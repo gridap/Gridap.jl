@@ -1,7 +1,20 @@
 abstract type MultiFieldStyle end
 
+"""
+  The DoF ids of the collective space are the concatenation of the DoF ids of the
+  individual spaces.
+"""
 struct ConsecutiveMultiFieldStyle <: MultiFieldStyle end
 
+"""
+  Similar to ConsecutiveMultiFieldStyle, but we keep the original DoF ids of the
+  individual spaces for better block assembly (see BlockSparseMatrixAssembler). 
+"""
+struct BlockMultiFieldStyle <: MultiFieldStyle end
+
+"""
+  Not implemented yet. 
+"""
 struct StridedMultiFieldStyle <: MultiFieldStyle end
 
 """
@@ -36,10 +49,16 @@ end
 """
     MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
 """
-function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
+function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace}; 
+                           style = ConsecutiveMultiFieldStyle())
   Ts = map(get_dof_value_type,spaces)
-  T = typeof(*(map(zero,Ts)...))
-  MultiFieldFESpace(Vector{T},spaces,ConsecutiveMultiFieldStyle())
+  T  = typeof(*(map(zero,Ts)...))
+  if style == BlockMultiFieldStyle()
+    VT = BlockVector{T}
+  else
+    VT = Vector{T}
+  end
+  MultiFieldFESpace(VT,spaces,style)
 end
 
 function MultiFieldFESpace(::Type{V},spaces::Vector{<:SingleFieldFESpace}) where V
@@ -74,12 +93,23 @@ function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::MultiFieldStyle)
   @abstractmethod
 end
 
-function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::ConsecutiveMultiFieldStyle)
+function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,
+                                    ::Union{ConsecutiveMultiFieldStyle,BlockMultiFieldStyle})
   block_num_dofs = Int[]
   for U in f.spaces
     push!(block_num_dofs,num_free_dofs(U))
   end
   BlockArrays.blockedrange(block_num_dofs)
+end
+
+function FESpaces.zero_free_values(f::MultiFieldFESpace{<:BlockMultiFieldStyle})
+  T = get_dof_value_type(f)
+  sizes = map(num_free_dofs,f)
+  free_values = BlockVector{T}(undef_blocks,sizes)
+  for (i,si) in enumerate(sizes)
+    free_values[Block(i)]= zeros(T,si)
+  end
+  return free_values
 end
 
 FESpaces.get_dof_value_type(f::MultiFieldFESpace{MS,CS,V}) where {MS,CS,V} = eltype(V)
@@ -240,6 +270,11 @@ function  _restrict_to_field(f,::ConsecutiveMultiFieldStyle,free_values,field)
   pini = offsets[field] + 1
   pend = offsets[field] + num_free_dofs(U[field])
   SubVector(free_values,pini,pend)
+end
+
+function  _restrict_to_field(f,::BlockMultiFieldStyle,free_values::BlockVector,field)
+  @check blocklength(free_values) == length(f.spaces)
+  return free_values[Block(field)]
 end
 
 """
@@ -430,6 +465,18 @@ function Arrays.evaluate!(cache,k::Broadcasting{typeof(_sum_if_first_positive)},
     end
   end
   r
+end
+
+function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::Triangulation,::BlockMultiFieldStyle)
+  nfields = length(f.spaces)
+  blockmask = [ is_change_possible(get_triangulation(Vi),trian) for Vi in f.spaces ]
+  active_block_ids = findall(blockmask)
+  active_block_data = Any[]
+  for i in active_block_ids
+    cell_dofs_i = get_cell_dof_ids(f.spaces[i],trian)
+    push!(active_block_data,cell_dofs_i)
+  end
+  return lazy_map(BlockMap(nfields,active_block_ids),active_block_data...)
 end
 
 # API for multi field case

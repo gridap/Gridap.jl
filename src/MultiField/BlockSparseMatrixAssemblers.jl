@@ -3,28 +3,16 @@ struct BlockSparseMatrixAssembler <: FESpaces.SparseMatrixAssembler
   glob_assembler   :: SparseMatrixAssembler
   block_assemblers :: AbstractArray{<:SparseMatrixAssembler}
 
-  function BlockSparseMatrixAssembler(X::MultiFieldFESpace,Y::MultiFieldFESpace)
-    nblocks = length(X)
-    @check nblocks == length(Y)
+  function BlockSparseMatrixAssembler(X::MultiFieldFESpace{MS},Y::MultiFieldFESpace{MS}) where MS
+    msg = "Block assembly is only allowed for BlockMultiFieldStyle."
+    @check (MS <: BlockMultiFieldStyle) msg
+
     glob_assembler = SparseMatrixAssembler(X,Y)
 
-    row_offsets = [0,get_rows(glob_assembler).lasts...]
-    col_offsets = [0,get_cols(glob_assembler).lasts...]
-
-    mat_builder = get_matrix_builder(glob_assembler)
-    vec_builder = get_vector_builder(glob_assembler)
-
-    block_assemblers = Matrix{SparseMatrixAssembler}(undef,nblocks,nblocks)
-    for i in 1:nblocks
-      for j in 1:nblocks
-        row_map(row) = row .- row_offsets[i]
-        col_map(col) = col .- col_offsets[j]
-        row_mask(row) = true
-        col_mask(col) = true
-        strategy = GenericAssemblyStrategy(row_map,col_map,row_mask,col_mask)
-
-        block_assemblers[i,j] = SparseMatrixAssembler(mat_builder,vec_builder,X[i],Y[j],strategy)
-      end
+    nblocks = (length(Y),length(X))
+    block_assemblers = Matrix{SparseMatrixAssembler}(undef,nblocks)
+    for i in 1:nblocks[1], j in 1:nblocks[2]
+      block_assemblers[i,j] = SparseMatrixAssembler(Y[i],X[j])
     end
     new{}(glob_assembler,block_assemblers)
   end
@@ -150,3 +138,24 @@ function FESpaces.assemble_matrix_add!(mat::BlockMatrix,a::BlockSparseMatrixAsse
     end
   end
 end
+
+# Matrix and vector Assembly
+
+"""
+function FESpaces.allocate_matrix_and_vector(a::BlockSparseMatrixAssembler,data)
+  
+end
+
+function FESpaces.assemble_matrix_and_vector!(A,b,a::BlockSparseMatrixAssembler, data)
+
+end
+
+function FESpaces.assemble_matrix_and_vector_add!(A,b,a::BlockSparseMatrixAssembler,data)
+
+end
+
+function FESpaces.assemble_matrix_and_vector(a::BlockSparseMatrixAssembler,data)
+
+end
+"""
+

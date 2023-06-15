@@ -36,6 +36,7 @@ export MultiFieldFESpace
 export MultiFieldFEFunction
 export MultiFieldStyle
 export ConsecutiveMultiFieldStyle
+export BlockMultiFieldStyle
 
 export BlockSparseMatrixAssembler
 
