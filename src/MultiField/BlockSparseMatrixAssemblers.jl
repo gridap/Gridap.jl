@@ -71,14 +71,20 @@ function allocate_block_matrix(a::BlockSparseMatrixAssembler)
 end
 
 function select_block_matdata(matdata,i::Integer,j::Integer)
-  (map(y->lazy_map(x->getindex(x,i,j),y),matdata[1]),
-   map(y->lazy_map(x->getindex(x,i),y),matdata[2]),
-   map(y->lazy_map(x->getindex(x,j),y),matdata[3]))
+  (map(data->_select_block_data(data,i,j),matdata[1]),
+   map(data->_select_block_data(data,i),matdata[2]),
+   map(data->_select_block_data(data,j),matdata[3]))
 end
 
 function select_block_vecdata(vecdata,j::Integer)
-  (map(y->lazy_map(x->getindex(x,j),y),vecdata[1]),
-   map(y->lazy_map(x->getindex(x,j),y),vecdata[2]))
+  (map(data->_select_block_data(data,j),vecdata[1]),
+   map(data->_select_block_data(data,j),vecdata[2]))
+end
+
+function _select_block_data(data,idx::Integer...)
+  n = length(data)
+  _idx = map(i->Fill(i,n),idx)
+  return lazy_map(getindex,data,_idx...)
 end
 
 """
