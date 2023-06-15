@@ -30,11 +30,12 @@ data = collect_cell_matrix_and_vector(X,Y,biform(u,v),liform(v))
 matdata = collect_cell_matrix(X,Y,biform(u,v))
 vecdata = collect_cell_vector(Y,liform(v))  
 
-mat = assemble_matrix(assem.glob_assembler,matdata)
-vec = assemble_vector(assem.glob_assembler,vecdata)
+assem = SparseMatrixAssembler(X,Y)
+A = assemble_matrix(assem,matdata)
+b = assemble_vector(assem,vecdata)
 
-y = similar(vec)
-mul!(y,mat,vec)
+y = similar(b)
+mul!(y,A,b)
 
 ############################################################################################
 # Block Assembly 
@@ -50,11 +51,11 @@ bdata = collect_cell_matrix_and_vector(Xb,Yb,biform(ub,vb),liform(vb))
 bmatdata = collect_cell_matrix(Xb,Yb,biform(ub,vb))
 bvecdata = collect_cell_vector(Yb,liform(vb)) 
 
-assem = BlockSparseMatrixAssembler(Xb,Yb)
-mat_blocks = assemble_matrix(assem,bmatdata)
-vec_blocks = assemble_vector(assem,bvecdata)
+assem_blocks = SparseMatrixAssembler(Xb,Yb)
+A_blocks = assemble_matrix(assem_blocks,bmatdata)
+b_blocks = assemble_vector(assem_blocks,bvecdata)
 
-y_blocks = similar(vec_blocks)
-mul!(y_blocks,mat_blocks,vec_blocks)
+y_blocks = similar(b_blocks)
+mul!(y_blocks,A_blocks,b_blocks)
 
 y_blocks ≈ y

@@ -3,19 +3,47 @@ struct BlockSparseMatrixAssembler <: FESpaces.SparseMatrixAssembler
   glob_assembler   :: SparseMatrixAssembler
   block_assemblers :: AbstractArray{<:SparseMatrixAssembler}
 
-  function BlockSparseMatrixAssembler(X::MultiFieldFESpace{MS},Y::MultiFieldFESpace{MS}) where MS
+  function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:MS},
+                                      test::MultiFieldFESpace{<:MS},
+                                      matrix_builder,
+                                      vector_builder,
+                                      strategy=FESpaces.DefaultAssemblyStrategy()) where MS
     msg = "Block assembly is only allowed for BlockMultiFieldStyle."
     @check (MS <: BlockMultiFieldStyle) msg
 
-    glob_assembler = SparseMatrixAssembler(X,Y)
+    # Regular global assembler
+    rows = get_free_dof_ids(test)
+    cols = get_free_dof_ids(trial)
+    glob_assembler = FESpaces.GenericSparseMatrixAssembler(matrix_builder,
+                                                           vector_builder,
+                                                           rows,
+                                                           cols,
+                                                           strategy)
 
-    nblocks = (length(Y),length(X))
+    # Block assemblers
+    nblocks = (length(test),length(trial))
     block_assemblers = Matrix{SparseMatrixAssembler}(undef,nblocks)
     for i in 1:nblocks[1], j in 1:nblocks[2]
-      block_assemblers[i,j] = SparseMatrixAssembler(Y[i],X[j])
+      block_rows = get_free_dof_ids(test[i])
+      block_cols = get_free_dof_ids(trial[j])
+      block_assemblers[i,j] = FESpaces.GenericSparseMatrixAssembler(matrix_builder,
+                                                                    vector_builder,
+                                                                    block_rows,
+                                                                    block_cols,
+                                                                    strategy)
     end
-    new{}(glob_assembler,block_assemblers)
+    
+    return new{}(glob_assembler,block_assemblers)
   end
+end
+
+function FESpaces.SparseMatrixAssembler(
+  mat,
+  vec,
+  trial::MultiFieldFESpace{<:BlockMultiFieldStyle},
+  test::MultiFieldFESpace{<:BlockMultiFieldStyle},
+  strategy::AssemblyStrategy=DefaultAssemblyStrategy())
+  return BlockSparseMatrixAssembler(trial,test,SparseMatrixBuilder(mat),ArrayBuilder(vec),strategy)
 end
 
 for fun in [:get_rows,:get_cols,:get_matrix_builder,:get_vector_builder,:get_assembly_strategy]
