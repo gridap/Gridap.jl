@@ -187,3 +187,23 @@ function integrate(f,b::CompositeMeasure)
   add_contribution!(cont,b.ttrian,tc)
   return cont
 end
+
+function get_cell_weights(dΩ::Gridap.CellData.Measure)
+    get_cell_weights(dΩ.quad)
+end
+
+function get_cell_weights(quad::Gridap.CellData.CellQuadrature)
+  if quad.data_domain_style == PhysicalDomain() && quad.integration_domain_style == PhysicalDomain()
+    quad.cell_weight
+  elseif quad.data_domain_style == ReferenceDomain() && quad.integration_domain_style == PhysicalDomain()
+    cell_map = get_cell_map(quad.trian)
+    cell_Jt = lazy_map(∇,cell_map)
+    cell_Jtx = lazy_map(evaluate,cell_Jt,quad.cell_point)
+    cell_m = lazy_map(Broadcasting(Gridap.TensorValues.meas),cell_Jtx)
+    lazy_map(Broadcasting(*),quad.cell_weight,cell_m)
+  elseif quad.data_domain_style == ReferenceDomain() && quad.integration_domain_style == ReferenceDomain()
+    quad.cell_weight
+  else
+    Gridap.Helpers.@notimplemented
+  end
+end
