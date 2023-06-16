@@ -264,7 +264,7 @@ function  _restrict_to_field(f,::MultiFieldStyle,free_values,field)
   @notimplemented
 end
 
-function  _restrict_to_field(f,::ConsecutiveMultiFieldStyle,free_values,field)
+function  _restrict_to_field(f,::Union{<:ConsecutiveMultiFieldStyle,<:BlockMultiFieldStyle},free_values,field)
   offsets = compute_field_offsets(f)
   U = f.spaces
   pini = offsets[field] + 1
@@ -281,7 +281,7 @@ end
     compute_field_offsets(f::MultiFieldFESpace)
 """
 function compute_field_offsets(f::MultiFieldFESpace)
-  @assert MultiFieldStyle(f) == ConsecutiveMultiFieldStyle()
+  @assert MultiFieldStyle(f) ∈ [ConsecutiveMultiFieldStyle(),BlockMultiFieldStyle()]
   U = f.spaces
   n = length(U)
   offsets = zeros(Int,n)
