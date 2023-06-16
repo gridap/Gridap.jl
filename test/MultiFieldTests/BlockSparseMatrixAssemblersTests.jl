@@ -14,7 +14,7 @@ V = FESpace(Ω, reffe; dirichlet_tags="boundary")
 U = TrialFESpace(sol,V)
 
 dΩ = Measure(Ω, 2)
-biform((u1,u2),(v1,v2)) = ∫(∇(u1)⋅∇(v1) + u2⋅v2)*dΩ
+biform((u1,u2),(v1,v2)) = ∫(∇(u1)⋅∇(v1) + u2⋅v2 - u1⋅v2)*dΩ
 liform((v1,v2)) = ∫(v1 - v2)*dΩ
 
 ############################################################################################
@@ -83,5 +83,13 @@ A4_blocks, b4_blocks = allocate_matrix_and_vector(assem_blocks,bdata)
 assemble_matrix_and_vector!(A4_blocks,b4_blocks,assem_blocks,bdata)
 @test A4_blocks ≈ A2_blocks
 @test b4_blocks ≈ b2_blocks
+
+############################################################################################
+
+op = AffineFEOperator(biform,liform,X,Y)
+block_op = AffineFEOperator(biform,liform,Xb,Yb)
+
+@test get_matrix(op) ≈ get_matrix(block_op)
+@test get_vector(op) ≈ get_vector(block_op)
 
 end # module
