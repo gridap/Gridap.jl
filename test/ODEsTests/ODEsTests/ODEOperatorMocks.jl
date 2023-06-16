@@ -43,7 +43,7 @@ function residual!(r::AbstractVector,op::ODEOperatorMock,t::Real,x::NTuple{3,Abs
   r
 end
 
-function allocate_residual(op::ODEOperatorMock,u::AbstractVector,cache)
+function allocate_residual(op::ODEOperatorMock,t0::Real,u::AbstractVector,cache)
   zeros(2)
 end
 
@@ -104,7 +104,7 @@ function jacobians!(
   J
 end
 
-function allocate_jacobian(op::ODEOperatorMock,u::AbstractVector,cache)
+function allocate_jacobian(op::ODEOperatorMock,t0::Real,u::AbstractVector,cache)
   spzeros(2,2)
 end
 
