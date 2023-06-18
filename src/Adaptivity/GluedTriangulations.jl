@@ -221,7 +221,7 @@ function change_domain_o2n(f_coarse,ctrian::Triangulation{Dc},ftrian::GluedTrian
     ref_coord_map = get_n2o_reference_coordinate_map(glue)
 
     # f_fine(x_fine) = f_f2c ∘ Φ^(-1)(x_fine) = f_coarse(x_coarse)
-    f_fine = lazy_map(∘,f_f2c,ref_coord_map)
+    f_fine = lazy_map(Broadcasting(∘),f_f2c,ref_coord_map)
 
     ### New Model -> New Triangulation
     #fine_tface_to_field = lazy_map(Reindex(fine_mface_to_field),fglue.tface_to_mface)
