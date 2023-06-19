@@ -1,73 +1,66 @@
 
-struct BlockSparseMatrixAssembler <: FESpaces.SparseMatrixAssembler
-  glob_assembler   :: SparseMatrixAssembler
-  block_assemblers :: AbstractArray{<:SparseMatrixAssembler}
-
-  function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:MS},
-                                      test::MultiFieldFESpace{<:MS},
-                                      matrix_builder,
-                                      vector_builder,
-                                      strategy=FESpaces.DefaultAssemblyStrategy()) where MS
-    msg = "Block assembly is only allowed for BlockMultiFieldStyle."
-    @check (MS <: BlockMultiFieldStyle) msg
-
-    # Regular global assembler
-    rows = get_free_dof_ids(test)
-    cols = get_free_dof_ids(trial)
-    glob_assembler = FESpaces.GenericSparseMatrixAssembler(matrix_builder,
-                                                           vector_builder,
-                                                           rows,
-                                                           cols,
-                                                           strategy)
-
-    # Block assemblers
-    nblocks = (length(test),length(trial))
-    block_assemblers = Matrix{SparseMatrixAssembler}(undef,nblocks)
-    for i in 1:nblocks[1], j in 1:nblocks[2]
-      block_rows = get_free_dof_ids(test[i])
-      block_cols = get_free_dof_ids(trial[j])
-      block_assemblers[i,j] = FESpaces.GenericSparseMatrixAssembler(matrix_builder,
-                                                                    vector_builder,
-                                                                    block_rows,
-                                                                    block_cols,
-                                                                    strategy)
-    end
-    
-    return new{}(glob_assembler,block_assemblers)
-  end
+struct BlockMatrixAssembler{A <: FESpaces.Assembler} <: FESpaces.Assembler
+  global_assembler :: A
+  block_assemblers :: AbstractMatrix{A}
 end
 
-function FESpaces.SparseMatrixAssembler(
-  mat,
-  vec,
-  trial::MultiFieldFESpace{<:BlockMultiFieldStyle},
-  test::MultiFieldFESpace{<:BlockMultiFieldStyle},
-  strategy::AssemblyStrategy=DefaultAssemblyStrategy())
+function FESpaces.get_rows(a::BlockMatrixAssembler)
+  row_assemblers = a.block_assemblers[:,1]
+  return blockedrange(map(a->length(get_rows(a)),row_assemblers))
+end
+
+function FESpaces.get_cols(a::BlockMatrixAssembler)
+  col_assemblers = a.block_assemblers[1,:]
+  return blockedrange(map(a->length(get_cols(a)),col_assemblers))
+end
+
+function allocate_block_vector(a::BlockMatrixAssembler)
+  vector_type = get_vector_type(first(a.block_assemblers))
+  vector_lengths = blocklengths(get_rows(a))
+  BlockArray(undef_blocks,vector_type,vector_lengths)
+end
+
+function allocate_block_matrix(a::BlockMatrixAssembler)
+  matrix_type = get_matrix_type(first(a.block_assemblers))
+  row_lengths = blocklengths(get_rows(a))
+  col_lengths = blocklengths(get_cols(a))
+  BlockArray(undef_blocks,matrix_type,row_lengths,col_lengths)
+end
+
+# BlockMatrixAssembler for sparse matrices
+function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:MS},
+                                    test::MultiFieldFESpace{<:MS},
+                                    matrix_builder,
+                                    vector_builder,
+                                    strategy=FESpaces.DefaultAssemblyStrategy()) where MS
+  msg = "Block assembly is only allowed for BlockMultiFieldStyle."
+  @check (MS <: BlockMultiFieldStyle) msg
+
+  # Regular global assembler
+  rows = get_free_dof_ids(test)
+  cols = get_free_dof_ids(trial)
+  global_assembler = FESpaces.GenericSparseMatrixAssembler(matrix_builder,vector_builder,rows,cols,strategy)
+
+  # Block assemblers
+  A = typeof(global_assembler)
+  nblocks = (length(test),length(trial))
+  block_assemblers = Matrix{A}(undef,nblocks)
+  for i in 1:nblocks[1], j in 1:nblocks[2]
+    block_rows = get_free_dof_ids(test[i])
+    block_cols = get_free_dof_ids(trial[j])
+    block_assemblers[i,j] = FESpaces.GenericSparseMatrixAssembler(matrix_builder,vector_builder,
+                                                                  block_rows,block_cols,strategy)
+  end
+
+  return BlockMatrixAssembler(global_assembler,block_assemblers)
+end
+
+function FESpaces.SparseMatrixAssembler(mat,
+                                        vec,
+                                        trial::MultiFieldFESpace{<:BlockMultiFieldStyle},
+                                        test::MultiFieldFESpace{<:BlockMultiFieldStyle},
+                                        strategy::AssemblyStrategy=DefaultAssemblyStrategy())
   return BlockSparseMatrixAssembler(trial,test,SparseMatrixBuilder(mat),ArrayBuilder(vec),strategy)
-end
-
-for fun in [:get_rows,:get_cols,:get_matrix_builder,:get_vector_builder,:get_assembly_strategy]
-  @eval begin
-    function FESpaces.$fun(a::BlockSparseMatrixAssembler)
-      $fun(a.glob_assembler)
-    end
-  end
-end
-
-function allocate_block_vector(a::BlockSparseMatrixAssembler)
-  vec_type = get_vector_builder(a.glob_assembler).array_type
-  rows = get_rows(a.glob_assembler)
-  r = rows.lasts .- [0,rows.lasts[1:end-1]...]
-  BlockArray(undef_blocks,vec_type,r)
-end
-
-function allocate_block_matrix(a::BlockSparseMatrixAssembler)
-  mat_type = get_matrix_builder(a.glob_assembler).matrix_type
-  rows = get_rows(a.glob_assembler)
-  cols = get_cols(a.glob_assembler)
-  r = rows.lasts .- [0,rows.lasts[1:end-1]...]
-  c = cols.lasts .- [0,cols.lasts[1:end-1]...]
-  BlockArray(undef_blocks,mat_type,r,c)
 end
 
 function select_block_matdata(matdata,i::Integer,j::Integer)
@@ -118,7 +111,7 @@ end
 
 # Vector assembly 
 
-function FESpaces.assemble_vector(a::BlockSparseMatrixAssembler,vecdata)
+function FESpaces.assemble_vector(a::BlockMatrixAssembler,vecdata)
   v = allocate_block_vector(a)
   block_assemblers = a.block_assemblers
   for j in 1:blocksize(v,1)
@@ -129,7 +122,7 @@ function FESpaces.assemble_vector(a::BlockSparseMatrixAssembler,vecdata)
   return v
 end
 
-function FESpaces.allocate_vector(a::BlockSparseMatrixAssembler,vecdata)
+function FESpaces.allocate_vector(a::BlockMatrixAssembler,vecdata)
   v = allocate_block_vector(a)
   block_assemblers = a.block_assemblers
   for i in 1:blocksize(v,1)
@@ -140,7 +133,12 @@ function FESpaces.allocate_vector(a::BlockSparseMatrixAssembler,vecdata)
   return v
 end
 
-function FESpaces.assemble_vector_add!(b::BlockVector,a::BlockSparseMatrixAssembler,vecdata)
+function FESpaces.assemble_vector!(b::BlockVector,a::BlockMatrixAssembler,vecdata)
+  fill!(b,zero(eltype(b)))
+  assemble_vector_add!(b,a,vecdata)
+end
+
+function FESpaces.assemble_vector_add!(b::BlockVector,a::BlockMatrixAssembler,vecdata)
   block_assemblers = a.block_assemblers
   for j in 1:blocksize(b,1)
     _a = block_assemblers[j,1]
@@ -152,7 +150,7 @@ end
 
 # Matrix assembly 
 
-function FESpaces.assemble_matrix(a::BlockSparseMatrixAssembler,matdata)
+function FESpaces.assemble_matrix(a::BlockMatrixAssembler,matdata)
   m = allocate_block_matrix(a)
   block_assemblers = a.block_assemblers
   for i in 1:blocksize(m,1)
@@ -165,7 +163,7 @@ function FESpaces.assemble_matrix(a::BlockSparseMatrixAssembler,matdata)
   return m
 end
 
-function FESpaces.allocate_matrix(a::BlockSparseMatrixAssembler,matdata)
+function FESpaces.allocate_matrix(a::BlockMatrixAssembler,matdata)
   m = allocate_block_matrix(a)
   block_assemblers = a.block_assemblers
   for i in 1:blocksize(m,1)
@@ -178,14 +176,14 @@ function FESpaces.allocate_matrix(a::BlockSparseMatrixAssembler,matdata)
   return m
 end
 
-function FESpaces.assemble_matrix!(mat::BlockMatrix,a::BlockSparseMatrixAssembler,matdata)
+function FESpaces.assemble_matrix!(mat::BlockMatrix,a::BlockMatrixAssembler,matdata)
   for (i,j) in blockaxes(mat)
     LinearAlgebra.fillstored!(mat[i,j],zero(eltype(mat)))
   end
   assemble_matrix_add!(mat,a,matdata)
 end
 
-function FESpaces.assemble_matrix_add!(mat::BlockMatrix,a::BlockSparseMatrixAssembler,matdata)
+function FESpaces.assemble_matrix_add!(mat::BlockMatrix,a::BlockMatrixAssembler,matdata)
   block_assemblers = a.block_assemblers
   for i in 1:blocksize(mat,1)
     for j in 1:blocksize(mat,2)
@@ -199,7 +197,7 @@ end
 
 # Matrix and vector Assembly
 
-function FESpaces.allocate_matrix_and_vector(a::BlockSparseMatrixAssembler,data)
+function FESpaces.allocate_matrix_and_vector(a::BlockMatrixAssembler,data)
   matvecdata, matdata, vecdata = data
   m = allocate_block_matrix(a)
   v = allocate_block_vector(a)
@@ -221,7 +219,7 @@ function FESpaces.allocate_matrix_and_vector(a::BlockSparseMatrixAssembler,data)
   return m, v
 end
 
-function FESpaces.assemble_matrix_and_vector!(A::BlockMatrix,b::BlockVector,a::BlockSparseMatrixAssembler,data)
+function FESpaces.assemble_matrix_and_vector!(A::BlockMatrix,b::BlockVector,a::BlockMatrixAssembler,data)
   for (i,j) in blockaxes(A)
     LinearAlgebra.fillstored!(A[i,j],zero(eltype(A)))
   end
@@ -229,7 +227,7 @@ function FESpaces.assemble_matrix_and_vector!(A::BlockMatrix,b::BlockVector,a::B
   assemble_matrix_and_vector_add!(A,b,a,data)
 end
 
-function FESpaces.assemble_matrix_and_vector_add!(A::BlockMatrix,b::BlockVector,a::BlockSparseMatrixAssembler,data)
+function FESpaces.assemble_matrix_and_vector_add!(A::BlockMatrix,b::BlockVector,a::BlockMatrixAssembler,data)
   matvecdata, matdata, vecdata = data
   block_assemblers = a.block_assemblers
   for i in 1:blocksize(A,1)
@@ -250,7 +248,7 @@ function FESpaces.assemble_matrix_and_vector_add!(A::BlockMatrix,b::BlockVector,
   end
 end
 
-function FESpaces.assemble_matrix_and_vector(a::BlockSparseMatrixAssembler,data)
+function FESpaces.assemble_matrix_and_vector(a::BlockMatrixAssembler,data)
   matvecdata, matdata, vecdata = data
   m = allocate_block_matrix(a)
   v = allocate_block_vector(a)

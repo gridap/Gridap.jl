@@ -103,13 +103,7 @@ function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,
 end
 
 function FESpaces.zero_free_values(f::MultiFieldFESpace{<:BlockMultiFieldStyle})
-  T = get_dof_value_type(f)
-  sizes = map(num_free_dofs,f)
-  free_values = BlockVector{T}(undef_blocks,sizes)
-  for (i,si) in enumerate(sizes)
-    free_values[Block(i)]= zeros(T,si)
-  end
-  return free_values
+  return mortar(map(zero_free_values,f.spaces))
 end
 
 FESpaces.get_dof_value_type(f::MultiFieldFESpace{MS,CS,V}) where {MS,CS,V} = eltype(V)

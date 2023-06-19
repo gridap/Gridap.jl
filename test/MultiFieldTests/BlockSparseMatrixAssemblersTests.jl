@@ -55,7 +55,7 @@ bvecdata = collect_cell_vector(Yb,liform(vb))
 # Block Assembly 
 
 assem_blocks = SparseMatrixAssembler(Xb,Yb)
-test_sparse_matrix_assembler(assem_blocks,bmatdata,bvecdata,bdata)
+test_assembler(assem_blocks,bmatdata,bvecdata,bdata)
 
 A1_blocks = assemble_matrix(assem_blocks,bmatdata)
 b1_blocks = assemble_vector(assem_blocks,bvecdata)
