@@ -1,6 +1,5 @@
 
 struct BlockMatrixAssembler{A <: FESpaces.Assembler} <: FESpaces.Assembler
-  global_assembler :: A # The global assembler can actually be removed
   block_assemblers :: AbstractMatrix{A}
 end
 
@@ -55,7 +54,7 @@ function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:MS},
                                                                   block_rows,block_cols,strategy)
   end
 
-  return BlockMatrixAssembler(global_assembler,block_assemblers)
+  return BlockMatrixAssembler(block_assemblers)
 end
 
 function FESpaces.SparseMatrixAssembler(mat,
