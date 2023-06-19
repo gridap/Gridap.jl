@@ -1,6 +1,6 @@
 
 struct BlockMatrixAssembler{A <: FESpaces.Assembler} <: FESpaces.Assembler
-  global_assembler :: A
+  global_assembler :: A # The global assembler can actually be removed
   block_assemblers :: AbstractMatrix{A}
 end
 
@@ -12,6 +12,10 @@ end
 function FESpaces.get_cols(a::BlockMatrixAssembler)
   col_assemblers = a.block_assemblers[1,:]
   return blockedrange(map(a->length(get_cols(a)),col_assemblers))
+end
+
+function FESpaces.get_assembly_strategy(a::BlockMatrixAssembler)
+  return get_assembly_strategy(first(a.block_assemblers))
 end
 
 function allocate_block_vector(a::BlockMatrixAssembler)
@@ -28,6 +32,7 @@ function allocate_block_matrix(a::BlockMatrixAssembler)
 end
 
 # BlockMatrixAssembler for sparse matrices
+
 function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:MS},
                                     test::MultiFieldFESpace{<:MS},
                                     matrix_builder,
@@ -36,12 +41,10 @@ function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:MS},
   msg = "Block assembly is only allowed for BlockMultiFieldStyle."
   @check (MS <: BlockMultiFieldStyle) msg
 
-  # Regular global assembler
   rows = get_free_dof_ids(test)
   cols = get_free_dof_ids(trial)
   global_assembler = FESpaces.GenericSparseMatrixAssembler(matrix_builder,vector_builder,rows,cols,strategy)
 
-  # Block assemblers
   A = typeof(global_assembler)
   nblocks = (length(test),length(trial))
   block_assemblers = Matrix{A}(undef,nblocks)
@@ -62,6 +65,8 @@ function FESpaces.SparseMatrixAssembler(mat,
                                         strategy::AssemblyStrategy=DefaultAssemblyStrategy())
   return BlockSparseMatrixAssembler(trial,test,SparseMatrixBuilder(mat),ArrayBuilder(vec),strategy)
 end
+
+# Block extraction functions
 
 function select_block_matdata(matdata,i::Integer,j::Integer)
   (map(data->_select_block_data(data,i,j),matdata[1]),

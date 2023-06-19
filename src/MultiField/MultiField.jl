@@ -17,7 +17,7 @@ using Gridap.Fields
 
 using Gridap.FESpaces: FEBasis, TestBasis, TrialBasis, get_cell_dof_values
 using Gridap.FESpaces: SingleFieldFEBasis, TestBasis, TrialBasis
-using Gridap.FESpaces: get_rows, get_cols
+using Gridap.FESpaces: get_rows, get_cols, get_assembly_strategy
 using Gridap.CellData: CellFieldAt
 using Gridap.CellData: SkeletonCellFieldPair
 
