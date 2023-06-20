@@ -40,18 +40,11 @@ function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:MS},
   msg = "Block assembly is only allowed for BlockMultiFieldStyle."
   @check (MS <: BlockMultiFieldStyle) msg
 
-  rows = get_free_dof_ids(test)
-  cols = get_free_dof_ids(trial)
-  global_assembler = FESpaces.GenericSparseMatrixAssembler(matrix_builder,vector_builder,rows,cols,strategy)
-
-  A = typeof(global_assembler)
-  nblocks = (length(test),length(trial))
-  block_assemblers = Matrix{A}(undef,nblocks)
-  for i in 1:nblocks[1], j in 1:nblocks[2]
-    block_rows = get_free_dof_ids(test[i])
-    block_cols = get_free_dof_ids(trial[j])
-    block_assemblers[i,j] = FESpaces.GenericSparseMatrixAssembler(matrix_builder,vector_builder,
-                                                                  block_rows,block_cols,strategy)
+  block_idx = CartesianIndices((length(test),length(trial)))
+  block_assemblers = map(block_idx) do idx
+    block_rows = get_free_dof_ids(test[idx[1]])
+    block_cols = get_free_dof_ids(trial[idx[2]])
+    FESpaces.GenericSparseMatrixAssembler(matrix_builder,vector_builder,block_rows,block_cols,strategy)
   end
 
   return BlockMatrixAssembler(block_assemblers)
