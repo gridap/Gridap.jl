@@ -101,10 +101,59 @@ function combine_matdata(data1,data2)
   return (vcat(w1,w2),vcat(r1,r2),vcat(c1,c2))
 end
 
-"""
-  TODO: We need to detect inactive blocks and avoid assembling them.
-  Otherwise, we allocate unnecessary memory.
-"""
+# Detection of innactive blocks
+
+function select_touched_blocks_vecdata(vecdata,s::Tuple)
+  touched = fill(true,s)
+  map(vecdata[1]) do vecdata
+    cache = array_cache(vecdata)
+    for i in 1:length(vecdata)
+      vec = getindex!(cache,vecdata,i)
+      touched .&= vec.touched
+    end
+  end
+  return touched
+end
+
+function select_touched_blocks_matdata(matdata,s::Tuple)
+  touched = fill(false,s)
+  map(matdata[1]) do matdata
+    cache = array_cache(matdata)
+    for i in 1:length(matdata)
+      mat = getindex!(cache,matdata,i)
+      touched .|= mat.touched
+    end
+  end
+  return touched
+end
+
+function select_touched_blocks_matvecdata(matvecdata,s::Tuple)
+  touched = fill(false,s)
+  map(matvecdata[1]) do matvecdata
+    cache = array_cache(matvecdata)
+    for i in 1:length(matvecdata)
+      mat, vec = getindex!(cache,matvecdata,i)
+      touched .|= mat.touched
+    end
+  end
+  return touched
+end
+
+function zero_block(a::BlockMatrixAssembler,i::Integer,j::Integer)
+  block_assembler = a.block_assemblers[i,j]
+  mat_type = get_matrix_type(block_assembler)
+  return zero_block(mat_type,block_assembler)
+end
+
+function zero_block(::Type{<:SparseMatrixCSC{TV,TI}},a::SparseMatrixAssembler) where {TV,TI}
+  n, m = size(a)
+  return spzeros(TV,TI,n,m)
+end
+
+function zero_block(::Type{<:SparseMatrixCSR{Bi,TV,TI}},a::SparseMatrixAssembler) where {Bi,TV,TI}
+  n, m = size(a)
+  return SparseMatrixCSR{Bi}(transpose(spzeros(TV,TI,n,m)))
+end
 
 # Vector assembly 
 
@@ -149,12 +198,17 @@ end
 
 function FESpaces.assemble_matrix(a::BlockMatrixAssembler,matdata)
   m = allocate_block_matrix(a)
+  touched = select_touched_blocks_matdata(matdata,blocksize(m))
   block_assemblers = a.block_assemblers
   for i in 1:blocksize(m,1)
     for j in 1:blocksize(m,2)
-      _a = block_assemblers[i,j]
-      _matdata = select_block_matdata(matdata,i,j)
-      m[Block(i,j)] = assemble_matrix(_a,_matdata)
+      if touched[i,j]
+        _a = block_assemblers[i,j]
+        _matdata = select_block_matdata(matdata,i,j)
+        m[Block(i,j)] = assemble_matrix(_a,_matdata)
+      else
+        m[Block(i,j)] = zero_block(a,i,j)
+      end
     end
   end
   return m
@@ -162,12 +216,17 @@ end
 
 function FESpaces.allocate_matrix(a::BlockMatrixAssembler,matdata)
   m = allocate_block_matrix(a)
+  touched = select_touched_blocks_matdata(matdata,blocksize(m))
   block_assemblers = a.block_assemblers
   for i in 1:blocksize(m,1)
     for j in 1:blocksize(m,2)
-      _a = block_assemblers[i,j]
-      _matdata = select_block_matdata(matdata,i,j)
-      m[Block(i,j)] = allocate_matrix(_a,_matdata)
+      if touched[i,j]
+        _a = block_assemblers[i,j]
+        _matdata = select_block_matdata(matdata,i,j)
+        m[Block(i,j)] = allocate_matrix(_a,_matdata)
+      else
+        m[Block(i,j)] = zero_block(a,i,j)
+      end
     end
   end
   return m
@@ -184,10 +243,12 @@ function FESpaces.assemble_matrix_add!(mat::BlockMatrix,a::BlockMatrixAssembler,
   block_assemblers = a.block_assemblers
   for i in 1:blocksize(mat,1)
     for j in 1:blocksize(mat,2)
-      _a = block_assemblers[i,j]
-      _matdata = select_block_matdata(matdata,i,j)
       mat_ij = mat[Block(i,j)]
-      assemble_matrix_add!(mat_ij,_a,_matdata)
+      if nnz(mat_ij) != 0 #! Is this necessary/correct? It limits use to SparseMatrices...
+        _a = block_assemblers[i,j]
+        _matdata = select_block_matdata(matdata,i,j)
+        assemble_matrix_add!(mat_ij,_a,_matdata)
+      end
     end
   end
 end
@@ -198,18 +259,22 @@ function FESpaces.allocate_matrix_and_vector(a::BlockMatrixAssembler,data)
   matvecdata, matdata, vecdata = data
   m = allocate_block_matrix(a)
   v = allocate_block_vector(a)
+  touched   = select_touched_blocks_matdata(matdata,blocksize(m))
+  touched .|= select_touched_blocks_matvecdata(matvecdata,blocksize(m))
   block_assemblers = a.block_assemblers
   for i in 1:blocksize(m,1)
+    _vecdata = select_block_vecdata(vecdata,i)
     for j in 1:blocksize(m,2)
       _a = block_assemblers[i,j]
       _matvecdata = select_block_matvecdata(matvecdata,i,j)
       _matdata = select_block_matdata(matdata,i,j)
-      if i == j # Diagonal blocks
-        _vecdata = select_block_vecdata(vecdata,j)
+      if i == j           # Diagonal blocks
         m[Block(i,j)], v[Block(i)] = allocate_matrix_and_vector(_a,(_matvecdata,_matdata,_vecdata))
-      else      # Off-diagonal blocks
+      elseif touched[i,j] # Off-diagonal blocks
         __matdata = combine_matdata(_matvecdata,_matdata) 
         m[Block(i,j)] = allocate_matrix(_a,__matdata)
+      else
+        m[Block(i,j)] = zero_block(a,i,j)
       end
     end
   end
@@ -228,18 +293,20 @@ function FESpaces.assemble_matrix_and_vector_add!(A::BlockMatrix,b::BlockVector,
   matvecdata, matdata, vecdata = data
   block_assemblers = a.block_assemblers
   for i in 1:blocksize(A,1)
+    _vecdata = select_block_vecdata(vecdata,i)
     for j in 1:blocksize(A,2)
       _a = block_assemblers[i,j]
       _matvecdata = select_block_matvecdata(matvecdata,i,j)
       _matdata = select_block_matdata(matdata,i,j)
       if i == j # Diagonal blocks
-        _vecdata = select_block_vecdata(vecdata,j)
         _A, _b = A[Block(i,j)], b[Block(i)]
         assemble_matrix_and_vector_add!(_A,_b,_a,(_matvecdata,_matdata,_vecdata))
       else      # Off-diagonal blocks
-        __matdata = combine_matdata(_matvecdata,_matdata)
         _A = A[Block(i,j)]
-        assemble_matrix_add!(_A,_a,__matdata)
+        if nnz(_A) != 0
+          __matdata = combine_matdata(_matvecdata,_matdata)
+          assemble_matrix_add!(_A,_a,__matdata)
+        end
       end
     end
   end
@@ -249,18 +316,22 @@ function FESpaces.assemble_matrix_and_vector(a::BlockMatrixAssembler,data)
   matvecdata, matdata, vecdata = data
   m = allocate_block_matrix(a)
   v = allocate_block_vector(a)
+  touched   = select_touched_blocks_matdata(matdata,blocksize(m))
+  touched .|= select_touched_blocks_matvecdata(matvecdata,blocksize(m))
   block_assemblers = a.block_assemblers
   for i in 1:blocksize(m,1)
     for j in 1:blocksize(m,2)
       _a = block_assemblers[i,j]
       _matvecdata = select_block_matvecdata(matvecdata,i,j)
       _matdata = select_block_matdata(matdata,i,j)
-      if i == j # Diagonal blocks
+      if i == j           # Diagonal blocks
         _vecdata = select_block_vecdata(vecdata,j)
         m[Block(i,j)], v[Block(i)] = assemble_matrix_and_vector(_a,(_matvecdata,_matdata,_vecdata))
-      else      # Off-diagonal blocks
+      elseif touched[i,j] # Off-diagonal blocks
         __matdata = combine_matdata(_matvecdata,_matdata) 
         m[Block(i,j)] = assemble_matrix(_a,__matdata)
+      else
+        m[Block(i,j)] = zero_block(a,i,j)
       end
     end
   end

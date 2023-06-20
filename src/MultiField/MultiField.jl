@@ -21,6 +21,8 @@ using Gridap.FESpaces: get_rows, get_cols, get_assembly_strategy
 using Gridap.CellData: CellFieldAt
 using Gridap.CellData: SkeletonCellFieldPair
 
+using SparseMatricesCSR: SparseMatrixCSR
+
 import Gridap.Fields: gradient, DIV, ∇∇
 
 using ForwardDiff
