@@ -54,7 +54,7 @@ function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace};
   Ts = map(get_dof_value_type,spaces)
   T  = typeof(*(map(zero,Ts)...))
   if style == BlockMultiFieldStyle()
-    VT = BlockVector{T}
+    VT = BlockVector{T,Vector{Vector{T}}}
   else
     VT = Vector{T}
   end
