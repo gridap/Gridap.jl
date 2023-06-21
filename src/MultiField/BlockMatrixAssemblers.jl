@@ -101,6 +101,11 @@ function combine_matdata(data1,data2)
   return (vcat(w1,w2),vcat(r1,r2),vcat(c1,c2))
 end
 
+# This function is needed to dispatch in GridapDistributed
+function recombine_data(matvecdata,matdata,vecdata)
+  return (matvecdata,matdata,vecdata)
+end
+
 # Detection of innactive blocks
 
 function select_touched_blocks_vecdata(vecdata,s::Tuple)
@@ -326,7 +331,8 @@ function FESpaces.assemble_matrix_and_vector(a::BlockMatrixAssembler,data)
       _matdata = select_block_matdata(matdata,i,j)
       if i == j           # Diagonal blocks
         _vecdata = select_block_vecdata(vecdata,j)
-        m[Block(i,j)], v[Block(i)] = assemble_matrix_and_vector(_a,(_matvecdata,_matdata,_vecdata))
+        _data = recombine_data(_matvecdata,_matdata,_vecdata)
+        m[Block(i,j)], v[Block(i)] = assemble_matrix_and_vector(_a,_data)
       elseif touched[i,j] # Off-diagonal blocks
         __matdata = combine_matdata(_matvecdata,_matdata) 
         m[Block(i,j)] = assemble_matrix(_a,__matdata)
