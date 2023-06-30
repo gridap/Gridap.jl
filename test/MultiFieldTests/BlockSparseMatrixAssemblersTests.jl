@@ -6,7 +6,7 @@ using Gridap.FESpaces, Gridap.ReferenceFEs, Gridap.MultiField
 
 sol(x) = sum(x)
 
-model = CartesianDiscreteModel((0.0,1.0,0.0,1.0),(10,10))
+model = CartesianDiscreteModel((0.0,1.0,0.0,1.0),(5,5))
 Ω = Triangulation(model)
 
 reffe = LagrangianRefFE(Float64,QUAD,1)
