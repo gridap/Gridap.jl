@@ -76,7 +76,7 @@ A3_blocks = allocate_matrix(assem_blocks,bmatdata)
 b3_blocks = allocate_vector(assem_blocks,bvecdata)
 assemble_matrix!(A3_blocks,assem_blocks,bmatdata)
 assemble_vector!(b3_blocks,assem_blocks,bvecdata)
-@test A3_blocks ≈ A1_blocks
+@test A3_blocks ≈ A1
 @test b3_blocks ≈ b1_blocks
 
 A4_blocks, b4_blocks = allocate_matrix_and_vector(assem_blocks,bdata)

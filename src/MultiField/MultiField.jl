@@ -15,6 +15,7 @@ using Gridap.TensorValues
 using Gridap.CellData
 using Gridap.Fields
 
+using Gridap.Fields: ArrayBlock, MatrixBlock, VectorBlock
 using Gridap.FESpaces: FEBasis, TestBasis, TrialBasis, get_cell_dof_values
 using Gridap.FESpaces: SingleFieldFEBasis, TestBasis, TrialBasis
 using Gridap.FESpaces: get_rows, get_cols, get_assembly_strategy
@@ -41,8 +42,6 @@ export MultiFieldStyle
 export ConsecutiveMultiFieldStyle
 export BlockMultiFieldStyle
 
-export BlockMatrixAssembler
-
 include("MultiFieldCellFields.jl")
 
 include("MultiFieldFESpaces.jl")
@@ -51,6 +50,6 @@ include("MultiFieldFEFunctions.jl")
 
 include("MultiFieldFEAutodiff.jl")
 
-include("BlockMatrixAssemblers.jl")
+include("BlockSparseMatrixAssemblers.jl")
 
 end # module

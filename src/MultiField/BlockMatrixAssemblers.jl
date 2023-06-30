@@ -32,11 +32,11 @@ end
 
 # BlockMatrixAssembler for sparse matrices
 
-function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:MS},
-                                    test::MultiFieldFESpace{<:MS},
-                                    matrix_builder,
-                                    vector_builder,
-                                    strategy=FESpaces.DefaultAssemblyStrategy()) where MS
+function BlockMatrixAssembler(trial::MultiFieldFESpace{<:MS},
+                              test::MultiFieldFESpace{<:MS},
+                              matrix_builder,
+                              vector_builder,
+                              strategy=FESpaces.DefaultAssemblyStrategy()) where MS
   msg = "Block assembly is only allowed for BlockMultiFieldStyle."
   @check (MS <: BlockMultiFieldStyle) msg
 
@@ -48,14 +48,6 @@ function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:MS},
   end
 
   return BlockMatrixAssembler(block_assemblers)
-end
-
-function FESpaces.SparseMatrixAssembler(mat,
-                                        vec,
-                                        trial::MultiFieldFESpace{<:BlockMultiFieldStyle},
-                                        test::MultiFieldFESpace{<:BlockMultiFieldStyle},
-                                        strategy::AssemblyStrategy=DefaultAssemblyStrategy())
-  return BlockSparseMatrixAssembler(trial,test,SparseMatrixBuilder(mat),ArrayBuilder(vec),strategy)
 end
 
 # Block extraction functions
