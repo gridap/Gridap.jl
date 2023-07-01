@@ -14,6 +14,7 @@ function l2_error(u1,u2,dΩ)
 end
 
 function test_grid_transfers(D,parent,model,order)
+  return
   sol(x) = sum(x)
   qorder = 2*order+1
 
@@ -102,7 +103,7 @@ function test_grid_transfers(D,parent,model,order)
   @test l2_error(uh_c,uh_c_pr,dΩ_c) < 1.e-8
 end
 
-visualize = false
+visualize = true
 
 # Refining meshes of QUADs
 cart_model = CartesianDiscreteModel((0,1,0,1),(4,4))
@@ -161,5 +162,20 @@ ref_model9 = refine(ref_model8, refinement_method = "nvb", cells_to_refine = [1,
 trian9 = Triangulation(ref_model9.model)
 visualize && writevtk(trian9, "test/AdaptivityTests/ref_model9")
 test_grid_transfers(2, ref_model8, ref_model9, 1)
+trian8 = Triangulation(ref_model8)
+coarsen(ref_model9, coarsening_method="nvb", cells_to_coarsen=[1,2])
+#ref_modeln = ref_model9.model
+#let
+#	ref_modeln = ref_model9
+#	for n = 10:20
+#		@show n
+#		upper = trunc(Int, num_cells(ref_modeln))
+#		rand_cells = rand(1:10, 500)
+#		println("Hello")
+#		ref_modeln = refine(ref_modeln.model, refinement_method = "nvb", cells_to_refine=rand_cells)
+#		@time writevtk(Triangulation(ref_modeln),"test/AdaptivityTests/ref_model$n")
+#		println("Goodbye")
+#	end
+#end
 
 end

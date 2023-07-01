@@ -51,6 +51,17 @@ is_related(m1::DiscreteModel,m2::DiscreteModel) = is_child(m1,m2) || is_child(m2
 
 # Model Adaptation
 
+# Handle the user's requested choice for refinement
+function string_to_refinement(refinement_method::String, model)
+  refinement_method == "red_green" && return RedGreenRefinement()
+  refinement_method == "nvb" && return NVBRefinement(model)
+  error("refinement_method $refinement_method not recognized")
+end
+
+function string_to_coarsening(coarsening_method::String, model)
+  coarsening_method == "nvb" && return NVBCoarsening(model)
+end
+
 function refine(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
 end
@@ -62,6 +73,15 @@ end
 
 function coarsen(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
+end
+
+function coarsen(model::DiscreteModel,args...;coarsening_method="nvb",kwargs...)
+  return coarsen(string_to_coarsening(coarsening_method, model),model,args...;kwargs...)
+end
+
+function coarsen(model::AdaptedDiscreteModel,args...;kwargs...)
+  coarse_model = coarsen(model.model,args...;kwargs...)
+  return AdaptedDiscreteModel(coarse_model.model,model,coarse_model.glue)
 end
 
 function adapt(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
@@ -79,13 +99,6 @@ abstract type AdaptivityMethod end
 
 function refine(model::UnstructuredDiscreteModel,::AdaptivityMethod,args...;kwargs...)
   @abstractmethod
-end
-
-# Handle the user's requested choice for refinement
-function string_to_refinement(refinement_method::String, model)
-  refinement_method == "red_green" && return RedGreenRefinement()
-  refinement_method == "nvb" && return NVBRefinement(model)
-  error("refinement_method $refinement_method not recognized")
 end
 
 function refine(model::UnstructuredDiscreteModel,args...;refinement_method="red_green",kwargs...)
