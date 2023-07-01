@@ -8,9 +8,44 @@ struct ConsecutiveMultiFieldStyle <: MultiFieldStyle end
 
 """
   Similar to ConsecutiveMultiFieldStyle, but we keep the original DoF ids of the
-  individual spaces for better block assembly (see BlockSparseMatrixAssembler). 
+  individual spaces for better block assembly (see BlockSparseMatrixAssembler).
+  Takes two parameters: 
+   - NB: Number of assembly blocks, as a Tuple(nrows,ncols)
+   - SB: Size of each assembly block, as a Tuple
+
+  If only NB and SB are provided, the blocks will be built using consecutive variables. 
+  Alternatively, any combination of variables can be prescribed by passing a `block_map`.
+  Variable `(i,j)` will be assembled in matrix block `block_map[i,j]`.
 """
-struct BlockMultiFieldStyle <: MultiFieldStyle end
+struct BlockMultiFieldStyle{NB,SB,A} <: MultiFieldStyle 
+  block_map :: A
+end
+
+BlockMultiFieldStyle() = BlockMultiFieldStyle{0,0,Nothing}(nothing)
+
+function BlockMultiFieldStyle{NB,SB}(block_map) where {NB,SB}
+  A = typeof(block_map)
+  BlockMultiFieldStyle{NB,SB,A}(block_map)
+end
+
+function BlockMultiFieldStyle(NB::Tuple{Integer,Integer},
+                              SB::Tuple{Vector{Integer},Vector{Integer}})
+  ptrs_i = [1,SB[1]...]
+  length_to_ptrs!(ptrs_i)
+  ptrs_j = [1,SB[2]...]
+  length_to_ptrs!(ptrs_j)
+
+  block_map = Matrix{CartesianIndex{2}}(undef,map(sum,SB)...)
+  for I in CartesianIndices(NB)
+    i_range = ptrs_i[I[1]]:ptrs_i[I[1]+1]-1
+    j_range = ptrs_j[I[2]]:ptrs_j[I[2]+1]-1
+    for i in i_range, j in j_range
+      block_map[i,j] = I 
+    end
+  end
+
+  return BlockMultiFieldStyle{NB,SB}(block_map)
+end
 
 """
   Not implemented yet. 
@@ -66,7 +101,7 @@ function MultiFieldFESpace(::Type{V},spaces::Vector{<:SingleFieldFESpace}) where
 end
 
 MultiFieldStyle(::Type{MultiFieldFESpace{S,B,V}}) where {S,B,V} = S()
-MultiFieldStyle(f::MultiFieldFESpace) = MultiFieldStyle(typeof(f))
+MultiFieldStyle(f::MultiFieldFESpace) = f.multi_field_style
 
 # Implementation of FESpace
 
