@@ -14,14 +14,14 @@ V = FESpace(Ω, reffe; dirichlet_tags="boundary")
 U = TrialFESpace(sol,V)
 
 dΩ = Measure(Ω, 2)
-biform((u1,u2),(v1,v2)) = ∫(∇(u1)⋅∇(v1) + u2⋅v2 - u1⋅v2)*dΩ
-liform((v1,v2)) = ∫(v1 - v2)*dΩ
+biform((u1,u2,u3),(v1,v2,v3)) = ∫(∇(u1)⋅∇(v1) + u2⋅v2 - u1⋅v2 - u3⋅v2 - u2⋅v3)*dΩ
+liform((v1,v2,v3)) = ∫(v1 - v2 + 2.0*v3)*dΩ
 
 ############################################################################################
 # Normal assembly 
 
-Y = MultiFieldFESpace([V,V])
-X = MultiFieldFESpace([U,U])
+Y = MultiFieldFESpace([V,V,V])
+X = MultiFieldFESpace([U,U,U])
 
 u = get_trial_fe_basis(X)
 v = get_fe_basis(Y)
@@ -38,9 +38,9 @@ A2,b2 = assemble_matrix_and_vector(assem,data)
 ############################################################################################
 # Block MultiFieldStyle
 
-mfs = BlockMultiFieldStyle()
-Yb = MultiFieldFESpace([V,V];style=mfs)
-Xb = MultiFieldFESpace([U,U];style=mfs)
+mfs = BlockMultiFieldStyle((2,2),((1,2),(1,2)))
+Yb = MultiFieldFESpace([V,V,V];style=mfs)
+Xb = MultiFieldFESpace([U,U,U];style=mfs)
 
 ub = get_trial_fe_basis(Xb)
 vb = get_fe_basis(Yb)
@@ -91,5 +91,22 @@ block_op = AffineFEOperator(biform,liform,Xb,Yb)
 
 @test get_matrix(op) ≈ get_matrix(block_op)
 @test get_vector(op) ≈ get_vector(block_op)
+
+
+using Gridap.Fields: ArrayBlock
+using Gridap.Arrays
+using FillArrays
+using Gridap.Algebra: SparseMatrixBuilder
+
+block_map = mfs.block_map
+_mat_builder = ArrayBlock(get_matrix_builder(assem_blocks).array[1:2,1:2],fill(true,2,2))
+
+mat_builder = lazy_map(Reindex(_mat_builder),block_map)
+
+aux = view(zeros(2,2),block_map)
+aux[2,2] = 1.0
+
+T = LazyArray{G,<:SparseMatrixBuilder} where {G}
+typeof(mat_builder) <: T
 
 end # module

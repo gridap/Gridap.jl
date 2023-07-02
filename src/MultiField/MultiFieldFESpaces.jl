@@ -28,8 +28,11 @@ function BlockMultiFieldStyle{NB,SB}(block_map) where {NB,SB}
   BlockMultiFieldStyle{NB,SB,A}(block_map)
 end
 
-function BlockMultiFieldStyle(NB::Tuple{Integer,Integer},
-                              SB::Tuple{Vector{Integer},Vector{Integer}})
+function BlockMultiFieldStyle(NB::Tuple{<:Integer,<:Integer},
+                              SB::Tuple{Tuple,Tuple})
+  @check length(SB[1]) == NB[1]
+  @check length(SB[2]) == NB[2]
+  
   ptrs_i = [1,SB[1]...]
   length_to_ptrs!(ptrs_i)
   ptrs_j = [1,SB[2]...]
