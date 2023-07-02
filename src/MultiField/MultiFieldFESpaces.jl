@@ -9,30 +9,40 @@ struct ConsecutiveMultiFieldStyle <: MultiFieldStyle end
 """
   Similar to ConsecutiveMultiFieldStyle, but we keep the original DoF ids of the
   individual spaces for better block assembly (see BlockSparseMatrixAssembler).
-  Takes two parameters: 
-   - NB: Number of assembly blocks, as a Tuple(nrows,ncols)
-   - SB: Size of each assembly block, as a Tuple
-
-  If only NB and SB are provided, the blocks will be built using consecutive variables. 
-  Alternatively, any combination of variables can be prescribed by passing a `block_map`.
-  Variable `(i,j)` will be assembled in matrix block `block_map[i,j]`.
+  Takes three parameters: 
+   - NB: Number of assembly blocks, as a Tuple(nrows,ncols).
+   - SB: Size of each assembly block, as a Tuple.
+   - P : Permutation of the variables of the multifield space when assembling, as a Tuple.
 """
-struct BlockMultiFieldStyle{NB,SB,A} <: MultiFieldStyle 
-  block_map :: A
-end
+struct BlockMultiFieldStyle{NB,SB,P} <: MultiFieldStyle end
 
-BlockMultiFieldStyle() = BlockMultiFieldStyle{0,0,Nothing}(nothing)
+BlockMultiFieldStyle() = BlockMultiFieldStyle{0,0,0}()
 
-function BlockMultiFieldStyle{NB,SB}(block_map) where {NB,SB}
-  A = typeof(block_map)
-  BlockMultiFieldStyle{NB,SB,A}(block_map)
-end
-
-function BlockMultiFieldStyle(NB::Tuple{<:Integer,<:Integer},
-                              SB::Tuple{Tuple,Tuple})
+function BlockMultiFieldStyle(NB::Tuple{<:Integer,<:Integer},SB::Tuple{Tuple,Tuple},P::Tuple)
   @check length(SB[1]) == NB[1]
   @check length(SB[2]) == NB[2]
-  
+  @check sum(SB[1]) == sum(SB[2]) == length(P)
+  return BlockMultiFieldStyle{NB,SB,P}()
+end
+
+function BlockMultiFieldStyle(num_blocks::Integer,block_sizes::Tuple)
+  P = Tuple([1:sum(block_sizes)]...)
+  return BlockMultiFieldStyle(num_blocks,block_sizes,P)
+end
+
+function BlockMultiFieldStyle(num_blocks::Integer,block_sizes::Tuple,P::Tuple)
+  NB = (num_blocks,num_blocks)
+  SB = (block_sizes,block_sizes)
+  return BlockMultiFieldStyle(NB,SB,P)
+end
+
+function BlockMultiFieldStyle(NB::Tuple{<:Integer,<:Integer},SB::Tuple{Tuple,Tuple})
+  P = Tuple([1:sum(SB[1])]...)
+  return BlockMultiFieldStyle(NB,SB,P)
+end
+
+function get_block_map(::BlockMultiFieldStyle{NB,SB,P}) where {NB,SB,P}
+  #! TODO: Include permutation P into the block map
   ptrs_i = [1,SB[1]...]
   length_to_ptrs!(ptrs_i)
   ptrs_j = [1,SB[2]...]
@@ -47,7 +57,7 @@ function BlockMultiFieldStyle(NB::Tuple{<:Integer,<:Integer},
     end
   end
 
-  return BlockMultiFieldStyle{NB,SB}(block_map)
+  return block_map
 end
 
 """
@@ -104,7 +114,7 @@ function MultiFieldFESpace(::Type{V},spaces::Vector{<:SingleFieldFESpace}) where
 end
 
 MultiFieldStyle(::Type{MultiFieldFESpace{S,B,V}}) where {S,B,V} = S()
-MultiFieldStyle(f::MultiFieldFESpace) = f.multi_field_style
+MultiFieldStyle(f::MultiFieldFESpace) = MultiFieldStyle(typeof(f))
 
 # Implementation of FESpace
 
