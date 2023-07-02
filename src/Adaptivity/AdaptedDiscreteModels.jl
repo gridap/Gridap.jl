@@ -80,7 +80,7 @@ function coarsen(model::DiscreteModel,args...;coarsening_method="nvb",kwargs...)
 end
 
 function coarsen(model::AdaptedDiscreteModel,args...;kwargs...)
-  coarse_model = coarsen(model.model,args...;kwargs...)
+  coarse_model = coarsen(model.model,model.glue, args...;kwargs...)
   return AdaptedDiscreteModel(coarse_model.model,model,coarse_model.glue)
 end
 

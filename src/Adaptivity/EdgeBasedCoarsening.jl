@@ -48,16 +48,9 @@ end
 
 NVBCoarsening(model::AdaptedDiscreteModel) = NVBRefinement(model.model)
 
-function coarsen(method::EdgeBasedCoarsening,model::UnstructuredDiscreteModel{Dc,Dp};cells_to_coarsen=nothing) where {Dc,Dp}
-  # cells_to_refine can be
-  #    a) nothing -> All cells get refined
-  #    b) AbstractArray{<:Bool} of size num_cells(model)
-  #            -> Only cells such that cells_to_refine[iC] == true get refined
-  #    c) AbstractArray{<:Integer}
-  #            -> Cells for which gid ∈ cells_to_refine get refined
-
+function coarsen(method::EdgeBasedCoarsening,model::UnstructuredDiscreteModel{Dc,Dp}, glue::AdaptivityGlue;cells_to_coarsen=nothing) where {Dc,Dp}
   # Create new model
-  rrules, faces_list = setup_edge_based_crules(method, model.grid_topology,cells_to_coarsen)
+  rrules, faces_list = setup_edge_based_crules(method, model.grid_topology, glue, cells_to_coarsen)
   #topo   = _refine_unstructured_topology(model.grid_topology,rrules,faces_list)
   #reffes = map(p->LagrangianRefFE(Float64,p,1),get_polytopes(topo))
   #grid   = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),reffes,get_cell_type(topo),OrientationStyle(topo))
@@ -110,21 +103,47 @@ end
 
 _shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer} = circshift(v, -(i - 1))
 
-function setup_edge_based_crules(method::NVBCoarsening, topo::UnstructuredGridTopology{Dc},cells_to_coarsen::AbstractArray{<:Integer}) where Dc
+function _is_newest_vertex(n, e2n_map_cache, e2n_map, longest_edge_gid, coords)
+	longest_edge_nodes = getindex!(e2n_map_cache, e2n_map, longest_edge_gid)
+	longest_coords = coords[longest_edge_nodes]
+	#@show longest_coords
+	n_coord = coords[n]
+	@show n_coord
+	return n ∉ longest_edge_nodes 
+end
+
+function setup_edge_based_crules(method::NVBCoarsening,  topo::UnstructuredGridTopology{Dc},glue::AdaptivityGlue,cells_to_coarsen::AbstractArray{<:Integer}) where Dc
   nC = num_faces(topo,Dc)
   nE = num_faces(topo,1)
   nN = num_faces(topo,0)
   n2c_map       = get_faces(topo,0,Dc)
   n2c_map_cache = array_cache(n2c_map)
   c2e_map       = get_faces(topo,Dc,1)
+  e2n_map       = get_faces(topo,1,0)
+	e2n_map_cache = array_cache(e2n_map)
   c2e_map_cache = array_cache(c2e_map)
   e2c_map       = get_faces(topo,1,Dc)
   polys       = topo.polytopes
   cell_types  = topo.cell_type
   cell_color  = copy(cell_types) # WHITE
+	c_to_longest_edge_gid = method.cell_to_longest_edge_gid
+	c_to_longest_edge_lid = method.cell_to_longest_edge_lid
+	@show coords = get_vertex_coordinates(topo)
 	for n = 1:nN
 		patch_cells = getindex!(n2c_map_cache, n2c_map, n)
+		if length(patch_cells) == 2 || length(patch_cells) == 4
+			for c in patch_cells
+				@show c
+				#@show coords[getindex!(c2n_map_cache, c2n_map, c)]
+				is_newest =  _is_newest_vertex(n, e2n_map_cache, e2n_map, c_to_longest_edge_gid[c], coords)
+				@show is_newest
+			end
+		end
+		# Patch can be coarsened locally
+		#	@show n
+		#	@show glue.n2o_cell_to_child_id[n]
+		#end
 		#@show patch_cells
 	end
-	return [WhiteRefinementRule(TRI) for i = 1:nC], nothing
+	return [WhiteRefinementRule(TRI) for _ = 1:nC], nothing
 end
