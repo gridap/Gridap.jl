@@ -18,7 +18,8 @@ function FESpaces.get_cols(a::BlockSparseMatrixAssembler)
 end
 
 function FESpaces.get_assembly_strategy(a::BlockSparseMatrixAssembler)
-  return get_assembly_strategy(first(a.block_assemblers))
+  assems = a.block_assemblers
+  return ArrayBlock(map(get_assembly_strategy,assems),fill(true,size(assems)))
 end
 
 function FESpaces.get_matrix_builder(a::BlockSparseMatrixAssembler)
@@ -63,6 +64,46 @@ end
 
 function LinearAlgebra.fillstored!(a::BlockArray,v)
   map(ai->LinearAlgebra.fillstored!(ai,v),blocks(a))
+end
+
+# map cell ids
+
+function FESpaces.map_cell_rows(strategy::ArrayBlock{<:AssemblyStrategy},cell_ids)
+  strats = diag(strategy.array)
+  k = map(FESpaces.AssemblyStrategyMap{:rows},strats)
+  return lazy_map(k,cell_ids)
+end
+
+function FESpaces.map_cell_cols(strategy::ArrayBlock{<:AssemblyStrategy},cell_ids)
+  strats = diag(strategy.array)
+  k = map(FESpaces.AssemblyStrategyMap{:cols},strats)
+  return lazy_map(k,cell_ids)
+end
+
+function Arrays.return_cache(k::Array{<:FESpaces.AssemblyStrategyMap},ids::ArrayBlock)
+  fi = testitem(ids)
+  ki = testitem(k)
+  ci = return_cache(ki,fi)
+  gi = evaluate!(ci,ki,fi)
+  b = Array{typeof(ci),ndims(ids)}(undef,size(ids))
+  for i in eachindex(ids.array)
+    if ids.touched[i]
+      ki = return_cache(k[i],ids.array[i])
+      b[i] = return_cache(k[i],ids.array[i])
+    end
+  end
+  array = Array{typeof(gi),ndims(ids)}(undef,size(ids))
+  ArrayBlock(array,ids.touched), b
+end
+
+function Arrays.evaluate!(cache,k::Array{<:FESpaces.AssemblyStrategyMap},ids::ArrayBlock)
+  a,b = cache
+  for i in eachindex(ids.array)
+    if ids.touched[i]
+      a.array[i] = evaluate!(b[i],k[i],ids.array[i])
+    end
+  end
+  a
 end
 
 # nnz counters and allocators

@@ -92,7 +92,6 @@ block_op = AffineFEOperator(biform,liform,Xb,Yb)
 @test get_matrix(op) ≈ get_matrix(block_op)
 @test get_vector(op) ≈ get_vector(block_op)
 
-
 using Gridap.Fields: ArrayBlock
 using Gridap.Arrays
 using FillArrays
