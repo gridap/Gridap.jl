@@ -4,14 +4,17 @@ struct BlockSparseMatrixAssembler{A} <: FESpaces.SparseMatrixAssembler
   block_assemblers :: AbstractMatrix{A}
 end
 
+FESpaces.num_rows(a::BlockSparseMatrixAssembler) = sum(map(length,get_rows(a)))
+FESpaces.num_cols(a::BlockSparseMatrixAssembler) = sum(map(length,get_cols(a)))
+
 function FESpaces.get_rows(a::BlockSparseMatrixAssembler)
   row_assemblers = a.block_assemblers[:,1]
-  return blockedrange(map(a->length(get_rows(a)),row_assemblers))
+  return map(FESpaces.get_rows,row_assemblers)
 end
 
 function FESpaces.get_cols(a::BlockSparseMatrixAssembler)
   col_assemblers = a.block_assemblers[1,:]
-  return blockedrange(map(a->length(get_cols(a)),col_assemblers))
+  return map(FESpaces.get_cols,col_assemblers)
 end
 
 function FESpaces.get_assembly_strategy(a::BlockSparseMatrixAssembler)
@@ -66,17 +69,17 @@ end
 
 Algebra.LoopStyle(a::ArrayBlock) = Algebra.LoopStyle(first(a.array))
 
-function Algebra.nz_counter(builder::MatrixBlock,axis)
+function Algebra.nz_counter(builder::MatrixBlock,axs)
   s = size(builder.array)
-  rows = map(i->axis[1][Block(i)],1:s[1])
-  cols = map(i->axis[2][Block(i)],1:s[2])
+  rows = axs[1]
+  cols = axs[2]
   counters = [nz_counter(builder.array[i,j],(rows[i],cols[j])) for i in 1:s[1], j in 1:s[2]]
   return ArrayBlock(counters,fill(true,size(counters)))
 end
 
-function Algebra.nz_counter(builder::VectorBlock,axis)
+function Algebra.nz_counter(builder::VectorBlock,axs)
   s = size(builder.array)
-  rows = map(i->axis[1][Block(i)],1:s[1])
+  rows = axs[1]
   counters = [nz_counter(builder.array[i],(rows[i],)) for i in 1:s[1]]
   return ArrayBlock(counters,fill(true,size(counters)))
 end
