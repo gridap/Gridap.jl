@@ -97,19 +97,20 @@ using Gridap.Arrays
 using FillArrays
 using Gridap.Algebra: SparseMatrixBuilder
 using Gridap.MultiField: ArrayBlockView, MatrixBlockView, VectorBlockView
+using Gridap.Algebra: nz_counter, nz_allocation, create_from_nz
+using Gridap.FESpaces: symbolic_loop_matrix!, numeric_loop_matrix!
 
-block_map = MultiField.get_block_map(mfs)
-_mat_builder = ArrayBlock(get_matrix_builder(assem_blocks).array[1:2,1:2],fill(true,2,2))
+builders = get_matrix_builder(assem_blocks)
+rows = get_rows(assem_blocks)
+cols = get_cols(assem_blocks)
+m1 = nz_counter(builders,(rows,cols))
+symbolic_loop_matrix!(m1,assem_blocks,bmatdata)
+m2 = nz_allocation(m1)
+numeric_loop_matrix!(m2,assem_blocks,bmatdata)
+m3 = create_from_nz(m2)
+m3
 
-mat_builder = view(_mat_builder,block_map)
-
-diag(_mat_builder)
-fff = diag(mat_builder)
-
-ggg = view(_mat_builder,diag(CartesianIndices(_mat_builder.array)))
-
-
-typeof(ggg)
+m3.blocks[2,2] ≈ A1[17:48,17:48]
 
 
 end # module

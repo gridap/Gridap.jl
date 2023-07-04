@@ -18,35 +18,55 @@ function FESpaces.get_cols(a::BlockSparseMatrixAssembler)
   return map(FESpaces.get_cols,diag(a.block_assemblers))
 end
 
-function FESpaces.get_assembly_strategy(a::BlockSparseMatrixAssembler)
+function FESpaces.get_assembly_strategy(a::BlockSparseMatrixAssembler{NB,NV}) where {NB,NV}
   assems = a.block_assemblers
-  return ArrayBlock(map(get_assembly_strategy,assems),fill(true,size(assems)))
+  strats = ArrayBlock(map(get_assembly_strategy,assems),fill(true,size(assems)))
+  return expand_blocks(a,strats)
 end
 
-function FESpaces.get_matrix_builder(a::BlockSparseMatrixAssembler)
+function FESpaces.get_matrix_builder(a::BlockSparseMatrixAssembler{NB,NV}) where {NB,NV}
   assems = a.block_assemblers
-  return ArrayBlock(map(get_matrix_builder,assems),fill(true,size(assems)))
+  builders = ArrayBlock(map(get_matrix_builder,assems),fill(true,size(assems)))
+  return expand_blocks(a,builders)
 end
 
-function FESpaces.get_vector_builder(a::BlockSparseMatrixAssembler)
+function FESpaces.get_vector_builder(a::BlockSparseMatrixAssembler{NB,NV}) where {NB,NV}
   assems = diag(a.block_assemblers)
-  return ArrayBlock(map(get_vector_builder,assems),fill(true,length(assems)))
+  builders = ArrayBlock(map(get_vector_builder,assems),fill(true,length(assems)))
+  return expand_blocks(a,builders)
+end
+
+function expand_blocks(a::BlockSparseMatrixAssembler{NB,NB},blocks) where NB
+  blocks
+end
+
+function expand_blocks(a::BlockSparseMatrixAssembler{NB,NV},blocks::MatrixBlock) where {NB,NV}
+  block_map = get_block_map(a)
+  ArrayBlockView(blocks,block_map)
+end
+
+function expand_blocks(a::BlockSparseMatrixAssembler{NB,NV},blocks::VectorBlock) where {NB,NV}
+  block_map = map(idx -> CartesianIndex(idx[1]), diag(get_block_map(a)))
+  ArrayBlockView(blocks,block_map)
+end
+
+function get_block_ranges(NB::Integer,SB,P)
+  ptrs = [1,SB...]
+  length_to_ptrs!(ptrs)
+  var_perm = [P...]
+  return map(i-> var_perm[ptrs[i]:ptrs[i+1]-1], 1:NB)
 end
 
 function get_block_map(::BlockSparseMatrixAssembler{NB,NV,SB,P}) where {NB,NV,SB,P}
-  #! TODO: Include permutation P into the block map
-  ptrs = [1,SB...]
-  length_to_ptrs!(ptrs)
-
+  ranges = get_block_ranges(NB,SB,P)
   block_map = Matrix{CartesianIndex{2}}(undef,NV,NV)
   for I in CartesianIndices((NB,NB))
-    i_range = ptrs[I[1]]:ptrs[I[1]+1]-1
-    j_range = ptrs[I[2]]:ptrs[I[2]+1]-1
+    i_range = ranges[I[1]]
+    j_range = ranges[I[2]]
     for i in i_range, j in j_range
-      block_map[i,j] = I 
+      block_map[i,j] = I
     end
   end
-
   return block_map
 end
 
@@ -67,14 +87,30 @@ function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:BlockMultiFieldSt
                                     vector_builder,
                                     strategy=FESpaces.DefaultAssemblyStrategy()) where {NB,SB,P}
 
-  block_idx = CartesianIndices((length(test),length(trial)))
+  # Create block FESpaces #! TODO: Are they actually necessary? Probably not...
+  NV = length(test.spaces)
+  block_ranges = get_block_ranges(NB,SB,P)
+  block_tests = Vector{FESpace}(undef,NB)
+  block_trials = Vector{FESpace}(undef,NB)
+  for i in 1:NB
+    range = block_ranges[i]
+    if length(range) == 1
+      block_tests[i]  = test[range[1]]
+      block_trials[i] = trial[range[1]]
+    else
+      block_tests[i]  = MultiFieldFESpace(test.spaces[range])
+      block_trials[i] = MultiFieldFESpace(trial.spaces[range])
+    end
+  end
+
+  # Create block assemblers
+  block_idx = CartesianIndices((NB,NB))
   block_assemblers = map(block_idx) do idx
-    block_rows = get_free_dof_ids(test[idx[1]])
-    block_cols = get_free_dof_ids(trial[idx[2]])
+    block_rows = get_free_dof_ids(block_tests[idx[1]])
+    block_cols = get_free_dof_ids(block_trials[idx[2]])
     FESpaces.GenericSparseMatrixAssembler(matrix_builder,vector_builder,block_rows,block_cols,strategy)
   end
 
-  NV = length(test.spaces)
   return BlockSparseMatrixAssembler{NB,NV,SB,P}(block_assemblers)
 end
 
