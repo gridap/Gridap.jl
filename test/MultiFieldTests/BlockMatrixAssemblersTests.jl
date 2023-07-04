@@ -92,25 +92,4 @@ block_op = AffineFEOperator(biform,liform,Xb,Yb)
 @test get_matrix(op) ≈ get_matrix(block_op)
 @test get_vector(op) ≈ get_vector(block_op)
 
-using Gridap.Fields: ArrayBlock, BlockMap, MatrixBlock, VectorBlock
-using Gridap.Arrays
-using FillArrays
-using Gridap.Algebra: SparseMatrixBuilder
-using Gridap.MultiField: ArrayBlockView, MatrixBlockView, VectorBlockView
-using Gridap.Algebra: nz_counter, nz_allocation, create_from_nz
-using Gridap.FESpaces: symbolic_loop_matrix!, numeric_loop_matrix!
-
-builders = get_matrix_builder(assem_blocks)
-rows = get_rows(assem_blocks)
-cols = get_cols(assem_blocks)
-m1 = nz_counter(builders,(rows,cols))
-symbolic_loop_matrix!(m1,assem_blocks,bmatdata)
-m2 = nz_allocation(m1)
-numeric_loop_matrix!(m2,assem_blocks,bmatdata)
-m3 = create_from_nz(m2)
-m3
-
-m3.blocks[2,2] ≈ A1[17:48,17:48]
-
-
 end # module

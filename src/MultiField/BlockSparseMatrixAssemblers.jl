@@ -36,7 +36,7 @@ function FESpaces.get_vector_builder(a::BlockSparseMatrixAssembler{NB,NV}) where
   return expand_blocks(a,builders)
 end
 
-function expand_blocks(a::BlockSparseMatrixAssembler{NB,NB},blocks) where NB
+function expand_blocks(::BlockSparseMatrixAssembler{NB,NB},blocks) where NB
   blocks
 end
 
@@ -306,4 +306,27 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
 
     end # @eval
   end # for VT
+end
+
+# In place assembly modifications (for dispatching)
+# We convert from BlockArray to ArrayBlock to be able to expland the blocks
+
+function FESpaces.assemble_vector_add!(b::BlockVector,a::BlockSparseMatrixAssembler,vecdata)
+  b1 = ArrayBlock(b.blocks,fill(true,size(b.blocks)))
+  b2 = expand_blocks(a,b1)
+  FESpaces.assemble_vector_add!(b2,a,vecdata)
+end
+
+function FESpaces.assemble_matrix_add!(mat::BlockMatrix,a::BlockSparseMatrixAssembler,matdata)
+  m1 = ArrayBlock(mat.blocks,fill(true,size(mat.blocks)))
+  m2 = expand_blocks(a,m1)
+  FESpaces.assemble_matrix_add!(m2,a,matdata)
+end
+
+function FESpaces.assemble_matrix_and_vector_add!(A::BlockMatrix,b::BlockVector,a::BlockSparseMatrixAssembler,data)
+  m1 = ArrayBlock(A.blocks,fill(true,size(A.blocks)))
+  m2 = expand_blocks(a,m1)
+  b1 = ArrayBlock(b.blocks,fill(true,size(b.blocks)))
+  b2 = expand_blocks(a,b1)
+  FESpaces.assemble_matrix_and_vector_add!(m2,b2,a,data)
 end
