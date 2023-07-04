@@ -87,7 +87,7 @@ function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace};
   T  = typeof(*(map(zero,Ts)...))
   if isa(style,BlockMultiFieldStyle)
     style = BlockMultiFieldStyle(style,spaces)
-    VT = BlockVector{T,Vector{Vector{T}}}
+    VT = typeof(mortar(map(zero_free_values,spaces)))
   else
     VT = Vector{T}
   end
@@ -126,17 +126,22 @@ function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::MultiFieldStyle)
   @abstractmethod
 end
 
-function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,
-                                    ::Union{ConsecutiveMultiFieldStyle,BlockMultiFieldStyle})
-  block_num_dofs = Int[]
-  for U in f.spaces
-    push!(block_num_dofs,num_free_dofs(U))
-  end
-  BlockArrays.blockedrange(block_num_dofs)
+function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::ConsecutiveMultiFieldStyle)
+  block_num_dofs = map(num_free_dofs,f.spaces)
+  return BlockArrays.blockedrange(block_num_dofs)
 end
 
-function FESpaces.zero_free_values(f::MultiFieldFESpace{<:BlockMultiFieldStyle})
-  return mortar(map(zero_free_values,f.spaces))
+function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::BlockMultiFieldStyle{NB,SB,P}) where {NB,SB,P}
+  block_ranges   = get_block_ranges(NB,SB,P)
+  block_num_dofs = map(range->sum(map(num_free_dofs,f.spaces[range])),block_ranges)
+  return BlockArrays.blockedrange(block_num_dofs)
+end
+
+function FESpaces.zero_free_values(f::MultiFieldFESpace{<:BlockMultiFieldStyle{NB,SB,P}}) where {NB,SB,P}
+  block_ranges   = get_block_ranges(NB,SB,P)
+  block_num_dofs = map(range->sum(map(num_free_dofs,f.spaces[range])),block_ranges)
+  block_vtypes   = map(range->get_vector_type(first(f.spaces[range])),block_ranges)
+  return mortar(map(allocate_vector,block_vtypes,block_num_dofs))
 end
 
 FESpaces.get_dof_value_type(f::MultiFieldFESpace{MS,CS,V}) where {MS,CS,V} = eltype(V)
@@ -291,17 +296,34 @@ function  _restrict_to_field(f,::MultiFieldStyle,free_values,field)
   @notimplemented
 end
 
-function  _restrict_to_field(f,::Union{<:ConsecutiveMultiFieldStyle,<:BlockMultiFieldStyle},free_values,field)
-  offsets = compute_field_offsets(f,ConsecutiveMultiFieldStyle())
+function  _restrict_to_field(f,
+                             ::Union{<:ConsecutiveMultiFieldStyle,<:BlockMultiFieldStyle},
+                             free_values,
+                             field)
   U = f.spaces
+  offsets = _compute_field_offsets(U)
   pini = offsets[field] + 1
   pend = offsets[field] + num_free_dofs(U[field])
   SubVector(free_values,pini,pend)
 end
 
-function  _restrict_to_field(f,::BlockMultiFieldStyle,free_values::BlockVector,field)
-  @check blocklength(free_values) == length(f.spaces)
-  return free_values[Block(field)]
+function  _restrict_to_field(f,
+                             mfs::BlockMultiFieldStyle{NB,SB,P},
+                             free_values::BlockVector,
+                             field) where {NB,SB,P}
+  @check blocklength(free_values) == NB
+  U = f.spaces
+
+  # Find the block for this field
+  block_ranges = get_block_ranges(NB,SB,P)
+  block_idx    = findfirst(range -> field ∈ range, block_ranges)
+  block_free_values = free_values[Block(block_idx)]
+
+  # Within the block, restrict to field
+  offsets = compute_field_offsets(f,mfs)
+  pini = offsets[field] + 1
+  pend = offsets[field] + num_free_dofs(U[field])
+  return SubVector(block_free_values,pini,pend)
 end
 
 """

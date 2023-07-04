@@ -87,28 +87,18 @@ function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:BlockMultiFieldSt
                                     vector_builder,
                                     strategy=FESpaces.DefaultAssemblyStrategy()) where {NB,SB,P}
 
-  # Create block FESpaces #! TODO: Are they actually necessary? Probably not...
+  # Count block rows/cols
   NV = length(test.spaces)
   block_ranges = get_block_ranges(NB,SB,P)
-  block_tests = Vector{FESpace}(undef,NB)
-  block_trials = Vector{FESpace}(undef,NB)
-  for i in 1:NB
-    range = block_ranges[i]
-    if length(range) == 1
-      block_tests[i]  = test[range[1]]
-      block_trials[i] = trial[range[1]]
-    else
-      block_tests[i]  = MultiFieldFESpace(test.spaces[range])
-      block_trials[i] = MultiFieldFESpace(trial.spaces[range])
-    end
-  end
+  block_rows = map(range->sum(map(num_free_dofs,test.spaces[range])),block_ranges)
+  block_cols = map(range->sum(map(num_free_dofs,trial.spaces[range])),block_ranges)
 
   # Create block assemblers
   block_idx = CartesianIndices((NB,NB))
   block_assemblers = map(block_idx) do idx
-    block_rows = get_free_dof_ids(block_tests[idx[1]])
-    block_cols = get_free_dof_ids(block_trials[idx[2]])
-    FESpaces.GenericSparseMatrixAssembler(matrix_builder,vector_builder,block_rows,block_cols,strategy)
+    rows = Base.OneTo(block_rows[idx[1]])
+    cols = Base.OneTo(block_cols[idx[2]])
+    FESpaces.GenericSparseMatrixAssembler(matrix_builder,vector_builder,rows,cols,strategy)
   end
 
   return BlockSparseMatrixAssembler{NB,NV,SB,P}(block_assemblers)

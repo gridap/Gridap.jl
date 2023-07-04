@@ -41,6 +41,8 @@ A2,b2 = assemble_matrix_and_vector(assem,data)
 mfs = BlockMultiFieldStyle(2,(1,2))
 Yb = MultiFieldFESpace([V,V,V];style=mfs)
 Xb = MultiFieldFESpace([U,U,U];style=mfs)
+test_fe_space(Yb)
+test_fe_space(Xb)
 
 ub = get_trial_fe_basis(Xb)
 vb = get_fe_basis(Yb)
@@ -48,14 +50,14 @@ vb = get_fe_basis(Yb)
 bdata = collect_cell_matrix_and_vector(Xb,Yb,biform(ub,vb),liform(vb))
 bmatdata = collect_cell_matrix(Xb,Yb,biform(ub,vb))
 bvecdata = collect_cell_vector(Yb,liform(vb))
-#test_fe_space(Xb,bdata[1][1][1],bmatdata[1][1],bvecdata[1][1],Ω)
-#test_fe_space(Yb,bdata[1][1][1],bmatdata[1][1],bvecdata[1][1],Ω)
+test_fe_space(Xb,bdata[1][1][1],bmatdata[1][1],bvecdata[1][1],Ω)
+test_fe_space(Yb,bdata[1][1][1],bmatdata[1][1],bvecdata[1][1],Ω)
 
 ############################################################################################
 # Block Assembly 
 
 assem_blocks = SparseMatrixAssembler(Xb,Yb)
-test_assembler(assem_blocks,bmatdata,bvecdata,bdata)
+test_sparse_matrix_assembler(assem_blocks,bmatdata,bvecdata,bdata)
 
 A1_blocks = assemble_matrix(assem_blocks,bmatdata)
 b1_blocks = assemble_vector(assem_blocks,bvecdata)
