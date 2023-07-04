@@ -25,12 +25,12 @@ function BlockMultiFieldStyle(NB::Integer,SB::Tuple,P::Tuple)
 end
 
 function BlockMultiFieldStyle(NB::Integer,SB::Tuple)
-  P = Tuple([1:sum(SB)]...)
+  P = Tuple([1:sum(SB)...])
   return BlockMultiFieldStyle(NB,SB,P)
 end
 
 function BlockMultiFieldStyle(NB::Integer)
-  SB = Tuple(fill(1,NB)...)
+  SB = Tuple(fill(1,NB))
   return BlockMultiFieldStyle(NB,SB)
 end
 
