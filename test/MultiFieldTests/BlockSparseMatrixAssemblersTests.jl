@@ -38,7 +38,9 @@ A2,b2 = assemble_matrix_and_vector(assem,data)
 ############################################################################################
 # Block MultiFieldStyle
 
-mfs = BlockMultiFieldStyle(2,(1,2))
+styles = [BlockMultiFieldStyle(),BlockMultiFieldStyle(2,(1,2))]
+
+mfs = styles[2]
 Yb = MultiFieldFESpace([V,V,V];style=mfs)
 Xb = MultiFieldFESpace([U,U,U];style=mfs)
 test_fe_space(Yb)

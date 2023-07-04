@@ -36,9 +36,8 @@ function FESpaces.get_vector_builder(a::BlockSparseMatrixAssembler{NB,NV}) where
   return expand_blocks(a,builders)
 end
 
-function expand_blocks(::BlockSparseMatrixAssembler{NB,NB},blocks) where NB
-  blocks
-end
+expand_blocks(::BlockSparseMatrixAssembler{NB,NB},blocks::MatrixBlock) where NB = blocks
+expand_blocks(::BlockSparseMatrixAssembler{NB,NB},blocks::VectorBlock) where NB = blocks
 
 function expand_blocks(a::BlockSparseMatrixAssembler{NB,NV},blocks::MatrixBlock) where {NB,NV}
   block_map = get_block_map(a)
