@@ -243,8 +243,8 @@ Algebra.create_from_nz(a::ArrayBlockView) = create_from_nz(a.array)
 
 for T in (:AddEntriesMap,:TouchEntriesMap)
 
-  for MT in (:MatrixBlock,:MatrixBlockView,:BlockMatrix)
-    Aij = (MT == :BlockMatrix) ? :(A.blocks[i,j]) : :(A[i,j])
+  for MT in (:MatrixBlock,:MatrixBlockView)
+    Aij = (MT == :MatrixBlock) ? :(A.array[i,j]) : :(A[i,j])
     @eval begin
 
       function Fields.return_cache(k::$T,A::$MT,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
@@ -277,8 +277,8 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
     end # @eval
   end # for MT
 
-  for VT in (:VectorBlock,:VectorBlockView,:BlockVector)
-    Ai = (VT == :BlockVector) ? :(A.blocks[i]) : :(A[i])
+  for VT in (:VectorBlock,:VectorBlockView)
+    Ai = (VT == :VectorBlock) ? :(A.array[i]) : :(A[i])
     @eval begin
 
       function Fields.return_cache(k::$T,A::$VT,v::VectorBlock,I::VectorBlock)
@@ -309,8 +309,8 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
 end
 
 # In place assembly modifications (for dispatching)
-# We convert from BlockArray to ArrayBlock to be able to expland the blocks
-
+# We convert from BlockArray to ArrayBlock to be able to expland the blocks. 
+# After assembly we convert back to BlockArray automatically.
 function FESpaces.assemble_vector_add!(b::BlockVector,a::BlockSparseMatrixAssembler,vecdata)
   b1 = ArrayBlock(b.blocks,fill(true,size(b.blocks)))
   b2 = expand_blocks(a,b1)
