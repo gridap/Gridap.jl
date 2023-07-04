@@ -38,7 +38,7 @@ A2,b2 = assemble_matrix_and_vector(assem,data)
 ############################################################################################
 # Block MultiFieldStyle
 
-mfs = BlockMultiFieldStyle((2,2),((1,2),(1,2)))
+mfs = BlockMultiFieldStyle(2,(1,2))
 Yb = MultiFieldFESpace([V,V,V];style=mfs)
 Xb = MultiFieldFESpace([U,U,U];style=mfs)
 
@@ -92,20 +92,24 @@ block_op = AffineFEOperator(biform,liform,Xb,Yb)
 @test get_matrix(op) ≈ get_matrix(block_op)
 @test get_vector(op) ≈ get_vector(block_op)
 
-using Gridap.Fields: ArrayBlock
+using Gridap.Fields: ArrayBlock, BlockMap, MatrixBlock, VectorBlock
 using Gridap.Arrays
 using FillArrays
 using Gridap.Algebra: SparseMatrixBuilder
+using Gridap.MultiField: ArrayBlockView, MatrixBlockView, VectorBlockView
 
-block_map = mfs.block_map
+block_map = MultiField.get_block_map(mfs)
 _mat_builder = ArrayBlock(get_matrix_builder(assem_blocks).array[1:2,1:2],fill(true,2,2))
 
-mat_builder = lazy_map(Reindex(_mat_builder),block_map)
+mat_builder = view(_mat_builder,block_map)
 
-aux = view(zeros(2,2),block_map)
-aux[2,2] = 1.0
+diag(_mat_builder)
+fff = diag(mat_builder)
 
-T = LazyArray{G,<:SparseMatrixBuilder} where {G}
-typeof(mat_builder) <: T
+ggg = view(_mat_builder,diag(CartesianIndices(_mat_builder.array)))
+
+
+typeof(ggg)
+
 
 end # module

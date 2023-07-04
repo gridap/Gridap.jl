@@ -10,7 +10,7 @@ struct ConsecutiveMultiFieldStyle <: MultiFieldStyle end
   Similar to ConsecutiveMultiFieldStyle, but we keep the original DoF ids of the
   individual spaces for better block assembly (see BlockSparseMatrixAssembler).
   Takes three parameters: 
-   - NB: Number of assembly blocks, as a Tuple(nrows,ncols).
+   - NB: Number of assembly blocks
    - SB: Size of each assembly block, as a Tuple.
    - P : Permutation of the variables of the multifield space when assembling, as a Tuple.
 """
@@ -18,46 +18,29 @@ struct BlockMultiFieldStyle{NB,SB,P} <: MultiFieldStyle end
 
 BlockMultiFieldStyle() = BlockMultiFieldStyle{0,0,0}()
 
-function BlockMultiFieldStyle(NB::Tuple{<:Integer,<:Integer},SB::Tuple{Tuple,Tuple},P::Tuple)
-  @check length(SB[1]) == NB[1]
-  @check length(SB[2]) == NB[2]
-  @check sum(SB[1]) == sum(SB[2]) == length(P)
+function BlockMultiFieldStyle(NB::Integer,SB::Tuple,P::Tuple)
+  @check length(SB) == NB
+  @check sum(SB) == length(P)
   return BlockMultiFieldStyle{NB,SB,P}()
 end
 
-function BlockMultiFieldStyle(num_blocks::Integer,block_sizes::Tuple)
-  P = Tuple([1:sum(block_sizes)]...)
-  return BlockMultiFieldStyle(num_blocks,block_sizes,P)
-end
-
-function BlockMultiFieldStyle(num_blocks::Integer,block_sizes::Tuple,P::Tuple)
-  NB = (num_blocks,num_blocks)
-  SB = (block_sizes,block_sizes)
+function BlockMultiFieldStyle(NB::Integer,SB::Tuple)
+  P = Tuple([1:sum(SB)]...)
   return BlockMultiFieldStyle(NB,SB,P)
 end
 
-function BlockMultiFieldStyle(NB::Tuple{<:Integer,<:Integer},SB::Tuple{Tuple,Tuple})
-  P = Tuple([1:sum(SB[1])]...)
+function BlockMultiFieldStyle(NB::Integer)
+  SB = Tuple(fill(1,NB)...)
+  return BlockMultiFieldStyle(NB,SB)
+end
+
+function BlockMultiFieldStyle(::BlockMultiFieldStyle{NB,SB,P},spaces::Vector{<:SingleFieldFESpace}) where {NB,SB,P}
   return BlockMultiFieldStyle(NB,SB,P)
 end
 
-function get_block_map(::BlockMultiFieldStyle{NB,SB,P}) where {NB,SB,P}
-  #! TODO: Include permutation P into the block map
-  ptrs_i = [1,SB[1]...]
-  length_to_ptrs!(ptrs_i)
-  ptrs_j = [1,SB[2]...]
-  length_to_ptrs!(ptrs_j)
-
-  block_map = Matrix{CartesianIndex{2}}(undef,map(sum,SB)...)
-  for I in CartesianIndices(NB)
-    i_range = ptrs_i[I[1]]:ptrs_i[I[1]+1]-1
-    j_range = ptrs_j[I[2]]:ptrs_j[I[2]+1]-1
-    for i in i_range, j in j_range
-      block_map[i,j] = I 
-    end
-  end
-
-  return block_map
+function BlockMultiFieldStyle(::BlockMultiFieldStyle{0,0,0},spaces::Vector{<:SingleFieldFESpace})
+  NB = length(spaces)
+  return BlockMultiFieldStyle(NB)
 end
 
 """
@@ -101,7 +84,8 @@ function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace};
                            style = ConsecutiveMultiFieldStyle())
   Ts = map(get_dof_value_type,spaces)
   T  = typeof(*(map(zero,Ts)...))
-  if style == BlockMultiFieldStyle()
+  if isa(style,BlockMultiFieldStyle)
+    style = BlockMultiFieldStyle(style,spaces)
     VT = BlockVector{T,Vector{Vector{T}}}
   else
     VT = Vector{T}

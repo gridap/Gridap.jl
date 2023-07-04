@@ -1,20 +1,21 @@
 
-
-struct BlockSparseMatrixAssembler{A} <: FESpaces.SparseMatrixAssembler
+struct BlockSparseMatrixAssembler{NB,NV,SB,P,A} <: FESpaces.SparseMatrixAssembler
   block_assemblers :: AbstractMatrix{A}
+  function BlockSparseMatrixAssembler{NB,NV,SB,P}(block_assemblers) where {NB,NV,SB,P}
+    A = eltype(block_assemblers)
+    return new{NB,NV,SB,P,A}(block_assemblers)
+  end
 end
 
 FESpaces.num_rows(a::BlockSparseMatrixAssembler) = sum(map(length,get_rows(a)))
 FESpaces.num_cols(a::BlockSparseMatrixAssembler) = sum(map(length,get_cols(a)))
 
 function FESpaces.get_rows(a::BlockSparseMatrixAssembler)
-  row_assemblers = a.block_assemblers[:,1]
-  return map(FESpaces.get_rows,row_assemblers)
+  return map(FESpaces.get_rows,diag(a.block_assemblers))
 end
 
 function FESpaces.get_cols(a::BlockSparseMatrixAssembler)
-  col_assemblers = a.block_assemblers[1,:]
-  return map(FESpaces.get_cols,col_assemblers)
+  return map(FESpaces.get_cols,diag(a.block_assemblers))
 end
 
 function FESpaces.get_assembly_strategy(a::BlockSparseMatrixAssembler)
@@ -32,15 +33,39 @@ function FESpaces.get_vector_builder(a::BlockSparseMatrixAssembler)
   return ArrayBlock(map(get_vector_builder,assems),fill(true,length(assems)))
 end
 
+function get_block_map(::BlockSparseMatrixAssembler{NB,NV,SB,P}) where {NB,NV,SB,P}
+  #! TODO: Include permutation P into the block map
+  ptrs = [1,SB...]
+  length_to_ptrs!(ptrs)
+
+  block_map = Matrix{CartesianIndex{2}}(undef,NV,NV)
+  for I in CartesianIndices((NB,NB))
+    i_range = ptrs[I[1]]:ptrs[I[1]+1]-1
+    j_range = ptrs[I[2]]:ptrs[I[2]+1]-1
+    for i in i_range, j in j_range
+      block_map[i,j] = I 
+    end
+  end
+
+  return block_map
+end
+
 # Constructors
 
-function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:MS},
-                                    test::MultiFieldFESpace{<:MS},
+function BlockSparseMatrixAssembler(trial::MultiFieldFESpace,
+                                    test::MultiFieldFESpace,
                                     matrix_builder,
                                     vector_builder,
-                                    strategy=FESpaces.DefaultAssemblyStrategy()) where MS
+                                    strategy=FESpaces.DefaultAssemblyStrategy())
   msg = "Block assembly is only allowed for BlockMultiFieldStyle."
-  @check (MS <: BlockMultiFieldStyle) msg
+  @notimplemented msg
+end
+
+function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:BlockMultiFieldStyle{NB,SB,P}},
+                                    test::MultiFieldFESpace{<:BlockMultiFieldStyle{NB,SB,P}},
+                                    matrix_builder,
+                                    vector_builder,
+                                    strategy=FESpaces.DefaultAssemblyStrategy()) where {NB,SB,P}
 
   block_idx = CartesianIndices((length(test),length(trial)))
   block_assemblers = map(block_idx) do idx
@@ -49,7 +74,8 @@ function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:MS},
     FESpaces.GenericSparseMatrixAssembler(matrix_builder,vector_builder,block_rows,block_cols,strategy)
   end
 
-  return BlockSparseMatrixAssembler(block_assemblers)
+  NV = length(test.spaces)
+  return BlockSparseMatrixAssembler{NB,NV,SB,P}(block_assemblers)
 end
 
 function FESpaces.SparseMatrixAssembler(mat,
@@ -66,18 +92,49 @@ function LinearAlgebra.fillstored!(a::BlockArray,v)
   map(ai->LinearAlgebra.fillstored!(ai,v),blocks(a))
 end
 
-# map cell ids
-
-function FESpaces.map_cell_rows(strategy::ArrayBlock{<:AssemblyStrategy},cell_ids)
-  strats = diag(strategy.array)
-  k = map(FESpaces.AssemblyStrategyMap{:rows},strats)
-  return lazy_map(k,cell_ids)
+struct ArrayBlockView{A,N,M}
+  array::ArrayBlock{A,M}
+  block_map::Array{CartesianIndex{M},N}
 end
 
-function FESpaces.map_cell_cols(strategy::ArrayBlock{<:AssemblyStrategy},cell_ids)
-  strats = diag(strategy.array)
-  k = map(FESpaces.AssemblyStrategyMap{:cols},strats)
-  return lazy_map(k,cell_ids)
+Base.view(a::ArrayBlock{A,M},b::Array{CartesianIndex{M},N}) where {A,M,N} = ArrayBlockView(a,b)
+const MatrixBlockView{A} = ArrayBlockView{A,2,2} where A
+const VectorBlockView{A} = ArrayBlockView{A,1,1} where A
+
+Base.size(a::ArrayBlockView) = size(a.block_map)
+Base.length(b::ArrayBlockView) = length(b.block_map)
+Base.eltype(::Type{<:ArrayBlockView{A}}) where A = A
+Base.eltype(::ArrayBlockView{A}) where A = A
+Base.ndims(::ArrayBlockView{A,N}) where {A,N} = N
+Base.ndims(::Type{ArrayBlockView{A,N}}) where {A,N} = N
+Base.getindex(b::ArrayBlockView,i...) = getindex(b.array,b.block_map[i...])
+Base.setindex!(b::ArrayBlockView,v,i...) = setindex!(b.array,v,b.block_map[i...])
+
+Base.copy(a::ArrayBlockView) = ArrayBlockView(copy(a.array),copy(a.block_map))
+Base.eachindex(a::ArrayBlockView) = eachindex(a.block_map)
+
+function Base.show(io::IO,o::ArrayBlockView)
+  print(io,"ArrayBlockView($(o.array), $(o.block_map))")
+end
+
+LinearAlgebra.diag(a::MatrixBlock) = view(a.array,diag(CartesianIndices(a.array)))
+LinearAlgebra.diag(a::MatrixBlockView) = view(a.array.array, diag(a.block_map))
+
+# map cell ids
+
+for T in [:MatrixBlock,:MatrixBlockView]
+  @eval begin
+    function FESpaces.map_cell_rows(strategy::$T{<:AssemblyStrategy},cell_ids)
+      strats = diag(strategy)
+      k = map(FESpaces.AssemblyStrategyMap{:rows},strats)
+      return lazy_map(k,cell_ids)
+    end
+    function FESpaces.map_cell_cols(strategy::$T{<:AssemblyStrategy},cell_ids)
+      strats = diag(strategy)
+      k = map(FESpaces.AssemblyStrategyMap{:cols},strats)
+      return lazy_map(k,cell_ids)
+    end
+  end
 end
 
 function Arrays.return_cache(k::Array{<:FESpaces.AssemblyStrategyMap},ids::ArrayBlock)
@@ -109,9 +166,10 @@ end
 # nnz counters and allocators
 
 Algebra.LoopStyle(a::ArrayBlock) = Algebra.LoopStyle(first(a.array))
+Algebra.LoopStyle(a::ArrayBlockView) = Algebra.LoopStyle(a.array)
 
 function Algebra.nz_counter(builder::MatrixBlock,axs)
-  s = size(builder.array)
+  s = size(builder)
   rows = axs[1]
   cols = axs[2]
   counters = [nz_counter(builder.array[i,j],(rows[i],cols[j])) for i in 1:s[1], j in 1:s[2]]
@@ -119,10 +177,14 @@ function Algebra.nz_counter(builder::MatrixBlock,axs)
 end
 
 function Algebra.nz_counter(builder::VectorBlock,axs)
-  s = size(builder.array)
+  s = size(builder)
   rows = axs[1]
   counters = [nz_counter(builder.array[i],(rows[i],)) for i in 1:s[1]]
   return ArrayBlock(counters,fill(true,size(counters)))
+end
+
+function Algebra.nz_counter(builder::ArrayBlockView,axs)
+  ArrayBlockView(nz_counter(builder.array,axs),builder.block_map)
 end
 
 function Algebra.nz_allocation(a::ArrayBlock)
@@ -130,17 +192,23 @@ function Algebra.nz_allocation(a::ArrayBlock)
   return ArrayBlock(array,a.touched)
 end
 
+function Algebra.nz_allocation(a::ArrayBlockView)
+  ArrayBlockView(nz_allocation(a.array),a.block_map)
+end
+
 function Algebra.create_from_nz(a::ArrayBlock)
   array = map(Algebra.create_from_nz,a.array)
   return mortar(array)
 end
 
+Algebra.create_from_nz(a::ArrayBlockView) = create_from_nz(a.array)
+
 # AddEntriesMap and TouchEntriesMap
 
 for T in (:AddEntriesMap,:TouchEntriesMap)
 
-  for MT in (:MatrixBlock,BlockMatrix)
-    Aij = (MT == :MatrixBlock) ? :(A.array[i,j]) : :(A.blocks[i,j])
+  for MT in (:MatrixBlock,:MatrixBlockView,:BlockMatrix)
+    Aij = (MT == :BlockMatrix) ? :(A.blocks[i,j]) : :(A[i,j])
     @eval begin
 
       function Fields.return_cache(k::$T,A::$MT,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
@@ -173,8 +241,8 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
     end # @eval
   end # for MT
 
-  for VT in (:VectorBlock,BlockVector)
-    Ai = (VT == :VectorBlock) ? :(A.array[i]) : :(A.blocks[i])
+  for VT in (:VectorBlock,:VectorBlockView,:BlockVector)
+    Ai = (VT == :BlockVector) ? :(A.blocks[i]) : :(A[i])
     @eval begin
 
       function Fields.return_cache(k::$T,A::$VT,v::VectorBlock,I::VectorBlock)
