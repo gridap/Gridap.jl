@@ -21,14 +21,14 @@ By line number:
 
 1) We retrieve the `SparseMatrixBuilder/ArrayBuilder` from the assembler. This structure has information on which type of array will be allocated at the end. For instance CSR vs CSC sparse matrix storage, which type of element type the array should hold (Float64, Float32,...), etc... With this information, we create a non-zero counter object `m1`, which will manage the counting of sparse entries and eventually the allocation of the array.
 2) We do a symbolic loop over the matrix contributions in `matdata`. During this loop, we save the row/col indexes of the non-zeros that will be present in the final matrix.
-3) We allocate the necessary space for the nonzero entries we have counted. In the case of CSR and CSC storage types, we do not allocate the final matrix yet but rather do everything in COO format (which is more efficient for random access assembly). `m2` is the same as `m1`, but after allocation.
+3) We allocate the necessary space for the nonzero entries we have counted. In the case of CSR and CSC storage types, we do not allocate the final matrix yet but rather do everything in COO format (which is more efficient for random access assembly). `m2` is now an array allocator object. 
 4) We do a second loop over the matrix contributions in `matdata`, During this loop, we actually assemble the entries that will end up in the matrix.
-5) We use the `SparseMatrixCounter` to allocate and fill the final sparse matrix.
+5) We use the matrix allocator to allocate and fill the final sparse matrix.
 
 So the objects involved and the overall workflow is given by
 
 ```md
-SparseMatrixBuilder -> ArrayCounter -> Array
+SparseMatrixBuilder -> ArrayCounter -> ArrayAllocator -> Array
 ```
 
 The second part of the puzzle is given by the loops over the data, i.e `symbolic_loop_X!` and `numeric_loop_X!`. Both loops are quite similar, so we will focus on the numeric loop, which is implemented in the following function: 
@@ -72,17 +72,17 @@ The second part of the puzzle is given by the loops over the data, i.e `symbolic
   end
 ```
 
-By line number: 
+By line number:
 1) We retrieve the `AssemblyStrategy` object from the assembler. This object contains all the information necessary to map the DoF ids from our mesh to the final columns/rows of the matrix. In serial this map is almost always the identity, but in parallel it is crucial to handle ghosts and local/global indexes. 
-2) We use the col/row maps in strategy to map the cell DoF ids in each cell contribution to the corresponding rows/cols in the final matrix. 
+2) We use the col/row maps in strategy to map the cell DoF ids in each cell contribution to the corresponding rows/cols in the final matrix.
 3) We prepare a `TouchEntriesMap` (symbolic loop) or `AddEntriesMap` (numeric loop). These maps will be executed on each cell contribution, and are the ones responsible to allocate/assemble the contributions on the array counter. 
-4) For each cell, we retrieve the rows, cols and values and execute the map on these. This will allocate/assemble the contributions of this cell into the counter. In the case of `MultiFieldFESpaces`,  the cell indices `rows`/`cols` will be `VectorBlocks` with as many blocks as fields the `MultiFieldFESpace` has and `vals` will be a `MatrixBlock` with an array of blocks of size (# blocks in rows, # blocks in cols). The `TouchEntriesMap` and`AddEntriesMap` maps are specialised on these types, and assemble all blocks into the same `ArrayCounter`. 
+4) For each cell, we retrieve the rows, cols and values and execute the map on these. This will allocate/assemble the contributions of this cell into the counter. In the case of `MultiFieldFESpaces`,  the cell indices `rows`/`cols` will be `VectorBlocks` with as many blocks as fields the `MultiFieldFESpace` has and `vals` will be a `MatrixBlock` with an array of blocks of size (# blocks in rows, # blocks in cols). The `TouchEntriesMap` and`AddEntriesMap` maps are specialised on these types, and assemble all blocks into the same `ArrayCounter`.
 
 ## BlockSparseMatrixAssemblers
 
-To activate the block assemblers, we have created a new `MultiFieldStyle` called `BlockMultiFieldStyle`.  The purpose of this style is two-fold: 
-1) It activates the block assembly automatically when calling `SparseMatrixAssembler`, so that the everything fits with the high-level API. 
-2) It manages the numbering of the cell DoFs when performing the integrals, ensuring the DoFs ids are local to each block. 
+To activate the block assemblers, we have created a new `MultiFieldStyle` called `BlockMultiFieldStyle`.  The purpose of this style is two-fold:
+1) It activates the block assembly automatically when calling `SparseMatrixAssembler`, so that the everything fits with the high-level API.
+2) It manages the numbering of the cell DoFs when performing the integrals, ensuring the DoFs ids are local to each block.
 
 To create a block-assembled `MultiFieldFESpace`, you can use the following constructor: 
 ```julia
@@ -91,11 +91,11 @@ Yb  = MultiFieldFESpace(tests;style=mfs)
 Xb  = MultiFieldFESpace(trials;style=mfs)
 ```
 
-By default, the final matrix and vector will have a block for each input `FESpace`. However, you can introduce some parameters when building your `BlockMultiFieldStyle` so that multiple fields are assembled in the same block (see section B). 
+By default, the final matrix and vector will have a block for each input `FESpace`. However, you can introduce some parameters when building your `BlockMultiFieldStyle` so that multiple fields are assembled in the same block (see section B).
 
 ### A) One to one Block <-> FESpace correspondence
 
-The design of `BlockSparseMatrixAssemblers` is quite simple: Instead of having a single `SparseMatrixBuilder`, `ArrayCounter` and`Array` in which we assemble the entries coming from all fields in the `MultiFieldFESpace`, the assembler will create one of these objects for each final block and put them in a `ArrayBlock` object. We will then dispatch on the `ArrayBlock` type so that the contributions from each field is assembled in the block we want. 
+The design of `BlockSparseMatrixAssemblers` is quite simple: Instead of having a single `SparseMatrixBuilder`, `ArrayCounter` and`Array` in which we assemble the entries coming from all fields in the `MultiFieldFESpace`, the assembler will create one of these objects for each final block and put them in a `ArrayBlock` object. We will then dispatch on the `ArrayBlock` type so that the contributions from each field is assembled in the block we want.
 
 For instance, for the `nz_counter` function we dispatch as follows: 
 
@@ -156,4 +156,4 @@ Using this three parameters, one can assemble an arbitrary number of fields into
 **Example**: Consider we are solving an MHD problem with variables `(u,p,j,q)` , i.e (fluid velocity, fluid pressure, magnetic current, electric potential). Although the variables are in this specific order in the `MultiFieldFESpace`, we want to build a block-preconditioner that solves `(u,j)` together in a single block then `p` and `q` separately in two other blocks. Then we would need to assemble our system using `NB=3`, `SB=(2,1,1)` and `P=(1,3,2,4)`.
 With this configuration, we will create 3 blocks. The first block will have size 2 and hold variables `[P[1],P[2]] = [1,3] = [u,j]`. The second block will have size 1 and hold variables `[P[3]] = [2] = [p]`. Finally, the third block will hold variables `[P[4]] = [4] = [q]`.
 
-In terms of implementation, everything is the same. We use `ArrayBlockViews` (which is a view counterpart of `ArrayBlock`) so that an array of `NBxNB` array builders / array counters can be indexed using the field indexes. This allows us to use the same dispatches as we had in part A.
+In terms of implementation, everything is the same. We use `ArrayBlockViews` (which is a view counterpart of `ArrayBlock`) so that an array of `NBxNB` array builders / array counters can be indexed using the field indexes. This allows us to use the same dispatches as we had in part A. 
