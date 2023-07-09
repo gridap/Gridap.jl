@@ -14,67 +14,82 @@ using Gridap.FESpaces: get_algebraic_operator
 u(x,t) = (1.0-x[1])*x[1]*(1.0-x[2])*x[2]*(t+3.0)
 u(t::Real) = x -> u(x,t)
 v(x) = t -> u(x,t)
-
 f(t) = x -> ∂t(u)(x,t)-Δ(u(t))(x)
+∂tu(x,t) = ∂t(u)(x,t)
+∂tu(t::Real) = x -> ∂tu(x,t)
 
+# Domain and triangulations
 domain = (0,1,0,1)
 partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)
-
 order = 2
-
 reffe = ReferenceFE(lagrangian,Float64,order)
 V0 = FESpace(
   model,
   reffe,
   conformity=:H1,
   dirichlet_tags="boundary")
-
 U = TransientTrialFESpace(V0,u)
-
 Ω = Triangulation(model)
 degree = 2*order
 dΩ = Measure(Ω,degree)
 
+# Affine FE operator
 a(u,v) = ∫(∇(v)⊙∇(u))dΩ
 m(u,v) = ∫(v*u)dΩ
 b(v,t) = ∫(v*f(t))dΩ
-
 res(t,u,v) = a(u,v) + m(∂t(u),v) - b(v,t)
 jac(t,u,du,v) = a(du,v)
 jac_t(t,u,dut,v) = m(dut,v)
-
 op = TransientFEOperator(res,jac,jac_t,U,V0)
 
+# Time stepping
 t0 = 0.0
 tF = 1.0
 dt = 0.1
 
-
+# Initial solution
 U0 = U(0.0)
 uh0 = interpolate_everywhere(u(0.0),U0)
+∂tuh0 = interpolate_everywhere(∂tu(0.0),U0)
 
-ls = LUSolver()
-ode_solver = ThetaMethod(ls,dt,θ)
+function test_ode_solver(ode_solver,xh0)
+  sol_t = solve(ode_solver,op,xh0,t0,tF)
 
-sol_t = solve(ode_solver,op,uh0,t0,tF)
+  l2(w) = w*w
 
-l2(w) = w*w
+  tol = 1.0e-6
+  _t_n = t0
 
-tol = 1.0e-6
-_t_n = t0
+  for (uh_tn, tn) in sol_t
+    # global _t_n
+    _t_n += dt
+    @test tn≈_t_n
+    e = u(tn) - uh_tn
+    el2 = sqrt(sum( ∫(l2(e))dΩ ))
+    @test el2 < tol
+  end
 
-for (uh_tn, tn) in sol_t
-  global _t_n
-  _t_n += dt
-  @test tn≈_t_n
-  e = u(tn) - uh_tn
-  el2 = sqrt(sum( ∫(l2(e))dΩ ))
-  @test el2 < tol
+  @test length( [uht for uht in sol_t] ) == ceil((tF - t0)/dt)
+
 end
 
-@test length( [uht for uht in sol_t] ) == ceil((tF - t0)/dt)
+# Linear solver
+ls = LUSolver()
 
+# ODE solvers
+ode_solvers = []
+push!(ode_solvers,(ThetaMethod(ls,dt,θ),uh0))
+push!(ode_solvers,(BackwardEuler(ls,dt),uh0))
+push!(ode_solvers,(MidPoint(ls,dt),uh0))
+push!(ode_solvers,(GeneralizedAlpha(ls,dt,1.0),(uh0,∂tuh0)))
+push!(ode_solvers,(RungeKutta(ls,dt,:BE_1_0_1),uh0))
+push!(ode_solvers,(RungeKutta(ls,dt,:CN_2_0_2),uh0))
+push!(ode_solvers,(RungeKutta(ls,dt,:SDIRK_2_0_2),uh0))
+for ode_solver in ode_solvers
+  println(ode_solver)
+  test_ode_solver(ode_solver...)
+end
 #
 
 u0 = get_free_dof_values(uh0)
@@ -88,6 +103,8 @@ nl_cache = nothing
 
 # tf = t0+dt
 
+# Nonlinear ThetaMethod
+ode_solver = ThetaMethod(ls,dt,θ)
 ode_solver.θ == 0.0 ? dtθ = dt : dtθ = dt*ode_solver.θ
 tθ = t0+dtθ
 ode_cache = update_cache!(ode_cache,odeop,tθ)
