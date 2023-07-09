@@ -1,7 +1,9 @@
 abstract type ButcherTableauType end
 
 struct BE_1_0_1 <: ButcherTableauType end
-struct SDIRK_2_1_2 <: ButcherTableauType end
+struct CN_2_0_2 <: ButcherTableauType end
+struct SDIRK_2_0_2 <: ButcherTableauType end
+struct ESDIRK_3_1_2 <: ButcherTableauType end
 struct TRBDF2_3_3_2 <: ButcherTableauType end
 
 """
@@ -17,8 +19,13 @@ struct ButcherTableau{T <: ButcherTableauType}
   d::Vector # d_j (embedded)
 end
 
+# Butcher Tableaus constructors
 """
-ButcherTableau constructor
+Backward-Euler
+
+number of stages: 1
+embedded method: no
+order: 1
 """
 function ButcherTableau(::BE_1_0_1)
   s = 1
@@ -31,15 +38,55 @@ function ButcherTableau(::BE_1_0_1)
   ButcherTableau{BE_1_0_1}(s,p,q,a,b,c,d)
 end
 
-function ButcherTableau(type::SDIRK_2_1_2)
+"""
+Crank-Nicolson (equivalent to trapezoidal rule)
+
+number of stages: 2
+embedded method: no
+order: 2
+"""
+function ButcherTableau(type::CN_2_0_2)
 s = 2
+p = 0
+q = 2
+a = [0.0 0.0; 0.5 0.5]
+b = [0.5, 0.5]
+c = [0.0, 1.0]
+d = [0.0, 0.0]
+ButcherTableau{CN_2_0_2}(s,p,q,a,b,c,d)
+end
+
+"""
+Qin and Zhang's SDIRK
+
+number of stages: 2
+embedded method: no
+order: 2
+"""
+function ButcherTableau(type::SDIRK_2_0_2)
+s = 2
+p = 0
+q = 2
+a = [0.25 0.0; 0.5 0.25]
+b = [0.5, 0.5]
+c = [0.25, 0.75]
+d = [0.0, 0.0]
+ButcherTableau{SDIRK_2_0_2}(s,p,q,a,b,c,d)
+end
+
+function ButcherTableau(type::ESDIRK_3_1_2)
+s = 3
 p = 1
 q = 2
-a = [1.0 0.0; -1.0 1.0]
-b = [0.5, 0.5]
-c = [1.0, 0.0]
-d = [1.0, 0.0]
-ButcherTableau{SDIRK_2_1_2}(s,p,q,a,b,c,d)
+γ = (2-√(2))/2
+b₂ = (1 − 2γ)/(4γ)
+b̂₂ = γ*(−2 + 7γ − 5(γ^2) + 4(γ^3)) / (2(2γ − 1))
+b̂₃ = −2*(γ^2)*(1 − γ + γ^2) / (2γ − 1)
+a = [0.0 0.0 0.0; γ γ 0.0; (1 − b₂ − γ) b₂ γ]
+b = [(1 − b₂ − γ), b₂, γ]
+c = [0.0, 2γ, 1.0]
+d = [(1 − b̂₂ − b̂₃), b̂₂, b̂₃]
+ButcherTableau{ESDIRK_3_1_2}(s,p,q,a,b,c,d)
 end
 
 function ButcherTableau(type::TRBDF2_3_3_2)
