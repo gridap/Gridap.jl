@@ -154,20 +154,24 @@ function solve_step!(uf::AbstractVector,
       push!(fi,similar(u0))
     end
 
+    # update time
+    ti = t0 + c[i]*dt
+    ode_cache = update_cache!(ode_cache,op,ti)
+    update!(nlop,ti,fi,i)
+
     # Skip stage solve if a_ii=0 => u_i=u_0, f_i = f_0
     if(a[i,i]==0)
-      @assert c[i] == 0
-      ti = t0
-      update!(nlop,ti,fi,i)
-      fi[i] = get_fi(u0,nlop,nl_cache)
+      # @assert c[i] == 0
+      # ti = t0
+      # update!(nlop,ti,fi,i)
+      # fi[i] = get_fi(uf,nlop,nl_cache)
     else
       # solve at stage i
-      ti = t0 + c[i]*dt
-      ode_cache = update_cache!(ode_cache,op,ti)
-      update!(nlop,ti,fi,i)
       nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
-      fi[i] = get_fi(uf,nlop,nl_cache)
+      # fi[i] = get_fi(uf,nlop,nl_cache)
     end
+    fi[i] = get_fi(uf,nlop,nl_cache)
+    update!(nlop,ti,fi,i)
 
   end
 
@@ -211,7 +215,7 @@ function residual!(b::AbstractVector,op::RungeKuttaNonlinearOperator,x::Abstract
   vi = (x-op.u0)/(op.a[op.i,op.i]*op.dt)
   residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
   for j in 1:op.i-1
-    b .= b - op.a[op.i,j]/op.a[op.i,op.i] * op.fi[j]
+    @. b = b - op.a[op.i,j]/op.a[op.i,op.i] * op.fi[j]
   end
   b
 end
@@ -250,7 +254,7 @@ function get_fi(x::AbstractVector, op::RungeKuttaNonlinearOperator, cache::Nothi
   end
   b=similar(x)
   residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
-  (vi-b) # store fi for future stages
+  (op.a[op.i,op.i]*vi-b) # store fi for future stages
 end
 function get_fi(x::AbstractVector, op::RungeKuttaNonlinearOperator, cache)
   ui = x
@@ -261,7 +265,7 @@ function get_fi(x::AbstractVector, op::RungeKuttaNonlinearOperator, cache)
     vi = (x-op.u0)/(op.a[op.i,op.i]*op.dt)
   end
   residual!(cache.b,op.odeop,op.ti,(ui,vi),op.ode_cache)
-  (vi-cache.b) # store fi for future stages
+  (op.a[op.i,op.i]*vi-cache.b) # store fi for future stages
 end
 
 function update!(op::RungeKuttaNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
