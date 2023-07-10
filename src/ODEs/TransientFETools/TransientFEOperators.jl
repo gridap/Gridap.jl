@@ -137,6 +137,14 @@ function TransientAffineFEOperator(m::Function,a::Function,b::Function,
   TransientFEOperatorFromWeakForm{Affine}(res,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
 end
 
+function TransientRungeKuttaFEOperator(m::Function,f::Function,trial,test)
+  res(t,u,v) = m(t,∂t(u),v) - f(t,u,v)
+  jac(t,u,du,v) = -f(t,du,v)
+  jac_t(t,u,dut,v) = m(t,dut,v)
+  assem_t = SparseMatrixAssembler(trial,test)
+  TransientFEOperatorFromWeakForm{RungeKutta}(res,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
+end
+
 function TransientFEOperator(res::Function,jac::Function,jac_t::Function,
   trial,test)
   assem_t = SparseMatrixAssembler(trial,test)

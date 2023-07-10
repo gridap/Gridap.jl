@@ -23,3 +23,4 @@ end
 @publish_gridapodes TransientFETools TransientAffineFEOperator
 @publish_gridapodes TransientFETools TransientConstantFEOperator
 @publish_gridapodes TransientFETools TransientConstantMatrixFEOperator
+@publish_gridapodes TransientFETools TransientRungeKuttaFEOperator
