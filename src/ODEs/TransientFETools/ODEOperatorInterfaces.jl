@@ -121,3 +121,21 @@ function jacobians!(
   xh=TransientCellField(EvaluationFunction(Xh[1],xhF[1]),dxh)
   jacobians!(J,op.feop,t,xh,γ,ode_cache)
 end
+
+"""
+It provides the Right hand side, RHS, of M(t,uh,∂tuh) = RHS(t,uh) for a given (t,uh,∂tuh,...,∂t^Nuh)
+"""
+function rhs!(
+  rhs::AbstractVector,
+  op::ODEOpFromFEOp,
+  t::Real,
+  xhF::Tuple{Vararg{AbstractVector}},
+  ode_cache)
+  Xh, = ode_cache
+  dxh = ()
+  for i in 2:get_order(op)+1
+    dxh = (dxh...,EvaluationFunction(Xh[i],xhF[i]))
+  end
+  xh=TransientCellField(EvaluationFunction(Xh[1],xhF[1]),dxh)
+  rhs!(rhs,op.feop,t,xh,ode_cache)
+end

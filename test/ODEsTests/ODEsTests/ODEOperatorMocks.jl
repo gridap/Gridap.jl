@@ -35,6 +35,14 @@ function residual!(r::AbstractVector,op::ODEOperatorMock,t::Real,x::NTuple{2,Abs
   r
 end
 
+function rhs!(r::AbstractVector,op::ODEOperatorMock,t::Real,x::NTuple{2,AbstractVector},ode_cache)
+  u,u_t = x
+  r .= 0
+  r[1] = op.a * u[1]
+  r[2] = op.b * u[1] + op.c * u[2]
+  r
+end
+
 function residual!(r::AbstractVector,op::ODEOperatorMock,t::Real,x::NTuple{3,AbstractVector},ode_cache)
   u,u_t,u_tt = x
   r .= 0

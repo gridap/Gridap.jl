@@ -266,6 +266,19 @@ function residual!(
   b
 end
 
+function rhs!(
+  rhs::AbstractVector,
+  op::TransientFEOperatorFromWeakForm,
+  t::Real,
+  xh::T,
+  cache) where T
+  V = get_test(op)
+  v = get_fe_basis(V)
+  vecdata = collect_cell_vector(V,op.rhs(t,xh,v))
+  assemble_vector!(rhs,op.assem_t,vecdata)
+  rhs
+end
+
 function allocate_jacobian(
   op::TransientFEOperatorFromWeakForm,
   t0::Real,
