@@ -160,17 +160,12 @@ function solve_step!(uf::AbstractVector,
     ode_cache = update_cache!(ode_cache,op,ti)
     update!(nlop,ti,fi,i)
 
-    # Skip stage solve if a_ii=0 => u_i=u_0, f_i = f_0
     if(a[i,i]==0)
-      # @assert c[i] == 0
-      # ti = t0
-      # update!(nlop,ti,fi,i)
-      # fi[i] = get_fi(uf,nlop,nl_cache)
+      # Skip stage solve if a_ii=0 => u_i=u_0, f_i = f_0
       @. uf = u0
     else
       # solve at stage i
       nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
-      # fi[i] = get_fi(uf,nlop,nl_cache)
     end
     rhs!(uf,nlop,rhs_cache)
 
