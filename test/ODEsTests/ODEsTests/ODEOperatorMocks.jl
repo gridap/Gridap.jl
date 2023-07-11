@@ -16,6 +16,7 @@ import Gridap.ODEs.ODETools: jacobian!
 import Gridap.ODEs.ODETools: jacobians!
 import Gridap.ODEs.ODETools: allocate_jacobian
 import Gridap.ODEs.ODETools: residual!
+import Gridap.ODEs.ODETools: rhs!
 using SparseArrays: spzeros
 
 struct ODEOperatorMock{T<:Real,C} <: ODEOperator{C}
