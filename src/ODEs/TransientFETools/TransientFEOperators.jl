@@ -144,8 +144,6 @@ end
 function TransientRungeKuttaFEOperator(m::Function,rhs::Function,jac::Function,
   jac_t::Function,trial,test)
   res(t,u,v) = m(t,∂t(u),v) - rhs(t,u,v)
-  jac(t,u,du,v) = jac(t,du,v)
-  jac_t(t,u,dut,v) = jac_t(t,dut,v)
   assem_t = SparseMatrixAssembler(trial,test)
   TransientFEOperatorFromWeakForm{Nonlinear}(res,rhs,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
 end
@@ -153,7 +151,7 @@ end
 function TransientFEOperator(res::Function,jac::Function,jac_t::Function,
   trial,test)
   assem_t = SparseMatrixAssembler(trial,test)
-  TransientFEOperatorFromWeakForm{Nonlinear}(res,nothing,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
+  TransientFEOperatorFromWeakForm{Nonlinear}(res,rhs_error,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
 end
 
 
@@ -205,7 +203,7 @@ function TransientFEOperator(res::Function,jac::Function,jac_t::Function,
   trial_t = ∂t(trial)
   trial_tt = ∂t(trial_t)
   TransientFEOperatorFromWeakForm{Nonlinear}(
-    res,nothing,(jac,jac_t,jac_tt),assem_t,(trial,trial_t,trial_tt),test,2)
+    res,rhs_error,(jac,jac_t,jac_tt),assem_t,(trial,trial_t,trial_tt),test,2)
 end
 
 function TransientFEOperator(res::Function,trial,test;order::Integer=1)
@@ -228,7 +226,7 @@ function TransientFEOperator(res::Function,trial,test;order::Integer=1)
     end
     jacs = (jacs...,jac_i)
   end
-  TransientFEOperator(res,nothing,jacs...,trial,test)
+  TransientFEOperator(res,rhs_error,jacs...,trial,test)
 end
 
 function TransientRungeKuttaFEOperator(m::Function,rhs::Function,trial,test)
@@ -400,6 +398,12 @@ function _matdata_jacobian(
   du = get_trial_fe_basis(Uh)
   v = get_fe_basis(V)
   matdata = collect_cell_matrix(Uh,V,γᵢ*op.jacs[i](t,xh,du,v))
+end
+
+function rhs_error(t::Real,xh,v)
+  error("The \"rhs\" function is not defined for this TransientFEOperator.
+  Please, try to use another type of TransientFEOperator that supports this
+  functionality.")
 end
 
 # Tester

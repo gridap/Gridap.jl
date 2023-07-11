@@ -54,6 +54,7 @@ export jacobian!
 export jacobian_t!
 export jacobian_and_jacobian_t!
 export test_ode_operator
+export rhs!
 
 export ODESolver
 export solve_step!

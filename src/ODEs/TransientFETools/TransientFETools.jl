@@ -39,6 +39,7 @@ export TransientFEOperator
 export TransientAffineFEOperator
 export TransientConstantFEOperator
 export TransientConstantMatrixFEOperator
+export TransientRungeKuttaFEOperator
 using Gridap.FESpaces: Assembler
 using Gridap.FESpaces: SparseMatrixAssembler
 import Gridap.ODEs.ODETools: allocate_cache
@@ -52,6 +53,7 @@ import Gridap.ODEs.ODETools: allocate_jacobian
 import Gridap.ODEs.ODETools: residual!
 import Gridap.ODEs.ODETools: jacobian!
 import Gridap.ODEs.ODETools: jacobians!
+import Gridap.ODEs.ODETools: rhs!
 import Gridap.ODEs.ODETools: OperatorType
 using Gridap.ODEs.ODETools: Nonlinear
 using Gridap.ODEs.ODETools: Affine

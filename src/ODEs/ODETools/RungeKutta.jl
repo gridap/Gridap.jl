@@ -139,8 +139,9 @@ function solve_step!(uf::AbstractVector,
     vi = similar(u0)
     fi = [similar(u0)]
     nl_cache = nothing
+    rhs_cache = nothing
   else
-    ode_cache, vi, fi, nl_cache = cache
+    ode_cache, vi, fi, nl_cache, rhs_cache = cache
   end
 
   # Create RKNL operator
@@ -165,23 +166,23 @@ function solve_step!(uf::AbstractVector,
       # ti = t0
       # update!(nlop,ti,fi,i)
       # fi[i] = get_fi(uf,nlop,nl_cache)
+      @. uf = u0
     else
       # solve at stage i
       nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
       # fi[i] = get_fi(uf,nlop,nl_cache)
     end
-    fi[i] = get_fi(uf,nlop,nl_cache)
-    update!(nlop,ti,fi,i)
+    rhs!(uf,nlop,rhs_cache)
 
   end
 
   # update
-  uf = u0
+  @. uf = u0
   for i in 1:s
-    uf = uf + dt*b[i]*fi[i]
+    @. uf = uf + dt*b[i]*fi[i]
   end
 
-  cache = (ode_cache, vi, fi, nl_cache)
+  cache = (ode_cache, vi, fi, nl_cache, rhs_cache)
 
   tf = t0 + dt
   return (uf,tf,cache)
@@ -244,28 +245,20 @@ function zero_initial_guess(op::RungeKuttaNonlinearOperator)
   x0
 end
 
-function get_fi(x::AbstractVector, op::RungeKuttaNonlinearOperator, cache::Nothing)
+function rhs!(x::AbstractVector, op::RungeKuttaNonlinearOperator, cache::Nothing)
   ui = x
   vi = op.vi
-  if(op.a[op.i,op.i]==0.0)
-    vi=zero(x)
-  else
-    vi = (x-op.u0)/(op.a[op.i,op.i]*op.dt)
-  end
-  b=similar(x)
-  residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
-  (op.a[op.i,op.i]*vi-b) # store fi for future stages
+  vi = (x-op.u0)/(op.a[op.i,op.i]*op.dt)
+  rhs=similar(x)
+  cache = rhs
+  op.fi[op.i] = rhs!(rhs,op.odeop,op.ti,(ui,vi),op.ode_cache)
 end
-function get_fi(x::AbstractVector, op::RungeKuttaNonlinearOperator, cache)
+function rhs!(x::AbstractVector, op::RungeKuttaNonlinearOperator, cache)
   ui = x
   vi = op.vi
-  if(op.a[op.i,op.i]==0.0)
-    vi=zero(x)
-  else
-    vi = (x-op.u0)/(op.a[op.i,op.i]*op.dt)
-  end
-  residual!(cache.b,op.odeop,op.ti,(ui,vi),op.ode_cache)
-  (op.a[op.i,op.i]*vi-cache.b) # store fi for future stages
+  vi = (x-op.u0)/(op.a[op.i,op.i]*op.dt)
+  rhs = cache
+  op.fi[op.i] = rhs!(rhs,op.odeop,op.ti,(ui,vi),op.ode_cache)
 end
 
 function update!(op::RungeKuttaNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
