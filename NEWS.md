@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Since PR [#884](https://github.com/gridap/Gridap.jl/pull/884).
 
 - Fixed `cell_dof_ids` for the case of vectorial `ConstantFESpace`. Since PR [#888](https://github.com/gridap/Gridap.jl/pull/888)
+- Fixed generation of Modal C0 bases for Julia 1.9. Since PR [#918](https://github.com/gridap/Gridap.jl/pull/918).
 
 ## [0.17.17] - 2023-02-24
 
