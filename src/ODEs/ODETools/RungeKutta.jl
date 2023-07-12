@@ -138,10 +138,11 @@ function solve_step!(uf::AbstractVector,
     ode_cache = allocate_cache(op)
     vi = similar(u0)
     fi = [similar(u0)]
+    M = allocate_jacobian(op,t0,u0,ode_cache)
     nl_cache = nothing
     rhs_cache = nothing
   else
-    ode_cache, vi, fi, nl_cache, rhs_cache = cache
+    ode_cache, vi, fi, M, nl_cache, rhs_cache = cache
   end
 
   # Create RKNL operator
@@ -167,17 +168,28 @@ function solve_step!(uf::AbstractVector,
       # solve at stage i
       nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
     end
+
+    # Update RHS at stage i
     rhs!(uf,nlop,rhs_cache)
 
   end
 
-  # update
-  @. uf = u0
+  # Update Mass (assume constant per time step)
+  tf = t0+dt
+  M = _mass_matrix!(M,op,tf,ode_cache,uf)
+
+  # update final RHS = Mu₀ + ∑ᵢ(dt*bᵢ*fᵢ)
+  nl_cache.b .= M*u0
   for i in 1:s
-    @. uf = uf + dt*b[i]*fi[i]
+    @. nl_cache.b = nl_cache.b + (dt*b[i]) * fi[i]
   end
 
-  cache = (ode_cache, vi, fi, nl_cache, rhs_cache)
+  # Solve for Muf = Mu₀ + ∑ᵢ(dt*bᵢ*fᵢ)
+  ss = symbolic_setup(solver.nls, M)
+  ns = numerical_setup(ss,M)
+  solve!(uf,ns,nl_cache.b)
+
+  cache = (ode_cache, vi, fi, M, nl_cache, rhs_cache)
 
   tf = t0 + dt
   return (uf,tf,cache)
@@ -226,6 +238,16 @@ function jacobian!(A::AbstractMatrix,op::RungeKuttaNonlinearOperator,x::Abstract
   jacobians!(A,op.odeop,op.ti,(ui,vi),(1.0,1.0/(op.a[op.i,op.i]*op.dt)),op.ode_cache)
 end
 
+function jacobian!(A::AbstractMatrix,op::RungeKuttaNonlinearOperator,x::AbstractVector,
+  i::Integer,γᵢ::Real)
+  ui = x
+  vi = op.vi
+  vi = (x-op.u0)/(op.a[op.i,op.i]*op.dt)
+  z = zero(eltype(A))
+  fillstored!(A,z)
+  jacobian!(A,op.odeop,op.ti,(ui,vi),i,γᵢ,op.ode_cache)
+end
+
 function allocate_residual(op::RungeKuttaNonlinearOperator,x::AbstractVector)
   allocate_residual(op.odeop,op.ti,x,op.ode_cache)
 end
@@ -260,4 +282,10 @@ function update!(op::RungeKuttaNonlinearOperator,ti::Float64,fi::AbstractVector,
   op.ti = ti
   op.fi = fi
   op.i = i
+end
+
+function _mass_matrix!(A,odeop,t,ode_cache,u)
+  z = zero(eltype(A))
+  fillstored!(A,z)
+  jacobian!(A,odeop,t,(u,u),2,1.0,ode_cache)
 end
