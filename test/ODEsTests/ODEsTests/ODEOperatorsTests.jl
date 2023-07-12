@@ -18,13 +18,13 @@ u_t = ones(2)*2.0
 cache = allocate_cache(op)
 update_cache!(cache,op,0.0)
 
-r = allocate_residual(op,u,cache)
+t = 0.0
+r = allocate_residual(op,t,u,cache)
 @test r == zeros(2)
 
-J = allocate_jacobian(op,u,cache)
+J = allocate_jacobian(op,t,u,cache)
 @test J == zeros(2,2)
 
-t = 0.0
 residual!(r,op,t,(u,u_t),cache)
 _r = zeros(2)
 _r[1] = u_t[1] - op.a * u[1]

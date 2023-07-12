@@ -180,11 +180,11 @@ function jacobian!(A::AbstractMatrix,op::RungeKuttaNonlinearOperator,x::Abstract
 end
 
 function allocate_residual(op::RungeKuttaNonlinearOperator,x::AbstractVector)
-  allocate_residual(op.odeop,x,op.ode_cache)
+  allocate_residual(op.odeop,op.ti,x,op.ode_cache)
 end
 
 function allocate_jacobian(op::RungeKuttaNonlinearOperator,x::AbstractVector)
-  allocate_jacobian(op.odeop,x,op.ode_cache)
+  allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
 end
 
 function zero_initial_guess(op::RungeKuttaNonlinearOperator)
