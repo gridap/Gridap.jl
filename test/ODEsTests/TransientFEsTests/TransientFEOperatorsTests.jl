@@ -38,10 +38,13 @@ dΩ = Measure(Ω,degree)
 a(u,v) = ∫(∇(v)⊙∇(u))dΩ
 m(u,v) = ∫(v*u)dΩ
 b(v,t) = ∫(v*f(t))dΩ
+m(t,u,v) = m(u,v)
 res(t,u,v) = a(u,v) + m(∂t(u),v) - b(v,t)
+rhs(t,u,v) = b(v,t) - a(u,v)
 jac(t,u,du,v) = a(du,v)
 jac_t(t,u,dut,v) = m(dut,v)
 op = TransientFEOperator(res,jac,jac_t,U,V0)
+opRK = TransientRungeKuttaFEOperator(m,rhs,jac,jac_t,U,V0)
 
 # Time stepping
 t0 = 0.0
@@ -53,7 +56,7 @@ U0 = U(0.0)
 uh0 = interpolate_everywhere(u(0.0),U0)
 ∂tuh0 = interpolate_everywhere(∂tu(0.0),U0)
 
-function test_ode_solver(ode_solver,xh0)
+function test_ode_solver(ode_solver,op,xh0)
   sol_t = solve(ode_solver,op,xh0,t0,tF)
 
   l2(w) = w*w
@@ -79,13 +82,13 @@ ls = LUSolver()
 
 # ODE solvers
 ode_solvers = []
-push!(ode_solvers,(ThetaMethod(ls,dt,θ),uh0))
-push!(ode_solvers,(BackwardEuler(ls,dt),uh0))
-push!(ode_solvers,(MidPoint(ls,dt),uh0))
-push!(ode_solvers,(GeneralizedAlpha(ls,dt,1.0),(uh0,∂tuh0)))
-push!(ode_solvers,(RungeKutta(ls,dt,:BE_1_0_1),uh0))
-push!(ode_solvers,(RungeKutta(ls,dt,:CN_2_0_2),uh0))
-push!(ode_solvers,(RungeKutta(ls,dt,:SDIRK_2_0_2),uh0))
+push!(ode_solvers,(ThetaMethod(ls,dt,θ),op,uh0))
+push!(ode_solvers,(BackwardEuler(ls,dt),op,uh0))
+push!(ode_solvers,(MidPoint(ls,dt),op,uh0))
+push!(ode_solvers,(GeneralizedAlpha(ls,dt,1.0),op,(uh0,∂tuh0)))
+push!(ode_solvers,(RungeKutta(ls,dt,:BE_1_0_1),opRK,uh0))
+push!(ode_solvers,(RungeKutta(ls,dt,:CN_2_0_2),opRK,uh0))
+push!(ode_solvers,(RungeKutta(ls,dt,:SDIRK_2_0_2),opRK,uh0))
 for ode_solver in ode_solvers
   println(ode_solver)
   test_ode_solver(ode_solver...)
@@ -146,14 +149,14 @@ function extract_matrix_vector(a,fst)
   return Ast, bst
 end
 
-A,rhs = extract_matrix_vector(a,fst)
+A,vec = extract_matrix_vector(a,fst)
 
 gst(x) = u(tf)(x)
 m(u,v) = ∫(u*v)dΩ
 
 M,_ = extract_matrix_vector(m,gst)
 
-@test rhs ≈ h
+@test vec ≈ h
 @test A+M/(θ*dt) ≈ K
 
 rhs
