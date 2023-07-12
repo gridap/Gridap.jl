@@ -90,7 +90,6 @@ push!(ode_solvers,(RungeKutta(ls,dt,:BE_1_0_1),opRK,uh0))
 push!(ode_solvers,(RungeKutta(ls,dt,:CN_2_0_2),opRK,uh0))
 push!(ode_solvers,(RungeKutta(ls,dt,:SDIRK_2_0_2),opRK,uh0))
 for ode_solver in ode_solvers
-  println(ode_solver)
   test_ode_solver(ode_solver...)
 end
 #

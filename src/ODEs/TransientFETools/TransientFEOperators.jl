@@ -226,7 +226,7 @@ function TransientFEOperator(res::Function,trial,test;order::Integer=1)
     end
     jacs = (jacs...,jac_i)
   end
-  TransientFEOperator(res,rhs_error,jacs...,trial,test)
+  TransientFEOperator(res,jacs...,trial,test)
 end
 
 function TransientRungeKuttaFEOperator(m::Function,rhs::Function,trial,test)
