@@ -22,101 +22,108 @@ function CellQuadrature(
   CellQuadrature(cell_quad,cell_point,cell_weight,trian,data_domain_style,PhysicalDomain())
 end
 
-function CellQuadrature(trian::Triangulation,quad::Tuple{<:QuadratureName,Any,Any})
-  CellQuadrature(trian,quad,PhysicalDomain())
-end
-
-
-function CellQuadrature(trian::Triangulation,quad::Tuple{<:QuadratureName,Any,Any},ids::DomainStyle)
+function CellQuadrature(trian::Triangulation,quad::Tuple{<:QuadratureName,Any,Any};
+                        data_domain_style::DomainStyle=ReferenceDomain(),
+                        integration_domain_style::DomainStyle=PhysicalDomain())
   name, args, kwargs = quad
   cell_quad = Quadrature(trian,name,args...;kwargs...)
-  CellQuadrature(trian,cell_quad,ids)
+  CellQuadrature(trian,cell_quad,data_domain_style,integration_domain_style)
 end
 
-function CellQuadrature(trian::Triangulation,degree::Integer;kwargs...)
-  CellQuadrature(trian,degree,PhysicalDomain();kwargs...)
-end
-
-function CellQuadrature(trian::Triangulation,degree::Integer,ids::DomainStyle;kwargs...)
+function CellQuadrature(trian::Triangulation,degree::Integer;
+                        data_domain_style::DomainStyle=ReferenceDomain(),
+                        integration_domain_style::DomainStyle=PhysicalDomain(),kwargs...)
   cell_quad = Quadrature(trian,degree;kwargs...)
-  CellQuadrature(trian,cell_quad,ids)
+  CellQuadrature(trian,cell_quad,data_domain_style,integration_domain_style)
 end
 
-function CellQuadrature(trian::Triangulation,quad::Quadrature)
-  CellQuadrature(trian,quad,PhysicalDomain())
-end
-
-function CellQuadrature(trian::Triangulation,quad::Quadrature,ids::DomainStyle)
+function CellQuadrature(trian::Triangulation,quad::Quadrature;
+                        data_domain_style::DomainStyle=ReferenceDomain(),
+                        integration_domain_style::DomainStyle=PhysicalDomain())
   cell_quad = expand_cell_data([quad],get_cell_type(trian))
-  CellQuadrature(trian,cell_quad,ids)
+  CellQuadrature(trian,cell_quad,data_domain_style,integration_domain_style)
+end
+
+function CellQuadrature(trian::Triangulation,cell_quad::AbstractVector{<:Quadrature};
+                        data_domain_style::DomainStyle=ReferenceDomain(),
+                        integration_domain_style::DomainStyle=PhysicalDomain())
+  CellQuadrature(trian,cell_quad,data_domain_style,integration_domain_style)
 end
 
 function CellQuadrature(trian::Triangulation,
-  cell_quad::AbstractVector{<:Quadrature})
-  CellQuadrature(trian,cell_quad,PhysicalDomain())
-end
-
-function CellQuadrature(trian::Triangulation,
-                        cell_quad::AbstractVector{<:Quadrature},ids::DomainStyle)
+                        cell_quad::AbstractVector{<:Quadrature},
+                        dds::DomainStyle,ids::DomainStyle)
   ctype_to_quad, cell_to_ctype = compress_cell_data(cell_quad)
   ctype_to_point = map(get_coordinates,ctype_to_quad)
   ctype_to_weight = map(get_weights,ctype_to_quad)
   cell_point = expand_cell_data(ctype_to_point,cell_to_ctype)
   cell_weight = expand_cell_data(ctype_to_weight,cell_to_ctype)
-  CellQuadrature(cell_quad,cell_point,cell_weight,trian,ReferenceDomain(),ids)
+  CellQuadrature(cell_quad,cell_point,cell_weight,trian,dds,ids)
 end
 
-function CellQuadrature(trian::AppendedTriangulation,degree1,degree2;kwargs...)
-  CellQuadrature(trian,degree1,degree2,PhysicalDomain();kwargs...)
-end
-
-function CellQuadrature(trian::AppendedTriangulation,degree1,degree2,ids::DomainStyle;kwargs...)
-  quad1 = CellQuadrature(trian.a,degree1,ids;kwargs...)
-  quad2 = CellQuadrature(trian.b,degree2,ids;kwargs...)
+function CellQuadrature(trian::AppendedTriangulation,degree1,degree2;
+                        data_domain_style::DomainStyle=ReferenceDomain(),
+                        integration_domain_style::DomainStyle=PhysicalDomain(),kwargs...)
+  quad1 = CellQuadrature(trian.a,degree1;
+                         data_domain_style=data_domain_style,
+                         integration_domain_style=integration_domain_style,kwargs...)
+  quad2 = CellQuadrature(trian.b,degree2;
+                         data_domain_style=data_domain_style,
+                         integration_domain_style=integration_domain_style,kwargs...)
   lazy_append(quad1,quad2,trian)
 end
 
-function CellQuadrature(trian::AppendedTriangulation,degree::Integer;kwargs...)
-  CellQuadrature(trian,degree,degree,PhysicalDomain();kwargs...)
-end
-
-function CellQuadrature(trian::AppendedTriangulation,degree::Integer,ids::DomainStyle;kwargs...)
-  CellQuadrature(trian,degree,degree,ids;kwargs...)
-end
-
-function CellQuadrature(trian::AppendedTriangulation,
-  quad::Tuple{<:QuadratureName,Any,Any})
-  CellQuadrature(trian,quad,quad,PhysicalDomain())
+function CellQuadrature(trian::AppendedTriangulation,degree::Integer;
+                        data_domain_style::DomainStyle=ReferenceDomain(),
+                        integration_domain_style::DomainStyle=PhysicalDomain(),kwargs...)
+  CellQuadrature(trian,degree,degree;
+                 data_domain_style=data_domain_style,
+                 integration_domain_style=integration_domain_style,kwargs...)
 end
 
 function CellQuadrature(trian::AppendedTriangulation,
-                        quad::Tuple{<:QuadratureName,Any,Any},ids::DomainStyle)
-  CellQuadrature(trian,quad,quad,ids)
+                        quad::Tuple{<:QuadratureName,Any,Any};
+                        data_domain_style::DomainStyle=ReferenceDomain(),
+                        integration_domain_style::DomainStyle=PhysicalDomain())
+  CellQuadrature(trian,quad,quad;
+                 data_domain_style=data_domain_style,
+                 integration_domain_style=integration_domain_style)
 end
 
-function CellQuadrature(trian::AppendedTriangulation,quad::Quadrature)
-  CellQuadrature(trian,quad,PhysicalDomain())
+function CellQuadrature(trian::AppendedTriangulation,quad::Quadrature;
+                        data_domain_style::DomainStyle=ReferenceDomain(),
+                        integration_domain_style::DomainStyle=PhysicalDomain())
+  CellQuadrature(trian,quad,quad;
+                 data_domain_style=data_domain_style,
+                 integration_domain_style=integration_domain_style)
 end
 
-function CellQuadrature(trian::AppendedTriangulation,quad::Quadrature,ids::DomainStyle)
-  CellQuadrature(trian,quad,quad,ids)
-end
+@deprecate( 
+  CellQuadrature(trian::Triangulation,degree,ids::DomainStyle),
+  CellQuadrature(trian::Triangulation,degree;data_domain_style=ReferenceDomain(),integration_domain_style=ids)
+)
+
+@deprecate( 
+  CellQuadrature(trian::AppendedTriangulation,degree1,degree2,ids::DomainStyle),
+  CellQuadrature(trian::AppendedTriangulation,degree1,degree2;data_domain_style=ReferenceDomain(),integration_domain_style=ids)
+)
 
 function lazy_append(
   quad1::CellQuadrature,
   quad2::CellQuadrature,
   trian::AppendedTriangulation=lazy_append(quad1.trian,quad2.trian))
 
-  @notimplementedif DomainStyle(quad1) != DomainStyle(quad2)
+  @notimplementedif quad1.data_domain_style != quad2.data_domain_style
+  @notimplementedif quad1.integration_domain_style != quad2.integration_domain_style
   cell_quad = lazy_append(quad1.cell_quad,quad2.cell_quad)
   cell_point = lazy_append(quad1.cell_point,quad2.cell_point)
   cell_weight = lazy_append(quad1.cell_weight,quad2.cell_weight)
-  CellQuadrature(cell_quad,cell_point,cell_weight,trian,DomainStyle(quad1),PhysicalDomain())
+  CellQuadrature(cell_quad,cell_point,cell_weight,trian,
+                 quad1.data_domain_style,quad1.integration_domain_style)
 end
 
 get_data(f::CellQuadrature) = f.cell_quad
 get_triangulation(f::CellQuadrature) = f.trian
-DomainStyle(::Type{CellQuadrature{DDS,IDS}}) where {DDS,IDS} = DDS()
 
 function change_domain(a::CellQuadrature,::ReferenceDomain,::PhysicalDomain)
   @notimplemented
