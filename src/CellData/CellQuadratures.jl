@@ -98,6 +98,16 @@ function CellQuadrature(trian::AppendedTriangulation,quad::Quadrature;
                  integration_domain_style=integration_domain_style)
 end
 
+@deprecate( 
+  CellQuadrature(trian::Triangulation,degree,ids::DomainStyle),
+  CellQuadrature(trian::Triangulation,degree;data_domain_style=ReferenceDomain(),integration_domain_style=ids)
+)
+
+@deprecate( 
+  CellQuadrature(trian::AppendedTriangulation,degree1,degree2,ids::DomainStyle),
+  CellQuadrature(trian::AppendedTriangulation,degree1,degree2;data_domain_style=ReferenceDomain(),integration_domain_style=ids)
+)
+
 function lazy_append(
   quad1::CellQuadrature,
   quad2::CellQuadrature,
