@@ -248,7 +248,7 @@ function TransientRungeKuttaFEOperator(m::Function,rhs::Function,trial,test)
     jacobian(res_t,x.derivatives[1])
   end
   jacs = (jac_0,jac_t)
-  TransientRungeKuttaFEOperator(res,rhs,jacs...,trial,test)
+  TransientRungeKuttaFEOperator(m,rhs,jacs...,trial,test)
 end
 
 function SparseMatrixAssembler(
