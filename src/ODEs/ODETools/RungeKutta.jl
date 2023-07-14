@@ -110,11 +110,12 @@ Runge-Kutta ODE solver
 """
 struct RungeKutta <: ODESolver
   nls::NonlinearSolver
+  ls::LinearSolver
   dt::Float64
   bt::ButcherTableau
-  function RungeKutta(nls,dt,type::Symbol)
+  function RungeKutta(nls::NonlinearSolver,ls::LinearSolver,dt,type::Symbol)
     bt = ButcherTableau(type)
-    new(nls,dt,bt)
+    new(nls,ls,dt,bt)
   end
 end
 
@@ -185,7 +186,7 @@ function solve_step!(uf::AbstractVector,
   end
 
   # Solve for Muf = Mu₀ + ∑ᵢ(dt*bᵢ*fᵢ)
-  ss = symbolic_setup(solver.nls, M)
+  ss = symbolic_setup(solver.ls, M)
   ns = numerical_setup(ss,M)
   solve!(uf,ns,vi)
 

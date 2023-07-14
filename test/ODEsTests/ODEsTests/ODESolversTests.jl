@@ -133,7 +133,7 @@ ufθ, tf, cache = solve_step!(ufθ,odesolθ,op,u0,t0,nothing)
 
 # RK tests
 # RK: BE equivalent
-odesol = RungeKutta(ls,dt,:BE_1_0_1)
+odesol = RungeKutta(ls,ls,dt,:BE_1_0_1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
@@ -141,7 +141,7 @@ uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # RK: CN 2nd order
-odesol = RungeKutta(ls,dt,:CN_2_0_2)
+odesol = RungeKutta(ls,ls,dt,:CN_2_0_2)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
@@ -149,7 +149,7 @@ uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # RK: SDIRK 2nd order
-odesol = RungeKutta(ls,dt,:SDIRK_2_0_2)
+odesol = RungeKutta(ls,ls,dt,:SDIRK_2_0_2)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
@@ -157,7 +157,7 @@ uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # RK: TRBDF (2nd order with some 0 on the diagonal)
-odesol = RungeKutta(ls,dt,:TRBDF2_3_3_2)
+odesol = RungeKutta(ls,ls,dt,:TRBDF2_3_3_2)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt

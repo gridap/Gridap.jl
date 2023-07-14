@@ -86,9 +86,9 @@ push!(ode_solvers,(ThetaMethod(ls,dt,θ),op,uh0))
 push!(ode_solvers,(BackwardEuler(ls,dt),op,uh0))
 push!(ode_solvers,(MidPoint(ls,dt),op,uh0))
 push!(ode_solvers,(GeneralizedAlpha(ls,dt,1.0),op,(uh0,∂tuh0)))
-push!(ode_solvers,(RungeKutta(ls,dt,:BE_1_0_1),opRK,uh0))
-push!(ode_solvers,(RungeKutta(ls,dt,:CN_2_0_2),opRK,uh0))
-push!(ode_solvers,(RungeKutta(ls,dt,:SDIRK_2_0_2),opRK,uh0))
+push!(ode_solvers,(RungeKutta(ls,ls,dt,:BE_1_0_1),opRK,uh0))
+push!(ode_solvers,(RungeKutta(ls,ls,dt,:CN_2_0_2),opRK,uh0))
+push!(ode_solvers,(RungeKutta(ls,ls,dt,:SDIRK_2_0_2),opRK,uh0))
 for ode_solver in ode_solvers
   test_ode_solver(ode_solver...)
 end
