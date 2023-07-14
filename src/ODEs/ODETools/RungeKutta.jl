@@ -178,16 +178,16 @@ function solve_step!(uf::AbstractVector,
   tf = t0+dt
   M = _mass_matrix!(M,op,tf,ode_cache,uf)
 
-  # update final RHS = Mu₀ + ∑ᵢ(dt*bᵢ*fᵢ)
-  nl_cache.b .= M*u0
+  # update final RHS = Mu₀ + ∑ᵢ(dt*bᵢ*fᵢ) (reusing vi auxiliar vector)
+  vi .= M*u0
   for i in 1:s
-    @. nl_cache.b = nl_cache.b + (dt*b[i]) * fi[i]
+    @. vi = vi + (dt*b[i]) * fi[i]
   end
 
   # Solve for Muf = Mu₀ + ∑ᵢ(dt*bᵢ*fᵢ)
   ss = symbolic_setup(solver.nls, M)
   ns = numerical_setup(ss,M)
-  solve!(uf,ns,nl_cache.b)
+  solve!(uf,ns,vi)
 
   cache = (ode_cache, vi, fi, M, nl_cache, rhs_cache)
 
