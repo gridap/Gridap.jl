@@ -406,9 +406,10 @@ _has_interior_point(rr::RefinementRule,::RefinementRuleType) = false
 """
 RefinementRule representing a non-refined cell.
 """
-function WhiteRefinementRule(p::Polytope)
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(LagrangianRefFE(Float64,p,1)))
-  return RefinementRule(WithoutRefinement(),p,ref_grid)
+function WhiteRefinementRule(p::Polytope{D}) where {D}
+  partition = tfill(1,Val{D}())
+  ref_grid = UnstructuredGrid(compute_reference_grid(p,partition))
+  RefinementRule(WithoutRefinement(),p,ref_grid)
 end
 
 """
