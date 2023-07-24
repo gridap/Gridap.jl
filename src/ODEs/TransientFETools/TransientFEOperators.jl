@@ -141,13 +141,6 @@ function TransientAffineFEOperator(m::Function,a::Function,b::Function,
   TransientFEOperatorFromWeakForm{Affine}(res,rhs,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
 end
 
-function TransientRungeKuttaFEOperator(m::Function,rhs::Function,jac::Function,
-  jac_t::Function,trial,test)
-  res(t,u,v) = m(t,∂t(u),v) - rhs(t,u,v)
-  assem_t = SparseMatrixAssembler(trial,test)
-  TransientFEOperatorFromWeakForm{Nonlinear}(res,rhs,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
-end
-
 function TransientFEOperator(res::Function,jac::Function,jac_t::Function,
   trial,test)
   assem_t = SparseMatrixAssembler(trial,test)
@@ -229,42 +222,6 @@ function TransientFEOperator(res::Function,trial,test;order::Integer=1)
   TransientFEOperator(res,jacs...,trial,test)
 end
 
-function TransientRungeKuttaFEOperator(m::Function,rhs::Function,trial,test)
-  res(t,u,v) = m(t,∂t(u),v) - rhs(t,u,v)
-  function jac_0(t,x,dx0,dv)
-    function res_0(y)
-      x0 = TransientCellField(y,x.derivatives)
-      res(t,x0,dv)
-    end
-    jacobian(res_0,x.cellfield)
-  end
-  jacs = (jac_0,)
-  function jac_t(t,x,dxt,dv)
-    function res_t(y)
-      derivatives = (y,x.derivatives[2:end]...)
-      xt = TransientCellField(x.cellfield,derivatives)
-      res(t,xt,dv)
-    end
-    jacobian(res_t,x.derivatives[1])
-  end
-  jacs = (jac_0,jac_t)
-  TransientRungeKuttaFEOperator(m,rhs,jacs...,trial,test)
-end
-
-function SparseMatrixAssembler(
-  trial::Union{TransientTrialFESpace,TransientMultiFieldTrialFESpace},
-  test::FESpace)
-  SparseMatrixAssembler(evaluate(trial,nothing),test)
-end
-
-get_assembler(op::TransientFEOperatorFromWeakForm) = op.assem_t
-
-get_test(op::TransientFEOperatorFromWeakForm) = op.test
-
-get_trial(op::TransientFEOperatorFromWeakForm) = op.trials[1]
-
-get_order(op::TransientFEOperatorFromWeakForm) = op.order
-
 function allocate_residual(
   op::TransientFEOperatorFromWeakForm,
   t0::Real,
@@ -294,9 +251,80 @@ function residual!(
   b
 end
 
+"""
+Transient FE operator that is defined by a transient Weak form with the
+form: LHS(t,u,∂u/∂t,...) ∂u/∂t = RHS(t,u,∂u/∂t,...). Used in Runge-Kutta schemes
+"""
+struct TransientRKFEOperatorFromWeakForm{C} <: TransientFEOperator{C}
+  lhs::Function
+  rhs::Function
+  jacs::Tuple{Vararg{Function}}
+  assem_t::Assembler
+  trials::Tuple{Vararg{Any}}
+  test::FESpace
+  order::Integer
+end
+
+function TransientRungeKuttaFEOperator(lhs::Function,rhs::Function,jac::Function,
+  jac_t::Function,trial,test)
+  assem_t = SparseMatrixAssembler(trial,test)
+  TransientRKFEOperatorFromWeakForm{Nonlinear}(lhs,rhs,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
+end
+
+function TransientRungeKuttaFEOperator(lhs::Function,rhs::Function,trial,test)
+  res(t,u,v) = lhs(t,u,v) - rhs(t,u,v)
+  function jac_0(t,x,dx0,dv)
+    function res_0(y)
+      x0 = TransientCellField(y,x.derivatives)
+      res(t,x0,dv)
+    end
+    jacobian(res_0,x.cellfield)
+  end
+  jacs = (jac_0,)
+  function jac_t(t,x,dxt,dv)
+    function res_t(y)
+      derivatives = (y,x.derivatives[2:end]...)
+      xt = TransientCellField(x.cellfield,derivatives)
+      res(t,xt,dv)
+    end
+    jacobian(res_t,x.derivatives[1])
+  end
+  jacs = (jac_0,jac_t)
+  TransientRungeKuttaFEOperator(lhs,rhs,jacs...,trial,test)
+end
+
+function allocate_residual(
+  op::TransientRKFEOperatorFromWeakForm,
+  t0::Real,
+  uh::T,
+  cache) where T
+  V = get_test(op)
+  v = get_fe_basis(V)
+  dxh = ()
+  for i in 1:get_order(op)
+    dxh = (dxh...,uh)
+  end
+  xh = TransientCellField(uh,dxh)
+  vecdata = collect_cell_vector(V,op.lhs(t0,xh,v))
+  allocate_vector(op.assem_t,vecdata)
+end
+
+function lhs!(
+  b::AbstractVector,
+  op::TransientRKFEOperatorFromWeakForm,
+  t::Real,
+  xh::T,
+  cache) where T
+  V = get_test(op)
+  v = get_fe_basis(V)
+  vecdata = collect_cell_vector(V,op.lhs(t,xh,v))
+  assemble_vector!(b,op.assem_t,vecdata)
+  b
+end
+
 function rhs!(
   rhs::AbstractVector,
-  op::TransientFEOperatorFromWeakForm,
+  op::TransientRKFEOperatorFromWeakForm,
   t::Real,
   xh::T,
   cache) where T
@@ -307,8 +335,28 @@ function rhs!(
   rhs
 end
 
+# Common functions
+
+TransientFEOperatorsFromWeakForm = Union{TransientFEOperatorFromWeakForm,
+TransientRKFEOperatorFromWeakForm}
+
+function SparseMatrixAssembler(
+  trial::Union{TransientTrialFESpace,TransientMultiFieldTrialFESpace},
+  test::FESpace)
+  SparseMatrixAssembler(evaluate(trial,nothing),test)
+end
+
+get_assembler(op::TransientFEOperatorsFromWeakForm) = op.assem_t
+
+get_test(op::TransientFEOperatorsFromWeakForm) = op.test
+
+get_trial(op::TransientFEOperatorsFromWeakForm) = op.trials[1]
+
+get_order(op::TransientFEOperatorsFromWeakForm) = op.order
+
+
 function allocate_jacobian(
-  op::TransientFEOperatorFromWeakForm,
+  op::TransientFEOperatorsFromWeakForm,
   t0::Real,
   uh::CellField,
   cache)
@@ -319,7 +367,7 @@ end
 
 function jacobian!(
   A::AbstractMatrix,
-  op::TransientFEOperatorFromWeakForm,
+  op::TransientFEOperatorsFromWeakForm,
   t::Real,
   xh::T,
   i::Integer,
@@ -332,7 +380,7 @@ end
 
 function jacobians!(
   A::AbstractMatrix,
-  op::TransientFEOperatorFromWeakForm,
+  op::TransientFEOperatorsFromWeakForm,
   t::Real,
   xh::TransientCellField,
   γ::Tuple{Vararg{Real}},
@@ -343,7 +391,7 @@ function jacobians!(
   A
 end
 
-function fill_initial_jacobians(op::TransientFEOperatorFromWeakForm,t0::Real,uh)
+function fill_initial_jacobians(op::TransientFEOperatorsFromWeakForm,t0::Real,uh)
   dxh = ()
   for i in 1:get_order(op)
     dxh = (dxh...,uh)
@@ -357,7 +405,7 @@ function fill_initial_jacobians(op::TransientFEOperatorFromWeakForm,t0::Real,uh)
 end
 
 function fill_jacobians(
-  op::TransientFEOperatorFromWeakForm,
+  op::TransientFEOperatorsFromWeakForm,
   t::Real,
   xh::T,
   γ::Tuple{Vararg{Real}}) where T
@@ -388,7 +436,7 @@ function _vcat_matdata(_matdata)
 end
 
 function _matdata_jacobian(
-  op::TransientFEOperatorFromWeakForm,
+  op::TransientFEOperatorsFromWeakForm,
   t::Real,
   xh::T,
   i::Integer,

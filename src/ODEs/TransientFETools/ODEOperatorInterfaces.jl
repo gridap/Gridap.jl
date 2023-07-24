@@ -123,7 +123,25 @@ function jacobians!(
 end
 
 """
-It provides the Right hand side, RHS, of M(t,uh,∂tuh) = RHS(t,uh) for a given (t,uh,∂tuh,...,∂t^Nuh)
+It provides the Left hand side, RHS, of LHS(t,uh,∂tuh) = RHS(t,uh) for a given (t,uh,∂tuh,...,∂t^Nuh)
+"""
+function lhs!(
+  lhs::AbstractVector,
+  op::ODEOpFromFEOp,
+  t::Real,
+  xhF::Tuple{Vararg{AbstractVector}},
+  ode_cache)
+  Xh, = ode_cache
+  dxh = ()
+  for i in 2:get_order(op)+1
+    dxh = (dxh...,EvaluationFunction(Xh[i],xhF[i]))
+  end
+  xh=TransientCellField(EvaluationFunction(Xh[1],xhF[1]),dxh)
+  lhs!(lhs,op.feop,t,xh,ode_cache)
+end
+
+"""
+It provides the Right hand side, RHS, of LHS(t,uh,∂tuh) = RHS(t,uh) for a given (t,uh,∂tuh,...,∂t^Nuh)
 """
 function rhs!(
   rhs::AbstractVector,

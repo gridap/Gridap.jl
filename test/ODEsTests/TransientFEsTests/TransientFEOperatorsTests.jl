@@ -38,13 +38,13 @@ dΩ = Measure(Ω,degree)
 a(u,v) = ∫(∇(v)⊙∇(u))dΩ
 m(u,v) = ∫(v*u)dΩ
 b(v,t) = ∫(v*f(t))dΩ
-m(t,u,v) = m(u,v)
 res(t,u,v) = a(u,v) + m(∂t(u),v) - b(v,t)
+lhs(t,u,v) = m(∂t(u),v)
 rhs(t,u,v) = b(v,t) - a(u,v)
 jac(t,u,du,v) = a(du,v)
 jac_t(t,u,dut,v) = m(dut,v)
 op = TransientFEOperator(res,jac,jac_t,U,V0)
-opRK = TransientRungeKuttaFEOperator(m,rhs,jac,jac_t,U,V0)
+opRK = TransientRungeKuttaFEOperator(lhs,rhs,jac,jac_t,U,V0)
 
 # Time stepping
 t0 = 0.0

@@ -109,13 +109,13 @@ end
 Runge-Kutta ODE solver
 """
 struct RungeKutta <: ODESolver
-  nls::NonlinearSolver
-  ls::LinearSolver
+  nls_stage::NonlinearSolver
+  nls_update::NonlinearSolver
   dt::Float64
   bt::ButcherTableau
-  function RungeKutta(nls::NonlinearSolver,ls::LinearSolver,dt,type::Symbol)
+  function RungeKutta(nls_stage::NonlinearSolver,nls_update::NonlinearSolver,dt,type::Symbol)
     bt = ButcherTableau(type)
-    new(nls,ls,dt,bt)
+    new(nls_stage,nls_update,dt,bt)
   end
 end
 
@@ -139,15 +139,16 @@ function solve_step!(uf::AbstractVector,
     ode_cache = allocate_cache(op)
     vi = similar(u0)
     fi = [similar(u0)]
-    M = allocate_jacobian(op,t0,u0,ode_cache)
-    nl_cache = nothing
+    # M = allocate_jacobian(op,t0,u0,ode_cache)
+    nls_stage_cache = nothing
+    nls_update_cache = nothing
     rhs_cache = nothing
   else
-    ode_cache, vi, fi, M, nl_cache, rhs_cache = cache
+    ode_cache, vi, fi, nls_stage_cache, nls_update_cache, rhs_cache = cache
   end
 
-  # Create RKNL operator
-  nlop = RungeKuttaNonlinearOperator(op,t0,dt,u0,ode_cache,vi,fi,0,a)
+  # Create RKNL stage operator
+  nlop_stage = RungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,fi,0,a)
 
   # Compute intermediate stages
   for i in 1:s
@@ -157,51 +158,47 @@ function solve_step!(uf::AbstractVector,
       push!(fi,similar(u0))
     end
 
-    # update time
+    # Update time
     ti = t0 + c[i]*dt
     ode_cache = update_cache!(ode_cache,op,ti)
-    update!(nlop,ti,fi,i)
+    update!(nlop_stage,ti,fi,i)
 
     if(a[i,i]==0)
       # Skip stage solve if a_ii=0 => u_i=u_0, f_i = f_0
       @. uf = u0
+      rhs!(uf, nlop_stage, rhs_cache)
     else
       # solve at stage i
-      nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
+      nls_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nls_stage_cache)
     end
 
-    # Update RHS at stage i
-    rhs!(uf,nlop,rhs_cache)
+    # Update RHS at stage i using solution at u_i
+    rhs!(uf,nlop_stage,rhs_cache)
 
   end
 
-  # Update Mass (assume constant per time step)
+  # Create RKNL final update operator
   tf = t0+dt
-  M = _mass_matrix!(M,op,tf,ode_cache,uf)
+  nlop_update = RungeKuttaUpdateNonlinearOperator(op,tf,dt,u0,ode_cache,vi,fi,s,b)
 
-  # update final RHS = Mu₀ + ∑ᵢ(dt*bᵢ*fᵢ) (reusing vi auxiliar vector)
-  vi .= M*u0
-  for i in 1:s
-    @. vi = vi + (dt*b[i]) * fi[i]
-  end
 
-  # Solve for Muf = Mu₀ + ∑ᵢ(dt*bᵢ*fᵢ)
-  ss = symbolic_setup(solver.ls, M)
-  ns = numerical_setup(ss,M)
-  solve!(uf,ns,vi)
+  # solve at final update
+  nls_update_cache = solve!(uf,solver.nls_update,nlop_update,nls_update_cache)
 
-  cache = (ode_cache, vi, fi, M, nl_cache, rhs_cache)
+  # Update final cache
+  cache = (ode_cache, vi, fi, nls_stage_cache, nls_update_cache, rhs_cache)
 
-  tf = t0 + dt
   return (uf,tf,cache)
 
 end
+
+abstract type RungeKuttaNonlinearOperator <: NonlinearOperator end
 
 """
 Nonlinear operator that represents the Runge-Kutta nonlinear operator at a
 given time step and stage, i.e., A(t,u_i,(u_i-u_n)/dt)
 """
-mutable struct RungeKuttaNonlinearOperator <: NonlinearOperator
+mutable struct RungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
   odeop::ODEOperator
   ti::Float64
   dt::Float64
@@ -213,37 +210,100 @@ mutable struct RungeKuttaNonlinearOperator <: NonlinearOperator
   a::Matrix
 end
 
-function residual!(b::AbstractVector,op::RungeKuttaNonlinearOperator,x::AbstractVector)
-  # A(t,ui,∂ui/∂t) = ∂ui/∂t - a_ii * f(ui,ti) - ∑_{j<i} a_ij * f(uj,tj) = 0
-  # b = [1/a_ii * ∂u/∂t - f(ui,ti)]
-  # Res_ij = - a_ij/a_ii * f(uj,ti)
-  # b + ∑_{j<i} Res_ij = 0
-  @assert (abs(op.a[op.i,op.i]) > 0.0)
+"""
+Nonlinear operator that represents the Runge-Kutta nonlinear operator at the
+final updated of a given time step, i.e., A(t,u_f,(u_f-u_n)/dt)
+"""
+mutable struct RungeKuttaUpdateNonlinearOperator <: RungeKuttaNonlinearOperator
+  odeop::ODEOperator
+  ti::Float64
+  dt::Float64
+  u0::AbstractVector
+  ode_cache
+  vf::AbstractVector
+  fi::Vector{AbstractVector}
+  s::Int
+  b::Vector{Number}
+end
+
+
+
+"""
+Compute the residual of the Runge-Kutta nonlinear operator at stage i.
+```math
+A(t,ui,∂ui/∂t) = ∂ui/∂t - a_ii * f(ui,ti) - ∑_{j<i} a_ij * f(uj,tj) = 0
+```
+
+Uses the vector b as auxiliar variable to store the residual of the i-th stage
+ODE operator, then adds the corresponding contribution from earlier stages.
+```math
+b = [1/a_ii * ∂u/∂t - f(ui,ti)]
+Res_ij = - a_ij/a_ii * f(uj,ti)
+b + ∑_{j<i} Res_ij = 0
+```
+"""
+function residual!(b::AbstractVector,op::RungeKuttaStageNonlinearOperator,x::AbstractVector)
+  # @assert (abs(op.a[op.i,op.i]) > 0.0)
   ui = x
   vi = op.vi
-  vi = (x-op.u0)/(op.a[op.i,op.i]*op.dt)
-  residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
-  for j in 1:op.i-1
-    @. b = b - op.a[op.i,j]/op.a[op.i,op.i] * op.fi[j]
+  vi = (x-op.u0)/(op.dt)
+  fi = op.fi
+  rhs!(fi[op.i],op.odeop,op.ti,(ui,vi),op.ode_cache)
+  lhs!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
+  for j in 1:op.i
+    @. b = b - op.a[op.i,j] * fi[j]
   end
   b
 end
 
-function jacobian!(A::AbstractMatrix,op::RungeKuttaNonlinearOperator,x::AbstractVector)
-  @assert (abs(op.a[op.i,op.i]) > 0.0)
-  ui = x
-  vi = op.vi
-  vi = (x-op.u0)/(op.a[op.i,op.i]*op.dt)
-  z = zero(eltype(A))
-  fillstored!(A,z)
-  jacobians!(A,op.odeop,op.ti,(ui,vi),(1.0,1.0/(op.a[op.i,op.i]*op.dt)),op.ode_cache)
+"""
+Compute the residual of the final update of the Runge-Kutta nonlinear operator.
+```math
+A(t,uf,∂uf/∂t) = ∂uf/∂t - ∑_{i<=s} b_i * f(ui,ti) = 0
+```
+
+Uses the vector b as auxiliar variable to store the residual of the update ODE
+operator (e.g. identity or mass matrix), then adds the corresponding contribution from earlier stages.
+```math
+b = [∂u/∂t]
+b - ∑_{i<s} bi * f(ui,ti) = 0
+```
+"""
+function residual!(b::AbstractVector,op::RungeKuttaUpdateNonlinearOperator,x::AbstractVector)
+  uf = x
+  vf = op.vf
+  vf = (x-op.u0)/(op.dt)
+  lhs!(b,op.odeop,op.ti,(uf,vf),op.ode_cache)
+  for i in 1:op.s
+    @. b = b - op.b[i] * op.fi[i]
+  end
+  b
 end
 
-function jacobian!(A::AbstractMatrix,op::RungeKuttaNonlinearOperator,x::AbstractVector,
+function jacobian!(A::AbstractMatrix,op::RungeKuttaStageNonlinearOperator,x::AbstractVector)
+  # @assert (abs(op.a[op.i,op.i]) > 0.0)
+  ui = x
+  vi = op.vi
+  vi = (x-op.u0)/(op.dt)
+  z = zero(eltype(A))
+  fillstored!(A,z)
+  jacobians!(A,op.odeop,op.ti,(ui,vi),(op.a[op.i,op.i],1.0/op.dt),op.ode_cache)
+end
+
+function jacobian!(A::AbstractMatrix,op::RungeKuttaUpdateNonlinearOperator,x::AbstractVector)
+  uf = x
+  vf = op.vf
+  vf = (x-op.u0)/(op.dt)
+  z = zero(eltype(A))
+  fillstored!(A,z)
+  jacobians!(A,op.odeop,op.ti,(uf,vf),(0.0,1.0/(op.dt)),op.ode_cache)
+end
+
+function jacobian!(A::AbstractMatrix,op::RungeKuttaStageNonlinearOperator,x::AbstractVector,
   i::Integer,γᵢ::Real)
   ui = x
   vi = op.vi
-  vi = (x-op.u0)/(op.a[op.i,op.i]*op.dt)
+  vi = (x-op.u0)/(op.dt)
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobian!(A,op.odeop,op.ti,(ui,vi),i,γᵢ,op.ode_cache)
@@ -263,18 +323,28 @@ function zero_initial_guess(op::RungeKuttaNonlinearOperator)
   x0
 end
 
-function rhs!(x::AbstractVector, op::RungeKuttaNonlinearOperator, cache::Nothing)
+function lhs!(x::AbstractVector, op::RungeKuttaStageNonlinearOperator, cache::Nothing)
   ui = x
   vi = op.vi
-  vi = (x-op.u0)/(op.a[op.i,op.i]*op.dt)
+  vi = (x-op.u0)/(op.dt)
+  lhs=similar(x)
+  cache = lhs
+  lhs!(lhs,op.odeop,op.ti,(ui,vi),op.ode_cache)
+end
+
+function rhs!(x::AbstractVector, op::RungeKuttaStageNonlinearOperator, cache::Nothing)
+  ui = x
+  vi = op.vi
+  vi = (x-op.u0)/(op.dt)
   rhs=similar(x)
   cache = rhs
   op.fi[op.i] = rhs!(rhs,op.odeop,op.ti,(ui,vi),op.ode_cache)
 end
-function rhs!(x::AbstractVector, op::RungeKuttaNonlinearOperator, cache)
+
+function rhs!(x::AbstractVector, op::RungeKuttaStageNonlinearOperator, cache)
   ui = x
   vi = op.vi
-  vi = (x-op.u0)/(op.a[op.i,op.i]*op.dt)
+  vi = (x-op.u0)/(op.dt)
   rhs = cache
   op.fi[op.i] = rhs!(rhs,op.odeop,op.ti,(ui,vi),op.ode_cache)
 end
