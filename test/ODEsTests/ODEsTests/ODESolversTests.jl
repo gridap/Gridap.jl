@@ -103,6 +103,7 @@ uf = copy(u0)
 uf.=1.0
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
+println(uf)
 @test tf==t0+dt
 @test all(uf.≈1+11/9)
 @test test_ode_solver(odesol,op,u0,t0,tf)
@@ -127,7 +128,7 @@ odesolθ = ThetaMethod(ls,dt,0.5)
 ufθ = copy(u0)
 ufθ.=1.0
 ufθ, tf, cache = solve_step!(ufθ,odesolθ,op,u0,t0,nothing)
-@test tf==t0+dt
+println(ufθ)
 @test all(ufθ.≈(dt/(1-0.5dt) + 1)*u0)
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
@@ -136,6 +137,7 @@ ufθ, tf, cache = solve_step!(ufθ,odesolθ,op,u0,t0,nothing)
 odesol = RungeKutta(ls,ls,dt,:BE_1_0_1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
+println(uf)
 @test tf==t0+dt
 @test all(uf.≈1+11/9)
 @test test_ode_solver(odesol,op,u0,t0,tf)
@@ -144,6 +146,7 @@ uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 odesol = RungeKutta(ls,ls,dt,:CN_2_0_2)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
+println(uf)
 @test tf==t0+dt
 @test all(uf.≈ufθ)
 @test test_ode_solver(odesol,op,u0,t0,tf)

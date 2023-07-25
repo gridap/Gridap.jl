@@ -17,6 +17,7 @@ import Gridap.ODEs.ODETools: jacobians!
 import Gridap.ODEs.ODETools: allocate_jacobian
 import Gridap.ODEs.ODETools: residual!
 import Gridap.ODEs.ODETools: rhs!
+import Gridap.ODEs.ODETools: lhs!
 using SparseArrays: spzeros
 
 struct ODEOperatorMock{T<:Real,C} <: ODEOperator{C}
@@ -44,6 +45,14 @@ function rhs!(r::AbstractVector,op::ODEOperatorMock,t::Real,x::NTuple{2,Abstract
   r
 end
 
+function lhs!(r::AbstractVector,op::ODEOperatorMock,t::Real,x::NTuple{2,AbstractVector},ode_cache)
+  u,u_t = x
+  r .= 0
+  r[1] = u_t[1]
+  r[2] = u_t[2]
+  r
+end
+
 function residual!(r::AbstractVector,op::ODEOperatorMock,t::Real,x::NTuple{3,AbstractVector},ode_cache)
   u,u_t,u_tt = x
   r .= 0
@@ -66,9 +75,9 @@ function jacobian!(J::AbstractMatrix,
   @assert get_order(op) == 1
   @assert 0 < i <= get_order(op)+1
   if i==1
-    J[1,1] += -op.a
-    J[2,1] += -op.b
-    J[2,2] += -op.c
+    J[1,1] += -op.a*γᵢ
+    J[2,1] += -op.b*γᵢ
+    J[2,2] += -op.c*γᵢ
   elseif i==2
     J[1,1] += 1.0*γᵢ
     J[2,2] += 1.0*γᵢ
@@ -86,9 +95,9 @@ function jacobian!(J::AbstractMatrix,
   @assert get_order(op) == 2
   @assert 0 < i <= get_order(op)+1
   if i==1
-    J[1,1] += -op.a
-    J[2,1] += -op.b
-    J[2,2] += -op.c
+    J[1,1] += -op.a*γᵢ
+    J[2,1] += -op.b*γᵢ
+    J[2,2] += -op.c*γᵢ
   elseif i==2
     J[1,1] += op.b*γᵢ
     J[2,2] += op.a*γᵢ
