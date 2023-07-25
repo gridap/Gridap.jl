@@ -142,9 +142,8 @@ function solve_step!(uf::AbstractVector,
     # M = allocate_jacobian(op,t0,u0,ode_cache)
     nls_stage_cache = nothing
     nls_update_cache = nothing
-    rhs_cache = nothing
   else
-    ode_cache, vi, fi, nls_stage_cache, nls_update_cache, rhs_cache = cache
+    ode_cache, vi, fi, nls_stage_cache, nls_update_cache = cache
   end
 
   # Create RKNL stage operator
@@ -166,14 +165,13 @@ function solve_step!(uf::AbstractVector,
     if(a[i,i]==0)
       # Skip stage solve if a_ii=0 => u_i=u_0, f_i = f_0
       @. uf = u0
-      rhs!(uf, nlop_stage, rhs_cache)
     else
       # solve at stage i
       nls_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nls_stage_cache)
     end
 
     # Update RHS at stage i using solution at u_i
-    rhs!(uf,nlop_stage,rhs_cache)
+    rhs!(uf,nlop_stage)
 
   end
 
@@ -186,7 +184,7 @@ function solve_step!(uf::AbstractVector,
   nls_update_cache = solve!(uf,solver.nls_update,nlop_update,nls_update_cache)
 
   # Update final cache
-  cache = (ode_cache, vi, fi, nls_stage_cache, nls_update_cache, rhs_cache)
+  cache = (ode_cache, vi, fi, nls_stage_cache, nls_update_cache)
 
   return (uf,tf,cache)
 
@@ -296,7 +294,7 @@ function jacobian!(A::AbstractMatrix,op::RungeKuttaUpdateNonlinearOperator,x::Ab
   vf = (x-op.u0)/(op.dt)
   z = zero(eltype(A))
   fillstored!(A,z)
-  jacobians!(A,op.odeop,op.ti,(uf,vf),(0.0,1.0/(op.dt)),op.ode_cache)
+  jacobian!(A,op.odeop,op.ti,(uf,vf),2,1.0/(op.dt),op.ode_cache)
 end
 
 function jacobian!(A::AbstractMatrix,op::RungeKuttaStageNonlinearOperator,x::AbstractVector,
@@ -323,30 +321,20 @@ function zero_initial_guess(op::RungeKuttaNonlinearOperator)
   x0
 end
 
-function lhs!(x::AbstractVector, op::RungeKuttaStageNonlinearOperator, cache::Nothing)
+function rhs!(x::AbstractVector, op::RungeKuttaStageNonlinearOperator)
   ui = x
   vi = op.vi
   vi = (x-op.u0)/(op.dt)
-  lhs=similar(x)
-  cache = lhs
-  lhs!(lhs,op.odeop,op.ti,(ui,vi),op.ode_cache)
+  fi = op.fi
+  rhs!(fi[op.i],op.odeop,op.ti,(ui,vi),op.ode_cache)
 end
 
-function rhs!(x::AbstractVector, op::RungeKuttaStageNonlinearOperator, cache::Nothing)
+function rhs!(x::AbstractVector, op::RungeKuttaStageNonlinearOperator)
   ui = x
   vi = op.vi
   vi = (x-op.u0)/(op.dt)
-  rhs=similar(x)
-  cache = rhs
-  op.fi[op.i] = rhs!(rhs,op.odeop,op.ti,(ui,vi),op.ode_cache)
-end
-
-function rhs!(x::AbstractVector, op::RungeKuttaStageNonlinearOperator, cache)
-  ui = x
-  vi = op.vi
-  vi = (x-op.u0)/(op.dt)
-  rhs = cache
-  op.fi[op.i] = rhs!(rhs,op.odeop,op.ti,(ui,vi),op.ode_cache)
+  fi = op.fi
+  rhs!(fi[op.i],op.odeop,op.ti,(ui,vi),op.ode_cache)
 end
 
 function update!(op::RungeKuttaNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
