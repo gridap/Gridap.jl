@@ -156,7 +156,7 @@ uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # RK: TRBDF (2nd order with some 0 on the diagonal)
-odesol = RungeKutta(ls,ls,dt,:TRBDF2_3_3_2)
+odesol = RungeKutta(ls,ls,dt,:TRBDF2_3_2_3)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt

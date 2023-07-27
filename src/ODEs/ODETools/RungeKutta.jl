@@ -3,8 +3,9 @@ abstract type ButcherTableauType end
 struct BE_1_0_1 <: ButcherTableauType end
 struct CN_2_0_2 <: ButcherTableauType end
 struct SDIRK_2_0_2 <: ButcherTableauType end
+struct SDIRK_2_0_3 <: ButcherTableauType end
 struct ESDIRK_3_1_2 <: ButcherTableauType end
-struct TRBDF2_3_3_2 <: ButcherTableauType end
+struct TRBDF2_3_2_3 <: ButcherTableauType end
 
 """
 Butcher tableau
@@ -46,14 +47,14 @@ embedded method: no
 order: 2
 """
 function ButcherTableau(type::CN_2_0_2)
-s = 2
-p = 0
-q = 2
-a = [0.0 0.0; 0.5 0.5]
-b = [0.5, 0.5]
-c = [0.0, 1.0]
-d = [0.0, 0.0]
-ButcherTableau{CN_2_0_2}(s,p,q,a,b,c,d)
+  s = 2
+  p = 0
+  q = 2
+  a = [0.0 0.0; 0.5 0.5]
+  b = [0.5, 0.5]
+  c = [0.0, 1.0]
+  d = [0.0, 0.0]
+  ButcherTableau{CN_2_0_2}(s,p,q,a,b,c,d)
 end
 
 """
@@ -64,14 +65,33 @@ embedded method: no
 order: 2
 """
 function ButcherTableau(type::SDIRK_2_0_2)
-s = 2
-p = 0
-q = 2
-a = [0.25 0.0; 0.5 0.25]
-b = [0.5, 0.5]
-c = [0.25, 0.75]
-d = [0.0, 0.0]
-ButcherTableau{SDIRK_2_0_2}(s,p,q,a,b,c,d)
+  s = 2
+  p = 0
+  q = 2
+  a = [0.25 0.0; 0.5 0.25]
+  b = [0.5, 0.5]
+  c = [0.25, 0.75]
+  d = [0.0, 0.0]
+  ButcherTableau{SDIRK_2_0_2}(s,p,q,a,b,c,d)
+end
+
+"""
+3rd order SDIRK
+
+number of stages: 2
+embedded method: no
+order: 3
+"""
+function ButcherTableau(type::SDIRK_2_0_3)
+  s = 2
+  p = 0
+  q = 3
+  γ = (3-√(3))/6
+  a = [γ 0.0; 1-2γ γ]
+  b = [0.5, 0.5]
+  c = [γ, 1-γ]
+  d = [0.0, 0.0]
+  ButcherTableau{SDIRK_2_0_3}(s,p,q,a,b,c,d)
 end
 
 function ButcherTableau(type::ESDIRK_3_1_2)
@@ -89,16 +109,16 @@ d = [(1 − b̂₂ − b̂₃), b̂₂, b̂₃]
 ButcherTableau{ESDIRK_3_1_2}(s,p,q,a,b,c,d)
 end
 
-function ButcherTableau(type::TRBDF2_3_3_2)
+function ButcherTableau(type::TRBDF2_3_2_3)
   s = 3
-  p = 3
-  q = 2
+  p = 2
+  q = 3
   aux = 2.0-√2.0
   a = [0.0 0.0 0.0; aux/2 aux/2 0.0; √2/4 √2/4 aux/2]
   b = [√2/4, √2/4, aux/2]
   c = [0.0, aux, 1.0]
   d = [(1.0-(√2/4))/3, ((3*√2)/4+1.0)/3, aux/6]
-  ButcherTableau{TRBDF2_3_3_2}(s,p,q,a,b,c,d)
+  ButcherTableau{TRBDF2_3_2_3}(s,p,q,a,b,c,d)
 end
 
 function ButcherTableau(type::Symbol)
@@ -175,14 +195,20 @@ function solve_step!(uf::AbstractVector,
 
   end
 
-  # Create RKNL final update operator
+  # Update final time
   tf = t0+dt
-  ode_cache = update_cache!(ode_cache,op,tf)
-  nlop_update = RungeKuttaUpdateNonlinearOperator(op,tf,dt,u0,ode_cache,vi,fi,s,b)
 
+  # Skip final update if not necessary
+  if !(c[s]==1.0 && a[s,:] == b)
 
-  # solve at final update
-  nls_update_cache = solve!(uf,solver.nls_update,nlop_update,nls_update_cache)
+    # Create RKNL final update operator
+    ode_cache = update_cache!(ode_cache,op,tf)
+    nlop_update = RungeKuttaUpdateNonlinearOperator(op,tf,dt,u0,ode_cache,vi,fi,s,b)
+
+    # solve at final update
+    nls_update_cache = solve!(uf,solver.nls_update,nlop_update,nls_update_cache)
+
+  end
 
   # Update final cache
   cache = (ode_cache, vi, fi, nls_stage_cache, nls_update_cache)
