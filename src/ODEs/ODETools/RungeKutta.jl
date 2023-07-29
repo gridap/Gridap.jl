@@ -159,7 +159,6 @@ function solve_step!(uf::AbstractVector,
     ode_cache = allocate_cache(op)
     vi = similar(u0)
     fi = [similar(u0)]
-    # M = allocate_jacobian(op,t0,u0,ode_cache)
     nls_stage_cache = nothing
     nls_update_cache = nothing
   else
@@ -259,12 +258,12 @@ Compute the residual of the Runge-Kutta nonlinear operator at stage i.
 A(t,ui,∂ui/∂t) = ∂ui/∂t - a_ii * f(ui,ti) - ∑_{j<i} a_ij * f(uj,tj) = 0
 ```
 
-Uses the vector b as auxiliar variable to store the residual of the i-th stage
-ODE operator, then adds the corresponding contribution from earlier stages.
+Uses the vector b as auxiliar variable to store the residual of the left-hand side of
+the i-th stage ODE operator, then adds the corresponding contribution from right-hand side
+at all earlier stages.
 ```math
-b = [1/a_ii * ∂u/∂t - f(ui,ti)]
-Res_ij = - a_ij/a_ii * f(uj,ti)
-b + ∑_{j<i} Res_ij = 0
+b = M(ui,ti)∂u/∂t
+b - ∑_{j<=i} a_ij * f(uj,tj) = 0
 ```
 """
 function residual!(b::AbstractVector,op::RungeKuttaStageNonlinearOperator,x::AbstractVector)
@@ -286,7 +285,7 @@ Uses the vector b as auxiliar variable to store the residual of the update ODE
 operator (e.g. identity or mass matrix), then adds the corresponding contribution from earlier stages.
 ```math
 b = [∂u/∂t]
-b - ∑_{i<s} bi * f(ui,ti) = 0
+b - ∑_{i<=s} bi * f(ui,ti) = 0
 ```
 """
 function residual!(b::AbstractVector,op::RungeKuttaUpdateNonlinearOperator,x::AbstractVector)
