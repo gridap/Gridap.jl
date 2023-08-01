@@ -1,8 +1,8 @@
 
 """
-  AdaptedDiscreteModel
 
-  `DiscreteModel` created by refining/coarsening another `DiscreteModel`. 
+  `DiscreteModel` created by refining/coarsening another `DiscreteModel`.
+  
   The refinement/coarsening hierarchy can be traced backwards by following the 
   `parent` pointer chain. This allows the transfer of dofs 
   between `FESpaces` defined on this model and its ancestors.

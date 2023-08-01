@@ -3,6 +3,15 @@ abstract type RefinementRuleType end
 struct GenericRefinement <: RefinementRuleType end
 struct WithoutRefinement <: RefinementRuleType end
 
+"""
+  Structure representing the map between a single parent cell and its children.
+
+  Contains: 
+
+  - T :: `RefinementRuleType`, indicating the refinement method.
+  - poly :: `Polytope`, representing the geometry of the parent cell.
+  - ref_grid :: `DiscreteModel` defined on `poly`, giving the parent-to-children cell map. 
+"""
 struct RefinementRule{P,A<:DiscreteModel}
   T         :: RefinementRuleType
   poly      :: P
