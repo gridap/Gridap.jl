@@ -4,15 +4,28 @@ struct RefinementGlue <: AdaptivityGlueType end
 struct MixedGlue <: AdaptivityGlueType end
 
 """
-Adaptivity glue between two nested triangulations:
+Glue containing the map between two nested triangulations. The contained datastructures will 
+depend on the type of glue. There are two types of `AdaptivityGlue`: 
 
-- `n2o_faces_map`       : Given a new face gid, returns 
-        A) if fine, the gid of the old face containing it.
-        B) if coarse, the gids of its children (in child order)
-- `n2o_cell_to_child_id`: Given a new cell gid, returns 
-        A) if fine, the local child id within the (old) coarse cell containing it.
-        B) if coarse, -1
-- `refinement_rules`    : RefinementRule used for each coarse cell.
+- `RefinementGlue` :: All cells in the new mesh are children of cells in the old mesh. I.e given 
+  a new cell, it is possible to find a single old cell containing it (the new cell might be exactly
+  the old cell if no refinement).
+- `MixedGlue` :: Some cells in the new mesh are children of cells in the old mesh, while others are
+  parents of cells in the old mesh. 
+
+Contains: 
+
+- `n2o_faces_map` :: Given a new face gid, returns
+
+  A) if fine, the gid of the old face containing it.
+  B) if coarse, the gids of its children (in child order)
+
+- `n2o_cell_to_child_id` :: Given a new cell gid, returns 
+
+  A) if fine, the local child id within the (old) coarse cell containing it.
+  B) if coarse, -1
+
+- `refinement_rules` :: Array conatining the `RefinementRule` used for each coarse cell.
 """
 struct AdaptivityGlue{GT,Dc,A,B,C,D,E} <: GridapType
   n2o_faces_map        :: A
