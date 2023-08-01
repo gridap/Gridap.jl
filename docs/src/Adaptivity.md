@@ -1,17 +1,15 @@
-
+# Gridap.Adaptivity
 
 ```@meta
 CurrentModule = Gridap.Adaptivity
 ```
 
-# Gridap.Adaptivity
-
 The adaptivity module provides a framework to work with adapted (refined/coarsened/mixed) meshes.
 
 It provides
 
-  1) A generic interface to represent adapted meshes and a set of tools to work with Finite Element spaces defined on them. In particular, moving `CellFields` between different levels of the hierarchy.
-  2) Particular implementations for conformally refining/coarsening 2D/3D meshes using several well-known strategies. In particular, Red-Green refinement and longest-edge bisection (TRI only).
+- A generic interface to represent adapted meshes and a set of tools to work with Finite Element spaces defined on them. In particular, moving `CellFields` between different levels of the hierarchy.
+- Particular implementations for conformally refining/coarsening 2D/3D meshes using several well-known strategies. In particular, Red-Green refinement and longest-edge bisection (TRI only).
 
 ## Interface
 
@@ -37,15 +35,15 @@ adapt
 Provides a `refine` method for `UnstructuredDiscreteModel`. The method takes a string `refinement_method`
 that determines the refinement startegy to be used. The following strategies are available:
 
-  - `"red_green"` :: Red-Green refinement, default.
-  - `"nvb"` :: Longest-edge bisection (only for meshes of TRIangles)
+- `"red_green"` :: Red-Green refinement, default.
+- `"nvb"` :: Longest-edge bisection (only for meshes of TRIangles)
 
-Additionally, the method takes a kwarg `cells_to_refine` that determines which cells will be refined. 
+Additionally, the method takes a kwarg `cells_to_refine` that determines which cells will be refined.
 Possible input types are:
 
-  - `Nothing` :: All cells get refined.
-  - `AbstractArray{<:Bool}` of size `num_cells(model)` :: Only cells such that `cells_to_refine[iC] == true` get refined.
-  - `AbstractArray{<:Integer}` :: Cells for which `gid ∈ cells_to_refine` get refined
+- `Nothing` :: All cells get refined.
+- `AbstractArray{<:Bool}` of size `num_cells(model)` :: Only cells such that `cells_to_refine[iC] == true` get refined.
+- `AbstractArray{<:Integer}` :: Cells for which `gid ∈ cells_to_refine` get refined
 
 The algorithms try to respect the `cells_to_refine` input as much as possible, but some additional cells
 might get refined in order to guarantee that the mesh remains conforming.
