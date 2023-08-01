@@ -19,6 +19,7 @@ pages = [
   "Gridap.Visualization" => "Visualization.md",
   "Gridap.FESpaces" => "FESpaces.md",
   "Gridap.MultiField" => "MultiField.md",
+  "Gridap.Adaptivity" => "Adaptivity.md",
   "Deep dives" => Any[
     "deep-dives/block-assemblers.md",
   ],
