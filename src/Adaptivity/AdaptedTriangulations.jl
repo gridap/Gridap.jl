@@ -316,8 +316,9 @@ function change_domain_n2o(f_fine,ftrian::AdaptedTriangulation{Dc},ctrian::Trian
     # f_c2f[i_coarse] = [f_fine[i_fine_1], ..., f_fine[i_fine_nChildren]]
     f_c2f = f2c_reindex(fine_mface_to_field,glue)
 
-    rrules   = get_old_cell_refinement_rules(glue)
-    coarse_mface_to_field = lazy_map(FineToCoarseField,f_c2f,rrules)
+    child_ids = f2c_reindex(glue.n2o_cell_to_child_id,glue)
+    rrules    = get_old_cell_refinement_rules(glue)
+    coarse_mface_to_field = lazy_map(FineToCoarseField,f_c2f,rrules,child_ids)
 
     ### Old Model -> Old Triangulation
     coarse_tface_to_field = lazy_map(Reindex(coarse_mface_to_field),cglue.tface_to_mface)
