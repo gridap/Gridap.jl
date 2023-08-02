@@ -183,8 +183,14 @@ end
 
 for sdomain in [:ReferenceDomain,:PhysicalDomain]
   for (stype,ttype) in [(:AdaptedTriangulation,:AdaptedTriangulation),(:AdaptedTriangulation,:Triangulation),(:Triangulation,:AdaptedTriangulation)]
+    sstrian = (stype==:AdaptedTriangulation) ? :(strian.trian) : :(strian)
+    tttrian = (ttype==:AdaptedTriangulation) ? :(ttrian.trian) : :(ttrian)
     @eval begin
-      function CellData.change_domain(a::CellField,strian::$stype,::$sdomain,ttrian::$ttype,::PhysicalDomain)
+      function CellData.change_domain(a::CellField,strian::$stype,sd::$sdomain,ttrian::$ttype,::PhysicalDomain)
+        if (get_background_model(strian) === get_background_model(ttrian))
+          return change_domain(a,$sstrian,sd,$tttrian,PhysicalDomain())
+        end
+
         a_ref  = change_domain(a,ReferenceDomain())
         atrian = change_domain(a_ref,strian,ReferenceDomain(),ttrian,ReferenceDomain())
         return change_domain(atrian,PhysicalDomain())
