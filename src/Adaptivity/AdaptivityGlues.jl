@@ -22,7 +22,7 @@ struct AdaptivityGlue{GT,Dc,A,B,C,D,E} <: GridapType
   is_refined           :: E
 
   function AdaptivityGlue(n2o_faces_map::Vector{<:Union{AbstractVector{<:Integer},Table{<:Integer}}},
-                          n2o_cell_to_child_id::AbstractVector{<:Integer},
+                          n2o_cell_to_child_id::Union{AbstractVector{<:Integer},Table{<:Integer}},
                           refinement_rules::AbstractVector{<:RefinementRule})
     Dc = length(n2o_faces_map)-1
     is_refined    = select_refined_cells(n2o_faces_map[Dc+1])
@@ -67,7 +67,26 @@ end
   but the algorithm is optimized for Vectors (refinement only).
 """
 function get_o2n_faces_map(ncell_to_ocell::Table{T}) where {T<:Integer}
-  @notimplemented
+  nC = maximum(ncell_to_ocell.data)
+  
+  ptrs = fill(0,nC+1)
+  for ccell in ncell_to_ocell.data
+    ptrs[ccell+1] += 1
+  end
+  Arrays.length_to_ptrs!(ptrs)
+
+  data = Vector{Int}(undef,ptrs[end]-1)
+  for fcell = 1:length(ncell_to_ocell.ptrs)-1
+    for j = ncell_to_ocell.ptrs[fcell]:ncell_to_ocell.ptrs[fcell+1]-1
+      ccell = ncell_to_ocell.data[j]
+      data[ptrs[ccell]] = fcell
+      ptrs[ccell] += 1
+    end
+  end
+  Arrays.rewind_ptrs!(ptrs)
+
+  ocell_to_ncell = Table(data,ptrs)
+  return ocell_to_ncell
 end
 
 function get_o2n_faces_map(ncell_to_ocell::Vector{T}) where {T<:Integer}
