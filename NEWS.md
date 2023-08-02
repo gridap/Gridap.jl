@@ -9,11 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Jacobi polynomial bases. Since PR [#896](https://github.com/gridap/Gridap.jl/pull/896).
+
+- Replaced newest vertex bisection mesh adaptation in
+  `src/Geometry/NewestVertexBisection.jl` with appropriate changes to
+  `src/Adaptivity/EdgeBasedRefinement.jl`. see PR
+  [#901](https://github.com/gridap/Gridap.jl/pull/901).
+
+### Changed
+
+- The API of `CellQuadrature` has now both data and integration domain styles as keyword arguments. Old signatures are deprecated. Since PR [#885](https://github.com/gridap/Gridap.jl/pull/885).
+
 ### Fixed
 
+- ODE operators cache linear system at initial time or the time stored by the operator. Before, the linear system was cached at time `t = 0.0`, which cannot be done if the operator is not well-defined at `t = 0.0`. Since PR [#891](https://github.com/gridap/Gridap.jl/pull/891).
 - Fixed the method `get_normal_vector` for `AdaptedTriangulation`. The method `get_facet_normal`
   was using default, it's now using the spetialized implementation for the underlying triangulation type.
   Since PR [#884](https://github.com/gridap/Gridap.jl/pull/884).
+
+- Fixed `cell_dof_ids` for the case of vectorial `ConstantFESpace`. Since PR [#888](https://github.com/gridap/Gridap.jl/pull/888)
+- Fixed generation of Modal C0 bases for Julia 1.9. Since PR [#918](https://github.com/gridap/Gridap.jl/pull/918).
 
 ## [0.17.17] - 2023-02-24
 

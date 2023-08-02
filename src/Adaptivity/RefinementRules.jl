@@ -21,9 +21,9 @@ function RefinementRule(T::RefinementRuleType,poly::Polytope,ref_grid::DiscreteM
   return RefinementRule(T,poly,ref_grid,p2c_cache)
 end
 
-function Base.show(io::IO,rr::RefinementRule{P}) where P
+function Base.show(io::IO,rr::RefinementRule{P,A}) where {P,A}
   T = RefinementRuleType(rr)
-  print(io,"RefinementRule{$T,$P}")
+  print(io,"RefinementRule{$P,$A}. RefinementRuleType=$T")
 end
 
 ReferenceFEs.get_polytope(rr::RefinementRule) = rr.poly

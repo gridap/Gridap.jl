@@ -22,9 +22,9 @@ function solve_step!(
     (v,a, ode_cache) = newmark_cache
 
     # Allocate matrices and vectors
-    A, b = _allocate_matrix_and_vector(op,x0,ode_cache)
-    M = _allocate_matrix(op,x0,ode_cache)
-    C = _allocate_matrix(op,x0,ode_cache)
+    A, b = _allocate_matrix_and_vector(op,t0,x0,ode_cache)
+    M = _allocate_matrix(op,t0,x0,ode_cache)
+    C = _allocate_matrix(op,t0,x0,ode_cache)
     b1 = similar(b)
     b1 .= 0.0
 

@@ -12,6 +12,8 @@ using Test
 
 @testset "ModalC0Bases" begin include("ModalC0BasesTests.jl") end
 
+@testset "JacobiPolynomialBases" begin include("JacobiPolynomialBasesTests.jl") end
+
 #@testset "ChangeBasis" begin include("ChangeBasisTests.jl") end
 
 end # module
