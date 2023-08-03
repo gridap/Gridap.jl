@@ -127,7 +127,7 @@ end
 function _get_cartesian_domain(desc::CartesianDescriptor{D}) where D
   origin = desc.origin
   corner = origin + VectorValue(desc.sizes .* desc.partition)
-  domain = Vector{Int}(undef,2*D)
+  domain = Vector{eltype(origin)}(undef,2*D)
   for d in 1:D
     domain[d*2-1] = origin[d]
     domain[d*2]   = corner[d]
