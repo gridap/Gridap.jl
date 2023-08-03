@@ -118,8 +118,31 @@ function get_d_to_face_to_child_faces(rr::RefinementRule)
   get_d_to_face_to_child_faces(rr,RefinementRuleType(rr))
 end
 
-function get_d_to_face_to_child_faces(::RefinementRule,::RefinementRuleType)
-  @notimplemented
+# Generic version of the function. Spetializations may exist for some other ref rule types.
+# This generic method relies on get_d_to_face_to_parent_face, and simply inverts the map. 
+function get_d_to_face_to_child_faces(rr::RefinementRule,::RefinementRuleType)
+  d_to_face_to_parent_face, d_to_face_to_parent_face_dim = get_d_to_face_to_parent_face(rr)
+
+  poly = get_polytope(rr)
+  Dc   = num_cell_dims(poly)
+  d_to_face_to_child_faces = Vector{Vector{Vector{Int32}}}(undef,Dc+1)
+
+  for cface_dim in 0:Dc
+    num_cfaces = num_faces(poly,cface_dim)
+    cface_to_child_faces = Vector{Vector{Int32}}(undef,num_cfaces)
+
+    parent_faces     = d_to_face_to_parent_face[cface_dim+1]
+    parent_faces_dim = d_to_face_to_parent_face_dim[cface_dim+1]
+    parent_pairs     = collect(zip(parent_faces,parent_faces_dim))
+
+    for cface in 1:num_cfaces
+      cface_to_child_faces[cface] = findall(p -> (p[1] == cface) && (p[2] == cface_dim),parent_pairs)
+    end
+
+    d_to_face_to_child_faces[cface_dim+1] = cface_to_child_faces
+  end
+
+  return d_to_face_to_child_faces
 end
 
 """
@@ -163,7 +186,8 @@ function get_d_to_face_to_parent_face(rr::RefinementRule,::RefinementRuleType)
   d_to_face_to_parent_face = Vector{Vector{Int32}}(undef,Dc+1)
   d_to_face_to_parent_face_dim = Vector{Vector{Int32}}(undef,Dc+1)
 
-  for fface_dim in 0:Dc
+  # For each fface dimension
+  for fface_dim in 0:Dc 
     fface_nodes = Geometry.get_faces(topo,fface_dim,0)
     fface_node_coords = lazy_map(nodes -> lazy_map(Reindex(fnode_coords),nodes),fface_nodes)
 
@@ -171,9 +195,11 @@ function get_d_to_face_to_parent_face(rr::RefinementRule,::RefinementRuleType)
     fface_to_parent_face = fill(Int32(-1),num_ffaces)
     fface_to_parent_face_dim = fill(Int32(-1),num_ffaces)
 
+    # For each fface find the parent face containing it
     for (fface,fcoords) in enumerate(fface_node_coords)
       found = false
       cface_dim = fface_dim
+      # Start with cfaces of the same dimension as the fface, and go up until reaching Dc-1
       while (!found) && (cface_dim < Dc)
         cface_nodes = get_faces(poly,cface_dim,0)
         cface_node_coords = lazy_map(nodes -> lazy_map(Reindex(cnode_coords),nodes),cface_nodes)
@@ -187,7 +213,7 @@ function get_d_to_face_to_parent_face(rr::RefinementRule,::RefinementRuleType)
         end
         cface_dim += 1
       end
-      if !found # Belongs to the cell itself
+      if !found # Belongs to the cell itself (dimension Dc)
         fface_to_parent_face[fface] = 1
         fface_to_parent_face_dim[fface] = Dc
       end
