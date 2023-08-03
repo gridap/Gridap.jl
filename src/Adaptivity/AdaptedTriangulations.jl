@@ -306,7 +306,7 @@ function change_domain_o2n(
 
   if (num_cells(old_trian) != 0)
     # If mixed refinement/coarsening, then f_c2f is a Table
-    f_old_data  = Gridap.CellData.get_data(f_old)
+    f_old_data  = CellData.get_data(f_old)
     f_c2f       = c2f_reindex(f_old_data,glue)
     new_rrules  = get_new_cell_refinement_rules(glue)
     field_array = lazy_map(OldToNewField, f_c2f, new_rrules, glue.n2o_cell_to_child_id)
