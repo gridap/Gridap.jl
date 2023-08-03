@@ -29,6 +29,13 @@ struct AdaptivityGlue{GT,Dc,A,B,C,D,E} <: GridapType
     o2n_faces_map = get_o2n_faces_map(n2o_faces_map[Dc+1])
 
     GT = all(is_refined) ? RefinementGlue : MixedGlue
+    if isa(GT(),RefinementGlue)
+      @assert isa(n2o_faces_map,Vector{<:AbstractVector{<:Integer}})
+      @assert isa(n2o_cell_to_child_id,AbstractVector{<:Integer})
+    else
+      @assert isa(n2o_faces_map,Vector{<:Table{<:Integer}})
+      @assert isa(n2o_cell_to_child_id,Table{<:Integer})
+    end
 
     A = typeof(n2o_faces_map)
     B = typeof(n2o_cell_to_child_id)
@@ -114,10 +121,17 @@ function get_o2n_faces_map(ncell_to_ocell::Vector{T}) where {T<:Integer}
   return ocell_to_ncell
 end
 
-function get_new_cell_refinement_rules(g::AdaptivityGlue)
+function get_new_cell_refinement_rules(g::AdaptivityGlue{<:RefinementGlue})
   old_rrules = g.refinement_rules
   n2o_faces_map = g.n2o_faces_map[end]
   return lazy_map(Reindex(old_rrules),n2o_faces_map)
+end
+
+function get_new_cell_refinement_rules(g::AdaptivityGlue{<:MixedGlue})
+  old_rrules = g.refinement_rules
+  n2o_faces_map = g.n2o_faces_map[end]
+  new_idx = lazy_map(Reindex(n2o_faces_map.data),n2o_faces_map.ptrs[1:end-1])
+  return lazy_map(Reindex(old_rrules), new_idx)
 end
 
 function get_old_cell_refinement_rules(g::AdaptivityGlue)
