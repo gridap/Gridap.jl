@@ -103,17 +103,24 @@ function refine(model::CartesianDiscreteModel{Dc}, cell_partition::Tuple) where 
   desc = Geometry.get_cartesian_descriptor(model)
   nC   = desc.partition
 
-  # Refined model
-  domain    = _get_cartesian_domain(desc)
-  model_ref = CartesianDiscreteModel(domain,cell_partition.*nC)
-
-  # Glue
+  # Refinement Glue
   f2c_cell_map, fcell_to_child_id = _create_cartesian_f2c_maps(nC,cell_partition)
-  faces_map      = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
-  reffe          = LagrangianRefFE(Float64,first(get_polytopes(model)),1)
-  rrules         = RefinementRule(reffe,cell_partition)
+  faces_map = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
+  reffe     = LagrangianRefFE(Float64,first(get_polytopes(model)),1)
+  rrules    = RefinementRule(reffe,cell_partition)
   glue = AdaptivityGlue(faces_map,fcell_to_child_id,rrules)
 
+  # Refined model
+  domain     = _get_cartesian_domain(desc)
+  _model_ref = CartesianDiscreteModel(domain,cell_partition.*nC)
+
+  # Propagate face labels
+  coarse_labels = get_face_labeling(model)
+  coarse_topo   = get_grid_topology(model)
+  fine_topo     = get_grid_topology(_model_ref)
+  fine_labels   = _refine_face_labeling(coarse_labels,glue,coarse_topo,fine_topo)
+
+  model_ref = CartesianDiscreteModel(get_grid(_model_ref),fine_topo,fine_labels)
   return AdaptedDiscreteModel(model_ref,model,glue)
 end
 
