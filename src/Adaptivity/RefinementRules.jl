@@ -134,8 +134,70 @@ function get_d_to_face_to_parent_face(rr::RefinementRule)
   get_d_to_face_to_parent_face(rr,RefinementRuleType(rr))
 end
 
-function get_d_to_face_to_parent_face(::RefinementRule,::RefinementRuleType)
-  @notimplemented
+# Generic version of the function. Spetializations may exist for some other ref rule types.
+function get_d_to_face_to_parent_face(rr::RefinementRule,::RefinementRuleType)
+  # WARNING: The functions below are NOT general for any point and any polytope.
+  #          They are only valid for the specific case of a refinement rule. 
+  function belongs_to_face(::Val{0},::Val{0},fface_coords,cface_coords)
+    return fface_coords[1] == cface_coords[1]
+  end
+  function belongs_to_face(::Val{0},::Val{1},fface_coords,cface_coords)
+    norm(cross(fface_coords[1] - cface_coords[1], fface_coords[1] - cface_coords[2])) ≈ 0.0
+  end
+  function belongs_to_face(::Val{0},::Val{2},fface_coords,cface_coords)
+    n = cross(cface_coords[2] - cface_coords[1], cface_coords[3] - cface_coords[1])
+    return sum(map(ccoords -> dot(n,ccoords - fface_coords[1]), cface_coords)) ≈ 0.0
+  end
+  function belongs_to_face(::Val{fface_dim},::Val{cface_dim},fface_coords,cface_coords) where {fface_dim,cface_dim}
+    return all(map(p -> belongs_to_face(Val(0),Val(cface_dim),[p],cface_coords),fface_coords))
+  end
+
+  ref_grid = get_ref_grid(rr)
+  topo = get_grid_topology(ref_grid)
+  poly = get_polytope(rr)
+
+  fnode_coords = get_node_coordinates(ref_grid)
+  cnode_coords = get_vertex_coordinates(poly)
+
+  Dc = num_cell_dims(ref_grid)
+  d_to_face_to_parent_face = Vector{Vector{Int32}}(undef,Dc+1)
+  d_to_face_to_parent_face_dim = Vector{Vector{Int32}}(undef,Dc+1)
+
+  for fface_dim in 0:Dc
+    fface_nodes = Geometry.get_faces(topo,fface_dim,0)
+    fface_node_coords = lazy_map(nodes -> lazy_map(Reindex(fnode_coords),nodes),fface_nodes)
+
+    num_ffaces = Geometry.num_faces(topo,fface_dim)
+    fface_to_parent_face = fill(Int32(-1),num_ffaces)
+    fface_to_parent_face_dim = fill(Int32(-1),num_ffaces)
+
+    for (fface,fcoords) in enumerate(fface_node_coords)
+      found = false
+      cface_dim = fface_dim
+      while (!found) && (cface_dim < Dc)
+        cface_nodes = get_faces(poly,cface_dim,0)
+        cface_node_coords = lazy_map(nodes -> lazy_map(Reindex(cnode_coords),nodes),cface_nodes)
+
+        for (cface,ccoords) in enumerate(cface_node_coords)
+          if !found && belongs_to_face(Val(fface_dim),Val(cface_dim),fcoords,ccoords)
+            found = true
+            fface_to_parent_face[fface] = cface
+            fface_to_parent_face_dim[fface] = cface_dim
+          end
+        end
+        cface_dim += 1
+      end
+      if !found # Belongs to the cell itself
+        fface_to_parent_face[fface] = 1
+        fface_to_parent_face_dim[fface] = Dc
+      end
+    end
+
+    d_to_face_to_parent_face[fface_dim+1] = fface_to_parent_face
+    d_to_face_to_parent_face_dim[fface_dim+1] = fface_to_parent_face_dim
+  end
+
+  return d_to_face_to_parent_face, d_to_face_to_parent_face_dim
 end
 
 function _get_terms(poly::Polytope,orders)

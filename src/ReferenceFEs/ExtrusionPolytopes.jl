@@ -723,6 +723,9 @@ function _nullspace(v)
   end
 end
 
+# Returns the first vertex not belonging to the facet i_f, or -1 if all vertices
+# belong to the facet. 
+# nf_vs is the array of arrays of vertices of the facets of the polytope.
 function _vertex_not_in_facet(p::DFace, i_f, nf_vs)
   for i in p.nf_dimranges[end][1]
     is_in_f = false

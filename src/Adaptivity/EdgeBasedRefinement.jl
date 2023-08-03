@@ -534,12 +534,12 @@ function get_d_to_face_to_parent_face(rr::RefinementRule,::RedRefinement)
     ]
   elseif p == TRI
     parent_faces = [
-      Int32[1,2,3,1,2,3,1],           # [Fine node] -> [Coarse face]
+      Int32[1,2,3,1,2,3],             # [Fine node] -> [Coarse face]
       Int32[1,2,1,1,3,1,2,3,1],       # [Fine edge] -> [Coarse face]
       Int32[1,1,1,1]                  # [Fine cell] -> [Coarse face]
     ]
     parent_dims  = [
-      Int32[0,0,0,1,1,1,2],           # [Fine node] -> [Coarse face dim]
+      Int32[0,0,0,1,1,1],             # [Fine node] -> [Coarse face dim]
       Int32[1,1,2,1,1,2,1,1,2],       # [Fine edge] -> [Coarse face dim]
       Int32[2,2,2,2]                  # [Fine cell] -> [Coarse face dim]
     ]
@@ -585,7 +585,7 @@ function get_d_to_face_to_parent_face(rr::RefinementRule,::RedRefinement)
       Int32[3,3,3,3,3,3,3,3] # [Fine cell] -> [Coarse face dim]
     ]
   else
-    @notimplemented
+    parent_faces, parent_dims = get_d_to_face_to_parent_face(rr,GenericRefinement())
   end
   return parent_faces, parent_dims
 end
