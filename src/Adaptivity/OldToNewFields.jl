@@ -1,9 +1,3 @@
-"""
-Given a domain and a non-overlapping refined cover, a `FineToCoarseField`
-is a `Field` defined in the domain and constructed by a set of fields defined on 
-the subparts of the covering partition.
-The refined cover is represented by a `RefinementRule`. 
-"""
 
 abstract type NewFieldType end;
 struct CoarsenedNewFieldType <: NewFieldType end;
