@@ -292,6 +292,31 @@ function change_domain_o2n(f_coarse,ctrian::Triangulation{Dc},ftrian::AdaptedTri
   end
 end
 
+function change_domain_o2n(
+  f_old,
+  old_trian::Triangulation{Dc},
+  new_trian::AdaptedTriangulation,
+  glue::AdaptivityGlue{<:MixedGlue}) where {Dc}
+
+  oglue = get_glue(old_trian,Val(Dc))
+  nglue = get_glue(new_trian,Val(Dc))
+
+  @notimplementedif num_point_dims(old_trian) != Dc
+  @notimplementedif isa(nglue,Nothing)
+
+  if (num_cells(old_trian) != 0)
+    # If mixed refinement/coarsening, then f_c2f is a Table
+    f_old_data  = Gridap.CellData.get_data(f_old)
+    f_c2f       = c2f_reindex(f_old_data,glue)
+    new_rrules  = get_new_cell_refinement_rules(glue)
+    field_array = lazy_map(OldToNewField, f_c2f, new_rrules, glue.n2o_cell_to_child_id)
+    return CellData.similar_cell_field(f_old,field_array,new_trian,ReferenceDomain())
+  else
+    f_new = Fill(Gridap.Fields.ConstantField(0.0),num_cells(new_trian))
+    return CellData.similar_cell_field(f_old,f_new,new_trian,ReferenceDomain())
+  end 
+end
+
 """
   Given a AdaptivityGlue and a CellField defined on the child(new) mesh, 
   returns an equivalent CellField on the parent(old) mesh.
