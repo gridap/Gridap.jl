@@ -10,11 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Jacobi polynomial bases. Since PR [#896](https://github.com/gridap/Gridap.jl/pull/896).
-
 - Replaced newest vertex bisection mesh adaptation in
   `src/Geometry/NewestVertexBisection.jl` with appropriate changes to
-  `src/Adaptivity/EdgeBasedRefinement.jl`. see PR
+  `src/Adaptivity/EdgeBasedRefinement.jl`. Since PR
   [#901](https://github.com/gridap/Gridap.jl/pull/901).
+- When refining `DiscreteModels`, the `FaceLabeling` of the resulting `AdaptedDiscreteModel` will now correctly inhering the tags of the parent model. This has been made possible by the addition of the method `get_d_to_face_to_parent_face`. Since PR[#886](https://github.com/gridap/Gridap.jl/pull/886).
+- Added support for mixed adaptivity (i.e coarsening and refining), as well as non-conforming adaptivity. Since PR[#886](https://github.com/gridap/Gridap.jl/pull/886).
 
 ### Changed
 
@@ -26,9 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed the method `get_normal_vector` for `AdaptedTriangulation`. The method `get_facet_normal`
   was using default, it's now using the spetialized implementation for the underlying triangulation type.
   Since PR [#884](https://github.com/gridap/Gridap.jl/pull/884).
-
 - Fixed `cell_dof_ids` for the case of vectorial `ConstantFESpace`. Since PR [#888](https://github.com/gridap/Gridap.jl/pull/888)
 - Fixed generation of Modal C0 bases for Julia 1.9. Since PR [#918](https://github.com/gridap/Gridap.jl/pull/918).
+- Fixed some edge cases for `change_domain` between `AdaptedTriangulations` where inneficient coordinate transformations would be applied between physical and reference domains. Since PR[#886](https://github.com/gridap/Gridap.jl/pull/886).
+- Fixed: Domain limits can now be of any type (notably, floats) when refining `CartesianDiscreteModels`. Since PR[#886](https://github.com/gridap/Gridap.jl/pull/886).
 
 ## [0.17.17] - 2023-02-24
 
