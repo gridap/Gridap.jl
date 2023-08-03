@@ -29,7 +29,7 @@ function OldToNewField(old_fields::AbstractArray{<:Fields.Field},
     refined_or_untouched_field = old_field∘cell_map
     return OldToNewField(RefinedOrUntouchedNewFieldType(),fine_to_coarse_field,refined_or_untouched_field)
   else 
-    @assert length(old_fields) <= Gridap.Adaptivity.num_subcells(rrule)
+    @assert length(old_fields) <= num_subcells(rrule)
     fine_to_coarse_field = FineToCoarseField(old_fields,rrule,child_ids)
     cell_map = get_cell_map(rrule)[1]
     refined_or_untouched_field = old_fields[1]∘cell_map 
@@ -46,10 +46,10 @@ end
 function Fields.evaluate!(cache,a::OldToNewField,x::AbstractArray{<:Point})
   if isa(a.new_field_type,CoarsenedNewFieldType)
     f2c_cache,rou_cache = cache
-    Gridap.Fields.evaluate!(f2c_cache,a.fine_to_coarse_field,x)
+    Fields.evaluate!(f2c_cache,a.fine_to_coarse_field,x)
   else
     @assert isa(a.new_field_type,RefinedOrUntouchedNewFieldType)
     f2c_cache,rou_cache = cache
-    Gridap.Fields.evaluate!(rou_cache,a.refined_or_untouched_field,x)
+    Fields.evaluate!(rou_cache,a.refined_or_untouched_field,x)
   end  
 end
