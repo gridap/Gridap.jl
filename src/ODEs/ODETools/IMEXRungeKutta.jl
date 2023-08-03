@@ -39,8 +39,10 @@ function solve_step!(uf::AbstractVector,
   # Unpack variables
   dt = solver.dt
   s = solver.tableau.s
-  a = solver.tableau.a
-  b = solver.tableau.b
+  aᵢ = solver.tableau.aᵢ
+  bᵢ = solver.tableau.bᵢ
+  aₑ = solver.tableau.aₑ
+  bₑ = solver.tableau.bₑ
   c = solver.tableau.c
   d = solver.tableau.d
 
@@ -57,7 +59,7 @@ function solve_step!(uf::AbstractVector,
   end
 
   # Create RKNL stage operator
-  nlop_stage = IMEXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,fi,gi,0,a)
+  nlop_stage = IMEXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,fi,gi,0,aᵢ,aₑ)
 
   # Compute intermediate stages
   for i in 1:s
@@ -82,6 +84,7 @@ function solve_step!(uf::AbstractVector,
 
     # Update RHS at stage i using solution at u_i
     rhs!(nlop_stage, uf)
+    explicit_rhs!(nlop_stage, uf)
 
   end
 
@@ -111,7 +114,10 @@ end
 IMEXRungeKuttaStageNonlinearOperator <: NonlinearOperator
 
 Nonlinear operator for the implicit-explicit Runge-Kutta stage.
-  At a given stage `i` it represents the nonlinear operator A(t,u_i,(u_i-u_n)/dt).
+  At a given stage `i` it represents the nonlinear operator A(t,u_i,(u_i-u_n)/dt) such that
+```math
+A(t,u_i,(u_i-u_n)/dt) = M(u_i,t)(u_i-u_n)/Δt - ∑aᵢ[i,j] * f(u_j,t_j) - ∑aₑ[i,j] * g(u_j,t_j) = 0
+```
 """
 mutable struct IMEXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
   odeop::ODEOperator
@@ -131,7 +137,10 @@ end
 IMEXRungeKuttaUpdateNonlinearOperator <: NonlinearOperator
 
 Nonlinear operator for the implicit-explicit Runge-Kutta final update.
-  At the final update it represents the nonlinear operator A(t,u_t,(u_t-u_n)/dt).
+  At the final update it represents the nonlinear operator A(t,u_t,(u_t-u_n)/dt)  such that
+  ```math
+  A(t,u_f,(u_f-u_n)/dt) = M(u_f,t)(u_f-u_n)/Δt - ∑aᵢ[i,j] * f(u_j,t_j) - ∑aₑ[i,j] * g(u_j,t_j) = 0
+  ```
 """
 mutable struct IMEXRungeKuttaUpdateNonlinearOperator <: RungeKuttaNonlinearOperator
   odeop::ODEOperator
@@ -241,4 +250,12 @@ function jacobian!(J::AbstractMatrix,
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobian!(A,op.odeop,op.ti,(uf,vf),2,1.0/(op.dt),op.ode_cache)
+end
+
+function explicit_rhs!(op::RungeKuttaNonlinearOperator, x::AbstractVector)
+  u = x
+  v = op.vi
+  @. v = (x-op.u0)/(op.dt)
+  g = op.gi
+  explicit_rhs!(g[op.i],op.odeop,op.ti,(u,v),op.ode_cache)
 end
