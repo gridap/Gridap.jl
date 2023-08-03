@@ -56,6 +56,7 @@ export jacobian_and_jacobian_t!
 export test_ode_operator
 export lhs!
 export rhs!
+export explicit_rhs!
 
 export ODESolver
 export solve_step!
@@ -69,6 +70,7 @@ export ForwardEuler
 export MidPoint
 export ThetaMethod
 export RungeKutta
+export IMEXRungeKutta
 export Newmark
 export GeneralizedAlpha
 

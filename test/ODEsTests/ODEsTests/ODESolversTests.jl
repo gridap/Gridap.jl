@@ -163,6 +163,14 @@ uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test all(uf.≈u0*1.105215241)
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
+# IMEX RK tests (explicit part = 0)
+odesol = IMEXRungeKutta(ls,ls,dt,:IMEX_FE_BE_1_0_1)
+cache = nothing
+uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
+@test tf==t0+dt
+@test all(uf.≈1+11/9)
+@test test_ode_solver(odesol,op,u0,t0,tf)
+
 
 # Newmark test
 op_const = ODEOperatorMock{Float64,Constant}(1.0,0.0,0.0,2)

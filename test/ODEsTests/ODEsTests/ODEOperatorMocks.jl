@@ -17,6 +17,7 @@ import Gridap.ODEs.ODETools: jacobians!
 import Gridap.ODEs.ODETools: allocate_jacobian
 import Gridap.ODEs.ODETools: residual!
 import Gridap.ODEs.ODETools: rhs!
+import Gridap.ODEs.ODETools: explicit_rhs!
 import Gridap.ODEs.ODETools: lhs!
 using SparseArrays: spzeros
 
@@ -42,6 +43,12 @@ function rhs!(r::AbstractVector,op::ODEOperatorMock,t::Real,x::NTuple{2,Abstract
   r .= 0
   r[1] = op.a * u[1]
   r[2] = op.b * u[1] + op.c * u[2]
+  r
+end
+
+function explicit_rhs!(r::AbstractVector,op::ODEOperatorMock,t::Real,x::NTuple{2,AbstractVector},ode_cache)
+  u,u_t = x
+  r .= 0
   r
 end
 

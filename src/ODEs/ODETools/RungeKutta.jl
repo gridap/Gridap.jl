@@ -103,7 +103,7 @@ mutable struct RungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
   u0::AbstractVector
   ode_cache
   vi::AbstractVector
-  fi::AbstractVector
+  fi::Vector{AbstractVector}
   i::Int
   a::Matrix
 end

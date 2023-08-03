@@ -133,7 +133,7 @@ struct IMEX_FE_BE_1_0_1 <: IMEXButcherTableauType end
 """
 Implicit-Explicit Butcher tableaus
 """
-struct IMEXButcherTableau{T <: ButcherTableauType}
+struct IMEXButcherTableau{T <: IMEXButcherTableauType}
   s::Int # stages
   p::Int # embedded order
   q::Int # order
@@ -153,7 +153,7 @@ number of stages: 2
 embedded method: no
 order: 1
 """
-function ButcherTableau(::IMEX_FE_BE_1_0_1)
+function IMEXButcherTableau(::IMEX_FE_BE_1_0_1)
   s = 2
   p = 0
   q = 1
@@ -163,10 +163,10 @@ function ButcherTableau(::IMEX_FE_BE_1_0_1)
   bₑ = [0.0, 1.0]
   c = [0.0, 1.0]
   d = [0.0, 0.0]
-  ButcherTableau{IMEX_FE_BE_1_0_1}(s,p,q,aᵢ,aₑ,bᵢ,bₑ,c,d)
+  IMEXButcherTableau{IMEX_FE_BE_1_0_1}(s,p,q,aᵢ,aₑ,bᵢ,bₑ,c,d)
 end
 
 
-function ButcherTableau(type::Symbol)
-  eval(:(ButcherTableau($type())))
+function IMEXButcherTableau(type::Symbol)
+  eval(:(IMEXButcherTableau($type())))
 end

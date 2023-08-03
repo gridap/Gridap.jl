@@ -10,14 +10,13 @@ where `f` is a nonlinear function of `u` and `t` that will treated implicitly an
   The ODE is solved using an implicit-explicit Runge-Kutta method.
 """
 struct IMEXRungeKutta <: ODESolver
-  nls_stage::NonlninearSolver
+  nls_stage::NonlinearSolver
   nls_update::NonlinearSolver
   dt::Float64
-  implicit_tableau::ButcherTableau
-  explicit_tableau
-  function IMEXRungeKutta(nls_stage::NonlinearSolver, nls_stage::NonlinearSolver, dt, type::Symbol)
-    ibt, ebt = IMEXButcherTableau(type)
-    new(nls_stage, nls_update, dt, ibt, ebt)
+  tableau::IMEXButcherTableau
+  function IMEXRungeKutta(nls_stage::NonlinearSolver, nls_update::NonlinearSolver, dt, type::Symbol)
+    bt = IMEXButcherTableau(type)
+    new(nls_stage, nls_update, dt, bt)
   end
 end
 
@@ -50,8 +49,12 @@ function solve_step!(uf::AbstractVector,
   if cache === nothing
     ode_cache = allocate_cache(op)
     vi = similar(u0)
-    fi = [similar(u0)]
-    gi = [similar(u0)]
+    fi = Vector{typeof(u0)}(undef,0)
+    gi = Vector{typeof(u0)}(undef,0)
+    for i in 1:s
+      push!(fi,similar(u0))
+      push!(gi,similar(u0))
+    end
     nls_stage_cache = nothing
     nls_update_cache = nothing
   else
@@ -74,7 +77,7 @@ function solve_step!(uf::AbstractVector,
     ode_cache = update_cache!(ode_cache,op,ti)
     update!(nlop_stage,ti,fi,gi,i)
 
-    if(a[i,i]==0)
+    if(aᵢ[i,i]==0)
       # Skip stage solve if a_ii=0 => u_i=u_0, f_i = f_0, gi = g_0
       @. uf = u0
     else
@@ -92,11 +95,11 @@ function solve_step!(uf::AbstractVector,
   tf = t0+dt
 
   # Skip final update if not necessary
-  if !(c[s]==1.0 && a[s,:] == b)
+  if !(c[s]==1.0 && aᵢ[s,:] == bᵢ && aₑ[s,:] == bₑ)
 
     # Create RKNL final update operator
     ode_cache = update_cache!(ode_cache,op,tf)
-    nlop_update = IMEXRungeKuttaUpdateNonlinearOperator(op,tf,dt,u0,ode_cache,vi,fi,s,b)
+    nlop_update = IMEXRungeKuttaUpdateNonlinearOperator(op,tf,dt,u0,ode_cache,vi,fi,gi,s,bᵢ,bₑ)
 
     # solve at final update
     nls_update_cache = solve!(uf,solver.nls_update,nlop_update,nls_update_cache)
@@ -124,11 +127,11 @@ mutable struct IMEXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperat
   ti::Float64
   dt::Float64
   u0::AbstractVector
-  ode_cache::ODECache
+  ode_cache
   vi::AbstractVector
   fi::Vector{AbstractVector}
   gi::Vector{AbstractVector}
-  i::Integer
+  i::Int
   aᵢ::Matrix{Float64}
   aₑ::Matrix{Float64}
 end
@@ -147,10 +150,11 @@ mutable struct IMEXRungeKuttaUpdateNonlinearOperator <: RungeKuttaNonlinearOpera
   ti::Float64
   dt::Float64
   u0::AbstractVector
-  ode_cache::ODECache
+  ode_cache
   vi::AbstractVector
   fi::Vector{AbstractVector}
-  s::Integer
+  gi::Vector{AbstractVector}
+  s::Int
   bᵢ::Vector{Float64}
   bₑ::Vector{Float64}
 end
@@ -230,9 +234,9 @@ function jacobian!(J::AbstractMatrix,
   ui = x
   vi = op.vi
   @. vi = (x-op.u0)/(op.dt)
-  z = zero(eltype(A))
-  fillstored!(A,z)
-  jacobians!(A,op.odeop,op.ti,(ui,vi),(op.aᵢ[op.i,op.i],1.0/op.dt),op.ode_cache)
+  z = zero(eltype(J))
+  fillstored!(J,z)
+  jacobians!(J,op.odeop,op.ti,(ui,vi),(op.aᵢ[op.i,op.i],1.0/op.dt),op.ode_cache)
 end
 
 """
@@ -247,9 +251,9 @@ function jacobian!(J::AbstractMatrix,
   uf = x
   vf = op.vi
   @. vf = (x-op.u0)/(op.dt)
-  z = zero(eltype(A))
-  fillstored!(A,z)
-  jacobian!(A,op.odeop,op.ti,(uf,vf),2,1.0/(op.dt),op.ode_cache)
+  z = zero(eltype(J))
+  fillstored!(J,z)
+  jacobian!(J,op.odeop,op.ti,(uf,vf),2,1.0/(op.dt),op.ode_cache)
 end
 
 function explicit_rhs!(op::RungeKuttaNonlinearOperator, x::AbstractVector)
@@ -258,4 +262,11 @@ function explicit_rhs!(op::RungeKuttaNonlinearOperator, x::AbstractVector)
   @. v = (x-op.u0)/(op.dt)
   g = op.gi
   explicit_rhs!(g[op.i],op.odeop,op.ti,(u,v),op.ode_cache)
+end
+
+function update!(op::RungeKuttaNonlinearOperator,ti::Float64,fi::AbstractVector,gi::AbstractVector,i::Int)
+  op.ti = ti
+  op.fi = fi
+  op.gi = gi
+  op.i = i
 end
