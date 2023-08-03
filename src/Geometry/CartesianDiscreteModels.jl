@@ -8,65 +8,62 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
   grid::CartesianGrid{D,T,F}
   grid_topology::UnstructuredGridTopology{D,D,T,Oriented}
   face_labeling::FaceLabeling
-  @doc """
-      CartesianDiscreteModel(desc::CartesianDescriptor)
+end
 
-  Inner constructor
-  """
-  function CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F}) where {D,T,F}
-    grid = CartesianGrid(desc)
-    _grid = UnstructuredGrid(grid)
-    if any(desc.isperiodic)
-      topo = _cartesian_grid_topology_with_periodic_bcs(_grid, desc.isperiodic, desc.partition)
-    else
-      topo = UnstructuredGridTopology(_grid)
-    end
-    nfaces = [num_faces(topo,d) for d in 0:num_cell_dims(topo)]
-    labels = FaceLabeling(nfaces)
-    _fill_cartesian_face_labeling!(labels,topo)
-    new{D,T,F}(grid,topo,labels)
+"""
+  CartesianDiscreteModel(desc::CartesianDescriptor)
+"""
+function CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F}) where {D,T,F}
+  grid = CartesianGrid(desc)
+  _grid = UnstructuredGrid(grid)
+  if any(desc.isperiodic)
+    topo = _cartesian_grid_topology_with_periodic_bcs(_grid, desc.isperiodic, desc.partition)
+  else
+    topo = UnstructuredGridTopology(_grid)
   end
+  nfaces = [num_faces(topo,d) for d in 0:num_cell_dims(topo)]
+  labels = FaceLabeling(nfaces)
+  _fill_cartesian_face_labeling!(labels,topo)
+  return CartesianDiscreteModel(grid,topo,labels)
+end
 
-  @doc """
-      CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F},
-                             cmin::CartesianIndex,
-                             cmax::CartesianIndex)
+"""
+  CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F},
+                          cmin::CartesianIndex,
+                          cmax::CartesianIndex)
 
-      Builds a CartesianDiscreteModel object which represents a subgrid of
-      a (larger) grid represented by desc. This subgrid is described by its
-      D-dimensional minimum (cmin) and maximum (cmax) CartesianIndex
-      identifiers.
+  Builds a CartesianDiscreteModel object which represents a subgrid of
+  a (larger) grid represented by desc. This subgrid is described by its
+  D-dimensional minimum (cmin) and maximum (cmax) CartesianIndex
+  identifiers.
+"""
+function CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F},
+                                cmin::CartesianIndex,
+                                cmax::CartesianIndex,
+                                remove_boundary=map(i->false,desc.sizes)) where {D,T,F}
 
-  Inner constructor
-  """
-  function CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F},
-                                  cmin::CartesianIndex,
-                                  cmax::CartesianIndex,
-                                  remove_boundary=map(i->false,desc.sizes)) where {D,T,F}
-
-     suborigin = Tuple(desc.origin) .+ (Tuple(cmin) .- 1) .* desc.sizes
-     subpartition = Tuple(cmax) .- Tuple(cmin) .+ 1
-     subsizes = desc.sizes
-     subisperiodic = map(subpartition,desc.partition,desc.isperiodic) do subn,n,p
-       # Periodic only make sense in dims in which we take the full span.
-       # Otherwise, we would artificially modify the periodicity period.
-       subn==n ? p : false
-     end
-     subdesc =
-       CartesianDescriptor(Point(suborigin), subsizes, subpartition; map=desc.map, isperiodic=subisperiodic)
-
-     grid = CartesianGrid(subdesc)
-     _grid = UnstructuredGrid(grid)
-     if any(subdesc.isperiodic)
-       topo = _cartesian_grid_topology_with_periodic_bcs(_grid, subdesc.isperiodic, subdesc.partition)
-     else
-       topo = UnstructuredGridTopology(_grid)
-     end
-     nfaces = [num_faces(topo, d) for d = 0:num_cell_dims(topo)]
-     labels = FaceLabeling(nfaces)
-     _fill_subgrid_cartesian_face_labeling!(labels,topo,subdesc,desc,cmin,remove_boundary)
-     new{D,T,F}(grid, topo, labels)
+  suborigin = Tuple(desc.origin) .+ (Tuple(cmin) .- 1) .* desc.sizes
+  subpartition = Tuple(cmax) .- Tuple(cmin) .+ 1
+  subsizes = desc.sizes
+  subisperiodic = map(subpartition,desc.partition,desc.isperiodic) do subn,n,p
+    # Periodic only make sense in dims in which we take the full span.
+    # Otherwise, we would artificially modify the periodicity period.
+    subn==n ? p : false
   end
+  subdesc =
+    CartesianDescriptor(Point(suborigin), subsizes, subpartition; map=desc.map, isperiodic=subisperiodic)
+
+  grid = CartesianGrid(subdesc)
+  _grid = UnstructuredGrid(grid)
+  if any(subdesc.isperiodic)
+    topo = _cartesian_grid_topology_with_periodic_bcs(_grid, subdesc.isperiodic, subdesc.partition)
+  else
+    topo = UnstructuredGridTopology(_grid)
+  end
+  nfaces = [num_faces(topo, d) for d = 0:num_cell_dims(topo)]
+  labels = FaceLabeling(nfaces)
+  _fill_subgrid_cartesian_face_labeling!(labels,topo,subdesc,desc,cmin,remove_boundary)
+  return CartesianDiscreteModel(grid, topo, labels)
 end
 
 """

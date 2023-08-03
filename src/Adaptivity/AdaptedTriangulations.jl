@@ -183,8 +183,14 @@ end
 
 for sdomain in [:ReferenceDomain,:PhysicalDomain]
   for (stype,ttype) in [(:AdaptedTriangulation,:AdaptedTriangulation),(:AdaptedTriangulation,:Triangulation),(:Triangulation,:AdaptedTriangulation)]
+    sstrian = (stype==:AdaptedTriangulation) ? :(strian.trian) : :(strian)
+    tttrian = (ttype==:AdaptedTriangulation) ? :(ttrian.trian) : :(ttrian)
     @eval begin
-      function CellData.change_domain(a::CellField,strian::$stype,::$sdomain,ttrian::$ttype,::PhysicalDomain)
+      function CellData.change_domain(a::CellField,strian::$stype,sd::$sdomain,ttrian::$ttype,::PhysicalDomain)
+        if (get_background_model(strian) === get_background_model(ttrian))
+          return change_domain(a,$sstrian,sd,$tttrian,PhysicalDomain())
+        end
+
         a_ref  = change_domain(a,ReferenceDomain())
         atrian = change_domain(a_ref,strian,ReferenceDomain(),ttrian,ReferenceDomain())
         return change_domain(atrian,PhysicalDomain())
@@ -281,9 +287,34 @@ function change_domain_o2n(f_coarse,ctrian::Triangulation{Dc},ftrian::AdaptedTri
 
     return CellData.similar_cell_field(f_coarse,f_fine,ftrian,ReferenceDomain())
   else
-    f_fine = Fill(Gridap.Fields.ConstantField(0.0),num_cells(ftrian))
+    f_fine = Fill(Fields.ConstantField(0.0),num_cells(ftrian))
     return CellData.similar_cell_field(f_coarse,f_fine,ftrian,ReferenceDomain())
   end
+end
+
+function change_domain_o2n(
+  f_old,
+  old_trian::Triangulation{Dc},
+  new_trian::AdaptedTriangulation,
+  glue::AdaptivityGlue{<:MixedGlue}) where {Dc}
+
+  oglue = get_glue(old_trian,Val(Dc))
+  nglue = get_glue(new_trian,Val(Dc))
+
+  @notimplementedif num_point_dims(old_trian) != Dc
+  @notimplementedif isa(nglue,Nothing)
+
+  if (num_cells(old_trian) != 0)
+    # If mixed refinement/coarsening, then f_c2f is a Table
+    f_old_data  = CellData.get_data(f_old)
+    f_c2f       = c2f_reindex(f_old_data,glue)
+    new_rrules  = get_new_cell_refinement_rules(glue)
+    field_array = lazy_map(OldToNewField, f_c2f, new_rrules, glue.n2o_cell_to_child_id)
+    return CellData.similar_cell_field(f_old,field_array,new_trian,ReferenceDomain())
+  else
+    f_new = Fill(Fields.ConstantField(0.0),num_cells(new_trian))
+    return CellData.similar_cell_field(f_old,f_new,new_trian,ReferenceDomain())
+  end 
 end
 
 """
@@ -310,8 +341,9 @@ function change_domain_n2o(f_fine,ftrian::AdaptedTriangulation{Dc},ctrian::Trian
     # f_c2f[i_coarse] = [f_fine[i_fine_1], ..., f_fine[i_fine_nChildren]]
     f_c2f = f2c_reindex(fine_mface_to_field,glue)
 
-    rrules   = get_old_cell_refinement_rules(glue)
-    coarse_mface_to_field = lazy_map(FineToCoarseField,f_c2f,rrules)
+    child_ids = f2c_reindex(glue.n2o_cell_to_child_id,glue)
+    rrules    = get_old_cell_refinement_rules(glue)
+    coarse_mface_to_field = lazy_map(FineToCoarseField,f_c2f,rrules,child_ids)
 
     ### Old Model -> Old Triangulation
     coarse_tface_to_field = lazy_map(Reindex(coarse_mface_to_field),cglue.tface_to_mface)
@@ -319,7 +351,7 @@ function change_domain_n2o(f_fine,ftrian::AdaptedTriangulation{Dc},ctrian::Trian
 
     return CellData.similar_cell_field(f_fine,f_coarse,ctrian,ReferenceDomain())
   else
-    f_coarse = Fill(Gridap.Fields.ConstantField(0.0),num_cells(fcoarse))
+    f_coarse = Fill(Fields.ConstantField(0.0),num_cells(fcoarse))
     return CellData.similar_cell_field(f_fine,f_coarse,ctrian,ReferenceDomain())
   end
 end
