@@ -86,19 +86,21 @@ function refine(method::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,
   #    a) nothing -> All cells get refined
   #    b) AbstractArray{<:Bool} of size num_cells(model)
   #            -> Only cells such that cells_to_refine[iC] == true get refined
-  #    c) AbstractArray{<:Integer}
+  #    c) AbstractArray{<:Integer} 
   #            -> Cells for which gid ∈ cells_to_refine get refined
-
+  ctopo = get_grid_topology(model)
+  coarse_labels = get_face_labeling(model)
   # Create new model
   rrules, faces_list = setup_edge_based_rrules(method, model.grid_topology,cells_to_refine)
-  topo   = _refine_unstructured_topology(model.grid_topology,rrules,faces_list)
+  topo   = _refine_unstructured_topology(ctopo,rrules,faces_list)
   reffes = map(p->LagrangianRefFE(Float64,p,1),get_polytopes(topo))
-  grid   = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),reffes,get_cell_type(topo),OrientationStyle(topo))
-  labels = FaceLabeling(topo)
-  ref_model = UnstructuredDiscreteModel(grid,topo,labels)
-  ## Create ref glue
+  grid   = UnstructuredGrid(get_vertex_coordinates(topo),
+			    get_faces(topo,Dc,0),reffes,
+			    get_cell_type(topo),
+			    OrientationStyle(topo))
   glue = _get_refinement_glue(topo,model.grid_topology,rrules)
-
+  labels = _refine_face_labeling(coarse_labels,glue,model.grid_topology,topo)
+  ref_model = UnstructuredDiscreteModel(grid,topo,labels)
   return AdaptedDiscreteModel(ref_model,model,glue)
 end
 
@@ -415,14 +417,10 @@ end
 Edge-based RefinementRule where a new vertex is added to
 each edge of the original Polytope.
 """
-function RedRefinementRule(p::Polytope{2})
-  @notimplementedif (p ∉ [TRI,QUAD])
+function RedRefinementRule(p::Polytope)
+  @notimplementedif (p ∉ [TRI,QUAD,HEX])
 
-  if p == TRI
-    faces_list = ([1,2,3],[1,2,3],[])
-  elseif p == QUAD
-    faces_list = ([1,2,3,4],[1,2,3,4],[1])
-  end
+  faces_list = _get_red_refined_faces_list(p)
   coords = get_new_coordinates_from_faces(p,faces_list)
 
   polys, cell_types, conn = _get_red_refined_connectivity(p)
@@ -432,24 +430,48 @@ function RedRefinementRule(p::Polytope{2})
   return RefinementRule(RedRefinement(),p,ref_grid)
 end
 
-function _get_red_refined_connectivity(p::Polytope{2})
+function _get_red_refined_faces_list(p::Polytope)
+  if p == TRI
+    return (Int32[1,2,3],Int32[1,2,3],Int32[])
+  elseif p == QUAD
+    return (Int32[1,2,3,4],Int32[1,2,3,4],Int32[1])
+  elseif p == HEX
+    return (Int32[1,2,3,4,5,6,7,8],Int32[1,2,3,4,5,6,7,8,9,10,11,12],Int32[1,2,3,4,5,6],Int32[1])
+  end
+  @notimplemented
+end
+
+function _get_red_refined_connectivity(p::Polytope)
   if p == TRI
     polys     = [TRI]
-    cell_type = [1,1,1,1]
-    conn_data = [1,4,5,
-                2,4,6,
-                3,5,6,
-                4,5,6]
-    conn_ptrs = [1,4,7,10,13]
+    cell_type = Int32[1,1,1,1]
+    conn_data = Int32[1,4,5,
+                      2,4,6,
+                      3,5,6,
+                      4,5,6]
+    conn_ptrs = Int32[1,4,7,10,13]
     return polys, cell_type, Table(conn_data,conn_ptrs)
   elseif p == QUAD
     polys     = [QUAD]
-    cell_type = [1,1,1,1]
-    conn_data = [1,5,7,9,
-                5,2,9,8,
-                7,9,3,6,
-                9,8,6,4]
-    conn_ptrs = [1,5,9,13,17]
+    cell_type = Int32[1,1,1,1]
+    conn_data = Int32[1,5,7,9,
+                      5,2,9,8,
+                      7,9,3,6,
+                      9,8,6,4]
+    conn_ptrs = Int32[1,5,9,13,17]
+    return polys, cell_type, Table(conn_data,conn_ptrs)
+  elseif p == HEX
+    polys     = [HEX]
+    cell_type = Int32[1,1,1,1,1,1,1,1]
+    conn_data = Int32[ 1, 9,13,21,17,23,25,27,
+                       9, 2,21,14,23,18,27,26,
+                      13,21, 3,10,25,27,19,24,
+                      21,14,10, 4,27,26,24,20,
+                      17,23,25,27, 5,11,15,22,
+                      23,18,27,26,11, 6,22,16,
+                      25,27,19,24,15,22, 7,12,
+                      27,26,24,20,22,16,12, 8]
+    conn_ptrs = Int32[1,9,17,25,33,41,49,57,65]
     return polys, cell_type, Table(conn_data,conn_ptrs)
   end
   @notimplemented
@@ -457,10 +479,115 @@ end
 
 function _has_interior_point(rr::RefinementRule,::RedRefinement)
   p = get_polytope(rr)
-  if p == QUAD
+  if p ∈ [QUAD,HEX]
     return true
   end
   return false
+end
+
+# [Face dimension][Coarse Face id] -> [Fine faces]
+function get_d_to_face_to_child_faces(rr::RefinementRule,::RedRefinement)
+  p = get_polytope(rr)
+  if p == QUAD
+    return [
+      [Int32[1],Int32[2],Int32[3],Int32[4]],           # [Coarse Node] -> [Fine Node]
+      [Int32[1,5],Int32[8,11],Int32[3,9],Int32[7,12]], # [Coarse Edge] -> [Fine Edge]
+      [Int32[1,2,3,4]]                                 # [Coarse Cell] -> [Fine Cells]
+    ]
+  elseif p == TRI
+    return [
+      [Int32[1],Int32[2],Int32[3]],       # [Coarse Node] -> [Fine Node]
+      [Int32[1,4],Int32[2,7],Int32[5,8]], # [Coarse Edge] -> [Fine Edge]
+      [Int32[1,2,3]]                      # [Coarse Cell] -> [Fine Cells]
+    ]
+  elseif p == HEX
+    return [
+      [Int32[1],Int32[2],Int32[3],Int32[4],
+       Int32[5],Int32[6],Int32[7],Int32[8]],                # [Coarse Node] -> [Fine Node]
+      [Int32[1,13],Int32[21,29],Int32[34,42],Int32[47,52],
+       Int32[5,23],Int32[17,31],Int32[36,48],Int32[44,53],
+       Int32[9,38],Int32[19,45],Int32[27,50],Int32[33,54]], # [Coarse Edge] -> [Fine Edge]
+      [Int32[1,7,12,17] ,Int32[21,26,30,34],
+       Int32[3,9,22,27] ,Int32[14,19,31,35],
+       Int32[5,15,24,32],Int32[11,20,29,36]],               # [Coarse Face] -> [Fine Face]
+      [Int32[1,2,3,4,5,6,7,8]],                             # [Coarse Cell] -> [Fine Cells]
+    ]
+  else
+    @notimplemented
+  end
+end
+
+# 1 - [Face dimension][Fine Face id] -> [Parent Face]
+# 2 - [Face dimension][Fine Face id] -> [Parent Face Dimension]
+function get_d_to_face_to_parent_face(rr::RefinementRule,::RedRefinement)
+  p = get_polytope(rr)
+  if p == QUAD
+    parent_faces = [
+      Int32[1,2,3,4,1,2,3,4,1],       # [Fine node] -> [Coarse face]
+      Int32[1,1,3,1,1,1,4,2,3,1,2,4], # [Fine edge] -> [Coarse face]
+      Int32[1,1,1,1]                  # [Fine cell] -> [Coarse face]
+    ]
+    parent_dims  = [
+      Int32[0,0,0,0,1,1,1,1,2],       # [Fine node] -> [Coarse face dim]
+      Int32[1,2,1,2,1,2,1,1,1,2,1,1], # [Fine edge] -> [Coarse face dim]
+      Int32[2,2,2,2]                  # [Fine cell] -> [Coarse face dim]
+    ]
+  elseif p == TRI
+    parent_faces = [
+      Int32[1,2,3,1,2,3],             # [Fine node] -> [Coarse face]
+      Int32[1,2,1,1,3,1,2,3,1],       # [Fine edge] -> [Coarse face]
+      Int32[1,1,1,1]                  # [Fine cell] -> [Coarse face]
+    ]
+    parent_dims  = [
+      Int32[0,0,0,1,1,1],             # [Fine node] -> [Coarse face dim]
+      Int32[1,1,2,1,1,2,1,1,2],       # [Fine edge] -> [Coarse face dim]
+      Int32[2,2,2,2]                  # [Fine cell] -> [Coarse face dim]
+    ]
+  elseif p == HEX
+    parent_faces = [ 
+      Int32[1,2,3,4,5,6,7,8,1,2,3,4,5,6,7,8,9,10,11,12,1,2,3,4,5,6,1], # [Fine node] -> [Coarse face]
+      Int32[1,1,3,1,5,1,5,1,9,3,5,1,
+            1,1,3,1,6,6,10,6,
+            2,4,5,1,5,1,11,4,
+            2,4,6,6,12,
+            3,2,7,2,9,3,5,1,
+            3,2,8,10,6,
+            4,7,2,11,4,
+            4,8,12],         # [Fine edge] -> [Coarse face]
+      Int32[1,1,3,1,5,1,
+            1,1,3,1,6,
+            1,1,4,5,1,
+            1,1,4,6,
+            2,3,1,5,1,
+            2,3,1,6,
+            2,4,5,1,
+            2,4,6],          # [Fine face] -> [Coarse face]
+      Int32[1,1,1,1,1,1,1,1] # [Fine cell] -> [Coarse face]
+    ]
+    parent_dims = [
+      Int32[0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,3], # [Fine node] -> [Coarse face dim]
+      Int32[1,2,2,3,1,2,2,3,1,2,2,3,
+            1,2,2,3,1,2,1,2,
+            1,2,1,2,2,3,1,2,
+            1,2,1,2,1,
+            1,2,1,2,1,2,2,3,
+            1,2,1,1,2,
+            1,1,2,1,2,
+            1,1,1],          # [Fine edge] -> [Coarse face dim]
+      Int32[2,3,2,3,2,3,
+            2,3,2,3,2,
+            2,3,2,2,3,
+            2,3,2,2,
+            2,2,3,2,3,
+            2,2,3,2,
+            2,2,2,3,
+            2,2,2],          # [Fine face] -> [Coarse face dim]
+      Int32[3,3,3,3,3,3,3,3] # [Fine cell] -> [Coarse face dim]
+    ]
+  else
+    parent_faces, parent_dims = get_d_to_face_to_parent_face(rr,GenericRefinement())
+  end
+  return parent_faces, parent_dims
 end
 
 """
