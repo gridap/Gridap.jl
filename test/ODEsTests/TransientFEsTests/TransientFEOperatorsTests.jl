@@ -92,7 +92,7 @@ push!(ode_solvers,(GeneralizedAlpha(ls,dt,1.0),op,(uh0,∂tuh0)))
 push!(ode_solvers,(RungeKutta(ls,ls,dt,:BE_1_0_1),opRK,uh0))
 push!(ode_solvers,(RungeKutta(ls,ls,dt,:CN_2_0_2),opRK,uh0))
 push!(ode_solvers,(RungeKutta(ls,ls,dt,:SDIRK_2_0_2),opRK,uh0))
-push!(ode_solvers,(IMEXRungeKutta(ls,ls,dt,:IMEX_FE_BE_1_0_1),opIMEXRK,uh0))
+push!(ode_solvers,(IMEXRungeKutta(ls,ls,dt,:IMEX_FE_BE_2_0_1),opIMEXRK,uh0))
 for ode_solver in ode_solvers
   test_ode_solver(ode_solver...)
 end

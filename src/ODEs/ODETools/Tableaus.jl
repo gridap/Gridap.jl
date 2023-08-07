@@ -127,8 +127,8 @@ end
 
 abstract type IMEXButcherTableauType end
 
-struct IMEX_FE_BE_1_0_1 <: IMEXButcherTableauType end
-
+struct IMEX_FE_BE_2_0_1 <: IMEXButcherTableauType end
+struct IMEX_Midpoint_2_0_2 <: IMEXButcherTableauType end
 
 """
 Implicit-Explicit Butcher tableaus
@@ -153,7 +153,7 @@ number of stages: 2
 embedded method: no
 order: 1
 """
-function IMEXButcherTableau(::IMEX_FE_BE_1_0_1)
+function IMEXButcherTableau(::IMEX_FE_BE_2_0_1)
   s = 2
   p = 0
   q = 1
@@ -163,7 +163,27 @@ function IMEXButcherTableau(::IMEX_FE_BE_1_0_1)
   bₑ = [0.0, 1.0]
   c = [0.0, 1.0]
   d = [0.0, 0.0]
-  IMEXButcherTableau{IMEX_FE_BE_1_0_1}(s,p,q,aᵢ,aₑ,bᵢ,bₑ,c,d)
+  IMEXButcherTableau{IMEX_FE_BE_2_0_1}(s,p,q,aᵢ,aₑ,bᵢ,bₑ,c,d)
+end
+
+"""
+IMEX Midpoint
+
+number of stages: 2
+embedded method: no
+order: 2
+"""
+function IMEXButcherTableau(::IMEX_Midpoint_2_0_2)
+  s = 2
+  p = 0
+  q = 2
+  aᵢ = [0.0 0.0; 0.0 0.5]
+  aₑ = [0.0 0.0; 0.5 0.0]
+  bᵢ = [0.0, 1.0]
+  bₑ = [0.0, 1.0]
+  c = [0.0, 0.5]
+  d = [0.0, 0.0]
+  IMEXButcherTableau{IMEX_Midpoint_2_0_2}(s,p,q,aᵢ,aₑ,bᵢ,bₑ,c,d)
 end
 
 
