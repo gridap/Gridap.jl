@@ -49,13 +49,6 @@ function AdaptivityGlue(n2o_faces_map::Vector{<:Union{AbstractVector{<:Integer},
                         refinement_rules::AbstractVector{<:RefinementRule})
   is_refined = select_refined_cells(n2o_faces_map[end])
   GT = all(is_refined) ? RefinementGlue : MixedGlue
-  if isa(GT(),RefinementGlue)
-    @assert isa(n2o_faces_map,Vector{<:AbstractVector{<:Integer}})
-    @assert isa(n2o_cell_to_child_id,AbstractVector{<:Integer})
-  else
-    @assert isa(n2o_faces_map,Vector{<:Table{<:Integer}})
-    @assert isa(n2o_cell_to_child_id,Table{<:Integer})
-  end
   AdaptivityGlue(GT(),n2o_faces_map,n2o_cell_to_child_id,refinement_rules)
 end
 
