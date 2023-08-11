@@ -164,23 +164,23 @@ end
 # Data re-indexing
 
 """
-  `function n2o_reindex(fine_data,g::AdaptivityGlue) -> coarse_data`
+  `function n2o_reindex(new_data,g::AdaptivityGlue) -> old_data`
 
   Reindexes a cell-wise array from the new mesh to the old mesh.
 """
-function n2o_reindex(fine_data,g::AdaptivityGlue)
-  ccell_to_fcell = g.o2n_faces_map
-  return _reindex(fine_data,ccell_to_fcell)
+function n2o_reindex(new_data,g::AdaptivityGlue)
+  ocell_to_ncell = g.o2n_faces_map
+  return _reindex(new_data,ocell_to_ncell)
 end
 
 """
-  `function o2n_reindex(coarse_data,g::AdaptivityGlue) -> fine_data`
+  `function o2n_reindex(old_data,g::AdaptivityGlue) -> new_data`
 
   Reindexes a cell-wise array from the old mesh to the new mesh.
 """
-function o2n_reindex(coarse_data,g::AdaptivityGlue{GT,Dc}) where {GT,Dc}
-  fcell_to_ccell = g.n2o_faces_map[Dc+1]
-  return _reindex(coarse_data,fcell_to_ccell)
+function o2n_reindex(old_data,g::AdaptivityGlue{GT,Dc}) where {GT,Dc}
+  ncell_to_ocell = g.n2o_faces_map[Dc+1]
+  return _reindex(old_data,ncell_to_ocell)
 end
 
 n2o_reindex(a::CellDatum,g::AdaptivityGlue) = n2o_reindex(CellData.get_data(a),g::AdaptivityGlue)
