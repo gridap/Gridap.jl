@@ -80,7 +80,7 @@ However, we want to stress a couple of key performance-critical points:
 
 ## Notes for developers
 
-### Topology mappings
+### RefinementRule API
 
 Given a `RefinementRule`, the library provides a set of methods to compute the mappings between parent (coarse) face ids and child (fine) face ids (and vice-versa). The ids are local to the `RefinementRule`.
 
@@ -90,10 +90,15 @@ get_d_to_face_to_parent_face
 get_face_subface_ldof_to_cell_ldof
 ```
 
-Similar routines are defined mesh-wise given a `RefinementGlue`:
+### AdaptivityGlue API
 
 ```@docs
+get_n2o_reference_coordinate_map
+get_old_cell_refinement_rules
+get_new_cell_refinement_rules
 get_d_to_fface_to_cface
+n2o_reindex
+o2n_reindex
 ```
 
 ### New-to-old field evaluations
