@@ -164,7 +164,7 @@ end
 # Data re-indexing
 
 """
-  function n2o_reindex(fine_data,g::AdaptivityGlue) -> coarse_data
+  `function n2o_reindex(fine_data,g::AdaptivityGlue) -> coarse_data`
 
   Reindexes a cell-wise array from the new mesh to the old mesh.
 """
@@ -174,7 +174,7 @@ function n2o_reindex(fine_data,g::AdaptivityGlue)
 end
 
 """
-  function o2n_reindex(coarse_data,g::AdaptivityGlue) -> fine_data
+  `function o2n_reindex(coarse_data,g::AdaptivityGlue) -> fine_data`
 
   Reindexes a cell-wise array from the old mesh to the new mesh.
 """
