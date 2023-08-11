@@ -117,34 +117,6 @@ function LinearAlgebra.fillstored!(a::BlockArray,v)
   map(ai->LinearAlgebra.fillstored!(ai,v),blocks(a))
 end
 
-struct ArrayBlockView{A,N,M}
-  array::ArrayBlock{A,M}
-  block_map::Array{CartesianIndex{M},N}
-end
-
-Base.view(a::ArrayBlock{A,M},b::Array{CartesianIndex{M},N}) where {A,M,N} = ArrayBlockView(a,b)
-const MatrixBlockView{A} = ArrayBlockView{A,2,2} where A
-const VectorBlockView{A} = ArrayBlockView{A,1,1} where A
-
-Base.size(a::ArrayBlockView) = size(a.block_map)
-Base.length(b::ArrayBlockView) = length(b.block_map)
-Base.eltype(::Type{<:ArrayBlockView{A}}) where A = A
-Base.eltype(::ArrayBlockView{A}) where A = A
-Base.ndims(::ArrayBlockView{A,N}) where {A,N} = N
-Base.ndims(::Type{ArrayBlockView{A,N}}) where {A,N} = N
-Base.getindex(b::ArrayBlockView,i...) = getindex(b.array,b.block_map[i...])
-Base.setindex!(b::ArrayBlockView,v,i...) = setindex!(b.array,v,b.block_map[i...])
-
-Base.copy(a::ArrayBlockView) = ArrayBlockView(copy(a.array),copy(a.block_map))
-Base.eachindex(a::ArrayBlockView) = eachindex(a.block_map)
-
-function Base.show(io::IO,o::ArrayBlockView)
-  print(io,"ArrayBlockView($(o.array), $(o.block_map))")
-end
-
-LinearAlgebra.diag(a::MatrixBlock) = view(a.array,diag(CartesianIndices(a.array)))
-LinearAlgebra.diag(a::MatrixBlockView) = view(a.array.array, diag(a.block_map))
-
 # map cell ids
 
 for T in [:MatrixBlock,:MatrixBlockView]

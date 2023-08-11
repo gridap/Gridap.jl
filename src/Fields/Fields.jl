@@ -86,6 +86,9 @@ export ArrayBlock
 export VectorBlock
 export MatrixBlock
 export BlockMap
+export ArrayBlockView
+export VectorBlockView
+export MatrixBlockView
 
 export VoidField
 export VoidFieldMap
