@@ -33,7 +33,7 @@ adapt
 ## Edge-Based refinement
 
 The module provides a `refine` method for `UnstructuredDiscreteModel`. The method takes a string `refinement_method`
-that determines the refinement startegy to be used. The following strategies are available:
+that determines the refinement strategy to be used. The following strategies are available:
 
 - `"red_green"` :: Red-Green refinement, default.
 - `"nvb"` :: Longest-edge bisection (only for meshes of TRIangles)
@@ -69,12 +69,12 @@ a 2x3 grid of cells.
 
 ## Notes for users
 
-Most of the tools provided by this module are showcased in the tests of the module itself, as well as the following tutorial (comming soon).
+Most of the tools provided by this module are showcased in the tests of the module itself, as well as the following tutorial (coming soon).
 
 However, we want to stress a couple of key performance-critical points:
 
 - The refining/coarsening routines are not optimized for performance. In particular, they are not parallelized.
-  If you require an optimized/parallel implementation, please consider leveraging spetialised meshing libraries. For instance, we provide an implementation of `refine/coarsen` using P4est in the [GridapP4est.jl](https://github.com/gridap/GridapP4est.jl) library.
+  If you require an optimized/parallel implementation, please consider leveraging specialised meshing libraries. For instance, we provide an implementation of `refine/coarsen` using P4est in the [GridapP4est.jl](https://github.com/gridap/GridapP4est.jl) library.
 
 - Although the toolbox allows you to evaluate `CellFields` defined on both fine/coarse meshes on their parent/children mesh, both directions of evaluation are not equivalent. As a user, you should always try to evaluate/integrate on the finest mesh for maximal performance. Evaluating a fine `CellField` on a coarse mesh relies on local tree searches, and is therefore a very expensive operation that should be avoided whenever possible.
 
