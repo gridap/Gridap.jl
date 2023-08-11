@@ -13,6 +13,7 @@ end
   include("ComplexChangeDomainTests.jl")
   include("EdgeBasedRefinementTests.jl")
   include("FineToCoarseFieldsTests.jl")
+  include("RefinementRuleBoundaryTests.jl")
 end
 
 @testset "CompositeQuadratures" begin
