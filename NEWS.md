@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   [#901](https://github.com/gridap/Gridap.jl/pull/901).
 - When refining `DiscreteModels`, the `FaceLabeling` of the resulting `AdaptedDiscreteModel` will now correctly inhering the tags of the parent model. This has been made possible by the addition of the method `get_d_to_face_to_parent_face`. Since PR[#886](https://github.com/gridap/Gridap.jl/pull/886).
 - Added support for mixed adaptivity (i.e coarsening and refining), as well as non-conforming adaptivity. Since PR[#886](https://github.com/gridap/Gridap.jl/pull/886).
+- Added support for block assembly of FE systems. Two new types `BlockMultiFieldStyle` and `BlockSparseMatrixAssemblers` have been added. Since PR[#915](https://github.com/gridap/Gridap.jl/pull/915).
 
 ### Changed
 
