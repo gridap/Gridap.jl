@@ -8,8 +8,8 @@ The adaptivity module provides a framework to work with adapted (refined/coarsen
 
 It provides
 
-- A generic interface to represent adapted meshes and a set of tools to work with Finite Element spaces defined on them. In particular, moving `CellFields` between different levels of the hierarchy.
-- Particular implementations for conformally refining/coarsening 2D/3D meshes using several well-known strategies. In particular, Red-Green refinement and longest-edge bisection (TRI only).
+- A generic interface to represent adapted meshes and a set of tools to work with Finite Element spaces defined on them. In particular, moving `CellFields` between parent and child meshes.
+- Particular implementations for conformally refining/coarsening 2D/3D meshes using several well-known strategies. In particular, Red-Green refinement and longest-edge bisection.
 
 ## Interface
 
@@ -32,7 +32,7 @@ adapt
 
 ## Edge-Based refinement
 
-Provides a `refine` method for `UnstructuredDiscreteModel`. The method takes a string `refinement_method`
+The module provides a `refine` method for `UnstructuredDiscreteModel`. The method takes a string `refinement_method`
 that determines the refinement startegy to be used. The following strategies are available:
 
 - `"red_green"` :: Red-Green refinement, default.
@@ -56,7 +56,7 @@ might get refined in order to guarantee that the mesh remains conforming.
 
 ## CartesianDiscreteModel refining
 
-Provides a `refine` method for `CartesianDiscreteModel`. The method takes a `Tuple` of size `Dc`
+The module provides a `refine` method for `CartesianDiscreteModel`. The method takes a `Tuple` of size `Dc`
 (the dimension of the model cells) that will determine how many times cells will be refined in
 each direction. For example, for a 2D model, `refine(model,(2,3))` will refine each QUAD cell into
 a 2x3 grid of cells.
@@ -77,3 +77,29 @@ However, we want to stress a couple of key performance-critical points:
   If you require an optimized/parallel implementation, please consider leveraging spetialised meshing libraries. For instance, we provide an implementation of `refine/coarsen` using P4est in the [GridapP4est.jl](https://github.com/gridap/GridapP4est.jl) library.
 
 - Although the toolbox allows you to evaluate `CellFields` defined on both fine/coarse meshes on their parent/children mesh, both directions of evaluation are not equivalent. As a user, you should always try to evaluate/integrate on the finest mesh for maximal performance. Evaluating a fine `CellField` on a coarse mesh relies on local tree searches, and is therefore a very expensive operation that should be avoided whenever possible.
+
+## Notes for developers
+
+### Topology mappings
+
+```@docs
+get_d_to_fface_to_cface
+get_d_to_face_to_child_faces
+get_d_to_face_to_parent_face
+```
+
+### DoF mappings
+
+```@docs
+get_face_subface_ldof_to_cell_ldof
+```
+
+### New-to-old field evaluations
+
+When a cell is refined, we need to be able to evaluate the fields defined on the children cells on the parent cell. To do so, we bundle the fields defined on the children cells into a new type of `Field` called `FineToCoarseField`. When evaluated on a `Point`, a `FineToCoarseField` will select the child cell that contains the `Point` and evaluate the mapped point on the corresponding child field.
+
+```@docs
+FineToCoarseField
+FineToCoarseDofBasis
+FineToCoarseRefFE
+```
