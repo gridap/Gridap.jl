@@ -4,15 +4,24 @@ struct RefinementGlue <: AdaptivityGlueType end
 struct MixedGlue <: AdaptivityGlueType end
 
 """
-Adaptivity glue between two nested triangulations:
+Glue containing the map between two nested triangulations. The contained datastructures will 
+depend on the type of glue. There are two types of `AdaptivityGlue`: 
 
-- `n2o_faces_map`       : Given a new face gid, returns 
-        A) if fine, the gid of the old face containing it.
-        B) if coarse, the gids of its children (in child order)
-- `n2o_cell_to_child_id`: Given a new cell gid, returns 
-        A) if fine, the local child id within the (old) coarse cell containing it.
-        B) if coarse, a list of local child ids of the (old) cells containing it.
-- `refinement_rules`    : RefinementRule used for each coarse cell.
+- `RefinementGlue` :: All cells in the new mesh are children of cells in the old mesh. I.e given 
+  a new cell, it is possible to find a single old cell containing it (the new cell might be exactly
+  the old cell if no refinement).
+- `MixedGlue` :: Some cells in the new mesh are children of cells in the old mesh, while others are
+  parents of cells in the old mesh. 
+
+Contains: 
+
+- `n2o_faces_map` :: Given a new face gid, returns
+  - if fine, the gid of the old face containing it.
+  - if coarse, the gids of its children (in child order)
+- `n2o_cell_to_child_id` :: Given a new cell gid, returns 
+  - if fine, the local child id within the (old) coarse cell containing it.
+  - if coarse, a list of local child ids of the (old) cells containing it.
+- `refinement_rules` :: Array conatining the `RefinementRule` used for each coarse cell.
 """
 struct AdaptivityGlue{GT,Dc,A,B,C,D,E} <: GridapType
   n2o_faces_map        :: A
@@ -62,7 +71,7 @@ select_refined_cells(n2o_cell_map::Vector) = Fill(true,length(n2o_cell_map))
 select_refined_cells(n2o_cell_map::Table) = map(x -> length(x) == 1, n2o_cell_map)
 
 """
-For each fine cell, returns Φ st. x_coarse = ϕ(x_fine)
+For each fine cell, returns the map Φ st. x_coarse = ϕ(x_fine)
 """
 function get_n2o_reference_coordinate_map(g::AdaptivityGlue{RefinementGlue})
   rrules    = get_new_cell_refinement_rules(g)
@@ -127,6 +136,10 @@ function get_o2n_faces_map(ncell_to_ocell::Vector{T}) where {T<:Integer}
   return ocell_to_ncell
 end
 
+"""
+  Given a `RefinementGlue`, returns an array containing the refinement rules for each
+  cell in the new mesh. 
+"""
 function get_new_cell_refinement_rules(g::AdaptivityGlue{<:RefinementGlue})
   old_rrules = g.refinement_rules
   n2o_faces_map = g.n2o_faces_map[end]
@@ -140,24 +153,38 @@ function get_new_cell_refinement_rules(g::AdaptivityGlue{<:MixedGlue})
   return lazy_map(Reindex(old_rrules), new_idx)
 end
 
+"""
+  Given a `RefinementGlue`, returns an array containing the refinement rules for each
+  cell in the old mesh. 
+"""
 function get_old_cell_refinement_rules(g::AdaptivityGlue)
   return g.refinement_rules
 end
 
 # Data re-indexing
 
-function f2c_reindex(fine_data,g::AdaptivityGlue)
-  ccell_to_fcell = g.o2n_faces_map
-  return _reindex(fine_data,ccell_to_fcell)
+"""
+  `function n2o_reindex(new_data,g::AdaptivityGlue) -> old_data`
+
+  Reindexes a cell-wise array from the new mesh to the old mesh.
+"""
+function n2o_reindex(new_data,g::AdaptivityGlue)
+  ocell_to_ncell = g.o2n_faces_map
+  return _reindex(new_data,ocell_to_ncell)
 end
 
-function c2f_reindex(coarse_data,g::AdaptivityGlue{GT,Dc}) where {GT,Dc}
-  fcell_to_ccell = g.n2o_faces_map[Dc+1]
-  return _reindex(coarse_data,fcell_to_ccell)
+"""
+  `function o2n_reindex(old_data,g::AdaptivityGlue) -> new_data`
+
+  Reindexes a cell-wise array from the old mesh to the new mesh.
+"""
+function o2n_reindex(old_data,g::AdaptivityGlue{GT,Dc}) where {GT,Dc}
+  ncell_to_ocell = g.n2o_faces_map[Dc+1]
+  return _reindex(old_data,ncell_to_ocell)
 end
 
-f2c_reindex(a::CellDatum,g::AdaptivityGlue) = f2c_reindex(CellData.get_data(a),g::AdaptivityGlue)
-c2f_reindex(a::CellDatum,g::AdaptivityGlue) = c2f_reindex(CellData.get_data(a),g::AdaptivityGlue)
+n2o_reindex(a::CellDatum,g::AdaptivityGlue) = n2o_reindex(CellData.get_data(a),g::AdaptivityGlue)
+o2n_reindex(a::CellDatum,g::AdaptivityGlue) = o2n_reindex(CellData.get_data(a),g::AdaptivityGlue)
 
 function _reindex(data,idx::Table)
   m = Reindex(data)
@@ -189,7 +216,7 @@ function get_d_to_fface_to_cface(glue::AdaptivityGlue{<:RefinementGlue},
                                  ftopo::GridTopology{Dc}) where Dc
 
   # Local data for each coarse cell, at the RefinementRule level
-  rrules = Adaptivity.get_old_cell_refinement_rules(glue)
+  rrules = get_old_cell_refinement_rules(glue)
   ccell_to_d_to_faces = lazy_map(rr->map(d->Geometry.get_faces(get_grid_topology(rr.ref_grid),Dc,d),0:Dc),rrules)
   ccell_to_d_to_fface_to_parent_face = lazy_map(get_d_to_face_to_parent_face,rrules)
 

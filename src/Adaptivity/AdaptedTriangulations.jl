@@ -1,13 +1,12 @@
 
 """
-  AdaptedTriangulation
 
   Triangulation produced from an AdaptedDiscreteModel.
   
   Contains: 
 
-  - adapted_model ~> AdaptedDiscreteModel for the triangulation.
-  - trian ~> Triangulation extracted from the background model, i.e get_model(adapted_model).
+  - adapted_model :: `AdaptedDiscreteModel` for the triangulation.
+  - trian :: `Triangulation` extracted from the background model, i.e `get_model(adapted_model)`.
 """
 struct AdaptedTriangulation{Dc,Dp,A<:Triangulation{Dc,Dp},B<:AdaptedDiscreteModel} <: Triangulation{Dc,Dp}
   trian::A
@@ -273,7 +272,7 @@ function change_domain_o2n(f_coarse,ctrian::Triangulation{Dc},ftrian::AdaptedTri
     ### Old Model -> New Model
     # Coarse field but with fine indexing, i.e 
     #   f_f2c[i_fine] = f_coarse[coarse_parent(i_fine)]
-    f_f2c = c2f_reindex(coarse_mface_to_field,glue)
+    f_f2c = o2n_reindex(coarse_mface_to_field,glue)
 
     # Fine to coarse coordinate map: x_coarse = Φ^(-1)(x_fine)
     ref_coord_map = get_n2o_reference_coordinate_map(glue)
@@ -307,7 +306,7 @@ function change_domain_o2n(
   if (num_cells(old_trian) != 0)
     # If mixed refinement/coarsening, then f_c2f is a Table
     f_old_data  = CellData.get_data(f_old)
-    f_c2f       = c2f_reindex(f_old_data,glue)
+    f_c2f       = o2n_reindex(f_old_data,glue)
     new_rrules  = get_new_cell_refinement_rules(glue)
     field_array = lazy_map(OldToNewField, f_c2f, new_rrules, glue.n2o_cell_to_child_id)
     return CellData.similar_cell_field(f_old,field_array,new_trian,ReferenceDomain())
@@ -339,9 +338,9 @@ function change_domain_n2o(f_fine,ftrian::AdaptedTriangulation{Dc},ctrian::Trian
 
     ### New Model -> Old Model
     # f_c2f[i_coarse] = [f_fine[i_fine_1], ..., f_fine[i_fine_nChildren]]
-    f_c2f = f2c_reindex(fine_mface_to_field,glue)
+    f_c2f = n2o_reindex(fine_mface_to_field,glue)
 
-    child_ids = f2c_reindex(glue.n2o_cell_to_child_id,glue)
+    child_ids = n2o_reindex(glue.n2o_cell_to_child_id,glue)
     rrules    = get_old_cell_refinement_rules(glue)
     coarse_mface_to_field = lazy_map(FineToCoarseField,f_c2f,rrules,child_ids)
 

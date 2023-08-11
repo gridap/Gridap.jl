@@ -1,8 +1,8 @@
 
 """
-  AdaptedDiscreteModel
 
-  `DiscreteModel` created by refining/coarsening another `DiscreteModel`. 
+  `DiscreteModel` created by refining/coarsening another `DiscreteModel`.
+  
   The refinement/coarsening hierarchy can be traced backwards by following the 
   `parent` pointer chain. This allows the transfer of dofs 
   between `FESpaces` defined on this model and its ancestors.
@@ -51,6 +51,11 @@ is_related(m1::DiscreteModel,m2::DiscreteModel) = is_child(m1,m2) || is_child(m2
 
 # Model Adaptation
 
+"""
+  function refine(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
+
+  Returns an `AdaptedDiscreteModel` that is the result of refining the given `DiscreteModel`.
+"""
 function refine(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
 end
@@ -60,10 +65,21 @@ function refine(model::AdaptedDiscreteModel,args...;kwargs...)
   return AdaptedDiscreteModel(ref_model.model,model,ref_model.glue)
 end
 
+"""
+  function coarsen(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
+
+  Returns an `AdaptedDiscreteModel` that is the result of coarsening the given `DiscreteModel`.
+"""
 function coarsen(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
 end
 
+"""
+  function adapt(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
+
+  Returns an `AdaptedDiscreteModel` that is the result of adapting (mixed coarsening and refining) 
+  the given `DiscreteModel`.
+"""
 function adapt(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
 end
