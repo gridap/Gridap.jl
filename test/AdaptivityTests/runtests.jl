@@ -5,6 +5,7 @@ using Test
 @testset "AdaptedGeometry" begin
   include("RefinementRulesTests.jl")
   include("AdaptedGeometryTests.jl")
+  include("FaceLabelingTests.jl")
 end
 
 @testset "Refinement" begin
