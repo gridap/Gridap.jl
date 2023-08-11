@@ -11,7 +11,7 @@ Adaptivity glue between two nested triangulations:
         B) if coarse, the gids of its children (in child order)
 - `n2o_cell_to_child_id`: Given a new cell gid, returns 
         A) if fine, the local child id within the (old) coarse cell containing it.
-        B) if coarse, -1
+        B) if coarse, a list of local child ids of the (old) cells containing it.
 - `refinement_rules`    : RefinementRule used for each coarse cell.
 """
 struct AdaptivityGlue{GT,Dc,A,B,C,D,E} <: GridapType
@@ -20,30 +20,36 @@ struct AdaptivityGlue{GT,Dc,A,B,C,D,E} <: GridapType
   refinement_rules     :: C
   o2n_faces_map        :: D
   is_refined           :: E
+  function AdaptivityGlue(GT::AdaptivityGlueType,
+    n2o_faces_map::Vector{<:Union{AbstractVector{<:Integer},Table{<:Integer}}},
+    n2o_cell_to_child_id::Union{AbstractVector{<:Integer},Table{<:Integer}},
+    refinement_rules::AbstractVector{<:RefinementRule})
 
-  function AdaptivityGlue(n2o_faces_map::Vector{<:Union{AbstractVector{<:Integer},Table{<:Integer}}},
-                          n2o_cell_to_child_id::Union{AbstractVector{<:Integer},Table{<:Integer}},
-                          refinement_rules::AbstractVector{<:RefinementRule})
+    if (isa(GT,MixedGlue))
+      @assert isa(n2o_faces_map,Vector{<:Table{<:Integer}})
+      @assert isa(n2o_cell_to_child_id,Table{<:Integer})
+    else
+      @assert isa(n2o_faces_map,Vector{<:AbstractVector{<:Integer}})
+      @assert isa(n2o_cell_to_child_id,AbstractVector{<:Integer})
+    end
     Dc = length(n2o_faces_map)-1
     is_refined    = select_refined_cells(n2o_faces_map[Dc+1])
     o2n_faces_map = get_o2n_faces_map(n2o_faces_map[Dc+1])
-
-    GT = all(is_refined) ? RefinementGlue : MixedGlue
-    if isa(GT(),RefinementGlue)
-      @assert isa(n2o_faces_map,Vector{<:AbstractVector{<:Integer}})
-      @assert isa(n2o_cell_to_child_id,AbstractVector{<:Integer})
-    else
-      @assert isa(n2o_faces_map,Vector{<:Table{<:Integer}})
-      @assert isa(n2o_cell_to_child_id,Table{<:Integer})
-    end
-
     A = typeof(n2o_faces_map)
     B = typeof(n2o_cell_to_child_id)
     C = typeof(refinement_rules)
     D = typeof(o2n_faces_map)
     E = typeof(is_refined)
-    new{GT,Dc,A,B,C,D,E}(n2o_faces_map,n2o_cell_to_child_id,refinement_rules,o2n_faces_map,is_refined)
+    new{typeof(GT),Dc,A,B,C,D,E}(n2o_faces_map,n2o_cell_to_child_id,refinement_rules,o2n_faces_map,is_refined)
   end
+end
+
+function AdaptivityGlue(n2o_faces_map::Vector{<:Union{AbstractVector{<:Integer},Table{<:Integer}}},
+                        n2o_cell_to_child_id::Union{AbstractVector{<:Integer},Table{<:Integer}},
+                        refinement_rules::AbstractVector{<:RefinementRule})
+  is_refined = select_refined_cells(n2o_faces_map[end])
+  GT = all(is_refined) ? RefinementGlue : MixedGlue
+  AdaptivityGlue(GT(),n2o_faces_map,n2o_cell_to_child_id,refinement_rules)
 end
 
 function AdaptivityGlue(n2o_faces_map,n2o_cell_to_child_id,refinement_rule::RefinementRule)
