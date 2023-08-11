@@ -82,16 +82,18 @@ However, we want to stress a couple of key performance-critical points:
 
 ### Topology mappings
 
+Given a `RefinementRule`, the library provides a set of methods to compute the mappings between parent (coarse) face ids and child (fine) face ids (and vice-versa). The ids are local to the `RefinementRule`.
+
 ```@docs
-get_d_to_fface_to_cface
 get_d_to_face_to_child_faces
 get_d_to_face_to_parent_face
+get_face_subface_ldof_to_cell_ldof
 ```
 
-### DoF mappings
+Similar routines are defined mesh-wise given a `RefinementGlue`:
 
 ```@docs
-get_face_subface_ldof_to_cell_ldof
+get_d_to_fface_to_cface
 ```
 
 ### New-to-old field evaluations

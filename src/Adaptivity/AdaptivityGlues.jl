@@ -71,7 +71,7 @@ select_refined_cells(n2o_cell_map::Vector) = Fill(true,length(n2o_cell_map))
 select_refined_cells(n2o_cell_map::Table) = map(x -> length(x) == 1, n2o_cell_map)
 
 """
-For each fine cell, returns Φ st. x_coarse = ϕ(x_fine)
+For each fine cell, returns the map Φ st. x_coarse = ϕ(x_fine)
 """
 function get_n2o_reference_coordinate_map(g::AdaptivityGlue{RefinementGlue})
   rrules    = get_new_cell_refinement_rules(g)
@@ -136,6 +136,10 @@ function get_o2n_faces_map(ncell_to_ocell::Vector{T}) where {T<:Integer}
   return ocell_to_ncell
 end
 
+"""
+  Given a `RefinementGlue`, returns an array containing the refinement rules for each
+  cell in the new mesh. 
+"""
 function get_new_cell_refinement_rules(g::AdaptivityGlue{<:RefinementGlue})
   old_rrules = g.refinement_rules
   n2o_faces_map = g.n2o_faces_map[end]
@@ -149,24 +153,38 @@ function get_new_cell_refinement_rules(g::AdaptivityGlue{<:MixedGlue})
   return lazy_map(Reindex(old_rrules), new_idx)
 end
 
+"""
+  Given a `RefinementGlue`, returns an array containing the refinement rules for each
+  cell in the old mesh. 
+"""
 function get_old_cell_refinement_rules(g::AdaptivityGlue)
   return g.refinement_rules
 end
 
 # Data re-indexing
 
-function f2c_reindex(fine_data,g::AdaptivityGlue)
+"""
+  function n2o_reindex(fine_data,g::AdaptivityGlue) -> coarse_data
+
+  Reindexes a cell-wise array from the new mesh to the old mesh.
+"""
+function n2o_reindex(fine_data,g::AdaptivityGlue)
   ccell_to_fcell = g.o2n_faces_map
   return _reindex(fine_data,ccell_to_fcell)
 end
 
-function c2f_reindex(coarse_data,g::AdaptivityGlue{GT,Dc}) where {GT,Dc}
+"""
+  function o2n_reindex(coarse_data,g::AdaptivityGlue) -> fine_data
+
+  Reindexes a cell-wise array from the old mesh to the new mesh.
+"""
+function o2n_reindex(coarse_data,g::AdaptivityGlue{GT,Dc}) where {GT,Dc}
   fcell_to_ccell = g.n2o_faces_map[Dc+1]
   return _reindex(coarse_data,fcell_to_ccell)
 end
 
-f2c_reindex(a::CellDatum,g::AdaptivityGlue) = f2c_reindex(CellData.get_data(a),g::AdaptivityGlue)
-c2f_reindex(a::CellDatum,g::AdaptivityGlue) = c2f_reindex(CellData.get_data(a),g::AdaptivityGlue)
+n2o_reindex(a::CellDatum,g::AdaptivityGlue) = n2o_reindex(CellData.get_data(a),g::AdaptivityGlue)
+o2n_reindex(a::CellDatum,g::AdaptivityGlue) = o2n_reindex(CellData.get_data(a),g::AdaptivityGlue)
 
 function _reindex(data,idx::Table)
   m = Reindex(data)
