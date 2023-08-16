@@ -261,8 +261,8 @@ end
 function allocate_jacobian(
   op::TransientFEOperatorFromWeakForm,
   t0::Real,
-  uh::CellField,
-  cache)
+  uh::T,
+  cache) where T
   _matdata_jacobians = fill_initial_jacobians(op,t0,uh)
   matdata = _vcat_matdata(_matdata_jacobians)
   allocate_matrix(op.assem_t,matdata)
