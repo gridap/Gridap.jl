@@ -124,6 +124,7 @@ end
 
 get_data(f::CellQuadrature) = f.cell_quad
 get_triangulation(f::CellQuadrature) = f.trian
+DomainStyle(::Type{CellQuadrature{DDS,IDS}}) where {DDS,IDS} = DDS()
 
 function change_domain(a::CellQuadrature,::ReferenceDomain,::PhysicalDomain)
   @notimplemented
