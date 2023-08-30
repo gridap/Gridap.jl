@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Block assembly now generalised to work with `AbstractBlockArrays`, to include changes in GridapDistributed. Since PR [939](https://github.com/gridap/Gridap.jl/pull/939).
 
+### Fixed
+
+- Using Broadcasting(\circ) instead of \circ in one of the lazy_maps used to transform a coarse field into a fine field. Since PR [#938](https://github.com/gridap/Gridap.jl/pull/938).
+
 ## [0.17.19] - 2023-08-23
 
 ### Fixed
