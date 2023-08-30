@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased 
+
+### Fixed
+
+- Using Broadcasting(\circ) instead of \circ in one of the lazy_maps used to transform a coarse field into a fine field. Since PR [#938](https://github.com/gridap/Gridap.jl/pull/938).
+
 ## [0.17.19] - 2023-08-23
 
 ### Fixed
