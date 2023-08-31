@@ -75,7 +75,8 @@ function coarsen(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
 end
 
-function coarsen(model::DiscreteModel,args...;coarsening_method="nvb",kwargs...)
+function coarsen(model::UnstructuredDiscreteModel,args...;coarsening_method="nvb",kwargs...)
+  println("Entering first coarsen")
   return coarsen(string_to_coarsening(coarsening_method, model),model,args...;kwargs...)
 end
 
