@@ -163,7 +163,11 @@ trian9 = Triangulation(ref_model9.model)
 visualize && writevtk(trian9, "test/AdaptivityTests/ref_model9")
 test_grid_transfers(2, ref_model8, ref_model9, 1)
 trian8 = Triangulation(ref_model8)
-coarsen(ref_model9, coarsening_method="nvb", cells_to_coarsen=[1,2])
+ref_model10 = coarsen(ref_model9, coarsening_method="nvb", cells_to_coarsen=[1,2])
+trian10 = Triangulation(ref_model10)
+coords = get_node_coordinates(ref_model10)
+@show VectorValue(0.125, 0.25) in coords
+visualize && writevtk(trian10, "test/AdaptivityTests/ref_model10")
 #ref_modeln = ref_model9.model
 #let
 #	ref_modeln = ref_model9
