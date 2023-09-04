@@ -155,15 +155,15 @@ test_grid_transfers(2, model2, ref_model7, 1)
 
 # Refine all edges using NVB
 # Mark edges such that blue, and double_blue refinement are triggered
-ref_model8 = refine(model2, refinement_method = "nvb", cells_to_refine = [4, 9])
+ref_model8 = refine(model2, refinement_method = "nvb", cells_to_refine = [4, 9, 31, 32])
 trian8 = Triangulation(ref_model8)
 visualize && writevtk(trian8, "test/AdaptivityTests/ref_model8")
-ref_model9 = refine(ref_model8, refinement_method = "nvb", cells_to_refine = [1, 3, 4, 11])
+ref_model9 = refine(ref_model8, refinement_method = "nvb", cells_to_refine = [3, 4, 11, 38])
 trian9 = Triangulation(ref_model9.model)
 visualize && writevtk(trian9, "test/AdaptivityTests/ref_model9")
 test_grid_transfers(2, ref_model8, ref_model9, 1)
 trian8 = Triangulation(ref_model8)
-ref_model10 = coarsen(ref_model9, coarsening_method="nvb", cells_to_coarsen=[1,2])
+@time ref_model10 = coarsen(ref_model9, coarsening_method="nvb", cells_to_coarsen=[1,2])
 trian10 = Triangulation(ref_model10)
 coords = get_node_coordinates(ref_model10)
 @show VectorValue(0.125, 0.25) in coords

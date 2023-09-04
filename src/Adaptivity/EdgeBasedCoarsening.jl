@@ -193,7 +193,6 @@ function _coarsen_unstructured_topology(
     cell_color = copy(cell_types) # WHITE
     coords = get_vertex_coordinates(topo)
     c_to_longest_edge_gid = method.cell_to_longest_edge_gid
-    c_to_longest_edge_lid = method.cell_to_longest_edge_lid
     good_nodes = _identify_good_nodes_to_coarsen(
         n2c_map_cache,
         n2c_map,
@@ -205,45 +204,42 @@ function _coarsen_unstructured_topology(
     cell_to_parent_gid = glue.n2o_faces_map[3]
     all_brother_pairs =
         _get_brother_pairs(good_nodes, n2c_map_cache, n2c_map, cell_to_parent_gid)
-    all_brother_pairs_flat = eltype(cell_to_parent_gid)[]
+    cells_to_remove = eltype(cell_to_parent_gid)[]
     for (good_node, pairs) in all_brother_pairs
         for pair in pairs
-            push!(all_brother_pairs_flat, pair.first)
-            push!(all_brother_pairs_flat, pair.second)
+            push!(cells_to_remove, pair.first)
+            push!(cells_to_remove, pair.second)
         end
     end
     @show good_nodes
-    @show all_brother_pairs_flat
+    @show cells_to_remove
     new_cells = []
     for brothers in values(all_brother_pairs)
         union!(new_cells, _combine_brothers(brothers, e2n_map, e2n_map_cache, c_to_longest_edge_gid, coords))
     end
     @show new_cells
     # Setup c2n_map_new
-    c2n_map_new = Vector{Vector{Int32}}()
+    num_new_cells = length(c2n_map) - length(cells_to_remove)
+    c2n_map_new = Vector{Vector{eltype(cell_to_parent_gid)}}(undef,num_new_cells)
+    c_new = 0
     for c = 1:nC
-        if c ∉ all_brother_pairs_flat
+        # If this cell should not be removed
+        if c ∉ cells_to_remove
             nodes = copy(getindex!(c2n_map_cache, c2n_map, c))
-            for i in eachindex(nodes)
-                if nodes[i] >= 29
-                    @show c
-                end
-            end
-            push!(c2n_map_new, nodes)
-        else
-            println("Brother pairs flat")
-            nodes = copy(getindex!(c2n_map_cache, c2n_map, c))
-            for i in eachindex(nodes)
-                if nodes[i] >= 29
-                    @show nodes
-                end
-            end
-
-        end
+            c_new += 1
+           c2n_map_new[c_new] = nodes
+       end
     end
     union!(c2n_map_new, new_cells)
+    for nodes in c2n_map_new
+        for i in eachindex(nodes)
+            offset = filter(n -> nodes[i] > n, good_nodes) |> length
+            nodes[i] -= offset
+        end
+    end
+    @show length(c2n_map_new)
+    @show length(coords_new)
     c2n_map_new = Table(c2n_map_new)
-    @show length(all_brother_pairs_flat)
     #coords_new = get_new_coordinates_from_faces(topo, faces_list)
     #c2n_map_new = get_refined_cell_to_vertex_map(topo, rrules, faces_list)
     #polys_new, cell_type_new = _get_cell_polytopes(rrules)
@@ -254,8 +250,6 @@ function _coarsen_unstructured_topology(
     ##orientation = NonOriented()
     #orientation = NonOriented()
     new_cell_type = ones(Int8, length(c2n_map_new))
-    @show length(new_cell_type)
-    @show length(topo.cell_type)
     return UnstructuredGridTopology(
         coords_new,
         c2n_map_new,
