@@ -30,6 +30,7 @@ using Gridap.FESpaces: get_dirichlet_dof_values
 using Gridap.FESpaces: TrialFESpace!
 using Gridap.FESpaces: HomogeneousTrialFESpace
 using Gridap.FESpaces: jacobian
+using Gridap.FESpaces: FEOperator
 
 import Gridap.Geometry: Triangulation
 import Gridap.CellData: Measure
@@ -62,6 +63,8 @@ using Gridap.ODEs.ODETools: Nonlinear
 using Gridap.ODEs.ODETools: Affine
 using Gridap.ODEs.ODETools: Constant
 using Gridap.ODEs.ODETools: ConstantMatrix
+import Gridap.ODEs.ODETools: DAEOperator
+
 import Gridap.FESpaces: get_algebraic_operator
 import Gridap.FESpaces: assemble_vector!
 import Gridap.FESpaces: assemble_matrix_add!

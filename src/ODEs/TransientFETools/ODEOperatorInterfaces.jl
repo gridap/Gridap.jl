@@ -175,3 +175,36 @@ function explicit_rhs!(
   xh=TransientCellField(EvaluationFunction(Xh[1],xhF[1]),dxh)
   explicit_rhs!(explicit_rhs,op.feop,t,xh,ode_cache)
 end
+
+"""
+It provides the explicit right hand side, E_RHS, of LHS(t,uh,∂tuh) = I_RHS(t,uh) + E_RHS(t,uh,uh_alg)
+for a given (t,uh,∂tuh,...,∂t^Nuh). uh_alg are algebraic variables.
+"""
+function explicit_rhs!(
+  explicit_rhs::AbstractVector,
+  op::ODEOpFromFEOp,
+  t::Real,
+  xhF::Tuple{Vararg{AbstractVector}},
+  xhF_alg::AbstractVector,
+  ode_cache)
+  Xh,Xh_alg, = ode_cache
+  dxh = ()
+  for i in 2:get_order(op)+1
+    dxh = (dxh...,EvaluationFunction(Xh[i],xhF[i]))
+  end
+  xh=TransientCellField(EvaluationFunction(Xh[1],xhF[1]),dxh)
+  xh_alg=EvaluationFunction(Xh_alg,xhF_alg)
+  explicit_rhs!(explicit_rhs,op.feop,t,xh,xh_alg,ode_cache)
+end
+
+"""
+DAEOperatorFromFEOp
+
+It represents a Differential Algebraic Equation operator. It is a wrapper of an
+`ODEOpFromFEOp` that represents the implicit ODE part of the DAE, and a `FEOperator`
+that represents the algebraic part of the DAE.
+"""
+struct DAEOpFromFEOp{C} <: DAEOperator{C}
+  ode_feop::TransientFEOperator{C}
+  alg_feop::FEOperator
+end

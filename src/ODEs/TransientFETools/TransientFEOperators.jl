@@ -436,6 +436,99 @@ function explicit_rhs!(
   explicit_rhs
 end
 
+# DAE IMEX-RK Transient FE operators
+"""
+Transient FE operator that is defined by a transient Weak form resulting in a
+Differential Algebraic Equations system with the form:
+
+  LHS(t,u,∂u/∂t,...) ∂u/∂t = I_RHS(t,u,∂u/∂t,...) + E_RHS(t,u,∂u/∂t,...,u_alg),
+  A(t,u,∂u/∂t,...,u_alg) = 0.
+
+Used in Implicit-Explicit Runge-Kutta schemes
+"""
+struct TransientIMEXRKDAEFEOperatorFromWeakForm{C} <: TransientFEOperator{C}
+  ode_op::TransientIMEXRKFEOperatorFromWeakForm{C}
+  alg_op::FEOperator
+end
+
+function TransientIMEXRungeKuttaDAEFEOperator(
+  ode_op::TransientIMEXRKFEOperatorFromWeakForm{C},
+  alg_op::FEOperator) where C
+  TransientIMEXRKDAEFEOperatorFromWeakForm(ode_op,alg_op)
+end
+
+"""
+Returns a `DAEOperator` wrapper of the `TransientFEOperator` that can be
+straightforwardly used with the `ODETools` module.
+"""
+function get_algebraic_operator(feop::TransientIMEXRKDAEFEOperatorFromWeakForm{C}) where C
+  DAEOpFromFEOp{C}(feop.ode_op,feop.alg_op)
+end
+
+# function allocate_residual(
+#   op::TransientIMEXRKDAEFEOperatorFromWeakForm,
+#   t0::Real,
+#   uh::T,
+#   cache) where T
+#   allocate_residual(op.ode_op,t0,uh,cache)
+# end
+
+# function lhs!(
+#   b::AbstractVector,
+#   op::TransientIMEXRKDAEFEOperatorFromWeakForm,
+#   t::Real,
+#   xh::T,
+#   cache) where T
+#   lhs!(b,op.ode_op,t,xh,cache)
+# end
+
+# function rhs!(
+#   rhs::AbstractVector,
+#   op::TransientIMEXRKDAEFEOperatorFromWeakForm,
+#   t::Real,
+#   xh::T,
+#   cache) where T
+#   rhs!(rhs,op.ode_op,t,xh,cache)
+# end
+
+# function explicit_rhs!(
+#   explicit_rhs::AbstractVector,
+#   op::TransientIMEXRKDAEFEOperatorFromWeakForm,
+#   t::Real,
+#   xh::T,
+#   xh_alg,
+#   cache) where T
+#   V = get_test(op)
+#   v = get_fe_basis(V)
+#   vecdata = collect_cell_vector(V,op.explicit_rhs(t,xh,v,xh_alg))
+#   assemble_vector!(explicit_rhs,op.assem_t,vecdata)
+#   explicit_rhs
+# end
+
+function get_assembler(op::TransientIMEXRKDAEFEOperatorFromWeakForm)
+  imexrk_assembler = get_assembler(op.ode_op)
+  alg_assembler = get_assembler(op.alg_op)
+  return (imexrk_assembler,alg_assembler)
+end
+
+function get_test(op::TransientIMEXRKDAEFEOperatorFromWeakForm)
+  imexrk_test = get_test(op.ode_op)
+  alg_test = get_test(op.alg_op)
+  return (imexrk_test,alg_op)
+end
+
+function get_trial(op::TransientIMEXRKDAEFEOperatorFromWeakForm)
+  imexrk_trial = get_trial(op.ode_op)
+  alg_trial = get_trial(op.alg_op)
+  return (imexrk_trial,alg_trial)
+end
+
+function get_order(op::TransientIMEXRKDAEFEOperatorFromWeakForm)
+  imexrk_order = get_order(op.ode_op)
+  alg_order = get_order(op.alg_op)
+  return (imexrk_order,alg_order)
+end
+
 # Common functions
 
 TransientFEOperatorsFromWeakForm = Union{TransientFEOperatorFromWeakForm,

@@ -31,7 +31,7 @@ end
 
 struct GenericODESolution{T} <: ODESolution
   solver::ODESolver
-  op::ODEOperator
+  op::Union{ODEOperator,DAEOperator}
   u0::T
   t0::Real
   tF::Real

@@ -133,3 +133,12 @@ function test_ode_operator(op::ODEOperator,t::Real,u::AbstractVector,u_t::Abstra
   jacobians!(J,op,t,(u,u_t),(1.0,1.0),cache)
   true
 end
+
+"""
+DAEOperator
+
+It represents a Differential Algebraic Equation operator. It is a wrapper of an
+`ODEOperator` that represents the implicit ODE part of the DAE, and a `NonlinearOperator`
+that represents the algebraic part of the DAE.
+"""
+abstract type DAEOperator{C<:OperatorType} <: GridapType end

@@ -39,6 +39,8 @@ export Nonlinear
 export Affine
 export Constant
 export ConstantMatrix
+export DAEOperator
+
 using Gridap.Algebra: residual
 using Gridap.Algebra: jacobian
 using Gridap.Algebra: symbolic_setup
@@ -71,6 +73,7 @@ export MidPoint
 export ThetaMethod
 export RungeKutta
 export IMEXRungeKutta
+export IMEXRungeKuttaDAE
 export Newmark
 export GeneralizedAlpha
 
