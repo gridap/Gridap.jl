@@ -52,6 +52,6 @@ Pages = [
   "Visualization.md",
   "FESpaces.md",
   "MultiField.md",
+  "Adaptivity.md",
   ]
 ```
-

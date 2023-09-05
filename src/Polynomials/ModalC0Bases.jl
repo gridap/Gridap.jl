@@ -266,8 +266,8 @@ function _sort_by_nfaces!(terms::Vector{CartesianIndex{D}},orders) where D
   # Generate indices of n-faces and order s.t.
   # (1) dimension-increasing (2) lexicographic
   bin_rang_nfaces = tfill(0:1,Val{D}())
-  bin_ids_nfaces = collect(Iterators.product(bin_rang_nfaces...))
-  sum_bin_ids_nfaces = [sum(bin_ids_nfaces[i]) for i in eachindex(bin_ids_nfaces)]
+  bin_ids_nfaces = vec(collect(Iterators.product(bin_rang_nfaces...)))
+  sum_bin_ids_nfaces = sum.(bin_ids_nfaces)
   bin_ids_nfaces = permute!(bin_ids_nfaces,sortperm(sum_bin_ids_nfaces))
 
   # Generate LIs of basis funs s.t. order by n-faces
