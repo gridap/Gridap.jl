@@ -67,11 +67,6 @@ function solve_step!(uf::AbstractVector,
   # Compute intermediate stages
   for i in 1:s
 
-    # allocate space to store the RHS at i
-    if (length(fi) < i)
-      push!(fi,similar(u0))
-    end
-
     # Update time
     ti = t0 + c[i]*dt
     ode_cache = update_cache!(ode_cache,op,ti)
