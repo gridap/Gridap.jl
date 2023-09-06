@@ -10,11 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Block assembly now generalised to work with `AbstractBlockArrays`, to include changes in GridapDistributed. Since PR [939](https://github.com/gridap/Gridap.jl/pull/939).
+- Implici-Explicit Runge-Kutta ODE solvers. Since PR [#919](https://github.com/gridap/Gridap.jl/pull/919).
 
 ### Fixed
 
 - Using Broadcasting(\circ) instead of \circ in one of the lazy_maps used to transform a coarse field into a fine field. Since PR [#938](https://github.com/gridap/Gridap.jl/pull/938).
 - Better infinite norm computation in `Algebra._check_convergence`. Now works for any `AbstractArray` type, including `PVector`. Since PR [#940](https://github.com/gridap/Gridap.jl/pull/940).
+- Updated Runge-Kutta solver. Since PR [#919](https://github.com/gridap/Gridap.jl/pull/919).
 
 ## [0.17.19] - 2023-08-23
 
