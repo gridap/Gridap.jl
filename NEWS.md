@@ -9,11 +9,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Block assembly now generalised to work with `AbstractBlockArrays`, to include changes in GridapDistributed. Since PR [939](https://github.com/gridap/Gridap.jl/pull/939).
+- Implici-Explicit Runge-Kutta ODE solvers. Since PR [#919](https://github.com/gridap/Gridap.jl/pull/919).
+
 ### Fixed
 
+- Using Broadcasting(\circ) instead of \circ in one of the lazy_maps used to transform a coarse field into a fine field. Since PR [#938](https://github.com/gridap/Gridap.jl/pull/938).
+- Better infinite norm computation in `Algebra._check_convergence`. Now works for any `AbstractArray` type, including `PVector`. Since PR [#940](https://github.com/gridap/Gridap.jl/pull/940).
+- Updated Runge-Kutta solver. Since PR [#919](https://github.com/gridap/Gridap.jl/pull/919).
+
+## [0.17.19] - 2023-08-23
+
+### Fixed
+
+- Reimplemented `DomainStyle` for `CellQuadrature` to fix breaking low-level Poisson tutorial. Since PR [#937](https://github.com/gridap/Gridap.jl/pull/937).
+
+## [0.17.18] - 2023-08-15
+
+### Added
+
+- Jacobi polynomial bases. Since PR [#896](https://github.com/gridap/Gridap.jl/pull/896).
+- Replaced newest vertex bisection mesh adaptation in
+  `src/Geometry/NewestVertexBisection.jl` with appropriate changes to
+  `src/Adaptivity/EdgeBasedRefinement.jl`. Since PR
+  [#901](https://github.com/gridap/Gridap.jl/pull/901).
+- When refining `DiscreteModels`, the `FaceLabeling` of the resulting `AdaptedDiscreteModel` will now correctly inhering the tags of the parent model. This has been made possible by the addition of the method `get_d_to_face_to_parent_face`. Since PR[#886](https://github.com/gridap/Gridap.jl/pull/886).
+- Added support for mixed adaptivity (i.e coarsening and refining), as well as non-conforming adaptivity. Since PR[#886](https://github.com/gridap/Gridap.jl/pull/886).
+- Added support for block assembly of FE systems. Two new types `BlockMultiFieldStyle` and `BlockSparseMatrixAssemblers` have been added. Since PR[#915](https://github.com/gridap/Gridap.jl/pull/915).
+
+### Changed
+
+- The API of `CellQuadrature` has now both data and integration domain styles as keyword arguments. Old signatures are deprecated. Since PR [#885](https://github.com/gridap/Gridap.jl/pull/885).
+
+### Fixed
+
+- ODE operators cache linear system at initial time or the time stored by the operator. Before, the linear system was cached at time `t = 0.0`, which cannot be done if the operator is not well-defined at `t = 0.0`. Since PR [#891](https://github.com/gridap/Gridap.jl/pull/891).
 - Fixed the method `get_normal_vector` for `AdaptedTriangulation`. The method `get_facet_normal`
   was using default, it's now using the spetialized implementation for the underlying triangulation type.
   Since PR [#884](https://github.com/gridap/Gridap.jl/pull/884).
+- Fixed `cell_dof_ids` for the case of vectorial `ConstantFESpace`. Since PR [#888](https://github.com/gridap/Gridap.jl/pull/888)
+- Fixed generation of Modal C0 bases for Julia 1.9. Since PR [#918](https://github.com/gridap/Gridap.jl/pull/918).
+- Fixed some edge cases for `change_domain` between `AdaptedTriangulations` where inneficient coordinate transformations would be applied between physical and reference domains. Since PR[#886](https://github.com/gridap/Gridap.jl/pull/886).
+- Fixed: Domain limits can now be of any type (notably, floats) when refining `CartesianDiscreteModels`. Since PR[#886](https://github.com/gridap/Gridap.jl/pull/886).
 
 ## [0.17.17] - 2023-02-24
 
@@ -21,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implemented `RefinementRule` and `AdaptivityGlue`, which encode the mapping between the old and new cells in an adapted model. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
 - Implemented `AdaptedDiscreteModel` and `AdaptedTriangulation`, representing respectively a model and triangulation produced by adapting a parent model. This types mostly wrap around `DiscreteModel` and `Triangulation`, with some added features necessary to keep track of the adaptive hierarchy. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
-- Implemented tools to be able to transfer `CellDatum`s back and forth between parent and child grids. These include changes to `change_domain` (which now takes the source `Triangulation` as argument) and a new type of `Measure` called `CompositeMeasure`, which allows the integration `Triangulation` to be different from the `Triangulation` of the resulting `DomainContribution`. To accomodate `CompositeMeasure`, `Measure` has been made abstract type and a `GenericMeasure` has been created to replace the old type. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Implemented tools to be able to transfer `CellDatum`s back and forth between parent and child grids. These include changes to `change_domain` (which now takes the source `Triangulation` as argument) and a new type of `Measure` called `CompositeMeasure`, which allows the integration `Triangulation` to be different from the `Triangulation` of the resulting `DomainContribution`. To accommodate `CompositeMeasure`, `Measure` has been made abstract type and a `GenericMeasure` has been created to replace the old type. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
 - For the fine-to-coarse transfer of `CellField`s, the new `FineToCoarseField` has been implemented. This new structure bundles several fields defined on the fine mesh to create a single field on the coarse mesh. To enable fast interpolation of this type of field, we have also implemented `FineToCoarseReferenceFE` and `FineToCoarseDofBasis`. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
 - Implemented `CompositeQuadrature`, a quadrature for a cell that has been refined using a `RefinementRule`. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
 - Implemented simple refinement strategies for Cartesian discrete models in 2&3D as well as Unstructured discrete models in 2D. The latter is implemented by red-green refinement. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
@@ -707,9 +744,9 @@ This version is a major refactoring of the project which is not summarized here 
 
 - Added support to high order simplicial Lagrangian finite elements. Since commit [cbefe9b](https://github.com/gridap/Gridap.jl/commit/cbefe9bbea83d00e7f6ccbef50396ddc7dc49b80).
 - Now the built-in simplicial grids are oriented. Since commit [cbefe9b](https://github.com/gridap/Gridap.jl/commit/cbefe9bbea83d00e7f6ccbef50396ddc7dc49b80).
-- Added binary operations between `FEFuntion` and `Number`, and `FEBasis` and `Number`. Since PR [#88](https://github.com/gridap/Gridap.jl/pull/88).
+- Added binary operations between `FEFunction` and `Number`, and `FEBasis` and `Number`. Since PR [#88](https://github.com/gridap/Gridap.jl/pull/88).
 - Added `PDiscRefFE`, `DiscFESpace`, and `ConstrainedFESpace`. Since PR [#88](https://github.com/gridap/Gridap.jl/pull/88).
-- Now its possible to pass a `CellNumer` or an `Array` of numbers into a constitutive law. Useful to identify which is the material of the current Gauss point in multi-material problems. Since commit [62cb2c3](https://github.com/gridap/Gridap.jl/commit/62cb2c354e2a09c556324a4fe9861329989299f4).
+- Now its possible to pass a `CellNumber` or an `Array` of numbers into a constitutive law. Useful to identify which is the material of the current Gauss point in multi-material problems. Since commit [62cb2c3](https://github.com/gridap/Gridap.jl/commit/62cb2c354e2a09c556324a4fe9861329989299f4).
 - `LinearFESolver` is now optional for solving a `LinearFEOperator`. Since commit [5c1caa8](https://github.com/gridap/Gridap.jl/commit/5c1caa8c92b260db72f5902e778ec5c0eb88728b).
 - `Assembler` is now optional to build `FEOperator` objects. Since commit [b1bf517](https://github.com/gridap/Gridap.jl/commit/b1bf5172955b940f6b3c9d027bd4a839c6486199).
 - Binary operations between `Function` and `FEFunction`. Since commit [a7f22f5](https://github.com/gridap/Gridap.jl/commit/a7f22f5ac1f45d9e8f53906472257aa582726e87).

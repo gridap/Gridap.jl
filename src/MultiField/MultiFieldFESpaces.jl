@@ -1,7 +1,52 @@
 abstract type MultiFieldStyle end
 
+"""
+  The DoF ids of the collective space are the concatenation of the DoF ids of the
+  individual spaces.
+"""
 struct ConsecutiveMultiFieldStyle <: MultiFieldStyle end
 
+"""
+  Similar to ConsecutiveMultiFieldStyle, but we keep the original DoF ids of the
+  individual spaces for better block assembly (see BlockSparseMatrixAssembler).
+  Takes three parameters: 
+   - NB: Number of assembly blocks
+   - SB: Size of each assembly block, as a Tuple.
+   - P : Permutation of the variables of the multifield space when assembling, as a Tuple.
+"""
+struct BlockMultiFieldStyle{NB,SB,P} <: MultiFieldStyle end
+
+BlockMultiFieldStyle() = BlockMultiFieldStyle{0,0,0}()
+
+function BlockMultiFieldStyle(NB::Integer,SB::Tuple,P::Tuple)
+  @check length(SB) == NB
+  @check sum(SB) == length(P)
+  return BlockMultiFieldStyle{NB,SB,P}()
+end
+
+function BlockMultiFieldStyle(NB::Integer,SB::Tuple)
+  P = Tuple([1:sum(SB)...])
+  return BlockMultiFieldStyle(NB,SB,P)
+end
+
+function BlockMultiFieldStyle(NB::Integer)
+  SB = Tuple(fill(1,NB))
+  return BlockMultiFieldStyle(NB,SB)
+end
+
+function BlockMultiFieldStyle(::BlockMultiFieldStyle{NB,SB,P},spaces::Vector{<:SingleFieldFESpace}) where {NB,SB,P}
+  @check length(spaces) == sum(SB)
+  return BlockMultiFieldStyle(NB,SB,P)
+end
+
+function BlockMultiFieldStyle(::BlockMultiFieldStyle{0,0,0},spaces::Vector{<:SingleFieldFESpace})
+  NB = length(spaces)
+  return BlockMultiFieldStyle(NB)
+end
+
+"""
+  Not implemented yet. 
+"""
 struct StridedMultiFieldStyle <: MultiFieldStyle end
 
 """
@@ -36,10 +81,17 @@ end
 """
     MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
 """
-function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
+function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace}; 
+                           style = ConsecutiveMultiFieldStyle())
   Ts = map(get_dof_value_type,spaces)
-  T = typeof(*(map(zero,Ts)...))
-  MultiFieldFESpace(Vector{T},spaces,ConsecutiveMultiFieldStyle())
+  T  = typeof(*(map(zero,Ts)...))
+  if isa(style,BlockMultiFieldStyle)
+    style = BlockMultiFieldStyle(style,spaces)
+    VT = typeof(mortar(map(zero_free_values,spaces)))
+  else
+    VT = Vector{T}
+  end
+  MultiFieldFESpace(VT,spaces,style)
 end
 
 function MultiFieldFESpace(::Type{V},spaces::Vector{<:SingleFieldFESpace}) where V
@@ -75,11 +127,21 @@ function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::MultiFieldStyle)
 end
 
 function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::ConsecutiveMultiFieldStyle)
-  block_num_dofs = Int[]
-  for U in f.spaces
-    push!(block_num_dofs,num_free_dofs(U))
-  end
-  BlockArrays.blockedrange(block_num_dofs)
+  block_num_dofs = map(num_free_dofs,f.spaces)
+  return BlockArrays.blockedrange(block_num_dofs)
+end
+
+function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::BlockMultiFieldStyle{NB,SB,P}) where {NB,SB,P}
+  block_ranges   = get_block_ranges(NB,SB,P)
+  block_num_dofs = map(range->sum(map(num_free_dofs,f.spaces[range])),block_ranges)
+  return BlockArrays.blockedrange(block_num_dofs)
+end
+
+function FESpaces.zero_free_values(f::MultiFieldFESpace{<:BlockMultiFieldStyle{NB,SB,P}}) where {NB,SB,P}
+  block_ranges   = get_block_ranges(NB,SB,P)
+  block_num_dofs = map(range->sum(map(num_free_dofs,f.spaces[range])),block_ranges)
+  block_vtypes   = map(range->get_vector_type(first(f.spaces[range])),block_ranges)
+  return mortar(map(allocate_vector,block_vtypes,block_num_dofs))
 end
 
 FESpaces.get_dof_value_type(f::MultiFieldFESpace{MS,CS,V}) where {MS,CS,V} = eltype(V)
@@ -234,27 +296,68 @@ function  _restrict_to_field(f,::MultiFieldStyle,free_values,field)
   @notimplemented
 end
 
-function  _restrict_to_field(f,::ConsecutiveMultiFieldStyle,free_values,field)
-  offsets = compute_field_offsets(f)
+function  _restrict_to_field(f,
+                             ::Union{<:ConsecutiveMultiFieldStyle,<:BlockMultiFieldStyle},
+                             free_values,
+                             field)
   U = f.spaces
+  offsets = _compute_field_offsets(U)
   pini = offsets[field] + 1
   pend = offsets[field] + num_free_dofs(U[field])
   SubVector(free_values,pini,pend)
+end
+
+function  _restrict_to_field(f,
+                             mfs::BlockMultiFieldStyle{NB,SB,P},
+                             free_values::BlockVector,
+                             field) where {NB,SB,P}
+  @check blocklength(free_values) == NB
+  U = f.spaces
+
+  # Find the block for this field
+  block_ranges = get_block_ranges(NB,SB,P)
+  block_idx    = findfirst(range -> field ∈ range, block_ranges)
+  block_free_values = free_values[Block(block_idx)]
+
+  # Within the block, restrict to field
+  offsets = compute_field_offsets(f,mfs)
+  pini = offsets[field] + 1
+  pend = offsets[field] + num_free_dofs(U[field])
+  return SubVector(block_free_values,pini,pend)
 end
 
 """
     compute_field_offsets(f::MultiFieldFESpace)
 """
 function compute_field_offsets(f::MultiFieldFESpace)
-  @assert MultiFieldStyle(f) == ConsecutiveMultiFieldStyle()
+  mfs = MultiFieldStyle(f)
+  compute_field_offsets(f,mfs)
+end
+
+function compute_field_offsets(f::MultiFieldFESpace,::MultiFieldStyle)
+  @notimplemented
+end
+
+function compute_field_offsets(f::MultiFieldFESpace,::ConsecutiveMultiFieldStyle)
+  _compute_field_offsets(f.spaces)
+end
+
+function compute_field_offsets(f::MultiFieldFESpace,::BlockMultiFieldStyle{NB,SB,P}) where {NB,SB,P}
   U = f.spaces
-  n = length(U)
+  block_ranges  = get_block_ranges(NB,SB,P)
+  block_offsets = vcat(map(range->_compute_field_offsets(U[range]),block_ranges)...)
+  offsets = map(p->block_offsets[p],P)
+  return offsets
+end
+
+function _compute_field_offsets(spaces::Vector{<:FESpace})
+  n = length(spaces)
   offsets = zeros(Int,n)
   for i in 1:(n-1)
-    Ui = U[i]
+    Ui = spaces[i]
     offsets[i+1] = offsets[i] + num_free_dofs(Ui)
   end
-  offsets
+  return offsets
 end
 
 function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace)
@@ -375,7 +478,9 @@ function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,::Triangulation,::MultiF
   @notimplemented
 end
 
-function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::Triangulation,::ConsecutiveMultiFieldStyle)
+function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,
+                                   trian::Triangulation,
+                                   ::Union{<:ConsecutiveMultiFieldStyle,<:BlockMultiFieldStyle})
   offsets = compute_field_offsets(f)
   nfields = length(f.spaces)
   blockmask = [ is_change_possible(get_triangulation(Vi),trian) for Vi in f.spaces ]

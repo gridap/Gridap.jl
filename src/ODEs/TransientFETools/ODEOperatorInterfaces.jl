@@ -47,16 +47,16 @@ function update_cache!(ode_cache,op::ODEOpFromFEOp,t::Real)
   (Us,Uts,fecache)
 end
 
-function allocate_residual(op::ODEOpFromFEOp,uhF::AbstractVector,ode_cache)
+function allocate_residual(op::ODEOpFromFEOp,t0::Real,uhF::AbstractVector,ode_cache)
   Us,Uts,fecache = ode_cache
   uh = EvaluationFunction(Us[1],uhF)
-  allocate_residual(op.feop,uh,fecache)
+  allocate_residual(op.feop,t0,uh,fecache)
 end
 
-function allocate_jacobian(op::ODEOpFromFEOp,uhF::AbstractVector,ode_cache)
+function allocate_jacobian(op::ODEOpFromFEOp,t0::Real,uhF::AbstractVector,ode_cache)
   Us,Uts,fecache = ode_cache
   uh = EvaluationFunction(Us[1],uhF)
-  allocate_jacobian(op.feop,uh,fecache)
+  allocate_jacobian(op.feop,t0,uh,fecache)
 end
 
 """
@@ -120,4 +120,58 @@ function jacobians!(
   end
   xh=TransientCellField(EvaluationFunction(Xh[1],xhF[1]),dxh)
   jacobians!(J,op.feop,t,xh,γ,ode_cache)
+end
+
+"""
+It provides the Left hand side, RHS, of LHS(t,uh,∂tuh) = RHS(t,uh) for a given (t,uh,∂tuh,...,∂t^Nuh)
+"""
+function lhs!(
+  lhs::AbstractVector,
+  op::ODEOpFromFEOp,
+  t::Real,
+  xhF::Tuple{Vararg{AbstractVector}},
+  ode_cache)
+  Xh, = ode_cache
+  dxh = ()
+  for i in 2:get_order(op)+1
+    dxh = (dxh...,EvaluationFunction(Xh[i],xhF[i]))
+  end
+  xh=TransientCellField(EvaluationFunction(Xh[1],xhF[1]),dxh)
+  lhs!(lhs,op.feop,t,xh,ode_cache)
+end
+
+"""
+It provides the Right hand side, RHS, of LHS(t,uh,∂tuh) = RHS(t,uh) for a given (t,uh,∂tuh,...,∂t^Nuh)
+"""
+function rhs!(
+  rhs::AbstractVector,
+  op::ODEOpFromFEOp,
+  t::Real,
+  xhF::Tuple{Vararg{AbstractVector}},
+  ode_cache)
+  Xh, = ode_cache
+  dxh = ()
+  for i in 2:get_order(op)+1
+    dxh = (dxh...,EvaluationFunction(Xh[i],xhF[i]))
+  end
+  xh=TransientCellField(EvaluationFunction(Xh[1],xhF[1]),dxh)
+  rhs!(rhs,op.feop,t,xh,ode_cache)
+end
+
+"""
+It provides the explicit right hand side, E_RHS, of LHS(t,uh,∂tuh) = I_RHS(t,uh) + E_RHS(t,uh) for a given (t,uh,∂tuh,...,∂t^Nuh)
+"""
+function explicit_rhs!(
+  explicit_rhs::AbstractVector,
+  op::ODEOpFromFEOp,
+  t::Real,
+  xhF::Tuple{Vararg{AbstractVector}},
+  ode_cache)
+  Xh, = ode_cache
+  dxh = ()
+  for i in 2:get_order(op)+1
+    dxh = (dxh...,EvaluationFunction(Xh[i],xhF[i]))
+  end
+  xh=TransientCellField(EvaluationFunction(Xh[1],xhF[1]),dxh)
+  explicit_rhs!(explicit_rhs,op.feop,t,xh,ode_cache)
 end

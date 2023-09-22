@@ -259,7 +259,7 @@ end
 """
     Operation(op)
 
-Retuns the map that results after applying an operation `f` over a set of map(s) `args`.
+Returns the map that results after applying an operation `f` over a set of map(s) `args`.
 That is `Operation(f)(args)(x...)` is formally defined as
 `f(map(a->a(x...),args)...)`.
 

@@ -776,7 +776,7 @@ function find_gface_to_face(
 
   ngfaces = length(gface_to_nodes_ptrs) - 1
   gface_to_face = zeros(T,ngfaces)
-  n = max_cells_arround_vertex(node_to_faces_ptrs)
+  n = max_cells_around_vertex(node_to_faces_ptrs)
   faces_around = fill(UNSET,n)
   faces_around_scratch = fill(UNSET,n)
 
@@ -930,7 +930,7 @@ function _generate_cell_to_faces(
   vertices = fill(UNSET,nvertices)
   vertices_scratch = fill(UNSET,nvertices)
 
-  nvertices = max_cells_arround_vertex(vertex_to_cells_ptrs)
+  nvertices = max_cells_around_vertex(vertex_to_cells_ptrs)
   cells_around = fill(UNSET,nvertices)
   cells_around_scratch = fill(UNSET,nvertices)
   lface_of_cells_around = fill(UNSET,nvertices)
@@ -976,7 +976,7 @@ function  _cell_to_faces_from_vertex_to_faces(
   nvertices = max_nvertices_in_lface(ctype_to_lface_to_lvertices)
   vertices = fill(UNSET,nvertices)
 
-  nvertices = max_cells_arround_vertex(vertex_to_faces_ptrs)
+  nvertices = max_cells_around_vertex(vertex_to_faces_ptrs)
   faces_around = fill(UNSET,nvertices)
   faces_around_scratch = fill(UNSET,nvertices)
 
@@ -1079,7 +1079,7 @@ function max_nvertices_in_lface(ctype_to_lface_to_lvertices)
   n
 end
 
-function max_cells_arround_vertex(vertex_to_cells_ptrs)
+function max_cells_around_vertex(vertex_to_cells_ptrs)
   n = 0
   nvertices = length(vertex_to_cells_ptrs)-1
   for vertex in 1:nvertices
@@ -1167,7 +1167,7 @@ function  _cell_to_faces_fill!(
         vertices,
         vertices_scratch)
 
-      _fill_face_in_cells_arround!(
+      _fill_face_in_cells_around!(
         cell_to_faces_data,
         cell_to_faces_ptrs,
         face,
@@ -1181,7 +1181,7 @@ function  _cell_to_faces_fill!(
 
 end
 
-function _fill_face_in_cells_arround!(
+function _fill_face_in_cells_around!(
   cell_to_faces_data,
   cell_to_faces_ptrs,
   face,

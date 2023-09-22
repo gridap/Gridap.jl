@@ -10,7 +10,7 @@ using Test
 using DocStringExtensions
 
 using ForwardDiff
-using LinearAlgebra: fillstored!
+using LinearAlgebra: fillstored!, rmul!
 using SparseArrays: issparse
 
 const ϵ = 100*eps()
@@ -54,6 +54,9 @@ export jacobian!
 export jacobian_t!
 export jacobian_and_jacobian_t!
 export test_ode_operator
+export lhs!
+export rhs!
+export explicit_rhs!
 
 export ODESolver
 export solve_step!
@@ -67,6 +70,7 @@ export ForwardEuler
 export MidPoint
 export ThetaMethod
 export RungeKutta
+export IMEXRungeKutta
 export Newmark
 export GeneralizedAlpha
 

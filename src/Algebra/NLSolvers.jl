@@ -77,21 +77,13 @@ function _solve_nr!(x,A,b,dx,ns,nls,op)
 end
 
 function _check_convergence(nls,b)
-  m0 = _inf_norm(b)
-  (false, m0)
+  m0 = maximum(abs,b)
+  return (false, m0)
 end
 
 function _check_convergence(nls,b,m0)
-  m = _inf_norm(b)
-  m < nls.tol * m0
-end
-
-function _inf_norm(b)
-  m = 0
-  for bi in b
-    m = max(m,abs(bi))
-  end
-  m
+  m = maximum(abs,b)
+  return m < nls.tol * m0
 end
 
 # Default concrete implementation
