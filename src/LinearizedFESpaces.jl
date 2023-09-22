@@ -98,7 +98,7 @@ function _get_cell_fe_data(fun,sface_to_data, strian::AdaptedTriangulation, ttri
 # ttrian refined
 function _get_cell_fe_data(fun, sface_to_data, strian::Triangulation, ttrian::AdaptedTriangulation)
   Gridap.Helpers.@check get_background_model(strian) === get_parent(get_adapted_model(ttrian))
-  Gridap.Adaptivity.c2f_reindex(sface_to_data,get_adapted_model(ttrian).glue)
+  Gridap.Adaptivity.o2n_reindex(sface_to_data,get_adapted_model(ttrian).glue)
 end
 
 function _get_cell_fe_data(fun, sface_to_data, strian::AdaptedTriangulation, ttrian::AdaptedTriangulation)
