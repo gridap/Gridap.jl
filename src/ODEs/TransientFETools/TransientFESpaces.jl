@@ -80,6 +80,11 @@ Time 2nd derivative of the Dirichlet functions
 ∂tt(U::MultiFieldFESpace) = MultiFieldFESpace(∂tt.(U.spaces))
 ∂tt(t::T) where T<:Number = zero(T)
 
+zero_free_values(f::TransientTrialFESpace) = zero_free_values(f.space)
+has_constraints(f::TransientTrialFESpace) = has_constraints(f.space)
+get_dof_value_type(f::TransientTrialFESpace) = get_dof_value_type(f.space)
+get_vector_type(f::TransientTrialFESpace) = get_vector_type(f.space)
+
 # Testing the interface
 
 function test_transient_trial_fe_space(Uh)
@@ -122,22 +127,59 @@ end
 
 # Define the interface for MultiField
 
-struct TransientMultiFieldTrialFESpace
+struct TransientMultiFieldTrialFESpace{MS<:MultiFieldStyle,CS<:ConstraintStyle,V}
+  vector_type::Type{V}
   spaces::Vector
+  multi_field_style::MS
+  constraint_style::CS
+  function TransientMultiFieldTrialFESpace(
+    ::Type{V},
+    spaces::Vector,
+    multi_field_style::MultiFieldStyle) where V
+    @assert length(spaces) > 0
+
+    MS = typeof(multi_field_style)
+    if any( map(has_constraints,spaces) )
+      constraint_style = Constrained()
+    else
+      constraint_style = UnConstrained()
+    end
+    CS = typeof(constraint_style)
+    new{MS,CS,V}(V,spaces,multi_field_style,constraint_style)
+  end
 end
+
+# Default constructors
+function TransientMultiFieldFESpace(spaces::Vector;
+  style = ConsecutiveMultiFieldStyle())
+  Ts = map(get_dof_value_type,spaces)
+  T  = typeof(*(map(zero,Ts)...))
+  if isa(style,BlockMultiFieldStyle)
+    style = BlockMultiFieldStyle(style,spaces)
+    VT = typeof(mortar(map(zero_free_values,spaces)))
+  else
+    VT = Vector{T}
+  end
+  TransientMultiFieldTrialFESpace(VT,spaces,style)
+end
+
+function TransientMultiFieldFESpace(::Type{V},spaces::Vector) where V
+  TransientMultiFieldTrialFESpace(V,spaces,ConsecutiveMultiFieldStyle())
+end
+
+function TransientMultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace};
+  style = ConsecutiveMultiFieldStyle())
+  MultiFieldFESpace(spaces,style=style)
+end
+
+function TransientMultiFieldFESpace(::Type{V},spaces::Vector{<:SingleFieldFESpace}) where V
+  MultiFieldFESpace(V,spaces,ConsecutiveMultiFieldStyle())
+end
+
 Base.iterate(m::TransientMultiFieldTrialFESpace) = iterate(m.spaces)
 Base.iterate(m::TransientMultiFieldTrialFESpace,state) = iterate(m.spaces,state)
 Base.getindex(m::TransientMultiFieldTrialFESpace,field_id::Integer) = m.spaces[field_id]
 Base.length(m::TransientMultiFieldTrialFESpace) = length(m.spaces)
-
-
-function TransientMultiFieldFESpace(spaces::Vector)
-  TransientMultiFieldTrialFESpace(spaces)
-end
-
-function TransientMultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
-  MultiFieldFESpace(spaces)
-end
 
 function evaluate!(Ut::T,U::TransientMultiFieldTrialFESpace,t::Real) where T
   spaces_at_t = [evaluate!(Uti,Ui,t) for (Uti,Ui) in zip(Ut,U)]
@@ -164,4 +206,25 @@ end
 function ∂t(U::TransientMultiFieldTrialFESpace)
   spaces = ∂t.(U.spaces)
   TransientMultiFieldFESpace(spaces)
+end
+
+function zero_free_values(f::TransientMultiFieldTrialFESpace{<:BlockMultiFieldStyle{NB,SB,P}}) where {NB,SB,P}
+  block_ranges   = get_block_ranges(NB,SB,P)
+  block_num_dofs = map(range->sum(map(num_free_dofs,f.spaces[range])),block_ranges)
+  block_vtypes   = map(range->get_vector_type(first(f.spaces[range])),block_ranges)
+  return mortar(map(allocate_vector,block_vtypes,block_num_dofs))
+end
+
+get_dof_value_type(f::TransientMultiFieldTrialFESpace{MS,CS,V}) where {MS,CS,V} = eltype(V)
+get_vector_type(f::TransientMultiFieldTrialFESpace) = f.vector_type
+ConstraintStyle(::Type{TransientMultiFieldTrialFESpace{S,B,V}}) where {S,B,V} = B()
+
+function BlockMultiFieldStyle(::BlockMultiFieldStyle{NB,SB,P},spaces::Vector) where {NB,SB,P}
+  @check length(spaces) == sum(SB)
+  return BlockMultiFieldStyle(NB,SB,P)
+end
+
+function BlockMultiFieldStyle(::BlockMultiFieldStyle{0,0,0},spaces::Vector)
+  NB = length(spaces)
+  return BlockMultiFieldStyle(NB)
 end

@@ -112,6 +112,13 @@ import Gridap.CellData: gradient
 import Gridap.CellData: ∇∇
 import Gridap.CellData: change_domain
 import Gridap.FESpaces: BasisStyle
+using Gridap.MultiField: MultiFieldStyle, ConsecutiveMultiFieldStyle
+using Gridap.FESpaces: Constrained, UnConstrained
+import Gridap.MultiField: ConstraintStyle, BlockMultiFieldStyle
+import Gridap.FESpaces: zero_free_values, has_constraints
+import Gridap.FESpaces: get_dof_value_type, get_vector_type
+
+using BlockArrays
 
 include("TransientFESpaces.jl")
 
