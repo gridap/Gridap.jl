@@ -34,7 +34,7 @@ end
 Allocate the space to be used as first argument in evaluate!
 """
 function allocate_trial_space(U::TransientTrialFESpace)
-    HomogeneousTrialFESpace(U.space)
+  HomogeneousTrialFESpace(U.space)
 end
 
 """
@@ -43,14 +43,14 @@ Time evaluation allocating Dirichlet vals
 function evaluate(U::TransientTrialFESpace,t::Real)
   Ut = allocate_trial_space(U)
   evaluate!(Ut,U,t)
-  Ut
+  return Ut
 end
 
 """
 We can evaluate at `nothing` when we do not care about the Dirichlet vals
 """
 function evaluate(U::TransientTrialFESpace,t::Nothing)
-  U.Ud0
+  return U.Ud0
 end
 
 evaluate(U::TrialFESpace,t::Nothing) = U
@@ -105,21 +105,10 @@ end
 
 # Define the TransientTrialFESpace interface for stationary spaces
 
-function evaluate!(Ut::FESpace,U::FESpace,t::Real)
-  U
-end
-
-function allocate_trial_space(U::FESpace)
-  U
-end
-
-function evaluate(U::FESpace,t::Real)
-  U
-end
-
-function evaluate(U::FESpace,t::Nothing)
-  U
-end
+evaluate!(Ut::FESpace,U::FESpace,t::Real) = U
+allocate_trial_space(U::FESpace) = U
+evaluate(U::FESpace,t::Real) = U
+evaluate(U::FESpace,t::Nothing) = U
 
 @static if VERSION >= v"1.3"
   (U::FESpace)(t) = U
@@ -150,8 +139,8 @@ struct TransientMultiFieldTrialFESpace{MS<:MultiFieldStyle,CS<:ConstraintStyle,V
 end
 
 # Default constructors
-function TransientMultiFieldFESpace(spaces::Vector;
-  style = ConsecutiveMultiFieldStyle())
+function TransientMultiFieldFESpace(spaces::Vector; 
+                                    style = ConsecutiveMultiFieldStyle())
   Ts = map(get_dof_value_type,spaces)
   T  = typeof(*(map(zero,Ts)...))
   if isa(style,BlockMultiFieldStyle)
@@ -167,8 +156,8 @@ function TransientMultiFieldFESpace(::Type{V},spaces::Vector) where V
   TransientMultiFieldTrialFESpace(V,spaces,ConsecutiveMultiFieldStyle())
 end
 
-function TransientMultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace};
-  style = ConsecutiveMultiFieldStyle())
+function TransientMultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace}; 
+                                    style = ConsecutiveMultiFieldStyle())
   MultiFieldFESpace(spaces,style=style)
 end
 
@@ -183,29 +172,34 @@ Base.length(m::TransientMultiFieldTrialFESpace) = length(m.spaces)
 
 function evaluate!(Ut::T,U::TransientMultiFieldTrialFESpace,t::Real) where T
   spaces_at_t = [evaluate!(Uti,Ui,t) for (Uti,Ui) in zip(Ut,U)]
-  MultiFieldFESpace(spaces_at_t)
+  mfs = MultiFieldStyle(U)
+  return MultiFieldFESpace(spaces_at_t;style=mfs)
 end
 
 function allocate_trial_space(U::TransientMultiFieldTrialFESpace)
   spaces = allocate_trial_space.(U.spaces)
-  MultiFieldFESpace(spaces)
+  mfs = MultiFieldStyle(U)
+  return MultiFieldFESpace(spaces;style=mfs)
 end
 
 function evaluate(U::TransientMultiFieldTrialFESpace,t::Real)
   Ut = allocate_trial_space(U)
   evaluate!(Ut,U,t)
-  Ut
+  return Ut
 end
 
 function evaluate(U::TransientMultiFieldTrialFESpace,t::Nothing)
-  MultiFieldFESpace([evaluate(fesp,nothing) for fesp in U.spaces])
+  spaces = [evaluate(fesp,nothing) for fesp in U.spaces]
+  mfs = MultiFieldStyle(U)
+  MultiFieldFESpace(spaces;style=mfs)
 end
 
 (U::TransientMultiFieldTrialFESpace)(t) = evaluate(U,t)
 
 function ∂t(U::TransientMultiFieldTrialFESpace)
   spaces = ∂t.(U.spaces)
-  TransientMultiFieldFESpace(spaces)
+  mfs = MultiFieldStyle(U)
+  TransientMultiFieldFESpace(spaces;style=mfs)
 end
 
 function zero_free_values(f::TransientMultiFieldTrialFESpace{<:BlockMultiFieldStyle{NB,SB,P}}) where {NB,SB,P}
@@ -218,13 +212,15 @@ end
 get_dof_value_type(f::TransientMultiFieldTrialFESpace{MS,CS,V}) where {MS,CS,V} = eltype(V)
 get_vector_type(f::TransientMultiFieldTrialFESpace) = f.vector_type
 ConstraintStyle(::Type{TransientMultiFieldTrialFESpace{S,B,V}}) where {S,B,V} = B()
+ConstraintStyle(::TransientMultiFieldTrialFESpace) = ConstraintStyle(typeof(f))
+MultiFieldStyle(::Type{TransientMultiFieldTrialFESpace{S,B,V}}) where {S,B,V} = S()
+MultiFieldStyle(f::TransientMultiFieldTrialFESpace) = MultiFieldStyle(typeof(f))
 
-function BlockMultiFieldStyle(::BlockMultiFieldStyle{NB,SB,P},spaces::Vector) where {NB,SB,P}
-  @check length(spaces) == sum(SB)
-  return BlockMultiFieldStyle(NB,SB,P)
-end
-
-function BlockMultiFieldStyle(::BlockMultiFieldStyle{0,0,0},spaces::Vector)
-  NB = length(spaces)
-  return BlockMultiFieldStyle(NB)
+function SparseMatrixAssembler(mat,vec,
+                               trial::TransientMultiFieldTrialFESpace{MS},
+                               test ::TransientMultiFieldTrialFESpace{MS},
+                               strategy::AssemblyStrategy=DefaultAssemblyStrategy()
+                               ) where MS <: BlockMultiFieldStyle
+  mfs = MultiFieldStyle(test)
+  return BlockSparseMatrixAssembler(mfs,trial,test,SparseMatrixBuilder(mat),ArrayBuilder(vec),strategy)
 end

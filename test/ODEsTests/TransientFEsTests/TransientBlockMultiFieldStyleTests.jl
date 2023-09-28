@@ -5,8 +5,25 @@ using Gridap
 using Gridap.FESpaces, Gridap.ReferenceFEs, Gridap.MultiField
 using Gridap.ODEs.TransientFETools
 
-function main(n_spaces,mfs,weakform,Ω,dΩ,U,V)
-  mass, biform, liform = weakform
+sol(x,t) = sum(x)
+sol(t::Real) = x->sol(x,t)
+
+model = CartesianDiscreteModel((0.0,1.0,0.0,1.0),(5,5))
+Ω = Triangulation(model)
+
+reffe = LagrangianRefFE(Float64,QUAD,1)
+V = FESpace(Ω, reffe; dirichlet_tags="boundary")
+U = TransientTrialFESpace(V,sol)
+
+dΩ = Measure(Ω, 2)
+n_spaces = 2
+mfs = BlockMultiFieldStyle()
+mass(t,(u1t,u2t),(v1,v2)) = ∫(u1t⋅v1)*dΩ
+biform(t,(u1,u2),(v1,v2)) = ∫(∇(u1)⋅∇(v1) + u2⋅v2 - u1⋅v2)*dΩ
+liform(t,(v1,v2)) = ∫(v1 - v2)*dΩ
+
+#function main(n_spaces,mfs,weakform,Ω,dΩ,U,V)
+  #mass, biform, liform = weakform
   res(t,x,y) = mass(t,∂t(x),y) + biform(t,x,y) - liform(t,y)
   jac(t,x,dx,y) = biform(t,dx,y)
   jac_t(t,xt,dxt,y) = mass(t,dxt,y)
@@ -89,7 +106,7 @@ function main(n_spaces,mfs,weakform,Ω,dΩ,U,V)
 
   # @test get_matrix(op) ≈ get_matrix(block_op)
   # @test get_vector(op) ≈ get_vector(block_op)
-end
+#end
 
 ############################################################################################
 
