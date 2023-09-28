@@ -5,25 +5,8 @@ using Gridap
 using Gridap.FESpaces, Gridap.ReferenceFEs, Gridap.MultiField
 using Gridap.ODEs.TransientFETools
 
-sol(x,t) = sum(x)
-sol(t::Real) = x->sol(x,t)
-
-model = CartesianDiscreteModel((0.0,1.0,0.0,1.0),(5,5))
-Ω = Triangulation(model)
-
-reffe = LagrangianRefFE(Float64,QUAD,1)
-V = FESpace(Ω, reffe; dirichlet_tags="boundary")
-U = TransientTrialFESpace(V,sol)
-
-dΩ = Measure(Ω, 2)
-n_spaces = 2
-mfs = BlockMultiFieldStyle()
-mass(t,(u1t,u2t),(v1,v2)) = ∫(u1t⋅v1)*dΩ
-biform(t,(u1,u2),(v1,v2)) = ∫(∇(u1)⋅∇(v1) + u2⋅v2 - u1⋅v2)*dΩ
-liform(t,(v1,v2)) = ∫(v1 - v2)*dΩ
-
-#function main(n_spaces,mfs,weakform,Ω,dΩ,U,V)
-  #mass, biform, liform = weakform
+function main(n_spaces,mfs,weakform,Ω,dΩ,U,V)
+  mass, biform, liform = weakform
   res(t,x,y) = mass(t,∂t(x),y) + biform(t,x,y) - liform(t,y)
   jac(t,x,dx,y) = biform(t,dx,y)
   jac_t(t,xt,dxt,y) = mass(t,dxt,y)
@@ -61,8 +44,8 @@ liform(t,(v1,v2)) = ∫(v1 - v2)*dΩ
   vb = get_fe_basis(Yb)
   ubₜ = TransientCellField(ub,(ub,))
 
-  bmatdata_jac = collect_cell_matrix(X(0),Y,jac(0,ubₜ,ub,vb))
-  bmatdata_jac_t = collect_cell_matrix(X(0),Y,jac_t(0,ubₜ,ub,vb))
+  bmatdata_jac = collect_cell_matrix(Xb(0),Yb,jac(0,ubₜ,ub,vb))
+  bmatdata_jac_t = collect_cell_matrix(Xb(0),Yb,jac_t(0,ubₜ,ub,vb))
   bmatdata_jacs = (bmatdata_jac,bmatdata_jac_t)
   bmatdata = TransientFETools._vcat_matdata(bmatdata_jacs)
   bvecdata = collect_cell_vector(Yb,liform(0,vb))
@@ -74,8 +57,8 @@ liform(t,(v1,v2)) = ∫(v1 - v2)*dΩ
 
   A1_blocks = assemble_matrix(assem_blocks,bmatdata)
   b1_blocks = assemble_vector(assem_blocks,bvecdata)
-  @test A1 ≈ A1_blocks # Passing
-  @test b1 ≈ b1_blocks # Failing
+  @test A1 ≈ A1_blocks
+  @test b1 ≈ b1_blocks
 
   # y1_blocks = similar(b1_blocks)
   # mul!(y1_blocks,A1_blocks,b1_blocks)

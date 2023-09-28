@@ -226,7 +226,7 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
         cache
       end
 
-      function Fields.evaluate!(cache, k::$T,A::$MT,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
+      function Fields.evaluate!(cache,k::$T,A::$MT,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
         ni,nj = size(v.touched)
         for j in 1:nj
           for i in 1:ni
