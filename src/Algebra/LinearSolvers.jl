@@ -75,11 +75,8 @@ end
     solve(ls::LinearSolver,A::AbstractMatrix,b::AbstractVector)
 """
 function solve(ls::LinearSolver,A::AbstractMatrix,b::AbstractVector)
-  ss = symbolic_setup(ls,A)
-  ns = numerical_setup(ss,A)
-  x = similar(b)
-  solve!(x,ns,b)
-  x
+  x = allocate_in_domain(typeof(b),A)
+  solve!(x,ls,A,b)
 end
 
 """
@@ -89,7 +86,7 @@ function solve!(x::AbstractVector,ls::LinearSolver,A::AbstractMatrix,b::Abstract
   ss = symbolic_setup(ls,A)
   ns = numerical_setup(ss,A)
   solve!(x,ns,b)
-  x
+  return x
 end
 
 """
@@ -109,22 +106,22 @@ end
 """
     abstract type NumericalSetup <: GridapType end
 
-- [`numerical_setup!(::NumericalSetup,mat::AbstractMatrix)`](@ref)
-- [`solve!(x::AbstractVector,::NumericalSetup,b::AbstractVector)`](@ref)
+- [`numerical_setup!(ns::NumericalSetup,mat::AbstractMatrix)`](@ref)
+- [`solve!(x::AbstractVector,ns::NumericalSetup,b::AbstractVector)`](@ref)
 """
 abstract type NumericalSetup <: GridapType end
 
 """
-    numerical_setup!(::NumericalSetup,mat::AbstractMatrix)
+    numerical_setup!(ns::NumericalSetup,mat::AbstractMatrix)
 """
-function numerical_setup!(::NumericalSetup,mat::AbstractMatrix)
+function numerical_setup!(::NumericalSetup,::AbstractMatrix)
   @abstractmethod
 end
 
 """
-    solve!(x::AbstractVector,::NumericalSetup,b::AbstractVector)
+    solve!(x::AbstractVector,ns::NumericalSetup,b::AbstractVector)
 """
-function solve!(x::AbstractVector,::NumericalSetup,b::AbstractVector)
+function solve!(::AbstractVector,::NumericalSetup,::AbstractVector)
   @abstractmethod
 end
 
@@ -160,10 +157,6 @@ function test_linear_solver(
 
 end
 
-# function solve!(x::AbstractVector,ls::LinearSolver,op::NonlinearOperator,cache)
-#   @unreachable "A LinearSolver can only solve an AffineOperator"
-# end
-
 struct LinearSolverCache <: GridapType
   A::AbstractMatrix
   b::AbstractVector
@@ -190,18 +183,17 @@ function solve!(x::AbstractVector,
                 cache)
   fill!(x,zero(eltype(x)))
   b = cache.b
-  A = cache.A
   ns = cache.ns
   residual!(b, op, x)
-  numerical_setup!(ns,A)
+  numerical_setup!(ns,cache.A)
   rmul!(b,-1)
   solve!(x,ns,b)
   cache
 end
 
 function solve!(x::AbstractVector,ls::LinearSolver,op::AffineOperator,cache::Nothing)
-  A = op.matrix
-  b = op.vector
+  A  = get_matrix(op)
+  b  = get_vector(op)
   ss = symbolic_setup(ls,A)
   ns = numerical_setup(ss,A)
   solve!(x,ns,b)
@@ -222,8 +214,7 @@ end
       cache,
       newmatrix::Bool)
 """
-function solve!(
-  x::AbstractVector,ls::LinearSolver,op::AffineOperator,cache,newmatrix::Bool)
+function solve!(x::AbstractVector,ls::LinearSolver,op::AffineOperator,cache,newmatrix::Bool)
   A = op.matrix
   b = op.vector
   ns = cache
@@ -234,8 +225,7 @@ function solve!(
   cache
 end
 
-function solve!(
-  x::AbstractVector,ls::LinearSolver,op::AffineOperator,cache::Nothing,newmatrix::Bool)
+function solve!(x::AbstractVector,ls::LinearSolver,op::AffineOperator,cache::Nothing,newmatrix::Bool)
   solve!(x,ls,op,cache)
 end
 
