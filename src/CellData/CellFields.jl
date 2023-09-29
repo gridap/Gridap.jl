@@ -298,7 +298,9 @@ function _point_to_cell!(cache, x::Point)
     dist ≤ 1000eps(T) && return cell
 
   end
-
+  if searchmethod.accept_points_outside == true
+    return nothing
+  end
   # Output error message if cell not found
   @check false "Point $x is not inside any active cell"
 end
@@ -309,6 +311,9 @@ function evaluate!(cache,f::CellField,x::Point)
   @check f === f₀ "Wrong cache"
 
   cell = _point_to_cell!(cache1, x)
+  if cell == nothing
+    return nothing
+  end
   cf = getindex!(cell_f_cache, cell_f, cell)
   fx = evaluate!(f_cache, cf, x)
   return fx
@@ -787,8 +792,9 @@ end
 # Interpolable struct
 struct KDTreeSearch
   num_nearest_vertices::Int
-  function KDTreeSearch(;num_nearest_vertices=1)
-    new(num_nearest_vertices)
+  accept_points_outside::Bool
+  function KDTreeSearch(;num_nearest_vertices=1, accept_points_outside=false)
+    new(num_nearest_vertices, accept_points_outside)
   end
 end
 
