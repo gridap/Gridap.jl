@@ -30,7 +30,6 @@ function main(n_spaces,mfs,weakform,Ω,dΩ,U,V)
   assem = SparseMatrixAssembler(X(0),Y)
   A1 = assemble_matrix(assem,matdata)
   b1 = assemble_vector(assem,vecdata)
-  # A2,b2 = assemble_matrix_and_vector(assem,data)
 
   ############################################################################################
   # Block MultiFieldStyle
@@ -60,36 +59,20 @@ function main(n_spaces,mfs,weakform,Ω,dΩ,U,V)
   @test A1 ≈ A1_blocks
   @test b1 ≈ b1_blocks
 
-  # y1_blocks = similar(b1_blocks)
-  # mul!(y1_blocks,A1_blocks,b1_blocks)
-  # y1 = similar(b1)
-  # mul!(y1,A1,b1)
-  # @test y1_blocks ≈ y1
+  y1_blocks = similar(b1_blocks)
+  mul!(y1_blocks,A1_blocks,b1_blocks)
+  y1 = similar(b1)
+  mul!(y1,A1,b1)
+  @test y1_blocks ≈ y1
 
-  # A2_blocks, b2_blocks = assemble_matrix_and_vector(assem_blocks,bdata)
-  # @test A2_blocks ≈ A2
-  # @test b2_blocks ≈ b2
+  A3_blocks = allocate_matrix(assem_blocks,bmatdata)
+  b3_blocks = allocate_vector(assem_blocks,bvecdata)
+  assemble_matrix!(A3_blocks,assem_blocks,bmatdata)
+  assemble_vector!(b3_blocks,assem_blocks,bvecdata)
+  @test A3_blocks ≈ A1
+  @test b3_blocks ≈ b1_blocks
 
-  # A3_blocks = allocate_matrix(assem_blocks,bmatdata)
-  # b3_blocks = allocate_vector(assem_blocks,bvecdata)
-  # assemble_matrix!(A3_blocks,assem_blocks,bmatdata)
-  # assemble_vector!(b3_blocks,assem_blocks,bvecdata)
-  # @test A3_blocks ≈ A1
-  # @test b3_blocks ≈ b1_blocks
-
-  # A4_blocks, b4_blocks = allocate_matrix_and_vector(assem_blocks,bdata)
-  # assemble_matrix_and_vector!(A4_blocks,b4_blocks,assem_blocks,bdata)
-  # @test A4_blocks ≈ A2_blocks
-  # @test b4_blocks ≈ b2_blocks
-
-  ############################################################################################
-
-  # op = TransientAffineFEOperator(biform,liform,X,Y)
-  # block_op = TransientAffineFEOperator(biform,liform,Xb,Yb)
-
-  # @test get_matrix(op) ≈ get_matrix(block_op)
-  # @test get_vector(op) ≈ get_vector(block_op)
-#end
+end
 
 ############################################################################################
 
