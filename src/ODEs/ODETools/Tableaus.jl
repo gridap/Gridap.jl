@@ -230,3 +230,7 @@ function EXButcherTableau(::EX_FE_1_0_1)
   d = [0.0]
   EXButcherTableau{EX_FE_1_0_1}(s,p,q,a,b,c,d)
 end
+
+function EXButcherTableau(type::Symbol)
+  eval(:(EXButcherTableau($type())))
+end
