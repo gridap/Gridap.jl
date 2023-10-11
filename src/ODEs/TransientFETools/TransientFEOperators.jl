@@ -456,7 +456,7 @@ end
 function TransientEXRungeKuttaFEOperator(lhs::Function,
   explicit_rhs::Function,jac::Function,jac_t::Function,trial,test)
   assem_t = SparseMatrixAssembler(trial,test)
-  TransientIMEXRKFEOperatorFromWeakForm{Nonlinear}(lhs,explicit_rhs,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
+  TransientEXRKFEOperatorFromWeakForm{Nonlinear}(lhs,explicit_rhs,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
 end
 
 function TransientEXRungeKuttaFEOperator(lhs::Function,
@@ -547,7 +547,8 @@ end
 # Common functions
 
 TransientFEOperatorsFromWeakForm = Union{TransientFEOperatorFromWeakForm,
-TransientRKFEOperatorFromWeakForm, TransientIMEXRKFEOperatorFromWeakForm}
+TransientRKFEOperatorFromWeakForm, TransientIMEXRKFEOperatorFromWeakForm,
+TransientEXRKFEOperatorFromWeakForm}
 
 function SparseMatrixAssembler(
   trial::Union{TransientTrialFESpace,TransientMultiFieldTrialFESpace},
