@@ -46,18 +46,18 @@ function solve_step!(uf::AbstractVector,
   if cache === nothing
     ode_cache = allocate_cache(op)
     vi = similar(u0)
-    gi = Vector{typeof(u0)}(undef,0)
+    fi = Vector{typeof(u0)}(undef,0)
     for i in 1:s
-      push!(gi,similar(u0))
+      push!(fi,similar(u0))
     end
     nls_stage_cache = nothing
     nls_update_cache = nothing
   else
-    ode_cache, vi, gi, nls_stage_cache, nls_update_cache = cache
+    ode_cache, vi, fi, nls_stage_cache, nls_update_cache = cache
   end
 
   # Create RKNL stage operator
-  nlop_stage = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,gi,0,a)
+  nlop_stage = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,fi,0,a)
 
   # Compute intermediate stages
   for i in 1:s
@@ -65,10 +65,10 @@ function solve_step!(uf::AbstractVector,
     # Update time
     ti = t0 + c[i]*dt
     ode_cache = update_cache!(ode_cache,op,ti)
-    update!(nlop_stage,ti,gi,i)
+    update!(nlop_stage,ti,fi,i)
 
     if(a[i,i]==0)
-      # Skip stage solve if a_ii=0 => u_i=u_0, gi = g_0
+      # Skip stage solve if a_ii=0 => u_i=u_0, fi = f_0
       @. uf = u0
     else
       # solve at stage i
@@ -89,7 +89,7 @@ function solve_step!(uf::AbstractVector,
 
     # Create RKNL final update operator
     ode_cache = update_cache!(ode_cache,op,tf)
-    nlop_update = EXRungeKuttaUpdateNonlinearOperator(op,tf,dt,u0,ode_cache,vi,gi,s,b)
+    nlop_update = EXRungeKuttaUpdateNonlinearOperator(op,tf,dt,u0,ode_cache,vi,fi,s,b)
 
     # solve at final update
     nls_update_cache = solve!(uf,solver.nls_update,nlop_update,nls_update_cache)
@@ -97,7 +97,7 @@ function solve_step!(uf::AbstractVector,
   end
 
   # Update final cache
-  cache = (ode_cache, vi, gi, nls_stage_cache, nls_update_cache)
+  cache = (ode_cache, vi, fi, nls_stage_cache, nls_update_cache)
 
   return (uf, tf, cache)
 
@@ -119,7 +119,7 @@ mutable struct EXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
   u0::AbstractVector
   ode_cache
   vi::AbstractVector
-  gi::Vector{AbstractVector}
+  fi::Vector{AbstractVector}
   i::Int
   a::Matrix{Float64}
 end
@@ -140,7 +140,7 @@ mutable struct EXRungeKuttaUpdateNonlinearOperator <: RungeKuttaNonlinearOperato
   u0::AbstractVector
   ode_cache
   vi::AbstractVector
-  gi::Vector{AbstractVector}
+  fi::Vector{AbstractVector}
   s::Int
   b::Vector{Float64}
 end
@@ -168,7 +168,7 @@ function residual!(b::AbstractVector,
   rhs!(op,x)
   lhs!(b,op,x)
   for j in 1:op.i
-    @. b = b - op.a[op.i,j] * op.gi[j]
+    @. b = b - op.a[op.i,j] * op.fi[j]
   end
   b
 end
@@ -195,7 +195,7 @@ function residual!(b::AbstractVector,
   x::AbstractVector)
   lhs!(b,op,x)
   for i in 1:op.s
-    @. b = b - op.b[i] * op.gi[i]
+    @. b = b - op.b[i] * op.fi[i]
   end
   b
 end
@@ -246,12 +246,12 @@ function explicit_rhs!(op::RungeKuttaNonlinearOperator, x::AbstractVector)
   u = x
   v = op.vi
   @. v = (x-op.u0)/(op.dt)
-  g = op.gi
+  g = op.fi
   explicit_rhs!(g[op.i],op.odeop,op.ti,(u,v),op.ode_cache)
 end
 
-function update!(op::RungeKuttaNonlinearOperator,ti::Float64,gi::AbstractVector,i::Int)
+function update!(op::RungeKuttaNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
   op.ti = ti
-  op.gi = gi
+  op.fi = fi
   op.i = i
 end
