@@ -196,7 +196,7 @@ end
 
 abstract type EXButcherTableauType end
 
-struct EX_FE_BE_2_0_1 <: EXButcherTableauType end
+struct EX_FE_1_0_1 <: EXButcherTableauType end
 
 """
 Explicit Butcher tableaus
