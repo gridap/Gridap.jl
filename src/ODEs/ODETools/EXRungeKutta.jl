@@ -77,7 +77,7 @@ function solve_step!(uf::AbstractVector,
 
     # Update RHS at stage i using solution at u_i
     rhs!(nlop_stage, uf)
-    explicit_rhs!(nlop_stage, uf)
+    # explicit_rhs!(nlop_stage, uf)
 
   end
 
@@ -242,13 +242,13 @@ function jacobian!(J::AbstractMatrix,
   jacobian!(J,op.odeop,op.ti,(uf,vf),2,1.0/(op.dt),op.ode_cache)
 end
 
-function explicit_rhs!(op::RungeKuttaNonlinearOperator, x::AbstractVector)
-  u = x
-  v = op.vi
-  @. v = (x-op.u0)/(op.dt)
-  g = op.fi
-  explicit_rhs!(g[op.i],op.odeop,op.ti,(u,v),op.ode_cache)
-end
+# function explicit_rhs!(op::RungeKuttaNonlinearOperator, x::AbstractVector)
+#   u = x
+#   v = op.vi
+#   @. v = (x-op.u0)/(op.dt)
+#   g = op.fi
+#   explicit_rhs!(g[op.i],op.odeop,op.ti,(u,v),op.ode_cache)
+# end
 
 function update!(op::RungeKuttaNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
   op.ti = ti
