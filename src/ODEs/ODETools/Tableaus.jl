@@ -21,6 +21,20 @@ struct ButcherTableau{T <: ButcherTableauType}
 end
 
 # Butcher Tableaus constructors
+""" Forward Euler
+"""
+function ButcherTableau(::FE_1_0_1)
+  s = 1
+  p = 0
+  q = 1
+  a = reshape([0.0],1,1)
+  b = [1.0]
+  c = [0.0]
+  d = [0.0]
+  ButcherTableau{FE_1_0_1}(s,p,q,a,b,c,d)
+end
+
+
 """
 Backward-Euler
 
