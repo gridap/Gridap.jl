@@ -7,3 +7,5 @@ docs/build/
 Manifest.toml
 tmp/
 .vscode/
+*.vtu
+*.pvd
