@@ -222,7 +222,7 @@ function jacobian!(J::AbstractMatrix,
   @. vi = (x-op.u0)/(op.dt)
   z = zero(eltype(J))
   fillstored!(J,z)
-  jacobians!(J,op.odeop,op.ti,(ui,vi),(op.aᵢ[op.i,op.i],1.0/op.dt),op.ode_cache)
+  jacobians!(J,op.odeop,op.ti,(ui,vi),(op.a[op.i,op.i],1.0/op.dt),op.ode_cache)
 end
 
 """
