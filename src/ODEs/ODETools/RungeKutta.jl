@@ -55,13 +55,13 @@ function solve_step!(uf::AbstractVector,
     ode_cache = update_cache!(ode_cache,op,ti)
     update!(nlop_stage,ti,fi,i)
 
-    if(a[i,i]==0)
+    # if(a[i,i]==0)
       # Skip stage solve if a_ii=0 => u_i=u_0, f_i = f_0
-      @. uf = u0
-    else
+      # @. uf = u0
+    # else
       # solve at stage i
       nls_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nls_stage_cache)
-    end
+    # end
 
     # Update RHS at stage i using solution at u_i
     rhs!(nlop_stage, uf)
