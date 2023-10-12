@@ -3,9 +3,9 @@ Explicit Runge-Kutta ODE solver.
 
 This struct defines an ODE solver for the system of ODEs
 
-    M(u,t)du/dt = g(u,t)
+    M(u,t)du/dt = f(u,t)
 
-where `g` is a nonlinear function of `u` and `t` that will be treated explicitly.
+where `f` is a nonlinear function of `u` and `t` that will be treated explicitly.
   The ODE is solved using an explicit Runge-Kutta method.
 """
 struct EXRungeKutta <: ODESolver
@@ -109,7 +109,7 @@ EXRungeKuttaStageNonlinearOperator <: NonlinearOperator
 Nonlinear operator for the explicit Runge-Kutta stage.
   At a given stage `i` it represents the nonlinear operator A(t,u_i,(u_i-u_n)/dt) such that
 ```math
-A(t,u_i,(u_i-u_n)/dt) = M(u_i,t)(u_i-u_n)/Δt - ∑a[i,j] * g(u_j,t_j) = 0
+A(t,u_i,(u_i-u_n)/dt) = M(u_i,t)(u_i-u_n)/Δt - ∑a[i,j] * f(u_j,t_j) = 0
 ```
 """
 mutable struct EXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
@@ -130,7 +130,7 @@ EXRungeKuttaUpdateNonlinearOperator <: NonlinearOperator
 Nonlinear operator for the explicit Runge-Kutta final update.
   At the final update it represents the nonlinear operator A(t,u_t,(u_t-u_n)/dt)  such that
   ```math
-  A(t,u_f,(u_f-u_n)/dt) = M(u_f,t)(u_f-u_n)/Δt - ∑aₑ[i,j] * g(u_j,t_j) = 0
+  A(t,u_f,(u_f-u_n)/dt) = M(u_f,t)(u_f-u_n)/Δt - ∑a[i,j] * f(u_j,t_j) = 0
   ```
 """
 mutable struct EXRungeKuttaUpdateNonlinearOperator <: RungeKuttaNonlinearOperator
@@ -148,10 +148,9 @@ end
 """
 residual!(b,op::EXRungeKuttaStageNonlinearOperator,x)
 
-Compute the residual of the EX Runge-Kutta nonlinear operator `op` at `x` and
-store it in `b` for a given stage `i`.
+Compute the residual of the explicit Runge-Kutta nonlinear operator at stage i.
 ```math
-b = A(t,x,(x-x₀)/dt) = ∂ui/∂t - ∑aᵢ[i,j] * f(xj,tj)
+A(t,ui,∂ui/∂t) = ∂ui/∂t - a_ii * f(ui,ti) - ∑_{j<i} a_ij * f(uj,tj) = 0
 ```
 
 Uses the vector b as auxiliar variable to store the residual of the left-hand side of
@@ -159,12 +158,12 @@ the i-th stage ODE operator, then adds the corresponding contribution from right
 at all earlier stages.
 ```math
 b = M(ui,ti)∂u/∂t
-b -  ∑_{j<i} aₑ_ij * g(uj,tj) = 0
+b - ∑_{j<=i} a_ij * f(uj,tj) = 0
 ```
 """
 function residual!(b::AbstractVector,
   op::EXRungeKuttaStageNonlinearOperator,
-  x::AbstractVector)
+  x::AbstractVector)    # same as RungeKutta
   rhs!(op,x)
   lhs!(b,op,x)
   for j in 1:op.i
@@ -192,7 +191,7 @@ b - ∑_{i<s} b[i] * f(ui,ti) = 0
 """
 function residual!(b::AbstractVector,
   op::EXRungeKuttaUpdateNonlinearOperator,
-  x::AbstractVector)
+  x::AbstractVector)    # same as RungeKutta
   lhs!(b,op,x)
   for i in 1:op.s
     @. b = b - op.b[i] * op.fi[i]
@@ -216,7 +215,7 @@ has already the negative sign incorporated in its calculation.
 """
 function jacobian!(J::AbstractMatrix,
   op::EXRungeKuttaStageNonlinearOperator,
-  x::AbstractVector)
+  x::AbstractVector)   # same as RungeKutta, same as ForwardEuler
   ui = x
   vi = op.vi
   @. vi = (x-op.u0)/(op.dt)
@@ -233,7 +232,7 @@ stores it in `J` for the final update. This is typically the mass matrix
 """
 function jacobian!(J::AbstractMatrix,
   op::EXRungeKuttaUpdateNonlinearOperator,
-  x::AbstractVector)
+  x::AbstractVector)    # same as RungeKutta
   uf = x
   vf = op.vi
   @. vf = (x-op.u0)/(op.dt)
@@ -249,6 +248,9 @@ end
 #   g = op.fi
 #   explicit_rhs!(g[op.i],op.odeop,op.ti,(u,v),op.ode_cache)
 # end
+
+# function lhs!() end    calls from RungeKutta
+# function rhs!() end    calls from RungeKutta
 
 function update!(op::RungeKuttaNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
   op.ti = ti
