@@ -162,16 +162,16 @@ b = M(ui,ti)∂u/∂t
 b -  ∑_{j<i} aₑ_ij * g(uj,tj) = 0
 ```
 """
-function residual!(b::AbstractVector,
-  op::EXRungeKuttaStageNonlinearOperator,
-  x::AbstractVector)
-  rhs!(op,x)
-  lhs!(b,op,x)
-  for j in 1:op.i
-    @. b = b - op.a[op.i,j] * op.fi[j]
-  end
-  b
-end
+# function residual!(b::AbstractVector,
+#   op::EXRungeKuttaStageNonlinearOperator,
+#   x::AbstractVector)
+#   rhs!(op,x)
+#   lhs!(b,op,x)
+#   for j in 1:op.i
+#     @. b = b - op.a[op.i,j] * op.fi[j]
+#   end
+#   b
+# end
 
 """
 residual!(b,op::EXRungeKuttaUpdateNonlinearOperator,x)
@@ -179,7 +179,7 @@ residual!(b,op::EXRungeKuttaUpdateNonlinearOperator,x)
 Computes the residual of the EX Runge-Kutta nonlinear operator `op` at `x` and
 for the final update.
 ```math
-b = A(t,x,(x-x₀)/dt) = ∂ui/∂t - ∑bₑ[i] * g(xj,tj)
+b = A(t,x,(x-x₀)/dt) = ∂ui/∂t - ∑b[i] * f(xj,tj)
 ```
 
 Uses the vector b as auxiliar variable to store the residual of the left-hand side of
@@ -187,7 +187,7 @@ the final update ODE operator, then adds the corresponding contribution from rig
 at all stages.
 ```math
 b = M(ui,ti)∂u/∂t
-b - ∑_{i<s} bₑ[i] * g(ui,ti) = 0
+b - ∑_{i<s} b[i] * f(ui,ti) = 0
 ```
 """
 function residual!(b::AbstractVector,
