@@ -67,9 +67,9 @@ function solve_step!(uf::AbstractVector,
     ode_cache = update_cache!(ode_cache,op,ti)
     update!(nlop_stage,ti,fi,i)
 
-    if(a[i,i]==0)
-      # Skip stage solve if a_ii=0 => u_i=u_0, fi = f_0
-      @. uf = u0
+    if(i==0)
+      # First stage is always forward euler: u_i = u_0 + dt*f_0
+      @. uf = u0 + dt*fi
     else
       # solve at stage i
       nls_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nls_stage_cache)
@@ -127,7 +127,7 @@ end
 """
 EXRungeKuttaUpdateNonlinearOperator <: NonlinearOperator
 
-Nonlinear operator for the implicit-explicit Runge-Kutta final update.
+Nonlinear operator for the explicit Runge-Kutta final update.
   At the final update it represents the nonlinear operator A(t,u_t,(u_t-u_n)/dt)  such that
   ```math
   A(t,u_f,(u_f-u_n)/dt) = M(u_f,t)(u_f-u_n)/Δt - ∑aₑ[i,j] * g(u_j,t_j) = 0
