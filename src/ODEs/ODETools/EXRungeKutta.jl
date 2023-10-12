@@ -162,16 +162,16 @@ b = M(ui,ti)∂u/∂t
 b -  ∑_{j<i} aₑ_ij * g(uj,tj) = 0
 ```
 """
-# function residual!(b::AbstractVector,
-#   op::EXRungeKuttaStageNonlinearOperator,
-#   x::AbstractVector)
-#   rhs!(op,x)
-#   lhs!(b,op,x)
-#   for j in 1:op.i
-#     @. b = b - op.a[op.i,j] * op.fi[j]
-#   end
-#   b
-# end
+function residual!(b::AbstractVector,
+  op::EXRungeKuttaStageNonlinearOperator,
+  x::AbstractVector)
+  rhs!(op,x)
+  lhs!(b,op,x)
+  for j in 1:op.i
+    @. b = b - op.a[op.i,j] * op.fi[j]
+  end
+  b
+end
 
 """
 residual!(b,op::EXRungeKuttaUpdateNonlinearOperator,x)
