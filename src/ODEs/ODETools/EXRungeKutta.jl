@@ -67,13 +67,13 @@ function solve_step!(uf::AbstractVector,
     ode_cache = update_cache!(ode_cache,op,ti)
     update!(nlop_stage,ti,fi,i)
 
-    if(i==0)
-      # First stage is always forward euler: u_i = u_0 + dt*f_0
-      @. uf = u0 + dt*fi
-    else
+    # if(i==0)
+    #   # First stage is always forward euler: u_i = u_0 + dt*f_0
+    #   @. uf = u0 + dt*fi
+    # else
       # solve at stage i
       nls_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nls_stage_cache)
-    end
+    # end
 
     # Update RHS at stage i using solution at u_i
     rhs!(nlop_stage, uf)
@@ -146,7 +146,7 @@ mutable struct EXRungeKuttaUpdateNonlinearOperator <: RungeKuttaNonlinearOperato
 end
 
 """
-residual!(b,op::IMEXRungeKuttaStageNonlinearOperator,x)
+residual!(b,op::EXRungeKuttaStageNonlinearOperator,x)
 
 Compute the residual of the EX Runge-Kutta nonlinear operator `op` at `x` and
 store it in `b` for a given stage `i`.
