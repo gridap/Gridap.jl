@@ -6,7 +6,7 @@ struct SDIRK_2_0_2 <: ButcherTableauType end
 struct SDIRK_2_0_3 <: ButcherTableauType end
 struct ESDIRK_3_1_2 <: ButcherTableauType end
 struct TRBDF2_3_2_3 <: ButcherTableauType end
-
+struct FE_1_0_1 <: ButcherTableauType end
 """
 Butcher tableau
 """
