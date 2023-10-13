@@ -252,8 +252,8 @@ end
 # function lhs!() end    calls from RungeKutta
 # function rhs!() end    calls from RungeKutta
 
-function update!(op::RungeKuttaNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
-  op.ti = ti
-  op.fi = fi
-  op.i = i
-end
+# function update!(op::RungeKuttaNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
+#   op.ti = ti
+#   op.fi = fi
+#   op.i = i
+# end
