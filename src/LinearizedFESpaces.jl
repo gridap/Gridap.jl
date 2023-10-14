@@ -158,3 +158,120 @@ function Gridap.FESpaces._jacobian(f,uh,fuh::DomainContribution)
   end
   terms
 end
+
+### BEGIN OPTIMIZATIONS
+function Gridap.Adaptivity.get_n2o_reference_coordinate_map(
+            g::AdaptivityGlue{Gridap.Adaptivity.RefinementGlue,Dc,A,B,<:FillArrays.Fill}) where {Dc,A,B}
+  rrules    = Gridap.Adaptivity.get_new_cell_refinement_rules(g)
+  cell_maps = Gridap.Geometry.get_cell_map(rrules.value)
+  return lazy_map(Reindex(cell_maps),g.n2o_cell_to_child_id)
+end
+
+function Gridap.Adaptivity.get_n2o_reference_coordinate_map(
+            g::AdaptivityGlue{Gridap.Adaptivity.RefinementGlue,Dc,A,B,<:CompressedArray}) where {Dc,A,B}
+  
+  rrules = Gridap.Adaptivity.get_new_cell_refinement_rules(g)
+  Gridap.Helpers.@notimplementedif length(rrules.values)>1
+  cell_maps = Gridap.Geometry.get_cell_map(rrules.values[1])
+  return lazy_map(Reindex(cell_maps),g.n2o_cell_to_child_id)
+end
+
+const NewToOldReindexArray{T,N}=Gridap.Arrays.LazyArray{<:Fill{<:Reindex},
+                                                        T,
+                                                        N,
+                                                        <:Tuple{<:AbstractVector{<:Integer}}} where {T,N}
+
+function Gridap.Arrays.lazy_map(::typeof(evaluate),
+                                f::NewToOldReindexArray{T,N},
+                                x::Fill{<:AbstractVector{<:Point}}) where {T,N}
+    reindex_map=f.maps.value
+    reindex_map_fields=reindex_map.values
+    reindex_map_fields_x=[evaluate(reindex_map_fields[i],x.value) for i=1:length(reindex_map_fields)]
+    lazy_map(Reindex(reindex_map_fields_x),f.args[1])
+end 
+
+function Gridap.Arrays.lazy_map(::typeof(evaluate),
+                                f::NewToOldReindexArray{T,N},
+                                x::CompressedArray{<:AbstractVector{<:Point}}) where {T,N}
+    @notimplementedif length(x.values)>1
+    reindex_map=f.maps.value
+    reindex_map_fields=reindex_map.values
+    reindex_map_fields_x=[evaluate(reindex_map_fields[i],x.values[1]) for i=1:length(reindex_map_fields)]
+    lazy_map(Reindex(reindex_map_fields_x),f.args[1])
+end
+
+function Gridap.Arrays.lazy_map(::typeof(evaluate),
+                                f::Union{Fill{<:AbstractVector{<:Gridap.Fields.Field}},Fill{<:Gridap.Fields.Field}},
+                                gx::NewToOldReindexArray{T,N})where {T,N}
+    gxmv=gx.maps.value.values
+    fv=f.value
+    fvgx=[evaluate(fv,gxmv[i]) for i=1:length(gxmv)]
+    lazy_map(Reindex(fvgx),gx.args[1])
+end
+
+function Gridap.Arrays.lazy_map(::typeof(evaluate),
+                                f::Union{CompressedArray{<:AbstractVector{<:Gridap.Fields.Field}},
+                                         CompressedArray{<:Gridap.Fields.Field}},
+                                gx::NewToOldReindexArray{T,N})where {T,N}
+    @notimplementedif length(f.values)>1
+    gxmv=gx.maps.value.values
+    fv=f.values[1]
+    fvgx=[evaluate(fv,gxmv[i]) for i=1:length(gxmv)]
+    lazy_map(Reindex(fvgx),gx.args[1])
+end
+
+function Gridap.Arrays.lazy_map(m::Gridap.Fields.TransposeMap,
+                                gx::NewToOldReindexArray{T,N}) where {T,N}
+    gxmv=gx.maps.value.values
+    gxmvT=[evaluate(m,gxmv[i]) for i=1:length(gxmv)]
+    lazy_map(Reindex(gxmvT),gx.args[1]) 
+end
+
+function Gridap.Arrays.lazy_map(m::Gridap.Fields.BroadcastingFieldOpMap,
+                                gx::NewToOldReindexArray{T1,N1},
+                                fx::NewToOldReindexArray{T2,N2}) where {T1,N1,T2,N2}
+  
+  @assert gx.args[1]===fx.args[1]
+  @assert length(gx.maps.value.values)===length(fx.maps.value.values)
+  gxs_op_fxs=[evaluate(m,gx.maps.value.values[i],fx.maps.value.values[i]) for i=1:length(fx.maps.value.values)]
+  lazy_map(Reindex(gxs_op_fxs),fx.args[1])
+end
+
+function Gridap.Arrays.lazy_map(m::Gridap.Fields.BroadcastingFieldOpMap,
+                                gx::Fill,
+                                fx::NewToOldReindexArray{T,N}) where {T,N}
+  fxs_op_gx=[evaluate(m,fx.maps.value.values[i],gx.value) for i=1:length(fx.maps.value.values)]
+  lazy_map(Reindex(fxs_op_gx),fx.args[1])    
+end
+
+function Gridap.Arrays.lazy_map(m::Gridap.Fields.BroadcastingFieldOpMap,
+                                gx::CompressedArray,
+                                fx::NewToOldReindexArray{T,N}) where {T,N}
+  @notimplementedif length(gx.values)>1
+  fxs_op_gx=[evaluate(m,fx.maps.value.values[i],gx.values[1]) for i=1:length(fx.maps.value.values)]
+  lazy_map(Reindex(fxs_op_gx),fx.args[1])    
+end
+
+function Gridap.Arrays.lazy_map(m::Gridap.Fields.BroadcastingFieldOpMap,
+                                fx::NewToOldReindexArray{T,N},
+                                gx::Fill) where {T,N}
+  fxs_op_gx=[evaluate(m,fx.maps.value.values[i],gx.value) for i=1:length(fx.maps.value.values)]
+  lazy_map(Reindex(fxs_op_gx),fx.args[1]) 
+end
+
+function Gridap.Arrays.lazy_map(m::Gridap.Fields.BroadcastingFieldOpMap,
+                                fx::NewToOldReindexArray{T,N},
+                                gx::CompressedArray) where {T,N}
+  @notimplementedif length(gx.values)>1
+  fxs_op_gx=[evaluate(m,fx.maps.value.values[i],gx.values[1]) for i=1:length(fx.maps.value.values)]
+  lazy_map(Reindex(fxs_op_gx),fx.args[1])
+end
+
+function Gridap.Arrays.lazy_map(m  :: Gridap.Fields.IntegrationMap, 
+                                fx :: NewToOldReindexArray{T,N}, 
+                                w  :: Fill, 
+                                j  :: Fill) where {T,N}
+  fxs_op_w_op_j=[evaluate(m,fx.maps.value.values[i],w.value,j.value) for i=1:length(fx.maps.value.values)]
+  lazy_map(Reindex(fxs_op_w_op_j),fx.args[1])
+end
+#### END OPTIMIZATIONS
