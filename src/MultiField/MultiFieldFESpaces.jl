@@ -34,12 +34,12 @@ function BlockMultiFieldStyle(NB::Integer)
   return BlockMultiFieldStyle(NB,SB)
 end
 
-function BlockMultiFieldStyle(::BlockMultiFieldStyle{NB,SB,P},spaces::Vector{<:SingleFieldFESpace}) where {NB,SB,P}
+function BlockMultiFieldStyle(::BlockMultiFieldStyle{NB,SB,P},spaces) where {NB,SB,P}
   @check length(spaces) == sum(SB)
   return BlockMultiFieldStyle(NB,SB,P)
 end
 
-function BlockMultiFieldStyle(::BlockMultiFieldStyle{0,0,0},spaces::Vector{<:SingleFieldFESpace})
+function BlockMultiFieldStyle(::BlockMultiFieldStyle{0,0,0},spaces)
   NB = length(spaces)
   return BlockMultiFieldStyle(NB)
 end
