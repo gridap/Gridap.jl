@@ -66,12 +66,6 @@ function solve_step!(uf::AbstractVector,
 
     # Update stage unknown
     @. nlop_stage.ui[i] = uf
-    println("uf RK = ",uf, "ti = ", ti)
-    println( "op.ui = ",nlop_stage.ui)
-    println( "ui = ",ui)
-
-    # # Update RHS at stage i using solution at u_i
-    # rhs!(nlop_stage, uf)
 
   end
 
@@ -85,13 +79,8 @@ function solve_step!(uf::AbstractVector,
     ode_cache = update_cache!(ode_cache,op,tf)
     nlop_update = RungeKuttaUpdateNonlinearOperator(op,tf,dt,u0,ode_cache,vi,ui,rhs,s,b)
 
-
-    println( "op_up.ui = ",nlop_update.ui)
-    println( "ui = ",ui)
-
     # solve at final update
     nls_update_cache = solve!(uf,solver.nls_update,nlop_update,nls_update_cache)
-    println("uf RK update = ",uf, "tf =",tf)
 
   end
 
