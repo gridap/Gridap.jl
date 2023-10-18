@@ -166,7 +166,7 @@ function residual!(b::AbstractVector,
   x::AbstractVector)    # same as RungeKutta
   rhs!(op,x)
   lhs!(b,op,x)
-  for j in 1:op.i
+  for j in 1:op.i-1
     @. b = b - op.a[op.i,j] * op.fi[j]
   end
   b
