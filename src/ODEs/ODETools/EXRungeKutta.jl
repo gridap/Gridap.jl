@@ -161,7 +161,7 @@ function residual!(b::AbstractVector,
   x::AbstractVector)
   rhs!(op,x)
   lhs!(b,op,x)
-  for j in 1:op.i-1
+  for j in 1:op.i # This could be changed to sum to i-1 as all explicit methods have a_ii = 0.
     @. b = b - op.a[op.i,j] * op.fi[j]
   end
   b
