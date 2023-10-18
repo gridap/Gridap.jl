@@ -221,21 +221,21 @@ function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::A
   jacobian!(A,op.odeop,op.ti,(ui,vi),i,γᵢ,op.ode_cache)
 end
 
-# function allocate_residual(op::EXRungeKuttaNonlinearOperator,x::AbstractVector)
-#   allocate_residual(op.odeop,op.ti,x,op.ode_cache)
-# end
+function allocate_residual(op::RungeKuttaNonlinearOperator,x::AbstractVector)
+  allocate_residual(op.odeop,op.ti,x,op.ode_cache)
+end
 
-# function allocate_jacobian(op::EXRungeKuttaNonlinearOperator,x::AbstractVector)
-#   allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
-# end
+function allocate_jacobian(op::RungeKuttaNonlinearOperator,x::AbstractVector)
+  allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
+end
 
-# function zero_initial_guess(op::EXRungeKuttaNonlinearOperator)
-#   x0 = similar(op.u0)
-#   fill!(x0,zero(eltype(x0)))
-#   x0
-# end
+function zero_initial_guess(op::RungeKuttaNonlinearOperator)
+  x0 = similar(op.u0)
+  fill!(x0,zero(eltype(x0)))
+  x0
+end
 
-function rhs!(op::EXRungeKuttaNonlinearOperator, x::AbstractVector)
+function rhs!(op::RungeKuttaNonlinearOperator, x::AbstractVector)
   u = x
   v = op.vi
   @. v = (x-op.u0)/(op.dt)
@@ -243,14 +243,14 @@ function rhs!(op::EXRungeKuttaNonlinearOperator, x::AbstractVector)
   rhs!(f[op.i],op.odeop,op.ti,(u,v),op.ode_cache)
 end
 
-function lhs!(b::AbstractVector, op::EXRungeKuttaNonlinearOperator, x::AbstractVector)
+function lhs!(b::AbstractVector, op::RungeKuttaNonlinearOperator, x::AbstractVector)
   u = x
   v = op.vi
   @. v = (x-op.u0)/(op.dt)
   lhs!(b,op.odeop,op.ti,(u,v),op.ode_cache)
 end
 
-function update!(op::EXRungeKuttaNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
+function update!(op::RungeKuttaNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
   op.ti = ti
   op.fi = fi
   op.i = i
