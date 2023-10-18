@@ -221,19 +221,19 @@ function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::A
   jacobian!(A,op.odeop,op.ti,(ui,vi),i,γᵢ,op.ode_cache)
 end
 
-function allocate_residual(op::EXRungeKuttaNonlinearOperator,x::AbstractVector)
-  allocate_residual(op.odeop,op.ti,x,op.ode_cache)
-end
+# function allocate_residual(op::EXRungeKuttaNonlinearOperator,x::AbstractVector)
+#   allocate_residual(op.odeop,op.ti,x,op.ode_cache)
+# end
 
-function allocate_jacobian(op::EXRungeKuttaNonlinearOperator,x::AbstractVector)
-  allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
-end
+# function allocate_jacobian(op::EXRungeKuttaNonlinearOperator,x::AbstractVector)
+#   allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
+# end
 
-function zero_initial_guess(op::EXRungeKuttaNonlinearOperator)
-  x0 = similar(op.u0)
-  fill!(x0,zero(eltype(x0)))
-  x0
-end
+# function zero_initial_guess(op::EXRungeKuttaNonlinearOperator)
+#   x0 = similar(op.u0)
+#   fill!(x0,zero(eltype(x0)))
+#   x0
+# end
 
 function rhs!(op::EXRungeKuttaNonlinearOperator, x::AbstractVector)
   u = x
