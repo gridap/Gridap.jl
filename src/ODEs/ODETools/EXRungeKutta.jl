@@ -46,39 +46,42 @@ function solve_step!(uf::AbstractVector,
   if cache === nothing
     ode_cache = allocate_cache(op)
     vi = similar(u0)
-    fi = [similar(u0)]
+    ui = [similar(u0)]
+    rhs = similar(u0)
     nls_stage_cache = nothing
     nls_update_cache = nothing
   else
-    ode_cache, vi, fi, nls_stage_cache, nls_update_cache = cache
+    ode_cache, vi, ui, rhs, nls_stage_cache, nls_update_cache = cache
   end
 
   # Create RKNL stage operator
-  nlop_stage = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,fi,0,a)
+  nlop_stage = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ui,rhs,0,a)
 
   # Compute intermediate stages
   for i in 1:s
 
     # allocate space to store the RHS at i
-    if (length(fi) < i)
-      push!(fi,similar(u0))
+    if (length(ui) < i)
+      push!(ui,similar(u0))
     end
 
     # Update time
     ti = t0 + c[i]*dt
     ode_cache = update_cache!(ode_cache,op,ti)
-    update!(nlop_stage,ti,fi,i)
+    update!(nlop_stage,ti,ui,i)
 
     # if(i==0)
     #   # First stage is always forward euler: u_i = u_0 + dt*f_0
-    #   @. uf = u0 + dt*fi
+    #   @. uf = u0
     # else
       # solve at stage i
       nls_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nls_stage_cache)
+            # uf is the ki at each stage
+            # uf is continuously updated
     # end
 
-    # Update RHS at stage i using solution at u_i
-    rhs!(nlop_stage, uf)
+    # Update stage unknown
+    @. nlop_stage.ui[i] = uf
 
   end
 
@@ -90,7 +93,7 @@ function solve_step!(uf::AbstractVector,
 
     # Create RKNL final update operator
     ode_cache = update_cache!(ode_cache,op,tf)
-    nlop_update = EXRungeKuttaUpdateNonlinearOperator(op,tf,dt,u0,ode_cache,vi,fi,s,b)
+    nlop_update = EXRungeKuttaUpdateNonlinearOperator(op,tf,dt,u0,ode_cache,vi,ui,rhs,s,b)
 
     # solve at final update
     nls_update_cache = solve!(uf,solver.nls_update,nlop_update,nls_update_cache)
@@ -98,7 +101,7 @@ function solve_step!(uf::AbstractVector,
   end
 
   # Update final cache
-  cache = (ode_cache, vi, fi, nls_stage_cache, nls_update_cache)
+  cache = (ode_cache, vi, ui, rhs, nls_stage_cache, nls_update_cache)
 
   return (uf, tf, cache)
 
@@ -117,7 +120,8 @@ mutable struct EXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
   u0::AbstractVector
   ode_cache
   vi::AbstractVector
-  fi::Vector{AbstractVector}
+  ui::Vector{AbstractVector}
+  rhs::AbstractVector
   i::Int
   a::Matrix{Float64}
 end
@@ -135,7 +139,8 @@ mutable struct EXRungeKuttaUpdateNonlinearOperator <: RungeKuttaNonlinearOperato
   u0::AbstractVector
   ode_cache
   vi::AbstractVector
-  fi::Vector{AbstractVector}
+  ui::Vector{AbstractVector}
+  rhs::AbstractVector
   s::Int
   b::Vector{Float64}
 end
@@ -153,7 +158,7 @@ the i-th stage ODE operator, then adds the corresponding contribution from right
 at all earlier stages.
 ```math
 b = M(ui,ti)∂u/∂t
-b - ∑_{j<=i} a_ij * f(uj,tj) = 0
+b - f(∑_{j<=i} a_ij * uj,tj) = 0
 ```
 """
 function residual!(b::AbstractVector,
@@ -161,9 +166,7 @@ function residual!(b::AbstractVector,
   x::AbstractVector)
   rhs!(op,x)
   lhs!(b,op,x)
-  for j in 1:op.i # This could be changed to sum to i-1 as all explicit methods have a_ii = 0.
-    @. b = b - op.a[op.i,j] * op.fi[j]
-  end
+  @. b = b - op.rhs
   b
 end
 
@@ -179,16 +182,15 @@ Uses the vector b as auxiliar variable to store the residual of the update ODE
 operator (e.g. identity or mass matrix), then adds the corresponding contribution from earlier stages.
 ```math
 b = [∂u/∂t]
-b - ∑_{i<=s} bi * f(ui,ti) = 0
+b - f(∑_{i<=s} bi * ui,ti) = 0
 ```
 """
 function residual!(b::AbstractVector,
   op::EXRungeKuttaUpdateNonlinearOperator,
   x::AbstractVector)    # same as RungeKutta
   lhs!(b,op,x)
-  for i in 1:op.s
-    @. b = b - op.b[i] * op.fi[i]
-  end
+  rhs!(op,x)
+  @. b = b - op.rhs
   b
 end
 
@@ -235,12 +237,24 @@ function zero_initial_guess(op::RungeKuttaNonlinearOperator)
   x0
 end
 
-function rhs!(op::RungeKuttaNonlinearOperator, x::AbstractVector)
-  u = x
+function rhs!(op::EXRungeKuttaStageNonlinearOperator, x::AbstractVector)
+  u = zeros(eltype(x),length(x))
+  for j in 1:op.i
+    @. u = u + op.a[op.i,j] * op.ui[j]
+  end
   v = op.vi
   @. v = (x-op.u0)/(op.dt)
-  f = op.fi
-  rhs!(f[op.i],op.odeop,op.ti,(u,v),op.ode_cache)
+  rhs!(op.rhs,op.odeop,op.ti,(u,v),op.ode_cache)
+end
+
+function rhs!(op::EXRungeKuttaUpdateNonlinearOperator, x::AbstractVector)
+  u = zeros(eltype(x),length(x))
+  for i in 1:op.s
+    @. u = u + op.b[i] * op.ui[i]
+  end
+  v = op.vi
+  @. v = (x-op.u0)/(op.dt)
+  rhs!(op.rhs,op.odeop,op.ti,(u,v),op.ode_cache)
 end
 
 function lhs!(b::AbstractVector, op::RungeKuttaNonlinearOperator, x::AbstractVector)
@@ -252,7 +266,7 @@ end
 
 function update!(op::RungeKuttaNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
   op.ti = ti
-  op.fi = fi
+  op.ui = ui
   op.i = i
 end
 
