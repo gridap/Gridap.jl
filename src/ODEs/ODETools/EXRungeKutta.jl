@@ -202,6 +202,7 @@ function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::A
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobians!(A,op.odeop,op.ti,(ui,vi),(op.a[op.i,op.i],1.0/op.dt),op.ode_cache)
+  # do not need to compute J0 as a_ii = 0
 end
 
 function jacobian!(A::AbstractMatrix,op::EXRungeKuttaUpdateNonlinearOperator,x::AbstractVector)
@@ -211,6 +212,7 @@ function jacobian!(A::AbstractMatrix,op::EXRungeKuttaUpdateNonlinearOperator,x::
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobian!(A,op.odeop,op.ti,(uf,vf),2,1.0/(op.dt),op.ode_cache)
+  # what is the significance of the 2 here. Should is be i = s?
 end
 
 function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector,
@@ -238,7 +240,8 @@ function zero_initial_guess(op::RungeKuttaNonlinearOperator)
 end
 
 function rhs!(op::EXRungeKuttaStageNonlinearOperator, x::AbstractVector)
-  u = zeros(eltype(x),length(x))
+  u = x
+  u .= 0.0 # changed this based on Santi comment on Oriol code
   for j in 1:op.i-1 # changed to i-1 for explicit methods
     @. u = u + op.a[op.i,j] * op.ui[j]
   end
@@ -248,7 +251,8 @@ function rhs!(op::EXRungeKuttaStageNonlinearOperator, x::AbstractVector)
 end
 
 function rhs!(op::EXRungeKuttaUpdateNonlinearOperator, x::AbstractVector)
-  u = zeros(eltype(x),length(x))
+  u = x
+  u .= 0.0 # changed this based on Santi comment on Oriol code
   for i in 1:op.s
     @. u = u + op.b[i] * op.ui[i]
   end
