@@ -264,7 +264,7 @@ function lhs!(b::AbstractVector, op::RungeKuttaNonlinearOperator, x::AbstractVec
   lhs!(b,op.odeop,op.ti,(u,v),op.ode_cache)
 end
 
-function update!(op::RungeKuttaNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
+function update!(op::RungeKuttaNonlinearOperator,ti::Float64,ui::AbstractVector,i::Int)
   op.ti = ti
   op.ui = ui
   op.i = i
