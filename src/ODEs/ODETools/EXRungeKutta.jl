@@ -164,7 +164,7 @@ b - f(∑_{j<=i} a_ij * uj,tj) = 0
 function residual!(b::AbstractVector,
   op::EXRungeKuttaStageNonlinearOperator,
   x::AbstractVector)
-  rhs!(op,x)
+  rhs!(op,x) ### this is different to below
   lhs!(b,op,x)
   @. b = b - op.rhs
   b
@@ -181,13 +181,13 @@ A(t,uf,∂uf/∂t) = ∂uf/∂t - ∑_{i<=s} b_i * f(ui,ti) = 0
 Uses the vector b as auxiliar variable to store the residual of the update ODE
 operator (e.g. identity or mass matrix), then adds the corresponding contribution from earlier stages.
 ```math
-b = [∂u/∂t]
+b = M(uf,tf)[∂u/∂t]
 b - f(∑_{i<=s} bi * ui,ti) = 0
 ```
 """
 function residual!(b::AbstractVector,
   op::EXRungeKuttaUpdateNonlinearOperator,
-  x::AbstractVector)    # same as RungeKutta
+  x::AbstractVector)
   lhs!(b,op,x)
   rhs!(op,x)
   @. b = b - op.rhs
@@ -239,7 +239,7 @@ end
 
 function rhs!(op::EXRungeKuttaStageNonlinearOperator, x::AbstractVector)
   u = zeros(eltype(x),length(x))
-  for j in 1:op.i
+  for j in 1:op.i-1 # changed to i-1 for explicit methods
     @. u = u + op.a[op.i,j] * op.ui[j]
   end
   v = op.vi
