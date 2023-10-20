@@ -186,7 +186,7 @@ function jacobian!(A::AbstractMatrix,op::RungeKuttaUpdateNonlinearOperator,x::Ab
   @. vf = (x-op.u0)/(op.dt)
   z = zero(eltype(A))
   fillstored!(A,z)
-  jacobian!(A,op.odeop,op.ti,(uf,vf),2,1.0/(op.dt),op.ode_cache)
+  jacobian!(A,op.odeop,op.ti,(uf,vf),1.0,1.0/(op.dt),op.ode_cache)
 end
 
 function jacobian!(A::AbstractMatrix,op::RungeKuttaStageNonlinearOperator,x::AbstractVector,
