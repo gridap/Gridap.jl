@@ -211,7 +211,7 @@ function jacobian!(A::AbstractMatrix,op::EXRungeKuttaUpdateNonlinearOperator,x::
   @. vf = (x-op.u0)/(op.dt)
   z = zero(eltype(A))
   fillstored!(A,z)
-  jacobian!(A,op.odeop,op.ti,(uf,vf),2,1.0/(op.dt),op.ode_cache)
+  jacobian!(A,op.odeop,op.ti,(uf,vf),1.0,1.0/(op.dt),op.ode_cache)
   # what is the significance of the 2 here. Should is be i = s?
 end
 
