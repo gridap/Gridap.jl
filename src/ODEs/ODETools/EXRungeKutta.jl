@@ -212,7 +212,7 @@ function jacobian!(A::AbstractMatrix,op::EXRungeKuttaUpdateNonlinearOperator,x::
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobian!(A,op.odeop,op.ti,(uf,vf),1.0,1.0/(op.dt),op.ode_cache)
-  # what is the significance of the 2 here. Should is be i = s?
+  # I have changed this input from hard coded 2 -> 1
 end
 
 function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector,
