@@ -33,17 +33,22 @@ function solve_step!(uf::AbstractVector,
     ode_cache = allocate_cache(op)
     vi = similar(u0)
     ui = Vector{typeof(u0)}()
-    sizehint!(ui,s)
-    [push!(ui,similar(u0)) for i in 1:s]
+    sizehint!(ui,s-1)
+    [push!(ui,similar(u0)) for i in 1:s-1]
     rhs = similar(u0)
+    if (s>1)
+      u_aux = ui[1] # auxiliar variable to store the sum of stages
+    else
+      u_aux = nothing # This is needed for the case s=1
+    end
     nls_stage_cache = nothing
     nls_update_cache = nothing
   else
-    ode_cache, vi, ui, rhs, nls_stage_cache, nls_update_cache = cache
+    ode_cache, vi, ui, u_aux, rhs, nls_stage_cache, nls_update_cache = cache
   end
 
   # Create RKNL stage operator
-  nlop_stage = RungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ui,rhs,0,a)
+  nlop_stage = RungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,u_aux,rhs,0,a)
 
   # Compute intermediate stages
   for i in 1:s
@@ -61,8 +66,10 @@ function solve_step!(uf::AbstractVector,
       nls_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nls_stage_cache)
     end
 
-    # Update stage unknown
-    @. nlop_stage.ui[i] = uf
+    # Store stage unknown
+    if (i<s)
+      @. ui[i] = uf
+    end
 
   end
 
@@ -72,9 +79,16 @@ function solve_step!(uf::AbstractVector,
   # Skip final update if not necessary
   if !(c[s]==1.0 && a[s,:] == b)
 
+    # Operate with stages solution
+    @. u_aux = b[1]*ui[1]  # u_aux points to ui[1], this needs to be done first
+    @. u_aux += b[s]*uf
+    for i in 2:s-1
+      @. u_aux += b[i]*ui[i]
+    end
+
     # Create RKNL final update operator
     ode_cache = update_cache!(ode_cache,op,tf)
-    nlop_update = RungeKuttaUpdateNonlinearOperator(op,tf,dt,u0,ode_cache,vi,ui,rhs,s,b)
+    nlop_update = RungeKuttaUpdateNonlinearOperator(op,tf,dt,u0,ode_cache,vi,u_aux,rhs,s,b)
 
     # solve at final update
     nls_update_cache = solve!(uf,solver.nls_update,nlop_update,nls_update_cache)
@@ -82,7 +96,7 @@ function solve_step!(uf::AbstractVector,
   end
 
   # Update final cache
-  cache = (ode_cache, vi, ui, rhs, nls_stage_cache, nls_update_cache)
+  cache = (ode_cache, vi, ui, u_aux, rhs, nls_stage_cache, nls_update_cache)
 
   return (uf,tf,cache)
 
@@ -101,7 +115,7 @@ mutable struct RungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
   u0::AbstractVector
   ode_cache
   vi::AbstractVector
-  ui::Vector{AbstractVector}
+  ui::Union{AbstractVector,Nothing}
   rhs::AbstractVector
   i::Int
   a::Matrix
@@ -118,7 +132,7 @@ mutable struct RungeKuttaUpdateNonlinearOperator <: RungeKuttaNonlinearOperator
   u0::AbstractVector
   ode_cache
   vi::AbstractVector
-  ui::Vector{AbstractVector}
+  ui::AbstractVector
   rhs::AbstractVector
   s::Int
   b::Vector{Number}
@@ -213,9 +227,9 @@ end
 function rhs!(op::RungeKuttaStageNonlinearOperator, x::AbstractVector)
   v = op.vi
   @. v = (x-op.u0)/(op.dt)
-  u = op.a[op.i,op.i] * op.ui[op.i]
-  for j in 1:op.i-1
-      @. u += op.a[op.i,j] * op.ui[j]
+  u = op.a[op.i,op.i] * x
+  if (op.i>1)
+    @. u += op.ui
   end
   rhs!(op.rhs,op.odeop,op.ti,(u,v),op.ode_cache)
 end
@@ -223,11 +237,7 @@ end
 function rhs!(op::RungeKuttaUpdateNonlinearOperator, x::AbstractVector)
   v = op.vi
   @. v = (x-op.u0)/(op.dt)
-  u = op.b[op.s] * op.ui[op.s]
-  for i in 1:op.s-1
-    @. u = u + op.b[i] * op.ui[i]
-  end
-  rhs!(op.rhs,op.odeop,op.ti,(u,v),op.ode_cache)
+  rhs!(op.rhs,op.odeop,op.ti,(op.ui,v),op.ode_cache)
 end
 
 function lhs!(b::AbstractVector, op::RungeKuttaNonlinearOperator, x::AbstractVector)
@@ -237,9 +247,12 @@ function lhs!(b::AbstractVector, op::RungeKuttaNonlinearOperator, x::AbstractVec
   lhs!(b,op.odeop,op.ti,(u,v),op.ode_cache)
 end
 
-function update!(op::RungeKuttaNonlinearOperator,ti::Float64,ui::AbstractVector,i::Int)
+function update!(op::RungeKuttaStageNonlinearOperator,ti::Float64,ui::AbstractVector,i::Int)
   op.ti = ti
-  op.ui = ui
+  if (i>1)
+    op.ui = op.a[i,i-1]*ui[i-1]
+    [@. op.ui += op.a[i,j]*ui[j] for j in 1:i-2]
+  end
   op.i = i
 end
 

@@ -290,3 +290,9 @@ function explicit_rhs!(op::IMEXRungeKuttaUpdateNonlinearOperator, x::AbstractVec
   @. v = (x-op.u0)/(op.dt)
   explicit_rhs!(op.ex_rhs,op.odeop,op.ti,(u,v),op.ode_cache)
 end
+
+function update!(op::IMEXRungeKuttaStageNonlinearOperator,ti::Float64,ui::AbstractVector,i::Int)
+  op.ti = ti
+  op.ui = ui
+  op.i = i
+end
