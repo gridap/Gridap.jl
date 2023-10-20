@@ -32,7 +32,9 @@ function solve_step!(uf::AbstractVector,
   if cache === nothing
     ode_cache = allocate_cache(op)
     vi = similar(u0)
-    ui = [similar(u0)]
+    ui = Vector{typeof(u0)}()
+    sizehint!(ui,s)
+    [push!(ui,similar(u0)) for i in 1:s]
     rhs = similar(u0)
     nls_stage_cache = nothing
     nls_update_cache = nothing
@@ -45,11 +47,6 @@ function solve_step!(uf::AbstractVector,
 
   # Compute intermediate stages
   for i in 1:s
-
-    # allocate space to store the RHS at i
-    if (length(ui) < i)
-      push!(ui,similar(u0))
-    end
 
     # Update time
     ti = t0 + c[i]*dt
@@ -214,22 +211,22 @@ function zero_initial_guess(op::RungeKuttaNonlinearOperator)
 end
 
 function rhs!(op::RungeKuttaStageNonlinearOperator, x::AbstractVector)
-  u = zeros(eltype(x),length(x))
-  for j in 1:op.i
-    @. u = u + op.a[op.i,j] * op.ui[j]
-  end
   v = op.vi
   @. v = (x-op.u0)/(op.dt)
+  u = op.a[op.i,op.i] * op.ui[op.i]
+  for j in 1:op.i-1
+      @. u += op.a[op.i,j] * op.ui[j]
+  end
   rhs!(op.rhs,op.odeop,op.ti,(u,v),op.ode_cache)
 end
 
 function rhs!(op::RungeKuttaUpdateNonlinearOperator, x::AbstractVector)
-  u = zeros(eltype(x),length(x))
-  for i in 1:op.s
-    @. u = u + op.b[i] * op.ui[i]
-  end
   v = op.vi
   @. v = (x-op.u0)/(op.dt)
+  u = op.b[op.s] * op.ui[op.s]
+  for i in 1:op.s-1
+    @. u = u + op.b[i] * op.ui[i]
+  end
   rhs!(op.rhs,op.odeop,op.ti,(u,v),op.ode_cache)
 end
 

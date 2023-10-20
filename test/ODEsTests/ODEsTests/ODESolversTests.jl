@@ -132,6 +132,7 @@ ufθ, tf, cache = solve_step!(ufθ,odesolθ,op,u0,t0,nothing)
 
 # RK tests
 # RK: BE equivalent
+# u1-u0 = dt*u1 => u1 = u0/(1-dt) = 2.2222222222222223
 odesol = RungeKutta(ls,ls,dt,:BE_1_0_1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
@@ -148,6 +149,13 @@ uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # RK: SDIRK 2nd order
+# u1-u0 = 0.25*dt*u1
+# u1(1-0.25*dt) = u0 => u1 = u0/(1-0.25*dt) = 2.0512820512820515
+# u2-u0 = 0.25*dt*u2 + 0.5*dt*u0/(1-0.25*dt)
+# u2(1-0.25*dt) = u0 + 0.5*dt*u0/(1-0.25*dt) = u0*(1+0.5*0.1/(1-0.25*0.1))
+# u2 = u0*(1+0.5*0.1/(1-0.25*0.1))/(1-0.25*dt) = 2.156476002629849
+# uf-u0 = 0.5*dt*u1 + 0.5*dt*u2 = 0.5*dt*u0*( 1/(1-0.25*dt) + (1+0.5*dt/(1-0.25*dt)) )
+# uf = u0*(1 + 0.5*dt/(1-0.25*dt) + 0.5*dt*(1+0.5*0.1/(1-0.25*0.1))/(1-0.25*dt))
 odesol = RungeKutta(ls,ls,dt,:SDIRK_2_0_2)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
