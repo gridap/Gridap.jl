@@ -16,7 +16,8 @@ struct EXRungeKutta <: ODESolver
   # function EXRungeKutta(nls_stage::NonlinearSolver, nls_update::NonlinearSolver, dt, type::Symbol)
   function EXRungeKutta(nls_stage::NonlinearSolver, dt, type::Symbol)
     bt = EXButcherTableau(type)
-    new(nls_stage, nls_update, dt, bt)
+    # new(nls_stage, nls_update, dt, bt)
+    new(nls_stage, dt, bt)
   end
 end
 
