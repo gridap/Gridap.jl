@@ -133,6 +133,17 @@ mutable struct EXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
 end
 
 
+
+mutable struct EXRungeKuttaUpdateNonlinearOperator <: RungeKuttaNonlinearOperator
+  odeop::ODEOperator
+  ti::Float64
+  dt::Float64
+  u0::AbstractVector
+  ode_cache
+  vi::AbstractVector
+end
+
+
 function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
   vi = op.vi
   @. vi = (x-op.u0)/op.dt
