@@ -158,11 +158,11 @@ function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::A
   jacobians!(A,op.odeop,op.ti,(op.u0,vi),(0,1/op.dt),op.ode_cache)
 end
 
-function allocate_residual(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+function allocate_residual(op::RungeKuttaNonlinearOperator,x::AbstractVector)
   allocate_residual(op.odeop,op.ti,x,op.ode_cache)
 end
 
-function allocate_jacobian(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+function allocate_jacobian(op::RungeKuttaNonlinearOperator,x::AbstractVector)
   allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
 end
 
