@@ -48,20 +48,20 @@ function solve_step!(uf::AbstractVector,
   if cache === nothing
     ode_cache = allocate_cache(op)
     vi = similar(u0)
-    # ui = [similar(u0)]
+    ui = [similar(u0)]
     # rhs = similar(u0)
     nl_stage_cache = nothing
     # nls_update_cache = nothing
   else
     # ode_cache, vi, ui, rhs, nls_stage_cache, nls_update_cache = cache
-    ode_cache, vi, nl_stage_cache = cache
+    ode_cache, vi, ui, nl_stage_cache = cache
   end
 
   # Create RKNL stage operator
   tf = t0 + dt
   ode_cache = update_cache!(ode_cache,op,t0)
 
-  nlop_stage = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi)
+  nlop_stage = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ui)
   nl_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nl_stage_cache)
 
   # Update final cache
@@ -130,6 +130,7 @@ mutable struct EXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
   u0::AbstractVector
   ode_cache
   vi::AbstractVector
+  ui::Vector{AbstractVector}
 end
 
 
@@ -147,15 +148,17 @@ end
 function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
   vi = op.vi
   @. vi = (x-op.u0)/op.dt
-  residual!(b,op.odeop,op.ti,(op.u0,vi),op.ode_cache)
+  residual!(b,op.odeop,op.ti,(op.ui,vi),op.ode_cache) # in FE, use u0 not ui
 end
 
-function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+function jacobian!(A::AbstractMatrix,op::RungeKuttaStageNonlinearOperator,x::AbstractVector)
+  # @assert (abs(op.a[op.i,op.i]) > 0.0)
+  ui = x # this line not in FE
   vi = op.vi
-  @. vi = (x-op.u0)/op.dt
+  @. vi = (x-op.u0)/(op.dt)
   z = zero(eltype(A))
   fillstored!(A,z)
-  jacobians!(A,op.odeop,op.ti,(op.u0,vi),(0,1/op.dt),op.ode_cache)
+  jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0/op.dt),op.ode_cache) # in FE, use u0 not ui
 end
 
 function allocate_residual(op::RungeKuttaNonlinearOperator,x::AbstractVector)
