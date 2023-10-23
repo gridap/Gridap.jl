@@ -48,7 +48,7 @@ function solve_step!(uf::AbstractVector,
   if cache === nothing
     ode_cache = allocate_cache(op)
     vi = similar(u0)
-    ui = similar(u0)
+    ui = [similar(u0)]
     # rhs = similar(u0)
     nl_stage_cache = nothing
     # nls_update_cache = nothing
