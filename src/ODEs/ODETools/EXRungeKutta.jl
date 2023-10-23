@@ -57,18 +57,20 @@ function solve_step!(uf::AbstractVector,
     ode_cache, vi, ui, nl_stage_cache = cache
   end
 
+  nlop_stage = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ui,0)
+
   i = 1
   # Create RKNL stage operator
-  tf = t0 + c[i]*dt
-  ode_cache = update_cache!(ode_cache,op,t0)
+  ti = t0 + c[i]*dt
+  ode_cache = update_cache!(ode_cache,op,ti)
   update!(nlop_stage,ti,ui,i)
 
-  nlop_stage = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ui,i)
   nl_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nl_stage_cache)
 
   # Update final cache
   cache = (ode_cache, vi, ui, nl_stage_cache)
 
+  tf = t0+dt
   return (uf, tf, cache)
 
 
