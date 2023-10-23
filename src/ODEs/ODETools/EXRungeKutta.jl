@@ -66,14 +66,17 @@ function solve_step!(uf::AbstractVector,
   ode_cache = update_cache!(ode_cache,op,ti)
   nlop_stage = EXRungeKuttaStageNonlinearOperator(op,ti,dt,u0,ode_cache,vi,ui,i)
 
-  # update!(nlop_stage,ti,ui,i)
 
   nl_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nl_stage_cache)
+  update!(nlop_stage,ti,uf,i)
+
+  tf = t0+dt
+  uf .= u0
+  uf = uf + dt*b[i]*nlop_stage.ui
 
   # Update final cache
   cache = (ode_cache, vi, ui, nl_stage_cache)
 
-  tf = t0+dt
   return (uf, tf, cache)
 
 
@@ -177,11 +180,11 @@ function allocate_jacobian(op::RungeKuttaNonlinearOperator,x::AbstractVector)
   allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
 end
 
-# function update!(op::RungeKuttaNonlinearOperator,ti::Float64,ui::AbstractVector,i::Int)
-#   op.ti = ti
-#   op.ui = ui
-#   op.i = i
-# end
+function update!(op::RungeKuttaNonlinearOperator,ti::Float64,ui::AbstractVector,i::Int)
+  op.ti = ti
+  op.ui = ui
+  op.i = i
+end
 
 
 
