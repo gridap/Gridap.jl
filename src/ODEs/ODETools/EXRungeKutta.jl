@@ -48,7 +48,7 @@ function solve_step!(uf::AbstractVector,
   if cache === nothing
     ode_cache = allocate_cache(op)
     vi = similar(u0)
-    ui = [similar(u0)]
+    ui = similar(u0)
     # rhs = similar(u0)
     nl_stage_cache = nothing
     # nls_update_cache = nothing
@@ -57,13 +57,15 @@ function solve_step!(uf::AbstractVector,
     ode_cache, vi, ui, nl_stage_cache = cache
   end
 
-  nlop_stage = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ui,0)
+  # nlop_stage = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ui,0)
 
   i = 1
   # Create RKNL stage operator
   ti = t0 + c[i]*dt
   ode_cache = update_cache!(ode_cache,op,ti)
-  update!(nlop_stage,ti,ui,i)
+  nlop_stage = EXRungeKuttaStageNonlinearOperator(op,ti,dt,u0,ode_cache,vi,ui,i)
+
+  # update!(nlop_stage,ti,ui,i)
 
   nl_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nl_stage_cache)
 
@@ -163,7 +165,7 @@ function jacobian!(A::AbstractMatrix,op::RungeKuttaStageNonlinearOperator,x::Abs
   @. vi = (x-op.u0)/(op.dt)
   z = zero(eltype(A))
   fillstored!(A,z)
-  jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0/op.dt),op.ode_cache) # in FE, use u0 not ui
+  jacobians!(A,op.odeop,op.ti,(ui,vi),(0,1.0/op.dt),op.ode_cache) # in FE, use u0 not ui
 end
 
 function allocate_residual(op::RungeKuttaNonlinearOperator,x::AbstractVector)
