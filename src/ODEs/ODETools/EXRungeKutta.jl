@@ -68,11 +68,13 @@ function solve_step!(uf::AbstractVector,
 
 
   nl_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nl_stage_cache)
-  update!(nlop_stage,ti,uf,i)
+
+  # Update stage unknown
+  @. nlop_stage.ui[i] = uf
 
   tf = t0+dt
   uf .= u0
-  uf = uf + dt*b[i]*nlop_stage.ui
+  uf = uf + dt*b[i]*nlop_stage.ui[i]
 
   # Update final cache
   cache = (ode_cache, vi, ui, nl_stage_cache)
