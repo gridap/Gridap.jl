@@ -158,7 +158,7 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
   residual!(b,op.odeop,op.ti,(op.u0,vi),op.ode_cache) # in FE, use u0 not ui
 end
 
-function jacobian!(A::AbstractMatrix,op::RungeKuttaStageNonlinearOperator,x::AbstractVector)
+function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
   # @assert (abs(op.a[op.i,op.i]) > 0.0)
   ui = x # this line not in FE
   vi = op.vi
