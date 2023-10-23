@@ -48,14 +48,14 @@ function solve_step!(uf::AbstractVector,
   if cache === nothing
     ode_cache = allocate_cache(op)
     vi = similar(u0)
-    # ui = similar(u0)
+    ui = similar(u0)
     # rhs = similar(u0)
     nl_stage_cache = nothing
     # nls_update_cache = nothing
   else
     # ode_cache, vi, ui, rhs, nls_stage_cache, nls_update_cache = cache
-    ode_cache, vi, nl_stage_cache = cache
-    # ode_cache, vi, ui, nl_stage_cache = cache
+    # ode_cache, vi, nl_stage_cache = cache
+    ode_cache, vi, ui, nl_stage_cache = cache
   end
 
   # nlop_stage = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ui,0)
@@ -64,14 +64,14 @@ function solve_step!(uf::AbstractVector,
   # Create RKNL stage operator
   ti = t0 + c[i]*dt
   ode_cache = update_cache!(ode_cache,op,ti)
-  nlop_stage = EXRungeKuttaStageNonlinearOperator(op,ti,dt,u0,ode_cache,vi,i)
+  nlop_stage = EXRungeKuttaStageNonlinearOperator(op,ti,dt,u0,ode_cache,vi,ui,i)
 
   # update!(nlop_stage,ti,ui,i)
 
   nl_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nl_stage_cache)
 
   # Update final cache
-  cache = (ode_cache, vi, nl_stage_cache)
+  cache = (ode_cache, vi, ui, nl_stage_cache)
 
   tf = t0+dt
   return (uf, tf, cache)
@@ -137,7 +137,7 @@ mutable struct EXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
   u0::AbstractVector
   ode_cache
   vi::AbstractVector
-  # ui::Vector{AbstractVector}
+  ui::Vector{AbstractVector}
   i::Int
 end
 
@@ -161,7 +161,7 @@ end
 
 function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
   # @assert (abs(op.a[op.i,op.i]) > 0.0)
-  ui = x # this line not in FE
+  # ui = x # this line not in FE
   vi = op.vi
   @. vi = (x-op.u0)/(op.dt)
   z = zero(eltype(A))
