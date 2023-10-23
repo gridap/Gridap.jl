@@ -57,15 +57,17 @@ function solve_step!(uf::AbstractVector,
     ode_cache, vi, ui, nl_stage_cache = cache
   end
 
+  i = 1
   # Create RKNL stage operator
-  tf = t0 + dt
+  tf = t0 + c[i]*dt
   ode_cache = update_cache!(ode_cache,op,t0)
+  update!(nlop_stage,ti,ui,i)
 
-  nlop_stage = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ui)
+  nlop_stage = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ui,i)
   nl_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nl_stage_cache)
 
   # Update final cache
-  cache = (ode_cache, vi, nl_stage_cache)
+  cache = (ode_cache, vi, ui, nl_stage_cache)
 
   return (uf, tf, cache)
 
@@ -131,6 +133,7 @@ mutable struct EXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
   ode_cache
   vi::AbstractVector
   ui::Vector{AbstractVector}
+  i::Int
 end
 
 
@@ -169,7 +172,11 @@ function allocate_jacobian(op::RungeKuttaNonlinearOperator,x::AbstractVector)
   allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
 end
 
-
+function update!(op::RungeKuttaNonlinearOperator,ti::Float64,ui::AbstractVector,i::Int)
+  op.ti = ti
+  op.ui = ui
+  op.i = i
+end
 
 
 
