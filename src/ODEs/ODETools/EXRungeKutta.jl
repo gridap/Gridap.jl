@@ -155,7 +155,7 @@ end
 function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
   vi = op.vi
   @. vi = (x-op.u0)/op.dt
-  residual!(b,op.odeop,op.ti,(op.ui,vi),op.ode_cache) # in FE, use u0 not ui
+  residual!(b,op.odeop,op.ti,(op.u0,vi),op.ode_cache) # in FE, use u0 not ui
 end
 
 function jacobian!(A::AbstractMatrix,op::RungeKuttaStageNonlinearOperator,x::AbstractVector)
@@ -165,7 +165,7 @@ function jacobian!(A::AbstractMatrix,op::RungeKuttaStageNonlinearOperator,x::Abs
   @. vi = (x-op.u0)/(op.dt)
   z = zero(eltype(A))
   fillstored!(A,z)
-  jacobians!(A,op.odeop,op.ti,(ui,vi),(0,1.0/op.dt),op.ode_cache) # in FE, use u0 not ui
+  jacobians!(A,op.odeop,op.ti,(op.u0,vi),(0,1.0/op.dt),op.ode_cache) # in FE, use u0 not ui
 end
 
 function allocate_residual(op::RungeKuttaNonlinearOperator,x::AbstractVector)
