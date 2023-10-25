@@ -48,87 +48,38 @@ function solve_step!(uf::AbstractVector,
   if cache === nothing
     ode_cache = allocate_cache(op)
     vi = similar(u0)
-    ui = [similar(u0)]
-    # rhs = similar(u0)
-    nl_stage_cache = nothing
-    # nls_update_cache = nothing
+    fi = [similar(u0)]
+    nl_cache = nothing
   else
-    # ode_cache, vi, ui, rhs, nls_stage_cache, nls_update_cache = cache
-    # ode_cache, vi, nl_stage_cache = cache
-    ode_cache, vi, ui, nl_stage_cache = cache
+    ode_cache, vi, fi, nl_cache = cache
   end
 
-  # nlop_stage = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ui,0)
+  nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,fi,0,a)
 
-  i = 1
-  # Create RKNL stage operator
-  ti = t0 + c[i]*dt
-  ode_cache = update_cache!(ode_cache,op,ti)
-  nlop_stage = EXRungeKuttaStageNonlinearOperator(op,ti,dt,u0,ode_cache,vi,ui,i)
+  for i in 1:s
+     # allocate space to store the RHS at i
+     if (length(fi) < i)
+      push!(fi,similar(u0))
+    end
 
+      # solve at stage i
+      ti = t0 + c[i]*dt
+      ode_cache = update_cache!(ode_cache,op,ti)
+      update!(nlop,ti,fi,i)
+      nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
+      fi[i] = get_fi(uf,nlop,nl_cache)
 
-  nl_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nl_stage_cache)
+  end
 
-  # Update stage unknown
-  @. nlop_stage.ui[i] = uf
-
+  # update
+  uf = u0
+  for i in 1:s
+    uf = uf + dt*b[i]*fi[i]
+  end
+  cache = (ode_cache, vi, fi, nl_cache)
   tf = t0+dt
-  uf .= u0
-  uf = uf + dt*b[i]*nlop_stage.ui[i]
+  return (uf,tf,cache)
 
-  # Update final cache
-  cache = (ode_cache, vi, ui, nl_stage_cache)
-
-  return (uf, tf, cache)
-
-
-  # # Compute intermediate stages
-  # for i in 1:s
-
-  #   # # allocate space to store the RHS at i
-  #   # if (length(ui) < i)
-  #   #   push!(ui,similar(u0))
-  #   # end
-
-  #   # Update time
-  #   ti = t0 + c[i]*dt
-  #   ode_cache = update_cache!(ode_cache,op,ti)
-  #   update!(nlop_stage,ti,ui,i)
-
-  #   # if(i==0)
-  #   #   # First stage is always forward euler: u_i = u_0 + dt*f_0
-  #   #   @. uf = u0
-  #   # else
-  #     # solve at stage i
-  #     nls_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nls_stage_cache)
-  #           # uf is the ki at each stage
-  #           # uf is continuously updated
-  #   # end
-
-  #   # Update stage unknown
-  #   @. nlop_stage.ui[i] = uf
-
-  # end
-
-  # # Update final time
-  # tf = t0+dt
-
-  # # Skip final update if not necessary
-  # if !(c[s]==1.0 && a[s,:] == b)
-
-  #   # Create RKNL final update operator
-  #   ode_cache = update_cache!(ode_cache,op,tf)
-  #   nlop_update = EXRungeKuttaUpdateNonlinearOperator(op,tf,dt,u0,ode_cache,vi,ui,rhs,s,b)
-
-  #   # solve at final update
-  #   nls_update_cache = solve!(uf,solver.nls_update,nlop_update,nls_update_cache)
-
-  # end
-
-  # # Update final cache
-  # cache = (ode_cache, vi, ui, rhs, nls_stage_cache, nls_update_cache)
-
-  # return (uf, tf, cache)
 
 end
 
@@ -142,8 +93,9 @@ mutable struct EXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
   u0::AbstractVector
   ode_cache
   vi::AbstractVector
-  ui::Vector{AbstractVector}
+  fi::AbstractVector
   i::Int
+  a::Matrix
 end
 
 
@@ -157,34 +109,75 @@ mutable struct EXRungeKuttaUpdateNonlinearOperator <: RungeKuttaNonlinearOperato
   vi::AbstractVector
 end
 
-
 function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+  # A(t,ui,∂ui/∂t) = ∂ui/∂t - ∑_{j<i} a_ij * f(uj,tj) = 0
+  # b = [∂u/∂t ]
+  # Res_ij = - a_ij * f(uj,ti)
+  # b + ∑_{j<i} Res_ij = 0
+  ui = x
   vi = op.vi
-  @. vi = (x-op.u0)/op.dt
-  residual!(b,op.odeop,op.ti,(op.u0,vi),op.ode_cache) # in FE, use u0 not ui
+  vi = (x-op.u0)/(op.dt)
+  residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
+  for j in 1:op.i-1
+    b .= b - op.a[op.i,j]* op.fi[j]
+  end
+  b
 end
+# function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+#   vi = op.vi
+#   @. vi = (x-op.u0)/op.dt
+#   residual!(b,op.odeop,op.ti,(op.u0,vi),op.ode_cache) # in FE, use u0 not ui
+# end
+
 
 function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
   # @assert (abs(op.a[op.i,op.i]) > 0.0)
-  # ui = x # this line not in FE
+  ui = x
   vi = op.vi
-  @. vi = (x-op.u0)/(op.dt)
+  vi = (x-op.u0)/(op.dt)
   z = zero(eltype(A))
   fillstored!(A,z)
-  jacobians!(A,op.odeop,op.ti,(op.u0,vi),(0,1.0/op.dt),op.ode_cache) # in FE, use u0 not ui
+  jacobians!(A,op.odeop,op.ti,(ui,vi),(1.0,1.0/(op.dt)),op.ode_cache)
+end
+# function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+#   # @assert (abs(op.a[op.i,op.i]) > 0.0)
+#   # ui = x # this line not in FE
+#   vi = op.vi
+#   @. vi = (x-op.u0)/(op.dt)
+#   z = zero(eltype(A))
+#   fillstored!(A,z)
+#   jacobians!(A,op.odeop,op.ti,(op.u0,vi),(0,1.0/op.dt),op.ode_cache) # in FE, use u0 not ui
+# end
+
+# function allocate_residual(op::RungeKuttaNonlinearOperator,x::AbstractVector)
+#   allocate_residual(op.odeop,op.ti,x,op.ode_cache)
+# end
+
+# function allocate_jacobian(op::RungeKuttaNonlinearOperator,x::AbstractVector)
+#   allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
+# end
+
+
+function get_fi(x::AbstractVector, op::EXRungeKuttaStageNonlinearOperator, cache::Nothing)
+  ui = x
+  vi = op.vi
+  vi=zero(x)
+  b=similar(x)
+  residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
+  (vi-b) # store fi for future stages
+end
+function get_fi(x::AbstractVector, op::EXRungeKuttaStageNonlinearOperator, cache)
+  ui = x
+  vi = op.vi
+  vi=zero(x)
+  residual!(cache.b,op.odeop,op.ti,(ui,vi),op.ode_cache)
+  (vi-cache.b) # store fi for future stages
 end
 
-function allocate_residual(op::RungeKuttaNonlinearOperator,x::AbstractVector)
-  allocate_residual(op.odeop,op.ti,x,op.ode_cache)
-end
 
-function allocate_jacobian(op::RungeKuttaNonlinearOperator,x::AbstractVector)
-  allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
-end
-
-function update!(op::RungeKuttaNonlinearOperator,ti::Float64,ui::AbstractVector,i::Int)
+function update!(op::EXRungeKuttaStageNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
   op.ti = ti
-  op.ui = ui
+  op.fi = fi
   op.i = i
 end
 
