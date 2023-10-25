@@ -50,7 +50,7 @@ or
 $$
 M \delta k_s = - M k_s -K(t_n + c_s \delta t,  u^{n} + \delta t \sum_{i=1}^{s} a_{s,i} k_i, k_s).
 $$ 
-Then, $u^{n+1} = u^n + \delta t \sum_{i=1}^{n} b_i k_i$. Note that we are only considering DIRK methods, since we only allow $i = 1, \ldots, s$ at each stage computation. In this case, the jacobians to be computed are as above, $J_0$ and $J_1$. However, $J_0 = M$ and $J_1 = \frac{\partial K}{\partial u}$. In any case, we could just define $A$ as above and compute its Jacobians as above. 
+Then, $u^{n+1} = u^n + \delta t \sum_{i=1}^{n} b_i k_i$. Note that we are only considering DIRK methods, since we only allow $i = 1, \ldots, s$ at each stage computation. In this case, the jacobians to be computed are as above, $J_0$ and $J_1$. However, $J_1 = M$ and $J_0 = \frac{\partial K}{\partial u}$. In any case, we could just define $A$ as above and compute its Jacobians as above. 
 
 At each stage, we have $\gamma_1^s = 1$ and $\gamma_0^s = \delta t a_{s,s}$. We can use exactly the same machinery as above with these coefficients.
 
