@@ -55,16 +55,16 @@ function solve_step!(uf::AbstractVector,
 
   for i in 1:s
      # allocate space to store the RHS at i
-     if (length(fi) < i)
+    if (length(fi) < i)
       push!(fi,similar(u0))
     end
 
-      # solve at stage i
-      ti = t0 + c[i]*dt
-      ode_cache = update_cache!(ode_cache,op,ti)
-      update!(nlop,ti,fi,i)
-      nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
-      fi[i] = get_fi(uf,nlop,nl_cache)
+    # solve at stage i
+    ti = t0 + c[i]*dt
+    ode_cache = update_cache!(ode_cache,op,ti)
+    update!(nlop,ti,fi,i)
+    nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
+    fi[i] = get_fi(uf,nlop,nl_cache)
 
   end
 
@@ -74,7 +74,8 @@ function solve_step!(uf::AbstractVector,
     uf = uf + dt*b[i]*fi[i]
   end
   cache = (ode_cache, vi, fi, nl_cache)
-  tf = t0+dt
+  tf = t0 + dt
+
   return (uf,tf,cache)
 
 
@@ -134,7 +135,7 @@ function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::A
   vi = (x-op.u0)/(op.dt)
   z = zero(eltype(A))
   fillstored!(A,z)
-  jacobians!(A,op.odeop,op.ti,(ui,vi),(1.0,1.0/(op.dt)),op.ode_cache)
+  jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0),op.ode_cache)
 end
 # function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
 #   # @assert (abs(op.a[op.i,op.i]) > 0.0)
@@ -146,13 +147,13 @@ end
 #   jacobians!(A,op.odeop,op.ti,(op.u0,vi),(0,1.0/op.dt),op.ode_cache) # in FE, use u0 not ui
 # end
 
-# function allocate_residual(op::RungeKuttaNonlinearOperator,x::AbstractVector)
-#   allocate_residual(op.odeop,op.ti,x,op.ode_cache)
-# end
+function allocate_residual(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+  allocate_residual(op.odeop,op.ti,x,op.ode_cache)
+end
 
-# function allocate_jacobian(op::RungeKuttaNonlinearOperator,x::AbstractVector)
-#   allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
-# end
+function allocate_jacobian(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+  allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
+end
 
 
 function get_fi(x::AbstractVector, op::EXRungeKuttaStageNonlinearOperator, cache::Nothing)
