@@ -9,15 +9,12 @@ where `f` is a nonlinear function of `u` and `t` that will be treated explicitly
   The ODE is solved using an explicit Runge-Kutta method.
 """
 struct EXRungeKutta <: ODESolver
-  nls_stage::NonlinearSolver
-  # nls_update::NonlinearSolver # simplfying by removing update solver
+  nls::NonlinearSolver
   dt::Float64
   tableau::EXButcherTableau
-  # function EXRungeKutta(nls_stage::NonlinearSolver, nls_update::NonlinearSolver, dt, type::Symbol)
-  function EXRungeKutta(nls_stage::NonlinearSolver, dt, type::Symbol)
+  function EXRungeKutta(nls::NonlinearSolver, dt, type::Symbol)
     bt = EXButcherTableau(type)
-    # new(nls_stage, nls_update, dt, bt)
-    new(nls_stage, dt, bt)
+    new(nls, dt, bt)
   end
 end
 
