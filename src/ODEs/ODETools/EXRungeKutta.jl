@@ -114,7 +114,8 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
   # b + ∑_{j<i} Res_ij = 0
   ui = x
   vi = op.vi
-  vi = (x-op.u0)/(op.dt)
+  # vi = (x-op.u0)/(op.dt)
+  vi=zero(x)
   residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
   for j in 1:op.i-1
     b .= b - op.a[op.i,j]* op.fi[j]
@@ -132,7 +133,8 @@ function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::A
   # @assert (abs(op.a[op.i,op.i]) > 0.0)
   ui = x
   vi = op.vi
-  vi = (x-op.u0)/(op.dt)
+  # vi = (x-op.u0)/(op.dt)
+  vi=zero(x)
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0),op.ode_cache)
