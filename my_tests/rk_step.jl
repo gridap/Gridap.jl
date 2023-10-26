@@ -52,11 +52,12 @@ jac_t(t,u,dut,v) = m(dut,v)
 
 #### SET UP FOR SOLVER
 u0 = get_free_dof_values( interpolate_everywhere(u(0),U(0.0)) )
-solver = RungeKutta(ls,ls,0.001,:BE_1_0_1)
-op = TransientRungeKuttaFEOperator(Lhs,Rhs,jac,jac_t,U,V)
+solver = EXRungeKutta(ls,0.001,:EX_FE_1_0_1)
+op = TransientEXRungeKuttaFEOperator(Lhs,Rhs,jac,jac_t,U,V)
 t0 = 0.0
 cache = nothing
-uf .= (u0)
+uf = copy(u0)
+
 
 # function solve_step!(uf::AbstractVector,
 #   solver::RungeKutta,
@@ -79,23 +80,21 @@ uf .= (u0)
   # if cache === nothing
     ode_cache = allocate_cache(op)
     vi = similar(u0)
-    ui = [similar(u0)]
-    rhs = similar(u0)
-    nls_stage_cache = nothing
-    nls_update_cache = nothing
+    nl_cache = nothing
   # else
   #   ode_cache, vi, ui, rhs, nls_stage_cache, nls_update_cache = cache
   # end
 
-
   import Gridap.ODEs.ODETools: RungeKuttaNonlinearOperator
-  import Gridap.ODEs.ODETools: RungeKuttaStageNonlinearOperator
+  import Gridap.ODEs.ODETools: EXRungeKuttaStageNonlinearOperator
   import Gridap.FESpaces: get_algebraic_operator
+
+  import Gridap.ODEs.ODETools
 
   op1 = get_algebraic_operator(op) # I think this happens outside solve_step!
 
   # Create RKNL stage operator
-  nlop_stage = RungeKuttaStageNonlinearOperator(op1,t0,dt,u0,ode_cache,vi,ui,rhs,0,a)
+  nlop = EXRungeKuttaStageNonlinearOperator(op1,t0,dt,u0,ode_cache,vi)
 
   # Compute intermediate stages
   # for i in 1:s
@@ -111,7 +110,7 @@ uf .= (u0)
     # Update time
     ti = t0 + c[i]*dt
     ode_cache = update_cache!(ode_cache,op,ti)
-    update!(nlop_stage,ti,ui,i)
+    # update!(nlop_stage,ti,ui,i)
 
     # if(a[i,i]==0)
     #   # Skip stage solve if a_ii=0 => u_i=u_0, f_i = f_0
@@ -120,7 +119,7 @@ uf .= (u0)
       # solve at stage i
     import Gridap.Algebra: solve!
 
-      nls_stage_cache = solve!(uf,solver.nls_stage,nlop_stage,nls_stage_cache)
+      nl_cache = solve!(uf,solver.nls_stage,nlop,nl_cache)
     # end
     # solve!(x::AbstractVector,ls::LinearSolver,A::AbstractMatrix,b::AbstractVector)
     # Update stage unknown
