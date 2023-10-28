@@ -102,8 +102,13 @@ function _get_cell_fe_data(fun, sface_to_data, strian::Triangulation, ttrian::Ad
 end
 
 function _get_cell_fe_data(fun, sface_to_data, strian::AdaptedTriangulation, ttrian::AdaptedTriangulation)
-  Gridap.Helpers.@check get_background_model(strian)===get_background_model(ttrian)
-  _get_cell_fe_data_trian_trian_body(fun, sface_to_data, strian, ttrian)
+  if (get_background_model(strian) === get_parent(get_adapted_model(ttrian)))
+    Gridap.Adaptivity.o2n_reindex(sface_to_data,get_adapted_model(ttrian).glue)
+  elseif (get_background_model(strian) === get_background_model(ttrian))
+    _get_cell_fe_data_trian_trian_body(fun,sface_to_data, strian, ttrian)
+  else
+    Gridap.Helpers.@notimplemented
+  end 
 end
 
 
@@ -171,9 +176,32 @@ function Gridap.Adaptivity.get_n2o_reference_coordinate_map(
             g::AdaptivityGlue{Gridap.Adaptivity.RefinementGlue,Dc,A,B,<:CompressedArray}) where {Dc,A,B}
   
   rrules = Gridap.Adaptivity.get_new_cell_refinement_rules(g)
-  Gridap.Helpers.@notimplementedif length(rrules.values)>1
-  cell_maps = Gridap.Geometry.get_cell_map(rrules.values[1])
-  return lazy_map(Reindex(cell_maps),g.n2o_cell_to_child_id)
+  if (length(rrules.values)==1)
+     cell_maps = Gridap.Geometry.get_cell_map(rrules.values[1])
+     return lazy_map(Reindex(cell_maps),g.n2o_cell_to_child_id)
+  else
+    @assert length(rrules.values)==2
+    rrules_types=map(typeof,map(Gridap.Adaptivity.RefinementRuleType,rrules.values))
+    @assert Gridap.Adaptivity.WithoutRefinement in rrules_types
+    @assert Gridap.Adaptivity.GenericRefinement in rrules_types
+    cell_maps_1=Gridap.Geometry.get_cell_map(rrules.values[1])
+    cell_maps_2=Gridap.Geometry.get_cell_map(rrules.values[2])
+    if (rrules_types[1]==Gridap.Adaptivity.WithoutRefinement)
+      cell_maps=[cell_maps_2...,cell_maps_1...]
+    else
+      cell_maps=[cell_maps_1...,cell_maps_2...]
+    end
+    wo_refinement_map_id=maximum(g.n2o_cell_to_child_id)+1
+    cell_maps_ptrs=Vector{Int}(undef,length(g.n2o_cell_to_child_id))
+    for i=1:length(g.n2o_cell_to_child_id)
+      if Gridap.Adaptivity.RefinementRuleType(rrules[i])==Gridap.Adaptivity.WithoutRefinement
+        cell_maps_ptrs[i]=wo_refinement_map_id
+      else
+        cell_maps_ptrs[i]=g.n2o_cell_to_child_id[i]
+      end
+    end
+    return lazy_map(Reindex(cell_maps),cell_maps_ptrs)
+  end 
 end
 
 const NewToOldReindexArray{T,N}=Gridap.Arrays.LazyArray{<:Fill{<:Reindex},
