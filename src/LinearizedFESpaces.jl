@@ -101,9 +101,17 @@ function _get_cell_fe_data(fun, sface_to_data, strian::Triangulation, ttrian::Ad
   Gridap.Adaptivity.o2n_reindex(sface_to_data,get_adapted_model(ttrian).glue)
 end
 
-function _get_cell_fe_data(fun, sface_to_data, strian::AdaptedTriangulation, ttrian::AdaptedTriangulation)
+function _get_cell_fe_data(fun, 
+                           sface_to_data, 
+                           strian::AdaptedTriangulation{Dc}, 
+                           ttrian::AdaptedTriangulation{Dc}) where Dc
   if (get_background_model(strian) === get_parent(get_adapted_model(ttrian)))
-    Gridap.Adaptivity.o2n_reindex(sface_to_data,get_adapted_model(ttrian).glue)
+    sface_to_data_reindexed=Gridap.Adaptivity.o2n_reindex(sface_to_data,get_adapted_model(ttrian).glue)
+    # Strictly speaking, the next line is not guaranteed to work in the most general case. 
+    # I am assuming that Triangulation(get_background_model(ttrian)) is the proper one that 
+    # matches sface_to_data_reindexed, but this is not true in general. For the particular (and most frequent)
+    # case in which sface_to_data holds cell-wise data coming from a FESpace, this is true.
+    _get_cell_fe_data_trian_trian_body(fun,sface_to_data_reindexed, Triangulation(get_background_model(ttrian)), ttrian)
   elseif (get_background_model(strian) === get_background_model(ttrian))
     _get_cell_fe_data_trian_trian_body(fun,sface_to_data, strian, ttrian)
   else
