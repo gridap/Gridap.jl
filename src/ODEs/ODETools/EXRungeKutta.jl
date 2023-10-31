@@ -161,7 +161,7 @@ end
 function get_fi(x::AbstractVector, op::EXRungeKuttaStageNonlinearOperator)
   ui = zeros(eltype(x),length(x))
   for j in 1:op.i-1
-    @. ui = ui + op.a[op.i,j] * op.ui[j]
+    @. ui = ui + op.a[op.i,j] * op.fi[j]
   end
 
   vi = op.vi
