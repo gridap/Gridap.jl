@@ -64,7 +64,7 @@ function solve_step!(uf::AbstractVector,
     ode_cache = update_cache!(ode_cache,op,ti)
     update!(nlop,ti,fi,i)
     nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
-    rhs!(nlop,uf) #get_fi(uf,nlop,nl_cache)
+    rhs!(nlop,uf)
 
   end
 
@@ -123,6 +123,7 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
   @. b = b - op.a[op.i,j]* op.fi[j]
   end
   b
+  println("residual:", b)
 end
 
 function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
@@ -146,32 +147,22 @@ function allocate_jacobian(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVec
   allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
 end
 
-# function get_fi(x::AbstractVector, op::EXRungeKuttaStageNonlinearOperator, cache::Nothing)
-#   ui = x
-#   vi = op.vi
-#   @. vi = (x-op.u0)/(op.dt) #zero(x)
-#   b = similar(x)
-#   residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
-#   (vi-b) # store fi for future stages
-# end
-# function get_fi(x::AbstractVector, op::EXRungeKuttaStageNonlinearOperator, cache)
-#   ui = x
-#   vi = op.vi
-#   @. vi = (x-op.u0)/(op.dt) #zero(x)
-#   residual!(cache.b,op.odeop,op.ti,(ui,vi),op.ode_cache)
-#   (vi-cache.b) # store fi for future stages
-# end
 
 function rhs!(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
   ui = x
   vi = op.vi
   @. vi = (x-op.u0)/(op.dt)
   f = op.fi
-  rhs!(f[op.i],op.odeop,op.ti,(ui,vi),op.ode_cache)
+  rhs!(op.fi[op.i],op.odeop,op.ti,(ui,vi),op.ode_cache)
 
 end
 
-
+function lhs!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+  ui = x
+  vi = op.vi
+  @. vi = (x-op.u0)/(op.dt)
+  lhs!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
+end
 
 function update!(op::EXRungeKuttaStageNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
   op.ti = ti
