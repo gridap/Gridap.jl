@@ -477,7 +477,7 @@ function allocate_residual(
     dxh = (dxh...,uh)
   end
   xh = TransientCellField(uh,dxh)
-  vecdata = collect_cell_vector(V,op.res(t0,xh,v))
+  vecdata = collect_cell_vector(V,op.lhs(t0,xh,v))
   allocate_vector(op.assem_t,vecdata)
 end
 
