@@ -456,7 +456,7 @@ end
 function TransientEXRungeKuttaFEOperator(m::Function,a::Function,b::Function,
   trial,test)
   res(t,u,v) = m(t,∂t(u),v) + a(t,u,v) - b(t,v)
-  lhs(t,u,v) = m(t,u,v)
+  lhs(t,u,v) = m(t,∂t(u),v)
   rhs(t,u,v) = b(t,v) - a(t,u,v)
   jac(t,u,du,v) = a(t,du,v)
   jac_t(t,u,dut,v) = m(t,dut,v)
