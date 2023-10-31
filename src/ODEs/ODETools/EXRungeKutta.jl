@@ -64,12 +64,12 @@ function solve_step!(uf::AbstractVector,
     ode_cache = update_cache!(ode_cache,op,ti)
     update!(nlop,ti,fi,i)
     nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
-    fi[i] = get_fi(uf,nlop) #get_fi(uf,nlop,nl_cache)
+    rhs!(nlop,uf) #get_fi(uf,nlop,nl_cache)
 
   end
 
   # update
-  uf = u0
+  @. uf = u0
   for i in 1:s
     uf = uf + dt*b[i]*fi[i]
   end
@@ -158,17 +158,12 @@ end
 #   (vi-cache.b) # store fi for future stages
 # end
 
-function get_fi(x::AbstractVector, op::EXRungeKuttaStageNonlinearOperator)
-  ui = zeros(eltype(x),length(x))
-  for j in 1:op.i-1
-    @. ui = ui + op.a[op.i,j] * op.fi[j]
-  end
-
+function rhs!(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+  ui = x
   vi = op.vi
-  @. vi = (x-op.u0)/(op.dt) #zero(x)
-
-  rhs!(x,op.odeop,op.ti,(ui,vi),op.ode_cache)
-  x # store fi for future stages
+  @. vi = (x-op.u0)/(op.dt)
+  f = op.fi
+  rhs!(f[op.i],op.odeop,op.ti,(ui,vi),op.ode_cache)
 
 end
 
