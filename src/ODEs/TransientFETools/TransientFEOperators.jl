@@ -443,6 +443,7 @@ Used in Explicit Runge-Kutta schemes
 """
 struct TransientEXRKFEOperatorFromWeakForm{C} <: TransientFEOperator{C}
   res::Function
+  lhs::Function
   rhs::Function
   jacs::Tuple{Vararg{Function}}
   assem_t::Assembler
@@ -455,11 +456,12 @@ end
 function TransientEXRungeKuttaFEOperator(m::Function,a::Function,b::Function,
   trial,test)
   res(t,u,v) = m(t,∂t(u),v) + a(t,u,v) - b(t,v)
+  lhs(t,u,v) = m(t,u,v)
   rhs(t,u,v) = b(t,v) - a(t,u,v)
   jac(t,u,du,v) = a(t,du,v)
   jac_t(t,u,dut,v) = m(t,dut,v)
   assem_t = SparseMatrixAssembler(trial,test)
-  TransientEXRKFEOperatorFromWeakForm{Nonlinear}(res,rhs,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
+  TransientEXRKFEOperatorFromWeakForm{Nonlinear}(res,lhs,rhs,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
 end
 
 
@@ -506,6 +508,18 @@ function rhs!(
   rhs
 end
 
+function lhs!(
+  b::AbstractVector,
+  op::TransientEXRKFEOperatorFromWeakForm,
+  t::Real,
+  xh::T,
+  cache) where T
+  V = get_test(op)
+  v = get_fe_basis(V)
+  vecdata = collect_cell_vector(V,op.lhs(t,xh,v))
+  assemble_vector!(b,op.assem_t,vecdata)
+  b
+end
 
 """
 """
