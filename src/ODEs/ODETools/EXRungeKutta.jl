@@ -71,7 +71,7 @@ function solve_step!(uf::AbstractVector,
   # update
   @. uf = u0
   for i in 1:s
-    uf = uf + dt*b[i]*fi[i]
+  @. uf = uf + dt*b[i]*fi[i]
   end
   cache = (ode_cache, vi, fi, nl_cache)
   tf = t0 + dt
@@ -120,7 +120,7 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
 
   lhs!(b,op,x)
   for j in 1:op.i-1
-    b .= b - op.a[op.i,j]* op.fi[j]
+  @. b = b - op.a[op.i,j]* op.fi[j]
   end
   b
 end
