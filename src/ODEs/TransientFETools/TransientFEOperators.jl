@@ -459,7 +459,7 @@ function TransientEXRungeKuttaFEOperator(m::Function,a::Function,b::Function,
   jac(t,u,du,v) = a(t,du,v)
   jac_t(t,u,dut,v) = m(t,dut,v)
   assem_t = SparseMatrixAssembler(trial,test)
-  TransientEXRKFEOperatorFromWeakForm{Nonlinear}(lhs,rhs,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
+  TransientEXRKFEOperatorFromWeakForm{Nonlinear}(res,rhs,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
 end
 
 
