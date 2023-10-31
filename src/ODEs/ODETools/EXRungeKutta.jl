@@ -113,7 +113,7 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
   # b - ∑_{j<i} a_ij * f(tj,uj) = 0
   ui = x
   vi = op.vi
-  vi = (x-op.u0)/(op.dt)
+  @. vi = (x-op.u0)/(op.dt)
   residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
   for j in 1:op.i-1
     b .= b - op.a[op.i,j]* op.fi[j]
@@ -127,7 +127,7 @@ function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::A
   # γ_1^i = 1/δt
   ui = x
   vi = op.vi
-  vi = (x-op.u0)/(op.dt)
+  @. vi = (x-op.u0)/(op.dt)
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0/op.dt),op.ode_cache)
@@ -146,15 +146,15 @@ end
 function get_fi(x::AbstractVector, op::EXRungeKuttaStageNonlinearOperator, cache::Nothing)
   ui = x
   vi = op.vi
-  vi=zero(x)
-  b=similar(x)
+  @. vi = (x-op.u0)/(op.dt)
+  b = similar(x)
   residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
   (vi-b) # store fi for future stages
 end
 function get_fi(x::AbstractVector, op::EXRungeKuttaStageNonlinearOperator, cache)
   ui = x
   vi = op.vi
-  vi=zero(x)
+  @. vi = (x-op.u0)/(op.dt)
   residual!(cache.b,op.odeop,op.ti,(ui,vi),op.ode_cache)
   (vi-cache.b) # store fi for future stages
 end
