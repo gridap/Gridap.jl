@@ -53,6 +53,7 @@ function residual!(b::AbstractVector,op::ForwardEulerNonlinearOperator,x::Abstra
   vf = op.vf
   @. vf = (x-op.u0)/op.dt
   residual!(b,op.odeop,op.tf,(op.u0,vf),op.ode_cache)
+  println("residual: ", b)
 end
 
 function jacobian!(A::AbstractMatrix,op::ForwardEulerNonlinearOperator,x::AbstractVector)
