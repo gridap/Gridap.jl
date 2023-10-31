@@ -159,11 +159,17 @@ end
 # end
 
 function get_fi(x::AbstractVector, op::EXRungeKuttaStageNonlinearOperator)
-  ui = x
+  ui = zeros(eltype(x),length(x))
+  for j in 1:op.i-1
+    @. ui = ui + op.a[op.i,j] * op.ui[j]
+  end
+
   vi = op.vi
   @. vi = (x-op.u0)/(op.dt) #zero(x)
+
   rhs!(x,op.odeop,op.ti,(ui,vi),op.ode_cache)
   x # store fi for future stages
+
 end
 
 
