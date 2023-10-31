@@ -142,22 +142,30 @@ function allocate_jacobian(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVec
   allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
 end
 
+# function get_fi(x::AbstractVector, op::EXRungeKuttaStageNonlinearOperator, cache::Nothing)
+#   ui = x
+#   vi = op.vi
+#   @. vi = (x-op.u0)/(op.dt) #zero(x)
+#   b = similar(x)
+#   residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
+#   (vi-b) # store fi for future stages
+# end
+# function get_fi(x::AbstractVector, op::EXRungeKuttaStageNonlinearOperator, cache)
+#   ui = x
+#   vi = op.vi
+#   @. vi = (x-op.u0)/(op.dt) #zero(x)
+#   residual!(cache.b,op.odeop,op.ti,(ui,vi),op.ode_cache)
+#   (vi-cache.b) # store fi for future stages
+# end
 
-function get_fi(x::AbstractVector, op::EXRungeKuttaStageNonlinearOperator, cache::Nothing)
+function get_fi(x::AbstractVector, op::EXRungeKuttaStageNonlinearOperator)
   ui = x
   vi = op.vi
   @. vi = (x-op.u0)/(op.dt) #zero(x)
-  b = similar(x)
-  residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
-  (vi-b) # store fi for future stages
+  rhs!(x,op.odeop,op.ti,(ui,vi),op.ode_cache)
+  x # store fi for future stages
 end
-function get_fi(x::AbstractVector, op::EXRungeKuttaStageNonlinearOperator, cache)
-  ui = x
-  vi = op.vi
-  @. vi = (x-op.u0)/(op.dt) #zero(x)
-  residual!(cache.b,op.odeop,op.ti,(ui,vi),op.ode_cache)
-  (vi-cache.b) # store fi for future stages
-end
+
 
 
 function update!(op::EXRungeKuttaStageNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
