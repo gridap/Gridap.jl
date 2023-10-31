@@ -439,12 +439,10 @@ end
 
 # EX-RK Transient FE operators
 """
-Transient FE operator that is defined by a transient Weak form with the
-form: LHS(t,u,∂u/∂t,...) ∂u/∂t = E_RHS(t,u,∂u/∂t,...).
 Used in Explicit Runge-Kutta schemes
 """
 struct TransientEXRKFEOperatorFromWeakForm{C} <: TransientFEOperator{C}
-  lhs::Function
+  res::Function
   rhs::Function
   jacs::Tuple{Vararg{Function}}
   assem_t::Assembler
@@ -453,34 +451,17 @@ struct TransientEXRKFEOperatorFromWeakForm{C} <: TransientFEOperator{C}
   order::Integer
 end
 
-function TransientEXRungeKuttaFEOperator(lhs::Function,
-  rhs::Function,jac::Function,jac_t::Function,trial,test)
+
+function TransientEXRungeKuttaFEOperator(m::Function,a::Function,b::Function,
+  trial,test)
+  res(t,u,v) = m(t,∂t(u),v) + a(t,u,v) - b(t,v)
+  rhs(t,u,v) = b(t,v) - a(t,u,v)
+  jac(t,u,du,v) = a(t,du,v)
+  jac_t(t,u,dut,v) = m(t,dut,v)
   assem_t = SparseMatrixAssembler(trial,test)
   TransientEXRKFEOperatorFromWeakForm{Nonlinear}(lhs,rhs,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
 end
 
-function TransientEXRungeKuttaFEOperator(lhs::Function,
-  rhs::Function,trial,test)
-  res(t,u,v) = lhs(t,u,v) - rhs(t,u,v)
-  function jac_0(t,x,dx0,dv)
-    function res_0(y)
-      x0 = TransientCellField(y,x.derivatives)
-      res(t,x0,dv)
-    end
-    jacobian(res_0,x.cellfield)
-  end
-  jacs = (jac_0,)
-  function jac_t(t,x,dxt,dv)
-    function res_t(y)
-      derivatives = (y,x.derivatives[2:end]...)
-      xt = TransientCellField(x.cellfield,derivatives)
-      res(t,xt,dv)
-    end
-    jacobian(res_t,x.derivatives[1])
-  end
-  jacs = (jac_0,jac_t)
-  TransientEXRungeKuttaFEOperator(lhs,rhs,jacs...,trial,test)
-end
 
 function allocate_residual(
   op::TransientEXRKFEOperatorFromWeakForm,
@@ -494,11 +475,11 @@ function allocate_residual(
     dxh = (dxh...,uh)
   end
   xh = TransientCellField(uh,dxh)
-  vecdata = collect_cell_vector(V,op.lhs(t0,xh,v))
+  vecdata = collect_cell_vector(V,op.res(t0,xh,v))
   allocate_vector(op.assem_t,vecdata)
 end
 
-function lhs!(
+function residual!(
   b::AbstractVector,
   op::TransientEXRKFEOperatorFromWeakForm,
   t::Real,
@@ -506,10 +487,11 @@ function lhs!(
   cache) where T
   V = get_test(op)
   v = get_fe_basis(V)
-  vecdata = collect_cell_vector(V,op.lhs(t,xh,v))
+  vecdata = collect_cell_vector(V,op.res(t,xh,v))
   assemble_vector!(b,op.assem_t,vecdata)
   b
 end
+
 
 function rhs!(
   rhs::AbstractVector,
@@ -524,19 +506,9 @@ function rhs!(
   rhs
 end
 
-# function explicit_rhs!(
-#   explicit_rhs::AbstractVector,
-#   op::TransientEXRKFEOperatorFromWeakForm,
-#   t::Real,
-#   xh::T,
-#   cache) where T
-#   V = get_test(op)
-#   v = get_fe_basis(V)
-#   vecdata = collect_cell_vector(V,op.explicit_rhs(t,xh,v))
-#   assemble_vector!(explicit_rhs,op.assem_t,vecdata)
-#   explicit_rhs
-# end
 
+"""
+"""
 
 
 
