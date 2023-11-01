@@ -78,7 +78,7 @@ function solve_step!(uf::AbstractVector,
   for i in 1:s
   @. uf = uf + dt*b[i]*ki[i]
   end
-  cache = (ode_cache, vi, ki, nl_cache)
+  cache = (ode_cache, vi, ki, rhs, nl_cache)
   tf = t0 + dt
 
   return (uf,tf,cache)
