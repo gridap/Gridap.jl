@@ -53,7 +53,8 @@ function solve_step!(uf::AbstractVector,
 
   nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a)
 
-  for i in 1:s
+  # for i in 1:s
+  i = 1
     # allocate space to store f_i
     if (length(ki) < i)
       push!(ki,similar(u0))
@@ -66,18 +67,18 @@ function solve_step!(uf::AbstractVector,
     nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
 
     @. ki[i] = uf
-    update!(nlop,ti,ki,i)
+    # update!(nlop,ti,ki,i)
 
 
 
-  end
+  # end
 
   # update
-  @. uf = u0
-  for i in 1:s
-  @. uf = uf + dt*b[i]*ki[i]
-  end
-  cache = (ode_cache, vi, ki, nl_cache)
+  @. uf = u0 + dt*b[i]*ki[i]
+  # for i in 1:s
+  # @. uf = uf + dt*b[i]*ki[i]
+  # end
+  cache = nothing #(ode_cache, vi, ki, nl_cache)
   tf = t0 + dt
 
   return (uf,tf,cache)
@@ -112,30 +113,29 @@ mutable struct EXRungeKuttaUpdateNonlinearOperator <: RungeKuttaNonlinearOperato
 end
 
 function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
-  # A(t,ui,∂ui/∂t) = ∂ui/∂t - ∑_{j<i} a_ij * f(tj,uj) = 0
-  # b = [∂ui/∂t ]
-  # b - ∑_{j<i} a_ij * f(tj,uj) = 0
-
-  # lhs!(b,op,x)
-  # rhs!(op,x)
-  # @. b = b - op.rhs
-  # b
+  # M ki    + K(ti,u0 + dt ∑_{j<i} a_ij * kj) = 0
+  # M ∂u/∂t + K(ti,ui) = 0
   ui = x
   vi = op.vi
-  @. vi = x #(x-op.u0)/(op.dt)
-  @. ui = op.u0 #+ op.a[op.i,j] *ki
+
+  @. ui = op.u0 # + dt * op.a[op.i,j] * kj
+  @. vi = x  #(x-op.u0)/(op.dt)
+
   residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
 
 end
 
 function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
-  # A(t,ui,∂ui/∂t) = ∂ui/∂t - ∑_{j<i} a_ij * f(tj,uj) = 0
-  # γ_0^i = 0 (as A is not a function of u_i)
-  # γ_1^i = 1/δt
+  # M ki    + K(ti,u0 + dt ∑_{j<i} a_ij * kj) = 0
+  # M ∂u/∂t + K(ti,ui) = 0
+  # γ_0^i = 0 (as K is not a function of ki)
+  # γ_1^i = 1
   ui = x
   vi = op.vi
-  @. vi = x #(x-op.u0)/(op.dt)
-  @. ui = op.u0
+
+  @. ui = op.u0 # + dt * op.a[op.i,j] * kj
+  @. vi = x     #(x-op.u0)/(op.dt)
+
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0),op.ode_cache)
