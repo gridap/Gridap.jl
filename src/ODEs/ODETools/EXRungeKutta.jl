@@ -45,24 +45,24 @@ function solve_step!(uf::AbstractVector,
   if cache === nothing
     ode_cache = allocate_cache(op)
     vi = similar(u0)
-    fi = [similar(u0)]
+    ki = [similar(u0)]
     nl_cache = nothing
   else
-    ode_cache, vi, fi, nl_cache = cache
+    ode_cache, vi, ki, nl_cache = cache
   end
 
-  nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,fi,0,a)
+  nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a)
 
   for i in 1:s
     # allocate space to store f_i
-    if (length(fi) < i)
-      push!(fi,similar(u0))
+    if (length(ki) < i)
+      push!(ki,similar(u0))
     end
 
     # solve at stage i
     ti = t0 + c[i]*dt
     ode_cache = update_cache!(ode_cache,op,ti)
-    update!(nlop,ti,fi,i)
+    update!(nlop,ti,ki,i)
     nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
     rhs!(nlop,uf)
 
@@ -71,9 +71,9 @@ function solve_step!(uf::AbstractVector,
   # update
   @. uf = u0
   for i in 1:s
-  @. uf = uf + dt*b[i]*fi[i]
+  @. uf = uf + b[i]*ki[i]
   end
-  cache = (ode_cache, vi, fi, nl_cache)
+  cache = (ode_cache, vi, ki, nl_cache)
   tf = t0 + dt
 
   return (uf,tf,cache)
@@ -91,7 +91,7 @@ mutable struct EXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
   u0::AbstractVector
   ode_cache
   vi::AbstractVector
-  fi::AbstractVector
+  ki::AbstractVector
   i::Int
   a::Matrix
 end
@@ -114,7 +114,7 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
 
   lhs!(b,op,x)
   for j in 1:op.i-1
-  @. b = b - op.a[op.i,j]* op.fi[j]
+  @. b = b - op.a[op.i,j]* op.ki[j]
   end
   b
   println("residual:", b)
@@ -146,8 +146,8 @@ function rhs!(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
   ui = x
   vi = op.vi
   @. vi = (x-op.u0)/(op.dt)
-  f = op.fi
-  rhs!(op.fi[op.i],op.odeop,op.ti,(ui,vi),op.ode_cache)
+  f = op.ki
+  rhs!(op.ki[op.i],op.odeop,op.ti,(ui,vi),op.ode_cache)
 
 end
 
@@ -158,8 +158,8 @@ function lhs!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::Abstra
   lhs!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
 end
 
-function update!(op::EXRungeKuttaStageNonlinearOperator,ti::Float64,fi::AbstractVector,i::Int)
+function update!(op::EXRungeKuttaStageNonlinearOperator,ti::Float64,ki::AbstractVector,i::Int)
   op.ti = ti
-  op.fi = fi
+  op.ki = ki
   op.i = i
 end
