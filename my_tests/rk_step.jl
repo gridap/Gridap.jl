@@ -4,7 +4,10 @@ Pkg.add(url="https://github.com/tamaratambyah/Gridap.jl", rev="rungekutta")
 using Gridap
 using LaTeXStrings
 using Plots
+using LinearAlgebra
 using JLD
+using Gridap.Algebra, Gridap.ODEs.ODETools
+
 
 
 u(x,t) = x[1]*(1-x[1])*t
@@ -12,7 +15,7 @@ u(t) = x -> u(x,t)
 ∂tu = ∂t(u)
 f(t) = x -> ∂t(u)(x,t)-Δ(u(t))(x)
 
-n = 4
+n = 3
 p = 2
 degree = 4*(p+1)
 L = 1
@@ -40,117 +43,161 @@ U = TransientTrialFESpace(V,g)
 
 ls = LUSolver()
 
-A(t,u,v) = ∫(( ∇(v)⊙∇(u) ))dΩ
-m(u,v) = ∫(v*u)dΩ
-B(v,t) = ∫(v*f(t))dΩ
-Lhs(t,u,v) = m(u,v)
-Rhs(t,u,v) = B(v,t) - A(t,u,v)
-res(t,u,v) = A(t,u,v) + m(∂t(u),v) - B(v,t)
-jac(t,u,du,v) = A(t,du,v)
-jac_t(t,u,dut,v) = m(dut,v)
+m(t,u,v) = ∫(v*u)dΩ
+lhs(t,u,v) = ∫( v*∂t(u) )dΩ
+rhs(t,u,v) = ∫(v*f(t))dΩ - ∫(( ∇(v)⊙∇(u) ))dΩ
+# res(t,u,v) = lhs(t,u,v) - rhs(t,u,v)
+jac(t,u,du,v) = ∫(( ∇(v)⊙∇(du) ))dΩ
+jac_t(t,u,dut,v) = ∫( dut*v )dΩ
 
 
 #### SET UP FOR SOLVER
 u0 = get_free_dof_values( interpolate_everywhere(u(0),U(0.0)) )
 solver = EXRungeKutta(ls,0.001,:EX_FE_1_0_1)
-op = TransientEXRungeKuttaFEOperator(Lhs,Rhs,jac,jac_t,U,V)
+opRK = TransientEXRungeKuttaFEOperator(lhs,rhs,jac,jac_t,U,V)
+op = Gridap.FESpaces.get_algebraic_operator(opRK)
 t0 = 0.0
 cache = nothing
 uf = copy(u0)
 
 
-# function solve_step!(uf::AbstractVector,
-#   solver::RungeKutta,
-#   op::ODEOperator,
-#   u0::AbstractVector,
-#   t0::Real,
-#   cache)
+u0 = copy(u_ex)
+t0 = tf
+###
+
 
   # Unpack variables
   dt = solver.dt
-  s = solver.bt.s
-  a = solver.bt.a
-  b = solver.bt.b
-  c = solver.bt.c
-  d = solver.bt.d
-
-  import Gridap.ODEs.ODETools: allocate_cache
+  s = solver.tableau.s
+  a = solver.tableau.a
+  b = solver.tableau.b
+  c = solver.tableau.c
+  d = solver.tableau.d
 
   # Create cache if not there
-  # if cache === nothing
-    ode_cache = allocate_cache(op)
+    ode_cache = Gridap.ODEs.ODETools.allocate_cache(op)
     vi = similar(u0)
+    ki = [similar(u0)]
     nl_cache = nothing
-  # else
-  #   ode_cache, vi, ui, rhs, nls_stage_cache, nls_update_cache = cache
-  # end
 
-  import Gridap.ODEs.ODETools: RungeKuttaNonlinearOperator
-  import Gridap.ODEs.ODETools: EXRungeKuttaStageNonlinearOperator
-  import Gridap.FESpaces: get_algebraic_operator
+  nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a)
+  println(nlop.ti)
+  println(nlop.u0)
+  println(nlop.ki)
 
-  import Gridap.ODEs.ODETools
-
-  op1 = get_algebraic_operator(op) # I think this happens outside solve_step!
-
-  # Create RKNL stage operator
-  nlop = EXRungeKuttaStageNonlinearOperator(op1,t0,dt,u0,ode_cache,vi)
-
-  # Compute intermediate stages
   # for i in 1:s
-    i = 1
-    # allocate space to store the RHS at i
-    if (length(ui) < i)
-      push!(ui,similar(u0))
-    end
-
-    import Gridap.ODEs.ODETools: update_cache!
-    import Gridap.ODEs.ODETools: update!
-
-    # Update time
-    ti = t0 + c[i]*dt
-    ode_cache = update_cache!(ode_cache,op,ti)
-    # update!(nlop_stage,ti,ui,i)
-
-    # if(a[i,i]==0)
-    #   # Skip stage solve if a_ii=0 => u_i=u_0, f_i = f_0
-    #   @. uf = u0
-    # else
-      # solve at stage i
-    import Gridap.Algebra: solve!
-
-      nl_cache = solve!(uf,solver.nls_stage,nlop,nl_cache)
+  i = 1
+    # allocate space to store f_i
+    # if (length(ki) < i)
+    #   push!(ki,similar(u0))
     # end
-    # solve!(x::AbstractVector,ls::LinearSolver,A::AbstractMatrix,b::AbstractVector)
-    # Update stage unknown
-    @. nlop_stage.ui[i] = uf
+
+    # solve at stage i
+    ti = t0 + c[i]*dt
+    # ode_cache = update_cache!(ode_cache,op,ti)
+    Gridap.ODEs.ODETools.update!(nlop,ti,ki,i)
+    nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
+
+    @. ki[i] = uf
+    # Gridap.ODEs.ODETools.update!(nlop,ti,ki,i)
+
 
   # end
 
-  # Update final time
-  tf = t0+dt
-
-  # update final solution
-  uf .= u0
-  for i in 1:s
-    uf = uf + dt*b[i]*nlop_stage.ui[i]
-  end
-
-  # # Skip final update if not necessary
-  # if !(c[s]==1.0 && a[s,:] == b)
-
-  #   # Create RKNL final update operator
-  #   ode_cache = update_cache!(ode_cache,op,tf)
-  #   nlop_update = RungeKuttaUpdateNonlinearOperator(op,tf,dt,u0,ode_cache,vi,ui,rhs,s,b)
-
-  #   # solve at final update
-  #   nls_update_cache = solve!(uf,solver.nls_update,nlop_update,nls_update_cache)
-
+  # update
+  @. uf = u0 + dt*b[i]*ki[i]
+  # for i in 1:s
+  # @. uf = uf + dt*b[i]*ki[i]
   # end
+  cache = nothing #(ode_cache, vi, ki, nl_cache)
+  tf = t0 + dt
 
-  # Update final cache
-  cache = (ode_cache, vi, ui, rhs, nls_stage_cache, nls_update_cache)
+  # return (uf,tf,cache)
 
-  return (uf,tf,cache)
 
+u_ex = get_free_dof_values( interpolate_everywhere(u(tf),U(tf)))
+println(uf)
+println(u_ex)
+
+import Gridap.ODEs.ODETools: RungeKuttaNonlinearOperator
+import Gridap.ODEs.ODETools: ODEOperator
+mutable struct EXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
+  odeop::ODEOperator
+  ti::Float64
+  dt::Float64
+  u0::AbstractVector
+  ode_cache
+  vi::AbstractVector
+  ki::AbstractVector
+  i::Int
+  a::Matrix
+end
+
+
+"""
+ODE: A(t,u,∂u) = M ∂u/∂t + K(t,u) = 0 -> solve for u
+RK:  A(t,u,ui) = M ki    + K(ti,u0 + dt ∑_{j<i} a_ij * kj) = 0 -> solve for ki
+               = M ki    + K(ti,ui) = 0
+For forward euler, i = 1     -> ui = u0
+For other methods, i = 1,…,s -> ui = u0 + dt ∑_{j<i} a_ij * kj
+"""
+function Gridap.Algebra.residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+
+  ui = x
+  vi = op.vi
+
+  @. ui = op.u0 # + dt * op.a[op.i,j] * kj
+  @. vi = x  #(x-op.u0)/(op.dt)
+
+  Gridap.ODEs.ODETools.residual!(b,op.odeop,ti,(ui,vi),op.ode_cache)
+
+end
+
+function Gridap.Algebra.jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+  # γ_0^i = 0 (as K is not a function of ki)
+  # γ_1^i = 1
+  ui = x
+  vi = op.vi
+
+  @. ui = op.u0 # + dt * op.a[op.i,j] * kj
+  @. vi = x     #(x-op.u0)/(op.dt)
+
+  z = zero(eltype(A))
+  LinearAlgebra.fillstored!(A,z)
+  Gridap.ODEs.ODETools.jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0),op.ode_cache)
+end
+
+
+function Gridap.Algebra.allocate_residual(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+  allocate_residual(op.odeop,op.ti,x,op.ode_cache)
+end
+
+function Gridap.Algebra.allocate_jacobian(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+  allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
+end
+
+
+# function Gridap.ODEs.ODETools.rhs!(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+#   # ui = x
+#   # vi = op.vi
+#   # @. vi = (x-op.u0)/(op.dt)
+#   # f = op.ki
+#   # rhs!(op.ki[op.i],op.odeop,op.ti,(ui,vi),op.ode_cache)
+#   v = op.vi
+#   @. v = (x-op.u0)/(op.dt)
+#   u = op.a[op.i,op.i] * x
+#   rhs!(op.rhs,op.odeop,op.ti,(u,v),op.ode_cache)
 # end
+
+# function Gridap.ODEs.ODETools.lhs!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+#   ui = x
+#   vi = op.vi
+#   @. vi = (x-op.u0)/(op.dt)
+#   lhs!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
+# end
+
+function Gridap.ODEs.ODETools.update!(op::EXRungeKuttaStageNonlinearOperator,ti::Float64,ki::AbstractVector,i::Int)
+  op.ti = ti
+  op.ki = ki
+  op.i = i
+end

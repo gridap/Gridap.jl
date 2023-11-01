@@ -48,14 +48,14 @@ u0 = interpolate_everywhere(u(0),U(0.0))
 
 ls = LUSolver()
 
-a(t,u,v) = ∫(( ∇(v)⊙∇(u) ))dΩ
-m(u,v) = ∫(v*u)dΩ
-b(v,t) = ∫(v*f(t))dΩ
-lhs(t,u,v) = m(u,v)
-rhs(t,u,v) = b(v,t) - a(t,u,v)
-res(t,u,v) = a(t,u,v) + m(∂t(u),v) - b(v,t)
-jac(t,u,du,v) = a(t,du,v)
-jac_t(t,u,dut,v) = m(dut,v)
+m(t,u,v) = ∫(v*u)dΩ
+
+
+lhs(t,u,v) = ∫( v*∂t(u) )dΩ
+rhs(t,u,v) = ∫(v*f(t))dΩ -  ∫(( ∇(v)⊙∇(u) ))dΩ
+res(t,u,v) = lhs(t,u,v) - rhs(t,u,v)
+jac(t,u,du,v) = ∫(( ∇(v)⊙∇(du) ))dΩ
+jac_t(t,u,dut,v) = ∫( dut*v )dΩ
 
 
 
@@ -74,7 +74,7 @@ for (uh,t) in sol_be
 end
 
 plot()
-plot!(ts,errors)
+plot(ts,errors)
 plot!(
   #shape=:auto,
   xlabel="t",
@@ -88,7 +88,7 @@ savefig(string("be_error"))
 
 #### Solve with standard RungeKutta with BE table
 rk = RungeKutta(ls,ls,0.001,:BE_1_0_1)
-opRK = TransientFEOperator(res,jac,jac_t,U,V) #TransientRungeKuttaFEOperator(lhs,rhs,jac,jac_t,U,V)
+opRK = TransientRungeKuttaFEOperator(lhs,rhs,jac,jac_t,U,V)
 sol_rk = solve(rk,opRK,u0,t0,T)
 
 
@@ -101,8 +101,8 @@ for (uh,t) in sol_rk
   ts_rk = [ts_rk; t]
 end
 
-plot()
-plot!(ts_rk,errors_rk)
+
+plot(ts_rk,errors_rk)
 plot!(
   #shape=:auto,
   xlabel="t",
@@ -119,7 +119,7 @@ savefig(string("rk_be"))
 #### Solve with standard FE
 fe = ForwardEuler(ls,0.001)
 op_fe = TransientFEOperator(res,jac,jac_t,U,V)
-sol_fe = solve(fe,op_fe,u0,t0,T)
+sol_fe = solve(fe,op_fe,u0,t0,0.001*2)
 
 errors_fe = []
 ts_fe = []
@@ -130,8 +130,7 @@ for (uh,t) in sol_fe
   ts_fe = [ts_fe; t]
 end
 
-plot()
-plot!(ts_fe,errors_fe)
+plot(ts_fe,errors_fe)
 plot!(
   #shape=:auto,
   xlabel="t",
@@ -144,8 +143,9 @@ savefig(string("fe_error"))
 
 #### Solve with standard EXRungeKutta with FE table
 rk_fe = EXRungeKutta(ls,0.001,:EX_FE_1_0_1)
-opRK_fe = TransientFEOperator(res,jac,jac_t,U,V) #TransientEXRungeKuttaFEOperator(lhs,rhs,jac,jac_t,U,V)
-sol_rk_fe = solve(rk_fe,opRK_fe,u0,t0,T)
+opRK_fe = TransientEXRungeKuttaFEOperator(lhs,rhs,jac,jac_t,U,V)
+sol_rk_fe = solve(rk_fe,opRK_fe,u0,t0,0.001*3)
+
 
 errors_rk_fe = []
 ts_rk_fe = []
@@ -153,11 +153,12 @@ for (uh,t) in sol_rk_fe
   u_ex = interpolate_everywhere(u(t),U(t))
   e = l2(uh-u_ex,Ω,p)/l2(u_ex,Ω,p) # relative error
   errors_rk_fe = [errors_rk_fe; e]
+  println(e)
   ts_rk_fe = [ts_rk_fe; t]
 end
 
-plot()
-plot!(ts_rk_fe,errors_rk_fe)
+
+plot(ts_rk_fe,errors_rk_fe)
 plot!(
   #shape=:auto,
   xlabel="t",
@@ -167,3 +168,11 @@ plot!(
   )
 plot!(show=true)
 savefig(string("rk_fe"))
+
+
+createpvd("my_tests/transient_sol/poisson_transient_solution_ex") do pvd
+  for (uₕ,t) in sol_rk_fe
+    u_ex = interpolate_everywhere(u(t),U(t))
+    pvd[t] = createvtk(Ω,"my_tests/transient_sol/poisson_transient_solution_ex_$t"*".vtu",cellfields=["u"=>u_ex])
+  end
+end
