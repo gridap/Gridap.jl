@@ -453,13 +453,9 @@ struct TransientEXRKFEOperatorFromWeakForm{C} <: TransientFEOperator{C}
 end
 
 
-function TransientEXRungeKuttaFEOperator(m::Function,a::Function,b::Function,
-  trial,test)
-  res(t,u,v) = m(t,∂t(u),v) + a(t,u,v) - b(t,v)
-  lhs(t,u,v) = m(t,∂t(u),v)
-  rhs(t,u,v) = b(t,v) - a(t,u,v)
-  jac(t,u,du,v) = a(t,du,v)
-  jac_t(t,u,dut,v) = m(t,dut,v)
+function TransientEXRungeKuttaFEOperator(lhs::Function,rhs::Function,jac::Function,
+  jac_t::Function,trial,test)
+  res(t,u,v) = lhs(t,u,v) - rhs(t,u,v)
   assem_t = SparseMatrixAssembler(trial,test)
   TransientEXRKFEOperatorFromWeakForm{Nonlinear}(res,lhs,rhs,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
 end
