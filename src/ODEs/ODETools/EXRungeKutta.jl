@@ -122,7 +122,7 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
   # b
   vi = op.vi
   @. vi = (x-op.u0)/(op.dt)
-  ui = op.u0 #op.a[op.i,op.i] * x
+  ui = x #op.u0 #op.a[op.i,op.i] * x
   residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
 
 end
