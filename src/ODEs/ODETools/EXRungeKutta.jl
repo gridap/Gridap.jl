@@ -71,7 +71,7 @@ function solve_step!(uf::AbstractVector,
   # update
   @. uf = u0
   for i in 1:s
-  @. uf = uf + b[i]*ki[i]
+  @. uf = uf + dt*b[i]*ki[i]
   end
   cache = (ode_cache, vi, ki, nl_cache)
   tf = t0 + dt
@@ -129,7 +129,7 @@ function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::A
   @. vi = (x-op.u0)/(op.dt)
   z = zero(eltype(A))
   fillstored!(A,z)
-  jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0/op.dt),op.ode_cache)
+  jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0),op.ode_cache)
 end
 
 
