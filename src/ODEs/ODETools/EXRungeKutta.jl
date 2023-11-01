@@ -46,12 +46,13 @@ function solve_step!(uf::AbstractVector,
     ode_cache = allocate_cache(op)
     vi = similar(u0)
     ki = [similar(u0)]
+    rhs = similar(u0)
     nl_cache = nothing
   else
     ode_cache, vi, ki, nl_cache = cache
   end
 
-  nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a)
+  nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,rhs,0,a)
 
   for i in 1:s
     # allocate space to store f_i
@@ -68,7 +69,7 @@ function solve_step!(uf::AbstractVector,
     @. ki[i] = uf
     update!(nlop,ti,ki,i)
 
-    # rhs!(nlop,uf)
+
 
   end
 
@@ -96,6 +97,7 @@ mutable struct EXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
   ode_cache
   vi::AbstractVector
   ki::AbstractVector
+  rhs::AbstractVector
   i::Int
   a::Matrix
 end
@@ -117,11 +119,9 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
   # b - ∑_{j<i} a_ij * f(tj,uj) = 0
 
   lhs!(b,op,x)
-  for j in 1:op.i-1
-  @. b = b - op.a[op.i,j]* op.ki[j]
-  end
+  rhs!(op,x)
+  @. b = b - op.rhs
   b
-  println("residual:", b)
 end
 
 function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
@@ -147,11 +147,13 @@ end
 
 
 function rhs!(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
-  ui = x
-  vi = op.vi
-  @. vi = (x-op.u0)/(op.dt)
-  f = op.ki
-  rhs!(op.ki[op.i],op.odeop,op.ti,(ui,vi),op.ode_cache)
+  v = op.vi
+  @. v = (x-op.u0)/(op.dt)
+  u = op.a[op.i,op.i] * x # == zero for explicit
+  # if (op.i>1)
+  #   @. u += op.ui
+  # end
+  rhs!(op.rhs,op.odeop,op.ti,(u,v),op.ode_cache)
 
 end
 
