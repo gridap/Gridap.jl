@@ -64,7 +64,11 @@ function solve_step!(uf::AbstractVector,
     ode_cache = update_cache!(ode_cache,op,ti)
     update!(nlop,ti,ki,i)
     nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
-    rhs!(nlop,uf)
+
+    @. ki[i] = uf
+    update!(nlop,ti,ki,i)
+
+    # rhs!(nlop,uf)
 
   end
 
