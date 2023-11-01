@@ -46,13 +46,12 @@ function solve_step!(uf::AbstractVector,
     ode_cache = allocate_cache(op)
     vi = similar(u0)
     ki = [similar(u0)]
-    rhs = similar(u0)
     nl_cache = nothing
   else
-    ode_cache, vi, ki, rhs, nl_cache = cache
+    ode_cache, vi, ki, nl_cache = cache
   end
 
-  nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,rhs,0,a)
+  nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a)
 
   for i in 1:s
     # allocate space to store f_i
@@ -78,7 +77,7 @@ function solve_step!(uf::AbstractVector,
   for i in 1:s
   @. uf = uf + dt*b[i]*ki[i]
   end
-  cache = (ode_cache, vi, ki, rhs, nl_cache)
+  cache = (ode_cache, vi, ki, nl_cache)
   tf = t0 + dt
 
   return (uf,tf,cache)
@@ -97,7 +96,6 @@ mutable struct EXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
   ode_cache
   vi::AbstractVector
   ki::AbstractVector
-  rhs::AbstractVector
   i::Int
   a::Matrix
 end
@@ -118,10 +116,15 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
   # b = [∂ui/∂t ]
   # b - ∑_{j<i} a_ij * f(tj,uj) = 0
 
-  lhs!(b,op,x)
-  rhs!(op,x)
-  @. b = b - op.rhs
-  b
+  # lhs!(b,op,x)
+  # rhs!(op,x)
+  # @. b = b - op.rhs
+  # b
+  vi = op.vi
+  @. vi = (x-op.u0)/(op.dt)
+  ui = op.a[op.i,op.i] * x
+  residual!(b,op.odeop,ti,(ui,vi),op.ode_cache)
+
 end
 
 function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
@@ -146,23 +149,23 @@ function allocate_jacobian(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVec
 end
 
 
-function rhs!(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
-  v = op.vi
-  @. v = (x-op.u0)/(op.dt)
-  u = op.a[op.i,op.i] * x # == zero for explicit
-  # if (op.i>1)
-  #   @. u += op.ui
-  # end
-  rhs!(op.rhs,op.odeop,op.ti,(u,v),op.ode_cache)
+# function rhs!(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+#   v = op.vi
+#   @. v = (x-op.u0)/(op.dt)
+#   u = op.a[op.i,op.i] * x # == zero for explicit
+#   # if (op.i>1)
+#   #   @. u += op.ui
+#   # end
+#   rhs!(op.rhs,op.odeop,op.ti,(u,v),op.ode_cache)
 
-end
+# end
 
-function lhs!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
-  ui = x
-  vi = op.vi
-  @. vi = (x-op.u0)/(op.dt)
-  lhs!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
-end
+# function lhs!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+#   ui = x
+#   vi = op.vi
+#   @. vi = (x-op.u0)/(op.dt)
+#   lhs!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
+# end
 
 function update!(op::EXRungeKuttaStageNonlinearOperator,ti::Float64,ki::AbstractVector,i::Int)
   op.ti = ti
