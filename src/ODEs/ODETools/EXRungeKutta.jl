@@ -49,7 +49,7 @@ function solve_step!(uf::AbstractVector,
     rhs = similar(u0)
     nl_cache = nothing
   else
-    ode_cache, vi, ki, nl_cache = cache
+    ode_cache, vi, ki, rhs, nl_cache = cache
   end
 
   nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,rhs,0,a)
