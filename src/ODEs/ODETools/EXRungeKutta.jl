@@ -151,23 +151,23 @@ function allocate_jacobian(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVec
 end
 
 
-# function rhs!(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
-#   v = op.vi
-#   @. v = (x-op.u0)/(op.dt)
-#   u = op.a[op.i,op.i] * x # == zero for explicit
-#   # if (op.i>1)
-#   #   @. u += op.ui
-#   # end
-#   rhs!(op.rhs,op.odeop,op.ti,(u,v),op.ode_cache)
+function rhs!(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+  v = op.vi
+  @. v = (x-op.u0)/(op.dt)
+  u = op.a[op.i,op.i] * x # == zero for explicit
+  # if (op.i>1)
+  #   @. u += op.ui
+  # end
+  rhs!(op.rhs,op.odeop,op.ti,(u,v),op.ode_cache)
 
-# end
+end
 
-# function lhs!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
-#   ui = x
-#   vi = op.vi
-#   @. vi = (x-op.u0)/(op.dt)
-#   lhs!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
-# end
+function lhs!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+  ui = x
+  vi = op.vi
+  @. vi = (x-op.u0)/(op.dt)
+  lhs!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
+end
 
 function update!(op::EXRungeKuttaStageNonlinearOperator,ti::Float64,ki::AbstractVector,i::Int)
   op.ti = ti
