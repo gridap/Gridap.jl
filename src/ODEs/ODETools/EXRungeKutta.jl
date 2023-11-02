@@ -130,7 +130,7 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
 
   @. ui = 0.0*op.u0
   @. vi = x
-  lhs!(b,op.odeop,ti,(ui,vi),op.ode_cache)
+  lhs!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
 
   @. b = b - rhs
   b
