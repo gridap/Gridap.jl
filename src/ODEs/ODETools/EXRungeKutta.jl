@@ -119,7 +119,7 @@ function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::A
   ui = x
   vi = op.vi
 
-  @. ui = op.u0
+  @. ui = op.u0 # this value is irrelevant its jacobian contribution is zero
   @. vi = x
 
   z = zero(eltype(A))
@@ -136,26 +136,6 @@ function allocate_jacobian(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVec
   allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
 end
 
-
-# function rhs!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
-#   # ui = x
-#   # vi = op.vi
-#   # @. vi = (x-op.u0)/(op.dt)
-#   # f = op.ki
-#   # rhs!(op.ki[op.i],op.odeop,op.ti,(ui,vi),op.ode_cache)
-#   v = op.vi
-#   @. v = 0.0*x
-#   @. u = op.u0
-#   rhs!(b,op.odeop,op.ti,(u,v),op.ode_cache)
-
-# end
-
-# function lhs!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
-#   ui = x
-#   vi = op.vi
-#   @. vi = (x-op.u0)/(op.dt)
-#   lhs!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
-# end
 
 function update!(op::EXRungeKuttaStageNonlinearOperator,ti::Float64,ki::AbstractVector,i::Int)
   op.ti = ti
