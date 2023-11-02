@@ -149,7 +149,7 @@ end
 
 
 
-function get_mass_matrix!(A::AbstractMatrix,odeop,t0,u0,ode_cache)
+function get_mass_matrix!(A::AbstractMatrix,odeop::ODEOperator,t0::Float64,u0::AbstractVector,ode_cache)
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobian!(A,odeop,t0,(u0,u0),2,1.0,ode_cache)
