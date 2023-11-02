@@ -38,7 +38,7 @@ function solve_step!(uf::AbstractVector,
     get_mass_matrix!(M,op,t0,uf,ode_cache)
     nl_cache = nothing
   else
-    ode_cache, vi, ki, nl_cache = cache
+    ode_cache, vi, ki, M, nl_cache = cache
   end
 
   nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a,M)
@@ -66,7 +66,7 @@ function solve_step!(uf::AbstractVector,
   # for i in 1:s
   # @. uf = uf + dt*b[i]*ki[i]
   # end
-  cache = (ode_cache, vi, ki, nl_cache)
+  cache = (ode_cache, vi, ki, M, nl_cache)
 
   return (uf,tf,cache)
 
