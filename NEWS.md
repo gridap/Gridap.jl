@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Implemented real/imag for VectorValues
+
 ### Fixed
 
 - `BlockMultiFieldStyle` available for `TransientMultiFieldFESpaces` since PR [#946](https://github.com/gridap/Gridap.jl/pull/946).
