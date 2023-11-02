@@ -151,7 +151,7 @@ end
 
 function get_mass_matrix!(A::AbstractMatrix,odeop,t0,u0,ode_cache)
   z = zero(eltype(A))
-  LinearAlgebra.fillstored!(A,z)
-  Gridap.ODEs.ODETools.jacobian!(A,odeop,t0,(u0,u0),2,1.0,ode_cache)
+  fillstored!(A,z)
+  jacobian!(A,odeop,t0,(u0,u0),2,1.0,ode_cache)
   A
 end
