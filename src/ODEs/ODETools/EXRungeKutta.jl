@@ -118,10 +118,22 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
   ui = x
   vi = op.vi
 
-  @. ui = op.u0 # + dt * op.a[op.i,j] * kj
-  @. vi = x  #(x-op.u0)/(op.dt)
+  # @. ui = op.u0 # + dt * op.a[op.i,j] * kj
+  # @. vi = x  #(x-op.u0)/(op.dt)
 
-  residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
+  # residual!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
+
+  @. vi = 0.0*x
+  @. ui = op.u0 # + dt * op.a[op.i,j] * kj
+  rhs = similar(op.u0)
+  rhs!(rhs,op.odeop,op.ti,(ui,vi),op.ode_cache)
+
+  @. ui = 0.0*op.u0
+  @. vi = x
+  lhs!(b,op.odeop,ti,(ui,vi),op.ode_cache)
+
+  @. b = b - rhs
+  b
 
 end
 
