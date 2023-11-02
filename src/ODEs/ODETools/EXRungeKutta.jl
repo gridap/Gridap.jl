@@ -54,17 +54,17 @@ function solve_step!(uf::AbstractVector,
     nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
 
     @. ki[i] = uf
-    # update!(nlop,ti,ki,i)
+    update!(nlop,ti,ki,i)
 
   # end
 
-  # update
+  # update final solution
+  tf = t0 + dt
   @. uf = u0 + dt*b[i]*ki[i]
   # for i in 1:s
   # @. uf = uf + dt*b[i]*ki[i]
   # end
-  cache = nothing #(ode_cache, vi, ki, nl_cache)
-  tf = t0 + dt
+  cache = (ode_cache, vi, ki, nl_cache)
 
   return (uf,tf,cache)
 
