@@ -39,6 +39,8 @@ export TransientFEOperator
 export TransientAffineFEOperator
 export TransientConstantFEOperator
 export TransientConstantMatrixFEOperator
+export TransientRungeKuttaFEOperator
+export TransientIMEXRungeKuttaFEOperator
 using Gridap.FESpaces: Assembler
 using Gridap.FESpaces: SparseMatrixAssembler
 import Gridap.ODEs.ODETools: allocate_cache
@@ -52,6 +54,9 @@ import Gridap.ODEs.ODETools: allocate_jacobian
 import Gridap.ODEs.ODETools: residual!
 import Gridap.ODEs.ODETools: jacobian!
 import Gridap.ODEs.ODETools: jacobians!
+import Gridap.ODEs.ODETools: lhs!
+import Gridap.ODEs.ODETools: rhs!
+import Gridap.ODEs.ODETools: explicit_rhs!
 import Gridap.ODEs.ODETools: OperatorType
 using Gridap.ODEs.ODETools: Nonlinear
 using Gridap.ODEs.ODETools: Affine
@@ -107,6 +112,13 @@ import Gridap.CellData: gradient
 import Gridap.CellData: ∇∇
 import Gridap.CellData: change_domain
 import Gridap.FESpaces: BasisStyle
+using Gridap.FESpaces: Constrained, UnConstrained, AssemblyStrategy
+using Gridap.MultiField: ConsecutiveMultiFieldStyle, BlockSparseMatrixAssembler
+import Gridap.MultiField: ConstraintStyle, MultiFieldStyle, BlockMultiFieldStyle
+import Gridap.FESpaces: zero_free_values, has_constraints, SparseMatrixAssembler
+import Gridap.FESpaces: get_dof_value_type, get_vector_type
+
+using BlockArrays
 
 include("TransientFESpaces.jl")
 

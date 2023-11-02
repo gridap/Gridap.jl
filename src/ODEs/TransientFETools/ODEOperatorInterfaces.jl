@@ -121,3 +121,57 @@ function jacobians!(
   xh=TransientCellField(EvaluationFunction(Xh[1],xhF[1]),dxh)
   jacobians!(J,op.feop,t,xh,γ,ode_cache)
 end
+
+"""
+It provides the Left hand side, RHS, of LHS(t,uh,∂tuh) = RHS(t,uh) for a given (t,uh,∂tuh,...,∂t^Nuh)
+"""
+function lhs!(
+  lhs::AbstractVector,
+  op::ODEOpFromFEOp,
+  t::Real,
+  xhF::Tuple{Vararg{AbstractVector}},
+  ode_cache)
+  Xh, = ode_cache
+  dxh = ()
+  for i in 2:get_order(op)+1
+    dxh = (dxh...,EvaluationFunction(Xh[i],xhF[i]))
+  end
+  xh=TransientCellField(EvaluationFunction(Xh[1],xhF[1]),dxh)
+  lhs!(lhs,op.feop,t,xh,ode_cache)
+end
+
+"""
+It provides the Right hand side, RHS, of LHS(t,uh,∂tuh) = RHS(t,uh) for a given (t,uh,∂tuh,...,∂t^Nuh)
+"""
+function rhs!(
+  rhs::AbstractVector,
+  op::ODEOpFromFEOp,
+  t::Real,
+  xhF::Tuple{Vararg{AbstractVector}},
+  ode_cache)
+  Xh, = ode_cache
+  dxh = ()
+  for i in 2:get_order(op)+1
+    dxh = (dxh...,EvaluationFunction(Xh[i],xhF[i]))
+  end
+  xh=TransientCellField(EvaluationFunction(Xh[1],xhF[1]),dxh)
+  rhs!(rhs,op.feop,t,xh,ode_cache)
+end
+
+"""
+It provides the explicit right hand side, E_RHS, of LHS(t,uh,∂tuh) = I_RHS(t,uh) + E_RHS(t,uh) for a given (t,uh,∂tuh,...,∂t^Nuh)
+"""
+function explicit_rhs!(
+  explicit_rhs::AbstractVector,
+  op::ODEOpFromFEOp,
+  t::Real,
+  xhF::Tuple{Vararg{AbstractVector}},
+  ode_cache)
+  Xh, = ode_cache
+  dxh = ()
+  for i in 2:get_order(op)+1
+    dxh = (dxh...,EvaluationFunction(Xh[i],xhF[i]))
+  end
+  xh=TransientCellField(EvaluationFunction(Xh[1],xhF[1]),dxh)
+  explicit_rhs!(explicit_rhs,op.feop,t,xh,ode_cache)
+end

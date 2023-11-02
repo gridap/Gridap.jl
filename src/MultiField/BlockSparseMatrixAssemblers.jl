@@ -80,8 +80,9 @@ function BlockSparseMatrixAssembler(trial::MultiFieldFESpace,
   @notimplemented msg
 end
 
-function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:BlockMultiFieldStyle{NB,SB,P}},
-                                    test::MultiFieldFESpace{<:BlockMultiFieldStyle{NB,SB,P}},
+function BlockSparseMatrixAssembler(::BlockMultiFieldStyle{NB,SB,P},
+                                    trial,
+                                    test,
                                     matrix_builder,
                                     vector_builder,
                                     strategy=FESpaces.DefaultAssemblyStrategy()) where {NB,SB,P}
@@ -103,12 +104,13 @@ function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:BlockMultiFieldSt
   return BlockSparseMatrixAssembler{NB,NV,SB,P}(block_assemblers)
 end
 
-function FESpaces.SparseMatrixAssembler(mat,
-                                        vec,
-                                        trial::MultiFieldFESpace{<:BlockMultiFieldStyle},
-                                        test::MultiFieldFESpace{<:BlockMultiFieldStyle},
-                                        strategy::AssemblyStrategy=DefaultAssemblyStrategy())
-  return BlockSparseMatrixAssembler(trial,test,SparseMatrixBuilder(mat),ArrayBuilder(vec),strategy)
+function FESpaces.SparseMatrixAssembler(mat,vec,
+                                        trial::MultiFieldFESpace{MS},
+                                        test ::MultiFieldFESpace{MS},
+                                        strategy::AssemblyStrategy=DefaultAssemblyStrategy()
+                                       ) where MS <: BlockMultiFieldStyle
+  mfs = MultiFieldStyle(test)
+  return BlockSparseMatrixAssembler(mfs,trial,test,SparseMatrixBuilder(mat),ArrayBuilder(vec),strategy)
 end
 
 # BlockArrays extensions
@@ -224,7 +226,7 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
         cache
       end
 
-      function Fields.evaluate!(cache, k::$T,A::$MT,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
+      function Fields.evaluate!(cache,k::$T,A::$MT,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
         ni,nj = size(v.touched)
         for j in 1:nj
           for i in 1:ni
@@ -272,22 +274,25 @@ end
 # In place assembly modifications (for dispatching)
 # We convert from BlockArray to ArrayBlock to be able to expland the blocks. 
 # After assembly we convert back to BlockArray automatically.
-function FESpaces.assemble_vector_add!(b::BlockVector,a::BlockSparseMatrixAssembler,vecdata)
-  b1 = ArrayBlock(b.blocks,fill(true,size(b.blocks)))
+function FESpaces.assemble_vector_add!(b::AbstractBlockVector,a::BlockSparseMatrixAssembler,vecdata)
+  b1 = ArrayBlock(blocks(b),fill(true,blocksize(b)))
   b2 = expand_blocks(a,b1)
   FESpaces.assemble_vector_add!(b2,a,vecdata)
 end
 
-function FESpaces.assemble_matrix_add!(mat::BlockMatrix,a::BlockSparseMatrixAssembler,matdata)
-  m1 = ArrayBlock(mat.blocks,fill(true,size(mat.blocks)))
+function FESpaces.assemble_matrix_add!(mat::AbstractBlockMatrix,a::BlockSparseMatrixAssembler,matdata)
+  m1 = ArrayBlock(blocks(mat),fill(true,blocksize(mat)))
   m2 = expand_blocks(a,m1)
   FESpaces.assemble_matrix_add!(m2,a,matdata)
 end
 
-function FESpaces.assemble_matrix_and_vector_add!(A::BlockMatrix,b::BlockVector,a::BlockSparseMatrixAssembler,data)
-  m1 = ArrayBlock(A.blocks,fill(true,size(A.blocks)))
+function FESpaces.assemble_matrix_and_vector_add!(A::AbstractBlockMatrix,
+                                                  b::AbstractBlockVector,
+                                                  a::BlockSparseMatrixAssembler,
+                                                  data)
+  m1 = ArrayBlock(blocks(A),fill(true,blocksize(A)))
   m2 = expand_blocks(a,m1)
-  b1 = ArrayBlock(b.blocks,fill(true,size(b.blocks)))
+  b1 = ArrayBlock(blocks(b),fill(true,blocksize(b)))
   b2 = expand_blocks(a,b1)
   FESpaces.assemble_matrix_and_vector_add!(m2,b2,a,data)
 end

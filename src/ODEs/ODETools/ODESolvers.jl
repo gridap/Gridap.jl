@@ -45,6 +45,8 @@ end
 
 # Specialization
 
+include("Tableaus.jl")
+
 include("ForwardEuler.jl")
 
 include("ThetaMethod.jl")
@@ -52,6 +54,8 @@ include("ThetaMethod.jl")
 include("AffineThetaMethod.jl")
 
 include("RungeKutta.jl")
+
+include("IMEXRungeKutta.jl")
 
 include("Newmark.jl")
 
