@@ -34,12 +34,14 @@ function solve_step!(uf::AbstractVector,
     ode_cache = allocate_cache(op)
     vi = similar(u0)
     ki = [similar(u0)]
+    M = allocate_jacobian(op,t0,uf,ode_cache)
+    get_mass_matrix!(M,op,t0,uf,ode_cache)
     nl_cache = nothing
   else
     ode_cache, vi, ki, nl_cache = cache
   end
 
-  nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a)
+  nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a,M)
 
   i = 1 # for i in 1:s
     # allocate space to store f_i
@@ -84,6 +86,7 @@ mutable struct EXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
   ki::AbstractVector
   i::Int
   a::Matrix
+  M::AbstractMatrix
 end
 
 
@@ -116,15 +119,16 @@ end
 function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
   # γ_0^i = 0 (as K is not a function of ki)
   # γ_1^i = 1
-  ui = x
-  vi = op.vi
+  # ui = x
+  # vi = op.vi
 
-  @. ui = op.u0 # this value is irrelevant its jacobian contribution is zero
-  @. vi = x
+  # @. ui = op.u0 # this value is irrelevant its jacobian contribution is zero
+  # @. vi = x
 
-  z = zero(eltype(A))
-  fillstored!(A,z)
-  jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0),op.ode_cache)
+  # z = zero(eltype(A))
+  # fillstored!(A,z)
+  # jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0),op.ode_cache)
+  @. A = op.M
 end
 
 
@@ -141,4 +145,13 @@ function update!(op::EXRungeKuttaStageNonlinearOperator,ti::Float64,ki::Abstract
   op.ti = ti
   op.ki = ki
   op.i = i
+end
+
+
+
+function get_mass_matrix!(A::AbstractMatrix,odeop,t0,u0,ode_cache)
+  z = zero(eltype(A))
+  LinearAlgebra.fillstored!(A,z)
+  Gridap.ODEs.ODETools.jacobian!(A,odeop,t0,(u0,u0),2,1.0,ode_cache)
+  A
 end
