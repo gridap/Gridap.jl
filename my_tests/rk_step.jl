@@ -15,7 +15,7 @@ u(t) = x -> u(x,t)
 ∂tu = ∂t(u)
 f(t) = x -> ∂t(u)(x,t)-Δ(u(t))(x)
 
-n = 3
+n = 2
 p = 2
 degree = 4*(p+1)
 L = 1
@@ -78,12 +78,15 @@ t0 = tf
     ode_cache = Gridap.ODEs.ODETools.allocate_cache(op)
     vi = similar(u0)
     ki = [similar(u0)]
+    M = allocate_jacobian(op,t0,uf,ode_cache)
+    get_mass_matrix2!(M,op,t0,uf,ode_cache)
     nl_cache = nothing
 
-  nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a)
+  nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a,M)
   println(nlop.ti)
   println(nlop.u0)
   println(nlop.ki)
+  println(nlop.M)
 
   # for i in 1:s
   i = 1
@@ -131,6 +134,7 @@ mutable struct EXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
   ki::AbstractVector
   i::Int
   a::Matrix
+  M::AbstractMatrix
 end
 
 
@@ -168,15 +172,18 @@ end
 function Gridap.Algebra.jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
   # γ_0^i = 0 (as K is not a function of ki)
   # γ_1^i = 1
-  ui = x
-  vi = op.vi
+  # ui = x
+  # vi = op.vi
 
-  @. ui = op.u0
-  @. vi = x
+  # @. ui = op.u0
+  # @. vi = x
 
-  z = zero(eltype(A))
-  LinearAlgebra.fillstored!(A,z)
-  Gridap.ODEs.ODETools.jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0),op.ode_cache)
+  # z = zero(eltype(A))
+  # LinearAlgebra.fillstored!(A,z)
+  # Gridap.ODEs.ODETools.jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0),op.ode_cache)
+
+  # Gridap.ODEs.ODETools.jacobian!(A,op.odeop,op.ti,(ui,vi),2,1.0,op.ode_cache)
+  @. A = op.M
 end
 
 
@@ -215,3 +222,26 @@ function Gridap.ODEs.ODETools.update!(op::EXRungeKuttaStageNonlinearOperator,ti:
   op.ki = ki
   op.i = i
 end
+
+
+
+function get_mass_matrix!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator)
+
+  ui = op.u0
+  vi = op.vi
+
+  z = zero(eltype(A))
+  LinearAlgebra.fillstored!(A,z)
+  Gridap.ODEs.ODETools.jacobian!(A,op.odeop,op.ti,(ui,vi),2,1.0,op.ode_cache)
+  A
+end
+
+function get_mass_matrix2!(A::AbstractMatrix,odeop,t0,u0,ode_cache)
+  z = zero(eltype(A))
+  LinearAlgebra.fillstored!(A,z)
+  Gridap.ODEs.ODETools.jacobian!(A,odeop,t0,(u0,u0),2,1.0,ode_cache)
+  A
+end
+
+M = allocate_jacobian(op,t0,uf,ode_cache) #allocate_jacobian(nlop.odeop,nlop.ti,uf,nlop.ode_cache)
+get_mass_matrix2!(M,op,t0,uf,ode_cache)
