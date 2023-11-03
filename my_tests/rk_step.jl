@@ -37,7 +37,7 @@ V = TestFESpace(model,
                 dirichlet_tags="boundary")
 g(x,t::Real) = 0.0
 g(t::Real) = x -> g(x,t)
-U = TransientTrialFESpace(V,g)
+U = TransientTrialFESpace(V,u)
 
 
 
@@ -121,6 +121,7 @@ t0 = tf
 u_ex = get_free_dof_values( interpolate_everywhere(u(tf),U(tf)))
 println(uf)
 println(u_ex)
+abs(sum(uf-u_ex))
 
 import Gridap.ODEs.ODETools: RungeKuttaNonlinearOperator
 import Gridap.ODEs.ODETools: ODEOperator
