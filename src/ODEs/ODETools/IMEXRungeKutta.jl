@@ -251,6 +251,15 @@ function jacobian!(J::AbstractMatrix,
   jacobian!(J,op.odeop,op.ti,(uf,vf),2,1.0/(op.dt),op.ode_cache)
 end
 
+function rhs!(op::Union{IMEXRungeKuttaStageNonlinearOperator,IMEXRungeKuttaUpdateNonlinearOperator},
+    x::AbstractVector)
+  u = x
+  v = op.vi
+  @. v = (x-op.u0)/(op.dt)
+  f = op.fi
+  rhs!(f[op.i],op.odeop,op.ti,(u,v),op.ode_cache)
+end
+
 function explicit_rhs!(op::RungeKuttaNonlinearOperator, x::AbstractVector)
   u = x
   v = op.vi
