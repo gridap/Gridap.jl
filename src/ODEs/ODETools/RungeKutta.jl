@@ -32,7 +32,9 @@ function solve_step!(uf::AbstractVector,
   if cache === nothing
     ode_cache = allocate_cache(op)
     vi = similar(u0)
-    ui = [similar(u0)]
+    ui = Vector{typeof(u0)}()
+    sizehint!(ui,s)
+    [push!(ui,similar(u0)) for i in 1:s]
     rhs = similar(u0)
     nls_stage_cache = nothing
     nls_update_cache = nothing
@@ -40,16 +42,16 @@ function solve_step!(uf::AbstractVector,
     ode_cache, vi, ui, rhs, nls_stage_cache, nls_update_cache = cache
   end
 
+  # Initialize states to zero
+  for i in 1:s
+    @. ui[i] *= 0.0
+  end
+
   # Create RKNL stage operator
   nlop_stage = RungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ui,rhs,0,a)
 
   # Compute intermediate stages
   for i in 1:s
-
-    # allocate space to store the RHS at i
-    if (length(ui) < i)
-      push!(ui,similar(u0))
-    end
 
     # Update time
     ti = t0 + c[i]*dt
@@ -66,9 +68,6 @@ function solve_step!(uf::AbstractVector,
 
     # Update stage unknown
     @. nlop_stage.ui[i] = uf
-    println("uf RK = ",uf, "ti = ", ti)
-    println( "op.ui = ",nlop_stage.ui)
-    println( "ui = ",ui)
 
     # # Update RHS at stage i using solution at u_i
     # rhs!(nlop_stage, uf)
@@ -183,12 +182,16 @@ end
 
 function jacobian!(A::AbstractMatrix,op::RungeKuttaStageNonlinearOperator,x::AbstractVector)
   # @assert (abs(op.a[op.i,op.i]) > 0.0)
-  ui = x
+  u = op.ui[op.i]
+  @. u *= op.a[op.i,op.i]
+  for j in 1:op.i-1
+    @. u = u + op.a[op.i,j] * op.ui[j]
+  end
   vi = op.vi
   @. vi = (x-op.u0)/(op.dt)
   z = zero(eltype(A))
   fillstored!(A,z)
-  jacobians!(A,op.odeop,op.ti,(ui,vi),(op.a[op.i,op.i],1.0/op.dt),op.ode_cache)
+  jacobians!(A,op.odeop,op.ti,(u,vi),(op.a[op.i,op.i],1.0/op.dt),op.ode_cache)
 end
 
 function jacobian!(A::AbstractMatrix,op::RungeKuttaUpdateNonlinearOperator,x::AbstractVector)
@@ -202,12 +205,16 @@ end
 
 function jacobian!(A::AbstractMatrix,op::RungeKuttaStageNonlinearOperator,x::AbstractVector,
   i::Integer,γᵢ::Real)
-  ui = x
+  u = op.ui[op.i]
+  @. u *= op.a[op.i,op.i]
+  for j in 1:op.i-1
+    @. u = u + op.a[op.i,j] * op.ui[j]
+  end
   vi = op.vi
   @. vi = (x-op.u0)/(op.dt)
   z = zero(eltype(A))
   fillstored!(A,z)
-  jacobian!(A,op.odeop,op.ti,(ui,vi),i,γᵢ,op.ode_cache)
+  jacobian!(A,op.odeop,op.ti,(u,vi),i,γᵢ,op.ode_cache)
 end
 
 function allocate_residual(op::RungeKuttaNonlinearOperator,x::AbstractVector)
@@ -225,8 +232,9 @@ function zero_initial_guess(op::RungeKuttaNonlinearOperator)
 end
 
 function rhs!(op::RungeKuttaStageNonlinearOperator, x::AbstractVector)
-  u = zeros(eltype(x),length(x))
-  for j in 1:op.i
+  u = op.ui[op.i]
+  @. u *= op.a[op.i,op.i]
+  for j in 1:op.i-1
     @. u = u + op.a[op.i,j] * op.ui[j]
   end
   v = op.vi
@@ -235,8 +243,9 @@ function rhs!(op::RungeKuttaStageNonlinearOperator, x::AbstractVector)
 end
 
 function rhs!(op::RungeKuttaUpdateNonlinearOperator, x::AbstractVector)
-  u = zeros(eltype(x),length(x))
-  for i in 1:op.s
+  u = op.ui[op.s]
+  @. u *= op.b[op.s]
+  for i in 1:op.s-1
     @. u = u + op.b[i] * op.ui[i]
   end
   v = op.vi

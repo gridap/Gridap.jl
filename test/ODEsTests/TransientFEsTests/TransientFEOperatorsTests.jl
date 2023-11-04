@@ -31,13 +31,17 @@ V0 = FESpace(
   dirichlet_tags="boundary")
 U = TransientTrialFESpace(V0,u)
 Ω = Triangulation(model)
+# Γ = BoundaryTriangulation(model,tags="boundary")
 degree = 2*order
 dΩ = Measure(Ω,degree)
+# dΓ = Measure(Γ,degree)
+# nΓ = get_normal_vector(Γ)
+# h = 1/partition[1]
 
 # Affine FE operator
-a(u,v) = ∫(∇(v)⊙∇(u))dΩ
+a(u,v) = ∫(∇(v)⊙∇(u))dΩ #- ∫(0.0*v⋅(nΓ⋅∇(u))  + u⋅(nΓ⋅∇(v)) - 10/h*(v⋅u))dΓ
 m(u,v) = ∫(v*u)dΩ
-b(v,t) = ∫(v*f(t))dΩ
+b(v,t) = ∫(v*f(t))dΩ #- ∫(u(t)⋅(nΓ⋅∇(v)) - 10/h*(v⋅u(t)) )dΓ
 res(t,u,v) = a(u,v) + m(∂t(u),v) - b(v,t)
 lhs(t,u,v) = m(∂t(u),v)
 rhs(t,u,v) = b(v,t) - a(u,v)
