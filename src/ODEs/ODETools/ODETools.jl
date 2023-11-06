@@ -10,7 +10,7 @@ using Test
 using DocStringExtensions
 
 using ForwardDiff
-using LinearAlgebra: fillstored!, rmul!
+using LinearAlgebra: fillstored!, rmul!, mul!
 using SparseArrays: issparse
 
 const ϵ = 100*eps()
