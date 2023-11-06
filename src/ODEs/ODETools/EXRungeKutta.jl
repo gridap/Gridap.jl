@@ -102,19 +102,38 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
   ui = x
   vi = op.vi
 
+  # @. ui = op.u0 # + dt * op.a[op.i,j] * kj
+  # rhs = similar(op.u0)
+  # rhs!(rhs,op.odeop,op.ti,(ui,vi),op.ode_cache)
+
+  # mul!(b,op.M,x) # M*x
+
+  # @. b = b - rhs
+  # b
+
+
+  lhs!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
+
   @. ui = op.u0 # + dt * op.a[op.i,j] * kj
   rhs = similar(op.u0)
   rhs!(rhs,op.odeop,op.ti,(ui,vi),op.ode_cache)
 
-  mul!(b,op.M,x) # M*x
-
-  @. b = b - rhs
+  @. b = b + rhs
+  @. b = -1.0 * b
   b
-
 end
 
 function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
-   @. A = op.M
+  #  @. A = op.M
+
+  ui = x
+  vi = op.vi
+  @. ui = op.u0 # this value is irrelevant its jacobian contribution is zero
+  @. vi = x
+  z = zero(eltype(A))
+  fillstored!(A,z)
+  jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0),op.ode_cache)
+
 end
 
 
