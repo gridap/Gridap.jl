@@ -102,14 +102,14 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
   ui = x
   vi = op.vi
 
-  @. vi = 0.0*x
+  # @. vi = 0.0*x
   @. ui = op.u0 # + dt * op.a[op.i,j] * kj
   rhs = similar(op.u0)
   rhs!(rhs,op.odeop,op.ti,(ui,vi),op.ode_cache)
 
   @. ui = 0.0*op.u0
   @. vi = x
-  lhs!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
+  mul!(b,op.M,x) # lhs!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
 
   @. b = b - rhs
   b
