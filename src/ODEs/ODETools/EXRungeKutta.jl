@@ -1,6 +1,7 @@
 """
 Explicit Runge-Kutta ODE solver
 """
+using LinearAlgebra
 struct EXRungeKutta <: ODESolver
   nls::NonlinearSolver
   dt::Float64
