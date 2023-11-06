@@ -6,6 +6,7 @@ $(EXPORTS)
 module ODEs
 
 using DocStringExtensions
+using LinearAlgebra
 
 include("ODETools/ODETools.jl")
 
