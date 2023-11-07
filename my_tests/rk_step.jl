@@ -80,7 +80,7 @@ t0 = tf
   # Create cache if not there
     ode_cache = Gridap.ODEs.ODETools.allocate_cache(op)
     vi = similar(u0)
-    ki = [similar(u0)]
+    ki =  [similar(u0) for i in 1:s]
     M = allocate_jacobian(op,t0,uf,ode_cache)
     get_mass_matrix!(M,op,t0,uf,ode_cache)
     nl_cache = nothing
@@ -93,18 +93,18 @@ t0 = tf
 
   for i in 1:s
     # allocate space to store k_i
-    if (length(ki) < i)
-      push!(ki,similar(u0))
-    end
+    # if (length(ki) < i)
+    #   push!(ki,similar(u0))
+    # end
 
     # solve at stage i
     ti = t0 + c[i]*dt
     ode_cache = update_cache!(ode_cache,op,ti)
-    Gridap.ODEs.ODETools.update!(nlop,ti,ki,i)
+    Gridap.ODEs.ODETools.update!(nlop,ti,ki[i],i)
     nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
 
-    @. ki[i] = uf
-    Gridap.ODEs.ODETools.update!(nlop,ti,ki,i)
+    # @. ki[i] = uf
+    Gridap.ODEs.ODETools.update!(nlop,ti,uf,i)
 
 
   end
@@ -112,7 +112,7 @@ t0 = tf
   # update
   @. uf = u0
   for i in 1:s
-  @. uf = uf + dt*b[i]*ki[i]
+  @. uf = uf + dt*b[i]*nlop.ki[i]
   end
   cache = nothing #(ode_cache, vi, ki, nl_cache)
   tf = t0 + dt
@@ -157,7 +157,7 @@ function Gridap.Algebra.residual!(b::AbstractVector,op::EXRungeKuttaStageNonline
 
   @. ui = op.u0
   for j = 1:op.i-1
-   @. ui = ui  + dt * op.a[op.i,j] * op.ki[j]
+   @. ui = ui  + op.dt * op.a[op.i,j] * op.ki[j]
   end
 
   rhs = similar(op.u0)
@@ -200,7 +200,7 @@ end
 
 function Gridap.ODEs.ODETools.update!(op::EXRungeKuttaStageNonlinearOperator,ti::Float64,ki::AbstractVector,i::Int)
   op.ti = ti
-  op.ki = ki
+  @. op.ki[i] = ki
   op.i = i
 end
 

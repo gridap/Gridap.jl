@@ -79,7 +79,7 @@ for (uh_tn, tn) in sol_t
 
   e = u(tn) - uh_tn
   el2 = sqrt(sum( ∫(l2(e))dΩ )) #/ ( sqrt(sum( ∫(l2( u(tn) ))dΩ ))  )
-  println(el2)
+  println(el2, tn)
   @test el2 < tol
 
   errors_rk_fe = [errors_rk_fe; el2]

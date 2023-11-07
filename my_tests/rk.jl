@@ -20,7 +20,7 @@ u(t) = x -> u(x,t)
 f(t) = x -> ∂t(u)(x,t)-Δ(u(t))(x)
 
 
-n = 3
+n = 16
 p = 2
 degree = 4*(p+1)
 L = 1
@@ -59,9 +59,10 @@ jac(t,u,du,v) = ∫(( ∇(v)⊙∇(du) ))dΩ
 jac_t(t,u,dut,v) = ∫( dut*v )dΩ
 
 #### Solve with standard EXRungeKutta with FE table
-rk_fe = EXRungeKutta(ls,dt,:EX_FE_1_0_1)
+# rk_fe = EXRungeKutta(ls,dt,:EX_FE_1_0_1)
+rk_fe = EXRungeKutta(ls,dt,:EX_SSP_3_0_3)
 opRK_fe = TransientEXRungeKuttaFEOperator(lhs,rhs,jac,jac_t,U,V)
-sol_rk_fe = solve(rk_fe,opRK_fe,u0,t0,T*10)
+sol_rk_fe = solve(rk_fe,opRK_fe,u0,t0,T)
 
 
 errors_rk_fe = []
@@ -87,13 +88,11 @@ plot!(show=true)
 savefig(string("rk_fe_error"))
 
 
-createpvd("my_tests/transient_sol/poisson_transient_solution_ex") do pvd
-  for (uₕ,t) in sol_rk_fe
-    u_ex = interpolate_everywhere(u(t),U(t))
-    pvd[t] = createvtk(Ω,"my_tests/transient_sol/poisson_transient_solution_ex_$t"*".vtu",cellfields=["u"=>u_ex])
+createpvd("my_tests/transient_sol/poisson_transient_solution") do pvd
+  for (uh,t) in sol_rk_fe
+    pvd[t] = createvtk(Ω,"my_tests/transient_sol/poisson_transient_solution_$t"*".vtu",cellfields=["u"=>uh])
   end
 end
-
 
 
 
@@ -179,3 +178,7 @@ plot!(
   )
 plot!(show=true)
 savefig(string("fe_error"))
+
+
+
+####

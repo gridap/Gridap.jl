@@ -45,8 +45,8 @@ dt = 0.001
 uh0 = interpolate_everywhere(u(0.0),U(0.0))
 
 ls = LUSolver()
-# ode_solver = EXRungeKutta(ls,dt,:EX_FE_1_0_1)
-ode_solver = EXRungeKutta(ls,dt,:EX_SSP_3_0_3)
+ode_solver = EXRungeKutta(ls,dt,:EX_FE_1_0_1)
+# ode_solver = EXRungeKutta(ls,dt,:EX_SSP_3_0_3)
 
 sol_t = solve(ode_solver,op,uh0,t0,tF)
 
@@ -62,6 +62,7 @@ for (uh_tn, tn) in sol_t
   el2 = sqrt(sum( ∫(l2(e))dΩ ))
   println(el2)
   @test el2< tol
+  @test ~any( isnan.(get_free_dof_values(uh_tn)))
 
   errors_rk_fe = [errors_rk_fe; el2]
   ts_rk_fe = [ts_rk_fe; tn]
@@ -79,3 +80,12 @@ plot!(
   )
 plot!(show=true)
 savefig(string("rk_fe_error"))
+
+
+
+sol_t = solve(ode_solver,op,uh0,t0,tF)
+createpvd("my_tests/transient_sol/poisson_transient_solution") do pvd
+  for (uh,t) in sol_t
+    pvd[t] = createvtk(Ω,"my_tests/transient_sol/poisson_transient_solution_$t"*".vtu",cellfields=["u"=>uh])
+  end
+end

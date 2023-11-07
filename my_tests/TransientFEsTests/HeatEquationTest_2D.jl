@@ -39,7 +39,7 @@ jac_t(t,u,dut,v) = ∫( dut*v )dΩ
 op = TransientEXRungeKuttaFEOperator(lhs,rhs,jac,jac_t,U,V0)
 
 t0 = 0.0
-tF = 10.0
+tF = 1.0
 dt = 0.001
 
 uh0 = interpolate_everywhere(u(0.0),U(0.0))
@@ -78,3 +78,10 @@ plot!(
   )
 plot!(show=true)
 savefig(string("rk_fe_error_2D"))
+
+
+createpvd("my_tests/transient_sol/poisson_transient_solution") do pvd
+  for (uh,t) in sol_t
+    pvd[t] = createvtk(Ω,"my_tests/transient_sol/poisson_transient_solution_$t"*".vtu",cellfields=["u"=>uh])
+  end
+end
