@@ -1,21 +1,23 @@
 using Pkg
-using Test
-using ForwardDiff
-using LinearAlgebra
+
+
 Pkg.add(url="https://github.com/tamaratambyah/Gridap.jl", rev="rungekutta")
 
 using Gridap
 
+using Test
 
 # Analytical functions
 # u(x,t) = (x[1]+x[2])*t
 # u(x,t) = (2*x[1]+x[2])*t
-# u(x,t) = (1.0-x[1])*x[1]*(1.0-x[2])*x[2]*t
-u(x,t) = (1.0-x[1])*x[1]*t
+u(x,t) = (1.0-x[1])*x[1]*(1.0-x[2])*x[2]*t
+# u(x,t) = (1.0-x[1])*x[1]*t
 
-u(t::Real) = x -> u(x,t)
+u(t) = x -> u(x,t)
 ∂tu = ∂t(u)
 f(t) = x -> ∂t(u)(x,t)-Δ(u(t))(x)
+
+
 
 domain = (0,1,0,1)
 partition = (2,2)
@@ -49,16 +51,14 @@ b_Γ(v,t) = ∫(v*(∇(u(t))⋅nb))dΓ
 lhs(t,u,v) = ∫( v* (u) )dΩ
 rhs(t,u,v) = b(v,t) + b_Γ(v,t) - a(u,v)
 
-lhs(t,u,v) = ∫( v* (u) )dΩ
-rhs(t,u,v) = ∫(v*f(t))dΩ -  ∫(( ∇(v)⊙∇(u) ))dΩ
 jac(t,u,du,v) = ∫(( ∇(v)⊙∇(du) ))dΩ
 jac_t(t,u,dut,v) = ∫( dut*v )dΩ
 
 op = TransientEXRungeKuttaFEOperator(lhs,rhs,jac,jac_t,U,V0)
 
 t0 = 0.0
-tF = 1.0
-dt = 0.1
+tF = 10.0
+dt = 0.001
 
 U0 = U(0.0)
 uh0 = interpolate_everywhere(u(0.0),U0)
@@ -72,19 +72,25 @@ sol_t = solve(ode_solver,op,uh0,t0,tF)
 l2(w) = w*w
 
 tol = 1.0e-6
-_t_n = t0
 
+errors_rk_fe = []
+ts_rk_fe = []
 for (uh_tn, tn) in sol_t
   e = u(tn) - uh_tn
-  el2 = sqrt(sum( ∫(l2(e))dΩ ))
+  el2 = sqrt(sum( ∫(l2(e))dΩ )) / ( sqrt( sum( ∫( u(tn) )dΩ  )) )
   println(el2)
-  # println(@test el2 < tol)
+  (@test el2 < tol)
+  errors_rk_fe = [errors_rk_fe; el2]
+  ts_rk_fe = [ts_rk_fe; tn]
 end
 
-a(u,v) = ∫(∇(v)⋅∇(u))dΩ
-b(v,t) = ∫(v*f(t))dΩ
-m(ut,v) = ∫(ut*v)dΩ
-b_Γ(v,t) = ∫(v*(∇(u(t))⋅nb))dΓ
-res(t,u,v) = a(u,v) + m(∂t(u),v) - b(v,t) - b_Γ(v,t)
-op = TransientFEOperator(res,jac,jac_t,U,V0)
-ode_solver = ThetaMethod(ls,dt,0.2)
+plot(ts_rk_fe,errors_rk_fe)
+plot!(
+  #shape=:auto,
+  xlabel="t",
+  ylabel="relative error",
+  title="RK-FE"
+  # yaxis=:log
+  )
+plot!(show=true)
+savefig(string("rk_fe_error_boundary"))

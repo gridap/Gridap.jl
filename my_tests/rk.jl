@@ -13,7 +13,8 @@ function l2(u,Ω,p)
 end
 
 
-u(x,t) = x[1]*(1-x[1])*t
+# u(x,t) = x[1]*(1-x[1])*t
+u(x,t) = (1.0-x[1])*x[1]*(1.0-x[2])*x[2]*t
 u(t) = x -> u(x,t)
 ∂tu = ∂t(u)
 f(t) = x -> ∂t(u)(x,t)-Δ(u(t))(x)
@@ -29,8 +30,8 @@ t0 = 0.0
 T = 1.0
 
 
-domain = (0.0, L)
-partition = (n)
+domain = (0.0, L, 0.0, L)
+partition = (n,n)
 model  = CartesianDiscreteModel(domain,partition )
 Ω = Triangulation(model)
 dΩ = Measure(Ω,degree)
@@ -41,7 +42,7 @@ V = TestFESpace(model,
                 dirichlet_tags="boundary")
 g(x,t::Real) = 0.0
 g(t::Real) = x -> g(x,t)
-U = TransientTrialFESpace(V,g)
+U = TransientTrialFESpace(V,u)
 
 u0 = interpolate_everywhere(u(0),U(0.0))
 
@@ -60,7 +61,7 @@ jac_t(t,u,dut,v) = ∫( dut*v )dΩ
 #### Solve with standard EXRungeKutta with FE table
 rk_fe = EXRungeKutta(ls,dt,:EX_FE_1_0_1)
 opRK_fe = TransientEXRungeKuttaFEOperator(lhs,rhs,jac,jac_t,U,V)
-sol_rk_fe = solve(rk_fe,opRK_fe,u0,t0,10*T)
+sol_rk_fe = solve(rk_fe,opRK_fe,u0,t0,T*10)
 
 
 errors_rk_fe = []
@@ -73,6 +74,7 @@ for (uh,t) in sol_rk_fe
   ts_rk_fe = [ts_rk_fe; t]
 end
 
+plot()
 plot(ts_rk_fe,errors_rk_fe)
 plot!(
   #shape=:auto,

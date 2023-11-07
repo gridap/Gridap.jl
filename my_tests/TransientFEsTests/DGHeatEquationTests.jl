@@ -57,8 +57,8 @@ jac_t(t,u,dut,v) = m(dut,v)
 op = TransientEXRungeKuttaFEOperator(lhs,rhs,jac,jac_t,U,V0)
 
 t0 = 0.0
-tF = 1.0
-dt = 0.05
+tF = 10.0
+dt = 0.001
 
 U0 = U(0.0)
 uh0 = interpolate_everywhere(u(0.0),U0)
@@ -71,13 +71,29 @@ sol_t = solve(ode_solver,op,uh0,t0,tF)
 l2(w) = w*w
 
 tol = 1.0e-6
-_t_n = t0
 
+errors_rk_fe = []
+ts_rk_fe = []
 for (uh_tn, tn) in sol_t
-  global _t_n
-  _t_n += dt
+
   e = u(tn) - uh_tn
-  el2 = sqrt(sum( ∫(l2(e))dΩ ))
+  el2 = sqrt(sum( ∫(l2(e))dΩ )) #/ ( sqrt(sum( ∫(l2( u(tn) ))dΩ ))  )
   println(el2)
-  println(@test el2 < tol)
+  @test el2 < tol
+
+  errors_rk_fe = [errors_rk_fe; el2]
+  ts_rk_fe = [ts_rk_fe; tn]
 end
+
+
+
+plot(ts_rk_fe,errors_rk_fe)
+plot!(
+  #shape=:auto,
+  xlabel="t",
+  ylabel="relative error",
+  title="RK-FE"
+  # yaxis=:log
+  )
+plot!(show=true)
+savefig(string("rk_fe_error_dG"))
