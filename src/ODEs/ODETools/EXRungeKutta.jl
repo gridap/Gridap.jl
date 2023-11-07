@@ -44,10 +44,6 @@ function solve_step!(uf::AbstractVector,
   nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a,M)
 
   for i in 1:s
-    # # allocate space to store k_i
-    # if (length(ki) < i)
-    #   push!(ki,similar(u0))
-    # end
 
     # solve at stage i
     ti = t0 + c[i]*dt
@@ -55,7 +51,6 @@ function solve_step!(uf::AbstractVector,
     update!(nlop,ti,ki[i],i)
     nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
 
-    # @. ki[i] = uf
     update!(nlop,ti,uf,i)
 
 
@@ -65,7 +60,7 @@ function solve_step!(uf::AbstractVector,
   tf = t0 + dt
   @. uf = u0
   for i in 1:s
-  @. uf = uf + dt*b[i]*ki[i]
+  @. uf = uf + dt*b[i]*nlop.ki[i]
   end
   cache = (ode_cache, vi, ki, M, nl_cache)
 
