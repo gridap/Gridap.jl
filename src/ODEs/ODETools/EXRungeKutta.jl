@@ -109,7 +109,7 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
   rhs!(rhs,op.odeop,op.ti,(ui,vi),op.ode_cache)
 
   @. b = b + rhs
-  # @. b = -1.0 * b
+  @. b = -1.0 * b
   b
 end
 
