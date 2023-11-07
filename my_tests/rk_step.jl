@@ -10,8 +10,8 @@ using Gridap.Algebra, Gridap.ODEs.ODETools
 
 
 
-# u(x,t) = x[1]*(1-x[1])*t
-u(x,t) = (1.0-x[1])*x[1]*(1.0-x[2])*x[2]*t
+u(x,t) = x[1]*(1-x[1])*t
+# u(x,t) = (1.0-x[1])*x[1]*(1.0-x[2])*x[2]*t
 u(t) = x -> u(x,t)
 ∂tu = ∂t(u)
 f(t) = x -> ∂t(u)(x,t)-Δ(u(t))(x)
@@ -26,8 +26,8 @@ t0 = 0.0
 T = 1.0
 
 
-domain = (0.0, L, 0.0, L )
-partition = (n, n)
+domain = (0.0, L )
+partition = (n)
 model  = CartesianDiscreteModel(domain,partition )
 Ω = Triangulation(model)
 dΩ = Measure(Ω,degree)
@@ -52,21 +52,11 @@ jac(t,u,du,v) = ∫(( ∇(v)⊙∇(du) ))dΩ
 jac_t(t,u,dut,v) = ∫( dut*v )dΩ
 
 
-# _a(u,v) = ∫(∇(v)⊙∇(u))dΩ
-# _b(v,t) = ∫(v⋅f(t))dΩ
-# m(ut,v) = ∫(ut⋅v)dΩ
-# _rhs(t,u,v) = _b(v,t) - _a(u,v)
-# _lhs(t,u,v) = ∫( v*u )dΩ
-
-# rhs(t,(u1,u2),(v1,v2)) = _rhs(t,u1,v1) + _rhs(t,u2,v2)
-# lhs(t,(u1,u2),(v1,v2)) = _lhs(t,u1,v1) + _lhs(t,u2,v2)
-# jac(t,x,(du1,du2),(v1,v2)) = _a(du1,v1) + _a(du2,v2)
-# jac_t(t,x,(du1t,du2t),(v1,v2)) = m(du1t,v1) + m(du2t,v2)
-
 
 #### SET UP FOR SOLVER
 u0 = get_free_dof_values( interpolate_everywhere(u(0),U(0.0)) )
-solver = EXRungeKutta(ls,0.001,:EX_FE_1_0_1)
+# solver = EXRungeKutta(ls,0.001,:EX_FE_1_0_1)
+solver = EXRungeKutta(ls,0.001,:EX_SSP_3_0_3)
 opRK = TransientEXRungeKuttaFEOperator(lhs,rhs,jac,jac_t,U,V)
 op = Gridap.FESpaces.get_algebraic_operator(opRK)
 t0 = 0.0
@@ -101,30 +91,29 @@ t0 = tf
   println(nlop.ki)
   println(nlop.M)
 
-  # for i in 1:s
-  i = 1
-    # allocate space to store f_i
-    # if (length(ki) < i)
-    #   push!(ki,similar(u0))
-    # end
+  for i in 1:s
+    # allocate space to store k_i
+    if (length(ki) < i)
+      push!(ki,similar(u0))
+    end
 
     # solve at stage i
     ti = t0 + c[i]*dt
-    # ode_cache = update_cache!(ode_cache,op,ti)
+    ode_cache = update_cache!(ode_cache,op,ti)
     Gridap.ODEs.ODETools.update!(nlop,ti,ki,i)
     nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
 
     @. ki[i] = uf
-    # Gridap.ODEs.ODETools.update!(nlop,ti,ki,i)
+    Gridap.ODEs.ODETools.update!(nlop,ti,ki,i)
 
 
-  # end
+  end
 
   # update
-  @. uf = u0 + dt*b[i]*ki[i]
-  # for i in 1:s
-  # @. uf = uf + dt*b[i]*ki[i]
-  # end
+  @. uf = u0
+  for i in 1:s
+  @. uf = uf + dt*b[i]*ki[i]
+  end
   cache = nothing #(ode_cache, vi, ki, nl_cache)
   tf = t0 + dt
 
@@ -166,7 +155,11 @@ function Gridap.Algebra.residual!(b::AbstractVector,op::EXRungeKuttaStageNonline
 
   lhs!(b,op.odeop,op.ti,(ui,vi),op.ode_cache)
 
-   @. ui = op.u0 # + dt * op.a[op.i,j] * kj
+  @. ui = op.u0
+  for j = 1:op.i-1
+   @. ui = ui  + dt * op.a[op.i,j] * op.ki[j]
+  end
+
   rhs = similar(op.u0)
   rhs!(rhs,op.odeop,op.ti,(ui,vi),op.ode_cache)
 
@@ -176,38 +169,22 @@ function Gridap.Algebra.residual!(b::AbstractVector,op::EXRungeKuttaStageNonline
 
 end
 
-ki[i] = Vector{Float64}([3, 6, 10])
-b = similar(nlop.u0)
-mul!(b,nlop.M,ki[i])
 
-vi = ones(size(nlop.u0))
-ui = ki[i] # + dt * op.a[op.i,j] * kj
-_lhs = similar(nlop.u0)
-Gridap.ODEs.ODETools.lhs!(_lhs,nlop.odeop,nlop.ti,(ui,vi),nlop.ode_cache)
-print( sum( b - _lhs)  )
-
-# ui = 100*ones(size(nlop.u0))
-# vi = nlop.vi
-# frhs = similar(nlop.u0)
-# Gridap.ODEs.ODETools.rhs!(frhs,nlop.odeop,nlop.ti,(ui,vi),nlop.ode_cache)
-
-# b = similar(nlop.u0)
-# Gridap.ODEs.ODETools.lhs!(b,nlop.odeop,nlop.ti,(ui,vi),nlop.ode_cache)
 
 
 function Gridap.Algebra.jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
   # γ_0^i = 0 (as K is not a function of ki)
   # γ_1^i = 1
 
-  # @. A = op.M
+  @. A = op.M
 
-  ui = x
-  vi = op.vi
-  @. ui = op.u0 # this value is irrelevant its jacobian contribution is zero
-  @. vi = x
-  z = zero(eltype(A))
-  LinearAlgebra.fillstored!(A,z)
-  Gridap.ODEs.ODETools.jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0),op.ode_cache)
+  # ui = x
+  # vi = op.vi
+  # @. ui = op.u0 # this value is irrelevant its jacobian contribution is zero
+  # @. vi = x
+  # z = zero(eltype(A))
+  # LinearAlgebra.fillstored!(A,z)
+  # Gridap.ODEs.ODETools.jacobians!(A,op.odeop,op.ti,(ui,vi),(0.0,1.0),op.ode_cache)
 
 end
 
@@ -235,5 +212,24 @@ function get_mass_matrix!(A::AbstractMatrix,odeop,t0,u0,ode_cache)
   A
 end
 
-M = allocate_jacobian(op,t0,uf,ode_cache) #allocate_jacobian(nlop.odeop,nlop.ti,uf,nlop.ode_cache)
-get_mass_matrix!(M,op,t0,uf,ode_cache)
+# M = allocate_jacobian(op,t0,uf,ode_cache) #allocate_jacobian(nlop.odeop,nlop.ti,uf,nlop.ode_cache)
+# get_mass_matrix!(M,op,t0,uf,ode_cache)
+
+
+# ki[i] = Vector{Float64}([3, 6, 10])
+# b = similar(nlop.u0)
+# mul!(b,nlop.M,ki[i])
+
+# vi = ones(size(nlop.u0))
+# ui = ki[i] # + dt * op.a[op.i,j] * kj
+# _lhs = similar(nlop.u0)
+# Gridap.ODEs.ODETools.lhs!(_lhs,nlop.odeop,nlop.ti,(ui,vi),nlop.ode_cache)
+# print( sum( b - _lhs)  )
+
+# ui = 100*ones(size(nlop.u0))
+# vi = nlop.vi
+# frhs = similar(nlop.u0)
+# Gridap.ODEs.ODETools.rhs!(frhs,nlop.odeop,nlop.ti,(ui,vi),nlop.ode_cache)
+
+# b = similar(nlop.u0)
+# Gridap.ODEs.ODETools.lhs!(b,nlop.odeop,nlop.ti,(ui,vi),nlop.ode_cache)

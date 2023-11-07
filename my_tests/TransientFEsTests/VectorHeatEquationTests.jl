@@ -59,7 +59,8 @@ xh0 = interpolate_everywhere([uh0,uh0],X0)
 
 ls = LUSolver()
 
-ode_solver = EXRungeKutta(ls,dt,:EX_FE_1_0_1)
+# ode_solver = EXRungeKutta(ls,dt,:EX_FE_1_0_1)
+ode_solver = EXRungeKutta(ls,dt,:EX_SSP_3_0_3)
 
 sol_t = solve(ode_solver,op,xh0,t0,tF)
 

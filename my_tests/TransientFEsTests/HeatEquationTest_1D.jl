@@ -45,7 +45,9 @@ dt = 0.001
 uh0 = interpolate_everywhere(u(0.0),U(0.0))
 
 ls = LUSolver()
-ode_solver = EXRungeKutta(ls,dt,:EX_FE_1_0_1)
+# ode_solver = EXRungeKutta(ls,dt,:EX_FE_1_0_1)
+ode_solver = EXRungeKutta(ls,dt,:EX_SSP_3_0_3)
+
 sol_t = solve(ode_solver,op,uh0,t0,tF)
 
 
@@ -58,7 +60,7 @@ ts_rk_fe = []
 for (uh_tn, tn) in sol_t
   e = interpolate_everywhere(u(tn),U(tn)) - uh_tn
   el2 = sqrt(sum( ∫(l2(e))dΩ ))
-  # println(el2)
+  println(el2)
   @test el2< tol
 
   errors_rk_fe = [errors_rk_fe; el2]
