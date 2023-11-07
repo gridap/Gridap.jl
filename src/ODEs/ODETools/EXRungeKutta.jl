@@ -106,7 +106,7 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
 
   @. ui = op.u0
   for j = 1:op.i-1
-   @. ui = ui  + dt * op.a[op.i,j] * op.ki[j]
+   @. ui = ui  + op.dt * op.a[op.i,j] * op.ki[j]
   end
 
   rhs = similar(op.u0)
