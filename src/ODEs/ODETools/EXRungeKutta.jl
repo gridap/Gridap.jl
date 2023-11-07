@@ -33,7 +33,7 @@ function solve_step!(uf::AbstractVector,
   if cache === nothing
     ode_cache = allocate_cache(op)
     vi = similar(u0)
-    ki = [similar(u0)]
+    ki = [similar(u0) for i in 1:s]
     M = allocate_jacobian(op,t0,uf,ode_cache)
     get_mass_matrix!(M,op,t0,uf,ode_cache)
     nl_cache = nothing
@@ -44,19 +44,20 @@ function solve_step!(uf::AbstractVector,
   nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a,M)
 
   for i in 1:s
-    # allocate space to store k_i
-    if (length(ki) < i)
-      push!(ki,similar(u0))
-    end
+    # # allocate space to store k_i
+    # if (length(ki) < i)
+    #   push!(ki,similar(u0))
+    # end
 
     # solve at stage i
     ti = t0 + c[i]*dt
     ode_cache = update_cache!(ode_cache,op,ti)
-    update!(nlop,ti,ki,i)
+    update!(nlop,ti,ki[i],i)
     nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
 
-    @. ki[i] = uf
-    update!(nlop,ti,ki,i)
+    # @. ki[i] = uf
+    update!(nlop,ti,uf,i)
+
 
   end
 
@@ -142,7 +143,7 @@ end
 
 function update!(op::EXRungeKuttaStageNonlinearOperator,ti::Float64,ki::AbstractVector,i::Int)
   op.ti = ti
-  op.ki = ki
+  @. op.ki[i] = ki
   op.i = i
 end
 
