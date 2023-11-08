@@ -52,7 +52,7 @@ function _solve_nr!(x,A,b,dx,ns,nls,op)
 
   # Newton-like iterations
   for nliter in 1:nls.max_nliters
-
+    println(nliter)
     # Solve linearized problem
     rmul!(b,-1)
     solve!(dx,ns,b)
