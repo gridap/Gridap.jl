@@ -2,12 +2,12 @@
 Explicit Runge-Kutta ODE solver
 """
 struct EXRungeKutta <: ODESolver
-  nls::NonlinearSolver
+  ls::LinearSolver
   dt::Float64
   tableau::EXButcherTableau
-  function EXRungeKutta(nls::NonlinearSolver, dt, type::Symbol)
+  function EXRungeKutta(ls::NonlinearSolver, dt, type::Symbol)
     bt = EXButcherTableau(type)
-    new(nls, dt, bt)
+    new(ls, dt, bt)
   end
 end
 
@@ -36,9 +36,9 @@ function solve_step!(uf::AbstractVector,
     ki = [similar(u0) for i in 1:s]
     M = allocate_jacobian(op,t0,uf,ode_cache)
     get_mass_matrix!(M,op,t0,uf,ode_cache)
-    nl_cache = nothing
+    ls_cache = nothing
   else
-    ode_cache, vi, ki, M, nl_cache = cache
+    ode_cache, vi, ki, M, ls_cache = cache
   end
 
   nlop = EXRungeKuttaStageOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a,M)
@@ -49,7 +49,7 @@ function solve_step!(uf::AbstractVector,
     ti = t0 + c[i]*dt
     ode_cache = update_cache!(ode_cache,op,ti)
     update!(nlop,ti,ki[i],i)
-    nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
+    ls_cache = solve!(uf,solver.ls,nlop,ls_cache)
 
     update!(nlop,ti,uf,i)
 
@@ -63,7 +63,7 @@ function solve_step!(uf::AbstractVector,
   @. uf = uf + dt*b[i]*nlop.ki[i]
   end
 
-  cache = (ode_cache, vi, ki, M, nl_cache)
+  cache = (ode_cache, vi, ki, M, ls_cache)
 
   return (uf,tf,cache)
 
