@@ -41,7 +41,7 @@ function solve_step!(uf::AbstractVector,
     ode_cache, vi, ki, M, nl_cache = cache
   end
 
-  nlop = EXRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a,M)
+  nlop = EXRungeKuttaStageOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a,M)
 
   for i in 1:s
 
@@ -73,7 +73,7 @@ end
 
 
 
-mutable struct EXRungeKuttaStageNonlinearOperator <: RungeKuttaNonlinearOperator
+mutable struct EXRungeKuttaStageOperator <: RungeKuttaNonlinearOperator
   odeop::ODEOperator
   ti::Float64
   dt::Float64
@@ -89,17 +89,14 @@ end
 
 """
 ODE:    A(t,u,∂u  = M ∂u/∂t + K(t,u) = 0 -> solve for u
-EX-RK:  A(t,u,ki) = M ki    + K(ti,u0 + dt ∑_{j<i} a_ij * kj) = 0 -> solve for ki
-                  = M ki    + K(ti,ui) = 0
-
-For forward euler,          i = 1     -> ui = u0
-For other explicit methods, i = 1,…,s -> ui = u0 + dt ∑_{j<i} a_ij * kj
-
-For EX-RK, the Jacobian is always M. At each solve_step, compute and store M in
-nlop
-
+EX-RK:  A(t,u,ki) = M ki    + K(ti,u0 + dt ∑_{j<i} a_ij * kj) = 0
+                  = M ki    + K(ti,ui) = 0 -> solve for ki
+where  ui = u0 + dt ∑_{j<i} a_ij * kj for i = 1,…,s
+The Jacobian is always M. Compute and store M in EXRungeKuttaStageOperator
 """
-function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+function residual!(b::AbstractVector,
+  op::EXRungeKuttaStageOperator,
+  x::AbstractVector)
 
   ui = x
   vi = op.vi
@@ -119,28 +116,37 @@ function residual!(b::AbstractVector,op::EXRungeKuttaStageNonlinearOperator,x::A
   b
 end
 
-function jacobian!(A::AbstractMatrix,op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+function jacobian!(A::AbstractMatrix,
+  op::EXRungeKuttaStageOperator,
+  x::AbstractVector)
    @. A = op.M
 end
 
 
-function allocate_residual(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+function allocate_residual(op::EXRungeKuttaStageOperator,x::AbstractVector)
   allocate_residual(op.odeop,op.ti,x,op.ode_cache)
 end
 
-function allocate_jacobian(op::EXRungeKuttaStageNonlinearOperator,x::AbstractVector)
+function allocate_jacobian(op::EXRungeKuttaStageOperator,x::AbstractVector)
   allocate_jacobian(op.odeop,op.ti,x,op.ode_cache)
 end
 
 
-function update!(op::EXRungeKuttaStageNonlinearOperator,ti::Float64,ki::AbstractVector,i::Int)
+function update!(op::EXRungeKuttaStageOperator,
+  ti::Float64,
+  ki::AbstractVector,
+  i::Int)
   op.ti = ti
   @. op.ki[i] = ki
   op.i = i
 end
 
 
-function get_mass_matrix!(A::AbstractMatrix,odeop::ODEOperator,t0::Float64,u0::AbstractVector,ode_cache)
+function get_mass_matrix!(A::AbstractMatrix,
+  odeop::ODEOperator,
+  t0::Float64,
+  u0::AbstractVector,
+  ode_cache)
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobian!(A,odeop,t0,(u0,u0),2,1.0,ode_cache)
