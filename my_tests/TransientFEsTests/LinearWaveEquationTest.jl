@@ -75,24 +75,26 @@ createpvd("my_tests/transient_sol/wave_eq") do pvd
   end
 end
 
-global uh = 1
+global uh
+global hh
 for (xh,t) in sol_t
   println(t)
-  # global uh = xh
-  # hh = xh[2]
+  uh = xh[1]
+  hh = xh[2]
 end
 
-Uh = Gridap.ODEs.TransientFETools.allocate_trial_space(sol_t.trial)
+l2(w) = w ⊙ w
 
-Xh0 = get_free_dof_values(xh0)
-tf = 0.0
-evaluate!(Xh0,sol_t.trial,tf)
-sol_t.trial
+tol = 1.0e-5
 
-evaluate!(Uh,sol.trial,tf)
+eu = uh0 - uh
+eh = hh0 - hh
+el2_u = sqrt(sum( ∫(l2(eu))dΩ ))
+el2_h = sqrt(sum( ∫(l2(eh))dΩ ))
+println(el2)
+@test el2_u< tol
+@test el2_h< tol
 
-
-get_free_dof_values(uh)
 
 ##### INCLUDE CORILOIS
 f = 1.0
