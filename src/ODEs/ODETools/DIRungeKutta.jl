@@ -36,7 +36,7 @@ function solve_step!(uf::AbstractVector,
     ki = [similar(u0) for i in 1:s]
     nl_cache = nothing
   else
-    ode_cache, vi, ki, M, nl_cache = cache
+    ode_cache, vi, ki, nl_cache = cache
   end
 
   nlop = DIRungeKuttaStageNonlinearOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a)
@@ -61,7 +61,7 @@ function solve_step!(uf::AbstractVector,
   @. uf = uf + dt*b[i]*nlop.ki[i]
   end
 
-  cache = (ode_cache, vi, ki, M, nl_cache)
+  cache = (ode_cache, vi, ki, nl_cache)
 
   return (uf,tf,cache)
 
