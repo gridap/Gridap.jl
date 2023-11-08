@@ -36,6 +36,11 @@ function solve_step!(uf::AbstractVector,
     sizehint!(ki,s)
     [push!(ki,similar(u0)) for i in 1:s]
     rhs = similar(u0)
+    if (s>1)
+      u_aux = ui[1] # auxiliar variable to store the sum of stages
+    else
+      u_aux = nothing # This is needed for the case s=1
+    end
     nls_stage_cache = nothing
     nls_update_cache = nothing
   else

@@ -132,6 +132,8 @@ ufθ, tf, cache = solve_step!(ufθ,odesolθ,op,u0,t0,nothing)
 
 # RK tests
 # RK: BE equivalent
+# u1-u0 = dt*u1 => u1 = u0/(1-dt) = 2.2222222222222223
+# uf-u0 = dt*u1 => uf = u1
 odesol = RungeKutta(ls,ls,dt,:BE_1_0_1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
