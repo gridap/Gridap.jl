@@ -4,7 +4,7 @@ Explicit Runge-Kutta ODE solver
 struct DIRungeKutta <: ODESolver
   nls::NonlinearSolver
   dt::Float64
-  tableau::DIButcherTableau
+  tableau::ButcherTableau
   function DIRungeKutta(nls::NonlinearSolver, dt, type::Symbol)
     bt = DIButcherTableau(type)
     new(nls, dt, bt)
