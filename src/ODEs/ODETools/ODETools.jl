@@ -72,6 +72,7 @@ export ThetaMethod
 export RungeKutta
 export IMEXRungeKutta
 export EXRungeKutta
+export DIRungeKutta
 export Newmark
 export GeneralizedAlpha
 
