@@ -5,7 +5,7 @@ struct EXRungeKutta <: ODESolver
   ls::LinearSolver
   dt::Float64
   tableau::EXButcherTableau
-  function EXRungeKutta(ls::NonlinearSolver, dt, type::Symbol)
+  function EXRungeKutta(ls::LinearSolver, dt, type::Symbol)
     bt = EXButcherTableau(type)
     new(ls, dt, bt)
   end
@@ -36,22 +36,22 @@ function solve_step!(uf::AbstractVector,
     ki = [similar(u0) for i in 1:s]
     M = allocate_jacobian(op,t0,uf,ode_cache)
     get_mass_matrix!(M,op,t0,uf,ode_cache)
-    ls_cache = nothing
+    l_cache = nothing
   else
-    ode_cache, vi, ki, M, ls_cache = cache
+    ode_cache, vi, ki, M, l_cache = cache
   end
 
-  nlop = EXRungeKuttaStageOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a,M)
+  lop = EXRungeKuttaStageOperator(op,t0,dt,u0,ode_cache,vi,ki,0,a,M)
 
   for i in 1:s
 
     # solve at stage i
     ti = t0 + c[i]*dt
     ode_cache = update_cache!(ode_cache,op,ti)
-    update!(nlop,ti,ki[i],i)
-    ls_cache = solve!(uf,solver.ls,nlop,ls_cache)
+    update!(lop,ti,ki[i],i)
+    l_cache = solve!(uf,solver.ls,lop,l_cache)
 
-    update!(nlop,ti,uf,i)
+    update!(lop,ti,uf,i)
 
   end
 
@@ -60,10 +60,10 @@ function solve_step!(uf::AbstractVector,
 
   @. uf = u0
   for i in 1:s
-  @. uf = uf + dt*b[i]*nlop.ki[i]
+  @. uf = uf + dt*b[i]*lop.ki[i]
   end
 
-  cache = (ode_cache, vi, ki, M, ls_cache)
+  cache = (ode_cache, vi, ki, M, l_cache)
 
   return (uf,tf,cache)
 
