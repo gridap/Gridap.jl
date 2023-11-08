@@ -11,6 +11,7 @@ end
 @publish_gridapodes ODETools ThetaMethod
 @publish_gridapodes ODETools RungeKutta
 @publish_gridapodes ODETools IMEXRungeKutta
+@publish_gridapodes ODETools EXRungeKutta
 @publish_gridapodes ODETools Newmark
 @publish_gridapodes ODETools GeneralizedAlpha
 @publish_gridapodes ODETools ∂t
@@ -26,3 +27,4 @@ end
 @publish_gridapodes TransientFETools TransientConstantMatrixFEOperator
 @publish_gridapodes TransientFETools TransientRungeKuttaFEOperator
 @publish_gridapodes TransientFETools TransientIMEXRungeKuttaFEOperator
+@publish_gridapodes TransientFETools TransientEXRungeKuttaFEOperator

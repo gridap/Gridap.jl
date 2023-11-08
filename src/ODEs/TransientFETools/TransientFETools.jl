@@ -41,6 +41,7 @@ export TransientConstantFEOperator
 export TransientConstantMatrixFEOperator
 export TransientRungeKuttaFEOperator
 export TransientIMEXRungeKuttaFEOperator
+export TransientEXRungeKuttaFEOperator
 using Gridap.FESpaces: Assembler
 using Gridap.FESpaces: SparseMatrixAssembler
 import Gridap.ODEs.ODETools: allocate_cache

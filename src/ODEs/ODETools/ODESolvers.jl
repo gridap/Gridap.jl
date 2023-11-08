@@ -57,6 +57,8 @@ include("RungeKutta.jl")
 
 include("IMEXRungeKutta.jl")
 
+include("EXRungeKutta.jl")
+
 include("Newmark.jl")
 
 include("AffineNewmark.jl")
