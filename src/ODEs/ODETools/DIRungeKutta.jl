@@ -1,5 +1,6 @@
 """
-Explicit Runge-Kutta ODE solver
+Diagonally Implicit Runge-Kutta ODE solver
+** NOT WORKING YET **
 """
 struct DIRungeKutta <: ODESolver
   nls::NonlinearSolver
@@ -85,11 +86,8 @@ end
 
 
 """
-ODE: A(t,u,∂u) = M ∂u/∂t + K(t,u) = 0 -> solve for u
-RK:  A(t,u,ki) = M ki  + K(ti, dt a_ij ki)  + K(ti,u0 + dt ∑_{j<i} a_ij * kj) = 0 -> solve for ki
-               = M ki    + K(ti,ui) = 0
-For forward euler, i = 1     -> ui = u0
-For other methods, i = 1,…,s -> ui = u0 + dt ∑_{j<i} a_ij * kj
+ODE:    A(t,u,∂u) = M ∂u/∂t + K(t,u) = 0 -> solve for u
+DI-RK:  A(t,u,ki) = M ki  + K(ti, dt a_ij ki)  + K(ti,u0 + dt ∑_{j<i} a_ij * kj) = 0 -> solve for ki
 """
 function residual!(b::AbstractVector,op::DIRungeKuttaStageNonlinearOperator,x::AbstractVector)
 
