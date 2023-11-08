@@ -71,7 +71,7 @@ function Base.iterate(sol::TransientFESolution)
   (uf, tf), odesolstate = odesolnext
 
   Uh = allocate_trial_space(sol.trial)
-  Uh = evaluate!(Uh,sol.trial,tf)
+  # Uh = evaluate!(Uh,sol.trial,tf)
   # uh = FEFunction(Uh,uf)
 
   state = (Uh, odesolstate)
@@ -91,7 +91,7 @@ function Base.iterate(sol::TransientFESolution, state)
 
   (uf, tf), odesolstate = odesolnext
 
-  Uh = evaluate!(Uh,sol.trial,tf)
+  # Uh = evaluate!(Uh,sol.trial,tf)
   # uh = FEFunction(Uh,uf)
 
   state = (Uh, odesolstate)
