@@ -6,7 +6,7 @@ struct DIRungeKutta <: ODESolver
   dt::Float64
   tableau::ButcherTableau
   function DIRungeKutta(nls::NonlinearSolver, dt, type::Symbol)
-    bt = DIButcherTableau(type)
+    bt = ButcherTableau(type)
     new(nls, dt, bt)
   end
 end
