@@ -12,6 +12,7 @@ end
 @publish_gridapodes ODETools RungeKutta
 @publish_gridapodes ODETools IMEXRungeKutta
 @publish_gridapodes ODETools EXRungeKutta
+@publish_gridapodes ODETools DIRungeKutta
 @publish_gridapodes ODETools Newmark
 @publish_gridapodes ODETools GeneralizedAlpha
 @publish_gridapodes ODETools ∂t
