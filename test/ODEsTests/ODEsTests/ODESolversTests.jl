@@ -1,9 +1,11 @@
-# module ODESolversTests
+module ODESolversTests
 
 using Gridap.ODEs
 using Gridap.ODEs.ODETools: GenericODESolution
 using Gridap.ODEs.ODETools: BackwardEuler
 using Gridap.ODEs.ODETools: RungeKutta
+using Gridap.ODEs.ODETools: IMEXRungeKutta
+using Gridap.ODEs.ODETools: EXRungeKutta
 using Gridap.ODEs.ODETools: ThetaMethodNonlinearOperator
 using Gridap.ODEs.ODETools: GeneralizedAlpha
 using Gridap.ODEs.ODETools: solve!
@@ -171,6 +173,14 @@ uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test all(uf.≈1+11/9)
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
+# EX-RK: FE equivalent
+odesol = EXRungeKutta(ls,dt,:EX_FE_1_0_1)
+cache = nothing
+uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
+@test tf==t0+dt
+@test all(uf.≈1+11/9)
+@test test_ode_solver(odesol,op,u0,t0,tf)
+
 
 # Newmark test
 op_const = ODEOperatorMock{Float64,Constant}(1.0,0.0,0.0,2)
@@ -244,4 +254,4 @@ afα = copy(a0)
 @test sqrt(sum(abs2.(vfα - vfN))) < 1.0e-10
 @test sqrt(sum(abs2.(afα - afN))) < 1.0e-10
 
-# end #module
+end #module
