@@ -178,7 +178,15 @@ odesol = EXRungeKutta(ls,dt,:EX_FE_1_0_1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈1+11/9)
+@test all(uf.≈u0*1.1)
+@test test_ode_solver(odesol,op,u0,t0,tf)
+
+# EX-RK: SSP equivalent
+odesol = EXRungeKutta(ls,dt,:EX_SSP_3_0_3)
+cache = nothing
+uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
+@test tf==t0+dt
+@test all(uf.≈u0*1.1051666666666666)
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 
