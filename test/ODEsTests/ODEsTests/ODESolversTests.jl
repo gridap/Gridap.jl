@@ -189,6 +189,13 @@ uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test all(uf.≈u0*1.1051666666666666)
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
+# Forward Euler test
+odesol = ForwardEuler(ls,dt)
+cache = nothing
+uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
+@test tf==t0+dt
+@test all(uf.≈u0*1.1)
+@test test_ode_solver(odesol,op,u0,t0,tf)
 
 # Newmark test
 op_const = ODEOperatorMock{Float64,Constant}(1.0,0.0,0.0,2)
