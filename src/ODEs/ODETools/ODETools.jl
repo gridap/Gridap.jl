@@ -71,6 +71,7 @@ export MidPoint
 export ThetaMethod
 export RungeKutta
 export IMEXRungeKutta
+export EXRungeKutta
 export Newmark
 export GeneralizedAlpha
 

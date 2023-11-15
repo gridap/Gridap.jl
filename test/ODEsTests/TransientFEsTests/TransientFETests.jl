@@ -112,7 +112,7 @@ ls = LUSolver()
 tol = 1.0
 maxiters = 20
 using Gridap.Algebra: NewtonRaphsonSolver
-nls = NLSolver(ls;show_trace=true,method=:newton) #linesearch=BackTracking())
+nls = NLSolver(ls;show_trace=false,method=:newton) #linesearch=BackTracking())
 ode_solver = ThetaMethod(nls,dt,1.0)
 @test test_transient_fe_solver(ode_solver,op,uh0,t0,tF)
 

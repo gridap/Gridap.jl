@@ -436,10 +436,92 @@ function explicit_rhs!(
   explicit_rhs
 end
 
+
+# EX-RK Transient FE operators
+"""
+Used in Explicit Runge-Kutta schemes
+"""
+struct TransientEXRKFEOperatorFromWeakForm{C} <: TransientFEOperator{C}
+  res::Function
+  lhs::Function
+  rhs::Function
+  jacs::Tuple{Vararg{Function}}
+  assem_t::Assembler
+  trials::Tuple{Vararg{Any}}
+  test::FESpace
+  order::Integer
+end
+
+
+function TransientEXRungeKuttaFEOperator(lhs::Function,rhs::Function,jac::Function,
+  jac_t::Function,trial,test)
+  res(t,u,v) = lhs(t,u,v) - rhs(t,u,v)
+  assem_t = SparseMatrixAssembler(trial,test)
+  TransientEXRKFEOperatorFromWeakForm{Nonlinear}(res,lhs,rhs,(jac,jac_t),assem_t,(trial,∂t(trial)),test,1)
+end
+
+
+function allocate_residual(
+  op::TransientEXRKFEOperatorFromWeakForm,
+  t0::Real,
+  uh::T,
+  cache) where T
+  V = get_test(op)
+  v = get_fe_basis(V)
+  dxh = ()
+  for i in 1:get_order(op)
+    dxh = (dxh...,uh)
+  end
+  xh = TransientCellField(uh,dxh)
+  vecdata = collect_cell_vector(V,op.res(t0,xh,v))
+  allocate_vector(op.assem_t,vecdata)
+end
+
+function residual!(
+  b::AbstractVector,
+  op::TransientEXRKFEOperatorFromWeakForm,
+  t::Real,
+  xh::T,
+  cache) where T
+  V = get_test(op)
+  v = get_fe_basis(V)
+  vecdata = collect_cell_vector(V,op.res(t,xh,v))
+  assemble_vector!(b,op.assem_t,vecdata)
+  b
+end
+
+
+function rhs!(
+  rhs::AbstractVector,
+  op::TransientEXRKFEOperatorFromWeakForm,
+  t::Real,
+  xh::T,
+  cache) where T
+  V = get_test(op)
+  v = get_fe_basis(V)
+  vecdata = collect_cell_vector(V,op.rhs(t,xh,v))
+  assemble_vector!(rhs,op.assem_t,vecdata)
+  rhs
+end
+
+function lhs!(
+  b::AbstractVector,
+  op::TransientEXRKFEOperatorFromWeakForm,
+  t::Real,
+  xh::T,
+  cache) where T
+  V = get_test(op)
+  v = get_fe_basis(V)
+  vecdata = collect_cell_vector(V,op.lhs(t,xh,v))
+  assemble_vector!(b,op.assem_t,vecdata)
+  b
+end
+
 # Common functions
 
 TransientFEOperatorsFromWeakForm = Union{TransientFEOperatorFromWeakForm,
-TransientRKFEOperatorFromWeakForm, TransientIMEXRKFEOperatorFromWeakForm}
+TransientRKFEOperatorFromWeakForm, TransientIMEXRKFEOperatorFromWeakForm,
+TransientEXRKFEOperatorFromWeakForm}
 
 function SparseMatrixAssembler(
   trial::Union{TransientTrialFESpace,TransientMultiFieldTrialFESpace},
