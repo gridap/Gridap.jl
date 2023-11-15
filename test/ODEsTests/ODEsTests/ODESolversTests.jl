@@ -101,13 +101,14 @@ _J = jacobian(sop,x)
 ls = LUSolver()
 
 # BackwardEuler tests
+dt = 0.01
 odesol = BackwardEuler(ls,dt)
 uf = copy(u0)
 uf.=1.0
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈1+11/9)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # Affine and nonlinear solvers
@@ -115,14 +116,14 @@ op = ODEOperatorMock{Float64,Nonlinear}(1.0,0.0,1.0,1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈1+11/9)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 op = ODEOperatorMock{Float64,Affine}(1.0,0.0,1.0,1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈1+11/9)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # ThetaMethod tests
@@ -130,7 +131,7 @@ odesolθ = ThetaMethod(ls,dt,0.5)
 ufθ = copy(u0)
 ufθ.=1.0
 ufθ, tf, cache = solve_step!(ufθ,odesolθ,op,u0,t0,nothing)
-@test all(ufθ.≈(dt/(1-0.5dt) + 1)*u0)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # RK tests
@@ -139,7 +140,7 @@ odesol = RungeKutta(ls,ls,dt,:BE_1_0_1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈1+11/9)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # RK: CN 2nd order
@@ -147,7 +148,7 @@ odesol = RungeKutta(ls,ls,dt,:CN_2_0_2)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈ufθ)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # RK: SDIRK 2nd order
@@ -155,7 +156,7 @@ odesol = RungeKutta(ls,ls,dt,:SDIRK_2_0_2)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈u0*1.1051939513477975)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # RK: TRBDF (2nd order with some 0 on the diagonal)
@@ -163,7 +164,7 @@ odesol = RungeKutta(ls,ls,dt,:TRBDF2_3_2_3)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈u0*1.105215241)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # IMEX RK tests (explicit part = 0)
@@ -171,7 +172,7 @@ odesol = IMEXRungeKutta(ls,ls,dt,:IMEX_FE_BE_2_0_1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈1+11/9)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # EX-RK: FE equivalent
@@ -179,7 +180,7 @@ odesol = EXRungeKutta(ls,dt,:EX_FE_1_0_1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all( (uf.- u0*1.1)  .< 1e-3 )
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # EX-RK: SSP equivalent
@@ -187,7 +188,7 @@ odesol = EXRungeKutta(ls,dt,:EX_SSP_3_0_3)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all( (uf.- u0*1.105166) .< 1e-3 )
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # Forward Euler test
@@ -195,7 +196,7 @@ odesol = ForwardEuler(ls,dt)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all( (uf.- u0*1.1)  .< 1e-3 )
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # Newmark test
