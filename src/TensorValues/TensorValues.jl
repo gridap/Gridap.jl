@@ -63,7 +63,7 @@ export data_index
 import Base: show
 import Base: zero, one
 import Base: +, -, *, /, \, ==, ≈, isless
-import Base: conj
+import Base: conj, real, imag
 import Base: sum, maximum, minimum
 import Base: getindex, iterate, eachindex, lastindex
 import Base: size, length, eltype

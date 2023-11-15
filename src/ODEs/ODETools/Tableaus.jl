@@ -190,3 +190,69 @@ end
 function IMEXButcherTableau(type::Symbol)
   eval(:(IMEXButcherTableau($type())))
 end
+
+"""
+Explicit Butcher tableaus
+"""
+
+abstract type EXButcherTableauType end
+
+struct EX_FE_1_0_1 <: EXButcherTableauType end
+struct EX_SSP_3_0_3 <: EXButcherTableauType end
+
+"""
+Explicit Butcher tableaus
+"""
+struct EXButcherTableau{T <: EXButcherTableauType}
+  s::Int # stages
+  p::Int # embedded order
+  q::Int # order
+  a::Matrix # A_ij explicit
+  b::Vector # b_j explicit
+  c::Vector # c_i explicit
+  d::Vector # d_j (embedded)
+end
+
+# EX Butcher Tableaus constructors
+
+"""
+EX Forward-Backward-Euler
+
+number of stages: 1
+embedded method: no
+order: 1
+"""
+function EXButcherTableau(::EX_FE_1_0_1)
+  s = 1
+  p = 0
+  q = 1
+  a = reshape([0.0],1,1)
+  b = [1.0]
+  c = [0.0]
+  d = [0.0]
+  EXButcherTableau{EX_FE_1_0_1}(s,p,q,a,b,c,d)
+end
+
+"""
+EX SSPRK3
+
+number of stages: 3
+embedded method: no
+order: 3
+"""
+function EXButcherTableau(::EX_SSP_3_0_3)
+  s = 3
+  p = 0
+  q = 3
+  a = [0.0 0.0 0.0; 1.0 0.0 0.0; 1/4 1/4 0.0]
+  b = [1/6, 1/6, 2/3]
+  c = [0.0, 1.0, 1/2]
+  d = [0.0, 0.0, 0.0]
+
+
+  EXButcherTableau{EX_SSP_3_0_3}(s,p,q,a,b,c,d)
+end
+
+function EXButcherTableau(type::Symbol)
+  eval(:(EXButcherTableau($type())))
+end
