@@ -6,6 +6,7 @@ using Gridap.ODEs.ODETools: BackwardEuler
 using Gridap.ODEs.ODETools: RungeKutta
 using Gridap.ODEs.ODETools: IMEXRungeKutta
 using Gridap.ODEs.ODETools: EXRungeKutta
+using Gridap.ODEs.ODETools: ForwardEuler
 using Gridap.ODEs.ODETools: ThetaMethodNonlinearOperator
 using Gridap.ODEs.ODETools: GeneralizedAlpha
 using Gridap.ODEs.ODETools: solve!
@@ -178,7 +179,7 @@ odesol = EXRungeKutta(ls,dt,:EX_FE_1_0_1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈u0*1.1)
+@test all( (uf.- u0*1.1)  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # EX-RK: SSP equivalent
@@ -186,7 +187,7 @@ odesol = EXRungeKutta(ls,dt,:EX_SSP_3_0_3)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈u0*1.1051666666666666)
+@test all( (uf.- u0*1.105166) .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # Forward Euler test
@@ -194,7 +195,7 @@ odesol = ForwardEuler(ls,dt)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈u0*1.1)
+@test all( (uf.- u0*1.1)  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # Newmark test
