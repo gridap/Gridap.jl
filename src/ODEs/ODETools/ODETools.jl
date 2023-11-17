@@ -44,6 +44,7 @@ using Gridap.Algebra: jacobian
 using Gridap.Algebra: symbolic_setup
 using Gridap.Algebra: numerical_setup
 using Gridap.Algebra: numerical_setup!
+using Gridap.Algebra: LinearSolverCache
 import Gridap.Algebra: residual!
 import Gridap.Algebra: jacobian!
 import Gridap.Algebra: allocate_residual
