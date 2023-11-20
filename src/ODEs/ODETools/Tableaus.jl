@@ -1,258 +1,470 @@
-abstract type ButcherTableauType end
+##########
+# RKType #
+##########
+abstract type RKType <: GridapType end
 
-struct BE_1_0_1 <: ButcherTableauType end
-struct CN_2_0_2 <: ButcherTableauType end
-struct SDIRK_2_0_2 <: ButcherTableauType end
-struct SDIRK_2_0_3 <: ButcherTableauType end
-struct ESDIRK_3_1_2 <: ButcherTableauType end
-struct TRBDF2_3_2_3 <: ButcherTableauType end
+struct ERK <: RKType end
 
-"""
-Butcher tableau
-"""
-struct ButcherTableau{T <: ButcherTableauType}
-  s::Int # stages
-  p::Int # embedded order
-  q::Int # order
-  a::Matrix # A_ij
-  b::Vector # b_j
-  c::Vector # c_i
-  d::Vector # d_j (embedded)
+abstract type IRK <: RKType end
+struct FIRK <: IRK end
+struct DIRK <: IRK end
+
+struct IMEXRK <: RKType end
+
+##########################
+# AbstractButcherTableau #
+##########################
+abstract type AbstractButcherTableau{T<:RKType} <: GridapType end
+
+RKType(::AbstractButcherTableau{T}) where {T} = T
+
+function get_matrix(tableau::AbstractButcherTableau)
+  @abstractmethod
 end
 
-# Butcher Tableaus constructors
-"""
-Backward-Euler
+function get_weights(tableau::AbstractButcherTableau)
+  @abstractmethod
+end
 
-number of stages: 1
-embedded method: no
-order: 1
+function get_nodes(tableau::AbstractButcherTableau)
+  @abstractmethod
+end
+
+function get_order(tableau::AbstractButcherTableau)
+  @abstractmethod
+end
+
+##################
+# ButcherTableau #
+##################
+struct ButcherTableau{T} <: AbstractButcherTableau{T}
+  matrix::Matrix
+  weights::Vector
+  nodes::Vector
+  order::Int
+
+  function ButcherTableau(matrix, weights, order)
+    nodes = reshape(sum(matrix, dims=2), size(matrix, 1))
+    T = _butcher_tableau_type(matrix)
+    new{T}(matrix, weights, nodes, order)
+  end
+end
+
+function get_matrix(tableau::ButcherTableau)
+  tableau.matrix
+end
+
+function get_weights(tableau::ButcherTableau)
+  tableau.weights
+end
+
+function get_nodes(tableau::ButcherTableau)
+  tableau.nodes
+end
+
+function get_order(tableau::ButcherTableau)
+  tableau.order
+end
+
+function _butcher_tableau_type(matrix::Matrix)
+  T = ERK
+  n = size(matrix, 1)
+  for i in 1:n
+    if (i < n) && !iszero(matrix[i, i+1])
+      T = FIRK
+      break
+    elseif !iszero(matrix[i, i])
+      T = DIRK
+    end
+  end
+  T
+end
+
+##########################
+# EmbeddedButcherTableau #
+##########################
+struct EmbeddedButcherTableau{T} <: AbstractButcherTableau{T}
+  tableau::AbstractButcherTableau{T}
+  emb_weights::Vector
+  emb_order::Int
+end
+
+function get_matrix(tableau::EmbeddedButcherTableau)
+  get_matrix(tableau.tableau)
+end
+
+function get_weights(tableau::EmbeddedButcherTableau)
+  get_weights(tableau.tableau)
+end
+
+function get_nodes(tableau::EmbeddedButcherTableau)
+  get_nodes(tableau.tableau)
+end
+
+function get_order(tableau::EmbeddedButcherTableau)
+  get_order(tableau.tableau)
+end
+
+function get_embedded_weights(tableau::EmbeddedButcherTableau)
+  tableau.emb_weights
+end
+
+function get_embedded_order(tableau::EmbeddedButcherTableau)
+  tableau.emb_order
+end
+
+######################
+# IMEXButcherTableau #
+######################
+struct IMEXButcherTableau <: AbstractButcherTableau{IMEXRK}
+  im_tableau::AbstractButcherTableau
+  ex_tableau::AbstractButcherTableau
+  order::Int
+
+  function IMEXButcherTableau(im_tableau, ex_tableau, order)
+    Tim = RKType(im_tableau)
+    Tex = RKType(ex_tableau)
+
+    msg = """Invalid IMEX Butcher tableau:
+    the first tableau must be implicit and the second must be explicit."""
+    @assert (Tim <: IRK && Tex == ERK) msg
+
+    msg = """Invalid IMEX Butcher tableau:
+    the nodes of the implicit and explicit tableaus must coincide."""
+    @assert isapprox(get_nodes(im_tableau), get_nodes(ex_tableau)) msg
+
+    new(im_tableau, ex_tableau, order)
+  end
+end
+
+function get_matrix(tableau::IMEXButcherTableau)
+  get_matrix(tableau.im_tableau), get_matrix(tableau.ex_tableau)
+end
+
+function get_weights(tableau::IMEXButcherTableau)
+  get_weights(tableau.im_tableau), get_weights(tableau.ex_tableau)
+end
+
+function get_nodes(tableau::IMEXButcherTableau)
+  get_nodes(tableau.im_tableau)
+end
+
+function get_order(tableau::IMEXButcherTableau)
+  tableau.order
+end
+
+############################
+# Concrete implementations #
+############################
+abstract type ButcherTableauName <: GridapType end
+
+# Redirect to ButcherTableau
+function ButcherTableau(name::Symbol, type::Type=Float64)
+  eval(:(ButcherTableau($name(), $type)))
+end
+
+function EmbeddedButcherTableau(name::Symbol, type::Type=Float64)
+  eval(:(ButcherTableau($name(), $type)))
+end
+
+function IMEXButcherTableau(name::Symbol, type::Type=Float64)
+  eval(:(ButcherTableau($name(), $type)))
+end
+
+####################
+# Explicit schemes #
+####################
 """
-function ButcherTableau(::BE_1_0_1)
-  s = 1
-  p = 0
-  q = 1
-  a = reshape([1.0],1,1)
-  b = [1.0]
-  c = [1.0]
-  d = [0.0]
-  ButcherTableau{BE_1_0_1}(s,p,q,a,b,c,d)
+Forward Euler
+
+Type              Explicit
+Number of stages  1
+Order             1
+Stage order       1
+"""
+struct FE_1_0_1 <: ButcherTableauName end
+
+function ButcherTableau(::FE_1_0_1, ::Type{T}=Float64) where {T}
+  matrix = T[0;;]
+  weights = T[1]
+  order = 1
+  ButcherTableau(matrix, weights, order)
 end
 
 """
-Crank-Nicolson (equivalent to trapezoidal rule)
+3rd-order Strong Stability Preserving Runge-Kutta
+SSPRK33
 
-number of stages: 2
-embedded method: no
-order: 2
+Type              Explicit
+Number of stages  3
+Order             3
+Stage order       1
 """
-function ButcherTableau(type::CN_2_0_2)
-  s = 2
-  p = 0
-  q = 2
-  a = [0.0 0.0; 0.5 0.5]
-  b = [0.5, 0.5]
-  c = [0.0, 1.0]
-  d = [0.0, 0.0]
-  ButcherTableau{CN_2_0_2}(s,p,q,a,b,c,d)
+struct SSPRK_3_0_3 <: ButcherTableauName end
+
+function ButcherTableau(::SSPRK_3_0_3, ::Type{T}=Float64) where {T}
+  a = 1
+  b = 1 / 4
+  c = 1 / 6
+  d = 2 / 3
+  matrix = T[
+    0 0 0
+    a 0 0
+    b b 0
+  ]
+  weights = T[c, c, d]
+  order = 3
+  ButcherTableau(matrix, weights, order)
+end
+
+###############################
+# Diagonally-Implicit schemes #
+###############################
+"""
+Backward Euler
+
+Type              Diagonally Implicit
+Number of stages  1
+Order             1
+Stage order       1
+"""
+struct BE_1_0_1 <: ButcherTableauName end
+
+function ButcherTableau(::BE_1_0_1, ::Type{T}=Float64) where {T}
+  matrix = T[1;;]
+  weights = T[1]
+  order = 1
+  ButcherTableau(matrix, weights, order)
+end
+
+"""
+Crank-Nicolson
+Trapezoidal rule
+Lobatto IIIA2
+
+Type              Diagonally Implicit
+Number of stages  2
+Order             2
+Stage order       2
+"""
+struct CN_2_0_2 <: ButcherTableauName end
+
+function ButcherTableau(::CN_2_0_2, ::Type{T}=Float64) where {T}
+  a = 1 / 2
+  matrix = T[
+    0 0
+    a a
+  ]
+  weights = T[a, a]
+  order = 2
+  ButcherTableau(matrix, weights, order)
 end
 
 """
 Qin and Zhang's SDIRK
 
-number of stages: 2
-embedded method: no
-order: 2
+Type              Singly Diagonally Implicit (Symplectic)
+Number of stages  2
+Order             2
+Stage order       2
 """
-function ButcherTableau(type::SDIRK_2_0_2)
-  s = 2
-  p = 0
-  q = 2
-  a = [0.25 0.0; 0.5 0.25]
-  b = [0.5, 0.5]
-  c = [0.25, 0.75]
-  d = [0.0, 0.0]
-  ButcherTableau{SDIRK_2_0_2}(s,p,q,a,b,c,d)
+struct SDIRK_2_0_2 <: ButcherTableauName end
+
+function ButcherTableau(::SDIRK_2_0_2, ::Type{T}=Float64) where {T}
+  a = 1 / 4
+  b = 1 / 2
+  matrix = T[
+    a 0
+    b a
+  ]
+  weights = T[b, b]
+  order = 2
+  ButcherTableau(matrix, weights, order)
 end
 
 """
 3rd order SDIRK
 
-number of stages: 2
-embedded method: no
-order: 3
+Type              Diagonally Implicit
+Number of stages  2
+Order             3
+Stage order       2
 """
-function ButcherTableau(type::SDIRK_2_0_3)
-  s = 2
-  p = 0
-  q = 3
-  γ = (3-√(3))/6
-  a = [γ 0.0; 1-2γ γ]
-  b = [0.5, 0.5]
-  c = [γ, 1-γ]
-  d = [0.0, 0.0]
-  ButcherTableau{SDIRK_2_0_3}(s,p,q,a,b,c,d)
+struct SDIRK_2_0_3 <: ButcherTableauName end
+
+function ButcherTableau(::SDIRK_2_0_3, ::Type{T}=Float64) where {T}
+  a = (3 - sqrt(3)) / 6
+  b = 1 - 2 * a
+  c = 1 / 2
+  matrix = T[
+    a 0
+    b a
+  ]
+  weights = T[c, c]
+  order = 3
+  ButcherTableau(matrix, weights, order)
 end
-
-function ButcherTableau(type::ESDIRK_3_1_2)
-s = 3
-p = 1
-q = 2
-γ = (2-√(2))/2
-b₂ = (1 − 2γ)/(4γ)
-b̂₂ = γ*(−2 + 7γ − 5(γ^2) + 4(γ^3)) / (2(2γ − 1))
-b̂₃ = −2*(γ^2)*(1 − γ + γ^2) / (2γ − 1)
-a = [0.0 0.0 0.0; γ γ 0.0; (1 − b₂ − γ) b₂ γ]
-b = [(1 − b₂ − γ), b₂, γ]
-c = [0.0, 2γ, 1.0]
-d = [(1 − b̂₂ − b̂₃), b̂₂, b̂₃]
-ButcherTableau{ESDIRK_3_1_2}(s,p,q,a,b,c,d)
-end
-
-function ButcherTableau(type::TRBDF2_3_2_3)
-  s = 3
-  p = 2
-  q = 3
-  aux = 2.0-√2.0
-  a = [0.0 0.0 0.0; aux/2 aux/2 0.0; √2/4 √2/4 aux/2]
-  b = [√2/4, √2/4, aux/2]
-  c = [0.0, aux, 1.0]
-  d = [(1.0-(√2/4))/3, ((3*√2)/4+1.0)/3, aux/6]
-  ButcherTableau{TRBDF2_3_2_3}(s,p,q,a,b,c,d)
-end
-
-function ButcherTableau(type::Symbol)
-  eval(:(ButcherTableau($type())))
-end
-
-abstract type IMEXButcherTableauType end
-
-struct IMEX_FE_BE_2_0_1 <: IMEXButcherTableauType end
-struct IMEX_Midpoint_2_0_2 <: IMEXButcherTableauType end
 
 """
-Implicit-Explicit Butcher tableaus
+3rd order ESDIRK
+
+Type              Diagonally Implicit
+Number of stages  3
+Order             2
+Stage order       1
+Embedded order    1
 """
-struct IMEXButcherTableau{T <: IMEXButcherTableauType}
-  s::Int # stages
-  p::Int # embedded order
-  q::Int # order
-  aᵢ::Matrix # A_ij implicit
-  aₑ::Matrix # A_ij explicit
-  bᵢ::Vector # b_j implicit
-  bₑ::Vector # b_j explicit
-  c::Vector # c_i
-  d::Vector # d_j (embedded)
+struct ESDIRK_3_1_2 <: ButcherTableauName end
+
+function ButcherTableau(::ESDIRK_3_1_2, ::Type{T}=Float64) where {T}
+  c = (2 - sqrt(2)) / 2
+  b = (1 - 2 * c) / (4 * c)
+  a = 1 - b - c
+  matrix = T[
+    0 0 0
+    c c 0
+    a b c
+  ]
+  weights = T[a, b, c]
+  order = 2
+  tableau = ButcherTableau(matrix, weights, order)
+
+  ĉ = -2 * (c^2) * (1 - c + c^2) / (2 * c - 1)
+  b̂ = c * (-2 + 7 * c - 5(c^2) + 4(c^3)) / (2 * (2 * c - 1))
+  â = 1 - b̂ - ĉ
+  emb_weights = T[â, b̂, ĉ]
+  emb_order = 1
+  EmbeddedButcherTableau(tableau, emb_weights, emb_order)
 end
 
-# IMEX Butcher Tableaus constructors
+"""
+Trapezoidal Rule with Second Order Backward Difference Formula
+TR-BDF2
+
+Type              Diagonally Implicit
+Number of stages  3
+Order             3
+Stage order       2
+Embedded order    2
+"""
+struct TRBDF2_3_2_3 <: ButcherTableauName end
+
+function ButcherTableau(::TRBDF2_3_2_3, ::Type{T}=Float64) where {T}
+  γ = 2 - sqrt(2)
+  d = γ / 2
+  w = sqrt(2) / 4
+  matrix = T[
+    0 0 0
+    d d 0
+    w w d
+  ]
+  weights = T[w, w, d]
+  order = 3
+  tableau = ButcherTableau(matrix, weights, order)
+
+  ĉ = d / 3
+  b̂ = (3 * w + 1) / 3
+  â = 1 - b̂ - ĉ
+  emb_weights = [â, b̂, ĉ]
+  emb_order = 2
+  EmbeddedButcherTableau(tableau, emb_weights, emb_order)
+end
+
+"""
+Double Trapezoidal Rule
+TR-X2
+
+Type              Diagonally Implicit
+Number of stages  3
+Order             3
+Stage order       2
+Embedded order    2
+"""
+struct TRX2_3_2_3 <: ButcherTableauName end
+
+function ButcherTableau(::TRX2_3_2_3, ::Type{T}=Float64) where {T}
+  a = 1 / 4
+  b = 1 / 2
+  matrix = T[
+    0 0 0
+    a a 0
+    a b a
+  ]
+  weights = T[a, b, a]
+  order = 3
+  tableau = ButcherTableau(matrix, weights, order)
+
+  c = 1 / 6
+  d = 2 / 3
+  emb_weights = [c, d, c]
+  emb_order = 2
+  EmbeddedButcherTableau(tableau, emb_weights, emb_order)
+end
+
+#############################
+# Implicit-Explicit schemes #
+#############################
 """
 IMEX Forward-Backward-Euler
 
-number of stages: 2
-embedded method: no
-order: 1
+Type              Implicit-Explicit
+Number of stages  2
+Order             1
+Stage order       1
 """
-function IMEXButcherTableau(::IMEX_FE_BE_2_0_1)
-  s = 2
-  p = 0
-  q = 1
-  aᵢ = [0.0 0.0; 0.0 1.0]
-  aₑ = [0.0 0.0; 1.0 0.0]
-  bᵢ = [0.0, 1.0]
-  bₑ = [0.0, 1.0]
-  c = [0.0, 1.0]
-  d = [0.0, 0.0]
-  IMEXButcherTableau{IMEX_FE_BE_2_0_1}(s,p,q,aᵢ,aₑ,bᵢ,bₑ,c,d)
+struct IMEX_FE_BE_2_0_1 <: ButcherTableauName end
+
+function ButcherTableau(::IMEX_FE_BE_2_0_1, ::Type{T}=Float64) where {T}
+  a = 1
+  im_matrix = T[
+    0 0
+    0 a
+  ]
+  im_weights = T[0, a]
+  im_order = 1
+  im_tableau = ButcherTableau(im_matrix, im_weights, im_order)
+
+  ex_matrix = T[
+    0 0
+    a 0
+  ]
+  ex_weights = T[0, a]
+  ex_order = 1
+  ex_tableau = ButcherTableau(ex_matrix, ex_weights, ex_order)
+
+  order = 1
+  IMEXButcherTableau(im_tableau, ex_tableau, order)
 end
 
 """
 IMEX Midpoint
 
-number of stages: 2
-embedded method: no
-order: 2
+Type              Implicit-Explicit
+Number of stages  2
+Order             2
+Stage order       2
 """
-function IMEXButcherTableau(::IMEX_Midpoint_2_0_2)
-  s = 2
-  p = 0
-  q = 2
-  aᵢ = [0.0 0.0; 0.0 0.5]
-  aₑ = [0.0 0.0; 0.5 0.0]
-  bᵢ = [0.0, 1.0]
-  bₑ = [0.0, 1.0]
-  c = [0.0, 0.5]
-  d = [0.0, 0.0]
-  IMEXButcherTableau{IMEX_Midpoint_2_0_2}(s,p,q,aᵢ,aₑ,bᵢ,bₑ,c,d)
-end
+struct IMEX_Midpoint_2_0_2 <: ButcherTableauName end
 
+function ButcherTableau(::IMEX_Midpoint_2_0_2, ::Type{T}=Float64) where {T}
+  a = 1
+  b = 1 / 2
+  im_matrix = T[
+    0 0
+    0 b
+  ]
+  im_weights = T[0, a]
+  im_order = 1
+  im_tableau = ButcherTableau(im_matrix, im_weights, im_order)
 
-function IMEXButcherTableau(type::Symbol)
-  eval(:(IMEXButcherTableau($type())))
-end
+  ex_matrix = T[
+    0 0
+    b 0
+  ]
+  ex_weights = T[0, a]
+  ex_order = 1
+  ex_tableau = ButcherTableau(ex_matrix, ex_weights, ex_order)
 
-"""
-Explicit Butcher tableaus
-"""
-
-abstract type EXButcherTableauType end
-
-struct EX_FE_1_0_1 <: EXButcherTableauType end
-struct EX_SSP_3_0_3 <: EXButcherTableauType end
-
-"""
-Explicit Butcher tableaus
-"""
-struct EXButcherTableau{T <: EXButcherTableauType}
-  s::Int # stages
-  p::Int # embedded order
-  q::Int # order
-  a::Matrix # A_ij explicit
-  b::Vector # b_j explicit
-  c::Vector # c_i explicit
-  d::Vector # d_j (embedded)
-end
-
-# EX Butcher Tableaus constructors
-
-"""
-EX Forward-Backward-Euler
-
-number of stages: 1
-embedded method: no
-order: 1
-"""
-function EXButcherTableau(::EX_FE_1_0_1)
-  s = 1
-  p = 0
-  q = 1
-  a = reshape([0.0],1,1)
-  b = [1.0]
-  c = [0.0]
-  d = [0.0]
-  EXButcherTableau{EX_FE_1_0_1}(s,p,q,a,b,c,d)
-end
-
-"""
-EX SSPRK3
-
-number of stages: 3
-embedded method: no
-order: 3
-"""
-function EXButcherTableau(::EX_SSP_3_0_3)
-  s = 3
-  p = 0
-  q = 3
-  a = [0.0 0.0 0.0; 1.0 0.0 0.0; 1/4 1/4 0.0]
-  b = [1/6, 1/6, 2/3]
-  c = [0.0, 1.0, 1/2]
-  d = [0.0, 0.0, 0.0]
-
-
-  EXButcherTableau{EX_SSP_3_0_3}(s,p,q,a,b,c,d)
-end
-
-function EXButcherTableau(type::Symbol)
-  eval(:(EXButcherTableau($type())))
+  order = 2
+  IMEXButcherTableau(im_tableau, ex_tableau, order)
 end

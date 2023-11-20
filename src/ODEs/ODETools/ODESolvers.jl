@@ -53,11 +53,13 @@ include("ThetaMethod.jl")
 
 include("AffineThetaMethod.jl")
 
-include("RungeKutta.jl")
+include("GeneralRungeKutta.jl")
+
+# include("RungeKutta.jl")
 
 include("IMEXRungeKutta.jl")
 
-include("EXRungeKutta.jl")
+# include("EXRungeKutta.jl")
 
 include("Newmark.jl")
 
