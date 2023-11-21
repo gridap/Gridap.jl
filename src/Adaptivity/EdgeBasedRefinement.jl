@@ -159,8 +159,8 @@ function setup_edge_based_rrules(::EdgeBasedRefinement, topo::UnstructuredGridTo
   return rrules, faces_list
 end
 
-function setup_edge_based_rrules(::EdgeBasedRefinement,topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Bool}) where Dc
-  return setup_edge_based_rrules(topo,findall(cells_to_refine))
+function setup_edge_based_rrules(a::EdgeBasedRefinement,topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Bool}) where Dc
+  return setup_edge_based_rrules(a,topo,findall(cells_to_refine))
 end
 
 _shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer} = circshift(v, -(i - 1))

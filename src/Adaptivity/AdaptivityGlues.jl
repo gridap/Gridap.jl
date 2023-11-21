@@ -90,6 +90,7 @@ end
 """
 function get_o2n_faces_map(ncell_to_ocell::Table{T}) where {T<:Integer}
   nC = maximum(ncell_to_ocell.data)
+  nF = length(ncell_to_ocell)
   
   ptrs = fill(0,nC+1)
   for ccell in ncell_to_ocell.data
@@ -98,7 +99,7 @@ function get_o2n_faces_map(ncell_to_ocell::Table{T}) where {T<:Integer}
   Arrays.length_to_ptrs!(ptrs)
 
   data = Vector{Int}(undef,ptrs[end]-1)
-  for fcell = 1:length(ncell_to_ocell.ptrs)-1
+  for fcell = 1:nF
     for j = ncell_to_ocell.ptrs[fcell]:ncell_to_ocell.ptrs[fcell+1]-1
       ccell = ncell_to_ocell.data[j]
       data[ptrs[ccell]] = fcell
@@ -118,19 +119,17 @@ function get_o2n_faces_map(ncell_to_ocell::Vector{T}) where {T<:Integer}
   nF = length(ncell_to_ocell)
 
   ptrs = fill(0,nC+1)
-  for iF in 1:nF
-    iC = ncell_to_ocell[iF]
+  for iC in ncell_to_ocell
     ptrs[iC+1] += 1
   end
-  length_to_ptrs!(ptrs)
+  Arrays.length_to_ptrs!(ptrs)
 
-  cnts = fill(0,nC)
   data = fill(zero(T),ptrs[end])
-  for iF in 1:nF
-    iC = ncell_to_ocell[iF]
-    data[ptrs[iC]+cnts[iC]] = iF
-    cnts[iC] += 1
+  for (iF,iC) in enumerate(ncell_to_ocell)
+    data[ptrs[iC]] = iF
+    ptrs[iC] += 1
   end
+  Arrays.rewind_ptrs!(ptrs)
 
   ocell_to_ncell = Table(data,ptrs)
   return ocell_to_ncell

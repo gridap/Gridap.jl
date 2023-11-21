@@ -93,6 +93,7 @@ end
     abstract type SymbolicSetup <: GridapType end
 
 - [`numerical_setup(::SymbolicSetup,mat::AbstractMatrix)`](@ref)
+- [`numerical_setup(::SymbolicSetup,mat::AbstractMatrix,x::AbstractVector)`](@ref)
 """
 abstract type SymbolicSetup <: GridapType end
 
@@ -104,9 +105,17 @@ function numerical_setup(::SymbolicSetup,mat::AbstractMatrix)
 end
 
 """
+    numerical_setup(::SymbolicSetup,mat::AbstractMatrix,x::AbstractVector) -> NumericalSetup
+"""
+function numerical_setup(ss::SymbolicSetup,mat::AbstractMatrix,x::AbstractVector)
+  numerical_setup(ss,mat)
+end
+
+"""
     abstract type NumericalSetup <: GridapType end
 
 - [`numerical_setup!(ns::NumericalSetup,mat::AbstractMatrix)`](@ref)
+- [`numerical_setup!(ns::NumericalSetup,mat::AbstractMatrix,x::AbstractVector)`](@ref)
 - [`solve!(x::AbstractVector,ns::NumericalSetup,b::AbstractVector)`](@ref)
 """
 abstract type NumericalSetup <: GridapType end
@@ -114,8 +123,15 @@ abstract type NumericalSetup <: GridapType end
 """
     numerical_setup!(ns::NumericalSetup,mat::AbstractMatrix)
 """
-function numerical_setup!(::NumericalSetup,::AbstractMatrix)
+function numerical_setup!(ns::NumericalSetup,mat::AbstractMatrix)
   @abstractmethod
+end
+
+"""
+    numerical_setup!(ns::NumericalSetup,mat::AbstractMatrix,x::AbstractVector)
+"""
+function numerical_setup!(ns::NumericalSetup,mat::AbstractMatrix,x::AbstractVector)
+  numerical_setup!(ns,mat)
 end
 
 """
@@ -141,13 +157,14 @@ function test_linear_solver(
   y = solve(ls,A,b)
   @test x ≈ y
 
+  fill!(y, zero(eltype(y)))
   ss = symbolic_setup(ls,A)
   ns = numerical_setup(ss,A)
   numerical_setup!(ns,A)
   solve!(y,ns,b)
   @test x ≈ y
 
-  y .= zero(eltype(y))
+  fill!(y, zero(eltype(y)))
   solve!(y,ls,A,b)
   @test x ≈ y
 
