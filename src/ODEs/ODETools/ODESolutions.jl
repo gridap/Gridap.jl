@@ -1,34 +1,26 @@
-
-# Represents a lazy iterator over all solution in a time interval
+###############
+# ODESolution #
+###############
 """
-It represents the solution of a ODE at a given time interval. It is a lazy implementation,
-i.e., the object is an iterator that computes the solution at each time step
-when accessing the solution at each time step.
+Solution of an ODE during a given time interval. It is a lazy iterator that
+computes the solution at each time step while it is iterated over
 """
 abstract type ODESolution <: GridapType end
 
-# First time step
-function iterate(u::ODESolution) # (u0,t0)-> (uf,tf) or nothing
+function iterate(sol::ODESolution)
   @abstractmethod
 end
 
-# Following time steps
-function iterate(u::ODESolution,state) # (u0,t0)-> (uf,tf) or nothing
+function iterate(sol::ODESolution, state)
   @abstractmethod
 end
 
-# tester
-
-function test_ode_solution(sol::ODESolution)
-  for (u_n,t_n) in sol
-    @test isa(t_n,Real)
-    @test isa(u_n,AbstractVector)
-  end
-  true
-end
-
-# Specialization
-
+######################
+# GenericODESolution #
+######################
+"""
+Generic representation of the solution to an ODE problem
+"""
 struct GenericODESolution{T} <: ODESolution
   solver::ODESolver
   op::ODEOperator
@@ -37,78 +29,90 @@ struct GenericODESolution{T} <: ODESolution
   tF::Real
 end
 
-function Base.iterate(sol::GenericODESolution{T}) where {T<:AbstractVector}
-
-  uf = copy(sol.u0)
+# AbstractVector
+function iterate(sol::GenericODESolution{<:AbstractVector})
   u0 = copy(sol.u0)
+  uF = copy(sol.u0)
   t0 = sol.t0
 
   # Solve step
-  uf, tf, cache = solve_step!(uf,sol.solver,sol.op,u0,t0)
+  uF, tF, cache = solve_step!(uF, sol.solver, sol.op, u0, t0)
 
-  # Update
-  u0 .= uf
-  state = (uf,u0,tf,cache)
+  # Update state
+  @. u0 = uF
+  state = (uF, u0, tF, cache)
 
-  return (uf, tf), state
+  (uF, tF), state
 end
 
-function Base.iterate(sol::GenericODESolution{T}, state) where {T<:AbstractVector}
-
-  uf,u0,t0,cache = state
+function iterate(sol::GenericODESolution{<:AbstractVector}, state)
+  uF, u0, t0, cache = state
 
   if t0 >= sol.tF - ϵ
     return nothing
   end
 
   # Solve step
-  uf, tf, cache = solve_step!(uf,sol.solver,sol.op,u0,t0,cache)
+  uF, tF, cache = solve_step!(uF, sol.solver, sol.op, u0, t0, cache)
 
-  # Update
-  u0 .= uf
-  state = (uf,u0,tf,cache)
+  # Update state
+  @. u0 = uF
+  state = (uF, u0, tF, cache)
 
-  return (uf, tf), state
+  (uF, tF), state
 end
 
-function Base.iterate(sol::GenericODESolution{T}) where {T<:Tuple{Vararg{AbstractVector}}}
-
-  uf = ()
+# Tuple{Vararg{AbstractVector}}
+function Base.iterate(sol::GenericODESolution{<:Tuple{Vararg{AbstractVector}}})
   u0 = ()
-  for i in 1:length(sol.u0)
-    uf = (uf...,copy(sol.u0[i]))
-    u0 = (u0...,copy(sol.u0[i]))
+  uF = ()
+  for i in eachindex(sol.u0)
+    u0 = (u0..., copy(sol.u0[i]))
+    uF = (uF..., copy(sol.u0[i]))
   end
   t0 = sol.t0
 
   # Solve step
-  uf, tf, cache = solve_step!(uf,sol.solver,sol.op,u0,t0)
+  uF, tF, cache = solve_step!(uF, sol.solver, sol.op, u0, t0)
 
-  # Update
-  for i in 1:length(uf)
-    u0[i] .= uf[i]
+  # Update state
+  for i in eachindex(u0, uF)
+    @. u0[i] = uF[i]
   end
-  state = (uf,u0,tf,cache)
+  state = (uF, u0, tF, cache)
 
-  return (uf[1], tf), state
+  return (first(uF), tF), state
 end
 
-function Base.iterate(sol::GenericODESolution{T}, state) where {T<:Tuple{Vararg{AbstractVector}}}
-
-  uf,u0,t0,cache = state
+function Base.iterate(
+  sol::GenericODESolution{<:Tuple{Vararg{AbstractVector}}},
+  state
+)
+  uF, u0, t0, cache = state
 
   if t0 >= sol.tF - ϵ
     return nothing
   end
 
   # Solve step
-  uf, tf, cache = solve_step!(uf,sol.solver,sol.op,u0,t0,cache)
+  uF, tF, cache = solve_step!(uF, sol.solver, sol.op, u0, t0, cache)
 
-  # Update
-  for i in 1:length(uf)
-    u0[i] .= uf[i]
+  # Update state
+  for i in eachindex(u0, uF)
+    @. u0[i] = uF[i]
   end
-  state = (uf,u0,tf,cache)
+  state = (uF, u0, tF, cache)
 
-  return (uf[1], tf), state
+  return (first(uF), tF), state
+end
+
+########
+# Test #
+########
+function test_ode_solution(sol::ODESolution)
+  for (u_n, t_n) in sol
+    @test isa(u_n, AbstractVector)
+    @test isa(t_n, Real)
+  end
+  true
 end

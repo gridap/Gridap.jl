@@ -1,135 +1,152 @@
+###################
+# ODEOperatorType #
+###################
 """
-Trait for `ODEOperator` that tells us whether the operator depends on the solution
-(including its time derivatives), it is an affine operator that depends on time
-or it is a constant operator (affine and time-indepedendent)
+Trait for ODEOperator that indicates the type of ODE (nonlinear, linear with
+respect to the highest time derivative, with constant coefficients).
 """
-abstract type OperatorType end
-struct Nonlinear <: OperatorType end
-struct Affine  <: OperatorType end
-struct Constant  <: OperatorType end
-struct ConstantMatrix  <: OperatorType end
+abstract type ODEOperatorType <: GridapType end
+struct NonlinearODE <: ODEOperatorType end
 
+abstract type AbstractMassLinearODE <: ODEOperatorType end
+struct MassLinearODE <: AbstractMassLinearODE end
+struct ConstantMassODE <: AbstractMassLinearODE end
 
+###############
+# ODEOperator #
+###############
 """
-It represents the operator in an implicit N-th order ODE, i.e., A(t,u,∂tu,∂t^2u,...,∂t^Nu)
-where the implicit PDE reads A(t,u,∂tu,∂t^2u,...,∂t^Nu) = 0, when ∂t^iu is the
-i-th time derivative of u, with i=0,..,N. The trait `{C}` determines whether the
-operator is fully nonlinear, affine or constant in time.
+Nonlinear ODE defined by a residual of the form
+```math
+residual(t, u, v) = res(t, u, ∂t(u), ..., ∂t^N(u), v)
+```, where `∂t^k(u)` is the k-th time derivative of u and `N` is the order of
+the ODE operator.
 """
-abstract type ODEOperator{C<:OperatorType} <: GridapType end
-
-"""
-It represents an _affine_ operator in an implicit ODE, i.e., an ODE operator of
-the form A(t,u,∂tu,...,∂t^Nu) = A_N(t)∂t^Nu + ...A_1(t)∂tu + A_0(t)u + f(t)
-"""
-const AffineODEOperator = ODEOperator{Affine}
-
-"""
-It represents a constant operator in an implicit ODE, i.e., an ODE operator of
-the form A(t,u,∂tu,...,∂t^Nu) = A_N∂t^Nu + ...A_1∂tu + A_0u + f
-"""
-const ConstantODEOperator = ODEOperator{Constant}
+abstract type ODEOperator{T<:ODEOperatorType} <: GridapType end
 
 """
-It represents an affine operator in an implicit ODE with constant matrix, but
-time-dependent right-hand side, i.e., an ODE operator of
-the form A(t,u,∂tu,...,∂t^Nu) = A_N∂t^Nu + ...A_1∂tu + A_0u + f(t)
+ODE whose residual is linear with respect to the highest-order time derivative,
+e.g.
+```math
+residual(t, u, v) = mass(t, ∂t^N(u), v) + res(t, u, ∂t(u), ..., ∂t^(N-1)(u), v)
+```, where `N` is the order of the ODE operator, `mass` is linear in `∂t^N(u)`
+and `res` does not depend on `∂t^N(u)`.
 """
-const ConstantMatrixODEOperator = ODEOperator{ConstantMatrix}
+const MassLinearODEOperator = ODEOperator{MassLinearODE}
 
 """
-Returns the `OperatorType`, i.e., nonlinear, affine, or constant in time
+ODE whose residual is linear with respect to the highest-order time derivative,
+and whose corresponding matrix is constant with respect to time and lower-order
+time derivatives, e.g.
+```math
+residual(t, u, v) = mass(∂t^N(u), v) + res(t, u, ∂t(u), ..., ∂t^(N-1)(u), v)
+```, where `N` is the order of the ODE operator, `mass` is linear in `∂t^N(u)`
+and independent of time, and `res` does not depend on `∂t^N(u)`.
 """
-OperatorType(::ODEOperator{C}) where {C} = C
+const ConstantMassODEOperator = ODEOperator{ConstantMassODE}
 
 """
-Returns the order of the ODE operator
+Return the `ODEOperatorType` of an ODE operator.
+"""
+ODEOperatorType(::ODEOperator{T}) where {T} = T
+
+"""
+Return the order of the ODE operator
 """
 function get_order(::ODEOperator)
   @abstractmethod
 end
 
 """
-It provides A(t,u,∂tu,...,∂t^Nu) for a given (t,u,∂tu,...,∂t^Nu)
-"""
-function residual!(
-  r::AbstractVector,
-  op::ODEOperator,
-  t::Real,
-  u::Union{AbstractVector,Tuple{Vararg{AbstractVector}}},
-  ode_cache)
-  @abstractmethod
-end
-
-"""
+Allocate a residual vector for the ODE operator
 """
 function allocate_residual(
   op::ODEOperator,
-  t0::Real,
-  u::Union{AbstractVector,Tuple{Vararg{AbstractVector}}},
-  ode_cache)
+  t::Real, us::VecOrNTupleVec,
+  cache
+)
   @abstractmethod
 end
 
 """
-It adds contribution to the Jacobian with respect to the i-th time derivative,
-with i=0,...,N. That is, adding γ_i*[∂A/∂(∂t^iu)](t,u,∂tu,...,∂t^Nu) for a
-given (t,u,∂tu,...,∂t^Nu) to a given matrix J, where γ_i is a scaling coefficient
-provided by the `ODESolver`, e.g., 1/Δt for Backward Euler; It represents
-∂(δt^i(u))/∂(u), in which δt^i(⋅) is the approximation of ∂t^i(⋅) in the solver.
-Note that for i=0, γ_i=1.0.
+Return the residual vector of the ODE operator at a given point
+(t, u, ∂t(u), ..., ∂t^n(u)), where `n` is the order of the ODE
+"""
+function residual!(
+  r::AbstractVector, op::ODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  cache
+)
+  @abstractmethod
+end
+
+"""
+Allocate a jacobian matrix for the ODE operator
+"""
+function allocate_jacobian(
+  op::ODEOperator,
+  t::Real, us::VecOrNTupleVec,
+  cache
+)
+  @abstractmethod
+end
+
+"""
+Add the jacobian with respect to the i-th time derivative, weighted by some
+factor γ, to the matrix J.
 """
 function jacobian!(
-  J::AbstractMatrix,
-  op::ODEOperator,
-  t::Real,
-  u::Tuple{Vararg{AbstractVector}},
-  i::Integer,
-  γᵢ::Real,
-  ode_cache)
+  J::AbstractMatrix, op::ODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  i::Integer, γ::Real,
+  cache
+)
   @abstractmethod
-  # Add values to J
 end
 
 """
-Add the contribution of all jacobians ,i.e., ∑ᵢ γ_i*[∂A/∂(∂t^iu)](t,u,∂tu,...,∂t^Nu)
+Add a linear combination of all jacobians, weighted by some weights γs
 """
 function jacobians!(
-  J::AbstractMatrix,
+  J::AbstractMatrix, op::ODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  γs::Tuple{Vararg{Real}},
+  cache
+)
+  @abstractmethod
+end
+
+"""
+Allocate the cache required by the `ODESolution` for the ODE operator
+"""
+function allocate_cache(op::ODEOperator, args...)
+  @abstractmethod
+end
+
+"""
+Update the cache of the `ODESolution` attached to the ODE operator
+"""
+function update_cache!(cache, op::ODEOperator, t::Real)
+  @abstractmethod
+end
+
+########
+# Test #
+########
+"""
+Test the interface of `ODEOperator` specializations
+"""
+function test_ode_operator(
   op::ODEOperator,
-  t::Real,
-  u::Tuple{Vararg{AbstractVector}},
-  γ::Tuple{Vararg{Real}},
-  ode_cache)
-  @abstractmethod
-  # Add values to J
-end
-
-"""
-"""
-function allocate_jacobian(op::ODEOperator,t0::Real,u::AbstractVector,ode_cache)
-  @abstractmethod
-end
-
-"""
-Allocates the cache data required by the `ODESolution` for a given `ODEOperator`
-"""
-allocate_cache(op::ODEOperator) = @abstractmethod
-
-#@fverdugo to be used as `cache = update_cache!(cache,op,t)`
-update_cache!(cache,op::ODEOperator,t::Real) = @abstractmethod
-
-"""
-Tests the interface of `ODEOperator` specializations
-"""
-function test_ode_operator(op::ODEOperator,t::Real,u::AbstractVector,u_t::AbstractVector)
+  t::Real, u::AbstractVector, u̇::AbstractVector
+)
   cache = allocate_cache(op)
-  cache = update_cache!(cache,op,0.0)
-  r = allocate_residual(op,0.0,u,cache)
-  residual!(r,op,t,(u,u_t),cache)
-  J = allocate_jacobian(op,0.0,u,cache)
-  jacobian!(J,op,t,(u,u_t),1,1.0,cache)
-  jacobian!(J,op,t,(u,u_t),2,1.0,cache)
-  jacobians!(J,op,t,(u,u_t),(1.0,1.0),cache)
+  cache = update_cache!(cache, op, t)
+  r = allocate_residual(op, t, (u, u̇), cache)
+  residual!(r, op, t, (u, u̇), cache)
+  J = allocate_jacobian(op, t, (u, u̇), cache)
+  jacobian!(J, op, t, (u, u̇), 0, 1, cache)
+  jacobian!(J, op, t, (u, u̇), 1, 1, cache)
+  jacobians!(J, op, t, (u, u̇), (1, 1), cache)
   true
 end

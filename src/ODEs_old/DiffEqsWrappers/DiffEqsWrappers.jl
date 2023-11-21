@@ -3,9 +3,9 @@
 The exported names are
 $(EXPORTS)
 """
-module DiffEqsWrappers
+module DiffEqWrappers
 
-using DocStringExtensions
+using Test
 
 using Gridap.ODEs.TransientFETools: TransientFEOperator
 
@@ -81,7 +81,7 @@ end
   It allocates the Jacobian (or mass or stiffness) matrix, given the `FEOperator`
   and a vector of size total number of unknowns
 """
-function prototype_jacobian(op::TransientFEOperator, u0)
+function prototype_jacobian(op::TransientFEOperator,u0)
   ode_op = get_algebraic_operator(op)
   ode_cache = allocate_cache(ode_op) # Not acceptable in terms of performance
   return allocate_jacobian(ode_op, u0, ode_cache)
@@ -91,4 +91,4 @@ const prototype_mass = prototype_jacobian
 
 const prototype_stiffness = prototype_jacobian
 
-end # module DiffEqsWrappers
+end #module

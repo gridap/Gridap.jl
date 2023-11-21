@@ -1,72 +1,44 @@
-# Now, we need an abstract type representing a numerical discretization scheme
-# for the ODE
+#############
+# ODESolver #
+#############
 """
-Represents a map that given (t_n,u_n) returns (t_n+1,u_n+1) and cache for the
-corresponding `ODEOperator` and `NonlinearOperator`
+An ODE solver is a map that given (t_n, us_n) returns (t_n+1, us_n+1) and the
+corresponding updated cache. Here `us = (u_n, ∂t(u_n), ..., ∂t^(N-1)(u_n))` is
+a tuple containing the time derivatives up to the order of the ODE operator
+minus one.
 """
 abstract type ODESolver <: GridapType end
 
+"""
+Evolve the ODE operator for one time step using the ODE solver
+"""
 function solve_step!(
-  uF::Union{AbstractVector,Tuple{Vararg{AbstractVector}}},
-  solver::ODESolver,
-  op::ODEOperator,
-  u0::Union{AbstractVector,Tuple{Vararg{AbstractVector}}},
-  t0::Real,
-  cache) # -> (uF,tF,cache)
+  usF::VecOrNTupleVec,
+  solver::ODESolver, op::ODEOperator,
+  us0::VecOrNTupleVec, t0::Real, cache
+)
   @abstractmethod
 end
 
-# Default API
-
 function solve_step!(
-  uF::Union{AbstractVector,Tuple{Vararg{AbstractVector}}},
-  solver::ODESolver,
-  op::ODEOperator,
-  u0::Union{AbstractVector,Tuple{Vararg{AbstractVector}}},
-  t0::Real) # -> (uF,tF,cache)
-  solve_step!(uF,solver,op,u0,t0,nothing)
+  usF::VecOrNTupleVec,
+  solver::ODESolver, op::ODEOperator,
+  us0::VecOrNTupleVec, t0::Real
+)
+  solve_step!(usF, solver, op, us0, t0, nothing)
 end
 
 function solve(
-  solver::ODESolver,
-  op::ODEOperator,
-  u0::T,
-  t0::Real,
-  tf::Real) where {T}
-  GenericODESolution{T}(solver,op,u0,t0,tf)
+  solver::ODESolver, op::ODEOperator,
+  u0::T, t0::Real, tF::Real
+) where {T}
+  GenericODESolution{T}(solver, op, u0, t0, tF)
 end
 
-# testers
-
-function test_ode_solver(solver::ODESolver,op::ODEOperator,u0,t0,tf)
-  solution = solve(solver,op,u0,t0,tf)
+########
+# Test #
+########
+function test_ode_solver(solver::ODESolver, op::ODEOperator, u0, t0, tf)
+  solution = solve(solver, op, u0, t0, tf)
   test_ode_solution(solution)
 end
-
-# Specialization
-
-include("Tableaus.jl")
-
-include("ForwardEuler.jl")
-
-include("ThetaMethod.jl")
-
-include("AffineThetaMethod.jl")
-
-include("GeneralRungeKutta.jl")
-
-# include("RungeKutta.jl")
-
-include("IMEXRungeKutta.jl")
-
-# include("EXRungeKutta.jl")
-
-include("Newmark.jl")
-
-include("AffineNewmark.jl")
-
-include("ConstantNewmark.jl")
-
-include("ConstantMatrixNewmark.jl")
-
-include("GeneralizedAlpha.jl")

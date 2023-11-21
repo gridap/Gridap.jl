@@ -13,6 +13,6 @@ include("TransientFETools/TransientFETools.jl")
 
 # include("DiffEqsWrappers/DiffEqsWrappers.jl")
 
-end # module ODEs
+end #module
 
 const GridapODEs = ODEs

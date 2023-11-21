@@ -2,6 +2,6 @@ module DiffEqsWrappersTests
 
 using Test
 
-@testset "DiffEqWrappers" begin include("DiffEqsTests.jl") end
+@testset "DiffEqsWrappers" begin include("DiffEqsWrappersTests.jl") end
 
-end # module
+end # module DiffEqsWrappersTests

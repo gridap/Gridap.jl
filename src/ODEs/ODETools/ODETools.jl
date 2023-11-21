@@ -6,86 +6,58 @@ $(EXPORTS)
 module ODETools
 
 using Test
-
 using DocStringExtensions
 
+import Base: iterate
 using ForwardDiff
-using LinearAlgebra: fillstored!, rmul!
-using SparseArrays: issparse
 
-const ϵ = 100*eps()
+using Gridap.Helpers: @abstractmethod, GridapType
+
+import Gridap.Algebra: allocate_residual
+import Gridap.Algebra: residual!
+import Gridap.Algebra: allocate_jacobian
+import Gridap.Algebra: jacobian!
+
+using Gridap.Arrays: get_array
+
+using Gridap.TensorValues: VectorValue, TensorValue
+
+using Gridap.Fields: return_type
+
+const ϵ = 100 * eps()
+const VecOrNTupleVec = Union{AbstractVector,Tuple{Vararg{AbstractVector}}}
+
+include("DiffOperators.jl")
+
 export ∂t
 export ∂tt
 export time_derivative
 
-using Gridap.Fields: VectorValue, TensorValue
-using Gridap.Fields: return_type
-using Gridap.Arrays: get_array
+include("ODEOperators.jl")
 
-using Gridap.Helpers: GridapType
-using Gridap.Helpers
-using Gridap.Algebra: NonlinearSolver
-using Gridap.Algebra: LinearSolver
-using Gridap.Algebra: NonlinearOperator
-using Gridap.Algebra: AffineOperator
-
+export ODEOperatorType
+export NonlinearODE
+export MassLinearODE
+export ConstantMassODE
 export ODEOperator
-export AffineODEOperator
-export ConstantODEOperator
-export ConstantMatrixODEOperator
-export SecondOrderODEOperator
-export OperatorType
-export Nonlinear
-export Affine
-export Constant
-export ConstantMatrix
-using Gridap.Algebra: residual
-using Gridap.Algebra: jacobian
-using Gridap.Algebra: symbolic_setup
-using Gridap.Algebra: numerical_setup
-using Gridap.Algebra: numerical_setup!
-using Gridap.Algebra: LinearSolverCache
-import Gridap.Algebra: residual!
-import Gridap.Algebra: jacobian!
-import Gridap.Algebra: allocate_residual
-import Gridap.Algebra: allocate_jacobian
+export MassLinearODEOperator
+export ConstantMassODEOperator
+export get_order
+export jacobians!
 export allocate_cache
 export update_cache!
-export jacobian!
-export jacobian_t!
-export jacobian_and_jacobian_t!
 export test_ode_operator
-export lhs!
-export rhs!
-export explicit_rhs!
+
+include("ODESolvers.jl")
 
 export ODESolver
 export solve_step!
 export test_ode_solver
-import Gridap.Algebra: solve
-import Gridap.Algebra: solve!
-import Gridap.Algebra: zero_initial_guess
-
-export BackwardEuler
-export ForwardEuler
-export MidPoint
-export ThetaMethod
-export RungeKutta
-export IMEXRungeKutta
-export EXRungeKutta
-export Newmark
-export GeneralizedAlpha
-
-export ODESolution
-export test_ode_solution
-import Base: iterate
-
-include("DiffOperators.jl")
-
-include("ODEOperators.jl")
-
-include("ODESolvers.jl")
 
 include("ODESolutions.jl")
 
-end #module
+export ODESolution
+export GenericODESolution
+export test_ode_solution
+
+end # module ODETools
