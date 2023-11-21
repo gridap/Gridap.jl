@@ -27,15 +27,15 @@ import Gridap.ODEs.ODETools: update_cache!
 # u_1_tt + b * u_1_t - a * u_1 = 0
 # u_2_tt + a * u_1_t - b * u_1 - c * u_2 = 0
 
-struct ODEOperatorMock{A,B,C,T} <: ODEOperator{T}
-  a::A
-  b::B
-  c::C
+struct ODEOperatorMock{T,C} <: ODEOperator{C}
+  a::T
+  b::T
+  c::T
   order::Int
 
-  function ODEOperatorMock{T}(a, b, c, order) where {T}
-    A, B, C = typeof(a), typeof(b), typeof(c)
-    new{A,B,C,T}(a, b, c, order)
+  function ODEOperatorMock{C}(a, b, c, order) where {C}
+    T = promote_type(typeof(a), typeof(b), typeof(c))
+    new{T,C}(a, b, c, order)
   end
 end
 

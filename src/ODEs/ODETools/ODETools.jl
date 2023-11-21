@@ -17,6 +17,7 @@ import Gridap.Algebra: allocate_residual
 import Gridap.Algebra: residual!
 import Gridap.Algebra: allocate_jacobian
 import Gridap.Algebra: jacobian!
+import Gridap.Algebra: solve
 
 using Gridap.Arrays: get_array
 

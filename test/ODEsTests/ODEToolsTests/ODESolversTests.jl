@@ -17,6 +17,12 @@ tF = 1.0
 dt = 0.1
 u0 = 2 * ones(2)
 
+α = 1 - dt * a
+β = -dt * b
+γ = 1 - dt * c
+@assert !iszero(α)
+@assert !iszero(γ)
+
 # OperatorMock tests
 nl_op = OperatorMock(ode_op, u0, dt, tF, nothing)
 
@@ -50,9 +56,9 @@ r, J, du = nls_cache
 @test J[2, 1] ≈ -b
 @test J[2, 2] ≈ dt⁻¹ - c
 
-D = (1 - dt * a) * (1 - dt * c)
-@test u[1] ≈ (1 - dt * c) * u0[1] / D
-@test u[2] ≈ ((dt * b) * u0[1] + (1 - dt * a) * u0[2]) / D
+D = α * γ
+@test u[1] ≈ γ * u0[1] / D
+@test u[2] ≈ (α * u0[2] - β * u0[1]) / D
 
 # ODESolver tests
 ode_solver = ODESolverMock(nls, dt)
@@ -73,4 +79,4 @@ uF, tF = utF
 @test tF ≈ t0 + dt
 @test all(uF .≈ u)
 
-end # module module ODESolversTests
+end # module ODESolversTests

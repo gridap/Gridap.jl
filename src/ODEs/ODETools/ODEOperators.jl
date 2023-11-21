@@ -22,7 +22,7 @@ residual(t, u, v) = res(t, u, ∂t(u), ..., ∂t^N(u), v)
 ```, where `∂t^k(u)` is the k-th time derivative of u and `N` is the order of
 the ODE operator.
 """
-abstract type ODEOperator{T<:ODEOperatorType} <: GridapType end
+abstract type ODEOperator{C<:ODEOperatorType} <: GridapType end
 
 """
 ODE whose residual is linear with respect to the highest-order time derivative,
@@ -48,7 +48,7 @@ const ConstantMassODEOperator = ODEOperator{ConstantMassODE}
 """
 Return the `ODEOperatorType` of an ODE operator.
 """
-ODEOperatorType(::ODEOperator{T}) where {T} = T
+ODEOperatorType(::ODEOperator{C}) where {C} = C
 
 """
 Return the order of the ODE operator
