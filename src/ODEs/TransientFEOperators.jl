@@ -54,7 +54,7 @@ function allocate_cache(op::TransientFEOperator)
 end
 
 function update_cache!(cache, op::TransientFEOperator, t::Real)
-  nothing
+  cache
 end
 
 function Algebra.allocate_residual(

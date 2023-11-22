@@ -77,3 +77,19 @@ function test_ode_solver(
   solution = solve(solver, op, us0, t0, tf)
   test_ode_solution(solution)
 end
+
+##################
+# Import solvers #
+##################
+function _discrete_time_derivative!(u̇F, u0, u, dt)
+  copy!(u̇F, u)
+  axpy!(-1, u0, u̇F)
+  rdiv!(u̇F, dt)
+  u̇F
+end
+
+include("ODESolvers/ForwardEuler.jl")
+
+include("ODESolvers/BackwardEuler.jl")
+
+include("ODESolvers/ThetaMethod.jl")

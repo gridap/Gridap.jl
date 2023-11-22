@@ -63,6 +63,11 @@ export ODESolver
 export solve_step!
 export solve
 
+export ForwardEuler
+export BackwardEuler
+export ThetaMethod
+export MidPoint
+
 export test_ode_solver
 
 include("ODESolutions.jl")
