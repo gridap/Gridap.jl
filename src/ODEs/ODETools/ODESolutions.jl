@@ -63,7 +63,7 @@ function iterate(sol::GenericODESolution{<:AbstractVector}, state)
 end
 
 # Tuple{Vararg{AbstractVector}}
-function Base.iterate(sol::GenericODESolution{<:Tuple{Vararg{AbstractVector}}})
+function iterate(sol::GenericODESolution{<:Tuple{Vararg{AbstractVector}}})
   u0 = ()
   uF = ()
   for i in eachindex(sol.u0)
@@ -84,7 +84,7 @@ function Base.iterate(sol::GenericODESolution{<:Tuple{Vararg{AbstractVector}}})
   return (first(uF), tF), state
 end
 
-function Base.iterate(
+function iterate(
   sol::GenericODESolution{<:Tuple{Vararg{AbstractVector}}},
   state
 )

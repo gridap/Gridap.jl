@@ -6,126 +6,104 @@ $(EXPORTS)
 module TransientFETools
 
 using Test
+
 using DocStringExtensions
 
+import Base: iterate
+import Base: getindex
+import Base: getproperty
+import Base: length
+
+using BlockArrays
+
 using Gridap.Helpers
+using Gridap.Algebra
+using Gridap.CellData
+using Gridap.Geometry
+using Gridap.FESpaces
+using Gridap.MultiField
+using Gridap.ODETools
 
-export ∂t
+import Gridap.Algebra: allocate_residual
+import Gridap.Algebra: residual!
+import Gridap.Algebra: allocate_jacobian
+import Gridap.Algebra: jacobian!
+import Gridap.Algebra: solve
 
-import Gridap.ODEs.ODETools: ∂t, ∂tt
-import Gridap.ODEs.ODETools: time_derivative
-
-export TransientTrialFESpace
-export TransientMultiFieldFESpace
-export test_transient_trial_fe_space
 import Gridap.Fields: evaluate
 import Gridap.Fields: evaluate!
-import Gridap.MultiField: MultiFieldFESpace
-using Gridap.FESpaces: FESpace
-using Gridap.FESpaces: SingleFieldFESpace
-using Gridap.FESpaces: TrialFESpace
-using Gridap.FESpaces: ZeroMeanFESpace
-using Gridap.FESpaces: get_free_dof_values
-using Gridap.FESpaces: get_dirichlet_dof_values
-using Gridap.FESpaces: TrialFESpace!
-using Gridap.FESpaces: HomogeneousTrialFESpace
-using Gridap.FESpaces: jacobian
 
-import Gridap.Geometry: Triangulation
-import Gridap.CellData: Measure
-using Gridap.FESpaces: ∫
+import Gridap.Polynomials: get_order
 
-export TransientFEOperator
-export TransientAffineFEOperator
-export TransientConstantFEOperator
-export TransientConstantMatrixFEOperator
-export TransientRungeKuttaFEOperator
-export TransientIMEXRungeKuttaFEOperator
-export TransientEXRungeKuttaFEOperator
-using Gridap.FESpaces: Assembler
-using Gridap.FESpaces: SparseMatrixAssembler
-import Gridap.ODEs.ODETools: ODEOperatorType
-using Gridap.ODEs.ODETools: NonlinearODE
-using Gridap.ODEs.ODETools: MassLinearODE
-using Gridap.ODEs.ODETools: ConstantMassODE
-import Gridap.ODEs.ODETools: ODEOperator
-import Gridap.ODEs.ODETools: MassLinearODEOperator
-import Gridap.ODEs.ODETools: ConstantMassODEOperator
-import Gridap.ODEs.ODETools: allocate_residual
-import Gridap.ODEs.ODETools: allocate_jacobian
-import Gridap.ODEs.ODETools: residual!
-import Gridap.ODEs.ODETools: jacobian!
-import Gridap.ODEs.ODETools: jacobians!
-import Gridap.ODEs.ODETools: allocate_cache
-import Gridap.ODEs.ODETools: update_cache!
-import Gridap.FESpaces: get_algebraic_operator
-import Gridap.FESpaces: assemble_vector!
-import Gridap.FESpaces: assemble_matrix_add!
-import Gridap.FESpaces: allocate_vector
-import Gridap.FESpaces: allocate_matrix
-using Gridap.FESpaces: get_fe_basis
-using Gridap.FESpaces: get_trial_fe_basis
-using Gridap.FESpaces: collect_cell_vector
-using Gridap.FESpaces: collect_cell_matrix
-using Gridap.FESpaces: return_type
-import Gridap.FESpaces: SparseMatrixAssembler
-import Gridap.FESpaces: get_trial
-import Gridap.FESpaces: get_test
-using Gridap.ODEs.ODETools: test_ode_operator
-export test_transient_fe_operator
-
-import Gridap.FESpaces: FESolver
-import Gridap.ODEs.ODETools: ODESolver
-import Gridap.Algebra: solve
-import Gridap.Algebra: solve!
-import Gridap.ODEs.ODETools: solve_step!
-export test_transient_fe_solver
-
-export TransientFEFunction
-import Gridap.FESpaces: FEFunction
-import Gridap.FESpaces: SingleFieldFEFunction
-import Gridap.FESpaces: EvaluationFunction
-import Gridap.MultiField: MultiFieldFEFunction
-import Gridap.MultiField: num_fields
-
-export TransientFESolution
-import Gridap.Algebra: solve
-import Gridap.ODEs.ODETools: ODESolution
-import Gridap.ODEs.ODETools: GenericODESolution
-import Base: iterate
-export test_transient_fe_solution
-
-export TransientCellField
-using Gridap.CellData: CellField
-using Gridap.CellData: CellFieldAt
-using Gridap.CellData: GenericCellField
-using Gridap.MultiField: MultiFieldCellField
-using Gridap.FESpaces: FEBasis
 import Gridap.CellData: get_data
 import Gridap.CellData: get_triangulation
 import Gridap.CellData: DomainStyle
 import Gridap.CellData: gradient
 import Gridap.CellData: ∇∇
 import Gridap.CellData: change_domain
-import Gridap.FESpaces: BasisStyle
-using Gridap.FESpaces: Constrained, UnConstrained, AssemblyStrategy
-using Gridap.MultiField: ConsecutiveMultiFieldStyle, BlockSparseMatrixAssembler
-import Gridap.MultiField: ConstraintStyle, MultiFieldStyle, BlockMultiFieldStyle
-import Gridap.FESpaces: zero_free_values, has_constraints, SparseMatrixAssembler
-import Gridap.FESpaces: get_dof_value_type, get_vector_type
 
-using BlockArrays
+import Gridap.FESpaces: zero_free_values
+import Gridap.FESpaces: get_vector_type
+import Gridap.FESpaces: get_dof_value_type
+import Gridap.FESpaces: has_constraints
+import Gridap.FESpaces: BasisStyle
+import Gridap.FESpaces: get_test
+import Gridap.FESpaces: get_trial
+import Gridap.FESpaces: SparseMatrixAssembler
+import Gridap.FESpaces: get_algebraic_operator
+
+using Gridap.MultiField: MultiFieldFESpace
+using Gridap.MultiField: ConsecutiveMultiFieldStyle
+using Gridap.MultiField: BlockMultiFieldStyle
+using Gridap.MultiField: BlockSparseMatrixAssembler
+
+import Gridap.MultiField: num_fields
+import Gridap.MultiField: MultiFieldStyle
+import Gridap.MultiField: ConstraintStyle
+
+import Gridap.ODEs.ODETools: ∂t
+import Gridap.ODEs.ODETools: ∂tt
+import Gridap.ODEs.ODETools: ODEOperatorType
+import Gridap.ODEs.ODETools: jacobians!
+import Gridap.ODEs.ODETools: allocate_cache
+import Gridap.ODEs.ODETools: update_cache!
 
 include("TransientFESpaces.jl")
 
+export TransientTrialFESpace
+export TransientMultiFieldTrialFESpace
+export TransientMultiFieldFESpace
+
+export ∂t
+export ∂tt
+
+export test_transient_trial_fe_space
+
 include("TransientCellField.jl")
+
+export TransientCellField
 
 include("TransientMultiFieldCellField.jl")
 
-# include("TransientFEOperators.jl")
+include("TransientFEOperators.jl")
 
-# include("ODEOperatorInterfaces.jl")
+export TransientFEOperator
+# export TransientAffineFEOperator
+# export TransientConstantFEOperator
+# export TransientConstantMatrixFEOperator
+# export TransientRungeKuttaFEOperator
+# export TransientIMEXRungeKuttaFEOperator
+# export TransientEXRungeKuttaFEOperator
 
-# include("TransientFESolutions.jl")
+export test_transient_fe_operator
+
+include("ODEOperatorInterfaces.jl")
+
+include("TransientFESolutions.jl")
+
+export TransientFESolution
+
+export test_transient_fe_solution
+export test_transient_fe_solver
 
 end # module TransientFETools

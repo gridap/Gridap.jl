@@ -25,14 +25,16 @@ using Gridap.TensorValues: VectorValue, TensorValue
 
 using Gridap.Fields: return_type
 
+import Gridap.Polynomials: get_order
+
 const ϵ = 100 * eps()
 const VecOrNTupleVec = Union{AbstractVector,Tuple{Vararg{AbstractVector}}}
 
 include("DiffOperators.jl")
 
+export time_derivative
 export ∂t
 export ∂tt
-export time_derivative
 
 include("ODEOperators.jl")
 
@@ -40,25 +42,36 @@ export ODEOperatorType
 export NonlinearODE
 export MassLinearODE
 export ConstantMassODE
+
 export ODEOperator
 export MassLinearODEOperator
 export ConstantMassODEOperator
+
 export get_order
+export allocate_residual
+export residual!
+export allocate_jacobian
+export jacobian!
 export jacobians!
 export allocate_cache
 export update_cache!
+
 export test_ode_operator
 
 include("ODESolvers.jl")
 
 export ODESolver
+
 export solve_step!
+export solve
+
 export test_ode_solver
 
 include("ODESolutions.jl")
 
 export ODESolution
 export GenericODESolution
+
 export test_ode_solution
 
 end # module ODETools
