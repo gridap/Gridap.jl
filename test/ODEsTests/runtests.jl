@@ -24,7 +24,6 @@ using Test
 
 # TODO Find a way to run the same tests as in
 # - TransientFETests
-# - TransientBlockMultifieldStyleTests
 # - TransientFEOperatorsTests
 # - AffineFEOperatorsTests
 # - ConstantFEOperatorsTests

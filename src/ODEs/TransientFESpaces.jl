@@ -109,6 +109,14 @@ end
 ∂tt(space::MultiFieldFESpace) = MultiFieldFESpace(∂tt.(space.spaces))
 ∂tt(t::T) where {T<:Number} = zero(T)
 
+# FESpace interface
+function FESpaces.SparseMatrixAssembler(
+  trial::AbstractTransientTrialFESpace,
+  test::FESpace
+)
+  SparseMatrixAssembler(evaluate(trial, nothing), test)
+end
+
 #########################
 # TransientTrialFESpace #
 #########################

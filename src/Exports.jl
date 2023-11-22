@@ -182,7 +182,21 @@ using Gridap.CellData: ∫; export ∫
 @publish Visualization createpvd
 @publish Visualization savepvd
 
-include("ODEs/Exports.jl")
+@publish ODEs ∂t
+@publish ODEs ∂tt
+# @publish ODEs BackwardEuler
+# @publish ODEs ForwardEuler
+# @publish ODEs ThetaMethod
+# @publish ODEs MidPoint
+# @publish ODEs RungeKutta
+# @publish ODEs IMEXRungeKutta
+# @publish ODEs Newmark
+# @publish ODEs GeneralizedAlpha
+
+@publish ODEs TransientTrialFESpace
+@publish ODEs TransientMultiFieldFESpace
+@publish ODEs TransientFEOperator
+# @publish ODEs TransientMassLinearFEOperator
 
 # Deprecated / removed
 

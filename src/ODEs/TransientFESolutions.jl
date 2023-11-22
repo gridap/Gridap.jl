@@ -73,7 +73,7 @@ function Base.iterate(sol::TransientFESolution)
 
   (uF, tF), odesolstate = odesolnext
 
-  Uh = allocate_trial_space(sol.trial)
+  Uh = allocate_space(sol.trial)
   Uh = evaluate!(Uh, sol.trial, tF)
   uh = FEFunction(Uh, uF)
 
@@ -105,8 +105,8 @@ Base.IteratorSize(::Type{TransientFESolution}) = Base.SizeUnknown()
 ########
 function test_transient_fe_solution(sol::TransientFESolution)
   for (uh_n, t_n) in sol
-    @test uh_n isa FEFunction
     @test t_n isa Real
+    @test uh_n isa FEFunction
   end
   true
 end

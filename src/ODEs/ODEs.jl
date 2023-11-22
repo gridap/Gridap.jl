@@ -8,6 +8,8 @@ module ODEs
 using Test
 using DocStringExtensions
 
+using LinearAlgebra
+using LinearAlgebra: fillstored!
 using ForwardDiff
 using BlockArrays
 

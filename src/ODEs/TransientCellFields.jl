@@ -38,6 +38,7 @@ struct TransientSingleFieldCellField{A} <: TransientCellField
   derivatives::Tuple # {Vararg{A,B} where B}
 end
 
+# TODO include other single-field types? e.g. SingleFieldFEBasis
 const SingleFieldTypes = Union{GenericCellField,SingleFieldFEFunction}
 
 function TransientCellField(single_field::SingleFieldTypes, derivatives::Tuple)

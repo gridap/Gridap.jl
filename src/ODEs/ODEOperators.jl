@@ -117,14 +117,32 @@ function Algebra.allocate_residual(
 end
 
 """
+    residual(
+      op::ODEOperator,
+      t::Real, us::Tuple{Vararg{AbstractVector}},
+      cache
+    ) -> AbstractVector
+
+Evaluate the residual vector of the ODE operator
+"""
+function Algebra.residual(
+  op::ODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  cache
+)
+  r = allocate_residual(op, t, us, cache)
+  residual!(r, op, t, us, cache)
+  r
+end
+
+"""
     residual!(
       r::AbstractVector, op::ODEOperator,
       t::Real, us::Tuple{Vararg{AbstractVector}},
       cache
     ) -> AbstractVector
 
-Return the residual vector of the ODE operator at a given point
-(t, u, ∂t(u), ..., ∂t^N(u)), where `N` is the order of the ODE
+Allocate a residual vector and evaluate it
 """
 function Algebra.residual!(
   r::AbstractVector, op::ODEOperator,
@@ -149,6 +167,29 @@ function Algebra.allocate_jacobian(
   cache
 )
   @abstractmethod
+end
+
+"""
+    jacobian(
+      op::ODEOperator,
+      t::Real, us::Tuple{Vararg{AbstractVector}},
+      i::Integer, γ::Real,
+      cache
+    ) -> AbstractMatrix
+
+Allocate a jacobian matrix and add the jacobian with respect to the `i`-th time
+derivative, weighted by some factor `γ`, to the matrix `J`
+"""
+function Algebra.jacobian(
+  op::ODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  i::Integer, γ::Real,
+  cache
+)
+  J = allocate_jacobian(op, t, us, cache)
+  fillstored!(J, zero(eltype(J)))
+  jacobian!(J, op, t, us, i, γ, cache)
+  J
 end
 
 """

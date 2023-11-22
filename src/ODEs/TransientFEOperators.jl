@@ -65,6 +65,16 @@ function Algebra.allocate_residual(
   @abstractmethod
 end
 
+function Algebra.residual(
+  op::TransientFEOperator,
+  t::Real, uh::CellField,
+  cache
+)
+  r = allocate_residual(op, t, uh, cache)
+  residual!(r, op, t, uh, cache)
+  r
+end
+
 function Algebra.residual!(
   r::AbstractVector, op::TransientFEOperator,
   t::Real, uh::CellField,
@@ -79,6 +89,18 @@ function Algebra.allocate_jacobian(
   cache
 )
   @notimplemented
+end
+
+function Algebra.jacobian(
+  op::TransientFEOperator,
+  t::Real, uh::CellField,
+  i::Int, γ::Real,
+  cache
+)
+  J = allocate_jacobian(op, t, uh, cache)
+  fillstored!(J, zero(eltype(J)))
+  jacobian!(J, op, t, uh, i, γ, cache)
+  J
 end
 
 function Algebra.jacobian!(
@@ -241,8 +263,9 @@ function jacobians!(
 )
   _matdata = ()
   for i in 0:get_order(op)
-    if !iszero(γ[i])
-      _matdata = (_matdata..., _matdata_jacobian(op, t, uh, i, γs[i]))
+    γ = γs[i+1]
+    if !iszero(γ)
+      _matdata = (_matdata..., _matdata_jacobian(op, t, uh, i, γ))
     end
   end
 
@@ -271,12 +294,12 @@ Polynomials.get_order(op::ODEOpFromFEOp) = get_order(op.feop)
 
 function allocate_cache(op::ODEOpFromFEOp)
   Ut = get_trial(op.feop)
-  U = allocate_trial_space(Ut)
+  U = allocate_space(Ut)
   Uts = (Ut,)
   Us = (U,)
   for i in 1:get_order(op)
     Uts = (Uts..., ∂t(Uts[i]))
-    Us = (Us..., allocate_trial_space(Uts[i+1]))
+    Us = (Us..., allocate_space(Uts[i+1]))
   end
   fe_cache = allocate_cache(op.feop)
   ode_cache = (Us, Uts, fe_cache)
@@ -433,10 +456,10 @@ function test_transient_fe_operator(op::TransientFEOperator, uh)
   J = allocate_jacobian(op, t, uh, cache)
   @test J isa AbstractMatrix
 
-  jacobian!(J, op, t, xh, 1, 1, cache)
+  jacobian!(J, op, t, xh, 0, 1, cache)
   @test J isa AbstractMatrix
 
-  jacobian!(J, op, t, xh, 2, 1, cache)
+  jacobian!(J, op, t, xh, 1, 1, cache)
   @test J isa AbstractMatrix
 
   jacobians!(J, op, t, xh, (1, 1), cache)

@@ -15,88 +15,103 @@ import Gridap: ∇
 ∇(u) === ∇u
 
 θ = 1.0
+###
+# BEGIN DONE in TransientFESpacesTests.jl
+###
 
-∂tu(t) = x -> x[1]+x[2]
-import Gridap.ODEs.TransientFETools: ∂t
-∂t(::typeof(u)) = ∂tu
-@test ∂t(u) === ∂tu
+# ∂tu(t) = x -> x[1]+x[2]
+# import Gridap.ODEs.TransientFETools: ∂t
+# ∂t(::typeof(u)) = ∂tu
+# @test ∂t(u) === ∂tu
 
-f(t) = x -> (x[1]+x[2])
+# f(t) = x -> (x[1]+x[2])
 
-domain = (0,1,0,1)
-partition = (2,2)
-model = CartesianDiscreteModel(domain,partition)
+# domain = (0,1,0,1)
+# partition = (2,2)
+# model = CartesianDiscreteModel(domain,partition)
 
-order = 1
-reffe = ReferenceFE(lagrangian,Float64,order)
-V0 = TestFESpace(
-  model,
-  reffe,
-  conformity=:H1,
-  dirichlet_tags="boundary"
-)
+# order = 1
+# reffe = ReferenceFE(lagrangian,Float64,order)
+# V0 = TestFESpace(
+#   model,
+#   reffe,
+#   conformity=:H1,
+#   dirichlet_tags="boundary"
+# )
 
-U = TransientTrialFESpace(V0,u)
-U0 = TrialFESpace(V0,u(0.0))
-@test test_transient_trial_fe_space(U)
+# U = TransientTrialFESpace(V0,u)
+# U0 = TrialFESpace(V0,u(0.0))
+# @test test_transient_trial_fe_space(U)
 
-U0 = U(1.0)
-ud0 = copy(get_dirichlet_dof_values(U0))
-_ud0 = get_dirichlet_dof_values(U0)
-U1 = U(2.0)
-ud1 = copy(get_dirichlet_dof_values(U1))
-_ud1 = get_dirichlet_dof_values(U1)
-@test all(ud0 .≈ 0.5ud1)
-all(_ud0 .≈ _ud1)
+# U0 = U(1.0)
+# ud0 = copy(get_dirichlet_dof_values(U0))
+# _ud0 = get_dirichlet_dof_values(U0)
+# U1 = U(2.0)
+# ud1 = copy(get_dirichlet_dof_values(U1))
+# _ud1 = get_dirichlet_dof_values(U1)
+# @test all(ud0 .≈ 0.5ud1)
+# all(_ud0 .≈ _ud1)
 
-Ut = ∂t(U)
-Ut.dirichlet_t
-Ut0 = Ut(0.0)
-Ut0.dirichlet_values
+# Ut = ∂t(U)
+# Ut.dirichlet_t
+# Ut0 = Ut(0.0)
+# Ut0.dirichlet_values
 
-Ut1 = Ut(1.0)
-utd0 = copy(get_dirichlet_dof_values(Ut0))
-utd1 = copy(get_dirichlet_dof_values(Ut1))
-@test all(utd0 .== utd1)
-@test all(utd1 .== ud0)
+# Ut1 = Ut(1.0)
+# utd0 = copy(get_dirichlet_dof_values(Ut0))
+# utd1 = copy(get_dirichlet_dof_values(Ut1))
+# @test all(utd0 .== utd1)
+# @test all(utd1 .== ud0)
 
-Ω = Triangulation(model)
-degree = 2
-dΩ = Measure(Ω,degree)
+###
+# END DONE
+###
 
-a(u,v) = ∫(∇(v)⋅∇(u))dΩ
-b(v,t) = ∫(v*f(t))dΩ
+###
+# BEGIN DONE in TransientFEOperatorsTests.jl
+###
 
-res(t,u,v) = a(u,v) + ∫(∂t(u)*v)dΩ - b(v,t)
-jac(t,u,du,v) = a(du,v)
-jac_t(t,u,dut,v) = ∫(dut*v)dΩ
+# Ω = Triangulation(model)
+# degree = 2
+# dΩ = Measure(Ω,degree)
 
-U0 = U(0.0)
-_res(u,v) = a(u,v) + 10.0*∫(u*v)dΩ - b(v,0.0)
-_jac(u,du,v) = a(du,v) + 10.0*∫(du*v)dΩ
-_op = FEOperator(_res,_jac,U0,V0)
+# a(u,v) = ∫(∇(v)⋅∇(u))dΩ
+# b(v,t) = ∫(v*f(t))dΩ
 
-uh = interpolate_everywhere(0.0,U0)#1.0)
-using Gridap.FESpaces: allocate_residual, allocate_jacobian
-_r = allocate_residual(_op,uh)
-_J = allocate_jacobian(_op,uh)
-using Gridap.FESpaces: residual!, jacobian!
-residual!(_r,_op,uh)
-jacobian!(_J,_op,uh)
+# res(t,u,v) = a(u,v) + ∫(∂t(u)*v)dΩ - b(v,t)
+# jac(t,u,du,v) = a(du,v)
+# jac_t(t,u,dut,v) = ∫(dut*v)dΩ
 
-op = TransientFEOperator(res,jac,jac_t,U,V0)
-odeop = get_algebraic_operator(op)
-cache = allocate_cache(odeop)
+# U0 = U(0.0)
+# _res(u,v) = a(u,v) + 10.0*∫(u*v)dΩ - b(v,0.0)
+# _jac(u,du,v) = a(du,v) + 10.0*∫(du*v)dΩ
+# _op = FEOperator(_res,_jac,U0,V0)
 
-r = allocate_residual(op,0.0,uh,cache)
-J = allocate_jacobian(op,0.0,uh,cache)
-uh10 = interpolate_everywhere(0.0,U0)#10.0)
-xh = TransientCellField(uh,(uh10,))
-residual!(r,op,0.0,xh,cache)
-jacobian!(J,op,1.0,xh,1,1.0,cache)
-jacobian!(J,op,1.0,xh,2,10.0,cache)
-@test all(r.≈_r)
-@test all(J.≈_J)
+# uh = interpolate_everywhere(0.0,U0)#1.0)
+# using Gridap.FESpaces: allocate_residual, allocate_jacobian
+# _r = allocate_residual(_op,uh)
+# _J = allocate_jacobian(_op,uh)
+# using Gridap.FESpaces: residual!, jacobian!
+# residual!(_r,_op,uh)
+# jacobian!(_J,_op,uh)
+
+# op = TransientFEOperator(res,jac,jac_t,U,V0)
+# odeop = get_algebraic_operator(op)
+# cache = allocate_cache(odeop)
+
+# r = allocate_residual(op,0.0,uh,cache)
+# J = allocate_jacobian(op,0.0,uh,cache)
+# uh10 = interpolate_everywhere(0.0,U0)#10.0)
+# xh = TransientCellField(uh,(uh10,))
+# residual!(r,op,0.0,xh,cache)
+# jacobian!(J,op,1.0,xh,1,1.0,cache)
+# jacobian!(J,op,1.0,xh,2,10.0,cache)
+# @test all(r.≈_r)
+# @test all(J.≈_J)
+
+###
+# END DONE
+###
 
 U0 = U(0.0)
 uh0 = interpolate_everywhere(0.0,U0)
