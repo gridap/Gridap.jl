@@ -117,7 +117,7 @@ struct GenericTableau{T<:TableauType} <: AbstractTableau{T}
 
   function GenericTableau(matrix, weights, order)
     nodes = reshape(sum(matrix, dims=2), size(matrix, 1))
-    T = _butcher_tableau_type(matrix)
+    T = _tableau_type(matrix)
     new{T}(matrix, weights, nodes, order)
   end
 end
@@ -138,7 +138,7 @@ function Polynomials.get_order(tableau::GenericTableau)
   tableau.order
 end
 
-function _butcher_tableau_type(matrix::Matrix)
+function _tableau_type(matrix::Matrix)
   T = ExplicitTableau
   n = size(matrix, 1)
   for i in 1:n
