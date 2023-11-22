@@ -2,12 +2,36 @@ module ODEsTests
 
 using Test
 
-@time @testset "ODETools" begin include("ODEToolsTests/runtests.jl") end
+@time @testset "TimeDerivatives" begin include("TimeDerivativesTests.jl") end
 
-@time @testset "TransientFETools" begin include("TransientFEToolsTests/runtests.jl") end
+@time @testset "ODEOperators" begin include("ODEOperatorsTests.jl") end
 
-# @time @testset "DiffEqsWrappers" begin include("DiffEqsWrappersTests/runtests.jl") end
+@time @testset "ODESolvers" begin include("ODESolversTests.jl") end
+
+@time @testset "ODESolutions" begin include("ODESolutionsTests.jl") end
+
+@time @testset "TransientFESpaces" begin include("TransientFESpacesTests.jl") end
+
+@time @testset "TransientCellFields" begin include("TransientCellFieldsTests.jl") end
+
+@time @testset "TransientFEOperators" begin include("TransientFEOperatorsTests.jl") end
+
+@time @testset "TransientFESolutions" begin include("TransientFESolutionsTests.jl") end
+
+@time @testset "ODESolversAll" begin include("ODESolversAllTests/runtests.jl") end
+
+@time @testset "TransientProblems" begin include("TransientProblemsTests/runtests.jl") end
+
+# TODO Find a way to run the same tests as in
+# - TransientFETests
+# - TransientBlockMultifieldStyleTests
+# - TransientFEOperatorsTests
+# - AffineFEOperatorsTests
+# - ConstantFEOperatorsTests
+# - Transient2ndOrderFEOperatorsTests
+
+# @time @testset "DiffEqsWrappers" begin include("_DiffEqsWrappersTests.jl") end
 
 # include("../bench/runbenchs.jl")
 
-end #module
+end # module ODEsTests
