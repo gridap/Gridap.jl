@@ -19,6 +19,7 @@ using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
+using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.CellData
 using Gridap.FESpaces
@@ -67,6 +68,30 @@ export ForwardEuler
 export BackwardEuler
 export ThetaMethod
 export MidPoint
+
+export TableauType
+export ExplicitTableau
+export ImplicitTableau
+export FullyImplicitTableau
+export DiagonallyImplicitTableau
+export ImplicitExplicitTableau
+
+export AbstractTableau
+export get_matrix
+export get_weights
+export get_nodes
+export get_order
+
+export get_embedded_weights
+export get_embedded_order
+
+export GenericTableau
+export EmbeddedTableau
+export IMEXTableau
+
+export TableauName
+export ButcherTableau
+export available_tableaus
 
 export test_ode_solver
 

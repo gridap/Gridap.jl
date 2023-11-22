@@ -189,6 +189,10 @@ using Gridap.CellData: ∫; export ∫
 @publish ODEs BackwardEuler
 @publish ODEs ThetaMethod
 @publish ODEs MidPoint
+
+@publish ODEs ButcherTableau
+@publish ODEs available_tableaus
+
 # @publish ODEs RungeKutta
 # @publish ODEs IMEXRungeKutta
 # @publish ODEs Newmark

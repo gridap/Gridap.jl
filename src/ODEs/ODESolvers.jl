@@ -93,3 +93,5 @@ include("ODESolvers/ForwardEuler.jl")
 include("ODESolvers/BackwardEuler.jl")
 
 include("ODESolvers/ThetaMethod.jl")
+
+include("ODESolvers/Tableaus.jl")
