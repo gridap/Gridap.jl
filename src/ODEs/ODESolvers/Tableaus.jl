@@ -4,8 +4,8 @@
 """
     abstract type TableauType <: GridapType end
 
-Trait for `AbstractTableau` to differentiate between explicit, implicit and
-implicit-explicit tableaus
+Trait that indicates whether a tableau is explicit, implicit or
+implicit-explicit
 """
 abstract type TableauType <: GridapType end
 
@@ -19,7 +19,7 @@ struct ExplicitTableau <: TableauType end
 """
     abstract type ImplicitTableau <: TableauType end
 
-Tableau whose matrix has at least one nonzero coefficient outside the strict
+Tableau whose matrix has at least one nonzero coefficient outside its strict
 lower triangular part
 """
 abstract type ImplicitTableau <: TableauType end
@@ -35,7 +35,7 @@ struct DiagonallyImplicitTableau <: ImplicitTableau end
 """
     struct FullyImplicitTableau <: ImplicitTableau end
 
-Tableau whose matrix has at least one nonzero coefficient in the strict upper
+Tableau whose matrix has at least one nonzero coefficient in its strict upper
 triangular part
 """
 struct FullyImplicitTableau <: ImplicitTableau end
@@ -61,7 +61,7 @@ abstract type AbstractTableau{T<:TableauType} <: GridapType end
 """
     TableauType(::AbstractTableau) -> TableauType
 
-Return the `TableauType` of the `AbtractTableau`
+Return the `TableauType` of the tableau
 """
 TableauType(::AbstractTableau{T}) where {T} = T
 
@@ -105,7 +105,7 @@ end
 # GenericTableau #
 ##################
 """
-    struct GenericTableau <: AbstractTableau
+    struct GenericTableau <: AbstractTableau end
 
 Generic type that stores any type of Butcher tableau
 """
@@ -156,7 +156,7 @@ end
 # EmbeddedTableau #
 ###################
 """
-    struct EmbeddedTableau <: AbstractTableau
+    struct EmbeddedTableau <: AbstractTableau end
 
 Generic type that stores any type of embedded Butcher tableau
 """
@@ -204,7 +204,7 @@ end
 # IMEXTableau #
 ###############
 """
-    struct IMEXTableau <: AbstractTableau
+    struct IMEXTableau <: AbstractTableau end
 
 Generic type that stores any type of implicit-explicit pair of Butcher tableaus,
 that form a valid IMEX scheme

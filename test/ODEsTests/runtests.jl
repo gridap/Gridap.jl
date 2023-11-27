@@ -16,9 +16,9 @@ using Test
 
 # @time @testset "TransientFEOperators" begin include("TransientFEOperatorsTests.jl") end
 
-# @time @testset "TransientFESolutions" begin include("TransientFESolutionsTests.jl") end
+@time @testset "TransientFESolutions" begin include("TransientFESolutionsTests.jl") end
 
-@time @testset "ODESolversAll" begin include("ODESolversAllTests/runtests.jl") end
+# @time @testset "ODESolversAll" begin include("ODESolversAllTests/runtests.jl") end
 
 # @time @testset "TransientProblems" begin include("TransientProblemsTests/runtests.jl") end
 

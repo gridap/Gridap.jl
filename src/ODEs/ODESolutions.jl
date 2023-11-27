@@ -4,8 +4,9 @@
 """
     abstract type ODESolution <: GridapType end
 
-Wrapper around an ODE operator and an ODE solution. It is an iterator that
-computes the solution at each time step in a lazy fashion
+Wrapper around an `ODEOperator` and an `ODESolver`. It is an iterator that
+computes the solution at each time step in a lazy fashion when accessing the
+solution
 
 - [`Base.iterate(sol)`](@ref)
 - [`Base.iterate(sol, state)`](@ref)
@@ -15,7 +16,8 @@ abstract type ODESolution <: GridapType end
 """
     Base.iterate(sol::ODESolution) -> ((OneOrMoreVectors, Real), StateType)
 
-Allocate a cache and perform one time step of the ODE operator
+Allocate a cache and perform one time step of the `ODEOperator` with the
+`ODESolver` attached to the `ODESolution`
 """
 function Base.iterate(sol::ODESolution)
   @abstractmethod
@@ -24,7 +26,8 @@ end
 """
     Base.iterate(sol::ODESolution) -> ((OneOrMoreVectors, Real), StateType)
 
-Perform one time step of the ODE operator
+Perform one time step of the `ODEOperator` with the `ODESolver` attached to the
+`ODESolution`
 """
 function Base.iterate(sol::ODESolution, state)
   @abstractmethod
@@ -36,9 +39,9 @@ Base.IteratorSize(::Type{<:ODESolution}) = Base.SizeUnknown()
 # GenericODESolution #
 ######################
 """
-    struct GenericODESolution{T} <: ODESolution
+    struct GenericODESolution{T} <: ODESolution end
 
-Generic wrapper for the evolution of an ODE operator with an ODE solver
+Generic wrapper for the evolution of an `ODEOperator` with an `ODESolver`
 """
 struct GenericODESolution{T} <: ODESolution
   solver::ODESolver

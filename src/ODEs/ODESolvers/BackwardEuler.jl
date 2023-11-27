@@ -1,4 +1,6 @@
 """
+    struct BackwardEuler <: ODESolver end
+
 BackwardEuler ODE solver
 """
 struct BackwardEuler <: ODESolver
@@ -37,10 +39,10 @@ function solve_step!(
 end
 
 """
-    struct BackwardEulerSolverOperator <: NonlinearOperator
+    struct BackwardEulerSolverOperator <: NonlinearOperator end
 
 Nonlinear operator that represents the Backward Euler nonlinear operator at a
-given time step, i.e., A(t, u_n+1, (u_n+1 - u_n) / dt)
+given time step, i.e., residual(t, u_n+1, (u_n+1 - u_n) / dt)
 """
 struct BackwardEulerSolverOperator <: NonlinearOperator
   ode_op::ODEOperator
@@ -61,7 +63,7 @@ function Algebra.allocate_residual(
   op::BackwardEulerSolverOperator,
   u::AbstractVector
 )
-  allocate_residual(op.ode_op, op.tF, u, op.ode_cache)
+  allocate_residual(op.ode_op, op.tF, (u, u), op.ode_cache)
 end
 
 function Algebra.residual!(
@@ -79,7 +81,7 @@ function Algebra.allocate_jacobian(
   op::BackwardEulerSolverOperator,
   u::AbstractVector
 )
-  allocate_jacobian(op.ode_op, op.tF, u, op.ode_cache)
+  allocate_jacobian(op.ode_op, op.tF, (u, u), op.ode_cache)
 end
 
 function Algebra.jacobian!(

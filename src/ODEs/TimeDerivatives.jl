@@ -1,7 +1,7 @@
 """
     time_derivative(f::Function) -> Function
 
-First-order time derivative operator for a function f(x, t)
+First-order time derivative operator for a function `f(x, t)`
 """
 function time_derivative(f::Function)
   function time_derivative_f(x, t)
@@ -15,7 +15,7 @@ end
 """
     ∂t(f::Function) -> Function
 
-First-order time derivative operator for a function f(x, t)
+First-order time derivative operator for a function `f(x, t)`
 
 Alias for `time_derivative`.
 """
@@ -35,8 +35,8 @@ function _time_derivative_f(f, x, t, fxt::TensorValue)
 end
 
 """
-    ∂tt(f::Function)
+    ∂tt(f::Function) -> Function
 
-Second-order time derivative operator for a function f(x, t)
+Second-order time derivative operator for a function `f(x, t)`
 """
 ∂tt(f::Function) = ∂t(∂t(f))

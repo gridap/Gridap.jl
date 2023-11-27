@@ -72,6 +72,7 @@ end
 # xv = Point(rand(Float64, 2)...)
 # ∇f(xv, tv)
 
+# TODO
 # @santiagobadia : Is there any way to make this transparent to the user
 # I guess not unless we create a type for these analytical (space-only or
 # space-time via a trait) functions

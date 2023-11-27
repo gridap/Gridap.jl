@@ -1,5 +1,10 @@
 """
-θ-method ODE solver
+    struct ThetaMethod <: ODESolver end
+
+θ-method ODE solver:
+* θ = 0     Forward Euler
+* θ = 1/2   Crank-Nicolson / MidPoint
+* θ = 1     Backward Euler
 """
 struct ThetaMethod <: ODESolver
   nls::NonlinearSolver
@@ -57,10 +62,10 @@ function solve_step!(
 end
 
 """
-    struct ThetaMethodSolverOperator <: NonlinearOperator
+    struct ThetaMethodSolverOperator <: NonlinearOperator end
 
 Nonlinear operator that represents the θ-method nonlinear operator at a
-given time step, i.e., A(t, u_n+θ, (u_n+θ - u_n) / dt)
+given time step, i.e., residual(t, u_n+θ, (u_n+θ - u_n) / dt)
 """
 struct ThetaMethodSolverOperator <: NonlinearOperator
   ode_op::ODEOperator
@@ -81,7 +86,7 @@ function Algebra.allocate_residual(
   op::ThetaMethodSolverOperator,
   u::AbstractVector
 )
-  allocate_residual(op.ode_op, op.tθ, u, op.ode_cache)
+  allocate_residual(op.ode_op, op.tθ, (u, u), op.ode_cache)
 end
 
 function Algebra.residual!(
@@ -99,7 +104,7 @@ function Algebra.allocate_jacobian(
   op::ThetaMethodSolverOperator,
   u::AbstractVector
 )
-  allocate_jacobian(op.ode_op, op.tθ, u, op.ode_cache)
+  allocate_jacobian(op.ode_op, op.tθ, (u, u), op.ode_cache)
 end
 
 function Algebra.jacobian!(

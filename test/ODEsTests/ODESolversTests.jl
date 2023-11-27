@@ -78,4 +78,6 @@ uF, tF = utF
 @test tF ≈ t0 + dt
 @test all(uF .≈ u)
 
+@test test_ode_solver(ode_solver, ode_op, u0, t0, tF)
+
 end # module ODESolversTests

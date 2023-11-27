@@ -4,22 +4,13 @@ using Gridap
 using Gridap.Algebra
 using Gridap.ODEs
 
-import Gridap.Algebra: zero_initial_guess
-import Gridap.Algebra: allocate_residual
-import Gridap.Algebra: residual!
-import Gridap.Algebra: allocate_jacobian
-import Gridap.Algebra: jacobian!
-import Gridap.Algebra: solve!
-
-import Gridap.ODEs: solve_step!
-
 ################
 # NLSolverMock #
 ################
 struct NLSolverMock <: NonlinearSolver
 end
 
-function solve!(
+function Gridap.Algebra.solve!(
   x::AbstractVector, nls::NLSolverMock,
   op::NonlinearOperator, cache::Nothing
 )
@@ -33,7 +24,7 @@ function solve!(
   cache
 end
 
-function solve!(
+function Gridap.Algebra.solve!(
   x::AbstractVector, nls::NLSolverMock,
   op::NonlinearOperator, cache
 )
@@ -56,7 +47,7 @@ struct ODESolverMock <: ODESolver
   dt::Float64
 end
 
-function solve_step!(
+function Gridap.ODEs.solve_step!(
   uF::AbstractVector,
   solver::ODESolverMock, ode_op::ODEOperator,
   u0::AbstractVector, t0::Real, cache
@@ -96,28 +87,32 @@ struct OperatorMock <: NonlinearOperator
   ode_cache
 end
 
-function allocate_residual(op::OperatorMock, u::AbstractVector)
-  allocate_residual(op.ode_op, op.tF, u, op.ode_cache)
+function Gridap.Algebra.allocate_residual(op::OperatorMock, u::AbstractVector)
+  allocate_residual(op.ode_op, op.tF, (u, u), op.ode_cache)
 end
 
-function residual!(r::AbstractVector, op::OperatorMock, u::AbstractVector)
+function Gridap.Algebra.residual!(
+  r::AbstractVector, op::OperatorMock, u::AbstractVector
+)
   u̇ = (u - op.u0) ./ op.dt
   residual!(r, op.ode_op, op.tF, (u, u̇), op.ode_cache)
   r
 end
 
-function allocate_jacobian(op::OperatorMock, u::AbstractVector)
-  allocate_jacobian(op.ode_op, op.tF, u, op.ode_cache)
+function Gridap.Algebra.allocate_jacobian(op::OperatorMock, u::AbstractVector)
+  allocate_jacobian(op.ode_op, op.tF, (u, u), op.ode_cache)
 end
 
-function jacobian!(J::AbstractMatrix, op::OperatorMock, u::AbstractVector)
+function Gridap.Algebra.jacobian!(
+  J::AbstractMatrix, op::OperatorMock, u::AbstractVector
+)
   u̇ = (u - op.u0) ./ op.dt
   fill!(J, 0)
   jacobians!(J, op.ode_op, op.tF, (u, u̇), (1, inv(op.dt)), op.ode_cache)
   J
 end
 
-function zero_initial_guess(op::OperatorMock)
+function Gridap.Algebra.zero_initial_guess(op::OperatorMock)
   u = similar(op.u0)
   fill!(u, zero(eltype(u)))
   u

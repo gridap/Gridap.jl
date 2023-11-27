@@ -22,7 +22,9 @@ using Gridap.Polynomials
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.CellData
+using Gridap.CellData: OperationCellField
 using Gridap.FESpaces
+using Gridap.FESpaces: SingleFieldFEBasis
 using Gridap.MultiField
 
 const ε = 100 * eps()
@@ -116,6 +118,7 @@ export TransientCellField
 include("TransientFEOperators.jl")
 
 export TransientFEOperator
+export TransientMassLinearFEOperator
 
 export test_transient_fe_operator
 

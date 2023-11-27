@@ -4,7 +4,7 @@
 """
     abstract type ODEOperatorType <: GridapType end
 
-Trait that indicates the (linearity) type of an ODEOperator
+Trait that indicates the (linearity) type of an ODE operator
 """
 abstract type ODEOperatorType <: GridapType end
 struct NonlinearODE <: ODEOperatorType end
@@ -19,11 +19,11 @@ struct ConstantMassODE <: AbstractMassLinearODE end
 """
     abstract type ODEOperator <: GridapType end
 
-General implicit, nonlinear ODE defined by a residual of the form
+General implicit, nonlinear ODE operator defined by a residual of the form
 ```math
-residual(t, u, v) = res(t, u, ∂t(u), ..., ∂t^N(u), v)
-```, where `N` is the order of the ODE operator `∂t^k(u)` is the k-th time
-derivative of u.
+residual(t, us) = res(t, us[1], ..., us[N])
+```, where `N` is the order of the ODE operator and `us[k] = ∂t^k(u)` is the
+k-th-order time derivative of u.
 
 - [`get_order(op)`](@ref)
 - [`allocate_cache(op, args...)`](@ref)
@@ -39,12 +39,13 @@ abstract type ODEOperator{C<:ODEOperatorType} <: GridapType end
 """
     MassLinearODEOperator
 
-ODE whose residual is linear with respect to the highest-order time derivative,
-e.g.
+ODE operator whose residual is linear with respect to the highest-order time
+derivative, e.g.
 ```math
-residual(t, u, v) = mass(t, ∂t^N(u), v) + res(t, u, ∂t(u), ..., ∂t^(N-1)(u), v)
-```, where `N` is the order of the ODE operator, `mass` is linear in `∂t^N(u)`
-and `res` does not depend on `∂t^N(u)`.
+residual(t, us) = mass(t, us[N]) + res(t, us[1], ..., us[N-1])
+```, where `N` is the order of the ODE operator, `us[k] = ∂t^k(u)` is the
+`k`-th-order time derivative of u, `mass` is linear in `∂t^N(u)` and `res` does
+not depend on `∂t^N(u)`.
 
 Alias for `ODEOperator{MassLinearODE}`.
 """
@@ -53,13 +54,14 @@ const MassLinearODEOperator = ODEOperator{MassLinearODE}
 """
     ConstantMassODEOperator
 
-ODE whose residual is linear with respect to the highest-order time derivative,
-and whose corresponding bilinear form is constant with respect to time and
-lower-order time derivatives, e.g.
+ODE operator whose residual is linear with respect to the highest-order time
+derivative, and whose corresponding bilinear form is constant with respect to
+time and lower-order time derivatives, e.g.
 ```math
-residual(t, u, v) = mass(∂t^N(u), v) + res(t, u, ∂t(u), ..., ∂t^(N-1)(u), v)
-```, where `N` is the order of the ODE operator, `mass` is linear in `∂t^N(u)`
-and independent of time, and `res` does not depend on `∂t^N(u)`.
+residual(t, us) = mass(us[N]) + res(t, us[1], ..., us[N-1])
+```, where `N` is the order of the ODE operator, `us[k] = ∂t^k(u)` is the
+`k`-th-order time derivative of u, `mass` is linear in `∂t^N(u)` and independent
+of time, and `res` does not depend on `∂t^N(u)`.
 
 Alias for `ODEOperator{ConstantMassODE}`.
 """
@@ -68,14 +70,14 @@ const ConstantMassODEOperator = ODEOperator{ConstantMassODE}
 """
     ODEOperatorType(op::ODEOperator) -> ODEOperatorType
 
-Return the `ODEOperatorType` of the ODE operator
+Return the `ODEOperatorType` of the `ODEOperator`
 """
 ODEOperatorType(::ODEOperator{C}) where {C} = C
 
 """
     get_order(::ODEOperator) -> Integer
 
-Return the order of the ODE operator
+Return the order of the `ODEOperator`
 """
 function Polynomials.get_order(::ODEOperator)
   @abstractmethod
@@ -84,7 +86,7 @@ end
 """
     allocate_cache(op::ODEOperator, args...) -> CacheType
 
-Allocate the cache required by the ODE operator
+Allocate the cache required by the `ODEOperator`
 """
 function allocate_cache(op::ODEOperator, args...)
   @abstractmethod
@@ -93,7 +95,7 @@ end
 """
     update_cache!(cache, op::ODEOperator, t::Real, args...) -> CacheType
 
-Update the cache of the ODE operator
+Update the cache of the `ODEOperator`
 """
 function update_cache!(cache, op::ODEOperator, t::Real, args...)
   @abstractmethod
@@ -102,15 +104,15 @@ end
 """
     allocate_residual(
       op::ODEOperator,
-      t::Real, us::OneOrMoreVectors,
+      t::Real, us::Tuple{Vararg{AbstractVector}},
       cache
     ) -> AbstractVector
 
-Allocate a residual vector for the ODE operator
+Allocate a residual vector for the `ODEOperator`
 """
 function Algebra.allocate_residual(
   op::ODEOperator,
-  t::Real, us::OneOrMoreVectors,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
   cache
 )
   @abstractmethod
@@ -123,7 +125,7 @@ end
       cache
     ) -> AbstractVector
 
-Evaluate the residual vector of the ODE operator
+Allocate a residual vector and evaluate it
 """
 function Algebra.residual(
   op::ODEOperator,
@@ -142,7 +144,7 @@ end
       cache
     ) -> AbstractVector
 
-Allocate a residual vector and evaluate it
+Evaluate the residual vector of the `ODEOperator`
 """
 function Algebra.residual!(
   r::AbstractVector, op::ODEOperator,
@@ -155,15 +157,15 @@ end
 """
     allocate_jacobian(
       op::ODEOperator,
-      t::Real, us::OneOrMoreVectors,
+      t::Real, us::Tuple{Vararg{AbstractVector}},
       cache
     ) -> AbstractMatrix
 
-Allocate a jacobian matrix for the ODE operator
+Allocate a jacobian matrix for the `ODEOperator`
 """
 function Algebra.allocate_jacobian(
   op::ODEOperator,
-  t::Real, us::OneOrMoreVectors,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
   cache
 )
   @abstractmethod
@@ -177,8 +179,9 @@ end
       cache
     ) -> AbstractMatrix
 
-Allocate a jacobian matrix and add the jacobian with respect to the `i`-th time
-derivative, weighted by some factor `γ`, to the matrix `J`
+Allocate a jacobian matrix for the `ODEOperator` and add the jacobian of the
+residual of the `ODEOperator` with respect to the `i`-th-order time derivative,
+weighted by some factor `γ`
 """
 function Algebra.jacobian(
   op::ODEOperator,
@@ -200,8 +203,8 @@ end
       cache
     ) -> AbstractMatrix
 
-Add the jacobian with respect to the `i`-th time derivative, weighted by some
-factor `γ`, to the matrix `J`
+Add the jacobian of the residual of the `ODEOperator` with respect to the
+`i`-th-order time derivative, weighted by some factor `γ`
 """
 function Algebra.jacobian!(
   J::AbstractMatrix, op::ODEOperator,
@@ -220,8 +223,8 @@ end
       cache
     ) -> AbstractMatrix
 
-Add the jacobian with respect to all time derivatives, weighted by some factors
-`γs`, to the matrix `J`
+Add the jacobian of the residual of the `ODEOperator` with respect to all time
+derivatives, weighted by some factors `γs`
 """
 function jacobians!(
   J::AbstractMatrix, op::ODEOperator,
@@ -238,14 +241,14 @@ end
 """
     test_ode_operator(
       op::ODEOperator,
-      t::Real, us::OneOrMoreVectors
+      t::Real, us::Tuple{Vararg{AbstractVector}}
     ) -> Bool
 
 Test the interface of `ODEOperator` specializations
 """
 function test_ode_operator(
   op::ODEOperator,
-  t::Real, us::OneOrMoreVectors
+  t::Real, us::Tuple{Vararg{AbstractVector}}
 )
   cache = allocate_cache(op)
   cache = update_cache!(cache, op, t)

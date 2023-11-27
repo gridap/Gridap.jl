@@ -9,6 +9,7 @@ using Gridap
 using Gridap.FESpaces
 using Gridap.MultiField
 using Gridap.ODEs
+using Gridap.ODEs: TransientMultiFieldCellField
 
 sol(x, t) = sum(x)
 sol(t::Real) = x -> sol(x, t)
@@ -29,19 +30,18 @@ dΩ = Measure(Ω, degree)
 ###############
 # SingleField #
 ###############
-m(t, ut, v) = ∫(ut ⋅ v) * dΩ
+m(t, ∂ₜu, v) = ∫(∂ₜu ⋅ v) * dΩ
 b(t, u, v) = ∫(∇(u) ⋅ ∇(v) + u ⋅ v) * dΩ
 l(t, v) = ∫(v) * dΩ
 
-res(t, u, v) = m(t, ∂t(u), y) + b(t, u, v) - l(t, v)
+res(t, u, v) = m(t, ∂t(u), v) + b(t, u, v) - l(t, v)
 jac(t, u, du, v) = b(t, du, v)
-jac_t(t, ut, dut, v) = m(t, dut, v)
+jac_t(t, u, dut, v) = m(t, dut, v)
 
 t0 = 0.0
 U0 = U(t0)
 u = get_trial_fe_basis(U0)
-# uₜ = TransientCellField(u, (u,)) # TODO Should work
-uₜ = ODEs.TransientSingleFieldCellField(u, (u,))
+uₜ = TransientCellField(u, (u,))
 v = get_fe_basis(V)
 
 matdata_jac = collect_cell_matrix(U0, V, jac(t0, uₜ, u, v))
@@ -57,18 +57,18 @@ vec = assemble_vector(assembler, vecdata)
 ##############
 # MultiField #
 ##############
-m2(t, (u1t, u2t), (v1, v2)) = ∫(u1t ⋅ v1) * dΩ
+m2(t, (∂ₜu1, ∂ₜu2), (v1, v2)) = ∫(∂ₜu1 ⋅ v1) * dΩ
 b2(t, (u1, u2), (v1, v2)) = ∫(∇(u1) ⋅ ∇(v1) + u2 ⋅ v2 - u1 ⋅ v2) * dΩ
 l2(t, (v1, v2)) = ∫(v1 - v2) * dΩ
 
-m3(t, (u1t, u2t, u3t), (v1, v2, v3)) = ∫(u1t ⋅ v1) * dΩ
+m3(t, (∂ₜu1, ∂ₜu2, ∂ₜu3), (v1, v2, v3)) = ∫(∂ₜu1 ⋅ v1) * dΩ
 b3(t, (u1, u2, u3), (v1, v2, v3)) = ∫(∇(u1) ⋅ ∇(v1) + u2 ⋅ v2 - u1 ⋅ v2 - u3 ⋅ v2 - u2 ⋅ v3) * dΩ
 l3(t, (v1, v2, v3)) = ∫(v1 - v2 + v3) * dΩ
 
 function test_multifield(n, mfs, m, b, l, U, V)
-  res(t, u, v) = m(t, ∂t(u), y) + b(t, u, v) - l(t, v)
+  res(t, u, v) = m(t, ∂t(u), v) + b(t, u, v) - l(t, v)
   jac(t, u, du, v) = b(t, du, v)
-  jac_t(t, ut, dut, v) = m(t, dut, v)
+  jac_t(t, u, dut, v) = m(t, dut, v)
 
   # Normal assembly
   Y = MultiFieldFESpace(fill(V, n))
@@ -77,7 +77,7 @@ function test_multifield(n, mfs, m, b, l, U, V)
   t0 = 0.0
   X0 = X(t0)
   u = get_trial_fe_basis(X0)
-  uₜ = TransientCellField(u, (u,))
+  uₜ = TransientMultiFieldCellField(u, (u,))
   v = get_fe_basis(Y)
 
   matdata_jac = collect_cell_matrix(X0, Y, jac(t0, uₜ, u, v))
@@ -93,12 +93,12 @@ function test_multifield(n, mfs, m, b, l, U, V)
   # Block MultiFieldStyle
   Y_blocks = MultiFieldFESpace(fill(V, n); style=mfs)
   X_blocks = TransientMultiFieldFESpace(fill(U, n); style=mfs)
-  X0_blocks = X_blocks(0)
+  X0_blocks = X_blocks(t0)
   test_fe_space(Y_blocks)
   test_fe_space(X0_blocks)
 
   u_blocks = get_trial_fe_basis(X0_blocks)
-  uₜ_blocks = TransientCellField(u_blocks, (u_blocks,))
+  uₜ_blocks = TransientMultiFieldCellField(u_blocks, (u_blocks,))
   v_blocks = get_fe_basis(Y_blocks)
 
   matdata_blocks_jac = collect_cell_matrix(

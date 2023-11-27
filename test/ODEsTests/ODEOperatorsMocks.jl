@@ -14,9 +14,6 @@ import Gridap.ODEs: allocate_cache
 import Gridap.ODEs: update_cache!
 import Gridap.ODEs: jacobians!
 
-const OneOrMoreOfType{T} = Union{T,Tuple{Vararg{T}}}
-const OneOrMoreVectors = OneOrMoreOfType{AbstractVector}
-
 # Toy 1st-order linear ODE
 # u_1_t - a * u_1 = 0
 # u_2_t - b * u_1 - c * u_2 = 0
@@ -46,9 +43,17 @@ end
 
 get_order(op::ODEOperatorMock) = op.order
 
+function allocate_cache(op::ODEOperatorMock)
+  nothing
+end
+
+function update_cache!(cache, op::ODEOperatorMock, t::Real)
+  cache
+end
+
 function allocate_residual(
   op::ODEOperatorMock,
-  t::Real, us::OneOrMoreVectors,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
   cache
 )
   zeros(2)
@@ -80,7 +85,7 @@ end
 
 function allocate_jacobian(
   op::ODEOperatorMock,
-  t::Real, us::OneOrMoreVectors,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
   cache
 )
   spzeros(2, 2)
@@ -143,20 +148,4 @@ function jacobians!(
     jacobian!(J, op, t, us, order, γ, cache)
   end
   J
-end
-
-function allocate_cache(op::ODEOperatorMock)
-  nothing
-end
-
-function allocate_cache(op::ODEOperatorMock, v::AbstractVector)
-  (similar(v), nothing)
-end
-
-function allocate_cache(op::ODEOperatorMock, v::AbstractVector, a::AbstractVector)
-  (similar(v), similar(a), nothing)
-end
-
-function update_cache!(cache, op::ODEOperatorMock, t::Real)
-  cache
 end

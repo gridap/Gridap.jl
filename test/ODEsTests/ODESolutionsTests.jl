@@ -25,24 +25,27 @@ u0 = 2 * ones(2)
 nls = NLSolverMock()
 solver = ODESolverMock(nls, dt)
 
-steps = solve(solver, op, u0, t0, tF)
+sol = solve(solver, op, u0, t0, tF)
 
 uF = copy(u0)
 fill!(uF, 1)
 
-for (n, (u_n, t_n)) in enumerate(steps)
+αⁿ, γⁿ = one(α), one(γ)
+for (n, (u_n, t_n)) in enumerate(sol)
   @test t_n ≈ t0 + n * dt
   if a == c
     D = α^n
     @test u_n[1] ≈ u0[1] / D
     @test u_n[2] ≈ (u0[2] - n * β * u0[1]) / D
   else
-    D = (α * γ)^n
-    @test u_n[1] ≈ (γ^n * u0[1]) / D
-    @test u_n[2] ≈ (α^n * u0[2] - β * (α^n - γ^n) / (α - γ)) / D
+    D = αⁿ * γⁿ
+    αⁿ = α * αⁿ
+    γⁿ = γ * γⁿ
+    @test u_n[1] ≈ (γⁿ * u0[1]) / D
+    @test u_n[2] ≈ (αⁿ * u0[2] - β * (αⁿ - γⁿ) / (α - γ)) / D
   end
 end
 
-@test test_ode_solution(steps)
+@test test_ode_solution(sol)
 
 end # module ODESolutionsTests

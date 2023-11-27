@@ -200,8 +200,9 @@ using Gridap.CellData: ∫; export ∫
 
 @publish ODEs TransientTrialFESpace
 @publish ODEs TransientMultiFieldFESpace
+
 @publish ODEs TransientFEOperator
-# @publish ODEs TransientMassLinearFEOperator
+@publish ODEs TransientMassLinearFEOperator
 
 # Deprecated / removed
 

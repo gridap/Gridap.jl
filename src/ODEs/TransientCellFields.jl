@@ -4,7 +4,10 @@
 """
     abstract type TransientCellField <: CellField end
 
-Transient CellField
+Transient version of `CellField`
+
+- [`∂t(f)`](@ref)
+- [`∂tt(f)`](@ref)
 """
 abstract type TransientCellField <: CellField end
 
@@ -25,24 +28,30 @@ Fields.gradient(f::TransientCellField) = @abstractmethod
 
 Fields.∇∇(f::TransientCellField) = @abstractmethod
 
+# TransientCellField interface
+function ∂t(f::TransientCellField)
+  @abstractmethod
+end
+
+function ∂tt(f::TransientCellField)
+  ∂t(∂t(f))
+end
+
 #################################
 # TransientSingleFieldCellField #
 #################################
 """
-    struct TransientSingleFieldCellField <: TransientCellField
+    struct TransientSingleFieldCellField <: TransientCellField end
 
-Transient CellField for a SingleField FESpace
+Transient `CellField` for a single-field `FESpace`
 """
 struct TransientSingleFieldCellField{A} <: TransientCellField
   cellfield::A
   derivatives::Tuple # {Vararg{A,B} where B}
 end
 
-# TODO include other single-field types? e.g. SingleFieldFEBasis
-const SingleFieldTypes = Union{GenericCellField,SingleFieldFEFunction}
-
-function TransientCellField(single_field::SingleFieldTypes, derivatives::Tuple)
-  TransientSingleFieldCellField(single_field, derivatives)
+function TransientCellField(field::CellField, derivatives::Tuple)
+  TransientSingleFieldCellField(field, derivatives)
 end
 
 # CellField interface
@@ -82,13 +91,19 @@ function Base.getproperty(f::TransientSingleFieldCellField, sym::Symbol)
   end
 end
 
+# TransientCellField interface
+function ∂t(f::TransientSingleFieldCellField)
+  cellfield, derivatives = first_and_tail(f.derivatives)
+  TransientCellField(cellfield, derivatives)
+end
+
 ################################
 # TransientMultiFieldCellField #
 ################################
 """
-    struct TransientMultiFieldCellField <: TransientCellField
+    struct TransientMultiFieldCellField <: TransientCellField end
 
-Transient CellField for a MultiField FESpace
+Transient `CellField` for a multi-field `FESpace`
 """
 struct TransientMultiFieldCellField{A} <: TransientCellField
   cellfield::A
@@ -96,21 +111,21 @@ struct TransientMultiFieldCellField{A} <: TransientCellField
   transient_single_fields::Vector{<:TransientCellField} # used to iterate
 end
 
-const MultiFieldTypes = Union{MultiFieldCellField,MultiFieldFEFunction}
-
-function TransientCellField(multi_field::MultiFieldTypes, derivatives::Tuple)
-  _flat = _to_transient_single_fields(multi_field, derivatives)
-  TransientMultiFieldCellField(multi_field, derivatives, _flat)
+function TransientMultiFieldCellField(fields::CellField, derivatives::Tuple)
+  _flat = _to_transient_single_fields(fields, derivatives)
+  TransientMultiFieldCellField(fields, derivatives, _flat)
 end
 
 # CellField interface
 function CellData.get_data(f::TransientMultiFieldCellField)
   s = """
-  Function get_data is not implemented for TransientMultiFieldCellField at this moment.
-  You need to extract the individual fields and then evaluate them separately.
+  Function `get_data` is not implemented for `TransientMultiFieldCellField` at
+  this moment. You need to extract the individual fields and then evaluate them
+  separately.
 
-  If ever implement this, evaluating a `MultiFieldCellField` directly would provide,
-  at each evaluation point, a tuple with the value of the different fields.
+  If this function is ever to be implemented, evaluating a `MultiFieldCellField`
+  directly would provide, at each evaluation point, a tuple with the value of
+  the different fields.
   """
   @notimplemented s
 end
@@ -171,7 +186,7 @@ function Base.iterate(f::TransientMultiFieldCellField, state)
   iterate(f.transient_single_fields, state)
 end
 
-# Time derivatives
+# TransientCellField interface
 function ∂t(f::TransientMultiFieldCellField)
   cellfield, derivatives = first_and_tail(f.derivatives)
 
@@ -186,17 +201,20 @@ function ∂t(f::TransientMultiFieldCellField)
   )
 end
 
-∂tt(f::TransientMultiFieldCellField) = ∂t(∂t(f))
-
 ####################
 # TransientFEBasis #
 ####################
+"""
+    struct TransientFEBasis <: FEBasis end
+
+Transient `FEBasis`
+"""
 struct TransientFEBasis{A} <: FEBasis
   febasis::A
   derivatives::Tuple{Vararg{A}}
 end
 
-# FEBasis interface
+# CellField interface
 CellData.get_data(f::TransientFEBasis) = get_data(f.febasis)
 
 CellData.get_triangulation(f::TransientFEBasis) = get_triangulation(f.febasis)
@@ -212,21 +230,31 @@ Fields.gradient(f::TransientFEBasis) = gradient(f.febasis)
 
 Fields.∇∇(f::TransientFEBasis) = ∇∇(f.febasis)
 
+# FEBasis interface
 FESpaces.BasisStyle(::Type{<:TransientFEBasis{A}}) where {A} = BasisStyle(A)
 
-# Time derivatives
-function ∂t(f::Union{TransientCellField,TransientFEBasis})
+# Transient FEBasis interface
+function ∂t(f::TransientFEBasis)
   cellfield, derivatives = first_and_tail(f.derivatives)
   TransientCellField(cellfield, derivatives)
 end
 
-function ∂tt(f::Union{TransientCellField,TransientFEBasis})
+function ∂tt(f::TransientFEBasis)
   ∂t(∂t(f))
 end
 
 #########
 # Utils #
 #########
+"""
+    _to_transient_single_fields(
+      multi_field,
+      derivatives
+    ) -> Vector{<:TransientSingleFieldCellField}
+
+Convert a `TransientMultiFieldCellField` into a vector of
+`TransientSingleFieldCellField`s
+"""
 function _to_transient_single_fields(multi_field, derivatives)
   transient_single_fields = TransientCellField[]
 

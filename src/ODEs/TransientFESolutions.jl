@@ -2,12 +2,12 @@
 # TransientFESolution #
 #######################
 """
-    struct TransientFESolution <: GridapType
+    struct TransientFESolution <: GridapType end
 
-It represents a FE function at a set of time steps. It is a wrapper of a ODE
-solution for free values combined with data for Dirichlet values. Thus, it is a
+This represents an `FEFunction` at a set of time steps. It is a wrapper of an
+`ODESolution` for free values combined with data for Dirichlet values. It is a
 lazy iterator that computes the solution at each time step when accessing the
-solution.
+solution
 """
 struct TransientFESolution <: GridapType
   odesol::ODESolution
@@ -28,14 +28,14 @@ end
 
 function TransientFESolution(
   solver::ODESolver, fe_op::TransientFEOperator,
-  xh0::Tuple{Vararg{Any}}, t0::Real, tF::Real
+  uh0::Tuple{Vararg{Any}}, t0::Real, tF::Real
 )
-  x0 = ()
-  for xhi in xh0
-    x0 = (x0..., get_free_dof_values(xhi))
+  u0 = ()
+  for uhi in uh0
+    u0 = (u0..., get_free_dof_values(uhi))
   end
   ode_op = get_algebraic_operator(fe_op)
-  ode_sol = solve(solver, ode_op, x0, t0, tF)
+  ode_sol = solve(solver, ode_op, u0, t0, tF)
   trial = get_trial(fe_op)
   TransientFESolution(ode_sol, trial)
 end
@@ -46,20 +46,6 @@ function Algebra.solve(
   u0, t0::Real, tF::Real
 )
   TransientFESolution(solver, op, u0, t0, tF)
-end
-
-function Algebra.solve(
-  solver::ODESolver, op::TransientFEOperator,
-  u0, v0, t0::Real, tF::Real
-)
-  TransientFESolution(solver, op, u0, v0, t0, tF)
-end
-
-function Algebra.solve(
-  solver::ODESolver, op::TransientFEOperator,
-  u0, v0, a0, t0::Real, tF::Real
-)
-  TransientFESolution(solver, op, u0, v0, a0, t0, tF)
 end
 
 # @fverdugo this is a general implementation of iterate for TransientFESolution
@@ -103,6 +89,11 @@ Base.IteratorSize(::Type{TransientFESolution}) = Base.SizeUnknown()
 ########
 # Test #
 ########
+"""
+    test_transient_fe_solution(sol::TransientFESolution) -> Bool
+
+Test the interface of `TransientFESolution` specializations
+"""
 function test_transient_fe_solution(sol::TransientFESolution)
   for (uh_n, t_n) in sol
     @test t_n isa Real
@@ -111,6 +102,14 @@ function test_transient_fe_solution(sol::TransientFESolution)
   true
 end
 
+"""
+    test_transient_fe_solver(
+      solver::ODESolver, op::TransientFEOperator,
+      u0, t0, tF
+    ) -> Bool
+
+Test the interface of `ODESolver` specializations on `TransientFEOperator`s
+"""
 function test_transient_fe_solver(
   solver::ODESolver, op::TransientFEOperator,
   u0, t0, tF

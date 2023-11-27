@@ -33,9 +33,8 @@ V = FESpace(model, reffe, conformity=:H1, dirichlet_tags="boundary")
 U = TransientTrialFESpace(V, u)
 
 # Integration
-degree = 2 * order
-
 Ω = Triangulation(model)
+degree = 2 * order
 dΩ = Measure(Ω, degree)
 
 # Γ = BoundaryTriangulation(model, tags="boundary")
@@ -45,14 +44,18 @@ dΩ = Measure(Ω, degree)
 # β = 10
 
 # ODE operator
-m(t, u, v) = ∫(u * v) * dΩ
-a(t, u, v) = ∫(∇(v) ⊙ ∇(u)) * dΩ # - ∫(v ⋅ (nΓ ⋅ ∇(u)) + u ⋅ (nΓ ⋅ ∇(v)) - β / h * (v ⋅ u)) * dΓ
-b(t, v) = ∫(v * f(t)) * dΩ # - ∫(u(t) ⋅ (nΓ ⋅ ∇(v)) - β / h * (v ⋅ u(t))) * dΓ
+m(t, u, v) = ∫(u ⋅ v) * dΩ
+a(t, u, v) = ∫(∇(u) ⊙ ∇(v)) * dΩ # - ∫(u ⋅ (nΓ ⋅ ∇(v)) + u ⋅ (nΓ ⋅ ∇(v)) - β / h * (u ⋅ v)) * dΓ
+b(t, v) = ∫(v ⋅ f(t)) * dΩ # - ∫(u(t) ⋅ (nΓ ⋅ ∇(v)) - β / h * (u(t) ⋅ v)) * dΓ
 
-res(t, u, v) = m(t, ∂t(u), v) + a(t, u, v) - b(t, v)
+mass(t, u, v) = m(t, ∂t(u), v)
+part_res(t, u, v) = a(t, u, v) - b(t, v)
+full_res(t, u, v) = mass(t, u, v) + part_res(t, u, v)
 jac(t, u, du, v) = a(t, du, v)
 jac_t(t, u, dut, v) = m(t, dut, v)
-op = TransientFEOperator(res, jac, jac_t, U, V)
+
+op_nonlinear = TransientFEOperator(full_res, jac, jac_t, U, V)
+op_masslinear = TransientMassLinearFEOperator(mass, part_res, jac, jac_t, U, V)
 
 # ODE solver
 t0 = 0.0
@@ -65,20 +68,21 @@ uh0 = interpolate_everywhere(u(t0), U0)
 nls = NLSolverMock()
 ode_solver = ODESolverMock(nls, dt)
 
-sol = solve(ode_solver, op, uh0, t0, tF)
-@test test_transient_fe_solution(sol)
+for op in (op_nonlinear, op_masslinear)
+  sol = solve(ode_solver, op, uh0, t0, tF)
+  @test test_transient_fe_solution(sol)
 
-tol = 1.0e-6
-l = 0
-for (uh_n, t_n) in sol
-  eh_n = u(t_n) - uh_n
-  e_n = sqrt(sum(∫(eh_n * eh_n) * dΩ))
-  @test e_n < tol
+  tol = 1.0e-6
+  l = 0
+  for (uh_n, t_n) in sol
+    eh_n = u(t_n) - uh_n
+    e_n = sqrt(sum(∫(eh_n * eh_n) * dΩ))
+    @test e_n < tol
 
-  global l
-  l += 1
+    l += 1
+  end
+
+  @test l == trunc(Int, ceil((tF - t0) / dt))
 end
-
-@test l == trunc(Int, ceil((tF - t0) / dt))
 
 end # module TransientFESolutionsTests
