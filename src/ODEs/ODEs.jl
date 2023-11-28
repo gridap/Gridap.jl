@@ -43,11 +43,11 @@ include("ODEOperators.jl")
 export ODEOperatorType
 export NonlinearODE
 export MassLinearODE
-export ConstantMassODE
+export LinearODE
 
 export ODEOperator
 export MassLinearODEOperator
-export ConstantMassODEOperator
+export LinearODEOperator
 
 export get_order
 export allocate_cache
@@ -57,6 +57,8 @@ export residual!
 export allocate_jacobian
 export jacobian!
 export jacobians!
+export is_jacobian_constant
+export is_forcing_constant
 
 export test_ode_operator
 
@@ -82,7 +84,6 @@ export AbstractTableau
 export get_matrix
 export get_weights
 export get_nodes
-export get_order
 
 export get_embedded_weights
 export get_embedded_order
@@ -119,8 +120,11 @@ include("TransientFEOperators.jl")
 
 export TransientFEOperator
 export TransientMassLinearFEOperator
+export TransientLinearFEOperator
 
 export test_transient_fe_operator
+
+include("ODEOperatorsFromFEOperators.jl")
 
 include("TransientFESolutions.jl")
 
@@ -133,4 +137,5 @@ export test_transient_fe_solver
 
 end # module ODEs
 
+# TODO useful?
 const GridapODEs = ODEs

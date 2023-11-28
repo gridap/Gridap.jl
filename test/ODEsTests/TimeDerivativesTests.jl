@@ -87,7 +87,7 @@ f2(x, t) = x[1] * t^2
 ∂tf2(x, t) = 2 * x[1] * t
 ∂ttf2(x, t) = 2 * x[1]
 
-for (f, ∂tf, ∂ttf) in ((f1,∂tf1, ∂ttf1), (f2,∂tf2, ∂ttf2),)
+for (f, ∂tf, ∂ttf) in ((f1, ∂tf1, ∂ttf1), (f2, ∂tf2, ∂ttf2),)
   dtf = (x, t) -> ForwardDiff.derivative(t -> f(x, t), t)
   dttf = (x, t) -> ForwardDiff.derivative(t -> dtf(x, t), t)
 

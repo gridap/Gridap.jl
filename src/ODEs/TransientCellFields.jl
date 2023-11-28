@@ -4,9 +4,12 @@
 """
     abstract type TransientCellField <: CellField end
 
-Transient version of `CellField`
+Transient version of `CellField`.
 
+# Mandatory (in addition to the `CellField` interface)
 - [`∂t(f)`](@ref)
+
+# Optional
 - [`∂tt(f)`](@ref)
 """
 abstract type TransientCellField <: CellField end
@@ -43,7 +46,7 @@ end
 """
     struct TransientSingleFieldCellField <: TransientCellField end
 
-Transient `CellField` for a single-field `FESpace`
+Transient `CellField` for a single-field `FESpace`.
 """
 struct TransientSingleFieldCellField{A} <: TransientCellField
   cellfield::A
@@ -103,7 +106,7 @@ end
 """
     struct TransientMultiFieldCellField <: TransientCellField end
 
-Transient `CellField` for a multi-field `FESpace`
+Transient `CellField` for a multi-field `FESpace`.
 """
 struct TransientMultiFieldCellField{A} <: TransientCellField
   cellfield::A
@@ -207,7 +210,7 @@ end
 """
     struct TransientFEBasis <: FEBasis end
 
-Transient `FEBasis`
+Transient `FEBasis`.
 """
 struct TransientFEBasis{A} <: FEBasis
   febasis::A
@@ -253,7 +256,7 @@ end
     ) -> Vector{<:TransientSingleFieldCellField}
 
 Convert a `TransientMultiFieldCellField` into a vector of
-`TransientSingleFieldCellField`s
+`TransientSingleFieldCellField`s.
 """
 function _to_transient_single_fields(multi_field, derivatives)
   transient_single_fields = TransientCellField[]

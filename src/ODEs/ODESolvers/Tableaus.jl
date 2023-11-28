@@ -5,14 +5,14 @@
     abstract type TableauType <: GridapType end
 
 Trait that indicates whether a tableau is explicit, implicit or
-implicit-explicit
+implicit-explicit.
 """
 abstract type TableauType <: GridapType end
 
 """
     struct ExplicitTableau <: TableauType end
 
-Tableau whose matrix is strictly lower triangular
+Tableau whose matrix is strictly lower triangular.
 """
 struct ExplicitTableau <: TableauType end
 
@@ -20,7 +20,7 @@ struct ExplicitTableau <: TableauType end
     abstract type ImplicitTableau <: TableauType end
 
 Tableau whose matrix has at least one nonzero coefficient outside its strict
-lower triangular part
+lower triangular part.
 """
 abstract type ImplicitTableau <: TableauType end
 
@@ -28,7 +28,7 @@ abstract type ImplicitTableau <: TableauType end
     struct DiagonallyImplicitTableau <: ImplicitTableau end
 
 Tableau whose matrix is lower triangular, with at least one nonzero diagonal
-coefficient
+coefficient.
 """
 struct DiagonallyImplicitTableau <: ImplicitTableau end
 
@@ -36,7 +36,7 @@ struct DiagonallyImplicitTableau <: ImplicitTableau end
     struct FullyImplicitTableau <: ImplicitTableau end
 
 Tableau whose matrix has at least one nonzero coefficient in its strict upper
-triangular part
+triangular part.
 """
 struct FullyImplicitTableau <: ImplicitTableau end
 
@@ -44,7 +44,7 @@ struct FullyImplicitTableau <: ImplicitTableau end
     struct ImplicitExplicitTableau <: ImplicitTableau end
 
 Pair of implicit and explicit tableaus that form a valid implicit-explicit
-scheme
+scheme.
 """
 struct ImplicitExplicitTableau <: TableauType end
 
@@ -54,21 +54,21 @@ struct ImplicitExplicitTableau <: TableauType end
 """
     abstract type AbstractTableau{T} <: GridapType end
 
-Type that stores the Butcher tableau corresponding to a Runge-Kutta scheme
+Type that stores the Butcher tableau corresponding to a Runge-Kutta scheme.
 """
 abstract type AbstractTableau{T<:TableauType} <: GridapType end
 
 """
     TableauType(::AbstractTableau) -> TableauType
 
-Return the `TableauType` of the tableau
+Return the `TableauType` of the tableau.
 """
 TableauType(::AbstractTableau{T}) where {T} = T
 
 """
     get_matrix(tableau::AbstractTableau) -> AbstractMatrix
 
-Return the matrix of the tableau
+Return the matrix of the tableau.
 """
 function Algebra.get_matrix(tableau::AbstractTableau)
   @abstractmethod
@@ -77,7 +77,7 @@ end
 """
     get_weights(tableau::AbstractTableau) -> AbstractVector
 
-Return the weights of the tableau
+Return the weights of the tableau.
 """
 function ReferenceFEs.get_weights(tableau::AbstractTableau)
   @abstractmethod
@@ -86,7 +86,7 @@ end
 """
     get_nodes(tableau::AbstractTableau) -> AbstractVector
 
-Return the nodes of the tableau
+Return the nodes of the tableau.
 """
 function ReferenceFEs.get_nodes(tableau::AbstractTableau)
   @abstractmethod
@@ -95,7 +95,7 @@ end
 """
     get_order(tableau::AbstractTableau) -> Integer
 
-Return the order of the scheme corresponding to the tableau
+Return the order of the scheme corresponding to the tableau.
 """
 function Polynomials.get_order(tableau::AbstractTableau)
   @abstractmethod
@@ -107,13 +107,13 @@ end
 """
     struct GenericTableau <: AbstractTableau end
 
-Generic type that stores any type of Butcher tableau
+Generic type that stores any type of Butcher tableau.
 """
 struct GenericTableau{T<:TableauType} <: AbstractTableau{T}
   matrix::Matrix
   weights::Vector
   nodes::Vector
-  order::Int
+  order::Integer
 
   function GenericTableau(matrix, weights, order)
     nodes = reshape(sum(matrix, dims=2), size(matrix, 1))
@@ -158,12 +158,12 @@ end
 """
     struct EmbeddedTableau <: AbstractTableau end
 
-Generic type that stores any type of embedded Butcher tableau
+Generic type that stores any type of embedded Butcher tableau.
 """
 struct EmbeddedTableau{T} <: AbstractTableau{T}
   tableau::AbstractTableau{T}
   emb_weights::Vector
-  emb_order::Int
+  emb_order::Integer
 end
 
 function Algebra.get_matrix(tableau::EmbeddedTableau)
@@ -185,7 +185,7 @@ end
 """
     get_embedded_weights(tableau::EmbeddedTableau) -> AbstractVector
 
-Return the embedded weight of the tableau
+Return the embedded weight of the tableau.
 """
 function get_embedded_weights(tableau::EmbeddedTableau)
   tableau.emb_weights
@@ -194,7 +194,7 @@ end
 """
     get_embedded_order(tableau::EmbeddedTableau) -> Integer
 
-Return the embedded order of the tableau
+Return the embedded order of the tableau.
 """
 function get_embedded_order(tableau::EmbeddedTableau)
   tableau.emb_order
@@ -207,12 +207,12 @@ end
     struct IMEXTableau <: AbstractTableau end
 
 Generic type that stores any type of implicit-explicit pair of Butcher tableaus,
-that form a valid IMEX scheme
+that form a valid IMEX scheme.
 """
 struct IMEXTableau <: AbstractTableau{ImplicitExplicitTableau}
   im_tableau::AbstractTableau
   ex_tableau::AbstractTableau
-  order::Int
+  order::Integer
 
   function IMEXTableau(im_tableau, ex_tableau, order)
     Tim = TableauType(im_tableau)
@@ -252,14 +252,14 @@ end
 """
     abstract type TableauName <: GridapType end
 
-Name of a Butcher tableau
+Name of a Butcher tableau.
 """
 abstract type TableauName <: GridapType end
 
 """
     ButcherTableau(name::TableauName, type::Type) -> AbtractTableau
 
-Builds the Butcher tableau corresponding to a `TableauName`
+Builds the Butcher tableau corresponding to a `TableauName`.
 """
 function ButcherTableau(name::TableauName, type::Type=Float64)
   @abstractmethod

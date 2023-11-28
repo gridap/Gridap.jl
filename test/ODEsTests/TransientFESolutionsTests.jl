@@ -46,7 +46,7 @@ dΩ = Measure(Ω, degree)
 # ODE operator
 m(t, u, v) = ∫(u ⋅ v) * dΩ
 a(t, u, v) = ∫(∇(u) ⊙ ∇(v)) * dΩ # - ∫(u ⋅ (nΓ ⋅ ∇(v)) + u ⋅ (nΓ ⋅ ∇(v)) - β / h * (u ⋅ v)) * dΓ
-b(t, v) = ∫(v ⋅ f(t)) * dΩ # - ∫(u(t) ⋅ (nΓ ⋅ ∇(v)) - β / h * (u(t) ⋅ v)) * dΓ
+b(t, v) = ∫(f(t) ⋅ v) * dΩ # - ∫(u(t) ⋅ (nΓ ⋅ ∇(v)) - β / h * (u(t) ⋅ v)) * dΓ
 
 mass(t, u, v) = m(t, ∂t(u), v)
 part_res(t, u, v) = a(t, u, v) - b(t, v)

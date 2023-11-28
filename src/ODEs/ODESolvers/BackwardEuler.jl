@@ -1,7 +1,7 @@
 """
     struct BackwardEuler <: ODESolver end
 
-BackwardEuler ODE solver
+BackwardEuler ODE solver.
 """
 struct BackwardEuler <: ODESolver
   nls::NonlinearSolver
@@ -41,8 +41,10 @@ end
 """
     struct BackwardEulerSolverOperator <: NonlinearOperator end
 
-Nonlinear operator that represents the Backward Euler nonlinear operator at a
-given time step, i.e., residual(t, u_n+1, (u_n+1 - u_n) / dt)
+Backward Euler operator at a given time step, i.e.
+```math
+residual(t_n+1, u_n+1, (u_n+1 - u_n) / dt) = 0.
+```
 """
 struct BackwardEulerSolverOperator <: NonlinearOperator
   ode_op::ODEOperator
@@ -94,5 +96,5 @@ function Algebra.jacobian!(
   uF = u
   u0, u̇F, dt = op.u0, op.u̇F, op.dt
   _discrete_time_derivative!(u̇F, u0, uF, dt)
-  jacobians!(J, op.ode_op, op.tF, (uF, u̇F), (1, 1 / op.dt), op.ode_cache)
+  jacobians!(J, op.ode_op, op.tF, (uF, u̇F), (1, inv(op.dt)), op.ode_cache)
 end

@@ -203,6 +203,7 @@ using Gridap.CellData: ∫; export ∫
 
 @publish ODEs TransientFEOperator
 @publish ODEs TransientMassLinearFEOperator
+@publish ODEs TransientLinearFEOperator
 
 # Deprecated / removed
 

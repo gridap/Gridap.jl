@@ -57,7 +57,7 @@ function Gridap.ODEs.solve_step!(
 
   # Create or retrieve cache
   if isnothing(cache)
-    ode_cache = allocate_cache(ode_op)
+    ode_cache = allocate_cache(ode_op, t0, (u0, u0))
     nl_cache = nothing
   else
     ode_cache, nl_cache = cache

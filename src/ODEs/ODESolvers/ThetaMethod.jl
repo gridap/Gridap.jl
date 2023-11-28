@@ -1,7 +1,7 @@
 """
     struct ThetaMethod <: ODESolver end
 
-θ-method ODE solver:
+θ-method ODE solver.
 * θ = 0     Forward Euler
 * θ = 1/2   Crank-Nicolson / MidPoint
 * θ = 1     Backward Euler
@@ -26,12 +26,12 @@ MidPoint(nls, dt) = ThetaMethod(nls, dt, 0.5)
 
 function solve_step!(
   uF::AbstractVector,
-  solver::ThetaMethod, op::ODEOperator,
+  solver::ThetaMethod, ode_op::ODEOperator,
   u0::AbstractVector, t0::Real,
   cache
 )
   if isnothing(cache)
-    ode_cache = allocate_cache(op)
+    ode_cache = allocate_cache(ode_op)
     u̇θ = similar(u0)
     nls_cache = nothing
   else
@@ -44,10 +44,10 @@ function solve_step!(
   tF = t0 + dt
 
   # Update Dirichlet boundary conditions
-  ode_cache = update_cache!(ode_cache, op, tθ)
+  ode_cache = update_cache!(ode_cache, ode_op, tθ)
 
   # Create and solve discrete ODE operator
-  nl_op = ThetaMethodSolverOperator(op, ode_cache, tθ, dtθ, u0, u̇θ)
+  nl_op = ThetaMethodSolverOperator(ode_op, ode_cache, tθ, dtθ, u0, u̇θ)
   nls_cache = solve!(uF, solver.nls, nl_op, nls_cache)
 
   # The operator above solves for uθ
@@ -64,8 +64,10 @@ end
 """
     struct ThetaMethodSolverOperator <: NonlinearOperator end
 
-Nonlinear operator that represents the θ-method nonlinear operator at a
-given time step, i.e., residual(t, u_n+θ, (u_n+θ - u_n) / dt)
+Theta method operator at a given time step, i.e.
+```math
+residual(t_n+θ, u_n+θ, (u_n+θ - u_n) / θ / dt) = 0.
+```
 """
 struct ThetaMethodSolverOperator <: NonlinearOperator
   ode_op::ODEOperator

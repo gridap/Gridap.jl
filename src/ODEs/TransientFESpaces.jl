@@ -9,12 +9,16 @@
     abstract type AbstractTransientTrialFESpace <: FESpace end
 
 Transient version of `TrialFESpace`: the Dirichlet boundary conditions are
-allowed to be time-dependent
+allowed to be time-dependent.
 
+# Mandatory (in addition to the `FESpace` interface)
 - [`allocate_space(space)`](@ref)
-- [`evaluate(space, t)`](@ref)
+- [`evaluate(space, t::Nothing)`](@ref)
 - [`evaluate!(space, t)`](@ref)
 - [`∂t(space)`](@ref)
+
+# Optional
+- [`evaluate(space, t::Real)`](@ref)
 - [`∂tt(space)`](@ref)
 """
 abstract type AbstractTransientTrialFESpace <: FESpace end
@@ -22,7 +26,7 @@ abstract type AbstractTransientTrialFESpace <: FESpace end
 """
     allocate_space(space::AbstractTransientTrialFESpace) -> FESpace
 
-Allocate a transient space, intended to be updated at every time step
+Allocate a transient space, intended to be updated at every time step.
 """
 function allocate_space(space::AbstractTransientTrialFESpace)
   @abstractmethod
@@ -33,7 +37,7 @@ allocate_space(space::FESpace) = space
 """
     evaluate(space::AbstractTransientTrialFESpace, t::Real) -> FESpace
 
-Allocate a transient space and evaluate the Dirichlet values at time `t`
+Allocate a transient space and evaluate the Dirichlet values at time `t`.
 """
 function Arrays.evaluate(space::AbstractTransientTrialFESpace, t::Real)
   transient_space = allocate_space(space)
@@ -46,7 +50,7 @@ Arrays.evaluate(space::FESpace, t::Real) = space
 """
     evaluate(space::AbstractTransientTrialFESpace, t::Nothing) -> FESpace
 
-Evaluating at `nothing` means that the Dirichlet values are not important
+Evaluating at `nothing` means that the Dirichlet values are not important.
 """
 function Arrays.evaluate(space::AbstractTransientTrialFESpace, t::Nothing)
   @abstractmethod
@@ -60,7 +64,7 @@ Arrays.evaluate(space::FESpace, t::Nothing) = space
       space::AbstractTransientTrialFESpace, t::Real
     ) -> FESpace
 
-Replace the Dirichlet values of the space by those at time `t`
+Replace the Dirichlet values of the space by those at time `t`.
 """
 function Arrays.evaluate!(
   transient_space::FESpace,
@@ -74,7 +78,7 @@ Arrays.evaluate!(transient_space::FESpace, space::FESpace, t::Real) = space
 """
     (space::AbstractTransientTrialFESpace)(t) -> FESpace
 
-Alias for [`evaluate(space, t)`](@ref)
+Alias for [`evaluate(space, t)`](@ref).
 """
 (space::AbstractTransientTrialFESpace)(t) = evaluate(space, t)
 
@@ -89,7 +93,7 @@ end
 """
     ∂t(space::AbstractTransientTrialFESpace) -> FESpace
 
-First-order time derivative of the Dirichlet functions
+First-order time derivative of the Dirichlet functions.
 """
 function ∂t(space::AbstractTransientTrialFESpace)
   @abstractmethod
@@ -102,10 +106,10 @@ end
 """
     ∂tt(space::AbstractTransientTrialFESpace) -> FESpace
 
-Second-order time derivative of the Dirichlet functions
+Second-order time derivative of the Dirichlet functions.
 """
 function ∂tt(space::AbstractTransientTrialFESpace)
-  @abstractmethod
+  ∂t(∂t(space))
 end
 
 ∂tt(space::SingleFieldFESpace) = HomogeneousTrialFESpace(space)
@@ -126,7 +130,7 @@ end
 """
     struct TransientTrialFESpace <: AbstractTransientTrialFESpace end
 
-Single-field `FESpace` with transient Dirichlet data
+Single-field `FESpace` with transient Dirichlet data.
 """
 struct TransientTrialFESpace{U,U0} <: AbstractTransientTrialFESpace
   space::U
@@ -189,7 +193,7 @@ FESpaces.has_constraints(f::TransientTrialFESpace) = has_constraints(f.space)
 """
     struct TransientMultiFieldFESpace <: AbstractTransientTrialFESpace
 
-Multi-field `FESpace` with transient Dirichlet data
+Multi-field `FESpace` with transient Dirichlet data.
 """
 struct TransientMultiFieldFESpace{
   MS<:MultiFieldStyle,CS<:ConstraintStyle,V
@@ -223,7 +227,7 @@ function TransientMultiFieldFESpace(
 )
   Ts = map(get_dof_value_type, spaces)
   T = typeof(*(map(zero, Ts)...))
-  if isa(style, BlockMultiFieldStyle)
+  if style isa BlockMultiFieldStyle
     style = BlockMultiFieldStyle(style, spaces)
     VT = typeof(mortar(map(zero_free_values, spaces)))
   else
@@ -339,7 +343,7 @@ end
 """
     test_transient_trial_fe_space(U::AbstractTransientTrialFESpace) -> Bool
 
-Test the interface of `AbstractTransientTrialFESpace` specializations
+Test the interface of `AbstractTransientTrialFESpace` specializations.
 """
 function test_transient_trial_fe_space(U::AbstractTransientTrialFESpace)
   UX = evaluate(U, nothing)

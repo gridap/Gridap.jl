@@ -9,7 +9,7 @@ include("ODEOperatorsMocks.jl")
 include("ODESolversMocks.jl")
 
 a, b, c = 1.0, 0.0, 1.0
-ode_op = ODEOperatorMock{ConstantMassODE}(a, b, c, 1)
+ode_op = ODEOperatorMock{MassLinearODE}(a, b, c, 1)
 
 t0 = 0.0
 tF = 1.0

@@ -6,8 +6,9 @@
 
 Wrapper around an `ODEOperator` and an `ODESolver`. It is an iterator that
 computes the solution at each time step in a lazy fashion when accessing the
-solution
+solution.
 
+# Mandatory
 - [`Base.iterate(sol)`](@ref)
 - [`Base.iterate(sol, state)`](@ref)
 """
@@ -17,7 +18,7 @@ abstract type ODESolution <: GridapType end
     Base.iterate(sol::ODESolution) -> ((OneOrMoreVectors, Real), StateType)
 
 Allocate a cache and perform one time step of the `ODEOperator` with the
-`ODESolver` attached to the `ODESolution`
+`ODESolver` attached to the `ODESolution`.
 """
 function Base.iterate(sol::ODESolution)
   @abstractmethod
@@ -27,7 +28,7 @@ end
     Base.iterate(sol::ODESolution) -> ((OneOrMoreVectors, Real), StateType)
 
 Perform one time step of the `ODEOperator` with the `ODESolver` attached to the
-`ODESolution`
+`ODESolution`.
 """
 function Base.iterate(sol::ODESolution, state)
   @abstractmethod
@@ -41,7 +42,7 @@ Base.IteratorSize(::Type{<:ODESolution}) = Base.SizeUnknown()
 """
     struct GenericODESolution{T} <: ODESolution end
 
-Generic wrapper for the evolution of an `ODEOperator` with an `ODESolver`
+Generic wrapper for the evolution of an `ODEOperator` with an `ODESolver`.
 """
 struct GenericODESolution{T} <: ODESolution
   solver::ODESolver
@@ -88,9 +89,9 @@ end
 function Base.iterate(sol::GenericODESolution{<:Tuple{Vararg{AbstractVector}}})
   us0 = ()
   usF = ()
-  for i in eachindex(sol.us0)
-    us0 = (us0..., copy(sol.us0[i]))
-    usF = (usF..., copy(sol.us0[i]))
+  for k in eachindex(sol.us0)
+    us0 = (us0..., copy(sol.us0[k]))
+    usF = (usF..., copy(sol.us0[k]))
   end
   t0 = sol.t0
 
@@ -98,8 +99,8 @@ function Base.iterate(sol::GenericODESolution{<:Tuple{Vararg{AbstractVector}}})
   usF, tF, cache = solve_step!(usF, sol.solver, sol.op, us0, t0)
 
   # Update state
-  for i in eachindex(us0, usF)
-    copy!(us0[i], usF[i])
+  for k in eachindex(us0, usF)
+    copy!(us0[k], usF[k])
   end
   state = (usF, us0, tF, cache)
 
@@ -120,8 +121,8 @@ function Base.iterate(
   usF, tF, cache = solve_step!(usF, sol.solver, sol.op, us0, t0, cache)
 
   # Update state
-  for i in eachindex(us0, usF)
-    copy!(us0[i], usF[i])
+  for k in eachindex(us0, usF)
+    copy!(us0[k], usF[k])
   end
   state = (usF, us0, tF, cache)
 
@@ -134,12 +135,12 @@ end
 """
     test_ode_solution(sol::ODESolution) -> Bool
 
-Test the interface of `ODESolution` specializations
+Test the interface of `ODESolution` specializations.
 """
 function test_ode_solution(sol::ODESolution)
   for (us_n, t_n) in sol
-    @test isa(us_n, AbstractVector)
-    @test isa(t_n, Real)
+    @test us_n isa AbstractVector
+    @test t_n isa Real
   end
   true
 end

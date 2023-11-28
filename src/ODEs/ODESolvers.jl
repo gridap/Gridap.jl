@@ -9,7 +9,10 @@ corresponding updated cache. Here `us_n` is a vector of size `N-1`, where `N` is
 the order of the `ODEOperator`, and `us_n[k] = ∂t^k(u)(t_n)` is the `k`-th-order
 time derivative of `u` at `t_n`.
 
+# Mandatory
 - [`solve_step!(usF, solver, op, us0, t0[, cache])`](@ref)
+
+# Optional
 - [`solve(solver, op, us0, t0, tF)`](@ref)
 """
 abstract type ODESolver <: GridapType end
@@ -23,7 +26,7 @@ abstract type ODESolver <: GridapType end
     ) -> Tuple{Real,OneOrMoreVectors,CacheType}
 
 Perform one time step of the `ODEOperator` with the `ODESolver` from `t0` with
-initial state `us0`
+initial state `us0`.
 """
 function solve_step!(
   usF::OneOrMoreVectors,
@@ -49,7 +52,7 @@ end
     ) -> ODESolution
 
 Create an `ODESolution` wrapper around the `ODEOperator` and `ODESolver`,
-starting with state `us0` at time `t0`, to be evolved until `tF`
+starting with state `us0` at time `t0`, to be evolved until `tF`.
 """
 function Algebra.solve(
   solver::ODESolver, op::ODEOperator,
@@ -68,7 +71,7 @@ end
       us0::OneOrMoreVectors, t0::Real, tF::Real
     ) -> Bool
 
-Test the interface of `ODESolver` specializations
+Test the interface of `ODESolver` specializations.
 """
 function test_ode_solver(
   solver::ODESolver, op::ODEOperator,
@@ -88,7 +91,7 @@ end
       dt::Real
     ) -> AbstractVector
 
-Compute the discrete time derivative `u̇ = (u - u0) / dt`
+Compute the discrete time derivative `u̇ = (u - u0) / dt`.
 """
 function _discrete_time_derivative!(
   u̇::AbstractVector,

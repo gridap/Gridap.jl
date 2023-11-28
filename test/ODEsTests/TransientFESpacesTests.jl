@@ -5,22 +5,18 @@ using Test
 using Gridap
 using Gridap.ODEs
 
-import Gridap: ∇
-import Gridap.ODEs: ∂t
-import Gridap.ODEs: ∂tt
-
 u(x, t) = (x[1] + x[2]) * t
 u(t::Real) = x -> u(x, t)
 
 ∇u(x, t) = VectorValue(1, 1) * t
 ∇u(t::Real) = x -> ∇u(x, t)
-∇(::typeof(u)) = ∇u
+Gridap.Fields.∇(::typeof(u)) = ∇u
 
 ∂tu(t) = x -> x[1] + x[2]
-∂t(::typeof(u)) = ∂tu
+Gridap.ODEs.∂t(::typeof(u)) = ∂tu
 
 ∂ttu(t) = x -> zero(x[1])
-∂tt(::typeof(u)) = ∂ttu
+Gridap.ODEs.∂tt(::typeof(u)) = ∂ttu
 
 # f(t) = x -> (x[1] + x[2])
 

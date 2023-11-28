@@ -10,13 +10,13 @@ using Gridap.ODEs
 include("ODEOperatorsMocks.jl")
 
 a, b, c = 1.0, 2.0, 3.0
-op = ODEOperatorMock{ConstantMassODE}(a, b, c, 1)
+op = ODEOperatorMock{MassLinearODE}(a, b, c, 1)
 
 t = 0.0
 u = ones(2)
 u̇ = 2 * ones(2)
 
-cache = allocate_cache(op)
+cache = allocate_cache(op, t, (u, u̇))
 update_cache!(cache, op, t)
 
 r = allocate_residual(op, t, (u, u̇), cache)

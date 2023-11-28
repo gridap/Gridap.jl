@@ -7,7 +7,7 @@
 This represents an `FEFunction` at a set of time steps. It is a wrapper of an
 `ODESolution` for free values combined with data for Dirichlet values. It is a
 lazy iterator that computes the solution at each time step when accessing the
-solution
+solution.
 """
 struct TransientFESolution <: GridapType
   odesol::ODESolution
@@ -92,7 +92,7 @@ Base.IteratorSize(::Type{TransientFESolution}) = Base.SizeUnknown()
 """
     test_transient_fe_solution(sol::TransientFESolution) -> Bool
 
-Test the interface of `TransientFESolution` specializations
+Test the interface of `TransientFESolution` specializations.
 """
 function test_transient_fe_solution(sol::TransientFESolution)
   for (uh_n, t_n) in sol
@@ -108,7 +108,7 @@ end
       u0, t0, tF
     ) -> Bool
 
-Test the interface of `ODESolver` specializations on `TransientFEOperator`s
+Test the interface of `ODESolver` specializations on `TransientFEOperator`s.
 """
 function test_transient_fe_solver(
   solver::ODESolver, op::TransientFEOperator,

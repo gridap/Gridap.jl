@@ -1,26 +1,39 @@
-# TODO Conceptually, TransientFEOperator is a subtype of FEOperator and
-# ODEOperator. Should there be a hierarchy of types?
 """
     abstract type TransientFEOperator <: GridapType end
 
 Transient version of `FEOperator` corresponding to a residual of the form
 `residual(t, u, v) = 0`, that can involve time derivatives of `u`.
+
+Important note: For now, the residual and jacobians cannot be directly computed
+on a `TransientFEOperator`. They have to be evaluated on the corresponding
+algebraic operator, which is an `ODEOperator`. As such, `TransientFEOperator` is
+not exactly a subtype of `FEOperator`, but rather at the intersection of
+`FEOperator` and `ODEOperator`.
+
+# Mandatory
+- [`get_test(op)`](@ref)
+- [`get_trial(op)`](@ref)
+- [`get_algebraic_operator(op)`](@ref)
+- [`get_order(op)`](@ref)
+- [`get_assembler(op)`](@ref)
+- [`get_res(op::TransientFEOperator)`](@ref)
+- [`get_jacs(op::TransientFEOperator)`](@ref)
+- [`get_mass(op::TransientFEOperator{MassLinearODE})`](@ref)
+- [`get_forms(op::TransientFEOperator{LinearODE})`](@ref)
+
+# Optional
+- [`is_jacobian_constant(op, k)`](@ref)
+- [`is_forcing_constant(op::TransientFEOperator{<:AbstractMassLinearODE})`](@ref)
 """
 abstract type TransientFEOperator{C<:ODEOperatorType} <: GridapType end
 
 """
     ODEOperatorType(::Type{<:TransientFEOperator}) -> ODEOperatorType
 
-Return the `ODEOperatorType` of the `TransientFEOperator`
+Return the `ODEOperatorType` of the `TransientFEOperator`.
 """
+ODEOperatorType(op::TransientFEOperator) = ODEOperatorType(typeof(op))
 ODEOperatorType(::Type{<:TransientFEOperator{C}}) where {C} = C
-
-"""
-    get_assembler(op::TransientFEOperator) -> Assembler
-
-Return the assembler of the `TransientFEOperator`
-"""
-get_assembler(op::TransientFEOperator) = @abstractmethod
 
 # FEOperator interface
 function FESpaces.get_test(op::TransientFEOperator)
@@ -31,12 +44,6 @@ function FESpaces.get_trial(op::TransientFEOperator)
   @abstractmethod
 end
 
-"""
-    get_algebraic_operator(op::TransientFEOperator) -> ODEOperator
-
-Return an `ODEOperator` wrapper around the `TransientFEOperator`, that can be
-straightforwardly used with an `ODESolver`
-"""
 function FESpaces.get_algebraic_operator(op::TransientFEOperator{C}) where {C}
   ODEOpFromFEOp{C}(op)
 end
@@ -56,69 +63,127 @@ function update_cache!(cache, op::TransientFEOperator, t::Real)
   cache
 end
 
-# TODO replace CellField by TransientCellField?
+function is_jacobian_constant(op::TransientFEOperator, k::Integer)
+  false
+end
+
+function is_forcing_constant(op::TransientFEOperator{<:AbstractMassLinearODE})
+  false
+end
+
+# TransientFEOperator interface
+"""
+    get_assembler(op::TransientFEOperator) -> Assembler
+
+Return the assembler of the `TransientFEOperator`.
+"""
+function get_assembler(op::TransientFEOperator)
+  @abstractmethod
+end
+
+"""
+    get_res(op::TransientFEOperator) -> Function
+
+Return the (partial) residual of the `TransientFEOperator`.
+"""
+function get_res(op::TransientFEOperator)
+  @abstractmethod
+end
+
+"""
+    get_jacs(op::TransientFEOperator) -> Tuple{Vararg{Function}}
+
+Return the jacobians of the `TransientFEOperator`.
+"""
+function get_jacs(op::TransientFEOperator)
+  @abstractmethod
+end
+
+"""
+    get_mass(op::TransientFEOperator{MassLinearODE}) -> Function
+
+Return the mass bilinear form of the `TransientFEOperator`.
+"""
+function get_mass(op::TransientFEOperator{MassLinearODE})
+  @abstractmethod
+end
+
+"""
+    get_forms(op::TransientFEOperator{LinearODE}) -> Function
+
+Return the bilinear forms of the `TransientFEOperator`.
+"""
+function get_forms(op::TransientFEOperator{LinearODE})
+  @abstractmethod
+end
+
+# Broken FESpaces interface
+const res_jac_on_alg_op_msg = """
+For now, the residual and jacobians cannot be directly computed on a
+`TransientFEOperator`. They have to be evaluated on the corresponding
+algebraic operator, which is an `ODEOperator`.
+
+This is because the `ODEOperator` works with vectors and it is optimised to
+take advantage of constant jacobians.
+"""
+
 function Algebra.allocate_residual(
   op::TransientFEOperator,
-  t::Real, uh::CellField,
+  t::Real, uh::TransientCellField,
   cache
 )
-  @abstractmethod
+  error(res_jac_on_alg_op_msg)
 end
 
 function Algebra.residual(
   op::TransientFEOperator,
-  t::Real, uh::CellField,
+  t::Real, uh::TransientCellField,
   cache
 )
-  r = allocate_residual(op, t, uh, cache)
-  residual!(r, op, t, uh, cache)
-  r
+  error(res_jac_on_alg_op_msg)
 end
 
 function Algebra.residual!(
   r::AbstractVector, op::TransientFEOperator,
-  t::Real, uh::CellField,
+  t::Real, uh::TransientCellField,
   cache
 )
-  @abstractmethod
+  error(res_jac_on_alg_op_msg)
 end
 
 function Algebra.allocate_jacobian(
   op::TransientFEOperator,
-  t::Real, uh::CellField,
+  t::Real, uh::TransientCellField,
   cache
 )
-  @notimplemented
+  error(res_jac_on_alg_op_msg)
 end
 
 function Algebra.jacobian(
   op::TransientFEOperator,
-  t::Real, uh::CellField,
-  i::Int, γ::Real,
+  t::Real, uh::TransientCellField,
+  k::Integer, γ::Real,
   cache
 )
-  J = allocate_jacobian(op, t, uh, cache)
-  fillstored!(J, zero(eltype(J)))
-  jacobian!(J, op, t, uh, i, γ, cache)
-  J
+  error(res_jac_on_alg_op_msg)
 end
 
 function Algebra.jacobian!(
   J::AbstractMatrix, op::TransientFEOperator,
-  t::Real, uh::CellField,
-  i::Int, γ::Real,
+  t::Real, uh::TransientCellField,
+  k::Integer, γ::Real,
   cache
 )
-  @abstractmethod
+  error(res_jac_on_alg_op_msg)
 end
 
 function jacobians!(
   J::AbstractMatrix, op::TransientFEOperator,
-  t::Real, uh::CellField,
+  t::Real, uh::TransientCellField,
   γs::Tuple{Vararg{Real}},
   cache
 )
-  @abstractmethod
+  error(res_jac_on_alg_op_msg)
 end
 
 #############################
@@ -127,154 +192,88 @@ end
 """
     struct TransientFEOpFromWeakForm <: TransientFEOperator end
 
-Transient `FEOperator` defined by a transient weak form
+Transient `FEOperator` defined by a transient weak form.
 """
-struct TransientFEOpFromWeakForm{C} <: TransientFEOperator{C}
+struct TransientFEOpFromWeakForm <: TransientFEOperator{NonlinearODE}
   res::Function
   jacs::Tuple{Vararg{Function}}
+  jacs_constant::Tuple{Vararg{Bool}}
   assembler::Assembler
   trial::FESpace
   test::FESpace
   order::Integer
 end
 
+get_res(op::TransientFEOpFromWeakForm) = op.res
+
+get_jacs(op::TransientFEOpFromWeakForm) = op.jacs
+
 # Default constructors
-function TransientFEOperator(res::Function, trial, test; order::Integer=1)
+function TransientFEOperator(
+  res::Function,
+  trial, test;
+  order::Integer=1,
+  jacs_constant::Tuple{Vararg{Bool}}=ntuple(_ -> false, order + 1)
+)
   if trial isa MultiFieldFESpace
     TransientCellFieldType = TransientMultiFieldCellField
   else
     TransientCellFieldType = TransientCellField
   end
 
-  function jac_0(t, u, du, dv)
+  function jac_0(t, u, du, v)
     function res_0(y)
       u0 = TransientCellFieldType(y, u.derivatives)
-      res(t, u0, dv)
+      res(t, u0, v)
     end
     jacobian(res_0, u.cellfield)
   end
   jacs = (jac_0,)
 
-  for i in 1:order
-    function jac_i(t, u, dui, dv)
-      function res_i(y)
-        derivatives = (u.derivatives[1:i-1]..., y, u.derivatives[i+1:end]...)
-        ui = TransientCellFieldType(u.cellfield, derivatives)
-        res(t, ui, dv)
+  for k in 1:order
+    function jac_k(t, u, duk, v)
+      function res_k(y)
+        derivatives = (u.derivatives[1:k-1]..., y, u.derivatives[k+1:end]...)
+        uk = TransientCellFieldType(u.cellfield, derivatives)
+        res(t, uk, v)
       end
-      jacobian(res_i, u.derivatives[i])
+      jacobian(res_k, u.derivatives[k])
     end
-    jacs = (jacs..., jac_i)
+    jacs = (jacs..., jac_k)
   end
 
-  TransientFEOperator(res, jacs..., trial, test)
+  TransientFEOperator(res, jacs..., trial, test; jacs_constant)
 end
 
 function TransientFEOperator(
-  res::Function, jac::Function, jac_t::Function,
-  trial, test
+  res::Function,
+  jac::Function, jac_t::Function,
+  trial, test;
+  jacs_constant::NTuple{2,Bool}=ntuple(_ -> false, 2)
 )
   assembler = SparseMatrixAssembler(trial, test)
-  TransientFEOpFromWeakForm{NonlinearODE}(
-    res, (jac, jac_t),
+  TransientFEOpFromWeakForm(
+    res, (jac, jac_t), jacs_constant,
     assembler, trial, test, 1
   )
 end
 
 function TransientFEOperator(
-  res::Function, jac::Function, jac_t::Function, jac_tt::Function,
-  trial, test
+  res::Function,
+  jac::Function, jac_t::Function, jac_tt::Function,
+  trial, test;
+  jacs_constant::NTuple{3,Bool}=ntuple(_ -> false, 3)
 )
   assembler = SparseMatrixAssembler(trial, test)
-  TransientFEOpFromWeakForm{NonlinearODE}(
-    res, (jac, jac_t, jac_tt),
+  TransientFEOpFromWeakForm(
+    res, (jac, jac_t, jac_tt), jacs_constant,
     assembler, trial, test, 2
   )
-end
-
-# TransientFEOperator interface
-get_assembler(op::TransientFEOpFromWeakForm) = op.assembler
-
-FESpaces.get_test(op::TransientFEOpFromWeakForm) = op.test
-
-FESpaces.get_trial(op::TransientFEOpFromWeakForm) = op.trial
-
-Polynomials.get_order(op::TransientFEOpFromWeakForm) = op.order
-
-function Algebra.allocate_residual(
-  op::TransientFEOpFromWeakForm,
-  t::Real, uh::CellField,
-  cache
-)
-  V = get_test(op)
-  v = get_fe_basis(V)
-  vecdata = collect_cell_vector(V, op.res(t, uh, v))
-  allocate_vector(get_assembler(op), vecdata)
-end
-
-function Algebra.residual!(
-  r::AbstractVector, op::TransientFEOpFromWeakForm,
-  t::Real, uh::CellField,
-  cache
-)
-  V = get_test(op)
-  v = get_fe_basis(V)
-  vecdata = collect_cell_vector(V, op.res(t, uh, v))
-  assemble_vector!(r, get_assembler(op), vecdata)
-  r
-end
-
-function Algebra.allocate_jacobian(
-  op::TransientFEOpFromWeakForm,
-  t::Real, uh::CellField,
-  cache
-)
-  _matdata = ()
-  for i in 0:get_order(op)
-    _matdata = (_matdata..., _matdata_jacobian(op, t, uh, i, 0))
-  end
-
-  matdata = _vcat_matdata(_matdata)
-  allocate_matrix(get_assembler(op), matdata)
-end
-
-function Algebra.jacobian!(
-  J::AbstractMatrix, op::TransientFEOpFromWeakForm,
-  t::Real, uh::CellField,
-  i::Int, γ::Real,
-  cache
-)
-  matdata = _matdata_jacobian(op, t, uh, i, γ)
-  assemble_matrix_add!(J, get_assembler(op), matdata)
-  J
-end
-
-function jacobians!(
-  J::AbstractMatrix, op::TransientFEOpFromWeakForm,
-  t::Real, uh::CellField,
-  γs::Tuple{Vararg{Real}},
-  cache
-)
-  _matdata = ()
-  for i in 0:get_order(op)
-    γ = γs[i+1]
-    if !iszero(γ)
-      _matdata = (_matdata..., _matdata_jacobian(op, t, uh, i, γ))
-    end
-  end
-
-  matdata = _vcat_matdata(_matdata)
-  assemble_matrix_add!(J, get_assembler(op), matdata)
-  J
 end
 
 #######################################
 # TransientMassLinearFEOpFromWeakForm #
 #######################################
-# TODO can also provide the mass bilinear form in terms of `u` and call it
-# with the proper derivative order within `residual` and `jacobian`. The
-# advantage is that the jacobian w.r.t. the highest-order time derivative
-# does not need automatic differentiation
 """
     struct TransientMassLinearFEOpFromWeakForm <: TransientFEOperator end
 
@@ -283,22 +282,33 @@ Transient `FEOperator` defined by a transient weak form
 mass(t, u, v) + res(t, u, v) = 0
 ```, where `mass` is linear in `∂t^N(u)` (`N` is the order of the operator) and
 `res` does not depend on `∂t^N(u)` (`mass` and `res` can depend on lower-order
-time-derivatives of `u` by applying the `∂t` operator)
+time-derivatives of `u` by applying the `∂t` operator).
 """
-struct TransientMassLinearFEOpFromWeakForm{C<:AbstractMassLinearODE} <: TransientFEOperator{C}
+struct TransientMassLinearFEOpFromWeakForm <: TransientFEOperator{MassLinearODE}
   mass::Function
   res::Function
   jacs::Tuple{Vararg{Function}}
+  jacs_constant::Tuple{Vararg{Bool}}
+  forcing_constant::Bool
   assembler::Assembler
   trial::FESpace
   test::FESpace
   order::Integer
 end
 
+get_res(op::TransientMassLinearFEOpFromWeakForm) = op.res
+
+get_jacs(op::TransientMassLinearFEOpFromWeakForm) = op.jacs
+
+get_mass(op::TransientMassLinearFEOpFromWeakForm) = op.mass
+
 # Default constructors
 function TransientMassLinearFEOperator(
   mass::Function, res::Function,
-  trial, test; order::Integer=1
+  trial, test;
+  order::Integer=1,
+  jacs_constant::Tuple{Vararg{Bool}}=ntuple(_ -> false, order + 1),
+  forcing_constant::Bool=false
 )
   if trial isa MultiFieldFESpace
     TransientCellFieldType = TransientMultiFieldCellField
@@ -306,48 +316,53 @@ function TransientMassLinearFEOperator(
     TransientCellFieldType = TransientCellField
   end
 
-  function jac_0(t, u, du, dv)
+  function jac_0(t, u, du, v)
     function res_0(y)
       u0 = TransientCellFieldType(y, u.derivatives)
-      mass(t, u0, dv) + res(t, u0, dv)
+      mass(t, u0, v) + res(t, u0, v)
     end
     jacobian(res_0, u.cellfield)
   end
   jacs = (jac_0,)
 
-  for i in 1:order-1
-    function jac_i(t, u, dui, dv)
-      function res_i(y)
-        derivatives = (u.derivatives[1:i-1]..., y, u.derivatives[i+1:end]...)
-        ui = TransientCellFieldType(u.cellfield, derivatives)
-        mass(t, ui, dv) + res(t, ui, dv)
+  for k in 1:order-1
+    function jac_k(t, u, duk, v)
+      function res_k(y)
+        derivatives = (u.derivatives[1:k-1]..., y, u.derivatives[k+1:end]...)
+        uk = TransientCellFieldType(u.cellfield, derivatives)
+        mass(t, uk, v) + res(t, uk, v)
       end
-      jacobian(res_i, u.derivatives[i])
+      jacobian(res_k, u.derivatives[k])
     end
-    jacs = (jacs..., jac_i)
+    jacs = (jacs..., jac_k)
   end
 
-  function jac_N(t, u, duN, dv)
+  function jac_N(t, u, duN, v)
     function res_N(y)
       derivatives = (u.derivatives[1:order-1]..., y)
       uN = TransientCellFieldType(u.cellfield, derivatives)
-      mass(t, uN, dv)
+      mass(t, uN, v)
     end
     jacobian(res_N, u.derivatives[order])
   end
   jacs = (jacs..., jac_N)
 
-  TransientMassLinearFEOperator(mass, res, jacs..., trial, test)
+  TransientMassLinearFEOperator(
+    mass, res, jacs..., trial, test;
+    jacs_constant, forcing_constant
+  )
 end
 
 function TransientMassLinearFEOperator(
   mass::Function, res::Function,
   jac::Function, jac_t::Function,
-  trial, test
+  trial, test;
+  jacs_constant::NTuple{2,Bool}=ntuple(_ -> false, 2),
+  forcing_constant::Bool=false
 )
   assembler = SparseMatrixAssembler(trial, test)
-  TransientMassLinearFEOpFromWeakForm{MassLinearODE}(
-    mass, res, (jac, jac_t),
+  TransientMassLinearFEOpFromWeakForm(
+    mass, res, (jac, jac_t), jacs_constant, forcing_constant,
     assembler, trial, test, 1
   )
 end
@@ -355,284 +370,207 @@ end
 function TransientMassLinearFEOperator(
   mass::Function, res::Function,
   jac::Function, jac_t::Function, jac_tt::Function,
-  trial, test
+  trial, test;
+  jacs_constant::NTuple{3,Bool}=ntuple(_ -> false, 3),
+  forcing_constant::Bool=false
 )
   assembler = SparseMatrixAssembler(trial, test)
-  TransientMassLinearFEOpFromWeakForm{MassLinearODE}(
-    mass, res, (jac, jac_t, jac_tt),
+  TransientMassLinearFEOpFromWeakForm(
+    mass, res, (jac, jac_t, jac_tt), jacs_constant, forcing_constant,
     assembler, trial, test, 2
   )
 end
 
-# TransientFEOperator interface
-get_assembler(op::TransientMassLinearFEOpFromWeakForm) = op.assembler
-
-FESpaces.get_test(op::TransientMassLinearFEOpFromWeakForm) = op.test
-
-FESpaces.get_trial(op::TransientMassLinearFEOpFromWeakForm) = op.trial
-
-Polynomials.get_order(op::TransientMassLinearFEOpFromWeakForm) = op.order
-
-function Algebra.allocate_residual(
-  op::TransientMassLinearFEOpFromWeakForm,
-  t::Real, uh::CellField,
-  cache
-)
-  V = get_test(op)
-  v = get_fe_basis(V)
-  vecdata = collect_cell_vector(V, op.res(t, uh, v))
-  # Could also take op.mass or op.mass + op.res above
-  allocate_vector(get_assembler(op), vecdata)
-end
-
-function Algebra.residual!(
-  r::AbstractVector, op::TransientMassLinearFEOpFromWeakForm,
-  t::Real, uh::CellField,
-  cache
-)
-  V = get_test(op)
-  v = get_fe_basis(V)
-  vecdata = collect_cell_vector(V, op.res(t, uh, v))
-  assemble_vector!(r, get_assembler(op), vecdata)
-  # Special case for the highest-order derivative
-  vecdata = collect_cell_vector(V, op.mass(t, uh, v))
-  assemble_vector_add!(r, get_assembler(op), vecdata)
-  r
-end
-
-function Algebra.allocate_jacobian(
-  op::TransientMassLinearFEOpFromWeakForm,
-  t::Real, uh::CellField,
-  cache
-)
-  _matdata = ()
-  for i in 0:get_order(op)
-    _matdata = (_matdata..., _matdata_jacobian(op, t, uh, i, 0))
-  end
-
-  matdata = _vcat_matdata(_matdata)
-  allocate_matrix(get_assembler(op), matdata)
-end
-
-function Algebra.jacobian!(
-  J::AbstractMatrix, op::TransientMassLinearFEOpFromWeakForm,
-  t::Real, uh::CellField,
-  i::Int, γ::Real,
-  cache
-)
-  matdata = _matdata_jacobian(op, t, uh, i, γ)
-  assemble_matrix_add!(J, get_assembler(op), matdata)
-  J
-end
-
-function jacobians!(
-  J::AbstractMatrix, op::TransientMassLinearFEOpFromWeakForm,
-  t::Real, uh::CellField,
-  γs::Tuple{Vararg{Real}},
-  cache
-)
-  _matdata = ()
-  for i in 0:get_order(op)
-    γ = γs[i+1]
-    if !iszero(γ)
-      _matdata = (_matdata..., _matdata_jacobian(op, t, uh, i, γ))
-    end
-  end
-
-  matdata = _vcat_matdata(_matdata)
-  assemble_matrix_add!(J, get_assembler(op), matdata)
-  J
-end
-
-#################
-# ODEOpFromFEOp #
-#################
+###################################
+# TransientLinearFEOpFromWeakForm #
+###################################
+# TODO Fix notations
 """
-    struct ODEOpFromFEOp <: ODEOperator end
+    struct TransientLinearFEOpFromWeakForm <: TransientFEOperator end
 
-Wrapper that transforms a `TransientFEOperator` into an `ODEOperator`, i.e.
-takes `residual(t, uh, ∂t(uh), ..., ∂t^N(uh), vh)` and returns
-`residual(t, uf, ∂t(uf), ..., ∂t^N(uf))`, where `uf` represent the free values
-of the `EvaluationFunction` uh
+Transient `FEOperator` defined by a transient weak form
+```math
+∑_{0 ≤ k ≤ N} form_k(t, ∂t^k(u), v) + res(t, v) = 0
+```, where `N` is the order of the operator, `form_k` is linear in `∂t^k(u)`
+and does not depend on the other time derivatives of `u`.
 """
-struct ODEOpFromFEOp{C} <: ODEOperator{C}
-  fe_op::TransientFEOperator{C}
+struct TransientLinearFEOpFromWeakForm <: TransientFEOperator{LinearODE}
+  forms::Tuple{Vararg{Function}}
+  res::Function
+  jacs::Tuple{Vararg{Function}}
+  jacs_constant::Tuple{Vararg{Bool}}
+  forcing_constant::Bool
+  assembler::Assembler
+  trial::FESpace
+  test::FESpace
+  order::Integer
 end
 
-# ODEOperator interface
-Polynomials.get_order(op::ODEOpFromFEOp) = get_order(op.fe_op)
+get_res(op::TransientLinearFEOpFromWeakForm) = (t, u, v) -> op.res(t, v)
 
-function allocate_cache(op::ODEOpFromFEOp)
-  Ut = get_trial(op.fe_op)
-  U = allocate_space(Ut)
-  Uts = (Ut,)
-  Us = (U,)
-  for i in 1:get_order(op)
-    Uts = (Uts..., ∂t(Uts[i]))
-    Us = (Us..., allocate_space(Uts[i+1]))
-  end
-  fe_cache = allocate_cache(op.fe_op)
-  ode_cache = (Us, Uts, fe_cache)
-  ode_cache
-end
+get_jacs(op::TransientLinearFEOpFromWeakForm) = op.jacs
 
-function update_cache!(cache, op::ODEOpFromFEOp, t::Real)
-  _Us, Uts, fe_cache = cache
-  Us = ()
-  for i in 0:get_order(op)
-    Us = (Us..., evaluate!(_Us[i+1], Uts[i+1], t))
-  end
-  fe_cache = update_cache!(fe_cache, op.fe_op, t)
-  (Us, Uts, fe_cache)
-end
+get_forms(op::TransientLinearFEOpFromWeakForm) = op.forms
 
-function Algebra.allocate_residual(
-  op::ODEOpFromFEOp,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  cache
+# Default constructors
+function TransientLinearFEOperator(
+  forms::Tuple{Vararg{Function}}, res::Function,
+  trial, test;
+  order::Integer=1,
+  jacs_constant::Tuple{Vararg{Bool}}=ntuple(_ -> false, order + 1),
+  forcing_constant::Bool=false
 )
-  _, _, fe_cache = cache
-  uh = _make_uh_from_us(op.fe_op, us, cache)
-  allocate_residual(op.fe_op, t, uh, fe_cache)
-end
-
-function Algebra.residual!(
-  r::AbstractVector, op::ODEOpFromFEOp,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  cache
-)
-  uh = _make_uh_from_us(op, us, cache)
-  residual!(r, op.fe_op, t, uh, cache)
-end
-
-function Algebra.allocate_jacobian(
-  op::ODEOpFromFEOp,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  cache
-)
-  _, _, fe_cache = cache
-  uh = _make_uh_from_us(op.fe_op, us, cache)
-  allocate_jacobian(op.fe_op, t, uh, fe_cache)
-end
-
-function Algebra.jacobian!(
-  J::AbstractMatrix, op::ODEOpFromFEOp,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  i::Integer, γ::Real,
-  cache
-)
-  uh = _make_uh_from_us(op, us, cache)
-  jacobian!(J, op.fe_op, t, uh, i, γ, cache)
-end
-
-function jacobians!(
-  J::AbstractMatrix, op::ODEOpFromFEOp,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  γs::Tuple{Vararg{Real}},
-  cache
-)
-  uh = _make_uh_from_us(op, us, cache)
-  jacobians!(J, op.fe_op, t, uh, γs, cache)
-end
-
-#########
-# Utils #
-#########
-function _matdata_jacobian(
-  op::Union{TransientFEOpFromWeakForm,TransientMassLinearFEOpFromWeakForm},
-  t::Real, uh::CellField,
-  i::Integer, γ::Real
-)
-  Ut = evaluate(get_trial(op), nothing)
-  V = get_test(op)
-  du = get_trial_fe_basis(Ut)
-  v = get_fe_basis(V)
-  collect_cell_matrix(Ut, V, γ * op.jacs[i+1](t, uh, du, v))
-end
-
-function _vcat_matdata(_matdata)
-  term_to_cellmat_j = ()
-  term_to_cellidsrows_j = ()
-  term_to_cellidscols_j = ()
-  for j in 1:length(_matdata)
-    term_to_cellmat_j = (term_to_cellmat_j..., _matdata[j][1])
-    term_to_cellidsrows_j = (term_to_cellidsrows_j..., _matdata[j][2])
-    term_to_cellidscols_j = (term_to_cellidscols_j..., _matdata[j][3])
-  end
-
-  term_to_cellmat = vcat(term_to_cellmat_j...)
-  term_to_cellidsrows = vcat(term_to_cellidsrows_j...)
-  term_to_cellidscols = vcat(term_to_cellidscols_j...)
-
-  (term_to_cellmat, term_to_cellidsrows, term_to_cellidscols)
-end
-
-function _make_uh_from_us(op, us, cache)
-  Ut, = cache
-
-  u = EvaluationFunction(Ut[1], us[1])
-
-  dus = ()
-  for i in 1:get_order(op)
-    dus = (dus..., EvaluationFunction(Ut[i+1], us[i+1]))
-  end
-
-  if first(Ut) isa MultiFieldFESpace
+  if trial isa MultiFieldFESpace
     TransientCellFieldType = TransientMultiFieldCellField
   else
     TransientCellFieldType = TransientCellField
   end
-  TransientCellFieldType(u, dus)
+
+  function jac_0(t, u, du, v)
+    function res_0(y)
+      u0 = TransientCellFieldType(y, u.derivatives)
+      forms[order+1](t, u0, v)
+    end
+    jacobian(res_0, u.cellfield)
+  end
+  jacs = (jac_0,)
+
+  for k in 1:order
+    function jac_k(t, u, duk, v)
+      function res_k(y)
+        derivatives = (u.derivatives[1:k-1]..., y, u.derivatives[k+1:end]...)
+        uk = TransientCellFieldType(u.cellfield, derivatives)
+        forms[order+1-k](t, uk, v)
+      end
+      jacobian(res_k, u.derivatives[k])
+    end
+    jacs = (jacs..., jac_k)
+  end
+
+  TransientLinearFEOperator(
+    forms, res, jacs..., trial, test;
+    jacs_constant, forcing_constant
+  )
+end
+
+function TransientLinearFEOperator(
+  mass::Function, stiffness::Function, res::Function,
+  jac::Function, jac_t::Function,
+  trial, test;
+  jacs_constant::NTuple{2,Bool}=ntuple(_ -> false, 2),
+  forcing_constant::Bool=false
+)
+  TransientLinearFEOperator(
+    (mass, stiffness), res,
+    jac, jac_t, trial, test;
+    jacs_constant, forcing_constant
+  )
+end
+
+function TransientLinearFEOperator(
+  forms::NTuple{2,Function}, res::Function,
+  jac::Function, jac_t::Function,
+  trial, test;
+  jacs_constant::NTuple{2,Bool}=ntuple(_ -> false, 2),
+  forcing_constant::Bool=false
+)
+  assembler = SparseMatrixAssembler(trial, test)
+  TransientLinearFEOpFromWeakForm(
+    forms, res, (jac, jac_t), jacs_constant, forcing_constant,
+    assembler, trial, test, 1
+  )
+end
+
+function TransientLinearFEOperator(
+  mass::Function, stiffness::Function, damping::Function, res::Function,
+  jac::Function, jac_t::Function, jac_tt::Function,
+  trial, test;
+  jacs_constant::NTuple{3,Bool}=ntuple(_ -> false, 3),
+  forcing_constant::Bool=false
+)
+  TransientLinearFEOperator(
+    (mass, stiffness, damping), res,
+    jac, jac_t, jac_tt, trial, test;
+    jacs_constant, forcing_constant
+  )
+end
+
+function TransientLinearFEOperator(
+  forms::NTuple{3,Function}, res::Function,
+  jac::Function, jac_t::Function, jac_tt::Function,
+  trial, test;
+  jacs_constant::NTuple{3,Bool}=ntuple(_ -> false, 3),
+  forcing_constant::Bool=false
+)
+  assembler = SparseMatrixAssembler(trial, test)
+  TransientLinearFEOpFromWeakForm(
+    forms, res, (jac, jac_t, jac_tt), jacs_constant, forcing_constant,
+    assembler, trial, test, 2
+  )
+end
+
+####################
+# Common functions #
+####################
+const TransientFEOperatorTypes = Union{
+  TransientFEOpFromWeakForm,
+  TransientMassLinearFEOpFromWeakForm,
+  TransientLinearFEOpFromWeakForm
+}
+const TransientAbstractMassLinearFEOperatorTypes = Union{
+  TransientMassLinearFEOpFromWeakForm,
+  TransientLinearFEOpFromWeakForm
+}
+
+# FEOperator interface
+FESpaces.get_test(op::TransientFEOperatorTypes) = op.test
+
+FESpaces.get_trial(op::TransientFEOperatorTypes) = op.trial
+
+# ODEOperator interface
+Polynomials.get_order(op::TransientFEOperatorTypes) = op.order
+
+# TransientFEOperator interface
+get_assembler(op::TransientFEOperatorTypes) = op.assembler
+function is_jacobian_constant(op::TransientFEOperatorTypes, k::Integer)
+  op.jacs_constant[k+1]
+end
+
+function is_forcing_constant(op::TransientAbstractMassLinearFEOperatorTypes)
+  op.forcing_constant
 end
 
 ########
 # Test #
 ########
 """
-    test_transient_fe_operator(op::TransientFEOperator, uh) -> Bool
+    test_transient_fe_operator(
+      op::TransientFEOperator,
+      t::Real, uh::TransientCellField
+    ) -> Bool
 
-Test the interface of `TransientFEOperator` specializations
+Test the interface of `TransientFEOperator` specializations.
 """
-function test_transient_fe_operator(op::TransientFEOperator, uh)
-  odeop = get_algebraic_operator(op)
-  @test odeop isa ODEOperator
-
-  t = 0.0
+function test_transient_fe_operator(
+  op::TransientFEOperator,
+  t::Real, uh::TransientCellField
+)
   U = get_trial(op)
   Ut = U(t)
-  V = get_test(op)
-
-  @test V isa FESpace
   @test Ut isa FESpace
 
-  if U isa MultiFieldFESpace
-    TransientCellFieldType = TransientMultiFieldCellField
-  else
-    TransientCellFieldType = TransientCellField
+  V = get_test(op)
+  @test V isa FESpace
+
+  us = (get_free_dof_values(uh.cellfield),)
+  for derivative in uh.derivatives
+    us = (us..., get_free_dof_values(derivative))
   end
 
-  uhₜ = TransientCellFieldType(uh, (uh,))
-  cache = allocate_cache(op)
+  ode_op = get_algebraic_operator(op)
+  @test ode_op isa ODEOperator
 
-  r = allocate_residual(op, t, uhₜ, cache)
-  @test r isa AbstractVector
-
-  residual!(r, op, t, uhₜ, cache)
-  @test r isa AbstractVector
-
-  J = allocate_jacobian(op, t, uhₜ, cache)
-  @test J isa AbstractMatrix
-
-  jacobian!(J, op, t, uhₜ, 0, 1, cache)
-  @test J isa AbstractMatrix
-
-  jacobian!(J, op, t, uhₜ, 1, 1, cache)
-  @test J isa AbstractMatrix
-
-  jacobians!(J, op, t, uhₜ, (1, 1), cache)
-  @test J isa AbstractMatrix
-
-  cache = update_cache!(cache, op, t)
+  test_ode_operator(ode_op, t, us, t, us)
 
   true
 end

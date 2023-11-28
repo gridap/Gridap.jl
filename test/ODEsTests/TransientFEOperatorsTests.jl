@@ -3,6 +3,7 @@ module TransientFEOperatorsTests
 using Test
 
 using LinearAlgebra
+using LinearAlgebra: fillstored!
 using ForwardDiff
 
 using Gridap
@@ -58,45 +59,76 @@ _r = residual(_op, uh0)
 _J = jacobian(_op, uh0)
 
 # Residual and jacobian with TransientFEOperators
+# Testing with all combinations of constant jacobians and forcing term,
+# With manual or automatic jacobians
 ∂ₜuh0 = FEFunction(U0, get_free_dof_values(uh0) ./ dt)
 uₜ = TransientCellField(uh0, (∂ₜuh0,))
+us = (get_free_dof_values(uh0), get_free_dof_values(∂ₜuh0))
+
+mass(t, u, v) = m(t, ∂t(u), v)
+stiffness(t, u, v) = a(t, u, v)
+res(t, u, v) = mass(t, u, v) + stiffness(t, u, v) - b(t, v)
+jac(t, u, du, v) = a(t, du, v)
+jac_t(t, u, dut, v) = m(t, dut, v)
+
+res_masslinear(t, u, v) = a(t, u, v) - b(t, v)
+res_linear(t, v) = (-1) * b(t, v)
 
 function test_transient_operator(op)
-  @test test_transient_fe_operator(op, zero(U0))
+  @test test_transient_fe_operator(op, t0, uₜ)
 
   ode_op = get_algebraic_operator(op)
-  ode_cache = allocate_cache(ode_op)
+  ode_cache = allocate_cache(ode_op, t0, us)
 
-  r = allocate_residual(op, t0, uₜ, ode_cache)
-  J = allocate_jacobian(op, t0, uₜ, ode_cache)
-  residual!(r, op, t0, uₜ, ode_cache)
-  jacobians!(J, op, t1, uₜ, (1, dt⁻¹), ode_cache)
-
+  r = allocate_residual(ode_op, t0, us, ode_cache)
+  J = allocate_jacobian(ode_op, t0, us, ode_cache)
+  residual!(r, ode_op, t0, us, ode_cache)
   @test all(r .≈ _r)
+
+  fillstored!(J, zero(eltype(J)))
+  jacobians!(J, ode_op, t1, us, (1, dt⁻¹), ode_cache)
   @test all(J .≈ _J)
 end
 
-# TransientFEOperator
-res(t, u, v) = m(t, ∂t(u), v) + a(t, u, v) - b(t, v)
-jac(t, u, du, v) = a(t, du, v)
-jac_t(t, u, dut, v) = m(t, dut, v)
+for jac_u_constant in (true, false)
+  for jac_u̇_constant in (true, false)
+    jacs_constant = (jac_u_constant, jac_u̇_constant)
 
-op = TransientFEOperator(res, jac, jac_t, U, V)
-test_transient_operator(op)
+    # TransientFEOperator
+    op = TransientFEOperator(res, jac, jac_t, U, V; jacs_constant)
+    test_transient_operator(op)
 
-op = TransientFEOperator(res, U, V)
-test_transient_operator(op)
+    op = TransientFEOperator(res, U, V; jacs_constant)
+    test_transient_operator(op)
 
-# TransientMassLinearFEOperator
-mass(t, u, v) = m(t, ∂t(u), v)
-res(t, u, v) = a(t, u, v) - b(t, v)
-jac(t, u, du, v) = a(t, du, v)
-jac_t(t, u, dut, v) = m(t, dut, v)
+    # TransientMassLinearFEOperator
+    op = TransientMassLinearFEOperator(
+      mass, res_masslinear, jac, jac_t, U, V;
+      jacs_constant, forcing_constant=false
+    )
+    test_transient_operator(op)
 
-op = TransientMassLinearFEOperator(mass, res, jac, jac_t, U, V)
-test_transient_operator(op)
+    op = TransientMassLinearFEOperator(
+      mass, res_masslinear, U, V;
+      jacs_constant, forcing_constant=false
+    )
+    test_transient_operator(op)
 
-op = TransientMassLinearFEOperator(mass, res, U, V)
-test_transient_operator(op)
+    # TransientLinearFEOperator
+    op = TransientLinearFEOperator(
+      mass, stiffness, res_linear, jac, jac_t, U, V;
+      jacs_constant, forcing_constant=false
+    )
+    test_transient_operator(op)
+
+    op = TransientLinearFEOperator(
+      (mass, stiffness), res_linear, U, V;
+      jacs_constant, forcing_constant=false
+    )
+    test_transient_operator(op)
+  end
+end
+
+# TODO Test second-order operators
 
 end # module TransientFEOperatorsTests
