@@ -85,28 +85,47 @@ end
 # Import solvers #
 ##################
 """
-    _discrete_time_derivative!(
-      u̇::AbstractVector,
-      u0::AbstractVector, u::AbstractVector,
-      dt::Real
+    _v_from_u(
+      v::AbstractVector,
+      u::AbstractVector, u0::AbstractVector, dt::Real
     ) -> AbstractVector
 
-Compute the discrete time derivative `u̇ = (u - u0) / dt`.
+Safely write `(u - u0) / dt` into `v`.
 """
-function _discrete_time_derivative!(
-  u̇::AbstractVector,
-  u0::AbstractVector, u::AbstractVector,
-  dt::Real
+function _v_from_u(
+  v::AbstractVector,
+  u::AbstractVector, u0::AbstractVector, dt::Real
 )
-  copy!(u̇, u)
-  axpy!(-1, u0, u̇)
-  rdiv!(u̇, dt)
-  u̇
+  if u !== v
+    copy!(v, u)
+  end
+  axpy!(-1, u0, v)
+  rdiv!(v, dt)
+  v
+end
+
+"""
+    _u_from_v!(
+      u::AbstractVector,
+      u0::AbstractVector, dt::Real, v::AbstractVector
+    ) -> AbstractVector
+
+Safely write `u0 + dt * v` into `u`.
+"""
+function _u_from_v!(
+  u::AbstractVector,
+  u0::AbstractVector, dt::Real, v::AbstractVector
+)
+  if u === v
+    axpby!(1, u0, dt, u)
+  else
+    copy!(u, u0)
+    axpy!(dt, v, u)
+  end
+  u
 end
 
 include("ODESolvers/ForwardEuler.jl")
-
-include("ODESolvers/BackwardEuler.jl")
 
 include("ODESolvers/ThetaMethod.jl")
 

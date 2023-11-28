@@ -69,9 +69,9 @@ export solve_step!
 export solve
 
 export ForwardEuler
-export BackwardEuler
 export ThetaMethod
 export MidPoint
+export BackwardEuler
 
 export TableauType
 export ExplicitTableau

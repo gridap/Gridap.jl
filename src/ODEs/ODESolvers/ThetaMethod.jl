@@ -2,9 +2,6 @@
     struct ThetaMethod <: ODESolver end
 
 θ-method ODE solver.
-* θ = 0     Forward Euler
-* θ = 1/2   Crank-Nicolson / MidPoint
-* θ = 1     Backward Euler
 """
 struct ThetaMethod <: ODESolver
   nls::NonlinearSolver
@@ -12,17 +9,25 @@ struct ThetaMethod <: ODESolver
   θ::Float64
 
   function ThetaMethod(nls, dt, θ)
-    if θ <= 0
+    θ01 = clamp(θ, 0, 1)
+    if θ01 != θ
+      msg = """
+      The parameter θ of ThetaMethod must be between zero and one.
+      Setting θ to $(θ01).
+      """
+      println(msg)
+    end
+
+    if iszero(θ01)
       ForwardEuler(nls, dt)
-    elseif θ >= 1
-      BackwardEulerEuler(nls, dt)
     else
-      new(nls, dt, θ)
+      new(nls, dt, θ01)
     end
   end
 end
 
 MidPoint(nls, dt) = ThetaMethod(nls, dt, 0.5)
+BackwardEuler(nls, dt) = ThetaMethod(nls, dt, 1)
 
 function solve_step!(
   uF::AbstractVector,
@@ -31,11 +36,11 @@ function solve_step!(
   cache
 )
   if isnothing(cache)
-    ode_cache = allocate_cache(ode_op)
-    u̇θ = similar(u0)
+    ode_cache = allocate_cache(ode_op, t0, (u0, u0))
     nls_cache = nothing
+    solver_cache = allocate_solver_cache(solver, ode_op, ode_cache, t0, u0)
   else
-    ode_cache, u̇θ, nls_cache = cache
+    ode_cache, nls_cache, solver_cache = cache
   end
 
   dt, θ = solver.dt, solver.θ
@@ -47,77 +52,149 @@ function solve_step!(
   ode_cache = update_cache!(ode_cache, ode_op, tθ)
 
   # Create and solve discrete ODE operator
-  nl_op = ThetaMethodSolverOperator(ode_op, ode_cache, tθ, dtθ, u0, u̇θ)
-  nls_cache = solve!(uF, solver.nls, nl_op, nls_cache)
-
-  # The operator above solves for uθ
-  # Express uF in terms of uθ
-  axpy!(θ - 1, u0, uF)
-  rdiv!(uF, θ)
+  nl_op = ThetaMethodOperator(
+    ode_op, ode_cache, solver_cache,
+    tθ, u0, dtθ
+  )
+  v = uF
+  nls_cache = solve!(v, solver.nls, nl_op, nls_cache)
+  uF = _u_from_v!(uF, u0, dt, v)
 
   # Update cache
-  cache = (ode_cache, u̇θ, nls_cache)
+  cache = (ode_cache, nls_cache, solver_cache)
 
   (uF, tF, cache)
 end
 
-"""
-    struct ThetaMethodSolverOperator <: NonlinearOperator end
+function allocate_solver_cache(
+  solver::ThetaMethod, ode_op::ODEOperator, ode_cache,
+  t::Real, u::AbstractVector
+)
+  (similar(u),)
+end
 
-Theta method operator at a given time step, i.e.
+function allocate_solver_cache(
+  solver::ThetaMethod, ode_op::ODEOperator{LinearODE}, ode_cache,
+  t::Real, u::AbstractVector
+)
+  J = allocate_jacobian(ode_op, t, (u, u), ode_cache)
+  r = allocate_residual(ode_op, t, (u, u), ode_cache)
+  (J, r)
+end
+
+"""
+    ThetaMethodOperator(
+      ode_op::ODEOperator, ode_cache, solver_cache,
+      tθ::Real, u0::AbstractVector, dtθ::Real
+    ) -> Union{ThetaMethodNonlinearOperator, ThetaMethodLinearOperator}
+
+Return the linear or nonlinear Theta Method operator, depending on the
+type of `ODEOperator`.
+"""
+function ThetaMethodOperator(
+  ode_op::ODEOperator, ode_cache, solver_cache,
+  tθ::Real, u0::AbstractVector, dtθ::Real
+)
+  u, = solver_cache
+  ThetaMethodNonlinearOperator(
+    ode_op, ode_cache,
+    tθ, u0, dtθ, u
+  )
+end
+
+function ThetaMethodOperator(
+  ode_op::ODEOperator{LinearODE}, ode_cache, solver_cache,
+  tθ::Real, u0::AbstractVector, dtθ::Real
+)
+  ThetaMethodLinearOperator(
+    ode_op, ode_cache, solver_cache,
+    tθ, u0, dtθ
+  )
+end
+
+"""
+    struct ThetaMethodNonlinearOperator <: NonlinearOperator
+
+Theta method nonlinear operator at a given time step, i.e.
 ```math
 residual(t_n+θ, u_n+θ, (u_n+θ - u_n) / θ / dt) = 0.
 ```
 """
-struct ThetaMethodSolverOperator <: NonlinearOperator
+struct ThetaMethodNonlinearOperator <: NonlinearOperator
   ode_op::ODEOperator
   ode_cache
   tθ::Float64
-  dtθ::Float64
   u0::AbstractVector
-  u̇θ::AbstractVector
+  dtθ::Float64
+  u::AbstractVector
 end
 
-function Algebra.zero_initial_guess(op::ThetaMethodSolverOperator)
-  u = similar(op.u0)
-  fill!(u, zero(eltype(u)))
-  u
+function Algebra.zero_initial_guess(op::ThetaMethodNonlinearOperator)
+  v = similar(op.u0)
+  fill!(v, zero(eltype(v)))
+  v
 end
 
 function Algebra.allocate_residual(
-  op::ThetaMethodSolverOperator,
-  u::AbstractVector
+  op::ThetaMethodNonlinearOperator,
+  v::AbstractVector
 )
-  allocate_residual(op.ode_op, op.tθ, (u, u), op.ode_cache)
+  u = op.u
+  u = _u_from_v!(u, op.u0, op.dtθ, v)
+  allocate_residual(op.ode_op, op.tθ, (u, v), op.ode_cache)
 end
 
 function Algebra.residual!(
   r::AbstractVector,
-  op::ThetaMethodSolverOperator,
-  u::AbstractVector
+  op::ThetaMethodNonlinearOperator,
+  v::AbstractVector
 )
-  uθ = u
-  u0, u̇θ, dtθ = op.u0, op.u̇θ, op.dtθ
-  _discrete_time_derivative!(u̇θ, u0, uθ, dtθ)
-  residual!(r, op.ode_op, op.tθ, (uθ, u̇θ), op.ode_cache)
+  u = op.u
+  u = _u_from_v!(u, op.u0, op.dtθ, v)
+  residual!(r, op.ode_op, op.tθ, (u, v), op.ode_cache)
 end
 
 function Algebra.allocate_jacobian(
-  op::ThetaMethodSolverOperator,
-  u::AbstractVector
+  op::ThetaMethodNonlinearOperator,
+  v::AbstractVector
 )
-  allocate_jacobian(op.ode_op, op.tθ, (u, u), op.ode_cache)
+  u = op.u
+  u = _u_from_v!(u, op.u0, op.dtθ, v)
+  allocate_jacobian(op.ode_op, op.tθ, (u, v), op.ode_cache)
 end
 
 function Algebra.jacobian!(
   J::AbstractMatrix,
-  op::ThetaMethodSolverOperator,
-  u::AbstractVector
+  op::ThetaMethodNonlinearOperator,
+  v::AbstractVector
 )
   fillstored!(J, zero(eltype(J)))
+  u = op.u
+  u = _u_from_v!(u, op.u0, op.dtθ, v)
+  jacobians!(J, op.ode_op, op.tθ, (u, v), (op.dtθ, 1), op.ode_cache)
+end
 
-  uθ = u
-  u0, u̇θ, dtθ = op.u0, op.u̇θ, op.dtθ
-  _discrete_time_derivative!(u̇θ, u0, uθ, dtθ)
-  jacobians!(J, op.ode_op, op.tθ, (uθ, u̇θ), (1, inv(dtθ)), op.ode_cache)
+"""
+    ThetaMethodLinearOperator(
+      ode_op, ode_cache, solver_cache,
+      tθ, u0, dtθ
+    ) -> AffineOperator
+
+Theta method linear operator at a given time step, i.e.
+```math
+mass(t_n+θ) * (u_n+θ - u_n) / θ / dt + stiffness(t_n+θ) * u_n+θ + res(t_n+θ) = 0.
+```
+"""
+function ThetaMethodLinearOperator(
+  ode_op, ode_cache, solver_cache,
+  tθ, u0, dtθ
+)
+  J, r = solver_cache
+
+  fillstored!(J, zero(eltype(J)))
+  jacobians!(J, ode_op, tθ, (u0, u0), (dtθ, 1), ode_cache)
+  residual!(r, ode_op, tθ, (u0, u0), ode_cache, include_highest=false)
+  rmul!(r, -1)
+
+  AffineOperator(J, r)
 end

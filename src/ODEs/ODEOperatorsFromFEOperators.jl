@@ -131,7 +131,7 @@ end
 function Algebra.residual!(
   r::AbstractVector, op::ODEOpFromFEOp{MassLinearODE},
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  cache
+  cache; include_highest::Bool=true
 )
   mass_stored = !isnothing(cache.jacs[end])
   forcing_stored = !isnothing(cache.forcing)
@@ -142,13 +142,16 @@ function Algebra.residual!(
   end
 
   fill!(r, zero(eltype(r)))
-  if mass_stored
-    mul!(cache.jacvec, cache.jacs[end], us[end])
-    axpy!(1, cache.jacvec, r)
-  else
-    mass = get_mass(op.fe_op)
-    vecdata = collect_cell_vector(V, mass(t, uh, v))
-    assemble_vector_add!(r, get_assembler(op.fe_op), vecdata)
+
+  if include_highest
+    if mass_stored
+      mul!(cache.jacvec, cache.jacs[end], us[end])
+      axpy!(1, cache.jacvec, r)
+    else
+      mass = get_mass(op.fe_op)
+      vecdata = collect_cell_vector(V, mass(t, uh, v))
+      assemble_vector_add!(r, get_assembler(op.fe_op), vecdata)
+    end
   end
 
   if forcing_stored
@@ -165,7 +168,7 @@ end
 function Algebra.residual!(
   r::AbstractVector, op::ODEOpFromFEOp{LinearODE},
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  cache
+  cache; include_highest::Bool=true
 )
   forms_stored = !any(isnothing, cache.jacs)
   forcing_stored = !isnothing(cache.forcing)
@@ -175,9 +178,11 @@ function Algebra.residual!(
     uh = _make_uh_from_us(op, us, cache.Us)
   end
 
-  order = get_order(op)
   fill!(r, zero(eltype(r)))
-  for k in 0:order
+
+  order = get_order(op)
+  order_max = include_highest ? order : order - 1
+  for k in 0:order_max
     if !isnothing(cache.jacs[k+1])
       mul!(cache.jacvec, cache.jacs[k+1], us[k+1])
       axpy!(1, cache.jacvec, r)
@@ -225,9 +230,7 @@ function Algebra.jacobian!(
   cache
 )
   if !isnothing(cache.jacs[k+1])
-    # TODO optimise the sum of sparse matrices
-    # This is surprisingly better than axpy!(γ, cache.jacs[k+1], J)
-    @. J += γ * cache.jacs[k+1]
+    axpy_sparse!(γ, cache.jacs[k+1], J)
   else
     uh = _make_uh_from_us(op, us, cache.Us)
     matdata = _matdata_jacobian(op.fe_op, t, uh, k, γ)
@@ -253,9 +256,7 @@ function jacobians!(
     γ = γs[k+1]
     if !iszero(γ)
       if !isnothing(cache.jacs[k+1])
-        # TODO optimise the sum of sparse matrices
-        # This is surprisingly better than axpy!(γ, cache.jacs[k+1], J)
-        @. J += γ * cache.jacs[k+1]
+        axpy_sparse!(γ, cache.jacs[k+1], J)
       else
         _matdata = (_matdata..., _matdata_jacobian(op.fe_op, t, uh, k, γ))
       end
@@ -328,4 +329,10 @@ function _make_uh_from_us(op, us, Us)
     TransientCellFieldType = TransientCellField
   end
   TransientCellFieldType(u, dus)
+end
+
+function axpy_sparse!(α, A, B)
+  # TODO optimise the sum of sparse matrices
+  # This is surprisingly better than axpy!(α, A, B)
+  @. B += α * A
 end

@@ -44,21 +44,31 @@ a(t, u, v) = ∫(∇(u) ⊙ ∇(v)) * dΩ
 b(t, v) = ∫(f(t) ⋅ v) * dΩ
 
 mass(t, u, v) = m(t, ∂t(u), v)
-part_res(t, u, v) = a(t, u, v) - b(t, v)
-full_res(t, u, v) = mass(t, u, v) + part_res(t, u, v)
+stiffness(t, u, v) = a(t, u, v)
+res(t, u, v) = mass(t, u, v) + stiffness(t, u, v) - b(t, v)
+res_masslinear(t, u, v) = stiffness(t, u, v) - b(t, v)
+res_linear(t, v) = (-1) * b(t, v)
 jac(t, u, du, v) = a(t, du, v)
 jac_t(t, u, dut, v) = m(t, dut, v)
 
-op_nonlinear = TransientFEOperator(full_res, jac, jac_t, U, V)
-op_masslinear = TransientMassLinearFEOperator(mass, part_res, jac, jac_t, U, V)
-op_constmasslinear = TransientConstantMassLinearFEOperator(
-  mass, part_res, jac, jac_t, U, V
+jacs_constant = (true, true)
+op_nonlinear = TransientFEOperator(
+  res, jac, jac_t, U, V;
+  jacs_constant
+)
+op_masslinear = TransientMassLinearFEOperator(
+  mass, res_masslinear, jac, jac_t, U, V;
+  jacs_constant
+)
+op_linear = TransientLinearFEOperator(
+  mass, stiffness, res_linear, jac, jac_t, U, V;
+  jacs_constant
 )
 
 ops = [
   op_nonlinear,
   op_masslinear,
-  op_constmasslinear
+  op_linear
 ]
 
 # ODE solver
