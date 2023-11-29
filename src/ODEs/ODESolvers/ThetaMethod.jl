@@ -103,7 +103,7 @@ function solve_step!(
   )
 
   # Solve discrete ODE operator
-  sol_cache = solve_dop!(uF, dop, solver.sol, sol_cache)
+  uF, sol_cache = solve_dop!(uF, dop, solver.sol, sol_cache)
   tF = t0 + dt
 
   # Update cache
@@ -184,7 +184,7 @@ function solve_dop!(
   cache = solve!(vF, sol, op, cache)
   _u_from_v!(uF, u0, dt, vF)
 
-  cache
+  (uF, cache)
 end
 
 """
@@ -232,5 +232,5 @@ function solve_dop!(
   cache = solve!(vF, sol, op, cache)
   _u_from_v!(uF, u0, dt, vF)
 
-  cache
+  (uF, cache)
 end

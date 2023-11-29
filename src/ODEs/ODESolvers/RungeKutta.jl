@@ -81,7 +81,7 @@ function solve_step!(
   )
 
   # Solve discrete ODE operator
-  sol_cache = solve_dop!(uF, dop, solver, sol_cache)
+  uF, sol_cache = solve_dop!(uF, dop, solver, sol_cache)
   tF = t0 + dt
 
   # Update cache
@@ -407,7 +407,7 @@ function solve_dop!(
     end
   end
 
-  caches
+  (uF, caches)
 end
 
 ######################################
@@ -495,5 +495,6 @@ function solve_dop!(
   end
 
   caches = Base.setindex(caches, cache, isol)
-  caches
+
+  (uF, caches)
 end

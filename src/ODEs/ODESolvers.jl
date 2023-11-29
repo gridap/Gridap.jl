@@ -13,14 +13,14 @@ abstract type DiscreteODEOperator <: NonlinearOperator end
 
 """
     solve_dop!(
-      uF::AbstractVector,
+      usF::OneOrMoreVectors,
       op::DiscreteODEOperator, sol::NonlinearSolver, cache
-    ) -> CacheType
+    ) -> (OneOrMoreVectors, CacheType)
 
 Solve the discrete ODE operator.
 """
 function solve_dop!(
-  uF::AbstractVector,
+  usF::OneOrMoreVectors,
   op::DiscreteODEOperator, sol::NonlinearSolver, cache
 )
   @abstractmethod
@@ -282,3 +282,5 @@ include("ODESolvers/ThetaMethod.jl")
 include("ODESolvers/Tableaus.jl")
 
 include("ODESolvers/RungeKutta.jl")
+
+include("ODESolvers/GeneralizedAlpha.jl")

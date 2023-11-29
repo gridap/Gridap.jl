@@ -104,6 +104,8 @@ export available_tableaus
 
 export RungeKutta
 
+export GeneralizedAlpha
+
 export test_ode_solver
 
 include("ODESolutions.jl")

@@ -197,7 +197,7 @@ using Gridap.CellData: ∫; export ∫
 # @publish ODEs IMEXRungeKutta
 
 # @publish ODEs Newmark
-# @publish ODEs GeneralizedAlpha
+@publish ODEs GeneralizedAlpha
 
 @publish ODEs TransientTrialFESpace
 @publish ODEs TransientMultiFieldFESpace

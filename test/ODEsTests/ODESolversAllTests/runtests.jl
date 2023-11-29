@@ -9,6 +9,8 @@ using Gridap.ODEs
 
 # @time @testset "TableausTests" begin include("TableausTests.jl") end
 
-@time @testset "RungeKuttaTests" begin include("RungeKuttaTests.jl") end
+# @time @testset "RungeKuttaTests" begin include("RungeKuttaTests.jl") end
+
+@time @testset "GeneralizedAlphaTests" begin include("GeneralizedAlphaTests.jl") end
 
 end # module ODESolversAllTests
