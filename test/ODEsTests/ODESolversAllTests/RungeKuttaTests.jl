@@ -53,10 +53,18 @@ end
 
 tol = 1.0e-4
 ls = LUSolver()
+nls = NewtonRaphsonSolver(ls, 1.0e-8, 100)
 
 ode_solvers = [
-  RungeKutta(ls, dt, :FE_1_0_1)
-  RungeKutta(ls, dt, :SSPRK_3_0_3)
+  RungeKutta(nls, ls, dt, :FE_1_0_1)
+  RungeKutta(nls, ls, dt, :SSPRK_3_0_3)
+  RungeKutta(nls, ls, dt, :BE_1_0_1)
+  RungeKutta(nls, ls, dt, :CN_2_0_2)
+  RungeKutta(nls, ls, dt, :SDIRK_2_0_2)
+  RungeKutta(nls, ls, dt, :SDIRK_2_0_3)
+  RungeKutta(nls, ls, dt, :ESDIRK_3_1_2)
+  RungeKutta(nls, ls, dt, :TRBDF2_3_2_3)
+  RungeKutta(nls, ls, dt, :TRX2_3_2_3)
 ]
 
 # Main loop

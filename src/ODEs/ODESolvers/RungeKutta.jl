@@ -8,7 +8,7 @@ Generic Runge-Kutta ODE solver.
 
 # Mandatory
 - [`get_tableau(solver)`](@ref)
-- [`get_sols(solver)`](@ref)
+- [`get_solver_index(solver, explicit)`](@ref)
 """
 abstract type RungeKutta{T<:TableauType} <: ODESolver end
 
@@ -41,11 +41,15 @@ function get_tableau(solver::RungeKutta)
 end
 
 """
-    get_sols(solver::RungeKutta) -> Integer
+    get_solver_index(
+      solver::RungeKutta, explicit::Bool
+    ) -> (NonlinearSolver, Integer)
 
-Return the solvers for the discrete ODE operator of the Runge-Kutta ODE solver.
+Depending on whether the stage is explicit or not, return the linear or
+nonlinear solver for the discrete ODE operator of the Runge-Kutta ODE solver,
+together with its index.
 """
-function get_sols(solver::RungeKutta)
+function get_solver_index(solver::RungeKutta, explicit::Bool)
   @abstractmethod
 end
 
@@ -77,7 +81,7 @@ function solve_step!(
   )
 
   # Solve discrete ODE operator
-  sol_cache = solve_dop!(uF, dop, get_sols(solver), sol_cache)
+  sol_cache = solve_dop!(uF, dop, solver, sol_cache)
   tF = t0 + dt
 
   # Update cache
@@ -98,13 +102,6 @@ struct ExplicitRungeKutta <: RungeKutta{ExplicitTableau}
   sol::NonlinearSolver
   dt::Real
   tableau::AbstractTableau{ExplicitTableau}
-
-  function ExplicitRungeKutta(
-    sol::NonlinearSolver, dt::Real,
-    tableau::AbstractTableau{ExplicitTableau}
-  )
-    new(sol, dt, tableau)
-  end
 end
 
 # ODESolver interface
@@ -118,7 +115,8 @@ function allocate_dop_cache(
   t::Real, u::AbstractVector
 )
   ulc = similar(u)
-  (ulc,)
+  J, r = nothing, nothing
+  (ulc, J, r)
 end
 
 function allocate_dop_cache(
@@ -141,10 +139,10 @@ function DiscreteODEOperator(
   dop_cache, t0::Real, u0::AbstractVector, dt::Real,
   vs::AbstractVector{<:AbstractVector}, tableau::AbstractTableau
 )
-  ulc, = dop_cache
-  ExplicitRungeKuttaNonlinearOperator(
-    ode_op, ode_cache, ulc, vs, tableau,
-    t0, u0, dt, t0
+  ulc, J, r = dop_cache
+  SequentialRungeKuttaNonlinearOperator(
+    ode_op, ode_cache, ulc, vs, tableau, J, r,
+    t0, u0, dt, t0, zero(t0)
   )
 end
 
@@ -154,7 +152,7 @@ function DiscreteODEOperator(
   vs::AbstractVector{<:AbstractVector}, tableau::AbstractTableau
 )
   ulc, J, r = dop_cache
-  ExplicitRungeKuttaLinearOperator(
+  SequentialRungeKuttaLinearOperator(
     ode_op, ode_cache, ulc, vs, tableau, J, r,
     t0, u0, dt
   )
@@ -165,80 +163,191 @@ function get_tableau(solver::ExplicitRungeKutta)
   solver.tableau
 end
 
-function get_sols(solver::ExplicitRungeKutta)
-  (solver.sol,)
+function get_solver_index(solver::ExplicitRungeKutta, explicit::Bool)
+  (solver.sol, 1)
 end
 
-#######################################
-# ExplicitRungeKuttaNonlinearOperator #
-#######################################
+################################
+# DiagonallyImplicitRungeKutta #
+################################
 """
-    struct ExplicitRungeKuttaNonlinearOperator <: DiscreteODEOperator end
+    struct DiagonallyImplicitRungeKutta <: RungeKutta{DiagonallyImplicitTableau} end
 
-Nonlinear operator corresponding to an explicit Runge-Kutta scheme:
+Diagonally-implicit Runge-Kutta ODE solver.
+"""
+struct DiagonallyImplicitRungeKutta <: RungeKutta{DiagonallyImplicitTableau}
+  nlsol::NonlinearSolver
+  lsol::NonlinearSolver
+  dt::Real
+  tableau::AbstractTableau{DiagonallyImplicitTableau}
+end
+
+# ODESolver interface
+function get_dt(solver::DiagonallyImplicitRungeKutta)
+  solver.dt
+end
+
+function allocate_dop_cache(
+  solver::DiagonallyImplicitRungeKutta,
+  ode_op::ODEOperator, ode_cache,
+  t::Real, u::AbstractVector
+)
+  ulc = similar(u)
+  J, r = nothing, nothing
+  (ulc, J, r)
+end
+
+function allocate_dop_cache(
+  solver::DiagonallyImplicitRungeKutta,
+  ode_op::ODEOperator{MassLinearODE}, ode_cache,
+  t::Real, u::AbstractVector
+)
+  ulc = similar(u)
+  tableau = get_tableau(solver)
+  A = get_matrix(tableau)
+  if any(i -> iszero(A[i, i]), axes(A, 2))
+    J = allocate_jacobian(ode_op, t, (u, u), ode_cache)
+    r = allocate_residual(ode_op, t, (u, u), ode_cache)
+  else
+    J, r = nothing, nothing
+  end
+  (ulc, J, r)
+end
+
+function allocate_dop_cache(
+  solver::DiagonallyImplicitRungeKutta,
+  ode_op::ODEOperator{LinearODE}, ode_cache,
+  t::Real, u::AbstractVector
+)
+  ulc = similar(u)
+  J = allocate_jacobian(ode_op, t, (u, u), ode_cache)
+  r = allocate_residual(ode_op, t, (u, u), ode_cache)
+  (ulc, J, r)
+end
+
+function allocate_sol_cache(solver::DiagonallyImplicitRungeKutta)
+  (nothing, nothing)
+end
+
+function DiscreteODEOperator(
+  solver::DiagonallyImplicitRungeKutta, ode_op::ODEOperator, ode_cache,
+  dop_cache, t0::Real, u0::AbstractVector, dt::Real,
+  vs::AbstractVector{<:AbstractVector}, tableau::AbstractTableau
+)
+  ulc, J, r = dop_cache
+  SequentialRungeKuttaNonlinearOperator(
+    ode_op, ode_cache, ulc, vs, tableau, J, r,
+    t0, u0, dt, t0, zero(t0)
+  )
+end
+
+function DiscreteODEOperator(
+  solver::DiagonallyImplicitRungeKutta, ode_op::ODEOperator{LinearODE}, ode_cache,
+  dop_cache, t0::Real, u0::AbstractVector, dt::Real,
+  vs::AbstractVector{<:AbstractVector}, tableau::AbstractTableau
+)
+  ulc, J, r = dop_cache
+  SequentialRungeKuttaLinearOperator(
+    ode_op, ode_cache, ulc, vs, tableau, J, r,
+    t0, u0, dt
+  )
+end
+
+# RungeKutta interface
+function get_tableau(solver::DiagonallyImplicitRungeKutta)
+  solver.tableau
+end
+
+function get_solver_index(solver::DiagonallyImplicitRungeKutta, explicit::Bool)
+  explicit ? (solver.lsol, 2) : (solver.nlsol, 1)
+end
+
+#########################################
+# SequentialRungeKuttaNonlinearOperator #
+#########################################
+"""
+    struct SequentialRungeKuttaNonlinearOperator <: DiscreteODEOperator end
+
+Nonlinear operator corresponding to a sequential Runge-Kutta (explicit or
+diagonally implicit) scheme:
 ```math
 residual(t_s, u_s, v[s]) = 0,
 t_s = t_n + c[s] * dt,
-u_s = u_n + ∑_{j < s} A[s, j] * dt * v[j]
-```
+u_s = u_n + ∑_{j < s} A[s, j] * dt * v[j] + A[s, s] * dt * v[j],
+``` where `A[s, s]` is zero for an explicit scheme.
 """
-mutable struct ExplicitRungeKuttaNonlinearOperator <: DiscreteODEOperator
+mutable struct SequentialRungeKuttaNonlinearOperator <: DiscreteODEOperator
   ode_op::ODEOperator
   ode_cache
   ulc::AbstractVector
   vs::AbstractVector{<:AbstractVector}
-  tableau::AbstractTableau{ExplicitTableau}
+  tableau::AbstractTableau
+  J::Union{Nothing,AbstractMatrix}
+  r::Union{Nothing,AbstractVector}
   t0::Real
   u0::AbstractVector
   dt::Real
   t::Real
+  Ass::Real
 end
 
 function Algebra.allocate_residual(
-  op::ExplicitRungeKuttaNonlinearOperator,
+  op::SequentialRungeKuttaNonlinearOperator,
   v::AbstractVector
 )
   t, u = op.t, op.ulc
-  allocate_residual(op.ode_op, t, (u, v), op.ode_cache)
+  !iszero(op.Ass) && axpy!(op.Ass * op.dt, v, u)
+  r = allocate_residual(op.ode_op, t, (u, v), op.ode_cache)
+  !iszero(op.Ass) && axpy!(-op.Ass * op.dt, v, u)
+  r
 end
 
 function Algebra.residual!(
   r::AbstractVector,
-  op::ExplicitRungeKuttaNonlinearOperator,
+  op::SequentialRungeKuttaNonlinearOperator,
   v::AbstractVector
 )
   t, u = op.t, op.ulc
+  !iszero(op.Ass) && axpy!(op.Ass * op.dt, v, u)
   residual!(r, op.ode_op, t, (u, v), op.ode_cache)
+  !iszero(op.Ass) && axpy!(-op.Ass * op.dt, v, u)
+  r
 end
 
 function Algebra.allocate_jacobian(
-  op::ExplicitRungeKuttaNonlinearOperator,
+  op::SequentialRungeKuttaNonlinearOperator,
   v::AbstractVector
 )
   t, u = op.t, op.ulc
-  allocate_jacobian(op.ode_op, t, (u, v), op.ode_cache)
+  !iszero(op.Ass) && axpy!(op.Ass * op.dt, v, u)
+  J = allocate_jacobian(op.ode_op, t, (u, v), op.ode_cache)
+  !iszero(op.Ass) && axpy!(-op.Ass * op.dt, v, u)
+  J
 end
 
 function Algebra.jacobian!(
   J::AbstractMatrix,
-  op::ExplicitRungeKuttaNonlinearOperator,
+  op::SequentialRungeKuttaNonlinearOperator,
   v::AbstractVector
 )
   t, u = op.t, op.ulc
+  !iszero(op.Ass) && axpy!(op.Ass * op.dt, v, u)
   fillstored!(J, zero(eltype(J)))
-  jacobian!(J, op.ode_op, t, (u, v), 1, 1, op.ode_cache)
+  jacobians!(J, op.ode_op, t, (u, v), (op.Ass * op.dt, 1), op.ode_cache)
+  !iszero(op.Ass) && axpy!(-op.Ass * op.dt, v, u)
+  J
 end
 
 function solve_dop!(
   uF::AbstractVector,
-  op::ExplicitRungeKuttaNonlinearOperator,
-  sols::Tuple{Vararg{NonlinearSolver}}, caches
+  op::SequentialRungeKuttaNonlinearOperator,
+  solver::RungeKutta, caches
 )
   ode_op, ode_cache = op.ode_op, op.ode_cache
   ulc, vs, tableau = op.ulc, op.vs, op.tableau
   t0, u0, dt, t = op.t0, op.u0, op.dt, op.t
-  sol, cache = first(sols), first(caches)
 
+  ismasslinear = ODEOperatorType(ode_op) <: AbstractMassLinearODE
   A, b, c = get_matrix(tableau), get_weights(tableau), get_nodes(tableau)
   num_stages = length(c)
 
@@ -246,7 +355,6 @@ function solve_dop!(
   for s in 1:num_stages
     ts = t0 + c[s] * dt
     update_cache!(ode_cache, ode_op, ts)
-    op.t = ts
 
     # Take linear combination of previous stages
     u = ulc
@@ -258,10 +366,36 @@ function solve_dop!(
       end
     end
 
+    # Update operator state
+    op.t = ts
+    op.Ass = A[s, s]
+
     # Solve stage
+    explicit = iszero(A[s, s])
+    sol, isol = get_solver_index(solver, explicit)
+    cache = caches[isol]
+
     v = vs[s]
     fill!(v, zero(eltype(v)))
-    cache = solve!(v, sol, op, cache)
+
+    if explicit && ismasslinear
+      J, r = op.J, op.r
+
+      fillstored!(J, zero(eltype(J)))
+      jacobians!(J, ode_op, ts, (u, v), (A[s, s] * dt, 1), ode_cache)
+      residual!(r, ode_op, ts, (u, v), ode_cache, include_highest=false)
+      rmul!(r, -1)
+
+      _op = SequentialRungeKuttaLinearOperator(
+        ode_op, ode_cache, ulc, vs, tableau, J, r,
+        t0, u0, dt
+      )
+    else
+      _op = op
+    end
+
+    cache = solve!(v, sol, _op, cache)
+    caches = Base.setindex(caches, cache, isol)
   end
 
   # Take final linear combination
@@ -273,29 +407,29 @@ function solve_dop!(
     end
   end
 
-  caches = (cache,)
   caches
 end
 
-####################################
-# ExplicitRungeKuttaLinearOperator #
-####################################
+######################################
+# SequentialRungeKuttaLinearOperator #
+######################################
 """
-    struct ExplicitRungeKuttaLinearOperator <: LinearDiscreteODEOperator end
+    struct SequentialRungeKuttaLinearOperator <: LinearDiscreteODEOperator end
 
-Linear operator corresponding to an explicit Runge-Kutta scheme:
+Linear operator corresponding to a sequential Runge-Kutta (explicit or
+diagonally implicit) scheme:
 ```math
 residual(t_s, u_s, v[s]) = mass(t_s, u_s) v[s] + res(t_s, u_s) = 0,
 t_s = t_n + c[s] * dt,
-u_s = u_n + ∑_{j < s} A[s, j] * dt * v[j]
-```
+u_s = u_n + ∑_{j < s} A[s, j] * dt * v[j] + A[s, s] * dt * v[s],
+``` where `A[s, s]` is zero for an explicit scheme.
 """
-struct ExplicitRungeKuttaLinearOperator <: LinearDiscreteODEOperator
+struct SequentialRungeKuttaLinearOperator <: LinearDiscreteODEOperator
   ode_op::ODEOperator
   ode_cache
   ulc::AbstractVector
   vs::AbstractVector{<:AbstractVector}
-  tableau::AbstractTableau{ExplicitTableau}
+  tableau::AbstractTableau
   J::AbstractMatrix
   r::AbstractVector
   t0::Real
@@ -303,20 +437,23 @@ struct ExplicitRungeKuttaLinearOperator <: LinearDiscreteODEOperator
   dt::Real
 end
 
-Algebra.get_matrix(op::ExplicitRungeKuttaLinearOperator) = op.J
+Algebra.get_matrix(op::SequentialRungeKuttaLinearOperator) = op.J
 
-Algebra.get_vector(op::ExplicitRungeKuttaLinearOperator) = op.r
+Algebra.get_vector(op::SequentialRungeKuttaLinearOperator) = op.r
 
 function solve_dop!(
   uF::AbstractVector,
-  op::ExplicitRungeKuttaLinearOperator,
-  sols::Tuple{Vararg{NonlinearSolver}}, caches
+  op::SequentialRungeKuttaLinearOperator,
+  solver::RungeKutta, caches
 )
   ode_op, ode_cache = op.ode_op, op.ode_cache
   ulc, vs, tableau = op.ulc, op.vs, op.tableau
   J, r = op.J, op.r
   t0, u0, dt = op.t0, op.u0, op.dt
-  sol, cache = first(sols), first(caches)
+
+  explicit = true
+  sol, isol = get_solver_index(solver, explicit)
+  cache = caches[isol]
 
   A, b, c = get_matrix(tableau), get_weights(tableau), get_nodes(tableau)
   num_stages = length(c)
@@ -339,7 +476,7 @@ function solve_dop!(
 
     # Update jacobian and residual
     fillstored!(J, zero(eltype(J)))
-    jacobian!(J, ode_op, ts, (u, v), 1, 1, ode_cache)
+    jacobians!(J, ode_op, ts, (u, v), (A[s, s] * dt, 1), ode_cache)
     residual!(r, ode_op, ts, (u, v), ode_cache, include_highest=false)
     rmul!(r, -1)
 
@@ -357,6 +494,6 @@ function solve_dop!(
     end
   end
 
-  caches = (cache,)
+  caches = Base.setindex(caches, cache, isol)
   caches
 end
