@@ -2,19 +2,19 @@ module ODEOperatorsTests
 
 using Test
 
-using SparseArrays: spzeros
-
 using Gridap
 using Gridap.ODEs
 
 include("ODEOperatorsMocks.jl")
 
-a, b, c = 1.0, 2.0, 3.0
-op = ODEOperatorMock{MassLinearODE}(a, b, c, 1)
+M = randn(2, 2)
+K = randn(2, 2)
+f(t) = [cospi(t), sinpi(t)]
+op = ODEOperatorMock{MassLinearODE}(M, K, f)
 
-t = 0.0
-u = ones(2)
-u̇ = 2 * ones(2)
+t = randn()
+u = randn(2)
+u̇ = randn(2)
 
 cache = allocate_cache(op, t, (u, u̇))
 update_cache!(cache, op, t)
@@ -25,24 +25,18 @@ r = allocate_residual(op, t, (u, u̇), cache)
 J = allocate_jacobian(op, t, (u, u̇), cache)
 @test size(J) == (2, 2)
 
+_r = M * u̇ + K * u + f(t)
 residual!(r, op, t, (u, u̇), cache)
-_r = zeros(2)
-_r[1] = u̇[1] - a * u[1]
-_r[2] = u̇[2] - b * u[1] - c * u[2]
-@test all(r .== _r)
+@test r ≈ _r
 
+_J = K
 fill!(J, 0)
 jacobian!(J, op, t, (u, u̇), 0, 1, cache)
-_J = zeros(2, 2)
-_J[1, 1] = -a
-_J[2, 1] = -b
-_J[2, 2] = -c
-@test all(J .== _J)
+@test J ≈ _J
 
+_J += M
 jacobian!(J, op, t, (u, u̇), 1, 1, cache)
-_J[1, 1] += 1
-_J[2, 2] += 1
-@test all(J .== _J)
+@test J ≈ _J
 
 @test test_ode_operator(op, t, (u, u̇))
 

@@ -64,9 +64,15 @@ export test_ode_operator
 
 include("ODESolvers.jl")
 
+export DiscreteODEOperator
+export solve_dop!
+export LinearDiscreteODEOperator
+
 export ODESolver
+export get_dt
+export allocate_dop_cache
+export allocate_sol_cache
 export solve_step!
-export solve
 
 export ForwardEuler
 export ThetaMethod
@@ -95,6 +101,8 @@ export IMEXTableau
 export TableauName
 export ButcherTableau
 export available_tableaus
+
+export RungeKutta
 
 export test_ode_solver
 

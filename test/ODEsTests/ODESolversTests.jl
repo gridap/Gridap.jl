@@ -8,76 +8,54 @@ using Gridap.ODEs
 include("ODEOperatorsMocks.jl")
 include("ODESolversMocks.jl")
 
-a, b, c = 1.0, 0.0, 1.0
-ode_op = ODEOperatorMock{MassLinearODE}(a, b, c, 1)
+t0 = randn()
+tF = t0 + rand()
+dt = (tF - t0) / 10
+u0 = randn(2)
 
-t0 = 0.0
-tF = 1.0
-dt = 0.1
-u0 = 2 * ones(2)
+M = randn(2, 2)
+K = randn(2, 2)
+while iszero(det(M + dt * K))
+  M = randn(2, 2)
+  K = randn(2, 2)
+end
+f(t) = [cospi(t), sinpi(t)]
+ode_op = ODEOperatorMock{MassLinearODE}(M, K, f)
 
-α = 1 - dt * a
-β = -dt * b
-γ = 1 - dt * c
-@assert !iszero(α)
-@assert !iszero(γ)
+# MockDiscreteODEOperator tests
+dop = MockDiscreteODEOperator(ode_op, nothing, t0, u0, dt)
 
-# OperatorMock tests
-nl_op = OperatorMock(ode_op, u0, dt, tF, nothing)
+v = randn(2)
 
-u = zero_initial_guess(nl_op)
-fill!(u, 1)
-u̇ = (u - u0) ./ dt
-dt⁻¹ = inv(dt)
+r = allocate_residual(dop, v)
+J = allocate_jacobian(dop, v)
+residual!(r, dop, v)
+jacobian!(J, dop, v)
 
-r = allocate_residual(nl_op, u)
-J = allocate_jacobian(nl_op, u)
-residual!(r, nl_op, u)
-jacobian!(J, nl_op, u)
-
-@test r[1] ≈ u̇[1] - a
-@test r[2] ≈ u̇[2] - b - c
-@test J[1, 1] ≈ dt⁻¹ - a
-@test J[1, 2] ≈ 0
-@test J[2, 1] ≈ -b
-@test J[2, 2] ≈ dt⁻¹ - c
+_r = M * v + K * (u0 + dt * v) + f(t0 + dt)
+_J = M + dt * K
+@test r ≈ _r
+@test J ≈ _J
 
 # NLSolverMock tests
-nls = NLSolverMock()
+sol = NLSolverMock()
+sol_cache = solve!(v, sol, dop)
 
-nls_cache = solve!(u, nls, nl_op)
+r, J, du = sol_cache
+@test r ≈ _r
+@test J ≈ _J
 
-r, J, du = nls_cache
-@test r[1] ≈ u̇[1] - a
-@test r[2] ≈ u̇[2] - b - c
-@test J[1, 1] ≈ dt⁻¹ - a
-@test J[1, 2] ≈ 0
-@test J[2, 1] ≈ -b
-@test J[2, 2] ≈ dt⁻¹ - c
-
-D = α * γ
-@test u[1] ≈ γ * u0[1] / D
-@test u[2] ≈ (α * u0[2] - β * u0[1]) / D
+_v = -_J \ (K * u0 + f(t0 + dt))
+@test v ≈ _v
 
 # ODESolver tests
-ode_solver = ODESolverMock(nls, dt)
+ode_solver = ODESolverMock(sol, dt)
 uF = copy(u0)
-fill!(uF, 1)
-
 uF, tF, cache = solve_step!(uF, ode_solver, ode_op, u0, t0, nothing)
 
 @test tF ≈ t0 + dt
-@test all(uF .≈ u)
+@test uF ≈ u0 + dt * _v
 
-# ODESolutions tests
-tF = 10.0
-sol = GenericODESolution(ode_solver, ode_op, u0, t0, tF)
-utF, state = Base.iterate(sol)
-uF, tF = utF
-
-@test tF ≈ t0 + dt
-@test all(uF .≈ u)
-
-@test test_ode_solver(ode_solver, ode_op, u0, t0, tF)
+@test test_ode_solver(ode_solver, ode_op, t0, u0, t0, u0, dt)
 
 end # module ODESolversTests

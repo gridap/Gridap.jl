@@ -8,42 +8,34 @@ using Gridap.ODEs
 include("ODEOperatorsMocks.jl")
 include("ODESolversMocks.jl")
 
-a, b, c = 1.0, 0.0, 1.0
-op = ODEOperatorMock{MassLinearODE}(a, b, c, 1)
+t0 = randn()
+tF = t0 + rand()
+dt = (tF - t0) / 10
+u0 = randn(2)
 
-t0 = 0.0
-tF = 1.0
-dt = 0.1
-u0 = 2 * ones(2)
-
-α = 1 - dt * a
-β = -dt * b
-γ = 1 - dt * c
-@assert !iszero(α)
-@assert !iszero(γ)
+M = randn(2, 2)
+K = randn(2, 2)
+while iszero(det(M + dt * K))
+  M = randn(2, 2)
+  K = randn(2, 2)
+end
+f(t) = [cospi(t), sinpi(t)]
+ode_op = ODEOperatorMock{MassLinearODE}(M, K, f)
 
 nls = NLSolverMock()
 solver = ODESolverMock(nls, dt)
 
-sol = solve(solver, op, u0, t0, tF)
+sol = solve(solver, ode_op, u0, t0, tF)
 
-uF = copy(u0)
-fill!(uF, 1)
-
-αⁿ, γⁿ = one(α), one(γ)
-for (n, (u_n, t_n)) in enumerate(sol)
-  @test t_n ≈ t0 + n * dt
-  if a == c
-    D = α^n
-    @test u_n[1] ≈ u0[1] / D
-    @test u_n[2] ≈ (u0[2] - n * β * u0[1]) / D
-  else
-    D = αⁿ * γⁿ
-    αⁿ = α * αⁿ
-    γⁿ = γ * γⁿ
-    @test u_n[1] ≈ (γⁿ * u0[1]) / D
-    @test u_n[2] ≈ (αⁿ * u0[2] - β * (αⁿ - γⁿ) / (α - γ)) / D
-  end
+_J = M + dt * K
+tprev = t0
+uprev = copy(u0)
+for (u_n, t_n) in sol
+  global tprev, uprev
+  @test t_n ≈ tprev + dt
+  @test u_n ≈ uprev + dt * (-_J \ (K * uprev + f(t_n)))
+  tprev = t_n
+  copy!(uprev, u_n)
 end
 
 @test test_ode_solution(sol)

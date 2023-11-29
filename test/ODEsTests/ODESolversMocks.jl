@@ -1,8 +1,10 @@
 using LinearAlgebra
+using LinearAlgebra: fillstored!
 
 using Gridap
 using Gridap.Algebra
 using Gridap.ODEs
+using Gridap.ODEs: _u_from_v!
 
 ################
 # NLSolverMock #
@@ -10,7 +12,7 @@ using Gridap.ODEs
 struct NLSolverMock <: NonlinearSolver
 end
 
-function Gridap.Algebra.solve!(
+function Algebra.solve!(
   x::AbstractVector, nls::NLSolverMock,
   op::NonlinearOperator, cache::Nothing
 )
@@ -24,7 +26,7 @@ function Gridap.Algebra.solve!(
   cache
 end
 
-function Gridap.Algebra.solve!(
+function Algebra.solve!(
   x::AbstractVector, nls::NLSolverMock,
   op::NonlinearOperator, cache
 )
@@ -43,77 +45,126 @@ end
 # ODESolverMock #
 #################
 struct ODESolverMock <: ODESolver
-  nls::NLSolverMock
+  sol::NLSolverMock
   dt::Float64
 end
 
-function Gridap.ODEs.solve_step!(
+function ODEs.get_dt(solver::ODESolverMock)
+  solver.dt
+end
+
+function ODEs.allocate_dop_cache(
+  solver::ODESolverMock,
+  ode_op::ODEOperator, ode_cache,
+  t::Real, u::AbstractVector
+)
+  nothing
+end
+
+function ODEs.allocate_sol_cache(solver::ODESolverMock)
+  nothing
+end
+
+function ODEs.DiscreteODEOperator(
+  solver::ODESolverMock, ode_op::ODEOperator, ode_cache,
+  dop_cache, t0::Real, u0::AbstractVector, dt::Real
+)
+  MockDiscreteODEOperator(ode_op, ode_cache, t0, u0, dt)
+end
+
+function ODEs.solve_step!(
   uF::AbstractVector,
   solver::ODESolverMock, ode_op::ODEOperator,
   u0::AbstractVector, t0::Real, cache
 )
-  dt = solver.dt
-  tF = t0 + dt
+  # Unpack solver
+  dt = get_dt(solver)
 
-  # Create or retrieve cache
+  # Allocate or unpack cache
   if isnothing(cache)
     ode_cache = allocate_cache(ode_op, t0, (u0, u0))
-    nl_cache = nothing
+    dop_cache = allocate_dop_cache(solver, ode_op, ode_cache, t0, u0)
+    sol_cache = allocate_sol_cache(solver)
   else
-    ode_cache, nl_cache = cache
+    ode_cache, dop_cache, sol_cache = cache
   end
 
-  # Update ODE cache
-  update_cache!(ode_cache, ode_op, tF)
+  # Create discrete ODE operator
+  dop = DiscreteODEOperator(
+    solver, ode_op, ode_cache, dop_cache,
+    t0, u0, dt
+  )
 
-  # Create and solve ODE operator
-  nl_op = OperatorMock(ode_op, u0, dt, tF, ode_cache)
-  nl_cache = solve!(uF, solver.nls, nl_op, nl_cache)
+  # Solve discrete ODE operator
+  sol_cache = solve_dop!(uF, dop, solver.sol, sol_cache)
+  tF = t0 + dt
 
   # Update cache
-  cache = (ode_cache, nl_cache)
+  cache = (ode_cache, dop_cache, sol_cache)
 
   (uF, tF, cache)
 end
 
-################
-# OperatorMock #
-################
-struct OperatorMock <: NonlinearOperator
+###########################
+# MockDiscreteODEOperator #
+###########################
+struct MockDiscreteODEOperator <: DiscreteODEOperator
   ode_op::ODEOperator
-  u0::AbstractVector
-  dt::Float64
-  tF::Float64
   ode_cache
+  t0::Real
+  u0::AbstractVector
+  dt::Real
 end
 
-function Gridap.Algebra.allocate_residual(op::OperatorMock, u::AbstractVector)
-  allocate_residual(op.ode_op, op.tF, (u, u), op.ode_cache)
-end
-
-function Gridap.Algebra.residual!(
-  r::AbstractVector, op::OperatorMock, u::AbstractVector
+function Algebra.allocate_residual(
+  op::MockDiscreteODEOperator,
+  v::AbstractVector
 )
-  u̇ = (u - op.u0) ./ op.dt
-  residual!(r, op.ode_op, op.tF, (u, u̇), op.ode_cache)
+  t, u0 = op.t0 + op.dt, op.u0
+  u = u0 .+ dt .* v
+  allocate_residual(op.ode_op, t, (u, v), op.ode_cache)
+end
+
+function Algebra.residual!(
+  r::AbstractVector, op::MockDiscreteODEOperator, v::AbstractVector
+)
+  t, u0 = op.t0 + op.dt, op.u0
+  u = u0 .+ dt .* v
+  residual!(r, op.ode_op, t, (u, v), op.ode_cache)
   r
 end
 
-function Gridap.Algebra.allocate_jacobian(op::OperatorMock, u::AbstractVector)
-  allocate_jacobian(op.ode_op, op.tF, (u, u), op.ode_cache)
+function Algebra.allocate_jacobian(
+  op::MockDiscreteODEOperator, v::AbstractVector
+)
+  t, u0 = op.t0 + op.dt, op.u0
+  u = u0 .+ dt .* v
+  allocate_jacobian(op.ode_op, t, (u, v), op.ode_cache)
 end
 
-function Gridap.Algebra.jacobian!(
-  J::AbstractMatrix, op::OperatorMock, u::AbstractVector
+function Algebra.jacobian!(
+  J::AbstractMatrix, op::MockDiscreteODEOperator, v::AbstractVector
 )
-  u̇ = (u - op.u0) ./ op.dt
-  fill!(J, 0)
-  jacobians!(J, op.ode_op, op.tF, (u, u̇), (1, inv(op.dt)), op.ode_cache)
+  t, u0 = op.t0 + op.dt, op.u0
+  u = u0 .+ dt .* v
+  fillstored!(J, zero(eltype(J)))
+  jacobians!(J, op.ode_op, t, (u, v), (op.dt, 1), op.ode_cache)
   J
 end
 
-function Gridap.Algebra.zero_initial_guess(op::OperatorMock)
-  u = similar(op.u0)
-  fill!(u, zero(eltype(u)))
-  u
+function ODEs.solve_dop!(
+  uF::AbstractVector,
+  op::MockDiscreteODEOperator, sol::NonlinearSolver, cache
+)
+  ode_op, ode_cache = op.ode_op, op.ode_cache
+  t0, u0, dt = op.t0, op.u0, op.dt
+
+  update_cache!(ode_cache, ode_op, t0 + dt)
+
+  vF = uF
+  fill!(vF, zero(eltype(vF)))
+  cache = solve!(vF, sol, op, cache)
+  _u_from_v!(uF, u0, dt, vF)
+
+  cache
 end

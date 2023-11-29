@@ -3,6 +3,7 @@ module TransientFESpacesTests
 using Test
 
 using Gridap
+using Gridap.Fields
 using Gridap.ODEs
 
 u(x, t) = (x[1] + x[2]) * t
@@ -10,13 +11,13 @@ u(t::Real) = x -> u(x, t)
 
 ∇u(x, t) = VectorValue(1, 1) * t
 ∇u(t::Real) = x -> ∇u(x, t)
-Gridap.Fields.∇(::typeof(u)) = ∇u
+Fields.∇(::typeof(u)) = ∇u
 
 ∂tu(t) = x -> x[1] + x[2]
-Gridap.ODEs.∂t(::typeof(u)) = ∂tu
+ODEs.∂t(::typeof(u)) = ∂tu
 
 ∂ttu(t) = x -> zero(x[1])
-Gridap.ODEs.∂tt(::typeof(u)) = ∂ttu
+ODEs.∂tt(::typeof(u)) = ∂ttu
 
 # f(t) = x -> (x[1] + x[2])
 

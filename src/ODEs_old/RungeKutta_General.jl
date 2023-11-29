@@ -34,7 +34,7 @@ function solve_step!(
   c = get_nodes(tableau)
   num_stages = length(b)
 
-  # Create cache if not there
+  # Allocate cache if not there
   if isnothing(cache)
     ode_cache = allocate_cache(ode_op)
     M = allocate_jacobian(ode_op, t0, u0, ode_cache)
