@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `BlockMultiFieldStyle` available for `TransientMultiFieldFESpaces` since PR [#946](https://github.com/gridap/Gridap.jl/pull/946).
 - When creating `DiscreteModelPortions`, some of the `FaceLabeling` arrays were being aliased. This caused issues when adding tags to distributed models in debug mode. Since PR [#956](https://github.com/gridap/Gridap.jl/pull/956).
+- Function `add_entry!` was inconsistent for `AbstractMatrix` and `AbstractSparseMatrix`. Since PR[#959](https://github.com/gridap/Gridap.jl/pull/959).
 
 ## [0.17.20] - 2023-10-01 
 
