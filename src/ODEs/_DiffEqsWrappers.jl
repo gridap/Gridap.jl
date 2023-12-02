@@ -34,35 +34,35 @@ export diffeq_wrappers
 """
 function diffeq_wrappers(op)
 
-  ode_op = get_algebraic_operator(op)
-  ode_cache = allocate_cache(ode_op)
+  odeop = get_algebraic_operator(op)
+  odeopcache = allocate_cache(odeop)
 
   function _residual!(res, du, u, p, t)
     # TO DO (minor): Improve update_cache! st do nothing if same time t as in the cache
     # now it would be done twice (residual and jacobian)
-    ode_cache = update_cache!(ode_cache, ode_op, t)
-    residual!(res, ode_op, t, (u, du), ode_cache)
+    odeopcache = update_cache!(odeopcache, odeop, t)
+    residual!(res, odeop, t, (u, du), odeopcache)
   end
 
   function _jacobian!(jac, du, u, p, gamma, t)
-    ode_cache = update_cache!(ode_cache, ode_op, t)
+    odeopcache = update_cache!(odeopcache, odeop, t)
     z = zero(eltype(jac))
     fillstored!(jac, z)
-    jacobians!(jac, ode_op, t, (u, du), (1.0, gamma), ode_cache)
+    jacobians!(jac, odeop, t, (u, du), (1.0, gamma), odeopcache)
   end
 
   function _mass!(mass, du, u, p, t)
-    ode_cache = update_cache!(ode_cache, ode_op, t)
+    odeopcache = update_cache!(odeopcache, odeop, t)
     z = zero(eltype(mass))
     fillstored!(mass, z)
-    jacobian!(mass, ode_op, t, (u, du), 2, 1.0, ode_cache)
+    jacobian!(mass, odeop, t, (u, du), 2, 1.0, odeopcache)
   end
 
   function _stiffness!(stif, du, u, p, t)
-    ode_cache = update_cache!(ode_cache, ode_op, t)
+    odeopcache = update_cache!(odeopcache, odeop, t)
     z = zero(eltype(stif))
     fillstored!(stif, z)
-    jacobian!(stif, ode_op, t, (u, du), 1, 1.0, ode_cache)
+    jacobian!(stif, odeop, t, (u, du), 1, 1.0, odeopcache)
   end
 
   return _residual!, _jacobian!, _mass!, _stiffness!
@@ -74,9 +74,9 @@ end
   and a vector of size total number of unknowns
 """
 function prototype_jacobian(op::TransientFEOperator, u0)
-  ode_op = get_algebraic_operator(op)
-  ode_cache = allocate_cache(ode_op) # Not acceptable in terms of performance
-  return allocate_jacobian(ode_op, u0, ode_cache)
+  odeop = get_algebraic_operator(op)
+  odeopcache = allocate_cache(odeop) # Not acceptable in terms of performance
+  return allocate_jacobian(odeop, u0, odeopcache)
 end
 
 const prototype_mass = prototype_jacobian

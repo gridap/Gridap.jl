@@ -28,7 +28,8 @@ matrix = [
 
 for tableauname in available_tableaus
   ButcherTableau(tableauname)
-  ButcherTableau(eval(Meta.parse("ODEs." * string(tableauname) * "()")), Float64)
+  tableau = eval(Meta.parse("ODEs." * string(tableauname) * "()"))
+  ButcherTableau(tableau, Float64)
 end
 
 end # module TableausTests

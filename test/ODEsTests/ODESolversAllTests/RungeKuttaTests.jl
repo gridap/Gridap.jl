@@ -28,23 +28,23 @@ function u(t)
   s
 end
 
-op_nonlinear = ODEOperatorMock{NonlinearODE}(M, K, f)
+odeop_nonlinear = ODEOperatorMock1{NonlinearODE}(M, K, f)
 
-op_masslinear = ODEOperatorMock{MassLinearODE}(M, K, f)
+odeop_masslinear = ODEOperatorMock1{MassLinearODE}(M, K, f)
 
-op_linear = ODEOperatorMock{LinearODE}(M, K, f)
-ODEs.is_jacobian_constant(op::typeof(op_linear), k::Integer) = true
+odeop_linear = ODEOperatorMock1{LinearODE}(M, K, f)
+ODEs.is_jacobian_constant(odeop::typeof(odeop_linear), k::Integer) = true
 
-ops = [
-  op_nonlinear,
-  op_masslinear,
-  op_linear
+odeops = [
+  odeop_nonlinear,
+  odeop_masslinear,
+  odeop_linear
 ]
 
-function test_solver(ode_solver, op, tol)
-  sol = solve(ode_solver, op, u0, t0, tF)
+function test_solver(odeslvr, odeop, tol)
+  odesltn = solve(odeslvr, odeop, u0, t0, tF)
 
-  for (uh_n, t_n) in sol
+  for (uh_n, t_n) in odesltn
     eh_n = u(t_n) - uh_n
     e_n = sqrt(sum(abs2, eh_n))
     @test e_n < tol
@@ -52,25 +52,25 @@ function test_solver(ode_solver, op, tol)
 end
 
 tol = 1.0e-4
-ls = LUSolver()
-nls = NewtonRaphsonSolver(ls, 1.0e-8, 100)
+disslvr_l = LUSolver()
+disslvr_nl = NewtonRaphsonSolver(disslvr_l, 1.0e-8, 100)
 
-ode_solvers = [
-  RungeKutta(nls, ls, dt, :FE_1_0_1)
-  RungeKutta(nls, ls, dt, :SSPRK_3_0_3)
-  RungeKutta(nls, ls, dt, :BE_1_0_1)
-  RungeKutta(nls, ls, dt, :CN_2_0_2)
-  RungeKutta(nls, ls, dt, :SDIRK_2_0_2)
-  RungeKutta(nls, ls, dt, :SDIRK_2_0_3)
-  RungeKutta(nls, ls, dt, :ESDIRK_3_1_2)
-  RungeKutta(nls, ls, dt, :TRBDF2_3_2_3)
-  RungeKutta(nls, ls, dt, :TRX2_3_2_3)
+odeslvrs = [
+  RungeKutta(disslvr_nl, disslvr_l, dt, :FE_1_0_1)
+  RungeKutta(disslvr_nl, disslvr_l, dt, :SSPRK_3_0_3)
+  RungeKutta(disslvr_nl, disslvr_l, dt, :BE_1_0_1)
+  RungeKutta(disslvr_nl, disslvr_l, dt, :CN_2_0_2)
+  RungeKutta(disslvr_nl, disslvr_l, dt, :SDIRK_2_0_2)
+  RungeKutta(disslvr_nl, disslvr_l, dt, :SDIRK_2_0_3)
+  RungeKutta(disslvr_nl, disslvr_l, dt, :ESDIRK_3_1_2)
+  RungeKutta(disslvr_nl, disslvr_l, dt, :TRBDF2_3_2_3)
+  RungeKutta(disslvr_nl, disslvr_l, dt, :TRX2_3_2_3)
 ]
 
 # Main loop
-for ode_solver in ode_solvers
-  for op in ops
-    test_solver(ode_solver, op, tol)
+for odeslvr in odeslvrs
+  for odeop in odeops
+    test_solver(odeslvr, odeop, tol)
   end
 end
 

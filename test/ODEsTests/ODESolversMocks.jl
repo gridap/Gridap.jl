@@ -9,6 +9,11 @@ using Gridap.ODEs: _u_from_v!
 ################
 # NLSolverMock #
 ################
+"""
+    struct NLSolverMock <: NonlinearSolver end
+
+Mock linear system solver.
+"""
 struct NLSolverMock <: NonlinearSolver
 end
 
@@ -41,130 +46,314 @@ function Algebra.solve!(
   cache
 end
 
-#################
-# ODESolverMock #
-#################
-struct ODESolverMock <: ODESolver
-  sol::NLSolverMock
+##################
+# ODESolverMock1 #
+##################
+"""
+    struct ODESolverMock1 <: ODESolver end
+
+Mock first-order ODE solver (backward Euler).
+"""
+struct ODESolverMock1 <: ODESolver
+  disslvr::NLSolverMock
   dt::Float64
 end
 
-function ODEs.get_dt(solver::ODESolverMock)
-  solver.dt
+function ODEs.get_dt(odeslvr::ODESolverMock1)
+  odeslvr.dt
 end
 
-function ODEs.allocate_dop_cache(
-  solver::ODESolverMock,
-  ode_op::ODEOperator, ode_cache,
-  t::Real, u::AbstractVector
+function ODEs.allocate_disopcache(
+  odeslvr::ODESolverMock1,
+  odeop::ODEOperator, odeopcache,
+  t::Real, x::AbstractVector
 )
-  nothing
-end
-
-function ODEs.allocate_sol_cache(solver::ODESolverMock)
   nothing
 end
 
 function ODEs.DiscreteODEOperator(
-  solver::ODESolverMock, ode_op::ODEOperator, ode_cache,
-  dop_cache, t0::Real, u0::AbstractVector, dt::Real
+  odeslvr::ODESolverMock1, odeop::ODEOperator,
+  odeopcache, disopcache,
+  t0::Real, us0::NTuple{1,AbstractVector}, dt::Real
 )
-  MockDiscreteODEOperator(ode_op, ode_cache, t0, u0, dt)
+  DiscreteODEOperatorMock1(odeop, odeopcache, t0, us0, dt)
 end
 
 function ODEs.solve_step!(
-  uF::AbstractVector,
-  solver::ODESolverMock, ode_op::ODEOperator,
-  u0::AbstractVector, t0::Real, cache
+  usF::NTuple{1,AbstractVector},
+  odeslvr::ODESolverMock1, odeop::ODEOperator,
+  us0::NTuple{1,AbstractVector}, t0::Real,
+  cache
 )
-  # Unpack solver
-  dt = get_dt(solver)
+  # Unpack us and ODE solver
+  u0, = us0
+  dt = get_dt(odeslvr)
 
   # Allocate or unpack cache
   if isnothing(cache)
-    ode_cache = allocate_cache(ode_op, t0, (u0, u0))
-    dop_cache = allocate_dop_cache(solver, ode_op, ode_cache, t0, u0)
-    sol_cache = allocate_sol_cache(solver)
+    odeopcache = allocate_odeopcache(odeop, t0, (u0, u0))
+    disopcache = allocate_disopcache(odeslvr, odeop, odeopcache, t0, u0)
+    disslvrcache = allocate_disslvrcache(odeslvr)
   else
-    ode_cache, dop_cache, sol_cache = cache
+    odeopcache, disopcache, disslvrcache = cache
   end
 
   # Create discrete ODE operator
-  dop = DiscreteODEOperator(
-    solver, ode_op, ode_cache, dop_cache,
-    t0, u0, dt
+  disop = DiscreteODEOperator(
+    odeslvr, odeop,
+    odeopcache, disopcache,
+    t0, us0, dt
   )
 
   # Solve discrete ODE operator
-  uF, sol_cache = solve_dop!(uF, dop, solver.sol, sol_cache)
+  usF, disslvrcache = solve!(usF, odeslvr.disslvr, disop, disslvrcache)
   tF = t0 + dt
 
   # Update cache
-  cache = (ode_cache, dop_cache, sol_cache)
+  cache = (odeopcache, disopcache, disslvrcache)
 
-  (uF, tF, cache)
+  (usF, tF, cache)
 end
 
-###########################
-# MockDiscreteODEOperator #
-###########################
-struct MockDiscreteODEOperator <: DiscreteODEOperator
-  ode_op::ODEOperator
-  ode_cache
+############################
+# DiscreteODEOperatorMock1 #
+############################
+"""
+    struct DiscreteODEOperatorMock1 <: DiscreteODEOperator end
+
+Mock backward Euler operator for first-order ODEs:
+```math
+res(t_n + dt, u_n + dt * x, x) = 0.
+u_n+1 = u_n + dt * x
+```
+"""
+struct DiscreteODEOperatorMock1 <: DiscreteODEOperator
+  odeop::ODEOperator
+  odeopcache
   t0::Real
-  u0::AbstractVector
+  us0::NTuple{1,AbstractVector}
   dt::Real
 end
 
 function Algebra.allocate_residual(
-  op::MockDiscreteODEOperator,
-  v::AbstractVector
+  disop::DiscreteODEOperatorMock1,
+  x::AbstractVector
 )
-  t, u0 = op.t0 + op.dt, op.u0
-  u = u0 .+ dt .* v
-  allocate_residual(op.ode_op, t, (u, v), op.ode_cache)
+  t0, dt, (u0,) = disop.t0, disop.dt, disop.us0
+  t = t0 + dt
+  u = u0 .+ dt .* x
+  allocate_residual(disop.odeop, t, (u, x), disop.odeopcache)
 end
 
 function Algebra.residual!(
-  r::AbstractVector, op::MockDiscreteODEOperator, v::AbstractVector
+  r::AbstractVector,
+  disop::DiscreteODEOperatorMock1,
+  x::AbstractVector
 )
-  t, u0 = op.t0 + op.dt, op.u0
-  u = u0 .+ dt .* v
-  residual!(r, op.ode_op, t, (u, v), op.ode_cache)
-  r
+  t0, dt, (u0,) = disop.t0, disop.dt, disop.us0
+  t = t0 + dt
+  u = u0 .+ dt .* x
+  residual!(r, disop.odeop, t, (u, x), disop.odeopcache)
 end
 
 function Algebra.allocate_jacobian(
-  op::MockDiscreteODEOperator, v::AbstractVector
+  disop::DiscreteODEOperatorMock1,
+  x::AbstractVector
 )
-  t, u0 = op.t0 + op.dt, op.u0
-  u = u0 .+ dt .* v
-  allocate_jacobian(op.ode_op, t, (u, v), op.ode_cache)
+  t0, dt, (u0,) = disop.t0, disop.dt, disop.us0
+  t = t0 + dt
+  u = u0 .+ dt .* x
+  allocate_jacobian(disop.odeop, t, (u, x), disop.odeopcache)
 end
 
 function Algebra.jacobian!(
-  J::AbstractMatrix, op::MockDiscreteODEOperator, v::AbstractVector
+  J::AbstractMatrix,
+  disop::DiscreteODEOperatorMock1,
+  x::AbstractVector
 )
-  t, u0 = op.t0 + op.dt, op.u0
-  u = u0 .+ dt .* v
+  t0, dt, (u0,) = disop.t0, disop.dt, disop.us0
+  t = t0 + dt
+  u = u0 .+ dt .* x
   fillstored!(J, zero(eltype(J)))
-  jacobians!(J, op.ode_op, t, (u, v), (op.dt, 1), op.ode_cache)
-  J
+  jacobians!(J, disop.odeop, t, (u, x), (disop.dt, 1), disop.odeopcache)
 end
 
-function ODEs.solve_dop!(
-  uF::AbstractVector,
-  op::MockDiscreteODEOperator, sol::NonlinearSolver, cache
+function Algebra.solve!(
+  usF::NTuple{1,AbstractVector},
+  disslvr::NonlinearSolver, disop::DiscreteODEOperatorMock1,
+  disslvrcache
 )
-  ode_op, ode_cache = op.ode_op, op.ode_cache
-  t0, u0, dt = op.t0, op.u0, op.dt
+  uF, = usF
+  odeop, odeopcache = disop.odeop, disop.odeopcache
+  t0, dt, (u0,) = disop.t0, disop.dt, disop.us0
 
-  update_cache!(ode_cache, ode_op, t0 + dt)
+  update_odeopcache!(odeopcache, odeop, t0 + dt)
 
   vF = uF
   fill!(vF, zero(eltype(vF)))
-  cache = solve!(vF, sol, op, cache)
+  disslvrcache = solve!(vF, disslvr, disop, disslvrcache)
   _u_from_v!(uF, u0, dt, vF)
 
-  (uF, cache)
+  usF = (uF,)
+  (usF, disslvrcache)
+end
+
+##################
+# ODESolverMock2 #
+##################
+"""
+    struct ODESolverMock2 <: ODESolver end
+
+Mock second-order ODE solver (backward Euler).
+"""
+struct ODESolverMock2 <: ODESolver
+  disslvr::NLSolverMock
+  dt::Float64
+end
+
+function ODEs.get_dt(odeslvr::ODESolverMock2)
+  odeslvr.dt
+end
+
+function ODEs.allocate_disopcache(
+  odeslvr::ODESolverMock2,
+  odeop::ODEOperator, odeopcache,
+  t::Real, x::AbstractVector
+)
+  nothing
+end
+
+function ODEs.DiscreteODEOperator(
+  odeslvr::ODESolverMock2, odeop::ODEOperator,
+  odeopcache, disopcache,
+  t0::Real, us0::NTuple{2,AbstractVector}, dt::Real
+)
+  DiscreteODEOperatorMock2(odeop, odeopcache, t0, us0, dt)
+end
+
+function ODEs.solve_step!(
+  usF::NTuple{2,AbstractVector},
+  odeslvr::ODESolverMock2, odeop::ODEOperator,
+  us0::NTuple{2,AbstractVector}, t0::Real,
+  cache
+)
+  # Unpack us and ODE solver
+  u0, _ = us0
+  dt = get_dt(odeslvr)
+
+  # Allocate or unpack cache
+  if isnothing(cache)
+    odeopcache = allocate_odeopcache(odeop, t0, (u0, u0, u0))
+    disopcache = allocate_disopcache(odeslvr, odeop, odeopcache, t0, u0)
+    disslvrcache = allocate_disslvrcache(odeslvr)
+  else
+    odeopcache, disopcache, disslvrcache = cache
+  end
+
+  # Create discrete ODE operator
+  disop = DiscreteODEOperator(
+    odeslvr, odeop,
+    odeopcache, disopcache,
+    t0, us0, dt
+  )
+
+  # Solve discrete ODE operator
+  usF, disslvrcache = solve!(usF, odeslvr.disslvr, disop, disslvrcache)
+  tF = t0 + dt
+
+  # Update cache
+  cache = (odeopcache, disopcache, disslvrcache)
+
+  (usF, tF, cache)
+end
+
+############################
+# DiscreteODEOperatorMock2 #
+############################
+"""
+    struct DiscreteODEOperatorMock2 <: DiscreteODEOperator end
+
+Mock backward Euler operator for second-order ODEs:
+```math
+res(t_n + dt, u_n + dt * v_n + 3 * dt^2 / 2 * x, v_n + dt * x, x) = 0,
+u_n+1 = u_n + dt * v_n + 3 * dt^2 / 2 * x
+v_n+1 = v_n + dt * x
+```
+"""
+struct DiscreteODEOperatorMock2 <: DiscreteODEOperator
+  odeop::ODEOperator
+  odeopcache
+  t0::Real
+  us0::NTuple{2,AbstractVector}
+  dt::Real
+end
+
+function Algebra.allocate_residual(
+  disop::DiscreteODEOperatorMock2,
+  x::AbstractVector
+)
+  t0, dt, (u0, v0) = disop.t0, disop.dt, disop.us0
+  t = t0 + dt
+  u = u0 .+ dt .* v0 .+ 3 * dt^2 / 2 .* x
+  v = v0 .+ dt .* x
+  allocate_residual(disop.odeop, t, (u, v, x), disop.odeopcache)
+end
+
+function Algebra.residual!(
+  r::AbstractVector,
+  disop::DiscreteODEOperatorMock2,
+  x::AbstractVector
+)
+  t0, dt, (u0, v0) = disop.t0, disop.dt, disop.us0
+  t = t0 + dt
+  u = u0 .+ dt .* v0 .+ 3 * dt^2 / 2 .* x
+  v = v0 .+ dt .* x
+  residual!(r, disop.odeop, t, (u, v, x), disop.odeopcache)
+end
+
+function Algebra.allocate_jacobian(
+  disop::DiscreteODEOperatorMock2,
+  x::AbstractVector
+)
+  t0, dt, (u0, v0) = disop.t0, disop.dt, disop.us0
+  t = t0 + dt
+  u = u0 .+ dt .* v0 .+ 3 * dt^2 / 2 .* x
+  v = v0 .+ dt .* x
+  allocate_jacobian(disop.odeop, t, (u, v, x), disop.odeopcache)
+end
+
+function Algebra.jacobian!(
+  J::AbstractMatrix,
+  disop::DiscreteODEOperatorMock2,
+  x::AbstractVector
+)
+  t0, dt, (u0, v0) = disop.t0, disop.dt, disop.us0
+  t = t0 + dt
+  u = u0 .+ dt .* v0 .+ 3 * dt^2 / 2 .* x
+  v = v0 .+ dt .* x
+  fillstored!(J, zero(eltype(J)))
+  ws = (3 * dt^2 / 2, disop.dt, 1)
+  jacobians!(J, disop.odeop, t, (u, v, x), ws, disop.odeopcache)
+end
+
+function Algebra.solve!(
+  usF::NTuple{2,AbstractVector},
+  disslvr::NonlinearSolver, disop::DiscreteODEOperatorMock2,
+  disslvrcache
+)
+  uF, vF = usF
+  odeop, odeopcache = disop.odeop, disop.odeopcache
+  t0, dt, (u0, v0) = disop.t0, disop.dt, disop.us0
+
+  update_odeopcache!(odeopcache, odeop, t0 + dt)
+
+  aF = vF
+  fill!(aF, zero(eltype(aF)))
+  disslvrcache = solve!(aF, disslvr, disop, disslvrcache)
+
+  @. uF = u0 + dt * v0 + 3 * dt^2 / 2 * aF
+  @. vF = v0 + dt * aF
+
+  usF = (uF, vF)
+  (usF, disslvrcache)
 end

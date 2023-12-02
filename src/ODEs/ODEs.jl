@@ -28,9 +28,6 @@ using Gridap.FESpaces: SingleFieldFEBasis
 using Gridap.MultiField
 
 const ε = 100 * eps()
-const OneOrMoreOfType{T} = Union{T,Tuple{Vararg{T}}}
-const OneOrMoreVectors = OneOrMoreOfType{AbstractVector}
-const OneOrMoreFunctions = OneOrMoreOfType{Function}
 
 include("TimeDerivatives.jl")
 
@@ -49,13 +46,8 @@ export ODEOperator
 export MassLinearODEOperator
 export LinearODEOperator
 
-export get_order
-export allocate_cache
-export update_cache!
-export allocate_residual
-export residual!
-export allocate_jacobian
-export jacobian!
+export allocate_odeopcache
+export update_odeopcache!
 export jacobians!
 export is_jacobian_constant
 export is_forcing_constant
@@ -65,16 +57,18 @@ export test_ode_operator
 include("ODESolvers.jl")
 
 export DiscreteODEOperator
-export solve_dop!
 export LinearDiscreteODEOperator
 
 export ODESolver
 export get_dt
-export allocate_dop_cache
-export allocate_sol_cache
+export allocate_disopcache
+export allocate_disslvrcache
 export solve_step!
 
+export test_ode_solver
+
 export ForwardEuler
+
 export ThetaMethod
 export MidPoint
 export BackwardEuler
@@ -87,15 +81,10 @@ export DiagonallyImplicitTableau
 export ImplicitExplicitTableau
 
 export AbstractTableau
-export get_matrix
-export get_weights
-export get_nodes
-
-export get_embedded_weights
-export get_embedded_order
-
 export GenericTableau
 export EmbeddedTableau
+export get_embedded_weights
+export get_embedded_order
 export IMEXTableau
 
 export TableauName
@@ -106,8 +95,6 @@ export RungeKutta
 
 export GeneralizedAlpha
 
-export test_ode_solver
-
 include("ODESolutions.jl")
 
 export ODESolution
@@ -117,6 +104,9 @@ export test_ode_solution
 
 include("TransientFESpaces.jl")
 
+export AbstractTransientTrialFESpace
+export allocate_space
+
 export TransientTrialFESpace
 export TransientMultiFieldFESpace
 
@@ -125,16 +115,33 @@ export test_transient_trial_fe_space
 include("TransientCellFields.jl")
 
 export TransientCellField
+export TransientSingleFieldCellField
+export TransientMultiFieldCellField
+export TransientFEBasis
 
 include("TransientFEOperators.jl")
 
 export TransientFEOperator
+export allocate_feopcache
+export update_feopcache!
+export get_assembler
+export get_res
+export get_jacs
+export get_mass
+export get_forms
+
+export TransientFEOpFromWeakForm
+export TransientMassLinearFEOpFromWeakForm
 export TransientMassLinearFEOperator
+export TransientLinearFEOpFromWeakForm
 export TransientLinearFEOperator
 
 export test_transient_fe_operator
 
 include("ODEOperatorsFromFEOperators.jl")
+
+export ODEOpFromFEOpCache
+export ODEOpFromFEOp
 
 include("TransientFESolutions.jl")
 

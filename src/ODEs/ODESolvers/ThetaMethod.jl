@@ -4,11 +4,11 @@
 θ-method ODE solver.
 """
 struct ThetaMethod <: ODESolver
-  sol::NonlinearSolver
+  disslvr::NonlinearSolver
   dt::Real
   θ::Real
 
-  function ThetaMethod(sol, dt, θ)
+  function ThetaMethod(disslvr, dt, θ)
     θ01 = clamp(θ, 0, 1)
     if θ01 != θ
       msg = """
@@ -19,97 +19,100 @@ struct ThetaMethod <: ODESolver
     end
 
     if iszero(θ01)
-      ForwardEuler(sol, dt)
+      ForwardEuler(disslvr, dt)
     else
-      new(sol, dt, θ01)
+      new(disslvr, dt, θ01)
     end
   end
 end
 
-MidPoint(sol, dt) = ThetaMethod(sol, dt, 0.5)
-BackwardEuler(sol, dt) = ThetaMethod(sol, dt, 1)
+MidPoint(disslvr, dt) = ThetaMethod(disslvr, dt, 0.5)
+BackwardEuler(disslvr, dt) = ThetaMethod(disslvr, dt, 1)
 
 # ODESolver interface
-function get_dt(solver::ThetaMethod)
-  solver.dt
+function get_dt(odeslvr::ThetaMethod)
+  odeslvr.dt
 end
 
-function allocate_dop_cache(
-  solver::ThetaMethod,
-  ode_op::ODEOperator, ode_cache,
-  t::Real, u::AbstractVector
+function allocate_disopcache(
+  odeslvr::ThetaMethod,
+  odeop::ODEOperator, odeopcache,
+  t::Real, x::AbstractVector
 )
-  similar(u)
+  similar(x)
 end
 
-function allocate_dop_cache(
-  solver::ThetaMethod,
-  ode_op::ODEOperator{LinearODE}, ode_cache,
-  t::Real, u::AbstractVector
+function allocate_disopcache(
+  odeslvr::ThetaMethod,
+  odeop::ODEOperator{LinearODE}, odeopcache,
+  t::Real, x::AbstractVector
 )
-  J = allocate_jacobian(ode_op, t, (u, u), ode_cache)
-  r = allocate_residual(ode_op, t, (u, u), ode_cache)
+  J = allocate_jacobian(odeop, t, (x, x), odeopcache)
+  r = allocate_residual(odeop, t, (x, x), odeopcache)
   (J, r)
 end
 
-function allocate_sol_cache(solver::ThetaMethod)
-  nothing
+function DiscreteODEOperator(
+  odeslvr::ThetaMethod, odeop::ODEOperator,
+  odeopcache, disopcache,
+  t0::Real, us0::NTuple{1,AbstractVector}, dt::Real,
+  tθ::Real, dtθ::Real
+)
+  ulc = disopcache
+  ThetaMethodNonlinearOperator(odeop, odeopcache, ulc, t0, us0, dt, tθ, dtθ)
 end
 
 function DiscreteODEOperator(
-  solver::ThetaMethod, ode_op::ODEOperator, ode_cache,
-  dop_cache, t0::Real, u0::AbstractVector, dt::Real, tθ::Real, dtθ::Real
+  odeslvr::ThetaMethod, odeop::ODEOperator{LinearODE},
+  odeopcache, disopcache,
+  t0::Real, us0::NTuple{1,AbstractVector}, dt::Real,
+  tθ::Real, dtθ::Real
 )
-  ulc = dop_cache
-  ThetaMethodNonlinearOperator(ode_op, ode_cache, ulc, t0, u0, dt, tθ, dtθ)
-end
-
-function DiscreteODEOperator(
-  solver::ThetaMethod, ode_op::ODEOperator{LinearODE}, ode_cache,
-  dop_cache, t0::Real, u0::AbstractVector, dt::Real, tθ::Real, dtθ::Real
-)
-  J, r = dop_cache
-  ThetaMethodLinearOperator(ode_op, ode_cache, J, r, t0, u0, dt, tθ, dtθ)
+  J, r = disopcache
+  ThetaMethodLinearOperator(odeop, odeopcache, J, r, t0, us0, dt, tθ, dtθ)
 end
 
 ###############
 # solve_step! #
 ###############
 function solve_step!(
-  uF::AbstractVector,
-  solver::ThetaMethod, ode_op::ODEOperator,
-  u0::AbstractVector, t0::Real,
+  usF::NTuple{1,AbstractVector},
+  odeslvr::ThetaMethod, odeop::ODEOperator,
+  us0::NTuple{1,AbstractVector}, t0::Real,
   cache
 )
-  # Unpack solver
-  dt = get_dt(solver)
-  θ = solver.θ
+  # Unpack us and ODE solver
+  u0, = us0
+  dt = get_dt(odeslvr)
+  θ = odeslvr.θ
   dtθ = θ * dt
   tθ = t0 + dtθ
 
   # Allocate or unpack cache
   if isnothing(cache)
-    ode_cache = allocate_cache(ode_op, t0, (u0, u0))
-    dop_cache = allocate_dop_cache(solver, ode_op, ode_cache, t0, u0)
-    sol_cache = allocate_sol_cache(solver)
+    odeopcache = allocate_odeopcache(odeop, t0, (u0, u0))
+    disopcache = allocate_disopcache(odeslvr, odeop, odeopcache, t0, u0)
+    disslvrcache = allocate_disslvrcache(odeslvr)
   else
-    ode_cache, dop_cache, sol_cache = cache
+    odeopcache, disopcache, disslvrcache = cache
   end
 
   # Create discrete ODE operator
-  dop = DiscreteODEOperator(
-    solver, ode_op, ode_cache, dop_cache,
-    t0, u0, dt, tθ, dtθ
+  disop = DiscreteODEOperator(
+    odeslvr, odeop,
+    odeopcache, disopcache,
+    t0, us0, dt,
+    tθ, dtθ
   )
 
   # Solve discrete ODE operator
-  uF, sol_cache = solve_dop!(uF, dop, solver.sol, sol_cache)
+  usF, disslvrcache = solve!(usF, odeslvr.disslvr, disop, disslvrcache)
   tF = t0 + dt
 
   # Update cache
-  cache = (ode_cache, dop_cache, sol_cache)
+  cache = (odeopcache, disopcache, disslvrcache)
 
-  (uF, tF, cache)
+  (usF, tF, cache)
 end
 
 """
@@ -117,74 +120,78 @@ end
 
 Nonlinear discrete operator corresponding to the θ-method scheme:
 ```math
-residual(t_θ, u_n + θ * dt * v, v) = 0.
+residual(t_n + θ * dt, u_n + θ * dt * x, x) = 0,
+u_n+1 = u_n + dt * x
 ```
 """
 struct ThetaMethodNonlinearOperator <: DiscreteODEOperator
-  ode_op::ODEOperator
-  ode_cache
+  odeop::ODEOperator
+  odeopcache
   ulc::AbstractVector
   t0::Real
-  u0::AbstractVector
+  us0::NTuple{1,AbstractVector}
   dt::Real
   tθ::Real
   dtθ::Real
 end
 
 function Algebra.allocate_residual(
-  op::ThetaMethodNonlinearOperator,
-  v::AbstractVector
+  disop::ThetaMethodNonlinearOperator,
+  x::AbstractVector
 )
-  t, u = op.tθ, op.ulc
-  u = _u_from_v!(u, op.u0, op.dtθ, v)
-  allocate_residual(op.ode_op, t, (u, v), op.ode_cache)
+  t, u, (u0,) = disop.tθ, disop.ulc, disop.us0
+  u = _u_from_v!(u, u0, disop.dtθ, x)
+  allocate_residual(disop.odeop, t, (u, x), disop.odeopcache)
 end
 
 function Algebra.residual!(
   r::AbstractVector,
-  op::ThetaMethodNonlinearOperator,
-  v::AbstractVector
+  disop::ThetaMethodNonlinearOperator,
+  x::AbstractVector
 )
-  t, u = op.tθ, op.ulc
-  u = _u_from_v!(u, op.u0, op.dtθ, v)
-  residual!(r, op.ode_op, t, (u, v), op.ode_cache)
+  t, u, (u0,) = disop.tθ, disop.ulc, disop.us0
+  u = _u_from_v!(u, u0, disop.dtθ, x)
+  residual!(r, disop.odeop, t, (u, x), disop.odeopcache)
 end
 
 function Algebra.allocate_jacobian(
-  op::ThetaMethodNonlinearOperator,
-  v::AbstractVector
+  disop::ThetaMethodNonlinearOperator,
+  x::AbstractVector
 )
-  t, u = op.tθ, op.ulc
-  u = _u_from_v!(u, op.u0, op.dtθ, v)
-  allocate_jacobian(op.ode_op, t, (u, v), op.ode_cache)
+  t, u, (u0,) = disop.tθ, disop.ulc, disop.us0
+  u = _u_from_v!(u, u0, disop.dtθ, x)
+  allocate_jacobian(disop.odeop, t, (u, x), disop.odeopcache)
 end
 
 function Algebra.jacobian!(
   J::AbstractMatrix,
-  op::ThetaMethodNonlinearOperator,
-  v::AbstractVector
+  disop::ThetaMethodNonlinearOperator,
+  x::AbstractVector
 )
-  t, u = op.tθ, op.ulc
-  u = _u_from_v!(u, op.u0, op.dtθ, v)
+  t, u, (u0,) = disop.tθ, disop.ulc, disop.us0
+  u = _u_from_v!(u, u0, disop.dtθ, x)
   fillstored!(J, zero(eltype(J)))
-  jacobians!(J, op.ode_op, t, (u, v), (op.dtθ, 1), op.ode_cache)
+  jacobians!(J, disop.odeop, t, (u, x), (disop.dtθ, 1), disop.odeopcache)
 end
 
-function solve_dop!(
-  uF::AbstractVector,
-  op::ThetaMethodNonlinearOperator, sol::NonlinearSolver, cache
+function Algebra.solve!(
+  usF::NTuple{1,AbstractVector},
+  disslvr::NonlinearSolver, disop::ThetaMethodNonlinearOperator,
+  disslvrcache
 )
-  ode_op, ode_cache = op.ode_op, op.ode_cache
-  tθ, u0, dt = op.tθ, op.u0, op.dt
+  uF, = usF
+  odeop, odeopcache = disop.odeop, disop.odeopcache
+  tθ, dt, (u0,) = disop.tθ, disop.dt, disop.us0
 
-  update_cache!(ode_cache, ode_op, tθ)
+  update_odeopcache!(odeopcache, odeop, tθ)
 
   vF = uF
   fill!(vF, zero(eltype(vF)))
-  cache = solve!(vF, sol, op, cache)
+  disslvrcache = solve!(vF, disslvr, disop, disslvrcache)
   _u_from_v!(uF, u0, dt, vF)
 
-  (uF, cache)
+  usF = (uF,)
+  (usF, disslvrcache)
 end
 
 """
@@ -192,45 +199,49 @@ end
 
 Linear discrete operator corresponding to the θ-method scheme:
 ```math
-residual(t_θ, u_n + θ * dt * v, v) = mass(t_θ) v + stiffness(t_θ) (u_n + θ * dt * v) + res(t_θ) = 0.
+residual(t_n + θ * dt, u_n + θ * dt * x, x) = mass(t_n + θ * dt) x + stiffness(t_n + θ * dt) (u_n + θ * dt * x) + res(t_n + θ * dt) = 0,
+u_n+1 = u_n + dt * x
 ```
 """
 struct ThetaMethodLinearOperator <: LinearDiscreteODEOperator
-  ode_op::ODEOperator
-  ode_cache
+  odeop::ODEOperator
+  odeopcache
   J::AbstractMatrix
   r::AbstractVector
   t0::Real
-  u0::AbstractVector
+  us0::NTuple{1,AbstractVector}
   dt::Real
   tθ::Real
   dtθ::Real
 end
 
-Algebra.get_matrix(op::ThetaMethodLinearOperator) = op.J
+Algebra.get_matrix(disop::ThetaMethodLinearOperator) = disop.J
 
-Algebra.get_vector(op::ThetaMethodLinearOperator) = op.r
+Algebra.get_vector(disop::ThetaMethodLinearOperator) = disop.r
 
-function solve_dop!(
-  uF::AbstractVector,
-  op::ThetaMethodLinearOperator, sol::NonlinearSolver, cache
+function Algebra.solve!(
+  usF::NTuple{1,AbstractVector},
+  disslvr::NonlinearSolver, disop::ThetaMethodLinearOperator,
+  disslvrcache
 )
-  ode_op, ode_cache = op.ode_op, op.ode_cache
-  J, r = op.J, op.r
-  tθ, u0, dtθ, dt = op.tθ, op.u0, op.dtθ, op.dt
+  uF, = usF
+  odeop, odeopcache = disop.odeop, disop.odeopcache
+  J, r = disop.J, disop.r
+  tθ, dt, (u0,), dtθ = disop.tθ, disop.dt, disop.us0, disop.dtθ
 
-  update_cache!(ode_cache, ode_op, tθ)
+  update_odeopcache!(odeopcache, odeop, tθ)
 
-  u, v = u0, u0
+  u, x = u0, u0
   fillstored!(J, zero(eltype(J)))
-  jacobians!(J, ode_op, tθ, (u, v), (dtθ, 1), ode_cache)
-  residual!(r, ode_op, tθ, (u, v), ode_cache, include_highest=false)
+  jacobians!(J, odeop, tθ, (u, x), (dtθ, 1), odeopcache)
+  residual!(r, odeop, tθ, (u, x), odeopcache, include_highest=false)
   rmul!(r, -1)
 
   vF = uF
   fill!(vF, zero(eltype(vF)))
-  cache = solve!(vF, sol, op, cache)
+  disslvrcache = solve!(vF, disslvr, disop, disslvrcache)
   _u_from_v!(uF, u0, dt, vF)
 
-  (uF, cache)
+  usF = (uF,)
+  (usF, disslvrcache)
 end

@@ -6,7 +6,7 @@
 
 Transient version of `CellField`.
 
-# Mandatory (in addition to the `CellField` interface)
+# Mandatory
 - [`∂t(f)`](@ref)
 
 # Optional

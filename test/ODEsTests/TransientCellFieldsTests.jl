@@ -11,8 +11,8 @@ using Gridap.MultiField
 using Gridap.ODEs
 using Gridap.ODEs: TransientMultiFieldCellField
 
-sol(x, t) = sum(x)
-sol(t::Real) = x -> sol(x, t)
+f(x, t) = sum(x)
+f(t::Real) = x -> f(x, t)
 
 domain = (0, 1, 0, 1)
 partition = (5, 5)
@@ -21,7 +21,7 @@ model = CartesianDiscreteModel(domain, partition)
 order = 1
 reffe = ReferenceFE(lagrangian, Float64, order)
 V = TestFESpace(model, reffe, conformity=:H1, dirichlet_tags="boundary")
-U = TransientTrialFESpace(V, sol)
+U = TransientTrialFESpace(V, f)
 
 Ω = Triangulation(model)
 degree = 2 * order

@@ -5,61 +5,138 @@ using Gridap.Algebra
 using Gridap.Polynomials
 using Gridap.ODEs
 
-# Toy 1st-order linear ODE
-# M u̇ + K u + f(t) = 0
-# u(t) = exp(-M\K t) [u0 - ∫_{0, t} exp(M\K s) M\f(s) ds
+####################
+# ODEOperatorMock1 #
+####################
+"""
+    struct ODEOperatorMock1 <: ODEOperator end
 
-struct ODEOperatorMock{C} <: ODEOperator{C}
+Mock 1st-order linear ODE
+```math
+M u̇ + K u + f(t) = 0.
+```
+"""
+struct ODEOperatorMock1{T} <: ODEOperator{T}
   M::AbstractMatrix
   K::AbstractMatrix
   f::Function
 end
 
-Polynomials.get_order(op::ODEOperatorMock) = 1
+Polynomials.get_order(odeop::ODEOperatorMock1) = 1
 
 function Algebra.allocate_residual(
-  op::ODEOperatorMock,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  cache
+  odeop::ODEOperatorMock1,
+  t::Real, us::NTuple{2,AbstractVector},
+  odeopcache
 )
-  M = op.M
+  M = odeop.M
   zeros(typeof(t), size(M, 2))
 end
 
 function Algebra.residual!(
-  r::AbstractVector, op::ODEOperatorMock,
+  r::AbstractVector, odeop::ODEOperatorMock1,
   t::Real, us::NTuple{2,AbstractVector},
-  cache; include_highest::Bool=true
+  odeopcache; include_highest::Bool=true
 )
-  u, u̇ = us
+  u, v = us
   fill!(r, zero(eltype(r)))
   if include_highest
-    r .+= op.M * u̇
+    r .+= odeop.M * v
   end
-  r .+= op.K * u
+  r .+= odeop.K * u
   r .+= f(t)
   r
 end
 
 function Algebra.allocate_jacobian(
-  op::ODEOperatorMock,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  cache
+  odeop::ODEOperatorMock1,
+  t::Real, us::NTuple{2,AbstractVector},
+  odeopcache
 )
-  M = op.M
+  M = odeop.M
   spzeros(typeof(t), size(M, 2), size(M, 2))
 end
 
 function Algebra.jacobian!(
-  J::AbstractMatrix, op::ODEOperatorMock,
+  J::AbstractMatrix, odeop::ODEOperatorMock1,
   t::Real, us::NTuple{2,AbstractVector},
   k::Integer, γ::Real,
-  cache
+  odeopcache
 )
   if k == 0
-    @. J += γ * op.K
+    @. J += γ * odeop.K
   elseif k == 1
-    @. J += γ * op.M
+    @. J += γ * odeop.M
+  end
+  J
+end
+
+####################
+# ODEOperatorMock2 #
+####################
+"""
+    struct ODEOperatorMock2 <: ODEOperator end
+
+2nd-order linear ODE
+```math
+M ü + C u̇ + K u + f(t) = 0.
+```
+"""
+struct ODEOperatorMock2{T} <: ODEOperator{T}
+  M::AbstractMatrix
+  C::AbstractMatrix
+  K::AbstractMatrix
+  f::Function
+end
+
+Polynomials.get_order(odeop::ODEOperatorMock2) = 2
+
+function Algebra.allocate_residual(
+  odeop::ODEOperatorMock2,
+  t::Real, us::NTuple{3,AbstractVector},
+  odeopcache
+)
+  M = odeop.M
+  zeros(typeof(t), size(M, 2))
+end
+
+function Algebra.residual!(
+  r::AbstractVector, odeop::ODEOperatorMock2,
+  t::Real, us::NTuple{3,AbstractVector},
+  odeopcache; include_highest::Bool=true
+)
+  u, v, a = us
+  fill!(r, zero(eltype(r)))
+  if include_highest
+    r .+= odeop.M * a
+  end
+  r .+= odeop.C * v
+  r .+= odeop.K * u
+  r .+= f(t)
+  r
+end
+
+function Algebra.allocate_jacobian(
+  odeop::ODEOperatorMock2,
+  t::Real, us::NTuple{3,AbstractVector},
+  odeopcache
+)
+  M = odeop.M
+  spzeros(typeof(t), size(M, 2), size(M, 2))
+end
+
+function Algebra.jacobian!(
+  J::AbstractMatrix, odeop::ODEOperatorMock2,
+  t::Real, us::NTuple{3,AbstractVector},
+  k::Integer, γ::Real,
+  odeopcache
+)
+  if k == 0
+    @. J += γ * odeop.K
+  elseif k == 1
+    @. J += γ * odeop.C
+  elseif k == 2
+    @. J += γ * odeop.M
   end
   J
 end

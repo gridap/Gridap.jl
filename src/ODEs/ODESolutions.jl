@@ -9,28 +9,28 @@ computes the solution at each time step in a lazy fashion when accessing the
 solution.
 
 # Mandatory
-- [`Base.iterate(sol)`](@ref)
-- [`Base.iterate(sol, state)`](@ref)
+- [`Base.iterate(odesltn)`](@ref)
+- [`Base.iterate(odesltn, state)`](@ref)
 """
 abstract type ODESolution <: GridapType end
 
 """
-    Base.iterate(sol::ODESolution) -> ((OneOrMoreVectors, Real), StateType)
+    Base.iterate(odesltn::ODESolution) -> ((Tuple{Vararg{AbstractVector}}, Real), StateType)
 
 Allocate a cache and perform one time step of the `ODEOperator` with the
 `ODESolver` attached to the `ODESolution`.
 """
-function Base.iterate(sol::ODESolution)
+function Base.iterate(odesltn::ODESolution)
   @abstractmethod
 end
 
 """
-    Base.iterate(sol::ODESolution) -> ((OneOrMoreVectors, Real), StateType)
+    Base.iterate(odesltn::ODESolution) -> ((Tuple{Vararg{AbstractVector}}, Real), StateType)
 
 Perform one time step of the `ODEOperator` with the `ODESolver` attached to the
 `ODESolution`.
 """
-function Base.iterate(sol::ODESolution, state)
+function Base.iterate(odesltn::ODESolution, state)
   @abstractmethod
 end
 
@@ -40,63 +40,36 @@ Base.IteratorSize(::Type{<:ODESolution}) = Base.SizeUnknown()
 # GenericODESolution #
 ######################
 """
-    struct GenericODESolution{T} <: ODESolution end
+    struct GenericODESolution <: ODESolution end
 
 Generic wrapper for the evolution of an `ODEOperator` with an `ODESolver`.
 """
-struct GenericODESolution{T} <: ODESolution
-  solver::ODESolver
-  op::ODEOperator
-  us0::T
+struct GenericODESolution <: ODESolution
+  odeslvr::ODESolver
+  odeop::ODEOperator
+  us0::Tuple{Vararg{AbstractVector}}
   t0::Real
   tF::Real
 end
 
-# Interface for AbstractVector-valued GenericODESolution
-function Base.iterate(sol::GenericODESolution{<:AbstractVector})
-  us0 = copy(sol.us0)
-  usF = copy(sol.us0)
-  t0 = sol.t0
-
-  # Solve step
-  usF, tF, cache = solve_step!(usF, sol.solver, sol.op, us0, t0)
-
-  # Update state
-  copy!(us0, usF)
-  state = (usF, us0, tF, cache)
-
-  (usF, tF), state
+function GenericODESolution(
+  odeslvr::ODESolver, odeop::ODEOperator,
+  us0::AbstractVector, t0::Real, tF::Real
+)
+  GenericODESolution(odeslvr, odeop, (us0,), t0, tF)
 end
 
-function Base.iterate(sol::GenericODESolution{<:AbstractVector}, state)
-  usF, us0, t0, cache = state
-
-  if t0 >= sol.tF - ε
-    return nothing
-  end
-
-  # Solve step
-  usF, tF, cache = solve_step!(usF, sol.solver, sol.op, us0, t0, cache)
-
-  # Update state
-  copy!(us0, usF)
-  state = (usF, us0, tF, cache)
-
-  (usF, tF), state
-end
-
-# Interface for Tuple{Vararg{AbstractVector}}-valued GenericODESolution
-function Base.iterate(sol::GenericODESolution{<:Tuple{Vararg{AbstractVector}}})
+function Base.iterate(odesltn::GenericODESolution)
   us0 = ()
   usF = ()
-  for k in eachindex(sol.us0)
-    us0 = (us0..., copy(sol.us0[k]))
-    usF = (usF..., copy(sol.us0[k]))
+  for k in eachindex(odesltn.us0)
+    us0 = (us0..., copy(odesltn.us0[k]))
+    usF = (usF..., copy(odesltn.us0[k]))
   end
-  t0 = sol.t0
+  t0 = odesltn.t0
 
   # Solve step
-  usF, tF, cache = solve_step!(usF, sol.solver, sol.op, us0, t0)
+  usF, tF, cache = solve_step!(usF, odesltn.odeslvr, odesltn.odeop, us0, t0)
 
   # Update state
   for k in eachindex(us0, usF)
@@ -104,21 +77,19 @@ function Base.iterate(sol::GenericODESolution{<:Tuple{Vararg{AbstractVector}}})
   end
   state = (usF, us0, tF, cache)
 
-  return (first(usF), tF), state
+  (first(usF), tF), state
 end
 
-function Base.iterate(
-  sol::GenericODESolution{<:Tuple{Vararg{AbstractVector}}},
-  state
-)
+function Base.iterate(odesltn::GenericODESolution, state)
   usF, us0, t0, cache = state
 
-  if t0 >= sol.tF - ε
+  if t0 >= odesltn.tF - ε
     return nothing
   end
 
   # Solve step
-  usF, tF, cache = solve_step!(usF, sol.solver, sol.op, us0, t0, cache)
+  odeslvr, odeop = odesltn.odeslvr, odesltn.odeop
+  usF, tF, cache = solve_step!(usF, odeslvr, odeop, us0, t0, cache)
 
   # Update state
   for k in eachindex(us0, usF)
@@ -126,21 +97,21 @@ function Base.iterate(
   end
   state = (usF, us0, tF, cache)
 
-  return (first(usF), tF), state
+  (first(usF), tF), state
 end
 
 ########
 # Test #
 ########
 """
-    test_ode_solution(sol::ODESolution) -> Bool
+    test_ode_solution(odesltn::ODESolution) -> Bool
 
 Test the interface of `ODESolution` specializations.
 """
-function test_ode_solution(sol::ODESolution)
-  for (us_n, t_n) in sol
-    @test us_n isa AbstractVector
+function test_ode_solution(odesltn::ODESolution)
+  for (us_n, t_n) in odesltn
     @test t_n isa Real
+    @test us_n isa AbstractVector
   end
   true
 end

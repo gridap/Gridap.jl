@@ -8,36 +8,56 @@ using Gridap.ODEs
 include("ODEOperatorsMocks.jl")
 
 M = randn(2, 2)
+C = randn(2, 2)
 K = randn(2, 2)
 f(t) = [cospi(t), sinpi(t)]
-op = ODEOperatorMock{MassLinearODE}(M, K, f)
 
 t = randn()
 u = randn(2)
-u̇ = randn(2)
+v = randn(2)
+a = randn(2)
 
-cache = allocate_cache(op, t, (u, u̇))
-update_cache!(cache, op, t)
+_odeop1 = ODEOperatorMock1
+us1 = (u, v)
+forms1 = (M, K)
 
-r = allocate_residual(op, t, (u, u̇), cache)
-@test size(r) == (2,)
+_odeop2 = ODEOperatorMock2
+us2 = (u, v, a)
+forms2 = (M, C, K)
 
-J = allocate_jacobian(op, t, (u, u̇), cache)
-@test size(J) == (2, 2)
+for (_odeop, forms, us) in (
+  (_odeop1, forms1, us1),
+  (_odeop2, forms2, us2)
+)
+  for T in (NonlinearODE, MassLinearODE, LinearODE)
+    odeop = _odeop{T}(forms..., f)
 
-_r = M * u̇ + K * u + f(t)
-residual!(r, op, t, (u, u̇), cache)
-@test r ≈ _r
+    odeopcache = allocate_odeopcache(odeop, t, us)
+    update_odeopcache!(odeopcache, odeop, t)
 
-_J = K
-fill!(J, 0)
-jacobian!(J, op, t, (u, u̇), 0, 1, cache)
-@test J ≈ _J
+    r = allocate_residual(odeop, t, us, odeopcache)
+    @test size(r) == (2,)
 
-_J += M
-jacobian!(J, op, t, (u, u̇), 1, 1, cache)
-@test J ≈ _J
+    J = allocate_jacobian(odeop, t, us, odeopcache)
+    @test size(J) == (2, 2)
 
-@test test_ode_operator(op, t, (u, u̇))
+    _r = f(t)
+    for (formi, ui) in zip(reverse(forms), us)
+      _r .+= formi * ui
+    end
+    residual!(r, odeop, t, us, odeopcache)
+    @test r ≈ _r
+
+    _J = zeros(2, 2)
+    fill!(J, 0)
+    for (i, formi) in enumerate(reverse(forms))
+      _J .+= formi
+      jacobian!(J, odeop, t, us, i - 1, 1, odeopcache)
+      @test J ≈ _J
+    end
+
+    @test test_ode_operator(odeop, t, us)
+  end
+end
 
 end # module ODEOperatorsTests

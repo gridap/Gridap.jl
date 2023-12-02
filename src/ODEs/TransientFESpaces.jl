@@ -135,10 +135,10 @@ Single-field `FESpace` with transient Dirichlet data.
 struct TransientTrialFESpace{U,U0} <: AbstractTransientTrialFESpace
   space::U
   homogeneous_space::U0
-  transient_dirichlet::OneOrMoreFunctions
+  transient_dirichlet::Union{Function,Tuple{Vararg{Function}}}
 
   function TransientTrialFESpace(
-    space::FESpace, transient_dirichlet::OneOrMoreFunctions
+    space::FESpace, transient_dirichlet::Union{Function,Tuple{Vararg{Function}}}
   )
     homogeneous_space = HomogeneousTrialFESpace(space)
     U = typeof(space)

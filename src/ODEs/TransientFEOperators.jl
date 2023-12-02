@@ -4,26 +4,29 @@
 Transient version of `FEOperator` corresponding to a residual of the form
 `residual(t, u, v) = 0`, that can involve time derivatives of `u`.
 
-Important note: For now, the residual and jacobians cannot be directly computed
-on a `TransientFEOperator`. They have to be evaluated on the corresponding
-algebraic operator, which is an `ODEOperator`. As such, `TransientFEOperator` is
-not exactly a subtype of `FEOperator`, but rather at the intersection of
+# Important
+For now, the residual and jacobians cannot be directly computed on a
+`TransientFEOperator`. They have to be evaluated on the corresponding algebraic
+operator, which is an `ODEOperator`. As such, `TransientFEOperator` is not
+exactly a subtype of `FEOperator`, but rather at the intersection of
 `FEOperator` and `ODEOperator`.
 
 # Mandatory
-- [`get_test(op)`](@ref)
-- [`get_trial(op)`](@ref)
-- [`get_algebraic_operator(op)`](@ref)
-- [`get_order(op)`](@ref)
-- [`get_assembler(op)`](@ref)
-- [`get_res(op::TransientFEOperator)`](@ref)
-- [`get_jacs(op::TransientFEOperator)`](@ref)
-- [`get_mass(op::TransientFEOperator{MassLinearODE})`](@ref)
-- [`get_forms(op::TransientFEOperator{LinearODE})`](@ref)
+- [`get_test(feop)`](@ref)
+- [`get_trial(feop)`](@ref)
+- [`get_algebraic_operator(feop)`](@ref)
+- [`get_order(feop)`](@ref)
+- [`get_assembler(feop)`](@ref)
+- [`get_res(feop::TransientFEOperator)`](@ref)
+- [`get_jacs(feop::TransientFEOperator)`](@ref)
+- [`get_mass(feop::TransientFEOperator{MassLinearODE})`](@ref)
+- [`get_forms(feop::TransientFEOperator{LinearODE})`](@ref)
 
 # Optional
-- [`is_jacobian_constant(op, k)`](@ref)
-- [`is_forcing_constant(op::TransientFEOperator{<:AbstractMassLinearODE})`](@ref)
+- [`allocate_feopcache(feop)`](@ref)
+- [`update_feopcache!(feopcache, feop, t)`](@ref)
+- [`is_jacobian_constant(feop, k)`](@ref)
+- [`is_forcing_constant(feop::TransientFEOperator{<:AbstractMassLinearODE})`](@ref)
 """
 abstract type TransientFEOperator{C<:ODEOperatorType} <: GridapType end
 
@@ -32,93 +35,103 @@ abstract type TransientFEOperator{C<:ODEOperatorType} <: GridapType end
 
 Return the `ODEOperatorType` of the `TransientFEOperator`.
 """
-ODEOperatorType(op::TransientFEOperator) = ODEOperatorType(typeof(op))
+ODEOperatorType(feop::TransientFEOperator) = ODEOperatorType(typeof(feop))
 ODEOperatorType(::Type{<:TransientFEOperator{C}}) where {C} = C
 
 # FEOperator interface
-function FESpaces.get_test(op::TransientFEOperator)
+function FESpaces.get_test(feop::TransientFEOperator)
   @abstractmethod
 end
 
-function FESpaces.get_trial(op::TransientFEOperator)
+function FESpaces.get_trial(feop::TransientFEOperator)
   @abstractmethod
 end
 
-function FESpaces.get_algebraic_operator(op::TransientFEOperator{C}) where {C}
-  ODEOpFromFEOp{C}(op)
+function FESpaces.get_algebraic_operator(feop::TransientFEOperator{C}) where {C}
+  ODEOpFromFEOp{C}(feop)
 end
 
 # ODEOperator interface
-function Polynomials.get_order(op::TransientFEOperator)
+function Polynomials.get_order(feop::TransientFEOperator)
   @abstractmethod
 end
 
 # @fverdugo This function is just in case we need to override it in the future
 # for some specialization. This default implementation is enough for the moment.
-function allocate_cache(op::TransientFEOperator)
+"""
+    allocate_feopcache(feop::TransientFEOperator)
+
+Allocate the cache of the `TransientFEOperator`.
+"""
+function allocate_feopcache(feop::TransientFEOperator)
   nothing
 end
 
-function update_cache!(cache, op::TransientFEOperator, t::Real)
-  cache
+"""
+    update_feopcache!(feopcache, feop::TransientFEOperator, t::Real)
+
+Update the cache of the `TransientFEOperator` at time `t`.
+"""
+function update_feopcache!(feopcache, feop::TransientFEOperator, t::Real)
+  feopcache
 end
 
-function is_jacobian_constant(op::TransientFEOperator, k::Integer)
+function is_jacobian_constant(feop::TransientFEOperator, k::Integer)
   false
 end
 
-function is_forcing_constant(op::TransientFEOperator{<:AbstractMassLinearODE})
+function is_forcing_constant(feop::TransientFEOperator{<:AbstractMassLinearODE})
   false
 end
 
 # TransientFEOperator interface
 """
-    get_assembler(op::TransientFEOperator) -> Assembler
+    get_assembler(feop::TransientFEOperator) -> Assembler
 
 Return the assembler of the `TransientFEOperator`.
 """
-function get_assembler(op::TransientFEOperator)
+function get_assembler(feop::TransientFEOperator)
   @abstractmethod
 end
 
 """
-    get_res(op::TransientFEOperator) -> Function
+    get_res(feop::TransientFEOperator) -> Function
 
 Return the (partial) residual of the `TransientFEOperator`.
 """
-function get_res(op::TransientFEOperator)
+function get_res(feop::TransientFEOperator)
   @abstractmethod
 end
 
 """
-    get_jacs(op::TransientFEOperator) -> Tuple{Vararg{Function}}
+    get_jacs(feop::TransientFEOperator) -> Tuple{Vararg{Function}}
 
 Return the jacobians of the `TransientFEOperator`.
 """
-function get_jacs(op::TransientFEOperator)
+function get_jacs(feop::TransientFEOperator)
   @abstractmethod
 end
 
 """
-    get_mass(op::TransientFEOperator{MassLinearODE}) -> Function
+    get_mass(feop::TransientFEOperator{MassLinearODE}) -> Function
 
 Return the mass bilinear form of the `TransientFEOperator`.
 """
-function get_mass(op::TransientFEOperator{MassLinearODE})
+function get_mass(feop::TransientFEOperator{MassLinearODE})
   @abstractmethod
 end
 
 """
-    get_forms(op::TransientFEOperator{LinearODE}) -> Function
+    get_forms(feop::TransientFEOperator{LinearODE}) -> Function
 
 Return the bilinear forms of the `TransientFEOperator`.
 """
-function get_forms(op::TransientFEOperator{LinearODE})
+function get_forms(feop::TransientFEOperator{LinearODE})
   @abstractmethod
 end
 
 # Broken FESpaces interface
-const res_jac_on_alg_op_msg = """
+const res_jac_on_transient_feop_msg = """
 For now, the residual and jacobians cannot be directly computed on a
 `TransientFEOperator`. They have to be evaluated on the corresponding
 algebraic operator, which is an `ODEOperator`.
@@ -128,62 +141,62 @@ take advantage of constant jacobians.
 """
 
 function Algebra.allocate_residual(
-  op::TransientFEOperator,
+  feop::TransientFEOperator,
   t::Real, uh::TransientCellField,
-  cache
+  feopcache
 )
-  error(res_jac_on_alg_op_msg)
+  error(res_jac_on_transient_feop_msg)
 end
 
 function Algebra.residual(
-  op::TransientFEOperator,
+  feop::TransientFEOperator,
   t::Real, uh::TransientCellField,
-  cache
+  feopcache
 )
-  error(res_jac_on_alg_op_msg)
+  error(res_jac_on_transient_feop_msg)
 end
 
 function Algebra.residual!(
-  r::AbstractVector, op::TransientFEOperator,
+  r::AbstractVector, feop::TransientFEOperator,
   t::Real, uh::TransientCellField,
-  cache
+  feopcache
 )
-  error(res_jac_on_alg_op_msg)
+  error(res_jac_on_transient_feop_msg)
 end
 
 function Algebra.allocate_jacobian(
-  op::TransientFEOperator,
+  feop::TransientFEOperator,
   t::Real, uh::TransientCellField,
-  cache
+  feopcache
 )
-  error(res_jac_on_alg_op_msg)
+  error(res_jac_on_transient_feop_msg)
 end
 
 function Algebra.jacobian(
-  op::TransientFEOperator,
+  feop::TransientFEOperator,
   t::Real, uh::TransientCellField,
   k::Integer, γ::Real,
-  cache
+  feopcache
 )
-  error(res_jac_on_alg_op_msg)
+  error(res_jac_on_transient_feop_msg)
 end
 
 function Algebra.jacobian!(
-  J::AbstractMatrix, op::TransientFEOperator,
+  J::AbstractMatrix, feop::TransientFEOperator,
   t::Real, uh::TransientCellField,
   k::Integer, γ::Real,
-  cache
+  feopcache
 )
-  error(res_jac_on_alg_op_msg)
+  error(res_jac_on_transient_feop_msg)
 end
 
 function jacobians!(
-  J::AbstractMatrix, op::TransientFEOperator,
+  J::AbstractMatrix, feop::TransientFEOperator,
   t::Real, uh::TransientCellField,
   γs::Tuple{Vararg{Real}},
-  cache
+  feopcache
 )
-  error(res_jac_on_alg_op_msg)
+  error(res_jac_on_transient_feop_msg)
 end
 
 #############################
@@ -204,9 +217,9 @@ struct TransientFEOpFromWeakForm <: TransientFEOperator{NonlinearODE}
   order::Integer
 end
 
-get_res(op::TransientFEOpFromWeakForm) = op.res
+get_res(feop::TransientFEOpFromWeakForm) = feop.res
 
-get_jacs(op::TransientFEOpFromWeakForm) = op.jacs
+get_jacs(feop::TransientFEOpFromWeakForm) = feop.jacs
 
 # Default constructors
 function TransientFEOperator(
@@ -296,11 +309,11 @@ struct TransientMassLinearFEOpFromWeakForm <: TransientFEOperator{MassLinearODE}
   order::Integer
 end
 
-get_res(op::TransientMassLinearFEOpFromWeakForm) = op.res
+get_res(feop::TransientMassLinearFEOpFromWeakForm) = feop.res
 
-get_jacs(op::TransientMassLinearFEOpFromWeakForm) = op.jacs
+get_jacs(feop::TransientMassLinearFEOpFromWeakForm) = feop.jacs
 
-get_mass(op::TransientMassLinearFEOpFromWeakForm) = op.mass
+get_mass(feop::TransientMassLinearFEOpFromWeakForm) = feop.mass
 
 # Default constructors
 function TransientMassLinearFEOperator(
@@ -406,11 +419,11 @@ struct TransientLinearFEOpFromWeakForm <: TransientFEOperator{LinearODE}
   order::Integer
 end
 
-get_res(op::TransientLinearFEOpFromWeakForm) = (t, u, v) -> op.res(t, v)
+get_res(feop::TransientLinearFEOpFromWeakForm) = (t, u, v) -> feop.res(t, v)
 
-get_jacs(op::TransientLinearFEOpFromWeakForm) = op.jacs
+get_jacs(feop::TransientLinearFEOpFromWeakForm) = feop.jacs
 
-get_forms(op::TransientLinearFEOpFromWeakForm) = op.forms
+get_forms(feop::TransientLinearFEOpFromWeakForm) = feop.forms
 
 # Default constructors
 function TransientLinearFEOperator(
@@ -523,21 +536,22 @@ const TransientAbstractMassLinearFEOperatorTypes = Union{
 }
 
 # FEOperator interface
-FESpaces.get_test(op::TransientFEOperatorTypes) = op.test
+FESpaces.get_test(feop::TransientFEOperatorTypes) = feop.test
 
-FESpaces.get_trial(op::TransientFEOperatorTypes) = op.trial
+FESpaces.get_trial(feop::TransientFEOperatorTypes) = feop.trial
 
 # ODEOperator interface
-Polynomials.get_order(op::TransientFEOperatorTypes) = op.order
+Polynomials.get_order(feop::TransientFEOperatorTypes) = feop.order
 
 # TransientFEOperator interface
-get_assembler(op::TransientFEOperatorTypes) = op.assembler
-function is_jacobian_constant(op::TransientFEOperatorTypes, k::Integer)
-  op.jacs_constant[k+1]
+get_assembler(feop::TransientFEOperatorTypes) = feop.assembler
+
+function is_jacobian_constant(feop::TransientFEOperatorTypes, k::Integer)
+  feop.jacs_constant[k+1]
 end
 
-function is_forcing_constant(op::TransientAbstractMassLinearFEOperatorTypes)
-  op.forcing_constant
+function is_forcing_constant(feop::TransientAbstractMassLinearFEOperatorTypes)
+  feop.forcing_constant
 end
 
 ########
@@ -545,21 +559,21 @@ end
 ########
 """
     test_transient_fe_operator(
-      op::TransientFEOperator,
+      feop::TransientFEOperator,
       t::Real, uh::TransientCellField
     ) -> Bool
 
 Test the interface of `TransientFEOperator` specializations.
 """
 function test_transient_fe_operator(
-  op::TransientFEOperator,
+  feop::TransientFEOperator,
   t::Real, uh::TransientCellField
 )
-  U = get_trial(op)
+  U = get_trial(feop)
   Ut = U(t)
   @test Ut isa FESpace
 
-  V = get_test(op)
+  V = get_test(feop)
   @test V isa FESpace
 
   us = (get_free_dof_values(uh.cellfield),)
@@ -567,10 +581,10 @@ function test_transient_fe_operator(
     us = (us..., get_free_dof_values(derivative))
   end
 
-  ode_op = get_algebraic_operator(op)
-  @test ode_op isa ODEOperator
+  odeop = get_algebraic_operator(feop)
+  @test odeop isa ODEOperator
 
-  test_ode_operator(ode_op, t, us, t, us)
+  test_ode_operator(odeop, t, us, t, us)
 
   true
 end

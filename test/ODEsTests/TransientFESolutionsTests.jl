@@ -54,8 +54,8 @@ full_res(t, u, v) = mass(t, u, v) + part_res(t, u, v)
 jac(t, u, du, v) = a(t, du, v)
 jac_t(t, u, dut, v) = m(t, dut, v)
 
-op_nonlinear = TransientFEOperator(full_res, jac, jac_t, U, V)
-op_masslinear = TransientMassLinearFEOperator(mass, part_res, jac, jac_t, U, V)
+feop_nonlinear = TransientFEOperator(full_res, jac, jac_t, U, V)
+feop_masslinear = TransientMassLinearFEOperator(mass, part_res, jac, jac_t, U, V)
 
 # ODE solver
 t0 = 0.0
@@ -65,16 +65,16 @@ dt = 0.1
 U0 = U(t0)
 uh0 = interpolate_everywhere(u(t0), U0)
 
-nls = NLSolverMock()
-ode_solver = ODESolverMock(nls, dt)
+disslvr = NLSolverMock()
+odeslvr = ODESolverMock1(disslvr, dt)
 
-for op in (op_nonlinear, op_masslinear)
-  sol = solve(ode_solver, op, uh0, t0, tF)
-  @test test_transient_fe_solution(sol)
+for feop in (feop_nonlinear, feop_masslinear)
+  fesltn = solve(odeslvr, feop, uh0, t0, tF)
+  @test test_transient_fe_solution(fesltn)
 
   tol = 1.0e-6
   l = 0
-  for (uh_n, t_n) in sol
+  for (uh_n, t_n) in fesltn
     eh_n = u(t_n) - uh_n
     e_n = sqrt(sum(∫(eh_n * eh_n) * dΩ))
     @test e_n < tol

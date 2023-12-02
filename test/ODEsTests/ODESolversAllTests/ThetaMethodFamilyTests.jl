@@ -28,23 +28,23 @@ function u(t)
   s
 end
 
-op_nonlinear = ODEOperatorMock{NonlinearODE}(M, K, f)
+odeop_nonlinear = ODEOperatorMock1{NonlinearODE}(M, K, f)
 
-op_masslinear = ODEOperatorMock{MassLinearODE}(M, K, f)
+odeop_masslinear = ODEOperatorMock1{MassLinearODE}(M, K, f)
 
-op_linear = ODEOperatorMock{LinearODE}(M, K, f)
-ODEs.is_jacobian_constant(op::typeof(op_linear), k::Integer) = true
+odeop_linear = ODEOperatorMock1{LinearODE}(M, K, f)
+ODEs.is_jacobian_constant(odeop::typeof(odeop_linear), k::Integer) = true
 
-ops = [
-  op_nonlinear,
-  op_masslinear,
-  op_linear
+odeops = [
+  odeop_nonlinear,
+  odeop_masslinear,
+  odeop_linear
 ]
 
-function test_solver(ode_solver, op, tol)
-  sol = solve(ode_solver, op, u0, t0, tF)
+function test_solver(odeslvr, odeop, tol)
+  odesltn = solve(odeslvr, odeop, u0, t0, tF)
 
-  for (uh_n, t_n) in sol
+  for (uh_n, t_n) in odesltn
     eh_n = u(t_n) - uh_n
     e_n = sqrt(sum(abs2, eh_n))
     @test e_n < tol
@@ -52,20 +52,20 @@ function test_solver(ode_solver, op, tol)
 end
 
 tol = 1.0e-4
-ls = LUSolver()
+disslvr = LUSolver()
 
-ode_solvers = [
-  ForwardEuler(ls, dt),
-  ThetaMethod(ls, dt, 0.2),
-  MidPoint(ls, dt),
-  ThetaMethod(ls, dt, 0.8),
-  BackwardEuler(ls, dt)
+odeslvrs = [
+  ForwardEuler(disslvr, dt),
+  ThetaMethod(disslvr, dt, 0.2),
+  MidPoint(disslvr, dt),
+  ThetaMethod(disslvr, dt, 0.8),
+  BackwardEuler(disslvr, dt)
 ]
 
 # Main loop
-for ode_solver in ode_solvers
-  for op in ops
-    test_solver(ode_solver, op, tol)
+for odeslvr in odeslvrs
+  for odeop in odeops
+    test_solver(odeslvr, odeop, tol)
   end
 end
 
