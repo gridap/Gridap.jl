@@ -12,18 +12,21 @@ t0 = randn()
 tF = t0 + rand()
 dt = (tF - t0) / 10
 
-u0 = randn(2)
-v0 = randn(2)
+num_eqs = 2
 
-M = randn(2, 2)
-C = randn(2, 2)
-K = randn(2, 2)
+M = randn(num_eqs, num_eqs)
+C = randn(num_eqs, num_eqs)
+K = randn(num_eqs, num_eqs)
 while iszero(det(M + dt * K)) || iszero(det(M + dt * C + 3 * dt^2 / 2 * K))
-  M = randn(2, 2)
-  C = randn(2, 2)
-  K = randn(2, 2)
+  M = randn(num_eqs, num_eqs)
+  C = randn(num_eqs, num_eqs)
+  K = randn(num_eqs, num_eqs)
 end
-f(t) = [cospi(t), sinpi(t)]
+α = randn(num_eqs)
+f(t) = -exp.(-α .* t)
+
+u0 = randn(num_eqs)
+v0 = randn(num_eqs)
 
 _odeop1 = ODEOperatorMock1
 _odeslvr1 = ODESolverMock1

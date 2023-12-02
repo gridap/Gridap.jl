@@ -278,11 +278,14 @@ end
 Nonlinear operator corresponding to a sequential Runge-Kutta (explicit or
 diagonally implicit) scheme:
 ```math
-residual(t_s, u_s, x[s]) = 0,
-t_s = t_n + c[s] * dt,
-u_s = u_n + ∑_{j < s} A[s, j] * dt * x[j] + A[s, s] * dt * x[j],
-u_n+1 = u_n + ∑_{i} b_i * dt * x[i]
-``` where `A[s, s]` is zero for an explicit scheme.
+residual(ti, ui, vi) = 0,
+
+ti = t_n + c[i] * dt
+ui = u_n + ∑_{j < s} A[s, j] * dt * v[j] + A[s, s] * dt * v[i]
+vi = x,
+
+u_(n+1) = u_n + ∑_{i} b_i * dt * x[i].
+```
 """
 mutable struct SequentialRungeKuttaNonlinearOperator <: DiscreteODEOperator
   odeop::ODEOperator

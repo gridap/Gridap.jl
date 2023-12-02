@@ -92,8 +92,11 @@ end
 
 Nonlinear discrete operator corresponding to the forward Euler scheme:
 ```math
-residual(t_n, u_n, x) = 0,
-u_n+1 = u_n + dt * x
+residual(t_n, u_n, v_n) = 0,
+
+v_n = x,
+
+u_(n+1) = u_n + dt * x.
 ```
 """
 struct ForwardEulerNonlinearOperator <: DiscreteODEOperator
@@ -163,8 +166,11 @@ end
 
 Linear discrete operator corresponding to the forward Euler scheme:
 ```math
-residual(t_n, u_n, x) = mass(t_n, u_n) x + res(t_n, u_n) = 0.
-u_n+1 = u_n + x
+residual(t_n, u_n, v_n) = mass(t_n, u_n) v_n + res(t_n, u_n) = 0,
+
+v_n = x,
+
+u_(n+1) = u_n + dt * x.
 ```
 """
 struct ForwardEulerLinearOperator <: LinearDiscreteODEOperator
