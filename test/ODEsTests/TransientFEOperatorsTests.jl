@@ -74,19 +74,22 @@ res_masslinear(t, u, v) = a(t, u, v) - b(t, v)
 res_linear(t, v) = (-1) * b(t, v)
 
 function test_transient_operator(feop)
-  @test test_transient_fe_operator(feop, t0, uₜ)
-
   odeop = get_algebraic_operator(feop)
   odeopcache = allocate_odeopcache(odeop, t0, us)
 
+  fac = feop isa TransientIMEXFEOperator ? 2 : 1
   r = allocate_residual(odeop, t0, us, odeopcache)
   J = allocate_jacobian(odeop, t0, us, odeopcache)
   residual!(r, odeop, t0, us, odeopcache)
-  @test all(r .≈ _r)
+  @test r ≈ fac .* _r
 
   fillstored!(J, zero(eltype(J)))
   jacobians!(J, odeop, t0, us, (1, dt⁻¹), odeopcache)
-  @test all(J .≈ _J)
+  @test J ≈ fac .* _J
+
+  if !(feop isa TransientIMEXFEOperator)
+    @test test_transient_fe_operator(feop, t0, uₜ)
+  end
 end
 
 for jac_u_constant in (true, false)
@@ -124,6 +127,15 @@ for jac_u_constant in (true, false)
       (mass, stiffness), res_linear, U, V;
       jacs_constant, forcing_constant=false
     )
+    test_transient_operator(feop)
+
+    # TransientIMEXFEOperator
+    im_feop = TransientMassLinearFEOperator(
+      mass, res_masslinear, jac, jac_t, U, V;
+      jacs_constant, forcing_constant=false
+    )
+    ex_feop = TransientFEOperator(res, jac, jac_t, U, V; jacs_constant)
+    feop = TransientIMEXFEOperator(im_feop, ex_feop)
     test_transient_operator(feop)
   end
 end

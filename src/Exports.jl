@@ -186,9 +186,12 @@ using Gridap.CellData: ∫; export ∫
 @publish ODEs ∂tt
 
 @publish ODEs ForwardEuler
+
 @publish ODEs ThetaMethod
 @publish ODEs MidPoint
 @publish ODEs BackwardEuler
+
+@publish ODEs GeneralizedAlpha1
 
 @publish ODEs ButcherTableau
 @publish ODEs available_tableaus
@@ -196,13 +199,14 @@ using Gridap.CellData: ∫; export ∫
 @publish ODEs RungeKutta
 # @publish ODEs IMEXRungeKutta
 
-# @publish ODEs Newmark
-@publish ODEs GeneralizedAlpha
+@publish ODEs GeneralizedAlpha2
+@publish ODEs Newmark
 
 @publish ODEs TransientTrialFESpace
 @publish ODEs TransientMultiFieldFESpace
 
 @publish ODEs TransientFEOperator
+@publish ODEs TransientIMEXFEOperator
 @publish ODEs TransientMassLinearFEOperator
 @publish ODEs TransientLinearFEOperator
 

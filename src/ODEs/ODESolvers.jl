@@ -266,12 +266,16 @@ function _u_from_v!(
   u
 end
 
+# First-order
 include("ODESolvers/ForwardEuler.jl")
 
 include("ODESolvers/ThetaMethod.jl")
+
+include("ODESolvers/GeneralizedAlpha1.jl")
 
 include("ODESolvers/Tableaus.jl")
 
 include("ODESolvers/RungeKutta.jl")
 
-include("ODESolvers/GeneralizedAlpha.jl")
+# Second-order
+include("ODESolvers/GeneralizedAlpha2.jl")

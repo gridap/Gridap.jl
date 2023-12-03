@@ -83,9 +83,11 @@ end
 
 # Solvers with memory
 odeslvrs = [
-  GeneralizedAlpha(disslvr_nl, dt, 0.0),
-  GeneralizedAlpha(disslvr_nl, dt, 0.5),
-  GeneralizedAlpha(disslvr_nl, dt, 1.0),
+  GeneralizedAlpha2(disslvr_nl, dt, 0.0),
+  GeneralizedAlpha2(disslvr_nl, dt, 0.5),
+  GeneralizedAlpha2(disslvr_nl, dt, 1.0),
+  Newmark(disslvr_nl, dt, 0.5, 0.0),
+  Newmark(disslvr_nl, dt, 0.5, 0.25),
 ]
 
 a0 = -M \ (C * v0 + K * u0 + f(t0))

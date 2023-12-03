@@ -48,9 +48,6 @@ function DiscreteODEOperator(
   ForwardEulerLinearOperator(odeop, odeopcache, J, r, t0, us0, dt)
 end
 
-###############
-# solve_step! #
-###############
 function solve_step!(
   usF::NTuple{1,AbstractVector},
   odeslvr::ForwardEuler, odeop::ODEOperator,
@@ -87,6 +84,9 @@ function solve_step!(
   (usF, tF, cache)
 end
 
+######################
+# Nonlinear operator #
+######################
 """
     struct ForwardEulerNonlinearOperator <: DiscreteODEOperator
 
@@ -161,6 +161,9 @@ function Algebra.solve!(
   (usF, disslvrcache)
 end
 
+###################
+# Linear operator #
+###################
 """
     struct ForwardEulerLinearOperator <: LinearDiscreteODEOperator
 
@@ -202,7 +205,7 @@ function Algebra.solve!(
   u, x = u0, u0
   fillstored!(J, zero(eltype(J)))
   jacobian!(J, odeop, t0, (u, x), 1, 1, odeopcache)
-  residual!(r, odeop, t0, (u, x), odeopcache, include_highest=false)
+  residual!(r, odeop, t0, (u, x), odeopcache, include_mass=false)
   rmul!(r, -1)
 
   vF = uF

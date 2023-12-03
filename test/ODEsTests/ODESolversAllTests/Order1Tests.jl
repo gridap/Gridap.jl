@@ -90,9 +90,9 @@ end
 
 # Solvers with memory
 odeslvrs = [
-  GeneralizedAlpha(disslvr_nl, dt, 0.0),
-  GeneralizedAlpha(disslvr_nl, dt, 0.5),
-  GeneralizedAlpha(disslvr_nl, dt, 1.0),
+  GeneralizedAlpha1(disslvr_nl, dt, 0.0),
+  GeneralizedAlpha1(disslvr_nl, dt, 0.5),
+  GeneralizedAlpha1(disslvr_nl, dt, 1.0),
 ]
 
 v0 = -M \ (K * u0 + f(t0))

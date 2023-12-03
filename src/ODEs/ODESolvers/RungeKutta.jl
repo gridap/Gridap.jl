@@ -269,9 +269,9 @@ function get_solver_index(odeslvr::DiagonallyImplicitRungeKutta, explicit::Bool)
   explicit ? (odeslvr.disslvr_l, 2) : (odeslvr.disslvr_nl, 1)
 end
 
-#########################################
-# SequentialRungeKuttaNonlinearOperator #
-#########################################
+######################
+# Nonlinear operator #
+######################
 """
     struct SequentialRungeKuttaNonlinearOperator <: DiscreteODEOperator end
 
@@ -359,7 +359,7 @@ function Algebra.solve!(
   ulc, vs, tableau = disop.ulc, disop.vs, disop.tableau
   t0, dt, (u0,) = disop.t0, disop.dt, disop.us0
 
-  ismasslinear = ODEOperatorType(odeop) <: AbstractMassLinearODE
+  is_masslinear = ODEOperatorType(odeop) <: AbstractMassLinearODE
   A, b, c = get_matrix(tableau), get_weights(tableau), get_nodes(tableau)
   num_stages = length(c)
 
@@ -390,12 +390,12 @@ function Algebra.solve!(
     x = vs[s]
     fill!(x, zero(eltype(x)))
 
-    if explicit && ismasslinear
+    if explicit && is_masslinear
       J, r = disop.J, disop.r
 
       fillstored!(J, zero(eltype(J)))
       jacobians!(J, odeop, ts, (u, x), (A[s, s] * dt, 1), odeopcache)
-      residual!(r, odeop, ts, (u, x), odeopcache, include_highest=false)
+      residual!(r, odeop, ts, (u, x), odeopcache, include_mass=false)
       rmul!(r, -1)
 
       _op = SequentialRungeKuttaLinearOperator(
@@ -423,9 +423,9 @@ function Algebra.solve!(
   (usF, disslvrcaches)
 end
 
-######################################
-# SequentialRungeKuttaLinearOperator #
-######################################
+###################
+# Linear operator #
+###################
 """
     struct SequentialRungeKuttaLinearOperator <: LinearDiscreteODEOperator end
 
@@ -486,12 +486,14 @@ function Algebra.solve!(
         axpy!(coef * dt, vs[j], u)
       end
     end
+
     x = vs[s]
+    fill!(x, zero(eltype(x)))
 
     # Update jacobian and residual
     fillstored!(J, zero(eltype(J)))
     jacobians!(J, odeop, ts, (u, x), (A[s, s] * dt, 1), odeopcache)
-    residual!(r, odeop, ts, (u, x), odeopcache, include_highest=false)
+    residual!(r, odeop, ts, (u, x), odeopcache, include_mass=false)
     rmul!(r, -1)
 
     # Solve stage

@@ -11,6 +11,7 @@ using DocStringExtensions
 using LinearAlgebra
 using LinearAlgebra: fillstored!
 using ForwardDiff
+using SparseArrays
 using BlockArrays
 
 using Gridap.Helpers
@@ -52,6 +53,11 @@ export jacobians!
 export is_jacobian_constant
 export is_forcing_constant
 
+export IMEXODEOperator
+export get_imex_operators
+
+export GenericIMEXODEOperator
+
 export test_ode_operator
 
 include("ODESolvers.jl")
@@ -73,6 +79,8 @@ export ThetaMethod
 export MidPoint
 export BackwardEuler
 
+export GeneralizedAlpha1
+
 export TableauType
 export ExplicitTableau
 export ImplicitTableau
@@ -93,7 +101,8 @@ export available_tableaus
 
 export RungeKutta
 
-export GeneralizedAlpha
+export GeneralizedAlpha2
+export Newmark
 
 include("ODESolutions.jl")
 
@@ -129,6 +138,8 @@ export get_res
 export get_jacs
 export get_mass
 export get_forms
+
+export TransientIMEXFEOperator
 
 export TransientFEOpFromWeakForm
 export TransientMassLinearFEOpFromWeakForm

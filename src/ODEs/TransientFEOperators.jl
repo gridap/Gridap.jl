@@ -26,7 +26,7 @@ exactly a subtype of `FEOperator`, but rather at the intersection of
 - [`allocate_feopcache(feop)`](@ref)
 - [`update_feopcache!(feopcache, feop, t)`](@ref)
 - [`is_jacobian_constant(feop, k)`](@ref)
-- [`is_forcing_constant(feop::TransientFEOperator{<:AbstractMassLinearODE})`](@ref)
+- [`is_forcing_constant(feop)`](@ref)
 """
 abstract type TransientFEOperator{C<:ODEOperatorType} <: GridapType end
 
@@ -47,8 +47,8 @@ function FESpaces.get_trial(feop::TransientFEOperator)
   @abstractmethod
 end
 
-function FESpaces.get_algebraic_operator(feop::TransientFEOperator{C}) where {C}
-  ODEOpFromFEOp{C}(feop)
+function FESpaces.get_algebraic_operator(feop::TransientFEOperator)
+  ODEOpFromFEOp(feop)
 end
 
 # ODEOperator interface
@@ -80,7 +80,7 @@ function is_jacobian_constant(feop::TransientFEOperator, k::Integer)
   false
 end
 
-function is_forcing_constant(feop::TransientFEOperator{<:AbstractMassLinearODE})
+function is_forcing_constant(feop::TransientFEOperator)
   false
 end
 
@@ -197,6 +197,43 @@ function jacobians!(
   feopcache
 )
   error(res_jac_on_transient_feop_msg)
+end
+
+###########################
+# TransientIMEXFEOperator #
+###########################
+"""
+    struct TransientIMEXFEOperator <: TransientFEOperator end
+
+Implicit-Explicit version of `TransientFEOperator`.
+"""
+struct TransientIMEXFEOperator{Cim,Cex} <: TransientFEOperator{Cim}
+  im_feop::TransientFEOperator{Cim}
+  ex_feop::TransientFEOperator{Cex}
+
+  function TransientIMEXFEOperator(
+    im_feop::TransientFEOperator,
+    ex_feop::TransientFEOperator
+  )
+    msg = """
+    A `TransientIMEXFEOperator` can only be built from two `TransientFEOperator`s with same order.
+    """
+    @assert get_order(im_feop) == get_order(ex_feop) msg
+    Cim = ODEOperatorType(im_feop)
+    Cex = ODEOperatorType(ex_feop)
+    new{Cim,Cex}(im_feop, ex_feop)
+  end
+end
+
+# TransientFEOperator interface
+# Only this function is needed because all other functions are going to be
+# called on the implicit and explicit `ODEOpFromFEOp`s within the
+# `IMEXODEOperator` interface, and in turn called on the implicit and explicit
+# `TransientFEOperator`s separately
+function FESpaces.get_algebraic_operator(feop::TransientIMEXFEOperator)
+  im_odeop = ODEOpFromFEOp(feop.im_feop)
+  ex_odeop = ODEOpFromFEOp(feop.ex_feop)
+  GenericIMEXODEOperator(im_odeop, ex_odeop)
 end
 
 #############################
@@ -584,7 +621,7 @@ function test_transient_fe_operator(
   odeop = get_algebraic_operator(feop)
   @test odeop isa ODEOperator
 
-  test_ode_operator(odeop, t, us, t, us)
+  test_ode_operator(odeop, t, us)
 
   true
 end

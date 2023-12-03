@@ -28,14 +28,14 @@ k-th-order time derivative of u.
 # Mandatory
 - [`get_order(odeop)`](@ref)
 - [`allocate_residual(odeop, t, us, odeopcache)`](@ref)
-- [`residual!(r, odeop, t, us, odeopcache)`](@ref)
+- [`residual!(r, odeop, t, us, odeopcache; include_mass)`](@ref)
 - [`allocate_jacobian(odeop, t, us, odeopcache)`](@ref)
 - [`jacobian!(J, odeop, t, us, k, γ, odeopcache)`](@ref)
 
 # Optional
-- [`allocate_odeopcache(odeop, args...)`](@ref)
+- [`allocate_odeopcache(odeop, t, us, args...)`](@ref)
 - [`update_odeopcache!(odeopcache, odeop, t, args...)`](@ref)
-- [`residual(odeop, t, us, odeopcache)`](@ref)
+- [`residual(odeop, t, us, odeopcache; include_mass)`](@ref)
 - [`jacobian(odeop, t, us, k, γ, odeopcache)`](@ref)
 - [`jacobians!(J, odeop, t, us, γs, odeopcache)`](@ref)
 - [`is_jacobian_constant(odeop, k)`](@ref)
@@ -88,11 +88,17 @@ function Polynomials.get_order(odeop::ODEOperator)
 end
 
 """
-    allocate_odeopcache(odeop::ODEOperator, args...) -> CacheType
+    allocate_odeopcache(
+      odeop::ODEOperator,
+      t::Real, us::Tuple{Vararg{AbstractVector}}, args...
+    ) -> CacheType
 
 Allocate the cache required by the `ODEOperator`.
 """
-function allocate_odeopcache(odeop::ODEOperator, args...)
+function allocate_odeopcache(
+  odeop::ODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}}, args...
+)
   nothing
 end
 
@@ -126,7 +132,7 @@ end
     residual(
       odeop::ODEOperator,
       t::Real, us::Tuple{Vararg{AbstractVector}},
-      odeopcache
+      odeopcache; include_mass::Bool=true
     ) -> AbstractVector
 
 Allocate a residual vector and evaluate it.
@@ -134,10 +140,10 @@ Allocate a residual vector and evaluate it.
 function Algebra.residual(
   odeop::ODEOperator,
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache
+  odeopcache; include_mass::Bool=true
 )
   r = allocate_residual(odeop, t, us, odeopcache)
-  residual!(r, odeop, t, us, odeopcache)
+  residual!(r, odeop, t, us, odeopcache; include_mass)
   r
 end
 
@@ -145,7 +151,7 @@ end
     residual!(
       r::AbstractVector, odeop::ODEOperator,
       t::Real, us::Tuple{Vararg{AbstractVector}},
-      odeopcache
+      odeopcache; include_mass::Bool=true
     ) -> AbstractVector
 
 Evaluate the residual vector of the `ODEOperator`.
@@ -153,7 +159,7 @@ Evaluate the residual vector of the `ODEOperator`.
 function Algebra.residual!(
   r::AbstractVector, odeop::ODEOperator,
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache
+  odeopcache; include_mass::Bool=true
 )
   @abstractmethod
 end
@@ -256,7 +262,7 @@ function is_jacobian_constant(odeop::ODEOperator, k::Integer)
 end
 
 """
-    is_forcing_constant(odeop::ODEOperator{<:AbstractMassLinearODE}) -> Bool
+    is_forcing_constant(odeop::ODEOperator) -> Bool
 
 For an `ODEOperator` of type `AbstractMassLinearODE`, indicate whether the
 forcing term is constant. For example with a `MassLinearODEOperator`,
@@ -264,8 +270,211 @@ forcing term is constant. For example with a `MassLinearODEOperator`,
 residual(t, u, v) = mass(t, ∂t(u), v) + res(t, u, v),```
 this function indicates whether `res` is constant.
 """
-function is_forcing_constant(odeop::ODEOperator{<:AbstractMassLinearODE})
+function is_forcing_constant(odeop::ODEOperator)
   false
+end
+
+###################
+# IMEXODEOperator #
+###################
+"""
+    abstract type IMEXODEOperator <: ODEOperator end
+
+Pair of ODE operators: one operator is considered stiff and and meant to be
+solved with an implicit solver, while the other is considered non stiff and
+solved with an explicit solver.
+
+# Mandatory
+- [`get_imex_operators(odeop)`](@ref)
+"""
+abstract type IMEXODEOperator{Cim,Cex} <: ODEOperator{Cim} end
+
+"""
+    get_imex_operators(odeop::IMEXODEOperator) -> (ODEOperator, ODEOperator)
+
+Return the implicit and explicit `ODEOperator`s of the `IMEXODEOperator`.
+"""
+function get_imex_operators(odeop::IMEXODEOperator)
+  @abstractmethod
+end
+
+# ODEOperator interface
+function Polynomials.get_order(odeop::IMEXODEOperator)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  get_order(im_odeop)
+end
+
+function allocate_odeopcache(
+  odeop::IMEXODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}}, args...
+)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_cache = allocate_odeopcache(im_odeop, t, us, args...)
+  ex_cache = allocate_odeopcache(ex_odeop, t, us, args...)
+  res_temp = allocate_residual(im_odeop, t, us, im_cache)
+  (im_cache, ex_cache, res_temp)
+end
+
+function update_odeopcache!(
+  odeopcache,
+  odeop::IMEXODEOperator, t::Real, args...
+)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_cache, ex_cache, res_temp = odeopcache
+  update_odeopcache!(im_cache, im_odeop, t, args...)
+  update_odeopcache!(ex_cache, ex_odeop, t, args...)
+  (im_cache, ex_cache, res_temp)
+end
+
+function Algebra.allocate_residual(
+  odeop::IMEXODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  odeopcache
+)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_cache, ex_cache, = odeopcache
+  im_res = allocate_residual(im_odeop, t, us, im_cache)
+  ex_res = allocate_residual(ex_odeop, t, us, ex_cache)
+  axpy!(1, ex_res, im_res)
+  im_res
+end
+
+function Algebra.residual!(
+  r::AbstractVector, odeop::IMEXODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  odeopcache; include_mass::Bool=true
+)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_cache, ex_cache, res_temp = odeopcache
+  residual!(res_temp, im_odeop, t, us, im_cache; include_mass)
+  residual!(r, ex_odeop, t, us, ex_cache; include_mass)
+  axpy!(1, res_temp, r)
+  r
+end
+
+function Algebra.allocate_jacobian(
+  odeop::IMEXODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  odeopcache
+)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_cache, ex_cache, = odeopcache
+  im_jac = allocate_jacobian(im_odeop, t, us, im_cache)
+  ex_jac = allocate_jacobian(ex_odeop, t, us, ex_cache)
+
+  if !can_add_matrices(im_jac, ex_jac)
+    throw("Cannot add matrices with different structures yet.")
+  end
+  axpy_sparse!(1, ex_jac, im_jac)
+  im_jac
+end
+
+function Algebra.jacobian!(
+  J::AbstractMatrix, odeop::IMEXODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  k::Integer, γ::Real,
+  odeopcache
+)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_cache, ex_cache, = odeopcache
+  jacobian!(J, im_odeop, t, us, k, γ, im_cache)
+  jacobian!(J, ex_odeop, t, us, k, γ, ex_cache)
+  J
+end
+
+function jacobians!(
+  J::AbstractMatrix, odeop::IMEXODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  γs::Tuple{Vararg{Real}},
+  odeopcache
+)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_cache, ex_cache, = odeopcache
+  jacobians!(J, im_odeop, t, us, γs, im_cache)
+  jacobians!(J, ex_odeop, t, us, γs, ex_cache)
+  J
+end
+
+function is_jacobian_constant(odeop::IMEXODEOperator, k::Integer)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_const = is_jacobian_constant(im_odeop, k)
+  ex_const = is_jacobian_constant(ex_odeop, k)
+  im_const && ex_const
+end
+
+function is_forcing_constant(odeop::IMEXODEOperator)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_const = is_forcing_constant(im_odeop)
+  ex_const = is_forcing_constant(ex_odeop)
+  im_const && ex_const
+end
+
+##########################
+# GenericIMEXODEOperator #
+##########################
+"""
+    struct GenericIMEXODEOperator <: IMEXODEOperator end
+
+Generic `IMEXODEOperator`.
+"""
+struct GenericIMEXODEOperator{Cim,Cex} <: IMEXODEOperator{Cim,Cex}
+  im_odeop::ODEOperator{Cim}
+  ex_odeop::ODEOperator{Cex}
+
+  function GenericIMEXODEOperator(im_odeop::ODEOperator, ex_odeop::ODEOperator)
+    msg = """
+    An `IMEXODEOperator` can only be built from two `ODEOperator`s with same order.
+    """
+    @assert get_order(im_odeop) == get_order(ex_odeop) msg
+    Cim = ODEOperatorType(im_odeop)
+    Cex = ODEOperatorType(ex_odeop)
+    new{Cim,Cex}(im_odeop, ex_odeop)
+  end
+end
+
+function IMEXODEOperator(im_odeop::ODEOperator, ex_odeop::ODEOperator)
+  GenericIMEXODEOperator(im_odeop, ex_odeop)
+end
+
+# IMEXODEOperator interface
+function get_imex_operators(odeop::GenericIMEXODEOperator)
+  (odeop.im_odeop, odeop.ex_odeop)
+end
+
+#########
+# Utils #
+#########
+function can_add_matrices(A::AbstractMatrix, B::AbstractMatrix)
+  if typeof(A) != typeof(B)
+    return false
+  end
+
+  if A isa SparseMatrixCSC
+    if rowvals(A) != rowvals(B)
+      return false
+    end
+
+    if any(nzrange(A, j) != nzrange(B, j) for j in 1:size(A, 2))
+      return false
+    end
+  end
+
+  true
+end
+
+function axpy_sparse!(α::Real, A::AbstractMatrix, B::AbstractMatrix)
+  axpy!(α, A, B)
+end
+
+function axpy_sparse!(α::Real, A::SparseMatrixCSC, B::SparseMatrixCSC)
+  # TODO optimise the sum of sparse matrices
+
+  # This is surprisingly better than axpy!(α, A, B)
+  # @. B += α * A
+
+  # This is way more efficient but only available when A and B have the same
+  # structure (rowvals and nzrange)
+  axpy!(α, nonzeros(A), nonzeros(B))
 end
 
 ########
@@ -285,7 +494,7 @@ function test_ode_operator(
   t::Real, us::Tuple{Vararg{AbstractVector}},
   args...
 )
-  odeopcache = allocate_odeopcache(odeop, args...)
+  odeopcache = allocate_odeopcache(odeop, t, us, args...)
   odeopcache = update_odeopcache!(odeopcache, odeop, t)
 
   r = allocate_residual(odeop, t, us, odeopcache)

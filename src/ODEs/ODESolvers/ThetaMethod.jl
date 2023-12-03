@@ -80,9 +80,6 @@ function DiscreteODEOperator(
   )
 end
 
-###############
-# solve_step! #
-###############
 function solve_step!(
   usF::NTuple{1,AbstractVector},
   odeslvr::ThetaMethod, odeop::ODEOperator,
@@ -123,6 +120,9 @@ function solve_step!(
   (usF, tF, cache)
 end
 
+######################
+# Nonlinear operator #
+######################
 """
     struct ThetaMethodNonlinearOperator <: DiscreteODEOperator
 
@@ -210,6 +210,9 @@ function Algebra.solve!(
   (usF, disslvrcache)
 end
 
+######################
+# Nonlinear operator #
+######################
 """
     struct ThetaMethodLinearOperator <: LinearDiscreteODEOperator end
 
@@ -257,7 +260,7 @@ function Algebra.solve!(
 
   fillstored!(J, zero(eltype(J)))
   jacobians!(J, odeop, tθ, usθ, ws, odeopcache)
-  residual!(r, odeop, tθ, usθ, odeopcache, include_highest=false)
+  residual!(r, odeop, tθ, usθ, odeopcache, include_mass=false)
   rmul!(r, -1)
 
   vF = usF[1]

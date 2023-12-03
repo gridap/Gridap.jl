@@ -36,11 +36,11 @@ end
 function Algebra.residual!(
   r::AbstractVector, odeop::ODEOperatorMock1,
   t::Real, us::NTuple{2,AbstractVector},
-  odeopcache; include_highest::Bool=true
+  odeopcache; include_mass::Bool=true
 )
   u, v = us
   fill!(r, zero(eltype(r)))
-  if include_highest
+  if include_mass
     r .+= odeop.M * v
   end
   r .+= odeop.K * u
@@ -103,11 +103,11 @@ end
 function Algebra.residual!(
   r::AbstractVector, odeop::ODEOperatorMock2,
   t::Real, us::NTuple{3,AbstractVector},
-  odeopcache; include_highest::Bool=true
+  odeopcache; include_mass::Bool=true
 )
   u, v, a = us
   fill!(r, zero(eltype(r)))
-  if include_highest
+  if include_mass
     r .+= odeop.M * a
   end
   r .+= odeop.C * v

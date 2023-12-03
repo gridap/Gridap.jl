@@ -96,9 +96,6 @@ function update_odeopcache!(odeopcache, odeop::ODEOpFromFEOp, t::Real)
   odeopcache
 end
 
-############
-# Residual #
-############
 function Algebra.allocate_residual(
   odeop::ODEOpFromFEOp,
   t::Real, us::Tuple{Vararg{AbstractVector}},
@@ -116,7 +113,7 @@ end
 function Algebra.residual!(
   r::AbstractVector, odeop::ODEOpFromFEOp{NonlinearODE},
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache
+  odeopcache; include_mass::Bool=true
 )
   uh = _make_uh_from_us(odeop, us, odeopcache.Us)
 
@@ -131,7 +128,7 @@ end
 function Algebra.residual!(
   r::AbstractVector, odeop::ODEOpFromFEOp{MassLinearODE},
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache; include_highest::Bool=true
+  odeopcache; include_mass::Bool=true
 )
   mass_stored = !isnothing(odeopcache.jacs[end])
   forcing_stored = !isnothing(odeopcache.forcing)
@@ -143,7 +140,7 @@ function Algebra.residual!(
 
   fill!(r, zero(eltype(r)))
 
-  if include_highest
+  if include_mass
     if mass_stored
       mul!(odeopcache.jacvec, odeopcache.jacs[end], us[end])
       axpy!(1, odeopcache.jacvec, r)
@@ -168,7 +165,7 @@ end
 function Algebra.residual!(
   r::AbstractVector, odeop::ODEOpFromFEOp{LinearODE},
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache; include_highest::Bool=true
+  odeopcache; include_mass::Bool=true
 )
   forms_stored = !any(isnothing, odeopcache.jacs)
   forcing_stored = !isnothing(odeopcache.forcing)
@@ -181,7 +178,7 @@ function Algebra.residual!(
   fill!(r, zero(eltype(r)))
 
   order = get_order(odeop)
-  order_max = include_highest ? order : order - 1
+  order_max = include_mass ? order : order - 1
   for k in 0:order_max
     if !isnothing(odeopcache.jacs[k+1])
       mul!(odeopcache.jacvec, odeopcache.jacs[k+1], us[k+1])
@@ -204,9 +201,6 @@ function Algebra.residual!(
   r
 end
 
-############
-# Jacobian #
-############
 function Algebra.allocate_jacobian(
   odeop::ODEOpFromFEOp,
   t::Real, us::Tuple{Vararg{AbstractVector}},
@@ -271,9 +265,6 @@ function jacobians!(
   J
 end
 
-############
-# Constant #
-############
 function is_jacobian_constant(odeop::ODEOpFromFEOp, k::Integer)
   is_jacobian_constant(odeop.feop, k)
 end
@@ -329,10 +320,4 @@ function _make_uh_from_us(odeop, us, Us)
     TransientCellFieldType = TransientCellField
   end
   TransientCellFieldType(u, dus)
-end
-
-function axpy_sparse!(α, A, B)
-  # TODO optimise the sum of sparse matrices
-  # This is surprisingly better than axpy!(α, A, B)
-  @. B += α * A
 end
