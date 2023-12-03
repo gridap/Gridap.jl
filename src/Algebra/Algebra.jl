@@ -11,6 +11,7 @@ using SparseArrays
 using LinearAlgebra
 using Test
 using SparseMatricesCSR
+using BlockArrays
 
 using Gridap.Helpers
 
