@@ -84,7 +84,7 @@ for (_odeop, odeslvr, _disop, us0, _r, _J, x̃) in (
   (_odeop2, odeslvr2, _disop2, us02, _r2, _J2, x̃2),
   (_imex_odeop2, odeslvr2, _imex_disop2, us02, _r2, _J2, x̃2)
 )
-  for T in (NonlinearODE, MassLinearODE, LinearODE)
+  for T in (NonlinearODE, QuasilinearODE, SemilinearODE, LinearODE)
     odeop = _odeop(T)
     disop = _disop(odeop)
 

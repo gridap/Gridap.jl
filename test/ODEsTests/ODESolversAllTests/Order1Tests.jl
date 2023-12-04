@@ -38,15 +38,17 @@ end
 
 odeop_nonlinear = ODEOperatorMock1{NonlinearODE}(M, K, f)
 
-odeop_masslinear = ODEOperatorMock1{MassLinearODE}(M, K, f)
+odeop_quasilinear = ODEOperatorMock1{QuasilinearODE}(M, K, f)
+odeop_semilinear = ODEOperatorMock1{SemilinearODE}(M, K, f)
 
 odeop_linear = ODEOperatorMock1{LinearODE}(M, K, f)
 ODEs.is_jacobian_constant(odeop::typeof(odeop_linear), k::Integer) = true
 
 odeops = [
   odeop_nonlinear,
-  odeop_masslinear,
-  odeop_linear
+  odeop_quasilinear,
+  odeop_semilinear,
+  odeop_linear,
 ]
 
 function test_solver(odeslvr, odeop, us0, tol)
@@ -97,6 +99,33 @@ odeslvrs = [
 
 v0 = -M \ (K * u0 + f(t0))
 us0 = (u0, v0,)
+for odeslvr in odeslvrs
+  for odeop in odeops
+    test_solver(odeslvr, odeop, us0, tol)
+  end
+end
+
+# Solvers for IMEX decompositions
+form0 = zeros(num_eqs, num_eqs)
+f0(t) = zero(t)
+
+odeop_im1 = ODEOperatorMock1{LinearODE}(M, form0, f0)
+odeop_im2 = ODEOperatorMock1{SemilinearODE}(M, form0, f0)
+odeop_ex = ODEOperatorMock0{QuasilinearODE}(K, f)
+odeop_imex1 = GenericIMEXODEOperator(odeop_im1, odeop_ex)
+odeop_imex2 = GenericIMEXODEOperator(odeop_im2, odeop_ex)
+
+odeops = [
+  odeop_imex1,
+  odeop_imex2,
+]
+
+odeslvrs = [
+  RungeKutta(disslvr_nl, disslvr_l, dt, :IMEX_FE_BE_2_0_1),
+  RungeKutta(disslvr_nl, disslvr_l, dt, :IMEX_Midpoint_2_0_2),
+]
+
+us0 = (u0,)
 for odeslvr in odeslvrs
   for odeop in odeops
     test_solver(odeslvr, odeop, us0, tol)

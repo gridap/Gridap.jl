@@ -39,7 +39,7 @@ for (_odeop, forms, us, _ex_odeop) in (
   (_odeop1, forms1, us1, _odeop0),
   (_odeop2, forms2, us2, _odeop1)
 )
-  for T in (NonlinearODE, MassLinearODE, LinearODE)
+  for T in (NonlinearODE, QuasilinearODE, SemilinearODE, LinearODE)
     odeop = _odeop{T}(forms..., f)
 
     odeopcache = allocate_odeopcache(odeop, t0, us)

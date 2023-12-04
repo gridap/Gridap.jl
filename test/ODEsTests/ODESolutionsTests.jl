@@ -52,7 +52,7 @@ for (_odeop, _odeslvr, forms, us0, _u) in (
   (_odeop1, _odeslvr1, forms1, us01, _u1),
   (_odeop2, _odeslvr2, forms2, us02, _u2),
 )
-  for T in (NonlinearODE, MassLinearODE, LinearODE,)
+  for T in (NonlinearODE, QuasilinearODE, SemilinearODE, LinearODE)
     odeop = _odeop{T}(forms..., f)
     odeslvr = _odeslvr(disslvr, dt)
 

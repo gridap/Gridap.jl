@@ -9,9 +9,14 @@ Trait that indicates the (linearity) type of an ODE operator.
 abstract type ODEOperatorType <: GridapType end
 struct NonlinearODE <: ODEOperatorType end
 
-abstract type AbstractMassLinearODE <: ODEOperatorType end
-struct MassLinearODE <: AbstractMassLinearODE end
-struct LinearODE <: AbstractMassLinearODE end
+abstract type AbstractQuasilinearODE <: ODEOperatorType end
+struct QuasilinearODE <: AbstractQuasilinearODE end
+
+abstract type AbstractSemilinearODE <: AbstractQuasilinearODE end
+struct SemilinearODE <: AbstractSemilinearODE end
+
+abstract type AbstractLinearODE <: AbstractSemilinearODE end
+struct LinearODE <: AbstractLinearODE end
 
 ###############
 # ODEOperator #
@@ -21,10 +26,10 @@ struct LinearODE <: AbstractMassLinearODE end
 
 General implicit, nonlinear ODE operator defined by a residual of the form
 ```math
-residual(t, us) = res(t, us[0], ..., us[N]),
+residual(t, ∂t^0[u], ..., ∂t^N[u]) = 0,
 ```
-where `N` is the order of the ODE operator and `us[k] = ∂t^k(u)` is the
-`k`-th-order time derivative of `u`.
+where `N` is the order of the ODE operator and `∂t^k[u]` is the `k`-th-order
+time derivative of `u`.
 
 # Mandatory
 - [`get_order(odeop)`](@ref)
@@ -45,30 +50,46 @@ where `N` is the order of the ODE operator and `us[k] = ∂t^k(u)` is the
 abstract type ODEOperator{C<:ODEOperatorType} <: GridapType end
 
 """
-    MassLinearODEOperator
+    QuasilinearODEOperator
 
 ODE operator whose residual is linear with respect to the highest-order time
-derivative, e.g.
+derivative, i.e.
 ```math
-residual(t, us) = mass(t, us[0], ..., us[N-1]) us[N]
-                +  res(t, us[0], ..., us[N-1]),
+residual(t, ∂t^0[u], ..., ∂t^N[u]) = mass(t, ∂t^0[u], ..., ∂t^(N-1)[u]) ∂t^N[u]
+                                   +  res(t, ∂t^0[u], ..., ∂t^(N-1)[u])
 ```
-where `N` is the order of the ODE operator, `us[k] = ∂t^k(u)` is the
-`k`-th-order time derivative of `u`, and both `mass` and `res` have order `N-1`.
+where `N` is the order of the ODE operator, `∂t^k[u]` is the `k`-th-order time
+derivative of `u`, and both `mass` and `res` have order `N-1`.
 
-Alias for `ODEOperator{MassLinearODE}`.
+Alias for `ODEOperator{QuasilinearODE}`.
 """
-const MassLinearODEOperator = ODEOperator{MassLinearODE}
+const QuasilinearODEOperator = ODEOperator{QuasilinearODE}
+
+"""
+    SemilinearODEOperator
+
+ODE operator whose residual is linear with respect to the highest-order time
+derivative, and may only depend on time, i.e.
+```math
+residual(t, ∂t^0[u], ..., ∂t^N[u]) = mass(t) ∂t^N[u]
+                                   +  res(t, ∂t^0[u], ..., ∂t^(N-1)[u])
+```
+where `N` is the order of the ODE operator, `∂t^k[u]` is the `k`-th-order time
+derivative of `u`, `mass` is independent of `u` and `res` has order `N-1`.
+
+Alias for `ODEOperator{SemilinearODE}`.
+"""
+const SemilinearODEOperator = ODEOperator{SemilinearODE}
 
 """
     LinearODEOperator
 
-ODE operator whose residual is linear with respect to all time derivatives, e.g.
+ODE operator whose residual is linear with respect to all time derivatives, i.e.
 ```math
-residual(t, us) = ∑_{0 ≤ k ≤ N} A_k(t) us[k] + res(t)
+residual(t, ∂t^0[u], ..., ∂t^N[u]) = ∑_{0 ≤ k ≤ N} A_k(t) ∂t^k[u] + res(t)
 ```
-where `N` is the order of the ODE operator, and `us[k] = ∂t^k(u)` is the
-`k`-th-order time derivative of `u`.
+where `N` is the order of the ODE operator, and `∂t^k[u]` is the `k`-th-order
+time derivative of `u`.
 
 Alias for `ODEOperator{LinearODE}`.
 """
@@ -271,15 +292,12 @@ end
 """
     is_residual_constant(odeop::ODEOperator) -> Bool
 
-This function only has a meaning when the `ODEOperator` is a subtype of
-`AbstractMassLinearODE`. In that case, it indicates whether the residual of the
-`ODEOperator`, excluding the mass term, is constant.
-
-For example with a first-order `ODEOperator` whose residual can be written
-```math
-residual(t, us) = mass(t, us[0]) us[1] + res(t, us[0]),
-```
-this function indicates whether `res` is constant.
+Indicate whether the lowest-order element in the decomposition of the residual
+of the `ODEOperator` is constant:
+* For a `NonlinearODE`, indicate whether the whole residual is constant,
+* For a `QuasilinearODE`, indicate whether the residual, excluding the mass
+term is constant,
+* For a `LinearODE`, indicate whether the forcing term is constant.
 """
 function is_residual_constant(odeop::ODEOperator)
   false
@@ -293,7 +311,8 @@ end
 
 ODEOperator whose residual can be decomposed into
 ```math
-residual(t, us) = implicit_residual(t, us) + explicit_residual(t, us[0:N-1]),
+residual(t, ∂t^0[u], ..., ∂t^N[u]) = implicit_residual(t, ∂t^0[u], ..., ∂t^N[u])
+                                   + explicit_residual(t, ∂t^0[u], ..., ∂t^(N-1)[u]),
 ```
 where
 * The implicit operator defined by the implicit residual is considered stiff
@@ -374,7 +393,7 @@ function Algebra.residual!(
   im_odeop, ex_odeop = get_imex_operators(odeop)
   im_odeopcache, ex_odeopcache, ex_res = odeopcache
   residual!(im_res, im_odeop, t, im_us, im_odeopcache; filter)
-  residual!(ex_res, ex_odeop, t, ex_us, ex_odeopcache)
+  residual!(ex_res, ex_odeop, t, ex_us, ex_odeopcache; filter)
   axpy!(1, ex_res, im_res)
   r
 end
@@ -554,7 +573,7 @@ function test_ode_operator(
     @test is_jacobian_constant(odeop, k) isa Bool
   end
 
-  if ODEOperatorType(odeop) <: AbstractMassLinearODE
+  if ODEOperatorType(odeop) <: AbstractQuasilinearODE
     @test is_residual_constant(odeop) isa Bool
   end
 

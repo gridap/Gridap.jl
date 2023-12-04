@@ -17,7 +17,8 @@ function GeneralizedAlpha2(disslvr::NonlinearSolver, dt::Float64, ρ∞::Float64
   ρ∞01 = clamp(ρ∞, 0, 1)
   if ρ∞01 != ρ∞
     msg = """
-    The parameter ρ∞ of the generalized-α scheme must lie between zero and one. Setting ρ∞ to $(ρ∞01).
+    The parameter ρ∞ of the generalized-α scheme must lie between zero and one.
+    Setting ρ∞ to $(ρ∞01).
     """
     @warn msg
     ρ∞ = ρ∞01
@@ -34,7 +35,8 @@ function Newmark(disslvr::NonlinearSolver, dt::Float64, γ::Float64, β::Float64
   γ01 = clamp(γ, 0, 1)
   if γ01 != γ
     msg = """
-    The parameter γ of the Newmark scheme must lie between zero and one. Setting γ to $(γ01).
+    The parameter γ of the Newmark scheme must lie between zero and one.
+    Setting γ to $(γ01).
     """
     @warn msg
     γ = γ01
@@ -43,7 +45,8 @@ function Newmark(disslvr::NonlinearSolver, dt::Float64, γ::Float64, β::Float64
   β01 = clamp(β, 0, 1)
   if β01 != β
     msg = """
-    The parameter β of the Newmark scheme must lie between zero and one. Setting β to $(β01).
+    The parameter β of the Newmark scheme must lie between zero and one.
+    Setting β to $(β01).
     """
     @warn msg
     β = β01
@@ -68,7 +71,7 @@ end
 
 function allocate_disopcache(
   odeslvr::GeneralizedAlpha2,
-  odeop::ODEOperator{LinearODE}, odeopcache,
+  odeop::ODEOperator{<:AbstractLinearODE}, odeopcache,
   t::Real, x::AbstractVector
 )
   us = (x, x, x)
@@ -92,7 +95,7 @@ function DiscreteODEOperator(
 end
 
 function DiscreteODEOperator(
-  odeslvr::GeneralizedAlpha2, odeop::ODEOperator{LinearODE},
+  odeslvr::GeneralizedAlpha2, odeop::ODEOperator{<:AbstractLinearODE},
   odeopcache, disopcache,
   t0::Real, us0::NTuple{3,AbstractVector}, dt::Real,
   αm::Real, αf::Real, γ::Real, β::Real, tα::Real
@@ -154,6 +157,7 @@ Nonlinear discrete operator corresponding to the second-order generalized-α sch
 ```math
 residual(tα, uα, vα, aα) = 0,
 
+tα = αf * t_n + (1 - αf) * t_(n+1)
 uα = αf * u_n + (1 - αf) * u_(n+1)
 vα = αf * v_n + (1 - αf) * v_(n+1)
 aα = αm * a_n + (1 - αm) * a_(n+1),
@@ -174,16 +178,6 @@ struct GeneralizedAlpha2NonlinearOperator <: DiscreteODEOperator
   γ::Real
   β::Real
   usα::NTuple{3,AbstractVector}
-end
-
-function Algebra.allocate_residual(
-  disop::GeneralizedAlpha2NonlinearOperator,
-  x::AbstractVector
-)
-  tα, dt, us0, usα = disop.tα, disop.dt, disop.us0, disop.usα
-  αm, αf, γ, β = disop.αm, disop.αf, disop.γ, disop.β
-  usα = _fill_usα!(usα, us0, x, dt, αm, αf, γ, β)
-  allocate_residual(disop.odeop, tα, usα, disop.odeopcache)
 end
 
 function Algebra.residual!(
@@ -250,6 +244,7 @@ Linear discrete operator corresponding to the second-order generalized-α scheme
 ```math
 residual(tα, uα, vα, aα) = mass(tα) aα + damping(tα) vα + stiffness(tα) uα + res(tα) = 0,
 
+tα = αf * t_n + (1 - αf) * t_(n+1)
 uα = αf * u_n + (1 - αf) * u_(n+1)
 vα = αf * v_n + (1 - αf) * v_(n+1)
 aα = αm * a_n + (1 - αm) * a_(n+1),

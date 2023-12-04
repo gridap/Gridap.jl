@@ -2,9 +2,6 @@ module ODESolversAllTests
 
 using Test
 
-using Gridap
-using Gridap.ODEs
-
 @time @testset "TableausTests" begin include("TableausTests.jl") end
 
 @time @testset "Order1Tests" begin include("Order1Tests.jl") end

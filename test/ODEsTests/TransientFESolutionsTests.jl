@@ -49,13 +49,24 @@ a(t, u, v) = ∫(∇(u) ⊙ ∇(v)) * dΩ # - ∫(u ⋅ (nΓ ⋅ ∇(v)) + u ⋅
 b(t, v) = ∫(f(t) ⋅ v) * dΩ # - ∫(u(t) ⋅ (nΓ ⋅ ∇(v)) - β / h * (u(t) ⋅ v)) * dΓ
 
 mass(t, u, v) = m(t, ∂t(u), v)
-part_res(t, u, v) = a(t, u, v) - b(t, v)
-full_res(t, u, v) = mass(t, u, v) + part_res(t, u, v)
+stiffness(t, u, v) = a(t, u, v)
+forcing(t, v) = (-1) * b(t, v)
+res_quasilinear(t, u, v) = stiffness(t, u, v) + forcing(t, v)
+res_nonlinear(t, u, v) = mass(t, u, v) + res_quasilinear(t, u, v)
 jac(t, u, du, v) = a(t, du, v)
 jac_t(t, u, dut, v) = m(t, dut, v)
 
-feop_nonlinear = TransientFEOperator(full_res, jac, jac_t, U, V)
-feop_masslinear = TransientMassLinearFEOperator(mass, part_res, jac, jac_t, U, V)
+feop_nonlinear = TransientFEOperator(res_nonlinear, jac, jac_t, U, V)
+feop_quasilinear = TransientQuasilinearFEOperator(mass, res_quasilinear, jac, jac_t, U, V)
+feop_semilinear = TransientSemilinearFEOperator(mass, res_quasilinear, jac, jac_t, U, V)
+feop_linear = TransientLinearFEOperator(mass, stiffness, forcing, jac, jac_t, U, V)
+
+feops = [
+  feop_nonlinear,
+  feop_quasilinear,
+  feop_semilinear,
+  feop_linear
+]
 
 # ODE solver
 t0 = 0.0
@@ -68,7 +79,7 @@ uh0 = interpolate_everywhere(u(t0), U0)
 disslvr = NLSolverMock()
 odeslvr = ODESolverMock1(disslvr, dt)
 
-for feop in (feop_nonlinear, feop_masslinear)
+for feop in feops
   fesltn = solve(odeslvr, feop, uh0, t0, tF)
   @test test_transient_fe_solution(fesltn)
 

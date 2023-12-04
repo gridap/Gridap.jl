@@ -70,7 +70,7 @@ res(t, u, v) = mass(t, u, v) + stiffness(t, u, v) - b(t, v)
 jac(t, u, du, v) = a(t, du, v)
 jac_t(t, u, dut, v) = m(t, dut, v)
 
-res_masslinear(t, u, v) = a(t, u, v) - b(t, v)
+res_quasilinear(t, u, v) = a(t, u, v) - b(t, v)
 res_linear(t, v) = (-1) * b(t, v)
 
 # TODO need a simple and optimised way to indicate that a jacobian is zero
@@ -104,21 +104,40 @@ for jac_u_constant in (true, false)
     jacs_constant = (jac_u_constant, jac_u̇_constant)
 
     # TransientFEOperator
-    feop = TransientFEOperator(res, jac, jac_t, U, V; jacs_constant)
+    feop = TransientFEOperator(
+      res, jac, jac_t, U, V;
+      jacs_constant
+    )
     test_transient_operator(feop)
 
-    feop = TransientFEOperator(res, U, V; jacs_constant)
+    feop = TransientFEOperator(
+      res, U, V;
+      jacs_constant
+    )
     test_transient_operator(feop)
 
-    # TransientMassLinearFEOperator
-    feop = TransientMassLinearFEOperator(
-      mass, res_masslinear, jac, jac_t, U, V;
+    # TransientQuasilinearFEOperator
+    feop = TransientQuasilinearFEOperator(
+      mass, res_quasilinear, jac, jac_t, U, V;
       jacs_constant, residual_constant=false
     )
     test_transient_operator(feop)
 
-    feop = TransientMassLinearFEOperator(
-      mass, res_masslinear, U, V;
+    feop = TransientQuasilinearFEOperator(
+      mass, res_quasilinear, U, V;
+      jacs_constant, residual_constant=false
+    )
+    test_transient_operator(feop)
+
+    # TransientSemilinearFEOperator
+    feop = TransientSemilinearFEOperator(
+      mass, res_quasilinear, jac, jac_t, U, V;
+      jacs_constant, residual_constant=false
+    )
+    test_transient_operator(feop)
+
+    feop = TransientSemilinearFEOperator(
+      mass, res_quasilinear, U, V;
       jacs_constant, residual_constant=false
     )
     test_transient_operator(feop)
@@ -137,7 +156,7 @@ for jac_u_constant in (true, false)
     test_transient_operator(feop)
 
     # TransientIMEXFEOperator
-    im_feop = TransientMassLinearFEOperator(
+    im_feop = TransientSemilinearFEOperator(
       mass, im_res, im_jac, im_jac_t, U, V;
       jacs_constant, residual_constant=false
     )

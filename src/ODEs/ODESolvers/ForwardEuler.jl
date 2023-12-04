@@ -23,7 +23,7 @@ end
 
 function allocate_disopcache(
   odeslvr::ForwardEuler,
-  odeop::ODEOperator{<:AbstractMassLinearODE}, odeopcache,
+  odeop::ODEOperator{<:AbstractQuasilinearODE}, odeopcache,
   t::Real, x::AbstractVector
 )
   us = (x, x)
@@ -44,7 +44,7 @@ function DiscreteODEOperator(
 end
 
 function DiscreteODEOperator(
-  odeslvr::ForwardEuler, odeop::ODEOperator{<:AbstractMassLinearODE},
+  odeslvr::ForwardEuler, odeop::ODEOperator{<:AbstractQuasilinearODE},
   odeopcache, disopcache,
   t0::Real, us0::NTuple{1,AbstractVector}, dt::Real
 )
@@ -101,9 +101,11 @@ end
 
 Nonlinear discrete operator corresponding to the forward Euler scheme:
 ```math
-residual(t_n, u_n, v_n) = 0,
+residual(t0, u0, v0) = 0,
 
-v_n = x,
+t0 = t_n
+u0 = u_n
+v0 = x,
 
 u_(n+1) = u_n + dt * x.
 ```
@@ -114,15 +116,6 @@ struct ForwardEulerNonlinearOperator <: DiscreteODEOperator
   t0::Real
   us0::NTuple{1,AbstractVector}
   dt::Real
-end
-
-function Algebra.allocate_residual(
-  disop::ForwardEulerNonlinearOperator,
-  x::AbstractVector
-)
-  t0, (u0,) = disop.t0, disop.us0
-  us0 = (u0, x)
-  allocate_residual(disop.odeop, t0, us0, disop.odeopcache)
 end
 
 function Algebra.residual!(
@@ -182,9 +175,11 @@ end
 
 Linear discrete operator corresponding to the forward Euler scheme:
 ```math
-residual(t_n, u_n, v_n) = mass(t_n, u_n) v_n + res(t_n, u_n) = 0,
+residual(t0, u0, v0) = mass(t0, u0) v0 + res(t0, u0) = 0,
 
-v_n = x,
+t0 = t_n
+u0 = u_n
+v0 = x,
 
 u_(n+1) = u_n + dt * x.
 ```

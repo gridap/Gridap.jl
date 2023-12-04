@@ -44,7 +44,7 @@ end
 
 function allocate_disopcache(
   odeslvr::ThetaMethod,
-  odeop::ODEOperator{LinearODE}, odeopcache,
+  odeop::ODEOperator{<:AbstractLinearODE}, odeopcache,
   t::Real, x::AbstractVector
 )
   us = (x, x)
@@ -68,7 +68,7 @@ function DiscreteODEOperator(
 end
 
 function DiscreteODEOperator(
-  odeslvr::ThetaMethod, odeop::ODEOperator{LinearODE},
+  odeslvr::ThetaMethod, odeop::ODEOperator{<:AbstractLinearODE},
   odeopcache, disopcache,
   t0::Real, us0::NTuple{1,AbstractVector}, dt::Real,
   tθ::Real, dtθ::Real
@@ -147,16 +147,6 @@ struct ThetaMethodNonlinearOperator <: DiscreteODEOperator
   dt::Real
   dtθ::Real
   usθ::NTuple{1,AbstractVector}
-end
-
-function Algebra.allocate_residual(
-  disop::ThetaMethodNonlinearOperator,
-  x::AbstractVector
-)
-  tθ, usθ, us0 = disop.tθ, disop.usθ, disop.us0
-  dtθ = disop.dtθ
-  usθ = _fill_usθ!(usθ, us0, x, dtθ)
-  allocate_residual(disop.odeop, tθ, usθ, disop.odeopcache)
 end
 
 function Algebra.residual!(

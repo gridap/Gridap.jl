@@ -127,7 +127,7 @@ end
 
 function allocate_disopcache(
   odeslvr::EXRungeKutta,
-  odeop::ODEOperator{<:AbstractMassLinearODE}, odeopcache,
+  odeop::ODEOperator{<:AbstractQuasilinearODE}, odeopcache,
   t::Real, x::AbstractVector
 )
   ui = zero(x)
@@ -157,7 +157,7 @@ function DiscreteODEOperator(
 end
 
 function DiscreteODEOperator(
-  odeslvr::EXRungeKutta, odeop::ODEOperator{<:AbstractMassLinearODE},
+  odeslvr::EXRungeKutta, odeop::ODEOperator{<:AbstractQuasilinearODE},
   odeopcache, disopcache,
   t0::Real, us0::NTuple{1,AbstractVector}, dt::Real,
   vs::AbstractVector{<:AbstractVector}, tableau::AbstractTableau
@@ -211,7 +211,7 @@ end
 
 function allocate_disopcache(
   odeslvr::DIMRungeKutta,
-  odeop::ODEOperator{MassLinearODE}, odeopcache,
+  odeop::ODEOperator{<:AbstractQuasilinearODE}, odeopcache,
   t::Real, x::AbstractVector
 )
   ui = zero(x)
@@ -229,7 +229,7 @@ end
 
 function allocate_disopcache(
   odeslvr::DIMRungeKutta,
-  odeop::ODEOperator{LinearODE}, odeopcache,
+  odeop::ODEOperator{<:AbstractLinearODE}, odeopcache,
   t::Real, x::AbstractVector
 )
   ui = zero(x)
@@ -259,7 +259,7 @@ function DiscreteODEOperator(
 end
 
 function DiscreteODEOperator(
-  odeslvr::DIMRungeKutta, odeop::ODEOperator{LinearODE},
+  odeslvr::DIMRungeKutta, odeop::ODEOperator{<:AbstractLinearODE},
   odeopcache, disopcache,
   t0::Real, us0::NTuple{1,AbstractVector}, dt::Real,
   vs::AbstractVector{<:AbstractVector}, tableau::AbstractTableau
@@ -299,8 +299,8 @@ vi = x,
 u_(n+1) = u_n + dt * ∑_{1 ≤ i ≤ s} b[i] * vi.
 ```
 """
-mutable struct SequentialRungeKuttaNonlinearOperator <: DiscreteODEOperator
-  odeop::ODEOperator
+mutable struct SequentialRungeKuttaNonlinearOperator{C} <: DiscreteODEOperator
+  odeop::ODEOperator{C}
   odeopcache
   t0::Real
   us0::NTuple{1,AbstractVector}
@@ -314,28 +314,17 @@ mutable struct SequentialRungeKuttaNonlinearOperator <: DiscreteODEOperator
   r::Union{Nothing,AbstractVector}
 end
 
-function Algebra.allocate_residual(
-  disop::SequentialRungeKuttaNonlinearOperator,
-  x::AbstractVector
-)
-  ti, dt, ui = disop.ti, disop.dt, disop.ui
-  !iszero(disop.aii) && axpy!(disop.aii * dt, x, ui)
-  usi = (ui, x)
-  r = allocate_residual(disop.odeop, ti, usi, disop.odeopcache)
-  !iszero(disop.aii) && axpy!(-disop.aii * dt, x, ui)
-  r
-end
-
 function Algebra.residual!(
   r::AbstractVector,
   disop::SequentialRungeKuttaNonlinearOperator,
   x::AbstractVector
 )
   ti, dt, ui = disop.ti, disop.dt, disop.ui
-  !iszero(disop.aii) && axpy!(disop.aii * dt, x, ui)
+  aii = disop.aii
+  axpy!(aii * dt, x, ui)
   usi = (ui, x)
   residual!(r, disop.odeop, ti, usi, disop.odeopcache)
-  !iszero(disop.aii) && axpy!(-disop.aii * dt, x, ui)
+  axpy!(-aii * dt, x, ui)
   r
 end
 
@@ -344,10 +333,11 @@ function Algebra.allocate_jacobian(
   x::AbstractVector
 )
   ti, dt, ui = disop.ti, disop.dt, disop.ui
-  !iszero(disop.aii) && axpy!(disop.aii * dt, x, ui)
+  aii = disop.aii
+  axpy!(aii * dt, x, ui)
   usi = (ui, x)
   J = allocate_jacobian(disop.odeop, ti, usi, disop.odeopcache)
-  !iszero(disop.aii) && axpy!(-disop.aii * dt, x, ui)
+  axpy!(-aii * dt, x, ui)
   J
 end
 
@@ -357,31 +347,31 @@ function Algebra.jacobian!(
   x::AbstractVector
 )
   ti, dt, ui = disop.ti, disop.dt, disop.ui
+  aii = disop.aii
+  axpy!(aii * dt, x, ui)
   ws = (disop.aii * dt, 1)
-  !iszero(disop.aii) && axpy!(disop.aii * dt, x, ui)
   usi = (ui, x)
   fillstored!(J, zero(eltype(J)))
   jacobians!(J, disop.odeop, ti, usi, ws, disop.odeopcache)
-  !iszero(disop.aii) && axpy!(-disop.aii * dt, x, ui)
+  axpy!(-aii * dt, x, ui)
   J
 end
 
 function Algebra.solve!(
   usF::NTuple{1,AbstractVector},
-  odeslvr::RungeKutta, disop::SequentialRungeKuttaNonlinearOperator,
+  odeslvr::RungeKutta, disop::SequentialRungeKuttaNonlinearOperator{C},
   disslvrcaches
-)
+) where {C}
   odeop, odeopcache = disop.odeop, disop.odeopcache
   t0, dt, us0 = disop.t0, disop.dt, disop.us0
   ui, vs, tableau = disop.ui, disop.vs, disop.tableau
   A, b, c = get_matrix(tableau), get_weights(tableau), get_nodes(tableau)
-  num_stages = length(c)
-  is_masslinear = ODEOperatorType(odeop) <: AbstractMassLinearODE
+  is_quasilinear = C <: AbstractQuasilinearODE
 
   u0, = us0
 
   # Solve stages
-  for i in 1:num_stages
+  for i in eachindex(c)
     ti = t0 + c[i] * dt
     update_odeopcache!(odeopcache, odeop, ti)
 
@@ -398,14 +388,14 @@ function Algebra.solve!(
     disop.ti = ti
     disop.aii = A[i, i]
 
-    # Solve stage
+    # Solve the discrete ODE operator
     explicit = iszero(A[i, i])
     disslvr, islvr = get_solver_index(odeslvr, explicit)
     disslvrcache = disslvrcaches[islvr]
 
     vi = vs[i]
     fill!(vi, zero(eltype(vi)))
-    if explicit && is_masslinear
+    if explicit && is_quasilinear
       J, r = disop.J, disop.r
 
       usi = (ui, vi)
@@ -481,7 +471,6 @@ function Algebra.solve!(
   t0, dt, us0 = disop.t0, disop.dt, disop.us0
   ui, vs, tableau = disop.ui, disop.vs, disop.tableau
   A, b, c = get_matrix(tableau), get_weights(tableau), get_nodes(tableau)
-  num_stages = length(c)
 
   explicit = true
   disslvr, islvr = get_solver_index(odeslvr, explicit)
@@ -490,7 +479,7 @@ function Algebra.solve!(
   u0, = us0
 
   # Solve stages
-  for i in 1:num_stages
+  for i in eachindex(c)
     ti = t0 + c[i] * dt
     update_odeopcache!(odeopcache, odeop, ti)
 
@@ -506,7 +495,7 @@ function Algebra.solve!(
     # Update jacobian and residual
     vi = vs[i]
     fill!(vi, zero(eltype(vi)))
-    usi = (ui, vi) # vi does not matter
+    usi = (ui, vi)
     ws = (A[i, i] * dt, 1)
     filter = (true, true, false)
 

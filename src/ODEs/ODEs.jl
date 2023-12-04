@@ -40,11 +40,13 @@ include("ODEOperators.jl")
 
 export ODEOperatorType
 export NonlinearODE
-export MassLinearODE
+export QuasilinearODE
+export SemilinearODE
 export LinearODE
 
 export ODEOperator
-export MassLinearODEOperator
+export QuasilinearODEOperator
+export SemilinearODEOperator
 export LinearODEOperator
 
 export allocate_odeopcache
@@ -143,8 +145,9 @@ export get_forms
 export TransientIMEXFEOperator
 
 export TransientFEOpFromWeakForm
-export TransientMassLinearFEOpFromWeakForm
-export TransientMassLinearFEOperator
+export TransientQuasilinearFEOpFromWeakForm
+export TransientQuasilinearFEOperator
+export TransientSemilinearFEOperator
 export TransientLinearFEOpFromWeakForm
 export TransientLinearFEOperator
 

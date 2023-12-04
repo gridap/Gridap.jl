@@ -19,7 +19,8 @@ function GeneralizedAlpha1(
   ρ∞01 = clamp(ρ∞, 0, 1)
   if ρ∞01 != ρ∞
     msg = """
-    The parameter ρ∞ of the generalized-α scheme must lie between zero and one. Setting ρ∞ to $(ρ∞01).
+    The parameter ρ∞ of the generalized-α scheme must lie between zero and one.
+    Setting ρ∞ to $(ρ∞01).
     """
     @warn msg
     ρ∞ = ρ∞01
@@ -47,7 +48,7 @@ end
 
 function allocate_disopcache(
   odeslvr::GeneralizedAlpha1,
-  odeop::ODEOperator{LinearODE}, odeopcache,
+  odeop::ODEOperator{<:AbstractLinearODE}, odeopcache,
   t::Real, x::AbstractVector
 )
   us = (x, x)
@@ -71,7 +72,7 @@ function DiscreteODEOperator(
 end
 
 function DiscreteODEOperator(
-  odeslvr::GeneralizedAlpha1, odeop::ODEOperator{LinearODE},
+  odeslvr::GeneralizedAlpha1, odeop::ODEOperator{<:AbstractLinearODE},
   odeopcache, disopcache,
   t0::Real, us0::NTuple{2,AbstractVector}, dt::Real,
   αm::Real, αf::Real, γ::Real, tα::Real
@@ -129,10 +130,12 @@ end
 """
     struct GeneralizedAlpha1NonlinearOperator <: DiscreteODEOperator end
 
-Nonlinear discrete operator corresponding to the first-order generalized-α scheme:
+Nonlinear discrete operator corresponding to the first-order generalized-α
+scheme:
 ```math
 residual(tα, uα, vα) = 0,
 
+tα = (1 - αf) * t_n + αf * t_(n+1)
 uα = (1 - αf) * u_n + αf * u_(n+1)
 vα = (1 - αm) * v_n + αm * v_(n+1),
 
@@ -150,16 +153,6 @@ struct GeneralizedAlpha1NonlinearOperator <: DiscreteODEOperator
   αf::Real
   γ::Real
   usα::NTuple{2,AbstractVector}
-end
-
-function Algebra.allocate_residual(
-  disop::GeneralizedAlpha1NonlinearOperator,
-  x::AbstractVector
-)
-  tα, dt, us0, usα = disop.tα, disop.dt, disop.us0, disop.usα
-  αm, αf, γ = disop.αm, disop.αf, disop.γ
-  usα = _fill_usα!(usα, us0, x, dt, αm, αf, γ)
-  allocate_residual(disop.odeop, tα, usα, disop.odeopcache)
 end
 
 function Algebra.residual!(
@@ -226,6 +219,7 @@ Linear discrete operator corresponding to the first-order generalized-α scheme:
 ```math
 residual(tα, uα, vα) = mass(tα) vα + stiffness(tαf) uα + res(tαf) = 0,
 
+tα = (1 - αf) * t_n + αf * t_(n+1)
 uα = (1 - αf) * u_n + αf * u_(n+1)
 vα = (1 - αm) * v_n + αm * v_(n+1),
 

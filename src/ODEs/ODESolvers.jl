@@ -9,6 +9,12 @@ Zero-th-order nonlinear operator (nonlinear system) corresponding to an
 """
 abstract type DiscreteODEOperator <: NonlinearOperator end
 
+function Algebra.allocate_residual(
+  disop::DiscreteODEOperator, x::AbstractVector
+)
+  zero(x)
+end
+
 #############################
 # LinearDiscreteODEOperator #
 #############################
@@ -31,12 +37,6 @@ end
 
 function Algebra.get_vector(disop::LinearDiscreteODEOperator)
   @abstractmethod
-end
-
-function Algebra.allocate_residual(
-  disop::LinearDiscreteODEOperator, x::AbstractVector
-)
-  zero(x)
 end
 
 function Algebra.residual!(
@@ -247,16 +247,16 @@ include("ODESolvers/GeneralizedAlpha2.jl")
 
 # TODO for now if a jacobian matrix is constant, it is not reassembled. This is
 # nice, but we should also reduce the number of factorisations by storing them.
-# This is always true in the following scenarios
-# * explicit schemes on `AbstractMassLinearODE`s with constant mass
+# This can always be done in the following scenarios
+# * explicit schemes on `AbstractQuasilinearODE`s with constant mass
 # * diagonally-implicit schemes on `LinearODE`s with constant mass and
 # stiffness. Besides, it is often the case that different stages of a DIRK
 # scheme have the same matrix. This happens when some diagonal coefficients have
 # the same value. In the extreme case when all the diagonal values are the same,
 # these methods are known as Singly-Diagonally-Implicit Runge-Kutta schemes
-# (SDIRK). One special case happens when a diagonal coefficient is zero, in
-# which case the stage becomes explicit, even in the `AbstractMassLinearODE`
-# case. This stragety is already set up in the current implementation of DIRK.
+# (SDIRK). One special case happens when a diagonal coefficient is zero: the
+# stage becomes explicit, even in the `AbstractQuasilinearODE` case. This
+# strategy is already set up in the current implementation of DIRK.
 
 # TODO another optimisation is the so-called FSAL property (First Same As Last)
 # of some schemes, which can save one evaluation of the residual.

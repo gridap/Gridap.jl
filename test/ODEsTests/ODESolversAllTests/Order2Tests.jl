@@ -43,14 +43,16 @@ end
 
 odeop_nonlinear = ODEOperatorMock2{NonlinearODE}(M, C, K, f)
 
-odeop_masslinear = ODEOperatorMock2{MassLinearODE}(M, C, K, f)
+odeop_quasilinear = ODEOperatorMock2{QuasilinearODE}(M, C, K, f)
+odeop_semilinear = ODEOperatorMock2{SemilinearODE}(M, C, K, f)
 
 odeop_linear = ODEOperatorMock2{LinearODE}(M, C, K, f)
 ODEs.is_jacobian_constant(odeop::typeof(odeop_linear), k::Integer) = true
 
 odeops = [
   odeop_nonlinear,
-  odeop_masslinear,
+  odeop_quasilinear,
+  odeop_semilinear,
   odeop_linear
 ]
 
