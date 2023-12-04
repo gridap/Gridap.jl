@@ -5,16 +5,16 @@
     struct ODEOpFromFEOpCache <: GridapType
 
 Structure that stores the `TransientFESpace` and cache of a
-`TransientFEOperator`, as well as the jacobian matrices and forcing term if
-they are constant.
+`TransientFEOperator`, as well as the jacobian matrices and residual if they
+are constant.
 """
 mutable struct ODEOpFromFEOpCache <: GridapType
   Us
   Uts
   feopcache
-  jacs
+  jac_const_mats
   jacvec
-  forcing
+  res_const_vec
 end
 
 #################
@@ -25,8 +25,8 @@ end
 
 Wrapper that transforms a `TransientFEOperator` into an `ODEOperator`, i.e.
 takes `residual(t, uh, ∂t(uh), ..., ∂t^N(uh), vh)` and returns
-`residual(t, uf, ∂t(uf), ..., ∂t^N(uf))`, where `uf` represent the free values
-of the `EvaluationFunction` `uh`.
+`residual(t, us)`, where `us[k] = ∂t^k(us)` and `uf` represents the free values
+of `uh`.
 """
 struct ODEOpFromFEOp{C} <: ODEOperator{C}
   feop::TransientFEOperator{C}
@@ -56,17 +56,17 @@ function allocate_odeopcache(
   v = get_fe_basis(V)
   uh = _make_uh_from_us(odeop, us, Us)
 
-  jacs = ()
+  jac_const_mats = ()
   use_jacvec = false
   for k in 0:order
-    jac = nothing
+    jac_const_mat = nothing
     if is_jacobian_constant(odeop, k)
       matdata = _matdata_jacobian(odeop.feop, t, uh, k, 1)
-      jac = assemble_matrix(get_assembler(odeop.feop), matdata)
+      jac_const_mat = assemble_matrix(get_assembler(odeop.feop), matdata)
 
       use_jacvec = true
     end
-    jacs = (jacs..., jac)
+    jac_const_mats = (jac_const_mats..., jac_const_mat)
   end
 
   jacvec = nothing
@@ -76,14 +76,14 @@ function allocate_odeopcache(
     jacvec = allocate_vector(get_assembler(odeop.feop), vecdata)
   end
 
-  forcing = nothing
-  if is_masslinear && is_forcing_constant(odeop)
+  res_const_vec = nothing
+  if is_masslinear && is_residual_constant(odeop)
     res = get_res(odeop.feop)
     vecdata = collect_cell_vector(V, res(t, uh, v))
-    forcing = assemble_vector(get_assembler(odeop.feop), vecdata)
+    res_const_vec = assemble_vector(get_assembler(odeop.feop), vecdata)
   end
 
-  ODEOpFromFEOpCache(Us, Uts, feopcache, jacs, jacvec, forcing)
+  ODEOpFromFEOpCache(Us, Uts, feopcache, jac_const_mats, jacvec, res_const_vec)
 end
 
 function update_odeopcache!(odeopcache, odeop::ODEOpFromFEOp, t::Real)
@@ -113,7 +113,8 @@ end
 function Algebra.residual!(
   r::AbstractVector, odeop::ODEOpFromFEOp{NonlinearODE},
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache; include_mass::Bool=true
+  odeopcache;
+  filter::Tuple{Vararg{Bool}}=ntuple(_ -> true, get_order(odeop) + 2)
 )
   uh = _make_uh_from_us(odeop, us, odeopcache.Us)
 
@@ -128,11 +129,12 @@ end
 function Algebra.residual!(
   r::AbstractVector, odeop::ODEOpFromFEOp{MassLinearODE},
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache; include_mass::Bool=true
+  odeopcache;
+  filter::Tuple{Vararg{Bool}}=ntuple(_ -> true, get_order(odeop) + 2)
 )
-  mass_stored = !isnothing(odeopcache.jacs[end])
-  forcing_stored = !isnothing(odeopcache.forcing)
-  if !(mass_stored && forcing_stored)
+  mass_const = !isnothing(odeopcache.jac_const_mats[end])
+  res_const = !isnothing(odeopcache.res_const_vec)
+  if !(mass_const && res_const)
     V = get_test(odeop.feop)
     v = get_fe_basis(V)
     uh = _make_uh_from_us(odeop, us, odeopcache.Us)
@@ -140,9 +142,19 @@ function Algebra.residual!(
 
   fill!(r, zero(eltype(r)))
 
-  if include_mass
-    if mass_stored
-      mul!(odeopcache.jacvec, odeopcache.jacs[end], us[end])
+  if filter[1] || filter[2]
+    if res_const
+      axpy!(1, odeopcache.res_const_vec, r)
+    else
+      res = get_res(odeop.feop)
+      vecdata = collect_cell_vector(V, res(t, uh, v))
+      assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
+    end
+  end
+
+  if filter[3]
+    if mass_const
+      mul!(odeopcache.jacvec, odeopcache.jac_const_mats[end], us[end])
       axpy!(1, odeopcache.jacvec, r)
     else
       mass = get_mass(odeop.feop)
@@ -150,26 +162,18 @@ function Algebra.residual!(
       assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
     end
   end
-
-  if forcing_stored
-    axpy!(1, odeopcache.forcing, r)
-  else
-    res = get_res(odeop.feop)
-    vecdata = collect_cell_vector(V, res(t, uh, v))
-    assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
-  end
-
   r
 end
 
 function Algebra.residual!(
   r::AbstractVector, odeop::ODEOpFromFEOp{LinearODE},
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache; include_mass::Bool=true
+  odeopcache;
+  filter::Tuple{Vararg{Bool}}=ntuple(_ -> true, get_order(odeop) + 2)
 )
-  forms_stored = !any(isnothing, odeopcache.jacs)
-  forcing_stored = !isnothing(odeopcache.forcing)
-  if !(forms_stored && forcing_stored)
+  forms_const = !any(isnothing, odeopcache.jac_const_mats)
+  res_const = !isnothing(odeopcache.res_const_vec)
+  if !(forms_const && res_const)
     V = get_test(odeop.feop)
     v = get_fe_basis(V)
     uh = _make_uh_from_us(odeop, us, odeopcache.Us)
@@ -177,25 +181,28 @@ function Algebra.residual!(
 
   fill!(r, zero(eltype(r)))
 
-  order = get_order(odeop)
-  order_max = include_mass ? order : order - 1
-  for k in 0:order_max
-    if !isnothing(odeopcache.jacs[k+1])
-      mul!(odeopcache.jacvec, odeopcache.jacs[k+1], us[k+1])
+  if filter[1]
+    if res_const
+      axpy!(1, odeopcache.res_const_vec, r)
+    else
+      res = get_res(odeop.feop)
+      vecdata = collect_cell_vector(V, res(t, uh, v))
+      assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
+    end
+  end
+
+  for k in 0:get_order(odeop)
+    !filter[k+2] && continue
+
+    form_const = !isnothing(odeopcache.jac_const_mats[k+1])
+    if form_const
+      mul!(odeopcache.jacvec, odeopcache.jac_const_mats[k+1], us[k+1])
       axpy!(1, odeopcache.jacvec, r)
     else
       form = get_forms(odeop.feop)[order+1-k]
       vecdata = collect_cell_vector(V, form(t, uh, v))
       assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
     end
-  end
-
-  if forcing_stored
-    axpy!(1, odeopcache.forcing, r)
-  else
-    res = get_res(odeop.feop)
-    vecdata = collect_cell_vector(V, res(t, uh, v))
-    assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
   end
 
   r
@@ -223,8 +230,8 @@ function Algebra.jacobian!(
   k::Integer, γ::Real,
   odeopcache
 )
-  if !isnothing(odeopcache.jacs[k+1])
-    axpy_sparse!(γ, odeopcache.jacs[k+1], J)
+  if !isnothing(odeopcache.jac_const_mats[k+1])
+    axpy_sparse!(γ, odeopcache.jac_const_mats[k+1], J)
   else
     uh = _make_uh_from_us(odeop, us, odeopcache.Us)
     matdata = _matdata_jacobian(odeop.feop, t, uh, k, γ)
@@ -240,7 +247,7 @@ function jacobians!(
   γs::Tuple{Vararg{Real}},
   odeopcache
 )
-  need_assembly = any(isnothing, odeopcache.jacs)
+  need_assembly = any(isnothing, odeopcache.jac_const_mats)
   if need_assembly
     uh = _make_uh_from_us(odeop, us, odeopcache.Us)
   end
@@ -249,8 +256,8 @@ function jacobians!(
   for k in 0:get_order(odeop)
     γ = γs[k+1]
     if !iszero(γ)
-      if !isnothing(odeopcache.jacs[k+1])
-        axpy_sparse!(γ, odeopcache.jacs[k+1], J)
+      if !isnothing(odeopcache.jac_const_mats[k+1])
+        axpy_sparse!(γ, odeopcache.jac_const_mats[k+1], J)
       else
         _matdata = (_matdata..., _matdata_jacobian(odeop.feop, t, uh, k, γ))
       end
@@ -269,8 +276,8 @@ function is_jacobian_constant(odeop::ODEOpFromFEOp, k::Integer)
   is_jacobian_constant(odeop.feop, k)
 end
 
-function is_forcing_constant(odeop::ODEOpFromFEOp{<:AbstractMassLinearODE})
-  is_forcing_constant(odeop.feop)
+function is_residual_constant(odeop::ODEOpFromFEOp{<:AbstractMassLinearODE})
+  is_residual_constant(odeop.feop)
 end
 
 #########

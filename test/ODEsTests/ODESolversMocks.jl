@@ -4,7 +4,6 @@ using LinearAlgebra: fillstored!
 using Gridap
 using Gridap.Algebra
 using Gridap.ODEs
-using Gridap.ODEs: _u_from_v!
 
 ################
 # NLSolverMock #
@@ -105,7 +104,7 @@ function ODEs.solve_step!(
     t0, us0, dt
   )
 
-  # Solve discrete ODE operator
+  # Solve the discrete ODE operator
   usF, disslvrcache = solve!(usF, odeslvr.disslvr, disop, disslvrcache)
   tF = t0 + dt
 
@@ -192,7 +191,7 @@ function Algebra.solve!(
   vF = uF
   fill!(vF, zero(eltype(vF)))
   disslvrcache = solve!(vF, disslvr, disop, disslvrcache)
-  _u_from_v!(uF, u0, dt, vF)
+  @. uF = u0 + vF * dt
 
   usF = (uF,)
   (usF, disslvrcache)
@@ -257,7 +256,7 @@ function ODEs.solve_step!(
     t0, us0, dt
   )
 
-  # Solve discrete ODE operator
+  # Solve the discrete ODE operator
   usF, disslvrcache = solve!(usF, odeslvr.disslvr, disop, disslvrcache)
   tF = t0 + dt
 

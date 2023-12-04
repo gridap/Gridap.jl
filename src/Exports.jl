@@ -197,7 +197,6 @@ using Gridap.CellData: ∫; export ∫
 @publish ODEs available_tableaus
 
 @publish ODEs RungeKutta
-# @publish ODEs IMEXRungeKutta
 
 @publish ODEs GeneralizedAlpha2
 @publish ODEs Newmark

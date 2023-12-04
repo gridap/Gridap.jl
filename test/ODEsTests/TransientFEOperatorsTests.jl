@@ -58,7 +58,7 @@ _r = residual(_feop, uh0)
 _J = jacobian(_feop, uh0)
 
 # Residual and jacobian with TransientFEOperators
-# Testing with all combinations of constant jacobians and forcing term,
+# Testing with all combinations of constant jacobians and residual,
 # With manual or automatic jacobians
 ∂ₜuh0 = FEFunction(U0, get_free_dof_values(uh0) ./ dt)
 uₜ = TransientCellField(uh0, (∂ₜuh0,))
@@ -73,19 +73,26 @@ jac_t(t, u, dut, v) = m(t, dut, v)
 res_masslinear(t, u, v) = a(t, u, v) - b(t, v)
 res_linear(t, v) = (-1) * b(t, v)
 
+# TODO need a simple and optimised way to indicate that a jacobian is zero
+f0(t) = zero(t)
+im_res(t, u, v) = ∫(f0(t) * u * v) * dΩ
+im_jac(t, u, du, v) = ∫(f0(t) * du * v) * dΩ
+im_jac_t(t, u, dut, v) = m(t, dut, v)
+ex_res(t, u, v) = a(t, u, v) - b(t, v)
+ex_jac(t, u, du, v) = a(t, du, v)
+
 function test_transient_operator(feop)
   odeop = get_algebraic_operator(feop)
   odeopcache = allocate_odeopcache(odeop, t0, us)
 
-  fac = feop isa TransientIMEXFEOperator ? 2 : 1
   r = allocate_residual(odeop, t0, us, odeopcache)
   J = allocate_jacobian(odeop, t0, us, odeopcache)
   residual!(r, odeop, t0, us, odeopcache)
-  @test r ≈ fac .* _r
+  @test r ≈ _r
 
   fillstored!(J, zero(eltype(J)))
   jacobians!(J, odeop, t0, us, (1, dt⁻¹), odeopcache)
-  @test J ≈ fac .* _J
+  @test J ≈ _J
 
   if !(feop isa TransientIMEXFEOperator)
     @test test_transient_fe_operator(feop, t0, uₜ)
@@ -106,35 +113,38 @@ for jac_u_constant in (true, false)
     # TransientMassLinearFEOperator
     feop = TransientMassLinearFEOperator(
       mass, res_masslinear, jac, jac_t, U, V;
-      jacs_constant, forcing_constant=false
+      jacs_constant, residual_constant=false
     )
     test_transient_operator(feop)
 
     feop = TransientMassLinearFEOperator(
       mass, res_masslinear, U, V;
-      jacs_constant, forcing_constant=false
+      jacs_constant, residual_constant=false
     )
     test_transient_operator(feop)
 
     # TransientLinearFEOperator
     feop = TransientLinearFEOperator(
       mass, stiffness, res_linear, jac, jac_t, U, V;
-      jacs_constant, forcing_constant=false
+      jacs_constant, residual_constant=false
     )
     test_transient_operator(feop)
 
     feop = TransientLinearFEOperator(
       (mass, stiffness), res_linear, U, V;
-      jacs_constant, forcing_constant=false
+      jacs_constant, residual_constant=false
     )
     test_transient_operator(feop)
 
     # TransientIMEXFEOperator
     im_feop = TransientMassLinearFEOperator(
-      mass, res_masslinear, jac, jac_t, U, V;
-      jacs_constant, forcing_constant=false
+      mass, im_res, im_jac, im_jac_t, U, V;
+      jacs_constant, residual_constant=false
     )
-    ex_feop = TransientFEOperator(res, jac, jac_t, U, V; jacs_constant)
+    ex_feop = TransientFEOperator(
+      ex_res, ex_jac, U, V;
+      jacs_constant=(jac_u_constant,)
+    )
     feop = TransientIMEXFEOperator(im_feop, ex_feop)
     test_transient_operator(feop)
   end

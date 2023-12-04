@@ -39,7 +39,7 @@ function allocate_disopcache(
   odeop::ODEOperator, odeopcache,
   t::Real, x::AbstractVector
 )
-  (similar(x),)
+  (zero(x),)
 end
 
 function allocate_disopcache(
@@ -47,8 +47,9 @@ function allocate_disopcache(
   odeop::ODEOperator{LinearODE}, odeopcache,
   t::Real, x::AbstractVector
 )
-  J = allocate_jacobian(odeop, t, (x, x), odeopcache)
-  r = allocate_residual(odeop, t, (x, x), odeopcache)
+  us = (x, x)
+  J = allocate_jacobian(odeop, t, us, odeopcache)
+  r = allocate_residual(odeop, t, us, odeopcache)
   (J, r)
 end
 
@@ -95,7 +96,8 @@ function solve_step!(
 
   # Allocate or unpack cache
   if isnothing(cache)
-    odeopcache = allocate_odeopcache(odeop, t0, (u0, u0))
+    us = (u0, u0)
+    odeopcache = allocate_odeopcache(odeop, t0, us)
     disopcache = allocate_disopcache(odeslvr, odeop, odeopcache, t0, u0)
     disslvrcache = allocate_disslvrcache(odeslvr)
   else
@@ -110,7 +112,7 @@ function solve_step!(
     tθ, dtθ
   )
 
-  # Solve discrete ODE operator
+  # Solve the discrete ODE operator
   usF, disslvrcache = solve!(usF, odeslvr.disslvr, disop, disslvrcache)
   tF = t0 + dt
 
@@ -201,11 +203,11 @@ function Algebra.solve!(
 
   update_odeopcache!(odeopcache, odeop, tθ)
 
-  vF, = usF
-  fill!(vF, zero(eltype(vF)))
+  uF, = usF
+  disslvrcache = solve!(uF, disslvr, disop, disslvrcache)
 
-  disslvrcache = solve!(vF, disslvr, disop, disslvrcache)
-  _fill_usF!(usF, us0, vF, dt)
+  # Express usF in terms of the solution of the discrete ODE operator
+  usF = _finalize_theta!(usF, us0, uF, dt)
 
   (usF, disslvrcache)
 end
@@ -254,18 +256,24 @@ function Algebra.solve!(
 
   update_odeopcache!(odeopcache, odeop, tθ)
 
+  # Update jacobian and residual
   u0, = us0
+  uF, = usF
   usθ = (u0, u0)
   ws = _get_ws(dtθ)
+  filter=(true, true, false)
 
   fillstored!(J, zero(eltype(J)))
   jacobians!(J, odeop, tθ, usθ, ws, odeopcache)
-  residual!(r, odeop, tθ, usθ, odeopcache, include_mass=false)
+  residual!(r, odeop, tθ, usθ, odeopcache; filter)
   rmul!(r, -1)
 
-  vF = usF[1]
-  disslvrcache = solve!(vF, disslvr, disop, disslvrcache)
-  usF = _fill_usF!(usF, us0, vF, dt)
+  # Solve the discrete ODE operator
+  uF = usF[1]
+  disslvrcache = solve!(uF, disslvr, disop, disslvrcache)
+
+  # Express usF in terms of the solution of the discrete ODE operator
+  usF = _finalize_theta!(usF, us0, uF, dt)
 
   (usF, disslvrcache)
 end
@@ -273,9 +281,9 @@ end
 #########
 # Utils #
 #########
-function _fill_usF!(
-  usF::NTuple{1,AbstractVector}, us0::NTuple{1,AbstractVector}, x,
-  dt
+function _finalize_theta!(
+  usF::NTuple{1,AbstractVector}, us0::NTuple{1,AbstractVector},
+  x::AbstractVector, dt::Real
 )
   u0, = us0
   uF, = usF

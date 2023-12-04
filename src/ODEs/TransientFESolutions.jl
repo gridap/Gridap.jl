@@ -4,17 +4,20 @@
 """
     struct TransientFESolution <: GridapType end
 
-This represents an `FEFunction` at a set of time steps. It is a wrapper of an
-`ODESolution` for free values combined with data for Dirichlet values. It is a
-lazy iterator that computes the solution at each time step when accessing the
-solution.
+Wrapper around a `TransientFEOperator` and `ODESolver` that represents the
+solution at a set of time steps. It is an iterator that computes the solution
+at each time step in a lazy fashion when accessing the solution.
+
+# Mandatory
+- [`Base.iterate(fesltn)`](@ref)
+- [`Base.iterate(fesltn, state)`](@ref)
 """
 struct TransientFESolution <: GridapType
   odesltn::ODESolution
   trial
 end
 
-# Default constructors
+# Constructors
 function TransientFESolution(
   odeslvr::ODESolver, feop::TransientFEOperator,
   uh0::Tuple{Vararg{CellField}}, t0::Real, tF::Real

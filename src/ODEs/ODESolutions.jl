@@ -4,9 +4,9 @@
 """
     abstract type ODESolution <: GridapType end
 
-Wrapper around an `ODEOperator` and an `ODESolver`. It is an iterator that
-computes the solution at each time step in a lazy fashion when accessing the
-solution.
+Wrapper around an `ODEOperator` and `ODESolver` that represents the solution at
+a set of time steps. It is an iterator that computes the solution at each time
+step in a lazy fashion when accessing the solution.
 
 # Mandatory
 - [`Base.iterate(odesltn)`](@ref)

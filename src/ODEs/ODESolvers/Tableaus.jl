@@ -210,11 +210,11 @@ Generic type that stores any type of implicit-explicit pair of Butcher tableaus,
 that form a valid IMEX scheme.
 """
 struct IMEXTableau <: AbstractTableau{ImplicitExplicitTableau}
-  im_tableau::AbstractTableau
-  ex_tableau::AbstractTableau
-  order::Integer
+  im_tableau::AbstractTableau{<:ImplicitTableau}
+  ex_tableau::AbstractTableau{ExplicitTableau}
+  imex_order::Integer
 
-  function IMEXTableau(im_tableau, ex_tableau, order)
+  function IMEXTableau(im_tableau, ex_tableau, imex_order)
     Tim = TableauType(im_tableau)
     Tex = TableauType(ex_tableau)
 
@@ -226,24 +226,16 @@ struct IMEXTableau <: AbstractTableau{ImplicitExplicitTableau}
     the nodes of the implicit and explicit tableaus must coincide."""
     @assert isapprox(get_nodes(im_tableau), get_nodes(ex_tableau)) msg
 
-    new(im_tableau, ex_tableau, order)
+    new(im_tableau, ex_tableau, imex_order)
   end
 end
 
-function Algebra.get_matrix(tableau::IMEXTableau)
-  get_matrix(tableau.im_tableau), get_matrix(tableau.ex_tableau)
-end
-
-function ReferenceFEs.get_weights(tableau::IMEXTableau)
-  get_weights(tableau.im_tableau), get_weights(tableau.ex_tableau)
-end
-
-function ReferenceFEs.get_nodes(tableau::IMEXTableau)
-  get_nodes(tableau.im_tableau)
-end
-
 function Polynomials.get_order(tableau::IMEXTableau)
-  tableau.order
+  tableau.imex_order
+end
+
+function get_imex_tableaus(tableau::IMEXTableau)
+  (tableau.im_tableau, tableau.ex_tableau)
 end
 
 ############################

@@ -24,37 +24,69 @@ while iszero(det(M + dt * K)) || iszero(det(M + dt * C + 3 * dt^2 / 2 * K))
 end
 α = randn(num_eqs)
 f(t) = -exp.(α .* t)
+form0 = zeros(num_eqs, num_eqs)
+f0(t) = zero(t)
 
 u0 = randn(num_eqs)
 v0 = randn(num_eqs)
 
-_odeop1 = ODEOperatorMock1
-_odeslvr1 = ODESolverMock1
-_disop1 = DiscreteODEOperatorMock1
-forms1 = (M, K)
+disslvr = NLSolverMock()
+
+# Order 1
 us01 = (u0,)
+
+_odeop1(T) = ODEOperatorMock1{T}(M, K, f)
+_disop1(odeop) = DiscreteODEOperatorMock1(
+  odeop, nothing,
+  t0, us01, dt
+)
+
+_imex_odeop1(T) = GenericIMEXODEOperator(
+  ODEOperatorMock1{T}(M, form0, f0),
+  ODEOperatorMock0{T}(K, f)
+)
+_imex_disop1(odeop) = DiscreteODEOperatorMock1(
+  odeop, (nothing, nothing, zeros(num_eqs)),
+  t0, us01, dt
+)
+
+odeslvr1 = ODESolverMock1(disslvr, dt)
 _r1(x) = M * x + K * (u0 + dt * x) + f(t0 + dt)
 _J1(x) = M + dt * K
 x̃1 = -(M + dt * K) \ (K * u0 + f(t0 + dt))
 
-_odeop2 = ODEOperatorMock2
-_odeslvr2 = ODESolverMock2
-_disop2 = DiscreteODEOperatorMock2
-forms2 = (M, C, K)
+# Order 2
 us02 = (u0, v0,)
+
+_odeop2(T) = ODEOperatorMock2{T}(M, C, K, f)
+_disop2(odeop) = DiscreteODEOperatorMock2(
+  odeop, nothing,
+  t0, us02, dt
+)
+
+_imex_odeop2(T) = GenericIMEXODEOperator(
+  ODEOperatorMock2{T}(M, form0, form0, f0),
+  ODEOperatorMock1{T}(C, K, f)
+)
+_imex_disop2(odeop) = DiscreteODEOperatorMock2(
+  odeop, (nothing, nothing, zeros(num_eqs)),
+  t0, us02, dt
+)
+
+odeslvr2 = ODESolverMock2(disslvr, dt)
 _r2(x) = M * x + C * (v0 + dt * x) + K * (u0 + dt * v0 + 3 * dt^2 / 2 * x) + f(t0 + dt)
 _J2(x) = M + dt * C + 3 * dt^2 / 2 * K
 x̃2 = -(M + dt * C + 3 * dt^2 / 2 * K) \ (C * v0 + K * (u0 + dt * v0) + f(t0 + dt))
 
-disslvr = NLSolverMock()
-
-for (_odeop, _odeslvr, _disop, forms, us0, _r, _J, x̃) in (
-  (_odeop1, _odeslvr1, _disop1, forms1, us01, _r1, _J1, x̃1),
-  (_odeop2, _odeslvr2, _disop2, forms2, us02, _r2, _J2, x̃2)
+for (_odeop, odeslvr, _disop, us0, _r, _J, x̃) in (
+  (_odeop1, odeslvr1, _disop1, us01, _r1, _J1, x̃1),
+  (_imex_odeop1, odeslvr1, _imex_disop1, us01, _r1, _J1, x̃1),
+  (_odeop2, odeslvr2, _disop2, us02, _r2, _J2, x̃2),
+  (_imex_odeop2, odeslvr2, _imex_disop2, us02, _r2, _J2, x̃2)
 )
   for T in (NonlinearODE, MassLinearODE, LinearODE)
-    odeop = _odeop{T}(forms..., f)
-    disop = _disop(odeop, nothing, t0, us0, dt)
+    odeop = _odeop(T)
+    disop = _disop(odeop)
 
     # MockDiscreteODEOperator tests
     x = randn(num_eqs)
@@ -78,10 +110,6 @@ for (_odeop, _odeslvr, _disop, forms, us0, _r, _J, x̃) in (
     @test x ≈ x̃
 
     # ODESolver tests
-    odeslvr = _odeslvr(disslvr, dt)
-
-    # The following is a little ugly because the input of a first-order ODE
-    # solver is a vector and not a tuple with one element
     usF = copy.(us0)
     usF, tF, cache = solve_step!(usF, odeslvr, odeop, us0, t0, nothing)
 

@@ -63,7 +63,7 @@ function allocate_disopcache(
   odeop::ODEOperator, odeopcache,
   t::Real, x::AbstractVector
 )
-  (similar(x), similar(x), similar(x))
+  (zero(x), zero(x), zero(x))
 end
 
 function allocate_disopcache(
@@ -71,9 +71,9 @@ function allocate_disopcache(
   odeop::ODEOperator{LinearODE}, odeopcache,
   t::Real, x::AbstractVector
 )
-  usx = (x, x, x)
-  J = allocate_jacobian(odeop, t, usx, odeopcache)
-  r = allocate_residual(odeop, t, usx, odeopcache)
+  us = (x, x, x)
+  J = allocate_jacobian(odeop, t, us, odeopcache)
+  r = allocate_residual(odeop, t, us, odeopcache)
   (J, r)
 end
 
@@ -134,7 +134,7 @@ function solve_step!(
     αm, αf, γ, β, tα
   )
 
-  # Solve discrete ODE operator
+  # Solve the discrete ODE operator
   usF, disslvrcache = solve!(usF, odeslvr.disslvr, disop, disslvrcache)
   tF = t0 + dt
 
@@ -233,7 +233,9 @@ function Algebra.solve!(
 
   uF, vF, aF = usF
   disslvrcache = solve!(aF, disslvr, disop, disslvrcache)
-  usF = _fill_usF!(usF, us0, aF, dt, γ, β)
+
+  # Express usF in terms of the solution of the discrete ODE operator
+  usF = _finalize_alpha2!(usF, us0, aF, dt, γ, β)
 
   (usF, disslvrcache)
 end
@@ -295,14 +297,18 @@ function Algebra.solve!(
   usα = (uα, vα, aα)
   ws = _get_ws(dt, αm, αf, γ, β)
 
+  # Update jacobian and residual
   fillstored!(J, zero(eltype(J)))
   jacobians!(J, disop.odeop, tα, usα, ws, disop.odeopcache)
   residual!(r, odeop, tα, usα, odeopcache)
   rmul!(r, -1)
 
+  # Solve the discrete ODE operator
   aF = usF[3]
   disslvrcache = solve!(aF, disslvr, disop, disslvrcache)
-  usF = _fill_usF!(usF, us0, aF, dt, γ, β)
+
+  # Express usF in terms of the solution of the discrete ODE operator
+  usF = _finalize_alpha2!(usF, us0, aF, dt, γ, β)
 
   (usF, disslvrcache)
 end
@@ -310,9 +316,9 @@ end
 #########
 # Utils #
 #########
-function _fill_usF!(
-  usF::NTuple{3,AbstractVector}, us0::NTuple{3,AbstractVector}, x,
-  dt, γ, β
+function _finalize_alpha2!(
+  usF::NTuple{3,AbstractVector}, us0::NTuple{3,AbstractVector},
+  x::AbstractVector, dt::Real, γ::Real, β::Real
 )
   u0, v0, a0 = us0
   uF, vF, aF = usF

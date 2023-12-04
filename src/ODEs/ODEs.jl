@@ -51,7 +51,7 @@ export allocate_odeopcache
 export update_odeopcache!
 export jacobians!
 export is_jacobian_constant
-export is_forcing_constant
+export is_residual_constant
 
 export IMEXODEOperator
 export get_imex_operators
@@ -94,6 +94,7 @@ export EmbeddedTableau
 export get_embedded_weights
 export get_embedded_order
 export IMEXTableau
+export get_imex_tableaus
 
 export TableauName
 export ButcherTableau

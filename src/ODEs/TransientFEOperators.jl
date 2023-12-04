@@ -2,7 +2,11 @@
     abstract type TransientFEOperator <: GridapType end
 
 Transient version of `FEOperator` corresponding to a residual of the form
-`residual(t, u, v) = 0`, that can involve time derivatives of `u`.
+```math
+residual(t, u, v) = 0,
+```
+where `residual` is linear in `v`. Time derivatives of `u` can be included by
+using the `∂t` operator.
 
 # Important
 For now, the residual and jacobians cannot be directly computed on a
@@ -14,7 +18,6 @@ exactly a subtype of `FEOperator`, but rather at the intersection of
 # Mandatory
 - [`get_test(feop)`](@ref)
 - [`get_trial(feop)`](@ref)
-- [`get_algebraic_operator(feop)`](@ref)
 - [`get_order(feop)`](@ref)
 - [`get_assembler(feop)`](@ref)
 - [`get_res(feop::TransientFEOperator)`](@ref)
@@ -25,8 +28,9 @@ exactly a subtype of `FEOperator`, but rather at the intersection of
 # Optional
 - [`allocate_feopcache(feop)`](@ref)
 - [`update_feopcache!(feopcache, feop, t)`](@ref)
+- [`get_algebraic_operator(feop)`](@ref)
 - [`is_jacobian_constant(feop, k)`](@ref)
-- [`is_forcing_constant(feop)`](@ref)
+- [`is_residual_constant(feop)`](@ref)
 """
 abstract type TransientFEOperator{C<:ODEOperatorType} <: GridapType end
 
@@ -56,8 +60,15 @@ function Polynomials.get_order(feop::TransientFEOperator)
   @abstractmethod
 end
 
-# @fverdugo This function is just in case we need to override it in the future
-# for some specialization. This default implementation is enough for the moment.
+function is_jacobian_constant(feop::TransientFEOperator, k::Integer)
+  false
+end
+
+function is_residual_constant(feop::TransientFEOperator)
+  false
+end
+
+# TransientFEOperator interface
 """
     allocate_feopcache(feop::TransientFEOperator)
 
@@ -76,15 +87,6 @@ function update_feopcache!(feopcache, feop::TransientFEOperator, t::Real)
   feopcache
 end
 
-function is_jacobian_constant(feop::TransientFEOperator, k::Integer)
-  false
-end
-
-function is_forcing_constant(feop::TransientFEOperator)
-  false
-end
-
-# TransientFEOperator interface
 """
     get_assembler(feop::TransientFEOperator) -> Assembler
 
@@ -97,7 +99,9 @@ end
 """
     get_res(feop::TransientFEOperator) -> Function
 
-Return the (partial) residual of the `TransientFEOperator`.
+Return the residual of the `TransientFEOperator`. By convention, if the
+`TransientFEOperator` is a subtype of `AbstractMassLinearODE`, the residual
+returned by this function excludes the mass term.
 """
 function get_res(feop::TransientFEOperator)
   @abstractmethod
@@ -205,7 +209,13 @@ end
 """
     struct TransientIMEXFEOperator <: TransientFEOperator end
 
-Implicit-Explicit version of `TransientFEOperator`.
+Implicit-Explicit version of `TransientFEOperator` whose residual can be
+decomposed into
+```math
+residual(t, u, v) = implicit_residual(t, u, v) + explicit_residual(t, u, v),
+```
+where `implicit_residual` and `explicit_residual` are linear in `v` and the
+explicit residual has one order less than the implicit residual.
 """
 struct TransientIMEXFEOperator{Cim,Cex} <: TransientFEOperator{Cim}
   im_feop::TransientFEOperator{Cim}
@@ -216,9 +226,10 @@ struct TransientIMEXFEOperator{Cim,Cex} <: TransientFEOperator{Cim}
     ex_feop::TransientFEOperator
   )
     msg = """
-    A `TransientIMEXFEOperator` can only be built from two `TransientFEOperator`s with same order.
+    The explicit `TransientFEOperator` of a `TransientIMEXFEOperator` must have
+    one order less than the implicit `TransientFEOperator`.
     """
-    @assert get_order(im_feop) == get_order(ex_feop) msg
+    @assert get_order(im_feop) == get_order(ex_feop) + 1 msg
     Cim = ODEOperatorType(im_feop)
     Cex = ODEOperatorType(ex_feop)
     new{Cim,Cex}(im_feop, ex_feop)
@@ -226,10 +237,10 @@ struct TransientIMEXFEOperator{Cim,Cex} <: TransientFEOperator{Cim}
 end
 
 # TransientFEOperator interface
-# Only this function is needed because all other functions are going to be
-# called on the implicit and explicit `ODEOpFromFEOp`s within the
-# `IMEXODEOperator` interface, and in turn called on the implicit and explicit
-# `TransientFEOperator`s separately
+# Only this function needs to be implemented because all other functions of the
+# interface are going to be called on the implicit and explicit
+# `ODEOpFromFEOp`s within the `IMEXODEOperator` interface, and in turn called
+# on the implicit and explicit `TransientFEOperator`s separately
 function FESpaces.get_algebraic_operator(feop::TransientIMEXFEOperator)
   im_odeop = ODEOpFromFEOp(feop.im_feop)
   ex_odeop = ODEOpFromFEOp(feop.ex_feop)
@@ -242,7 +253,8 @@ end
 """
     struct TransientFEOpFromWeakForm <: TransientFEOperator end
 
-Transient `FEOperator` defined by a transient weak form.
+Generic `TransientFEOperator` constructed from the weak formulation of a
+partial differential equation.
 """
 struct TransientFEOpFromWeakForm <: TransientFEOperator{NonlinearODE}
   res::Function
@@ -254,11 +266,7 @@ struct TransientFEOpFromWeakForm <: TransientFEOperator{NonlinearODE}
   order::Integer
 end
 
-get_res(feop::TransientFEOpFromWeakForm) = feop.res
-
-get_jacs(feop::TransientFEOpFromWeakForm) = feop.jacs
-
-# Default constructors
+# Constructors
 function TransientFEOperator(
   res::Function,
   trial, test;
@@ -295,6 +303,20 @@ function TransientFEOperator(
   TransientFEOperator(res, jacs..., trial, test; jacs_constant)
 end
 
+# Order 0
+function TransientFEOperator(
+  res::Function, jac::Function,
+  trial, test;
+  jacs_constant::NTuple{1,Bool}=ntuple(_ -> false, 1)
+)
+  assembler = SparseMatrixAssembler(trial, test)
+  TransientFEOpFromWeakForm(
+    res, (jac,), jacs_constant,
+    assembler, trial, test, 0
+  )
+end
+
+# Order 1
 function TransientFEOperator(
   res::Function,
   jac::Function, jac_t::Function,
@@ -308,6 +330,7 @@ function TransientFEOperator(
   )
 end
 
+# Order 2
 function TransientFEOperator(
   res::Function,
   jac::Function, jac_t::Function, jac_tt::Function,
@@ -321,6 +344,11 @@ function TransientFEOperator(
   )
 end
 
+# TransientFEOperator interface (rest in # Common functions)
+get_res(feop::TransientFEOpFromWeakForm) = feop.res
+
+get_jacs(feop::TransientFEOpFromWeakForm) = feop.jacs
+
 #######################################
 # TransientMassLinearFEOpFromWeakForm #
 #######################################
@@ -329,36 +357,32 @@ end
 
 Transient `FEOperator` defined by a transient weak form
 ```math
-mass(t, u, v) + res(t, u, v) = 0
-```, where `mass` is linear in `∂t^N(u)` (`N` is the order of the operator) and
-`res` does not depend on `∂t^N(u)` (`mass` and `res` can depend on lower-order
-time-derivatives of `u` by applying the `∂t` operator).
+residual(t, u, v) = mass(t, u, v) + res(t, u, v) = 0.
+```
+Let `N` be the order of the operator. We impose the following conditions:
+* `mass` is linear in the `N`-th-order time derivative of `u`,
+* `res` has order `N-1`,
+* both `mass` and `res` are linear in `v`.
 """
 struct TransientMassLinearFEOpFromWeakForm <: TransientFEOperator{MassLinearODE}
   mass::Function
   res::Function
   jacs::Tuple{Vararg{Function}}
   jacs_constant::Tuple{Vararg{Bool}}
-  forcing_constant::Bool
+  residual_constant::Bool
   assembler::Assembler
   trial::FESpace
   test::FESpace
   order::Integer
 end
 
-get_res(feop::TransientMassLinearFEOpFromWeakForm) = feop.res
-
-get_jacs(feop::TransientMassLinearFEOpFromWeakForm) = feop.jacs
-
-get_mass(feop::TransientMassLinearFEOpFromWeakForm) = feop.mass
-
-# Default constructors
+# Constructors
 function TransientMassLinearFEOperator(
   mass::Function, res::Function,
   trial, test;
   order::Integer=1,
   jacs_constant::Tuple{Vararg{Bool}}=ntuple(_ -> false, order + 1),
-  forcing_constant::Bool=false
+  residual_constant::Bool=false
 )
   if trial isa MultiFieldFESpace
     TransientCellFieldType = TransientMultiFieldCellField
@@ -387,54 +411,78 @@ function TransientMassLinearFEOperator(
     jacs = (jacs..., jac_k)
   end
 
-  function jac_N(t, u, duN, v)
-    function res_N(y)
-      derivatives = (u.derivatives[1:order-1]..., y)
-      uN = TransientCellFieldType(u.cellfield, derivatives)
-      mass(t, uN, v)
+  if order > 0
+    function jac_N(t, u, duN, v)
+      function res_N(y)
+        derivatives = (u.derivatives[1:order-1]..., y)
+        uN = TransientCellFieldType(u.cellfield, derivatives)
+        mass(t, uN, v)
+      end
+      jacobian(res_N, u.derivatives[order])
     end
-    jacobian(res_N, u.derivatives[order])
+    jacs = (jacs..., jac_N)
   end
-  jacs = (jacs..., jac_N)
 
   TransientMassLinearFEOperator(
     mass, res, jacs..., trial, test;
-    jacs_constant, forcing_constant
+    jacs_constant, residual_constant
   )
 end
 
+# Order 0
+function TransientMassLinearFEOperator(
+  mass::Function, res::Function, jac::Function,
+  trial, test;
+  jacs_constant::NTuple{1,Bool}=ntuple(_ -> false, 1),
+  residual_constant::Bool=false
+)
+  assembler = SparseMatrixAssembler(trial, test)
+  TransientMassLinearFEOpFromWeakForm(
+    mass, res, (jac,), jacs_constant, residual_constant,
+    assembler, trial, test, 0
+  )
+end
+
+# Order 1
 function TransientMassLinearFEOperator(
   mass::Function, res::Function,
   jac::Function, jac_t::Function,
   trial, test;
   jacs_constant::NTuple{2,Bool}=ntuple(_ -> false, 2),
-  forcing_constant::Bool=false
+  residual_constant::Bool=false
 )
   assembler = SparseMatrixAssembler(trial, test)
   TransientMassLinearFEOpFromWeakForm(
-    mass, res, (jac, jac_t), jacs_constant, forcing_constant,
+    mass, res, (jac, jac_t), jacs_constant, residual_constant,
     assembler, trial, test, 1
   )
 end
 
+# Order 2
 function TransientMassLinearFEOperator(
   mass::Function, res::Function,
   jac::Function, jac_t::Function, jac_tt::Function,
   trial, test;
   jacs_constant::NTuple{3,Bool}=ntuple(_ -> false, 3),
-  forcing_constant::Bool=false
+  residual_constant::Bool=false
 )
   assembler = SparseMatrixAssembler(trial, test)
   TransientMassLinearFEOpFromWeakForm(
-    mass, res, (jac, jac_t, jac_tt), jacs_constant, forcing_constant,
+    mass, res, (jac, jac_t, jac_tt), jacs_constant, residual_constant,
     assembler, trial, test, 2
   )
 end
 
+# TransientFEOperator interface (rest in # Common functions)
+get_res(feop::TransientMassLinearFEOpFromWeakForm) = feop.res
+
+get_jacs(feop::TransientMassLinearFEOpFromWeakForm) = feop.jacs
+
+get_mass(feop::TransientMassLinearFEOpFromWeakForm) = feop.mass
+
 ###################################
 # TransientLinearFEOpFromWeakForm #
 ###################################
-# TODO Fix notations
 """
     struct TransientLinearFEOpFromWeakForm <: TransientFEOperator end
 
@@ -449,26 +497,20 @@ struct TransientLinearFEOpFromWeakForm <: TransientFEOperator{LinearODE}
   res::Function
   jacs::Tuple{Vararg{Function}}
   jacs_constant::Tuple{Vararg{Bool}}
-  forcing_constant::Bool
+  residual_constant::Bool
   assembler::Assembler
   trial::FESpace
   test::FESpace
   order::Integer
 end
 
-get_res(feop::TransientLinearFEOpFromWeakForm) = (t, u, v) -> feop.res(t, v)
-
-get_jacs(feop::TransientLinearFEOpFromWeakForm) = feop.jacs
-
-get_forms(feop::TransientLinearFEOpFromWeakForm) = feop.forms
-
-# Default constructors
+# Constructors
 function TransientLinearFEOperator(
   forms::Tuple{Vararg{Function}}, res::Function,
   trial, test;
   order::Integer=1,
   jacs_constant::Tuple{Vararg{Bool}}=ntuple(_ -> false, order + 1),
-  forcing_constant::Bool=false
+  residual_constant::Bool=false
 )
   if trial isa MultiFieldFESpace
     TransientCellFieldType = TransientMultiFieldCellField
@@ -499,21 +541,49 @@ function TransientLinearFEOperator(
 
   TransientLinearFEOperator(
     forms, res, jacs..., trial, test;
-    jacs_constant, forcing_constant
+    jacs_constant, residual_constant
   )
 end
 
+# Order 0
+function TransientLinearFEOperator(
+  mass::Function, res::Function, jac::Function,
+  trial, test;
+  jacs_constant::NTuple{1,Bool}=ntuple(_ -> false, 1),
+  residual_constant::Bool=false
+)
+  TransientLinearFEOperator(
+    (mass,), res,
+    jac, jac_t, trial, test;
+    jacs_constant, residual_constant
+  )
+end
+
+function TransientLinearFEOperator(
+  forms::NTuple{1,Function}, res::Function, jac::Function,
+  trial, test;
+  jacs_constant::NTuple{1,Bool}=ntuple(_ -> false, 1),
+  residual_constant::Bool=false
+)
+  assembler = SparseMatrixAssembler(trial, test)
+  TransientLinearFEOpFromWeakForm(
+    forms, res, (jac,), jacs_constant, residual_constant,
+    assembler, trial, test, 0
+  )
+end
+
+# Order 1
 function TransientLinearFEOperator(
   mass::Function, stiffness::Function, res::Function,
   jac::Function, jac_t::Function,
   trial, test;
   jacs_constant::NTuple{2,Bool}=ntuple(_ -> false, 2),
-  forcing_constant::Bool=false
+  residual_constant::Bool=false
 )
   TransientLinearFEOperator(
     (mass, stiffness), res,
     jac, jac_t, trial, test;
-    jacs_constant, forcing_constant
+    jacs_constant, residual_constant
   )
 end
 
@@ -522,26 +592,27 @@ function TransientLinearFEOperator(
   jac::Function, jac_t::Function,
   trial, test;
   jacs_constant::NTuple{2,Bool}=ntuple(_ -> false, 2),
-  forcing_constant::Bool=false
+  residual_constant::Bool=false
 )
   assembler = SparseMatrixAssembler(trial, test)
   TransientLinearFEOpFromWeakForm(
-    forms, res, (jac, jac_t), jacs_constant, forcing_constant,
+    forms, res, (jac, jac_t), jacs_constant, residual_constant,
     assembler, trial, test, 1
   )
 end
 
+# Order 2
 function TransientLinearFEOperator(
   mass::Function, stiffness::Function, damping::Function, res::Function,
   jac::Function, jac_t::Function, jac_tt::Function,
   trial, test;
   jacs_constant::NTuple{3,Bool}=ntuple(_ -> false, 3),
-  forcing_constant::Bool=false
+  residual_constant::Bool=false
 )
   TransientLinearFEOperator(
     (mass, stiffness, damping), res,
     jac, jac_t, jac_tt, trial, test;
-    jacs_constant, forcing_constant
+    jacs_constant, residual_constant
   )
 end
 
@@ -550,14 +621,21 @@ function TransientLinearFEOperator(
   jac::Function, jac_t::Function, jac_tt::Function,
   trial, test;
   jacs_constant::NTuple{3,Bool}=ntuple(_ -> false, 3),
-  forcing_constant::Bool=false
+  residual_constant::Bool=false
 )
   assembler = SparseMatrixAssembler(trial, test)
   TransientLinearFEOpFromWeakForm(
-    forms, res, (jac, jac_t, jac_tt), jacs_constant, forcing_constant,
+    forms, res, (jac, jac_t, jac_tt), jacs_constant, residual_constant,
     assembler, trial, test, 2
   )
 end
+
+# TransientFEOperator interface (rest in # Common functions)
+get_res(feop::TransientLinearFEOpFromWeakForm) = (t, u, v) -> feop.res(t, v)
+
+get_jacs(feop::TransientLinearFEOpFromWeakForm) = feop.jacs
+
+get_forms(feop::TransientLinearFEOpFromWeakForm) = feop.forms
 
 ####################
 # Common functions #
@@ -587,8 +665,8 @@ function is_jacobian_constant(feop::TransientFEOperatorTypes, k::Integer)
   feop.jacs_constant[k+1]
 end
 
-function is_forcing_constant(feop::TransientAbstractMassLinearFEOperatorTypes)
-  feop.forcing_constant
+function is_residual_constant(feop::TransientAbstractMassLinearFEOperatorTypes)
+  feop.residual_constant
 end
 
 ########

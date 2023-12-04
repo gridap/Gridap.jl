@@ -41,7 +41,8 @@ function allocate_disopcache(
   odeop::ODEOperator, odeopcache,
   t::Real, x::AbstractVector
 )
-  (similar(x), similar(x),)
+
+  (zero(x), zero(x),)
 end
 
 function allocate_disopcache(
@@ -49,13 +50,12 @@ function allocate_disopcache(
   odeop::ODEOperator{LinearODE}, odeopcache,
   t::Real, x::AbstractVector
 )
-  usx = (x, x)
-  J = allocate_jacobian(odeop, t, usx, odeopcache)
-  r = allocate_residual(odeop, t, usx, odeopcache)
+  us = (x, x)
+  J = allocate_jacobian(odeop, t, us, odeopcache)
+  r = allocate_residual(odeop, t, us, odeopcache)
   (J, r)
 end
 
-# 1st-order
 function DiscreteODEOperator(
   odeslvr::GeneralizedAlpha1, odeop::ODEOperator,
   odeopcache, disopcache,
@@ -113,7 +113,7 @@ function solve_step!(
     αm, αf, γ, tα
   )
 
-  # Solve discrete ODE operator
+  # Solve the discrete ODE operator
   usF, disslvrcache = solve!(usF, odeslvr.disslvr, disop, disslvrcache)
   tF = t0 + dt
 
@@ -209,7 +209,9 @@ function Algebra.solve!(
 
   uF, vF = usF
   disslvrcache = solve!(vF, disslvr, disop, disslvrcache)
-  usF = _fill_usF!(usF, us0, vF, dt, γ)
+
+  # Express usF in terms of the solution of the discrete ODE operator
+  usF = _finalize_alpha1!(usF, us0, vF, dt, γ)
 
   (usF, disslvrcache)
 end
@@ -260,6 +262,7 @@ function Algebra.solve!(
 
   update_odeopcache!(odeopcache, odeop, tα)
 
+  # Update jacobian and residual
   u0, v0 = us0
   uα, vα = usF
   @. uα = (1 - αf) * u0 + αf * (u0 + dt * (1 - γ) * v0)
@@ -272,9 +275,12 @@ function Algebra.solve!(
   residual!(r, odeop, tα, usα, odeopcache)
   rmul!(r, -1)
 
+  # Solve the discrete ODE operator
   vF = usF[2]
   disslvrcache = solve!(vF, disslvr, disop, disslvrcache)
-  usF = _fill_usF!(usF, us0, vF, dt, γ)
+
+  # Express usF in terms of the solution of the discrete ODE operator
+  usF = _finalize_alpha1!(usF, us0, vF, dt, γ)
 
   (usF, disslvrcache)
 end
@@ -282,9 +288,9 @@ end
 #########
 # Utils #
 #########
-function _fill_usF!(
-  usF::NTuple{2,AbstractVector}, us0::NTuple{2,AbstractVector}, x,
-  dt, γ
+function _finalize_alpha1!(
+  usF::NTuple{2,AbstractVector}, us0::NTuple{2,AbstractVector},
+  x::AbstractVector, dt::Real, γ::Real
 )
   u0, v0 = us0
   uF, vF = usF

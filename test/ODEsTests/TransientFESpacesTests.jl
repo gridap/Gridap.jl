@@ -19,8 +19,6 @@ ODEs.∂t(::typeof(u)) = ∂tu
 ∂ttu(t) = x -> zero(x[1])
 ODEs.∂tt(::typeof(u)) = ∂ttu
 
-# f(t) = x -> (x[1] + x[2])
-
 domain = (0, 1, 0, 1)
 partition = (5, 5)
 model = CartesianDiscreteModel(domain, partition)

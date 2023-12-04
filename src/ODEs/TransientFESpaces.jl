@@ -147,7 +147,7 @@ struct TransientTrialFESpace{U,U0} <: AbstractTransientTrialFESpace
   end
 end
 
-# Default constructors
+# Constructors
 function TransientTrialFESpace(space)
   HomogeneousTrialFESpace(space)
 end
@@ -220,7 +220,7 @@ struct TransientMultiFieldFESpace{
   end
 end
 
-# Default constructors (copy-pasted from MultiField)
+# Constructors (copy-pasted from MultiField)
 function TransientMultiFieldFESpace(
   spaces::Vector;
   style=ConsecutiveMultiFieldStyle()

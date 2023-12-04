@@ -1,7 +1,5 @@
 module Order2Tests
 
-using Random
-Random.seed!(123)
 using Test
 
 using Gridap

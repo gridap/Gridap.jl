@@ -4,7 +4,8 @@
 """
     abstract type DiscreteODEOperator <: NonlinearOperator end
 
-Discrete ODE operator corresponding to an `ODEOperator` and an `ODESolver`.
+Zero-th-order nonlinear operator (nonlinear system) corresponding to an
+`ODEOperator` and an `ODESolver`.
 """
 abstract type DiscreteODEOperator <: NonlinearOperator end
 
@@ -14,8 +15,9 @@ abstract type DiscreteODEOperator <: NonlinearOperator end
 """
     abstract type LinearDiscreteODEOperator <: DiscreteODEOperator end
 
-Discrete linear ODE operator corresponding to an `ODEOperator` and an
-`ODESolver`.
+Zero-th-order linear operator (linear system) corresponding to an `ODEOperator`
+and an `ODESolver`. This is mostly a copy of `AffineOperator` but enables the
+interface with an `ODESolver`.
 
 # Mandatory
 - [`get_matrix(disop)`](@ref)
@@ -34,7 +36,7 @@ end
 function Algebra.allocate_residual(
   disop::LinearDiscreteODEOperator, x::AbstractVector
 )
-  similar(x)
+  zero(x)
 end
 
 function Algebra.residual!(
@@ -66,10 +68,12 @@ end
 """
     abstract type ODESolver <: GridapType end
 
-An `ODESolver` is a map that given (t_n, us_n) returns (t_n+1, us_n+1) and the
-corresponding updated cache. Here `us_n` is a vector of size `N-1`, where `N` is
-the order of the `ODEOperator`, and `us_n[k] = ∂t^k(u)(t_n)` is the `k`-th-order
-time derivative of `u` at `t_n`.
+An `ODESolver` is a map that given `(t_n, us_n)` returns `(t_(n+1), us_(n+1))`
+and the corresponding updated cache.
+
+Here `us_n` is a vector of size `N-1`, where `N` is the order of the
+`ODEOperator`, and `us_n[k] = ∂t^k(u)(t_n)` is the `k`-th-order time derivative
+of `u` at `t_n`.
 
 # Mandatory
 - [`get_dt(odeslvr)`](@ref)
@@ -127,7 +131,7 @@ end
       args...
     ) -> DiscreteODEOperator
 
-Return the discrete ODE operator corresponding to the `ODEOperator` and the
+Return the `DiscreteODEOperator` corresponding to the `ODEOperator` and the
 `ODESolver`.
 """
 function DiscreteODEOperator(
@@ -145,7 +149,7 @@ end
       odeslvr::ODESolver, odeop::ODEOperator,
       us0::Tuple{Vararg{AbstractVector}}, t0::Real
       [, cache]
-    ) -> Tuple{Real,Tuple{Vararg{AbstractVector}},CacheType}
+    ) -> (Tuple{Vararg{AbstractVector}}, Real, CacheType)
 
 Perform one time step of the `ODEOperator` with the `ODESolver` from `t0` with
 initial state `us0`.
@@ -201,7 +205,7 @@ function test_ode_solver(
   @test get_dt(odeslvr) isa Real
 
   u0 = (us0 isa Tuple) ? first(us0) : us0
-  odeopcache = allocate_odeopcache(odeop, t0, us0)
+  odeopcache = allocate_odeopcache(odeop, t0, (us0..., u0))
   disopcache = allocate_disopcache(odeslvr, odeop, odeopcache, t0, u0)
 
   disop = DiscreteODEOperator(
@@ -225,47 +229,6 @@ end
 ##################
 # Import solvers #
 ##################
-"""
-    _v_from_u(
-      v::AbstractVector,
-      u::AbstractVector, u0::AbstractVector, dt::Real
-    ) -> AbstractVector
-
-Safely write `(u - u0) / dt` into `v`.
-"""
-function _v_from_u(
-  v::AbstractVector,
-  u::AbstractVector, u0::AbstractVector, dt::Real
-)
-  if u !== v
-    copy!(v, u)
-  end
-  axpy!(-1, u0, v)
-  rdiv!(v, dt)
-  v
-end
-
-"""
-    _u_from_v!(
-      u::AbstractVector,
-      u0::AbstractVector, dt::Real, v::AbstractVector
-    ) -> AbstractVector
-
-Safely write `u0 + dt * v` into `u`.
-"""
-function _u_from_v!(
-  u::AbstractVector,
-  u0::AbstractVector, dt::Real, v::AbstractVector
-)
-  if u === v
-    axpby!(1, u0, dt, u)
-  else
-    copy!(u, u0)
-    axpy!(dt, v, u)
-  end
-  u
-end
-
 # First-order
 include("ODESolvers/ForwardEuler.jl")
 
@@ -277,5 +240,23 @@ include("ODESolvers/Tableaus.jl")
 
 include("ODESolvers/RungeKutta.jl")
 
+include("ODESolvers/IMEXRungeKutta.jl")
+
 # Second-order
 include("ODESolvers/GeneralizedAlpha2.jl")
+
+# TODO for now if a jacobian matrix is constant, it is not reassembled. This is
+# nice, but we should also reduce the number of factorisations by storing them.
+# This is always true in the following scenarios
+# * explicit schemes on `AbstractMassLinearODE`s with constant mass
+# * diagonally-implicit schemes on `LinearODE`s with constant mass and
+# stiffness. Besides, it is often the case that different stages of a DIRK
+# scheme have the same matrix. This happens when some diagonal coefficients have
+# the same value. In the extreme case when all the diagonal values are the same,
+# these methods are known as Singly-Diagonally-Implicit Runge-Kutta schemes
+# (SDIRK). One special case happens when a diagonal coefficient is zero, in
+# which case the stage becomes explicit, even in the `AbstractMassLinearODE`
+# case. This stragety is already set up in the current implementation of DIRK.
+
+# TODO another optimisation is the so-called FSAL property (First Same As Last)
+# of some schemes, which can save one evaluation of the residual.
