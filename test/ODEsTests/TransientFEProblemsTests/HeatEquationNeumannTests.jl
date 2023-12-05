@@ -1,4 +1,4 @@
-module HeatEquationVectorTests
+module HeatEquationNeumannTests
 
 using Test
 
@@ -11,7 +11,7 @@ using Gridap.FESpaces
 using Gridap.ODEs
 
 # Analytical functions
-u(x, t) = VectorValue(x[1] * (1 - x[2]), (1 - x[1]) * x[2]) * t
+u(x, t) = (1.0 - x[1]) * x[1] * (1.0 - x[2]) * x[2] * (1 + t)
 u(t::Real) = x -> u(x, t)
 u(x) = t -> u(x, t)
 
@@ -22,11 +22,13 @@ u(x) = t -> u(x, t)
 domain = (0, 1, 0, 1)
 partition = (5, 5)
 model = CartesianDiscreteModel(domain, partition)
+dirichlet_tags = [1, 2, 3, 4, 5, 6]
+neumanntags = [7, 8]
 
 # FE spaces
 order = 2
-reffe = ReferenceFE(lagrangian, VectorValue{2,Float64}, order)
-V = FESpace(model, reffe, conformity=:H1, dirichlet_tags="boundary")
+reffe = ReferenceFE(lagrangian, Float64, order)
+V = FESpace(model, reffe, conformity=:H1, dirichlet_tags=dirichlet_tags)
 U = TransientTrialFESpace(V, u)
 
 # Integration
@@ -34,11 +36,17 @@ U = TransientTrialFESpace(V, u)
 degree = 2 * order
 dΩ = Measure(Ω, degree)
 
+Γ = BoundaryTriangulation(model, tags=neumanntags)
+dΓ = Measure(Γ, degree)
+nΓ = get_normal_vector(Γ)
+
 # FE operator
 f(t) = x -> ∂t(u)(x, t) - Δ(u(t))(x)
 mass(t, ∂ₜu, v) = ∫(∂ₜu ⋅ v) * dΩ
 stiffness(t, u, v) = ∫(∇(u) ⊙ ∇(v)) * dΩ
-forcing(t, v) = ∫(f(t) ⋅ v) * dΩ
+forcing_Ω(t, v) = ∫(f(t) ⋅ v) * dΩ
+forcing_Γ(t, v) = ∫((∇(u(t)) ⋅ nΓ) ⋅ v) * dΓ
+forcing(t, v) = forcing_Ω(t, v) + forcing_Γ(t, v)
 
 res(t, u, v) = mass(t, ∂t(u), v) + stiffness(t, u, v) - forcing(t, v)
 jac(t, u, du, v) = stiffness(t, du, v)
@@ -77,4 +85,4 @@ for odeslvr in odeslvrs
   end
 end
 
-end # module HeatEquationVectorTests
+end # module HeatEquationNeumannTests

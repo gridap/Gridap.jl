@@ -24,6 +24,7 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.CellData
 using Gridap.CellData: OperationCellField
+using Gridap.CellData: CellFieldAt
 using Gridap.FESpaces
 using Gridap.FESpaces: SingleFieldFEBasis
 using Gridap.MultiField

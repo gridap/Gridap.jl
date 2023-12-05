@@ -55,9 +55,6 @@ function Algebra.solve(
   TransientFESolution(odeslvr, feop, uh0, t0, tF)
 end
 
-# @fverdugo this is a general implementation of iterate for TransientFESolution
-# We could also implement another one for the very common case that the
-# underlying odeop is a ODEOpFromFEOp object
 function Base.iterate(fesltn::TransientFESolution)
   odesltn_next = iterate(fesltn.odesltn)
   if isnothing(odesltn_next)

@@ -603,6 +603,8 @@ function TransientLinearFEOperator(
     TransientCellFieldType = TransientCellField
   end
 
+  # TODO no need for autodiff here
+
   function jac_0(t, u, du, v)
     function res_0(y)
       u0 = TransientCellFieldType(y, u.derivatives)

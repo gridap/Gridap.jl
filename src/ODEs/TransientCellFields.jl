@@ -51,6 +51,15 @@ Transient `CellField` for a single-field `FESpace`.
 struct TransientSingleFieldCellField{A} <: TransientCellField
   cellfield::A
   derivatives::Tuple # {Vararg{A,B} where B}
+
+  function TransientSingleFieldCellField(cellfield, derivatives)
+    forbidden_types = (MultiFieldCellField, MultiFieldFEFunction, TransientMultiFieldCellField)
+    if any(type -> cellfield isa type, forbidden_types)
+      throw("Building a `TransientSingleFieldCellField` from a $(typeof(cellfield))")
+    end
+    A = typeof(cellfield)
+    new{A}(cellfield, derivatives)
+  end
 end
 
 function TransientCellField(field::CellField, derivatives::Tuple)
@@ -64,7 +73,8 @@ CellData.get_triangulation(f::TransientSingleFieldCellField) = get_triangulation
 
 CellData.DomainStyle(::Type{<:TransientSingleFieldCellField{A}}) where {A} = DomainStyle(A)
 
-function CellData.change_domain(f::TransientSingleFieldCellField, trian::Triangulation,
+function CellData.change_domain(
+  f::TransientSingleFieldCellField, trian::Triangulation,
   target_domain::DomainStyle)
   change_domain(f.cellfield, trian, target_domain)
 end
@@ -120,6 +130,14 @@ function TransientMultiFieldCellField(fields::MultiFieldTypes, derivatives::Tupl
   TransientMultiFieldCellField(fields, derivatives, _flat)
 end
 
+function TransientCellField(fields::MultiFieldTypes, derivatives::Tuple)
+  TransientMultiFieldCellField(fields, derivatives)
+end
+
+function TransientCellField(fields::TransientMultiFieldCellField, derivatives::Tuple)
+  TransientMultiFieldCellField(fields, derivatives)
+end
+
 # CellField interface
 function CellData.get_data(f::TransientMultiFieldCellField)
   s = """
@@ -138,8 +156,10 @@ CellData.get_triangulation(f::TransientMultiFieldCellField) = get_triangulation(
 
 CellData.DomainStyle(::Type{TransientMultiFieldCellField{A}}) where {A} = DomainStyle(A)
 
-function CellData.change_domain(f::TransientMultiFieldCellField, trian::Triangulation,
-  target_domain::DomainStyle)
+function CellData.change_domain(
+  f::TransientMultiFieldCellField, trian::Triangulation,
+  target_domain::DomainStyle
+)
   change_domain(f.cellfield, trian, target_domain)
 end
 
@@ -162,8 +182,10 @@ function Base.getindex(f::TransientMultiFieldCellField, index::Integer)
   TransientSingleFieldCellField(sub_cellfield, sub_derivatives)
 end
 
-function Base.getindex(f::TransientMultiFieldCellField,
-  indices::AbstractVector{<:Integer})
+function Base.getindex(
+  f::TransientMultiFieldCellField,
+  indices::AbstractVector{<:Integer}
+)
   sub_cellfield = MultiFieldCellField(
     f.cellfield[indices],
     DomainStyle(f.cellfield)
@@ -225,8 +247,10 @@ CellData.get_triangulation(f::TransientFEBasis) = get_triangulation(f.febasis)
 
 CellData.DomainStyle(::Type{<:TransientFEBasis{A}}) where {A} = DomainStyle(A)
 
-function CellData.change_domain(f::TransientFEBasis, trian::Triangulation,
-  target_domain::DomainStyle)
+function CellData.change_domain(
+  f::TransientFEBasis, trian::Triangulation,
+  target_domain::DomainStyle
+)
   change_domain(f.febasis, trian, target_domain)
 end
 
