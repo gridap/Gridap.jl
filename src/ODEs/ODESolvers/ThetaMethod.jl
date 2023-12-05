@@ -251,7 +251,7 @@ function Algebra.solve!(
   uF, = usF
   usθ = (u0, u0)
   ws = _get_ws(dtθ)
-  filter=(true, true, false)
+  filter = (true, true, false)
 
   fillstored!(J, zero(eltype(J)))
   jacobians!(J, odeop, tθ, usθ, ws, odeopcache)
@@ -268,9 +268,9 @@ function Algebra.solve!(
   (usF, disslvrcache)
 end
 
-#########
-# Utils #
-#########
+#############
+# Finalizer #
+#############
 function _finalize_theta!(
   usF::NTuple{1,AbstractVector}, us0::NTuple{1,AbstractVector},
   x::AbstractVector, dt::Real

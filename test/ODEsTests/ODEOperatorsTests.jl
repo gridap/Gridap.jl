@@ -7,95 +7,89 @@ using Gridap.ODEs
 
 include("ODEOperatorsMocks.jl")
 
-num_eqs = 2
+num_eqs = 5
+order_max = 5
 
-M = randn(num_eqs, num_eqs)
-C = randn(num_eqs, num_eqs)
-K = randn(num_eqs, num_eqs)
-α = randn(num_eqs)
-f(t) = -exp.(α .* t)
-form0 = zeros(num_eqs, num_eqs)
-f0(t) = zero(t)
+all_mats = ntuple(_ -> randn(num_eqs, num_eqs), order_max + 1)
+all_forms = ntuple(k -> (t -> all_mats[k] .* cospi(t)), order_max + 1)
 
-t0 = randn()
-u0 = randn(num_eqs)
-v0 = randn(num_eqs)
-a0 = randn(num_eqs)
+vec = randn(num_eqs)
+forcing(t) = vec .* cospi(t)
 
-_odeop0 = ODEOperatorMock0
-us0 = (u0,)
-forms0 = (M,)
+mat0 = zeros(num_eqs, num_eqs)
+form0(t) = mat0
 
-_odeop1 = ODEOperatorMock1
-us1 = (u0, v0)
-forms1 = (M, K)
+vec0 = zeros(num_eqs)
+forcing0(t) = vec0
 
-_odeop2 = ODEOperatorMock2
-us2 = (u0, v0, a0)
-forms2 = (M, C, K)
+t = randn()
+all_us = ntuple(i -> randn(num_eqs), order_max + 1)
 
-for (_odeop, forms, us, _ex_odeop) in (
-  (_odeop0, forms0, us0, nothing),
-  (_odeop1, forms1, us1, _odeop0),
-  (_odeop2, forms2, us2, _odeop1)
-)
-  for T in (NonlinearODE, QuasilinearODE, SemilinearODE, LinearODE)
-    odeop = _odeop{T}(forms..., f)
+exp_r = zeros(num_eqs)
+exp_J = spzeros(num_eqs, num_eqs)
 
-    odeopcache = allocate_odeopcache(odeop, t0, us)
-    update_odeopcache!(odeopcache, odeop, t0)
+for N in 0:order_max
+  us = tuple((all_us[k] for k in 1:N+1)...)
+  forms = all_forms[1:N+1]
 
-    r = allocate_residual(odeop, t0, us, odeopcache)
-    @test size(r) == (num_eqs,)
+  for C in (NonlinearODE, QuasilinearODE, SemilinearODE, LinearODE)
+    standard_odeop = ODEOperatorMock{C}(forms, forcing)
+    odeops = (standard_odeop,)
 
-    J = allocate_jacobian(odeop, t0, us, odeopcache)
-    @test size(J) == (num_eqs, num_eqs)
+    # Create an IMEXODEOperator randomly
+    if N > 0
+      im_forms = ()
+      ex_forms = ()
+      for k in 0:N-1
+        form = forms[k+1]
+        to_im = rand(Bool)
+        im_forms = (im_forms..., to_im ? form : form0)
+        ex_forms = (ex_forms..., to_im ? form0 : form)
+      end
+      im_forms = (im_forms..., last(forms))
 
-    _r = f(t0)
-    for (formi, ui) in zip(reverse(forms), us)
-      _r .+= formi * ui
-    end
-    residual!(r, odeop, t0, us, odeopcache)
-    @test r ≈ _r
+      to_im = rand(Bool)
+      im_forcing = to_im ? forcing : forcing0
+      ex_forcing = to_im ? forcing0 : forcing
 
-    _J = zeros(num_eqs, num_eqs)
-    fill!(J, 0)
-    for (i, formi) in enumerate(reverse(forms))
-      _J .+= formi
-      jacobian!(J, odeop, t0, us, i - 1, 1, odeopcache)
-      @test J ≈ _J
+      im_odeop = ODEOperatorMock{C}(im_forms, im_forcing)
+      ex_odeop = ODEOperatorMock{C}(ex_forms, ex_forcing)
+      imex_odeop = IMEXODEOperator(im_odeop, ex_odeop)
+
+      odeops = (odeops..., imex_odeop)
     end
 
-    @test test_ode_operator(odeop, t0, us)
-
-    # IMEX tests
-    isnothing(_ex_odeop) && continue
-
-    im_odeop = _odeop{T}(forms[1], ntuple(_ -> form0, length(forms) - 1)..., f0)
-    ex_odeop = _ex_odeop{T}(forms[2:end]..., f)
-    imex_odeop = IMEXODEOperator(im_odeop, ex_odeop)
-
-    imex_odeopcache = allocate_odeopcache(imex_odeop, t0, us)
-    update_odeopcache!(imex_odeopcache, imex_odeop, t0)
-
-    r = allocate_residual(imex_odeop, t0, us, imex_odeopcache)
-    @test size(r) == (num_eqs,)
-
-    J = allocate_jacobian(imex_odeop, t0, us, imex_odeopcache)
-    @test size(J) == (num_eqs, num_eqs)
-
-    residual!(r, imex_odeop, t0, us, imex_odeopcache)
-    @test r ≈ _r
-
-    _J = zeros(num_eqs, num_eqs)
-    fill!(J, 0)
-    for (i, formi) in enumerate(reverse(forms))
-      _J .+= formi
-      jacobian!(J, imex_odeop, t0, us, i - 1, 1, imex_odeopcache)
-      @test J ≈ _J
+    # Compute expected residual
+    f = forcing(t)
+    copy!(exp_r, f)
+    for (ui, formi) in zip(us, forms)
+      form = formi(t)
+      exp_r .+= form * ui
     end
 
-    @test test_ode_operator(imex_odeop, t0, us)
+    for odeop in odeops
+      odeopcache = allocate_odeopcache(odeop, t, us)
+      update_odeopcache!(odeopcache, odeop, t)
+
+      r = allocate_residual(odeop, t, us, odeopcache)
+      @test size(r) == (num_eqs,)
+
+      J = allocate_jacobian(odeop, t, us, odeopcache)
+      @test size(J) == (num_eqs, num_eqs)
+
+      residual!(r, odeop, t, us, odeopcache)
+      @test r ≈ exp_r
+
+      fill!(exp_J, zero(eltype(exp_J)))
+      fill!(J, zero(eltype(J)))
+      for k in 0:N
+        exp_J .+= forms[k+1](t)
+        jacobian!(J, odeop, t, us, k, 1, odeopcache)
+        @test J ≈ exp_J
+      end
+
+      @test test_ode_operator(odeop, t, us)
+    end
   end
 end
 

@@ -1,4 +1,4 @@
-module Order2Tests
+module Order2ODETests
 
 using Test
 
@@ -12,18 +12,23 @@ t0 = 0.0
 dt = 1.0e-3
 tF = t0 + 10 * dt
 
-num_eqs = 2
+num_eqs = 5
 
 M = randn(num_eqs, num_eqs)
-while iszero(det(M))
-  M = randn(num_eqs, num_eqs)
-end
 λ = randn(num_eqs)
 μ = randn(num_eqs)
 C = M * diagm(-(λ .+ μ))
 K = M * diagm(λ .* μ)
+
+mass(t) = M
+damping(t) = C
+stiffness(t) = K
+forms = (stiffness, damping, mass)
+form_zero(t) = zeros(num_eqs, num_eqs)
+
 α = randn(num_eqs)
-f(t) = -M * exp.(α .* t)
+forcing(t) = -M * exp.(α .* t)
+forcing_zero(t) = zero(t)
 
 u0 = randn(num_eqs)
 v0 = randn(num_eqs)
@@ -41,20 +46,30 @@ function u(t)
   s
 end
 
-odeop_nonlinear = ODEOperatorMock2{NonlinearODE}(M, C, K, f)
+odeop_nonlinear = ODEOperatorMock{NonlinearODE}(forms, forcing)
+odeop_quasilinear = ODEOperatorMock{QuasilinearODE}(forms, forcing)
+odeop_semilinear = ODEOperatorMock{SemilinearODE}(forms, forcing)
+odeop_linear = ODEOperatorMock{LinearODE}(forms, forcing)
 
-odeop_quasilinear = ODEOperatorMock2{QuasilinearODE}(M, C, K, f)
-odeop_semilinear = ODEOperatorMock2{SemilinearODE}(M, C, K, f)
+# Testing some random combinations of `IMEXODEOperator`s
+odeop_imex1 = GenericIMEXODEOperator(
+  ODEOperatorMock{LinearODE}((stiffness, form_zero, mass), forcing_zero),
+  ODEOperatorMock{QuasilinearODE}((form_zero, damping,), forcing)
+)
 
-odeop_linear = ODEOperatorMock2{LinearODE}(M, C, K, f)
-ODEs.is_jacobian_constant(odeop::typeof(odeop_linear), k::Integer) = true
+odeop_imex2 = GenericIMEXODEOperator(
+  ODEOperatorMock{SemilinearODE}((form_zero, damping, mass), forcing_zero),
+  ODEOperatorMock{NonlinearODE}((stiffness, form_zero,), forcing)
+)
 
-odeops = [
+odeops = (
   odeop_nonlinear,
   odeop_quasilinear,
   odeop_semilinear,
-  odeop_linear
-]
+  odeop_linear,
+  odeop_imex1,
+  odeop_imex2,
+)
 
 function test_solver(odeslvr, odeop, us0, tol)
   odesltn = solve(odeslvr, odeop, us0, t0, tF)
@@ -67,12 +82,14 @@ function test_solver(odeslvr, odeop, us0, tol)
 end
 
 tol = 1.0e-4
+atol = 1.0e-12
+rtol = 1.0e-8
+maxiter = 100
 disslvr_l = LUSolver()
-disslvr_nl = NewtonRaphsonSolver(disslvr_l, 1.0e-8, 100)
+disslvr_nl = DiscreteODESolverMock(rtol, atol, maxiter)
 
 # Solvers without memory
-odeslvrs = [
-]
+odeslvrs = ()
 
 us0 = (u0, v0,)
 for odeslvr in odeslvrs
@@ -82,15 +99,15 @@ for odeslvr in odeslvrs
 end
 
 # Solvers with memory
-odeslvrs = [
+odeslvrs = (
   GeneralizedAlpha2(disslvr_nl, dt, 0.0),
   GeneralizedAlpha2(disslvr_nl, dt, 0.5),
   GeneralizedAlpha2(disslvr_nl, dt, 1.0),
   Newmark(disslvr_nl, dt, 0.5, 0.0),
   Newmark(disslvr_nl, dt, 0.5, 0.25),
-]
+)
 
-a0 = -M \ (C * v0 + K * u0 + f(t0))
+a0 = -M \ (C * v0 + K * u0 + forcing(t0))
 us0 = (u0, v0, a0)
 for odeslvr in odeslvrs
   for odeop in odeops
@@ -98,4 +115,4 @@ for odeslvr in odeslvrs
   end
 end
 
-end # module Order2Tests
+end # module Order2ODETests

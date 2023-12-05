@@ -308,9 +308,9 @@ function Algebra.solve!(
   (usF, disslvrcache)
 end
 
-#########
-# Utils #
-#########
+#############
+# Finalizer #
+#############
 function _finalize_alpha2!(
   usF::NTuple{3,AbstractVector}, us0::NTuple{3,AbstractVector},
   x::AbstractVector, dt::Real, γ::Real, β::Real
@@ -323,6 +323,9 @@ function _finalize_alpha2!(
   (uF, vF, aF)
 end
 
+#########
+# Utils #
+#########
 function _get_ws(dt, αm, αf, γ, β)
   wu = (1 - αf) * dt^2 * β
   wv = (1 - αf) * dt * γ

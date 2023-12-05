@@ -515,9 +515,9 @@ function Algebra.solve!(
   (usF, disslvrcaches)
 end
 
-#########
-# Utils #
-#########
+#############
+# Finalizer #
+#############
 function _finalize_rk!(
   usF::NTuple{1,AbstractVector}, us0::NTuple{1,AbstractVector},
   vs::AbstractVector, dt::Real, b::AbstractVector

@@ -56,7 +56,7 @@ ODE operator whose residual is linear with respect to the highest-order time
 derivative, i.e.
 ```math
 residual(t, ∂t^0[u], ..., ∂t^N[u]) = mass(t, ∂t^0[u], ..., ∂t^(N-1)[u]) ∂t^N[u]
-                                   +  res(t, ∂t^0[u], ..., ∂t^(N-1)[u])
+                                   +  res(t, ∂t^0[u], ..., ∂t^(N-1)[u]),
 ```
 where `N` is the order of the ODE operator, `∂t^k[u]` is the `k`-th-order time
 derivative of `u`, and both `mass` and `res` have order `N-1`.
@@ -69,10 +69,10 @@ const QuasilinearODEOperator = ODEOperator{QuasilinearODE}
     SemilinearODEOperator
 
 ODE operator whose residual is linear with respect to the highest-order time
-derivative, and may only depend on time, i.e.
+derivative, and whose mass matrix only depend on time, i.e.
 ```math
 residual(t, ∂t^0[u], ..., ∂t^N[u]) = mass(t) ∂t^N[u]
-                                   +  res(t, ∂t^0[u], ..., ∂t^(N-1)[u])
+                                   +  res(t, ∂t^0[u], ..., ∂t^(N-1)[u]),
 ```
 where `N` is the order of the ODE operator, `∂t^k[u]` is the `k`-th-order time
 derivative of `u`, `mass` is independent of `u` and `res` has order `N-1`.
@@ -86,7 +86,7 @@ const SemilinearODEOperator = ODEOperator{SemilinearODE}
 
 ODE operator whose residual is linear with respect to all time derivatives, i.e.
 ```math
-residual(t, ∂t^0[u], ..., ∂t^N[u]) = ∑_{0 ≤ k ≤ N} A_k(t) ∂t^k[u] + res(t)
+residual(t, ∂t^0[u], ..., ∂t^N[u]) = ∑_{0 ≤ k ≤ N} A_k(t) ∂t^k[u] + res(t),
 ```
 where `N` is the order of the ODE operator, and `∂t^k[u]` is the `k`-th-order
 time derivative of `u`.
@@ -128,11 +128,17 @@ function allocate_odeopcache(
 end
 
 """
-    update_odeopcache!(odeopcache, odeop::ODEOperator, t::Real, args...) -> CacheType
+    update_odeopcache!(
+      odeopcache, odeop::ODEOperator,
+      t::Real, args...
+    ) -> CacheType
 
 Update the cache of the `ODEOperator`.
 """
-function update_odeopcache!(odeopcache, odeop::ODEOperator, t::Real, args...)
+function update_odeopcache!(
+  odeopcache, odeop::ODEOperator,
+  t::Real, args...
+)
   odeopcache
 end
 
@@ -157,7 +163,8 @@ end
     residual(
       odeop::ODEOperator,
       t::Real, us::Tuple{Vararg{AbstractVector}},
-      odeopcache; filter::Tuple{Vararg{Bool}}=ntuple(_ -> true, get_order(odeop) + 2)
+      odeopcache;
+      filter::Tuple{Vararg{Bool}}=ntuple(_ -> true, get_order(odeop) + 2)
     ) -> AbstractVector
 
 Allocate a residual vector and evaluate it.
@@ -257,8 +264,7 @@ end
     jacobians!(
       J::AbstractMatrix, odeop::ODEOperator,
       t::Real, us::Tuple{Vararg{AbstractVector}},
-      γs::Tuple{Vararg{Real}},
-      odeopcache
+      γs::Tuple{Vararg{Real}}, odeopcache
     ) -> AbstractMatrix
 
 Add the jacobian of the residual of the `ODEOperator` with respect to all time
@@ -294,10 +300,10 @@ end
 
 Indicate whether the lowest-order element in the decomposition of the residual
 of the `ODEOperator` is constant:
-* For a `NonlinearODE`, indicate whether the whole residual is constant,
-* For a `QuasilinearODE`, indicate whether the residual, excluding the mass
-term is constant,
-* For a `LinearODE`, indicate whether the forcing term is constant.
+* In the general case, indicate whether the whole residual is constant,
+* For an `AbstractQuasilinearODE`, indicate whether the residual, excluding the
+mass term is constant,
+* For an `AbstractLinearODE`, indicate whether the forcing term is constant.
 """
 function is_residual_constant(odeop::ODEOperator)
   false
@@ -540,16 +546,14 @@ end
 """
     test_ode_operator(
       odeop::ODEOperator,
-      t::Real, us::Tuple{Vararg{AbstractVector}},
-      args...
+      t::Real, us::Tuple{Vararg{AbstractVector}}, args...
     ) -> Bool
 
 Test the interface of `ODEOperator` specializations.
 """
 function test_ode_operator(
   odeop::ODEOperator,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  args...
+  t::Real, us::Tuple{Vararg{AbstractVector}}, args...
 )
   odeopcache = allocate_odeopcache(odeop, t, us, args...)
   odeopcache = update_odeopcache!(odeopcache, odeop, t)

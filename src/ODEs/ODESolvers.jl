@@ -44,7 +44,7 @@ function Algebra.residual!(
   disop::LinearDiscreteODEOperator, x::AbstractVector
 )
   mul!(r, get_matrix(disop), x)
-  r .-= get_vector(disop)
+  axpy!(-1, get_vector(disop), r)
   r
 end
 

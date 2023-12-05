@@ -101,9 +101,9 @@ end
 
 Return the lowest-order element in the decomposition of the residual of the
 `ODEOperator`:
-* For a `NonlinearODE`, return the whole residual,
-* For a `QuasilinearODE`, return the residual excluding the mass term,
-* For a `LinearODE`, return the forcing term.
+* In the general case, return the whole residual,
+* For an `AbstractQuasilinearODE`, return the residual excluding the mass term,
+* For an `AbstractLinearODE`, return the forcing term.
 """
 function get_res(feop::TransientFEOperator)
   @abstractmethod
@@ -232,11 +232,18 @@ struct TransientIMEXFEOperator{Cim,Cex} <: TransientFEOperator{Cim}
     im_feop::TransientFEOperator,
     ex_feop::TransientFEOperator
   )
-    msg = """
+    msg_spaces = """
+    The implicit and explicit `TransientFEOperator` of a
+    `TransientIMEXFEOperator` must be defined on the same trial and test spaces.
+    """
+    @assert get_trial(im_feop) == get_trial(ex_feop) msg_spaces
+    @assert get_test(im_feop) == get_test(ex_feop) msg_spaces
+
+    msg_order = """
     The explicit `TransientFEOperator` of a `TransientIMEXFEOperator` must have
     one order less than the implicit `TransientFEOperator`.
     """
-    @assert get_order(im_feop) == get_order(ex_feop) + 1 msg
+    @assert get_order(im_feop) == get_order(ex_feop) + 1 msg_order
     Cim = ODEOperatorType(im_feop)
     Cex = ODEOperatorType(ex_feop)
     new{Cim,Cex}(im_feop, ex_feop)
@@ -244,10 +251,18 @@ struct TransientIMEXFEOperator{Cim,Cex} <: TransientFEOperator{Cim}
 end
 
 # TransientFEOperator interface
-# Only this function needs to be implemented because all other functions of the
+# Only these function need to be implemented because all other functions of the
 # interface are going to be called on the implicit and explicit
 # `ODEOpFromFEOp`s within the `IMEXODEOperator` interface, and in turn called
 # on the implicit and explicit `TransientFEOperator`s separately
+function FESpaces.get_trial(feop::TransientIMEXFEOperator)
+  feop.im_feop.trial
+end
+
+function FESpaces.get_test(feop::TransientIMEXFEOperator)
+  feop.im_feop.tes
+end
+
 function FESpaces.get_algebraic_operator(feop::TransientIMEXFEOperator)
   im_odeop = ODEOpFromFEOp(feop.im_feop)
   ex_odeop = ODEOpFromFEOp(feop.ex_feop)
@@ -280,7 +295,7 @@ function TransientFEOperator(
   order::Integer=1,
   jacs_constant::Tuple{Vararg{Bool}}=ntuple(_ -> false, order + 1)
 )
-  if trial isa MultiFieldFESpace
+  if trial isa TransientMultiFieldFESpace
     TransientCellFieldType = TransientMultiFieldCellField
   else
     TransientCellFieldType = TransientCellField
@@ -392,7 +407,7 @@ function TransientQuasilinearFEOperator(
   residual_constant::Bool=false,
   C::Type{<:AbstractQuasilinearODE}=QuasilinearODE
 )
-  if trial isa MultiFieldFESpace
+  if trial isa TransientMultiFieldFESpace
     TransientCellFieldType = TransientMultiFieldCellField
   else
     TransientCellFieldType = TransientCellField
@@ -582,7 +597,7 @@ function TransientLinearFEOperator(
   residual_constant::Bool=false,
   C::Type{<:AbstractLinearODE}=LinearODE
 )
-  if trial isa MultiFieldFESpace
+  if trial isa TransientMultiFieldFESpace
     TransientCellFieldType = TransientMultiFieldCellField
   else
     TransientCellFieldType = TransientCellField

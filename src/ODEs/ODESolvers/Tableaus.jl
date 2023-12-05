@@ -273,6 +273,50 @@ for tableautype in (:GenericTableau, :EmbeddedTableau, :IMEXTableau)
   end
 end
 
+##################################################
+# Families of DIRK schemes with order conditions #
+##################################################
+function DIRK11(α::Real, ::Type{T}=Float64) where {T<:Real}
+  matrix = T[α;;]
+  weights = T[1]
+  cond2 = (α ≈ 1 / 2)
+  order = cond2 ? 2 : 1
+  GenericTableau(matrix, weights, order)
+end
+
+function DIRK12(T::Type{<:Real}=Float64)
+  RK11(1 / 2, T)
+end
+
+function DIRK22(α::Real, β::Real, γ::Real, ::Type{T}=Float64) where {T<:Real}
+  δ = β - γ
+  θ = (1 - 2 * α) / 2 / (β - α)
+  matrix = T[
+    α 0
+    δ γ
+  ]
+  weights = T[1-θ, θ]
+  cond31 = ((1 - θ) * α^2 + θ * β^2 ≈ 1 / 3)
+  cond32 = ((1 - θ) * α^2 + θ * (δ * α + γ * β) ≈ 1 / 6)
+  cond3 = cond31 && cond32
+  order = cond3 ? 3 : 2
+  GenericTableau(matrix, weights, order)
+end
+
+function DIRK23(λ::Real, ::Type{T}=Float64) where {T<:Real}
+  α = 1 / 2 - sqrt(3) / 6 / λ
+  β = sqrt(3) / 3 * λ
+  γ = 1 / 2 - sqrt(3) / 6 * λ
+  θ = 1 / (λ^2 + 1)
+  matrix = T[
+    α 0
+    β γ
+  ]
+  weights = T[1-θ, θ]
+  order = 3
+  GenericTableau(matrix, weights, order)
+end
+
 ####################
 # Explicit schemes #
 ####################
@@ -286,11 +330,8 @@ Stage order       1
 """
 struct FE_1_0_1 <: TableauName end
 
-function ButcherTableau(::FE_1_0_1, ::Type{T}=Float64) where {T}
-  matrix = T[0;;]
-  weights = T[1]
-  order = 1
-  GenericTableau(matrix, weights, order)
+function ButcherTableau(::FE_1_0_1, T::Type{<:Real}=Float64)
+  DIRK11(0, T)
 end
 
 """
@@ -304,7 +345,7 @@ Stage order       1
 """
 struct SSPRK_3_0_3 <: TableauName end
 
-function ButcherTableau(::SSPRK_3_0_3, ::Type{T}=Float64) where {T}
+function ButcherTableau(::SSPRK_3_0_3, ::Type{T}=Float64) where {T<:Real}
   a = 1
   b = 1 / 4
   c = 1 / 6
@@ -332,11 +373,8 @@ Stage order       1
 """
 struct BE_1_0_1 <: TableauName end
 
-function ButcherTableau(::BE_1_0_1, ::Type{T}=Float64) where {T}
-  matrix = T[1;;]
-  weights = T[1]
-  order = 1
-  GenericTableau(matrix, weights, order)
+function ButcherTableau(::BE_1_0_1, T::Type{<:Real}=Float64)
+  DIRK11(1, T)
 end
 
 """
@@ -351,15 +389,8 @@ Stage order       2
 """
 struct CN_2_0_2 <: TableauName end
 
-function ButcherTableau(::CN_2_0_2, ::Type{T}=Float64) where {T}
-  a = 1 / 2
-  matrix = T[
-    0 0
-    a a
-  ]
-  weights = T[a, a]
-  order = 2
-  GenericTableau(matrix, weights, order)
+function ButcherTableau(::CN_2_0_2, T::Type{<:Real}=Float64)
+  DIRK22(0, 1 / 2, 1 / 2, T)
 end
 
 """
@@ -372,39 +403,22 @@ Stage order       2
 """
 struct SDIRK_2_0_2 <: TableauName end
 
-function ButcherTableau(::SDIRK_2_0_2, ::Type{T}=Float64) where {T}
-  a = 1 / 4
-  b = 1 / 2
-  matrix = T[
-    a 0
-    b a
-  ]
-  weights = T[b, b]
-  order = 2
-  GenericTableau(matrix, weights, order)
+function ButcherTableau(::SDIRK_2_0_2, T::Type{<:Real}=Float64)
+  DIRK22(1 / 4, 3 / 4, 1 / 4, T)
 end
 
 """
 3rd order SDIRK
 
-Type              Diagonally Implicit
+Type              Singly Diagonally Implicit
 Number of stages  2
 Order             3
 Stage order       2
 """
 struct SDIRK_2_0_3 <: TableauName end
 
-function ButcherTableau(::SDIRK_2_0_3, ::Type{T}=Float64) where {T}
-  a = (3 - sqrt(3)) / 6
-  b = 1 - 2 * a
-  c = 1 / 2
-  matrix = T[
-    a 0
-    b a
-  ]
-  weights = T[c, c]
-  order = 3
-  GenericTableau(matrix, weights, order)
+function ButcherTableau(::SDIRK_2_0_3, T::Type{<:Real}=Float64)
+  DIRK23(1, T)
 end
 
 """
@@ -418,7 +432,7 @@ Embedded order    1
 """
 struct ESDIRK_3_1_2 <: TableauName end
 
-function ButcherTableau(::ESDIRK_3_1_2, ::Type{T}=Float64) where {T}
+function ButcherTableau(::ESDIRK_3_1_2, ::Type{T}=Float64) where {T<:Real}
   c = (2 - sqrt(2)) / 2
   b = (1 - 2 * c) / (4 * c)
   a = 1 - b - c
@@ -451,7 +465,7 @@ Embedded order    2
 """
 struct TRBDF2_3_2_3 <: TableauName end
 
-function ButcherTableau(::TRBDF2_3_2_3, ::Type{T}=Float64) where {T}
+function ButcherTableau(::TRBDF2_3_2_3, ::Type{T}=Float64) where {T<:Real}
   γ = 2 - sqrt(2)
   d = γ / 2
   w = sqrt(2) / 4
@@ -484,7 +498,7 @@ Embedded order    2
 """
 struct TRX2_3_2_3 <: TableauName end
 
-function ButcherTableau(::TRX2_3_2_3, ::Type{T}=Float64) where {T}
+function ButcherTableau(::TRX2_3_2_3, ::Type{T}=Float64) where {T<:Real}
   a = 1 / 4
   b = 1 / 2
   matrix = T[
@@ -516,26 +530,11 @@ Stage order       1
 """
 struct IMEX_FE_BE_2_0_1 <: TableauName end
 
-function ButcherTableau(::IMEX_FE_BE_2_0_1, ::Type{T}=Float64) where {T}
-  a = 1
-  im_matrix = T[
-    0 0
-    0 a
-  ]
-  im_weights = T[0, a]
-  im_order = 1
-  im_tableau = GenericTableau(im_matrix, im_weights, im_order)
-
-  ex_matrix = T[
-    0 0
-    a 0
-  ]
-  ex_weights = T[0, a]
-  ex_order = 1
-  ex_tableau = GenericTableau(ex_matrix, ex_weights, ex_order)
-
-  order = 1
-  IMEXTableau(im_tableau, ex_tableau, order)
+function ButcherTableau(::IMEX_FE_BE_2_0_1, T::Type{<:Real}=Float64)
+  im_tableau = DIRK22(0, 1, 1, T)
+  ex_tableau = DIRK22(0, 1, 0, T)
+  imex_order = 1
+  IMEXTableau(im_tableau, ex_tableau, imex_order)
 end
 
 """
@@ -548,27 +547,11 @@ Stage order       2
 """
 struct IMEX_Midpoint_2_0_2 <: TableauName end
 
-function ButcherTableau(::IMEX_Midpoint_2_0_2, ::Type{T}=Float64) where {T}
-  a = 1
-  b = 1 / 2
-  im_matrix = T[
-    0 0
-    0 b
-  ]
-  im_weights = T[0, a]
-  im_order = 1
-  im_tableau = GenericTableau(im_matrix, im_weights, im_order)
-
-  ex_matrix = T[
-    0 0
-    b 0
-  ]
-  ex_weights = T[0, a]
-  ex_order = 1
-  ex_tableau = GenericTableau(ex_matrix, ex_weights, ex_order)
-
-  order = 2
-  IMEXTableau(im_tableau, ex_tableau, order)
+function ButcherTableau(::IMEX_Midpoint_2_0_2, T::Type{<:Real}=Float64)
+  im_tableau = DIRK22(0, 1 / 2, 1 / 2, T)
+  ex_tableau = DIRK22(0, 1 / 2, 0, T)
+  imex_order = 2
+  IMEXTableau(im_tableau, ex_tableau, imex_order)
 end
 
 const available_tableaus = [

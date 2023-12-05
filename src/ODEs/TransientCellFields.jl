@@ -114,7 +114,8 @@ struct TransientMultiFieldCellField{A} <: TransientCellField
   transient_single_fields::Vector{<:TransientCellField} # used to iterate
 end
 
-function TransientMultiFieldCellField(fields::CellField, derivatives::Tuple)
+const MultiFieldTypes = Union{MultiFieldCellField,MultiFieldFEFunction}
+function TransientMultiFieldCellField(fields::MultiFieldTypes, derivatives::Tuple)
   _flat = _to_transient_single_fields(fields, derivatives)
   TransientMultiFieldCellField(fields, derivatives, _flat)
 end

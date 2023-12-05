@@ -33,11 +33,11 @@ function allocate_disopcache(
   odeop::IMEXODEOperator{<:AbstractSemilinearODE}, odeopcache,
   t::Real, x::AbstractVector
 )
-  vi, ri = zero(x), zero(x)
+  ui, ri = zero(x), zero(x)
   us = (x, x)
   J = allocate_jacobian(odeop, t, us, odeopcache)
   r = allocate_residual(odeop, t, us, odeopcache)
-  (vi, ri, J, r)
+  (ui, ri, J, r)
 end
 
 function allocate_disopcache(
@@ -74,13 +74,13 @@ function DiscreteODEOperator(
   ex_res::AbstractVector{<:AbstractVector},
   tableau::AbstractTableau
 )
-  vi, ri, J, r = disopcache
+  ui, ri, J, r = disopcache
   ti, aii = t0, zero(t0)
   IMEXRungeKuttaNonlinearOperator(
     odeop, odeopcache,
     t0, us0, dt,
     im_res, ex_res, tableau,
-    ti, aii, vi, ri, J, r
+    ti, aii, ui, ri, J, r
   )
 end
 
@@ -119,7 +119,7 @@ function solve_step!(
   u0, = us0
   dt = get_dt(odeslvr)
   tableau = odeslvr.tableau
-  im_tableau, ex_tableau = get_imex_tableaus(tableau)
+  im_tableau, _ = get_imex_tableaus(tableau)
   num_stages = length(get_nodes(im_tableau))
 
   # Allocate or unpack cache
@@ -158,7 +158,7 @@ end
 """
     struct IMEXRungeKuttaNonlinearOperator <: DiscreteODEOperator end
 
-Nonlinear operator corresponding to a Implicit-Explicit Runge-Kutta scheme:
+Nonlinear operator corresponding to an Implicit-Explicit Runge-Kutta scheme:
 ```math
 residual(ti, ui, vi) = im_mass(ti) vi
                      + ∑_{i < j} im_A[i, j] * im_res(tj, uj)
@@ -166,15 +166,15 @@ residual(ti, ui, vi) = im_mass(ti) vi
                      + ∑_{i < j} ex_A[i, j] * ex_res(tj, uj) = 0,
 
 ti = t_n + c[i] * dt
-ui = x
-vi = (x - u_n) / dt,
+ui = u_n + dt * x
+vi = x,
 
 residual(t_(n+1), u_(n+1), v_(n+1)) = im_mass(t_(n+1)) v_(n+1)
                                     + ∑_{1 ≤ i ≤ s} im_b[i] * im_res(ti, ui)
                                     + ∑_{1 ≤ i ≤ s} ex_b[i] * ex_res(ti, ui) = 0,
 
-u_(n+1) = x
-v_(n+1) = (x - u_n) / dt.
+u_(n+1) = u_n + dt * x
+v_(n+1) = x.
 ```
 """
 mutable struct IMEXRungeKuttaNonlinearOperator <: DiscreteODEOperator
@@ -188,7 +188,7 @@ mutable struct IMEXRungeKuttaNonlinearOperator <: DiscreteODEOperator
   tableau::AbstractTableau
   ti::Real
   aii::Real
-  vi::AbstractVector
+  ui::AbstractVector
   ri::AbstractVector
   J::AbstractMatrix
   r::AbstractVector
@@ -200,16 +200,16 @@ function Algebra.residual!(
   x::AbstractVector
 )
   ti, dt, (u0,) = disop.ti, disop.dt, disop.us0
-  vi, ri, aii = disop.vi, disop.ri, disop.aii
+  ui, ri, aii = disop.ui, disop.ri, disop.aii
   im_odeop, _ = get_imex_operators(disop.odeop)
   im_odeopcache, _, res_temp = disop.odeopcache
 
-  @. vi = (x - u0) / dt
-  usi = (x, vi)
+  @. ui = u0 + dt * x
+  usi = (ui, x)
   # Mass matrix
   filter = (false, false, true)
   residual!(r, im_odeop, ti, usi, im_odeopcache; filter)
-  # Implicit res
+  # Implicit residual
   filter = (true, true, false)
   residual!(res_temp, im_odeop, ti, usi, im_odeopcache; filter)
   axpy!(aii, res_temp, r)
@@ -222,11 +222,13 @@ function Algebra.allocate_jacobian(
   disop::IMEXRungeKuttaNonlinearOperator,
   x::AbstractVector
 )
-  ti = disop.ti
+  ti, dt, (u0,) = disop.ti, disop.dt, disop.us0
+  ui = disop.ui
   im_odeop, _ = get_imex_operators(disop.odeop)
   im_odeopcache, _ = disop.odeopcache
 
-  usi = (x, x) # vi does not matter
+  @. ui = u0 + dt * x
+  usi = (ui, x)
   allocate_jacobian(im_odeop, ti, usi, im_odeopcache)
 end
 
@@ -235,13 +237,14 @@ function Algebra.jacobian!(
   disop::IMEXRungeKuttaNonlinearOperator,
   x::AbstractVector
 )
-  ti, dt = disop.ti, disop.dt
-  aii = disop.aii
+  ti, dt, (u0,) = disop.ti, disop.dt, disop.us0
+  ui, aii = disop.ui, disop.aii
   im_odeop, _ = get_imex_operators(disop.odeop)
   im_odeopcache, _ = disop.odeopcache
 
-  usi = (x, x) # vi does not matter
-  ws = (aii, 1 / dt)
+  @. ui = u0 + dt * x
+  usi = (ui, x)
+  ws = (aii * dt, 1)
   fillstored!(J, zero(eltype(J)))
   jacobians!(J, im_odeop, ti, usi, ws, im_odeopcache)
   J
@@ -257,7 +260,7 @@ function Algebra.solve!(
   im_odeopcache, ex_odeopcache, _ = odeopcache
 
   t0, dt, us0 = disop.t0, disop.dt, disop.us0
-  J, r = disop.J, disop.r, ri = disop.J, disop.r, disop.ri
+  J, r, ri = disop.J, disop.r, disop.ri
 
   im_res, ex_res = disop.im_res, disop.ex_res
   tableau = disop.tableau
@@ -296,16 +299,14 @@ function Algebra.solve!(
     disslvrcache = disslvrcaches[islvr]
 
     if explicit
-      copy!(uF, u0)
-      rmul!(uF, -1 / dt)
-      usi = (uF, uF) # ui does not matter
+      im_usi = (u0, u0) # ui and vi do not matter
       filter = (false, false, true)
-      w = 1 / dt
+      w = 1
 
       fillstored!(J, zero(eltype(J)))
-      jacobian!(J, im_odeop, ti, usi, 1, w, im_odeopcache)
-      residual!(r, im_odeop, ti, usi, im_odeopcache; filter)
-      axpy!(1, ri, r)
+      jacobian!(J, im_odeop, ti, im_usi, 1, w, im_odeopcache)
+      # The residual is only the linear combination of the stored residuals
+      copy!(r, ri)
       rmul!(r, -1)
 
       _op = IMEXRungeKuttaLinearOperator(
@@ -317,11 +318,13 @@ function Algebra.solve!(
       _op = disop
     end
 
+    vi = uF
+    disslvrcache = solve!(vi, disslvr, _op, disslvrcache)
     ui = uF
-    disslvrcache = solve!(ui, disslvr, _op, disslvrcache)
+    @. ui = u0 + dt * vi
     disslvrcaches = Base.setindex(disslvrcaches, disslvrcache, islvr)
 
-    # Store new residuals
+    # Store residuals at current stage
     im_usi = (ui, ui)
     ex_usi = (ui,)
     filter = (true, true, false)
@@ -334,14 +337,14 @@ function Algebra.solve!(
   disslvr, islvr = get_solver_index(odeslvr, explicit)
   disslvrcache = disslvrcaches[islvr]
 
-  _op = IMEXRungeKuttaLinearOperator(
+  # Finalizing step
+  finalop = IMEXRungeKuttaFinalizingOperator(
     odeop, odeopcache,
     t0, us0, dt,
     im_res, ex_res, tableau, J, r
   )
-  usF, disslvrcache = _finalize_imex_rk!(usF, disslvr, _op, disslvrcache)
+  usF, disslvrcaches = solve!(usF, odeslvr, finalop, disslvrcaches)
 
-  disslvrcaches = Base.setindex(disslvrcaches, disslvrcache, islvr)
   (usF, disslvrcaches)
 end
 
@@ -351,7 +354,7 @@ end
 """
     struct IMEXRungeKuttaLinearOperator <: LinearDiscreteODEOperator end
 
-Linear operator corresponding to a Implicit-Explicit Runge-Kutta scheme:
+Linear operator corresponding to an Implicit-Explicit Runge-Kutta scheme:
 ```math
 residual(ti, ui, vi) = im_mass(ti) vi
                      + ∑_{i < j} im_A[i, j] * (im_stiffness(tj) uj + im_res(tj))
@@ -359,15 +362,15 @@ residual(ti, ui, vi) = im_mass(ti) vi
                      + ∑_{i < j} ex_A[i, j] * ex_res(tj, uj) = 0,
 
 ti = t_n + c[i] * dt
-ui = x
-vi = (x - u_n) / dt,
+ui = un + dt * x
+vi = x,
 
 residual(t_(n+1), u_(n+1), v_(n+1)) = im_mass(t_(n+1)) v_(n+1)
                                     + ∑_{1 ≤ i ≤ s} im_b[i] * (im_stiffness(ti) ui + im_res(ti))
                                     + ∑_{1 ≤ i ≤ s} ex_b[i] * ex_res(ti, ui) = 0,
 
-u_(n+1) = x
-v_(n+1) = (u_(n+1) - u_n) / dt.
+u_(n+1) = un + dt * x
+v_(n+1) = x.
 ```
 """
 mutable struct IMEXRungeKuttaLinearOperator <: LinearDiscreteODEOperator
@@ -394,7 +397,7 @@ function Algebra.solve!(
 )
   odeop, odeopcache = disop.odeop, disop.odeopcache
   im_odeop, ex_odeop = get_imex_operators(odeop)
-  im_odeopcache, ex_odeopcache, res_temp = odeopcache
+  im_odeopcache, ex_odeopcache, _ = odeopcache
 
   t0, dt, us0 = disop.t0, disop.dt, disop.us0
   J, r = disop.J, disop.r
@@ -417,42 +420,36 @@ function Algebra.solve!(
     ti = t0 + c[i] * dt
     update_odeopcache!(odeopcache, odeop, ti)
 
-    # Take linear combination of previous residuals
-    fill!(res_temp, zero(eltype(res_temp)))
-    for j in 1:i-1
-      im_coef = im_A[i, j]
-      if !iszero(im_coef)
-        axpy!(im_coef, im_res[j], res_temp)
-      end
-      ex_coef = ex_A[i, j]
-      if !iszero(ex_coef)
-        axpy!(ex_coef, ex_res[j], res_temp)
-      end
-    end
-
     # Update jacobian and residual
-    ui, vi = uF, uF
-    copy!(vi, u0)
-    rmul!(vi, -1 / dt)
-    im_usi = (ui, vi) # ui does not matter
-    ws = (im_A[i, i], 1 / dt)
+    im_usi = (u0, u0)
+    ws = (im_A[i, i] * dt, 1)
+    filter = (true, true, false)
 
     fillstored!(J, zero(eltype(J)))
     jacobians!(J, im_odeop, ti, im_usi, ws, im_odeopcache)
-    # Extract rest of residual
-    filter = (true, false, false)
     residual!(r, im_odeop, ti, im_usi, im_odeopcache; filter)
-    axpy!(im_A[i, i], r, res_temp)
-    # Extract rest of mass matrix
-    filter = (false, false, true)
-    residual!(r, im_odeop, ti, im_usi, im_odeopcache; filter)
-    axpy!(1, res_temp, r)
+    rmul!(r, im_A[i, i])
+
+    # Add linear combination of residuals at previous stages
+    for j in 1:i-1
+      im_coef = im_A[i, j]
+      if !iszero(im_coef)
+        axpy!(im_coef, im_res[j], r)
+      end
+      ex_coef = ex_A[i, j]
+      if !iszero(ex_coef)
+        axpy!(ex_coef, ex_res[j], r)
+      end
+    end
     rmul!(r, -1)
 
     # Solve the discrete ODE operator
-    disslvrcache = solve!(ui, disslvr, disop, disslvrcache)
+    vi = uF
+    disslvrcache = solve!(vi, disslvr, disop, disslvrcache)
+    ui = uF
+    @. ui = u0 + dt * vi
 
-    # Store new residuals
+    # Store residuals at current stage
     im_usi = (ui, ui)
     ex_usi = (ui,)
     filter = (true, true, false)
@@ -460,17 +457,56 @@ function Algebra.solve!(
     residual!(ex_res[i], ex_odeop, ti, ex_usi, ex_odeopcache; filter)
   end
 
-  # Final mass system for the update
-  usF, disslvrcache = _finalize_imex_rk!(usF, disslvr, disop, disslvrcache)
+  # Finalizing step
+  finalop = IMEXRungeKuttaFinalizingOperator(
+    odeop, odeopcache,
+    t0, us0, dt,
+    im_res, ex_res, tableau, J, r
+  )
+  usF, disslvrcaches = solve!(usF, odeslvr, finalop, disslvrcaches)
 
-  disslvrcaches = Base.setindex(disslvrcaches, disslvrcache, islvr)
   (usF, disslvrcaches)
 end
 
-#########
-# Utils #
-#########
-function _finalize_imex_rk!(usF, disslvr, disop, disslvrcache)
+#############
+# Finalizer #
+#############
+"""
+    struct IMEXRungeKuttaFinalizingOperator <: LinearDiscreteODEOperator end
+
+Linear operator corresponding to the final update of an Implicit-Explicit
+Runge-Kutta scheme:
+```math
+residual(t_(n+1), u_(n+1), v_(n+1)) = im_mass(t_(n+1)) v_(n+1)
+                                    + ∑_{1 ≤ i ≤ s} im_b[i] * (im_stiffness(ti) ui + im_res(ti))
+                                    + ∑_{1 ≤ i ≤ s} ex_b[i] * ex_res(ti, ui) = 0,
+
+u_(n+1) = un + dt * x
+v_(n+1) = x.
+```
+"""
+mutable struct IMEXRungeKuttaFinalizingOperator <: LinearDiscreteODEOperator
+  odeop::ODEOperator
+  odeopcache
+  t0::Real
+  us0::NTuple{1,AbstractVector}
+  dt::Real
+  im_res::AbstractVector{<:AbstractVector}
+  ex_res::AbstractVector{<:AbstractVector}
+  tableau::AbstractTableau
+  J::AbstractMatrix
+  r::AbstractVector
+end
+
+Algebra.get_matrix(disop::IMEXRungeKuttaFinalizingOperator) = disop.J
+
+Algebra.get_vector(disop::IMEXRungeKuttaFinalizingOperator) = disop.r
+
+function Algebra.solve!(
+  usF::NTuple{1,AbstractVector},
+  odeslvr::IMEXRungeKutta, disop::IMEXRungeKuttaFinalizingOperator,
+  disslvrcaches
+)
   t0, dt, us0 = disop.t0, disop.dt, disop.us0
   J, r = disop.J, disop.r
   odeop, odeopcache = disop.odeop, disop.odeopcache
@@ -485,17 +521,15 @@ function _finalize_imex_rk!(usF, disslvr, disop, disslvrcache)
   uF, = usF
   tF = t0 + dt
 
-  im_usF = (uF, uF) # uF does not matter but vF does
-  copy!(uF, u0)
-  rmul!(uF, -1 / dt)
-  w = 1 / dt
-  filter = (false, false, true)
+  # Update jacobian and residual
+  im_usF = (uF, uF) # uF and vF do not matter
+  w = 1
 
   fillstored!(J, zero(eltype(J)))
   jacobian!(J, im_odeop, tF, im_usF, 1, w, im_odeopcache)
-  residual!(r, im_odeop, tF, im_usF, im_odeopcache; filter)
 
   # Linear combination of residuals
+  fill!(r, zero(eltype(r)))
   for i in eachindex(im_b, ex_b)
     im_coef = im_b[i]
     if !iszero(im_coef)
@@ -508,8 +542,16 @@ function _finalize_imex_rk!(usF, disslvr, disop, disslvrcache)
   end
   rmul!(r, -1)
 
-  disslvrcache = solve!(uF, disslvr, disop, disslvrcache)
+  explicit = true
+  disslvr, islvr = get_solver_index(odeslvr, explicit)
+  disslvrcache = disslvrcaches[islvr]
+
+  vF = uF
+  disslvrcache = solve!(vF, disslvr, disop, disslvrcache)
+  @. uF = u0 + dt * vF
 
   usF = (uF,)
-  (usF, disslvrcache)
+  disslvrcaches = Base.setindex(disslvrcaches, disslvrcache, islvr)
+
+  (usF, disslvrcaches)
 end

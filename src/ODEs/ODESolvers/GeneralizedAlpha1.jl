@@ -92,7 +92,7 @@ function solve_step!(
   cache
 )
   # Unpack us and ODE solver
-  u0, v0 = us0
+  u0, _ = us0
   dt = get_dt(odeslvr)
   αm, αf, γ = odeslvr.αm, odeslvr.αf, odeslvr.γ
   tα = t0 + αf * dt
@@ -279,9 +279,9 @@ function Algebra.solve!(
   (usF, disslvrcache)
 end
 
-#########
-# Utils #
-#########
+#############
+# Finalizer #
+#############
 function _finalize_alpha1!(
   usF::NTuple{2,AbstractVector}, us0::NTuple{2,AbstractVector},
   x::AbstractVector, dt::Real, γ::Real
@@ -293,6 +293,9 @@ function _finalize_alpha1!(
   (uF, vF)
 end
 
+#########
+# Utils #
+#########
 function _get_ws(dt, αm, αf, γ)
   wu = αf * dt * γ
   wv = αm

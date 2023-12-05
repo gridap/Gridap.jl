@@ -231,9 +231,9 @@ function Algebra.solve!(
   (usF, disslvrcache)
 end
 
-#########
-# Utils #
-#########
+#############
+# Finalizer #
+#############
 function _finalize_euler!(
   usF::NTuple{1,AbstractVector}, us0::NTuple{1,AbstractVector},
   x::AbstractVector, dt::Real
