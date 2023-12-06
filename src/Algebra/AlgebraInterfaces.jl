@@ -37,8 +37,7 @@ function allocate_vector(::Type{V},indices) where V
 end
 
 function allocate_vector(::Type{V},n::Integer) where V
-  T = eltype(V)
-  zeros(T,n)
+  V(undef,n)
 end
 
 function allocate_vector(::Type{<:BlockVector{T,VV}},indices::BlockedUnitRange) where {T,VV}
