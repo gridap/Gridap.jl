@@ -86,7 +86,7 @@ end
 Allocate a vector in the domain of matrix `matrix`.
 """
 function allocate_in_domain(matrix::AbstractMatrix{T}) where T
-  allocate_in_range(Vector{T},matrix)
+  allocate_in_domain(Vector{T},matrix)
 end
 
 function allocate_in_domain(matrix::BlockMatrix{T}) where T
