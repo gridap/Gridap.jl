@@ -16,7 +16,9 @@ num_dirichlet_dofs(f::SingleFieldFESpace) = length(get_dirichlet_dof_ids(f))
 """
 function zero_dirichlet_values(f::SingleFieldFESpace)
   V = get_vector_type(f)
-  allocate_vector(V,num_dirichlet_dofs(f))
+  dir_values = allocate_vector(V,num_dirichlet_dofs(f))
+  fill!(dir_values,zero(eltype(V)))
+  return dir_values
 end
 
 """
