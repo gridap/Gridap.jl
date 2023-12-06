@@ -3,7 +3,6 @@ module Order2FETests
 using Test
 
 using LinearAlgebra
-using ForwardDiff
 
 using Gridap
 using Gridap.Algebra
@@ -12,9 +11,12 @@ using Gridap.ODEs
 
 # Analytical functions
 u(x, t) = (1.0 - x[1]) * x[1] * (1.0 - x[2]) * x[2] * (1 + t * (1 - t))
+∂tu(x, t) = ∂t(u)(x, t)
+∂ttu(x, t) = ∂tt(u)(x, t)
+
 u(t::Real) = x -> u(x, t)
-∂tu(t::Real) = ∂t(u)(t)
-∂ttu(t::Real) = ∂tt(u)(t)
+∂tu(t::Real) = x -> ∂tu(x, t)
+∂ttu(t::Real) = x -> ∂ttu(x, t)
 
 # Geometry
 domain = (0, 1, 0, 1)
@@ -33,40 +35,42 @@ degree = 2 * order
 dΩ = Measure(Ω, degree)
 
 # FE operator
+order = 2
 f(t) = x -> ∂tt(u)(x, t) + ∂t(u)(x, t) - Δ(u(t))(x)
+
 mass(t, ∂ₜₜu, v) = ∫(∂ₜₜu ⋅ v) * dΩ
+mass(t, u, ∂ₜₜu, v) = mass(t, ∂ₜₜu, v)
 damping(t, ∂ₜu, v) = ∫(∂ₜu ⋅ v) * dΩ
 stiffness(t, u, v) = ∫(∇(u) ⊙ ∇(v)) * dΩ
 forcing(t, v) = ∫(f(t) ⋅ v) * dΩ
 
-res(t, u, v) = mass(t, ∂tt(u), v) + damping(t, ∂t(u), v) + stiffness(t, u, v) - forcing(t, v)
+res(t, u, v) = mass(t, u, ∂tt(u), v) + damping(t, ∂t(u), v) + stiffness(t, u, v) - forcing(t, v)
 jac(t, u, du, v) = stiffness(t, du, v)
 jac_t(t, u, dut, v) = damping(t, dut, v)
 jac_tt(t, u, dutt, v) = mass(t, dutt, v)
 
-mass_at_∂tt(t, u, v) = mass(t, ∂tt(u), v)
-damping_at_∂t(t, u, v) = damping(t, ∂t(u), v)
-res_quasilinear(t, u, v) = damping(t, ∂t(u), v) + stiffness(t, u, v) - forcing(t, v)
-res_linear(t, v) = (-1) * forcing(t, v)
+res_ql(t, u, v) = damping(t, ∂t(u), v) + stiffness(t, u, v) - forcing(t, v)
+res_l(t, v) = (-1) * forcing(t, v)
 
-feop_nonlinear = TransientFEOperator(res, jac, jac_t, jac_tt, U, V)
-feop_quasilinear = TransientQuasilinearFEOperator(mass_at_∂tt, res_quasilinear, jac, jac_t, jac_tt, U, V)
-feop_semilinear = TransientSemilinearFEOperator(mass_at_∂tt, res_quasilinear, jac, jac_t, jac_tt, U, V)
-feop_linear = TransientLinearFEOperator(mass_at_∂tt, damping_at_∂t, stiffness, res_linear, jac, jac_t, jac_tt, U, V)
-
-# Zero explicit residual
-bilin0(t, u, v) = ∫(0 * u * v) * dΩ
+res0(t, u, v) = ∫(0 * u * v) * dΩ
 jac0(t, u, du, v) = ∫(0 * du * v) * dΩ
-feop_imex = TransientIMEXFEOperator(
-  TransientSemilinearFEOperator(mass_at_∂tt, res_quasilinear, jac, jac_t, jac_tt, U, V),
-  TransientFEOperator(bilin0, jac0, jac0, U, V)
-)
+
+args = ((jac, jac_t, jac_tt), U, V)
+args0 = ((jac0, jac0), U, V)
+feop_nl = TransientFEOperator(res, args...)
+feop_ql = TransientQuasilinearFEOperator(mass, res_ql, args...)
+feop_sl = TransientSemilinearFEOperator(mass, res_ql, args...)
+feop_l = TransientLinearFEOperator((stiffness, damping, mass), res_l, args...)
+
+feop_im = TransientSemilinearFEOperator(mass, res_ql, args...)
+feop_ex = TransientFEOperator(res0, args0...)
+feop_imex = TransientIMEXFEOperator(feop_im, feop_ex)
 
 feops = (
-  feop_nonlinear,
-  feop_quasilinear,
-  feop_semilinear,
-  feop_linear,
+  feop_nl,
+  feop_ql,
+  feop_sl,
+  feop_l,
   feop_imex,
 )
 
@@ -86,7 +90,8 @@ uh0 = interpolate_everywhere(u(t0), U0)
 tol = 1.0e-5
 disslvr = LUSolver()
 
-function test_transient_fe_problem_2(odeslvr, feop, uhs0)
+# Testing function
+function test_feop_order2(odeslvr, feop, uhs0)
   fesltn = solve(odeslvr, feop, uhs0, t0, tF)
 
   for (uh_n, t_n) in fesltn
@@ -102,7 +107,7 @@ odeslvrs = ()
 uhs0 = (uh0, ∂tuh0,)
 for odeslvr in odeslvrs
   for feop in feops
-    test_transient_fe_problem_2(odeslvr, feop, uhs0)
+    test_feop_order2(odeslvr, feop, uhs0)
   end
 end
 
@@ -114,7 +119,7 @@ odeslvrs = (
 uhs0 = (uh0, ∂tuh0, ∂ttuh0,)
 for odeslvr in odeslvrs
   for feop in feops
-    test_transient_fe_problem_2(odeslvr, feop, uhs0)
+    test_feop_order2(odeslvr, feop, uhs0)
   end
 end
 

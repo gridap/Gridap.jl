@@ -24,8 +24,8 @@ end
     struct ODEOpFromFEOp <: ODEOperator end
 
 Wrapper that transforms a `TransientFEOperator` into an `ODEOperator`, i.e.
-takes `residual(t, uh, ∂t(uh), ..., ∂t^N(uh), vh)` and returns
-`residual(t, us)`, where `us[k] = ∂t^k(us)` and `uf` represents the free values
+takes `residual(t, uh, ∂t[uh], ..., ∂t^N[uh], vh)` and returns
+`residual(t, us)`, where `us[k] = ∂t^k[us]` and `uf` represents the free values
 of `uh`.
 """
 struct ODEOpFromFEOp{C} <: ODEOperator{C}
@@ -39,22 +39,26 @@ function allocate_odeopcache(
   odeop::ODEOpFromFEOp,
   t::Real, us::Tuple{Vararg{AbstractVector}}
 )
+  # Allocate FE spaces for derivatives
+  order = get_order(odeop)
   Ut = get_trial(odeop.feop)
   U = allocate_space(Ut)
   Uts = (Ut,)
   Us = (U,)
-
-  order = get_order(odeop)
   for k in 1:order
     Uts = (Uts..., ∂t(Uts[k]))
     Us = (Us..., allocate_space(Uts[k+1]))
   end
+
+  # Allocate the cache of the FE operator
   feopcache = allocate_feopcache(odeop.feop)
 
+  # Create uh from us for assembly
   V = get_test(odeop.feop)
   v = get_fe_basis(V)
   uh = _make_uh_from_us(odeop, us, Us)
 
+  # Store the jacobians that are constant
   jac_const_mats = ()
   use_jacvec = false
   for k in 0:order
@@ -67,6 +71,8 @@ function allocate_odeopcache(
     jac_const_mats = (jac_const_mats..., jac_const_mat)
   end
 
+  # Allocate a vector to compute the jacobian vector product if any jacobian
+  # has been stored
   jacvec = nothing
   if use_jacvec
     res = get_res(odeop.feop)
@@ -74,6 +80,7 @@ function allocate_odeopcache(
     jacvec = allocate_vector(get_assembler(odeop.feop), vecdata)
   end
 
+  # Store the forcing term if it is constant
   res_const_vec = nothing
   if is_residual_constant(odeop)
     res = get_res(odeop.feop)
@@ -123,6 +130,7 @@ function Algebra.residual!(
   else
     fill!(r, zero(eltype(r)))
   end
+
   r
 end
 
@@ -139,6 +147,7 @@ function Algebra.residual!(
   mass_needed = filter[order+2]
   mass_const = !isnothing(odeopcache.jac_const_mats[end])
 
+  # Compute uh from us if assembly is needed
   if (res_needed && !res_const) || (mass_needed && !mass_const)
     V = get_test(odeop.feop)
     v = get_fe_basis(V)
@@ -147,6 +156,7 @@ function Algebra.residual!(
 
   fill!(r, zero(eltype(r)))
 
+  # Add residual (without mass) if needed
   if res_needed
     if res_const
       axpy!(1, odeopcache.res_const_vec, r)
@@ -157,13 +167,23 @@ function Algebra.residual!(
     end
   end
 
+  # Add mass if needed
   if mass_needed
     if mass_const
       mul!(odeopcache.jacvec, odeopcache.jac_const_mats[end], us[end])
       axpy!(1, odeopcache.jacvec, r)
     else
+      # Build the time derivative
+      ∂tNuh = uh
+      for _ in 1:order
+        ∂tNuh = ∂t(∂tNuh)
+      end
       mass = get_mass(odeop.feop)
-      vecdata = collect_cell_vector(V, mass(t, uh, v))
+      if odeop isa AbstractSemilinearODE
+        vecdata = collect_cell_vector(V, mass(t, ∂tNuh, v))
+      else
+        vecdata = collect_cell_vector(V, mass(t, uh, ∂tNuh, v))
+      end
       assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
     end
   end
@@ -182,9 +202,11 @@ function Algebra.residual!(
   res_const = !isnothing(odeopcache.res_const_vec)
 
   form_needed_not_const = any(
-    i -> filter[i+2] && isnothing(odeopcache.jac_const_mats[i+1]), 0:order
+    k -> filter[k+2] && isnothing(odeopcache.jac_const_mats[k+1]),
+    0:order
   )
 
+  # Compute uh from us if assembly is needed
   if (res_needed && !res_const) || form_needed_not_const
     V = get_test(odeop.feop)
     v = get_fe_basis(V)
@@ -193,6 +215,7 @@ function Algebra.residual!(
 
   fill!(r, zero(eltype(r)))
 
+  # Add the forcing term if needed
   if res_needed
     if res_const
       axpy!(1, odeopcache.res_const_vec, r)
@@ -203,17 +226,26 @@ function Algebra.residual!(
     end
   end
 
+  # Add the forms if needed
+  ∂tkuh = uh
   for k in 0:order
-    !filter[k+2] && continue
-
-    form_const = !isnothing(odeopcache.jac_const_mats[k+1])
-    if form_const
-      mul!(odeopcache.jacvec, odeopcache.jac_const_mats[k+1], us[k+1])
-      axpy!(1, odeopcache.jacvec, r)
-    else
-      form = get_forms(odeop.feop)[order+1-k]
-      vecdata = collect_cell_vector(V, form(t, uh, v))
-      assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
+    idx_form = k + 1
+    idx_filter = k + 2
+    if filter[idx_filter]
+      jac_mat = odeopcache.jac_const_mats[idx_form]
+      form_const = !isnothing(jac_mat)
+      if form_const
+        mul!(odeopcache.jacvec, jac_mat, us[idx_form])
+        axpy!(1, odeopcache.jacvec, r)
+      else
+        form = get_forms(odeop.feop)[idx_form]
+        println(get_forms(odeop.feop))
+        vecdata = collect_cell_vector(V, form(t, ∂tkuh, v))
+        assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
+      end
+    end
+    if k < order
+      ∂tkuh = ∂t(∂tkuh)
     end
   end
 
@@ -226,12 +258,10 @@ function Algebra.allocate_jacobian(
   odeopcache
 )
   uh = _make_uh_from_us(odeop, us, odeopcache.Us)
-
   _matdata = ()
   for k in 0:get_order(odeop.feop)
     _matdata = (_matdata..., _matdata_jacobian(odeop.feop, t, uh, k, 0))
   end
-
   matdata = _vcat_matdata(_matdata)
   allocate_matrix(get_assembler(odeop.feop), matdata)
 end
@@ -242,6 +272,7 @@ function Algebra.jacobian!(
   k::Integer, γ::Real,
   odeopcache
 )
+  # Retrieve stored jacobian or compute and assemble the domain contribution
   if !isnothing(odeopcache.jac_const_mats[k+1])
     axpy_sparse!(γ, odeopcache.jac_const_mats[k+1], J)
   else
@@ -264,6 +295,8 @@ function jacobians!(
     uh = _make_uh_from_us(odeop, us, odeopcache.Us)
   end
 
+  # Loop through jacobians and check whether they are already stored,
+  # otherwise compute and add the domain contributions
   _matdata = ()
   for k in 0:get_order(odeop)
     γ = γs[k+1]
@@ -276,6 +309,7 @@ function jacobians!(
     end
   end
 
+  # Assemble the domain contributions if needed
   if need_assembly
     matdata = _vcat_matdata(_matdata)
     assemble_matrix_add!(J, get_assembler(odeop.feop), matdata)
@@ -317,26 +351,17 @@ function _vcat_matdata(_matdata)
     term_to_cellidsrows_j = (term_to_cellidsrows_j..., _matdata[j][2])
     term_to_cellidscols_j = (term_to_cellidscols_j..., _matdata[j][3])
   end
-
   term_to_cellmat = vcat(term_to_cellmat_j...)
   term_to_cellidsrows = vcat(term_to_cellidsrows_j...)
   term_to_cellidscols = vcat(term_to_cellidscols_j...)
-
   (term_to_cellmat, term_to_cellidsrows, term_to_cellidscols)
 end
 
 function _make_uh_from_us(odeop, us, Us)
   u = EvaluationFunction(Us[1], us[1])
-
   dus = ()
   for k in 1:get_order(odeop)
     dus = (dus..., EvaluationFunction(Us[k+1], us[k+1]))
   end
-
-  if first(Us) isa MultiFieldFESpace
-    TransientCellFieldType = TransientMultiFieldCellField
-  else
-    TransientCellFieldType = TransientCellField
-  end
-  TransientCellFieldType(u, dus)
+  TransientCellField(u, dus)
 end

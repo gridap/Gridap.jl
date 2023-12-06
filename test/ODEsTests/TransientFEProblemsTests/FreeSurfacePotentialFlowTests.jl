@@ -106,9 +106,9 @@ function test_flow_operator(op)
   end
 end
 
-test_flow_operator(op_const)
-test_flow_operator(op_trans)
-# test_flow_operator(op_ad) # Not working yet
-test_flow_operator(op_multifield)
+# op_ad not working yet
+for op in (op_const, op_trans, op_multifield)
+  test_flow_operator(op)
+end
 
 end

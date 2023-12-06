@@ -51,17 +51,10 @@ Transient `CellField` for a single-field `FESpace`.
 struct TransientSingleFieldCellField{A} <: TransientCellField
   cellfield::A
   derivatives::Tuple # {Vararg{A,B} where B}
-
-  function TransientSingleFieldCellField(cellfield, derivatives)
-    forbidden_types = (MultiFieldCellField, MultiFieldFEFunction, TransientMultiFieldCellField)
-    if any(type -> cellfield isa type, forbidden_types)
-      throw("Building a `TransientSingleFieldCellField` from a $(typeof(cellfield))")
-    end
-    A = typeof(cellfield)
-    new{A}(cellfield, derivatives)
-  end
 end
 
+# Default constructor (see `TransientMultiFieldCellField` for the implementations
+# of `TransientCellField` when the field is a `MultiFieldCellField`)
 function TransientCellField(field::CellField, derivatives::Tuple)
   TransientSingleFieldCellField(field, derivatives)
 end
@@ -130,6 +123,7 @@ function TransientMultiFieldCellField(fields::MultiFieldTypes, derivatives::Tupl
   TransientMultiFieldCellField(fields, derivatives, _flat)
 end
 
+# Default constructors
 function TransientCellField(fields::MultiFieldTypes, derivatives::Tuple)
   TransientMultiFieldCellField(fields, derivatives)
 end

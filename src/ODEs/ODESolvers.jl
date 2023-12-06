@@ -72,7 +72,7 @@ An `ODESolver` is a map that given `(t_n, us_n)` returns `(t_(n+1), us_(n+1))`
 and the corresponding updated cache.
 
 Here `us_n` is a vector of size `N-1`, where `N` is the order of the
-`ODEOperator`, and `us_n[k] = ∂t^k(u)(t_n)` is the `k`-th-order time derivative
+`ODEOperator`, and `us_n[k] = ∂t^k[u](t_n)` is the `k`-th-order time derivative
 of `u` at `t_n`.
 
 # Mandatory

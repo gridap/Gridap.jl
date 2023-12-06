@@ -3,7 +3,6 @@ module StokesEquationTests
 using Test
 
 using LinearAlgebra
-using ForwardDiff
 
 using Gridap
 using Gridap.Algebra

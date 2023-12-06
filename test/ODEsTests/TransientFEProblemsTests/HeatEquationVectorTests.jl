@@ -3,7 +3,6 @@ module HeatEquationVectorTests
 using Test
 
 using LinearAlgebra
-using ForwardDiff
 
 using Gridap
 using Gridap.Algebra
@@ -11,11 +10,10 @@ using Gridap.FESpaces
 using Gridap.ODEs
 
 # Analytical functions
-u(x, t) = VectorValue(x[1] * (1 - x[2]), (1 - x[1]) * x[2]) * t
-u(t::Real) = x -> u(x, t)
-u(x) = t -> u(x, t)
-
+u(x, t) = VectorValue(x[1] * (1 - x[2]), (1 - x[1]) * x[2]) * (1 + t)
 ∂tu(x, t) = ∂t(u)(x, t)
+
+u(t::Real) = x -> u(x, t)
 ∂tu(t::Real) = x -> ∂tu(x, t)
 
 # Geometry
@@ -36,17 +34,41 @@ dΩ = Measure(Ω, degree)
 
 # FE operator
 f(t) = x -> ∂t(u)(x, t) - Δ(u(t))(x)
+
 mass(t, ∂ₜu, v) = ∫(∂ₜu ⋅ v) * dΩ
+mass(t, u, ∂ₜu, v) = mass(t, ∂ₜu, v)
 stiffness(t, u, v) = ∫(∇(u) ⊙ ∇(v)) * dΩ
 forcing(t, v) = ∫(f(t) ⋅ v) * dΩ
 
-res(t, u, v) = mass(t, ∂t(u), v) + stiffness(t, u, v) - forcing(t, v)
+res(t, u, v) = mass(t, u, ∂t(u), v) + stiffness(t, u, v) - forcing(t, v)
 jac(t, u, du, v) = stiffness(t, du, v)
-jac_t(t, u, dut, v) = mass(t, dut, v)
+jac_t(t, u, dut, v) = mass(t, u, dut, v)
 
-feop = TransientFEOperator(res, jac, jac_t, U, V)
-feop_AD = TransientFEOperator(res, U, V)
-feops = (feop, feop_AD,)
+res_ql(t, u, v) = stiffness(t, u, v) - forcing(t, v)
+res_l(t, v) = (-1) * forcing(t, v)
+
+args_man = ((jac, jac_t), U, V)
+feop_nl_man = TransientFEOperator(res, args_man...)
+feop_ql_man = TransientQuasilinearFEOperator(mass, res_ql, args_man...)
+feop_sl_man = TransientSemilinearFEOperator(mass, res_ql, args_man...)
+feop_l_man = TransientLinearFEOperator((stiffness, mass), res_l, args_man...)
+
+args_ad = (U, V)
+feop_nl_ad = TransientFEOperator(res, args_ad...)
+feop_ql_ad = TransientQuasilinearFEOperator(mass, res_ql, args_ad...)
+feop_sl_ad = TransientSemilinearFEOperator(mass, res_ql, args_ad...)
+feop_l_ad = TransientLinearFEOperator((stiffness, mass), res_l, args_ad...)
+
+feops = (
+  feop_nl_man,
+  feop_ql_man,
+  feop_sl_man,
+  feop_l_man,
+  feop_nl_ad,
+  feop_ql_ad,
+  feop_sl_ad,
+  # feop_l_ad,
+)
 
 # Initial conditions
 t0 = 0.0

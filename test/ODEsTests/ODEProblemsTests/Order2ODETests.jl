@@ -46,10 +46,10 @@ function u(t)
   s
 end
 
-odeop_nonlinear = ODEOperatorMock{NonlinearODE}(forms, forcing)
-odeop_quasilinear = ODEOperatorMock{QuasilinearODE}(forms, forcing)
-odeop_semilinear = ODEOperatorMock{SemilinearODE}(forms, forcing)
-odeop_linear = ODEOperatorMock{LinearODE}(forms, forcing)
+odeop_nl = ODEOperatorMock{NonlinearODE}(forms, forcing)
+odeop_ql = ODEOperatorMock{QuasilinearODE}(forms, forcing)
+odeop_sl = ODEOperatorMock{SemilinearODE}(forms, forcing)
+odeop_l = ODEOperatorMock{LinearODE}(forms, forcing)
 
 # Testing some random combinations of `IMEXODEOperator`s
 odeop_imex1 = GenericIMEXODEOperator(
@@ -63,10 +63,10 @@ odeop_imex2 = GenericIMEXODEOperator(
 )
 
 odeops = (
-  odeop_nonlinear,
-  odeop_quasilinear,
-  odeop_semilinear,
-  odeop_linear,
+  odeop_nl,
+  odeop_ql,
+  odeop_sl,
+  odeop_l,
   odeop_imex1,
   odeop_imex2,
 )
