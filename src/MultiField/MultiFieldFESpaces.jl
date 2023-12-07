@@ -137,13 +137,6 @@ function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::BlockMultiFieldStyle{N
   return BlockArrays.blockedrange(block_num_dofs)
 end
 
-function FESpaces.zero_free_values(f::MultiFieldFESpace{<:BlockMultiFieldStyle{NB,SB,P}}) where {NB,SB,P}
-  block_ranges   = get_block_ranges(NB,SB,P)
-  block_num_dofs = map(range->sum(map(num_free_dofs,f.spaces[range])),block_ranges)
-  block_vtypes   = map(range->get_vector_type(first(f.spaces[range])),block_ranges)
-  return mortar(map(allocate_vector,block_vtypes,block_num_dofs))
-end
-
 FESpaces.get_dof_value_type(f::MultiFieldFESpace{MS,CS,V}) where {MS,CS,V} = eltype(V)
 
 FESpaces.get_vector_type(f::MultiFieldFESpace) = f.vector_type
