@@ -37,8 +37,7 @@ function allocate_vector(::Type{V},indices) where V
 end
 
 function allocate_vector(::Type{V},n::Integer) where V
-  T = eltype(V)
-  zeros(T,n)
+  V(undef,n)
 end
 
 function allocate_vector(::Type{<:BlockVector{T,VV}},indices::BlockedUnitRange) where {T,VV}
@@ -86,7 +85,7 @@ end
 Allocate a vector in the domain of matrix `matrix`.
 """
 function allocate_in_domain(matrix::AbstractMatrix{T}) where T
-  allocate_in_range(Vector{T},matrix)
+  allocate_in_domain(Vector{T},matrix)
 end
 
 function allocate_in_domain(matrix::BlockMatrix{T}) where T

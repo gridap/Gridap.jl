@@ -206,7 +206,9 @@ function zero_free_values(f::TransientMultiFieldTrialFESpace{<:BlockMultiFieldSt
   block_ranges   = get_block_ranges(NB,SB,P)
   block_num_dofs = map(range->sum(map(num_free_dofs,f.spaces[range])),block_ranges)
   block_vtypes   = map(range->get_vector_type(first(f.spaces[range])),block_ranges)
-  return mortar(map(allocate_vector,block_vtypes,block_num_dofs))
+  values = mortar(map(allocate_vector,block_vtypes,block_num_dofs))
+  fill!(values,zero(eltype(values)))
+  return values
 end
 
 get_dof_value_type(f::TransientMultiFieldTrialFESpace{MS,CS,V}) where {MS,CS,V} = eltype(V)
