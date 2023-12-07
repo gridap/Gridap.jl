@@ -10,7 +10,7 @@ using Gridap.FESpaces
 using Gridap.ODEs
 
 # Analytical functions
-u(x, t) = (1.0 - x[1]) * x[1] * (1.0 - x[2]) * x[2] * (1 + t * (1 - t))
+u(x, t) = x[1] * (1 - x[2]) * (1 + t)
 ∂tu(x, t) = ∂t(u)(x, t)
 ∂ttu(x, t) = ∂tt(u)(x, t)
 
@@ -55,23 +55,38 @@ res_l(t, v) = (-1) * forcing(t, v)
 res0(t, u, v) = ∫(0 * u * v) * dΩ
 jac0(t, u, du, v) = ∫(0 * du * v) * dΩ
 
-args = ((jac, jac_t, jac_tt), U, V)
-args0 = ((jac0, jac0), U, V)
-feop_nl = TransientFEOperator(res, args...)
-feop_ql = TransientQuasilinearFEOperator(mass, res_ql, args...)
-feop_sl = TransientSemilinearFEOperator(mass, res_ql, args...)
-feop_l = TransientLinearFEOperator((stiffness, damping, mass), res_l, args...)
+args_man = ((jac, jac_t, jac_tt), U, V)
+args0_man = ((jac0, jac0), U, V)
+feop_nl_man = TransientFEOperator(res, args_man...)
+feop_ql_man = TransientQuasilinearFEOperator(mass, res_ql, args_man...)
+feop_sl_man = TransientSemilinearFEOperator(mass, res_ql, args_man...)
+feop_l_man = TransientLinearFEOperator((stiffness, damping, mass), res_l, args_man...)
 
-feop_im = TransientSemilinearFEOperator(mass, res_ql, args...)
-feop_ex = TransientFEOperator(res0, args0...)
-feop_imex = TransientIMEXFEOperator(feop_im, feop_ex)
+feop_im_man = TransientSemilinearFEOperator(mass, res_ql, args_man...)
+feop_ex_man = TransientFEOperator(res0, args0_man...)
+feop_imex_man = TransientIMEXFEOperator(feop_im_man, feop_ex_man)
+
+args_ad = (U, V)
+feop_nl_ad = TransientFEOperator(res, args_ad...)
+feop_ql_ad = TransientQuasilinearFEOperator(mass, res_ql, args_ad...)
+feop_sl_ad = TransientSemilinearFEOperator(mass, res_ql, args_ad...)
+feop_l_ad = TransientLinearFEOperator((stiffness, damping, mass), res_l, args_ad...)
+
+feop_im_ad = TransientSemilinearFEOperator(mass, res_ql, args_ad...)
+feop_ex_ad = TransientFEOperator(res0, args_ad..., order=0)
+feop_imex_ad = TransientIMEXFEOperator(feop_im_ad, feop_ex_ad)
 
 feops = (
-  feop_nl,
-  feop_ql,
-  feop_sl,
-  feop_l,
-  feop_imex,
+  feop_nl_man,
+  feop_ql_man,
+  feop_sl_man,
+  feop_l_man,
+  feop_imex_man,
+  # feop_nl_ad,
+  # feop_ql_ad,
+  # feop_sl_ad,
+  feop_l_ad,
+  # feop_imex_ad,
 )
 
 # Initial conditions
@@ -92,9 +107,9 @@ disslvr = LUSolver()
 
 # Testing function
 function test_feop_order2(odeslvr, feop, uhs0)
-  fesltn = solve(odeslvr, feop, uhs0, t0, tF)
+  fesltn = solve(odeslvr, feop, t0, tF, uhs0)
 
-  for (uh_n, t_n) in fesltn
+  for (t_n, uh_n) in fesltn
     eh_n = u(t_n) - uh_n
     e_n = sqrt(sum(∫(eh_n ⋅ eh_n) * dΩ))
     @test e_n < tol

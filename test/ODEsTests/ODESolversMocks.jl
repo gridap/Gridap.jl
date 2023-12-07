@@ -83,18 +83,17 @@ end
 function ODEs.allocate_disopcache(
   odeslvr::ODESolverMock,
   odeop::ODEOperator, odeopcache,
-  t::Real, x::AbstractVector
+  t0::Real, us0::Tuple{Vararg{AbstractVector}}
 )
   N = get_order(odeop)
-  ntuple(i -> zero(x), N + 1)
+  ntuple(k -> zero(us0[k]), N)
 end
 
 function ODEs.DiscreteODEOperator(
   odeslvr::ODESolverMock, odeop::ODEOperator,
   odeopcache, disopcache,
-  t0::Real, us0::Tuple{Vararg{AbstractVector}}, dt::Real
+  t0::Real, us0::Tuple{Vararg{AbstractVector}}, dt::Real, tx::Real
 )
-  tx = t0 + dt
   usx = disopcache
 
   N = get_order(odeop)
@@ -111,44 +110,39 @@ function ODEs.DiscreteODEOperator(
 
   DiscreteODEOperatorMock(
     odeop, odeopcache,
-    us0, usx, tx, dt, ws
+    us0, dt, tx, usx, ws
   )
 end
 
 function ODEs.solve_step!(
   usF::Tuple{Vararg{AbstractVector}},
   odeslvr::ODESolverMock, odeop::ODEOperator,
-  us0::Tuple{Vararg{AbstractVector}}, t0::Real,
+  t0::Real, us0::Tuple{Vararg{AbstractVector}},
   cache
 )
-  # Unpack us and ODE solver
-  u0 = first(us0)
   dt = get_dt(odeslvr)
+  tF = t0 + dt
 
   # Allocate or unpack cache
   if isnothing(cache)
-    odeopcache = allocate_odeopcache(odeop, t0, (us0..., u0))
-    disopcache = allocate_disopcache(odeslvr, odeop, odeopcache, t0, u0)
+    us0_full = (us0..., us0[1])
+    odeopcache = allocate_odeopcache(odeop, t0, us0_full)
+    disopcache = allocate_disopcache(odeslvr, odeop, odeopcache, t0, us0_full)
     disslvrcache = allocate_disslvrcache(odeslvr)
   else
     odeopcache, disopcache, disslvrcache = cache
   end
 
-  # Create discrete ODE operator
+  # Create and solve discrete ODE operator
   disop = DiscreteODEOperator(
-    odeslvr, odeop,
-    odeopcache, disopcache,
-    t0, us0, dt
+    odeslvr, odeop, odeopcache, disopcache,
+    t0, us0, dt, tF
   )
 
-  # Solve the discrete ODE operator
   usF, disslvrcache = solve!(usF, odeslvr.disslvr, disop, disslvrcache)
-  tF = t0 + dt
-
-  # Update cache
   cache = (odeopcache, disopcache, disslvrcache)
 
-  (usF, tF, cache)
+  (tF, usF, cache)
 end
 
 ###########################
@@ -162,8 +156,8 @@ Mock backward Euler operator for arbitrary-order ODEs:
 res(tx, ux[0], ..., ux[N]) = 0,
 
 tx = t_n + dt
+ux[i] = ∂t^i[u](t_n) + ∑_{i + 1 ≤ j ≤ N} 1/(j - i)! dt^(j - i) ux[j].
 ux[N] = x
-ux[i] = ∂t^i[u](t_n) + ∑_{i + 1 ≤ j ≤ N} 1/(j - i)! dt^(j - i) ux[j],
 
 ∂t^i[u](t_(n+1)) = ux[i].
 ```
@@ -172,9 +166,9 @@ struct DiscreteODEOperatorMock <: DiscreteODEOperator
   odeop::ODEOperator
   odeopcache
   us0::Tuple{Vararg{AbstractVector}}
-  usx::Tuple{Vararg{AbstractVector}}
-  tx::Real
   dt::Real
+  tx::Real
+  usx::Tuple{Vararg{AbstractVector}}
   ws::Tuple{Vararg{Real}}
 end
 
@@ -182,9 +176,9 @@ function Algebra.allocate_residual(
   disop::DiscreteODEOperatorMock,
   x::AbstractVector
 )
+  dt, tx = disop.dt, disop.tx
   us0, usx = disop.us0, disop.usx
-  tx, dt = disop.tx, disop.dt
-  usx = _set_usx!(usx, us0, x, dt)
+  usx = _stage_mock!(usx, dt, us0, x)
   allocate_residual(disop.odeop, tx, usx, disop.odeopcache)
 end
 
@@ -193,19 +187,20 @@ function Algebra.residual!(
   disop::DiscreteODEOperatorMock,
   x::AbstractVector
 )
-  us0, usx = disop.us0, disop.usx
-  tx, dt = disop.tx, disop.dt
-  usx = _set_usx!(usx, us0, x, dt)
+  us0, dt = disop.us0, disop.dt
+  tx, usx = disop.tx, disop.usx
+  usx = _stage_mock!(usx, dt, us0, x)
   residual!(r, disop.odeop, tx, usx, disop.odeopcache)
+  r
 end
 
 function Algebra.allocate_jacobian(
   disop::DiscreteODEOperatorMock,
   x::AbstractVector
 )
-  us0, usx = disop.us0, disop.usx
-  tx, dt = disop.tx, disop.dt
-  usx = _set_usx!(usx, us0, x, dt)
+  us0, dt = disop.us0, disop.dt
+  tx, usx = disop.tx, disop.usx
+  usx = _stage_mock!(usx, dt, us0, x)
   allocate_jacobian(disop.odeop, tx, usx, disop.odeopcache)
 end
 
@@ -214,9 +209,9 @@ function Algebra.jacobian!(
   disop::DiscreteODEOperatorMock,
   x::AbstractVector
 )
-  us0, usx = disop.us0, disop.usx
-  tx, dt = disop.tx, disop.dt
-  usx = _set_usx!(usx, us0, x, dt)
+  us0, dt = disop.us0, disop.dt
+  tx, usx = disop.tx, disop.usx
+  usx = _stage_mock!(usx, dt, us0, x)
   ws = disop.ws
   fillstored!(J, zero(eltype(J)))
   jacobians!(J, disop.odeop, tx, usx, ws, disop.odeopcache)
@@ -228,23 +223,20 @@ function Algebra.solve!(
   disslvrcache
 )
   odeop, odeopcache = disop.odeop, disop.odeopcache
-  us0, usx = disop.us0, disop.usx
-  tx, dt = disop.tx, disop.dt
+  us0, dt = disop.us0, disop.dt
+  tx = disop.tx
+  x = usF[1]
 
-  # Update dirichlet boundary conditions
+  # Update the cache of the ODE operator (typically Dirichlet BCs)
   update_odeopcache!(odeopcache, odeop, tx)
 
-  # Solve discrete ODE operator
-  x = last(usF)
+  # Solve the discrete ODE operator
   disslvrcache = solve!(x, disslvr, disop, disslvrcache)
 
-  # Finalizer
-  _set_usx!(usx, us0, x, dt)
-  for i in eachindex(usF)
-    uiF, uix = usF[i], usx[i]
-    copy!(uiF, uix)
-    usF = Base.setindex(usF, uiF, i)
-  end
+  # Finalize
+  copy!(disop.usx[1], x)
+  x = disop.usx[1]
+  usF = _finalize_mock!(usF, dt, us0, x)
 
   (usF, disslvrcache)
 end
@@ -252,23 +244,31 @@ end
 #########
 # Utils #
 #########
-function _set_usx!(usx, us0, x, dt)
+function _stage_mock!(
+  usF::Tuple{Vararg{AbstractVector}}, dt::Real,
+  us0::Tuple{Vararg{AbstractVector}}, x::AbstractVector
+)
+  usF = _finalize_mock!(usF, dt, us0, x)
+  usF = (usF..., x)
+  usF
+end
+
+function _finalize_mock!(
+  usF::Tuple{Vararg{AbstractVector}}, dt::Real,
+  us0::Tuple{Vararg{AbstractVector}}, x::AbstractVector
+)
   N = length(us0)
-
-  uNx = usx[N+1]
-  copy!(uNx, x)
-  usx = Base.setindex(usx, uNx, N + 1)
-
   for i in N:-1:1
-    ui0, uix = us0[i], usx[i]
-    copy!(uix, ui0)
+    ui0, uiF = us0[i], usF[i]
+    copy!(uiF, ui0)
     coef = 1
-    for j in i+1:N+1
+    for j in i+1:N
       coef = coef * dt / (j - i)
-      axpy!(coef, usx[j], uix)
+      axpy!(coef, usF[j], uiF)
     end
-    usx = Base.setindex(usx, uix, i)
+    j = N + 1
+    coef = coef * dt / (j - i)
+    axpy!(coef, x, uiF)
   end
-
-  usx
+  usF
 end

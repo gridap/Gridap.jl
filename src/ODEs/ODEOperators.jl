@@ -34,14 +34,14 @@ time derivative of `u`.
 # Mandatory
 - [`get_order(odeop)`](@ref)
 - [`allocate_residual(odeop, t, us, odeopcache)`](@ref)
-- [`residual!(r, odeop, t, us, odeopcache; filter)`](@ref)
+- [`residual!(r, odeop, t, us, odeopcache)`](@ref)
 - [`allocate_jacobian(odeop, t, us, odeopcache)`](@ref)
 - [`jacobian!(J, odeop, t, us, k, γ, odeopcache)`](@ref)
 
 # Optional
 - [`allocate_odeopcache(odeop, t, us, args...)`](@ref)
 - [`update_odeopcache!(odeopcache, odeop, t, args...)`](@ref)
-- [`residual(odeop, t, us, odeopcache; filter)`](@ref)
+- [`residual(odeop, t, us, odeopcache)`](@ref)
 - [`jacobian(odeop, t, us, k, γ, odeopcache)`](@ref)
 - [`jacobians!(J, odeop, t, us, γs, odeopcache)`](@ref)
 - [`is_jacobian_constant(odeop, k)`](@ref)
@@ -128,17 +128,11 @@ function allocate_odeopcache(
 end
 
 """
-    update_odeopcache!(
-      odeopcache, odeop::ODEOperator,
-      t::Real, args...
-    ) -> CacheType
+    update_odeopcache!(odeopcache, odeop::ODEOperator, t::Real, args...) -> CacheType
 
 Update the cache of the `ODEOperator`.
 """
-function update_odeopcache!(
-  odeopcache, odeop::ODEOperator,
-  t::Real, args...
-)
+function update_odeopcache!(odeopcache, odeop::ODEOperator, t::Real, args...)
   odeopcache
 end
 
@@ -163,8 +157,7 @@ end
     residual(
       odeop::ODEOperator,
       t::Real, us::Tuple{Vararg{AbstractVector}},
-      odeopcache;
-      filter::Tuple{Vararg{Bool}}=ntuple(_ -> true, get_order(odeop) + 2)
+      odeopcache
     ) -> AbstractVector
 
 Allocate a residual vector and evaluate it.
@@ -172,11 +165,10 @@ Allocate a residual vector and evaluate it.
 function Algebra.residual(
   odeop::ODEOperator,
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache;
-  filter::Tuple{Vararg{Bool}}=ntuple(_ -> true, get_order(odeop) + 2)
+  odeopcache
 )
   r = allocate_residual(odeop, t, us, odeopcache)
-  residual!(r, odeop, t, us, odeopcache; filter)
+  residual!(r, odeop, t, us, odeopcache)
   r
 end
 
@@ -184,8 +176,7 @@ end
     residual!(
       r::AbstractVector, odeop::ODEOperator,
       t::Real, us::Tuple{Vararg{AbstractVector}},
-      odeopcache;
-      filter::Tuple{Vararg{Bool}}=ntuple(_ -> true, get_order(odeop) + 2)
+      odeopcache
     ) -> AbstractVector
 
 Evaluate the residual vector of the `ODEOperator`.
@@ -193,8 +184,7 @@ Evaluate the residual vector of the `ODEOperator`.
 function Algebra.residual!(
   r::AbstractVector, odeop::ODEOperator,
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache;
-  filter::Tuple{Vararg{Bool}}=ntuple(_ -> true, get_order(odeop) + 2)
+  odeopcache
 )
   @abstractmethod
 end
@@ -264,7 +254,8 @@ end
     jacobians!(
       J::AbstractMatrix, odeop::ODEOperator,
       t::Real, us::Tuple{Vararg{AbstractVector}},
-      γs::Tuple{Vararg{Real}}, odeopcache
+      γs::Tuple{Vararg{Real}},
+      odeopcache
     ) -> AbstractMatrix
 
 Add the jacobian of the residual of the `ODEOperator` with respect to all time
@@ -347,7 +338,7 @@ end
 
 # ODEOperator interface
 function Polynomials.get_order(odeop::IMEXODEOperator)
-  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_odeop, _ = get_imex_operators(odeop)
   get_order(im_odeop)
 end
 
@@ -364,8 +355,8 @@ function allocate_odeopcache(
 end
 
 function update_odeopcache!(
-  odeopcache,
-  odeop::IMEXODEOperator, t::Real, args...
+  odeopcache, odeop::IMEXODEOperator,
+  t::Real, args...
 )
   im_odeop, ex_odeop = get_imex_operators(odeop)
   im_odeopcache, ex_odeopcache, ex_res = odeopcache
@@ -381,7 +372,7 @@ function Algebra.allocate_residual(
 )
   im_us, ex_us = us, ntuple(i -> us[i], length(us) - 1)
   im_odeop, ex_odeop = get_imex_operators(odeop)
-  im_odeopcache, ex_odeopcache, = odeopcache
+  im_odeopcache, ex_odeopcache, _ = odeopcache
   im_res = allocate_residual(im_odeop, t, im_us, im_odeopcache)
   ex_res = allocate_residual(ex_odeop, t, ex_us, ex_odeopcache)
   axpy!(1, ex_res, im_res)
@@ -391,15 +382,14 @@ end
 function Algebra.residual!(
   r::AbstractVector, odeop::IMEXODEOperator,
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache;
-  filter::Tuple{Vararg{Bool}}=ntuple(_ -> true, get_order(odeop) + 2)
+  odeopcache
 )
   im_res = r
   im_us, ex_us = us, ntuple(i -> us[i], length(us) - 1)
   im_odeop, ex_odeop = get_imex_operators(odeop)
   im_odeopcache, ex_odeopcache, ex_res = odeopcache
-  residual!(im_res, im_odeop, t, im_us, im_odeopcache; filter)
-  residual!(ex_res, ex_odeop, t, ex_us, ex_odeopcache; filter)
+  residual!(im_res, im_odeop, t, im_us, im_odeopcache)
+  residual!(ex_res, ex_odeop, t, ex_us, ex_odeopcache)
   axpy!(1, ex_res, im_res)
   r
 end
@@ -448,7 +438,7 @@ function jacobians!(
   im_us, ex_us = us, ntuple(i -> us[i], length(us) - 1)
   im_γs, ex_γs = γs, ntuple(i -> γs[i], length(γs) - 1)
   im_odeop, ex_odeop = get_imex_operators(odeop)
-  im_odeopcache, ex_odeopcache, = odeopcache
+  im_odeopcache, ex_odeopcache, _ = odeopcache
   jacobians!(J, im_odeop, t, im_us, im_γs, im_odeopcache)
   jacobians!(J, ex_odeop, t, ex_us, ex_γs, ex_odeopcache)
   J
@@ -556,7 +546,7 @@ function test_ode_operator(
   t::Real, us::Tuple{Vararg{AbstractVector}}, args...
 )
   odeopcache = allocate_odeopcache(odeop, t, us, args...)
-  odeopcache = update_odeopcache!(odeopcache, odeop, t)
+  odeopcache = update_odeopcache!(odeopcache, odeop, t, args...)
 
   r = allocate_residual(odeop, t, us, odeopcache)
   @test r isa AbstractVector

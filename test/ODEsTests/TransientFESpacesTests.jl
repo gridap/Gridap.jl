@@ -32,7 +32,8 @@ U = TransientTrialFESpace(V, u)
 Ut = ∂t(U)
 Utt = ∂tt(U)
 
-for t in (0.0, 1.0, 2.0)
+ts = randn(5)
+for t in ts
   # Dirichlet values of U
   _U0 = TrialFESpace(V, u(t))
   U0 = U(t)

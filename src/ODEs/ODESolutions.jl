@@ -15,7 +15,7 @@ step in a lazy fashion when accessing the solution.
 abstract type ODESolution <: GridapType end
 
 """
-    Base.iterate(odesltn::ODESolution) -> ((Tuple{Vararg{AbstractVector}}, Real), StateType)
+    Base.iterate(odesltn::ODESolution) -> ((Real, Tuple{Vararg{AbstractVector}}), StateType)
 
 Allocate a cache and perform one time step of the `ODEOperator` with the
 `ODESolver` attached to the `ODESolution`.
@@ -25,7 +25,7 @@ function Base.iterate(odesltn::ODESolution)
 end
 
 """
-    Base.iterate(odesltn::ODESolution) -> ((Tuple{Vararg{AbstractVector}}, Real), StateType)
+    Base.iterate(odesltn::ODESolution) -> ((Real, Tuple{Vararg{AbstractVector}}), StateType)
 
 Perform one time step of the `ODEOperator` with the `ODESolver` attached to the
 `ODESolution`.
@@ -47,41 +47,40 @@ Generic wrapper for the evolution of an `ODEOperator` with an `ODESolver`.
 struct GenericODESolution <: ODESolution
   odeslvr::ODESolver
   odeop::ODEOperator
-  us0::Tuple{Vararg{AbstractVector}}
   t0::Real
   tF::Real
+  us0::Tuple{Vararg{AbstractVector}}
 end
 
 function GenericODESolution(
   odeslvr::ODESolver, odeop::ODEOperator,
-  us0::AbstractVector, t0::Real, tF::Real
+  t0::Real, tF::Real, us0::AbstractVector,
 )
-  GenericODESolution(odeslvr, odeop, (us0,), t0, tF)
+  GenericODESolution(odeslvr, odeop, t0, tF, (us0,))
 end
 
 function Base.iterate(odesltn::GenericODESolution)
+  t0 = odesltn.t0
   us0 = ()
   usF = ()
   for k in eachindex(odesltn.us0)
-    us0 = (us0..., copy(odesltn.us0[k]))
-    usF = (usF..., copy(odesltn.us0[k]))
+    ui0 = odesltn.us0[k]
+    us0 = (us0..., copy(ui0))
+    usF = (usF..., copy(ui0))
   end
-  t0 = odesltn.t0
 
   # Solve step
-  usF, tF, cache = solve_step!(usF, odesltn.odeslvr, odesltn.odeop, us0, t0)
+  odeslvr, odeop = odesltn.odeslvr, odesltn.odeop
+  tF, usF, cache = solve_step!(usF, odeslvr, odeop, t0, us0)
 
   # Update state
-  for k in eachindex(us0, usF)
-    copy!(us0[k], usF[k])
-  end
-  state = (usF, us0, tF, cache)
+  state = (tF, usF, us0, cache)
 
-  (first(usF), tF), state
+  (tF, first(usF)), state
 end
 
 function Base.iterate(odesltn::GenericODESolution, state)
-  usF, us0, t0, cache = state
+  t0, us0, usF, cache = state
 
   if t0 >= odesltn.tF - ε
     return nothing
@@ -89,15 +88,12 @@ function Base.iterate(odesltn::GenericODESolution, state)
 
   # Solve step
   odeslvr, odeop = odesltn.odeslvr, odesltn.odeop
-  usF, tF, cache = solve_step!(usF, odeslvr, odeop, us0, t0, cache)
+  tF, usF, cache = solve_step!(usF, odeslvr, odeop, t0, us0, cache)
 
   # Update state
-  for k in eachindex(us0, usF)
-    copy!(us0[k], usF[k])
-  end
-  state = (usF, us0, tF, cache)
+  state = (tF, usF, us0, cache)
 
-  (first(usF), tF), state
+  (tF, first(usF)), state
 end
 
 ########
@@ -109,7 +105,7 @@ end
 Test the interface of `ODESolution` specializations.
 """
 function test_ode_solution(odesltn::ODESolution)
-  for (us_n, t_n) in odesltn
+  for (t_n, us_n) in odesltn
     @test t_n isa Real
     @test us_n isa AbstractVector
   end

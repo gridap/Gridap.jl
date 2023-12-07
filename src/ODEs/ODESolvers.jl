@@ -4,8 +4,18 @@
 """
     abstract type DiscreteODEOperator <: NonlinearOperator end
 
-Zero-th-order nonlinear operator (nonlinear system) corresponding to an
-`ODEOperator` and an `ODESolver`.
+Nonlinear system corresponding to the discretisation of an `ODEOperator` by
+an `ODESolver`. This is an operator of order zero.
+
+# Mandatory
+- [`residual!(r, disop, x)`](@ref)
+- [`allocate_jacobian(disop, x)`](@ref)
+- [`jacobian!(J, disop, x)`](@ref)
+
+# Optional
+- [`allocate_residual(disop, x)`](@ref)
+- [`residual(odeop, x)`](@ref)
+- [`jacobian(odeop, x)`](@ref)
 """
 abstract type DiscreteODEOperator <: NonlinearOperator end
 
@@ -21,9 +31,12 @@ end
 """
     abstract type LinearDiscreteODEOperator <: DiscreteODEOperator end
 
-Zero-th-order linear operator (linear system) corresponding to an `ODEOperator`
-and an `ODESolver`. This is mostly a copy of `AffineOperator` but enables the
-interface with an `ODESolver`.
+Linear operator corresponding to the discretisation of an `ODEOperator` by
+an `ODESolver`. The operator is linear in the following conditions:
+* Explicit scheme applied to a quasilinear ODEOperator,
+* Diagonally-implicit scheme applied to a linear ODEOperator.
+This is mostly a copy of `AffineOperator` but enables the interface with an
+`ODESolver`.
 
 # Mandatory
 - [`get_matrix(disop)`](@ref)
@@ -71,19 +84,21 @@ end
 An `ODESolver` is a map that given `(t_n, us_n)` returns `(t_(n+1), us_(n+1))`
 and the corresponding updated cache.
 
-Here `us_n` is a vector of size `N-1`, where `N` is the order of the
-`ODEOperator`, and `us_n[k] = ∂t^k[u](t_n)` is the `k`-th-order time derivative
-of `u` at `t_n`.
+Here `us_n` is a vector containing the state variables required by the
+`ODESolver`. In the most basic case, it corresponds to the first `N-1` time
+derivatives of `u` at time `t_n`, where `N` is the order of the `ODEOperator`,
+but some solvers rely on other state variables (values at previous times,
+higher-order derivatives...).
 
 # Mandatory
 - [`get_dt(odeslvr)`](@ref)
-- [`allocate_disopcache(odeslvr, odeop, odeopcache, t, x)`](@ref)
-- [`DiscreteODEOperator(odeslvr, odeop, odeopcache, disopcache, t, us, dt, args...)`](@ref)
-- [`solve_step!(usF, odeslvr, odeop, us0, t0[, cache])`](@ref)
+- [`allocate_disopcache(odeslvr, odeop, odeopcache, t, us)`](@ref)
+- [`DiscreteODEOperator(odeslvr, odeop, odeopcache, disopcache, t0, us0, args...)`](@ref)
+- [`solve_step!(usF, odeslvr, odeop, t0, us0, [, cache])`](@ref)
 
 # Optional
 - [`allocate_disslvrcache(odeslvr)`](@ref)
-- [`solve(odeslvr, odeop, us0, t0, tF)`](@ref)
+- [`solve(odeslvr, odeop, t0, tF, us0)`](@ref)
 """
 abstract type ODESolver <: GridapType end
 
@@ -99,16 +114,14 @@ end
 """
     allocate_disopcache(
       odeslvr::ODESolver,
-      odeop::ODEOperator, odeopcache,
-      t::Real, x::AbstractVector
+      odeop::ODEOperator, odeopcache, args...
     ) -> CacheType
 
 Allocate the cache of the `DiscreteODEOperator` of the `ODESolver`.
 """
 function allocate_disopcache(
   odeslvr::ODESolver,
-  odeop::ODEOperator, odeopcache,
-  t::Real, x::AbstractVector
+  odeop::ODEOperator, odeopcache, args...
 )
   @abstractmethod
 end
@@ -126,9 +139,7 @@ end
 """
     DiscreteODEOperator(
       odeslvr::ODESolver, odeop::ODEOperator,
-      odeopcache, disopcache,
-      t::Real, us::Tuple{Vararg{AbstractVector}}, dt::Real,
-      args...
+      odeopcache, disopcache, args...
     ) -> DiscreteODEOperator
 
 Return the `DiscreteODEOperator` corresponding to the `ODEOperator` and the
@@ -136,9 +147,7 @@ Return the `DiscreteODEOperator` corresponding to the `ODEOperator` and the
 """
 function DiscreteODEOperator(
   odeslvr::ODESolver, odeop::ODEOperator,
-  odeopcache, disopcache,
-  t::Real, us::Tuple{Vararg{AbstractVector}}, dt::Real,
-  args...
+  odeopcache, disopcache, args...
 )
   @abstractmethod
 end
@@ -147,17 +156,17 @@ end
     solve_step!(
       usF::Tuple{Vararg{AbstractVector}},
       odeslvr::ODESolver, odeop::ODEOperator,
-      us0::Tuple{Vararg{AbstractVector}}, t0::Real
+      t0::Real, us0::Tuple{Vararg{AbstractVector}},
       [, cache]
     ) -> (Tuple{Vararg{AbstractVector}}, Real, CacheType)
 
-Perform one time step of the `ODEOperator` with the `ODESolver` from `t0` with
-initial state `us0`.
+Perform one time step of the `ODEOperator` with the `ODESolver` from time `t0`
+with initial state `us0`.
 """
 function solve_step!(
   usF::Tuple{Vararg{AbstractVector}},
   odeslvr::ODESolver, odeop::ODEOperator,
-  us0::Tuple{Vararg{AbstractVector}}, t0::Real,
+  t0::Real, us0::Tuple{Vararg{AbstractVector}},
   cache
 )
   @abstractmethod
@@ -166,15 +175,15 @@ end
 function solve_step!(
   usF::Tuple{Vararg{AbstractVector}},
   odeslvr::ODESolver, odeop::ODEOperator,
-  us0::Tuple{Vararg{AbstractVector}}, t0::Real
+  t0::Real, us0::Tuple{Vararg{AbstractVector}},
 )
-  solve_step!(usF, odeslvr, odeop, us0, t0, nothing)
+  solve_step!(usF, odeslvr, odeop, t0, us0, nothing)
 end
 
 """
     solve(
       odeslvr::ODESolver, odeop::ODEOperator,
-      us0, t0::Real, tF::Real
+      t0::Real, tF::Real, us0::Tuple{Vararg{AbstractVector}},
     ) -> ODESolution
 
 Create an `ODESolution` wrapper around the `ODEOperator` and `ODESolver`,
@@ -182,9 +191,9 @@ starting with state `us0` at time `t0`, to be evolved until `tF`.
 """
 function Algebra.solve(
   odeslvr::ODESolver, odeop::ODEOperator,
-  us0, t0::Real, tF::Real
+  t0::Real, tF::Real, us0::Tuple{Vararg{AbstractVector}},
 )
-  GenericODESolution(odeslvr, odeop, us0, t0, tF)
+  GenericODESolution(odeslvr, odeop, t0, tF, us0)
 end
 
 ########
@@ -193,35 +202,29 @@ end
 """
     test_ode_solver(
       odeslvr::ODESolver, odeop::ODEOperator,
-      t0::Real, us0::Tuple{Vararg{AbstractVector}}, dt::Real, args...
+      t0::Real, us0::Tuple{Vararg{AbstractVector}}, args...
     ) -> Bool
 
 Test the interface of `ODESolver` specializations.
 """
 function test_ode_solver(
   odeslvr::ODESolver, odeop::ODEOperator,
-  t0::Real, us0::Tuple{Vararg{AbstractVector}}, dt::Real, args...
+  t0::Real, us0::Tuple{Vararg{AbstractVector}}, args...
 )
   @test get_dt(odeslvr) isa Real
 
-  u0 = (us0 isa Tuple) ? first(us0) : us0
-  odeopcache = allocate_odeopcache(odeop, t0, (us0..., u0))
-  disopcache = allocate_disopcache(odeslvr, odeop, odeopcache, t0, u0)
+  odeopcache = allocate_odeopcache(odeop, t0, us0)
+  disopcache = allocate_disopcache(odeslvr, odeop, odeopcache, t0, us0)
 
-  disop = DiscreteODEOperator(
-    odeslvr, odeop,
-    odeopcache, disopcache,
-    t0, us0, dt,
-    args...
-  )
+  disop = DiscreteODEOperator(odeslvr, odeop, odeopcache, disopcache, args...)
   @test disop isa DiscreteODEOperator
 
   usF = copy.(us0)
-  (usF, tF, cache) = solve_step!(usF, odeslvr, odeop, us0, t0)
-  (usF, tF, cache) = solve_step!(usF, odeslvr, odeop, us0, t0, cache)
+  tF, usF, cache = solve_step!(usF, odeslvr, odeop, t0, us0)
+  tF, usF, cache = solve_step!(usF, odeslvr, odeop, t0, us0, cache)
 
-  @test usF isa Tuple{Vararg{AbstractVector}}
   @test tF isa Real
+  @test usF isa Tuple{Vararg{AbstractVector}}
 
   true
 end

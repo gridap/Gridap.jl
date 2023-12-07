@@ -7,10 +7,7 @@
 Transient version of `CellField`.
 
 # Mandatory
-- [`∂t(f)`](@ref)
-
-# Optional
-- [`∂tt(f)`](@ref)
+- [`time_derivative(f)`](@ref)
 """
 abstract type TransientCellField <: CellField end
 
@@ -32,12 +29,8 @@ Fields.gradient(f::TransientCellField) = @abstractmethod
 Fields.∇∇(f::TransientCellField) = @abstractmethod
 
 # TransientCellField interface
-function ∂t(f::TransientCellField)
+function time_derivative(f::TransientCellField)
   @abstractmethod
-end
-
-function ∂tt(f::TransientCellField)
-  ∂t(∂t(f))
 end
 
 #################################
@@ -98,7 +91,7 @@ function Base.getproperty(f::TransientSingleFieldCellField, sym::Symbol)
 end
 
 # TransientCellField interface
-function ∂t(f::TransientSingleFieldCellField)
+function time_derivative(f::TransientSingleFieldCellField)
   cellfield, derivatives = first_and_tail(f.derivatives)
   TransientCellField(cellfield, derivatives)
 end
@@ -207,12 +200,13 @@ function Base.iterate(f::TransientMultiFieldCellField, state)
 end
 
 # TransientCellField interface
-function ∂t(f::TransientMultiFieldCellField)
+function time_derivative(f::TransientMultiFieldCellField)
   cellfield, derivatives = first_and_tail(f.derivatives)
 
   transient_single_field_derivatives = TransientCellField[]
   for transient_single_field in f.transient_single_fields
-    push!(transient_single_field_derivatives, ∂t(transient_single_field))
+    transient_single_field_derivative = time_derivative(transient_single_field)
+    push!(transient_single_field_derivatives, transient_single_field_derivative)
   end
 
   TransientMultiFieldCellField(
@@ -256,13 +250,9 @@ Fields.∇∇(f::TransientFEBasis) = ∇∇(f.febasis)
 FESpaces.BasisStyle(::Type{<:TransientFEBasis{A}}) where {A} = BasisStyle(A)
 
 # Transient FEBasis interface
-function ∂t(f::TransientFEBasis)
+function time_derivative(f::TransientFEBasis)
   cellfield, derivatives = first_and_tail(f.derivatives)
   TransientCellField(cellfield, derivatives)
-end
-
-function ∂tt(f::TransientFEBasis)
-  ∂t(∂t(f))
 end
 
 #########

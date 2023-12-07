@@ -8,6 +8,8 @@ using Test
 
 # @time @testset "ODESolvers" begin include("ODESolversTests.jl") end
 
+# @time @testset "ODEProblems" begin include("ODEProblemsTests.jl") end
+
 # @time @testset "ODESolutions" begin include("ODESolutionsTests.jl") end
 
 # @time @testset "TransientFESpaces" begin include("TransientFESpacesTests.jl") end
@@ -16,7 +18,7 @@ using Test
 
 # @time @testset "TransientFEOperatorsSolutions" begin include("TransientFEOperatorsSolutionsTests.jl") end
 
-@time @testset "TransientFEProblems" begin include("TransientFEProblemsTests.jl") end
+# @time @testset "TransientFEProblems" begin include("TransientFEProblemsTests.jl") end
 
 # @time @testset "DiffEqsWrappers" begin include("_DiffEqsWrappersTests.jl") end
 

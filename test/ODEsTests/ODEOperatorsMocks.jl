@@ -28,24 +28,20 @@ function Algebra.allocate_residual(
   t::Real, us::Tuple{Vararg{AbstractVector}},
   odeopcache
 )
-  zero(first(us))
+  f = forcing(t)
+  copy(f)
 end
 
 function Algebra.residual!(
   r::AbstractVector, odeop::ODEOperatorMock,
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache;
-  filter::Tuple{Vararg{Bool}}=ntuple(_ -> true, get_order(odeop) + 2)
+  odeopcache
 )
   fill!(r, zero(eltype(r)))
-  if filter[1]
-    r .+= odeop.forcing(t)
-  end
+  r .+= odeop.forcing(t)
   for k in 0:get_order(odeop)
-    if filter[k+2]
-      mat = odeop.forms[k+1](t)
-      r .+= mat * us[k+1]
-    end
+    mat = odeop.forms[k+1](t)
+    r .+= mat * us[k+1]
   end
   r
 end

@@ -78,7 +78,7 @@ function test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, ws)
     @test test_transient_fe_operator(feop, t0, uhs0_cf)
   end
 
-  fesltn = solve(odeslvr, feop, uhs0_fe, t0, tF)
+  fesltn = solve(odeslvr, feop, t0, tF, uhs0_fe)
   @test test_transient_fe_solution(fesltn)
 end
 

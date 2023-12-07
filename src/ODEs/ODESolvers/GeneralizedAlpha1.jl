@@ -40,67 +40,64 @@ end
 function allocate_disopcache(
   odeslvr::GeneralizedAlpha1,
   odeop::ODEOperator, odeopcache,
-  t::Real, x::AbstractVector
+  t0::Real, us0::NTuple{2,AbstractVector}
 )
-
-  (zero(x), zero(x),)
+  zero.(us0)
 end
 
 function allocate_disopcache(
   odeslvr::GeneralizedAlpha1,
   odeop::ODEOperator{<:AbstractLinearODE}, odeopcache,
-  t::Real, x::AbstractVector
+  t0::Real, us0::NTuple{2,AbstractVector}
 )
-  us = (x, x)
-  J = allocate_jacobian(odeop, t, us, odeopcache)
-  r = allocate_residual(odeop, t, us, odeopcache)
+  J = allocate_jacobian(odeop, t0, us0, odeopcache)
+  r = allocate_residual(odeop, t0, us0, odeopcache)
   (J, r)
 end
 
 function DiscreteODEOperator(
   odeslvr::GeneralizedAlpha1, odeop::ODEOperator,
   odeopcache, disopcache,
-  t0::Real, us0::NTuple{2,AbstractVector}, dt::Real,
-  αm::Real, αf::Real, γ::Real, tα::Real
+  u0::AbstractVector, v0::AbstractVector, dt::Real,
+  tα::Real, αm::Real, αf::Real, γ::Real
 )
-  usα = disopcache
+  uα, vα = disopcache
   GeneralizedAlpha1NonlinearOperator(
     odeop, odeopcache,
-    tα, us0, dt,
-    αm, αf, γ, usα
+    u0, v0, dt, tα, uα, vα, αm, αf, γ
   )
 end
 
 function DiscreteODEOperator(
   odeslvr::GeneralizedAlpha1, odeop::ODEOperator{<:AbstractLinearODE},
   odeopcache, disopcache,
-  t0::Real, us0::NTuple{2,AbstractVector}, dt::Real,
-  αm::Real, αf::Real, γ::Real, tα::Real
+  u0::AbstractVector, v0::AbstractVector, dt::Real,
+  tα::Real, αm::Real, αf::Real, γ::Real
 )
   J, r = disopcache
   GeneralizedAlpha1LinearOperator(
     odeop, odeopcache,
-    tα, us0, dt,
-    αm, αf, γ, J, r,
+    u0, v0, dt, tα, αm, αf, γ,
+    J, r
   )
 end
 
 function solve_step!(
   usF::NTuple{2,AbstractVector},
   odeslvr::GeneralizedAlpha1, odeop::ODEOperator,
-  us0::NTuple{2,AbstractVector}, t0::Real,
+  t0::Real, us0::NTuple{2,AbstractVector},
   cache
 )
-  # Unpack us and ODE solver
-  u0, _ = us0
+  u0, v0 = us0[1], us0[2]
   dt = get_dt(odeslvr)
   αm, αf, γ = odeslvr.αm, odeslvr.αf, odeslvr.γ
   tα = t0 + αf * dt
+  tF = t0 + dt
 
   # Allocate or unpack cache
   if isnothing(cache)
     odeopcache = allocate_odeopcache(odeop, t0, us0)
-    disopcache = allocate_disopcache(odeslvr, odeop, odeopcache, t0, u0)
+    disopcache = allocate_disopcache(odeslvr, odeop, odeopcache, t0, us0)
     disslvrcache = allocate_disslvrcache(odeslvr)
   else
     odeopcache, disopcache, disslvrcache = cache
@@ -110,18 +107,14 @@ function solve_step!(
   disop = DiscreteODEOperator(
     odeslvr, odeop,
     odeopcache, disopcache,
-    t0, us0, dt,
-    αm, αf, γ, tα
+    u0, v0, dt, tα, αm, αf, γ
   )
 
   # Solve the discrete ODE operator
   usF, disslvrcache = solve!(usF, odeslvr.disslvr, disop, disslvrcache)
-  tF = t0 + dt
-
-  # Update cache
   cache = (odeopcache, disopcache, disslvrcache)
 
-  (usF, tF, cache)
+  (tF, usF, cache)
 end
 
 ######################
@@ -133,26 +126,28 @@ end
 Nonlinear discrete operator corresponding to the first-order generalized-α
 scheme:
 ```math
-residual(tα, uα, vα) = 0,
+residual(tx, ux, vx) = 0,
 
-tα = (1 - αf) * t_n + αf * t_(n+1)
-uα = (1 - αf) * u_n + αf * u_(n+1)
-vα = (1 - αm) * v_n + αm * v_(n+1),
+tx = (1 - αf) * t_n + αf * t_(n+1)
+ux = (1 - αf) * u_n + αf * u_(n+1)
+vx = (1 - αm) * v_n + αm * v_(n+1),
 
-u_(n+1) = u_n + h * ((1 - γ) * v_n + γ * x)
+u_(n+1) = u_n + dt * ((1 - γ) * v_n + γ * x)
 v_(n+1) = x.
 ```
 """
 struct GeneralizedAlpha1NonlinearOperator <: DiscreteODEOperator
   odeop::ODEOperator
   odeopcache
-  tα::Real
-  us0::NTuple{2,AbstractVector}
+  u0::AbstractVector
+  v0::AbstractVector
   dt::Real
+  tα::Real
+  uα::AbstractVector
+  vα::AbstractVector
   αm::Real
   αf::Real
   γ::Real
-  usα::NTuple{2,AbstractVector}
 end
 
 function Algebra.residual!(
@@ -160,20 +155,25 @@ function Algebra.residual!(
   disop::GeneralizedAlpha1NonlinearOperator,
   x::AbstractVector
 )
-  tα, dt, us0, usα = disop.tα, disop.dt, disop.us0, disop.usα
+  u0, v0, dt = disop.u0, disop.v0, disop.dt
+  tα, uα, vα = disop.tα, disop.uα, disop.vα
   αm, αf, γ = disop.αm, disop.αf, disop.γ
-  usα = _fill_usα!(usα, us0, x, dt, αm, αf, γ)
-  residual!(r, disop.odeop, tα, usα, disop.odeopcache)
+  # Residual: (uα, vα)
+  uα, vα = _stage_alpha1!(uα, vα, x, u0, v0, dt, αm, αf, γ)
+
+  tx = tα
+  usx = (uα, vα)
+  residual!(r, disop.odeop, tx, usx, disop.odeopcache)
 end
 
 function Algebra.allocate_jacobian(
   disop::GeneralizedAlpha1NonlinearOperator,
   x::AbstractVector
 )
-  tα, dt, us0, usα = disop.tα, disop.dt, disop.us0, disop.usα
-  αm, αf, γ = disop.αm, disop.αf, disop.γ
-  usα = _fill_usα!(usα, us0, x, dt, αm, αf, γ)
-  allocate_jacobian(disop.odeop, tα, usα, disop.odeopcache)
+  tα, uα, vα = disop.tα, disop.uα, disop.vα
+  tx = tα
+  usx = (uα, vα)
+  allocate_jacobian(disop.odeop, tx, usx, disop.odeopcache)
 end
 
 function Algebra.jacobian!(
@@ -181,12 +181,17 @@ function Algebra.jacobian!(
   disop::GeneralizedAlpha1NonlinearOperator,
   x::AbstractVector
 )
-  tα, dt, us0, usα = disop.tα, disop.dt, disop.us0, disop.usα
+  u0, v0, dt = disop.u0, disop.v0, disop.dt
+  tα, uα, vα = disop.tα, disop.uα, disop.vα
   αm, αf, γ = disop.αm, disop.αf, disop.γ
-  usα = _fill_usα!(usα, us0, x, dt, αm, αf, γ)
-  ws = _get_ws(dt, αm, αf, γ)
+  # Jacobian: (uα, vα)
+  uα, vα = _stage_alpha1!(uα, vα, x, u0, v0, dt, αm, αf, γ)
+
+  tx = tα
+  usx = (uα, vα)
+  ws = (αf * γ * dt, αm)
   fillstored!(J, zero(eltype(J)))
-  jacobians!(J, disop.odeop, tα, usα, ws, disop.odeopcache)
+  jacobians!(J, disop.odeop, tx, usx, ws, disop.odeopcache)
 end
 
 function Algebra.solve!(
@@ -194,17 +199,22 @@ function Algebra.solve!(
   disslvr::NonlinearSolver, disop::GeneralizedAlpha1NonlinearOperator,
   disslvrcache
 )
+  uF, vF = usF[1], usF[2]
   odeop, odeopcache = disop.odeop, disop.odeopcache
-  tα, dt, us0 = disop.tα, disop.dt, disop.us0
+  u0, v0, dt = disop.u0, disop.v0, disop.dt
+  tα = disop.tα
   γ = disop.γ
 
+  # Update the cache of the ODE operator (typically Dirichlet BCs)
   update_odeopcache!(odeopcache, odeop, tα)
 
-  uF, vF = usF
-  disslvrcache = solve!(vF, disslvr, disop, disslvrcache)
+  # Solve the discrete ODE operator
+  x = vF
+  disslvrcache = solve!(x, disslvr, disop, disslvrcache)
 
-  # Express usF in terms of the solution of the discrete ODE operator
-  usF = _finalize_alpha1!(usF, us0, vF, dt, γ)
+  # Finalize
+  uF, vF = _finalize_alpha1!(uF, vF, u0, v0, dt, γ)
+  usF = (uF, vF)
 
   (usF, disslvrcache)
 end
@@ -217,22 +227,23 @@ end
 
 Linear discrete operator corresponding to the first-order generalized-α scheme:
 ```math
-residual(tα, uα, vα) = mass(tα) vα + stiffness(tαf) uα + res(tαf) = 0,
+residual(tx, ux, vx) = mass(tx) vx + stiffness(tx) ux + res(tx) = 0,
 
-tα = (1 - αf) * t_n + αf * t_(n+1)
-uα = (1 - αf) * u_n + αf * u_(n+1)
-vα = (1 - αm) * v_n + αm * v_(n+1),
+tx = (1 - αf) * t_n + αf * t_(n+1)
+ux = (1 - αf) * u_n + αf * u_(n+1)
+vx = (1 - αm) * v_n + αm * v_(n+1),
 
-u_(n+1) = u_n + h * ((1 - γ) * v_n + γ * x)
+u_(n+1) = u_n + dt * ((1 - γ) * v_n + γ * x)
 v_(n+1) = x.
 ```
 """
 struct GeneralizedAlpha1LinearOperator <: LinearDiscreteODEOperator
   odeop::ODEOperator
   odeopcache
-  tα::Real
-  us0::NTuple{2,AbstractVector}
+  u0::AbstractVector
+  v0::AbstractVector
   dt::Real
+  tα::Real
   αm::Real
   αf::Real
   γ::Real
@@ -249,66 +260,73 @@ function Algebra.solve!(
   disslvr::NonlinearSolver, disop::GeneralizedAlpha1LinearOperator,
   disslvrcache
 )
+  uF, vF = usF[1], usF[2]
   odeop, odeopcache = disop.odeop, disop.odeopcache
+  u0, v0, dt = disop.u0, disop.v0, disop.dt
+  tα = disop.tα
+  αm, αf, γ = disop.αm, disop.αf, disop.γ
   J, r = disop.J, disop.r
-  tα, dt, us0 = disop.tα, disop.dt, disop.us0
-  αf, αm, γ = disop.αf, disop.αm, disop.γ
 
+  # Update the cache of the ODE operator (typically Dirichlet BCs)
   update_odeopcache!(odeopcache, odeop, tα)
 
-  # Update jacobian and residual
-  u0, v0 = us0
-  uα, vα = usF
-  @. uα = (1 - αf) * u0 + αf * (u0 + dt * (1 - γ) * v0)
-  @. vα = (1 - αm) * v0
-  usα = (uα, vα)
-  ws = _get_ws(dt, αm, αf, γ)
+  # Residual: (uα, vα)
+  # Jacobian: (uα, vα)
+  # Take x = 0 to split the mass term from the residual
+  # Trick: use uF, vF to store uα, vα and r to store x = 0
+  fill!(r, zero(eltype(r)))
+  uα, vα = _stage_alpha1!(uF, vF, r, u0, v0, dt, αm, αf, γ)
 
+  tx = tα
+  usx = (uα, vα)
+  ws = (αf * γ * dt, αm)
   fillstored!(J, zero(eltype(J)))
-  jacobians!(J, disop.odeop, tα, usα, ws, disop.odeopcache)
-  residual!(r, odeop, tα, usα, odeopcache)
+  jacobians!(J, disop.odeop, tx, usx, ws, disop.odeopcache)
+  residual!(r, odeop, tx, usx, odeopcache)
   rmul!(r, -1)
 
   # Solve the discrete ODE operator
-  vF = usF[2]
-  disslvrcache = solve!(vF, disslvr, disop, disslvrcache)
+  x = vF
+  disslvrcache = solve!(x, disslvr, disop, disslvrcache)
 
-  # Express usF in terms of the solution of the discrete ODE operator
-  usF = _finalize_alpha1!(usF, us0, vF, dt, γ)
+  # Finalize
+  usF = _finalize_alpha1!(uF, vF, u0, v0, dt, γ)
 
   (usF, disslvrcache)
-end
-
-#############
-# Finalizer #
-#############
-function _finalize_alpha1!(
-  usF::NTuple{2,AbstractVector}, us0::NTuple{2,AbstractVector},
-  x::AbstractVector, dt::Real, γ::Real
-)
-  u0, v0 = us0
-  uF, vF = usF
-  @. uF = u0 + dt * ((1 - γ) * v0 + γ * x)
-  @. vF = x
-  (uF, vF)
 end
 
 #########
 # Utils #
 #########
-function _get_ws(dt, αm, αf, γ)
-  wu = αf * dt * γ
-  wv = αm
-  (wu, wv)
+function _stage_alpha1!(
+  ux::AbstractVector, vx::AbstractVector, x::AbstractVector,
+  u0::AbstractVector, v0::AbstractVector, dt::Real,
+  αm::Real, αf::Real, γ::Real
+)
+  # @. ux = (1 - αf) * u0 + αf * (u0 + dt * ((1 - γ) * v0 + γ * x))
+  copy!(ux, u0)
+  axpy!(αf * (1 - γ) * dt, v0, ux)
+  axpy!(αf * γ * dt, x, ux)
+
+  # @. vx = (1 - αm) * v0 + αm * x
+  copy!(vx, v0)
+  rmul!(vx, 1 - αm)
+  axpy!(αm, x, vx)
+
+  usx = (ux, vx)
+  usx
 end
 
-function _fill_usα!(
-  usα::NTuple{2,AbstractVector}, us0::NTuple{2,AbstractVector}, x,
-  dt, αm, αf, γ
+function _finalize_alpha1!(
+  uF::AbstractVector, vF::AbstractVector,
+  u0::AbstractVector, v0::AbstractVector,
+  dt::Real, γ::Real
 )
-  u0, v0 = us0
-  uα, vα = usα
-  @. uα = (1 - αf) * u0 + αf * (u0 + dt * ((1 - γ) * v0 + γ * x))
-  @. vα = (1 - αm) * v0 + αm * x
-  (uα, vα)
+  # @. uF = u0 + dt * ((1 - γ) * v0 + γ * x)
+  copy!(uF, u0)
+  axpy!((1 - γ) * dt, v0, uF)
+  axpy!(γ * dt, vF, uF)
+
+  usF = (uF, vF)
+  usF
 end

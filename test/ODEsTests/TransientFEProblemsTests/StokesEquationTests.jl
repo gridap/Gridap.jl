@@ -51,9 +51,12 @@ res(t, (u, p), (v, q)) = mass(t, ∂t(u), v) + stiffness(t, u, v) - forcing(t, (
 jac(t, (u, p), (du, dp), (v, q)) = stiffness(t, du, v) - ∫(dp * (∇ ⋅ v)) * dΩ + ∫((∇ ⋅ du) * q) * dΩ
 jac_t(t, (u, p), (dut, dpt), (v, q)) = mass(t, dut, v)
 
-feop = TransientFEOperator(res, jac, jac_t, X, Y)
-feop_AD = TransientFEOperator(res, X, Y)
-feops = (feop, feop_AD,)
+feop_nl_man = TransientFEOperator(res, (jac, jac_t), X, Y)
+feop_nl_ad = TransientFEOperator(res, X, Y)
+feops = (
+  feop_nl_man,
+  feop_nl_ad,
+)
 
 # Initial conditions
 t0 = 0.0
@@ -78,9 +81,9 @@ odeslvrs = (
 # Tests
 for odeslvr in odeslvrs
   for feop in feops
-    fesltn = solve(odeslvr, feop, xhs0, t0, tF)
+    fesltn = solve(odeslvr, feop, t0, tF, xhs0)
 
-    for (xhs_n, t_n) in fesltn
+    for (t_n, xhs_n) in fesltn
       eh_n = u(t_n) - xhs_n[1]
       e_n = sqrt(sum(∫(eh_n ⋅ eh_n) * dΩ))
       @test e_n < tol

@@ -51,7 +51,7 @@ function allocate_odeopcache(
   end
 
   # Allocate the cache of the FE operator
-  feopcache = allocate_feopcache(odeop.feop)
+  feopcache = allocate_feopcache(odeop.feop, t, us)
 
   # Create uh from us for assembly
   V = get_test(odeop.feop)
@@ -97,7 +97,10 @@ function update_odeopcache!(odeopcache, odeop::ODEOpFromFEOp, t::Real)
     Us = (Us..., evaluate!(odeopcache.Us[k+1], odeopcache.Uts[k+1], t))
   end
   odeopcache.Us = Us
-  odeopcache.feopcache = update_feopcache!(odeopcache.feopcache, odeop.feop, t)
+
+  feopcache, feop = odeopcache.feopcache, odeop.feop
+  odeopcache.feopcache = update_feopcache!(feopcache, feop, t)
+
   odeopcache
 end
 
@@ -117,19 +120,15 @@ end
 function Algebra.residual!(
   r::AbstractVector, odeop::ODEOpFromFEOp,
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache;
-  filter::Tuple{Vararg{Bool}}=ntuple(_ -> true, get_order(odeop) + 2)
+  odeopcache
 )
-  if any(filter)
-    uh = _make_uh_from_us(odeop, us, odeopcache.Us)
-    V = get_test(odeop.feop)
-    v = get_fe_basis(V)
-    res = get_res(odeop.feop)
-    vecdata = collect_cell_vector(V, res(t, uh, v))
-    assemble_vector!(r, get_assembler(odeop.feop), vecdata)
-  else
-    fill!(r, zero(eltype(r)))
-  end
+  uh = _make_uh_from_us(odeop, us, odeopcache.Us)
+  V = get_test(odeop.feop)
+  v = get_fe_basis(V)
+
+  res = get_res(odeop.feop)
+  vecdata = collect_cell_vector(V, res(t, uh, v))
+  assemble_vector!(r, get_assembler(odeop.feop), vecdata)
 
   r
 end
@@ -137,55 +136,39 @@ end
 function Algebra.residual!(
   r::AbstractVector, odeop::ODEOpFromFEOp{<:AbstractQuasilinearODE},
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache;
-  filter::Tuple{Vararg{Bool}}=ntuple(_ -> true, get_order(odeop) + 2)
+  odeopcache
 )
   order = get_order(odeop)
-  res_needed = any(i -> filter[i], 1:order+1)
   res_const = !isnothing(odeopcache.res_const_vec)
-
-  mass_needed = filter[order+2]
   mass_const = !isnothing(odeopcache.jac_const_mats[end])
 
   # Compute uh from us if assembly is needed
-  if (res_needed && !res_const) || (mass_needed && !mass_const)
+  if !(res_const && mass_const)
+    uh = _make_uh_from_us(odeop, us, odeopcache.Us)
     V = get_test(odeop.feop)
     v = get_fe_basis(V)
-    uh = _make_uh_from_us(odeop, us, odeopcache.Us)
   end
 
-  fill!(r, zero(eltype(r)))
-
-  # Add residual (without mass) if needed
-  if res_needed
-    if res_const
-      axpy!(1, odeopcache.res_const_vec, r)
-    else
-      res = get_res(odeop.feop)
-      vecdata = collect_cell_vector(V, res(t, uh, v))
-      assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
-    end
+  if res_const
+    axpy!(1, odeopcache.res_const_vec, r)
+  else
+    res = get_res(odeop.feop)
+    vecdata = collect_cell_vector(V, res(t, uh, v))
+    assemble_vector!(r, get_assembler(odeop.feop), vecdata)
   end
 
-  # Add mass if needed
-  if mass_needed
-    if mass_const
-      mul!(odeopcache.jacvec, odeopcache.jac_const_mats[end], us[end])
-      axpy!(1, odeopcache.jacvec, r)
+  if mass_const
+    mul!(odeopcache.jacvec, odeopcache.jac_const_mats[end], us[end])
+    axpy!(1, odeopcache.jacvec, r)
+  else
+    ∂tNuh = ∂t(uh, Val(order))
+    mass = get_mass(odeop.feop)
+    if odeop isa AbstractSemilinearODE
+      vecdata = collect_cell_vector(V, mass(t, ∂tNuh, v))
     else
-      # Build the time derivative
-      ∂tNuh = uh
-      for _ in 1:order
-        ∂tNuh = ∂t(∂tNuh)
-      end
-      mass = get_mass(odeop.feop)
-      if odeop isa AbstractSemilinearODE
-        vecdata = collect_cell_vector(V, mass(t, ∂tNuh, v))
-      else
-        vecdata = collect_cell_vector(V, mass(t, uh, ∂tNuh, v))
-      end
-      assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
+      vecdata = collect_cell_vector(V, mass(t, uh, ∂tNuh, v))
     end
+    assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
   end
 
   r
@@ -194,55 +177,39 @@ end
 function Algebra.residual!(
   r::AbstractVector, odeop::ODEOpFromFEOp{<:AbstractLinearODE},
   t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache;
-  filter::Tuple{Vararg{Bool}}=ntuple(_ -> true, get_order(odeop) + 2)
+  odeopcache
 )
   order = get_order(odeop)
-  res_needed = filter[1]
+  forms = get_forms(odeop.feop)
   res_const = !isnothing(odeopcache.res_const_vec)
-
-  form_needed_not_const = any(
-    k -> filter[k+2] && isnothing(odeopcache.jac_const_mats[k+1]),
-    0:order
-  )
+  forms_const = !any(isnothing, odeopcache.jac_const_mats)
 
   # Compute uh from us if assembly is needed
-  if (res_needed && !res_const) || form_needed_not_const
+  if !(res_const && forms_const)
+    uh = _make_uh_from_us(odeop, us, odeopcache.Us)
     V = get_test(odeop.feop)
     v = get_fe_basis(V)
-    uh = _make_uh_from_us(odeop, us, odeopcache.Us)
   end
 
-  fill!(r, zero(eltype(r)))
-
-  # Add the forcing term if needed
-  if res_needed
-    if res_const
-      axpy!(1, odeopcache.res_const_vec, r)
-    else
-      res = get_res(odeop.feop)
-      vecdata = collect_cell_vector(V, res(t, uh, v))
-      assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
-    end
+  if res_const
+    axpy!(1, odeopcache.res_const_vec, r)
+  else
+    res = get_res(odeop.feop)
+    vecdata = collect_cell_vector(V, res(t, uh, v))
+    assemble_vector!(r, get_assembler(odeop.feop), vecdata)
   end
 
-  # Add the forms if needed
   ∂tkuh = uh
   for k in 0:order
-    idx_form = k + 1
-    idx_filter = k + 2
-    if filter[idx_filter]
-      jac_mat = odeopcache.jac_const_mats[idx_form]
-      form_const = !isnothing(jac_mat)
-      if form_const
-        mul!(odeopcache.jacvec, jac_mat, us[idx_form])
-        axpy!(1, odeopcache.jacvec, r)
-      else
-        form = get_forms(odeop.feop)[idx_form]
-        println(get_forms(odeop.feop))
-        vecdata = collect_cell_vector(V, form(t, ∂tkuh, v))
-        assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
-      end
+    jac_mat = odeopcache.jac_const_mats[k+1]
+    form_const = !isnothing(jac_mat)
+    if form_const
+      mul!(odeopcache.jacvec, jac_mat, us[k+1])
+      axpy!(1, odeopcache.jacvec, r)
+    else
+      form = forms[k+1]
+      vecdata = collect_cell_vector(V, form(t, ∂tkuh, v))
+      assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
     end
     if k < order
       ∂tkuh = ∂t(∂tkuh)
@@ -260,7 +227,8 @@ function Algebra.allocate_jacobian(
   uh = _make_uh_from_us(odeop, us, odeopcache.Us)
   _matdata = ()
   for k in 0:get_order(odeop.feop)
-    _matdata = (_matdata..., _matdata_jacobian(odeop.feop, t, uh, k, 0))
+    cell_mat = _matdata_jacobian(odeop.feop, t, uh, k, 0)
+    _matdata = (_matdata..., cell_mat)
   end
   matdata = _vcat_matdata(_matdata)
   allocate_matrix(get_assembler(odeop.feop), matdata)
@@ -296,7 +264,7 @@ function jacobians!(
   end
 
   # Loop through jacobians and check whether they are already stored,
-  # otherwise compute and add the domain contributions
+  # otherwise compute and add the cell_mat
   _matdata = ()
   for k in 0:get_order(odeop)
     γ = γs[k+1]
@@ -309,7 +277,7 @@ function jacobians!(
     end
   end
 
-  # Assemble the domain contributions if needed
+  # Assemble the jacobian matrix if needed
   if need_assembly
     matdata = _vcat_matdata(_matdata)
     assemble_matrix_add!(J, get_assembler(odeop.feop), matdata)
@@ -335,26 +303,28 @@ function _matdata_jacobian(
   k::Integer, γ::Real
 )
   Ut = evaluate(get_trial(odeop), nothing)
-  V = get_test(odeop)
   du = get_trial_fe_basis(Ut)
+  V = get_test(odeop)
   v = get_fe_basis(V)
+
   jac = get_jacs(odeop)[k+1]
   collect_cell_matrix(Ut, V, γ * jac(t, uh, du, v))
 end
 
-function _vcat_matdata(_matdata)
-  term_to_cellmat_j = ()
-  term_to_cellidsrows_j = ()
-  term_to_cellidscols_j = ()
-  for j in 1:length(_matdata)
-    term_to_cellmat_j = (term_to_cellmat_j..., _matdata[j][1])
-    term_to_cellidsrows_j = (term_to_cellidsrows_j..., _matdata[j][2])
-    term_to_cellidscols_j = (term_to_cellidscols_j..., _matdata[j][3])
+function _vcat_matdata(all_matdata)
+  all_mats = ()
+  all_rows = ()
+  all_cols = ()
+  for one_matdata in all_matdata
+    one_mats, one_rows, one_cols = one_matdata
+    all_mats = (all_mats..., one_mats)
+    all_rows = (all_rows..., one_rows)
+    all_cols = (all_cols..., one_cols)
   end
-  term_to_cellmat = vcat(term_to_cellmat_j...)
-  term_to_cellidsrows = vcat(term_to_cellidsrows_j...)
-  term_to_cellidscols = vcat(term_to_cellidscols_j...)
-  (term_to_cellmat, term_to_cellidsrows, term_to_cellidscols)
+  flat_mats = vcat(all_mats...)
+  flat_rows = vcat(all_rows...)
+  flat_cols = vcat(all_cols...)
+  (flat_mats, flat_rows, flat_cols)
 end
 
 function _make_uh_from_us(odeop, us, Us)

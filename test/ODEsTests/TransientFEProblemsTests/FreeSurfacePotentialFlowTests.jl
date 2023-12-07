@@ -63,15 +63,15 @@ jac(t, x, dx, y) = a(t, dx, y)
 jac_t(t, x, dxt, y) = m(t, dxt, y)
 
 # Optimal transient FE Operator
-op_const = TransientLinearFEOperator(m, a, b, jac, jac_t, X, Y)
+op_const = TransientLinearFEOperator((a, m), b, (jac, jac_t), X, Y)
 
 # TransientFEOperator exploiting automatic differentiation (testing purposes)
-op_trans = TransientFEOperator(res, jac, jac_t, X, Y)
+op_trans = TransientFEOperator(res, (jac, jac_t), X, Y)
 op_ad = TransientFEOperator(res, X, Y)
 
 # TransientFEOperator exploiting time derivative of separate fields (TransientMultiFieldCellField)
 res2(t, (ϕ, η), y) = m(t, (∂t(ϕ), ∂t(η)), y) + a(t, (ϕ, η), y) - b(t, y)
-op_multifield = TransientFEOperator(res2, jac, jac_t, X, Y)
+op_multifield = TransientFEOperator(res2, (jac, jac_t), X, Y)
 
 # Solver
 disslvr = LUSolver()
@@ -87,7 +87,7 @@ xh0 = interpolate_everywhere([uh0, uhΓ0], X0)
 xhs0 = (xh0,)
 
 function test_flow_operator(op)
-  fesltn = solve(odelsvr, op, xhs0, t0, tF)
+  fesltn = solve(odelsvr, op, t0, tF, xhs0)
 
   # Post-process
   l2_Ω(v) = √(∑(∫(v ⋅ v) * dΩ))
@@ -96,7 +96,7 @@ function test_flow_operator(op)
   E_pot(v) = g * 0.5 * ∑(∫(v * v)dΓ)
   Eₑ = 0.5 * g * ξ^2 * L
 
-  for ((ϕn, ηn), tn) in fesltn
+  for (tn, (ϕn, ηn)) in fesltn
     E = E_kin(ϕn) + E_pot(ηn)
     error_ϕ = l2_Ω(ϕn - ϕₑ(tn))
     error_η = l2_Γ(ηn - ηₑ(tn))

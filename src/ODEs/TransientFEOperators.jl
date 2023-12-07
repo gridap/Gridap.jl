@@ -70,16 +70,22 @@ end
 
 # TransientFEOperator interface
 """
-    allocate_feopcache(feop::TransientFEOperator)
+    allocate_feopcache(
+      feop::TransientFEOperator,
+      t::Real, us::Tuple{Vararg{AbstractVector}}
+    ) -> CacheType
 
 Allocate the cache of the `TransientFEOperator`.
 """
-function allocate_feopcache(feop::TransientFEOperator)
+function allocate_feopcache(
+  feop::TransientFEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}}
+)
   nothing
 end
 
 """
-    update_feopcache!(feopcache, feop::TransientFEOperator, t::Real)
+    update_feopcache!(feopcache, feop::TransientFEOperator, t::Real) -> CacheType
 
 Update the cache of the `TransientFEOperator` at time `t`.
 """
@@ -260,7 +266,7 @@ function FESpaces.get_trial(feop::TransientIMEXFEOperator)
 end
 
 function FESpaces.get_test(feop::TransientIMEXFEOperator)
-  feop.im_feop.tes
+  feop.im_feop.test
 end
 
 function FESpaces.get_algebraic_operator(feop::TransientIMEXFEOperator)
@@ -345,7 +351,7 @@ get_jacs(feop::TransientFEOpFromWeakForm) = feop.jacs
 
 Transient `FEOperator` defined by a transient weak form
 ```math
-residual(t, u, v) = mass(t, u, ∂t^N[u] v) + res(t, u, v) = 0.
+residual(t, u, v) = mass(t, u, ∂t^N[u], v) + res(t, u, v) = 0.
 ```
 Let `N` be the order of the operator. We impose the following conditions:
 * `mass` is linear in the `N`-th-order time derivative of `u`,
@@ -380,10 +386,7 @@ function TransientQuasilinearFEOperator(
     function jac_0(t, u, du, v)
       function res_0(y)
         u0 = TransientCellField(y, u.derivatives)
-        ∂tNu0 = u0
-        for _ in 1:order
-          ∂tNu0 = ∂t(∂tNu0)
-        end
+        ∂tNu0 = ∂t(u0, Val(order))
         mass(t, u0, ∂tNu0, v) + res(t, u0, v)
       end
       jacobian(res_0, u.cellfield)
@@ -395,12 +398,9 @@ function TransientQuasilinearFEOperator(
     function jac_k(t, u, duk, v)
       function res_k(y)
         derivatives = (u.derivatives[1:k-1]..., y, u.derivatives[k+1:end]...)
-        uk = TransientCellField(u.cellfield, derivatives)
-        ∂tNuk = uk
-        for _ in 1:order
-          ∂tNuk = ∂t(∂tNuk)
-        end
-        mass(t, uk, ∂tNuk, v) + res(t, uk, v)
+        u0 = TransientCellField(u.cellfield, derivatives)
+        ∂tNu0 = ∂t(u0, Val(order))
+        mass(t, u0, ∂tNu0, v) + res(t, u0, v)
       end
       jacobian(res_k, u.derivatives[k])
     end
@@ -410,8 +410,8 @@ function TransientQuasilinearFEOperator(
   function jac_N(t, u, duN, v)
     function res_N(y)
       derivatives = (u.derivatives[1:end-1]..., y)
-      uN = TransientCellField(u.cellfield, derivatives)
-      mass(t, uN, y, v)
+      u0 = TransientCellField(u.cellfield, derivatives)
+      mass(t, u0, y, v)
     end
     jacobian(res_N, u.derivatives[end])
   end
@@ -576,7 +576,7 @@ function TransientLinearFEOperator(
   trial, test;
   order::Integer=1,
   jacs_constant::Tuple{Vararg{Bool}}=ntuple(_ -> false, order + 1),
-  residual_constant::Bool=false,
+  residual_constant::Bool=false
 )
   # When the operator is linear, the jacobians are the forms themselves
   jacs = ntuple(k -> ((t, u, duk, v) -> forms[k](t, duk, v)), order + 1)
@@ -588,8 +588,7 @@ function TransientLinearFEOperator(
 end
 
 function TransientLinearFEOperator(
-  forms::Tuple{Vararg{Function}}, res::Function,
-  jacs::Tuple{Vararg{Function}},
+  forms::Tuple{Vararg{Function}}, res::Function, jacs::Tuple{Vararg{Function}},
   trial, test;
   jacs_constant::Tuple{Vararg{Bool}}=ntuple(_ -> false, length(jacs)),
   residual_constant::Bool=false
@@ -665,13 +664,13 @@ function test_transient_fe_operator(
   V = get_test(feop)
   @test V isa FESpace
 
+  odeop = get_algebraic_operator(feop)
+  @test odeop isa ODEOperator
+
   us = (get_free_dof_values(uh.cellfield),)
   for derivative in uh.derivatives
     us = (us..., get_free_dof_values(derivative))
   end
-
-  odeop = get_algebraic_operator(feop)
-  @test odeop isa ODEOperator
 
   test_ode_operator(odeop, t, us)
 

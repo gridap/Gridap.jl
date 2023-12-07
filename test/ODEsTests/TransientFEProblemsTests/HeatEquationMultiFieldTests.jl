@@ -10,7 +10,7 @@ using Gridap.FESpaces
 using Gridap.ODEs
 
 # Analytical functions
-u(x, t) = (1.0 - x[1]) * x[1] * (1.0 - x[2]) * x[2] * (1 + t)
+u(x, t) = x[1] * (1 - x[2]) * (1 + t)
 u(t::Real) = x -> u(x, t)
 u(x) = t -> u(x, t)
 
@@ -38,18 +38,48 @@ dΩ = Measure(Ω, degree)
 
 # FE operator
 f(t) = x -> ∂t(u)(x, t) - Δ(u(t))(x)
-mass(t, ∂ₜu, v) = ∫(∂ₜu ⋅ v) * dΩ
-stiffness(t, u, v) = ∫(∇(u) ⊙ ∇(v)) * dΩ
-forcing(t, v) = ∫(f(t) ⋅ v) * dΩ
+_mass(t, ∂ₜu, v) = ∫(∂ₜu ⋅ v) * dΩ
+_mass(t, u, ∂ₜu, v) = _mass(t, ∂ₜu, v)
+_stiffness(t, u, v) = ∫(∇(u) ⊙ ∇(v)) * dΩ
+_forcing(t, v) = ∫(f(t) ⋅ v) * dΩ
 
-_res(t, u, v) = mass(t, ∂t(u), v) + stiffness(t, u, v) - forcing(t, v)
+_res(t, u, v) = _mass(t, ∂t(u), v) + _stiffness(t, u, v) - _forcing(t, v)
+_res_ql(t, u, v) = _stiffness(t, u, v) - _forcing(t, v)
+_res_l(t, v) = (-1) * _forcing(t, v)
+
+mass(t, (∂ₜu1, ∂ₜu2), (v1, v2)) = _mass(t, ∂ₜu1, v1) + _mass(t, ∂ₜu2, v2)
+mass(t, (u1, u2), (∂ₜu1, ∂ₜu2), (v1, v2)) = _mass(t, u1, ∂ₜu1, v1) + _mass(t, u2, ∂ₜu2, v2)
+stiffness(t, (u1, u2), (v1, v2)) = _stiffness(t, u1, v1) + _stiffness(t, u2, v2)
+
 res(t, (u1, u2), (v1, v2)) = _res(t, u1, v1) + _res(t, u2, v2)
-jac(t, us, (du1, du2), (v1, v2)) = stiffness(t, du1, v1) + stiffness(t, du2, v2)
-jac_t(t, us, (dut1, dut2), (v1, v2)) = mass(t, dut1, v1) + mass(t, dut2, v2)
+jac(t, x, (du1, du2), (v1, v2)) = _stiffness(t, du1, v1) + _stiffness(t, du2, v2)
+jac_t(t, x, (dut1, dut2), (v1, v2)) = _mass(t, dut1, v1) + _mass(t, dut2, v2)
 
-feop = TransientFEOperator(res, jac, jac_t, X, Y)
-feop_AD = TransientFEOperator(res, X, Y)
-feops = (feop, feop_AD,)
+res_ql(t, (u1, u2), (v1, v2)) = _res_ql(t, u1, v1) + _res_ql(t, u2, v2)
+res_l(t, (v1, v2)) = _res_l(t, v1) + _res_l(t, v2)
+
+args_man = ((jac, jac_t), X, Y)
+feop_nl_man = TransientFEOperator(res, args_man...)
+feop_ql_man = TransientQuasilinearFEOperator(mass, res_ql, args_man...)
+feop_sl_man = TransientSemilinearFEOperator(mass, res_ql, args_man...)
+feop_l_man = TransientLinearFEOperator((stiffness, mass), res_l, args_man...)
+
+args_ad = (X, Y)
+feop_nl_ad = TransientFEOperator(res, args_ad...)
+feop_ql_ad = TransientQuasilinearFEOperator(mass, res_ql, args_ad...)
+feop_sl_ad = TransientSemilinearFEOperator(mass, res_ql, args_ad...)
+feop_l_ad = TransientLinearFEOperator((stiffness, mass), res_l, args_ad...)
+
+feops = (
+  feop_nl_man,
+  feop_ql_man,
+  feop_sl_man,
+  feop_l_man,
+  feop_nl_ad,
+  feop_ql_ad,
+  feop_sl_ad,
+  feop_l_ad,
+)
 
 # Initial conditions
 t0 = 0.0
@@ -72,9 +102,9 @@ odeslvrs = (
 # Tests
 for odeslvr in odeslvrs
   for feop in feops
-    fesltn = solve(odeslvr, feop, xhs0, t0, tF)
+    fesltn = solve(odeslvr, feop, t0, tF, xhs0)
 
-    for (xhs_n, t_n) in fesltn
+    for (t_n, xhs_n) in fesltn
       eh_n = u(t_n) - xhs_n[1]
       e_n = sqrt(sum(∫(eh_n ⋅ eh_n) * dΩ))
       @test e_n < tol

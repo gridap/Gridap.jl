@@ -65,10 +65,10 @@ for N in 1:order_max
     )
 
     for odeop in (standard_odeop, imex_odeop,)
-      odesltn = solve(odeslvr, odeop, us0, t0, tF)
+      odesltn = solve(odeslvr, odeop, t0, tF, us0)
 
       tprev = t0
-      for (u_n, t_n) in odesltn
+      for (t_n, u_n) in odesltn
         @test t_n ≈ tprev + dt
         tprev = t_n
       end

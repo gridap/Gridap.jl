@@ -67,7 +67,7 @@ feops = (
   feop_nl_ad,
   feop_ql_ad,
   feop_sl_ad,
-  # feop_l_ad,
+  feop_l_ad,
 )
 
 # Initial conditions
@@ -89,9 +89,9 @@ odeslvrs = (
 # Tests
 for odeslvr in odeslvrs
   for feop in feops
-    fesltn = solve(odeslvr, feop, uhs0, t0, tF)
+    fesltn = solve(odeslvr, feop, t0, tF, uhs0)
 
-    for (uh_n, t_n) in fesltn
+    for (t_n, uh_n) in fesltn
       eh_n = u(t_n) - uh_n
       e_n = sqrt(sum(∫(eh_n ⋅ eh_n) * dΩ))
       @test e_n < tol

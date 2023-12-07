@@ -1,42 +1,97 @@
+#############################
+# time_derivative interface #
+#############################
 """
-    time_derivative(f::Function) -> Function
+    time_derivative(f::DerivableType) -> DerivableType
 
-First-order time derivative operator for a function `f(x, t)`.
+Build the first-order time derivative operator for `f`.
 """
-function time_derivative(f::Function)
-  function time_derivative_f(x, t)
-    fxt = zero(return_type(f, x, t))
-    _time_derivative_f(f, x, t, fxt)
-  end
-  time_derivative_f(x::VectorValue) = t -> time_derivative_f(x, t)
-  time_derivative_f(t) = x -> time_derivative_f(x, t)
+function time_derivative(f)
+  @abstractmethod
 end
 
 """
-    ∂t(f::Function) -> Function
+    time_derivative(f::DerivableType, ::Val{k}) -> DerivableType
 
-First-order time derivative operator for a function `f(x, t)`.
-
-Alias for `time_derivative`.
+Build the `k`-th-order time derivative operator for `f`.
 """
-const ∂t = time_derivative
+function time_derivative(f, ::Val{0})
+  f
+end
 
-function _time_derivative_f(f, x, t, fxt)
+function time_derivative(f, ::Val{1})
+  time_derivative(f)
+end
+
+function time_derivative(f, ::Val{k}) where {k}
+  time_derivative(time_derivative(f), Val(k - 1))
+end
+
+"""
+    ∂t(f::DerivableType) -> DerivableType
+
+Build the first-th-order time derivative operator for `f`.
+
+Alias for `time_derivative(f)`.
+"""
+function ∂t(f)
+  time_derivative(f)
+end
+
+"""
+    ∂t(f::DerivableType, ::Val{k}) -> DerivableType
+
+Build the `k`-th-order time derivative operator for `f`.
+
+Alias for `time_derivative(f, Val(k))`.
+"""
+function ∂t(f, ::Val{k}) where {k}
+  time_derivative(f, Val(k))
+end
+
+"""
+    ∂tt(f::DerivableType) -> DerivableType
+
+Second-order time derivative operator for `f`.
+
+Alias for `time_derivative(f, Val(2))`.
+"""
+function ∂tt(f)
+  time_derivative(f, Val(2))
+end
+
+#################################
+# Specialisation for `Function` #
+#################################
+function time_derivative(f::Function)
+  function dfdt(x, t)
+    z = zero(return_type(f, x, t))
+    _time_derivative(f, x, t, z)
+  end
+  # Extend definition to include restrictions
+  _dfdt(x, t) = dfdt(x, t)
+  _dfdt(x::VectorValue) = t -> dfdt(x, t)
+  _dfdt(t::Real) = x -> dfdt(x, t)
+  return _dfdt
+end
+
+function _time_derivative(f, x, t, z)
   ForwardDiff.derivative(t -> f(x, t), t)
 end
 
-function _time_derivative_f(f, x, t, fxt::VectorValue)
+function _time_derivative(f, x, t, z::VectorValue)
   VectorValue(ForwardDiff.derivative(t -> get_array(f(x, t)), t))
-  # VectorValue(ForwardDiff.derivative(t->f(x,t),t))
+  # VectorValue(ForwardDiff.derivative(t -> f(x, t), t))
 end
 
-function _time_derivative_f(f, x, t, fxt::TensorValue)
+function _time_derivative(f, x, t, z::TensorValue)
   TensorValue(ForwardDiff.derivative(t -> get_array(f(x, t)), t))
 end
 
-"""
-    ∂tt(f::Function) -> Function
+###############################
+# Specialisation for `Number` #
+###############################
+time_derivative(x::Number) = zero(x)
 
-Second-order time derivative operator for a function `f(x, t)`.
-"""
-∂tt(f::Function) = ∂t(∂t(f))
+time_derivative(x::Number, ::Val{0}) = x
+time_derivative(x::Number, ::Val) = time_derivative(x)

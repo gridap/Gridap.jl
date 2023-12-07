@@ -72,9 +72,9 @@ odeops = (
 )
 
 function test_solver(odeslvr, odeop, us0, tol)
-  odesltn = solve(odeslvr, odeop, us0, t0, tF)
+  odesltn = solve(odeslvr, odeop, t0, tF, us0)
 
-  for (uh_n, t_n) in odesltn
+  for (t_n, uh_n) in odesltn
     eh_n = u(t_n) - uh_n
     e_n = sqrt(sum(abs2, eh_n))
     @test e_n < tol

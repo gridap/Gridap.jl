@@ -119,21 +119,15 @@ for N in 1:order_max
     imex_odeop = IMEXODEOperator(im_odeop, ex_odeop)
 
     for odeop in (standard_odeop, imex_odeop,)
-      usF, tF, cache = solve_step!(usF, odeslvr, odeop, us0, t0)
+      tF, usF, cache = solve_step!(usF, odeslvr, odeop, t0, us0)
 
       for i in 1:N
         @test usF[i] ≈ exp_usF[i]
       end
 
-      @test test_ode_solver(odeslvr, odeop, t0, us0, dt)
+      @test test_ode_solver(odeslvr, odeop, t0, us0, t0, us0, dt, tF)
     end
   end
 end
-
-@time @testset "TableausTests" begin include("ODEProblemsTests/TableausTests.jl") end
-
-@time @testset "Order1ODETests" begin include("ODEProblemsTests/Order1ODETests.jl") end
-
-@time @testset "Order2ODETests" begin include("ODEProblemsTests/Order2ODETests.jl") end
 
 end # module ODESolversTests

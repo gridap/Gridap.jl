@@ -58,42 +58,37 @@ end
 function solve_step!(
   usF::NTuple{1,AbstractVector},
   odeslvr::RungeKutta, odeop::ODEOperator,
-  us0::NTuple{1,AbstractVector}, t0::Real,
+  t0::Real, us0::NTuple{1,AbstractVector},
   cache
 )
-  # Unpack us and ODE solver
-  u0, = us0
+  u0 = us0[1]
   dt = get_dt(odeslvr)
+  tF = t0 + dt
   tableau = get_tableau(odeslvr)
   num_stages = length(get_nodes(tableau))
 
   # Allocate or unpack cache
   if isnothing(cache)
-    us = (u0, u0)
-    odeopcache = allocate_odeopcache(odeop, t0, us)
-    disopcache = allocate_disopcache(odeslvr, odeop, odeopcache, t0, u0)
+    us0_full = (u0, u0)
+    odeopcache = allocate_odeopcache(odeop, t0, us0_full)
+    disopcache = allocate_disopcache(odeslvr, odeop, odeopcache, t0, us0_full)
     disslvrcache = allocate_disslvrcache(odeslvr)
-    vs = [zero(u0) for _ in 1:num_stages]
+    slopes = [zero(u0) for _ in 1:num_stages]
   else
-    odeopcache, disopcache, disslvrcache, vs = cache
+    odeopcache, disopcache, disslvrcache, slopes = cache
   end
 
   # Create discrete ODE operator
   disop = DiscreteODEOperator(
-    odeslvr, odeop,
-    odeopcache, disopcache,
-    t0, us0, dt,
-    vs, tableau
+    odeslvr, odeop, odeopcache, disopcache,
+    t0, u0, dt, slopes, tableau
   )
 
   # Solve the discrete ODE operator
   usF, disslvrcache = solve!(usF, odeslvr, disop, disslvrcache)
-  tF = t0 + dt
+  cache = (odeopcache, disopcache, disslvrcache, slopes)
 
-  # Update cache
-  cache = (odeopcache, disopcache, disslvrcache, vs)
-
-  (usF, tF, cache)
+  (tF, usF, cache)
 end
 
 ################
@@ -118,9 +113,9 @@ end
 function allocate_disopcache(
   odeslvr::EXRungeKutta,
   odeop::ODEOperator, odeopcache,
-  t::Real, x::AbstractVector
+  t0::Real, us0::NTuple{2,AbstractVector}
 )
-  ui = zero(x)
+  ui = zero(us0[1])
   J, r = nothing, nothing
   (ui, J, r)
 end
@@ -128,12 +123,11 @@ end
 function allocate_disopcache(
   odeslvr::EXRungeKutta,
   odeop::ODEOperator{<:AbstractQuasilinearODE}, odeopcache,
-  t::Real, x::AbstractVector
+  t0::Real, us0::NTuple{2,AbstractVector}
 )
-  ui = zero(x)
-  us = (x, x)
-  J = allocate_jacobian(odeop, t, us, odeopcache)
-  r = allocate_residual(odeop, t, us, odeopcache)
+  ui = zero(us0[1])
+  J = allocate_jacobian(odeop, t0, us0, odeopcache)
+  r = allocate_residual(odeop, t0, us0, odeopcache)
   (ui, J, r)
 end
 
@@ -144,29 +138,29 @@ end
 function DiscreteODEOperator(
   odeslvr::EXRungeKutta, odeop::ODEOperator,
   odeopcache, disopcache,
-  t0::Real, us0::NTuple{1,AbstractVector}, dt::Real,
-  vs::AbstractVector{<:AbstractVector}, tableau::AbstractTableau
+  t0::Real, u0::AbstractVector, dt::Real,
+  slopes::AbstractVector{<:AbstractVector}, tableau::AbstractTableau
 )
   ui, J, r = disopcache
   ti, aii = t0, zero(t0)
   SequentialRungeKuttaNonlinearOperator(
     odeop, odeopcache,
-    t0, us0, dt,
-    ui, vs, tableau, ti, aii, J, r
+    t0, u0, dt, ti, ui, aii,
+    slopes, tableau, J, r
   )
 end
 
 function DiscreteODEOperator(
   odeslvr::EXRungeKutta, odeop::ODEOperator{<:AbstractQuasilinearODE},
   odeopcache, disopcache,
-  t0::Real, us0::NTuple{1,AbstractVector}, dt::Real,
-  vs::AbstractVector{<:AbstractVector}, tableau::AbstractTableau
+  t0::Real, u0::AbstractVector, dt::Real,
+  slopes::AbstractVector{<:AbstractVector}, tableau::AbstractTableau
 )
   ui, J, r = disopcache
   SequentialRungeKuttaLinearOperator(
     odeop, odeopcache,
-    t0, us0, dt,
-    ui, vs, tableau, J, r,
+    t0, u0, dt, ui,
+    slopes, tableau, J, r,
   )
 end
 
@@ -202,9 +196,9 @@ end
 function allocate_disopcache(
   odeslvr::DIMRungeKutta,
   odeop::ODEOperator, odeopcache,
-  t::Real, x::AbstractVector
+  t0::Real, us0::NTuple{2,AbstractVector}
 )
-  ui = zero(x)
+  ui = zero(us0[1])
   J, r = nothing, nothing
   (ui, J, r)
 end
@@ -212,15 +206,14 @@ end
 function allocate_disopcache(
   odeslvr::DIMRungeKutta,
   odeop::ODEOperator{<:AbstractQuasilinearODE}, odeopcache,
-  t::Real, x::AbstractVector
+  t0::Real, us0::NTuple{2,AbstractVector}
 )
-  ui = zero(x)
+  ui = zero(us0[1])
   tableau = get_tableau(odeslvr)
   A = get_matrix(tableau)
   if any(i -> iszero(A[i, i]), axes(A, 2))
-    us = (x, x)
-    J = allocate_jacobian(odeop, t, us, odeopcache)
-    r = allocate_residual(odeop, t, us, odeopcache)
+    J = allocate_jacobian(odeop, t0, us0, odeopcache)
+    r = allocate_residual(odeop, t0, us0, odeopcache)
   else
     J, r = nothing, nothing
   end
@@ -230,12 +223,11 @@ end
 function allocate_disopcache(
   odeslvr::DIMRungeKutta,
   odeop::ODEOperator{<:AbstractLinearODE}, odeopcache,
-  t::Real, x::AbstractVector
+  t0::Real, us0::NTuple{2,AbstractVector}
 )
-  ui = zero(x)
-  us = (x, x)
-  J = allocate_jacobian(odeop, t, us, odeopcache)
-  r = allocate_residual(odeop, t, us, odeopcache)
+  ui = zero(us0[1])
+  J = allocate_jacobian(odeop, t0, us0, odeopcache)
+  r = allocate_residual(odeop, t0, us0, odeopcache)
   (ui, J, r)
 end
 
@@ -246,29 +238,29 @@ end
 function DiscreteODEOperator(
   odeslvr::DIMRungeKutta, odeop::ODEOperator,
   odeopcache, disopcache,
-  t0::Real, us0::NTuple{1,AbstractVector}, dt::Real,
-  vs::AbstractVector{<:AbstractVector}, tableau::AbstractTableau
+  t0::Real, u0::AbstractVector, dt::Real,
+  slopes::AbstractVector{<:AbstractVector}, tableau::AbstractTableau
 )
   ui, J, r = disopcache
   ti, aii = t0, zero(t0)
   SequentialRungeKuttaNonlinearOperator(
     odeop, odeopcache,
-    t0, us0, dt,
-    ui, vs, tableau, ti, aii, J, r
+    t0, u0, dt, ti, ui, aii,
+    slopes, tableau, J, r
   )
 end
 
 function DiscreteODEOperator(
   odeslvr::DIMRungeKutta, odeop::ODEOperator{<:AbstractLinearODE},
   odeopcache, disopcache,
-  t0::Real, us0::NTuple{1,AbstractVector}, dt::Real,
-  vs::AbstractVector{<:AbstractVector}, tableau::AbstractTableau
+  t0::Real, u0::AbstractVector, dt::Real,
+  slopes::AbstractVector{<:AbstractVector}, tableau::AbstractTableau
 )
   ui, J, r = disopcache
   SequentialRungeKuttaLinearOperator(
     odeop, odeopcache,
-    t0, us0, dt,
-    ui, vs, tableau, J, r
+    t0, u0, dt, ui,
+    slopes, tableau, J, r
   )
 end
 
@@ -290,26 +282,26 @@ end
 Nonlinear operator corresponding to a sequential Runge-Kutta (explicit or
 diagonally implicit) scheme:
 ```math
-residual(ti, ui, vi) = 0,
+residual(tx, ux, vx) = 0,
 
-ti = t_n + c[i] * dt
-ui = u_n + dt * ∑_{1 ≤ j < i} A[i, j] * vj + dt * A[i, i] * dt * x
-vi = x,
+tx = t_n + c[i] * dt
+ux = u_n + dt * ∑_{1 ≤ j < i} A[i, j] * slopes[j] + dt * A[i, i] * dt * x
+vx = x,
 
-u_(n+1) = u_n + dt * ∑_{1 ≤ i ≤ s} b[i] * vi.
+u_(n+1) = u_n + dt * ∑_{1 ≤ i ≤ s} b[i] * slopes[i].
 ```
 """
 mutable struct SequentialRungeKuttaNonlinearOperator{C} <: DiscreteODEOperator
   odeop::ODEOperator{C}
   odeopcache
   t0::Real
-  us0::NTuple{1,AbstractVector}
+  u0::AbstractVector
   dt::Real
-  ui::AbstractVector
-  vs::AbstractVector{<:AbstractVector}
-  tableau::AbstractTableau
   ti::Real
+  ui::AbstractVector
   aii::Real
+  slopes::AbstractVector{<:AbstractVector}
+  tableau::AbstractTableau
   J::Union{Nothing,AbstractMatrix}
   r::Union{Nothing,AbstractVector}
 end
@@ -319,12 +311,16 @@ function Algebra.residual!(
   disop::SequentialRungeKuttaNonlinearOperator,
   x::AbstractVector
 )
-  ti, dt, ui = disop.ti, disop.dt, disop.ui
-  aii = disop.aii
+  dt = disop.dt
+  ti, ui, aii = disop.ti, disop.ui, disop.aii
+  # Residual: (ui + aii * dt * x, x)
   axpy!(aii * dt, x, ui)
-  usi = (ui, x)
-  residual!(r, disop.odeop, ti, usi, disop.odeopcache)
+
+  tx = ti
+  usx = (ui, x)
+  residual!(r, disop.odeop, tx, usx, disop.odeopcache)
   axpy!(-aii * dt, x, ui)
+
   r
 end
 
@@ -332,13 +328,10 @@ function Algebra.allocate_jacobian(
   disop::SequentialRungeKuttaNonlinearOperator,
   x::AbstractVector
 )
-  ti, dt, ui = disop.ti, disop.dt, disop.ui
-  aii = disop.aii
-  axpy!(aii * dt, x, ui)
-  usi = (ui, x)
-  J = allocate_jacobian(disop.odeop, ti, usi, disop.odeopcache)
-  axpy!(-aii * dt, x, ui)
-  J
+  ti, ui = disop.ti, disop.ui
+  tx = ti
+  usx = (ui, x)
+  allocate_jacobian(disop.odeop, tx, usx, disop.odeopcache)
 end
 
 function Algebra.jacobian!(
@@ -346,13 +339,16 @@ function Algebra.jacobian!(
   disop::SequentialRungeKuttaNonlinearOperator,
   x::AbstractVector
 )
-  ti, dt, ui = disop.ti, disop.dt, disop.ui
-  aii = disop.aii
+  dt = disop.dt
+  ti, ui, aii = disop.ti, disop.ui, disop.aii
+  # Residual: (ui + aii * dt * x, x)
   axpy!(aii * dt, x, ui)
-  ws = (disop.aii * dt, 1)
-  usi = (ui, x)
+
+  tx = ti
+  usx = (ui, x)
+  ws = (aii * dt, 1)
   fillstored!(J, zero(eltype(J)))
-  jacobians!(J, disop.odeop, ti, usi, ws, disop.odeopcache)
+  jacobians!(J, disop.odeop, tx, usx, ws, disop.odeopcache)
   axpy!(-aii * dt, x, ui)
   J
 end
@@ -362,66 +358,75 @@ function Algebra.solve!(
   odeslvr::RungeKutta, disop::SequentialRungeKuttaNonlinearOperator{C},
   disslvrcaches
 ) where {C}
+  uF = usF[1]
   odeop, odeopcache = disop.odeop, disop.odeopcache
-  t0, dt, us0 = disop.t0, disop.dt, disop.us0
-  ui, vs, tableau = disop.ui, disop.vs, disop.tableau
+  t0, u0, dt = disop.t0, disop.u0, disop.dt
+  ui = disop.ui
+
+  slopes, tableau = disop.slopes, disop.tableau
   A, b, c = get_matrix(tableau), get_weights(tableau), get_nodes(tableau)
   is_quasilinear = C <: AbstractQuasilinearODE
-
-  u0, = us0
 
   # Solve stages
   for i in eachindex(c)
     ti = t0 + c[i] * dt
+    aii = A[i, i]
+
+    # Update the cache of the ODE operator (typically Dirichlet BCs)
     update_odeopcache!(odeopcache, odeop, ti)
 
-    # Take linear combination of previous stages
+    # Update solver state (ti, aii and ui)
+    disop.ti = ti
+    disop.aii = aii
     copy!(ui, u0)
     for j in 1:i-1
       coef = A[i, j]
       if !iszero(coef)
-        axpy!(coef * dt, vs[j], ui)
+        axpy!(coef * dt, slopes[j], ui)
       end
     end
 
-    # Update operator state
-    disop.ti = ti
-    disop.aii = A[i, i]
-
-    # Solve the discrete ODE operator
-    explicit = iszero(A[i, i])
+    # Decide whether the operator is linear or nonlinear
+    explicit = iszero(aii)
     disslvr, islvr = get_solver_index(odeslvr, explicit)
     disslvrcache = disslvrcaches[islvr]
 
-    vi = vs[i]
-    fill!(vi, zero(eltype(vi)))
     if explicit && is_quasilinear
       J, r = disop.J, disop.r
 
-      usi = (ui, vi)
-      w = 1
-      filter = (true, true, false)
+      # Residual: (ui, x)
+      # Jacobian: (ui, x)
+      # Take x = 0 to split the mass term from the residual
+      # Use slopes[i] to store x = 0
+      x = slopes[i]
+      fill!(x, zero(eltype(x)))
 
+      tx = ti
+      usx = (ui, x)
+      w = 1
       fillstored!(J, zero(eltype(J)))
-      jacobian!(J, odeop, ti, usi, 1, w, odeopcache)
-      residual!(r, odeop, ti, usi, odeopcache; filter)
+      jacobian!(J, odeop, tx, usx, 1, w, odeopcache)
+      residual!(r, odeop, tx, usx, odeopcache)
       rmul!(r, -1)
 
       _op = SequentialRungeKuttaLinearOperator(
         odeop, odeopcache,
-        t0, us0, dt,
-        ui, vs, tableau, J, r
+        t0, u0, dt, ui,
+        slopes, tableau, J, r
       )
     else
       _op = disop
     end
 
-    disslvrcache = solve!(vi, disslvr, _op, disslvrcache)
+    # Solve the discrete ODE operator
+    x = slopes[i]
+    disslvrcache = solve!(x, disslvr, _op, disslvrcache)
     disslvrcaches = Base.setindex(disslvrcaches, disslvrcache, islvr)
   end
 
-  # Express usF in terms of the solution of the discrete ODE operator
-  usF = _finalize_rk!(usF, us0, vs, dt, b)
+  # Finalize
+  uF = _finalize_rk!(uF, u0, dt, slopes, b)
+  usF = (uF,)
 
   (usF, disslvrcaches)
 end
@@ -435,23 +440,23 @@ end
 Linear operator corresponding to a sequential Runge-Kutta (explicit or
 diagonally implicit) scheme:
 ```math
-residual(ti, ui, vi) = mass(ti, ui) vi + res(ti, ui) = 0,
+residual(tx, ux, vx) = mass(tx, ux) vx + res(tx, ux) = 0,
 
-ti = t_n + c[i] * dt
-ui = u_n + dt * ∑_{1 ≤ j < i} A[i, j] * vj + dt * A[i, i] x = 0
-vi = x,
+tx = t_n + c[i] * dt
+ux = u_n + dt * ∑_{1 ≤ j < i} A[i, j] * slopes[j] + dt * A[i, i] x = 0
+vx = x,
 
-u_(n+1) = u_n + dt * ∑_{1 ≤ i ≤ s} b[i] * vi.
+u_(n+1) = u_n + dt * ∑_{1 ≤ i ≤ s} b[i] * slopes[i].
 ```
 """
 struct SequentialRungeKuttaLinearOperator <: LinearDiscreteODEOperator
   odeop::ODEOperator
   odeopcache
   t0::Real
-  us0::NTuple{1,AbstractVector}
+  u0::AbstractVector
   dt::Real
   ui::AbstractVector
-  vs::AbstractVector{<:AbstractVector}
+  slopes::AbstractVector{<:AbstractVector}
   tableau::AbstractTableau
   J::AbstractMatrix
   r::AbstractVector
@@ -466,52 +471,57 @@ function Algebra.solve!(
   odeslvr::RungeKutta, disop::SequentialRungeKuttaLinearOperator,
   disslvrcaches
 )
+  uF = usF[1]
   odeop, odeopcache = disop.odeop, disop.odeopcache
-  J, r = disop.J, disop.r
-  t0, dt, us0 = disop.t0, disop.dt, disop.us0
-  ui, vs, tableau = disop.ui, disop.vs, disop.tableau
+  t0, u0, dt = disop.t0, disop.u0, disop.dt
+  ui = disop.ui
+  slopes, tableau = disop.slopes, disop.tableau
   A, b, c = get_matrix(tableau), get_weights(tableau), get_nodes(tableau)
+  J, r = disop.J, disop.r
 
   explicit = true
   disslvr, islvr = get_solver_index(odeslvr, explicit)
   disslvrcache = disslvrcaches[islvr]
 
-  u0, = us0
-
   # Solve stages
   for i in eachindex(c)
     ti = t0 + c[i] * dt
+
+    # Update the cache of the ODE operator (typically Dirichlet BCs)
     update_odeopcache!(odeopcache, odeop, ti)
 
-    # Take linear combination of previous stages
+    # Residual: (ui, x)
+    # Jacobian: (ui, x)
+    # Take x = 0 to split the mass term from the residual
+    # Use slopes[i] to store x = 0
     copy!(ui, u0)
     for j in 1:i-1
       coef = A[i, j]
       if !iszero(coef)
-        axpy!(coef * dt, vs[j], ui)
+        axpy!(coef * dt, slopes[j], ui)
       end
     end
+    x = slopes[i]
+    fill!(x, zero(eltype(x)))
 
-    # Update jacobian and residual
-    vi = vs[i]
-    fill!(vi, zero(eltype(vi)))
-    usi = (ui, vi)
+    tx = ti
+    usx = (ui, x)
     ws = (A[i, i] * dt, 1)
-    filter = (true, true, false)
-
     fillstored!(J, zero(eltype(J)))
-    jacobians!(J, odeop, ti, usi, ws, odeopcache)
-    residual!(r, odeop, ti, usi, odeopcache; filter)
+    jacobians!(J, odeop, tx, usx, ws, odeopcache)
+    residual!(r, odeop, tx, usx, odeopcache)
     rmul!(r, -1)
 
     # Solve the discrete ODE operator
-    disslvrcache = solve!(vi, disslvr, disop, disslvrcache)
+    x = slopes[i]
+    disslvrcache = solve!(x, disslvr, disop, disslvrcache)
   end
-
-  # Express usF in terms of the solution of the discrete ODE operator
-  usF = _finalize_rk!(usF, us0, vs, dt, b)
-
   disslvrcaches = Base.setindex(disslvrcaches, disslvrcache, islvr)
+
+  # Finalize
+  uF = _finalize_rk!(uF, u0, dt, slopes, b)
+  usF = (uF,)
+
   (usF, disslvrcaches)
 end
 
@@ -519,17 +529,16 @@ end
 # Finalizer #
 #############
 function _finalize_rk!(
-  usF::NTuple{1,AbstractVector}, us0::NTuple{1,AbstractVector},
-  vs::AbstractVector, dt::Real, b::AbstractVector
+  uF::AbstractVector, u0::AbstractVector, dt::Real,
+  slopes::AbstractVector, b::AbstractVector
 )
-  u0, = us0
-  uF, = usF
+  # @. uF = u0 + ∑_{1 ≤ i ≤ s} b[i] * dt * slopes[i]
   copy!(uF, u0)
   for i in eachindex(b)
     coef = b[i]
     if !iszero(coef)
-      axpy!(coef * dt, vs[i], uF)
+      axpy!(coef * dt, slopes[i], uF)
     end
   end
-  (uF,)
+  uF
 end

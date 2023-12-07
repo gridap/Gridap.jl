@@ -2,20 +2,20 @@ module TransientFEProblemsTests
 
 using Test
 
-# @testset "Order1FETests" begin include("TransientFEProblemsTests/Order1FETests.jl") end
+@testset "HeatEquationScalar" begin include("TransientFEProblemsTests/HeatEquationScalarTests.jl") end
 
-# @testset "Order2FETests" begin include("TransientFEProblemsTests/Order2FETests.jl") end
+@testset "HeatEquationVector" begin include("TransientFEProblemsTests/HeatEquationVectorTests.jl") end
 
-@testset "HeatEquationVectorTests" begin include("TransientFEProblemsTests/HeatEquationVectorTests.jl") end
+@testset "HeatEquationMultiField" begin include("TransientFEProblemsTests/HeatEquationMultiFieldTests.jl") end
 
-# @testset "HeatEquationMultiFieldTests" begin include("TransientFEProblemsTests/HeatEquationMultiFieldTests.jl") end
+@testset "HeatEquationNeumann" begin include("TransientFEProblemsTests/HeatEquationNeumannTests.jl") end
 
-# @testset "HeatEquationNeumannTests" begin include("TransientFEProblemsTests/HeatEquationNeumannTests.jl") end
+@testset "HeatEquationDG" begin include("TransientFEProblemsTests/HeatEquationDGTests.jl") end
 
-# @testset "HeatEquationDGTests" begin include("TransientFEProblemsTests/HeatEquationDGTests.jl") end
+@testset "StokesEquation" begin include("TransientFEProblemsTests/StokesEquationTests.jl") end
 
-# @testset "StokesEquationTests" begin include("TransientFEProblemsTests/StokesEquationTests.jl") end
+@testset "FreeSurfacePotentialFlow" begin include("TransientFEProblemsTests/FreeSurfacePotentialFlowTests.jl") end
 
-# @testset "FreeSurfacePotentialFlowTests" begin include("TransientFEProblemsTests/FreeSurfacePotentialFlowTests.jl") end
+@testset "SecondOrderEquation" begin include("TransientFEProblemsTests/SecondOrderEquationTests.jl") end
 
 end # module TransientFEProblemsTests

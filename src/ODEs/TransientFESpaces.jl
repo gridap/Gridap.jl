@@ -15,11 +15,10 @@ allowed to be time-dependent.
 - [`allocate_space(space)`](@ref)
 - [`evaluate(space, t::Nothing)`](@ref)
 - [`evaluate!(space, t)`](@ref)
-- [`∂t(space)`](@ref)
+- [`time_derivative(space)`](@ref)
 
 # Optional
 - [`evaluate(space, t::Real)`](@ref)
-- [`∂tt(space)`](@ref)
 """
 abstract type AbstractTransientTrialFESpace <: FESpace end
 
@@ -91,30 +90,31 @@ end
 (space::ZeroMeanFESpace)(t) = evaluate(space, t)
 
 """
-    ∂t(space::AbstractTransientTrialFESpace) -> FESpace
+    time_derivative(space::AbstractTransientTrialFESpace) -> FESpace
 
 First-order time derivative of the Dirichlet functions.
 """
-function ∂t(space::AbstractTransientTrialFESpace)
+function time_derivative(space::AbstractTransientTrialFESpace)
   @abstractmethod
 end
 
-∂t(space::SingleFieldFESpace) = HomogeneousTrialFESpace(space)
-∂t(space::MultiFieldFESpace) = MultiFieldFESpace(∂t.(space.spaces))
-∂t(t::T) where {T<:Number} = zero(T)
-
-"""
-    ∂tt(space::AbstractTransientTrialFESpace) -> FESpace
-
-Second-order time derivative of the Dirichlet functions.
-"""
-function ∂tt(space::AbstractTransientTrialFESpace)
-  ∂t(∂t(space))
+# Specialisation for `SingleFieldFESpace`
+function time_derivative(space::SingleFieldFESpace)
+  HomogeneousTrialFESpace(space)
 end
 
-∂tt(space::SingleFieldFESpace) = HomogeneousTrialFESpace(space)
-∂tt(space::MultiFieldFESpace) = MultiFieldFESpace(∂tt.(space.spaces))
-∂tt(t::T) where {T<:Number} = zero(T)
+function time_derivative(space::SingleFieldFESpace, ::Val{0})
+  space
+end
+
+function time_derivative(space::SingleFieldFESpace, ::Val)
+  time_derivative(space)
+end
+
+# Specialisation for `MultiFieldFESpace`
+function time_derivative(space::MultiFieldFESpace)
+  MultiFieldFESpace(time_derivative.(space.spaces))
+end
 
 # FESpace interface
 function FESpaces.SparseMatrixAssembler(
@@ -169,12 +169,8 @@ function Arrays.evaluate!(Ut::FESpace, U::TransientTrialFESpace, t::Real)
   Ut
 end
 
-function ∂t(U::TransientTrialFESpace)
-  TransientTrialFESpace(U.space, ∂t.(U.transient_dirichlet))
-end
-
-function ∂tt(U::TransientTrialFESpace)
-  TransientTrialFESpace(U.space, ∂tt.(U.transient_dirichlet))
+function time_derivative(U::TransientTrialFESpace)
+  TransientTrialFESpace(U.space, time_derivative.(U.transient_dirichlet))
 end
 
 # FESpace interface
@@ -325,14 +321,8 @@ function Arrays.evaluate!(Ut::FESpace, U::TransientMultiFieldFESpace, t::Real)
   MultiFieldFESpace(spaces; style)
 end
 
-function ∂t(U::TransientMultiFieldFESpace)
-  spaces = ∂t.(U.spaces)
-  style = MultiFieldStyle(U)
-  TransientMultiFieldFESpace(spaces; style)
-end
-
-function ∂tt(U::TransientMultiFieldFESpace)
-  spaces = ∂tt.(U.spaces)
+function time_derivative(U::TransientMultiFieldFESpace)
+  spaces = time_derivative.(U.spaces)
   style = MultiFieldStyle(U)
   TransientMultiFieldFESpace(spaces; style)
 end
