@@ -55,6 +55,8 @@ function LagrangianDofBasis(::Type{T},nodes::Vector{<:Point}) where T
 end
 
 get_nodes(b::LagrangianDofBasis) = b.nodes
+get_dof_to_node(b::LagrangianDofBasis) = b.dof_to_node
+get_dof_to_comp(b::LagrangianDofBasis) = b.dof_to_comp
 
 function _generate_dof_layout_node_major(::Type{<:Real},nnodes::Integer)
   ndofs = nnodes
