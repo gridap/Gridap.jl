@@ -71,7 +71,7 @@ function Base.iterate(odesltn::GenericODESolution)
 
   # Solve step
   odeslvr, odeop = odesltn.odeslvr, odesltn.odeop
-  tF, usF, cache = solve_step!(usF, odeslvr, odeop, t0, us0)
+  tF, usF, cache = solve_odeop!(usF, odeslvr, odeop, t0, us0)
 
   # Update state
   state = (tF, usF, us0, cache)
@@ -88,7 +88,7 @@ function Base.iterate(odesltn::GenericODESolution, state)
 
   # Solve step
   odeslvr, odeop = odesltn.odeslvr, odesltn.odeop
-  tF, usF, cache = solve_step!(usF, odeslvr, odeop, t0, us0, cache)
+  tF, usF, cache = solve_odeop!(usF, odeslvr, odeop, t0, us0, cache)
 
   # Update state
   state = (tF, usF, us0, cache)

@@ -33,6 +33,7 @@ time derivative of `u`.
 
 # Mandatory
 - [`get_order(odeop)`](@ref)
+- [`get_forms(odeop)`](@ref)
 - [`allocate_residual(odeop, t, us, odeopcache)`](@ref)
 - [`residual!(r, odeop, t, us, odeopcache)`](@ref)
 - [`allocate_jacobian(odeop, t, us, odeopcache)`](@ref)
@@ -108,6 +109,22 @@ ODEOperatorType(::Type{<:ODEOperator{C}}) where {C} = C
 Return the order of the `ODEOperator`.
 """
 function Polynomials.get_order(odeop::ODEOperator)
+  @abstractmethod
+end
+
+"""
+    get_forms(feop::ODEOperator) -> Tuple{Vararg{Function}}
+
+Return the linear forms of the `ODEOperator`:
+* For a general ODE operator, return an empty tuple,
+* For a quasilinear ODE operator, return a tuple with the mass matrix,
+* For a linear ODE operator, return all the linear forms.
+"""
+function get_forms(odeop::ODEOperator)
+  ()
+end
+
+function get_forms(odeop::ODEOperator{<:AbstractQuasilinearODE})
   @abstractmethod
 end
 
@@ -325,6 +342,30 @@ end
 function Polynomials.get_order(odeop::IMEXODEOperator)
   im_odeop, _ = get_imex_operators(odeop)
   get_order(im_odeop)
+end
+
+function get_forms(odeop::IMEXODEOperator)
+  ()
+end
+
+function get_forms(odeop::IMEXODEOperator{<:AbstractQuasilinearODE})
+  # Only the mass matrix of the implicit part
+  im_odeop, _ = get_imex_operators(odeop)
+  im_forms = get_forms(im_odeop)
+  (last(im_forms),)
+end
+
+function get_forms(odeop::IMEXODEOperator{<:AbstractLinearODE,<:AbstractLinearODE})
+  # Sum the forms of the implicit and explicit parts, taking into account the
+  # difference in order of the two operators
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_forms, ex_forms = get_forms(im_odeop), get_forms(ex_odeop)
+  forms = ()
+  for (im_form, ex_form) in zip(im_forms, ex_forms)
+    form = (t, u) -> im_form(t, u) + ex_form(t, u)
+    forms = (forms..., form)
+  end
+  forms = (forms..., last(im_forms))
 end
 
 function allocate_odeopcache(

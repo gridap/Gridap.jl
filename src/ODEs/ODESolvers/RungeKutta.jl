@@ -55,7 +55,7 @@ function get_solver_index(odeslvr::RungeKutta, explicit::Bool)
   @abstractmethod
 end
 
-function solve_step!(
+function solve_odeop!(
   usF::NTuple{1,AbstractVector},
   odeslvr::RungeKutta, odeop::ODEOperator,
   t0::Real, us0::NTuple{1,AbstractVector},
@@ -85,7 +85,7 @@ function solve_step!(
   )
 
   # Solve the discrete ODE operator
-  usF, disslvrcache = solve!(usF, odeslvr, disop, disslvrcache)
+  usF, disslvrcache = solve_disop!(usF, odeslvr, disop, disslvrcache)
   cache = (odeopcache, disopcache, disslvrcache, slopes)
 
   (tF, usF, cache)
@@ -353,7 +353,7 @@ function Algebra.jacobian!(
   J
 end
 
-function Algebra.solve!(
+function solve_disop!(
   usF::NTuple{1,AbstractVector},
   odeslvr::RungeKutta, disop::SequentialRungeKuttaNonlinearOperator{C},
   disslvrcaches
@@ -466,7 +466,22 @@ Algebra.get_matrix(disop::SequentialRungeKuttaLinearOperator) = disop.J
 
 Algebra.get_vector(disop::SequentialRungeKuttaLinearOperator) = disop.r
 
-function Algebra.solve!(
+# For now only indicate that the jacobian matrix is constant when the
+# tableau is explicit and the ODE operator is semilinear with constant mass.
+# TODO as indicated in ODESolvers.jl, we should also save the jacobian matrices
+# when the ODE operator is linear with constant forms.
+function is_jacobian_constant(disop::SequentialRungeKuttaLinearOperator)
+  odeop = disop.odeop
+  constant_jacobian = false
+  explicit_tableau = TableauType(disop.tableau) <: ExplicitTableau
+  semilinear_ode = ODEOperatorType(odeop) <: AbstractSemilinearODE
+  if explicit_tableau && semilinear_ode
+    constant_jacobian = is_form_constant(odeop, 1)
+  end
+  constant_jacobian
+end
+
+function solve_disop!(
   usF::NTuple{1,AbstractVector},
   odeslvr::RungeKutta, disop::SequentialRungeKuttaLinearOperator,
   disslvrcaches
@@ -507,6 +522,8 @@ function Algebra.solve!(
     tx = ti
     usx = (ui, x)
     ws = (A[i, i] * dt, 1)
+    # If the jacobian is constant, the following call will only retrieve the
+    # jacobian from the ODEOpFromFEOpCache.
     fillstored!(J, zero(eltype(J)))
     jacobians!(J, odeop, tx, usx, ws, odeopcache)
     residual!(r, odeop, tx, usx, odeopcache)

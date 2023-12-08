@@ -19,16 +19,16 @@ exactly a subtype of `FEOperator`, but rather at the intersection of
 - [`get_test(feop)`](@ref)
 - [`get_trial(feop)`](@ref)
 - [`get_order(feop)`](@ref)
-- [`get_assembler(feop)`](@ref)
 - [`get_res(feop::TransientFEOperator)`](@ref)
 - [`get_jacs(feop::TransientFEOperator)`](@ref)
 - [`get_forms(feop::TransientFEOperator)`](@ref)
+- [`get_assembler(feop)`](@ref)
 
 # Optional
-- [`allocate_feopcache(feop)`](@ref)
-- [`update_feopcache!(feopcache, feop, t)`](@ref)
 - [`get_algebraic_operator(feop)`](@ref)
 - [`is_form_constant(feop, k)`](@ref)
+- [`allocate_feopcache(feop)`](@ref)
+- [`update_feopcache!(feopcache, feop, t)`](@ref)
 """
 abstract type TransientFEOperator{C<:ODEOperatorType} <: GridapType end
 
@@ -60,39 +60,6 @@ end
 
 # TransientFEOperator interface
 """
-    allocate_feopcache(
-      feop::TransientFEOperator,
-      t::Real, us::Tuple{Vararg{AbstractVector}}
-    ) -> CacheType
-
-Allocate the cache of the `TransientFEOperator`.
-"""
-function allocate_feopcache(
-  feop::TransientFEOperator,
-  t::Real, us::Tuple{Vararg{AbstractVector}}
-)
-  nothing
-end
-
-"""
-    update_feopcache!(feopcache, feop::TransientFEOperator, t::Real) -> CacheType
-
-Update the cache of the `TransientFEOperator` at time `t`.
-"""
-function update_feopcache!(feopcache, feop::TransientFEOperator, t::Real)
-  feopcache
-end
-
-"""
-    get_assembler(feop::TransientFEOperator) -> Assembler
-
-Return the assembler of the `TransientFEOperator`.
-"""
-function get_assembler(feop::TransientFEOperator)
-  @abstractmethod
-end
-
-"""
     get_res(feop::TransientFEOperator) -> Function
 
 Return the lowest-order element in the decomposition of the residual of the
@@ -117,7 +84,10 @@ end
 """
     get_forms(feop::TransientFEOperator) -> Function
 
-Return the bilinear forms of the `TransientFEOperator`.
+Return the bilinear forms of the `TransientFEOperator`:
+* For a general transient FE operator, return nothing,
+* For a quasilinear FE operator, return the mass matrix,
+* For a linear FE operator, return all the linear forms.
 """
 function get_forms(feop::TransientFEOperator)
   ()
@@ -131,6 +101,39 @@ to the `k`-th-order time derivative of `u` is constant with respect to `t`.
 """
 function is_form_constant(feop::TransientFEOperator, k::Integer)
   false
+end
+
+"""
+    get_assembler(feop::TransientFEOperator) -> Assembler
+
+Return the assembler of the `TransientFEOperator`.
+"""
+function get_assembler(feop::TransientFEOperator)
+  @abstractmethod
+end
+
+"""
+    allocate_feopcache(
+      feop::TransientFEOperator,
+      t::Real, us::Tuple{Vararg{AbstractVector}}
+    ) -> CacheType
+
+Allocate the cache of the `TransientFEOperator`.
+"""
+function allocate_feopcache(
+  feop::TransientFEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}}
+)
+  nothing
+end
+
+"""
+    update_feopcache!(feopcache, feop::TransientFEOperator, t::Real) -> CacheType
+
+Update the cache of the `TransientFEOperator` at time `t`.
+"""
+function update_feopcache!(feopcache, feop::TransientFEOperator, t::Real)
+  feopcache
 end
 
 # Broken FESpaces interface
@@ -248,12 +251,12 @@ end
 # interface are going to be called on the implicit and explicit
 # `ODEOpFromFEOp`s within the `IMEXODEOperator` interface, and in turn called
 # on the implicit and explicit `TransientFEOperator`s separately
-function FESpaces.get_trial(feop::TransientIMEXFEOperator)
-  feop.im_feop.trial
-end
-
 function FESpaces.get_test(feop::TransientIMEXFEOperator)
   feop.im_feop.test
+end
+
+function FESpaces.get_trial(feop::TransientIMEXFEOperator)
+  feop.im_feop.trial
 end
 
 function FESpaces.get_algebraic_operator(feop::TransientIMEXFEOperator)
@@ -322,10 +325,17 @@ function TransientFEOperator(
   )
 end
 
-# TransientFEOperator interface (rest in # Common functions)
+FESpaces.get_test(feop::TransientFEOpFromWeakForm) = feop.test
+
+FESpaces.get_trial(feop::TransientFEOpFromWeakForm) = feop.trial
+
+Polynomials.get_order(feop::TransientFEOpFromWeakForm) = feop.order
+
 get_res(feop::TransientFEOpFromWeakForm) = feop.res
 
 get_jacs(feop::TransientFEOpFromWeakForm) = feop.jacs
+
+get_assembler(feop::TransientFEOpFromWeakForm) = feop.assembler
 
 ########################################
 # TransientQuasilinearFEOpFromWeakForm #
@@ -414,16 +424,20 @@ function TransientQuasilinearFEOperator(
   )
 end
 
-# TransientFEOperator interface (rest in # Common functions)
+# TransientFEOperator interface
+FESpaces.get_test(feop::TransientQuasilinearFEOpFromWeakForm) = feop.test
+
+FESpaces.get_trial(feop::TransientQuasilinearFEOpFromWeakForm) = feop.trial
+
+Polynomials.get_order(feop::TransientQuasilinearFEOpFromWeakForm) = feop.order
+
 get_res(feop::TransientQuasilinearFEOpFromWeakForm) = feop.res
 
 get_jacs(feop::TransientQuasilinearFEOpFromWeakForm) = feop.jacs
 
 get_forms(feop::TransientQuasilinearFEOpFromWeakForm) = (feop.mass,)
 
-function is_form_constant(feop::TransientQuasilinearFEOpFromWeakForm, k::Integer)
-  false
-end
+get_assembler(feop::TransientQuasilinearFEOpFromWeakForm) = feop.assembler
 
 ########################################
 # TransientQuasilinearFEOpFromWeakForm #
@@ -511,7 +525,13 @@ function TransientSemilinearFEOperator(
   )
 end
 
-# TransientFEOperator interface (rest in # Common functions)
+# TransientFEOperator interface
+FESpaces.get_test(feop::TransientSemilinearFEOpFromWeakForm) = feop.test
+
+FESpaces.get_trial(feop::TransientSemilinearFEOpFromWeakForm) = feop.trial
+
+Polynomials.get_order(feop::TransientSemilinearFEOpFromWeakForm) = feop.order
+
 get_res(feop::TransientSemilinearFEOpFromWeakForm) = feop.res
 
 get_jacs(feop::TransientSemilinearFEOpFromWeakForm) = feop.jacs
@@ -521,6 +541,8 @@ get_forms(feop::TransientSemilinearFEOpFromWeakForm) = (feop.mass,)
 function is_form_constant(feop::TransientSemilinearFEOpFromWeakForm, k::Integer)
   feop.constant_mass
 end
+
+get_assembler(feop::TransientSemilinearFEOpFromWeakForm) = feop.assembler
 
 ###################################
 # TransientLinearFEOpFromWeakForm #
@@ -580,7 +602,13 @@ function TransientLinearFEOperator(
   )
 end
 
-# TransientFEOperator interface (rest in # Common functions)
+# TransientFEOperator interface
+FESpaces.get_test(feop::TransientLinearFEOpFromWeakForm) = feop.test
+
+FESpaces.get_trial(feop::TransientLinearFEOpFromWeakForm) = feop.trial
+
+Polynomials.get_order(feop::TransientLinearFEOpFromWeakForm) = feop.order
+
 get_res(feop::TransientLinearFEOpFromWeakForm) = (t, u, v) -> feop.res(t, v)
 
 get_jacs(feop::TransientLinearFEOpFromWeakForm) = feop.jacs
@@ -591,26 +619,7 @@ function is_form_constant(feop::TransientLinearFEOpFromWeakForm, k::Integer)
   feop.constant_forms[k+1]
 end
 
-####################
-# Common functions #
-####################
-const TransientFEOperatorTypes = Union{
-  TransientFEOpFromWeakForm,
-  TransientQuasilinearFEOpFromWeakForm,
-  TransientSemilinearFEOpFromWeakForm,
-  TransientLinearFEOpFromWeakForm
-}
-
-# FEOperator interface
-FESpaces.get_test(feop::TransientFEOperatorTypes) = feop.test
-
-FESpaces.get_trial(feop::TransientFEOperatorTypes) = feop.trial
-
-# ODEOperator interface
-Polynomials.get_order(feop::TransientFEOperatorTypes) = feop.order
-
-# TransientFEOperator interface
-get_assembler(feop::TransientFEOperatorTypes) = feop.assembler
+get_assembler(feop::TransientLinearFEOpFromWeakForm) = feop.assembler
 
 ########
 # Test #

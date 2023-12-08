@@ -11,8 +11,10 @@ an `ODESolver`. This is an operator of order zero.
 - [`residual!(r, disop, x)`](@ref)
 - [`allocate_jacobian(disop, x)`](@ref)
 - [`jacobian!(J, disop, x)`](@ref)
+- [`solve_disop!(usF, disslvr, disop, disopcache)`]
 
 # Optional
+- [`is_jacobian_constant(disop)`](@ref)
 - [`allocate_residual(disop, x)`](@ref)
 - [`residual(odeop, x)`](@ref)
 - [`jacobian(odeop, x)`](@ref)
@@ -23,6 +25,86 @@ function Algebra.allocate_residual(
   disop::DiscreteODEOperator, x::AbstractVector
 )
   zero(x)
+end
+
+"""
+    is_jacobian_constant(disop::DiscreteODEOperator) -> Bool
+
+Indicate whether the jacobian matrix of the `DiscreteODEOperator` is constant.
+"""
+function is_jacobian_constant(disop::DiscreteODEOperator)
+  false
+end
+
+"""
+    solve_disop!(
+      usF::Tuple{Vararg{AbstractVector}},
+      disslvr::NonlinearSolver, disop::DiscreteODEOperator,
+      disopcache
+    ) -> (Tuple{Vararg{AbstractVector}}, CacheType)
+
+Solve the `DiscreteODEOperator`.
+"""
+function solve_disop!(
+  usF::Tuple{Vararg{AbstractVector}},
+  disslvr::NonlinearSolver, disop::DiscreteODEOperator,
+  disopcache
+)
+  @abstractmethod
+end
+
+# IMPORTANT: by default, linear solvers do not recompute the jacobian matrix
+# across consecutive calls. This behaviour need to be changed in the case of
+# `DiscreteODEOperator`s.
+
+# TODO nonlinear solvers should also take advantage of the jacobian matrix
+# being constant
+
+# TODO we should also reduce the number of factorisations by storing them.
+# This can always be done in the following scenarios
+# * explicit schemes on semilinear ODE operators with constant mass
+# * diagonally-implicit schemes on `LinearODE`s with constant forms.
+# Besides, it is often the case that different stages of a DIRK scheme have the
+# same matrix. This happens when some diagonal coefficients have the same value.
+# In the extreme case when all the diagonal values are the same, these methods
+# are known as Singly-Diagonally-Implicit Runge-Kutta schemes (SDIRK). One
+# special case happens when a diagonal coefficient is zero: the stage becomes
+# explicit, even in the `AbstractQuasilinearODE` case. This strategy is already
+# set up in the current implementation of DIRK.
+
+# TODO another optimisation is the so-called FSAL property (First Same As Last)
+# of some schemes, which can save one evaluation of the residual.
+
+function Algebra.solve!(
+  x::AbstractVector,
+  ls::LinearSolver, disop::DiscreteODEOperator,
+  cache::Nothing
+)
+  fill!(x, zero(eltype(x)))
+  b = residual(disop, x)
+  A = jacobian(disop, x)
+  ss = symbolic_setup(ls, A)
+  ns = numerical_setup(ss, A)
+  rmul!(b, -1)
+  solve!(x, ns, b)
+  LinearSolverCache(A, b, ns)
+end
+
+function Algebra.solve!(
+  x::AbstractVector,
+  ls::LinearSolver, disop::DiscreteODEOperator,
+  cache
+)
+  fill!(x, zero(eltype(x)))
+  A, b, ns = cache.A, cache.b, cache.ns
+  if !is_jacobian_constant(disop)
+    residual!(b, disop, x)
+    jacobian!(A, disop, x)
+    numerical_setup!(ns, A)
+  end
+  rmul!(b, -1)
+  solve!(x, ns, b)
+  cache
 end
 
 #############################
@@ -94,7 +176,7 @@ higher-order derivatives...).
 - [`get_dt(odeslvr)`](@ref)
 - [`allocate_disopcache(odeslvr, odeop, odeopcache, t, us)`](@ref)
 - [`DiscreteODEOperator(odeslvr, odeop, odeopcache, disopcache, t0, us0, args...)`](@ref)
-- [`solve_step!(usF, odeslvr, odeop, t0, us0, [, cache])`](@ref)
+- [`solve_odeop!(usF, odeslvr, odeop, t0, us0, [, cache])`](@ref)
 
 # Optional
 - [`allocate_disslvrcache(odeslvr)`](@ref)
@@ -153,7 +235,7 @@ function DiscreteODEOperator(
 end
 
 """
-    solve_step!(
+    solve_odeop!(
       usF::Tuple{Vararg{AbstractVector}},
       odeslvr::ODESolver, odeop::ODEOperator,
       t0::Real, us0::Tuple{Vararg{AbstractVector}},
@@ -163,7 +245,7 @@ end
 Perform one time step of the `ODEOperator` with the `ODESolver` from time `t0`
 with initial state `us0`.
 """
-function solve_step!(
+function solve_odeop!(
   usF::Tuple{Vararg{AbstractVector}},
   odeslvr::ODESolver, odeop::ODEOperator,
   t0::Real, us0::Tuple{Vararg{AbstractVector}},
@@ -172,12 +254,12 @@ function solve_step!(
   @abstractmethod
 end
 
-function solve_step!(
+function solve_odeop!(
   usF::Tuple{Vararg{AbstractVector}},
   odeslvr::ODESolver, odeop::ODEOperator,
   t0::Real, us0::Tuple{Vararg{AbstractVector}},
 )
-  solve_step!(usF, odeslvr, odeop, t0, us0, nothing)
+  solve_odeop!(usF, odeslvr, odeop, t0, us0, nothing)
 end
 
 """
@@ -220,8 +302,8 @@ function test_ode_solver(
   @test disop isa DiscreteODEOperator
 
   usF = copy.(us0)
-  tF, usF, cache = solve_step!(usF, odeslvr, odeop, t0, us0)
-  tF, usF, cache = solve_step!(usF, odeslvr, odeop, t0, us0, cache)
+  tF, usF, cache = solve_odeop!(usF, odeslvr, odeop, t0, us0)
+  tF, usF, cache = solve_odeop!(usF, odeslvr, odeop, t0, us0, cache)
 
   @test tF isa Real
   @test usF isa Tuple{Vararg{AbstractVector}}
@@ -247,19 +329,3 @@ include("ODESolvers/IMEXRungeKutta.jl")
 
 # Second-order
 include("ODESolvers/GeneralizedAlpha2.jl")
-
-# TODO for now if a jacobian matrix is constant, it is not reassembled. This is
-# nice, but we should also reduce the number of factorisations by storing them.
-# This can always be done in the following scenarios
-# * explicit schemes on `AbstractQuasilinearODE`s with constant mass
-# * diagonally-implicit schemes on `LinearODE`s with constant mass and
-# stiffness. Besides, it is often the case that different stages of a DIRK
-# scheme have the same matrix. This happens when some diagonal coefficients have
-# the same value. In the extreme case when all the diagonal values are the same,
-# these methods are known as Singly-Diagonally-Implicit Runge-Kutta schemes
-# (SDIRK). One special case happens when a diagonal coefficient is zero: the
-# stage becomes explicit, even in the `AbstractQuasilinearODE` case. This
-# strategy is already set up in the current implementation of DIRK.
-
-# TODO another optimisation is the so-called FSAL property (First Same As Last)
-# of some schemes, which can save one evaluation of the residual.

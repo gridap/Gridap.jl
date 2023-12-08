@@ -16,6 +16,7 @@ using BlockArrays
 
 using Gridap.Helpers
 using Gridap.Algebra
+using Gridap.Algebra: LinearSolverCache
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
@@ -50,10 +51,11 @@ export QuasilinearODEOperator
 export SemilinearODEOperator
 export LinearODEOperator
 
+export get_forms
+export is_form_constant
 export allocate_odeopcache
 export update_odeopcache!
 export jacobians!
-export is_form_constant
 
 export IMEXODEOperator
 export get_imex_operators
@@ -66,12 +68,14 @@ include("ODESolvers.jl")
 
 export DiscreteODEOperator
 export LinearDiscreteODEOperator
+export is_jacobian_constant
+export solve_disop!
 
 export ODESolver
 export get_dt
 export allocate_disopcache
 export allocate_disslvrcache
-export solve_step!
+export solve_odeop!
 
 export test_ode_solver
 
@@ -134,12 +138,11 @@ export TransientFEBasis
 include("TransientFEOperators.jl")
 
 export TransientFEOperator
-export allocate_feopcache
-export update_feopcache!
 export get_assembler
 export get_res
 export get_jacs
-export get_forms
+export allocate_feopcache
+export update_feopcache!
 
 export TransientIMEXFEOperator
 

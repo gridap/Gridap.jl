@@ -111,7 +111,7 @@ function get_solver_index(odeslvr::IMEXRungeKutta, explicit::Bool)
   explicit ? (odeslvr.disslvr_l, 2) : (odeslvr.disslvr_nl, 1)
 end
 
-function solve_step!(
+function solve_odeop!(
   usF::NTuple{1,AbstractVector},
   odeslvr::IMEXRungeKutta, odeop::IMEXODEOperator,
   t0::Real, us0::NTuple{1,AbstractVector},
@@ -146,7 +146,7 @@ function solve_step!(
   )
 
   # Solve the discrete ODE operator
-  usF, disslvrcache = solve!(usF, odeslvr, disop, disslvrcache)
+  usF, disslvrcache = solve_disop!(usF, odeslvr, disop, disslvrcache)
   cache = (odeopcache, disopcache, disslvrcache, im_res, ex_res)
 
   (tF, usF, cache)
@@ -266,7 +266,7 @@ function Algebra.jacobian!(
   jacobians!(J, im_odeop, tx, usx, ws, im_odeopcache)
 end
 
-function Algebra.solve!(
+function solve_disop!(
   usF::NTuple{1,AbstractVector},
   odeslvr::IMEXRungeKutta, disop::IMEXRungeKuttaNonlinearOperator,
   disslvrcaches
@@ -366,7 +366,7 @@ function Algebra.solve!(
     t0, u0, dt,
     im_res, ex_res, tableau, J, r
   )
-  usF, disslvrcaches = solve!(usF, odeslvr, finalop, disslvrcaches)
+  usF, disslvrcaches = solve_disop!(usF, odeslvr, finalop, disslvrcaches)
 
   (usF, disslvrcaches)
 end
@@ -409,11 +409,14 @@ mutable struct IMEXRungeKuttaLinearOperator <: LinearDiscreteODEOperator
   r::AbstractVector
 end
 
+# TODO as indicated in ODESolvers.jl, we should also save the jacobian matrices
+# when the ODE operator is linear with constant forms.
+
 Algebra.get_matrix(disop::IMEXRungeKuttaLinearOperator) = disop.J
 
 Algebra.get_vector(disop::IMEXRungeKuttaLinearOperator) = disop.r
 
-function Algebra.solve!(
+function solve_disop!(
   usF::NTuple{1,AbstractVector},
   odeslvr::IMEXRungeKutta, disop::IMEXRungeKuttaLinearOperator,
   disslvrcaches
@@ -496,7 +499,7 @@ function Algebra.solve!(
     t0, u0, dt,
     im_res, ex_res, tableau, J, r
   )
-  usF, disslvrcaches = solve!(usF, odeslvr, finalop, disslvrcaches)
+  usF, disslvrcaches = solve_disop!(usF, odeslvr, finalop, disslvrcaches)
 
   (usF, disslvrcaches)
 end
@@ -535,7 +538,7 @@ Algebra.get_matrix(disop::IMEXRungeKuttaFinalizingOperator) = disop.J
 
 Algebra.get_vector(disop::IMEXRungeKuttaFinalizingOperator) = disop.r
 
-function Algebra.solve!(
+function solve_disop!(
   usF::NTuple{1,AbstractVector},
   odeslvr::IMEXRungeKutta, disop::IMEXRungeKuttaFinalizingOperator,
   disslvrcaches

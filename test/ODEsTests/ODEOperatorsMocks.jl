@@ -4,6 +4,8 @@ using Gridap
 using Gridap.Algebra
 using Gridap.Polynomials
 using Gridap.ODEs
+using Gridap.ODEs: AbstractQuasilinearODE
+using Gridap.ODEs: AbstractLinearODE
 
 ###################
 # ODEOperatorMock #
@@ -22,6 +24,10 @@ struct ODEOperatorMock{T} <: ODEOperator{T}
 end
 
 Polynomials.get_order(odeop::ODEOperatorMock) = length(odeop.forms) - 1
+
+ODEs.get_forms(odeop::ODEOperatorMock) = ()
+ODEs.get_forms(odeop::ODEOperatorMock{<:AbstractQuasilinearODE}) = (odeop.forms[end],)
+ODEs.get_forms(odeop::ODEOperatorMock{<:AbstractLinearODE}) = odeop.forms
 
 function Algebra.allocate_residual(
   odeop::ODEOperatorMock,

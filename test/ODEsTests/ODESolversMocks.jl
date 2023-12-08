@@ -114,7 +114,7 @@ function ODEs.DiscreteODEOperator(
   )
 end
 
-function ODEs.solve_step!(
+function ODEs.solve_odeop!(
   usF::Tuple{Vararg{AbstractVector}},
   odeslvr::ODESolverMock, odeop::ODEOperator,
   t0::Real, us0::Tuple{Vararg{AbstractVector}},
@@ -139,7 +139,7 @@ function ODEs.solve_step!(
     t0, us0, dt, tF
   )
 
-  usF, disslvrcache = solve!(usF, odeslvr.disslvr, disop, disslvrcache)
+  usF, disslvrcache = solve_disop!(usF, odeslvr.disslvr, disop, disslvrcache)
   cache = (odeopcache, disopcache, disslvrcache)
 
   (tF, usF, cache)
@@ -217,7 +217,7 @@ function Algebra.jacobian!(
   jacobians!(J, disop.odeop, tx, usx, ws, disop.odeopcache)
 end
 
-function Algebra.solve!(
+function solve_disop!(
   usF::Tuple{Vararg{AbstractVector}},
   disslvr::NonlinearSolver, disop::DiscreteODEOperatorMock,
   disslvrcache

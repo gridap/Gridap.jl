@@ -55,7 +55,7 @@ function DiscreteODEOperator(
   )
 end
 
-function solve_step!(
+function solve_odeop!(
   usF::NTuple{1,AbstractVector},
   odeslvr::ForwardEuler, odeop::ODEOperator,
   t0::Real, us0::NTuple{1,AbstractVector},
@@ -81,7 +81,7 @@ function solve_step!(
     t0, u0, dt
   )
 
-  usF, disslvrcache = solve!(usF, odeslvr.disslvr, disop, disslvrcache)
+  usF, disslvrcache = solve_disop!(usF, odeslvr.disslvr, disop, disslvrcache)
   cache = (odeopcache, disopcache, disslvrcache)
 
   (tF, usF, cache)
@@ -148,7 +148,7 @@ function Algebra.jacobian!(
   jacobian!(J, disop.odeop, tx, usx, 1, w, disop.odeopcache)
 end
 
-function Algebra.solve!(
+function solve_disop!(
   usF::NTuple{1,AbstractVector},
   disslvr::NonlinearSolver, disop::ForwardEulerNonlinearOperator,
   disslvrcache
@@ -200,7 +200,18 @@ Algebra.get_matrix(disop::ForwardEulerLinearOperator) = disop.J
 
 Algebra.get_vector(disop::ForwardEulerLinearOperator) = disop.r
 
-function Algebra.solve!(
+# The jacobian matrix is constant if the ODE operator is semilinear and has a
+# constant mass (this includes linear with constant forms).
+function is_jacobian_constant(disop::ForwardEulerLinearOperator)
+  odeop = disop.odeop
+  constant_jacobian = false
+  if ODEOperatorType(odeop) <: AbstractSemilinearODE
+    constant_jacobian = is_form_constant(odeop, 1)
+  end
+  constant_jacobian
+end
+
+function solve_disop!(
   usF::NTuple{1,AbstractVector},
   disslvr::NonlinearSolver, disop::ForwardEulerLinearOperator,
   disslvrcache

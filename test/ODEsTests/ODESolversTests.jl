@@ -119,7 +119,7 @@ for N in 1:order_max
     imex_odeop = IMEXODEOperator(im_odeop, ex_odeop)
 
     for odeop in (standard_odeop, imex_odeop,)
-      tF, usF, cache = solve_step!(usF, odeslvr, odeop, t0, us0)
+      tF, usF, cache = solve_odeop!(usF, odeslvr, odeop, t0, us0)
 
       for i in 1:N
         @test usF[i] ≈ exp_usF[i]

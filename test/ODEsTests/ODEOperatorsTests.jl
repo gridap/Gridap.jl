@@ -4,6 +4,8 @@ using Test
 
 using Gridap
 using Gridap.ODEs
+using Gridap.ODEs: AbstractQuasilinearODE
+using Gridap.ODEs: AbstractLinearODE
 
 include("ODEOperatorsMocks.jl")
 
@@ -68,6 +70,15 @@ for N in 0:order_max
     end
 
     for odeop in odeops
+      num_forms = length(get_forms(odeop))
+      if C <: AbstractLinearODE
+        @test num_forms == get_order(odeop) + 1
+      elseif C <: AbstractQuasilinearODE
+        @test num_forms == 1
+      else
+        @test num_forms == 0
+      end
+
       odeopcache = allocate_odeopcache(odeop, t, us)
       update_odeopcache!(odeopcache, odeop, t)
 

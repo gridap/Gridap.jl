@@ -33,6 +33,14 @@ end
 # ODEOperator interface
 Polynomials.get_order(odeop::ODEOpFromFEOp) = get_order(odeop.feop)
 
+function get_forms(odeop::ODEOpFromFEOp)
+  get_forms(odeop.feop)
+end
+
+function is_form_constant(odeop::ODEOpFromFEOp, k::Integer)
+  is_form_constant(odeop.feop, k)
+end
+
 function allocate_odeopcache(
   odeop::ODEOpFromFEOp,
   t::Real, us::Tuple{Vararg{AbstractVector}}
@@ -406,10 +414,6 @@ function jacobians!(
   matdata = _vcat_matdata(all_matdata)
   assemble_matrix_add!(J, assembler, matdata)
   J
-end
-
-function is_form_constant(odeop::ODEOpFromFEOp, k::Integer)
-  is_form_constant(odeop.feop, k)
 end
 
 #########

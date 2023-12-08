@@ -107,7 +107,7 @@ function DiscreteODEOperator(
   )
 end
 
-function solve_step!(
+function solve_odeop!(
   usF::NTuple{3,AbstractVector},
   odeslvr::GeneralizedAlpha2, odeop::ODEOperator,
   t0::Real, us0::NTuple{3,AbstractVector},
@@ -137,7 +137,7 @@ function solve_step!(
   )
 
   # Solve the discrete ODE operator
-  usF, disslvrcache = solve!(usF, odeslvr.disslvr, disop, disslvrcache)
+  usF, disslvrcache = solve_disop!(usF, odeslvr.disslvr, disop, disslvrcache)
 
   # Update cache
   cache = (odeopcache, disopcache, disslvrcache)
@@ -226,7 +226,7 @@ function Algebra.jacobian!(
   jacobians!(J, disop.odeop, tx, usx, ws, disop.odeopcache)
 end
 
-function Algebra.solve!(
+function solve_disop!(
   usF::NTuple{3,AbstractVector},
   disslvr::NonlinearSolver, disop::GeneralizedAlpha2NonlinearOperator,
   disslvrcache
@@ -287,11 +287,25 @@ struct GeneralizedAlpha2LinearOperator <: LinearDiscreteODEOperator
   r::AbstractVector
 end
 
+# The jacobian matrix is constant if the ODE operator is linear and has
+# constant forms
+function is_jacobian_constant(disop::GeneralizedAlpha2LinearOperator)
+  odeop = disop.odeop
+  constant_jacobian = false
+  if ODEOperatorType(odeop) <: AbstractLinearODE
+    constant_stiffness = is_form_constant(odeop, 0)
+    constant_damping = is_form_constant(odeop, 1)
+    constant_mass = is_form_constant(odeop, 2)
+    constant_jacobian = constant_stiffness && constant_damping && constant_mass
+  end
+  constant_jacobian
+end
+
 Algebra.get_matrix(disop::GeneralizedAlpha2LinearOperator) = disop.J
 
 Algebra.get_vector(disop::GeneralizedAlpha2LinearOperator) = disop.r
 
-function Algebra.solve!(
+function solve_disop!(
   usF::NTuple{3,AbstractVector},
   disslvr::NonlinearSolver, disop::GeneralizedAlpha2LinearOperator,
   disslvrcache

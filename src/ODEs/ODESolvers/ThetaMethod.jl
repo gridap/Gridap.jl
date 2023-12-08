@@ -77,7 +77,7 @@ function DiscreteODEOperator(
   )
 end
 
-function solve_step!(
+function solve_odeop!(
   usF::NTuple{1,AbstractVector},
   odeslvr::ThetaMethod, odeop::ODEOperator,
   t0::Real, us0::NTuple{1,AbstractVector},
@@ -107,7 +107,7 @@ function solve_step!(
   )
 
   # Solve the discrete ODE operator
-  usF, disslvrcache = solve!(usF, odeslvr.disslvr, disop, disslvrcache)
+  usF, disslvrcache = solve_disop!(usF, odeslvr.disslvr, disop, disslvrcache)
   cache = (odeopcache, disopcache, disslvrcache)
 
   (tF, usF, cache)
@@ -184,7 +184,7 @@ function Algebra.jacobian!(
   jacobians!(J, disop.odeop, tx, usx, ws, disop.odeopcache)
 end
 
-function Algebra.solve!(
+function solve_disop!(
   usF::NTuple{1,AbstractVector},
   disslvr::NonlinearSolver, disop::ThetaMethodNonlinearOperator,
   disslvrcache
@@ -239,7 +239,20 @@ Algebra.get_matrix(disop::ThetaMethodLinearOperator) = disop.J
 
 Algebra.get_vector(disop::ThetaMethodLinearOperator) = disop.r
 
-function Algebra.solve!(
+# The jacobian matrix is constant if the ODE operator is linear and has
+# constant forms
+function is_jacobian_constant(disop::ThetaMethodLinearOperator)
+  odeop = disop.odeop
+  constant_jacobian = false
+  if ODEOperatorType(odeop) <: AbstractLinearODE
+    constant_stiffness = is_form_constant(odeop, 0)
+    constant_mass = is_form_constant(odeop, 1)
+    constant_jacobian = constant_stiffness && constant_mass
+  end
+  constant_jacobian
+end
+
+function solve_disop!(
   usF::NTuple{1,AbstractVector},
   disslvr::NonlinearSolver, disop::ThetaMethodLinearOperator,
   disslvrcache
@@ -264,6 +277,8 @@ function Algebra.solve!(
   tx = tθ
   usx = (u0, x)
   ws = (dtθ, 1)
+  # If the jacobian is constant, the following call will only retrieve the
+  # jacobian from the ODEOpFromFEOpCache.
   fillstored!(J, zero(eltype(J)))
   jacobians!(J, odeop, tx, usx, ws, odeopcache)
   residual!(r, odeop, tx, usx, odeopcache)
