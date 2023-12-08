@@ -48,7 +48,6 @@ end
 
 ConstraintStyle(::Type{<:UnconstrainedFESpace}) = UnConstrained()
 get_free_dof_ids(f::UnconstrainedFESpace) = Base.OneTo(f.nfree)
-zero_free_values(f::UnconstrainedFESpace) = allocate_vector(f.vector_type,num_free_dofs(f))
 get_fe_basis(f::UnconstrainedFESpace) = f.fe_basis
 get_fe_dof_basis(f::UnconstrainedFESpace) = f.fe_dof_basis
 get_cell_dof_ids(f::UnconstrainedFESpace) = f.cell_dofs_ids
@@ -61,7 +60,6 @@ get_cell_is_dirichlet(f::UnconstrainedFESpace) = f.cell_is_dirichlet
 
 get_dirichlet_dof_ids(f::UnconstrainedFESpace) = Base.OneTo(f.ndirichlet)
 num_dirichlet_tags(f::UnconstrainedFESpace) = f.ntags
-zero_dirichlet_values(f::UnconstrainedFESpace) = allocate_vector(f.vector_type,num_dirichlet_dofs(f))
 get_dirichlet_dof_tag(f::UnconstrainedFESpace) = f.dirichlet_dof_tag
 
 function scatter_free_and_dirichlet_values(f::UnconstrainedFESpace,free_values,dirichlet_values)

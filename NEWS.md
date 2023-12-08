@@ -7,16 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Changed how `allocate_vector` works. Now it only allocates, instead of allocating+initialising to zero. Since PR[#963](https://github.com/gridap/Gridap.jl/pull/963).
+
+## [0.17.21] - 2023-12-04
+
 ### Added
 
 - Implemented real/imag for VectorValues
 - Explicit Runge-Kutta ODE Solvers. Since PR [#952](https://github.com/gridap/Gridap.jl/pull/952)
+- Improved the methods `allocate_in_range` and `allocate_in_domain` with support for `BlockArrays` and distributed arrays. Since PR[#960](https://github.com/gridap/Gridap.jl/pull/960).
 
 ### Fixed
 
 - `BlockMultiFieldStyle` available for `TransientMultiFieldFESpaces` since PR [#946](https://github.com/gridap/Gridap.jl/pull/946).
+- When creating `DiscreteModelPortions`, some of the `FaceLabeling` arrays were being aliased. This caused issues when adding tags to distributed models in debug mode. Since PR [#956](https://github.com/gridap/Gridap.jl/pull/956).
+- Function `add_entry!` was inconsistent for `AbstractMatrix` and `AbstractSparseMatrix`. Since PR[#959](https://github.com/gridap/Gridap.jl/pull/959).
 
-## [0.17.20] - 2023-10-01 
+## [0.17.20] - 2023-10-01
 
 ### Added
 
