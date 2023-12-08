@@ -67,13 +67,13 @@ feop_ex_man = TransientFEOperator(res0, args0_man...)
 feop_imex_man = TransientIMEXFEOperator(feop_im_man, feop_ex_man)
 
 args_ad = (U, V)
-feop_nl_ad = TransientFEOperator(res, args_ad...)
-feop_ql_ad = TransientQuasilinearFEOperator(mass, res_ql, args_ad...)
-feop_sl_ad = TransientSemilinearFEOperator(mass, res_ql, args_ad...)
+feop_nl_ad = TransientFEOperator(res, args_ad..., order=2)
+feop_ql_ad = TransientQuasilinearFEOperator(mass, res_ql, args_ad..., order=2)
+feop_sl_ad = TransientSemilinearFEOperator(mass, res_ql, args_ad..., order=2)
 feop_l_ad = TransientLinearFEOperator((stiffness, damping, mass), res_l, args_ad...)
 
-feop_im_ad = TransientSemilinearFEOperator(mass, res_ql, args_ad...)
-feop_ex_ad = TransientFEOperator(res0, args_ad..., order=0)
+feop_im_ad = TransientSemilinearFEOperator(mass, res_ql, args_ad..., order=2)
+feop_ex_ad = TransientFEOperator(res0, args_ad..., order=1)
 feop_imex_ad = TransientIMEXFEOperator(feop_im_ad, feop_ex_ad)
 
 feops = (

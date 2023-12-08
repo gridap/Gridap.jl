@@ -53,8 +53,7 @@ export LinearODEOperator
 export allocate_odeopcache
 export update_odeopcache!
 export jacobians!
-export is_jacobian_constant
-export is_residual_constant
+export is_form_constant
 
 export IMEXODEOperator
 export get_imex_operators
@@ -140,7 +139,6 @@ export update_feopcache!
 export get_assembler
 export get_res
 export get_jacs
-export get_mass
 export get_forms
 
 export TransientIMEXFEOperator

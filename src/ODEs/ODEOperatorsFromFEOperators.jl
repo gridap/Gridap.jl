@@ -12,9 +12,7 @@ mutable struct ODEOpFromFEOpCache <: GridapType
   Us
   Uts
   feopcache
-  jac_const_mats
-  jacvec
-  res_const_vec
+  const_forms
 end
 
 #################
@@ -53,42 +51,45 @@ function allocate_odeopcache(
   # Allocate the cache of the FE operator
   feopcache = allocate_feopcache(odeop.feop, t, us)
 
-  # Create uh from us for assembly
+  # Variables for assembly
+  uh = _make_uh_from_us(odeop, us, Us)
   V = get_test(odeop.feop)
   v = get_fe_basis(V)
-  uh = _make_uh_from_us(odeop, us, Us)
+  Ut = evaluate(get_trial(odeop.feop), nothing)
+  du = get_trial_fe_basis(Ut)
+  assembler = get_assembler(odeop.feop)
 
-  # Store the jacobians that are constant
-  jac_const_mats = ()
-  use_jacvec = false
-  for k in 0:order
-    jac_const_mat = nothing
-    if is_jacobian_constant(odeop, k)
-      matdata = _matdata_jacobian(odeop.feop, t, uh, k, 1)
-      jac_const_mat = assemble_matrix(get_assembler(odeop.feop), matdata)
-      use_jacvec = true
+  # Store the forms that are constant
+  const_forms = ()
+  forms = get_forms(odeop.feop)
+  jacs = get_jacs(odeop.feop)
+
+  # Little workaround here since when the `ODEOperator` is quasilinear or
+  # semilinear but not linear, it has only one form but `order+1` jacobians
+  # so we need to be careful with indexing
+  odeoptype = ODEOperatorType(odeop)
+  if odeoptype <: AbstractLinearODE
+    for k in 0:length(forms)-1
+      const_form = nothing
+      if is_form_constant(odeop, k)
+        jac = jacs[k+1]
+        matdata = collect_cell_matrix(Ut, V, jac(t, uh, du, v))
+        const_form = assemble_matrix(assembler, matdata)
+      end
+      const_forms = (const_forms..., const_form)
     end
-    jac_const_mats = (jac_const_mats..., jac_const_mat)
+  elseif odeoptype <: AbstractQuasilinearODE
+    const_form = nothing
+    k = order
+    if is_form_constant(odeop, k)
+      jac = jacs[k+1]
+      matdata = collect_cell_matrix(Ut, V, jac(t, uh, du, v))
+      const_form = assemble_matrix(assembler, matdata)
+    end
+    const_forms = (const_forms..., const_form)
   end
 
-  # Allocate a vector to compute the jacobian vector product if any jacobian
-  # has been stored
-  jacvec = nothing
-  if use_jacvec
-    res = get_res(odeop.feop)
-    vecdata = collect_cell_vector(V, res(t, uh, v))
-    jacvec = allocate_vector(get_assembler(odeop.feop), vecdata)
-  end
-
-  # Store the forcing term if it is constant
-  res_const_vec = nothing
-  if is_residual_constant(odeop)
-    res = get_res(odeop.feop)
-    vecdata = collect_cell_vector(V, res(t, uh, v))
-    res_const_vec = assemble_vector(get_assembler(odeop.feop), vecdata)
-  end
-
-  ODEOpFromFEOpCache(Us, Uts, feopcache, jac_const_mats, jacvec, res_const_vec)
+  ODEOpFromFEOpCache(Us, Uts, feopcache, const_forms)
 end
 
 function update_odeopcache!(odeopcache, odeop::ODEOpFromFEOp, t::Real)
@@ -112,9 +113,11 @@ function Algebra.allocate_residual(
   uh = _make_uh_from_us(odeop, us, odeopcache.Us)
   V = get_test(odeop.feop)
   v = get_fe_basis(V)
+  assembler = get_assembler(odeop.feop)
+
   res = get_res(odeop.feop)
   vecdata = collect_cell_vector(V, res(t, uh, v))
-  allocate_vector(get_assembler(odeop.feop), vecdata)
+  allocate_vector(assembler, vecdata)
 end
 
 function Algebra.residual!(
@@ -125,11 +128,11 @@ function Algebra.residual!(
   uh = _make_uh_from_us(odeop, us, odeopcache.Us)
   V = get_test(odeop.feop)
   v = get_fe_basis(V)
+  assembler = get_assembler(odeop.feop)
 
   res = get_res(odeop.feop)
   vecdata = collect_cell_vector(V, res(t, uh, v))
-  assemble_vector!(r, get_assembler(odeop.feop), vecdata)
-
+  assemble_vector!(r, assembler, vecdata)
   r
 end
 
@@ -138,38 +141,49 @@ function Algebra.residual!(
   t::Real, us::Tuple{Vararg{AbstractVector}},
   odeopcache
 )
+  uh = _make_uh_from_us(odeop, us, odeopcache.Us)
+  V = get_test(odeop.feop)
+  v = get_fe_basis(V)
+  assembler = get_assembler(odeop.feop)
+
+  fill!(r, zero(eltype(r)))
+  # Mass
   order = get_order(odeop)
-  res_const = !isnothing(odeopcache.res_const_vec)
-  mass_const = !isnothing(odeopcache.jac_const_mats[end])
+  mass = get_forms(odeop.feop)[1]
+  ∂tNuh = ∂t(uh, Val(order))
+  vecdata = collect_cell_vector(V, mass(t, uh, ∂tNuh, v))
+  assemble_vector_add!(r, assembler, vecdata)
 
-  # Compute uh from us if assembly is needed
-  if !(res_const && mass_const)
-    uh = _make_uh_from_us(odeop, us, odeopcache.Us)
-    V = get_test(odeop.feop)
-    v = get_fe_basis(V)
-  end
+  # Residual
+  res = get_res(odeop.feop)
+  vecdata = collect_cell_vector(V, res(t, uh, v))
+  assemble_vector_add!(r, assembler, vecdata)
 
-  if res_const
-    axpy!(1, odeopcache.res_const_vec, r)
-  else
-    res = get_res(odeop.feop)
-    vecdata = collect_cell_vector(V, res(t, uh, v))
-    assemble_vector!(r, get_assembler(odeop.feop), vecdata)
-  end
+  r
+end
 
-  if mass_const
-    mul!(odeopcache.jacvec, odeopcache.jac_const_mats[end], us[end])
-    axpy!(1, odeopcache.jacvec, r)
-  else
-    ∂tNuh = ∂t(uh, Val(order))
-    mass = get_mass(odeop.feop)
-    if odeop isa AbstractSemilinearODE
-      vecdata = collect_cell_vector(V, mass(t, ∂tNuh, v))
-    else
-      vecdata = collect_cell_vector(V, mass(t, uh, ∂tNuh, v))
-    end
-    assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
-  end
+function Algebra.residual!(
+  r::AbstractVector, odeop::ODEOpFromFEOp{<:AbstractSemilinearODE},
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  odeopcache
+)
+  uh = _make_uh_from_us(odeop, us, odeopcache.Us)
+  V = get_test(odeop.feop)
+  v = get_fe_basis(V)
+  assembler = get_assembler(odeop.feop)
+
+  fill!(r, zero(eltype(r)))
+  # Mass
+  order = get_order(odeop)
+  mass = get_forms(odeop.feop)[1]
+  ∂tNuh = ∂t(uh, Val(order))
+  vecdata = collect_cell_vector(V, mass(t, ∂tNuh, v))
+  assemble_vector_add!(r, assembler, vecdata)
+
+  # Residual
+  res = get_res(odeop.feop)
+  vecdata = collect_cell_vector(V, res(t, uh, v))
+  assemble_vector_add!(r, assembler, vecdata)
 
   r
 end
@@ -179,42 +193,29 @@ function Algebra.residual!(
   t::Real, us::Tuple{Vararg{AbstractVector}},
   odeopcache
 )
+  uh = _make_uh_from_us(odeop, us, odeopcache.Us)
+  V = get_test(odeop.feop)
+  v = get_fe_basis(V)
+  assembler = get_assembler(odeop.feop)
+
+  fill!(r, zero(eltype(r)))
+  # Forms
   order = get_order(odeop)
   forms = get_forms(odeop.feop)
-  res_const = !isnothing(odeopcache.res_const_vec)
-  forms_const = !any(isnothing, odeopcache.jac_const_mats)
-
-  # Compute uh from us if assembly is needed
-  if !(res_const && forms_const)
-    uh = _make_uh_from_us(odeop, us, odeopcache.Us)
-    V = get_test(odeop.feop)
-    v = get_fe_basis(V)
-  end
-
-  if res_const
-    axpy!(1, odeopcache.res_const_vec, r)
-  else
-    res = get_res(odeop.feop)
-    vecdata = collect_cell_vector(V, res(t, uh, v))
-    assemble_vector!(r, get_assembler(odeop.feop), vecdata)
-  end
-
   ∂tkuh = uh
   for k in 0:order
-    jac_mat = odeopcache.jac_const_mats[k+1]
-    form_const = !isnothing(jac_mat)
-    if form_const
-      mul!(odeopcache.jacvec, jac_mat, us[k+1])
-      axpy!(1, odeopcache.jacvec, r)
-    else
-      form = forms[k+1]
-      vecdata = collect_cell_vector(V, form(t, ∂tkuh, v))
-      assemble_vector_add!(r, get_assembler(odeop.feop), vecdata)
-    end
+    form = forms[k+1]
+    vecdata = collect_cell_vector(V, form(t, ∂tkuh, v))
+    assemble_vector_add!(r, assembler, vecdata)
     if k < order
       ∂tkuh = ∂t(∂tkuh)
     end
   end
+
+  # Residual
+  res = get_res(odeop.feop)
+  vecdata = collect_cell_vector(V, res(t, uh, v))
+  assemble_vector_add!(r, assembler, vecdata)
 
   r
 end
@@ -225,13 +226,21 @@ function Algebra.allocate_jacobian(
   odeopcache
 )
   uh = _make_uh_from_us(odeop, us, odeopcache.Us)
-  _matdata = ()
+  Ut = evaluate(get_trial(odeop.feop), nothing)
+  du = get_trial_fe_basis(Ut)
+  V = get_test(odeop.feop)
+  v = get_fe_basis(V)
+  assembler = get_assembler(odeop.feop)
+
+  all_matdata = ()
+  jacs = get_jacs(odeop.feop)
   for k in 0:get_order(odeop.feop)
-    cell_mat = _matdata_jacobian(odeop.feop, t, uh, k, 0)
-    _matdata = (_matdata..., cell_mat)
+    jac = jacs[k+1]
+    one_matdata = collect_cell_matrix(Ut, V, jac(t, uh, du, v))
+    all_matdata = (all_matdata..., one_matdata)
   end
-  matdata = _vcat_matdata(_matdata)
-  allocate_matrix(get_assembler(odeop.feop), matdata)
+  matdata = _vcat_matdata(all_matdata)
+  allocate_matrix(assembler, matdata)
 end
 
 function Algebra.jacobian!(
@@ -240,15 +249,64 @@ function Algebra.jacobian!(
   k::Integer, γ::Real,
   odeopcache
 )
-  # Retrieve stored jacobian or compute and assemble the domain contribution
-  if !isnothing(odeopcache.jac_const_mats[k+1])
-    axpy_sparse!(γ, odeopcache.jac_const_mats[k+1], J)
+  uh = _make_uh_from_us(odeop, us, odeopcache.Us)
+  Ut = evaluate(get_trial(odeop.feop), nothing)
+  du = get_trial_fe_basis(Ut)
+  V = get_test(odeop.feop)
+  v = get_fe_basis(V)
+  assembler = get_assembler(odeop.feop)
+
+  jac = get_jacs(odeop.feop)[k+1]
+  matdata = collect_cell_matrix(Ut, V, γ * jac(t, uh, du, v))
+  assemble_matrix_add!(J, assembler, matdata)
+  J
+end
+
+function Algebra.jacobian!(
+  J::AbstractMatrix, odeop::ODEOpFromFEOp{<:AbstractSemilinearODE},
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  k::Integer, γ::Real,
+  odeopcache
+)
+  order = get_order(odeop)
+  # Special case for the mass matrix
+  if k == order && is_form_constant(odeop, order)
+    axpy_sparse!(γ, odeopcache.const_forms[1], J)
   else
     uh = _make_uh_from_us(odeop, us, odeopcache.Us)
-    matdata = _matdata_jacobian(odeop.feop, t, uh, k, γ)
-    assemble_matrix_add!(J, get_assembler(odeop.feop), matdata)
-  end
+    Ut = evaluate(get_trial(odeop.feop), nothing)
+    du = get_trial_fe_basis(Ut)
+    V = get_test(odeop.feop)
+    v = get_fe_basis(V)
+    assembler = get_assembler(odeop.feop)
 
+    jac = get_jacs(odeop.feop)[k+1]
+    matdata = collect_cell_matrix(Ut, V, γ * jac(t, uh, du, v))
+    assemble_matrix_add!(J, assembler, matdata)
+  end
+  J
+end
+
+function Algebra.jacobian!(
+  J::AbstractMatrix, odeop::ODEOpFromFEOp{<:AbstractLinearODE},
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  k::Integer, γ::Real,
+  odeopcache
+)
+  if is_form_constant(odeop, k)
+    axpy_sparse!(γ, odeopcache.const_forms[k+1], J)
+  else
+    uh = _make_uh_from_us(odeop, us, odeopcache.Us)
+    Ut = evaluate(get_trial(odeop.feop), nothing)
+    du = get_trial_fe_basis(Ut)
+    V = get_test(odeop.feop)
+    v = get_fe_basis(V)
+    assembler = get_assembler(odeop.feop)
+
+    jac = get_jacs(odeop.feop)[k+1]
+    matdata = collect_cell_matrix(Ut, V, γ * jac(t, uh, du, v))
+    assemble_matrix_add!(J, assembler, matdata)
+  end
   J
 end
 
@@ -258,57 +316,112 @@ function jacobians!(
   γs::Tuple{Vararg{Real}},
   odeopcache
 )
-  need_assembly = any(isnothing, odeopcache.jac_const_mats)
-  if need_assembly
-    uh = _make_uh_from_us(odeop, us, odeopcache.Us)
-  end
+  uh = _make_uh_from_us(odeop, us, odeopcache.Us)
+  Ut = evaluate(get_trial(odeop.feop), nothing)
+  du = get_trial_fe_basis(Ut)
+  V = get_test(odeop.feop)
+  v = get_fe_basis(V)
+  assembler = get_assembler(odeop.feop)
 
-  # Loop through jacobians and check whether they are already stored,
-  # otherwise compute and add the cell_mat
-  _matdata = ()
+  all_matdata = ()
+  jacs = get_jacs(odeop.feop)
   for k in 0:get_order(odeop)
     γ = γs[k+1]
-    if !iszero(γ)
-      if !isnothing(odeopcache.jac_const_mats[k+1])
-        axpy_sparse!(γ, odeopcache.jac_const_mats[k+1], J)
-      else
-        _matdata = (_matdata..., _matdata_jacobian(odeop.feop, t, uh, k, γ))
-      end
-    end
+    iszero(γ) && continue
+    jac = jacs[k+1]
+    one_matdata = collect_cell_matrix(Ut, V, γ * jac(t, uh, du, v))
+    all_matdata = (all_matdata..., one_matdata)
   end
-
-  # Assemble the jacobian matrix if needed
-  if need_assembly
-    matdata = _vcat_matdata(_matdata)
-    assemble_matrix_add!(J, get_assembler(odeop.feop), matdata)
-  end
-
+  matdata = _vcat_matdata(all_matdata)
+  assemble_matrix_add!(J, assembler, matdata)
   J
 end
 
-function is_jacobian_constant(odeop::ODEOpFromFEOp, k::Integer)
-  is_jacobian_constant(odeop.feop, k)
+function jacobians!(
+  J::AbstractMatrix, odeop::ODEOpFromFEOp{<:AbstractQuasilinearODE},
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  γs::Tuple{Vararg{Real}},
+  odeopcache
+)
+  uh = _make_uh_from_us(odeop, us, odeopcache.Us)
+  Ut = evaluate(get_trial(odeop.feop), nothing)
+  du = get_trial_fe_basis(Ut)
+  V = get_test(odeop.feop)
+  v = get_fe_basis(V)
+  assembler = get_assembler(odeop.feop)
+
+  all_matdata = ()
+  order = get_order(odeop)
+  jacs = get_jacs(odeop.feop)
+  for k in 0:order-1
+    γ = γs[k+1]
+    iszero(γ) && continue
+    jac = jacs[k+1]
+    one_matdata = collect_cell_matrix(Ut, V, γ * jac(t, uh, du, v))
+    all_matdata = (all_matdata..., one_matdata)
+  end
+  # Special case for the mass matrix
+  k = order
+  γ = γs[k+1]
+  if !iszero(γ)
+    if is_form_constant(odeop, k)
+      axpy_sparse!(γ, odeopcache.const_forms[1], J)
+    else
+      jac = jacs[k+1]
+      one_matdata = collect_cell_matrix(Ut, V, γ * jac(t, uh, du, v))
+      all_matdata = (all_matdata..., one_matdata)
+    end
+  end
+  matdata = _vcat_matdata(all_matdata)
+  assemble_matrix_add!(J, assembler, matdata)
+  J
 end
 
-function is_residual_constant(odeop::ODEOpFromFEOp)
-  is_residual_constant(odeop.feop)
+function jacobians!(
+  J::AbstractMatrix, odeop::ODEOpFromFEOp{<:AbstractLinearODE},
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  γs::Tuple{Vararg{Real}},
+  odeopcache
+)
+  uh = _make_uh_from_us(odeop, us, odeopcache.Us)
+  Ut = evaluate(get_trial(odeop.feop), nothing)
+  du = get_trial_fe_basis(Ut)
+  V = get_test(odeop.feop)
+  v = get_fe_basis(V)
+  assembler = get_assembler(odeop.feop)
+
+  all_matdata = ()
+  jacs = get_jacs(odeop.feop)
+  for k in 0:get_order(odeop)
+    γ = γs[k+1]
+    iszero(γ) && continue
+    if is_form_constant(odeop, k)
+      axpy_sparse!(γ, odeopcache.const_forms[k+1], J)
+    else
+      jac = jacs[k+1]
+      one_matdata = collect_cell_matrix(Ut, V, γ * jac(t, uh, du, v))
+      all_matdata = (all_matdata..., one_matdata)
+    end
+  end
+  matdata = _vcat_matdata(all_matdata)
+  assemble_matrix_add!(J, assembler, matdata)
+  J
+end
+
+function is_form_constant(odeop::ODEOpFromFEOp, k::Integer)
+  is_form_constant(odeop.feop, k)
 end
 
 #########
 # Utils #
 #########
-function _matdata_jacobian(
-  odeop::TransientFEOperatorTypes,
-  t::Real, uh::TransientCellField,
-  k::Integer, γ::Real
-)
-  Ut = evaluate(get_trial(odeop), nothing)
-  du = get_trial_fe_basis(Ut)
-  V = get_test(odeop)
-  v = get_fe_basis(V)
-
-  jac = get_jacs(odeop)[k+1]
-  collect_cell_matrix(Ut, V, γ * jac(t, uh, du, v))
+function _make_uh_from_us(odeop, us, Us)
+  u = EvaluationFunction(Us[1], us[1])
+  dus = ()
+  for k in 1:get_order(odeop)
+    dus = (dus..., EvaluationFunction(Us[k+1], us[k+1]))
+  end
+  TransientCellField(u, dus)
 end
 
 function _vcat_matdata(all_matdata)
@@ -325,13 +438,4 @@ function _vcat_matdata(all_matdata)
   flat_rows = vcat(all_rows...)
   flat_cols = vcat(all_cols...)
   (flat_mats, flat_rows, flat_cols)
-end
-
-function _make_uh_from_us(odeop, us, Us)
-  u = EvaluationFunction(Us[1], us[1])
-  dus = ()
-  for k in 1:get_order(odeop)
-    dus = (dus..., EvaluationFunction(Us[k+1], us[k+1]))
-  end
-  TransientCellField(u, dus)
 end

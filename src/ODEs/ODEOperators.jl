@@ -44,8 +44,7 @@ time derivative of `u`.
 - [`residual(odeop, t, us, odeopcache)`](@ref)
 - [`jacobian(odeop, t, us, k, γ, odeopcache)`](@ref)
 - [`jacobians!(J, odeop, t, us, γs, odeopcache)`](@ref)
-- [`is_jacobian_constant(odeop, k)`](@ref)
-- [`is_residual_constant(odeop)`](@ref)
+- [`is_form_constant(odeop, k)`](@ref)
 """
 abstract type ODEOperator{C<:ODEOperatorType} <: GridapType end
 
@@ -277,26 +276,12 @@ function jacobians!(
 end
 
 """
-    is_jacobian_constant(odeop::ODEOperator, k::Integer) -> Bool
+    is_form_constant(odeop::ODEOperator, k::Integer) -> Bool
 
-Indicate whether the jacobian of the residual of the `ODEOperator` with respect
-to the `k`-th-order time derivative is constant.
+Indicate whether the linear form of the `ODEOperator` corresponding to the
+`k`-th-order time derivative of `u` is constant with respect to `t`.
 """
-function is_jacobian_constant(odeop::ODEOperator, k::Integer)
-  false
-end
-
-"""
-    is_residual_constant(odeop::ODEOperator) -> Bool
-
-Indicate whether the lowest-order element in the decomposition of the residual
-of the `ODEOperator` is constant:
-* In the general case, indicate whether the whole residual is constant,
-* For an `AbstractQuasilinearODE`, indicate whether the residual, excluding the
-mass term is constant,
-* For an `AbstractLinearODE`, indicate whether the forcing term is constant.
-"""
-function is_residual_constant(odeop::ODEOperator)
+function is_form_constant(odeop::ODEOperator, k::Integer)
   false
 end
 
@@ -444,20 +429,13 @@ function jacobians!(
   J
 end
 
-function is_jacobian_constant(odeop::IMEXODEOperator, k::Integer)
+function is_form_constant(odeop::IMEXODEOperator, k::Integer)
   im_odeop, ex_odeop = get_imex_operators(odeop)
-  im_const = is_jacobian_constant(im_odeop, k)
+  im_const = is_form_constant(im_odeop, k)
   ex_const = true
   if k < get_order(odeop)
-    ex_const = is_jacobian_constant(ex_odeop, k)
+    ex_const = is_form_constant(ex_odeop, k)
   end
-  im_const && ex_const
-end
-
-function is_residual_constant(odeop::IMEXODEOperator)
-  im_odeop, ex_odeop = get_imex_operators(odeop)
-  im_const = is_residual_constant(im_odeop)
-  ex_const = is_residual_constant(ex_odeop)
   im_const && ex_const
 end
 
@@ -564,11 +542,7 @@ function test_ode_operator(
   jacobians!(J, odeop, t, us, γs, odeopcache)
 
   for k in 0:order
-    @test is_jacobian_constant(odeop, k) isa Bool
-  end
-
-  if ODEOperatorType(odeop) <: AbstractQuasilinearODE
-    @test is_residual_constant(odeop) isa Bool
+    @test is_form_constant(odeop, k) isa Bool
   end
 
   true
