@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Added `get_dof_to_node` and `get_dof_to_comp` for `LagrangianDofBasis`. Since PR[#964](https://github.com/gridap/Gridap.jl/pull/964).
+
 ### Changed
 
 - Changed how `allocate_vector` works. Now it only allocates, instead of allocating+initialising to zero. Since PR[#963](https://github.com/gridap/Gridap.jl/pull/963).
