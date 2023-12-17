@@ -52,36 +52,36 @@ jac0(t, u, du, v) = ∫(0 * du * v) * dΩ
 
 args_man = ((jac, jac_t), U, V)
 args0_man = ((jac0,), U, V)
-feop_nl_man = TransientFEOperator(res, args_man...)
-feop_ql_man = TransientQuasilinearFEOperator(mass, res_ql, args_man...)
-feop_sl_man = TransientSemilinearFEOperator(mass, res_ql, args_man...)
-feop_l_man = TransientLinearFEOperator((stiffness, mass), res_l, args_man...)
+tfeop_nl_man = TransientFEOperator(res, args_man...)
+tfeop_ql_man = TransientQuasilinearFEOperator(mass, res_ql, args_man...)
+tfeop_sl_man = TransientSemilinearFEOperator(mass, res_ql, args_man...)
+tfeop_l_man = TransientLinearFEOperator((stiffness, mass), res_l, args_man...)
 
-feop_im_man = TransientSemilinearFEOperator(mass, res_ql, args_man...)
-feop_ex_man = TransientFEOperator(res0, args0_man...)
-feop_imex_man = TransientIMEXFEOperator(feop_im_man, feop_ex_man)
+tfeop_im_man = TransientSemilinearFEOperator(mass, res_ql, args_man...)
+tfeop_ex_man = TransientFEOperator(res0, args0_man...)
+tfeop_imex_man = TransientIMEXFEOperator(tfeop_im_man, tfeop_ex_man)
 
 args_ad = (U, V)
-feop_nl_ad = TransientFEOperator(res, args_ad...)
-feop_ql_ad = TransientQuasilinearFEOperator(mass, res_ql, args_ad...)
-feop_sl_ad = TransientSemilinearFEOperator(mass, res_ql, args_ad...)
-feop_l_ad = TransientLinearFEOperator((stiffness, mass), res_l, args_ad...)
+tfeop_nl_ad = TransientFEOperator(res, args_ad...)
+tfeop_ql_ad = TransientQuasilinearFEOperator(mass, res_ql, args_ad...)
+tfeop_sl_ad = TransientSemilinearFEOperator(mass, res_ql, args_ad...)
+tfeop_l_ad = TransientLinearFEOperator((stiffness, mass), res_l, args_ad...)
 
-feop_im_ad = TransientSemilinearFEOperator(mass, res_ql, args_ad...)
-feop_ex_ad = TransientFEOperator(res0, args_ad..., order=0)
-feop_imex_ad = TransientIMEXFEOperator(feop_im_ad, feop_ex_ad)
+tfeop_im_ad = TransientSemilinearFEOperator(mass, res_ql, args_ad...)
+tfeop_ex_ad = TransientFEOperator(res0, args_ad..., order=0)
+tfeop_imex_ad = TransientIMEXFEOperator(tfeop_im_ad, tfeop_ex_ad)
 
-feops = (
-  feop_nl_man,
-  feop_ql_man,
-  feop_sl_man,
-  feop_l_man,
-  feop_imex_man,
-  feop_nl_ad,
-  feop_ql_ad,
-  feop_sl_ad,
-  feop_l_ad,
-  feop_imex_ad,
+tfeops = (
+  tfeop_nl_man,
+  tfeop_ql_man,
+  tfeop_sl_man,
+  tfeop_l_man,
+  tfeop_imex_man,
+  tfeop_nl_ad,
+  tfeop_ql_ad,
+  tfeop_sl_ad,
+  tfeop_l_ad,
+  tfeop_imex_ad,
 )
 
 # Initial conditions
@@ -91,14 +91,14 @@ dt = 0.1
 
 U0 = U(t0)
 uh0 = interpolate_everywhere(u(t0), U0)
-∂tuh0 = interpolate_everywhere(∂tu(t0), U0)
 
 tol = 1.0e-6
-disslvr = LUSolver()
+sysslvr_l = LUSolver()
+sysslvr_nl = NLSolver(sysslvr_l, show_trace=false, method=:newton, iterations=10)
 
 # Testing function
-function test_transient_heat_scalar(odeslvr, feop, uhs0)
-  fesltn = solve(odeslvr, feop, t0, tF, uhs0)
+function test_transient_heat_scalar(odeslvr, tfeop, uhs0)
+  fesltn = solve(odeslvr, tfeop, t0, tF, uhs0)
 
   for (t_n, uh_n) in fesltn
     eh_n = u(t_n) - uh_n
@@ -107,57 +107,42 @@ function test_transient_heat_scalar(odeslvr, feop, uhs0)
   end
 end
 
-# Solvers without memory
 # Do not try explicit solvers
 odeslvrs = (
-  ThetaMethod(disslvr, dt, 0.2),
-  MidPoint(disslvr, dt),
-  ThetaMethod(disslvr, dt, 0.8),
-  BackwardEuler(disslvr, dt),
-  RungeKutta(disslvr, disslvr, dt, :BE_1_0_1),
-  RungeKutta(disslvr, disslvr, dt, :CN_2_0_2),
-  RungeKutta(disslvr, disslvr, dt, :SDIRK_2_0_2),
-  RungeKutta(disslvr, disslvr, dt, :SDIRK_2_0_3),
-  RungeKutta(disslvr, disslvr, dt, :ESDIRK_3_1_2),
-  RungeKutta(disslvr, disslvr, dt, :TRBDF2_3_2_3),
-  RungeKutta(disslvr, disslvr, dt, :TRX2_3_2_3),
+  ThetaMethod(sysslvr_nl, dt, 0.2),
+  MidPoint(sysslvr_nl, dt),
+  ThetaMethod(sysslvr_nl, dt, 0.8),
+  BackwardEuler(sysslvr_nl, dt),
+  RungeKutta(sysslvr_nl, sysslvr_l, dt, :SDIRK_Euler_1_1),
+  RungeKutta(sysslvr_nl, sysslvr_l, dt, :SDIRK_Midpoint_1_2),
+  RungeKutta(sysslvr_nl, sysslvr_l, dt, :DIRK_CrankNicolson_2_2),
+  RungeKutta(sysslvr_nl, sysslvr_l, dt, :SDIRK_QinZhang_2_2),
+  GeneralizedAlpha1(sysslvr_nl, dt, 0.0),
+  GeneralizedAlpha1(sysslvr_nl, dt, 0.5),
+  GeneralizedAlpha1(sysslvr_nl, dt, 1.0),
 )
 
 uhs0 = (uh0,)
 for odeslvr in odeslvrs
-  for feop in feops
-    test_transient_heat_scalar(odeslvr, feop, uhs0)
-  end
-end
-
-# Solvers with memory
-odeslvrs = (
-  GeneralizedAlpha1(disslvr, dt, 0.0),
-  GeneralizedAlpha1(disslvr, dt, 0.5),
-  GeneralizedAlpha1(disslvr, dt, 1.0),
-)
-
-uhs0 = (uh0, ∂tuh0)
-for odeslvr in odeslvrs
-  for feop in feops
-    test_transient_heat_scalar(odeslvr, feop, uhs0)
+  for tfeop in tfeops
+    test_transient_heat_scalar(odeslvr, tfeop, uhs0)
   end
 end
 
 # Solvers for IMEX decompositions
-feops = (
-  feop_imex_man,
-  feop_imex_ad,
+tfeops = (
+  tfeop_imex_man,
+  tfeop_imex_ad,
 )
 
 odeslvrs = (
-  RungeKutta(disslvr, disslvr, dt, :IMEX_Midpoint_2_0_2),
+  RungeKutta(sysslvr_nl, sysslvr_l, dt, :IMEXRK_1_2_2),
 )
 
 uhs0 = (uh0,)
 for odeslvr in odeslvrs
-  for feop in feops
-    test_transient_heat_scalar(odeslvr, feop, uhs0)
+  for tfeop in tfeops
+    test_transient_heat_scalar(odeslvr, tfeop, uhs0)
   end
 end
 

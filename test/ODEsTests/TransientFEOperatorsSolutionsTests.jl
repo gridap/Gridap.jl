@@ -58,38 +58,47 @@ uh0_dof = get_free_dof_values(uh0)
 atol = 1.0e-12
 rtol = 1.0e-8
 maxiter = 100
-disslvr = DiscreteODESolverMock(rtol, atol, maxiter)
-odeslvr = ODESolverMock(disslvr, dt)
+sysslvr = NonlinearSolverMock(rtol, atol, maxiter)
+odeslvr = ODESolverMock(sysslvr, dt)
 
 function test_transient_operator(
-  feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms
+  tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms
 )
-  odeop = get_algebraic_operator(feop)
+  odeop = get_algebraic_operator(tfeop)
   odeopcache = allocate_odeopcache(odeop, t0, uhs0_dof)
   update_odeopcache!(odeopcache, odeop, t0)
 
-  if !(feop isa TransientIMEXFEOperator)
-    @test test_transient_fe_operator(feop, t0, uhs0_cf)
+  if !(tfeop isa TransientIMEXFEOperator)
+    @test test_tfe_operator(tfeop, t0, uhs0_cf)
   end
 
-  fesltn = solve(odeslvr, feop, t0, tF, uhs0_fe)
-  @test test_transient_fe_solution(fesltn)
+  fesltn = solve(odeslvr, tfeop, t0, tF, uhs0_fe)
+  @test test_tfe_solution(fesltn)
 
   # Test storage of constant forms
-  if feop isa TransientIMEXFEOperator
-    im_feop, ex_feop = feop.im_feop, feop.ex_feop
-    im_odeopcache, ex_odeopcache, _ = odeopcache
-    feops_odeopcaches = ((im_feop, im_odeopcache), (ex_feop, ex_odeopcache))
+  if tfeop isa TransientIMEXFEOperator
+    im_tfeop, ex_tfeop = get_imex_operators(tfeop)
+    im_odeopcache, ex_odeopcache = odeopcache
+    tfeops_odeopcaches = ((im_tfeop, im_odeopcache), (ex_tfeop, ex_odeopcache))
   else
-    feops_odeopcaches = ((feop, odeopcache),)
+    tfeops_odeopcaches = ((tfeop, odeopcache),)
   end
-  for (feop, odeopcache) in feops_odeopcaches
-    forms = get_forms(feop)
-    for k in 0:length(forms)-1
-      constant_form = constant_forms[k+1]
-      @test is_form_constant(feop, k) == constant_form
+  for (tfeop, odeopcache) in tfeops_odeopcaches
+    num_forms = get_num_forms(tfeop)
+    if num_forms == 1
+      order = get_order(tfeop)
+      constant_form = constant_forms[1]
+      @test is_form_constant(tfeop, order) == constant_form
       if constant_form
-        @test !isnothing(odeopcache.const_forms[k+1])
+        @test !isnothing(odeopcache.const_forms[1])
+      end
+    else
+      for k in 0:num_forms-1
+        constant_form = constant_forms[k+1]
+        @test is_form_constant(tfeop, k) == constant_form
+        if constant_form
+          @test !isnothing(odeopcache.const_forms[k+1])
+        end
       end
     end
   end
@@ -130,63 +139,63 @@ uhs0_dof = (uh0_dof, ∂ₜuh0_dof)
 # TransientFEOperator
 constant_forms = ()
 
-feop = TransientFEOperator(res, (jac, jac_t), U, V)
-test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+tfeop = TransientFEOperator(res, (jac, jac_t), U, V)
+test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
-feop = TransientFEOperator(res, U, V; order)
-test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+tfeop = TransientFEOperator(res, U, V; order)
+test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
 # TransientQuasilinearFEOperator
 constant_forms = (false,)
 
-feop = TransientQuasilinearFEOperator(mass, res_ql, (jac, jac_t), U, V)
-test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+tfeop = TransientQuasilinearFEOperator(mass, res_ql, (jac, jac_t), U, V)
+test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
-feop = TransientQuasilinearFEOperator(mass, res_ql, U, V; order)
-test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+tfeop = TransientQuasilinearFEOperator(mass, res_ql, U, V; order)
+test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
 for constant_mass in (true, false)
   # TransientSemilinearFEOperator
   constant_forms = (constant_mass,)
 
-  feop = TransientSemilinearFEOperator(
+  tfeop = TransientSemilinearFEOperator(
     mass, res_ql, (jac, jac_t), U, V;
     constant_mass
   )
-  test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+  test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
-  feop = TransientSemilinearFEOperator(
+  tfeop = TransientSemilinearFEOperator(
     mass, res_ql, U, V;
     constant_mass, order
   )
-  test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+  test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
   # TransientIMEXFEOperator
   constant_forms = (constant_mass,)
 
-  im_feop = TransientSemilinearFEOperator(
+  im_tfeop = TransientSemilinearFEOperator(
     mass, im_res, (im_jac, im_jac_t), U, V;
     constant_mass
   )
-  ex_feop = TransientFEOperator(ex_res, (ex_jac,), U, V)
-  feop = TransientIMEXFEOperator(im_feop, ex_feop)
-  test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+  ex_tfeop = TransientFEOperator(ex_res, (ex_jac,), U, V)
+  tfeop = TransientIMEXFEOperator(im_tfeop, ex_tfeop)
+  test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
   for constant_stiffness in (true, false)
     # TransientLinearFEOperator
-    constant_forms = (constant_mass, constant_stiffness)
+    constant_forms = (constant_stiffness, constant_mass)
 
-    feop = TransientLinearFEOperator(
+    tfeop = TransientLinearFEOperator(
       (stiffness, mass), res_l, (jac, jac_t), U, V;
       constant_forms
     )
-    test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+    test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
-    feop = TransientLinearFEOperator(
+    tfeop = TransientLinearFEOperator(
       (stiffness, mass), res_l, U, V;
       constant_forms
     )
-    test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+    test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
   end
 end
 
@@ -227,64 +236,64 @@ uhs0_dof = (uh0_dof, ∂ₜuh0_dof, ∂ₜₜuh0_dof)
 # TransientFEOperator
 constant_forms = ()
 
-feop = TransientFEOperator(res, (jac, jac_t, jac_tt), U, V)
-test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+tfeop = TransientFEOperator(res, (jac, jac_t, jac_tt), U, V)
+test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
-feop = TransientFEOperator(res, U, V; order)
-test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+tfeop = TransientFEOperator(res, U, V; order)
+test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
 for constant_mass in (true, false)
   # TransientQuasilinearFEOperator
   constant_forms = (false,)
 
-  feop = TransientQuasilinearFEOperator(mass, res_ql, (jac, jac_t, jac_tt), U, V)
-  test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+  tfeop = TransientQuasilinearFEOperator(mass, res_ql, (jac, jac_t, jac_tt), U, V)
+  test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
-  feop = TransientQuasilinearFEOperator(mass, res_ql, U, V; order)
-  test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+  tfeop = TransientQuasilinearFEOperator(mass, res_ql, U, V; order)
+  test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
   # TransientSemilinearFEOperator
   constant_forms = (constant_mass,)
 
-  feop = TransientSemilinearFEOperator(
+  tfeop = TransientSemilinearFEOperator(
     mass, res_ql, (jac, jac_t, jac_tt), U, V;
     constant_mass
   )
-  test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+  test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
-  feop = TransientSemilinearFEOperator(
+  tfeop = TransientSemilinearFEOperator(
     mass, res_ql, U, V;
     constant_mass, order
   )
-  test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+  test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
   # TransientIMEXFEOperator
   constant_forms = (constant_mass,)
 
-  im_feop = TransientSemilinearFEOperator(
+  im_tfeop = TransientSemilinearFEOperator(
     mass, im_res, (im_jac, im_jac_t, im_jac_tt), U, V;
     constant_mass
   )
-  ex_feop = TransientFEOperator(ex_res, (ex_jac, ex_jac_t), U, V)
-  feop = TransientIMEXFEOperator(im_feop, ex_feop)
-  test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+  ex_tfeop = TransientFEOperator(ex_res, (ex_jac, ex_jac_t), U, V)
+  tfeop = TransientIMEXFEOperator(im_tfeop, ex_tfeop)
+  test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
   for constant_damping in (true, false)
     for constant_stiffness in (true, false)
       # TransientLinearFEOperator
       constant_forms = (constant_stiffness, constant_damping, constant_mass)
 
-      feop = TransientLinearFEOperator(
+      tfeop = TransientLinearFEOperator(
         (stiffness, damping, mass), res_l, (jac, jac_t, jac_tt), U, V;
         constant_forms
       )
-      test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+      test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
 
-      feop = TransientLinearFEOperator(
+      tfeop = TransientLinearFEOperator(
         (stiffness, damping, mass), res_l, U, V;
         constant_forms
       )
-      test_transient_operator(feop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
+      test_transient_operator(tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms)
     end
   end
 end

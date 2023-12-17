@@ -1,6 +1,7 @@
 module Order2ODETests
 
 using Test
+using SparseArrays
 
 using Gridap
 using Gridap.ODEs
@@ -14,21 +15,23 @@ tF = t0 + 10 * dt
 
 num_eqs = 5
 
-M = randn(num_eqs, num_eqs)
+M = sprandn(num_eqs, num_eqs, 1.0)
 λ = randn(num_eqs)
 μ = randn(num_eqs)
-C = M * diagm(-(λ .+ μ))
-K = M * diagm(λ .* μ)
+C = M * spdiagm(-(λ .+ μ))
+K = M * spdiagm(λ .* μ)
 
 mass(t) = M
 damping(t) = C
 stiffness(t) = K
 forms = (stiffness, damping, mass)
-form_zero(t) = zeros(num_eqs, num_eqs)
+mat0 = sprand(num_eqs, num_eqs, 1.0)
+nonzeros(mat0) .= 0
+form_zero(t) = mat0
 
 α = randn(num_eqs)
 forcing(t) = -M * exp.(α .* t)
-forcing_zero(t) = zero(t)
+forcing_zero(t) = zeros(typeof(t), num_eqs)
 
 u0 = randn(num_eqs)
 v0 = randn(num_eqs)
@@ -85,30 +88,18 @@ tol = 1.0e-4
 atol = 1.0e-12
 rtol = 1.0e-8
 maxiter = 100
-disslvr_l = LUSolver()
-disslvr_nl = DiscreteODESolverMock(rtol, atol, maxiter)
+sysslvr_l = LUSolver()
+sysslvr_nl = NonlinearSolverMock(rtol, atol, maxiter)
 
-# Solvers without memory
-odeslvrs = ()
-
-us0 = (u0, v0,)
-for odeslvr in odeslvrs
-  for odeop in odeops
-    test_solver(odeslvr, odeop, us0, tol)
-  end
-end
-
-# Solvers with memory
 odeslvrs = (
-  GeneralizedAlpha2(disslvr_nl, dt, 0.0),
-  GeneralizedAlpha2(disslvr_nl, dt, 0.5),
-  GeneralizedAlpha2(disslvr_nl, dt, 1.0),
-  Newmark(disslvr_nl, dt, 0.5, 0.0),
-  Newmark(disslvr_nl, dt, 0.5, 0.25),
+  GeneralizedAlpha2(sysslvr_nl, dt, 0.0),
+  GeneralizedAlpha2(sysslvr_nl, dt, 0.5),
+  GeneralizedAlpha2(sysslvr_nl, dt, 1.0),
+  Newmark(sysslvr_nl, dt, 0.5, 0.0),
+  Newmark(sysslvr_nl, dt, 0.5, 0.25),
 )
 
-a0 = -M \ (C * v0 + K * u0 + forcing(t0))
-us0 = (u0, v0, a0)
+us0 = (u0, v0)
 for odeslvr in odeslvrs
   for odeop in odeops
     test_solver(odeslvr, odeop, us0, tol)

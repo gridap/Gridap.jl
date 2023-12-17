@@ -1,24 +1,24 @@
 module ODEOperatorsTests
 
 using Test
+using SparseArrays
 
 using Gridap
 using Gridap.ODEs
-using Gridap.ODEs: AbstractQuasilinearODE
-using Gridap.ODEs: AbstractLinearODE
 
 include("ODEOperatorsMocks.jl")
 
 num_eqs = 5
 order_max = 5
 
-all_mats = ntuple(_ -> randn(num_eqs, num_eqs), order_max + 1)
+all_mats = ntuple(_ -> sprandn(num_eqs, num_eqs, 1.0), order_max + 1)
 all_forms = ntuple(k -> (t -> all_mats[k] .* cospi(t)), order_max + 1)
 
 vec = randn(num_eqs)
 forcing(t) = vec .* cospi(t)
 
-mat0 = zeros(num_eqs, num_eqs)
+mat0 = sprand(num_eqs, num_eqs, 1.0)
+nonzeros(mat0) .= 0
 form0(t) = mat0
 
 vec0 = zeros(num_eqs)
@@ -30,15 +30,17 @@ all_us = ntuple(i -> randn(num_eqs), order_max + 1)
 exp_r = zeros(num_eqs)
 exp_J = spzeros(num_eqs, num_eqs)
 
+Ts = (NonlinearODE, QuasilinearODE, SemilinearODE, LinearODE)
+
 for N in 0:order_max
   us = tuple((all_us[k] for k in 1:N+1)...)
   forms = all_forms[1:N+1]
 
-  for C in (NonlinearODE, QuasilinearODE, SemilinearODE, LinearODE)
-    standard_odeop = ODEOperatorMock{C}(forms, forcing)
+  for T in Ts
+    standard_odeop = ODEOperatorMock{T}(forms, forcing)
     odeops = (standard_odeop,)
 
-    # Create an IMEXODEOperator randomly
+    # Randomly create a `IMEXODEOperator`s
     if N > 0
       im_forms = ()
       ex_forms = ()
@@ -54,11 +56,12 @@ for N in 0:order_max
       im_forcing = to_im ? forcing : forcing0
       ex_forcing = to_im ? forcing0 : forcing
 
-      im_odeop = ODEOperatorMock{C}(im_forms, im_forcing)
-      ex_odeop = ODEOperatorMock{C}(ex_forms, ex_forcing)
-      imex_odeop = IMEXODEOperator(im_odeop, ex_odeop)
-
-      odeops = (odeops..., imex_odeop)
+      im_odeop = ODEOperatorMock{T}(im_forms, im_forcing)
+      for T_ex in Ts
+        ex_odeop = ODEOperatorMock{T_ex}(ex_forms, ex_forcing)
+        imex_odeop = IMEXODEOperator(im_odeop, ex_odeop)
+        # odeops = (odeops..., imex_odeop)
+      end
     end
 
     # Compute expected residual
@@ -70,13 +73,29 @@ for N in 0:order_max
     end
 
     for odeop in odeops
-      num_forms = length(get_forms(odeop))
-      if C <: AbstractLinearODE
-        @test num_forms == get_order(odeop) + 1
-      elseif C <: AbstractQuasilinearODE
-        @test num_forms == 1
+      num_forms = get_num_forms(odeop)
+      if odeop isa IMEXODEOperator
+        im_odeop, ex_odeop = get_imex_operators(odeop)
+        T_im, T_ex = ODEOperatorType(im_odeop), ODEOperatorType(ex_odeop)
+        if T_im <: AbstractLinearODE
+          if T_ex <: AbstractLinearODE
+            @test num_forms == get_order(im_odeop) + 1
+          else
+            @test num_forms == 1
+          end
+        elseif T_im <: AbstractQuasilinearODE
+          @test num_forms == 1
+        else
+          @test num_forms == 0
+        end
       else
-        @test num_forms == 0
+        if T <: AbstractLinearODE
+          @test num_forms == get_order(odeop) + 1
+        elseif T <: AbstractQuasilinearODE
+          @test num_forms == 1
+        else
+          @test num_forms == 0
+        end
       end
 
       odeopcache = allocate_odeopcache(odeop, t, us)
@@ -95,9 +114,10 @@ for N in 0:order_max
       fill!(J, zero(eltype(J)))
       for k in 0:N
         exp_J .+= forms[k+1](t)
-        jacobian!(J, odeop, t, us, k, 1, odeopcache)
-        @test J ≈ exp_J
       end
+      ws = ntuple(_ -> 1, N + 1)
+      jacobian!(J, odeop, t, us, ws, odeopcache)
+      @test J ≈ exp_J
 
       @test test_ode_operator(odeop, t, us)
     end

@@ -51,11 +51,11 @@ res(t, (u, p), (v, q)) = mass(t, ∂t(u), v) + stiffness(t, u, v) - forcing(t, (
 jac(t, (u, p), (du, dp), (v, q)) = stiffness(t, du, v) - ∫(dp * (∇ ⋅ v)) * dΩ + ∫((∇ ⋅ du) * q) * dΩ
 jac_t(t, (u, p), (dut, dpt), (v, q)) = mass(t, dut, v)
 
-feop_nl_man = TransientFEOperator(res, (jac, jac_t), X, Y)
-feop_nl_ad = TransientFEOperator(res, X, Y)
-feops = (
-  feop_nl_man,
-  feop_nl_ad,
+tfeop_nl_man = TransientFEOperator(res, (jac, jac_t), X, Y)
+tfeop_nl_ad = TransientFEOperator(res, X, Y)
+tfeops = (
+  tfeop_nl_man,
+  tfeop_nl_ad,
 )
 
 # Initial conditions
@@ -73,15 +73,16 @@ xhs0 = (xh0,)
 
 # ODE Solver
 tol = 1.0e-6
-disslvr = LUSolver()
+sysslvr_l = LUSolver()
+sysslvr_nl = NLSolver(sysslvr_l, show_trace=false, method=:newton, iterations=10)
 odeslvrs = (
-  MidPoint(disslvr, dt),
+  ThetaMethod(sysslvr_nl, dt, 0.5),
 )
 
 # Tests
 for odeslvr in odeslvrs
-  for feop in feops
-    fesltn = solve(odeslvr, feop, t0, tF, xhs0)
+  for tfeop in tfeops
+    fesltn = solve(odeslvr, tfeop, t0, tF, xhs0)
 
     for (t_n, xhs_n) in fesltn
       eh_n = u(t_n) - xhs_n[1]

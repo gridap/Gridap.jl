@@ -10,13 +10,14 @@ using DocStringExtensions
 
 using LinearAlgebra
 using LinearAlgebra: fillstored!
-using ForwardDiff
 using SparseArrays
 using BlockArrays
+using NLsolve
+using ForwardDiff
 
 using Gridap.Helpers
 using Gridap.Algebra
-using Gridap.Algebra: LinearSolverCache
+using Gridap.Algebra: NLSolversCache
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
@@ -42,20 +43,20 @@ include("ODEOperators.jl")
 
 export ODEOperatorType
 export NonlinearODE
+export AbstractQuasilinearODE
 export QuasilinearODE
+export AbstractSemilinearODE
 export SemilinearODE
+export AbstractLinearODE
 export LinearODE
 
 export ODEOperator
-export QuasilinearODEOperator
-export SemilinearODEOperator
-export LinearODEOperator
-
+export get_num_forms
 export get_forms
 export is_form_constant
 export allocate_odeopcache
 export update_odeopcache!
-export jacobians!
+export jacobian_add!
 
 export IMEXODEOperator
 export get_imex_operators
@@ -64,18 +65,21 @@ export GenericIMEXODEOperator
 
 export test_ode_operator
 
+include("StageOperators.jl")
+
+export StageOperator
+export NonlinearStageOperator
+export LinearStageOperator
+
+export massless_residual_weights
+
 include("ODESolvers.jl")
 
-export DiscreteODEOperator
-export LinearDiscreteODEOperator
-export is_jacobian_constant
-export solve_disop!
-
 export ODESolver
-export get_dt
-export allocate_disopcache
-export allocate_disslvrcache
-export solve_odeop!
+export allocate_odecache
+export ode_start
+export ode_march!
+export ode_finish!
 
 export test_ode_solver
 
@@ -101,10 +105,12 @@ export get_embedded_weights
 export get_embedded_order
 export IMEXTableau
 export get_imex_tableaus
+export is_padded
 
 export TableauName
 export ButcherTableau
 export available_tableaus
+export available_imex_tableaus
 
 export RungeKutta
 
@@ -126,7 +132,7 @@ export allocate_space
 export TransientTrialFESpace
 export TransientMultiFieldFESpace
 
-export test_transient_trial_fe_space
+export test_tfe_space
 
 include("TransientCellFields.jl")
 
@@ -141,31 +147,33 @@ export TransientFEOperator
 export get_assembler
 export get_res
 export get_jacs
-export allocate_feopcache
-export update_feopcache!
-
-export TransientIMEXFEOperator
+export allocate_tfeopcache
+export update_tfeopcache!
 
 export TransientFEOpFromWeakForm
 export TransientQuasilinearFEOpFromWeakForm
 export TransientQuasilinearFEOperator
+export TransientSemilinearFEOpFromWeakForm
 export TransientSemilinearFEOperator
 export TransientLinearFEOpFromWeakForm
 export TransientLinearFEOperator
 
-export test_transient_fe_operator
+export TransientIMEXFEOperator
+export GenericTransientIMEXFEOperator
 
-include("ODEOperatorsFromFEOperators.jl")
+export test_tfe_operator
 
-export ODEOpFromFEOpCache
-export ODEOpFromFEOp
+include("ODEOpsFromTFEOps.jl")
+
+export ODEOpFromTFEOpCache
+export ODEOpFromTFEOp
 
 include("TransientFESolutions.jl")
 
 export TransientFESolution
 
-export test_transient_fe_solution
-export test_transient_fe_solver
+export test_tfe_solution
+export test_tfe_solver
 
 # include("_DiffEqsWrappers.jl")
 

@@ -59,17 +59,17 @@ res(t, u, v) = mass(t, ∂t(u), v) + stiffness(t, u, v) - forcing(t, v)
 jac(t, u, du, v) = stiffness(t, du, v)
 jac_t(t, u, dut, v) = mass(t, dut, v)
 
-feop_nl_man = TransientFEOperator(res, (jac, jac_t), U, V)
+tfeop_nl_man = TransientFEOperator(res, (jac, jac_t), U, V)
 
 # TODO there is an issue with AD here. The issue is already there in the
 # current version of Gridap.ODEs. This happens when calling
 # TransientCellFieldType(y, u.derivatives) in the construction of the jacobians
 # with AD
-feop_nl_ad = TransientFEOperator(res, U, V)
+tfeop_nl_ad = TransientFEOperator(res, U, V)
 
-feops = (
-  feop_nl_man,
-  # feop_nl_ad
+tfeops = (
+  tfeop_nl_man,
+  # tfeop_nl_ad
 )
 
 # Initial conditions
@@ -83,15 +83,16 @@ uhs0 = (uh0,)
 
 # ODE Solver
 tol = 1.0e-6
-disslvr = LUSolver()
+sysslvr_l = LUSolver()
+sysslvr_nl = NLSolver(sysslvr_l, show_trace=false, method=:newton, iterations=10)
 odeslvrs = (
-  MidPoint(disslvr, dt),
+  ThetaMethod(sysslvr_nl, dt, 0.5),
 )
 
 # Tests
 for odeslvr in odeslvrs
-  for feop in feops
-    fesltn = solve(odeslvr, feop, t0, tF, uhs0)
+  for tfeop in tfeops
+    fesltn = solve(odeslvr, tfeop, t0, tF, uhs0)
 
     for (t_n, uh_n) in fesltn
       eh_n = u(t_n) - uh_n

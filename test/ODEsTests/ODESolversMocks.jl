@@ -6,53 +6,52 @@ using Gridap.Algebra
 using Gridap.ODEs
 using Gridap.Polynomials
 
-#########################
-# DiscreteODESolverMock #
-#########################
+#######################
+# NonlinearSolverMock #
+#######################
 """
-    struct DiscreteODESolverMock <: NonlinearSolver end
+    struct NonlinearSolverMock <: NonlinearSolver end
 
-Mock `DiscreteODESolver` (simple Newton-Raphson with Backslash).
+Mock `NonlinearSolver` for `NonlinearStageOperator` (simple Newton-Raphson with
+Backslash) which defaults to Backslash for `linearStageOperator`.
 """
-struct DiscreteODESolverMock <: NonlinearSolver
+struct NonlinearSolverMock <: NonlinearSolver
   atol::Real
   rtol::Real
   maxiter::Integer
 end
 
 function Algebra.solve!(
-  x::AbstractVector, disslvr::DiscreteODESolverMock,
-  op::NonlinearOperator, cache
+  x::AbstractVector, nls::NonlinearSolverMock,
+  nlop::NonlinearStageOperator, cache
 )
-  atol, rtol, maxiter = disslvr.atol, disslvr.rtol, disslvr.maxiter
+  atol, rtol, maxiter = nls.atol, nls.rtol, nls.maxiter
 
   if isnothing(cache)
-    r = allocate_residual(op, x)
-    J = allocate_jacobian(op, x)
+    J = allocate_jacobian(nlop, x)
+    r = allocate_residual(nlop, x)
   else
-    r, J = cache
+    J, r = cache
   end
 
   # Update residual and check convergence
-  residual!(r, op, x)
+  residual!(r, nlop, x)
   nr_prev = norm(r)
   converged = (nr_prev < atol)
 
   iter = 0
   while !converged
     if iter > maxiter
-      throw("DiscreteODESolverMock did not converge.")
+      throw("NonlinearSolverMock did not converge.")
     end
 
-    # Update jacobian
-    jacobian!(J, op, x)
-
     # Update x
+    jacobian!(J, nlop, x)
     dx = J \ r
     axpy!(-1, dx, x)
 
     # Update residual and check convergence
-    residual!(r, op, x)
+    residual!(r, nlop, x)
     nr = norm(r)
     converged = (nr < atol) || (nr < rtol * nr_prev)
     nr_prev = nr
@@ -60,7 +59,16 @@ function Algebra.solve!(
     iter += 1
   end
 
-  (r, J)
+  (J, r)
+end
+
+function Algebra.solve!(
+  x::AbstractVector, nls::NonlinearSolverMock,
+  lop::LinearStageOperator, cache
+)
+  copy!(x, lop.J \ lop.r)
+  rmul!(x, -1)
+  cache
 end
 
 #################
@@ -70,33 +78,36 @@ end
     struct ODESolverMock <: ODESolver end
 
 Mock `ODESolver` for ODEs of arbitrary order, using a backward Euler scheme.
+```math
+res(tx, ux[0], ..., ux[N]) = 0,
+
+tx = t_n + dt
+ux[i] = ∂t^i[u](t_n) + ∑_{i + 1 ≤ j ≤ N} 1/(j - i)! dt^(j - i) ux[j].
+ux[N] = x
+
+∂t^i[u](t_(n+1)) = ux[i].
+```
 """
 struct ODESolverMock <: ODESolver
-  disslvr::DiscreteODESolverMock
+  sysslvr::NonlinearSolverMock
   dt::Real
 end
 
-function ODEs.get_dt(odeslvr::ODESolverMock)
-  odeslvr.dt
-end
-
-function ODEs.allocate_disopcache(
-  odeslvr::ODESolverMock,
-  odeop::ODEOperator, odeopcache,
+##################
+# Nonlinear case #
+##################
+function ODEs.allocate_odecache(
+  odeslvr::ODESolverMock, odeop::ODEOperator,
   t0::Real, us0::Tuple{Vararg{AbstractVector}}
 )
-  N = get_order(odeop)
-  ntuple(k -> zero(us0[k]), N)
-end
+  u0 = us0[1]
+  us0N = (us0..., u0)
+  odeopcache = allocate_odeopcache(odeop, t0, us0N)
 
-function ODEs.DiscreteODEOperator(
-  odeslvr::ODESolverMock, odeop::ODEOperator,
-  odeopcache, disopcache,
-  t0::Real, us0::Tuple{Vararg{AbstractVector}}, dt::Real, tx::Real
-)
-  usx = disopcache
+  usx = copy.(us0)
 
   N = get_order(odeop)
+  dt = odeslvr.dt
   ws = ntuple(i -> 0, N + 1)
   ws = Base.setindex(ws, 1, N + 1)
   for i in N:-1:1
@@ -108,155 +119,69 @@ function ODEs.DiscreteODEOperator(
     ws = Base.setindex(ws, wi, i)
   end
 
-  DiscreteODEOperatorMock(
-    odeop, odeopcache,
-    us0, dt, tx, usx, ws
-  )
+  sysslvrcache = nothing
+  odeslvrcache = (usx, ws, sysslvrcache)
+
+  (odeslvrcache, odeopcache)
 end
 
-function ODEs.solve_odeop!(
-  usF::Tuple{Vararg{AbstractVector}},
+function ODEs.ode_march!(
+  stateF::Tuple{Vararg{AbstractVector}},
   odeslvr::ODESolverMock, odeop::ODEOperator,
-  t0::Real, us0::Tuple{Vararg{AbstractVector}},
-  cache
+  t0::Real, state0::Tuple{Vararg{AbstractVector}},
+  odecache
 )
-  dt = get_dt(odeslvr)
-  tF = t0 + dt
+  # Unpack inputs
+  us0, usF = state0, stateF
+  odeslvrcache, odeopcache = odecache
+  usx, ws, sysslvrcache = odeslvrcache
 
-  # Allocate or unpack cache
-  if isnothing(cache)
-    us0_full = (us0..., us0[1])
-    odeopcache = allocate_odeopcache(odeop, t0, us0_full)
-    disopcache = allocate_disopcache(odeslvr, odeop, odeopcache, t0, us0_full)
-    disslvrcache = allocate_disslvrcache(odeslvr)
-  else
-    odeopcache, disopcache, disslvrcache = cache
-  end
+  # Unpack solver
+  sysslvr = odeslvr.sysslvr
+  dt = odeslvr.dt
 
-  # Create and solve discrete ODE operator
-  disop = DiscreteODEOperator(
-    odeslvr, odeop, odeopcache, disopcache,
-    t0, us0, dt, tF
-  )
+  # Define scheme
+  tx = t0 + dt
+  _usx(x) = _stage_mock!(usx, us0, dt, x)
 
-  usF, disslvrcache = solve_disop!(usF, odeslvr.disslvr, disop, disslvrcache)
-  cache = (odeopcache, disopcache, disslvrcache)
-
-  (tF, usF, cache)
-end
-
-###########################
-# DiscreteODEOperatorMock #
-###########################
-"""
-    struct DiscreteODEOperatorMock <: DiscreteODEOperator end
-
-Mock backward Euler operator for arbitrary-order ODEs:
-```math
-res(tx, ux[0], ..., ux[N]) = 0,
-
-tx = t_n + dt
-ux[i] = ∂t^i[u](t_n) + ∑_{i + 1 ≤ j ≤ N} 1/(j - i)! dt^(j - i) ux[j].
-ux[N] = x
-
-∂t^i[u](t_(n+1)) = ux[i].
-```
-"""
-struct DiscreteODEOperatorMock <: DiscreteODEOperator
-  odeop::ODEOperator
-  odeopcache
-  us0::Tuple{Vararg{AbstractVector}}
-  dt::Real
-  tx::Real
-  usx::Tuple{Vararg{AbstractVector}}
-  ws::Tuple{Vararg{Real}}
-end
-
-function Algebra.allocate_residual(
-  disop::DiscreteODEOperatorMock,
-  x::AbstractVector
-)
-  dt, tx = disop.dt, disop.tx
-  us0, usx = disop.us0, disop.usx
-  usx = _stage_mock!(usx, dt, us0, x)
-  allocate_residual(disop.odeop, tx, usx, disop.odeopcache)
-end
-
-function Algebra.residual!(
-  r::AbstractVector,
-  disop::DiscreteODEOperatorMock,
-  x::AbstractVector
-)
-  us0, dt = disop.us0, disop.dt
-  tx, usx = disop.tx, disop.usx
-  usx = _stage_mock!(usx, dt, us0, x)
-  residual!(r, disop.odeop, tx, usx, disop.odeopcache)
-  r
-end
-
-function Algebra.allocate_jacobian(
-  disop::DiscreteODEOperatorMock,
-  x::AbstractVector
-)
-  us0, dt = disop.us0, disop.dt
-  tx, usx = disop.tx, disop.usx
-  usx = _stage_mock!(usx, dt, us0, x)
-  allocate_jacobian(disop.odeop, tx, usx, disop.odeopcache)
-end
-
-function Algebra.jacobian!(
-  J::AbstractMatrix,
-  disop::DiscreteODEOperatorMock,
-  x::AbstractVector
-)
-  us0, dt = disop.us0, disop.dt
-  tx, usx = disop.tx, disop.usx
-  usx = _stage_mock!(usx, dt, us0, x)
-  ws = disop.ws
-  fillstored!(J, zero(eltype(J)))
-  jacobians!(J, disop.odeop, tx, usx, ws, disop.odeopcache)
-end
-
-function solve_disop!(
-  usF::Tuple{Vararg{AbstractVector}},
-  disslvr::NonlinearSolver, disop::DiscreteODEOperatorMock,
-  disslvrcache
-)
-  odeop, odeopcache = disop.odeop, disop.odeopcache
-  us0, dt = disop.us0, disop.dt
-  tx = disop.tx
-  x = usF[1]
-
-  # Update the cache of the ODE operator (typically Dirichlet BCs)
+  # Update ODE operator cache
   update_odeopcache!(odeopcache, odeop, tx)
 
-  # Solve the discrete ODE operator
-  disslvrcache = solve!(x, disslvr, disop, disslvrcache)
+  # Create and solve stage operator
+  stageop = NonlinearStageOperator(odeop, odeopcache, tx, _usx, ws)
 
-  # Finalize
-  copy!(disop.usx[1], x)
-  x = disop.usx[1]
-  usF = _finalize_mock!(usF, dt, us0, x)
+  x = usF[1]
+  sysslvrcache = solve!(x, sysslvr, stageop, sysslvrcache)
 
-  (usF, disslvrcache)
+  # Update state
+  tF = t0 + dt
+  copy!(usx[1], x)
+  x = usx[1]
+  usF = _convert_mock!(usF, us0, dt, x)
+  stateF = usF
+
+  # Pack outputs
+  odeslvrcache = (usx, ws, sysslvrcache)
+  odecache = (odeslvrcache, odeopcache)
+  (tF, stateF, odecache)
 end
 
 #########
 # Utils #
 #########
 function _stage_mock!(
-  usF::Tuple{Vararg{AbstractVector}}, dt::Real,
-  us0::Tuple{Vararg{AbstractVector}}, x::AbstractVector
+  usx::Tuple{Vararg{AbstractVector}}, us0::Tuple{Vararg{AbstractVector}},
+  dt::Real, x::AbstractVector
 )
-  usF = _finalize_mock!(usF, dt, us0, x)
-  usF = (usF..., x)
-  usF
+  _convert_mock!(usx, us0, dt, x)
+  (usx..., x)
 end
 
-function _finalize_mock!(
-  usF::Tuple{Vararg{AbstractVector}}, dt::Real,
-  us0::Tuple{Vararg{AbstractVector}}, x::AbstractVector
+function _convert_mock!(
+  usF::Tuple{Vararg{AbstractVector}}, us0::Tuple{Vararg{AbstractVector}},
+  dt::Real, x::AbstractVector
 )
+  # usF[i] = us0[i] + ∑_{i < j ≤ N+1} 1/(j - i)! dt^(j - i) usF[j]
   N = length(us0)
   for i in N:-1:1
     ui0, uiF = us0[i], usF[i]

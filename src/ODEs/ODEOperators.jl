@@ -4,19 +4,120 @@
 """
     abstract type ODEOperatorType <: GridapType end
 
-Trait that indicates the (linearity) type of an ODE operator.
+Trait that indicates the linearity type of an ODE operator.
 """
 abstract type ODEOperatorType <: GridapType end
 struct NonlinearODE <: ODEOperatorType end
 
+"""
+    abstract type AbstractQuasilinearODE <: ODEOperatorType end
+
+ODE operator whose residual is linear with respect to the highest-order time
+derivative, i.e.
+```math
+residual(t, ∂t^0[u], ..., ∂t^N[u]) = mass(t, ∂t^0[u], ..., ∂t^(N-1)[u]) ∂t^N[u]
+                                   +  res(t, ∂t^0[u], ..., ∂t^(N-1)[u]),
+```
+where `N` is the order of the ODE operator, `∂t^k[u]` is the `k`-th-order time
+derivative of `u`, and both `mass` and `res` have order `N-1`.
+"""
 abstract type AbstractQuasilinearODE <: ODEOperatorType end
 struct QuasilinearODE <: AbstractQuasilinearODE end
 
+"""
+    abstract type AbstractSemilinearODE <: AbstractQuasilinearODE end
+
+ODE operator whose residual is linear with respect to the highest-order time
+derivative, and whose mass matrix only depend on time, i.e.
+```math
+residual(t, ∂t^0[u], ..., ∂t^N[u]) = mass(t) ∂t^N[u]
+                                   +  res(t, ∂t^0[u], ..., ∂t^(N-1)[u]),
+```
+where `N` is the order of the ODE operator, `∂t^k[u]` is the `k`-th-order time
+derivative of `u`, `mass` is independent of `u` and `res` has order `N-1`.
+"""
 abstract type AbstractSemilinearODE <: AbstractQuasilinearODE end
 struct SemilinearODE <: AbstractSemilinearODE end
 
+"""
+    abstract type AbstractLinearODE <: AbstractSemilinearODE end
+
+ODE operator whose residual is linear with respect to all time derivatives, i.e.
+```math
+residual(t, ∂t^0[u], ..., ∂t^N[u]) = ∑_{0 ≤ k ≤ N} A_k(t) ∂t^k[u] + res(t),
+```
+where `N` is the order of the ODE operator, and `∂t^k[u]` is the `k`-th-order
+time derivative of `u`.
+"""
 abstract type AbstractLinearODE <: AbstractSemilinearODE end
 struct LinearODE <: AbstractLinearODE end
+
+################
+# IMEX Helpers #
+################
+"""
+    check_imex_compatibility(im_order::Integer, ex_order::Integer) -> Bool
+
+Check whether two operators can make a valid IMEX operator decomposition. This
+function should be called in the constructors of concrete IMEX operators.
+"""
+function check_imex_compatibility(im_order::Integer, ex_order::Integer)
+  msg = """
+  The explicit operator of an IMEX operator decomposition must have one order
+  less than the implicit operator.
+  """
+  @assert (im_order == ex_order + 1) msg
+end
+
+"""
+    IMEXODEOperatorType(
+      T_im::Type{<:ODEOperatorType},
+      T_ex::Type{<:ODEOperatorType}
+    ) -> ODEOperatorType
+
+Return the `ODEOperatorType` of the operator defined by an IMEX decomposition.
+This function should be called in the constructors of concrete IMEX operators.
+"""
+function IMEXODEOperatorType(
+  T_im::Type{<:ODEOperatorType},
+  T_ex::Type{<:ODEOperatorType}
+)
+  T_im
+end
+
+function IMEXODEOperatorType(
+  T_im::Type{<:AbstractLinearODE},
+  T_ex::Type{<:ODEOperatorType}
+)
+  SemilinearODE
+end
+
+# We should theoretically dispatch on T_ex <: AbstractQuasilinearODE because
+# in that case we can write the decomposition as
+#   im_A_N(t) ∂t^N[u]
+# + [im_A_(N-1)(t) + ex_mass(t, ∂t^0[u], ..., ∂t^(N-2)[u])] ∂t^(N-1)[u]
+# + ∑_{0 ≤ k ≤ N-2} im_A_k(t) ∂t^k[u] + im_res(t) + ex_res(t, ∂t^0[u], ..., ∂t^(N-1)[u])
+# so we can identify two linear forms corresponding to the two highest-order
+# time derivatives, and then the rest of the residual. We decide to still
+# define the global operator as semilinear for the following reasons:
+# * For a first-order ODE, the explicit part has order zero, so the definitions
+# of quasilinear, semilinear and linear coincide. This will default to the
+# case below. This means there is only a special case when the residual has
+# order two or higher.
+# * We would need to have a new type when we can identify two linear forms
+# corresponding to the two highest-order time derivatives. This would
+# recursively force us to create order-dependent linearity types based on how
+# many linear forms have been identified.
+# * This distinction is not common in the litterature and indeed there does not
+# seem to exist ODE solvers that take advantage of this kind of multi-form
+# operator decomposition.
+
+function IMEXODEOperatorType(
+  T_im::Type{<:AbstractLinearODE},
+  T_ex::Type{<:AbstractLinearODE}
+)
+  T_im
+end
 
 ###############
 # ODEOperator #
@@ -35,73 +136,28 @@ time derivative of `u`.
 - [`get_order(odeop)`](@ref)
 - [`get_forms(odeop)`](@ref)
 - [`allocate_residual(odeop, t, us, odeopcache)`](@ref)
-- [`residual!(r, odeop, t, us, odeopcache)`](@ref)
+- [`residual!(r, odeop, t, us, odeopcache; add::Bool)`](@ref)
 - [`allocate_jacobian(odeop, t, us, odeopcache)`](@ref)
-- [`jacobian!(J, odeop, t, us, k, γ, odeopcache)`](@ref)
+- [`jacobian_add!(J, odeop, t, us, ws, odeopcache)`](@ref)
 
 # Optional
-- [`allocate_odeopcache(odeop, t, us, args...)`](@ref)
-- [`update_odeopcache!(odeopcache, odeop, t, args...)`](@ref)
-- [`residual(odeop, t, us, odeopcache)`](@ref)
-- [`jacobian(odeop, t, us, k, γ, odeopcache)`](@ref)
-- [`jacobians!(J, odeop, t, us, γs, odeopcache)`](@ref)
+- [`get_num_forms(odeop)`](@ref)
 - [`is_form_constant(odeop, k)`](@ref)
+- [`allocate_odeopcache(odeop, t, us)`](@ref)
+- [`update_odeopcache!(odeopcache, odeop, t)`](@ref)
+- [`residual(odeop, t, us, odeopcache)`](@ref)
+- [`jacobian!(odeop, t, us, ws, odeopcache)`](@ref)
+- [`jacobian(odeop, t, us, ws, odeopcache)`](@ref)
 """
-abstract type ODEOperator{C<:ODEOperatorType} <: GridapType end
-
-"""
-    QuasilinearODEOperator
-
-ODE operator whose residual is linear with respect to the highest-order time
-derivative, i.e.
-```math
-residual(t, ∂t^0[u], ..., ∂t^N[u]) = mass(t, ∂t^0[u], ..., ∂t^(N-1)[u]) ∂t^N[u]
-                                   +  res(t, ∂t^0[u], ..., ∂t^(N-1)[u]),
-```
-where `N` is the order of the ODE operator, `∂t^k[u]` is the `k`-th-order time
-derivative of `u`, and both `mass` and `res` have order `N-1`.
-
-Alias for `ODEOperator{QuasilinearODE}`.
-"""
-const QuasilinearODEOperator = ODEOperator{QuasilinearODE}
-
-"""
-    SemilinearODEOperator
-
-ODE operator whose residual is linear with respect to the highest-order time
-derivative, and whose mass matrix only depend on time, i.e.
-```math
-residual(t, ∂t^0[u], ..., ∂t^N[u]) = mass(t) ∂t^N[u]
-                                   +  res(t, ∂t^0[u], ..., ∂t^(N-1)[u]),
-```
-where `N` is the order of the ODE operator, `∂t^k[u]` is the `k`-th-order time
-derivative of `u`, `mass` is independent of `u` and `res` has order `N-1`.
-
-Alias for `ODEOperator{SemilinearODE}`.
-"""
-const SemilinearODEOperator = ODEOperator{SemilinearODE}
-
-"""
-    LinearODEOperator
-
-ODE operator whose residual is linear with respect to all time derivatives, i.e.
-```math
-residual(t, ∂t^0[u], ..., ∂t^N[u]) = ∑_{0 ≤ k ≤ N} A_k(t) ∂t^k[u] + res(t),
-```
-where `N` is the order of the ODE operator, and `∂t^k[u]` is the `k`-th-order
-time derivative of `u`.
-
-Alias for `ODEOperator{LinearODE}`.
-"""
-const LinearODEOperator = ODEOperator{LinearODE}
+abstract type ODEOperator{T<:ODEOperatorType} <: GridapType end
 
 """
     ODEOperatorType(odeop::ODEOperator) -> ODEOperatorType
 
 Return the `ODEOperatorType` of the `ODEOperator`.
 """
-ODEOperatorType(odeop::ODEOperator) = ODEOperatorType(typeof(odeop))
-ODEOperatorType(::Type{<:ODEOperator{C}}) where {C} = C
+ODEOperatorType(::ODEOperator{T}) where {T} = T
+ODEOperatorType(::Type{<:ODEOperator{T}}) where {T} = T
 
 """
     get_order(odeop::ODEOperator) -> Integer
@@ -113,7 +169,24 @@ function Polynomials.get_order(odeop::ODEOperator)
 end
 
 """
-    get_forms(feop::ODEOperator) -> Tuple{Vararg{Function}}
+    get_num_forms(odeop::ODEOperator) -> Integer
+
+Return the number of linear forms of the `ODEOperator`. See [`get_forms`](@ref)
+"""
+function get_num_forms(odeop::ODEOperator)
+  0
+end
+
+function get_num_forms(odeop::ODEOperator{<:AbstractQuasilinearODE})
+  1
+end
+
+function get_num_forms(odeop::ODEOperator{<:AbstractLinearODE})
+  get_order(odeop) + 1
+end
+
+"""
+    get_forms(odeop::ODEOperator) -> Tuple{Vararg{Function}}
 
 Return the linear forms of the `ODEOperator`:
 * For a general ODE operator, return an empty tuple,
@@ -126,6 +199,16 @@ end
 
 function get_forms(odeop::ODEOperator{<:AbstractQuasilinearODE})
   @abstractmethod
+end
+
+"""
+    is_form_constant(odeop::ODEOperator, k::Integer) -> Bool
+
+Indicate whether the linear form of the `ODEOperator` corresponding to the
+`k`-th-order time derivative of `u` is constant with respect to `t`.
+"""
+function is_form_constant(odeop::ODEOperator, k::Integer)
+  false
 end
 
 """
@@ -170,13 +253,31 @@ function Algebra.allocate_residual(
 end
 
 """
+    residual!(
+      r::AbstractVector, odeop::ODEOperator,
+      t::Real, us::Tuple{Vararg{AbstractVector}},
+      odeopcache; add::Bool=false
+    ) -> AbstractVector
+
+Compute the residual of the `ODEOperator`. If `add` is true, this function adds
+to `r` instead of erasing it.
+"""
+function Algebra.residual!(
+  r::AbstractVector, odeop::ODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  odeopcache; add::Bool=false
+)
+  @abstractmethod
+end
+
+"""
     residual(
       odeop::ODEOperator,
       t::Real, us::Tuple{Vararg{AbstractVector}},
       odeopcache
     ) -> AbstractVector
 
-Allocate a residual vector and evaluate it.
+Allocate a vector and evaluate the residual of the `ODEOperator`.
 """
 function Algebra.residual(
   odeop::ODEOperator,
@@ -186,23 +287,6 @@ function Algebra.residual(
   r = allocate_residual(odeop, t, us, odeopcache)
   residual!(r, odeop, t, us, odeopcache)
   r
-end
-
-"""
-    residual!(
-      r::AbstractVector, odeop::ODEOperator,
-      t::Real, us::Tuple{Vararg{AbstractVector}},
-      odeopcache
-    ) -> AbstractVector
-
-Evaluate the residual vector of the `ODEOperator`.
-"""
-function Algebra.residual!(
-  r::AbstractVector, odeop::ODEOperator,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache
-)
-  @abstractmethod
 end
 
 """
@@ -222,84 +306,75 @@ function Algebra.allocate_jacobian(
   @abstractmethod
 end
 
+const jacobian_weights_order_msg = """
+The weights are ordered by increasing order of time derivative, i.e. the first
+weight corresponds to `∂residual / ∂u` and the last to
+`∂residual / ∂(d^N u / dt^N)`.
 """
-    jacobian(
-      odeop::ODEOperator,
-      t::Real, us::Tuple{Vararg{AbstractVector}},
-      k::Integer, γ::Real,
-      odeopcache
-    ) -> AbstractMatrix
-
-Allocate a jacobian matrix for the `ODEOperator` and add the jacobian of the
-residual of the `ODEOperator` with respect to the `k`-th-order time derivative,
-weighted by some factor `γ`.
-"""
-function Algebra.jacobian(
-  odeop::ODEOperator,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  k::Integer, γ::Real,
-  odeopcache
-)
-  J = allocate_jacobian(odeop, t, us, odeopcache)
-  fillstored!(J, zero(eltype(J)))
-  jacobian!(J, odeop, t, us, k, γ, odeopcache)
-  J
-end
 
 """
-    jacobian!(
+    jacobian_add!(
       J::AbstractMatrix, odeop::ODEOperator,
-      t::Real, us::Tuple{Vararg{AbstractVector}},
-      k::Integer, γ::Real,
+      t::Real, us::Tuple{Vararg{AbstractVector}}, ws::Tuple{Vararg{Real}},
       odeopcache
     ) -> AbstractMatrix
 
-Add the jacobian of the residual of the `ODEOperator` with respect to the
-`k`-th-order time derivative, weighted by some factor `γ`.
+Add the jacobian of the residual of the `ODEOperator` with respect to all time
+derivatives, weighted by some factors `ws`.
+
+$(jacobian_weights_order_msg)
 """
-function Algebra.jacobian!(
+function jacobian_add!(
   J::AbstractMatrix, odeop::ODEOperator,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  k::Integer, γ::Real,
+  t::Real, us::Tuple{Vararg{AbstractVector}}, ws::Tuple{Vararg{Real}},
   odeopcache
 )
   @abstractmethod
 end
 
 """
-    jacobians!(
+    jacobian!(
       J::AbstractMatrix, odeop::ODEOperator,
-      t::Real, us::Tuple{Vararg{AbstractVector}},
-      γs::Tuple{Vararg{Real}},
+      t::Real, us::Tuple{Vararg{AbstractVector}}, ws::Tuple{Vararg{Real}},
       odeopcache
     ) -> AbstractMatrix
 
-Add the jacobian of the residual of the `ODEOperator` with respect to all time
-derivatives, weighted by some factors `γs`.
+Compute the jacobian of the residual of the `ODEOperator` with respect to all
+time derivatives, weighted by some factors `ws`.
+
+$(jacobian_weights_order_msg)
 """
-function jacobians!(
+function Algebra.jacobian!(
   J::AbstractMatrix, odeop::ODEOperator,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  γs::Tuple{Vararg{Real}},
+  t::Real, us::Tuple{Vararg{AbstractVector}}, ws::Tuple{Vararg{Real}},
   odeopcache
 )
-  for k in 0:get_order(odeop)
-    γ = γs[k+1]
-    if !iszero(γ)
-      jacobian!(J, odeop, t, us, k, γ, odeopcache)
-    end
-  end
+  fillstored!(J, zero(eltype(J)))
+  jacobian_add!(J, odeop, t, us, ws, odeopcache)
   J
 end
 
 """
-    is_form_constant(odeop::ODEOperator, k::Integer) -> Bool
+    jacobian(
+      odeop::ODEOperator,
+      t::Real, us::Tuple{Vararg{AbstractVector}}, ws::Tuple{Vararg{Real}},
+      odeopcache
+    ) -> AbstractMatrix
 
-Indicate whether the linear form of the `ODEOperator` corresponding to the
-`k`-th-order time derivative of `u` is constant with respect to `t`.
+Allocate a jacobian matrix for the `ODEOperator` and compute the jacobian of
+the residual of the `ODEOperator` with respect to all time derivatives,
+weighted by some factors `ws`.
+
+$(jacobian_weights_order_msg)
 """
-function is_form_constant(odeop::ODEOperator, k::Integer)
-  false
+function Algebra.jacobian(
+  odeop::ODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}}, ws::Tuple{Vararg{Real}},
+  odeopcache
+)
+  J = allocate_jacobian(odeop, t, us, odeopcache)
+  jacobian!(J, odeop, t, us, ws, odeopcache)
+  J
 end
 
 ###################
@@ -308,16 +383,16 @@ end
 """
     abstract type IMEXODEOperator <: ODEOperator end
 
-ODEOperator whose residual can be decomposed into
+Implicit-Explicit decomposition of a residual defining an `ODEOperator`:
 ```math
 residual(t, ∂t^0[u], ..., ∂t^N[u]) = implicit_residual(t, ∂t^0[u], ..., ∂t^N[u])
                                    + explicit_residual(t, ∂t^0[u], ..., ∂t^(N-1)[u]),
 ```
 where
 * The implicit operator defined by the implicit residual is considered stiff
-and is meant to be solved with an implicit solver,
+and is meant to be solved implicitly,
 * The explicit operator defined by the explicit residual is considered non-stiff
-and is meant to be solved with an explicit solver.
+and is meant to be solved explicitly.
 
 # Important
 The explicit operator must have one order less than the implicit operator, so
@@ -327,12 +402,24 @@ operator.
 # Mandatory
 - [`get_imex_operators(odeop)`](@ref)
 """
-abstract type IMEXODEOperator{Cim,Cex} <: ODEOperator{Cim} end
+abstract type IMEXODEOperator{T<:ODEOperatorType} <: ODEOperator{T} end
 
+# IMEX Helpers
+function check_imex_compatibility(im_odeop::ODEOperator, ex_odeop::ODEOperator)
+  im_order, ex_order = get_order(im_odeop), get_order(ex_odeop)
+  check_imex_compatibility(im_order, ex_order)
+end
+
+function IMEXODEOperatorType(im_odeop::ODEOperator, ex_odeop::ODEOperator)
+  T_im, T_ex = ODEOperatorType(im_odeop), ODEOperatorType(ex_odeop)
+  IMEXODEOperatorType(T_im, T_ex)
+end
+
+# IMEXODEOperator interface
 """
     get_imex_operators(odeop::IMEXODEOperator) -> (ODEOperator, ODEOperator)
 
-Return the implicit and explicit `ODEOperator`s of the `IMEXODEOperator`.
+Return the implicit and explicit parts of the `IMEXODEOperator`.
 """
 function get_imex_operators(odeop::IMEXODEOperator)
   @abstractmethod
@@ -344,20 +431,13 @@ function Polynomials.get_order(odeop::IMEXODEOperator)
   get_order(im_odeop)
 end
 
-function get_forms(odeop::IMEXODEOperator)
-  ()
-end
-
 function get_forms(odeop::IMEXODEOperator{<:AbstractQuasilinearODE})
-  # Only the mass matrix of the implicit part
   im_odeop, _ = get_imex_operators(odeop)
   im_forms = get_forms(im_odeop)
   (last(im_forms),)
 end
 
-function get_forms(odeop::IMEXODEOperator{<:AbstractLinearODE,<:AbstractLinearODE})
-  # Sum the forms of the implicit and explicit parts, taking into account the
-  # difference in order of the two operators
+function get_forms(odeop::IMEXODEOperator{<:AbstractLinearODE})
   im_odeop, ex_odeop = get_imex_operators(odeop)
   im_forms, ex_forms = get_forms(im_odeop), get_forms(ex_odeop)
   forms = ()
@@ -365,109 +445,7 @@ function get_forms(odeop::IMEXODEOperator{<:AbstractLinearODE,<:AbstractLinearOD
     form = (t, u) -> im_form(t, u) + ex_form(t, u)
     forms = (forms..., form)
   end
-  forms = (forms..., last(im_forms))
-end
-
-function allocate_odeopcache(
-  odeop::IMEXODEOperator,
-  t::Real, us::Tuple{Vararg{AbstractVector}}, args...
-)
-  im_us, ex_us = us, ntuple(i -> us[i], length(us) - 1)
-  im_odeop, ex_odeop = get_imex_operators(odeop)
-  im_odeopcache = allocate_odeopcache(im_odeop, t, im_us, args...)
-  ex_odeopcache = allocate_odeopcache(ex_odeop, t, ex_us, args...)
-  ex_res = allocate_residual(ex_odeop, t, ex_us, ex_odeopcache)
-  (im_odeopcache, ex_odeopcache, ex_res)
-end
-
-function update_odeopcache!(
-  odeopcache, odeop::IMEXODEOperator,
-  t::Real, args...
-)
-  im_odeop, ex_odeop = get_imex_operators(odeop)
-  im_odeopcache, ex_odeopcache, ex_res = odeopcache
-  update_odeopcache!(im_odeopcache, im_odeop, t, args...)
-  update_odeopcache!(ex_odeopcache, ex_odeop, t, args...)
-  (im_odeopcache, ex_odeopcache, ex_res)
-end
-
-function Algebra.allocate_residual(
-  odeop::IMEXODEOperator,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache
-)
-  im_us, ex_us = us, ntuple(i -> us[i], length(us) - 1)
-  im_odeop, ex_odeop = get_imex_operators(odeop)
-  im_odeopcache, ex_odeopcache, _ = odeopcache
-  im_res = allocate_residual(im_odeop, t, im_us, im_odeopcache)
-  ex_res = allocate_residual(ex_odeop, t, ex_us, ex_odeopcache)
-  axpy!(1, ex_res, im_res)
-  im_res
-end
-
-function Algebra.residual!(
-  r::AbstractVector, odeop::IMEXODEOperator,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache
-)
-  im_res = r
-  im_us, ex_us = us, ntuple(i -> us[i], length(us) - 1)
-  im_odeop, ex_odeop = get_imex_operators(odeop)
-  im_odeopcache, ex_odeopcache, ex_res = odeopcache
-  residual!(im_res, im_odeop, t, im_us, im_odeopcache)
-  residual!(ex_res, ex_odeop, t, ex_us, ex_odeopcache)
-  axpy!(1, ex_res, im_res)
-  r
-end
-
-function Algebra.allocate_jacobian(
-  odeop::IMEXODEOperator,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  odeopcache
-)
-  im_us, ex_us = us, ntuple(i -> us[i], length(us) - 1)
-  im_odeop, ex_odeop = get_imex_operators(odeop)
-  im_odeopcache, ex_odeopcache, = odeopcache
-  im_jac = allocate_jacobian(im_odeop, t, im_us, im_odeopcache)
-  ex_jac = allocate_jacobian(ex_odeop, t, ex_us, ex_odeopcache)
-
-  if !can_add_matrices(im_jac, ex_jac)
-    throw("Cannot add matrices with different structures yet.")
-  end
-  axpy_sparse!(1, ex_jac, im_jac)
-  im_jac
-end
-
-function Algebra.jacobian!(
-  J::AbstractMatrix, odeop::IMEXODEOperator,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  k::Integer, γ::Real,
-  odeopcache
-)
-  im_us = us
-  im_odeop, ex_odeop = get_imex_operators(odeop)
-  im_odeopcache, ex_odeopcache, = odeopcache
-  jacobian!(J, im_odeop, t, im_us, k, γ, im_odeopcache)
-  if k < get_order(odeop)
-    ex_us = ntuple(i -> us[i], length(us) - 1)
-    jacobian!(J, ex_odeop, t, ex_us, k, γ, ex_odeopcache)
-  end
-  J
-end
-
-function jacobians!(
-  J::AbstractMatrix, odeop::IMEXODEOperator,
-  t::Real, us::Tuple{Vararg{AbstractVector}},
-  γs::Tuple{Vararg{Real}},
-  odeopcache
-)
-  im_us, ex_us = us, ntuple(i -> us[i], length(us) - 1)
-  im_γs, ex_γs = γs, ntuple(i -> γs[i], length(γs) - 1)
-  im_odeop, ex_odeop = get_imex_operators(odeop)
-  im_odeopcache, ex_odeopcache, _ = odeopcache
-  jacobians!(J, im_odeop, t, im_us, im_γs, im_odeopcache)
-  jacobians!(J, ex_odeop, t, ex_us, ex_γs, ex_odeopcache)
-  J
+  (forms..., last(im_forms))
 end
 
 function is_form_constant(odeop::IMEXODEOperator, k::Integer)
@@ -480,6 +458,83 @@ function is_form_constant(odeop::IMEXODEOperator, k::Integer)
   im_const && ex_const
 end
 
+function allocate_odeopcache(
+  odeop::IMEXODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}}, args...
+)
+  im_us, ex_us = us, ntuple(i -> us[i], length(us) - 1)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_odeopcache = allocate_odeopcache(im_odeop, t, im_us, args...)
+  ex_odeopcache = allocate_odeopcache(ex_odeop, t, ex_us, args...)
+  (im_odeopcache, ex_odeopcache)
+end
+
+function update_odeopcache!(
+  odeopcache, odeop::IMEXODEOperator,
+  t::Real, args...
+)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_odeopcache, ex_odeopcache = odeopcache
+  update_odeopcache!(im_odeopcache, im_odeop, t, args...)
+  update_odeopcache!(ex_odeopcache, ex_odeop, t, args...)
+  (im_odeopcache, ex_odeopcache)
+end
+
+function Algebra.allocate_residual(
+  odeop::IMEXODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  odeopcache
+)
+  im_us, ex_us = us, ntuple(i -> us[i], length(us) - 1)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_odeopcache, ex_odeopcache = odeopcache
+  im_res = allocate_residual(im_odeop, t, im_us, im_odeopcache)
+  ex_res = allocate_residual(ex_odeop, t, ex_us, ex_odeopcache)
+  axpy!(1, ex_res, im_res)
+  im_res
+end
+
+function Algebra.residual!(
+  r::AbstractVector, odeop::IMEXODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  odeopcache; add::Bool=false
+)
+  im_us, ex_us = us, ntuple(i -> us[i], length(us) - 1)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_odeopcache, ex_odeopcache = odeopcache
+  residual!(r, im_odeop, t, im_us, im_odeopcache; add)
+  residual!(r, ex_odeop, t, ex_us, ex_odeopcache; add=true)
+  r
+end
+
+function Algebra.allocate_jacobian(
+  odeop::IMEXODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}},
+  odeopcache
+)
+  im_us, ex_us = us, ntuple(i -> us[i], length(us) - 1)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_odeopcache, ex_odeopcache = odeopcache
+  im_jac = allocate_jacobian(im_odeop, t, im_us, im_odeopcache)
+  ex_jac = allocate_jacobian(ex_odeop, t, ex_us, ex_odeopcache)
+  axpy_entries!(1, ex_jac, im_jac)
+  im_jac
+end
+
+function jacobian_add!(
+  J::AbstractMatrix, odeop::IMEXODEOperator,
+  t::Real, us::Tuple{Vararg{AbstractVector}}, ws::Tuple{Vararg{Real}},
+  odeopcache
+)
+  im_us, ex_us = us, ntuple(i -> us[i], length(us) - 1)
+  im_ws, ex_ws = ws, ntuple(i -> ws[i], length(ws) - 1)
+  im_odeop, ex_odeop = get_imex_operators(odeop)
+  im_odeopcache, ex_odeopcache = odeopcache
+  jacobian_add!(J, im_odeop, t, im_us, im_ws, im_odeopcache)
+  jacobian_add!(J, ex_odeop, t, ex_us, ex_ws, ex_odeopcache)
+  J
+end
+
 ##########################
 # GenericIMEXODEOperator #
 ##########################
@@ -488,22 +543,18 @@ end
 
 Generic `IMEXODEOperator`.
 """
-struct GenericIMEXODEOperator{Cim,Cex} <: IMEXODEOperator{Cim,Cex}
-  im_odeop::ODEOperator{Cim}
-  ex_odeop::ODEOperator{Cex}
+struct GenericIMEXODEOperator{T} <: IMEXODEOperator{T}
+  im_odeop::ODEOperator
+  ex_odeop::ODEOperator
 
   function GenericIMEXODEOperator(im_odeop::ODEOperator, ex_odeop::ODEOperator)
-    msg = """
-    The explicit `ODEOperator` of an `IMEXODEOperator` must have one order less
-    than the implicit `ODEOperator`.
-    """
-    @assert get_order(im_odeop) == get_order(ex_odeop) + 1 msg
-    Cim = ODEOperatorType(im_odeop)
-    Cex = ODEOperatorType(ex_odeop)
-    new{Cim,Cex}(im_odeop, ex_odeop)
+    check_imex_compatibility(im_odeop, ex_odeop)
+    T = IMEXODEOperatorType(im_odeop, ex_odeop)
+    new{T}(im_odeop, ex_odeop)
   end
 end
 
+# Default constructor
 function IMEXODEOperator(im_odeop::ODEOperator, ex_odeop::ODEOperator)
   GenericIMEXODEOperator(im_odeop, ex_odeop)
 end
@@ -511,42 +562,6 @@ end
 # IMEXODEOperator interface
 function get_imex_operators(odeop::GenericIMEXODEOperator)
   (odeop.im_odeop, odeop.ex_odeop)
-end
-
-#########
-# Utils #
-#########
-function can_add_matrices(A::AbstractMatrix, B::AbstractMatrix)
-  if typeof(A) != typeof(B)
-    return false
-  end
-
-  if A isa SparseMatrixCSC
-    if rowvals(A) != rowvals(B)
-      return false
-    end
-
-    if any(nzrange(A, j) != nzrange(B, j) for j in 1:size(A, 2))
-      return false
-    end
-  end
-
-  true
-end
-
-function axpy_sparse!(α::Real, A::AbstractMatrix, B::AbstractMatrix)
-  axpy!(α, A, B)
-end
-
-function axpy_sparse!(α::Real, A::SparseMatrixCSC, B::SparseMatrixCSC)
-  # TODO optimise the sum of sparse matrices
-
-  # This is surprisingly better than axpy!(α, A, B)
-  # @. B += α * A
-
-  # This is way more efficient but only available when A and B have the same
-  # structure (rowvals and nzrange)
-  axpy!(α, nonzeros(A), nonzeros(B))
 end
 
 ########
@@ -564,6 +579,11 @@ function test_ode_operator(
   odeop::ODEOperator,
   t::Real, us::Tuple{Vararg{AbstractVector}}, args...
 )
+  num_forms = get_num_forms(odeop)
+  for k in 0:num_forms-1
+    @test is_form_constant(odeop, k) isa Bool
+  end
+
   odeopcache = allocate_odeopcache(odeop, t, us, args...)
   odeopcache = update_odeopcache!(odeopcache, odeop, t, args...)
 
@@ -575,16 +595,8 @@ function test_ode_operator(
   J = allocate_jacobian(odeop, t, us, odeopcache)
   @assert J isa AbstractMatrix
 
-  order = get_order(odeop)
-  for k in 0:order
-    jacobian!(J, odeop, t, us, k, 1, odeopcache)
-  end
-  γs = ntuple(_ -> 1, order + 1)
-  jacobians!(J, odeop, t, us, γs, odeopcache)
-
-  for k in 0:order
-    @test is_form_constant(odeop, k) isa Bool
-  end
+  ws = ntuple(_ -> 1, get_order(odeop) + 1)
+  jacobian!(J, odeop, t, us, ws, odeopcache)
 
   true
 end

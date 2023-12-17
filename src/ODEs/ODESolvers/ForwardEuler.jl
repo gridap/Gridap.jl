@@ -2,98 +2,6 @@
     struct ForwardEuler <: ODESolver end
 
 Forward Euler ODE solver.
-"""
-struct ForwardEuler <: ODESolver
-  disslvr::NonlinearSolver
-  dt::Real
-end
-
-# ODESolver interface
-function get_dt(odeslvr::ForwardEuler)
-  odeslvr.dt
-end
-
-function allocate_disopcache(
-  odeslvr::ForwardEuler,
-  odeop::ODEOperator, odeopcache,
-  t0::Real, us0::NTuple{2,AbstractVector}
-)
-  nothing
-end
-
-function allocate_disopcache(
-  odeslvr::ForwardEuler,
-  odeop::ODEOperator{<:AbstractQuasilinearODE}, odeopcache,
-  t0::Real, us0::NTuple{2,AbstractVector}
-)
-  J = allocate_jacobian(odeop, t0, us0, odeopcache)
-  r = allocate_residual(odeop, t0, us0, odeopcache)
-  (J, r)
-end
-
-function DiscreteODEOperator(
-  odeslvr::ForwardEuler, odeop::ODEOperator,
-  odeopcache, disopcache,
-  t0::Real, u0::AbstractVector, dt::Real,
-)
-  ForwardEulerNonlinearOperator(
-    odeop, odeopcache,
-    t0, u0, dt
-  )
-end
-
-function DiscreteODEOperator(
-  odeslvr::ForwardEuler, odeop::ODEOperator{<:AbstractQuasilinearODE},
-  odeopcache, disopcache,
-  t0::Real, u0::AbstractVector, dt::Real,
-)
-  J, r = disopcache
-  ForwardEulerLinearOperator(
-    odeop, odeopcache,
-    t0, u0, dt,
-    J, r
-  )
-end
-
-function solve_odeop!(
-  usF::NTuple{1,AbstractVector},
-  odeslvr::ForwardEuler, odeop::ODEOperator,
-  t0::Real, us0::NTuple{1,AbstractVector},
-  cache
-)
-  u0 = us0[1]
-  dt = get_dt(odeslvr)
-  tF = t0 + dt
-
-  # Allocate or unpack cache
-  if isnothing(cache)
-    us0_full = (u0, u0)
-    odeopcache = allocate_odeopcache(odeop, t0, us0_full)
-    disopcache = allocate_disopcache(odeslvr, odeop, odeopcache, t0, us0_full)
-    disslvrcache = allocate_disslvrcache(odeslvr)
-  else
-    odeopcache, disopcache, disslvrcache = cache
-  end
-
-  # Create and solve discrete ODE operator
-  disop = DiscreteODEOperator(
-    odeslvr, odeop, odeopcache, disopcache,
-    t0, u0, dt
-  )
-
-  usF, disslvrcache = solve_disop!(usF, odeslvr.disslvr, disop, disslvrcache)
-  cache = (odeopcache, disopcache, disslvrcache)
-
-  (tF, usF, cache)
-end
-
-######################
-# Nonlinear operator #
-######################
-"""
-    struct ForwardEulerNonlinearOperator <: DiscreteODEOperator
-
-Nonlinear discrete operator corresponding to the forward Euler scheme:
 ```math
 residual(tx, ux, vx) = 0,
 
@@ -104,157 +12,153 @@ vx = x,
 u_(n+1) = u_n + dt * x.
 ```
 """
-struct ForwardEulerNonlinearOperator <: DiscreteODEOperator
-  odeop::ODEOperator
-  odeopcache
-  t0::Real
-  u0::AbstractVector
+struct ForwardEuler <: ODESolver
+  sysslvr::NonlinearSolver
   dt::Real
 end
 
-function Algebra.residual!(
-  r::AbstractVector,
-  disop::ForwardEulerNonlinearOperator,
-  x::AbstractVector
+##################
+# Nonlinear case #
+##################
+function allocate_odecache(
+  odeslvr::ForwardEuler, odeop::ODEOperator,
+  t0::Real, us0::NTuple{1,AbstractVector}
 )
-  t0, u0 = disop.t0, disop.u0
-  # Residual: (u0, x)
+  u0 = us0[1]
+  us0N = (u0, u0)
+  odeopcache = allocate_odeopcache(odeop, t0, us0N)
+
+  sysslvrcache = nothing
+  odeslvrcache = (sysslvrcache,)
+
+  (odeslvrcache, odeopcache)
+end
+
+function ode_march!(
+  stateF::NTuple{1,AbstractVector},
+  odeslvr::ForwardEuler, odeop::ODEOperator,
+  t0::Real, state0::NTuple{1,AbstractVector},
+  odecache
+)
+  # Unpack inputs
+  u0 = state0[1]
+  odeslvrcache, odeopcache = odecache
+  sysslvrcache, = odeslvrcache
+
+  # Unpack solver
+  sysslvr = odeslvr.sysslvr
+  dt = odeslvr.dt
+
+  # Define scheme
+  x = stateF[1]
   tx = t0
-  usx = (u0, x)
-  residual!(r, disop.odeop, tx, usx, disop.odeopcache)
+  usx(x) = (u0, x)
+  ws = (0, 1)
+
+  # Update ODE operator cache
+  update_odeopcache!(odeopcache, odeop, tx)
+
+  # Create and solve stage operator
+  stageop = NonlinearStageOperator(
+    odeop, odeopcache,
+    tx, usx, ws
+  )
+
+  sysslvrcache = solve!(x, sysslvr, stageop, sysslvrcache)
+
+  # Update state
+  tF = t0 + dt
+  stateF = _update_euler!(stateF, state0, dt, x)
+
+  # Pack outputs
+  odeslvrcache = (sysslvrcache,)
+  odecache = (odeslvrcache, odeopcache)
+  (tF, stateF, odecache)
 end
 
-function Algebra.allocate_jacobian(
-  disop::ForwardEulerNonlinearOperator,
-  x::AbstractVector
+###############
+# Linear case #
+###############
+function allocate_odecache(
+  odeslvr::ForwardEuler, odeop::ODEOperator{<:AbstractQuasilinearODE},
+  t0::Real, us0::NTuple{1,AbstractVector}
 )
-  t0, u0 = disop.t0, disop.u0
-  tx = t0
-  usx = (u0, x)
-  allocate_jacobian(disop.odeop, tx, usx, disop.odeopcache)
+  u0 = us0[1]
+  us0N = (u0, u0)
+  odeopcache = allocate_odeopcache(odeop, t0, us0N)
+
+  is_semilinear = (ODEOperatorType(odeop) <: AbstractSemilinearODE)
+  constant_mass = is_form_constant(odeop, 1)
+  reuse = (is_semilinear && constant_mass)
+
+  J = allocate_jacobian(odeop, t0, us0N, odeopcache)
+  r = allocate_residual(odeop, t0, us0N, odeopcache)
+
+  sysslvrcache = nothing
+  odeslvrcache = (reuse, J, r, sysslvrcache)
+
+  (odeslvrcache, odeopcache)
 end
 
-function Algebra.jacobian!(
-  J::AbstractMatrix,
-  disop::ForwardEulerNonlinearOperator,
-  x::AbstractVector
+function ode_march!(
+  stateF::NTuple{1,AbstractVector},
+  odeslvr::ForwardEuler, odeop::ODEOperator{<:AbstractQuasilinearODE},
+  t0::Real, state0::NTuple{1,AbstractVector},
+  odecache
 )
-  t0, u0 = disop.t0, disop.u0
-  # Jacobian: (u0, x)
-  tx = t0
-  usx = (u0, x)
-  w = 1
-  fillstored!(J, zero(eltype(J)))
-  jacobian!(J, disop.odeop, tx, usx, 1, w, disop.odeopcache)
-end
+  # Unpack inputs
+  u0 = state0[1]
+  odeslvrcache, odeopcache = odecache
+  reuse, J, r, sysslvrcache = odeslvrcache
 
-function solve_disop!(
-  usF::NTuple{1,AbstractVector},
-  disslvr::NonlinearSolver, disop::ForwardEulerNonlinearOperator,
-  disslvrcache
-)
-  uF = usF[1]
-  odeop, odeopcache = disop.odeop, disop.odeopcache
-  t0, u0, dt = disop.t0, disop.u0, disop.dt
+  # Unpack solver
+  sysslvr = odeslvr.sysslvr
+  dt = odeslvr.dt
 
-  # Update the cache of the ODE operator (typically Dirichlet BCs)
-  update_odeopcache!(odeopcache, odeop, t0)
-
-  # Solve the discrete ODE operator
-  x = uF
-  disslvrcache = solve!(x, disslvr, disop, disslvrcache)
-
-  # Finalize
-  uF = _finalize_euler!(uF, u0, dt)
-  usF = (uF,)
-
-  (usF, disslvrcache)
-end
-
-###################
-# Linear operator #
-###################
-"""
-    struct ForwardEulerLinearOperator <: LinearDiscreteODEOperator
-
-Linear discrete operator corresponding to the forward Euler scheme:
-```math
-residual(tx, ux, vx) = mass(tx, ux) vx + res(tx, ux) = 0,
-
-tx = t_n
-ux = u_n
-vx = x.
-```
-"""
-struct ForwardEulerLinearOperator <: LinearDiscreteODEOperator
-  odeop::ODEOperator
-  odeopcache
-  t0::Real
-  u0::AbstractVector
-  dt::Real
-  J::AbstractMatrix
-  r::AbstractVector
-end
-
-Algebra.get_matrix(disop::ForwardEulerLinearOperator) = disop.J
-
-Algebra.get_vector(disop::ForwardEulerLinearOperator) = disop.r
-
-# The jacobian matrix is constant if the ODE operator is semilinear and has a
-# constant mass (this includes linear with constant forms).
-function is_jacobian_constant(disop::ForwardEulerLinearOperator)
-  odeop = disop.odeop
-  constant_jacobian = false
-  if ODEOperatorType(odeop) <: AbstractSemilinearODE
-    constant_jacobian = is_form_constant(odeop, 1)
-  end
-  constant_jacobian
-end
-
-function solve_disop!(
-  usF::NTuple{1,AbstractVector},
-  disslvr::NonlinearSolver, disop::ForwardEulerLinearOperator,
-  disslvrcache
-)
-  uF = usF[1]
-  odeop, odeopcache = disop.odeop, disop.odeopcache
-  t0, u0, dt = disop.t0, disop.u0, disop.dt
-
-  J, r = disop.J, disop.r
-
-  # Update the cache of the ODE operator (typically Dirichlet BCs)
-  update_odeopcache!(odeopcache, odeop, t0)
-
-  # Jacobian: (u0, x)
-  # Residual: (u0, x)
-  # Trick: use uF to store 0
-  x = uF
+  # Define scheme
+  # Set x to zero to split jacobian and residual
+  x = stateF[1]
   fill!(x, zero(eltype(x)))
-
   tx = t0
   usx = (u0, x)
-  w = 1
-  fillstored!(J, zero(eltype(J)))
-  jacobian!(J, odeop, tx, usx, 1, w, odeopcache)
-  residual!(r, odeop, tx, usx, odeopcache)
-  rmul!(r, -1)
+  ws = (0, 1)
 
-  # Solve the discrete ODE operator
-  x = uF
-  disslvrcache = solve!(x, disslvr, disop, disslvrcache)
+  # Update ODE operator cache
+  update_odeopcache!(odeopcache, odeop, tx)
 
-  # Finalize
-  uF = _finalize_euler!(uF, u0, dt)
-  usF = (uF,)
+  # Create and solve stage operator
+  stageop = LinearStageOperator(
+    odeop, odeopcache,
+    tx, usx, ws,
+    J, r, reuse, sysslvrcache
+  )
 
-  (usF, disslvrcache)
+  sysslvrcache = solve!(x, sysslvr, stageop, sysslvrcache)
+
+  # Update state
+  tF = t0 + dt
+  stateF = _update_euler!(stateF, state0, dt, x)
+
+  # Pack outputs
+  odeslvrcache = (reuse, J, r, sysslvrcache)
+  odecache = (odeslvrcache, odeopcache)
+  (tF, stateF, odecache)
 end
 
 #########
 # Utils #
 #########
-function _finalize_euler!(uF::AbstractVector, u0::AbstractVector, dt::Real)
-  # @. uF = u0 + dt * x
-  axpby!(1, u0, dt, uF)
-  uF
+function _update_euler!(
+  stateF::NTuple{1,AbstractVector}, state0::NTuple{1,AbstractVector},
+  dt::Real, x::AbstractVector
+)
+  # uF = u0 + dt * x
+  # We always have x === uF
+  u0 = state0[1]
+  uF = stateF[1]
+
+  rmul!(uF, dt)
+  axpy!(1, u0, uF)
+
+  (uF,)
 end

@@ -59,26 +59,26 @@ res_ql(t, (u1, u2), (v1, v2)) = _res_ql(t, u1, v1) + _res_ql(t, u2, v2)
 res_l(t, (v1, v2)) = _res_l(t, v1) + _res_l(t, v2)
 
 args_man = ((jac, jac_t), X, Y)
-feop_nl_man = TransientFEOperator(res, args_man...)
-feop_ql_man = TransientQuasilinearFEOperator(mass, res_ql, args_man...)
-feop_sl_man = TransientSemilinearFEOperator(mass, res_ql, args_man...)
-feop_l_man = TransientLinearFEOperator((stiffness, mass), res_l, args_man...)
+tfeop_nl_man = TransientFEOperator(res, args_man...)
+tfeop_ql_man = TransientQuasilinearFEOperator(mass, res_ql, args_man...)
+tfeop_sl_man = TransientSemilinearFEOperator(mass, res_ql, args_man...)
+tfeop_l_man = TransientLinearFEOperator((stiffness, mass), res_l, args_man...)
 
 args_ad = (X, Y)
-feop_nl_ad = TransientFEOperator(res, args_ad...)
-feop_ql_ad = TransientQuasilinearFEOperator(mass, res_ql, args_ad...)
-feop_sl_ad = TransientSemilinearFEOperator(mass, res_ql, args_ad...)
-feop_l_ad = TransientLinearFEOperator((stiffness, mass), res_l, args_ad...)
+tfeop_nl_ad = TransientFEOperator(res, args_ad...)
+tfeop_ql_ad = TransientQuasilinearFEOperator(mass, res_ql, args_ad...)
+tfeop_sl_ad = TransientSemilinearFEOperator(mass, res_ql, args_ad...)
+tfeop_l_ad = TransientLinearFEOperator((stiffness, mass), res_l, args_ad...)
 
-feops = (
-  feop_nl_man,
-  feop_ql_man,
-  feop_sl_man,
-  feop_l_man,
-  feop_nl_ad,
-  feop_ql_ad,
-  feop_sl_ad,
-  feop_l_ad,
+tfeops = (
+  tfeop_nl_man,
+  tfeop_ql_man,
+  tfeop_sl_man,
+  tfeop_l_man,
+  tfeop_nl_ad,
+  tfeop_ql_ad,
+  tfeop_sl_ad,
+  tfeop_l_ad,
 )
 
 # Initial conditions
@@ -94,15 +94,16 @@ xhs0 = (xh0,)
 
 # ODE Solver
 tol = 1.0e-6
-disslvr = LUSolver()
+sysslvr_l = LUSolver()
+sysslvr_nl = NLSolver(sysslvr_l, show_trace=false, method=:newton, iterations=10)
 odeslvrs = (
-  MidPoint(disslvr, dt),
+  ThetaMethod(sysslvr_nl, dt, 0.5),
 )
 
 # Tests
 for odeslvr in odeslvrs
-  for feop in feops
-    fesltn = solve(odeslvr, feop, t0, tF, xhs0)
+  for tfeop in tfeops
+    fesltn = solve(odeslvr, tfeop, t0, tF, xhs0)
 
     for (t_n, xhs_n) in fesltn
       eh_n = u(t_n) - xhs_n[1]

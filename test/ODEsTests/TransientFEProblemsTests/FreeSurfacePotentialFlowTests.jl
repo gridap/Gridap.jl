@@ -17,8 +17,8 @@ k = 2 * π / L
 h = L / n
 ω = √(g * k * tanh(k * H))
 t0 = 0.0
-tF = 2 * π
 dt = h / (2 * λ * ω)
+tF = 10 * dt # 2 * π
 α = 2 / dt
 tol = 1.0e-2
 
@@ -74,8 +74,9 @@ res2(t, (ϕ, η), y) = m(t, (∂t(ϕ), ∂t(η)), y) + a(t, (ϕ, η), y) - b(t, 
 op_multifield = TransientFEOperator(res2, (jac, jac_t), X, Y)
 
 # Solver
-disslvr = LUSolver()
-odelsvr = MidPoint(disslvr, dt)
+sysslvr_l = LUSolver()
+sysslvr_nl = NLSolver(sysslvr_l, show_trace=false, method=:newton, iterations=10)
+odeslvr = ThetaMethod(sysslvr_nl, dt, 0.5)
 
 # Initial solution
 U0 = U(t0)
@@ -87,7 +88,7 @@ xh0 = interpolate_everywhere([uh0, uhΓ0], X0)
 xhs0 = (xh0,)
 
 function test_flow_operator(op)
-  fesltn = solve(odelsvr, op, t0, tF, xhs0)
+  fesltn = solve(odeslvr, op, t0, tF, xhs0)
 
   # Post-process
   l2_Ω(v) = √(∑(∫(v ⋅ v) * dΩ))

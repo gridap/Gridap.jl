@@ -11,7 +11,7 @@
 Transient version of `TrialFESpace`: the Dirichlet boundary conditions are
 allowed to be time-dependent.
 
-# Mandatory (in addition to the `FESpace` interface)
+# Mandatory
 - [`allocate_space(space)`](@ref)
 - [`evaluate(space, t::Nothing)`](@ref)
 - [`evaluate!(space, t)`](@ref)
@@ -135,10 +135,10 @@ Single-field `FESpace` with transient Dirichlet data.
 struct TransientTrialFESpace{U,U0} <: AbstractTransientTrialFESpace
   space::U
   homogeneous_space::U0
-  transient_dirichlet::Union{Function,Tuple{Vararg{Function}}}
+  transient_dirichlet::Union{Function,AbstractVector{<:Function}}
 
   function TransientTrialFESpace(
-    space::FESpace, transient_dirichlet::Union{Function,Tuple{Vararg{Function}}}
+    space::FESpace, transient_dirichlet::Union{Function,AbstractVector{<:Function}}
   )
     homogeneous_space = HomogeneousTrialFESpace(space)
     U = typeof(space)
@@ -333,11 +333,11 @@ end
 # Test #
 ########
 """
-    test_transient_trial_fe_space(U::AbstractTransientTrialFESpace) -> Bool
+    test_tfe_space(U::AbstractTransientTrialFESpace) -> Bool
 
 Test the interface of `AbstractTransientTrialFESpace` specializations.
 """
-function test_transient_trial_fe_space(U::AbstractTransientTrialFESpace)
+function test_tfe_space(U::AbstractTransientTrialFESpace)
   UX = evaluate(U, nothing)
   @test UX isa FESpace
 

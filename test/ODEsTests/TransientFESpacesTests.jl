@@ -6,18 +6,23 @@ using Gridap
 using Gridap.Fields
 using Gridap.ODEs
 
-u(x, t) = (x[1] + x[2]) * t
-u(t::Real) = x -> u(x, t)
+u1(x, t) = (x[1] + x[2]) * t
+u1(t::Real) = x -> u1(x, t)
 
-∇u(x, t) = VectorValue(1, 1) * t
-∇u(t::Real) = x -> ∇u(x, t)
-Fields.∇(::typeof(u)) = ∇u
+∂tu1(t) = x -> x[1] + x[2]
+ODEs.∂t(::typeof(u1)) = ∂tu1
 
-∂tu(t) = x -> x[1] + x[2]
-ODEs.∂t(::typeof(u)) = ∂tu
+∂ttu1(t) = x -> zero(x[1])
+ODEs.∂tt(::typeof(u1)) = ∂ttu1
 
-∂ttu(t) = x -> zero(x[1])
-ODEs.∂tt(::typeof(u)) = ∂ttu
+u2(x, t) = x[1] * t^2 + x[2] * t
+u2(t::Real) = x -> u2(x, t)
+
+∂tu2(t) = x -> 2 * t * x[1] + x[2]
+ODEs.∂t(::typeof(u2)) = ∂tu2
+
+∂ttu2(t) = x -> 2 * x[1]
+ODEs.∂tt(::typeof(u2)) = ∂ttu2
 
 domain = (0, 1, 0, 1)
 partition = (5, 5)
@@ -25,41 +30,53 @@ model = CartesianDiscreteModel(domain, partition)
 
 order = 1
 reffe = ReferenceFE(lagrangian, Float64, order)
-V = TestFESpace(model, reffe, conformity=:H1, dirichlet_tags="boundary")
-U = TransientTrialFESpace(V, u)
-@test test_transient_trial_fe_space(U)
+V1 = TestFESpace(model, reffe, conformity=:H1, dirichlet_tags="boundary")
+U1 = TransientTrialFESpace(V1, u1)
+@test test_tfe_space(U1)
 
-Ut = ∂t(U)
-Utt = ∂tt(U)
+V2 = TestFESpace(model, reffe, conformity=:H1, dirichlet_tags=["tag_1", "tag_2"])
+U2 = TransientTrialFESpace(V2, [u1, u2])
+@test test_tfe_space(U2)
 
 ts = randn(5)
-for t in ts
-  # Dirichlet values of U
-  _U0 = TrialFESpace(V, u(t))
-  U0 = U(t)
+for (U, V, us) in ((U1, V1, [u1]), (U2, V2, [u1, u2]))
+  Ut = ∂t(U)
+  Utt = ∂tt(U)
 
-  _ud0 = get_dirichlet_dof_values(_U0)
-  ud0 = get_dirichlet_dof_values(U0)
+  for t in ts
+    # Dirichlet values of U
+    ust = [ui(t) for ui in us]
+    ust = (length(ust) == 1) ? ust[1] : ust
+    _U0 = TrialFESpace(V, ust)
+    U0 = U(t)
 
-  @test all(ud0 .≈ _ud0)
+    _ud0 = get_dirichlet_dof_values(_U0)
+    ud0 = get_dirichlet_dof_values(U0)
 
-  # Dirichlet values of ∂t(U)
-  _Ut0 = TrialFESpace(V, ∂tu(t))
-  Ut0 = Ut(t)
+    @test all(ud0 .≈ _ud0)
 
-  _utd0 = get_dirichlet_dof_values(_Ut0)
-  utd0 = get_dirichlet_dof_values(Ut0)
+    # Dirichlet values of ∂t(U)
+    ∂tust = [∂t(ui)(t) for ui in us]
+    ∂tust = (length(∂tust) == 1) ? ∂tust[1] : ∂tust
+    _Ut0 = TrialFESpace(V, ∂tust)
+    Ut0 = Ut(t)
 
-  @test all(utd0 .≈ _utd0)
+    _utd0 = get_dirichlet_dof_values(_Ut0)
+    utd0 = get_dirichlet_dof_values(Ut0)
 
-  # Dirichlet values of ∂tt(U)
-  _Utt0 = TrialFESpace(V, ∂ttu(t))
-  Utt0 = Utt(t)
+    @test all(utd0 .≈ _utd0)
 
-  _uttd0 = get_dirichlet_dof_values(_Utt0)
-  uttd0 = get_dirichlet_dof_values(Utt0)
+    # Dirichlet values of ∂tt(U)
+    ∂ttust = [∂tt(ui)(t) for ui in us]
+    ∂ttust = (length(∂ttust) == 1) ? ∂ttust[1] : ∂ttust
+    _Utt0 = TrialFESpace(V, ∂ttust)
+    Utt0 = Utt(t)
 
-  @test all(uttd0 .≈ _uttd0)
+    _uttd0 = get_dirichlet_dof_values(_Utt0)
+    uttd0 = get_dirichlet_dof_values(Utt0)
+
+    @test all(uttd0 .≈ _uttd0)
+  end
 end
 
 end # module TransientFESpacesTests

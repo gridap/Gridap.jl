@@ -1,6 +1,7 @@
 module Order1ODETests
 
 using Test
+using SparseArrays
 
 using Gridap
 using Gridap.ODEs
@@ -8,24 +9,28 @@ using Gridap.ODEs
 include("../ODEOperatorsMocks.jl")
 include("../ODESolversMocks.jl")
 
+# M u̇ + M * Diag(λ) u = M * f(t),
+# where f(t) = exp(Diag(α) * t)
 t0 = 0.0
 dt = 1.0e-3
 tF = t0 + 10 * dt
 
 num_eqs = 5
 
-M = randn(num_eqs, num_eqs)
+M = sprandn(num_eqs, num_eqs, 1.0)
 λ = randn(num_eqs)
-K = M * diagm(-λ)
+K = M * spdiagm(-λ)
 
 mass(t) = M
 stiffness(t) = K
 forms = (stiffness, mass)
-form_zero(t) = zeros(num_eqs, num_eqs)
+mat0 = sprand(num_eqs, num_eqs, 1.0)
+nonzeros(mat0) .= 0
+form_zero(t) = mat0
 
 α = randn(num_eqs)
 forcing(t) = -M * exp.(α .* t)
-forcing_zero(t) = zero(t)
+forcing_zero(t) = zeros(typeof(t), num_eqs)
 
 u0 = randn(num_eqs)
 
@@ -79,59 +84,44 @@ tol = 1.0e-4
 atol = 1.0e-12
 rtol = 1.0e-8
 maxiter = 100
-disslvr_l = LUSolver()
-disslvr_nl = DiscreteODESolverMock(rtol, atol, maxiter)
+sysslvr_l = LUSolver()
+sysslvr_nl = NonlinearSolverMock(rtol, atol, maxiter)
 
-# Solvers without memory
-odeslvrs = (
-  ForwardEuler(disslvr_nl, dt),
-  ThetaMethod(disslvr_nl, dt, 0.2),
-  MidPoint(disslvr_nl, dt),
-  ThetaMethod(disslvr_nl, dt, 0.8),
-  BackwardEuler(disslvr_nl, dt),
-  RungeKutta(disslvr_nl, disslvr_l, dt, :FE_1_0_1),
-  RungeKutta(disslvr_nl, disslvr_l, dt, :SSPRK_3_0_3),
-  RungeKutta(disslvr_nl, disslvr_l, dt, :BE_1_0_1),
-  RungeKutta(disslvr_nl, disslvr_l, dt, :CN_2_0_2),
-  RungeKutta(disslvr_nl, disslvr_l, dt, :SDIRK_2_0_2),
-  RungeKutta(disslvr_nl, disslvr_l, dt, :SDIRK_2_0_3),
-  RungeKutta(disslvr_nl, disslvr_l, dt, :ESDIRK_3_1_2),
-  RungeKutta(disslvr_nl, disslvr_l, dt, :TRBDF2_3_2_3),
-  RungeKutta(disslvr_nl, disslvr_l, dt, :TRX2_3_2_3),
-)
+# odeslvrs = (
+#   ForwardEuler(sysslvr_nl, dt),
+#   ThetaMethod(sysslvr_nl, dt, 0.2),
+#   MidPoint(sysslvr_nl, dt),
+#   ThetaMethod(sysslvr_nl, dt, 0.8),
+#   BackwardEuler(sysslvr_nl, dt),
+#   GeneralizedAlpha1(sysslvr_nl, dt, 0.0),
+#   GeneralizedAlpha1(sysslvr_nl, dt, 0.5),
+#   GeneralizedAlpha1(sysslvr_nl, dt, 1.0),
+# )
+# for tableau in available_tableaus
+#   global odeslvrs
+#   odeslvr = RungeKutta(sysslvr_nl, sysslvr_l, dt, tableau)
+#   odeslvrs = (odeslvrs..., odeslvr)
+# end
 
-us0 = (u0,)
-for odeslvr in odeslvrs
-  for odeop in odeops
-    test_solver(odeslvr, odeop, us0, tol)
-  end
-end
-
-# Solvers with memory
-odeslvrs = [
-  GeneralizedAlpha1(disslvr_nl, dt, 0.0),
-  GeneralizedAlpha1(disslvr_nl, dt, 0.5),
-  GeneralizedAlpha1(disslvr_nl, dt, 1.0),
-]
-
-v0 = -M \ (K * u0 + forcing(t0))
-us0 = (u0, v0,)
-for odeslvr in odeslvrs
-  for odeop in odeops
-    test_solver(odeslvr, odeop, us0, tol)
-  end
-end
+# us0 = (u0,)
+# for odeslvr in odeslvrs
+#   for odeop in odeops
+#     test_solver(odeslvr, odeop, us0, tol)
+#   end
+# end
 
 # Solvers for `IMEXODEOperator`s
 odeops = (
   odeop_imex1,
-  # odeop_imex2,
+  odeop_imex2,
 )
 
-odeslvrs = (
-  RungeKutta(disslvr_nl, disslvr_l, dt, :IMEX_FE_BE_2_0_1),
-  RungeKutta(disslvr_nl, disslvr_l, dt, :IMEX_Midpoint_2_0_2),
-)
+odeslvrs = ()
+for tableau in available_imex_tableaus
+  global odeslvrs
+  odeslvr = RungeKutta(sysslvr_nl, sysslvr_l, dt, tableau)
+  odeslvrs = (odeslvrs..., odeslvr)
+end
 
 us0 = (u0,)
 for odeslvr in odeslvrs

@@ -192,8 +192,8 @@ using Gridap.CellData: ∫; export ∫
 @publish ODEs ButcherTableau
 @publish ODEs available_tableaus
 @publish ODEs RungeKutta
-@publish ODEs GeneralizedAlpha2
-@publish ODEs Newmark
+# @publish ODEs GeneralizedAlpha2
+# @publish ODEs Newmark
 @publish ODEs TransientTrialFESpace
 @publish ODEs TransientMultiFieldFESpace
 @publish ODEs TransientFEOperator
