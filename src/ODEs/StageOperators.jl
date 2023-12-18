@@ -286,20 +286,3 @@ function Algebra.solve!(
   solve!(x, ns, r)
   ns
 end
-
-# TODO we should also reduce the number of factorisations by storing them.
-# This can always be done in the following scenarios
-# * explicit schemes on semilinear ODE operators with constant mass
-# * diagonally-implicit schemes on `LinearODE`s with constant forms.
-# Besides, it is often the case that different stages of a DIRK scheme have the
-# same matrix. This happens when some diagonal coefficients have the same value.
-# In the extreme case when all the diagonal values are the same, these methods
-# are known as Singly-Diagonally-Implicit Runge-Kutta schemes (SDIRK). One
-# special case happens when a diagonal coefficient is zero: the stage becomes
-# explicit, even in the `AbstractQuasilinearODE` case. This strategy is already
-# set up in the current implementation of DIRK.
-
-# TODO another optimisation is the so-called FSAL property (First Same As Last)
-# of some schemes, which can save one evaluation of the residual. It may not be
-# possible to have this optimisation in our case because of the Dirichlet
-# boundary conditions.
