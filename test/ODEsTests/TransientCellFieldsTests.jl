@@ -6,6 +6,7 @@ using SparseArrays
 using BlockArrays
 
 using Gridap
+using Gridap.CellData
 using Gridap.FESpaces
 using Gridap.MultiField
 using Gridap.ODEs
@@ -44,10 +45,10 @@ u = get_trial_fe_basis(U0)
 uₜ = TransientCellField(u, (u,))
 v = get_fe_basis(V)
 
-matdata_jac = collect_cell_matrix(U0, V, jac(t0, uₜ, u, v))
-matdata_jac_t = collect_cell_matrix(U0, V, jac_t(t0, uₜ, u, v))
-matdata_jacs = (matdata_jac, matdata_jac_t)
-matdata = ODEs._vcat_matdata(matdata_jacs)
+dc = DomainContribution()
+dc = dc + jac(t0, uₜ, u, v)
+dc = dc + jac_t(t0, uₜ, u, v)
+matdata = collect_cell_matrix(U0, V, dc)
 vecdata = collect_cell_vector(V, l(t0, v))
 
 assembler = SparseMatrixAssembler(U, V)
@@ -80,10 +81,10 @@ function test_multifield(n, mfs, m, b, l, U, V)
   uₜ = TransientMultiFieldCellField(u, (u,))
   v = get_fe_basis(Y)
 
-  matdata_jac = collect_cell_matrix(X0, Y, jac(t0, uₜ, u, v))
-  matdata_jac_t = collect_cell_matrix(X0, Y, jac_t(t0, uₜ, u, v))
-  matdata_jacs = (matdata_jac, matdata_jac_t)
-  matdata = ODEs._vcat_matdata(matdata_jacs)
+  dc = DomainContribution()
+  dc = dc + jac(t0, uₜ, u, v)
+  dc = dc + jac_t(t0, uₜ, u, v)
+  matdata = collect_cell_matrix(X0, Y, dc)
   vecdata = collect_cell_vector(Y, l(t0, v))
 
   assembler = SparseMatrixAssembler(X, Y)
@@ -101,16 +102,10 @@ function test_multifield(n, mfs, m, b, l, U, V)
   uₜ_blocks = TransientMultiFieldCellField(u_blocks, (u_blocks,))
   v_blocks = get_fe_basis(Y_blocks)
 
-  matdata_blocks_jac = collect_cell_matrix(
-    X0_blocks, Y_blocks,
-    jac(t0, uₜ_blocks, u_blocks, v_blocks)
-  )
-  matdata_blocks_jac_t = collect_cell_matrix(
-    X0_blocks, Y_blocks,
-    jac_t(t0, uₜ_blocks, u_blocks, v_blocks)
-  )
-  matdata_blocks_jacs = (matdata_blocks_jac, matdata_blocks_jac_t)
-  matdata_blocks = ODEs._vcat_matdata(matdata_blocks_jacs)
+  dc = DomainContribution()
+  dc = dc + jac(t0, uₜ_blocks, u_blocks, v_blocks)
+  dc = dc + jac_t(t0, uₜ_blocks, u_blocks, v_blocks)
+  matdata_blocks = collect_cell_matrix(X0_blocks, Y_blocks, dc)
   vecdata_blocks = collect_cell_vector(Y_blocks, l(t0, v_blocks))
 
   # Block Assembly

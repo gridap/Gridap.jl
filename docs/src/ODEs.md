@@ -249,7 +249,7 @@ The order conditions are as follows.
 By looking at the behaviour of the stability function at infinity, we find that the scheme is $L$-stable only when $\theta = 1$. We determine whether the scheme is $A$-stable or not by looking at stability region. We distinguish three cases based on the value of $\theta$.
 * $\theta < \frac{1}{2}$. The stability region is the circle of radius $\frac{1}{1 - 2 \theta}$ centered at $\left(\frac{-1}{1 - 2 \theta}, 0\right)$. In particular, it is not $A$-stable. The special case $\theta = 0$ is known as the Forward Euler scheme, which is the only explicit scheme of the $\theta$-method family.
 * $\theta = \frac{1}{2}$. The stability region is the whole left complex plane, so the scheme is $A$-stable. This case is known as the implicit midpoint scheme. 
-* $\theta > \frac{1}{2}$. The stability region is the whole complex plane except the circle of radius $\frac{1}{2 \theta - 1}$ centered at $\left(\frac{1}{2 \theta - 1}, 0\right)$. In particular, the scheme is $A$-stable (in fact $A()$-stable). The special case $\theta = 1$ is known as the Backward Euler scheme. 
+* $\theta > \frac{1}{2}$. The stability region is the whole complex plane except the circle of radius $\frac{1}{2 \theta - 1}$ centered at $\left(\frac{1}{2 \theta - 1}, 0\right)$. In particular, the scheme is $A$-stable. The special case $\theta = 1$ is known as the Backward Euler scheme. 
 
 ## Generalised- $\alpha$ scheme for first-order ODEs
 This scheme relies on the state vector $\\{\boldsymbol{s}(t)\\} = \\{\boldsymbol{u}(t), \partial_{t} \boldsymbol{u}(t)\\}$. In particular, it needs a nontrivial starting procedure that evaluates $\partial_{t} \boldsymbol{u}(t_{0})$ by enforcing a zero residual at $t_{0}$. The finaliser can still return the first vector of the state vectors. For convenience, let $\partial_{t} \boldsymbol{u}\_{n}$ denote the approximation $\partial_{t} \boldsymbol{u}(t_{n})$.
@@ -267,12 +267,12 @@ t_{1} &= (1 - \alpha_{F}) t_{n} +  \alpha_{F} t_{n+1}, \\
 In more concrete terms, we solve the following system:
 ```math
 \begin{align*}
-\boldsymbol{0} &= \boldsymbol{r}(t_{n + \alpha_{F}}, \boldsymbol{u}\_{n + \alpha_{F}}, \partial_{t} \boldsymbol{u}\_{n + \alpha_{M}}), \\
+\boldsymbol{0} &= \boldsymbol{r}(t_{n + \alpha_{F}}, \boldsymbol{u}_{n + \alpha_{F}}, \partial_{t} \boldsymbol{u}_{n + \alpha_{M}}), \\
 t_{n + \alpha_{F}} &= (1 - \alpha_{F}) t_{n} + \alpha_{F} t_{n+1}, \\
-\boldsymbol{u}\_{n + \alpha_{F}} &= (1 - \alpha_{F}) \boldsymbol{u}\_{n} + \alpha_{F} \boldsymbol{u}\_{n+1}, \\
-\partial_{t} \boldsymbol{u}\_{n + \alpha_{M}} &= (1 - \alpha_{M}) \partial_{t} \boldsymbol{u}\_{n} + \alpha_{M} \partial_{t} \boldsymbol{u}\_{n+1}, \\
-\boldsymbol{u}\_{n+1} &= \boldsymbol{u}\_{n} + h\_{n} [(1 - \gamma) \partial_{t} \boldsymbol{u}_{n} + \gamma \boldsymbol{x}], \\
-\partial_{t} \boldsymbol{u}\_{n+1} &= \boldsymbol{x}.
+\boldsymbol{u}_{n + \alpha_{F}} &= (1 - \alpha_{F}) \boldsymbol{u}_{n} + \alpha_{F} \boldsymbol{u}_{n+1}, \\
+\partial_{t} \boldsymbol{u}_{n + \alpha_{M}} &= (1 - \alpha_{M}) \partial_{t} \boldsymbol{u}_{n} + \alpha_{M} \partial_{t} \boldsymbol{u}_{n+1}, \\
+\boldsymbol{u}_{n+1} &= \boldsymbol{u}_{n} + h_{n} [(1 - \gamma) \partial_{t} \boldsymbol{u}_{n} + \gamma \boldsymbol{x}], \\
+\partial_{t} \boldsymbol{u}_{n+1} &= \boldsymbol{x}.
 \end{align*}
 ```
 The state vector is updated to $\\{\boldsymbol{s}\\}\_{n+1} = \\{\boldsymbol{u}\_{n+1}, \partial_{t} \boldsymbol{u}_{n+1}\\}$.
@@ -304,7 +304,7 @@ The order conditions are as follows.
 
 We finally study the stability in the extreme cases $|z| \to 0$ and $|z| \to +\infty$. We want the spectral radius of the amplification matrix to be smaller than one, so that perturbations are damped away.
 * When $|z| \to 0$, we have $\rho(\boldsymbol{A}(z)) \to \max\\{1, \left| - \frac{1}{\alpha_{M}}\right|\\}$.
-* When $|z| \to +\infty$, we have $\rho(\boldsymbol{A}(z)) \to \max\\{\left|1 - \frac{1}{\alpha_{F}}\right| and \left|1 - \frac{1}{\gamma}\right|\\}$.
+* When $|z| \to +\infty$, we have $\rho(\boldsymbol{A}(z)) \to \max\\{\left|1 - \frac{1}{\alpha_{F}}\right|, \left|1 - \frac{1}{\gamma}\right|\\}$.
 
 We thus require $\alpha_{M} \geq \frac{1}{2}$, $\alpha_{F} \geq \frac{1}{2}$ and $\gamma \geq \frac{1}{2}$ to ensure stability. In particular when the scheme has order $3$, the stability conditions become $\alpha_{M} \geq \alpha_{F} \geq \frac{1}{2}$. We verify that the scheme is unstable whenever it has order greater than $3$. We notice that $L$-stability is only achieved when $\alpha_{F} = 1$ and $\gamma = 1$. The corresponding value of $\alpha_{M}$ for a third-order scheme is $\alpha_{M} = \frac{3}{2}$.
 

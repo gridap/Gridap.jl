@@ -184,17 +184,19 @@ function Algebra.residual!(
   assembler = get_assembler(odeop.tfeop)
 
   !add && fill!(r, zero(eltype(r)))
+  dc = DomainContribution()
 
   # Residual
   res = get_res(odeop.tfeop)
-  vecdata = collect_cell_vector(V, res(t, uh, v))
-  assemble_vector_add!(r, assembler, vecdata)
+  dc = dc + res(t, uh, v)
 
   # Mass
   order = get_order(odeop)
   mass = get_forms(odeop.tfeop)[1]
   ∂tNuh = ∂t(uh, Val(order))
-  vecdata = collect_cell_vector(V, mass(t, uh, ∂tNuh, v))
+  dc = dc + mass(t, uh, ∂tNuh, v)
+
+  vecdata = collect_cell_vector(V, dc)
   assemble_vector_add!(r, assembler, vecdata)
 
   r
@@ -211,17 +213,19 @@ function Algebra.residual!(
   assembler = get_assembler(odeop.tfeop)
 
   !add && fill!(r, zero(eltype(r)))
+  dc = DomainContribution()
 
   # Residual
   res = get_res(odeop.tfeop)
-  vecdata = collect_cell_vector(V, res(t, uh, v))
-  assemble_vector_add!(r, assembler, vecdata)
+  dc = dc + res(t, uh, v)
 
   # Mass
   order = get_order(odeop)
   mass = get_forms(odeop.tfeop)[1]
   ∂tNuh = ∂t(uh, Val(order))
-  vecdata = collect_cell_vector(V, mass(t, ∂tNuh, v))
+  dc = dc + mass(t, ∂tNuh, v)
+
+  vecdata = collect_cell_vector(V, dc)
   assemble_vector_add!(r, assembler, vecdata)
 
   r
@@ -238,11 +242,11 @@ function Algebra.residual!(
   assembler = get_assembler(odeop.tfeop)
 
   !add && fill!(r, zero(eltype(r)))
+  dc = DomainContribution()
 
   # Residual
   res = get_res(odeop.tfeop)
-  vecdata = collect_cell_vector(V, res(t, uh, v))
-  assemble_vector_add!(r, assembler, vecdata)
+  dc = dc + res(t, uh, v)
 
   # Forms
   order = get_order(odeop)
@@ -250,12 +254,14 @@ function Algebra.residual!(
   ∂tkuh = uh
   for k in 0:order
     form = forms[k+1]
-    vecdata = collect_cell_vector(V, form(t, ∂tkuh, v))
-    assemble_vector_add!(r, assembler, vecdata)
+    dc = dc + form(t, ∂tkuh, v)
     if k < order
       ∂tkuh = ∂t(∂tkuh)
     end
   end
+
+  vecdata = collect_cell_vector(V, dc)
+  assemble_vector_add!(r, assembler, vecdata)
 
   r
 end
@@ -272,14 +278,13 @@ function Algebra.allocate_jacobian(
   v = get_fe_basis(V)
   assembler = get_assembler(odeop.tfeop)
 
-  all_matdata = ()
   jacs = get_jacs(odeop.tfeop)
+  dc = DomainContribution()
   for k in 0:get_order(odeop.tfeop)
     jac = jacs[k+1]
-    one_matdata = collect_cell_matrix(Ut, V, jac(t, uh, du, v))
-    all_matdata = (all_matdata..., one_matdata)
+    dc = dc + jac(t, uh, du, v)
   end
-  matdata = _vcat_matdata(all_matdata)
+  matdata = collect_cell_matrix(Ut, V, dc)
   allocate_matrix(assembler, matdata)
 end
 
@@ -295,16 +300,16 @@ function jacobian_add!(
   v = get_fe_basis(V)
   assembler = get_assembler(odeop.tfeop)
 
-  all_matdata = ()
   jacs = get_jacs(odeop.tfeop)
+  dc = DomainContribution()
   for k in 0:get_order(odeop)
     w = ws[k+1]
     iszero(w) && continue
     jac = jacs[k+1]
-    one_matdata = collect_cell_matrix(Ut, V, w * jac(t, uh, du, v))
-    all_matdata = (all_matdata..., one_matdata)
+    dc = dc + w * jac(t, uh, du, v)
   end
-  matdata = _vcat_matdata(all_matdata)
+
+  matdata = collect_cell_matrix(Ut, V, dc)
   assemble_matrix_add!(J, assembler, matdata)
 
   J
@@ -322,15 +327,14 @@ function jacobian_add!(
   v = get_fe_basis(V)
   assembler = get_assembler(odeop.tfeop)
 
-  all_matdata = ()
   order = get_order(odeop)
   jacs = get_jacs(odeop.tfeop)
+  dc = DomainContribution()
   for k in 0:order-1
     w = ws[k+1]
     iszero(w) && continue
     jac = jacs[k+1]
-    one_matdata = collect_cell_matrix(Ut, V, w * jac(t, uh, du, v))
-    all_matdata = (all_matdata..., one_matdata)
+    dc = dc + w * jac(t, uh, du, v)
   end
 
   # Special case for the mass matrix
@@ -341,11 +345,11 @@ function jacobian_add!(
       axpy_entries!(w, odeopcache.const_forms[1], J)
     else
       jac = jacs[k+1]
-      one_matdata = collect_cell_matrix(Ut, V, w * jac(t, uh, du, v))
-      all_matdata = (all_matdata..., one_matdata)
+      dc = dc + w * jac(t, uh, du, v)
     end
   end
-  matdata = _vcat_matdata(all_matdata)
+
+  matdata = collect_cell_matrix(Ut, V, dc)
   assemble_matrix_add!(J, assembler, matdata)
 
   J
@@ -363,8 +367,8 @@ function jacobian_add!(
   v = get_fe_basis(V)
   assembler = get_assembler(odeop.tfeop)
 
-  all_matdata = ()
   jacs = get_jacs(odeop.tfeop)
+  dc = DomainContribution()
   for k in 0:get_order(odeop)
     w = ws[k+1]
     iszero(w) && continue
@@ -372,11 +376,11 @@ function jacobian_add!(
       axpy_entries!(w, odeopcache.const_forms[k+1], J)
     else
       jac = jacs[k+1]
-      one_matdata = collect_cell_matrix(Ut, V, w * jac(t, uh, du, v))
-      all_matdata = (all_matdata..., one_matdata)
+      dc = dc + w * jac(t, uh, du, v)
     end
   end
-  matdata = _vcat_matdata(all_matdata)
+
+  matdata = collect_cell_matrix(Ut, V, dc)
   assemble_matrix_add!(J, assembler, matdata)
 
   J
@@ -395,20 +399,4 @@ function _make_uh_from_us(odeop, us, Us)
     dus = (dus..., EvaluationFunction(Us[k+1], us[k+1]))
   end
   TransientCellField(u, dus)
-end
-
-function _vcat_matdata(all_matdata)
-  all_mats = ()
-  all_rows = ()
-  all_cols = ()
-  for one_matdata in all_matdata
-    one_mats, one_rows, one_cols = one_matdata
-    all_mats = (all_mats..., one_mats)
-    all_rows = (all_rows..., one_rows)
-    all_cols = (all_cols..., one_cols)
-  end
-  flat_mats = vcat(all_mats...)
-  flat_rows = vcat(all_rows...)
-  flat_cols = vcat(all_cols...)
-  (flat_mats, flat_rows, flat_cols)
 end
