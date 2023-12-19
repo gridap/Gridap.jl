@@ -86,11 +86,10 @@ end
 struct BoundaryTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
   trian::A
   glue::B
-
   function BoundaryTriangulation(
     trian::BodyFittedTriangulation,
-    glue::FaceToCellGlue)
-
+    glue)
+  
     Dc = num_cell_dims(trian)
     Dp = num_point_dims(trian)
     A = typeof(trian)
@@ -208,9 +207,7 @@ function get_glue(trian::BoundaryTriangulation,::Val{D},::Val{D}) where D
   FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
 end
 
-function get_facet_normal(trian::BoundaryTriangulation)
-
-  glue = trian.glue
+function get_facet_normal(trian::BoundaryTriangulation, boundary_trian_glue::FaceToCellGlue)
   cell_grid = get_grid(get_background_model(trian.trian))
 
   ## Reference normal
@@ -223,24 +220,28 @@ function get_facet_normal(trian::BoundaryTriangulation)
     lface_pindex_to_n
   end
   ctype_lface_pindex_to_nref = map(f, get_reffes(cell_grid))
-  face_to_nref = FaceCompressedVector(ctype_lface_pindex_to_nref,glue)
+  face_to_nref = FaceCompressedVector(ctype_lface_pindex_to_nref,boundary_trian_glue)
   face_s_nref = lazy_map(constant_field,face_to_nref)
 
   # Inverse of the Jacobian transpose
   cell_q_x = get_cell_map(cell_grid)
   cell_q_Jt = lazy_map(∇,cell_q_x)
   cell_q_invJt = lazy_map(Operation(pinvJt),cell_q_Jt)
-  face_q_invJt = lazy_map(Reindex(cell_q_invJt),glue.face_to_cell)
+  face_q_invJt = lazy_map(Reindex(cell_q_invJt),boundary_trian_glue.face_to_cell)
 
   # Change of domain
   D = num_cell_dims(cell_grid)
-  glue = get_glue(trian,Val(D))
-  face_s_q = glue.tface_to_mface_map
+  boundary_trian_glue = get_glue(trian,Val(D))
+  face_s_q = boundary_trian_glue.tface_to_mface_map
   face_s_invJt = lazy_map(∘,face_q_invJt,face_s_q)
   face_s_n = lazy_map(Broadcasting(Operation(push_normal)),face_s_invJt,face_s_nref)
   Fields.MemoArray(face_s_n)
 end
 
+function get_facet_normal(trian::BoundaryTriangulation{Dc,Dp,A,<:FaceToCellGlue}) where {Dc,Dp,A}
+  glue = trian.glue
+  get_facet_normal(trian, glue)
+end
 function push_normal(invJt,n)
   v = invJt⋅n
   m = sqrt(inner(v,v))
@@ -251,42 +252,46 @@ function push_normal(invJt,n)
   end
 end
 
-function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation)
-    d = num_cell_dims(trian)
-    cell_grid = get_grid(get_background_model(trian.trian))
-    polytopes = map(get_polytope, get_reffes(cell_grid))
-    cell_to_ctype = trian.glue.cell_to_ctype
-    ctype_to_lvertex_to_qcoords = map(get_vertex_coordinates, polytopes)
-    ctype_to_lface_to_lvertices = map((p)->get_faces(p,d,0), polytopes)
-    ctype_to_lface_to_pindex_to_perm = map( (p)->get_face_vertex_permutations(p,d), polytopes)
+function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation,glue)
+  d = num_cell_dims(trian)
+  cell_grid = get_grid(get_background_model(trian.trian))
+  polytopes = map(get_polytope, get_reffes(cell_grid))
+  cell_to_ctype = glue.cell_to_ctype
+  ctype_to_lvertex_to_qcoords = map(get_vertex_coordinates, polytopes)
+  ctype_to_lface_to_lvertices = map((p)->get_faces(p,d,0), polytopes)
+  ctype_to_lface_to_pindex_to_perm = map( (p)->get_face_vertex_permutations(p,d), polytopes)
 
-    P = eltype(eltype(ctype_to_lvertex_to_qcoords))
-    D = num_components(P)
-    T = eltype(P)
-    ctype_to_lface_to_pindex_to_qcoords = Vector{Vector{Vector{Point{D,T}}}}[]
+  P = eltype(eltype(ctype_to_lvertex_to_qcoords))
+  D = num_components(P)
+  T = eltype(P)
+  ctype_to_lface_to_pindex_to_qcoords = Vector{Vector{Vector{Point{D,T}}}}[]
 
-    for (ctype, lface_to_pindex_to_perm) in enumerate(ctype_to_lface_to_pindex_to_perm)
-      lvertex_to_qcoods = ctype_to_lvertex_to_qcoords[ctype]
-      lface_to_pindex_to_qcoords = Vector{Vector{Point{D,T}}}[]
-      for (lface, pindex_to_perm) in enumerate(lface_to_pindex_to_perm)
-        cfvertex_to_lvertex = ctype_to_lface_to_lvertices[ctype][lface]
-        nfvertices = length(cfvertex_to_lvertex)
-        pindex_to_qcoords = Vector{Vector{Point{D,T}}}(undef,length(pindex_to_perm))
-        for (pindex, cfvertex_to_ffvertex) in enumerate(pindex_to_perm)
-          ffvertex_to_qcoords = zeros(Point{D,T},nfvertices)
-          for (cfvertex, ffvertex) in enumerate(cfvertex_to_ffvertex)
-            lvertex = cfvertex_to_lvertex[cfvertex]
-            qcoords = lvertex_to_qcoods[lvertex]
-            ffvertex_to_qcoords[ffvertex] = qcoords
-          end
-          pindex_to_qcoords[pindex] = ffvertex_to_qcoords
+  for (ctype, lface_to_pindex_to_perm) in enumerate(ctype_to_lface_to_pindex_to_perm)
+    lvertex_to_qcoods = ctype_to_lvertex_to_qcoords[ctype]
+    lface_to_pindex_to_qcoords = Vector{Vector{Point{D,T}}}[]
+    for (lface, pindex_to_perm) in enumerate(lface_to_pindex_to_perm)
+      cfvertex_to_lvertex = ctype_to_lface_to_lvertices[ctype][lface]
+      nfvertices = length(cfvertex_to_lvertex)
+      pindex_to_qcoords = Vector{Vector{Point{D,T}}}(undef,length(pindex_to_perm))
+      for (pindex, cfvertex_to_ffvertex) in enumerate(pindex_to_perm)
+        ffvertex_to_qcoords = zeros(Point{D,T},nfvertices)
+        for (cfvertex, ffvertex) in enumerate(cfvertex_to_ffvertex)
+          lvertex = cfvertex_to_lvertex[cfvertex]
+          qcoords = lvertex_to_qcoods[lvertex]
+          ffvertex_to_qcoords[ffvertex] = qcoords
         end
-        push!(lface_to_pindex_to_qcoords,pindex_to_qcoords)
+        pindex_to_qcoords[pindex] = ffvertex_to_qcoords
       end
-      push!(ctype_to_lface_to_pindex_to_qcoords,lface_to_pindex_to_qcoords)
+      push!(lface_to_pindex_to_qcoords,pindex_to_qcoords)
     end
+    push!(ctype_to_lface_to_pindex_to_qcoords,lface_to_pindex_to_qcoords)
+  end
 
-    FaceCompressedVector(ctype_to_lface_to_pindex_to_qcoords,trian.glue)
+  FaceCompressedVector(ctype_to_lface_to_pindex_to_qcoords,glue)
+end
+
+function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation{Dc,Dp,A,<:FaceToCellGlue}) where {Dc,Dp,A}
+  _compute_face_to_q_vertex_coords(trian,trian.glue)
 end
 
 struct FaceCompressedVector{T,G<:FaceToCellGlue} <: AbstractVector{T}
