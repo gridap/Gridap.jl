@@ -160,10 +160,6 @@ function time_derivative(space::SingleFieldFESpace)
   HomogeneousTrialFESpace(space)
 end
 
-function time_derivative(space::SingleFieldFESpace, ::Val{0})
-  space
-end
-
 #####################
 # MultiFieldFESpace #
 #####################

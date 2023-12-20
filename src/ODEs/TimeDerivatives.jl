@@ -92,6 +92,3 @@ end
 # Specialisation for `Number` #
 ###############################
 time_derivative(x::Number) = zero(x)
-
-time_derivative(x::Number, ::Val{0}) = x
-time_derivative(x::Number, ::Val) = time_derivative(x)
