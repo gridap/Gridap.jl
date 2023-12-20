@@ -236,7 +236,7 @@ function TransientFEOperator(
   jac::Function,
   trial, test
 )
-  TransientFEOpFromWeakForm(
+  TransientFEOperator(
     res, (jac,),
     trial, test
   )
@@ -247,7 +247,7 @@ function TransientFEOperator(
   jac::Function, jac_t::Function,
   trial, test
 )
-  TransientFEOpFromWeakForm(
+  TransientFEOperator(
     res, (jac, jac_t),
     trial, test
   )
@@ -258,7 +258,7 @@ function TransientFEOperator(
   jac::Function, jac_t::Function, jac_tt::Function,
   trial, test
 )
-  TransientFEOpFromWeakForm(
+  TransientFEOperator(
     res, (jac, jac_t, jac_tt),
     trial, test
   )
@@ -368,7 +368,7 @@ function TransientQuasilinearFEOperator(
   jac::Function, jac_t::Function,
   trial, test
 )
-  TransientQuasilinearFEOpFromWeakForm(
+  TransientQuasilinearFEOperator(
     mass, res, (jac, jac_t),
     trial, test
   )
@@ -379,7 +379,7 @@ function TransientQuasilinearFEOperator(
   jac::Function, jac_t::Function, jac_tt::Function,
   trial, test
 )
-  TransientQuasilinearFEOpFromWeakForm(
+  TransientQuasilinearFEOperator(
     mass, res, (jac, jac_t, jac_tt),
     trial, test
   )
@@ -514,7 +514,7 @@ function TransientSemilinearFEOperator(
   trial, test;
   constant_mass::Bool=false,
 )
-  TransientSemilinearFEOpFromWeakForm(
+  TransientSemilinearFEOperator(
     mass, res, (jac, jac_t),
     trial, test;
     constant_mass
@@ -527,7 +527,7 @@ function TransientSemilinearFEOperator(
   trial, test;
   constant_mass::Bool=false,
 )
-  TransientSemilinearFEOpFromWeakForm(
+  TransientSemilinearFEOperator(
     mass, res, (jac, jac_t, jac_tt),
     trial, test;
     constant_mass

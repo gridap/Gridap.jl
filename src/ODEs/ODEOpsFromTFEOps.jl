@@ -107,7 +107,8 @@ function allocate_odeopcache(
       const_form = nothing
       if is_form_constant(odeop, k)
         jac = jacs[k+1]
-        matdata = collect_cell_matrix(Ut, V, jac(t, uh, du, v))
+        dc = jac(t, uh, du, v)
+        matdata = collect_cell_matrix(Ut, V, dc)
         const_form = assemble_matrix(assembler, matdata)
       end
       const_forms = (const_forms..., const_form)
@@ -117,7 +118,8 @@ function allocate_odeopcache(
     k = order
     if is_form_constant(odeop, k)
       jac = jacs[k+1]
-      matdata = collect_cell_matrix(Ut, V, jac(t, uh, du, v))
+      dc = jac(t, uh, du, v)
+      matdata = collect_cell_matrix(Ut, V, dc)
       const_form = assemble_matrix(assembler, matdata)
     end
     const_forms = (const_forms..., const_form)
@@ -167,7 +169,8 @@ function Algebra.residual!(
   !add && fill!(r, zero(eltype(r)))
 
   res = get_res(odeop.tfeop)
-  vecdata = collect_cell_vector(V, res(t, uh, v))
+  dc = res(t, uh, v)
+  vecdata = collect_cell_vector(V, dc)
   assemble_vector_add!(r, assembler, vecdata)
 
   r
@@ -184,11 +187,10 @@ function Algebra.residual!(
   assembler = get_assembler(odeop.tfeop)
 
   !add && fill!(r, zero(eltype(r)))
-  dc = DomainContribution()
 
   # Residual
   res = get_res(odeop.tfeop)
-  dc = dc + res(t, uh, v)
+  dc = res(t, uh, v)
 
   # Mass
   order = get_order(odeop)
@@ -213,11 +215,10 @@ function Algebra.residual!(
   assembler = get_assembler(odeop.tfeop)
 
   !add && fill!(r, zero(eltype(r)))
-  dc = DomainContribution()
 
   # Residual
   res = get_res(odeop.tfeop)
-  dc = dc + res(t, uh, v)
+  dc = res(t, uh, v)
 
   # Mass
   order = get_order(odeop)
@@ -242,11 +243,10 @@ function Algebra.residual!(
   assembler = get_assembler(odeop.tfeop)
 
   !add && fill!(r, zero(eltype(r)))
-  dc = DomainContribution()
 
   # Residual
   res = get_res(odeop.tfeop)
-  dc = dc + res(t, uh, v)
+  dc = res(t, uh, v)
 
   # Forms
   order = get_order(odeop)
@@ -309,8 +309,10 @@ function jacobian_add!(
     dc = dc + w * jac(t, uh, du, v)
   end
 
-  matdata = collect_cell_matrix(Ut, V, dc)
-  assemble_matrix_add!(J, assembler, matdata)
+  if num_domains(dc) > 0
+    matdata = collect_cell_matrix(Ut, V, dc)
+    assemble_matrix_add!(J, assembler, matdata)
+  end
 
   J
 end
@@ -349,8 +351,10 @@ function jacobian_add!(
     end
   end
 
-  matdata = collect_cell_matrix(Ut, V, dc)
-  assemble_matrix_add!(J, assembler, matdata)
+  if num_domains(dc) > 0
+    matdata = collect_cell_matrix(Ut, V, dc)
+    assemble_matrix_add!(J, assembler, matdata)
+  end
 
   J
 end
@@ -380,8 +384,10 @@ function jacobian_add!(
     end
   end
 
-  matdata = collect_cell_matrix(Ut, V, dc)
-  assemble_matrix_add!(J, assembler, matdata)
+  if num_domains(dc) > 0
+    matdata = collect_cell_matrix(Ut, V, dc)
+    assemble_matrix_add!(J, assembler, matdata)
+  end
 
   J
 end
