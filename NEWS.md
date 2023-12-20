@@ -75,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Changed how `allocate_vector` works. Now it only allocates, instead of allocating+initialising to zero. Since PR[#963](https://github.com/gridap/Gridap.jl/pull/963).
+- Misc changes required to support facet integration on non-conforming meshes. These changes do not involve methods of the public API. Since PR[#967](https://github.com/gridap/Gridap.jl/pull/967)
 
 ### Fixed
 
