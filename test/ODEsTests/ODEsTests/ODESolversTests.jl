@@ -1,9 +1,12 @@
-# module ODESolversTests
+module ODESolversTests
 
 using Gridap.ODEs
 using Gridap.ODEs.ODETools: GenericODESolution
 using Gridap.ODEs.ODETools: BackwardEuler
 using Gridap.ODEs.ODETools: RungeKutta
+using Gridap.ODEs.ODETools: IMEXRungeKutta
+using Gridap.ODEs.ODETools: EXRungeKutta
+using Gridap.ODEs.ODETools: ForwardEuler
 using Gridap.ODEs.ODETools: ThetaMethodNonlinearOperator
 using Gridap.ODEs.ODETools: GeneralizedAlpha
 using Gridap.ODEs.ODETools: solve!
@@ -98,13 +101,14 @@ _J = jacobian(sop,x)
 ls = LUSolver()
 
 # BackwardEuler tests
+dt = 0.01
 odesol = BackwardEuler(ls,dt)
 uf = copy(u0)
 uf.=1.0
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈1+11/9)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # Affine and nonlinear solvers
@@ -112,14 +116,14 @@ op = ODEOperatorMock{Float64,Nonlinear}(1.0,0.0,1.0,1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈1+11/9)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 op = ODEOperatorMock{Float64,Affine}(1.0,0.0,1.0,1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈1+11/9)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # ThetaMethod tests
@@ -127,32 +131,46 @@ odesolθ = ThetaMethod(ls,dt,0.5)
 ufθ = copy(u0)
 ufθ.=1.0
 ufθ, tf, cache = solve_step!(ufθ,odesolθ,op,u0,t0,nothing)
-@test all(ufθ.≈(dt/(1-0.5dt) + 1)*u0)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # RK tests
 # RK: BE equivalent
+# u1-u0 = dt*u1 => u1 = u0/(1-dt) = 2.2222222222222223
+# uf-u0 = dt*u1 => uf = u1
 odesol = RungeKutta(ls,ls,dt,:BE_1_0_1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈1+11/9)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # RK: CN 2nd order
+# k1 = u0
+# k2 = u0 + dt * 0.5 * u0 + dt * 0.5 * k2
+# k2 = u0 * (1+dt*0.5)/(1-dt*0.5)
+# un+1 = u0 + dt * 0.5 * u0 + dt * 0.5 * u0 * (1+dt*0.5)/(1-dt*0.5)
+# un+1 = u0 * (1+ dt * 0.5 + dt * 0.5* (1+dt*0.5)/(1-dt*0.5))
 odesol = RungeKutta(ls,ls,dt,:CN_2_0_2)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈ufθ)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # RK: SDIRK 2nd order
+# k1 = u0 + dt * 0.25 * k1
+# k1 = u0 * 1/(1-dt*0.25)
+# k2 = u0 + dt * 0.5 * k1 + dt * 0.25 * k2
+# k2 = u0 * 1/(1-dt*0.25) * (1 + dt*0.5/(1-dt*0.25))
+# un+1 = u0 + dt * 0.5 * k1 + dt * 0.5 * k2
+# un+1 = u0 + dt * 0.5 * u0 * 1/(1-dt*0.25) + dt * 0.5 * u0 * 1/(1-dt*0.25) * (1 + dt*0.5/(1-dt*0.25))
+# un+1 = u0 * (1 + dt*0.5/(1-dt*0.25) + dt*0.5/(1-dt*0.25) * (1 + dt*0.5/(1-dt*0.25))
 odesol = RungeKutta(ls,ls,dt,:SDIRK_2_0_2)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈u0*1.1051939513477975)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # RK: TRBDF (2nd order with some 0 on the diagonal)
@@ -160,7 +178,7 @@ odesol = RungeKutta(ls,ls,dt,:TRBDF2_3_2_3)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈u0*1.105215241)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
 # IMEX RK tests (explicit part = 0)
@@ -168,9 +186,32 @@ odesol = IMEXRungeKutta(ls,ls,dt,:IMEX_FE_BE_2_0_1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
-@test all(uf.≈1+11/9)
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
 @test test_ode_solver(odesol,op,u0,t0,tf)
 
+# EX-RK: FE equivalent
+odesol = EXRungeKutta(ls,dt,:EX_FE_1_0_1)
+cache = nothing
+uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
+@test tf==t0+dt
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
+@test test_ode_solver(odesol,op,u0,t0,tf)
+
+# EX-RK: SSP equivalent
+odesol = EXRungeKutta(ls,dt,:EX_SSP_3_0_3)
+cache = nothing
+uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
+@test tf==t0+dt
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
+@test test_ode_solver(odesol,op,u0,t0,tf)
+
+# Forward Euler test
+odesol = ForwardEuler(ls,dt)
+cache = nothing
+uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
+@test tf==t0+dt
+@test all( (uf.- u0*exp(dt))  .< 1e-3 )
+@test test_ode_solver(odesol,op,u0,t0,tf)
 
 # Newmark test
 op_const = ODEOperatorMock{Float64,Constant}(1.0,0.0,0.0,2)
@@ -244,4 +285,4 @@ afα = copy(a0)
 @test sqrt(sum(abs2.(vfα - vfN))) < 1.0e-10
 @test sqrt(sum(abs2.(afα - afN))) < 1.0e-10
 
-# end #module
+end #module

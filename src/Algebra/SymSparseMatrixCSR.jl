@@ -35,7 +35,7 @@ function add_entry!(combine::Function,A::SymSparseMatrixCSR,v::Number,i,j)
     k = nz_index(A,i,j)
     nz = nonzeros(A)
     Aij = nz[k]
-    nz[k] = combine(v,Aij)
+    nz[k] = combine(Aij,v)
   end
   A
 end

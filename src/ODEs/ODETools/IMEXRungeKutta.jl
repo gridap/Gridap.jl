@@ -154,6 +154,9 @@ mutable struct IMEXRungeKuttaUpdateNonlinearOperator <: RungeKuttaNonlinearOpera
   bₑ::Vector{Float64}
 end
 
+IMEXRungeKuttaNonlinearOperator = Union{IMEXRungeKuttaStageNonlinearOperator,
+  IMEXRungeKuttaUpdateNonlinearOperator}
+
 """
 residual!(b,op::IMEXRungeKuttaStageNonlinearOperator,x)
 
@@ -251,12 +254,27 @@ function jacobian!(J::AbstractMatrix,
   jacobian!(J,op.odeop,op.ti,(uf,vf),2,1.0/(op.dt),op.ode_cache)
 end
 
-function explicit_rhs!(op::RungeKuttaNonlinearOperator, x::AbstractVector)
+function rhs!(op::IMEXRungeKuttaNonlinearOperator, x::AbstractVector)
+  u = x
+  v = op.vi
+  @. v = (x-op.u0)/(op.dt)
+  f = op.fi
+  rhs!(f[op.i],op.odeop,op.ti,(u,v),op.ode_cache)
+end
+
+function explicit_rhs!(op::IMEXRungeKuttaNonlinearOperator, x::AbstractVector)
   u = x
   v = op.vi
   @. v = (x-op.u0)/(op.dt)
   g = op.gi
   explicit_rhs!(g[op.i],op.odeop,op.ti,(u,v),op.ode_cache)
+end
+
+function lhs!(b::AbstractVector, op::IMEXRungeKuttaNonlinearOperator, x::AbstractVector)
+  u = x
+  v = op.vi
+  @. v = (x-op.u0)/(op.dt)
+  lhs!(b,op.odeop,op.ti,(u,v),op.ode_cache)
 end
 
 function update!(op::RungeKuttaNonlinearOperator,ti::Float64,fi::AbstractVector,gi::AbstractVector,i::Int)

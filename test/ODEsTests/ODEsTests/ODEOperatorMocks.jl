@@ -1,6 +1,9 @@
 # Toy linear ODE with 2 DOFs
 # u_1_t - a * u_1 = 0
 # u_2_t - b * u_1 - c * u_2 = 0
+# For a = 1, b = 0, c = 1, the analytical solution is:
+# u_1 = u0*exp(t)
+# u_2 = u0*exp(t)
 
 # Toy 2nd order ODE with 2 DOFs
 # u_1_tt + b * u_1_t - a * u_1 = 0

@@ -37,8 +37,12 @@ function allocate_vector(::Type{V},indices) where V
 end
 
 function allocate_vector(::Type{V},n::Integer) where V
-  T = eltype(V)
-  zeros(T,n)
+  V(undef,n)
+end
+
+function allocate_vector(::Type{<:BlockVector{T,VV}},indices::BlockedUnitRange) where {T,VV}
+  V = eltype(VV)
+  mortar(map(ids -> allocate_vector(V,ids),blocks(indices)))
 end
 
 """
@@ -47,8 +51,22 @@ end
 Allocate a vector of type `V` in the range of matrix `matrix`.
 """
 function allocate_in_range(::Type{V},matrix) where V
-  n = size(matrix,1)
-  allocate_vector(V,n)
+  rows = axes(matrix,1)
+  allocate_vector(V,rows)
+end
+
+"""
+    allocate_in_range(matrix::AbstractMatrix{T}) where T
+
+Allocate a vector in the range of matrix `matrix`.
+"""
+function allocate_in_range(matrix::AbstractMatrix{T}) where T
+  allocate_in_range(Vector{T},matrix)
+end
+
+function allocate_in_range(matrix::BlockMatrix{T}) where T
+  V = BlockVector{T,Vector{Vector{T}}}
+  allocate_in_range(V,matrix)
 end
 
 """
@@ -57,8 +75,22 @@ end
 Allocate a vector of type `V` in the domain of matrix `matrix`.
 """
 function allocate_in_domain(::Type{V},matrix) where V
-  n = size(matrix,2)
-  allocate_vector(V,n)
+  cols = axes(matrix,2)
+  allocate_vector(V,cols)
+end
+
+"""
+    allocate_in_domain(matrix::AbstractMatrix{T}) where T
+
+Allocate a vector in the domain of matrix `matrix`.
+"""
+function allocate_in_domain(matrix::AbstractMatrix{T}) where T
+  allocate_in_domain(Vector{T},matrix)
+end
+
+function allocate_in_domain(matrix::BlockMatrix{T}) where T
+  V = BlockVector{T,Vector{Vector{T}}}
+  allocate_in_domain(V,matrix)
 end
 
 """
@@ -444,7 +476,7 @@ function add_entry!(combine::Function,A::AbstractSparseMatrix,v::Number,i,j)
   k = nz_index(A,i,j)
   nz = nonzeros(A)
   Aij = nz[k]
-  nz[k] = combine(v,Aij)
+  nz[k] = combine(Aij,v)
   A
 end
 
