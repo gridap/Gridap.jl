@@ -126,7 +126,6 @@ export test_ode_solution
 
 include("TransientFESpaces.jl")
 
-export AbstractTransientTrialFESpace
 export allocate_space
 
 export TransientTrialFESpace

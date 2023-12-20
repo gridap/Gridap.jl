@@ -77,6 +77,9 @@ function test_multifield(n, mfs, m, b, l, U, V)
 
   t0 = 0.0
   X0 = X(t0)
+  test_fe_space(Y)
+  test_fe_space(X0)
+
   u = get_trial_fe_basis(X0)
   uₜ = TransientMultiFieldCellField(u, (u,))
   v = get_fe_basis(Y)

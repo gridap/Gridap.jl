@@ -203,15 +203,13 @@ end
 function time_derivative(f::TransientMultiFieldCellField)
   cellfield, derivatives = first_and_tail(f.derivatives)
 
-  transient_single_field_derivatives = TransientCellField[]
-  for transient_single_field in f.transient_single_fields
-    transient_single_field_derivative = time_derivative(transient_single_field)
-    push!(transient_single_field_derivatives, transient_single_field_derivative)
+  single_field_derivatives = map(cellfield, derivatives...) do cellfield, derivatives...
+    TransientSingleFieldCellField(cellfield, derivatives)
   end
 
   TransientMultiFieldCellField(
     cellfield, derivatives,
-    transient_single_field_derivatives
+    single_field_derivatives
   )
 end
 
