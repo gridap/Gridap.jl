@@ -63,7 +63,7 @@ jac(t, x, dx, y) = a(t, dx, y)
 jac_t(t, x, dxt, y) = m(t, dxt, y)
 
 # Optimal transient FE Operator
-op_const = TransientLinearFEOperator((a, m), b, (jac, jac_t), X, Y)
+op_const = TransientLinearFEOperator((a, m), b, (jac, jac_t), X, Y, constant_forms=(true, true))
 
 # TransientFEOperator exploiting automatic differentiation (testing purposes)
 op_trans = TransientFEOperator(res, (jac, jac_t), X, Y)
@@ -84,7 +84,7 @@ UΓ0 = U_Γ(t0)
 X0 = X(t0)
 uh0 = interpolate_everywhere(ϕₑ(t0), U0)
 uhΓ0 = interpolate_everywhere(ηₑ(t0), UΓ0)
-xh0 = interpolate_everywhere([uh0, uhΓ0], X0)
+xh0 = interpolate_everywhere([uh0, uhΓ0], X0);
 xhs0 = (xh0,)
 
 function test_flow_operator(op)

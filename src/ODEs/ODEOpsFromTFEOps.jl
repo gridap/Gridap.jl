@@ -98,9 +98,19 @@ function allocate_odeopcache(
   num_forms = get_num_forms(odeop.tfeop)
   jacs = get_jacs(odeop.tfeop)
 
-  # Little workaround here since when the `ODEOperator` is quasilinear or
-  # semilinear but not linear, it has only one form but `order+1` jacobians
-  # so we need to be careful with indexing
+  # We want the stored jacobians to have the same sparsity as the full jacobian
+  # (when all orders are considered), so we start by allocating it and we will assemble
+  # the constant jacobians in a copy of the full jacobian
+  # We need a little workaround here since when the `ODEOperator` is quasilinear or
+  # semilinear but not linear, it has only one form but `order+1` jacobians.
+  dc = DomainContribution()
+  for k in 0:order
+    jac = jacs[k+1]
+    dc = dc + jac(t, uh, du, v)
+  end
+  matdata = collect_cell_matrix(Ut, V, dc)
+  J_full = allocate_matrix(assembler, matdata)
+
   odeoptype = ODEOperatorType(odeop)
   if odeoptype <: AbstractLinearODE
     for k in 0:num_forms-1
@@ -109,7 +119,9 @@ function allocate_odeopcache(
         jac = jacs[k+1]
         dc = jac(t, uh, du, v)
         matdata = collect_cell_matrix(Ut, V, dc)
-        const_form = assemble_matrix(assembler, matdata)
+        const_form = copy(J_full)
+        fillstored!(const_form, zero(eltype(const_form)))
+        assemble_matrix_add!(const_form, assembler, matdata)
       end
       const_forms = (const_forms..., const_form)
     end
@@ -120,7 +132,9 @@ function allocate_odeopcache(
       jac = jacs[k+1]
       dc = jac(t, uh, du, v)
       matdata = collect_cell_matrix(Ut, V, dc)
-      const_form = assemble_matrix(assembler, matdata)
+      const_form = copy(J_full)
+      fillstored!(const_form, zero(eltype(const_form)))
+      assemble_matrix_add!(const_form, assembler, matdata)
     end
     const_forms = (const_forms..., const_form)
   end

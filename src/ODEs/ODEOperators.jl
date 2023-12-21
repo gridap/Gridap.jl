@@ -515,10 +515,57 @@ function Algebra.allocate_jacobian(
   im_us, ex_us = us, ntuple(i -> us[i], length(us) - 1)
   im_odeop, ex_odeop = get_imex_operators(odeop)
   im_odeopcache, ex_odeopcache = odeopcache
-  im_jac = allocate_jacobian(im_odeop, t, im_us, im_odeopcache)
-  ex_jac = allocate_jacobian(ex_odeop, t, ex_us, ex_odeopcache)
-  axpy_entries!(1, ex_jac, im_jac)
-  im_jac
+
+  # TODO Ideally, we want to allocate the jacobian matrix of both parts and sum them into
+  # a new sparse matrix that has the sparsity structure of the sum. This is not fully
+  # implemented for now.
+  # * When both parts come from a TransientFEOperator, we replicate the code of
+  # `allocate_jacobian` and simply merge the DomainContribution of both parts into a
+  # single DomainContribution.
+  # * Otherwise, for now, we allocate the two jacobians separately and add them. This will
+  # break if they do not have the same sparsity structure.
+  if im_odeop isa ODEOpFromTFEOp && ex_odeop isa ODEOpFromTFEOp
+    # Common
+    Ut = evaluate(get_trial(im_odeop.tfeop), nothing)
+    du = get_trial_fe_basis(Ut)
+    V = get_test(im_odeop.tfeop)
+    v = get_fe_basis(V)
+    assembler = get_assembler(im_odeop.tfeop)
+    dc = DomainContribution()
+
+    # Implicit part
+    uh = _make_uh_from_us(im_odeop, us, im_odeopcache.Us)
+    jacs = get_jacs(im_odeop.tfeop)
+    for k in 0:get_order(im_odeop.tfeop)
+      jac = jacs[k+1]
+      dc = dc + jac(t, uh, du, v)
+    end
+
+    # Explicit part
+    uh = _make_uh_from_us(ex_odeop, us, ex_odeopcache.Us)
+    jacs = get_jacs(ex_odeop.tfeop)
+    for k in 0:get_order(ex_odeop.tfeop)
+      jac = jacs[k+1]
+      dc = dc + jac(t, uh, du, v)
+    end
+
+    matdata = collect_cell_matrix(Ut, V, dc)
+    allocate_matrix(assembler, matdata)
+  else
+    im_jac = allocate_jacobian(im_odeop, t, im_us, im_odeopcache)
+    ex_jac = allocate_jacobian(ex_odeop, t, ex_us, ex_odeopcache)
+    try
+      axpy_entries!(1, ex_jac, im_jac)
+    catch
+      msg = """
+      You are trying to define an IMEX operator where the jacobian of the implicit and
+      explicit parts do not share the same sparsity structure. For now, this is only
+      implemented when the implicit and explicit operators are `TransientFEOperator`.
+      """
+      @error msg
+    end
+    im_jac
+  end
 end
 
 function jacobian_add!(
