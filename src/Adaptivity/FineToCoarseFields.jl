@@ -34,7 +34,7 @@ function FineToCoarseField(
     fields[id] = fine_fields[k]
     is_zero[id] = false
   end
-  return FineToCoarseField(fields,rrule)
+  return FineToCoarseField(fields,rrule,is_zero)
 end
 
 function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point})
@@ -58,7 +58,7 @@ function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point})
   zi = evaluate!(zi_cache,mi,xi)
 
   yi_type  = Fields.return_type(fi,zi)
-  y_cache  = Arrays.CachedArray(yi_type,1)
+  y_cache  = Arrays.CachedArray(zeros(yi_type,size(x)))
 
   # Evaluation caches
   fi_zero = ZeroField(fi)
@@ -83,6 +83,7 @@ function Geometry.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point}
     mi = getindex!(mi_cache,cmaps,child_id)
     zi = Fields.evaluate!(zi_cache,mi,xi)
     _yi_cache = yi_cache[is_zero[child_id]+1]
+    println("i = $i,child_id = $child_id, is_zero = $(is_zero[child_id])")
     y_cache.array[i] = Fields.evaluate!(_yi_cache,fi,zi)
   end
   return y_cache.array
@@ -111,7 +112,7 @@ function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point},ch
   zi = evaluate!(zi_cache,mi,xi)
 
   yi_type  = Fields.return_type(fi,zi)
-  y_cache  = Arrays.CachedArray(yi_type,1)
+  y_cache  = Arrays.CachedArray(zeros(yi_type,size(x)))
 
   # Evaluation caches
   fi_zero = ZeroField(fi)
