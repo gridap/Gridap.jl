@@ -19,7 +19,7 @@ end
 # Necessary for distributed meshes, where not all children of a coarse cell may belong to the processor. 
 function FineToCoarseField(fine_fields::AbstractArray{<:Field},rrule::RefinementRule,child_ids::AbstractArray{<:Integer})
   fields = Vector{Field}(undef,num_subcells(rrule))
-  fields = fill!(fields,ConstantField(0.0))
+  fields = fill!(fields,ZeroField(testitem(fine_fields)))
   for (k,id) in enumerate(child_ids)
     fields[id] = fine_fields[k]
   end
