@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed issue where `FineToCoarseField` would not work for vector-valued fields. Since PR[#970](https://github.com/gridap/Gridap.jl/pull/970).
+- Fixed issue where `BlockSparseMatrixAssembler` would not work correctly when permuting variables. Since PR[#971](https://github.com/gridap/Gridap.jl/pull/971).
 
 ## [0.17.21] - 2023-12-04
 
