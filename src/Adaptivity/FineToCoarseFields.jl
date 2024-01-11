@@ -83,7 +83,6 @@ function Geometry.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point}
     mi = getindex!(mi_cache,cmaps,child_id)
     zi = Fields.evaluate!(zi_cache,mi,xi)
     _yi_cache = yi_cache[is_zero[child_id]+1]
-    println("i = $i,child_id = $child_id, is_zero = $(is_zero[child_id])")
     y_cache.array[i] = Fields.evaluate!(_yi_cache,fi,zi)
   end
   return y_cache.array
