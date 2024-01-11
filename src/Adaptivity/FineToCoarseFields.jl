@@ -125,7 +125,7 @@ end
 function Geometry.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point},child_ids::AbstractArray{<:Integer})
   fi_cache, mi_cache, xi_cache, id_cache, zi_cache, yi_cache, y_cache = cache
   cmaps  = get_inverse_cell_map(a.rrule)
-  fields = a.fine_fields
+  fields, is_zero = a.fine_fields, a.is_zero
 
   Arrays.setsize!(y_cache, size(x))
 
