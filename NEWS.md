@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.17.22] - 2024-01-12
 
 ### Added
 
@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Changed how `allocate_vector` works. Now it only allocates, instead of allocating+initialising to zero. Since PR[#963](https://github.com/gridap/Gridap.jl/pull/963).
+
+### Fixed
+
+- Fixed issue where `FineToCoarseField` would not work for vector-valued fields. Since PR[#970](https://github.com/gridap/Gridap.jl/pull/970).
+- Fixed issue where `BlockSparseMatrixAssembler` would not work correctly when permuting variables. Since PR[#971](https://github.com/gridap/Gridap.jl/pull/971).
 
 ## [0.17.21] - 2023-12-04
 
