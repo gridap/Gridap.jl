@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.23] - 2024-01-28 
+
+### Changed
+
+- Changed how `symbolic_loop_matrix_vector!` loop works. Now it also takes account vector entries touched from matvecdata. Since PR[#975](https://github.com/gridap/Gridap.jl/pull/975).
+
 ## [0.17.22] - 2024-01-12
 
 ### Added
