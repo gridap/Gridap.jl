@@ -57,6 +57,13 @@ function get_cell_points(trian::Triangulation)
   CellPoint(cell_ref_coords,cell_phys_coords,trian,ReferenceDomain())
 end
 
+function Base.:(==)(a::CellPoint,b::CellPoint)
+  a.trian == b.trian &&
+  a.cell_ref_point == b.cell_ref_point &&
+  a.cell_phys_point == b.cell_phys_point &&
+  a.domain_style == b.domain_style
+end
+
 """
 """
 abstract type CellField <: CellDatum end
