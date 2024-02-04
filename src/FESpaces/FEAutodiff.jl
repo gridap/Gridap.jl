@@ -246,3 +246,120 @@ end
 function autodiff_array_hessian(a,i_to_x,i_to_j::SkeletonPair)
   @notimplemented
 end
+
+
+## AD support for GridapDistributed and parametric problems
+# The main idea is to store the fucntional and measures separately, so that they can be 
+# retrieved and/or manipulated when needed. This is something that is not possible with
+# anonymous functions, unfortunately. 
+
+"""
+    struct IntegrandWithMeasure
+      F 
+      dΩ
+    end
+
+  A struct to store the integrand `F` and the measure(s) `dΩ` separately. Meant to be used
+  with automatic differentiation.
+
+  - `dΩ = (dΩ_1,...,dΩ_m)` is a tuple of `Measure`s.
+  - `F` is a function of the form `F(u_1,...,u_n,dΩ_1,...,dΩ_m) = F_1(u_1,...,u_n) * dΩ_1 + ... + F_m(u_1,...,u_n) * dΩ_m`
+     which returns a `DomainContribution` when evaluated.
+
+"""
+struct IntegrandWithMeasure{A,B<:Tuple}
+  F  :: A
+  dΩ :: B
+end
+
+IntegrandWithMeasure(F::Function, dΩ::Measure) = IntegrandWithMeasure(F, (dΩ,))
+
+(F::IntegrandWithMeasure)(args...) = F.F(args...,F.dΩ...)
+
+gradient(F::IntegrandWithMeasure,uh) = gradient(F,[uh],1)
+
+function gradient(F::IntegrandWithMeasure,uh::Vector{<:CellField},K::Int)
+  @check 0 < K <= length(uh)
+  _f(uk) = F.F(uh[1:K-1]...,uk,uh[K+1:end]...,F.dΩ...)
+  return gradient(_f,uh[K])
+end
+
+function jacobian(F::IntegrandWithMeasure,uh::Vector{<:CellField},K::Int)
+  @check 0 < K <= length(uh)
+  _f(uk) = F.F(uh[1:K-1]...,uk,uh[K+1:end]...,F.dΩ...)
+  return jacobian(_f,uh[K])
+end
+
+"""
+  ParametricIntegrandWithMeasure
+
+  Represents an IntegrandWithMeasure of the following form:
+    `F: (u,φ,[dΩ₁,dΩ₂,...]) ↦ F(u(φ),φ,[dΩ₁,dΩ₂,...])`
+  where `φ` is an auxilary field and `u` is a state field depending on `φ`. 
+"""
+struct ParametricIntegrandWithMeasure{A<:IntegrandWithMeasure,B,C,D}
+  F       :: A
+  spaces  :: B
+  assems  :: C
+  caches  :: D
+end
+
+"""
+    function ParametricIntegrandWithMeasure(
+      F::IntegrandWithMeasure,V_u::FESpace,V_φ::FESpace;
+      assem_u::Assembler=SparseMatrixAssembler(V_u,V_u),
+      assem_φ::Assembler=SparseMatrixAssembler(V_φ,V_φ)
+    )
+"""
+function ParametricIntegrandWithMeasure(
+  F::IntegrandWithMeasure,V_u::FESpace,V_φ::FESpace;
+  assem_u::Assembler=SparseMatrixAssembler(V_u,V_u),
+  assem_φ::Assembler=SparseMatrixAssembler(V_φ,V_φ)
+)
+  φ₀, u₀ = zero(V_φ), zero(V_u)
+  dFdu_vecdata = collect_cell_vector(V_u,∇(F,[u₀,φ₀],1))
+  dFdφ_vecdata = collect_cell_vector(V_φ,∇(F,[u₀,φ₀],2))
+  dFdu_vec = allocate_vector(assem_u,dFdu_vecdata)
+  dFdφ_vec = allocate_vector(assem_φ,dFdφ_vecdata)
+  
+  spaces = (V_u,V_φ)
+  assems = (assem_u,assem_φ)
+  caches = (dFdu_vec,dFdφ_vec)
+  return ParametricIntegrandWithMeasure(F,spaces,assems,caches)
+end
+
+(F::ParametricIntegrandWithMeasure)(uh,φh) = F.F(uh,φh)
+
+function (F::ParametricIntegrandWithMeasure)(u::AbstractVector,φ::AbstractVector)
+  U, V_φ = u_to_j.spaces
+  uh = FEFunction(U,u)
+  φh = FEFunction(V_φ,φ)
+  return F(uh,φh)
+end
+
+function ChainRulesCore.rrule(F::ParametricIntegrandWithMeasure,uh,φh)
+  V_u,V_φ = F.spaces
+  assem_u,assem_φ = F.assems
+  dFdu_vec,dFdφ_vec = F.caches
+
+  function F_pullback(dF)
+    ## Compute ∂F/∂uh(uh,φh) and ∂F/∂φh(uh,φh)
+    dFdu = ∇(F.F,[uh,φh],1)
+    dFdu_vecdata = collect_cell_vector(V_u,dFdu)
+    assemble_vector!(dFdu_vec,assem_u,dFdu_vecdata)
+    dFdφ = ∇(F.F,[uh,φh],2)
+    dFdφ_vecdata = collect_cell_vector(V_φ,dFdφ)
+    assemble_vector!(dFdφ_vec,assem_φ,dFdφ_vecdata)
+    dFdu_vec .*= dF
+    dFdφ_vec .*= dF
+    (NoTangent(), dFdu_vec, dFdφ_vec)
+  end
+  return F(uh,φh), F_pullback
+end
+
+function ChainRulesCore.rrule(F::ParametricIntegrandWithMeasure,u::AbstractVector,φ::AbstractVector)
+  V_u,V_φ = F.spaces
+  uh = FEFunction(V_u,u)
+  φh = FEFunction(V_φ,φ)
+  return ChainRulesCore.rrule(F,uh,φh)
+end

@@ -11,6 +11,7 @@ using FillArrays
 using SparseArrays
 using LinearAlgebra
 using ForwardDiff
+using ChainRulesCore
 
 using Gridap.Helpers
 using Gridap.Algebra
