@@ -6,7 +6,7 @@ module LinearizedFESpacesTests
   function generate_analytical_functions(order)
     u(x)   = x[1]^order
     f(x)   = -Δ(u)(x)
-    u, f  
+    u, f
   end
 
   for D=1:3
@@ -39,7 +39,7 @@ module LinearizedFESpacesTests
 
     Ωh       = Triangulation(Vh.refined_model)
     dΩh      = Measure(Ωh,order+1)
-    
+
     # Test L2-projection
     aL2dΩh(UH,vh)=∫(UH*vh)dΩh
     lL2Ωh(vh)    =∫(I*vh)dΩh
@@ -50,11 +50,11 @@ module LinearizedFESpacesTests
 
     function generate_bilinear_form(dΩH)
       aH(u,v) = ∫(∇(u)⋅∇(v))*dΩH
-    end 
+    end
 
     function generate_linear_form(f,dΩH)
       lH(v) = ∫(f*v)*dΩH
-    end 
+    end
 
     function generate_weak_residual_form(Vh)
       function weak_res(uH, dΩ, f)
@@ -65,17 +65,17 @@ module LinearizedFESpacesTests
 
     for orderTrial in 1:2
       u,f = generate_analytical_functions(orderTrial)
-      
+
       reffeH = ReferenceFE(lagrangian,Float64,orderTrial)
       VH = TestFESpace(modelH,reffeH; conformity=:H1, dirichlet_tags="boundary")
       UH = TrialFESpace(VH,u)
       ΩH = Triangulation(modelH)
       dΩH = Measure(ΩH,2*orderTrial+1)
-      
+
       aH=generate_bilinear_form(dΩH)
       lH=generate_linear_form(f,dΩH)
       weak_res = generate_weak_residual_form(VH)
-      
+
       # Test laplacian (Galerkin problem)
       # uH is the Galerkin solution
       op = AffineFEOperator(aH,lH,UH,VH)
@@ -102,9 +102,9 @@ module LinearizedFESpacesTests
           rh = weak_res(uh, dΩh, f)
           rh_vec = assemble_vector(rh,Vh)
           @test norm(rh_vec) < 1.0e-12
-        else 
+        else
           # Test Galerkin solution against LinearizedFESpace
-          # 1. Using weak residual form 
+          # 1. Using weak residual form
           rh = weak_res(uH, dΩh, f)
           rh_vec = assemble_vector(rh,Vh)
           @test norm(rh_vec) < 1.0e-12
@@ -118,24 +118,30 @@ module LinearizedFESpacesTests
           x=get_free_dof_values(uH)
           r = A*x-b
           @test norm(r) < 1.0e-12
+
+          # 3. Boundary terms
+          Γh = BoundaryTriangulation(Vh.refined_model, tags="boundary")
+          dΓh = Measure(Γh, 2 * orderTrial + 1)
+          n_Γh = get_normal_vector(Γh)
+          @test length(assemble_vector(∫(n_Γh ⋅ ∇(dvh))dΓh, Vh)) > 0
         end
       end
     end
-  end 
-  
+  end
+
   û(x) = sin(3.2 * x[1]^2) * cos(x[1]) + sin(4.6 * x[1]) * cos(5.2 * x[1])
   ŝ(x) = exp(x[1] / 2) + 2
   k̂(x) = 2 + sin(x[1])
-  
+
   q(x) = k̂(x) * ∇(û)(x)
   f(x) = -(∇ ⋅ q)(x) + ŝ(x) * û(x)
-  
+
   ncells = 10
   order = 5
   degree = 2 * order + 1
   reffe = ReferenceFE(lagrangian, Float64, order)
   model = CartesianDiscreteModel((0, 1), (ncells,))
-  
+
   V0 = TestFESpace(model, reffe; dirichlet_tags="boundary")
   Ug = TrialFESpace(V0, û)
   Vl = Gridap.LinearizedFESpace(model, ReferenceFE(lagrangian, Float64, order); dirichlet_tags="boundary")
@@ -145,11 +151,9 @@ module LinearizedFESpacesTests
   a(u, v) = ∫(∇(dv) ⋅ (k̂ * ∇(u)) + ŝ * u * dv)dΩ
   l(v) = ∫(f * dv)dΩ
   ũh = solve(AffineFEOperator(a, l, Ug, Vl))
-  
+
   jac = Gridap.jacobian(u -> a(u, dv) - l(dv), ũh)
-  A1=assemble_matrix(jac, Ug, Vl) 
+  A1=assemble_matrix(jac, Ug, Vl)
   A2=assemble_matrix(a,Ug,Vl)
   @assert norm(A1-A2) < 1.0e-12
 end
-
-
