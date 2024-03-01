@@ -108,8 +108,8 @@ end
 
 function _get_cell_fe_data(fun, 
                            sface_to_data, 
-                           strian::AdaptedTriangulation{Dc}, 
-                           ttrian::AdaptedTriangulation{Dc}) where Dc
+                           strian::AdaptedTriangulation, 
+                           ttrian::AdaptedTriangulation)
   if (get_background_model(strian) === get_parent(get_adapted_model(ttrian)))
     sface_to_data_reindexed=Gridap.Adaptivity.o2n_reindex(sface_to_data,get_adapted_model(ttrian).glue)
     # Strictly speaking, the next line is not guaranteed to work in the most general case. 
