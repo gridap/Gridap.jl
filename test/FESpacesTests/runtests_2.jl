@@ -28,4 +28,6 @@ using Test
 
 @testset "ConstantFESpaceTests" begin include("ConstantFESpaceTests.jl") end
 
+@testset "LinearizedFESpacesTests" begin include("LinearizedFESpacesTests.jl") end
+
 end # module
