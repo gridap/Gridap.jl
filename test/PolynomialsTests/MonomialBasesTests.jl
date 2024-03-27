@@ -5,7 +5,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 
-xi = Point(2,3)
+xi = Point(2.0,3.0)
 np = 5
 x = fill(xi,np)
 
