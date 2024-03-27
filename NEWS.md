@@ -5,7 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.17.23] - 2024-01-28 
+## [0.18.0] - 2024-03-22
+
+### Changed
+
+- ODE module extensive refactor. Breaking changes! See docs and PR for details. Since PR[965](https://github.com/gridap/Gridap.jl/pull/965).
+
+### Added
+
+- Added some missing API methods to `Assemblers` and `MultiField`. Since PR[#985](https://github.com/gridap/Gridap.jl/pull/985).
+
+### Fixed
+
+- Fix when evaluating `\circ` operator with `CellState`. Since PR[#987](https://github.com/gridap/Gridap.jl/pull/987).
+
+## [0.17.23] - 2024-01-28
 
 ### Changed
 
