@@ -7,9 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.18.0] - 2024-03-22
 
-### Changed
+### Breaking
 
 - ODE module extensive refactor. Breaking changes! See docs and PR for details. Since PR[965](https://github.com/gridap/Gridap.jl/pull/965).
+- Fixed name clash with `Statistics.mean`. Since PR[#988](https://github.com/gridap/Gridap.jl/pull/988).
 
 ### Added
 
