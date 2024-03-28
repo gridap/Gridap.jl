@@ -60,6 +60,9 @@ uh, ph = xh
 @test isa(uh,FEFunction)
 @test isa(ph,FEFunction)
 
+dir_values = zero_dirichlet_values(Y)
+@test all(map((dv,Yi) -> dv == zero_dirichlet_values(Yi),dir_values,Y))
+
 cell_isconstr = get_cell_isconstrained(X,trian)
 @test cell_isconstr == Fill(false,num_cells(model))
 

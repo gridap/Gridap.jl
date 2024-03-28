@@ -635,10 +635,10 @@ end
 function TransientLinearFEOperator(
   forms::Tuple{Vararg{Function}}, res::Function, jacs::Tuple{Vararg{Function}},
   trial, test;
-  constant_forms::Tuple{Vararg{Bool}}=ntuple(_ -> false, length(forms))
+  constant_forms::Tuple{Vararg{Bool}}=ntuple(_ -> false, length(forms)),
+  assembler = SparseMatrixAssembler(trial, test)
 )
   order = length(jacs) - 1
-  assembler = SparseMatrixAssembler(trial, test)
   TransientLinearFEOpFromWeakForm(
     forms, res, jacs, constant_forms,
     assembler, trial, test, order
@@ -652,7 +652,8 @@ end
 function TransientLinearFEOperator(
   forms::Tuple{Vararg{Function}}, res::Function,
   trial, test;
-  constant_forms::Tuple{Vararg{Bool}}=ntuple(_ -> false, length(forms))
+  constant_forms::Tuple{Vararg{Bool}}=ntuple(_ -> false, length(forms)),
+  assembler = SparseMatrixAssembler(trial, test)
 )
   # When the operator is linear, the jacobians are the forms themselves
   order = length(forms) - 1
@@ -660,7 +661,7 @@ function TransientLinearFEOperator(
 
   TransientLinearFEOperator(
     forms, res, jacs, trial, test;
-    constant_forms
+    constant_forms,assembler
   )
 end
 
@@ -668,33 +669,36 @@ end
 function TransientLinearFEOperator(
   mass::Function, res::Function,
   trial, test;
-  constant_forms::NTuple{1,Bool}=(false,)
+  constant_forms::NTuple{1,Bool}=(false,),
+  assembler = SparseMatrixAssembler(trial, test)
 )
   TransientLinearFEOperator(
     (mass,), res,
-    trial, test; constant_forms
+    trial, test; constant_forms, assembler
   )
 end
 
 function TransientLinearFEOperator(
   stiffness::Function, mass::Function, res::Function,
   trial, test;
-  constant_forms::NTuple{2,Bool}=(false, false)
+  constant_forms::NTuple{2,Bool}=(false, false),
+  assembler = SparseMatrixAssembler(trial, test)
 )
   TransientLinearFEOperator(
     (stiffness, mass), res,
-    trial, test; constant_forms
+    trial, test; constant_forms, assembler
   )
 end
 
 function TransientLinearFEOperator(
   stiffness::Function, damping::Function, mass::Function, res::Function,
   trial, test;
-  constant_forms::NTuple{3,Bool}=(false, false, false)
+  constant_forms::NTuple{3,Bool}=(false, false, false),
+  assembler = SparseMatrixAssembler(trial, test)
 )
   TransientLinearFEOpFromWeakForm(
     (stiffness, damping, mass), res,
-    trial, test; constant_forms
+    trial, test; constant_forms, assembler
   )
 end
 

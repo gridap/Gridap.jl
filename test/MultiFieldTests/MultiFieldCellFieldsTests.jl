@@ -35,6 +35,8 @@ _cf1, _cf2 = cf
 @test cf1 === _cf1
 @test cf2 === _cf2
 
+_cfdot = cf⋅cf
+
 order = 2
 
 domain = (0,1,0,1)
