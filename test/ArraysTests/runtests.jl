@@ -26,8 +26,6 @@ using Test
 
 @testset "IdentityVectors" begin include("IdentityVectorsTests.jl") end
 
-@testset "SubVectors" begin include("SubVectorsTests.jl") end
-
 @testset "ArrayPairs" begin include("ArrayPairsTests.jl") end
 
 @testset "AppendedArrays" begin include("AppendedArraysTests.jl") end

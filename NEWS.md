@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ODE module extensive refactor. Breaking changes! See docs and PR for details. Since PR[965](https://github.com/gridap/Gridap.jl/pull/965).
 - Fixed name clash with `Statistics.mean`. Since PR[#988](https://github.com/gridap/Gridap.jl/pull/988).
+- Deprecated `SubVector` in favor of Julia's `view`. Since PR[#989](https://github.com/gridap/Gridap.jl/pull/989).
 
 ### Added
 
