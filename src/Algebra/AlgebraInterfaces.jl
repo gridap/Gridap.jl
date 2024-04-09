@@ -298,6 +298,13 @@ function axpy_entries!(
   B
 end
 
+function axpy_entries!(α::Number, A::T, B::T) where {T<:AbstractBlockMatrix}
+  map(blocks(A), blocks(B)) do a, b
+    axpy_entries!(α, a, b)
+  end
+  B
+end
+
 #
 # Some API associated with assembly routines
 #
