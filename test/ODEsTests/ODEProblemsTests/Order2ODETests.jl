@@ -9,6 +9,8 @@ using Gridap.ODEs
 include("../ODEOperatorsMocks.jl")
 include("../ODESolversMocks.jl")
 
+# M ü + M * Diag(-(λ .+ μ)) u̇ + M * Diag(λ .* μ) u = M * f(t),
+# where f(t) = exp(Diag(α) * t)
 t0 = 0.0
 dt = 1.0e-3
 tF = t0 + 10 * dt
@@ -100,6 +102,15 @@ odeslvrs = (
 )
 
 us0 = (u0, v0)
+for odeslvr in odeslvrs
+  for odeop in odeops
+    test_solver(odeslvr, odeop, us0, tol)
+  end
+end
+
+# Tests with initial acceleration
+a0 = exp.(α .* t0) - spdiagm(-(λ .+ μ)) * v0 - spdiagm(λ .* μ) * u0
+us0 = (u0, v0, a0)
 for odeslvr in odeslvrs
   for odeop in odeops
     test_solver(odeslvr, odeop, us0, tol)

@@ -271,7 +271,7 @@ end
 function TransientFEOperator(
   res::Function,
   trial, test;
-  order::Integer=1;
+  order::Integer=1,
   assembler=SparseMatrixAssembler(trial, test)
 )
   function jac_0(t, u, du, v)

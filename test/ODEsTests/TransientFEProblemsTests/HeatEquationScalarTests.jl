@@ -129,6 +129,21 @@ for odeslvr in odeslvrs
   end
 end
 
+# Test GeneralizedAlpha1 with initial velocity
+odeslvrs = (
+  GeneralizedAlpha1(sysslvr_nl, dt, 0.0),
+  GeneralizedAlpha1(sysslvr_nl, dt, 0.5),
+  GeneralizedAlpha1(sysslvr_nl, dt, 1.0),
+)
+
+vh0 = interpolate_everywhere(∂t(u)(t0), U0)
+uhs0 = (uh0, vh0)
+for odeslvr in odeslvrs
+  for tfeop in tfeops
+    test_transient_heat_scalar(odeslvr, tfeop, uhs0)
+  end
+end
+
 # Solvers for IMEX decompositions
 tfeops = (
   tfeop_imex_man,

@@ -68,18 +68,27 @@ function Newmark(sysslvr::NonlinearSolver, dt::Real, γ::Real, β::Real)
   GeneralizedAlpha2(sysslvr, dt, αf, αm, γ, β)
 end
 
-##################
-# Nonlinear case #
-##################
+# Default allocate_odecache without acceleration
 function allocate_odecache(
   odeslvr::GeneralizedAlpha2, odeop::ODEOperator,
   t0::Real, us0::NTuple{2,AbstractVector}
 )
   u0, v0 = us0[1], us0[2]
-  us0N = (u0, v0, v0)
+  allocate_odecache(odeslvr, odeop, t0, (u0, v0, v0))
+end
+
+##################
+# Nonlinear case #
+##################
+function allocate_odecache(
+  odeslvr::GeneralizedAlpha2, odeop::ODEOperator,
+  t0::Real, us0::NTuple{3,AbstractVector}
+)
+  u0, v0, a0 = us0[1], us0[2], us0[3]
+  us0N = (u0, v0, a0)
   odeopcache = allocate_odeopcache(odeop, t0, us0N)
 
-  uα, vα, aα = copy(u0), copy(v0), copy(v0)
+  uα, vα, aα = copy(u0), copy(v0), copy(a0)
 
   sysslvrcache = nothing
   odeslvrcache = (uα, vα, aα, sysslvrcache)
@@ -126,6 +135,24 @@ function ode_start(
   # Pack outputs
   odeslvrcache = (uα, vα, aα, sysslvrcache)
   odecache = (odeslvrcache, odeopcache)
+  (state0, odecache)
+end
+
+function ode_start(
+  odeslvr::GeneralizedAlpha2, odeop::ODEOperator,
+  t0::Real, us0::NTuple{3,AbstractVector},
+  odecache
+)
+  # Unpack inputs
+  u0, v0, a0 = us0[1], us0[2], us0[3]
+
+  # Allocate state
+  s0, s1, s2 = copy(u0), copy(v0), copy(a0)
+
+  # Update state
+  state0 = (s0, s1, s2)
+
+  # Pack outputs
   (state0, odecache)
 end
 
@@ -191,13 +218,13 @@ end
 ###############
 function allocate_odecache(
   odeslvr::GeneralizedAlpha2, odeop::ODEOperator{<:AbstractLinearODE},
-  t0::Real, us0::NTuple{2,AbstractVector}
+  t0::Real, us0::NTuple{3,AbstractVector}
 )
-  u0, v0 = us0[1], us0[2]
-  us0N = (u0, v0, v0)
+  u0, v0, a0 = us0[1], us0[2], us0[3]
+  us0N = (u0, v0, a0)
   odeopcache = allocate_odeopcache(odeop, t0, us0N)
 
-  uα, vα, aα = zero(u0), zero(v0), zero(v0)
+  uα, vα, aα = zero(u0), zero(v0), zero(a0)
 
   constant_stiffness = is_form_constant(odeop, 0)
   constant_damping = is_form_constant(odeop, 1)
@@ -255,6 +282,24 @@ function ode_start(
   # Pack outputs
   odeslvrcache = (reuse, uα, vα, aα, J, r, sysslvrcache)
   odecache = (odeslvrcache, odeopcache)
+  (state0, odecache)
+end
+
+function ode_start(
+  odeslvr::GeneralizedAlpha2, odeop::ODEOperator{<:AbstractLinearODE},
+  t0::Real, us0::NTuple{3,AbstractVector},
+  odecache
+)
+  # Unpack inputs
+  u0, v0, a0 = us0[1], us0[2], us0[3]
+
+  # Allocate state
+  s0, s1, s2 = copy(u0), copy(v0), copy(a0)
+
+  # Update state
+  state0 = (s0, s1, s2)
+
+  # Pack outputs
   (state0, odecache)
 end
 

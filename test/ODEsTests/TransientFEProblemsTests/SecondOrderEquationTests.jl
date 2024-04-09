@@ -97,7 +97,6 @@ dt = 0.1
 U0 = U(t0)
 uh0 = interpolate_everywhere(u(t0), U0)
 ∂tuh0 = interpolate_everywhere(∂tu(t0), U0)
-∂ttuh0 = interpolate_everywhere(∂ttu(t0), U0)
 
 tol = 1.0e-6
 sysslvr_l = LUSolver()
@@ -119,6 +118,15 @@ odeslvrs = (
 )
 
 uhs0 = (uh0, ∂tuh0)
+for odeslvr in odeslvrs
+  for tfeop in tfeops
+    test_tfeop_order2(odeslvr, tfeop, uhs0)
+  end
+end
+
+# Test with initial acceleration
+∂ttuh0 = interpolate_everywhere(∂ttu(t0), U0)
+uhs0 = (uh0, ∂tuh0, ∂ttuh0)
 for odeslvr in odeslvrs
   for tfeop in tfeops
     test_tfeop_order2(odeslvr, tfeop, uhs0)
