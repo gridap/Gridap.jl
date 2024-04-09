@@ -266,6 +266,18 @@ function FESpaces.FEFunction(fe::MultiFieldFESpace, free_values)
   MultiFieldFEFunction(free_values,fe,blocks)
 end
 
+function FESpaces.FEFunction(
+  fe::MultiFieldFESpace, free_values::AbstractVector, dir_values::Vector{<:AbstractVector}
+)
+  @check length(dir_values) == num_fields(fe)
+  blocks = map(1:length(fe.spaces)) do i
+    free_values_i = restrict_to_field(fe,free_values,i)
+    dir_values_i  = dir_values[i]
+    FEFunction(fe.spaces[i],free_values_i,dir_values_i)
+  end
+  MultiFieldFEFunction(free_values,fe,blocks)
+end
+
 function FESpaces.EvaluationFunction(fe::MultiFieldFESpace, free_values)
   blocks = map(1:length(fe.spaces)) do i
     free_values_i = restrict_to_field(fe,free_values,i)
