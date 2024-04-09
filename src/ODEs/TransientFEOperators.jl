@@ -220,10 +220,10 @@ end
 # Constructor with manual jacobians
 function TransientFEOperator(
   res::Function, jacs::Tuple{Vararg{Function}},
-  trial, test
+  trial, test;
+  assembler=SparseMatrixAssembler(trial, test)
 )
   order = length(jacs) - 1
-  assembler = SparseMatrixAssembler(trial, test)
   TransientFEOpFromWeakForm(
     res, jacs,
     assembler, trial, test, order
@@ -234,33 +234,36 @@ end
 function TransientFEOperator(
   res::Function,
   jac::Function,
-  trial, test
+  trial, test;
+  assembler=SparseMatrixAssembler(trial, test)
 )
   TransientFEOperator(
-    res, (jac,),
-    trial, test
+    res, (jac,), trial, test;
+    assembler
   )
 end
 
 function TransientFEOperator(
   res::Function,
   jac::Function, jac_t::Function,
-  trial, test
+  trial, test;
+  assembler=SparseMatrixAssembler(trial, test)
 )
   TransientFEOperator(
-    res, (jac, jac_t),
-    trial, test
+    res, (jac, jac_t), trial, test;
+    assembler
   )
 end
 
 function TransientFEOperator(
   res::Function,
   jac::Function, jac_t::Function, jac_tt::Function,
-  trial, test
+  trial, test;
+  assembler=SparseMatrixAssembler(trial, test)
 )
   TransientFEOperator(
-    res, (jac, jac_t, jac_tt),
-    trial, test
+    res, (jac, jac_t, jac_tt), trial, test;
+    assembler
   )
 end
 
@@ -268,7 +271,8 @@ end
 function TransientFEOperator(
   res::Function,
   trial, test;
-  order::Integer=1
+  order::Integer=1;
+  assembler=SparseMatrixAssembler(trial, test)
 )
   function jac_0(t, u, du, v)
     function res_0(y)
@@ -291,7 +295,10 @@ function TransientFEOperator(
     jacs = (jacs..., jac_k)
   end
 
-  TransientFEOperator(res, jacs, trial, test)
+  TransientFEOperator(
+    res, jacs, trial, test;
+    assembler
+  )
 end
 
 # TransientFEOperator interface
@@ -338,15 +345,18 @@ end
 # Constructor with manual jacobians
 function TransientQuasilinearFEOperator(
   mass::Function, res::Function, jacs::Tuple{Vararg{Function}},
-  trial, test
+  trial, test;
+  assembler=SparseMatrixAssembler(trial, test)
 )
   order = length(jacs) - 1
   if order == 0
     @warn default_linear_msg
-    return TransientLinearFEOperator((mass,), res, jacs, trial, test)
+    return TransientLinearFEOperator(
+      (mass,), res, jacs, trial, test;
+      assembler
+    )
   end
 
-  assembler = SparseMatrixAssembler(trial, test)
   TransientQuasilinearFEOpFromWeakForm(
     mass, res, jacs,
     assembler, trial, test, order
@@ -357,31 +367,37 @@ end
 function TransientQuasilinearFEOperator(
   mass::Function, res::Function,
   jac::Function,
-  trial, test
+  trial, test;
+  assembler=SparseMatrixAssembler(trial, test)
 )
   @warn default_linear_msg
-  TransientLinearFEOperator(mass, res, jac, trial, test)
+  TransientLinearFEOperator(
+    mass, res, jac, trial, test;
+    assembler
+  )
 end
 
 function TransientQuasilinearFEOperator(
   mass::Function, res::Function,
   jac::Function, jac_t::Function,
-  trial, test
+  trial, test;
+  assembler=SparseMatrixAssembler(trial, test)
 )
   TransientQuasilinearFEOperator(
-    mass, res, (jac, jac_t),
-    trial, test
+    mass, res, (jac, jac_t), trial, test;
+    assembler
   )
 end
 
 function TransientQuasilinearFEOperator(
   mass::Function, res::Function,
   jac::Function, jac_t::Function, jac_tt::Function,
-  trial, test
+  trial, test;
+  assembler=SparseMatrixAssembler(trial, test)
 )
   TransientQuasilinearFEOperator(
-    mass, res, (jac, jac_t, jac_tt),
-    trial, test
+    mass, res, (jac, jac_t, jac_tt), trial, test;
+    assembler
   )
 end
 
@@ -389,11 +405,15 @@ end
 function TransientQuasilinearFEOperator(
   mass::Function, res::Function,
   trial, test;
-  order::Integer=1
+  order::Integer=1,
+  assembler=SparseMatrixAssembler(trial, test)
 )
   if order == 0
     @warn default_linear_msg
-    return TransientLinearFEOperator(mass, res, trial, test)
+    return TransientLinearFEOperator(
+      mass, res, trial, test;
+      assembler
+    )
   end
 
   jacs = ()
@@ -428,7 +448,8 @@ function TransientQuasilinearFEOperator(
   jacs = (jacs..., jac_N)
 
   TransientQuasilinearFEOperator(
-    mass, res, jacs, trial, test
+    mass, res, jacs, trial, test;
+    assembler
   )
 end
 
@@ -481,16 +502,18 @@ function TransientSemilinearFEOperator(
   mass::Function, res::Function, jacs::Tuple{Vararg{Function}},
   trial, test;
   constant_mass::Bool=false,
+  assembler=SparseMatrixAssembler(trial, test)
 )
   order = length(jacs) - 1
   if order == 0
     @warn default_linear_msg
+    constant_forms = (constant_mass,)
     return TransientLinearFEOperator(
-      (mass,), res, jacs, trial, test; constant_mass
+      (mass,), res, jacs, trial, test;
+      constant_forms, assembler
     )
   end
 
-  assembler = SparseMatrixAssembler(trial, test)
   TransientSemilinearFEOpFromWeakForm(
     mass, res, jacs, constant_mass,
     assembler, trial, test, order
@@ -503,9 +526,14 @@ function TransientSemilinearFEOperator(
   jac::Function,
   trial, test;
   constant_mass::Bool=false,
+  assembler=SparseMatrixAssembler(trial, test)
 )
   @warn default_linear_msg
-  TransientLinearFEOperator(mass, res, jac, trial, test; constant_mass)
+  constant_forms = (constant_mass,)
+  TransientLinearFEOperator(
+    mass, res, jac, trial, test;
+    constant_forms, assembler
+  )
 end
 
 function TransientSemilinearFEOperator(
@@ -513,11 +541,11 @@ function TransientSemilinearFEOperator(
   jac::Function, jac_t::Function,
   trial, test;
   constant_mass::Bool=false,
+  assembler=SparseMatrixAssembler(trial, test)
 )
   TransientSemilinearFEOperator(
-    mass, res, (jac, jac_t),
-    trial, test;
-    constant_mass
+    mass, res, (jac, jac_t), trial, test;
+    constant_mass, assembler
   )
 end
 
@@ -526,11 +554,11 @@ function TransientSemilinearFEOperator(
   jac::Function, jac_t::Function, jac_tt::Function,
   trial, test;
   constant_mass::Bool=false,
+  assembler=SparseMatrixAssembler(trial, test)
 )
   TransientSemilinearFEOperator(
-    mass, res, (jac, jac_t, jac_tt),
-    trial, test;
-    constant_mass
+    mass, res, (jac, jac_t, jac_tt), trial, test;
+    constant_mass, assembler
   )
 end
 
@@ -539,11 +567,16 @@ function TransientSemilinearFEOperator(
   mass::Function, res::Function,
   trial, test;
   order::Integer=1,
-  constant_mass::Bool=false
+  constant_mass::Bool=false,
+  assembler=SparseMatrixAssembler(trial, test)
 )
   if order == 0
     @warn default_linear_msg
-    return TransientLinearFEOperator(mass, res, trial, test; constant_mass)
+    constant_forms = (constant_mass,)
+    return TransientLinearFEOperator(
+      mass, res, trial, test;
+      constant_forms, assembler
+    )
   end
 
   # When the operator is semilinear, the mass term can be omitted in the
@@ -579,7 +612,7 @@ function TransientSemilinearFEOperator(
 
   TransientSemilinearFEOperator(
     mass, res, jacs, trial, test;
-    constant_mass
+    constant_mass, assembler
   )
 end
 
@@ -636,7 +669,7 @@ function TransientLinearFEOperator(
   forms::Tuple{Vararg{Function}}, res::Function, jacs::Tuple{Vararg{Function}},
   trial, test;
   constant_forms::Tuple{Vararg{Bool}}=ntuple(_ -> false, length(forms)),
-  assembler = SparseMatrixAssembler(trial, test)
+  assembler=SparseMatrixAssembler(trial, test)
 )
   order = length(jacs) - 1
   TransientLinearFEOpFromWeakForm(
@@ -653,7 +686,7 @@ function TransientLinearFEOperator(
   forms::Tuple{Vararg{Function}}, res::Function,
   trial, test;
   constant_forms::Tuple{Vararg{Bool}}=ntuple(_ -> false, length(forms)),
-  assembler = SparseMatrixAssembler(trial, test)
+  assembler=SparseMatrixAssembler(trial, test)
 )
   # When the operator is linear, the jacobians are the forms themselves
   order = length(forms) - 1
@@ -661,7 +694,7 @@ function TransientLinearFEOperator(
 
   TransientLinearFEOperator(
     forms, res, jacs, trial, test;
-    constant_forms,assembler
+    constant_forms, assembler
   )
 end
 
@@ -670,11 +703,11 @@ function TransientLinearFEOperator(
   mass::Function, res::Function,
   trial, test;
   constant_forms::NTuple{1,Bool}=(false,),
-  assembler = SparseMatrixAssembler(trial, test)
+  assembler=SparseMatrixAssembler(trial, test)
 )
   TransientLinearFEOperator(
-    (mass,), res,
-    trial, test; constant_forms, assembler
+    (mass,), res, trial, test;
+    constant_forms, assembler
   )
 end
 
@@ -682,11 +715,11 @@ function TransientLinearFEOperator(
   stiffness::Function, mass::Function, res::Function,
   trial, test;
   constant_forms::NTuple{2,Bool}=(false, false),
-  assembler = SparseMatrixAssembler(trial, test)
+  assembler=SparseMatrixAssembler(trial, test)
 )
   TransientLinearFEOperator(
-    (stiffness, mass), res,
-    trial, test; constant_forms, assembler
+    (stiffness, mass), res, trial, test;
+    constant_forms, assembler
   )
 end
 
@@ -694,11 +727,11 @@ function TransientLinearFEOperator(
   stiffness::Function, damping::Function, mass::Function, res::Function,
   trial, test;
   constant_forms::NTuple{3,Bool}=(false, false, false),
-  assembler = SparseMatrixAssembler(trial, test)
+  assembler=SparseMatrixAssembler(trial, test)
 )
   TransientLinearFEOpFromWeakForm(
-    (stiffness, damping, mass), res,
-    trial, test; constant_forms, assembler
+    (stiffness, damping, mass), res, trial, test;
+    constant_forms, assembler
   )
 end
 
