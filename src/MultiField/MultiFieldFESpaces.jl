@@ -313,7 +313,7 @@ function  _restrict_to_field(f,
   offsets = _compute_field_offsets(U)
   pini = offsets[field] + 1
   pend = offsets[field] + num_free_dofs(U[field])
-  SubVector(free_values,pini,pend)
+  view(free_values,pini:pend)
 end
 
 function  _restrict_to_field(f,
@@ -332,7 +332,7 @@ function  _restrict_to_field(f,
   offsets = compute_field_offsets(f,mfs)
   pini = offsets[field] + 1
   pend = offsets[field] + num_free_dofs(U[field])
-  return SubVector(block_free_values,pini,pend)
+  return view(block_free_values,pini:pend)
 end
 
 """
