@@ -93,7 +93,7 @@ function ode_start(
     tx, usx, ws
   )
 
-  sysslvrcache = solve!(x, sysslvr, stageop, sysslvrcache)
+  # sysslvrcache = solve!(x, sysslvr, stageop, sysslvrcache)
 
   # Update state
   state0 = (s0, s1)
@@ -218,7 +218,7 @@ function ode_start(
     J, r, false, sysslvrcache
   )
 
-  sysslvrcache = solve!(x, sysslvr, stageop, sysslvrcache)
+  # sysslvrcache = solve!(x, sysslvr, stageop, sysslvrcache)
 
   # Update state
   state0 = (s0, s1)
