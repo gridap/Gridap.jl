@@ -252,6 +252,8 @@ By looking at the behaviour of the stability function at infinity, we find that 
 ## Generalised- $\alpha$ scheme for first-order ODEs
 This scheme relies on the state vector $\\{\boldsymbol{s}(t)\\} = \\{\boldsymbol{u}(t), \partial_{t} \boldsymbol{u}(t)\\}$. In particular, it needs a nontrivial starting procedure that evaluates $\partial_{t} \boldsymbol{u}(t_{0})$ by enforcing a zero residual at $t_{0}$. The finaliser can still return the first vector of the state vectors. For convenience, let $\partial_{t} \boldsymbol{u}\_{n}$ denote the approximation $\partial_{t} \boldsymbol{u}(t_{n})$.
 
+> Alternatively, the initial velocity can be provided manually: when calling `solve(odeslvr, tfeop, t0, tF, uhs0)`, set `uhs0 = (u0, v0, a0)` instead of `uhs0 = (u0, v0)`. This is useful when enforcing a zero initial residual would lead to a singular system.
+
 This method extends the $\theta$-method by considering the two-point quadrature rule $$\boldsymbol{u}(t_{n+1}) = \boldsymbol{u}\_{n} + \int_{t_{n}}^{t_{n+1}} \partial_{t} \boldsymbol{u}(t) \ \mathrm{d} t \approx \boldsymbol{u}\_{n} + h_{n} [(1 - \gamma) \partial_{t} \boldsymbol{u}(t_{n}) + \gamma \partial_{t} \boldsymbol{u}(t_{n+1})],$$
 where $0 \leq \gamma \leq 1$ is a free parameter. The question is now how to estimate $\partial_{t} \boldsymbol{u}(t_{n+1})$. This is achieved by enforcing a zero residual at $t_{n + \alpha_{F}} \doteq (1 - \alpha_{F}) t_{n} + \alpha_{F} t_{n+1}$, where $0 \leq \alpha_{F} \leq 1$ is another free parameter. The value of $\boldsymbol{u}$ at that time, $\boldsymbol{u}\_{n + \alpha_{F}}$, is obtained by the same linear combination of $\boldsymbol{u}$ at $t_{n}$ and $t_{n+1}$. Regarding $\partial_{t} \boldsymbol{u}$, it is taken as a linear combination weighted by another free parameter $0 < \alpha_{M} \leq 1$ of the time derivative at times $t_{n}$ and $t_{n+1}$. Note that $\alpha_{M}$ cannot be zero. Altogether, we have defined the discrete operators
 ```math
@@ -398,6 +400,8 @@ We note that the first column of the matrix and the first weight are all zero, s
 
 ## Generalised- $\alpha$ scheme for second-order ODEs
 This scheme relies on the state vector $\\{\boldsymbol{s}(t)\\} = \\{\boldsymbol{u}(t), \partial_{t} \boldsymbol{u}(t), \partial_{tt} \boldsymbol{u}(t)\\}$. It needs a nontrivial starting procedure that evaluates $\partial_{tt} \boldsymbol{u}(t_{0})$ by enforcing a zero residual at $t_{0}$. The finaliser can still return the first vector of the state vectors. For convenience, let $\partial_{tt} \boldsymbol{u}\_{n}$ denote the approximation $\partial_{tt} \boldsymbol{u}(t_{n})$.
+
+> The initial acceleration can alternatively be provided manually: when calling `solve(odeslvr, tfeop, t0, tF, uhs0)`, set `uhs0 = (u0, v0, a0)` instead of `uhs0 = (u0, v0)`. This is useful when enforcing a zero initial residual would lead to a singular system.
 
 This method is built out of the following update rule
 ```math
