@@ -34,12 +34,12 @@ function BlockMultiFieldStyle(NB::Integer)
   return BlockMultiFieldStyle(NB,SB)
 end
 
-function BlockMultiFieldStyle(::BlockMultiFieldStyle{NB,SB,P},spaces::Vector{<:SingleFieldFESpace}) where {NB,SB,P}
+function BlockMultiFieldStyle(::BlockMultiFieldStyle{NB,SB,P},spaces) where {NB,SB,P}
   @check length(spaces) == sum(SB)
   return BlockMultiFieldStyle(NB,SB,P)
 end
 
-function BlockMultiFieldStyle(::BlockMultiFieldStyle{0,0,0},spaces::Vector{<:SingleFieldFESpace})
+function BlockMultiFieldStyle(::BlockMultiFieldStyle{0,0,0},spaces)
   NB = length(spaces)
   return BlockMultiFieldStyle(NB)
 end
@@ -135,13 +135,6 @@ function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::BlockMultiFieldStyle{N
   block_ranges   = get_block_ranges(NB,SB,P)
   block_num_dofs = map(range->sum(map(num_free_dofs,f.spaces[range])),block_ranges)
   return BlockArrays.blockedrange(block_num_dofs)
-end
-
-function FESpaces.zero_free_values(f::MultiFieldFESpace{<:BlockMultiFieldStyle{NB,SB,P}}) where {NB,SB,P}
-  block_ranges   = get_block_ranges(NB,SB,P)
-  block_num_dofs = map(range->sum(map(num_free_dofs,f.spaces[range])),block_ranges)
-  block_vtypes   = map(range->get_vector_type(first(f.spaces[range])),block_ranges)
-  return mortar(map(allocate_vector,block_vtypes,block_num_dofs))
 end
 
 FESpaces.get_dof_value_type(f::MultiFieldFESpace{MS,CS,V}) where {MS,CS,V} = eltype(V)

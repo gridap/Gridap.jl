@@ -5,7 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.17.23] - 2024-01-28 
+
+### Changed
+
+- Changed how `symbolic_loop_matrix_vector!` loop works. Now it also takes account vector entries touched from matvecdata. Since PR[#975](https://github.com/gridap/Gridap.jl/pull/975).
+
+## [0.17.22] - 2024-01-12
+
+### Added
+
+- Added `get_dof_to_node` and `get_dof_to_comp` for `LagrangianDofBasis`. Since PR[#964](https://github.com/gridap/Gridap.jl/pull/964).
+
+### Changed
+
+- Changed how `allocate_vector` works. Now it only allocates, instead of allocating+initialising to zero. Since PR[#963](https://github.com/gridap/Gridap.jl/pull/963).
+
+### Fixed
+
+- Fixed issue where `FineToCoarseField` would not work for vector-valued fields. Since PR[#970](https://github.com/gridap/Gridap.jl/pull/970).
+- Fixed issue where `BlockSparseMatrixAssembler` would not work correctly when permuting variables. Since PR[#971](https://github.com/gridap/Gridap.jl/pull/971).
+
+## [0.17.21] - 2023-12-04
+
+### Added
+
+- Implemented real/imag for VectorValues
+- Explicit Runge-Kutta ODE Solvers. Since PR [#952](https://github.com/gridap/Gridap.jl/pull/952)
+- Improved the methods `allocate_in_range` and `allocate_in_domain` with support for `BlockArrays` and distributed arrays. Since PR[#960](https://github.com/gridap/Gridap.jl/pull/960).
+
+### Fixed
+
+- `BlockMultiFieldStyle` available for `TransientMultiFieldFESpaces` since PR [#946](https://github.com/gridap/Gridap.jl/pull/946).
+- When creating `DiscreteModelPortions`, some of the `FaceLabeling` arrays were being aliased. This caused issues when adding tags to distributed models in debug mode. Since PR [#956](https://github.com/gridap/Gridap.jl/pull/956).
+- Function `add_entry!` was inconsistent for `AbstractMatrix` and `AbstractSparseMatrix`. Since PR[#959](https://github.com/gridap/Gridap.jl/pull/959).
+
+## [0.17.20] - 2023-10-01
 
 ### Added
 
