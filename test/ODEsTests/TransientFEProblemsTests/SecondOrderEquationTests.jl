@@ -8,15 +8,9 @@ using Gridap
 using Gridap.Algebra
 using Gridap.FESpaces
 using Gridap.ODEs
-
 # Analytical functions
-u(x, t) = (1 - x[1]) * x[2] * (t^2 + 3.0)
-∂tu(x, t) = ∂t(u)(x, t)
-∂ttu(x, t) = ∂tt(u)(x, t)
-
-u(t::Real) = x -> u(x, t)
-∂tu(t::Real) = x -> ∂tu(x, t)
-∂ttu(t::Real) = x -> ∂ttu(x, t)
+utx(t, x) = (1 - x[1]) * x[2] * (t^2 + 3.0)
+u = time_slicing(utx)
 
 # Geometry
 domain = (0, 1, 0, 1)
@@ -36,8 +30,8 @@ dΩ = Measure(Ω, degree)
 
 # FE operator
 order = 2
-f(t) = x -> ∂tt(u)(x, t) + ∂t(u)(x, t) - Δ(u(t))(x)
-
+ftx(t, x) = ∂tt(u)(t, x) + ∂t(u)(t, x) - Δ(u)(t, x)
+f = time_slicing(ftx)
 mass(t, ∂ₜₜu, v) = ∫(∂ₜₜu ⋅ v) * dΩ
 mass(t, u, ∂ₜₜu, v) = mass(t, ∂ₜₜu, v)
 damping(t, ∂ₜu, v) = ∫(∂ₜu ⋅ v) * dΩ
@@ -96,7 +90,7 @@ dt = 0.1
 
 U0 = U(t0)
 uh0 = interpolate_everywhere(u(t0), U0)
-∂tuh0 = interpolate_everywhere(∂tu(t0), U0)
+∂tuh0 = interpolate_everywhere(∂t(u)(t0), U0)
 
 tol = 1.0e-6
 sysslvr_l = LUSolver()
@@ -125,7 +119,7 @@ for odeslvr in odeslvrs
 end
 
 # Test with initial acceleration
-∂ttuh0 = interpolate_everywhere(∂ttu(t0), U0)
+∂ttuh0 = interpolate_everywhere(∂tt(u)(t0), U0)
 uhs0 = (uh0, ∂tuh0, ∂ttuh0)
 for odeslvr in odeslvrs
   for tfeop in tfeops

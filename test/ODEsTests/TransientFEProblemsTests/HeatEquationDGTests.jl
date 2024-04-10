@@ -10,12 +10,8 @@ using Gridap.FESpaces
 using Gridap.ODEs
 
 # Analytical functions
-u(x, t) = x[1] * (1 - x[2]) * (1 + t)
-u(t::Real) = x -> u(x, t)
-u(x) = t -> u(x, t)
-
-∂tu(x, t) = ∂t(u)(x, t)
-∂tu(t::Real) = x -> ∂tu(x, t)
+utx(t, x) = x[1] * (1 - x[2]) * (1 + t)
+u = time_slicing(utx)
 
 # Geometry
 domain = (0, 1, 0, 1)
@@ -42,7 +38,8 @@ dΛ = Measure(Λ, degree)
 nΛ = get_normal_vector(Λ)
 
 # FE operator
-f(t) = x -> ∂t(u)(x, t) - Δ(u(t))(x)
+ftx(t, x) = ∂t(u)(t, x) - Δ(u)(t, x)
+f = time_slicing(ftx)
 h = 1 / 5
 γ = order * (order + 1)
 

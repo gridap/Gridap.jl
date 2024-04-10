@@ -15,12 +15,8 @@ using Gridap.ODEs
 include("ODESolversMocks.jl")
 
 # Analytical functions
-u(x, t) = x[1] * (1 - x[2]) * (1 + t)
-u(t::Real) = x -> u(x, t)
-u(x) = t -> u(x, t)
-
-∂tu(x, t) = ∂t(u)(x, t)
-∂tu(t::Real) = x -> ∂tu(x, t)
+utx(t, x) = x[1] * (1 - x[2]) * (1 + t)
+u = time_slicing(utx)
 
 # Geometry
 domain = (0, 1, 0, 1)
@@ -108,7 +104,8 @@ end
 # First-order #
 ###############
 order = 1
-f(t) = x -> ∂t(u)(x, t) - Δ(u(t))(x)
+ftx(t, x) = ∂t(u)(t)(x) - Δ(u(t))(x)
+f = time_slicing(ftx)
 
 mass(t, ∂ₜu, v) = ∫(∂ₜu ⋅ v) * dΩ
 mass(t, u, ∂ₜu, v) = mass(t, ∂ₜu, v)
@@ -203,7 +200,8 @@ end
 # Second-order #
 ################
 order = 2
-f(t) = x -> ∂tt(u)(x, t) + ∂t(u)(x, t) - Δ(u(t))(x)
+ftx(t, x) = ∂tt(u)(t)(x) + ∂t(u)(t)(x) - Δ(u(t))(x)
+f = time_slicing(ftx)
 
 mass(t, ∂ₜₜu, v) = ∫(∂ₜₜu ⋅ v) * dΩ
 mass(t, u, ∂ₜₜu, v) = mass(t, ∂ₜₜu, v)

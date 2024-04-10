@@ -12,8 +12,8 @@ using Gridap.MultiField
 using Gridap.ODEs
 using Gridap.ODEs: TransientMultiFieldCellField
 
-f(x, t) = sum(x)
-f(t::Real) = x -> f(x, t)
+ftx(t, x) = sum(x)
+f = time_slicing(ftx)
 
 domain = (0, 1, 0, 1)
 partition = (5, 5)

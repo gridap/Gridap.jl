@@ -23,10 +23,10 @@ tF = 10 * dt # 2 * π
 tol = 1.0e-2
 
 # Exact solution
-ϕₑ(x, t) = ω / k * ξ * (cosh(k * (x[2]))) / sinh(k * H) * sin(k * x[1] - ω * t)
-ηₑ(x, t) = ξ * cos(k * x[1] - ω * t)
-ϕₑ(t::Real) = x -> ϕₑ(x, t)
-ηₑ(t::Real) = x -> ηₑ(x, t)
+ϕₑtx(t, x) = ω / k * ξ * (cosh(k * (x[2]))) / sinh(k * H) * sin(k * x[1] - ω * t)
+ϕₑ = time_slicing(ϕₑtx)
+ηₑtx(t, x) = ξ * cos(k * x[1] - ω * t)
+ηₑ = time_slicing(ηₑtx)
 
 # Domain
 domain = (0, L, 0, H)
@@ -84,7 +84,7 @@ UΓ0 = U_Γ(t0)
 X0 = X(t0)
 uh0 = interpolate_everywhere(ϕₑ(t0), U0)
 uhΓ0 = interpolate_everywhere(ηₑ(t0), UΓ0)
-xh0 = interpolate_everywhere([uh0, uhΓ0], X0);
+xh0 = interpolate_everywhere([uh0, uhΓ0], X0)
 xhs0 = (xh0,)
 
 function test_flow_operator(op)
