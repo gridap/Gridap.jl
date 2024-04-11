@@ -23,10 +23,8 @@ tF = 10 * dt # 2 * π
 tol = 1.0e-2
 
 # Exact solution
-ϕₑtx(t, x) = ω / k * ξ * (cosh(k * (x[2]))) / sinh(k * H) * sin(k * x[1] - ω * t)
-ϕₑ = time_slicing(ϕₑtx)
-ηₑtx(t, x) = ξ * cos(k * x[1] - ω * t)
-ηₑ = time_slicing(ηₑtx)
+ϕₑ(t) = x -> ω / k * ξ * (cosh(k * (x[2]))) / sinh(k * H) * sin(k * x[1] - ω * t)
+ηₑ(t) = x -> ξ * cos(k * x[1] - ω * t)
 
 # Domain
 domain = (0, L, 0, H)

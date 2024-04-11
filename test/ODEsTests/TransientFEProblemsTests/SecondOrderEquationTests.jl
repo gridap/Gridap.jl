@@ -9,8 +9,8 @@ using Gridap.Algebra
 using Gridap.FESpaces
 using Gridap.ODEs
 # Analytical functions
-utx(t, x) = (1 - x[1]) * x[2] * (t^2 + 3.0)
-u = time_slicing(utx)
+ut(t) = x -> (1 - x[1]) * x[2] * (t^2 + 3.0)
+u = TimeSpaceFunction(ut)
 
 # Geometry
 domain = (0, 1, 0, 1)
@@ -30,8 +30,8 @@ dΩ = Measure(Ω, degree)
 
 # FE operator
 order = 2
-ftx(t, x) = ∂tt(u)(t, x) + ∂t(u)(t, x) - Δ(u)(t, x)
-f = time_slicing(ftx)
+ft(t) = x -> ∂tt(u)(t, x) + ∂t(u)(t, x) - Δ(u)(t, x)
+f = TimeSpaceFunction(ft)
 mass(t, ∂ₜₜu, v) = ∫(∂ₜₜu ⋅ v) * dΩ
 mass(t, u, ∂ₜₜu, v) = mass(t, ∂ₜₜu, v)
 damping(t, ∂ₜu, v) = ∫(∂ₜu ⋅ v) * dΩ

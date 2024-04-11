@@ -1,47 +1,40 @@
-################
-# Time slicing #
-################
+#####################
+# TimeSpaceFunction #
+#####################
 """
-    struct TimeSlicing{F} <: Function end
+    struct TimeSpaceFunction{F} <: Function end
 
-`TimeSlicing` is an operator that can be applied to a function of time and space, and
-that, to a given time, produces the function of space at that time, allowing for the
-following syntax: if `f(t, x)` is defined, then `TimeSlicing(f)(t)(x) = f(t, x)`.
-
-This is needed prevent performance drops with automatic differentiation (e.g. when taking
-the time derivative of Dirichlet boundary conditions), and with integration (i.e. when
-an integrand contains a time-dependent coefficient).
+`TimeSpaceFunction` allows for convenient ways to apply differential operators to
+functions that depend on time and space. More precisely, if `f` is a function that, to
+a given time, returns a function of space (i.e. `f` is evaluated at time `t` and position
+`x` via `f(t)(x)`), then `F = TimeSpaceFunction(f)` supports the following syntax:
+* `op(F)`: a `TimeSpaceFunction` representing both `t -> x -> op(f)(t)(x)` and `(t, x) -> op(f)(t)(x)`,
+* `op(F)(t)`: a function of space representing `x -> op(f)(t)(x)`
+* `op(F)(t, x)`: the quantity `op(f)(t)(x)` (this notation is equivalent to `op(F)(t)(x)`),
+for all spatial and temporal differential operator, i.e. `op` in `(time_derivative,
+gradient, symmetric_gradient, divergence, curl, laplacian)` and their symbolic aliases
+(`∂t`, `∂tt`, `∇`, ...).
 """
-struct TimeSlicing{F} <: Function
+struct TimeSpaceFunction{F} <: Function
   f::F
 end
 
-function (ts::TimeSlicing)(t)
-  _ftx(x) = ts.f(t, x)
-  _ftx
-end
-
-function (ts::TimeSlicing)(t, x)
-  ts.f(t, x)
-end
-
-"""
-    const time_slicing = TimeSlicing
-
-Alias for `TimeSlicing`.
-"""
-const time_slicing = TimeSlicing
+(ts::TimeSpaceFunction)(t) = ts.f(t)
+(ts::TimeSpaceFunction)(t, x) = ts.f(t)(x)
 
 ##################################
 # Spatial differential operators #
 ##################################
-# Using the rule spatial_op(ts)(t, x) = spatial_op(ts(t))(x)
+# Using the rule spatial_op(ts)(t)(x) = spatial_op(ts(t))(x)
 for op in (:(Fields.gradient), :(Fields.symmetric_gradient), :(Fields.divergence),
   :(Fields.curl), :(Fields.laplacian))
   @eval begin
-    function ($op)(ts::TimeSlicing)
-      _op(t, x) = $op(ts(t))(x)
-      TimeSlicing(_op)
+    function ($op)(ts::TimeSpaceFunction)
+      function _op(t)
+        _op_t(x) = $op(ts(t))(x)
+        _op_t
+      end
+      TimeSpaceFunction(_op)
     end
   end
 end
@@ -112,33 +105,37 @@ end
 # Specialisation for `Function` #
 #################################
 function time_derivative(f::Function)
-  function dfdt(t, x)
-    T = return_type(f, t, x)
-    _time_derivative(T, f, t, x)
+  function dfdt(t)
+    ft = f(t)
+    function dfdt_t(x)
+      T = return_type(ft, x)
+      _time_derivative(T, f, t, x)
+    end
+    dfdt_t
   end
   dfdt
 end
 
 function _time_derivative(T::Type{<:Real}, f, t, x)
-  partial(t) = f(t, x)
+  partial(t) = f(t)(x)
   ForwardDiff.derivative(partial, t)
 end
 
 function _time_derivative(T::Type{<:VectorValue}, f, t, x)
-  partial(t) = get_array(f(t, x))
+  partial(t) = get_array(f(t)(x))
   VectorValue(ForwardDiff.derivative(partial, t))
 end
 
 function _time_derivative(T::Type{<:TensorValue}, f, t, x)
-  partial(t) = get_array(f(t, x))
+  partial(t) = get_array(f(t)(x))
   TensorValue(ForwardDiff.derivative(partial, t))
 end
 
-####################################
-# Specialisation for `TimeSlicing` #
-####################################
-function time_derivative(ts::TimeSlicing)
-  TimeSlicing(time_derivative(ts.f))
+##########################################
+# Specialisation for `TimeSpaceFunction` #
+##########################################
+function time_derivative(ts::TimeSpaceFunction)
+  TimeSpaceFunction(time_derivative(ts.f))
 end
 
 ###############################

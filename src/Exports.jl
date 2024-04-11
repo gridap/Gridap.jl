@@ -182,7 +182,6 @@ using Gridap.CellData: ∫; export ∫
 @publish Visualization createpvd
 @publish Visualization savepvd
 
-@publish ODEs time_slicing
 @publish ODEs ∂t
 @publish ODEs ∂tt
 @publish ODEs ForwardEuler

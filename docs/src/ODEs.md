@@ -91,8 +91,7 @@ A `TransientTrialFESpace` can be evaluated at any time derivative order, and the
 
 For example, the following creates a transient `FESpace` and evaluates its first two time derivatives.
 ```
-gtx(t, x) = x[1] + x[2] * t
-g = time_slicing(gtx)
+g(t) = x -> x[1] + x[2] * t
 V = FESpace(model, reffe, dirichlet_tags="boundary")
 U = TransientTrialFESpace (V, g)
 
@@ -105,13 +104,6 @@ U0 = U(t0)
 ∂ttU = ∂tt(U) # or ∂ttU = ∂t(∂t(U))
 ∂ttU0 = ∂ttU(t0)
 ```
-
-## The `time_slicing` constructor
-Note that the constructor `time_slicing` was used above to prescribe the boundary condition, instead of a more natural function `f(t, x) = gtx(t, x)` or functor `F(t) = x -> gtx(t, x)`. It would be possible to provide `f` instead of `g` in this example, but it would not be possible to do so for time-dependent coefficients inside an integrand, simply because `Gridap` expects an integrand to be a function of space only. This `time_slicing` constructor unifies these two scenarios and is motivated by performance and convenience reasons:
-* With the functor approach, `h(t)` is an anonymous function of `x`. This leads to performance drops when evaluating `h(t)(x)`, even when the function `h(t)` is instantiated only once, i.e. creating `ht = h(t)` and calling `ht(x)`. An even more significant loss in performance happens when computing (space or time) derivatives with automatic differentiation. With the `time_slicing` constructor, `g(t)` is a named function of `x`, and brings the same performance as if calling `gtx`.
-* With the functor approach, applying spatial differential operators is somewhat cumbersome, for example one would have to write `∂t(h)(t)(x) - Δ(h(t))(x)`. With the `time_slicing` constructor, one can simply write `∂t(g)(t, x) - Δ(g)(t, x)`.
-
-As a summary, `g = time_slicing(gtx)` allows the syntax `op(g)`, `op(g)(t)` and `op(g)(t, x)`, for all spatial and temporal differential operator, i.e. `op` in `(time_derivative, gradient, symmetric_gradient, divergence, curl, laplacian)` and their symbolic aliases (`∂t`, `∂tt`, `∇`, ...).
 
 ## Cell fields
 The time-dependent equivalent of `CellField` is `TransientCellField`. It stores the cell field itself together with its derivatives up to the order of the ODE.
@@ -163,7 +155,15 @@ TransientLinearFEOperator((stiffness, mass), res, U, V, constant_forms=(false, t
 ```
 If $\kappa$ is constant, the keyword `constant_forms` could be replaced by `(true, true)`.
 
-**Important** Note that in these examples, for optimal performance, `κ` should be a `time_slicing`.
+## The `TimeSpaceFunction` constructor
+Apply differential operators on a function that depends on time and space is somewhat cumbersome. Let `f` be a function of time and space, and `g(t) = x -> f(t, x)` (as in the prescription of the boundary conditions `g` above). Applying the operator $\partial_{t} - \Delta$  to `g` and evaluating at $(t, x)$ is written `∂t(g)(t)(x) - Δ(g(t))(x)`.
+
+The constructor `TimeSpaceFunction` allows for simpler notations: let `h = TimeSpaceFunction(g)`. The object `h` is a functor that supports the notations 
+* `op(h)`: a `TimeSpaceFunction` representing both `t -> x -> op(f)(t, x)` and `(t, x) -> op(f)(t, x)`,
+* `op(h)(t)`: a function of space representing `x -> op(f)(t, x)`
+* `op(h)(t, x)`: the quantity `op(f)(t, x)` (this notation is equivalent to `op(h)(t)(x)`),
+
+for all spatial and temporal differential operator, i.e. `op` in `(time_derivative, gradient, symmetric_gradient, divergence, curl, laplacian)` and their symbolic aliases (`∂t`, `∂tt`, `∇`, ...). The operator above applied to `h` and evaluated at `(t, x)` can be conveniently written `∂t(h)(t, x) - Δ(h)(t, x)`.
 
 ## Solver and solution
 The next step is to choose an ODE solver (see below for a full list) and specify the boundary conditions. The solution can then be iterated over until the final time is reached.

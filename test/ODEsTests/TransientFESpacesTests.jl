@@ -6,11 +6,8 @@ using Gridap
 using Gridap.Fields
 using Gridap.ODEs
 
-u1tx(t, x) = (x[1] + x[2]) * t
-u1 = time_slicing(u1tx)
-
-u2tx(t, x) = x[1] * t^2 + x[2] * t
-u2 = time_slicing(u2tx)
+u1(t) = x -> (x[1] + x[2]) * t
+u2(t) = x -> x[1] * t^2 + x[2] * t
 
 domain = (0, 1, 0, 1)
 partition = (5, 5)

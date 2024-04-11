@@ -10,8 +10,8 @@ using Gridap.FESpaces
 using Gridap.ODEs
 
 # Analytical functions
-utx(t, x) = x[1] * (1 - x[2]) * (1 + t)
-u = time_slicing(utx)
+ut(t) = x -> x[1] * (1 - x[2]) * (1 + t)
+u = TimeSpaceFunction(ut)
 
 # Geometry
 domain = (0, 1, 0, 1)
@@ -36,8 +36,8 @@ dΓ = Measure(Γ, degree)
 nΓ = get_normal_vector(Γ)
 
 # FE operator
-ftx(t, x) = ∂t(u)(t, x) - Δ(u)(t, x)
-f = time_slicing(ftx)
+ft(t) = x -> ∂t(u)(t, x) - Δ(u)(t, x)
+f = TimeSpaceFunction(ft)
 mass(t, ∂ₜu, v) = ∫(∂ₜu ⋅ v) * dΩ
 mass(t, u, ∂ₜu, v) = mass(t, ∂ₜu, v)
 stiffness(t, u, v) = ∫(∇(u) ⊙ ∇(v)) * dΩ
