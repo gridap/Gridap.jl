@@ -8,94 +8,100 @@ using Gridap
 using Gridap.ODEs
 
 # First time derivative, scalar-valued
-f1(x, t) = 5 * x[1] * x[2] + x[2]^2 * t^3
-∂tf1(x, t) = 3 * x[2]^2 * t^2
+f1(t) = x -> 5 * x[1] * x[2] + x[2]^2 * t^3
+∂tf1(t) = x -> 3 * x[2]^2 * t^2
 
-f2(x, t) = t^2
-∂tf2(x, t) = 2 * t
+f2(t) = x -> t^2
+∂tf2(t) = x -> 2 * t
 
-f3(x, t) = x[1]^2
-∂tf3(x, t) = zero(x[1])
+f3(t) = x -> x[1]^2
+∂tf3(t) = x -> zero(x[1])
 
-f4(x, t) = x[1]^t^2
-∂tf4(x, t) = 2 * t * log(x[1]) * f4(x, t)
+f4(t) = x -> x[1]^t^2
+∂tf4(t) = x -> 2 * t * log(x[1]) * f4(t)(x)
 
 for (f, ∂tf) in ((f1, ∂tf1), (f2, ∂tf2), (f3, ∂tf3), (f4, ∂tf4),)
-  dtf = (x, t) -> ForwardDiff.derivative(t -> f(x, t), t)
+  dtf(t) = x -> ForwardDiff.derivative(t -> f(t)(x), t)
 
   tv = rand(Float64)
   xv = Point(rand(Float64, 2)...)
-  @test ∂t(f)(xv, tv) ≈ ∂tf(xv, tv)
-  @test ∂t(f)(xv, tv) ≈ dtf(xv, tv)
-  @test ∂t(f)(xv, tv) ≈ ∂t(f)(xv)(tv) ≈ ∂t(f)(tv)(xv)
+  @test ∂t(f)(tv)(xv) ≈ ∂tf(tv)(xv)
+  @test ∂t(f)(tv)(xv) ≈ dtf(tv)(xv)
+
+  F = TimeSpaceFunction(f)
+  @test F(tv)(xv) ≈ f(tv)(xv)
+  @test ∂t(F)(tv)(xv) ≈ ∂tf(tv)(xv)
 end
 
 # First time derivative, vector-valued
-f1(x, t) = VectorValue(5 * x[1] * x[2], x[2]^2 * t^3)
-∂tf1(x, t) = VectorValue(zero(x[1]), x[2]^2 * 3 * t^2)
+f1(t) = x -> VectorValue(5 * x[1] * x[2], x[2]^2 * t^3)
+∂tf1(t) = x -> VectorValue(zero(x[1]), x[2]^2 * 3 * t^2)
 
-f2(x, t) = VectorValue(x[1]^2, zero(x[2]))
-∂tf2(x, t) = VectorValue(zero(x[1]), zero(x[2]))
+f2(t) = x -> VectorValue(x[1]^2, zero(x[2]))
+∂tf2(t) = x -> VectorValue(zero(x[1]), zero(x[2]))
 
-f3(x, t) = VectorValue(x[1]^2, t)
-∂tf3(x, t) = VectorValue(zero(x[1]), one(t))
+f3(t) = x -> VectorValue(x[1]^2, t)
+∂tf3(t) = x -> VectorValue(zero(x[1]), one(t))
 
 for (f, ∂tf) in ((f1, ∂tf1), (f2, ∂tf2), (f3, ∂tf3),)
-  dtf = (x, t) -> VectorValue(ForwardDiff.derivative(t -> get_array(f(x, t)), t))
+  dtf(t) = x -> VectorValue(ForwardDiff.derivative(t -> get_array(f(t)(x)), t))
 
   tv = rand(Float64)
   xv = Point(rand(Float64, 2)...)
-  @test ∂t(f)(xv, tv) ≈ ∂tf(xv, tv)
-  @test ∂t(f)(xv, tv) ≈ dtf(xv, tv)
-  @test ∂t(f)(xv, tv) ≈ ∂t(f)(xv)(tv) ≈ ∂t(f)(tv)(xv)
+  @test ∂t(f)(tv)(xv) ≈ ∂tf(tv)(xv)
+  @test ∂t(f)(tv)(xv) ≈ dtf(tv)(xv)
+
+  F = TimeSpaceFunction(f)
+  @test F(tv)(xv) ≈ f(tv)(xv)
+  @test ∂t(F)(tv)(xv) ≈ ∂tf(tv)(xv)
 end
 
 # First time derivative, tensor-valued
-f1(x, t) = TensorValue(x[1] * t, x[2] * t, x[1] * x[2], x[1] * t^2)
-∂tf1(x, t) = TensorValue(x[1], x[2], zero(x[1]), 2 * x[1] * t)
+f1(t) = x -> TensorValue(x[1] * t, x[2] * t, x[1] * x[2], x[1] * t^2)
+∂tf1(t) = x -> TensorValue(x[1], x[2], zero(x[1]), 2 * x[1] * t)
 
 for (f, ∂tf) in ((f1, ∂tf1),)
-  dtf = (x, t) -> TensorValue(ForwardDiff.derivative(t -> get_array(f(x, t)), t))
+  dtf(t) = x -> TensorValue(ForwardDiff.derivative(t -> get_array(f(t)(x)), t))
 
   tv = rand(Float64)
   xv = Point(rand(Float64, 2)...)
-  @test ∂t(f)(xv, tv) ≈ ∂tf(xv, tv)
-  @test ∂t(f)(xv, tv) ≈ dtf(xv, tv)
-  @test ∂t(f)(xv, tv) ≈ ∂t(f)(xv)(tv) ≈ ∂t(f)(tv)(xv)
+  @test ∂t(f)(tv)(xv) ≈ ∂tf(tv)(xv)
+  @test ∂t(f)(tv)(xv) ≈ dtf(tv)(xv)
+
+  F = TimeSpaceFunction(f)
+  @test F(tv)(xv) ≈ f(tv)(xv)
+  @test ∂t(F)(tv)(xv) ≈ ∂tf(tv)(xv)
 end
 
 # Spatial derivatives
-# f(x, t) = VectorValue(x[1]^2, t)
-# ∇f(x, t) = ∇(y -> f(y, t))(x)
+ft(t) = x -> x[1]^2 * t + x[2]
+f = TimeSpaceFunction(ft)
 
-# tv = rand(Float64)
-# xv = Point(rand(Float64, 2)...)
-# ∇f(xv, tv)
-
-# TODO
-# @santiagobadia : Is there any way to make this transparent to the user
-# I guess not unless we create a type for these analytical (space-only or
-# space-time via a trait) functions
-# Probably a try-catch?
+tv = rand(Float64)
+xv = Point(rand(Float64, 2)...)
+@test ∇(f)(tv)(xv) ≈ Point(2 * xv[1] * tv, 1.0)
 
 # Second time derivative, scalar-valued
-f1(x, t) = t^2
-∂tf1(x, t) = 2 * t
-∂ttf1(x, t) = 2 * one(t)
+f1(t) = x -> t^2
+∂tf1(t) = x -> 2 * t
+∂ttf1(t) = x -> 2 * one(t)
 
-f2(x, t) = x[1] * t^2
-∂tf2(x, t) = 2 * x[1] * t
-∂ttf2(x, t) = 2 * x[1]
+f2(t) = x -> x[1] * t^2
+∂tf2(t) = x -> 2 * x[1] * t
+∂ttf2(t) = x -> 2 * x[1]
 
 for (f, ∂tf, ∂ttf) in ((f1, ∂tf1, ∂ttf1), (f2, ∂tf2, ∂ttf2),)
-  dtf = (x, t) -> ForwardDiff.derivative(t -> f(x, t), t)
-  dttf = (x, t) -> ForwardDiff.derivative(t -> dtf(x, t), t)
+  dtf(t) = x -> ForwardDiff.derivative(t -> f(t)(x), t)
+  dttf(t) = x -> ForwardDiff.derivative(t -> dtf(t)(x), t)
 
   tv = rand(Float64)
   xv = Point(rand(Float64, 2)...)
-  @test ∂tt(f)(xv, tv) ≈ ∂ttf(xv, tv)
-  @test ∂tt(f)(xv, tv) ≈ dttf(xv, tv)
-  @test ∂tt(f)(xv, tv) ≈ ∂tt(f)(xv)(tv) ≈ ∂tt(f)(tv)(xv)
+  @test ∂tt(f)(tv)(xv) ≈ ∂ttf(tv)(xv)
+  @test ∂tt(f)(tv)(xv) ≈ dttf(tv)(xv)
+
+  F = TimeSpaceFunction(f)
+  @test F(tv)(xv) ≈ f(tv)(xv)
+  @test ∂tt(F)(tv)(xv) ≈ ∂ttf(tv)(xv)
 end
 
 end # module TimeDerivativesTests

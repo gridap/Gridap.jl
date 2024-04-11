@@ -91,7 +91,7 @@ A `TransientTrialFESpace` can be evaluated at any time derivative order, and the
 
 For example, the following creates a transient `FESpace` and evaluates its first two time derivatives.
 ```
-g(t::Real) = x -> x[1] + x[2] * t
+g(t) = x -> x[1] + x[2] * t
 V = FESpace(model, reffe, dirichlet_tags="boundary")
 U = TransientTrialFESpace (V, g)
 
@@ -154,6 +154,16 @@ res(t, u, v) = ∫( -f(t) ⋅ v ) * dΩ
 TransientLinearFEOperator((stiffness, mass), res, U, V, constant_forms=(false, true))
 ```
 If $\kappa$ is constant, the keyword `constant_forms` could be replaced by `(true, true)`.
+
+## The `TimeSpaceFunction` constructor
+Apply differential operators on a function that depends on time and space is somewhat cumbersome. Let `f` be a function of time and space, and `g(t) = x -> f(t, x)` (as in the prescription of the boundary conditions `g` above). Applying the operator $\partial_{t} - \Delta$  to `g` and evaluating at $(t, x)$ is written `∂t(g)(t)(x) - Δ(g(t))(x)`.
+
+The constructor `TimeSpaceFunction` allows for simpler notations: let `h = TimeSpaceFunction(g)`. The object `h` is a functor that supports the notations 
+* `op(h)`: a `TimeSpaceFunction` representing both `t -> x -> op(f)(t, x)` and `(t, x) -> op(f)(t, x)`,
+* `op(h)(t)`: a function of space representing `x -> op(f)(t, x)`
+* `op(h)(t, x)`: the quantity `op(f)(t, x)` (this notation is equivalent to `op(h)(t)(x)`),
+
+for all spatial and temporal differential operator, i.e. `op` in `(time_derivative, gradient, symmetric_gradient, divergence, curl, laplacian)` and their symbolic aliases (`∂t`, `∂tt`, `∇`, ...). The operator above applied to `h` and evaluated at `(t, x)` can be conveniently written `∂t(h)(t, x) - Δ(h)(t, x)`.
 
 ## Solver and solution
 The next step is to choose an ODE solver (see below for a full list) and specify the boundary conditions. The solution can then be iterated over until the final time is reached.
@@ -251,6 +261,8 @@ By looking at the behaviour of the stability function at infinity, we find that 
 
 ## Generalised- $\alpha$ scheme for first-order ODEs
 This scheme relies on the state vector $\\{\boldsymbol{s}(t)\\} = \\{\boldsymbol{u}(t), \partial_{t} \boldsymbol{u}(t)\\}$. In particular, it needs a nontrivial starting procedure that evaluates $\partial_{t} \boldsymbol{u}(t_{0})$ by enforcing a zero residual at $t_{0}$. The finaliser can still return the first vector of the state vectors. For convenience, let $\partial_{t} \boldsymbol{u}\_{n}$ denote the approximation $\partial_{t} \boldsymbol{u}(t_{n})$.
+
+> Alternatively, the initial velocity can be provided manually: when calling `solve(odeslvr, tfeop, t0, tF, uhs0)`, set `uhs0 = (u0, v0, a0)` instead of `uhs0 = (u0, v0)`. This is useful when enforcing a zero initial residual would lead to a singular system.
 
 This method extends the $\theta$-method by considering the two-point quadrature rule $$\boldsymbol{u}(t_{n+1}) = \boldsymbol{u}\_{n} + \int_{t_{n}}^{t_{n+1}} \partial_{t} \boldsymbol{u}(t) \ \mathrm{d} t \approx \boldsymbol{u}\_{n} + h_{n} [(1 - \gamma) \partial_{t} \boldsymbol{u}(t_{n}) + \gamma \partial_{t} \boldsymbol{u}(t_{n+1})],$$
 where $0 \leq \gamma \leq 1$ is a free parameter. The question is now how to estimate $\partial_{t} \boldsymbol{u}(t_{n+1})$. This is achieved by enforcing a zero residual at $t_{n + \alpha_{F}} \doteq (1 - \alpha_{F}) t_{n} + \alpha_{F} t_{n+1}$, where $0 \leq \alpha_{F} \leq 1$ is another free parameter. The value of $\boldsymbol{u}$ at that time, $\boldsymbol{u}\_{n + \alpha_{F}}$, is obtained by the same linear combination of $\boldsymbol{u}$ at $t_{n}$ and $t_{n+1}$. Regarding $\partial_{t} \boldsymbol{u}$, it is taken as a linear combination weighted by another free parameter $0 < \alpha_{M} \leq 1$ of the time derivative at times $t_{n}$ and $t_{n+1}$. Note that $\alpha_{M}$ cannot be zero. Altogether, we have defined the discrete operators
@@ -398,6 +410,8 @@ We note that the first column of the matrix and the first weight are all zero, s
 
 ## Generalised- $\alpha$ scheme for second-order ODEs
 This scheme relies on the state vector $\\{\boldsymbol{s}(t)\\} = \\{\boldsymbol{u}(t), \partial_{t} \boldsymbol{u}(t), \partial_{tt} \boldsymbol{u}(t)\\}$. It needs a nontrivial starting procedure that evaluates $\partial_{tt} \boldsymbol{u}(t_{0})$ by enforcing a zero residual at $t_{0}$. The finaliser can still return the first vector of the state vectors. For convenience, let $\partial_{tt} \boldsymbol{u}\_{n}$ denote the approximation $\partial_{tt} \boldsymbol{u}(t_{n})$.
+
+> The initial acceleration can alternatively be provided manually: when calling `solve(odeslvr, tfeop, t0, tF, uhs0)`, set `uhs0 = (u0, v0, a0)` instead of `uhs0 = (u0, v0)`. This is useful when enforcing a zero initial residual would lead to a singular system.
 
 This method is built out of the following update rule
 ```math

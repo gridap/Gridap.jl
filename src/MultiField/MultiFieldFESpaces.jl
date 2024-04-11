@@ -137,6 +137,10 @@ function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::BlockMultiFieldStyle{N
   return BlockArrays.blockedrange(block_num_dofs)
 end
 
+function FESpaces.zero_dirichlet_values(f::MultiFieldFESpace)
+  map(zero_dirichlet_values,f.spaces)
+end
+
 FESpaces.get_dof_value_type(f::MultiFieldFESpace{MS,CS,V}) where {MS,CS,V} = eltype(V)
 
 FESpaces.get_vector_type(f::MultiFieldFESpace) = f.vector_type
@@ -262,6 +266,18 @@ function FESpaces.FEFunction(fe::MultiFieldFESpace, free_values)
   MultiFieldFEFunction(free_values,fe,blocks)
 end
 
+function FESpaces.FEFunction(
+  fe::MultiFieldFESpace, free_values::AbstractVector, dir_values::Vector{<:AbstractVector}
+)
+  @check length(dir_values) == num_fields(fe)
+  blocks = map(1:length(fe.spaces)) do i
+    free_values_i = restrict_to_field(fe,free_values,i)
+    dir_values_i  = dir_values[i]
+    FEFunction(fe.spaces[i],free_values_i,dir_values_i)
+  end
+  MultiFieldFEFunction(free_values,fe,blocks)
+end
+
 function FESpaces.EvaluationFunction(fe::MultiFieldFESpace, free_values)
   blocks = map(1:length(fe.spaces)) do i
     free_values_i = restrict_to_field(fe,free_values,i)
@@ -297,7 +313,7 @@ function  _restrict_to_field(f,
   offsets = _compute_field_offsets(U)
   pini = offsets[field] + 1
   pend = offsets[field] + num_free_dofs(U[field])
-  SubVector(free_values,pini,pend)
+  view(free_values,pini:pend)
 end
 
 function  _restrict_to_field(f,
@@ -316,7 +332,7 @@ function  _restrict_to_field(f,
   offsets = compute_field_offsets(f,mfs)
   pini = offsets[field] + 1
   pend = offsets[field] + num_free_dofs(U[field])
-  return SubVector(block_free_values,pini,pend)
+  return view(block_free_values,pini:pend)
 end
 
 """
@@ -596,7 +612,18 @@ function FESpaces.interpolate_everywhere(objects, fe::MultiFieldFESpace)
   for (field, (U,object)) in enumerate(zip(fe.spaces,objects))
     free_values_i = restrict_to_field(fe,free_values,field)
     dirichlet_values_i = zero_dirichlet_values(U)
-    uhi = interpolate_everywhere!(object, free_values_i,dirichlet_values_i,U)
+    uhi = interpolate_everywhere!(object,free_values_i,dirichlet_values_i,U)
+    push!(blocks,uhi)
+  end
+  MultiFieldFEFunction(free_values,fe,blocks)
+end
+
+function FESpaces.interpolate_everywhere!(objects,free_values::AbstractVector,dirichlet_values::Vector,fe::MultiFieldFESpace)
+  blocks = SingleFieldFEFunction[]
+  for (field, (U,object)) in enumerate(zip(fe.spaces,objects))
+    free_values_i = restrict_to_field(fe,free_values,field)
+    dirichlet_values_i = dirichlet_values[field]
+    uhi = interpolate_everywhere!(object,free_values_i,dirichlet_values_i,U)
     push!(blocks,uhi)
   end
   MultiFieldFEFunction(free_values,fe,blocks)

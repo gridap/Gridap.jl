@@ -6,23 +6,8 @@ using Gridap
 using Gridap.Fields
 using Gridap.ODEs
 
-u1(x, t) = (x[1] + x[2]) * t
-u1(t::Real) = x -> u1(x, t)
-
-∂tu1(t) = x -> x[1] + x[2]
-ODEs.∂t(::typeof(u1)) = ∂tu1
-
-∂ttu1(t) = x -> zero(x[1])
-ODEs.∂tt(::typeof(u1)) = ∂ttu1
-
-u2(x, t) = x[1] * t^2 + x[2] * t
-u2(t::Real) = x -> u2(x, t)
-
-∂tu2(t) = x -> 2 * t * x[1] + x[2]
-ODEs.∂t(::typeof(u2)) = ∂tu2
-
-∂ttu2(t) = x -> 2 * x[1]
-ODEs.∂tt(::typeof(u2)) = ∂ttu2
+u1(t) = x -> (x[1] + x[2]) * t
+u2(t) = x -> x[1] * t^2 + x[2] * t
 
 domain = (0, 1, 0, 1)
 partition = (5, 5)
