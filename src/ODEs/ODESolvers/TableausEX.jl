@@ -9,8 +9,10 @@ function EXRK11(::Type{T}) where {T}
 end
 
 """
-EXRK_Euler_1_1
-FE
+    EXRK_Euler_1_1
+    FE
+
+Hello world
 """
 struct EXRK_Euler_1_1 <: TableauName end
 
@@ -33,7 +35,9 @@ function EXRK22(α::Real, ::Type{T}=Float64) where {T}
 end
 
 """
+```
 EXRK_Midpoint_2_2
+```
 """
 struct EXRK_Midpoint_2_2 <: TableauName end
 
@@ -42,8 +46,8 @@ function ButcherTableau(::EXRK_Midpoint_2_2, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_SSP_2_2
-EXRK_Heun_2_2
+    EXRK_SSP_2_2
+    EXRK_Heun_2_2
 """
 struct EXRK_SSP_2_2 <: TableauName end
 
@@ -61,7 +65,7 @@ function ButcherTableau(::EXRK_Heun_2_2, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_Ralston_2_2
+    EXRK_Ralston_2_2
 """
 struct EXRK_Ralston_2_2 <: TableauName end
 

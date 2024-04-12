@@ -34,10 +34,10 @@ makedocs(
   modules = [Gridap],
   pages = pages,
   doctest = false,
-  warnonly = true,
+  warnonly = [:cross_references,:missing_docs],
+  checkdocs = :exports,
 )
 
 deploydocs(
   repo = "github.com/gridap/Gridap.jl.git",
 )
-
