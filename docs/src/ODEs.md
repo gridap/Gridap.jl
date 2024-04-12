@@ -1,9 +1,16 @@
-# A general framework for the numerical approximation of ODEs
+```@meta
+CurrentModule = Gridap.ODEs
+```
+
+# Gridap.ODEs
+
 We consider an initial value problem written in the form
 ```math
 \left\{\begin{array}{rcll}\boldsymbol{r}(t, \partial_{t}^{0} \boldsymbol{u}, \ldots, \partial_{t}^{n} \boldsymbol{u}) &=& \boldsymbol{0}_{d}, \\ \partial_{t}^{k} \boldsymbol{u}(t_{0}) &=& \boldsymbol{u}_{0}^{k} & 0 \leq k \leq n-1,\end{array}\right.
 ```
+
 where
+
 * $\boldsymbol{u}: \mathbb{R} \to \mathbb{R}^{d}$ is the unknown of the problem,
 * $n \in \mathbb{N}$ is the order of the ODE,
 * $t_{0} \in \mathbb{R}$ is the initial time and $\\{\{\boldsymbol{u}\_{0}^{k}\}\\}\_{0 \leq k \leq n-1} \in (\mathbb{R}^{d})^{n-1}$ are the initial conditions, and
@@ -456,11 +463,8 @@ This method was also designed to damp high-frequency perturbations so it is comm
 * The standard generalised- $\alpha$ method is obtained by setting $\alpha_{M} = \frac{2 \rho_{\infty - 1}}{\rho_{\infty} + 1}$, $\alpha_{F} = \frac{\rho_{\infty}}{\rho_{\infty} + 1}$.
 * The Newmark method corresponds to $\alpha_{F} = \alpha_{M} = 0$. In this case, the values of $\beta$ and $\gamma$ are usually chosen as $\beta = 0$, $\gamma = \frac{1}{2}$ (explicit central difference scheme), or $\beta = \frac{1}{4}$ and $\gamma = \frac{1}{2}$ (midpoint rule).
 
-# TODO
-Some Runge-Kutta schemes have the First-Same-As-Last (FSAL) property, that enables sharing a residual evaluation from one step to the next. It may not be possible to have this optimisation in our case because of the Dirichlet boundary conditions.
+# Reference
 
-# Ideas for later
-* Adaptive time-stepping with embedded Runge-Kutta methods or Richardson extrapolation
-* Linear multistep methods (Adam-Bashford, Adam-Moulton, Backward Difference Formula)
-* General linear methods
-* Numerical methods for differential-algebraic systems of equations (DAEs)
+```@autodocs
+Modules = [ODEs,]
+```
