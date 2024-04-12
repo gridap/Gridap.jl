@@ -13,7 +13,7 @@ using Gridap.ODEs
     struct ODEOperatorMock <: ODEOperator end
 
 Mock linear ODE of arbitrary order
-```math
+```
 ∑_{0 ≤ k ≤ N} form_k(t) ∂t^k u + forcing(t) = 0.
 ```
 """

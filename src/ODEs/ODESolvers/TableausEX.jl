@@ -9,8 +9,8 @@ function EXRK11(::Type{T}) where {T}
 end
 
 """
-EXRK_Euler_1_1
-FE
+    EXRK_Euler_1_1
+    FE
 """
 struct EXRK_Euler_1_1 <: TableauName end
 
@@ -33,7 +33,7 @@ function EXRK22(α::Real, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_Midpoint_2_2
+    EXRK_Midpoint_2_2
 """
 struct EXRK_Midpoint_2_2 <: TableauName end
 
@@ -42,8 +42,8 @@ function ButcherTableau(::EXRK_Midpoint_2_2, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_SSP_2_2
-EXRK_Heun_2_2
+    EXRK_SSP_2_2
+    EXRK_Heun_2_2
 """
 struct EXRK_SSP_2_2 <: TableauName end
 
@@ -61,7 +61,7 @@ function ButcherTableau(::EXRK_Heun_2_2, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_Ralston_2_2
+    EXRK_Ralston_2_2
 """
 struct EXRK_Ralston_2_2 <: TableauName end
 
@@ -118,7 +118,7 @@ function EXRK33_2(α::Real, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_Kutta_3_3
+    EXRK_Kutta_3_3
 """
 struct EXRK_Kutta_3_3 <: TableauName end
 
@@ -127,7 +127,7 @@ function ButcherTableau(::EXRK_Kutta_3_3, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_Heun_3_3
+    EXRK_Heun_3_3
 """
 struct EXRK_Heun_3_3 <: TableauName end
 
@@ -136,8 +136,8 @@ function ButcherTableau(::EXRK_Heun_3_3, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_Wray_3_3
-EXRK_VanDerHouwen_3_3
+    EXRK_Wray_3_3
+    EXRK_VanDerHouwen_3_3
 """
 struct EXRK_Wray_3_3 <: TableauName end
 
@@ -152,7 +152,7 @@ function ButcherTableau(::EXRK_VanDerHouwen_3_3, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_Ralston_3_3
+    EXRK_Ralston_3_3
 """
 struct EXRK_Ralston_3_3 <: TableauName end
 
@@ -161,7 +161,7 @@ function ButcherTableau(::EXRK_Ralston_3_3, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_SSP_3_3
+    EXRK_SSP_3_3
 """
 struct EXRK_SSP_3_3 <: TableauName end
 
@@ -170,7 +170,7 @@ function ButcherTableau(::EXRK_SSP_3_3, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_SSP_3_2
+    EXRK_SSP_3_2
 """
 struct EXRK_SSP_3_2 <: TableauName end
 
@@ -188,7 +188,7 @@ function ButcherTableau(::EXRK_SSP_3_2, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_Fehlberg_3_2
+    EXRK_Fehlberg_3_2
 """
 struct EXRK_Fehlberg_3_2 <: TableauName end
 
@@ -215,7 +215,7 @@ end
 # 4 stages #
 ############
 """
-EXRK_RungeKutta_4_4
+    EXRK_RungeKutta_4_4
 """
 struct EXRK_RungeKutta_4_4 <: TableauName end
 
@@ -235,7 +235,7 @@ function ButcherTableau(::EXRK_RungeKutta_4_4, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_Simpson_4_4
+    EXRK_Simpson_4_4
 """
 struct EXRK_Simpson_4_4 <: TableauName end
 
@@ -257,7 +257,7 @@ function ButcherTableau(::EXRK_Simpson_4_4, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_Ralston_4_4
+    EXRK_Ralston_4_4
 """
 struct EXRK_Ralston_4_4 <: TableauName end
 
@@ -285,7 +285,7 @@ function ButcherTableau(::EXRK_Ralston_4_4, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_SSP_4_3
+    EXRK_SSP_4_3
 """
 struct EXRK_SSP_4_3 <: TableauName end
 
@@ -309,7 +309,7 @@ function ButcherTableau(::EXRK_SSP_4_3, ::Type{T}=Float64) where {T}
 end
 
 """
-EXRK_BogackiShampine_4_3
+    EXRK_BogackiShampine_4_3
 """
 struct EXRK_BogackiShampine_4_3 <: TableauName end
 

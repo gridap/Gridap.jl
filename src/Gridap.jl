@@ -20,6 +20,7 @@ The module is structured in the following sub-modules:
 - [`Gridap.FESpaces`](@ref)
 - [`Gridap.MultiField`](@ref)
 - [`Gridap.ODEs`](@ref)
+- [`Gridap.Adaptivity`](@ref)
 
 The exported names are:
 $(EXPORTS)

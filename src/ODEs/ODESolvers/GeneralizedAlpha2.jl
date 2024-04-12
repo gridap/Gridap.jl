@@ -2,7 +2,7 @@
     struct GeneralizedAlpha2 <: ODESolver
 
 Generalized-α second-order ODE solver.
-```math
+```
 residual(tx, ux, vx, ax) = 0,
 
 tx = αf * t_n + (1 - αf) * t_(n+1)

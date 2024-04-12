@@ -78,7 +78,7 @@ end
     struct ODESolverMock <: ODESolver end
 
 Mock `ODESolver` for ODEs of arbitrary order, using a backward Euler scheme.
-```math
+```
 res(tx, ux[0], ..., ux[N]) = 0,
 
 tx = t_n + dt
