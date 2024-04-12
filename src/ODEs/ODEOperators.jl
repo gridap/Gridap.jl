@@ -44,7 +44,7 @@ struct SemilinearODE <: AbstractSemilinearODE end
 
 ODE operator whose residual is linear with respect to all time derivatives, i.e.
 ```
-residual(t, ∂t^0[u], ..., ∂t^N[u]) = ∑_{0 ≤ k ≤ N} A_k(t) ∂t^k[u] + res(t),
+residual(t, ∂t^0[u], ..., ∂t^N[u]) = ∑_{0 ≤ k ≤ N} A_k(t) ∂t^k[u] - res(t),
 ```
 where `N` is the order of the ODE operator, and `∂t^k[u]` is the `k`-th-order
 time derivative of `u`.

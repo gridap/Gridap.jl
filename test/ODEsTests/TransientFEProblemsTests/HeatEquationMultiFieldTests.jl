@@ -42,7 +42,7 @@ _forcing(t, v) = ∫(f(t) ⋅ v) * dΩ
 
 _res(t, u, v) = _mass(t, ∂t(u), v) + _stiffness(t, u, v) - _forcing(t, v)
 _res_ql(t, u, v) = _stiffness(t, u, v) - _forcing(t, v)
-_res_l(t, v) = (-1) * _forcing(t, v)
+_res_l(t, v) = _forcing(t, v)
 
 mass(t, (∂ₜu1, ∂ₜu2), (v1, v2)) = _mass(t, ∂ₜu1, v1) + _mass(t, ∂ₜu2, v2)
 mass(t, (u1, u2), (∂ₜu1, ∂ₜu2), (v1, v2)) = _mass(t, u1, ∂ₜu1, v1) + _mass(t, u2, ∂ₜu2, v2)

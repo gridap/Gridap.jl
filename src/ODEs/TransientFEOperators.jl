@@ -643,7 +643,7 @@ get_assembler(tfeop::TransientSemilinearFEOpFromWeakForm) = tfeop.assembler
 
 Transient `FEOperator` defined by a transient weak form
 ```
-residual(t, u, v) = ∑_{0 ≤ k ≤ N} form_k(t, ∂t^k[u], v) + res(t, v) = 0,
+residual(t, u, v) = ∑_{0 ≤ k ≤ N} form_k(t, ∂t^k[u], v) - res(t, v) = 0,
 ```
 where `N` is the order of the operator, `form_k` is linear in `∂t^k[u]` and
 does not depend on the other time derivatives of `u`, and the `form_k` and
