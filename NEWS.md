@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.18.1] - 2024-04-12
 
+### Changed
+
+- Changed the sign of the residual in `TransientLinearFEOperator` to align with the conventions of `AffineFEOperator`. Since PR[#996](https://github.com/gridap/Gridap.jl/pull/996).
+
 ### Fixed
 
 - Bugfix in `restrict_to_field` for `BlockMultiFieldStyle`. Since PR[#993](https://github.com/gridap/Gridap.jl/pull/993).

@@ -62,9 +62,9 @@ We call the matrix ``\boldsymbol{M}: \mathbb{R} \to \mathbb{R}^{d \times d}`` th
 In particular, a semilinear ODE is a quasilinear ODE.
 * **Linear**. The residual is linear with respect to all time derivatives, i.e.
 ```math
-\boldsymbol{r}(t, \partial_{t}^{0} \boldsymbol{u}, \ldots, \partial_{t}^{n} \boldsymbol{u}) = \sum_{0 \leq k \leq n} \boldsymbol{A}_{k}(t) \partial_{t}^{k} \boldsymbol{u} + \boldsymbol{f}(t).
+\boldsymbol{r}(t, \partial_{t}^{0} \boldsymbol{u}, \ldots, \partial_{t}^{n} \boldsymbol{u}) = \sum_{0 \leq k \leq n} \boldsymbol{A}_{k}(t) \partial_{t}^{k} \boldsymbol{u} - \boldsymbol{f}(t).
 ```
-We refer to the matrix ``\boldsymbol{A}_{k}: \mathbb{R} \to \mathbb{R}^{d \times d}`` as the ``k``-th linear form of the residual. We may still define the mass matrix ``\boldsymbol{M} = \boldsymbol{A}_{n}``. In particular, a linear ODE is a semilinear ODE.
+We refer to the matrix ``\boldsymbol{A}_{k}: \mathbb{R} \to \mathbb{R}^{d \times d}`` as the ``k``-th linear form of the residual. We may still define the mass matrix ``\boldsymbol{M} = \boldsymbol{A}_{n}``. Note that the term independent of $u$, i.e. the forcing term, is subtracted from the residual. This aligns with standard conventions, and in particular with those of `AffineFEOperator` (see example in _Finite element operators_ below, in the construction of a `TransientLinearFEOperator`). In particular, a linear ODE is a semilinear ODE.
 
 > Note that for residuals of order zero (i.e. "standard" systems of equations), the definitions of quasilinear, semilinear, and linear coincide.
 
@@ -159,7 +159,7 @@ The time-dependent analog of `FEOperator` is `TransientFEOperator`. It has the f
 * `TransientSemilinearFEOperator(mass, res, jacs, trial, test; constant_mass)` and `TransientSemilinearFEOperator(mass, res, trial, test; order, constant_mass)` for the version with automatic jacobians. (The jacobian with respect to ``\partial_{t}^{n} \boldsymbol{u}`` is simply the mass term). The mass and residual are expected to have the signatures `mass(t, dtNu, v)` and `residual(t, u, v)`, where here again `dtNu` is the highest-order derivative. In particular, the mass is specified as a linear form of `dtNu`.
 * `TransientLinearFEOperator(forms, res, jacs, trial, test; constant_forms)` and `TransientLinearFEOperator(forms, res, trial, test; constant_forms)` for the version with automatic jacobians. (In fact, the jacobians are simply the forms themselves). The forms and residual are expected to have the signatures `form_k(t, dtku, v)` and `residual(t, v)`, i.e. `form_k` is a linear form of the ``k``-th order derivative, and the residual does not depend on `u`.
 
-It is important to note that all the terms are gathered in the residual, including the forcing term. In the common case where the forcing term is on the right-hand side, it will need to be made negative in this description.
+It is important to note that all the terms are gathered in the residual, including the forcing term. In the common case where the ODE is linear, the residual is only the forcing term, and it is subtracted from the bilinear forms (see example below).
 
 Here, in the signature of the residual, `t` is the time at which the residual is evaluated, `u` is a function in the trial space, and `v` is a test function. Time derivatives of `u` can be included in the residual via the `∂t` operator, applied as many times as needed, or using the shortcut `∂t(u, N)`.
 
@@ -194,7 +194,7 @@ TransientSemilinearFEOperator(mass, res, U, V, constant_mass=true)
 ```
 stiffness(t, u, v) = ∫( ∇(v) ⋅ (κ(t) ⋅ ∇(u)) ) dΩ
 mass(t, dtu, v) = ∫( v ⋅ dtu ) dΩ
-res(t, u, v) = -(∫( v ⋅ f(t) ) dΩ)
+res(t, u, v) = ∫( v ⋅ f(t) ) dΩ
 TransientLinearFEOperator((stiffness, mass), res, U, V, constant_forms=(false, true))
 ```
 If ``\kappa`` is constant, the keyword `constant_forms` could be replaced by `(true, true)`.

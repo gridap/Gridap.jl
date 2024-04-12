@@ -32,7 +32,7 @@ nonzeros(mat0) .= 0
 form_zero(t) = mat0
 
 α = randn(num_eqs)
-forcing(t) = -M * exp.(α .* t)
+forcing(t) = M * exp.(α .* t)
 forcing_zero(t) = zeros(typeof(t), num_eqs)
 
 u0 = randn(num_eqs)

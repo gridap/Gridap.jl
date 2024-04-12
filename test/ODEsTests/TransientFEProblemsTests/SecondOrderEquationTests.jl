@@ -44,7 +44,7 @@ jac_t(t, u, dut, v) = damping(t, dut, v)
 jac_tt(t, u, dutt, v) = mass(t, dutt, v)
 
 res_ql(t, u, v) = damping(t, ∂t(u), v) + stiffness(t, u, v) - forcing(t, v)
-res_l(t, v) = (-1) * forcing(t, v)
+res_l(t, v) = forcing(t, v)
 
 res0(t, u, v) = ∫(0 * u * v) * dΩ
 jac0(t, u, du, v) = ∫(0 * du * v) * dΩ

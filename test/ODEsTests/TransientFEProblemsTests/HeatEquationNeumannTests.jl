@@ -50,7 +50,7 @@ jac(t, u, du, v) = stiffness(t, du, v)
 jac_t(t, u, dut, v) = mass(t, dut, v)
 
 res_ql(t, u, v) = stiffness(t, u, v) - forcing(t, v)
-res_l(t, v) = (-1) * forcing(t, v)
+res_l(t, v) = forcing(t, v)
 
 args_man = ((jac, jac_t), U, V)
 tfeop_nl_man = TransientFEOperator(res, args_man...)

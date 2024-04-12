@@ -42,7 +42,7 @@ jac(t, u, du, v) = stiffness(t, du, v)
 jac_t(t, u, dut, v) = mass(t, u, dut, v)
 
 res_ql(t, u, v) = stiffness(t, u, v) - forcing(t, v)
-res_l(t, v) = (-1) * forcing(t, v)
+res_l(t, v) = forcing(t, v)
 
 res0(t, u, v) = ∫(0 * u * v) * dΩ
 jac0(t, u, du, v) = ∫(0 * du * v) * dΩ

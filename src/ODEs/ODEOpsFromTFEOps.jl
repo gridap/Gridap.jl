@@ -260,7 +260,9 @@ function Algebra.residual!(
 
   # Residual
   res = get_res(odeop.tfeop)
-  dc = res(t, uh, v)
+  # Need a negative sign here:
+  # residual(t, u, v) = ∑_{0 ≤ k ≤ N} form_k(t, ∂t^k[u], v) - res(t, v)
+  dc = (-1) * res(t, uh, v)
 
   # Forms
   order = get_order(odeop)

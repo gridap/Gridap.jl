@@ -117,7 +117,7 @@ jac(t, u, du, v) = stiffness(t, du, v)
 jac_t(t, u, dut, v) = mass(t, u, dut, v)
 
 res_ql(t, u, v) = stiffness(t, u, v) - forcing(t, v)
-res_l(t, v) = (-1) * forcing(t, v)
+res_l(t, v) = forcing(t, v)
 
 # TODO could think of a simple and optimised way to create a zero residual or
 # jacobian without assembling the vector / matrix
@@ -215,7 +215,7 @@ jac_t(t, u, dut, v) = damping(t, dut, v)
 jac_tt(t, u, dutt, v) = mass(t, dutt, v)
 
 res_ql(t, u, v) = damping(t, ∂t(u), v) + stiffness(t, u, v) - forcing(t, v)
-res_l(t, v) = (-1) * forcing(t, v)
+res_l(t, v) = forcing(t, v)
 
 im_res(t, u, v) = ∫(0 * u * v) * dΩ
 im_jac(t, u, du, v) = ∫(0 * du * v) * dΩ
