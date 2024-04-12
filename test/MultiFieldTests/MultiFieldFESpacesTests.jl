@@ -1,6 +1,7 @@
 module MultiFieldFESpacesTests
 
 using FillArrays
+using BlockArrays
 using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.FESpaces
@@ -27,10 +28,9 @@ Q = TestFESpace(model,ReferenceFE(lagrangian,Float64,order-1),conformity=:L2)
 U = TrialFESpace(V)
 P = TrialFESpace(Q)
 
-multi_field_style = ConsecutiveMultiFieldStyle()
-
-Y = MultiFieldFESpace(Vector{Float64},[V,Q],multi_field_style)
-X = MultiFieldFESpace(Vector{Float64},[U,P],multi_field_style)
+mfs = ConsecutiveMultiFieldStyle()
+Y = MultiFieldFESpace(Vector{Float64},[V,Q],mfs)
+X = MultiFieldFESpace(Vector{Float64},[U,P],mfs)
 
 @test num_free_dofs(X) == num_free_dofs(U) + num_free_dofs(P)
 @test num_free_dofs(X) == num_free_dofs(Y)
@@ -78,12 +78,22 @@ cf = CellField(X,get_cell_dof_ids(X,trian))
 test_fe_space(X,cellmatvec,cellmat,cellvec,trian)
 test_fe_space(Y,cellmatvec,cellmat,cellvec,trian)
 
-#using Gridap.Visualization
-#writevtk(trian,"trian";nsubcells=30,cellfields=["uh" => uh, "ph"=> ph])
-
 f(x) = sin(4*pi*(x[1]-x[2]^2))+1
 fh = interpolate([f,f],X)
 fh = interpolate_everywhere([f,f],X)
 fh = interpolate_dirichlet([f,f],X)
+
+# BlockMultiFieldStyle
+
+mfs = BlockMultiFieldStyle()
+Y = MultiFieldFESpace([V,Q],style=mfs)
+X = MultiFieldFESpace([U,P],style=mfs)
+
+fh = interpolate([f,f],X)
+
+x = zero_free_values(X)
+interpolate!([f,f],x,X)
+@test isa(x,BlockVector)
+@test x == get_free_dof_values(fh)
 
 end # module
