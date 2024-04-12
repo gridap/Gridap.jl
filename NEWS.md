@@ -5,7 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.18.0] - 2024-03-22
+## [0.18.1] - 2024-04-12
+
+### Fixed
+
+- Bugfix in `restrict_to_field` for `BlockMultiFieldStyle`. Since PR[#993](https://github.com/gridap/Gridap.jl/pull/993).
+
+## [0.18.0] - 2024-04-12
 
 ### Breaking
 
