@@ -2,7 +2,7 @@
     abstract type TransientFEOperator <: GridapType end
 
 Transient version of `FEOperator` corresponding to a residual of the form
-```math
+```
 residual(t, u, v) = 0,
 ```
 where `residual` is linear in `v`. Time derivatives of `u` can be included by
@@ -321,7 +321,7 @@ get_assembler(tfeop::TransientFEOpFromWeakForm) = tfeop.assembler
     struct TransientQuasilinearFEOpFromWeakForm <: TransientFEOperator end
 
 Transient `FEOperator` defined by a transient weak form
-```math
+```
 residual(t, u, v) = mass(t, u, ∂t^N[u], v) + res(t, u, v) = 0.
 ```
 Let `N` be the order of the operator. We impose the following conditions:
@@ -475,7 +475,7 @@ get_assembler(tfeop::TransientQuasilinearFEOpFromWeakForm) = tfeop.assembler
     struct TransientSemilinearFEOpFromWeakForm <: TransientFEOperator end
 
 Transient `FEOperator` defined by a transient weak form
-```math
+```
 residual(t, u, v) = mass(t, ∂t^N[u], v) + res(t, u, v) = 0.
 ```
 Let `N` be the order of the operator. We impose the following conditions:
@@ -642,7 +642,7 @@ get_assembler(tfeop::TransientSemilinearFEOpFromWeakForm) = tfeop.assembler
     struct TransientLinearFEOpFromWeakForm <: TransientFEOperator end
 
 Transient `FEOperator` defined by a transient weak form
-```math
+```
 residual(t, u, v) = ∑_{0 ≤ k ≤ N} form_k(t, ∂t^k[u], v) + res(t, v) = 0,
 ```
 where `N` is the order of the operator, `form_k` is linear in `∂t^k[u]` and
@@ -761,15 +761,13 @@ get_assembler(tfeop::TransientLinearFEOpFromWeakForm) = tfeop.assembler
     abstract type TransientIMEXFEOperator <: TransientFEOperator end
 
 Implicit-Explicit decomposition of a residual defining a `TransientFEOperator`:
-```math
+```
 residual(t, u, v) = implicit_residual(t, u, v)
                   + explicit_residual(t, u, v),
 ```
 where
-* The implicit operator defined by the implicit residual is considered stiff
-and is meant to be solved implicitly,
-* The explicit operator defined by the explicit residual is considered non-stiff
-and is meant to be solved explicitly.
+* The implicit operator defined by the implicit residual is considered stiff and is meant to be solved implicitly,
+* The explicit operator defined by the explicit residual is considered non-stiff and is meant to be solved explicitly.
 * Both the implicit and explicit residuals are linear in `v`.
 
 # Important

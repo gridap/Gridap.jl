@@ -7,10 +7,10 @@
 Operator used to perform one stage within one time step of an `ODESolver`.
 
 # Mandatory
-- [`allocate_residual(nlop, x)`]
-- [`residual!(r, nlop, x)`]
-- [`allocate_jacobian(nlop, x)`]
-- [`jacobian!(J, nlop, x)`]
+- [`allocate_residual(nlop, x)`](@ref)
+- [`residual!(r, nlop, x)`](@ref)
+- [`allocate_jacobian(nlop, x)`](@ref)
+- [`jacobian!(J, nlop, x)`](@ref)
 """
 abstract type StageOperator <: NonlinearOperator end
 

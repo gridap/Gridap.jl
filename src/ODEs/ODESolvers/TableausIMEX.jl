@@ -8,7 +8,8 @@
 # 2 stages #
 ############
 """
-IMEXRK_1_1_1
+    IMEXRK_1_1_1
+
 Backward-Forward Euler pair, order 1
 """
 struct IMEXRK_1_1_1 <: TableauName end
@@ -35,7 +36,8 @@ function ButcherTableau(::IMEXRK_1_1_1, T::Type{<:Real}=Float64)
 end
 
 """
-IMEXRK_1_2_1
+    IMEXRK_1_2_1
+
 Backward-Forward Euler pair with same weights, order 1
 """
 struct IMEXRK_1_2_1 <: TableauName end
@@ -62,7 +64,8 @@ function ButcherTableau(::IMEXRK_1_2_1, T::Type{<:Real}=Float64)
 end
 
 """
-IMEXRK_1_2_2
+    IMEXRK_1_2_2
+
 Implicit-Explicit midpoint pair, order 2
 """
 struct IMEXRK_1_2_2 <: TableauName end
@@ -90,7 +93,8 @@ function ButcherTableau(::IMEXRK_1_2_2, T::Type{<:Real}=Float64)
 end
 
 """
-IMEXRK_2_2_2
+    IMEXRK_2_2_2
+
 L-stable, 2-stage, 2-order SDIRK
 """
 struct IMEXRK_2_2_2 <: TableauName end
@@ -123,7 +127,8 @@ function ButcherTableau(::IMEXRK_2_2_2, T::Type{<:Real}=Float64)
 end
 
 """
-IMEXRK_2_3_2
+    IMEXRK_2_3_2
+
 L-stable, 2-stage, 2-order SDIRK
 """
 struct IMEXRK_2_3_2 <: TableauName end
@@ -156,7 +161,8 @@ function ButcherTableau(::IMEXRK_2_3_2, T::Type{<:Real}=Float64)
 end
 
 """
-IMEXRK_2_3_3
+    IMEXRK_2_3_3
+
 2-stage, 3-order SDIRK scheme with best damping properties
 """
 struct IMEXRK_2_3_3 <: TableauName end
@@ -190,7 +196,8 @@ function ButcherTableau(::IMEXRK_2_3_3, T::Type{<:Real}=Float64)
 end
 
 """
-IMEXRK_3_4_3
+    IMEXRK_3_4_3
+
 L-stable, 3-stage, 3-order SDIRK
 """
 struct IMEXRK_3_4_3 <: TableauName end
@@ -230,7 +237,8 @@ function ButcherTableau(::IMEXRK_3_4_3, T::Type{<:Real}=Float64)
 end
 
 """
-IMEXRK_4_4_3
+    IMEXRK_4_4_3
+
 L-stable, 4-stage, 3-order SDIRK
 """
 struct IMEXRK_4_4_3 <: TableauName end

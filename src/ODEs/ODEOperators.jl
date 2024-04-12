@@ -14,7 +14,7 @@ struct NonlinearODE <: ODEOperatorType end
 
 ODE operator whose residual is linear with respect to the highest-order time
 derivative, i.e.
-```math
+```
 residual(t, ∂t^0[u], ..., ∂t^N[u]) = mass(t, ∂t^0[u], ..., ∂t^(N-1)[u]) ∂t^N[u]
                                    +  res(t, ∂t^0[u], ..., ∂t^(N-1)[u]),
 ```
@@ -29,7 +29,7 @@ struct QuasilinearODE <: AbstractQuasilinearODE end
 
 ODE operator whose residual is linear with respect to the highest-order time
 derivative, and whose mass matrix only depend on time, i.e.
-```math
+```
 residual(t, ∂t^0[u], ..., ∂t^N[u]) = mass(t) ∂t^N[u]
                                    +  res(t, ∂t^0[u], ..., ∂t^(N-1)[u]),
 ```
@@ -43,7 +43,7 @@ struct SemilinearODE <: AbstractSemilinearODE end
     abstract type AbstractLinearODE <: AbstractSemilinearODE end
 
 ODE operator whose residual is linear with respect to all time derivatives, i.e.
-```math
+```
 residual(t, ∂t^0[u], ..., ∂t^N[u]) = ∑_{0 ≤ k ≤ N} A_k(t) ∂t^k[u] + res(t),
 ```
 where `N` is the order of the ODE operator, and `∂t^k[u]` is the `k`-th-order
@@ -126,7 +126,7 @@ end
     abstract type ODEOperator <: GridapType end
 
 General implicit, nonlinear ODE operator defined by a residual of the form
-```math
+```
 residual(t, ∂t^0[u], ..., ∂t^N[u]) = 0,
 ```
 where `N` is the order of the ODE operator and `∂t^k[u]` is the `k`-th-order
@@ -384,15 +384,13 @@ end
     abstract type IMEXODEOperator <: ODEOperator end
 
 Implicit-Explicit decomposition of a residual defining an `ODEOperator`:
-```math
+```
 residual(t, ∂t^0[u], ..., ∂t^N[u]) = implicit_residual(t, ∂t^0[u], ..., ∂t^N[u])
                                    + explicit_residual(t, ∂t^0[u], ..., ∂t^(N-1)[u]),
 ```
 where
-* The implicit operator defined by the implicit residual is considered stiff
-and is meant to be solved implicitly,
-* The explicit operator defined by the explicit residual is considered non-stiff
-and is meant to be solved explicitly.
+* The implicit operator defined by the implicit residual is considered stiff and is meant to be solved implicitly,
+* The explicit operator defined by the explicit residual is considered non-stiff and is meant to be solved explicitly.
 
 # Important
 The explicit operator must have one order less than the implicit operator, so

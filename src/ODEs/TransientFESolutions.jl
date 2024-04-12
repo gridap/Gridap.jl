@@ -9,8 +9,8 @@ solution at a set of time steps. It is an iterator that computes the solution
 at each time step in a lazy fashion when accessing the solution.
 
 # Mandatory
-- [`Base.iterate(tfesltn)`](@ref)
-- [`Base.iterate(tfesltn, state)`](@ref)
+- [`iterate(tfesltn)`](@ref)
+- [`iterate(tfesltn, state)`](@ref)
 """
 abstract type TransientFESolution <: GridapType end
 

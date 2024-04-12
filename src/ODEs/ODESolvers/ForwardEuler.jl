@@ -2,7 +2,7 @@
     struct ForwardEuler <: ODESolver end
 
 Forward Euler ODE solver.
-```math
+```
 residual(tx, ux, vx) = 0,
 
 tx = t_n
