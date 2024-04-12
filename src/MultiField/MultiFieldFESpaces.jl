@@ -305,10 +305,12 @@ function  _restrict_to_field(f,::MultiFieldStyle,free_values,field)
   @notimplemented
 end
 
-function  _restrict_to_field(f,
-                             ::Union{<:ConsecutiveMultiFieldStyle,<:BlockMultiFieldStyle},
-                             free_values,
-                             field)
+function  _restrict_to_field(
+  f,
+  ::Union{<:ConsecutiveMultiFieldStyle,<:BlockMultiFieldStyle},
+  free_values,
+  field
+)
   U = f.spaces
   offsets = _compute_field_offsets(U)
   pini = offsets[field] + 1
@@ -316,17 +318,19 @@ function  _restrict_to_field(f,
   view(free_values,pini:pend)
 end
 
-function  _restrict_to_field(f,
-                             mfs::BlockMultiFieldStyle{NB,SB,P},
-                             free_values::BlockVector,
-                             field) where {NB,SB,P}
+function  _restrict_to_field(
+  f,
+  mfs::BlockMultiFieldStyle{NB,SB,P},
+  free_values::BlockVector,
+  field
+) where {NB,SB,P}
   @check blocklength(free_values) == NB
   U = f.spaces
 
   # Find the block for this field
   block_ranges = get_block_ranges(NB,SB,P)
   block_idx    = findfirst(range -> field ∈ range, block_ranges)
-  block_free_values = free_values[Block(block_idx)]
+  block_free_values = blocks(free_values)[block_idx]
 
   # Within the block, restrict to field
   offsets = compute_field_offsets(f,mfs)
@@ -596,7 +600,7 @@ function FESpaces.interpolate!(objects,free_values::AbstractVector,fe::MultiFiel
   blocks = SingleFieldFEFunction[]
   for (field, (U,object)) in enumerate(zip(fe.spaces,objects))
     free_values_i = restrict_to_field(fe,free_values,field)
-    uhi = interpolate!(object, free_values_i,U)
+    uhi = interpolate!(object, free_values_i, U)
     push!(blocks,uhi)
   end
   MultiFieldFEFunction(free_values,fe,blocks)
