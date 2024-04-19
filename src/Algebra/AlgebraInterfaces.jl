@@ -244,6 +244,67 @@ else
   end
 end
 
+"""
+    axpy_entries!(α::Number, A::T, B::T) where {T<: AbstractMatrix} -> T
+
+Efficient implementation of axpy! for sparse matrices.
+"""
+function axpy_entries!(α::Number, A::T, B::T) where {T<:AbstractMatrix}
+  iszero(α) && return B
+
+  axpy!(α, A, B)
+  B
+end
+
+# For sparse matrices, it is surprisingly quicker to call `@. B += α * A` than
+# `axpy!(α, A, B)`.` Calling axpy! on the nonzero values of A and B is the most
+# efficient approach but this is only possible when A and B have the same
+# sparsity pattern. The checks add some non-negligible overhead so we make them
+# optional by adding a keyword.
+const cannot_axpy_entries_msg = """
+It is only possible to efficiently add two sparse matrices that have the same
+sparsity pattern.
+"""
+
+function axpy_entries!(
+  α::Number, A::T, B::T;
+  check::Bool=true
+) where {T<:SparseMatrixCSC}
+  iszero(α) && return B
+
+  if check
+    msg = cannot_axpy_entries_msg
+    @check rowvals(A) == rowvals(B) msg
+    @check all(nzrange(A, j) == nzrange(B, j) for j in axes(A, 2)) msg
+  end
+
+  axpy!(α, nonzeros(A), nonzeros(B))
+  B
+end
+
+function axpy_entries!(
+  α::Number, A::T, B::T;
+  check::Bool=true
+) where {T<:Union{SparseMatrixCSR,SymSparseMatrixCSR}}
+  iszero(α) && return B
+
+  if check
+    msg = cannot_axpy_entries_msg
+    @check colvals(A) == colvals(B) msg
+    @check all(nzrange(A, j) == nzrange(B, j) for j in axes(A, 1)) msg
+  end
+
+  axpy!(α, nonzeros(A), nonzeros(B))
+  B
+end
+
+function axpy_entries!(α::Number, A::T, B::T) where {T<:AbstractBlockMatrix}
+  map(blocks(A), blocks(B)) do a, b
+    axpy_entries!(α, a, b)
+  end
+  B
+end
+
 #
 # Some API associated with assembly routines
 #

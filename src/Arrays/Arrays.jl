@@ -105,7 +105,6 @@ export find_local_index
 
 export IdentityVector
 
-export SubVector
 export pair_arrays
 export unpair_arrays
 
@@ -162,7 +161,7 @@ include("KeyToValMaps.jl")
 
 include("FilteredArrays.jl")
 
-include("SubVectors.jl")
+include("SubVectors.jl") # Deprecated
 
 include("ArrayPairs.jl")
 

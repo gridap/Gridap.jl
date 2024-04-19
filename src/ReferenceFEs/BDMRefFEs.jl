@@ -6,7 +6,7 @@ const bdm = BDM()
 BDMRefFE(::Type{et},p::Polytope,order::Integer) where et
 
 The `order` argument has the following meaning: the divergence of the  functions in this basis
-is in the Q space of degree `order`.
+is in the P space of degree `order-1`.
 
 """
 function BDMRefFE(::Type{et},p::Polytope,order::Integer) where et
