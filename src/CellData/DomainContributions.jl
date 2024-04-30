@@ -1,7 +1,6 @@
-
-"""
-"""
 using DataStructures
+"""
+"""
 
 struct DomainContribution <: GridapType
   dict::OrderedDict{Triangulation,AbstractArray} # ordered so that iteration is deterministic (#1002)
