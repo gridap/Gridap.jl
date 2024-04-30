@@ -4,7 +4,7 @@
 using DataStructures
 
 struct DomainContribution <: GridapType
-  dict::OrderedDict{Triangulation,AbstractArray}
+  dict::OrderedDict{Triangulation,AbstractArray} # ordered so that iteration is deterministic (#1002)
 end
 
 DomainContribution() = DomainContribution(IdDict{Triangulation,AbstractArray}())
