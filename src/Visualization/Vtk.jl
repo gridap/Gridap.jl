@@ -71,7 +71,7 @@ function create_vtk_file(
 
   points = _vtkpoints(trian)
   cells = _vtkcells(trian)
-  vtkfile = vtk_grid(filebase, points, cells, compress=false)
+  vtkfile = vtk_grid(filebase, points, cells, compress=false, append=false)
 
   if num_cells(trian)>0
     for (k,v) in celldata
@@ -91,7 +91,7 @@ function create_pvtk_file(
 
   points = _vtkpoints(trian)
   cells = _vtkcells(trian)
-  vtkfile = pvtk_grid(filebase, points, cells, compress=false;
+  vtkfile = pvtk_grid(filebase, points, cells, compress=false, append=false;
                       part=part, nparts=nparts, ismain=ismain)
 
   if num_cells(trian) > 0
