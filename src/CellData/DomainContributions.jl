@@ -6,7 +6,7 @@ struct DomainContribution <: GridapType
   dict::OrderedDict{Triangulation,AbstractArray} # ordered so that iteration is deterministic (#1002)
 end
 
-DomainContribution() = DomainContribution(IdDict{Triangulation,AbstractArray}())
+DomainContribution() = DomainContribution(OrderedDict{Triangulation,AbstractArray}())
 
 num_domains(a::DomainContribution) = length(a.dict)
 
