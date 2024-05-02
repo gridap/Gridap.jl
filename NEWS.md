@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Bugfix in `get_face_dofs` for Nedelec GenericRefFE. Since PR[#1005](https://github.com/gridap/Gridap.jl/pull/1005).
+- Ensure deterministic bahavior for matrix assembly involving multiple domains. Since PR[#1004](https://github.com/gridap/Gridap.jl/pull/1004).
 
 ## [0.18.1] - 2024-04-12
 
