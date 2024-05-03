@@ -5,7 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.18.2] - 2024-05-02 
+
+### Fixed
+
+- Bugfix in `get_face_dofs` for Nedelec GenericRefFE. Since PR[#1005](https://github.com/gridap/Gridap.jl/pull/1005).
+- Ensure deterministic behavior for matrix assembly involving multiple domains. Since PR[#1004](https://github.com/gridap/Gridap.jl/pull/1004).
+
+## [0.18.1] - 2024-04-12
+
+### Changed
+
+- Changed the sign of the residual in `TransientLinearFEOperator` to align with the conventions of `AffineFEOperator`. Since PR[#996](https://github.com/gridap/Gridap.jl/pull/996).
+
+### Fixed
+
+- Bugfix in `restrict_to_field` for `BlockMultiFieldStyle`. Since PR[#993](https://github.com/gridap/Gridap.jl/pull/993).
+
+## [0.18.0] - 2024-04-12
+
+### Breaking
+
+- ODE module extensive refactor. Breaking changes! See docs and PR for details. Since PR[965](https://github.com/gridap/Gridap.jl/pull/965).
+- Fixed name clash with `Statistics.mean`. Since PR[#988](https://github.com/gridap/Gridap.jl/pull/988).
+- Deprecated `SubVector` in favor of Julia's `view`. Since PR[#989](https://github.com/gridap/Gridap.jl/pull/989).
+
+### Added
+
+- Added some missing API methods to `Assemblers` and `MultiField`. Since PR[#985](https://github.com/gridap/Gridap.jl/pull/985).
+
+### Fixed
+
+- Fix when evaluating `\circ` operator with `CellState`. Since PR[#987](https://github.com/gridap/Gridap.jl/pull/987).
+
+## [0.17.23] - 2024-01-28
+
+### Changed
+
+- Changed how `symbolic_loop_matrix_vector!` loop works. Now it also takes account vector entries touched from matvecdata. Since PR[#975](https://github.com/gridap/Gridap.jl/pull/975).
+
+## [0.17.22] - 2024-01-12
 
 ### Added
 
@@ -15,6 +54,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Changed how `allocate_vector` works. Now it only allocates, instead of allocating+initialising to zero. Since PR[#963](https://github.com/gridap/Gridap.jl/pull/963).
 - Misc changes required to support facet integration on non-conforming meshes. These changes do not involve methods of the public API. Since PR[#967](https://github.com/gridap/Gridap.jl/pull/967)
+
+### Fixed
+
+- Fixed issue where `FineToCoarseField` would not work for vector-valued fields. Since PR[#970](https://github.com/gridap/Gridap.jl/pull/970).
+- Fixed issue where `BlockSparseMatrixAssembler` would not work correctly when permuting variables. Since PR[#971](https://github.com/gridap/Gridap.jl/pull/971).
 
 ## [0.17.21] - 2023-12-04
 

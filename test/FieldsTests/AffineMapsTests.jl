@@ -39,6 +39,9 @@ cell_to_∇hx = lazy_map(evaluate,cell_to_∇h,cell_to_x)
 test_array(cell_to_hx,fill(hx,ncells))
 test_array(cell_to_∇hx,fill(∇hx,ncells))
 
+T = AffineMap{3,3,Int}
+@test isa(zero(T),T)
+
 #display(cell_to_hx)
 #display(cell_to_∇hx)
 #print_op_tree(cell_to_hx)

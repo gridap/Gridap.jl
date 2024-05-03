@@ -5,6 +5,8 @@
       pini::Int
       pend::Int
     end
+  
+  `SubVector` is deprecated, use `view` instead.
 """
 struct SubVector{T,A<:AbstractVector{T}} <: AbstractVector{T}
   vector::A

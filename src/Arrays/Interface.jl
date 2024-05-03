@@ -168,6 +168,16 @@ function testvalue(::Type{T}) where T<:AbstractArray{E,N} where {E,N}
    similar(T,tfill(0,Val(N))...)
 end
 
+# When the jacobian of a residual is obtained through automatic differentiation,
+# the return type is BlockArray{<:SubArray} and the behaviour of testvalue
+# does not allow broadcasting operations between BlockArray{<:AbstractMatrix}
+# and BlockArray{<:SubArray}. This function returns a matrix of size a
+# P-dimensional array where each dimension has length 0, i.e., (0, ..., 0).
+function testvalue(::Type{<:SubArray{T,P,AT}}) where {T,P,AT}
+  a = testvalue(AT)
+  return SubArray(a, ntuple(_ -> 0:-1, P))
+end
+
 function testvalue(::Type{T}) where T<:Transpose{E,A} where {E,A}
   a = testvalue(A)
   Transpose(a)
@@ -272,5 +282,3 @@ function test_array(
   end
   true
 end
-
-
