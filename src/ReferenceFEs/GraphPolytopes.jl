@@ -571,6 +571,13 @@ function simplexify_interior(p::Polygon)
   get_vertex_coordinates(p),T
 end
 
+"""
+    simplexify_interior(p::Polyhedron)
+
+  `simplex_interior` computes a simplex partition of the volume inside
+  the Polyhedron `p`.
+  It returns a vector of coordinates and an array of connectivitties.
+"""
 function simplexify_interior(poly::Polyhedron)
   !isopen(poly) || return simplexify_surface(poly)
   vstart = fill(UNSET,num_vertices(poly))
@@ -621,6 +628,13 @@ function simplexify_interior(poly::Polyhedron)
   X,T
 end
 
+"""
+    simplexify_surface(p::Polyhedron)
+
+  `simplex_surface` computes a simplex partition of the surface bounding
+  the Polyhedron `p`.
+  It returns a vector of coordinates and an array of connectivitties.
+"""
 function simplexify_surface(poly::Polyhedron)
   istouch = map( i -> falses(length(i)), get_graph(poly) )
   T = Vector{Int32}[]
