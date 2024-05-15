@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Define `GraphPolytope` that represents general polytopes in 2 and 3 dimensions. Since PR[#100X](https://github.com/gridap/Gridap.jl/pull/100X).
+- Define `GraphPolytope` that represents general polytopes in 2 and 3 dimensions. Since PR[#1006](https://github.com/gridap/Gridap.jl/pull/1006).
 
 ## [0.18.2] - 2024-05-02 
 
