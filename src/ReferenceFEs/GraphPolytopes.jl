@@ -112,11 +112,11 @@ function GraphPolytope{D}(
   GraphPolytope{D}(vertices,graph,isopen,data)
 end
 
-function get_polytope_data(p::Polytope;metadata=nothing)
-  get_polytope_data(p,metadata)
+function generate_polytope_data(p::Polytope;metadata=nothing)
+  generate_polytope_data(p,metadata)
 end
 
-function get_polytope_data(p::Polytope,::Nothing)
+function generate_polytope_data(p::Polytope,::Nothing)
   nothing
 end
 
@@ -134,7 +134,7 @@ function Polygon(p::Polytope{2},vertices::AbstractVector{<:Point};kwargs...)
   e_v_graph = map(Reindex(e_v_graph),perm)
   e_v_graph = map(i->replace(i, Dict(perm .=> 1:length(perm))...),e_v_graph)
   e_v_graph = map(i->Int32.(i),e_v_graph)
-  data = get_polytope_data(p;kwargs...)
+  data = generate_polytope_data(p;kwargs...)
   Polygon(vertices,e_v_graph,data)
 end
 
@@ -164,7 +164,7 @@ function Polyhedron(p::Polytope{3},vertices::AbstractVector{<:Point};kwargs...)
     @unreachable
   end
   e_v_graph = map(i->Int32.(i),e_v_graph)
-  data = get_polytope_data(p;kwargs...)
+  data = generate_polytope_data(p;kwargs...)
   Polyhedron(vertices,e_v_graph,data)
 end
 
@@ -201,11 +201,11 @@ Base.getindex(a::GraphPolytope,i::Integer) = a.vertices[i]
 
 
 """
-    get_data(p::GraphPolytope)
+    get_metadata(p::GraphPolytope)
 
   It return the metadata stored in the polytope `p`.
 """
-get_data(a::GraphPolytope) = a.metadata
+get_metadata(a::GraphPolytope) = a.metadata
 
 
 """
@@ -551,7 +551,7 @@ function Base.copy(poly::Polyhedron)
   vertices = get_vertex_coordinates(poly)
   graph = get_graph(poly)
   open = isopen(poly)
-  data = get_data(poly)
+  data = get_metadata(poly)
   data = !isnothing(data) ? copy(data) : nothing
   Polyhedron(vertices,graph,open,data)
 end
