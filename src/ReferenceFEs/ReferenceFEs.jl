@@ -46,7 +46,7 @@ import Base: ==
 
 export Polytope
 export ExtrusionPolytope
-export GraphPolytope
+export GeneralPolytope
 export Polygon
 export Polyhedron
 export get_extrusion
@@ -217,7 +217,7 @@ include("Polytopes.jl")
 
 include("ExtrusionPolytopes.jl")
 
-include("GraphPolytopes.jl")
+include("GeneralPolytopes.jl")
 
 include("Dofs.jl")
 

@@ -1,4 +1,4 @@
-module GraphPolytopesTests
+module GeneralPolytopesTests
 
 using Test
 using Gridap

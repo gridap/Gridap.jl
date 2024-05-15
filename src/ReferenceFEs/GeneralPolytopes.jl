@@ -1,7 +1,7 @@
 """
-    struct GraphPolytope{D,Dp,Tp} <: Polytope{D}
+    struct GeneralPolytope{D,Dp,Tp} <: Polytope{D}
 
-  A graph polytope is a general polytope defined by a set of vertices and a rototation
+  The `GeneralPolytope` is definded defined by a set of vertices and a rototation
   system (a planar oriented graph). This polytopal representation can represent
   any polytope in 2 and 3 dimensions.
 
@@ -17,7 +17,7 @@
 
   > S. Badia, P. A. Martorell, F. Verdugo. "Geometrical discretisations for unfitted finite elements on explicit boundary representations", J.Comput. Phys. 460 (2022): 111162. doi: [10.1016/j.jcp.2022.111162](https://doi.org/10.1016/j.jcp.2022.111162)
 """
-struct GraphPolytope{D,Dp,Tp,Td} <: Polytope{D}
+struct GeneralPolytope{D,Dp,Tp,Td} <: Polytope{D}
   vertices::Vector{Point{Dp,Tp}}
   edge_vertex_graph::Vector{Vector{Int32}}
   n_m_to_nface_to_mfaces::Matrix{Vector{Vector{Int}}}
@@ -26,7 +26,7 @@ struct GraphPolytope{D,Dp,Tp,Td} <: Polytope{D}
   dface_nfaces::Vector{Vector{Int}}
   isopen::Bool
   metadata::Td
-  function GraphPolytope{D}(
+  function GeneralPolytope{D}(
     vertices::Vector{Point{Dp,Tp}},
     edge_vertex_graph::Vector{Vector{Int32}},
     n_m_to_nface_to_mfaces::Matrix{Vector{Vector{Int}}},
@@ -48,22 +48,22 @@ struct GraphPolytope{D,Dp,Tp,Td} <: Polytope{D}
 end
 
 """
-    Polygon = GraphPolytope{2}
+    Polygon = GeneralPolytope{2}
 
-  A polygon is a [`GraphPolytope`](@ref) in 2 dimensions.
+  A polygon is a [`GeneralPolytope`](@ref) in 2 dimensions.
 """
-const Polygon = GraphPolytope{2}
+const Polygon = GeneralPolytope{2}
 
 """
-    Polyhedron = GraphPolytope{3}
+    Polyhedron = GeneralPolytope{3}
 
-  A polyhedron is a [`GraphPolytope`](@ref) in 3 dimensions.
+  A polyhedron is a [`GeneralPolytope`](@ref) in 3 dimensions.
 """
-const Polyhedron = GraphPolytope{3}
+const Polyhedron = GeneralPolytope{3}
 
 # Constructors
 
-function GraphPolytope{D}(
+function GeneralPolytope{D}(
   vertices::Vector{<:Point},
   graph::Vector{Vector{Int32}},
   isopen::Bool,
@@ -74,7 +74,7 @@ function GraphPolytope{D}(
   dimranges = Vector{UnitRange{Int}}(undef,0)
   dface_nfaces = Vector{Vector{Int}}(undef,0)
   facedims = Vector{Int32}(undef,0)
-  GraphPolytope{D}(
+  GeneralPolytope{D}(
     vertices,
     graph,
     n_m_to_nface_to_mfaces,
@@ -85,31 +85,37 @@ function GraphPolytope{D}(
     data)
 end
 
-function GraphPolytope{D}(
+function GeneralPolytope{D}(
   vertices::AbstractVector{<:Point},
   graph::Vector{<:Vector},
   isopen::Bool,
   data) where D
 
-  GraphPolytope{D}(collect(vertices),graph,isopen,data)
+  GeneralPolytope{D}(collect(vertices),graph,isopen,data)
 end
 
-function GraphPolytope{D}(
+"""
+    GeneralPolytope{D}(vertices,graph;kwargs...)
+
+  Constructor of a [`GeneralPolytope`](@ref) that generates a polytope of
+  D dimensions with the given `vertices` and `graph` of connectivities.
+"""
+function GeneralPolytope{D}(
   vertices::AbstractVector{<:Point},
   graph::Vector{<:Vector}
   ;isopen=false::Bool,
   metadata=nothing) where D
 
-  GraphPolytope{D}(vertices,graph,isopen,metadata)
+  GeneralPolytope{D}(vertices,graph,isopen,metadata)
 end
 
-function GraphPolytope{D}(
+function GeneralPolytope{D}(
   vertices::AbstractVector{<:Point},
   graph::Vector{<:Vector},
   data) where D
 
   isopen = false
-  GraphPolytope{D}(vertices,graph,isopen,data)
+  GeneralPolytope{D}(vertices,graph,isopen,data)
 end
 
 function generate_polytope_data(p::Polytope;metadata=nothing)
@@ -168,55 +174,55 @@ function Polyhedron(p::Polytope{3},vertices::AbstractVector{<:Point};kwargs...)
   Polyhedron(vertices,e_v_graph,data)
 end
 
-function GraphPolytope{D}(p::Polytope;kwargs...) where D
-  GraphPolytope{D}(p,get_vertex_coordinates(p);kwargs...)
+function GeneralPolytope{D}(p::Polytope;kwargs...) where D
+  GeneralPolytope{D}(p,get_vertex_coordinates(p);kwargs...)
 end
 
 # Interface
 
-num_dims(::T) where T<:GraphPolytope = num_dims(T)
+num_dims(::T) where T<:GeneralPolytope = num_dims(T)
 
-num_dims(::Type{<:GraphPolytope{D}}) where D = D
+num_dims(::Type{<:GeneralPolytope{D}}) where D = D
 
-num_cell_dims(a::GraphPolytope) = num_dims(a)
+num_cell_dims(a::GeneralPolytope) = num_dims(a)
 
-point_eltype(::T) where T<:GraphPolytope = point_eltype(T)
+point_eltype(::T) where T<:GeneralPolytope = point_eltype(T)
 
-point_eltype(::Type{<:GraphPolytope{D,Dp,T}}) where {D,Dp,T} = T
+point_eltype(::Type{<:GeneralPolytope{D,Dp,T}}) where {D,Dp,T} = T
 
-num_point_dims(::Type{<:GraphPolytope{D,Dp}}) where {D,Dp} = Dp
+num_point_dims(::Type{<:GeneralPolytope{D,Dp}}) where {D,Dp} = Dp
 
-num_vertices(a::GraphPolytope) = length(a.vertices)
+num_vertices(a::GeneralPolytope) = length(a.vertices)
 
-get_vertex_coordinates(a::GraphPolytope) = a.vertices
+get_vertex_coordinates(a::GeneralPolytope) = a.vertices
 
-Base.getindex(a::GraphPolytope,i::Integer) = a.vertices[i]
+Base.getindex(a::GeneralPolytope,i::Integer) = a.vertices[i]
 
 """
-    get_graph(p::GraphPolytope) -> Vector{Vector{Int32}}
+    get_graph(p::GeneralPolytope) -> Vector{Vector{Int32}}
 
   It returns the edge-vertex graph of the polytope `p`.
 """
-@inline get_graph(a::GraphPolytope) = a.edge_vertex_graph
+@inline get_graph(a::GeneralPolytope) = a.edge_vertex_graph
 
 
 """
-    get_metadata(p::GraphPolytope)
+    get_metadata(p::GeneralPolytope)
 
   It return the metadata stored in the polytope `p`.
 """
-get_metadata(a::GraphPolytope) = a.metadata
+get_metadata(a::GeneralPolytope) = a.metadata
 
 
 """
-    isopen(p::GraphPolytope) -> Bool
+    isopen(p::GeneralPolytope) -> Bool
 
   In return whether the polytope is watter tight or not.
 """
-Base.isopen(a::GraphPolytope) = a.isopen
+Base.isopen(a::GeneralPolytope) = a.isopen
 
 """
-    isactive(p::GraphPolytope,vertex::Integer) -> Bool
+    isactive(p::GeneralPolytope,vertex::Integer) -> Bool
 
   It returns whether a vertex is connected to any other vertex.
 """
@@ -225,12 +231,12 @@ function isactive(p::Polyhedron,vertex::Integer)
 end
 
 """
-    check_polytope_graph(p::GraphPolytope) -> Bool
+    check_polytope_graph(p::GeneralPolytope) -> Bool
 
   It checks whether the graph is well-constructed. The graph must be oriented
   and planar.
 """
-function check_polytope_graph(p::GraphPolytope)
+function check_polytope_graph(p::GeneralPolytope)
   check_polytope_graph(get_graph(p))
 end
 
@@ -245,11 +251,11 @@ function check_polytope_graph(graph::AbstractVector{<:AbstractVector})
   true
 end
 
-is_simplex(::GraphPolytope) = false
+is_simplex(::GeneralPolytope) = false
 
-is_n_cube(::GraphPolytope) = false
+is_n_cube(::GeneralPolytope) = false
 
-function simplexify(p::GraphPolytope{D}) where D
+function simplexify(p::GeneralPolytope{D}) where D
   @assert !isopen(p)
   X,T = simplexify_interior(p)
   @check X == get_vertex_coordinates(p)
@@ -264,15 +270,15 @@ simplex_polytope(::Val{2}) = TRI
 
 simplex_polytope(::Val{3}) = TET
 
-function Polytope{0}(p::GraphPolytope,faceid::Integer)
+function Polytope{0}(p::GeneralPolytope,faceid::Integer)
   VERTEX
 end
 
-function Polytope{1}(p::GraphPolytope,faceid::Integer)
+function Polytope{1}(p::GeneralPolytope,faceid::Integer)
   SEGMENT
 end
 
-function Polytope{D}(p::GraphPolytope{D},faceid::Integer) where D
+function Polytope{D}(p::GeneralPolytope{D},faceid::Integer) where D
   p
 end
 
@@ -283,15 +289,15 @@ function Polytope{2}(p::Polyhedron,faceid::Integer)
   Polygon(vertices)
 end
 
-Base.:(==)(a::GraphPolytope,b::GraphPolytope) = false
+Base.:(==)(a::GeneralPolytope,b::GeneralPolytope) = false
 
-function Base.:(==)(a::GraphPolytope{D},b::GraphPolytope{D}) where D
+function Base.:(==)(a::GeneralPolytope{D},b::GeneralPolytope{D}) where D
   a === b ||
   ( get_vertex_coordinates(a) == get_vertex_coordinates(b) &&
   get_graph(a) == get_graph(b) )
 end
 
-function num_faces(p::GraphPolytope{D},d::Integer) where D
+function num_faces(p::GeneralPolytope{D},d::Integer) where D
   if d == 0
     num_vertices(p)
   elseif d == D
@@ -301,12 +307,12 @@ function num_faces(p::GraphPolytope{D},d::Integer) where D
   end
 end
 
-function get_faces(p::GraphPolytope,n::Integer,m::Integer)
+function get_faces(p::GeneralPolytope,n::Integer,m::Integer)
   setup_faces!(p,n,m)
   p.n_m_to_nface_to_mfaces[n+1,m+1]
 end
 
-function get_facet_orientations(p::GraphPolytope)
+function get_facet_orientations(p::GeneralPolytope)
   ones(Int,num_facets(p))
 end
 
@@ -336,7 +342,7 @@ function get_facet_normal(p::Polygon)
   end
 end
 
-function get_edge_tangent(p::GraphPolytope)
+function get_edge_tangent(p::GeneralPolytope)
   e_to_v = get_faces(p,1,0)
   coords = get_vertex_coordinates(p)
   map(e_to_v) do v
@@ -345,27 +351,27 @@ function get_edge_tangent(p::GraphPolytope)
   end
 end
 
-function get_dimranges(p::GraphPolytope)
+function get_dimranges(p::GeneralPolytope)
   setup_dimranges!(p)
   p.dimranges
 end
 
-function get_dimrange(p::GraphPolytope,d::Integer)
+function get_dimrange(p::GeneralPolytope,d::Integer)
   setup_dimranges!(p)
   p.dimranges[d+1]
 end
 
-function get_faces(p::GraphPolytope)
+function get_faces(p::GeneralPolytope)
   setup_face_to_nfaces!(p)
   p.dface_nfaces
 end
 
-function get_facedims(p::GraphPolytope)
+function get_facedims(p::GeneralPolytope)
   setup_facedims!(p)
   p.facedims
 end
 
-function setup_dimranges!(p::GraphPolytope{D}) where D
+function setup_dimranges!(p::GeneralPolytope{D}) where D
   if length(p.dimranges) < D+1
     lens = map(i->num_faces(p,i),0:D)
     sums = cumsum(lens)
@@ -376,7 +382,7 @@ function setup_dimranges!(p::GraphPolytope{D}) where D
   end
 end
 
-function setup_face_to_nfaces!(p::GraphPolytope)
+function setup_face_to_nfaces!(p::GeneralPolytope)
   if length(p.dface_nfaces) < num_vertices(p)
     facedims = get_facedims(p)
     dface_nfaces = Vector{Vector{Int}}(undef,length(facedims))
@@ -394,7 +400,7 @@ function setup_face_to_nfaces!(p::GraphPolytope)
   nothing
 end
 
-function setup_facedims!(p::GraphPolytope)
+function setup_facedims!(p::GeneralPolytope)
   if length(p.facedims) < num_vertices(p)
     dimranges = get_dimranges(p)
     n_faces = dimranges[end][end]
@@ -403,7 +409,7 @@ function setup_facedims!(p::GraphPolytope)
   end
 end
 
-function setup_faces!(p::GraphPolytope{D},dimfrom,dimto) where D
+function setup_faces!(p::GeneralPolytope{D},dimfrom,dimto) where D
   if isassigned(p.n_m_to_nface_to_mfaces,dimfrom+1,dimto+1)
     return nothing
   end
@@ -421,14 +427,14 @@ function setup_faces!(p::GraphPolytope{D},dimfrom,dimto) where D
   nothing
 end
 
-function setup_face_to_vertices!(p::GraphPolytope,d)
+function setup_face_to_vertices!(p::GeneralPolytope,d)
   if !isassigned(p.n_m_to_nface_to_mfaces,d+1,1)
     df_to_v = generate_face_to_vertices(p,d)
     p.n_m_to_nface_to_mfaces[d+1,1] = df_to_v
   end
 end
 
-function setup_cell_to_faces!(p::GraphPolytope{D},d) where D
+function setup_cell_to_faces!(p::GeneralPolytope{D},d) where D
   if !isassigned(p.n_m_to_nface_to_mfaces,D+1,d+1)
     num_f = num_faces(p,d)
     c_to_f = [ collect(1:num_f) ]
@@ -436,7 +442,7 @@ function setup_cell_to_faces!(p::GraphPolytope{D},d) where D
   end
 end
 
-function setup_nface_to_nface!(p::GraphPolytope,n)
+function setup_nface_to_nface!(p::GeneralPolytope,n)
   if !isassigned(p.n_m_to_nface_to_mfaces,n+1,n+1)
     num_nf = num_faces(p,n)
     nf_to_nf = map(i->Int[i],1:num_nf)
@@ -465,7 +471,7 @@ function setup_nface_to_mface!(p::Polyhedron,n,m)
   end
 end
 
-function setup_nface_to_mface_dual!(p::GraphPolytope,dimto,dimfrom)
+function setup_nface_to_mface_dual!(p::GeneralPolytope,dimto,dimfrom)
   if !isassigned(p.n_m_to_nface_to_mfaces,dimfrom+1,dimto+1)
     @assert dimfrom < dimto
     nf_to_mf = get_faces(p,dimto,dimfrom)
@@ -523,7 +529,7 @@ function generate_facet_to_vertices(poly::Polyhedron)
   T
 end
 
-function generate_edge_to_vertices(poly::GraphPolytope)
+function generate_edge_to_vertices(poly::GeneralPolytope)
   graph = get_graph(poly)
   T = Vector{Int32}[]
   for v in 1:length(graph)
