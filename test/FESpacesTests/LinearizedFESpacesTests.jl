@@ -20,7 +20,7 @@
       end
       modelH=CartesianDiscreteModel(Tuple(domain),Tuple(partition))
 
-      modelH = Gridap.Adaptivity.refine(modelH,2)
+      # modelH = Gridap.Adaptivity.refine(modelH,2)
 
       order  = 4
       I(x)   = x[1]^order
@@ -166,9 +166,9 @@
   du = Gridap.get_trial_fe_basis(Ug)
   ∇u_Λ=Gridap.CellData.change_domain(∇(du),ReferenceDomain(),Ω,ReferenceDomain())
   # dv = get_fe_basis(V0)
-  # a(u, v) = ∫(∇(dv) ⋅ (k̂ * ∇(u)) + ŝ * u * dv)dΩ + ∫(10*u*dv)*dΓ -
-  # ∫(u*∇(dv)⋅n̂_Γ)*dΓ + ∫(jump(∇u_Λ⋅n̂_Λ)⋅jump(∇(dv)⋅n̂_Λ))*dΛ
-  a(u, v) = ∫(jump(∇u_Λ⋅n̂_Λ)⋅jump(∇(dv)⋅n̂_Λ))*dΛ
+  a(u, v) = ∫(∇(dv) ⋅ (k̂ * ∇(u)) + ŝ * u * dv)dΩ + ∫(10*u*dv)*dΓ -
+  ∫(u*∇(dv)⋅n̂_Γ)*dΓ + ∫(jump(∇u_Λ⋅n̂_Λ)⋅jump(∇(dv)⋅n̂_Λ))*dΛ
+  # a(u, v) = ∫(jump(∇u_Λ⋅n̂_Λ)⋅jump(∇(dv)⋅n̂_Λ))*dΛ
 
   l(v) = ∫(f * dv)dΩ
   ũh = solve(AffineFEOperator(a, l, Ug, Vl))
