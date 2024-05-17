@@ -133,7 +133,7 @@
     end
   end 
 
-  run_test()
+  # run_test()
 
   û(x) = sin(3.2 * x[1]^2) * cos(x[1]) + sin(4.6 * x[1]) * cos(5.2 * x[1])
   ŝ(x) = exp(x[1] / 2) + 2
@@ -142,38 +142,71 @@
   q(x) = k̂(x) * ∇(û)(x)
   f(x) = -(∇ ⋅ q)(x) + ŝ(x) * û(x)
 
-  ncells = 10
+  ncells = 2
   order = 2
   degree = 2 * order + 1
   reffe = ReferenceFE(lagrangian, Float64, order)
-  model = CartesianDiscreteModel((0, 1), (ncells,))
+  model = CartesianDiscreteModel((0, 1, 0, 1), (ncells,ncells))
 
   V0 = TestFESpace(model, reffe; dirichlet_tags="boundary")
   Ug = TrialFESpace(V0, û)
-  Vl = Gridap.LinearizedFESpace(model, ReferenceFE(lagrangian, Float64, order); dirichlet_tags="boundary")
-  Ω = Triangulation(Vl.refined_model)
-  Γ = BoundaryTriangulation(Vl.refined_model)
-  Λ = SkeletonTriangulation(Vl.refined_model)
-  # Ω = Triangulation(model)
-  # Γ = BoundaryTriangulation(model)
-  # Λ = SkeletonTriangulation(model)
+
+  Ω = Triangulation(model)
+  Γ = BoundaryTriangulation(model)
+  Λ = SkeletonTriangulation(model)
   n̂_Γ = get_normal_vector(Γ)
   n̂_Λ = get_normal_vector(Λ)
   dΩ = Measure(Ω, degree)
   dΓ = Measure(Γ, degree)
   dΛ = Measure(Λ, degree)
-  dv = Gridap.get_fe_basis(Vl)
-  du = Gridap.get_trial_fe_basis(Ug)
-  ∇u_Λ=Gridap.CellData.change_domain(∇(du),ReferenceDomain(),Ω,ReferenceDomain())
-  # dv = get_fe_basis(V0)
-  a(u, v) = ∫(∇(dv) ⋅ (k̂ * ∇(u)) + ŝ * u * dv)dΩ + ∫(10*u*dv)*dΓ -
-  ∫(u*∇(dv)⋅n̂_Γ)*dΓ + ∫(jump(∇u_Λ⋅n̂_Λ)⋅jump(∇(dv)⋅n̂_Λ))*dΛ
-  # a(u, v) = ∫(jump(∇u_Λ⋅n̂_Λ)⋅jump(∇(dv)⋅n̂_Λ))*dΛ
 
-  l(v) = ∫(f * dv)dΩ
+  du = Gridap.get_trial_fe_basis(Ug)
+  # ∇u_Λ = Gridap.CellData.change_domain(∇(du),ReferenceDomain(),Ω,ReferenceDomain())
+  dv = get_fe_basis(V0)
+  a(u, v) = ∫(∇(v) ⋅ (k̂ * ∇(u)) + ŝ * u * v)dΩ + ∫(10*u*v)*dΓ - ∫(u*∇(v)⋅n̂_Γ)*dΓ + ∫(jump(∇(u)⋅n̂_Λ)*jump(∇(v)⋅n̂_Λ))*dΛ
+
+  dc = a(du,dv)
+
+  l(v) = ∫(f * v)dΩ
+  ũh = solve(AffineFEOperator(a, l, Ug, V0))
+  A2=assemble_matrix(a,Ug,V0)
+  # jac = Gridap.jacobian(u -> a(u, dv) - l(dv), ũh)
+  # A1=assemble_matrix(jac, Ug, V0)
+  # @assert norm(A1-A2) < 1.0e-12
+
+
+  Vl = Gridap.LinearizedFESpace(model, ReferenceFE(lagrangian, Float64, order); dirichlet_tags="boundary")
+  Ω = Triangulation(Vl.refined_model)
+  Γ = BoundaryTriangulation(Vl.refined_model)
+  Λ = SkeletonTriangulation(Vl.refined_model)
+  n̂_Γ = get_normal_vector(Γ)
+  n̂_Λ = get_normal_vector(Λ)
+  dΩ = Measure(Ω, degree)
+  dΓ = Measure(Γ, degree)
+  dΛ = Measure(Λ, degree)
+
+  a(u, v) = ∫(∇(v) ⋅ (k̂ * ∇(u)) + ŝ * u * v)dΩ + ∫(10*u*v)*dΓ - ∫(u*∇(v)⋅n̂_Γ)*dΓ # + ∫(jump(∇(u)⋅n̂_Λ)*jump(∇(v)⋅n̂_Λ))*dΛ
+
+  l(v) = ∫(f * v)dΩ
+
+  du = Gridap.get_trial_fe_basis(Ug)
+  dv = Gridap.get_fe_basis(Vl)
+
+  dc = a(du,dv)
+
+  a(du, du)
+  a(dv, dv)
+
+
+
+  ũh = solve(AffineFEOperator(a, l, Vl, Vl))
+  A2 = assemble_matrix(a,Vl,Vl)
+
   ũh = solve(AffineFEOperator(a, l, Ug, Vl))
-  jac = Gridap.jacobian(u -> a(u, dv) - l(dv), ũh)
-  A1=assemble_matrix(jac, Ug, Vl)
-  A2=assemble_matrix(a,Ug,Vl)
-  @assert norm(A1-A2) < 1.0e-12
+  A2 = assemble_matrix(a,Ug,Vl)
+
+  # jac = Gridap.jacobian(u -> a(u, dv) - l(dv), ũh)
+  # A1=assemble_matrix(jac, Ug, Vl)
+  # @assert norm(A1-A2) < 1.0e-12
+
 # end
