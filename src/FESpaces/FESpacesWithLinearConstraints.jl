@@ -470,6 +470,10 @@ function get_vector_type(f::FESpaceWithLinearConstraints)
   get_vector_type(f.space)
 end
 
+function get_dof_value_type(f::FESpaceWithLinearConstraints)
+  eltype(get_vector_type(f.space))
+end
+
 function get_fe_basis(f::FESpaceWithLinearConstraints)
   get_fe_basis(f.space)
 end

@@ -46,14 +46,7 @@ Vc = FESpaceWithLinearConstraints(
 
 test_single_field_fe_space(Vc)
 @test has_constraints(Vc)
-@test get_dof_value_type(Vc) == ComplexF64 broken=true
-
-###################################################
-# One possible fix:
-import Gridap.FESpaces: get_dof_value_type
-get_dof_value_type(f::FESpaceWithLinearConstraints) = eltype(get_vector_type(f.space))
 @test get_dof_value_type(Vc) == ComplexF64
-###################################################
 
 @test isa(get_cell_constraints(Vc,Λ)[1],ArrayBlock)
 
