@@ -26,8 +26,9 @@ dΓ = Measure(Γ,2)
 dΛ = Measure(Λ,2)
 
 V = FESpace(
-  model,ReferenceFE(lagrangian,Float64,1), conformity=:H1, dirichlet_tags="dirichlet")
+  model,ReferenceFE(lagrangian,Float64,1), vector_type=Vector{ComplexF64}, conformity=:H1, dirichlet_tags="dirichlet")
 test_single_field_fe_space(V)
+@test get_dof_value_type(V) == ComplexF64
 
 fdof_to_val = collect(Float64,1:num_free_dofs(V))
 ddof_to_val = -collect(Float64,1:num_dirichlet_dofs(V))
@@ -45,6 +46,14 @@ Vc = FESpaceWithLinearConstraints(
 
 test_single_field_fe_space(Vc)
 @test has_constraints(Vc)
+@test get_dof_value_type(Vc) == ComplexF64 broken=true
+
+###################################################
+# One possible fix:
+import Gridap.FESpaces: get_dof_value_type
+get_dof_value_type(f::FESpaceWithLinearConstraints) = eltype(get_vector_type(f.space))
+@test get_dof_value_type(Vc) == ComplexF64
+###################################################
 
 @test isa(get_cell_constraints(Vc,Λ)[1],ArrayBlock)
 
@@ -62,7 +71,7 @@ vch = interpolate(v,Vc)
 
 
 #using Gridap.Visualization
-#writevtk(Ω,"trian",nsubcells=10,cellfields=["vh"=>vh,"vch"=>vch])
+#writevtk(Ω,"trian",nsubcells=10,cellfields=["vh"=> vh,"vch"=> real ∘ vch]) # function `vch` gives complex values now, but `vh` does not???
 
 u(x) = x[1] + 2*x[2]
 f(x) = -Δ(u)(x)
@@ -72,19 +81,19 @@ uch = interpolate(u,Uc)
 
 n_Γ = get_normal_vector(Γ)
 
-a(u,v) = ∫( ∇(v)⋅∇(u) )*dΩ + ∫( jump(u)*jump(v) )*dΛ
+a(u,v) = ∫( ∇(v)⋅∇(u) + 0im )*dΩ + ∫( jump(u)*jump(v) + 0im )*dΛ ## make sure this evaluates to complex for type inference
 l(v) = ∫( v*f )*dΩ + ∫( v*(n_Γ⋅∇(u)) )*dΓ
 
-op = AffineFEOperator(a,l,Uc,Vc)
+op = AffineFEOperator(a,l,Uc,Vc) ## this would error without the `+ 0im` above
 uch = solve(op)
 
 #using Gridap.Visualization
-#writevtk(trian,"trian",nsubcells=10,cellfields=["uch"=>uch])
+#writevtk(trian,"trian",nsubcells=10,cellfields=["uch"=> real ∘ uch]) # `uch` is complex valued
 
-e = u - uch
+e = u - uch # this is complex valued
 
-e_l2 = sqrt(sum(∫( e*e )*dΩ))
-e_h1 = sqrt(sum(∫( e*e + ∇(e)⋅∇(e) )*dΩ))
+e_l2 = sqrt(sum(∫( abs2 ∘ e )*dΩ))
+e_h1 = real(sqrt(sum(∫( abs2 ∘ e + ∇(e)⋅(conj ∘ ∇(e)) )*dΩ)))
 
 tol = 1.e-9
 @test e_l2 < tol
