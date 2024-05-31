@@ -70,6 +70,7 @@ using .CellData
 using .Adaptivity
 using FillArrays
 include("LinearizedFESpaces.jl")
+include("QkIsoQ1RefFEs.jl")
 
 include("Exports.jl")
 
