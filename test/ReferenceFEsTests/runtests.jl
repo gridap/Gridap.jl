@@ -42,4 +42,6 @@ using Test
 
 @testset "ModalC0RefFEs" begin include("ModalC0RefFEsTests.jl") end
 
+@testset "QkIsoQ1RefFEs" begin include("QkIsoQ1RefFEsTests.jl") end
+
 end # module
