@@ -1,12 +1,12 @@
-struct FineToCoarseBasis{A<:AbstractArray{<:AbstractArray{<:Field}},
+struct FineToCoarseBasis{A<:CellField,
                          B<:Gridap.Adaptivity.RefinementRule} <: AbstractVector{Field}
-  fine_fields    :: A
+  fine_field     :: A
   rrule          :: B
-  function FineToCoarseBasis(fine_fields,rrule::Gridap.Adaptivity.RefinementRule)
-    Gridap.Helpers.@check length(fine_fields)   == Gridap.Adaptivity.num_subcells(rrule)
-    A = typeof(fine_fields)
+  function FineToCoarseBasis(fine_field,rrule::Gridap.Adaptivity.RefinementRule)
+    Gridap.Helpers.@check length(get_data(fine_field))   == Gridap.Adaptivity.num_subcells(rrule)
+    A = typeof(fine_field)
     B = typeof(rrule)
-    new{A,B}(fine_fields,rrule)
+    new{A,B}(fine_field,rrule)
   end
 end
 
@@ -16,13 +16,13 @@ end
 function Base.size(f::FineToCoarseBasis)
   (Gridap.Geometry.num_nodes(f.rrule.ref_grid),)
 end
-# Dirty hack
+
+Gridap.Fields.return_type(::FineToCoarseBasis)=Float64
+
+struct FineToCoarseBasisFunction <: Field end
+
 function Base.getindex(f::FineToCoarseBasis,i)
-  fields = f.fine_fields
-  points = get_node_coordinates(f.rrule.ref_grid)
-  fi = fields[1]
-  yi_type  = Fields.return_type(fi,points[1])
-  ConstantField(zero(eltype(yi_type)))
+  FineToCoarseBasisFunction()
 end
 
 # Methods required by RefFE re. the prebasis
@@ -40,8 +40,8 @@ function Gridap.ReferenceFEs.get_order(a::FineToCoarseBasis)
 end
 
 
-function Gridap.Geometry.return_cache(a::FineToCoarseBasis,x::AbstractArray{<:Point})
-  fields, x2cell = a.fine_fields, xi->Gridap.Adaptivity.x_to_cell(a.rrule,xi)
+function Gridap.Fields.return_cache(a::FineToCoarseBasis,x::AbstractArray{<:Point})
+  fields, x2cell = get_data(a.fine_field), xi->Gridap.Adaptivity.x_to_cell(a.rrule,xi)
   cmaps = Gridap.Adaptivity.get_inverse_cell_map(a.rrule)
 
   xi_cache = array_cache(x)
@@ -63,11 +63,11 @@ function Gridap.Geometry.return_cache(a::FineToCoarseBasis,x::AbstractArray{<:Po
   return fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache
 end
 
-function Gridap.Geometry.evaluate!(cache,
-                            a::FineToCoarseBasis{<:AbstractArray{<:AbstractArray{<:Field}}},
+function Gridap.Fields.evaluate!(cache,
+                            a::FineToCoarseBasis,
                             x::AbstractArray{<:Point})
   fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache = cache
-  fields, x_to_cell = a.fine_fields, xi->Gridap.Adaptivity.x_to_cell(a.rrule,xi)
+  fields, x_to_cell = get_data(a.fine_field), xi->Gridap.Adaptivity.x_to_cell(a.rrule,xi)
   cmaps = Gridap.Adaptivity.get_inverse_cell_map(a.rrule)
 
   Gridap.Arrays.setsize!(y_cache, (length(x),Gridap.Geometry.num_nodes(a.rrule.ref_grid)))
@@ -86,6 +86,87 @@ function Gridap.Geometry.evaluate!(cache,
   return y_cache.array
 end
 
+struct FineToCoarseBasisGradient{A<:FineToCoarseBasis,B} <: AbstractVector{Field}
+  f2cb    :: A
+  ∇field  :: B
+  function FineToCoarseBasisGradient(a::FineToCoarseBasis)
+    ∇field=∇(a.fine_field)
+    new{typeof(a),typeof(∇field)}(a,∇field)
+  end
+end
+
+struct FineToCoarseBasisGradientFunction <: Field end
+
+function Base.length(f::FineToCoarseBasisGradient)
+  Geometry.num_nodes(f.f2cb.rrule.ref_grid)
+end
+function Base.size(f::FineToCoarseBasisGradient)
+  (Geometry.num_nodes(f.f2cb.rrule.ref_grid),)
+end
+function Base.getindex(f::FineToCoarseBasisGradient,i)
+  FineToCoarseBasisGradientFunction()
+end
+
+function Geometry.return_cache(a::FineToCoarseBasisGradient,x::AbstractArray{<:Point})
+  x2cell = xi->Gridap.Adaptivity.x_to_cell(a.f2cb.rrule,xi)
+  cmaps = Gridap.Adaptivity.get_inverse_cell_map(a.f2cb.rrule)
+
+  xi_cache = array_cache(x)
+  fi_cache = array_cache(get_data(a.∇field))
+  mi_cache = array_cache(cmaps)
+
+  xi = getindex!(xi_cache,x,1)
+  child_id = x2cell(xi)
+  mi = getindex!(mi_cache,cmaps,child_id)
+  fi = getindex!(fi_cache,get_data(a.∇field),child_id)
+
+  zi_cache = Gridap.Fields.return_cache(mi,xi)
+  zi = evaluate!(zi_cache,mi,xi)
+
+  yi_type  = Gridap.Fields.return_type(fi,zi)
+  yi_cache = Gridap.Fields.return_cache(fi,zi)
+  y_cache  = Arrays.CachedArray(eltype(yi_type),2)
+
+  return fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache
+end
+
+function Geometry.evaluate!(cache,a::FineToCoarseBasisGradient,x::AbstractArray{<:Point})
+  fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache = cache
+  x2cell = xi->Gridap.Adaptivity.x_to_cell(a.f2cb.rrule,xi)
+  cmaps = Gridap.Adaptivity.get_inverse_cell_map(a.f2cb.rrule)
+
+  Arrays.setsize!(y_cache, (length(x),Geometry.num_nodes(a.f2cb.rrule.ref_grid)))
+
+  y_cache.array .= zero(y_cache.array[1])
+
+  cell_node_ids = Geometry.get_cell_node_ids(a.f2cb.rrule.ref_grid)
+  for i in eachindex(x)
+     xi = getindex!(xi_cache,x,i)
+     child_id = x2cell(xi)
+     fi = getindex!(fi_cache,get_data(a.∇field),child_id)
+     mi = getindex!(mi_cache,cmaps,child_id)
+     zi = Gridap.Fields.evaluate!(zi_cache,mi,xi)
+     y_cache.array[i,cell_node_ids[child_id]] = Gridap.Fields.evaluate!(yi_cache,fi,zi)
+  end
+  return y_cache.array
+end
+
+function Gridap.Fields.return_cache(
+  fg::FieldGradientArray{1,<:FineToCoarseBasis},
+  x::AbstractVector{<:Point})
+  f2cbg=FineToCoarseBasisGradient(fg.fa)
+  f2cbgc=return_cache(f2cbg,x)
+  f2cbg, f2cbgc
+end
+
+function Gridap.Fields.evaluate!(
+  cache,
+  fg::FieldGradientArray{1,<:FineToCoarseBasis},
+  x::AbstractVector{<:Point})
+  f2cbg, f2cbgc = cache
+  evaluate!(f2cbgc,f2cbg,x)
+end
+
 function QkIsoQ1(::Type{T},D::Integer,order) where {T}
     orders=Tuple(fill(order,D))
     
@@ -97,7 +178,7 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
 
     rrule=Mh.glue.refinement_rules[1]
     
-    prebasis = FineToCoarseBasis(Gridap.CellData.get_data(vl),rrule)
+    prebasis = FineToCoarseBasis(vl,rrule)
 
     if D==1
         p=SEGMENT
@@ -148,16 +229,18 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
     end
   end
 
+  Gridap.Fields.return_type(::HQkIsoQ1Basis{T,D}) where {T,D} = T
+
+  struct HQkIsoQ1BasisFunction <: Field end
+
   function Base.length(f::HQkIsoQ1Basis{T,D}) where {T,D}
     (f.order+1)^D
   end
   function Base.size(f::HQkIsoQ1Basis{T,D}) where {T,D}
     (length(f),)
   end
-  # Dirty hack
   function Base.getindex(f::HQkIsoQ1Basis,i)
-    # @warn "Calling a dirty hack implementation of HQkIsoQ1Basis"
-    ConstantField(0.0)
+    HQkIsoQ1BasisFunction()
   end
   
   # Methods required by RefFE re. the prebasis
@@ -170,7 +253,6 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
   function Gridap.ReferenceFEs.get_order(a::HQkIsoQ1Basis{T,D}) where {T,D}
     a.order
   end
-
 
   function Gridap.Geometry.return_cache(a::HQkIsoQ1Basis{T,D},x::AbstractArray{<:Point}) where {T,D}
     num_levels = Int(floor(log2(a.order)))+1
@@ -188,13 +270,65 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
     np   = length(x)
     ndof = num_dofs(qk_iso_q1_reffes[end]) 
     r = CachedArray(zeros(T,(np,ndof)))
-    (r, qk_iso_q1_reffes,qk_iso_q1_reffes_at_x_cache,qk_iso_q1_reffes_at_x)
+
+    indices_current_lev=Vector{StepRange{Int,Int}}(undef,num_levels)
+    indices_last_lev=Vector{StepRange{Int,Int}}(undef,num_levels)
+    indices_current_lev_full=Vector{StepRange{Int,Int}}(undef,num_levels)
+    indices_last_lev_full=Vector{StepRange{Int,Int}}(undef,num_levels)
+
+    last_lev_face_own_dofs=get_face_own_dofs(qk_iso_q1_reffes[end],1)[1]
+    for i=2:num_levels 
+      k=2^(i-1)
+      current_lev_face_own_dofs=get_face_own_dofs(qk_iso_q1_reffes[i],1)[1]
+      current_lev_face_dof = 1
+      indices_current_lev[i] = _generate_indices(current_lev_face_dof,
+                                                 2,
+                                                 length(current_lev_face_own_dofs))
+
+      current_last_lev_face_dof = div(a.order,k)
+      last_lev_face_dof_stride = current_last_lev_face_dof*2
+      indices_last_lev[i] = _generate_indices(current_last_lev_face_dof,
+                                              last_lev_face_dof_stride,
+                                              length(last_lev_face_own_dofs))
+
+
+      indices_current_lev_full[i] = _generate_indices(current_lev_face_dof,
+                                            1,
+                                            length(current_lev_face_own_dofs))
+
+      indices_last_lev_full[i] = _generate_indices(current_last_lev_face_dof,
+                                                   div(last_lev_face_dof_stride,2),
+                                                   length(last_lev_face_own_dofs))
+    end
+
+    (r, 
+     qk_iso_q1_reffes,
+     qk_iso_q1_reffes_at_x_cache,
+     qk_iso_q1_reffes_at_x,
+     indices_current_lev,
+     indices_last_lev,
+     indices_current_lev_full,
+     indices_last_lev_full)
   end
+
+  function _get_lis(face_own_dofs,d)
+    shape=Vector{Int}(undef,d)
+    shape .= length(face_own_dofs)
+    shape = Tuple(shape)
+    LinearIndices(shape)
+  end 
 
   function Gridap.Geometry.evaluate!(cache,
                             a::HQkIsoQ1Basis{T,D},
                             x::AbstractArray{<:Point}) where {T,D}
-    r, qk_iso_q1_reffes, qk_iso_q1_reffes_at_x_cache,qk_iso_q1_reffes_at_x = cache
+    r, 
+    qk_iso_q1_reffes, 
+    qk_iso_q1_reffes_at_x_cache,
+    qk_iso_q1_reffes_at_x,
+    indices_current_lev,
+    indices_last_lev,
+    indices_current_lev_full,
+    indices_last_lev_full = cache
 
     num_levels = length(qk_iso_q1_reffes)
     for i=1:num_levels
@@ -222,48 +356,17 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
         for i=2:num_levels 
           k=2^(i-1)
           current_lev_face_own_dofs_1=get_face_own_dofs(qk_iso_q1_reffes[i],1)[iface]
-          current_lev_face_dof = 1
-          indices_current_lev = _generate_indices(current_lev_face_dof,
-                                                  2,
-                                                  length(current_lev_face_own_dofs_1))
-          
-          current_last_lev_face_dof = div(order,k)
-          last_lev_face_dof_stride = current_last_lev_face_dof*2
-          indices_last_lev    = _generate_indices(current_last_lev_face_dof,
-                                                  last_lev_face_dof_stride,
-                                                  length(last_lev_face_own_dofs_1))
-
-
-          shape_current_lev=Vector{Int}(undef,d)
-          shape_current_lev .= length(current_lev_face_own_dofs_1)
-          shape_current_lev = Tuple(shape_current_lev)
-          cis_current_lev=CartesianIndices(shape_current_lev)
-          lis_current_lev=LinearIndices(shape_current_lev)
-
-          shape_last_lev=Vector{Int}(undef,d)
-          shape_last_lev .= length(last_lev_face_own_dofs_1)
-          shape_last_lev = Tuple(shape_last_lev)
-          cis_last_lev=CartesianIndices(shape_last_lev)
-          lis_last_lev=LinearIndices(shape_last_lev)
-
-          current_lev_face_own_dofs_d=get_face_own_dofs(qk_iso_q1_reffes[i],d)[iface]
-
           if d==1
-            for (current_lev_face_dof,current_last_lev_face_dof) in zip(indices_current_lev,indices_last_lev)
+            for (current_lev_face_dof,current_last_lev_face_dof) in zip(indices_current_lev[i],indices_last_lev[i])
               @debug "$(d) $(i) $(iface): $(current_lev_face_dof) $(current_last_lev_face_dof)"
               r[:,last_lev_face_own_dofs_1[current_last_lev_face_dof]]=
                     qk_iso_q1_reffes_at_x[i][:,current_lev_face_own_dofs_1[current_lev_face_dof]]
              end
           elseif d==2
-            indices_current_lev_full = _generate_indices(current_lev_face_dof,
-                                                         1,
-                                                         length(current_lev_face_own_dofs_1))
-                                                      
-            indices_last_lev_full = _generate_indices(current_last_lev_face_dof,
-                                                      div(last_lev_face_dof_stride,2),
-                                                      length(last_lev_face_own_dofs_1))
-                                        
-            for (i1,i2) in zip(indices_current_lev_full,indices_last_lev_full)
+            current_lev_face_own_dofs_d=get_face_own_dofs(qk_iso_q1_reffes[i],d)[iface]
+            lis_current_lev=_get_lis(current_lev_face_own_dofs_1,d)
+            lis_last_lev=_get_list(last_lev_face_own_dofs_1,d)
+            for (i1,i2) in zip(indices_current_lev_full[i],indices_last_lev_full[i])
               if mod(i1,2)!=0 
                 a = indices_current_lev_full
                 b = indices_last_lev_full
@@ -287,7 +390,7 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
   end 
 
   function _generate_indices(start,stride,n)
-    collect(start:stride:n)
+    start:stride:n
   end 
   
   struct LinearCombinationDofBasis{T,B<:AbstractMatrix} <: AbstractVector{T}

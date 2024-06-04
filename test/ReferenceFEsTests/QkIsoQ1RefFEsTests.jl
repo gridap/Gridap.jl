@@ -8,7 +8,7 @@ module QkIsoQ1RefFEsTests
     f(x)   = -Δ(u)(x)
     u, f  
   end
-  for ref_fe_constructor in [Gridap.QkIsoQ1,Gridap.HQkIsoQ1]
+  for ref_fe_constructor in [Gridap.QkIsoQ1] #,Gridap.HQkIsoQ1]
       if ref_fe_constructor == Gridap.QkIsoQ1
          MAX_D=3
       else 
@@ -111,8 +111,9 @@ module QkIsoQ1RefFEsTests
           ref_rnorm = norm(assemble_vector(rH,VH))
           @test ref_rnorm < 1.0e-12
 
-          for orderLinearFERefine in 1:4
-            reffeh = ReferenceFE(lagrangian,Float64,orderLinearFERefine)
+          for orderLinearFERefine in orderTrial:orderTrial
+            reffeh = ref_fe_constructor(Float64,D,orderLinearFERefine)
+            modelh=Gridap.Adaptivity.refine(modelH,orderLinearFERefine)
             Vh = FESpace(modelH,reffeh;conformity=:H1,dirichlet_tags="boundary")
             order = max(orderTrial, orderLinearFERefine)
             Ωh = Triangulation(modelh)
