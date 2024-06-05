@@ -222,10 +222,16 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
 
   struct HQkIsoQ1Basis{T,D} <: AbstractVector{Field}
     order::Int
+    qk_iso_q1_reffes::Vector{GenericLagrangianRefFE}
     function HQkIsoQ1Basis(::Type{T},D::Integer,order) where {T}
       @assert floor(log2(order)) == ceil(log2(order)) "The order of HQkIsoQ1Basis must be a power of 2"
       @assert D==1 || D==2
-      new{T,D}(order)
+      num_levels = Int(floor(log2(order)))+1
+      qk_iso_q1_reffes = Vector{GenericLagrangianRefFE}(undef, num_levels)
+      for i=0:num_levels-1
+        qk_iso_q1_reffes[i+1] = QkIsoQ1(T,D,2^i)
+      end
+      new{T,D}(order,qk_iso_q1_reffes)
     end
   end
 
@@ -254,28 +260,12 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
     a.order
   end
 
-  function Gridap.Geometry.return_cache(a::HQkIsoQ1Basis{T,D},x::AbstractArray{<:Point}) where {T,D}
-    num_levels = Int(floor(log2(a.order)))+1
-    qk_iso_q1_reffes = Vector{GenericLagrangianRefFE}(undef, num_levels)
-    for i=0:num_levels-1
-      qk_iso_q1_reffes[i+1] = QkIsoQ1(T,D,2^i)
-    end
-    qk_iso_q1_reffes_at_x_cache = Vector{Any}(undef, num_levels)
-    for i=1:num_levels
-      shape_funs = get_shapefuns(qk_iso_q1_reffes[i])
-      qk_iso_q1_reffes_at_x_cache[i] = return_cache(shape_funs, x)      
-    end
-    qk_iso_q1_reffes_at_x = Vector{Matrix{T}}(undef, num_levels)
-    
-    np   = length(x)
-    ndof = num_dofs(qk_iso_q1_reffes[end]) 
-    r = CachedArray(zeros(T,(np,ndof)))
-
+  function _setup_indices(qk_iso_q1_reffes,order)
+    num_levels=length(qk_iso_q1_reffes)
     indices_current_lev=Vector{StepRange{Int,Int}}(undef,num_levels)
     indices_last_lev=Vector{StepRange{Int,Int}}(undef,num_levels)
     indices_current_lev_full=Vector{StepRange{Int,Int}}(undef,num_levels)
     indices_last_lev_full=Vector{StepRange{Int,Int}}(undef,num_levels)
-
     last_lev_face_own_dofs=get_face_own_dofs(qk_iso_q1_reffes[end],1)[1]
     for i=2:num_levels 
       k=2^(i-1)
@@ -285,7 +275,7 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
                                                  2,
                                                  length(current_lev_face_own_dofs))
 
-      current_last_lev_face_dof = div(a.order,k)
+      current_last_lev_face_dof = div(order,k)
       last_lev_face_dof_stride = current_last_lev_face_dof*2
       indices_last_lev[i] = _generate_indices(current_last_lev_face_dof,
                                               last_lev_face_dof_stride,
@@ -300,9 +290,26 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
                                                    div(last_lev_face_dof_stride,2),
                                                    length(last_lev_face_own_dofs))
     end
+    (indices_current_lev,indices_last_lev,indices_current_lev_full,indices_last_lev_full)
+  end 
 
-    (r, 
-     qk_iso_q1_reffes,
+  function Gridap.Geometry.return_cache(a::HQkIsoQ1Basis{T,D},x::AbstractArray{<:Point}) where {T,D}
+    num_levels=length(a.qk_iso_q1_reffes)
+    qk_iso_q1_reffes_at_x_cache = Vector{Any}(undef, num_levels)
+    for i=1:num_levels
+      shape_funs = get_shapefuns(a.qk_iso_q1_reffes[i])
+      qk_iso_q1_reffes_at_x_cache[i] = return_cache(shape_funs, x)      
+    end
+    qk_iso_q1_reffes_at_x = Vector{Matrix{T}}(undef, num_levels)
+    
+    np   = length(x)
+    ndof = num_dofs(a.qk_iso_q1_reffes[end]) 
+    r = CachedArray(zeros(T,(np,ndof)))
+
+    indices_current_lev,indices_last_lev,indices_current_lev_full,indices_last_lev_full = 
+        _setup_indices(a.qk_iso_q1_reffes,a.order)
+
+    (r,
      qk_iso_q1_reffes_at_x_cache,
      qk_iso_q1_reffes_at_x,
      indices_current_lev,
@@ -322,7 +329,6 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
                             a::HQkIsoQ1Basis{T,D},
                             x::AbstractArray{<:Point}) where {T,D}
     r, 
-    qk_iso_q1_reffes, 
     qk_iso_q1_reffes_at_x_cache,
     qk_iso_q1_reffes_at_x,
     indices_current_lev,
@@ -330,20 +336,20 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
     indices_current_lev_full,
     indices_last_lev_full = cache
 
-    num_levels = length(qk_iso_q1_reffes)
+    num_levels = length(a.qk_iso_q1_reffes)
     for i=1:num_levels
-      shape_funs = get_shapefuns(qk_iso_q1_reffes[i])
+      shape_funs = get_shapefuns(a.qk_iso_q1_reffes[i])
       qk_iso_q1_reffes_at_x[i] = evaluate!(qk_iso_q1_reffes_at_x_cache[i],shape_funs, x)
     end
 
     np   = length(x)
-    ndof = num_dofs(qk_iso_q1_reffes[end]) 
+    ndof = num_dofs(a.qk_iso_q1_reffes[end]) 
     setsize!(r, (np,ndof))
 
     order = a.order 
     
     # First vertices
-    p = get_polytope(qk_iso_q1_reffes[1])
+    p = get_polytope(a.qk_iso_q1_reffes[1])
     for vertex=1:num_vertices(p)
       r[:,vertex]=qk_iso_q1_reffes_at_x[1][:,vertex]
     end
@@ -351,11 +357,11 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
     for d=1:D 
       num_faces=length(get_faces(p,D,d)[1])
       for iface=1:num_faces
-        last_lev_face_own_dofs_1=get_face_own_dofs(qk_iso_q1_reffes[end],1)[iface]
-        last_lev_face_own_dofs_d=get_face_own_dofs(qk_iso_q1_reffes[end],d)[iface]
+        last_lev_face_own_dofs_1=get_face_own_dofs(a.qk_iso_q1_reffes[end],1)[iface]
+        last_lev_face_own_dofs_d=get_face_own_dofs(a.qk_iso_q1_reffes[end],d)[iface]
         for i=2:num_levels 
           k=2^(i-1)
-          current_lev_face_own_dofs_1=get_face_own_dofs(qk_iso_q1_reffes[i],1)[iface]
+          current_lev_face_own_dofs_1=get_face_own_dofs(a.qk_iso_q1_reffes[i],1)[iface]
           if d==1
             for (current_lev_face_dof,current_last_lev_face_dof) in zip(indices_current_lev[i],indices_last_lev[i])
               @debug "$(d) $(i) $(iface): $(current_lev_face_dof) $(current_last_lev_face_dof)"
@@ -363,16 +369,16 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
                     qk_iso_q1_reffes_at_x[i][:,current_lev_face_own_dofs_1[current_lev_face_dof]]
              end
           elseif d==2
-            current_lev_face_own_dofs_d=get_face_own_dofs(qk_iso_q1_reffes[i],d)[iface]
+            current_lev_face_own_dofs_d=get_face_own_dofs(a.qk_iso_q1_reffes[i],d)[iface]
             lis_current_lev=_get_lis(current_lev_face_own_dofs_1,d)
-            lis_last_lev=_get_list(last_lev_face_own_dofs_1,d)
+            lis_last_lev=_get_lis(last_lev_face_own_dofs_1,d)
             for (i1,i2) in zip(indices_current_lev_full[i],indices_last_lev_full[i])
               if mod(i1,2)!=0 
-                a = indices_current_lev_full
-                b = indices_last_lev_full
+                a = indices_current_lev_full[i]
+                b = indices_last_lev_full[i]
               else
-                a = indices_current_lev
-                b = indices_last_lev
+                a = indices_current_lev[i]
+                b = indices_last_lev[i]
               end
               for (j1,j2) in zip(a,b)
                 li1=lis_current_lev[CartesianIndex(i1,j1)]
@@ -392,7 +398,133 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
   function _generate_indices(start,stride,n)
     start:stride:n
   end 
+
+
+  struct HQkIsoQ1BasisGradient{T,D} <: AbstractVector{Field}
+    basis::HQkIsoQ1Basis{T,D}
+  end
+
+  struct HQkIsoQ1BasisGradientFunction <: Field end
+
+  function Base.length(f::HQkIsoQ1BasisGradient)
+    length(f.basis)
+  end
+  function Base.size(f::HQkIsoQ1BasisGradient)
+    (length(f.basis),)
+  end
+  function Base.getindex(f::HQkIsoQ1BasisGradient,i)
+    HQkIsoQ1BasisGradientFunction()
+  end
+
+  function Gridap.Fields.return_cache(
+    fg::FieldGradientArray{1,<:HQkIsoQ1Basis},
+    x::AbstractVector{<:Point})
+    f2cbg=HQkIsoQ1BasisGradient(fg.fa)
+    f2cbgc=return_cache(f2cbg,x)
+    f2cbg, f2cbgc
+  end
   
+  function Gridap.Fields.evaluate!(
+    cache,
+    fg::FieldGradientArray{1,<:HQkIsoQ1Basis},
+    x::AbstractVector{<:Point})
+    f2cbg, f2cbgc = cache
+    evaluate!(f2cbgc,f2cbg,x)
+  end
+
+  function Geometry.return_cache(a::HQkIsoQ1BasisGradient{T,D},x::AbstractArray{<:Point}) where {T,D}
+    num_levels=length(a.basis.qk_iso_q1_reffes)
+    qk_iso_q1_reffes_at_x_cache = Vector{Any}(undef, num_levels)
+    for i=1:num_levels
+      grad_shape_funs = Broadcasting(∇)(get_shapefuns(a.basis.qk_iso_q1_reffes[i]))
+      qk_iso_q1_reffes_at_x_cache[i] = return_cache(grad_shape_funs, x)      
+    end
+    qk_iso_q1_reffes_at_x = Vector{Matrix{VectorValue{D,T}}}(undef, num_levels)
+    
+    np   = length(x)
+    ndof = num_dofs(a.basis.qk_iso_q1_reffes[end]) 
+    r = CachedArray(zeros(VectorValue{D,T},(np,ndof)))
+
+    indices_current_lev,indices_last_lev,indices_current_lev_full,indices_last_lev_full = 
+        _setup_indices(a.basis.qk_iso_q1_reffes,a.basis.order)
+
+    (r, 
+     qk_iso_q1_reffes_at_x_cache,
+     qk_iso_q1_reffes_at_x,
+     indices_current_lev,
+     indices_last_lev,
+     indices_current_lev_full,
+     indices_last_lev_full)
+  end
+  
+  function Geometry.evaluate!(cache,a::HQkIsoQ1BasisGradient{T,D},x::AbstractArray{<:Point})  where {T,D}
+    r, 
+    qk_iso_q1_reffes_at_x_cache,
+    qk_iso_q1_reffes_at_x,
+    indices_current_lev,
+    indices_last_lev,
+    indices_current_lev_full,
+    indices_last_lev_full = cache
+
+    num_levels = length(a.basis.qk_iso_q1_reffes)
+    for i=1:num_levels
+      grad_shape_funs = Broadcasting(∇)(get_shapefuns(a.basis.qk_iso_q1_reffes[i]))
+      qk_iso_q1_reffes_at_x[i] = evaluate!(qk_iso_q1_reffes_at_x_cache[i],grad_shape_funs,x)
+    end
+
+    np   = length(x)
+    ndof = num_dofs(a.basis.qk_iso_q1_reffes[end]) 
+    setsize!(r, (np,ndof))
+
+    order = a.basis.order 
+    
+    # First vertices
+    p = get_polytope(a.basis.qk_iso_q1_reffes[1])
+    for vertex=1:num_vertices(p)
+      r[:,vertex]=qk_iso_q1_reffes_at_x[1][:,vertex]
+    end
+
+    for d=1:D 
+      num_faces=length(get_faces(p,D,d)[1])
+      for iface=1:num_faces
+        last_lev_face_own_dofs_1=get_face_own_dofs(a.basis.qk_iso_q1_reffes[end],1)[iface]
+        last_lev_face_own_dofs_d=get_face_own_dofs(a.basis.qk_iso_q1_reffes[end],d)[iface]
+        for i=2:num_levels 
+          k=2^(i-1)
+          current_lev_face_own_dofs_1=get_face_own_dofs(a.basis.qk_iso_q1_reffes[i],1)[iface]
+          if d==1
+            for (current_lev_face_dof,current_last_lev_face_dof) in zip(indices_current_lev[i],indices_last_lev[i])
+              @debug "$(d) $(i) $(iface): $(current_lev_face_dof) $(current_last_lev_face_dof)"
+              r[:,last_lev_face_own_dofs_1[current_last_lev_face_dof]]=
+                    qk_iso_q1_reffes_at_x[i][:,current_lev_face_own_dofs_1[current_lev_face_dof]]
+             end
+          elseif d==2
+            current_lev_face_own_dofs_d=get_face_own_dofs(a.basis.qk_iso_q1_reffes[i],d)[iface]
+            lis_current_lev=_get_lis(current_lev_face_own_dofs_1,d)
+            lis_last_lev=_get_lis(last_lev_face_own_dofs_1,d)
+            for (i1,i2) in zip(indices_current_lev_full[i],indices_last_lev_full[i])
+              if mod(i1,2)!=0 
+                a = indices_current_lev_full[i]
+                b = indices_last_lev_full[i]
+              else
+                a = indices_current_lev[i]
+                b = indices_last_lev[i]
+              end
+              for (j1,j2) in zip(a,b)
+                li1=lis_current_lev[CartesianIndex(i1,j1)]
+                li2=lis_last_lev[CartesianIndex(i2,j2)]
+                @debug "$(d) $(i) $(iface): $(li1) $(li2)"
+                r[:,last_lev_face_own_dofs_d[li2]]=
+                   qk_iso_q1_reffes_at_x[i][:,current_lev_face_own_dofs_d[li1]]
+              end 
+            end
+          end 
+        end
+      end
+    end
+    r.array
+  end
+
   struct LinearCombinationDofBasis{T,B<:AbstractMatrix} <: AbstractVector{T}
     basis::AbstractVector{T}
     matrix::B
@@ -465,57 +597,3 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
 
     GenericLagrangianRefFE(reffe,qk_iso_q1_reffe.reffe.face_dofs)
   end
-
-  # function _compute_high_order_nodes(p::Polytope{D},orders) where D
-  #   nodes = Point{D,Float64}[]
-  #   facenodes = [Int[] for i in 1:num_faces(p)]
-  #   _compute_high_order_nodes_dim_0!(nodes,facenodes,p)
-  #   for d in 1:(num_dims(p)-1)
-  #     _compute_high_order_nodes_dim_d!(nodes,facenodes,p,orders,Val{d}())
-  #   end
-  #   _compute_high_order_nodes_dim_D!(nodes,facenodes,p,orders)
-  #   (nodes, facenodes)
-  # end
-  
-  # function _compute_high_order_nodes_dim_0!(nodes,facenodes,p)
-  #   x = get_vertex_coordinates(p)
-  #   k = 1
-  #   for vertex in 1:num_vertices(p)
-  #     push!(nodes,x[vertex])
-  #     push!(facenodes[vertex],k)
-  #     k += 1
-  #   end
-  # end
-  
-  # @noinline function _compute_high_order_nodes_dim_d!(nodes,facenodes,p,orders,::Val{d}) where d
-  #   x = get_vertex_coordinates(p)
-  #   offset = get_offset(p,d)
-  #   k = length(nodes)+1
-  #   for iface in 1:num_faces(p,d)
-  #     face = Polytope{d}(p,iface)
-  #     face_ref_x = get_vertex_coordinates(face)
-  #     face_prebasis = MonomialBasis(Float64,face,1)
-  #     change = inv(evaluate(face_prebasis,face_ref_x))
-  #     face_shapefuns = linear_combination(change,face_prebasis)
-  #     face_vertex_ids = get_faces(p,d,0)[iface]
-  #     face_x = x[face_vertex_ids]
-  #     face_orders = compute_face_orders(p,face,iface,orders)
-  #     face_interior_nodes = compute_own_nodes(face,face_orders)
-  #     face_high_x = evaluate(face_shapefuns,face_interior_nodes)*face_x
-  #     for xi in 1:length(face_high_x)
-  #       push!(nodes,face_high_x[xi])
-  #       push!(facenodes[iface+offset],k)
-  #       k += 1
-  #     end
-  #   end
-  # end
-  
-  # function _compute_high_order_nodes_dim_D!(nodes,facenodes,p,orders)
-  #   k = length(nodes)+1
-  #   p_high_x = compute_own_nodes(p,orders)
-  #   for xi in 1:length(p_high_x)
-  #     push!(nodes,p_high_x[xi])
-  #     push!(facenodes[end],k)
-  #     k += 1
-  #   end
-  # end

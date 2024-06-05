@@ -8,7 +8,7 @@ module QkIsoQ1RefFEsTests
     f(x)   = -Δ(u)(x)
     u, f  
   end
-  for ref_fe_constructor in [Gridap.QkIsoQ1] #,Gridap.HQkIsoQ1]
+  for ref_fe_constructor in [Gridap.QkIsoQ1, Gridap.HQkIsoQ1]
       if ref_fe_constructor == Gridap.QkIsoQ1
          MAX_D=3
       else 
