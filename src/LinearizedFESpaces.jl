@@ -13,8 +13,12 @@ function _num_cells_x_dim(reffe::Tuple{<:Lagrangian,Any,Any})
    reffe[2][2]
 end
 
-function LinearizedFESpace(model::CartesianDiscreteModel{Dc},
-                           reffe::Tuple{<:Lagrangian,Any,Any}; kwargs...) where Dc
+function _num_cells_x_dim(reffe::Tuple{<:Nedelec,Any,Any})
+  reffe[2][2] + 1
+end
+
+function LinearizedFESpace(model::DiscreteModel{Dc},
+                           reffe::Tuple{<:Union{<:Lagrangian,<:Nedelec},Any,Any}; kwargs...) where Dc
   reffe_linearized=_linearize_reffe(reffe)
   ncells_x_dim=_num_cells_x_dim(reffe)
   ref_model=Adaptivity.refine(model,ncells_x_dim)
@@ -62,120 +66,258 @@ function FESpaces.get_fe_basis(f::LinearizedFESpace)
   fe_basis = get_fe_basis(f.linear_fe_space)
 end
 
-# The following defitions are required to support the correct execution
-# of the collect_cell_matrix(trial::FESpace,test::FESpace,a::DomainContribution)
-# function for different combinations of regular and adapted triangulations
-# corresponding to FESpace's triangulation and domain of integration
-# Please, use with care, they are only valid for the most obvious cases.
-function Gridap.FESpaces.get_cell_fe_data(fun,f,ttrian::AdaptedTriangulation)
-  sface_to_data = fun(f)
-  strian = get_triangulation(f)
-  _get_cell_fe_data(fun,sface_to_data, strian, ttrian)
-end
+### START CLEANING!
+# Purpose: During the usage of `LinearizedFESpace`s we trying to integrate a
+# given `CellField` defined on base triangulation on a refined triangulation or
+# any triangulation constructed from a refined model 
 
-# strian: triangulation of the FESpace, cell-wise related data (e.g., cell_dof_ids)
-# ttrian: triangulation of the Measure
-function _get_cell_fe_data(fun, sface_to_data, strian::Triangulation, ttrian::Triangulation)
-  _get_cell_fe_data_trian_trian_body(fun, sface_to_data, strian, ttrian)
-end
+function _get_adapted_cell_fe_data(
+  fun, sface_to_data, strian, ttrian, sglue::FaceToFaceGlue, tglue::FaceToFaceGlue)
 
-function _get_cell_fe_data_trian_trian_body(fun, sface_to_data, strian, ttrian)
-  if strian === ttrian
-    return sface_to_data
-  end
-  @assert is_change_possible(strian,ttrian)
-  D = num_cell_dims(strian)
-  sglue = get_glue(strian,Val(D))
-  tglue = get_glue(ttrian,Val(D))
-  Gridap.FESpaces.get_cell_fe_data(fun,sface_to_data,sglue,tglue)
-end
+  mface_to_data_strian = Geometry.extend(sface_to_data, sglue.mface_to_tface)
+  mface_to_data_ttrian = Adaptivity.o2n_reindex(mface_to_data_strian, Adaptivity.get_adaptivity_glue(ttrian))
+  lazy_map(Reindex(mface_to_data_ttrian),tglue.tface_to_mface)
+end 
 
-function _get_cell_fe_data(fun,sface_to_data, strian::AdaptedTriangulation, ttrian::Triangulation)
-  _get_cell_fe_data_trian_trian_body(fun,sface_to_data, strian, ttrian)
- end
+# function _get_adapted_cell_fe_data(
+#   fun, sface_to_data, strian, ttrian, sglue::FaceToFaceGlue, tglue::SkeletonPair)
 
-# strian coarse
-# ttrian refined
-function _get_cell_fe_data(fun, sface_to_data, strian::Triangulation, ttrian::AdaptedTriangulation)
-  Gridap.Helpers.@check get_background_model(strian) === get_parent(get_adapted_model(ttrian))
-  sface_to_data_reindexed=Gridap.Adaptivity.o2n_reindex(sface_to_data,get_adapted_model(ttrian).glue)
-  # Strictly speaking, the next line is not guaranteed to work in the most general case. 
-  # I am assuming that Triangulation(get_background_model(ttrian)) is the proper one that 
-  # matches sface_to_data_reindexed, but this is not true in general. For the particular (and most frequent)
-  # case in which sface_to_data holds cell-wise data coming from a FESpace, this is true.
-  _get_cell_fe_data_trian_trian_body(fun,sface_to_data_reindexed, Triangulation(get_background_model(ttrian)), ttrian)
-end
+#   plus = _get_adapted_cell_fe_data(fun, sface_to_data, strian, ttrian, sglue, tglue.plus)
+#   minus = _get_adapted_cell_fe_data(fun, sface_to_data, strian, ttrian, sglue, tglue.minus)
+#   lazy_map(BlockMap(2,[1,2]),plus,minus)
+# end 
 
-function _get_cell_fe_data(fun, 
-                           sface_to_data, 
-                           strian::AdaptedTriangulation, 
-                           ttrian::AdaptedTriangulation)
-  if (get_background_model(strian) === get_parent(get_adapted_model(ttrian)))
-    sface_to_data_reindexed=Gridap.Adaptivity.o2n_reindex(sface_to_data,get_adapted_model(ttrian).glue)
-    # Strictly speaking, the next line is not guaranteed to work in the most general case. 
-    # I am assuming that Triangulation(get_background_model(ttrian)) is the proper one that 
-    # matches sface_to_data_reindexed, but this is not true in general. For the particular (and most frequent)
-    # case in which sface_to_data holds cell-wise data coming from a FESpace, this is true.
-    _get_cell_fe_data_trian_trian_body(fun,sface_to_data_reindexed, Triangulation(get_background_model(ttrian)), ttrian)
-  elseif (get_background_model(strian) === get_background_model(ttrian))
-    _get_cell_fe_data_trian_trian_body(fun,sface_to_data, strian, ttrian)
-  else
+# function _get_adapted_cell_fe_data(
+#   fun::typeof(Gridap.FESpaces.get_cell_is_dirichlet), sface_to_data, strian, ttrian::AdaptedTriangulation, sglue::FaceToFaceGlue, tglue::SkeletonPair)
+  
+#   plus = _get_adapted_cell_fe_data(fun, sface_to_data, strian, ttrian, sglue, tglue.plus)
+#   minus = _get_adapted_cell_fe_data(fun, sface_to_data, strian, ttrian, sglue, tglue.minus)
+#   lazy_map((l,r)-> l||r, plus, minus)
+# end
+
+# function _get_adapted_cell_fe_data(
+#   fun::typeof(Gridap.FESpaces.get_cell_isconstrained), sface_to_data, strian, ttrian::AdaptedTriangulation, sglue::FaceToFaceGlue, tglue::SkeletonPair)
+  
+#   plus = _get_adapted_cell_fe_data(fun, sface_to_data, strian, ttrian, sglue, tglue.plus)
+#   minus = _get_adapted_cell_fe_data(fun, sface_to_data, strian, ttrian, sglue, tglue.minus)
+#   lazy_map((l,r)-> l||r, plus, minus)
+# end
+
+# function _get_adapted_cell_fe_data(
+#   fun::typeof(Gridap.FESpaces.get_cell_constraints), sface_to_data, strian, ttrian::AdaptedTriangulation, sglue::FaceToFaceGlue, tglue::SkeletonPair)
+  
+#   plus = _get_adapted_cell_fe_data(fun, sface_to_data, strian, ttrian, sglue, tglue.plus)
+#   minus = _get_adapted_cell_fe_data(fun, sface_to_data, strian, ttrian, sglue, tglue.minus)
+#   lazy_map(BlockMap((2,2),[(1,1),(2,2)]),plus,minus)
+# end
+
+function FESpaces.get_cell_fe_data(
+  fun, sface_to_data, strian::Triangulation, 
+  ttrian::AdaptedTriangulation)
+
+  Dc = num_cell_dims(strian)
+
+  # This would occur only when both are built on same model 
+  # i.e. the adapted_model stored inside ttrian.
+  # A default path is taken as both based on same model
+  if get_background_model(strian) === get_background_model(ttrian)
+    get_cell_fe_data(fun, sface_to_data, strian, ttrian.trian)
+  else 
+    if is_child(ttrian, strian) # is ttrian the child of strian?
+      sglue = get_glue(strian,Val(Dc))
+      tglue = get_glue(ttrian,Val(Dc))
+      _get_adapted_cell_fe_data(fun, sface_to_data, strian, ttrian, sglue, tglue)
+    else 
+      @assert false # any useful case that would end us up here?
+    end 
+  end 
+end 
+
+# when would we require this case?
+# the CellField is defined on adapted triangulation but we are trying to
+# integrate it on a non-adapted one
+function FESpaces.get_cell_fe_data(
+  fun, sface_to_data, strian::AdaptedTriangulation, ttrian::Triangulation)
+
+  if get_background_model(strian) === get_background_model(ttrian)
+    get_cell_fe_data(fun, sface_to_data, strian.trian, ttrian)
+  else 
     Gridap.Helpers.@notimplemented
   end 
-end
+end 
 
+function FESpaces.get_cell_fe_data(
+  fun, sface_to_data, strian::AdaptedTriangulation, 
+  ttrian::AdaptedTriangulation)
 
-function Gridap.FESpaces._compute_cell_ids(uh,ttrian)
-  strian = get_triangulation(uh)
-  Gridap.FESpaces._compute_cell_ids(uh, strian, ttrian)
-end
+  Dc = num_cell_dims(strian)
 
-function Gridap.FESpaces._compute_cell_ids(uh, strian::Triangulation, ttrian::Triangulation)
-  _compute_cell_ids_body(uh,strian,ttrian)
-end
+  if get_background_model(strian) === get_background_model(ttrian)
+    FESpaces.get_cell_fe_data(fun, sface_to_data, strian.trian, ttrian.trian)
+  else 
+    if is_child(ttrian, strian) # is ttrian the child of strian?
+      sglue = get_glue(strian,Val(Dc))
+      tglue = get_glue(ttrian,Val(Dc))
+      _get_adapted_cell_fe_data(fun, sface_to_data, strian, ttrian, sglue, tglue)
+    else 
+      @assert false # any useful case that would end us up here?
+    end 
+  end 
+end 
 
-function _compute_cell_ids_body(uh, strian, ttrian)
-  if strian === ttrian
-    return collect(IdentityVector(Int32(num_cells(strian))))
-  end
-  @check is_change_possible(strian,ttrian)
-  D = num_cell_dims(strian)
-  sglue = get_glue(strian,Val(D))
-  tglue = get_glue(ttrian,Val(D))
-  @notimplementedif !isa(sglue,FaceToFaceGlue)
-  @notimplementedif !isa(tglue,FaceToFaceGlue)
+# # strian: triangulation of the FESpace, cell-wise related data (e.g., cell_dof_ids)
+# # ttrian: triangulation of the Measure
+# function _get_cell_fe_data(fun, sface_to_data, strian::Triangulation, ttrian::Triangulation)
+#   _get_cell_fe_data_trian_trian_body(fun, sface_to_data, strian, ttrian)
+# end
+
+# function _get_cell_fe_data_trian_trian_body(fun, sface_to_data, strian, ttrian)
+#   if strian === ttrian
+#     return sface_to_data
+#   end
+#   @assert is_change_possible(strian,ttrian)
+#   D = num_cell_dims(strian)
+#   sglue = get_glue(strian,Val(D))
+#   tglue = get_glue(ttrian,Val(D))
+#   Gridap.FESpaces.get_cell_fe_data(fun,sface_to_data,sglue,tglue)
+# end
+
+# function _get_cell_fe_data(fun,sface_to_data, strian::AdaptedTriangulation, ttrian::Triangulation)
+#   _get_cell_fe_data_trian_trian_body(fun,sface_to_data, strian, ttrian)
+#  end
+
+# # strian coarse
+# # ttrian refined
+# function _get_cell_fe_data(fun, sface_to_data, strian::Triangulation, ttrian::AdaptedTriangulation)
+#   Gridap.Helpers.@check get_background_model(strian) === get_parent(get_adapted_model(ttrian))
+#   sface_to_data_reindexed=Gridap.Adaptivity.o2n_reindex(sface_to_data,get_adapted_model(ttrian).glue)
+#   # Strictly speaking, the next line is not guaranteed to work in the most general case.
+#   # I am assuming that Triangulation(get_background_model(ttrian)) is the proper one that
+#   # matches sface_to_data_reindexed, but this is not true in general. For the particular (and most frequent)
+#   # case in which sface_to_data holds cell-wise data coming from a FESpace, this is true.
+#   _get_cell_fe_data_trian_trian_body(fun,sface_to_data_reindexed, Triangulation(get_background_model(ttrian)), ttrian)
+# end
+
+# function _get_cell_fe_data(fun,
+#                            sface_to_data,
+#                            strian::AdaptedTriangulation,
+#                            ttrian::AdaptedTriangulation)
+#   if (get_background_model(strian) === get_parent(get_adapted_model(ttrian)))
+#     sface_to_data_reindexed=Gridap.Adaptivity.o2n_reindex(sface_to_data,get_adapted_model(ttrian).glue)
+#     # Strictly speaking, the next line is not guaranteed to work in the most general case.
+#     # I am assuming that Triangulation(get_background_model(ttrian)) is the proper one that
+#     # matches sface_to_data_reindexed, but this is not true in general. For the particular (and most frequent)
+#     # case in which sface_to_data holds cell-wise data coming from a FESpace, this is true.
+#     _get_cell_fe_data_trian_trian_body(fun,sface_to_data_reindexed, Triangulation(get_background_model(ttrian)), ttrian)
+#   elseif (get_background_model(strian) === get_background_model(ttrian))
+#     _get_cell_fe_data_trian_trian_body(fun,sface_to_data, strian, ttrian)
+#   else
+#     Gridap.Helpers.@notimplemented
+#   end
+# end
+
+###
+# The functions below are related to the computation of Jacobians of
+# Petrov-Galerkin residuals
+
+# function Gridap.FESpaces._compute_cell_ids(uh,ttrian)
+#   strian = get_triangulation(uh)
+#   Gridap.FESpaces._compute_cell_ids(uh, strian, ttrian)
+# end
+
+# function Gridap.FESpaces._compute_cell_ids(uh, strian::Triangulation, ttrian::Triangulation)
+#   _compute_cell_ids_default(uh,strian,ttrian)
+# end
+
+# # the content is same as the original in FEAutodiff.jl, default case
+# function _compute_cell_ids_default(uh, strian, ttrian)
+#   if strian === ttrian
+#     return collect(IdentityVector(Int32(num_cells(strian))))
+#   end
+#   @check is_change_possible(strian,ttrian)
+#   D = num_cell_dims(strian)
+#   sglue = get_glue(strian,Val(D))
+#   tglue = get_glue(ttrian,Val(D))
+#   @notimplementedif !isa(sglue,FaceToFaceGlue)
+#   @notimplementedif !isa(tglue,FaceToFaceGlue)
+#   scells = IdentityVector(Int32(num_cells(strian)))
+#   mcells = extend(scells,sglue.mface_to_tface)
+#   tcells = lazy_map(Reindex(mcells),tglue.tface_to_mface)
+#   collect(tcells)
+# end
+
+# old version of the interesting case
+# function Gridap.FESpaces._compute_cell_ids(uh, strian::Triangulation, ttrian::AdaptedTriangulation)
+#   Gridap.Helpers.@check get_background_model(strian) === get_parent(get_adapted_model(ttrian))
+#   return collect(IdentityVector(Int32(num_cells(ttrian))))
+# end
+
+function _compute_adapted_cell_ids(
+  strian,sglue,ttrian,tglue::SkeletonPair)
+
+  Gridap.Helpers.@notimplemented
+  # tcells_plus  = _compute_adapted_cell_ids(strian,sglue,ttrian,tglue.plus)
+  # tcells_minus = _compute_adapted_cell_ids(strian,sglue,ttrian,tglue.minus)
+  # SkeletonPair(tcells_plus,tcells_minus)
+end 
+
+function _compute_adapted_cell_ids(strian,sglue,ttrian,tglue)
   scells = IdentityVector(Int32(num_cells(strian)))
-  mcells = extend(scells,sglue.mface_to_tface)
-  tcells = lazy_map(Reindex(mcells),tglue.tface_to_mface)
-  collect(tcells)
+  mcells = Geometry.extend(scells,sglue.mface_to_tface)
+  mcells_ttrian = Adaptivity.o2n_reindex(mcells, Adaptivity.get_adaptivity_glue(ttrian))
+  return lazy_map(Reindex(mcells_ttrian),tglue.tface_to_mface)
 end
 
+# this is the interesting case, and needs to be handled similar to 
+# get_cell_fe_data above for similar case
+# need to have different method for the case of adapted skeleton triangulation
 function Gridap.FESpaces._compute_cell_ids(uh, strian::Triangulation, ttrian::AdaptedTriangulation)
-  Gridap.Helpers.@check get_background_model(strian) === get_parent(get_adapted_model(ttrian))
-  return collect(IdentityVector(Int32(num_cells(ttrian))))
+  if get_background_model(strian) === get_adapted_model(ttrian)
+    return _compute_cell_ids_default(uh, strian, ttrian.trian)
+  else 
+    if is_child(ttrian, strian)
+      D = num_cell_dims(strian)
+      sglue = get_glue(strian,Val(D))
+      tglue = get_glue(ttrian,Val(D))
+      @notimplementedif !isa(sglue,FaceToFaceGlue)
+      @notimplementedif !(isa(sglue,FaceToFaceGlue) || isa(sglue,SkeletonPair))
+      _compute_adapted_cell_ids(strian,sglue,ttrian,tglue)
+    else
+      @assert false
+    end 
+  end
 end
 
 function Gridap.FESpaces._compute_cell_ids(uh, strian::AdaptedTriangulation, ttrian::Triangulation)
   Gridap.Helpers.@notimplemented
 end
 
-function Gridap.FESpaces._compute_cell_ids(uh,
-                                           strian::AdaptedTriangulation,
-                                           ttrian::AdaptedTriangulation)
-  _compute_cell_ids_body(uh, strian, ttrian)
-end
+# can fall back to the default case
+# function Gridap.FESpaces._compute_cell_ids(uh,
+#                                            strian::AdaptedTriangulation,
+#                                            ttrian::AdaptedTriangulation)
+#   _compute_cell_ids_body(uh, strian, ttrian)
+# end
 
-function Gridap.FESpaces._jacobian(f,uh,fuh::DomainContribution)
-  terms = DomainContribution()
-  for trian in get_domains(fuh)
-    g = Gridap.FESpaces._change_argument(jacobian,f,trian,uh)
-    cell_u = get_cell_dof_values(uh,trian)
-    cell_id = Gridap.FESpaces._compute_cell_ids(uh,trian)
-    cell_grad = Gridap.FESpaces.autodiff_array_jacobian(g,cell_u,cell_id)
-    Gridap.CellData.add_contribution!(terms,trian,cell_grad)
-  end
-  terms
-end
+# This is different from the usual one as it uses the 2-arg autodiff_array_
+# family of functions. 
+# The question is why doesn't the original one as well use the 2-arg versions
+# Probably we can't dualize a part of cell_dof_values, obtained from reindex
+# function Gridap.FESpaces._jacobian(f,uh,fuh::DomainContribution)
+#   terms = DomainContribution()
+#   for trian in get_domains(fuh)
+#     g = Gridap.FESpaces._change_argument(jacobian,f,trian,uh)
+#     cell_u = get_cell_dof_values(uh,trian)
+#     # cell_id = Gridap.FESpaces._compute_cell_ids(uh,trian)
+#     # cell_grad = Gridap.FESpaces.autodiff_array_jacobian(g,cell_u)
+#     cell_id = Gridap.FESpaces._compute_cell_ids(uh,trian)
+#     cell_grad = Gridap.FESpaces.autodiff_array_jacobian(g,cell_u,cell_id)
+#     Gridap.CellData.add_contribution!(terms,trian,cell_grad)
+#   end
+#   terms
+# end
+
+### END CLEANING!
 
 ### BEGIN OPTIMIZATIONS
 function Gridap.Adaptivity.get_n2o_reference_coordinate_map(
@@ -187,7 +329,7 @@ end
 
 function Gridap.Adaptivity.get_n2o_reference_coordinate_map(
             g::AdaptivityGlue{Gridap.Adaptivity.RefinementGlue,Dc,A,B,<:CompressedArray}) where {Dc,A,B}
-  
+
   rrules = Gridap.Adaptivity.get_new_cell_refinement_rules(g)
   if (length(rrules.values)==1)
      cell_maps = Gridap.Geometry.get_cell_map(rrules.values[1])
@@ -214,7 +356,7 @@ function Gridap.Adaptivity.get_n2o_reference_coordinate_map(
       end
     end
     return lazy_map(Reindex(cell_maps),cell_maps_ptrs)
-  end 
+  end
 end
 
 const NewToOldReindexArray{T,N}=Gridap.Arrays.LazyArray{<:Fill{<:Reindex},
@@ -229,7 +371,7 @@ function Gridap.Arrays.lazy_map(::typeof(evaluate),
     reindex_map_fields=reindex_map.values
     reindex_map_fields_x=[evaluate(reindex_map_fields[i],x.value) for i=1:length(reindex_map_fields)]
     lazy_map(Reindex(reindex_map_fields_x),f.args[1])
-end 
+end
 
 function Gridap.Arrays.lazy_map(::typeof(evaluate),
                                 f::NewToOldReindexArray{T,N},
@@ -265,13 +407,13 @@ function Gridap.Arrays.lazy_map(m::Gridap.Fields.TransposeMap,
                                 gx::NewToOldReindexArray{T,N}) where {T,N}
     gxmv=gx.maps.value.values
     gxmvT=[evaluate(m,gxmv[i]) for i=1:length(gxmv)]
-    lazy_map(Reindex(gxmvT),gx.args[1]) 
+    lazy_map(Reindex(gxmvT),gx.args[1])
 end
 
 function Gridap.Arrays.lazy_map(m::Gridap.Fields.BroadcastingFieldOpMap,
                                 gx::NewToOldReindexArray{T1,N1},
                                 fx::NewToOldReindexArray{T2,N2}) where {T1,N1,T2,N2}
-  
+
   @assert gx.args[1]===fx.args[1]
   @assert length(gx.maps.value.values)===length(fx.maps.value.values)
   gxs_op_fxs=[evaluate(m,gx.maps.value.values[i],fx.maps.value.values[i]) for i=1:length(fx.maps.value.values)]
@@ -282,7 +424,7 @@ function Gridap.Arrays.lazy_map(m::Gridap.Fields.BroadcastingFieldOpMap,
                                 gx::Fill,
                                 fx::NewToOldReindexArray{T,N}) where {T,N}
   fxs_op_gx=[evaluate(m,fx.maps.value.values[i],gx.value) for i=1:length(fx.maps.value.values)]
-  lazy_map(Reindex(fxs_op_gx),fx.args[1])    
+  lazy_map(Reindex(fxs_op_gx),fx.args[1])
 end
 
 function Gridap.Arrays.lazy_map(m::Gridap.Fields.BroadcastingFieldOpMap,
@@ -290,14 +432,14 @@ function Gridap.Arrays.lazy_map(m::Gridap.Fields.BroadcastingFieldOpMap,
                                 fx::NewToOldReindexArray{T,N}) where {T,N}
   @notimplementedif length(gx.values)>1
   fxs_op_gx=[evaluate(m,fx.maps.value.values[i],gx.values[1]) for i=1:length(fx.maps.value.values)]
-  lazy_map(Reindex(fxs_op_gx),fx.args[1])    
+  lazy_map(Reindex(fxs_op_gx),fx.args[1])
 end
 
 function Gridap.Arrays.lazy_map(m::Gridap.Fields.BroadcastingFieldOpMap,
                                 fx::NewToOldReindexArray{T,N},
                                 gx::Fill) where {T,N}
   fxs_op_gx=[evaluate(m,fx.maps.value.values[i],gx.value) for i=1:length(fx.maps.value.values)]
-  lazy_map(Reindex(fxs_op_gx),fx.args[1]) 
+  lazy_map(Reindex(fxs_op_gx),fx.args[1])
 end
 
 function Gridap.Arrays.lazy_map(m::Gridap.Fields.BroadcastingFieldOpMap,
@@ -308,9 +450,9 @@ function Gridap.Arrays.lazy_map(m::Gridap.Fields.BroadcastingFieldOpMap,
   lazy_map(Reindex(fxs_op_gx),fx.args[1])
 end
 
-function Gridap.Arrays.lazy_map(m  :: Gridap.Fields.IntegrationMap, 
-                                fx :: NewToOldReindexArray{T,N}, 
-                                w  :: Fill, 
+function Gridap.Arrays.lazy_map(m  :: Gridap.Fields.IntegrationMap,
+                                fx :: NewToOldReindexArray{T,N},
+                                w  :: Fill,
                                 j  :: Fill) where {T,N}
   fxs_op_w_op_j=[evaluate(m,fx.maps.value.values[i],w.value,j.value) for i=1:length(fx.maps.value.values)]
   lazy_map(Reindex(fxs_op_w_op_j),fx.args[1])

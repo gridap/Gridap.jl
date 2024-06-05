@@ -26,8 +26,34 @@ function _gradient(f,uh,fuh::DomainContribution)
   terms
 end
 
+# function _compute_cell_ids(uh,ttrian)
+#   strian = get_triangulation(uh)
+#   if strian === ttrian
+#     return collect(IdentityVector(Int32(num_cells(strian))))
+#   end
+#   @check is_change_possible(strian,ttrian)
+#   D = num_cell_dims(strian)
+#   sglue = get_glue(strian,Val(D))
+#   tglue = get_glue(ttrian,Val(D))
+#   @notimplementedif !isa(sglue,FaceToFaceGlue)
+#   @notimplementedif !isa(tglue,FaceToFaceGlue)
+#   scells = IdentityVector(Int32(num_cells(strian)))
+#   mcells = extend(scells,sglue.mface_to_tface)
+#   tcells = lazy_map(Reindex(mcells),tglue.tface_to_mface)
+#   collect(tcells)
+# end
+
 function _compute_cell_ids(uh,ttrian)
   strian = get_triangulation(uh)
+  _compute_cell_ids(uh, strian, ttrian)
+end
+
+function _compute_cell_ids(uh, strian::Triangulation, ttrian::Triangulation)
+  _compute_cell_ids_default(uh,strian,ttrian)
+end
+
+# the content is same as the original in FEAutodiff.jl, default case
+function _compute_cell_ids_default(uh, strian, ttrian)
   if strian === ttrian
     return collect(IdentityVector(Int32(num_cells(strian))))
   end

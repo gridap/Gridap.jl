@@ -20,6 +20,12 @@ end
 function get_cell_fe_data(fun,f,ttrian)
   sface_to_data = fun(f)
   strian = get_triangulation(f)
+  get_cell_fe_data(fun, sface_to_data, strian, ttrian)
+end
+
+function get_cell_fe_data(
+  fun, sface_to_data, strian::Triangulation, ttrian::Triangulation)
+
   if strian === ttrian
     return sface_to_data
   end
@@ -28,7 +34,7 @@ function get_cell_fe_data(fun,f,ttrian)
   sglue = get_glue(strian,Val(D))
   tglue = get_glue(ttrian,Val(D))
   get_cell_fe_data(fun,sface_to_data,sglue,tglue)
-end
+end 
 
 function get_cell_fe_data(fun,sface_to_data,sglue::FaceToFaceGlue,tglue::FaceToFaceGlue)
   mface_to_sface = sglue.mface_to_tface
