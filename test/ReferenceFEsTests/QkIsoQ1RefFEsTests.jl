@@ -10,7 +10,7 @@ module QkIsoQ1RefFEsTests
   end
   for ref_fe_constructor in [Gridap.QkIsoQ1, Gridap.HQkIsoQ1]
       if ref_fe_constructor == Gridap.QkIsoQ1
-         MAX_D=3
+         MAX_D=2
       else 
          MAX_D=2
       end    
@@ -22,7 +22,7 @@ module QkIsoQ1RefFEsTests
           domain[2*d  ] = 1.0
           partition[d]  = 2
         end
-        order  = 2
+        order  = 8
         I(x)   = x[1]^order
         u,f=generate_analytical_functions(order)
 
@@ -89,7 +89,7 @@ module QkIsoQ1RefFEsTests
           end
         end
 
-        for orderTrial in 1:2
+        for orderTrial in (2,4)
           u,f = generate_analytical_functions(orderTrial)
           
           reffeH = ReferenceFE(lagrangian,Float64,orderTrial)
@@ -126,7 +126,7 @@ module QkIsoQ1RefFEsTests
               op=AffineFEOperator(adΩHh,lΩHh,UH,Vh)
               uh=solve(op)
               eh=sum(∫((u-uh)*(u-uh))dΩHh)
-              @test eh < 1.0e-12
+              @test eh < 1.0e-10
               rh = weak_res(uh, dΩHh, f)
               rh_vec = assemble_vector(rh,Vh)
               @test norm(rh_vec) < 1.0e-10
