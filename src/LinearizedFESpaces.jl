@@ -16,8 +16,17 @@ end
 function LinearizedFESpace(model::CartesianDiscreteModel{Dc},
                            reffe::Tuple{<:Lagrangian,Any,Any}; kwargs...) where Dc
   reffe_linearized=_linearize_reffe(reffe)
-  ncells_x_dim=_num_cells_x_dim(reffe)
-  ref_model=Adaptivity.refine(model,ncells_x_dim)
+  order = reffe[2][2]
+  ref_model=Adaptivity.refine(model,order)
+  linear_fe_space=FESpace(ref_model,reffe_linearized;kwargs...)
+  LinearizedFESpace(model,ref_model,linear_fe_space)
+end
+
+function LinearizedFESpace(model::CartesianDiscreteModel{Dc},
+                           reffe::Tuple{<:Nedelec,Any,Any}; kwargs...) where Dc
+  reffe_linearized=_linearize_reffe(reffe)
+  order = reffe[2][2]
+  ref_model=Adaptivity.refine(model,order-1)
   linear_fe_space=FESpace(ref_model,reffe_linearized;kwargs...)
   LinearizedFESpace(model,ref_model,linear_fe_space)
 end
@@ -98,13 +107,39 @@ function _get_cell_fe_data(fun,sface_to_data, strian::AdaptedTriangulation, ttri
 # ttrian refined
 function _get_cell_fe_data(fun, sface_to_data, strian::Triangulation, ttrian::AdaptedTriangulation)
   Gridap.Helpers.@check get_background_model(strian) === get_parent(get_adapted_model(ttrian))
-  sface_to_data_reindexed=Gridap.Adaptivity.o2n_reindex(sface_to_data,get_adapted_model(ttrian).glue)
-  # Strictly speaking, the next line is not guaranteed to work in the most general case. 
-  # I am assuming that Triangulation(get_background_model(ttrian)) is the proper one that 
-  # matches sface_to_data_reindexed, but this is not true in general. For the particular (and most frequent)
-  # case in which sface_to_data holds cell-wise data coming from a FESpace, this is true.
-  _get_cell_fe_data_trian_trian_body(fun,sface_to_data_reindexed, Triangulation(get_background_model(ttrian)), ttrian)
+  Gridap.Helpers.@check isa(get_adapted_model(ttrian).glue.n2o_faces_map[end],Vector)
+  Dc = num_cell_dims(strian)
+  adapt_glue=get_adapted_model(ttrian).glue
+  sglue=get_glue(strian,Val(Dc))
+  s_mface_to_tface=sglue.mface_to_tface
+  tglue=get_glue(ttrian,Val(Dc))
+  sface_to_data_reindexed=_reindex_sface_to_data(fun,sface_to_data,s_mface_to_tface,adapt_glue,tglue)
+  _get_cell_fe_data_trian_trian_body(fun,sface_to_data_reindexed, ttrian.trian, ttrian)
 end
+
+function _reindex_sface_to_data(fun,sface_to_data,s_mface_to_tface,adapt_glue,tglue)
+  t_tface_to_mface=tglue.tface_to_mface
+  s_coarse_mfaces=adapt_glue.n2o_faces_map[end][t_tface_to_mface]
+  lazy_map(Reindex(sface_to_data),s_mface_to_tface[s_coarse_mfaces])
+end 
+
+function _reindex_sface_to_data(fun,sface_to_data,s_mface_to_tface,adapt_glue,tglue::SkeletonPair)
+  t_tface_to_mface_plus  = tglue.plus.tface_to_mface
+  t_tface_to_mface_minus = tglue.minus.tface_to_mface
+  s_coarse_mfaces_plus  = adapt_glue.n2o_faces_map[end][t_tface_to_mface_plus]
+  s_coarse_mfaces_minus = adapt_glue.n2o_faces_map[end][t_tface_to_mface_minus]
+  sface_to_data_plus_reindex = lazy_map(Reindex(sface_to_data),s_mface_to_tface[s_coarse_mfaces_plus])
+  sface_to_data_minus_reindex = lazy_map(Reindex(sface_to_data),s_mface_to_tface[s_coarse_mfaces_minus])
+  _combine_plus_minus(fun,sface_to_data_plus_reindex,sface_to_data_minus_reindex)
+end 
+
+function _combine_plus_minus(fun,p,m)
+  lazy_map(BlockMap(2,[1,2]),p,m)
+end 
+
+function _combine_plus_minus(fun::typeof(get_cell_is_dirichlet),p,m)
+  lazy_map((p,m)->(p||m),p,m)
+end 
 
 function _get_cell_fe_data(fun, 
                            sface_to_data, 
@@ -123,7 +158,6 @@ function _get_cell_fe_data(fun,
     Gridap.Helpers.@notimplemented
   end 
 end
-
 
 function Gridap.FESpaces._compute_cell_ids(uh,ttrian)
   strian = get_triangulation(uh)
