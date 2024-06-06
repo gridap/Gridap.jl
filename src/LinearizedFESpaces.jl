@@ -268,15 +268,6 @@ function Gridap.Arrays.lazy_map(m::Gridap.Fields.TransposeMap,
     lazy_map(Reindex(gxmvT),gx.args[1]) 
 end
 
-function Gridap.Arrays.lazy_map(m::Gridap.Fields.BroadcastingFieldOpMap,
-                                gx::NewToOldReindexArray{T1,N1},
-                                fx::NewToOldReindexArray{T2,N2}) where {T1,N1,T2,N2}
-  
-  @assert gx.args[1]===fx.args[1]
-  @assert length(gx.maps.value.values)===length(fx.maps.value.values)
-  gxs_op_fxs=[evaluate(m,gx.maps.value.values[i],fx.maps.value.values[i]) for i=1:length(fx.maps.value.values)]
-  lazy_map(Reindex(gxs_op_fxs),fx.args[1])
-end
 
 function Gridap.Arrays.lazy_map(m::Gridap.Fields.BroadcastingFieldOpMap,
                                 gx::Fill,
