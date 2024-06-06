@@ -48,7 +48,9 @@ function Gridap.Fields.return_cache(a::FineToCoarseBasis,x::AbstractArray{<:Poin
   fi_cache = array_cache(fields)
   mi_cache = array_cache(cmaps)
 
-  xi = getindex!(xi_cache,x,1)
+  vcoords=get_vertex_coordinates(a.rrule.poly)
+
+  xi = vcoords[1]
   child_id = x2cell(xi)
   mi = getindex!(mi_cache,cmaps,child_id)
   fi = getindex!(fi_cache,fields,child_id)
@@ -115,7 +117,8 @@ function Geometry.return_cache(a::FineToCoarseBasisGradient,x::AbstractArray{<:P
   fi_cache = array_cache(get_data(a.∇field))
   mi_cache = array_cache(cmaps)
 
-  xi = getindex!(xi_cache,x,1)
+  vcoords=get_vertex_coordinates(a.f2cb.rrule.poly)
+  xi = vcoords[1]
   child_id = x2cell(xi)
   mi = getindex!(mi_cache,cmaps,child_id)
   fi = getindex!(fi_cache,get_data(a.∇field),child_id)
@@ -137,7 +140,7 @@ function Geometry.evaluate!(cache,a::FineToCoarseBasisGradient,x::AbstractArray{
 
   Arrays.setsize!(y_cache, (length(x),Geometry.num_nodes(a.f2cb.rrule.ref_grid)))
 
-  y_cache.array .= zero(y_cache.array[1])
+  y_cache.array .= zero(eltype(y_cache.array))
 
   cell_node_ids = Geometry.get_cell_node_ids(a.f2cb.rrule.ref_grid)
   for i in eachindex(x)
