@@ -377,13 +377,13 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
             lis_last_lev=_get_lis(last_lev_face_own_dofs_1,d)
             for (i1,i2) in zip(indices_current_lev_full[i],indices_last_lev_full[i])
               if mod(i1,2)!=0 
-                a = indices_current_lev_full[i]
-                b = indices_last_lev_full[i]
+                aindices = indices_current_lev_full[i]
+                bindices = indices_last_lev_full[i]
               else
-                a = indices_current_lev[i]
-                b = indices_last_lev[i]
+                aindices = indices_current_lev[i]
+                bindices = indices_last_lev[i]
               end
-              for (j1,j2) in zip(a,b)
+              for (j1,j2) in zip(aindices,bindices)
                 li1=lis_current_lev[CartesianIndex(i1,j1)]
                 li2=lis_last_lev[CartesianIndex(i2,j2)]
                 @debug "$(d) $(i) $(iface): $(li1) $(li2)"
@@ -507,13 +507,13 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
             lis_last_lev=_get_lis(last_lev_face_own_dofs_1,d)
             for (i1,i2) in zip(indices_current_lev_full[i],indices_last_lev_full[i])
               if mod(i1,2)!=0 
-                a = indices_current_lev_full[i]
-                b = indices_last_lev_full[i]
+                aindices = indices_current_lev_full[i]
+                bindices = indices_last_lev_full[i]
               else
-                a = indices_current_lev[i]
-                b = indices_last_lev[i]
+                aindices = indices_current_lev[i]
+                bindices = indices_last_lev[i]
               end
-              for (j1,j2) in zip(a,b)
+              for (j1,j2) in zip(aindices,bindices)
                 li1=lis_current_lev[CartesianIndex(i1,j1)]
                 li2=lis_last_lev[CartesianIndex(i2,j2)]
                 @debug "$(d) $(i) $(iface): $(li1) $(li2)"
