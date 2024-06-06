@@ -30,7 +30,7 @@ function Gridap.ReferenceFEs.get_orders(a::FineToCoarseBasis)
   D=num_cell_dims(a.rrule.ref_grid)
   nodes=num_vertices(a.rrule.ref_grid)
   orders=zeros(Int,D)
-  order=Int64(nodes^(1.0/D))-1
+  order=Int64(round(nodes^(1.0/D)))-1
   orders.=order
   Tuple(orders)
 end
