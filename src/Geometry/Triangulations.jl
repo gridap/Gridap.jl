@@ -158,7 +158,17 @@ get_background_model(trian::BodyFittedTriangulation) = trian.model
 get_grid(trian::BodyFittedTriangulation) = trian.grid
 
 function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dt}) where Dt
-  tface_to_mface = trian.tface_to_mface
+  # unique(...) here is required for those cases in which an mface in 
+  # trian.tface_to_mface is listed more than once. Otherwise, the 
+  # constructor of PosNegPartition fails because it does not admit 
+  # the same mface to be the image of more than one tface.
+  # In turn, I have required this for the computation of facet integrals 
+  # on non-conforming cell interfaces.
+  if !(allunique(trian.tface_to_mface))
+    tface_to_mface = unique(trian.tface_to_mface)
+  else 
+    tface_to_mface = trian.tface_to_mface
+  end 
   tface_to_mface_map = Fill(GenericField(identity),num_cells(trian))
   if isa(tface_to_mface,IdentityVector) && num_faces(trian.model,Dt) == num_cells(trian)
     mface_to_tface = tface_to_mface
