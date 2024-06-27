@@ -122,15 +122,15 @@ function get_o2n_faces_map(ncell_to_ocell::Vector{T}) where {T<:Integer}
     iC = ncell_to_ocell[iF]
     ptrs[iC+1] += 1
   end
-  length_to_ptrs!(ptrs)
+  Arrays.length_to_ptrs!(ptrs)
 
-  cnts = fill(0,nC)
   data = fill(zero(T),ptrs[end])
   for iF in 1:nF
     iC = ncell_to_ocell[iF]
-    data[ptrs[iC]+cnts[iC]] = iF
-    cnts[iC] += 1
+    data[ptrs[iC]] = iF
+    ptrs[iC] += 1
   end
+  Arrays.rewind_ptrs!(ptrs)
 
   ocell_to_ncell = Table(data,ptrs)
   return ocell_to_ncell
