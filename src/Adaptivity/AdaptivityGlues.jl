@@ -219,6 +219,7 @@ function get_d_to_fface_to_cface(glue::AdaptivityGlue{<:RefinementGlue},
   rrules = get_old_cell_refinement_rules(glue)
   ccell_to_d_to_faces = lazy_map(rr->map(d->Geometry.get_faces(get_grid_topology(rr.ref_grid),Dc,d),0:Dc),rrules)
   ccell_to_d_to_fface_to_parent_face = lazy_map(get_d_to_face_to_parent_face,rrules)
+  fcell_to_child_id = glue.n2o_cell_to_child_id
 
   # Global data, concerning the complete meshes
   ccell_to_fcell = glue.o2n_faces_map
@@ -234,7 +235,8 @@ function get_d_to_fface_to_cface(glue::AdaptivityGlue{<:RefinementGlue},
       local_d_to_fface_to_parent_dim = ccell_to_d_to_fface_to_parent_face[ccell]
     # For each fine subcell:
     # child_id -> Local Id of the fine cell within the refinement rule (ccell)
-    for (child_id,fcell) in enumerate(ccell_to_fcell[ccell])
+    for fcell in ccell_to_fcell[ccell]
+      child_id = fcell_to_child_id[fcell]
       # For each fine face on the fine subcell: 
       # d     -> Dimension of the fine face
       # iF    -> Local Id of the fine face within the fine cell
@@ -244,7 +246,7 @@ function get_d_to_fface_to_cface(glue::AdaptivityGlue{<:RefinementGlue},
           # Local Id of the fine face within the refinement rule
           fface_child_id = ccell_to_d_to_faces[ccell][d+1][child_id][iF]
           # Local Id of the coarse parent face within the coarse cell
-          parent    = local_d_to_fface_to_parent_face[d+1][fface_child_id]
+          parent = local_d_to_fface_to_parent_face[d+1][fface_child_id]
 
           # Global Id of the coarse parent face, and it's dimension
           cface_dim = local_d_to_fface_to_parent_dim[d+1][fface_child_id]
