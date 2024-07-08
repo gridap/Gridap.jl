@@ -177,7 +177,7 @@ function get_refined_cell_to_vertex_map(
   # Maps from refined faces (i.e new vertices) to old faces
   d_to_faces_reindexing = map(d_to_nfaces,d_to_offset,faces_list) do nfaces,offset,ref_faces
     faces_reindexing = find_inverse_index_map(ref_faces,nfaces)
-    return map(f -> iszero(f) ? 0 : f + offset, faces_reindexing)
+    return map(f -> iszero(f) ? 0 : f + offset - 1, faces_reindexing)
   end
 
   # For a given parent cell, return the new node gids (corresponding to the refined faces)
@@ -203,7 +203,7 @@ function get_refined_cell_to_vertex_map(
 
   k = 1
   ptrs_new[1] = 1
-  for iC = 1:nC_old
+  for iC = 1:d_to_nfaces[Dc+1]
     rr = rrules[iC]
 
     # New vertex ids from old face ids
@@ -274,6 +274,10 @@ function NVBRefinement(model::DiscreteModel{Dc,Dp}) where {Dc, Dp}
 end
 
 NVBRefinement(model::AdaptedDiscreteModel) = NVBRefinement(model.model)
+
+function setup_edge_based_rrules(method::NVBRefinement, topo::UnstructuredGridTopology{Dc},::Nothing) where Dc
+  setup_edge_based_rrules(method, topo, collect(1:num_faces(topo,Dc)))
+end
 
 function setup_edge_based_rrules(method::NVBRefinement, topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}) where Dc
   nE = num_faces(topo,1)
@@ -381,7 +385,7 @@ The resulting mesh is always conformal.
 struct RedGreenRefinement <: EdgeBasedRefinement end
 
 function setup_edge_based_rrules(::RedGreenRefinement, topo::UnstructuredGridTopology{Dc},::Nothing) where Dc
-  rrules     = lazy_map(RedRefinementRule,CompressedArray(topo.polytopes,topo.cell_type))
+  rrules = lazy_map(RedRefinementRule,CompressedArray(topo.polytopes,topo.cell_type))
 
   ref_nodes = 1:num_faces(topo,0)
   ref_edges = 1:num_faces(topo,1)
@@ -990,9 +994,9 @@ function get_relabeled_connectivity(::WithoutRefinement,rr::RefinementRule{<:Pol
   return Table(new_data,conn.ptrs)
 end
 
-function get_relabeled_connectivity(::RedRefinement,rr::RefinementRule{P},faces_gids) where P
+function get_relabeled_connectivity(::RedRefinement,rr::RefinementRule,faces_gids)
   conn = rr.ref_grid.grid.cell_node_ids
-  if is_simplex(P) # TRI, TET only adds vertices to edges
+  if is_simplex(get_polytope(rr)) # TRI, TET only adds vertices to edges
     gids = vcat(faces_gids[1]...,faces_gids[2]...)
   else # QUAD, HEX adds vertices to edges, faces and interior
     gids = vcat(faces_gids...)    
@@ -1031,8 +1035,8 @@ function get_relabeled_connectivity(::BarycentricRefinement,rr::RefinementRule{<
   return Table(new_data,conn.ptrs)
 end
 
-function get_relabeled_connectivity(::PowellSabinRefinement,rr::RefinementRule{P},faces_gids) where P
-  @assert is_simplex(P)
+function get_relabeled_connectivity(::PowellSabinRefinement,rr::RefinementRule,faces_gids)
+  @assert is_simplex(get_polytope(rr))
   conn = rr.ref_grid.grid.cell_node_ids
   gids = vcat(faces_gids...)
   new_data = lazy_map(Reindex(gids),conn.data)
