@@ -66,6 +66,11 @@ struct FaceToFaceGlue{Dc,A,B,C}
   end
 end
 
+"""
+    is_change_possible(strian::Triangulation,ttrian::Triangulation)
+
+  Returns `true` if `CellDatum` objects can be transferred from `strian` to `ttrian`.
+"""
 function is_change_possible(strian::Triangulation,ttrian::Triangulation)
   if strian === ttrian
     return true
@@ -85,6 +90,12 @@ function is_change_possible(sglue::FaceToFaceGlue,tglue::FaceToFaceGlue)
   sglue.mface_to_tface != nothing
 end
 
+"""
+    best_target(trian1::Triangulation,trian2::Triangulation)
+
+  If possible, returns a `Triangulation` to which `CellDatum` objects can be transferred 
+  from `trian1` and `trian2`. Can be `trian1`, `trian2` or a new `Triangulation`.
+"""
 function best_target(trian1::Triangulation,trian2::Triangulation)
   @check is_change_possible(trian1,trian2)
   @check is_change_possible(trian2,trian1)
@@ -281,6 +292,12 @@ end
 #  args = map(i->extend(i,b),a.args)
 #  lazy_map(k,args...)
 #end
+
+"""
+"""
+function pos_neg_data(ipos_to_val::AbstractArray,i_to_iposneg::PosNegPartition)
+  @abstractmethod
+end
 
 function pos_neg_data(
   ipos_to_val::AbstractArray{<:Number},i_to_iposneg::PosNegPartition)

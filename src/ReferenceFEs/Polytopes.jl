@@ -236,7 +236,7 @@ end
 """
     simplexify(p::Polytope) -> Tuple{Vector{Vector{Int}},Polytope}
 """
-function simplexify(p::Polytope)
+function simplexify(p::Polytope;kwargs...)
   @abstractmethod
 end
 
@@ -432,7 +432,7 @@ dimension `dimto` on its boundary.
 For `dimfrom < dimto` returns a vector that for each face of `dimfrom`
 stores a vector of the face ids of faces of dimension `dimto` that touch it.
 
-The numerations used in this funcitons are the ones restricted to each dimension.
+The numerations used in this function are the ones restricted to each dimension.
 
 ```jldoctest
 using Gridap.ReferenceFEs
@@ -726,4 +726,3 @@ function test_polytope(p::Polytope{D};optional::Bool=false) where D
     @test isa(is_n_cube(p),Bool)
   end
 end
-

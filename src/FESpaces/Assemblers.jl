@@ -197,7 +197,7 @@ end
 
 """
 """
-function assemble_matrix_add!(mat,a::Assembler, matdata)
+function assemble_matrix_add!(mat,a::Assembler,matdata)
   @abstractmethod
 end
 
@@ -215,11 +215,11 @@ end
 
 """
 """
-function assemble_matrix_and_vector!(A,b,a::Assembler, data)
+function assemble_matrix_and_vector!(A,b,a::Assembler,data)
   @abstractmethod
 end
 
-function assemble_matrix_and_vector_add!(A,b,a::Assembler, data)
+function assemble_matrix_and_vector_add!(A,b,a::Assembler,data)
   @abstractmethod
 end
 
@@ -279,6 +279,17 @@ end
 # Some syntactic sugar for assembling from anonymous functions
 # and objects from which one can collect cell matrices/vectors
 
+function allocate_matrix(f::Function,a::Assembler,U::FESpace,V::FESpace)
+  v = get_fe_basis(V)
+  u = get_trial_fe_basis(U)
+  allocate_matrix(a,collect_cell_matrix(U,V,f(u,v)))
+end
+
+function allocate_vector(f::Function,a::Assembler,V::FESpace)
+  v = get_fe_basis(V)
+  allocate_vector(a,collect_cell_vector(V,f(v)))
+end
+
 function assemble_matrix(f::Function,a::Assembler,U::FESpace,V::FESpace)
   v = get_fe_basis(V)
   u = get_trial_fe_basis(U)
@@ -311,6 +322,14 @@ function assemble_matrix_and_vector!(f::Function,b::Function,M::AbstractMatrix,r
   v = get_fe_basis(V)
   u = get_trial_fe_basis(U)
   assemble_matrix_and_vector!(M,r,a,collect_cell_matrix_and_vector(U,V,f(u,v),b(v)))
+end
+
+function assemble_matrix_and_vector!(
+  f::Function,b::Function,M::AbstractMatrix,r::AbstractVector,a::Assembler,U::FESpace,V::FESpace,uhd
+)
+  v = get_fe_basis(V)
+  u = get_trial_fe_basis(U)
+  assemble_matrix_and_vector!(M,r,a,collect_cell_matrix_and_vector(U,V,f(u,v),b(v),uhd))
 end
 
 function assemble_matrix(f,a::Assembler,U::FESpace,V::FESpace)
@@ -526,11 +545,11 @@ function collect_cell_matrix_and_vector(
   trial::FESpace,test::FESpace,mat_contributions::DomainContribution,l::Number)
   @notimplementedif l != 0
   vec_contributions = DomainContribution()
-  collect_cell_matrix_and_vector(test,trial,mat_contributions,vec_contributions)
+  collect_cell_matrix_and_vector(trial,test,mat_contributions,vec_contributions)
 end
 
 function collect_cell_matrix_and_vector(
   trial::FESpace,test::FESpace,biform::DomainContribution,l::Number,uhd::FEFunction)
   liform = DomainContribution()
-  collect_cell_matrix_and_vector(test,trial,biform,liform,uhd)
+  collect_cell_matrix_and_vector(trial,test,biform,liform,uhd)
 end

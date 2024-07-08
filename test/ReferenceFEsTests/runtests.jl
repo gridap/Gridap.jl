@@ -6,6 +6,8 @@ using Test
 
 @testset "ExtrusionPolytopes" begin include("ExtrusionPolytopesTests.jl") end
 
+@testset "GeneralPolytopes" begin include("GeneralPolytopesTests.jl") end
+
 @testset "Dofs" begin include("DofsTests.jl") end
 
 @testset "MockDofs" begin include("MockDofsTests.jl") end
@@ -37,5 +39,7 @@ using Test
 @testset "CDLagrangianRefFEs" begin include("CDLagrangianRefFEsTests.jl") end
 
 @testset "BezierRefFEs" begin include("BezierRefFEsTests.jl") end
+
+@testset "ModalC0RefFEs" begin include("ModalC0RefFEsTests.jl") end
 
 end # module

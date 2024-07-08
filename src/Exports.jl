@@ -87,10 +87,14 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs ReferenceFE
 @publish ReferenceFEs Lagrangian
 @publish ReferenceFEs RaviartThomas
+@publish ReferenceFEs BDM
 @publish ReferenceFEs Nedelec
+@publish ReferenceFEs ModalC0
 @publish ReferenceFEs lagrangian
 @publish ReferenceFEs raviart_thomas
+@publish ReferenceFEs bdm
 @publish ReferenceFEs nedelec
+@publish ReferenceFEs modalC0
 
 @publish Geometry get_triangulation
 @publish Geometry num_cells
@@ -168,6 +172,7 @@ using Gridap.CellData: ∫; export ∫
 @publish FESpaces FESolver
 @publish FESpaces SparseMatrixAssembler
 @publish FESpaces FiniteElements
+@publish FESpaces ConstantFESpace
 
 @publish MultiField MultiFieldFESpace
 @publish MultiField num_fields
@@ -177,7 +182,25 @@ using Gridap.CellData: ∫; export ∫
 @publish Visualization createpvd
 @publish Visualization savepvd
 
-include("ODEs/Exports.jl")
+@publish ODEs ∂t
+@publish ODEs ∂tt
+@publish ODEs ForwardEuler
+@publish ODEs ThetaMethod
+@publish ODEs MidPoint
+@publish ODEs BackwardEuler
+@publish ODEs GeneralizedAlpha1
+@publish ODEs ButcherTableau
+@publish ODEs available_tableaus
+@publish ODEs RungeKutta
+# @publish ODEs GeneralizedAlpha2
+# @publish ODEs Newmark
+@publish ODEs TransientTrialFESpace
+@publish ODEs TransientMultiFieldFESpace
+@publish ODEs TransientFEOperator
+@publish ODEs TransientIMEXFEOperator
+@publish ODEs TransientSemilinearFEOperator
+@publish ODEs TransientQuasilinearFEOperator
+@publish ODEs TransientLinearFEOperator
 
 # Deprecated / removed
 

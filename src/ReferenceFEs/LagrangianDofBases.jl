@@ -55,6 +55,8 @@ function LagrangianDofBasis(::Type{T},nodes::Vector{<:Point}) where T
 end
 
 get_nodes(b::LagrangianDofBasis) = b.nodes
+get_dof_to_node(b::LagrangianDofBasis) = b.dof_to_node
+get_dof_to_comp(b::LagrangianDofBasis) = b.dof_to_comp
 
 function _generate_dof_layout_node_major(::Type{<:Real},nnodes::Integer)
   ndofs = nnodes
@@ -119,7 +121,7 @@ function evaluate!(cache,b::LagrangianDofBasis,field)
   If you are trying to interpolate a function on a FESpace make sure that
   both objects have the same value type.
 
-  For instance, trying to interpolate a vector-valued funciton on a scalar-valued FE space
+  For instance, trying to interpolate a vector-valued function on a scalar-valued FE space
   would raise this error.
   """
   _evaluate_lagr_dof!(c,vals,b.node_and_comp_to_dof,ndofs,ncomps)

@@ -245,7 +245,7 @@ function push_normal(invJt,n)
   v = invJt⋅n
   m = sqrt(inner(v,v))
   if m < eps()
-    return zero(n)
+    return zero(v)
   else
     return v/m
   end

@@ -225,17 +225,18 @@ function is_n_cube(p::ExtrusionPolytope{1})
   true
 end
 
-function simplexify(p::ExtrusionPolytope{0})
+function simplexify(p::ExtrusionPolytope{0};kwargs...)
   [[1,],], VERTEX
 end
 
-function simplexify(p::ExtrusionPolytope{1})
+function simplexify(p::ExtrusionPolytope{1};kwargs...)
   [[1,2],], Polytope(TET_AXIS)
 end
 
-function simplexify(p::ExtrusionPolytope{2})
+function simplexify(p::ExtrusionPolytope{2};positive=false)
   if p == QUAD
-    ([[1,2,3],[2,3,4]], TRI)
+    simplices = simplexify_hypercube(2,positive)
+    (simplices, TRI)
   elseif p == TRI
     ([[1,2,3],], TRI)
   else
@@ -243,11 +244,9 @@ function simplexify(p::ExtrusionPolytope{2})
   end
 end
 
-function simplexify(p::ExtrusionPolytope{3})
+function simplexify(p::ExtrusionPolytope{3};positive=false)
   if p == HEX
-    simplices = [
-      [1,2,3,7], [1,2,5,7], [2,3,4,7],
-      [2,4,7,8], [2,5,6,7], [2,6,7,8]]
+    simplices = simplexify_hypercube(3,positive)
     (simplices, TET)
   elseif p == TET
     simplices = [[1,2,3,4],]
@@ -257,12 +256,13 @@ function simplexify(p::ExtrusionPolytope{3})
   end
 end
 
-function simplexify(p::ExtrusionPolytope{D}) where {D}
+function simplexify(p::ExtrusionPolytope{D};positive=false) where {D}
   # This function works for all dimensions. It could replace the
   # special cases above, but this might change the shape and order of
   # simplices.
-  SD = Polytope(ntuple(d->TET_AXIS, D))
-  QD = Polytope(ntuple(d->HEX_AXIS, D))
+  @notimplementedif positive
+  SD = Polytope(ntuple(d->TET_AXIS, Val{D}() ))
+  QD = Polytope(ntuple(d->HEX_AXIS, Val{D}() ))
   if p == QD
     simplices = simplexify_hypercube(D)
     (simplices, SD)
@@ -271,6 +271,36 @@ function simplexify(p::ExtrusionPolytope{D}) where {D}
     (simplices, SD)
   else
      @notimplemented
+  end
+end
+
+function simplexify_hypercube(dim::Integer,positive::Bool)
+  if positive
+    positive_simplexify_hypercube(dim)
+  else
+    oriented_simplexify_hypercube(dim)
+  end
+end
+
+function oriented_simplexify_hypercube(dim::Integer)
+  if dim == 2
+    [[1,2,3],[2,3,4]]
+  elseif dim == 3
+    [[1,2,3,7], [1,2,5,7], [2,3,4,7],
+    [2,4,7,8], [2,5,6,7], [2,6,7,8]]
+  else
+    @notimplemented
+  end
+end
+
+function positive_simplexify_hypercube(dim::Integer)
+  if dim == 2
+    [[1,2,3],[2,4,3]]
+  elseif dim == 3
+    [[1,2,3,7], [1,5,2,7], [2,4,3,7],
+    [2,4,7,8], [2,5,6,7], [2,7,6,8]]
+  else
+    @notimplemented
   end
 end
 
@@ -693,6 +723,9 @@ function _nullspace(v)
   end
 end
 
+# Returns the first vertex not belonging to the facet i_f, or -1 if all vertices
+# belong to the facet. 
+# nf_vs is the array of arrays of vertices of the facets of the polytope.
 function _vertex_not_in_facet(p::DFace, i_f, nf_vs)
   for i in p.nf_dimranges[end][1]
     is_in_f = false

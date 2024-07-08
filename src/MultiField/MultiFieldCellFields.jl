@@ -20,7 +20,7 @@ end
 function CellData.get_data(f::MultiFieldCellField)
   s = """
   Function get_data is not implemented for MultiFieldCellField at this moment.
-  You need to extract the individual fields and then evaluate them separatelly.
+  You need to extract the individual fields and then evaluate them separately.
 
   If ever implement this, evaluating a `MultiFieldCellField` directly would provide,
   at each evaluation point, a tuple with the value of the different fields.
@@ -39,3 +39,9 @@ num_fields(a::MultiFieldCellField) = length(a.single_fields)
 Base.getindex(a::MultiFieldCellField,i::Integer) = a.single_fields[i]
 Base.iterate(a::MultiFieldCellField)  = iterate(a.single_fields)
 Base.iterate(a::MultiFieldCellField,state)  = iterate(a.single_fields,state)
+Base.length(a::MultiFieldCellField) = num_fields(a)
+
+function LinearAlgebra.dot(a::MultiFieldCellField,b::MultiFieldCellField)
+  @check num_fields(a) == num_fields(b)
+  return sum(map(dot,a.single_fields,b.single_fields))
+end

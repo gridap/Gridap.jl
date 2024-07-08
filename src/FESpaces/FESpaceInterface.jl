@@ -87,7 +87,9 @@ num_free_dofs(f::FESpace) = length(get_free_dof_ids(f))
 """
 function zero_free_values(f::FESpace)
   V = get_vector_type(f)
-  allocate_vector(V,num_free_dofs(f))
+  free_values = allocate_vector(V,get_free_dof_ids(f))
+  fill!(free_values,zero(eltype(V)))
+  return free_values
 end
 
 function get_vector_type(fs::FESpace)

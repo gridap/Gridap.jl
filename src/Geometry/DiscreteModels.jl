@@ -375,9 +375,9 @@ end
 """
     simplexify(model::DiscreteModel)
 """
-function simplexify(model::DiscreteModel)
+function simplexify(model::DiscreteModel;kwargs...)
   umodel = UnstructuredDiscreteModel(model)
-  simplexify(umodel)
+  simplexify(umodel;kwargs...)
 end
 
 function ReferenceFE(model::DiscreteModel,args...;kwargs...)
@@ -386,6 +386,12 @@ function ReferenceFE(model::DiscreteModel,args...;kwargs...)
   ctype_to_reffe = map(p->ReferenceFE(p,args...;kwargs...),ctype_to_polytope)
   cell_to_reffe = expand_cell_data(ctype_to_reffe,cell_to_ctype)
   cell_to_reffe
+end
+
+function ReferenceFE(model::DiscreteModel,basis::ModalC0,args...;kwargs...)
+  ctype_to_polytope = get_polytopes(model)
+  @assert length(ctype_to_polytope) == 1 "Only one polytope expected"
+  compute_cell_to_modalC0_reffe(ctype_to_polytope[1],num_cells(model),args...;kwargs...)
 end
 
 # IO
@@ -409,12 +415,11 @@ function DiscreteModelFromFile(filename::AbstractString)
 end
 
 function DiscreteModelFromFile(filename::AbstractString,::Any)
-  @notimplemented
+  error("File type unknown (you may need to load a package, for instance GridapGmsh)")
 end
 
 function DiscreteModelFromFile(filename::AbstractString,::Val{:json})
-  model = from_json_file(DiscreteModel,filename)
-  model
+  from_json_file(DiscreteModel,filename)
 end
 
 # GenericDiscreteModel

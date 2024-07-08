@@ -714,6 +714,14 @@ b = 4.0 - 3.0*im
 @test outer(a,b) == a*b
 @test inner(a,b) == a*b
 
+@test real(VectorValue(1+1im)) == VectorValue(1)
+@test real(VectorValue(1+1im, 1+1im)) == VectorValue(1, 1)
+@test real(VectorValue(1+1im, 1+1im, 1+1im)) == VectorValue(1, 1, 1)
+
+@test imag(VectorValue(1+1im)) == VectorValue(1)
+@test imag(VectorValue(1+1im, 1+1im)) == VectorValue(1, 1)
+@test imag(VectorValue(1+1im, 1+1im, 1+1im)) == VectorValue(1, 1, 1)
+
 # Broadcast
 a = VectorValue(1,2,3)
 b = VectorValue(1.,2.,3.)

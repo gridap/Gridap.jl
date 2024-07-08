@@ -8,6 +8,7 @@ import Gridap.Arrays: testitem
 
 using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable, @check
+using Gridap.Helpers: tfill
 
 using Gridap.Algebra: mul!
 
@@ -86,6 +87,9 @@ export ArrayBlock
 export VectorBlock
 export MatrixBlock
 export BlockMap
+export ArrayBlockView
+export VectorBlockView
+export MatrixBlockView
 
 export VoidField
 export VoidFieldMap

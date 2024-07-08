@@ -57,7 +57,7 @@ further defined and clarified by project maintainers.
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported by contacting the project administrators, either 
 [Santiago Badia](mailto:santiago.badia@monash.edu) or 
-[Francesc Verdugo](mailto:fverdugo@cimne.upc.edu). All
+[Francesc Verdugo](mailto:f.verdugo.rojano@vu.nl). All
 complaints will be reviewed and investigated and will result in a response that
 is deemed necessary and appropriate to the circumstances. The project team is
 obligated to maintain confidentiality with regard to the reporter of an incident.

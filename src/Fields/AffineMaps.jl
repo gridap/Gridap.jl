@@ -99,7 +99,7 @@ end
 function inverse_map(f::AffineMap)
   Jt = f.gradient
   y0 = f.origin
-  invJt = inv(Jt)
+  invJt = pinvJt(Jt)
   x0 = -y0⋅invJt
   AffineMap(invJt,x0)
 end
@@ -107,4 +107,10 @@ end
 function lazy_map(::typeof(∇),a::LazyArray{<:Fill{typeof(affine_map)}})
   gradients = a.args[1]
   lazy_map(constant_field,gradients)
+end
+
+function Base.zero(::Type{<:AffineMap{D1,D2,T}}) where {D1,D2,T}
+  gradient = TensorValue{D1,D2}(tfill(zero(T),Val{D1*D2}()))
+  origin = Point{D2,T}(tfill(zero(T),Val{D2}()))
+  AffineMap(gradient,origin)
 end

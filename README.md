@@ -1,4 +1,4 @@
-# <img src="https://github.com/gridap/Gridap.jl/blob/master/images/color-text.png" width="250" title="Gridap logo">
+# <img src="https://github.com/gridap/Gridap.jl/blob/master/images/color-text-sticker.png" width="250" title="Gridap logo">
 
 
 | **Documentation** |
@@ -16,7 +16,7 @@
 Gridap provides a set of tools for the grid-based approximation of partial differential equations (PDEs) written in the
 [Julia programming language](https://julialang.org/). The library currently supports linear and nonlinear PDE systems for scalar and vector fields, single and multi-field problems, conforming and nonconforming finite element (FE) discretizations, on structured and unstructured meshes of simplices and n-cubes. It also provides methods for time integration. Gridap is extensible and modular. One can implement new FE spaces, new reference elements, use external mesh generators, linear solvers, post-processing tools, etc. See, e.g., the list of available [Gridap plugins](https://github.com/gridap/Gridap.jl#plugins).
 
-Gridap has a very expressive API allowing one to solve complex PDEs with very few lines of code. The user can write the underlying weak form with a syntax almost 1:1 to the mathematical notation, and Gridap generates an efficient FE assembly loop automatically by leveraging the Julia JIT compiler. For instance, the weak form for an interior penalty DG method for the Poisson equation can be simply specified as: 
+Gridap has a very expressive API allowing one to solve complex PDEs with very few lines of code. The user can write the underlying weak form with a syntax almost 1:1 to the mathematical notation, and Gridap generates an efficient FE assembly loop automatically by leveraging the Julia JIT compiler. For instance, the weak form for an interior penalty DG method for the Poisson equation can be simply specified as:
 ```julia
 a(u,v) =
   ∫( ∇(v)⋅∇(u) )*dΩ +
@@ -63,7 +63,7 @@ pkg> add Gridap
 - [GridapDistributed](https://github.com/gridap/GridapDistributed.jl) Distributed-memory extension of Gridap.
 - [GridapEmbedded](https://github.com/gridap/GridapEmbedded.jl) Embedded finite elements in Julia.
 - [GridapGmsh](https://github.com/gridap/GridapGmsh.jl) Generate a FE mesh with [GMSH](www.gmsh.info) and use it in Gridap.
-- [GridapMakie](https://github.com/gridap/GridapMakie.jl) Makie plotting recipies for Gridap.
+- [GridapMakie](https://github.com/gridap/GridapMakie.jl) Makie plotting recipes for Gridap.
 - [GridapPardiso](https://github.com/gridap/GridapPardiso.jl) Use the [Intel Pardiso MKL direct sparse solver](https://software.intel.com/en-us/mkl-developer-reference-fortran-intel-mkl-pardiso-parallel-direct-sparse-solver-interface) in Gridap.
 - [GridapPETSc](https://github.com/gridap/GridapPETSc.jl) Use [PETSc](https://petsc.org/) linear and nonlinear solvers in Gridap.
 
@@ -80,7 +80,7 @@ These are some popular PDEs solved with the Gridap library. Examples taken from 
 
 ## Known issues
 
-Since Julia 1.6 ownwards we have noticed large first call latencies of Gridap.jl codes with the default compiler optimization level (i.e., `-O2`). 
+Since Julia 1.6 onwards we have noticed large first call latencies of Gridap.jl codes with the default compiler optimization level (i.e., `-O2`).
 In general, while developing code, but specially if you are noting high first call latencies, we recommend to run `julia` with the `-O1` flag. For production runs use `-O2` or `-O3`.  
 
  ## Gridap community
@@ -101,7 +101,7 @@ Want to help? We have a number of [issues waiting for help](https://github.com/g
 
 ## How to cite Gridap
 
-In order to give credit to the `Gridap` contributors, we simply ask you to cite the reference below in any publication in which you have made use of the `Gridap` project. If you are using other `Gridap` sub-packages, please cite them as indicated in their repositories.
+In order to give credit to the `Gridap` contributors, we simply ask you to cite the references below in any publication in which you have made use of the `Gridap` project. If you are using other `Gridap` sub-packages, please cite them as indicated in their repositories.
 
 ```
 @article{Badia2020,
@@ -116,10 +116,22 @@ In order to give credit to the `Gridap` contributors, we simply ask you to cite 
   title = {Gridap: An extensible Finite Element toolbox in Julia},
   journal = {Journal of Open Source Software}
 }
+
+@article{Verdugo2022,
+  doi = {10.1016/j.cpc.2022.108341},
+  url = {https://doi.org/10.1016/j.cpc.2022.108341},
+  year = {2022},
+  month = jul,
+  publisher = {Elsevier {BV}},
+  volume = {276},
+  pages = {108341},
+  author = {Francesc Verdugo and Santiago Badia},
+  title = {The software design of Gridap: A Finite Element package based on the Julia {JIT} compiler},
+  journal = {Computer Physics Communications}
+}
 ```
 
 ## Contact
 
 
-Please, contact the project administrators, [Santiago Badia](mailto:santiago.badia@monash.edu) and [Francesc Verdugo](mailto:fverdugo@cimne.upc.edu), for further questions about licenses and terms of use.
-
+Please, contact the project administrators, [Santiago Badia](mailto:santiago.badia@monash.edu), [Francesc Verdugo](mailto:f.verdugo.rojano@vu.nl), and [Alberto F. Martin](mailto:alberto.f.martin@anu.edu.au)  for further questions about licenses and terms of use.

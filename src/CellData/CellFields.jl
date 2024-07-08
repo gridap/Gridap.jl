@@ -58,6 +58,13 @@ function get_cell_points(trian::Triangulation)
   CellPoint(cell_ref_coords,cell_phys_coords,trian,ReferenceDomain())
 end
 
+function Base.:(==)(a::CellPoint,b::CellPoint)
+  a.trian == b.trian &&
+  a.cell_ref_point == b.cell_ref_point &&
+  a.cell_phys_point == b.cell_phys_point &&
+  a.domain_style == b.domain_style
+end
+
 """
 """
 abstract type CellField <: CellDatum end
@@ -134,16 +141,19 @@ function change_domain(a::CellField,::PhysicalDomain,::ReferenceDomain)
 end
 
 function change_domain(a::CellField,target_trian::Triangulation,target_domain::DomainStyle)
-  change_domain(a,DomainStyle(a),target_trian,target_domain)
+  change_domain(a,get_triangulation(a),DomainStyle(a),target_trian,target_domain)
 end
 
-function change_domain(a::CellField,::ReferenceDomain,ttrian::Triangulation,::ReferenceDomain)
+function change_domain(a::CellField,source_domain::DomainStyle,target_trian::Triangulation,target_domain::DomainStyle)
+  change_domain(a,get_triangulation(a),source_domain,target_trian,target_domain)
+end
+
+function change_domain(a::CellField,strian::Triangulation,::ReferenceDomain,ttrian::Triangulation,::ReferenceDomain)
   msg = """\n
   We cannot move the given CellField to the reference domain of the requested triangulation.
   Make sure that the given triangulation is either the same as the triangulation on which the
   CellField is defined, or that the latter triangulation is the background of the former.
   """
-  strian = get_triangulation(a)
   if strian === ttrian
     return a
   end
@@ -154,13 +164,12 @@ function change_domain(a::CellField,::ReferenceDomain,ttrian::Triangulation,::Re
   change_domain_ref_ref(a,ttrian,sglue,tglue)
 end
 
-function change_domain(a::CellField,::PhysicalDomain,ttrian::Triangulation,::PhysicalDomain)
+function change_domain(a::CellField,strian::Triangulation,::PhysicalDomain,ttrian::Triangulation,::PhysicalDomain)
   msg = """\n
   We cannot move the given CellField to the physical domain of the requested triangulation.
   Make sure that the given triangulation is either the same as the triangulation on which the
   CellField is defined, or that the latter triangulation is the background of the former.
   """
-  strian = get_triangulation(a)
   if strian === ttrian
     return a
   end
@@ -171,12 +180,12 @@ function change_domain(a::CellField,::PhysicalDomain,ttrian::Triangulation,::Phy
   change_domain_phys_phys(a,ttrian,sglue,tglue)
 end
 
-function change_domain(a::CellField,::PhysicalDomain,trian::Triangulation,::ReferenceDomain)
+function change_domain(a::CellField,strian::Triangulation,::PhysicalDomain,trian::Triangulation,::ReferenceDomain)
   a_trian = change_domain(a,trian,PhysicalDomain())
   change_domain(a_trian,ReferenceDomain())
 end
 
-function change_domain(a::CellField,::ReferenceDomain,trian::Triangulation,::PhysicalDomain)
+function change_domain(a::CellField,strian::Triangulation,::ReferenceDomain,trian::Triangulation,::PhysicalDomain)
   a_phys = change_domain(a,PhysicalDomain())
   change_domain(a_phys,trian,PhysicalDomain())
 end
@@ -467,21 +476,13 @@ struct OperationCellField{DS} <: CellField
     @check all( map(i->DomainStyle(i)==domain_style,args) )
     #@check all( map(i->get_triangulation(i)===trian,args) )
 
+    # This is only to catch errors in user code
+    # as soon as possible.
     if num_cells(trian)>0
       x = _get_cell_points(args...)
-      try
-         ax = map(i->i(x),args)
-         axi = map(first,ax)
-         r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
-      catch
-        @unreachable """\n
-        It is not possible to perform the operation "$(op.op)" on the given cell fields.
-
-        See the caught error for more information. (If you are using the Visual
-          Studio Code REPL you might not see the caught error, please use the
-          command-line REPL instead).
-        """
-      end
+      ax = map(i->i(x),args)
+      axi = map(first,ax)
+      r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
     end
 
     new{typeof(domain_style)}(op,args,trian,domain_style,Dict())
@@ -573,7 +574,7 @@ function _to_common_domain(a::CellField...)
   Make sure that all CellField objects are defined on the background triangulation
   or that the number of different sub-triangulations is equal to one.
 
-  For instace:
+  For instance:
 
   - 3 cell fields 2, two them on the same Neumann boundary and the other on the background mesh is OK.
 

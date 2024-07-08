@@ -124,6 +124,7 @@ export compute_reference_grid
 
 export GridPortion
 export UnstructuredGrid
+export MappedGrid
 
 export CartesianGrid
 export CartesianDescriptor
@@ -163,6 +164,7 @@ export CartesianDiscreteModel
 export GenericTriangulation
 export BoundaryTriangulation
 export DiscreteModelPortion
+export MappedDiscreteModel
 
 export Interior
 export Boundary
@@ -212,6 +214,8 @@ include("DiscreteModelMocks.jl")
 include("UnstructuredDiscreteModels.jl")
 
 include("CartesianDiscreteModels.jl")
+
+include("MappedDiscreteModels.jl")
 
 include("GridPortions.jl")
 

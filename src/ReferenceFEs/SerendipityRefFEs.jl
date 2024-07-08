@@ -103,24 +103,19 @@ function compute_own_nodes(p::SerendipityPolytope{1},orders)
   compute_own_nodes(p.hex,orders)
 end
 
-function compute_own_nodes(p::SerendipityPolytope{2},orders)
-  order, = orders
-  if order == 4
-    o = (2,2)
-  elseif order in (0,1,2,3)
-    o=(1,1)
-  else
-    @unreachable "Serendipity elements only up to order 4"
-  end
-  compute_own_nodes(p.hex,o)
-end
+_own_s_filter(e,o) = ( sum( [ i for i in e ] ) <= o && all( [ i > 1 for i in e ] ) )
 
-function compute_own_nodes(p::SerendipityPolytope{3},orders)
-  Point{3,Float64}[]
+function _compute_own_s_nodes(orders)
+  _terms = _define_terms(_q_filter,orders)
+  _sort_by_nfaces!(_terms,orders)
+  mask = _compute_filter_mask(_terms,_own_s_filter,orders)
+  _terms = lazy_map(Reindex(_terms),mask)
+  terms = map(t->CartesianIndex(Tuple(t)),_terms)
+  _terms_to_coords(terms,orders)
 end
 
 function compute_own_nodes(p::SerendipityPolytope,orders)
-  @unreachable "Serendipity elements only up to 3d"
+  _compute_own_s_nodes(orders)
 end
 
 function compute_face_orders(

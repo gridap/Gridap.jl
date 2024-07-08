@@ -34,6 +34,7 @@ import Gridap.Geometry: get_triangulation
 import Gridap.TensorValues: inner, outer, double_contraction, symmetric_part
 import LinearAlgebra: det, tr, cross, dot, ⋅, rmul!
 import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose, real, imag, conj
+import Statistics: mean
 
 export gradient, ∇
 export ∇∇
@@ -84,6 +85,8 @@ export update_state!
 
 export DiracDelta
 
+export SkeletonCellFieldPair 
+
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
@@ -101,5 +104,7 @@ include("CellDofs.jl")
 include("AttachDirichlet.jl")
 
 include("AttachConstraints.jl")
+
+include("SkeletonCellFieldPair.jl")
 
 end # module

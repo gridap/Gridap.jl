@@ -8,10 +8,10 @@ The main feature of this module is that the provided types do not extend from `A
 
 This allows one to work with them as if they were scalar values in broadcasted operations on arrays of `VectorValue` objects (also for `TensorValue` or `MultiValue` objects). For instance, one can perform the following manipulations:
 ```julia
-# Assing a VectorValue to all the entries of an Array of VectorValues
+# Assign a VectorValue to all the entries of an Array of VectorValues
 A = zeros(VectorValue{2,Int}, (4,5))
 v = VectorValue(12,31)
-A .= v # This is posible since  VectorValue <: Number
+A .= v # This is possible since  VectorValue <: Number
 
 # Broadcasting of tensor operations in arrays of TensorValues
 t = TensorValue(13,41,53,17) # creates a 2x2 TensorValue
@@ -63,9 +63,9 @@ export data_index
 import Base: show
 import Base: zero, one
 import Base: +, -, *, /, \, ==, ≈, isless
-import Base: conj
+import Base: conj, real, imag
 import Base: sum, maximum, minimum
-import Base: getindex, iterate, eachindex
+import Base: getindex, iterate, eachindex, lastindex
 import Base: size, length, eltype
 import Base: reinterpret
 import Base: convert

@@ -156,6 +156,18 @@ for dim in 0:5
     @test p == SD
     @test is_simplex(p)
 
+    if dim <= 3
+      vss,p = simplexify(QD,positive=true)
+      @test length(vss) == factorial(dim)
+      for vs in vss
+          @test allunique(vs)
+          @test all(1 ≤ v ≤ 2^dim for v in vs)
+      end
+      @test allunique(vss)
+      @test p == SD
+      @test is_simplex(p)
+    end
+
     vss,p = simplexify(SD)
     @test length(vss) == 1
     for vs in vss
