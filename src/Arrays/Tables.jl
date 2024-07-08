@@ -42,6 +42,12 @@ function Base.convert(::Type{Table{T,Vd,Vp}},table::Table{T,Vd,Vp}) where {T,Vd,
   table
 end
 
+function Base.view(a::Table,i::Integer)
+  pini = a.ptrs[i]
+  pend = a.ptrs[i+1]-1
+  return view(a.data,pini:pend)
+end
+
 """
 """
 function identity_table(::Type{T},::Type{P},l::Integer) where {T,P}

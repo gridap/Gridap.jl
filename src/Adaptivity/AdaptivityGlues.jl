@@ -261,17 +261,17 @@ end
 
 # FaceLabeling refinement
 
-function _refine_face_labeling(coarse_labeling::FaceLabeling,
+function refine_face_labeling(coarse_labeling::FaceLabeling,
                                glue  :: AdaptivityGlue,
                                ctopo :: GridTopology,
                                ftopo :: GridTopology)
   d_to_fface_to_cface,
     d_to_fface_to_cface_dim = get_d_to_fface_to_cface(glue,ctopo,ftopo)
 
-  return _refine_face_labeling(coarse_labeling,d_to_fface_to_cface,d_to_fface_to_cface_dim)
+  return refine_face_labeling(coarse_labeling,d_to_fface_to_cface,d_to_fface_to_cface_dim)
 end
 
-function _refine_face_labeling(coarse_labeling::FaceLabeling,
+function refine_face_labeling(coarse_labeling::FaceLabeling,
                                d_to_fface_to_cface,
                                d_to_fface_to_cface_dim)
   tag_to_name = copy(coarse_labeling.tag_to_name)
