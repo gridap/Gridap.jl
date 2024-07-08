@@ -195,6 +195,10 @@ function get_refined_cell_to_vertex_map(
     return (N,E,F,C)
   end
 
+  display(faces_list)
+  display(d_to_faces_reindexing)
+  display(d_to_offset)
+
   # Allocate ptr and data arrays for new connectivity
   nC_new    = sum(rr -> num_subcells(rr), rrules)
   nData_new = sum(rr -> sum(length,rr.ref_grid.grid.cell_node_ids), rrules)
@@ -394,7 +398,10 @@ function setup_edge_based_rrules(::RedGreenRefinement, topo::UnstructuredGridTop
   if Dc == 2
     faces_list = (ref_nodes,ref_edges,ref_cells)
   else
-    faces_list = (ref_nodes,ref_edges,Int32[],ref_cells)
+    @check length(topo.polytopes) == 1 "Mixed meshes not supported yet."
+    p = first(topo.polytopes)
+    ref_faces = is_simplex(p) ? Int32[] : 1:num_faces(topo,2)
+    faces_list = (ref_nodes,ref_edges,ref_faces,ref_cells)
   end
 
   return rrules, faces_list
@@ -490,18 +497,23 @@ Barycentric refinement method. Each selected cell is refined by adding a new ver
 barycenter of the cell. Then the cell is split into subcells by connecting the new vertex
 to the vertices of the parent cell. Always results in a conformal mesh.
 """
-struct BarycentricRefinementMethod <: EdgeBasedRefinement end
+struct BarycentricRefinement <: EdgeBasedRefinement end
 
 function setup_edge_based_rrules(
-  method::BarycentricRefinementMethod, topo::UnstructuredGridTopology,::Nothing
-)
+  method::BarycentricRefinement, topo::UnstructuredGridTopology{Dc},::Nothing
+) where Dc
   setup_edge_based_rrules(method,topo,collect(1:num_faces(topo,Dc)))
 end
 
 function setup_edge_based_rrules(
-  ::BarycentricRefinementMethod, topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}
+  ::BarycentricRefinement, topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}
 ) where Dc
-  rrules = lazy_map(BarycentricRefinementRule,CompressedArray(topo.polytopes,topo.cell_type))
+  @check (length(topo.polytopes) == 1) && is_simplex(first(topo.polytopes)) "Only simplex meshes supported"
+
+  ptrs = fill(1,num_faces(topo,Dc))
+  ptrs[cells_to_refine] .= 2
+  p = first(topo.polytopes)
+  rrules = CompressedArray([WhiteRefinementRule(p),BarycentricRefinementRule(p)],ptrs)
 
   ref_nodes = 1:num_faces(topo,0)
   if Dc == 2
@@ -524,7 +536,7 @@ struct RedRefinement <: EdgeBasedRefinementRule end
 struct GreenRefinement{P} <: EdgeBasedRefinementRule end
 struct BlueRefinement{P, Q} <: EdgeBasedRefinementRule end
 struct BlueDoubleRefinement{P} <: EdgeBasedRefinementRule end
-struct BarycentricRefinement <: EdgeBasedRefinementRule end
+struct BarycentricRefinementRule <: EdgeBasedRefinementRule end
 struct PowellSabinRefinement <: EdgeBasedRefinementRule end
 
 _has_interior_point(rr::RefinementRule) = _has_interior_point(rr,RefinementRuleType(rr))
@@ -883,7 +895,7 @@ function BarycentricRefinementRule(p::Polytope)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
   ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
-  return RefinementRule(BarycentricRefinement(),p,ref_grid)
+  return RefinementRule(BarycentricRefinementRule(),p,ref_grid)
 end
 
 function _get_barycentric_refined_faces_list(p::Polytope)
@@ -902,7 +914,7 @@ function _get_barycentric_refined_connectivity(p::Polytope)
     conn_data = [1, 2, 4,
                  2, 3, 4,
                  3, 1, 4]
-    conn_ptrs = [1, 4, 7]
+    conn_ptrs = [1, 4, 7, 10]
     return polys, cell_type, Table(conn_data,conn_ptrs)
   elseif p == TET
     polys     = [TET]
@@ -987,7 +999,7 @@ end
 
 get_relabeled_connectivity(::RefinementRuleType,::RefinementRule,faces_gids) = @notimplemented
 
-function get_relabeled_connectivity(::WithoutRefinement,rr::RefinementRule{<:Polytope{2}},faces_gids)
+function get_relabeled_connectivity(::WithoutRefinement,rr::RefinementRule,faces_gids)
   conn = rr.ref_grid.grid.cell_node_ids
   gids = faces_gids[1]
   new_data = lazy_map(Reindex(gids),conn.data)
@@ -1028,7 +1040,7 @@ function get_relabeled_connectivity(::BlueDoubleRefinement{N},rr::RefinementRule
   return Table(new_data,conn.ptrs)
 end
 
-function get_relabeled_connectivity(::BarycentricRefinement,rr::RefinementRule{<:Polytope{D}},faces_gids) where D
+function get_relabeled_connectivity(::BarycentricRefinementRule,rr::RefinementRule{<:Polytope{D}},faces_gids) where D
   conn = rr.ref_grid.grid.cell_node_ids
   gids = [faces_gids[1]...,faces_gids[D+1]...] # Polytope nodes + Barycenter
   new_data = lazy_map(Reindex(gids),conn.data)
