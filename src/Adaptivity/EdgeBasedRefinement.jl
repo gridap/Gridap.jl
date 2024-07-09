@@ -195,10 +195,6 @@ function get_refined_cell_to_vertex_map(
     return (N,E,F,C)
   end
 
-  display(faces_list)
-  display(d_to_faces_reindexing)
-  display(d_to_offset)
-
   # Allocate ptr and data arrays for new connectivity
   nC_new    = sum(rr -> num_subcells(rr), rrules)
   nData_new = sum(rr -> sum(length,rr.ref_grid.grid.cell_node_ids), rrules)
