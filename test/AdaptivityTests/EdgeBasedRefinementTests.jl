@@ -104,23 +104,27 @@ end
 
 visualize = false
 
-# Refining meshes of QUADs
+############################################################################################
+### Red-Green refinement
+
+## A) 2D meshes - QUADs 
+
 cart_model = CartesianDiscreteModel((0,1,0,1),(4,4))
 model1     = UnstructuredDiscreteModel(cart_model)
 
-## Homogeneous refinement
+# Homogeneous refinement
 ref_model1 = refine(model1)
 trian1 = Triangulation(ref_model1.model)
 visualize && writevtk(trian1,"test/AdaptivityTests/ref_model1")
 test_grid_transfers(2,model1,ref_model1,1)
 
-## Propagate to all-red
+# Propagate to all-red
 ref_model2 = refine(model1;cells_to_refine=[1,6,11,16])
 trian2 = Triangulation(ref_model2.model)
 visualize && writevtk(trian2,"test/AdaptivityTests/ref_model2")
 test_grid_transfers(2,model1,ref_model2,1)
 
-## Red-Green refinement
+# Red-Green refinement
 ref_model3 = refine(model1;cells_to_refine=[1,6,16])
 trian3 = Triangulation(ref_model3.model)
 visualize && writevtk(trian3,"test/AdaptivityTests/ref_model3")
@@ -131,7 +135,8 @@ trian4 = Triangulation(ref_model4.model)
 visualize && writevtk(trian4,"test/AdaptivityTests/ref_model4")
 #test_grid_transfers(2,model1,ref_model4,1)
 
-# Refining meshes of TRIans
+## B) 2D meshes - TRIs
+
 model2 = simplexify(model1)
 visualize && writevtk(Triangulation(model2),"test/AdaptivityTests/base_model2")
 
@@ -145,21 +150,83 @@ trian6 = Triangulation(ref_model6.model)
 visualize && writevtk(trian6,"test/AdaptivityTests/ref_model6")
 test_grid_transfers(2,model2,ref_model6,1)
 
-# Test newest vertex bisection i.e. longest edge bisection
-# Refine all edges using NVB
-ref_model7 = refine(model2, refinement_method = "nvb")
+## C) 3D meshes - HEXs
+
+cart_model = CartesianDiscreteModel((0,1,0,1,0,1),(2,2,2))
+model3     = UnstructuredDiscreteModel(cart_model)
+
+ref_model7 = refine(model3)
 trian7 = Triangulation(ref_model7.model)
-visualize && writevtk(trian7, "test/AdaptivityTests/ref_model7")
-test_grid_transfers(2, model2, ref_model7, 1)
+visualize && writevtk(trian7,"test/AdaptivityTests/ref_model7")
+test_grid_transfers(3,model3,ref_model7,1)
+
+## D) 3D meshes - TETs
+
+model4 = simplexify(model3)
+ref_model8 = refine(model4)
+trian8 = Triangulation(ref_model8.model)
+visualize && writevtk(trian8,"test/AdaptivityTests/ref_model8")
+test_grid_transfers(3,model4,ref_model8,1)
+
+############################################################################################
+### Newest Vertex Bisection refinement (longest edge bisection)
+
+# Refine all edges using NVB
+ref_model9 = refine(model2, refinement_method = "nvb")
+trian9 = Triangulation(ref_model9.model)
+visualize && writevtk(trian9, "test/AdaptivityTests/ref_model7")
+test_grid_transfers(2, model2, ref_model9, 1)
 
 # Refine all edges using NVB
 # Mark edges such that blue, and double_blue refinement are triggered
-ref_model8 = refine(model2, refinement_method = "nvb", cells_to_refine = [4, 9])
-trian8 = Triangulation(ref_model8)
-visualize && writevtk(trian8, "test/AdaptivityTests/ref_model8")
-ref_model9 = refine(ref_model8, refinement_method = "nvb", cells_to_refine = [1, 3, 4, 11])
-trian9 = Triangulation(ref_model9.model)
-visualize && writevtk(trian9, "test/AdaptivityTests/ref_model9")
-test_grid_transfers(2, ref_model8, ref_model9, 1)
+ref_model10 = refine(model2, refinement_method = "nvb", cells_to_refine = [4, 9])
+trian10 = Triangulation(ref_model10)
+visualize && writevtk(trian10, "test/AdaptivityTests/ref_model8")
+ref_model11 = refine(ref_model10, refinement_method = "nvb", cells_to_refine = [1, 3, 4, 11])
+trian11 = Triangulation(ref_model11.model)
+visualize && writevtk(trian11, "test/AdaptivityTests/ref_model9")
+test_grid_transfers(2, ref_model10, ref_model11, 1)
+
+############################################################################################
+### Barycentric refinement
+
+## A) 2D meshes - TRIs
+
+ref_model12 = refine(model2, refinement_method = "barycentric")
+trian12 = Triangulation(ref_model12.model)
+visualize && writevtk(trian12, "test/AdaptivityTests/ref_model12")
+test_grid_transfers(2, model2, ref_model12, 1)
+
+ref_model13 = refine(model2, refinement_method = "barycentric", cells_to_refine = [1, 6, 8])
+trian13 = Triangulation(ref_model13.model)
+visualize && writevtk(trian13, "test/AdaptivityTests/ref_model13")
+test_grid_transfers(2, model2, ref_model13, 1)
+
+## B) 3D meshes - TETs
+
+ref_model14 = refine(model4, refinement_method = "barycentric")
+trian14 = Triangulation(ref_model14.model)
+visualize && writevtk(trian13, "test/AdaptivityTests/ref_model13")
+test_grid_transfers(3, model4, ref_model14, 1)
+
+ref_model15 = refine(model4, refinement_method = "barycentric", cells_to_refine = [1, 6, 8])
+trian15 = Triangulation(ref_model15.model)
+visualize && writevtk(trian15, "test/AdaptivityTests/ref_model15")
+test_grid_transfers(3, model4, ref_model15, 1)
+
+############################################################################################
+### Simplexify refinement
+
+## A) 2D meshes - QUADs
+ref_model16 = refine(model1, refinement_method = "simplexify")
+trian16 = Triangulation(ref_model16.model)
+visualize && writevtk(trian16, "test/AdaptivityTests/ref_model16")
+test_grid_transfers(2, model1, ref_model16, 1)
+
+## B) 3D meshes - HEXs
+ref_model17 = refine(model3, refinement_method = "simplexify")
+trian17 = Triangulation(ref_model17.model)
+visualize && writevtk(trian17, "test/AdaptivityTests/ref_model17")
+test_grid_transfers(3, model3, ref_model17, 1)
 
 end

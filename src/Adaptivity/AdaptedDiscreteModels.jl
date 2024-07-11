@@ -101,6 +101,8 @@ end
 function string_to_refinement(refinement_method::String, model)
   refinement_method == "red_green" && return RedGreenRefinement()
   refinement_method == "nvb" && return NVBRefinement(model)
+  refinement_method == "barycentric" && return BarycentricRefinement()
+  refinement_method == "simplexify" && return SimplexifyRefinement()
   error("refinement_method $refinement_method not recognized")
 end
 
@@ -134,7 +136,7 @@ function refine(model::CartesianDiscreteModel{Dc}, cell_partition::Tuple) where 
   coarse_labels = get_face_labeling(model)
   coarse_topo   = get_grid_topology(model)
   fine_topo     = get_grid_topology(_model_ref)
-  fine_labels   = _refine_face_labeling(coarse_labels,glue,coarse_topo,fine_topo)
+  fine_labels   = refine_face_labeling(coarse_labels,glue,coarse_topo,fine_topo)
 
   model_ref = CartesianDiscreteModel(get_grid(_model_ref),fine_topo,fine_labels)
   return AdaptedDiscreteModel(model_ref,model,glue)

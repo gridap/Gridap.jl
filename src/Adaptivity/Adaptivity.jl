@@ -49,5 +49,6 @@ include("AdaptedDiscreteModels.jl")
 include("AdaptedTriangulations.jl")
 include("CompositeQuadratures.jl")
 include("EdgeBasedRefinement.jl")
+include("SimplexifyRefinement.jl")
 
 end # module
