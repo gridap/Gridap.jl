@@ -63,7 +63,7 @@ function refine(method::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,
     get_cell_type(topo),
     OrientationStyle(topo)
   )
-  glue = get_edge_based_refinement_glue(topo,model.grid_topology,rrules)
+  glue = blocked_refinement_glue(rrules)
   labels = refine_face_labeling(coarse_labels,glue,model.grid_topology,topo)
   ref_model = UnstructuredDiscreteModel(grid,topo,labels)
   return AdaptedDiscreteModel(ref_model,model,glue)
@@ -80,30 +80,6 @@ function refine_edge_based_topology(
   orientation = NonOriented()
 
   return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,polys_new,orientation)
-end
-
-function get_edge_based_refinement_glue(
-  ftopo ::UnstructuredGridTopology{Dc},
-  ctopo ::UnstructuredGridTopology{Dc},
-  rrules::AbstractVector{<:RefinementRule}
-) where {Dc}
-  nC_old = num_faces(ctopo,Dc)
-  nC_new = num_faces(ftopo,Dc)
-
-  f2c_cell_map      = Vector{Int}(undef,nC_new)
-  fcell_to_child_id = Vector{Int}(undef,nC_new)
-
-  k = 1
-  for iC = 1:nC_old
-    rr = rrules[iC]
-    range = k:k+num_subcells(rr)-1
-    f2c_cell_map[range] .= iC
-    fcell_to_child_id[range] .= collect(1:num_subcells(rr))
-    k += num_subcells(rr)
-  end
-
-  f2c_faces_map = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
-  return AdaptivityGlue(f2c_faces_map,fcell_to_child_id,rrules)
 end
 
 """

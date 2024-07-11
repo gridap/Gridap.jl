@@ -102,6 +102,7 @@ function string_to_refinement(refinement_method::String, model)
   refinement_method == "red_green" && return RedGreenRefinement()
   refinement_method == "nvb" && return NVBRefinement(model)
   refinement_method == "barycentric" && return BarycentricRefinement()
+  refinement_method == "simplexify" && return SimplexifyRefinement()
   error("refinement_method $refinement_method not recognized")
 end
 

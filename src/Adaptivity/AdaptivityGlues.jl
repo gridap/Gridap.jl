@@ -298,3 +298,31 @@ function refine_face_labeling(coarse_labeling::FaceLabeling,
   
   return Geometry.FaceLabeling(d_to_dface_to_entity,tag_to_entities,tag_to_name)  
 end
+
+"""
+    blocked_refinement_glue(rrules::AbstractVector{<:RefinementRule})
+
+Given an array of RefinementRules for each coarse cell, returns an AdaptivityGlue
+where children from the same parent are placed in contiguous blocks.
+"""
+function blocked_refinement_glue(
+  rrules::AbstractVector{<:RefinementRule{<:Polytope{Dc}}}
+) where Dc
+  nC_old = length(rrules)
+  nC_new = sum(num_subcells,rrules)
+
+  f2c_cell_map      = Vector{Int}(undef,nC_new)
+  fcell_to_child_id = Vector{Int}(undef,nC_new)
+
+  k = 1
+  for iC = 1:nC_old
+    rr = rrules[iC]
+    range = k:k+num_subcells(rr)-1
+    f2c_cell_map[range] .= iC
+    fcell_to_child_id[range] .= collect(1:num_subcells(rr))
+    k += num_subcells(rr)
+  end
+
+  f2c_faces_map = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
+  return AdaptivityGlue(f2c_faces_map,fcell_to_child_id,rrules)
+end

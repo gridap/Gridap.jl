@@ -214,4 +214,19 @@ trian15 = Triangulation(ref_model15.model)
 visualize && writevtk(trian15, "test/AdaptivityTests/ref_model15")
 test_grid_transfers(3, model4, ref_model15, 1)
 
+############################################################################################
+### Simplexify refinement
+
+## A) 2D meshes - QUADs
+ref_model16 = refine(model1, refinement_method = "simplexify")
+trian16 = Triangulation(ref_model16.model)
+visualize && writevtk(trian16, "test/AdaptivityTests/ref_model16")
+test_grid_transfers(2, model1, ref_model16, 1)
+
+## B) 3D meshes - HEXs
+ref_model17 = refine(model3, refinement_method = "simplexify")
+trian17 = Triangulation(ref_model17.model)
+visualize && writevtk(trian17, "test/AdaptivityTests/ref_model17")
+test_grid_transfers(3, model3, ref_model17, 1)
+
 end
