@@ -477,7 +477,7 @@ struct OperationCellField{DS} <: CellField
 
     # This is only to catch errors in user code
     # as soon as possible.
-    if num_cells(trian)>0
+    if num_cells(trian) > 0
       x = _get_cell_points(args...)
       ax = map(i->i(x),args)
       axi = map(first,ax)

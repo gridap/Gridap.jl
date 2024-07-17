@@ -35,6 +35,13 @@ function Base.show(io::IO,rr::RefinementRule{P,A}) where {P,A}
   print(io,"RefinementRule{$P,$A}. RefinementRuleType=$T")
 end
 
+function Base.:(==)(a::RefinementRule,b::RefinementRule)
+  A = get_polytope(a) == get_polytope(b)
+  B = num_subcells(a) == num_subcells(b)
+  C = RefinementRuleType(a) == RefinementRuleType(b)
+  return A && B && C
+end
+
 ReferenceFEs.get_polytope(rr::RefinementRule) = rr.poly
 get_ref_grid(rr::RefinementRule) = rr.ref_grid
 num_subcells(rr::RefinementRule) = num_cells(rr.ref_grid)

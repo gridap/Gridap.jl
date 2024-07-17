@@ -78,11 +78,11 @@ function combine_fine_to_coarse(
   FineToCoarseField(fine_fields,rr,child_ids)
 end
 
-struct FineToCoarseDof <: Dof end
+struct FineToCoarseDof <: Dof end # Should we implement this properly?
 function combine_fine_to_coarse(
   rr::RefinementRule,fine_dofs::Vector{<:Dof},child_ids::Vector{<:Integer}
 )
-  FineToCoarseDof() # Should we define this? 
+  FineToCoarseDof()
 end
 
 function combine_fine_to_coarse(
@@ -92,7 +92,17 @@ function combine_fine_to_coarse(
   evaluate(cmaps[first(child_ids)],first(fine_pts))
 end
 
-function Arrays.return_cache(a::FineToCoarseArray,b::FineToCoarseArray)
+function combine_fine_to_coarse(
+  rr::RefinementRule,fine_pts::Vector{<:Real},child_ids::Vector{<:Integer}
+)
+  sum(fine_pts)
+end
+
+# MacroDofBasis
+
+const MacroDofBasis = FineToCoarseArray{<:Dof}
+
+function Arrays.return_cache(a::MacroDofBasis,b::MacroFEBasis)
   @check a.rrule == b.rrule
   caches = map(return_cache,a.fine_data,b.fine_data)
   
@@ -101,7 +111,7 @@ function Arrays.return_cache(a::FineToCoarseArray,b::FineToCoarseArray)
   return res, caches
 end
 
-function Arrays.evaluate!(cache,a::FineToCoarseArray,b::FineToCoarseArray)
+function Arrays.evaluate!(cache,a::MacroDofBasis,b::MacroFEBasis)
   res, caches = cache
   fill!(res,zero(eltype(res)))
   cell_vals = map(evaluate!,caches,a.fine_data,b.fine_data)
@@ -113,18 +123,11 @@ function Arrays.evaluate!(cache,a::FineToCoarseArray,b::FineToCoarseArray)
   return res
 end
 
-const MacroFEBasis = FineToCoarseArray{<:Field}
-const MacroDofBasis = FineToCoarseArray{<:Dof}
-const MacroPoints = FineToCoarseArray{<:Point}
-
-# Extra stuff for interpolation of arbitrary fields
-
 function Arrays.return_cache(dofs::MacroDofBasis,f::Field)
   cmap = get_cell_map(dofs.rrule)
   caches = map((dofs_k,mk) -> return_cache(dofs_k,f∘mk),dofs.fine_data,cmap)
   T = eltype(evaluate!(first(caches),first(dofs.fine_data),f∘first(cmap)))
   res = zeros(T,length(dofs))
-
   return res, cmap, caches
 end
 
@@ -139,8 +142,30 @@ function Arrays.evaluate!(cache,dofs::MacroDofBasis,f::Field)
   return res
 end
 
-# Optimisations for MacroFEBasis
+# MacroFEBasis
 
+const MacroFEBasis = FineToCoarseArray{<:Field}
+
+function Arrays.return_cache(a::MacroFEBasis,b::FineToCoarseArray{<:Point})
+  @check a.rrule == b.rrule
+  caches = map(return_cache,a.fine_data,b.fine_data)
+  
+  T = eltype(evaluate!(first(caches),first(a.fine_data),first(b.fine_data)))
+  res = zeros(T,length(b),length(a))
+  return res, caches
+end
+
+function Arrays.evaluate!(cache,a::MacroFEBasis,b::FineToCoarseArray{<:Point})
+  res, caches = cache
+  fill!(res,zero(eltype(res)))
+  cell_vals = map(evaluate!,caches,a.fine_data,b.fine_data)
+  for fcell in 1:num_subcells(a.rrule)
+    I = b.ids.fcell_to_cids[fcell]
+    J = a.ids.fcell_to_cids[fcell]
+    res[I,J] .= cell_vals[fcell]
+  end
+  return res
+end
 
 ############################################################################################
 # MacroReferenceFE
@@ -236,16 +261,3 @@ function get_macro_face_own_dofs(
 
   return face_to_dof
 end
-
-############################################################################################
-
-# MacroFESpace
-
-# For dispatching:
-#    - CellData in trian can be mapped to subcells using the glue (change domain)
-#    - Dispatches to create macro-cell measures
-#    - Dispatches on FESpace to create a FESpace with a macro basis
-#struct MacroTriangulation
-#  trian::Triangulation
-#  glue::AdaptivityGlue
-#end
