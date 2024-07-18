@@ -93,14 +93,15 @@ function combine_fine_to_coarse(
 end
 
 function combine_fine_to_coarse(
-  rr::RefinementRule,fine_pts::Vector{<:Real},child_ids::Vector{<:Integer}
+  rr::RefinementRule,fine_vals::Vector{<:Real},child_ids::Vector{<:Integer}
 )
-  sum(fine_pts)
+  sum(fine_vals)
 end
 
-# MacroDofBasis
+# MacroDofBasis evaluation
 
 const MacroDofBasis = FineToCoarseArray{<:Dof}
+const MacroFEBasis = FineToCoarseArray{<:Field}
 
 function Arrays.return_cache(a::MacroDofBasis,b::MacroFEBasis)
   @check a.rrule == b.rrule
@@ -142,9 +143,7 @@ function Arrays.evaluate!(cache,dofs::MacroDofBasis,f::Field)
   return res
 end
 
-# MacroFEBasis
-
-const MacroFEBasis = FineToCoarseArray{<:Field}
+# MacroFEBasis evaluation
 
 function Arrays.return_cache(a::MacroFEBasis,b::FineToCoarseArray{<:Point})
   @check a.rrule == b.rrule
@@ -167,11 +166,36 @@ function Arrays.evaluate!(cache,a::MacroFEBasis,b::FineToCoarseArray{<:Point})
   return res
 end
 
+# MacroFEBasis optimisations
+
+function Fields.linear_combination(a::AbstractVector{<:Number},b::MacroFEBasis)
+  rrule, ids = b.rrule, b.ids
+
+  fcoeffs = lazy_map(Broadcasting(Reindex(a)),ids.fcell_to_cids)
+  ffields = lazy_map(linear_combination,fcoeffs,b.fine_data)
+  return FineToCoarseField(ffields,rrule)
+end
+
+for op in (:∇,:∇∇)
+  @eval begin
+    function Arrays.evaluate!(cache,k::Broadcasting{typeof(Fields.$op)},a::MacroFEBasis)
+      fields = map(Broadcasting($op),a.fine_data)
+      return FineToCoarseArray(a.rrule,fields,a.ids)
+    end
+  end
+end
+
 ############################################################################################
 # MacroReferenceFE
 
 struct MacroRefFE <: ReferenceFEName end
 
+"""
+    MacroReferenceFE(rrule::RefinementRule,reffes::AbstractVector{<:ReferenceFE})
+
+Constructs a ReferenceFE for a macro-element, given a RefinementRule and a set of
+ReferenceFEs for the subcells.
+"""
 function MacroReferenceFE(
   rrule::RefinementRule,
   reffes::AbstractVector{<:ReferenceFE},
@@ -212,6 +236,13 @@ function ReferenceFEs.get_face_own_dofs(reffe::GenericRefFE{MacroRefFE}, conf::C
   return get_face_dofs(reffe)
 end
 
+"""
+    get_macro_face_own_dofs(rrule::RefinementRule,space::FESpace,reffes::AbstractVector{<:ReferenceFE})
+
+Given a RefinementRule and a FESpace defined on it's grid (with a set of ReferenceFEs),
+returns the dofs owned by each face of the macro-element (i.e each face of the
+underlying polytope).
+"""
 function get_macro_face_own_dofs(
   rrule::RefinementRule{<:Polytope{Dc}},
   space::FESpace,

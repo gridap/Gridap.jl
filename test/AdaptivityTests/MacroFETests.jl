@@ -2,6 +2,7 @@
 using Test
 using Gridap
 using Gridap.Adaptivity, Gridap.Geometry, Gridap.ReferenceFEs, Gridap.Arrays, Gridap.Helpers
+using Gridap.CellData, Gridap.Fields, Gridap.FESpaces
 using FillArrays
 
 using Gridap.Fields
@@ -14,6 +15,14 @@ order = 2
 model = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),(2,2)))
 fmodel = refine(model)
 
+rrule = Adaptivity.RedRefinementRule(QUAD)
+ncells = num_subcells(rrule)
+
+reffe = LagrangianRefFE(Float64,QUAD,order)
+sub_reffes = Fill(reffe,ncells)
+macro_reffe = Adaptivity.MacroReferenceFE(rrule,sub_reffes)
+macro_quad  = Quadrature(QUAD,Adaptivity.CompositeQuadrature(),rrule,2*order)
+
 Ω = Triangulation(model)
 Ωf = Triangulation(fmodel)
 
@@ -25,14 +34,6 @@ dΩfc = Measure(Ω,Ωf,2*order)
 pt = get_cell_points(dΩ)
 ptm = get_cell_points(dΩm)
 ptf = get_cell_points(dΩf)
-
-rrule = Adaptivity.RedRefinementRule(QUAD)
-ncells = num_subcells(rrule)
-
-reffe = LagrangianRefFE(Float64,QUAD,order)
-sub_reffes = Fill(reffe,ncells)
-macro_reffe = Adaptivity.MacroReferenceFE(rrule,sub_reffes)
-macro_quad  = Quadrature(QUAD,Adaptivity.CompositeQuadrature(),rrule,2*order)
 
 V = FESpace(model,reffe)
 Vm = FESpace(model,macro_reffe)
@@ -52,9 +53,7 @@ cf2 = um⋅v
 cf2(pt)
 cf2(ptm)
 
-
-# TODO: um is a LinearCombination of FineToCoarseFields. 
-# It should be a FineToCoarseField of LinearCombinations...
+∇v = ∇(vm)(ptm)
 
 # um and uf should be the same
 u_exact(x) = cos(2π*x[1])*sin(2π*x[2])
@@ -68,3 +67,4 @@ bm = assemble_vector(v -> ∫(v*um)dΩm,V)
 xf = M\bf
 xm = M\bm
 @test norm(xf-xm) < 1.e-10
+
