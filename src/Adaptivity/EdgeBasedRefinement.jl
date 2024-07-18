@@ -1020,7 +1020,7 @@ function get_relabeled_connectivity(::BarycentricRefinementRule,rr::RefinementRu
 end
 
 function get_relabeled_connectivity(::PowellSabinRefinement,rr::RefinementRule,faces_gids)
-  @assert is_simplex(get_polytope(rr))
+  @check is_simplex(get_polytope(rr))
   conn = rr.ref_grid.grid.cell_node_ids
   gids = vcat(faces_gids...)
   new_data = lazy_map(Reindex(gids),conn.data)

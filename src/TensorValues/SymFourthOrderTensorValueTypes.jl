@@ -8,7 +8,7 @@ Type representing a symmetric fourth-order tensor
 struct SymFourthOrderTensorValue{D,T,L} <: MultiValue{Tuple{D,D,D,D},T,4,L}
   data::NTuple{L,T}
   function SymFourthOrderTensorValue{D,T}(data::NTuple{L,T}) where {D,T,L}
-    @assert L == (D*(D+1)÷2)^2
+    @check L == (D*(D+1)÷2)^2
     new{D,T,L}(data)
   end
 end

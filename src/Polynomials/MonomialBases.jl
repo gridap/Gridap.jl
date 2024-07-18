@@ -117,7 +117,7 @@ return_type(::MonomialBasis{D,T}) where {D,T} = T
 
 # Field implementation
 function return_cache(f::MonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
-  @assert D == length(eltype(x)) "Incorrect number of point components"
+  @check D == length(eltype(x)) "Incorrect number of point components"
   zT = zero(T)
   zxi = zero(eltype(eltype(x)))
   Tp = typeof( zT*zxi*zxi + zT*zxi*zxi  )
@@ -155,7 +155,7 @@ function _return_cache(
   TisbitsType::Val{true}) where {D,V,T}
 
   f = fg.fa
-  @assert D == length(eltype(x)) "Incorrect number of point components"
+  @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = length(f.terms)*num_components(V)
   n = 1 + _maximum(f.orders)
@@ -253,7 +253,7 @@ function return_cache(
   x::AbstractVector{<:Point}) where {D,V}
 
   f = fg.fa
-  @assert D == length(eltype(x)) "Incorrect number of point components"
+  @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = length(f.terms)*num_components(V)
   xi = testitem(x)
