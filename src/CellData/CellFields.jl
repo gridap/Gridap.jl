@@ -156,7 +156,7 @@ function change_domain(a::CellField,strian::Triangulation,::ReferenceDomain,ttri
   if strian === ttrian
     return a
   end
-  @assert is_change_possible(strian,ttrian) msg
+  @check is_change_possible(strian,ttrian) msg
   D = num_cell_dims(strian)
   sglue = get_glue(strian,Val(D))
   tglue = get_glue(ttrian,Val(D))
@@ -172,7 +172,7 @@ function change_domain(a::CellField,strian::Triangulation,::PhysicalDomain,ttria
   if strian === ttrian
     return a
   end
-  @assert is_change_possible(strian,ttrian) msg
+  @check is_change_possible(strian,ttrian) msg
   D = num_cell_dims(strian)
   sglue = get_glue(strian,Val(D))
   tglue = get_glue(ttrian,Val(D))

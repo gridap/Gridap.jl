@@ -221,11 +221,11 @@ struct IMEXTableau <: AbstractTableau{ImplicitExplicitTableau}
 
     msg = """Invalid IMEX tableau:
     the first tableau must be implicit and the second must be explicit."""
-    @assert (Tim <: ImplicitTableau && Tex == ExplicitTableau) msg
+    @check (Tim <: ImplicitTableau && Tex == ExplicitTableau) msg
 
     msg = """Invalid IMEX tableau:
     the nodes of the implicit and explicit tableaus must coincide."""
-    @assert isapprox(get_nodes(im_tableau), get_nodes(ex_tableau)) msg
+    @check isapprox(get_nodes(im_tableau), get_nodes(ex_tableau)) msg
 
     is_padded = _is_padded(im_tableau)
 

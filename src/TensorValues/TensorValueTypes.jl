@@ -8,7 +8,7 @@ Type representing a second-order tensor
 struct TensorValue{D1,D2,T,L} <: MultiValue{Tuple{D1,D2},T,2,L}
     data::NTuple{L,T}
     function TensorValue{D1,D2,T}(data::NTuple{L,T}) where {D1,D2,T,L}
-        @assert L == D1*D2
+        @check L == D1*D2
         new{D1,D2,T,L}(data)
     end
 end
