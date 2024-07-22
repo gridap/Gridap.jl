@@ -229,4 +229,15 @@ trian17 = Triangulation(ref_model17.model)
 visualize && writevtk(trian17, "test/AdaptivityTests/ref_model17")
 test_grid_transfers(3, model3, ref_model17, 1)
 
+## C) 2D meshes - QUADs (Positive Volume)
+ref_model18 = refine(model1, refinement_method = "simplexify", positive = true)
+trian18 = Triangulation(ref_model18.model)
+visualize && writevtk(trian18, "test/AdaptivityTests/ref_model18")
+test_grid_transfers(2, model1, ref_model18, 1)
+
+## D) 3D meshes - HEXs (Positive Volume)
+ref_model19 = refine(model3, refinement_method = "simplexify", positive = true)
+trian19 = Triangulation(ref_model19.model)
+visualize && writevtk(trian19, "test/AdaptivityTests/ref_model19")
+test_grid_transfers(3, model3, ref_model19, 1)
 end
