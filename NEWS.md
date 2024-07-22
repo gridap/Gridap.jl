@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Define `GeneralPolytope` that represents general polytopes in 2 and 3 dimensions. Since PR[#1006](https://github.com/gridap/Gridap.jl/pull/1006).
 
+### Changed
+
+- Added local preferences for Gridap through `Preferences.jl`. The macro `@check` can now be activated/deactivated by using the local preference `execution_mode`. Since PR[#1014](https://github.com/gridap/Gridap.jl/pull/1014).
+
 ## [0.18.2] - 2024-05-02
 
 ### Fixed
