@@ -107,7 +107,7 @@ visualize = false
 ############################################################################################
 ### Red-Green refinement
 
-## A) 2D meshes - QUADs 
+## A) 2D meshes - QUADs
 
 cart_model = CartesianDiscreteModel((0,1,0,1),(4,4))
 model1     = UnstructuredDiscreteModel(cart_model)

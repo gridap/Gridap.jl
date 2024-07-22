@@ -2,7 +2,7 @@
 """
     struct SimplexifyRefinement <: AdaptivityMethod
 
-Equivalent to `simplexify`, but keeps track of the parent-child relationship between 
+Equivalent to `simplexify`, but keeps track of the parent-child relationship between
 the original and the refined model.
 """
 struct SimplexifyRefinement <: AdaptivityMethod end
@@ -14,7 +14,7 @@ function refine(::SimplexifyRefinement,model::UnstructuredDiscreteModel{Dc,Dp};k
   ctype = get_cell_type(model)
   rrules = expand_cell_data(map(p -> SimplexifyRefinementRule(p;kwargs...),polys),ctype)
   glue = blocked_refinement_glue(rrules)
-  
+
   return AdaptedDiscreteModel(ref_model,model,glue)
 end
 
