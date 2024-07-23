@@ -198,23 +198,22 @@ ReferenceFEs for the subcells.
 """
 function MacroReferenceFE(
   rrule::RefinementRule,
-  reffes::AbstractVector{<:ReferenceFE},
+  reffes::AbstractVector{<:ReferenceFE};
+  conformity = Conformity(first(reffes))
 )
   @check length(reffes) == num_subcells(rrule)
 
   grid = rrule.ref_grid
-  space = FESpace(grid,reffes)
+  space = FESpace(grid,reffes;conformity=conformity)
 
   conn = get_cell_dof_ids(space)
   basis = FineToCoarseArray(rrule,collect(map(get_shapefuns,reffes)),conn)
   dofs  = FineToCoarseArray(rrule,collect(map(get_dof_basis,reffes)),conn)
-  face_dofs = get_macro_face_own_dofs(rrule,space,reffes)
+  face_dofs = get_macro_face_own_dofs(conformity,rrule,space,reffes)
 
   ndofs = num_free_dofs(space)
   poly = get_polytope(rrule)
   prebasis = FineToCoarseArray(rrule,collect(map(get_prebasis,reffes)))
-  conformity = Conformity(first(reffes))
-  @check all(r -> Conformity(r) == conformity,reffes)
   metadata = (rrule,conn)
 
   return GenericRefFE{MacroRefFE}(
@@ -236,6 +235,21 @@ function ReferenceFEs.get_face_own_dofs(reffe::GenericRefFE{MacroRefFE}, conf::C
   return get_face_dofs(reffe)
 end
 
+function ReferenceFEs.get_face_own_dofs(reffe::GenericRefFE{MacroRefFE}, conf::L2Conformity)
+  @check conf == Conformity(reffe)
+  return get_face_dofs(reffe)
+end
+
+function ReferenceFEs.Conformity(reffe::GenericRefFE{MacroRefFE},sym::Symbol)
+  if sym == :L2
+    L2Conformity()
+  elseif sym == :H1
+    H1Conformity()
+  else
+    @notimplemented
+  end
+end
+
 """
     get_macro_face_own_dofs(rrule::RefinementRule,space::FESpace,reffes::AbstractVector{<:ReferenceFE})
 
@@ -244,6 +258,7 @@ returns the dofs owned by each face of the macro-element (i.e each face of the
 underlying polytope).
 """
 function get_macro_face_own_dofs(
+  ::Conformity,
   rrule::RefinementRule{<:Polytope{Dc}},
   space::FESpace,
   reffes::AbstractVector{<:ReferenceFE}
@@ -290,5 +305,17 @@ function get_macro_face_own_dofs(
   end
   @check all(touched)
 
+  return face_to_dof
+end
+
+function get_macro_face_own_dofs(
+  ::L2Conformity,
+  rrule::RefinementRule{<:Polytope{Dc}},
+  space::FESpace,
+  reffes::AbstractVector{<:ReferenceFE}
+) where Dc
+  nfaces = sum(d -> num_faces(get_polytope(rrule),d),0:Dc)
+  face_to_dof = [Int[] for i in 1:nfaces]
+  face_to_dof[nfaces] = collect(1:num_free_dofs(space))
   return face_to_dof
 end
