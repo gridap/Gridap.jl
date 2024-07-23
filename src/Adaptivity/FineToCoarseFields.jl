@@ -50,24 +50,19 @@ function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point})
 
   # Generic caches
   child_ids = map(i -> x_to_cell(rr,getindex!(xi_cache,x,i)),eachindex(x))
-  pos = findfirst(id -> !is_zero[id],child_ids)
-  xi = getindex!(xi_cache,x,pos)
-  id = child_ids[pos]
-  id = x_to_cell(rr,xi)
+  
+  xi = first(x)
+  id = first(child_ids)
   mi = getindex!(mi_cache,cmaps,id)
   fi = getindex!(fi_cache,fields,id)
-
   zi_cache = Fields.return_cache(mi,xi)
-  zi = evaluate!(zi_cache,mi,xi)
+  zi = zero(evaluate!(zi_cache,mi,xi))
 
-  yi_type  = Fields.return_type(fi,zi)
+  yi_cache = map(fii -> Fields.return_cache(fii,zi), fields)
+  yi_types = map(fii -> Fields.return_type(fii,zi), fields)
+  yi_type  = first(yi_types)
+  @assert all(t -> yi_type == t, yi_types)
   y_cache  = Arrays.CachedArray(zeros(yi_type,size(x)))
-
-  # Evaluation caches
-  fi_zero = ZeroField(fi)
-  yi_nonzero_cache = Fields.return_cache(fi,zi)
-  yi_zero_cache = Fields.return_cache(fi_zero,zi)
-  yi_cache = (yi_nonzero_cache,yi_zero_cache)
 
   return fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache
 end
@@ -79,13 +74,16 @@ function Geometry.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point}
 
   Arrays.setsize!(y_cache, size(x))
 
+  display(yi_cache)
+
   for i in eachindex(x)
     xi = getindex!(xi_cache,x,i)
     child_id = x_to_cell(rr,xi)
     fi = getindex!(fi_cache,fields,child_id)
     mi = getindex!(mi_cache,cmaps,child_id)
     zi = Fields.evaluate!(zi_cache,mi,xi)
-    _yi_cache = yi_cache[is_zero[child_id]+1]
+    _yi_cache = yi_cache[child_id]
+    display(child_id)
     y_cache.array[i] = Fields.evaluate!(_yi_cache,fi,zi)
   end
   return y_cache.array
