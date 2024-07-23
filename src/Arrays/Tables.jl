@@ -276,7 +276,7 @@ function append_tables_locally(offsets::NTuple, tables::NTuple)
 
   first_table, = tables
 
-  @assert all( map(length,tables) .== length(first_table) ) "All tables must have the same length"
+  @check all( map(length,tables) .== length(first_table) ) "All tables must have the same length"
   ndata = sum( (length(table.data) for table in tables) )
 
   T = get_data_eltype(first_table)

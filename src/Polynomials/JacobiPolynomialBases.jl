@@ -47,7 +47,7 @@ return_type(::JacobiPolynomialBasis{D,T}) where {D,T} = T
 # Field implementation
 
 function return_cache(f::JacobiPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
-  @assert D == length(eltype(x)) "Incorrect number of point components"
+  @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = length(f.terms)*num_components(T)
   n = 1 + _maximum(f.orders)

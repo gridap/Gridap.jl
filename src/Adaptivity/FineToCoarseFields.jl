@@ -37,6 +37,9 @@ function FineToCoarseField(
   return FineToCoarseField(fields,rrule,is_zero)
 end
 
+Geometry.return_cache(a::FineToCoarseField,x::Point) = return_cache(a,[x])
+Geometry.evaluate!(cache,a::FineToCoarseField,x::Point) = first(evaluate!(cache,a,[x]))
+
 function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point})
   fields, rr, is_zero = a.fine_fields, a.rrule, a.is_zero
   cmaps = get_inverse_cell_map(a.rrule)

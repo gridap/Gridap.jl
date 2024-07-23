@@ -34,13 +34,13 @@ end
 
 function _CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},orders,cont) where {T,D}
   cond(c,o) = ( o > 0 || c == DISC )
-  @assert all((cond(cont[k],orders[k]) for k in 1:length(orders)))
+  @check all((cond(cont[k],orders[k]) for k in 1:length(orders)))
   _cd_lagrangian_ref_fe(T,p,orders,cont)
 end
 
 function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont) where {T,D}
 
-  @assert isa(p,ExtrusionPolytope)
+  @check isa(p,ExtrusionPolytope)
 
   prebasis = compute_monomial_basis(T,p,orders)
 

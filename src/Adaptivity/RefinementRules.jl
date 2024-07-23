@@ -35,6 +35,13 @@ function Base.show(io::IO,rr::RefinementRule{P,A}) where {P,A}
   print(io,"RefinementRule{$P,$A}. RefinementRuleType=$T")
 end
 
+function Base.:(==)(a::RefinementRule,b::RefinementRule)
+  A = get_polytope(a) == get_polytope(b)
+  B = num_subcells(a) == num_subcells(b)
+  C = RefinementRuleType(a) == RefinementRuleType(b)
+  return A && B && C
+end
+
 ReferenceFEs.get_polytope(rr::RefinementRule) = rr.poly
 get_ref_grid(rr::RefinementRule) = rr.ref_grid
 num_subcells(rr::RefinementRule) = num_cells(rr.ref_grid)
@@ -286,9 +293,11 @@ The result is given for each coarse/parent face of dimension `D` as a list of th
 fine dof lids, i.e 
 - [coarse face][coarse dof lid] -> fine dof lid
 """
-function get_face_subface_ldof_to_cell_ldof(rr::RefinementRule{<:ExtrusionPolytope{Dc}},
-                                            fine_orders::NTuple{Dc,<:Integer},
-                                            D::Int) where Dc
+function get_face_subface_ldof_to_cell_ldof(
+  rr::RefinementRule{<:ExtrusionPolytope{Dc}},
+  fine_orders::NTuple{Dc,<:Integer},
+  D::Int
+) where Dc
   poly  = get_polytope(rr)
   coarse_orders = 2 .* fine_orders
   coarse_reffe  = ReferenceFE(poly,lagrangian,Float64,coarse_orders)
