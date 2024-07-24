@@ -1,20 +1,24 @@
 """
 """
-function writevtk(args...;kwargs...)
+function writevtk(args...;compress=false,append=true,ascii=false,vtkversion=:default,kwargs...)
   map(visualization_data(args...;kwargs...)) do visdata
     write_vtk_file(
-    visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata)
+      visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata,
+      compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
+    )
   end
 end
 
 """
 """
-function createvtk(args...;kwargs...)
+function createvtk(args...;compress=false,append=true,ascii=false,vtkversion=:default,kwargs...)
   v = visualization_data(args...;kwargs...)
   @notimplementedif length(v) != 1
   visdata = first(v)
   create_vtk_file(
-    visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata)
+    visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata,
+    compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
+  )
 end
 
 """
@@ -43,14 +47,21 @@ end
       trian::Grid,
       filebase;
       celldata=Dict(),
-      nodaldata=Dict())
+      nodaldata=Dict(),
+      vtk_kwargs...
+      )
 
 Low level entry point to vtk. Other vtk-related routines in Gridap eventually call this one.
-
+The optional WriteVTK kwargs `vtk_kwargs` are passed to the `vtk_grid` constructor.
 """
 function write_vtk_file(
-  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict())
-  vtkfile = create_vtk_file(trian, filebase, celldata=celldata, nodaldata=nodaldata)
+  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict(),
+  compress=false, append=true, ascii=false, vtkversion=:default
+)
+  vtkfile = create_vtk_file(
+    trian, filebase, celldata=celldata, nodaldata=nodaldata,
+    compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
+  )
   outfiles = vtk_save(vtkfile)
 end
 
@@ -60,18 +71,26 @@ end
       trian::Grid,
       filebase;
       celldata=Dict(),
-      nodaldata=Dict())
+      nodaldata=Dict(),
+      vtk_kwargs...
+    )
 
 Low level entry point to vtk. Other vtk-related routines in Gridap eventually call this one.
 This function only creates the vtkFile, without writing to disk.
 
+The optional WriteVTK kwargs `vtk_kwargs` are passed to the `vtk_grid` constructor.
 """
 function create_vtk_file(
-  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict())
+  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict(), 
+  compress=false, append=true, ascii=false, vtkversion=:default
+)
 
   points = _vtkpoints(trian)
   cells = _vtkcells(trian)
-  vtkfile = vtk_grid(filebase, points, cells, compress=false)
+  vtkfile = vtk_grid(
+    filebase, points, cells,
+    compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
+  )
 
   if num_cells(trian)>0
     for (k,v) in celldata
@@ -86,13 +105,16 @@ function create_vtk_file(
 end
 
 function create_pvtk_file(
-  trian::Grid, filebase;
-  part, nparts, ismain=(part==1), celldata=Dict(), nodaldata=Dict())
+  trian::Grid, filebase; part, nparts, ismain=(part==1), celldata=Dict(), nodaldata=Dict(),
+  compress=false, append=true, ascii=false, vtkversion=:default
+)
 
   points = _vtkpoints(trian)
   cells = _vtkcells(trian)
-  vtkfile = pvtk_grid(filebase, points, cells, compress=false;
-                      part=part, nparts=nparts, ismain=ismain)
+  vtkfile = pvtk_grid(
+    filebase, points, cells;part=part, nparts=nparts, ismain=ismain,
+    compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
+  )
 
   if num_cells(trian) > 0
     for (k, v) in celldata

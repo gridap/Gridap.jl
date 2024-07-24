@@ -25,16 +25,26 @@ mean(x) = sum(x)/length(x)
 
 cell_center = lazy_map(mean, get_cell_coordinates(trian) )
 
-write_vtk_file(
-  trian,f,
-  nodaldata=["nodeid"=>node_ids],
-  celldata=["cellid"=>cell_ids,"centers"=>cell_center])
+for compress in [true,false]
+  for append in [true,false]
+    for ascii in [true,false]
+      for vtkversion in [:default,:latest]
+        write_vtk_file(
+          trian,f,
+          nodaldata=["nodeid"=>node_ids],
+          celldata=["cellid"=>cell_ids,"centers"=>cell_center]
+        )
 
-pvtk = Visualization.create_pvtk_file(
-  trian,f; part=1, nparts=1,
-  nodaldata=["nodeid"=>node_ids],
-  celldata=["cellid"=>cell_ids,"centers"=>cell_center])
-vtk_save(pvtk)
+        pvtk = Visualization.create_pvtk_file(
+          trian,f; part=1, nparts=1,
+          nodaldata=["nodeid"=>node_ids],
+          celldata=["cellid"=>cell_ids,"centers"=>cell_center]
+        )
+        vtk_save(pvtk)
+      end
+    end
+  end
+end
 
 reffe = LagrangianRefFE(VectorValue{3,Float64},WEDGE,(3,3,4))
 f = joinpath(d,"reffe")
