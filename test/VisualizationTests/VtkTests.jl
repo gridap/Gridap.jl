@@ -32,13 +32,15 @@ for compress in [true,false]
         write_vtk_file(
           trian,f,
           nodaldata=["nodeid"=>node_ids],
-          celldata=["cellid"=>cell_ids,"centers"=>cell_center]
+          celldata=["cellid"=>cell_ids,"centers"=>cell_center],
+          compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
         )
 
         pvtk = Visualization.create_pvtk_file(
           trian,f; part=1, nparts=1,
           nodaldata=["nodeid"=>node_ids],
-          celldata=["cellid"=>cell_ids,"centers"=>cell_center]
+          celldata=["cellid"=>cell_ids,"centers"=>cell_center],
+          compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
         )
         vtk_save(pvtk)
       end
