@@ -37,6 +37,7 @@ struct NVBCoarsening{T} <: EdgeBasedCoarsening
 end
 
 function NVBCoarsening(model::DiscreteModel{Dc,Dp}) where {Dc,Dp}
+    println("Entering NVBCoarsening")
     topo = model.grid_topology
     @check all(p -> p == TRI, get_polytopes(topo))
     c2e_map = get_faces(topo, Dc, 1)
@@ -135,11 +136,12 @@ function _combine_brothers(
     @show new_coarse_nodes
 end
 
-function _get_brother_pairs(good_nodes, n2c_map_cache, n2c_map, cell_to_parent_gid)
+function _get_brother_pairs(good_nodes, n2c_map_cache, n2c_map, c2e_map_cache, c2e_map, cell_to_parent_gid)
     all_brother_pairs = Dict{
         eltype(good_nodes),
         Vector{Pair{eltype(cell_to_parent_gid),eltype(cell_to_parent_gid)}},
     }()
+    intersect_empty(a, b) = isempty(intersect(a, b))
     for n in good_nodes
         patch_cells = getindex!(n2c_map_cache, n2c_map, n)
         #@show n
@@ -149,12 +151,27 @@ function _get_brother_pairs(good_nodes, n2c_map_cache, n2c_map, cell_to_parent_g
             push!(parent_cell_gids, cell_to_parent_gid[c])
         end
         #@show unique!(parent_cell_gids)
-        # TODO: assuming brothers are next to each other
         if length(patch_cells) == 2
             brother_pairs = [Pair(patch_cells[1], patch_cells[2])]
         elseif length(patch_cells) == 4
-            brother_pairs =
+            edges1 = getindex!(c2e_map_cache, c2e_map, patch_cells[1]) |> copy
+            edges2 = getindex!(c2e_map_cache, c2e_map, patch_cells[2]) |> copy
+            edges3 = getindex!(c2e_map_cache, c2e_map, patch_cells[3]) |> copy
+            if !intersect_empty(edges1, edges2)#!isempty(intersect(edges1, edges2))
+                println("edges1, edges2")
+                brother_pairs =
                 [Pair(patch_cells[1], patch_cells[2]), Pair(patch_cells[3], patch_cells[4])]
+            elseif !intersect_empty(edges1, edges3)
+                println("edges1, edges3")
+                brother_pairs =
+                [Pair(patch_cells[1], patch_cells[3]), Pair(patch_cells[2], patch_cells[4])]
+            else
+                println("edges1, edges4")
+                brother_pairs =
+                [Pair(patch_cells[1], patch_cells[4]), Pair(patch_cells[2], patch_cells[3])]
+            end
+        else
+            error("Number of edges not equal to 2 or 4 :)")
         end
         all_brother_pairs[n] = brother_pairs
     end
@@ -203,7 +220,7 @@ function _coarsen_unstructured_topology(
     coords_new = setdiff(coords, coords[good_nodes]) 
     cell_to_parent_gid = glue.n2o_faces_map[3]
     all_brother_pairs =
-        _get_brother_pairs(good_nodes, n2c_map_cache, n2c_map, cell_to_parent_gid)
+        _get_brother_pairs(good_nodes, n2c_map_cache, n2c_map, c2e_map_cache, c2e_map, cell_to_parent_gid)
     cells_to_remove = eltype(cell_to_parent_gid)[]
     for (good_node, pairs) in all_brother_pairs
         for pair in pairs
@@ -217,6 +234,7 @@ function _coarsen_unstructured_topology(
     for brothers in values(all_brother_pairs)
         union!(new_cells, _combine_brothers(brothers, e2n_map, e2n_map_cache, c_to_longest_edge_gid, coords))
     end
+    @show all_brother_pairs
     @show new_cells
     # Setup c2n_map_new
     num_new_cells = length(c2n_map) - length(cells_to_remove)

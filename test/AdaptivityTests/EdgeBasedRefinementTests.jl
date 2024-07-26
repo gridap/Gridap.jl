@@ -166,8 +166,13 @@ trian8 = Triangulation(ref_model8)
 @time ref_model10 = coarsen(ref_model9, coarsening_method="nvb", cells_to_coarsen=[1,2])
 trian10 = Triangulation(ref_model10)
 coords = get_node_coordinates(ref_model10)
-@show VectorValue(0.125, 0.25) in coords
 visualize && writevtk(trian10, "test/AdaptivityTests/ref_model10")
+@time ref_model11 = coarsen(ref_model10, coarsening_method="nvb", cells_to_coarsen=[1,2])
+topo = get_grid_topology(ref_model11.model)
+@show get_faces(topo, 2, 0)
+trian11 = Triangulation(ref_model11)
+visualize && writevtk(trian11, "test/AdaptivityTests/ref_model11")
+#@time ref_model12 = coarsen(ref_model11, coarsening_method="nvb", cells_to_coarsen=[1,2])
 #ref_modeln = ref_model9.model
 #let
 #	ref_modeln = ref_model9
