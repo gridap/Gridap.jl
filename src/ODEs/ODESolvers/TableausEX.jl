@@ -10,7 +10,6 @@ end
 
 """
     EXRK_Euler_1_1
-    FE
 """
 struct EXRK_Euler_1_1 <: TableauName end
 
