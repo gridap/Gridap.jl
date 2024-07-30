@@ -34,7 +34,7 @@ WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 [compat]
 AbstractTrees = "0.3.3, 0.4"
 BSON = "0.2.5, 0.3"
-BlockArrays = "0.12.12, 0.13, 0.14, 0.15, 0.16"
+BlockArrays = "0.12.12, 0.13, 0.14, 0.15, 0.16, 1"
 Combinatorics = "1.0.0"
 DataStructures = "0.18.13"
 DocStringExtensions = "0.8.1, 0.9"
