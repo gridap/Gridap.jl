@@ -321,13 +321,14 @@ function compute_reffaces(::Type{Polytope{d}}, g::GridTopology) where d
   cell_to_ctype = get_cell_type(g)
   nfaces = num_faces(g,d)
   face_to_ftype = generate_face_to_face_type(
-    cell_to_faces, cell_to_ctype, ctype_to_lface_to_ftype, nfaces)
-
+    cell_to_faces, cell_to_ctype, ctype_to_lface_to_ftype, nfaces
+  )
   (collect1d(ftype_to_refface), face_to_ftype)
 end
 
 function compute_reffaces(::Type{Polytope{D}}, g::GridTopology{D}) where D
-  (get_polytopes(g), get_cell_type(g))
+  # Copying cell_type required to avoid modifying the original
+  (get_polytopes(g), copy(get_cell_type(g)))
 end
 
 """
@@ -362,8 +363,9 @@ function compute_reffaces(g::GridTopology)
   d_to_refdfaces = Vector{Polytope}[]
   d_to_dface_to_ftype = Vector{Int8}[]
   for d in 0:D
-    push!(d_to_refdfaces,get_reffaces(Polytope{d},g))
-    push!(d_to_dface_to_ftype,get_face_type(g,d))
+    reffaces, face_to_ftype = compute_reffaces(Polytope{d},g)
+    push!(d_to_refdfaces,reffaces)
+    push!(d_to_dface_to_ftype,face_to_ftype)
   end
   d_to_offset = zeros(Int,D+1)
   for d in 1:D
