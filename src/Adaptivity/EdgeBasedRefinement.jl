@@ -607,7 +607,7 @@ function _has_interior_point(rr::RefinementRule,::RedRefinement)
 end
 
 # [Face dimension][Coarse Face id] -> [Fine faces]
-function get_d_to_face_to_child_faces(rr::RefinementRule,::RedRefinement)
+function get_d_to_face_to_child_faces(::RedRefinement,rr::RefinementRule)
   p = get_polytope(rr)
   if p == QUAD
     return [

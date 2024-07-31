@@ -124,6 +124,8 @@ end
 # Faces to child faces, dof maps
 
 "
+    get_d_to_face_to_child_faces(rr::RefinementRule)
+
 Given a `RefinementRule`, returns for each parent/coarse face the child/fine faces of the 
 same dimension that it contains. Therefore, only fine faces at the coarse cell boundary are 
 listed in the returned structure.
@@ -131,12 +133,12 @@ listed in the returned structure.
 Returns: [Face dimension][Coarse Face id] -> [Fine faces]
 "
 function get_d_to_face_to_child_faces(rr::RefinementRule) 
-  get_d_to_face_to_child_faces(rr,RefinementRuleType(rr))
+  get_d_to_face_to_child_faces(RefinementRuleType(rr),rr)
 end
 
-# Generic version of the function. Spetializations may exist for some other ref rule types.
+# Generic version of the function. Spetialisations may exist for some other ref rule types.
 # This generic method relies on get_d_to_face_to_parent_face, and simply inverts the map. 
-function get_d_to_face_to_child_faces(rr::RefinementRule,::RefinementRuleType)
+function get_d_to_face_to_child_faces(::RefinementRuleType,rr::RefinementRule)
   d_to_face_to_parent_face, d_to_face_to_parent_face_dim = get_d_to_face_to_parent_face(rr)
 
   poly = get_polytope(rr)
@@ -152,7 +154,7 @@ function get_d_to_face_to_child_faces(rr::RefinementRule,::RefinementRuleType)
     parent_pairs     = collect(zip(parent_faces,parent_faces_dim))
 
     for cface in 1:num_cfaces
-      cface_to_child_faces[cface] = findall(p -> (p[1] == cface) && (p[2] == cface_dim),parent_pairs)
+      cface_to_child_faces[cface] = findall(p -> (p[1] == cface) && (p[2] == cface_dim), parent_pairs)
     end
 
     d_to_face_to_child_faces[cface_dim+1] = cface_to_child_faces
@@ -162,6 +164,8 @@ function get_d_to_face_to_child_faces(rr::RefinementRule,::RefinementRuleType)
 end
 
 """
+    get_d_to_face_to_parent_face(rr::RefinementRule)
+
 Given a `RefinementRule`, returns for each fine/child face the parent/coarse face
 containing it. The parent face can have higher dimension. 
 
@@ -339,6 +343,68 @@ function get_face_subface_ldof_to_cell_ldof(
   return coarse_dofs_above_fine_dofs
 end
 
+"""
+    get_cface_to_own_ffaces(rr::RefinementRule)
+
+Given a `RefinementRule`, returns for each parent/coarse face the child/fine faces of all 
+dimensions that it owns. 
+"""
+function get_cface_to_own_ffaces(rr::RefinementRule)
+  d_to_face_to_parent_face, d_to_face_to_parent_face_dim = get_d_to_face_to_parent_face(rr)
+
+  poly = get_polytope(rr)
+  topo = get_grid_topology(rr.ref_grid)
+  Dc   = num_cell_dims(poly)
+
+  coffsets = get_offsets(poly)
+  foffsets = get_offsets(topo)
+
+  cface_own_ffaces = [Int32[] for cface in 1:num_faces(poly)]
+  for fface_dim in 0:Dc
+    parent_faces     = d_to_face_to_parent_face[fface_dim+1]
+    parent_faces_dim = d_to_face_to_parent_face_dim[fface_dim+1]
+    for (fface,(cface,cface_dim)) in enumerate(zip(parent_faces,parent_faces_dim))
+      co = coffsets[cface_dim+1]
+      fo = foffsets[fface_dim+1]
+      push!(cface_own_ffaces[cface+co],fface+fo)
+    end
+  end
+
+  return cface_own_ffaces
+end
+
+"""
+    get_cface_to_ffaces(rr::RefinementRule)
+
+Given a `RefinementRule`, returns for each parent/coarse face the child/fine faces of all 
+dimensions that are on it (owned and not owned).
+
+The implementation aggregates the results of `get_cface_to_own_ffaces`.
+"""
+function get_cface_to_ffaces(rr::RefinementRule)
+  poly = get_polytope(rr)
+  Dc   = num_cell_dims(poly)
+
+  coffsets = get_offsets(poly)
+  face_own_dfaces = get_cface_to_own_ffaces(rr)
+
+  # For each cface, we concatenate the entries of face_own_dfaces of any 
+  # other cface of lower (or equal) dimension that is owned by the cface
+  face_dfaces = [Int32[] for cface in 1:num_faces(poly)]
+  for d1 in 0:Dc
+    o1 = coffsets[d1+1]
+    for d2 in 0:d1
+      o2 = coffsets[d2+1]
+      d1_to_d2_faces = get_faces(poly,d1,d2)
+      for (d1_cface,d2_cfaces) in enumerate(d1_to_d2_faces)
+        face_dfaces[d1_cface+o1] = vcat(face_dfaces[d1_cface+o1],face_own_dfaces[d2_cfaces .+ o2]...)
+      end
+    end
+  end
+
+  map(sort!,face_dfaces)
+  return face_dfaces
+end
 
 # GenericRefinement Rule
 
