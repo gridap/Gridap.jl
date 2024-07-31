@@ -30,6 +30,25 @@ function RefinementRule(T::RefinementRuleType,poly::Polytope,ref_grid::DiscreteM
   return RefinementRule(T,poly,ref_grid,p2c_cache)
 end
 
+function RefinementRule(reffe::LagrangianRefFE{D},nrefs::Integer;kwargs...) where D
+  partition = tfill(nrefs,Val{D}())
+  return RefinementRule(get_polytope(reffe),partition;kwargs...)
+end
+
+function RefinementRule(reffe::LagrangianRefFE{D},partition::NTuple{D,Integer};kwargs...) where D
+  return RefinementRule(get_polytope(reffe),partition;kwargs...)
+end
+
+function RefinementRule(poly::Polytope{D},nrefs::Integer;kwargs...) where D
+  partition = tfill(nrefs,Val{D}())
+  return RefinementRule(poly,partition;kwargs...)
+end
+
+function RefinementRule(poly::Polytope{D},partition::NTuple{D,Integer};kwargs...) where D
+  ref_grid = UnstructuredGrid(compute_reference_grid(poly,partition))
+  return RefinementRule(GenericRefinement(),poly,ref_grid;kwargs...)
+end
+
 function Base.show(io::IO,rr::RefinementRule{P,A}) where {P,A}
   T = RefinementRuleType(rr)
   print(io,"RefinementRule{$P,$A}. RefinementRuleType=$T")
@@ -405,28 +424,6 @@ function get_cface_to_ffaces(rr::RefinementRule)
   map(sort!,face_dfaces)
   return face_dfaces
 end
-
-# GenericRefinement Rule
-
-function RefinementRule(reffe::LagrangianRefFE{D},nrefs::Integer;kwargs...) where D
-  partition = tfill(nrefs,Val{D}())
-  return RefinementRule(get_polytope(reffe),partition;kwargs...)
-end
-
-function RefinementRule(reffe::LagrangianRefFE{D},partition::NTuple{D,Integer};kwargs...) where D
-  return RefinementRule(get_polytope(reffe),partition;kwargs...)
-end
-
-function RefinementRule(poly::Polytope{D},nrefs::Integer;kwargs...) where D
-  partition = tfill(nrefs,Val{D}())
-  return RefinementRule(poly,partition;kwargs...)
-end
-
-function RefinementRule(poly::Polytope{D},partition::NTuple{D,Integer};kwargs...) where D
-  ref_grid = UnstructuredGrid(compute_reference_grid(poly,partition))
-  return RefinementRule(GenericRefinement(),poly,ref_grid;kwargs...)
-end
-
 
 # Tests 
 

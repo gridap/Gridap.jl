@@ -665,13 +665,19 @@ function get_face_vertex_permutations(p::Polytope)
 end
 
 """
+    get_face_coordinates(p::Polytope)
     get_face_coordinates(p::Polytope,d::Integer)
 """
 function get_face_coordinates(p::Polytope,d::Integer)
   vert_to_coord = get_vertex_coordinates(p)
   face_to_vertices = get_faces(p,d,0)
   collect(lazy_map(Broadcasting(Reindex(vert_to_coord)),face_to_vertices))
-  # collect(LocalToGlobalArray(face_to_vertices,vert_to_coord))
+end
+
+function get_face_coordinates(p::Polytope)
+  D = num_cell_dims(p)
+  p = [ get_face_coordinates(p,d) for d in 0:D ]
+  vcat(p...)
 end
 
 # Testers

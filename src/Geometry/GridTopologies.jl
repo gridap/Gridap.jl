@@ -260,6 +260,24 @@ function get_cell_vertices(g::GridTopology)
 end
 
 """
+    get_face_coordinates(g::GridTopology)
+    get_face_coordinates(g::GridTopology,d::Integer)
+"""
+function get_face_coordinates(g::GridTopology)
+  coords = get_vertex_coordinates(g)
+  face_to_vertices = get_face_vertices(g)
+  data = lazy_map(Reindex(coords),face_to_vertices.data)
+  Table(data,face_to_vertices.ptrs)
+end
+
+function get_face_coordinates(g::GridTopology,d::Integer)
+  coords = get_vertex_coordinates(g)
+  face_to_vertices = get_face_vertices(g,d)
+  data = lazy_map(Reindex(coords),face_to_vertices.data)
+  Table(data,face_to_vertices.ptrs)
+end
+
+"""
     is_simplex(p::GridTopology) -> Bool
 """
 function is_simplex(p::GridTopology)
