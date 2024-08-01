@@ -615,6 +615,112 @@ function _compute_face_vertex_permutations(
   return pindex_to_fnodes
 end
 
+"""
+    get_cface_to_fface_permutations(rrule::RefinementRule)
+    get_cface_to_own_fface_permutations(rrule::RefinementRule)
+
+Given a `RefinementRule`, this function returns: 
+
+  - `cface_to_cpindex_to_ffaces` : For each coarse face, for each coarse face permutation, 
+    the permuted ids of the fine faces.
+  - `cface_to_cpindex_to_fpindex` : For each coarse face, for each coarse face permutation, 
+    the sub-permutation of the fine faces.
+
+The idea is the following: A permutation on a coarse face indices a 2-stage permutation for 
+the fine faces, i.e 
+
+  - First, the fine faces get shuffled amongs themselves.
+  - Second, each fine face has it's orientation changed (given by a sub-permutation).
+
+For instance, let's consider a 1D example, where a SEGMENT is refined into 2 segments: 
+
+       3             4     5
+    X-----X  -->  X-----X-----X 
+    1     2       1     3     2
+
+Then when aplying the coarse node permutation (1,2) -> (2,1), 
+we get the following fine face permutation: 
+
+  - Faces (1,2,3,4,5) get mapped to (2,1,3,5,4)
+  - Moreover, the orientation of faces 3 and 5 is changed, 
+    i.e we get the sub-permutation (1,1,1,2,2)
+"""
+function get_cface_to_fface_permutations(rrule::RefinementRule)
+  cface_to_ffaces = get_cface_to_ffaces(rrule)
+  cface_to_fface_to_clnodes = get_cface_to_ffaces_to_lnodes(rrule)
+  return _compute_face_child_permutations(
+    rrule,cface_to_ffaces,cface_to_fface_to_clnodes
+  )
+end
+
+function get_cface_to_own_fface_permutations(rrule::RefinementRule)
+  cface_to_ffaces = get_cface_to_own_ffaces(rrule)
+  cface_to_fface_to_clnodes = get_cface_to_own_ffaces_to_lnodes(rrule)
+  return _compute_face_child_permutations(
+    rrule,cface_to_ffaces,cface_to_fface_to_clnodes
+  )
+end
+
+function _compute_face_child_permutations(
+  rrule::RefinementRule,
+  cface_to_ffaces,
+  cface_to_fface_to_clnodes
+)
+  poly = get_polytope(rrule)
+  topo = get_grid_topology(rrule.ref_grid)
+  cface_to_cpindex_to_clnodes = get_face_vertex_permutations(rrule)
+
+  fface_to_polytope = CompressedArray(get_reffaces(topo),get_face_type(topo))
+  fface_to_fpindex_to_flnodes = lazy_map(get_vertex_permutations,fface_to_polytope)
+
+  # For each coarse face
+  cface_to_cpindex_to_ffaces = Vector{Vector{Vector{Int32}}}(undef,num_faces(poly))
+  cface_to_cpindex_to_fpindex = Vector{Vector{Vector{Int32}}}(undef,num_faces(poly))
+  for cface in 1:num_faces(poly)
+    cpindex_to_clnodes = cface_to_cpindex_to_clnodes[cface]
+    fface_to_clnodes = cface_to_fface_to_clnodes[cface]
+    flface_to_fpindex_to_flnodes = view(fface_to_fpindex_to_flnodes,cface_to_ffaces[cface])
+
+    # For each coarse face permutation
+    cpindex_to_ffaces = Vector{Vector{Int32}}(undef,length(cpindex_to_clnodes))
+    cpindex_to_fpindex = Vector{Vector{Int32}}(undef,length(cpindex_to_clnodes))
+    for (cpindex,clnodes) in enumerate(cpindex_to_clnodes)
+      permuted_ffaces = Vector{Int32}(undef,length(fface_to_clnodes))
+      permuted_fpindex = Vector{Int32}(undef,length(fface_to_clnodes))
+      # For each fine face within the coarse face
+      for (fface,unpermuted_clnodes) in enumerate(fface_to_clnodes)
+        # Find the permuted position of the fface within the cface:
+        # To do this, we match the permuted nodes of the selected fine face 
+        # with the unpermuted nodes of all fine faces within the coarse face.
+        permuted_clnodes = cpindex_to_clnodes[cpindex][unpermuted_clnodes]
+        permuted_fface = findfirst(
+          clnodes -> all(map(pnode -> pnode ∈ clnodes, permuted_clnodes)),
+          fface_to_clnodes
+        )
+        @assert !isnothing(permuted_fface)
+        # Find the inner fface permutation index:
+        # To do this, we match the unpermuted nodes of the new fine face position 
+        # with the permutations of the original fine face.
+        permuted_fface_unpermuted_clones = fface_to_clnodes[permuted_fface]
+        fpindex_to_flnodes = flface_to_fpindex_to_flnodes[fface]
+        fpindex = findfirst(
+          flnodes -> all(permuted_fface_unpermuted_clones[flnodes] .== permuted_clnodes),
+          fpindex_to_flnodes
+        )
+        @assert !isnothing(fpindex)
+        permuted_ffaces[fface] = permuted_fface
+        permuted_fpindex[fface] = fpindex
+      end
+      cpindex_to_ffaces[cpindex] = permuted_ffaces
+      cpindex_to_fpindex[cpindex] = permuted_fpindex
+    end
+    cface_to_cpindex_to_ffaces[cface] = cpindex_to_ffaces
+    cface_to_cpindex_to_fpindex[cface] = cpindex_to_fpindex
+  end
+
+  return cface_to_cpindex_to_ffaces,cface_to_cpindex_to_fpindex
+end
+
 # Tests 
 
 function test_refinement_rule(rr::RefinementRule; debug=false)
