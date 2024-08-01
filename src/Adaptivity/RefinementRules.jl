@@ -425,6 +425,196 @@ function get_cface_to_ffaces(rr::RefinementRule)
   return face_dfaces
 end
 
+"""
+    get_cface_to_ffaces_to_lnodes(rr::RefinementRule)
+
+Given a `RefinementRule`, returns
+
+  [coarse face][local child face] -> local fine node ids
+
+where local refers to the local fine numbering within the coarse face.
+"""
+function get_cface_to_ffaces_to_lnodes(rrule::RefinementRule)
+  topo = get_grid_topology(rrule.ref_grid)
+  cface_to_ffaces = get_cface_to_ffaces(rrule)
+  cface_to_fnodes = get_face_vertices(rrule)
+  fface_to_fnodes = get_face_vertices(topo)
+
+  return _compute_cface_to_ffaces_to_lnodes(
+    cface_to_ffaces,cface_to_fnodes,fface_to_fnodes
+  )
+end
+
+"""
+    get_cface_to_own_ffaces_to_lnodes(rr::RefinementRule)
+
+Given a `RefinementRule`, returns
+
+  [coarse face][local owned child face] -> local fine node ids
+  
+where local refers to the local fine numbering within the coarse face.
+"""
+function get_cface_to_own_ffaces_to_lnodes(rrule::RefinementRule)
+  topo = get_grid_topology(rrule.ref_grid)
+  cface_to_ffaces = get_cface_to_own_ffaces(rrule)
+  cface_to_fnodes = get_face_vertices(rrule)
+  fface_to_fnodes = get_face_vertices(topo)
+
+  return _compute_cface_to_ffaces_to_lnodes(
+    cface_to_ffaces,cface_to_fnodes,fface_to_fnodes
+  )
+end
+
+function _compute_cface_to_ffaces_to_lnodes(
+  cface_to_ffaces::AbstractVector{Vector{Int32}},
+  cface_to_fnodes::AbstractVector{Vector{Int32}},
+  fface_to_fnodes::AbstractVector{Vector{Int32}},
+)
+  ncfaces = length(cface_to_ffaces)
+  cface_to_ffaces_to_lnodes = Vector{Vector{Vector{Int32}}}(undef,ncfaces)
+  for cface in 1:ncfaces
+    ffaces = cface_to_ffaces[cface]
+    cface_fnodes = cface_to_fnodes[cface]
+    @assert issorted(cface_fnodes)
+
+    ffaces_to_lnodes = Vector{Vector{Int32}}(undef,length(ffaces))
+    for (i,fface) in enumerate(ffaces)
+      fface_fnodes = fface_to_fnodes[fface]
+      lnodes = zeros(Int32, length(fface_fnodes))
+      for (j,fnode) in enumerate(fface_fnodes)
+        lnode = searchsortedfirst(cface_fnodes,fnode)
+        @assert lnode != length(cface_fnodes)+1
+        lnodes[j] = lnode
+      end
+      ffaces_to_lnodes[i] = lnodes
+    end
+    cface_to_ffaces_to_lnodes[cface] = ffaces_to_lnodes
+  end
+
+  return cface_to_ffaces_to_lnodes
+end
+
+"""
+    ReferenceFEs.get_face_vertices(rr::RefinementRule)
+
+Given a `RefinementRule`, returns for each parent/coarse face the ids of the
+child/fine vertices it contains.
+"""
+function ReferenceFEs.get_face_vertices(rrule::RefinementRule)
+  cface_to_ffaces = get_cface_to_ffaces(rrule)
+  topo = get_grid_topology(rrule.ref_grid)
+  node_range = get_dimrange(topo,0)
+  face_vertices = map(ffaces -> filter(fface -> fface ∈ node_range,ffaces), cface_to_ffaces)
+  return face_vertices
+end
+
+"""
+    ReferenceFEs.get_face_coordinates(rr::RefinementRule)
+
+Given a `RefinementRule`, returns for each parent/coarse face the coordinates of the
+child/fine vertices it contains.
+"""
+function ReferenceFEs.get_face_coordinates(rrule::RefinementRule)
+  face_vertices = get_face_vertices(rrule)
+  topo = get_grid_topology(rrule.ref_grid)
+  coords = get_vertex_coordinates(topo)
+  face_coords = lazy_map(Broadcasting(Reindex(coords)), face_vertices)
+  return face_coords
+end
+
+"""
+    ReferenceFEs.get_vertex_permutations(rr::RefinementRule)
+
+Given a `RefinementRule`, returns all possible permutations of the child/fine vertices
+within the cell.
+"""
+function ReferenceFEs.get_vertex_permutations(rrule::RefinementRule)
+  poly = get_polytope(rrule)
+  topo = get_grid_topology(rrule.ref_grid)
+
+  cnodes  = collect(1:num_faces(poly,0))
+  fnodes  = collect(1:num_faces(topo,0))
+  fcoords = get_node_coordinates(rrule.ref_grid)
+  ccoords = get_vertex_coordinates(poly)
+  pindex_to_cnodes = get_vertex_permutations(poly)
+
+  pindex_to_fnodes = _compute_face_vertex_permutations(
+    poly,cnodes,fnodes,ccoords,fcoords,pindex_to_cnodes
+  )
+  return pindex_to_fnodes
+end
+
+"""
+    ReferenceFEs.get_face_vertex_permutations(rr::RefinementRule)
+
+Given a `RefinementRule`, returns for each parent/coarse face the possible permutations of the
+child/fine vertices it contains.
+"""
+function ReferenceFEs.get_face_vertex_permutations(rrule::RefinementRule)
+  poly = get_polytope(rrule)
+  cface_to_cnodes = get_face_vertices(poly)
+  cface_to_fnodes = get_face_vertices(rrule)
+  cface_to_ccoords = get_face_coordinates(poly)
+  cface_to_fcoords = get_face_coordinates(rrule)
+  cface_to_pindex_to_cnodes = get_face_vertex_permutations(poly)
+
+  Ti = eltype(first(first(cface_to_pindex_to_cnodes)))
+  cface_to_pindex_to_fnodes = Vector{Vector{Vector{Ti}}}(undef,num_faces(poly))
+  for cface in 1:num_faces(poly)
+    cface_to_pindex_to_fnodes[cface] = _compute_face_vertex_permutations(
+      poly,
+      cface_to_cnodes[cface],
+      cface_to_fnodes[cface],
+      cface_to_ccoords[cface],
+      cface_to_fcoords[cface],
+      cface_to_pindex_to_cnodes[cface]
+    )
+  end
+  
+  return cface_to_pindex_to_fnodes
+end
+
+# Implementation comment (Jordi): 
+# The function below computes the permutations of the fine nodes on a face, given a permutation 
+# of the coarse nodes on the same face. This is done by comparing coordinates. In general, this is 
+# not the best idea, since we are doing float comparisons. However, I believe this should not be a problem
+# in this case, since RefinementRules should never have two nodes that are too close to each other.
+# I have also not found another way of doing this.
+function _compute_face_vertex_permutations(
+  poly   :: Polytope,                    # The RefinementRule polytope (NOT the face polytope)
+  cnodes :: Vector{<:Integer},           # The coarse node ids on the coarse face
+  fnodes :: Vector{<:Integer},           # The fine node ids on the coarse face
+  ccoords::Vector{VectorValue{D,T}},     # The coarse node coordinates (for the cnodes)
+  fcoords::Vector{VectorValue{D,T}},     # The fine node coordinates (for the fnodes)
+  pindex_to_cnodes::Vector{Vector{Ti}},  # The coarse node permutations (in local face numbering)
+) where {D,T,Ti}
+  # Collect the D-dimensional shape functions for the coarse face
+  reffe = LagrangianRefFE(Float64,poly,1)
+  shapefuns = get_shapefuns(reffe)[cnodes]
+
+  # For each permutation of the coarse face nodes
+  pindex_to_fnodes = Vector{Vector{Ti}}(undef,length(pindex_to_cnodes))
+  for (pindex, p_cnodes) in enumerate(pindex_to_cnodes)
+    # Compute the coordinates of the permuted fine nodes
+    p_ccoords = ccoords[p_cnodes]
+    cmap = linear_combination(p_ccoords,shapefuns)
+    p_fcoords = evaluate(cmap, fcoords)
+
+    # Match the permuted coordinates to find the fine node permutation
+    p_fnodes = zeros(Ti,length(fcoords))
+    for (i,c) in enumerate(p_fcoords)
+      p = findfirst(x->norm(x-c) < eps(T),fcoords)
+      @assert !isnothing(p)
+      p_fnodes[i] = p # for non-local numbering, we would do fnodes[p]
+    end
+    @check !any(iszero,p_fnodes) "Face vertex permutation not found!"
+
+    pindex_to_fnodes[pindex] = p_fnodes
+  end
+  
+  return pindex_to_fnodes
+end
+
 # Tests 
 
 function test_refinement_rule(rr::RefinementRule; debug=false)

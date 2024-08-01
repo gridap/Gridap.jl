@@ -553,6 +553,11 @@ function get_reffaces(::Type{Polytope{d}},p::Polytope) where d
   collect(ftype_to_refface)
 end
 
+function get_reffaces(p::Polytope)
+  ftype_to_refface, = _compute_reffaces_and_face_types(p)
+  collect(ftype_to_refface)
+end
+
 """
     get_face_type(p::Polytope,d::Integer) -> Vector{Int}
 
@@ -588,9 +593,31 @@ function get_face_type(p::Polytope,d::Integer)
   iface_to_ftype
 end
 
+function get_face_type(p::Polytope)
+  _, iface_to_ftype = _compute_reffaces_and_face_types(p)
+  iface_to_ftype
+end
+
 function _compute_reffaces_and_face_types(p::Polytope,::Val{d}) where d
   iface_to_refface = [ Polytope{d}(p,iface) for iface in 1:num_faces(p,d) ]
   _find_unique_with_indices(iface_to_refface)
+end
+
+function _compute_reffaces_and_face_types(p::Polytope)
+  D = num_cell_dims(p)
+  d_to_refdfaces = Vector{Polytope}[]
+  d_to_dface_to_ftype = Vector{Int8}[]
+  for d in 0:D
+    reffaces, face_to_ftype = _compute_reffaces_and_face_types(p,Val(d))
+    push!(d_to_refdfaces,reffaces)
+    push!(d_to_dface_to_ftype,face_to_ftype)
+  end
+  d_to_offset = zeros(Int,D+1)
+  for d in 1:D
+    d_to_offset[d+1] = d_to_offset[d] + length(d_to_refdfaces[d])
+    d_to_dface_to_ftype[d+1] .+= d_to_offset[d+1]
+  end
+  (collect(vcat(d_to_refdfaces...)), vcat(d_to_dface_to_ftype...), d_to_offset)
 end
 
 function _find_unique_with_indices(a_to_b)

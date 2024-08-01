@@ -279,6 +279,7 @@ function get_macro_face_own_dofs(
   face_to_dof = [Int[] for i in 1:nfaces]
   touched = fill(false,num_free_dofs(space))
 
+  # For each subcell in the macro-element
   for cell in 1:ncells
     dofs = view(cell_to_dofs,cell)
     lface_to_dof = cell_to_lface_to_dof[cell]
@@ -287,10 +288,11 @@ function get_macro_face_own_dofs(
       o = offsets[d+1]
       face_to_parent_face = d_to_face_to_parent_face[d+1]
       face_to_parent_dim = d_to_face_to_parent_face_dim[d+1]
+      # For each d-face of the subcell
       for (lface,face) in enumerate(d_to_cell_to_dface[d+1][cell])
         face_dofs = view(dofs,lface_to_dof[o+lface])
-        parent_face = face_to_parent_face[face]
-        parent_dim = face_to_parent_dim[face]
+        parent_face = face_to_parent_face[face] # Id of the parent face (within the polytope)
+        parent_dim = face_to_parent_dim[face]   # Dimension of the parent face
         pos = parent_offsets[parent_dim+1] + parent_face
         for dof in face_dofs
           if !touched[dof]
