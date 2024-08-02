@@ -54,21 +54,21 @@ function coarsen(
     method::EdgeBasedCoarsening,
     model::UnstructuredDiscreteModel{Dc,Dp},
     glue::AdaptivityGlue;
-    cells_to_coarsen = nothing,
+    cells_to_coarsen = Int[],
 ) where {Dc,Dp}
     # Create new mode
     rrules, faces_list =
         setup_edge_based_crules(method, model.grid_topology, glue, cells_to_coarsen)
-    topo = _coarsen_unstructured_topology(method, model.grid_topology, glue)
+    topo = _coarsen_unstructured_topology(method, model.grid_topology, glue, cells_to_coarsen)
     reffes = map(p->LagrangianRefFE(Float64,p,1),get_polytopes(topo))
     grid   = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),reffes,get_cell_type(topo),OrientationStyle(topo))
     labels = FaceLabeling(topo)
-    ref_model = UnstructuredDiscreteModel(grid,topo,labels)
+    coarse_model = UnstructuredDiscreteModel(grid,topo,labels)
     #ref_model = model
     #topo = get_grid_topology(model)
     ## Create ref glue
-    glue = _get_refinement_glue(topo, ref_model.grid_topology, rrules)
-    return AdaptedDiscreteModel(ref_model, model, glue)
+    glue = _get_refinement_glue(topo, coarse_model.grid_topology, rrules)
+    return AdaptedDiscreteModel(coarse_model, model, glue)
 end
 
 function _is_newest_vertex(n, e2n_map_cache, e2n_map, longest_edge_gid)
@@ -78,16 +78,16 @@ function _is_newest_vertex(n, e2n_map_cache, e2n_map, longest_edge_gid)
 end
 
 function _identify_good_nodes_to_coarsen(
+    candidate_nodes,
     n2c_map_cache,
     n2c_map,
     topo,
-    nN,
     c_to_longest_edge_gid,
 )
     e2n_map = get_faces(topo, 1, 0)
     e2n_map_cache = array_cache(e2n_map)
-    good_nodes = typeof(nN)[]
-    for n = 1:nN
+    good_nodes = eltype(candidate_nodes)[]
+    for n in candidate_nodes
         patch_cells = getindex!(n2c_map_cache, n2c_map, n)
         if length(patch_cells) == 2 || length(patch_cells) == 4
             is_newest = Bool[]
@@ -188,10 +188,21 @@ function setup_edge_based_crules(
     return [WhiteRefinementRule(TRI) for _ = 1:nC], nothing
 end
 
+function _get_nodes_from_cells_to_coarsen(cells_to_coarsen, c2n_map_cache, c2n_map)
+    nodes_to_coarsen = eltype(cells_to_coarsen)[]
+    sizehint!(nodes_to_coarsen, 3*length(cells_to_coarsen))
+    for c in cells_to_coarsen
+        cur_nodes = getindex!(c2n_map_cache, c2n_map, c)
+        append!(nodes_to_coarsen, cur_nodes)
+    end
+    return unique!(nodes_to_coarsen)
+end
+
 function _coarsen_unstructured_topology(
     method::EdgeBasedCoarsening,
     topo::UnstructuredGridTopology{Dc},
     glue::AdaptivityGlue,
+    cells_to_coarsen::Vector{<:Int},
 ) where {Dc}
     nC = num_faces(topo, Dc)
     nE = num_faces(topo, 1)
@@ -209,14 +220,19 @@ function _coarsen_unstructured_topology(
     cell_types = topo.cell_type
     cell_color = copy(cell_types) # WHITE
     coords = get_vertex_coordinates(topo)
+    candidate_nodes = _get_nodes_from_cells_to_coarsen(cells_to_coarsen, c2n_map_cache, c2n_map)
     c_to_longest_edge_gid = method.cell_to_longest_edge_gid
     good_nodes = _identify_good_nodes_to_coarsen(
+        candidate_nodes,
         n2c_map_cache,
         n2c_map,
         topo,
-        nN,
         c_to_longest_edge_gid,
     )
+    if isempty(good_nodes)
+        println("No good nodes identified, no coarsening performed.")
+        return topo
+    end
     coords_new = setdiff(coords, coords[good_nodes]) 
     cell_to_parent_gid = glue.n2o_faces_map[3]
     all_brother_pairs =
