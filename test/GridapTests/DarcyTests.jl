@@ -36,7 +36,7 @@ X = MultiFieldFESpace([U, P])
 trian = Triangulation(model)
 degree = 2
 dΩ = Measure(trian,degree)
-dω = Measure(trian,degree,ReferenceDomain())
+dω = Measure(trian,degree,integration_domain_style=ReferenceDomain())
 
 neumanntags = [7,8]
 btrian = BoundaryTriangulation(model,tags=neumanntags)

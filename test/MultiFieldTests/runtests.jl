@@ -16,4 +16,6 @@ using Test
 
 @testset "MultiFieldFEAutodiff" begin include("MultiFieldFEAutodiffTests.jl") end
 
+@testset "BlockSparseMatrixAssemblers" begin include("BlockSparseMatrixAssemblersTests.jl") end
+
 end # module

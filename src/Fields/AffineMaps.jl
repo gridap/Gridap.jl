@@ -108,3 +108,9 @@ function lazy_map(::typeof(∇),a::LazyArray{<:Fill{typeof(affine_map)}})
   gradients = a.args[1]
   lazy_map(constant_field,gradients)
 end
+
+function Base.zero(::Type{<:AffineMap{D1,D2,T}}) where {D1,D2,T}
+  gradient = TensorValue{D1,D2}(tfill(zero(T),Val{D1*D2}()))
+  origin = Point{D2,T}(tfill(zero(T),Val{D2}()))
+  AffineMap(gradient,origin)
+end

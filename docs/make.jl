@@ -19,16 +19,25 @@ pages = [
   "Gridap.Visualization" => "Visualization.md",
   "Gridap.FESpaces" => "FESpaces.md",
   "Gridap.MultiField" => "MultiField.md",
- ]
+  "Gridap.ODEs" => "ODEs.md",
+  "Gridap.Adaptivity" => "Adaptivity.md",
+  "Developper notes" => Any[
+    "dev-notes/block-assemblers.md",
+  ],
+]
 
 makedocs(
-    sitename = "Gridap.jl",
-    format = Documenter.HTML(),
-    modules = [Gridap],
-    pages = pages
+  sitename = "Gridap.jl",
+  format = Documenter.HTML(
+    size_threshold=nothing
+  ),
+  modules = [Gridap],
+  pages = pages,
+  doctest = false,
+  warnonly = [:cross_references,:missing_docs],
+  checkdocs = :exports,
 )
 
 deploydocs(
-    repo = "github.com/gridap/Gridap.jl.git",
+  repo = "github.com/gridap/Gridap.jl.git",
 )
-

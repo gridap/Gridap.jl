@@ -14,42 +14,6 @@ function get_vector_builder(a::SparseMatrixAssembler)
   @abstractmethod
 end
 
-"""
-"""
-function symbolic_loop_matrix!(A,a::SparseMatrixAssembler,matdata)
-  @abstractmethod
-end
-
-"""
-"""
-function symbolic_loop_vector!(b,a::SparseMatrixAssembler,vecdata)
-  @abstractmethod
-end
-
-"""
-"""
-function symbolic_loop_matrix_and_vector!(A,b,a::SparseMatrixAssembler,data)
-  @abstractmethod
-end
-
-"""
-"""
-function numeric_loop_matrix!(A,a::SparseMatrixAssembler,matdata)
-  @abstractmethod
-end
-
-"""
-"""
-function numeric_loop_vector!(b,a::SparseMatrixAssembler,vecdata)
-  @abstractmethod
-end
-
-"""
-"""
-function numeric_loop_matrix_and_vector!(A,b,a::SparseMatrixAssembler,data)
-  @abstractmethod
-end
-
 get_matrix_type(a::SparseMatrixAssembler) = get_array_type(get_matrix_builder(a))
 get_vector_type(a::SparseMatrixAssembler) = get_array_type(get_vector_builder(a))
 
@@ -194,15 +158,16 @@ get_vector_builder(a::GenericSparseMatrixAssembler) = a.vector_builder
 
 get_assembly_strategy(a::GenericSparseMatrixAssembler) = a.strategy
 
-function symbolic_loop_matrix!(A,a::GenericSparseMatrixAssembler,matdata)
+function symbolic_loop_matrix!(A,a::SparseMatrixAssembler,matdata)
   get_mat(a::Tuple) = a[1]
   get_mat(a) = a
   if LoopStyle(A) == DoNotLoop()
     return A
   end
+  strategy = get_assembly_strategy(a)
   for (cellmat,_cellidsrows,_cellidscols) in zip(matdata...)
-    cellidsrows = map_cell_rows(a.strategy,_cellidsrows)
-    cellidscols = map_cell_cols(a.strategy,_cellidscols)
+    cellidsrows = map_cell_rows(strategy,_cellidsrows)
+    cellidscols = map_cell_cols(strategy,_cellidscols)
     @assert length(cellidscols) == length(cellidsrows)
     if length(cellidscols) > 0
       rows_cache = array_cache(cellidsrows)
@@ -229,10 +194,11 @@ end
   end
 end
 
-function numeric_loop_matrix!(A,a::GenericSparseMatrixAssembler,matdata)
+function numeric_loop_matrix!(A,a::SparseMatrixAssembler,matdata)
+  strategy = get_assembly_strategy(a)
   for (cellmat,_cellidsrows,_cellidscols) in zip(matdata...)
-    cellidsrows = map_cell_rows(a.strategy,_cellidsrows)
-    cellidscols = map_cell_cols(a.strategy,_cellidscols)
+    cellidsrows = map_cell_rows(strategy,_cellidsrows)
+    cellidscols = map_cell_cols(strategy,_cellidscols)
     @assert length(cellidscols) == length(cellidsrows)
     @assert length(cellmat) == length(cellidsrows)
     if length(cellmat) > 0
@@ -262,14 +228,15 @@ end
   end
 end
 
-function symbolic_loop_vector!(b,a::GenericSparseMatrixAssembler,vecdata)
+function symbolic_loop_vector!(b,a::SparseMatrixAssembler,vecdata)
   get_vec(a::Tuple) = a[1]
   get_vec(a) = a
   if LoopStyle(b) == DoNotLoop()
     return b
   end
+  strategy = get_assembly_strategy(a)
   for (cellvec,_cellids) in zip(vecdata...)
-    cellids = map_cell_rows(a.strategy,_cellids)
+    cellids = map_cell_rows(strategy,_cellids)
     if length(cellids) > 0
       rows_cache = array_cache(cellids)
       vec1 = get_vec(first(cellvec))
@@ -292,9 +259,10 @@ end
   end
 end
 
-function numeric_loop_vector!(b,a::GenericSparseMatrixAssembler,vecdata)
+function numeric_loop_vector!(b,a::SparseMatrixAssembler,vecdata)
+  strategy = get_assembly_strategy(a)
   for (cellvec, _cellids) in zip(vecdata...)
-    cellids = map_cell_rows(a.strategy,_cellids)
+    cellids = map_cell_rows(strategy,_cellids)
     if length(cellvec) > 0
       rows_cache = array_cache(cellids)
       vals_cache = array_cache(cellvec)
@@ -320,19 +288,53 @@ end
   end
 end
 
-function symbolic_loop_matrix_and_vector!(A,b,a::GenericSparseMatrixAssembler,data)
+function symbolic_loop_matrix_and_vector!(A,b,a::SparseMatrixAssembler,data)
+  if LoopStyle(A) == DoNotLoop()
+    return A, b
+  end
   matvecdata, matdata, vecdata = data
-  symbolic_loop_matrix!(A,a,matvecdata)
+  strategy = get_assembly_strategy(a)
+  for (cellmatvec,_cellidsrows,_cellidscols) in zip(matvecdata...)
+    cellidsrows = map_cell_rows(strategy,_cellidsrows)
+    cellidscols = map_cell_cols(strategy,_cellidscols)
+    @assert length(cellidscols) == length(cellidsrows)
+    @assert length(cellmatvec) == length(cellidsrows)
+    if length(cellmatvec) > 0
+      rows_cache = array_cache(cellidsrows)
+      cols_cache = array_cache(cellidscols)
+      vals_cache = array_cache(cellmatvec)
+      mat1, vec1 = getindex!(vals_cache,cellmatvec,1)
+      rows1 = getindex!(rows_cache,cellidsrows,1)
+      cols1 = getindex!(cols_cache,cellidscols,1)
+      touch! = TouchEntriesMap()
+      touch_mat_cache = return_cache(touch!,A,mat1,rows1,cols1)
+      touch_vec_cache = return_cache(touch!,b,vec1,rows1)
+      caches = touch_mat_cache, touch_vec_cache,rows_cache, cols_cache
+      _symbolic_loop_matvec!(A,b,caches,cellidsrows,cellidscols,mat1,vec1)
+    end
+  end
   symbolic_loop_matrix!(A,a,matdata)
   symbolic_loop_vector!(b,a,vecdata)
   A, b
+end 
+
+@noinline function _symbolic_loop_matvec!(A,b,caches,cell_rows,cell_cols,mat1,vec1)
+  touch_mat_cache, touch_vec_cache, rows_cache, cols_cache = caches
+  touch! = TouchEntriesMap()
+  for cell in 1:length(cell_cols)
+    rows = getindex!(rows_cache,cell_rows,cell)
+    cols = getindex!(cols_cache,cell_cols,cell)
+    evaluate!(touch_mat_cache,touch!,A,mat1,rows,cols)
+    evaluate!(touch_vec_cache,touch!,b,vec1,rows)
+  end
 end
 
-function numeric_loop_matrix_and_vector!(A,b,a::GenericSparseMatrixAssembler,data)
+function numeric_loop_matrix_and_vector!(A,b,a::SparseMatrixAssembler,data)
+  strategy = get_assembly_strategy(a)
   matvecdata, matdata, vecdata = data
   for (cellmatvec,_cellidsrows,_cellidscols) in zip(matvecdata...)
-    cellidsrows = map_cell_rows(a.strategy,_cellidsrows)
-    cellidscols = map_cell_cols(a.strategy,_cellidscols)
+    cellidsrows = map_cell_rows(strategy,_cellidsrows)
+    cellidscols = map_cell_cols(strategy,_cellidscols)
     @assert length(cellidscols) == length(cellidsrows)
     @assert length(cellmatvec) == length(cellidsrows)
     if length(cellmatvec) > 0

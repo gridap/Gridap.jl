@@ -11,6 +11,7 @@ using SparseArrays
 using LinearAlgebra
 using Test
 using SparseMatricesCSR
+using BlockArrays
 
 using Gridap.Helpers
 
@@ -27,6 +28,7 @@ export allocate_in_domain
 export allocate_in_range
 export add_entries!
 export muladd!
+export axpy_entries!
 export nz_counter
 export nz_allocation
 export create_from_nz

@@ -3,4 +3,4 @@ Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Gridap = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
 
 [compat]
-Documenter = "0.25"
+Documenter = "1.0"
