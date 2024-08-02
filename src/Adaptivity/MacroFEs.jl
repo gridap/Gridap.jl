@@ -38,7 +38,7 @@ end
 function FineToCoarseArray(
   rrule::RefinementRule,
   fine_data::Vector{<:AbstractVector},
-  ids :: FineToCoarseIndices
+  ids::FineToCoarseIndices
 )
   coarse_data = map(ids) do (fcells,fids)
     fdata = map((fcell,fid) -> getindex(fine_data[fcell],Int(fid)),fcells,fids)
@@ -209,8 +209,9 @@ function MacroReferenceFE(
   conn = get_cell_dof_ids(space)
   basis = FineToCoarseArray(rrule,collect(map(get_shapefuns,reffes)),conn)
   dofs  = FineToCoarseArray(rrule,collect(map(get_dof_basis,reffes)),conn)
-  face_dofs = get_macro_face_dofs(rrule,space,reffes)
-  face_own_dofs, face_own_perms = get_macro_face_own_dofs(rrule,space,reffes)
+  face_dofs = get_cface_to_dofs(rrule,space,reffes)
+  face_own_dofs = get_cface_to_own_dofs(rrule,space,reffes)
+  face_own_perms = get_cface_to_own_dof_permutations(rrule,space,reffes)
 
   ndofs = num_free_dofs(space)
   poly = get_polytope(rrule)
@@ -233,13 +234,13 @@ end
 
 function ReferenceFEs.get_face_own_dofs(reffe::GenericRefFE{MacroRefFE}, conf::Conformity)
   @check conf == Conformity(reffe)
-  rrule,conn,face_own_dofs,face_own_perms = get_metadata(reffe)
+  rrule,conn,face_own_dofs,face_own_perms = ReferenceFEs.get_metadata(reffe)
   return face_own_dofs
 end
 
 function ReferenceFEs.get_face_own_dofs_permutations(reffe::GenericRefFE{MacroRefFE}, conf::Conformity)
   @check conf == Conformity(reffe)
-  rrule,conn,face_own_dofs,face_own_perms = get_metadata(reffe)
+  rrule,conn,face_own_dofs,face_own_perms = ReferenceFEs.get_metadata(reffe)
   return face_own_perms
 end
 
@@ -261,53 +262,57 @@ function ReferenceFEs.Conformity(reffe::GenericRefFE{MacroRefFE},sym::Symbol)
 end
 
 """
-    get_macro_face_own_dofs(rrule::RefinementRule,space::FESpace,reffes::AbstractVector{<:ReferenceFE})
+    get_cface_to_own_dofs(
+      rrule::RefinementRule, 
+      space::FESpace, 
+      reffes::AbstractVector{<:ReferenceFE}
+    )
 
 Given a RefinementRule and a FESpace defined on it's grid (with a set of ReferenceFEs),
 returns the dofs owned by each face of the macro-element (i.e each face of the
 underlying polytope).
 """
-function get_macro_face_own_dofs(
+function get_cface_to_own_dofs(
   rrule::RefinementRule{<:Polytope{Dc}},
   space::FESpace,
   reffes::AbstractVector{<:ReferenceFE}
 ) where Dc
-  cface_to_own_dof_perms = get_cface_to_own_dof_permutations(
-    rrule, get_cface_to_own_fface_to_own_dofs(rrule,space,reffes)...
-  )
-  cface_to_own_dofs = map(first,cface_to_own_dof_perms)
-  return cface_to_own_dofs, cface_to_own_dof_perms
+  cface_to_own_fface_to_own_dofs = get_cface_to_own_fface_to_own_dofs(rrule,space,reffes)
+  cface_to_own_dofs = map(x -> vcat(x...), cface_to_own_fface_to_own_dofs)
+  return cface_to_own_dofs
 end
 
 """
-    get_macro_face_dofs(rrule::RefinementRule,space::FESpace,reffes::AbstractVector{<:ReferenceFE})
+    get_cface_to_dofs(
+      rrule::RefinementRule, 
+      space::FESpace, 
+      reffes::AbstractVector{<:ReferenceFE}
+    )
 
 Given a RefinementRule and a FESpace defined on it's grid (with a set of ReferenceFEs),
 returns the dofs in the closure of each face of the macro-element (i.e each face of the
 underlying polytope).
 """
-function get_macro_face_dofs(
+function get_cface_to_dofs(
   rrule::RefinementRule{<:Polytope{Dc}},
   space::FESpace,
   reffes::AbstractVector{<:ReferenceFE}
 ) where Dc
-  cface_to_own_fface_to_dofs, _ = get_cface_to_own_fface_to_own_dofs(rrule,space,reffes;own_dofs=false)
+  cface_to_own_fface_to_own_dofs = get_cface_to_own_fface_to_own_dofs(rrule,space,reffes)
   cface_to_fface_to_dofs = aggregate_cface_to_own_fface_data(
-    rrule, cface_to_own_fface_to_dofs
+    rrule, cface_to_own_fface_to_own_dofs
   )
-  cface_to_dofs = map(x -> collect(Int,vcat(x...)), cface_to_fface_to_dofs)
+  cface_to_dofs = map(x -> vcat(x...), cface_to_fface_to_dofs)
   return cface_to_dofs
 end
 
 """
-    get_cface_to_own_fface_to_dofs(
-      rrule::RefinementRule, space::FESpace, reffes::AbstractVector{<:ReferenceFE}; own_dofs::Bool = true
+    get_cface_to_own_fface_to_own_dofs(
+      rrule::RefinementRule, space::FESpace, reffes::AbstractVector{<:ReferenceFE}
     )
 
 Given a RefinementRule and a FESpace defined on it's grid (with a set of ReferenceFEs),
 returns for each coarse face the dofs owned by each fine face owned by the coarse face.
-
-The flag `own_dofs` allows to switch between owned dofs and dofs in the closure of the face.
 
 Returns two arrays
 
@@ -316,10 +321,23 @@ Returns two arrays
 
 """
 function get_cface_to_own_fface_to_own_dofs(
+  rrule::RefinementRule,
+  space::FESpace,
+  reffes::AbstractVector{<:ReferenceFE}
+)
+  cface_to_own_fface_to_own_dofs, _ = 
+    _compute_cface_to_own_fface_to_own_dofs_and_permutations(rrule,space,reffes)
+  return cface_to_own_fface_to_own_dofs
+end
+
+# This function computes at the same time the data structures
+#    [coarse face][owned fine face] -> [owned dofs]
+#    [coarse face][owned fine face][local permutation] -> [local permuted dofs]
+# which then are used to compute the owned dofs and the permutations for each cface.
+function _compute_cface_to_own_fface_to_own_dofs_and_permutations(
   rrule::RefinementRule{<:Polytope{Dc}},
   space::FESpace,
   reffes::AbstractVector{<:ReferenceFE};
-  own_dofs::Bool = true # Switch between owned and not owned dofs
 ) where Dc
   poly = get_polytope(rrule)
   topo = get_grid_topology(rrule.ref_grid)
@@ -339,7 +357,7 @@ function get_cface_to_own_fface_to_own_dofs(
   d_to_cell_to_lface = map(Df -> Geometry.get_faces(topo,Dc,Df),0:Dc)
 
   cell_to_dofs = get_cell_dof_ids(space)
-  cell_to_lface_to_dof = own_dofs ? lazy_map(get_face_own_dofs,reffes) : lazy_map(get_face_dofs,reffes)
+  cell_to_lface_to_dof = lazy_map(get_face_own_dofs,reffes)
   cell_to_lface_to_fpindex_to_ldofs = lazy_map(get_face_own_dofs_permutations,reffes)
   cell_to_offsets = lazy_map(r -> get_offsets(get_polytope(r)),reffes)
 
@@ -349,7 +367,7 @@ function get_cface_to_own_fface_to_own_dofs(
   # have already seen through the `touched` array.
   # We also collect local dof permutations on that face, which will be aggregated later.
   cface_to_own_fface_to_dofs = [
-    Vector{Vector{Int32}}(undef,cface_to_num_own_ffaces[cface]) for cface in 1:num_faces(poly)
+    Vector{Vector{Int}}(undef,cface_to_num_own_ffaces[cface]) for cface in 1:num_faces(poly)
   ]
   cface_to_own_fface_to_fpindex_to_ldofs = [
     Vector{Vector{Vector{Int}}}(undef,cface_to_num_own_ffaces[cface]) for cface in 1:num_faces(poly)
@@ -377,7 +395,7 @@ function get_cface_to_own_fface_to_own_dofs(
           cdface_dim = fface_to_cface_dim[fdface]   # Dimension of the cface
           cface = coffsets[cdface_dim+1] + cdface   # Id of the cface (within the polytope)
           pos = searchsortedfirst(cface_to_own_ffaces[cface],fface) # Id of fface (within the cface)
-          cface_to_own_fface_to_dofs[cface][pos] = collect(Int32,face_dofs)
+          cface_to_own_fface_to_dofs[cface][pos] = collect(Int,face_dofs)
           cface_to_own_fface_to_fpindex_to_ldofs[cface][pos] = face_fpindex_to_ldofs
           touched[fface] = true
         end
@@ -391,9 +409,9 @@ end
 
 """
     get_cface_to_own_dof_permutations(
-      rrule::RefinementRule,
-      cface_to_fface_to_dofs,
-      cface_to_fface_to_fpindex_to_ldofs
+      rrule::RefinementRule{<:Polytope},
+      space::FESpace,
+      reffes::AbstractVector{<:ReferenceFE}
     )
 
 Given a RefinementRule and information on the dofs owned by each fine face, compute 
@@ -403,11 +421,29 @@ Please refer to [`get_cface_to_own_fface_to_own_dofs`](@ref) for more informatio
 structure of the input arguments.
 """
 function get_cface_to_own_dof_permutations(
-  rrule::RefinementRule,
-  cface_to_fface_to_dofs,
-  cface_to_fface_to_fpindex_to_ldofs
+  rrule::RefinementRule{<:Polytope},
+  space::FESpace,
+  reffes::AbstractVector{<:ReferenceFE}
 )
-  # Compute permutations for each cface
+  # Dof permutation data
+  cface_to_fface_to_dofs, 
+    cface_to_fface_to_fpindex_to_ldofs = 
+      _compute_cface_to_own_fface_to_own_dofs_and_permutations(rrule,space,reffes)
+
+  # We need to convert the dof numberings (which are in the rrule numeration) into 
+  # the local numeration of the coarse faces. 
+  cface_to_fface_to_ldofs = map(cface_to_fface_to_dofs) do fface_to_dofs
+    fface_to_ldofs = Vector{Vector{Int}}(undef,length(fface_to_dofs))
+    offset = 0
+    for (fface,dofs) in enumerate(fface_to_dofs)
+      n_ldofs = length(dofs)
+      fface_to_ldofs[fface] = collect(offset+1:offset+n_ldofs)
+      offset += n_ldofs
+    end
+    return fface_to_ldofs
+  end
+
+  # Topological permutation data
   cface_to_cpindex_to_ffaces, 
     cface_to_cpindex_to_fpindex = get_cface_to_own_fface_permutations(rrule)
 
@@ -416,12 +452,12 @@ function get_cface_to_own_dof_permutations(
   n_cfaces = num_faces(poly)
   n_cperms = map(length,cface_to_cpindex_to_ffaces)
   cface_to_cpindex_to_dofs = [
-    Vector{Vector{Int32}}(undef,n_cperms[cface]) for cface in 1:n_cfaces
+    Vector{Vector{Int}}(undef,n_cperms[cface]) for cface in 1:n_cfaces
   ]
 
   # For each coarse face, and each coarse permutation of the cface
   for cface in 1:n_cfaces
-    fface_to_dofs = cface_to_fface_to_dofs[cface]
+    fface_to_dofs = cface_to_fface_to_ldofs[cface]
     fface_to_fpindex_to_ldofs = cface_to_fface_to_fpindex_to_ldofs[cface]
     for cpindex in 1:n_cperms[cface]
       p_ffaces = cface_to_cpindex_to_ffaces[cface][cpindex]      # Permuted fine faces

@@ -48,16 +48,24 @@ function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point})
   fi_cache = array_cache(fields)
   mi_cache = array_cache(cmaps)
 
-  # Generic caches
+  # Geometric caches
   child_ids = map(i -> x_to_cell(rr,getindex!(xi_cache,x,i)),eachindex(x))
-  
   xi = first(x)
   id = first(child_ids)
   mi = getindex!(mi_cache,cmaps,id)
   zi_cache = Fields.return_cache(mi,xi)
   zi = zero(evaluate!(zi_cache,mi,xi))
 
-  yi_cache = map(fii -> Fields.return_cache(fii,zi), fields)
+  # Evaluation caches
+  i_nnz = findfirst(!,is_zero)
+  @assert !isnothing(i_nnz)
+  fi_nonzero = getindex!(fi_cache,fields,i_nnz)
+  fi_zero = ZeroField(fi_nonzero)
+  yi_nonzero_cache = Fields.return_cache(fi_nonzero,zi)
+  yi_zero_cache = Fields.return_cache(fi_zero,zi)
+  yi_cache = (yi_nonzero_cache,yi_zero_cache)
+  
+  # Output cache
   yi_types = map(fii -> Fields.return_type(fii,zi), fields)
   yi_type  = first(yi_types)
   @assert all(t -> yi_type == t, yi_types)
@@ -73,15 +81,13 @@ function Geometry.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point}
 
   Arrays.setsize!(y_cache, size(x))
 
-  display(yi_cache)
-
   for i in eachindex(x)
     xi = getindex!(xi_cache,x,i)
     child_id = x_to_cell(rr,xi)
     fi = getindex!(fi_cache,fields,child_id)
     mi = getindex!(mi_cache,cmaps,child_id)
     zi = Fields.evaluate!(zi_cache,mi,xi)
-    _yi_cache = yi_cache[child_id]
+    _yi_cache = yi_cache[is_zero[child_id]+1]
     y_cache.array[i] = Fields.evaluate!(_yi_cache,fi,zi)
   end
   return y_cache.array
@@ -94,29 +100,33 @@ function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point},ch
   fields, is_zero = a.fine_fields, a.is_zero
   cmaps = get_inverse_cell_map(a.rrule)
 
-  # Generic caches
+  # Geometric caches
   xi_cache = array_cache(x)
   fi_cache = array_cache(fields)
   mi_cache = array_cache(cmaps)
   id_cache = array_cache(child_ids)
 
-  pos = findfirst(id -> !is_zero[id],child_ids)
-  xi = getindex!(xi_cache,x,pos)
-  id = getindex!(id_cache,child_ids,pos)
+  xi = getindex!(xi_cache,x,1)
+  id = getindex!(id_cache,child_ids,1)
   mi = getindex!(mi_cache,cmaps,id)
-  fi = getindex!(fi_cache,fields,id)
 
   zi_cache = Fields.return_cache(mi,xi)
-  zi = evaluate!(zi_cache,mi,xi)
-
-  yi_type  = Fields.return_type(fi,zi)
-  y_cache  = Arrays.CachedArray(zeros(yi_type,size(x)))
+  zi = zero(evaluate!(zi_cache,mi,xi))
 
   # Evaluation caches
-  fi_zero = ZeroField(fi)
-  yi_nonzero_cache = Fields.return_cache(fi,zi)
+  i_nonzero = findfirst(!,is_zero)
+  @assert !isnothing(i_nonzero)
+  fi_nonzero = getindex!(fi_cache,fields,i_nonzero)
+  fi_zero = ZeroField(fi_nonzero)
+  yi_nonzero_cache = Fields.return_cache(fi_nonzero,zi)
   yi_zero_cache = Fields.return_cache(fi_zero,zi)
   yi_cache = (yi_nonzero_cache,yi_zero_cache)
+
+  # Output cache
+  yi_types = map(fii -> Fields.return_type(fii,zi), fields)
+  yi_type  = first(yi_types)
+  @assert all(t -> yi_type == t, yi_types)
+  y_cache  = Arrays.CachedArray(zeros(yi_type,size(x)))
 
   return fi_cache, mi_cache, xi_cache, id_cache, zi_cache, yi_cache, y_cache
 end
