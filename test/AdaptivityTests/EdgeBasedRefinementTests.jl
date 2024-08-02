@@ -103,7 +103,7 @@ function test_grid_transfers(D,parent,model,order)
   @test l2_error(uh_c,uh_c_pr,dΩ_c) < 1.e-8
 end
 
-visualize = true
+visualize = false
 
 ############################################################################################
 ### Red-Green refinement
@@ -188,29 +188,17 @@ trian9 = Triangulation(ref_model9.model)
 visualize && writevtk(trian9, "test/AdaptivityTests/ref_model9")
 test_grid_transfers(2, ref_model8, ref_model9, 1)
 trian8 = Triangulation(ref_model8)
-@time ref_model10 = coarsen(ref_model9, coarsening_method="nvb", cells_to_coarsen=[5,6])
+# Basic coarsening test
+############################################################################################
+ref_model10 = coarsen(ref_model9, coarsening_method="nvb", cells_to_coarsen=[5,6])
 trian10 = Triangulation(ref_model10)
 coords = get_node_coordinates(ref_model10)
 visualize && writevtk(trian10, "test/AdaptivityTests/ref_model10")
-@time ref_model11 = coarsen(ref_model10, coarsening_method="nvb", cells_to_coarsen=[3])
+ref_model11 = coarsen(ref_model10, coarsening_method="nvb", cells_to_coarsen=[3])
 topo = get_grid_topology(ref_model11.model)
 trian11 = Triangulation(ref_model11)
 visualize && writevtk(trian11, "test/AdaptivityTests/ref_model11")
-##################################################################
-#@time ref_model12 = coarsen(ref_model11, coarsening_method="nvb", cells_to_coarsen=[1,2])
-#ref_modeln = ref_model9.model
-#let
-#	ref_modeln = ref_model9
-#	for n = 10:20
-#		@show n
-#		upper = trunc(Int, num_cells(ref_modeln))
-#		rand_cells = rand(1:10, 500)
-#		println("Hello")
-#		ref_modeln = refine(ref_modeln.model, refinement_method = "nvb", cells_to_refine=rand_cells)
-#		@time writevtk(Triangulation(ref_modeln),"test/AdaptivityTests/ref_model$n")
-#		println("Goodbye")
-#	end
-#end
+############################################################################################
 ref_model10 = refine(model2, refinement_method = "nvb", cells_to_refine = [4, 9])
 trian10 = Triangulation(ref_model10)
 visualize && writevtk(trian10, "test/AdaptivityTests/ref_model8")
