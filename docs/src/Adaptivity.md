@@ -82,11 +82,35 @@ However, we want to stress a couple of key performance-critical points:
 
 ### RefinementRule API
 
-Given a `RefinementRule`, the library provides a set of methods to compute the mappings between parent (coarse) face ids and child (fine) face ids (and vice-versa). The ids are local to the `RefinementRule`.
+Given a `RefinementRule`, the library provides a set of methods to compute the mappings between parent (coarse) face ids and child (fine) face ids (and vice-versa).
+
+The most basic information (that can directly be hardcoded in the RefinementRule for performance) are the mappings between parent face ids and child face ids. These are provided by:
 
 ```@docs
 get_d_to_face_to_child_faces
 get_d_to_face_to_parent_face
+```
+
+On top of these two basic mappings, a whole plethora of additional topological mappings can be computed.
+These first set of routines extend the ReferenceFEs API to provide information on the face-to-node mappings and permutations:
+
+```@docs
+ReferenceFEs.get_face_vertices
+ReferenceFEs.get_face_coordinates
+ReferenceFEs.get_vertex_permutations
+ReferenceFEs.get_face_vertex_permutations
+```
+
+We also provide face-to-face maps:
+
+```@docs
+get_cface_to_num_own_ffaces
+get_cface_to_own_ffaces
+get_cface_to_ffaces
+get_cface_to_own_ffaces_to_lnodes
+get_cface_to_ffaces_to_lnodes
+get_cface_to_fface_permutations
+aggregate_cface_to_own_fface_data
 get_face_subface_ldof_to_cell_ldof
 ```
 
