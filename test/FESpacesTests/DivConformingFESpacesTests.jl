@@ -17,7 +17,7 @@ function test_div_v_q_equiv(U,V,P,Q,Ω)
   p=get_trial_fe_basis(P)
 
   dΩ=Measure(Ω,1)
-  dΩᵣ=Measure(Ω,1,ReferenceDomain())
+  dΩᵣ=Measure(Ω,1,integration_domain_style=ReferenceDomain())
 
   a1(p,v)=∫(divergence(v)*p)dΩ
   a2(p,v)=∫(DIV(v)*p)dΩᵣ

@@ -92,6 +92,9 @@ change_eltype(::VectorValue{D,T1},::Type{T2}) where {D,T1,T2} = change_eltype(Ve
 
 get_array(arg::VectorValue{D,T}) where {D,T} = convert(SVector{D,T}, arg)
 
+real(x::VectorValue{D,<:Complex}) where {D} = VectorValue{D}(real.(x.data))
+imag(x::VectorValue{D,<:Complex}) where {D} = VectorValue{D}(imag.(x.data))
+
 ###############################################################
 # Introspection (VectorValue)
 ###############################################################

@@ -53,11 +53,16 @@ end
   @check condition "Error message"
 
 Macro used to make sure that condition is fulfilled, like `@assert`
-but the check gets deactivated when running Julia with --boundscheck=no
+but the check gets deactivated when running Gridap in performance mode.
 """
 macro check(test,msg="A check failed")
-  quote
-    @boundscheck @assert $(esc(test)) $(esc(msg))
+  @static if execution_mode == "debug"
+    quote
+      @assert $(esc(test)) $(esc(msg))
+    end
+  else
+    quote
+      nothing
+    end
   end
 end
-

@@ -37,8 +37,12 @@ function allocate_vector(::Type{V},indices) where V
 end
 
 function allocate_vector(::Type{V},n::Integer) where V
-  T = eltype(V)
-  zeros(T,n)
+  V(undef,n)
+end
+
+function allocate_vector(::Type{<:BlockVector{T,VV}},indices::BlockedUnitRange) where {T,VV}
+  V = eltype(VV)
+  mortar(map(ids -> allocate_vector(V,ids),blocks(indices)))
 end
 
 """
@@ -47,8 +51,22 @@ end
 Allocate a vector of type `V` in the range of matrix `matrix`.
 """
 function allocate_in_range(::Type{V},matrix) where V
-  n = size(matrix,1)
-  allocate_vector(V,n)
+  rows = axes(matrix,1)
+  allocate_vector(V,rows)
+end
+
+"""
+    allocate_in_range(matrix::AbstractMatrix{T}) where T
+
+Allocate a vector in the range of matrix `matrix`.
+"""
+function allocate_in_range(matrix::AbstractMatrix{T}) where T
+  allocate_in_range(Vector{T},matrix)
+end
+
+function allocate_in_range(matrix::BlockMatrix{T}) where T
+  V = BlockVector{T,Vector{Vector{T}}}
+  allocate_in_range(V,matrix)
 end
 
 """
@@ -57,8 +75,22 @@ end
 Allocate a vector of type `V` in the domain of matrix `matrix`.
 """
 function allocate_in_domain(::Type{V},matrix) where V
-  n = size(matrix,2)
-  allocate_vector(V,n)
+  cols = axes(matrix,2)
+  allocate_vector(V,cols)
+end
+
+"""
+    allocate_in_domain(matrix::AbstractMatrix{T}) where T
+
+Allocate a vector in the domain of matrix `matrix`.
+"""
+function allocate_in_domain(matrix::AbstractMatrix{T}) where T
+  allocate_in_domain(Vector{T},matrix)
+end
+
+function allocate_in_domain(matrix::BlockMatrix{T}) where T
+  V = BlockVector{T,Vector{Vector{T}}}
+  allocate_in_domain(V,matrix)
 end
 
 """
@@ -210,6 +242,67 @@ else
       end
     end
   end
+end
+
+"""
+    axpy_entries!(α::Number, A::T, B::T) where {T<: AbstractMatrix} -> T
+
+Efficient implementation of axpy! for sparse matrices.
+"""
+function axpy_entries!(α::Number, A::T, B::T) where {T<:AbstractMatrix}
+  iszero(α) && return B
+
+  axpy!(α, A, B)
+  B
+end
+
+# For sparse matrices, it is surprisingly quicker to call `@. B += α * A` than
+# `axpy!(α, A, B)`.` Calling axpy! on the nonzero values of A and B is the most
+# efficient approach but this is only possible when A and B have the same
+# sparsity pattern. The checks add some non-negligible overhead so we make them
+# optional by adding a keyword.
+const cannot_axpy_entries_msg = """
+It is only possible to efficiently add two sparse matrices that have the same
+sparsity pattern.
+"""
+
+function axpy_entries!(
+  α::Number, A::T, B::T;
+  check::Bool=true
+) where {T<:SparseMatrixCSC}
+  iszero(α) && return B
+
+  if check
+    msg = cannot_axpy_entries_msg
+    @check rowvals(A) == rowvals(B) msg
+    @check all(nzrange(A, j) == nzrange(B, j) for j in axes(A, 2)) msg
+  end
+
+  axpy!(α, nonzeros(A), nonzeros(B))
+  B
+end
+
+function axpy_entries!(
+  α::Number, A::T, B::T;
+  check::Bool=true
+) where {T<:Union{SparseMatrixCSR,SymSparseMatrixCSR}}
+  iszero(α) && return B
+
+  if check
+    msg = cannot_axpy_entries_msg
+    @check colvals(A) == colvals(B) msg
+    @check all(nzrange(A, j) == nzrange(B, j) for j in axes(A, 1)) msg
+  end
+
+  axpy!(α, nonzeros(A), nonzeros(B))
+  B
+end
+
+function axpy_entries!(α::Number, A::T, B::T) where {T<:AbstractBlockMatrix}
+  map(blocks(A), blocks(B)) do a, b
+    axpy_entries!(α, a, b)
+  end
+  B
 end
 
 #
@@ -444,7 +537,7 @@ function add_entry!(combine::Function,A::AbstractSparseMatrix,v::Number,i,j)
   k = nz_index(A,i,j)
   nz = nonzeros(A)
   Aij = nz[k]
-  nz[k] = combine(v,Aij)
+  nz[k] = combine(Aij,v)
   A
 end
 

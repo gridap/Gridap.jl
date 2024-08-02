@@ -42,6 +42,7 @@ export change_domain, move_contributions
 
 include("RefinementRules.jl")
 include("FineToCoarseFields.jl")
+include("OldToNewFields.jl")
 include("FineToCoarseReferenceFEs.jl")
 include("AdaptivityGlues.jl")
 include("AdaptedDiscreteModels.jl")
@@ -49,5 +50,6 @@ include("AdaptedTriangulations.jl")
 include("CompositeQuadratures.jl")
 include("EdgeBasedRefinement.jl")
 include("EdgeBasedCoarsening.jl")
+include("SimplexifyRefinement.jl")
 
 end # module

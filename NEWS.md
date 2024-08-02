@@ -7,14 +7,129 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Added WriteVTK kwargs to control the output encoding for vtk files. Since PR[#1016](https://github.com/gridap/Gridap.jl/pull/1016).
+
+### Fixed
+
+- Passing `kwargs` from `refine` to `simplexify` functions in Adaptivity. Since PR[#1015](https://github.com/gridap/Gridap.jl/pull/1015).
+
+## [0.18.3] - 2024-07-11
+
+### Added
+
+- Added more features to Adaptivity. Notably: 3D uniform edge-based refinement for HEX and TETs. Barycentric refinement for simplices. Simplexify as a new refinement strategy. Since PR[#1013](https://github.com/gridap/Gridap.jl/pull/1013).
+
+- Define `GeneralPolytope` that represents general polytopes in 2 and 3 dimensions. Since PR[#1006](https://github.com/gridap/Gridap.jl/pull/1006).
+
+### Changed
+
+- Added local preferences for Gridap through `Preferences.jl`. The macro `@check` can now be activated/deactivated by using the local preference `execution_mode`. Since PR[#1014](https://github.com/gridap/Gridap.jl/pull/1014).
+
+## [0.18.2] - 2024-05-02
+
+### Fixed
+
+- Bugfix in `get_face_dofs` for Nedelec GenericRefFE. Since PR[#1005](https://github.com/gridap/Gridap.jl/pull/1005).
+- Ensure deterministic behavior for matrix assembly involving multiple domains. Since PR[#1004](https://github.com/gridap/Gridap.jl/pull/1004).
+
+## [0.18.1] - 2024-04-12
+
+### Changed
+
+- Changed the sign of the residual in `TransientLinearFEOperator` to align with the conventions of `AffineFEOperator`. Since PR[#996](https://github.com/gridap/Gridap.jl/pull/996).
+
+### Fixed
+
+- Bugfix in `restrict_to_field` for `BlockMultiFieldStyle`. Since PR[#993](https://github.com/gridap/Gridap.jl/pull/993).
+
+## [0.18.0] - 2024-04-12
+
+### Breaking
+
+- ODE module extensive refactor. Breaking changes! See docs and PR for details. Since PR[965](https://github.com/gridap/Gridap.jl/pull/965).
+- Fixed name clash with `Statistics.mean`. Since PR[#988](https://github.com/gridap/Gridap.jl/pull/988).
+- Deprecated `SubVector` in favor of Julia's `view`. Since PR[#989](https://github.com/gridap/Gridap.jl/pull/989).
+
+### Added
+
+- Added some missing API methods to `Assemblers` and `MultiField`. Since PR[#985](https://github.com/gridap/Gridap.jl/pull/985).
+
+### Fixed
+
+- Fix when evaluating `\circ` operator with `CellState`. Since PR[#987](https://github.com/gridap/Gridap.jl/pull/987).
+
+## [0.17.23] - 2024-01-28
+
+### Changed
+
+- Changed how `symbolic_loop_matrix_vector!` loop works. Now it also takes account vector entries touched from matvecdata. Since PR[#975](https://github.com/gridap/Gridap.jl/pull/975).
+
+## [0.17.22] - 2024-01-12
+
+### Added
+
+- Added `get_dof_to_node` and `get_dof_to_comp` for `LagrangianDofBasis`. Since PR[#964](https://github.com/gridap/Gridap.jl/pull/964).
+
+### Changed
+
+- Changed how `allocate_vector` works. Now it only allocates, instead of allocating+initialising to zero. Since PR[#963](https://github.com/gridap/Gridap.jl/pull/963).
+
+### Fixed
+
+- Fixed issue where `FineToCoarseField` would not work for vector-valued fields. Since PR[#970](https://github.com/gridap/Gridap.jl/pull/970).
+- Fixed issue where `BlockSparseMatrixAssembler` would not work correctly when permuting variables. Since PR[#971](https://github.com/gridap/Gridap.jl/pull/971).
+
+## [0.17.21] - 2023-12-04
+
+### Added
+
+- Implemented real/imag for VectorValues
+- Explicit Runge-Kutta ODE Solvers. Since PR [#952](https://github.com/gridap/Gridap.jl/pull/952)
+- Improved the methods `allocate_in_range` and `allocate_in_domain` with support for `BlockArrays` and distributed arrays. Since PR[#960](https://github.com/gridap/Gridap.jl/pull/960).
+
+### Fixed
+
+- `BlockMultiFieldStyle` available for `TransientMultiFieldFESpaces` since PR [#946](https://github.com/gridap/Gridap.jl/pull/946).
+- When creating `DiscreteModelPortions`, some of the `FaceLabeling` arrays were being aliased. This caused issues when adding tags to distributed models in debug mode. Since PR [#956](https://github.com/gridap/Gridap.jl/pull/956).
+- Function `add_entry!` was inconsistent for `AbstractMatrix` and `AbstractSparseMatrix`. Since PR[#959](https://github.com/gridap/Gridap.jl/pull/959).
+
+## [0.17.20] - 2023-10-01
+
+### Added
+
+- Block assembly now generalised to work with `AbstractBlockArrays`, to include changes in GridapDistributed. Since PR [939](https://github.com/gridap/Gridap.jl/pull/939).
+- Implici-Explicit Runge-Kutta ODE solvers. Since PR [#919](https://github.com/gridap/Gridap.jl/pull/919).
+
+### Fixed
+
+- Using Broadcasting(\circ) instead of \circ in one of the lazy_maps used to transform a coarse field into a fine field. Since PR [#938](https://github.com/gridap/Gridap.jl/pull/938).
+- Better infinite norm computation in `Algebra._check_convergence`. Now works for any `AbstractArray` type, including `PVector`. Since PR [#940](https://github.com/gridap/Gridap.jl/pull/940).
+- Updated Runge-Kutta solver. Since PR [#919](https://github.com/gridap/Gridap.jl/pull/919).
+
+## [0.17.19] - 2023-08-23
+
+### Fixed
+
+- Reimplemented `DomainStyle` for `CellQuadrature` to fix breaking low-level Poisson tutorial. Since PR [#937](https://github.com/gridap/Gridap.jl/pull/937).
+
+## [0.17.18] - 2023-08-15
+
 ### Added
 
 - Jacobi polynomial bases. Since PR [#896](https://github.com/gridap/Gridap.jl/pull/896).
-
 - Replaced newest vertex bisection mesh adaptation in
   `src/Geometry/NewestVertexBisection.jl` with appropriate changes to
-  `src/Adaptivity/EdgeBasedRefinement.jl`. see PR
+  `src/Adaptivity/EdgeBasedRefinement.jl`. Since PR
   [#901](https://github.com/gridap/Gridap.jl/pull/901).
+- When refining `DiscreteModels`, the `FaceLabeling` of the resulting `AdaptedDiscreteModel` will now correctly inhering the tags of the parent model. This has been made possible by the addition of the method `get_d_to_face_to_parent_face`. Since PR[#886](https://github.com/gridap/Gridap.jl/pull/886).
+- Added support for mixed adaptivity (i.e coarsening and refining), as well as non-conforming adaptivity. Since PR[#886](https://github.com/gridap/Gridap.jl/pull/886).
+- Added support for block assembly of FE systems. Two new types `BlockMultiFieldStyle` and `BlockSparseMatrixAssemblers` have been added. Since PR[#915](https://github.com/gridap/Gridap.jl/pull/915).
+
+### Changed
+
+- The API of `CellQuadrature` has now both data and integration domain styles as keyword arguments. Old signatures are deprecated. Since PR [#885](https://github.com/gridap/Gridap.jl/pull/885).
 
 ### Fixed
 
@@ -22,8 +137,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed the method `get_normal_vector` for `AdaptedTriangulation`. The method `get_facet_normal`
   was using default, it's now using the spetialized implementation for the underlying triangulation type.
   Since PR [#884](https://github.com/gridap/Gridap.jl/pull/884).
-
 - Fixed `cell_dof_ids` for the case of vectorial `ConstantFESpace`. Since PR [#888](https://github.com/gridap/Gridap.jl/pull/888)
+- Fixed generation of Modal C0 bases for Julia 1.9. Since PR [#918](https://github.com/gridap/Gridap.jl/pull/918).
+- Fixed some edge cases for `change_domain` between `AdaptedTriangulations` where inneficient coordinate transformations would be applied between physical and reference domains. Since PR[#886](https://github.com/gridap/Gridap.jl/pull/886).
+- Fixed: Domain limits can now be of any type (notably, floats) when refining `CartesianDiscreteModels`. Since PR[#886](https://github.com/gridap/Gridap.jl/pull/886).
 
 ## [0.17.17] - 2023-02-24
 

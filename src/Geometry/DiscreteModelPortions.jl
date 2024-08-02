@@ -164,7 +164,9 @@ function _setup_labels_p(labels,d_to_dface_to_parent_dface)
     _update_labels_dim!(face_to_label,oface_to_label,face_to_oface)
   end
 
-  FaceLabeling(d_to_dface_to_entity,labels.tag_to_entities,labels.tag_to_name)
+  tag_to_entities = copy(labels.tag_to_entities)
+  tag_to_name     = copy(labels.tag_to_name)
+  FaceLabeling(d_to_dface_to_entity,tag_to_entities,tag_to_name)
 end
 
 function _update_labels_dim!(face_to_label,oface_to_label,face_to_oface)

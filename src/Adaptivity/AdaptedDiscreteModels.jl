@@ -1,10 +1,10 @@
 
 """
-  AdaptedDiscreteModel
 
-  `DiscreteModel` created by refining/coarsening another `DiscreteModel`. 
-  The refinement/coarsening hierarchy can be traced backwards by following the 
-  `parent` pointer chain. This allows the transfer of dofs 
+  `DiscreteModel` created by refining/coarsening another `DiscreteModel`.
+
+  The refinement/coarsening hierarchy can be traced backwards by following the
+  `parent` pointer chain. This allows the transfer of dofs
   between `FESpaces` defined on this model and its ancestors.
 
 """
@@ -51,17 +51,15 @@ is_related(m1::DiscreteModel,m2::DiscreteModel) = is_child(m1,m2) || is_child(m2
 
 # Model Adaptation
 
-# Handle the user's requested choice for refinement
-function string_to_refinement(refinement_method::String, model)
-  refinement_method == "red_green" && return RedGreenRefinement()
-  refinement_method == "nvb" && return NVBRefinement(model)
-  error("refinement_method $refinement_method not recognized")
-end
-
 function string_to_coarsening(coarsening_method::String, model)
   coarsening_method == "nvb" && return NVBCoarsening(model)
 end
 
+"""
+  function refine(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
+
+  Returns an `AdaptedDiscreteModel` that is the result of refining the given `DiscreteModel`.
+"""
 function refine(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
 end
@@ -71,12 +69,16 @@ function refine(model::AdaptedDiscreteModel,args...;kwargs...)
   return AdaptedDiscreteModel(ref_model.model,model,ref_model.glue)
 end
 
+"""
+  function coarsen(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
+
+  Returns an `AdaptedDiscreteModel` that is the result of coarsening the given `DiscreteModel`.
+"""
 function coarsen(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
 end
 
 function coarsen(model::UnstructuredDiscreteModel,args...;coarsening_method="nvb",kwargs...)
-  println("Entering first coarsen")
   return coarsen(string_to_coarsening(coarsening_method, model),model,args...;kwargs...)
 end
 
@@ -85,6 +87,12 @@ function coarsen(model::AdaptedDiscreteModel,args...;kwargs...)
   return AdaptedDiscreteModel(coarse_model.model,model,coarse_model.glue)
 end
 
+"""
+  function adapt(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
+
+  Returns an `AdaptedDiscreteModel` that is the result of adapting (mixed coarsening and refining)
+  the given `DiscreteModel`.
+"""
 function adapt(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
 end
@@ -102,6 +110,15 @@ function refine(model::UnstructuredDiscreteModel,::AdaptivityMethod,args...;kwar
   @abstractmethod
 end
 
+# Handle the user's requested choice for refinement
+function string_to_refinement(refinement_method::String, model)
+  refinement_method == "red_green" && return RedGreenRefinement()
+  refinement_method == "nvb" && return NVBRefinement(model)
+  refinement_method == "barycentric" && return BarycentricRefinement()
+  refinement_method == "simplexify" && return SimplexifyRefinement()
+  error("refinement_method $refinement_method not recognized")
+end
+
 function refine(model::UnstructuredDiscreteModel,args...;refinement_method="red_green",kwargs...)
   return refine(string_to_refinement(refinement_method, model),model,args...;kwargs...)
 end
@@ -117,24 +134,31 @@ function refine(model::CartesianDiscreteModel{Dc}, cell_partition::Tuple) where 
   desc = Geometry.get_cartesian_descriptor(model)
   nC   = desc.partition
 
-  # Refined model
-  domain    = _get_cartesian_domain(desc)
-  model_ref = CartesianDiscreteModel(domain,cell_partition.*nC)
-
-  # Glue
+  # Refinement Glue
   f2c_cell_map, fcell_to_child_id = _create_cartesian_f2c_maps(nC,cell_partition)
-  faces_map      = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
-  reffe          = LagrangianRefFE(Float64,first(get_polytopes(model)),1)
-  rrules         = RefinementRule(reffe,cell_partition)
+  faces_map = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
+  reffe     = LagrangianRefFE(Float64,first(get_polytopes(model)),1)
+  rrules    = RefinementRule(reffe,cell_partition)
   glue = AdaptivityGlue(faces_map,fcell_to_child_id,rrules)
 
+  # Refined model
+  domain     = _get_cartesian_domain(desc)
+  _model_ref = CartesianDiscreteModel(domain,cell_partition.*nC)
+
+  # Propagate face labels
+  coarse_labels = get_face_labeling(model)
+  coarse_topo   = get_grid_topology(model)
+  fine_topo     = get_grid_topology(_model_ref)
+  fine_labels   = refine_face_labeling(coarse_labels,glue,coarse_topo,fine_topo)
+
+  model_ref = CartesianDiscreteModel(get_grid(_model_ref),fine_topo,fine_labels)
   return AdaptedDiscreteModel(model_ref,model,glue)
 end
 
 function _get_cartesian_domain(desc::CartesianDescriptor{D}) where D
   origin = desc.origin
   corner = origin + VectorValue(desc.sizes .* desc.partition)
-  domain = Vector{Int}(undef,2*D)
+  domain = Vector{eltype(origin)}(undef,2*D)
   for d in 1:D
     domain[d*2-1] = origin[d]
     domain[d*2]   = corner[d]
@@ -142,14 +166,14 @@ function _get_cartesian_domain(desc::CartesianDescriptor{D}) where D
   return Tuple(domain)
 end
 
-@generated function _c2v(idx::Union{NTuple{N,T},CartesianIndex{N}},sizes::NTuple{N,T}) where {N,T}    
+@generated function _c2v(idx::Union{NTuple{N,T},CartesianIndex{N}},sizes::NTuple{N,T}) where {N,T}
   res = :(idx[1])
   for d in 1:N-1
     ik = :((idx[$(d+1)]-1))
     for k in 1:d
         ik = :($ik * sizes[$k])
     end
-    res = :($res + $ik) 
+    res = :($res + $ik)
   end
   return res
 end
@@ -157,7 +181,7 @@ end
 @generated function _create_cartesian_f2c_maps(nC::NTuple{N,T},ref::NTuple{N,T}) where {N,T}
   J_f2c   = Meta.parse(prod(["(",["1+(I[$k]-1)÷ref[$k]," for k in 1:N]...,")"]))
   J_child = Meta.parse(prod(["(",["1+(I[$k]-1)%ref[$k]," for k in 1:N]...,")"]))
-  
+
   return :(begin
     nF = nC .* ref
     f2c_map   = Vector{Int}(undef,prod(nF))
@@ -169,7 +193,14 @@ end
       f2c_map[i] = _c2v(J_f2c,nC)
       child_map[i] = _c2v(J_child,ref)
     end
-        
+
     return f2c_map, child_map
   end)
+end
+
+function get_d_to_fface_to_cface(model::AdaptedDiscreteModel)
+  ftopo = get_grid_topology(get_model(model))
+  ctopo = get_grid_topology(get_parent(model))
+  glue  = get_adaptivity_glue(model)
+  return get_d_to_fface_to_cface(glue,ctopo,ftopo)
 end

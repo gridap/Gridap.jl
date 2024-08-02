@@ -37,7 +37,6 @@ struct NVBCoarsening{T} <: EdgeBasedCoarsening
 end
 
 function NVBCoarsening(model::DiscreteModel{Dc,Dp}) where {Dc,Dp}
-    println("Entering NVBCoarsening")
     topo = model.grid_topology
     @check all(p -> p == TRI, get_polytopes(topo))
     c2e_map = get_faces(topo, Dc, 1)
@@ -69,6 +68,28 @@ function coarsen(
     ## Create ref glue
     glue = _get_refinement_glue(topo, ref_model.grid_topology, rrules)
     return AdaptedDiscreteModel(ref_model, model, glue)
+end
+
+function _get_refinement_glue(ftopo ::UnstructuredGridTopology{Dc},
+                              ctopo ::UnstructuredGridTopology{Dc},
+                              rrules::AbstractVector{<:RefinementRule}) where {Dc}
+  nC_old = num_faces(ctopo,Dc)
+  nC_new = num_faces(ftopo,Dc)
+
+  f2c_cell_map      = Vector{Int}(undef,nC_new)
+  fcell_to_child_id = Vector{Int}(undef,nC_new)
+
+  k = 1
+  for iC = 1:nC_old
+    rr = rrules[iC]
+    range = k:k+num_subcells(rr)-1
+    f2c_cell_map[range] .= iC
+    fcell_to_child_id[range] .= collect(1:num_subcells(rr))
+    k += num_subcells(rr)
+  end
+
+  f2c_faces_map = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
+  return AdaptivityGlue(f2c_faces_map,fcell_to_child_id,rrules)
 end
 
 function _is_newest_vertex(n, e2n_map_cache, e2n_map, longest_edge_gid)
@@ -114,7 +135,6 @@ function _combine_brothers(
     c_to_longest_edge_gid,
     coords,
 )
-    println("------------------------")
     new_coarse_nodes = Vector{Vector{eltype(c_to_longest_edge_gid)}}()
     for (c1, c2) in brothers
         nodes = Set{eltype(c_to_longest_edge_gid)}()
@@ -133,7 +153,7 @@ function _combine_brothers(
         push!(new_coarse_nodes, coarse_nodes)
         my_coords = coords[coarse_nodes]
     end
-    @show new_coarse_nodes
+    return new_coarse_nodes
 end
 
 function _get_brother_pairs(good_nodes, n2c_map_cache, n2c_map, c2e_map_cache, c2e_map, cell_to_parent_gid)
@@ -158,15 +178,12 @@ function _get_brother_pairs(good_nodes, n2c_map_cache, n2c_map, c2e_map_cache, c
             edges2 = getindex!(c2e_map_cache, c2e_map, patch_cells[2]) |> copy
             edges3 = getindex!(c2e_map_cache, c2e_map, patch_cells[3]) |> copy
             if !intersect_empty(edges1, edges2)#!isempty(intersect(edges1, edges2))
-                println("edges1, edges2")
                 brother_pairs =
                 [Pair(patch_cells[1], patch_cells[2]), Pair(patch_cells[3], patch_cells[4])]
             elseif !intersect_empty(edges1, edges3)
-                println("edges1, edges3")
                 brother_pairs =
                 [Pair(patch_cells[1], patch_cells[3]), Pair(patch_cells[2], patch_cells[4])]
             else
-                println("edges1, edges4")
                 brother_pairs =
                 [Pair(patch_cells[1], patch_cells[4]), Pair(patch_cells[2], patch_cells[3])]
             end
@@ -228,14 +245,10 @@ function _coarsen_unstructured_topology(
             push!(cells_to_remove, pair.second)
         end
     end
-    @show good_nodes
-    @show cells_to_remove
     new_cells = []
     for brothers in values(all_brother_pairs)
         union!(new_cells, _combine_brothers(brothers, e2n_map, e2n_map_cache, c_to_longest_edge_gid, coords))
     end
-    @show all_brother_pairs
-    @show new_cells
     # Setup c2n_map_new
     num_new_cells = length(c2n_map) - length(cells_to_remove)
     c2n_map_new = Vector{Vector{eltype(cell_to_parent_gid)}}(undef,num_new_cells)
@@ -255,8 +268,6 @@ function _coarsen_unstructured_topology(
             nodes[i] -= offset
         end
     end
-    @show length(c2n_map_new)
-    @show length(coords_new)
     c2n_map_new = Table(c2n_map_new)
     #coords_new = get_new_coordinates_from_faces(topo, faces_list)
     #c2n_map_new = get_refined_cell_to_vertex_map(topo, rrules, faces_list)

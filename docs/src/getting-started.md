@@ -20,5 +20,3 @@ For further information about how to install and manage Julia packages, see the
 ## Further steps
 
 We recommend to follow the [Gridap Tutorials](https://gridap.github.io/Tutorials/dev/) in order to get familiar with the library.
-
-

@@ -726,4 +726,3 @@ function test_polytope(p::Polytope{D};optional::Bool=false) where D
     @test isa(is_n_cube(p),Bool)
   end
 end
-

@@ -58,4 +58,16 @@ r = r1*r2*h
 #using Gridap.Visualization
 #writevtk(x,"x",cellfields=["f"=>f,"g"=>g])
 
+# Test for evaluating operations involving cellstates
+model = CartesianDiscreteModel((0.0,1.0,0,1.0,0,1),(2,1,1))
+Ω = Interior(model,[1,2])
+Γ = Boundary(Ω)
+dΩ = Measure(Ω,0)
+dΓ = Measure(Γ,0)
+a = CellState(1.0,dΩ)
+b = CellState(1.0,dΓ)
+id(z)=z
+@test sum(∫((id∘a))dΩ) == sum(∫(a)dΩ)
+@test sum(∫((id∘b))dΓ) == sum(∫(b)dΓ)
+
 end # module
