@@ -363,6 +363,41 @@ function get_face_subface_ldof_to_cell_ldof(
 end
 
 """
+    get_cface_to_num_own_ffaces(rr::RefinementRule)
+
+Given a `RefinementRule`, returns for each parent/coarse face the number of child/fine faces of all 
+dimensions that it owns. 
+"""
+function get_cface_to_num_own_ffaces(rr::RefinementRule)
+  d_to_face_to_parent_face, d_to_face_to_parent_face_dim = get_d_to_face_to_parent_face(rr)
+  return _compute_cface_to_num_own_ffaces(
+    rr,d_to_face_to_parent_face,d_to_face_to_parent_face_dim
+  )
+end
+
+function _compute_cface_to_num_own_ffaces(
+  rr::RefinementRule,
+  d_to_face_to_parent_face,
+  d_to_face_to_parent_face_dim
+)
+  poly = get_polytope(rr)
+  Dc   = num_cell_dims(poly)
+  coffsets = get_offsets(poly)
+
+  cface_to_num_own_ffaces = zeros(Int32,num_faces(poly))
+  for fface_dim in 0:Dc
+    parent_faces     = d_to_face_to_parent_face[fface_dim+1]
+    parent_faces_dim = d_to_face_to_parent_face_dim[fface_dim+1]
+    for (cface,cface_dim) in zip(parent_faces,parent_faces_dim)
+      co = coffsets[cface_dim+1]
+      cface_to_num_own_ffaces[cface+co] += 1
+    end
+  end
+
+  return cface_to_num_own_ffaces
+end
+
+"""
     get_cface_to_own_ffaces(rr::RefinementRule)
 
 Given a `RefinementRule`, returns for each parent/coarse face the child/fine faces of all 
@@ -370,7 +405,19 @@ dimensions that it owns.
 """
 function get_cface_to_own_ffaces(rr::RefinementRule)
   d_to_face_to_parent_face, d_to_face_to_parent_face_dim = get_d_to_face_to_parent_face(rr)
+  return _compute_cface_to_own_ffaces(
+    rr,d_to_face_to_parent_face,d_to_face_to_parent_face_dim
+  )
+end
 
+function _compute_cface_to_own_ffaces(
+  rr::RefinementRule,
+  d_to_fface_to_cface,
+  d_to_fface_to_cface_dim,
+  cface_to_num_own_ffaces = _compute_cface_to_num_own_ffaces(
+    rr, d_to_fface_to_cface, d_to_fface_to_cface_dim
+  )
+)
   poly = get_polytope(rr)
   topo = get_grid_topology(rr.ref_grid)
   Dc   = num_cell_dims(poly)
@@ -378,18 +425,20 @@ function get_cface_to_own_ffaces(rr::RefinementRule)
   coffsets = get_offsets(poly)
   foffsets = get_offsets(topo)
 
-  cface_own_ffaces = [Int32[] for cface in 1:num_faces(poly)]
+  cface_to_own_ffaces = map(nfaces -> zeros(Int32,nfaces),cface_to_num_own_ffaces)
+  ptrs = fill(1,num_faces(poly))
   for fface_dim in 0:Dc
-    parent_faces     = d_to_face_to_parent_face[fface_dim+1]
-    parent_faces_dim = d_to_face_to_parent_face_dim[fface_dim+1]
-    for (fface,(cface,cface_dim)) in enumerate(zip(parent_faces,parent_faces_dim))
+    cfaces     = d_to_fface_to_cface[fface_dim+1]
+    cfaces_dim = d_to_fface_to_cface_dim[fface_dim+1]
+    for (fface,(cface,cface_dim)) in enumerate(zip(cfaces,cfaces_dim))
       co = coffsets[cface_dim+1]
       fo = foffsets[fface_dim+1]
-      push!(cface_own_ffaces[cface+co],fface+fo)
+      cface_to_own_ffaces[cface+co][ptrs[cface+co]] = fface+fo
+      ptrs[cface+co] += 1
     end
   end
 
-  return cface_own_ffaces
+  return cface_to_own_ffaces
 end
 
 """
@@ -401,28 +450,68 @@ dimensions that are on it (owned and not owned).
 The implementation aggregates the results of `get_cface_to_own_ffaces`.
 """
 function get_cface_to_ffaces(rr::RefinementRule)
+  cface_to_own_ffaces = get_cface_to_own_ffaces(rr)
+  return aggregate_cface_to_own_fface_data(rr,cface_to_own_ffaces,cface_to_own_ffaces)
+end
+
+"""
+    aggregate_cface_to_own_fface_data(
+        rr::RefinementRule,
+        cface_to_own_fface_to_data :: AbstractVector{<:AbstractVector{T}}
+    ) where T
+  
+Given a `RefinementRule`, and a data structure `cface_to_own_fface_to_data` that contains
+data for each child/fine face owned by each parent/coarse face, returns a data structure
+`cface_to_fface_to_data` that contains the data for each child/fine face contained in the 
+closure of each parent/coarse face (i.e the fine faces are owned and not owned).
+
+The implementation makes sure that the resulting data structure is ordered according to the
+fine face numbering in `get_cface_to_ffaces(rrule)` (which in turn is by increasing fine face id).
+"""
+function aggregate_cface_to_own_fface_data(
+  rr::RefinementRule,
+  cface_to_own_fface_to_data :: AbstractVector{<:AbstractVector{T}}
+) where T
+  cface_to_own_ffaces = get_cface_to_own_ffaces(rr)
+  return aggregate_cface_to_own_fface_data(rr,cface_to_own_ffaces,cface_to_own_fface_to_data)
+end
+
+function aggregate_cface_to_own_fface_data(
+  rr::RefinementRule,
+  cface_to_own_ffaces::AbstractVector{Vector{Int32}},
+  cface_to_own_fface_to_data :: AbstractVector{<:AbstractVector{T}}
+) where T
   poly = get_polytope(rr)
   Dc   = num_cell_dims(poly)
-
   coffsets = get_offsets(poly)
-  face_own_dfaces = get_cface_to_own_ffaces(rr)
 
   # For each cface, we concatenate the entries of face_own_dfaces of any 
   # other cface of lower (or equal) dimension that is owned by the cface
-  face_dfaces = [Int32[] for cface in 1:num_faces(poly)]
+  cface_to_fface = [Int32[] for cface in 1:num_faces(poly)]
+  cface_to_fface_to_data = [T[] for cface in 1:num_faces(poly)]
   for d1 in 0:Dc
     o1 = coffsets[d1+1]
     for d2 in 0:d1
       o2 = coffsets[d2+1]
       d1_to_d2_faces = get_faces(poly,d1,d2)
       for (d1_cface,d2_cfaces) in enumerate(d1_to_d2_faces)
-        face_dfaces[d1_cface+o1] = vcat(face_dfaces[d1_cface+o1],face_own_dfaces[d2_cfaces .+ o2]...)
+        append!(
+          cface_to_fface[d1_cface + o1],
+          cface_to_own_ffaces[d2_cfaces .+ o2]...
+        )
+        append!(
+          cface_to_fface_to_data[d1_cface + o1],
+          cface_to_own_fface_to_data[d2_cfaces .+ o2]...
+        )
       end
     end
   end
 
-  map(sort!,face_dfaces)
-  return face_dfaces
+  # We now need to sort the entries of cface_to_fface_to_data according to the order of the
+  # fine faces numbering in cface_to_fface.
+  perms = map(sortperm,cface_to_fface)
+  map(permute!,cface_to_fface_to_data,perms)
+  return cface_to_fface_to_data
 end
 
 """
@@ -603,7 +692,7 @@ function _compute_face_vertex_permutations(
     # Match the permuted coordinates to find the fine node permutation
     p_fnodes = zeros(Ti,length(fcoords))
     for (i,c) in enumerate(p_fcoords)
-      p = findfirst(x->norm(x-c) < eps(T),fcoords)
+      p = findfirst(x -> norm(x-c) < eps(T),fcoords)
       @assert !isnothing(p)
       p_fnodes[i] = p # for non-local numbering, we would do fnodes[p]
     end
@@ -626,7 +715,7 @@ Given a `RefinementRule`, this function returns:
   - `cface_to_cpindex_to_fpindex` : For each coarse face, for each coarse face permutation, 
     the sub-permutation of the fine faces.
 
-The idea is the following: A permutation on a coarse face indices a 2-stage permutation for 
+The idea is the following: A permutation on a coarse face induces a 2-level permutation for 
 the fine faces, i.e 
 
   - First, the fine faces get shuffled amongs themselves.
@@ -648,7 +737,7 @@ we get the following fine face permutation:
 function get_cface_to_fface_permutations(rrule::RefinementRule)
   cface_to_ffaces = get_cface_to_ffaces(rrule)
   cface_to_fface_to_clnodes = get_cface_to_ffaces_to_lnodes(rrule)
-  return _compute_face_child_permutations(
+  return _compute_cface_to_fface_permutations(
     rrule,cface_to_ffaces,cface_to_fface_to_clnodes
   )
 end
@@ -656,12 +745,12 @@ end
 function get_cface_to_own_fface_permutations(rrule::RefinementRule)
   cface_to_ffaces = get_cface_to_own_ffaces(rrule)
   cface_to_fface_to_clnodes = get_cface_to_own_ffaces_to_lnodes(rrule)
-  return _compute_face_child_permutations(
+  return _compute_cface_to_fface_permutations(
     rrule,cface_to_ffaces,cface_to_fface_to_clnodes
   )
 end
 
-function _compute_face_child_permutations(
+function _compute_cface_to_fface_permutations(
   rrule::RefinementRule,
   cface_to_ffaces,
   cface_to_fface_to_clnodes

@@ -54,7 +54,6 @@ function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point})
   xi = first(x)
   id = first(child_ids)
   mi = getindex!(mi_cache,cmaps,id)
-  fi = getindex!(fi_cache,fields,id)
   zi_cache = Fields.return_cache(mi,xi)
   zi = zero(evaluate!(zi_cache,mi,xi))
 
@@ -83,7 +82,6 @@ function Geometry.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point}
     mi = getindex!(mi_cache,cmaps,child_id)
     zi = Fields.evaluate!(zi_cache,mi,xi)
     _yi_cache = yi_cache[child_id]
-    display(child_id)
     y_cache.array[i] = Fields.evaluate!(_yi_cache,fi,zi)
   end
   return y_cache.array
