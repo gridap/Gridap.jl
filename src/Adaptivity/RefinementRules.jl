@@ -51,7 +51,7 @@ end
 
 function Base.show(io::IO,rr::RefinementRule{P,A}) where {P,A}
   T = RefinementRuleType(rr)
-  print(io,"RefinementRule{$P,$A}. RefinementRuleType=$T")
+  print(io,"RefinementRule{$(rr.poly),$T}")
 end
 
 function Base.:(==)(a::RefinementRule,b::RefinementRule)
@@ -139,8 +139,7 @@ function bundle_points_by_subcell(rr::RefinementRule,x::AbstractArray{<:Point})
   return Table(data,ptrs)
 end
 
-
-# Faces to child faces, dof maps
+# Topological information functions
 
 "
     get_d_to_face_to_child_faces(rr::RefinementRule)

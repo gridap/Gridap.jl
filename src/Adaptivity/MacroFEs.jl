@@ -416,9 +416,6 @@ end
 
 Given a RefinementRule and information on the dofs owned by each fine face, compute 
 the permutations of the dofs owned by each coarse face.
-
-Please refer to [`get_cface_to_own_fface_to_own_dofs`](@ref) for more information on the 
-structure of the input arguments.
 """
 function get_cface_to_own_dof_permutations(
   rrule::RefinementRule{<:Polytope},
