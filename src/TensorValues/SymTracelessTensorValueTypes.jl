@@ -154,6 +154,7 @@ Mutable(::Type{<:SymTracelessTensorValue{D,T}}) where {D,T} = MMatrix{D,D,T}
 Mutable(::SymTracelessTensorValue{D,T}) where {D,T} = Mutable(SymTracelessTensorValue{D,T})
 mutable(a::SymTracelessTensorValue{D}) where D = MMatrix{D,D}(Tuple(get_array(a)))
 
+change_eltype(::Type{SymTracelessTensorValue{D,T1}},::Type{T2}) where {D,T1,T2} = SymTracelessTensorValue{D,T2}
 change_eltype(::Type{SymTracelessTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymTracelessTensorValue{D,T2,L}
 change_eltype(::SymTracelessTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} = change_eltype(SymTracelessTensorValue{D,T1,L},T2)
 

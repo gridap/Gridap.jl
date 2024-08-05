@@ -138,6 +138,7 @@ Mutable(::Type{<:SymTensorValue{D,T}}) where {D,T} = MMatrix{D,D,T}
 Mutable(::SymTensorValue{D,T}) where {D,T} = Mutable(SymTensorValue{D,T})
 mutable(a::SymTensorValue{D}) where D = MMatrix{D,D}(Tuple(get_array(a)))
 
+change_eltype(::Type{SymTensorValue{D,T1}},::Type{T2}) where {D,T1,T2} = SymTensorValue{D,T2}
 change_eltype(::Type{SymTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymTensorValue{D,T2,L}
 change_eltype(::SymTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} = change_eltype(SymTensorValue{D,T1,L},T2)
 

@@ -14,7 +14,7 @@ struct TensorValue{D1,D2,T,L} <: MultiValue{Tuple{D1,D2},T,2,L}
 end
 
 ###############################################################
-# Constructors 
+# Constructors
 ###############################################################
 
 # Empty TensorValue constructor
@@ -111,6 +111,7 @@ Mutable(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T} = MMatrix{D1,D2,T}
 Mutable(::TensorValue{D1,D2,T}) where {D1,D2,T} = Mutable(TensorValue{D1,D2,T})
 mutable(a::TensorValue{D1,D2}) where {D1,D2} = MMatrix{D1,D2}(a.data)
 
+change_eltype(::Type{TensorValue{D1,D2,T1}},::Type{T2}) where {D1,D2,T1,T2} = TensorValue{D1,D2,T2}
 change_eltype(::Type{TensorValue{D1,D2,T1,L}},::Type{T2}) where {D1,D2,T1,T2,L} = TensorValue{D1,D2,T2,L}
 change_eltype(::TensorValue{D1,D2,T1,L},::Type{T2}) where {D1,D2,T1,T2,L} = change_eltype(TensorValue{D1,D2,T1,L},T2)
 

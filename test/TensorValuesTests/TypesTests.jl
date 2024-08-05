@@ -480,6 +480,7 @@ a = VectorValue(1,2,3,4)
 
 a = TensorValue(1,2,3,4)
 @test change_eltype(a,Float64) == TensorValue{2,2,Float64,4}
+@test change_eltype(TensorValue{2,2,Float64},Int) == TensorValue{2,2,Int}
 
 @test change_eltype(1,Float64) == Float64
 
@@ -497,6 +498,7 @@ t = diagonal_tensor(p)
 
 a = SymTensorValue(11,21,22)
 @test change_eltype(a,Float64) == SymTensorValue{2,Float64,3}
+@test change_eltype(SymTensorValue{2,Float64},Int) == SymTensorValue{2,Int}
 @test isa(Tuple(a),Tuple)
 @test Tuple(a) == a.data
 b = Matrix{Int64}(undef,2,2)
@@ -510,6 +512,7 @@ bt = SymTensorValue{2,Int64}(b)
 
 a = SymTracelessTensorValue(11,21)
 @test change_eltype(a,Float64) == SymTracelessTensorValue{2,Float64,3}
+@test change_eltype(SymTracelessTensorValue{2,Float64},Int) == SymTracelessTensorValue{2,Int}
 @test isa(Tuple(a),Tuple)
 @test Tuple(a) == a.data
 b = Matrix{Int64}(undef,2,2)
@@ -522,6 +525,7 @@ bt = SymTracelessTensorValue{2,Int64}(b)
 
 a = SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
 @test change_eltype(a,Float64) == SymFourthOrderTensorValue{2,Float64,9}
+@test change_eltype(SymFourthOrderTensorValue{2,Float64},Int) == SymFourthOrderTensorValue{2,Int}
 @test isa(Tuple(a),Tuple)
 @test Tuple(a) == a.data
 
