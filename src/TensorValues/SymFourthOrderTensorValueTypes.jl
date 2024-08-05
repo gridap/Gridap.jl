@@ -1,5 +1,5 @@
 ###############################################################
-# SymTensorValue Type
+# SymFourthOrderTensorValue Type
 ###############################################################
 
 """
@@ -14,10 +14,10 @@ struct SymFourthOrderTensorValue{D,T,L} <: MultiValue{Tuple{D,D,D,D},T,4,L}
 end
 
 ###############################################################
-# Constructors (SymTensorValue)
+# Constructors (SymFourthOrderTensorValue)
 ###############################################################
 
-# Empty SymTensorValue constructor
+# Empty SymFourthOrderTensorValue constructor
 
 SymFourthOrderTensorValue()                   = SymFourthOrderTensorValue{0,Int}(NTuple{0,Int}())
 SymFourthOrderTensorValue{0}()                = SymFourthOrderTensorValue{0,Int}(NTuple{0,Int}())
@@ -25,7 +25,7 @@ SymFourthOrderTensorValue{0,T}() where {T}    = SymFourthOrderTensorValue{0,T}(N
 SymFourthOrderTensorValue(data::NTuple{0})    = SymFourthOrderTensorValue{0,Int}(data)
 SymFourthOrderTensorValue{0}(data::NTuple{0}) = SymFourthOrderTensorValue{0,Int}(data)
 
-# SymTensorValue single NTuple argument constructor
+# SymFourthOrderTensorValue single NTuple argument constructor
 
 @generated function SymFourthOrderTensorValue(data::NTuple{L,T}) where {L,T}
   msg = "Invalid number of scalar arguments in SymFourthOrderTensorValue constructor"
@@ -40,20 +40,20 @@ SymFourthOrderTensorValue{D}(data::NTuple{L,T}) where {D,L,T}           = SymFou
 SymFourthOrderTensorValue{D,T1}(data::NTuple{L,T2}) where {D,L,T1,T2}   = SymFourthOrderTensorValue{D,T1}(NTuple{L,T1}(data))
 SymFourthOrderTensorValue{D,T1,L}(data::NTuple{L,T2}) where {D,L,T1,T2} = SymFourthOrderTensorValue{D,T1}(NTuple{L,T1}(data))
 
-# SymTensorValue single Tuple argument constructor
+# SymFourthOrderTensorValue single Tuple argument constructor
 
 SymFourthOrderTensorValue(data::Tuple) = SymFourthOrderTensorValue(promote(data...))
 SymFourthOrderTensorValue{D}(data::Tuple) where {D} = SymFourthOrderTensorValue{D}(promote(data...))
 SymFourthOrderTensorValue{D,T1}(data::Tuple) where {D,T1} = SymFourthOrderTensorValue{D,T1}(NTuple{length(data),T1}(data))
 
-# SymTensorValue Vararg constructor
+# SymFourthOrderTensorValue Vararg constructor
 
 SymFourthOrderTensorValue(data::Number...) = SymFourthOrderTensorValue(data)
 SymFourthOrderTensorValue{D}(data::Number...) where {D} = SymFourthOrderTensorValue{D}(data)
 SymFourthOrderTensorValue{D,T1}(data::Number...) where {D,T1} = SymFourthOrderTensorValue{D,T1}(data)
 
 ###############################################################
-# Conversions (SymTensorValue)
+# Conversions (SymFourthOrderTensorValue)
 ###############################################################
 
 # Direct conversion
@@ -67,7 +67,7 @@ convert(::Type{<:SymFourthOrderTensorValue{D,T}}, arg::SymFourthOrderTensorValue
 convert(::Type{<:SymFourthOrderTensorValue{D,T}}, arg::SymFourthOrderTensorValue{D,T}) where {D,T} = arg
 
 ###############################################################
-# Other constructors and conversions (SymTensorValue)
+# Other constructors and conversions (SymFourthOrderTensorValue)
 ###############################################################
 
 @generated function zero(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T}
@@ -101,7 +101,7 @@ change_eltype(::Type{SymFourthOrderTensorValue{D,T1,L}},::Type{T2}) where {D,T1,
 change_eltype(::SymFourthOrderTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} = change_eltype(SymFourthOrderTensorValue{D,T1,L},T2)
 
 ###############################################################
-# Introspection (SymTensorValue)
+# Introspection (SymFourthOrderTensorValue)
 ###############################################################
 
 eltype(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T} = T
