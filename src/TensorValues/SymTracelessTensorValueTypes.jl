@@ -136,7 +136,7 @@ zero(::Type{<:SymTracelessTensorValue{0,T}}) where {T} = SymTracelessTensorValue
   end
 end
 
-zero(::Type{<:SymTracelessTensorValue{D,T,L}}) where {D,T,L} = SymTracelessTensorValue{D,T}(tfill(zero(T),Val{L}()))
+zero(::Type{<:SymTracelessTensorValue{D,T,L}}) where {D,T,L} = SymTracelessTensorValue{D,T}(tfill(zero(T),Val{L-1}()))
 zero(::SymTracelessTensorValue{D,T,L}) where {D,T,L} = zero(SymTracelessTensorValue{D,T,L})
 
 rand(::AbstractRNG, ::Random.SamplerType{<:SymTracelessTensorValue{0,T}}) where {T} = SymTracelessTensorValue{0,T}()
