@@ -41,7 +41,10 @@ using Random
 export MultiValue
 export VectorValue
 export TensorValue
+export AbstractSymTensorValue
 export SymTensorValue
+export SymTracelessTensorValue
+export QTensorValue
 export SymFourthOrderTensorValue
 export ThirdOrderTensorValue
 
@@ -88,6 +91,8 @@ include("VectorValueTypes.jl")
 include("TensorValueTypes.jl")
 
 include("SymTensorValueTypes.jl")
+
+include("SymTracelessTensorValueTypes.jl")
 
 include("SymFourthOrderTensorValueTypes.jl")
 

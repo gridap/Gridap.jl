@@ -1,11 +1,15 @@
 ###############################################################
 # SymTensorValue Type
 ###############################################################
+"""
+Abstract type representing any symmetric second-order tensor
+"""
+abstract type AbstractSymTensorValue{D,T,L} <: MultiValue{Tuple{D,D},T,2,L} end
 
 """
-Type representing a symmetric second-order tensor
+Type representing a symmetric second-order tensor (with D(D-1)/2 independant components)
 """
-struct SymTensorValue{D,T,L} <: MultiValue{Tuple{D,D},T,2,L}
+struct SymTensorValue{D,T,L} <: AbstractSymTensorValue{D,T,L}
     data::NTuple{L,T}
     function SymTensorValue{D,T}(data::NTuple{L,T}) where {D,T,L}
         @check L == D*(D+1)÷2

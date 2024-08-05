@@ -104,18 +104,91 @@ c = a + b
 r = SymTensorValue(6,8,10)
 @test c==r
 
+c = b - a
+r = SymTensorValue(4,4,4)
+@test c==r
+
 a = TensorValue(1,2,3,4)
 b = SymTensorValue(5,6,7)
 
 c = a + b
+d = b + a
 r = TensorValue(6,8,9,11)
+@test c==r
+@test d==r
+
+c = a - b
+r = TensorValue(-4,-4,-3,-3)
+@test c==r
+
+c = b - a
+r = TensorValue(4,4,3,3)
+@test c==r
+
+a = SymTracelessTensorValue(1,2)
+b = SymTracelessTensorValue(5,6)
+
+c = -a
+r = SymTracelessTensorValue(-1,-2)
+@test c==r
+
+c = a + b
+r = SymTracelessTensorValue(6,8)
+@test c==r
+
+c = a - b
+r = SymTracelessTensorValue(-4,-4)
+@test c==r
+
+a = SymTensorValue(1,2,3)
+b = SymTracelessTensorValue(5,6)
+
+c = a + b
+d = b + a
+r = SymTensorValue(6,8,-2)
+@test c==r
+@test d==r
+
+c = a - b
+r = SymTensorValue(-4,-4,8)
+@test c==r
+
+c = b - a
+r = SymTensorValue(4,4,-8)
 @test c==r
 
 a = SymTensorValue(5,6,7)
 b = TensorValue(1,2,3,4)
 
+c = a + b
+d = b + a
+r = TensorValue(6,8,9,11)
+@test c==r
+@test d==r
+
 c = a - b
 r = TensorValue(4,4,3,3)
+@test c==r
+
+c = b - a
+r = TensorValue(-4,-4,-3,-3)
+@test c==r
+
+a = SymTracelessTensorValue(5,6)
+b = TensorValue(1,2,3,4)
+
+c = a + b
+d = b + a
+r = TensorValue(6,8,9,-1)
+@test c==r
+@test d==r
+
+c = a - b
+r = TensorValue(4,4,3,-9)
+@test c==r
+
+c = b - a
+r = TensorValue(-4,-4,-3,9)
 @test c==r
 
 # Matrix Division
@@ -134,6 +207,7 @@ c = st\a
 
 t = TensorValue(1,2,3,4,5,6,7,8,9)
 st = SymTensorValue(1,2,3,5,6,9)
+qt = SymTracelessTensorValue(1,2,3,5,6)
 s4ot = one(SymFourthOrderTensorValue{2,Int})
 a = VectorValue(1,2,3)
 
@@ -192,6 +266,18 @@ c = st + 2
 r = SymTensorValue(3,4,5,7,8,11)
 @test c == r
 
+
+c = 2 * qt
+@test isa(c,SymTracelessTensorValue{3})
+r = SymTracelessTensorValue(2,4,6,10,12)
+@test c == r
+
+c = qt * 2
+@test isa(c,SymTracelessTensorValue{3})
+r = SymTracelessTensorValue(2,4,6,10,12)
+@test c == r
+
+
 c = 2 * s4ot
 @test isa(c,SymFourthOrderTensorValue{2})
 r = SymFourthOrderTensorValue(2,0,0, 0,1,0, 0,0,2)
@@ -214,8 +300,10 @@ b = VectorValue(2,1,6)
 
 t = TensorValue(1,2,3,4,5,6,7,8,9)
 s = TensorValue(9,8,3,4,5,6,7,2,1)
-st = SymTensorValue(1,2,3,5,6,9)
+st  = SymTensorValue(1,2,3,5,6,9)
 st2 = SymTensorValue(9,6,5,3,2,1)
+qt  = SymTracelessTensorValue(1,2,3,5,6)
+qt2 = SymTracelessTensorValue(9,6,5,3,2)
 
 c = a ⋅ b
 @test isa(c,Int)
@@ -231,6 +319,11 @@ c = st ⋅ a
 r = VectorValue(14,30,42)
 @test c == r
 
+c = qt ⋅ a
+@test isa(c,VectorValue{3,Int})
+r = VectorValue(14,30,-3)
+@test c == r
+
 c = s ⋅ t
 @test isa(c,TensorValue{3,3,Int})
 r = TensorValue(38,24,18,98,69,48,158,114,78)
@@ -241,9 +334,29 @@ c = st ⋅ st2
 r = TensorValue(36, 78, 108, 18, 39, 54, 12, 26, 36)
 @test c == r
 
+c = qt ⋅ qt2
+@test isa(c,TensorValue{3,3,Int})
+r = TensorValue(36, 78, 33, 18, 39, 24, -27, -52, 99)
+@test c == r
+
+c = st ⋅ qt2
+@test isa(c,TensorValue{3,3,Int})
+r = TensorValue(36, 78, 108, 18, 39, 54, -27, -52, -81)
+@test c == r
+
+c = qt2 ⋅ st
+@test isa(c,TensorValue{3,3,Int})
+r = TensorValue(36, 18, -27, 78, 39, -52, 108, 54, -81)
+@test c == r
+
 c = a ⋅ st
 @test isa(c,VectorValue{3,Int})
 r = VectorValue(14,30,42)
+@test c == r
+
+c = a ⋅ qt
+@test isa(c,VectorValue{3,Int})
+r = VectorValue(14,30,-3)
 @test c == r
 
 a1 = VectorValue(1,0)
@@ -306,6 +419,11 @@ c = inner(st,st2)
 c = st ⊙ st2
 @test isa(c,Int)
 @test c == inner(TensorValue(get_array(st)),TensorValue(get_array(st2)))
+
+c = inner(qt,qt2)
+c = qt ⊙ qt2
+@test isa(c,Int)
+@test c == inner(TensorValue(get_array(qt)),TensorValue(get_array(qt2)))
 
 # Reductions
 
@@ -389,7 +507,11 @@ c = inv(t)
 
 st = SymTensorValue(9,8,7,5,4,1)
 @test det(st) == det(TensorValue(get_array(st)))
-@test inv(st) == inv(TensorValue(get_array(st)))
+@test inv(st) ≈  inv(TensorValue(get_array(st)))
+
+qt = SymTracelessTensorValue(9,8,7,5,4)
+@test det(qt) == det(TensorValue(get_array(qt)))
+@test inv(qt) ≈  inv(TensorValue(get_array(qt)))
 
 t = TensorValue(10)
 @test det(t) == 10
@@ -411,6 +533,9 @@ c = meas(t)
 
 st = SymTensorValue(1,2,3,5,6,9)
 @test meas(st) == meas(TensorValue(get_array(st)))
+
+qt = SymTracelessTensorValue(1,2,3,5,6)
+@test meas(qt) == meas(TensorValue(get_array(qt)))
 
 v = TensorValue{1,2}(10,20)
 @test meas(v) == sqrt(500)
@@ -465,8 +590,14 @@ t = TensorValue(1,2,3,4,5,6,7,8,9)
 st = SymTensorValue(1,2,3,5,6,9)
 @test tr(st) == tr(TensorValue(get_array(st)))
 
+qt = SymTracelessTensorValue(1,2,3,5,6)
+@test tr(qt) == tr(TensorValue(get_array(qt)))
+
 @test get_array(symmetric_part(t)) == get_array(TensorValue(1.0, 3.0, 5.0, 3.0, 5.0, 7.0, 5.0, 7.0, 9.0))
 @test symmetric_part(st) == symmetric_part(TensorValue(get_array(st)))
+@test symmetric_part(st) === st
+@test symmetric_part(qt) == symmetric_part(TensorValue(get_array(qt)))
+@test symmetric_part(qt) === qt
 
 a = TensorValue(1,2,3,4)
 b = a'
@@ -564,6 +695,15 @@ b = Matrix(get_array(b_tensor))
 odot_contraction = Vector(get_array(a_tensor ⋅² b_tensor))
 odot_contraction_array = 1*a[:,1,1] + 2*a[:,1,2] + 3*a[:,1,3] + 2*a[:,2,1] +
   4*a[:,2,2] + 5*a[:,2,3] + 3*a[:,3,1] + 5*a[:,3,2] + 6*a[:,3,3]
+@test odot_contraction == odot_contraction_array
+
+a = reshape(Vector(1:27),(3,3,3))
+a_tensor = ThirdOrderTensorValue(a...)
+b_tensor = SymTracelessTensorValue((1:5)...)
+b = Matrix(get_array(b_tensor))
+odot_contraction = Vector(get_array(a_tensor ⋅² b_tensor))
+odot_contraction_array = 1*a[:,1,1] + 2*a[:,1,2] + 3*a[:,1,3] + 2*a[:,2,1] +
+  4*a[:,2,2] + 5*a[:,2,3] + 3*a[:,3,1] + 5*a[:,3,2] + (-5)*a[:,3,3]
 @test odot_contraction == odot_contraction_array
 
 # double Contractions w/ products
@@ -737,5 +877,23 @@ c = a .* b
 
 @test diag(a) == VectorValue(1,4)
 
+
+a = SymTensorValue(1,2,4)
+b = SymTensorValue(1.,2.,4.)
+c = a .* b
+@test isa(c,SymTensorValue)
+@test c.data == map(*,a.data,b.data)
+
+@test diag(a) == VectorValue(1,4)
+
+
+# Componant wise operations on sym. traceless tensors yield sym. tensors
+a = SymTracelessTensorValue(1,2)
+b = SymTracelessTensorValue(1.,2.)
+c = a .* b
+@test isa(c,SymTensorValue)
+@test c.data == map(*,a.data,b.data)
+
+@test diag(a) == VectorValue(1,-1)
 
 end # module OperationsTests

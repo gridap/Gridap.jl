@@ -45,6 +45,10 @@ for op in (:+,:-)
       T(r)
     end
 
+    function ($op)(a::MultiValue,b::MultiValue)
+      @notimplemented "Not implemented or undefined operation \"$($op)\" on MultiValues of these shapes"
+    end
+
     function ($op)(a::MultiValue{S},b::MultiValue{S})  where S
       r = map(($op), a.data, b.data)
       T = _eltype($op,r,a,b)
@@ -52,16 +56,51 @@ for op in (:+,:-)
       M(r)
     end
 
-    function ($op)(a::TensorValue,b::SymTensorValue)
+    function ($op)(a::TensorValue{D,D},b::SymTensorValue{D}) where D
       map(($op), a, TensorValue(get_array(b)))
     end
 
-    function ($op)(a::SymTensorValue,b::TensorValue)
+    function ($op)(a::SymTensorValue{D},b::TensorValue{D,D}) where D
       map(($op), TensorValue(get_array(a)), b)
+    end
+
+    function ($op)(a::TensorValue{D,D},b::SymTracelessTensorValue{D}) where D
+      map(($op), a, TensorValue(get_array(b)))
+    end
+
+    function ($op)(a::SymTracelessTensorValue{D},b::TensorValue{D,D}) where D
+      map(($op), TensorValue(get_array(a)), b)
+    end
+
+    function ($op)(a::SymTracelessTensorValue{D},b::SymTensorValue{D}) where D
+      r = map(($op), a.data, b.data)
+      T = _eltype($op,r,a,b)
+      M = change_eltype(b,T)
+      M(r)
+    end
+
+    function ($op)(a::SymTensorValue{D},b::SymTracelessTensorValue{D}) where D
+      r = map(($op), a.data, b.data)
+      T = _eltype($op,r,a,b)
+      M = change_eltype(a,T)
+      M(r)
+    end
+
+    function ($op)(a::SymTracelessTensorValue)
+      r = map($op, a.data[1:end-1])
+      typeof(a)(r)
+    end
+
+    function ($op)(a::SymTracelessTensorValue{D},b::SymTracelessTensorValue{D}) where D
+      r = map(($op), a.data[1:end-1], b.data[1:end-1])
+      T = _eltype($op,r,a,b)
+      M = change_eltype(a,T)
+      M(r)
     end
 
   end
 end
+
 
 ###############################################################
 # Matrix Division
@@ -98,27 +137,44 @@ end
 for op in (:+,:-,:*)
   @eval begin
     function ($op)(a::MultiValue,b::Number)
-        r = _bc($op,a.data,b)
-        T = _eltype($op,r,a,b)
-        M  = change_eltype(a,T)
-        M(r)
+      r = _bc($op,a.data,b)
+      T = _eltype($op,r,a,b)
+      M  = change_eltype(a,T)
+      M(r)
     end
 
     function ($op)(a::Number,b::MultiValue)
-        r = _bc($op,a,b.data)
-        T = _eltype($op,r,a,b)
-        M  = change_eltype(b,T)
-        M(r)
+      r = _bc($op,a,b.data)
+      T = _eltype($op,r,a,b)
+      M  = change_eltype(b,T)
+      M(r)
     end
   end
 end
 
-function (/)(a::MultiValue,b::Number)
-    r = _bc(/,a.data,b)
-    T = _eltype(/,r,a,b)
-    P  = change_eltype(a,T)
-    P(r)
+function (*)(a::Number,b::SymTracelessTensorValue)
+  r = _bc(*,a,b.data[1:end-1])
+  T = _eltype(*,r,a,b)
+  M  = change_eltype(b,T)
+  M(r)
 end
+
+function (*)(a::SymTracelessTensorValue,b::Number)
+  b*a
+end
+
+function (/)(a::MultiValue,b::Number)
+  r = _bc(/,a.data,b)
+  T = _eltype(/,r,a,b)
+  P  = change_eltype(a,T)
+  P(r)
+end
+
+const _err =  " with number is undefined for traceless tensors"
+function -(::SymTracelessTensorValue,::Number) error("Addition"   *_err) end
+function +(::SymTracelessTensorValue,::Number) error("Subtraction"*_err) end
+function -(::Number,::SymTracelessTensorValue) error("Addition"   *_err) end
+function +(::Number,::SymTracelessTensorValue) error("Subtraction"*_err) end
 
 @inline function _eltype(op,r,a,b)
   eltype(r)
@@ -146,18 +202,18 @@ dot(a::MultiValue{Tuple{D}}, b::MultiValue{Tuple{D}}) where D = inner(a,b)
 dot(a::MultiValue,b::MultiValue) = @notimplemented
 
 @generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D1}},B<:MultiValue{Tuple{D1,D2}}} where {D1,D2}
-    ss = String[]
-    for j in 1:D2
-      s = ""
-      for i in 1:D1
-        ak = data_index(A,i)
-        bk = data_index(B,i,j)
-        s *= "a.data[$ak]*b.data[$bk]+"
-      end
-      push!(ss,s[1:(end-1)]*", ")
+  ss = String[]
+  for j in 1:D2
+    s = ""
+    for i in 1:D1
+      ak = data_index(A,i)
+      bk = data_index(B,i,j)
+      s *= "a.data[$ak]*b.data[$bk]+"
     end
-    str = join(ss)
-    Meta.parse("VectorValue{$D2}($str)")
+    push!(ss,s[1:(end-1)]*", ")
+  end
+  str = join(ss)
+  Meta.parse("VectorValue{$D2}($str)")
 end
 
 function dot(a::A,b::B) where {A<:MultiValue{Tuple{0}},B<:MultiValue{Tuple{0,D2}}} where D2
@@ -166,30 +222,30 @@ function dot(a::A,b::B) where {A<:MultiValue{Tuple{0}},B<:MultiValue{Tuple{0,D2}
 end
 
 @generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D1,D2}},B<:MultiValue{Tuple{D2}}} where {D1,D2}
-    ss = String[]
-    for i in 1:D1
-      s = ""
-      for j in 1:D2
-        ak = data_index(A,i,j)
-        bk = data_index(B,j)
-        s *= "a.data[$ak]*b.data[$bk]+"
-      end
-        push!(ss,s[1:(end-1)]*", ")
+  ss = String[]
+  for i in 1:D1
+    s = ""
+    for j in 1:D2
+      ak = data_index(A,i,j)
+      bk = data_index(B,j)
+      s *= "a.data[$ak]*b.data[$bk]+"
     end
-    str = join(ss)
-    Meta.parse("VectorValue{$D1}($str)")
+      push!(ss,s[1:(end-1)]*", ")
+  end
+  str = join(ss)
+  Meta.parse("VectorValue{$D1}($str)")
 end
 
 @generated function dot(a::MultiValue{Tuple{D1,D3}}, b::MultiValue{Tuple{D3,D2}}) where {D1,D2,D3}
-    ss = String[]
-    for j in 1:D2
-        for i in 1:D1
-            s = join([ "a[$i,$k]*b[$k,$j]+" for k in 1:D3])
-            push!(ss,s[1:(end-1)]*", ")
-        end
+  ss = String[]
+  for j in 1:D2
+    for i in 1:D1
+      s = join([ "a[$i,$k]*b[$k,$j]+" for k in 1:D3])
+      push!(ss,s[1:(end-1)]*", ")
     end
-    str = join(ss)
-    Meta.parse("TensorValue{$D1,$D2}(($str))")
+  end
+  str = join(ss)
+  Meta.parse("TensorValue{$D1,$D2}(($str))")
 end
 
 # a_ij = b_ijk*c_k
@@ -261,34 +317,35 @@ function inner(a::MultiValue, b::MultiValue)
 end
 
 @generated function inner(a::MultiValue{S}, b::MultiValue{S}) where S
-    str = join([" a[$i]*b[$i] +" for i in 1:length(a) ])
-    Meta.parse(str[1:(end-1)])
-end
-
-@generated function inner(a::SymTensorValue{D}, b::SymTensorValue{D}) where D
-  str = ""
-  for i in 1:D
-    for j in 1:D
-      k = data_index(a,i,j)
-      str *= " a.data[$k]*b.data[$k] +"
-    end
-  end
+  str = join([" a[$i]*b[$i] +" for i in 1:length(a) ])
   Meta.parse(str[1:(end-1)])
 end
 
-@generated function inner(a::SymFourthOrderTensorValue{D}, b::SymTensorValue{D}) where D
+@generated function inner(a::AbstractSymTensorValue{D}, b::AbstractSymTensorValue{D}) where D
+  str = ""
+  for i in 1:D
+    str *= "+ a[$i,$i]*b[$i,$i]"
+  end
+  str *= " + 2*("
+  for i in 1:D
+    for j in i+1:D
+      str *= "+ a[$i,$j]*b[$i,$j]"
+    end
+  end
+  str *= ")"
+  Meta.parse(str)
+end
+
+@generated function inner(a::SymFourthOrderTensorValue{D}, b::AbstractSymTensorValue{D}) where D
   str = ""
   for i in 1:D
     for j in i:D
-      s = ""
       for k in 1:D
         for l in 1:D
-          ak = data_index(a,i,j,k,l)
-          bk = data_index(b,k,l)
-          s *= " a.data[$ak]*b.data[$bk] +"
+          str *= "+ a[$i,$j,$k,$l]*b[$k,$l]"
         end
       end
-      str *= s[1:(end-1)]*", "
+      str *= ", "
     end
   end
   Meta.parse("SymTensorValue{D}($str)")
@@ -388,9 +445,9 @@ const ⋅² = double_contraction
 ###############################################################
 
 for op in (:sum,:maximum,:minimum)
-    @eval begin
-        $op(a::MultiValue) = $op(a.data)
-    end
+  @eval begin
+    $op(a::MultiValue) = $op(a.data)
+  end
 end
 
 # Outer product (aka dyadic product)
@@ -426,15 +483,13 @@ end
   Meta.parse("ThirdOrderTensorValue{D,D1,D2}($str)")
 end
 
-@generated function outer(a::SymTensorValue{D},b::SymTensorValue{D}) where D
+@generated function outer(a::AbstractSymTensorValue{D},b::AbstractSymTensorValue{D}) where D
   str = ""
   for i in 1:D
     for j in i:D
-      ak = data_index(a,i,j)
       for k in 1:D
         for l in k:D
-          bk = data_index(b,k,l)
-          str *= "a.data[$ak]*b.data[$bk], "
+          str *= "a[$i,$j]*b[$k,$l], "
         end
       end
     end
@@ -481,6 +536,9 @@ function det(a::MultiValue{Tuple{3,3}})
 end
 
 inv(a::MultiValue{Tuple{D1,D2}}) where {D1,D2} = TensorValue(inv(get_array(a)))
+# those still have better perf than the D=2,3 specialization below
+inv(a::AbstractSymTensorValue{D}) where D = SymTensorValue(inv(get_array(a)))
+inv(a::SymTracelessTensorValue{2}) = SymTracelessTensorValue(inv(get_array(a)))
 
 function inv(a::MultiValue{Tuple{1,1}})
   r = 1/a[1]
@@ -520,7 +578,8 @@ end
 """
 meas(a::MultiValue{Tuple{D}}) where D = sqrt(inner(a,a))
 meas(a::MultiValue{Tuple{D,D}}) where D = abs(det(a))
-meas(a::TensorValue{0,D,T}) where {T,D} = one(T)
+#meas( ::TensorValue{0,D,T}) where {T,D} = one(T)
+#meas( ::MultiValue{Tuple{0,0},T}) where {T} = one(T)
 
 function meas(v::MultiValue{Tuple{1,D}}) where D
   t = VectorValue(v.data)
@@ -553,14 +612,20 @@ function conj(a::T) where {T<:MultiValue}
   T(r)
 end
 
+function conj(a::SymTracelessTensorValue)
+  r = map(conj, a.data)
+  SymTracelessTensorValue(r[1:end-1])
+end
+
 ###############################################################
 # Trace
 ###############################################################
 
 @generated function tr(v::MultiValue{Tuple{D,D}}) where D
-    str = join([" v[$i,$i] +" for i in 1:D ])
-    Meta.parse(str[1:(end-1)])
+  str = join([" v[$i,$i] +" for i in 1:D ])
+  Meta.parse(str[1:(end-1)])
 end
+tr(::SymTracelessTensorValue{D,T}) where {D,T} = zero(T)
 
 @generated function tr(v::MultiValue{Tuple{A,A,B}}) where {A,B}
   lis = LinearIndices((A,A,B))
@@ -596,7 +661,7 @@ transpose(a::MultiValue{Tuple{D,D}}) where D = @notimplemented
   Meta.parse("TensorValue{D2,D1}($str)")
 end
 
-@generated function transpose(a::TensorValue{D1,D2}) where {D1,D2}
+@generated function transpose(a::TensorValue{D1,D2,T}) where {D1,D2,T}
   str = ""
   for i in 1:D1
     for j in 1:D2
@@ -604,18 +669,18 @@ end
       str *= "a.data[$k], "
     end
   end
-  Meta.parse("TensorValue{D2,D1}($str)")
+  Meta.parse("TensorValue{D2,D1,T}($str)")
 end
 
 @inline function adjoint(a::TensorValue{D1,D2,T}) where {D1,D2,T<:Real}
   transpose(a)
 end
 
-adjoint(a::SymTensorValue) = conj(a)
+adjoint(a::AbstractSymTensorValue) = conj(a)
 
-@inline adjoint(a::SymTensorValue{D,T} where {D,T<:Real}) = transpose(a)
+@inline adjoint(a::AbstractSymTensorValue{D,T} where {D,T<:Real}) = transpose(a)
 
-transpose(a::SymTensorValue) = a
+transpose(a::AbstractSymTensorValue) = a
 
 ###############################################################
 # Symmetric part
@@ -634,24 +699,14 @@ transpose(a::SymTensorValue) = a
     Meta.parse("SymTensorValue{D}($str)")
 end
 
+symmetric_part(v::AbstractSymTensorValue) = v
+
 ###############################################################
 # diag
 ###############################################################
 
-function LinearAlgebra.diag(a::TensorValue{1,1})
-  VectorValue(a.data[1])
-end
-
-function LinearAlgebra.diag(a::TensorValue{2,2})
-  VectorValue(a.data[1],a.data[4])
-end
-
-function LinearAlgebra.diag(a::TensorValue{3,3})
-  VectorValue(a.data[1],a.data[5],a.data[9])
-end
-
-function LinearAlgebra.diag(a::TensorValue)
-  @notimplemented
+function LinearAlgebra.diag(a::MultiValue{Tuple{D,D},T}) where {D,T}
+  VectorValue((a[i,i] for i in 1:D)...)
 end
 
 ###############################################################
@@ -667,25 +722,6 @@ function Base.broadcasted(f,a::TensorValue,b::TensorValue)
   TensorValue(map(f,a.data,b.data))
 end
 
-###############################################################
-# Define new operations for Gridap types
-###############################################################
-
-#for op in (:symmetric_part,)
-#    @eval begin
-#        ($op)(a::GridapType) = operate($op,a)
-#    end
-#end
-#
-#for op in (:inner,:outer,:double_contraction)#,:(:))
-#    @eval begin
-#        ($op)(a::GridapType,b::GridapType) = operate($op,a,b)
-#        ($op)(a::GridapType,b::Number)     = operate($op,a,b)
-#        ($op)(a::Number,    b::GridapType) = operate($op,a,b)
-#        ($op)(a::GridapType,b::Function)   = operate($op,a,b)
-#        ($op)(a::Function,  b::GridapType) = operate($op,a,b)
-#    end
-#end
-
-
-
+function Base.broadcasted(f,a::AbstractSymTensorValue,b::AbstractSymTensorValue)
+  SymTensorValue(map(f,a.data,b.data))
+end

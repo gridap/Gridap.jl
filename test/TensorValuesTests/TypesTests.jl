@@ -103,6 +103,60 @@ s = SymTensorValue{2,Int}(11,21.0,22)
 @test isa(s,SymTensorValue{2,Int})
 @test convert(SMatrix{2,2,Int},s) == [11.0 21.0;21.0 22.0]
 
+# Constructors (SymTracelessTensorValue)
+
+q = SymTracelessTensorValue( (11,21) )
+@test isa(q,SymTracelessTensorValue{2,Int})
+@test convert(SMatrix{2,2,Int},q) == [11 21;21 -11]
+
+q = SymTracelessTensorValue(11,21)
+@test isa(q,SymTracelessTensorValue{2,Int})
+@test convert(SMatrix{2,2,Float64},q) == [11.0 21.0;21.0 -11.0]
+
+q = SymTracelessTensorValue{2}( (11,21) )
+@test isa(q,SymTracelessTensorValue{2,Int})
+@test convert(SMatrix{2,2,Int},q) == [11 21;21 -11]
+
+q = SymTracelessTensorValue{2}(11,21)
+@test isa(q,SymTracelessTensorValue{2,Int})
+@test convert(SMatrix{2,2,Float64},q) == [11.0 21.0;21.0 -11.0]
+
+q = SymTracelessTensorValue{2,Int}( (11,21) )
+@test isa(q,SymTracelessTensorValue{2,Int})
+@test convert(SMatrix{2,2,Int},q) == [11 21;21 -11]
+
+q = SymTracelessTensorValue{2,Float64}(11,21)
+@test isa(q,SymTracelessTensorValue{2,Float64})
+@test convert(SMatrix{2,2,Float64},q) == [11.0 21.0;21.0 -11.0]
+
+q = SymTracelessTensorValue{0,Int}( () )
+@test isa(q,SymTracelessTensorValue{0,Int})
+@test convert(SMatrix{0,0,Int},q) == Array{Any,2}(undef,0,0)
+
+q = SymTracelessTensorValue{0,Int}()
+@test isa(q,SymTracelessTensorValue{0,Int})
+@test convert(SMatrix{0,0,Int},q) == Array{Any,2}(undef,0,0)
+
+q = SymTracelessTensorValue{1,Int}( () )
+@test isa(q,SymTracelessTensorValue{1,Int})
+@test convert(SMatrix{1,1,Int},q) == [0;;]
+
+q = SymTracelessTensorValue{1,Int}()
+@test isa(q,SymTracelessTensorValue{1,Int})
+@test convert(SMatrix{1,1,Int},q) == [0;;]
+
+q = SymTracelessTensorValue(11,21.0)
+@test isa(q,SymTracelessTensorValue{2,Float64})
+@test convert(SMatrix{2,2,Float64},q) == [11.0 21.0;21.0 -11.0]
+
+q = SymTracelessTensorValue{2}(11,21.0)
+@test isa(q,SymTracelessTensorValue{2,Float64})
+@test convert(SMatrix{2,2,Float64},q) == [11.0 21.0;21.0 -11.0]
+
+q = SymTracelessTensorValue{2,Int}(11,21.0)
+@test isa(q,SymTracelessTensorValue{2,Int})
+@test convert(SMatrix{2,2,Int},q) == [11.0 21.0;21.0 -11.0]
+
 # Constructors (SymFourthOrderTensorValue)
 
 s = SymFourthOrderTensorValue( (1111,1121,1122, 2111,2121,2122, 2211,2221,2222) )
@@ -241,6 +295,10 @@ z = zero(SymTensorValue{3,Int})
 @test isa(z,SymTensorValue{3,Int,6})
 @test convert(SMatrix{3,3,Int},z) == zeros(Int,(3,3))
 
+z = zero(SymTracelessTensorValue{3,Int})
+@test isa(z,SymTracelessTensorValue{3,Int,6})
+@test convert(SMatrix{3,3,Int},z) == zeros(Int,(3,3))
+
 z = zero(ThirdOrderTensorValue{3,3,3,Int,27})
 @test isa(z,ThirdOrderTensorValue{3,3,3,Int,27})
 @test Tuple(z) == Tuple(zeros(Int,(27)))
@@ -279,6 +337,10 @@ r = rand(SymTensorValue{3,Int})
 @test isa(r,SymTensorValue{3,Int,6})
 @test r ≠ rand(typeof(r))
 
+r = rand(SymTracelessTensorValue{3,Int})
+@test isa(r,SymTracelessTensorValue{3,Int,6})
+@test r ≠ rand(typeof(r))
+
 r = rand(SymFourthOrderTensorValue{3,Int})
 @test isa(r,SymFourthOrderTensorValue{3,Int,36})
 @test r ≠ rand(typeof(r))
@@ -309,6 +371,13 @@ V = SymTensorValue{2,Int,3}
 b = convert(V,a)
 @test isa(b,V)
 b = V[a,a,a,]
+@test isa(b,Vector{V})
+
+a = (11,21)
+V = SymTracelessTensorValue{2,Int,3}
+b = convert(V,a)
+@test isa(b,V)
+b = V[a,a,a]
 @test isa(b,Vector{V})
 
 a = (1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
@@ -403,6 +472,7 @@ v = VectorValue(m)
 @test num_components(VectorValue(1,2,3)) == 3
 @test num_components(TensorValue(1,2,3,4)) == 4
 @test num_components(SymTensorValue(1,2,3)) == 4
+@test num_components(SymTracelessTensorValue(1,2)) == 4
 @test num_components(SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)) == 16
 
 a = VectorValue(1,2,3,4)
@@ -434,9 +504,21 @@ b[1,1] = a[1,1]
 b[1,2] = a[1,2]
 b[2,1] = a[2,1]
 b[2,2] = a[2,2]
+a = SymTensorValue(11,21,22)
 bt = SymTensorValue{2,Int64}(b)
-@test bt .== a
+@test all(bt .== a)
 
+a = SymTracelessTensorValue(11,21)
+@test change_eltype(a,Float64) == SymTracelessTensorValue{2,Float64,3}
+@test isa(Tuple(a),Tuple)
+@test Tuple(a) == a.data
+b = Matrix{Int64}(undef,2,2)
+b[1,1] = a[1,1]
+b[1,2] = a[1,2]
+b[2,1] = a[2,1]
+b[2,2] = a[2,2]
+bt = SymTracelessTensorValue{2,Int64}(b)
+@test all(bt .== a)
 
 a = SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
 @test change_eltype(a,Float64) == SymFourthOrderTensorValue{2,Float64,9}
