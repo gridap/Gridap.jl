@@ -54,6 +54,7 @@ export Mutable
 export symmetric_part
 export n_components
 export num_components
+export num_indep_components
 export change_eltype
 export diagonal_tensor
 export ⊙

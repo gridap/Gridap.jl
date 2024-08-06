@@ -157,5 +157,10 @@ size(::SymTensorValue{D}) where {D} = size(SymTensorValue{D})
 length(::Type{<:SymTensorValue{D}}) where {D} = D*D
 length(::SymTensorValue{D}) where {D} = length(SymTensorValue{D})
 
+num_components(::Type{<:SymTensorValue}) = @unreachable "The dimension is needed to count components"
 num_components(::Type{<:SymTensorValue{D}}) where {D} = length(SymTensorValue{D})
 num_components(::SymTensorValue{D}) where {D} = num_components(SymTensorValue{D})
+
+num_indep_components(::Type{<:SymTensorValue})  = num_components(SymTensorValue)
+num_indep_components(::Type{<:SymTensorValue{D}}) where {D} = D*(D+1)÷2
+num_indep_components(::SymTensorValue{D}) where {D} = num_indep_components(SymTensorValue{D})

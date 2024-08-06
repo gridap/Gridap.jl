@@ -473,7 +473,46 @@ v = VectorValue(m)
 @test num_components(TensorValue(1,2,3,4)) == 4
 @test num_components(SymTensorValue(1,2,3)) == 4
 @test num_components(SymTracelessTensorValue(1,2)) == 4
+@test num_components(ThirdOrderTensorValue(111,112,121,122,211,212,221,222)) == 8
 @test num_components(SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)) == 16
+
+@test num_indep_components(Int) == 1
+@test num_indep_components(Float64) == 1
+@test num_indep_components(1.0) == 1
+@test num_indep_components(1) == 1
+@test num_indep_components(VectorValue{0}) == 0
+@test num_indep_components(VectorValue{3}) == 3
+@test num_indep_components(VectorValue(1,2,3)) == 3
+@test num_indep_components(TensorValue{2,2}) == 4
+@test num_indep_components(TensorValue(1,2,3,4)) == 4
+@test num_indep_components(SymTensorValue{0}) == 0
+@test num_indep_components(SymTensorValue{2}) == 3
+@test num_indep_components(SymTensorValue(1,2,3)) == 3
+@test num_indep_components(SymTracelessTensorValue{0}) == 0
+@test num_indep_components(SymTracelessTensorValue{1}) == 0
+@test num_indep_components(SymTracelessTensorValue{2}) == 2
+@test num_indep_components(SymTracelessTensorValue(1,2)) == 2
+@test num_indep_components(ThirdOrderTensorValue{2,2,2}) == 8
+@test num_indep_components(ThirdOrderTensorValue(111,112,121,122,211,212,221,222)) == 8
+@test num_indep_components(SymFourthOrderTensorValue{2}) == 9
+@test num_indep_components(SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)) == 9
+
+@test_throws ErrorException num_components(VectorValue)
+@test_throws ErrorException num_components(TensorValue)
+@test_throws ErrorException num_components(TensorValue{2})
+@test_throws ErrorException num_components(AbstractSymTensorValue{2})
+@test_throws ErrorException num_components(SymTensorValue)
+@test_throws ErrorException num_components(SymTracelessTensorValue)
+@test_throws ErrorException num_components(ThirdOrderTensorValue{2,2})
+@test_throws ErrorException num_components(SymFourthOrderTensorValue)
+@test_throws ErrorException num_indep_components(VectorValue)
+@test_throws ErrorException num_indep_components(TensorValue)
+@test_throws ErrorException num_indep_components(TensorValue{2})
+@test_throws ErrorException num_indep_components(AbstractSymTensorValue{2})
+@test_throws ErrorException num_indep_components(SymTensorValue)
+@test_throws ErrorException num_indep_components(SymTracelessTensorValue)
+@test_throws ErrorException num_indep_components(ThirdOrderTensorValue{2,2})
+@test_throws ErrorException num_indep_components(SymFourthOrderTensorValue)
 
 a = VectorValue(1,2,3,4)
 @test change_eltype(a,Float64) == VectorValue{4,Float64}

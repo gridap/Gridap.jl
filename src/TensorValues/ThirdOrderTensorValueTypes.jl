@@ -110,6 +110,6 @@ size(::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = size(ThirdOrderTensor
 length(::Type{<:ThirdOrderTensorValue{D1,D2,D3}}) where {D1,D2,D3} = D1*D2*D3
 length(::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = length(ThirdOrderTensorValue{D1,D2,D3})
 
+num_components(::Type{<:ThirdOrderTensorValue}) = @unreachable "All three size dimensions are needed to count components"
 num_components(::Type{<:ThirdOrderTensorValue{D1,D2,D3}}) where {D1,D2,D3} = length(ThirdOrderTensorValue{D1,D2,D3})
 num_components(::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = num_components(ThirdOrderTensorValue{D1,D2,D3})
-

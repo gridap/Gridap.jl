@@ -114,6 +114,10 @@ size(::SymFourthOrderTensorValue{D}) where {D} = size(SymFourthOrderTensorValue{
 length(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = D*D*D*D
 length(::SymFourthOrderTensorValue{D}) where {D} = length(SymFourthOrderTensorValue{D})
 
+num_components(::Type{<:SymFourthOrderTensorValue}) = @unreachable "The dimension is needed to count components"
 num_components(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = length(SymFourthOrderTensorValue{D})
 num_components(::SymFourthOrderTensorValue{D}) where {D} = num_components(SymFourthOrderTensorValue{D})
 
+num_indep_components(::Type{<:SymFourthOrderTensorValue})  = num_components(SymFourthOrderTensorValue)
+num_indep_components(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = (D*(D+1)÷2)^2
+num_indep_components(::SymFourthOrderTensorValue{D}) where {D} = num_indep_components(SymFourthOrderTensorValue{D})
