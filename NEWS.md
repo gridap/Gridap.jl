@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Passing `kwargs` from `refine` to `simplexify` functions in Adaptivity. Since PR[#1015](https://github.com/gridap/Gridap.jl/pull/1015).
+- Fixed `interpolate` for `ZeroMeanFESpace`. Since PR[#1020](https://github.com/gridap/Gridap.jl/pull/1020).
+- Fixed `gather_free_and_dirichlet_values!` for `FESpaceWithConstantFixed`. Since PR[#1020](https://github.com/gridap/Gridap.jl/pull/1020).
 
 ## [0.18.3] - 2024-07-11
 
