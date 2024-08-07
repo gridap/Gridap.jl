@@ -31,13 +31,19 @@ U = TrialFESpace(V)
 test_single_field_fe_space(U,cellmatvec,cellmat,cellvec,trian)
 @test isa(U,ZeroMeanFESpace)
 
-fun(x) = sin(4*pi*(x[1]+x[2]^2)) + 3
-uh = interpolate(fun, U)
+# Interpolate a function with non-zero mean
+f(x) = sin(4*pi*(x[1]+x[2]^2)) + 3
+uh = interpolate(f, U)
+@test abs(sum(∫(uh)*dΩ)) < 1.0e-10
 
-mean1 = sum(∫(uh)*dΩ)
-
-tol = 1.0e-10
-@test abs(mean1) < tol
+# Interpolate a function with zero mean
+ĝ(x) = x[1]^2 + x[2]
+g_mean = sum(∫(ĝ)*dΩ)/sum(∫(1)*dΩ)
+g(x) = ĝ(x) - g_mean
+vh = interpolate(g, U)
+eh = vh - g
+@test abs(sum(∫(vh)*dΩ)) < 1.0e-10
+@test sum(∫(eh*eh)*dΩ) < 1.0e-10
 
 V = FESpace(model,ReferenceFE(lagrangian,Float64,order);conformity=:L2,constraint=:zeromean)
 @test isa(V,ZeroMeanFESpace)
