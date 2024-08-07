@@ -60,6 +60,15 @@ function _compute_new_fixedval(fv,dv,vol_i,vol,fixed_dof)
   c
 end
 
+# This is required, otherwise we end up calling `FEFunction` with a fixed value of zero, 
+# which does not properly interpolate the function provided. 
+# With this change, we modify are interpolating in the unconstrained space and then
+# substracting the mean.
+function interpolate!(object,free_values,fs::ZeroMeanFESpace)
+  dirichlet_values = zero_dirichlet_values(fs)
+  interpolate_everywhere!(object,free_values,dirichlet_values,fs)
+end
+
 # Delegated functions
 
 get_triangulation(f::ZeroMeanFESpace) = get_triangulation(f.space)
