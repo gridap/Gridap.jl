@@ -45,8 +45,8 @@ function Arrays.evaluate!(cache,s::FineToCoarseDofBasis{T,<:LagrangianDofBasis},
   vals  = evaluate!(cf,field,b.nodes,s.child_ids)
   ndofs = length(b.dof_to_node)
   T2    = eltype(vals)
-  ncomps = num_components(T2)
-  @check ncomps == num_components(eltype(b.node_and_comp_to_dof)) """\n
+  ncomps = num_indep_components(T2) # use num_indep_components ?
+  @check ncomps == num_indep_components(eltype(b.node_and_comp_to_dof)) """\n
   Unable to evaluate LagrangianDofBasis. The number of components of the
   given Field does not match with the LagrangianDofBasis.
 
@@ -80,8 +80,8 @@ end
 
 
 """
-  Wrapper for a ReferenceFE which is specialised for 
-  efficiently evaluating FineToCoarseFields. 
+  Wrapper for a ReferenceFE which is specialised for
+  efficiently evaluating FineToCoarseFields.
 """
 struct FineToCoarseRefFE{T,D,A} <: ReferenceFE{D}
   reffe     :: T

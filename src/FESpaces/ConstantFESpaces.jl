@@ -32,7 +32,7 @@ struct ConstantFESpace{V,T,A,B,C} <: SingleFieldFESpace
     cell_dof_basis_array = lazy_map(get_dof_basis,cell_reffe)
     cell_dof_basis = CellDof(cell_dof_basis_array,Triangulation(model),ReferenceDomain())
 
-    cell_dof_ids = Fill(Int32(1):Int32(num_components(field_type)),num_cells(model))
+    cell_dof_ids = Fill(Int32(1):Int32(num_indep_components(field_type)),num_cells(model))
     A = typeof(cell_basis)
     B = typeof(cell_dof_basis)
     C = typeof(cell_dof_ids)

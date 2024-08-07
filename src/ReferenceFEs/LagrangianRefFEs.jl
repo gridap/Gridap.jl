@@ -222,7 +222,7 @@ end
 function _generate_face_own_dofs(face_own_nodes, node_and_comp_to_dof)
   faces = 1:length(face_own_nodes)
   T = eltype(node_and_comp_to_dof)
-  comps = 1:num_components(T)
+  comps = 1:num_indep_components(T)
   face_own_dofs = [Int[] for i in faces]
   for face in faces
     nodes = face_own_nodes[face]
@@ -254,7 +254,7 @@ function  _generate_face_own_dofs_permutations(
   face_own_nodes_permutations, node_and_comp_to_dof, face_own_nodes, face_own_dofs)
 
   T = eltype(node_and_comp_to_dof)
-  ncomps = num_components(T)
+  ncomps = num_indep_components(T)
 
   face_own_dofs_permutations = Vector{Vector{Int}}[]
   for  (face, pindex_to_inode_to_pinode) in enumerate(face_own_nodes_permutations)

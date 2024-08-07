@@ -63,6 +63,7 @@ export ⋅¹
 export ⋅²
 export double_contraction
 export data_index
+export indep_comp_getindex
 
 import Base: show
 import Base: zero, one
