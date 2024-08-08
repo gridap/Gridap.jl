@@ -94,7 +94,7 @@ function divergence(f::Function,x::Point,fx::TensorValue{3,3})
    )
 end
 
-function divergence(f::Function,x::Point,fx::SymTensorValue{2})
+function divergence(f::Function,x::Point,fx::AbstractSymTensorValue{2})
   g(x) = SVector(f(x).data)
   a = ForwardDiff.jacobian(g,get_array(x))
   VectorValue(
@@ -103,7 +103,7 @@ function divergence(f::Function,x::Point,fx::SymTensorValue{2})
   )
 end
 
-function divergence(f::Function,x::Point,fx::SymTensorValue{3})
+function divergence(f::Function,x::Point,fx::AbstractSymTensorValue{3})
   g(x) = SVector(f(x).data)
   a = ForwardDiff.jacobian(g,get_array(x))
   VectorValue(
