@@ -82,7 +82,7 @@ l2_error(u,v) = sqrt(sum(∫((u-v)⋅(u-v))*dΩ))
 
 b(u,q) = ∫(q*(∇⋅u))dΩ
 B = assemble_vector(q -> b(uh,q),Q)
-B0 = assemble_vector(q -> b(u_ex,q),Q0)
+B0 = assemble_vector(q -> b(uh,q),Q0)
 @test abs(sum(B)) < 1.0e-10
 @test abs(sum(B0)) < 1.0e-10
 
