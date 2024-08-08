@@ -35,7 +35,8 @@ function FEFunction(
     dirichlet_values,
     f.vol_i,
     f.vol,
-    f.space.dof_to_fix)
+    f.space.dof_to_fix
+  )
   fv = lazy_map(+,free_values,Fill(c,length(free_values)))
   dv = dirichlet_values .+ c
   FEFunction(f.space,fv,dv)
@@ -57,12 +58,12 @@ function _compute_new_fixedval(fv,dv,vol_i,vol,fixed_dof)
     c += fv[i-1]*vol_i[i]
   end
   c = -c/vol
-  c
+  return c
 end
 
 # This is required, otherwise we end up calling `FEFunction` with a fixed value of zero, 
 # which does not properly interpolate the function provided. 
-# With this change, we modify are interpolating in the unconstrained space and then
+# With this change, we are interpolating in the unconstrained space and then
 # substracting the mean.
 function interpolate!(object,free_values,fs::ZeroMeanFESpace)
   dirichlet_values = zero_dirichlet_values(fs)
