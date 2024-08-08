@@ -26,10 +26,22 @@ function TrialFESpace(f::ZeroMeanFESpace)
   ZeroMeanFESpace(U,f.vol_i,f.vol)
 end
 
+# function FEFunction(f::ZeroMeanFESpace,free_values)
+#   msg = """
+#     This function should never be called for ZeroMeanFESpace. Please use 
+#     `FEFunction(f::ZeroMeanFESpace,free_values,dirichlet_values)` instead.
+#     Reason: 
+#       Without the fixed value (i.e the dirichlet_values), we cannot correctly 
+#       interpolate the free dofs within the space.
+#   """
+#   @unreachable msg
+# end
+# 
 function FEFunction(
   f::ZeroMeanFESpace,
   free_values::AbstractVector,
-  dirichlet_values::AbstractVector)
+  dirichlet_values::AbstractVector
+)
   c = _compute_new_fixedval(
     free_values,
     dirichlet_values,
