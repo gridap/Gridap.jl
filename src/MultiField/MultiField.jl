@@ -42,6 +42,8 @@ export MultiFieldStyle
 export ConsecutiveMultiFieldStyle
 export BlockMultiFieldStyle
 
+export ColoredFESpace, MultiColorFESpace
+
 include("MultiFieldCellFields.jl")
 
 include("MultiFieldFESpaces.jl")
@@ -51,5 +53,10 @@ include("MultiFieldFEFunctions.jl")
 include("MultiFieldFEAutodiff.jl")
 
 include("BlockSparseMatrixAssemblers.jl")
+
+# Colored assembly
+include("ColoredArrays.jl")
+include("ColoredFESpaces.jl")
+include("ColoredMultiFieldFESpaces.jl")
 
 end # module
