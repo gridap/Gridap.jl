@@ -170,7 +170,7 @@ end
 
 function MultiColorFESpace(
   model ::DiscreteModel,
-  reffe ::Tuple{<:Gridap.FESpaces.ReferenceFEName,Any,Any},
+  reffe ::Tuple{<:ReferenceFEs.ReferenceFEName,Any,Any},
   tags  ::Vector{String},
   labels::FaceLabeling = get_face_labeling(model);
   kwargs...
@@ -181,7 +181,7 @@ end
 
 function MultiColorFESpace(
   space ::SingleFieldFESpace,
-  reffe ::Tuple{<:Gridap.FESpaces.ReferenceFEName,Any,Any},
+  reffe ::Tuple{<:FESpaces.ReferenceFEName,Any,Any},
   tags  ::Vector{String},
   labels::FaceLabeling;
   kwargs...
@@ -289,12 +289,12 @@ FESpaces.map_cell_cols(strategy::MatrixBlock{FESpaces.DefaultAssemblyStrategy},c
 
 function _cell_conformity(
   model::DiscreteModel,
-  reffe::Tuple{<:Gridap.FESpaces.ReferenceFEName,Any,Any};
+  reffe::Tuple{<:FESpaces.ReferenceFEName,Any,Any};
   conformity=nothing, kwargs...
 )
   basis, reffe_args, reffe_kwargs = reffe
   cell_reffe = ReferenceFE(model,basis,reffe_args...;reffe_kwargs...)
-  conformity = Conformity(Gridap.Arrays.testitem(cell_reffe),conformity)
+  conformity = Conformity(Arrays.testitem(cell_reffe),conformity)
   return CellConformity(cell_reffe,conformity)
 end
 

@@ -14,6 +14,7 @@ using Gridap.Geometry
 using Gridap.TensorValues
 using Gridap.CellData
 using Gridap.Fields
+using Gridap.ReferenceFEs
 
 using Gridap.Fields: ArrayBlock, MatrixBlock, VectorBlock
 using Gridap.FESpaces: FEBasis, TestBasis, TrialBasis, get_cell_dof_values
