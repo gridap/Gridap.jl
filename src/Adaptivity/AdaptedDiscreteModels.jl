@@ -51,6 +51,10 @@ is_related(m1::DiscreteModel,m2::DiscreteModel) = is_child(m1,m2) || is_child(m2
 
 # Model Adaptation
 
+function string_to_coarsening(coarsening_method::String, model)
+  coarsening_method == "nvb" && return NVBCoarsening(model)
+end
+
 """
   function refine(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
 
@@ -72,6 +76,15 @@ end
 """
 function coarsen(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
+end
+
+function coarsen(model::UnstructuredDiscreteModel,args...;coarsening_method="nvb",kwargs...)
+  return coarsen(string_to_coarsening(coarsening_method, model),model,args...;kwargs...)
+end
+
+function coarsen(model::AdaptedDiscreteModel,args...;kwargs...)
+  coarse_model = coarsen(model.model,model.glue, args...;kwargs...)
+  return AdaptedDiscreteModel(coarse_model.model,model,coarse_model.glue)
 end
 
 """
