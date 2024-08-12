@@ -194,7 +194,7 @@ function _generate_node_to_dof_glue_component_major(
   nfree_dofs = 0
   ndiri_dofs = 0
   ncomps = length(z)
-  @assert length(testitem(tag_to_masks)) == ncomps
+  @check length(testitem(tag_to_masks)) == ncomps
   for (node,tag) in enumerate(node_to_tag)
     if tag == UNSET
       nfree_dofs += ncomps

@@ -103,8 +103,8 @@ end
 ## Bernstein Basis
 
 function _bernstein_term(p,a,i)
-  @assert i ≤ p
-  @assert a ≤ p
+  @check i ≤ p
+  @check a ≤ p
   if ( i ≤ a ≤ p )
     f = factorial(p) ÷ ( factorial(i)*factorial(p-i) )
     b1 = binomial( p-i, a-i )
@@ -116,8 +116,8 @@ function _bernstein_term(p,a,i)
 end
 
 function _bernstein_term(p,a,b,i,j)
-  @assert i+j ≤ p
-  @assert a+b ≤ p
+  @check i+j ≤ p
+  @check a+b ≤ p
   if ( i ≤ a ≤ p-j ) && ( j ≤ b ≤ p-a )
     f = factorial(p) ÷ ( factorial(i)*factorial(j)*factorial(p-i-j) )
     b1 = binomial( p-i-j, a-i )
@@ -130,8 +130,8 @@ function _bernstein_term(p,a,b,i,j)
 end
 
 function _bernstein_term(p,a,b,c,i,j,k)
-  @assert i+j+k ≤ p
-  @assert a+b+c ≤ p
+  @check i+j+k ≤ p
+  @check a+b+c ≤ p
   if ( i ≤ a ≤ p-j-k ) && ( j ≤ b ≤ p-a-k ) && ( k ≤ c ≤ p-a-b )
     p!,i!,j!,k! = factorial(p),factorial(i),factorial(j),factorial(k)
     f = p! ÷ ( i!*j!*k!*factorial(p-i-j-k) )

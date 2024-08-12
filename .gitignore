@@ -4,6 +4,7 @@
 *.code-workspace
 .DS_Store
 docs/build/
+LocalPreferences.toml
 Manifest.toml
 tmp/
 .vscode/

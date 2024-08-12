@@ -30,7 +30,7 @@ The `order` argument has the following meaning: the divergence of the  functions
 is in the Q space of degree `order`.
 """
 function QCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
-  @assert T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
+  @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
   _order = order+1
   _t = tfill(_order,Val{D-1}())
   t = (_order+1,_t...)

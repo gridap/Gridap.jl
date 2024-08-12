@@ -8,7 +8,7 @@ Type representing a symmetric second-order tensor
 struct SymTensorValue{D,T,L} <: MultiValue{Tuple{D,D},T,2,L}
     data::NTuple{L,T}
     function SymTensorValue{D,T}(data::NTuple{L,T}) where {D,T,L}
-        @assert L == D*(D+1)÷2
+        @check L == D*(D+1)÷2
         new{D,T,L}(data)
     end
 end
@@ -30,7 +30,7 @@ SymTensorValue{0}(data::NTuple{0}) = SymTensorValue{0,Int}(data)
 @generated function SymTensorValue(data::NTuple{L,T}) where {L,T}
   msg = "Invalid number of scalar arguments in SymTensorValue constructor"
   V = (sqrt(1+8*L)-1)/2
-  @assert floor(Int,V) == ceil(Int,V) msg
+  @check floor(Int,V) == ceil(Int,V) msg
   D = Int(V)
   quote
     SymTensorValue{$D,T}(data)
