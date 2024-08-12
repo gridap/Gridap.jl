@@ -39,9 +39,29 @@ function Gridap.ReferenceFEs.get_order(a::FineToCoarseBasis)
   maximum(Gridap.ReferenceFEs.get_orders(a))
 end
 
+function _coord_to_piece(x::Float64,pieces)
+   if (x<pieces[1])
+     return 1 
+   elseif (x>pieces[end])
+     return length(pieces)-1
+   else  
+    for i in 1:length(pieces)-1
+      if x>=pieces[i] && x<=pieces[i+1]
+        return i
+      end
+    end
+  end
+end 
+
+function _point_to_cell(x::Point{D,Float64},pieces) where D 
+   ci  = CartesianIndex(Tuple(_coord_to_piece(x[i],pieces) for i=1:D))
+   lis = LinearIndices(Tuple(length(pieces)-1 for i=1:D))
+   lis[ci]
+end   
+
 
 function Gridap.Fields.return_cache(a::FineToCoarseBasis,x::AbstractArray{<:Point})
-  fields, x2cell = get_data(a.fine_field), xi->Gridap.Adaptivity.x_to_cell(a.rrule,xi)
+  fields, x2cell = get_data(a.fine_field), xi->_point_to_cell(xi,0.0:1.0/first(get_orders(a)):1.0)
   cmaps = Gridap.Adaptivity.get_inverse_cell_map(a.rrule)
 
   xi_cache = array_cache(x)
@@ -69,7 +89,7 @@ function Gridap.Fields.evaluate!(cache,
                             a::FineToCoarseBasis,
                             x::AbstractArray{<:Point})
   fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache = cache
-  fields, x_to_cell = get_data(a.fine_field), xi->Gridap.Adaptivity.x_to_cell(a.rrule,xi)
+  fields, x_to_cell = get_data(a.fine_field), xi->_point_to_cell(xi,0.0:1.0/first(get_orders(a)):1.0)
   cmaps = Gridap.Adaptivity.get_inverse_cell_map(a.rrule)
 
   Gridap.Arrays.setsize!(y_cache, (length(x),Gridap.Geometry.num_nodes(a.rrule.ref_grid)))
