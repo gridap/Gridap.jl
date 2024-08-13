@@ -108,6 +108,25 @@ function Gridap.Fields.evaluate!(cache,
   return y_cache.array
 end
 
+
+# We need the following two definitions in order to be able to evaluated 
+# the cell-wise dofs (i.e, the dofs resulting from get_fe_dof_basis) on the 
+# cell-wise shape functions mapped to PhysicalDomain(). This is in turn required 
+# to compute the constraints in the AgFEMSpaces.jl module.
+function Gridap.Fields.return_cache(a::FineToCoarseBasis,x::Point)
+  xs=Vector{typeof(x)}(undef,1)
+  xs[1]=x
+  return Gridap.Fields.return_cache(a,xs),xs
+end
+
+function Gridap.Fields.evaluate!(cache,a::FineToCoarseBasis,x::Point)
+  cache,xs = cache
+  xs[1]=x
+  # evaluate!(...) returns a 2D array of size 1xN, so we reshape it to 1D
+  reshape(Gridap.Fields.evaluate!(cache,a,xs),(length(a),))
+end
+
+
 struct FineToCoarseBasisGradient{A<:FineToCoarseBasis,B} <: AbstractVector{Field}
   f2cb    :: A
   ∇field  :: B
@@ -421,6 +440,23 @@ function QkIsoQ1(::Type{T},D::Integer,order) where {T}
   function _generate_indices(start,stride,n)
     start:stride:n
   end 
+
+  # We need the following two definitions in order to be able to evaluated 
+  # the cell-wise dofs (i.e, the dofs resulting from get_fe_dof_basis) on the 
+  # cell-wise shape functions mapped to PhysicalDomain(). This is in turn required 
+  # to compute the constraints in the AgFEMSpaces.jl module.
+  function Gridap.Fields.return_cache(a::HQkIsoQ1Basis,x::Point)
+    xs=Vector{typeof(x)}(undef,1)
+    xs[1]=x
+    return Gridap.Fields.return_cache(a,xs),xs
+  end
+
+  function Gridap.Fields.evaluate!(cache,a::HQkIsoQ1Basis,x::Point)
+    cache,xs = cache
+    xs[1]=x
+    # evaluate!(...) returns a 2D array of size 1xN, so we reshape it to 1D
+    reshape(Gridap.Fields.evaluate!(cache,a,xs),(length(a),))
+  end
 
 
   struct HQkIsoQ1BasisGradient{T,D} <: AbstractVector{Field}
