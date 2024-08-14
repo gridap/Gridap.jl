@@ -64,8 +64,8 @@ convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::AbstractArray) where {
 convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::Tuple) where {D1,D2,D3,T} = ThirdOrderTensorValue{D1,D2,D3,T}(arg)
 
 # Inverse conversion
-convert(::Type{<:SMatrix{D1,D2,D3,T}}, arg::ThirdOrderTensorValue) where {D1,D2,D3,T} = SMatrix{D1,D2,D3,T}(Tuple(arg))
-convert(::Type{<:MMatrix{D1,D2,D3,T}}, arg::ThirdOrderTensorValue) where {D1,D2,D3,T} = MMatrix{D1,D2,D3,T}(Tuple(arg))
+convert(::Type{<:SArray{Tuple{D1,D2,D3},T}}, arg::ThirdOrderTensorValue) where {D1,D2,D3,T} = SArray{Tuple{D1,D2,D3},T}(Tuple(arg))
+convert(::Type{<:MArray{Tuple{D1,D2,D3},T}}, arg::ThirdOrderTensorValue) where {D1,D2,D3,T} = MArray{Tuple{D1,D2,D3},T}(Tuple(arg))
 convert(::Type{<:NTuple{L,T1}}, arg::ThirdOrderTensorValue) where {L,T1} = NTuple{L,T1}(Tuple(arg))
 
 # Internal conversion
@@ -77,6 +77,8 @@ convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::ThirdOrderTensorValue{
 change_eltype(::Type{ThirdOrderTensorValue{D1,D2,D3,T1}},::Type{T2}) where {D1,D2,D3,T1,T2} = ThirdOrderTensorValue{D1,D2,D3,T2}
 change_eltype(::Type{ThirdOrderTensorValue{D1,D2,D3,T1,L}},::Type{T2}) where {D1,D2,D3,T1,T2,L} = ThirdOrderTensorValue{D1,D2,D3,T2,L}
 change_eltype(::T,::Type{T2}) where {T<:ThirdOrderTensorValue,T2} = change_eltype(T,T2)
+
+get_array(arg::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = convert(SArray{Tuple{D1,D2,D3},T},arg)
 
 zero(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T} = ThirdOrderTensorValue{D1,D2,D3,T}(tfill(zero(T),Val{D1*D2*D3}()))
 zero(::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = zero(ThirdOrderTensorValue{D1,D2,D3,T})
