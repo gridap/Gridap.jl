@@ -176,13 +176,20 @@ function Fields.linear_combination(a::AbstractVector{<:Number},b::MacroFEBasis)
   return FineToCoarseField(ffields,rrule)
 end
 
-for op in (:∇,:∇∇)
-  @eval begin
-    function Arrays.evaluate!(cache,k::Broadcasting{typeof(Fields.$op)},a::MacroFEBasis)
-      fields = map(Broadcasting($op),a.fine_data)
-      return FineToCoarseArray(a.rrule,fields,a.ids)
-    end
-  end
+function Arrays.evaluate!(cache,k::Broadcasting{typeof(Fields.∇)},a::MacroFEBasis)
+  rrule  = a.rrule
+  cell_maps = get_cell_map(rrule)
+  cell_iJt = map(m -> inv(∇(m)),cell_maps)
+  fields_ref = map(Broadcasting(Fields.∇),a.fine_data)
+  fields = map(Broadcasting(⋅),cell_iJt,fields_ref)
+  return FineToCoarseArray(a.rrule,fields,a.ids)
+end
+
+function Arrays.evaluate!(cache,k::Broadcasting{typeof(Fields.∇∇)},a::MacroFEBasis)
+  @notimplemented
+  # TODO: Lacking geometrical mapping (like for gradients)
+  fields = map(Broadcasting(Fields.∇∇),a.fine_data)
+  return FineToCoarseArray(a.rrule,fields,a.ids)
 end
 
 ############################################################################################
