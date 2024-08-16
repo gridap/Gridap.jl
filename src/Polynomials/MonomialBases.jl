@@ -494,6 +494,40 @@ function _set_gradient!(
   k
 end
 
+# Specialization for SymTensorValue and SymTracelessTensorValue,
+# necessary as long as outer(Point, V<:AbstractSymTensorValue)::G does not
+# return a tensor type that implements the appropriate symmetries of the
+# gradient (and hessian)
+function _set_gradient!(
+  v::AbstractVector{G},s,k,::Type{V}) where {V<:AbstractSymTensorValue{D},G} where D
+
+  T = eltype(s)
+  m = zero(Mutable(G))
+  z = zero(T)
+
+  is_traceless = V <: SymTracelessTensorValue
+  skip_last_diagval = is_traceless ? 1 : 0    # Skid V_DD if traceless
+
+  for c in 1:(D-skip_last_diagval) # Go over cols
+    for r in c:D                   # Go over lower triangle, current col
+      for i in CartesianIndices(m)
+        @inbounds m[i] = z
+      end
+      for i in CartesianIndices(s)
+        @inbounds m[i,r,c] = s[i]
+        if (r!=c)
+          @inbounds m[i,c,r] = s[i]
+        elseif is_traceless # V_rr contributes negatively to V_DD (tracelessness)
+          @inbounds m[i,D,D] = -s[i]
+        end
+      end
+      @inbounds v[k] = m
+      k += 1
+    end
+  end
+  k
+end
+
 function _hessian_nd!(
   v::AbstractVector{G},
   x,

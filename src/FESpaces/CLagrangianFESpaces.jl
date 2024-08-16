@@ -215,7 +215,7 @@ function _generate_node_to_dof_glue_component_major(
   diri_dof_to_tag = ones(Int8,ndiri_dofs)
   T = change_eltype(z,Int32)
   nnodes = length(node_to_tag)
-  node_and_comp_to_dof = zeros(T,nnodes)
+  node_and_comp_to_dof = Vector{T}(undef,nnodes)
   nfree_dofs = 0
   ndiri_dofs = 0
   m = zeros(Int32, ncomps)

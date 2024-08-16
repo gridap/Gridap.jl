@@ -230,7 +230,7 @@ function _generate_face_own_dofs(face_own_nodes, node_and_comp_to_dof)
     for comp in comps
       for node in nodes
         comp_to_dofs = node_and_comp_to_dof[node]
-        dof = comp_to_dofs[comp]
+        dof = indep_comp_getindex(comp_to_dofs,comp)
         push!(face_own_dofs[face],dof)
       end
     end
@@ -274,8 +274,8 @@ function  _generate_face_own_dofs_permutations(
         comp_to_pdof = node_and_comp_to_dof[pnode]
         comp_to_dof = node_and_comp_to_dof[node]
         for comp in 1:ncomps
-          dof = comp_to_dof[comp]
-          pdof = comp_to_pdof[comp]
+          dof = indep_comp_getindex(comp_to_dof,comp)
+          pdof = indep_comp_getindex(comp_to_pdof,comp)
           idof = findfirst(i->i==dof,idof_to_dof)
           ipdof = findfirst(i->i==pdof,idof_to_dof)
           idof_to_pidof[idof] = ipdof
