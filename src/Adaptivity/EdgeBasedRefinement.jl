@@ -942,8 +942,8 @@ function _get_powellsabin_refined_connectivity(p::Polytope)
                   4, 2, 7,
                   2, 6, 7,
                   6, 3, 7,
-                  3, 5, 7,
-                  5, 1, 7]
+                  5, 3, 7,
+                  1, 5, 7]
   if p == TRI
     polys = [TRI]
     cell_type = fill(1, n_TRI)
