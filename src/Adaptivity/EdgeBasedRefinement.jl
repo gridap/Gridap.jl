@@ -953,7 +953,7 @@ function _get_powellsabin_refined_connectivity(p::Polytope)
     polys     = [TET]
     cell_type = fill(1, n_TRI*n_FACE)
     face_conn = [[1,2,3,5,6,7,11],[1,2,4,5,8,9,12],[1,3,4,6,8,10,13],[2,3,4,7,9,10,14]]
-    conn_data = vcat([[lazy_map(Reindex(face_conn[f]),conn_data_2d[1+(i-1)*3:i*3])...,15] for i in 1:n_TRI for f in 1:n_FACE]...)
+    conn_data = vcat([[lazy_map(Reindex(face_conn[f]),conn_data_TRI[1+(i-1)*3:i*3])...,15] for i in 1:n_TRI for f in 1:n_FACE]...)
     conn_ptrs = collect(1:4:n_TRI*n_FACE*4+1)
     return polys, cell_type, Table(conn_data,conn_ptrs)
   end
