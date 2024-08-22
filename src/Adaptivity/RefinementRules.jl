@@ -198,16 +198,17 @@ end
 # Generic version of the function. Spetializations may exist for some other ref rule types.
 function get_d_to_face_to_parent_face(rr::RefinementRule,::RefinementRuleType)
   # WARNING: The functions below are NOT general for any point and any polytope.
-  #          They are only valid for the specific case of a refinement rule. 
+  #          They are only valid for the specific case of a refinement rule.
+  tol = 1.e-10
   function belongs_to_face(::Val{0},::Val{0},fface_coords,cface_coords)
-    return fface_coords[1] == cface_coords[1]
+    return norm(fface_coords[1] - cface_coords[1]) < tol
   end
   function belongs_to_face(::Val{0},::Val{1},fface_coords,cface_coords)
-    norm(cross(fface_coords[1] - cface_coords[1], fface_coords[1] - cface_coords[2])) ≈ 0.0
+    norm(cross(fface_coords[1] - cface_coords[1], fface_coords[1] - cface_coords[2])) < tol
   end
   function belongs_to_face(::Val{0},::Val{2},fface_coords,cface_coords)
     n = cross(cface_coords[2] - cface_coords[1], cface_coords[3] - cface_coords[1])
-    return sum(map(ccoords -> dot(n,ccoords - fface_coords[1]), cface_coords)) ≈ 0.0
+    return norm(sum(map(ccoords -> dot(n,ccoords - fface_coords[1]), cface_coords))) < tol
   end
   function belongs_to_face(::Val{fface_dim},::Val{cface_dim},fface_coords,cface_coords) where {fface_dim,cface_dim}
     return all(map(p -> belongs_to_face(Val(0),Val(cface_dim),[p],cface_coords),fface_coords))
