@@ -122,21 +122,58 @@ function _get_cell_polytopes(rrules::AbstractArray{<:RefinementRule})
   return polys_new, cell_type_new
 end
 
+# Geometric maps between coarse and fine points
+
 x_to_cell(rr::RefinementRule,x::Point) = CellData._point_to_cell!(rr.p2c_cache,x)
 
-function bundle_points_by_subcell(rr::RefinementRule,x::AbstractArray{<:Point})
-  npts      = length(x)
-  nchildren = num_subcells(rr)
+struct CoarseToFinePointMap <: Map end
 
-  child_ids = map(xi -> x_to_cell(rr,xi),x)
-  ptrs      = fill(0,nchildren+1)
-  for i in 1:npts
-    ptrs[child_ids[i]+1] += 1
+function Arrays.return_cache(::CoarseToFinePointMap,rr::RefinementRule,x::AbstractVector{<:Point})
+  cmaps = get_inverse_cell_map(rr)
+  xi_cache = array_cache(x)
+  mi_cache = array_cache(cmaps)
+
+  xi = first(x)
+  mi = getindex!(mi_cache,cmaps,1)
+  zi_cache = Fields.return_cache(mi,xi)
+  zi = zero(Fields.return_type(mi,xi))
+
+  T = typeof(zi)
+  ptrs = zeros(Int32,num_subcells(rr)+1)
+  ids_cache = CachedArray(zeros(Int32,size(x)))
+  y_cache = CachedArray(zeros(T,size(x)))
+  return xi_cache, mi_cache, zi_cache, y_cache, ids_cache, ptrs
+end
+
+function Arrays.evaluate!(cache,::CoarseToFinePointMap,rr::RefinementRule,x::AbstractVector{<:Point})
+  xi_cache, mi_cache, zi_cache, y_cache, ids_cache, ptrs = cache
+  cmaps = get_inverse_cell_map(rr)
+  setsize!(y_cache,size(x))
+  setsize!(ids_cache,size(x))
+  y, ids = y_cache.array, ids_cache.array
+
+  # First pass: We count the number of points in each subcell, and store the ids
+  fill!(ptrs,0)
+  for i in eachindex(x)
+    xi = getindex!(xi_cache,x,i)
+    id = x_to_cell(rr,xi)
+    ids[i] = Int32(id)
+    ptrs[id+1] += 1
   end
-  ptrs[1] = 1
-  
-  data = lazy_map(Reindex(x),sortperm(child_ids))
-  return Table(data,ptrs)
+  Arrays.length_to_ptrs!(ptrs)
+
+  # Second pass: We evaluate cmaps on the points in each subcell
+  for i in eachindex(x)
+    xi = getindex!(xi_cache,x,i)
+    id = ids[i]
+    mi = getindex!(mi_cache,cmaps,id)
+    y[ptrs[id]] = Fields.evaluate!(zi_cache,mi,xi)
+    ids[i] = ptrs[id] # Reverse map
+    ptrs[id] += 1
+  end
+  Arrays.rewind_ptrs!(ptrs)
+
+  return Table(y,ptrs), Table(ids,ptrs)
 end
 
 # Topological information functions
@@ -836,7 +873,6 @@ function test_refinement_rule(rr::RefinementRule; debug=false)
     debug && println(ichild, " :: ", p," -> ",y, " -> ", z, " - ", p ≈ z)
   end
 
-  pts_bundled = bundle_points_by_subcell(rr,pts)
   cell_measures = get_cell_measures(rr)
   cell_polys = get_cell_polytopes(rr)
 

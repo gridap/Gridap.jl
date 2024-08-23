@@ -473,15 +473,17 @@ struct OperationCellField{DS} <: CellField
     trian = get_triangulation(first(args))
     domain_style = DomainStyle(first(args))
     @check all( map(i->DomainStyle(i)==domain_style,args) )
-    #@check all( map(i->get_triangulation(i)===trian,args) )
 
     # This is only to catch errors in user code
     # as soon as possible.
     if num_cells(trian) > 0
-      x = _get_cell_points(args...)
-      ax = map(i->i(x),args)
-      axi = map(first,ax)
-      r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
+      @check begin
+        x = _get_cell_points(args...)
+        ax = map(i->i(x),args)
+        axi = map(first,ax)
+        r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
+        true
+      end
     end
 
     new{typeof(domain_style)}(op,args,trian,domain_style,Dict())
@@ -529,12 +531,6 @@ get_triangulation(f::OperationCellField) = f.trian
 DomainStyle(::Type{OperationCellField{DS}}) where DS = DS()
 
 function evaluate!(cache,f::OperationCellField,x::CellPoint)
-  #key = (:evaluate,objectid(x))
-  #if ! haskey(f.memo,key)
-  #  ax = map(i->i(x),f.args)
-  #  f.memo[key] = lazy_map(Fields.BroadcastingFieldOpMap(f.op.op),ax...)
-  #end
-  #f.memo[key]
   ax = map(i->i(x),f.args)
   lazy_map(Fields.BroadcastingFieldOpMap(f.op.op),ax...)
 end
