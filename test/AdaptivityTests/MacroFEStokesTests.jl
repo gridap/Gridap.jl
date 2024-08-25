@@ -6,12 +6,12 @@ using Gridap.ReferenceFEs
 
 using FillArrays
 
-u_sol(x) = (Dc == 2) ? VectorValue(x[1],-x[2]) : VectorValue(x[1],-x[2],0.0)
-p_sol(x) = (x[1] - 1.0/2.0)
-
 function main(Dc,reftype)
   @assert Dc ∈ [2,3]
   @assert reftype ∈ [:barycentric,:powellsabin]
+
+  u_sol(x) = (Dc == 2) ? VectorValue(x[1],-x[2]) : VectorValue(x[1],-x[2],0.0)
+  p_sol(x) = (x[1] - 1.0/2.0)
 
   domain = (Dc == 2) ? (0,1,0,1) : (0,1,0,1,0,1)
   nc = (Dc == 2) ? (4,4) : (2,2,2)

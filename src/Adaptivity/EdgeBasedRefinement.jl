@@ -518,7 +518,7 @@ _has_interior_point(rr::RefinementRule,::RefinementRuleType) = false
 RefinementRule representing a non-refined cell.
 """
 function WhiteRefinementRule(p::Polytope)
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(LagrangianRefFE(Float64,p,1)))
+  ref_grid = UnstructuredGrid(LagrangianRefFE(Float64,p,1))
   return RefinementRule(WithoutRefinement(),p,ref_grid)
 end
 
@@ -535,7 +535,7 @@ function RedRefinementRule(p::Polytope)
   polys, cell_types, conn = _get_red_refined_connectivity(p)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
   return RefinementRule(RedRefinement(),p,ref_grid)
 end
 
@@ -724,7 +724,7 @@ function GreenRefinementRule(p::Polytope{2},ref_edge::Integer)
   polys, cell_types, conn = _get_green_refined_connectivity(p,ref_edge)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
   return RefinementRule(GreenRefinement{ref_edge}(),p,ref_grid)
 end
 
@@ -779,7 +779,7 @@ function BlueRefinementRule(p::Polytope{2}, long_ref_edge::Integer, short_ref_ed
   polys, cell_types, conn = _get_blue_refined_connectivity(p,long_ref_edge, short_ref_edge)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
   return RefinementRule(BlueRefinement{long_ref_edge, short_ref_edge}(),p,ref_grid)
 end
 
@@ -821,7 +821,7 @@ function BlueDoubleRefinementRule(p::Polytope{2}, long_ref_edge::Integer)
   coords = get_new_coordinates_from_faces(p,faces_list)
   polys, cell_types, conn = _get_blue_double_refined_connectivity(p,long_ref_edge)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
   return RefinementRule(BlueDoubleRefinement{long_ref_edge}(),p,ref_grid)
 end
 
@@ -866,7 +866,7 @@ function BarycentricRefinementRule(p::Polytope)
   polys, cell_types, conn = _get_barycentric_refined_connectivity(p)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
   return RefinementRule(BarycentricRefinementRule(),p,ref_grid)
 end
 
@@ -914,7 +914,7 @@ function PowellSabinRefinementRule(p::Polytope)
   polys, cell_types, conn = _get_powellsabin_refined_connectivity(p)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
   return RefinementRule(PowellSabinRefinement(),p,ref_grid)
 end
 

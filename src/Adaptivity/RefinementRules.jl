@@ -40,7 +40,8 @@ end
 
 function RefinementRule(T::RefinementRuleType,poly::Polytope,ref_grid::Grid)
   ref_model = UnstructuredDiscreteModel(ref_grid)
-  return RefinementRule(T,poly,ref_model)
+  cell_maps = get_cell_map(ref_grid)
+  return RefinementRule(T,poly,ref_model;cell_maps)
 end
 
 function RefinementRule(T::RefinementRuleType,poly::Polytope,ref_grid::CartesianGrid)
@@ -873,8 +874,8 @@ function test_refinement_rule(rr::RefinementRule; debug=false)
 
     y = evaluate(m,p)
     z = evaluate(m_inv,y)
-    @test p ≈ z
     debug && println(ichild, " :: ", p," -> ",y, " -> ", z, " - ", p ≈ z)
+    @test norm(p-z) < 1.e-6
   end
 
   cell_measures = get_cell_measures(rr)

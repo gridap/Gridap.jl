@@ -65,6 +65,21 @@ The module provides a `refine` method for `CartesianDiscreteModel`. The method t
   end
 ```
 
+## Macro Finite-Elements
+
+The module also provides support for macro finite-elements. From an abstract point of view, a macro finite-element is a finite-element defined on a refined polytope, where polynomial basis are defined on each of the subcells (creating a broken piece-wise polynomial space on the original polytope). From Gridap's point of view, a macro finite-element is a `ReferenceFE` defined on a `RefinementRule` from an array of `ReferenceFE`s defined on the subcells.
+
+Although there are countless combinations, here are two possible applications:
+
+- Linearized High-Order Lagrangian FESpaces: These are spaces which have the same DoFs as a high-order Lagrangian space, but where the basis functions are linear on each subcell.
+- Barycentrically-refined elements for Stokes-like problems: These are spaces where the basis functions for velocity are defined on the barycentrically-refined mesh, whereas the basis functions for pressure are defined on the original cells. This allows for exact so-called Stokes sequences (see [here](https://arxiv.org/abs/2002.02051)).
+
+The API is given by the following methods:
+
+```@docs
+  MacroReferenceFE
+```
+
 ## Notes for users
 
 Most of the tools provided by this module are showcased in the tests of the module itself, as well as the following tutorial (coming soon).
