@@ -22,10 +22,12 @@ struct RefinementRule{P}
 end
 
 # Note for devs: 
-# The reason why we are saving both the cell maps and the inverse cell maps is to avoid recomputing
-# them when needed. This is needed for performance when the RefinementRule is used for MacroFEs.
-# Also, in the case the ref_grid comes from a CartesianGrid, we save the cell maps as 
-# AffineMaps, which are more efficient than the default linear_combinations.
+# - The reason why we are saving both the cell maps and the inverse cell maps is to avoid recomputing
+#   them when needed. This is needed for performance when the RefinementRule is used for MacroFEs.
+#   Also, in the case the ref_grid comes from a CartesianGrid, we save the cell maps as 
+#   AffineMaps, which are more efficient than the default linear_combinations.
+# - We cannot parametrise the RefinementRule by all it's fields, because we will have different types of
+#   RefinementRules in a single mesh. It's the same reason why we don't parametrise the ReferenceFE type.
 
 function RefinementRule(
   T::RefinementRuleType,poly::Polytope,ref_grid::DiscreteModel;
@@ -69,7 +71,7 @@ function RefinementRule(poly::Polytope{D},partition::NTuple{D,Integer};kwargs...
   return RefinementRule(GenericRefinement(),poly,ref_grid;kwargs...)
 end
 
-function Base.show(io::IO,rr::RefinementRule{P,A}) where {P,A}
+function Base.show(io::IO,rr::RefinementRule{P}) where P
   T = RefinementRuleType(rr)
   print(io,"RefinementRule{$(rr.poly),$T}")
 end
