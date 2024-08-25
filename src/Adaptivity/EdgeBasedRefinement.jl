@@ -517,8 +517,12 @@ _has_interior_point(rr::RefinementRule,::RefinementRuleType) = false
 """
 RefinementRule representing a non-refined cell.
 """
-function WhiteRefinementRule(p::Polytope)
-  ref_grid = compute_reference_grid(p,1)
+function WhiteRefinementRule(p::Polytope{D}) where D
+  coords = get_vertex_coordinates(p)
+  conn = Table(get_faces(p,D,0))
+  cell_types = Int32[1]
+  reffes = [LagrangianRefFE(Float64,p,1)]
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types;has_affine_map=true)
   return RefinementRule(WithoutRefinement(),p,ref_grid)
 end
 
@@ -535,7 +539,7 @@ function RedRefinementRule(p::Polytope)
   polys, cell_types, conn = _get_red_refined_connectivity(p)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types;has_affine_map=true)
   return RefinementRule(RedRefinement(),p,ref_grid)
 end
 
