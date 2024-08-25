@@ -289,6 +289,8 @@ struct MacroRefFE <: ReferenceFEName end
 
 Constructs a ReferenceFE for a macro-element, given a RefinementRule and a set of
 ReferenceFEs for the subcells.
+
+For performance, these should be paired with CompositeQuadratures.
 """
 function MacroReferenceFE(
   rrule::RefinementRule,
