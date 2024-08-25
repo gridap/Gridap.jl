@@ -12,11 +12,24 @@ struct WithoutRefinement <: RefinementRuleType end
   - poly :: `Polytope`, representing the geometry of the parent cell.
   - ref_grid :: `DiscreteModel` defined on `poly`, giving the parent-to-children cell map. 
 """
-struct RefinementRule{P,A<:DiscreteModel}
+struct RefinementRule{P,A<:DiscreteModel,B,C}
   T         :: RefinementRuleType
   poly      :: P
   ref_grid  :: A
+  cmaps     :: B
+  icmaps    :: C
   p2c_cache :: Tuple
+end
+
+function RefinementRule(
+  T::RefinementRuleType,poly::Polytope,ref_grid::DiscreteModel;
+  cell_maps=get_cell_map(ref_grid)
+)
+  ref_trian = Triangulation(ref_grid)
+  cmaps = collect1d(cell_maps)
+  icmaps = collect1d(lazy_map(Fields.inverse_map,cell_maps))
+  p2c_cache = CellData._point_to_cell_cache(CellData.KDTreeSearch(),ref_trian)
+  return RefinementRule(T,poly,ref_grid,cmaps,icmaps,p2c_cache)
 end
 
 function RefinementRule(T::RefinementRuleType,poly::Polytope,ref_grid::Grid)
@@ -24,10 +37,10 @@ function RefinementRule(T::RefinementRuleType,poly::Polytope,ref_grid::Grid)
   return RefinementRule(T,poly,ref_model)
 end
 
-function RefinementRule(T::RefinementRuleType,poly::Polytope,ref_grid::DiscreteModel)
-  ref_trian = Triangulation(UnstructuredDiscreteModel(ref_grid))
-  p2c_cache = CellData._point_to_cell_cache(CellData.KDTreeSearch(),ref_trian)
-  return RefinementRule(T,poly,ref_grid,p2c_cache)
+function RefinementRule(T::RefinementRuleType,poly::Polytope,ref_grid::CartesianGrid)
+  ref_model = UnstructuredDiscreteModel(ref_grid)
+  cell_maps = get_cell_map(ref_grid)
+  return RefinementRule(T,poly,ref_model;cell_maps)
 end
 
 function RefinementRule(reffe::LagrangianRefFE{D},nrefs::Integer;kwargs...) where D
@@ -45,7 +58,7 @@ function RefinementRule(poly::Polytope{D},nrefs::Integer;kwargs...) where D
 end
 
 function RefinementRule(poly::Polytope{D},partition::NTuple{D,Integer};kwargs...) where D
-  ref_grid = UnstructuredGrid(compute_reference_grid(poly,partition))
+  ref_grid = compute_reference_grid(poly,partition)
   return RefinementRule(GenericRefinement(),poly,ref_grid;kwargs...)
 end
 
@@ -67,23 +80,8 @@ num_subcells(rr::RefinementRule) = num_cells(rr.ref_grid)
 num_ref_faces(rr::RefinementRule,d::Int) = num_faces(rr.ref_grid,d)
 RefinementRuleType(rr::RefinementRule) :: RefinementRuleType = rr.T
 
-function Geometry.get_cell_map(rr::RefinementRule)
-  ref_grid = get_ref_grid(rr)
-  return collect(Geometry.get_cell_map(ref_grid))
-end
-
-function get_inverse_cell_map(rr::RefinementRule)
-  # Getting the underlying grid is important, otherwise we would not get affine maps for
-  # simplicial meshes. For non-simplicial meshes we will still get LinearCombinationFields.
-  # Note that this implies that (potentially)
-  #            inverse_map(get_cell_map(rr)) != get_inverse_cell_map(rr)
-  # This is on purpose, so that we may keep type stability in mixed-polytope meshes 
-  # when only using the cell_maps. Using the inverse cell_maps in mixed meshes may 
-  # result in type instabilities (only during fine-to-coarse transfers). 
-  ref_grid = get_grid(get_ref_grid(rr))
-  f2c_cell_map = collect(Geometry.get_cell_map(ref_grid))
-  return map(Fields.inverse_map,f2c_cell_map)
-end
+Geometry.get_cell_map(rr::RefinementRule) = rr.cmaps
+get_inverse_cell_map(rr::RefinementRule) = rr.icmaps
 
 function get_cell_measures(rr::RefinementRule)
   ref_grid  = get_ref_grid(rr)

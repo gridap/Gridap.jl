@@ -31,25 +31,25 @@ end
 struct FineToCoarseArray{T,A,B,C} <: AbstractVector{T}
   rrule       :: A
   coarse_data :: B
-  fine_data   :: Vector{C}
+  fine_data   :: C
   ids         :: FineToCoarseIndices
 
   function FineToCoarseArray{T}(
     rrule::RefinementRule,
     coarse_data::Union{Vector{T},Nothing},
-    fine_data::Vector{<:AbstractVector},
+    fine_data::AbstractVector{<:AbstractVector},
     ids::FineToCoarseIndices
   ) where T
     A = typeof(rrule)
     B = typeof(coarse_data)
-    C = eltype(fine_data)
+    C = typeof(fine_data)
     new{T,A,B,C}(rrule,coarse_data,fine_data,ids)
   end
 end
 
 function FineToCoarseArray(
   rrule::RefinementRule,
-  fine_data::Vector{<:AbstractVector},
+  fine_data::AbstractVector{<:AbstractVector},
   ids::FineToCoarseIndices
 )
   T = combine_fine_to_coarse_type(rrule,fine_data,ids)
@@ -58,7 +58,7 @@ end
 
 function FineToCoarseArray(
   rrule::RefinementRule,
-  fine_data::Vector{<:AbstractVector},
+  fine_data::AbstractVector{<:AbstractVector},
   connectivity::AbstractVector{<:AbstractVector{<:Integer}}
 )
   ids = FineToCoarseIndices(connectivity)
@@ -67,7 +67,7 @@ end
 
 function FineToCoarseArray(
   rrule::RefinementRule,
-  fine_data::Vector{<:AbstractVector}
+  fine_data::AbstractVector{<:AbstractVector}
 )
   offsets = cumsum(map(length,fine_data)) .- length(first(fine_data)) .+ 1
   connectivity = map(fine_data,offsets) do fdata,o
@@ -92,47 +92,47 @@ function Arrays.get_children(n::TreeNode,a::FineToCoarseArray)
   (similar_tree_node(n,a.rrule),similar_tree_node(n,a.fine_data))
 end
 
-function combine_fine_to_coarse_type(
-  rr::RefinementRule,fine_data::Vector{<:AbstractVector{T}},ids::FineToCoarseIndices
+@inline function combine_fine_to_coarse_type(
+  rr::RefinementRule,fine_data::AbstractVector{<:AbstractVector{T}},ids::FineToCoarseIndices
 ) where T <: Field
   return FineToCoarseField{Vector{T},typeof(rr),Vector{Int32}}
 end
-function combine_fine_to_coarse(
+@inline function combine_fine_to_coarse(
   rr::RefinementRule,fine_fields::Vector{<:Field},child_ids::Vector{<:Integer}
 )
   FineToCoarseField(fine_fields,rr,child_ids)
 end
 
 struct FineToCoarseDof <: Dof end # Should we implement this properly?
-function combine_fine_to_coarse_type(
-  rr::RefinementRule,fine_data::Vector{<:AbstractVector{T}},ids::FineToCoarseIndices
+@inline function combine_fine_to_coarse_type(
+  rr::RefinementRule,fine_data::AbstractVector{<:AbstractVector{T}},ids::FineToCoarseIndices
 ) where T <: Dof
   return FineToCoarseDof
 end
-function combine_fine_to_coarse(
+@inline function combine_fine_to_coarse(
   rr::RefinementRule,fine_dofs::Vector{<:Dof},child_ids::Vector{<:Integer}
 )
   FineToCoarseDof()
 end
 
-function combine_fine_to_coarse_type(
-  rr::RefinementRule,fine_data::Vector{<:AbstractVector{T}},ids::FineToCoarseIndices
+@inline function combine_fine_to_coarse_type(
+  rr::RefinementRule,fine_data::AbstractVector{<:AbstractVector{T}},ids::FineToCoarseIndices
 ) where T <: Point
   return T
 end
-function combine_fine_to_coarse(
+@inline function combine_fine_to_coarse(
   rr::RefinementRule,fine_pts::Vector{<:Point},child_ids::Vector{<:Integer}
 )
   cmaps = get_cell_map(rr)
   evaluate(cmaps[first(child_ids)],first(fine_pts))
 end
 
-function combine_fine_to_coarse_type(
-  rr::RefinementRule,fine_data::Vector{<:AbstractVector{T}},ids::FineToCoarseIndices
+@inline function combine_fine_to_coarse_type(
+  rr::RefinementRule,fine_data::AbstractVector{<:AbstractVector{T}},ids::FineToCoarseIndices
 ) where T <: Real
   return T
 end
-function combine_fine_to_coarse(
+@inline function combine_fine_to_coarse(
   rr::RefinementRule,fine_vals::Vector{<:Real},child_ids::Vector{<:Integer}
 )
   sum(fine_vals)
@@ -247,7 +247,6 @@ end
 
 function Fields.linear_combination(a::AbstractVector{<:Number},b::MacroFEBasis)
   rrule, ids = b.rrule, b.ids
-
   fcoeffs = lazy_map(Broadcasting(Reindex(a)),ids.fcell_to_cids)
   ffields = lazy_map(linear_combination,fcoeffs,b.fine_data)
   return FineToCoarseField(ffields,rrule)
@@ -256,16 +255,16 @@ end
 function Arrays.evaluate!(cache,k::Broadcasting{typeof(Fields.∇)},a::MacroFEBasis)
   rrule  = a.rrule
   cell_maps = get_cell_map(rrule)
-  cell_iJt = map(m -> inv(∇(m)),cell_maps)
-  fields_ref = map(Broadcasting(Fields.∇),a.fine_data)
-  fields = map(Broadcasting(⋅),cell_iJt,fields_ref)
+  cell_grads = lazy_map(k,a.fine_data)
+  fields = lazy_map(push_∇,cell_grads,cell_maps)
   return FineToCoarseArray(a.rrule,fields,a.ids)
 end
 
 function Arrays.evaluate!(cache,k::Broadcasting{typeof(Fields.∇∇)},a::MacroFEBasis)
-  @notimplemented
-  # TODO: Lacking geometrical mapping (like for gradients)
-  fields = map(Broadcasting(Fields.∇∇),a.fine_data)
+  rrule  = a.rrule
+  cell_maps = get_cell_map(rrule)
+  cell_grads = lazy_map(k,a.fine_data)
+  fields = lazy_map(push_∇∇,cell_grads,cell_maps)
   return FineToCoarseArray(a.rrule,fields,a.ids)
 end
 
@@ -291,8 +290,8 @@ function MacroReferenceFE(
   space = FESpace(grid,reffes;conformity=conformity)
 
   conn = get_cell_dof_ids(space)
-  basis = FineToCoarseArray(rrule,collect(map(get_shapefuns,reffes)),conn)
-  dofs  = FineToCoarseArray(rrule,collect(map(get_dof_basis,reffes)),conn)
+  basis = FineToCoarseArray(rrule,map(get_shapefuns,reffes),conn)
+  dofs  = FineToCoarseArray(rrule,map(get_dof_basis,reffes),conn)
   face_dofs = get_cface_to_dofs(rrule,space,reffes)
   face_own_dofs = get_cface_to_own_dofs(rrule,space,reffes)
   face_own_perms = get_cface_to_own_dof_permutations(rrule,space,reffes)
