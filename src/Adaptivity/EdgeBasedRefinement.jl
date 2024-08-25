@@ -518,7 +518,7 @@ _has_interior_point(rr::RefinementRule,::RefinementRuleType) = false
 RefinementRule representing a non-refined cell.
 """
 function WhiteRefinementRule(p::Polytope)
-  ref_grid = UnstructuredGrid(LagrangianRefFE(Float64,p,1))
+  ref_grid = compute_reference_grid(p,1)
   return RefinementRule(WithoutRefinement(),p,ref_grid)
 end
 
