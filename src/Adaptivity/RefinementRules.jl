@@ -21,6 +21,12 @@ struct RefinementRule{P,A<:DiscreteModel,B,C}
   p2c_cache :: Tuple
 end
 
+# Note for devs: 
+# The reason why we are saving both the cell maps and the inverse cell maps is to avoid recomputing
+# them when needed. This is needed for performance when the RefinementRule is used for MacroFEs.
+# Also, in the case the ref_grid comes from a CartesianGrid, we save the cell maps as 
+# AffineMaps, which are more efficient than the default linear_combinations.
+
 function RefinementRule(
   T::RefinementRuleType,poly::Polytope,ref_grid::DiscreteModel;
   cell_maps=get_cell_map(ref_grid)

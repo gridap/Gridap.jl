@@ -28,6 +28,17 @@ function Base.getindex(a::FineToCoarseIndices,cid::Integer)
   (a.cid_to_fcells[cid],a.cid_to_fids[cid])
 end
 
+# Note for developpers:
+# We use FineToCoarseArray to represent many data-structures, from quadrature points to 
+# finite-element basis. For performance reasons, we sometimes want to keep a copy of the 
+# coarse data (but not always!). For instance: 
+#  - for quad points, we want to keep the coarse points. Otherwise, we woudl have to 
+#    recompute them for every cell when the CompositeQuadrature is used with other 
+#    gridap basis. 
+#  - for finite-element basis, we do NOT want to generate the coarse basis, otherwise 
+#    we would be creating it many times (when it should never be used). In this case, we 
+#    create it on the go (see getindex! specialisations).
+# All in all, this is why coarse_data can be of type Nothing.
 struct FineToCoarseArray{T,A,B,C} <: AbstractVector{T}
   rrule       :: A
   coarse_data :: B
