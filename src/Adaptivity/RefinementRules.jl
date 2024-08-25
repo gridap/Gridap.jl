@@ -12,12 +12,12 @@ struct WithoutRefinement <: RefinementRuleType end
   - poly :: `Polytope`, representing the geometry of the parent cell.
   - ref_grid :: `DiscreteModel` defined on `poly`, giving the parent-to-children cell map. 
 """
-struct RefinementRule{P,A<:DiscreteModel,B,C}
+struct RefinementRule{P,A<:DiscreteModel}
   T         :: RefinementRuleType
   poly      :: P
   ref_grid  :: A
-  cmaps     :: B
-  icmaps    :: C
+  cmaps     :: Vector{<:Field}
+  icmaps    :: Vector{<:Field}
   p2c_cache :: Tuple
 end
 
