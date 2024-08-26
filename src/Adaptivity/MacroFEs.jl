@@ -88,15 +88,13 @@ function FineToCoarseArray(
 end
 
 Base.size(a::FineToCoarseArray) = size(a.ids)
-Base.getindex(a::FineToCoarseArray,i::Integer) = getindex!(array_cache(a),a,i)
-Arrays.array_cache(a::FineToCoarseArray) = nothing
 
-Arrays.getindex!(cache,a::FineToCoarseArray{T},i::Integer) where T = getindex(a.coarse_data,i)
+Base.getindex(a::FineToCoarseArray{T},i::Integer) where T = getindex(a.coarse_data,i)
 
-function Arrays.getindex!(cache,a::FineToCoarseArray{T,A,Nothing},i::Integer) where {T,A}
+function Base.getindex(a::FineToCoarseArray{T,A,Nothing},i::Integer) where {T,A}
   fcells, fids = getindex(a.ids,i)
   fdata = map((fcell,fid) -> getindex(a.fine_data[fcell],Int(fid)),fcells,fids)
-  return combine_fine_to_coarse(a.rrule,fdata,fids)
+  return combine_fine_to_coarse(a.rrule,fdata,fcells)
 end
 
 function Arrays.get_children(n::TreeNode,a::FineToCoarseArray)
