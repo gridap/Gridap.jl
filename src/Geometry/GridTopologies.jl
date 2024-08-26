@@ -105,6 +105,14 @@ function test_grid_topology(top::GridTopology{Dc,Dp}) where {Dc,Dp}
       @test length(nface_to_mfaces) == num_faces(top,n)
     end
   end
+  face_coords = get_face_coordinates(top)
+  @test isa(face_coords,Table{<:VectorValue{Dp}})
+  @test length(face_coords) == num_faces(top)
+  for d in 0:D
+    face_coords_d = get_face_coordinates(top,d)
+    @test isa(face_coords_d,Table{<:VectorValue{Dp}})
+    @test length(face_coords_d) == num_faces(top,d)
+  end
 end
 
 # Default API

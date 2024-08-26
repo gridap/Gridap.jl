@@ -742,9 +742,17 @@ function test_polytope(p::Polytope{D};optional::Bool=false) where D
       @test isa(fs,Vector{Vector{Int}})
     end
   end
+  reffaces = get_reffaces(p)
+  facetypes = get_face_type(p)
+  @test isa(reffaces,Vector{<:Polytope})
+  @test isa(facetypes,Vector{<:Integer})
+  @test num_faces(p) == length(facetypes)
   x = get_vertex_coordinates(p)
   @test isa(x,Vector{Point{D,Float64}})
   @test length(x) == num_faces(p,0)
+  face_x = get_face_coordinates(p)
+  @test isa(face_x,Vector{Vector{Point{D,Float64}}})
+  @test length(face_x) == num_faces(p)
   if optional
     fn = get_facet_normal(p)
     @test isa(fn,Vector{VectorValue{D,Float64}})
