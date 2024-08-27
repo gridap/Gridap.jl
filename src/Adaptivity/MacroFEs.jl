@@ -344,7 +344,7 @@ end
 
 function ReferenceFEs.get_face_own_dofs_permutations(reffe::GenericRefFE{MacroRefFE}, ::L2Conformity)
   face_own_dofs = ReferenceFEs.get_face_own_dofs(reffe,L2Conformity())
-  return _trivial_face_own_dofs_permutations(face_own_dofs)
+  return ReferenceFEs._trivial_face_own_dofs_permutations(face_own_dofs)
 end
 
 function ReferenceFEs.Conformity(reffe::GenericRefFE{MacroRefFE},sym::Symbol)
