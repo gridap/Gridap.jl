@@ -472,15 +472,15 @@ to the vertices of the parent cell. Always results in a conformal mesh.
 struct BarycentricRefinement <: EdgeBasedRefinement end
 
 function setup_edge_based_rrules(
-  method::BarycentricRefinement, topo::UnstructuredGridTopology{Dc},::Nothing
+  method::BarycentricRefinement, topo::UnstructuredGridTopology{Dc}, ::Nothing
 ) where Dc
   setup_edge_based_rrules(method,topo,collect(1:num_faces(topo,Dc)))
 end
 
 function setup_edge_based_rrules(
-  ::BarycentricRefinement, topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}
+  ::BarycentricRefinement, topo::UnstructuredGridTopology{Dc}, cells_to_refine::AbstractArray{<:Integer}
 ) where Dc
-  @check (length(topo.polytopes) == 1) && is_simplex(first(topo.polytopes)) "Only simplex meshes supported"
+  @check (length(topo.polytopes) == 1) && is_simplex(first(topo.polytopes)) "Only simplicial meshes supported"
 
   ptrs = fill(1,num_faces(topo,Dc))
   ptrs[cells_to_refine] .= 2
