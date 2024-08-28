@@ -31,7 +31,7 @@ The `order` argument has the following meaning: the curl of the  functions in th
 is in the Q space of degree `order`.
 """
 function QGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
-  @assert T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
+  @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
   _order = order + 1
   _t = tfill(_order+1,Val{D-1}())
   t = (_order,_t...)
@@ -48,7 +48,7 @@ num_terms(f::QGradMonomialBasis{D,T}) where {D,T} = length(f.terms)*D
 get_order(f::QGradMonomialBasis) = f.order
 
 function return_cache(f::QGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
-  @assert D == length(eltype(x)) "Incorrect number of point components"
+  @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_qgrad(f)
   n = 1 + f.order+1
@@ -82,7 +82,7 @@ function return_cache(
   x::AbstractVector{<:Point}) where {D,T}
 
   f = fg.fa
-  @assert D == length(eltype(x)) "Incorrect number of point components"
+  @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_qgrad(f)
   n = 1 + f.order+1

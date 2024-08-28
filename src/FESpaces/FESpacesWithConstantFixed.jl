@@ -45,15 +45,12 @@ function get_cell_dof_ids(f::FESpaceWithConstantFixed{DoNotFixConstant})
 end
 
 get_dirichlet_dof_ids(f::FESpaceWithConstantFixed{FixConstant}) = Base.OneTo(1)
-
 get_dirichlet_dof_ids(f::FESpaceWithConstantFixed{DoNotFixConstant}) = Base.OneTo(0)
 
 num_dirichlet_tags(f::FESpaceWithConstantFixed{FixConstant}) = 1
-
 num_dirichlet_tags(f::FESpaceWithConstantFixed{DoNotFixConstant}) = 0
 
 get_dirichlet_dof_tag(f::FESpaceWithConstantFixed{FixConstant}) = Int8[1,]
-
 get_dirichlet_dof_tag(f::FESpaceWithConstantFixed{DoNotFixConstant}) = Int8[]
 
 function scatter_free_and_dirichlet_values(f::FESpaceWithConstantFixed{FixConstant},fv,dv)
@@ -81,15 +78,16 @@ function gather_free_and_dirichlet_values(f::FESpaceWithConstantFixed{DoNotFixCo
 end
 
 function gather_free_and_dirichlet_values!(fv,dv,f::FESpaceWithConstantFixed{FixConstant},cv)
-  _fv, _dv = gather_free_and_dirichlet_values(f.space,cv)
-  @assert length(_dv) == 0
-  fv    .= VectorWithEntryRemoved(_fv,f.dof_to_fix)
-  dv[1]  = _fv[f.dof_to_fix]
+  @assert length(dv) == 1
+  _dv = similar(dv,eltype(dv),0)
+  _fv = VectorWithEntryInserted(fv,f.dof_to_fix,zero(eltype(fv)))
+  gather_free_and_dirichlet_values!(_fv,_dv,f.space,cv)
+  dv[1] = _fv.value
   (fv, dv)
 end
 
 function gather_free_and_dirichlet_values!(fv,dv,f::FESpaceWithConstantFixed{DoNotFixConstant},cv)
-  gather_free_and_dirichlet_values(f.space,cv)
+  gather_free_and_dirichlet_values!(fv,dv,f.space,cv)
 end
 
 function TrialFESpace(f::FESpaceWithConstantFixed{CA}) where CA

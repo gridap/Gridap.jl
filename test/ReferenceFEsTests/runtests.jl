@@ -6,6 +6,8 @@ using Test
 
 @testset "ExtrusionPolytopes" begin include("ExtrusionPolytopesTests.jl") end
 
+@testset "GeneralPolytopes" begin include("GeneralPolytopesTests.jl") end
+
 @testset "Dofs" begin include("DofsTests.jl") end
 
 @testset "MockDofs" begin include("MockDofsTests.jl") end

@@ -122,7 +122,7 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
   function _BDM_face_values(p,et,order,phi)
 
     # Reference facet
-    @assert is_simplex(p) "We are assuming that all n-faces of the same n-dim are the same."
+    @check is_simplex(p) "We are assuming that all n-faces of the same n-dim are the same."
     fp = Polytope{num_dims(p)-1}(p,1)
 
     # geomap from ref face to polytope faces
