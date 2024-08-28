@@ -197,6 +197,13 @@ function (*)(a::MultiValue, b::MultiValue)
   #dot(a,b)
 end
 
+# Resolution of silly method ambiguity
+const _msg =  "Use use simple contraction dot aka ⋅ (\\cdot) or full contraction inner aka ⊙ (\\odot)"
+function *(::MultiValue,::SymTracelessTensorValue) @unreachable _msg end
+function *(::SymTracelessTensorValue,::MultiValue) @unreachable _msg end
+function *(::SymTracelessTensorValue,::AbstractSymTensorValue) @unreachable _msg end
+function *(::SymTracelessTensorValue,::SymTracelessTensorValue) @unreachable _msg end
+
 dot(a::MultiValue{Tuple{D}}, b::MultiValue{Tuple{D}}) where D = inner(a,b)
 
 dot(a::MultiValue,b::MultiValue) = @notimplemented
