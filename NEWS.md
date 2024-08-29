@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.6] - 2024-08-29
+
+### Fixed
+
+- Improved performance of PR[#967](https://github.com/gridap/Gridap.jl/pull/967). Along the way, opened the door to Triangulations of different type in SkeletonTriangulation. Since PR[#1026](https://github.com/gridap/Gridap.jl/pull/1026).
+
 ## [0.18.5] - 2024-08-28 
 
 ### Changed
