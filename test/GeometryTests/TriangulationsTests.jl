@@ -125,4 +125,10 @@ glue = get_glue(Ω2,Val(2))
 @test isa(glue.tface_to_mface,IdentityVector)
 @test isa(glue.mface_to_tface,IdentityVector)
 
+# Using a non-injective tface_to_mface map
+Ω3 = Triangulation(model, [1,2,1,2,3,3])
+glue = get_glue(Ω3,Val(2))
+@test isa(glue.tface_to_mface_map,Fill)
+@test isa(glue.mface_to_tface,Nothing)
+
 end # module
