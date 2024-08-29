@@ -137,9 +137,13 @@ function _restrict_model(model,tface_to_mface::IdentityVector)
   model
 end
 
+abstract type TrianFaceModelFaceMapInjectivity end;
+struct Injective    <: TrianFaceModelFaceMapInjectivity end;
+struct NonInjective <: TrianFaceModelFaceMapInjectivity end;
+
 # This is the most basic Triangulation
 # It represents a physical domain built using the faces of a DiscreteModel
-struct BodyFittedTriangulation{Dt,Dp,A,B,C} <: Triangulation{Dt,Dp}
+struct BodyFittedTriangulation{Dt,Dp,A,B,C,D<:TrianFaceModelFaceMapInjectivity} <: Triangulation{Dt,Dp}
   model::A
   grid::B
   tface_to_mface::C
@@ -150,33 +154,46 @@ struct BodyFittedTriangulation{Dt,Dp,A,B,C} <: Triangulation{Dt,Dp}
     A = typeof(model)
     B = typeof(grid)
     C = typeof(tface_to_mface)
-    new{Dt,Dp,A,B,C}(model,grid,tface_to_mface)
+
+    # While we do not have a more definitive solution, we need to distinguish 
+    # between injective and non-injective tface_to_mface maps.
+    # The inverse map, mface_to_tface, relies on PosNegPartition, which fails 
+    # whenever the same mface is the image of more than one tface.
+    # In turn, I have required non-injective mappings for the computation of facet 
+    # integrals on non-conforming cell interfaces.
+    if !(allunique(tface_to_mface))
+      tface_to_mface_injectivity = NonInjective()
+      D = typeof(tface_to_mface_injectivity)
+      new{Dt,Dp,A,B,C,D}(model,grid,tface_to_mface)
+    else 
+      tface_to_mface_injectivity = Injective()
+      D = typeof(tface_to_mface_injectivity)
+      new{Dt,Dp,A,B,C,D}(model,grid,tface_to_mface)
+    end
   end
 end
 
 get_background_model(trian::BodyFittedTriangulation) = trian.model
 get_grid(trian::BodyFittedTriangulation) = trian.grid
 
-function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dt}) where Dt
-  # unique(...) here is required for those cases in which an mface in 
-  # trian.tface_to_mface is listed more than once. Otherwise, the 
-  # constructor of PosNegPartition fails because it does not admit 
-  # the same mface to be the image of more than one tface.
-  # In turn, I have required this for the computation of facet integrals 
-  # on non-conforming cell interfaces.
-  if !(allunique(trian.tface_to_mface))
-    tface_to_mface = unique(trian.tface_to_mface)
-  else 
-    tface_to_mface = trian.tface_to_mface
-  end 
+function get_glue(trian::BodyFittedTriangulation{Dt,Dp,A,B,C,Injective},::Val{Dt}) where {Dt,Dp,A,B,C}
   tface_to_mface_map = Fill(GenericField(identity),num_cells(trian))
-  if isa(tface_to_mface,IdentityVector) && num_faces(trian.model,Dt) == num_cells(trian)
-    mface_to_tface = tface_to_mface
+  if isa(trian.tface_to_mface,IdentityVector) && num_faces(trian.model,Dt) == num_cells(trian)
+    mface_to_tface = trian.tface_to_mface
   else
     nmfaces = num_faces(trian.model,Dt)
-    mface_to_tface = PosNegPartition(tface_to_mface,Int32(nmfaces))
+    mface_to_tface = PosNegPartition(trian.tface_to_mface,Int32(nmfaces))
   end
-  FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
+  FaceToFaceGlue(trian.tface_to_mface,tface_to_mface_map,mface_to_tface)
+end
+
+function get_glue(trian::BodyFittedTriangulation{Dt,Dp,A,B,C,NonInjective},::Val{Dt}) where {Dt,Dp,A,B,C}
+  tface_to_mface_map = Fill(GenericField(identity),num_cells(trian))
+  mface_to_tface = nothing
+  # Whenever tface_to_mface is non-injective, we currently avoid the computation of 
+  # mface_to_tface, which relies on PosNegPartition. This is a limitation that we should 
+  # face in the future on those scenarios on which we need mface_to_tface.
+  FaceToFaceGlue(trian.tface_to_mface,tface_to_mface_map,mface_to_tface)
 end
 
 #function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dm}) where {Dt,Dm}
