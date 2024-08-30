@@ -60,6 +60,7 @@ pkg> add Gridap
 ```
 
 ## Plugins
+
 - [GridapDistributed](https://github.com/gridap/GridapDistributed.jl) Distributed-memory extension of Gridap.
 - [GridapEmbedded](https://github.com/gridap/GridapEmbedded.jl) Embedded finite elements in Julia.
 - [GridapGmsh](https://github.com/gridap/GridapGmsh.jl) Generate a FE mesh with [GMSH](www.gmsh.info) and use it in Gridap.

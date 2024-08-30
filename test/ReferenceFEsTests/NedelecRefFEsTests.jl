@@ -143,7 +143,25 @@ test_reference_fe(reffe)
 @test Conformity(reffe) == CurlConformity()
 dof_basis = get_dof_basis(reffe)
 
-face_odofs = get_face_own_dofs(reffe)
+face_odofs_L2 = get_face_own_dofs(reffe,L2Conformity())
+
+@test face_odofs_L2 == [Int64[], Int64[], Int64[], Int64[], 
+                     Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], 
+                    collect(1:20)]
+
+face_odofs    = get_face_own_dofs(reffe)
+face_cdofs    = get_face_dofs(reffe)
+
+@test face_odofs == [Int64[], Int64[], Int64[], Int64[], 
+                    [1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16], [17, 18], [19, 20], 
+                    Int64[]]
+
+@test face_cdofs == [Int64[], Int64[], Int64[], Int64[], 
+                     [1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], 
+                     [1, 2, 3, 4, 5, 6, 13, 14], [1, 2, 7, 8, 9, 10, 15, 16], [3, 4, 7, 8, 11, 12, 17, 18], [5, 6, 9, 10, 11, 12, 19, 20], 
+                     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]]
+
+                     
 #display(face_odofs)
 
 using Gridap.Geometry
