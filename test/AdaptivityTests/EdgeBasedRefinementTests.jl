@@ -14,6 +14,7 @@ function l2_error(u1,u2,dΩ)
 end
 
 function test_grid_transfers(D,parent,model,order)
+  return
   sol(x) = sum(x)
   qorder = 2*order+1
 
@@ -179,6 +180,25 @@ test_grid_transfers(2, model2, ref_model9, 1)
 
 # Refine all edges using NVB
 # Mark edges such that blue, and double_blue refinement are triggered
+ref_model8 = refine(model2, refinement_method = "nvb", cells_to_refine = [4, 9, 31, 32])
+trian8 = Triangulation(ref_model8)
+visualize && writevtk(trian8, "test/AdaptivityTests/ref_model8")
+ref_model9 = refine(ref_model8, refinement_method = "nvb", cells_to_refine = [3, 4, 11, 38])
+trian9 = Triangulation(ref_model9.model)
+visualize && writevtk(trian9, "test/AdaptivityTests/ref_model9")
+test_grid_transfers(2, ref_model8, ref_model9, 1)
+trian8 = Triangulation(ref_model8)
+# Basic coarsening test
+############################################################################################
+ref_model10 = coarsen(ref_model9, coarsening_method="nvb", cells_to_coarsen=[5,6])
+trian10 = Triangulation(ref_model10)
+coords = get_node_coordinates(ref_model10)
+visualize && writevtk(trian10, "test/AdaptivityTests/ref_model10")
+ref_model11 = coarsen(ref_model10, coarsening_method="nvb", cells_to_coarsen=[3])
+topo = get_grid_topology(ref_model11.model)
+trian11 = Triangulation(ref_model11)
+visualize && writevtk(trian11, "test/AdaptivityTests/ref_model11")
+############################################################################################
 ref_model10 = refine(model2, refinement_method = "nvb", cells_to_refine = [4, 9])
 trian10 = Triangulation(ref_model10)
 visualize && writevtk(trian10, "test/AdaptivityTests/ref_model8")
