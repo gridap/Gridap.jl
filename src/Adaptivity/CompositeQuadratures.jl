@@ -52,6 +52,6 @@ function ReferenceFEs.Quadrature(
   end
   fpoints = map(get_coordinates,quads)
   ids = FineToCoarseIndices(conn)
-  coordinates = FineToCoarseArray(rr,cpoints,fpoints,ids)
+  coordinates = FineToCoarseArray{eltype(cpoints)}(rr,cpoints,fpoints,ids)
   return GenericQuadrature(coordinates,weights,"Composite quadrature")
 end

@@ -28,28 +28,48 @@ function Base.getindex(a::FineToCoarseIndices,cid::Integer)
   (a.cid_to_fcells[cid],a.cid_to_fids[cid])
 end
 
-struct FineToCoarseArray{T,R} <: AbstractVector{T}
-  rrule :: RefinementRule
-  coarse_data :: Vector{T}
-  fine_data   :: Vector{R}
-  ids :: FineToCoarseIndices
+# Note for developpers:
+# We use FineToCoarseArray to represent many data-structures, from quadrature points to 
+# finite-element basis. For performance reasons, we sometimes want to keep a copy of the 
+# coarse data (but not always!). For instance: 
+#  - for quad points, we want to keep the coarse points. Otherwise, we woudl have to 
+#    recompute them for every cell when the CompositeQuadrature is used with other 
+#    gridap basis. 
+#  - for finite-element basis, we do NOT want to generate the coarse basis, otherwise 
+#    we would be creating it many times (when it should never be used). In this case, we 
+#    create it on the go (see getindex! specialisations).
+# All in all, this is why coarse_data can be of type Nothing.
+struct FineToCoarseArray{T,A,B,C} <: AbstractVector{T}
+  rrule       :: A
+  coarse_data :: B
+  fine_data   :: C
+  ids         :: FineToCoarseIndices
+
+  function FineToCoarseArray{T}(
+    rrule::RefinementRule,
+    coarse_data::Union{Vector{T},Nothing},
+    fine_data::AbstractVector{<:AbstractVector},
+    ids::FineToCoarseIndices
+  ) where T
+    A = typeof(rrule)
+    B = typeof(coarse_data)
+    C = typeof(fine_data)
+    new{T,A,B,C}(rrule,coarse_data,fine_data,ids)
+  end
 end
 
 function FineToCoarseArray(
   rrule::RefinementRule,
-  fine_data::Vector{<:AbstractVector},
+  fine_data::AbstractVector{<:AbstractVector},
   ids::FineToCoarseIndices
 )
-  coarse_data = map(ids) do (fcells,fids)
-    fdata = map((fcell,fid) -> getindex(fine_data[fcell],Int(fid)),fcells,fids)
-    combine_fine_to_coarse(rrule,fdata,fcells)
-  end
-  return FineToCoarseArray(rrule,coarse_data,fine_data,ids)
+  T = combine_fine_to_coarse_type(rrule,fine_data,ids)
+  return FineToCoarseArray{T}(rrule,nothing,fine_data,ids)
 end
 
 function FineToCoarseArray(
   rrule::RefinementRule,
-  fine_data::Vector{<:AbstractVector},
+  fine_data::AbstractVector{<:AbstractVector},
   connectivity::AbstractVector{<:AbstractVector{<:Integer}}
 )
   ids = FineToCoarseIndices(connectivity)
@@ -58,7 +78,7 @@ end
 
 function FineToCoarseArray(
   rrule::RefinementRule,
-  fine_data::Vector{<:AbstractVector}
+  fine_data::AbstractVector{<:AbstractVector}
 )
   offsets = cumsum(map(length,fine_data)) .- length(first(fine_data)) .+ 1
   connectivity = map(fine_data,offsets) do fdata,o
@@ -67,32 +87,61 @@ function FineToCoarseArray(
   return FineToCoarseArray(rrule,fine_data,connectivity)
 end
 
-Base.size(a::FineToCoarseArray) = size(a.coarse_data)
-Base.getindex(a::FineToCoarseArray,i::Integer) = getindex!(array_cache(a),a,i)
-Arrays.array_cache(a::FineToCoarseArray) = nothing
-Arrays.getindex!(cache,a::FineToCoarseArray,i::Integer) = getindex(a.coarse_data,i)
+Base.size(a::FineToCoarseArray) = size(a.ids)
 
-function combine_fine_to_coarse(
+Base.getindex(a::FineToCoarseArray{T},i::Integer) where T = getindex(a.coarse_data,i)
+
+function Base.getindex(a::FineToCoarseArray{T,A,Nothing},i::Integer) where {T,A}
+  fcells, fids = getindex(a.ids,i)
+  fdata = map((fcell,fid) -> getindex(a.fine_data[fcell],Int(fid)),fcells,fids)
+  return combine_fine_to_coarse(a.rrule,fdata,fcells)
+end
+
+function Arrays.get_children(n::TreeNode,a::FineToCoarseArray)
+  (similar_tree_node(n,a.rrule),similar_tree_node(n,a.fine_data))
+end
+
+@inline function combine_fine_to_coarse_type(
+  rr::RefinementRule,fine_data::AbstractVector{<:AbstractVector{T}},ids::FineToCoarseIndices
+) where T <: Field
+  return FineToCoarseField{Vector{T},typeof(rr),Vector{Int32}}
+end
+@inline function combine_fine_to_coarse(
   rr::RefinementRule,fine_fields::Vector{<:Field},child_ids::Vector{<:Integer}
 )
   FineToCoarseField(fine_fields,rr,child_ids)
 end
 
 struct FineToCoarseDof <: Dof end # Should we implement this properly?
-function combine_fine_to_coarse(
+@inline function combine_fine_to_coarse_type(
+  rr::RefinementRule,fine_data::AbstractVector{<:AbstractVector{T}},ids::FineToCoarseIndices
+) where T <: Dof
+  return FineToCoarseDof
+end
+@inline function combine_fine_to_coarse(
   rr::RefinementRule,fine_dofs::Vector{<:Dof},child_ids::Vector{<:Integer}
 )
   FineToCoarseDof()
 end
 
-function combine_fine_to_coarse(
+@inline function combine_fine_to_coarse_type(
+  rr::RefinementRule,fine_data::AbstractVector{<:AbstractVector{T}},ids::FineToCoarseIndices
+) where T <: Point
+  return T
+end
+@inline function combine_fine_to_coarse(
   rr::RefinementRule,fine_pts::Vector{<:Point},child_ids::Vector{<:Integer}
 )
   cmaps = get_cell_map(rr)
   evaluate(cmaps[first(child_ids)],first(fine_pts))
 end
 
-function combine_fine_to_coarse(
+@inline function combine_fine_to_coarse_type(
+  rr::RefinementRule,fine_data::AbstractVector{<:AbstractVector{T}},ids::FineToCoarseIndices
+) where T <: Real
+  return T
+end
+@inline function combine_fine_to_coarse(
   rr::RefinementRule,fine_vals::Vector{<:Real},child_ids::Vector{<:Integer}
 )
   sum(fine_vals)
@@ -143,25 +192,62 @@ function Arrays.evaluate!(cache,dofs::MacroDofBasis,f::Field)
   return res
 end
 
-# MacroFEBasis evaluation
+# MacroFEBasis evaluation with coarse points
+
+function Arrays.return_cache(a::MacroFEBasis,xc::AbstractArray{<:Point})
+  rr = a.rrule
+
+  k = CoarseToFinePointMap()
+  geo_cache = return_cache(k,rr,xc)
+  xf, ids = evaluate!(geo_cache,k,rr,xc)
+
+  eval_caches = map(return_cache,a.fine_data,xf)
+
+  T = eltype(evaluate!(first(eval_caches),first(a.fine_data),first(xf)))
+  res_cache = CachedArray(zeros(T,length(xc),length(a)))
+  return res_cache, k, geo_cache, eval_caches
+end
+
+function Arrays.evaluate!(caches, a::MacroFEBasis,xc::AbstractArray{<:Point})
+  res_cache, k, geo_cache, eval_caches = caches
+  setsize!(res_cache,(length(xc),length(a)))
+  res = res_cache.array
+
+  fill!(res,zero(eltype(res)))
+  xf, ids = evaluate!(geo_cache,k,a.rrule,xc)
+  
+  for fcell in 1:num_subcells(a.rrule)
+    r = xf.ptrs[fcell]:xf.ptrs[fcell+1]-1
+    vals = evaluate!(eval_caches[fcell],a.fine_data[fcell],view(xf.data,r))
+    I  = view(ids.data,r)
+    J = a.ids.fcell_to_cids[fcell]
+    res[I,J] .= vals
+  end
+  return res
+end
+
+# MacroFEBasis evaluation with fine points
 
 function Arrays.return_cache(a::MacroFEBasis,b::FineToCoarseArray{<:Point})
   @check a.rrule == b.rrule
   caches = map(return_cache,a.fine_data,b.fine_data)
   
   T = eltype(evaluate!(first(caches),first(a.fine_data),first(b.fine_data)))
-  res = zeros(T,length(b),length(a))
-  return res, caches
+  res_cache = CachedArray(zeros(T,length(b),length(a)))
+  return res_cache, caches
 end
 
 function Arrays.evaluate!(cache,a::MacroFEBasis,b::FineToCoarseArray{<:Point})
-  res, caches = cache
+  res_cache, caches = cache
+  setsize!(res_cache,(length(b),length(a)))
+  res = res_cache.array
+
   fill!(res,zero(eltype(res)))
-  cell_vals = map(evaluate!,caches,a.fine_data,b.fine_data)
   for fcell in 1:num_subcells(a.rrule)
+    vals = evaluate!(caches[fcell],a.fine_data[fcell],b.fine_data[fcell])
     I = b.ids.fcell_to_cids[fcell]
     J = a.ids.fcell_to_cids[fcell]
-    res[I,J] .= cell_vals[fcell]
+    res[I,J] .= vals
   end
   return res
 end
@@ -170,7 +256,6 @@ end
 
 function Fields.linear_combination(a::AbstractVector{<:Number},b::MacroFEBasis)
   rrule, ids = b.rrule, b.ids
-
   fcoeffs = lazy_map(Broadcasting(Reindex(a)),ids.fcell_to_cids)
   ffields = lazy_map(linear_combination,fcoeffs,b.fine_data)
   return FineToCoarseField(ffields,rrule)
@@ -179,16 +264,16 @@ end
 function Arrays.evaluate!(cache,k::Broadcasting{typeof(Fields.∇)},a::MacroFEBasis)
   rrule  = a.rrule
   cell_maps = get_cell_map(rrule)
-  cell_iJt = map(m -> inv(∇(m)),cell_maps)
-  fields_ref = map(Broadcasting(Fields.∇),a.fine_data)
-  fields = map(Broadcasting(⋅),cell_iJt,fields_ref)
+  cell_grads = lazy_map(k,a.fine_data)
+  fields = lazy_map(push_∇,cell_grads,cell_maps)
   return FineToCoarseArray(a.rrule,fields,a.ids)
 end
 
 function Arrays.evaluate!(cache,k::Broadcasting{typeof(Fields.∇∇)},a::MacroFEBasis)
-  @notimplemented
-  # TODO: Lacking geometrical mapping (like for gradients)
-  fields = map(Broadcasting(Fields.∇∇),a.fine_data)
+  rrule  = a.rrule
+  cell_maps = get_cell_map(rrule)
+  cell_grads = lazy_map(k,a.fine_data)
+  fields = lazy_map(push_∇∇,cell_grads,cell_maps)
   return FineToCoarseArray(a.rrule,fields,a.ids)
 end
 
@@ -202,6 +287,8 @@ struct MacroRefFE <: ReferenceFEName end
 
 Constructs a ReferenceFE for a macro-element, given a RefinementRule and a set of
 ReferenceFEs for the subcells.
+
+For performance, these should be paired with CompositeQuadratures.
 """
 function MacroReferenceFE(
   rrule::RefinementRule,
@@ -214,8 +301,8 @@ function MacroReferenceFE(
   space = FESpace(grid,reffes;conformity=conformity)
 
   conn = get_cell_dof_ids(space)
-  basis = FineToCoarseArray(rrule,collect(map(get_shapefuns,reffes)),conn)
-  dofs  = FineToCoarseArray(rrule,collect(map(get_dof_basis,reffes)),conn)
+  basis = FineToCoarseArray(rrule,map(get_shapefuns,reffes),conn)
+  dofs  = FineToCoarseArray(rrule,map(get_dof_basis,reffes),conn)
   face_dofs = get_cface_to_dofs(rrule,space,reffes)
   face_own_dofs = get_cface_to_own_dofs(rrule,space,reffes)
   face_own_perms = get_cface_to_own_dof_permutations(rrule,space,reffes)
@@ -257,7 +344,7 @@ end
 
 function ReferenceFEs.get_face_own_dofs_permutations(reffe::GenericRefFE{MacroRefFE}, ::L2Conformity)
   face_own_dofs = ReferenceFEs.get_face_own_dofs(reffe,L2Conformity())
-  return _trivial_face_own_dofs_permutations(face_own_dofs)
+  return ReferenceFEs._trivial_face_own_dofs_permutations(face_own_dofs)
 end
 
 function ReferenceFEs.Conformity(reffe::GenericRefFE{MacroRefFE},sym::Symbol)

@@ -12,22 +12,44 @@ struct WithoutRefinement <: RefinementRuleType end
   - poly :: `Polytope`, representing the geometry of the parent cell.
   - ref_grid :: `DiscreteModel` defined on `poly`, giving the parent-to-children cell map. 
 """
-struct RefinementRule{P,A<:DiscreteModel}
+struct RefinementRule{P}
   T         :: RefinementRuleType
   poly      :: P
-  ref_grid  :: A
+  ref_grid  :: DiscreteModel
+  cmaps     :: Vector{<:Field}
+  icmaps    :: Vector{<:Field}
   p2c_cache :: Tuple
+end
+
+# Note for devs: 
+# - The reason why we are saving both the cell maps and the inverse cell maps is to avoid recomputing
+#   them when needed. This is needed for performance when the RefinementRule is used for MacroFEs.
+#   Also, in the case the ref_grid comes from a CartesianGrid, we save the cell maps as 
+#   AffineMaps, which are more efficient than the default linear_combinations.
+# - We cannot parametrise the RefinementRule by all it's fields, because we will have different types of
+#   RefinementRules in a single mesh. It's the same reason why we don't parametrise the ReferenceFE type.
+
+function RefinementRule(
+  T::RefinementRuleType,poly::Polytope,ref_grid::DiscreteModel;
+  cell_maps=get_cell_map(ref_grid)
+)
+  ref_trian = Triangulation(ref_grid)
+  cmaps = collect1d(cell_maps)
+  icmaps = collect1d(lazy_map(Fields.inverse_map,cell_maps))
+  p2c_cache = CellData._point_to_cell_cache(CellData.KDTreeSearch(),ref_trian)
+  return RefinementRule(T,poly,ref_grid,cmaps,icmaps,p2c_cache)
 end
 
 function RefinementRule(T::RefinementRuleType,poly::Polytope,ref_grid::Grid)
   ref_model = UnstructuredDiscreteModel(ref_grid)
-  return RefinementRule(T,poly,ref_model)
+  cell_maps = get_cell_map(ref_grid)
+  return RefinementRule(T,poly,ref_model;cell_maps)
 end
 
-function RefinementRule(T::RefinementRuleType,poly::Polytope,ref_grid::DiscreteModel)
-  ref_trian = Triangulation(UnstructuredDiscreteModel(ref_grid))
-  p2c_cache = CellData._point_to_cell_cache(CellData.KDTreeSearch(),ref_trian)
-  return RefinementRule(T,poly,ref_grid,p2c_cache)
+function RefinementRule(T::RefinementRuleType,poly::Polytope,ref_grid::CartesianGrid)
+  ref_model = UnstructuredDiscreteModel(ref_grid)
+  cell_maps = get_cell_map(ref_grid)
+  return RefinementRule(T,poly,ref_model;cell_maps)
 end
 
 function RefinementRule(reffe::LagrangianRefFE{D},nrefs::Integer;kwargs...) where D
@@ -45,11 +67,11 @@ function RefinementRule(poly::Polytope{D},nrefs::Integer;kwargs...) where D
 end
 
 function RefinementRule(poly::Polytope{D},partition::NTuple{D,Integer};kwargs...) where D
-  ref_grid = UnstructuredGrid(compute_reference_grid(poly,partition))
+  ref_grid = compute_reference_grid(poly,partition)
   return RefinementRule(GenericRefinement(),poly,ref_grid;kwargs...)
 end
 
-function Base.show(io::IO,rr::RefinementRule{P,A}) where {P,A}
+function Base.show(io::IO,rr::RefinementRule{P}) where P
   T = RefinementRuleType(rr)
   print(io,"RefinementRule{$(rr.poly),$T}")
 end
@@ -67,23 +89,8 @@ num_subcells(rr::RefinementRule) = num_cells(rr.ref_grid)
 num_ref_faces(rr::RefinementRule,d::Int) = num_faces(rr.ref_grid,d)
 RefinementRuleType(rr::RefinementRule) :: RefinementRuleType = rr.T
 
-function Geometry.get_cell_map(rr::RefinementRule)
-  ref_grid = get_ref_grid(rr)
-  return collect(Geometry.get_cell_map(ref_grid))
-end
-
-function get_inverse_cell_map(rr::RefinementRule)
-  # Getting the underlying grid is important, otherwise we would not get affine maps for
-  # simplicial meshes. For non-simplicial meshes we will still get LinearCombinationFields.
-  # Note that this implies that (potentially)
-  #            inverse_map(get_cell_map(rr)) != get_inverse_cell_map(rr)
-  # This is on purpose, so that we may keep type stability in mixed-polytope meshes 
-  # when only using the cell_maps. Using the inverse cell_maps in mixed meshes may 
-  # result in type instabilities (only during fine-to-coarse transfers). 
-  ref_grid = get_grid(get_ref_grid(rr))
-  f2c_cell_map = collect(Geometry.get_cell_map(ref_grid))
-  return map(Fields.inverse_map,f2c_cell_map)
-end
+Geometry.get_cell_map(rr::RefinementRule) = rr.cmaps
+get_inverse_cell_map(rr::RefinementRule) = rr.icmaps
 
 function get_cell_measures(rr::RefinementRule)
   ref_grid  = get_ref_grid(rr)
@@ -122,21 +129,58 @@ function _get_cell_polytopes(rrules::AbstractArray{<:RefinementRule})
   return polys_new, cell_type_new
 end
 
+# Geometric maps between coarse and fine points
+
 x_to_cell(rr::RefinementRule,x::Point) = CellData._point_to_cell!(rr.p2c_cache,x)
 
-function bundle_points_by_subcell(rr::RefinementRule,x::AbstractArray{<:Point})
-  npts      = length(x)
-  nchildren = num_subcells(rr)
+struct CoarseToFinePointMap <: Map end
 
-  child_ids = map(xi -> x_to_cell(rr,xi),x)
-  ptrs      = fill(0,nchildren+1)
-  for i in 1:npts
-    ptrs[child_ids[i]+1] += 1
+function Arrays.return_cache(::CoarseToFinePointMap,rr::RefinementRule,x::AbstractVector{<:Point})
+  cmaps = get_inverse_cell_map(rr)
+  xi_cache = array_cache(x)
+  mi_cache = array_cache(cmaps)
+
+  xi = first(x)
+  mi = getindex!(mi_cache,cmaps,1)
+  zi_cache = Fields.return_cache(mi,xi)
+  zi = zero(Fields.return_type(mi,xi))
+
+  T = typeof(zi)
+  ptrs = zeros(Int32,num_subcells(rr)+1)
+  ids_cache = CachedArray(zeros(Int32,size(x)))
+  y_cache = CachedArray(zeros(T,size(x)))
+  return xi_cache, mi_cache, zi_cache, y_cache, ids_cache, ptrs
+end
+
+function Arrays.evaluate!(cache,::CoarseToFinePointMap,rr::RefinementRule,x::AbstractVector{<:Point})
+  xi_cache, mi_cache, zi_cache, y_cache, ids_cache, ptrs = cache
+  cmaps = get_inverse_cell_map(rr)
+  setsize!(y_cache,size(x))
+  setsize!(ids_cache,size(x))
+  y, ids = y_cache.array, ids_cache.array
+
+  # First pass: We count the number of points in each subcell, and store the ids
+  fill!(ptrs,0)
+  for i in eachindex(x)
+    xi = getindex!(xi_cache,x,i)
+    id = x_to_cell(rr,xi)
+    ids[i] = Int32(id)
+    ptrs[id+1] += 1
   end
-  ptrs[1] = 1
-  
-  data = lazy_map(Reindex(x),sortperm(child_ids))
-  return Table(data,ptrs)
+  Arrays.length_to_ptrs!(ptrs)
+
+  # Second pass: We evaluate cmaps on the points in each subcell
+  for i in eachindex(x)
+    xi = getindex!(xi_cache,x,i)
+    id = ids[i]
+    mi = getindex!(mi_cache,cmaps,id)
+    y[ptrs[id]] = Fields.evaluate!(zi_cache,mi,xi)
+    ids[i] = ptrs[id] # Reverse map
+    ptrs[id] += 1
+  end
+  Arrays.rewind_ptrs!(ptrs)
+
+  return Table(y,ptrs), Table(ids,ptrs)
 end
 
 # Topological information functions
@@ -832,11 +876,10 @@ function test_refinement_rule(rr::RefinementRule; debug=false)
 
     y = evaluate(m,p)
     z = evaluate(m_inv,y)
-    @test p ≈ z
     debug && println(ichild, " :: ", p," -> ",y, " -> ", z, " - ", p ≈ z)
+    @test norm(p-z) < 1.e-6
   end
 
-  pts_bundled = bundle_points_by_subcell(rr,pts)
   cell_measures = get_cell_measures(rr)
   cell_polys = get_cell_polytopes(rr)
 
