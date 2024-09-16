@@ -51,10 +51,22 @@ struct FineToCoarseField{A,B,C} <: Field
   end
 end
 
-Fields.return_cache(a::FineToCoarseField,x::Point) = return_cache(a,[x])
-Fields.evaluate!(cache,a::FineToCoarseField,x::Point) = first(evaluate!(cache,a,[x]))
+Arrays.return_type(a::FineToCoarseField,x::Point) = return_type(first(a.fine_fields),zero(x))
+Arrays.return_value(a::FineToCoarseField,x::Point) = zero(return_type(a,x))
+Arrays.return_cache(a::FineToCoarseField,x::Point) = return_cache(a,[x])
+Arrays.evaluate!(cache,a::FineToCoarseField,x::Point) = first(evaluate!(cache,a,[x]))
 
-function Fields.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point})
+function Arrays.return_type(a::FineToCoarseField,x::AbstractArray{<:Point})
+  T = return_type(first(a.fine_fields),zero(eltype(x)))
+  return Vector{T}
+end
+
+function Arrays.return_value(a::FineToCoarseField,x::AbstractArray{<:Point})
+  T = return_type(a,x)
+  return similar(T,size(x))
+end
+
+function Arrays.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point})
   fields, rr, id_map = a.fine_fields, a.rrule, a.id_map
   cmaps = get_inverse_cell_map(rr)
 
@@ -81,7 +93,7 @@ function Fields.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point})
   return fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache
 end
 
-function Fields.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point})
+function Arrays.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point})
   fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache = cache
   fields, rr, id_map = a.fine_fields, a.rrule, a.id_map
   cmaps = get_inverse_cell_map(rr)
@@ -106,12 +118,21 @@ end
 
 # Fast evaluation of FineToCoarseFields: 
 # Points are pre-classified into the children cells, which allows for the search to be 
-# skipped entirely. 
-function Fields.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point},child_ids::AbstractArray{<:Integer})
+# skipped entirely.
+
+function Arrays.return_type(a::FineToCoarseField,x::AbstractArray{<:Point},child_ids::AbstractArray{<:Integer})
+  return_type(a,x)
+end
+
+function Arrays.return_value(a::FineToCoarseField,x::AbstractArray{<:Point},child_ids::AbstractArray{<:Integer})
+  return_value(a,x)
+end
+
+function Arrays.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point},child_ids::AbstractArray{<:Integer})
   return_cache(a,x)
 end
 
-function Fields.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point},child_ids::AbstractArray{<:Integer})
+function Arrays.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point},child_ids::AbstractArray{<:Integer})
   fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache = cache
   fields, rr, id_map = a.fine_fields, a.rrule, a.id_map
   cmaps = get_inverse_cell_map(rr)

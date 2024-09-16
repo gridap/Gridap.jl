@@ -152,6 +152,20 @@ end
 const MacroDofBasis = FineToCoarseArray{<:Dof}
 const MacroFEBasis = FineToCoarseArray{<:Field}
 
+function Arrays.return_type(a::MacroDofBasis,b::MacroFEBasis)
+  @check a.rrule == b.rrule
+  types = map(return_type,a.fine_data,b.fine_data)
+  T = typejoin(types...)
+  @assert all(t -> t <: T, types)
+  return T
+end
+
+function Arrays.return_value(a::MacroDofBasis,b::MacroFEBasis)
+  @check a.rrule == b.rrule
+  T = return_type(a,b)
+  return similar(T,length(a),length(b))
+end
+
 function Arrays.return_cache(a::MacroDofBasis,b::MacroFEBasis)
   @check a.rrule == b.rrule
   caches = map(return_cache,a.fine_data,b.fine_data)
@@ -171,6 +185,12 @@ function Arrays.evaluate!(cache,a::MacroDofBasis,b::MacroFEBasis)
     res[I,J] .= cell_vals[fcell]
   end
   return res
+end
+
+function Arrays.return_value(dofs::MacroDofBasis,f::Field)
+  cmap = get_cell_map(dofs.rrule)
+  v = return_value(first(dofs.fine_data),f∘first(cmap))
+  return similar(v,length(dofs))
 end
 
 function Arrays.return_cache(dofs::MacroDofBasis,f::Field)
@@ -193,6 +213,15 @@ function Arrays.evaluate!(cache,dofs::MacroDofBasis,f::Field)
 end
 
 # MacroFEBasis evaluation with coarse points
+
+function Arrays.return_type(a::MacroFEBasis,xc::AbstractArray{<:Point})
+  return_type(first(a.fine_data),xc)
+end
+
+function Arrays.return_value(a::MacroFEBasis,xc::AbstractArray{<:Point})
+  TM = return_type(a,xc)
+  return similar(TM,length(xc),length(a))
+end
 
 function Arrays.return_cache(a::MacroFEBasis,xc::AbstractArray{<:Point})
   rr = a.rrule
@@ -228,6 +257,16 @@ end
 
 # MacroFEBasis evaluation with fine points
 
+function Arrays.return_type(a::MacroFEBasis,b::FineToCoarseArray{<:Point})
+  @check a.rrule == b.rrule
+  return return_type(first(a.fine_data),first(b.fine_data))
+end
+
+function Arrays.return_value(a::MacroFEBasis,b::FineToCoarseArray{<:Point})
+  MT = return_type(a,b)
+  return similar(MT,length(b),length(a))
+end
+
 function Arrays.return_cache(a::MacroFEBasis,b::FineToCoarseArray{<:Point})
   @check a.rrule == b.rrule
   caches = map(return_cache,a.fine_data,b.fine_data)
@@ -256,8 +295,8 @@ end
 
 function Fields.linear_combination(a::AbstractVector{<:Number},b::MacroFEBasis)
   rrule, ids = b.rrule, b.ids
-  fcoeffs = lazy_map(Broadcasting(Reindex(a)),ids.fcell_to_cids)
-  ffields = lazy_map(linear_combination,fcoeffs,b.fine_data)
+  fcoeffs = map(cids -> view(a,cids), ids.fcell_to_cids)
+  ffields = map(linear_combination,fcoeffs,b.fine_data)
   return FineToCoarseField(ffields,rrule)
 end
 

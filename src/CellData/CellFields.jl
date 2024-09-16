@@ -472,16 +472,17 @@ struct OperationCellField{DS} <: CellField
     @assert length(args) > 0
     trian = get_triangulation(first(args))
     domain_style = DomainStyle(first(args))
-    @check all( map(i->DomainStyle(i)==domain_style,args) )
+    @check all(i -> DomainStyle(i) == domain_style, args)
 
     # This is only to catch errors in user code
     # as soon as possible.
     if num_cells(trian) > 0
       @check begin
-        x = _get_cell_points(args...)
-        ax = map(i->i(x),args)
-        axi = map(first,ax)
-        r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
+        pts = _get_cell_points(args...)
+        x = testitem(get_data(pts))
+        f = map(ak -> testitem(get_data(ak)), args)
+        fx = map(fk -> return_value(fk,x), f)
+        r = Fields.BroadcastingFieldOpMap(op.op)(fx...)
         true
       end
     end
