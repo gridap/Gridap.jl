@@ -479,10 +479,13 @@ struct OperationCellField{DS} <: CellField
     if num_cells(trian) > 0
       @check begin
         pts = _get_cell_points(args...)
-        x = testitem(get_data(pts))
-        f = map(ak -> testitem(get_data(ak)), args)
-        fx = map(fk -> return_value(fk,x), f)
-        r = Fields.BroadcastingFieldOpMap(op.op)(fx...)
+        #x = testitem(get_data(pts))
+        #f = map(ak -> testitem(get_data(ak)), args)
+        #fx = map(fk -> return_value(fk,x), f)
+        #r = Fields.BroadcastingFieldOpMap(op.op)(fx...)
+        ax = map(i->i(pts),args)
+        axi = map(first,ax)
+        r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
         true
       end
     end
