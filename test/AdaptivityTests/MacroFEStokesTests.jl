@@ -27,7 +27,6 @@ function main(Dc,reftype)
   
   subreffes_p = Fill(LagrangianRefFE(Float64,poly,order-1),Adaptivity.num_subcells(rrule))
   reffe_p = Adaptivity.MacroReferenceFE(rrule,subreffes_p;conformity=L2Conformity())
-  #reffe_p = LagrangianRefFE(Float64,poly,order-1)
 
   qdegree = 2*order
   quad  = Quadrature(poly,Adaptivity.CompositeQuadrature(),rrule,qdegree)
@@ -63,9 +62,13 @@ function main(Dc,reftype)
   end
 end
 
+# NOTE: Powell-Sabin split not working yet. The issue is we woudl need a global cellmap 
+# directly from the sub-cells to the physical domain (due to how the split is built). 
+# This is something I may do in the future. 
+
 main(2,:barycentric)
-main(2,:powellsabin)
+#main(2,:powellsabin)
 main(3,:barycentric)
-main(3,:powellsabin)
+#main(3,:powellsabin)
 
 end # module
