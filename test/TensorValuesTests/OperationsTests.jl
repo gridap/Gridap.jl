@@ -245,6 +245,11 @@ c = t * 2
 r = TensorValue(2, 4, 6, 8, 10, 12, 14, 16, 18)
 @test c == r
 
+c = t / 2
+@test isa(c,TensorValue{3})
+r = TensorValue(.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5)
+@test c == r
+
 c = t + 2
 @test isa(c,TensorValue{3,3,Int})
 r = TensorValue(3, 4, 5, 6, 7, 8, 9, 10, 11)
@@ -259,6 +264,11 @@ r = SymTensorValue(2,4,6,10,12,18)
 c = st * 2
 @test isa(c,SymTensorValue{3})
 r = SymTensorValue(2,4,6,10,12,18)
+@test c == r
+
+c = st / 2
+@test isa(c,SymTensorValue{3})
+r = SymTensorValue(.5,1,1.5,2.5,3,4.5)
 @test c == r
 
 c = st + 2
@@ -277,6 +287,10 @@ c = qt * 2
 r = SymTracelessTensorValue(2,4,6,10,12)
 @test c == r
 
+c = qt / 2
+@test isa(c,SymTracelessTensorValue{3})
+r = SymTracelessTensorValue(.5,1,1.5,2.5,3)
+@test c == r
 
 c = 2 * s4ot
 @test isa(c,SymFourthOrderTensorValue{2})
@@ -288,9 +302,14 @@ c = s4ot * 2
 r = SymFourthOrderTensorValue(2,0,0, 0,1,0, 0,0,2)
 @test c == r
 
-c = c + 0
+c = s4ot / 2
 @test isa(c,SymFourthOrderTensorValue{2})
-r = SymFourthOrderTensorValue(2,0,0, 0,1,0, 0,0,2)
+r = SymFourthOrderTensorValue(.5,0,0, 0,.25,0, 0,0,.5)
+@test c == r
+
+c = s4ot + 0
+@test isa(c,SymFourthOrderTensorValue{2})
+r = SymFourthOrderTensorValue(1,0,0, 0,.5,0, 0,0,1)
 @test c == r
 
 # Dot product (simple contraction)

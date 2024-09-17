@@ -170,6 +170,13 @@ function (/)(a::MultiValue,b::Number)
   P(r)
 end
 
+function (/)(a::SymTracelessTensorValue,b::Number)
+  r = _bc(/,a.data[1:end-1],b)
+  T = _eltype(/,r,a,b)
+  M  = change_eltype(a,T)
+  M(r)
+end
+
 const _err =  " with number is undefined for traceless tensors"
 function -(::SymTracelessTensorValue,::Number) error("Addition"   *_err) end
 function +(::SymTracelessTensorValue,::Number) error("Subtraction"*_err) end
