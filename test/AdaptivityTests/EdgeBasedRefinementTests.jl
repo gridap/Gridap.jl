@@ -202,6 +202,11 @@ trian13 = Triangulation(ref_model13.model)
 visualize && writevtk(trian13, "test/AdaptivityTests/ref_model13")
 test_grid_transfers(2, model2, ref_model13, 1)
 
+ref_model14 = refine(model1, refinement_method = "barycentric")
+trian14 = Triangulation(ref_model14.model)
+visualize && writevtk(trian14, "test/AdaptivityTests/ref_model14")
+test_grid_transfers(2, model1, ref_model14, 1)
+
 ## B) 3D meshes - TETs
 
 ref_model14 = refine(model4, refinement_method = "barycentric")

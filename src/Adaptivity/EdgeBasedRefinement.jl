@@ -480,12 +480,21 @@ end
 function setup_edge_based_rrules(
   ::BarycentricRefinement, topo::UnstructuredGridTopology{Dc}, cells_to_refine::AbstractArray{<:Integer}
 ) where Dc
-  @check (length(topo.polytopes) == 1) && is_simplex(first(topo.polytopes)) "Only simplicial meshes supported"
+  @assert (length(get_polytopes(topo)) == 1)
 
-  ptrs = fill(1,num_faces(topo,Dc))
-  ptrs[cells_to_refine] .= 2
   p = first(topo.polytopes)
-  rrules = CompressedArray([WhiteRefinementRule(p),BarycentricRefinementRule(p)],ptrs)
+  A = is_simplex(p)
+  B = (p == QUAD) && length(cells_to_refine) == num_faces(topo,Dc)
+  @check A || B "Barycentric refinement only supported for simplicial meshes or QUAD meshes with all cells refined."
+
+  if A
+    ptrs = fill(1,num_faces(topo,Dc))
+    ptrs[cells_to_refine] .= 2
+    rrules = CompressedArray([WhiteRefinementRule(p),BarycentricRefinementRule(p)],ptrs)
+  else
+    ptrs = fill(1,num_faces(topo,Dc))
+    rrules = CompressedArray([BarycentricRefinementRule(p),],ptrs)
+  end
 
   ref_nodes = 1:num_faces(topo,0)
   if Dc == 2
@@ -862,7 +871,7 @@ vertex is added in the center, then joined to the vertices of the original
 Polytope.
 """
 function BarycentricRefinementRule(p::Polytope)
-  @notimplementedif (p ∉ [TRI,TET])
+  @notimplementedif (p ∉ [TRI,TET,QUAD])
 
   faces_list = _get_barycentric_refined_faces_list(p)
   coords = get_new_coordinates_from_faces(p,faces_list)
@@ -879,6 +888,8 @@ function _get_barycentric_refined_faces_list(p::Polytope)
     return (Int32[1,2,3],Int32[],Int32[1])
   elseif p == TET
     return (Int32[1,2,3,4],Int32[],Int32[],Int32[1])
+  elseif p == QUAD
+    return (Int32[1,2,3,4],Int32[],Int32[1])
   end
   @notimplemented
 end
@@ -900,6 +911,15 @@ function _get_barycentric_refined_connectivity(p::Polytope)
                  3, 1, 4, 5,
                  1, 2, 4, 5]
     conn_ptrs = [1, 5, 9, 13, 17]
+    return polys, cell_type, Table(conn_data,conn_ptrs)
+  elseif p == QUAD
+    polys     = [TRI]
+    cell_type = [1, 1, 1, 1]
+    conn_data = [1, 2, 5,
+                 2, 4, 5,
+                 4, 3, 5,
+                 3, 1, 5]
+    conn_ptrs = [1, 4, 7, 10, 13]
     return polys, cell_type, Table(conn_data,conn_ptrs)
   end
   @notimplemented
