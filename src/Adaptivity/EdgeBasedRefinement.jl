@@ -484,14 +484,14 @@ function setup_edge_based_rrules(
 
   p = first(topo.polytopes)
   A = is_simplex(p)
-  B = (p == QUAD) && length(cells_to_refine) == num_faces(topo,Dc)
+  B = (p ∈ (QUAD,HEX)) && length(cells_to_refine) == num_faces(topo,Dc)
   @check A || B "Barycentric refinement only supported for simplicial meshes or QUAD meshes with all cells refined."
 
-  if A
+  if A # Simplicial meshes
     ptrs = fill(1,num_faces(topo,Dc))
     ptrs[cells_to_refine] .= 2
     rrules = CompressedArray([WhiteRefinementRule(p),BarycentricRefinementRule(p)],ptrs)
-  else
+  else # QUAD/HEX meshes
     ptrs = fill(1,num_faces(topo,Dc))
     rrules = CompressedArray([BarycentricRefinementRule(p),],ptrs)
   end
@@ -499,8 +499,11 @@ function setup_edge_based_rrules(
   ref_nodes = 1:num_faces(topo,0)
   if Dc == 2
     faces_list = (ref_nodes,Int32[],cells_to_refine)
-  else
+  elseif p == TET
     faces_list = (ref_nodes,Int32[],Int32[],cells_to_refine)
+  else p == HEX
+    faces_to_refine = 1:num_faces(topo,2)
+    faces_list = (ref_nodes,Int32[],faces_to_refine,cells_to_refine)
   end
 
   return rrules, faces_list
@@ -871,7 +874,7 @@ vertex is added in the center, then joined to the vertices of the original
 Polytope.
 """
 function BarycentricRefinementRule(p::Polytope)
-  @notimplementedif (p ∉ [TRI,TET,QUAD])
+  @notimplementedif (p ∉ (TRI,TET,QUAD,HEX))
 
   faces_list = _get_barycentric_refined_faces_list(p)
   coords = get_new_coordinates_from_faces(p,faces_list)
@@ -890,6 +893,8 @@ function _get_barycentric_refined_faces_list(p::Polytope)
     return (Int32[1,2,3,4],Int32[],Int32[],Int32[1])
   elseif p == QUAD
     return (Int32[1,2,3,4],Int32[],Int32[1])
+  elseif p == HEX
+    return (Int32[1,2,3,4,5,6,7,8],Int32[],Int32[1,2,3,4,5,6],Int32[1])
   end
   @notimplemented
 end
@@ -920,6 +925,23 @@ function _get_barycentric_refined_connectivity(p::Polytope)
                  4, 3, 5,
                  3, 1, 5]
     conn_ptrs = [1, 4, 7, 10, 13]
+    return polys, cell_type, Table(conn_data,conn_ptrs)
+  elseif p == HEX # For HEX, we also create a new vertex in the center of each face
+    # Connectivity for each face: Face corners + face node + barycenter
+    face_conn = [
+      1,2,5,6,
+      2,4,5,6,
+      4,3,5,6,
+      3,1,5,6,
+    ]
+    n_TET  = 4 # Number of new TETs per polytope face
+    n_FACE = 6 # Number of faces in a HEX
+    n_NODE = 8 # Number of nodes in a HEX
+    polys     = [TET]
+    cell_type = fill(1, n_TET*n_FACE)
+    face_to_node = Geometry.get_faces(p,2,0)
+    conn_data = vcat([vcat(nodes...,face+n_NODE,n_NODE+n_FACE+1)[face_conn] for (face,nodes) in enumerate(face_to_node)]...)
+    conn_ptrs = [i*4+1 for i in 0:(n_TET*n_FACE)]
     return polys, cell_type, Table(conn_data,conn_ptrs)
   end
   @notimplemented
@@ -1038,7 +1060,11 @@ end
 
 function get_relabeled_connectivity(::BarycentricRefinementRule,rr::RefinementRule{<:Polytope{D}},faces_gids) where D
   conn = rr.ref_grid.grid.cell_node_ids
-  gids = [faces_gids[1]...,faces_gids[D+1]...] # Polytope nodes + Barycenter
+  if (get_polytope(rr) != HEX) # TRI, TET, QUAD
+    gids = [faces_gids[1]...,faces_gids[D+1]...] # Polytope nodes + Barycenter
+  else # HEX
+    gids = [faces_gids[1]...,faces_gids[D]...,faces_gids[D+1]...] # Polytope nodes + Faces + Barycenter
+  end
   new_data = lazy_map(Reindex(gids),conn.data)
   return Table(new_data,conn.ptrs)
 end
