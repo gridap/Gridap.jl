@@ -100,6 +100,15 @@ function Arrays.testitem(f::ArrayBlock{A}) where A
   end
 end
 
+function Arrays.testitem(f::ArrayBlock{<:AbstractArray{<:Field}})
+  i = findall(f.touched)
+  if length(i) != 0
+    f.array[i[1]]
+  else
+    testitem(f.array)
+  end
+end
+
 function Arrays.testvalue(::Type{ArrayBlock{A,N}}) where {A,N}
   s = ntuple(i->0,Val(N))
   array = Array{A,N}(undef,s)
@@ -205,7 +214,7 @@ end
 function evaluate!(cache,::ZeroBlockMap,a,b::AbstractArray)
   setsize!(cache,size(b))
   r = cache.array
-  fill!(r,zero(eltype(r)))
+  fill!(r,zero(testitem(r)))
   r
 end
 
@@ -621,28 +630,151 @@ function evaluate!(cache,k::Broadcasting{<:Operation},h::Field,f::ArrayBlock)
   g
 end
 
-function return_value(k::Broadcasting{<:Operation},h::ArrayBlock{A,N},f::ArrayBlock{B,N}) where {A,B,N}
-  i = findfirst(h.touched)
-  j = findfirst(f.touched)
-  @notimplementedif (isnothing(i) || isnothing(j))
-  ci = return_value(k,h.array[i],f.array[j])
-  a = Array{typeof(ci),N}(undef,size(f.array))
-  fill!(a,ci)
-  touched = Array{Bool,N}(undef,size(f.array))
-  touched .= f.touched .&& h.touched
-  ArrayBlock(a,touched)
-end
-
 function return_value(k::Broadcasting{<:Operation},h::ArrayBlock,f::ArrayBlock)
   evaluate(k,h,f)
 end
 
-function return_cache(k::Broadcasting{<:Operation},h::ArrayBlock,f::ArrayBlock{A,N}) where {A,N}
+function return_cache(k::Broadcasting{<:Operation},h::ArrayBlock,f::ArrayBlock)
   @notimplemented
 end
 
 function evaluate!(cache,k::Broadcasting{<:Operation},h::ArrayBlock,f::ArrayBlock)
   @notimplemented
+end
+
+function return_value(
+  k::Broadcasting{<:Operation},f::ArrayBlock{A,N},g::ArrayBlock{B,N}) where {A,B,N}
+  fi = testitem(f)
+  gi = testitem(g)
+  hi = return_value(k,fi,gi)
+  a = Array{typeof(hi),N}(undef,size(f.array))
+  fill!(a,hi)
+  ArrayBlock(a,f.touched)
+end
+
+function return_cache(
+  k::Broadcasting{<:Operation},f::ArrayBlock{A,N},g::ArrayBlock{B,N}) where {A,B,N}
+  @notimplementedif size(f) != size(g)
+  fi = testitem(f)
+  gi = testitem(g)
+  ci = return_cache(k,fi,gi)
+  hi = evaluate!(ci,k,fi,gi)
+  m = ZeroBlockMap()
+  a = Array{typeof(hi),N}(undef,size(f.array))
+  b = Array{typeof(ci),N}(undef,size(f.array))
+  zf = Array{typeof(return_cache(m,fi,gi))}(undef,size(f.array))
+  zg = Array{typeof(return_cache(m,gi,fi))}(undef,size(f.array))
+  t = map(|,f.touched,g.touched)
+  for i in eachindex(f.array)
+    if f.touched[i] && g.touched[i]
+      b[i] = return_cache(k,f.array[i],g.array[i])
+    elseif f.touched[i]
+      _fi = f.array[i]
+      zg[i] = return_cache(m,gi,_fi)
+      _gi = evaluate!(zg[i],m,gi,_fi)
+      b[i] = return_cache(k,_fi,_gi)
+    elseif g.touched[i]
+      _gi = g.array[i]
+      zf[i] = return_cache(m,fi,_gi)
+      _fi = evaluate!(zf[i],m,fi,_gi)
+      b[i] = return_cache(k,_fi,_gi)
+    end
+  end
+  ArrayBlock(a,t), b, zf, zg
+end
+
+function evaluate!(
+  cache,k::Broadcasting{<:Operation},f::ArrayBlock{A,N},g::ArrayBlock{B,N}) where {A,B,N}
+  a,b, zf, zg = cache
+  @check size(f) == size(g)
+  @check size(a) == size(g)
+  m = ZeroBlockMap()
+  for i in eachindex(f.array)
+    if f.touched[i] && g.touched[i]
+      a.array[i] = evaluate!(b[i],k,f.array[i],g.array[i])
+    elseif f.touched[i]
+      fi = f.array[i]
+      gi = evaluate!(zg[i],m,nothing,fi)
+      a.array[i] = evaluate!(b[i],k,fi,gi)
+    elseif g.touched[i]
+      gi = g.array[i]
+      fi = evaluate!(zf[i],m,nothing,gi)
+      a.array[i] = evaluate!(b[i],k,fi,gi)
+    end
+  end
+  a
+end
+
+function return_cache(
+  k::Broadcasting{<:Operation},f::ArrayBlock{A,1},g::ArrayBlock{B,2}) where {A,B}
+  fi = testitem(f)
+  gi = testitem(g)
+  ci = return_cache(k,fi,gi)
+  hi = evaluate!(ci,k,fi,gi)
+  @check size(g.array,1) == 1 || size(g.array,2) == 0
+  s = (size(f.array,1),size(g.array,2))
+  a = Array{typeof(hi),2}(undef,s)
+  b = Array{typeof(ci),2}(undef,s)
+  t = fill(false,s)
+  for j in 1:s[2]
+    for i in 1:s[1]
+      if f.touched[i] && g.touched[1,j]
+        t[i,j] = true
+        b[i,j] = return_cache(k,f.array[i],g.array[1,j])
+      end
+    end
+  end
+  ArrayBlock(a,t), b
+end
+
+function return_cache(
+  k::Broadcasting{<:Operation},f::ArrayBlock{A,2},g::ArrayBlock{B,1}) where {A,B}
+  fi = testitem(f)
+  gi = testitem(g)
+  ci = return_cache(k,fi,gi)
+  hi = evaluate!(ci,k,fi,gi)
+  @check size(f.array,1) == 1 || size(f.array,2) == 0
+  s = (size(g.array,1),size(f.array,2))
+  a = Array{typeof(hi),2}(undef,s)
+  b = Array{typeof(ci),2}(undef,s)
+  t = fill(false,s)
+  for j in 1:s[2]
+    for i in 1:s[1]
+      if f.touched[1,j] && g.touched[i]
+        t[i,j] = true
+        b[i,j] = return_cache(k,f.array[1,j],g.array[i])
+      end
+    end
+  end
+  ArrayBlock(a,t), b
+end
+
+function evaluate!(
+  cache,k::Broadcasting{<:Operation},f::ArrayBlock{A,1},g::ArrayBlock{B,2}) where {A,B}
+  a,b = cache
+  s = size(a.array)
+  for j in 1:s[2]
+    for i in 1:s[1]
+      if f.touched[i] && g.touched[1,j]
+        a.array[i,j] = evaluate!(b[i,j],k,f.array[i],g.array[1,j])
+      end
+    end
+  end
+  a
+end
+
+function evaluate!(
+  cache,k::Broadcasting{<:Operation},f::ArrayBlock{A,2},g::ArrayBlock{B,1}) where {A,B}
+  a,b = cache
+  s = size(a.array)
+  for j in 1:s[2]
+    for i in 1:s[1]
+      if f.touched[1,j] && g.touched[i]
+        a.array[i,j] = evaluate!(b[i,j],k,f.array[1,j],g.array[i])
+      end
+    end
+  end
+  a
 end
 
 function return_value(k::BroadcastingFieldOpMap,f::ArrayBlock{A,N},g::AbstractArray) where {A,N}

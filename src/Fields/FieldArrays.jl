@@ -123,6 +123,10 @@ struct FieldGradientArray{Ng,A,T,N} <: AbstractArray{T,N}
   end
 end
 
+function testvalue(::Type{FieldGradientArray{Ng,A}}) where {Ng,A}
+  FieldGradientArray{Ng}(testvalue(A))
+end
+
 function return_value(k::Broadcasting{typeof(∇)},a::AbstractArray{<:Field})
   evaluate(k,a)
 end

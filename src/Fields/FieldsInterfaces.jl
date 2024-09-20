@@ -205,9 +205,14 @@ struct ZeroField{F} <: Field
   field::F
 end
 
+return_type(z::ZeroField,x::Point) = return_type(z.field,x)
+return_value(z::ZeroField,x::Point) = return_value(z.field,x)
 return_cache(z::ZeroField,x::Point) = zero(return_type(z.field,x))
 evaluate!(cache,z::ZeroField,x::Point) = cache
 testvalue(::Type{ZeroField{F}}) where F = ZeroField(testvalue(F))
+
+return_type(z::ZeroField,x::AbstractArray{<:Point}) = return_type(z.field,testitem(x))
+return_value(z::ZeroField,x::AbstractArray{<:Point}) = return_value(z.field,testitem(x))
 
 function return_cache(z::ZeroField,x::AbstractArray{<:Point})
   E = return_type(z.field,testitem(x))

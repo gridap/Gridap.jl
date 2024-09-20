@@ -78,15 +78,23 @@ function j_ref(r)
 end
 
 ∇jv = Gridap.gradient(j, vh)
-tprint(∇jv)
-
 ∇ju = Gridap.gradient(j_ref, uh)
-tprint(∇ju)
-
 @benchmark Gridap.gradient($j, $vh)
-@benchmark Gridap.gradient($j_ref, $vh)
 @benchmark Gridap.gradient($j, $uh)
-@benchmark Gridap.gradient($j_ref, $uh)
+
+using Profile, FlameGraphs, ProfileView, PProf
+
+function prof_grad(j, vh, n)
+  for i in 1:n
+    Gridap.gradient(j, vh)
+  end
+end
+
+Profile.clear(); ProfileView.@profview prof_grad(j,vh,100)
+
+Profile.Allocs.clear(); Profile.Allocs.@profile prof_grad(j,vh,100)
+PProf.Allocs.pprof()
+
 
 v_vec = assemble_vector(Gridap.gradient(j, vh), V)
 u_vec = assemble_vector(Gridap.gradient(j_ref, uh), U)
@@ -113,7 +121,7 @@ jj_v = jj(vh)
 @benchmark jj($vh)
 
 cfa = vh*vh
-@benchmark $vh⋅$vh
+@benchmark $vh*$vh
 
 ∇vh = ∇(vh)
 @benchmark ∇($vh)
@@ -121,6 +129,26 @@ cfa = vh*vh
 cfb = ∇vh⋅∇vh
 @benchmark $∇vh ⋅ $∇vh
 @benchmark $cfa + $cfb
+
+function gg(cfa,cfb)
+  args = (cfa,cfb)
+  x = zeros(Point{2,Float64},1)
+  args_data = map(CellData.get_data,args)
+  args_vals = map(a -> return_value(first(a),x),args_data)
+  r = return_value(Fields.BroadcastingFieldOpMap(+),args_vals...)
+end
+
+@benchmark gg($cfa,$cfb)
+
+
+function prof_op(op, v)
+  for i in 1:500
+    op(v,v)
+  end
+end
+
+Profile.clear(); ProfileView.@profview prof_op(⋅,∇vh)
+
 
 using Gridap.Arrays
 args = (cfa,cfb)
