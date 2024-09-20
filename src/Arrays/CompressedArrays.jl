@@ -72,6 +72,25 @@ function lazy_map(::typeof(evaluate),::Type{T},g::Union{CompressedArray,Fill}...
   end
 end
 
+function lazy_map(::typeof(return_value),::Type{T},g::CompressedArray...) where T
+  if _have_same_ptrs(g)
+    _lazy_map_compressed_value(g...)
+  else
+    LazyArray(T,g...)
+  end
+end
+
+function lazy_map(::typeof(return_value),::Type{T},g::Union{CompressedArray,Fill}...) where T
+  g_compressed = _find_compressed_ones(g)
+  if _have_same_ptrs(g_compressed)
+    g1 = first(g_compressed)
+    g_all_compressed = map(gi->_compress(gi,g1),g)
+    _lazy_map_compressed_value(g_all_compressed...)
+  else
+    LazyArray(T,g...)
+  end
+end
+
 function _find_compressed_ones(g)
   g_compressed = ( gi for gi in g if isa(gi,CompressedArray) )
   g_compressed
@@ -79,6 +98,12 @@ end
 
 function _lazy_map_compressed(g::CompressedArray...)
   vals = map(evaluate, map(gi->gi.values,g)...)
+  ptrs = first(g).ptrs
+  CompressedArray(vals,ptrs)
+end
+
+function _lazy_map_compressed_value(g::CompressedArray...)
+  vals = map(return_value, map(gi->gi.values,g)...)
   ptrs = first(g).ptrs
   CompressedArray(vals,ptrs)
 end

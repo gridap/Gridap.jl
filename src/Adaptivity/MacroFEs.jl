@@ -101,6 +101,12 @@ function Arrays.get_children(n::TreeNode,a::FineToCoarseArray)
   (similar_tree_node(n,a.rrule),similar_tree_node(n,a.fine_data))
 end
 
+function Arrays.testitem(a::FineToCoarseArray{<:FineToCoarseField,A,Nothing}) where {T,A}
+  n_children  = num_subcells(a.rrule)
+  fine_fields = Fill(testitem(testitem(a.fine_data)),n_children)
+  return FineToCoarseField(fine_fields,a.rrule)
+end
+
 @inline function combine_fine_to_coarse_type(
   rr::RefinementRule,fine_data::AbstractVector{<:AbstractVector{T}},ids::FineToCoarseIndices
 ) where T <: Field

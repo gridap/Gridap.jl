@@ -1,11 +1,22 @@
 
 # Make arrays of field behave like Maps
 
-function return_cache(f::AbstractArray{T},x::Point) where T<:Field
+function return_type(f::AbstractArray{T},x::Point) where T<:Field
   S = return_type(testitem(f),x)
+  Vector{S}
+end
+
+function return_value(f::AbstractArray{T},x::Point) where T<:Field
+  S = return_type(testitem(f),x)
+  zeros(S,size(f))
+end
+
+function return_cache(f::AbstractArray{T},x::Point) where T<:Field
+  fi = testitem(f)
+  S = return_type(fi,x)
   cr = CachedArray(zeros(S,size(f)))
   if isconcretetype(T)
-    cf = return_cache(testitem(f),x)
+    cf = return_cache(fi,x)
   else
     cf = nothing
   end
@@ -33,6 +44,16 @@ function evaluate!(c,f::AbstractArray{T},x::Point) where T<:Field
     end
   end
   r
+end
+
+function return_type(f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Field
+  S = return_type(testitem(f),testitem(x))
+  return Matrix{S}
+end
+
+function return_value(f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Field
+  S = return_type(testitem(f),testitem(x))
+  return zeros(S,(size(x)...,size(f)...))
 end
 
 function return_cache(f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Field
@@ -346,6 +367,11 @@ function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractVector,fx::Ab
   evaluate!(cache,LinearCombinationMap(1),v,fx)
 end
 
+function return_value(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractVector)
+  c = return_cache(k,v,fx)
+  c.array
+end
+
 function return_cache(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractVector)
   vf = testitem(fx)
   vv = testitem(v)
@@ -366,6 +392,11 @@ function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::Ab
     r[j] = rj
   end
   r
+end
+
+function return_value(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractMatrix)
+  c = return_cache(k,v,fx)
+  c.array
 end
 
 function return_cache(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractMatrix)
@@ -397,9 +428,11 @@ testitem(a::Transpose{<:Field}) = testitem(a.parent)
 evaluate!(cache,k::Broadcasting{typeof(∇)},a::Transpose{<:Field}) = transpose(k(a.parent))
 evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::Transpose{<:Field}) = transpose(k(a.parent))
 
+return_value(k::Transpose{<:Field},x::Point) = return_value(k.parent,x)
 return_cache(k::Transpose{<:Field},x::Point) = return_cache(k.parent,x)
 evaluate!(cache,k::Transpose{<:Field},x::Point) = transpose(evaluate!(cache,k.parent,x))
 
+return_value(k::Transpose{<:Field},x::AbstractVector{<:Point}) = return_value(k.parent,x)
 return_cache(k::Transpose{<:Field},x::AbstractVector{<:Point}) = return_cache(k.parent,x)
 function evaluate!(cache,k::Transpose{<:Field},x::AbstractVector{<:Point})
   TransposeFieldIndices(evaluate!(cache,k.parent,x))
@@ -486,6 +519,7 @@ Base.size(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(size,a.
 Base.axes(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(axes,a.args)...)
 Base.IndexStyle(::Type{<:BroadcastOpFieldArray}) = IndexLinear()
 Base.getindex(a::BroadcastOpFieldArray,i::Integer) = broadcast(Operation(a.op),a.args...)[i]
+
 function testitem(a::BroadcastOpFieldArray)
   fs = map(testitem,a.args)
   return_value(Operation(a.op),fs...)
@@ -493,6 +527,12 @@ end
 
 for T in (:(Point),:(AbstractArray{<:Point}))
   @eval begin
+
+    function return_value(f::BroadcastOpFieldArray,x::$T)
+      rs = map(fi -> return_value(fi,x),f.args)
+      bm = BroadcastingFieldOpMap(f.op)
+      return_value(bm,rs...)
+    end
 
     function return_cache(f::BroadcastOpFieldArray,x::$T)
       cfs = map(fi -> return_cache(fi,x),f.args)

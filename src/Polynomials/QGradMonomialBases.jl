@@ -47,6 +47,20 @@ num_terms(f::QGradMonomialBasis{D,T}) where {D,T} = length(f.terms)*D
 
 get_order(f::QGradMonomialBasis) = f.order
 
+function return_type(f::QGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
+  @check D == length(eltype(x)) "Incorrect number of point components"
+  V = VectorValue{D,T}
+  Matrix{V}
+end
+
+function return_value(f::QGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
+  @check D == length(eltype(x)) "Incorrect number of point components"
+  np = length(x)
+  ndof = _ndofs_qgrad(f)
+  V = VectorValue{D,T}
+  zeros(V,(np,ndof))
+end
+
 function return_cache(f::QGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
@@ -75,6 +89,27 @@ function evaluate!(cache,f::QGradMonomialBasis{D,T},x::AbstractVector{<:Point}) 
     end
   end
   r.array
+end
+
+function return_type(
+  fg::FieldGradientArray{1,QGradMonomialBasis{D,T}},
+  x::AbstractVector{<:Point}) where {D,T}
+  @check D == length(eltype(x)) "Incorrect number of point components"
+  V = VectorValue{D,T}
+  G = gradient_type(V,testitem(x))
+  Matrix{G}
+end
+
+function return_value(
+  fg::FieldGradientArray{1,QGradMonomialBasis{D,T}},
+  x::AbstractVector{<:Point}) where {D,T}
+  f = fg.fa
+  @check D == length(eltype(x)) "Incorrect number of point components"
+  np = length(x)
+  ndof = _ndofs_qgrad(f)
+  V = VectorValue{D,T}
+  G = gradient_type(V,testitem(x))
+  zeros(G,(np,ndof))
 end
 
 function return_cache(

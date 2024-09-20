@@ -116,6 +116,25 @@ end
 return_type(::MonomialBasis{D,T}) where {D,T} = T
 
 # Field implementation
+
+function return_type(f::MonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
+  @check D == length(eltype(x)) "Incorrect number of point components"
+  zT = zero(T)
+  zxi = zero(eltype(eltype(x)))
+  Tp = typeof( zT*zxi*zxi + zT*zxi*zxi  )
+  return Matrix{Tp}
+end
+
+function return_value(f::MonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
+  @check D == length(eltype(x)) "Incorrect number of point components"
+  zT = zero(T)
+  zxi = zero(eltype(eltype(x)))
+  Tp = typeof( zT*zxi*zxi + zT*zxi*zxi  )
+  np = length(x)
+  ndof = length(f.terms)*num_components(T)
+  return zeros(Tp,(np,ndof))
+end
+
 function return_cache(f::MonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @check D == length(eltype(x)) "Incorrect number of point components"
   zT = zero(T)
@@ -148,6 +167,35 @@ function evaluate!(cache,f::MonomialBasis{D,T},x::AbstractVector{<:Point}) where
   r.array
 end
 
+function return_type(
+  fg::FieldGradientArray{1,MonomialBasis{D,V}},x::AbstractVector{<:Point}
+) where {D,V}
+  @check D == length(eltype(x)) "Incorrect number of point components"
+  T = gradient_type(V,testitem(x))
+  return Matrix{T}
+end
+
+function return_value(
+  fg::FieldGradientArray{1,MonomialBasis{D,V}},x::AbstractVector{<:Point}
+) where {D,V}
+  f = fg.fa
+  @check D == length(eltype(x)) "Incorrect number of point components"
+  T = gradient_type(V,testitem(x))
+  np = length(x)
+  ndof = length(f.terms)*num_components(V)
+  zeros(T,(np,ndof))
+end
+
+function return_cache(
+  fg::FieldGradientArray{1,MonomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
+
+  xi = testitem(x)
+  T = gradient_type(V,xi)
+  TisbitsType = Val(isbitstype(T))
+  _return_cache(fg,x,T,TisbitsType)
+end
+
 function _return_cache(
   fg::FieldGradientArray{1,MonomialBasis{D,V}},
   x::AbstractVector{<:Point},
@@ -175,16 +223,6 @@ function _return_cache(
   cache = _return_cache(fg,x,T,Val{true}())
   z = CachedArray(zeros(eltype(T),D)) 
   (cache...,z)
-end
-
-function return_cache(
-  fg::FieldGradientArray{1,MonomialBasis{D,V}},
-  x::AbstractVector{<:Point}) where {D,V}
-
-  xi = testitem(x)
-  T = gradient_type(V,xi)
-  TisbitsType = Val(isbitstype(T))
-  _return_cache(fg,x,T,TisbitsType)
 end
 
 function _evaluate!(
@@ -248,6 +286,24 @@ function evaluate!(
   _evaluate!(cache,fg,x,TisbitsType)
 end
 
+function return_type(
+  fg::FieldGradientArray{2,MonomialBasis{D,V}},x::AbstractVector{<:Point}
+) where {D,V}
+  xi = testitem(x)
+  T = gradient_type(gradient_type(V,xi),xi)
+  return Matrix{T}
+end
+
+function return_value(
+  fg::FieldGradientArray{2,MonomialBasis{D,V}},x::AbstractVector{<:Point}
+) where {D,V}
+  xi = testitem(x)
+  T = gradient_type(gradient_type(V,xi),xi)
+  np = length(x)
+  ndof = length(f.terms)*num_components(V)
+  zeros(T,(np,ndof))
+end
+
 function return_cache(
   fg::FieldGradientArray{2,MonomialBasis{D,V}},
   x::AbstractVector{<:Point}) where {D,V}
@@ -294,6 +350,15 @@ end
 
 # Optimizing evaluation at a single point
 
+function return_type(f::AbstractVector{Monomial},x::Point)
+  typeof(return_value(f,x))
+end
+
+function return_value(f::AbstractVector{Monomial},x::Point)
+  r, cf, xs = return_cache(f,x)
+  return r.array
+end
+
 function return_cache(f::AbstractVector{Monomial},x::Point)
   xs = [x]
   cf = return_cache(f,xs)
@@ -311,6 +376,16 @@ function evaluate!(cache,f::AbstractVector{Monomial},x::Point)
   a = r.array
   copyto!(a,v)
   a
+end
+
+function return_type(f::FieldGradientArray{N,<:AbstractVector{Monomial}},x::Point) where {N}
+  typeof(return_value(f,x))
+end
+
+function return_value(
+  f::FieldGradientArray{N,<:AbstractVector{Monomial}}, x::Point) where {N}
+  r, cf, xs = return_cache(f,x)
+  return r.array
 end
 
 function return_cache(

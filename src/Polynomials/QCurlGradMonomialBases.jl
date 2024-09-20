@@ -42,12 +42,36 @@ end
 # @santiagobadia: This is dirty, I would put here VectorValue{D,T}
 return_type(::QCurlGradMonomialBasis{D,T}) where {D,T} = T
 
+function return_type(f::QCurlGradMonomialBasis,x::AbstractVector{<:Point})
+  return_type(f.qgrad,x)
+end
+
+function return_value(f::QCurlGradMonomialBasis,x::AbstractVector{<:Point})
+  return_value(f.qgrad,x)
+end
+
 function return_cache(f::QCurlGradMonomialBasis,x::AbstractVector{<:Point})
   return_cache(f.qgrad,x)
 end
 
 function evaluate!(cache,f::QCurlGradMonomialBasis,x::AbstractVector{<:Point})
   evaluate!(cache,f.qgrad,x)
+end
+
+function return_type(
+  fg::FieldGradientArray{N,<:QCurlGradMonomialBasis},
+  x::AbstractVector{<:Point}) where N
+
+  f = fg.fa
+  return_type(FieldGradientArray{N}(f.qgrad),x)
+end
+
+function return_value(
+  fg::FieldGradientArray{N,<:QCurlGradMonomialBasis},
+  x::AbstractVector{<:Point}) where N
+
+  f = fg.fa
+  return_value(FieldGradientArray{N}(f.qgrad),x)
 end
 
 function return_cache(

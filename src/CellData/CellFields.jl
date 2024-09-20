@@ -394,6 +394,14 @@ function evaluate!(cache,f::CellField,x::CellPoint)
   lazy_map(evaluate,cell_field,cell_point)
 end
 
+# This is quite important for optimizing the OperationCellField constructor checks
+function return_value(f::CellField,x::CellPoint)
+  _f, _x = _to_common_domain(f,x)
+  cell_field = get_data(_f)
+  cell_point = get_data(_x)
+  lazy_map(return_value,cell_field,cell_point)
+end
+
 function _to_common_domain(f::CellField,x::CellPoint)
   trian_f = get_triangulation(f)
   trian_x = get_triangulation(x)
@@ -479,12 +487,12 @@ struct OperationCellField{DS} <: CellField
     if num_cells(trian) > 0
       @check begin
         pts = _get_cell_points(args...)
-        #x = testitem(get_data(pts))
-        #f = map(ak -> testitem(get_data(ak)), args)
-        #fx = map(fk -> return_value(fk,x), f)
-        #r = Fields.BroadcastingFieldOpMap(op.op)(fx...)
-        ax = map(i->i(pts),args)
-        axi = map(first,ax)
+        # x = testitem(get_data(pts))
+        # f = map(ak -> testitem(get_data(ak)), args)
+        # fx = map(fk -> return_value(fk,x), f)
+        # r = Fields.BroadcastingFieldOpMap(op.op)(fx...)
+        ax = map(ai->return_value(ai,pts),args)
+        axi = map(testitem,ax)
         r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
         true
       end

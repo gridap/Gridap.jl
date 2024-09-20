@@ -12,6 +12,14 @@ function lazy_map(
   i_to_basis_x = lazy_map(evaluate,i_to_basis,x)
   lazy_map(LinearCombinationMap(:),i_to_values,i_to_basis_x)
 end
+function lazy_map(
+  ::typeof(return_value), a::LazyArray{<:Fill{typeof(linear_combination)}}, x::AbstractArray)
+
+  i_to_values = a.args[1]
+  i_to_basis = a.args[2]
+  i_to_basis_x = lazy_map(return_value,i_to_basis,x)
+  lazy_map(LinearCombinationMap(:),i_to_values,i_to_basis_x)
+end
 
 # We always keep the parent when transposing (needed for some optimizations below)
 
@@ -33,6 +41,12 @@ function lazy_map(
   i_to_basis_x = lazy_map(evaluate,a.args[1],x)
   lazy_map(TransposeMap(),i_to_basis_x)
 end
+function lazy_map(
+  ::typeof(return_value), a::LazyArray{<:Fill{typeof(transpose)}}, x::AbstractArray)
+
+  i_to_basis_x = lazy_map(return_value,a.args[1],x)
+  lazy_map(TransposeMap(),i_to_basis_x)
+end
 
 # Optimization for
 #
@@ -46,6 +60,15 @@ function lazy_map(
   g = a.args[2]
   gx = lazy_map(evaluate,g,x)
   fx = lazy_map(evaluate,f,gx)
+  fx
+end
+function lazy_map(
+  ::typeof(return_value), a::LazyArray{<:Fill{typeof(∘)}}, x::AbstractArray)
+
+  f = a.args[1]
+  g = a.args[2]
+  gx = lazy_map(return_value,g,x)
+  fx = lazy_map(return_value,f,gx)
   fx
 end
 
@@ -63,6 +86,15 @@ function lazy_map(
   fx = lazy_map(evaluate,f,gx)
   fx
 end
+function lazy_map(
+  ::typeof(return_value), a::LazyArray{<:Fill{Broadcasting{typeof(∘)}}}, x::AbstractArray)
+
+  f = a.args[1]
+  g = a.args[2]
+  gx = lazy_map(return_value,g,x)
+  fx = lazy_map(return_value,f,gx)
+  fx
+end
 
 # Optimization for
 #
@@ -78,6 +110,15 @@ function lazy_map(
   op = a.maps.value.op
   lazy_map( Broadcasting(op), fx...)
 end
+function lazy_map(
+  ::typeof(return_value),
+  a::LazyArray{<:Fill{<:Operation}},
+  x::AbstractArray)
+
+  fx = map( fi->lazy_map(return_value,fi,x), a.args)
+  op = a.maps.value.op
+  lazy_map( Broadcasting(op), fx...)
+end
 
 # Optimization for
 #
@@ -88,6 +129,13 @@ function lazy_map(
   ::typeof(evaluate), a::LazyArray{<:Fill{<:Broadcasting{<:Operation}}}, x::AbstractArray)
 
   fx = map( fi->lazy_map(evaluate,fi,x), a.args)
+  op = a.maps.value.f.op
+  lazy_map(BroadcastingFieldOpMap(op),fx...)
+end
+function lazy_map(
+  ::typeof(return_value), a::LazyArray{<:Fill{<:Broadcasting{<:Operation}}}, x::AbstractArray)
+
+  fx = map( fi->lazy_map(return_value,fi,x), a.args)
   op = a.maps.value.f.op
   lazy_map(BroadcastingFieldOpMap(op),fx...)
 end
@@ -314,6 +362,22 @@ Arrays.getindex!(cache,a::MemoArray,i::Integer) = getindex!(cache,a.parent,i)
 Arrays.getindex!(cache,a::MemoArray{T,N},i::Vararg{Integer,N}) where {T,N} = getindex!(cache,a.parent,i...)
 Arrays.testitem(a::MemoArray) = testitem(a.parent)
 Arrays.get_array(a::MemoArray) = get_array(a.parent)
+
+function lazy_map(::typeof(return_value),a::MemoArray,x::AbstractArray{<:Point})
+  key = (:return_value,objectid(x))
+  if ! haskey(a.memo,key)
+    a.memo[key] = lazy_map(return_value,a.parent,x)
+  end
+  a.memo[key]
+end
+
+function lazy_map(::typeof(return_value),a::MemoArray,x::AbstractArray{<:AbstractArray{<:Point}})
+  key = (:return_value,objectid(x))
+  if ! haskey(a.memo,key)
+    a.memo[key] = lazy_map(return_value,a.parent,x)
+  end
+  a.memo[key]
+end
 
 function lazy_map(::typeof(evaluate),a::MemoArray,x::AbstractArray{<:Point})
   key = (:evaluate,objectid(x))

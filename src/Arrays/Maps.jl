@@ -241,6 +241,11 @@ struct OperationMap{K,L} <: Map
   end
 end
 
+function return_value(c::OperationMap,x...)
+  lx = map(fi -> return_value(fi,x...),c.l)
+  return_value(c.k,lx...)
+end
+
 function return_cache(c::OperationMap,x...)
   cl = map(fi -> return_cache(fi,x...),c.l)
   lx = map(fi -> return_value(fi,x...),c.l)

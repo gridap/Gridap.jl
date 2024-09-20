@@ -621,6 +621,18 @@ function evaluate!(cache,k::Broadcasting{<:Operation},h::Field,f::ArrayBlock)
   g
 end
 
+function return_value(k::Broadcasting{<:Operation},h::ArrayBlock{A,N},f::ArrayBlock{B,N}) where {A,B,N}
+  i = findfirst(h.touched)
+  j = findfirst(f.touched)
+  @notimplementedif (isnothing(i) || isnothing(j))
+  ci = return_value(k,h.array[i],f.array[j])
+  a = Array{typeof(ci),N}(undef,size(f.array))
+  fill!(a,ci)
+  touched = Array{Bool,N}(undef,size(f.array))
+  touched .= f.touched .&& h.touched
+  ArrayBlock(a,touched)
+end
+
 function return_value(k::Broadcasting{<:Operation},h::ArrayBlock,f::ArrayBlock)
   evaluate(k,h,f)
 end

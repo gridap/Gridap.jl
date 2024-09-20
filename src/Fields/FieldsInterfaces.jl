@@ -465,6 +465,11 @@ function integrate(a::Field,q::AbstractVector{<:Point},w::AbstractVector{<:Real}
   evaluate!(cache,integrate,a,q,w,j)
 end
 
+function return_value(::typeof(integrate),a,x,w)
+  ax = return_value(a,x)
+  return_value(IntegrationMap(),ax,w)
+end
+
 function return_cache(::typeof(integrate),a,x,w)
   ca = return_cache(a,x)
   ax = return_value(a,x)
@@ -476,6 +481,12 @@ function evaluate!(cache,::typeof(integrate),a,x,w)
   ca, ck = cache
   ax = evaluate!(ca,a,x)
   evaluate!(ck,IntegrationMap(),ax,w)
+end
+
+function return_value(::typeof(integrate),a,q,w,j)
+  aq = return_value(a,q)
+  jq = return_value(j,q)
+  return_value(IntegrationMap(),aq,w,jq)
 end
 
 function return_cache(::typeof(integrate),a,q,w,j)
@@ -516,6 +527,11 @@ function evaluate!(cache,k::IntegrationMap,aq::AbstractVector,w,jq::AbstractVect
     z += aq[i]*w[i]*meas(jq[i])
   end
   z
+end
+
+function return_value(k::IntegrationMap,ax::AbstractArray,w)
+  c = return_cache(k,ax,w)
+  c.array
 end
 
 function return_cache(k::IntegrationMap,ax::AbstractArray,w)

@@ -96,6 +96,10 @@ struct AutoDiffMap{F} <: Map
   f::F
 end
 
+function return_value(k::AutoDiffMap,ydual,x,cfg::ForwardDiff.GradientConfig{T}) where T
+  return_cache(k,ydual,x,cfg)
+end
+
 function return_cache(k::AutoDiffMap,ydual,x,cfg::ForwardDiff.GradientConfig{T}) where T
   ydual isa Real || throw(ForwardDiff.GRAD_ERROR)
   result = similar(x, ForwardDiff.valtype(ydual))
@@ -107,6 +111,10 @@ function evaluate!(result,k::AutoDiffMap,ydual,x,cfg::ForwardDiff.GradientConfig
   @notimplementedif length(result) != length(x)
   result = ForwardDiff.extract_gradient!(T, result, ydual)
   return result
+end
+
+function return_value(k::AutoDiffMap,ydual,x,cfg::ForwardDiff.JacobianConfig{T,V,N}) where {T,V,N}
+  return_cache(k,ydual,x,cfg)
 end
 
 function return_cache(k::AutoDiffMap,ydual,x,cfg::ForwardDiff.JacobianConfig{T,V,N}) where {T,V,N}

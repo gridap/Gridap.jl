@@ -58,8 +58,6 @@ function lazy_map(k,f::AbstractArray...)
   lazy_map(k,T,f...)
 end
 
-#lazy_map(::typeof(evaluate),k::AbstractArray,f::AbstractArray...) = LazyArray(k,f...)
-
 # This is the function to be overload to specialize on the Map f
 """
     lazy_map(f,::Type{T},a::AbstractArray...) where T
@@ -253,14 +251,20 @@ function _sum_lazy_array(cache,a)
   r
 end
 
+# function testitem(a::LazyArray{A,T} where A) where T
+#   if length(a) > 0
+#     first(a)
+#   else
+#     gi = testitem(a.maps)
+#     fi = map(testitem,a.args)
+#     return_value(gi,fi...)
+#   end::T
+# end
+
 function testitem(a::LazyArray{A,T} where A) where T
-  if length(a) > 0
-    first(a)
-  else
-    gi = testitem(a.maps)
-    fi = map(testitem,a.args)
-    return_value(gi,fi...)
-  end::T
+  gi = testitem(a.maps)
+  fi = map(testitem,a.args)
+  return_value(gi,fi...)
 end
 
 # Particular implementations for Fill
@@ -275,6 +279,20 @@ end
 function lazy_map(::typeof(evaluate),::Type{T}, f::Fill, a::Fill...) where T
   ai = map(ai->ai.value,a)
   r = evaluate(f.value, ai...)
+  s = _common_size(f, a...)
+  Fill(r, s)
+end
+
+function lazy_map(::typeof(return_value),f::Fill, a::Fill...)
+  ai = map(ai->ai.value,a)
+  r = return_value(f.value, ai...)
+  s = _common_size(f, a...)
+  Fill(r, s)
+end
+
+function lazy_map(::typeof(return_value),::Type{T}, f::Fill, a::Fill...) where T
+  ai = map(ai->ai.value,a)
+  r = return_value(f.value, ai...)
   s = _common_size(f, a...)
   Fill(r, s)
 end

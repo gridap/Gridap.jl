@@ -98,6 +98,18 @@ return_type(::ModalC0Basis{D,T,V}) where {D,T,V} = T
 
 # Field implementation
 
+function return_type(f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {D,T,V}
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  Matrix{T}
+end
+
+function return_value(f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {D,T,V}
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  np = length(x)
+  ndof = length(f.terms)*num_components(T)
+  zeros(T,(np,ndof))
+end
+
 function return_cache(f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {D,T,V}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
@@ -125,6 +137,25 @@ function evaluate!(cache,f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) wher
     end
   end
   r.array
+end
+
+function return_type(
+  fg::FieldGradientArray{1,ModalC0Basis{D,V,W}},
+  x::AbstractVector{<:Point}) where {D,V,W}
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  T = gradient_type(V,testitem(x))
+  Matrix{T}
+end
+
+function return_value(
+  fg::FieldGradientArray{1,ModalC0Basis{D,V,W}},
+  x::AbstractVector{<:Point}) where {D,V,W}
+  f = fg.fa
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  np = length(x)
+  ndof = length(f.terms)*num_components(V)
+  T = gradient_type(V,testitem(x))
+  zeros(T,(np,ndof))
 end
 
 function return_cache(
@@ -167,6 +198,25 @@ function evaluate!(
     end
   end
   r.array
+end
+
+function return_type(
+  fg::FieldGradientArray{2,ModalC0Basis{D,V,W}},
+  x::AbstractVector{<:Point}) where {D,V,W}
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  T = gradient_type(gradient_type(V,xi),testitem(x))
+  Matrix{T}
+end
+
+function return_value(
+  fg::FieldGradientArray{2,ModalC0Basis{D,V,W}},
+  x::AbstractVector{<:Point}) where {D,V,W}
+  f = fg.fa
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  np = length(x)
+  ndof = length(f.terms)*num_components(V)
+  T = gradient_type(gradient_type(V,xi),testitem(x))
+  zeros(T,(np,ndof))
 end
 
 function return_cache(
@@ -215,6 +265,15 @@ end
 
 # Optimizing evaluation at a single point
 
+function return_type(f::AbstractVector{ModalC0BasisFunction},x::Point)
+  typeof(return_value(f,x))
+end
+
+function return_value(f::AbstractVector{ModalC0BasisFunction},x::Point)
+  r, cf, xs = return_cache(f,x)
+  r.array
+end
+
 function return_cache(f::AbstractVector{ModalC0BasisFunction},x::Point)
   xs = [x]
   cf = return_cache(f,xs)
@@ -232,6 +291,17 @@ function evaluate!(cache,f::AbstractVector{ModalC0BasisFunction},x::Point)
   a = r.array
   copyto!(a,v)
   a
+end
+
+function return_type(
+  f::FieldGradientArray{N,<:AbstractVector{ModalC0BasisFunction}}, x::Point) where {N}
+  typeof(return_value(f,x))
+end
+
+function return_value(
+  f::FieldGradientArray{N,<:AbstractVector{ModalC0BasisFunction}}, x::Point) where {N}
+  r, cf, xs = return_cache(f,x)
+  r.array
 end
 
 function return_cache(

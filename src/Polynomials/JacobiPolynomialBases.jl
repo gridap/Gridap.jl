@@ -46,6 +46,18 @@ return_type(::JacobiPolynomialBasis{D,T}) where {D,T} = T
 
 # Field implementation
 
+function return_type(f::JacobiPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
+  @check D == length(eltype(x)) "Incorrect number of point components"
+  Matrix{T}
+end
+
+function return_value(f::JacobiPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
+  @check D == length(eltype(x)) "Incorrect number of point components"
+  np = length(x)
+  ndof = length(f.terms)*num_components(T)
+  zeros(T,(np,ndof))
+end
+
 function return_cache(f::JacobiPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
@@ -73,6 +85,25 @@ function evaluate!(cache,f::JacobiPolynomialBasis{D,T},x::AbstractVector{<:Point
     end
   end
   r.array
+end
+
+function return_type(
+  fg::FieldGradientArray{1,JacobiPolynomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  T = gradient_type(V,testitem(x))
+  Matrix{T}
+end
+
+function return_value(
+  fg::FieldGradientArray{1,JacobiPolynomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
+  f = fg.fa
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  np = length(x)
+  ndof = length(f.terms)*num_components(V)
+  T = gradient_type(V,testitem(x))
+  zeros(T,(np,ndof))
 end
 
 function return_cache(
@@ -115,6 +146,27 @@ function evaluate!(
     end
   end
   r.array
+end
+
+function return_type(
+  fg::FieldGradientArray{2,JacobiPolynomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  xi = testitem(x)
+  T = gradient_type(gradient_type(V,xi),xi)
+  Matrix{T}
+end
+
+function return_value(
+  fg::FieldGradientArray{2,JacobiPolynomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
+  f = fg.fa
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  np = length(x)
+  ndof = length(f.terms)*num_components(V)
+  xi = testitem(x)
+  T = gradient_type(gradient_type(V,xi),xi)
+  zeros(T,(np,ndof))
 end
 
 function return_cache(
@@ -163,6 +215,15 @@ end
 
 # Optimizing evaluation at a single point
 
+function return_type(f::JacobiPolynomialBasis{D,T},x::Point) where {D,T}
+  typeof(return_value(f,x))
+end
+
+function return_value(f::JacobiPolynomialBasis{D,T},x::Point) where {D,T}
+  r, cf, xs = return_cache(f,x)
+  r.array
+end
+
 function return_cache(f::JacobiPolynomialBasis{D,T},x::Point) where {D,T}
   ndof = length(f.terms)*num_components(T)
   r = CachedArray(zeros(T,(ndof,)))
@@ -180,6 +241,17 @@ function evaluate!(cache,f::JacobiPolynomialBasis{D,T},x::Point) where {D,T}
   a = r.array
   copyto!(a,v)
   a
+end
+
+function return_type(
+  f::FieldGradientArray{N,JacobiPolynomialBasis{D,V}}, x::Point) where {N,D,V}
+  typeof(return_value(f,x))
+end
+
+function return_value(
+  f::FieldGradientArray{N,JacobiPolynomialBasis{D,V}}, x::Point) where {N,D,V}
+  r, cf, xs = return_cache(f,x)
+  r.array
 end
 
 function return_cache(
