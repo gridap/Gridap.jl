@@ -493,7 +493,7 @@ struct OperationCellField{DS} <: CellField
         # r = Fields.BroadcastingFieldOpMap(op.op)(fx...)
         ax = map(ai->return_value(ai,pts),args)
         axi = map(testitem,ax)
-        r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
+        r = return_value(Fields.BroadcastingFieldOpMap(op.op),axi...)
         true
       end
     end
