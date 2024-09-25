@@ -93,8 +93,8 @@ end
 
 abstract type AdaptivityMethod end
 
-function refine(model::UnstructuredDiscreteModel,::AdaptivityMethod,args...;kwargs...)
-  @abstractmethod
+function refine(model::DiscreteModel,::AdaptivityMethod,args...;kwargs...)
+  @notimplemented "Refinement not implemented for this type of model and adaptivity method"
 end
 
 # Handle the user's requested choice for refinement
@@ -106,7 +106,7 @@ function string_to_refinement(refinement_method::String, model)
   error("refinement_method $refinement_method not recognized")
 end
 
-function refine(model::UnstructuredDiscreteModel,args...;refinement_method="red_green",kwargs...)
+function refine(model::DiscreteModel,args...;refinement_method="red_green",kwargs...)
   return refine(string_to_refinement(refinement_method, model),model,args...;kwargs...)
 end
 
