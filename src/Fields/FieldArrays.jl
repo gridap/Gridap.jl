@@ -163,6 +163,13 @@ end
 for T in (:(Point),:(AbstractVector{<:Point}))
   @eval begin
 
+  function return_value(a::LinearCombinationField,x::$T)
+    fx = return_value(a.fields,x)
+    v = a.values
+    k = LinearCombinationMap(a.column)
+    return_value(k,v,fx)
+  end
+
   function return_cache(a::LinearCombinationField,x::$T)
     cf = return_cache(a.fields,x)
     fx = return_value(a.fields,x)
@@ -220,6 +227,13 @@ Base.IndexStyle(::Type{<:LinearCombinationField}) = IndexLinear()
 
 for T in (:(Point),:(AbstractVector{<:Point}))
   @eval begin
+
+    function return_value(a::LinearCombinationFieldVector,x::$T)
+      fx = return_value(a.fields,x)
+      v = a.values
+      k = LinearCombinationMap(:)
+      return_value(k,v,fx)
+    end
 
     function return_cache(a::LinearCombinationFieldVector,x::$T)
       cf = return_cache(a.fields,x)

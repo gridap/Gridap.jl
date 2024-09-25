@@ -21,6 +21,12 @@ end
 
 struct CompositeQuadrature <: QuadratureName end
 
+"""
+    Quadrature(rr::RefinementRule,degree::Integer;kwargs...)
+
+Creates a CompositeQuadrature on the RefinementRule `rr` by concatenating 
+quadratures of degree `degree` on each subcell of the RefinementRule.
+"""
 function ReferenceFEs.Quadrature(rr::RefinementRule,degree::Integer;kwargs...)
   return ReferenceFEs.Quadrature(ReferenceFEs.get_polytope(rr),CompositeQuadrature(),rr,degree;kwargs...)
 end
@@ -52,6 +58,29 @@ function ReferenceFEs.Quadrature(
   end
   fpoints = map(get_coordinates,quads)
   ids = FineToCoarseIndices(conn)
-  coordinates = FineToCoarseArray(rr,cpoints,fpoints,ids)
+  coordinates = FineToCoarseArray{eltype(cpoints)}(rr,cpoints,fpoints,ids)
+  return GenericQuadrature(coordinates,weights,"Composite quadrature")
+end
+
+"""
+    CompositeQuadrature(quad::Quadrature,rr::RefinementRule)
+
+Creates a CompositeQuadrature on the RefinementRule `rr` by splitting
+the quadrature `quad` into the subcells of the RefinementRule.
+"""
+function CompositeQuadrature(
+  quad::Quadrature,rr::RefinementRule
+)
+  @check ReferenceFEs.get_polytope(quad) === ReferenceFEs.get_polytope(rr)
+
+  weights = get_weights(quad)
+  cpoints = get_coordinates(quad)
+
+  fpoints, conn = evaluate(CoarseToFinePointMap(),rr,cpoints)
+  fpoints = collect(Vector{eltype(cpoints)},fpoints)
+  conn = collect(Vector{Int32},conn)
+  
+  ids = FineToCoarseIndices(conn)
+  coordinates = FineToCoarseArray{eltype(cpoints)}(rr,cpoints,fpoints,ids)
   return GenericQuadrature(coordinates,weights,"Composite quadrature")
 end

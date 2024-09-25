@@ -2,9 +2,9 @@
 """
 
   `DiscreteModel` created by refining/coarsening another `DiscreteModel`.
-  
-  The refinement/coarsening hierarchy can be traced backwards by following the 
-  `parent` pointer chain. This allows the transfer of dofs 
+
+  The refinement/coarsening hierarchy can be traced backwards by following the
+  `parent` pointer chain. This allows the transfer of dofs
   between `FESpaces` defined on this model and its ancestors.
 
 """
@@ -77,7 +77,7 @@ end
 """
   function adapt(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
 
-  Returns an `AdaptedDiscreteModel` that is the result of adapting (mixed coarsening and refining) 
+  Returns an `AdaptedDiscreteModel` that is the result of adapting (mixed coarsening and refining)
   the given `DiscreteModel`.
 """
 function adapt(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
@@ -153,14 +153,14 @@ function _get_cartesian_domain(desc::CartesianDescriptor{D}) where D
   return Tuple(domain)
 end
 
-@generated function _c2v(idx::Union{NTuple{N,T},CartesianIndex{N}},sizes::NTuple{N,T}) where {N,T}    
+@generated function _c2v(idx::Union{NTuple{N,T},CartesianIndex{N}},sizes::NTuple{N,T}) where {N,T}
   res = :(idx[1])
   for d in 1:N-1
     ik = :((idx[$(d+1)]-1))
     for k in 1:d
         ik = :($ik * sizes[$k])
     end
-    res = :($res + $ik) 
+    res = :($res + $ik)
   end
   return res
 end
@@ -168,7 +168,7 @@ end
 @generated function _create_cartesian_f2c_maps(nC::NTuple{N,T},ref::NTuple{N,T}) where {N,T}
   J_f2c   = Meta.parse(prod(["(",["1+(I[$k]-1)÷ref[$k]," for k in 1:N]...,")"]))
   J_child = Meta.parse(prod(["(",["1+(I[$k]-1)%ref[$k]," for k in 1:N]...,")"]))
-  
+
   return :(begin
     nF = nC .* ref
     f2c_map   = Vector{Int}(undef,prod(nF))
@@ -180,7 +180,7 @@ end
       f2c_map[i] = _c2v(J_f2c,nC)
       child_map[i] = _c2v(J_child,ref)
     end
-        
+
     return f2c_map, child_map
   end)
 end
