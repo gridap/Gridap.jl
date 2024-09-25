@@ -7,7 +7,7 @@ the original and the refined model.
 """
 struct SimplexifyRefinement <: AdaptivityMethod end
 
-function refine(::SimplexifyRefinement,model::UnstructuredDiscreteModel{Dc,Dp};kwargs...) where {Dc,Dp}
+function refine(::SimplexifyRefinement,model::DiscreteModel{Dc,Dp};kwargs...) where {Dc,Dp}
   ref_model = simplexify(model;kwargs...)
 
   polys = get_polytopes(model)
