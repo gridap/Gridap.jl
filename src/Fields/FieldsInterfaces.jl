@@ -491,6 +491,15 @@ end
 
 struct IntegrationMap <: Map end
 
+function return_value(k::IntegrationMap,ax::AbstractVector,w)
+  if size(ax,1) == length(w)
+    evaluate(k,ax,w)
+  else
+    T = typeof( testitem(ax)*testitem(w) + testitem(ax)*testitem(w) )
+    zero(T)
+  end
+end
+
 function evaluate!(cache,k::IntegrationMap,ax::AbstractVector,w)
   T = typeof( testitem(ax)*testitem(w) + testitem(ax)*testitem(w) )
   z = zero(T)
@@ -511,6 +520,15 @@ function evaluate!(cache,k::IntegrationMap,aq::AbstractVector,w,jq::AbstractVect
     z += aq[i]*w[i]*meas(jq[i])
   end
   z
+end
+
+function return_value(k::IntegrationMap,ax::AbstractArray,w)
+  if size(ax,1) == length(w)
+    evaluate(k,ax,w)
+  else
+    c = return_cache(k,ax,w)
+    c.array
+  end
 end
 
 function return_cache(k::IntegrationMap,ax::AbstractArray,w)
