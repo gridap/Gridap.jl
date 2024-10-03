@@ -263,7 +263,7 @@ end
 
 function evaluate!(cache,k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractVector)
   z = zero(return_type(outer,testitem(fx),testitem(v)))
-  @check length(fx) == size(v,1)
+  length(fx) != size(v,1) && return z
   @inbounds for i in eachindex(fx)
     # We need to do the product in this way
     # so that the gradient also works
@@ -565,6 +565,7 @@ function evaluate!(
   nj = size(b,3)
   setsize!(cache,(np,ni,nj))
   r = cache.array
+  size(b,1) == 0 && return r
   for p in 1:np
     for j in 1:nj
       bpj = b[p,1,j]

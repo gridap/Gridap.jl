@@ -693,7 +693,11 @@ end
 function return_cache(f::VoidField,x::AbstractVector{<:Point})
   c = return_cache(f.field,x)
   fx = evaluate!(c,f.field,x)
-  z = similar(fx)
+  if(eltype(fx) != Any)
+    z = similar(fx)
+  else
+    z = Float64[]
+  end
   c, CachedArray(z)
 end
 

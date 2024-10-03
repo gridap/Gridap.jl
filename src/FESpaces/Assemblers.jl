@@ -516,11 +516,13 @@ function _pair_contribution_when_possible(biform,liform,uhd)
   matvec = DomainContribution()
   mat = DomainContribution()
   for (trian,t) in _matvec.dict
+    num_cells(trian) == 0 && continue
     cellvals = get_cell_dof_values(uhd,trian)
     cellmask = get_cell_is_dirichlet(uhd,trian)
     matvec.dict[trian] = attach_dirichlet(t,cellvals,cellmask)
   end
   for (trian,t) in _mat.dict
+    num_cells(trian) == 0 && continue
     cellvals = get_cell_dof_values(uhd,trian)
     cellmask = get_cell_is_dirichlet(uhd,trian)
     matvec.dict[trian] = attach_dirichlet(t,cellvals,cellmask)
