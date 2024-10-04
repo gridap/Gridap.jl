@@ -9,7 +9,7 @@ using Gridap.ODEs
 include("../ODEOperatorsMocks.jl")
 include("../ODESolversMocks.jl")
 
-# M u̇ + M * Diag(λ) u = M * f(t),
+# M u̇ + M * Diag(-λ) u = M * f(t),
 # where f(t) = exp(Diag(α) * t)
 t0 = 0.0
 dt = 1.0e-3
@@ -29,7 +29,7 @@ nonzeros(mat0) .= 0
 form_zero(t) = mat0
 
 α = randn(num_eqs)
-forcing(t) = -M * exp.(α .* t)
+forcing(t) = M * exp.(α .* t)
 forcing_zero(t) = zeros(typeof(t), num_eqs)
 
 u0 = randn(num_eqs)
@@ -87,28 +87,43 @@ maxiter = 100
 sysslvr_l = LUSolver()
 sysslvr_nl = NonlinearSolverMock(rtol, atol, maxiter)
 
-# odeslvrs = (
-#   ForwardEuler(sysslvr_nl, dt),
-#   ThetaMethod(sysslvr_nl, dt, 0.2),
-#   MidPoint(sysslvr_nl, dt),
-#   ThetaMethod(sysslvr_nl, dt, 0.8),
-#   BackwardEuler(sysslvr_nl, dt),
-#   GeneralizedAlpha1(sysslvr_nl, dt, 0.0),
-#   GeneralizedAlpha1(sysslvr_nl, dt, 0.5),
-#   GeneralizedAlpha1(sysslvr_nl, dt, 1.0),
-# )
-# for tableau in available_tableaus
-#   global odeslvrs
-#   odeslvr = RungeKutta(sysslvr_nl, sysslvr_l, dt, tableau)
-#   odeslvrs = (odeslvrs..., odeslvr)
-# end
+odeslvrs = (
+  ForwardEuler(sysslvr_nl, dt),
+  ThetaMethod(sysslvr_nl, dt, 0.2),
+  MidPoint(sysslvr_nl, dt),
+  ThetaMethod(sysslvr_nl, dt, 0.8),
+  BackwardEuler(sysslvr_nl, dt),
+  GeneralizedAlpha1(sysslvr_nl, dt, 0.0),
+  GeneralizedAlpha1(sysslvr_nl, dt, 0.5),
+  GeneralizedAlpha1(sysslvr_nl, dt, 1.0),
+)
+for tableau in available_tableaus
+  global odeslvrs
+  odeslvr = RungeKutta(sysslvr_nl, sysslvr_l, dt, tableau)
+  odeslvrs = (odeslvrs..., odeslvr)
+end
 
-# us0 = (u0,)
-# for odeslvr in odeslvrs
-#   for odeop in odeops
-#     test_solver(odeslvr, odeop, us0, tol)
-#   end
-# end
+us0 = (u0,)
+for odeslvr in odeslvrs
+  for odeop in odeops
+    test_solver(odeslvr, odeop, us0, tol)
+  end
+end
+
+# Tests with initial velocity
+odeslvrs = (
+  GeneralizedAlpha1(sysslvr_nl, dt, 0.0),
+  GeneralizedAlpha1(sysslvr_nl, dt, 0.5),
+  GeneralizedAlpha1(sysslvr_nl, dt, 1.0),
+)
+
+v0 = exp.(α .* t0) - spdiagm(-λ) * u0
+us0 = (u0, v0)
+for odeslvr in odeslvrs
+  for odeop in odeops
+    test_solver(odeslvr, odeop, us0, tol)
+  end
+end
 
 # Solvers for `IMEXODEOperator`s
 odeops = (

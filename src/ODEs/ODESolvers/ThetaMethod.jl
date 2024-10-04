@@ -2,7 +2,7 @@
     struct ThetaMethod <: ODESolver end
 
 θ-method ODE solver.
-```math
+```
 residual(tx, ux, vx) = 0,
 
 tx = t_n + θ * dt

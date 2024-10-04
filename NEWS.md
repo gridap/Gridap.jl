@@ -5,7 +5,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.17.23] - 2024-01-28 
+## [0.18.6] - 2024-08-29
+
+### Fixed
+
+- Improved performance of PR[#967](https://github.com/gridap/Gridap.jl/pull/967). Along the way, opened the door to Triangulations of different type in SkeletonTriangulation. Since PR[#1026](https://github.com/gridap/Gridap.jl/pull/1026).
+
+## [0.18.5] - 2024-08-28 
+
+### Changed
+
+- Misc changes required to support facet integration on non-conforming meshes. These changes do not involve methods of the public API. Since PR[#967](https://github.com/gridap/Gridap.jl/pull/967)
+
+## [0.18.4] - 2024-08-09
+
+### Changed
+
+- Added WriteVTK kwargs to control the output encoding for vtk files. Since PR[#1016](https://github.com/gridap/Gridap.jl/pull/1016).
+
+### Fixed
+
+- Passing `kwargs` from `refine` to `simplexify` functions in Adaptivity. Since PR[#1015](https://github.com/gridap/Gridap.jl/pull/1015).
+- Fixed `interpolate` for `ZeroMeanFESpace`. Since PR[#1020](https://github.com/gridap/Gridap.jl/pull/1020).
+- Fixed `gather_free_and_dirichlet_values!` for `FESpaceWithConstantFixed`. Since PR[#1020](https://github.com/gridap/Gridap.jl/pull/1020).
+
+## [0.18.3] - 2024-07-11
+
+### Added
+
+- Added more features to Adaptivity. Notably: 3D uniform edge-based refinement for HEX and TETs. Barycentric refinement for simplices. Simplexify as a new refinement strategy. Since PR[#1013](https://github.com/gridap/Gridap.jl/pull/1013).
+
+- Define `GeneralPolytope` that represents general polytopes in 2 and 3 dimensions. Since PR[#1006](https://github.com/gridap/Gridap.jl/pull/1006).
+
+### Changed
+
+- Added local preferences for Gridap through `Preferences.jl`. The macro `@check` can now be activated/deactivated by using the local preference `execution_mode`. Since PR[#1014](https://github.com/gridap/Gridap.jl/pull/1014).
+
+## [0.18.2] - 2024-05-02
+
+### Fixed
+
+- Bugfix in `get_face_dofs` for Nedelec GenericRefFE. Since PR[#1005](https://github.com/gridap/Gridap.jl/pull/1005).
+- Ensure deterministic behavior for matrix assembly involving multiple domains. Since PR[#1004](https://github.com/gridap/Gridap.jl/pull/1004).
+
+## [0.18.1] - 2024-04-12
+
+### Changed
+
+- Changed the sign of the residual in `TransientLinearFEOperator` to align with the conventions of `AffineFEOperator`. Since PR[#996](https://github.com/gridap/Gridap.jl/pull/996).
+
+### Fixed
+
+- Bugfix in `restrict_to_field` for `BlockMultiFieldStyle`. Since PR[#993](https://github.com/gridap/Gridap.jl/pull/993).
+
+## [0.18.0] - 2024-04-12
+
+### Breaking
+
+- ODE module extensive refactor. Breaking changes! See docs and PR for details. Since PR[965](https://github.com/gridap/Gridap.jl/pull/965).
+- Fixed name clash with `Statistics.mean`. Since PR[#988](https://github.com/gridap/Gridap.jl/pull/988).
+- Deprecated `SubVector` in favor of Julia's `view`. Since PR[#989](https://github.com/gridap/Gridap.jl/pull/989).
+
+### Added
+
+- Added some missing API methods to `Assemblers` and `MultiField`. Since PR[#985](https://github.com/gridap/Gridap.jl/pull/985).
+
+### Fixed
+
+- Fix when evaluating `\circ` operator with `CellState`. Since PR[#987](https://github.com/gridap/Gridap.jl/pull/987).
+
+## [0.17.23] - 2024-01-28
 
 ### Changed
 

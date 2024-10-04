@@ -14,7 +14,7 @@ function SDIRK12(T::Type{<:Real}=Float64)
 end
 
 """
-SDIRK_Euler_1_1
+    SDIRK_Euler_1_1
 """
 struct SDIRK_Euler_1_1 <: TableauName end
 
@@ -23,7 +23,7 @@ function ButcherTableau(::SDIRK_Euler_1_1, ::Type{T}=Float64) where {T}
 end
 
 """
-SDIRK_Midpoint_1_2
+    SDIRK_Midpoint_1_2
 """
 struct SDIRK_Midpoint_1_2 <: TableauName end
 
@@ -64,7 +64,7 @@ function DIRK23(λ::Real, ::Type{T}=Float64) where {T<:Real}
 end
 
 """
-DIRK_CrankNicolson_2_2
+    DIRK_CrankNicolson_2_2
 """
 struct DIRK_CrankNicolson_2_2 <: TableauName end
 
@@ -73,7 +73,7 @@ function ButcherTableau(::DIRK_CrankNicolson_2_2, ::Type{T}=Float64) where {T}
 end
 
 """
-SDIRK_QinZhang_2_2
+    SDIRK_QinZhang_2_2
 """
 struct SDIRK_QinZhang_2_2 <: TableauName end
 
@@ -82,7 +82,7 @@ function ButcherTableau(::SDIRK_QinZhang_2_2, ::Type{T}=Float64) where {T}
 end
 
 """
-DIRK_LobattoIIIA_2_2
+    DIRK_LobattoIIIA_2_2
 """
 struct DIRK_LobattoIIIA_2_2 <: TableauName end
 
@@ -94,7 +94,7 @@ function ButcherTableau(::DIRK_LobattoIIIA_2_2, ::Type{T}=Float64) where {T}
 end
 
 """
-DIRK_RadauI_2_3
+    DIRK_RadauI_2_3
 """
 struct DIRK_RadauI_2_3 <: TableauName end
 
@@ -112,7 +112,7 @@ function ButcherTableau(::DIRK_RadauI_2_3, ::Type{T}=Float64) where {T<:Real}
 end
 
 """
-DIRK_RadauII_2_3
+    DIRK_RadauII_2_3
 """
 struct DIRK_RadauII_2_3 <: TableauName end
 
@@ -130,7 +130,7 @@ function ButcherTableau(::DIRK_RadauII_2_3, ::Type{T}=Float64) where {T<:Real}
 end
 
 """
-SDIRK_LobattoIIIC_2_2
+    SDIRK_LobattoIIIC_2_2
 """
 struct SDIRK_LobattoIIIC_2_2 <: TableauName end
 
@@ -139,7 +139,7 @@ function ButcherTableau(::SDIRK_LobattoIIIC_2_2, ::Type{T}=Float64) where {T}
 end
 
 """
-SDIRK_2_2
+    SDIRK_2_2
 """
 struct SDIRK_2_2 <: TableauName end
 
@@ -148,8 +148,8 @@ function ButcherTableau(::SDIRK_2_2, ::Type{T}=Float64) where {T}
 end
 
 """
-SDIRK_SSP_2_3
-SDIRK_Crouzeix_2_3
+    SDIRK_SSP_2_3
+    SDIRK_Crouzeix_2_3
 """
 struct SDIRK_SSP_2_3 <: TableauName end
 
@@ -167,7 +167,7 @@ end
 # 3 stages #
 ############
 """
-SDIRK_3_2
+    SDIRK_3_2
 """
 struct SDIRK_3_2 <: TableauName end
 
@@ -193,7 +193,7 @@ function ButcherTableau(::SDIRK_3_2, ::Type{T}=Float64) where {T<:Real}
 end
 
 """
-DIRK_TRBDF_3_2
+    DIRK_TRBDF_3_2
 """
 struct DIRK_TRBDF_3_2 <: TableauName end
 
@@ -219,7 +219,7 @@ function ButcherTableau(::DIRK_TRBDF_3_2, ::Type{T}=Float64) where {T<:Real}
 end
 
 """
-DIRK_TRX_3_2
+    DIRK_TRX_3_2
 """
 struct DIRK_TRX_3_2 <: TableauName end
 
@@ -243,7 +243,7 @@ function ButcherTableau(::DIRK_TRX_3_2, ::Type{T}=Float64) where {T<:Real}
 end
 
 """
-SDIRK_3_3
+    SDIRK_3_3
 """
 struct SDIRK_3_3 <: TableauName end
 
@@ -263,7 +263,7 @@ function ButcherTableau(::SDIRK_3_3, ::Type{T}=Float64) where {T}
 end
 
 """
-SDIRK_Crouzeix_3_4
+    SDIRK_Crouzeix_3_4
 """
 struct SDIRK_Crouzeix_3_4 <: TableauName end
 
@@ -286,7 +286,7 @@ function ButcherTableau(::SDIRK_Crouzeix_3_4, ::Type{T}=Float64) where {T}
 end
 
 """
-SDIRK_Norsett_3_4
+    SDIRK_Norsett_3_4
 """
 struct SDIRK_Norsett_3_4 <: TableauName end
 
@@ -310,7 +310,7 @@ function ButcherTableau(::SDIRK_Norsett_3_4, ::Type{T}=Float64) where {T}
 end
 
 """
-DIRK_LobattoIIIC_3_4
+    DIRK_LobattoIIIC_3_4
 """
 struct DIRK_LobattoIIIC_3_4 <: TableauName end
 
@@ -332,7 +332,7 @@ end
 # 4 stages #
 ############
 """
-SDIRK_4_3
+    SDIRK_4_3
 """
 struct SDIRK_4_3 <: TableauName end
 

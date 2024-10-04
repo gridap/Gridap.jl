@@ -6,7 +6,7 @@
     struct DIMRungeKutta <: ODESolver end
 
 Diagonally-implicit Runge-Kutta ODE solver.
-```math
+```
 residual(tx, ux, vx) = 0,
 
 tx = t_n + c[i] * dt

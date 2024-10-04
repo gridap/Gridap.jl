@@ -35,6 +35,7 @@ const ε = 100 * eps()
 
 include("TimeDerivatives.jl")
 
+export TimeSpaceFunction
 export time_derivative
 export ∂t
 export ∂tt

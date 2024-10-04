@@ -36,4 +36,6 @@ uh, ph = xh
 cell_values = get_cell_dof_values(xh,trian)
 @test isa(cell_values[1],ArrayBlock)
 
+xh2 = xh⋅xh
+
 end # module

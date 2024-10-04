@@ -10,11 +10,8 @@ using Gridap.FESpaces
 using Gridap.ODEs
 
 # Analytical functions
-u(x, t) = x[1] * (1 - x[2]) * (1 + t)
-∂tu(x, t) = ∂t(u)(x, t)
-
-u(t::Real) = x -> u(x, t)
-∂tu(t::Real) = x -> ∂tu(x, t)
+ut(t) = x -> x[1] * (1 - x[2]) * (1 + t)
+u = TimeSpaceFunction(ut)
 
 # Geometry
 domain = (0, 1, 0, 1)
@@ -33,8 +30,8 @@ degree = 2 * order
 dΩ = Measure(Ω, degree)
 
 # FE operator
-f(t) = x -> ∂t(u)(x, t) - Δ(u(t))(x)
-
+ft(t) = x -> ∂t(u)(t, x) - Δ(u)(t, x)
+f = TimeSpaceFunction(ft)
 mass(t, ∂ₜu, v) = ∫(∂ₜu ⋅ v) * dΩ
 mass(t, u, ∂ₜu, v) = mass(t, ∂ₜu, v)
 stiffness(t, u, v) = ∫(∇(u) ⊙ ∇(v)) * dΩ
@@ -45,7 +42,7 @@ jac(t, u, du, v) = stiffness(t, du, v)
 jac_t(t, u, dut, v) = mass(t, u, dut, v)
 
 res_ql(t, u, v) = stiffness(t, u, v) - forcing(t, v)
-res_l(t, v) = (-1) * forcing(t, v)
+res_l(t, v) = forcing(t, v)
 
 res0(t, u, v) = ∫(0 * u * v) * dΩ
 jac0(t, u, du, v) = ∫(0 * du * v) * dΩ
@@ -123,6 +120,21 @@ odeslvrs = (
 )
 
 uhs0 = (uh0,)
+for odeslvr in odeslvrs
+  for tfeop in tfeops
+    test_transient_heat_scalar(odeslvr, tfeop, uhs0)
+  end
+end
+
+# Test GeneralizedAlpha1 with initial velocity
+odeslvrs = (
+  GeneralizedAlpha1(sysslvr_nl, dt, 0.0),
+  GeneralizedAlpha1(sysslvr_nl, dt, 0.5),
+  GeneralizedAlpha1(sysslvr_nl, dt, 1.0),
+)
+
+vh0 = interpolate_everywhere(∂t(u)(t0), U0)
+uhs0 = (uh0, vh0)
 for odeslvr in odeslvrs
   for tfeop in tfeops
     test_transient_heat_scalar(odeslvr, tfeop, uhs0)

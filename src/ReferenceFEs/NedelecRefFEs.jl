@@ -71,8 +71,41 @@ function Conformity(reffe::GenericRefFE{Nedelec},sym::Symbol)
 end
 
 function get_face_own_dofs(reffe::GenericRefFE{Nedelec}, conf::CurlConformity)
-  get_face_dofs(reffe)
+  reffe.face_dofs # For Nedelec, this member variable holds the face owned dofs
 end
+
+function get_face_own_dofs(reffe::GenericRefFE{Nedelec}, conf::L2Conformity)
+  face_own_dofs=[Int[] for i in 1:num_faces(reffe)]
+  face_own_dofs[end]=collect(1:num_dofs(reffe))
+  face_own_dofs
+end
+
+function get_face_dofs(reffe::GenericRefFE{Nedelec,Dc}) where Dc
+  face_dofs=[Int[] for i in 1:num_faces(reffe)]
+  face_own_dofs=get_face_own_dofs(reffe)
+  p = get_polytope(reffe)
+  for d=1:Dc # Starting from edges, vertices do not own DoFs for Nedelec
+    first_face = get_offset(p,d)
+    nfaces     = num_faces(reffe,d)
+    for face=first_face+1:first_face+nfaces
+      for df=1:d-1
+        face_faces  = get_faces(p,d,df)
+        first_cface = get_offset(p,df)
+        for cface in face_faces[face-first_face]
+          cface_own_dofs = face_own_dofs[first_cface+cface]
+          for dof in cface_own_dofs
+              push!(face_dofs[face],dof)
+          end
+        end 
+      end
+      for dof in face_own_dofs[face]
+        push!(face_dofs[face],dof)
+      end
+    end
+  end
+  face_dofs
+end
+
 
 function _Nedelec_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
 

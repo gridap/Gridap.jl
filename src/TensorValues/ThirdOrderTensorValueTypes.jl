@@ -5,7 +5,7 @@ Type representing a third-order tensor
 struct ThirdOrderTensorValue{D1,D2,D3,T,L} <: MultiValue{Tuple{D1,D2,D3},T,3,L}
     data::NTuple{L,T}
     function ThirdOrderTensorValue{D1,D2,D3,T}(data::NTuple{L,T}) where {D1,D2,D3,T,L}
-        @assert L == D1*D2*D3
+        @check L == D1*D2*D3
         new{D1,D2,D3,T,L}(data)
     end
 end
