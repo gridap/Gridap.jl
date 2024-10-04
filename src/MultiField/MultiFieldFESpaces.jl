@@ -152,20 +152,21 @@ struct MultiFieldFEBasisComponent{B} <: FEBasis
   single_field::B
   fieldid::Int
   nfields::Int
-  function MultiFieldFEBasisComponent(
-    single_field::SingleFieldFEBasis,fieldid::Integer,nfields::Integer)
-    function block_dofs(cell_bs,::TestBasis,fieldid,nfields)
-      cell_basis = lazy_map(BlockMap(nfields,fieldid),cell_bs)
-    end
-    function block_dofs(cell_bs,::TrialBasis,fieldid,nfields)
-      cell_basis = lazy_map(BlockMap((1,nfields),fieldid),cell_bs)
-    end
-    B = typeof(single_field)
-    cell_bs = get_data(single_field)
-    bsty = BasisStyle(single_field)
-    cell_basis = block_dofs(cell_bs,bsty,fieldid,nfields)
-    new{B}(cell_basis,single_field,fieldid,nfields)
+end
+
+function MultiFieldFEBasisComponent(
+  single_field::SingleFieldFEBasis,fieldid::Integer,nfields::Integer)
+  function block_dofs(cell_bs,::TestBasis,fieldid,nfields)
+    cell_basis = lazy_map(BlockMap(nfields,fieldid),cell_bs)
   end
+  function block_dofs(cell_bs,::TrialBasis,fieldid,nfields)
+    cell_basis = lazy_map(BlockMap((1,nfields),fieldid),cell_bs)
+  end
+  B = typeof(single_field)
+  cell_bs = get_data(single_field)
+  bsty = BasisStyle(single_field)
+  cell_basis = block_dofs(cell_bs,bsty,fieldid,nfields)
+  MultiFieldFEBasisComponent{B}(cell_basis,single_field,fieldid,nfields)
 end
 
 CellData.get_data(f::MultiFieldFEBasisComponent) = f.cell_basis
