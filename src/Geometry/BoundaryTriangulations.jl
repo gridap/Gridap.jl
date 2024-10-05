@@ -252,9 +252,13 @@ function push_normal(invJt,n)
   end
 end
 
-function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation,glue)
+function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation)
   d = num_cell_dims(trian)
-  cell_grid = get_grid(get_background_model(trian.trian))
+  _compute_face_to_q_vertex_coords_body(d,get_background_model(trian.trian),trian.glue)
+end
+
+function _compute_face_to_q_vertex_coords_body(d,model,glue)
+  cell_grid = get_grid(model)
   polytopes = map(get_polytope, get_reffes(cell_grid))
   cell_to_ctype = glue.cell_to_ctype
   ctype_to_lvertex_to_qcoords = map(get_vertex_coordinates, polytopes)
@@ -288,10 +292,6 @@ function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation,glue)
   end
 
   FaceCompressedVector(ctype_to_lface_to_pindex_to_qcoords,glue)
-end
-
-function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation{Dc,Dp,A,<:FaceToCellGlue}) where {Dc,Dp,A}
-  _compute_face_to_q_vertex_coords(trian,trian.glue)
 end
 
 struct FaceCompressedVector{T,G<:FaceToCellGlue} <: AbstractVector{T}
