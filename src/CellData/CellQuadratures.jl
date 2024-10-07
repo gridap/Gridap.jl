@@ -1,19 +1,11 @@
 
 # Quadrature rule
-
-# VectorBlock{<:AbstractArray{<:Point}}
-
-const QET=Union{<:Quadrature,<:VectorBlock{<:Quadrature}}
-const PET=Union{<:AbstractArray{<:Point},<:VectorBlock{<:AbstractArray{<:Point}}}
-const WET=Union{<:AbstractArray{<:Real},<:VectorBlock{<:AbstractArray{<:Real}}}
-
-
 """
 """
 struct CellQuadrature{DDS,IDS} <: CellDatum
-  cell_quad::AbstractArray{<:QET}
-  cell_point::AbstractArray{<:PET}
-  cell_weight::AbstractArray{<:WET}
+  cell_quad::AbstractArray{<:Quadrature}
+  cell_point::AbstractArray{<:AbstractArray{<:Point}}
+  cell_weight::AbstractArray{<:AbstractArray{<:Real}}
   trian::Triangulation
   data_domain_style::DDS
   integration_domain_style::IDS
@@ -21,9 +13,9 @@ end
 
 # Old constructor (for backward compatibility)
 function CellQuadrature(
-  cell_quad::AbstractArray{<:QET},
-  cell_point::AbstractArray{<:PET},
-  cell_weight::AbstractArray{<:WET},
+  cell_quad::AbstractArray{<:Quadrature},
+  cell_point::AbstractArray{<:AbstractArray{<:Point}},
+  cell_weight::AbstractArray{<:AbstractArray{<:Real}},
   trian::Triangulation,
   data_domain_style::DomainStyle)
   CellQuadrature(cell_quad,cell_point,cell_weight,trian,data_domain_style,PhysicalDomain())
