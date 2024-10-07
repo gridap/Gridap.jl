@@ -1,7 +1,7 @@
 
 # Quadrature rule
 
-VectorBlock{<:AbstractArray{<:Point}}
+# VectorBlock{<:AbstractArray{<:Point}}
 
 const QET=Union{<:Quadrature,<:VectorBlock{<:Quadrature}}
 const PET=Union{<:AbstractArray{<:Point},<:VectorBlock{<:AbstractArray{<:Point}}}
