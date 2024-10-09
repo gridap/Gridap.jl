@@ -22,6 +22,7 @@
 
 
 struct ArrayBlock{A,N} 
+  array::Array{A,N}
   touched::Array{Bool,N}
   function ArrayBlock(array::Array{A,N},touched::Array{Bool,N}) where {A,N}
     @check size(array) == size(touched)
