@@ -21,7 +21,7 @@
 # uh [c][lf][np]
 
 
-struct ArrayBlock{A,N} <: AbstractVector{A}
+struct ArrayBlock{A,N} 
   touched::Array{Bool,N}
   function ArrayBlock(array::Array{A,N},touched::Array{Bool,N}) where {A,N}
     @check size(array) == size(touched)
