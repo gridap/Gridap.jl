@@ -2,29 +2,10 @@
 # Quadrature rule
 """
 """
-# struct CellQuadrature{DDS,IDS} <: CellDatum
-#   cell_quad::AbstractArray{<:Quadrature}
-#   cell_point::AbstractArray{<:AbstractArray{<:Point}}
-#   cell_weight::AbstractArray{<:AbstractArray{<:Real}}
-#   trian::Triangulation
-#   data_domain_style::DDS
-#   integration_domain_style::IDS
-# end
-
-# # Old constructor (for backward compatibility)
-# function CellQuadrature(
-#   cell_quad::AbstractArray{<:Quadrature},
-#   cell_point::AbstractArray{<:AbstractArray{<:Point}},
-#   cell_weight::AbstractArray{<:AbstractArray{<:Real}},
-#   trian::Triangulation,
-#   data_domain_style::DomainStyle)
-#   CellQuadrature(cell_quad,cell_point,cell_weight,trian,data_domain_style,PhysicalDomain())
-# end
-
 struct CellQuadrature{DDS,IDS} <: CellDatum
-  cell_quad::AbstractArray
-  cell_point::AbstractArray
-  cell_weight::AbstractArray
+  cell_quad::AbstractArray{<:Quadrature}
+  cell_point::AbstractArray{<:AbstractArray{<:Point}}
+  cell_weight::AbstractArray{<:AbstractArray{<:Real}}
   trian::Triangulation
   data_domain_style::DDS
   integration_domain_style::IDS
@@ -32,13 +13,32 @@ end
 
 # Old constructor (for backward compatibility)
 function CellQuadrature(
-  cell_quad::AbstractArray,
-  cell_point::AbstractArray,
-  cell_weight::AbstractArray,
+  cell_quad::AbstractArray{<:Quadrature},
+  cell_point::AbstractArray{<:AbstractArray{<:Point}},
+  cell_weight::AbstractArray{<:AbstractArray{<:Real}},
   trian::Triangulation,
   data_domain_style::DomainStyle)
   CellQuadrature(cell_quad,cell_point,cell_weight,trian,data_domain_style,PhysicalDomain())
-end
+# end
+
+# struct CellQuadrature{DDS,IDS} <: CellDatum
+#   cell_quad::AbstractArray
+#   cell_point::AbstractArray
+#   cell_weight::AbstractArray
+#   trian::Triangulation
+#   data_domain_style::DDS
+#   integration_domain_style::IDS
+# end
+
+# # Old constructor (for backward compatibility)
+# function CellQuadrature(
+#   cell_quad::AbstractArray,
+#   cell_point::AbstractArray,
+#   cell_weight::AbstractArray,
+#   trian::Triangulation,
+#   data_domain_style::DomainStyle)
+#   CellQuadrature(cell_quad,cell_point,cell_weight,trian,data_domain_style,PhysicalDomain())
+# end
 
 function CellQuadrature(trian::Triangulation,quad::Tuple{<:QuadratureName,Any,Any};
                         data_domain_style::DomainStyle=ReferenceDomain(),
