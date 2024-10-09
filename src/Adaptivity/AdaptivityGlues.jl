@@ -124,7 +124,7 @@ function get_o2n_faces_map(ncell_to_ocell::Vector{T}) where {T<:Integer}
   end
   Arrays.length_to_ptrs!(ptrs)
 
-  data = fill(zero(T),ptrs[end])
+  data = fill(zero(T),ptrs[end]-1)
   for iF in 1:nF
     iC = ncell_to_ocell[iF]
     data[ptrs[iC]] = iF

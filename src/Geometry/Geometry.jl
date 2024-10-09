@@ -46,6 +46,7 @@ import Gridap.ReferenceFEs: num_nodes
 import Gridap.ReferenceFEs: is_first_order
 import Gridap.ReferenceFEs: get_faces
 import Gridap.ReferenceFEs: get_face_vertices
+import Gridap.ReferenceFEs: get_face_coordinates
 import Gridap.ReferenceFEs: get_dimranges
 import Gridap.ReferenceFEs: get_dimrange
 import Gridap.ReferenceFEs: num_faces

@@ -48,6 +48,14 @@ function Base.view(a::Table,i::Integer)
   return view(a.data,pini:pend)
 end
 
+function Base.view(a::Table,ids::UnitRange{<:Integer})
+  data_range = a.ptrs[ids.start]:a.ptrs[ids.stop+1]-1
+  ptrs_range = ids.start:ids.stop+1
+  offset = a.ptrs[ids.start]-1
+  ptrs = lazy_map(p -> p - offset, view(a.ptrs,ptrs_range))
+  return Table(view(a.data,data_range),ptrs)
+end
+
 """
 """
 function identity_table(::Type{T},::Type{P},l::Integer) where {T,P}

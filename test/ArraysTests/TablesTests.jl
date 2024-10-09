@@ -26,6 +26,17 @@ data = Int[2,3,1,3,6,7,3,2,5,6,3,4]
 ptrs = [1,4,4,7,13]
 a = Table(data,ptrs)
 
+a_view = view(a,1)
+@test isa(a_view,AbstractVector{Int})
+@test length(a_view) == 3
+@test a_view == [2,3,1]
+
+a_view = view(a,1:3)
+@test isa(a_view,Table{Int})
+@test length(a_view) == 3
+@test a_view.ptrs == [1,4,4,7]
+@test a_view.data == [2,3,1,3,6,7]
+
 data  = reinterpret(Int,Vector{Float64}(undef,12))
 data[1:6] .= a.data[7:12]
 data[7:9] .= a.data[4:6]

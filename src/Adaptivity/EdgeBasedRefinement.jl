@@ -472,26 +472,38 @@ to the vertices of the parent cell. Always results in a conformal mesh.
 struct BarycentricRefinement <: EdgeBasedRefinement end
 
 function setup_edge_based_rrules(
-  method::BarycentricRefinement, topo::UnstructuredGridTopology{Dc},::Nothing
+  method::BarycentricRefinement, topo::UnstructuredGridTopology{Dc}, ::Nothing
 ) where Dc
   setup_edge_based_rrules(method,topo,collect(1:num_faces(topo,Dc)))
 end
 
 function setup_edge_based_rrules(
-  ::BarycentricRefinement, topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}
+  ::BarycentricRefinement, topo::UnstructuredGridTopology{Dc}, cells_to_refine::AbstractArray{<:Integer}
 ) where Dc
-  @check (length(topo.polytopes) == 1) && is_simplex(first(topo.polytopes)) "Only simplex meshes supported"
+  @assert (length(get_polytopes(topo)) == 1)
 
-  ptrs = fill(1,num_faces(topo,Dc))
-  ptrs[cells_to_refine] .= 2
   p = first(topo.polytopes)
-  rrules = CompressedArray([WhiteRefinementRule(p),BarycentricRefinementRule(p)],ptrs)
+  A = is_simplex(p)
+  B = (p ∈ (QUAD,HEX)) && length(cells_to_refine) == num_faces(topo,Dc)
+  @check A || B "Barycentric refinement only supported for simplicial meshes or QUAD meshes with all cells refined."
+
+  if A # Simplicial meshes
+    ptrs = fill(1,num_faces(topo,Dc))
+    ptrs[cells_to_refine] .= 2
+    rrules = CompressedArray([WhiteRefinementRule(p),BarycentricRefinementRule(p)],ptrs)
+  else # QUAD/HEX meshes
+    ptrs = fill(1,num_faces(topo,Dc))
+    rrules = CompressedArray([BarycentricRefinementRule(p),],ptrs)
+  end
 
   ref_nodes = 1:num_faces(topo,0)
   if Dc == 2
     faces_list = (ref_nodes,Int32[],cells_to_refine)
-  else
+  elseif p == TET
     faces_list = (ref_nodes,Int32[],Int32[],cells_to_refine)
+  else p == HEX
+    faces_to_refine = 1:num_faces(topo,2)
+    faces_list = (ref_nodes,Int32[],faces_to_refine,cells_to_refine)
   end
 
   return rrules, faces_list
@@ -517,8 +529,12 @@ _has_interior_point(rr::RefinementRule,::RefinementRuleType) = false
 """
 RefinementRule representing a non-refined cell.
 """
-function WhiteRefinementRule(p::Polytope)
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(LagrangianRefFE(Float64,p,1)))
+function WhiteRefinementRule(p::Polytope{D}) where D
+  coords = get_vertex_coordinates(p)
+  conn = Table(get_faces(p,D,0))
+  cell_types = Int32[1]
+  reffes = [LagrangianRefFE(Float64,p,1)]
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types;has_affine_map=true)
   return RefinementRule(WithoutRefinement(),p,ref_grid)
 end
 
@@ -535,7 +551,7 @@ function RedRefinementRule(p::Polytope)
   polys, cell_types, conn = _get_red_refined_connectivity(p)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types;has_affine_map=true)
   return RefinementRule(RedRefinement(),p,ref_grid)
 end
 
@@ -607,7 +623,7 @@ function _has_interior_point(rr::RefinementRule,::RedRefinement)
 end
 
 # [Face dimension][Coarse Face id] -> [Fine faces]
-function get_d_to_face_to_child_faces(rr::RefinementRule,::RedRefinement)
+function get_d_to_face_to_child_faces(::RedRefinement,rr::RefinementRule)
   p = get_polytope(rr)
   if p == QUAD
     return [
@@ -724,7 +740,7 @@ function GreenRefinementRule(p::Polytope{2},ref_edge::Integer)
   polys, cell_types, conn = _get_green_refined_connectivity(p,ref_edge)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
   return RefinementRule(GreenRefinement{ref_edge}(),p,ref_grid)
 end
 
@@ -779,7 +795,7 @@ function BlueRefinementRule(p::Polytope{2}, long_ref_edge::Integer, short_ref_ed
   polys, cell_types, conn = _get_blue_refined_connectivity(p,long_ref_edge, short_ref_edge)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
   return RefinementRule(BlueRefinement{long_ref_edge, short_ref_edge}(),p,ref_grid)
 end
 
@@ -821,7 +837,7 @@ function BlueDoubleRefinementRule(p::Polytope{2}, long_ref_edge::Integer)
   coords = get_new_coordinates_from_faces(p,faces_list)
   polys, cell_types, conn = _get_blue_double_refined_connectivity(p,long_ref_edge)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
   return RefinementRule(BlueDoubleRefinement{long_ref_edge}(),p,ref_grid)
 end
 
@@ -858,7 +874,7 @@ vertex is added in the center, then joined to the vertices of the original
 Polytope.
 """
 function BarycentricRefinementRule(p::Polytope)
-  @notimplementedif (p ∉ [TRI,TET])
+  @notimplementedif (p ∉ (TRI,TET,QUAD,HEX))
 
   faces_list = _get_barycentric_refined_faces_list(p)
   coords = get_new_coordinates_from_faces(p,faces_list)
@@ -866,7 +882,7 @@ function BarycentricRefinementRule(p::Polytope)
   polys, cell_types, conn = _get_barycentric_refined_connectivity(p)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
   return RefinementRule(BarycentricRefinementRule(),p,ref_grid)
 end
 
@@ -875,6 +891,10 @@ function _get_barycentric_refined_faces_list(p::Polytope)
     return (Int32[1,2,3],Int32[],Int32[1])
   elseif p == TET
     return (Int32[1,2,3,4],Int32[],Int32[],Int32[1])
+  elseif p == QUAD
+    return (Int32[1,2,3,4],Int32[],Int32[1])
+  elseif p == HEX
+    return (Int32[1,2,3,4,5,6,7,8],Int32[],Int32[1,2,3,4,5,6],Int32[1])
   end
   @notimplemented
 end
@@ -897,6 +917,32 @@ function _get_barycentric_refined_connectivity(p::Polytope)
                  1, 2, 4, 5]
     conn_ptrs = [1, 5, 9, 13, 17]
     return polys, cell_type, Table(conn_data,conn_ptrs)
+  elseif p == QUAD
+    polys     = [TRI]
+    cell_type = [1, 1, 1, 1]
+    conn_data = [1, 2, 5,
+                 2, 4, 5,
+                 4, 3, 5,
+                 3, 1, 5]
+    conn_ptrs = [1, 4, 7, 10, 13]
+    return polys, cell_type, Table(conn_data,conn_ptrs)
+  elseif p == HEX # For HEX, we also create a new vertex in the center of each face
+    # Connectivity for each face: Face corners + face node + barycenter
+    face_conn = [
+      1,2,5,6,
+      2,4,5,6,
+      4,3,5,6,
+      3,1,5,6,
+    ]
+    n_TET  = 4 # Number of new TETs per polytope face
+    n_FACE = 6 # Number of faces in a HEX
+    n_NODE = 8 # Number of nodes in a HEX
+    polys     = [TET]
+    cell_type = fill(1, n_TET*n_FACE)
+    face_to_node = Geometry.get_faces(p,2,0)
+    conn_data = vcat([vcat(nodes...,face+n_NODE,n_NODE+n_FACE+1)[face_conn] for (face,nodes) in enumerate(face_to_node)]...)
+    conn_ptrs = [i*4+1 for i in 0:(n_TET*n_FACE)]
+    return polys, cell_type, Table(conn_data,conn_ptrs)
   end
   @notimplemented
 end
@@ -914,7 +960,7 @@ function PowellSabinRefinementRule(p::Polytope)
   polys, cell_types, conn = _get_powellsabin_refined_connectivity(p)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
   return RefinementRule(PowellSabinRefinement(),p,ref_grid)
 end
 
@@ -942,8 +988,8 @@ function _get_powellsabin_refined_connectivity(p::Polytope)
                   4, 2, 7,
                   2, 6, 7,
                   6, 3, 7,
-                  3, 5, 7,
-                  5, 1, 7]
+                  5, 3, 7,
+                  1, 5, 7]
   if p == TRI
     polys = [TRI]
     cell_type = fill(1, n_TRI)
@@ -953,7 +999,7 @@ function _get_powellsabin_refined_connectivity(p::Polytope)
     polys     = [TET]
     cell_type = fill(1, n_TRI*n_FACE)
     face_conn = [[1,2,3,5,6,7,11],[1,2,4,5,8,9,12],[1,3,4,6,8,10,13],[2,3,4,7,9,10,14]]
-    conn_data = vcat([[lazy_map(Reindex(face_conn[f]),conn_data_2d[1+(i-1)*3:i*3])...,15] for i in 1:n_TRI for f in 1:n_FACE]...)
+    conn_data = vcat([[lazy_map(Reindex(face_conn[f]),conn_data_TRI[1+(i-1)*3:i*3])...,15] for i in 1:n_TRI for f in 1:n_FACE]...)
     conn_ptrs = collect(1:4:n_TRI*n_FACE*4+1)
     return polys, cell_type, Table(conn_data,conn_ptrs)
   end
@@ -1014,7 +1060,11 @@ end
 
 function get_relabeled_connectivity(::BarycentricRefinementRule,rr::RefinementRule{<:Polytope{D}},faces_gids) where D
   conn = rr.ref_grid.grid.cell_node_ids
-  gids = [faces_gids[1]...,faces_gids[D+1]...] # Polytope nodes + Barycenter
+  if (get_polytope(rr) != HEX) # TRI, TET, QUAD
+    gids = [faces_gids[1]...,faces_gids[D+1]...] # Polytope nodes + Barycenter
+  else # HEX
+    gids = [faces_gids[1]...,faces_gids[D]...,faces_gids[D+1]...] # Polytope nodes + Faces + Barycenter
+  end
   new_data = lazy_map(Reindex(gids),conn.data)
   return Table(new_data,conn.ptrs)
 end

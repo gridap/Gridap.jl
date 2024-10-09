@@ -27,10 +27,10 @@ struct LagrangianDofBasis{P,V} <: AbstractVector{PointValue{P}}
   node_and_comp_to_dof::Vector{V}
 end
 
-Base.size(a::LagrangianDofBasis) = (length(a.nodes),)
-Base.axes(a::LagrangianDofBasis) = (axes(a.nodes,1),)
+Base.size(a::LagrangianDofBasis) = (length(a.dof_to_node),)
+Base.axes(a::LagrangianDofBasis) = (axes(a.dof_to_node,1),)
 # @santiagobadia : Not sure we want to create the monomial machinery
-Base.getindex(a::LagrangianDofBasis,i::Integer) = PointValue(a.nodes[i])
+Base.getindex(a::LagrangianDofBasis,i::Integer) = PointValue(a.nodes[a.dof_to_node[i]])
 Base.IndexStyle(::LagrangianDofBasis) = IndexLinear()
 
 # This one takes a basis and replaces the nodes

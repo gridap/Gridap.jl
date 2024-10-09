@@ -136,7 +136,7 @@ bi = testitem(b)
 """
 function testitem(a::AbstractArray{T}) where T
   #@check isconcretetype(T) "This array is type-instable"
-  if length(a) >0
+  if length(a) > 0
     first(a)
   else
     testvalue(T)
