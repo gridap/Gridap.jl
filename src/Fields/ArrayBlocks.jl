@@ -21,7 +21,7 @@
 # uh [c][lf][np]
 
 
-struct ArrayBlock{A,N} <: AbstractArray{A,N}
+struct ArrayBlock{A,N}
   array::Array{A,N}
   touched::Array{Bool,N}
   function ArrayBlock(array::Array{A,N},touched::Array{Bool,N}) where {A,N}
