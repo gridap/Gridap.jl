@@ -99,13 +99,7 @@ get_weights(q::GenericQuadrature) = q.weights
 
 get_name(q::GenericQuadrature) = q.name
 
-function GenericQuadrature(a::Quadrature)
-  GenericQuadrature(get_coordinates(a),get_weights(a),get_name(a))
-end
 
-function GenericQuadrature(a::GenericQuadrature)
-  a
-end
 
 # Quadrature factory
 
