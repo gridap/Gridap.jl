@@ -11,15 +11,14 @@ function main(Dc,reftype)
   @assert reftype ∈ [:barycentric,:powellsabin]
 
   u_sol(x) = (Dc == 2) ? VectorValue(x[1],-x[2]) : VectorValue(x[1],-x[2],0.0)
-  p_sol(x) = (x[1] - 1.0/2.0)
+  p_sol(x) = x[1] - 1.0/2.0
 
   domain = (Dc == 2) ? (0,1,0,1) : (0,1,0,1,0,1)
   nc = (Dc == 2) ? (2,2) : (1,1,1)
   model = simplexify(CartesianDiscreteModel(domain,nc))
 
-  min_order = (reftype == :barycentric) ? Dc : Dc-1
-  order = max(2,min_order)
   poly  = (Dc == 2) ? TRI : TET
+  order = (reftype == :barycentric) ? Dc : Dc-1
   rrule = (reftype == :barycentric) ? Adaptivity.BarycentricRefinementRule(poly) : Adaptivity.PowellSabinRefinementRule(poly)
 
   subreffes_u = Fill(LagrangianRefFE(VectorValue{Dc,Float64},poly,order),Adaptivity.num_subcells(rrule))
@@ -62,7 +61,7 @@ function main(Dc,reftype)
   end
 end
 
-# NOTE: Powell-Sabin split not working yet. The issue is we woudl need a global cellmap 
+# NOTE: Powell-Sabin split not working yet. The issue is we would need a global cellmap 
 # directly from the sub-cells to the physical domain (due to how the split is built). 
 # This is something I may do in the future. 
 
