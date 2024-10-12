@@ -13,7 +13,12 @@ function test_macro_reffe(model,fmodel,rrule,order)
   reffe = LagrangianRefFE(Float64,poly,order)
   sub_reffes = Fill(reffe,num_subcells(rrule))
   macro_reffe = Adaptivity.MacroReferenceFE(rrule,sub_reffes)
+  ReferenceFEs.test_reference_fe(macro_reffe)
+
   macro_quad  = Quadrature(poly,Adaptivity.CompositeQuadrature(),rrule,2*order)
+  macro_quad_bis = Adaptivity.CompositeQuadrature(Quadrature(poly,4*order),rrule)
+  ReferenceFEs.test_quadrature(macro_quad)
+  ReferenceFEs.test_quadrature(macro_quad_bis)
 
   Ω = Triangulation(model)
   Ωf = Triangulation(fmodel)

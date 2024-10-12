@@ -91,13 +91,13 @@ eh2 = u_c - u_fc
 eh3 = u_c - u_fc2 
 @test sum(∫(eh3⋅eh3)*dΩ_c) < 1.e-12
 
-modelH=CartesianDiscreteModel((0,1,0,1),(1,1))
-modelh=refine(modelH,2)
-reffe=LagrangianRefFE(Float64,QUAD,1)
-XH  = TestFESpace(modelH,reffe)
-xH  = get_fe_basis(XH)
+modelH = CartesianDiscreteModel((0,1,0,1),(1,1))
+modelh = refine(modelH,2)
+reffe = LagrangianRefFE(Float64,QUAD,1)
+XH = TestFESpace(modelH,reffe)
+xH = get_fe_basis(XH)
 xHh = change_domain(xH,get_triangulation(modelh),ReferenceDomain())
-evaluate(Gridap.CellData.get_data(xHh)[1],
-         [Point(0.0,0.0),Point(0.5,0.5)])
+evaluate(Gridap.CellData.get_data(xHh)[1],[Point(0.0,0.0),Point(0.5,0.5)])
+evaluate(Gridap.CellData.get_data(xHh)[1],Point(0.5,0.5))
 
 end
