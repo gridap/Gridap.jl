@@ -18,4 +18,9 @@ end
   include("CompositeQuadratureTests.jl")
 end
 
+@testset "MacroFETests" begin
+  include("MacroFETests.jl")
+  include("MacroFEStokesTests.jl")
+end
+
 end # module
