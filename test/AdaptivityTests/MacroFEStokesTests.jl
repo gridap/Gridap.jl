@@ -27,7 +27,7 @@ function main(Dc,reftype)
   subreffes_p = Fill(LagrangianRefFE(Float64,poly,order-1),Adaptivity.num_subcells(rrule))
   reffe_p = Adaptivity.MacroReferenceFE(rrule,subreffes_p;conformity=L2Conformity())
 
-  qdegree = 2*order
+  qdegree = 2*(order-1)
   quad  = Quadrature(poly,Adaptivity.CompositeQuadrature(),rrule,qdegree)
 
   V = FESpace(model,reffe_u,dirichlet_tags=["boundary"])
@@ -53,8 +53,6 @@ function main(Dc,reftype)
   uh, ph = xh
   eh_u = uh - u_sol
   eh_p = ph - p_sol
-  println(sum(∫(eh_u⋅eh_u)dΩ))
-  println(sum(∫(eh_p⋅eh_p)dΩ))
   @test sum(∫(eh_u⋅eh_u)dΩ) < 1.e-10
   if reftype != :powellsabin
     @test sum(∫(eh_p*eh_p)dΩ) < 1.e-10
