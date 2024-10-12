@@ -694,3 +694,39 @@ for op in (:*,:⋅,:⊙,:⊗)
     end
   end
 end
+
+# Optimisations to 
+# lazy_map(Broadcasting(constant_field),a::AbstractArray{<:AbstractArray{<:Number}})
+
+struct ConstantFieldArray{T,N} <: AbstractArray{ConstantField{T},N}
+  values::Array{T,N}
+end
+
+Base.size(a::ConstantFieldArray) = size(a.values)
+Base.axes(a::ConstantFieldArray) = axes(a.values)
+Base.getindex(a::ConstantFieldArray,i::Integer) = ConstantField(a.values[i])
+
+function return_value(::Broadcasting{typeof(constant_field)},values::AbstractArray{<:Number})
+  ConstantFieldArray(values)
+end
+
+function evaluate!(cache,::Broadcasting{typeof(constant_field)},values::AbstractArray{<:Number})
+  ConstantFieldArray(values)
+end
+
+function evaluate!(c,f::ConstantFieldArray,x::Point)
+  return f.values
+end
+
+function return_cache(f::ConstantFieldArray{T},x::AbstractArray{<:Point}) where T
+  return CachedArray(zeros(T,(size(x)...,size(f)...)))
+end
+
+function evaluate!(c,f::ConstantFieldArray{T},x::AbstractArray{<:Point}) where T
+  setsize!(c,(size(x)...,size(f)...))
+  r = c.array
+  for i in eachindex(x)
+    r[i,:] .= f.values
+  end
+  return r
+end
