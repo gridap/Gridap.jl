@@ -24,118 +24,114 @@
 #   shape function corresponding to the global DoF.
 # * We do NOT have to use the signed determinant, but its absolute value, in the Piola Map.
 
-struct TransformRTDofBasis{Dc,Dp} <: Map end ;
+struct TransformRTDofBasis{Dc,Dp} <: Map end
 
-function get_cell_dof_basis(model::DiscreteModel,
-                            cell_reffe::AbstractArray{<:GenericRefFE{<:DivConforming}},
-                            ::DivConformity,
-                            sign_flip=get_sign_flip(model, cell_reffe))
-    cell_map  = get_cell_map(Triangulation(model))
-    phi       = cell_map[1]
-    Jt        = lazy_map(Broadcasting(∇),cell_map)
-    x         = lazy_map(get_nodes,lazy_map(get_dof_basis,cell_reffe))
-    Jtx       = lazy_map(evaluate,Jt,x)
-    reffe     = cell_reffe[1]
-    Dc        = num_dims(reffe)
-    # @santiagobadia: A hack here, for RT returns Float64 and for BDM VectorValue{Float64}
-    et        = eltype(return_type(get_prebasis(reffe)))
-    pt        = Point{Dc,et}
-    Dp        = first(size(return_type(phi,zero(pt))))
-    k         = TransformRTDofBasis{Dc,Dp}()
-    lazy_map(k,cell_reffe,Jtx,sign_flip)
+function get_cell_dof_basis(
+  model::DiscreteModel{Dc,Dp},
+  cell_reffe::AbstractArray{<:GenericRefFE{<:DivConforming}},
+  ::DivConformity,
+  sign_flip = get_sign_flip(model, cell_reffe)
+) where {Dc,Dp}
+  cell_map  = get_cell_map(get_grid(model))
+  Jt  = lazy_map(Broadcasting(∇),cell_map)
+  x   = lazy_map(get_nodes,lazy_map(get_dof_basis,cell_reffe))
+  Jtx = lazy_map(evaluate,Jt,x)
+  k = TransformRTDofBasis{Dc,Dp}()
+  lazy_map(k,cell_reffe,Jtx,sign_flip)
 end
 
-function get_cell_shapefuns(model::DiscreteModel,
-                            cell_reffe::AbstractArray{<:GenericRefFE{<:DivConforming}},
-                            ::DivConformity,
-                            sign_flip=get_sign_flip(model, cell_reffe))
-    cell_reffe_shapefuns=lazy_map(get_shapefuns,cell_reffe)
-    k=ContraVariantPiolaMap()
-    lazy_map(k,
-             cell_reffe_shapefuns,
-             get_cell_map(Triangulation(model)),
-             lazy_map(Broadcasting(constant_field), sign_flip))
+function get_cell_shapefuns(
+  model::DiscreteModel,
+  cell_reffe::AbstractArray{<:GenericRefFE{<:DivConforming}},
+  ::DivConformity,
+  sign_flip = get_sign_flip(model, cell_reffe)
+)
+  cell_map = get_cell_map(get_grid(model))
+  cell_shapefuns = lazy_map(get_shapefuns,cell_reffe)
+  k = ContraVariantPiolaMap()
+  lazy_map(k,cell_shapefuns,cell_map,lazy_map(Broadcasting(constant_field),sign_flip))
 end
 
 struct SignFlipMap{T} <: Map
   model::T
+  facet_owners::Vector{Int32}
 end
 
-function return_cache(k::SignFlipMap,reffe,cell_id)
-  model = k.model
-  D = num_cell_dims(model)
-  gtopo = get_grid_topology(model)
-
-  # Extract composition among cells and facets
-  cell_wise_facets_ids = get_faces(gtopo, D, D - 1)
-  cache_cell_wise_facets_ids = array_cache(cell_wise_facets_ids)
-
-  # Extract cells around facets
-  cells_around_facets = get_faces(gtopo, D - 1, D)
-  cache_cells_around_facets = array_cache(cells_around_facets)
-
-  (cell_wise_facets_ids,
-   cache_cell_wise_facets_ids,
-   cells_around_facets,
-   cache_cells_around_facets,
-   CachedVector(Bool))
-
+function SignFlipMap(model)
+  facet_owners = compute_facet_owners(model)
+  SignFlipMap(model,facet_owners)
 end
 
-function evaluate!(cache,k::SignFlipMap,reffe,cell_id)
+function return_cache(k::SignFlipMap,reffe,facet_own_dofs,cell)
   model = k.model
+  Dc = num_cell_dims(model)
+  topo = get_grid_topology(model)
 
-  cell_wise_facets_ids,
-  cache_cell_wise_facets_ids,
-  cells_around_facets,
-  cache_cells_around_facets,
-  sign_flip_cached = cache
+  cell_facets = get_faces(topo, Dc, Dc-1)
+  cell_facets_cache = array_cache(cell_facets)
 
-  setsize!(sign_flip_cached, (num_dofs(reffe),))
-  sign_flip = sign_flip_cached.array
+  return cell_facets,cell_facets_cache,CachedVector(Bool)
+end
+
+function evaluate!(cache,k::SignFlipMap,reffe,facet_own_dofs,cell)
+  cell_facets,cell_facets_cache,sign_flip_cache = cache
+  facet_owners = k.facet_owners
+
+  setsize!(sign_flip_cache, (num_dofs(reffe),))
+  sign_flip = sign_flip_cache.array
   sign_flip .= false
 
-  D = num_dims(reffe)
-  face_own_dofs = get_face_own_dofs(reffe)
-  facet_lid = get_offsets(get_polytope(reffe))[D] + 1
-  cell_facets_ids = getindex!(cache_cell_wise_facets_ids,
-                              cell_wise_facets_ids,
-                              cell_id)
-  for facet_gid in cell_facets_ids
-      facet_cells_around = getindex!(cache_cells_around_facets,
-           cells_around_facets,
-           facet_gid)
-      is_slave = (findfirst((x) -> (x == cell_id), facet_cells_around) == 2)
-      if is_slave
-          for dof in face_own_dofs[facet_lid]
-              sign_flip[dof] = true
-          end
+  facets = getindex!(cell_facets_cache,cell_facets,cell)
+  for (lfacet,facet) in enumerate(facets)
+    owner = facet_owners[facet]
+    if owner != cell
+      for dof in facet_own_dofs[lfacet]
+        sign_flip[dof] = true
       end
-      facet_lid = facet_lid + 1
+    end
   end
-  sign_flip
+
+  return sign_flip
 end
 
-function get_sign_flip(model::DiscreteModel,
-                       cell_reffe::AbstractArray{<:GenericRefFE{<:DivConforming}})
-    lazy_map(SignFlipMap(model),
-            cell_reffe,
-            IdentityVector(Int32(num_cells(model))))
+function get_sign_flip(
+  model::DiscreteModel{Dc},
+  cell_reffe::AbstractArray{<:GenericRefFE{<:DivConforming}}
+) where Dc
+  # Comment: lazy_maps on cell_reffes are very optimised, since they are CompressedArray/FillArray
+  get_facet_own_dofs(reffe) = view(get_face_own_dofs(reffe),get_dimrange(get_polytope(reffe),Dc-1))
+  cell_facet_own_dofs = lazy_map(get_facet_own_dofs,cell_reffe)
+  cell_ids = IdentityVector(Int32(num_cells(model)))
+  lazy_map(SignFlipMap(model),cell_reffe,cell_facet_own_dofs,cell_ids)
 end
 
-function return_cache(::TransformRTDofBasis{Dc,Dp},
-                      reffe::GenericRefFE{<:DivConforming},
-                      Jtx,
-                      ::AbstractVector{Bool}) where {Dc,Dp}
-  p = get_polytope(reffe)
-  prebasis = get_prebasis(reffe)
-  order = get_order(prebasis)
+function compute_facet_owners(model::DiscreteModel{Dc,Dp}) where {Dc,Dp}
+  topo = get_grid_topology(model)
+  facet_to_cell = get_faces(topo, Dc-1, Dc)
+
+  nfacets = num_faces(topo, Dc-1)
+  owners = Vector{Int32}(undef, nfacets)
+  for facet in 1:nfacets
+    facet_cells = view(facet_to_cell, facet)
+    owners[facet] = first(facet_cells)
+  end
+
+  return owners
+end
+
+function return_cache(
+  ::TransformRTDofBasis{Dc,Dp},
+  reffe::GenericRefFE{<:DivConforming},
+  Jtx,
+  ::AbstractVector{Bool}
+) where {Dc,Dp}
   # @santiagobadia: Hack as above
-  et = eltype(return_type(prebasis))
+  et = eltype(return_type(get_prebasis(reffe)))
   dofs = get_dof_basis(reffe)
-  nodes, nf_nodes, nf_moments =  get_nodes(dofs),
-                                 get_face_nodes_dofs(dofs),
-                                 get_face_moments(dofs)
+
+  nodes = get_nodes(dofs)
+  nf_nodes = get_face_nodes_dofs(dofs)
+  nf_moments = get_face_moments(dofs)
   db = MomentBasedDofBasis(nodes,nf_moments,nf_nodes)
   face_moments = [ similar(i,VectorValue{Dp,et})  for i in nf_moments ]
 
@@ -143,11 +139,13 @@ function return_cache(::TransformRTDofBasis{Dc,Dp},
   cache
 end
 
-function evaluate!(cache,
-                   ::TransformRTDofBasis,
-                   reffe::GenericRefFE{<:DivConforming},
-                   Jt_q,
-                   sign_flip::AbstractVector{Bool})
+function evaluate!(
+  cache,
+  ::TransformRTDofBasis,
+  reffe::GenericRefFE{<:DivConforming},
+  Jt_q,
+  sign_flip::AbstractVector{Bool}
+)
   nodes, nf_nodes, nf_moments, face_moments = cache
   face_own_dofs=get_face_own_dofs(reffe)
   for face in 1:length(face_moments)
