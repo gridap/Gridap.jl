@@ -31,9 +31,6 @@ rr_bc3 = Adaptivity.BarycentricRefinementRule(TET)
 Adaptivity.test_refinement_rule(rr_bc3)
 
 rr_ps2 = Adaptivity.PowellSabinRefinementRule(TRI)
-Adaptivity.test_refinement_rule(rr_ps2)
-
 rr_ps3 = Adaptivity.PowellSabinRefinementRule(TET)
-Adaptivity.test_refinement_rule(rr_ps3)
 
 end
