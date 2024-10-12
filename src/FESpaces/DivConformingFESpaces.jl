@@ -168,20 +168,23 @@ end
 
 
 # Support for DIV operator
-function DIV(f::LazyArray{<:Fill{T}}) where T
-  df=DIV(f.args[1])
-  k=f.maps.value
+
+function DIV(f::LazyArray{<:Fill})
+  df = DIV(f.args[1])
+  k  = f.maps.value
   lazy_map(k,df)
 end
+
 function DIV(f::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}})
   ϕrgₖ       = f.args[1]
   fsign_flip = f.args[4]
-  div_ϕrgₖ = lazy_map(Broadcasting(divergence),ϕrgₖ)
-  fsign_flip=lazy_map(Broadcasting(Operation(x->(-1)^x)), fsign_flip)
+  div_ϕrgₖ   = lazy_map(Broadcasting(divergence),ϕrgₖ)
+  fsign_flip = lazy_map(Broadcasting(Operation(x->(-1)^x)), fsign_flip)
   lazy_map(Broadcasting(Operation(*)),fsign_flip,div_ϕrgₖ)
 end
+
 function DIV(a::LazyArray{<:Fill{typeof(linear_combination)}})
-  i_to_basis = DIV(a.args[2])
+  i_to_basis  = DIV(a.args[2])
   i_to_values = a.args[1]
   lazy_map(linear_combination,i_to_values,i_to_basis)
 end
