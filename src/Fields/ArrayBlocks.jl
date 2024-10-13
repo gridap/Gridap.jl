@@ -397,7 +397,7 @@ function Base.transpose(f::ArrayBlock{A,2} where A)
   ArrayBlock(g,collect(transpose(f.touched)))
 end
 
-function  return_cache(k::TransposeMap,f::ArrayBlock{A,1} where A)
+function return_cache(k::TransposeMap,f::ArrayBlock{A,1} where A)
   fi = testitem(f)
   li = return_cache(k,fi)
   fix = evaluate!(li,k,fi)
@@ -411,7 +411,7 @@ function  return_cache(k::TransposeMap,f::ArrayBlock{A,1} where A)
   ArrayBlock(g,collect(transpose(f.touched))),l
 end
 
-function  evaluate!(cache,k::TransposeMap,f::ArrayBlock{A,1} where A)
+function evaluate!(cache,k::TransposeMap,f::ArrayBlock{A,1} where A)
   g,l = cache
   @check g.touched == transpose(f.touched)
   for i in eachindex(f.array)

@@ -321,6 +321,11 @@ function evaluate!(cache,c::OperationField,x::Point)
   evaluate!(ck,c.op,lx...)
 end
 
+function return_value(c::OperationField,x::AbstractArray{<:Point})
+  fx = map(f -> return_value(f,x),c.fields)
+  c.op.(fx...)
+end
+
 function return_cache(c::OperationField,x::AbstractArray{<:Point})
   cf = map(fi -> return_cache(fi,x),c.fields)
   lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)

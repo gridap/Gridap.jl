@@ -1,4 +1,3 @@
-
 """
 """
 struct FineToCoarseDofBasis{T,A,B,C} <: AbstractVector{T}
@@ -49,10 +48,8 @@ function Arrays.evaluate!(cache,s::FineToCoarseDofBasis{T,<:LagrangianDofBasis},
   @check ncomps == num_components(eltype(b.node_and_comp_to_dof)) """\n
   Unable to evaluate LagrangianDofBasis. The number of components of the
   given Field does not match with the LagrangianDofBasis.
-
   If you are trying to interpolate a function on a FESpace make sure that
   both objects have the same value type.
-
   For instance, trying to interpolate a vector-valued function on a scalar-valued FE space
   would raise this error.
   """

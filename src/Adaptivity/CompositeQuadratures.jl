@@ -1,37 +1,39 @@
 
-function CellData.CellQuadrature(trian::Triangulation,
-                                 rrules::AbstractVector{<:RefinementRule},
-                                 degree::Integer;
-                                 kwargs...)
+function CellData.CellQuadrature(
+  trian::Triangulation,
+  rrules::AbstractVector{<:RefinementRule},
+  degree::Integer;
+  kwargs...
+)
   return CellData.CellQuadrature(trian,rrules,degree,PhysicalDomain();kwargs...)
 end
 
-function CellData.CellQuadrature(trian::Triangulation,
-                                 rrules::AbstractVector{<:RefinementRule},
-                                 degree::Integer,
-                                 ids::DomainStyle;
-                                 kwargs...)
+function CellData.CellQuadrature(
+  trian::Triangulation,
+  rrules::AbstractVector{<:RefinementRule},
+  degree::Integer,
+  ids::DomainStyle;
+  kwargs...
+)
   cell_quad = lazy_map(rr -> Quadrature(rr,degree;kwargs...),rrules)
   return CellData.CellQuadrature(trian,cell_quad,integration_domain_style=ids)
 end
 
-struct BundleQuadrature{D,T,C <: Table{Point{D,T}},W <: AbstractVector{T}} <: Quadrature{D,T}
-  coordinates::C
-  weights::W
-  name::String
-end
-
-ReferenceFEs.get_coordinates(q::BundleQuadrature) = q.coordinates
-ReferenceFEs.get_weights(q::BundleQuadrature) = q.weights
-ReferenceFEs.get_name(q::BundleQuadrature) = q.name
-
 struct CompositeQuadrature <: QuadratureName end
 
+"""
+    Quadrature(rr::RefinementRule,degree::Integer;kwargs...)
+
+Creates a CompositeQuadrature on the RefinementRule `rr` by concatenating 
+quadratures of degree `degree` on each subcell of the RefinementRule.
+"""
 function ReferenceFEs.Quadrature(rr::RefinementRule,degree::Integer;kwargs...)
   return ReferenceFEs.Quadrature(ReferenceFEs.get_polytope(rr),CompositeQuadrature(),rr,degree;kwargs...)
 end
 
-function ReferenceFEs.Quadrature(p::Polytope,::CompositeQuadrature,rr::RefinementRule,degree::Integer;bundle_points::Bool=false,kwargs...)
+function ReferenceFEs.Quadrature(
+  p::Polytope,::CompositeQuadrature,rr::RefinementRule,degree::Integer;kwargs...
+)
   @check p === ReferenceFEs.get_polytope(rr)
   subgrid  = get_ref_grid(rr)
   cellmap  = get_cell_map(rr)
@@ -41,25 +43,42 @@ function ReferenceFEs.Quadrature(p::Polytope,::CompositeQuadrature,rr::Refinemen
   npts = sum(map(num_points,quads))
   WT = eltype(get_weights(first(quads)))
   CT = eltype(get_coordinates(first(quads)))
-  weights     = Vector{WT}(undef,npts)
-  coordinates = Vector{CT}(undef,npts)
-  ptrs = Vector{Int}(undef,length(quads)+1); ptrs[1] = 1;
+  weights = Vector{WT}(undef,npts)
+  cpoints = Vector{CT}(undef,npts)
+  conn = Vector{Vector{Int32}}(undef,length(quads))
   k = 1
   for (iq,q) in enumerate(quads)
     n = num_points(q)
     w = get_weights(q)
     c = get_coordinates(q)
     weights[k:k+n-1] .= w .* measures[iq]
-    coordinates[k:k+n-1] .= (cellmap[iq])(c)
-    ptrs[iq+1] = ptrs[iq] + n
+    cpoints[k:k+n-1] .= (cellmap[iq])(c)
+    conn[iq] = collect(k:k+n-1)
     k = k+n
   end
+  fpoints = map(get_coordinates,quads)
+  ids = FineToCoarseIndices(conn)
+  coordinates = FineToCoarseArray{eltype(cpoints)}(rr,cpoints,fpoints,ids)
+  return GenericQuadrature(coordinates,weights,"Composite quadrature")
+end
 
-  name = "Composite quadrature"
-  if bundle_points
-    coordinates = Table(coordinates,ptrs)
-    return BundleQuadrature(coordinates,weights,name)
-  else
-    return GenericQuadrature(coordinates,weights,name)
-  end
+"""
+    CompositeQuadrature(quad::Quadrature,rr::RefinementRule)
+
+Creates a CompositeQuadrature on the RefinementRule `rr` by splitting
+the quadrature `quad` into the subcells of the RefinementRule.
+"""
+function CompositeQuadrature(
+  quad::Quadrature,rr::RefinementRule
+)
+  weights = get_weights(quad)
+  cpoints = get_coordinates(quad)
+
+  fpoints, conn = evaluate(CoarseToFinePointMap(),rr,cpoints)
+  fpoints = collect(Vector{eltype(cpoints)},fpoints)
+  conn = collect(Vector{Int32},conn)
+  
+  ids = FineToCoarseIndices(conn)
+  coordinates = FineToCoarseArray{eltype(cpoints)}(rr,cpoints,fpoints,ids)
+  return GenericQuadrature(coordinates,weights,"Composite quadrature")
 end
