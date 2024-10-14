@@ -81,7 +81,7 @@ This function only creates the vtkFile, without writing to disk.
 The optional WriteVTK kwargs `vtk_kwargs` are passed to the `vtk_grid` constructor.
 """
 function create_vtk_file(
-  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict(), 
+  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict(),
   compress=false, append=true, ascii=false, vtkversion=:default
 )
 
@@ -94,10 +94,10 @@ function create_vtk_file(
 
   if num_cells(trian)>0
     for (k,v) in celldata
-      vtk_cell_data(vtkfile, _prepare_data(v), k)
+      vtk_cell_data(vtkfile, _prepare_data(v), k; component_names=_data_component_names(v))
     end
     for (k,v) in nodaldata
-      vtk_point_data(vtkfile, _prepare_data(v), k)
+      vtk_point_data(vtkfile, _prepare_data(v), k; component_names=_data_component_names(v))
     end
   end
 
@@ -179,6 +179,68 @@ function _generate_vtk_cells(
 
   meshcells
 
+end
+
+_data_component_names(v) = nothing
+
+_data_component_names(v::AbstractArray{T}) where T<:MultiValue = _data_component_names(T)
+
+"""
+Return an array containing the component labels in the order they are stored internally, consistently with _prepare_data(::Multivalue)
+
+For spacial dimensions d=1,2 or 3, the components are named with letters X,Y and Z similarly to the automatic naming of Paraview. Else, if d>3, they are numbered from 1 to d.
+"""
+_data_component_names(::Type{<:MultiValue}) = @notimplemented
+
+function _data_component_names(::Type{<:VectorValue{A}}) where A
+  [ "$i" for i in 1:A ]
+  if A>3
+    return ["$i" for i in 1:A ]
+  else
+    c_name = ["X", "Y", "Z"]
+    return [c_name[i] for i in 1:A ]
+  end
+end
+
+function _data_component_names(::Type{<:TensorValue{A,B}}) where {A,B}
+  if A>3 || B>3
+    return ["$i$j" for i in 1:A for j in 1:B ]
+  else
+    c_name = ["X", "Y", "Z"]
+    return [c_name[i]*c_name[j] for i in 1:A for j in 1:B ]
+  end
+end
+
+_data_component_names(::Type{<:SymTensorValue{1}})= ["XX"]
+_data_component_names(::Type{<:SymTensorValue{2}})= ["XX","XY","YY"]
+_data_component_names(::Type{<:SymTensorValue{3}})= [
+  "XX", "XY", "XZ", "YY", "YZ", "ZZ"
+]
+function _data_component_names(::Type{<:SymTensorValue{A}}) where A
+  if A>3
+    return ["$i$j" for i in 1:A for j in i:A ]
+  else
+    c_name = ["X", "Y", "Z"]
+    return [c_name[i]*c_name[j] for i in 1:A for j in i:A ]
+  end
+end
+
+function _data_component_names(::Type{<:ThirdOrderTensorValue{A,B,C}}) where {A,B,C}
+  if A>3 || B>3 || C>3
+    return ["$i$j$k" for i in 1:A for j in 1:B for k in 1:C ]
+  else
+    c_name = ["X", "Y", "Z"]
+    return [c_name[i]*c_name[j]*c_name[k] for i in 1:A for j in 1:B for k in 1:C]
+  end
+end
+
+function _data_component_names(::Type{<:SymFourthOrderTensorValue{A}}) where A
+  if A>3
+    return ["$i$j$k$l" for i in 1:A for j in i:A for k in 1:A for l in k:A ]
+  else
+    c_name = ["X", "Y", "Z"]
+    return [c_name[i]*c_name[j]*c_name[k]*c_name[l] for i in 1:A for j in i:A for k in 1:A for l in k:A ]
+  end
 end
 
 _prepare_data(v) = v
