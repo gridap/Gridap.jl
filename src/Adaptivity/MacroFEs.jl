@@ -229,9 +229,11 @@ function Arrays.return_cache(a::MacroFEBasis,xc::AbstractArray{<:Point})
   k = CoarseToFinePointMap()
   geo_cache = return_cache(k,rr,xc)
   xf, ids = evaluate!(geo_cache,k,rr,xc)
-
   xf_cache = array_cache(xf)
-  eval_caches = map(return_cache,a.fine_data,xf)
+
+  # NOTE: xf may be empty for some subcells, so it's safer to use testvalue
+  xt = testvalue(xc)
+  eval_caches = map(ffields -> return_cache(ffields,xt),a.fine_data)
 
   T = eltype(evaluate!(first(eval_caches),first(a.fine_data),first(xf)))
   res_cache = CachedArray(zeros(T,length(xc),length(a)))
