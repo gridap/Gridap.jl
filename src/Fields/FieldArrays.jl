@@ -698,8 +698,12 @@ end
 # Optimisations to 
 # lazy_map(Broadcasting(constant_field),a::AbstractArray{<:AbstractArray{<:Number}})
 
-struct ConstantFieldArray{T,N} <: AbstractArray{ConstantField{T},N}
-  values::Array{T,N}
+struct ConstantFieldArray{T,N,A} <: AbstractArray{ConstantField{T},N}
+  values::A
+  function ConstantFieldArray(values::AbstractArray{T,N}) where {T,N}
+    A = typeof(values)
+    new{T,N,A}(values)
+  end
 end
 
 Base.size(a::ConstantFieldArray) = size(a.values)
