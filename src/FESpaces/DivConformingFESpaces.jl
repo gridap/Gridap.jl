@@ -177,7 +177,7 @@ end
 
 function DIV(f::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}})
   ϕrgₖ       = f.args[1]
-  fsign_flip = f.args[4]
+  fsign_flip = f.args[3]
   div_ϕrgₖ   = lazy_map(Broadcasting(divergence),ϕrgₖ)
   fsign_flip = lazy_map(Broadcasting(Operation(x->(-1)^x)), fsign_flip)
   lazy_map(Broadcasting(Operation(*)),fsign_flip,div_ϕrgₖ)

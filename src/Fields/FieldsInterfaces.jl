@@ -246,26 +246,21 @@ function evaluate!(c,f::ConstantField,x::Point)
   f.value
 end
 
-#function return_cache(f::ConstantField,x::AbstractArray{<:Point})
-#  nx = size(x)
-#  c = fill(f.value,nx)
-#  CachedArray(c)
-#end
-#
-#function evaluate!(c,f::ConstantField,x::AbstractArray{<:Point})
-#  nx = size(x)
-#  # This optimization is a bug if we include several ConstantField with different states
-#  # in the same array and we try to reuse cache between them.
-#  #if size(c) != nx
-#    setsize!(c,nx)
-#    fill!(c.array,f.value)
-#  #end
-#  c.array
-#end
+function return_cache(f::ConstantField,x::AbstractArray{<:Point})
+  nx = size(x)
+  c = fill(f.value,nx)
+  CachedArray(c)
+end
 
 function evaluate!(c,f::ConstantField,x::AbstractArray{<:Point})
   nx = size(x)
-  return Fill(f.value,nx)
+  # This optimization is a bug if we include several ConstantField with different states
+  # in the same array and we try to reuse cache between them.
+  #if size(c) != nx
+    setsize!(c,nx)
+    fill!(c.array,f.value)
+  #end
+  c.array
 end
 
 function return_cache(f::FieldGradient{N,<:ConstantField},x::Point) where N
