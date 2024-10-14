@@ -247,6 +247,9 @@ function Arrays.evaluate!(caches, a::MacroFEBasis,xc::AbstractArray{<:Point})
   
   for fcell in 1:num_subcells(a.rrule)
     r = xf.ptrs[fcell]:xf.ptrs[fcell+1]-1
+    if isempty(r)
+      continue
+    end
     vals = evaluate!(eval_caches[fcell],a.fine_data[fcell],view(xf.data,r))
     I  = view(ids.data,r)
     J = a.ids.fcell_to_cids[fcell]
