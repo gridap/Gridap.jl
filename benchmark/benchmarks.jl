@@ -21,7 +21,9 @@ for D in [2,3]
       for (biform_name,biform,qdegree) in biform_cases
         reffe = ReferenceFE(basis, T, degree)
         name = "assembly_$(D)D_$(basis_name)_$(biform_name)_$(order)"
-        SUITE[name] = @benchmarkable bm_matrix_assembly(D,ncells,reffe,qdegree,biform)
+        SUITE[name] = @benchmarkable bm_matrix_assembly(
+          $(D),$(ncells),$(reffe),$(qdegree),$(biform)
+        )
       end
     end
   end

@@ -1,4 +1,6 @@
 
+using Gridap.Geometry
+
 mass(u,v,dΩ) = ∫(u⋅v)dΩ
 laplacian(u,v,dΩ) = ∫(∇(u)⊙∇(v))dΩ
 
@@ -9,8 +11,8 @@ function bm_matrix_assembly(
   qdegree :: Integer,
   biform :: Function
 )
-  domain = Tuple(repeat((0,1), D)...)
-  partition = Tuple(repeat(n, D)...)
+  domain = Tuple([repeat([0,1], D)...])
+  partition = Tuple(fill(n, D))
   model = UnstructuredDiscreteModel(CartesianDiscreteModel(domain, partition))
   Ω = Triangulation(model)
   dΩ = Measure(Ω,qdegree)
