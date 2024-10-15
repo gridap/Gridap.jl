@@ -94,10 +94,12 @@ function create_vtk_file(
 
   if num_cells(trian)>0
     for (k,v) in celldata
-      vtk_cell_data(vtkfile, _prepare_data(v), k; component_names=_data_component_names(v))
+      comp_names = _data_component_names(v)
+      vtk_cell_data(vtkfile, _prepare_data(v), k; component_names=comp_names)
     end
     for (k,v) in nodaldata
-      vtk_point_data(vtkfile, _prepare_data(v), k; component_names=_data_component_names(v))
+      comp_names = _data_component_names(v)
+      vtk_point_data(vtkfile, _prepare_data(v), k; component_names=comp_names)
     end
   end
 
@@ -118,10 +120,13 @@ function create_pvtk_file(
 
   if num_cells(trian) > 0
     for (k, v) in celldata
-      vtkfile[k, VTKCellData()] = _prepare_data(v)
+      # comp_names are actually always nothing as there are no field in ptvk atm
+      comp_names = _data_component_names(v)
+      vtkfile[k, VTKCellData(), component_names=comp_names] = _prepare_data(v)
     end
     for (k, v) in nodaldata
-      vtkfile[k, VTKPointData()] = _prepare_data(v)
+      comp_names = _data_component_names(v)
+      vtkfile[k, VTKPointData(), component_names=comp_names] = _prepare_data(v)
     end
   end
   return vtkfile
