@@ -116,3 +116,16 @@ length(::SymFourthOrderTensorValue{D}) where {D} = length(SymFourthOrderTensorVa
 num_components(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = length(SymFourthOrderTensorValue{D})
 num_components(::SymFourthOrderTensorValue{D}) where {D} = num_components(SymFourthOrderTensorValue{D})
 
+###############################################################
+# VTK export (SymFourthOrderTensorValue)
+###############################################################
+
+function indep_components_names(::Type{<:SymFourthOrderTensorValue{A}}) where A
+  if A>3
+    return ["$i$j$k$l" for i in 1:A for j in i:A for k in 1:A for l in k:A ]
+  else
+    c_name = ["X", "Y", "Z"]
+    return [c_name[i]*c_name[j]*c_name[k]*c_name[l] for i in 1:A for j in i:A for k in 1:A for l in k:A ]
+  end
+end
+
