@@ -164,3 +164,17 @@ num_components(::SymTensorValue{D}) where {D} = num_components(SymTensorValue{D}
 num_indep_components(::Type{<:SymTensorValue})  = num_components(SymTensorValue)
 num_indep_components(::Type{<:SymTensorValue{D}}) where {D} = D*(D+1)÷2
 num_indep_components(::SymTensorValue{D}) where {D} = num_indep_components(SymTensorValue{D})
+
+###############################################################
+# VTK export (SymTensorValue)
+###############################################################
+
+function indep_components_names(::Type{<:AbstractSymTensorValue{D}}) where D
+  if D>3
+    return ["$i$j" for i in 1:D for j in i:D ]
+  else
+    c_name = ["X", "Y", "Z"]
+    return [c_name[i]*c_name[j] for i in 1:D for j in i:D ]
+  end
+end
+

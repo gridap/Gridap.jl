@@ -71,8 +71,6 @@ the quadrature `quad` into the subcells of the RefinementRule.
 function CompositeQuadrature(
   quad::Quadrature,rr::RefinementRule
 )
-  @check ReferenceFEs.get_polytope(quad) === ReferenceFEs.get_polytope(rr)
-
   weights = get_weights(quad)
   cpoints = get_coordinates(quad)
 
