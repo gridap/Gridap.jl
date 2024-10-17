@@ -8,7 +8,7 @@ using Gridap
 using PkgBenchmark
 using DrWatson
 
-target = "raviart_thomas"
+target = "raviart-thomas"
 
 results = judge(
   Gridap, 
