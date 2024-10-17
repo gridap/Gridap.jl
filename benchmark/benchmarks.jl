@@ -5,8 +5,7 @@ include("drivers.jl")
 
 const SUITE = BenchmarkGroup()
 
-ncells = 40
-for D in [2,3]
+for (D,ncells) in [(2,20),(3,8)]
   for order in [1,2,3]
     basis_cases = [
       ("lagrangian",lagrangian,Float64,order),

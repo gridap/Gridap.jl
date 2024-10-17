@@ -8,13 +8,11 @@ using Gridap
 using PkgBenchmark
 using DrWatson
 
-target = "raviart-thomas"
-
 results = judge(
   Gridap, 
-  BenchmarkConfig(juliacmd = `julia -O3`, id = target),
+  BenchmarkConfig(juliacmd = `julia -O3`), # target -> current branch
   BenchmarkConfig(juliacmd = `julia -O3`, id = "master")
 )
 
-outfile = projectdir("benchmark/results_$(target).json")
+outfile = normpath(@__DIR__,"results_$(target).json")
 export_markdown(outfile,results)
