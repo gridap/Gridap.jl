@@ -6,13 +6,23 @@ Pkg.instantiate()
 
 using Gridap
 using PkgBenchmark
-using DrWatson
 
-results = judge(
-  Gridap, 
-  BenchmarkConfig(juliacmd = `julia -O3`), # target -> current branch
-  BenchmarkConfig(juliacmd = `julia -O3`, id = "master")
+config_kwargs = (;
+  juliacmd = `julia -O3`,
 )
 
-outfile = normpath(@__DIR__,"results_$(target).json")
+if haskey(ENV,"BM_TARGET")
+  target = BenchmarkConfig(config_kwargs..., id = ENV["BM_TARGET"])
+else
+  target = BenchmarkConfig(config_kwargs...)
+end
+
+if haskey(ENV,"BM_BASE")
+  base = BenchmarkConfig(config_kwargs..., id = ENV["BM_BASE"])
+else
+  base = BenchmarkConfig(config_kwargs..., id = "master")
+end
+
+results = judge(Gridap, target, base)
+outfile = normpath(@__DIR__,"benchmark_results.md")
 export_markdown(outfile,results)
