@@ -11,15 +11,15 @@ config_kwargs = (;
   juliacmd = `julia -O3`,
 )
 
-if haskey(ENV,"BM_TARGET")
+if haskey(ENV,"BM_TARGET") # Provided by CI workflow
   target = BenchmarkConfig(config_kwargs..., id = ENV["BM_TARGET"])
-else
+else # Default to the current commit
   target = BenchmarkConfig(config_kwargs...)
 end
 
-if haskey(ENV,"BM_BASE")
+if haskey(ENV,"BM_BASE") # Provided by CI workflow
   base = BenchmarkConfig(config_kwargs..., id = ENV["BM_BASE"])
-else
+else # Default to master
   base = BenchmarkConfig(config_kwargs..., id = "master")
 end
 
