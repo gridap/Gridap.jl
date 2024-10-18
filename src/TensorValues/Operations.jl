@@ -618,17 +618,21 @@ end
 @inline norm(u::MultiValue{Tuple{0},T}) where T = sqrt(zero(T))
 
 ###############################################################
-# conj
+# conj, real, imag
 ###############################################################
 
-function conj(a::T) where {T<:MultiValue}
-  r = map(conj, a.data)
-  T(r)
-end
+for op in (:conj,:real,:imag)
+  @eval begin
+    function ($op)(a::T) where {T<:MultiValue}
+      r = map($op, a.data)
+      T(r)
+    end
 
-function conj(a::SymTracelessTensorValue)
-  r = map(conj, a.data)
-  SymTracelessTensorValue(r[1:end-1])
+    function ($op)(a::SymTracelessTensorValue)
+      r = map($op, a.data)
+      SymTracelessTensorValue(r[1:end-1])
+    end
+  end
 end
 
 ###############################################################

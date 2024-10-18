@@ -600,6 +600,8 @@ v = VectorValue(1,0)
 @test v == v'
 @test conj(v) == v'
 
+# tr
+
 t = TensorValue(1,2,3,4)
 @test tr(t) == 5
 
@@ -876,10 +878,14 @@ b = 4.0 - 3.0*im
 @test real(VectorValue(1+1im)) == VectorValue(1)
 @test real(VectorValue(1+1im, 1+1im)) == VectorValue(1, 1)
 @test real(VectorValue(1+1im, 1+1im, 1+1im)) == VectorValue(1, 1, 1)
+@test real(TensorValue(1+1im, 1+1im, 1+1im, 1+1im)) == TensorValue(1, 1, 1, 1)
+@test real(SymTracelessTensorValue(1+1im, 1+1im)) == SymTracelessTensorValue(1, 1)
 
 @test imag(VectorValue(1+1im)) == VectorValue(1)
 @test imag(VectorValue(1+1im, 1+1im)) == VectorValue(1, 1)
 @test imag(VectorValue(1+1im, 1+1im, 1+1im)) == VectorValue(1, 1, 1)
+@test imag(TensorValue(1+1im, 1+1im, 1+1im, 1+1im)) == TensorValue(1, 1, 1, 1)
+@test imag(SymTracelessTensorValue(1+1im, 1+1im)) == SymTracelessTensorValue(1, 1)
 
 # Broadcast
 a = VectorValue(1,2,3)
