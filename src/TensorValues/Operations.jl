@@ -531,7 +531,7 @@ cross(a::MultiValue,b::MultiValue) = error("Cross product only defined for R2 an
 # Linear Algebra
 ###############################################################
 
-det(a::MultiValue{Tuple{D1,D2}}) where {D1,D2} = det(get_array(a))
+det(a::MultiValue{Tuple{D,D}}) where {D} = det(get_array(a))
 
 det(a::MultiValue{Tuple{1,1}}) = a[1]
 
