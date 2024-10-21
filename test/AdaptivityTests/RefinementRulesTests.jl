@@ -33,13 +33,4 @@ Adaptivity.test_refinement_rule(rr_bc3)
 rr_ps2 = Adaptivity.PowellSabinRefinementRule(TRI)
 rr_ps3 = Adaptivity.PowellSabinRefinementRule(TET)
 
-rr_bc2 = Adaptivity.BarycentricRefinementRule(QUAD)
-Adaptivity.test_refinement_rule(rr_bc2)
-
-rr_bc3 = Adaptivity.BarycentricRefinementRule(HEX)
-Adaptivity.test_refinement_rule(rr_bc3)
-
-writevtk(rr_bc3.ref_grid,"ref_barycentric";append=false)
-
-
 end
