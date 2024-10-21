@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added MacroFElements. These are defined as having the basis/dof-basis of a FESpace created on top of a RefinementRule. Since PR[#1024](https://github.com/gridap/Gridap.jl/pull/1024).
 - Added Barycentric refinement rule in 2D and 3D. Added Simplexify refinement rule. Since PR[#1024](https://github.com/gridap/Gridap.jl/pull/1024).
+- Added names to vector and tensor components in VTK exports, to avoid Paraview's automatic (sometimes wrong) guesses. See `TensorValues.indep_components_names`. Since PR[#1038](https://github.com/gridap/Gridap.jl/pull/1038).
 
 ## [0.18.6] - 2024-08-29
 
