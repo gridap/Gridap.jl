@@ -13,14 +13,21 @@ The `order` argument has the following meaning: the divergence of the  functions
 is in the Q space of degree `order`.
 
 """
-function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
+function RaviartThomasRefFE(
+  ::Type{et},p::Polytope,order::Integer;basis_type=:monomial
+) where et
+  @assert basis_type ∈ (:monomial, :jacobi, :chebyshev)
 
   D = num_dims(p)
 
-  if is_n_cube(p)
+  if is_n_cube(p) && basis_type == :monomial
     prebasis = QCurlGradMonomialBasis{D}(et,order)
-  elseif is_simplex(p)
+  elseif is_simplex(p) && basis_type == :monomial
     prebasis = PCurlGradMonomialBasis{D}(et,order)
+  elseif is_n_cube(p) && basis_type == :jacobi
+    prebasis = QCurlGradJacobiPolynomialBasis{D}(et,order)
+  elseif is_n_cube(p) && basis_type == :chebyshev
+    prebasis = QCurlGradChebyshevPolynomialBasis{D}(et,order)
   else
     @notimplemented "H(div) Reference FE only available for cubes and simplices"
   end
@@ -49,12 +56,12 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
   reffe
 end
 
-function ReferenceFE(p::Polytope,::RaviartThomas, order)
-  RaviartThomasRefFE(Float64,p,order)
+function ReferenceFE(p::Polytope,::RaviartThomas,order;basis_type=:monomial)
+  RaviartThomasRefFE(Float64,p,order;basis_type)
 end
 
-function ReferenceFE(p::Polytope,::RaviartThomas,::Type{T}, order) where T
-  RaviartThomasRefFE(T,p,order)
+function ReferenceFE(p::Polytope,::RaviartThomas,::Type{T},order;basis_type=:monomial) where T
+  RaviartThomasRefFE(T,p,order;basis_type)
 end
 
 function Conformity(reffe::GenericRefFE{RaviartThomas},sym::Symbol)
@@ -187,13 +194,41 @@ function _RT_face_values(p,et,order,phi)
 
   # Moments (fmoments)
   # The RT prebasis is expressed in terms of shape function
-  fshfs = MonomialBasis(et,fp,order)
+  #fshfs = MonomialBasis(et,fp,order)
+  fshfs = JacobiBasis(et,fp,order)
+  #fshfs = ChebyshevBasis(et,fp,order)
+  #fshfs = get_shapefuns(LagrangianRefFE(et,fp,order))
 
   # Face moments, i.e., M(Fi)_{ab} = q_RF^a(xgp_RFi^b) w_Fi^b n_Fi ⋅ ()
   fmoments = _RT_face_moments(p, fshfs, c_fips, fcips, fwips, phi)
 
   return fcips, fmoments
+end
 
+function JacobiBasis(::Type{T},p::Polytope,orders) where T
+  compute_jacobi_basis(T,p,orders)
+end
+function JacobiBasis(::Type{T},p::Polytope{D},order::Int) where {D,T}
+  orders = tfill(order,Val{D}())
+  JacobiBasis(T,p,orders)
+end
+function compute_jacobi_basis(::Type{T},p::ExtrusionPolytope{D},orders) where {D,T}
+  extrusion = Tuple(p.extrusion)
+  terms = _monomial_terms(extrusion,orders)
+  JacobiPolynomialBasis{D}(T,orders,terms)
+end
+
+function ChebyshevBasis(::Type{T},p::Polytope,orders) where T
+  compute_chebyshev_basis(T,p,orders)
+end
+function ChebyshevBasis(::Type{T},p::Polytope{D},order::Int) where {D,T}
+  orders = tfill(order,Val{D}())
+  ChebyshevBasis(T,p,orders)
+end
+function compute_chebyshev_basis(::Type{T},p::ExtrusionPolytope{D},orders) where {D,T}
+  extrusion = Tuple(p.extrusion)
+  terms = _monomial_terms(extrusion,orders)
+  ChebyshevPolynomialBasis{D}(T,orders,terms)
 end
 
 function _RT_cell_moments(p, cbasis, ccips, cwips)
@@ -214,7 +249,9 @@ function _RT_cell_values(p,et,order,phi)
 
   # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
   if is_n_cube(p)
-    cbasis = QGradMonomialBasis{num_dims(p)}(et,order-1)
+    #cbasis = QGradMonomialBasis{num_dims(p)}(et,order-1)
+    cbasis = QGradJacobiPolynomialBasis{num_dims(p)}(et,order-1)
+    #cbasis = QGradChebyshevPolynomialBasis{num_dims(p)}(et,order-1)
   elseif is_simplex(p)
     T = VectorValue{num_dims(p),et}
     cbasis = MonomialBasis{num_dims(p)}(T,order-1, _p_filter)
