@@ -612,7 +612,7 @@ function det(a::MultiValue{Tuple{3,3}})
     (a_11*a_23*a_32 + a_12*a_21*a_33 + a_13*a_22*a_31)
 end
 
-inv(a::MultiValue{Tuple{D1,D2}}) where {D1,D2} = TensorValue(inv(get_array(a)))
+inv(a::MultiValue{Tuple{D,D}}) where D = TensorValue(inv(get_array(a)))
 # those still have better perf than the D=2,3 specialization below
 inv(a::AbstractSymTensorValue{D}) where D = SymTensorValue(inv(get_array(a)))
 inv(a::SymTracelessTensorValue{2}) = SymTracelessTensorValue(inv(get_array(a)))
