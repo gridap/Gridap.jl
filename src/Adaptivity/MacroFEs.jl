@@ -348,6 +348,7 @@ function MacroReferenceFE(
 
   ndofs = num_free_dofs(space)
   poly = get_polytope(rrule)
+  # This is a hack to be able to compute the orders
   prebasis = FineToCoarseArray(rrule,collect(map(get_prebasis,reffes)))
   metadata = (rrule,conn,face_own_dofs,face_own_perms)
 
