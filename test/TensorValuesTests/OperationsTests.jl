@@ -728,6 +728,13 @@ odot_contraction_array = 1*a[:,1,1] + 2*a[:,1,2] + 3*a[:,1,3] + 2*a[:,2,1] +
 @test odot_contraction == odot_contraction_array
 
 # double Contractions w/ products
+
+v  = VectorValue(1:2...)
+t1 = TensorValue(1:4...)
+t2 = TensorValue(1:9...)
+@test_throws ErrorException double_contraction(t1,v)
+@test_throws DimensionMismatch double_contraction(t1,t2)
+
 Sym4TensorIndexing = [1111, 1121, 1131, 1122, 1132, 1133, 2111, 2121, 2131, 2122, 2132, 2133,
                       3111, 3121, 3131, 3122, 3132, 3133, 2211, 2221, 2231, 2222, 2232, 2233,
                       2311, 2321, 2331, 2322, 2332, 2333, 3311, 3321, 3331, 3322, 3332, 3333]
@@ -839,15 +846,59 @@ vals[3,:,:] .= [1 0 0
                 0 2 1
                 0 1 3];
 t1 = ThirdOrderTensorValue(vals ...)
-@test (t1 ⋅² t1)[1,1] == sum(vals[1,i,j] .* vals[i,j,1] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[2,1] == sum(vals[2,i,j] .* vals[i,j,1] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[3,1] == sum(vals[3,i,j] .* vals[i,j,1] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[1,2] == sum(vals[1,i,j] .* vals[i,j,2] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[2,2] == sum(vals[2,i,j] .* vals[i,j,2] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[3,2] == sum(vals[3,i,j] .* vals[i,j,2] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[1,3] == sum(vals[1,i,j] .* vals[i,j,3] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[2,3] == sum(vals[2,i,j] .* vals[i,j,3] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[3,3] == sum(vals[3,i,j] .* vals[i,j,3] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[1,1] == sum(vals[1,i,j] * vals[i,j,1] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[2,1] == sum(vals[2,i,j] * vals[i,j,1] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[3,1] == sum(vals[3,i,j] * vals[i,j,1] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[1,2] == sum(vals[1,i,j] * vals[i,j,2] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[2,2] == sum(vals[2,i,j] * vals[i,j,2] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[3,2] == sum(vals[3,i,j] * vals[i,j,2] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[1,3] == sum(vals[1,i,j] * vals[i,j,3] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[2,3] == sum(vals[2,i,j] * vals[i,j,3] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[3,3] == sum(vals[3,i,j] * vals[i,j,3] for i in 1:3 for j in 1:3)
+
+# a_il = b_ijk*c_jkl
+t1 = ThirdOrderTensorValue{3,2,2}(1:12...)
+t2 = ThirdOrderTensorValue{2,2,1}(1:4...)
+t1_double_t2 = t1 ⋅² t2
+@test isa(t1_double_t2, TensorValue{3,1})
+@test (t1 ⋅² t2)[1,1] == sum(t1[1,j,k] * t2[j,k,1] for j in 1:2 for k in 1:2)
+@test (t1 ⋅² t2)[2,1] == sum(t1[2,j,k] * t2[j,k,1] for j in 1:2 for k in 1:2)
+@test (t1 ⋅² t2)[3,1] == sum(t1[3,j,k] * t2[j,k,1] for j in 1:2 for k in 1:2)
+
+# a_kl = b_ij*c_ijkl
+t1 = SymTensorValue{3}(1:6...)
+t2 = SymFourthOrderTensorValue(1:36 ...)
+v11 = sum(t1[i,j]*t2[i,j,1,1] for i in 1:3 for j in 1:3);
+v12 = sum(t1[i,j]*t2[i,j,1,2] for i in 1:3 for j in 1:3);
+v13 = sum(t1[i,j]*t2[i,j,1,3] for i in 1:3 for j in 1:3);
+v22 = sum(t1[i,j]*t2[i,j,2,2] for i in 1:3 for j in 1:3);
+v23 = sum(t1[i,j]*t2[i,j,2,3] for i in 1:3 for j in 1:3);
+v33 = sum(t1[i,j]*t2[i,j,3,3] for i in 1:3 for j in 1:3);
+t1_double_t2 = t1 ⋅² t2
+@test v11 == (t1_double_t2)[1,1]
+@test v12 == (t1_double_t2)[1,2]
+@test v13 == (t1_double_t2)[1,3]
+@test v22 == (t1_double_t2)[2,2]
+@test v23 == (t1_double_t2)[2,3]
+@test v33 == (t1_double_t2)[3,3]
+
+# a_ij = b_ijkl*c_kl
+t1 = SymFourthOrderTensorValue(1:36...)
+t2 = SymTensorValue{3}(1:6...)
+v11 = sum(t1[1,1,k,l]*t2[k,l] for k in 1:3 for l in 1:3);
+v12 = sum(t1[1,2,k,l]*t2[k,l] for k in 1:3 for l in 1:3);
+v13 = sum(t1[1,3,k,l]*t2[k,l] for k in 1:3 for l in 1:3);
+v22 = sum(t1[2,2,k,l]*t2[k,l] for k in 1:3 for l in 1:3);
+v23 = sum(t1[2,3,k,l]*t2[k,l] for k in 1:3 for l in 1:3);
+v33 = sum(t1[3,3,k,l]*t2[k,l] for k in 1:3 for l in 1:3);
+t1_double_t2 = t1 ⋅² t2
+@test v11 == (t1_double_t2)[1,1]
+@test v12 == (t1_double_t2)[1,2]
+@test v13 == (t1_double_t2)[1,3]
+@test v22 == (t1_double_t2)[2,2]
+@test v23 == (t1_double_t2)[2,3]
+@test v33 == (t1_double_t2)[3,3]
+
 
 # a_il = b_ij*c_jl
 v1 = [1 2 3

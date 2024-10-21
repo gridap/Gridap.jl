@@ -350,19 +350,12 @@ end
   Meta.parse(str)
 end
 
-@generated function inner(a::SymFourthOrderTensorValue{D}, b::AbstractSymTensorValue{D}) where D
-  str = ""
-  for i in 1:D
-    for j in i:D
-      for k in 1:D
-        for l in 1:D
-          str *= "+ a[$i,$j,$k,$l]*b[$k,$l]"
-        end
-      end
-      str *= ", "
-    end
-  end
-  Meta.parse("SymTensorValue{D}($str)")
+function inner(a::SymFourthOrderTensorValue{D}, b::AbstractSymTensorValue{D}) where D
+  double_contraction(a,b)
+end
+
+function inner(a::AbstractSymTensorValue{D}, b::SymFourthOrderTensorValue{D}) where D
+  double_contraction(a,b)
 end
 
 function inner(a::SymFourthOrderTensorValue{D},b::MultiValue{Tuple{D,D}}) where D
@@ -375,7 +368,25 @@ const ⊙ = inner
 # Double Contractions w/ products
 ###############################################################
 
-# a_i = b_ijk*c_jk
+function double_contraction(a::MultiValue{S1}, b::MultiValue{S2}) where {S1<:Tuple,S2<:Tuple}
+  L1, L2 = length(S1.types), length(S2.types)
+  if L1<2 || L2<2
+    @unreachable "Double contraction is only define for tensors of order more than 2, got $L1 and $L2."
+  end
+
+  D1, E1, D2, E2 = S1.types[end-1], S1.types[end],  S2.types[1], S2.types[2]
+  if D1 != D2 || E1 != E2
+    throw(DimensionMismatch("the last two dimensions of the first argument must match the first two of the second argument, got ($D1,$E1) ≠ ($D2,$E2)."))
+  end
+  @notimplemented
+end
+
+# c_i = a_ij*b_ij
+function double_contraction(a::MultiValue{S}, b::MultiValue{S}) where {S<:Tuple{D1,D2}} where {D1,D2}
+  inner(a,b)
+end
+
+# c_i = a_ijk*b_jk
 @generated function double_contraction(a::A, b::B) where {A<:MultiValue{Tuple{D1,D2,D3}},B<:MultiValue{Tuple{D2,D3}}} where {D1,D2,D3}
   ss = String[]
   for i in 1:D1
@@ -386,7 +397,18 @@ const ⊙ = inner
   Meta.parse("VectorValue{$D1}(($str))")
 end
 
-# a_ijpm = b_ijkl*c_klpm (3D)
+# c_k = a_ij*b_ijk
+@generated function double_contraction(a::A, b::B) where {A<:MultiValue{Tuple{D1,D2}},B<:MultiValue{Tuple{D1,D2,D3}}} where {D1,D2,D3}
+  ss = String[]
+  for k in 1:D3
+    s = join([ "a[$i,$j]*b[$i,$j,$k]+" for i in 1:D1 for j in 1:D2])
+    push!(ss,s[1:(end-1)]*", ")
+  end
+  str = join(ss)
+  Meta.parse("VectorValue{$D3}(($str))")
+end
+
+# c_ijpm = a_ijkl*b_klpm (3D)
 @generated function double_contraction(a::A, b::B) where {A<:SymFourthOrderTensorValue{3},B<:SymFourthOrderTensorValue{3}}
 
   Sym4TensorIndexing = [1111, 1121, 1131, 1122, 1132, 1133, 2111, 2121, 2131, 2122, 2132, 2133,
@@ -403,7 +425,7 @@ end
   Meta.parse("SymFourthOrderTensorValue{3}($str)")
 end
 
-# a_ijpm = b_ijkl*c_klpm (general case)
+# c_ijpm = a_ijkl*b_klpm (general case)
 @generated function double_contraction(a::SymFourthOrderTensorValue{D}, b::SymFourthOrderTensorValue{D}) where D
   str = ""
   for j in 1:D
@@ -424,32 +446,73 @@ end
   Meta.parse("SymFourthOrderTensorValue{D}($str)")
 end
 
-# a_ilm = b_ijk*c_jklm
-@generated function double_contraction(a::A,b::B) where {A<:ThirdOrderTensorValue{D},B<:SymFourthOrderTensorValue{D}} where D
+# c_ilm = a_ijk*b_jklm
+@generated function double_contraction(a::ThirdOrderTensorValue{D1,D,D},b::SymFourthOrderTensorValue{D}) where {D1,D}
   ss = String[]
   for m in 1:D
     for l in 1:D
-      for i in 1:D
+      for i in 1:D1
         s = join([ "a[$i,$j,$k]*b[$j,$k,$l,$m]+" for j in 1:D for k in 1:D])
         push!(ss,s[1:(end-1)]*", ")
       end
     end
   end
   str = join(ss)
-  Meta.parse("ThirdOrderTensorValue{$D}($str)")
+  Meta.parse("ThirdOrderTensorValue{$D1,$D,$D}($str)")
 end
 
-# a_il = b_ijk*c_jkl
-@generated function double_contraction(a::A,b::B) where {A<:ThirdOrderTensorValue{D},B<:ThirdOrderTensorValue{D}} where D
+# c_ij = a_ijkl*b_kl
+@generated function double_contraction(a::SymFourthOrderTensorValue{D}, b::AbstractSymTensorValue{D}) where D
+  str = ""
+  for i in 1:D
+    for j in i:D
+      for k in 1:D
+        str *= "+ a[$i,$j,$k,$k]*b[$k,$k]"
+      end
+      str *= " + 2*("
+      for k in 1:D
+        for l in k+1:D
+          str *= "+ a[$i,$j,$k,$l]*b[$k,$l]"
+        end
+      end
+      str *= "), "
+    end
+  end
+  Meta.parse("SymTensorValue{D}($str)")
+end
+
+# c_kl = a_ij*b_ijkl
+@generated function double_contraction(a::AbstractSymTensorValue{D}, b::SymFourthOrderTensorValue{D}) where D
+  str = ""
+  for k in 1:D
+    for l in k:D
+      for i in 1:D
+        str *= "+ a[$i,$i]*b[$i,$i,$k,$l]"
+      end
+      str *= " + 2*("
+      for i in 1:D
+        for j in i+1:D
+          str *= "+ a[$i,$j]*b[$i,$j,$k,$l]"
+        end
+      end
+      str *= "), "
+    end
+  end
+  Meta.parse("SymTensorValue{D}($str)")
+end
+
+
+# c_il = a_ijk*b_jkl
+@generated function double_contraction(a::ThirdOrderTensorValue{D1,D,E},b::ThirdOrderTensorValue{D,E,D2}) where {D1,D,E,D2}
   ss = String[]
-  for l in 1:D
-    for i in 1:D
-      s = join([ "a[$i,$j,$k]*b[$j,$k,$l]+" for j in 1:D for k in 1:D])
+  for l in 1:D2
+    for i in 1:D1
+      s = join([ "a[$i,$j,$k]*b[$j,$k,$l]+" for j in 1:D for k in 1:E])
       push!(ss,s[1:(end-1)]*", ")
     end
   end
   str = join(ss)
-  Meta.parse("TensorValue{$D}($str)")
+  Meta.parse("TensorValue{$D1,$D2}($str)")
 end
 
 const ⋅² = double_contraction
