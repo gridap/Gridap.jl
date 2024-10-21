@@ -122,11 +122,11 @@ function create_pvtk_file(
     for (k, v) in celldata
       # component_names are actually always nothing as there are no field in ptvk atm
       component_names = _data_component_names(v)
-      vtkfile[k, VTKCellData(); component_names] = _prepare_data(v)
+      vtkfile[k, VTKCellData(), component_names=component_names] = _prepare_data(v)
     end
     for (k, v) in nodaldata
       component_names = _data_component_names(v)
-      vtkfile[k, VTKPointData(); component_names] = _prepare_data(v)
+      vtkfile[k, VTKPointData(), component_names=component_names] = _prepare_data(v)
     end
   end
   return vtkfile
