@@ -14,7 +14,7 @@ is in the Q space of degree `order`.
 
 """
 function RaviartThomasRefFE(
-  ::Type{et},p::Polytope,order::Integer;basis_type=:monomial
+  ::Type{et},p::Polytope,order::Integer;basis_type=:monomial,phi=GenericField(identity)
 ) where et
   @assert basis_type ∈ (:monomial, :jacobi, :chebyshev)
 
@@ -32,7 +32,7 @@ function RaviartThomasRefFE(
     @notimplemented "H(div) Reference FE only available for cubes and simplices"
   end
 
-  nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,GenericField(identity))
+  nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,phi)
 
   face_own_dofs = _face_own_dofs_from_moments(nf_moments)
 
@@ -146,7 +146,7 @@ function _broadcast(::Type{T},n,b) where T
   return c
 end
 
-function _RT_face_moments(p, fshfs, c_fips, fcips, fwips,phi)
+function _RT_face_moments(p, fshfs, c_fips, fcips, fwips, phi)
   nc = length(c_fips)
   cfshfs = fill(fshfs, nc)
   cvals = lazy_map(evaluate,cfshfs,c_fips)
@@ -231,6 +231,27 @@ function compute_chebyshev_basis(::Type{T},p::ExtrusionPolytope{D},orders) where
   ChebyshevPolynomialBasis{D}(T,orders,terms)
 end
 
+function compute_lagrangian_rt_basis(D,et,order)
+  P  = get_dof_basis(LagrangianRefFE(et,SEGMENT,order)).nodes
+  DP = get_dof_basis(LagrangianRefFE(et,SEGMENT,order-1)).nodes
+  nodes1d = map(I -> (I[1] == I[2]) ? P : DP, CartesianIndices((D,D)))
+
+  S = Tuple(map(k -> Tuple(map(length,nodes1d[k,:])),1:D))
+  nnodes = sum(map(prod,S))
+  nodes = Vector{VectorValue{D,et}}(undef,nnodes)
+  k = 1
+  for d in 1:D
+    Sk = S[d]
+    for I in CartesianIndices(Sk)
+      nodes[k] = VectorValue(map(l -> nodes1d[d,l][I[l]].data[1], 1:D))
+      k += 1
+    end
+  end
+
+  dof_to_comp = vcat(map(k -> fill(k,prod(S[k])), 1:D)...)
+  dof_to_node = Base.OneTo(nnodes)
+end
+
 function _RT_cell_moments(p, cbasis, ccips, cwips)
   # Interior DOFs-related basis evaluated at interior integration points
   ishfs_iips = evaluate(cbasis,ccips)
@@ -252,6 +273,7 @@ function _RT_cell_values(p,et,order,phi)
     #cbasis = QGradMonomialBasis{num_dims(p)}(et,order-1)
     cbasis = QGradJacobiPolynomialBasis{num_dims(p)}(et,order-1)
     #cbasis = QGradChebyshevPolynomialBasis{num_dims(p)}(et,order-1)
+    #cbasis = get_shapefuns(RaviartThomasRefFE(et,p,order-1))
   elseif is_simplex(p)
     T = VectorValue{num_dims(p),et}
     cbasis = MonomialBasis{num_dims(p)}(T,order-1, _p_filter)
