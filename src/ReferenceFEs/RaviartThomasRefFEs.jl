@@ -56,12 +56,12 @@ function RaviartThomasRefFE(
   reffe
 end
 
-function ReferenceFE(p::Polytope,::RaviartThomas,order;basis_type=:monomial)
-  RaviartThomasRefFE(Float64,p,order;basis_type)
+function ReferenceFE(p::Polytope,::RaviartThomas,order;kwargs...)
+  RaviartThomasRefFE(Float64,p,order;kwargs...)
 end
 
-function ReferenceFE(p::Polytope,::RaviartThomas,::Type{T},order;basis_type=:monomial) where T
-  RaviartThomasRefFE(T,p,order;basis_type)
+function ReferenceFE(p::Polytope,::RaviartThomas,::Type{T},order;kwargs...) where T
+  RaviartThomasRefFE(T,p,order;kwargs...)
 end
 
 function Conformity(reffe::GenericRefFE{RaviartThomas},sym::Symbol)
