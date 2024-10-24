@@ -112,3 +112,16 @@ length(::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = length(ThirdOrderTe
 num_components(::Type{<:ThirdOrderTensorValue{D1,D2,D3}}) where {D1,D2,D3} = length(ThirdOrderTensorValue{D1,D2,D3})
 num_components(::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = num_components(ThirdOrderTensorValue{D1,D2,D3})
 
+###############################################################
+# VTK export (ThirdOrderTensorValue)
+###############################################################
+
+function indep_components_names(::Type{<:ThirdOrderTensorValue{D1,D2,D3}}) where {D1,D2,D3}
+  if D1>3 || D2>3 || D3>3
+    return ["$i$j$k" for i in 1:D1 for j in 1:D2 for k in 1:D3 ]
+  else
+    c_name = ["X", "Y", "Z"]
+    return [c_name[i]*c_name[j]*c_name[k] for i in 1:D1 for j in 1:D2 for k in 1:D3]
+  end
+end
+

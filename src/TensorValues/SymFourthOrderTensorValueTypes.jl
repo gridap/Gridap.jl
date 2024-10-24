@@ -82,7 +82,7 @@ zero(::SymFourthOrderTensorValue{D,T,L}) where {D,T,L} = zero(SymFourthOrderTens
 # This is in fact the "symmetrized" 4th order identity
 @generated function one(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T}
   S = typeof(one(T)/2)
-  str = join(["($i==$k && $j==$l) ?  ( $i==$j ? one($S) :  one(T)/2) : zero($S), " for i in 1:D for j in i:D for k in 1:D for l in k:D])
+  str = join(["($i==$k && $j==$l) ?  ( $i==$j ? one($S) :  one($S)/2) : zero($S), " for i in 1:D for j in i:D for k in 1:D for l in k:D])
   Meta.parse("SymFourthOrderTensorValue{D,$S}(($str))")
 end
 one(::SymFourthOrderTensorValue{D,T}) where {D,T} = one(SymFourthOrderTensorValue{D,T})
@@ -115,4 +115,17 @@ length(::SymFourthOrderTensorValue{D}) where {D} = length(SymFourthOrderTensorVa
 
 num_components(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = length(SymFourthOrderTensorValue{D})
 num_components(::SymFourthOrderTensorValue{D}) where {D} = num_components(SymFourthOrderTensorValue{D})
+
+###############################################################
+# VTK export (SymFourthOrderTensorValue)
+###############################################################
+
+function indep_components_names(::Type{<:SymFourthOrderTensorValue{A}}) where A
+  if A>3
+    return ["$i$j$k$l" for i in 1:A for j in i:A for k in 1:A for l in k:A ]
+  else
+    c_name = ["X", "Y", "Z"]
+    return [c_name[i]*c_name[j]*c_name[k]*c_name[l] for i in 1:A for j in i:A for k in 1:A for l in k:A ]
+  end
+end
 

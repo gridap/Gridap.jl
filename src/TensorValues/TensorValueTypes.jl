@@ -14,7 +14,7 @@ struct TensorValue{D1,D2,T,L} <: MultiValue{Tuple{D1,D2},T,2,L}
 end
 
 ###############################################################
-# Constructors 
+# Constructors
 ###############################################################
 
 # Empty TensorValue constructor
@@ -145,3 +145,15 @@ num_components(::Type{<:TensorValue{D}}) where {D} = length(TensorValue{D,D})
 num_components(::Type{<:TensorValue{D1,D2}}) where {D1,D2} = length(TensorValue{D1,D2})
 num_components(::TensorValue{D1,D2}) where {D1,D2} = num_components(TensorValue{D1,D2})
 
+###############################################################
+# VTK export (TensorValue)
+###############################################################
+
+function indep_components_names(::Type{<:TensorValue{D1,D2}}) where {D1,D2}
+  if D1>3 || D2>3
+    return ["$i$j" for i in 1:D1 for j in 1:D2 ]
+  else
+    c_name = ["X", "Y", "Z"]
+    return [c_name[i]*c_name[j] for i in 1:D1 for j in 1:D2 ]
+  end
+end

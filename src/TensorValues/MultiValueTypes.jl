@@ -38,3 +38,15 @@ end
 function data_index(::Type{<:MultiValue},i...)
   @abstractmethod
 end
+
+"""
+    indep_components_names(::MultiValue)
+
+Returns an array of strings containing the component labels in the order they are stored internally, consistently with _prepare_data(::Multivalue)
+
+If all dimensions of the tensor shape S are smaller than 3, the components should be named with letters "X","Y" and "Z" similarly to the automatic naming of Paraview. Else, if max(S)>3, they are labeled from "1" to "\$dim".
+"""
+function indep_components_names(::Type{MultiValue{S,T,N,L}}) where {S,T,N,L}
+  return ["$i" for i in 1:L]
+end
+
