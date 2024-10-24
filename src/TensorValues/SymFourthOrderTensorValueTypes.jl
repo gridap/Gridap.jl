@@ -3,7 +3,11 @@
 ###############################################################
 
 """
-Type representing a symmetric fourth-order tensor
+    SymFourthOrderTensorValue{D,T,L} <: MultiValue{Tuple{D,D,D,D},T,4,L}
+
+Type representing a symmetric second-order `D`×`D`×`D`×`D` tensor, with symmetries ijkl↔jikl and ijkl↔ijlk. It must hold `L` = (`D`(`D`+1)/2)^2.
+
+It is constructed by providing the components of index (i,j,k,l) for 1 ≤ i ≤ j ≤ `D` and 1 ≤ k ≤ l ≤ `D`.
 """
 struct SymFourthOrderTensorValue{D,T,L} <: MultiValue{Tuple{D,D,D,D},T,4,L}
   data::NTuple{L,T}
@@ -80,6 +84,13 @@ zero(::Type{<:SymFourthOrderTensorValue{D,T,L}}) where {D,T,L} = SymFourthOrderT
 zero(::SymFourthOrderTensorValue{D,T,L}) where {D,T,L} = zero(SymFourthOrderTensorValue{D,T,L})
 
 # This is in fact the "symmetrized" 4th order identity
+"""
+    one(::SymFourthOrderTensorValue{D,T}})
+
+Returns the tensor `resᵢⱼₖₗ = δᵢₖδⱼₗ(δᵢⱼ + (1-δᵢⱼ)/2)`.
+
+The scalar type `T2` of the result is `typeof(one(T)/2)`.
+"""
 @generated function one(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T}
   S = typeof(one(T)/2)
   str = join(["($i==$k && $j==$l) ?  ( $i==$j ? one($S) :  one($S)/2) : zero($S), " for i in 1:D for j in i:D for k in 1:D for l in k:D])

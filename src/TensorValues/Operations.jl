@@ -213,6 +213,13 @@ function *(::SymTracelessTensorValue,::SymTracelessTensorValue) @unreachable _ms
 
 dot(a::MultiValue{Tuple{D}}, b::MultiValue{Tuple{D}}) where D = inner(a,b)
 
+"""
+    dot(a::MultiValue{Tuple{...,D}}, b::MultiValue{Tuple{D,...}})
+    a ⋅¹ b
+    a ⋅ b
+
+Inner product of two tensors `a` and `b`, that is the single contraction of the last index of `a` with the first index of `b`. The corresponding dimensions `D` must match. No symmetry is preserved.
+"""
 dot(a::MultiValue,b::MultiValue) = @notimplemented
 
 @generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D1}},B<:MultiValue{Tuple{D1,D2}}} where {D1,D2}
@@ -326,6 +333,12 @@ const ⋅¹ = dot
 
 inner(a::Number,b::Number) = a*b
 
+"""
+    inner(a::MultiValue{S}, b::MultiValue{S}) -> scalar
+    a ⊙ b
+
+Inner product of two tensors, that is the full contraction along each indices. The size `S` of `a` and `b` must match.
+"""
 function inner(a::MultiValue, b::MultiValue)
   @notimplemented
 end
@@ -368,6 +381,18 @@ const ⊙ = inner
 # Double Contractions w/ products
 ###############################################################
 
+"""
+    double_contraction(a::MultiValue{Tuple{...,D,E}}, b::MultiValue{Tuple{D,E,...})
+    a ⋅² b
+
+Double contraction of two tensors `a` and `b`, along the two last indices of `a`
+and two first of `b`. The corresponding dimensions `D` and `E` must match, the
+contraction order is chosen to be consistent with the inner product of second
+order tensors.
+
+The `double_contraction` between second- and/or fourth-order symmetric tensors
+preserves the symmetry (returns a symmetric tensor type).
+"""
 function double_contraction(a::MultiValue{S1}, b::MultiValue{S2}) where {S1<:Tuple,S2<:Tuple}
   L1, L2 = length(S1.types), length(S2.types)
   if L1<2 || L2<2
@@ -529,13 +554,19 @@ end
 
 # Outer product (aka dyadic product)
 
-"""
-"""
 outer(a::Number,b::Number) = a*b
 
 outer(a::MultiValue,b::Number) = a*b
 outer(a::Number,b::MultiValue) = a*b
 
+"""
+    outer(a,b)
+    a ⊗ b
+
+Outer product (or tensor-product) of two `Number`s and/or `MultiValue`s, that is
+`(a⊗b)[i₁,...,iₙ,j₁,...,jₙ] = a[i₁,...,iₙ]*b[j₁,...,jₙ]`. This falls back to standard
+multiplication if `a` or `b` is a scalar.
+"""
 function outer(a::MultiValue,b::MultiValue)
    @notimplemented
 end
@@ -588,12 +619,24 @@ function cross(a::MultiValue{Tuple{2}}, b::MultiValue{Tuple{2}})
   a[1]b[2]-a[2]b[1]
 end
 
+"""
+    cross(a::VectorValue{3}, b::VectorValue{3}) -> VectorValue{3}
+    cross(a::VectorValue{2}, b::VectorValue{2}) -> Scalar
+    a × b
+
+Cross product of 2D and 3D vector.
+"""
 cross(a::MultiValue,b::MultiValue) = error("Cross product only defined for R2 and R3 vectors")
 
 ###############################################################
 # Linear Algebra
 ###############################################################
 
+"""
+    det(a::MultiValue{Tuple{D,D},T})
+
+Determinent of second order tensors.
+"""
 det(a::MultiValue{Tuple{D,D}}) where {D} = det(get_array(a))
 
 det(a::MultiValue{Tuple{1,1}}) = a[1]
@@ -612,6 +655,11 @@ function det(a::MultiValue{Tuple{3,3}})
     (a_11*a_23*a_32 + a_12*a_21*a_33 + a_13*a_22*a_31)
 end
 
+"""
+    inv(a::MultiValue{Tuple{D,D}})
+
+Inverse of a second order tensor.
+"""
 inv(a::MultiValue{Tuple{D,D}}) where D = TensorValue(inv(get_array(a)))
 # those still have better perf than the D=2,3 specialization below
 inv(a::AbstractSymTensorValue{D}) where D = SymTensorValue(inv(get_array(a)))
@@ -652,15 +700,27 @@ end
 ###############################################################
 
 """
+    meas(a::MultiValue{Tuple{D}})
+    meas(a::MultiValue{Tuple{1,D2}})
+
+Euclidean norm of a vector.
 """
 meas(a::MultiValue{Tuple{D}}) where D = sqrt(inner(a,a))
+
+"""
+    meas(J::MultiValue{Tuple{D1,D2}})
+
+Returns the absolute `D1`-dimensional volume of the parallelepiped
+formed by the rows of `J`, that is `sqrt(det(J⋅Jᵀ))`, or `abs(det(J))` if `D1`=`D2`.
+This is used to compute the contribution of the Jacobian matrix `J` of a changes of variables in integrals.
+"""
 meas(a::MultiValue{Tuple{D,D}}) where D = abs(det(a))
 #meas( ::TensorValue{0,D,T}) where {T,D} = one(T)
 #meas( ::MultiValue{Tuple{0,0},T}) where {T} = one(T)
 
 function meas(v::MultiValue{Tuple{1,D}}) where D
   t = VectorValue(v.data)
-  sqrt(t ⋅ t)
+  meas(t)
 end
 
 function meas(v::MultiValue{Tuple{2,3}})
@@ -668,7 +728,7 @@ function meas(v::MultiValue{Tuple{2,3}})
   n2 = v[1,3]*v[2,1] - v[1,1]*v[2,3]
   n3 = v[1,1]*v[2,2] - v[1,2]*v[2,1]
   n = VectorValue(n1,n2,n3)
-  sqrt(n ⋅ n)
+  meas(n)
 end
 
 function meas(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
@@ -676,6 +736,12 @@ function meas(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
   sqrt(det(Jt⋅J))
 end
 
+"""
+    norm(u::MultiValue{Tuple{D}})
+    norm(u::MultiValue{Tuple{D1,D2}})
+
+Euclidean (2-)norm of `u`, namely `sqrt(inner(u,u))`.
+"""
 @inline norm(u::MultiValue{Tuple{D}}) where D = sqrt(inner(u,u))
 @inline norm(u::MultiValue{Tuple{D1,D2}}) where {D1,D2} = sqrt(inner(u,u))
 @inline norm(u::MultiValue{Tuple{0},T}) where T = sqrt(zero(T))
@@ -702,12 +768,22 @@ end
 # Trace
 ###############################################################
 
+"""
+    tr(v::MultiValue{Tuple{D1,D2}})
+
+Return the trace of a second order tensor, defined by `0` if `D1`≠`D2`, and `Σᵢ vᵢᵢ` else.
+"""
 @generated function tr(v::MultiValue{Tuple{D,D}}) where D
   str = join([" v[$i,$i] +" for i in 1:D ])
   Meta.parse(str[1:(end-1)])
 end
 tr(::SymTracelessTensorValue{D,T}) where {D,T} = zero(T)
 
+"""
+    tr(v::MultiValue{Tuple{D1,D1,D2}}) -> ::VectorValue{D2}
+
+Return a vector of length `D2` of traces computed on the first two indices: `resⱼ = Σᵢ vᵢᵢⱼ`.
+"""
 @generated function tr(v::MultiValue{Tuple{A,A,B}}) where {A,B}
   lis = LinearIndices((A,A,B))
   str = ""
@@ -768,6 +844,10 @@ transpose(a::AbstractSymTensorValue) = a
 ###############################################################
 
 """
+    symmetric_part(v::MultiValue{Tuple{D,D}})::AbstractSymTensorValue
+
+Return the symmetric part of second order tensor, that is `½(v + vᵀ)`.
+Return `v` if  `v isa AbstractSymTensorValue`.
 """
 @generated function symmetric_part(v::MultiValue{Tuple{D,D}}) where D
     str = "("

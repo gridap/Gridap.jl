@@ -3,7 +3,11 @@
 ###############################################################
 
 """
-Type representing a second-order tensor
+    TensorValue{D1,D2,T,L} <: MultiValue{Tuple{D1,D2},T,2,L}
+
+Type representing a second-order `D1`×`D2` tensor. It must hold `L` = `D1`*`D2`.
+
+If only `D1` or no dimension parameter is given to the constructor, `D1`=`D2` is assumed.
 """
 struct TensorValue{D1,D2,T,L} <: MultiValue{Tuple{D1,D2},T,2,L}
     data::NTuple{L,T}
@@ -117,6 +121,11 @@ change_eltype(::TensorValue{D1,D2,T1,L},::Type{T2}) where {D1,D2,T1,T2,L} = chan
 
 get_array(arg::TensorValue{D1,D2,T}) where {D1,D2,T} = convert(SMatrix{D1,D2,T},arg)
 
+"""
+    diagonal_tensor(v::VectorValue{D,T}) -> ::TensorValue{D,D,T}
+
+Return a diagonal `D`×`D` tensor with diagonal containing the elements of `v`.
+"""
 @generated function diagonal_tensor(v::VectorValue{D,T}) where {D,T}
   s = ["zero(T), " for i in 1:(D*D)]
   for i in 1:D

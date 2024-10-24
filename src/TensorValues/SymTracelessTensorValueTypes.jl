@@ -3,10 +3,13 @@
 ###############################################################
 
 """
-Type representing a traceless symmetric second-order tensor,
-used to model the Q tensor in nematic liquid cristals
+    SymTracelessTensorValue{D,T,L} <: AbstractSymTensorValue{D,T,L}
+    QTensorValue{D,T,L}
 
-The last diagonal value is determined by minus the sum of the other and musn't be provided
+Type representing a symetric second-order `D`×`D` tensor with zero trace. It must hold `L` = `D`(`D`+1)/2.
+This type is used to model the Q-tensor order parameter in nematic liquid cristals.
+
+The constructor determines the value of index (`D`,`D`) as minus the sum of the other diagonal values, so it value musn't be provided. The constructor thus expects the `L`-1 components of indices (i,j) for 1 ≤ i ≤ `D`-1 and  i ≤ j ≤ `D`.
 """
 struct SymTracelessTensorValue{D,T,L} <: AbstractSymTensorValue{D,T,L}
   data::NTuple{L,T}
@@ -31,6 +34,9 @@ end
   Meta.parse("($str)")
 end
 
+"""
+Alias for [`SymTracelessTensorValue`](@ref).
+"""
 const QTensorValue = SymTracelessTensorValue
 
 ###############################################################

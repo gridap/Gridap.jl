@@ -2,12 +2,20 @@
 # SymTensorValue Type
 ###############################################################
 """
-Abstract type representing any symmetric second-order tensor
+    AbstractSymTensorValue{D,T,L} <: MultiValue{Tuple{D,D},T,2,L}
+
+Abstract type representing any symmetric second-order `D`×`D` tensor, with symmetry ij↔ji.
+
+See also [`SymTensorValue`](@ref), [`SymTracelessTensorValue`](@ref).
 """
 abstract type AbstractSymTensorValue{D,T,L} <: MultiValue{Tuple{D,D},T,2,L} end
 
 """
-Type representing a symmetric second-order tensor (with D(D-1)/2 independant components)
+    SymTensorValue{D,T,L} <: AbstractSymTensorValue{D,T,L}
+
+Type representing a symmetric second-order `D`×`D` tensor. It must hold `L` = `D`(`D`+1)/2.
+
+It is constructed by providing the components of index (i,j) for 1 ≤ i ≤ j ≤ `D`.
 """
 struct SymTensorValue{D,T,L} <: AbstractSymTensorValue{D,T,L}
     data::NTuple{L,T}
