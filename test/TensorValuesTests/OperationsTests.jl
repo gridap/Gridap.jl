@@ -1,5 +1,6 @@
 module OperationsTests
 
+using Test: Error
 using Test
 using Gridap.TensorValues
 using Gridap.Arrays
@@ -15,6 +16,12 @@ b = VectorValue(1,3,3)
 @test (a == b) == false
 @test (a >= b) == false
 @test (a > b) == false
+
+@test (a < a) == false
+@test (a <= a) == true
+@test (a == a) == true
+@test (a >= a) == true
+@test (a > a) == false
 
 @test VectorValue(1,2,3) == VectorValue(1.0,2.0,3.0)
 @test VectorValue(1,2,3) == VectorValue(1+0im, 2+0im, 3+0im)
@@ -32,6 +39,11 @@ b = VectorValue(2,1,6)
 @test a!=b
 @test [a,a] == [a,a]
 @test [a,a] ≈ [a,a]
+
+c = TensorValue(1,2,3,4)
+
+@test_throws ErrorException (a < c)
+@test_throws ErrorException (a <= c)
 
 # Addition / subtraction
 

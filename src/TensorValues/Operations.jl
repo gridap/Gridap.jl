@@ -30,6 +30,7 @@ function isless(a::MultiValue{Tuple{L}},b::MultiValue{Tuple{L}}) where L
 end
 
 isless(a::Number,b::MultiValue) = all(isless.(a, b.data))
+isless(a::MultiValue,b::MultiValue) = @unreachable "Comparison is not defined between tensor of order greater than 1"
 
 ###############################################################
 # Addition / subtraction
