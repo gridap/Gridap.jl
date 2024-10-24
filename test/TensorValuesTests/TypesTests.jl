@@ -457,12 +457,67 @@ m = mutable(v)
 @test m == get_array(v)
 @test isa(m,MMatrix)
 
+v = SymTensorValue{2}(1,2,3)
+m = mutable(v)
+@test m == get_array(v)
+@test isa(m,MMatrix)
+
+v = SymTracelessTensorValue{2}(1,2)
+m = mutable(v)
+@test m == get_array(v)
+@test isa(m,MMatrix)
+
+v = ThirdOrderTensorValue{2,1,3}(1:6...)
+m = mutable(v)
+@test m == get_array(v)
+@test isa(m,MArray)
+
+v = SymFourthOrderTensorValue{2}(1:9...)
+@test_throws ErrorException mutable(v) #notimplemented
+
 M = Mutable(VectorValue{3,Int})
 @test M == MVector{3,Int}
 m = zero(M)
 v = VectorValue(m)
 @test isa(v,VectorValue{3,Int})
+M2 = Mutable(v)
+@test M == M2
 
+M = Mutable(TensorValue{3,3,Int})
+@test M == MMatrix{3,3,Int}
+m = zero(M)
+v = TensorValue(m)
+@test isa(v,TensorValue{3,3,Int})
+M2 = Mutable(v)
+@test M == M2
+
+M = Mutable(SymTensorValue{3,Int})
+@test M == MMatrix{3,3,Int}
+m = zero(M)
+v = SymTensorValue(m)
+@test isa(v,SymTensorValue{3,Int})
+M2 = Mutable(v)
+@test M == M2
+
+M = Mutable(SymTracelessTensorValue{3,Int})
+@test M == MMatrix{3,3,Int}
+m = zero(M)
+v = SymTracelessTensorValue(m)
+@test isa(v,SymTracelessTensorValue{3,Int})
+M2 = Mutable(v)
+@test M == M2
+
+M = Mutable(ThirdOrderTensorValue{3,1,2,Int})
+@test M == MArray{Tuple{3,1,2},Int}
+m = zero(M)
+v = ThirdOrderTensorValue(m)
+@test isa(v,ThirdOrderTensorValue{3,1,2,Int})
+M2 = Mutable(v)
+@test M == M2
+
+@test_throws ErrorException Mutable(SymFourthOrderTensorValue{2,Int}) # @notimplemented
+
+@test_throws ErrorException Mutable(MultiValue) # @abstractmethod
 
 @test num_components(Int) == 1
 @test num_components(Float64) == 1

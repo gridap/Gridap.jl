@@ -27,6 +27,17 @@ end
 change_eltype(::Type{<:Number},::Type{T}) where {T} = T
 change_eltype(::Number,::Type{T2}) where {T2} = change_eltype(Number,T2)
 
+Mutable(::Type{MultiValue}) = @abstractmethod
+Mutable(::MultiValue) = Mutable(MultiValue)
+mutable(a::MultiValue) = @abstractmethod
+
+"""
+    num_components(::Type{<:Number})
+    num_components(a::Number)
+
+Total number of components of a `Number` or `MultiValue`, that is 1 for scalars
+and the product of the size dimensions for a `MultiValue`. This is the same as `length`.
+"""
 num_components(::Type{<:Number}) = 1
 num_components(::Number) = num_components(Number)
 num_components(T::Type{<:MultiValue}) = @unreachable "$T type is too abstract to count its components, provide a (parametric) concrete type"

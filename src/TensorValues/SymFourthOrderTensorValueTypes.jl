@@ -97,6 +97,10 @@ end
 rand(rng::AbstractRNG,::Random.SamplerType{<:SymFourthOrderTensorValue{D,T,L}}) where {D,T,L} =
   SymFourthOrderTensorValue{D,T}(Tuple(rand(rng, SVector{L,T})))
 
+Mutable(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T} = @notimplemented
+Mutable(::SymFourthOrderTensorValue{D,T}) where {D,T} = Mutable(SymFourthOrderTensorValue{D,T})
+mutable(a::SymFourthOrderTensorValue{D}) where D = @notimplemented
+
 change_eltype(::Type{SymFourthOrderTensorValue{D,T1}},::Type{T2}) where {D,T1,T2} = SymFourthOrderTensorValue{D,T2}
 change_eltype(::Type{SymFourthOrderTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymFourthOrderTensorValue{D,T2,L}
 change_eltype(::SymFourthOrderTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} = change_eltype(SymFourthOrderTensorValue{D,T1,L},T2)
