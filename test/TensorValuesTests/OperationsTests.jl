@@ -548,6 +548,8 @@ k = TensorValue(1,2,3,4)
 c = outer(e,k)
 @test c == ThirdOrderTensorValue{2,2,2}(10, 20, 20, 40, 30, 60, 40, 80)
 
+@test_throws ErrorException outer(k,c) # @notimplemented
+
 @test tr(c) == VectorValue(50,110)
 
 # Cross product
@@ -570,6 +572,9 @@ a = VectorValue(4.0,1.0)
 b = VectorValue(3.0,-2.0)
 @test cross(a, b) == -11.0
 
+a = VectorValue(4.0,1.0)
+b = VectorValue(3.0,-2.0,1.0)
+@test_throws ErrorException cross(a, b)
 # Linear Algebra
 
 t = TensorValue(10,2,30,4,5,6,70,8,9)
@@ -597,6 +602,19 @@ t = TensorValue(10)
 t = TensorValue(1,4,-1,1)
 @test det(t) == det(TensorValue(get_array(t)))
 @test inv(t) == inv(TensorValue(get_array(t)))
+
+t = TensorValue(1:16...)
+t += one(t)
+@test det(t) == det(TensorValue(get_array(t)))
+@test inv(t) == inv(TensorValue(get_array(t)))
+
+q = SymTracelessTensorValue(1,2)
+@test det(q) == det(TensorValue(get_array(q)))
+@test inv(q) == SymTracelessTensorValue(inv(get_array(q)))
+
+t = TensorValue{2,3}(1:6...)
+@test_throws ErrorException det(t)
+@test_throws ErrorException inv(t)
 
 # Measure
 

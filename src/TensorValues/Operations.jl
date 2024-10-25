@@ -631,7 +631,7 @@ end
 
 Cross product of 2D and 3D vector.
 """
-cross(a::MultiValue,b::MultiValue) = error("Cross product only defined for R2 and R3 vectors")
+cross(a::MultiValue,b::MultiValue) = error("Cross product only defined for R2 and R3 vectors of same dimension")
 
 ###############################################################
 # Linear Algebra
@@ -640,9 +640,10 @@ cross(a::MultiValue,b::MultiValue) = error("Cross product only defined for R2 an
 """
     det(a::MultiValue{Tuple{D,D},T})
 
-Determinent of second order tensors.
+Determinent of square second order tensors.
 """
 det(a::MultiValue{Tuple{D,D}}) where {D} = det(get_array(a))
+det(a::MultiValue)= @unreachable "det undefined for this tensor shape: $(size(a))"
 
 det(a::MultiValue{Tuple{1,1}}) = a[1]
 
@@ -666,8 +667,8 @@ end
 Inverse of a second order tensor.
 """
 inv(a::MultiValue{Tuple{D,D}}) where D = TensorValue(inv(get_array(a)))
-# those still have better perf than the D=2,3 specialization below
-inv(a::AbstractSymTensorValue{D}) where D = SymTensorValue(inv(get_array(a)))
+
+# this has better perf than the D=2,3 specialization below
 inv(a::SymTracelessTensorValue{2}) = SymTracelessTensorValue(inv(get_array(a)))
 
 function inv(a::MultiValue{Tuple{1,1}})
