@@ -702,9 +702,16 @@ b = a'
 @test b == TensorValue(1,3,2,4)
 @test a⋅b == TensorValue(10,14,14,20)
 
+a = TensorValue(1+0im,2-im,3,4+2im)
+b = a'
+@test adjoint(a) == b
+@test b == TensorValue(1,3,2+im,4-2im)
+@test a⋅b == TensorValue(10,14+5im,14-5im,25)
+
 a = TensorValue(1,2,3,4)
 b = a'
 @test transpose(a) == b
+@test transpose(a) == adjoint(a)
 @test b == TensorValue(1,3,2,4)
 @test a⋅b == TensorValue(10,14,14,20)
 
@@ -718,6 +725,12 @@ sa = SymTensorValue(1,2,3,5,6,9)
 sb = sa'
 @test transpose(sa) == sb
 @test sb == SymTensorValue(1,2,3,5,6,9)
+@test sa⋅sb == TensorValue(get_array(sa))⋅TensorValue(get_array(sb))
+
+sa = SymTracelessTensorValue(1,2,3,5,6)
+sb = sa'
+@test adjoint(sa) == sb
+@test sb == SymTracelessTensorValue(1,2,3,5,6)
 @test sa⋅sb == TensorValue(get_array(sa))⋅TensorValue(get_array(sb))
 
 u = VectorValue(1.0,2.0)
