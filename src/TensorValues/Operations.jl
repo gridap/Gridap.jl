@@ -179,10 +179,14 @@ function (/)(a::SymTracelessTensorValue,b::Number)
 end
 
 const _err =  " with number is undefined for traceless tensors"
-function -(::SymTracelessTensorValue,::Number) error("Addition"   *_err) end
-function +(::SymTracelessTensorValue,::Number) error("Subtraction"*_err) end
-function -(::Number,::SymTracelessTensorValue) error("Addition"   *_err) end
-function +(::Number,::SymTracelessTensorValue) error("Subtraction"*_err) end
+function +(::SymTracelessTensorValue,::Number)     error("Addition"   *_err) end
+function -(::SymTracelessTensorValue,::Number)     error("Subtraction"*_err) end
+function +(::Number,::SymTracelessTensorValue)     error("Addition"   *_err) end
+function -(::Number,::SymTracelessTensorValue)     error("Subtraction"*_err) end
+function +(::SymTracelessTensorValue,::MultiValue) error("Addition"   *_err) end
+function -(::SymTracelessTensorValue,::MultiValue) error("Subtraction"*_err) end
+function +(::MultiValue,::SymTracelessTensorValue) error("Addition"   *_err) end
+function -(::MultiValue,::SymTracelessTensorValue) error("Subtraction"*_err) end
 
 @inline function _eltype(op,r,a,b)
   eltype(r)

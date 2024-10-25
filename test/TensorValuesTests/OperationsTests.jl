@@ -203,6 +203,43 @@ c = b - a
 r = TensorValue(-4,-4,-3,9)
 @test c==r
 
+v = VectorValue(1,2)
+t = TensorValue(1,2,3,4)
+s = SymTensorValue(1,2,3)
+q = SymTracelessTensorValue(1,2)
+r = ThirdOrderTensorValue(1:8...)
+f = SymFourthOrderTensorValue(1:9...)
+
+@test_throws ErrorException v+t
+@test_throws ErrorException r+v
+@test_throws ErrorException r-f
+@test_throws ErrorException f-v
+@test_throws ErrorException v-s
+@test_throws ErrorException q+v
+@test_throws ErrorException v+q
+@test_throws ErrorException v-q
+@test_throws ErrorException q-v
+@test_throws ErrorException q+0
+@test_throws ErrorException 0+q
+@test_throws ErrorException 0-q
+@test_throws ErrorException q-0
+
+# Multiplication / division
+
+@test_throws ErrorException v*t
+@test_throws ErrorException r*v
+@test_throws ErrorException r/f
+@test_throws ErrorException f/v
+@test_throws ErrorException v/s
+@test_throws ErrorException q*v
+@test_throws ErrorException v*q
+@test_throws ErrorException q*s
+@test_throws ErrorException s*q
+@test_throws ErrorException s*s
+@test_throws ErrorException q*q
+@test_throws ErrorException v/q
+@test_throws ErrorException q/v
+
 # Matrix Division
 
 a = VectorValue(1,2,3)
