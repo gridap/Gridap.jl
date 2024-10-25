@@ -493,6 +493,10 @@ c = qt ⊙ qt2
 @test isa(c,Int)
 @test c == inner(TensorValue(get_array(qt)),TensorValue(get_array(qt2)))
 
+@test_throws ErrorException inner(a,t)
+@test_throws ErrorException inner(s,a)
+@test_throws ErrorException inner(a,q)
+
 # Reductions
 
 a = VectorValue(1,2,3)
@@ -723,7 +727,7 @@ I = one(SymFourthOrderTensorValue{2,Int})
 @test I[2,2,2,2] == 1
 
 @test I ⊙ ε == ε
-#@test I : ε == ε
+@test ε ⊙ I == ε
 
 a = TensorValue(1,2,3,4)
 b = I ⊙ a

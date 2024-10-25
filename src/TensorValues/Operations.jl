@@ -345,7 +345,7 @@ inner(a::Number,b::Number) = a*b
 Inner product of two tensors, that is the full contraction along each indices. The size `S` of `a` and `b` must match.
 """
 function inner(a::MultiValue, b::MultiValue)
-  @notimplemented
+  @notimplemented "Sizes of tensors must match."
 end
 
 @generated function inner(a::MultiValue{S}, b::MultiValue{S}) where S
