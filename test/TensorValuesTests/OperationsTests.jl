@@ -493,6 +493,11 @@ c = qt ⊙ qt2
 @test isa(c,Int)
 @test c == inner(TensorValue(get_array(qt)),TensorValue(get_array(qt2)))
 
+t1 = TensorValue{2,3}(1:6...)
+t2 = TensorValue{2,3}(10:15...)
+@test inner(t1,t1) == 91
+@test double_contraction(t1,t2) == inner(t1,t2)
+
 @test_throws ErrorException inner(a,t)
 @test_throws ErrorException inner(s,a)
 @test_throws ErrorException inner(a,q)
@@ -785,8 +790,10 @@ odot_contraction_array = 1*a[:,1,1] + 2*a[:,1,2] + 3*a[:,1,3] + 2*a[:,2,1] +
 v  = VectorValue(1:2...)
 t1 = TensorValue(1:4...)
 t2 = TensorValue(1:9...)
+s4 = SymFourthOrderTensorValue(1:9...)
 @test_throws ErrorException double_contraction(t1,v)
 @test_throws DimensionMismatch double_contraction(t1,t2)
+@test_throws ErrorException double_contraction(t1,s4) # @notimplemented
 
 Sym4TensorIndexing = [1111, 1121, 1131, 1122, 1132, 1133, 2111, 2121, 2131, 2122, 2132, 2133,
                       3111, 3121, 3131, 3122, 3132, 3133, 2211, 2221, 2231, 2222, 2232, 2233,
@@ -952,6 +959,18 @@ t1_double_t2 = t1 ⋅² t2
 @test v23 == (t1_double_t2)[2,3]
 @test v33 == (t1_double_t2)[3,3]
 
+# a_k = b_ij*c_ijk
+t1 = TensorValue{3,2}(1:6...)
+t2 = ThirdOrderTensorValue{3,2,4}(1:24...)
+v1 = sum(t1[i,j]*t2[i,j,1] for i in 1:3 for j in 1:2);
+v2 = sum(t1[i,j]*t2[i,j,2] for i in 1:3 for j in 1:2);
+v3 = sum(t1[i,j]*t2[i,j,3] for i in 1:3 for j in 1:2);
+v4 = sum(t1[i,j]*t2[i,j,4] for i in 1:3 for j in 1:2);
+t1_double_t2 = t1 ⋅² t2
+@test v1 == (t1_double_t2)[1]
+@test v2 == (t1_double_t2)[2]
+@test v3 == (t1_double_t2)[3]
+@test v4 == (t1_double_t2)[4]
 
 # a_il = b_ij*c_jl
 v1 = [1 2 3
