@@ -107,6 +107,6 @@ partition = (3,3)
 model = CartesianDiscreteModel(domain,partition,isperiodic=(false,true))
 reffe = ReferenceFE(lagrangian,Float64,1)
 V = FESpace(model,reffe)
-@test isa(V.metadata, FESPaces.CellConformity)
+@test isa(V.metadata, FESpaces.CellConformity)
 
 end # module
