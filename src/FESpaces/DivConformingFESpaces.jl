@@ -135,8 +135,7 @@ function return_cache(
   db = MomentBasedDofBasis(nodes,nf_moments,nf_nodes)
   face_moments = [ similar(i,VectorValue{Dp,et})  for i in nf_moments ]
 
-  cache = (db.nodes, db.face_nodes, nf_moments, face_moments)
-  cache
+  return db.nodes, db.face_nodes, nf_moments, face_moments
 end
 
 function evaluate!(
@@ -147,7 +146,7 @@ function evaluate!(
   sign_flip::AbstractVector{Bool}
 )
   nodes, nf_nodes, nf_moments, face_moments = cache
-  face_own_dofs=get_face_own_dofs(reffe)
+  face_own_dofs = get_face_own_dofs(reffe)
   for face in 1:length(face_moments)
     nf_moments_face   = nf_moments[face]
     face_moments_face = face_moments[face]

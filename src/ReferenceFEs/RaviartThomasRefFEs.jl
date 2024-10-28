@@ -164,7 +164,6 @@ function _RT_face_moments(p, fshfs, c_fips, fcips, fwips, phi)
   change_ips = lazy_map(evaluate,change,fcips)
 
   cvals = [ _broadcast(typeof(n),n,J.*b) for (n,b,J) in zip(fns,cvals,change_ips)]
-
   return cvals
 end
 
@@ -229,27 +228,6 @@ function compute_chebyshev_basis(::Type{T},p::ExtrusionPolytope{D},orders) where
   extrusion = Tuple(p.extrusion)
   terms = _monomial_terms(extrusion,orders)
   ChebyshevPolynomialBasis{D}(T,orders,terms)
-end
-
-function compute_lagrangian_rt_basis(D,et,order)
-  P  = get_dof_basis(LagrangianRefFE(et,SEGMENT,order)).nodes
-  DP = get_dof_basis(LagrangianRefFE(et,SEGMENT,order-1)).nodes
-  nodes1d = map(I -> (I[1] == I[2]) ? P : DP, CartesianIndices((D,D)))
-
-  S = Tuple(map(k -> Tuple(map(length,nodes1d[k,:])),1:D))
-  nnodes = sum(map(prod,S))
-  nodes = Vector{VectorValue{D,et}}(undef,nnodes)
-  k = 1
-  for d in 1:D
-    Sk = S[d]
-    for I in CartesianIndices(Sk)
-      nodes[k] = VectorValue(map(l -> nodes1d[d,l][I[l]].data[1], 1:D))
-      k += 1
-    end
-  end
-
-  dof_to_comp = vcat(map(k -> fill(k,prod(S[k])), 1:D)...)
-  dof_to_node = Base.OneTo(nnodes)
 end
 
 function _RT_cell_moments(p, cbasis, ccips, cwips)
