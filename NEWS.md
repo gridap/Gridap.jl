@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added Barycentric refinement rule in 2D and 3D. Added Simplexify refinement rule. Since PR[#1024](https://github.com/gridap/Gridap.jl/pull/1024).
 - Added names to vector and tensor components in VTK exports, to avoid Paraview's automatic (sometimes wrong) guesses. See `TensorValues.indep_components_names`. Since PR[#1038](https://github.com/gridap/Gridap.jl/pull/1038).
 
+### Changed
+
+- Conforming FESpaces now keep track of their `CellConformity` info, within the `metadata` field. Since PR[#1042](https://github.com/gridap/Gridap.jl/pull/1042).
+
 ## [0.18.6] - 2024-08-29
 
 ### Fixed
