@@ -71,7 +71,8 @@ function CLagrangianFESpace(
     dirichlet_dof_tag,
     dirichlet_cells,
     ntags,
-    glue)
+    glue
+  )
 
   space
 end
