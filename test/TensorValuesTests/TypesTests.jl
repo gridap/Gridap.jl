@@ -57,6 +57,15 @@ t = TensorValue{2,2,Int}(1,2.0,3,4)
 @test isa(t,TensorValue{2,2,Int})
 @test convert(SMatrix{2,2,Int},t) == [1 3;2 4]
 
+a = [11.0 21.0; 12.0 22.0]
+@test isa(a,AbstractArray{Float64,2})
+t = convert(TensorValue{2,2,Float64},a)
+@test  t == TensorValue{2,2,Float64,3}(11.0, 12.0, 21.0, 22.0)
+m = convert(MMatrix{2,2,Float64},t)
+@test m == MMatrix{2}(11.0, 12.0, 21.0, 22.0)
+u = convert(NTuple{4,Float64},t)
+@test u == tuple(11.0, 12.0, 21.0, 22.0)
+
 # Constructors (SymTensorValue)
 
 s = SymTensorValue( (11,21,22) )
@@ -103,10 +112,43 @@ s = SymTensorValue{2,Int}(11,21.0,22)
 @test isa(s,SymTensorValue{2,Int})
 @test convert(SMatrix{2,2,Int},s) == [11.0 21.0;21.0 22.0]
 
+a = [11.0 21.0; NaN 22.0]
+@test isa(a,AbstractArray{Float64,2})
+@test convert(SymTensorValue{2,Float64},a) == SymTensorValue{2,Float64,3}(11.0, 21.0, 22.0)
+
 # Constructors (SymTracelessTensorValue)
+q_none = SymTracelessTensorValue{0, Int64, 0}()
+q = SymTracelessTensorValue()
+@test q == q_none
+q = SymTracelessTensorValue{0}()
+@test q == q_none
+q = SymTracelessTensorValue{0}()
+@test q == q_none
+q = SymTracelessTensorValue(Tuple{}())
+@test q == q_none
+q = SymTracelessTensorValue{0}(Tuple{}())
+@test q == q_none
+
+q_zero = SymTracelessTensorValue{1,Int}(NTuple{0,Int}())
+q = SymTracelessTensorValue{1}(Tuple{}())
+@test q == q_zero
+q = SymTracelessTensorValue{1,Int}(Tuple{}())
+@test q == q_zero
+
+q = rand(SymTracelessTensorValue{0,Int})
+@test eltype(q) == Int
+@test eltype(typeof(q)) == Int
 
 q = SymTracelessTensorValue( (11,21) )
 @test isa(q,SymTracelessTensorValue{2,Int})
+@test convert(SMatrix{2,2,Int},q) == [11 21;21 -11]
+
+q = SymTracelessTensorValue{2,Int,3}( (11,21) )
+@test isa(q,SymTracelessTensorValue{2,Int,3})
+@test convert(SMatrix{2,2,Int},q) == [11 21;21 -11]
+
+q = SymTracelessTensorValue{2,Int,3}(11,21)
+@test isa(q,SymTracelessTensorValue{2,Int,3})
 @test convert(SMatrix{2,2,Int},q) == [11 21;21 -11]
 
 q = SymTracelessTensorValue(11,21)
@@ -156,6 +198,15 @@ q = SymTracelessTensorValue{2}(11,21.0)
 q = SymTracelessTensorValue{2,Int}(11,21.0)
 @test isa(q,SymTracelessTensorValue{2,Int})
 @test convert(SMatrix{2,2,Int},q) == [11.0 21.0;21.0 -11.0]
+
+a = [11.0 21.0; NaN NaN]
+@test isa(a,AbstractArray{Float64,2})
+t = convert(SymTracelessTensorValue{2,Float64},a)
+@test  t == SymTracelessTensorValue{2,Float64,3}(11.0, 21.0)
+m = convert(MMatrix{2,2,Float64},t)
+@test m == MMatrix{2}(11.0, 21.0, 21.0, -11.0)
+u = convert(NTuple{3,Float64},t)
+@test u == tuple(11.0, 21.0, -11.0)
 
 # Constructors (SymFourthOrderTensorValue)
 
@@ -284,30 +335,50 @@ g = VectorValue((1.0,2,3.0,4))
 @test isa(g,VectorValue{4,Float64})
 @test convert(SVector{4,Float64},g) == [1,2,3,4]
 
+a = [1.0, 2.0]
+@test isa(a,AbstractArray{Float64,1})
+t = convert(VectorValue{2,Float64},a)
+@test  t == VectorValue{2,Float64}(1.0, 2.0)
+m = convert(MVector{2,Float64},t)
+@test m == MVector{2}(1.0, 2.0)
+u = convert(NTuple{2,Float64},t)
+@test u == tuple(1.0, 2.0)
 
 # Initializers
 
 z = zero(TensorValue{3,3,Int,9})
+z2= zero(z)
+@test z == z2
 @test isa(z,TensorValue{3,3,Int,9})
 @test convert(SMatrix{3,3,Int},z) == zeros(Int,(3,3))
 
 z = zero(SymTensorValue{3,Int})
+z2= zero(z)
+@test z == z2
 @test isa(z,SymTensorValue{3,Int,6})
 @test convert(SMatrix{3,3,Int},z) == zeros(Int,(3,3))
 
 z = zero(SymTracelessTensorValue{3,Int})
+z2= zero(z)
+@test z == z2
 @test isa(z,SymTracelessTensorValue{3,Int,6})
 @test convert(SMatrix{3,3,Int},z) == zeros(Int,(3,3))
 
 z = zero(ThirdOrderTensorValue{3,3,3,Int,27})
+z2= zero(z)
+@test z == z2
 @test isa(z,ThirdOrderTensorValue{3,3,3,Int,27})
 @test Tuple(z) == Tuple(zeros(Int,(27)))
 
 z = zero(SymFourthOrderTensorValue{2,Int})
+z2= zero(z)
+@test z == z2
 @test isa(z,SymFourthOrderTensorValue{2,Int,9})
 @test Tuple(z) == Tuple(zeros(Int,(9)))
 
 z = zero(VectorValue{3,Int})
+z2= zero(z)
+@test z == z2
 @test isa(z,VectorValue{3,Int})
 @test convert(SVector{3,Int},z) == zeros(Int,3)
 
