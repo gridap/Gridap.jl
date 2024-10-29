@@ -79,6 +79,15 @@ u_ten(x) = TensorValue( x[1]^2 + x[2], 4*x[1] - x[2]^2, -x[1]^2 - x[2], -4*x[1] 
                                   -2*x[1],-one(x[2]),-4*one(x[1]), + 2*x[2] )
 Δu_ten(x) = TensorValue( 2, -2, -2, 2 )
 
+u_ten23(x) = TensorValue{2,3}( x[1]^2 + x[2], 4*x[1] - x[2]^2,
+                              -x[1]^2 - x[2],-4*x[1] + x[2]^2,
+                               x[1]^2 + x[2], 4*x[1] - x[2]^2)
+∇u_ten23(x) = ThirdOrderTensorValue{2,2,3}(
+                                   2*x[1], one(x[2]), 4*one(x[1]), - 2*x[2],
+                                  -2*x[1],-one(x[2]),-4*one(x[1]), + 2*x[2],
+                                   2*x[1], one(x[2]), 4*one(x[1]), - 2*x[2],)
+Δu_ten23(x) = TensorValue{2,3}( 2, -2, -2, 2, 2, -2)
+
 u_sten(x)  = SymTensorValue( x[1]^2 + x[2], 4*x[1] - x[2]^2, -4*x[1] + x[2]^2 )
 ∇u_sten(x) = ThirdOrderTensorValue( 2*x[1],      one(x[2]), 4*one(x[1]), - 2*x[2],
                                     4*one(x[1]),-2*x[2],   -4*one(x[1]), + 2*x[2] )
@@ -88,6 +97,9 @@ u_qten(x)  = SymTracelessTensorValue( x[1]^3 + 2x[2]^3, 5*x[1]^3 - 7x[2]^3)
 ∇u_qten(x) = ThirdOrderTensorValue( 3x[1]^2,  6x[2]^2, 15x[1]^2, -21x[2]^2,
                                    15x[1]^2,-21x[2]^2, -3x[1]^2,  -6x[2]^2)
 Δu_qten(x) = SymTracelessTensorValue( 6x[1] + 12x[2], 30x[1] - 42x[2] )
+
+u_ten3(x)  = ThirdOrderTensorValue{2,1,2}( x[1]^2 + x[2], 4*x[1] - x[2]^2, -x[1]^2 - x[2], -4*x[1] + x[2]^2 )
+Δu_ten3(x) = ThirdOrderTensorValue{2,1,2}( 2, -2, -2, 2 )
 
 xs = [ Point(1.,1.), Point(2.,0.), Point(0.,3.), Point(-1.,3.)]
 for x in xs
@@ -103,6 +115,11 @@ for x in xs
   @test (∇⋅u_ten)(x)  == tr(∇u_ten(x))
   @test  Δ(u_ten)(x)  == (∇⋅∇u_ten)(x)
 
+  @test  ∇(u_ten23)(x)  == ∇u_ten23(x)
+  @test  Δ(u_ten23)(x)  == Δu_ten23(x)
+  @test (∇⋅u_ten23)(x)  == tr(∇u_ten23(x))
+  @test  Δ(u_ten23)(x)  == (∇⋅∇u_ten23)(x)
+
   @test  ∇(u_sten)(x) == ∇u_sten(x)
   @test  Δ(u_sten)(x) == Δu_sten(x)
   @test (∇⋅u_sten)(x) == tr(∇u_sten(x))
@@ -114,6 +131,8 @@ for x in xs
   @test (∇⋅u_qten)(x) == tr(∇u_qten(x))
  #@test  Δ(u_qten)(x) == (∇⋅∇u_qten)(x)
   @test  get_array(Δ(u_qten)(x)) == get_array((∇⋅∇u_qten)(x))
+
+  @test  Δ(u_ten3)(x)  == Δu_ten3(x)
 end
 
 u(x) = VectorValue( x[1]^2 + 2*x[2]^2, -x[1]^2 )
