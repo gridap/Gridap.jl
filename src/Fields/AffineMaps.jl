@@ -1,7 +1,7 @@
 
 struct AffineMap <: Map end
 
-function return_cache(::AffineMap,G::TensorValue{D1,D2,T,L},y0::Point{D2,T},x::Point{D1,T})
+function return_cache(::AffineMap,G::TensorValue{D1,D2},y0::Point{D2},x::Point{D1}) where {D1,D2}
   nothing
 end
 
@@ -10,9 +10,6 @@ function evaluate!(
 ) where {D1,D2}
   x⋅G + y0
 end
-
-struct InverseAffineMap <: Map end
-
 
 
 """
