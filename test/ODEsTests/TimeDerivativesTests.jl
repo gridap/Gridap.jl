@@ -96,7 +96,7 @@ f1(t) = x -> SymTracelessTensorValue(x[1] * t,  x[2] * t^2)
 ∂tf1(t) = x -> SymTracelessTensorValue(x[1], 2 * x[2] * t)
 
 for (f, ∂tf) in ((f1, ∂tf1),)
-  dtf(t) = x -> SymTensorValue(ForwardDiff.derivative(t -> get_array(f(t)(x)), t))
+  dtf(t) = x -> SymTracelessTensorValue(ForwardDiff.derivative(t -> get_array(f(t)(x)), t))
 
   tv = rand(Float64)
   xv = Point(rand(Float64, 2)...)
