@@ -405,6 +405,19 @@ v = VectorValue(m)
 @test num_components(SymTensorValue(1,2,3)) == 4
 @test num_components(SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)) == 16
 
+@test indep_components_names(VectorValue{3}) == ["X","Y","Z"]
+@test indep_components_names(VectorValue{4}) == ["1","2","3","4"]
+@test indep_components_names(TensorValue{2,2}) == ["XX","XY","YX","YY"]
+@test indep_components_names(TensorValue{2,4}) == ["11","12","13","14","21","22","23","24",]
+@test indep_components_names(SymTensorValue{2}) == ["XX","XY","YY"]
+@test indep_components_names(SymTensorValue{4}) == ["11","12","13","14","22","23","24","33","34","44"]
+@test indep_components_names(ThirdOrderTensorValue{2,2,1}) == ["XXX","XYX","YXX","YYX"]
+@test indep_components_names(ThirdOrderTensorValue{1,4,1}) == ["111","121","131","141"]
+@test indep_components_names(SymFourthOrderTensorValue{2}) == [
+ "XXXX", "XXXY", "XXYY", "XYXX", "XYXY", "XYYY", "YYXX", "YYXY", "YYYY"
+]
+@test indep_components_names(MultiValue{Tuple{3,4},Int,2,5}) == ["1","2","3","4","5"]
+
 a = VectorValue(1,2,3,4)
 @test change_eltype(a,Float64) == VectorValue{4,Float64}
 
