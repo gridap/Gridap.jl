@@ -218,7 +218,7 @@ function _generate_node_to_dof_glue_component_major(
   node_and_comp_to_dof = Vector{T}(undef,nnodes)
   nfree_dofs = 0
   ndiri_dofs = 0
-  m = zeros(Int32, ncomps)
+  m = zero(MVector{ncomps, Int32})
   for (node,tag) in enumerate(node_to_tag)
     if tag == UNSET
       for comp in 1:ncomps
@@ -245,7 +245,7 @@ function _generate_node_to_dof_glue_component_major(
         end
       end
     end
-    node_and_comp_to_dof[node] = T(m...)
+    node_and_comp_to_dof[node] = Tuple(m)
   end
   glue = NodeToDofGlue(
    free_dof_to_node,

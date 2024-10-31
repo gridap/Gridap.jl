@@ -74,7 +74,7 @@ function _generate_dof_layout_node_major(::Type{T},nnodes::Integer) where T<:Mul
   dof_to_comp = zeros(Int,ndofs)
   dof_to_node = zeros(Int,ndofs)
   node_and_comp_to_dof = Vector{V}(undef,nnodes)
-  m = zeros(Int,ncomps)
+  m = zero(MVector{ncomps,Int})
   for node in 1:nnodes
     for comp in 1:ncomps
       o = nnodes*(comp-1)
@@ -83,7 +83,7 @@ function _generate_dof_layout_node_major(::Type{T},nnodes::Integer) where T<:Mul
       dof_to_node[dof] = node
       m[comp] = dof
     end
-    node_and_comp_to_dof[node] = V(m...)
+    node_and_comp_to_dof[node] = Tuple(m)
   end
   (dof_to_node, dof_to_comp, node_and_comp_to_dof)
 end

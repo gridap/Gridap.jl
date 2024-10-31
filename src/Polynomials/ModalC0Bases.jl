@@ -393,7 +393,7 @@ end
 
 @inline function _set_value_mc0!(v::AbstractVector{V},s::T,k,l) where {V,T}
   ncomp = num_indep_components(V)
-  m = zeros(T,ncomp)
+  m = zero(MVector{ncomp,T})
   z = zero(T)
   js = 1:ncomp
   for j in js
@@ -402,7 +402,7 @@ end
     end
     @inbounds m[j] = s
     i = k+l*(j-1)
-    @inbounds v[i] = V(m...)
+    @inbounds v[i] = Tuple(m)
   end
   k+1
 end

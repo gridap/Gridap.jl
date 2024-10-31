@@ -406,16 +406,16 @@ function _evaluate_nd!(
 end
 
 function _set_value!(v::AbstractVector{V},s::T,k) where {V,T}
-  ncomp = num_indep_components(V)
-  m = zeros(T,ncomp)
+  ncomp::Int = num_indep_components(V)
+  m = zero(MVector{ncomp,T})
   z = zero(T)
-  js = 1:ncomp
+  js = SOneTo(ncomp)#1:ncomp
   for j in js
     for i in js
       @inbounds m[i] = z
     end
     m[j] = s
-    v[k] = V(m...)
+    v[k] = Tuple(m)
     k += 1
   end
   k
