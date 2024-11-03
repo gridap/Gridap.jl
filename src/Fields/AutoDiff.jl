@@ -78,7 +78,7 @@ function divergence(f::Function,x::Point)
   divergence(f,x,return_value(f,x))
 end
 
-function divergence(f::Function,x::Point{D},fx::VectorValue{D}) where D
+function divergence(f::Function,x::Point,fx::VectorValue)
   tr(gradient(f,x,fx))
 end
 
@@ -92,7 +92,7 @@ function divergence(f::Function,x::Point{D},fx::S) where S<:MultiValue{Tuple{D,A
   TensorValue{A,B,T}( ntuple(k -> sum(i-> a[(k-1)*D+i,i], 1:D),A*B) )
 end
 
-function divergence(f::Function,x::Point{2},fx::TensorValue{2,2})
+function divergence(f::Function,x::Point,fx::TensorValue{2,2})
   g(x) = SVector(f(x).data)
   a = ForwardDiff.jacobian(g,get_array(x))
   VectorValue(
@@ -101,7 +101,7 @@ function divergence(f::Function,x::Point{2},fx::TensorValue{2,2})
   )
 end
 
-function divergence(f::Function,x::Point{3},fx::TensorValue{3,3})
+function divergence(f::Function,x::Point,fx::TensorValue{3,3})
   g(x) = SVector(f(x).data)
   a = ForwardDiff.jacobian(g,get_array(x))
   VectorValue(
