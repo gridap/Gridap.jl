@@ -8,6 +8,7 @@ module ReferenceFEs
 using Test
 using DocStringExtensions
 using LinearAlgebra
+using StaticArrays
 using Combinatorics
 using FillArrays
 using ..Gridap
