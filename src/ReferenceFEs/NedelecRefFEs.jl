@@ -317,6 +317,8 @@ function _broadcast_cross(::Type{T},n,b) where T
   return c
 end
 
+# Moves bi values from 2D to 3D, by multiplying by a 3x2 matrix Tm
+# Tm = [1.0 0.0; 0.0 1.0; 0.0 0.0] for instance
 function _broadcast_extend(::Type{T},Tm,b) where T
   c = Array{T}(undef,size(b))
   for (ii,i) in enumerate(b)
