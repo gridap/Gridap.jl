@@ -12,15 +12,15 @@ config_kwargs = (;
 )
 
 if haskey(ENV,"BM_TARGET") # Provided by CI workflow
-  target = BenchmarkConfig(config_kwargs..., id = ENV["BM_TARGET"])
+  target = BenchmarkConfig(;config_kwargs..., id = ENV["BM_TARGET"])
 else # Default to the current commit
-  target = BenchmarkConfig(config_kwargs...)
+  target = BenchmarkConfig(;config_kwargs...)
 end
 
 if haskey(ENV,"BM_BASE") # Provided by CI workflow
-  base = BenchmarkConfig(config_kwargs..., id = ENV["BM_BASE"])
+  base = BenchmarkConfig(;config_kwargs..., id = ENV["BM_BASE"])
 else # Default to master
-  base = BenchmarkConfig(config_kwargs..., id = "master")
+  base = BenchmarkConfig(;config_kwargs..., id = "master")
 end
 
 results = judge(Gridap, target, base)
