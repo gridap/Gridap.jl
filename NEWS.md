@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added `AbstractSymTensorValue`, an abstract type for second order symmetric tensors, and `SymTracelessTensorValue` (aliased to `QTensorValue`), a type for traceless symmetric tensors. `SymTensorValue` is now subtype of `AbstractSymTensorValue`.
     - A convergence test for Poisson problem of `QTensorValue` unknown field validates the implementation.
 
+ ### Fixed
+
+ - Fixed constructor of RungeKutta with only one solver. Since PR[#999](https://github.com/gridap/Gridap.jl/pull/999).
+
 ## [0.18.6] - 2024-08-29
 
 ### Fixed
