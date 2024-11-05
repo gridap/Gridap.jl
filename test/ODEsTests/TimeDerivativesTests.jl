@@ -6,6 +6,7 @@ using ForwardDiff
 
 using Gridap
 using Gridap.ODEs
+using Gridap.TensorValues
 
 # First time derivative, scalar-valued
 f1(t) = x -> 5 * x[1] * x[2] + x[2]^2 * t^3
@@ -72,6 +73,41 @@ for (f, ∂tf) in ((f1, ∂tf1),)
   @test F(tv)(xv) ≈ f(tv)(xv)
   @test ∂t(F)(tv)(xv) ≈ ∂tf(tv)(xv)
 end
+
+# First time derivative, symmetric tensor-valued
+f1(t) = x -> SymTensorValue(x[1] * t, x[1] * x[2], x[2] * t^2)
+∂tf1(t) = x -> SymTensorValue(x[1], zero(x[1]), 2 * x[2] * t)
+
+for (f, ∂tf) in ((f1, ∂tf1),)
+  dtf(t) = x -> SymTensorValue(ForwardDiff.derivative(t -> get_array(f(t)(x)), t))
+
+  tv = rand(Float64)
+  xv = Point(rand(Float64, 2)...)
+  @test ∂t(f)(tv)(xv) ≈ ∂tf(tv)(xv)
+  @test ∂t(f)(tv)(xv) ≈ dtf(tv)(xv)
+
+  F = TimeSpaceFunction(f)
+  @test F(tv)(xv) ≈ f(tv)(xv)
+  @test ∂t(F)(tv)(xv) ≈ ∂tf(tv)(xv)
+end
+
+# First time derivative, symmetric traceless tensor-valued
+f1(t) = x -> SymTracelessTensorValue(x[1] * t,  x[2] * t^2)
+∂tf1(t) = x -> SymTracelessTensorValue(x[1], 2 * x[2] * t)
+
+for (f, ∂tf) in ((f1, ∂tf1),)
+  dtf(t) = x -> SymTracelessTensorValue(ForwardDiff.derivative(t -> get_array(f(t)(x)), t))
+
+  tv = rand(Float64)
+  xv = Point(rand(Float64, 2)...)
+  @test ∂t(f)(tv)(xv) ≈ ∂tf(tv)(xv)
+  @test ∂t(f)(tv)(xv) ≈ dtf(tv)(xv)
+
+  F = TimeSpaceFunction(f)
+  @test F(tv)(xv) ≈ f(tv)(xv)
+  @test ∂t(F)(tv)(xv) ≈ ∂tf(tv)(xv)
+end
+
 
 # Spatial derivatives
 ft(t) = x -> x[1]^2 * t + x[2]

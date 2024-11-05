@@ -42,6 +42,20 @@ function Base.convert(::Type{Table{T,Vd,Vp}},table::Table{T,Vd,Vp}) where {T,Vd,
   table
 end
 
+function Base.view(a::Table,i::Integer)
+  pini = a.ptrs[i]
+  pend = a.ptrs[i+1]-1
+  return view(a.data,pini:pend)
+end
+
+function Base.view(a::Table,ids::UnitRange{<:Integer})
+  data_range = a.ptrs[ids.start]:a.ptrs[ids.stop+1]-1
+  ptrs_range = ids.start:ids.stop+1
+  offset = a.ptrs[ids.start]-1
+  ptrs = lazy_map(p -> p - offset, view(a.ptrs,ptrs_range))
+  return Table(view(a.data,data_range),ptrs)
+end
+
 """
 """
 function identity_table(::Type{T},::Type{P},l::Integer) where {T,P}
@@ -270,7 +284,7 @@ function append_tables_locally(offsets::NTuple, tables::NTuple)
 
   first_table, = tables
 
-  @assert all( map(length,tables) .== length(first_table) ) "All tables must have the same length"
+  @check all( map(length,tables) .== length(first_table) ) "All tables must have the same length"
   ndata = sum( (length(table.data) for table in tables) )
 
   T = get_data_eltype(first_table)

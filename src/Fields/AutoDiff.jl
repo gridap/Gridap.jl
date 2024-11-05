@@ -59,6 +59,13 @@ function gradient(f::Function,x::Point,fx::VectorValue)
   TensorValue(transpose(ForwardDiff.jacobian(y->get_array(f(y)),get_array(x))))
 end
 
+# Implementation for all second order tensor values
+# Does not exploit possible symmetries
+function gradient(f::Function,x::Point{A},fx::S) where S<:MultiValue{Tuple{B,C}} where {A,B,C}
+  a = transpose(ForwardDiff.jacobian(y->get_array(f(y)),get_array(x)))
+  ThirdOrderTensorValue(reshape(a, (A,B,C)))
+end
+
 function gradient(f::Function,x::Point,fx::MultiValue)
   @notimplemented
 end
@@ -71,8 +78,18 @@ function divergence(f::Function,x::Point)
   divergence(f,x,return_value(f,x))
 end
 
-function divergence(f::Function,x::Point,fx)
+function divergence(f::Function,x::Point,fx::VectorValue)
   tr(gradient(f,x,fx))
+end
+
+function divergence(f::Function,x::Point{D},fx::S) where S<:MultiValue{Tuple{D,A},T} where {D,A,T}
+  a = ForwardDiff.jacobian(y->get_array(f(y)),get_array(x))
+  VectorValue{A,T}( ntuple(k -> sum(i-> a[(k-1)*D+i,i], 1:D),A) )
+end
+
+function divergence(f::Function,x::Point{D},fx::S) where S<:MultiValue{Tuple{D,A,B},T} where {D,A,B,T}
+  a = ForwardDiff.jacobian(y->get_array(f(y)),get_array(x))
+  TensorValue{A,B,T}( ntuple(k -> sum(i-> a[(k-1)*D+i,i], 1:D),A*B) )
 end
 
 function divergence(f::Function,x::Point,fx::TensorValue{2,2})
@@ -94,7 +111,7 @@ function divergence(f::Function,x::Point,fx::TensorValue{3,3})
    )
 end
 
-function divergence(f::Function,x::Point,fx::SymTensorValue{2})
+function divergence(f::Function,x::Point{2},fx::AbstractSymTensorValue{2})
   g(x) = SVector(f(x).data)
   a = ForwardDiff.jacobian(g,get_array(x))
   VectorValue(
@@ -103,7 +120,7 @@ function divergence(f::Function,x::Point,fx::SymTensorValue{2})
   )
 end
 
-function divergence(f::Function,x::Point,fx::SymTensorValue{3})
+function divergence(f::Function,x::Point{3},fx::AbstractSymTensorValue{3})
   g(x) = SVector(f(x).data)
   a = ForwardDiff.jacobian(g,get_array(x))
   VectorValue(
@@ -111,6 +128,10 @@ function divergence(f::Function,x::Point,fx::SymTensorValue{3})
     a[2,1]+a[4,2]+a[5,3],
     a[3,1]+a[5,2]+a[6,3],
    )
+end
+
+function divergence(f::Function,x::Point,fx::MultiValue)
+  @notimplemented
 end
 
 function curl(f::Function,x::Point)
@@ -125,11 +146,25 @@ function laplacian(f::Function,x::Point,fx::Number)
   tr(ForwardDiff.jacobian(y->ForwardDiff.gradient(f,y), get_array(x)))
 end
 
-function laplacian(f::Function,x::Point,fx::VectorValue)
-  A = length(x)
-  B = length(fx)
-  a = ForwardDiff.jacobian(y->transpose(ForwardDiff.jacobian(z->get_array(f(z)),y)), get_array(x))
-  tr(ThirdOrderTensorValue{A,A,B}(Tuple(transpose(a))))
+function laplacian(f::Function,x::Point{A},fx::VectorValue{B,T}) where {A,B,T}
+  a = MMatrix{A*B,A,T}(undef)
+  ForwardDiff.jacobian!(a, y->ForwardDiff.jacobian(z->get_array(f(z)),y), get_array(x))
+  VectorValue{B,T}( ntuple(k -> sum(i-> a[(i-1)*B+k,i], 1:A),B) )
+end
+
+function laplacian(f::Function,x::Point{A},fx::S) where S<:MultiValue{Tuple{B,C},T} where {A,B,C,T}
+  a = MMatrix{A*B*C,A,T}(undef)
+  ForwardDiff.jacobian!(a, y->ForwardDiff.jacobian(z->get_array(f(z)),y), get_array(x))
+  t = ntuple(k -> sum(i-> a[(i-1)*B*C+k,i], 1:A),B*C)
+  S(SMatrix{B,C}(t)) #Necessary cast to build e.g. symmetric tensor values
+end
+
+# Implementation for any third order tensor values
+function laplacian(f::Function,x::Point{A},fx::S) where S<:MultiValue{Tuple{B,C,D},T} where {A,B,C,D,T}
+  a = MMatrix{A*B*C*D,A,T}(undef)
+  ForwardDiff.jacobian!(a, y->ForwardDiff.jacobian(z->get_array(f(z)),y), get_array(x))
+  t = ntuple(k -> sum(i-> a[(i-1)*B*C*D+k,i], 1:A),B*C*D)
+  S(SArray{Tuple{B,C,D}}(t))
 end
 
 function laplacian(f::Function,x::Point,fx::MultiValue)

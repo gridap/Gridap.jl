@@ -8,8 +8,10 @@ module ReferenceFEs
 using Test
 using DocStringExtensions
 using LinearAlgebra
+using StaticArrays
 using Combinatorics
 using FillArrays
+using ..Gridap
 
 using Gridap.Helpers
 using Gridap.Arrays
@@ -45,6 +47,9 @@ import Base: ==
 
 export Polytope
 export ExtrusionPolytope
+export GeneralPolytope
+export Polygon
+export Polyhedron
 export get_extrusion
 export get_faces
 export get_dimranges
@@ -212,6 +217,8 @@ export strang
 include("Polytopes.jl")
 
 include("ExtrusionPolytopes.jl")
+
+include("GeneralPolytopes.jl")
 
 include("Dofs.jl")
 

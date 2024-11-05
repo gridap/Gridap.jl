@@ -121,14 +121,9 @@ function _time_derivative(T::Type{<:Real}, f, t, x)
   ForwardDiff.derivative(partial, t)
 end
 
-function _time_derivative(T::Type{<:VectorValue}, f, t, x)
+function _time_derivative(T::Type{<:MultiValue}, f, t, x)
   partial(t) = get_array(f(t)(x))
-  VectorValue(ForwardDiff.derivative(partial, t))
-end
-
-function _time_derivative(T::Type{<:TensorValue}, f, t, x)
-  partial(t) = get_array(f(t)(x))
-  TensorValue(ForwardDiff.derivative(partial, t))
+  T(ForwardDiff.derivative(partial, t))
 end
 
 ##########################################
