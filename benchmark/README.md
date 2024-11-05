@@ -10,6 +10,12 @@ The benchmarks are setup as a manual Github Actions workflow in `.github/workflo
 
 The workflow will has two inputs: `target` and `base`, which are the branches/tags/commits you want to compare. The workflow will run the benchmarks on the `target` branch and compare them with the `base` branch (`master` by default).
 
+You can also run the workflow using Github CLI and the following command:
+
+```bash
+gh workflow run benchmark.yml -f target=your_target_branch -f base=your_base_branch
+```
+
 ### Running Locally
 
 To run the benchmarks locally, you can have a look at the [documentation for `PkgBenchmark.jl`](https://juliaci.github.io/PkgBenchmark.jl/stable/run_benchmarks/).
