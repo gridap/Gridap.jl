@@ -10,6 +10,7 @@ using Test
 using FillArrays
 using SparseArrays
 using LinearAlgebra
+using StaticArrays
 using ForwardDiff
 
 using Gridap.Helpers

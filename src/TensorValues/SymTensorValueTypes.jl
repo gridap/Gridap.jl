@@ -1,11 +1,23 @@
 ###############################################################
 # SymTensorValue Type
 ###############################################################
+"""
+    AbstractSymTensorValue{D,T,L} <: MultiValue{Tuple{D,D},T,2,L}
+
+Abstract type representing any symmetric second-order `D`×`D` tensor, with symmetry ij↔ji.
+
+See also [`SymTensorValue`](@ref), [`SymTracelessTensorValue`](@ref).
+"""
+abstract type AbstractSymTensorValue{D,T,L} <: MultiValue{Tuple{D,D},T,2,L} end
 
 """
-Type representing a symmetric second-order tensor
+    SymTensorValue{D,T,L} <: AbstractSymTensorValue{D,T,L}
+
+Type representing a symmetric second-order `D`×`D` tensor. It must hold `L` = `D`(`D`+1)/2.
+
+It is constructed by providing the components of index (i,j) for 1 ≤ i ≤ j ≤ `D`.
 """
-struct SymTensorValue{D,T,L} <: MultiValue{Tuple{D,D},T,2,L}
+struct SymTensorValue{D,T,L} <: AbstractSymTensorValue{D,T,L}
     data::NTuple{L,T}
     function SymTensorValue{D,T}(data::NTuple{L,T}) where {D,T,L}
         @check L == D*(D+1)÷2
@@ -134,6 +146,7 @@ Mutable(::Type{<:SymTensorValue{D,T}}) where {D,T} = MMatrix{D,D,T}
 Mutable(::SymTensorValue{D,T}) where {D,T} = Mutable(SymTensorValue{D,T})
 mutable(a::SymTensorValue{D}) where D = MMatrix{D,D}(Tuple(get_array(a)))
 
+change_eltype(::Type{SymTensorValue{D,T1}},::Type{T2}) where {D,T1,T2} = SymTensorValue{D,T2}
 change_eltype(::Type{SymTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymTensorValue{D,T2,L}
 change_eltype(::SymTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} = change_eltype(SymTensorValue{D,T1,L},T2)
 
@@ -152,5 +165,24 @@ size(::SymTensorValue{D}) where {D} = size(SymTensorValue{D})
 length(::Type{<:SymTensorValue{D}}) where {D} = D*D
 length(::SymTensorValue{D}) where {D} = length(SymTensorValue{D})
 
+num_components(::Type{<:SymTensorValue}) = @unreachable "The dimension is needed to count components"
 num_components(::Type{<:SymTensorValue{D}}) where {D} = length(SymTensorValue{D})
 num_components(::SymTensorValue{D}) where {D} = num_components(SymTensorValue{D})
+
+num_indep_components(::Type{<:SymTensorValue})  = num_components(SymTensorValue)
+num_indep_components(::Type{<:SymTensorValue{D}}) where {D} = D*(D+1)÷2
+num_indep_components(::SymTensorValue{D}) where {D} = num_indep_components(SymTensorValue{D})
+
+###############################################################
+# VTK export (SymTensorValue)
+###############################################################
+
+function indep_components_names(::Type{<:AbstractSymTensorValue{D}}) where D
+  if D>3
+    return ["$i$j" for i in 1:D for j in i:D ]
+  else
+    c_name = ["X", "Y", "Z"]
+    return [c_name[i]*c_name[j] for i in 1:D for j in i:D ]
+  end
+end
+
