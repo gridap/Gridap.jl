@@ -108,6 +108,7 @@ end
 
 ############################################################################################
 # Constant basis: Basis for a tensor type
+# Another possible name would be "component basis
 
 constant_basis(T::Type{<:Real}) = [one(T)]
 function constant_basis(V::Type{<:MultiValue})
@@ -133,6 +134,13 @@ Open questions:
   - Do we want to keep having structures face -> data? I guess if we had more than a single 
     moment per face, we would aggregate them. 
   - Can we always determine the minimum integration order for each moment? 
+
+Current pains: 
+- ReferenceFEs is loaded before CellData, i.e we do NOT have access to the 
+  CellField machinery to compute the moments.
+- Most operations that are defined for CellFields are not 100% working for arrays of Fields, 
+  where we tend to use the Broadcasting + Operation machinery.
+  For example, ∇(φ) is explicitly deactivated in favor of Broadcasting(∇)(φ).
 """
 function MomentBasedReferenceFE(
   name::ReferenceFEName,
@@ -187,13 +195,7 @@ function MomentBasedReferenceFE(
   metadata = nothing
 
   return GenericRefFE{typeof(MomentBasedReffe(name))}(
-    n_dofs,
-    p,
-    prebasis,
-    dof_basis,
-    conformity,
-    metadata,
-    face_own_dofs
+    n_dofs, p, prebasis, dof_basis, conformity, metadata, face_own_dofs
   )
 end
 
@@ -208,10 +210,11 @@ function fmom_dot(φ,μ,ds)
 end
 
 function fmom_cross(φ,μ,ds)
-  n = get_normal(ds)
+  o = get_facet_orientations(ds.poly)[ds.face] # Why do we need this? Is this to avoid a sign map? 
+  n = o*get_normal(ds)
   E = get_extension(ds)
   Eμ = Broadcasting(Operation(⋅))(E,μ) # We have to extend the basis to 3D (see Nedelec)
-  φn = Broadcasting(Operation(×))(φ,n)
+  φn = Broadcasting(Operation(×))(n,φ)
   Broadcasting(Operation(⋅))(φn,Eμ)
 end
 
@@ -291,119 +294,4 @@ nd_dofs = get_dof_basis(nd_reffe)
 
 Mnd = evaluate(nd_dofs,prebasis)
 M = evaluate(dofs,prebasis)
-M == Mnd # This is because the get_facet_orientations hack in Nedelec... Why is it necessary? 
-
-############################################################################################
-
-#φ = MonomialBasis(VectorValue{2,Float64},QUAD,1)
-φ = ConstantField(VectorValue(ntuple(i -> 1.0, 2)))
-
-dc = FaceMeasure{2}(QUAD,1,2)
-mc = get_cell_map(dc)
-φc = transpose(Broadcasting(Operation(∘))(φ,mc))
-μc = MonomialBasis(VectorValue{2,Float64},QUAD,1)
-
-df = FaceMeasure{1}(QUAD,1,2)
-mf = get_cell_map(df)
-φf = transpose(Broadcasting(Operation(∘))(φ,mf))
-μf = MonomialBasis(Float64,SEGMENT,1)
-
-σc = cmom(φc,μc,dc)
-σf = fmom(φf,μf,df)
-
-vc = evaluate(σc,dc)
-vf = evaluate(σf,df)
-
-sum(vc, dims=1)
-
-
-
-"""
-List of issues: 
-
-- ReferenceFEs is loaded before CellData, i.e we do NOT have access to the 
-  CellField machinery to compute the moments.
-
-- Most operations that are defined for CellFields are not 100% working for arrays of Fields, 
-  where we tend to use the Broadcasting + Operation machinery.
-  For example, ∇(φ) is explicitly deactivated in favor of Broadcasting(∇)(φ).
-"""
-
-p = QUAD
-
-pts = [Point(0.0,0.0), Point(1.0,0.0), Point(1.0,1.0), Point(0.0,1.0)]
-
-φ = ReferenceFEs.MonomialBasis(Float64,p,1)
-Broadcasting(∇)(φ)
-
-
-evaluate(*,φ,φ)
-evaluate(+,φ,φ)
-evaluate(-,φ,φ)
-
-evaluate(evaluate(Broadcasting(+),φ,φ),pts)
-evaluate(Broadcasting(Operation(+))(φ,φ),pts)
-
-evaluate(evaluate(⋅,φ,φ),pts)
-evaluate(evaluate(Broadcasting(Operation(⋅)),φ,φ),pts)
-
-
-############################################################################################
-# Deprecated code
-
-function MomentBasedReferenceFE(
-  p::Polytope{D},
-  order::Int,
-  face_moments::AbstractVector{<:Union{Function,Nothing}},
-  face_basis::AbstractVector{<:Union{AbstractVector{<:Field},Nothing}}
-) where D
-  _face_moments = Vector{AbstractVector{<:Union{Function,Nothing}}}(undef, D+1)
-  _face_basis = Vector{AbstractVector{<:Union{AbstractVector{<:Field},Nothing}}}(undef, D+1)
-  for d in 0:D
-    _face_moments[d+1] = Fill(face_moments[d+1], num_faces(p,d))
-    _face_basis[d+1] = Fill(face_basis[d+1], num_faces(p,d))
-  end
-  MomentBasedReferenceFE(
-    p,
-    order,
-    _face_moments,
-    _face_basis
-    #[Fill(m,num_faces(p,d-1)) for (d,m) in enumerate(face_moments)],
-    #[Fill(b,num_faces(p,d-1)) for (d,b) in enumerate(face_basis)],
-  )
-end
-
-function MomentBasedReferenceFE(
-  p::Polytope{D},
-  order::Int,
-  face_moments::AbstractVector{<:AbstractVector{<:Union{Function,Nothing}}},
-  face_basis::AbstractVector{<:AbstractVector{<:Union{AbstractVector{<:Field},Nothing}}}
-) where D
-  @assert length(face_moments) == length(face_basis) == D+1
-  @assert all(length(face_moments[d+1]) == length(face_basis[d+1]) for d in 0:D)
-
-  d_to_face_to_coords = [Vector{Vector{Point{D}}}(undef, num_faces(p,d)) for d in 0:D]
-  d_to_face_to_vals = [Vector{Matrix{Float64}}(undef, num_faces(p,d)) for d in 0:D]
-  for d in 0:D
-    for face in 1:num_faces(p,d)
-      σ = face_moments[d+1][face]
-      μ = face_basis[d+1][face]
-
-      if !isnothing(σ)
-        @assert !isnothing(μ)
-        qdegree = order*get_order(μ)
-        ds = FaceMeasure{d}(p, face, qdegree)
-
-        fmap = get_cell_map(ds)
-        φ = Operation(∘)(ConstantField(VectorValue(ntuple(i -> 1.0, D))),fmap)
-        vals, coords = evaluate(σ(φ,μ,ds),ds)
-
-        d_to_face_to_coords[d+1][face] = evaluate(fmap,coords)
-        d_to_face_to_vals[d+1][face] = vals
-      end
-    end
-  end
-
-  return d_to_face_to_coords, d_to_face_to_vals
-end
-
+M == Mnd
