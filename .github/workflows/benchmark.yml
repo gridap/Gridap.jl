@@ -12,6 +12,7 @@ on:
         required: true
         default: 'master'
         type: string
+  pull_request:
 
 jobs:
   benchmark:
