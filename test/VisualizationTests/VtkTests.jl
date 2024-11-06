@@ -96,6 +96,7 @@ writevtk(trian,f,nsubcells=10, cellfields=[
   "v2"=>x->VectorValue(1,2),
   "v"=>x->VectorValue(1,2,3),
   "s"=>x->SymTensorValue(1.0,2.0,3.0),
+  "q"=>x->SymTracelessTensorValue(1.0,2.0),
   "c"=>x->SymFourthOrderTensorValue(1,2,3, 1,2,3, 1,2,3),
   "t"=>x->TensorValue(1,2,3,4),])
 
