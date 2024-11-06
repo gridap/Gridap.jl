@@ -41,6 +41,7 @@ using Gridap.Arrays: ∑; export ∑
 @publish TensorValues outer
 @publish TensorValues diagonal_tensor
 @publish TensorValues num_components
+@publish TensorValues num_indep_components
 using Gridap.TensorValues: ⊙; export ⊙
 using Gridap.TensorValues: ⊗; export ⊗
 

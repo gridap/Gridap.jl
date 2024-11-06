@@ -27,4 +27,10 @@ A = reinterpret(V)
 R = [1 1 1 1 1; 2 2 2 2 2; 3 3 3 3 3]
 @test A == R
 
+v = SymTracelessTensorValue(1,2)
+V = fill(v,5)
+A = reinterpret(V)
+R = [1 1 1 1 1; 2 2 2 2 2; -1 -1 -1 -1 -1]
+@test A == R
+
 end # module ReinterpretTests

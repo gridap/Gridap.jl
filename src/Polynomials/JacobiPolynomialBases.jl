@@ -9,7 +9,7 @@ struct JacobiPolynomialBasis{D,T} <: AbstractVector{JacobiPolynomial}
   end
 end
 
-@inline Base.size(a::JacobiPolynomialBasis{D,T}) where {D,T} = (length(a.terms)*num_components(T),)
+@inline Base.size(a::JacobiPolynomialBasis{D,T}) where {D,T} = (length(a.terms)*num_indep_components(T),)
 @inline Base.getindex(a::JacobiPolynomialBasis,i::Integer) = JacobiPolynomial()
 @inline Base.IndexStyle(::JacobiPolynomialBasis) = IndexLinear()
 
@@ -49,7 +49,7 @@ return_type(::JacobiPolynomialBasis{D,T}) where {D,T} = T
 function return_cache(f::JacobiPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = length(f.terms)*num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   r = CachedArray(zeros(T,(np,ndof)))
   v = CachedArray(zeros(T,(ndof,)))
@@ -60,7 +60,7 @@ end
 function evaluate!(cache,f::JacobiPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   r, v, c = cache
   np = length(x)
-  ndof = length(f.terms)*num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -82,7 +82,7 @@ function return_cache(
   f = fg.fa
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = length(f.terms)*num_components(V)
+  ndof = length(f)
   xi = testitem(x)
   T = gradient_type(V,xi)
   n = 1 + _maximum(f.orders)
@@ -101,7 +101,7 @@ function evaluate!(
   f = fg.fa
   r, v, c, g = cache
   np = length(x)
-  ndof = length(f.terms) * num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -124,7 +124,7 @@ function return_cache(
   f = fg.fa
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = length(f.terms)*num_components(V)
+  ndof = length(f)
   xi = testitem(x)
   T = gradient_type(gradient_type(V,xi),xi)
   n = 1 + _maximum(f.orders)
@@ -144,7 +144,7 @@ function evaluate!(
   f = fg.fa
   r, v, c, g, h = cache
   np = length(x)
-  ndof = length(f.terms) * num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -164,7 +164,7 @@ end
 # Optimizing evaluation at a single point
 
 function return_cache(f::JacobiPolynomialBasis{D,T},x::Point) where {D,T}
-  ndof = length(f.terms)*num_components(T)
+  ndof = length(f)
   r = CachedArray(zeros(T,(ndof,)))
   xs = [x]
   cf = return_cache(f,xs)
