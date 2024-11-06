@@ -177,6 +177,5 @@ gndat = ["g$i"=>gux[:,i] for i in 1:num_dofs(reffe)]
 d = mktempdir()
 f = joinpath(d, "nede_tet_1")
 writevtk(grid,f,nodaldata=vcat(ndat,gndat))
-rm(d,recursive=true)
 
 end # module

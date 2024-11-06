@@ -33,8 +33,6 @@ d = mktempdir()
 f = joinpath(d,"foo.json")
 to_json_file(foo,f)
 @test foo == from_json_file(Foo,f)
-rm(d,recursive=true)
-
 @test foo == from_json(Foo,JSON.json(foo))
 
 end # module
