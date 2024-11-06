@@ -26,16 +26,29 @@ function TrialFESpace(f::ZeroMeanFESpace)
   ZeroMeanFESpace(U,f.vol_i,f.vol)
 end
 
+# function FEFunction(f::ZeroMeanFESpace,free_values)
+#   msg = """
+#     This function should never be called for ZeroMeanFESpace. Please use 
+#     `FEFunction(f::ZeroMeanFESpace,free_values,dirichlet_values)` instead.
+#     Reason: 
+#       Without the fixed value (i.e the dirichlet_values), we cannot correctly 
+#       interpolate the free dofs within the space.
+#   """
+#   @unreachable msg
+# end
+# 
 function FEFunction(
   f::ZeroMeanFESpace,
   free_values::AbstractVector,
-  dirichlet_values::AbstractVector)
+  dirichlet_values::AbstractVector
+)
   c = _compute_new_fixedval(
     free_values,
     dirichlet_values,
     f.vol_i,
     f.vol,
-    f.space.dof_to_fix)
+    f.space.dof_to_fix
+  )
   fv = lazy_map(+,free_values,Fill(c,length(free_values)))
   dv = dirichlet_values .+ c
   FEFunction(f.space,fv,dv)
@@ -57,7 +70,16 @@ function _compute_new_fixedval(fv,dv,vol_i,vol,fixed_dof)
     c += fv[i-1]*vol_i[i]
   end
   c = -c/vol
-  c
+  return c
+end
+
+# This is required, otherwise we end up calling `FEFunction` with a fixed value of zero, 
+# which does not properly interpolate the function provided. 
+# With this change, we are interpolating in the unconstrained space and then
+# substracting the mean.
+function interpolate!(object,free_values,fs::ZeroMeanFESpace)
+  dirichlet_values = zero_dirichlet_values(fs)
+  interpolate_everywhere!(object,free_values,dirichlet_values,fs)
 end
 
 # Delegated functions

@@ -27,10 +27,10 @@ struct LagrangianDofBasis{P,V} <: AbstractVector{PointValue{P}}
   node_and_comp_to_dof::Vector{V}
 end
 
-Base.size(a::LagrangianDofBasis) = (length(a.nodes),)
-Base.axes(a::LagrangianDofBasis) = (axes(a.nodes,1),)
+Base.size(a::LagrangianDofBasis) = (length(a.dof_to_node),)
+Base.axes(a::LagrangianDofBasis) = (axes(a.dof_to_node,1),)
 # @santiagobadia : Not sure we want to create the monomial machinery
-Base.getindex(a::LagrangianDofBasis,i::Integer) = PointValue(a.nodes[i])
+Base.getindex(a::LagrangianDofBasis,i::Integer) = PointValue(a.nodes[a.dof_to_node[i]])
 Base.IndexStyle(::LagrangianDofBasis) = IndexLinear()
 
 # This one takes a basis and replaces the nodes
@@ -68,13 +68,13 @@ end
 
 # Node major implementation
 function _generate_dof_layout_node_major(::Type{T},nnodes::Integer) where T<:MultiValue
-  ncomps = num_components(T)
   V = change_eltype(T,Int)
+  ncomps = num_indep_components(T)
   ndofs = ncomps*nnodes
   dof_to_comp = zeros(Int,ndofs)
   dof_to_node = zeros(Int,ndofs)
-  node_and_comp_to_dof = zeros(V,nnodes)
-  m = zero(Mutable(V))
+  node_and_comp_to_dof = Vector{V}(undef,nnodes)
+  m = zero(MVector{ncomps,Int})
   for node in 1:nnodes
     for comp in 1:ncomps
       o = nnodes*(comp-1)
@@ -83,7 +83,7 @@ function _generate_dof_layout_node_major(::Type{T},nnodes::Integer) where T<:Mul
       dof_to_node[dof] = node
       m[comp] = dof
     end
-    node_and_comp_to_dof[node] = m
+    node_and_comp_to_dof[node] = Tuple(m)
   end
   (dof_to_node, dof_to_comp, node_and_comp_to_dof)
 end
@@ -113,8 +113,8 @@ function evaluate!(cache,b::LagrangianDofBasis,field)
   vals = evaluate!(cf,field,b.nodes)
   ndofs = length(b.dof_to_node)
   T = eltype(vals)
-  ncomps = num_components(T)
-  @check ncomps == num_components(eltype(b.node_and_comp_to_dof)) """\n
+  ncomps = num_indep_components(T)
+  @check ncomps == num_indep_components(eltype(b.node_and_comp_to_dof)) """\n
   Unable to evaluate LagrangianDofBasis. The number of components of the
   given Field does not match with the LagrangianDofBasis.
 
@@ -135,8 +135,8 @@ function _evaluate_lagr_dof!(c::AbstractVector,node_comp_to_val,node_and_comp_to
     comp_to_dof = node_and_comp_to_dof[node]
     comp_to_val = node_comp_to_val[node]
     for comp in 1:ncomps
-      dof = comp_to_dof[comp]
-      val = comp_to_val[comp]
+      dof = indep_comp_getindex(comp_to_dof,comp)
+      val = indep_comp_getindex(comp_to_val,comp)
       r[dof] = val
     end
   end
@@ -152,8 +152,8 @@ function _evaluate_lagr_dof!(c::AbstractMatrix,node_pdof_comp_to_val,node_and_co
     for pdof in 1:npdofs
       comp_to_val = node_pdof_comp_to_val[node,pdof]
       for comp in 1:ncomps
-        dof = comp_to_dof[comp]
-        val = comp_to_val[comp]
+        dof = indep_comp_getindex(comp_to_dof,comp)
+        val = indep_comp_getindex(comp_to_val,comp)
         r[dof,pdof] = val
       end
     end

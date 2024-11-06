@@ -1,7 +1,7 @@
 name = "Gridap"
 uuid = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
 authors = ["Santiago Badia <santiago.badia@monash.edu>", "Francesc Verdugo <f.verdugo.rojano@vu.nl>", "Alberto F. Martin <alberto.f.martin@anu.edu.au>"]
-version = "0.18.2"
+version = "0.18.6"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
@@ -21,6 +21,7 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
 NearestNeighbors = "b8a86587-4115-5ab1-83bc-aa920d37bbce"
 PolynomialBases = "c74db56a-226d-5e98-8bb0-a6049094aeea"
+Preferences = "21216c6a-2e73-6563-6e65-726566657250"
 QuadGK = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
@@ -32,6 +33,7 @@ WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
 [compat]
 AbstractTrees = "0.3.3, 0.4"
+Aqua = "0.8"
 BSON = "0.2.5, 0.3"
 BlockArrays = "0.12.12, 0.13, 0.14, 0.15, 0.16, 1"
 Combinatorics = "1.0.0"
@@ -41,20 +43,27 @@ FastGaussQuadrature = "0.4.2, 1"
 FileIO = "1.2.2, 1.3, 1.4"
 FillArrays = "0.8.4, 0.9, 0.10, 0.11, 0.12, 0.13, 1"
 ForwardDiff = "0.10.10"
-JLD2 = "0.1.11, 0.3, 0.4"
+JLD2 = "0.1.11, 0.3, 0.4, 0.5"
 JSON = "0.21.0"
 LineSearches = "7.0.1"
+LinearAlgebra = "1"
 NLsolve = "4.3.0"
 NearestNeighbors = "0.4.8"
 PolynomialBases = "0.4.12"
+Preferences = "1.4"
 QuadGK = "2.3.1, 2.4"
+Random = "1"
+SparseArrays = "1"
 SparseMatricesCSR = "0.6.4"
 StaticArrays = "0.12.1, 1.0"
+Statistics = "1"
+Test = "1"
 WriteVTK = "1.12.0"
 julia = "1.3"
 
 [extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Aqua", "Test"]

@@ -40,23 +40,32 @@ for (k,ti) in enumerate(t)
 end
 
 s = SymTensorValue{2}(11,21,22)
+q = SymTracelessTensorValue{2}(11,21)
 t = TensorValue(convert(SMatrix{2,2,Int},s))
+p = TensorValue(convert(SMatrix{2,2,Int},q))
 
-@test size(s) == (2,2)
-@test length(s) == 4
-@test lastindex(s) == length(s)
-@test s[end] == 22 
+@test size(s) == size(q) == (2,2)
+@test length(s) == length(q) == 4
+@test lastindex(s) == lastindex(q) == length(s)
+@test s[end] == 22
+@test q[end] == -11
 
 for (k,i) in enumerate(eachindex(t))
     @test s[i] == t[k]
 end
+for (k,i) in enumerate(eachindex(p))
+    @test q[i] == p[k]
+end
 
-@test s[2,1] == 21
-
-@test s[2] == 21
+@test s[2,1] == q[2,1] == 21
+@test s[2] == q[2] == 21
+@test q[1] == -q[4]
 
 for (k,si) in enumerate(t)
   @test si == s[k]
+end
+for (k,qi) in enumerate(p)
+  @test qi == q[k]
 end
 
 v = @SMatrix zeros(2,3)
