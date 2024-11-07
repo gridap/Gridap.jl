@@ -181,11 +181,11 @@ q = SymTracelessTensorValue{0,Int}()
 
 q = SymTracelessTensorValue{1,Int}( () )
 @test isa(q,SymTracelessTensorValue{1,Int})
-@test convert(SMatrix{1,1,Int},q) == [0;;]
+@test convert(SMatrix{1,1,Int},q) == zeros(Int,1,1)
 
 q = SymTracelessTensorValue{1,Int}()
 @test isa(q,SymTracelessTensorValue{1,Int})
-@test convert(SMatrix{1,1,Int},q) == [0;;]
+@test convert(SMatrix{1,1,Int},q) == zeros(Int,1,1)
 
 q = SymTracelessTensorValue(11,21.0)
 @test isa(q,SymTracelessTensorValue{2,Float64})
