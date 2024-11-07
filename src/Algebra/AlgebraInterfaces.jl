@@ -40,7 +40,7 @@ function allocate_vector(::Type{V},n::Integer) where V
   V(undef,n)
 end
 
-function allocate_vector(::Type{<:BlockVector{T,VV}},indices::BlockedUnitRange) where {T,VV}
+function allocate_vector(::Type{<:BlockVector{T,VV}},indices::AbstractBlockedUnitRange) where {T,VV}
   V = eltype(VV)
   mortar(map(ids -> allocate_vector(V,ids),blocks(indices)))
 end
