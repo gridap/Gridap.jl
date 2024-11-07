@@ -8,37 +8,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  test: # Main CI tests
     name: Tests ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      matrix:
+      matrix: # Main tests for linux
         version:
+          - '1.8'
+          - '1.9'
           - '1.10'
         os:
           - ubuntu-latest
-          - windows-latest
-          - macos-latest
         arch:
           - x64
           - x86
-          - aarch64
-        exclude: # Exclude some combinations
-          - os: ubuntu-latest
+        include: # Test macos/windows on latest LTS
+          - version: '1.10'
+            os: macos-latest
             arch: aarch64
-          - os: windows-latest
-            arch: aarch64
-          - os: macos-latest
-            arch: x64
-          - os: macos-latest
-            arch: x86
-        include: # Legacy support for old Julia versions
-          - version: '1.8'
-            os: ubuntu-latest
-            arch: x64
-          - version: '1.9'
-            os: ubuntu-latest
+          - version: '1.10'
+            os: windows-latest
             arch: x64
     steps:
       - uses: actions/checkout@v4
