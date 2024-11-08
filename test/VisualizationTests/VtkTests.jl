@@ -202,7 +202,4 @@ vtk_save(pvtk)
 pvtk = create_pvtk_file(Ω2,f; part=2, nparts=2,celldata=["u"=>rand(num_cells(Ω2))])
 vtk_save(pvtk)
 
-
-rm(d,recursive=true)
-
 end # module
