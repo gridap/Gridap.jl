@@ -18,7 +18,7 @@ struct MonomialBasis{D,T} <: AbstractVector{Monomial}
   end
 end
 
-Base.size(a::MonomialBasis{D,T}) where {D,T} = (length(a.terms)*num_components(T),)
+Base.size(a::MonomialBasis{D,T}) where {D,T} = (length(a.terms)*num_indep_components(T),)
 # @santiagobadia : Not sure we want to create the monomial machinery
 Base.getindex(a::MonomialBasis,i::Integer) = Monomial()
 Base.IndexStyle(::MonomialBasis) = IndexLinear()
@@ -122,7 +122,7 @@ function return_cache(f::MonomialBasis{D,T},x::AbstractVector{<:Point}) where {D
   zxi = zero(eltype(eltype(x)))
   Tp = typeof( zT*zxi*zxi + zT*zxi*zxi  )
   np = length(x)
-  ndof = length(f.terms)*num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   r = CachedArray(zeros(Tp,(np,ndof)))
   v = CachedArray(zeros(Tp,(ndof,)))
@@ -133,7 +133,7 @@ end
 function evaluate!(cache,f::MonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   r, v, c = cache
   np = length(x)
-  ndof = length(f.terms)*num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -157,7 +157,7 @@ function _return_cache(
   f = fg.fa
   @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = length(f.terms)*num_components(V)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   r = CachedArray(zeros(T,(np,ndof)))
   v = CachedArray(zeros(T,(ndof,)))
@@ -173,7 +173,7 @@ function _return_cache(
   TisbitsType::Val{false}) where {D,V,T}
 
   cache = _return_cache(fg,x,T,Val{true}())
-  z = CachedArray(zeros(eltype(T),D)) 
+  z = CachedArray(zeros(eltype(T),D))
   (cache...,z)
 end
 
@@ -197,7 +197,7 @@ function _evaluate!(
   r, v, c, g = cache
   z = zero(Mutable(VectorValue{D,eltype(T)}))
   np = length(x)
-  ndof = length(f.terms) * num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -222,7 +222,7 @@ function _evaluate!(
   f = fg.fa
   r, v, c, g, z = cache
   np = length(x)
-  ndof = length(f.terms) * num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -255,7 +255,7 @@ function return_cache(
   f = fg.fa
   @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = length(f.terms)*num_components(V)
+  ndof = length(f)
   xi = testitem(x)
   T = gradient_type(gradient_type(V,xi),xi)
   n = 1 + _maximum(f.orders)
@@ -275,7 +275,7 @@ function evaluate!(
   f = fg.fa
   r, v, c, g, h = cache
   np = length(x)
-  ndof = length(f.terms) * num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -406,15 +406,16 @@ function _evaluate_nd!(
 end
 
 function _set_value!(v::AbstractVector{V},s::T,k) where {V,T}
-  m = zero(Mutable(V))
+  ncomp::Int = num_indep_components(V)
+  m = zero(MVector{ncomp,T})
   z = zero(T)
-  js = eachindex(m)
+  js = SOneTo(ncomp)#1:ncomp
   for j in js
     for i in js
       @inbounds m[i] = z
     end
     m[j] = s
-    v[k] = m
+    v[k] = Tuple(m)
     k += 1
   end
   k
@@ -440,7 +441,7 @@ function _gradient_nd!(
     _evaluate_1d!(c,x,orders[d],d)
     _gradient_1d!(g,x,orders[d],d)
   end
-  
+
   o = one(T)
   k = 1
 
@@ -489,6 +490,40 @@ function _set_gradient!(
     end
     @inbounds v[k] = m
     k += 1
+  end
+  k
+end
+
+# Specialization for SymTensorValue and SymTracelessTensorValue,
+# necessary as long as outer(Point, V<:AbstractSymTensorValue)::G does not
+# return a tensor type that implements the appropriate symmetries of the
+# gradient (and hessian)
+function _set_gradient!(
+  v::AbstractVector{G},s,k,::Type{V}) where {V<:AbstractSymTensorValue{D},G} where D
+
+  T = eltype(s)
+  m = zero(Mutable(G))
+  z = zero(T)
+
+  is_traceless = V <: SymTracelessTensorValue
+  skip_last_diagval = is_traceless ? 1 : 0    # Skid V_DD if traceless
+
+  for c in 1:(D-skip_last_diagval) # Go over cols
+    for r in c:D                   # Go over lower triangle, current col
+      for i in CartesianIndices(m)
+        @inbounds m[i] = z
+      end
+      for i in CartesianIndices(s)
+        @inbounds m[i,r,c] = s[i]
+        if (r!=c)
+          @inbounds m[i,c,r] = s[i]
+        elseif is_traceless # V_rr contributes negatively to V_DD (tracelessness)
+          @inbounds m[i,D,D] = -s[i]
+        end
+      end
+      @inbounds v[k] = m
+      k += 1
+    end
   end
   k
 end

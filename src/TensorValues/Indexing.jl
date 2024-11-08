@@ -14,7 +14,7 @@ function getindex(arg::TensorValue{D},i::Integer,j::Integer) where D
   arg.data[index]
 end
 
-function getindex(arg::SymTensorValue{D},i::Integer,j::Integer) where D
+function getindex(arg::AbstractSymTensorValue{D},i::Integer,j::Integer) where D
   index = _2d_sym_tensor_linear_index(D,i,j)
   arg.data[index]
 end
@@ -31,7 +31,7 @@ end
 
 getindex(arg::VectorValue, ci::CartesianIndex{1})              = getindex(arg,ci[1])
 getindex(arg::TensorValue,ci::CartesianIndex{2})               = getindex(arg,ci[1],ci[2])
-getindex(arg::SymTensorValue,ci::CartesianIndex{2})            = getindex(arg,ci[1],ci[2])
+getindex(arg::AbstractSymTensorValue,ci::CartesianIndex{2})    = getindex(arg,ci[1],ci[2])
 getindex(arg::ThirdOrderTensorValue,ci::CartesianIndex{3})     = getindex(arg,ci[1],ci[2],ci[3])
 getindex(arg::SymFourthOrderTensorValue,ci::CartesianIndex{4}) = getindex(arg,ci[1],ci[2],ci[3],ci[4])
 
@@ -44,7 +44,7 @@ getindex(arg::ThirdOrderTensorValue, i::Integer) = arg.data[i]
 
 data_index(::Type{<:VectorValue},i) = i
 data_index(::Type{<:TensorValue{D}},i,j) where D = _2d_tensor_linear_index(D,i,j)
-data_index(::Type{<:SymTensorValue{D}},i,j) where D = _2d_sym_tensor_linear_index(D,i,j)
+data_index(::Type{<:AbstractSymTensorValue{D}},i,j) where D = _2d_sym_tensor_linear_index(D,i,j)
 data_index(::Type{<:ThirdOrderTensorValue{D1,D2}},i,j,k) where {D1,D2} = _3d_tensor_linear_index(D1,D2,i,j,k)
 data_index(::Type{<:SymFourthOrderTensorValue{D}},i,j,k,l) where D = _4d_sym_tensor_linear_index(D,i,j,k,l)
 

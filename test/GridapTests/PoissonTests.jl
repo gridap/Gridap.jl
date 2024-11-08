@@ -2,6 +2,7 @@ module PoissonTests
 
 using Test
 using Gridap
+using Gridap.TensorValues
 import Gridap: ∇
 #using LinearAlgebra
 
@@ -60,7 +61,30 @@ vector_data[:valuetype] = VectorValue{2,Float64}
 vector_data[:u] = u_vec
 vector_data[:f] = f_vec
 
-for data in [ vector_data, scalar_data ]
+u_ten(x) = TensorValue( x[1]^2 + x[2], 4*x[1] - x[2]^2, 2x[2]^2 - 3x[1], -.5x[1]^2 + x[2] )
+f_ten(x) = - Δ(u_ten)(x)
+tensor_data = Dict{Symbol,Any}()
+tensor_data[:valuetype] = TensorValue{2,2,Float64}
+tensor_data[:u] = u_ten
+tensor_data[:f] = f_ten
+
+
+u_sten(x) = SymTensorValue( x[1]^2 + x[2], 4*x[1] - x[2]^2, 2x[2]^2 - 3x[1])
+f_sten(x) = - Δ(u_sten)(x)
+stensor_data = Dict{Symbol,Any}()
+stensor_data[:valuetype] = SymTensorValue{2,Float64}
+stensor_data[:u] = u_sten
+stensor_data[:f] = f_sten
+
+
+u_qten(x) = SymTracelessTensorValue( x[1]^2 + x[2], 4*x[1] - x[2]^2)
+f_qten(x) = - Δ(u_qten)(x)
+qtensor_data = Dict{Symbol,Any}()
+qtensor_data[:valuetype] = SymTracelessTensorValue{2,Float64}
+qtensor_data[:u] = u_qten
+qtensor_data[:f] = f_qten
+
+for data in [scalar_data, vector_data, tensor_data, stensor_data, qtensor_data]
 
   T = data[:valuetype]
   u = data[:u]
@@ -81,7 +105,7 @@ for data in [ vector_data, scalar_data ]
     l(v) =
       ∫( v⊙f )*dΩ +
       ∫( v⊙(nn⋅∇(uh)) )*dΓn +
-      ∫( (γ/h)*v⊙uh - (nd⋅∇(v))⊙u )*dΓd
+      ∫( (γ/h)*v⊙uh - (nd⋅∇(v))⊙uh )*dΓd
 
     op = AffineFEOperator(a,l,U,V)
     uh = solve(op)

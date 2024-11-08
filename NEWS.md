@@ -5,13 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.18.7] - 2024-10-8
 
 ### Added
 
 - Added MacroFElements. These are defined as having the basis/dof-basis of a FESpace created on top of a RefinementRule. Since PR[#1024](https://github.com/gridap/Gridap.jl/pull/1024).
 - Added Barycentric refinement rule in 2D and 3D. Added Simplexify refinement rule. Since PR[#1024](https://github.com/gridap/Gridap.jl/pull/1024).
 - Added names to vector and tensor components in VTK exports, to avoid Paraview's automatic (sometimes wrong) guesses. See `TensorValues.indep_components_names`. Since PR[#1038](https://github.com/gridap/Gridap.jl/pull/1038).
+- Misc improvements of the `TensorValues` module:  See `TensorValues.indep_components_names`. Since PR[#1040](https://github.com/gridap/Gridap.jl/pull/1040).
+  - Documented all symbols exported by the module
+  - Improved and added test for some API function of `MultiValue` (general `diag` of 2nd order tensors, fixed `convert` of 3rd order tensors to SArray, avoid unwanted fallback of `num_components` on `MultiValue` types with undefined dimensions, more autodiff tests, better `double_contraction` API (prevent invalid operation giving indexing errors and enable valid operations)).
+  - Added a clear separation between the physical components access (`getindex`, `num_components`) and the numerical access to the stored independent components (`num_indep_components`, `indep_comp_getindex`) to enable using symmetric tensor types as unknown in FE Spaces.
+  - Implemented automatic differentiation `gradient` and `laplacian` for second order tensor, and `divergence` for third order tensors.
+  - Added `AbstractSymTensorValue`, an abstract type for second order symmetric tensors, and `SymTracelessTensorValue` (aliased to `QTensorValue`), a type for traceless symmetric tensors. `SymTensorValue` is now subtype of `AbstractSymTensorValue`.
+  - A convergence test for Poisson problem of `QTensorValue` unknown field validates the implementation.
+- Added support for benchmarking, through `PkgBenchmark.jl`. Since PR[#1039](https://github.com/gridap/Gridap.jl/pull/1039).
+- Added code quality tests, through `Aqua.jl`. Since PR[#1039](https://github.com/gridap/Gridap.jl/pull/1039).
+
+### Fixed
+
+- Fixed constructor of RungeKutta with only one solver. Since PR[#999](https://github.com/gridap/Gridap.jl/pull/999).
 
 ### Changed
 

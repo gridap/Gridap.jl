@@ -107,6 +107,4 @@ to_json_file(model2,filename)
 model3 = DiscreteModelFromFile(filename)
 test_discrete_model(model3)
 
-rm(d,recursive=true)
-
 end # module

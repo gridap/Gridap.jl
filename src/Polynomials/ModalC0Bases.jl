@@ -11,11 +11,12 @@ struct ModalC0Basis{D,T,V} <: AbstractVector{ModalC0BasisFunction}
     terms::Vector{CartesianIndex{D}},
     a::Vector{Point{D,V}},
     b::Vector{Point{D,V}}) where {D,T,V}
+
     new{D,T,V}(orders,terms,a,b)
   end
 end
 
-@inline Base.size(a::ModalC0Basis{D,T,V}) where {D,T,V} = (length(a.terms)*num_components(T),)
+@inline Base.size(a::ModalC0Basis{D,T,V}) where {D,T,V} = (length(a.terms)*num_indep_components(T),)
 @inline Base.getindex(a::ModalC0Basis,i::Integer) = ModalC0BasisFunction()
 @inline Base.IndexStyle(::ModalC0Basis) = IndexLinear()
 
@@ -101,7 +102,7 @@ return_type(::ModalC0Basis{D,T,V}) where {D,T,V} = T
 function return_cache(f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {D,T,V}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = length(f.terms)*num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   r = CachedArray(zeros(T,(np,ndof)))
   v = CachedArray(zeros(T,(ndof,)))
@@ -112,7 +113,7 @@ end
 function evaluate!(cache,f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {D,T,V}
   r, v, c = cache
   np = length(x)
-  ndof = length(f.terms)*num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -134,7 +135,7 @@ function return_cache(
   f = fg.fa
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = length(f.terms)*num_components(V)
+  ndof = length(f)
   xi = testitem(x)
   T = gradient_type(V,xi)
   n = 1 + _maximum(f.orders)
@@ -153,7 +154,7 @@ function evaluate!(
   f = fg.fa
   r, v, c, g = cache
   np = length(x)
-  ndof = length(f.terms) * num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -176,7 +177,7 @@ function return_cache(
   f = fg.fa
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = length(f.terms)*num_components(V)
+  ndof = length(f)
   xi = testitem(x)
   T = gradient_type(gradient_type(V,xi),xi)
   n = 1 + _maximum(f.orders)
@@ -196,7 +197,7 @@ function evaluate!(
   f = fg.fa
   r, v, c, g, h = cache
   np = length(x)
-  ndof = length(f.terms) * num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -391,16 +392,17 @@ function _evaluate_nd_mc0!(
 end
 
 @inline function _set_value_mc0!(v::AbstractVector{V},s::T,k,l) where {V,T}
-  m = zero(Mutable(V))
+  ncomp = num_indep_components(V)
+  m = zero(MVector{ncomp,T})
   z = zero(T)
-  js = eachindex(m)
+  js = 1:ncomp
   for j in js
     for i in js
       @inbounds m[i] = z
     end
     @inbounds m[j] = s
     i = k+l*(j-1)
-    @inbounds v[i] = m
+    @inbounds v[i] = Tuple(m)
   end
   k+1
 end
@@ -461,8 +463,12 @@ end
   k+1
 end
 
+# Indexing and m definition should be fixed if G contains symmetries, that is
+# if the code is  optimized for symmetric tensor V valued FESpaces
+# (if gradient_type(V) returned a symmetric higher order tensor type G)
 @inline function _set_gradient_mc0!(
   v::AbstractVector{G},s,k,l,::Type{V}) where {V,G}
+  @notimplementedif num_indep_components(G) != num_components(G) "Not implemented for symmetric Jacobian or Hessian"
 
   T = eltype(s)
   m = zero(Mutable(G))
