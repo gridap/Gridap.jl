@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed constructor of RungeKutta with only one solver. Since PR[#999](https://github.com/gridap/Gridap.jl/pull/999).
 
+### Changed
+
+- Conforming FESpaces now keep track of their `CellConformity` info, within the `metadata` field. Since PR[#1042](https://github.com/gridap/Gridap.jl/pull/1042).
+
 ## [0.18.6] - 2024-08-29
 
 ### Fixed
