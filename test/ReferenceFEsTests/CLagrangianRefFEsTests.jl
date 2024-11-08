@@ -220,6 +220,4 @@ f = joinpath(d,"reffe.jld2")
 to_jld2_file(reffe,f)
 @test reffe == from_jld2_file(typeof(reffe),f)
 
-rm(d,recursive=true)
-
 end # module

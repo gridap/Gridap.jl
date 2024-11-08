@@ -171,6 +171,4 @@ f = joinpath(d,"a.jld2")
 to_jld2_file(a,f)
 @test a == from_jld2_file(typeof(a),f)
 
-rm(d,recursive=true)
-
 end # module

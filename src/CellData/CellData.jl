@@ -9,6 +9,10 @@ using Test
 using DocStringExtensions
 using FillArrays
 
+using NearestNeighbors
+using StaticArrays
+using DataStructures
+
 using Gridap.Helpers
 using Gridap.Algebra
 using Gridap.Arrays
@@ -16,9 +20,6 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
-
-using NearestNeighbors
-using StaticArrays
 
 import Gridap.Arrays: lazy_append
 import Gridap.Arrays: get_array
