@@ -35,6 +35,20 @@ dofs = LagrangianDofBasis(VectorValue{3,Float64},TET,1)
 @test dofs.nodes == Point{3,Float64}[(0,0,0), (1,0,0), (0,1,0), (0,0,1)]
 @test dofs.node_and_comp_to_dof == VectorValue{3,Int}[(1,5,9), (2,6,10), (3,7,11), (4,8,12)]
 
+dofs = LagrangianDofBasis(TensorValue{2,2,Float64},TET,1)
+@test dofs.nodes == Point{3,Float64}[(0,0,0), (1,0,0), (0,1,0), (0,0,1)]
+@test dofs.node_and_comp_to_dof == TensorValue{2,2,Int}[(1,5,9,13), (2,6,10,14), (3,7,11,15), (4,8,12,16)]
+
+dofs = LagrangianDofBasis(SymTensorValue{2,Float64},TET,1)
+@test dofs.nodes == Point{3,Float64}[(0,0,0), (1,0,0), (0,1,0), (0,0,1)]
+@test dofs.node_and_comp_to_dof == SymTensorValue{2,Int}[(1,5,9), (2,6,10), (3,7,11), (4,8,12)]
+
+# For SymTracelessTensorValue, the last index in data should not be accessed,
+# as it is minus the sum of the D-1 diagonal value, so is not free/independent
+dofs = LagrangianDofBasis(SymTracelessTensorValue{2,Float64},TET,1)
+@test dofs.nodes == Point{3,Float64}[(0,0,0), (1,0,0), (0,1,0), (0,0,1)]
+@test dofs.node_and_comp_to_dof == SymTracelessTensorValue{2,Int}[(1,5), (2,6), (3,7), (4,8)]
+
 dofs = LagrangianDofBasis(Float64,WEDGE,(2,2,2))
 r = Point{3,Float64}[
   (0.0,0.0,0.0),(1.0,0.0,0.0),(0.0,1.0,0.0),
@@ -47,6 +61,15 @@ r = Point{3,Float64}[
 
 dofs = LagrangianDofBasis(VectorValue{2,Int},VERTEX,())
 @test dofs.node_and_comp_to_dof == VectorValue{2,Int}[(1,2)]
+
+dofs = LagrangianDofBasis(TensorValue{2,2,Int},VERTEX,())
+@test dofs.node_and_comp_to_dof == TensorValue{2,2,Int}[(1,2,3,4)]
+
+dofs = LagrangianDofBasis(SymTensorValue{2,Int},VERTEX,())
+@test dofs.node_and_comp_to_dof == SymTensorValue{2,Int}[(1,2,3)]
+
+dofs = LagrangianDofBasis(SymTracelessTensorValue{2,Int},VERTEX,())
+@test dofs.node_and_comp_to_dof == SymTracelessTensorValue{2,Int}[(1,2)]
 
 b = MonomialBasis(VectorValue{2,Int},VERTEX,())
 @test length(b) == 2
@@ -196,7 +219,5 @@ f = joinpath(d,"reffe.jld2")
 
 to_jld2_file(reffe,f)
 @test reffe == from_jld2_file(typeof(reffe),f)
-
-rm(d,recursive=true)
 
 end # module

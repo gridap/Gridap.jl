@@ -53,6 +53,4 @@ model2 == from_jld2_file(typeof(model),f)
 @test model.grid_topology.polytopes == model2.grid_topology.polytopes
 @test model.grid_topology.vertex_coordinates == model2.grid_topology.vertex_coordinates
 
-rm(d,recursive=true)
-
 end # module

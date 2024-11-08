@@ -72,8 +72,6 @@ export StageOperator
 export NonlinearStageOperator
 export LinearStageOperator
 
-export massless_residual_weights
-
 include("ODESolvers.jl")
 
 export ODESolver

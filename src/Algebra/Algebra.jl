@@ -18,6 +18,7 @@ using Gridap.Helpers
 import Base: convert, size, getindex, show, count, *
 import LinearAlgebra: mul!
 import SparseArrays: nnz, nonzeros, nzrange, findnz, rowvals
+import BlockArrays: AbstractBlockedUnitRange
 
 export length_to_ptrs!
 export rewind_ptrs!

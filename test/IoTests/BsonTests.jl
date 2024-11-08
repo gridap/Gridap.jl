@@ -34,8 +34,6 @@ f = joinpath(d,"foo.bson")
 to_bson_file(foo,f)
 @test foo == from_bson_file(Foo,f)
 
-rm(d,recursive=true)
-
 end # module
 
 
