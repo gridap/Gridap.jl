@@ -22,14 +22,16 @@ jobs:
           - ubuntu-latest
         arch:
           - x64
-          - x86
-        include: # Test macos/windows on latest LTS
+        include: # Test macos/windows on latest LTS + x86 on ubuntu
           - version: '1.10'
             os: macos-latest
             arch: aarch64
           - version: '1.10'
             os: windows-latest
             arch: x64
+          - version: '1.10'
+            os: ubuntu-latest
+            arch: x86
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
