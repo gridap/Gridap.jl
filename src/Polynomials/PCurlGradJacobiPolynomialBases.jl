@@ -51,7 +51,7 @@ end
 
 get_order(f::PCurlGradJacobiPolynomialBasis{D,T}) where {D,T} = f.order
 
-return_type(::PCurlGradJacobiPolynomialBasis{D,T}) where {D,T} = T
+return_type(::PCurlGradJacobiPolynomialBasis{D,T}) where {D,T} = VectorValue{D,T}
 
 function return_cache(f::PCurlGradJacobiPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @check D == length(eltype(x)) "Incorrect number of point components"

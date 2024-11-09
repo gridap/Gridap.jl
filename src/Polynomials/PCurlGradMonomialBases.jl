@@ -52,7 +52,7 @@ end
 
 get_order(f::PCurlGradMonomialBasis{D,T}) where {D,T} = f.order
 
-return_type(::PCurlGradMonomialBasis{D,T}) where {D,T} = T
+return_type(::PCurlGradMonomialBasis{D,T}) where {D,T} = VectorValue{D,T}
 
 function return_cache(f::PCurlGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @check D == length(eltype(x)) "Incorrect number of point components"

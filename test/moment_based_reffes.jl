@@ -55,6 +55,19 @@ end
 Arrays.return_type(::Polynomials.QGradMonomialBasis{D,T}) where {D,T} = T
 
 ############################################################################################
+
+# Doesnt work... 
+# function Arrays.return_value(k::Broadcasting{<:typeof(∘)},args::Union{Field,AbstractArray{<:Field}}...)
+#   f, g = args
+#   Fields.BroadcastOpFieldArray(f,g)
+# end
+# 
+# function Arrays.evaluate!(cache,k::Broadcasting{<:typeof(∘)},args::Union{Field,AbstractArray{<:Field}}...)
+#   f, g = args
+#   Fields.BroadcastOpFieldArray(f,g)
+# end
+
+############################################################################################
 # FaceMeasure
 
 struct FaceMeasure{Df,Dc}
@@ -295,3 +308,5 @@ nd_dofs = get_dof_basis(nd_reffe)
 Mnd = evaluate(nd_dofs,prebasis)
 M = evaluate(dofs,prebasis)
 M == Mnd
+
+############################################################################################

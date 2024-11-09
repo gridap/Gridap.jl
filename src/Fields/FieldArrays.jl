@@ -509,6 +509,22 @@ for T in (:(Point),:(AbstractArray{<:Point}))
       evaluate!(r,bm,rs...)
     end
 
+    function return_cache(k::BroadcastOpFieldArray{typeof(∘)},x::$T)
+      f, g = k.args
+      cg = return_cache(g,x)
+      gx = evaluate!(cg,g,x)
+      cf = return_cache(f,gx)
+      return cg, cf
+    end
+    
+    function evaluate!(cache, k::BroadcastOpFieldArray{typeof(∘)},x::$T)
+      cg, cf = cache
+      f, g = k.args
+      gx = evaluate!(cg,g,x)
+      fgx = evaluate!(cf,f,gx)
+      return fgx
+    end
+
   end
 end
 

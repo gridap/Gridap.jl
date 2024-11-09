@@ -46,6 +46,8 @@ num_terms(f::QGradJacobiPolynomialBasis{D,T}) where {D,T} = length(f.terms)*D
 
 get_order(f::QGradJacobiPolynomialBasis) = f.order
 
+return_type(::QGradJacobiPolynomialBasis{D,T}) where {D,T} = VectorValue{D,T}
+
 function return_cache(f::QGradJacobiPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
@@ -266,7 +268,7 @@ function QCurlGradJacobiPolynomialBasis{D}(::Type{T},order::Int) where {D,T}
   QCurlGradJacobiPolynomialBasis(T,order,terms,perms)
 end
 
-return_type(::QCurlGradJacobiPolynomialBasis{D,T}) where {D,T} = T
+return_type(::QCurlGradJacobiPolynomialBasis{D,T}) where {D,T} = VectorValue{D,T}
 
 function return_cache(f::QCurlGradJacobiPolynomialBasis,x::AbstractVector{<:Point})
   return_cache(f.qgrad,x)
