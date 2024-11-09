@@ -29,6 +29,7 @@ export ModalC0Basis
 export JacobiPolynomialBasis
 export QGradJacobiPolynomialBasis
 export QCurlGradJacobiPolynomialBasis
+export PCurlGradJacobiPolynomialBasis
 export ChebyshevPolynomialBasis
 export QGradChebyshevPolynomialBasis
 export QCurlGradChebyshevPolynomialBasis
