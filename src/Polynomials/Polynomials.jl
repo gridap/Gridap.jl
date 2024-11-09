@@ -52,6 +52,8 @@ include("JacobiPolynomialBases.jl")
 
 include("QGradJacobiPolynomialBases.jl")
 
+include("PCurlGradJacobiPolynomialBases.jl")
+
 include("ChebyshevPolynomialBases.jl")
 
 end # module

@@ -26,6 +26,8 @@ function RaviartThomasRefFE(
     prebasis = PCurlGradMonomialBasis{D}(et,order)
   elseif is_n_cube(p) && basis_type == :jacobi
     prebasis = QCurlGradJacobiPolynomialBasis{D}(et,order)
+  elseif is_simplex(p) && basis_type == :jacobi
+    prebasis = PCurlGradJacobiPolynomialBasis{D}(et,order)
   elseif is_n_cube(p) && basis_type == :chebyshev
     prebasis = QCurlGradChebyshevPolynomialBasis{D}(et,order)
   else
