@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### Added
+
+- Small improvements of the documentation of `Gridap.TensorValues`. Since PR[#1051](https://github.com/gridap/Gridap.jl/pull/1051).
+
 ## [0.18.7] - 2024-10-8
 
 ### Added
