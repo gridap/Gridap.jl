@@ -35,6 +35,7 @@ function evaluate!(cache,k::MulAddMap,a,b,c)
   setsize!(cache,size(c))
   d = cache.array
   copyto!(d,c)
+  iszero(k.α) && isone(k.β) && return d
   mul!(d,a,b,k.α,k.β)
   d
 end
