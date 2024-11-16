@@ -116,7 +116,8 @@ function CellFE(
     cell_dof_basis,
     cell_shapefuns_domain,
     cell_dof_basis_domain,
-    max_order)
+    max_order
+  )
 end
 
 function get_cell_dof_basis(model::DiscreteModel,
@@ -146,13 +147,15 @@ function _ConformingFESpace(
   ntags = length(dirichlet_tags)
 
   cell_dofs_ids, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-    cell_fe,CellConformity(cell_fe),grid_topology,face_labeling,dirichlet_tags,dirichlet_components)
-
+    cell_fe,CellConformity(cell_fe),grid_topology,face_labeling,dirichlet_tags,dirichlet_components
+  )
+  
   cell_shapefuns, cell_dof_basis = compute_cell_space(cell_fe,trian)
 
   cell_is_dirichlet = fill(false,num_cells(trian))
   cell_is_dirichlet[dirichlet_cells] .= true
 
+  metadata = CellConformity(cell_fe)
   UnconstrainedFESpace(
     vector_type,
     nfree,
@@ -163,7 +166,9 @@ function _ConformingFESpace(
     cell_is_dirichlet,
     dirichlet_dof_tag,
     dirichlet_cells,
-    ntags)
+    ntags,
+    metadata
+  )
 end
 
 function compute_cell_space(cell_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
@@ -171,16 +176,18 @@ function compute_cell_space(cell_shapefuns::AbstractArray{<:AbstractArray{<:Fiel
                             cell_shapefuns_domain::DomainStyle,
                             cell_dof_basis_domain::DomainStyle,
                             trian::Triangulation)
-    SingleFieldFEBasis(cell_shapefuns,trian,TestBasis(),cell_shapefuns_domain),
-    CellDof(cell_dof_basis,trian,cell_dof_basis_domain)
+  SingleFieldFEBasis(cell_shapefuns,trian,TestBasis(),cell_shapefuns_domain),
+  CellDof(cell_dof_basis,trian,cell_dof_basis_domain)
 end
 
 function compute_cell_space(cellfe::CellFE,trian::Triangulation)
-    compute_cell_space(cellfe.cell_shapefuns,
-                       cellfe.cell_dof_basis,
-                       cellfe.cell_shapefuns_domain,
-                       cellfe.cell_dof_basis_domain,
-                       trian)
+  compute_cell_space(
+    cellfe.cell_shapefuns,
+    cellfe.cell_dof_basis,
+    cellfe.cell_shapefuns_domain,
+    cellfe.cell_dof_basis_domain,
+    trian
+  )
 end
 
 function compute_cell_space(cell_fe,trian::Triangulation)

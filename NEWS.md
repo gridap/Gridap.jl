@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### Fixed
+
+- Fixed #974, an error when weak form is real but unknown vector is complex. Since PR[#1050](https://github.com/gridap/Gridap.jl/pull/1050).
+
 ## [0.18.7] - 2024-10-8
 
 ### Added
@@ -25,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed constructor of RungeKutta with only one solver. Since PR[#999](https://github.com/gridap/Gridap.jl/pull/999).
+
+### Changed
+
+- Conforming FESpaces now keep track of their `CellConformity` info, within the `metadata` field. Since PR[#1042](https://github.com/gridap/Gridap.jl/pull/1042).
 
 ## [0.18.6] - 2024-08-29
 
