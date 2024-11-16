@@ -26,13 +26,13 @@ function RaviartThomasRefFE(
     cb = MonomialBasis{D}(T,order-1,Polynomials._p_filter)       # Cell basis
     fb = JacobiPolynomialBasis{D}(T,order,Polynomials._p_filter) # Face basis
   else
-    @notimplemented "H(div) Reference FE only available for cubes and simplices"
+    @notimplemented "Raviart-Thomas Reference FE only available for cubes and simplices"
   end
 
-  function cmom(φ,μ,ds) # Cell moment function
+  function cmom(φ,μ,ds) # Cell moment function: σ_K(φ,μ) = ∫(φ·μ)dK
     Broadcasting(Operation(⋅))(φ,μ)
   end
-  function fmom(φ,μ,ds) # Face moment function
+  function fmom(φ,μ,ds) # Face moment function : σ_F(φ,μ) = ∫((φ·n)*μ)dF
     n = get_normal(ds)
     φn = Broadcasting(Operation(⋅))(φ,n)
     Broadcasting(Operation(*))(φn,μ)

@@ -213,7 +213,7 @@ end
 
 """
 A moment is given by a triplet (f,σ,μ) where 
-  - f is vector of ids if faces Fk
+  - f is vector of ids of faces Fk
   - σ is a function σ(φ,μ,ds) that returns a Field-like object to be integrated over each Fk
   - μ is a polynomials basis on Fk
 
