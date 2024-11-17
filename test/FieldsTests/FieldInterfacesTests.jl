@@ -376,4 +376,26 @@ test_field(vf,x,v(x),grad=∇(v)(x))
 test_field(vt,x,zero.(v(x)),grad=zero.(∇(v)(x)),gradgrad=zero.(∇∇(v)(x)))
 test_field(vf,x,v(x),grad=∇(v)(x),gradgrad=∇∇(v)(x))
 
+# testing hessian rule for sum and product of two fields
+
+afun(x) = x[1]^3 + x[2]^4
+bfun(x) = sin(x[1])*cos(x[2])
+cfun(x) = exp(x⋅x)
+
+a = GenericField(afun)
+b = GenericField(bfun)
+c = GenericField(cfun)
+
+f = Operation(+)(Operation(*)(a,b), c)
+cp = afun(p) * bfun(p) + cfun(p)
+∇cp = ∇(afun)(p)*bfun(p) + ∇(bfun)(p)*afun(p) + ∇(cfun)(p)
+∇∇cp = ∇∇(afun)(p) * bfun(p) + afun(p) * ∇∇(bfun)(p) + 2*∇(afun)(p)⊗∇(bfun)(p) + ∇∇(cfun)(p)
+test_field(f,p,cp)
+test_field(f,p,cp, grad=∇cp, gradgrad=∇∇cp)
+
+test_field(f,x,f.(x))
+test_field(f,x,f.(x),grad=∇(f).(x),gradgrad=∇∇(f).(x))
+test_field(f,z,f.(z))
+test_field(f,z,f.(z),grad=∇(f).(z),gradgrad=∇∇(f).(z))
+
 end # module
