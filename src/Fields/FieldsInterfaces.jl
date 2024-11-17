@@ -427,6 +427,43 @@ for op in (:*,:⋅,:⊙,:⊗)
   end
 end
 
+# Hessian (∇∇) of sum
+
+for op in (:+,:-)
+  @eval begin
+    function ∇∇(a::OperationField{typeof($op)})
+      f = a.fields
+      g = map( ∇∇, f)
+      $op(g...)
+    end
+  end
+end
+
+# Hessian (∇∇) of product
+
+function product_rule_hessian(fun,f1,f2,∇f1,∇f2,∇∇f1,∇∇f2)
+  msg = "Product rule not implemented for product $fun between types $(typeof(f1)) and $(typeof(f2))"
+  @notimplemented msg
+end
+
+function product_rule_hessian(::typeof(*),f1::Real,f2::Real,∇f1,∇f2,∇∇f1,∇∇f2)
+  ∇∇f1*f2 + ∇∇f2*f1 + 2*∇f1⊗∇f2
+end
+
+for op in (:*,)
+  @eval begin
+    function ∇∇(a::OperationField{typeof($op)})
+      f = a.fields
+      @notimplementedif length(f) != 2
+      f1, f2 = f
+      g1, g2 = map(gradient, f)
+      h1, h2 = map(∇∇, f)
+      prod_rule_hess(F1,F2,G1,G2,H1,H2) = product_rule_hessian($op,F1,F2,G1,G2,H1,H2)
+      Operation(prod_rule_hess)(f1,f2,g1,g2,h1,h2)
+    end
+  end
+end
+
 # Chain rule
 function gradient(f::OperationField{<:Field})
   a = f.op
