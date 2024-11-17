@@ -387,9 +387,10 @@ b = GenericField(bfun)
 c = GenericField(cfun)
 
 f = Operation(+)(Operation(*)(a,b), c)
+∇f = ∇(a)*b + ∇(b)*a + ∇(c)
 cp = afun(p) * bfun(p) + cfun(p)
 ∇cp = ∇(afun)(p)*bfun(p) + ∇(bfun)(p)*afun(p) + ∇(cfun)(p)
-∇∇cp = ∇∇(afun)(p) * bfun(p) + afun(p) * ∇∇(bfun)(p) + 2*∇(afun)(p)⊗∇(bfun)(p) + ∇∇(cfun)(p)
+∇∇cp = ∇∇(afun)(p) * bfun(p) + afun(p) * ∇∇(bfun)(p) + ∇(afun)(p)⊗∇(bfun)(p) + ∇(bfun)(p)⊗∇(afun)(p) + ∇∇(cfun)(p)
 test_field(f,p,cp)
 test_field(f,p,cp, grad=∇cp, gradgrad=∇∇cp)
 
@@ -397,5 +398,10 @@ test_field(f,x,f.(x))
 test_field(f,x,f.(x),grad=∇(f).(x),gradgrad=∇∇(f).(x))
 test_field(f,z,f.(z))
 test_field(f,z,f.(z),grad=∇(f).(z),gradgrad=∇∇(f).(z))
+
+# this one checks by taking ∇ of ∇f to see if matches with rule for ∇∇(f)
+test_field(∇f, p, ∇cp, grad=∇∇cp)
+test_field(∇f, x, ∇(f).(x), grad=∇∇(f).(x))
+test_field(∇f, z, ∇(f).(z), grad=∇∇(f).(z))
 
 end # module
