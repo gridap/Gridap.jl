@@ -457,7 +457,7 @@ function product_rule_hessian(fun,f1,f2,∇f1,∇f2,∇∇f1,∇∇f2)
 end
 
 function product_rule_hessian(::typeof(*),f1::Real,f2::Real,∇f1,∇f2,∇∇f1,∇∇f2)
-  ∇∇f1*f2 + ∇∇f2*f1 + 2*∇f1⊗∇f2
+  ∇∇f1*f2 + ∇∇f2*f1 + ∇f1⊗∇f2 + ∇f2⊗∇f1
 end
 
 for op in (:*,)
