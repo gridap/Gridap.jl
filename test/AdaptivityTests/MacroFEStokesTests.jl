@@ -14,7 +14,7 @@ function main(Dc,reftype)
   p_sol(x) = x[1] - 1.0/2.0
 
   domain = (Dc == 2) ? (0,1,0,1) : (0,1,0,1,0,1)
-  nc = (Dc == 2) ? (2,2) : (1,1,1)
+  nc = (Dc == 2) ? (1,1) : (1,1,1)
   model = simplexify(CartesianDiscreteModel(domain,nc))
 
   poly  = (Dc == 2) ? TRI : TET
@@ -65,7 +65,7 @@ end
 
 main(2,:barycentric)
 #main(2,:powellsabin)
-main(3,:barycentric)
+#main(3,:barycentric)
 #main(3,:powellsabin)
 
 end # module

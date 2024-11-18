@@ -26,6 +26,11 @@ jobs:
           - x64
     steps:
       - uses: actions/checkout@v4
+        with:
+            fetch-depth: 0
+      - run: |
+          git fetch --tags
+          git branch --create-reflog main origin/main
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}

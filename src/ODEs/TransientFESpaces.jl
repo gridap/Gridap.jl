@@ -149,10 +149,7 @@ Arrays.evaluate!(transient_space::FESpace, space::FESpace, t::Real) = space
 Arrays.evaluate(space::FESpace, t::Real) = space
 Arrays.evaluate(space::FESpace, t::Nothing) = space
 
-# TODO why is this needed?
-@static if VERSION >= v"1.3"
-  (space::FESpace)(t) = evaluate(space, t)
-end
+(space::FESpace)(t) = evaluate(space, t)
 (space::TrialFESpace)(t) = evaluate(space, t)
 (space::ZeroMeanFESpace)(t) = evaluate(space, t)
 

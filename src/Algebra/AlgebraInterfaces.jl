@@ -40,7 +40,7 @@ function allocate_vector(::Type{V},n::Integer) where V
   V(undef,n)
 end
 
-function allocate_vector(::Type{<:BlockVector{T,VV}},indices::BlockedUnitRange) where {T,VV}
+function allocate_vector(::Type{<:BlockVector{T,VV}},indices::AbstractBlockedUnitRange) where {T,VV}
   V = eltype(VV)
   mortar(map(ids -> allocate_vector(V,ids),blocks(indices)))
 end
@@ -223,26 +223,7 @@ end
 
 Matrix multiply a*b and add to result to c. Returns c.
 """
-function muladd!(c,a,b)
-  _muladd!(c,a,b)
-  c
-end
-
-@static if VERSION >= v"1.3"
-  function _muladd!(c,a,b)
-    mul!(c,a,b,1,1)
-  end
-else
-  function _muladd!(c,a,b)
-    @assert length(c) == size(a,1)
-    @assert length(b) == size(a,2)
-    @inbounds for j in 1:size(a,2)
-      for i in 1:size(a,1)
-        c[i] += a[i,j]*b[j]
-      end
-    end
-  end
-end
+muladd!(b,A,x) = mul!(b,A,x,one(eltype(b)),one(eltype(b)))
 
 """
     axpy_entries!(α::Number, A::T, B::T) where {T<: AbstractMatrix} -> T
