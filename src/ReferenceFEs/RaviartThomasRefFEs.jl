@@ -18,13 +18,13 @@ function RaviartThomasRefFE(
 ) where {T,D}
 
   if is_n_cube(p)
-    prebasis = QCurlGradJacobiPolynomialBasis{D}(T,order)        # Prebasis
-    cb = QGradJacobiPolynomialBasis{D}(T,order-1)                # Cell basis
-    fb = JacobiPolynomialBasis{D}(T,order,Polynomials._q_filter) # Face basis
+    prebasis = QCurlGradJacobiPolynomialBasis{D}(T,order)          # Prebasis
+    cb = QGradJacobiPolynomialBasis{D}(T,order-1)                  # Cell basis
+    fb = JacobiPolynomialBasis{D-1}(T,order,Polynomials._q_filter) # Face basis
   elseif is_simplex(p)
-    prebasis = PCurlGradMonomialBasis{D}(et,order)               # Prebasis
-    cb = MonomialBasis{D}(T,order-1,Polynomials._p_filter)       # Cell basis
-    fb = JacobiPolynomialBasis{D}(T,order,Polynomials._p_filter) # Face basis
+    prebasis = PCurlGradMonomialBasis{D}(T,order)                                 # Prebasis
+    cb = JacobiPolynomialBasis{D}(VectorValue{D,T},order-1,Polynomials._p_filter) # Cell basis
+    fb = JacobiPolynomialBasis{D-1}(T,order,Polynomials._p_filter)                # Face basis
   else
     @notimplemented "Raviart-Thomas Reference FE only available for cubes and simplices"
   end
@@ -33,14 +33,17 @@ function RaviartThomasRefFE(
     Broadcasting(Operation(⋅))(φ,μ)
   end
   function fmom(φ,μ,ds) # Face moment function : σ_F(φ,μ) = ∫((φ·n)*μ)dF
-    n = get_normal(ds)
+    n = get_facet_normal(ds)
     φn = Broadcasting(Operation(⋅))(φ,n)
     Broadcasting(Operation(*))(φn,μ)
   end
-  moments = [
+
+  moments = Tuple[
     (get_dimrange(p,D-1),fmom,fb), # Face moments
-    (get_dimrange(p,D),cmom,cb)    # Cell moments
   ]
+  if (order > 0)
+    push!(moments,(get_dimrange(p,D),cmom,cb)) # Cell moments
+  end
 
   return MomentBasedReferenceFE(RaviartThomas(),p,prebasis,moments,DivConformity())
 end

@@ -87,7 +87,7 @@ end
 
   reffe = ReferenceFE(TET,raviart_thomas,order)
 
-  domain =(0,1,0,1,0,1)
+  domain = (0,1,0,1,0,1)
   partition = (3,3,3)
   model = simplexify(CartesianDiscreteModel(domain,partition))
 
@@ -135,7 +135,7 @@ end
   degree = 1
 
   reffe_rt = ReferenceFE(raviart_thomas,Float64,order)
-  V  = FESpace(Dc2Dp3model, reffe_rt ; conformity=:HDiv)
+  V  = FESpace(Dc2Dp3model, reffe_rt; conformity=:HDiv)
   U = TrialFESpace(V,u)
   reffe = ReferenceFE(lagrangian,Float64,order)
   Q = TestFESpace(Dc2Dp3model,reffe,conformity=:L2)

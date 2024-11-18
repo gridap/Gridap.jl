@@ -9,13 +9,12 @@ The `order` argument has the following meaning: the divergence of the  functions
 is in the P space of degree `order-1`.
 
 """
-function BDMRefFE(::Type{et},p::Polytope,order::Integer) where et
+function BDMRefFE(::Type{T},p::Polytope,order::Integer) where T
   D = num_dims(p)
-  vet = VectorValue{D,et}
 
   if is_simplex(p)
-    prebasis = MonomialBasis(vet,p,order)
-    fb = MonomialBasis{D-1}(et,order,Polynomials._p_filter)
+    prebasis = MonomialBasis{D}(VectorValue{D,T},order,Polynomials._p_filter)
+    fb = MonomialBasis{D-1}(T,order,Polynomials._p_filter)
     cb = Polynomials.NedelecPrebasisOnSimplex{D}(order-2)
   else
     @notimplemented "BDM Reference FE only available for simplices"
@@ -25,14 +24,17 @@ function BDMRefFE(::Type{et},p::Polytope,order::Integer) where et
     Broadcasting(Operation(⋅))(φ,μ)
   end
   function fmom(φ,μ,ds) # Face moment function : σ_F(φ,μ) = ∫((φ·n)*μ)dF
-    n = get_normal(ds)
+    n = get_facet_normal(ds)
     φn = Broadcasting(Operation(⋅))(φ,n)
     Broadcasting(Operation(*))(φn,μ)
   end
-  moments = [
+
+  moments = Tuple[
     (get_dimrange(p,D-1),fmom,fb), # Face moments
-    (get_dimrange(p,D),cmom,cb)    # Cell moments
   ]
+  if order > 1
+    push!(moments,(get_dimrange(p,D),cmom,cb)) # Cell moments
+  end
 
   return MomentBasedReferenceFE(BDM(),p,prebasis,moments,DivConformity())
 end

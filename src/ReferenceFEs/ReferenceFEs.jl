@@ -244,7 +244,7 @@ include("StrangQuadratures.jl")
 
 include("MomentBasedReferenceFEs.jl")
 
-include("DivConformingReferenceFEs.jl")
+include("RaviartThomasRefFEs.jl")
 
 include("BDMRefFEs.jl")
 

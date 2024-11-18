@@ -223,7 +223,7 @@ function MomentBasedReferenceFE(
   name::ReferenceFEName,
   p::Polytope{D},
   prebasis::AbstractVector{<:Field},
-  moments::AbstractVector{<:Tuple{Vector{Int},<:Function,<:AbstractArray{<:Field}}},
+  moments::AbstractVector{<:Tuple},#{<:AbstractVector{Int},<:Function,<:AbstractVector{<:Field}}},
   conformity::Conformity;
 ) where D
 
@@ -252,8 +252,8 @@ function MomentBasedReferenceFE(
   face_n_dofs = zeros(Int,n_faces)
   face_n_nodes = zeros(Int,n_faces)
   for ((faces,σ,μ),ds) in zip(moments,measures)
-    face_n_dofs[faces] += size(μ,2)
-    face_n_nodes[faces] += num_points(ds.quad)
+    face_n_dofs[faces] .+= length(μ)
+    face_n_nodes[faces] .+= num_points(ds.quad)
   end
   
   # Compute face moment and node indices
@@ -271,23 +271,25 @@ function MomentBasedReferenceFE(
     n_dofs += n_dofs_i
     n_nodes += n_nodes_i
   end
-  nodes = Vector{Point{D}}(undef,n_nodes)
+  n_dofs = n_dofs - 1
+  n_nodes = n_nodes - 1
 
   # Compute face moments and nodes
   fill!(face_n_dofs,0)
   fill!(face_n_nodes,0)
+  nodes = Vector{Point{D,Float64}}(undef,n_nodes)
   for ((faces,σ,μ),ds) in zip(moments,measures)
     cache = return_cache(σ,φ,μ,ds)
     for face in faces
       d = face_dims[face]
-      lface = face - face_offsets[d]
+      lface = face - face_offsets[d+1]
       set_face!(ds,lface)
 
       # vals : (nN, nμ, nφ), coords : (nN)
       vals, coords = evaluate!(cache,σ,φ,μ,ds)
 
       dof_offset = face_n_dofs[face]
-      node_offset = first(face_nodes[face]) + face_n_nodes[face]
+      node_offset = first(face_nodes[face]) + face_n_nodes[face] - 1
       for i in axes(vals,1)
         for j in axes(vals,2)
           face_moments[face][i,j+dof_offset] = dot(vals[i,j,:],φ_vec)
