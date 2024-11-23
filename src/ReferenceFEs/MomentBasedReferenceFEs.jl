@@ -179,9 +179,12 @@ function Arrays.return_cache(
   xf = get_coordinates(ds.quad)
   w = get_weights(ds.quad)
   fmap_cache = return_cache(fmap,xf)
+
+  detJ = Broadcasting(Operation(meas))(Broadcasting(∇)(fmap))
+  detJ_cache = return_cache(detJ,xf)
   
   f_cache = return_cache(f,xf)
-  return fmap_cache, f_cache, xf, w
+  return fmap_cache, detJ_cache, f_cache, xf, w
 end
 
 function Arrays.evaluate!(
@@ -191,15 +194,18 @@ function Arrays.evaluate!(
   μ::AbstractArray{<:Field},  # μ: polynomial basis (defined on the face)
   ds::FaceMeasure             # ds: face measure
 )
-  fmap_cache, f_cache, xf, w = cache
+  fmap_cache, detJ_cache, f_cache, xf, w = cache
 
   fmap = ds.fmaps[ds.face]
   φf = transpose(Broadcasting(Operation(∘))(φ,fmap))
   f = σ(φf,μ,ds)
 
+  detJ = Broadcasting(Operation(meas))(Broadcasting(∇)(fmap))
+  dF = evaluate!(detJ_cache,detJ,xf)
+
   xc = evaluate!(fmap_cache,fmap,xf) # quad pts on the cell
   fx = evaluate!(f_cache,f,xf) # f evaluated on the quad pts
-  fx .= w .* fx
+  fx .= (w .* dF) .* fx
   return fx, xc
 end
 
