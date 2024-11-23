@@ -260,6 +260,8 @@ Base.IndexStyle(::Type{<:NedelecPrebasisOnSimplex}) = IndexLinear()
 num_terms(a::NedelecPrebasisOnSimplex) = length(a)
 get_order(f::NedelecPrebasisOnSimplex) = f.order
 
+return_type(::NedelecPrebasisOnSimplex{D}) where {D} = VectorValue{D,Float64}
+
 function return_cache(
   f::NedelecPrebasisOnSimplex{d},x::AbstractVector{<:Point}) where d
   np = length(x)

@@ -31,7 +31,7 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
     Broadcasting(Operation(⋅))(φ,μ)
   end
   function fmom(φ,μ,ds) # Face moment function: σ_F(φ,μ) = ∫((φ×n)⋅μ)dF
-    o = get_facet_orientations(ds.poly)[ds.face] # This is a hack to avoid a sign map
+    o = get_facet_orientations(ds.cpoly)[ds.face] # This is a hack to avoid a sign map
     n = o*get_facet_normal(ds)
     E = get_extension(ds)
     Eμ = Broadcasting(Operation(⋅))(E,μ) # We have to extend the basis to 3D
@@ -44,18 +44,14 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
     Broadcasting(Operation(*))(φt,μ)
   end
 
-  if D == 2
-    moments = [ # In 2D we do not have face moments
-      (get_dimrange(p,1),emom,eb),   # Edge moments
-      (get_dimrange(p,D),cmom,cb)    # Cell moments
-    ]
-  else
-    @assert D == 3
-    moments = [
-      (get_dimrange(p,1),emom,eb),   # Edge moments
-      (get_dimrange(p,D-1),fmom,fb), # Face moments
-      (get_dimrange(p,D),cmom,cb)    # Cell moments
-    ]
+  moments = Tuple[
+    (get_dimrange(p,1),emom,eb), # Edge moments
+  ]
+  if D == 3 && order > 0
+    push!(moments,(get_dimrange(p,D-1),fmom,fb)) # Face moments
+  end
+  if (is_n_cube(p) && order > 0) || (is_simplex(p) && order > D-2)
+    push!(moments,(get_dimrange(p,D),cmom,cb))   # Cell moments
   end
 
   return MomentBasedReferenceFE(Nedelec(),p,prebasis,moments,CurlConformity())

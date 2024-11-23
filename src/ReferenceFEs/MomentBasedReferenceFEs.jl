@@ -257,22 +257,20 @@ function MomentBasedReferenceFE(
   end
   
   # Compute face moment and node indices
-  n_dofs = 1
-  n_nodes = 1
+  n_dofs = 0
+  n_nodes = 0
   face_own_dofs = Vector{Vector{Int}}(undef,n_faces)
   face_nodes = Vector{UnitRange{Int}}(undef, n_faces)
   face_moments = Vector{Array{T}}(undef, n_faces)
   for face in 1:n_faces
     n_dofs_i = face_n_dofs[face]
     n_nodes_i = face_n_nodes[face]
-    face_own_dofs[face] = collect(n_dofs:(n_dofs+n_dofs_i-1))
-    face_nodes[face] = n_nodes:(n_nodes+n_nodes_i-1)
+    face_own_dofs[face] = collect((n_dofs+1):(n_dofs+n_dofs_i))
+    face_nodes[face] = (n_nodes+1):(n_nodes+n_nodes_i)
     face_moments[face] = zeros(T,n_nodes_i,n_dofs_i)
     n_dofs += n_dofs_i
     n_nodes += n_nodes_i
   end
-  n_dofs = n_dofs - 1
-  n_nodes = n_nodes - 1
 
   # Compute face moments and nodes
   fill!(face_n_dofs,0)
