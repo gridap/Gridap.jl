@@ -911,10 +911,10 @@ function _get_barycentric_refined_connectivity(p::Polytope)
   elseif p == TET
     polys     = [TET]
     cell_type = [1, 1, 1, 1]
-    conn_data = [1, 2, 3, 5,
-                 2, 3, 4, 5,
-                 3, 1, 4, 5,
-                 1, 2, 4, 5]
+    conn_data = [5, 1, 2, 3,
+                 5, 1, 2, 4,
+                 5, 1, 3, 4,
+                 5, 2, 3, 4]
     conn_ptrs = [1, 5, 9, 13, 17]
     return polys, cell_type, Table(conn_data,conn_ptrs)
   elseif p == QUAD
@@ -929,12 +929,12 @@ function _get_barycentric_refined_connectivity(p::Polytope)
   elseif p == HEX # For HEX, we also create a new vertex in the center of each face
     # Connectivity for each face: Face corners + face node + barycenter
     face_conn = [
-      1,2,5,6,
-      2,4,5,6,
-      4,3,5,6,
-      3,1,5,6,
+      6, 1, 2, 5,
+      6, 2, 4, 5,
+      6, 3, 4, 5,
+      6, 1, 3, 5,
     ]
-    n_TET  = 4 # Number of new TETs per polytope face
+    n_TET  = 4 # Number of new TETs per polytope face (i.e per QUAD)
     n_FACE = 6 # Number of faces in a HEX
     n_NODE = 8 # Number of nodes in a HEX
     polys     = [TET]
