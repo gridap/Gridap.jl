@@ -242,6 +242,8 @@ include("DuffyQuadratures.jl")
 
 include("StrangQuadratures.jl")
 
+include("MomentBasedReferenceFEs.jl")
+
 include("RaviartThomasRefFEs.jl")
 
 include("BDMRefFEs.jl")
