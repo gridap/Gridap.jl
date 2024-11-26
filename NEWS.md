@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added Xiao-Gimbutas quadratures for simplices. Since PR[#1058](https://github.com/gridap/Gridap.jl/pull/1058).
+
 ### Fixed
 
 - Fixed #974, an error when weak form is real but unknown vector is complex. Since PR[#1050](https://github.com/gridap/Gridap.jl/pull/1050).
