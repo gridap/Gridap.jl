@@ -53,12 +53,12 @@ end
 Arrays.return_type(a::Fields.LinearCombinationFieldVector) = Arrays.return_type(a.fields)
 Polynomials.get_order(a::Fields.LinearCombinationFieldVector) = Polynomials.get_order(a.fields)
 
-function ReferenceFE(p::Polytope,::BDM, order)
-  BDMRefFE(Float64,p,order)
+function ReferenceFE(p::Polytope,::BDM, order; phi=1)
+  BDMRefFE(Float64,p,order;phi=phi)
 end
 
-function ReferenceFE(p::Polytope,::BDM,::Type{T}, order) where T
-  BDMRefFE(T,p,order)
+function ReferenceFE(p::Polytope,::BDM,::Type{T}, order; phi=1) where T
+  BDMRefFE(T,p,order;phi=phi)
 end
 
 function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
