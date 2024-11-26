@@ -9,19 +9,24 @@ The `order` argument has the following meaning: the divergence of the  functions
 is in the P space of degree `order-1`.
 
 """
-function BDMRefFE(::Type{et},p::Polytope,order::Integer) where et
+function BDMRefFE(::Type{et},p::Polytope,order::Integer;phi=1.0) where et
 
   D = num_dims(p)
 
   vet = VectorValue{num_dims(p),et}
 
   if is_simplex(p)
-    prebasis = MonomialBasis(vet,p,order)
+    #prebasis = MonomialBasis(vet,p,order)
+    #prebasis = JacobiBasis(vet,p,order)
+    prebasis = get_shapefuns(LagrangianRefFE(vet,p,order))
   else
     @notimplemented "BDM Reference FE only available for simplices"
   end
 
   nf_nodes, nf_moments = _BDM_nodes_and_moments(et,p,order,GenericField(identity))
+  for k in 1:num_faces(p)
+    nf_moments[k] .*= phi
+  end
 
   face_own_dofs = _face_own_dofs_from_moments(nf_moments)
 
@@ -44,6 +49,9 @@ function BDMRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   reffe
 end
+
+Arrays.return_type(a::Fields.LinearCombinationFieldVector) = Arrays.return_type(a.fields)
+Polynomials.get_order(a::Fields.LinearCombinationFieldVector) = Polynomials.get_order(a.fields)
 
 function ReferenceFE(p::Polytope,::BDM, order)
   BDMRefFE(Float64,p,order)
@@ -144,13 +152,15 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
 
     # Moments (fmoments)
     # The BDM prebasis is expressed in terms of shape function
-    fshfs = MonomialBasis(et,fp,order)
+    #fshfs = MonomialBasis(et,fp,order)
+    #fshfs = JacobiBasis(et,fp,order)
+    #fshfs = ChebyshevBasis(et,fp,order)
+    fshfs = get_shapefuns(LagrangianRefFE(et,fp,order))
 
     # Face moments, i.e., M(Fi)_{ab} = q_RF^a(xgp_RFi^b) w_Fi^b n_Fi ⋅ ()
     fmoments = _BDM_face_moments(p, fshfs, c_fips, fcips, fwips, phi)
 
     return fcips, fmoments
-
   end
 
   function _BDM_cell_moments(p, cbasis, ccips, cwips)

@@ -196,9 +196,9 @@ function _RT_face_values(p,et,order,phi)
   # Moments (fmoments)
   # The RT prebasis is expressed in terms of shape function
   #fshfs = MonomialBasis(et,fp,order)
-  fshfs = JacobiBasis(et,fp,order)
+  #fshfs = JacobiBasis(et,fp,order)
   #fshfs = ChebyshevBasis(et,fp,order)
-  #fshfs = get_shapefuns(LagrangianRefFE(et,fp,order))
+  fshfs = get_shapefuns(BezierRefFE(et,fp,order))
 
   # Face moments, i.e., M(Fi)_{ab} = q_RF^a(xgp_RFi^b) w_Fi^b n_Fi ⋅ ()
   fmoments = _RT_face_moments(p, fshfs, c_fips, fcips, fwips, phi)
@@ -256,7 +256,10 @@ function _RT_cell_values(p,et,order,phi)
     #cbasis = get_shapefuns(RaviartThomasRefFE(et,p,order-1))
   elseif is_simplex(p)
     T = VectorValue{num_dims(p),et}
-    cbasis = MonomialBasis{num_dims(p)}(T,order-1, _p_filter)
+    #cbasis = MonomialBasis{num_dims(p)}(T,order-1, _p_filter)
+    cbasis = JacobiPolynomialBasis{num_dims(p)}(T,order-1, _p_filter)
+    #cbasis = get_shapefuns(BezierRefFE(T,p,order-1))
+    #cbasis = ChebyshevPolynomialBasis{num_dims(p)}(T,order-1, _p_filter)
   else
     @notimplemented
   end

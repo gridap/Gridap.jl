@@ -12,6 +12,7 @@ for degree in 1:30
   f1 = integrate(f,get_coordinates(quad),get_weights(quad))
   f2 = integrate(f,get_coordinates(ref_quad),get_weights(ref_quad))
   err = maximum(abs.(f1 .- f2))/maximum(abs.(f1))
+  # println("degree = ",degree," err = ",maximum(abs.(f1 .- f2)))
   @test err < 1.0e-7
 end
 
@@ -24,6 +25,7 @@ for degree in 1:15
   f1 = integrate(f,get_coordinates(quad),get_weights(quad))
   f2 = integrate(f,get_coordinates(ref_quad),get_weights(ref_quad))
   err = maximum(abs.(f1 .- f2))/maximum(abs.(f1))
+  println("degree = ",degree," err = ",maximum(abs.(f1 .- f2)))
   @test err < 1.0e-7
 end
 
