@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added Xiao-Gimbutas quadratures for simplices. Since PR[#1058](https://github.com/gridap/Gridap.jl/pull/1058).
+- Small improvements of the documentation of `Gridap.TensorValues`. Since PR[#1051](https://github.com/gridap/Gridap.jl/pull/1051).
 
 ### Fixed
 
