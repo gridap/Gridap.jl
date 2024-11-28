@@ -56,7 +56,7 @@ export MockFieldArray
 export Point
 export inverse_map
 
-export AffineMap
+export AffineField
 export affine_map
 
 export gradient

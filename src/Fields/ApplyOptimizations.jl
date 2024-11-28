@@ -135,14 +135,14 @@ function lazy_map(
   k::Broadcasting{typeof(∇)}, a::LazyArray{<:Fill{typeof(transpose)}})
 
   i_to_basis = lazy_map(k,a.args[1])
-  lazy_map( transpose, i_to_basis)
+  lazy_map(transpose, i_to_basis)
 end
 
 function lazy_map(
   k::Broadcasting{typeof(∇∇)}, a::LazyArray{<:Fill{typeof(transpose)}})
 
   i_to_basis = lazy_map(k,a.args[1])
-  lazy_map( transpose, i_to_basis)
+  lazy_map(transpose, i_to_basis)
 end
 
 # Gradient rules
