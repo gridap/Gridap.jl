@@ -1,5 +1,38 @@
 """
-Immutable tensor types for Gridap.
+Immutable tensor types for Gridap. The currently implemented tensor types are
+- 1st order [`VectorValue`](@ref),
+- 2nd order [`TensorValue`](@ref),
+- 2nd order and symmetric [`SymTensorValue`](@ref),
+- 2nd order, symmetric and traceless [`SymTracelessTensorValue`](@ref),
+- 3rd order [`ThirdOrderTensorValue`](@ref),
+- 4th order and symmetric [`SymFourthOrderTensorValue`](@ref).
+
+Example usage:
+```julia
+# create a 2D vector from components
+v = VectorValue(12,31)
+
+# Assign a VectorValue to all the entries of an Array of VectorValues
+A = zeros(VectorValue{2,Int}, (4,5))
+A .= v # This is possible since  VectorValue <: Number
+
+using StaticArrays
+# create 2x2 tensor from component tuple
+t = TensorValue( (1, 2, 3, 4) )
+# conversion to StaticArrays type
+ts= convert(SMatrix{2,2,Int}, t)
+@show ts
+# 2×2 SMatrix{2, 2, Int64, 4} with indices SOneTo(2)×SOneTo(2):
+#  1  3
+#  2  4
+t2[1,2] == t[1,2] == 3 # true
+
+# conversion from Array or StaticArray types, symmetric tensor types only store required components
+SymTensorValue( [1 2; 3 4] )          # SymTensorValue{2, Int64, 3}(1, 2, 4)
+SymTensorValue( SMatrix{2}(1,2,3,4) ) # SymTensorValue{2, Int64, 3}(1, 3, 4)
+```
+
+See the official documentation for more details.
 """
 module TensorValues
 
