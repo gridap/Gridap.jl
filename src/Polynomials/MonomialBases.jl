@@ -351,8 +351,11 @@ function _evaluate_1d!(v::AbstractMatrix{T},x,order,d) where T
   n = order + 1
   z = one(T)
   @inbounds v[d,1] = z
+  @inbounds xd = x[d]
+  xn = xd
   for i in 2:n
-    @inbounds v[d,i] = x[d]^(i-1)
+    @inbounds v[d,i] = xn
+    xn *= xd
   end
 end
 
@@ -360,8 +363,11 @@ function _gradient_1d!(v::AbstractMatrix{T},x,order,d) where T
   n = order + 1
   z = zero(T)
   @inbounds v[d,1] = z
+  @inbounds xd = x[d]
+  xn = one(T)
   for i in 2:n
-    @inbounds v[d,i] = (i-1)*x[d]^(i-2)
+    @inbounds v[d,i] = (i-1)*xn
+    xn *= xd
   end
 end
 
@@ -372,8 +378,11 @@ function _hessian_1d!(v::AbstractMatrix{T},x,order,d) where T
   if n>1
     @inbounds v[d,2] = z
   end
+  @inbounds xd = x[d]
+  xn = one(T)
   for i in 3:n
-    @inbounds v[d,i] = (i-1)*(i-2)*x[d]^(i-3)
+    @inbounds v[d,i] = (i-1)*(i-2)*xn
+    xn *= xd
   end
 end
 
@@ -406,16 +415,10 @@ function _evaluate_nd!(
 end
 
 function _set_value!(v::AbstractVector{V},s::T,k) where {V,T}
-  ncomp::Int = num_indep_components(V)
-  m = zero(MVector{ncomp,T})
+  ncomp = num_indep_components(V)
   z = zero(T)
-  js = SOneTo(ncomp)#1:ncomp
-  for j in js
-    for i in js
-      @inbounds m[i] = z
-    end
-    m[j] = s
-    v[k] = Tuple(m)
+  @inbounds for j in 1:ncomp
+    v[k] = ntuple(i -> ifelse(i == j, s, z),Val(ncomp))
     k += 1
   end
   k
@@ -474,58 +477,77 @@ function _set_gradient!(
   k+1
 end
 
-function _set_gradient!(
+@generated function  _set_gradient!(
   v::AbstractVector{G},s,k,::Type{V}) where {V,G}
+  # Git blame me for readable non-generated version
 
-  T = eltype(s)
-  m = zero(Mutable(G))
   w = zero(V)
-  z = zero(T)
+  m = Array{String}(undef, size(G))
+  N_val_dims = length(size(V))
+  s_size = size(G)[1:end-N_val_dims]
+
+  body = "T = eltype(s); z = zero(T);"
+  for ci in CartesianIndices(s_size)
+    id = join(Tuple(ci))
+    body *= "@inbounds s$id = s[$ci];"
+  end
+
   for j in CartesianIndices(w)
     for i in CartesianIndices(m)
-     @inbounds m[i] = z
+      m[i] = "z"
     end
-    for i in CartesianIndices(s)
-      @inbounds m[i,j] = s[i]
+    for ci in CartesianIndices(s_size)
+      id = join(Tuple(ci))
+      m[ci,j] = "s$id"
     end
-    @inbounds v[k] = m
-    k += 1
+    body *= "@inbounds v[k] = ($(join(tuple(m...), ", ")));"
+    body *= "k = k + 1;"
   end
-  k
+
+  body = Meta.parse(string("begin ",body," end"))
+  return Expr(:block, body ,:(return k))
 end
 
 # Specialization for SymTensorValue and SymTracelessTensorValue,
 # necessary as long as outer(Point, V<:AbstractSymTensorValue)::G does not
 # return a tensor type that implements the appropriate symmetries of the
 # gradient (and hessian)
-function _set_gradient!(
+@generated function _set_gradient!(
   v::AbstractVector{G},s,k,::Type{V}) where {V<:AbstractSymTensorValue{D},G} where D
-
+  # Git blame me for readable non-generated version
+  
   T = eltype(s)
-  m = zero(Mutable(G))
-  z = zero(T)
+  m = Array{String}(undef, size(G))
+  s_length = size(G)[1]
 
   is_traceless = V <: SymTracelessTensorValue
   skip_last_diagval = is_traceless ? 1 : 0    # Skid V_DD if traceless
 
+  body = "z = $(zero(T));"
+  for i in 1:s_length 
+    body *= "@inbounds s$i = s[$i];"
+  end
+  
   for c in 1:(D-skip_last_diagval) # Go over cols
     for r in c:D                   # Go over lower triangle, current col
-      for i in CartesianIndices(m)
-        @inbounds m[i] = z
+      for i in eachindex(m)
+        m[i] = "z"
       end
-      for i in CartesianIndices(s)
-        @inbounds m[i,r,c] = s[i]
+      for i in 1:s_length # indices of the Vector s
+        m[i,r,c] = "s$i"
         if (r!=c)
-          @inbounds m[i,c,r] = s[i]
+          m[i,c,r] = "s$i"
         elseif is_traceless # V_rr contributes negatively to V_DD (tracelessness)
-          @inbounds m[i,D,D] = -s[i]
+          m[i,D,D] = "-s$i"
         end
       end
-      @inbounds v[k] = m
-      k += 1
+      body *= "@inbounds v[k] = ($(join(tuple(m...), ", ")));"
+      body *= "k = k + 1;"
     end
   end
-  k
+
+  body = Meta.parse(string("begin ",body," end"))
+  return Expr(:block, body ,:(return k))
 end
 
 function _hessian_nd!(

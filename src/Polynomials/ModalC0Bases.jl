@@ -393,16 +393,10 @@ end
 
 @inline function _set_value_mc0!(v::AbstractVector{V},s::T,k,l) where {V,T}
   ncomp = num_indep_components(V)
-  m = zero(MVector{ncomp,T})
   z = zero(T)
-  js = 1:ncomp
-  for j in js
-    for i in js
-      @inbounds m[i] = z
-    end
-    @inbounds m[j] = s
-    i = k+l*(j-1)
-    @inbounds v[i] = Tuple(m)
+  for j in 1:ncomp
+    m = k+l*(j-1)
+    @inbounds v[m] = ntuple(i -> ifelse(i == j, s, z),Val(ncomp))
   end
   k+1
 end
@@ -466,25 +460,36 @@ end
 # Indexing and m definition should be fixed if G contains symmetries, that is
 # if the code is  optimized for symmetric tensor V valued FESpaces
 # (if gradient_type(V) returned a symmetric higher order tensor type G)
-@inline function _set_gradient_mc0!(
+@inline @generated function _set_gradient_mc0!(
   v::AbstractVector{G},s,k,l,::Type{V}) where {V,G}
+  # Git blame me for readable non-generated version
   @notimplementedif num_indep_components(G) != num_components(G) "Not implemented for symmetric Jacobian or Hessian"
+  
+  m = Array{String}(undef, size(G))
+  N_val_dims = length(size(V))
+  s_size = size(G)[1:end-N_val_dims]
 
-  T = eltype(s)
-  m = zero(Mutable(G))
-  w = zero(V)
-  z = zero(T)
-  for (ij,j) in enumerate(CartesianIndices(w))
-    for i in CartesianIndices(m)
-      @inbounds m[i] = z
-    end
-    for i in CartesianIndices(s)
-      @inbounds m[i,j] = s[i]
-    end
-    i = k+l*(ij-1)
-    @inbounds v[i] = m
+  body = "T = eltype(s); z = zero(T);"
+  for ci in CartesianIndices(s_size)
+    id = join(Tuple(ci))
+    body *= "@inbounds s$id = s[$ci];"
   end
-  k+1
+  
+  V_size = size(V)
+  for (ij,j) in enumerate(CartesianIndices(V_size))
+    for i in CartesianIndices(m)
+      m[i] = "z"
+    end
+    for ci in CartesianIndices(s_size)
+      id = join(Tuple(ci))
+      m[ci,j] = "s$id"
+    end
+    body *= "i = k + l*($ij-1);"
+    body *= "@inbounds v[i] = ($(join(tuple(m...), ", ")));"
+  end
+
+  body = Meta.parse(string("begin ",body," end"))
+  return Expr(:block, body ,:(return k+1))
 end
 
 function _hessian_nd_mc0!(

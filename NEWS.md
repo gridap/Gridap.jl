@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed #974, an error when weak form is real but unknown vector is complex. Since PR[#1050](https://github.com/gridap/Gridap.jl/pull/1050).
 - Fixed issue where barycentric refinement rule in 3D would not produce oriented meshes. Since PR[#1055](https://github.com/gridap/Gridap.jl/pull/1055).
 
+### Changed
+- Optimized MonomialBasis low-level functions. Since PR[#1059](https://github.com/gridap/Gridap.jl/pull/1059).
+
 ## [0.18.7] - 2024-10-8
 
 ### Added
