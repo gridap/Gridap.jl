@@ -194,6 +194,58 @@ for op in (:*,:⋅,:⊙,:⊗)
   end
 end
 
+# Hessian rules 
+for op in (:+,:-)
+  @eval begin
+
+    function lazy_map(
+      ::typeof(∇∇), a::LazyArray{<:Fill{Operation{typeof($op)}}})
+
+      f = a.args
+      g = map(i->lazy_map(∇∇,i),f)
+      lazy_map(Operation($op),g...)
+    end
+
+    function lazy_map(
+      ::Broadcasting{typeof(∇∇)}, a::LazyArray{<:Fill{Broadcasting{Operation{typeof($op)}}}})
+
+      f = a.args
+      g = map(i->lazy_map(Broadcasting(∇∇),i),f)
+      lazy_map(Broadcasting(Operation($op)),g...)
+    end
+
+  end
+end
+
+for op in (:*,)
+  @eval begin
+
+    function lazy_map(
+      ::typeof(∇∇), a::LazyArray{<:Fill{Operation{typeof($op)}}})
+
+      f = a.args
+      @notimplementedif length(f) != 2
+      g = map(i->lazy_map(gradient,i),f)
+      h = map(i->lazy_map(∇∇,i),f)
+      prod_rule_hess(F1,F2,G1,G2,H1,H2) = product_rule_hessian($op,F1,F2,G1,G2,H1,H2)
+      lazy_map(Operation(prod_rule_hess),f...,g...,h...)
+    end
+
+    function lazy_map(
+      ::Broadcasting{typeof(∇∇)}, a::LazyArray{<:Fill{Broadcasting{Operation{typeof($op)}}}})
+
+      f = a.args
+      @notimplementedif length(f) != 2
+      g = map(i->lazy_map(Broadcasting(∇),i),f)
+      h = map(i->lazy_map(Broadcasting(∇∇),i),f)
+      prod_rule_hess(F1,F2,G1,G2,H1,H2) = product_rule_hessian($op,F1,F2,G1,G2,H1,H2)
+      lazy_map(Broadcasting(Operation(prod_rule_hess)),f...,g...,h...)
+    end
+
+  end
+end
+
+
 function lazy_map(
   ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{Broadcasting{typeof(∘)}}})
 
