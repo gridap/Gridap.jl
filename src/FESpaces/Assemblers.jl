@@ -434,6 +434,7 @@ function collect_cell_vector(test::FESpace,a::DomainContribution)
   w = []
   r = []
   for strian in get_domains(a)
+    num_cells(strian) == 0 && continue
     scell_vec = get_contribution(a,strian)
     cell_vec, trian = move_contributions(scell_vec,strian)
     @assert ndims(eltype(cell_vec)) == 1
@@ -497,6 +498,7 @@ function _pair_contribution_when_possible(biform,liform)
   mat = DomainContribution()
   vec = DomainContribution()
   for (trian,t) in biform.dict
+    num_cells(trian) == 0 && continue
     if haskey(liform.dict,trian)
       matvec.dict[trian] = pair_arrays(t,liform.dict[trian])
     else
@@ -504,6 +506,7 @@ function _pair_contribution_when_possible(biform,liform)
     end
   end
   for (trian,t) in liform.dict
+    num_cells(trian) == 0 && continue
     if ! haskey(biform.dict,trian)
       vec.dict[trian] = t
     end
@@ -516,11 +519,13 @@ function _pair_contribution_when_possible(biform,liform,uhd)
   matvec = DomainContribution()
   mat = DomainContribution()
   for (trian,t) in _matvec.dict
+    num_cells(trian) == 0 && continue
     cellvals = get_cell_dof_values(uhd,trian)
     cellmask = get_cell_is_dirichlet(uhd,trian)
     matvec.dict[trian] = attach_dirichlet(t,cellvals,cellmask)
   end
   for (trian,t) in _mat.dict
+    num_cells(trian) == 0 && continue
     cellvals = get_cell_dof_values(uhd,trian)
     cellmask = get_cell_is_dirichlet(uhd,trian)
     matvec.dict[trian] = attach_dirichlet(t,cellvals,cellmask)
