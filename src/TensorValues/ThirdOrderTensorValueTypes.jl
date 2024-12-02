@@ -1,6 +1,10 @@
 
 """
-Type representing a third-order tensor
+    ThirdOrderTensorValue{D1,D2,D3,T,L} <: MultiValue{Tuple{D1,D2,D3},T,3,L}
+
+Type representing a third-order `D1`×`D2`×`D3` tensor. It must hold `L` = `D1`\\*`D2`\\*`D3`.
+
+If only `D1` or no dimension parameter is given to the constructor, `D1`=`D2`=`D3` is assumed.
 """
 struct ThirdOrderTensorValue{D1,D2,D3,T,L} <: MultiValue{Tuple{D1,D2,D3},T,3,L}
     data::NTuple{L,T}
@@ -64,8 +68,8 @@ convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::AbstractArray) where {
 convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::Tuple) where {D1,D2,D3,T} = ThirdOrderTensorValue{D1,D2,D3,T}(arg)
 
 # Inverse conversion
-convert(::Type{<:SMatrix{D1,D2,D3,T}}, arg::ThirdOrderTensorValue) where {D1,D2,D3,T} = SMatrix{D1,D2,D3,T}(Tuple(arg))
-convert(::Type{<:MMatrix{D1,D2,D3,T}}, arg::ThirdOrderTensorValue) where {D1,D2,D3,T} = MMatrix{D1,D2,D3,T}(Tuple(arg))
+convert(::Type{<:SArray{Tuple{D1,D2,D3},T}}, arg::ThirdOrderTensorValue) where {D1,D2,D3,T} = SArray{Tuple{D1,D2,D3},T}(Tuple(arg))
+convert(::Type{<:MArray{Tuple{D1,D2,D3},T}}, arg::ThirdOrderTensorValue) where {D1,D2,D3,T} = MArray{Tuple{D1,D2,D3},T}(Tuple(arg))
 convert(::Type{<:NTuple{L,T1}}, arg::ThirdOrderTensorValue) where {L,T1} = NTuple{L,T1}(Tuple(arg))
 
 # Internal conversion
@@ -74,8 +78,11 @@ convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::ThirdOrderTensorValue{
 
 # other
 
+change_eltype(::Type{ThirdOrderTensorValue{D1,D2,D3,T1}},::Type{T2}) where {D1,D2,D3,T1,T2} = ThirdOrderTensorValue{D1,D2,D3,T2}
 change_eltype(::Type{ThirdOrderTensorValue{D1,D2,D3,T1,L}},::Type{T2}) where {D1,D2,D3,T1,T2,L} = ThirdOrderTensorValue{D1,D2,D3,T2,L}
 change_eltype(::T,::Type{T2}) where {T<:ThirdOrderTensorValue,T2} = change_eltype(T,T2)
+
+get_array(arg::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = convert(SArray{Tuple{D1,D2,D3},T},arg)
 
 zero(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T} = ThirdOrderTensorValue{D1,D2,D3,T}(tfill(zero(T),Val{D1*D2*D3}()))
 zero(::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = zero(ThirdOrderTensorValue{D1,D2,D3,T})
@@ -109,6 +116,20 @@ size(::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = size(ThirdOrderTensor
 length(::Type{<:ThirdOrderTensorValue{D1,D2,D3}}) where {D1,D2,D3} = D1*D2*D3
 length(::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = length(ThirdOrderTensorValue{D1,D2,D3})
 
+num_components(::Type{<:ThirdOrderTensorValue}) = @unreachable "All three size dimensions are needed to count components"
 num_components(::Type{<:ThirdOrderTensorValue{D1,D2,D3}}) where {D1,D2,D3} = length(ThirdOrderTensorValue{D1,D2,D3})
 num_components(::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = num_components(ThirdOrderTensorValue{D1,D2,D3})
+
+###############################################################
+# VTK export (ThirdOrderTensorValue)
+###############################################################
+
+function indep_components_names(::Type{<:ThirdOrderTensorValue{D1,D2,D3}}) where {D1,D2,D3}
+  if D1>3 || D2>3 || D3>3
+    return ["$i$j$k" for i in 1:D1 for j in 1:D2 for k in 1:D3 ]
+  else
+    c_name = ["X", "Y", "Z"]
+    return [c_name[i]*c_name[j]*c_name[k] for i in 1:D1 for j in 1:D2 for k in 1:D3]
+  end
+end
 

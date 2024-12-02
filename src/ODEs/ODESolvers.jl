@@ -202,5 +202,5 @@ function RungeKutta(
 end
 
 function RungeKutta(sysslvr_nl::NonlinearSolver, dt::Real, tableau)
-  RungeKutta(sysslvr_nl, sysslvr_nl, dt, name)
+  RungeKutta(sysslvr_nl, sysslvr_nl, dt, tableau)
 end

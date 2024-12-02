@@ -3,7 +3,11 @@
 ###############################################################
 
 """
-Type representing a second-order tensor
+    TensorValue{D1,D2,T,L} <: MultiValue{Tuple{D1,D2},T,2,L}
+
+Type representing a second-order `D1`×`D2` tensor. It must hold `L` = `D1`*`D2`.
+
+If only `D1` or no dimension parameter is given to the constructor, `D1`=`D2` is assumed.
 """
 struct TensorValue{D1,D2,T,L} <: MultiValue{Tuple{D1,D2},T,2,L}
     data::NTuple{L,T}
@@ -14,7 +18,7 @@ struct TensorValue{D1,D2,T,L} <: MultiValue{Tuple{D1,D2},T,2,L}
 end
 
 ###############################################################
-# Constructors 
+# Constructors
 ###############################################################
 
 # Empty TensorValue constructor
@@ -111,11 +115,17 @@ Mutable(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T} = MMatrix{D1,D2,T}
 Mutable(::TensorValue{D1,D2,T}) where {D1,D2,T} = Mutable(TensorValue{D1,D2,T})
 mutable(a::TensorValue{D1,D2}) where {D1,D2} = MMatrix{D1,D2}(a.data)
 
+change_eltype(::Type{TensorValue{D1,D2,T1}},::Type{T2}) where {D1,D2,T1,T2} = TensorValue{D1,D2,T2}
 change_eltype(::Type{TensorValue{D1,D2,T1,L}},::Type{T2}) where {D1,D2,T1,T2,L} = TensorValue{D1,D2,T2,L}
 change_eltype(::TensorValue{D1,D2,T1,L},::Type{T2}) where {D1,D2,T1,T2,L} = change_eltype(TensorValue{D1,D2,T1,L},T2)
 
 get_array(arg::TensorValue{D1,D2,T}) where {D1,D2,T} = convert(SMatrix{D1,D2,T},arg)
 
+"""
+    diagonal_tensor(v::VectorValue{D,T}) -> ::TensorValue{D,D,T}
+
+Return a diagonal `D`×`D` tensor with diagonal containing the elements of `v`.
+"""
 @generated function diagonal_tensor(v::VectorValue{D,T}) where {D,T}
   s = ["zero(T), " for i in 1:(D*D)]
   for i in 1:D
@@ -141,7 +151,20 @@ length(::Type{<:TensorValue{D}}) where {D} = length(TensorValue{D,D})
 length(::Type{<:TensorValue{D1,D2}}) where {D1,D2} = D1*D2
 length(::TensorValue{D1,D2}) where {D1,D2} = length(TensorValue{D1,D2})
 
-num_components(::Type{<:TensorValue{D}}) where {D} = length(TensorValue{D,D})
+num_components(::Type{<:TensorValue}) = @unreachable "All two size dimensions are needed to count components"
+num_components(::Type{<:TensorValue{D,D}}) where {D} = length(TensorValue{D,D})
 num_components(::Type{<:TensorValue{D1,D2}}) where {D1,D2} = length(TensorValue{D1,D2})
 num_components(::TensorValue{D1,D2}) where {D1,D2} = num_components(TensorValue{D1,D2})
 
+###############################################################
+# VTK export (TensorValue)
+###############################################################
+
+function indep_components_names(::Type{<:TensorValue{D1,D2}}) where {D1,D2}
+  if D1>3 || D2>3
+    return ["$i$j" for i in 1:D1 for j in 1:D2 ]
+  else
+    c_name = ["X", "Y", "Z"]
+    return [c_name[i]*c_name[j] for i in 1:D1 for j in 1:D2 ]
+  end
+end

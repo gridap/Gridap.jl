@@ -8,6 +8,7 @@ module ReferenceFEs
 using Test
 using DocStringExtensions
 using LinearAlgebra
+using StaticArrays
 using Combinatorics
 using FillArrays
 using ..Gridap
@@ -103,12 +104,10 @@ export get_face_moments
 export get_face_nodes_dofs
 export get_nodes
 export evaluate!
-export evaluate_dof
 export return_cache
 export return_type
 export test_dof
 export test_dof_array
-# export evaluate_dof_array
 
 export ReferenceFE
 export ReferenceFEName
@@ -212,6 +211,7 @@ export test_quadrature
 export tensor_product
 export duffy
 export strang
+export xiao_gimbutas
 
 include("Polytopes.jl")
 
@@ -242,6 +242,8 @@ include("TensorProductQuadratures.jl")
 include("DuffyQuadratures.jl")
 
 include("StrangQuadratures.jl")
+
+include("XiaoGimbutasQuadratures.jl")
 
 include("RaviartThomasRefFEs.jl")
 

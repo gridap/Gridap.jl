@@ -553,6 +553,11 @@ function get_reffaces(::Type{Polytope{d}},p::Polytope) where d
   collect(ftype_to_refface)
 end
 
+function get_reffaces(p::Polytope)
+  ftype_to_refface, = _compute_reffaces_and_face_types(p)
+  collect(ftype_to_refface)
+end
+
 """
     get_face_type(p::Polytope,d::Integer) -> Vector{Int}
 
@@ -588,9 +593,31 @@ function get_face_type(p::Polytope,d::Integer)
   iface_to_ftype
 end
 
+function get_face_type(p::Polytope)
+  _, iface_to_ftype = _compute_reffaces_and_face_types(p)
+  iface_to_ftype
+end
+
 function _compute_reffaces_and_face_types(p::Polytope,::Val{d}) where d
   iface_to_refface = [ Polytope{d}(p,iface) for iface in 1:num_faces(p,d) ]
   _find_unique_with_indices(iface_to_refface)
+end
+
+function _compute_reffaces_and_face_types(p::Polytope)
+  D = num_cell_dims(p)
+  d_to_refdfaces = Vector{Polytope}[]
+  d_to_dface_to_ftype = Vector{Int8}[]
+  for d in 0:D
+    reffaces, face_to_ftype = _compute_reffaces_and_face_types(p,Val(d))
+    push!(d_to_refdfaces,reffaces)
+    push!(d_to_dface_to_ftype,face_to_ftype)
+  end
+  d_to_offset = zeros(Int,D+1)
+  for d in 1:D
+    d_to_offset[d+1] = d_to_offset[d] + length(d_to_refdfaces[d])
+    d_to_dface_to_ftype[d+1] .+= d_to_offset[d+1]
+  end
+  (collect(vcat(d_to_refdfaces...)), vcat(d_to_dface_to_ftype...), d_to_offset)
 end
 
 function _find_unique_with_indices(a_to_b)
@@ -665,13 +692,19 @@ function get_face_vertex_permutations(p::Polytope)
 end
 
 """
+    get_face_coordinates(p::Polytope)
     get_face_coordinates(p::Polytope,d::Integer)
 """
 function get_face_coordinates(p::Polytope,d::Integer)
   vert_to_coord = get_vertex_coordinates(p)
   face_to_vertices = get_faces(p,d,0)
   collect(lazy_map(Broadcasting(Reindex(vert_to_coord)),face_to_vertices))
-  # collect(LocalToGlobalArray(face_to_vertices,vert_to_coord))
+end
+
+function get_face_coordinates(p::Polytope)
+  D = num_cell_dims(p)
+  p = [ get_face_coordinates(p,d) for d in 0:D ]
+  vcat(p...)
 end
 
 # Testers
@@ -709,9 +742,17 @@ function test_polytope(p::Polytope{D};optional::Bool=false) where D
       @test isa(fs,Vector{Vector{Int}})
     end
   end
+  reffaces = get_reffaces(p)
+  facetypes = get_face_type(p)
+  @test isa(reffaces,Vector{<:Polytope})
+  @test isa(facetypes,Vector{<:Integer})
+  @test num_faces(p) == length(facetypes)
   x = get_vertex_coordinates(p)
   @test isa(x,Vector{Point{D,Float64}})
   @test length(x) == num_faces(p,0)
+  face_x = get_face_coordinates(p)
+  @test isa(face_x,Vector{Vector{Point{D,Float64}}})
+  @test length(face_x) == num_faces(p)
   if optional
     fn = get_facet_normal(p)
     @test isa(fn,Vector{VectorValue{D,Float64}})
