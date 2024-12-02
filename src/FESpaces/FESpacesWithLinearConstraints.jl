@@ -297,6 +297,8 @@ function get_fe_dof_basis(f::FESpaceWithLinearConstraints)
   get_fe_dof_basis(f.space)
 end
 
+get_dof_value_type(f::FESpaceWithLinearConstraints) = get_dof_value_type(f.space)
+
 get_dirichlet_dof_ids(f::FESpaceWithLinearConstraints) = Base.OneTo(length(f.mDOF_to_DOF) - f.n_fmdofs)
 
 num_dirichlet_tags(f::FESpaceWithLinearConstraints) = num_dirichlet_tags(f.space)
