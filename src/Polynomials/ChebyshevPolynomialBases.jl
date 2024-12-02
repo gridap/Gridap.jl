@@ -175,20 +175,6 @@ function _evaluate_1d_ch_T!(v::AbstractMatrix{T},x,order,d) where T
   end
 end
 
-function _evaluate_1d_ch_U!(v::AbstractMatrix{T},x,order,d) where T
-  n = order + 1
-  o = one(T)
-  @inbounds v[d,1] = o
-  if n > 1
-    ξ = (2*x[d] - 1) # ξ ∈ [-1,1]
-    ξ2 = 2*ξ
-    v[d,2] = ξ2
-    for i in 3:n
-      @inbounds v[d,i] = v[d,i-1]*ξ2 - v[d,i-2]
-    end
-  end
-end
-
 function _gradient_1d_ch_T!(v::AbstractMatrix{T},x,order,d) where T
   n = order + 1
   z = zero(T)
