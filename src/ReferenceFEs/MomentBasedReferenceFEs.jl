@@ -166,6 +166,49 @@ function get_extension(m::FaceMeasure{Df,Dc}) where {Df,Dc}
   return ConstantField(TensorValue(hcat([vs[2]-vs[1]...],[vs[3]-vs[1]...])))
 end
 
+# TO DO: Bug in 3D, when n==2; n==4 and D==3
+function get_facet_measure(p::Polytope{D}, face::Int) where D
+  measures = Float64[]
+  facet_entities = get_face_coordinates(p)
+  for entity in facet_entities   
+    n = length(entity)
+    if n == 1 
+       push!(measures, 0.0)  # A point has zero measure
+    elseif n == 2
+        # Length of an edge
+        p1, p2 = entity
+        push!(measures, norm(p2-p1))
+    elseif n == 3 && D == 2
+      # Perimeter of the closed polygon
+      n = length(entity)
+      perimeter = 0.0
+      for i in 1:n
+          p1, p2 = entity[i], entity[mod1(i+1, n)]  # cyclic indices
+          perimeter += norm([p2[1] - p1[1], p2[2] - p1[2]])
+      end
+      push!(measures, perimeter)
+    elseif n == 3 && D == 3
+      # Area of a simplex 
+      p1, p2, p3 = entity
+      v1 = [p2[i] - p1[i] for i in 1:D]
+      v2 = [p3[i] - p1[i] for i in 1:D]
+      area = 0.5 * norm(cross(v1, v2))
+      push!(measures, area)
+    elseif n == 4 && D == 3
+      # Volume of a tetrahedron ( To do: Should be perimeter of the tetrahedron.)
+      p1, p2, p3, p4 = entity
+      v1 = [p2[i] - p1[i] for i in 1:D]
+      v2 = [p3[i] - p1[i] for i in 1:D]
+      v3 = [p4[i] - p1[i] for i in 1:D]
+      volume = abs(dot(v1, cross(v2, v3))) / 6
+      push!(measures, volume)
+    end
+
+  end
+  dim = get_dimranges(p)[face+1]
+  return measures[dim]
+end
+
 function Arrays.return_cache(
   σ::Function,                # σ(φ,μ,ds) -> Field/Array{Field}
   φ::AbstractArray{<:Field},  # φ: prebasis (defined on the cell)
