@@ -5,10 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.18.8] - 2024-12-2
 
 ### Added
 
+- Added get_dof_value_type for FESpacesWithLinearConstraints. Since PR[#1062](https://github.com/gridap/Gridap.jl/pull/1062).
 - Added Xiao-Gimbutas quadratures for simplices. Since PR[#1058](https://github.com/gridap/Gridap.jl/pull/1058).
 - Small improvements of the documentation of `Gridap.TensorValues`. Since PR[#1051](https://github.com/gridap/Gridap.jl/pull/1051).
 
