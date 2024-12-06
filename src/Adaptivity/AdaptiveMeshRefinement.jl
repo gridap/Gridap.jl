@@ -148,6 +148,13 @@ end
 
 # Estimators
 
+"""
+    estimate(f::Function, uh::Function) -> Vector{Float64}
+
+Given a functional `f` and a function `uh`, such that `f(uh)` produces a 
+scalar-valued `DomainContribution`, collects the estimator values for 
+each cell in the background model.
+"""
 function estimate(f::Function, uh)
   collect_estimator(f(uh))
 end
