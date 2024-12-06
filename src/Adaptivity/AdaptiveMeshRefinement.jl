@@ -1,4 +1,6 @@
 
+# Marking strategies
+
 """
   struct DorflerMarking
     θ :: Float64
@@ -56,6 +58,12 @@ struct DorflerMarking
   end
 end
 
+"""
+    mark(m::DorflerMarking, η::Vector{<:Real}) -> Vector{Int}
+
+Given a vector `η` of real positive numbers, returns a subset of indices `I` such that 
+satisfying the Dorfler marking condition.
+"""
 mark(m::DorflerMarking, η::Vector{<:Real}) = mark(Val(m.strategy), m, η)
 
 function mark(::Val{:sort}, m::DorflerMarking, η::Vector{<:Real})
@@ -136,4 +144,38 @@ function mark(::Val{:quickmark}, m::DorflerMarking, η::Vector{<:Real})
   target = m.θ * sum(η)
   m = quickmark!(η, perm, l, u, target)
   return perm[1:m]
+end
+
+# Estimators
+
+function estimate(f::Function, uh)
+  collect_estimator(f(uh))
+end
+
+function collect_estimator(c::DomainContribution)
+  trians = get_domains(c)
+  bgmodel = get_background_model(first(trians))
+  msg = "Estimator not implemented for mixed background models"
+  @notimplementedif !all([bgmodel == get_background_model(trian) for trian in trians]) msg
+
+  Dc = num_cell_dims(bgmodel)
+  η = zeros(Float64,num_cells(bgmodel))
+  for trian in trians
+    glue = get_glue(trian,Val(Dc))
+    collect_estimator!(η,glue,get_contribution(c,trian))
+  end
+
+  return η
+end
+
+function collect_estimator!(η, glue::FaceToFaceGlue, c)
+  cache = array_cache(c)
+  for (face,bgcell) in enumerate(glue.tface_to_mface)
+    η[bgcell] += getindex!(cache,c,face)
+  end
+end
+
+function collect_estimator!(η, glue::SkeletonPair, c)
+  collect_estimator!(η,glue.plus,c)
+  collect_estimator!(η,glue.minus,c)
 end

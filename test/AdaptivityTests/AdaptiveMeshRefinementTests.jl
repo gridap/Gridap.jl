@@ -31,11 +31,52 @@ function LShapedModel(n)
   return simplexify(DiscreteModelPortion(model,mask))
 end
 
+function amr_step(model)
+  order = 1
+  reffe = ReferenceFE(lagrangian,Float64,order)
+  V = TestFESpace(model,reffe)
+  
+  Ω = Triangulation(model)
+  Γ = Boundary(model)
+  Λ = Skeleton(model)
+  
+  dΩ = Measure(Ω,2*order)
+  dΓ = Measure(Γ,2*order)
+  dΛ = Measure(Λ,2*order)
+  
+  hK = CellField(sqrt.(collect(get_array(∫(1)dΩ))),Ω)
+  
+  f(x) = 1.0 / ((x[1]-0.5)^2 + (x[2]-0.5)^2)^(1/2)
+  a(u,v) = ∫(∇(u)⋅∇(v))dΩ
+  l(v)   = ∫(f*v)dΩ
+  ηh(u)  = ∫(hK*f)dΩ + ∫(hK*∇(u)⋅∇(u))dΓ + ∫(hK*jump(∇(u))⋅jump(∇(u)))dΛ
+  
+  op = AffineFEOperator(a,l,V,V)
+  uh = solve(op)
+  η = estimate(ηh,uh)
+  
+  m = DorflerMarking(0.5)
+  I = Adaptivity.mark(m,η)
+  
+  method = Adaptivity.NVBRefinement(model)
+  fmodel = Adaptivity.get_model(refine(method,model;cells_to_refine=I))
+
+  return fmodel, uh, η, I
+end
+
 model = LShapedModel(10)
 
-method = Adaptivity.NVBRefinement(model)
-cells_to_refine = [collect(1:10)...,collect(20:30)...]
-fmodel = refine(method,model;cells_to_refine)
-
-writevtk(Triangulation(fmodel),"tmp/fmodel";append=false)
-
+for i in 1:10
+  fmodel, uh, η, I = amr_step(model)
+  is_refined = map(i -> ifelse(i ∈ I, 1, -1), 1:num_cells(model))
+  Ω = Triangulation(model)
+  writevtk(
+    Ω,"tmp/model_$(i-1)",append=false,
+    cellfields = [
+      "uh" => uh,
+      "η" => CellField(η,Ω),
+      "is_refined" => CellField(is_refined,Ω)
+    ],
+  )
+  model = fmodel
+end

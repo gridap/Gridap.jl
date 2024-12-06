@@ -40,7 +40,7 @@ export AdaptedTriangulation
 export Triangulation, is_change_possible, best_target, get_adapted_model
 export change_domain, move_contributions
 
-export DorflerMarking, mark
+export DorflerMarking, mark, estimate
 
 include("RefinementRules.jl")
 include("FineToCoarseFields.jl")
