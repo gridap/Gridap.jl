@@ -1,4 +1,46 @@
 
+"""
+  struct DorflerMarking
+    θ :: Float64
+    ν :: Float64
+    strategy :: Symbol
+  end
+
+  DorflerMarking(θ::Float64; ν::Float64 = 0.5, strategy::Symbol = :quickmark)
+
+Implements the Dorfler marking strategy. Given a vector `η` of real positive numbers, 
+the marking strategy find a subset of indices `I` such that 
+
+  sum(η[I]) > θ * sum(η)
+
+where `0 < θ < 1` is a threshold parameter. 
+
+For more details, see the following reference: 
+
+`Dörfler marking with minimal cardinality is a linear complexity problem`, Pfeiler et al. (2020)
+
+The marking algorithm is controlled by the `strategy` parameter, which can take 
+the following values: 
+
+- `:sort`: Optimal cardinality, O(N log N) complexity. See Algorithm 2 in the reference.
+- `:binsort`: Quasi-optimal cardinality, O(N) complexity. See Algorithm 7 in the reference.
+- `:quickmark`: Optimal cardinality, O(N) complexity.  See Algorithm 10 in the reference.
+
+# Arguments
+
+- `θ::Float64`: The threshold parameter. Between 0 and 1.
+- `ν::Float64`: Extra parameter for `:binsort`. Default is 0.5.
+- `strategy::Symbol`: The marking strategy. Default is `:quickmark`.
+
+# Usage
+
+```julia
+η = abs.(randn(1000))
+m = DorflerMarking(0.5)
+I = mark(m,η)
+```
+
+"""
 struct DorflerMarking
   θ :: Float64
   ν :: Float64
@@ -6,7 +48,7 @@ struct DorflerMarking
   function DorflerMarking(
     θ::Float64;
     ν::Float64 = 0.5,
-    strategy::Symbol = :sort
+    strategy::Symbol = :quickmark
   )
     @assert 0 < θ < 1
     @assert strategy ∈ (:sort,:binsort,:quickmark) "Strategy not recognized. Available values are (:sort)"

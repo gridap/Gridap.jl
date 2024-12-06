@@ -4,7 +4,7 @@ using DataStructures
 
 # Marking tests
 
-function test_marking()
+function test_dorfler_marking()
   for strategy in (:sort,:binsort,:quickmark)
     for n in (1000,10000)
       for θ in (0.3,0.5)
@@ -19,7 +19,7 @@ function test_marking()
   end
 end
 
-test_marking()
+@testset "Dorfler marking" test_dorfler_marking()
 
 # AMR tests
 
