@@ -2,13 +2,13 @@
 # Marking strategies
 
 """
-  struct DorflerMarking
-    θ :: Float64
-    ν :: Float64
-    strategy :: Symbol
-  end
+    struct DorflerMarking
+      θ :: Float64
+      ν :: Float64
+      strategy :: Symbol
+    end
 
-  DorflerMarking(θ::Float64; ν::Float64 = 0.5, strategy::Symbol = :quickmark)
+    DorflerMarking(θ::Float64; ν::Float64 = 0.5, strategy::Symbol = :quickmark)
 
 Implements the Dorfler marking strategy. Given a vector `η` of real positive numbers, 
 the marking strategy find a subset of indices `I` such that 
@@ -19,7 +19,7 @@ where `0 < θ < 1` is a threshold parameter.
 
 For more details, see the following reference: 
 
-`Dörfler marking with minimal cardinality is a linear complexity problem`, Pfeiler et al. (2020)
+"Dörfler marking with minimal cardinality is a linear complexity problem", Pfeiler et al. (2020)
 
 The marking algorithm is controlled by the `strategy` parameter, which can take 
 the following values: 
