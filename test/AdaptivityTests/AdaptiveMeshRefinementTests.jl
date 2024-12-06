@@ -1,5 +1,27 @@
-
+using Test
 using Gridap, Gridap.Geometry, Gridap.Adaptivity
+using DataStructures
+
+# Marking tests
+
+function test_marking()
+  for strategy in (:sort,:binsort,:quickmark)
+    for n in (1000,10000)
+      for θ in (0.3,0.5)
+        η = abs.(randn(n))
+        m = DorflerMarking(θ;strategy)
+        I = Adaptivity.mark(m,η)
+        @test sum(η[I]) > θ * sum(η)
+        println("Strategy: $strategy, θ: $θ, n: $n")
+        println("  > N marked = $(length(I)), val marked = $(sum(η[I]) / sum(η))")
+      end
+    end
+  end
+end
+
+test_marking()
+
+# AMR tests
 
 function LShapedModel(n)
   model = CartesianDiscreteModel((0,1,0,1),(n,n))
@@ -16,3 +38,4 @@ cells_to_refine = [collect(1:10)...,collect(20:30)...]
 fmodel = refine(method,model;cells_to_refine)
 
 writevtk(Triangulation(fmodel),"tmp/fmodel";append=false)
+
