@@ -64,9 +64,10 @@ function amr_step(model)
   return fmodel, uh, η, I
 end
 
+nsteps = 10
 model = LShapedModel(10)
 
-for i in 1:10
+for i in 1:nsteps
   fmodel, uh, η, I = amr_step(model)
   is_refined = map(i -> ifelse(i ∈ I, 1, -1), 1:num_cells(model))
   Ω = Triangulation(model)
