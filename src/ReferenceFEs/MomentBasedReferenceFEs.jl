@@ -166,7 +166,7 @@ function get_extension(m::FaceMeasure{Df,Dc}) where {Df,Dc}
   return ConstantField(TensorValue(hcat([vs[2]-vs[1]...],[vs[3]-vs[1]...])))
 end
 
-# TO DO: Bug in 3D, when n==2; n==4 and D==3
+# TO DO: Bug in 3D, when n==2; n==4 and D==3. Also, working on this to make better and more general.
 function get_facet_measure(p::Polytope{D}, face::Int) where D
   measures = Float64[]
   facet_entities = get_face_coordinates(p)
