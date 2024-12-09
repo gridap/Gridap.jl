@@ -80,6 +80,18 @@ The API is given by the following methods:
   MacroReferenceFE
 ```
 
+## Adaptive Mesh Refinement
+
+One of the main uses of mesh refinement is Adaptive Mesh Refinement, where the mesh is refined only in regions of interest.
+
+The typical AMR workflow is the so-called `solve-estimate-mark-refine` loop. Since estimators will generally be problem-dependent, we only aim to provide some generic tools that can be combined by the user:
+
+```@docs
+  DorflerMarking
+  mark
+  estimate
+```
+
 ## Notes for users
 
 Most of the tools provided by this module are showcased in the tests of the module itself, as well as the following tutorial (coming soon).
