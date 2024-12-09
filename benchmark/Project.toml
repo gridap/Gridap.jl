@@ -2,3 +2,4 @@
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Gridap = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
 PkgBenchmark = "32113eaa-f34f-5b0d-bd6c-c81e245fc73d"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"

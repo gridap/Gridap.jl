@@ -211,6 +211,7 @@ export test_quadrature
 export tensor_product
 export duffy
 export strang
+export xiao_gimbutas
 
 include("Polytopes.jl")
 
@@ -243,6 +244,8 @@ include("DuffyQuadratures.jl")
 include("StrangQuadratures.jl")
 
 include("MomentBasedReferenceFEs.jl")
+
+include("XiaoGimbutasQuadratures.jl")
 
 include("RaviartThomasRefFEs.jl")
 

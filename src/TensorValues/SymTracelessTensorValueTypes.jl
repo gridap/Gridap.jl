@@ -34,9 +34,6 @@ end
   Meta.parse("($str)")
 end
 
-"""
-Alias for [`SymTracelessTensorValue`](@ref).
-"""
 const QTensorValue = SymTracelessTensorValue
 
 ###############################################################
