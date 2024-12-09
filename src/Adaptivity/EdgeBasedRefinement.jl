@@ -78,7 +78,6 @@ function refine_edge_based_topology(
   c2n_map_new = get_refined_cell_to_vertex_map(topo,rrules,faces_list)
   polys_new, cell_type_new = _get_cell_polytopes(rrules)
   orientation = NonOriented()
-
   return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,polys_new,orientation)
 end
 
@@ -109,17 +108,28 @@ The new vertices are ordered by parent dimension and face id (in that order).
 function get_new_coordinates_from_faces(p::Union{Polytope{D},GridTopology{D}},faces_list::Tuple) where {D}
   @check length(faces_list) == D+1
 
-  nN_new     = sum(x->length(x),faces_list)
+  nN_new     = sum(length,faces_list)
   coords_old = get_vertex_coordinates(p)
   coords_new = Vector{eltype(coords_old)}(undef,nN_new)
 
   n = 1
-  for (d,dfaces) in enumerate(faces_list)
-    if length(dfaces) > 0
-      nf = length(dfaces)
-      d2n_map = get_faces(p,d-1,0)
-      coords_new[n:n+nf-1] .= map(f -> sum(coords_old[d2n_map[f]])/length(d2n_map[f]), dfaces)
-      n += nf
+  # Nodes
+  if !isempty(faces_list[1])
+    for node in faces_list[1]
+      coords_new[n] = coords_old[node]
+      n += 1
+    end
+  end
+  # Faces (d > 0)
+  for (d,dfaces) in enumerate(faces_list[2:end])
+    if !isempty(dfaces)
+      d2n_map = get_faces(p,d,0)
+      cache = array_cache(d2n_map)
+      for face in dfaces
+        face_nodes = getindex!(cache,d2n_map,face)
+        coords_new[n] = sum(coords_old[face_nodes])/length(face_nodes)
+        n += 1
+      end
     end
   end
 
@@ -255,12 +265,13 @@ function setup_edge_based_rrules(method::NVBRefinement, topo::UnstructuredGridTo
   setup_edge_based_rrules(method, topo, collect(1:num_faces(topo,Dc)))
 end
 
-function setup_edge_based_rrules(method::NVBRefinement, topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}) where Dc
+function setup_edge_based_rrules(
+  method::NVBRefinement, topo::UnstructuredGridTopology{Dc}, cells_to_refine::AbstractArray{<:Integer}
+) where Dc
   nE = num_faces(topo,1)
-  c2e_map       = get_faces(topo,Dc,1)
-  c2e_map_cache = array_cache(c2e_map)
-  e2c_map       = get_faces(topo,1,Dc)
-  polys       = topo.polytopes
+  c2e_map = get_faces(topo,Dc,1)
+  e2c_map = get_faces(topo,1,Dc)
+  polys   = topo.polytopes
   cell_types  = topo.cell_type
   cell_color  = copy(cell_types) # WHITE
   # Hardcoded for TRI
@@ -274,43 +285,39 @@ function setup_edge_based_rrules(method::NVBRefinement, topo::UnstructuredGridTo
   c_to_longest_edge_lid = method.cell_to_longest_edge_lid
   is_refined = falses(nE)
   # Loop over cells and mark edges to refine i.e. is_refined
-  # The reason to not loop directly on c is that we need to change c within
-  # a given iteration of the for loop
-  for i in 1:length(cells_to_refine)
-    c = cells_to_refine[i]
-    e_longest = c_to_longest_edge_gid[c]
+  for i in eachindex(cells_to_refine)
     # Has to terminate because an edge is marked each iteration or we skip an
     # iteration due to a boundary cell
-    while !is_refined[e_longest]
-      is_refined[e_longest] = true
-      c_nbor_lid = findfirst(c′ -> c′ != c, e2c_map[e_longest])
-      if isnothing(c_nbor_lid) # We've reach the boundary
+    c = cells_to_refine[i]
+    e = c_to_longest_edge_gid[c]
+    while !is_refined[e]
+      is_refined[e] = true
+      e_cells = view(e2c_map,e)
+      if length(e_cells) == 1 # We've reach the boundary
         continue
       else
-        # Get the longest edge of the neighbor
-        c_nbor_gid = e2c_map[e_longest][c_nbor_lid]
-        e_longest = c_to_longest_edge_gid[c_nbor_gid]
-        # Set the current cell gid to that of the neighbor
-        c = c_nbor_gid
+        # Propagate to neighboring cell
+        c = ifelse(e_cells[1] == c, e_cells[2], e_cells[1])
+        e = c_to_longest_edge_gid[c]
       end
     end
   end
   # Loop over cells and refine based on marked edges
   for c in 1:length(c2e_map)
-    c_edges = getindex!(c2e_map_cache, c2e_map, c)
+    c_edges = view(c2e_map,c)
     refined_edge_lids = findall(is_refined[c_edges])
-    # GREEN refinement because only one edge should be bisected
     if length(refined_edge_lids) == 1
+      # GREEN refinement because only one edge should be bisected
       ref_edge = refined_edge_lids[1]
       cell_color[c] = GREEN + Int8(ref_edge-1)
-      # BLUE refinement: two bisected
     elseif length(refined_edge_lids) == 2
+      # BLUE refinement: two bisected
       long_ref_edge_lid = c_to_longest_edge_lid[c]
       short_ref_edge_lid = setdiff(refined_edge_lids, long_ref_edge_lid)[1]
       blue_idx = BLUE_dict[(long_ref_edge_lid, short_ref_edge_lid)]
       cell_color[c] = BLUE + Int8(blue_idx - 1)
-      # DOUBLE BLUE refinement: three bisected edges (somewhat rare)
     elseif length(refined_edge_lids) == 3
+      # DOUBLE BLUE refinement: three bisected edges (somewhat rare)
       long_ref_edge_lid = c_to_longest_edge_lid[c]
       cell_color[c] = BLUE_DOUBLE + Int(long_ref_edge_lid - 1)
     end
@@ -911,10 +918,10 @@ function _get_barycentric_refined_connectivity(p::Polytope)
   elseif p == TET
     polys     = [TET]
     cell_type = [1, 1, 1, 1]
-    conn_data = [1, 2, 3, 5,
-                 2, 3, 4, 5,
-                 3, 1, 4, 5,
-                 1, 2, 4, 5]
+    conn_data = [5, 1, 2, 3,
+                 5, 1, 2, 4,
+                 5, 1, 3, 4,
+                 5, 2, 3, 4]
     conn_ptrs = [1, 5, 9, 13, 17]
     return polys, cell_type, Table(conn_data,conn_ptrs)
   elseif p == QUAD
@@ -929,12 +936,12 @@ function _get_barycentric_refined_connectivity(p::Polytope)
   elseif p == HEX # For HEX, we also create a new vertex in the center of each face
     # Connectivity for each face: Face corners + face node + barycenter
     face_conn = [
-      1,2,5,6,
-      2,4,5,6,
-      4,3,5,6,
-      3,1,5,6,
+      6, 1, 2, 5,
+      6, 2, 4, 5,
+      6, 3, 4, 5,
+      6, 1, 3, 5,
     ]
-    n_TET  = 4 # Number of new TETs per polytope face
+    n_TET  = 4 # Number of new TETs per polytope face (i.e per QUAD)
     n_FACE = 6 # Number of faces in a HEX
     n_NODE = 8 # Number of nodes in a HEX
     polys     = [TET]
