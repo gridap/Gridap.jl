@@ -1,6 +1,5 @@
-
 """
-struct PCurlGradMonomialBasis{...} <: AbstractArray{Monomial}
+struct PCurlGradJacobiPolynomialBasis{...} <: AbstractArray{JacobiPolynomial}
 
 This type implements a multivariate vector-valued polynomial basis
 spanning the space needed for Raviart-Thomas reference elements on simplices.
@@ -8,53 +7,53 @@ The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct PCurlGradMonomialBasis{D,T} <: AbstractVector{Monomial}
+struct PCurlGradJacobiPolynomialBasis{D,T} <: AbstractVector{JacobiPolynomial}
   order::Int
   pterms::Array{CartesianIndex{D},1}
   sterms::Array{CartesianIndex{D},1}
   perms::Matrix{Int}
-  function PCurlGradMonomialBasis(::Type{T},order::Int,
+  function PCurlGradJacobiPolynomialBasis(::Type{T},order::Int,
       pterms::Array{CartesianIndex{D},1},sterms::Array{CartesianIndex{D},1},
       perms::Matrix{Int}) where {D,T}
     new{D,T}(order,pterms,sterms,perms)
   end
 end
 
-Base.size(a::PCurlGradMonomialBasis) = (_ndofs_pgrad(a),)
+Base.size(a::PCurlGradJacobiPolynomialBasis) = (_ndofs_pgrad(a),)
 # @santiagobadia : Not sure we want to create the monomial machinery
-Base.getindex(a::PCurlGradMonomialBasis,i::Integer) = Monomial()
-Base.IndexStyle(::PCurlGradMonomialBasis) = IndexLinear()
+Base.getindex(a::PCurlGradJacobiPolynomialBasis,i::Integer) = JacobiPolynomial()
+Base.IndexStyle(::PCurlGradJacobiPolynomialBasis) = IndexLinear()
 
 """
-PCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
+PCurlGradJacobiPolynomialBasis{D}(::Type{T},order::Int) where {D,T}
 
-Returns a `PCurlGradMonomialBasis` object. `D` is the dimension
+Returns a `PCurlGradJacobiPolynomialBasis` object. `D` is the dimension
 of the coordinate space and `T` is the type of the components in the vector-value.
 The `order` argument has the following meaning: the divergence of the  functions
 in this basis is in the P space of degree `order`.
 """
-function PCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
+function PCurlGradJacobiPolynomialBasis{D}(::Type{T},order::Int) where {D,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
   P_k = MonomialBasis{D}(T, order, _p_filter)
   S_k = MonomialBasis{D}(T, order, _s_filter)
   pterms = P_k.terms
   sterms = S_k.terms
   perms = _prepare_perms(D)
-  PCurlGradMonomialBasis(T,order,pterms,sterms,perms)
+  PCurlGradJacobiPolynomialBasis(T,order,pterms,sterms,perms)
 end
 
 """
-    num_terms(f::PCurlGradMonomialBasis{D,T}) where {D,T}
+    num_terms(f::PCurlGradJacobiPolynomialBasis{D,T}) where {D,T}
 """
-function num_terms(f::PCurlGradMonomialBasis{D,T}) where {D,T}
+function num_terms(f::PCurlGradJacobiPolynomialBasis{D,T}) where {D,T}
   Int(_p_dim(f.order,D)*D + _p_dim(f.order,D-1))
 end
 
-get_order(f::PCurlGradMonomialBasis{D,T}) where {D,T} = f.order
+get_order(f::PCurlGradJacobiPolynomialBasis{D,T}) where {D,T} = f.order
 
-return_type(::PCurlGradMonomialBasis{D,T}) where {D,T} = VectorValue{D,T}
+return_type(::PCurlGradJacobiPolynomialBasis{D,T}) where {D,T} = VectorValue{D,T}
 
-function return_cache(f::PCurlGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
+function return_cache(f::PCurlGradJacobiPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_pgrad(f)
@@ -66,7 +65,7 @@ function return_cache(f::PCurlGradMonomialBasis{D,T},x::AbstractVector{<:Point})
   (r, v, c)
 end
 
-function evaluate!(cache,f::PCurlGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
+function evaluate!(cache,f::PCurlGradJacobiPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   r, v, c = cache
   np = length(x)
   ndof = _ndofs_pgrad(f)
@@ -76,7 +75,7 @@ function evaluate!(cache,f::PCurlGradMonomialBasis{D,T},x::AbstractVector{<:Poin
   setsize!(c,(D,n))
   for i in 1:np
     @inbounds xi = x[i]
-      _evaluate_nd_pcurlgrad!(v,xi,f.order+1,f.pterms,f.sterms,f.perms,c)
+      _evaluate_nd_pcurlgrad_jp!(v,xi,f.order+1,f.pterms,f.sterms,f.perms,c)
     for j in 1:ndof
       @inbounds r[i,j] = v[j]
     end
@@ -85,7 +84,7 @@ function evaluate!(cache,f::PCurlGradMonomialBasis{D,T},x::AbstractVector{<:Poin
 end
 
 function return_cache(
-  fg::FieldGradientArray{1,PCurlGradMonomialBasis{D,T}},
+  fg::FieldGradientArray{1,PCurlGradJacobiPolynomialBasis{D,T}},
   x::AbstractVector{<:Point})  where {D,T}
 
   f = fg.fa
@@ -104,7 +103,7 @@ function return_cache(
 end
 
 function evaluate!(cache,
-  fg::FieldGradientArray{1,PCurlGradMonomialBasis{D,T}},
+  fg::FieldGradientArray{1,PCurlGradJacobiPolynomialBasis{D,T}},
   x::AbstractVector{<:Point}) where {D,T}
 
   f = fg.fa
@@ -119,7 +118,7 @@ function evaluate!(cache,
   V = VectorValue{D,T}
   for i in 1:np
     @inbounds xi = x[i]
-    _gradient_nd_pcurlgrad!(v,xi,f.order+1,f.pterms,f.sterms,f.perms,c,g,V)
+    _gradient_nd_pcurlgrad_jp!(v,xi,f.order+1,f.pterms,f.sterms,f.perms,c,g,V)
     for j in 1:ndof
       @inbounds r[i,j] = v[j]
     end
@@ -130,21 +129,9 @@ end
 
 # Helpers
 
-_p_filter(e,order) = (sum(e) <= order)
-_s_filter(e,order) = (sum(e) == order)
+_ndofs_pgrad(f::PCurlGradJacobiPolynomialBasis{D}) where D = num_terms(f)
 
-function _p_dim(order,D)
-  dim = 1
-  for d in 1:D
-    dim *= order+d
-  end
-  dim/factorial(D)
-end
-
-_ndofs_pgrad(f::PCurlGradMonomialBasis{D}) where D = num_terms(f)
-
-
-function _evaluate_nd_pcurlgrad!(
+function _evaluate_nd_pcurlgrad_jp!(
   v::AbstractVector{V},
   x,
   order,
@@ -155,7 +142,7 @@ function _evaluate_nd_pcurlgrad!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d!(c,x,order,d)
+    _evaluate_1d_jp!(c,x,order,d)
   end
 
   o = one(T)
@@ -201,7 +188,7 @@ function _evaluate_nd_pcurlgrad!(
   end
 end
 
-function _gradient_nd_pcurlgrad!(
+function _gradient_nd_pcurlgrad_jp!(
   v::AbstractVector{G},
   x,
   order,
@@ -214,8 +201,8 @@ function _gradient_nd_pcurlgrad!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d!(c,x,order,d)
-    _gradient_1d!(g,x,order,d)
+    _evaluate_1d_jp!(c,x,order,d)
+    _gradient_1d_jp!(g,x,order,d)
   end
 
   z = zero(Mutable(V))
