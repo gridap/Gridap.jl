@@ -1,4 +1,4 @@
-module BDMRefFEsTest
+# module BDMRefFEsTest
 
 using Test
 using Gridap.Polynomials
@@ -34,7 +34,7 @@ field = GenericField(x->v*x[1])
 
 cache = return_cache(dof_basis,field)
 r = evaluate!(cache, dof_basis, field)
-test_dof_array(dof_basis,field,r)
+@enter test_dof_array(dof_basis,field,r)
 
 cache = return_cache(dof_basis,prebasis)
 r = evaluate!(cache, dof_basis, prebasis)
@@ -98,4 +98,4 @@ reffe = ReferenceFE(TET,bdm,Float64,1)
 
 @test BDM() == bdm
 
-end # module
+# end # module

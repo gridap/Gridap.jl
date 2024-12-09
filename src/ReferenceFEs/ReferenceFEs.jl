@@ -56,6 +56,7 @@ export get_dimranges
 export get_dimrange
 export get_vertex_coordinates
 export get_facet_normal
+export get_facet_measure
 export get_facet_orientations
 export get_edge_tangent
 export get_vertex_permutations
@@ -182,6 +183,7 @@ export BDMRefFE
 export NedelecRefFE
 export BezierRefFE
 export ModalC0RefFE
+export CRRefFE
 
 export Lagrangian
 export DivConforming
@@ -197,6 +199,7 @@ export bdm
 export nedelec
 export bezier
 export modalC0
+export cr
 
 export Quadrature
 export QuadratureName
@@ -243,15 +246,17 @@ include("DuffyQuadratures.jl")
 
 include("StrangQuadratures.jl")
 
-include("MomentBasedReferenceFEs.jl")
-
 include("XiaoGimbutasQuadratures.jl")
+
+include("MomentBasedReferenceFEs.jl")
 
 include("RaviartThomasRefFEs.jl")
 
 include("BDMRefFEs.jl")
 
 include("NedelecRefFEs.jl")
+
+include("CRRefFEs.jl")
 
 include("MockDofs.jl")
 
