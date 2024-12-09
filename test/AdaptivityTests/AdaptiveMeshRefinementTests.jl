@@ -1,3 +1,5 @@
+module AdaptiveMeshRefinementTests
+
 using Test
 using Gridap, Gridap.Geometry, Gridap.Adaptivity
 using DataStructures
@@ -19,8 +21,6 @@ function test_dorfler_marking()
   end
 end
 
-@testset "Dorfler marking" test_dorfler_marking()
-
 # AMR tests
 
 function LShapedModel(n)
@@ -31,53 +31,82 @@ function LShapedModel(n)
   return simplexify(DiscreteModelPortion(model,mask))
 end
 
-function amr_step(model)
-  order = 1
+l2_norm(he,xh,dΩ) = ∫(he*(xh*xh))*dΩ
+l2_norm(xh,dΩ) = ∫(xh*xh)*dΩ
+
+function amr_step(model,u_exact;order=1)
   reffe = ReferenceFE(lagrangian,Float64,order)
-  V = TestFESpace(model,reffe)
+  V = TestFESpace(model,reffe;dirichlet_tags=["boundary"])
+  U = TrialFESpace(V,u_exact)
   
   Ω = Triangulation(model)
   Γ = Boundary(model)
   Λ = Skeleton(model)
   
-  dΩ = Measure(Ω,2*order)
+  dΩ = Measure(Ω,4*order)
   dΓ = Measure(Γ,2*order)
   dΛ = Measure(Λ,2*order)
   
   hK = CellField(sqrt.(collect(get_array(∫(1)dΩ))),Ω)
-  
-  f(x) = 1.0 / ((x[1]-0.5)^2 + (x[2]-0.5)^2)^(1/2)
+
+  nΓ = get_normal_vector(Γ)
+  nΛ = get_normal_vector(Λ)
+
+  ∇u(x)  = ∇(u_exact)(x)
+  f(x)   = -Δ(u_exact)(x)
   a(u,v) = ∫(∇(u)⋅∇(v))dΩ
   l(v)   = ∫(f*v)dΩ
-  ηh(u)  = ∫(hK*f)dΩ + ∫(hK*∇(u)⋅∇(u))dΓ + ∫(hK*jump(∇(u))⋅jump(∇(u)))dΛ
+  ηh(u)  = l2_norm(hK,(f + Δ(u)),dΩ) + l2_norm(hK,(∇(u) - ∇u)⋅nΓ,dΓ) + l2_norm(hK,jump(∇(u)⋅nΛ),dΛ)
   
-  op = AffineFEOperator(a,l,V,V)
+  op = AffineFEOperator(a,l,U,V)
   uh = solve(op)
   η = estimate(ηh,uh)
   
-  m = DorflerMarking(0.5)
+  m = DorflerMarking(0.8)
   I = Adaptivity.mark(m,η)
   
   method = Adaptivity.NVBRefinement(model)
   fmodel = Adaptivity.get_model(refine(method,model;cells_to_refine=I))
 
-  return fmodel, uh, η, I
+  error = sum(l2_norm(uh - u_exact,dΩ))
+  return fmodel, uh, η, I, error
 end
 
-nsteps = 10
-model = LShapedModel(10)
+function test_amr(nsteps,order)
+  model = LShapedModel(10)
 
-for i in 1:nsteps
-  fmodel, uh, η, I = amr_step(model)
-  is_refined = map(i -> ifelse(i ∈ I, 1, -1), 1:num_cells(model))
-  Ω = Triangulation(model)
-  writevtk(
-    Ω,"tmp/model_$(i-1)",append=false,
-    cellfields = [
-      "uh" => uh,
-      "η" => CellField(η,Ω),
-      "is_refined" => CellField(is_refined,Ω)
-    ],
-  )
-  model = fmodel
+  ϵ = 1e-2
+  r(x) = ((x[1]-0.5)^2 + (x[2]-0.5)^2)^(1/2)
+  u_exact(x) = 1.0 / (ϵ + r(x))
+
+  vtk = false
+  last_error = Inf
+  for i in 1:nsteps
+    fmodel, uh, η, I, error = amr_step(model,u_exact;order)
+    if vtk
+      is_refined = map(i -> ifelse(i ∈ I, 1, -1), 1:num_cells(model))
+      Ω = Triangulation(model)
+      writevtk(
+        Ω,"tmp/model_$(i-1)",append=false,
+        cellfields = [
+          "uh" => uh,
+          "η" => CellField(η,Ω),
+          "is_refined" => CellField(is_refined,Ω),
+          "u_exact" => CellField(u_exact,Ω),
+        ],
+      )
+    end
+
+    println("Error: $error, Error η: $(sum(η))")
+    @test (i < 3) || (error < last_error)
+    last_error = error
+    model = fmodel
+  end
 end
+
+############################################################################################
+
+@testset "Dorfler marking" test_dorfler_marking()
+@testset "AMR - Poisson" test_amr(20,2)
+
+end # module
