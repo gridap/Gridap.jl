@@ -56,7 +56,7 @@ function amr_step(model,u_exact;order=1)
   f(x)   = -Δ(u_exact)(x)
   a(u,v) = ∫(∇(u)⋅∇(v))dΩ
   l(v)   = ∫(f*v)dΩ
-  ηh(u)  = l2_norm(hK,(f + Δ(u)),dΩ) + l2_norm(hK,(∇(u) - ∇u)⋅nΓ,dΓ) + l2_norm(hK,jump(∇(u)⋅nΛ),dΛ)
+  ηh(u)  = l2_norm(hK*(f + Δ(u)),dΩ) + l2_norm(hK*(∇(u) - ∇u)⋅nΓ,dΓ) + l2_norm(jump(hK*∇(u)⋅nΛ),dΛ)
   
   op = AffineFEOperator(a,l,U,V)
   uh = solve(op)
