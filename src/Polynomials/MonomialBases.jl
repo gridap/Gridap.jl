@@ -1,3 +1,11 @@
+"""
+    MonomialPType{K} <: PolynomialType{K}
+
+Type representing the monomial polynomials of order up to `K`
+"""
+struct MonomialPType{K} <: PolynomialType{K} end
+isHierarchical(::MonomialPType) = true
+
 struct Monomial <: Field end
 
 """
@@ -347,41 +355,45 @@ function _define_terms(filter,orders)
   [ ci for ci in cis if filter(Int[Tuple(ci-co)...],maxorder) ]
 end
 
-function _evaluate_1d!(v::AbstractMatrix{T},x,order,d) where T
-  n = order + 1
-  z = one(T)
-  @inbounds v[d,1] = z
+function _evaluate_1d!(
+  ::Type{MonomialPType{K}}, v::AbstractMatrix{T},x,d) where {K,T<:Number}
+
+  n = K + 1
   @inbounds xd = x[d]
-  xn = xd
-  for i in 2:n
+  xn = one(T)
+  for i in 1:n
     @inbounds v[d,i] = xn
     xn *= xd
   end
 end
 
-function _gradient_1d!(v::AbstractMatrix{T},x,order,d) where T
-  n = order + 1
+function _gradient_1d!(
+  ::Type{MonomialPType{K}}, g::AbstractMatrix{T},x,d) where {K,T<:Number}
+
+  n = K + 1
   z = zero(T)
-  @inbounds v[d,1] = z
+  @inbounds g[d,1] = z
   @inbounds xd = x[d]
   xn = one(T)
   for i in 2:n
-    @inbounds v[d,i] = (i-1)*xn
+    @inbounds g[d,i] = (i-1)*xn
     xn *= xd
   end
 end
 
-function _hessian_1d!(v::AbstractMatrix{T},x,order,d) where T
-  n = order + 1
+function _hessian_1d!(
+  ::Type{MonomialPType{K}}, h::AbstractMatrix{T},x,d) where {K,T<:Number}
+
+  n = K + 1
   z = zero(T)
-  @inbounds v[d,1] = z
+  @inbounds h[d,1] = z
   if n>1
-    @inbounds v[d,2] = z
+    @inbounds h[d,2] = z
   end
   @inbounds xd = x[d]
   xn = one(T)
   for i in 3:n
-    @inbounds v[d,i] = (i-1)*(i-2)*xn
+    @inbounds h[d,i] = (i-1)*(i-2)*xn
     xn *= xd
   end
 end
@@ -395,7 +407,7 @@ function _evaluate_nd!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d!(c,x,orders[d],d)
+    _evaluate_1d!(MonomialPType{orders[d]},c,x,d)
   end
 
   o = one(T)
@@ -441,8 +453,7 @@ function _gradient_nd!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d!(c,x,orders[d],d)
-    _gradient_1d!(g,x,orders[d],d)
+    _derivatives_1d!(MonomialPType{orders[d]},(c,g),x,d)
   end
 
   o = one(T)
@@ -515,7 +526,7 @@ end
 @generated function _set_gradient!(
   v::AbstractVector{G},s,k,::Type{V}) where {V<:AbstractSymTensorValue{D},G} where D
   # Git blame me for readable non-generated version
-  
+
   T = eltype(s)
   m = Array{String}(undef, size(G))
   s_length = size(G)[1]
@@ -524,10 +535,10 @@ end
   skip_last_diagval = is_traceless ? 1 : 0    # Skid V_DD if traceless
 
   body = "z = $(zero(T));"
-  for i in 1:s_length 
+  for i in 1:s_length
     body *= "@inbounds s$i = s[$i];"
   end
-  
+
   for c in 1:(D-skip_last_diagval) # Go over cols
     for r in c:D                   # Go over lower triangle, current col
       for i in eachindex(m)
@@ -562,9 +573,7 @@ function _hessian_nd!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d!(c,x,orders[d],d)
-    _gradient_1d!(g,x,orders[d],d)
-    _hessian_1d!(h,x,orders[d],d)
+    _derivatives_1d!(MonomialPType{orders[d]},(c,g,h),x,d)
   end
 
   z = zero(Mutable(TensorValue{D,D,T}))

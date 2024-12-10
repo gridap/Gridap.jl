@@ -1,6 +1,6 @@
 
 """
-    struct QGradJacobiPolynomialBasis{...} <: AbstractVector{Monomial}
+    struct QGradLegendrePolynomialBasis{...} <: AbstractVector{Monomial}
 
 This type implements a multivariate vector-valued polynomial basis
 spanning the space needed for Nedelec reference elements on n-cubes.
@@ -8,50 +8,50 @@ The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct QGradJacobiPolynomialBasis{D,T} <: AbstractVector{JacobiPolynomial}
+struct QGradLegendrePolynomialBasis{D,T} <: AbstractVector{LegendrePolynomial}
   order::Int
   terms::CartesianIndices{D}
   perms::Matrix{Int}
-  function QGradJacobiPolynomialBasis(::Type{T},order::Int,terms::CartesianIndices{D},perms::Matrix{Int}) where {D,T}
+  function QGradLegendrePolynomialBasis(::Type{T},order::Int,terms::CartesianIndices{D},perms::Matrix{Int}) where {D,T}
     new{D,T}(order,terms,perms)
   end
 end
 
-Base.size(a::QGradJacobiPolynomialBasis) = (_ndofs_qgrad_jp(a),)
-Base.getindex(a::QGradJacobiPolynomialBasis,i::Integer) = JacobiPolynomial()
-Base.IndexStyle(::QGradJacobiPolynomialBasis) = IndexLinear()
+Base.size(a::QGradLegendrePolynomialBasis) = (_ndofs_qgrad_leg(a),)
+Base.getindex(a::QGradLegendrePolynomialBasis,i::Integer) = LegendrePolynomial()
+Base.IndexStyle(::QGradLegendrePolynomialBasis) = IndexLinear()
 
 """
-    QGradJacobiPolynomialBasis{D}(::Type{T},order::Int) where {D,T}
+    QGradLegendrePolynomialBasis{D}(::Type{T},order::Int) where {D,T}
 
-Returns a `QGradJacobiPolynomialBasis` object. `D` is the dimension
+Returns a `QGradLegendrePolynomialBasis` object. `D` is the dimension
 of the coordinate space and `T` is the type of the components in the vector-value.
 The `order` argument has the following meaning: the curl of the  functions in this basis
 is in the Q space of degree `order`.
 """
-function QGradJacobiPolynomialBasis{D}(::Type{T},order::Int) where {D,T}
+function QGradLegendrePolynomialBasis{D}(::Type{T},order::Int) where {D,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
   _order = order + 1
   _t = tfill(_order+1,Val{D-1}())
   t = (_order,_t...)
   terms = CartesianIndices(t)
   perms = _prepare_perms(D)
-  QGradJacobiPolynomialBasis(T,order,terms,perms)
+  QGradLegendrePolynomialBasis(T,order,terms,perms)
 end
 
 """
-    num_terms(f::QGradJacobiPolynomialBasis{D,T}) where {D,T}
+    num_terms(f::QGradLegendrePolynomialBasis{D,T}) where {D,T}
 """
-num_terms(f::QGradJacobiPolynomialBasis{D,T}) where {D,T} = length(f.terms)*D
+num_terms(f::QGradLegendrePolynomialBasis{D,T}) where {D,T} = length(f.terms)*D
 
-get_order(f::QGradJacobiPolynomialBasis) = f.order
+get_order(f::QGradLegendrePolynomialBasis) = f.order
 
-return_type(::QGradJacobiPolynomialBasis{D,T}) where {D,T} = VectorValue{D,T}
+return_type(::QGradLegendrePolynomialBasis{D,T}) where {D,T} = VectorValue{D,T}
 
-function return_cache(f::QGradJacobiPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
+function return_cache(f::QGradLegendrePolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = _ndofs_qgrad_jp(f)
+  ndof = _ndofs_qgrad_leg(f)
   n = 1 + f.order+1
   V = VectorValue{D,T}
   r = CachedArray(zeros(V,(np,ndof)))
@@ -60,17 +60,17 @@ function return_cache(f::QGradJacobiPolynomialBasis{D,T},x::AbstractVector{<:Poi
   (r, v, c)
 end
 
-function evaluate!(cache,f::QGradJacobiPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
+function evaluate!(cache,f::QGradLegendrePolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   r, v, c = cache
   np = length(x)
-  ndof = _ndofs_qgrad_jp(f)
+  ndof = _ndofs_qgrad_leg(f)
   n = 1 + f.order+1
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
   setsize!(c,(D,n))
   for i in 1:np
     @inbounds xi = x[i]
-      _evaluate_nd_qgrad_jp!(v,xi,f.order+1,f.terms,f.perms,c)
+      _evaluate_nd_qgrad_leg!(v,xi,f.order+1,f.terms,f.perms,c)
     for j in 1:ndof
       @inbounds r[i,j] = v[j]
     end
@@ -79,13 +79,13 @@ function evaluate!(cache,f::QGradJacobiPolynomialBasis{D,T},x::AbstractVector{<:
 end
 
 function return_cache(
-  fg::FieldGradientArray{1,QGradJacobiPolynomialBasis{D,T}},
+  fg::FieldGradientArray{1,QGradLegendrePolynomialBasis{D,T}},
   x::AbstractVector{<:Point}) where {D,T}
 
   f = fg.fa
   @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = _ndofs_qgrad_jp(f)
+  ndof = _ndofs_qgrad_leg(f)
   n = 1 + f.order+1
   xi = testitem(x)
   V = VectorValue{D,T}
@@ -99,13 +99,13 @@ end
 
 function evaluate!(
   cache,
-  fg::FieldGradientArray{1,QGradJacobiPolynomialBasis{D,T}},
+  fg::FieldGradientArray{1,QGradLegendrePolynomialBasis{D,T}},
   x::AbstractVector{<:Point}) where {D,T}
 
   f = fg.fa
   r, v, c, g = cache
   np = length(x)
-  ndof = _ndofs_qgrad_jp(f)
+  ndof = _ndofs_qgrad_leg(f)
   n = 1 + f.order+1
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -114,7 +114,7 @@ function evaluate!(
   V = VectorValue{D,T}
   for i in 1:np
     @inbounds xi = x[i]
-    _gradient_nd_qgrad_jp!(v,xi,f.order+1,f.terms,f.perms,c,g,V)
+    _gradient_nd_qgrad_leg!(v,xi,f.order+1,f.terms,f.perms,c,g,V)
     for j in 1:ndof
       @inbounds r[i,j] = v[j]
     end
@@ -124,9 +124,9 @@ end
 
 # Helpers
 
-_ndofs_qgrad_jp(f::QGradJacobiPolynomialBasis{D}) where D = D*(length(f.terms))
+_ndofs_qgrad_leg(f::QGradLegendrePolynomialBasis{D}) where D = D*(length(f.terms))
 
-function _evaluate_nd_qgrad_jp!(
+function _evaluate_nd_qgrad_leg!(
   v::AbstractVector{V},
   x,
   order,
@@ -136,7 +136,7 @@ function _evaluate_nd_qgrad_jp!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d_jp!(c,x,order,d)
+    _evaluate_1d!(LegendrePType{order},c,x,d)
   end
 
   o = one(T)
@@ -168,7 +168,7 @@ function _evaluate_nd_qgrad_jp!(
 
 end
 
-function _gradient_nd_qgrad_jp!(
+function _gradient_nd_qgrad_leg!(
   v::AbstractVector{G},
   x,
   order,
@@ -180,8 +180,7 @@ function _gradient_nd_qgrad_jp!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d_jp!(c,x,order,d)
-    _gradient_1d_jp!(g,x,order,d)
+    _derivatives_1d!(LegendrePType{order},(c,g),x,d)
   end
 
   z = zero(Mutable(V))
@@ -230,7 +229,7 @@ end
 ############################################################################################
 
 """
-    struct QCurlGradJacobiPolynomialBasis{...} <: AbstractArray{Monomial}
+    struct QCurlGradLegendrePolynomialBasis{...} <: AbstractArray{Monomial}
 
 This type implements a multivariate vector-valued polynomial basis
 spanning the space needed for Raviart-Thomas reference elements on n-cubes.
@@ -238,48 +237,48 @@ The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct QCurlGradJacobiPolynomialBasis{D,T} <: AbstractVector{JacobiPolynomial}
-  qgrad::QGradJacobiPolynomialBasis{D,T}
-  function QCurlGradJacobiPolynomialBasis(::Type{T},order::Int,terms::CartesianIndices{D},perms::Matrix{Int}) where {D,T}
-    qgrad = QGradJacobiPolynomialBasis(T,order,terms,perms)
+struct QCurlGradLegendrePolynomialBasis{D,T} <: AbstractVector{LegendrePolynomial}
+  qgrad::QGradLegendrePolynomialBasis{D,T}
+  function QCurlGradLegendrePolynomialBasis(::Type{T},order::Int,terms::CartesianIndices{D},perms::Matrix{Int}) where {D,T}
+    qgrad = QGradLegendrePolynomialBasis(T,order,terms,perms)
     new{D,T}(qgrad)
   end
 end
 
-Base.size(a::QCurlGradJacobiPolynomialBasis) = (length(a.qgrad),)
-Base.getindex(a::QCurlGradJacobiPolynomialBasis,i::Integer) = JacobiPolynomial()
-Base.IndexStyle(::QCurlGradJacobiPolynomialBasis) = IndexLinear()
+Base.size(a::QCurlGradLegendrePolynomialBasis) = (length(a.qgrad),)
+Base.getindex(a::QCurlGradLegendrePolynomialBasis,i::Integer) = LegendrePolynomial()
+Base.IndexStyle(::QCurlGradLegendrePolynomialBasis) = IndexLinear()
 
 """
-    QCurlGradJacobiPolynomialBasis{D}(::Type{T},order::Int) where {D,T}
+    QCurlGradLegendrePolynomialBasis{D}(::Type{T},order::Int) where {D,T}
 
-Returns a `QCurlGradJacobiPolynomialBasis` object. `D` is the dimension
+Returns a `QCurlGradLegendrePolynomialBasis` object. `D` is the dimension
 of the coordinate space and `T` is the type of the components in the vector-value.
 The `order` argument has the following meaning: the divergence of the  functions in this basis
 is in the Q space of degree `order`.
 """
-function QCurlGradJacobiPolynomialBasis{D}(::Type{T},order::Int) where {D,T}
+function QCurlGradLegendrePolynomialBasis{D}(::Type{T},order::Int) where {D,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
   _order = order+1
   _t = tfill(_order,Val{D-1}())
   t = (_order+1,_t...)
   terms = CartesianIndices(t)
   perms = _prepare_perms(D)
-  QCurlGradJacobiPolynomialBasis(T,order,terms,perms)
+  QCurlGradLegendrePolynomialBasis(T,order,terms,perms)
 end
 
-return_type(::QCurlGradJacobiPolynomialBasis{D,T}) where {D,T} = VectorValue{D,T}
+return_type(::QCurlGradLegendrePolynomialBasis{D,T}) where {D,T} = VectorValue{D,T}
 
-function return_cache(f::QCurlGradJacobiPolynomialBasis,x::AbstractVector{<:Point})
+function return_cache(f::QCurlGradLegendrePolynomialBasis,x::AbstractVector{<:Point})
   return_cache(f.qgrad,x)
 end
 
-function evaluate!(cache,f::QCurlGradJacobiPolynomialBasis,x::AbstractVector{<:Point})
+function evaluate!(cache,f::QCurlGradLegendrePolynomialBasis,x::AbstractVector{<:Point})
   evaluate!(cache,f.qgrad,x)
 end
 
 function return_cache(
-  fg::FieldGradientArray{N,<:QCurlGradJacobiPolynomialBasis},
+  fg::FieldGradientArray{N,<:QCurlGradLegendrePolynomialBasis},
   x::AbstractVector{<:Point}) where N
 
   f = fg.fa
@@ -288,7 +287,7 @@ end
 
 function evaluate!(
   cache,
-  fg::FieldGradientArray{N,<:QCurlGradJacobiPolynomialBasis},
+  fg::FieldGradientArray{N,<:QCurlGradLegendrePolynomialBasis},
   x::AbstractVector{<:Point}) where N
 
   f = fg.fa
@@ -296,10 +295,10 @@ function evaluate!(
 end
 
 """
-    num_terms(f::QCurlGradJacobiPolynomialBasis{D,T}) where {D,T}
+    num_terms(f::QCurlGradLegendrePolynomialBasis{D,T}) where {D,T}
 """
-num_terms(f::QCurlGradJacobiPolynomialBasis{D,T}) where {D,T} = length(f.qgrad.terms)*D
+num_terms(f::QCurlGradLegendrePolynomialBasis{D,T}) where {D,T} = length(f.qgrad.terms)*D
 
-get_order(f::QCurlGradJacobiPolynomialBasis{D,T}) where {D,T} = get_order(f.qgrad)
+get_order(f::QCurlGradLegendrePolynomialBasis{D,T}) where {D,T} = get_order(f.qgrad)
 
 ############################################################################################

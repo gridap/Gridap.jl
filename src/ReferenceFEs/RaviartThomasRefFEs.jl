@@ -18,13 +18,13 @@ function RaviartThomasRefFE(
 ) where {T,D}
 
   if is_n_cube(p)
-    prebasis = QCurlGradJacobiPolynomialBasis{D}(T,order)          # Prebasis
-    cb = QGradJacobiPolynomialBasis{D}(T,order-1)                  # Cell basis
-    fb = JacobiPolynomialBasis{D-1}(T,order,Polynomials._q_filter) # Face basis
+    prebasis = QCurlGradLegendrePolynomialBasis{D}(T,order)          # Prebasis
+    cb = QGradLegendrePolynomialBasis{D}(T,order-1)                  # Cell basis
+    fb = LegendrePolynomialBasis{D-1}(T,order,Polynomials._q_filter) # Face basis
   elseif is_simplex(p)
     prebasis = PCurlGradMonomialBasis{D}(T,order)                                 # Prebasis
-    cb = JacobiPolynomialBasis{D}(VectorValue{D,T},order-1,Polynomials._p_filter) # Cell basis
-    fb = JacobiPolynomialBasis{D-1}(T,order,Polynomials._p_filter)                # Face basis
+    cb = LegendrePolynomialBasis{D}(VectorValue{D,T},order-1,Polynomials._p_filter) # Cell basis
+    fb = LegendrePolynomialBasis{D-1}(T,order,Polynomials._p_filter)                # Face basis
   else
     @notimplemented "Raviart-Thomas Reference FE only available for cubes and simplices"
   end
@@ -76,17 +76,17 @@ function get_face_own_dofs(reffe::GenericRefFE{RaviartThomas}, conf::DivConformi
 end
 
 # TODO: Please remove me
-function JacobiBasis(::Type{T},p::Polytope,orders) where T
-  compute_jacobi_basis(T,p,orders)
+function LegendreBasis(::Type{T},p::Polytope,orders) where T
+  compute_legendre_basis(T,p,orders)
 end
-function JacobiBasis(::Type{T},p::Polytope{D},order::Int) where {D,T}
+function LegendreBasis(::Type{T},p::Polytope{D},order::Int) where {D,T}
   orders = tfill(order,Val{D}())
-  JacobiBasis(T,p,orders)
+  LegendreBasis(T,p,orders)
 end
-function compute_jacobi_basis(::Type{T},p::ExtrusionPolytope{D},orders) where {D,T}
+function compute_legendre_basis(::Type{T},p::ExtrusionPolytope{D},orders) where {D,T}
   extrusion = Tuple(p.extrusion)
   terms = _monomial_terms(extrusion,orders)
-  JacobiPolynomialBasis{D}(T,orders,terms)
+  LegendrePolynomialBasis{D}(T,orders,terms)
 end
 
 # ContraVariantPiolaMap

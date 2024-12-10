@@ -1,5 +1,5 @@
 """
-struct PCurlGradJacobiPolynomialBasis{...} <: AbstractArray{JacobiPolynomial}
+struct PCurlGradLegendrePolynomialBasis{...} <: AbstractArray{LegendrePolynomial}
 
 This type implements a multivariate vector-valued polynomial basis
 spanning the space needed for Raviart-Thomas reference elements on simplices.
@@ -7,53 +7,53 @@ The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct PCurlGradJacobiPolynomialBasis{D,T} <: AbstractVector{JacobiPolynomial}
+struct PCurlGradLegendrePolynomialBasis{D,T} <: AbstractVector{LegendrePolynomial}
   order::Int
   pterms::Array{CartesianIndex{D},1}
   sterms::Array{CartesianIndex{D},1}
   perms::Matrix{Int}
-  function PCurlGradJacobiPolynomialBasis(::Type{T},order::Int,
+  function PCurlGradLegendrePolynomialBasis(::Type{T},order::Int,
       pterms::Array{CartesianIndex{D},1},sterms::Array{CartesianIndex{D},1},
       perms::Matrix{Int}) where {D,T}
     new{D,T}(order,pterms,sterms,perms)
   end
 end
 
-Base.size(a::PCurlGradJacobiPolynomialBasis) = (_ndofs_pgrad(a),)
+Base.size(a::PCurlGradLegendrePolynomialBasis) = (_ndofs_pgrad(a),)
 # @santiagobadia : Not sure we want to create the monomial machinery
-Base.getindex(a::PCurlGradJacobiPolynomialBasis,i::Integer) = JacobiPolynomial()
-Base.IndexStyle(::PCurlGradJacobiPolynomialBasis) = IndexLinear()
+Base.getindex(a::PCurlGradLegendrePolynomialBasis,i::Integer) = LegendrePolynomial()
+Base.IndexStyle(::PCurlGradLegendrePolynomialBasis) = IndexLinear()
 
 """
-PCurlGradJacobiPolynomialBasis{D}(::Type{T},order::Int) where {D,T}
+PCurlGradLegendrePolynomialBasis{D}(::Type{T},order::Int) where {D,T}
 
-Returns a `PCurlGradJacobiPolynomialBasis` object. `D` is the dimension
+Returns a `PCurlGradLegendrePolynomialBasis` object. `D` is the dimension
 of the coordinate space and `T` is the type of the components in the vector-value.
 The `order` argument has the following meaning: the divergence of the  functions
 in this basis is in the P space of degree `order`.
 """
-function PCurlGradJacobiPolynomialBasis{D}(::Type{T},order::Int) where {D,T}
+function PCurlGradLegendrePolynomialBasis{D}(::Type{T},order::Int) where {D,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
   P_k = MonomialBasis{D}(T, order, _p_filter)
   S_k = MonomialBasis{D}(T, order, _s_filter)
   pterms = P_k.terms
   sterms = S_k.terms
   perms = _prepare_perms(D)
-  PCurlGradJacobiPolynomialBasis(T,order,pterms,sterms,perms)
+  PCurlGradLegendrePolynomialBasis(T,order,pterms,sterms,perms)
 end
 
 """
-    num_terms(f::PCurlGradJacobiPolynomialBasis{D,T}) where {D,T}
+    num_terms(f::PCurlGradLegendrePolynomialBasis{D,T}) where {D,T}
 """
-function num_terms(f::PCurlGradJacobiPolynomialBasis{D,T}) where {D,T}
+function num_terms(f::PCurlGradLegendrePolynomialBasis{D,T}) where {D,T}
   Int(_p_dim(f.order,D)*D + _p_dim(f.order,D-1))
 end
 
-get_order(f::PCurlGradJacobiPolynomialBasis{D,T}) where {D,T} = f.order
+get_order(f::PCurlGradLegendrePolynomialBasis{D,T}) where {D,T} = f.order
 
-return_type(::PCurlGradJacobiPolynomialBasis{D,T}) where {D,T} = VectorValue{D,T}
+return_type(::PCurlGradLegendrePolynomialBasis{D,T}) where {D,T} = VectorValue{D,T}
 
-function return_cache(f::PCurlGradJacobiPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
+function return_cache(f::PCurlGradLegendrePolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_pgrad(f)
@@ -65,7 +65,7 @@ function return_cache(f::PCurlGradJacobiPolynomialBasis{D,T},x::AbstractVector{<
   (r, v, c)
 end
 
-function evaluate!(cache,f::PCurlGradJacobiPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
+function evaluate!(cache,f::PCurlGradLegendrePolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   r, v, c = cache
   np = length(x)
   ndof = _ndofs_pgrad(f)
@@ -75,7 +75,7 @@ function evaluate!(cache,f::PCurlGradJacobiPolynomialBasis{D,T},x::AbstractVecto
   setsize!(c,(D,n))
   for i in 1:np
     @inbounds xi = x[i]
-      _evaluate_nd_pcurlgrad_jp!(v,xi,f.order+1,f.pterms,f.sterms,f.perms,c)
+      _evaluate_nd_pcurlgrad_leg!(v,xi,f.order+1,f.pterms,f.sterms,f.perms,c)
     for j in 1:ndof
       @inbounds r[i,j] = v[j]
     end
@@ -84,7 +84,7 @@ function evaluate!(cache,f::PCurlGradJacobiPolynomialBasis{D,T},x::AbstractVecto
 end
 
 function return_cache(
-  fg::FieldGradientArray{1,PCurlGradJacobiPolynomialBasis{D,T}},
+  fg::FieldGradientArray{1,PCurlGradLegendrePolynomialBasis{D,T}},
   x::AbstractVector{<:Point})  where {D,T}
 
   f = fg.fa
@@ -103,7 +103,7 @@ function return_cache(
 end
 
 function evaluate!(cache,
-  fg::FieldGradientArray{1,PCurlGradJacobiPolynomialBasis{D,T}},
+  fg::FieldGradientArray{1,PCurlGradLegendrePolynomialBasis{D,T}},
   x::AbstractVector{<:Point}) where {D,T}
 
   f = fg.fa
@@ -118,7 +118,7 @@ function evaluate!(cache,
   V = VectorValue{D,T}
   for i in 1:np
     @inbounds xi = x[i]
-    _gradient_nd_pcurlgrad_jp!(v,xi,f.order+1,f.pterms,f.sterms,f.perms,c,g,V)
+    _gradient_nd_pcurlgrad_leg!(v,xi,f.order+1,f.pterms,f.sterms,f.perms,c,g,V)
     for j in 1:ndof
       @inbounds r[i,j] = v[j]
     end
@@ -129,9 +129,9 @@ end
 
 # Helpers
 
-_ndofs_pgrad(f::PCurlGradJacobiPolynomialBasis{D}) where D = num_terms(f)
+_ndofs_pgrad(f::PCurlGradLegendrePolynomialBasis{D}) where D = num_terms(f)
 
-function _evaluate_nd_pcurlgrad_jp!(
+function _evaluate_nd_pcurlgrad_leg!(
   v::AbstractVector{V},
   x,
   order,
@@ -142,7 +142,7 @@ function _evaluate_nd_pcurlgrad_jp!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d_jp!(c,x,order,d)
+    _evaluate_1d!(LegendrePType{order},c,x,d)
   end
 
   o = one(T)
@@ -188,7 +188,7 @@ function _evaluate_nd_pcurlgrad_jp!(
   end
 end
 
-function _gradient_nd_pcurlgrad_jp!(
+function _gradient_nd_pcurlgrad_leg!(
   v::AbstractVector{G},
   x,
   order,
@@ -201,8 +201,7 @@ function _gradient_nd_pcurlgrad_jp!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d_jp!(c,x,order,d)
-    _gradient_1d_jp!(g,x,order,d)
+    _derivatives_1d!(LegendrePType{order},(c,g),x,d)
   end
 
   z = zero(Mutable(V))

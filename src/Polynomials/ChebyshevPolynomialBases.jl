@@ -1,3 +1,12 @@
+"""
+    ChebyshevPType{kind,K} <: PolynomialType{K}
+
+Type representing Chebyshev polynomials of order up to `K`,
+where `kind` is either `:T` or `:U` for first and second kind Chebyshev polynomials respectively.
+"""
+struct ChebyshevPType{kind, K} <: PolynomialType{K} end
+isHierarchical(::ChebyshevPType) = true
+
 struct ChebyshevPolynomial <: Field end
 
 struct ChebyshevPolynomialBasis{D,T} <: AbstractVector{ChebyshevPolynomial}
@@ -161,8 +170,10 @@ end
 
 # Helpers
 
-function _evaluate_1d_ch_T!(v::AbstractMatrix{T},x,order,d) where T
-  n = order + 1
+function _evaluate_1d!(
+  ::Type{ChebyshevPType{:T,K}}, v::AbstractMatrix{T},x,d) where {K,T<:Number}
+
+  n = K + 1
   o = one(T)
   @inbounds v[d,1] = o
   if n > 1
@@ -175,19 +186,21 @@ function _evaluate_1d_ch_T!(v::AbstractMatrix{T},x,order,d) where T
   end
 end
 
-function _gradient_1d_ch_T!(v::AbstractMatrix{T},x,order,d) where T
-  n = order + 1
+function _gradient_1d!(
+  ::Type{ChebyshevPType{:T,K}}, g::AbstractMatrix{T},x,d) where {K,T<:Number}
+
+  n = K + 1
   z = zero(T)
   o = one(T)
   dξdx = T(2.0)
-  @inbounds v[d,1] = z # dT_0 = 0
+  @inbounds g[d,1] = z # dT_0 = 0
   if n > 1
     ξ = T(2*x[d] - 1)
-    @inbounds v[d,2] = dξdx*o # dT_1 = 1*U_0 = 1
+    @inbounds g[d,2] = dξdx*o # dT_1 = 1*U_0 = 1
     unm1 = o
     un = 2*ξ
     for i in 3:n
-      @inbounds v[d,i] = dξdx*(i-1)*un # dT_i = i*U_{i-1}
+      @inbounds g[d,i] = dξdx*(i-1)*un # dT_i = i*U_{i-1}
       un, unm1 = 2*ξ*un - unm1, un
     end
   end
@@ -202,7 +215,7 @@ function _evaluate_nd_ch!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d_ch_T!(c,x,orders[d],d)
+    _evaluate_1d!(ChebyshevPType{:T,orders[d]},c,x,d)
   end
 
   o = one(T)
@@ -232,8 +245,7 @@ function _gradient_nd_ch!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d_ch_T!(c,x,orders[d],d)
-    _gradient_1d_ch_T!(g,x,orders[d],d)
+    _derivatives_1d!(ChebyshevPType{:T,orders[d]},(c,g),x,d)
   end
 
   z = zero(Mutable(VectorValue{D,T}))
@@ -399,7 +411,7 @@ function _evaluate_nd_qgrad_ch!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d_ch_T!(c,x,order,d)
+    _evaluate_1d!(ChebyshevPType{:T,order},c,x,d)
   end
 
   o = one(T)
@@ -443,8 +455,7 @@ function _gradient_nd_qgrad_ch!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d_ch_T!(c,x,order,d)
-    _gradient_1d_ch_T!(g,x,order,d)
+    _derivatives_1d!(ChebyshevPType{:T,order},(c,g),x,d)
   end
 
   z = zero(Mutable(V))

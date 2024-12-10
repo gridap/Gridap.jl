@@ -26,10 +26,10 @@ export QGradMonomialBasis
 export QCurlGradMonomialBasis
 export PCurlGradMonomialBasis
 export ModalC0Basis
-export JacobiPolynomialBasis
-export QGradJacobiPolynomialBasis
-export QCurlGradJacobiPolynomialBasis
-export PCurlGradJacobiPolynomialBasis
+export LegendrePolynomialBasis
+export QGradLegendrePolynomialBasis
+export QCurlGradLegendrePolynomialBasis
+export PCurlGradLegendrePolynomialBasis
 export ChebyshevPolynomialBasis
 export QGradChebyshevPolynomialBasis
 export QCurlGradChebyshevPolynomialBasis
@@ -39,7 +39,11 @@ export get_order
 export get_orders
 export num_terms
 
+include("PolynomialInterfaces.jl")
+
 include("MonomialBases.jl")
+
+include("BernsteinBases.jl")
 
 include("QGradMonomialBases.jl")
 
@@ -49,11 +53,11 @@ include("PCurlGradMonomialBases.jl")
 
 include("ModalC0Bases.jl")
 
-include("JacobiPolynomialBases.jl")
+include("LegendrePolynomialBases.jl")
 
-include("QGradJacobiPolynomialBases.jl")
+include("QGradLegendrePolynomialBases.jl")
 
-include("PCurlGradJacobiPolynomialBases.jl")
+include("PCurlGradLegendrePolynomialBases.jl")
 
 include("ChebyshevPolynomialBases.jl")
 

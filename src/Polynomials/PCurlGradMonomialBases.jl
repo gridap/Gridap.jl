@@ -155,7 +155,7 @@ function _evaluate_nd_pcurlgrad!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d!(c,x,order,d)
+    _evaluate_1d!(MonomialPType{order},c,x,d)
   end
 
   o = one(T)
@@ -214,8 +214,7 @@ function _gradient_nd_pcurlgrad!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d!(c,x,order,d)
-    _gradient_1d!(g,x,order,d)
+    _derivatives_1d!(MonomialPType{order},(c,g),x,d)
   end
 
   z = zero(Mutable(V))

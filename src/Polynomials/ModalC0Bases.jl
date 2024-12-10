@@ -308,11 +308,19 @@ function _define_terms_mc0(filter,sort!,orders)
   collect(lazy_map(Reindex(terms),mask))
 end
 
+"""
+Reference: equation (16) in
+
+Badia, S.; Neiva, E. & Verdugo, F.; (2022);
+Robust high-order unfitted finite elements by interpolation-based discrete extension,
+Computers & Mathematics with Applications,
+https://doi.org/10.1016/j.camwa.2022.09.027
+"""
 function _evaluate_1d_mc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
   @assert order > 0
   n = order + 1
-  z = one(T)
-  @inbounds v[d,1] = z - x[d]
+  o = one(T)
+  @inbounds v[d,1] = o - x[d]
   @inbounds v[d,2] = x[d]
   if n > 2
     ξ = ( 2*x[d] - ( a[d] + b[d] ) ) / ( b[d] - a[d] )
@@ -464,7 +472,7 @@ end
   v::AbstractVector{G},s,k,l,::Type{V}) where {V,G}
   # Git blame me for readable non-generated version
   @notimplementedif num_indep_components(G) != num_components(G) "Not implemented for symmetric Jacobian or Hessian"
-  
+
   m = Array{String}(undef, size(G))
   N_val_dims = length(size(V))
   s_size = size(G)[1:end-N_val_dims]
@@ -474,7 +482,7 @@ end
     id = join(Tuple(ci))
     body *= "@inbounds s$id = s[$ci];"
   end
-  
+
   V_size = size(V)
   for (ij,j) in enumerate(CartesianIndices(V_size))
     for i in CartesianIndices(m)

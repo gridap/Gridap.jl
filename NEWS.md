@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added AMR-related methods `mark` and `estimate` to `Adaptivity` module. Implemented Dorfler marking strategy. Since PR[#1063](https://github.com/gridap/Gridap.jl/pull/1063).
 
+### Changed
+- Existing Jacobi polynomial bases/spaces were renamed to Legendre (which they are). TODO
+
 ## [0.18.8] - 2024-12-2
 
 ### Added
