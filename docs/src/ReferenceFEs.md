@@ -60,7 +60,7 @@ Pages   = ["TensorProductQuadratures.jl","DuffyQuadratures.jl","StrangeQuadratur
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["ReferenceFEInterfaces.jl","Dofs.jl"]
+Pages   = ["ReferenceFEInterfaces.jl","Dofs.jl","LinearCombinationDofVectors.jl"]
 ```
 
 ### Nodal ReferenceFEs
