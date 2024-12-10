@@ -1,18 +1,30 @@
 
-struct XiaoGimbutas <: QuadratureName end
-const xiao_gimbutas = XiaoGimbutas()
+"""
+    struct XiaoGimbutas <: QuadratureName end
+
+Xiao-Gimbutas symmetric quadrature rule for simplices.
+
+# Constructor: 
+
+    `Quadrature(p::Polytope,xiao_gimbutas::XiaoGimbutas,degree::Integer;T::Type{<:AbstractFloat}=Float64)`
 
 # Reference: 
-#  `A numerical algorithm for the construction of efficient quadrature rules in two and higher dimensions`, 
-#   Hong Xiao, Zydrunas Gimbutas, Computers & Mathematics with Applications, (2010)
-#   DOI : https://doi.org/10.1016/j.camwa.2009.10.027
-# Adapted from: 
-#    https://github.com/FEniCS/basix/blob/main/cpp/basix/quadrature.cpp
+
+  `A numerical algorithm for the construction of efficient quadrature rules in two and higher dimensions`, 
+   Hong Xiao, Zydrunas Gimbutas, Computers & Mathematics with Applications, (2010), 
+   DOI : https://doi.org/10.1016/j.camwa.2009.10.027
+
+Adapted from: https://github.com/FEniCS/basix/blob/main/cpp/basix/quadrature.cpp
+"""
+struct XiaoGimbutas <: QuadratureName end
+
+const xiao_gimbutas = XiaoGimbutas()
+
 function Quadrature(
   p::Polytope,::XiaoGimbutas,degree::Integer;T::Type{<:AbstractFloat}=Float64
 )
   msg = """\n
-  `strang` quadrature rule only available for simplices.
+  `xiao_gimbutas` quadrature rule only available for simplices.
   Use `tensor_product` for n-cubes.
   """
   @assert is_simplex(p) msg
@@ -24,7 +36,7 @@ function Quadrature(
     x, w = _xiaogimbutas_quad_tet(degree)
   else
     msg = """\n
-    `strang` quadrature rule only available for tris and tets.
+    `xiao_gimbutas` quadrature rule only available for tris and tets.
     Use `duffy` for other simplices.
     """
     @unreachable msg
