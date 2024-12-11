@@ -130,17 +130,6 @@ end
 
 # Helpers
 
-_p_filter(e,order) = (sum(e) <= order)
-_s_filter(e,order) = (sum(e) == order)
-
-function _p_dim(order,D)
-  dim = 1
-  for d in 1:D
-    dim *= order+d
-  end
-  dim/factorial(D)
-end
-
 _ndofs_pgrad(f::PCurlGradMonomialBasis{D}) where D = num_terms(f)
 
 
@@ -155,7 +144,7 @@ function _evaluate_nd_pcurlgrad!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d!(MonomialPType{order},c,x,d)
+    _evaluate_1d!(Monomial,order,c,x,d)
   end
 
   o = one(T)
@@ -214,7 +203,7 @@ function _gradient_nd_pcurlgrad!(
 
   dim = D
   for d in 1:dim
-    _derivatives_1d!(MonomialPType{order},(c,g),x,d)
+    _derivatives_1d!(Monomial,order,(c,g),x,d)
   end
 
   z = zero(Mutable(V))

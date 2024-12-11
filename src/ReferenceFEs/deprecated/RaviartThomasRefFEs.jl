@@ -216,7 +216,7 @@ end
 function compute_legendre_basis(::Type{T},p::ExtrusionPolytope{D},orders) where {D,T}
   extrusion = Tuple(p.extrusion)
   terms = _monomial_terms(extrusion,orders)
-  LegendrePolynomialBasis{D}(T,orders,terms)
+  LegendreBasis{D}(T,orders,terms)
 end
 
 function ChebyshevBasis(::Type{T},p::Polytope,orders) where T

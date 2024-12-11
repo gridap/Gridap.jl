@@ -21,16 +21,17 @@ import Gridap.Fields: evaluate!
 import Gridap.Fields: return_cache
 import Gridap.Arrays: return_type
 
+export Polynomial
 export MonomialBasis
 export QGradMonomialBasis
 export QCurlGradMonomialBasis
 export PCurlGradMonomialBasis
 export ModalC0Basis
-export LegendrePolynomialBasis
+export LegendreBasis
 export QGradLegendrePolynomialBasis
 export QCurlGradLegendrePolynomialBasis
 export PCurlGradLegendrePolynomialBasis
-export ChebyshevPolynomialBasis
+export ChebyshevBasis
 export QGradChebyshevPolynomialBasis
 export QCurlGradChebyshevPolynomialBasis
 export get_exponents
@@ -38,10 +39,15 @@ export get_exponents
 export get_order
 export get_orders
 export num_terms
+export isHierarchical
 
 include("PolynomialInterfaces.jl")
 
+include("TensorPolynomialBases.jl")
+
 include("MonomialBases.jl")
+
+include("OldMonomialHelpers.jl")
 
 include("BernsteinBases.jl")
 
@@ -53,12 +59,12 @@ include("PCurlGradMonomialBases.jl")
 
 include("ModalC0Bases.jl")
 
-include("LegendrePolynomialBases.jl")
+include("LegendreBases.jl")
 
 include("QGradLegendrePolynomialBases.jl")
 
 include("PCurlGradLegendrePolynomialBases.jl")
 
-include("ChebyshevPolynomialBases.jl")
+include("ChebyshevBases.jl")
 
 end # module

@@ -1,179 +1,37 @@
 """
-    ChebyshevPType{kind,K} <: PolynomialType{K}
+    Chebyshev{kind} <: Polynomial
 
-Type representing Chebyshev polynomials of order up to `K`,
+Type representing Chebyshev polynomials of first and second kind
 where `kind` is either `:T` or `:U` for first and second kind Chebyshev polynomials respectively.
 """
-struct ChebyshevPType{kind, K} <: PolynomialType{K} end
-isHierarchical(::ChebyshevPType) = true
+struct Chebyshev{kind} <: Polynomial end
 
-struct ChebyshevPolynomial <: Field end
+isHierarchical(::Chebyshev) = true
 
-struct ChebyshevPolynomialBasis{D,T} <: AbstractVector{ChebyshevPolynomial}
-  orders::NTuple{D,Int}
-  terms::Vector{CartesianIndex{D}}
-  function ChebyshevPolynomialBasis{D}(
-    ::Type{T}, orders::NTuple{D,Int}, terms::Vector{CartesianIndex{D}}) where {D,T}
-    new{D,T}(orders,terms)
-  end
-end
+"""
+    ChebyshevBasis{D,T,kind,K} = TensorPolynomialBasis{D,T,K,Chebyshev{kind}}
 
-@inline Base.size(a::ChebyshevPolynomialBasis{D,T}) where {D,T} = (length(a.terms)*num_components(T),)
-@inline Base.getindex(a::ChebyshevPolynomialBasis,i::Integer) = ChebyshevPolynomial()
-@inline Base.IndexStyle(::ChebyshevPolynomialBasis) = IndexLinear()
+Multivariate scalar' or `Multivalue`'d Chebyshev basis, see [`TensorPolynomialBasis`](@ref)
+"""
+const ChebyshevBasis{D,T,kind,K} = TensorPolynomialBasis{D,T,K,Chebyshev{kind}}
 
-function ChebyshevPolynomialBasis{D}(
-  ::Type{T}, orders::NTuple{D,Int}, filter::Function=_q_filter) where {D,T}
+"""
+    ChebyshevBasis{D}(::Type{T}, order::Int, terms::Vector; kind=:T) where {D,T}
+    ChebyshevBasis{D}(::Type{T}, orders::Tuple [, filter::Function; kind=:T]) where {D,T}
+    ChebyshevBasis{D}(::Type{T}, order::Int [, filter::Function]; kind=:T) where {D,T}
 
-  terms = _define_terms(filter, orders)
-  ChebyshevPolynomialBasis{D}(T,orders,terms)
-end
+Convenience constructors of `ChebyshevBasis{D,T,kind}`. The default kind is the first kind (cf. [`Chebyshev`](@ref)).
+"""
+ChebyshevBasis{D}(args...; kind=:T) where {D} = TensorPolynomialBasis{D}(Chebyshev{kind}, args...)
 
-function ChebyshevPolynomialBasis{D}(
-  ::Type{T}, order::Int, filter::Function=_q_filter) where {D,T}
+TensorPolynomialBasis{D}(::Type{Chebyshev{:U}}, args...) where D = @notimplemented "1D evaluation for second kind needed here"
 
-  orders = tfill(order,Val{D}())
-  ChebyshevPolynomialBasis{D}(T,orders,filter)
-end
-
-# API
-
-function get_exponents(b::ChebyshevPolynomialBasis)
-  indexbase = 1
-  [Tuple(t) .- indexbase for t in b.terms]
-end
-
-function get_order(b::ChebyshevPolynomialBasis)
-  maximum(b.orders)
-end
-
-function get_orders(b::ChebyshevPolynomialBasis)
-  b.orders
-end
-
-return_type(::ChebyshevPolynomialBasis{D,T}) where {D,T} = T
-
-# Field implementation
-
-function return_cache(f::ChebyshevPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
-  @check D == length(eltype(x)) "Incorrect number of point components"
-  np = length(x)
-  ndof = length(f.terms)*num_components(T)
-  n = 1 + _maximum(f.orders)
-  r = CachedArray(zeros(T,(np,ndof)))
-  v = CachedArray(zeros(T,(ndof,)))
-  c = CachedArray(zeros(eltype(T),(D,n)))
-  (r, v, c)
-end
-
-function evaluate!(cache,f::ChebyshevPolynomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
-  r, v, c = cache
-  np = length(x)
-  ndof = length(f.terms)*num_components(T)
-  n = 1 + _maximum(f.orders)
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,n))
-  for i in 1:np
-    @inbounds xi = x[i]
-    _evaluate_nd_ch!(v,xi,f.orders,f.terms,c)
-    for j in 1:ndof
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
-
-function return_cache(
-  fg::FieldGradientArray{1,ChebyshevPolynomialBasis{D,V}},
-  x::AbstractVector{<:Point}) where {D,V}
-
-  f = fg.fa
-  @assert D == length(eltype(x)) "Incorrect number of point components"
-  np = length(x)
-  ndof = length(f.terms)*num_components(V)
-  xi = testitem(x)
-  T = gradient_type(V,xi)
-  n = 1 + _maximum(f.orders)
-  r = CachedArray(zeros(T,(np,ndof)))
-  v = CachedArray(zeros(T,(ndof,)))
-  c = CachedArray(zeros(eltype(T),(D,n)))
-  g = CachedArray(zeros(eltype(T),(D,n)))
-  (r, v, c, g)
-end
-
-function evaluate!(
-  cache,
-  fg::FieldGradientArray{1,ChebyshevPolynomialBasis{D,T}},
-  x::AbstractVector{<:Point}) where {D,T}
-
-  f = fg.fa
-  r, v, c, g = cache
-  np = length(x)
-  ndof = length(f.terms) * num_components(T)
-  n = 1 + _maximum(f.orders)
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,n))
-  setsize!(g,(D,n))
-  for i in 1:np
-    @inbounds xi = x[i]
-    _gradient_nd_ch!(v,xi,f.orders,f.terms,c,g,T)
-    for j in 1:ndof
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
-
-# Optimizing evaluation at a single point
-
-function return_cache(f::ChebyshevPolynomialBasis{D,T},x::Point) where {D,T}
-  ndof = length(f.terms)*num_components(T)
-  r = CachedArray(zeros(T,(ndof,)))
-  xs = [x]
-  cf = return_cache(f,xs)
-  r, cf, xs
-end
-
-function evaluate!(cache,f::ChebyshevPolynomialBasis{D,T},x::Point) where {D,T}
-  r, cf, xs = cache
-  xs[1] = x
-  v = evaluate!(cf,f,xs)
-  ndof = size(v,2)
-  setsize!(r,(ndof,))
-  a = r.array
-  copyto!(a,v)
-  a
-end
-
-function return_cache(
-  f::FieldGradientArray{N,ChebyshevPolynomialBasis{D,V}}, x::Point) where {N,D,V}
-  xs = [x]
-  cf = return_cache(f,xs)
-  v = evaluate!(cf,f,xs)
-  r = CachedArray(zeros(eltype(v),(size(v,2),)))
-  r, cf, xs
-end
-
-function evaluate!(
-  cache, f::FieldGradientArray{N,ChebyshevPolynomialBasis{D,V}}, x::Point) where {N,D,V}
-  r, cf, xs = cache
-  xs[1] = x
-  v = evaluate!(cf,f,xs)
-  ndof = size(v,2)
-  setsize!(r,(ndof,))
-  a = r.array
-  copyto!(a,v)
-  a
-end
-
-# Helpers
+# 1D evaluation implementation
 
 function _evaluate_1d!(
-  ::Type{ChebyshevPType{:T,K}}, v::AbstractMatrix{T},x,d) where {K,T<:Number}
+  ::Type{Chebyshev{:T}}, k, v::AbstractMatrix{T},x,d) where T<:Number
 
-  n = K + 1
+  n = k + 1
   o = one(T)
   @inbounds v[d,1] = o
   if n > 1
@@ -187,9 +45,9 @@ function _evaluate_1d!(
 end
 
 function _gradient_1d!(
-  ::Type{ChebyshevPType{:T,K}}, g::AbstractMatrix{T},x,d) where {K,T<:Number}
+  ::Type{Chebyshev{:T}}, k, g::AbstractMatrix{T},x,d) where T<:Number
 
-  n = K + 1
+  n = k + 1
   z = zero(T)
   o = one(T)
   dξdx = T(2.0)
@@ -206,78 +64,10 @@ function _gradient_1d!(
   end
 end
 
-function _evaluate_nd_ch!(
-  v::AbstractVector{V},
-  x,
-  orders,
-  terms::AbstractVector{CartesianIndex{D}},
-  c::AbstractMatrix{T}) where {V,T,D}
-
-  dim = D
-  for d in 1:dim
-    _evaluate_1d!(ChebyshevPType{:T,orders[d]},c,x,d)
-  end
-
-  o = one(T)
-  k = 1
-
-  for ci in terms
-
-    s = o
-    for d in 1:dim
-      @inbounds s *= c[d,ci[d]]
-    end
-
-    k = _set_value!(v,s,k)
-
-  end
-
-end
-
-function _gradient_nd_ch!(
-  v::AbstractVector{G},
-  x,
-  orders,
-  terms::AbstractVector{CartesianIndex{D}},
-  c::AbstractMatrix{T},
-  g::AbstractMatrix{T},
-  ::Type{V}) where {G,T,D,V}
-
-  dim = D
-  for d in 1:dim
-    _derivatives_1d!(ChebyshevPType{:T,orders[d]},(c,g),x,d)
-  end
-
-  z = zero(Mutable(VectorValue{D,T}))
-  o = one(T)
-  k = 1
-
-  for ci in terms
-
-    s = z
-    for i in eachindex(s)
-      @inbounds s[i] = o
-    end
-    for q in 1:dim
-      for d in 1:dim
-        if d != q
-          @inbounds s[q] *= c[d,ci[d]]
-        else
-          @inbounds s[q] *= g[d,ci[d]]
-        end
-      end
-    end
-
-    k = _set_gradient!(v,s,k,V)
-
-  end
-
-end
-
 ############################################################################################
 
 """
-    struct QGradChebyshevPolynomialBasis{...} <: AbstractVector{Monomial}
+    struct QGradChebyshevPolynomialBasis{...} <: AbstractVector{Chebyshev{:T}}
 
 This type implements a multivariate vector-valued polynomial basis
 spanning the space needed for Nedelec reference elements on n-cubes.
@@ -285,7 +75,7 @@ The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct QGradChebyshevPolynomialBasis{D,T} <: AbstractVector{ChebyshevPolynomial}
+struct QGradChebyshevPolynomialBasis{D,T} <: AbstractVector{Chebyshev{:T}}
   order::Int
   terms::CartesianIndices{D}
   perms::Matrix{Int}
@@ -295,7 +85,7 @@ struct QGradChebyshevPolynomialBasis{D,T} <: AbstractVector{ChebyshevPolynomial}
 end
 
 Base.size(a::QGradChebyshevPolynomialBasis) = (_ndofs_qgrad_ch(a),)
-Base.getindex(a::QGradChebyshevPolynomialBasis,i::Integer) = ChebyshevPolynomial()
+Base.getindex(a::QGradChebyshevPolynomialBasis,i::Integer) = Chebyshev{:T}()
 Base.IndexStyle(::QGradChebyshevPolynomialBasis) = IndexLinear()
 
 """
@@ -317,9 +107,9 @@ function QGradChebyshevPolynomialBasis{D}(::Type{T},order::Int) where {D,T}
 end
 
 """
-    num_terms(f::QGradChebyshevPolynomialBasis{D,T}) where {D,T}
+    num_terms(f::QGradChebyshevPolynomialBasis{D}) where {D}
 """
-num_terms(f::QGradChebyshevPolynomialBasis{D,T}) where {D,T} = length(f.terms)*D
+num_terms(f::QGradChebyshevPolynomialBasis{D}) where {D} = length(f.terms)*D
 
 get_order(f::QGradChebyshevPolynomialBasis) = f.order
 
@@ -411,7 +201,7 @@ function _evaluate_nd_qgrad_ch!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d!(ChebyshevPType{:T,order},c,x,d)
+    _evaluate_1d!(Chebyshev{:T},order,c,x,d)
   end
 
   o = one(T)
@@ -455,7 +245,7 @@ function _gradient_nd_qgrad_ch!(
 
   dim = D
   for d in 1:dim
-    _derivatives_1d!(ChebyshevPType{:T,order},(c,g),x,d)
+    _derivatives_1d!(Chebyshev{:T},order,(c,g),x,d)
   end
 
   z = zero(Mutable(V))
@@ -512,7 +302,7 @@ The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct QCurlGradChebyshevPolynomialBasis{D,T} <: AbstractVector{ChebyshevPolynomial}
+struct QCurlGradChebyshevPolynomialBasis{D,T} <: AbstractVector{Chebyshev{:T}}
   qgrad::QGradChebyshevPolynomialBasis{D,T}
   function QCurlGradChebyshevPolynomialBasis(::Type{T},order::Int,terms::CartesianIndices{D},perms::Matrix{Int}) where {D,T}
     qgrad = QGradChebyshevPolynomialBasis(T,order,terms,perms)
@@ -521,7 +311,7 @@ struct QCurlGradChebyshevPolynomialBasis{D,T} <: AbstractVector{ChebyshevPolynom
 end
 
 Base.size(a::QCurlGradChebyshevPolynomialBasis) = (length(a.qgrad),)
-Base.getindex(a::QCurlGradChebyshevPolynomialBasis,i::Integer) = ChebyshevPolynomial()
+Base.getindex(a::QCurlGradChebyshevPolynomialBasis,i::Integer) = Chebyshev{:T}()
 Base.IndexStyle(::QCurlGradChebyshevPolynomialBasis) = IndexLinear()
 
 """

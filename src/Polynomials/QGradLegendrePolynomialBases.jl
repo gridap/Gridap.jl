@@ -8,7 +8,7 @@ The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct QGradLegendrePolynomialBasis{D,T} <: AbstractVector{LegendrePolynomial}
+struct QGradLegendrePolynomialBasis{D,T} <: AbstractVector{Legendre}
   order::Int
   terms::CartesianIndices{D}
   perms::Matrix{Int}
@@ -18,7 +18,7 @@ struct QGradLegendrePolynomialBasis{D,T} <: AbstractVector{LegendrePolynomial}
 end
 
 Base.size(a::QGradLegendrePolynomialBasis) = (_ndofs_qgrad_leg(a),)
-Base.getindex(a::QGradLegendrePolynomialBasis,i::Integer) = LegendrePolynomial()
+Base.getindex(a::QGradLegendrePolynomialBasis,i::Integer) = Legendre()
 Base.IndexStyle(::QGradLegendrePolynomialBasis) = IndexLinear()
 
 """
@@ -136,7 +136,7 @@ function _evaluate_nd_qgrad_leg!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d!(LegendrePType{order},c,x,d)
+    _evaluate_1d!(Legendre,order,c,x,d)
   end
 
   o = one(T)
@@ -180,7 +180,7 @@ function _gradient_nd_qgrad_leg!(
 
   dim = D
   for d in 1:dim
-    _derivatives_1d!(LegendrePType{order},(c,g),x,d)
+    _derivatives_1d!(Legendre,order,(c,g),x,d)
   end
 
   z = zero(Mutable(V))
@@ -237,7 +237,7 @@ The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct QCurlGradLegendrePolynomialBasis{D,T} <: AbstractVector{LegendrePolynomial}
+struct QCurlGradLegendrePolynomialBasis{D,T} <: AbstractVector{Legendre}
   qgrad::QGradLegendrePolynomialBasis{D,T}
   function QCurlGradLegendrePolynomialBasis(::Type{T},order::Int,terms::CartesianIndices{D},perms::Matrix{Int}) where {D,T}
     qgrad = QGradLegendrePolynomialBasis(T,order,terms,perms)
@@ -246,7 +246,7 @@ struct QCurlGradLegendrePolynomialBasis{D,T} <: AbstractVector{LegendrePolynomia
 end
 
 Base.size(a::QCurlGradLegendrePolynomialBasis) = (length(a.qgrad),)
-Base.getindex(a::QCurlGradLegendrePolynomialBasis,i::Integer) = LegendrePolynomial()
+Base.getindex(a::QCurlGradLegendrePolynomialBasis,i::Integer) = Legendre()
 Base.IndexStyle(::QCurlGradLegendrePolynomialBasis) = IndexLinear()
 
 """

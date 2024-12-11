@@ -85,7 +85,7 @@ end
     get_order(b::ModalC0Basis)
 """
 function get_order(b::ModalC0Basis)
-  maximum(b.orders)
+  maximum(b.orders, init=0)
 end
 
 """
@@ -103,7 +103,7 @@ function return_cache(f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = length(f)
-  n = 1 + _maximum(f.orders)
+  n = get_order(f) + 1
   r = CachedArray(zeros(T,(np,ndof)))
   v = CachedArray(zeros(T,(ndof,)))
   c = CachedArray(zeros(eltype(T),(D,n)))
@@ -114,7 +114,7 @@ function evaluate!(cache,f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) wher
   r, v, c = cache
   np = length(x)
   ndof = length(f)
-  n = 1 + _maximum(f.orders)
+  n = get_order(f) + 1
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
   setsize!(c,(D,n))
@@ -138,7 +138,7 @@ function return_cache(
   ndof = length(f)
   xi = testitem(x)
   T = gradient_type(V,xi)
-  n = 1 + _maximum(f.orders)
+  n = get_order(f) + 1
   r = CachedArray(zeros(T,(np,ndof)))
   v = CachedArray(zeros(T,(ndof,)))
   c = CachedArray(zeros(eltype(T),(D,n)))
@@ -155,7 +155,7 @@ function evaluate!(
   r, v, c, g = cache
   np = length(x)
   ndof = length(f)
-  n = 1 + _maximum(f.orders)
+  n = get_order(f) + 1
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
   setsize!(c,(D,n))
@@ -180,7 +180,7 @@ function return_cache(
   ndof = length(f)
   xi = testitem(x)
   T = gradient_type(gradient_type(V,xi),xi)
-  n = 1 + _maximum(f.orders)
+  n = get_order(f) + 1
   r = CachedArray(zeros(T,(np,ndof)))
   v = CachedArray(zeros(T,(ndof,)))
   c = CachedArray(zeros(eltype(T),(D,n)))
@@ -198,7 +198,7 @@ function evaluate!(
   r, v, c, g, h = cache
   np = length(x)
   ndof = length(f)
-  n = 1 + _maximum(f.orders)
+  n = get_order(f) + 1
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
   setsize!(c,(D,n))
@@ -309,7 +309,7 @@ function _define_terms_mc0(filter,sort!,orders)
 end
 
 """
-Reference: equation (16) in
+Reference: equation (17) in
 
 Badia, S.; Neiva, E. & Verdugo, F.; (2022);
 Robust high-order unfitted finite elements by interpolation-based discrete extension,
@@ -363,7 +363,7 @@ function _hessian_1d_mc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
     for i in 3:n
       j, dj = jacobi_and_derivative(ξ,i-3,1,1)
       _, d2j = jacobi_and_derivative(ξ,i-4,2,2)
-      @inbounds v[d,i] = -sqrt(2*i-3)*(2*dv1*dv2*j+2*(dv1*v2+v1*dv2)*(2/(b[d]-a[d]))*dj+v1*v2*d2j*2*i*((b[d]-a[d])^2))/(i-2)
+      @inbounds v[d,i] = -sqrt(2*i-3)*(2*dv1*dv2*j+2*(dv1*v2+v1*dv2)*(2/(b[d]-[d]))*dj+v1*v2*d2j*2*i*((b[d]-a[d])^2))/(i-2)
     end
   end
 end

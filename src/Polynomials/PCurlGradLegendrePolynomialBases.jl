@@ -1,5 +1,5 @@
 """
-struct PCurlGradLegendrePolynomialBasis{...} <: AbstractArray{LegendrePolynomial}
+struct PCurlGradLegendrePolynomialBasis{...} <: AbstractArray{Legendre}
 
 This type implements a multivariate vector-valued polynomial basis
 spanning the space needed for Raviart-Thomas reference elements on simplices.
@@ -7,7 +7,7 @@ The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct PCurlGradLegendrePolynomialBasis{D,T} <: AbstractVector{LegendrePolynomial}
+struct PCurlGradLegendrePolynomialBasis{D,T} <: AbstractVector{Legendre}
   order::Int
   pterms::Array{CartesianIndex{D},1}
   sterms::Array{CartesianIndex{D},1}
@@ -21,7 +21,7 @@ end
 
 Base.size(a::PCurlGradLegendrePolynomialBasis) = (_ndofs_pgrad(a),)
 # @santiagobadia : Not sure we want to create the monomial machinery
-Base.getindex(a::PCurlGradLegendrePolynomialBasis,i::Integer) = LegendrePolynomial()
+Base.getindex(a::PCurlGradLegendrePolynomialBasis,i::Integer) = Legendre()
 Base.IndexStyle(::PCurlGradLegendrePolynomialBasis) = IndexLinear()
 
 """
@@ -142,7 +142,7 @@ function _evaluate_nd_pcurlgrad_leg!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d!(LegendrePType{order},c,x,d)
+    _evaluate_1d!(Legendre,order,c,x,d)
   end
 
   o = one(T)
@@ -201,7 +201,7 @@ function _gradient_nd_pcurlgrad_leg!(
 
   dim = D
   for d in 1:dim
-    _derivatives_1d!(LegendrePType{order},(c,g),x,d)
+    _derivatives_1d!(Legendre,order,(c,g),x,d)
   end
 
   z = zero(Mutable(V))
