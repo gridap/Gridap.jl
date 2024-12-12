@@ -11,10 +11,22 @@ where
 abstract type Pushforward <: Map end
 
 function Arrays.lazy_map(
+  k::Pushforward, ref_cell_fields, pf_args...
+)
+  lazy_map(Broadcasting(Operation(k)), ref_cell_fields, pf_args...)
+end
+
+function Arrays.evaluate!(
+  cache, k::Pushforward, v_ref::Number, args...
+)
+  @abstractmethod
+end
+
+function Arrays.lazy_map(
   ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{Broadcasting{Operation{<:Pushforward}}}}
 )
-  cell_ref_basis, args = a.args
-  cell_ref_gradient = lazy_map(Broadcasting(∇),cell_ref_basis)
+  cell_ref_fields, args = a.args
+  cell_ref_gradient = lazy_map(Broadcasting(∇),cell_ref_fields)
   return lazy_map(a.maps.value,cell_ref_gradient,args...)
 end
 
@@ -40,6 +52,28 @@ end
 Arrays.inverse_map(pf::Pushforward) = InversePushforward(pf)
 Arrays.inverse_map(ipf::InversePushforward) = ipf.pushforward
 
+function Arrays.lazy_map(
+  k::InversePushforward, phys_cell_fields, pf_args...
+)
+  lazy_map(Broadcasting(Operation(k)), phys_cell_fields, pf_args...)
+end
+
+function Arrays.return_cache(
+  k::InversePushforward, v_phys::Number, args...
+)
+  v_ref_basis = mock_basis(v_phys)
+  pf_cache = return_cache(k.pushforward,v_ref_basis,args...)
+  return v_ref_basis, pf_cache
+end
+
+function Arrays.evaluate!(
+  cache, k::InversePushforward, v_phys::Number, args...
+)
+  v_ref_basis, pf_cache = cache
+  change = evaluate!(pf_cache,k.pushforward,v_ref_basis,args...)
+  return inv(change)⋅v_phys
+end
+
 # Pushforward
 
 """
@@ -62,12 +96,12 @@ struct Pullback{PF} <: Map
 end
 
 function Arrays.lazy_map(
-  ::typeof{evaluate},k::LazyArray{<:Fill{<:Pushforward}},ref_cell_basis
+  ::typeof{evaluate},k::LazyArray{<:Fill{<:Pullback}},ref_cell_fields
 )
   pb = k.maps.value
-  phys_cell_dofs, cell_map, pf_args = k.args
-  phys_cell_basis = lazy_map(pb.pushforward,ref_cell_basis,cell_map,pf_args...)
-  return lazy_map(evaluate,phys_cell_dofs,phys_cell_basis)
+  phys_cell_dofs, pf_args = k.args
+  phys_cell_fields = lazy_map(pb.pushforward,ref_cell_fields,pf_args...)
+  return lazy_map(evaluate,phys_cell_dofs,phys_cell_fields)
 end
 
 # InversePullback
@@ -95,27 +129,17 @@ Arrays.inverse_map(pb::Pullback) = InversePullback(pb.pushforward)
 Arrays.inverse_map(ipb::InversePullback) = Pullback(ipb.pushforward)
 
 function Arrays.lazy_map(
-  ::typeof{evaluate},k::LazyArray{<:Fill{<:InversePullback}},phys_cell_basis
+  ::typeof{evaluate},k::LazyArray{<:Fill{<:InversePullback}},phys_cell_fields
 )
   pb = inverse_map(k.maps.value)
-  ref_cell_dofs, cell_map, pf_args = k.args
-  ref_cell_basis = lazy_map(inverse_map(pb.pushforward),phys_cell_basis,cell_map,pf_args...)
-  return lazy_map(evaluate,ref_cell_dofs,ref_cell_basis)
+  ref_cell_dofs, pf_args = k.args
+  ref_cell_fields = lazy_map(inverse_map(pb.pushforward),phys_cell_fields,pf_args...)
+  return lazy_map(evaluate,ref_cell_dofs,ref_cell_fields)
 end
 
 # ContraVariantPiolaMap
 
 struct ContraVariantPiolaMap <: Pushforward end
-
-function lazy_map(
-  k::ContraVariantPiolaMap,
-  cell_ref_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
-  cell_map::AbstractArray{<:Field},
-  sign_flip::AbstractArray{<:AbstractArray{<:Field}}
-)
-  cell_Jt = lazy_map(∇,cell_map)
-  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt,sign_flip)
-end
 
 function evaluate!(
   cache,::ContraVariantPiolaMap,
