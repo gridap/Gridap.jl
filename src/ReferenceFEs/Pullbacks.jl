@@ -31,7 +31,7 @@ end
 function Arrays.lazy_map(
   ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{Broadcasting{Operation{<:Pushforward}}}}
 )
-  cell_ref_fields, args = a.args
+  cell_ref_fields, args... = a.args
   cell_ref_gradient = lazy_map(Broadcasting(∇),cell_ref_fields)
   return lazy_map(a.maps.value,cell_ref_gradient,args...)
 end
@@ -123,15 +123,16 @@ function Arrays.lazy_map(
   ::typeof(evaluate),k::LazyArray{<:Fill{<:Pullback}},ref_cell_fields::AbstractArray
 )
   pb = k.maps.value
-  phys_cell_dofs, pf_args = k.args
+  phys_cell_dofs, pf_args... = k.args
   phys_cell_fields = lazy_map(pb.pushforward,ref_cell_fields,pf_args...)
   return lazy_map(evaluate,phys_cell_dofs,phys_cell_fields)
 end
 
 function evaluate!(
-  cache, k::PullBack, σ_phys::MomentBasedDofBasis, args...
+  cache, k::Pullback, σ_phys::AbstractVector{<:Dof}, args...
 )
-  Broadcasting(Operation(k))(f_phys,args...)
+  pf(f_ref) = evaluate(k.pushforward,f_ref,args...) # TODO: Can we avoid this? 
+  return Arrays.OperationMap(σ_phys,pf)
 end
 
 # InversePullback
@@ -145,7 +146,7 @@ where
   - V̂* is a dof space on the reference cell K̂ and 
   - V* is a dof space on the physical cell K.
 Its action on reference dofs ̂σ : V̂ -> R is defined in terms of the pushforward map F* as
-  σ = F**(̂σ) := ̂σ∘(F*)^-1 : V -> R
+  σ = (F**)^-1(̂σ) := ̂σ∘(F*)^-1 : V -> R
 """
 struct InversePullback{PF} <: Map
   pushforward::PF
@@ -162,9 +163,16 @@ function Arrays.lazy_map(
   ::typeof(evaluate),k::LazyArray{<:Fill{<:InversePullback}},phys_cell_fields::AbstractArray
 )
   pb = inverse_map(k.maps.value)
-  ref_cell_dofs, pf_args = k.args
+  ref_cell_dofs, pf_args... = k.args
   ref_cell_fields = lazy_map(inverse_map(pb.pushforward),phys_cell_fields,pf_args...)
   return lazy_map(evaluate,ref_cell_dofs,ref_cell_fields)
+end
+
+function evaluate!(
+  cache, k::InversePullback, σ_ref::AbstractVector{<:Dof}, args...
+)
+  ipf(f_phys) = evaluate(inverse_map(k.pushforward),f_phys,args...) # TODO: Can we avoid this? 
+  return Arrays.OperationMap(σ_ref,ipf)
 end
 
 # ContraVariantPiolaMap
