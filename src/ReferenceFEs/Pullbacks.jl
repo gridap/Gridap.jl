@@ -10,7 +10,7 @@ where
 """
 abstract type Pushforward <: Map end
 
-function lazy_map(
+function Arrays.lazy_map(
   ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{Broadcasting{Operation{<:Pushforward}}}}
 )
   cell_ref_basis, args = a.args
@@ -37,21 +37,21 @@ struct InversePushforward{PF} <: Map
   end
 end
 
-Arrays.inverse_map(pb::Pushforward) = InversePushforward(pb)
-Arrays.inverse_map(ipb::InversePushforward) = ipb.pushforward
+Arrays.inverse_map(pf::Pushforward) = InversePushforward(pf)
+Arrays.inverse_map(ipf::InversePushforward) = ipf.pushforward
 
 # Pushforward
 
 """
     struct Pullback{PF <: Pushforward} <: Map end
 
-Represents a pushforward map F**, defined as 
+Represents a pullback map F**, defined as 
   F** : V* -> V̂*
 where 
   - V̂* is a dof space on the reference cell K̂ and 
   - V* is a dof space on the physical cell K.
 Its action on physical dofs σ : V -> R is defined in terms of the pushforward map F* as
-  F**(σ) := σ∘F* : V̂ -> R
+  ̂σ = F**(σ) := σ∘F* : V̂ -> R
 """
 struct Pullback{PF} <: Map
   pushforward::PF
@@ -64,42 +64,42 @@ end
 function Arrays.lazy_map(
   ::typeof{evaluate},k::LazyArray{<:Fill{<:Pushforward}},ref_cell_basis
 )
-  pf = k.maps.value
-  phys_cell_dofs, cell_map, pb_args = k.args
-  phys_cell_basis = lazy_map(pf.pushforward,ref_cell_basis,cell_map,pb_args...)
+  pb = k.maps.value
+  phys_cell_dofs, cell_map, pf_args = k.args
+  phys_cell_basis = lazy_map(pb.pushforward,ref_cell_basis,cell_map,pf_args...)
   return lazy_map(evaluate,phys_cell_dofs,phys_cell_basis)
 end
 
-# InversePushforward
+# InversePullback
 
 """
-    struct InversePushforward{PF <: Pushforward} <: Map end
+    struct InversePullback{PF <: Pushforward} <: Map end
 
-Represents the inverse of the pushforward map F**, defined as 
+Represents the inverse of the pullback map F**, defined as 
   (F**)^-1 : V̂* -> V*
 where 
   - V̂* is a dof space on the reference cell K̂ and 
   - V* is a dof space on the physical cell K.
-Its action on reference dofs ̂σ : V -> R is defined in terms of the pushforward map F* as
-  F**(̂σ) := ̂σ∘(F*)^-1 : V -> R
+Its action on reference dofs ̂σ : V̂ -> R is defined in terms of the pushforward map F* as
+  σ = F**(̂σ) := ̂σ∘(F*)^-1 : V -> R
 """
-struct InversePushforward{PF} <: Map
+struct InversePullback{PF} <: Map
   pushforward::PF
-  function InversePushforward(pushforward::Pushforward)
+  function InversePullback(pushforward::Pushforward)
     PF = typeof(pushforward)
     new{PF}(pushforward)
   end
 end
 
-Arrays.inverse_map(pf::Pushforward) = InversePushforward(pf.pushforward)
-Arrays.inverse_map(ipf::InversePushforward) = Pushforward(ipf.pushforward)
+Arrays.inverse_map(pb::Pullback) = InversePullback(pb.pushforward)
+Arrays.inverse_map(ipb::InversePullback) = Pullback(ipb.pushforward)
 
 function Arrays.lazy_map(
-  ::typeof{evaluate},k::LazyArray{<:Fill{<:InversePushforward}},phys_cell_basis
+  ::typeof{evaluate},k::LazyArray{<:Fill{<:InversePullback}},phys_cell_basis
 )
-  pf = inverse_map(k.maps.value)
-  ref_cell_dofs, cell_map, pb_args = k.args
-  ref_cell_basis = lazy_map(inverse_map(pf.pushforward),phys_cell_basis,cell_map,pb_args...)
+  pb = inverse_map(k.maps.value)
+  ref_cell_dofs, cell_map, pf_args = k.args
+  ref_cell_basis = lazy_map(inverse_map(pb.pushforward),phys_cell_basis,cell_map,pf_args...)
   return lazy_map(evaluate,ref_cell_dofs,ref_cell_basis)
 end
 
