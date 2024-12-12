@@ -45,7 +45,7 @@ function get_cell_shapefuns(
 
   cell_reffe_shapefuns = lazy_map(get_shapefuns,cell_reffe)
   cell_map = get_cell_map(Triangulation(model))
+  cell_Jt  = lazy_map(Broadcasting(∇),cell_map)
   k = ReferenceFEs.CoVariantPiolaMap()
-  lazy_map(k,cell_reffe_shapefuns,cell_map)
+  lazy_map(k,cell_reffe_shapefuns,cell_Jt)
 end
-
