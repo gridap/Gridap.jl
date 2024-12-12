@@ -5,8 +5,9 @@
 # Notations:
 # D: spatial / input space dimension
 # T: scalar type (Float64, ...)
-# V: concrete type of values image space (T, VectorValue{D,T} etc.)
-# G: concrete MultiValue type holding the gradient of a function of value V, i.e. gradient_type(V,Point{D})
+# V: concrete type of image values (T, VectorValue{D,T} etc.)
+# G: concrete MultiValue type holding the gradient or hessian of a function of
+#      value V, i.e. gradient_type(V,Point{D}) or gradient_type(gradient_type(V,p::Point{D}), p)
 #
 # PT: a concrete `Polynomial` type
 # np: number of points at which a basis is evaluated
@@ -14,27 +15,25 @@
 # ndof_1d: maximum of 1D basis vector in any spatial dimension
 
 """
-    PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}
-
-Abstract type representing a generic multivariate polynomial basis.
-The parameters are:
-- `D`: the spatial dimension
-- `V`: the image value type, e.g. `Real` or `<:MultiValue`
-- `K`: the maximum order of a basis polynomial in one dimension
-- `PT <: Polynomial`: the polynomial family (must be a concrete type)
-"""
-abstract type PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}  end
-
-"""
     struct TensorPolynomialBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
 
-Type representing a basis of isotropic multivariate scalar-valued, vector-valued, or
-tensor-valued polynomial that have a of tensor product structure of 1D
-polynomial in each component.
+Type representing a tensorial basis of (an)isotropic `D`-multivariate `V`-valued
+(scalar, vector, or tensor) polynomial basis, that is:
+
+The polynomial space is the tensor product of a scalar polynomial space (one for
+each independant component of V).
+
+The scalar polynomial basis is
+
+  { x ⟶ b`ᴷ`\\_α(x) = b`ᴷ`\\_α₁(x₁) × b`ᴷ`\\_α₂(x₂) × ... × b`ᴷ`\\_α`D`(x`D`) |  α ∈ `terms` }
+
+where b`ᴷ`\\_αᵢ(xᵢ) is the αᵢth 1D basis polynomial of the basis `PT` of order `K`
+evaluated at xᵢ, and where α = (α₁, α₂, ..., α`D`) is a multi-index in `terms`,
+a subset of ⟦0,`K`⟧`ᴰ`. `terms` is a field that can be passed in a constructor.
 
 The fields of this `struct` are not public.
-This type fully implements the [`Field`](@ref) interface, with up to second order
-derivatives.
+This type fully implements the [`Field`](@ref) interface, with up to second
+order derivatives.
 """
 struct TensorPolynomialBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
   orders::NTuple{D,Int}
@@ -314,22 +313,35 @@ function _tensorial_evaluate_nd!(
       @inbounds s *= c[d,ci[d]]
     end
 
-    k = _isotropic_set_value!(v,s,k)
+    k = _tensorial_set_value!(v,s,k)
   end
 end
 
-function _isotropic_set_value!(v::AbstractVector{<:Real},s,k)
+"""
+    _tensorial_set_value!(v::AbstractVector{<:Real},s,k)
+
+v[k]   = s; return k+1
+"""
+function _tensorial_set_value!(v::AbstractVector{<:Real},s,k)
     @inbounds v[k] = s
     k+1
 end
 
-# If ncomp is the number of independent components of V, sets ncomp values in v
-# such that the j^th is V(0, ..., 0, s, 0, ...) with s at position j.
-# Values are set in v from position k to k+ncomp-1, k+ncomp is returned
-#
-# This means that the basis has the same polynomial space in each component,
-# so it is isotropic in V components
-function _isotropic_set_value!(v::AbstractVector{V},s::T,k) where {V,T}
+"""
+    _tensorial_set_value!(v::AbstractVector{V},s::T,k)
+
+v[k]   = V(s, 0, ..., 0)
+v[k+1] = V(0, s, ..., 0)
+        ⋮
+v[k+N] = V(0, ..., 0, s)
+return k+N
+
+Where N is the number of independent components of V
+
+This means that the basis has the same polynomial space in each component, so it
+is tensorial relative to V components (not necessarily relative to evaluation point x)
+"""
+function _tensorial_set_value!(v::AbstractVector{V},s::T,k) where {V,T}
   ncomp = num_indep_components(V)
   z = zero(T)
   @inbounds for j in 1:ncomp
@@ -373,18 +385,18 @@ function _tensorial_gradient_nd!(
       end
     end
 
-    k = _isotropic_set_gradient!(v,s,k,V)
+    k = _tensorial_set_gradient!(v,s,k,V)
   end
 end
 
-function _isotropic_set_gradient!(
+function _tensorial_set_gradient!(
   v::AbstractVector{G},s,k,::Type{<:Real}) where G
 
   @inbounds v[k] = s
   k+1
 end
 
-@generated function _isotropic_set_gradient!(
+@generated function _tensorial_set_gradient!(
   v::AbstractVector{G},s,k,::Type{V}) where {G,V}
   # Git blame me for readable non-generated version
 
@@ -420,9 +432,9 @@ end
 # return a tensor type G that implements the appropriate symmetries of the
 # gradient (and hessian)
 #
-# This is still called "isotropic" as each independent SymTensor component holds
-# the same (scalar multivariate) polynomial space.
-@generated function _isotropic_set_gradient!(
+# This is still (independant-)component tensorial as each independent SymTensor
+# component holds the same (scalar multivariate) polynomial space.
+@generated function _tensorial_set_gradient!(
   v::AbstractVector{G},s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
   # Git blame me for readable non-generated version
 

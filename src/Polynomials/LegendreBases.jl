@@ -8,18 +8,18 @@ struct Legendre <: Polynomial   end
 isHierarchical(::Legendre) = true
 
 """
-    LegendreBasis{D,T,K} = TensorPolynomialBasis{D,T,K,Legendre}
+    LegendreBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Legendre}
 
 Multivariate scalar' or `Multivalue`'d Legendre basis, see [`TensorPolynomialBasis`](@ref)
 """
-const LegendreBasis{D,T,K} = TensorPolynomialBasis{D,T,K,Legendre}
+const LegendreBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Legendre}
 
 """
-    LegendreBasis{D}(::Type{T}, order::Int, terms::Vector) where {D,T}
-    LegendreBasis{D}(::Type{T}, orders::Tuple [, filter::Function]) where {D,T}
-    LegendreBasis{D}(::Type{T}, order::Int [, filter::Function]) where {D,T}
+    LegendreBasis{D}(::Type{V}, order::Int, terms::Vector) where {D,V}
+    LegendreBasis{D}(::Type{V}, orders::Tuple [, filter::Function]) where {D,V}
+    LegendreBasis{D}(::Type{V}, order::Int [, filter::Function]) where {D,V}
 
-Convenience constructors of LegendreBasis{D,T}.
+Convenience constructors of LegendreBasis{D,V}.
 """
 LegendreBasis{D}(args...) where {D} = TensorPolynomialBasis{D}(Legendre, args...)
 

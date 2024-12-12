@@ -8,18 +8,18 @@ struct Bernstein <: Polynomial end
 isHierarchical(::Bernstein) = false
 
 """
-    BernsteinBasis{D,T,K} = TensorPolynomialBasis{D,T,K,Bernstein}
+    BernsteinBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Bernstein}
 
 Multivariate scalar' or `Multivalue`'d monomial basis, see [`TensorPolynomialBasis`](@ref)
 """
-const BernsteinBasis{D,T,K} = TensorPolynomialBasis{D,T,K,Bernstein}
+const BernsteinBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Bernstein}
 
 """
-    BernsteinBasis{D}(::Type{T}, order::Int, terms::Vector) where {D,T}
-    BernsteinBasis{D}(::Type{T}, orders::Tuple [, filter::Function]) where {D,T}
-    BernsteinBasis{D}(::Type{T}, order::Int [, filter::Function]) where {D,T}
+    BernsteinBasis{D}(::Type{V}, order::Int, terms::Vector) where {D,V}
+    BernsteinBasis{D}(::Type{V}, orders::Tuple [, filter::Function]) where {D,V}
+    BernsteinBasis{D}(::Type{V}, order::Int [, filter::Function]) where {D,V}
 
-Convenience constructors of BernsteinBasis{D,T}.
+Convenience constructors of BernsteinBasis{D,V}.
 """
 BernsteinBasis{D}(args...) where {D} = TensorPolynomialBasis{D}(Bernstein, args...)
 

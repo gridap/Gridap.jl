@@ -8,18 +8,18 @@ struct Monomial <: Polynomial   end
 isHierarchical(::Monomial) = true
 
 """
-    MonomialBasis{D,T,K} = TensorPolynomialBasis{D,T,K,Monomial}
+    MonomialBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Monomial}
 
 Multivariate scalar' or `Multivalue`'d monomial basis, see [`TensorPolynomialBasis`](@ref)
 """
-const MonomialBasis{D,T,K} = TensorPolynomialBasis{D,T,K,Monomial}
+const MonomialBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Monomial}
 
 """
-    MonomialBasis{D}(::Type{T}, order::Int, terms::Vector) where {D,T}
-    MonomialBasis{D}(::Type{T}, orders::Tuple [, filter::Function]) where {D,T}
-    MonomialBasis{D}(::Type{T}, order::Int [, filter::Function]) where {D,T}
+    MonomialBasis{D}(::Type{V}, order::Int, terms::Vector) where {D,V}
+    MonomialBasis{D}(::Type{V}, orders::Tuple [, filter::Function]) where {D,V}
+    MonomialBasis{D}(::Type{V}, order::Int [, filter::Function]) where {D,V}
 
-Convenience constructors of MonomialBasis{D,T}.
+Convenience constructors of MonomialBasis{D,V}.
 """
 MonomialBasis{D}(args...) where {D} = TensorPolynomialBasis{D}(Monomial, args...)
 

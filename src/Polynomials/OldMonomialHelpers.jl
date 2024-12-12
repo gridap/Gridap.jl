@@ -223,9 +223,9 @@ end
 # Field implementation
 #function _evaluate!(
 #  cache,
-#  fg::FieldGradientArray{1,MonomialBasis{D,T}},
+#  fg::FieldGradientArray{1,MonomialBasis{D,V}},
 #  x::AbstractVector{<:Point},
-#  TisbitsType::Val{true}) where {D,T}
+#  TisbitsType::Val{true}) where {D,V}
 #
 #  f = fg.fa
 #  r, v, c, g = cache
@@ -249,9 +249,9 @@ end
 #
 #function _evaluate!(
 #  cache,
-#  fg::FieldGradientArray{1,MonomialBasis{D,T}},
+#  fg::FieldGradientArray{1,MonomialBasis{D,V}},
 #  x::AbstractVector{<:Point},
-#  TisbitsType::Val{false}) where {D,T}
+#  TisbitsType::Val{false}) where {D,V}
 #
 #  f = fg.fa
 #  r, v, c, g, z = cache
@@ -274,8 +274,8 @@ end
 #
 #function evaluate!(
 #  cache,
-#  fg::FieldGradientArray{1,MonomialBasis{D,T}},
-#  x::AbstractVector{<:Point}) where {D,T}
+#  fg::FieldGradientArray{1,MonomialBasis{D,V}},
+#  x::AbstractVector{<:Point}) where {D,V}
 #
 #  r, v, c, g = cache
 #  TisbitsType = Val(isbitstype(eltype(c)))
@@ -303,8 +303,8 @@ end
 #
 #function evaluate!(
 #  cache,
-#  fg::FieldGradientArray{2,MonomialBasis{D,T}},
-#  x::AbstractVector{<:Point}) where {D,T}
+#  fg::FieldGradientArray{2,MonomialBasis{D,V}},
+#  x::AbstractVector{<:Point}) where {D,V}
 #
 #  f = fg.fa
 #  r, v, c, g, h = cache

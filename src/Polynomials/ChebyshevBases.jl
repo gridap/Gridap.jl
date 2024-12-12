@@ -9,18 +9,18 @@ struct Chebyshev{kind} <: Polynomial end
 isHierarchical(::Chebyshev) = true
 
 """
-    ChebyshevBasis{D,T,kind,K} = TensorPolynomialBasis{D,T,K,Chebyshev{kind}}
+    ChebyshevBasis{D,V,kind,K} = TensorPolynomialBasis{D,V,K,Chebyshev{kind}}
 
 Multivariate scalar' or `Multivalue`'d Chebyshev basis, see [`TensorPolynomialBasis`](@ref)
 """
-const ChebyshevBasis{D,T,kind,K} = TensorPolynomialBasis{D,T,K,Chebyshev{kind}}
+const ChebyshevBasis{D,V,kind,K} = TensorPolynomialBasis{D,V,K,Chebyshev{kind}}
 
 """
-    ChebyshevBasis{D}(::Type{T}, order::Int, terms::Vector; kind=:T) where {D,T}
-    ChebyshevBasis{D}(::Type{T}, orders::Tuple [, filter::Function; kind=:T]) where {D,T}
-    ChebyshevBasis{D}(::Type{T}, order::Int [, filter::Function]; kind=:T) where {D,T}
+    ChebyshevBasis{D}(::Type{V}, order::Int, terms::Vector; kind=:T) where {D,V}
+    ChebyshevBasis{D}(::Type{V}, orders::Tuple [, filter::Function; kind=:T]) where {D,V}
+    ChebyshevBasis{D}(::Type{V}, order::Int [, filter::Function]; kind=:T) where {D,V}
 
-Convenience constructors of `ChebyshevBasis{D,T,kind}`. The default kind is the first kind (cf. [`Chebyshev`](@ref)).
+Convenience constructors of `ChebyshevBasis{D,V,kind}`. The default kind is the first kind (cf. [`Chebyshev`](@ref)).
 """
 ChebyshevBasis{D}(args...; kind=:T) where {D} = TensorPolynomialBasis{D}(Chebyshev{kind}, args...)
 

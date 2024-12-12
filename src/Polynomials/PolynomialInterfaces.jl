@@ -15,18 +15,17 @@ of the basis of order `k-1` and an other order `k` polynomial.
 """
 isHierarchical(::Polynomial) = @abstractmethod
 
-#"""
-#    get_order(::Type{PolynomialType{K}}) where K = K
-#"""
-#get_order(::Type{PolynomialType{K}}) where K = K
+"""
+    PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}
 
-#"""
-#    Jacobi{α, β} <: Polynomial
-#
-#Type representing Jacobi polynomials of parameters `α` and `β`
-#"""
-#struct Jacobi{α, β} <: Polynomial end
-#isHierarchical(::Jacobi) = true
+Abstract type representing a generic multivariate polynomial basis.
+The parameters are:
+- `D`: the spatial dimension
+- `V`: the image values type, e.g. `Real` or `<:MultiValue`
+- `K`: the maximum order of a basis polynomial in a spatial component
+- `PT <: Polynomial`: the polynomial family (must be a concrete type)
+"""
+abstract type PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}  end
 
 
 ###############################
