@@ -186,7 +186,6 @@ export ModalC0RefFE
 export CRRefFE
 
 export Lagrangian
-export DivConforming
 export RaviartThomas
 export BDM
 export Nedelec

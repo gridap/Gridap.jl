@@ -12,7 +12,6 @@ dΩ = Measure(Ω,2)
 pts = CellData.get_data(get_cell_points(dΩ))
 
 reffe = RaviartThomasRefFE(Float64,QUAD,1)
-
 V = FESpace(model,reffe)
 
 u(x) = VectorValue(x[1], -x[2])
