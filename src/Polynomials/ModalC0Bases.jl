@@ -296,7 +296,7 @@ end
 function _compute_filter_mask(terms,filter,orders)
   g = (0 .* orders) .+ 1
   to = CartesianIndex(g)
-  maxorder = _maximum(orders)
+  maxorder = maximum(orders)
   term_to_is_fterm = lazy_map(t->filter(Int[Tuple(t-to)...],maxorder),terms)
   findall(term_to_is_fterm)
 end
@@ -363,7 +363,7 @@ function _hessian_1d_mc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
     for i in 3:n
       j, dj = jacobi_and_derivative(ξ,i-3,1,1)
       _, d2j = jacobi_and_derivative(ξ,i-4,2,2)
-      @inbounds v[d,i] = -sqrt(2*i-3)*(2*dv1*dv2*j+2*(dv1*v2+v1*dv2)*(2/(b[d]-[d]))*dj+v1*v2*d2j*2*i*((b[d]-a[d])^2))/(i-2)
+      @inbounds v[d,i] = -sqrt(2*i-3)*(2*dv1*dv2*j+2*(dv1*v2+v1*dv2)*(2/(b[d]-a[d]))*dj+v1*v2*d2j*2*i*((b[d]-a[d])^2))/(i-2)
     end
   end
 end
