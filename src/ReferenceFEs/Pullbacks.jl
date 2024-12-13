@@ -228,11 +228,12 @@ Arrays.inverse_map(pb::Pullback) = InversePullback(pb.pushforward)
 Arrays.inverse_map(ipb::InversePullback) = Pullback(ipb.pushforward)
 
 function Arrays.lazy_map(
-  ::typeof(evaluate),k::LazyArray{<:Fill{<:InversePullback}},phys_cell_fields::AbstractArray
+  ::typeof(evaluate), k::LazyArray{<:Fill{<:InversePullback}}, phys_cell_fields::AbstractArray
 )
+  println("InversePullback dispatch")
   pb = inverse_map(k.maps.value)
   ref_cell_dofs, pf_args... = k.args
-  ref_cell_fields = lazy_map(inverse_map(pb.pushforward),phys_cell_fields,pf_args...)
+  ref_cell_fields = lazy_map(inverse_map(pb.pushforward), phys_cell_fields, pf_args...)
   return lazy_map(evaluate,ref_cell_dofs,ref_cell_fields)
 end
 
@@ -251,7 +252,7 @@ function evaluate!(
 )
   sign  = (-1)^sign_flip
   idetJ = 1. / meas(Jt)
-  return sign * idetJ * (v_ref⋅Jt)
+  return (sign * v_ref) ⋅(idetJ * Jt)
 end
 
 function return_cache(
@@ -263,9 +264,9 @@ end
 function evaluate!(
   cache, ::InversePushforward{ContraVariantPiolaMap}, v_phys::Number, Jt::Number, sign_flip::Bool
 )
-  sign  = (-1)^sign_flip
+  sign = (-1)^sign_flip
   detJ = meas(Jt)
-  return sign * detJ * (inv(Jt)⋅v_phys)
+  return (sign * v_phys) ⋅ (detJ * pinvJt(Jt))
 end
 
 # TODO: Should this be here? Probably not...

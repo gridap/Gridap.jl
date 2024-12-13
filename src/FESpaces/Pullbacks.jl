@@ -43,7 +43,7 @@ end
 function get_cell_pushforward_arguments(
   ::CoVariantPiolaMap, model::DiscreteModel, cell_reffe, conformity
 )
-  cell_map  = get_cell_map(get_grid(model))
+  cell_map = get_cell_map(get_grid(model))
   Jt = lazy_map(Broadcasting(∇),cell_map)
   return Jt
 end
