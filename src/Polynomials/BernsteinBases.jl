@@ -40,7 +40,7 @@ function _evaluate_1d!(::Type{Bernstein}, k, v::AbstractMatrix{T},x,d) where T<:
     j = i-1
     λ1_j = λ1^(j)
     λ2_j = λ2^(k-j)
-    @inbounds v[d,i] = b[j] * λ1_j * λ2_j # order k
+    @inbounds v[d,i] = b[i] * λ1_j * λ2_j # order k
   end
 end
 
@@ -55,8 +55,8 @@ function _gradient_1d!(::Type{Bernstein}, k, g::AbstractMatrix{T},x,d) where T<:
 
   o = one(T)
   if isone(k)
-    @inbounds g[d,1] =  o
-    @inbounds g[d,2] = -o
+    @inbounds g[d,1] = -o
+    @inbounds g[d,2] =  o
     return
   end
 
@@ -65,13 +65,13 @@ function _gradient_1d!(::Type{Bernstein}, k, g::AbstractMatrix{T},x,d) where T<:
   @inbounds λ1 = x[d]
   λ2 = o - λ1
 
-  @inbounds g[1] = k * λ2^(k-1)
+  @inbounds g[1] =-k * λ2^(k-1)
   @inbounds g[n] = k * λ1^(k-1)
   for i in 2:n-1
     j = i-1
     λ1_j = λ1^(j-1)
     λ2_j = λ2^(k-j-1)
-    @inbounds g[d,i] = k * λ1_j * λ2_j *(λ2*b[j-1] - λ1*b[j]) # order k-1
+    @inbounds g[d,i] = k * λ1_j * λ2_j *(λ2*b[i-1] - λ1*b[i]) # order k-1
   end
 end
 
@@ -87,8 +87,8 @@ function _hessian_1d!(::Type{Bernstein}, k, h::AbstractMatrix{T},x,d) where T<:N
     return
   end
   if isone(k)
-    @inbounds h[d,1] =  z
-    @inbounds h[d,2] = -z
+    @inbounds h[d,1] = z
+    @inbounds h[d,2] = z
     return
   end
 
@@ -114,6 +114,6 @@ function _hessian_1d!(::Type{Bernstein}, k, h::AbstractMatrix{T},x,d) where T<:N
     j = i-1
     λ1_j = λ1^(j-2)
     λ2_j = λ2^(k-j-2)
-    @inbounds h[d,i] = C * λ1_j * λ2_j *(λ2*λ2*b[j-2] -2λ2*λ1*b[j-1] + λ1*λ1*b[j]) # order k-2
+    @inbounds h[d,i] = C * λ1_j * λ2_j *(λ2*λ2*b[i-2] -2λ2*λ1*b[i-1] + λ1*λ1*b[i]) # order k-2
   end
 end

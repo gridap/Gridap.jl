@@ -34,8 +34,9 @@ export PCurlGradLegendrePolynomialBasis
 export ChebyshevBasis
 export QGradChebyshevPolynomialBasis
 export QCurlGradChebyshevPolynomialBasis
-export get_exponents
+export BernsteinBasis
 
+export get_exponents
 export get_order
 export get_orders
 export num_terms
@@ -48,8 +49,6 @@ include("TensorPolynomialBases.jl")
 include("MonomialBases.jl")
 
 include("OldMonomialHelpers.jl")
-
-include("BernsteinBases.jl")
 
 include("QGradMonomialBases.jl")
 
@@ -66,5 +65,7 @@ include("QGradLegendrePolynomialBases.jl")
 include("PCurlGradLegendrePolynomialBases.jl")
 
 include("ChebyshevBases.jl")
+
+include("BernsteinBases.jl")
 
 end # module

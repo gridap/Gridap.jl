@@ -25,6 +25,8 @@ LegendreBasis{D}(args...) where {D} = TensorPolynomialBasis{D}(Legendre, args...
 
 # 1D evaluation implementation
 
+# TODO optimize evaluation by using the iterative formula explicitely 
+
 function _evaluate_1d!(::Type{Legendre}, k, v::AbstractMatrix{T},x,d) where T<:Number
   n = k + 1
   o = one(T)
