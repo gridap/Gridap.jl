@@ -1,11 +1,12 @@
 
 struct DivConformity <: Conformity end
-abstract type DivConforming <: ReferenceFEName end
 
 # RaviartThomas
 
-struct RaviartThomas <: DivConforming end
+struct RaviartThomas <: PushforwardRefFE end
 const raviart_thomas = RaviartThomas()
+
+Pushforward(::Type{<:RaviartThomas}) = ContraVariantPiolaMap()
 
 """
     RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et

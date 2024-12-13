@@ -10,6 +10,11 @@ where
 """
 abstract type Pushforward <: Map end
 
+abstract type PushforwardRefFE <: ReferenceFEName end
+
+Pushforward(::Type{<:PushforwardRefFE}) = @abstractmethod
+Pushforward(name::PushforwardRefFE) = Pushforward(typeof(name))
+
 function Arrays.lazy_map(
   k::Pushforward, ref_cell_fields::AbstractArray, pf_args::AbstractArray...
 )
@@ -261,6 +266,28 @@ function evaluate!(
   sign  = (-1)^sign_flip
   detJ = meas(Jt)
   return sign * detJ * (inv(Jt)⋅v_phys)
+end
+
+# TODO: Should this be here? Probably not...
+
+function Fields.DIV(f::LazyArray{<:Fill})
+  df = Fields.DIV(f.args[1])
+  k  = f.maps.value
+  lazy_map(k,df)
+end
+
+function Fields.DIV(a::LazyArray{<:Fill{typeof(linear_combination)}})
+  i_to_basis  = Fields.DIV(a.args[2])
+  i_to_values = a.args[1]
+  lazy_map(linear_combination,i_to_values,i_to_basis)
+end
+
+function Fields.DIV(f::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}})
+  ϕrgₖ       = f.args[1]
+  fsign_flip = f.args[3]
+  div_ϕrgₖ   = lazy_map(Broadcasting(divergence),ϕrgₖ)
+  fsign_flip = lazy_map(Broadcasting(Operation(x->(-1)^x)), fsign_flip)
+  lazy_map(Broadcasting(Operation(*)),fsign_flip,div_ϕrgₖ)
 end
 
 # CoVariantPiolaMap
