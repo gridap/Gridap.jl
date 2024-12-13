@@ -8,7 +8,8 @@ function _evaluate_nd!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d!(Monomial,orders[d],c,x,d)
+    Kd = Val(orders[d])
+    _evaluate_1d!(Monomial,Kd,c,x,d)
   end
 
   o = one(T)
@@ -54,7 +55,8 @@ function _gradient_nd!(
 
   dim = D
   for d in 1:dim
-    _derivatives_1d!(Monomial,orders[d],(c,g),x,d)
+    Kd = Val(orders[d])
+    _derivatives_1d!(Monomial,Kd,(c,g),x,d)
   end
 
   o = one(T)
@@ -174,7 +176,8 @@ function _hessian_nd!(
 
   dim = D
   for d in 1:dim
-    _derivatives_1d!(Monomial,orders[d],(c,g,h),x,d)
+    Kd = Val(orders[d])
+    _derivatives_1d!(Monomial,Kd,(c,g,h),x,d)
   end
 
   z = zero(Mutable(TensorValue{D,D,T}))

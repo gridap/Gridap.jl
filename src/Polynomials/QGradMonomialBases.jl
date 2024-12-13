@@ -150,7 +150,8 @@ function _evaluate_nd_qgrad!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d!(Monomial,order,c,x,d)
+    K = Val(order)
+    _evaluate_1d!(Monomial,K,c,x,d)
   end
 
   o = one(T)
@@ -194,7 +195,8 @@ function _gradient_nd_qgrad!(
 
   dim = D
   for d in 1:dim
-    _derivatives_1d!(Monomial,order,(c,g),x,d)
+    K = Val(order)
+    _derivatives_1d!(Monomial,K,(c,g),x,d)
   end
 
   z = zero(Mutable(V))
@@ -231,7 +233,7 @@ function _gradient_nd_qgrad!(
       for i in js
         @inbounds m[i,j] = s[i]
       end
-        @inbounds v[k] = m
+      @inbounds v[k] = m
       k += 1
 
     end

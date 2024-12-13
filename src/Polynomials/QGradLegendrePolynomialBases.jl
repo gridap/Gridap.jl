@@ -136,7 +136,8 @@ function _evaluate_nd_qgrad_leg!(
 
   dim = D
   for d in 1:dim
-    _evaluate_1d!(Legendre,order,c,x,d)
+    K = Val(order)
+    _evaluate_1d!(Legendre,K,c,x,d)
   end
 
   o = one(T)
@@ -180,7 +181,8 @@ function _gradient_nd_qgrad_leg!(
 
   dim = D
   for d in 1:dim
-    _derivatives_1d!(Legendre,order,(c,g),x,d)
+    K = Val(order)
+    _derivatives_1d!(Legendre,K,(c,g),x,d)
   end
 
   z = zero(Mutable(V))

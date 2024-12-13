@@ -301,7 +301,8 @@ function _tensorial_evaluate_nd!(
   c::AbstractMatrix{T}) where {V,D,T}
 
   for d in 1:D
-    _evaluate_1d!(PT,orders[d],c,x,d)
+    Kd = Val(orders[d])
+    _evaluate_1d!(PT,Kd,c,x,d)
   end
 
   o = one(T)
@@ -336,10 +337,10 @@ v[k+1] = V(0, s, ..., 0)
 v[k+N] = V(0, ..., 0, s)
 return k+N
 
-Where N is the number of independent components of V
+where N is the number of independent components of V.
 
 This means that the basis has the same polynomial space in each component, so it
-is tensorial relative to V components (not necessarily relative to evaluation point x)
+is tensorial relative to the V components.
 """
 function _tensorial_set_value!(v::AbstractVector{V},s::T,k) where {V,T}
   ncomp = num_indep_components(V)
@@ -363,7 +364,8 @@ function _tensorial_gradient_nd!(
   ::Type{V}) where {G,D,T,V}
 
   for d in 1:D
-    _derivatives_1d!(PT,orders[d],(c,g),x,d)
+    Kd = Val(orders[d])
+    _derivatives_1d!(PT,Kd,(c,g),x,d)
   end
 
   o = one(T)
@@ -484,7 +486,8 @@ function _tensorial_hessian_nd!(
   ::Type{V}) where {G,D,T,V}
 
   for d in 1:D
-    _derivatives_1d!(PT,orders[d],(c,g,h),x,d)
+    Kd = Val(orders[d])
+    _derivatives_1d!(PT,Kd,(c,g,h),x,d)
   end
 
   z = zero(Mutable(TensorValue{D,D,T}))

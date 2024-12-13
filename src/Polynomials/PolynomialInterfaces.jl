@@ -21,7 +21,7 @@ isHierarchical(::Polynomial) = @abstractmethod
 Abstract type representing a generic multivariate polynomial basis.
 The parameters are:
 - `D`: the spatial dimension
-- `V`: the image values type, e.g. `Real` or `<:MultiValue`
+- `V`: the image values type, of type `<:Real` or `<:MultiValue`
 - `K`: the maximum order of a basis polynomial in a spatial component
 - `PT <: Polynomial`: the polynomial family (must be a concrete type)
 """
@@ -32,69 +32,65 @@ abstract type PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}  end
 # 1D internal polynomial APIs #
 ###############################
 
-# TODO pass order argument as Val{k} to use compile time dispatch to optimize
-# edge cases (k=0,1) and possible polynomial coefficients that can be
-# pre-computed at compile time
-
 """
-    _evaluate_1d!(::Type{<:Polynomial}, k v, x, d)
+    _evaluate_1d!(PT::Type{<:Polynomial},::Val{K},v,x,d)
 
 Evaluates in place the 1D basis polynomials of the given type at one nD point `x`
 along the given coordinate 1 ≤ `d` ≤ nD.
 
-`v` is an AbstractMatrix of size (at least} d×(k+1), such that the 1 ≤ i ≤ `k`+1
+`v` is an AbstractMatrix of size (at least} `d`×(`K`+1), such that the 1 ≤ i ≤ `k`+1
 values are stored in `v[d,i]`.
 """
-function _evaluate_1d!( ::Type{<:Polynomial},k,v::AbstractMatrix{T},x,d) where T<:Number
+function _evaluate_1d!(::Type{<:Polynomial},::Val{K},v::AbstractMatrix{T},x,d) where {K,T<:Number}
   @abstractmethod
 end
 
 """
-    _gradient_1d!(::Type{<:Polynomial}, k, g, x, d)
+    _gradient_1d!(PT::Type{<:Polynomial},::Val{K},g,x,d)
 
 Like [`_evaluate_1d!`](@ref), but computes the first derivative of the basis functions.
 """
-function _gradient_1d!( ::Type{<:Polynomial},k,g::AbstractMatrix{T},x,d) where T<:Number
+function _gradient_1d!(::Type{<:Polynomial},::Val{K},g::AbstractMatrix{T},x,d) where {K,T<:Number}
   @abstractmethod
 end
 
 """
-    _hessian_1d!(::Type{<:Polynomial}, k, h, x, d)
+    _hessian_1d!(PT::Type{<:Polynomial},::Val{K},g,x,d)
 
 Like [`_evaluate_1d!`](@ref), but computes the second derivative of the basis functions.
 """
-function _hessian_1d!( ::Type{<:Polynomial},k,h::AbstractMatrix{T},x,d) where T<:Number
+function _hessian_1d!(::Type{<:Polynomial},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number}
   @abstractmethod
 end
 
 """
-    _derivatives_1d!(PT::Type{<:Polynomial}, k, (v,g,...), x, d)
+    _derivatives_1d!(PT::Type{<:Polynomial}, ::Val{K}, (v,g,...), x, d)
 
 Same as calling
 ```
-_evaluate_1d!(PT, k, v, x d)
-_gradient_1d!(PT, k, g, x d)
+_evaluate_1d!(PT, Val(K), v, x d)
+_gradient_1d!(PT, Val(K), g, x d)
           ⋮
 ```
-but with possible performence optimization.
+but with possible performance optimization.
 """
-function _derivatives_1d!(PT::Type{<:Polynomial},k,t::NTuple{N},x,d) where N
+function _derivatives_1d!(  ::Type{<:Polynomial},::Val{K},t::NTuple{N},x,d) where {K,N}
   @abstractmethod
 end
 
-function _derivatives_1d!(PT::Type{<:Polynomial},k,t::NTuple{1},x,d)
-  _evaluate_1d!(PT, k, t[1], x, d)
+function _derivatives_1d!(PT::Type{<:Polynomial},::Val{K},t::NTuple{1},x,d) where K
+  _evaluate_1d!(PT, Val(K), t[1], x, d)
 end
 
-function _derivatives_1d!(PT::Type{<:Polynomial},k,t::NTuple{2},x,d)
-  _evaluate_1d!(PT, k, t[1], x, d)
-  _gradient_1d!(PT, k, t[2], x, d)
+function _derivatives_1d!(PT::Type{<:Polynomial},::Val{K},t::NTuple{2},x,d) where K
+  _evaluate_1d!(PT, Val(K), t[1], x, d)
+  _gradient_1d!(PT, Val(K), t[2], x, d)
 end
 
-function _derivatives_1d!(PT::Type{<:Polynomial},k,t::NTuple{3},x,d)
-  _evaluate_1d!(PT, k, t[1], x, d)
-  _gradient_1d!(PT, k, t[2], x, d)
-  _hessian_1d!( PT, k, t[3], x, d)
+function _derivatives_1d!(PT::Type{<:Polynomial},::Val{K},t::NTuple{3},x,d) where K
+  _evaluate_1d!(PT, Val(K), t[1], x, d)
+  _gradient_1d!(PT, Val(K), t[2], x, d)
+  _hessian_1d!( PT, Val(K), t[3], x, d)
 end
 
 # Optimizing evaluation at a single point
