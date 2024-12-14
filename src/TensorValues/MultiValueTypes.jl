@@ -11,7 +11,7 @@ Abstract type representing a multi-dimensional number value. The parameters are 
 - `N` is the order of the tensor, the length of `S`,
 - `L` is the number of components stored internally.
 
-`MultiValue`s are immutable. See [`TensorValues`](@ref) for more details on usage.
+`MultiValue`s are immutable.
 """
 abstract type MultiValue{S,T,N,L} <: Number end
 
@@ -48,7 +48,7 @@ change_eltype(::Number,::Type{T2}) where {T2} = change_eltype(Number,T2)
     Mutable(T::Type{<:MultiValue}) -> ::Type{<:MArray}
     Mutable(a::MultiValue)
 
-Return the concrete `MArray` type (defined by `StaticArrays.jl`) corresponding
+Return the concrete mutable `MArray` type (defined by `StaticArrays.jl`) corresponding
 to the `MultiValue` type T or array size and type of `a`.
 
 See also [`mutable`](@ref).
@@ -59,7 +59,7 @@ Mutable(::MultiValue) = Mutable(MultiValue)
 """
     mutable(a::MultiValue)
 
-Converts `a` into an array of type `MArray` defined by `StaticArrays.jl`.
+Converts `a` into a mutable array of type `MArray` defined by `StaticArrays.jl`.
 
 See also [`Mutable`](@ref).
 """

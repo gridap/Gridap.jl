@@ -70,13 +70,14 @@ function Arrays.return_cache(k::AttachDirichletMap,matvec::Tuple,vals,mask)
 end
 
 function Arrays.evaluate!(cache,k::AttachDirichletMap,matvec::Tuple,vals,mask)
+  mat, vec = matvec
   if mask
-    mat, vec = matvec
     vec_with_bcs = evaluate!(cache,k.muladd,mat,vals,vec)
-    (mat, vec_with_bcs)
   else
-    matvec
+    identity_muladd = MulAddMap(0,1)
+    vec_with_bcs = evaluate!(cache,identity_muladd ,mat,vals,vec)
   end
+  (mat, vec_with_bcs)
 end
 
 function Arrays.return_value(k::AttachDirichletMap,mat,vals,mask)

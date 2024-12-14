@@ -14,6 +14,7 @@ function _DiscontinuousFESpace(
   cell_is_dirichlet = Fill(false,num_cells(trian))
   ntags = 0
 
+  metadata = CellConformity(cell_fe)
   UnconstrainedFESpace(
     vector_type,
     nfree,
@@ -24,23 +25,22 @@ function _DiscontinuousFESpace(
     cell_is_dirichlet,
     dirichlet_dof_tag,
     dirichlet_cells,
-    ntags)
+    ntags,
+    metadata
+  )
 end
 
 function compute_discontinuous_cell_dofs(cell_to_ctype,ctype_to_nldofs)
-
   ncells = length(cell_to_ctype)
   ptrs = zeros(Int32,ncells+1)
   for (cell, ctype) in enumerate(cell_to_ctype)
     nldofs = ctype_to_nldofs[ctype]
     ptrs[cell+1] = nldofs
   end
-
   length_to_ptrs!(ptrs)
 
   ndata = ptrs[end]-1
   data = collect(Int32,1:ndata)
-
+  
   (Table(data,ptrs), ndata)
-
 end

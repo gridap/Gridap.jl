@@ -1281,6 +1281,7 @@ function evaluate!(cache,k::MulAddMap,a::ArrayBlock,b::ArrayBlock,c::ArrayBlock)
   _setsize_mul!(c1,a,b)
   d = evaluate!(c2,unwrap_cached_array,c1)
   copyto!(d,c)
+  iszero(k.α) && isone(k.β) && return d
   mul!(d,a,b,k.α,k.β)
   d
 end
