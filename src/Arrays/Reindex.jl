@@ -129,11 +129,3 @@ end
   i = j_to_i[j]
   i_to_v[i]=v
 end
-
-# This optimization is important when integrating on partial domains (Triangulation views)
-function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{<:Reindex}},x::AbstractArray)
-  fields = a.maps.value.values
-  ids = a.args[1]
-  vals = lazy_map(evaluate,fields,x)
-  return lazy_map(Reindex(vals),ids)
-end
