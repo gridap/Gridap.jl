@@ -78,7 +78,7 @@ glue = get_glue(btrian,Val(1))
 glue = get_glue(btrian,Val(2))
 @test glue.tface_to_mface === btrian.glue.face_to_cell
 
-@test isa(get_cell_map(btrian)[1],AffineMap)
+@test isa(get_cell_map(btrian)[1],AffineField)
 
 face_s_q = glue.tface_to_mface_map
 
