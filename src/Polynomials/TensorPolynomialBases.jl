@@ -46,6 +46,7 @@ struct TensorPolynomialBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
     terms::Vector{CartesianIndex{D}}) where {D,V,PT<:Polynomial}
 
     K = maximum(orders; init=0)
+    @check all( term -> (maximum(Tuple(term), init=0) <= K+1), terms) "Some term contain a higher index than the maximum degree + 1."
     new{D,V,K,PT}(orders,terms)
   end
 end
