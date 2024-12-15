@@ -7,10 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added AMR-related methods `mark` and `estimate` to `Adaptivity` module. Implemented Dorfler marking strategy. Since PR[#1063](https://github.com/gridap/Gridap.jl/pull/1063).
+
+### Changed
+
+- Low level optimisations to reduce allocations. `AffineMap` renamed to `AffineField`. New `AffineMap <: Map`, doing the same as `AffineField` without struct allocation. New `ConstantMap <: Map`, doing the same as `ConstantField` without struct allocation. Since PR[#1043](https://github.com/gridap/Gridap.jl/pull/1043).
+
+## [0.18.8] - 2024-12-2
+
+### Added
+
+- Added get_dof_value_type for FESpacesWithLinearConstraints. Since PR[#1062](https://github.com/gridap/Gridap.jl/pull/1062).
+- Added Xiao-Gimbutas quadratures for simplices. Since PR[#1058](https://github.com/gridap/Gridap.jl/pull/1058).
+- Small improvements of the documentation of `Gridap.TensorValues`. Since PR[#1051](https://github.com/gridap/Gridap.jl/pull/1051).
+
 ### Fixed
 
 - Fixed #974, an error when weak form is real but unknown vector is complex. Since PR[#1050](https://github.com/gridap/Gridap.jl/pull/1050).
 - Fixed issue where barycentric refinement rule in 3D would not produce oriented meshes. Since PR[#1055](https://github.com/gridap/Gridap.jl/pull/1055).
+
+### Changed
+
+- Optimized MonomialBasis low-level functions. Since PR[#1059](https://github.com/gridap/Gridap.jl/pull/1059).
 
 ## [0.18.7] - 2024-10-8
 

@@ -38,6 +38,6 @@ fΓ = interpolate_everywhere(fa, FESpace(Γ,reffe))
 # ERROR: LoadError: DimensionMismatch: matrix is not square: dimensions are (1, 2)
 
 # Corrections
-# Modified src/Fields/AffineMaps.jl
+# Modified src/Fields/AffineFields.jl
 
 end

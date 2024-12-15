@@ -2,6 +2,12 @@
 struct XiaoGimbutas <: QuadratureName end
 const xiao_gimbutas = XiaoGimbutas()
 
+# Reference: 
+#  `A numerical algorithm for the construction of efficient quadrature rules in two and higher dimensions`, 
+#   Hong Xiao, Zydrunas Gimbutas, Computers & Mathematics with Applications, (2010)
+#   DOI : https://doi.org/10.1016/j.camwa.2009.10.027
+# Adapted from: 
+#    https://github.com/FEniCS/basix/blob/main/cpp/basix/quadrature.cpp
 function Quadrature(
   p::Polytope,::XiaoGimbutas,degree::Integer;T::Type{<:AbstractFloat}=Float64
 )

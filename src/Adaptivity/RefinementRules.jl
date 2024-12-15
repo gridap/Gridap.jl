@@ -25,7 +25,7 @@ end
 # - The reason why we are saving both the cell maps and the inverse cell maps is to avoid recomputing
 #   them when needed. This is needed for performance when the RefinementRule is used for MacroFEs.
 #   Also, in the case the ref_grid comes from a CartesianGrid, we save the cell maps as 
-#   AffineMaps, which are more efficient than the default linear_combinations.
+#   AffineFields, which are more efficient than the default linear_combinations.
 # - We cannot parametrise the RefinementRule by all it's fields, because we will have different types of
 #   RefinementRules in a single mesh. It's the same reason why we don't parametrise the ReferenceFE type.
 
