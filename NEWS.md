@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Low level optimisations to reduce allocations. `AffineMap` renamed to `AffineField`. New `AffineMap <: Map`, doing the same as `AffineField` without struct allocation. New `ConstantMap <: Map`, doing the same as `ConstantField` without struct allocation. Since PR[#1043](https://github.com/gridap/Gridap.jl/pull/1043).
+- `ConstantFESpaces` can now be built on triangulations. Since PR[#1069](https://github.com/gridap/Gridap.jl/pull/1069)
 
 ## [0.18.8] - 2024-12-2
 
