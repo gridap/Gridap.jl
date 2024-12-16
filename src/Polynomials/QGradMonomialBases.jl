@@ -47,6 +47,8 @@ num_terms(f::QGradMonomialBasis{D,T}) where {D,T} = length(f.terms)*D
 
 get_order(f::QGradMonomialBasis) = f.order
 
+return_type(::QGradMonomialBasis{D,T}) where {D,T} = VectorValue{D,T}
+
 function return_cache(f::QGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
@@ -257,6 +259,8 @@ Base.IndexStyle(::Type{<:NedelecPrebasisOnSimplex}) = IndexLinear()
 
 num_terms(a::NedelecPrebasisOnSimplex) = length(a)
 get_order(f::NedelecPrebasisOnSimplex) = f.order
+
+return_type(::NedelecPrebasisOnSimplex{D}) where {D} = VectorValue{D,Float64}
 
 function return_cache(
   f::NedelecPrebasisOnSimplex{d},x::AbstractVector{<:Point}) where d
