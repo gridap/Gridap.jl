@@ -46,32 +46,41 @@ struct TensorPolynomialBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
     terms::Vector{CartesianIndex{D}}) where {D,V,PT<:Polynomial}
 
     K = maximum(orders; init=0)
-    @check all( term -> (maximum(Tuple(term), init=0) <= K+1), terms) "Some term contain a higher index than the maximum degree + 1."
+    msg =  "Some term contain a higher index than the maximum degree + 1."
+    @check all( term -> (maximum(Tuple(term), init=0) <= K+1), terms) msg
     new{D,V,K,PT}(orders,terms)
   end
 end
 
 @inline Base.size(a::TensorPolynomialBasis{D,V}) where {D,V} = (length(a.terms)*num_indep_components(V),)
-@inline Base.getindex(a::TensorPolynomialBasis{D,V,K,PT}, i::Integer) where {D,V,K,PT} = PT()
-@inline Base.IndexStyle(::TensorPolynomialBasis) = IndexLinear()
+
+function TensorPolynomialBasis(
+   ::Type{PT},
+   ::Val{D},
+   ::Type{V},
+   orders::NTuple{D,Int},
+   terms::Vector{CartesianIndex{D}}) where {PT<:Polynomial,D,V}
+
+  TensorPolynomialBasis{D}(PT,V,orders,terms)
+end
 
 """
-    TensorPolynomialBasis{D}(::Type{PT}, ::Type{V}, orders::Tuple [, filter::Function])
+    TensorPolynomialBasis(::Type{PT}, ::Val{D}, ::Type{V}, orders::Tuple [, filter::Function])
 
 This version of the constructor allows to pass a tuple `orders` containing the
 polynomial order to be used in each of the `D` dimensions in order to  construct
 an anisotropic tensor-product space.
 """
-function TensorPolynomialBasis{D}(
-  ::Type{PT}, ::Type{V}, orders::NTuple{D,Int}, filter::Function=_q_filter
-  ) where {D,V,PT}
+function TensorPolynomialBasis(
+  ::Type{PT}, ::Val{D}, ::Type{V}, orders::NTuple{D,Int}, filter::Function=_q_filter
+  ) where {PT,D,V}
 
   terms = _define_terms(filter, orders)
   TensorPolynomialBasis{D}(PT,V,orders,terms)
 end
 
 """
-    TensorPolynomialBasis{D}(::Type{V}, order::Int [, filter::Function]) where {D,V}
+    TensorPolynomialBasis(::Type{V}, ::Val{D}, order::Int [, filter::Function]) where {D,V}
 
 Returns an instance of `TensorPolynomialBasis` representing a multivariate polynomial basis
 in `D` dimensions, of polynomial degree `order`, whose value is represented by the type `V`.
@@ -95,11 +104,11 @@ are used to select well known polynomial spaces
 - "Serendipity" space: `(e,order) -> sum( [ i for i in e if i>1 ] ) <= order`
 
 """
-function TensorPolynomialBasis{D}(
-  ::Type{PT}, ::Type{V}, order::Int, filter::Function=_q_filter) where {D,V,PT}
+function TensorPolynomialBasis(
+  ::Type{PT}, VD::Val{D}, ::Type{V}, order::Int, filter::Function=_q_filter) where {PT,D,V}
 
-  orders = tfill(order,Val{D}())
-  TensorPolynomialBasis{D}(PT,V,orders,filter)
+  orders = tfill(order,VD)
+  TensorPolynomialBasis(PT,Val(D),V,orders,filter)
 end
 
 # API
@@ -114,7 +123,7 @@ Get a vector of tuples with the exponents of all the terms in the basis.
 ```jldoctest
 using Gridap.Polynomials
 
-b = MonomialBasis{2}(Float64,2)
+b = MonomialBasis(Val(2),Float64,2)
 
 exponents = get_exponents(b)
 
@@ -130,13 +139,6 @@ function get_exponents(b::TensorPolynomialBasis)
 end
 
 """
-    get_order(b::TensorPolynomialBasis{D,V,K) = K
-
-Return the maximum polynomial order in a dimension, or `0` in 0D.
-"""
-get_order(::TensorPolynomialBasis{D,V,K}) where {D,V,K} = K
-
-"""
     get_orders(b::TensorPolynomialBasis)
 
 Return the D-tuple of polynomial orders in each dimension
@@ -144,8 +146,6 @@ Return the D-tuple of polynomial orders in each dimension
 function get_orders(b::TensorPolynomialBasis)
   b.orders
 end
-
-return_type(::TensorPolynomialBasis{D,V}) where {D,V} = V
 
 
 ###########
@@ -180,16 +180,17 @@ end
 
 function _return_cache(f::TensorPolynomialBasis{D},x,::Type{G},N_deriv) where {D,G}
   @assert D == length(eltype(x)) "Incorrect number of point components"
+  T = eltype(G)
   np = length(x)
   ndof = length(f)
-  n = get_order(f) + 1
+  ndof_1d = get_order(f) + 1
   # Cache for the returned array
   r = CachedArray(zeros(G,(np,ndof)))
   # Cache for basis functions at one point x[i]
   v = CachedArray(zeros(G,(ndof,)))
   # Cache for the 1D basis function values in each dimension (to be
   # tensor-producted), and of their 1D N_deriv'th derivatives
-  t = ntuple( _ -> CachedArray(zeros(eltype(G),(D,n))), N_deriv)
+  t = ntuple( _ -> CachedArray(zeros(T,(D,ndof_1d ))), N_deriv)
   (r, v, t...)
 end
 
@@ -234,7 +235,7 @@ function evaluate!(
 
   f = fg.fa
   r, v, c, g = cache
-  z = zero(Mutable(VectorValue{D,eltype(V)}))
+  s = zero(Mutable(VectorValue{D,eltype(V)}))
   np = length(x)
   ndof = length(f)
   ndof_1d = get_order(f) + 1 # K+1
@@ -245,7 +246,7 @@ function evaluate!(
   for i in 1:np
     # TODO Shouldn't we avoid accessing here ? (pass x and i)
     @inbounds xi = x[i]
-    _tensorial_gradient_nd!(PT,v,xi,f.orders,f.terms,c,g,z,V)
+    _tensorial_gradient_nd!(PT,v,xi,f.orders,f.terms,c,g,s,V)
     for j in 1:ndof
       # TODO Shouldn't we assign in place in _tensorial_gradient_nd instead of copying everything?
       @inbounds r[i,j] = v[j]
@@ -306,11 +307,10 @@ function _tensorial_evaluate_nd!(
     _evaluate_1d!(PT,Kd,c,x,d)
   end
 
-  o = one(T)
   k = 1
   for ci in terms
 
-    s = o
+    s = one(T)
     for d in 1:D
       @inbounds s *= c[d,ci[d]]
     end
@@ -322,7 +322,7 @@ end
 """
     _tensorial_set_value!(v::AbstractVector{<:Real},s,k)
 
-v[k]   = s; return k+1
+v[k] = s; return k+1
 """
 function _tensorial_set_value!(v::AbstractVector{<:Real},s,k)
     @inbounds v[k] = s
@@ -332,16 +332,18 @@ end
 """
     _tensorial_set_value!(v::AbstractVector{V},s::T,k)
 
+```
 v[k]   = V(s, 0, ..., 0)
 v[k+1] = V(0, s, ..., 0)
         ⋮
 v[k+N] = V(0, ..., 0, s)
 return k+N
+```
 
-where N is the number of independent components of V.
+where `N` is the number of independent components of `V<:MultiValue`.
 
 This means that the basis has the same polynomial space in each component, so it
-is tensorial relative to the V components.
+is tensorial relative to the `V` components.
 """
 function _tensorial_set_value!(v::AbstractVector{V},s::T,k) where {V,T}
   ncomp = num_indep_components(V)
@@ -361,7 +363,7 @@ function _tensorial_gradient_nd!(
   terms::AbstractVector{CartesianIndex{D}},
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
-  z::AbstractVector{T},
+  s::AbstractVector{T},
   ::Type{V}) where {G,D,T,V}
 
   for d in 1:D
@@ -369,15 +371,13 @@ function _tensorial_gradient_nd!(
     _derivatives_1d!(PT,Kd,(c,g),x,d)
   end
 
-  o = one(T)
   k = 1
-
   for ci in terms
 
-    s = z
     for i in eachindex(s)
-      @inbounds s[i] = o
+      @inbounds s[i] = one(T)
     end
+
     for q in 1:D
       for d in 1:D
         if d != q
@@ -399,6 +399,7 @@ function _tensorial_set_gradient!(
   k+1
 end
 
+# TODO comment
 @generated function _tensorial_set_gradient!(
   v::AbstractVector{G},s,k,::Type{V}) where {G,V}
   # Git blame me for readable non-generated version
@@ -491,16 +492,15 @@ function _tensorial_hessian_nd!(
     _derivatives_1d!(PT,Kd,(c,g,h),x,d)
   end
 
-  z = zero(Mutable(TensorValue{D,D,T}))
-  o = one(T)
+  s = zero(Mutable(TensorValue{D,D,T}))
   k = 1
 
   for ci in terms
 
-    s = z
     for i in eachindex(s)
-      @inbounds s[i] = o
+      @inbounds s[i] = one(T)
     end
+
     for r in 1:D
       for q in 1:D
         for d in 1:D

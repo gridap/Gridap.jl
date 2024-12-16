@@ -14,15 +14,15 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   D = num_dims(p)
 
   if is_n_cube(p)
-    prebasis = QGradMonomialBasis{D}(et,order) # Prebasis
-    eb = MonomialBasis{1}(et,order)            # Edge basis
-    fb = QGradMonomialBasis{D-1}(et,order-1)   # Face basis
-    cb = QCurlGradMonomialBasis{D}(et,order-1) # Cell basis
+    prebasis = QGradMonomialBasis(Val(D),et,order) # Prebasis
+    eb = MonomialBasis(Val(1),et,order)            # Edge basis
+    fb = QGradMonomialBasis(Val(D-1),et,order-1)   # Face basis
+    cb = QCurlGradMonomialBasis(Val(D),et,order-1) # Cell basis
   elseif is_simplex(p)
     prebasis = Polynomials.NedelecPrebasisOnSimplex{D}(order) # Prebasis
-    eb = MonomialBasis{1}(et,order)                           # Edge basis
-    fb = MonomialBasis{D-1}(VectorValue{D-1,et},order-1,Polynomials._p_filter) # Face basis
-    cb = MonomialBasis{D}(VectorValue{D,et},order-D+1,Polynomials._p_filter)   # Cell basis
+    eb = MonomialBasis(Val(1),et,order)                           # Edge basis
+    fb = MonomialBasis(Val(D-1),VectorValue{D-1,et},order-1,Polynomials._p_filter) # Face basis
+    cb = MonomialBasis(Val(D),VectorValue{D,et},order-D+1,Polynomials._p_filter)   # Cell basis
   else
     @unreachable "Nedelec Reference FE only implemented for n-cubes and simplices"
   end
@@ -100,7 +100,7 @@ function get_face_dofs(reffe::GenericRefFE{Nedelec,Dc}) where Dc
           for dof in cface_own_dofs
             push!(face_dofs[face],dof)
           end
-        end 
+        end
       end
       for dof in face_own_dofs[face]
         push!(face_dofs[face],dof)

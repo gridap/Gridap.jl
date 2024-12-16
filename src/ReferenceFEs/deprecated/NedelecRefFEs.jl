@@ -16,7 +16,7 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   D = num_dims(p)
 
   if is_n_cube(p)
-    prebasis = QGradMonomialBasis{D}(et,order)
+    prebasis = QGradMonomialBasis(Val(D),et,order)
   elseif is_simplex(p)
     prebasis = Polynomials.NedelecPrebasisOnSimplex{D}(order)
   else
@@ -96,7 +96,7 @@ function get_face_dofs(reffe::GenericRefFE{Nedelec,Dc}) where Dc
           for dof in cface_own_dofs
               push!(face_dofs[face],dof)
           end
-        end 
+        end
       end
       for dof in face_own_dofs[face]
         push!(face_dofs[face],dof)
@@ -204,7 +204,7 @@ function _Nedelec_face_values(p,et,order)
   c_fips, fcips, fwips = _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
 
   # Face moments, i.e., M(Fi)_{ab} = w_Fi^b q_RF^a(xgp_RFi^b) (n_Fi × ())
-  fshfs = QGradMonomialBasis{num_dims(fp)}(et,order-1)
+  fshfs = QGradMonomialBasis(Val(num_dims(fp)),et,order-1)
 
   fmoments = _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
 
@@ -250,7 +250,7 @@ function _Nedelec_face_values_simplex(p,et,order)
   c_fips, fcips, fwips, fJtips = _nfaces_evaluation_points_weights_with_jac(p, fgeomap, fips, wips)
 
   Df = num_dims(fp)
-  fshfs = MonomialBasis{Df}(VectorValue{Df,et},order-1,(e,k)->sum(e)<=k)
+  fshfs = MonomialBasis(Val(Df),VectorValue{Df,et},order-1,(e,k)->sum(e)<=k)
 
   fmoments = _Nedelec_face_moments_simplex(p, fshfs, c_fips, fcips, fwips, fJtips)
 
@@ -296,10 +296,10 @@ function _Nedelec_cell_values(p,et,order)
 
   # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
   if is_n_cube(p)
-    cbasis = QCurlGradMonomialBasis{num_dims(p)}(et,order-1)
+    cbasis = QCurlGradMonomialBasis(Val(num_dims(p)),et,order-1)
   else
     D = num_dims(p)
-    cbasis = MonomialBasis{D}(VectorValue{D,et},order-D+1,(e,k)->sum(e)<=k)
+    cbasis = MonomialBasis(Val(D),VectorValue{D,et},order-D+1,(e,k)->sum(e)<=k)
   end
   cmoments = _Nedelec_cell_moments(p, cbasis, ccips, cwips )
 

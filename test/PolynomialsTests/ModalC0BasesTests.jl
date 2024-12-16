@@ -22,6 +22,7 @@ order = 3
 a = fill(Point(-0.5),order+1)
 b = fill(Point(2.5),order+1)
 b1 = ModalC0Basis{1}(V,order,a,b)
+#b1 = ModalC0Basis(Val(1),V,order,a,b)
 ∇b1 = Broadcasting(∇)(b1)
 ∇∇b1 = Broadcasting(∇)(∇b1)
 
@@ -47,6 +48,7 @@ b = [ Point(1.0,1.0),Point(1.0,1.0),Point(1.0,1.0),Point(1.0,1.0),
       Point(-1.0,1.0),Point(-1.0,1.0),Point(-1.0,1.25),Point(-1.0,1.25),
       Point(1.0,1.0),Point(1.0,1.0),Point(1.0,1.0),Point(1.0,1.0) ]
 b2 = ModalC0Basis{2}(V,order,a,b)
+#b2 = ModalC0Basis(Val(2),V,order,a,b)
 ∇b2 = Broadcasting(∇)(b2)
 ∇∇b2 = Broadcasting(∇)(∇b2)
 

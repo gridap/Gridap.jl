@@ -15,7 +15,7 @@ order = 0
 V = Float64
 G = gradient_type(V,xi)
 H = gradient_type(G,xi)
-b = MonomialBasis{2}(V,order)
+b = MonomialBasis(Val(2),V,order)
 @test get_order(b) == 0
 @test get_orders(b) == (0,0)
 
@@ -35,7 +35,7 @@ order = 1
 V = Float64
 G = gradient_type(V,xi)
 H = gradient_type(G,xi)
-b = MonomialBasis{2}(V,order)
+b = MonomialBasis(Val(2),V,order)
 
 v = V[1.0, 2.0, 3.0, 6.0]
 g = G[(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (3.0, 2.0)]
@@ -52,7 +52,7 @@ test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 orders = (1,2)
 V = Float64
 G = gradient_type(V,xi)
-b = MonomialBasis{2}(V,orders)
+b = MonomialBasis(Val(2),V,orders)
 
 v = V[1.0, 2.0, 3.0, 6.0, 9.0, 18.0]
 g = G[(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (3.0, 2.0), (0.0, 6.0), (9.0, 12.0)]
@@ -68,7 +68,7 @@ order = 1
 V = VectorValue{3,Float64}
 G = gradient_type(V,xi)
 H = gradient_type(G,xi)
-b = MonomialBasis{2}(V,order)
+b = MonomialBasis(Val(2),V,order)
 
 v = V[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0],
       [2.0, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 2.0],
@@ -107,7 +107,7 @@ test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 orders = (1,2)
 V = VectorValue{2,Float64}
 G = gradient_type(V,xi)
-b = MonomialBasis{2}(V,orders)
+b = MonomialBasis(Val(2),V,orders)
 
 v = V[
  (1.0, 0.0), (0.0, 1.0), (2.0, 0.0), (0.0, 2.0),
@@ -133,7 +133,7 @@ order = 1
 V = Float64
 G = gradient_type(V,xi)
 filter = (e,o) -> sum(e) <= o
-b = MonomialBasis{2}(V,order,filter)
+b = MonomialBasis(Val(2),V,order,filter)
 
 v = V[1.0, 2.0, 3.0]
 g = G[[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]
@@ -149,7 +149,7 @@ order = 1
 V = VectorValue{3,Float64}
 G = gradient_type(V,xi)
 filter = (e,o) -> sum(e) <= o
-b = MonomialBasis{2}(V,order,filter)
+b = MonomialBasis(Val(2),V,order,filter)
 
 v = V[[1.0; 0.0; 0.0], [0.0; 1.0; 0.0], [0.0; 0.0; 1.0],
       [2.0; 0.0; 0.0], [0.0; 2.0; 0.0], [0.0; 0.0; 2.0],
@@ -172,7 +172,7 @@ order = 1
 V = SymTensorValue{2,Float64}
 G = gradient_type(V,xi)
 filter = (e,o) -> sum(e) <= o
-b = MonomialBasis{2}(V,order,filter)
+b = MonomialBasis(Val(2),V,order,filter)
 
 v = V[(1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0),
       (2.0, 0.0, 0.0), (0.0, 2.0, 0.0), (0.0, 0.0, 2.0),
@@ -199,7 +199,7 @@ order = 1
 V = SymTracelessTensorValue{2,Float64}
 G = gradient_type(V,xi)
 filter = (e,o) -> sum(e) <= o
-b = MonomialBasis{2}(V,order,filter)
+b = MonomialBasis(Val(2),V,order,filter)
 
 v = V[(1.0, 0.0), (0.0, 1.0),
       (2.0, 0.0), (0.0, 2.0),
@@ -219,25 +219,25 @@ test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:])
 
 
 order = 1
-b = MonomialBasis{1}(Float64,order)
+b = MonomialBasis(Val(1),Float64,order)
 @test evaluate(b,Point{1,Float64}[(0,),(1,)]) == [1.0 0.0; 1.0 1.0]
 
-b = MonomialBasis{0}(VectorValue{2,Float64},order)
+b = MonomialBasis(Val(0),VectorValue{2,Float64},order)
 @test evaluate(b,Point{0,Float64}[(),()]) == VectorValue{2,Float64}[(1.0, 0.0) (0.0, 1.0); (1.0, 0.0) (0.0, 1.0)]
 
-b = MonomialBasis{0}(TensorValue{2,2,Float64},order)
+b = MonomialBasis(Val(0),TensorValue{2,2,Float64},order)
 @test evaluate(b,Point{0,Float64}[(),()]) == TensorValue{2,2,Float64}[
   (1.0, 0.0, 0.0, 0.0) (0.0, 1.0, 0.0, 0.0) (0.0, 0.0, 1.0, 0.0) (0.0, 0.0, 0.0, 1.0);
   (1.0, 0.0, 0.0, 0.0) (0.0, 1.0, 0.0, 0.0) (0.0, 0.0, 1.0, 0.0) (0.0, 0.0, 0.0, 1.0)
 ]
 
-b = MonomialBasis{0}(SymTensorValue{2,Float64},order)
+b = MonomialBasis(Val(0),SymTensorValue{2,Float64},order)
 @test evaluate(b,Point{0,Float64}[(),()]) == SymTensorValue{2,Float64}[
   (1.0, 0.0, 0.0) (0.0, 1.0, 0.0) (0.0, 0.0, 1.0);
   (1.0, 0.0, 0.0) (0.0, 1.0, 0.0) (0.0, 0.0, 1.0)
 ]
 
-b = MonomialBasis{0}(SymTracelessTensorValue{2,Float64},order)
+b = MonomialBasis(Val(0),SymTracelessTensorValue{2,Float64},order)
 @test evaluate(b,Point{0,Float64}[(),()]) == SymTracelessTensorValue{2,Float64}[
   (1.0, 0.0) (0.0, 1.0); (1.0, 0.0) (0.0, 1.0)
 ]

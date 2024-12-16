@@ -170,7 +170,7 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
     # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
     if is_simplex(p)
       T = VectorValue{num_dims(p),et}
-      # cbasis = GradMonomialBasis{num_dims(p)}(T,order-1)
+    # cbasis = GradMonomialBasis(Val(num_dims(p)),T,order-1)
       cbasis = Polynomials.NedelecPrebasisOnSimplex{num_dims(p)}(order-2)
     else
       @notimplemented

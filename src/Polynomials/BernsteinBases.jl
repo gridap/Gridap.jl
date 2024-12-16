@@ -15,18 +15,27 @@ Multivariate scalar' or `Multivalue`'d monomial basis, see [`TensorPolynomialBas
 const BernsteinBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Bernstein}
 
 """
-    BernsteinBasis{D}(::Type{V}, order::Int, terms::Vector) where {D,V}
-    BernsteinBasis{D}(::Type{V}, orders::Tuple [, filter::Function]) where {D,V}
-    BernsteinBasis{D}(::Type{V}, order::Int [, filter::Function]) where {D,V}
+    BernsteinBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)
+    BernsteinBasis(::Val{D}, ::Type{V}, orders::Tuple [, filter::Function])
+    BernsteinBasis(::Val{D}, ::Type{V}, order::Int [, filter::Function])
 
-Convenience constructors of BernsteinBasis{D,V}.
+Convenience constructors of [`BernsteinBasis`](@ref).
 """
-BernsteinBasis{D}(args...) where {D} = TensorPolynomialBasis{D}(Bernstein, args...)
+BernsteinBasis(args...) = TensorPolynomialBasis(Bernstein, args...)
+
+QGradBernsteinBasis(args...)     = QGradBasis(Bernstein, args...)
+QCurlGradBernsteinBasis(args...) = QCurlGradBasis(Bernstein, args...)
+
 
 # 1D evaluation implementation
 
 # TODO Optimize with in-place De Casteljau
 
+"""
+    binoms(::Val{K})
+
+Returns the tuple of binomials ( C₍ₖ₀₎, C₍ₖ₁₎, ..., C₍ₖₖ₎ )
+"""
 binoms(::Val{K}) where K = ntuple( i -> binomial(K,i-1), Val(K+1))
 
 

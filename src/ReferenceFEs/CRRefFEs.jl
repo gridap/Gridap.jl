@@ -1,4 +1,4 @@
-struct CR <: ReferenceFEName end   
+struct CR <: ReferenceFEName end
 const cr = CR()
 
 """
@@ -8,19 +8,19 @@ The `order` argument has the following meaning: the divergence of the  functions
 is in the P space of degree `order-1`.
 
 """
-function CRRefFE(::Type{T},p::Polytope,order::Integer) where T 
+function CRRefFE(::Type{T},p::Polytope,order::Integer) where T
   D = num_dims(p)
 
   if is_simplex(p) && order == 1
-    prebasis = MonomialBasis{D}(T,order,Polynomials._p_filter)
-    fb = MonomialBasis{D-1}(T,0,Polynomials._p_filter)
+    prebasis = MonomialBasis(Val(D),T,order,Polynomials._p_filter)
+    fb = MonomialBasis(Val(D-1),T,0,Polynomials._p_filter)
   else
     @notimplemented "CR Reference FE only available for simplices and lowest order"
   end
 
   function fmom(φ,μ,ds) # Face moment function : σ_F(φ,μ) = 1/|F| ( ∫((φ)*μ)dF )
     D = num_dims(ds.cpoly)
-    facet_measure = get_facet_measure(ds.cpoly, D-1)  
+    facet_measure = get_facet_measure(ds.cpoly, D-1)
     facet_measure_1 = Gridap.Fields.ConstantField(1 / facet_measure[ds.face])
     φμ = Broadcasting(Operation(⋅))(φ,μ)
     Broadcasting(Operation(*))(φμ,facet_measure_1)

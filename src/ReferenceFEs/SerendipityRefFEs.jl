@@ -92,7 +92,7 @@ function _ser_filter(e,order)
 end
 
 function compute_monomial_basis(::Type{T},p::SerendipityPolytope{D},orders) where {T,D}
-  MonomialBasis{D}(T,orders,_ser_filter)
+  MonomialBasis(Val(D),T,orders,_ser_filter)
 end
 
 function compute_own_nodes(p::SerendipityPolytope{0},orders)

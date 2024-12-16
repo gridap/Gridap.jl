@@ -1,4 +1,17 @@
 
+function _prepare_perms(D)
+  perms = zeros(Int,D,D)
+  for j in 1:D
+    for d in j:D
+      perms[d,j] =  d-j+1
+    end
+    for d in 1:(j-1)
+      perms[d,j] =  d+(D-j)+1
+    end
+  end
+  perms
+end
+
 function _evaluate_nd!(
   v::AbstractVector{V},
   x,

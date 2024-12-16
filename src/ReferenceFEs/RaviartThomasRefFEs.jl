@@ -18,13 +18,13 @@ function RaviartThomasRefFE(
 ) where {T,D}
 
   if is_n_cube(p)
-    prebasis = QCurlGradLegendrePolynomialBasis{D}(T,order)          # Prebasis
-    cb = QGradLegendrePolynomialBasis{D}(T,order-1)                  # Cell basis
-    fb = LegendreBasis{D-1}(T,order,Polynomials._q_filter) # Face basis
+    prebasis = QCurlGradLegendreBasis(Val(D),T,order)          # Prebasis
+    cb = QGradLegendreBasis(Val(D),T,order-1)                  # Cell basis
+    fb = LegendreBasis(Val(D-1),T,order,Polynomials._q_filter) # Face basis
   elseif is_simplex(p)
     prebasis = PCurlGradMonomialBasis{D}(T,order)                                 # Prebasis
-    cb = LegendreBasis{D}(VectorValue{D,T},order-1,Polynomials._p_filter) # Cell basis
-    fb = LegendreBasis{D-1}(T,order,Polynomials._p_filter)                # Face basis
+    cb = LegendreBasis(Val(D),VectorValue{D,T},order-1,Polynomials._p_filter) # Cell basis
+    fb = LegendreBasis(Val(D-1),T,order,Polynomials._p_filter)                # Face basis
   else
     @notimplemented "Raviart-Thomas Reference FE only available for cubes and simplices"
   end
@@ -86,7 +86,7 @@ end
 function compute_legendre_basis(::Type{T},p::ExtrusionPolytope{D},orders) where {D,T}
   extrusion = Tuple(p.extrusion)
   terms = _monomial_terms(extrusion,orders)
-  LegendreBasis{D}(T,orders,terms)
+  LegendreBasis(Val(D),T,orders,terms)
 end
 
 # ContraVariantPiolaMap

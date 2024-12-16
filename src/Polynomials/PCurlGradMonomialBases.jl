@@ -35,8 +35,8 @@ in this basis is in the P space of degree `order`.
 """
 function PCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
-  P_k = MonomialBasis{D}(T, order, _p_filter)
-  S_k = MonomialBasis{D}(T, order, _s_filter)
+  P_k = MonomialBasis(Val(D), T, order, _p_filter)
+  S_k = MonomialBasis(Val(D), T, order, _s_filter)
   pterms = P_k.terms
   sterms = S_k.terms
   perms = _prepare_perms(D)

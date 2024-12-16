@@ -15,13 +15,19 @@ Multivariate scalar' or `Multivalue`'d Legendre basis, see [`TensorPolynomialBas
 const LegendreBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Legendre}
 
 """
-    LegendreBasis{D}(::Type{V}, order::Int, terms::Vector) where {D,V}
-    LegendreBasis{D}(::Type{V}, orders::Tuple [, filter::Function]) where {D,V}
-    LegendreBasis{D}(::Type{V}, order::Int [, filter::Function]) where {D,V}
+    LegendreBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)
+    LegendreBasis(::Val{D}, ::Type{V}, orders::Tuple [, filter::Function])
+    LegendreBasis(::Val{D}, ::Type{V}, order::Int [, filter::Function])
 
-Convenience constructors of LegendreBasis{D,V}.
+Convenience constructors of [`LegendreBasis`](@ref).
 """
-LegendreBasis{D}(args...) where {D} = TensorPolynomialBasis{D}(Legendre, args...)
+LegendreBasis(args...) = TensorPolynomialBasis(Legendre, args...)
+
+QGradLegendreBasis(args...)     = QGradBasis(Legendre, args...)
+#PGradLegendreBasis(args...)     = PGradBasis(Legendre, args...)
+QCurlGradLegendreBasis(args...) = QCurlGradBasis(Legendre, args...)
+#PCurlGradLegendreBasis(args...) = PCurlGradBasis(Legendre, args...)
+
 
 # 1D evaluation implementation
 

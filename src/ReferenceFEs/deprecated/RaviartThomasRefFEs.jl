@@ -21,15 +21,17 @@ function RaviartThomasRefFE(
   D = num_dims(p)
 
   if is_n_cube(p) && basis_type == :monomial
-    prebasis = QCurlGradMonomialBasis{D}(et,order)
+    prebasis = QCurlGradMonomialBasis(Val(D),et,order)
   elseif is_simplex(p) && basis_type == :monomial
     prebasis = PCurlGradMonomialBasis{D}(et,order)
+    #prebasis = PCurlGradMonomialBasis(Val(D),et,order)
   elseif is_n_cube(p) && basis_type == :legendre
-    prebasis = QCurlGradLegendrePolynomialBasis{D}(et,order)
+    prebasis = QCurlGradLegendreBasis(Val(D),et,order)
   elseif is_simplex(p) && basis_type == :legendre
-    prebasis = PCurlGradLegendrePolynomialBasis{D}(et,order)
+    prebasis = PCurlGradLegendreBasis{D}(et,order)
+    #prebasis = PCurlGradLegendreBasis(Val(D),et,order)
   elseif is_n_cube(p) && basis_type == :chebyshev
-    prebasis = QCurlGradChebyshevPolynomialBasis{D}(et,order)
+    prebasis = QCurlGradChebyshevBasis(Val(D),et,order)
   else
     @notimplemented "H(div) Reference FE only available for cubes and simplices"
   end
@@ -196,8 +198,8 @@ function _RT_face_values(p,et,order,phi)
   # Moments (fmoments)
   # The RT prebasis is expressed in terms of shape function
   #fshfs = MonomialBasis(et,fp,order)
-  fshfs = LegendreBasis(et,fp,order)
-  #fshfs = ChebyshevBasis(et,fp,order)
+  fshfs = legendreBasis(et,fp,order)
+  #fshfs = chebyshevBasis(et,fp,order)
   #fshfs = get_shapefuns(LagrangianRefFE(et,fp,order))
 
   # Face moments, i.e., M(Fi)_{ab} = q_RF^a(xgp_RFi^b) w_Fi^b n_Fi ⋅ ()
@@ -206,30 +208,30 @@ function _RT_face_values(p,et,order,phi)
   return fcips, fmoments
 end
 
-function LegendreBasis(::Type{T},p::Polytope,orders) where T
+function legendreBasis(::Type{T},p::Polytope,orders) where T
   compute_legendre_basis(T,p,orders)
 end
-function LegendreBasis(::Type{T},p::Polytope{D},order::Int) where {D,T}
+function legendreBasis(::Type{T},p::Polytope{D},order::Int) where {D,T}
   orders = tfill(order,Val{D}())
-  LegendreBasis(T,p,orders)
+  legendreBasis(T,p,orders)
 end
 function compute_legendre_basis(::Type{T},p::ExtrusionPolytope{D},orders) where {D,T}
   extrusion = Tuple(p.extrusion)
   terms = _monomial_terms(extrusion,orders)
-  LegendreBasis{D}(T,orders,terms)
+  LegendreBasis(Val(D),T,orders,terms)
 end
 
-function ChebyshevBasis(::Type{T},p::Polytope,orders) where T
+function chebyshevBasis(::Type{T},p::Polytope,orders) where T
   compute_chebyshev_basis(T,p,orders)
 end
-function ChebyshevBasis(::Type{T},p::Polytope{D},order::Int) where {D,T}
+function chebyshevBasis(::Type{T},p::Polytope{D},order::Int) where {D,T}
   orders = tfill(order,Val{D}())
-  ChebyshevBasis(T,p,orders)
+  chebyshevBasis(T,p,orders)
 end
 function compute_chebyshev_basis(::Type{T},p::ExtrusionPolytope{D},orders) where {D,T}
   extrusion = Tuple(p.extrusion)
   terms = _monomial_terms(extrusion,orders)
-  ChebyshevPolynomialBasis{D}(T,orders,terms)
+  ChebyshevBasis(Val(D),T,orders,terms)
 end
 
 function _RT_cell_moments(p, cbasis, ccips, cwips)
@@ -250,13 +252,13 @@ function _RT_cell_values(p,et,order,phi)
 
   # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
   if is_n_cube(p)
-    #cbasis = QGradMonomialBasis{num_dims(p)}(et,order-1)
-    cbasis = QGradLegendrePolynomialBasis{num_dims(p)}(et,order-1)
-    #cbasis = QGradChebyshevPolynomialBasis{num_dims(p)}(et,order-1)
+    #cbasis = QGradMonomialBasis(Val(num_dims(p)),et,order-1)
+    cbasis = QGradLegendreBasis(Val(num_dims(p)),et,order-1)
+    #cbasis = QGradChebyshevBasis(Val(num_dims(p)),et,order-1)
     #cbasis = get_shapefuns(RaviartThomasRefFE(et,p,order-1))
   elseif is_simplex(p)
     T = VectorValue{num_dims(p),et}
-    cbasis = MonomialBasis{num_dims(p)}(T,order-1, _p_filter)
+    cbasis = MonomialBasis(Val(num_dims(p)),T,order-1, _p_filter)
   else
     @notimplemented
   end

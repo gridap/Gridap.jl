@@ -594,7 +594,7 @@ end
 function compute_monomial_basis(::Type{T},p::ExtrusionPolytope{D},orders) where {D,T}
   extrusion = Tuple(p.extrusion)
   terms = _monomial_terms(extrusion,orders)
-  MonomialBasis{D}(T,orders,terms)
+  MonomialBasis(Val(D),T,orders,terms)
 end
 
 function compute_own_nodes(p::ExtrusionPolytope{D},orders) where D

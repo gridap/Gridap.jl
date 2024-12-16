@@ -22,50 +22,58 @@ import Gridap.Fields: return_cache
 import Gridap.Arrays: return_type
 
 export Polynomial
-export MonomialBasis
-export QGradMonomialBasis
-export QCurlGradMonomialBasis
-export PCurlGradMonomialBasis
-export ModalC0Basis
-export LegendreBasis
-export QGradLegendrePolynomialBasis
-export QCurlGradLegendrePolynomialBasis
-export PCurlGradLegendrePolynomialBasis
-export ChebyshevBasis
-export QGradChebyshevPolynomialBasis
-export QCurlGradChebyshevPolynomialBasis
-export BernsteinBasis
+export isHierarchical
+export PolynomialBasis
 
+export TensorPolynomialBasis
 export get_exponents
 export get_order
 export get_orders
 export num_terms
-export isHierarchical
+
+export MonomialBasis
+export LegendreBasis
+export ChebyshevBasis
+export ModalC0Basis
+export BernsteinBasis
+
+export QGradMonomialBasis
+export QGradLegendreBasis
+export QGradChebyshevBasis
+
+export QCurlGradMonomialBasis
+export QCurlGradLegendreBasis
+export QCurlGradChebyshevBasis
+
+export PCurlGradMonomialBasis
+export PCurlGradLegendreBasis
+
 
 include("PolynomialInterfaces.jl")
 
+include("OldMonomialHelpers.jl")
+
 include("TensorPolynomialBases.jl")
+
+include("CompWiseTensorPolyBases.jl")
 
 include("MonomialBases.jl")
 
-include("OldMonomialHelpers.jl")
-
-include("QGradMonomialBases.jl")
-
-include("QCurlGradMonomialBases.jl")
-
-include("PCurlGradMonomialBases.jl")
-
-include("ModalC0Bases.jl")
-
 include("LegendreBases.jl")
 
-include("QGradLegendrePolynomialBases.jl")
-
-include("PCurlGradLegendrePolynomialBases.jl")
+#include("JacobiBases.jl")
 
 include("ChebyshevBases.jl")
 
+include("ModalC0Bases.jl")
+
 include("BernsteinBases.jl")
+
+#include("newfile.jl")
+#include("PSpaceBases.jl")
+include("PCurlGradMonomialBases.jl")
+include("PCurlGradLegendreBases.jl")
+
+include("NedelecPrebasisOnSimplex.jl")
 
 end # module

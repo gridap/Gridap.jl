@@ -15,13 +15,19 @@ Multivariate scalar' or `Multivalue`'d monomial basis, see [`TensorPolynomialBas
 const MonomialBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Monomial}
 
 """
-    MonomialBasis{D}(::Type{V}, order::Int, terms::Vector) where {D,V}
-    MonomialBasis{D}(::Type{V}, orders::Tuple [, filter::Function]) where {D,V}
-    MonomialBasis{D}(::Type{V}, order::Int [, filter::Function]) where {D,V}
+    MonomialBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)
+    MonomialBasis(::Val{D}, ::Type{V}, orders::Tuple [, filter::Function])
+    MonomialBasis(::Val{D}, ::Type{V}, order::Int [, filter::Function])
 
-Convenience constructors of MonomialBasis{D,V}.
+Convenience constructors of [`MonomialBasis`](@ref).
 """
-MonomialBasis{D}(args...) where {D} = TensorPolynomialBasis{D}(Monomial, args...)
+MonomialBasis(args...) = TensorPolynomialBasis(Monomial, args...)
+
+QGradMonomialBasis(args...)     = QGradBasis(Monomial, args...)
+#PGradMonomialBasis(args...)     = PGradBasis(Monomial, args...)
+QCurlGradMonomialBasis(args...) = QCurlGradBasis(Monomial, args...)
+#PCurlGradMonomialBasis(args...) = PCurlGradBasis(Monomial, args...)
+
 
 # 1D evaluation implementation
 

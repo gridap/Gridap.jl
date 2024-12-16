@@ -16,15 +16,21 @@ Multivariate scalar' or `Multivalue`'d Chebyshev basis, see [`TensorPolynomialBa
 const ChebyshevBasis{D,V,kind,K} = TensorPolynomialBasis{D,V,K,Chebyshev{kind}}
 
 """
-    ChebyshevBasis{D}(::Type{V}, order::Int, terms::Vector; kind=:T) where {D,V}
-    ChebyshevBasis{D}(::Type{V}, orders::Tuple [, filter::Function; kind=:T]) where {D,V}
-    ChebyshevBasis{D}(::Type{V}, order::Int [, filter::Function]; kind=:T) where {D,V}
+    ChebyshevBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector; kind=:T)
+    ChebyshevBasis(::Val{D}, ::Type{V}, orders::Tuple [, filter::Function; kind=:T])
+    ChebyshevBasis(::Val{D}, ::Type{V}, order::Int [, filter::Function; kind=:T])
 
-Convenience constructors of `ChebyshevBasis{D,V,kind}`. The default kind is the first kind (cf. [`Chebyshev`](@ref)).
+Convenience constructors of [`ChebyshevBasis`](@ref).
 """
-ChebyshevBasis{D}(args...; kind=:T) where {D} = TensorPolynomialBasis{D}(Chebyshev{kind}, args...)
+ChebyshevBasis(args...; kind=:T) = TensorPolynomialBasis(Chebyshev{kind}, args...)
 
 TensorPolynomialBasis{D}(::Type{Chebyshev{:U}}, args...) where D = @notimplemented "1D evaluation for second kind needed here"
+
+QGradChebyshevBasis(args...; kind=:T)     = QGradBasis(Chebyshev{kind}, args...)
+#PGradChebyshevBasis(args...; kind=:T)     = PGradBasis(Chebyshev{kind}, args...)
+QCurlGradChebyshevBasis(args...; kind=:T) = QCurlGradBasis(Chebyshev{kind}, args...)
+#PCurlGradChebyshevBasis(args...; kind=:T) = PCurlGradBasis(Chebyshev{kind}, args...)
+
 
 # 1D evaluation implementation
 

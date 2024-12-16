@@ -18,7 +18,7 @@ H = gradient_type(G,xi)
 # order 0 degenerated case
 
 order = 0
-b = BernsteinBasis{1}(V,order)
+b = BernsteinBasis(Val(1),V,order)
 @test get_order(b) == 0
 @test get_orders(b) == (0,)
 
@@ -35,7 +35,7 @@ test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 # Order 1
 
 order = 1
-b = BernsteinBasis{1}(V,order)
+b = BernsteinBasis(Val(1),V,order)
 
 bx = [ 1.0  0.0
        0.0  1.0
@@ -55,7 +55,7 @@ test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 # Order 2
 
 order = 2
-b = BernsteinBasis{1}(V,order)
+b = BernsteinBasis(Val(1),V,order)
 
 bx  = [ 1.0   0.0   0.0
         0.0   0.0   1.0
@@ -76,7 +76,7 @@ test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 # Order 3
 
 order = 3
-b = BernsteinBasis{1}(V,order)
+b = BernsteinBasis(Val(1),V,order)
 
 # x=x^1; x2 = x^2; x3 = x^3
 #    -x3+3x2-3x+1  3x3-6x2+3x -3x3+3x2 x3

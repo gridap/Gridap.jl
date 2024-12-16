@@ -16,6 +16,7 @@ T = Float64
 V = VectorValue{D,T}
 G = gradient_type(V,xi)
 b = PCurlGradMonomialBasis{D}(T,order)
+#b = PCurlGradMonomialBasis(Val(D),T,order)
 
 v = V[
   (1.0, 0.0), (0.0, 1.0), (4.0, 0.0), (0.0, 2.0), (16.0, 0.0), (0.0, 4.0),
@@ -47,7 +48,7 @@ g = G[
   gvb = evaluate(∇b,xi)
   @test gvb == g
 
-  @test num_terms(b) == 15
+  @test length(b) == 15
   @test get_order(b) == 2
 
   xi = Point(2,3,5)
@@ -60,8 +61,9 @@ g = G[
   V = VectorValue{D,T}
   G = gradient_type(V,xi)
   b = PCurlGradMonomialBasis{D}(T,order)
+  #b = PCurlGradMonomialBasis(Val(D),T,order)
 
-  @test num_terms(b) == 15
+  @test length(b) == 15
   @test get_order(b) == 1
 
 end # module

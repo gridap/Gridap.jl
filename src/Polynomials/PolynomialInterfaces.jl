@@ -27,6 +27,18 @@ The parameters are:
 """
 abstract type PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}  end
 
+@inline Base.size(a::PolynomialBasis{D,V}) where {D,V} = @abstractmethod
+@inline Base.getindex(a::PolynomialBasis{D,V,K,PT}, i::Integer) where {D,V,K,PT} = PT()
+@inline Base.IndexStyle(::PolynomialBasis) = IndexLinear()
+@inline return_type(::PolynomialBasis{D,V}) where {D,V} = V
+
+"""
+    get_order(b::PolynomialBasis{D,V,K) = K
+
+Return the maximum polynomial order in a dimension, or `0` in 0D.
+"""
+get_order(::PolynomialBasis{D,V,K}) where {D,V,K} = K
+
 
 ###############################
 # 1D internal polynomial APIs #

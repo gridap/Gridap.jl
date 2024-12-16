@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Existing Jacobi polynomial bases/spaces were renamed to Legendre (which they are). TODO
+- `num_terms(b::Q/P(Curl)Grad...)` is deprecated, use `length(b)` instead
+- `get_order(b::Q/P(Curl)Grad...)`, now returns the order of the basis, +1 that used to create it.
 
 ## [0.18.8] - 2024-12-2
 
