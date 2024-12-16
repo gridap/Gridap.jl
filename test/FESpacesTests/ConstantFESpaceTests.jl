@@ -6,9 +6,9 @@ using Test
 domain = (0,1,0,1)
 partition = (4,4)
 model = CartesianDiscreteModel(domain,partition)
-Λ=ConstantFESpace(model)
+Λ = ConstantFESpace(model)
 Gridap.FESpaces.test_fe_space(Λ)
-M=TrialFESpace(Λ)
+M = TrialFESpace(Λ)
 
 order = 2
 u((x,y)) = (x+y)^order
@@ -29,13 +29,17 @@ uh = solve(op)
 @assert sum(∫((uh[1]-u)*(uh[1]-u))dΩ) < 1.0e-14
 abs(sum(∫(uh[2])dΩ)) < 1.0e-12
 
-Λ2=ConstantFESpace(model,field_type=VectorValue{2,Float64})
+Λ2 = ConstantFESpace(model,field_type=VectorValue{2,Float64})
 Gridap.FESpaces.test_fe_space(Λ2)
-M2=TrialFESpace(Λ2)
+M2 = TrialFESpace(Λ2)
 a2(μ,λ) = ∫(λ⋅μ)dΩ
 l2(λ) = ∫(VectorValue(0.0,0.0)⋅λ)dΩ
 op2 = AffineFEOperator(a2,l2,M2,Λ2)
 μ2h = solve(op2)
 @assert sum(∫(μ2h⋅μ2h)dΩ) < 1.0e-12
+
+trian = Triangulation(model,[1,2,3,4])
+Λ3 = ConstantFESpace(trian,field_type=VectorValue{2,Float64})
+Gridap.FESpaces.test_fe_space(Λ3)
 
 end # module
