@@ -152,9 +152,10 @@ end
 # Helpers #
 ###########
 
-_q_filter(e,o) = true
-_p_filter(e,order) = (sum(e) <= order)
-_s_filter(e,order) = (sum(e) == order)
+_q_filter( e,order) = (maximum(e,init=0) <= order) # ℚₙ
+_qs_filter(e,order) = (maximum(e,init=0) == order) # ℚₙ\ℚ₍ₙ₋₁₎
+_p_filter( e,order) = (sum(e) <= order)     # ℙₙ
+_ps_filter(e,order) = (sum(e) == order)     # ℙₙ\ℙ₍ₙ₋₁₎
 
 function _p_dim(order,D)
   dim = 1
