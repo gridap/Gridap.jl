@@ -39,7 +39,11 @@ Base.size(a::CompWiseTensorPolyBasis) = ( sum(prod.(eachrow(a.orders .+ 1))), )
     get_comp_terms(f::CompWiseTensorPolyBasis)
 
 Return a `NTuple{L,CartesianIndices{D}}` containing, for each component
-1 ≤ l ≤ `L`, the Cartesian indices of the terms of the tensor product basis.
+1 ≤ l ≤ `L`, the Cartesian indices iterator over the terms
+in ⟦1,`o`(l,1)+1⟧ × ⟦1,`o`(l,2)+1⟧ × … × ⟦1,`o`(l,D)+1⟧ that define 𝕊ˡ.
+
+E.g., if `orders=[ 0 1; 1 0]`, then the `comp_terms` are
+`( CartesianIndices{2}((1,2)), CartesianIndices{2}((2,1)) )`.
 """
 function get_comp_terms(f::CompWiseTensorPolyBasis{D,V,K,PT,L}) where {D,V,K,PT,L}
   _terms(l) = CartesianIndices( Tuple(f.orders[l,:] .+ 1) )
@@ -47,20 +51,10 @@ function get_comp_terms(f::CompWiseTensorPolyBasis{D,V,K,PT,L}) where {D,V,K,PT,
   comp_terms::NTuple{L,CartesianIndices{D}}
 end
 
-function return_cache(
-  f::CompWiseTensorPolyBasis{D,V},
-  x::AbstractVector{<:Point}) where {D,V}
 
-  @check D == length(eltype(x)) "Incorrect number of point components"
-  T = eltype(V)
-  np = length(x)
-  ndof = length(f)
-  ndof_1d = get_order(f) + 1
-  r = CachedArray(zeros(V,(np,ndof)))
-  v = CachedArray(zeros(V,(ndof,)))
-  c = CachedArray(zeros(T,(D,ndof_1d)))
-  (r, v, c)
-end
+########################
+# Field implementation #
+########################
 
 function evaluate!(
   cache,
@@ -83,25 +77,6 @@ function evaluate!(
     end
   end
   r.array
-end
-
-function return_cache(
-  fg::FieldGradientArray{1,<:CompWiseTensorPolyBasis{D,V}},
-  x::AbstractVector{<:Point}) where {D,V}
-
-  @check D == length(eltype(x)) "Incorrect number of point components"
-  T = eltype(V)
-  f = fg.fa
-  np = length(x)
-  ndof = length(f)
-  ndof_1d = get_order(f) + 1
-  xi = testitem(x)
-  G = gradient_type(V,xi)
-  r = CachedArray(zeros(G,(np,ndof)))
-  v = CachedArray(zeros(G,(ndof,)))
-  c = CachedArray(zeros(T,(D,ndof_1d)))
-  g = CachedArray(zeros(T,(D,ndof_1d)))
-  (r, v, c, g)
 end
 
 function evaluate!(
@@ -127,26 +102,6 @@ function evaluate!(
     end
   end
   r.array
-end
-
-function return_cache(
-  fg::FieldGradientArray{2,<:CompWiseTensorPolyBasis{D,V}},
-  x::AbstractVector{<:Point}) where {D,V}
-
-  @check D == length(eltype(x)) "Incorrect number of point components"
-  T = eltype(V)
-  f = fg.fa
-  np = length(x)
-  ndof = length(f)
-  ndof_1d = get_order(f) + 1
-  xi = testitem(x)
-  G = gradient_type(V,xi)
-  r = CachedArray(zeros(G,(np,ndof)))
-  v = CachedArray(zeros(G,(ndof,)))
-  c = CachedArray(zeros(T,(D,ndof_1d)))
-  g = CachedArray(zeros(T,(D,ndof_1d)))
-  h = CachedArray(zeros(T,(D,ndof_1d)))
-  (r, v, c, g, h)
 end
 
 function evaluate!(
@@ -175,7 +130,10 @@ function evaluate!(
   r.array
 end
 
-# Helpers
+
+###########
+# Helpers #
+###########
 
 function _evaluate_nd_cwtpb!(
   PT::Type{<:Polynomial},

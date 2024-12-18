@@ -40,6 +40,49 @@ Return the maximum polynomial order in a dimension, or `0` in 0D.
 get_order(::PolynomialBasis{D,V,K}) where {D,V,K} = K
 
 
+################################
+# Generic field implementation #
+################################
+
+"""
+TODO
+"""
+function _return_cache(
+  f::PolynomialBasis{D}, x,::Type{G},::Val{N_deriv}) where {D,G,N_deriv}
+
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  T = eltype(G)
+  np = length(x)
+  ndof = length(f)
+  ndof_1d = get_order(f) + 1
+  # Cache for the returned array
+  r = CachedArray(zeros(G,(np,ndof)))
+  # Cache for basis functions at one point x[i]
+  v = CachedArray(zeros(G,(ndof,)))
+  # Cache for the 1D basis function values in each dimension (to be
+  # tensor-producted), and of their N_deriv'th 1D derivatives
+  t = ntuple( _ -> CachedArray(zeros(T,(D,ndof_1d ))), Val(N_deriv+1))
+  (r, v, t...)
+end
+
+function return_cache(f::PolynomialBasis{D,V}, x::AbstractVector{<:Point}) where {D,V}
+  _return_cache(f,x,V,Val(0))
+end
+
+function return_cache(
+  fg::FieldGradientArray{N,<:PolynomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {N,D,V}
+
+  f = fg.fa
+  xi = testitem(x)
+  G = V
+  for _ in 1:N
+    G = gradient_type(G,xi)
+  end
+  _return_cache(f,x,G,Val(N))
+end
+
+
 ###############################
 # 1D internal polynomial APIs #
 ###############################

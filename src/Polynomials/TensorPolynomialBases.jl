@@ -178,26 +178,6 @@ end
 # Field implementation #
 ########################
 
-function _return_cache(f::TensorPolynomialBasis{D},x,::Type{G},N_deriv) where {D,G}
-  @assert D == length(eltype(x)) "Incorrect number of point components"
-  T = eltype(G)
-  np = length(x)
-  ndof = length(f)
-  ndof_1d = get_order(f) + 1
-  # Cache for the returned array
-  r = CachedArray(zeros(G,(np,ndof)))
-  # Cache for basis functions at one point x[i]
-  v = CachedArray(zeros(G,(ndof,)))
-  # Cache for the 1D basis function values in each dimension (to be
-  # tensor-producted), and of their 1D N_deriv'th derivatives
-  t = ntuple( _ -> CachedArray(zeros(T,(D,ndof_1d ))), N_deriv)
-  (r, v, t...)
-end
-
-function return_cache(f::TensorPolynomialBasis{D,V},x::AbstractVector{<:Point}) where {D,V}
-  _return_cache(f,x,V,1)
-end
-
 function evaluate!(cache,f::TensorPolynomialBasis{D,V,K,PT},x::AbstractVector{<:Point}) where {D,V,K,PT}
   r, v, c = cache
   np = length(x)
@@ -216,16 +196,6 @@ function evaluate!(cache,f::TensorPolynomialBasis{D,V,K,PT},x::AbstractVector{<:
     end
   end
   r.array
-end
-
-function return_cache(
-  fg::FieldGradientArray{1,<:TensorPolynomialBasis{D,V}},
-  x::AbstractVector{<:Point}) where {D,V}
-
-  f = fg.fa
-  xi = testitem(x)
-  G = gradient_type(V,xi)
-  _return_cache(f,x,G,2)
 end
 
 function evaluate!(
@@ -253,16 +223,6 @@ function evaluate!(
     end
   end
   r.array
-end
-
-function return_cache(
-  fg::FieldGradientArray{2,<:TensorPolynomialBasis{D,V}},
-  x::AbstractVector{<:Point}) where {D,V}
-
-  f = fg.fa
-  xi = testitem(x)
-  G = gradient_type(gradient_type(V,xi),xi)
-  _return_cache(f,x,G,3)
 end
 
 function evaluate!(
