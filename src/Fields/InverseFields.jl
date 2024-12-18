@@ -8,8 +8,8 @@ inverse_map(a::Field) = InverseField(a)
 inverse_map(a::InverseField) = a.original
 
 function return_cache(a::InverseField,x::Point)
-  y₀ = [zero(x)...]             # initial guess and solution
-  F₀ = [zero(x)...]             # error
+  y₀ = [zero(x)...] # initial guess and solution
+  F₀ = [zero(x)...] # error
   return return_cache(a.original,x), return_cache(∇(a.original),x), y₀, F₀
 end
 

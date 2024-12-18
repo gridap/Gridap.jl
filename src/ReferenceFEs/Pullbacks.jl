@@ -55,7 +55,7 @@ end
 # InversePushforward
 
 """
-    struct InversePushforward{PF <: Pushforward} <: Map end
+    const InversePushforward{PF} = InverseMap{PF} where PF <: Pushforward
 
 Represents the inverse of a pushforward map F*, defined as 
   (F*)^-1 : V -> V̂
@@ -75,16 +75,7 @@ specific pushforward type:
 - `evaluate!(cache, k::InversePushforward{PF}, v_phys::Number, args...)`
 
 """
-struct InversePushforward{PF} <: Map
-  pushforward::PF
-  function InversePushforward(pushforward::Pushforward)
-    PF = typeof(pushforward)
-    new{PF}(pushforward)
-  end
-end
-
-Arrays.inverse_map(pf::Pushforward) = InversePushforward(pf)
-Arrays.inverse_map(ipf::InversePushforward) = ipf.pushforward
+const InversePushforward{PF} = InverseMap{PF} where PF <: Pushforward
 
 function Arrays.lazy_map(
   k::InversePushforward, phys_cell_fields::AbstractArray, pf_args::AbstractArray...
@@ -97,7 +88,7 @@ function Arrays.return_cache(
 )
   mock_basis(::VectorValue{D,T}) where {D,T} = one(TensorValue{D,D,T})
   v_ref_basis = mock_basis(v_phys)
-  pf_cache = return_cache(k.pushforward,v_ref_basis,args...)
+  pf_cache = return_cache(inverse_map(k),v_ref_basis,args...)
   return v_ref_basis, pf_cache
 end
 
@@ -105,7 +96,7 @@ function Arrays.evaluate!(
   cache, k::InversePushforward, v_phys::Number, args...
 )
   v_ref_basis, pf_cache = cache
-  change = evaluate!(pf_cache,k.pushforward,v_ref_basis,args...)
+  change = evaluate!(pf_cache,inverse_map(k),v_ref_basis,args...)
   return v_phys⋅inv(change)
 end
 
@@ -180,12 +171,8 @@ where
 Its action on physical dofs σ : V -> R is defined in terms of the pushforward map F* as
   ̂σ = F**(σ) := σ∘F* : V̂ -> R
 """
-struct Pullback{PF} <: Map
+struct Pullback{PF <: Pushforward} <: Map
   pushforward::PF
-  function Pullback(pushforward::Pushforward)
-    PF = typeof(pushforward)
-    new{PF}(pushforward)
-  end
 end
 
 function Arrays.lazy_map(
@@ -216,16 +203,7 @@ where
 Its action on reference dofs ̂σ : V̂ -> R is defined in terms of the pushforward map F* as
   σ = (F**)^-1(̂σ) := ̂σ∘(F*)^-1 : V -> R
 """
-struct InversePullback{PF} <: Map
-  pushforward::PF
-  function InversePullback(pushforward::Pushforward)
-    PF = typeof(pushforward)
-    new{PF}(pushforward)
-  end
-end
-
-Arrays.inverse_map(pb::Pullback) = InversePullback(pb.pushforward)
-Arrays.inverse_map(ipb::InversePullback) = Pullback(ipb.pushforward)
+const InversePullback{PB} = InverseMap{PB} where PB <: Pullback
 
 function Arrays.lazy_map(
   ::typeof(evaluate), k::LazyArray{<:Fill{<:InversePullback}}, phys_cell_fields::AbstractArray
@@ -240,7 +218,8 @@ end
 function evaluate!(
   cache, k::InversePullback, σ_ref::AbstractVector{<:Dof}, args...
 )
-  return MappedDofBasis(inverse_map(k.pushforward),σ_ref,args...)
+  pb = inverse_map(k)
+  return MappedDofBasis(inverse_map(pb.pushforward),σ_ref,args...)
 end
 
 # ContraVariantPiolaMap
