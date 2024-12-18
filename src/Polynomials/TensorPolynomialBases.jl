@@ -476,7 +476,7 @@ function _tensorial_hessian_nd!(
       end
     end
 
-    k = _set_gradient!(v,s,k,V)
+    k = _tensorial_set_gradient!(v,s,k,V)
   end
 end
 

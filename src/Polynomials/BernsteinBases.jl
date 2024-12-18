@@ -5,7 +5,7 @@ Type representing Bernstein polynomials
 """
 struct Bernstein <: Polynomial end
 
-isHierarchical(::Bernstein) = false
+isHierarchical(::Type{Bernstein}) = false
 
 """
     BernsteinBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Bernstein}

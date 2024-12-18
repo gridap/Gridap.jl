@@ -22,7 +22,7 @@ function RaviartThomasRefFE(
     cb = QGradLegendreBasis(Val(D),T,order-1)                  # Cell basis
     fb = LegendreBasis(Val(D-1),T,order,Polynomials._q_filter) # Face basis
   elseif is_simplex(p)
-    prebasis = PCurlGradMonomialBasis{D}(T,order)                                 # Prebasis
+    prebasis = PCurlGradMonomialBasis(Val(D),T,order)                                 # Prebasis
     cb = LegendreBasis(Val(D),VectorValue{D,T},order-1,Polynomials._p_filter) # Cell basis
     fb = LegendreBasis(Val(D-1),T,order,Polynomials._p_filter)                # Face basis
   else

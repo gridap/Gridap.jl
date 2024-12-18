@@ -14,7 +14,8 @@ of 1D ℙ¹ spaces of order oₗₙ for 1 ≤ n ≤ `D`, that is:
 ⋮\\
 𝕊ᴸ = ℙ¹ₒ(`L`,1) ⊗ … ⊗ ℙ¹ₒ(`L`,`D`)
 
-The `L`×`D` matrix of orders o is given in the constructor, and `K` is the maximum of o.
+The `L`×`D` matrix of orders o is given in the constructor, and `K` is the
+maximum of o.
 """
 struct CompWiseTensorPolyBasis{D,V,K,PT,L} <: PolynomialBasis{D,V,K,PT}
   orders::SMatrix{L,D,Int}
@@ -234,22 +235,19 @@ end
 @generated function _comp_wize_set_gradient!(
   v::AbstractVector{G},s,k,::Val{l},::Type{V}) where {G,l,V}
 
-  m = Array{String}(undef, size(G))
   N_val_dims = length(size(V))
   s_size = size(G)[1:end-N_val_dims]
 
   body = "T = eltype(s); z = zero(T);"
-  #for i in CartesianIndices(m)
-  #  m[i] = "z"
-  #end
+  m = Array{String}(undef, size(G))
   m .= "z"
+
   for ci in CartesianIndices(s_size)
     m[ci,l] = "(@inbounds s[$ci])"
   end
   body *= "@inbounds v[k] = ($(join(tuple(m...), ", ")));"
 
   body = Meta.parse(string("begin ",body," end"))
-  #println(body)
   return Expr(:block, body ,:(return k+1))
 end
 
@@ -314,8 +312,8 @@ end
 """
     QGradBasis(::Type{PT}, ::Val{D}, ::Type{T}, order::Int) :: PolynomialBasis
 
-Return a basis of ℚ\\_order ⊕ x × (ℚ\\_order \\ ℚ\\_{order-1}), the polynomial space
-for Nedelec elements on `D`-dimensonal cubes with scalar type `T`.
+Return a basis of (ℚ\\_order)ᴰ ⊕ x × ( ℚ\\_order \\ ℚ\\_{order-1}) )ᴰ, the
+polynomial space for Nedelec elements on `D`-dimensonal cubes with scalar type `T`.
 
 The `order` argument has the following meaning: the curl of the  functions in
 this basis is in the ℚ space of degree `order`.
@@ -349,7 +347,7 @@ end
 """
     QCurlGradBasis(::Type{PT}, ::Val{D}, ::Type{T}, order::Int) :: PolynomialBasis
 
-Return a basis of ℚ\\_order ⊕ x ⋅ (ℚ\\_order \\ ℚ\\_{order-1}), the polynomial space
+Return a basis of (ℚ\\_order)ᴰ ⊕ x (ℚ\\_order \\ ℚ\\_{order-1}), the polynomial space
 for Raviart-Thomas elements on `D`-dimensonal cubes with scalar type `T`.
 
 The `order` argument has the following meaning: the divergence of the functions

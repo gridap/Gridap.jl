@@ -5,7 +5,7 @@ Type representing the monomial polynomials
 """
 struct Monomial <: Polynomial   end
 
-isHierarchical(::Monomial) = true
+isHierarchical(::Type{Monomial}) = true
 
 """
     MonomialBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Monomial}
@@ -26,7 +26,7 @@ MonomialBasis(args...) = TensorPolynomialBasis(Monomial, args...)
 QGradMonomialBasis(args...)     = QGradBasis(Monomial, args...)
 #PGradMonomialBasis(args...)     = PGradBasis(Monomial, args...)
 QCurlGradMonomialBasis(args...) = QCurlGradBasis(Monomial, args...)
-#PCurlGradMonomialBasis(args...) = PCurlGradBasis(Monomial, args...)
+PCurlGradMonomialBasis(args...) = PCurlGradBasis(Monomial, args...)
 
 
 # 1D evaluation implementation

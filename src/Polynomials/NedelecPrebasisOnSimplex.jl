@@ -14,7 +14,6 @@ end
 Base.getindex(a::NedelecPrebasisOnSimplex,i::Integer) = Monomial()
 Base.IndexStyle(::Type{<:NedelecPrebasisOnSimplex}) = IndexLinear()
 
-num_terms(a::NedelecPrebasisOnSimplex) = length(a)
 get_order(f::NedelecPrebasisOnSimplex) = f.order
 
 return_type(::NedelecPrebasisOnSimplex{D}) where {D} = VectorValue{D,Float64}
@@ -22,7 +21,7 @@ return_type(::NedelecPrebasisOnSimplex{D}) where {D} = VectorValue{D,Float64}
 function return_cache(
   f::NedelecPrebasisOnSimplex{D},x::AbstractVector{<:Point}) where D
   np = length(x)
-  ndofs = num_terms(f)
+  ndofs = length(f)
   V = eltype(x)
   a = zeros(V,(np,ndofs))
   k = f.order+1
@@ -36,7 +35,7 @@ function evaluate!(
   ca,cP,P = cache
   k = f.order+1
   np = length(x)
-  ndofs = num_terms(f)
+  ndofs = length(f)
   ndofsP = length(P)
   setsize!(ca,(np,ndofs))
   Px = evaluate!(cP,P,x)
@@ -82,7 +81,7 @@ function evaluate!(
   ca,cP,P = cache
   k = f.order+1
   np = length(x)
-  ndofs = num_terms(f)
+  ndofs = length(f)
   ndofsP = length(P)
   setsize!(ca,(np,ndofs))
   a = ca.array
@@ -114,7 +113,7 @@ function return_cache(
   x::AbstractVector{<:Point}) where D
   f = g.fa
   np = length(x)
-  ndofs = num_terms(f)
+  ndofs = length(f)
   xi = testitem(x)
   V = eltype(x)
   G = gradient_type(V,xi)
@@ -134,7 +133,7 @@ function evaluate!(
   f = g.fa
   k = f.order+1
   np = length(x)
-  ndofs = num_terms(f)
+  ndofs = length(f)
   setsize!(ca,(np,ndofs))
   a = ca.array
   fill!(a,zero(eltype(a)))
@@ -210,7 +209,7 @@ function evaluate!(
   ca,cP,P = cache
   k = f.order+1
   np = length(x)
-  ndofs = num_terms(f)
+  ndofs = length(f)
   setsize!(ca,(np,ndofs))
   a = ca.array
   fill!(a,zero(eltype(a)))
@@ -240,5 +239,23 @@ function evaluate!(
     #a[ip,3] = TensorValue((z,-u, u,z))
   end
   a
+end
+
+"""
+    PGradBasis(::Type{PT}, ::Val{D}, ::Type{T}, order::Int) :: PolynomialBasis
+
+Return a basis of ℙ_order ⊕ x × (ℙ_order\\ℙ_{order-1}), the polynomial space
+for Nedelec elements on `D`-dimensonal simplices with scalar type `T`.
+
+The `order` argument has the following meaning: the curl of the  functions in
+this basis is in the ℙ space of degree `order`.
+"""
+function PGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
+  @notimplemented "only implemented for monomials"
+end
+
+function PGradBasis(::Type{Monomial},::Val{D},::Type{T},order::Int) where {D,T}
+  @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
+  NedelecPrebasisOnSimplex{D}(order)
 end
 

@@ -23,13 +23,11 @@ function RaviartThomasRefFE(
   if is_n_cube(p) && basis_type == :monomial
     prebasis = QCurlGradMonomialBasis(Val(D),et,order)
   elseif is_simplex(p) && basis_type == :monomial
-    prebasis = PCurlGradMonomialBasis{D}(et,order)
-    #prebasis = PCurlGradMonomialBasis(Val(D),et,order)
+    prebasis = PCurlGradMonomialBasis(Val(D),et,order)
   elseif is_n_cube(p) && basis_type == :legendre
     prebasis = QCurlGradLegendreBasis(Val(D),et,order)
   elseif is_simplex(p) && basis_type == :legendre
-    prebasis = PCurlGradLegendreBasis{D}(et,order)
-    #prebasis = PCurlGradLegendreBasis(Val(D),et,order)
+    prebasis = PCurlGradLegendreBasis(Val(D),et,order)
   elseif is_n_cube(p) && basis_type == :chebyshev
     prebasis = QCurlGradChebyshevBasis(Val(D),et,order)
   else

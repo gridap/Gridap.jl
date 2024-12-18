@@ -51,11 +51,11 @@ export PCurlGradLegendreBasis
 
 include("PolynomialInterfaces.jl")
 
-include("OldMonomialHelpers.jl")
-
 include("TensorPolynomialBases.jl")
 
 include("CompWiseTensorPolyBases.jl")
+
+include("NonTensorRTPolyBasis.jl")
 
 include("MonomialBases.jl")
 
@@ -65,14 +65,9 @@ include("LegendreBases.jl")
 
 include("ChebyshevBases.jl")
 
-include("ModalC0Bases.jl")
-
 include("BernsteinBases.jl")
 
-#include("newfile.jl")
-#include("PSpaceBases.jl")
-include("PCurlGradMonomialBases.jl")
-include("PCurlGradLegendreBases.jl")
+include("ModalC0Bases.jl")
 
 include("NedelecPrebasisOnSimplex.jl")
 

@@ -6,7 +6,7 @@ where `kind` is either `:T` or `:U` for first and second kind Chebyshev polynomi
 """
 struct Chebyshev{kind} <: Polynomial end
 
-isHierarchical(::Chebyshev) = true
+isHierarchical(::Type{<:Chebyshev}) = true
 
 """
     ChebyshevBasis{D,V,kind,K} = TensorPolynomialBasis{D,V,K,Chebyshev{kind}}
@@ -29,7 +29,7 @@ TensorPolynomialBasis{D}(::Type{Chebyshev{:U}}, args...) where D = @notimplement
 QGradChebyshevBasis(args...; kind=:T)     = QGradBasis(Chebyshev{kind}, args...)
 #PGradChebyshevBasis(args...; kind=:T)     = PGradBasis(Chebyshev{kind}, args...)
 QCurlGradChebyshevBasis(args...; kind=:T) = QCurlGradBasis(Chebyshev{kind}, args...)
-#PCurlGradChebyshevBasis(args...; kind=:T) = PCurlGradBasis(Chebyshev{kind}, args...)
+PCurlGradChebyshevBasis(args...; kind=:T) = PCurlGradBasis(Chebyshev{kind}, args...)
 
 
 # 1D evaluation implementation

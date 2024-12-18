@@ -13,7 +13,7 @@ abstract type Polynomial  <: Field end
 Return true if the basis of order `k` of the given `<:Polynomial` type is the union
 of the basis of order `k-1` and an other order `k` polynomial.
 """
-isHierarchical(::Polynomial) = @abstractmethod
+isHierarchical(::Type{Polynomial}) = @abstractmethod
 
 """
     PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}
@@ -27,10 +27,12 @@ The parameters are:
 """
 abstract type PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}  end
 
-@inline Base.size(a::PolynomialBasis{D,V}) where {D,V} = @abstractmethod
-@inline Base.getindex(a::PolynomialBasis{D,V,K,PT}, i::Integer) where {D,V,K,PT} = PT()
+@inline Base.size(::PolynomialBasis{D,V}) where {D,V} = @abstractmethod
+@inline Base.getindex(::PolynomialBasis{D,V,K,PT}, i::Integer) where {D,V,K,PT} = PT()
 @inline Base.IndexStyle(::PolynomialBasis) = IndexLinear()
 @inline return_type(::PolynomialBasis{D,V}) where {D,V} = V
+
+@deprecate num_terms(a::PolynomialBasis) length(a)
 
 """
     get_order(b::PolynomialBasis{D,V,K) = K

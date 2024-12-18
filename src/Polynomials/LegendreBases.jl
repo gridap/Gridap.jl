@@ -5,7 +5,7 @@ Type representing the Legendre polynomials
 """
 struct Legendre <: Polynomial   end
 
-isHierarchical(::Legendre) = true
+isHierarchical(::Type{Legendre}) = true
 
 """
     LegendreBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Legendre}
@@ -26,7 +26,7 @@ LegendreBasis(args...) = TensorPolynomialBasis(Legendre, args...)
 QGradLegendreBasis(args...)     = QGradBasis(Legendre, args...)
 #PGradLegendreBasis(args...)     = PGradBasis(Legendre, args...)
 QCurlGradLegendreBasis(args...) = QCurlGradBasis(Legendre, args...)
-#PCurlGradLegendreBasis(args...) = PCurlGradBasis(Legendre, args...)
+PCurlGradLegendreBasis(args...) = PCurlGradBasis(Legendre, args...)
 
 
 # 1D evaluation implementation

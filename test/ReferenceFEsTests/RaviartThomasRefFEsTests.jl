@@ -82,7 +82,7 @@ reffe = RaviartThomasRefFE(et,p,order)
 test_reference_fe(reffe)
 @test length(get_prebasis(reffe)) == 4
 @test num_dofs(reffe) == 4
-@test get_order(get_prebasis(reffe)) == 0
+@test get_order(get_prebasis(reffe)) == 1
 @test Conformity(reffe) == DivConformity()
 
 
@@ -95,7 +95,7 @@ reffe = RaviartThomasRefFE(et,p,order)
 test_reference_fe(reffe)
 @test length(get_prebasis(reffe)) == 36
 @test num_dofs(reffe) == 36
-@test get_order(get_prebasis(reffe)) == 2
+@test get_order(get_prebasis(reffe)) == 3
 @test Conformity(reffe) == DivConformity()
 
 prebasis = get_prebasis(reffe)
