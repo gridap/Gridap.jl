@@ -1,9 +1,11 @@
-struct MardalTaiWinther <: ReferenceFEName end
+
+struct MardalTaiWinther <: PushforwardRefFE end
 
 const mtw = MardalTaiWinther()
 
 """
-MardalTaiWintherRefFE(::Type{et},p::Polytope,order::Integer) where et
+    struct MardalTaiWinther <: PushforwardRefFE end
+    MardalTaiWintherRefFE(::Type{et},p::Polytope,order::Integer) where et
 
 Mardal-Tai-Winther reference finite element.
 

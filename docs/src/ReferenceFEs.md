@@ -73,8 +73,18 @@ Pages   = ["LagrangianRefFEs.jl","LagrangianDofBases.jl","SerendipityRefFEs.jl",
 
 ### Moment-Based ReferenceFEs
 
+#### Framework
+
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["MomentBasedReferenceFEs.jl","RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CRRefFEs.jl"]
+Pages   = ["MomentBasedReferenceFEs.jl","Pullbacks.jl"]
+```
+
+#### Available Moment-Based ReferenceFEs
+
+```@autodocs
+Modules = [ReferenceFEs,]
+Order   = [:type, :constant, :macro, :function]
+Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CRRefFEs.jl"]
 ```

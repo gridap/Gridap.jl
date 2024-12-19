@@ -9,7 +9,7 @@ using Test
 origin = Point(1,1)
 g = TensorValue(2,0,0,2)
 
-h = AffineMap(g,origin)
+h = AffineField(g,origin)
 @test isa(∇(h),ConstantField)
 @test isa(Broadcasting(∇)(h),ConstantField)
 
@@ -39,7 +39,7 @@ cell_to_∇hx = lazy_map(evaluate,cell_to_∇h,cell_to_x)
 test_array(cell_to_hx,fill(hx,ncells))
 test_array(cell_to_∇hx,fill(∇hx,ncells))
 
-T = AffineMap{3,3,Int}
+T = AffineField{3,3,Int}
 @test isa(zero(T),T)
 
 #display(cell_to_hx)
