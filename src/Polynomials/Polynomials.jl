@@ -55,7 +55,7 @@ include("TensorPolynomialBases.jl")
 
 include("CompWiseTensorPolyBases.jl")
 
-include("NonTensorRTPolyBasis.jl")
+include("NonTensorRTPolyBases.jl")
 
 include("MonomialBases.jl")
 
