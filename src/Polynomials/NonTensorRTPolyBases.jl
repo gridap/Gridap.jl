@@ -56,66 +56,23 @@ Base.size(a::NonTensorRTPolyBasis{D}) where {D} = D*length(a.pterms) + length(a.
 Base.getindex(a::NonTensorRTPolyBasis,i::Integer) = Monomial()
 Base.IndexStyle(::NonTensorRTPolyBasis) = IndexLinear()
 
-function evaluate!(
-  cache,f::NonTensorRTPolyBasis{D,V,K,PT},
-  x::AbstractVector{<:Point}) where {D,V,K,PT}
 
-  r, v, c = cache
-  np = length(x)
-  ndof = length(f)
-  ndof_1d = get_order(f) + 1 # K+1
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,ndof_1d))
-  for i in 1:np
-    @inbounds xi = x[i]
-      _evaluate_nd_rt!(PT,v,xi,K,f.pterms,f.sterms,c)
-    for j in 1:ndof
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
+#################################
+# nD evaluations implementation #
+#################################
 
-function evaluate!(cache,
-  fg::FieldGradientArray{1,NonTensorRTPolyBasis{D,V,K,PT}},
-  x::AbstractVector{<:Point}) where {D,V,K,PT}
+function _evaluate_nd!(
+  b::NonTensorRTPolyBasis{D,V,K,PT}, x,
+  r::AbstractMatrix{V}, i,
+  v::AbstractVector{V},
+  c::AbstractMatrix{T}) where {D,V,K,PT,T}
 
-  f = fg.fa
-  r, v, c, g = cache
-  np = length(x)
-  ndof = length(f)
-  ndof_1d = get_order(f) + 1 # K+1
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,ndof_1d))
-  setsize!(g,(D,ndof_1d))
-  for i in 1:np
-    @inbounds xi = x[i]
-    _gradient_nd_rt!(PT,v,xi,K,f.pterms,f.sterms,c,g,V)
-    for j in 1:ndof
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
-
-
-# Helpers
-
-
-function _evaluate_nd_rt!(
-  ::Type{PT},
-  v::AbstractVector{V}, # V = VectorValue{D,T}
-  x,
-  order,
-  pterms::Vector{CartesianIndex{D}},
-  sterms::Vector{CartesianIndex{D}},
-  c::AbstractMatrix{T}) where {PT,V,T,D}
+  pterms = b.pterms
+  sterms = b.sterms
 
   for d in 1:D
-    K = Val(order)
-    _evaluate_1d!(PT,K,c,x,d)
+    Kv = Val(K)
+    _evaluate_1d!(PT,Kv,c,x,d)
   end
 
   m = zero(Mutable(V))
@@ -153,25 +110,29 @@ function _evaluate_nd_rt!(
       k += 1
     end
   end
+
+  #r[i] = v
+  @inbounds for j in 1:length(b)
+      r[i,j] = v[j]
+  end
 end
 
-function _gradient_nd_rt!(
-  ::Type{PT},
+function _gradient_nd!(
+  b::NonTensorRTPolyBasis{D,V,K,PT}, x,
+  r::AbstractMatrix{G}, i,
   v::AbstractVector{G},
-  x,
-  order,
-  pterms::Vector{CartesianIndex{D}},
-  sterms::Vector{CartesianIndex{D}},
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
-  ::Type{V}) where {PT,G,T,D,V}
+  s::MVector{D,T}) where {D,V,K,PT,G,T}
+
+  pterms = b.pterms
+  sterms = b.sterms
 
   for d in 1:D
-    K = Val(order)
-    _derivatives_1d!(PT,K,(c,g),x,d)
+    Kv = Val(K)
+    _derivatives_1d!(PT,Kv,(c,g),x,d)
   end
 
-  s = zero(Mutable(V))
   m = zero(Mutable(G))
   k = 1
 
@@ -230,6 +191,11 @@ function _gradient_nd_rt!(
       k += 1
     end
   end
+
+  #r[i] = v
+  @inbounds for j in 1:length(b)
+      r[i,j] = v[j]
+  end
 end
 
 """
@@ -244,7 +210,7 @@ of the functions in this basis is in the ℙ space of degree `order`.
 `PT<:Polynomial` is the choice of scalar 1D polynomial basis, it must be
 hierarchichal, see [`isHierarchichal`](@ref).
 
-Returns a `NonTensorRTPolyBasis{D,VectorValue{D,T},order+1,PT}` object,
+Returns a `NonTensorRTPolyBasis{D,VectorValue{D,T},order+1,PT}` object for `D`>1,
 or `TensorPolynomialBasis{1,VectorValue{1,T},order+1,PT}` for `D`=1.
 """
 function PCurlGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}

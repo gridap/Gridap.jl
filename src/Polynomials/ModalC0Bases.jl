@@ -1,92 +1,88 @@
-struct ModalC0BasisFunction <: Field end
+struct ModalC0 <: Polynomial end
 
-struct ModalC0Basis{D,T,V} <: AbstractVector{ModalC0BasisFunction}
+struct ModalC0Basis{D,V,T,K} <: PolynomialBasis{D,V,K,ModalC0}
   orders::NTuple{D,Int}
   terms::Vector{CartesianIndex{D}}
-  a::Vector{Point{D,V}}
-  b::Vector{Point{D,V}}
+  a::Vector{Point{D,T}}
+  b::Vector{Point{D,T}}
+
   function ModalC0Basis{D}(
-    ::Type{T},
+    ::Type{V},
     orders::NTuple{D,Int},
     terms::Vector{CartesianIndex{D}},
-    a::Vector{Point{D,V}},
-    b::Vector{Point{D,V}}) where {D,T,V}
+    a::Vector{Point{D,T}},
+    b::Vector{Point{D,T}}) where {D,V,T}
 
-    new{D,T,V}(orders,terms,a,b)
+    @check T == eltype(V) "Point and polynomial values should have the same scalar body"
+    K = maximum(orders, init=0)
+
+    new{D,V,T,K}(orders,terms,a,b)
   end
 end
 
-@inline Base.size(a::ModalC0Basis{D,T,V}) where {D,T,V} = (length(a.terms)*num_indep_components(T),)
-@inline Base.getindex(a::ModalC0Basis,i::Integer) = ModalC0BasisFunction()
-@inline Base.IndexStyle(::ModalC0Basis) = IndexLinear()
-
 function ModalC0Basis{D}(
-  ::Type{T},
+  ::Type{V},
   orders::NTuple{D,Int},
-  a::Vector{Point{D,V}},
-  b::Vector{Point{D,V}};
+  a::Vector{Point{D,T}},
+  b::Vector{Point{D,T}};
   filter::Function=_q_filter,
-  sort!::Function=_sort_by_nfaces!) where {D,T,V}
+  sort!::Function=_sort_by_nfaces!) where {D,V,T}
 
   terms = _define_terms_mc0(filter, sort!, orders)
-  ModalC0Basis{D}(T,orders,terms,a,b)
+  ModalC0Basis{D}(V,orders,terms,a,b)
 end
 
 function ModalC0Basis{D}(
-  ::Type{T},
+  ::Type{V},
   orders::NTuple{D,Int},
-  sa::Point{D,V},
-  sb::Point{D,V};
+  sa::Point{D,T},
+  sb::Point{D,T};
   filter::Function=_q_filter,
-  sort!::Function=_sort_by_nfaces!) where {D,T,V}
+  sort!::Function=_sort_by_nfaces!) where {D,V,T}
 
   terms = _define_terms_mc0(filter, sort!, orders)
   a = fill(sa,length(terms))
   b = fill(sb,length(terms))
-  ModalC0Basis{D}(T,orders,terms,a,b)
+  ModalC0Basis{D}(V,orders,terms,a,b)
 end
 
 function ModalC0Basis{D}(
-  ::Type{T},
+  ::Type{V},
   orders::NTuple{D,Int};
   filter::Function=_q_filter,
-  sort!::Function=_sort_by_nfaces!) where {D,T}
+  sort!::Function=_sort_by_nfaces!) where {D,V}
 
-  sa = Point{D,eltype(T)}(tfill(zero(eltype(T)),Val{D}()))
-  sb = Point{D,eltype(T)}(tfill(one(eltype(T)),Val{D}()))
-  ModalC0Basis{D}(T,orders,sa,sb,filter=filter,sort! = sort!)
+  T = eltype(V)
+  sa = Point{D,T}(tfill(zero(T),Val{D}()))
+  sb = Point{D,T}(tfill( one(T),Val{D}()))
+  ModalC0Basis{D}(V,orders,sa,sb; filter=filter, sort! =sort!)
 end
 
 function ModalC0Basis{D}(
-  ::Type{T},
+  ::Type{V},
   order::Int,
-  a::Vector{Point{D,V}},
-  b::Vector{Point{D,V}};
+  a::Vector{Point{D,T}},
+  b::Vector{Point{D,T}};
   filter::Function=_q_filter,
-  sort!::Function=_sort_by_nfaces!) where {D,T,V}
+  sort!::Function=_sort_by_nfaces!) where {D,V,T}
 
   orders = tfill(order,Val{D}())
-  ModalC0Basis{D}(T,orders,a,b,filter=filter,sort! = sort!)
+  ModalC0Basis{D}(V,orders,a,b; filter=filter, sort! =sort!)
 end
 
 function ModalC0Basis{D}(
-  ::Type{T},
+  ::Type{V},
   order::Int;
   filter::Function=_q_filter,
-  sort!::Function=_sort_by_nfaces!) where {D,T}
+  sort!::Function=_sort_by_nfaces!) where {D,V}
 
   orders = tfill(order,Val{D}())
-  ModalC0Basis{D}(T,orders,filter=filter,sort! = sort!)
+  ModalC0Basis{D}(V,orders; filter=filter, sort! =sort!)
 end
 
 # API
 
-"""
-    get_order(b::ModalC0Basis)
-"""
-function get_order(b::ModalC0Basis)
-  maximum(b.orders, init=0)
-end
+@inline Base.size(a::ModalC0Basis{D,V}) where {D,V} = (length(a.terms)*num_indep_components(V),)
 
 """
     get_orders(b::ModalC0Basis)
@@ -95,172 +91,9 @@ function get_orders(b::ModalC0Basis)
   b.orders
 end
 
-return_type(::ModalC0Basis{D,T,V}) where {D,T,V} = T
-
-# Field implementation
-
-function return_cache(f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {D,T,V}
-  @assert D == length(eltype(x)) "Incorrect number of point components"
-  np = length(x)
-  ndof = length(f)
-  n = get_order(f) + 1
-  r = CachedArray(zeros(T,(np,ndof)))
-  v = CachedArray(zeros(T,(ndof,)))
-  c = CachedArray(zeros(eltype(T),(D,n)))
-  (r, v, c)
-end
-
-function evaluate!(cache,f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {D,T,V}
-  r, v, c = cache
-  np = length(x)
-  ndof = length(f)
-  n = get_order(f) + 1
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,n))
-  for i in 1:np
-    @inbounds xi = x[i]
-    _evaluate_nd_mc0!(v,xi,f.a,f.b,f.orders,f.terms,c)
-    for j in 1:ndof
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
-
-function return_cache(
-  fg::FieldGradientArray{1,ModalC0Basis{D,V,W}},
-  x::AbstractVector{<:Point}) where {D,V,W}
-
-  f = fg.fa
-  @assert D == length(eltype(x)) "Incorrect number of point components"
-  np = length(x)
-  ndof = length(f)
-  xi = testitem(x)
-  T = gradient_type(V,xi)
-  n = get_order(f) + 1
-  r = CachedArray(zeros(T,(np,ndof)))
-  v = CachedArray(zeros(T,(ndof,)))
-  c = CachedArray(zeros(eltype(T),(D,n)))
-  g = CachedArray(zeros(eltype(T),(D,n)))
-  (r, v, c, g)
-end
-
-function evaluate!(
-  cache,
-  fg::FieldGradientArray{1,ModalC0Basis{D,T,V}},
-  x::AbstractVector{<:Point}) where {D,T,V}
-
-  f = fg.fa
-  r, v, c, g = cache
-  np = length(x)
-  ndof = length(f)
-  n = get_order(f) + 1
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,n))
-  setsize!(g,(D,n))
-  for i in 1:np
-    @inbounds xi = x[i]
-    _gradient_nd_mc0!(v,xi,f.a,f.b,f.orders,f.terms,c,g,T)
-    for j in 1:ndof
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
-
-function return_cache(
-  fg::FieldGradientArray{2,ModalC0Basis{D,V,W}},
-  x::AbstractVector{<:Point}) where {D,V,W}
-
-  f = fg.fa
-  @assert D == length(eltype(x)) "Incorrect number of point components"
-  np = length(x)
-  ndof = length(f)
-  xi = testitem(x)
-  T = gradient_type(gradient_type(V,xi),xi)
-  n = get_order(f) + 1
-  r = CachedArray(zeros(T,(np,ndof)))
-  v = CachedArray(zeros(T,(ndof,)))
-  c = CachedArray(zeros(eltype(T),(D,n)))
-  g = CachedArray(zeros(eltype(T),(D,n)))
-  h = CachedArray(zeros(eltype(T),(D,n)))
-  (r, v, c, g, h)
-end
-
-function evaluate!(
-  cache,
-  fg::FieldGradientArray{2,ModalC0Basis{D,T,V}},
-  x::AbstractVector{<:Point}) where {D,T,V}
-
-  f = fg.fa
-  r, v, c, g, h = cache
-  np = length(x)
-  ndof = length(f)
-  n = get_order(f) + 1
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,n))
-  setsize!(g,(D,n))
-  setsize!(h,(D,n))
-  for i in 1:np
-    @inbounds xi = x[i]
-    _hessian_nd_mc0!(v,xi,f.a,f.b,f.orders,f.terms,c,g,h,T)
-    for j in 1:ndof
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
-
-# Optimizing evaluation at a single point
-
-function return_cache(f::AbstractVector{ModalC0BasisFunction},x::Point)
-  xs = [x]
-  cf = return_cache(f,xs)
-  v = evaluate!(cf,f,xs)
-  r = CachedArray(zeros(eltype(v),(size(v,2),)))
-  r, cf, xs
-end
-
-function evaluate!(cache,f::AbstractVector{ModalC0BasisFunction},x::Point)
-  r, cf, xs = cache
-  xs[1] = x
-  v = evaluate!(cf,f,xs)
-  ndof = size(v,2)
-  setsize!(r,(ndof,))
-  a = r.array
-  copyto!(a,v)
-  a
-end
-
-function return_cache(
-  f::FieldGradientArray{N,<:AbstractVector{ModalC0BasisFunction}}, x::Point) where {N}
-  xs = [x]
-  cf = return_cache(f,xs)
-  v = evaluate!(cf,f,xs)
-  r = CachedArray(zeros(eltype(v),(size(v,2),)))
-  r, cf, xs
-end
-
-function evaluate!(
-  cache, f::FieldGradientArray{N,<:AbstractVector{ModalC0BasisFunction}}, x::Point) where {N}
-  r, cf, xs = cache
-  xs[1] = x
-  v = evaluate!(cf,f,xs)
-  ndof = size(v,2)
-  setsize!(r,(ndof,))
-  a = r.array
-  copyto!(a,v)
-  a
-end
-
 # Helpers
 
 _s_filter_mc0(e,o) = ( sum( [ i for i in e if i>1 ] ) <= o )
-
-_sort_by_tensor_prod!(terms,orders) = terms
 
 function _sort_by_nfaces!(terms::Vector{CartesianIndex{D}},orders) where D
 
@@ -307,6 +140,204 @@ function _define_terms_mc0(filter,sort!,orders)
   mask = _compute_filter_mask(terms,filter,orders)
   collect(lazy_map(Reindex(terms),mask))
 end
+
+
+#################################
+# nD evaluations implementation #
+#################################
+
+function _evaluate_nd!(
+  basis::ModalC0Basis{D,V,T,K}, x,
+  r::AbstractMatrix{V}, i,
+  v::AbstractVector{V},
+  c::AbstractMatrix{T}) where {D,V,T,K}
+
+  terms  = basis.terms
+  orders = basis.orders
+  a = basis.a
+  b = basis.b
+
+  k = 1
+  l = length(terms)
+
+  for (i,ci) in enumerate(terms)
+
+    for d in 1:D
+      _evaluate_1d_mc0!(c,x,a[i],b[i],orders[d],d)
+    end
+
+    s = one(T)
+    for d in 1:D
+      @inbounds s *= c[d,ci[d]]
+    end
+
+    k = _set_value_mc0!(v,s,k,l)
+  end
+
+  #r[i] = v
+  @inbounds for j in 1:length(basis)
+      r[i,j] = v[j]
+  end
+end
+
+@inline function _set_value_mc0!(v::AbstractVector{V},s::T,k,l) where {V,T}
+  ncomp = num_indep_components(V)
+  z = zero(T)
+  for j in 1:ncomp
+    m = k+l*(j-1)
+    @inbounds v[m] = ntuple(i -> ifelse(i == j, s, z),Val(ncomp))
+  end
+  k+1
+end
+
+@inline function _set_value_mc0!(v::AbstractVector{<:Real},s,k,l)
+  @inbounds v[k] = s
+  k+1
+end
+
+function _gradient_nd!(
+  basis::ModalC0Basis{D,V,T,K}, x,
+  r::AbstractMatrix{G}, i,
+  v::AbstractVector{G},
+  c::AbstractMatrix{T},
+  g::AbstractMatrix{T},
+  s::MVector{D,T}) where {D,V,T,K,G}
+
+  terms  = basis.terms
+  orders = basis.orders
+  a = basis.a
+  b = basis.b
+
+  k = 1
+  l = length(terms)
+
+  for (i,ci) in enumerate(terms)
+
+    for d in 1:D
+      _evaluate_1d_mc0!(c,x,a[i],b[i],orders[d],d)
+      _gradient_1d_mc0!(g,x,a[i],b[i],orders[d],d)
+    end
+
+    for i in eachindex(s)
+      @inbounds s[i] = one(T)
+    end
+    for q in 1:D
+      for d in 1:D
+        if d != q
+          @inbounds s[q] *= c[d,ci[d]]
+        else
+          @inbounds s[q] *= g[d,ci[d]]
+        end
+      end
+    end
+
+    k = _set_gradient_mc0!(v,s,k,l,V)
+  end
+
+  #r[i] = v
+  @inbounds for j in 1:length(basis)
+      r[i,j] = v[j]
+  end
+end
+
+@inline function _set_gradient_mc0!(
+  v::AbstractVector{G},s,k,l,::Type{<:Real}) where G
+
+  @inbounds v[k] = s
+  k+1
+end
+
+# Indexing and m definition should be fixed if G contains symmetries, that is
+# if the code is  optimized for symmetric tensor V valued FESpaces
+# (if gradient_type(V) returned a symmetric higher order tensor type G)
+@inline @generated function _set_gradient_mc0!(
+  v::AbstractVector{G},s,k,l,::Type{V}) where {V,G}
+  # Git blame me for readable non-generated version
+  @notimplementedif num_indep_components(G) != num_components(G) "Not implemented for symmetric Jacobian or Hessian"
+
+  m = Array{String}(undef, size(G))
+  N_val_dims = length(size(V))
+  s_size = size(G)[1:end-N_val_dims]
+
+  body = "T = eltype(s); z = zero(T);"
+  for ci in CartesianIndices(s_size)
+    id = join(Tuple(ci))
+    body *= "@inbounds s$id = s[$ci];"
+  end
+
+  V_size = size(V)
+  for (ij,j) in enumerate(CartesianIndices(V_size))
+    for i in CartesianIndices(m)
+      m[i] = "z"
+    end
+    for ci in CartesianIndices(s_size)
+      id = join(Tuple(ci))
+      m[ci,j] = "s$id"
+    end
+    body *= "i = k + l*($ij-1);"
+    body *= "@inbounds v[i] = ($(join(tuple(m...), ", ")));"
+  end
+
+  body = Meta.parse(string("begin ",body," end"))
+  return Expr(:block, body ,:(return k+1))
+end
+
+function _hessian_nd!(
+  basis::ModalC0Basis{D,V,T,K}, x,
+  r::AbstractMatrix{G}, i,
+  v::AbstractVector{G},
+  c::AbstractMatrix{T},
+  g::AbstractMatrix{T},
+  h::AbstractMatrix{T},
+  s::MMatrix{D,D,T}) where {D,V,T,K,G}
+
+  terms  = basis.terms
+  orders = basis.orders
+  a = basis.a
+  b = basis.b
+
+  k = 1
+  l = length(terms)
+
+  for (i,ci) in enumerate(terms)
+
+    for d in 1:D
+      _evaluate_1d_mc0!(c,x,a[i],b[i],orders[d],d)
+      _gradient_1d_mc0!(g,x,a[i],b[i],orders[d],d)
+      _hessian_1d_mc0!(h,x,a[i],b[i],orders[d],d)
+    end
+
+    for i in eachindex(s)
+      @inbounds s[i] = one(T)
+    end
+    for r in 1:D
+      for q in 1:D
+        for d in 1:D
+          if d != q && d != r
+            @inbounds s[r,q] *= c[d,ci[d]]
+          elseif d == q && d ==r
+            @inbounds s[r,q] *= h[d,ci[d]]
+          else
+            @inbounds s[r,q] *= g[d,ci[d]]
+          end
+        end
+      end
+    end
+
+    k = _set_gradient_mc0!(v,s,k,l,V)
+
+  end
+
+  #r[i] = v
+  @inbounds for j in 1:length(basis)
+      r[i,j] = v[j]
+  end
+end
+
+
+#################################
+# 1D evaluations implementation #
+#################################
 
 """
 Reference: equation (17) in
@@ -368,184 +399,3 @@ function _hessian_1d_mc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
   end
 end
 
-function _evaluate_nd_mc0!(
-  v::AbstractVector{V},
-  x,
-  a::Vector{Point{D,T}},
-  b::Vector{Point{D,T}},
-  orders,
-  terms::AbstractVector{CartesianIndex{D}},
-  c::AbstractMatrix{T}) where {V,T,D}
-
-  dim = D
-  o = one(T)
-  k = 1
-  l = length(terms)
-
-  for (i,ci) in enumerate(terms)
-
-    for d in 1:dim
-      _evaluate_1d_mc0!(c,x,a[i],b[i],orders[d],d)
-    end
-
-    s = o
-    for d in 1:dim
-      @inbounds s *= c[d,ci[d]]
-    end
-
-    k = _set_value_mc0!(v,s,k,l)
-
-  end
-
-end
-
-@inline function _set_value_mc0!(v::AbstractVector{V},s::T,k,l) where {V,T}
-  ncomp = num_indep_components(V)
-  z = zero(T)
-  for j in 1:ncomp
-    m = k+l*(j-1)
-    @inbounds v[m] = ntuple(i -> ifelse(i == j, s, z),Val(ncomp))
-  end
-  k+1
-end
-
-@inline function _set_value_mc0!(v::AbstractVector{<:Real},s,k,l)
-  @inbounds v[k] = s
-  k+1
-end
-
-function _gradient_nd_mc0!(
-  v::AbstractVector{G},
-  x,
-  a::Vector{Point{D,T}},
-  b::Vector{Point{D,T}},
-  orders,
-  terms::AbstractVector{CartesianIndex{D}},
-  c::AbstractMatrix{T},
-  g::AbstractMatrix{T},
-  ::Type{V}) where {G,T,D,V}
-
-  dim = D
-  z = zero(Mutable(VectorValue{D,T}))
-  o = one(T)
-  k = 1
-  l = length(terms)
-
-  for (i,ci) in enumerate(terms)
-
-    for d in 1:dim
-      _evaluate_1d_mc0!(c,x,a[i],b[i],orders[d],d)
-      _gradient_1d_mc0!(g,x,a[i],b[i],orders[d],d)
-    end
-
-    s = z
-    for i in eachindex(s)
-      @inbounds s[i] = o
-    end
-    for q in 1:dim
-      for d in 1:dim
-        if d != q
-          @inbounds s[q] *= c[d,ci[d]]
-        else
-          @inbounds s[q] *= g[d,ci[d]]
-        end
-      end
-    end
-
-    k = _set_gradient_mc0!(v,s,k,l,V)
-
-  end
-
-end
-
-@inline function _set_gradient_mc0!(
-  v::AbstractVector{G},s,k,l,::Type{<:Real}) where G
-
-  @inbounds v[k] = s
-  k+1
-end
-
-# Indexing and m definition should be fixed if G contains symmetries, that is
-# if the code is  optimized for symmetric tensor V valued FESpaces
-# (if gradient_type(V) returned a symmetric higher order tensor type G)
-@inline @generated function _set_gradient_mc0!(
-  v::AbstractVector{G},s,k,l,::Type{V}) where {V,G}
-  # Git blame me for readable non-generated version
-  @notimplementedif num_indep_components(G) != num_components(G) "Not implemented for symmetric Jacobian or Hessian"
-
-  m = Array{String}(undef, size(G))
-  N_val_dims = length(size(V))
-  s_size = size(G)[1:end-N_val_dims]
-
-  body = "T = eltype(s); z = zero(T);"
-  for ci in CartesianIndices(s_size)
-    id = join(Tuple(ci))
-    body *= "@inbounds s$id = s[$ci];"
-  end
-
-  V_size = size(V)
-  for (ij,j) in enumerate(CartesianIndices(V_size))
-    for i in CartesianIndices(m)
-      m[i] = "z"
-    end
-    for ci in CartesianIndices(s_size)
-      id = join(Tuple(ci))
-      m[ci,j] = "s$id"
-    end
-    body *= "i = k + l*($ij-1);"
-    body *= "@inbounds v[i] = ($(join(tuple(m...), ", ")));"
-  end
-
-  body = Meta.parse(string("begin ",body," end"))
-  return Expr(:block, body ,:(return k+1))
-end
-
-function _hessian_nd_mc0!(
-  v::AbstractVector{G},
-  x,
-  a::Vector{Point{D,T}},
-  b::Vector{Point{D,T}},
-  orders,
-  terms::AbstractVector{CartesianIndex{D}},
-  c::AbstractMatrix{T},
-  g::AbstractMatrix{T},
-  h::AbstractMatrix{T},
-  ::Type{V}) where {G,T,D,V}
-
-  dim = D
-  z = zero(Mutable(TensorValue{D,D,T}))
-  o = one(T)
-  k = 1
-  l = length(terms)
-
-  for (i,ci) in enumerate(terms)
-
-    for d in 1:dim
-      _evaluate_1d_mc0!(c,x,a[i],b[i],orders[d],d)
-      _gradient_1d_mc0!(g,x,a[i],b[i],orders[d],d)
-      _hessian_1d_mc0!(h,x,a[i],b[i],orders[d],d)
-    end
-
-    s = z
-    for i in eachindex(s)
-      @inbounds s[i] = o
-    end
-    for r in 1:dim
-      for q in 1:dim
-        for d in 1:dim
-          if d != q && d != r
-            @inbounds s[r,q] *= c[d,ci[d]]
-          elseif d == q && d ==r
-            @inbounds s[r,q] *= h[d,ci[d]]
-          else
-            @inbounds s[r,q] *= g[d,ci[d]]
-          end
-        end
-      end
-    end
-
-    k = _set_gradient_mc0!(v,s,k,l,V)
-
-  end
-
-end

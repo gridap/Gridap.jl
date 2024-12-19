@@ -54,7 +54,7 @@ order = 0
 reffe = NedelecRefFE(et,p,order)
 test_reference_fe(reffe)
 @test length(get_prebasis(reffe)) == 6
-@test get_order(get_prebasis(reffe)) == 0
+@test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 6
 @test Conformity(reffe) == CurlConformity()
 
@@ -95,7 +95,7 @@ order = 0
 reffe = NedelecRefFE(et,p,order)
 test_reference_fe(reffe)
 @test length(get_prebasis(reffe)) == 3
-@test get_order(get_prebasis(reffe)) == 0
+@test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 3
 @test Conformity(reffe) == CurlConformity()
 dof_basis = get_dof_basis(reffe)
@@ -138,7 +138,7 @@ order = 1
 reffe = NedelecRefFE(et,p,order)
 test_reference_fe(reffe)
 @test length(get_prebasis(reffe)) == 20
-@test get_order(get_prebasis(reffe)) == 1
+@test get_order(get_prebasis(reffe)) == 2
 @test num_dofs(reffe) == 20
 @test Conformity(reffe) == CurlConformity()
 dof_basis = get_dof_basis(reffe)

@@ -53,96 +53,18 @@ function get_comp_terms(f::CompWiseTensorPolyBasis{D,V,K,PT,L}) where {D,V,K,PT,
 end
 
 
-########################
-# Field implementation #
-########################
+#################################
+# nD evaluations implementation #
+#################################
 
-function evaluate!(
-  cache,
-  f::CompWiseTensorPolyBasis{D,V,K,PT,L},
-  x::AbstractVector{<:Point}) where {D,V,K,PT,L}
-
-  r, v, c = cache
-  np = length(x)
-  ndof = length(f)
-  ndof_1d = get_order(f) + 1 # K + 1
-  comp_terms = get_comp_terms(f)
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,ndof_1d))
-  for i in 1:np
-    @inbounds xi = x[i]
-    _evaluate_nd_cwtpb!(PT,v,xi,f.orders,comp_terms,c)
-    for j in 1:ndof
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
-
-function evaluate!(
-  cache,
-  fg::FieldGradientArray{1,<:CompWiseTensorPolyBasis{D,V,K,PT}},
-  x::AbstractVector{<:Point}) where {D,V,K,PT}
-
-  f = fg.fa
-  r, v, c, g = cache
-  np = length(x)
-  ndof = length(f)
-  ndof_1d = get_order(f) + 1
-  comp_terms = get_comp_terms(f)
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,ndof_1d))
-  setsize!(g,(D,ndof_1d))
-  for i in 1:np
-    @inbounds xi = x[i]
-    _gradient_nd_cwtpb!(PT,v,xi,f.orders,comp_terms,c,g,V)
-    for j in 1:ndof
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
-
-function evaluate!(
-  cache,
-  fg::FieldGradientArray{2,<:CompWiseTensorPolyBasis{D,V,K,PT}},
-  x::AbstractVector{<:Point}) where {D,V,K,PT}
-
-  f = fg.fa
-  r, v, c, g, h = cache
-  np = length(x)
-  ndof = length(f)
-  ndof_1d = get_order(f) + 1
-  comp_terms = get_comp_terms(f)
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,ndof_1d))
-  setsize!(g,(D,ndof_1d))
-  setsize!(h,(D,ndof_1d))
-  for i in 1:np
-    @inbounds xi = x[i]
-    _hessian_nd_cwtpb!(PT,v,xi,f.orders,comp_terms,c,g,h,V)
-    for j in 1:ndof
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
-
-
-###########
-# Helpers #
-###########
-
-function _evaluate_nd_cwtpb!(
-  PT::Type{<:Polynomial},
+function _evaluate_nd!(
+  b::CompWiseTensorPolyBasis{D,V,K,PT,L}, x,
+  r::AbstractMatrix{V}, i,
   v::AbstractVector{V},
-  x,
-  orders::SMatrix{L,D,Int},
-  comp_terms::NTuple{L,CartesianIndices{D}},
-  c::AbstractMatrix{T}) where {V,L,D,T}
+  c::AbstractMatrix{T}) where {D,V,K,PT,L,T}
+
+  orders = b.orders
+  comp_terms = get_comp_terms(b)
 
   for d in 1:D
     # for each coordinate d, the order at which the basis should be evaluated is
@@ -165,6 +87,11 @@ function _evaluate_nd_cwtpb!(
       k = _comp_wize_set_value!(v,s,k,l)
     end
   end
+
+  #r[i] = v
+  @inbounds for j in 1:length(b)
+      r[i,j] = v[j]
+  end
 end
 
 """
@@ -183,15 +110,16 @@ function _comp_wize_set_value!(v::AbstractVector{V},s::T,k,l) where {V,T}
   return k + 1
 end
 
-function _gradient_nd_cwtpb!(
-  PT::Type{<:Polynomial},
+function _gradient_nd!(
+  b::CompWiseTensorPolyBasis{D,V,K,PT,L}, x,
+  r::AbstractMatrix{G}, i,
   v::AbstractVector{G},
-  x,
-  orders::SMatrix{L,D,Int},
-  comp_terms::NTuple{L,CartesianIndices{D}},
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
-  ::Type{V}) where {G,L,D,T,V}
+  s::MVector{D,T}) where {D,V,K,PT,L,G,T}
+
+  orders = b.orders
+  comp_terms = get_comp_terms(b)
 
   for d in 1:D
     # for each spatial coordinate d, the order at which the basis should be
@@ -200,7 +128,6 @@ function _gradient_nd_cwtpb!(
     _derivatives_1d!(PT,Kd,(c,g),x,d)
   end
 
-  s = zero(Mutable(V))
   k = 1
 
   for (l,terms) in enumerate(comp_terms)
@@ -222,6 +149,11 @@ function _gradient_nd_cwtpb!(
 
       k = _comp_wize_set_gradient!(v,s,k,Val(l),V)
     end
+  end
+
+  #r[i] = v
+  @inbounds for j in 1:length(b)
+      r[i,j] = v[j]
   end
 end
 
@@ -257,16 +189,17 @@ end
   @notimplemented
 end
 
-function _hessian_nd_cwtpb!(
-  PT::Type{<:Polynomial},
-  v::AbstractVector{G},
-  x,
-  orders::SMatrix{L,D,Int},
-  comp_terms::NTuple{L,CartesianIndices{D}},
+function _hessian_nd!(
+  b::CompWiseTensorPolyBasis{D,V,K,PT,L}, x,
+  r::AbstractMatrix{H}, i,
+  v::AbstractVector{H},
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   h::AbstractMatrix{T},
-  ::Type{V}) where {G,L,D,T,V}
+  s::MMatrix{D,D,T}) where {D,V,K,PT,L,H,T}
+
+  orders = b.orders
+  comp_terms = get_comp_terms(b)
 
   for d in 1:D
     # for each spatial coordinate d, the order at which the basis should be
@@ -275,7 +208,6 @@ function _hessian_nd_cwtpb!(
     _derivatives_1d!(PT,Kd,(c,g,h),x,d)
   end
 
-  s = zero(Mutable(V))
   k = 1
 
   for (l,terms) in enumerate(comp_terms)
@@ -301,6 +233,11 @@ function _hessian_nd_cwtpb!(
 
       k = _comp_wize_set_gradient!(v,s,k,l,V)
     end
+  end
+
+  #r[i] = v
+  @inbounds for j in 1:length(b)
+      r[i,j] = v[j]
   end
 end
 

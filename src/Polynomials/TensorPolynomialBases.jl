@@ -2,18 +2,6 @@
 # Tensorial nD polynomial bases #
 #################################
 
-# Notations:
-# D: spatial / input space dimension
-# T: scalar type (Float64, ...)
-# V: concrete type of image values (T, VectorValue{D,T} etc.)
-# G: concrete MultiValue type holding the gradient or hessian of a function of
-#      value V, i.e. gradient_type(V,Point{D}) or gradient_type(gradient_type(V,p::Point{D}), p)
-#
-# PT: a concrete `Polynomial` type
-# np: number of points at which a basis is evaluated
-# ndof: number of basis vectors, num_indep_components(V) × dimension of the polynomial space
-# ndof_1d: maximum of 1D basis vector in any spatial dimension
-
 """
     struct TensorPolynomialBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
 
@@ -175,93 +163,18 @@ function _define_terms(filter,orders)
 end
 
 
-########################
-# Field implementation #
-########################
+#################################
+# nD evaluations implementation #
+#################################
 
-function evaluate!(cache,f::TensorPolynomialBasis{D,V,K,PT},x::AbstractVector{<:Point}) where {D,V,K,PT}
-  r, v, c = cache
-  np = length(x)
-  ndof = length(f)
-  ndof_1d = get_order(f) + 1 # K+1
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,ndof_1d))
-  for i in 1:np
-    # TODO Shouldn't we avoid accessing here ? (pass x and i)
-    @inbounds xi = x[i]
-    _tensorial_evaluate_nd!(PT,v,xi,f.orders,f.terms,c)
-    for j in 1:ndof
-      # TODO Shouldn't we assign in place in _tensorial_evaluate_nd instead of copying everything?
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
-
-function evaluate!(
-  cache,
-  fg::FieldGradientArray{1,<:TensorPolynomialBasis{D,V,K,PT}},
-  x::AbstractVector{<:Point}) where {D,V,K,PT}
-
-  f = fg.fa
-  r, v, c, g = cache
-  s = zero(Mutable(VectorValue{D,eltype(V)}))
-  np = length(x)
-  ndof = length(f)
-  ndof_1d = get_order(f) + 1 # K+1
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,ndof_1d))
-  setsize!(g,(D,ndof_1d))
-  for i in 1:np
-    # TODO Shouldn't we avoid accessing here ? (pass x and i)
-    @inbounds xi = x[i]
-    _tensorial_gradient_nd!(PT,v,xi,f.orders,f.terms,c,g,s,V)
-    for j in 1:ndof
-      # TODO Shouldn't we assign in place in _tensorial_gradient_nd instead of copying everything?
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
-
-function evaluate!(
-  cache,
-  fg::FieldGradientArray{2,<:TensorPolynomialBasis{D,V,K,PT}},
-  x::AbstractVector{<:Point}) where {D,V,K,PT}
-
-  f = fg.fa
-  r, v, c, g, h = cache
-  np = length(x)
-  ndof = length(f)
-  ndof_1d = get_order(f) + 1 # K+1
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,ndof_1d))
-  setsize!(g,(D,ndof_1d))
-  setsize!(h,(D,ndof_1d))
-  for i in 1:np
-    # TODO Shouldn't we avoid accessing here ? (pass x and i)
-    @inbounds xi = x[i]
-    _tensorial_hessian_nd!(PT,v,xi,f.orders,f.terms,c,g,h,V)
-    for j in 1:ndof
-      # TODO Shouldn't we assign in place in _tensorial_hessian_nd instead of copying everything?
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
-
-# Evaluates
-
-function _tensorial_evaluate_nd!(
-  PT::Type{<:Polynomial},
+function _evaluate_nd!(
+  b::TensorPolynomialBasis{D,V,K,PT}, x,
+  r::AbstractMatrix{V}, i,
   v::AbstractVector{V},
-  x,
-  orders,
-  terms::AbstractVector{CartesianIndex{D}},
-  c::AbstractMatrix{T}) where {V,D,T}
+  c::AbstractMatrix{T}) where {D,V,K,PT,T}
+
+  terms  = b.terms
+  orders = b.orders
 
   for d in 1:D
     Kd = Val(orders[d])
@@ -277,6 +190,11 @@ function _tensorial_evaluate_nd!(
     end
 
     k = _tensorial_set_value!(v,s,k)
+  end
+
+  #r[i] = v
+  @inbounds for j in 1:length(b)
+      r[i,j] = v[j]
   end
 end
 
@@ -316,16 +234,16 @@ function _tensorial_set_value!(v::AbstractVector{V},s::T,k) where {V,T}
   k
 end
 
-function _tensorial_gradient_nd!(
-  PT::Type{<:Polynomial},
+function _gradient_nd!(
+  b::TensorPolynomialBasis{D,V,K,PT}, x,
+  r::AbstractMatrix{G}, i,
   v::AbstractVector{G},
-  x,
-  orders,
-  terms::AbstractVector{CartesianIndex{D}},
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
-  s::AbstractVector{T},
-  ::Type{V}) where {G,D,T,V}
+  s::MVector{D,T}) where {D,V,K,PT,G,T}
+
+  terms  = b.terms
+  orders = b.orders
 
   for d in 1:D
     Kd = Val(orders[d])
@@ -350,6 +268,11 @@ function _tensorial_gradient_nd!(
     end
 
     k = _tensorial_set_gradient!(v,s,k,V)
+  end
+
+  #r[i] = v
+  @inbounds for j in 1:length(b)
+      r[i,j] = v[j]
   end
 end
 
@@ -437,23 +360,23 @@ end
   return Expr(:block, body ,:(return k))
 end
 
-function _tensorial_hessian_nd!(
-  PT::Type{<:Polynomial},
+function _hessian_nd!(
+  b::TensorPolynomialBasis{D,V,K,PT}, x,
+  r::AbstractMatrix{G}, i,
   v::AbstractVector{G},
-  x,
-  orders,
-  terms::AbstractVector{CartesianIndex{D}},
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   h::AbstractMatrix{T},
-  ::Type{V}) where {G,D,T,V}
+  s::MMatrix{D,D,T}) where {D,V,K,PT,G,T}
+
+  terms  = b.terms
+  orders = b.orders
 
   for d in 1:D
     Kd = Val(orders[d])
     _derivatives_1d!(PT,Kd,(c,g,h),x,d)
   end
 
-  s = zero(Mutable(TensorValue{D,D,T}))
   k = 1
 
   for ci in terms
@@ -477,6 +400,11 @@ function _tensorial_hessian_nd!(
     end
 
     k = _tensorial_set_gradient!(v,s,k,V)
+  end
+
+  #r[i] = v
+  @inbounds for j in 1:length(b)
+      r[i,j] = v[j]
   end
 end
 

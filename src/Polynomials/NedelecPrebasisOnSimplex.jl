@@ -1,7 +1,9 @@
-struct NedelecPrebasisOnSimplex{D} <: AbstractVector{Monomial}
+struct NedelecPrebasisOnSimplex{D,V,K} <: PolynomialBasis{D,V,K,Monomial}
   order::Int
   function NedelecPrebasisOnSimplex{D}(order::Integer) where D
-    new{D}(Int(order))
+    K = Int(order)+1
+    V = VectorValue{D,Float64}
+    new{D,V,K}(Int(order))
   end
 end
 
@@ -11,21 +13,14 @@ function Base.size(a::NedelecPrebasisOnSimplex{D}) where D
   (n,)
 end
 
-Base.getindex(a::NedelecPrebasisOnSimplex,i::Integer) = Monomial()
-Base.IndexStyle(::Type{<:NedelecPrebasisOnSimplex}) = IndexLinear()
-
-get_order(f::NedelecPrebasisOnSimplex) = f.order
-
-return_type(::NedelecPrebasisOnSimplex{D}) where {D} = VectorValue{D,Float64}
-
 function return_cache(
   f::NedelecPrebasisOnSimplex{D},x::AbstractVector{<:Point}) where D
   np = length(x)
   ndofs = length(f)
   V = eltype(x)
   a = zeros(V,(np,ndofs))
-  k = f.order+1
-  P = MonomialBasis(Val(D),VectorValue{D,Float64},k-1,(e,order)->sum(e)<=order)
+  K = get_order(f)
+  P = MonomialBasis(Val(D),VectorValue{D,Float64},K-1,(e,order)->sum(e)<=order)
   cP = return_cache(P,x)
   CachedArray(a), cP, P
 end
@@ -33,7 +28,7 @@ end
 function evaluate!(
   cache,f::NedelecPrebasisOnSimplex{3},x::AbstractVector{<:Point})
   ca,cP,P = cache
-  k = f.order+1
+  K = get_order(f)
   np = length(x)
   ndofs = length(f)
   ndofsP = length(P)
@@ -51,26 +46,26 @@ function evaluate!(
     i = ndofsP
     x1,x2,x3 = x[ip]
     zp = zero(x1)
-    for β in 1:k
-      for α in 1:(k+1-β)
+    for β in 1:K
+      for α in 1:(K+1-β)
         i += 1
         a[ip,i] = VectorValue(
-          -x1^(α-1)*x2^(k-α-β+2)*x3^(β-1),
-           x1^α*x2^(k-α-β+1)*x3^(β-1),
+          -x1^(α-1)*x2^(K-α-β+2)*x3^(β-1),
+           x1^α*x2^(K-α-β+1)*x3^(β-1),
            zp)
         i += 1
         a[ip,i] = VectorValue(
-          -x1^(k-α-β+1)*x2^(β-1)*x3^α,
+          -x1^(K-α-β+1)*x2^(β-1)*x3^α,
           zp,
-          x1^(k-α-β+2)*x2^(β-1)*x3^(α-1))
+          x1^(K-α-β+2)*x2^(β-1)*x3^(α-1))
       end
     end
-    for γ in 1:k
+    for γ in 1:K
       i += 1
       a[ip,i] = VectorValue(
         zp,
-        -x2^(γ-1)*x3^(k-γ+1),
-        x2^γ*x3^(k-γ))
+        -x2^(γ-1)*x3^(K-γ+1),
+        x2^γ*x3^(K-γ))
     end
   end
   a
@@ -79,7 +74,7 @@ end
 function evaluate!(
   cache,f::NedelecPrebasisOnSimplex{2},x::AbstractVector{<:Point})
   ca,cP,P = cache
-  k = f.order+1
+  K = get_order(f)
   np = length(x)
   ndofs = length(f)
   ndofsP = length(P)
@@ -97,9 +92,9 @@ function evaluate!(
     i = ndofsP
     x1,x2 = x[ip]
     zp = zero(x1)
-    for α in 1:k
+    for α in 1:K
       i += 1
-      a[ip,i] = VectorValue(-x1^(α-1)*x2^(k-α+1),x1^α*x2^(k-α))
+      a[ip,i] = VectorValue(-x1^(α-1)*x2^(K-α+1),x1^α*x2^(K-α))
     end
     #a[ip,1] = VectorValue((u,z))
     #a[ip,2] = VectorValue((z,u))
@@ -118,8 +113,8 @@ function return_cache(
   V = eltype(x)
   G = gradient_type(V,xi)
   a = zeros(G,(np,ndofs))
-  k = f.order+1
-  mb = MonomialBasis(Val(D),VectorValue{D,Float64},k-1,(e,order)->sum(e)<=order)
+  K = get_order(f)
+  mb = MonomialBasis(Val(D),VectorValue{D,Float64},K-1,_p_filter)
   P = Broadcasting(∇)(mb)
   cP = return_cache(P,x)
   CachedArray(a), cP, P
@@ -131,7 +126,7 @@ function evaluate!(
   x::AbstractVector{<:Point})
   ca,cP,P = cache
   f = g.fa
-  k = f.order+1
+  K = get_order(f)
   np = length(x)
   ndofs = length(f)
   setsize!(ca,(np,ndofs))
@@ -150,47 +145,47 @@ function evaluate!(
     i = ndofsP
     x1,x2,x3 = x[ip]
     zp = zero(x1)
-    for β in 1:k
-      for α in 1:(k+1-β)
+    for β in 1:K
+      for α in 1:(K+1-β)
         i += 1
         a[ip,i] = TensorValue(
-          #-x1^(α-1)*x2^(k-α-β+2)*x3^(β-1),
-          -(α-1)*_exp(x1,α-2)*x2^(k-α-β+2)*x3^(β-1),
-          -x1^(α-1)*(k-α-β+2)*_exp(x2,k-α-β+1)*x3^(β-1),
-          -x1^(α-1)*x2^(k-α-β+2)*(β-1)*_exp(x3,β-2),
-           #x1^α*x2^(k-α-β+1)*x3^(β-1),
-           α*_exp(x1,α-1)*x2^(k-α-β+1)*x3^(β-1),
-           x1^α*(k-α-β+1)*_exp(x2,k-α-β)*x3^(β-1),
-           x1^α*x2^(k-α-β+1)*(β-1)*_exp(x3,β-2),
+          #-x1^(α-1)*x2^(K-α-β+2)*x3^(β-1),
+          -(α-1)*_exp(x1,α-2)*x2^(K-α-β+2)*x3^(β-1),
+          -x1^(α-1)*(K-α-β+2)*_exp(x2,K-α-β+1)*x3^(β-1),
+          -x1^(α-1)*x2^(K-α-β+2)*(β-1)*_exp(x3,β-2),
+           #x1^α*x2^(K-α-β+1)*x3^(β-1),
+           α*_exp(x1,α-1)*x2^(K-α-β+1)*x3^(β-1),
+           x1^α*(K-α-β+1)*_exp(x2,K-α-β)*x3^(β-1),
+           x1^α*x2^(K-α-β+1)*(β-1)*_exp(x3,β-2),
            #zp,
            zp,zp,zp)
         i += 1
         a[ip,i] = TensorValue(
-          #-x1^(k-α-β+1)*x2^(β-1)*x3^α,
-          -(k-α-β+1)*_exp(x1,k-α-β)*x2^(β-1)*x3^α,
-          -x1^(k-α-β+1)*(β-1)*_exp(x2,β-2)*x3^α,
-          -x1^(k-α-β+1)*x2^(β-1)*α*_exp(x3,α-1),
+          #-x1^(K-α-β+1)*x2^(β-1)*x3^α,
+          -(K-α-β+1)*_exp(x1,K-α-β)*x2^(β-1)*x3^α,
+          -x1^(K-α-β+1)*(β-1)*_exp(x2,β-2)*x3^α,
+          -x1^(K-α-β+1)*x2^(β-1)*α*_exp(x3,α-1),
           # zp
           zp,zp,zp,
-          #x1^(k-α-β+2)*x2^(β-1)*x3^(α-1),
-          (k-α-β+2)*_exp(x1,k-α-β+1)*x2^(β-1)*x3^(α-1),
-          x1^(k-α-β+2)*(β-1)*_exp(x2,β-2)*x3^(α-1),
-          x1^(k-α-β+2)*x2^(β-1)*(α-1)*_exp(x3,α-2))
+          #x1^(K-α-β+2)*x2^(β-1)*x3^(α-1),
+          (K-α-β+2)*_exp(x1,K-α-β+1)*x2^(β-1)*x3^(α-1),
+          x1^(K-α-β+2)*(β-1)*_exp(x2,β-2)*x3^(α-1),
+          x1^(K-α-β+2)*x2^(β-1)*(α-1)*_exp(x3,α-2))
       end
     end
-    for γ in 1:k
+    for γ in 1:K
       i += 1
       a[ip,i] = TensorValue(
         #zp
         zp,zp,zp,
-        #-x2^(γ-1)*x3^(k-γ+1),
-        -0*x2^(γ-1)*x3^(k-γ+1),
-        -(γ-1)*_exp(x2,γ-2)*x3^(k-γ+1),
-        -x2^(γ-1)*(k-γ+1)*_exp(x3,k-γ),
-        #x2^γ*x3^(k-γ),
-        0*x2^γ*x3^(k-γ),
-        γ*_exp(x2,γ-1)*x3^(k-γ),
-        x2^γ*(k-γ)*_exp(x3,k-γ-1))
+        #-x2^(γ-1)*x3^(K-γ+1),
+        -0*x2^(γ-1)*x3^(K-γ+1),
+        -(γ-1)*_exp(x2,γ-2)*x3^(K-γ+1),
+        -x2^(γ-1)*(K-γ+1)*_exp(x3,K-γ),
+        #x2^γ*x3^(K-γ),
+        0*x2^γ*x3^(K-γ),
+        γ*_exp(x2,γ-1)*x3^(K-γ),
+        x2^γ*(K-γ)*_exp(x3,K-γ-1))
     end
     #a[ip,4] = TensorValue((z,-u,z, u,z,z, z,z,z))
     #a[ip,5] = TensorValue((z,z,-u, z,z,z, u,z,z))
@@ -207,7 +202,7 @@ function evaluate!(
   x::AbstractVector{<:Point})
   f = g.fa
   ca,cP,P = cache
-  k = f.order+1
+  K = get_order(f)
   np = length(x)
   ndofs = length(f)
   setsize!(ca,(np,ndofs))
@@ -226,15 +221,15 @@ function evaluate!(
     i = ndofsP
     x1,x2 = x[ip]
     zp = zero(x1)
-    for α in 1:k
+    for α in 1:K
       i += 1
       a[ip,i] = TensorValue(
-        #-x1^(α-1)*x2^(k-α+1),
-        -(α-1)*_exp(x1,α-2)*x2^(k-α+1),
-        -x1^(α-1)*(k-α+1)*_exp(x2,k-α),
-        #x1^α*x2^(k-α),
-        α*_exp(x1,α-1)*x2^(k-α),
-        x1^α*(k-α)*_exp(x2,k-α-1))
+        #-x1^(α-1)*x2^(K-α+1),
+        -(α-1)*_exp(x1,α-2)*x2^(K-α+1),
+        -x1^(α-1)*(K-α+1)*_exp(x2,K-α),
+        #x1^α*x2^(K-α),
+        α*_exp(x1,α-1)*x2^(K-α),
+        x1^α*(K-α)*_exp(x2,K-α-1))
     end
     #a[ip,3] = TensorValue((z,-u, u,z))
   end

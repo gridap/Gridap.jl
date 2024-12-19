@@ -1,6 +1,6 @@
-#################################################
-# Polynomial family/types with their parameters #
-#################################################
+############################
+# Polynomial family/types  #
+############################
 
 """
 Abstract type for 1- or n-D polynomial family of maximum order k.
@@ -14,6 +14,26 @@ Return true if the basis of order `k` of the given `<:Polynomial` type is the un
 of the basis of order `k-1` and an other order `k` polynomial.
 """
 isHierarchical(::Type{Polynomial}) = @abstractmethod
+
+
+###########################################
+# Polynomial basis abstract type and APIs #
+###########################################
+
+# Notations:
+#
+# D: spatial / input space dimension
+# T: scalar type (Float64, ...)
+# V: concrete type of image values (T, VectorValue{D,T} etc.)
+# G: concrete MultiValue type holding the gradient or hessian of a function of
+#      value V, i.e.  gradient_type(V,Point{D})
+#                 or  gradient_type(gradient_type(V,p::Point{D}), p)
+#
+# PT: a concrete `Polynomial` type
+# K: integer polynomial order (maximum of any component and in any direction in nD).
+# np: number of points at which a basis is evaluated
+# ndof: number of basis vectors, num_indep_components(V) × dimension of the polynomial space
+# ndof_1d: maximum of 1D basis vector in any spatial dimension
 
 """
     PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}
@@ -39,7 +59,7 @@ abstract type PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}  end
 
 Return the maximum polynomial order in a dimension, or `0` in 0D.
 """
-get_order(::PolynomialBasis{D,V,K}) where {D,V,K} = K
+@inline get_order(::PolynomialBasis{D,V,K}) where {D,V,K} = K
 
 
 ################################
@@ -82,6 +102,190 @@ function return_cache(
     G = gradient_type(G,xi)
   end
   _return_cache(f,x,G,Val(N))
+end
+
+function evaluate!(cache,
+  f::PolynomialBasis{D,V,K,PT},
+  x::AbstractVector{<:Point}) where {D,V,K,PT}
+
+  r, v, c = cache
+  np = length(x)
+  ndof = length(f)
+  ndof_1d = get_order(f) + 1 # K+1
+  setsize!(r,(np,ndof))
+  setsize!(v,(ndof,))
+  setsize!(c,(D,ndof_1d))
+  for i in 1:np
+    @inbounds xi = x[i]
+    _evaluate_nd!(f,xi,r,i,v,c)
+  end
+  r.array
+end
+
+function evaluate!(cache,
+  fg::FieldGradientArray{1,<:PolynomialBasis{D,V,K,PT}},
+  x::AbstractVector{<:Point}) where {D,V,K,PT}
+
+  f = fg.fa
+  r, v, c, g = cache
+  s = zero(Mutable(VectorValue{D,eltype(V)}))
+  np = length(x)
+  ndof = length(f)
+  ndof_1d = get_order(f) + 1 # K+1
+  setsize!(r,(np,ndof))
+  setsize!(v,(ndof,))
+  setsize!(c,(D,ndof_1d))
+  setsize!(g,(D,ndof_1d))
+  for i in 1:np
+    @inbounds xi = x[i]
+    _gradient_nd!(f,xi,r,i,v,c,g,s)
+  end
+  r.array
+end
+
+function evaluate!(cache,
+  fg::FieldGradientArray{2,<:PolynomialBasis{D,V,K,PT}},
+  x::AbstractVector{<:Point}) where {D,V,K,PT}
+
+  f = fg.fa
+  r, v, c, g, h = cache
+  s = zero(Mutable(TensorValue{D,D,eltype(V)}))
+  np = length(x)
+  ndof = length(f)
+  ndof_1d = get_order(f) + 1 # K+1
+  setsize!(r,(np,ndof))
+  setsize!(v,(ndof,))
+  setsize!(c,(D,ndof_1d))
+  setsize!(g,(D,ndof_1d))
+  setsize!(h,(D,ndof_1d))
+  for i in 1:np
+    @inbounds xi = x[i]
+    _hessian_nd!(f,xi,r,i,v,c,g,h,s)
+  end
+  r.array
+end
+
+
+###############################
+# nD internal polynomial APIs #
+###############################
+
+"""
+    _evaluate_nd!(b,xi,r,i,v,c)
+
+Compute and assign: r[i] = b(xi) = (b₁(xi), ..., bₙ(xi))
+
+where n = length(`b`) (cardinal of the basis), that is the function computes
+the basis polynomials at xi and setting the result in the `i`th row of `r`.
+
+`v` a mutable cache for of `b(xi)` and `c` is a mutable `D`×`K` cache.
+"""
+function _evaluate_nd!(
+  b::PolynomialBasis{D,V,K},
+  x,
+  r::AbstractMatrix{V},
+  i,
+  v::AbstractVector{V},
+  c::AbstractMatrix{T}) where {D,V,K,T}
+
+  @abstractmethod
+end
+
+"""
+    _gradient_nd!(b,xi,r,i,v,c,g,s)
+
+Compute and assign: `r`[`i`] = ∇`b`(`xi`) = (∇`b`₁(`xi`), ..., ∇`b`ₙ(`xi`))
+
+where n = length(`b`) (cardinal of the basis), like [`_evaluate_nd!`](@ref) but
+for gradients of `b`ₖ(`xi`), and
+
+- `g` is a mutable `D`×`K` cache (for 1D poly deriv evals).
+- `s` is a mutable length `D` cache for ∇`b`ₖ(`xi`).
+"""
+function _gradient_nd!(
+  b::PolynomialBasis{D,V,K},
+  x,
+  r::AbstractMatrix{G},
+  i,
+  v::AbstractVector{G},
+  c::AbstractMatrix{T},
+  g::AbstractMatrix{T},
+  s::MVector{D,T}) where {D,V,K,G,T}
+
+  @abstractmethod
+end
+
+
+"""
+    _hessian_nd!(b,xi,r,i,v,c,g,h,s)
+
+Compute and assign: `r`[`i`] = H`b`(`xi`) = (H`b`₁(`xi`), ..., H`b`ₙ(`xi`))
+
+where n = length(`b`) (cardinal of the basis), like [`_evaluate_nd!`](@ref) but
+for hessian matrices/tensor of `b`ₖ(`xi`), and
+
+- `h` is a mutable `D`×`K` cache (for 1D poly second deriv evals).
+- `s` is a mutable `D`×`D` cache for H`b`ₖ(`xi`).
+"""
+function _hessian_nd!(
+  b::PolynomialBasis{D,V,K},
+  x,
+  r::AbstractMatrix{H},
+  i,
+  v::AbstractVector{H},
+  c::AbstractMatrix{T},
+  g::AbstractMatrix{T},
+  h::AbstractMatrix{T},
+  s::MMatrix{D,D,T}) where {D,V,K,H,T}
+
+  @abstractmethod
+end
+
+
+##############################################
+# Optimizing of evaluation at a single point #
+##############################################
+
+function return_cache(f::PolynomialBasis,x::Point)
+  xs = [x]
+  cf = return_cache(f,xs)
+  v = evaluate!(cf,f,xs)
+  r = CachedArray(zeros(eltype(v),(size(v,2),)))
+  r, cf, xs
+end
+
+function evaluate!(cache,f::PolynomialBasis,x::Point)
+  r, cf, xs = cache
+  xs[1] = x
+  v = evaluate!(cf,f,xs)
+  ndof = size(v,2)
+  setsize!(r,(ndof,))
+  a = r.array
+  copyto!(a,v)
+  a
+end
+
+function return_cache(
+  f::FieldGradientArray{N,<:PolynomialBasis}, x::Point) where N
+
+  xs = [x]
+  cf = return_cache(f,xs)
+  v = evaluate!(cf,f,xs)
+  r = CachedArray(zeros(eltype(v),(size(v,2),)))
+  r, cf, xs
+end
+
+function evaluate!(
+  cache, f::FieldGradientArray{N,<:PolynomialBasis}, x::Point) where N
+
+  r, cf, xs = cache
+  xs[1] = x
+  v = evaluate!(cf,f,xs)
+  ndof = size(v,2)
+  setsize!(r,(ndof,))
+  a = r.array
+  copyto!(a,v)
+  a
 end
 
 
@@ -148,49 +352,5 @@ function _derivatives_1d!(PT::Type{<:Polynomial},::Val{K},t::NTuple{3},x,d) wher
   _evaluate_1d!(PT, Val(K), t[1], x, d)
   _gradient_1d!(PT, Val(K), t[2], x, d)
   _hessian_1d!( PT, Val(K), t[3], x, d)
-end
-
-# Optimizing evaluation at a single point
-
-function return_cache(f::AbstractVector{PT},x::Point) where PT<:Polynomial
-  xs = [x]
-  cf = return_cache(f,xs)
-  v = evaluate!(cf,f,xs)
-  r = CachedArray(zeros(eltype(v),(size(v,2),)))
-  r, cf, xs
-end
-
-function evaluate!(cache,f::AbstractVector{PT},x::Point) where PT<:Polynomial
-  r, cf, xs = cache
-  xs[1] = x
-  v = evaluate!(cf,f,xs)
-  ndof = size(v,2)
-  setsize!(r,(ndof,))
-  a = r.array
-  copyto!(a,v)
-  a
-end
-
-function return_cache(
-  f::FieldGradientArray{N,<:AbstractVector{PT}}, x::Point) where {N,PT<:Polynomial}
-
-  xs = [x]
-  cf = return_cache(f,xs)
-  v = evaluate!(cf,f,xs)
-  r = CachedArray(zeros(eltype(v),(size(v,2),)))
-  r, cf, xs
-end
-
-function evaluate!(
-  cache, f::FieldGradientArray{N,<:AbstractVector{PT}}, x::Point) where {N,PT<:Polynomial}
-
-  r, cf, xs = cache
-  xs[1] = x
-  v = evaluate!(cf,f,xs)
-  ndof = size(v,2)
-  setsize!(r,(ndof,))
-  a = r.array
-  copyto!(a,v)
-  a
 end
 
