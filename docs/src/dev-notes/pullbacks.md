@@ -39,7 +39,7 @@ An important result from [1, Theorem 3.1] is that ``P = M^T``.
 !!! details
     [1, Lemma 2.6]: A key ingredient is that given ``M`` a matrix we have ``\Sigma (M \Phi) = \Sigma (\Phi) M^T`` since
     ```math
-      [\Sigma (M \Phi)]_{ij} = \sigma_i (M_{jk} \varphi_k) = \sigma_i \varphi_k M_{jk} = [\Sigma (\Phi) M^T]_{ij}
+      [\Sigma (M \Phi)]_{ij} = \sigma_i (M_{jk} \varphi_k) = M_{jk} \sigma_i (\varphi_k) = [\Sigma (\Phi) M^T]_{ij}
     ```
     where we have used that moments are linear.
 
