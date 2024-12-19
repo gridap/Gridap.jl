@@ -47,9 +47,10 @@ function get_cell_shapefuns(
   sign_flip = get_sign_flip(model, cell_reffe)
 )
   cell_map = get_cell_map(get_grid(model))
+  cell_Jt  = lazy_map(Broadcasting(∇),cell_map)
   cell_shapefuns = lazy_map(get_shapefuns,cell_reffe)
   k = ContraVariantPiolaMap()
-  lazy_map(k,cell_shapefuns,cell_map,lazy_map(Broadcasting(constant_field),sign_flip))
+  lazy_map(k,cell_shapefuns,cell_Jt,lazy_map(Broadcasting(constant_field),sign_flip))
 end
 
 struct SignFlipMap{T} <: Map
