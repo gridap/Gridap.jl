@@ -170,7 +170,6 @@ end
 function _evaluate_nd!(
   b::TensorPolynomialBasis{D,V,K,PT}, x,
   r::AbstractMatrix{V}, i,
-  v::AbstractVector{V},
   c::AbstractMatrix{T}) where {D,V,K,PT,T}
 
   terms  = b.terms
@@ -189,46 +188,26 @@ function _evaluate_nd!(
       @inbounds s *= c[d,ci[d]]
     end
 
-    k = _tensorial_set_value!(v,s,k)
-  end
-
-  #r[i] = v
-  @inbounds for j in 1:length(b)
-      r[i,j] = v[j]
+    k = _tensorial_set_value!(r,i,s,k)
   end
 end
 
 """
-    _tensorial_set_value!(v::AbstractVector{<:Real},s,k)
+    _tensorial_set_value!(r::AbstractMatrix{<:Real},i,s,k)
 
-v[k] = s; return k+1
+r[i,k] = s; return k+1
 """
-function _tensorial_set_value!(v::AbstractVector{<:Real},s,k)
-    @inbounds v[k] = s
-    k+1
+function _tensorial_set_value!(r::AbstractMatrix{<:Real},i,s,k)
+  #@inbounds r[i][k] = s
+  @inbounds r[i,k] = s
+  k+1
 end
 
-"""
-    _tensorial_set_value!(v::AbstractVector{V},s::T,k)
-
-```
-v[k]   = V(s, 0, ..., 0)
-v[k+1] = V(0, s, ..., 0)
-        ⋮
-v[k+N] = V(0, ..., 0, s)
-return k+N
-```
-
-where `N` is the number of independent components of `V<:MultiValue`.
-
-This means that the basis has the same polynomial space in each component, so it
-is tensorial relative to the `V` components.
-"""
-function _tensorial_set_value!(v::AbstractVector{V},s::T,k) where {V,T}
+function _tensorial_set_value!(r::AbstractMatrix{V},i,s::T,k) where {V,T}
   ncomp = num_indep_components(V)
   z = zero(T)
   @inbounds for j in 1:ncomp
-    v[k] = ntuple(i -> ifelse(i == j, s, z),Val(ncomp))
+    r[i,k] = ntuple(i -> ifelse(i == j, s, z),Val(ncomp))
     k += 1
   end
   k
@@ -237,7 +216,6 @@ end
 function _gradient_nd!(
   b::TensorPolynomialBasis{D,V,K,PT}, x,
   r::AbstractMatrix{G}, i,
-  v::AbstractVector{G},
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   s::MVector{D,T}) where {D,V,K,PT,G,T}
@@ -267,25 +245,20 @@ function _gradient_nd!(
       end
     end
 
-    k = _tensorial_set_gradient!(v,s,k,V)
-  end
-
-  #r[i] = v
-  @inbounds for j in 1:length(b)
-      r[i,j] = v[j]
+    k = _tensorial_set_gradient!(r,i,s,k,V)
   end
 end
 
 function _tensorial_set_gradient!(
-  v::AbstractVector{G},s,k,::Type{<:Real}) where G
+  r::AbstractMatrix{G},i,s,k,::Type{<:Real}) where G
 
-  @inbounds v[k] = s
+  @inbounds r[i,k] = s
   k+1
 end
 
 # TODO comment
 @generated function _tensorial_set_gradient!(
-  v::AbstractVector{G},s,k,::Type{V}) where {G,V}
+  r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V}
   # Git blame me for readable non-generated version
 
   w = zero(V)
@@ -307,7 +280,7 @@ end
       id = join(Tuple(ci))
       m[ci,j] = "s$id"
     end
-    body *= "@inbounds v[k] = ($(join(tuple(m...), ", ")));"
+    body *= "@inbounds r[i,k] = ($(join(tuple(m...), ", ")));"
     body *= "k = k + 1;"
   end
 
@@ -323,7 +296,7 @@ end
 # This is still (independant-)component tensorial as each independent SymTensor
 # component holds the same (scalar multivariate) polynomial space.
 @generated function _tensorial_set_gradient!(
-  v::AbstractVector{G},s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
+  r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
   # Git blame me for readable non-generated version
 
   T = eltype(s)
@@ -351,7 +324,7 @@ end
           m[i,D,D] = "-s$i"
         end
       end
-      body *= "@inbounds v[k] = ($(join(tuple(m...), ", ")));"
+      body *= "@inbounds r[i,k] = ($(join(tuple(m...), ", ")));"
       body *= "k = k + 1;"
     end
   end
@@ -363,7 +336,6 @@ end
 function _hessian_nd!(
   b::TensorPolynomialBasis{D,V,K,PT}, x,
   r::AbstractMatrix{G}, i,
-  v::AbstractVector{G},
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   h::AbstractMatrix{T},
@@ -385,26 +357,21 @@ function _hessian_nd!(
       @inbounds s[i] = one(T)
     end
 
-    for r in 1:D
+    for t in 1:D
       for q in 1:D
         for d in 1:D
-          if d != q && d != r
-            @inbounds s[r,q] *= c[d,ci[d]]
-          elseif d == q && d ==r
-            @inbounds s[r,q] *= h[d,ci[d]]
+          if d != q && d != t
+            @inbounds s[t,q] *= c[d,ci[d]]
+          elseif d == q && d ==t
+            @inbounds s[t,q] *= h[d,ci[d]]
           else
-            @inbounds s[r,q] *= g[d,ci[d]]
+            @inbounds s[t,q] *= g[d,ci[d]]
           end
         end
       end
     end
 
-    k = _tensorial_set_gradient!(v,s,k,V)
-  end
-
-  #r[i] = v
-  @inbounds for j in 1:length(b)
-      r[i,j] = v[j]
+    k = _tensorial_set_gradient!(r,i,s,k,V)
   end
 end
 

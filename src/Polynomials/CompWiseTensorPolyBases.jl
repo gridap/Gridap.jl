@@ -60,7 +60,6 @@ end
 function _evaluate_nd!(
   b::CompWiseTensorPolyBasis{D,V,K,PT,L}, x,
   r::AbstractMatrix{V}, i,
-  v::AbstractVector{V},
   c::AbstractMatrix{T}) where {D,V,K,PT,L,T}
 
   orders = b.orders
@@ -84,36 +83,30 @@ function _evaluate_nd!(
         s *= c[d,ci[d]]
       end
 
-      k = _comp_wize_set_value!(v,s,k,l)
+      k = _comp_wize_set_value!(r,i,s,k,l)
     end
-  end
-
-  #r[i] = v
-  @inbounds for j in 1:length(b)
-      r[i,j] = v[j]
   end
 end
 
 """
-    _comp_wize_set_value!(v::AbstractVector{V},s::T,k,l)
+    _comp_wize_set_value!(r::AbstractMatrix{V},i,s::T,k,l)
 
 ```
-v[k]   = V(0, ..., 0, s, 0, ..., 0); return k+1
+r[i,k]   = V(0, ..., 0, s, 0, ..., 0); return k+1
 ```
 
 where `s` is at position `l` in `V<:MultiValue`.
 """
-function _comp_wize_set_value!(v::AbstractVector{V},s::T,k,l) where {V,T}
+function _comp_wize_set_value!(r::AbstractMatrix{V},i,s::T,k,l) where {V,T}
   z = zero(T)
   ncomp = num_indep_components(V)
-  v[k] = ntuple(i -> ifelse(i == l, s, z),Val(ncomp))
+  r[i,k] = ntuple(i -> ifelse(i == l, s, z),Val(ncomp))
   return k + 1
 end
 
 function _gradient_nd!(
   b::CompWiseTensorPolyBasis{D,V,K,PT,L}, x,
   r::AbstractMatrix{G}, i,
-  v::AbstractVector{G},
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   s::MVector{D,T}) where {D,V,K,PT,L,G,T}
@@ -147,25 +140,20 @@ function _gradient_nd!(
         end
       end
 
-      k = _comp_wize_set_gradient!(v,s,k,Val(l),V)
+      k = _comp_wize_set_gradient!(r,i,s,k,Val(l),V)
     end
-  end
-
-  #r[i] = v
-  @inbounds for j in 1:length(b)
-      r[i,j] = v[j]
   end
 end
 
 function _comp_wize_set_gradient!(
-  v::AbstractVector{G},s,k,l,::Type{<:Real}) where G
+  r::AbstractMatrix{G},i,s,k,l,::Type{<:Real}) where G
 
-  @inbounds v[k] = s
+  @inbounds r[i,k] = s
   k+1
 end
 
 @generated function _comp_wize_set_gradient!(
-  v::AbstractVector{G},s,k,::Val{l},::Type{V}) where {G,l,V}
+  r::AbstractMatrix{G},i,s,k,::Val{l},::Type{V}) where {G,l,V}
 
   N_val_dims = length(size(V))
   s_size = size(G)[1:end-N_val_dims]
@@ -177,14 +165,14 @@ end
   for ci in CartesianIndices(s_size)
     m[ci,l] = "(@inbounds s[$ci])"
   end
-  body *= "@inbounds v[k] = ($(join(tuple(m...), ", ")));"
+  body *= "@inbounds r[i,k] = ($(join(tuple(m...), ", ")));"
 
   body = Meta.parse(string("begin ",body," end"))
   return Expr(:block, body ,:(return k+1))
 end
 
 @generated function _comp_wize_set_gradient!(
-  v::AbstractVector{G},s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
+  r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
 
   @notimplemented
 end
@@ -192,7 +180,6 @@ end
 function _hessian_nd!(
   b::CompWiseTensorPolyBasis{D,V,K,PT,L}, x,
   r::AbstractMatrix{H}, i,
-  v::AbstractVector{H},
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   h::AbstractMatrix{T},
@@ -231,13 +218,8 @@ function _hessian_nd!(
         end
       end
 
-      k = _comp_wize_set_gradient!(v,s,k,l,V)
+      k = _comp_wize_set_gradient!(r,i,s,k,l,V)
     end
-  end
-
-  #r[i] = v
-  @inbounds for j in 1:length(b)
-      r[i,j] = v[j]
   end
 end
 

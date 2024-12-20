@@ -79,12 +79,10 @@ function _return_cache(
   ndof_1d = get_order(f) + 1
   # Cache for the returned array
   r = CachedArray(zeros(G,(np,ndof)))
-  # Cache for basis functions at one point x[i]
-  v = CachedArray(zeros(G,(ndof,)))
   # Cache for the 1D basis function values in each dimension (to be
   # tensor-producted), and of their N_deriv'th 1D derivatives
   t = ntuple( _ -> CachedArray(zeros(T,(D,ndof_1d ))), Val(N_deriv+1))
-  (r, v, t...)
+  (r, t...)
 end
 
 function return_cache(f::PolynomialBasis{D,V}, x::AbstractVector{<:Point}) where {D,V}
@@ -108,16 +106,15 @@ function evaluate!(cache,
   f::PolynomialBasis{D,V,K,PT},
   x::AbstractVector{<:Point}) where {D,V,K,PT}
 
-  r, v, c = cache
+  r, c = cache
   np = length(x)
   ndof = length(f)
   ndof_1d = get_order(f) + 1 # K+1
   setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
   setsize!(c,(D,ndof_1d))
   for i in 1:np
     @inbounds xi = x[i]
-    _evaluate_nd!(f,xi,r,i,v,c)
+    _evaluate_nd!(f,xi,r,i,c)
   end
   r.array
 end
@@ -127,18 +124,17 @@ function evaluate!(cache,
   x::AbstractVector{<:Point}) where {D,V,K,PT}
 
   f = fg.fa
-  r, v, c, g = cache
+  r, c, g = cache
   s = zero(Mutable(VectorValue{D,eltype(V)}))
   np = length(x)
   ndof = length(f)
   ndof_1d = get_order(f) + 1 # K+1
   setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
   setsize!(c,(D,ndof_1d))
   setsize!(g,(D,ndof_1d))
   for i in 1:np
     @inbounds xi = x[i]
-    _gradient_nd!(f,xi,r,i,v,c,g,s)
+    _gradient_nd!(f,xi,r,i,c,g,s)
   end
   r.array
 end
@@ -148,19 +144,18 @@ function evaluate!(cache,
   x::AbstractVector{<:Point}) where {D,V,K,PT}
 
   f = fg.fa
-  r, v, c, g, h = cache
+  r, c, g, h = cache
   s = zero(Mutable(TensorValue{D,D,eltype(V)}))
   np = length(x)
   ndof = length(f)
   ndof_1d = get_order(f) + 1 # K+1
   setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
   setsize!(c,(D,ndof_1d))
   setsize!(g,(D,ndof_1d))
   setsize!(h,(D,ndof_1d))
   for i in 1:np
     @inbounds xi = x[i]
-    _hessian_nd!(f,xi,r,i,v,c,g,h,s)
+    _hessian_nd!(f,xi,r,i,c,g,h,s)
   end
   r.array
 end
@@ -171,28 +166,25 @@ end
 ###############################
 
 """
-    _evaluate_nd!(b,xi,r,i,v,c)
+    _evaluate_nd!(b,xi,r,i,c)
 
 Compute and assign: r[i] = b(xi) = (b₁(xi), ..., bₙ(xi))
 
 where n = length(`b`) (cardinal of the basis), that is the function computes
 the basis polynomials at xi and setting the result in the `i`th row of `r`.
-
-`v` a mutable cache for of `b(xi)` and `c` is a mutable `D`×`K` cache.
 """
 function _evaluate_nd!(
   b::PolynomialBasis{D,V,K},
   x,
   r::AbstractMatrix{V},
   i,
-  v::AbstractVector{V},
   c::AbstractMatrix{T}) where {D,V,K,T}
 
   @abstractmethod
 end
 
 """
-    _gradient_nd!(b,xi,r,i,v,c,g,s)
+    _gradient_nd!(b,xi,r,i,c,g,s)
 
 Compute and assign: `r`[`i`] = ∇`b`(`xi`) = (∇`b`₁(`xi`), ..., ∇`b`ₙ(`xi`))
 
@@ -207,7 +199,6 @@ function _gradient_nd!(
   x,
   r::AbstractMatrix{G},
   i,
-  v::AbstractVector{G},
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   s::MVector{D,T}) where {D,V,K,G,T}
@@ -217,7 +208,7 @@ end
 
 
 """
-    _hessian_nd!(b,xi,r,i,v,c,g,h,s)
+    _hessian_nd!(b,xi,r,i,c,g,h,s)
 
 Compute and assign: `r`[`i`] = H`b`(`xi`) = (H`b`₁(`xi`), ..., H`b`ₙ(`xi`))
 
@@ -232,7 +223,6 @@ function _hessian_nd!(
   x,
   r::AbstractMatrix{H},
   i,
-  v::AbstractVector{H},
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   h::AbstractMatrix{T},
@@ -294,15 +284,15 @@ end
 ###############################
 
 """
-    _evaluate_1d!(PT::Type{<:Polynomial},::Val{K},v,x,d)
+    _evaluate_1d!(PT::Type{<:Polynomial},::Val{K},c,x,d)
 
 Evaluates in place the 1D basis polynomials of the given type at one nD point `x`
 along the given coordinate 1 ≤ `d` ≤ nD.
 
-`v` is an AbstractMatrix of size (at least} `d`×(`K`+1), such that the 1 ≤ i ≤ `k`+1
-values are stored in `v[d,i]`.
+`c` is an AbstractMatrix of size (at least} `d`×(`K`+1), such that the 1 ≤ i ≤ `k`+1
+values are stored in `c[d,i]`.
 """
-function _evaluate_1d!(::Type{<:Polynomial},::Val{K},v::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _evaluate_1d!(::Type{<:Polynomial},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number}
   @abstractmethod
 end
 
@@ -325,11 +315,11 @@ function _hessian_1d!(::Type{<:Polynomial},::Val{K},h::AbstractMatrix{T},x,d) wh
 end
 
 """
-    _derivatives_1d!(PT::Type{<:Polynomial}, ::Val{K}, (v,g,...), x, d)
+    _derivatives_1d!(PT::Type{<:Polynomial}, ::Val{K}, (c,g,...), x, d)
 
 Same as calling
 ```
-_evaluate_1d!(PT, Val(K), v, x d)
+_evaluate_1d!(PT, Val(K), c, x d)
 _gradient_1d!(PT, Val(K), g, x d)
           ⋮
 ```

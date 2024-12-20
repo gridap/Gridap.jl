@@ -64,7 +64,6 @@ Base.IndexStyle(::NonTensorRTPolyBasis) = IndexLinear()
 function _evaluate_nd!(
   b::NonTensorRTPolyBasis{D,V,K,PT}, x,
   r::AbstractMatrix{V}, i,
-  v::AbstractVector{V},
   c::AbstractMatrix{T}) where {D,V,K,PT,T}
 
   pterms = b.pterms
@@ -87,7 +86,7 @@ function _evaluate_nd!(
           s *= c[d,ci[d]]
         end
 
-        k = _comp_wize_set_value!(v,s,k,l)
+        k = _comp_wize_set_value!(r,i,s,k,l)
       end
     end
 
@@ -106,21 +105,16 @@ function _evaluate_nd!(
         m[l] = s
       end
 
-      v[k] = m
+      r[i,k] = m
       k += 1
     end
-  end
 
-  #r[i] = v
-  @inbounds for j in 1:length(b)
-      r[i,j] = v[j]
   end
 end
 
 function _gradient_nd!(
   b::NonTensorRTPolyBasis{D,V,K,PT}, x,
   r::AbstractMatrix{G}, i,
-  v::AbstractVector{G},
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   s::MVector{D,T}) where {D,V,K,PT,G,T}
@@ -154,7 +148,7 @@ function _gradient_nd!(
           end
         end
 
-        k = _comp_wize_set_gradient!(v,s,k,Val(l),V)
+        k = _comp_wize_set_gradient!(r,i,s,k,Val(l),V)
       end
     end
 
@@ -187,14 +181,10 @@ function _gradient_nd!(
            m[i,l] = s[i]
         end
       end
-      v[k] = m
+      r[i,k] = m
       k += 1
     end
-  end
 
-  #r[i] = v
-  @inbounds for j in 1:length(b)
-      r[i,j] = v[j]
   end
 end
 
