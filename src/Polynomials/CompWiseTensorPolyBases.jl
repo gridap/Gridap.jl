@@ -1,21 +1,24 @@
 """
     CompWiseTensorPolyBasis{D,V,K,PT,L} <: PolynomialBasis{D,V,K,PT}
 
-"Polynomial basis of component wise tensor product spaces"
+"Polynomial basis of component wise tensor product polynomial spaces"
 
-Polynomial basis for a multivariate `MultiValue`'d polynomial space
-`V`(𝕊¹, 𝕊², ..., 𝕊ᴸ) with `L`>1, where the scalar multivariate spaces 𝕊ˡ
-(for 1 ≤ l ≤ `L`) of each (independent) component of `V` is the tensor product
-of 1D ℙ¹ spaces of order oₗₙ for 1 ≤ n ≤ `D`, that is:
+Polynomial basis for a multivariate `MultiValue`'d polynomial space:
 
-𝕊¹ = ℙ¹ₒ(1,1) ⊗ … ⊗ ℙ¹ₒ(1,`D`)\\
+`V`(𝕊¹, 𝕊², ..., 𝕊ᴸ)
+
+with `L`>1, where the scalar multivariate spaces 𝕊ˡ (for 1 ≤ l ≤ `L`) of each
+(independent) component of `V` is the tensor product of 1D ℙ spaces of order
+α(l,n) for 1 ≤ n ≤ `D`, that is:
+
+𝕊¹ = ℙα(1,1) ⊗ … ⊗ ℙα(1,`D`)\\
 ⋮\\
-𝕊ˡ =     ⊗ₙ  ℙ¹ₒ₍ₗ,ₙ₎\\
+𝕊ˡ =     ⊗ₙ  ℙα(l,n)\\
 ⋮\\
-𝕊ᴸ = ℙ¹ₒ(`L`,1) ⊗ … ⊗ ℙ¹ₒ(`L`,`D`)
+𝕊ᴸ = ℙα(`L`,1) ⊗ … ⊗ ℙα(`L`,`D`)
 
-The `L`×`D` matrix of orders o is given in the constructor, and `K` is the
-maximum of o.
+The `L`×`D` matrix of orders α is given in the constructor, and `K` is the
+maximum of α. Any 1D polynomial basis `PT` is usable.
 """
 struct CompWiseTensorPolyBasis{D,V,K,PT,L} <: PolynomialBasis{D,V,K,PT}
   orders::SMatrix{L,D,Int}
@@ -231,13 +234,20 @@ end
 """
     QGradBasis(::Type{PT}, ::Val{D}, ::Type{T}, order::Int) :: PolynomialBasis
 
-Return a basis of (ℚ\\_order)ᴰ ⊕ x × ( ℚ\\_order \\ ℚ\\_{order-1}) )ᴰ, the
-polynomial space for Nedelec elements on `D`-dimensonal cubes with scalar type `T`.
+Return a basis of ℕ𝔻ᴰₙ(□) = (ℚₙ)ᴰ ⊕ x × (ℚₙ \\ ℚₙ₋₁)ᴰ with n=`order`, the
+polynomial space for Nedelec elements on `D`-dimensional cubes with scalar type `T`.
 
-The `order` argument has the following meaning: the curl of the  functions in
-this basis is in the ℚ space of degree `order`.
+The `order`=n argument has the following meaning: the curl of the  functions in
+this basis is in ℚₙ.
 
 `PT<:Polynomial` is the choice of scalar 1D polynomial basis.
+
+# Example:
+
+```jldoctest
+# a basis for Nedelec on hexahedra with divergence in ℚ₂
+b = PCurlGradBasis(Monomial, Val(3), Float64, 2)
+```
 
 For more details, see [`CompWiseTensorPolyBasis`](@ref), as `QGradBasis` returns
 an instance of `CompWiseTensorPolyBasis{D,VectorValue{D,T},order+1,PT,D}`.
@@ -266,16 +276,25 @@ end
 """
     QCurlGradBasis(::Type{PT}, ::Val{D}, ::Type{T}, order::Int) :: PolynomialBasis
 
-Return a basis of (ℚ\\_order)ᴰ ⊕ x (ℚ\\_order \\ ℚ\\_{order-1}), the polynomial space
-for Raviart-Thomas elements on `D`-dimensonal cubes with scalar type `T`.
+Return a basis of ℝ𝕋ᴰₙ(□) = (ℚₙ)ᴰ ⊕ x (ℚₙ \\ ℚₙ₋₁) with n=`order`, the polynomial
+space for Raviart-Thomas elements on `D`-dimensional cubes with scalar type `T`.
 
-The `order` argument has the following meaning: the divergence of the functions
-in this basis is in the ℚ space of degree `order`.
+The `order`=n argument has the following meaning: the divergence of the functions
+in this basis is in ℚₙ.
 
 `PT<:Polynomial` is the choice of scalar 1D polynomial basis.
 
+# Example:
+
+```jldoctest
+# a basis for Raviart-Thomas on rectangles with divergence in ℚ₃
+b = QCurlGradBasis(Bernstein, Val(2), Float64, 3)
+```
+
 For more details, see [`CompWiseTensorPolyBasis`](@ref), as `QCurlGradBasis` returns
-an instance of `CompWiseTensorPolyBasis{D,VectorValue{D,T},order+1,PT,D}`.
+an instance of\\
+`CompWiseTensorPolyBasis{D, VectorValue{D,T}, order+1, PT, D}` for `D`>1, or\\
+`TensorPolynomialBasis{1, VectorValue{1,T}, order+1, PT, D}` for `D`=1.
 """
 function QCurlGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"

@@ -4,7 +4,7 @@
 Basis of ℝ𝕋ᴰₙ = (𝕊ₙ)ᴰ ⊕ x (𝕊ₙ\\𝕊₍ₙ₋₁₎)
 where 𝕊ₙ is a multivariate scalar polynomial space of maximum degree n = `K`-1.
 
-ℝ𝕋ᴰₙ is the space needed for Raviart-Thomas elements with divergence in 𝕊ₙ.
+This ℝ𝕋ᴰₙ is the polynomial space for Raviart-Thomas elements with divergence in 𝕊ₙ.
 Its maximum degree is n+1 = `K`. `get_order` on it returns `K`.
 
 The multivariate scalar space 𝕊ₙ, typically ℙₙ, doesn't need to have a tensor
@@ -14,8 +14,8 @@ are not tensor products either.
 𝕊ₙ must admit a basis computable using products of 1D polynomials of the `PT`
 type, `PT` thus needs to be hierarchical, see [`isHierarchical`](@ref).
 
-Indeed, 𝕊ₙ is defined like a scalar valued `TensorPolynomialBasis` via the
-`_filter` argument of the constructor, by default `_p_filter`.
+Indeed, 𝕊ₙ is defined like a scalar valued [`TensorPolynomialBasis`](@ref) via
+the `_filter` argument of the constructor, by default `_p_filter`.
 """
 struct NonTensorRTPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
   pterms::Vector{CartesianIndex{D}}
@@ -36,25 +36,24 @@ struct NonTensorRTPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
     @check isHierarchical(PT) "The polynomial basis must be hierarchichal for this space."
 
     V = VectorValue{D,T}
+    indexbase = 1
 
-    # terms defining 𝕊_order
+    # terms defining 𝕊ₙ
     P_k = MonomialBasis(Val(D), T, order, _filter)
-    pterms = copy(P_k.terms)
+    pterms = P_k.terms
     msg =  "Some term defining `𝕊ₙ` contain a higher index than the maximum,
       `order`+1, please fix the `_filter` argument"
-    @check all( pterm -> (maximum(Tuple(pterm), init=0) <= order+1), pterms) msg
+    @check all( pterm -> (maximum(Tuple(pterm) .- indexbase, init=0) <= order), pterms) msg
 
-    # terms defining 𝕊_order\𝕊_{order-1}
-    _minus_one_order_filter = term -> _filter(Tuple(term) .- 1, order-1) # .-1 for index / degree shift
+    # terms defining 𝕊ₙ\𝕊ₙ₋₁
+    _minus_one_order_filter = term -> _filter(Tuple(term) .- indexbase, order-1)
     sterms = filter(!_minus_one_order_filter, pterms)
 
     new{D,V,order+1,PT}(pterms,sterms)
   end
 end
 
-Base.size(a::NonTensorRTPolyBasis{D}) where {D} = D*length(a.pterms) + length(a.sterms)
-Base.getindex(a::NonTensorRTPolyBasis,i::Integer) = Monomial()
-Base.IndexStyle(::NonTensorRTPolyBasis) = IndexLinear()
+Base.size(a::NonTensorRTPolyBasis{D}) where {D} = (D*length(a.pterms) + length(a.sterms), )
 
 
 #################################
@@ -191,17 +190,26 @@ end
 """
     PCurlGradBasis(::Type{PT}, ::Val{D}, ::Type{T}, order::Int) :: PolynomialBasis
 
-Return a basis of ℙ_`order` ⊕ x ⋅ (ℙ_`order`\\ℙ_{`order`-1}), the polynomial
+Return a basis of ℝ𝕋ᴰₙ(△) = (ℙₙ)ᴰ ⊕ x (ℙₙ \\ ℙₙ₋₁) with n=`order`, the polynomial
 space for Raviart-Thomas elements on `D`-dimensional simplices with scalar type `T`.
 
-The `order` argument of this function has the following meaning: the divergence
-of the functions in this basis is in the ℙ space of degree `order`.
+The `order`=n argument of this function has the following meaning: the divergence
+of the functions in this basis is in ℙₙ.
 
 `PT<:Polynomial` is the choice of scalar 1D polynomial basis, it must be
 hierarchichal, see [`isHierarchichal`](@ref).
 
-Returns a `NonTensorRTPolyBasis{D,VectorValue{D,T},order+1,PT}` object for `D`>1,
-or `TensorPolynomialBasis{1,VectorValue{1,T},order+1,PT}` for `D`=1.
+# Example:
+
+```jldoctest
+# a basis for Raviart-Thomas on tetrahedra with divergence in ℙ₂
+b = PCurlGradBasis(Monomial, Val(3), Float64, 2)
+```
+
+For more details, see [`NonTensorRTPolyBasis`](@ref), as `PCurlGradBasis` returns
+an instance of\\
+`NonTensorRTPolyBasis{D,VectorValue{D,T},order+1,PT}`  for `D`=2,3, or\\
+`TensorPolynomialBasis{1,VectorValue{1,T},order+1,PT}` for `D`=1.
 """
 function PCurlGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
   NonTensorRTPolyBasis{D}(PT, T, order)

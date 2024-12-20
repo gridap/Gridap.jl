@@ -3,15 +3,23 @@
 ############################
 
 """
-Abstract type for 1- or n-D polynomial family of maximum order k.
+    Polynomial  <: Field
 
-Implements [`isHierarchical`](@ref).
+Abstract type for polynomial bases families/types. It has trait
+[`isHierarchical`](@ref).
+
+The currently implemented families are [Monomial](@ref), [Legendre](@ref),
+[Chebyshev](@ref), [ModalC0](@ref) and [Bernstein](@ref). Only Bernstein is not
+hierarchical.
 """
 abstract type Polynomial  <: Field end
 
 """
-Return true if the basis of order `k` of the given `<:Polynomial` type is the union
-of the basis of order `k-1` and an other order `k` polynomial.
+    isHierarchical(::Type{Polynomial})
+
+Return true if the 1D basis of order `K` of the given [`Polynomial`](@ref) type
+is the union of the basis of order `K-1` and an other order `K` polynomial.
+Equivalently, if the iᵗʰ basis polynomial is of order i-1.
 """
 isHierarchical(::Type{Polynomial}) = @abstractmethod
 
@@ -29,11 +37,11 @@ isHierarchical(::Type{Polynomial}) = @abstractmethod
 #      value V, i.e.  gradient_type(V,Point{D})
 #                 or  gradient_type(gradient_type(V,p::Point{D}), p)
 #
-# PT: a concrete `Polynomial` type
-# K: integer polynomial order (maximum of any component and in any direction in nD).
-# np: number of points at which a basis is evaluated
-# ndof: number of basis vectors, num_indep_components(V) × dimension of the polynomial space
-# ndof_1d: maximum of 1D basis vector in any spatial dimension
+# PT:      a concrete `Polynomial` type
+# K:       integer polynomial order (maximum order of any component and in any direction in nD).
+# np:      number of points at which a basis is evaluated
+# ndof:    number of basis polynomials
+# ndof_1d: maximum of 1D polynomial vector in any spatial dimension
 
 """
     PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}
@@ -43,7 +51,7 @@ The parameters are:
 - `D`: the spatial dimension
 - `V`: the image values type, of type `<:Real` or `<:MultiValue`
 - `K`: the maximum order of a basis polynomial in a spatial component
-- `PT <: Polynomial`: the polynomial family (must be a concrete type)
+- `PT <: Polynomial`: the polynomial family (must be a concrete type).
 """
 abstract type PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}  end
 
@@ -55,9 +63,9 @@ abstract type PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}  end
 @deprecate num_terms(a::PolynomialBasis) length(a)
 
 """
-    get_order(b::PolynomialBasis{D,V,K) = K
+    get_order(b::PolynomialBasis{D,V,K}) = K
 
-Return the maximum polynomial order in a dimension, or `0` in 0D.
+Return the maximum polynomial order in a dimension, is should be `0` in 0D.
 """
 @inline get_order(::PolynomialBasis{D,V,K}) where {D,V,K} = K
 
@@ -66,9 +74,6 @@ Return the maximum polynomial order in a dimension, or `0` in 0D.
 # Generic field implementation #
 ################################
 
-"""
-TODO
-"""
 function _return_cache(
   f::PolynomialBasis{D}, x,::Type{G},::Val{N_deriv}) where {D,G,N_deriv}
 
@@ -282,7 +287,7 @@ end
 Evaluates in place the 1D basis polynomials of the given type at one nD point `x`
 along the given coordinate 1 ≤ `d` ≤ nD.
 
-`c` is an AbstractMatrix of size (at least} `d`×(`K`+1), such that the 1 ≤ i ≤ `k`+1
+`c` is an AbstractMatrix of size (at least) `d`×(`K`+1), such that the 1 ≤ i ≤ `k`+1
 values are stored in `c[d,i]`.
 """
 function _evaluate_1d!(::Type{<:Polynomial},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number}

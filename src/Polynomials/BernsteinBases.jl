@@ -1,7 +1,7 @@
 """
     Bernstein <: Polynomial
 
-Type representing Bernstein polynomials
+Type representing Bernstein polynomials.
 """
 struct Bernstein <: Polynomial end
 
@@ -10,16 +10,16 @@ isHierarchical(::Type{Bernstein}) = false
 """
     BernsteinBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Bernstein}
 
-Multivariate scalar' or `Multivalue`'d monomial basis, see [`TensorPolynomialBasis`](@ref)
+Alias for Bernstein multivariate scalar' or `Multivalue`'d basis, see [`TensorPolynomialBasis`](@ref).
 """
 const BernsteinBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Bernstein}
 
 """
     BernsteinBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)
-    BernsteinBasis(::Val{D}, ::Type{V}, orders::Tuple [, filter::Function])
     BernsteinBasis(::Val{D}, ::Type{V}, order::Int [, filter::Function])
+    BernsteinBasis(::Val{D}, ::Type{V}, orders::Tuple [, filter::Function])
 
-Convenience constructors of [`BernsteinBasis`](@ref).
+High level constructors of [`BernsteinBasis`](@ref).
 """
 BernsteinBasis(args...) = TensorPolynomialBasis(Bernstein, args...)
 
@@ -34,7 +34,7 @@ QCurlGradBernsteinBasis(args...) = QCurlGradBasis(Bernstein, args...)
 """
     binoms(::Val{K})
 
-Returns the tuple of binomials ( C₍ₖ₀₎, C₍ₖ₁₎, ..., C₍ₖₖ₎ )
+Returns the tuple of binomials ( C₍ₖ₀₎, C₍ₖ₁₎, ..., C₍ₖₖ₎ ).
 """
 binoms(::Val{K}) where K = ntuple( i -> binomial(K,i-1), Val(K+1))
 

@@ -1,7 +1,7 @@
 """
     Legendre <: Polynomial
 
-Type representing the Legendre polynomials
+Type representing the Legendre polynomials.
 """
 struct Legendre <: Polynomial   end
 
@@ -10,16 +10,16 @@ isHierarchical(::Type{Legendre}) = true
 """
     LegendreBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Legendre}
 
-Multivariate scalar' or `Multivalue`'d Legendre basis, see [`TensorPolynomialBasis`](@ref)
+Alias for Legendre multivariate scalar' or `Multivalue`'d basis, see [`TensorPolynomialBasis`](@ref).
 """
 const LegendreBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Legendre}
 
 """
     LegendreBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)
-    LegendreBasis(::Val{D}, ::Type{V}, orders::Tuple [, filter::Function])
     LegendreBasis(::Val{D}, ::Type{V}, order::Int [, filter::Function])
+    LegendreBasis(::Val{D}, ::Type{V}, orders::Tuple [, filter::Function])
 
-Convenience constructors of [`LegendreBasis`](@ref).
+High level constructors of [`LegendreBasis`](@ref).
 """
 LegendreBasis(args...) = TensorPolynomialBasis(Legendre, args...)
 
@@ -33,10 +33,9 @@ PCurlGradLegendreBasis(args...) = PCurlGradBasis(Legendre, args...)
 
 # TODO optimize evaluation by using the iterative formula explicitely
 
-function _evaluate_1d!(::Type{Legendre},::Val{K},v::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _evaluate_1d!(::Type{Legendre},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number}
   n = K + 1
-  o = one(T)
-  @inbounds v[d,1] = o
+  @inbounds c[d,1] = one(T)
   if n > 1
     ξ = ( 2*x[d] - 1 )
     for i in 2:n
@@ -44,7 +43,7 @@ function _evaluate_1d!(::Type{Legendre},::Val{K},v::AbstractMatrix{T},x,d) where
       # product on ξ∈[0,1], indeed:
       # ∫[0,1] Pn(2ξ-1)^2 dξ = 1/2 ∫[-1,1] Pn(t)^2 dt = 1/(2n+1)
       # C.f. Eq. (1.25) in Section 1.1.5 in Ern & Guermond book (2013).
-      @inbounds v[d,i] = sqrt(2*i-1)*jacobi(ξ,i-1,0,0)
+      @inbounds c[d,i] = sqrt(2*i-1)*jacobi(ξ,i-1,0,0)
     end
   end
 end

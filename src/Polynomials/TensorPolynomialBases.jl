@@ -56,8 +56,8 @@ end
     TensorPolynomialBasis(::Type{PT}, ::Val{D}, ::Type{V}, orders::Tuple [, filter::Function])
 
 This version of the constructor allows to pass a tuple `orders` containing the
-polynomial order to be used in each of the `D` dimensions in order to  construct
-an anisotropic tensor-product space.
+polynomial order to be used in each of the `D` dimensions in order to construct
+an tensor-product multivariate space.
 """
 function TensorPolynomialBasis(
   ::Type{PT}, ::Val{D}, ::Type{V}, orders::NTuple{D,Int}, filter::Function=_q_filter
@@ -87,8 +87,8 @@ The signature of the filter function is
 where `e` is a tuple of `D` integers containing the exponents of a multivariate monomial. The following filters
 are used to select well known polynomial spaces
 
-- Q space: `(e,order) -> true`
-- P space: `(e,order) -> sum(e) <= order`
+- ℚ space: `(e,order) -> true`
+- ℙ space: `(e,order) -> sum(e) <= order`
 - "Serendipity" space: `(e,order) -> sum( [ i for i in e if i>1 ] ) <= order`
 
 """
@@ -106,7 +106,7 @@ end
 
 Get a vector of tuples with the exponents of all the terms in the basis.
 
-# Examples
+# Example
 
 ```jldoctest
 using Gridap.Polynomials

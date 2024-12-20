@@ -1,8 +1,8 @@
 """
     Chebyshev{kind} <: Polynomial
 
-Type representing Chebyshev polynomials of first and second kind
-where `kind` is either `:T` or `:U` for first and second kind Chebyshev polynomials respectively.
+Type representing Chebyshev polynomials of first and second kind where `kind` is
+either `:T` or `:U` for first and second kind Chebyshev polynomials respectively.
 """
 struct Chebyshev{kind} <: Polynomial end
 
@@ -11,16 +11,16 @@ isHierarchical(::Type{<:Chebyshev}) = true
 """
     ChebyshevBasis{D,V,kind,K} = TensorPolynomialBasis{D,V,K,Chebyshev{kind}}
 
-Multivariate scalar' or `Multivalue`'d Chebyshev basis, see [`TensorPolynomialBasis`](@ref)
+Alias for Chebyshev multivariate scalar' or `Multivalue`'d basis, see [`TensorPolynomialBasis`](@ref).
 """
 const ChebyshevBasis{D,V,kind,K} = TensorPolynomialBasis{D,V,K,Chebyshev{kind}}
 
 """
     ChebyshevBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector; kind=:T)
-    ChebyshevBasis(::Val{D}, ::Type{V}, orders::Tuple [, filter::Function; kind=:T])
     ChebyshevBasis(::Val{D}, ::Type{V}, order::Int [, filter::Function; kind=:T])
+    ChebyshevBasis(::Val{D}, ::Type{V}, orders::Tuple [, filter::Function; kind=:T])
 
-Convenience constructors of [`ChebyshevBasis`](@ref).
+High level constructors of [`ChebyshevBasis`](@ref).
 """
 ChebyshevBasis(args...; kind=:T) = TensorPolynomialBasis(Chebyshev{kind}, args...)
 
@@ -35,28 +35,28 @@ PCurlGradChebyshevBasis(args...; kind=:T) = PCurlGradBasis(Chebyshev{kind}, args
 # 1D evaluation implementation
 
 function _evaluate_1d!(
-  ::Type{Chebyshev{:T}},::Val{0},v::AbstractMatrix{T},x,d) where T<:Number
+  ::Type{<:Chebyshev},::Val{0},c::AbstractMatrix{T},x,d) where T<:Number
 
-  @inbounds v[d,1] = one(T)
+  @inbounds c[d,1] = one(T)
 end
 
 function _evaluate_1d!(
-  ::Type{Chebyshev{:T}},::Val{K},v::AbstractMatrix{T},x,d) where {K,T<:Number}
+  ::Type{Chebyshev{:T}},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number}
 
   n = K + 1        # n > 1
   ξ = (2*x[d] - 1) # ξ ∈ [-1,1]
   ξ2 = 2*ξ
 
-  @inbounds v[d,1] = one(T)
-  @inbounds v[d,2] = ξ
+  @inbounds c[d,1] = one(T)
+  @inbounds c[d,2] = ξ
   for i in 3:n
-    @inbounds v[d,i] = v[d,i-1]*ξ2 - v[d,i-2]
+    @inbounds c[d,i] = c[d,i-1]*ξ2 - c[d,i-2]
   end
 end
 
 
 function _gradient_1d!(
-  ::Type{Chebyshev{:T}},::Val{0},g::AbstractMatrix{T},x,d) where T<:Number
+  ::Type{<:Chebyshev},::Val{0},g::AbstractMatrix{T},x,d) where T<:Number
 
   @inbounds g[d,1] = zero(T)
 end
@@ -82,8 +82,12 @@ end
 
 
 function _hessian_1d!(
-  ::Type{Chebyshev{:T}},::Val{K},g::AbstractMatrix{T},x,d) where {K,T<:Number}
+  ::Type{Chebyshev{:T}},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number}
 
   @notimplemented
 end
 
+
+_evaluate_1d!(::Type{Chebyshev{:U}},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number} = @notimplemented
+_gradient_1d!(::Type{Chebyshev{:U}},::Val{K},g::AbstractMatrix{T},x,d) where {K,T<:Number} = @notimplemented
+_hessian_1d!( ::Type{Chebyshev{:U}},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number} = @notimplemented

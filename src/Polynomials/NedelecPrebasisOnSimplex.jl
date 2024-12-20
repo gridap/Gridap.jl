@@ -38,32 +38,32 @@ function evaluate!(
   V = eltype(x)
   T = eltype(V)
   z = zero(T)
-  u = one(T)
-  for (ip,p) in enumerate(x)
+  for (i,xi) in enumerate(x)
+    # terms for (ℙₖ)³
     for j in 1:ndofsP
-      a[ip,j] = Px[ip,j]
+      a[i,j] = Px[i,j]
     end
-    i = ndofsP
-    x1,x2,x3 = x[ip]
-    zp = zero(x1)
+    # terms for x × (ℙₖ\ℙₖ₋₁)³
+    j = ndofsP
+    x1,x2,x3 = x[i]
     for β in 1:K
       for α in 1:(K+1-β)
-        i += 1
-        a[ip,i] = VectorValue(
+        j += 1
+        a[i,j] = VectorValue(
           -x1^(α-1)*x2^(K-α-β+2)*x3^(β-1),
            x1^α*x2^(K-α-β+1)*x3^(β-1),
-           zp)
-        i += 1
-        a[ip,i] = VectorValue(
+           z)
+        j += 1
+        a[i,j] = VectorValue(
           -x1^(K-α-β+1)*x2^(β-1)*x3^α,
-          zp,
+          z,
           x1^(K-α-β+2)*x2^(β-1)*x3^(α-1))
       end
     end
     for γ in 1:K
-      i += 1
-      a[ip,i] = VectorValue(
-        zp,
+      j += 1
+      a[i,j] = VectorValue(
+        z,
         -x2^(γ-1)*x3^(K-γ+1),
         x2^γ*x3^(K-γ))
     end
@@ -83,22 +83,23 @@ function evaluate!(
   V = eltype(x)
   T = eltype(V)
   z = zero(T)
-  u = one(T)
   Px = evaluate!(cP,P,x)
-  for (ip,p) in enumerate(x)
+  for (i,xi) in enumerate(x)
+    # terms for (ℙₖ)²
     for j in 1:ndofsP
-      a[ip,j] = Px[ip,j]
+      a[i,j] = Px[i,j]
     end
-    i = ndofsP
-    x1,x2 = x[ip]
-    zp = zero(x1)
+    # terms for x × (ℙₖ\ℙₖ₋₁)²
+    j = ndofsP
+    x1,x2 = xi
     for α in 1:K
-      i += 1
-      a[ip,i] = VectorValue(-x1^(α-1)*x2^(K-α+1),x1^α*x2^(K-α))
+      j += 1
+      a[i,j] = VectorValue(-x1^(α-1)*x2^(K-α+1),x1^α*x2^(K-α))
     end
-    #a[ip,1] = VectorValue((u,z))
-    #a[ip,2] = VectorValue((z,u))
-    #a[ip,3] = VectorValue((-p[2],p[1]))
+    #u = one(T)
+    #a[i,1] = VectorValue((u,z))
+    #a[i,2] = VectorValue((z,u))
+    #a[i,3] = VectorValue((-xi[2],xi[1]))
   end
   a
 end
@@ -137,18 +138,18 @@ function evaluate!(
   V = eltype(x)
   T = eltype(V)
   z = zero(T)
-  u = one(T)
-  for (ip,p) in enumerate(x)
+  for (i,xi) in enumerate(x)
+    # terms for ∇((ℙₖ)³)
     for j in 1:ndofsP
-      a[ip,j] = Px[ip,j]
+      a[i,j] = Px[i,j]
     end
-    i = ndofsP
-    x1,x2,x3 = x[ip]
-    zp = zero(x1)
+    # terms for  ∇(x × (ℙₖ\ℙₖ₋₁)³)
+    j = ndofsP
+    x1,x2,x3 = x[i]
     for β in 1:K
       for α in 1:(K+1-β)
-        i += 1
-        a[ip,i] = TensorValue(
+        j += 1
+        a[i,j] = TensorValue(
           #-x1^(α-1)*x2^(K-α-β+2)*x3^(β-1),
           -(α-1)*_exp(x1,α-2)*x2^(K-α-β+2)*x3^(β-1),
           -x1^(α-1)*(K-α-β+2)*_exp(x2,K-α-β+1)*x3^(β-1),
@@ -157,16 +158,14 @@ function evaluate!(
            α*_exp(x1,α-1)*x2^(K-α-β+1)*x3^(β-1),
            x1^α*(K-α-β+1)*_exp(x2,K-α-β)*x3^(β-1),
            x1^α*x2^(K-α-β+1)*(β-1)*_exp(x3,β-2),
-           #zp,
-           zp,zp,zp)
-        i += 1
-        a[ip,i] = TensorValue(
+           z,z,z)
+        j += 1
+        a[i,j] = TensorValue(
           #-x1^(K-α-β+1)*x2^(β-1)*x3^α,
           -(K-α-β+1)*_exp(x1,K-α-β)*x2^(β-1)*x3^α,
           -x1^(K-α-β+1)*(β-1)*_exp(x2,β-2)*x3^α,
           -x1^(K-α-β+1)*x2^(β-1)*α*_exp(x3,α-1),
-          # zp
-          zp,zp,zp,
+          z,z,z,
           #x1^(K-α-β+2)*x2^(β-1)*x3^(α-1),
           (K-α-β+2)*_exp(x1,K-α-β+1)*x2^(β-1)*x3^(α-1),
           x1^(K-α-β+2)*(β-1)*_exp(x2,β-2)*x3^(α-1),
@@ -174,10 +173,9 @@ function evaluate!(
       end
     end
     for γ in 1:K
-      i += 1
-      a[ip,i] = TensorValue(
-        #zp
-        zp,zp,zp,
+      j += 1
+      a[i,j] = TensorValue(
+        z,z,z,
         #-x2^(γ-1)*x3^(K-γ+1),
         -0*x2^(γ-1)*x3^(K-γ+1),
         -(γ-1)*_exp(x2,γ-2)*x3^(K-γ+1),
@@ -187,9 +185,10 @@ function evaluate!(
         γ*_exp(x2,γ-1)*x3^(K-γ),
         x2^γ*(K-γ)*_exp(x3,K-γ-1))
     end
-    #a[ip,4] = TensorValue((z,-u,z, u,z,z, z,z,z))
-    #a[ip,5] = TensorValue((z,z,-u, z,z,z, u,z,z))
-    #a[ip,6] = TensorValue((z,z,z, z,z,-u, z,u,z))
+    #u = one(T)
+    #a[i,4] = TensorValue((z,-u,z, u,z,z, z,z,z))
+    #a[i,5] = TensorValue((z,z,-u, z,z,z, u,z,z))
+    #a[i,6] = TensorValue((z,z,z, z,z,-u, z,u,z))
   end
   a
 end
@@ -211,19 +210,19 @@ function evaluate!(
   V = eltype(x)
   T = eltype(V)
   z = zero(T)
-  u = one(T)
   ndofsP = length(P)
   Px = evaluate!(cP,P,x)
-  for (ip,p) in enumerate(x)
+  for (i,xi) in enumerate(x)
+    # terms for  ∇((ℙₖ)²)
     for j in 1:ndofsP
-      a[ip,j] = Px[ip,j]
+      a[i,j] = Px[i,j]
     end
-    i = ndofsP
-    x1,x2 = x[ip]
-    zp = zero(x1)
+    # terms for  ∇(x × (ℙₖ\ℙₖ₋₁)²)
+    j = ndofsP
+    x1,x2 = x[i]
     for α in 1:K
-      i += 1
-      a[ip,i] = TensorValue(
+      j += 1
+      a[i,j] = TensorValue(
         #-x1^(α-1)*x2^(K-α+1),
         -(α-1)*_exp(x1,α-2)*x2^(K-α+1),
         -x1^(α-1)*(K-α+1)*_exp(x2,K-α),
@@ -231,19 +230,31 @@ function evaluate!(
         α*_exp(x1,α-1)*x2^(K-α),
         x1^α*(K-α)*_exp(x2,K-α-1))
     end
-    #a[ip,3] = TensorValue((z,-u, u,z))
+    #u = one(T)
+    #a[i,3] = TensorValue((z,-u, u,z))
   end
   a
 end
 
+####################################
+# Basis for Nedelec on D-simplices #
+####################################
+
 """
-    PGradBasis(::Type{PT}, ::Val{D}, ::Type{T}, order::Int) :: PolynomialBasis
+    PGradBasis(::Type{Monomial}, ::Val{D}, ::Type{T}, order::Int) :: PolynomialBasis
 
-Return a basis of ℙ_order ⊕ x × (ℙ_order\\ℙ_{order-1}), the polynomial space
-for Nedelec elements on `D`-dimensonal simplices with scalar type `T`.
+Return a basis of ℕ𝔻ᴰₙ(△) = (ℙₙ)ᴰ ⊕ x × (ℙₙ \\ ℙₙ₋₁)ᴰ with n=`order`, the polynomial
+space for Nedelec elements on `D`-dimensional simplices with scalar type `T`.
 
-The `order` argument has the following meaning: the curl of the  functions in
-this basis is in the ℙ space of degree `order`.
+The `order`=n argument has the following meaning: the curl of the  functions in
+this basis is in ℙₙ.
+
+# Example:
+
+```jldoctest
+# a basis for Nedelec on tetrahedra with curl in ℙ₂
+b = PGradBasis(Monomial, Val(3), Float64, 2)
+```
 """
 function PGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
   @notimplemented "only implemented for monomials"

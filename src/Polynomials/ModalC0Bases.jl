@@ -1,3 +1,10 @@
+"""
+    ModalC0 <: Polynomial
+
+Type representing ModalC0 polynomial.
+
+Reference: Eq. (17) in https://doi.org/10.1016/j.camwa.2022.09.027
+"""
 struct ModalC0 <: Polynomial end
 
 struct ModalC0Basis{D,V,T,K} <: PolynomialBasis{D,V,K,ModalC0}
@@ -320,14 +327,12 @@ end
 # 1D evaluations implementation #
 #################################
 
-"""
-Reference: equation (17) in
-
-Badia, S.; Neiva, E. & Verdugo, F.; (2022);
-Robust high-order unfitted finite elements by interpolation-based discrete extension,
-Computers & Mathematics with Applications,
-https://doi.org/10.1016/j.camwa.2022.09.027
-"""
+# Reference: equation (17) in
+#
+# Badia, S.; Neiva, E. & Verdugo, F.; (2022);
+# Robust high-order unfitted finite elements by interpolation-based discrete extension,
+# Computers & Mathematics with Applications,
+# https://doi.org/10.1016/j.camwa.2022.09.027
 function _evaluate_1d_mc0!(c::AbstractMatrix{T},x,a,b,order,d) where T
   @assert order > 0
   n = order + 1
