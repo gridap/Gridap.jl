@@ -312,7 +312,6 @@ function _hessian_nd!(
     end
 
     k = _set_gradient_mc0!(r,i,s,k,l,V)
-
   end
 end
 

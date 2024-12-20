@@ -23,11 +23,12 @@ import Gridap.Arrays: return_type
 
 export Polynomial
 export isHierarchical
+
 export PolynomialBasis
+export get_order
 
 export TensorPolynomialBasis
 export get_exponents
-export get_order
 export get_orders
 export num_terms
 
@@ -38,15 +39,8 @@ export ModalC0Basis
 export BernsteinBasis
 
 export QGradMonomialBasis
-export QGradLegendreBasis
-export QGradChebyshevBasis
-
 export QCurlGradMonomialBasis
-export QCurlGradLegendreBasis
-export QCurlGradChebyshevBasis
-
 export PCurlGradMonomialBasis
-export PCurlGradLegendreBasis
 
 
 include("PolynomialInterfaces.jl")

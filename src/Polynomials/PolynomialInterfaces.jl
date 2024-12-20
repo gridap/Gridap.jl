@@ -102,16 +102,23 @@ function return_cache(
   _return_cache(f,x,G,Val(N))
 end
 
+
+function _setsize!(f::PolynomialBasis{D}, np, r, t...) where D
+  ndof = length(f)
+  ndof_1d = get_order(f) + 1
+  setsize!(r,(np,ndof))
+  for c in t
+    setsize!(c,(D,ndof_1d))
+  end
+end
+
 function evaluate!(cache,
-  f::PolynomialBasis{D,V,K,PT},
-  x::AbstractVector{<:Point}) where {D,V,K,PT}
+  f::PolynomialBasis,
+  x::AbstractVector{<:Point})
 
   r, c = cache
   np = length(x)
-  ndof = length(f)
-  ndof_1d = get_order(f) + 1 # K+1
-  setsize!(r,(np,ndof))
-  setsize!(c,(D,ndof_1d))
+  _setsize!(f,np,r,c)
   for i in 1:np
     @inbounds xi = x[i]
     _evaluate_nd!(f,xi,r,i,c)
@@ -120,18 +127,14 @@ function evaluate!(cache,
 end
 
 function evaluate!(cache,
-  fg::FieldGradientArray{1,<:PolynomialBasis{D,V,K,PT}},
-  x::AbstractVector{<:Point}) where {D,V,K,PT}
+  fg::FieldGradientArray{1,<:PolynomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
 
   f = fg.fa
   r, c, g = cache
-  s = zero(Mutable(VectorValue{D,eltype(V)}))
   np = length(x)
-  ndof = length(f)
-  ndof_1d = get_order(f) + 1 # K+1
-  setsize!(r,(np,ndof))
-  setsize!(c,(D,ndof_1d))
-  setsize!(g,(D,ndof_1d))
+  _setsize!(f,np,r,c,g)
+  s = zero(Mutable(VectorValue{D,eltype(V)}))
   for i in 1:np
     @inbounds xi = x[i]
     _gradient_nd!(f,xi,r,i,c,g,s)
@@ -140,19 +143,14 @@ function evaluate!(cache,
 end
 
 function evaluate!(cache,
-  fg::FieldGradientArray{2,<:PolynomialBasis{D,V,K,PT}},
-  x::AbstractVector{<:Point}) where {D,V,K,PT}
+  fg::FieldGradientArray{2,<:PolynomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
 
   f = fg.fa
   r, c, g, h = cache
-  s = zero(Mutable(TensorValue{D,D,eltype(V)}))
   np = length(x)
-  ndof = length(f)
-  ndof_1d = get_order(f) + 1 # K+1
-  setsize!(r,(np,ndof))
-  setsize!(c,(D,ndof_1d))
-  setsize!(g,(D,ndof_1d))
-  setsize!(h,(D,ndof_1d))
+  _setsize!(f,np,r,c,g,h)
+  s = zero(Mutable(TensorValue{D,D,eltype(V)}))
   for i in 1:np
     @inbounds xi = x[i]
     _hessian_nd!(f,xi,r,i,c,g,h,s)
@@ -168,17 +166,16 @@ end
 """
     _evaluate_nd!(b,xi,r,i,c)
 
-Compute and assign: r[i] = b(xi) = (b₁(xi), ..., bₙ(xi))
+Compute and assign: `r`[`i`] = `b`(`xi`) = (`b`₁(`xi`), ..., `b`ₙ(`xi`))
 
 where n = length(`b`) (cardinal of the basis), that is the function computes
-the basis polynomials at xi and setting the result in the `i`th row of `r`.
+the basis polynomials at a single point `xi` and setting the result in the `i`th
+row of `r`.
 """
 function _evaluate_nd!(
-  b::PolynomialBasis{D,V,K},
-  x,
-  r::AbstractMatrix{V},
-  i,
-  c::AbstractMatrix{T}) where {D,V,K,T}
+  b::PolynomialBasis, xi,
+  r::AbstractMatrix, i,
+  c::AbstractMatrix)
 
   @abstractmethod
 end
@@ -195,13 +192,11 @@ for gradients of `b`ₖ(`xi`), and
 - `s` is a mutable length `D` cache for ∇`b`ₖ(`xi`).
 """
 function _gradient_nd!(
-  b::PolynomialBasis{D,V,K},
-  x,
-  r::AbstractMatrix{G},
-  i,
-  c::AbstractMatrix{T},
-  g::AbstractMatrix{T},
-  s::MVector{D,T}) where {D,V,K,G,T}
+  b::PolynomialBasis, xi,
+  r::AbstractMatrix, i,
+  c::AbstractMatrix,
+  g::AbstractMatrix,
+  s::MVector)
 
   @abstractmethod
 end
@@ -219,14 +214,12 @@ for hessian matrices/tensor of `b`ₖ(`xi`), and
 - `s` is a mutable `D`×`D` cache for H`b`ₖ(`xi`).
 """
 function _hessian_nd!(
-  b::PolynomialBasis{D,V,K},
-  x,
-  r::AbstractMatrix{H},
-  i,
-  c::AbstractMatrix{T},
-  g::AbstractMatrix{T},
-  h::AbstractMatrix{T},
-  s::MMatrix{D,D,T}) where {D,V,K,H,T}
+  b::PolynomialBasis, xi,
+  r::AbstractMatrix, i,
+  c::AbstractMatrix,
+  g::AbstractMatrix,
+  h::AbstractMatrix,
+  s::MMatrix)
 
   @abstractmethod
 end

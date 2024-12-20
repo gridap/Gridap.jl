@@ -34,6 +34,7 @@ import Gridap.Fields: evaluate
 import Gridap.Fields: lazy_map
 import Gridap.Fields: linear_combination
 import Gridap.Polynomials: MonomialBasis
+import Gridap.Polynomials: QGradLegendreBasis, QCurlGradLegendreBasis
 
 import Gridap.Polynomials: get_order
 import Gridap.Polynomials: get_orders
