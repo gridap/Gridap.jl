@@ -1093,6 +1093,26 @@ function Base.:*(a::ArrayBlock{A,2},b::ArrayBlock{B,1}) where {A,B}
   ArrayBlock(array,touched)
 end
 
+# Mostly used for v*tranpose(v)
+function Base.:*(a::ArrayBlock{A,1},b::ArrayBlock{B,2}) where {A,B}
+  @check size(b.array,1) == 1
+  ai = testvalue(A)
+  bi = testvalue(B)
+  ri = ai*bi
+  ni, nj = size(a.array,1), size(b.array,2)
+  array = Matrix{typeof(ri)}(undef,ni,nj)
+  touched = fill(false,ni,nj)
+  for i in 1:ni
+    for j in 1:nj
+      if a.touched[i] && b.touched[1,j]
+        array[i,j]   = a.array[i]*b.array[1,j]
+        touched[i,j] = true
+      end
+    end
+  end
+  ArrayBlock(array,touched)
+end
+
 function Base.:*(a::ArrayBlock{A,2},b::ArrayBlock{B,2}) where {A,B}
   @check size(a.array,2) == size(b.array,1)
   ai = testvalue(A)
@@ -1468,21 +1488,9 @@ function Arrays.evaluate!(result,k::AutoDiffMap,ydual,x,cfg::BlockConfig{typeof(
   return result
 end
 
-function _similar_matblock(a::VectorBlock{A},b::VectorBlock{B},T) where {A,B}
-  touched = collect(Bool, a.touched * transpose(b.touched))
-  C = typeof(similar(testvalue(A)*transpose(testvalue(B)),T))
-  array = Array{C,2}(undef, size(touched))
-  for I in CartesianIndices(touched)
-    if touched[I]
-      array[I] = similar(a.array[I[1]]*transpose(b.array[I[2]]),T)
-    end
-  end
-  ArrayBlock(array,touched)
-end
-
 function return_cache(k::AutoDiffMap,ydual,x,cfg::BlockConfig{typeof(ForwardDiff.jacobian),T,V,N}) where {T,V,N}
   ydual isa VectorBlock{<:AbstractArray} || throw(ForwardDiff.JACOBIAN_ERROR)
-  result = _similar_matblock(ydual, x, ForwardDiff.valtype(eltype(eltype(ydual))))
+  result = similar(ydual*transpose(x), ForwardDiff.valtype(eltype(eltype(ydual))))
   result
 end
 
