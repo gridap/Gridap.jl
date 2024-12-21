@@ -1469,8 +1469,8 @@ function Arrays.evaluate!(result,k::AutoDiffMap,ydual,x,cfg::BlockConfig{typeof(
 end
 
 function _similar_matblock(a::VectorBlock{A},b::VectorBlock{B},T) where {A,B}
-  touched = a.touched * transpose(b.touched)
-  C = typeof(similar(testvalue(A)*tranpose(testvalue(B)),T))
+  touched = collect(Bool, a.touched * transpose(b.touched))
+  C = typeof(similar(testvalue(A)*transpose(testvalue(B)),T))
   array = Array{C,2}(undef, size(touched))
   for I in CartesianIndices(touched)
     if touched[I]
