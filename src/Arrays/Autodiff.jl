@@ -103,8 +103,8 @@ function return_cache(k::AutoDiffMap,ydual,x,cfg::ForwardDiff.GradientConfig{T})
 end
 
 function evaluate!(result,k::AutoDiffMap,ydual,x,cfg::ForwardDiff.GradientConfig{T}) where T
-  @notimplementedif ForwardDiff.chunksize(cfg) != length(x)
-  @notimplementedif length(result) != length(x)
+  @check ForwardDiff.chunksize(cfg) == length(x)
+  @check length(result) == length(x)
   result = ForwardDiff.extract_gradient!(T, result, ydual)
   return result
 end
@@ -116,8 +116,8 @@ function return_cache(k::AutoDiffMap,ydual,x,cfg::ForwardDiff.JacobianConfig{T,V
 end
 
 function evaluate!(result,k::AutoDiffMap,ydual,x,cfg::ForwardDiff.JacobianConfig{T,V,N}) where {T,V,N}
-  @notimplementedif ForwardDiff.chunksize(cfg) != length(x)
-  @notimplementedif size(result,2) != length(x)
+  @check ForwardDiff.chunksize(cfg) == length(x)
+  @check size(result,2) == length(x)
   ForwardDiff.extract_jacobian!(T, result, ydual, N)
   ForwardDiff.extract_value!(T, result, ydual)
   return result

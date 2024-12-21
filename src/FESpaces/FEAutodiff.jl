@@ -95,7 +95,7 @@ function _hessian(f,uh,fuh::DomainContribution)
   terms
 end
 
-function _change_argument(op,f,trian,uh::SingleFieldFEFunction)
+function _change_argument(op,f,trian,uh)
   U = get_fe_space(uh)
   function g(cell_u)
     cf = CellField(U,cell_u)

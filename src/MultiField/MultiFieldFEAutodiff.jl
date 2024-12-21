@@ -1,4 +1,5 @@
 
+"""
 # TO IMPROVE .... Perhaps via a Map?
 # Do we have already this function in Gridap?
 # What if there are no cells? I am assuming that there is at least one cell
@@ -213,3 +214,4 @@ function _restructure_cell_grad!(
   cell_grad=lazy_map(BlockMap(nfields,collect(1:nfields)),blocks...)
   cell_grad
 end
+"""
