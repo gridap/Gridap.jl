@@ -26,7 +26,6 @@ using SparseMatricesCSR: SparseMatrixCSR
 
 import Gridap.Fields: gradient, DIV, ∇∇
 
-using ForwardDiff
 using FillArrays
 using SparseArrays
 using LinearAlgebra
@@ -47,8 +46,6 @@ include("MultiFieldCellFields.jl")
 include("MultiFieldFESpaces.jl")
 
 include("MultiFieldFEFunctions.jl")
-
-include("MultiFieldFEAutodiff.jl")
 
 include("BlockSparseMatrixAssemblers.jl")
 
