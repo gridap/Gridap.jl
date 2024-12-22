@@ -1501,6 +1501,9 @@ function Arrays.return_cache(k::AutoDiffMap,ydual,x,cfg::BlockConfig{typeof(Forw
 end
 
 function Arrays.evaluate!(result,k::AutoDiffMap,ydual,x,cfg::BlockConfig{typeof(ForwardDiff.gradient),T}) where T
+  display(ydual)
+  display(x)
+  display(cfg.offsets)
   extract_gradient_block!(T, result, ydual, cfg.offsets)
   return result
 end
