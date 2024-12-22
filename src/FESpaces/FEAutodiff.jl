@@ -105,6 +105,9 @@ function _change_argument(op,f,trian,uh)
   g
 end
 
+
+"""
+
 #= AD for DomainContribution involving SkeletonTriangulation
 
 - Following are the constructs for performing gradient of DomainContribution
@@ -246,3 +249,5 @@ end
 function autodiff_array_hessian(a,i_to_x,i_to_j::SkeletonPair)
   @notimplemented
 end
+
+"""

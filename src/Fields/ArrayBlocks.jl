@@ -1447,100 +1447,127 @@ LinearAlgebra.diag(a::MatrixBlock) = view(a.array,diag(CartesianIndices(a.array)
 
 # Autodiff
 
-struct BlockConfig{C,T,V,N,D,M} <: ForwardDiff.AbstractConfig{N}
-  sizes::NTuple{M,Int}
+struct BlockConfig{C,T,V,N,D,O} <: ForwardDiff.AbstractConfig{N}
   seeds::NTuple{N,ForwardDiff.Partials{N,V}}
   duals::D
+  offsets::O
 end
 
 function BlockConfig(
   op::Union{typeof(ForwardDiff.gradient),typeof(ForwardDiff.jacobian)},
   f::F,
-  x::VectorBlock{<:AbstractArray{V}},
+  x::Union{VectorBlock{<:AbstractArray{V}},VectorBlock{<:VectorBlock{<:AbstractArray{V}}}},
   ::T = ForwardDiff.Tag(f,V)
 ) where {F,V,T}
-  sizes = Tuple([t ? length(x.array[i]) : 0 for (i,t) in enumerate(x.touched)])
-  N = sum(sizes)
-  M = length(sizes)
+  offsets, N = block_offsets(x, 0)
   seeds = ForwardDiff.construct_seeds(ForwardDiff.Partials{N,V})
   duals = similar(x, ForwardDiff.Dual{T,V,N})
-  BlockConfig{typeof(op),T,V,N,typeof(duals),M}(sizes,seeds,duals)
+  BlockConfig{typeof(op),T,V,N,typeof(duals),typeof(offsets)}(seeds,duals,offsets)
 end
 
-function Arrays.return_cache(k::ConfigMap{typeof(ForwardDiff.gradient)},x::VectorBlock)
-  cfg = BlockConfig(ForwardDiff.gradient,k.tag,x)
-  cfg
+block_offsets(x::Vector, offset) = offset, offset + length(x) 
+
+function block_offsets(x::VectorBlock, offset)
+  offsets = ()
+  for i in eachindex(x.touched)
+    if x.touched[i]
+      offsets_i, offset = block_offsets(x.array[i], offset)
+    else
+      offsets_i = -1
+    end
+    offsets = (offsets...,offsets_i)
+  end
+  return offsets, offset
 end
 
-function Arrays.return_cache(k::ConfigMap{typeof(ForwardDiff.jacobian)},x::VectorBlock)
-  cfg = BlockConfig(ForwardDiff.jacobian,k.tag,x)
-  cfg
+for F in (ForwardDiff.gradient,ForwardDiff.jacobian)
+  @eval begin
+    function Arrays.return_cache(k::ConfigMap{typeof($F)},x::VectorBlock)
+      return BlockConfig($F,k.tag,x)
+    end
+  end
+end
+
+function evaluate!(cfg::BlockConfig,k::DualizeMap,x)
+  xdual = cfg.duals
+  seed_block!(xdual, x, cfg.seeds, cfg.offsets)
+  return xdual
 end
 
 function Arrays.return_cache(k::AutoDiffMap,ydual,x,cfg::BlockConfig{typeof(ForwardDiff.gradient),T}) where T
   ydual isa Real || throw(ForwardDiff.GRAD_ERROR)
   result = similar(x, ForwardDiff.valtype(ydual))
-  result
+  return result
 end
 
 function Arrays.evaluate!(result,k::AutoDiffMap,ydual,x,cfg::BlockConfig{typeof(ForwardDiff.gradient),T}) where T
-  result = ForwardDiff.extract_gradient!(T, result, ydual)
+  extract_gradient_block!(T, result, ydual, cfg.offsets)
   return result
 end
 
-function return_cache(k::AutoDiffMap,ydual,x,cfg::BlockConfig{typeof(ForwardDiff.jacobian),T,V,N}) where {T,V,N}
+function return_cache(k::AutoDiffMap,ydual,x,cfg::BlockConfig{typeof(ForwardDiff.jacobian),T}) where {T}
   ydual isa VectorBlock{<:AbstractArray} || throw(ForwardDiff.JACOBIAN_ERROR)
   result = similar(ydual*transpose(x), ForwardDiff.valtype(eltype(eltype(ydual))))
-  result
-end
-
-function evaluate!(result,k::AutoDiffMap,ydual,x,cfg::BlockConfig{typeof(ForwardDiff.jacobian),T,V,N}) where {T,V,N}
-  ForwardDiff.extract_jacobian!(T, result, ydual, N)
   return result
 end
 
-function ForwardDiff.seed!(
-  duals::VectorBlock{<:AbstractArray{ForwardDiff.Dual{T,V,N}}}, x,
-  seeds::NTuple{N,ForwardDiff.Partials{N,V}}
-) where {T,V,N}
-  offset = 0
+function evaluate!(result,k::AutoDiffMap,ydual,x,cfg::BlockConfig{typeof(ForwardDiff.jacobian),T}) where {T}
+  extract_jacobian_block!(T, result, ydual, cfg.offsets)
+  return result
+end
+
+function seed_block!(
+  duals::VectorBlock, x::VectorBlock, seeds::NTuple{N,ForwardDiff.Partials{N}}, offsets
+) where N
   for i in eachindex(duals.touched)
     if duals.touched[i]
-      @assert x.touched[i]
-      for j in eachindex(duals.array[i])
-        duals.array[i][j] = ForwardDiff.Dual{T,V,N}(x.array[i][j], seeds[j+offset])
-      end
-      offset += length(x.array[i])
+      @check x.touched[i]
+      seed_block!(duals.array[i], x.array[i], seeds, offsets[i])
     end
   end
   return duals
 end
 
-function ForwardDiff.extract_gradient!(::Type{T}, result::VectorBlock, dual::ForwardDiff.Dual) where {T}
-  offset = 0
+function seed_block!(
+  duals::AbstractArray{ForwardDiff.Dual{T,V,N}}, x, seeds::NTuple{N,ForwardDiff.Partials{N,V}}, offset
+) where {T,V,N}
+  for j in eachindex(duals)
+    duals[j] = ForwardDiff.Dual{T,V,N}(x[j], seeds[j+offset])
+  end
+  return duals
+end
+
+function extract_gradient_block!(::Type{T}, result::VectorBlock, dual::ForwardDiff.Dual, offsets) where {T}
   for i in eachindex(result.touched)
     if result.touched[i]
-      for j in eachindex(result.array[i])
-        result.array[i][j] = ForwardDiff.partials(T,dual,j+offset)
-      end
-      offset += length(result.array[i])
+      extract_gradient_block!(T, result.array[i], dual, offsets[i])
     end
   end
   return result
 end
 
-function ForwardDiff.extract_jacobian!(::Type{T}, result::MatrixBlock, dual::VectorBlock, n) where {T}
+function extract_gradient_block!(::Type{T}, result::AbstractArray, dual::ForwardDiff.Dual, offset) where {T}
+  for j in eachindex(result)
+    result[j] = ForwardDiff.partials(T,dual,j+offset)
+  end
+  return result
+end
+
+function extract_jacobian_block!(::Type{T}, result::MatrixBlock, dual::VectorBlock, offsets) where {T}
   for i in axes(result.touched,1)
-    offset = 0
     for j in axes(result.touched,2)
       if result.touched[i,j]
-        for k in axes(result.array[i,j],1)
-          for l in axes(result.array[i,j],2)
-            result.array[i,j][k,l] = ForwardDiff.partials(T,dual.array[i][k],l+offset)
-          end
-        end
-        offset += size(result.array[i,j],2)
+        extract_jacobian_block!(T, result.array[i,j], dual.array[i], offsets[j])
       end
+    end
+  end
+  return result
+end
+
+function extract_jacobian_block!(::Type{T}, result::AbstractMatrix, dual::AbstractVector, offset) where {T}
+  for k in axes(result,1)
+    for l in axes(result,2)
+      result[k,l] = ForwardDiff.partials(T,dual[k],l+offset)
     end
   end
   return result
