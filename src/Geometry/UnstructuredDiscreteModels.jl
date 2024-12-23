@@ -92,7 +92,7 @@ function from_dict(T::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
   D::Int = dict[:D]
   vertex_to_node::Vector{Int32} = dict[:vertex_node]
   orientation = OrientationStyle(grid)
-  polytopes = map(get_polytope, get_reffes(grid))
+  polytopes = get_polytopes(grid)
   cell_type = get_cell_type(grid)
   vertex_coordinates = get_node_coordinates(grid)[vertex_to_node]
 

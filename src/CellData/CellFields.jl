@@ -823,7 +823,7 @@ function return_cache(a::Interpolable,x::Point)
   f_cache = return_cache(cf,x)
   cache2 = cell_f_cache, f_cache, cell_f, f
 
-  return cache1,cache2
+  return cache1, cache2
 end
 
 function _point_to_cell_cache(searchmethod::KDTreeSearch,trian::Triangulation)
@@ -834,8 +834,7 @@ function _point_to_cell_cache(searchmethod::KDTreeSearch,trian::Triangulation)
   D = num_cell_dims(trian)
   vertex_to_cells = get_faces(topo, 0, D)
   cell_to_ctype = get_cell_type(trian)
-  ctype_to_reffe = get_reffes(trian)
-  ctype_to_polytope = map(get_polytope, ctype_to_reffe)
+  ctype_to_polytope = get_polytopes(trian)
   cell_map = get_cell_map(trian)
   table_cache = array_cache(vertex_to_cells)
   cache1 = searchmethod, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache

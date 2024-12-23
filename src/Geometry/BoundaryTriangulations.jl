@@ -32,7 +32,7 @@ function FaceToCellGlue(
   face_to_lcell = collect(Int8,lazy_map(Reindex(bgface_to_lcell), face_to_bgface))
 
   f = (p)->fill(Int8(UNSET),num_faces(p,cD))
-  ctype_to_lface_to_ftype = map( f, get_reffes(cell_grid) )
+  ctype_to_lface_to_ftype = map( f, get_polytopes(cell_grid) )
   face_to_ftype = get_cell_type(face_grid)
   cell_to_ctype = get_cell_type(cell_grid)
 
@@ -211,15 +211,14 @@ function get_facet_normal(trian::BoundaryTriangulation, boundary_trian_glue::Fac
   cell_grid = get_grid(get_background_model(trian.trian))
 
   ## Reference normal
-  function f(r)
-    p = get_polytope(r)
+  function f(p)
     lface_to_n = get_facet_normal(p)
     lface_to_pindex_to_perm = get_face_vertex_permutations(p,num_cell_dims(p)-1)
     nlfaces = length(lface_to_n)
     lface_pindex_to_n = [ fill(lface_to_n[lface],length(lface_to_pindex_to_perm[lface])) for lface in 1:nlfaces ]
     lface_pindex_to_n
   end
-  ctype_lface_pindex_to_nref = map(f, get_reffes(cell_grid))
+  ctype_lface_pindex_to_nref = map(f, get_polytopes(cell_grid))
   face_to_nref = FaceCompressedVector(ctype_lface_pindex_to_nref,boundary_trian_glue)
   face_s_nref = lazy_map(constant_field,face_to_nref)
 
@@ -255,7 +254,7 @@ end
 function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation,glue)
   d = num_cell_dims(trian)
   cell_grid = get_grid(get_background_model(trian.trian))
-  polytopes = map(get_polytope, get_reffes(cell_grid))
+  polytopes = get_polytopes(cell_grid)
   cell_to_ctype = glue.cell_to_ctype
   ctype_to_lvertex_to_qcoords = map(get_vertex_coordinates, polytopes)
   ctype_to_lface_to_lvertices = map((p)->get_faces(p,d,0), polytopes)

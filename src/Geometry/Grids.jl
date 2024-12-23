@@ -95,6 +95,11 @@ function get_facet_normal(trian::Grid)
   end
 end
 
+# Polytopes might be repeated, but it's OK
+function get_polytopes(trian::Grid)
+  map(get_polytope,get_reffes(trian))
+end
+
 """
     test_grid(trian::Grid)
 """
@@ -107,6 +112,8 @@ function test_grid(trian::Grid{Dc,Dp}) where {Dc,Dp}
   @test isa(cell_coords,AbstractArray{<:AbstractVector{<:Point}})
   reffes = get_reffes(trian)
   @test isa(reffes,AbstractVector{<:LagrangianRefFE{Dc}})
+  polys = get_polytopes(trian)
+  @test isa(polys,AbstractVector{<:Polytope{Dc}})
   cell_types = get_cell_type(trian)
   @test isa(cell_types,AbstractArray{<:Integer})
   ncells = num_cells(trian)

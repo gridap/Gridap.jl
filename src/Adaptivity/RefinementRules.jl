@@ -373,7 +373,7 @@ function get_face_subface_ldof_to_cell_ldof(
   
   model = get_ref_grid(rr)
   fine_face_grid = Grid(ReferenceFE{D},model)
-  fine_face_polys = CompressedArray(map(get_polytope,get_reffes(fine_face_grid)),get_cell_type(fine_face_grid))
+  fine_face_polys = CompressedArray(get_polytopes(fine_face_grid),get_cell_type(fine_face_grid))
 
   d_to_face_to_child_faces = get_d_to_face_to_child_faces(rr)
   face_to_child_faces = d_to_face_to_child_faces[D+1]

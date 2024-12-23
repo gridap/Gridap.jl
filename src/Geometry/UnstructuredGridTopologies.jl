@@ -132,8 +132,7 @@ function UnstructuredGridTopology(grid::UnstructuredGrid, cell_to_vertices::Tabl
 end
 
 function _generate_grid_topology_from_grid(grid::UnstructuredGrid,cell_to_vertices,vertex_to_node)
-
-  @notimplementedif (! is_regular(grid)) "Extrtacting the GridTopology form a Grid only implemented for the regular case"
+  @notimplementedif (! is_regular(grid)) "Extracting the GridTopology form a Grid only implemented for the regular case"
 
   node_to_coords = get_node_coordinates(grid)
   if vertex_to_node == 1:num_nodes(grid)
@@ -141,17 +140,16 @@ function _generate_grid_topology_from_grid(grid::UnstructuredGrid,cell_to_vertic
   else
     vertex_to_coords = node_to_coords[vertex_to_node]
   end
-
   cell_to_type = get_cell_type(grid)
-  polytopes = map(get_polytope, get_reffes(grid))
+  polytopes = get_polytopes(grid)
 
   UnstructuredGridTopology(
     vertex_to_coords,
     cell_to_vertices,
     cell_to_type,
     polytopes,
-    OrientationStyle(grid))
-
+    OrientationStyle(grid)
+  )
 end
 
 function _generate_cell_to_vertices_from_grid(grid::UnstructuredGrid)
