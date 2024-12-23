@@ -137,9 +137,10 @@ function CellData.SkeletonCellFieldPair(V::FESpace,cell_values)
   CellData.SkeletonCellFieldPair(plus,minus)
 end
 
-function Arrays.lazy_map(r::Reindex{<:LazyArray{<:Fill{BlockMap{1}}}}, ids::LazyArray{<:Fill{BlockMap{1}}})
+function Arrays.lazy_map(r::Reindex, ids::LazyArray{<:Fill{BlockMap{1}}})
   k = ids.maps.value
-  plus = lazy_map(Reindex(r.values.args[1]),ids.args[1])
-  minus = lazy_map(Reindex(r.values.args[2]),ids.args[2])
-  lazy_map(k,plus,minus)
+  plus = lazy_map(r,ids.args[1])
+  # minus = lazy_map(r,ids.args[2])
+  # lazy_map(k,plus,minus)
+  plus
 end

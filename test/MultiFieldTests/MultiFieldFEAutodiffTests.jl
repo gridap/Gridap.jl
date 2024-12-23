@@ -147,7 +147,7 @@ U = TrialFESpace(V)
 P = TrialFESpace(Q)
 
 Y = MultiFieldFESpace([V, Q])
-X = MultiFieldFESpace([U, P])
+X = MultiFieldFESpace([U, P, U])
 
 xh = FEFunction(X,rand(num_free_dofs(X)))
 
@@ -155,9 +155,12 @@ xh = FEFunction(X,rand(num_free_dofs(X)))
 dΛ = Measure(Λ,2)
 n_Λ = get_normal_vector(Λ)
 
-g_Λ((uh,ph)) = ∫( mean(uh) + mean(ph) + mean(uh)*mean(ph) )dΛ
+cell_x = FESpaces._get_cell_dof_values(xh,Λ)
+cf = SkeletonCellFieldPair(X,cell_x)
+
+g_Λ((uh,ph,vh)) = ∫( mean(uh) + mean(ph) + mean(uh)*mean(ph) )dΛ
 f_Λ((uh,ph)) = ∫( mean(uh*uh) + mean(uh*ph) + mean(ph*ph) )dΛ
-a_Λ((uh,ph)) = ∫( - jump(uh*n_Λ)⊙mean(∇(ph))
+a_Λ((uh,ph,vh)) = ∫( - jump(uh*n_Λ)⊙mean(∇(ph))
                   - mean(∇(uh))⊙jump(ph*n_Λ)
                   + jump(uh*n_Λ)⊙jump(ph*n_Λ) )dΛ
 

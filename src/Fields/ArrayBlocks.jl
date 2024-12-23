@@ -1488,33 +1488,62 @@ for F in (ForwardDiff.gradient,ForwardDiff.jacobian)
   end
 end
 
-function evaluate!(cfg::BlockConfig,k::DualizeMap,x)
-  xdual = cfg.duals
-  seed_block!(xdual, x, cfg.seeds, cfg.offsets)
+function evaluate!(cache,k::DualizeMap,cfg::BlockConfig,x)
+  xdual, seeds, offsets = cfg.duals, cfg.seeds, cfg.offsets
+  seed_block!(xdual, x, seeds, offsets)
   return xdual
 end
 
-function Arrays.return_cache(k::AutoDiffMap,ydual,x,cfg::BlockConfig{typeof(ForwardDiff.gradient),T}) where T
+function evaluate!(cache,k::DualizeMap,cfg::BlockConfig,x,block_id::CartesianIndex{N}) where N
+  xdual, seeds, offsets = cfg.duals, cfg.seeds, cfg.offsets
+  for i in 1:N
+    offsets = offsets[block_id[i]]
+    xdual = xdual.array[block_id[i]]
+  end
+  seed_block!(xdual, x, seeds, offsets)
+  return xdual
+end
+
+function Arrays.lazy_map(
+  ::DualizeMap,cfg::AbstractArray{<:BlockConfig},x::LazyArray{<:Fill{BlockMap{1}}}
+)
+  k = x.maps.value
+  xdual_blocks = map(k.indices,x.args) do k, xk
+    block_id = CartesianIndex(k,)
+    lazy_map(DualizeMap(),cfg,xk,Fill(block_id,length(cfg)))
+  end
+  lazy_map(k,xdual_blocks...)
+end
+
+function Arrays.lazy_map(
+  ::DualizeMap,cfg::AbstractArray{<:BlockConfig},x::LazyArray{<:Fill{BlockMap{1}}},block_ids::Fill{NTuple{N,Int}}
+) where N
+  k = x.maps.value
+  xdual_blocks = map(k.indices,x.args) do k, xk
+    block_id = CartesianIndex(block_ids.value,k)
+    lazy_map(DualizeMap(),cfg,xk,Fill(block_id,length(cfg)))
+  end
+  lazy_map(k,xdual_blocks...)
+end
+
+function Arrays.return_cache(::AutoDiffMap,cfg::BlockConfig{typeof(ForwardDiff.gradient),T},ydual) where T
   ydual isa Real || throw(ForwardDiff.GRAD_ERROR)
-  result = similar(x, ForwardDiff.valtype(ydual))
+  result = similar(cfg.duals, ForwardDiff.valtype(ydual))
   return result
 end
 
-function Arrays.evaluate!(result,k::AutoDiffMap,ydual,x,cfg::BlockConfig{typeof(ForwardDiff.gradient),T}) where T
-  display(ydual)
-  display(x)
-  display(cfg.offsets)
+function Arrays.evaluate!(result,::AutoDiffMap,cfg::BlockConfig{typeof(ForwardDiff.gradient),T},ydual) where T
   extract_gradient_block!(T, result, ydual, cfg.offsets)
   return result
 end
 
-function return_cache(k::AutoDiffMap,ydual,x,cfg::BlockConfig{typeof(ForwardDiff.jacobian),T}) where {T}
+function return_cache(::AutoDiffMap,cfg::BlockConfig{typeof(ForwardDiff.jacobian),T},ydual) where T
   ydual isa VectorBlock{<:AbstractArray} || throw(ForwardDiff.JACOBIAN_ERROR)
-  result = similar(ydual*transpose(x), ForwardDiff.valtype(eltype(eltype(ydual))))
+  result = similar(ydual*transpose(cfg.duals), ForwardDiff.valtype(eltype(eltype(ydual))))
   return result
 end
 
-function evaluate!(result,k::AutoDiffMap,ydual,x,cfg::BlockConfig{typeof(ForwardDiff.jacobian),T}) where {T}
+function evaluate!(result,::AutoDiffMap,cfg::BlockConfig{typeof(ForwardDiff.jacobian),T},ydual) where T
   extract_jacobian_block!(T, result, ydual, cfg.offsets)
   return result
 end
