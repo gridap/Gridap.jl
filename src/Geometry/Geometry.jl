@@ -10,6 +10,7 @@ using DocStringExtensions
 using FillArrays
 
 using LinearAlgebra: ⋅
+using Statistics: mean
 
 using Gridap.Helpers
 using Gridap.Arrays
@@ -26,6 +27,7 @@ using Gridap.ReferenceFEs: _get_facedims
 using Gridap.ReferenceFEs: _get_offsets
 using Gridap.ReferenceFEs: _get_offset
 using Gridap.ReferenceFEs: _find_unique_with_indices
+using Gridap.ReferenceFEs: GeneralPolytope, Polygon, Polyhedra
 
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
@@ -229,5 +231,7 @@ include("SkeletonTriangulations.jl")
 include("AppendedTriangulations.jl")
 
 include("CompressedCellArrays.jl")
+
+include("Polytopal.jl")
 
 end # module
