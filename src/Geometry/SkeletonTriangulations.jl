@@ -94,6 +94,12 @@ function get_facet_normal(trian::SkeletonTriangulation)
   SkeletonPair(plus,minus)
 end
 
+function get_edge_tangent(trian::SkeletonTriangulation)
+  plus = get_edge_tangent(trian.plus)
+  minus = get_edge_tangent(trian.minus)
+  SkeletonPair(plus,minus)
+end
+
 # Related with CompositeTriangulation
 function _compose_glues(rglue::FaceToFaceGlue,dglue::SkeletonPair)
   plus = _compose_glues(rglue,dglue.plus)

@@ -41,6 +41,7 @@ get_cell_node_ids(trian::Triangulation) = get_cell_node_ids(get_grid(trian))
 get_reffes(trian::Triangulation) = get_reffes(get_grid(trian))
 get_cell_type(trian::Triangulation) = get_cell_type(get_grid(trian))
 get_facet_normal(trian::Triangulation) = get_facet_normal(get_grid(trian))
+get_edge_tangent(trian::Triangulation) = get_edge_tangent(get_grid(trian))
 
 # The following are not strictly needed, sine there is a default implementation for them.
 # In any case, we delegate just in case the underlying grid defines more performant versions
