@@ -1,9 +1,9 @@
 abstract type Dof <: Map end
 
 """
-    struct LinearCombinationDofVector{T} <: AbstractVector{Dof}
-      values::Matrix{T}
-      dofs::AbstractVector{<:Dof}
+    struct LinearCombinationDofVector{T<:Dof,V,F} <: AbstractVector{T}
+      values :: V
+      dofs   :: F
     end
 
 Type that implements a dof basis (a) as the linear combination of a dof basis
@@ -13,8 +13,8 @@ dof values are next mapped to dof basis (a) applying a change of basis (field
 
 Fields:
 
-- `values::Matrix{T}` the matrix of the change from dof basis (b) to (a)
-- `dofs::AbstractVector{<:Dof}` A type representing dof basis (b)
+- `values::AbstractMatrix{<:Number}` the matrix of the change from dof basis (b) to (a)
+- `dofs::AbstractVector{T}` A type representing dof basis (b), with `T<:Dof`
 """
 struct LinearCombinationDofVector{T,V,F} <: AbstractVector{T}
   values::V
@@ -30,9 +30,9 @@ struct LinearCombinationDofVector{T,V,F} <: AbstractVector{T}
   end
 end
 
-@inline Base.size(a::LinearCombinationDofVector) = size(a.values,2)
-@inline Base.IndexStyle(::LinearCombinationDofVector) = IndexLinear()
-@inline Base.getindex(::LinearCombinationDofVector{T},::Integer) where T = T()
+Base.size(a::LinearCombinationDofVector) = size(a.values,2)
+Base.IndexStyle(::LinearCombinationDofVector) = IndexLinear()
+Base.getindex(::LinearCombinationDofVector{T},::Integer) where T = T()
 
 function linear_combination(a::AbstractMatrix{<:Number}, b::AbstractVector{<:Dof})
   LinearCombinationDofVector(a,b)
@@ -86,9 +86,8 @@ struct MappedDofBasis{T<:Dof,MT,BT,A} <: AbstractVector{T}
 end
 
 Base.size(b::MappedDofBasis) = size(b.dofs)
-
-# Technically wrong, but the individual dofs are fake anyway
-Base.getindex(b::MappedDofBasis, i) = getindex(b.dofs,i)
+Base.IndexStyle(::MappedDofBasis) = IndexLinear()
+Base.getindex(b::MappedDofBasis, i) = T()
 
 function Arrays.return_cache(b::MappedDofBasis, fields)
   f_cache = return_cache(b.F,fields,b.args...)
