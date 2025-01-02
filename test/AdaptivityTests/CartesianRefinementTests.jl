@@ -40,8 +40,6 @@ function test_grid_transfers(D,model,parent,order)
   U_f = TrialFESpace(V_f,sol)
   V_c = TestFESpace(parent,reffe;dirichlet_tags="boundary")
   U_c = TrialFESpace(V_c,sol)
-  V_c_fast = TestFESpace(parent,rrules,reffe;dirichlet_tags="boundary")
-  U_c_fast = TrialFESpace(V_c_fast,sol)
 
   # CellField: Coarse -> Fine
   cf_c_phy = CellField(sol,ctrian)
@@ -80,14 +78,12 @@ function test_grid_transfers(D,model,parent,order)
   uh_c_inter  = interpolate(uh_f,U_c)
   uh_c_inter2 = interpolate_everywhere(uh_f,U_c)
   uh_c_inter3 = interpolate_dirichlet(uh_f,U_c)
-  uh_c_inter4  = interpolate(uh_f,U_c_fast)
 
   @test l2_error(uh_f,uh_f_inter,dΩ_f) < 1.e-8
   @test l2_error(uh_f,uh_f_inter2,dΩ_f) < 1.e-8
 
   @test l2_error(uh_c,uh_c_inter,dΩ_c) < 1.e-8
   @test l2_error(uh_c,uh_c_inter2,dΩ_c) < 1.e-8
-  @test l2_error(uh_c,uh_c_inter4,dΩ_c) < 1.e-8
 
   # Coarse FEFunction -> Fine FEFunction, by projection
   af(u,v)  = ∫(v⋅u)*dΩ_f

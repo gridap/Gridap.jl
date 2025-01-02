@@ -44,10 +44,12 @@ More precisely, we would like ``\boldsymbol{u}_{n}`` to be close to ``\boldsymbo
 ```
 This is a condition on the design of the pair (``\mathcal{I}``, ``\mathcal{F}``).
 
-# Classification of ODEs and numerical schemes
+## Classification of ODEs and numerical schemes
+
 Essentially, a numerical scheme converts a (continuous) ODE into (discrete) nonlinear systems of equations. These systems of equations can be linear under special conditions on the nature of the ODE and the numerical scheme. Since numerical methods for linear and nonlinear systems of equations can be quite different in terms of cost and implementation, we are interested in solving linear systems whenever possible. This leads us to perform the following classifications.
 
-## Classification of ODEs
+### Classification of ODEs
+
 We define a few nonlinearity types based on the expression of the residual.
 * **Nonlinear**. Nothing special can be said about the residual.
 * **Quasilinear**. The residual is linear with respect to the highest-order time derivative and the corresponding linear form may depend on time and lower-order time derivatives, i.e.
@@ -83,7 +85,8 @@ In particular, for the global residual to be linear, both the implicit and expli
 
 > In the special case where the implicit part is linear and the explicit part is quasilinear or semilinear, we could, in theory, identify two linear forms for the global residual. However, introducing this difference would call for an order-dependent classification of ODEs and this would create (infinitely) many new types. Since numerical schemes can rarely take advantage of this extra structure in practice, we still say that the global residual is semilinear in these cases.
 
-## Classification of numerical schemes
+### Classification of numerical schemes
+
 We introduce a classification of numerical schemes based on where they evaluate the residual during the state update.
 
 * If it is possible (up to a change of variables) to write the system of equations for the state update as evaluations of the residual at known values (that depend on the solution at the current time) for all but the highest-order derivative, we say that the scheme is explicit.
@@ -95,7 +98,8 @@ We introduce a classification of numerical schemes based on where they evaluate 
 > ```
 > where ``\boldsymbol{x}`` and the unknown of the state update. The scheme is explicit if it is possible to introduce a change of variables such that ``\boldsymbol{u}_{k}`` does not depend on ``\boldsymbol{x}``. Otherwise, it is implicit.
 
-## Classification of systems of equations
+### Classification of systems of equations
+
 It is advantageous to introduce this classification of ODE and numerical schemes because the system of equations arising from the discretisation of the ODE by a numerical scheme will be linear or nonlinear depending on whether the scheme is explicit, implicit, or implicit-explicit, and on the type of the ODE. More precisely, we have the following table.
 
 |                   | Nonlinear   | Quasilinear | Semilinear | Linear |
@@ -107,7 +111,8 @@ When the system is linear, another important practical consideration is whether 
 * If the linear system comes from an explicit scheme, the matrix of the system is constant if the mass matrix is. This means that the ODE has to be quasilinear.
 * If the linear system comes from an implicit scheme, all the linear forms must be constant for the system to have a constant matrix.
 
-## Reuse across iterations
+### Reuse across iterations
+
 For performance reasons, it is thus important that the ODE be described in the most specific way. In particular, we consider that the mass term of a quasilinear ODE is not constant, because if it is, the ODE is semilinear. We enable the user to specify the following constant annotations:
 * For nonlinear and quasilinear ODE, no quantity can be described as constant.
 * For a semilinear ODE, whether the mass term is constant.
@@ -115,10 +120,12 @@ For performance reasons, it is thus important that the ODE be described in the m
 
 If a linear form is constant, regardless of whether the numerical scheme relies on a linear or nonlinear system, it is always possible to compute the jacobian of the residual with respect to the corresponding time derivative only once and retrieve it in subsequent computations of the jacobian.
 
-# High-level API in Gridap
+## High-level API in Gridap
+
 The ODE module of `Gridap` relies on the following structure.
 
-## Finite element spaces
+### Finite element spaces
+
 The time-dependent counterpart of `TrialFESpace` is `TransientTrialFESpace`. It is built from a standard `TestFESpace` and is equipped with time-dependent Dirichlet boundary conditions.
 > By definition, test spaces have zero Dirichlet boundary conditions so they need not be seen as time-dependent objects.
 
@@ -140,7 +147,8 @@ U0 = U(t0)
 ∂ttU0 = ∂ttU(t0)
 ```
 
-## Cell fields
+### Cell fields
+
 The time-dependent equivalent of `CellField` is `TransientCellField`. It stores the cell field itself together with its derivatives up to the order of the ODE.
 
 For example, the following creates a `TransientCellField` with two time derivatives.
@@ -151,7 +159,8 @@ u0 = zero(get_free_dof_values(U0))
 u = TransientCellField(u0, (∂tu0, ∂ttu0))
 ```
 
-## Finite element operators
+### Finite element operators
+
 The time-dependent analog of `FEOperator` is `TransientFEOperator`. It has the following constructors based on the nonlinearity type of the underlying ODE.
 
 * `TransientFEOperator(res, jacs, trial, test)` and `TransientFEOperator(res, trial, test; order)` for the version with automatic jacobians. The residual is expected to have the signature `residual(t, u, v)`.
@@ -199,7 +208,8 @@ TransientLinearFEOperator((stiffness, mass), res, U, V, constant_forms=(false, t
 ```
 If ``\kappa`` is constant, the keyword `constant_forms` could be replaced by `(true, true)`.
 
-## The `TimeSpaceFunction` constructor
+### The `TimeSpaceFunction` constructor
+
 Apply differential operators on a function that depends on time and space is somewhat cumbersome. Let `f` be a function of time and space, and `g(t) = x -> f(t, x)` (as in the prescription of the boundary conditions `g` above). Applying the operator ``\partial_{t} - \Delta``  to `g` and evaluating at ``(t, x)`` is written `∂t(g)(t)(x) - Δ(g(t))(x)`.
 
 The constructor `TimeSpaceFunction` allows for simpler notations: let `h = TimeSpaceFunction(g)`. The object `h` is a functor that supports the notations 
@@ -209,7 +219,8 @@ The constructor `TimeSpaceFunction` allows for simpler notations: let `h = TimeS
 
 for all spatial and temporal differential operator, i.e. `op` in `(time_derivative, gradient, symmetric_gradient, divergence, curl, laplacian)` and their symbolic aliases (`∂t`, `∂tt`, `∇`, ...). The operator above applied to `h` and evaluated at `(t, x)` can be conveniently written `∂t(h)(t, x) - Δ(h)(t, x)`.
 
-## Solver and solution
+### Solver and solution
+
 The next step is to choose an ODE solver (see below for a full list) and specify the boundary conditions. The solution can then be iterated over until the final time is reached.
 
 For example, to use the ``\theta``-method with a nonlinear solver, one could write
@@ -234,32 +245,38 @@ for (tn, un) in enumerate(sol)
 end
 ```
 
-# Low-level implementation
+## Low-level implementation
+
 We now briefly describe the low-level implementation of the ODE module in `Gridap`.
 
-## ODE operators
+### ODE operators
+
 The `ODEOperator` type represents an ODE according to the description above. It implements the `NonlinearOperator` interface, which enables the computation of residuals and jacobians.
 
 The algebraic equivalent of `TransientFEOperator` is an `ODEOpFromTFEOp`, which is a subtype of `ODEOperator`. Conceptually, `ODEOpFromTFEOp` can be thought of as an assembled `TransientFEOperator`, i.e. it deals with vectors of degrees of freedom. This operator comes with a cache (`ODEOpFromTFEOpCache`) that stores the transient space, its evaluation at the current time step, a cache for the `TransientFEOperator` itself (if any), and the constant forms (if any).
 
 > For now `TransientFEOperator` does not implement the `FEOperator` interface, i.e. it is not possible to evaluate residuals and jacobians directly on it. Rather, they are meant to be evaluated on the `ODEOpFromFEOp`. This is to cut down on the number of conversions between a `TransientCellField` and its vectors of degrees of freedom (one per time derivative). Indeed, when linear forms are constant, no conversion is needed as the jacobian matrix will be stored.
 
-## ODE solvers
+### ODE solvers
+
 An ODE solver has to implement the following interface.
 * `allocate_odecache(odeslvr, odeop, t0, us0)`. This function allocates a cache that can be reused across the three functions `ode_start`, `ode_march!`, and `ode_finish!`. In particular, it is necessary to call `allocate_odeopcache` within this function, so as to instantiate the `ODEOpFromTFEOpCache` and be able to update the Dirichlet boundary conditions in the subsequent functions.
 * `ode_start(odeslvr, odeop, t0, us0, odecache)`. This function creates the state vectors from the initial conditions. By default, this is the identity.
 * `ode_march!(stateF, odeslvr, odeop, t0, state0, odecache)`. This is the update map that evolves the state vectors.
 * `ode_finish!(uF, odeslvr, odeop, t0, tF, stateF, odecache)`. This function converts the state vectors into the evaluation of the solution at the current time step. By default, this copies the first state vector into `uF`.
 
-## Stage operator
+### Stage operator
+
 A `StageOperator` represents the linear or nonlinear operator that a numerical scheme relies on to evolve the state vector. It is essentially a special kind of `NonlinearOperator` but it overwrites the behaviour of nonlinear and linear solvers to take advantage of the matrix of a linear system being constant. The following subtypes of `StageOperator` are the building blocks of all numerical schemes.
 * `LinearStageOperator` represents the system ``\boldsymbol{J} \boldsymbol{x} + \boldsymbol{r} = \boldsymbol{0}``, and can build ``\boldsymbol{J}`` and ``\boldsymbol{r}`` by evaluating the residual at a given point.
 * `NonlinearStageOperator` represents ``\boldsymbol{r}(\boldsymbol{t}, \boldsymbol{\ell}_{0}(\boldsymbol{x}), \ldots, \boldsymbol{\ell}_{N}(\boldsymbol{x})) = \boldsymbol{0}``, where it is assumed that all the ``\boldsymbol{\ell}_{k}(\boldsymbol{x})`` are linear in ``\boldsymbol{x}``.
 
-## ODE solution
+### ODE solution
+
 This type is a simple wrapper around an `ODEOperator`, an `ODESolver`, and initial conditions that can be iterated on to evolve the ODE.
 
-# Numerical schemes formulation and implementation
+## Numerical schemes formulation and implementation
+
 We conclude this note by describing some numerical schemes and their implementation in `Gridap`.
 
 Suppose that the scheme has been evolved up to time ``t_{n}`` already and that the state vectors ``\{\boldsymbol{s}\}_{n}`` are known. We are willing to evolve the ODE up to time ``t_{n+1} > t_{n}``, i.e. compute the state vectors ``\{\boldsymbol{s}\}_{n+1}``. Generally speaking, a numerical scheme constructs an approximation of the map ``\{\boldsymbol{s}\}_{n} \to \{\boldsymbol{s}\}_{n+1}`` by solving one or more relationships of the type
@@ -272,7 +289,8 @@ We now describe the numerical schemes implemented in `Gridap` using this framewo
 
 We also briefly characterise these schemes in terms of their order and linear stability.
 
-## ``\theta``-method
+### ``\theta``-method
+
 This scheme is used to solve first-order ODEs and relies on the simple state vector ``\{\boldsymbol{s}(t)\} = \{\boldsymbol{u}(t)\}``. This means that the starting and finishing procedures are simply the identity.
 
 The ``\theta``-method relies on the following approximation
@@ -312,7 +330,8 @@ By looking at the behaviour of the stability function at infinity, we find that 
 * ``\theta = \frac{1}{2}``. The stability region is the whole left complex plane, so the scheme is ``A``-stable. This case is known as the implicit midpoint scheme. 
 * ``\theta > \frac{1}{2}``. The stability region is the whole complex plane except the circle of radius ``\frac{1}{2 \theta - 1}`` centered at ``\left(\frac{1}{2 \theta - 1}, 0\right)``. In particular, the scheme is ``A``-stable. The special case ``\theta = 1`` is known as the Backward Euler scheme. 
 
-## Generalised-``\alpha`` scheme for first-order ODEs
+### Generalised-``\alpha`` scheme for first-order ODEs
+
 This scheme relies on the state vector ``\{\boldsymbol{s}(t)\} = \{\boldsymbol{u}(t), \partial_{t} \boldsymbol{u}(t)\}``. In particular, it needs a nontrivial starting procedure that evaluates ``\partial_{t} \boldsymbol{u}(t_{0})`` by enforcing a zero residual at ``t_{0}``. The finaliser can still return the first vector of the state vectors. For convenience, let ``\partial_{t} \boldsymbol{u}_{n}`` denote the approximation ``\partial_{t} \boldsymbol{u}(t_{n})``.
 
 > Alternatively, the initial velocity can be provided manually: when calling `solve(odeslvr, tfeop, t0, tF, uhs0)`, set `uhs0 = (u0, v0, a0)` instead of `uhs0 = (u0, v0)`. This is useful when enforcing a zero initial residual would lead to a singular system.
@@ -344,6 +363,7 @@ t_{n + \alpha_{F}} &= (1 - \alpha_{F}) t_{n} + \alpha_{F} t_{n+1}, \\
 The state vector is updated to ``\{\boldsymbol{s}\}_{n+1} = \{\boldsymbol{u}_{n+1}, \partial_{t} \boldsymbol{u}_{n+1}\}``.
 
 ##### Analysis
+
 The amplification matrix for the state vector is
 ```math
 \boldsymbol{A}(z) = \frac{1}{\alpha_{M} - \alpha_{F} \gamma z} \begin{bmatrix}\alpha_{M} + (1 - \alpha_{F}) \gamma z & \alpha_{M} - \gamma \\ z & \alpha_{M} - 1 + \alpha_{F} (1 - \gamma) z\end{bmatrix}.
@@ -384,7 +404,8 @@ This scheme was originally devised to control the damping of high frequencies. O
 ```
 where ``\rho_{\infty}`` is the spectral radius at infinity. Setting ``\rho_{\infty}`` cuts all the highest frequencies in one step, whereas taking ``\rho_{\infty} = 1`` preserves high frequencies.
 
-## Runge-Kutta
+### Runge-Kutta
+
 Runge-Kutta methods are multi-stage, i.e. they build estimates of ``\boldsymbol{u}`` at intermediate times between ``t_{n}`` and ``t_{n+1}``. They can be written as follows
 ```math
 \begin{align*}
@@ -399,6 +420,7 @@ where ``p`` is the number of stages, ``\boldsymbol{A} = (a_{ij})_{1 \leq i, j \l
 **Implementation details** It is particularly advantageous to save the factorisation of the matrices of the stage operators for Runge-Kutta methods. This is always possible when the method is explicit and the mass matrix is constant, in which case all the stage matrices are the mass matrix. When the method is diagonally-implicit and the stiffness and mass matrices are constant, the matrices of the stage operators are ``\boldsymbol{M} + a_{ii} h_{n} \boldsymbol{K}``. In particular, if two diagonal coefficients coincide, the corresponding operators will have the same matrix. We implement these reuse strategies by storing them in `CompressedArray`s, and introducing a map `i -> NumericalSetup`.
 
 ##### Analysis
+
 The stability function of a Runge-Kutta scheme is
 ```math
 \rho(z) = 1 + z \boldsymbol{b}^{T} (\boldsymbol{I} - z \boldsymbol{A})^{-1} \boldsymbol{1}.
@@ -445,7 +467,8 @@ The analysis of Runge-Kutta methods is well-established but we only derive order
 \end{array}.
 ```
 
-## Implicit-Explicit Runge-Kutta
+### Implicit-Explicit Runge-Kutta
+
 When the residual has an implicit-explicit decomposition, usually because we can identify a stiff part that we want to solve implicitly and a nonstiff part that we want to solve explicitly, the Runge-Kutta method reads as follows
 ```math
 \begin{align*}
@@ -475,7 +498,8 @@ Many methods can be created by padding a DIRK tableau with zeros to give it an a
 ```
 We note that the first column of the matrix and the first weight are all zero, so the first stage for the implicit part does not need to be solved.
 
-## Generalised-``\alpha`` scheme for second-order ODEs
+### Generalised-``\alpha`` scheme for second-order ODEs
+
 This scheme relies on the state vector ``\{\boldsymbol{s}(t)\} = \{\boldsymbol{u}(t), \partial_{t} \boldsymbol{u}(t), \partial_{tt} \boldsymbol{u}(t)\}``. It needs a nontrivial starting procedure that evaluates ``\partial_{tt} \boldsymbol{u}(t_{0})`` by enforcing a zero residual at ``t_{0}``. The finaliser can still return the first vector of the state vectors. For convenience, let ``\partial_{tt} \boldsymbol{u}_{n}`` denote the approximation ``\partial_{tt} \boldsymbol{u}(t_{n})``.
 
 > The initial acceleration can alternatively be provided manually: when calling `solve(odeslvr, tfeop, t0, tF, uhs0)`, set `uhs0 = (u0, v0, a0)` instead of `uhs0 = (u0, v0)`. This is useful when enforcing a zero initial residual would lead to a singular system.
@@ -496,6 +520,7 @@ t_{n + 1 - \alpha_{F}} &= \alpha_{F} t_{n} + (1 - \alpha_{F}) t_{n+1}, \\
 The state vector is then updated to ``\{\boldsymbol{s}\}_{n+1} = \{\boldsymbol{u}_{n+1}, \partial_{t} \boldsymbol{u}_{n+1}, \partial_{tt} \boldsymbol{u}_{n+1}\}``.
 
 ##### Analysis
+
 The amplification matrix for the state vector is
 ```math
 \boldsymbol{A}(z) = \frac{1}{\overline{\alpha_{M}} + \overline{\alpha_{F}} \beta z^{2}} \begin{bmatrix}
@@ -526,7 +551,7 @@ This method was also designed to damp high-frequency perturbations so it is comm
 * The standard generalised-``\alpha`` method is obtained by setting ``\alpha_{M} = \frac{2 \rho_{\infty - 1}}{\rho_{\infty} + 1}``, ``\alpha_{F} = \frac{\rho_{\infty}}{\rho_{\infty} + 1}``.
 * The Newmark method corresponds to ``\alpha_{F} = \alpha_{M} = 0``. In this case, the values of ``\beta`` and ``\gamma`` are usually chosen as ``\beta = 0``, ``\gamma = \frac{1}{2}`` (explicit central difference scheme), or ``\beta = \frac{1}{4}`` and ``\gamma = \frac{1}{2}`` (midpoint rule).
 
-# Reference
+## Reference
 
 ```@autodocs
 Modules = [ODEs,]

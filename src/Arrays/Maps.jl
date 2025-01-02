@@ -296,3 +296,16 @@ function inverse_map(f)
   Function inverse_map is not implemented yet for objects of type $(typeof(f))
   """
 end
+
+struct InverseMap{F} <: Map
+  original::F
+end
+
+function evaluate!(cache,k::InverseMap,args...)
+  @notimplemented """\n
+  The inverse evaluation is not implemented yet for maps of type $(typeof(k.original))
+  """
+end
+
+inverse_map(k::Map) = InverseMap(k)
+inverse_map(k::InverseMap) = k.original

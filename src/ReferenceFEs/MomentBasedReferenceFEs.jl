@@ -36,7 +36,7 @@ struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
 end
 
 Base.size(a::MomentBasedDofBasis) = (num_dofs(a),)
-Base.axes(a::MomentBasedDofBasis) = (Base.OneTo(num_dofs),)
+Base.axes(a::MomentBasedDofBasis) = (Base.OneTo(num_dofs(a)),)
 Base.getindex(a::MomentBasedDofBasis,i::Integer) = Moment()
 Base.IndexStyle(::MomentBasedDofBasis) = IndexLinear()
 

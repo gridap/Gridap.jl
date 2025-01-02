@@ -186,7 +186,6 @@ export ModalC0RefFE
 export CRRefFE
 
 export Lagrangian
-export DivConforming
 export RaviartThomas
 export BDM
 export Nedelec
@@ -248,6 +247,8 @@ include("StrangQuadratures.jl")
 
 include("XiaoGimbutasQuadratures.jl")
 
+include("Pullbacks.jl")
+
 include("MomentBasedReferenceFEs.jl")
 
 include("RaviartThomasRefFEs.jl")
@@ -263,7 +264,5 @@ include("MockDofs.jl")
 include("BezierRefFEs.jl")
 
 include("ModalC0RefFEs.jl")
-
-include("LinearCombinationDofVectors.jl")
 
 end # module
