@@ -61,18 +61,6 @@ Represents the inverse of a pushforward map F*, defined as
 where 
   - V̂ is a function space on the reference cell K̂ and 
   - V is a function space on the physical cell K.
-
-# Note: 
-
-Given a pushforward F*, we provide a default implementation for the inverse (F*)^-1 that 
-is not optimal (and I think wrong for nonlinear geometries???). 
-
-For better performance, the user should overload the following methods for each 
-specific pushforward type:  
-
-- `return_cache(k::InversePushforward{PF}, v_phys::Number, args...)`
-- `evaluate!(cache, k::InversePushforward{PF}, v_phys::Number, args...)`
-
 """
 const InversePushforward{PF} = InverseMap{PF} where PF <: Pushforward
 
@@ -80,23 +68,6 @@ function Arrays.lazy_map(
   k::InversePushforward, phys_cell_fields::AbstractArray, pf_args::AbstractArray...
 )
   lazy_map(Broadcasting(Operation(k)), phys_cell_fields, pf_args...)
-end
-
-function Arrays.return_cache(
-  k::InversePushforward, v_phys::Number, args...
-)
-  mock_basis(::VectorValue{D,T}) where {D,T} = one(TensorValue{D,D,T})
-  v_ref_basis = mock_basis(v_phys)
-  pf_cache = return_cache(inverse_map(k),v_ref_basis,args...)
-  return v_ref_basis, pf_cache
-end
-
-function Arrays.evaluate!(
-  cache, k::InversePushforward, v_phys::Number, args...
-)
-  v_ref_basis, pf_cache = cache
-  change = evaluate!(pf_cache,inverse_map(k),v_ref_basis,args...)
-  return v_phys⋅inv(change)
 end
 
 function evaluate!(
@@ -185,12 +156,6 @@ function evaluate!(
   return v_ref ⋅ (idetJ * Jt)
 end
 
-function return_cache(
-  ::InversePushforward{ContraVariantPiolaMap}, v_phys::Number, Jt::Number
-)
-  nothing
-end
-
 function evaluate!(
   cache, ::InversePushforward{ContraVariantPiolaMap}, v_phys::Number, Jt::Number
 )
@@ -229,17 +194,46 @@ struct CoVariantPiolaMap <: Pushforward end
 function evaluate!(
   cache, ::CoVariantPiolaMap, v_ref::Number, Jt::Number
 )
-  return v_ref ⋅ transpose(inv(Jt))
-end
-
-function return_cache(
-  ::InversePushforward{CoVariantPiolaMap}, v_phys::Number, Jt::Number
-)
-  return nothing
+  return v_ref ⋅ transpose(pinvJt(Jt))
 end
 
 function evaluate!(
   cache, ::InversePushforward{CoVariantPiolaMap}, v_phys::Number, Jt::Number
 )
   return v_phys ⋅ transpose(Jt)
+end
+
+# DoubleContraVariantPiolaMap
+
+struct DoubleContraVariantPiolaMap <: Pushforward end
+
+function evaluate!(
+  cache, ::DoubleContraVariantPiolaMap, v_ref::Number, Jt::Number
+)
+  _Jt = meas(Jt) * Jt
+  return transpose(_Jt) ⋅ v_ref ⋅ _Jt
+end
+
+function evaluate!(
+  cache, ::InversePushforward{DoubleContraVariantPiolaMap}, v_phys::Number, Jt::Number
+)
+  iJt = meas(Jt) * pinvJt(Jt)
+  return transpose(iJt) ⋅ v_phys ⋅ iJt
+end
+
+# DoubleCoVariantPiolaMap
+
+struct DoubleCoVariantPiolaMap <: Pushforward end
+
+function evaluate!(
+  cache, ::DoubleCoVariantPiolaMap, v_ref::Number, Jt::Number
+)
+  iJt = pinvJt(Jt)
+  return iJt ⋅ v_ref ⋅ transpose(iJt)
+end
+
+function evaluate!(
+  cache, ::InversePushforward{DoubleCoVariantPiolaMap}, v_phys::Number, Jt::Number
+)
+  return Jt ⋅ v_phys ⋅ transpose(Jt)
 end

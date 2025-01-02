@@ -57,11 +57,11 @@ function ArnoldWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
 end
 
 function ReferenceFE(p::Polytope,::ArnoldWinther, order)
-  BDMRefFE(Float64,p,order)
+  ArnoldWintherRefFE(Float64,p,order)
 end
 
 function ReferenceFE(p::Polytope,::ArnoldWinther,::Type{T}, order) where T
-  BDMRefFE(T,p,order)
+  ArnoldWintherRefFE(T,p,order)
 end
 
 function Conformity(reffe::GenericRefFE{ArnoldWinther},sym::Symbol)
