@@ -368,6 +368,16 @@ function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::Ab
   r
 end
 
+function evaluate!(cache,k::LinearCombinationMap{Colon},v::LinearAlgebra.Diagonal,fx::AbstractVector)
+  @check length(fx) == size(v,1)
+  setsize!(cache,(size(v,2),))
+  r = cache.array
+  @inbounds for j in eachindex(fx)
+    r[j] = outer(fx[j],v.diag[j])
+  end
+  r
+end
+
 function return_cache(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractMatrix)
   vf = testitem(fx)
   vv = testitem(v)
@@ -387,6 +397,18 @@ function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::Ab
         rj += outer(fx[p,i],v[i,j])
       end
       r[p,j] = rj
+    end
+  end
+  r
+end
+
+function evaluate!(cache,k::LinearCombinationMap{Colon},v::LinearAlgebra.Diagonal,fx::AbstractMatrix)
+  @check size(fx,2) == size(v,1)
+  setsize!(cache,(size(fx,1),size(v,2)))
+  r = cache.array
+  @inbounds for p in 1:size(fx,1)
+    for j in 1:size(fx,2)
+      r[p,j] = outer(fx[p,j],v.diag[j])
     end
   end
   r
