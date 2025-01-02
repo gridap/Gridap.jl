@@ -46,7 +46,7 @@ vglue = get_glue(vtrian,Val(3))
 @test vglue.plus.tface_to_mface == sglue.plus.tface_to_mface[ids]
 @test vglue.minus.tface_to_mface == sglue.minus.tface_to_mface[ids]
 vn = get_facet_normal(vtrian)
-vt = Gridap.Geometry.get_edge_tangent(strian)
+# vt = Gridap.Geometry.get_edge_tangent(strian)
 @test isa(vn,SkeletonPair)
 @test isa(vn.plus,AbstractArray)
 @test isa(vn.minus,AbstractArray)
