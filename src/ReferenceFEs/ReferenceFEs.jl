@@ -265,6 +265,4 @@ include("BezierRefFEs.jl")
 
 include("ModalC0RefFEs.jl")
 
-include("LinearCombinationDofVectors.jl")
-
 end # module

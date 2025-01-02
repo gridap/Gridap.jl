@@ -71,7 +71,7 @@ I_K(g) = \Sigma(g) \Phi \quad, \quad \Sigma(g) = P^{-1} \hat{\Sigma}(F^{-*}(g))
 
 !!! note
     In [2], Covariant and Contravariant Piola maps preserve exactly (without any sign change) the normal and tangential components of a vector field.
-    I am quite sure that the discrepancy is coming from the fact that the geometrical information in the reference polytope is globaly oriented.
+    I am quite sure that the discrepancy is coming from the fact that the geometrical information in the reference polytope is globally oriented.
     For instance, the normals ``n`` and ``\hat{n}`` both have the same orientation, i.e ``n = (||\hat{e}||/||e||) (det J) J^{-T} \hat{n}``. Therefore ``\hat{n}`` is not fully local. See [2, Equation 2.11].
     In our case, we will be including the sign change in the transformation matrices, which will include all cell-and-dof-dependent information.
 

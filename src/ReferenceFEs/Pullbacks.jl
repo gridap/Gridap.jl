@@ -46,10 +46,9 @@ function Arrays.evaluate!(
   ::Broadcasting{typeof(∇)},
   a::Fields.BroadcastOpFieldArray{<:Pushforward}
 )
-  v, Jt, sign_flip = a.args
-  ∇v = Broadcasting(∇)(v)
-  k = ContraVariantPiolaMap()
-  Broadcasting(Operation(k))(∇v,Jt,sign_flip)
+  v, pf_args... = a.args
+  grad_v = Broadcasting(∇)(v)
+  Broadcasting(Operation(a.op))(grad_v,pf_args...)
 end
 
 # InversePushforward
@@ -104,6 +103,12 @@ function evaluate!(
   cache, k::InversePushforward, f_phys::AbstractVector{<:Field}, args...
 )
   Broadcasting(Operation(k))(f_phys,args...)
+end
+
+function evaluate!(
+  cache, k::InversePushforward, f_phys::Field, args...
+)
+  Operation(k)(f_phys,args...)
 end
 
 # MappedDofBasis
@@ -208,7 +213,6 @@ const InversePullback{PB} = InverseMap{PB} where PB <: Pullback
 function Arrays.lazy_map(
   ::typeof(evaluate), k::LazyArray{<:Fill{<:InversePullback}}, phys_cell_fields::AbstractArray
 )
-  println("InversePullback dispatch")
   pb = inverse_map(k.maps.value)
   ref_cell_dofs, pf_args... = k.args
   ref_cell_fields = lazy_map(inverse_map(pb.pushforward), phys_cell_fields, pf_args...)
@@ -227,25 +231,23 @@ end
 struct ContraVariantPiolaMap <: Pushforward end
 
 function evaluate!(
-  cache, ::ContraVariantPiolaMap, v_ref::Number, Jt::Number, sign_flip::Bool
+  cache, ::ContraVariantPiolaMap, v_ref::Number, Jt::Number
 )
-  sign  = (-1)^sign_flip
   idetJ = 1. / meas(Jt)
-  return (sign * v_ref) ⋅(idetJ * Jt)
+  return v_ref ⋅ (idetJ * Jt)
 end
 
 function return_cache(
-  ::InversePushforward{ContraVariantPiolaMap}, v_phys::Number, Jt::Number, sign_flip::Bool
+  ::InversePushforward{ContraVariantPiolaMap}, v_phys::Number, Jt::Number
 )
   nothing
 end
 
 function evaluate!(
-  cache, ::InversePushforward{ContraVariantPiolaMap}, v_phys::Number, Jt::Number, sign_flip::Bool
+  cache, ::InversePushforward{ContraVariantPiolaMap}, v_phys::Number, Jt::Number
 )
-  sign = (-1)^sign_flip
   detJ = meas(Jt)
-  return (sign * v_phys) ⋅ (detJ * pinvJt(Jt))
+  return v_phys ⋅ (detJ * pinvJt(Jt))
 end
 
 # TODO: Should this be here? Probably not...
@@ -263,11 +265,13 @@ function Fields.DIV(a::LazyArray{<:Fill{typeof(linear_combination)}})
 end
 
 function Fields.DIV(f::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}})
-  ϕrgₖ       = f.args[1]
-  fsign_flip = f.args[3]
-  div_ϕrgₖ   = lazy_map(Broadcasting(divergence),ϕrgₖ)
-  fsign_flip = lazy_map(Broadcasting(Operation(x->(-1)^x)), fsign_flip)
-  lazy_map(Broadcasting(Operation(*)),fsign_flip,div_ϕrgₖ)
+  ϕrgₖ = f.args[1]
+  return lazy_map(Broadcasting(divergence),ϕrgₖ)
+end
+
+function Fields.DIV(f::Fill{<:Fields.BroadcastOpFieldArray{ContraVariantPiolaMap}})
+  ϕrgₖ = f.value.args[1]
+  return Fill(Broadcasting(divergence)(ϕrgₖ),length(f))
 end
 
 # CoVariantPiolaMap

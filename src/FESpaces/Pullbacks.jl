@@ -1,27 +1,31 @@
 
 # TODO: We probably want to export these from Gridap.ReferenceFEs
-using Gridap.ReferenceFEs: PushforwardRefFE, Pushforward, InversePullback
+using Gridap.ReferenceFEs: PushforwardRefFE, Pushforward, Pullback
 using Gridap.ReferenceFEs: ContraVariantPiolaMap, CoVariantPiolaMap
 
 function get_cell_dof_basis(
   model::DiscreteModel, cell_reffe::AbstractArray{<:GenericRefFE{T}}, conformity::Conformity
 ) where T <: PushforwardRefFE
-  pushforward = Pushforward(T)
-  cell_args = get_cell_pushforward_arguments(pushforward, model, cell_reffe, conformity)
-  cell_dofs = lazy_map(get_dof_basis, cell_reffe)
-  return lazy_map(InversePullback(pushforward), cell_dofs, cell_args...)
+  pushforward, cell_change, cell_args = get_cell_pushforward(
+    Pushforward(T), model, cell_reffe, conformity
+  )
+  cell_ref_dofs = lazy_map(get_dof_basis, cell_reffe)
+  cell_phy_dofs = lazy_map(inverse_map(Pullback(pushforward)), cell_ref_dofs, cell_args...)
+  return lazy_map(linear_combination, cell_change, cell_phy_dofs) # TODO: Inverse
 end
 
 function get_cell_shapefuns(
   model::DiscreteModel, cell_reffe::AbstractArray{<:GenericRefFE{T}}, conformity::Conformity
 ) where T <: PushforwardRefFE
-  pushforward = Pushforward(T)
-  cell_args = get_cell_pushforward_arguments(pushforward, model, cell_reffe, conformity)
-  cell_dofs = lazy_map(get_shapefuns, cell_reffe)
-  return lazy_map(pushforward, cell_dofs, cell_args...)
+  pushforward, cell_change, cell_args = get_cell_pushforward(
+    Pushforward(T), model, cell_reffe, conformity
+  )
+  cell_ref_fields = lazy_map(get_shapefuns, cell_reffe)
+  cell_phy_fields = lazy_map(pushforward, cell_ref_fields, cell_args...)
+  return lazy_map(linear_combination, cell_change, cell_phy_fields)
 end
 
-function get_cell_pushforward_arguments(
+function get_cell_pushforward(
   ::Pushforward, model::DiscreteModel, cell_reffe, conformity
 )
   @abstractmethod
@@ -29,23 +33,24 @@ end
 
 # ContraVariantPiolaMap
 
-function get_cell_pushforward_arguments(
+function get_cell_pushforward(
   ::ContraVariantPiolaMap, model::DiscreteModel, cell_reffe, conformity
 )
   cell_map  = get_cell_map(get_grid(model))
   Jt = lazy_map(Broadcasting(∇),cell_map)
-  sign_flip = lazy_map(Broadcasting(constant_field),get_sign_flip(model, cell_reffe))
-  return Jt, sign_flip
+  change = get_sign_flip(model, cell_reffe)
+  return ContraVariantPiolaMap(), change, (Jt,)
 end
 
 # CoVariantPiolaMap
 
-function get_cell_pushforward_arguments(
+function get_cell_pushforward(
   ::CoVariantPiolaMap, model::DiscreteModel, cell_reffe, conformity
 )
   cell_map = get_cell_map(get_grid(model))
   Jt = lazy_map(Broadcasting(∇),cell_map)
-  return Jt
+  change = lazy_map(r -> Diagonal(ones(num_dofs(r))), cell_reffe) # TODO: Replace by edge-signs
+  return CoVariantPiolaMap(), change, (Jt,)
 end
 
 # SignFlipMap
@@ -72,7 +77,7 @@ function return_cache(k::SignFlipMap,reffe,facet_own_dofs,cell)
   cell_facets = get_faces(topo, Dc, Dc-1)
   cell_facets_cache = array_cache(cell_facets)
 
-  return cell_facets, cell_facets_cache, CachedVector(Bool)
+  return cell_facets, cell_facets_cache, CachedVector(Float64)
 end
 
 function evaluate!(cache,k::SignFlipMap,reffe,facet_own_dofs,cell)
@@ -81,19 +86,19 @@ function evaluate!(cache,k::SignFlipMap,reffe,facet_own_dofs,cell)
 
   setsize!(sign_flip_cache, (num_dofs(reffe),))
   sign_flip = sign_flip_cache.array
-  sign_flip .= false
+  fill!(sign_flip, one(eltype(sign_flip)))
 
   facets = getindex!(cell_facets_cache,cell_facets,cell)
   for (lfacet,facet) in enumerate(facets)
     owner = facet_owners[facet]
     if owner != cell
       for dof in facet_own_dofs[lfacet]
-        sign_flip[dof] = true
+        sign_flip[dof] = -1.0
       end
     end
   end
 
-  return sign_flip
+  return Diagonal(sign_flip)
 end
 
 function get_sign_flip(model::DiscreteModel{Dc}, cell_reffe) where Dc
