@@ -11,7 +11,7 @@ function get_cell_dof_basis(
   )
   cell_ref_dofs = lazy_map(get_dof_basis, cell_reffe)
   cell_phy_dofs = lazy_map(inverse_map(Pullback(pushforward)), cell_ref_dofs, cell_args...)
-  return lazy_map(linear_combination, cell_change, cell_phy_dofs) # TODO: Inverse
+  return lazy_map(linear_combination, cell_change, cell_phy_dofs) # TODO: Inverse and transpose
 end
 
 function get_cell_shapefuns(

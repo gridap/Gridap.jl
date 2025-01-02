@@ -229,7 +229,6 @@ struct CoVariantPiolaMap <: Pushforward end
 function evaluate!(
   cache, ::CoVariantPiolaMap, v_ref::Number, Jt::Number
 )
-  # we right-multiply to compute the gradient correctly
   return v_ref ⋅ transpose(inv(Jt))
 end
 
