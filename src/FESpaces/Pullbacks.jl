@@ -66,7 +66,7 @@ function SignFlipMap(model)
 end
 
 function return_value(k::SignFlipMap,reffe,facet_own_dofs,cell)
-  fill(false, num_dofs(reffe))
+  Diagonal(fill(one(Float64), num_dofs(reffe)))
 end
 
 function return_cache(k::SignFlipMap,reffe,facet_own_dofs,cell)

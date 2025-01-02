@@ -43,7 +43,7 @@ end
 
 function Arrays.evaluate!(
   cache,
-  ::Broadcasting{typeof(∇)},
+  ::Broadcasting{typeof(gradient)},
   a::Fields.BroadcastOpFieldArray{<:Pushforward}
 )
   v, pf_args... = a.args
@@ -109,58 +109,6 @@ function evaluate!(
   cache, k::InversePushforward, f_phys::Field, args...
 )
   Operation(k)(f_phys,args...)
-end
-
-# MappedDofBasis
-
-"""
-    struct MappedDofBasis{T<:Dof,MT,BT} <: AbstractVector{T}
-      F :: MT
-      σ :: BT
-      args
-    end
-
-Represents η = σ∘F, evaluated as η(φ) = σ(F(φ,args...))
-
-  - σ : V* -> R is a dof basis
-  - F : W  -> V is a map between function spaces
-
-Intended combinations would be: 
-
-- σ : V* -> R dof basis in the physical domain and F* : V̂ -> V is a pushforward map.
-- ̂σ : V̂* -> R dof basis in the reference domain and (F*)^-1 : V -> V̂ is an inverse pushforward map.
-
-"""
-struct MappedDofBasis{T<:Dof,MT,BT,A} <: AbstractVector{T}
-  F    :: MT
-  dofs :: BT
-  args :: A
-
-  function MappedDofBasis(F::Map, dofs::AbstractVector{<:Dof}, args...)
-    T  = eltype(dofs)
-    MT = typeof(F)
-    BT = typeof(dofs)
-    A  = typeof(args)
-    new{T,MT,BT,A}(F,dofs,args)
-  end
-end
-
-Base.size(b::MappedDofBasis) = size(b.dofs)
-
-# Technically wrong, but the individual dofs are fake anyway
-Base.getindex(b::MappedDofBasis, i) = getindex(b.dofs,i)
-
-function Arrays.return_cache(b::MappedDofBasis, fields)
-  f_cache = return_cache(b.F,fields,b.args...)
-  ffields = evaluate!(f_cache,b.F,fields,b.args...)
-  dofs_cache = return_cache(b.dofs,ffields)
-  return f_cache, dofs_cache
-end
-
-function Arrays.evaluate!(cache, b::MappedDofBasis, fields)
-  f_cache, dofs_cache = cache
-  ffields = evaluate!(f_cache,b.F,fields,b.args...)
-  evaluate!(dofs_cache,b.dofs,ffields)
 end
 
 # Pullback
@@ -282,7 +230,7 @@ function evaluate!(
   cache, ::CoVariantPiolaMap, v_ref::Number, Jt::Number
 )
   # we right-multiply to compute the gradient correctly
-  return v_ref⋅transpose(inv(Jt))
+  return v_ref ⋅ transpose(inv(Jt))
 end
 
 function return_cache(
@@ -294,5 +242,5 @@ end
 function evaluate!(
   cache, ::InversePushforward{CoVariantPiolaMap}, v_phys::Number, Jt::Number
 )
-  return transpose(Jt)⋅v_phys
+  return v_phys ⋅ transpose(Jt)
 end
