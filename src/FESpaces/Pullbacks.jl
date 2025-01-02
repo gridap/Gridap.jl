@@ -53,23 +53,28 @@ function get_cell_pushforward(
   return CoVariantPiolaMap(), change, (Jt,)
 end
 
-# SignFlipMap
+# NormalSignMap
 
-struct SignFlipMap{T} <: Map
+"""
+    struct NormalSignMap <: Map
+      ...
+    end
+"""
+struct NormalSignMap{T} <: Map
   model::T
   facet_owners::Vector{Int32}
 end
 
-function SignFlipMap(model)
+function NormalSignMap(model)
   facet_owners = compute_facet_owners(model)
-  SignFlipMap(model,facet_owners)
+  NormalSignMap(model,facet_owners)
 end
 
-function return_value(k::SignFlipMap,reffe,facet_own_dofs,cell)
+function return_value(k::NormalSignMap,reffe,facet_own_dofs,cell)
   Diagonal(fill(one(Float64), num_dofs(reffe)))
 end
 
-function return_cache(k::SignFlipMap,reffe,facet_own_dofs,cell)
+function return_cache(k::NormalSignMap,reffe,facet_own_dofs,cell)
   model = k.model
   Dc = num_cell_dims(model)
   topo = get_grid_topology(model)
@@ -80,25 +85,25 @@ function return_cache(k::SignFlipMap,reffe,facet_own_dofs,cell)
   return cell_facets, cell_facets_cache, CachedVector(Float64)
 end
 
-function evaluate!(cache,k::SignFlipMap,reffe,facet_own_dofs,cell)
-  cell_facets,cell_facets_cache,sign_flip_cache = cache
+function evaluate!(cache,k::NormalSignMap,reffe,facet_own_dofs,cell)
+  cell_facets,cell_facets_cache,dof_sign_cache = cache
   facet_owners = k.facet_owners
 
-  setsize!(sign_flip_cache, (num_dofs(reffe),))
-  sign_flip = sign_flip_cache.array
-  fill!(sign_flip, one(eltype(sign_flip)))
+  setsize!(dof_sign_cache, (num_dofs(reffe),))
+  dof_sign = dof_sign_cache.array
+  fill!(dof_sign, one(eltype(dof_sign)))
 
   facets = getindex!(cell_facets_cache,cell_facets,cell)
   for (lfacet,facet) in enumerate(facets)
     owner = facet_owners[facet]
     if owner != cell
       for dof in facet_own_dofs[lfacet]
-        sign_flip[dof] = -1.0
+        dof_sign[dof] = -1.0
       end
     end
   end
 
-  return Diagonal(sign_flip)
+  return Diagonal(dof_sign)
 end
 
 function get_sign_flip(model::DiscreteModel{Dc}, cell_reffe) where Dc
@@ -106,7 +111,7 @@ function get_sign_flip(model::DiscreteModel{Dc}, cell_reffe) where Dc
   get_facet_own_dofs(reffe) = view(get_face_own_dofs(reffe),get_dimrange(get_polytope(reffe),Dc-1))
   cell_facet_own_dofs = lazy_map(get_facet_own_dofs, cell_reffe)
   cell_ids = IdentityVector(Int32(num_cells(model)))
-  return lazy_map(SignFlipMap(model), cell_reffe, cell_facet_own_dofs, cell_ids)
+  return lazy_map(NormalSignMap(model), cell_reffe, cell_facet_own_dofs, cell_ids)
 end
 
 function compute_facet_owners(model::DiscreteModel{Dc}) where {Dc}
