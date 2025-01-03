@@ -30,7 +30,7 @@ struct LinearCombinationDofVector{T,V,F} <: AbstractVector{T}
   end
 end
 
-Base.size(a::LinearCombinationDofVector) = size(a.values,2)
+Base.size(a::LinearCombinationDofVector) = (size(a.values,2),)
 Base.IndexStyle(::LinearCombinationDofVector) = IndexLinear()
 Base.getindex(::LinearCombinationDofVector{T},::Integer) where T = T()
 
@@ -87,7 +87,7 @@ end
 
 Base.size(b::MappedDofBasis) = size(b.dofs)
 Base.IndexStyle(::MappedDofBasis) = IndexLinear()
-Base.getindex(b::MappedDofBasis, i) = T()
+Base.getindex(::MappedDofBasis{T}, ::Integer) where T = T()
 
 function Arrays.return_cache(b::MappedDofBasis, fields)
   f_cache = return_cache(b.F,fields,b.args...)
