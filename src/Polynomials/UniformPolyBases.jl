@@ -3,31 +3,30 @@
 #################################
 
 """
-    struct TensorPolynomialBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
+    struct UniformPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
 
-Type representing a tensorial basis of (an)isotropic `D`-multivariate `V`-valued
-(scalar, vector, or tensor) polynomial basis, that is:
+Type representing a uniform basis of (an)isotropic `D`-multivariate `V`-valued
+polynomial space `V`(𝕊, 𝕊, ..., 𝕊), where 𝕊 is a scalar polynomial space. So each
+independant component of `V` holds the same space, which is here called 'uniform'.
 
-The polynomial space is the tensor product of a scalar polynomial space (one for
-each independant component of V).
-
-The scalar polynomial basis is
+The scalar polynomial basis spanning 𝕊 is defined as
 
   { x ⟶ b`ᴷ`\\_α(x) = b`ᴷ`\\_α₁(x₁) × b`ᴷ`\\_α₂(x₂) × ... × b`ᴷ`\\_α`D`(x`D`) |  α ∈ `terms` }
 
 where b`ᴷ`\\_αᵢ(xᵢ) is the αᵢth 1D basis polynomial of the basis `PT` of order `K`
-evaluated at xᵢ, and where α = (α₁, α₂, ..., α`D`) is a multi-index in `terms`,
-a subset of ⟦0,`K`⟧`ᴰ`. `terms` is a field that can be passed in a constructor.
+evaluated at xᵢ (iᵗʰ comp. of x), and where α = (α₁, α₂, ..., α`D`) is a
+multi-index in `terms`, a subset of ⟦0,`K`⟧`ᴰ`. `terms` is a field that can be
+passed in a constructor.
 
 The fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to second
 order derivatives.
 """
-struct TensorPolynomialBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
+struct UniformPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
   orders::NTuple{D,Int}
   terms::Vector{CartesianIndex{D}}
 
-  function TensorPolynomialBasis{D}(
+  function UniformPolyBasis{D}(
     ::Type{PT},
     ::Type{V},
     orders::NTuple{D,Int},
@@ -40,71 +39,71 @@ struct TensorPolynomialBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
   end
 end
 
-@inline Base.size(a::TensorPolynomialBasis{D,V}) where {D,V} = (length(a.terms)*num_indep_components(V),)
+@inline Base.size(a::UniformPolyBasis{D,V}) where {D,V} = (length(a.terms)*num_indep_components(V),)
 
-function TensorPolynomialBasis(
+function UniformPolyBasis(
    ::Type{PT},
    ::Val{D},
    ::Type{V},
    orders::NTuple{D,Int},
    terms::Vector{CartesianIndex{D}}) where {PT<:Polynomial,D,V}
 
-  TensorPolynomialBasis{D}(PT,V,orders,terms)
+  UniformPolyBasis{D}(PT,V,orders,terms)
 end
 
 """
-    TensorPolynomialBasis(::Type{PT}, ::Val{D}, ::Type{V}, orders::Tuple [, filter::Function])
+    UniformPolyBasis(::Type{PT}, ::Val{D}, ::Type{V}, orders::Tuple [, filter::Function])
 
 This version of the constructor allows to pass a tuple `orders` containing the
 polynomial order to be used in each of the `D` dimensions in order to construct
-an tensor-product multivariate space.
+a tensorial anisotropic multivariate space 𝕊.
 """
-function TensorPolynomialBasis(
+function UniformPolyBasis(
   ::Type{PT}, ::Val{D}, ::Type{V}, orders::NTuple{D,Int}, filter::Function=_q_filter
   ) where {PT,D,V}
 
   terms = _define_terms(filter, orders)
-  TensorPolynomialBasis{D}(PT,V,orders,terms)
+  UniformPolyBasis{D}(PT,V,orders,terms)
 end
 
 """
-    TensorPolynomialBasis(::Type{V}, ::Val{D}, order::Int [, filter::Function]) where {D,V}
+    UniformPolyBasis(::Type{V}, ::Val{D}, order::Int [, filter::Function]) where {D,V}
 
-Returns an instance of `TensorPolynomialBasis` representing a multivariate polynomial basis
-in `D` dimensions, of polynomial degree `order`, whose value is represented by the type `V`.
-The type `V` is typically `<:Number`, e.g., `Float64` for scalar-valued functions and `VectorValue{D,Float64}`
-for vector-valued ones.
+Returns an instance of `UniformPolyBasis` representing a multivariate polynomial
+basis in `D` dimensions, of polynomial degree `order`, whose value is represented
+by the type `V`. The type `V` is typically `<:Number`, e.g., `Float64` for
+scalar-valued functions and `VectorValue{D,Float64}` for vector-valued ones.
 
 # Filter function
 
 The `filter` function is used to select which terms of the tensor product space
-of order `order` in `D` dimensions are to be used. If the filter is not provided, the full tensor-product
-space is used by default leading to a multivariate polynomial space of type Q.
-The signature of the filter function is
+of order `order` in `D` dimensions are to be used. If the filter is not provided,
+the full tensor-product space is used by default leading to a multivariate
+polynomial space of type ℚ. The signature of the filter function is
 
     (e,order) -> Bool
 
-where `e` is a tuple of `D` integers containing the exponents of a multivariate monomial. The following filters
-are used to select well known polynomial spaces
+where `e` is a tuple of `D` integers containing the exponents of a multivariate
+monomial. The following filters are used to select well known polynomial spaces
 
-- ℚ space: `(e,order) -> true`
+- ℚ space: `(e,order) -> maximum(e) <= order`
 - ℙ space: `(e,order) -> sum(e) <= order`
 - "Serendipity" space: `(e,order) -> sum( [ i for i in e if i>1 ] ) <= order`
 
 """
-function TensorPolynomialBasis(
+function UniformPolyBasis(
   ::Type{PT}, VD::Val{D}, ::Type{V}, order::Int, filter::Function=_q_filter) where {PT,D,V}
 
   orders = tfill(order,VD)
-  TensorPolynomialBasis(PT,Val(D),V,orders,filter)
+  UniformPolyBasis(PT,Val(D),V,orders,filter)
 end
 
 # API
 
 """
-    get_exponents(b::TensorPolynomialBasis)
+    get_exponents(b::UniformPolyBasis)
 
-Get a vector of tuples with the exponents of all the terms in the basis.
+Get a vector of tuples with the exponents of all the terms in the basis of 𝕊.
 
 # Example
 
@@ -121,17 +120,17 @@ println(exponents)
 Tuple{Int,Int}[(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2)]
 ```
 """
-function get_exponents(b::TensorPolynomialBasis)
+function get_exponents(b::UniformPolyBasis)
   indexbase = 1
   [Tuple(t) .- indexbase for t in b.terms]
 end
 
 """
-    get_orders(b::TensorPolynomialBasis)
+    get_orders(b::UniformPolyBasis)
 
 Return the D-tuple of polynomial orders in each dimension
 """
-function get_orders(b::TensorPolynomialBasis)
+function get_orders(b::UniformPolyBasis)
   b.orders
 end
 
@@ -168,7 +167,7 @@ end
 #################################
 
 function _evaluate_nd!(
-  b::TensorPolynomialBasis{D,V,K,PT}, x,
+  b::UniformPolyBasis{D,V,K,PT}, x,
   r::AbstractMatrix{V}, i,
   c::AbstractMatrix{T}) where {D,V,K,PT,T}
 
@@ -188,22 +187,34 @@ function _evaluate_nd!(
       @inbounds s *= c[d,ci[d]]
     end
 
-    k = _tensorial_set_value!(r,i,s,k)
+    k = _uniform_set_value!(r,i,s,k)
   end
 end
 
 """
-    _tensorial_set_value!(r::AbstractMatrix{<:Real},i,s,k)
+    _uniform_set_value!(r::AbstractMatrix{<:Real},i,s,k)
 
-r[i,k] = s; return k+1
+r[i,k] = s; return k+1
 """
-function _tensorial_set_value!(r::AbstractMatrix{<:Real},i,s,k)
-  #@inbounds r[i][k] = s
+function _uniform_set_value!(r::AbstractMatrix{<:Real},i,s,k)
   @inbounds r[i,k] = s
   k+1
 end
 
-function _tensorial_set_value!(r::AbstractMatrix{V},i,s::T,k) where {V,T}
+"""
+    _uniform_set_value!(r::AbstractMatrix{V},i,s::T,k,l)
+
+```
+r[i,k]     = V(s, 0,    ..., 0)
+r[i,k+1]   = V(0, s, 0, ..., 0)
+⋮
+r[i,k+N-1] = V(0,    ..., 0, s)
+return k+N
+```
+
+where `N = num_indep_components(V)`.
+"""
+function _uniform_set_value!(r::AbstractMatrix{V},i,s::T,k) where {V,T}
   ncomp = num_indep_components(V)
   z = zero(T)
   @inbounds for j in 1:ncomp
@@ -214,7 +225,7 @@ function _tensorial_set_value!(r::AbstractMatrix{V},i,s::T,k) where {V,T}
 end
 
 function _gradient_nd!(
-  b::TensorPolynomialBasis{D,V,K,PT}, x,
+  b::UniformPolyBasis{D,V,K,PT}, x,
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
@@ -245,19 +256,43 @@ function _gradient_nd!(
       end
     end
 
-    k = _tensorial_set_gradient!(r,i,s,k,V)
+    k = _uniform_set_derivative!(r,i,s,k,V)
   end
 end
 
-function _tensorial_set_gradient!(
+"""
+    _uniform_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{<:Real})
+
+```
+r[i,k] = s = (∇bᵏ)(xi); return k+1
+```
+
+where bᵏ is the kᵗʰ basis polynomial. Note that `r[i,k]` is a `VectorValue` or
+`TensorValue` and `s` a `MVector` or `MMatrix` respectively, of same size.
+"""
+function _uniform_set_derivative!(
   r::AbstractMatrix{G},i,s,k,::Type{<:Real}) where G
 
   @inbounds r[i,k] = s
   k+1
 end
 
-# TODO comment
-@generated function _tensorial_set_gradient!(
+"""
+    _uniform_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{V})
+
+```
+z = zero(s)
+r[i,k]     = G(s…, z…,     ..., z…) = (Dbᵏ    )(xi)
+r[i,k+1]   = G(z…, s…, z…, ..., z…) = (Dbᵏ⁺¹  )(xi)
+⋮
+r[i,k+n-1] = G(z…,     ..., z…, s…) = (Dbᵏ⁺ⁿ⁻¹)(xi)
+return k+n
+```
+
+Note that `r[i,k]` is a `TensorValue` or `ThirdOrderTensorValue` and `s` a
+`MVector` or `MMatrix`.
+"""
+@generated function _uniform_set_derivative!(
   r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V}
   # Git blame me for readable non-generated version
 
@@ -292,10 +327,7 @@ end
 # necessary as long as outer(Point, V<:AbstractSymTensorValue)::G does not
 # return a tensor type G that implements the appropriate symmetries of the
 # gradient (and hessian)
-#
-# This is still (independant-)component tensorial as each independent SymTensor
-# component holds the same (scalar multivariate) polynomial space.
-@generated function _tensorial_set_gradient!(
+@generated function _uniform_set_derivative!(
   r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
   # Git blame me for readable non-generated version
 
@@ -334,7 +366,7 @@ end
 end
 
 function _hessian_nd!(
-  b::TensorPolynomialBasis{D,V,K,PT}, x,
+  b::UniformPolyBasis{D,V,K,PT}, x,
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
@@ -371,7 +403,7 @@ function _hessian_nd!(
       end
     end
 
-    k = _tensorial_set_gradient!(r,i,s,k,V)
+    k = _uniform_set_derivative!(r,i,s,k,V)
   end
 end
 

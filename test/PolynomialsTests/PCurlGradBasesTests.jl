@@ -1,4 +1,4 @@
-module PCurlGradMonomialBasesTests
+module PCurlGradBasesTests
 
 using Test
 using Gridap.TensorValues
@@ -15,7 +15,7 @@ D = 2
 T = Float64
 V = VectorValue{D,T}
 G = gradient_type(V,xi)
-b = PCurlGradMonomialBasis(Val(D),T,order)
+b = PCurlGradBasis(Monomial, Val(D),T,order)
 
 v = V[
   (1.0,  0.0), (4.0,  0.0), (16.0, 0.0), (2.0,  0.0), (8.0,  0.0), (4.0,  0.0), # pterm ex
@@ -57,7 +57,7 @@ D = 3
 T = Float64
 V = VectorValue{D,T}
 G = gradient_type(V,xi)
-b = PCurlGradMonomialBasis(Val(D),T,order)
+b = PCurlGradBasis(Monomial, Val(D),T,order)
 
 @test length(b) == 15
 @test get_order(b) == 2

@@ -4,11 +4,13 @@ using Test
 
 @testset "MonomialBases" begin include("MonomialBasesTests.jl") end
 
-@testset "QGradMonomialBases" begin include("QGradMonomialBasesTests.jl") end
+@testset "QGradBases" begin include("QGradBasesTests.jl") end
 
-@testset "QCurlGradMonomialBases" begin include("QCurlGradMonomialBasesTests.jl") end
+@testset "QCurlGradBases" begin include("QCurlGradBasesTests.jl") end
 
-@testset "PCurlGradMonomialBases" begin include("PCurlGradMonomialBasesTests.jl") end
+@testset "PGradBases" begin include("PGradBasesTests.jl") end
+
+@testset "PCurlGradBases" begin include("PCurlGradBasesTests.jl") end
 
 @testset "ModalC0Bases" begin include("ModalC0BasesTests.jl") end
 

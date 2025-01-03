@@ -1,5 +1,5 @@
 """
-    NonTensorRTPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
+    RaviartThomasPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
 
 Basis of ℝ𝕋ᴰₙ = (𝕊ₙ)ᴰ ⊕ x (𝕊ₙ\\𝕊₍ₙ₋₁₎)
 where 𝕊ₙ is a multivariate scalar polynomial space of maximum degree n = `K`-1.
@@ -14,19 +14,19 @@ are not tensor products either.
 𝕊ₙ must admit a basis computable using products of 1D polynomials of the `PT`
 type, `PT` thus needs to be hierarchical, see [`isHierarchical`](@ref).
 
-Indeed, 𝕊ₙ is defined like a scalar valued [`TensorPolynomialBasis`](@ref) via
-the `_filter` argument of the constructor, by default `_p_filter`.
+Indeed, 𝕊ₙ is defined like a scalar valued [`UniformPolyBasis`](@ref) via
+the `_filter` argument of the constructor, by default [`_p_filter`](@ref).
 """
-struct NonTensorRTPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
+struct RaviartThomasPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
   pterms::Vector{CartesianIndex{D}}
   sterms::Vector{CartesianIndex{D}}
 
   """
-      NonTensorRTPolyBasis{D}(::Type{PT}, ::Type{T}, order::Int, _filter::Function=_p_filter)
+      RaviartThomasPolyBasis{D}(::Type{PT}, ::Type{T}, order::Int, _filter::Function=_p_filter)
 
   Where `_filter` defines 𝕊ₙ and `order` = n = K-1 (cf. struct docstring).
   """
-  function NonTensorRTPolyBasis{D}(
+  function RaviartThomasPolyBasis{D}(
     ::Type{PT}, ::Type{T}, order::Int,
     _filter::Function=_p_filter
     ) where {PT,D,T}
@@ -53,7 +53,7 @@ struct NonTensorRTPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
   end
 end
 
-Base.size(a::NonTensorRTPolyBasis{D}) where {D} = (D*length(a.pterms) + length(a.sterms), )
+Base.size(a::RaviartThomasPolyBasis{D}) where {D} = (D*length(a.pterms) + length(a.sterms), )
 
 
 #################################
@@ -61,7 +61,7 @@ Base.size(a::NonTensorRTPolyBasis{D}) where {D} = (D*length(a.pterms) + length(a
 #################################
 
 function _evaluate_nd!(
-  b::NonTensorRTPolyBasis{D,V,K,PT}, x,
+  b::RaviartThomasPolyBasis{D,V,K,PT}, x,
   r::AbstractMatrix{V}, i,
   c::AbstractMatrix{T}) where {D,V,K,PT,T}
 
@@ -112,7 +112,7 @@ function _evaluate_nd!(
 end
 
 function _gradient_nd!(
-  b::NonTensorRTPolyBasis{D,V,K,PT}, x,
+  b::RaviartThomasPolyBasis{D,V,K,PT}, x,
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
@@ -147,7 +147,7 @@ function _gradient_nd!(
           end
         end
 
-        k = _comp_wize_set_gradient!(r,i,s,k,Val(l),V)
+        k = _comp_wize_set_derivative!(r,i,s,k,Val(l),V)
       end
     end
 
@@ -206,18 +206,18 @@ hierarchichal, see [`isHierarchichal`](@ref).
 b = PCurlGradBasis(Monomial, Val(3), Float64, 2)
 ```
 
-For more details, see [`NonTensorRTPolyBasis`](@ref), as `PCurlGradBasis` returns
+For more details, see [`RaviartThomasPolyBasis`](@ref), as `PCurlGradBasis` returns
 an instance of\\
-`NonTensorRTPolyBasis{D,VectorValue{D,T},order+1,PT}`  for `D`=2,3, or\\
-`TensorPolynomialBasis{1,VectorValue{1,T},order+1,PT}` for `D`=1.
+`RaviartThomasPolyBasis{D,VectorValue{D,T},order+1,PT}`  for `D`=2,3, or\\
+`UniformPolyBasis{1,VectorValue{1,T},order+1,PT}` for `D`=1.
 """
 function PCurlGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
-  NonTensorRTPolyBasis{D}(PT, T, order)
+  RaviartThomasPolyBasis{D}(PT, T, order)
 end
 
 function PCurlGradBasis(::Type{PT},::Val{1},::Type{T},order::Int) where {PT,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
 
   V = VectorValue{1,T}
-  TensorPolynomialBasis(PT, Val(1), V, order+1)
+  UniformPolyBasis(PT, Val(1), V, order+1)
 end

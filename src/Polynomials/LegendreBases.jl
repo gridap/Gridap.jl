@@ -8,11 +8,11 @@ struct Legendre <: Polynomial   end
 isHierarchical(::Type{Legendre}) = true
 
 """
-    LegendreBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Legendre}
+    LegendreBasis{D,V,K} = UniformPolyBasis{D,V,K,Legendre}
 
-Alias for Legendre multivariate scalar' or `Multivalue`'d basis, see [`TensorPolynomialBasis`](@ref).
+Alias for Legendre multivariate scalar' or `Multivalue`'d basis, see [`UniformPolyBasis`](@ref).
 """
-const LegendreBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Legendre}
+const LegendreBasis{D,V,K} = UniformPolyBasis{D,V,K,Legendre}
 
 """
     LegendreBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)
@@ -21,12 +21,7 @@ const LegendreBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Legendre}
 
 High level constructors of [`LegendreBasis`](@ref).
 """
-LegendreBasis(args...) = TensorPolynomialBasis(Legendre, args...)
-
-QGradLegendreBasis(args...)     = QGradBasis(Legendre, args...)
-#PGradLegendreBasis(args...)     = PGradBasis(Legendre, args...)
-QCurlGradLegendreBasis(args...) = QCurlGradBasis(Legendre, args...)
-PCurlGradLegendreBasis(args...) = PCurlGradBasis(Legendre, args...)
+LegendreBasis(args...) = UniformPolyBasis(Legendre, args...)
 
 
 # 1D evaluation implementation

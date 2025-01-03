@@ -9,11 +9,11 @@ struct Chebyshev{kind} <: Polynomial end
 isHierarchical(::Type{<:Chebyshev}) = true
 
 """
-    ChebyshevBasis{D,V,kind,K} = TensorPolynomialBasis{D,V,K,Chebyshev{kind}}
+    ChebyshevBasis{D,V,kind,K} = UniformPolyBasis{D,V,K,Chebyshev{kind}}
 
-Alias for Chebyshev multivariate scalar' or `Multivalue`'d basis, see [`TensorPolynomialBasis`](@ref).
+Alias for Chebyshev multivariate scalar' or `Multivalue`'d basis, see [`UniformPolyBasis`](@ref).
 """
-const ChebyshevBasis{D,V,kind,K} = TensorPolynomialBasis{D,V,K,Chebyshev{kind}}
+const ChebyshevBasis{D,V,kind,K} = UniformPolyBasis{D,V,K,Chebyshev{kind}}
 
 """
     ChebyshevBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector; kind=:T)
@@ -22,14 +22,9 @@ const ChebyshevBasis{D,V,kind,K} = TensorPolynomialBasis{D,V,K,Chebyshev{kind}}
 
 High level constructors of [`ChebyshevBasis`](@ref).
 """
-ChebyshevBasis(args...; kind=:T) = TensorPolynomialBasis(Chebyshev{kind}, args...)
+ChebyshevBasis(args...; kind=:T) = UniformPolyBasis(Chebyshev{kind}, args...)
 
-TensorPolynomialBasis{D}(::Type{Chebyshev{:U}}, args...) where D = @notimplemented "1D evaluation for second kind needed here"
-
-QGradChebyshevBasis(args...; kind=:T)     = QGradBasis(Chebyshev{kind}, args...)
-#PGradChebyshevBasis(args...; kind=:T)     = PGradBasis(Chebyshev{kind}, args...)
-QCurlGradChebyshevBasis(args...; kind=:T) = QCurlGradBasis(Chebyshev{kind}, args...)
-PCurlGradChebyshevBasis(args...; kind=:T) = PCurlGradBasis(Chebyshev{kind}, args...)
+UniformPolyBasis{D}(::Type{Chebyshev{:U}}, args...) where D = @notimplemented "1D evaluation for second kind needed here"
 
 
 # 1D evaluation implementation

@@ -14,13 +14,13 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   D = num_dims(p)
 
   if is_n_cube(p)
-    prebasis = QGradMonomialBasis(Val(D),et,order) # Prebasis
-    eb = MonomialBasis(Val(1),et,order)            # Edge basis
-    fb = QGradMonomialBasis(Val(D-1),et,order-1)   # Face basis
-    cb = QCurlGradMonomialBasis(Val(D),et,order-1) # Cell basis
+    prebasis = QGradBasis(Monomial,Val(D),et,order) # Prebasis
+    eb = MonomialBasis(Val(1),et,order)             # Edge basis
+    fb = QGradBasis(Monomial,Val(D-1),et,order-1)   # Face basis
+    cb = QCurlGradBasis(Monomial,Val(D),et,order-1) # Cell basis
   elseif is_simplex(p)
-    prebasis = Polynomials.NedelecPrebasisOnSimplex{D}(order) # Prebasis
-    eb = MonomialBasis(Val(1),et,order)                           # Edge basis
+    prebasis = PGradBasis(Monomial,Val(D),et,order) # Prebasis
+    eb = MonomialBasis(Val(1),et,order)             # Edge basis
     fb = MonomialBasis(Val(D-1),VectorValue{D-1,et},order-1,Polynomials._p_filter) # Face basis
     cb = MonomialBasis(Val(D),VectorValue{D,et},order-D+1,Polynomials._p_filter)   # Cell basis
   else

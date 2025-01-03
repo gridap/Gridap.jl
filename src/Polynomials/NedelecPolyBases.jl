@@ -1,32 +1,32 @@
-struct NedelecPrebasisOnSimplex{D,V,K} <: PolynomialBasis{D,V,K,Monomial}
+struct NedelecPolyBasisOnSimplex{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
   order::Int
-  function NedelecPrebasisOnSimplex{D}(order::Integer) where D
+  function NedelecPolyBasisOnSimplex{D}(::Type{PT},::Type{T},order::Integer) where {D,PT,T}
+    @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
     K = Int(order)+1
-    V = VectorValue{D,Float64}
-    new{D,V,K}(Int(order))
+    V = VectorValue{D,T}
+    new{D,V,K,PT}(Int(order))
   end
 end
 
-function Base.size(a::NedelecPrebasisOnSimplex{D}) where D
+function Base.size(a::NedelecPolyBasisOnSimplex{D}) where D
   k = a.order+1
   n = div(k*prod(i->(k+i),2:D),factorial(D-1))
   (n,)
 end
 
 function return_cache(
-  f::NedelecPrebasisOnSimplex{D},x::AbstractVector{<:Point}) where D
+  f::NedelecPolyBasisOnSimplex{D,V,K,PT},x::AbstractVector{<:Point}) where {D,V,K,PT}
+
   np = length(x)
   ndofs = length(f)
-  V = eltype(x)
   a = zeros(V,(np,ndofs))
-  K = get_order(f)
-  P = MonomialBasis(Val(D),VectorValue{D,Float64},K-1,(e,order)->sum(e)<=order)
+  P = UniformPolyBasis(PT,Val(D),V,K-1,_p_filter)
   cP = return_cache(P,x)
   CachedArray(a), cP, P
 end
 
 function evaluate!(
-  cache,f::NedelecPrebasisOnSimplex{3},x::AbstractVector{<:Point})
+  cache,f::NedelecPolyBasisOnSimplex{3,V},x::AbstractVector{<:Point}) where V
   ca,cP,P = cache
   K = get_order(f)
   np = length(x)
@@ -35,7 +35,6 @@ function evaluate!(
   setsize!(ca,(np,ndofs))
   Px = evaluate!(cP,P,x)
   a = ca.array
-  V = eltype(x)
   T = eltype(V)
   z = zero(T)
   for (i,xi) in enumerate(x)
@@ -72,7 +71,7 @@ function evaluate!(
 end
 
 function evaluate!(
-  cache,f::NedelecPrebasisOnSimplex{2},x::AbstractVector{<:Point})
+  cache,f::NedelecPolyBasisOnSimplex{2,V},x::AbstractVector{<:Point}) where V
   ca,cP,P = cache
   K = get_order(f)
   np = length(x)
@@ -80,7 +79,6 @@ function evaluate!(
   ndofsP = length(P)
   setsize!(ca,(np,ndofs))
   a = ca.array
-  V = eltype(x)
   T = eltype(V)
   z = zero(T)
   Px = evaluate!(cP,P,x)
@@ -105,17 +103,15 @@ function evaluate!(
 end
 
 function return_cache(
-  g::FieldGradientArray{1,<:NedelecPrebasisOnSimplex{D}},
-  x::AbstractVector{<:Point}) where D
+  g::FieldGradientArray{1,<:NedelecPolyBasisOnSimplex{D,V,K,PT}},
+  x::AbstractVector{<:Point}) where {D,V,K,PT}
   f = g.fa
   np = length(x)
   ndofs = length(f)
   xi = testitem(x)
-  V = eltype(x)
   G = gradient_type(V,xi)
   a = zeros(G,(np,ndofs))
-  K = get_order(f)
-  mb = MonomialBasis(Val(D),VectorValue{D,Float64},K-1,_p_filter)
+  mb = UniformPolyBasis(PT,Val(D),V,K-1,_p_filter)
   P = Broadcasting(∇)(mb)
   cP = return_cache(P,x)
   CachedArray(a), cP, P
@@ -123,8 +119,8 @@ end
 
 function evaluate!(
   cache,
-  g::FieldGradientArray{1,<:NedelecPrebasisOnSimplex{3}},
-  x::AbstractVector{<:Point})
+  g::FieldGradientArray{1,<:NedelecPolyBasisOnSimplex{3,V}},
+  x::AbstractVector{<:Point}) where V
   ca,cP,P = cache
   f = g.fa
   K = get_order(f)
@@ -135,7 +131,6 @@ function evaluate!(
   fill!(a,zero(eltype(a)))
   ndofsP = length(P)
   Px = evaluate!(cP,P,x)
-  V = eltype(x)
   T = eltype(V)
   z = zero(T)
   for (i,xi) in enumerate(x)
@@ -197,8 +192,8 @@ _exp(a,y) = y>0 ? a^y : one(a)
 
 function evaluate!(
   cache,
-  g::FieldGradientArray{1,<:NedelecPrebasisOnSimplex{2}},
-  x::AbstractVector{<:Point})
+  g::FieldGradientArray{1,<:NedelecPolyBasisOnSimplex{2,V}},
+  x::AbstractVector{<:Point}) where V
   f = g.fa
   ca,cP,P = cache
   K = get_order(f)
@@ -207,7 +202,6 @@ function evaluate!(
   setsize!(ca,(np,ndofs))
   a = ca.array
   fill!(a,zero(eltype(a)))
-  V = eltype(x)
   T = eltype(V)
   z = zero(T)
   ndofsP = length(P)
@@ -257,11 +251,11 @@ b = PGradBasis(Monomial, Val(3), Float64, 2)
 ```
 """
 function PGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
+  # Although NedelecPolyBasisOnSimplex can be constructed with any PT<Polynomial,
+  # the code explicitely uses monomials for the terms of  x×(ℙₙ \\ ℙₙ₋₁)ᴰ, so I
+  # disable them here.
+  # But one can use NedelecPolyBasisOnSimplex{D}(PT,T,order) if they wish.
   @notimplemented "only implemented for monomials"
 end
 
-function PGradBasis(::Type{Monomial},::Val{D},::Type{T},order::Int) where {D,T}
-  @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
-  NedelecPrebasisOnSimplex{D}(order)
-end
 

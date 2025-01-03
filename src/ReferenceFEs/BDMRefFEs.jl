@@ -15,7 +15,7 @@ function BDMRefFE(::Type{T},p::Polytope,order::Integer) where T
   if is_simplex(p)
     prebasis = MonomialBasis(Val(D),VectorValue{D,T},order,Polynomials._p_filter)
     fb = MonomialBasis(Val(D-1),T,order,Polynomials._p_filter)
-    cb = Polynomials.NedelecPrebasisOnSimplex{D}(order-2)
+    cb = PGradBasis(Monomial,Val(D),T,order-2)
   else
     @notimplemented "BDM Reference FE only available for simplices"
   end

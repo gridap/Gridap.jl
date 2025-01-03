@@ -8,11 +8,11 @@ struct Bernstein <: Polynomial end
 isHierarchical(::Type{Bernstein}) = false
 
 """
-    BernsteinBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Bernstein}
+    BernsteinBasis{D,V,K} = UniformPolyBasis{D,V,K,Bernstein}
 
-Alias for Bernstein multivariate scalar' or `Multivalue`'d basis, see [`TensorPolynomialBasis`](@ref).
+Alias for Bernstein multivariate scalar' or `Multivalue`'d basis, see [`UniformPolyBasis`](@ref).
 """
-const BernsteinBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Bernstein}
+const BernsteinBasis{D,V,K} = UniformPolyBasis{D,V,K,Bernstein}
 
 """
     BernsteinBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)
@@ -21,10 +21,7 @@ const BernsteinBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Bernstein}
 
 High level constructors of [`BernsteinBasis`](@ref).
 """
-BernsteinBasis(args...) = TensorPolynomialBasis(Bernstein, args...)
-
-QGradBernsteinBasis(args...)     = QGradBasis(Bernstein, args...)
-QCurlGradBernsteinBasis(args...) = QCurlGradBasis(Bernstein, args...)
+BernsteinBasis(args...) = UniformPolyBasis(Bernstein, args...)
 
 
 # 1D evaluation implementation

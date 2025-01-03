@@ -231,11 +231,11 @@ function _gradient_nd!(
       end
     end
 
-    k = _set_gradient_mc0!(r,i,s,k,l,V)
+    k = _set_derivative_mc0!(r,i,s,k,l,V)
   end
 end
 
-@inline function _set_gradient_mc0!(
+@inline function _set_derivative_mc0!(
   r::AbstractMatrix{G},i,s,k,l,::Type{<:Real}) where G
 
   @inbounds r[i,k] = s
@@ -245,7 +245,7 @@ end
 # Indexing and m definition should be fixed if G contains symmetries, that is
 # if the code is  optimized for symmetric tensor V valued FESpaces
 # (if gradient_type(V) returned a symmetric higher order tensor type G)
-@inline @generated function _set_gradient_mc0!(
+@inline @generated function _set_derivative_mc0!(
   r::AbstractMatrix{G},i1,s,k,l,::Type{V}) where {V,G}
   # Git blame me for readable non-generated version
   @notimplementedif num_indep_components(G) != num_components(G) "Not implemented for symmetric Jacobian or Hessian"
@@ -318,7 +318,7 @@ function _hessian_nd!(
       end
     end
 
-    k = _set_gradient_mc0!(r,i,s,k,l,V)
+    k = _set_derivative_mc0!(r,i,s,k,l,V)
   end
 end
 

@@ -8,11 +8,11 @@ struct Monomial <: Polynomial   end
 isHierarchical(::Type{Monomial}) = true
 
 """
-    MonomialBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Monomial}
+    MonomialBasis{D,V,K} = UniformPolyBasis{D,V,K,Monomial}
 
-Alias for monomial Multivariate scalar' or `Multivalue`'d basis, see [`TensorPolynomialBasis`](@ref).
+Alias for monomial Multivariate scalar' or `Multivalue`'d basis, see [`UniformPolyBasis`](@ref).
 """
-const MonomialBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Monomial}
+const MonomialBasis{D,V,K} = UniformPolyBasis{D,V,K,Monomial}
 
 """
     MonomialBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)
@@ -21,13 +21,11 @@ const MonomialBasis{D,V,K} = TensorPolynomialBasis{D,V,K,Monomial}
 
 High level constructors of [`MonomialBasis`](@ref).
 """
-MonomialBasis(args...) = TensorPolynomialBasis(Monomial, args...)
+MonomialBasis(args...) = UniformPolyBasis(Monomial, args...)
 
-QGradMonomialBasis(args...)     = QGradBasis(Monomial, args...)
-#PGradMonomialBasis(args...)     = PGradBasis(Monomial, args...)
-QCurlGradMonomialBasis(args...) = QCurlGradBasis(Monomial, args...)
-PCurlGradMonomialBasis(args...) = PCurlGradBasis(Monomial, args...)
-
+function PGradBasis(::Type{Monomial},::Val{D},::Type{T},order::Int) where {D,T}
+  NedelecPolyBasisOnSimplex{D}(Monomial,T,order)
+end
 
 # 1D evaluation implementation
 

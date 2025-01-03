@@ -23,21 +23,37 @@ import Gridap.Arrays: return_type
 
 export Polynomial
 export isHierarchical
+export Monomial
+export Legendre
+export Chebyshev
+export ModalC0
+export Bernstein
 
 export PolynomialBasis
 export get_order
 
-export TensorPolynomialBasis
+export UniformPolyBasis
 export get_exponents
 export get_orders
-export num_terms
-
 export MonomialBasis
 export LegendreBasis
 export ChebyshevBasis
-export ModalC0Basis
 export BernsteinBasis
 
+export CompWiseTensorPolyBasis
+export QGradBasis
+export QCurlGradBasis
+
+export NedelecPolyBasisOnSimplex
+export PGradBasis
+
+export RaviartThomasPolyBasis
+export PCurlGradBasis
+
+export ModalC0Basis
+
+# deprecated
+export num_terms
 export QGradMonomialBasis
 export QCurlGradMonomialBasis
 export PCurlGradMonomialBasis
@@ -45,11 +61,13 @@ export PCurlGradMonomialBasis
 
 include("PolynomialInterfaces.jl")
 
-include("TensorPolynomialBases.jl")
+include("UniformPolyBases.jl")
 
 include("CompWiseTensorPolyBases.jl")
 
-include("NonTensorRTPolyBases.jl")
+include("NedelecPolyBases.jl")
+
+include("RaviartThomasPolyBases.jl")
 
 include("MonomialBases.jl")
 
@@ -63,6 +81,6 @@ include("BernsteinBases.jl")
 
 include("ModalC0Bases.jl")
 
-include("NedelecPrebasisOnSimplex.jl")
+include("Deprecated.jl")
 
 end # module

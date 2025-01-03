@@ -18,11 +18,11 @@ function RaviartThomasRefFE(
 ) where {T,D}
 
   if is_n_cube(p)
-    prebasis = QCurlGradLegendreBasis(Val(D),T,order)          # Prebasis
-    cb = QGradLegendreBasis(Val(D),T,order-1)                  # Cell basis
+    prebasis = QCurlGradBasis(Legendre,Val(D),T,order)         # Prebasis
+    cb = QGradBasis(Legendre,Val(D),T,order-1)                 # Cell basis
     fb = LegendreBasis(Val(D-1),T,order,Polynomials._q_filter) # Face basis
   elseif is_simplex(p)
-    prebasis = PCurlGradMonomialBasis(Val(D),T,order)                                 # Prebasis
+    prebasis = PCurlGradBasis(Monomial,Val(D),T,order)                        # Prebasis
     cb = LegendreBasis(Val(D),VectorValue{D,T},order-1,Polynomials._p_filter) # Cell basis
     fb = LegendreBasis(Val(D-1),T,order,Polynomials._p_filter)                # Face basis
   else

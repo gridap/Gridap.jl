@@ -11,10 +11,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added AMR-related methods `mark` and `estimate` to `Adaptivity` module. Implemented Dorfler marking strategy. Since PR[#1063](https://github.com/gridap/Gridap.jl/pull/1063).
 
+- Documentation and refactoring of Gridap.Polynomials. Since PR[#TODO](https://github.com/gridap/Gridap.jl/pull/#TODO).
+- Three new families of polynomial bases in addition to `Monomial`, `Legendre` (former `Jacobi`) and `ModalC0`: `Chebyshev`, `Bernstein` and `Jacobi`
+- `MonomialBasis` and `Q[Curl]GradMonomialBasis` have been generalized to `Legendre`, `Chebyshev`, `Bernstein` and `Jacobi` using the new `UniformPolyBasis` and `CompWiseTensorPolyBasis` respectively.
+- `PCurlGradMonomialBasis` has been generalized to `Legendre`, `Chebyshev` and `Jacobi` using the new `RaviartThomasPolyBasis`.
+- New aliases and high level constructor for `UniformPolyBasis` (former MonomialBasis): `MonomialBasis`, `LegendreBasis`, `ChebyshevBasis`, `BernsteinBasis`, `JacobiBasis`.
+- New high level constructors for Nedelec and Raviart-Thomas polynomial bases:
+    - Nedelec on simplex `PGradBasis(PT<:Polynomial, Val(D), order)`
+    - Nedelec on n-cubes `QGradBasis(PT<:Polynomial, Val(D), order)`
+    - Raviart on simplex `PCurlGradBasis(PT<:Polynomial, Val(D), order)`
+    - Raviart on n-cubes `QCurlGradBasis(PT<:Polynomial, Val(D), order)`
+
 ### Changed
-- Existing Jacobi polynomial bases/spaces were renamed to Legendre (which they are). TODO
-- `num_terms(b::Q/P(Curl)Grad...)` is deprecated, use `length(b)` instead
-- `get_order(b::Q/P(Curl)Grad...)`, now returns the order of the basis, +1 that used to create it.
+
+- Existing Jacobi polynomial bases/spaces were renamed to Legendre (which they were).
+- `Monomial` is now subtype of the new abstract type`Polynomial <: Field`
+- `MonomialBasis` is now an alias for `UniformPolyBasis{...,Monomial}`
+- All polynomial bases are now subtypes of the new abstract type `PolynomialBasis <: AbstractVector{<:Polynomial}`
+- `get_order(b::(Q/P)[Curl]Grad...)`, now returns the order of the basis, +1 than the order parameter passed to the constructor.
+- `NedelecPreBasisOnSimplex` is renamed `NedelecPolyBasisOnSimplex`
+- `JacobiPolynomial` is renamed `Legendre` and subtypes `Polynomial`
+- `JacobiPolynomialBasis` is renamed `LegendreBasis`
+- `ModalC0BasisFunction` is renamed `ModalC0` and subtypes `Polynomial`
+
+### Deprecated
+
+- `num_terms(f::AbstractVector{<:Field})` in favor of `length(f::PolynomialBasis)`
+- `MonomialBasis{D}(args...)` in favor of `MonomialBasis(Val(D), args...)`
+- `[P/Q][Curl]GradMonomialBasis{D}(args...)` in favor of `[...]GradBasis(Monomial, Val(D), args...)`
+- `NedelecPreBasisOnSimplex{D}(args...)` in favor of `NedelecPolyBasisOnSimplex(Val(D), args...)`
+- `JacobiPolynomialBasis{D}(args...)` in favor of `LegendreBasis(Val(D), args...)`
 
 ## [0.18.8] - 2024-12-2
 

@@ -28,7 +28,7 @@ struct CompWiseTensorPolyBasis{D,V,K,PT,L} <: PolynomialBasis{D,V,K,PT}
 
     msg1 = "The orders matrix rows number must match the number of independent components of V"
     @check L == num_indep_components(V) msg1
-    msg2 = "The Component Wise construction is useless for one component, use TensorPolynomialBasis instead"
+    msg2 = "The Component Wise construction is useless for one component, use UniformPolyBasis instead"
     @check L > 1 msg2
     @check D > 0
     K = maximum(orders)
@@ -143,19 +143,40 @@ function _gradient_nd!(
         end
       end
 
-      k = _comp_wize_set_gradient!(r,i,s,k,Val(l),V)
+      k = _comp_wize_set_derivative!(r,i,s,k,Val(l),V)
     end
   end
 end
 
-function _comp_wize_set_gradient!(
-  r::AbstractMatrix{G},i,s,k,l,::Type{<:Real}) where G
+"""
+    _uniform_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{V})
+
+```
+r[i,k]     = G(s…) = (Dbᵏ)(xi)
+return k+1
+```
+
+"""
+function _comp_wize_set_derivative!(
+  r::AbstractMatrix{G},i,s,k,vall,::Type{<:Real}) where G
 
   @inbounds r[i,k] = s
   k+1
 end
 
-@generated function _comp_wize_set_gradient!(
+"""
+    _uniform_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{V})
+
+```
+z = zero(s)
+r[i,k]     = G(z…, ..., z…, s…, z…, ..., z…) = (Dbᵏ)(xi)
+return k+1
+```
+
+where `s…` is the `l`ᵗʰ set of components. This is the gradient or hessian of
+the `k`ᵗʰ basis polynomial, whose nonzero component in `V` is the `l`ᵗʰ.
+"""
+@generated function _comp_wize_set_derivative!(
   r::AbstractMatrix{G},i,s,k,::Val{l},::Type{V}) where {G,l,V}
 
   N_val_dims = length(size(V))
@@ -174,7 +195,8 @@ end
   return Expr(:block, body ,:(return k+1))
 end
 
-@generated function _comp_wize_set_gradient!(
+# See _uniform_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
+@generated function _comp_wize_set_derivative!(
   r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
 
   @notimplemented
@@ -221,7 +243,7 @@ function _hessian_nd!(
         end
       end
 
-      k = _comp_wize_set_gradient!(r,i,s,k,l,V)
+      k = _comp_wize_set_derivative!(r,i,s,k,l,V)
     end
   end
 end
@@ -250,7 +272,9 @@ b = PCurlGradBasis(Monomial, Val(3), Float64, 2)
 ```
 
 For more details, see [`CompWiseTensorPolyBasis`](@ref), as `QGradBasis` returns
-an instance of `CompWiseTensorPolyBasis{D,VectorValue{D,T},order+1,PT,D}`.
+an instance of\\
+`CompWiseTensorPolyBasis{D, VectorValue{D,T}, order+1, PT}` for `D`>1, or\\
+`UniformPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
 """
 function QGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
@@ -265,7 +289,7 @@ function QGradBasis(::Type{PT},::Val{1},::Type{T},order::Int) where {PT,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
 
   V = VectorValue{1,T}
-  TensorPolynomialBasis(PT, Val(1), V, order+1)
+  UniformPolyBasis(PT, Val(1), V, order+1)
 end
 
 
@@ -293,8 +317,8 @@ b = QCurlGradBasis(Bernstein, Val(2), Float64, 3)
 
 For more details, see [`CompWiseTensorPolyBasis`](@ref), as `QCurlGradBasis` returns
 an instance of\\
-`CompWiseTensorPolyBasis{D, VectorValue{D,T}, order+1, PT, D}` for `D`>1, or\\
-`TensorPolynomialBasis{1, VectorValue{1,T}, order+1, PT, D}` for `D`=1.
+`CompWiseTensorPolyBasis{D, VectorValue{D,T}, order+1, PT}` for `D`>1, or\\
+`UniformPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
 """
 function QCurlGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
@@ -309,5 +333,5 @@ function QCurlGradBasis(::Type{PT},::Val{1},::Type{T},order::Int) where {PT,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
 
   V = VectorValue{1,T}
-  TensorPolynomialBasis(PT, Val(1), V, order+1)
+  UniformPolyBasis(PT, Val(1), V, order+1)
 end
