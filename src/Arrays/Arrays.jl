@@ -47,9 +47,8 @@ export testargs
 export inverse_map
 
 export Broadcasting
-
 export Operation
-
+export InverseMap
 
 # LazyArray
 
