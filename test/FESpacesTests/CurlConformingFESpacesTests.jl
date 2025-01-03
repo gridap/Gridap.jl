@@ -90,7 +90,7 @@ U = TrialFESpace(V,u)
 uh = interpolate(u,U)
 e = u - uh
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
-@test el2 < 1.0e-10 broken=true
+@test el2 < 1.0e-10
 order = 2
 reffe = ReferenceFE(nedelec,order)
 V = TestFESpace(model,reffe,dirichlet_tags = "boundary")
@@ -99,7 +99,7 @@ U = TrialFESpace(V,u)
 uh = interpolate(u,U)
 e = u - uh
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
-@test el2 < 1.0e-10 broken=true
+@test el2 < 1.0e-10
 
 domain = (0,1,0,1,0,1)
 partition = (3,3,3)
