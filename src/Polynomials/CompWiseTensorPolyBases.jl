@@ -256,8 +256,12 @@ end
 """
     QGradBasis(::Type{PT}, ::Val{D}, ::Type{T}, order::Int) :: PolynomialBasis
 
-Return a basis of ℕ𝔻ᴰₙ(□) = (ℚₙ)ᴰ ⊕ x × (ℚₙ \\ ℚₙ₋₁)ᴰ with n=`order`, the
-polynomial space for Nedelec elements on `D`-dimensional cubes with scalar type `T`.
+Return a basis of
+
+ℕ𝔻ᴰₙ(□) = (ℚₙ)ᴰ ⊕ x × (ℚₙ \\ ℚₙ₋₁)ᴰ
+
+with n=`order`, the polynomial space for Nedelec elements on `D`-dimensional
+cubes with scalar type `T`.
 
 The `order`=n argument has the following meaning: the curl of the  functions in
 this basis is in ℚₙ.
@@ -268,7 +272,7 @@ this basis is in ℚₙ.
 
 ```jldoctest
 # a basis for Nedelec on hexahedra with divergence in ℚ₂
-b = PCurlGradBasis(Monomial, Val(3), Float64, 2)
+b = QGradBasis(Monomial, Val(3), Float64, 2)
 ```
 
 For more details, see [`CompWiseTensorPolyBasis`](@ref), as `QGradBasis` returns

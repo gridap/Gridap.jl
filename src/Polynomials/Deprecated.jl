@@ -8,7 +8,7 @@ struct PGradMonomialBasis{D}
     new{0}()
   end
 end
-@deprecate PGradMonomialBasis{D}(args...) where D PGradBasis(Monomial, Val(D), args...)
+@deprecate PGradMonomialBasis{D}(args...) where D PGradBasis(Monomial, Val(D), args...) false
 
 struct PCurlGradMonomialBasis{D}
   function PCurlGradMonomialBasis()
@@ -40,7 +40,7 @@ struct NedelecPreBasisOnSimplex{D}
     new{0}()
   end
 end
-@deprecate NedelecPreBasisOnSimplex{D}(args...) where D NedelecPolyBasisOnSimplex{D}(args...)
+@deprecate NedelecPreBasisOnSimplex{D}(args...) where D NedelecPolyBasisOnSimplex{D}(args...) false
 
 struct JacobiPolynomialBasis{D}
   function JacobiPolynomialBasis()
