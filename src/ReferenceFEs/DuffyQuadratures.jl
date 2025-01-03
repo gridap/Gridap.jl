@@ -1,4 +1,14 @@
 
+"""
+    struct Duffy <: QuadratureName
+
+Duffy quadrature rule for simplices, obtained as the mapped
+tensor product of 1d Gauss-Jacobi and Gauss-Legendre quadratures.
+
+# Constructor: 
+
+    Quadrature(p::Polytope,duffy,degree::Integer;T::Type{<:AbstractFloat}=Float64)
+"""
 struct Duffy <: QuadratureName end
 
 const duffy = Duffy()

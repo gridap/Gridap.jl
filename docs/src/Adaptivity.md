@@ -156,6 +156,4 @@ When a cell is refined, we need to be able to evaluate the fields defined on the
 
 ```@docs
 FineToCoarseField
-FineToCoarseDofBasis
-FineToCoarseRefFE
 ```

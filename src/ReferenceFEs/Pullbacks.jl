@@ -1,128 +1,239 @@
 
 """
-    abstract type Pullback <: Map end
+    abstract type Pushforward <: Map end
 
-Represents a pullback map F*, defined as 
+Represents a pushforward map F*, defined as 
   F* : V̂ -> V
 where 
   - V̂ is a function space on the reference cell K̂ and 
   - V is a function space on the physical cell K.
 """
-abstract type Pullback <: Map end
+abstract type Pushforward <: Map end
 
-function lazy_map(
-  ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{Broadcasting{Operation{<:Pullback}}}}
+abstract type PushforwardRefFE <: ReferenceFEName end
+
+Pushforward(::Type{<:PushforwardRefFE}) = @abstractmethod
+Pushforward(name::PushforwardRefFE) = Pushforward(typeof(name))
+
+function Arrays.lazy_map(
+  k::Pushforward, ref_cell_fields::AbstractArray, pf_args::AbstractArray...
 )
-  cell_ref_basis, args = a.args
-  cell_ref_gradient = lazy_map(Broadcasting(∇),cell_ref_basis)
-  return lazy_map(a.maps.value,cell_ref_gradient,args...)
+  lazy_map(Broadcasting(Operation(k)), ref_cell_fields, pf_args...)
 end
 
-# InversePullback
-
-"""
-    struct InversePullback{PB <: Pullback} <: Map end
-
-Represents the inverse of a pullback map F*, defined as 
-  (F*)^-1 : V -> V̂
-where 
-  - V̂ is a function space on the reference cell K̂ and 
-  - V is a function space on the physical cell K.
-"""
-struct InversePullback{PB} <: Map
-  pullback::PB
-  function InversePullback(pullback::Pullback)
-    PB = typeof(pullback)
-    new{PB}(pullback)
-  end
+function Arrays.evaluate!(
+  cache, k::Pushforward, v_ref::Number, args...
+)
+  @abstractmethod
 end
 
-Arrays.inverse_map(pb::Pullback) = InversePullback(pb)
-Arrays.inverse_map(ipb::InversePullback) = ipb.pullback
-
-# Pushforward
-
-"""
-    struct Pushforward{PB <: Pullback} <: Map end
-
-Represents a pushforward map F**, defined as 
-  F** : V* -> V̂*
-where 
-  - V̂* is a dof space on the reference cell K̂ and 
-  - V* is a dof space on the physical cell K.
-Its action on physical dofs σ : V -> R is defined in terms of the pullback map F* as
-  F**(σ) := σ∘F* : V̂ -> R
-"""
-struct Pushforward{PB} <: Map
-  pullback::PB
-  function Pushforward(pullback::Pullback)
-    PB = typeof(pullback)
-    new{PB}(pullback)
-  end
+function evaluate!(
+  cache, k::Pushforward, f_ref::AbstractVector{<:Field}, args...
+)
+  Broadcasting(Operation(k))(f_ref,args...)
 end
 
 function Arrays.lazy_map(
-  ::typeof{evaluate},k::LazyArray{<:Fill{<:Pushforward}},ref_cell_basis
+  ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{Broadcasting{Operation{<:Pushforward}}}}
 )
-  pf = k.maps.value
-  phys_cell_dofs, cell_map, pb_args = k.args
-  phys_cell_basis = lazy_map(pf.pullback,ref_cell_basis,cell_map,pb_args...)
-  return lazy_map(evaluate,phys_cell_dofs,phys_cell_basis)
+  cell_ref_fields, args... = a.args
+  cell_ref_gradient = lazy_map(Broadcasting(∇),cell_ref_fields)
+  return lazy_map(a.maps.value,cell_ref_gradient,args...)
+end
+
+function Arrays.evaluate!(
+  cache,
+  ::Broadcasting{typeof(gradient)},
+  a::Fields.BroadcastOpFieldArray{<:Pushforward}
+)
+  v, pf_args... = a.args
+  grad_v = Broadcasting(∇)(v)
+  Broadcasting(Operation(a.op))(grad_v,pf_args...)
 end
 
 # InversePushforward
 
 """
-    struct InversePushforward{PB <: Pullback} <: Map end
+    const InversePushforward{PF} = InverseMap{PF} where PF <: Pushforward
 
-Represents the inverse of the pushforward map F**, defined as 
+Represents the inverse of a pushforward map F*, defined as 
+  (F*)^-1 : V -> V̂
+where 
+  - V̂ is a function space on the reference cell K̂ and 
+  - V is a function space on the physical cell K.
+"""
+const InversePushforward{PF} = InverseMap{PF} where PF <: Pushforward
+
+function Arrays.lazy_map(
+  k::InversePushforward, phys_cell_fields::AbstractArray, pf_args::AbstractArray...
+)
+  lazy_map(Broadcasting(Operation(k)), phys_cell_fields, pf_args...)
+end
+
+function evaluate!(
+  cache, k::InversePushforward, f_phys::AbstractVector{<:Field}, args...
+)
+  Broadcasting(Operation(k))(f_phys,args...)
+end
+
+function evaluate!(
+  cache, k::InversePushforward, f_phys::Field, args...
+)
+  Operation(k)(f_phys,args...)
+end
+
+# Pullback
+
+"""
+    struct Pullback{PF <: Pushforward} <: Map end
+
+Represents a pullback map F**, defined as 
+  F** : V* -> V̂*
+where 
+  - V̂* is a dof space on the reference cell K̂ and 
+  - V* is a dof space on the physical cell K.
+Its action on physical dofs σ : V -> R is defined in terms of the pushforward map F* as
+  ̂σ = F**(σ) := σ∘F* : V̂ -> R
+"""
+struct Pullback{PF <: Pushforward} <: Map
+  pushforward::PF
+end
+
+function Arrays.lazy_map(
+  ::typeof(evaluate),k::LazyArray{<:Fill{<:Pullback}},ref_cell_fields::AbstractArray
+)
+  pb = k.maps.value
+  phys_cell_dofs, pf_args... = k.args
+  phys_cell_fields = lazy_map(pb.pushforward,ref_cell_fields,pf_args...)
+  return lazy_map(evaluate,phys_cell_dofs,phys_cell_fields)
+end
+
+function evaluate!(
+  cache, k::Pullback, σ_phys::AbstractVector{<:Dof}, args...
+)
+  return MappedDofBasis(k.pushforward,σ_phys,args...)
+end
+
+# InversePullback
+
+"""
+    struct InversePullback{PF <: Pushforward} <: Map end
+
+Represents the inverse of the pullback map F**, defined as 
   (F**)^-1 : V̂* -> V*
 where 
   - V̂* is a dof space on the reference cell K̂ and 
   - V* is a dof space on the physical cell K.
-Its action on reference dofs ̂σ : V -> R is defined in terms of the pullback map F* as
-  F**(̂σ) := ̂σ∘(F*)^-1 : V -> R
+Its action on reference dofs ̂σ : V̂ -> R is defined in terms of the pushforward map F* as
+  σ = (F**)^-1(̂σ) := ̂σ∘(F*)^-1 : V -> R
 """
-struct InversePushforward{PB} <: Map
-  pullback::PB
-  function InversePushforward(pullback::Pullback)
-    PB = typeof(pullback)
-    new{PB}(pullback)
-  end
-end
-
-Arrays.inverse_map(pf::Pushforward) = InversePushforward(pf.pullback)
-Arrays.inverse_map(ipf::InversePushforward) = Pushforward(ipf.pullback)
+const InversePullback{PB} = InverseMap{PB} where PB <: Pullback
 
 function Arrays.lazy_map(
-  ::typeof{evaluate},k::LazyArray{<:Fill{<:InversePushforward}},phys_cell_basis
+  ::typeof(evaluate), k::LazyArray{<:Fill{<:InversePullback}}, phys_cell_fields::AbstractArray
 )
-  pf = inverse_map(k.maps.value)
-  ref_cell_dofs, cell_map, pb_args = k.args
-  ref_cell_basis = lazy_map(inverse_map(pf.pullback),phys_cell_basis,cell_map,pb_args...)
-  return lazy_map(evaluate,ref_cell_dofs,ref_cell_basis)
+  pb = inverse_map(k.maps.value)
+  ref_cell_dofs, pf_args... = k.args
+  ref_cell_fields = lazy_map(inverse_map(pb.pushforward), phys_cell_fields, pf_args...)
+  return lazy_map(evaluate,ref_cell_dofs,ref_cell_fields)
+end
+
+function evaluate!(
+  cache, k::InversePullback, σ_ref::AbstractVector{<:Dof}, args...
+)
+  pb = inverse_map(k)
+  return MappedDofBasis(inverse_map(pb.pushforward),σ_ref,args...)
 end
 
 # ContraVariantPiolaMap
 
-struct ContraVariantPiolaMap <: Pullback end
+struct ContraVariantPiolaMap <: Pushforward end
 
-function lazy_map(
-  k::ContraVariantPiolaMap,
-  cell_ref_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
-  cell_map::AbstractArray{<:Field},
-  sign_flip::AbstractArray{<:AbstractArray{<:Field}}
+function evaluate!(
+  cache, ::ContraVariantPiolaMap, v_ref::Number, Jt::Number
 )
-  cell_Jt = lazy_map(∇,cell_map)
-  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt,sign_flip)
+  idetJ = 1. / meas(Jt)
+  return v_ref ⋅ (idetJ * Jt)
 end
 
 function evaluate!(
-  cache,::ContraVariantPiolaMap,
-  v::Number,
-  Jt::Number,
-  sign_flip::Bool
+  cache, ::InversePushforward{ContraVariantPiolaMap}, v_phys::Number, Jt::Number
 )
-  idetJ = 1/meas(Jt)
-  ((-1)^sign_flip*v)⋅(idetJ*Jt)
+  detJ = meas(Jt)
+  return v_phys ⋅ (detJ * pinvJt(Jt))
+end
+
+# TODO: Should this be here? Probably not...
+
+function Fields.DIV(f::LazyArray{<:Fill})
+  df = Fields.DIV(f.args[1])
+  k  = f.maps.value
+  lazy_map(k,df)
+end
+
+function Fields.DIV(a::LazyArray{<:Fill{typeof(linear_combination)}})
+  i_to_basis  = Fields.DIV(a.args[2])
+  i_to_values = a.args[1]
+  lazy_map(linear_combination,i_to_values,i_to_basis)
+end
+
+function Fields.DIV(f::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}})
+  ϕrgₖ = f.args[1]
+  return lazy_map(Broadcasting(divergence),ϕrgₖ)
+end
+
+function Fields.DIV(f::Fill{<:Fields.BroadcastOpFieldArray{ContraVariantPiolaMap}})
+  ϕrgₖ = f.value.args[1]
+  return Fill(Broadcasting(divergence)(ϕrgₖ),length(f))
+end
+
+# CoVariantPiolaMap
+
+struct CoVariantPiolaMap <: Pushforward end
+
+function evaluate!(
+  cache, ::CoVariantPiolaMap, v_ref::Number, Jt::Number
+)
+  return v_ref ⋅ transpose(pinvJt(Jt))
+end
+
+function evaluate!(
+  cache, ::InversePushforward{CoVariantPiolaMap}, v_phys::Number, Jt::Number
+)
+  return v_phys ⋅ transpose(Jt)
+end
+
+# DoubleContraVariantPiolaMap
+
+struct DoubleContraVariantPiolaMap <: Pushforward end
+
+function evaluate!(
+  cache, ::DoubleContraVariantPiolaMap, v_ref::Number, Jt::Number
+)
+  _Jt = meas(Jt) * Jt
+  return transpose(_Jt) ⋅ v_ref ⋅ _Jt
+end
+
+function evaluate!(
+  cache, ::InversePushforward{DoubleContraVariantPiolaMap}, v_phys::Number, Jt::Number
+)
+  iJt = meas(Jt) * pinvJt(Jt)
+  return transpose(iJt) ⋅ v_phys ⋅ iJt
+end
+
+# DoubleCoVariantPiolaMap
+
+struct DoubleCoVariantPiolaMap <: Pushforward end
+
+function evaluate!(
+  cache, ::DoubleCoVariantPiolaMap, v_ref::Number, Jt::Number
+)
+  iJt = pinvJt(Jt)
+  return iJt ⋅ v_ref ⋅ transpose(iJt)
+end
+
+function evaluate!(
+  cache, ::InversePushforward{DoubleCoVariantPiolaMap}, v_phys::Number, Jt::Number
+)
+  return Jt ⋅ v_phys ⋅ transpose(Jt)
 end

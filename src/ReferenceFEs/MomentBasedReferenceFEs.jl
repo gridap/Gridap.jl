@@ -36,7 +36,7 @@ struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
 end
 
 Base.size(a::MomentBasedDofBasis) = (num_dofs(a),)
-Base.axes(a::MomentBasedDofBasis) = (Base.OneTo(num_dofs),)
+Base.axes(a::MomentBasedDofBasis) = (Base.OneTo(num_dofs(a)),)
 Base.getindex(a::MomentBasedDofBasis,i::Integer) = Moment()
 Base.IndexStyle(::MomentBasedDofBasis) = IndexLinear()
 
@@ -52,7 +52,7 @@ function num_dofs(b::MomentBasedDofBasis)
   n
 end
 
-function return_cache(b::MomentBasedDofBasis{P,V},field) where {P,V}
+function return_cache(b::MomentBasedDofBasis{P,V}, field) where {P,V}
   alloc_cache(vals::AbstractVector,T,ndofs) = zeros(T,ndofs)
   alloc_cache(vals::AbstractMatrix,T,ndofs) = zeros(T,ndofs,size(vals,2))
   cf = return_cache(field,b.nodes)
@@ -60,18 +60,15 @@ function return_cache(b::MomentBasedDofBasis{P,V},field) where {P,V}
   T = typeof(dot(zero(V),zero(eltype(vals))))
   r = alloc_cache(vals,T,num_dofs(b))
   c = CachedArray(r)
-  (c, cf)
+  return c, cf
 end
 
-function evaluate!(cache,b::MomentBasedDofBasis,field)
+function evaluate!(cache, b::MomentBasedDofBasis, field::Field)
   c, cf = cache
+  setsize!(c, size(b))
   vals = evaluate!(cf,field,b.nodes)
   dofs = c.array
-  _eval_moment_dof_basis!(dofs,vals,b)
-  dofs
-end
 
-function _eval_moment_dof_basis!(dofs,vals::AbstractVector,b)
   o = 1
   z = zero(eltype(dofs))
   face_nodes = b.face_nodes
@@ -90,9 +87,16 @@ function _eval_moment_dof_basis!(dofs,vals::AbstractVector,b)
       end
     end
   end
+
+  return dofs
 end
 
-function _eval_moment_dof_basis!(dofs,vals::AbstractMatrix,b)
+function evaluate!(cache, b::MomentBasedDofBasis, field::AbstractVector{<:Field})
+  c, cf = cache
+  setsize!(c, (size(b,1),length(field)))
+  vals = evaluate!(cf,field,b.nodes)
+  dofs = c.array
+
   o = 1
   na = size(vals,2)
   z = zero(eltype(dofs))
@@ -114,6 +118,8 @@ function _eval_moment_dof_basis!(dofs,vals::AbstractMatrix,b)
       end
     end
   end
+
+  return dofs
 end
 
 # MomentBasedReferenceFE
@@ -160,11 +166,21 @@ function get_edge_tangent(m::FaceMeasure{1,Dc}) where {Dc}
   return ConstantField(t[m.face])
 end
 
+# Extends a Df-dimensional vector to a Dc-dimensional one that 
+# lives in the tangent space of the Dc-embedded Df-dimensional manifold.
+# Equivalent to transpose(∇(fmap))
 function get_extension(m::FaceMeasure{Df,Dc}) where {Df,Dc}
   @assert Df == Dc - 1
   vs = ReferenceFEs._nfaces_vertices(Float64,m.cpoly,Df)[m.face]
-  return ConstantField(TensorValue(hcat([vs[2]-vs[1]...],[vs[3]-vs[1]...])))
+  J = TensorValue(hcat([vs[2]-vs[1]...],[vs[3]-vs[1]...]))
+  return ConstantField(J/meas(transpose(J)))
 end
+# function get_extension(m::FaceMeasure{Df,Dc}) where {Df,Dc}
+#   @assert Df == Dc - 1
+#   fmap = m.fmaps[m.face]
+#   J = Broadcasting(∇)(fmap)
+#   return Operation(*)(Operation(transpose)(J),Operation(x -> 1/meas(x))(J))
+# end
 
 # TO DO: Bug in 3D, when n==2; n==4 and D==3. Also, working on this to make better and more general.
 function get_facet_measure(p::Polytope{D}, face::Int) where D

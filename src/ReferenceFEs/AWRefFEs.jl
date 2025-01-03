@@ -1,9 +1,11 @@
-struct ArnoldWinther <: ReferenceFEName end
+
+struct ArnoldWinther <: PushforwardRefFE end
 
 const arnoldwinther = ArnoldWinther()
 
 """
-ArnoldWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
+    struct ArnoldWinther <: PushforwardRefFE end
+    ArnoldWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
 
 Arnold-Winther reference finite element.
 
@@ -55,11 +57,11 @@ function ArnoldWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
 end
 
 function ReferenceFE(p::Polytope,::ArnoldWinther, order)
-  BDMRefFE(Float64,p,order)
+  ArnoldWintherRefFE(Float64,p,order)
 end
 
 function ReferenceFE(p::Polytope,::ArnoldWinther,::Type{T}, order) where T
-  BDMRefFE(T,p,order)
+  ArnoldWintherRefFE(T,p,order)
 end
 
 function Conformity(reffe::GenericRefFE{ArnoldWinther},sym::Symbol)

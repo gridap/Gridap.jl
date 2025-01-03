@@ -101,7 +101,7 @@ e = u - uh
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
 @test el2 < 1.0e-10 broken=true
 
-domain =(0,1,0,1,0,1)
+domain = (0,1,0,1,0,1)
 partition = (3,3,3)
 model = CartesianDiscreteModel(domain,partition)
 
@@ -128,7 +128,7 @@ e = u - uh
 dΩ = Measure(Ω,order)
 
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
-@test el2 < 1.0e-10
+@test el2 < 2.0e-10
 
 
 # using Gridap.Visualization

@@ -10,19 +10,19 @@ using Gridap.Fields
 using Gridap.Io
 
 function test_div_v_q_equiv(U,V,P,Q,Ω)
-  v=get_fe_basis(V)
-  u=get_trial_fe_basis(U)
+  v = get_fe_basis(V)
+  u = get_trial_fe_basis(U)
 
-  q=get_fe_basis(Q)
-  p=get_trial_fe_basis(P)
+  q = get_fe_basis(Q)
+  p = get_trial_fe_basis(P)
 
-  dΩ=Measure(Ω,1)
-  dΩᵣ=Measure(Ω,1,integration_domain_style=ReferenceDomain())
+  dΩ  = Measure(Ω,1)
+  dΩᵣ = Measure(Ω,1,integration_domain_style = ReferenceDomain())
 
-  a1(p,v)=∫(divergence(v)*p)dΩ
-  a2(p,v)=∫(DIV(v)*p)dΩᵣ
+  a1(p,v) = ∫(divergence(v)*p)dΩ
+  a2(p,v) = ∫(DIV(v)*p)dΩᵣ
 
-  tol=1.0e-12
+  tol = 1.0e-12
   assem = SparseMatrixAssembler(P,V)
   data = collect_cell_matrix(P,V,a1(p,v))
   A1 = assemble_matrix(assem,data)
@@ -30,8 +30,8 @@ function test_div_v_q_equiv(U,V,P,Q,Ω)
   A2 = assemble_matrix(assem,data)
   @test norm(A1-A2) < tol
 
-  a3(u,q)=∫(q*divergence(u))dΩ
-  a4(u,q)=∫(q*DIV(u))dΩᵣ
+  a3(u,q) = ∫(q*divergence(u))dΩ
+  a4(u,q) = ∫(q*DIV(u))dΩᵣ
   assem = SparseMatrixAssembler(U,Q)
   data = collect_cell_matrix(U,Q,a3(u,q))
   A3 = assemble_matrix(assem,data)
@@ -39,36 +39,33 @@ function test_div_v_q_equiv(U,V,P,Q,Ω)
   A4 = assemble_matrix(assem,data)
   @test norm(A3-A4) < tol
 
-  uh=FEFunction(U,rand(num_free_dofs(U)))
-  l1(q)=∫(q*divergence(uh))dΩ
-  l2(q)=∫(q*DIV(uh))dΩᵣ
-  v1=assemble_vector(l1,Q)
-  v2=assemble_vector(l2,Q)
+  uh = FEFunction(U,rand(num_free_dofs(U)))
+  l1(q) = ∫(q*divergence(uh))dΩ
+  l2(q) = ∫(q*DIV(uh))dΩᵣ
+  v1 = assemble_vector(l1,Q)
+  v2 = assemble_vector(l2,Q)
   @test norm(v1-v2) < tol
 end
 
-@testset "Test Raviart-Thomas" begin
+#@testset "Test Raviart-Thomas" begin
 
-  domain =(0,1,0,1)
+  domain = (0,1,0,1)
   partition = (3,3)
   model = CartesianDiscreteModel(domain,partition)
 
   order = 1
-
   u(x) = x
 
   reffe = ReferenceFE(raviart_thomas,order)
-
   V = TestFESpace(model,reffe,dirichlet_tags = [1,6])
   test_single_field_fe_space(V)
   U = TrialFESpace(V,u)
 
-  reffe = ReferenceFE(lagrangian,Float64,order)
-  Q = TestFESpace(model,reffe,conformity=:L2)
+  reffe_p = ReferenceFE(lagrangian,Float64,order)
+  Q = TestFESpace(model,reffe_p,conformity=:L2)
   P = TrialFESpace(Q)
 
   uh = interpolate(u,U)
-
   e = u - uh
 
   Ω = Triangulation(model)
@@ -103,7 +100,6 @@ end
 
   v(x) = VectorValue(-0.5*x[1]+1.0,-0.5*x[2],-0.5*x[3])
   vh = interpolate(v,V)
-
   e = v - vh
 
   Ω = Triangulation(model)
@@ -150,7 +146,7 @@ end
 
   test_div_v_q_equiv(U,V,P,Q,Ω)
 
-end
+#end
 
 @testset "Test BDM" begin
 

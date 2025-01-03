@@ -1,8 +1,10 @@
 
 struct CurlConformity <: Conformity end
 
-struct Nedelec <: ReferenceFEName end
+struct Nedelec <: PushforwardRefFE end
 const nedelec = Nedelec()
+
+Pushforward(::Type{<:Nedelec}) = CoVariantPiolaMap()
 
 """
     NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
@@ -30,13 +32,18 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   function cmom(φ,μ,ds) # Cell moment function: σ_K(φ,μ) = ∫(φ⋅μ)dK
     Broadcasting(Operation(⋅))(φ,μ)
   end
-  function fmom(φ,μ,ds) # Face moment function: σ_F(φ,μ) = ∫((φ×n)⋅μ)dF
+  function fmom_HEX(φ,μ,ds) # Face moment function: σ_F(φ,μ) = ∫((φ×n)⋅μ)dF
     o = get_facet_orientations(ds.cpoly)[ds.face] # This is a hack to avoid a sign map
     n = o*get_facet_normal(ds)
     E = get_extension(ds)
     Eμ = Broadcasting(Operation(⋅))(E,μ) # We have to extend the basis to 3D
     φn = Broadcasting(Operation(×))(n,φ)
     Broadcasting(Operation(⋅))(φn,Eμ)
+  end
+  function fmom_TET(φ,μ,ds) # Face moment function: σ_F(φ,μ) = ∫((φ×n)⋅μ)dF
+    E = get_extension(ds)
+    Eμ = Broadcasting(Operation(⋅))(E,μ) # We have to extend the basis to 3D
+    Broadcasting(Operation(⋅))(φ,Eμ)
   end
   function emom(φ,μ,ds) # Edge moment function: σ_E(φ,μ) = ∫((φ⋅t)*μ)dE
     t = get_edge_tangent(ds)
@@ -47,7 +54,8 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   moments = Tuple[
     (get_dimrange(p,1),emom,eb), # Edge moments
   ]
-  if D == 3 && order > 0
+  if (D == 3) && order > 0
+    fmom = ifelse(is_n_cube(p),fmom_HEX,fmom_TET)
     push!(moments,(get_dimrange(p,D-1),fmom,fb)) # Face moments
   end
   if (is_n_cube(p) && order > 0) || (is_simplex(p) && order > D-2)
@@ -108,44 +116,4 @@ function get_face_dofs(reffe::GenericRefFE{Nedelec,Dc}) where Dc
     end
   end
   face_dofs
-end
-
-struct CoVariantPiolaMap <: Map end
-
-function evaluate!(
-  cache,
-  ::Broadcasting{typeof(∇)},
-  a::Fields.BroadcastOpFieldArray{CoVariantPiolaMap})
-  v, Jt = a.args
-  # Assuming J comes from an affine map
-  ∇v = Broadcasting(∇)(v)
-  k = CoVariantPiolaMap()
-  Broadcasting(Operation(k))(∇v,Jt)
-end
-
-function lazy_map(
-  ::Broadcasting{typeof(gradient)},
-  a::LazyArray{<:Fill{Broadcasting{Operation{CoVariantPiolaMap}}}})
-  v, Jt = a.args
-  ∇v = lazy_map(Broadcasting(∇),v)
-  k = CoVariantPiolaMap()
-  lazy_map(Broadcasting(Operation(k)),∇v,Jt)
-end
-
-function evaluate!(cache,::CoVariantPiolaMap,v::Number,Jt::Number)
-  v⋅transpose(inv(Jt)) # we multiply by the right side to compute the gradient correctly
-end
-
-function evaluate!(cache,k::CoVariantPiolaMap,v::AbstractVector{<:Field},phi::Field)
-  Jt = ∇(phi)
-  Broadcasting(Operation(k))(v,Jt)
-end
-
-function lazy_map(
-  k::CoVariantPiolaMap,
-  cell_ref_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
-  cell_map::AbstractArray{<:Field})
-
-  cell_Jt = lazy_map(∇,cell_map)
-  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt)
 end

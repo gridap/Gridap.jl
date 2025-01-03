@@ -1,11 +1,12 @@
 
 struct DivConformity <: Conformity end
-abstract type DivConforming <: ReferenceFEName end
 
 # RaviartThomas
 
-struct RaviartThomas <: DivConforming end
+struct RaviartThomas <: PushforwardRefFE end
 const raviart_thomas = RaviartThomas()
+
+Pushforward(::Type{<:RaviartThomas}) = ContraVariantPiolaMap()
 
 """
     RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
@@ -87,60 +88,4 @@ function compute_legendre_basis(::Type{T},p::ExtrusionPolytope{D},orders) where 
   extrusion = Tuple(p.extrusion)
   terms = _monomial_terms(extrusion,orders)
   LegendreBasis(Val(D),T,orders,terms)
-end
-
-# ContraVariantPiolaMap
-
-struct ContraVariantPiolaMap <: Map end
-
-function evaluate!(
-  cache,
-  ::Broadcasting{typeof(∇)},
-  a::Fields.BroadcastOpFieldArray{ContraVariantPiolaMap}
-)
-  v, Jt, sign_flip = a.args
-  ∇v = Broadcasting(∇)(v)
-  k = ContraVariantPiolaMap()
-  Broadcasting(Operation(k))(∇v,Jt,sign_flip)
-end
-
-function lazy_map(
-  ::Broadcasting{typeof(gradient)},
-  a::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}}
-)
-  v, Jt, sign_flip = a.args
-  ∇v = lazy_map(Broadcasting(∇),v)
-  k = ContraVariantPiolaMap()
-  lazy_map(Broadcasting(Operation(k)),∇v,Jt,sign_flip)
-end
-
-function lazy_map(
-  k::ContraVariantPiolaMap,
-  cell_ref_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
-  cell_map::AbstractArray{<:Field},
-  sign_flip::AbstractArray{<:AbstractArray{<:Field}}
-)
-  cell_Jt = lazy_map(∇,cell_map)
-  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt,sign_flip)
-end
-
-function evaluate!(
-  cache,::ContraVariantPiolaMap,
-  v::Number,
-  Jt::Number,
-  sign_flip::Bool
-)
-  idetJ = 1/meas(Jt)
-  ((-1)^sign_flip*v)⋅(idetJ*Jt)
-end
-
-function evaluate!(
-  cache,
-  k::ContraVariantPiolaMap,
-  v::AbstractVector{<:Field},
-  phi::Field,
-  sign_flip::AbstractVector{<:Field}
-)
-  Jt = ∇(phi)
-  Broadcasting(Operation(k))(v,Jt,sign_flip)
 end
