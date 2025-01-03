@@ -286,7 +286,7 @@ function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders) where {T,D}
 
 end
 
-function MonomialBasis(::Type{T},p::Polytope,orders) where T
+function monomial_basis(::Type{T},p::Polytope,orders) where T
   compute_monomial_basis(T,p,orders)
 end
 
@@ -369,9 +369,9 @@ function LagrangianRefFE(::Type{T},p::Polytope{D},order::Int;space::Symbol=_defa
   LagrangianRefFE(T,p,orders;space=space)
 end
 
-function MonomialBasis(::Type{T},p::Polytope{D},order::Int) where {D,T}
+function monomial_basis(::Type{T},p::Polytope{D},order::Int) where {D,T}
   orders = tfill(order,Val{D}())
-  MonomialBasis(T,p,orders)
+  monomial_basis(T,p,orders)
 end
 
 function LagrangianDofBasis(::Type{T},p::Polytope{D},order::Int) where {T,D}
@@ -508,7 +508,7 @@ end
   for iface in 1:num_faces(p,d)
     face = Polytope{d}(p,iface)
     face_ref_x = get_vertex_coordinates(face)
-    face_prebasis = MonomialBasis(Float64,face,1)
+    face_prebasis = monomial_basis(Float64,face,1)
     change = inv(evaluate(face_prebasis,face_ref_x))
     face_shapefuns = linear_combination(change,face_prebasis)
     face_vertex_ids = get_faces(p,d,0)[iface]
@@ -538,7 +538,7 @@ _compute_node_permutations(::Polytope{0}, interior_nodes) = [[1]]
 
 function _compute_node_permutations(p, interior_nodes)
   vertex_to_coord = get_vertex_coordinates(p)
-  lbasis = MonomialBasis(Float64,p,1)
+  lbasis = monomial_basis(Float64,p,1)
   change = inv(evaluate(lbasis,vertex_to_coord))
   lshapefuns = linear_combination(change,lbasis)
   perms = get_vertex_permutations(p)

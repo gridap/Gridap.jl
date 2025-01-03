@@ -168,7 +168,7 @@ function _Nedelec_edge_values(p,et,order)
   c_eips, ecips, ewips = _nfaces_evaluation_points_weights(p, egeomap, cips, wips)
 
   # Edge moments, i.e., M(Ei)_{ab} = q_RE^a(xgp_REi^b) w_Fi^b t_Ei ⋅ ()
-  eshfs = MonomialBasis(et,ep,order)
+  eshfs = monomial_basis(et,ep,order)
   emoments = _Nedelec_edge_moments(p, eshfs, c_eips, ecips, ewips)
 
   return ecips, emoments
