@@ -15,11 +15,11 @@ hierarchical.
 abstract type Polynomial  <: Field end
 
 """
-    isHierarchical(::Type{Polynomial})
+    isHierarchical(::Type{Polynomial})::Bool
 
-Return true if the 1D basis of order `K` of the given [`Polynomial`](@ref) type
-is the union of the basis of order `K-1` and an other order `K` polynomial.
-Equivalently, if the iᵗʰ basis polynomial is of order i-1.
+Return `true` if the 1D basis of order `K` of the given [`Polynomial`](@ref)
+basis family is the union of the basis of order `K-1` and an other order `K`
+polynomial. Equivalently, if the iᵗʰ basis polynomial is of order i-1.
 """
 isHierarchical(::Type{Polynomial}) = @abstractmethod
 
@@ -49,9 +49,9 @@ isHierarchical(::Type{Polynomial}) = @abstractmethod
 Abstract type representing a generic multivariate polynomial basis.
 The parameters are:
 - `D`: the spatial dimension
-- `V`: the image values type, of type `<:Real` or `<:MultiValue`
+- `V`: the image values type, a concrete type `<:Real` or `<:MultiValue`
 - `K`: the maximum order of a basis polynomial in a spatial component
-- `PT <: Polynomial`: the polynomial family (must be a concrete type).
+- `PT <: Polynomial`: the family of the basis polynomials (must be a concrete type).
 """
 abstract type PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}  end
 
@@ -191,7 +191,7 @@ Compute and assign: `r`[`i`] = ∇`b`(`xi`) = (∇`b`₁(`xi`), ..., ∇`b`ₙ(`
 where n = length(`b`) (cardinal of the basis), like [`_evaluate_nd!`](@ref) but
 for gradients of `b`ₖ(`xi`), and
 
-- `g` is a mutable `D`×`K` cache (for 1D poly deriv evals).
+- `g` is a mutable `D`×`K` cache (for the 1D polynomials first derivatives).
 - `s` is a mutable length `D` cache for ∇`b`ₖ(`xi`).
 """
 function _gradient_nd!(
@@ -213,7 +213,7 @@ Compute and assign: `r`[`i`] = H`b`(`xi`) = (H`b`₁(`xi`), ..., H`b`ₙ(`xi`))
 where n = length(`b`) (cardinal of the basis), like [`_evaluate_nd!`](@ref) but
 for hessian matrices/tensor of `b`ₖ(`xi`), and
 
-- `h` is a mutable `D`×`K` cache (for 1D poly second deriv evals).
+- `h` is a mutable `D`×`K` cache (for the 1D polynomials second derivatives).
 - `s` is a mutable `D`×`D` cache for H`b`ₖ(`xi`).
 """
 function _hessian_nd!(
@@ -282,11 +282,11 @@ end
 """
     _evaluate_1d!(PT::Type{<:Polynomial},::Val{K},c,x,d)
 
-Evaluates in place the 1D basis polynomials of the given type at one nD point `x`
-along the given coordinate 1 ≤ `d` ≤ nD.
+Evaluates in place the 1D basis polynomials of the family `PT` at one D-dim.
+point `x` along the given coordinate 1 ≤ `d` ≤ D.
 
-`c` is an AbstractMatrix of size (at least) `d`×(`K`+1), such that the 1 ≤ i ≤ `k`+1
-values are stored in `c[d,i]`.
+`c` is an AbstractMatrix of size (at least) `d`×(`K`+1), such that the
+1 ≤ i ≤ `k`+1 values are stored in `c[d,i]`.
 """
 function _evaluate_1d!(::Type{<:Polynomial},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number}
   @abstractmethod
@@ -295,7 +295,8 @@ end
 """
     _gradient_1d!(PT::Type{<:Polynomial},::Val{K},g,x,d)
 
-Like [`_evaluate_1d!`](@ref), but computes the first derivative of the basis functions.
+Like [`_evaluate_1d!`](@ref), but computes the first derivative of the basis
+polynomials.
 """
 function _gradient_1d!(::Type{<:Polynomial},::Val{K},g::AbstractMatrix{T},x,d) where {K,T<:Number}
   @abstractmethod
@@ -304,7 +305,8 @@ end
 """
     _hessian_1d!(PT::Type{<:Polynomial},::Val{K},g,x,d)
 
-Like [`_evaluate_1d!`](@ref), but computes the second derivative of the basis functions.
+Like [`_evaluate_1d!`](@ref), but computes the second derivative of the basis
+polynomials.
 """
 function _hessian_1d!(::Type{<:Polynomial},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number}
   @abstractmethod

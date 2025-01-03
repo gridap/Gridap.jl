@@ -18,7 +18,7 @@ with `L`>1, where the scalar multivariate spaces 𝕊ˡ (for 1 ≤ l ≤ `L`) of
 𝕊ᴸ = ℙα(`L`,1) ⊗ … ⊗ ℙα(`L`,`D`)
 
 The `L`×`D` matrix of orders α is given in the constructor, and `K` is the
-maximum of α. Any 1D polynomial basis `PT` is usable.
+maximum of α. Any 1D polynomial family `PT<:Polynomial` is usable.
 """
 struct CompWiseTensorPolyBasis{D,V,K,PT,L} <: PolynomialBasis{D,V,K,PT}
   orders::SMatrix{L,D,Int}
@@ -40,11 +40,11 @@ end
 Base.size(a::CompWiseTensorPolyBasis) = ( sum(prod.(eachrow(a.orders .+ 1))), )
 
 """
-    get_comp_terms(f::CompWiseTensorPolyBasis)
+    get_comp_terms(f::CompWiseTensorPolyBasis{D,V})
 
-Return a `NTuple{L,CartesianIndices{D}}` containing, for each component
-1 ≤ l ≤ `L`, the Cartesian indices iterator over the terms
-in ⟦1,`o`(l,1)+1⟧ × ⟦1,`o`(l,2)+1⟧ × … × ⟦1,`o`(l,D)+1⟧ that define 𝕊ˡ.
+Return a tuple (terms\\_1, ..., terms\\_l, ..., terms\\_L) containing, for each
+component of V, the Cartesian indices iterator over the terms that define 𝕊ˡ,
+that is all elements of ⟦1,`o`(l,1)+1⟧ × ⟦1,`o`(l,2)+1⟧ × … × ⟦1,`o`(l,D)+1⟧.
 
 E.g., if `orders=[ 0 1; 1 0]`, then the `comp_terms` are
 `( CartesianIndices{2}((1,2)), CartesianIndices{2}((2,1)) )`.
@@ -149,7 +149,7 @@ function _gradient_nd!(
 end
 
 """
-    _uniform_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{V})
+    _comp_wize_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{<:Real})
 
 ```
 r[i,k]     = G(s…) = (Dbᵏ)(xi)
@@ -165,7 +165,7 @@ function _comp_wize_set_derivative!(
 end
 
 """
-    _uniform_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{V})
+    _comp_wize_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{V})
 
 ```
 z = zero(s)
@@ -262,7 +262,7 @@ polynomial space for Nedelec elements on `D`-dimensional cubes with scalar type 
 The `order`=n argument has the following meaning: the curl of the  functions in
 this basis is in ℚₙ.
 
-`PT<:Polynomial` is the choice of scalar 1D polynomial basis.
+`PT<:Polynomial` is the choice of the family of the scalar 1D basis polynomials.
 
 # Example:
 
@@ -300,13 +300,17 @@ end
 """
     QCurlGradBasis(::Type{PT}, ::Val{D}, ::Type{T}, order::Int) :: PolynomialBasis
 
-Return a basis of ℝ𝕋ᴰₙ(□) = (ℚₙ)ᴰ ⊕ x (ℚₙ \\ ℚₙ₋₁) with n=`order`, the polynomial
-space for Raviart-Thomas elements on `D`-dimensional cubes with scalar type `T`.
+Return a basis of
+
+ℝ𝕋ᴰₙ(□) = (ℚₙ)ᴰ ⊕ x (ℚₙ \\ ℚₙ₋₁)
+
+with n=`order`, the polynomial space for Raviart-Thomas elements on
+`D`-dimensional cubes with scalar type `T`.
 
 The `order`=n argument has the following meaning: the divergence of the functions
 in this basis is in ℚₙ.
 
-`PT<:Polynomial` is the choice of scalar 1D polynomial basis.
+`PT<:Polynomial` is the choice of the family of the scalar 1D basis polynomials.
 
 # Example:
 
@@ -315,8 +319,8 @@ in this basis is in ℚₙ.
 b = QCurlGradBasis(Bernstein, Val(2), Float64, 3)
 ```
 
-For more details, see [`CompWiseTensorPolyBasis`](@ref), as `QCurlGradBasis` returns
-an instance of\\
+For more details, see [`CompWiseTensorPolyBasis`](@ref), as `QCurlGradBasis`
+returns an instance of\\
 `CompWiseTensorPolyBasis{D, VectorValue{D,T}, order+1, PT}` for `D`>1, or\\
 `UniformPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
 """

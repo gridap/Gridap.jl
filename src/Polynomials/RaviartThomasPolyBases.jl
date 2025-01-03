@@ -1,21 +1,22 @@
 """
     RaviartThomasPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
 
-Basis of ℝ𝕋ᴰₙ = (𝕊ₙ)ᴰ ⊕ x (𝕊ₙ\\𝕊₍ₙ₋₁₎)
+Basis of the vector valued (`V<:VectorValue{D}`) space
+
+ℝ𝕋ᴰₙ = (𝕊ₙ)ᴰ ⊕ x (𝕊ₙ\\𝕊₍ₙ₋₁₎)
+
 where 𝕊ₙ is a multivariate scalar polynomial space of maximum degree n = `K`-1.
 
 This ℝ𝕋ᴰₙ is the polynomial space for Raviart-Thomas elements with divergence in 𝕊ₙ.
 Its maximum degree is n+1 = `K`. `get_order` on it returns `K`.
 
-The multivariate scalar space 𝕊ₙ, typically ℙₙ, doesn't need to have a tensor
-product structure of 1D scalar spaces. Thus, the ℝ𝕋ᴰₙ component's scalar spaces
-are not tensor products either.
+The multivariate scalar space 𝕊ₙ, typically ℙₙ or ℚₙ, does not need to have a
+tensor product structure of 1D scalar spaces. Thus, the ℝ𝕋ᴰₙ component's scalar
+spaces are not tensor products either.
 
-𝕊ₙ must admit a basis computable using products of 1D polynomials of the `PT`
-type, `PT` thus needs to be hierarchical, see [`isHierarchical`](@ref).
-
-Indeed, 𝕊ₙ is defined like a scalar valued [`UniformPolyBasis`](@ref) via
-the `_filter` argument of the constructor, by default [`_p_filter`](@ref).
+𝕊ₙ is defined like a scalar valued [`UniformPolyBasis`](@ref) via the `_filter`
+argument of the constructor, by default [`_p_filter`](@ref) for ℙₙ.
+As a consequence, `PT` must be hierarchical, see [`isHierarchical`](@ref).
 """
 struct RaviartThomasPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
   pterms::Vector{CartesianIndex{D}}
@@ -190,14 +191,18 @@ end
 """
     PCurlGradBasis(::Type{PT}, ::Val{D}, ::Type{T}, order::Int) :: PolynomialBasis
 
-Return a basis of ℝ𝕋ᴰₙ(△) = (ℙₙ)ᴰ ⊕ x (ℙₙ \\ ℙₙ₋₁) with n=`order`, the polynomial
-space for Raviart-Thomas elements on `D`-dimensional simplices with scalar type `T`.
+Return a basis of
+
+ℝ𝕋ᴰₙ(△) = (ℙₙ)ᴰ ⊕ x (ℙₙ \\ ℙₙ₋₁)
+
+with n=`order`, the polynomial space for Raviart-Thomas elements on
+`D`-dimensional simplices with scalar type `T`.
 
 The `order`=n argument of this function has the following meaning: the divergence
 of the functions in this basis is in ℙₙ.
 
-`PT<:Polynomial` is the choice of scalar 1D polynomial basis, it must be
-hierarchichal, see [`isHierarchichal`](@ref).
+`PT<:Polynomial` is the choice of the family of the scalar 1D basis polynomials,
+it must be hierarchichal, see [`isHierarchichal`](@ref).
 
 # Example:
 
@@ -208,8 +213,8 @@ b = PCurlGradBasis(Monomial, Val(3), Float64, 2)
 
 For more details, see [`RaviartThomasPolyBasis`](@ref), as `PCurlGradBasis` returns
 an instance of\\
-`RaviartThomasPolyBasis{D,VectorValue{D,T},order+1,PT}`  for `D`=2,3, or\\
-`UniformPolyBasis{1,VectorValue{1,T},order+1,PT}` for `D`=1.
+`RaviartThomasPolyBasis{D, VectorValue{D,T}, order+1, PT}`  for `D`>1, or\\
+`UniformPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
 """
 function PCurlGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
   RaviartThomasPolyBasis{D}(PT, T, order)

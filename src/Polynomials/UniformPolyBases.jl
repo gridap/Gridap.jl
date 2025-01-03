@@ -6,8 +6,12 @@
     struct UniformPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
 
 Type representing a uniform basis of (an)isotropic `D`-multivariate `V`-valued
-polynomial space `V`(𝕊, 𝕊, ..., 𝕊), where 𝕊 is a scalar polynomial space. So each
-independant component of `V` holds the same space, which is here called 'uniform'.
+polynomial space
+
+`V`(𝕊, 𝕊, ..., 𝕊)
+
+where 𝕊 is a scalar polynomial space. So each (independant) component of `V`
+holds the same space, which is here called 'uniform'.
 
 The scalar polynomial basis spanning 𝕊 is defined as
 
@@ -52,11 +56,11 @@ function UniformPolyBasis(
 end
 
 """
-    UniformPolyBasis(::Type{PT}, ::Val{D}, ::Type{V}, orders::Tuple [, filter::Function])
+    UniformPolyBasis(::Type{PT}, ::Val{D}, ::Type{V}, orders::Tuple [, filter=_q_filter])
 
-This version of the constructor allows to pass a tuple `orders` containing the
-polynomial order to be used in each of the `D` dimensions in order to construct
-a tensorial anisotropic multivariate space 𝕊.
+This constructor allows to pass a tuple `orders` containing the polynomial order
+to be used in each of the `D` spatial dimensions in order to construct a
+tensorial anisotropic multivariate space 𝕊.
 """
 function UniformPolyBasis(
   ::Type{PT}, ::Val{D}, ::Type{V}, orders::NTuple{D,Int}, filter::Function=_q_filter
@@ -67,29 +71,25 @@ function UniformPolyBasis(
 end
 
 """
-    UniformPolyBasis(::Type{V}, ::Val{D}, order::Int [, filter::Function]) where {D,V}
+    UniformPolyBasis(::Type{PT}, ::Type{V}, ::Val{D}, order::Int [, filter=_q_filter]) where {D,V}
 
-Returns an instance of `UniformPolyBasis` representing a multivariate polynomial
-basis in `D` dimensions, of polynomial degree `order`, whose value is represented
-by the type `V`. The type `V` is typically `<:Number`, e.g., `Float64` for
-scalar-valued functions and `VectorValue{D,Float64}` for vector-valued ones.
+Returns an instance of `UniformPolyBasis{D,V,order,PT}`.
 
 # Filter function
 
 The `filter` function is used to select which terms of the tensor product space
-of order `order` in `D` dimensions are to be used. If the filter is not provided,
-the full tensor-product space is used by default leading to a multivariate
-polynomial space of type ℚ. The signature of the filter function is
+of order `order` in `D` spatial dimensions are to be used. If the filter is not
+provided, the full tensor-product space is used by default leading to a
+multivariate polynomial space of type ℚ. The signature of the filter function is
 
     (e,order) -> Bool
 
 where `e` is a tuple of `D` integers containing the exponents of a multivariate
 monomial. The following filters are used to select well known polynomial spaces
 
-- ℚ space: `(e,order) -> maximum(e) <= order`
-- ℙ space: `(e,order) -> sum(e) <= order`
+- ℚ space: `_p_filter = (e,order) -> maximum(e) <= order`
+- ℙ space: `_q_filter = (e,order) -> sum(e) <= order`
 - "Serendipity" space: `(e,order) -> sum( [ i for i in e if i>1 ] ) <= order`
-
 """
 function UniformPolyBasis(
   ::Type{PT}, VD::Val{D}, ::Type{V}, order::Int, filter::Function=_q_filter) where {PT,D,V}
@@ -128,7 +128,7 @@ end
 """
     get_orders(b::UniformPolyBasis)
 
-Return the D-tuple of polynomial orders in each dimension
+Return the D-tuple of polynomial orders in each spatial dimension
 """
 function get_orders(b::UniformPolyBasis)
   b.orders

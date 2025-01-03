@@ -1,7 +1,7 @@
 """
     ModalC0 <: Polynomial
 
-Type representing ModalC0 polynomial.
+Type representing ModalC0 polynomials.
 
 Reference: Eq. (17) in https://doi.org/10.1016/j.camwa.2022.09.027
 """
@@ -91,9 +91,6 @@ end
 
 @inline Base.size(a::ModalC0Basis{D,V}) where {D,V} = (length(a.terms)*num_indep_components(V),)
 
-"""
-    get_orders(b::ModalC0Basis)
-"""
 function get_orders(b::ModalC0Basis)
   b.orders
 end

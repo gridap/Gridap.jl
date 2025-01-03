@@ -237,8 +237,12 @@ end
 """
     PGradBasis(::Type{Monomial}, ::Val{D}, ::Type{T}, order::Int) :: PolynomialBasis
 
-Return a basis of ℕ𝔻ᴰₙ(△) = (ℙₙ)ᴰ ⊕ x × (ℙₙ \\ ℙₙ₋₁)ᴰ with n=`order`, the polynomial
-space for Nedelec elements on `D`-dimensional simplices with scalar type `T`.
+Return a basis of
+
+ℕ𝔻ᴰₙ(△) = (ℙₙ)ᴰ ⊕ x × (ℙₙ \\ ℙₙ₋₁)ᴰ
+
+with n=`order`, the polynomial space for Nedelec elements on `D`-dimensional
+simplices with scalar type `T`.
 
 The `order`=n argument has the following meaning: the curl of the  functions in
 this basis is in ℙₙ.
