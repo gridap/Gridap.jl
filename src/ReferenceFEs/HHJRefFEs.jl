@@ -21,7 +21,7 @@ function HellanHerrmannJhonsonRefFE(::Type{T},p::Polytope,order::Integer) where 
   
   VT = SymTensorValue{2,T}
   prebasis = MonomialBasis{2}(VT,order,Polynomials._p_filter)
-  fb = MonomialBasis{D-1}(T,order,Polynomials._p_filter)
+  fb = MonomialBasis{1}(T,order,Polynomials._p_filter)
   cb = MonomialBasis{2}(VT,order-1,Polynomials._p_filter)
 
   function cmom(φ,μ,ds) # Cell and Node moment function: σ_K(φ,μ) = ∫(φ:μ)dK

@@ -210,15 +210,15 @@ struct DoubleContraVariantPiolaMap <: Pushforward end
 function evaluate!(
   cache, ::DoubleContraVariantPiolaMap, v_ref::Number, Jt::Number
 )
-  _Jt = meas(Jt) * Jt
-  return transpose(_Jt) ⋅ v_ref ⋅ _Jt
+  _Jt = (1. / meas(Jt)) * Jt
+  return symmetric_part(transpose(_Jt) ⋅ v_ref ⋅ _Jt)
 end
 
 function evaluate!(
   cache, ::InversePushforward{DoubleContraVariantPiolaMap}, v_phys::Number, Jt::Number
 )
   iJt = meas(Jt) * pinvJt(Jt)
-  return transpose(iJt) ⋅ v_phys ⋅ iJt
+  return symmetric_part(transpose(iJt) ⋅ v_phys ⋅ iJt)
 end
 
 # DoubleCoVariantPiolaMap

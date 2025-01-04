@@ -53,6 +53,19 @@ function get_cell_pushforward(
   return CoVariantPiolaMap(), change, (Jt,)
 end
 
+# DoubleContraVariantPiolaMap
+
+using Gridap.ReferenceFEs: DoubleContraVariantPiolaMap
+function get_cell_pushforward(
+  ::DoubleContraVariantPiolaMap, model::DiscreteModel, cell_reffe, conformity
+)
+  cell_map = get_cell_map(get_grid(model))
+  Jt = lazy_map(Broadcasting(∇),cell_map)
+  change = lazy_map(r -> Diagonal(ones(num_dofs(r))), cell_reffe)
+  #change = get_sign_flip(model, cell_reffe)
+  return DoubleContraVariantPiolaMap(), change, (Jt,)
+end
+
 # NormalSignMap
 
 """

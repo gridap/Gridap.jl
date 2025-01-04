@@ -57,7 +57,7 @@ function return_cache(b::MomentBasedDofBasis{P,V}, field) where {P,V}
   alloc_cache(vals::AbstractMatrix,T,ndofs) = zeros(T,ndofs,size(vals,2))
   cf = return_cache(field,b.nodes)
   vals = evaluate!(cf,field,b.nodes)
-  T = typeof(dot(zero(V),zero(eltype(vals))))
+  T = typeof(inner(zero(V),zero(eltype(vals))))
   r = alloc_cache(vals,T,num_dofs(b))
   c = CachedArray(r)
   return c, cf
@@ -81,7 +81,8 @@ function evaluate!(cache, b::MomentBasedDofBasis, field::Field)
       for j in 1:nj
         dofs[o] = z
         for i in 1:ni
-          dofs[o] += moments[i,j]⋅vals[nodes[i]]
+          #dofs[o] += inner(moments[i,j],vals[nodes[i]])
+          dofs[o] += dot(VectorValue(moments[i,j].data),VectorValue(vals[nodes[i]].data))
         end
         o += 1
       end
@@ -111,7 +112,8 @@ function evaluate!(cache, b::MomentBasedDofBasis, field::AbstractVector{<:Field}
         for a in 1:na
           dofs[o,a] = z
           for i in 1:ni
-            dofs[o,a] += moments[i,j]⋅vals[nodes[i],a]
+            #dofs[o,a] += inner(moments[i,j],vals[nodes[i],a])
+            dofs[o,a] += dot(VectorValue(moments[i,j].data),VectorValue(vals[nodes[i],a].data))
           end
         end
         o += 1
@@ -261,6 +263,7 @@ function Arrays.evaluate!(
 
   detJ = Broadcasting(Operation(meas))(Broadcasting(∇)(fmap))
   dF = evaluate!(detJ_cache,detJ,xf)
+  dF .*= sum(w .* dF)
 
   xc = evaluate!(fmap_cache,fmap,xf) # quad pts on the cell
   fx = evaluate!(f_cache,f,xf) # f evaluated on the quad pts
@@ -271,7 +274,7 @@ end
 component_basis(T::Type{<:Real}) = [one(T)]
 function component_basis(V::Type{<:MultiValue})
   T = eltype(V)
-  n = num_components(V)
+  n = num_indep_components(V)
   z, o = zero(T), one(T)
   return [V(ntuple(i -> ifelse(i == j, o, z),Val(n))) for j in 1:n]
 end
@@ -355,7 +358,7 @@ function MomentBasedReferenceFE(
       node_offset = first(face_nodes[face]) + face_n_nodes[face] - 1
       for i in axes(vals,1)
         for j in axes(vals,2)
-          face_moments[face][i,j+dof_offset] = dot(vals[i,j,:],φ_vec)
+          face_moments[face][i,j+dof_offset] = T(vals[i,j,:]...)
         end
         nodes[i+node_offset] = coords[i]
       end

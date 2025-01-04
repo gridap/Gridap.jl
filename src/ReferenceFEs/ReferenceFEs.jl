@@ -199,6 +199,7 @@ export nedelec
 export bezier
 export modalC0
 export cr
+export hhj
 
 export Quadrature
 export QuadratureName
@@ -258,6 +259,8 @@ include("BDMRefFEs.jl")
 include("NedelecRefFEs.jl")
 
 include("CRRefFEs.jl")
+
+include("HHJRefFEs.jl")
 
 include("MockDofs.jl")
 
