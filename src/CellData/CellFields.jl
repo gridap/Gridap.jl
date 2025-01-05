@@ -716,16 +716,14 @@ function CellFieldAt{T}(parent::OperationCellField) where T
 end
 
 function get_normal_vector(trian::Triangulation,cell_normal::SkeletonPair)
-  get_normal_or_tangent_vector(trian, cell_normal)
+  plus = get_normal_vector(trian,cell_normal.plus)
+  minus = get_normal_vector(trian,cell_normal.minus)
+  SkeletonPair(plus,minus)
 end
 
 function get_tangent_vector(trian::Triangulation,cell_tangent::SkeletonPair)
-  get_normal_or_tangent_vector(trian, cell_tangent)
-end
-
-function get_normal_or_tangent_vector(trian::Triangulation, cell::SkeletonPair)
-  plus = get_normal_vector(trian,cell.plus)
-  minus = get_normal_vector(trian,cell.minus)
+  plus = get_normal_vector(trian,cell_tangent.plus)
+  minus = get_normal_vector(trian,cell_tangent.minus)
   SkeletonPair(plus,minus)
 end
 

@@ -239,41 +239,22 @@ function get_facet_normal(trian::BoundaryTriangulation, boundary_trian_glue::Fac
 end
 
 function get_edge_tangent(trian::BoundaryTriangulation, boundary_trian_glue::FaceToCellGlue)
-  cell_grid = get_grid(get_background_model(trian.trian))
 
-  ## Reference tangent
-  function f(r)
-    p = get_polytope(r)
-    lface_to_t = get_edge_tangent(p)
-    lface_to_pindex_to_perm = get_face_vertex_permutations(p, num_cell_dims(p)-1)
-    nlfaces = length(lface_to_t)
-    # Repeat tangents according to the permutations, just like normals
-    lface_pindex_to_t = [
-      fill(lface_to_t[lface], length(lface_to_pindex_to_perm[lface]))
-      for lface in 1:nlfaces
-    ]
-    return lface_pindex_to_t
+  face_s_n = get_facet_normal(trian, boundary_trian_glue)
+
+  function rotate_normal_2d(n)
+    t = VectorValue(n[2], -n[1])
+    m = sqrt(t[1]^2 + t[2]^2)
+    return m < eps() ? VectorValue(0.0, 0.0) : t
   end
-  ctype_lface_pindex_to_tref = map(f, get_reffes(cell_grid))
-  face_to_tref = FaceCompressedVector(ctype_lface_pindex_to_tref, boundary_trian_glue)
-  face_s_tref = lazy_map(constant_field, face_to_tref)
 
-  # Tangent vectors transform like the Jacobian
-  cell_q_x = get_cell_map(cell_grid)
-  cell_q_Jt = lazy_map(∇, cell_q_x)
-  cell_q_J  = lazy_map(Operation(transpose), cell_q_Jt) 
-  face_q_J = lazy_map(Reindex(cell_q_J), boundary_trian_glue.face_to_cell)
-  
-  # Change of domain
-  D = num_cell_dims(cell_grid)
-  boundary_trian_glue_D = get_glue(trian, Val(D))
-  face_s_q = boundary_trian_glue_D.tface_to_mface_map
-  face_s_J = lazy_map(∘, face_q_J, face_s_q)
-  face_s_t = lazy_map(Broadcasting(Operation(push_tangent)), face_s_J, face_s_tref)
+  face_s_t = lazy_map(Operation(rotate_normal_2d), face_s_n)
+
   return Fields.MemoArray(face_s_t)
 end
 
 function get_edge_tangent(trian::BoundaryTriangulation{Dc,Dp,A,<:FaceToCellGlue}) where {Dc,Dp,A}
+  Dp != 2 && error("get_edge_tangent only implemented for 2D")
   glue = trian.glue
   get_edge_tangent(trian, glue)
 end
@@ -281,13 +262,6 @@ end
 function get_facet_normal(trian::BoundaryTriangulation{Dc,Dp,A,<:FaceToCellGlue}) where {Dc,Dp,A}
   glue = trian.glue
   get_facet_normal(trian, glue)
-end
-
-
-# Identitcal to push_normal, just for emphasis that we are pushing forward the
-# Jacobian and not the inverse transpose
-function push_tangent(J, t)
-  return push_normal(J, t)
 end
 
 function push_normal(invJt,n)

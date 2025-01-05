@@ -46,7 +46,6 @@ vglue = get_glue(vtrian,Val(3))
 @test vglue.plus.tface_to_mface == sglue.plus.tface_to_mface[ids]
 @test vglue.minus.tface_to_mface == sglue.minus.tface_to_mface[ids]
 vn = get_facet_normal(vtrian)
-# vt = Gridap.Geometry.get_edge_tangent(strian)
 @test isa(vn,SkeletonPair)
 @test isa(vn.plus,AbstractArray)
 @test isa(vn.minus,AbstractArray)
@@ -119,7 +118,13 @@ face_own_dofs = get_face_own_dofs(reffe,conf)
 strian = SkeletonTriangulation(model,reffe,face_own_dofs)
 test_triangulation(strian)
 ns = get_facet_normal(strian)
+ts = get_edge_tangent(strian)
 @test length(ns.⁺) == num_cells(strian)
+@test length(ts.⁺) == num_cells(strian)
+# Test orthogonality
+should_be_zero = lazy_map(Broadcasting(Operation(dot)), ns.plus, ts.plus)
+ndot_t_evaluated = evaluate(should_be_zero, VectorValue.(0:0.05:1))
+@test maximum(ndot_t_evaluated) < 1e-15
 
 #using Gridap.Visualization
 #writevtk(strian,"strian",cellfields=["normal"=>ns])
