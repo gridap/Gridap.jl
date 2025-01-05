@@ -39,6 +39,7 @@ end
 get_node_coordinates(trian::Triangulation) = get_node_coordinates(get_grid(trian))
 get_cell_node_ids(trian::Triangulation) = get_cell_node_ids(get_grid(trian))
 get_reffes(trian::Triangulation) = get_reffes(get_grid(trian))
+get_polytopes(trian::Triangulation) = get_polytopes(get_grid(trian))
 get_cell_type(trian::Triangulation) = get_cell_type(get_grid(trian))
 get_facet_normal(trian::Triangulation) = get_facet_normal(get_grid(trian))
 

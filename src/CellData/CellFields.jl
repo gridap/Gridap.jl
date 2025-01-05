@@ -476,19 +476,19 @@ struct OperationCellField{DS} <: CellField
 
     # This is only to catch errors in user code
     # as soon as possible.
-    if num_cells(trian) > 0
-      @check begin
-        pts = _get_cell_points(args...)
-        #x = testitem(get_data(pts))
-        #f = map(ak -> testitem(get_data(ak)), args)
-        #fx = map(fk -> return_value(fk,x), f)
-        #r = Fields.BroadcastingFieldOpMap(op.op)(fx...)
-        ax = map(i->i(pts),args)
-        axi = map(first,ax)
-        r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
-        true
-      end
-    end
+    # if num_cells(trian) > 0
+    #   @check begin
+    #     pts = _get_cell_points(args...)
+    #     #x = testitem(get_data(pts))
+    #     #f = map(ak -> testitem(get_data(ak)), args)
+    #     #fx = map(fk -> return_value(fk,x), f)
+    #     #r = Fields.BroadcastingFieldOpMap(op.op)(fx...)
+    #     ax = map(i->i(pts),args)
+    #     axi = map(first,ax)
+    #     r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
+    #     true
+    #   end
+    # end
 
     new{typeof(domain_style)}(op,args,trian,domain_style,Dict())
   end

@@ -136,6 +136,16 @@ Return a diagonal `D`×`D` tensor with diagonal containing the elements of `v`.
   Meta.parse("TensorValue(($str))")
 end
 
+@generated function tensor_from_columns(cols::NTuple{D1,VectorValue{D2,T}}) where {D1,D2,T}
+  s = ""
+  for i in 1:D1
+    for j in 1:D2
+      s *= "cols[$i].data[$j],"
+    end
+  end
+  Meta.parse("TensorValue(($s))")
+end
+
 ###############################################################
 # Introspection (TensorValue)
 ###############################################################

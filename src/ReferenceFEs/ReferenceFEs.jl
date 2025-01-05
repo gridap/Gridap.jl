@@ -259,4 +259,6 @@ include("ModalC0RefFEs.jl")
 
 include("LinearCombinationDofVectors.jl")
 
+include("PolytopalQuadratures.jl")
+
 end # module

@@ -224,7 +224,7 @@ end
 
 function Quadrature(trian::Grid,args...;kwargs...)
   cell_ctype = get_cell_type(trian)
-  ctype_polytope = map(get_polytope,get_reffes(trian))
+  ctype_polytope = get_polytopes(trian)
   ctype_quad = map(p->Quadrature(p,args...;kwargs...),ctype_polytope)
   cell_quad = expand_cell_data(ctype_quad,cell_ctype)
 end
