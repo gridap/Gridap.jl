@@ -4,6 +4,7 @@ using Test
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
+using StaticArrays
 # using BenchmarkTools
 
 import Gridap.Fields: Broadcasting
@@ -62,5 +63,22 @@ H = gradient_type(G,x1)
 @test evaluate(∇∇b2,[x1,x2,x3,])[:,10] ≈ H[ (0.0, 0.0, 0.0, -4.47213595499958);
                                             (0.0, 0.5590169943749475, 0.5590169943749475, 1.118033988749895);
                                             (0.0, -2.23606797749979, -2.23606797749979, 0.0) ]
+# Misc
+
+# Derivatives not implemented for symetric tensor types
+
+D = 2
+T = Float64
+V = SymTensorValue{D,T}
+G = gradient_type(V,x1)
+s = MVector(0.,0.)
+r = zeros(G, (1,1))
+@test_throws ErrorException Polynomials._set_derivative_mc0!(r,1,s,0,0,V)
+
+V = SymTracelessTensorValue{D,T}
+G = gradient_type(V,x1)
+r = zeros(G, (1,1))
+@test_throws ErrorException Polynomials._set_derivative_mc0!(r,1,s,0,0,V)
+
 
 end # module

@@ -245,7 +245,7 @@ end
 @inline @generated function _set_derivative_mc0!(
   r::AbstractMatrix{G},i1,s,k,l,::Type{V}) where {V,G}
   # Git blame me for readable non-generated version
-  @notimplementedif num_indep_components(G) != num_components(G) "Not implemented for symmetric Jacobian or Hessian"
+  @notimplementedif num_indep_components(V) != num_components(V) "Not implemented for symmetric Jacobian or Hessian"
 
   m = Array{String}(undef, size(G))
   N_val_dims = length(size(V))
