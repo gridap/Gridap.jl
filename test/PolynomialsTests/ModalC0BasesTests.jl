@@ -23,7 +23,9 @@ order = 3
 a = fill(Point(-0.5),order+1)
 b = fill(Point(2.5),order+1)
 b1 = ModalC0Basis{1}(V,order,a,b)
-#b1 = ModalC0Basis(Val(1),V,order,a,b)
+
+@test IndexStyle(b1) == IndexLinear()
+
 ∇b1 = Broadcasting(∇)(b1)
 ∇∇b1 = Broadcasting(∇)(∇b1)
 

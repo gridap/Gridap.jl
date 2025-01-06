@@ -78,13 +78,6 @@ function _gradient_1d!(
   end
 end
 
-
-function _gradient_1d!(
-  ::Type{Chebyshev{:U}},::Val{0},g::AbstractMatrix{T},x,d) where T<:Number
-
-  @inbounds g[d,1] = zero(T)
-end
-
 _gradient_1d!(::Type{Chebyshev{:U}},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number} = @notimplemented
 _hessian_1d!( ::Type{Chebyshev{:U}},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number} = @notimplemented
 
