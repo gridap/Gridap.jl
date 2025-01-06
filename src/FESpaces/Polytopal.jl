@@ -80,12 +80,12 @@ function centroid_map(poly::Polytope{D}) where D
   v = get_vertex_coordinates(poly)
   xc = mean(v)
   h = maximum(vk -> norm(vk-xc), v)
-  origin = xc/h
-  gradient = TensorValues.diagonal_tensor(VectorValue([h for i in 1:D]))
+  origin = -xc/h
+  gradient = TensorValues.diagonal_tensor(VectorValue([1/h for i in 1:D]))
   return affine_map(gradient,origin)
 end
 
-function Arrays.lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{typeof(centroid_map)}},x::AbstractVector{<:Point})
+function Arrays.lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{typeof(centroid_map)}},x::AbstractVector)
   polys = a.args[1]
   lazy_map(CentroidCoordinateChangeMap(),polys,x)
 end
@@ -97,12 +97,12 @@ function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope{D},
   return (x - xc) / h
 end
 
-function Arrays.return_cache(::CentroidCoordinateChangeMap,poly::Polytope{D},x::AbstractVector{Point{D}}) where D
+function Arrays.return_cache(::CentroidCoordinateChangeMap,poly::Polytope{D},x::AbstractVector{<:Point{D}}) where D
   return CachedArray(similar(x))
 end
 
-function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope{D},x::AbstractVector{Point{D}}) where D
-  setsize!(cache,length(x))
+function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope{D},x::AbstractVector{<:Point{D}}) where D
+  setsize!(cache,size(x))
   y = cache.array
   v = get_vertex_coordinates(poly)
   xc = mean(v)

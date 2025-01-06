@@ -132,6 +132,6 @@ end
 # Constructor from a simplex given by D1+1 points
 function affine_map(points::NTuple{D,Point{D2,T}}) where {D,D2,T}
   origin, pk = first_and_tail(points)
-  gradient = TensorValues.tensor_from_columns(map(p -> p-origin, pk))
+  gradient = TensorValues.tensor_from_rows(map(p -> p-origin, pk))
   AffineField(gradient,origin)
 end

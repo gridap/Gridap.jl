@@ -54,9 +54,8 @@ end
 
 function Arrays.evaluate!(cache,::PQuadCoordsMap, q::PolytopalQuadrature)
   y_cache, cmap_cache = cache
-
-  conn = q.conn
   coords = get_vertex_coordinates(q.poly)
+  conn = q.conn
 
   x = get_coordinates(q.quad)
   setsize!(y_cache,(length(x)*length(conn),))
