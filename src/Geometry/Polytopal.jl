@@ -1,8 +1,8 @@
 
-struct PolytopalGridTopology{Dc,Dp,T} <: GridTopology{Dc,Dp}
-  vertex_coordinates::Vector{Point{Dp,T}}
+struct PolytopalGridTopology{Dc,Dp,Tp} <: GridTopology{Dc,Dp}
+  vertex_coordinates::Vector{Point{Dp,Tp}}
   n_m_to_nface_to_mfaces::Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}
-  polytopes::Vector{GeneralPolytope{Dc}}
+  polytopes::Vector{GeneralPolytope{Dc,Dp,Tp,Nothing}}
 end
 
 function PolytopalGridTopology(
@@ -62,7 +62,7 @@ get_polytopes(g::PolytopalGridTopology) = g.polytopes
 struct PolytopalGrid{Dc,Dp,Tp,Tn} <: Grid{Dc,Dp}
   node_coordinates::Vector{Point{Dp,Tp}}
   cell_node_ids::Table{Int32,Vector{Int32},Vector{Int32}}
-  polytopes::Vector{<:GeneralPolytope{Dc}}
+  polytopes::Vector{<:GeneralPolytope{Dc,Dp,Tp,Nothing}}
   facet_normal::Tn
 
   function PolytopalGrid(
@@ -182,8 +182,15 @@ function voronoi(topo::GridTopology{Dc}) where Dc
     data[ptrs[n]:ptrs[n+1]-1] .= connectivity[perm]
   end
   resize!(data,ptrs[end]-1)
-
   new_c2n = Arrays.Table(data,ptrs)
-  polytopes = map(Polygon,lazy_map(Broadcasting(Reindex(new_node_coords)),new_c2n))
+
+  # Create polytopes
+  Tp = eltype(eltype(new_node_coords))
+  polytopes = Vector{GeneralPolytope{Dc,Dc,Tp,Nothing}}(undef,n_new_cells)
+  for cell in 1:n_new_cells
+    vertices = view(new_c2n,cell)
+    polytopes[cell] = Polygon(new_node_coords[vertices])
+  end
+
   return PolytopalGridTopology(new_node_coords,new_c2n,polytopes)
 end

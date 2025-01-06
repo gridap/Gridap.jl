@@ -3,7 +3,6 @@ module MeshesExt
 using Meshes: Meshes
 using Gridap
 
-using Gridap.Geometry
 using Gridap.Geometry: Grid, get_node_coordinates, get_cell_node_ids
 using Gridap.Geometry: GridTopology, get_vertex_coordinates, get_faces
 
