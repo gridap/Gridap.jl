@@ -10,12 +10,14 @@ xi = Point(4,2)
 np = 1
 x = fill(xi,np)
 
+PT = Monomial
+
 order = 2
 D = 2
 T = Float64
 V = VectorValue{D,T}
 G = gradient_type(V,xi)
-b = PCurlGradBasis(Monomial, Val(D),T,order)
+b = PCurlGradBasis(PT, Val(D),T,order)
 
 v = V[
   (1.0,  0.0), (4.0,  0.0), (16.0, 0.0), (2.0,  0.0), (8.0,  0.0), (4.0,  0.0), # pterm ex
@@ -57,9 +59,23 @@ D = 3
 T = Float64
 V = VectorValue{D,T}
 G = gradient_type(V,xi)
-b = PCurlGradBasis(Monomial, Val(D),T,order)
+b = PCurlGradBasis(PT, Val(D),T,order)
 
 @test length(b) == 15
 @test get_order(b) == 2
+
+
+# 1D
+
+order = 0
+D = 1
+T = Float64
+V = VectorValue{D,T}
+b = PCurlGradBasis(PT,Val(D),T,order)
+
+@test b isa UniformPolyBasis{D,V,order+1,PT}
+
+@test_throws AssertionError PCurlGradBasis(PT,Val(D),V,order)
+
 
 end # module

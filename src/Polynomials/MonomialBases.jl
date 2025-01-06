@@ -26,6 +26,11 @@ MonomialBasis(args...) = UniformPolyBasis(Monomial, args...)
 function PGradBasis(::Type{Monomial},::Val{D},::Type{T},order::Int) where {D,T}
   NedelecPolyBasisOnSimplex{D}(Monomial,T,order)
 end
+function PGradBasis(::Type{Monomial},::Val{1},::Type{T},order::Int) where T
+  @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
+  V = VectorValue{1,T}
+  UniformPolyBasis(Monomial, Val(1), V, order+1)
+end
 
 # 1D evaluation implementation
 

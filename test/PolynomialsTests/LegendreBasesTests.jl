@@ -6,6 +6,8 @@ using Gridap.Fields
 using Gridap.Fields: Broadcasting
 using Gridap.Polynomials
 
+@test isHierarchical(Legendre) == true
+
 # Real-valued Q space with isotropic order
 
 x1 = Point(0.0)

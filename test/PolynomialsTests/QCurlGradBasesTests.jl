@@ -92,7 +92,6 @@ order = 0
 D = 1
 T = Float64
 V = VectorValue{D,T}
-G = gradient_type(V,xi)
 b = QCurlGradBasis(PT,Val(D),T,order)
 
 @test b isa UniformPolyBasis{D,V,order+1,PT}

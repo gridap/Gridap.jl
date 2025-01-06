@@ -7,6 +7,8 @@ using Gridap.Polynomials
 
 using Gridap.Polynomials: _q_filter, _qs_filter, _p_filter, _ps_filter
 
+@test isHierarchical(Monomial) == true
+
 xi = Point(2,3)
 np = 5
 x = fill(xi,np)

@@ -5,6 +5,8 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 
+@test isHierarchical(Bernstein) == false
+
 np = 3
 x = [Point(0.),Point(1.),Point(.4)]
 xi = x[1]
@@ -14,6 +16,7 @@ xi = x[1]
 V = Float64
 G = gradient_type(V,xi)
 H = gradient_type(G,xi)
+
 
 # order 0 degenerated case
 
@@ -31,6 +34,7 @@ bx = repeat(permutedims(v),np)
 Hbx = repeat(permutedims(h),np)
 test_field_array(b,x,bx,grad=∇bx,gradgrad=Hbx)
 test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
+
 
 # Order 1
 
@@ -52,6 +56,7 @@ Hbx = H[  0. 0.
 test_field_array(b,x,bx,grad=∇bx,gradgrad=Hbx)
 test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 
+
 # Order 2
 
 order = 2
@@ -72,6 +77,7 @@ Hbx = H[  2. -4. 2.
 
 test_field_array(b,x,bx,≈, grad=∇bx,gradgrad=Hbx)
 test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
+
 
 # Order 3
 

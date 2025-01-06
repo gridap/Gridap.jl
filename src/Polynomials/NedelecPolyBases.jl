@@ -2,6 +2,7 @@ struct NedelecPolyBasisOnSimplex{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
   order::Int
   function NedelecPolyBasisOnSimplex{D}(::Type{PT},::Type{T},order::Integer) where {D,PT,T}
     @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
+    @notimplementedif !(D in (2,3))
     K = Int(order)+1
     V = VectorValue{D,T}
     new{D,V,K,PT}(Int(order))
@@ -242,7 +243,7 @@ Return a basis of
 ℕ𝔻ᴰₙ(△) = (ℙₙ)ᴰ ⊕ x × (ℙₙ \\ ℙₙ₋₁)ᴰ
 
 with n=`order`, the polynomial space for Nedelec elements on `D`-dimensional
-simplices with scalar type `T`.
+simplices with scalar type `T`. `D` must be 1, 2 or 3.
 
 The `order`=n argument has the following meaning: the curl of the  functions in
 this basis is in ℙₙ.
@@ -261,5 +262,4 @@ function PGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
   # But one can use NedelecPolyBasisOnSimplex{D}(PT,T,order) if they wish.
   @notimplemented "only implemented for monomials"
 end
-
 
