@@ -144,14 +144,6 @@ _qs_filter(e,order) = (maximum(e,init=0) == order) # ℚₙ\ℚ₍ₙ₋₁₎
 _p_filter( e,order) = (sum(e) <= order)     # ℙₙ
 _ps_filter(e,order) = (sum(e) == order)     # ℙₙ\ℙ₍ₙ₋₁₎
 
-function _p_dim(order,D)
-  dim = 1
-  for d in 1:D
-    dim *= order+d
-  end
-  dim/factorial(D)
-end
-
 function _define_terms(filter,orders)
   t = orders .+ 1
   g = (0 .* orders) .+ 1

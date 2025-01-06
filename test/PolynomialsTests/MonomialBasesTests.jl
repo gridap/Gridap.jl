@@ -5,6 +5,8 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 
+using Gridap.Polynomials: _q_filter, _qs_filter, _p_filter, _ps_filter
+
 xi = Point(2,3)
 np = 5
 x = fill(xi,np)
@@ -241,5 +243,32 @@ b = MonomialBasis(Val(0),SymTracelessTensorValue{2,Float64},order)
 @test evaluate(b,Point{0,Float64}[(),()]) == SymTracelessTensorValue{2,Float64}[
   (1.0, 0.0) (0.0, 1.0); (1.0, 0.0) (0.0, 1.0)
 ]
+
+order = 2
+
+@test _q_filter( (1,2) ,order) == true
+@test _q_filter( (2,0) ,order) == true
+@test _q_filter( (2,2) ,order) == true
+@test _q_filter( (1,1) ,order) == true
+@test _q_filter( (3,1) ,order) == false
+
+@test _qs_filter( (1,2) ,order) == true
+@test _qs_filter( (2,0) ,order) == true
+@test _qs_filter( (2,2) ,order) == true
+@test _qs_filter( (1,1) ,order) == false
+@test _qs_filter( (3,1) ,order) == false
+
+@test _p_filter( (1,2) ,order) == false
+@test _p_filter( (2,0) ,order) == true
+@test _p_filter( (2,2) ,order) == false
+@test _p_filter( (1,1) ,order) == true
+@test _p_filter( (3,1) ,order) == false
+@test _p_filter( (0,1) ,order) == true
+
+@test _ps_filter( (1,2) ,order) == false
+@test _ps_filter( (2,0) ,order) == true
+@test _ps_filter( (2,2) ,order) == false
+@test _ps_filter( (1,1) ,order) == true
+@test _ps_filter( (3,1) ,order) == false
 
 end # module
