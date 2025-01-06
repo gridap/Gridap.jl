@@ -138,19 +138,18 @@ function compute_face_own_nodes(model::PolytopalDiscreteModel,d::Integer)
   end
 end
 
-function Grid(::Type{ReferenceFE{1}},model::PolytopalDiscreteModel{Dc}) where {Dc}
-  node_coordinates = get_node_coordinates(model)
-  face_to_nodes = Table(get_face_nodes(model,1))
-  reffes = [LagrangianRefFE(Float64,SEGMENT,1)]
-  face_to_ftype = fill(Int8(1),num_faces(get_grid_topology(model),1))
-  UnstructuredGrid(node_coordinates, face_to_nodes, reffes, face_to_ftype)
-end
-
 function Grid(::Type{ReferenceFE{Df}},model::PolytopalDiscreteModel{Dc}) where {Df,Dc}
   node_coordinates = get_node_coordinates(model)
   face_to_nodes = Table(get_face_nodes(model,Df))
-  face_to_polytopes = get_reffaces(Polytope{Df},get_grid_topology(model))
-  PolytopalGrid(node_coordinates, face_to_nodes, face_to_polytopes)
+  if iszero(Df) || isone(Df)
+    reffes = [ifelse(iszero(Df), VERTEX1, SEG2)]
+    face_to_ftype = fill(Int8(1),num_faces(get_grid_topology(model),Df))
+    grid = UnstructuredGrid(node_coordinates, face_to_nodes, reffes, face_to_ftype)
+  else
+    face_to_polytopes = get_reffaces(Polytope{Df},get_grid_topology(model))
+    grid = PolytopalGrid(node_coordinates, face_to_nodes, face_to_polytopes)
+  end
+  return grid
 end
 
 function Grid(::Type{ReferenceFE{Dc}},model::PolytopalDiscreteModel{Dc}) where {Dc}

@@ -7,12 +7,26 @@ using FillArrays
 using Meshes: viz
 using CairoMakie
 
+# TODO: Add support for GridapMakie, which is what Meshes.jl uses for plotting underneath
+# using GridapMakie
+# using Makie
+# using GridapMakie: PlotGridMesh, PlotGrid
+# Makie.plottype(::Grid) = PlotGridMesh
+# function Makie.convert_arguments(::Type{PlotGridMesh}, grid::Grid)
+#   (PlotGrid(grid), )
+# end
+# function Makie.convert_arguments(t::Type{<:Union{Makie.Wireframe, Makie.Scatter}}, grid::Grid)
+#   Makie.convert_arguments(t, PlotGrid(grid))
+# end
+# Makie.args_preferred_axis(pg::PlotGrid)= num_point_dims(pg.grid)<=2 ? Makie.Axis : Makie.LScene
+
 model = CartesianDiscreteModel((0,1,0,1),(4,4))
 
 pmodel = Geometry.PolytopalDiscreteModel(model)
 vmodel = Geometry.voronoi(simplexify(model))
 polys = get_polytopes(vmodel)
-# viz(vmodel;color=1:num_cells(vmodel),showpoints=true,showsegments=true)
+
+viz(vmodel;color=1:num_cells(vmodel),showpoints=true,showsegments=true)
 
 Ω = Triangulation(vmodel)
 Γ = Boundary(vmodel)
