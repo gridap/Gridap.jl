@@ -24,34 +24,37 @@ High level constructors of [`ChebyshevBasis`](@ref).
 """
 ChebyshevBasis(args...; kind=:T) = UniformPolyBasis(Chebyshev{kind}, args...)
 
-UniformPolyBasis{D}(::Type{Chebyshev{:U}}, args...) where D = @notimplemented "1D evaluation for second kind needed here"
+function UniformPolyBasis(
+  ::Type{Chebyshev{:U}}, ::Val{D}, ::Type{V}, ::Int64) where {D, V}
+
+  @notimplemented "1D evaluation for second kind need to be implemented here"
+end
 
 
 # 1D evaluation implementation
 
 function _evaluate_1d!(
-  ::Type{<:Chebyshev},::Val{0},c::AbstractMatrix{T},x,d) where T<:Number
+  ::Type{Chebyshev{kind}},::Val{0},c::AbstractMatrix{T},x,d) where {kind,T<:Number}
 
   @inbounds c[d,1] = one(T)
 end
 
 function _evaluate_1d!(
-  ::Type{Chebyshev{:T}},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number}
+  ::Type{Chebyshev{kind}},::Val{K},c::AbstractMatrix{T},x,d) where {kind,K,T<:Number}
 
   n = K + 1        # n > 1
   ξ = (2*x[d] - 1) # ξ ∈ [-1,1]
   ξ2 = 2*ξ
 
   @inbounds c[d,1] = one(T)
-  @inbounds c[d,2] = ξ
+  @inbounds c[d,2] = (kind == :T) ? ξ :  ξ2
   for i in 3:n
     @inbounds c[d,i] = c[d,i-1]*ξ2 - c[d,i-2]
   end
 end
 
-
 function _gradient_1d!(
-  ::Type{<:Chebyshev},::Val{0},g::AbstractMatrix{T},x,d) where T<:Number
+  ::Type{Chebyshev{:T}},::Val{0},g::AbstractMatrix{T},x,d) where T<:Number
 
   @inbounds g[d,1] = zero(T)
 end
@@ -76,13 +79,12 @@ function _gradient_1d!(
 end
 
 
-function _hessian_1d!(
-  ::Type{Chebyshev{:T}},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _gradient_1d!(
+  ::Type{Chebyshev{:U}},::Val{0},g::AbstractMatrix{T},x,d) where T<:Number
 
-  @notimplemented
+  @inbounds g[d,1] = zero(T)
 end
 
-
-_evaluate_1d!(::Type{Chebyshev{:U}},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number} = @notimplemented
-_gradient_1d!(::Type{Chebyshev{:U}},::Val{K},g::AbstractMatrix{T},x,d) where {K,T<:Number} = @notimplemented
+_gradient_1d!(::Type{Chebyshev{:U}},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number} = @notimplemented
 _hessian_1d!( ::Type{Chebyshev{:U}},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number} = @notimplemented
+

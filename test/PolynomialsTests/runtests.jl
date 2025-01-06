@@ -18,6 +18,8 @@ using Test
 
 @testset "LegendreBases" begin include("LegendreBasesTests.jl") end
 
+@testset "ChebyshevBases" begin include("ChebyshevBasesTests.jl") end
+
 @testset "BernsteinBases" begin include("BernsteinBasesTests.jl") end
 
 #@testset "ChangeBasis" begin include("ChangeBasisTests.jl") end
