@@ -21,7 +21,7 @@ Return `true` if the 1D basis of order `K` of the given [`Polynomial`](@ref)
 basis family is the union of the basis of order `K-1` and an other order `K`
 polynomial. Equivalently, if the iᵗʰ basis polynomial is of order i-1.
 """
-isHierarchical(::Type{Polynomial}) = @abstractmethod
+isHierarchical(::Type{<:Polynomial}) = @abstractmethod
 
 
 ###########################################

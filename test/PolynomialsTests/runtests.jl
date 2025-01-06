@@ -2,6 +2,8 @@ module PolynomialsTests
 
 using Test
 
+@testset "PolynomialInterfaces" begin include("PolynomialInterfacesTests.jl") end
+
 @testset "MonomialBases" begin include("MonomialBasesTests.jl") end
 
 @testset "QGradBases" begin include("QGradBasesTests.jl") end
