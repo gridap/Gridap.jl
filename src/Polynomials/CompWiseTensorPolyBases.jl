@@ -149,22 +149,6 @@ function _gradient_nd!(
 end
 
 """
-    _comp_wize_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{<:Real})
-
-```
-r[i,k]     = G(s…) = (Dbᵏ)(xi)
-return k+1
-```
-
-"""
-function _comp_wize_set_derivative!(
-  r::AbstractMatrix{G},i,s,k,vall,::Type{<:Real}) where G
-
-  @inbounds r[i,k] = s
-  k+1
-end
-
-"""
     _comp_wize_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{V})
 
 ```
@@ -243,7 +227,7 @@ function _hessian_nd!(
         end
       end
 
-      k = _comp_wize_set_derivative!(r,i,s,k,l,V)
+      k = _comp_wize_set_derivative!(r,i,s,k,Val(l),V)
     end
   end
 end
