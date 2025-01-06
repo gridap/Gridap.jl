@@ -73,8 +73,6 @@ include("MonomialBases.jl")
 
 include("LegendreBases.jl")
 
-#include("JacobiBases.jl")
-
 include("ChebyshevBases.jl")
 
 include("BernsteinBases.jl")
