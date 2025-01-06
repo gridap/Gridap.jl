@@ -58,9 +58,8 @@ model = CartesianDiscreteModel((0,1,0,1),(4,4))
 
 pmodel = Geometry.PolytopalDiscreteModel(model)
 vmodel = Geometry.voronoi(simplexify(model))
-# viz(vmodel;color=1:num_cells(vmodel),showpoints=true,showsegments=true)
-
 polys = get_polytopes(vmodel)
+# viz(vmodel;color=1:num_cells(vmodel),showpoints=true,showsegments=true)
 
 Ω = Triangulation(vmodel)
 dΩ = Measure(Ω,2)
@@ -72,9 +71,7 @@ a(u,v) = ∫(u⋅v)dΩ
 l(v) = ∫(v*u_exact)dΩ
 
 op = AffineFEOperator(a,l,V,V)
-
 uh = solve(op)
 
 eh = uh - u_exact
 sum(∫(eh⋅eh)dΩ)
-

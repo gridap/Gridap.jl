@@ -8,7 +8,7 @@ import Gridap.Arrays: testitem
 
 using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable, @check
-using Gridap.Helpers: tfill
+using Gridap.Helpers: tfill, first_and_tail
 
 using Gridap.Algebra: mul!
 
