@@ -107,11 +107,54 @@ end
 
 ############################################################################################
 
+struct PolytopalDiscreteModel{Dc,Dp,Tp,Tn} <: DiscreteModel{Dc,Dp}
+  grid::PolytopalGrid{Dc,Dp,Tp,Tn}
+  grid_topology::PolytopalGridTopology{Dc,Dp,Tp}
+  labels::FaceLabeling
+end
+
 function PolytopalDiscreteModel(model::DiscreteModel)
   grid = PolytopalGrid(get_grid(model))
   topo = PolytopalGridTopology(get_grid_topology(model))
-  labels = FaceLabeling(topo)
-  return Geometry.GenericDiscreteModel(grid,topo,labels)
+  labels = get_face_labeling(model)
+  return PolytopalDiscreteModel(grid,topo,labels)
+end
+
+get_grid(model::PolytopalDiscreteModel) = model.grid
+get_grid_topology(model::PolytopalDiscreteModel) = model.grid_topology
+get_face_labeling(model::PolytopalDiscreteModel) = model.labels
+
+function compute_face_nodes(model::PolytopalDiscreteModel,d::Integer)
+  topo = get_grid_topology(model)
+  get_faces(topo,d,0)
+end
+
+function compute_face_own_nodes(model::PolytopalDiscreteModel,d::Integer)
+  topo = get_grid_topology(model)
+  if iszero(d)
+    get_faces(topo,d,0)
+  else
+    empty_table(num_faces(topo,d))
+  end
+end
+
+function Grid(::Type{ReferenceFE{1}},model::PolytopalDiscreteModel{Dc}) where {Dc}
+  node_coordinates = get_node_coordinates(model)
+  face_to_nodes = Table(get_face_nodes(model,1))
+  reffes = [LagrangianRefFE(Float64,SEGMENT,1)]
+  face_to_ftype = fill(Int8(1),num_faces(get_grid_topology(model),1))
+  UnstructuredGrid(node_coordinates, face_to_nodes, reffes, face_to_ftype)
+end
+
+function Grid(::Type{ReferenceFE{Df}},model::PolytopalDiscreteModel{Dc}) where {Df,Dc}
+  node_coordinates = get_node_coordinates(model)
+  face_to_nodes = Table(get_face_nodes(model,Df))
+  face_to_polytopes = get_reffaces(Polytope{Df},get_grid_topology(model))
+  PolytopalGrid(node_coordinates, face_to_nodes, face_to_polytopes)
+end
+
+function Grid(::Type{ReferenceFE{Dc}},model::PolytopalDiscreteModel{Dc}) where {Dc}
+  get_grid(model)
 end
 
 ############################################################################################
@@ -125,8 +168,8 @@ end
 function voronoi(model::DiscreteModel)
   new_topo = voronoi(get_grid_topology(model))
   new_grid = PolytopalGrid(new_topo)
-  new_labels = FaceLabeling(new_topo)
-  return GenericDiscreteModel(new_grid,new_topo,new_labels)
+  new_labels = FaceLabeling(new_topo) # TODO: Map labels from the original model
+  return PolytopalDiscreteModel(new_grid,new_topo,new_labels)
 end
 
 function voronoi(topo::GridTopology{Dc}) where Dc
