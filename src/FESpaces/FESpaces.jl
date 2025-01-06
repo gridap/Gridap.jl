@@ -21,6 +21,7 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.CellData
 using Gridap.TensorValues
+using Gridap.Polynomials
 
 using Gridap.Arrays: Reindex, ConfigMap, DualizeMap, AutoDiffMap, lazy_map
 
@@ -260,6 +261,8 @@ include("FESpacesWithLinearConstraints.jl")
 include("DiscreteModelWithFEMaps.jl")
 
 include("ConstantFESpaces.jl")
+
+include("Polytopal.jl")
 
 export get_free_values
 function get_free_values(args...)
