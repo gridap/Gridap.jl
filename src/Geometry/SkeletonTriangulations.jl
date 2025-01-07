@@ -96,8 +96,7 @@ end
 
 function get_edge_tangent(trian::SkeletonTriangulation)
   plus = get_edge_tangent(trian.plus)
-  # Flip the minus side
-  minus = lazy_map(x -> -x, plus)
+  minus = get_edge_tangent(trian.minus)
   SkeletonPair(plus,minus)
 end
 

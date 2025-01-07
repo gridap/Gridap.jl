@@ -112,6 +112,14 @@ itrian = InterfaceTriangulation(Ω_in,Ω_out)
 #writevtk(trian,"trian",celldata=["inout"=>cell_to_inout])
 #writevtk(itrian,"itrian",nsubcells=10,cellfields=["ni"=>ni,"nl"=>nl,"nr"=>nr])
 
+ti = get_tangent_vector(itrian)
+tl = get_tangent_vector(ltrian)
+tr = get_tangent_vector(rtrian)
+
+@test ti isa SkeletonPair
+@test tl isa Gridap.CellData.GenericCellField
+@test tr isa Gridap.CellData.GenericCellField 
+
 reffe = LagrangianRefFE(Float64,QUAD,(2,2))
 conf = CDConformity((CONT,DISC))
 face_own_dofs = get_face_own_dofs(reffe,conf)

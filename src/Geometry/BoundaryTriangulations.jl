@@ -242,11 +242,7 @@ function get_edge_tangent(trian::BoundaryTriangulation, boundary_trian_glue::Fac
 
   face_s_n = get_facet_normal(trian, boundary_trian_glue)
 
-  function rotate_normal_2d(n)
-    t = VectorValue(n[2], -n[1])
-    m = sqrt(t[1]^2 + t[2]^2)
-    return m < eps() ? VectorValue(0.0, 0.0) : t
-  end
+  rotate_normal_2d(n) = VectorValue(n[2], -n[1])
 
   face_s_t = lazy_map(Operation(rotate_normal_2d), face_s_n)
 
