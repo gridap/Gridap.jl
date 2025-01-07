@@ -11,13 +11,30 @@ using ForwardDiff
 
 np = 3
 x = [Point(0.),Point(1.),Point(.4)]
-xi = x[1]
+x1 = x[1]
 
 # Only test 1D evaluations as tensor product structure is tested in monomial tests
 #
 V = Float64
-G = gradient_type(V,xi)
-H = gradient_type(G,xi)
+G = gradient_type(V,x1)
+H = gradient_type(G,x1)
+
+function test_internals(order,x,bx,∇bg,Hbx)
+  sz = (1,order+1)
+  for (i,xi) in enumerate(x)
+    v2 = zeros(sz)
+    Polynomials._evaluate_1d!(Bernstein,Val(order),v2,xi,1)
+    @test all( [ bxi[1]≈vxi[1] for (bxi,vxi) in zip(bx[i,:],v2[:,1]) ] )
+
+    g2 = zeros(sz)
+    Polynomials._gradient_1d!(Bernstein,Val(order),g2,xi,1)
+    @test all( [ bxi[1]≈vxi[1] for (bxi,vxi) in zip(∇bx[i,:],g2[:,1]) ] )
+
+    h2 = zeros(sz)
+    Polynomials._hessian_1d!(Bernstein,Val(order),h2,xi,1)
+    @test all( [ bxi[1]≈vxi[1] for (bxi,vxi) in zip(Hbx[i,:],h2[:,1]) ] )
+  end
+end
 
 
 # order 0 degenerated case
@@ -27,13 +44,12 @@ b = BernsteinBasis(Val(1),V,order)
 @test get_order(b) == 0
 @test get_orders(b) == (0,)
 
-v = V[1.0,]
-g = G[(0.0)]
-h = H[(0.0)]
+bx =   [ 1.; 1.; 1.;; ]
+∇bx = G[ 0.; 0.; 0.;; ]
+Hbx = H[ 0.; 0.; 0.;; ]
 
-bx = repeat(permutedims(v),np)
-∇bx = repeat(permutedims(g),np)
-Hbx = repeat(permutedims(h),np)
+test_internals(order,x,bx,∇bx,Hbx)
+
 test_field_array(b,x,bx,grad=∇bx,gradgrad=Hbx)
 test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 
@@ -54,6 +70,8 @@ bx = [ 1.0  0.0
 Hbx = H[  0. 0.
           0. 0.
           0. 0. ]
+
+test_internals(order,x,bx,∇bx,Hbx)
 
 test_field_array(b,x,bx,grad=∇bx,gradgrad=Hbx)
 test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
@@ -76,6 +94,8 @@ bx  = [ 1.0   0.0   0.0
 Hbx = H[  2. -4. 2.
           2. -4. 2.
           2. -4. 2. ]
+
+test_internals(order,x,bx,∇bx,Hbx)
 
 test_field_array(b,x,bx,≈, grad=∇bx,gradgrad=Hbx)
 test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
@@ -103,6 +123,8 @@ bx  = [      bernstein(order,n)( xi[1])  for xi in x,  n in 0:order]
 #    -6x+6 18x-12 -18x+6  6x
 Hbx = [ H(_H(bernstein(order,n))(xi[1])) for xi in x,  n in 0:order]
 
+test_internals(order,x,bx,∇bx,Hbx)
+
 test_field_array(b,x,bx,≈, grad=∇bx,gradgrad=Hbx)
 test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 
@@ -115,6 +137,8 @@ b = BernsteinBasis(Val(1),V,order)
 bx  = [      bernstein(order,n)( xi[1])  for xi in x,  n in 0:order]
 ∇bx = [ G(_∇(bernstein(order,n))(xi[1])) for xi in x,  n in 0:order]
 Hbx = [ H(_H(bernstein(order,n))(xi[1])) for xi in x,  n in 0:order]
+
+test_internals(order,x,bx,∇bx,Hbx)
 
 test_field_array(b,x,bx,≈, grad=∇bx,gradgrad=Hbx)
 test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])

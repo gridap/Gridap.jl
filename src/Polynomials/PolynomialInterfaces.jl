@@ -204,7 +204,6 @@ function _gradient_nd!(
   @abstractmethod
 end
 
-
 """
     _hessian_nd!(b,xi,r,i,c,g,h,s)
 
@@ -312,6 +311,10 @@ function _hessian_1d!(::Type{<:Polynomial},::Val{K},h::AbstractMatrix{T},x,d) wh
   @abstractmethod
 end
 
+# Dispatch helpers for base cases
+const Val_01  = Union{Val{0},Val{1}}
+const Val_012 = Union{Val{0},Val{1},Val{2}}
+
 """
     _derivatives_1d!(PT::Type{<:Polynomial}, ::Val{K}, (c,g,...), x, d)
 
@@ -323,22 +326,21 @@ _gradient_1d!(PT, Val(K), g, x d)
 ```
 but with possible performance optimization.
 """
-function _derivatives_1d!(  ::Type{<:Polynomial},::Val{K},t::NTuple{N},x,d) where {K,N}
+function _derivatives_1d!(  ::Type{<:Polynomial},v::Val,t::NTuple{N},x,d) where N
   @abstractmethod
 end
 
-function _derivatives_1d!(PT::Type{<:Polynomial},::Val{K},t::NTuple{1},x,d) where K
-  _evaluate_1d!(PT, Val(K), t[1], x, d)
+function _derivatives_1d!(PT::Type{<:Polynomial},v::Val,t::NTuple{1},x,d)
+  @inline _evaluate_1d!(PT, v, t[1], x, d)
 end
 
-function _derivatives_1d!(PT::Type{<:Polynomial},::Val{K},t::NTuple{2},x,d) where K
-  _evaluate_1d!(PT, Val(K), t[1], x, d)
-  _gradient_1d!(PT, Val(K), t[2], x, d)
+function _derivatives_1d!(PT::Type{<:Polynomial},v::Val,t::NTuple{2},x,d)
+  @inline _evaluate_1d!(PT, v, t[1], x, d)
+  @inline _gradient_1d!(PT, v, t[2], x, d)
 end
 
-function _derivatives_1d!(PT::Type{<:Polynomial},::Val{K},t::NTuple{3},x,d) where K
-  _evaluate_1d!(PT, Val(K), t[1], x, d)
-  _gradient_1d!(PT, Val(K), t[2], x, d)
-  _hessian_1d!( PT, Val(K), t[3], x, d)
+function _derivatives_1d!(PT::Type{<:Polynomial},v::Val,t::NTuple{3},x,d)
+  @inline _evaluate_1d!(PT, v, t[1], x, d)
+  @inline _gradient_1d!(PT, v, t[2], x, d)
+  @inline _hessian_1d!( PT, v, t[3], x, d)
 end
-
