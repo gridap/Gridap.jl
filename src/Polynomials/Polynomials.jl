@@ -1,9 +1,9 @@
 """
 This module provides a collection of multivariate polynomial bases.
 
-The exported names are:
 
-$(EXPORTS)
+
+$(public_names_in_md(@__MODULE__))
 """
 module Polynomials
 

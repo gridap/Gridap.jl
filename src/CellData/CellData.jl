@@ -1,7 +1,6 @@
 """
 
-The exported names are
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__))
 """
 module CellData
 
@@ -86,7 +85,7 @@ export update_state!
 
 export DiracDelta
 
-export SkeletonCellFieldPair 
+export SkeletonCellFieldPair
 
 include("CellDataInterface.jl")
 

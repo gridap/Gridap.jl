@@ -38,3 +38,29 @@ function first_and_tail(a::Tuple)
   first(a), Base.tail(a)
 end
 
+"""
+    public_names_in_md(m::Module)
+
+Return a string displaying exported and other public names of the module for
+printing in markdown.
+"""
+function public_names_in_md(m::Module)
+  publics = filter(!=(nameof(m)), names(m))
+  exported = filter(n->Base.isexported(m,n), publics)
+  non_exported_publics = filter(∉(exported), publics)
+
+  isempty(exported) && return ""
+
+  s = """
+  ### Exported names
+  `$( join(exported, "`, `") )`
+  """
+
+  isempty(non_exported_publics) && return s
+
+  s * """
+
+  ### Other public names
+  `$(join(non_exported_publics,"`, `"))`
+  """
+end
