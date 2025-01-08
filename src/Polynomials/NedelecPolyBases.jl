@@ -1,3 +1,13 @@
+"""
+    NedelecPolyBasisOnSimplex{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
+
+Basis of the vector valued (`V<:VectorValue{D}`) space ℕ𝔻ᴰₙ(△) for `D`=2,3.
+This space is the polynomial space for Nedelec elements on simplices with
+curl in (ℙᴰₙ)ᴰ. Its maximum degree is n+1 = `K`. `get_order` on it returns `K`.
+
+Currently, the basis is implemented as the union of a UniformPolyBasis{...,PT}
+for ℙᴰₙ and a monomial basis for x × (ℙᴰₙ \\ ℙᴰₙ₋₁)ᴰ.
+"""
 struct NedelecPolyBasisOnSimplex{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
   order::Int
   function NedelecPolyBasisOnSimplex{D}(::Type{PT},::Type{T},order::Integer) where {D,PT<:Polynomial,T}
@@ -241,13 +251,13 @@ end
 
 Return a basis of
 
-ℕ𝔻ᴰₙ(△) = (ℙₙ)ᴰ ⊕ x × (ℙₙ \\ ℙₙ₋₁)ᴰ
+ℕ𝔻ᴰₙ(△) = (ℙᴰₙ)ᴰ ⊕ x × (ℙᴰₙ \\ ℙᴰₙ₋₁)ᴰ
 
 with n=`order`, the polynomial space for Nedelec elements on `D`-dimensional
 simplices with scalar type `T`. `D` must be 1, 2 or 3.
 
 The `order`=n argument has the following meaning: the curl of the  functions in
-this basis is in ℙₙ.
+this basis is in (ℙᴰₙ)ᴰ.
 
 # Example:
 

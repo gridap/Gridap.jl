@@ -1,7 +1,7 @@
 """
     Bernstein <: Polynomial
 
-Type representing Bernstein polynomials.
+Type representing Bernstein polynomials, c.f. [Bernstein polynomials](@ref) section.
 """
 struct Bernstein <: Polynomial end
 
@@ -10,7 +10,7 @@ isHierarchical(::Type{Bernstein}) = false
 """
     BernsteinBasis{D,V,K} = UniformPolyBasis{D,V,K,Bernstein}
 
-Alias for Bernstein multivariate scalar' or `Multivalue`'d basis, see [`UniformPolyBasis`](@ref).
+Alias for Bernstein multivariate scalar' or `Multivalue`'d basis.
 """
 const BernsteinBasis{D,V,K} = UniformPolyBasis{D,V,K,Bernstein}
 

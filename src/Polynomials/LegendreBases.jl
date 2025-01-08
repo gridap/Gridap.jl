@@ -1,7 +1,7 @@
 """
     Legendre <: Polynomial
 
-Type representing the Legendre polynomials.
+Type representing the normalised shifted Legendre polynomials, c.f. [Legendre polynomials](@ref) section.
 """
 struct Legendre <: Polynomial   end
 
@@ -10,7 +10,7 @@ isHierarchical(::Type{Legendre}) = true
 """
     LegendreBasis{D,V,K} = UniformPolyBasis{D,V,K,Legendre}
 
-Alias for Legendre multivariate scalar' or `Multivalue`'d basis, see [`UniformPolyBasis`](@ref).
+Alias for Legendre multivariate scalar' or `Multivalue`'d basis.
 """
 const LegendreBasis{D,V,K} = UniformPolyBasis{D,V,K,Legendre}
 

@@ -1,8 +1,10 @@
 """
     Chebyshev{kind} <: Polynomial
 
-Type representing Chebyshev polynomials of first and second kind where `kind` is
-either `:T` or `:U` for first and second kind Chebyshev polynomials respectively.
+Type representing Chebyshev polynomials of the
+- first kind: `Chebyshev{:T}`
+- second kind: `Chebyshev{:U}`
+C.f. [Chebyshev polynomials](@ref) section.
 """
 struct Chebyshev{kind} <: Polynomial end
 
@@ -11,7 +13,7 @@ isHierarchical(::Type{<:Chebyshev}) = true
 """
     ChebyshevBasis{D,V,kind,K} = UniformPolyBasis{D,V,K,Chebyshev{kind}}
 
-Alias for Chebyshev multivariate scalar' or `Multivalue`'d basis, see [`UniformPolyBasis`](@ref).
+Alias for Chebyshev multivariate scalar' or `Multivalue`'d basis.
 """
 const ChebyshevBasis{D,V,kind,K} = UniformPolyBasis{D,V,K,Chebyshev{kind}}
 

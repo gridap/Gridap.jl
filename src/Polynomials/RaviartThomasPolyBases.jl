@@ -5,17 +5,17 @@ Basis of the vector valued (`V<:VectorValue{D}`) space
 
 ℝ𝕋ᴰₙ = (𝕊ₙ)ᴰ ⊕ x (𝕊ₙ\\𝕊₍ₙ₋₁₎)
 
-where 𝕊ₙ is a multivariate scalar polynomial space of maximum degree n = `K`-1.
+where 𝕊ₙ is a `D`-multivariate scalar polynomial space of maximum degree n = `K`-1.
 
 This ℝ𝕋ᴰₙ is the polynomial space for Raviart-Thomas elements with divergence in 𝕊ₙ.
 Its maximum degree is n+1 = `K`. `get_order` on it returns `K`.
 
-The multivariate scalar space 𝕊ₙ, typically ℙₙ or ℚₙ, does not need to have a
-tensor product structure of 1D scalar spaces. Thus, the ℝ𝕋ᴰₙ component's scalar
-spaces are not tensor products either.
+The space 𝕊ₙ, typically ℙᴰₙ or ℚᴰₙ, does not need to have a tensor product
+structure of 1D scalar spaces. Thus, the ℝ𝕋ᴰₙ component's scalar spaces are not
+tensor products either.
 
 𝕊ₙ is defined like a scalar valued [`UniformPolyBasis`](@ref) via the `_filter`
-argument of the constructor, by default [`_p_filter`](@ref) for ℙₙ.
+argument of the constructor, by default `_p_filter` for ℙᴰₙ.
 As a consequence, `PT` must be hierarchical, see [`isHierarchical`](@ref).
 """
 struct RaviartThomasPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
@@ -35,7 +35,7 @@ struct RaviartThomasPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
     @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
     @check D > 1
     @check isconcretetype(PT) "PT needs to be a concrete <:Polynomial type"
-    @check isHierarchical(PT) "The polynomial basis must be hierarchichal for this space."
+    @check isHierarchical(PT) "The polynomial basis must be hierarchical for this space."
 
     V = VectorValue{D,T}
     indexbase = 1
@@ -194,16 +194,16 @@ end
 
 Return a basis of
 
-ℝ𝕋ᴰₙ(△) = (ℙₙ)ᴰ ⊕ x (ℙₙ \\ ℙₙ₋₁)
+ℝ𝕋ᴰₙ(△) = (ℙᴰₙ)ᴰ ⊕ x (ℙᴰₙ \\ ℙᴰₙ₋₁)
 
 with n=`order`, the polynomial space for Raviart-Thomas elements on
 `D`-dimensional simplices with scalar type `T`.
 
 The `order`=n argument of this function has the following meaning: the divergence
-of the functions in this basis is in ℙₙ.
+of the functions in this basis is in ℙᴰₙ.
 
 `PT<:Polynomial` is the choice of the family of the scalar 1D basis polynomials,
-it must be hierarchichal, see [`isHierarchichal`](@ref).
+it must be hierarchical, see [`isHierarchical`](@ref).
 
 # Example:
 

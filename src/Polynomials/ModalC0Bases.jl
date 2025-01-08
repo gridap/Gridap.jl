@@ -1,12 +1,19 @@
 """
     ModalC0 <: Polynomial
 
-Type representing ModalC0 polynomials.
+Type representing ModalC0 polynomials, c.f. [ModalC0 polynomials](@ref) section.
 
 Reference: Eq. (17) in https://doi.org/10.1016/j.camwa.2022.09.027
 """
 struct ModalC0 <: Polynomial end
 
+"""
+    ModalC0Basis{D,V,T,K} <: PolynomialBasis{D,V,K,ModalC0}
+
+Tensor product basis of generalised modal C0 1D basis from section 5.2 in
+https://doi.org/10.1016/j.camwa.2022.09.027.
+See also [ModalC0 polynomials](@ref) section of the documentation.
+"""
 struct ModalC0Basis{D,V,T,K} <: PolynomialBasis{D,V,K,ModalC0}
   orders::NTuple{D,Int}
   terms::Vector{CartesianIndex{D}}

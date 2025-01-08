@@ -1,7 +1,7 @@
 """
     Monomial <: Polynomial
 
-Type representing the monomial polynomials.
+Type representing the monomial polynomials, c.f. [Monomials](@ref) section.
 """
 struct Monomial <: Polynomial   end
 
@@ -10,7 +10,7 @@ isHierarchical(::Type{Monomial}) = true
 """
     MonomialBasis{D,V,K} = UniformPolyBasis{D,V,K,Monomial}
 
-Alias for monomial Multivariate scalar' or `Multivalue`'d basis, see [`UniformPolyBasis`](@ref).
+Alias for monomial Multivariate scalar' or `Multivalue`'d basis.
 """
 const MonomialBasis{D,V,K} = UniformPolyBasis{D,V,K,Monomial}
 

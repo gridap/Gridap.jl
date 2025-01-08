@@ -10,14 +10,14 @@ polynomial space
 
 `V`(𝕊, 𝕊, ..., 𝕊)
 
-where 𝕊 is a scalar polynomial space. So each (independant) component of `V`
-holds the same space, which is here called 'uniform'.
+where 𝕊 is a scalar multivariate polynomial space. So each (independant)
+component of `V` holds the same space (hence the name 'uniform').
 
 The scalar polynomial basis spanning 𝕊 is defined as
 
-  { x ⟶ b`ᴷ`\\_α(x) = b`ᴷ`\\_α₁(x₁) × b`ᴷ`\\_α₂(x₂) × ... × b`ᴷ`\\_α`D`(x`D`) |  α ∈ `terms` }
+  { x ⟶ bα`ᴷ`(x) = bα₁`ᴷ`(x₁) × bα₂`ᴷ`(x₂) × ... × bα`Dᴷ`(x`D`) |  α ∈ `terms` }
 
-where b`ᴷ`\\_αᵢ(xᵢ) is the αᵢth 1D basis polynomial of the basis `PT` of order `K`
+where bαᵢ`ᴷ`(xᵢ) is the αᵢth 1D basis polynomial of the basis `PT` of order `K`
 evaluated at xᵢ (iᵗʰ comp. of x), and where α = (α₁, α₂, ..., α`D`) is a
 multi-index in `terms`, a subset of ⟦0,`K`⟧`ᴰ`. `terms` is a field that can be
 passed in a constructor.
@@ -62,7 +62,7 @@ end
 
 This constructor allows to pass a tuple `orders` containing the polynomial order
 to be used in each of the `D` spatial dimensions in order to construct a
-tensorial anisotropic multivariate space 𝕊.
+tensorial anisotropic `D`-multivariate space 𝕊.
 """
 function UniformPolyBasis(
   ::Type{PT}, ::Val{D}, ::Type{V}, orders::NTuple{D,Int}, filter::Function=_q_filter
@@ -73,25 +73,14 @@ function UniformPolyBasis(
 end
 
 """
-    UniformPolyBasis(::Type{PT}, ::Type{V}, ::Val{D}, order::Int [, filter=_q_filter]) where {D,V}
+    UniformPolyBasis(::Type{PT}, ::Type{V}, ::Val{D}, order::Int [, filter=_q_filter])
 
-Returns an instance of `UniformPolyBasis{D,V,order,PT}`.
+Return a `UniformPolyBasis{D,V,order,PT}` where 𝕊 is defined by the terms
+filtered by
 
-# Filter function
+    term -> `filter`(term, `order`).
 
-The `filter` function is used to select which terms of the tensor product space
-of order `order` in `D` spatial dimensions are to be used. If the filter is not
-provided, the full tensor-product space is used by default leading to a
-multivariate polynomial space of type ℚ. The signature of the filter function is
-
-    (e,order) -> Bool
-
-where `e` is a tuple of `D` integers containing the exponents of a multivariate
-monomial. The following filters are used to select well known polynomial spaces
-
-- ℚ space: `_p_filter = (e,order) -> maximum(e) <= order`
-- ℙ space: `_q_filter = (e,order) -> sum(e) <= order`
-- "Serendipity" space: `(e,order) -> sum( [ i for i in e if i>1 ] ) <= order`
+See the [Filter functions](@ref) section of the documentation for more details.
 """
 function UniformPolyBasis(
   ::Type{PT}, VD::Val{D}, ::Type{V}, order::Int, filter::Function=_q_filter) where {PT,D,V}
@@ -105,7 +94,8 @@ end
 """
     get_exponents(b::UniformPolyBasis)
 
-Get a vector of tuples with the exponents of all the terms in the basis of 𝕊.
+Get a vector of tuples with the exponents of all the terms in the basis of 𝕊,
+the components scalar space of `b`.
 
 # Example
 

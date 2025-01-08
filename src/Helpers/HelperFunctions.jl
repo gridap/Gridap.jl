@@ -53,7 +53,7 @@ function public_names_in_md(m::Module)
 
   s = """
   ### Exported names
-  `$( join(exported, "`, `") )`
+  [`$(join(exported,"`](@ref), [`"))`](@ref)
   """
 
   isempty(non_exported_publics) && return s
@@ -61,6 +61,6 @@ function public_names_in_md(m::Module)
   s * """
 
   ### Other public names
-  `$(join(non_exported_publics,"`, `"))`
+  [`$(join(non_exported_publics,"`](@ref), [`"))`](@ref)
   """
 end

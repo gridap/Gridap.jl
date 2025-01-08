@@ -3,11 +3,11 @@
 
 "Polynomial basis of component wise tensor product polynomial spaces"
 
-Polynomial basis for a multivariate `MultiValue`'d polynomial space:
+Polynomial basis for a `D`-multivariate `V`-valued polynomial space:
 
 `V`(𝕊¹, 𝕊², ..., 𝕊ᴸ)
 
-with `L`>1, where the scalar multivariate spaces 𝕊ˡ (for 1 ≤ l ≤ `L`) of each
+with `L`>1, where the scalar `D`-multivariate spaces 𝕊ˡ (for 1 ≤ l ≤ `L`) of each
 (independent) component of `V` is the tensor product of 1D ℙ spaces of order
 α(l,n) for 1 ≤ n ≤ `D`, that is:
 
@@ -243,13 +243,13 @@ end
 
 Return a basis of
 
-ℕ𝔻ᴰₙ(□) = (ℚₙ)ᴰ ⊕ x × (ℚₙ \\ ℚₙ₋₁)ᴰ
+ℕ𝔻ᴰₙ(□) = (ℚᴰₙ)ᴰ ⊕ x × (ℚᴰₙ \\ ℚᴰₙ₋₁)ᴰ
 
 with n=`order`, the polynomial space for Nedelec elements on `D`-dimensional
 cubes with scalar type `T`.
 
 The `order`=n argument has the following meaning: the curl of the  functions in
-this basis is in ℚₙ.
+this basis is in (ℚᴰₙ)ᴰ.
 
 `PT<:Polynomial` is the choice of the family of the scalar 1D basis polynomials.
 
@@ -291,13 +291,13 @@ end
 
 Return a basis of
 
-ℝ𝕋ᴰₙ(□) = (ℚₙ)ᴰ ⊕ x (ℚₙ \\ ℚₙ₋₁)
+ℝ𝕋ᴰₙ(□) = (ℚᴰₙ)ᴰ ⊕ x (ℚᴰₙ \\ ℚᴰₙ₋₁)
 
 with n=`order`, the polynomial space for Raviart-Thomas elements on
 `D`-dimensional cubes with scalar type `T`.
 
 The `order`=n argument has the following meaning: the divergence of the functions
-in this basis is in ℚₙ.
+in this basis is in ℚᴰₙ.
 
 `PT<:Polynomial` is the choice of the family of the scalar 1D basis polynomials.
 
