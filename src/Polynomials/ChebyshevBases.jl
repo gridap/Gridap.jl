@@ -25,7 +25,7 @@ High level constructors of [`ChebyshevBasis`](@ref).
 ChebyshevBasis(args...; kind=:T) = UniformPolyBasis(Chebyshev{kind}, args...)
 
 function UniformPolyBasis(
-  ::Type{Chebyshev{:U}}, ::Val{D}, ::Type{V}, ::Int64) where {D, V}
+  ::Type{Chebyshev{:U}}, ::Val{D}, ::Type{V}, ::Int) where {D, V}
 
   @notimplemented "1D evaluation for second kind need to be implemented here"
 end
