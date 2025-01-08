@@ -1,7 +1,77 @@
 """
-This module provides a collection of multivariate polynomial bases.
+This module provides a collection of uni- and multi-variate scalar- and multi-value'd polynomial bases.
 
+Most of the basis polynomials are composed using products of 1D polynomials,
+represented by the type [`Polynomial`](@ref).
+Five `Polynomial` families are currently implemented: [`Monomial`](@ref),
+[`Legendre`](@ref), [`Chebyshev`](@ref), [`Bernstein`](@ref) and [`ModalC0`](@ref).
 
+The polynomial bases all subtype [`PolynomialBasis`](@ref), which subtypes
+`AbstractVector{<:Field}`, so they implement the `Field` interface up to first
+or second derivatives.
+
+Constructors for commonly used bases (see the documentation for the spaces definitions):
+- ℚ spaces: `[Polynomial]Basis(Val(D), V, order)`
+- ℙ spaces: `[Polynomial]Basis(..., Polynomials._p_filter)`
+- ℚₙ\\ℚₙ₋₁: `[Polynomial]Basis(..., Polynomials._qs_filter)`
+- ℙₙ\\ℙₙ₋₁: `[Polynomial]Basis(..., Polynomials._ps_filter)`
+- ℕ𝔻(△): `PGradBasis(Val(D), T, order)`
+- ℕ𝔻(□): `QGradBasis(...)`
+- ℝ𝕋(△): `PCurlGradBasis(...)`
+- ℝ𝕋(□): `QCurlGradBasis(...)`
+
+### Examples
+
+```julia
+using Gridap
+using Gridap.Polynomials
+using Gridap.Fields: return_type
+
+# Basis of ℚ¹₂ of Float64 value type based on Bernstein polynomials:
+# {(1-x)², 2x(1-x), x²}
+D = 1; n = 2 # spatial dimension and order
+b = BernsteinBasis(Val(D), Float64, n)
+
+# APIs
+length(b)        # 3
+return_type(b)   # Float64
+get_order(b)     # 2
+
+xi =Point(0.1)
+evaluate(b, xi)
+evaluate(Broadcasting(∇)(b), xi)  # gradients
+evaluate(Broadcasting(∇∇)(b), xi) # hessians, not all basis support hessians
+evaluate(b, [xi, xi]) # evaluation on arrays of points
+
+# Basis of ℚ²₂ of Float64 value type based on Legendre polynomials, our 1D Legendre
+# polynomials are normalized for L2 scalar product and moved from [-1,1] to [0,1] using x -> 2x-1
+# { 1,            √3(2x-1),             √5(6x²-6x+2),
+#   √3(2y-1),     √3(2x-1)√3(2y-1),     √5(6x²-6x+2)√3(2y-1),
+#   √5(6y²-6y+2), √3(2x-1)√5(6x²-6x+2), √5(6x²-6x+2)√5(6y²-6y+2) }
+D = 2; n = 2 # spatial dimension and order
+b = LegendreBasis(Val(D), Float64, n)
+
+# Basis of (ℙ³₁)³ of VectorValue{3,Float64} value type, based on monomials:
+# {(1,0,0), (0,1,0), (0,0,1)
+#  (x,0,0), (0,x,0), (0,0,x)
+#  (y,0,0), (0,y,0), (0,0,y)
+#  (z,0,0), (0,z,0), (0,0,z)}
+D = 3; n = 1 # spatial dimension and order
+b = MonomialBasis(Val(D), VectorValue{D,Float64}, n, Polynomials._p_filter)
+evaluate(b, Point(.1, .2, .3)
+
+# a basis for Nedelec on tetrahedra with curl in ℙ₂
+b = PGradBasis(Monomial, Val(3), Float64, 2)          # basis of order 3
+
+# a basis for Nedelec on hexahedra with divergence in ℚ₂
+b = QGradBasis(Bernstein, Val(3), Float64, 2)         # basis of order 3
+
+# a basis for Raviart-Thomas on tetrahedra with divergence in ℙ₂
+b = PCurlGradBasis(Chebyshev{:T}, Val(3), Float64, 2) # basis of order 3
+
+# a basis for Raviart-Thomas on rectangles with divergence in ℚ₃
+b = QCurlGradBasis(Bernstein, Val(2), Float64, 3)     # basis of order 4
+```
 
 $(public_names_in_md(@__MODULE__))
 """
