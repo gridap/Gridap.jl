@@ -234,4 +234,6 @@ include("CompressedCellArrays.jl")
 
 include("Polytopal.jl")
 
+include("HybridTriangulations.jl")
+
 end # module

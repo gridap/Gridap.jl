@@ -365,10 +365,10 @@ Base.IndexStyle(::Type{<:LocalItemFromTable}) = IndexLinear()
 end
 
 """
-    find_local_index(a_to_b, b_to_la_to_a)
+    find_local_index(a_to_b, b_to_la_to_a) -> a_to_la
 """
 function find_local_index(a_to_b, b_to_la_to_a)
-  @notimplemented "find_local_index only implemented for table"
+  @notimplemented "find_local_index only implemented for Table"
 end
 
 function find_local_index(a_to_b, b_to_la_to_a::Table)
@@ -396,6 +396,27 @@ Base.IndexStyle(::Type{<:LocalIndexFromTable}) = IndexStyle(Table)
     end
   end
   return T(UNSET)
+end
+
+"""
+    find_local_index(c_to_a, c_to_b, b_to_la_to_a) -> c_to_lc
+"""
+function find_local_index(
+  c_to_a, c_to_b, b_to_lc_to_a :: Table
+)
+  c_to_lc = fill(Int8(-1),length(c_to_a))
+  for (c,a) in enumerate(c_to_a)
+    b = c_to_b[c]
+    pini = b_to_lc_to_a.ptrs[b]
+    pend = b_to_lc_to_a.ptrs[b+1]-1
+    for (lc,p) in enumerate(pini:pend)
+      if a == b_to_lc_to_a.data[p]
+        c_to_lc[c] = Int8(lc)
+        break
+      end
+    end
+  end
+  return c_to_lc
 end
 
 """
