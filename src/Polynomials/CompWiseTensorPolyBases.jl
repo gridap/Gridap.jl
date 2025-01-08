@@ -31,6 +31,7 @@ struct CompWiseTensorPolyBasis{D,V,K,PT,L} <: PolynomialBasis{D,V,K,PT}
     msg2 = "The Component Wise construction is useless for one component, use UniformPolyBasis instead"
     @check L > 1 msg2
     @check D > 0
+    @check isconcretetype(PT) "PT needs to be a concrete <:Polynomial type"
     K = maximum(orders)
 
     new{D,V,K,PT,L}(orders)

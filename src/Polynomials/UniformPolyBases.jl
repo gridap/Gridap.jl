@@ -36,6 +36,8 @@ struct UniformPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
     orders::NTuple{D,Int},
     terms::Vector{CartesianIndex{D}}) where {D,V,PT<:Polynomial}
 
+    @check isconcretetype(PT) "PT needs to be a concrete <:Polynomial type"
+
     K = maximum(orders; init=0)
     msg =  "Some term contain a higher index than the maximum degree + 1."
     @check all( term -> (maximum(Tuple(term), init=0) <= K+1), terms) msg

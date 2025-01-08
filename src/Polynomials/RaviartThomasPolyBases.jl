@@ -30,10 +30,11 @@ struct RaviartThomasPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
   function RaviartThomasPolyBasis{D}(
     ::Type{PT}, ::Type{T}, order::Int,
     _filter::Function=_p_filter
-    ) where {PT,D,T}
+    ) where {PT<:Polynomial,D,T}
 
     @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
     @check D > 1
+    @check isconcretetype(PT) "PT needs to be a concrete <:Polynomial type"
     @check isHierarchical(PT) "The polynomial basis must be hierarchichal for this space."
 
     V = VectorValue{D,T}

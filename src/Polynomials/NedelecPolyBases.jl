@@ -1,7 +1,8 @@
 struct NedelecPolyBasisOnSimplex{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
   order::Int
-  function NedelecPolyBasisOnSimplex{D}(::Type{PT},::Type{T},order::Integer) where {D,PT,T}
+  function NedelecPolyBasisOnSimplex{D}(::Type{PT},::Type{T},order::Integer) where {D,PT<:Polynomial,T}
     @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
+    @check isconcretetype(PT) "PT needs to be a concrete <:Polynomial type"
     @notimplementedif !(D in (2,3))
     K = Int(order)+1
     V = VectorValue{D,T}
@@ -260,6 +261,6 @@ function PGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
   # the code explicitely uses monomials for the terms of  x×(ℙₙ \\ ℙₙ₋₁)ᴰ, so I
   # disable them here.
   # But one can use NedelecPolyBasisOnSimplex{D}(PT,T,order) if they wish.
-  @notimplemented "only implemented for monomials"
+  @notimplemented "Nedelec on simplices is only implemented for monomials"
 end
 
