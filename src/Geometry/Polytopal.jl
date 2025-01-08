@@ -157,6 +157,7 @@ function Grid(::Type{ReferenceFE{Dc}},model::PolytopalDiscreteModel{Dc}) where {
 end
 
 ############################################################################################
+# Voronoi meshes
 
 function orient_nodes(v)
   _angle(c,v) = atan(v[1]-c[1],v[2]-c[2])

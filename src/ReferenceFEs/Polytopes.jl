@@ -666,12 +666,8 @@ function get_bounding_box(p::Polytope{D}) where D
   pmin = Point(tfill(T(Inf),Val{D}()))
   pmax = Point(tfill(T(-Inf),Val{D}()))
   for coord in vertex_to_coords
-    if coord < pmin
-      pmin = coord
-    end
-    if coord > pmax
-      pmax = coord
-    end
+    pmin = min.(pmin,coord)
+    pmax = max.(pmax,coord)
   end
   (pmin,pmax)
 end

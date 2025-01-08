@@ -27,7 +27,7 @@ using Gridap.ReferenceFEs: _get_facedims
 using Gridap.ReferenceFEs: _get_offsets
 using Gridap.ReferenceFEs: _get_offset
 using Gridap.ReferenceFEs: _find_unique_with_indices
-using Gridap.ReferenceFEs: GeneralPolytope, Polygon, Polyhedra
+using Gridap.ReferenceFEs: GeneralPolytope, Polygon, Polyhedron
 
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!

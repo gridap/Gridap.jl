@@ -32,7 +32,7 @@ viz(vmodel;color=1:num_cells(vmodel),showpoints=true,showsegments=true)
 Γ = Boundary(vmodel)
 Λ = Skeleton(vmodel)
 
-order = 2
+order = 3
 u_exact(x) = x[1]^order + x[2]^order
 
 dΩ = Measure(Ω,2*order)
