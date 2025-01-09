@@ -441,6 +441,43 @@ function  flatten_partition!(b_to_a,a_to_bs::Table)
   end
 end
 
+"""
+    find_local_nbor_index(a_to_b, a_to_lb_to_b) -> a_to_lb
+"""
+function find_local_nbor_index(a_to_b, a_to_lb_to_b::Table)
+  a_to_lb = Vector{Int8}(undef,length(a_to_b))
+  for (a,b) in enumerate(a_to_b)
+    pini = a_to_lb_to_b.ptrs[a]
+    pend = a_to_lb_to_b.ptrs[a+1]-1
+    for (lb,p) in enumerate(pini:pend)
+      if b == a_to_lb_to_b.data[p]
+        a_to_lb[a] = Int8(lb)
+        break
+      end
+    end
+  end
+  return a_to_lb
+end
+
+"""
+    find_local_nbor_index(a_to_b, a_to_c, c_to_lb_to_b) -> a_to_lb
+"""
+function find_local_nbor_index(a_to_b, a_to_c, c_to_lb_to_b::Table)
+  a_to_lb = Vector{Int8}(undef,length(a_to_b))
+  for (a,b) in enumerate(a_to_b)
+    c = a_to_c[a]
+    pini = c_to_lb_to_b.ptrs[c]
+    pend = c_to_lb_to_b.ptrs[c+1]-1
+    for (lb,p) in enumerate(pini:pend)
+      if b == c_to_lb_to_b.data[p]
+        a_to_lb[a] = Int8(lb)
+        break
+      end
+    end
+  end
+  return a_to_lb
+end
+
 function to_dict(table::Table)
   dict = Dict{Symbol,Any}()
   dict[:data] = table.data

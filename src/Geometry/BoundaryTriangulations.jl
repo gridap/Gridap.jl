@@ -1,12 +1,11 @@
 
-struct FaceToCellGlue{A,B,C,D} <: GridapType
+struct FaceToCellGlue{A,B,C} <: GridapType
   face_to_bgface::A
-  bgface_to_lcell::B
   face_to_cell::Vector{Int32}
   face_to_lface::Vector{Int8}
   face_to_lcell::Vector{Int8}
-  face_to_ftype::C
-  cell_to_ctype::D
+  face_to_ftype::B
+  cell_to_ctype::C
   cell_to_lface_to_pindex::Table{Int8,Vector{Int8},Vector{Int32}}
   ctype_to_lface_to_ftype::Vector{Vector{Int8}}
 end
@@ -24,7 +23,7 @@ function FaceToCellGlue(
   cell_to_bgfaces = get_faces(topo,D,cD)
   cell_to_lface_to_pindex = Table(get_cell_permutations(topo,cD))
 
-  bgface_to_cell = lazy_map(getindex,bgface_to_cells, bgface_to_lcell)
+  bgface_to_cell = lazy_map(getindex, bgface_to_cells, bgface_to_lcell)
   bgface_to_lface = find_local_index(bgface_to_cell, cell_to_bgfaces)
 
   face_to_cell = collect(Int32,lazy_map(Reindex(bgface_to_cell), face_to_bgface))
@@ -45,7 +44,6 @@ function FaceToCellGlue(
 
   FaceToCellGlue(
     face_to_bgface,
-    bgface_to_lcell,
     face_to_cell,
     face_to_lface,
     face_to_lcell,
@@ -53,49 +51,6 @@ function FaceToCellGlue(
     cell_to_ctype,
     cell_to_lface_to_pindex,
     ctype_to_lface_to_ftype)
-end
-
-function OverlappingFaceToCellGlue(
-  topo::GridTopology,
-  cell_grid::Grid,
-  face_grid::Grid,
-  face_to_bgface::AbstractVector,
-  face_to_lcell::AbstractVector
-)
-  Dc = num_cell_dims(cell_grid)
-  Df = num_cell_dims(face_grid)
-  bgface_to_cells = get_faces(topo,Df,Dc)
-  cell_to_bgfaces = get_faces(topo,Dc,Df)
-  cell_to_lface_to_pindex = Table(get_cell_permutations(topo,Df))
-
-  face_to_cells = lazy_map(Reindex(bgface_to_cells), face_to_bgface)
-  face_to_cell  = collect(Int32,lazy_map(getindex,face_to_cells,face_to_lcell))
-  face_to_lface = find_local_index(face_to_bgface,face_to_cell,cell_to_bgfaces)
-
-  f = (p) -> fill(Int8(UNSET), num_faces(p,Df))
-  ctype_to_lface_to_ftype = map(f, get_polytopes(cell_grid))
-  face_to_ftype = get_cell_type(face_grid)
-  cell_to_ctype = get_cell_type(cell_grid)
-
-  _fill_ctype_to_lface_to_ftype!(
-    ctype_to_lface_to_ftype,
-    face_to_cell,
-    face_to_lface,
-    face_to_ftype,
-    cell_to_ctype
-  )
-
-  FaceToCellGlue(
-    face_to_bgface,
-    face_to_lcell,
-    face_to_cell,
-    face_to_lface,
-    face_to_lcell,
-    face_to_ftype,
-    cell_to_ctype,
-    cell_to_lface_to_pindex,
-    ctype_to_lface_to_ftype
-  )
 end
 
 function _fill_ctype_to_lface_to_ftype!(
@@ -240,17 +195,19 @@ end
 
 function get_glue(trian::BoundaryTriangulation,::Val{D},::Val{D}) where D
   tface_to_mface = trian.glue.face_to_cell
-  face_to_q_vertex_coords = _compute_face_to_q_vertex_coords(trian)
-  f(p) = get_shapefuns(LagrangianRefFE(Float64,get_polytope(p),1))
-  ftype_to_shapefuns = map( f, get_reffes(trian) )
+  f(p) = get_shapefuns(LagrangianRefFE(Float64,p,1))
+  ftype_to_shapefuns = map(f, get_polytopes(trian))
   face_to_shapefuns = expand_cell_data(ftype_to_shapefuns,trian.glue.face_to_ftype)
+  face_to_q_vertex_coords = _compute_face_to_q_vertex_coords(trian)
   face_s_q = lazy_map(linear_combination,face_to_q_vertex_coords,face_to_shapefuns)
   tface_to_mface_map = face_s_q
   mface_to_tface = nothing
   FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
 end
 
-function get_facet_normal(trian::BoundaryTriangulation, boundary_trian_glue::FaceToCellGlue)
+get_facet_normal(trian::BoundaryTriangulation) = get_facet_normal(trian, trian.glue)
+
+function get_facet_normal(trian::BoundaryTriangulation, face_glue::FaceToCellGlue)
   cell_grid = get_grid(get_background_model(trian.trian))
 
   ## Reference normal
@@ -262,28 +219,24 @@ function get_facet_normal(trian::BoundaryTriangulation, boundary_trian_glue::Fac
     lface_pindex_to_n
   end
   ctype_lface_pindex_to_nref = map(f, get_polytopes(cell_grid))
-  face_to_nref = FaceCompressedVector(ctype_lface_pindex_to_nref,boundary_trian_glue)
+  face_to_nref = FaceCompressedVector(ctype_lface_pindex_to_nref,face_glue)
   face_s_nref = lazy_map(constant_field,face_to_nref)
 
   # Inverse of the Jacobian transpose
   cell_q_x = get_cell_map(cell_grid)
   cell_q_Jt = lazy_map(∇,cell_q_x)
   cell_q_invJt = lazy_map(Operation(pinvJt),cell_q_Jt)
-  face_q_invJt = lazy_map(Reindex(cell_q_invJt),boundary_trian_glue.face_to_cell)
+  face_q_invJt = lazy_map(Reindex(cell_q_invJt),face_glue.face_to_cell)
 
   # Change of domain
   D = num_cell_dims(cell_grid)
-  boundary_trian_glue = get_glue(trian,Val(D))
-  face_s_q = boundary_trian_glue.tface_to_mface_map
+  face_glue = get_glue(trian,Val(D))
+  face_s_q = face_glue.tface_to_mface_map
   face_s_invJt = lazy_map(∘,face_q_invJt,face_s_q)
   face_s_n = lazy_map(Broadcasting(Operation(push_normal)),face_s_invJt,face_s_nref)
   Fields.MemoArray(face_s_n)
 end
 
-function get_facet_normal(trian::BoundaryTriangulation{Dc,Dp,A,<:FaceToCellGlue}) where {Dc,Dp,A}
-  glue = trian.glue
-  get_facet_normal(trian, glue)
-end
 function push_normal(invJt,n)
   v = invJt⋅n
   m = sqrt(inner(v,v))
@@ -294,7 +247,11 @@ function push_normal(invJt,n)
   end
 end
 
-function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation,glue)
+function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation)
+  _compute_face_to_q_vertex_coords(trian,trian.glue)
+end
+
+function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation, glue)
   d = num_cell_dims(trian)
   cell_grid = get_grid(get_background_model(trian.trian))
   polytopes = get_polytopes(cell_grid)
@@ -330,10 +287,6 @@ function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation,glue)
   end
 
   FaceCompressedVector(ctype_to_lface_to_pindex_to_qcoords,glue)
-end
-
-function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation{Dc,Dp,A,<:FaceToCellGlue}) where {Dc,Dp,A}
-  _compute_face_to_q_vertex_coords(trian,trian.glue)
 end
 
 struct FaceCompressedVector{T,G<:FaceToCellGlue} <: AbstractVector{T}

@@ -152,7 +152,11 @@ function integrate(f,b::GenericMeasure)
 end
 
 """
-  Composite Measure
+    struct CompositeMeasure <: Measure
+      ttrian :: Triangulation
+      itrian :: Triangulation
+      quad   :: CellQuadrature
+    end
 
   Measure such that the integration and target triangulations are different. 
 
