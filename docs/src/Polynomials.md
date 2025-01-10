@@ -96,29 +96,35 @@ polynomials ``\phi_K`` for which ``\phi_K(0) = \delta_{0K}`` and ``\phi_K(1) =
 \delta_{1K}``. This module implements the generalised version introduced in Eq.
 17 of [Badia-Neiva-Verdugo 2022](https://doi.org/10.1016/j.camwa.2022.09.027).
 
+When `ModalC0` is used as a `<:Polynomial` parameter in
+[`UniformPolyBasis`](@ref) or other bases (except `ModalC0Basis`), the trivial
+bounding box `(a=Point{D}(0...), b=Point{D}(1...))` is assumed, which
+coincides with the usual definition of the ModalC0 bases.
+
 
 ### Polynomial spaces in FEM
 
 #### P and Q spaces
 
+Let us denote ``\mathbb{P}_K(x)`` the space of univariate polynomials of order up to ``K`` in the varible ``x``
 ```math
-\mathbb{P}_K(x) = \text{Span}\big\{\quad x\rightarrow x^i \quad\big|\quad 0\leq i\leq K \quad\big\}
+\mathbb{P}_K(x) = \text{Span}\big\{\quad x\rightarrow x^i \quad\big|\quad 0\leq i\leq K \quad\big\}.
 ```
 
+Then, ``\mathbb{Q}^D`` and ``\mathbb{P}^D`` are the spaces for Lagrange elements
+on D-cubes and D-simplices respectively, defined by
 ```math
 \mathbb{Q}^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^\alpha \quad\big|\quad 0\leq
-    \alpha_1, \alpha_2, \dots, \alpha_D \leq K \quad\big\}
+    \alpha_1, \alpha_2, \dots, \alpha_D \leq K \quad\big\},
 ```
-
+and
 ```math
 \mathbb{P}^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^\alpha \quad\big|\quad 0\leq
     \alpha_1, \alpha_2, \dots, \alpha_D \leq K;\quad \sum_{d=1}^D \alpha_d \leq
-    K \quad\big\}
+    K \quad\big\}.
 ```
 
-```math
-\mathbb{P}_K = \mathbb{P}^1_K = \mathbb{Q}^1_K
-```
+To note, there is ``\mathbb{P}_K = \mathbb{P}^1_K = \mathbb{Q}^1_K``.
 
 #### Serendipity space Sr
 
@@ -263,10 +269,6 @@ BernsteinBasis(args...)
 
 ```@docs
 BernsteinBasis
-ModalC0Basis
-```
-
-```@docs
 PGradBasis
 QGradBasis
 PCurlGradBasis
@@ -285,6 +287,8 @@ get_exponents
 CompWiseTensorPolyBasis
 NedelecPolyBasisOnSimplex
 RaviartThomasPolyBasis
+ModalC0Basis
+ModalC0Basis()
 ```
 
 ### Deprecated APIs

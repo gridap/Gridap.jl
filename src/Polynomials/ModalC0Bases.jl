@@ -27,12 +27,33 @@ struct ModalC0Basis{D,V,T,K} <: PolynomialBasis{D,V,K,ModalC0}
     a::Vector{Point{D,T}},
     b::Vector{Point{D,T}}) where {D,V,T}
 
+    _msg =  "The number of bounding box points in a and b should match the number of terms"
+    @check length(terms) == length(a) == length(b) _msg
     @check T == eltype(V) "Point and polynomial values should have the same scalar body"
     K = maximum(orders, init=0)
 
     new{D,V,T,K}(orders,terms,a,b)
   end
 end
+
+"""
+    ModalC0Basis{D}(::Type{V},order::Int;                        [, filter][, sort!:])
+    ModalC0Basis{D}(::Type{V},order::Int,   a::Point ,b::Point ; [, filter][, sort!:])
+    ModalC0Basis{D}(::Type{V},orders::Tuple;                     [, filter][, sort!:])
+    ModalC0Basis{D}(::Type{V},orders::Tuple,a::Point ,b::Point ; [, filter][, sort!:])
+    ModalC0Basis{D}(::Type{V},orders::Tuple,a::Vector,b::Vector; [, filter][, sort!:])
+
+where `filter` is a `Function` defaulting to `_q_filter`, and `sort!` is a
+`Function` defaulting to `_sort_by_nfaces!`.
+
+At last, all scalar basis polynomial will have its bounding box `(a[i],b[i])`,
+but they are assumed iddentical if only two points `a` and `b` are provided,
+and default to `a=Point{D}(0...)`, `b=Point{D}(1...)` if not provided.
+
+The basis is uniform, isotropic if one `order` is provided, or anisotropic if a
+`D` tuple `orders` is provided.
+"""
+function ModalC0Basis() end
 
 function ModalC0Basis{D}(
   ::Type{V},
@@ -93,6 +114,7 @@ function ModalC0Basis{D}(
   orders = tfill(order,Val{D}())
   ModalC0Basis{D}(V,orders; filter=filter, sort! =sort!)
 end
+
 
 # API
 
@@ -352,12 +374,12 @@ end
 function _gradient_1d_mc0!(g::AbstractMatrix{T},x,a,b,order,d) where T
   @assert order > 0
   n = order + 1
-  z = one(T)
-  @inbounds g[d,1] = -z
-  @inbounds g[d,2] = z
+  o = one(T)
+  @inbounds g[d,1] = -o
+  @inbounds g[d,2] = o
   if n > 2
     ξ = ( 2*x[d] - ( a[d] + b[d] ) ) / ( b[d] - a[d] )
-    v1 = z - x[d]
+    v1 = o - x[d]
     v2 = x[d]
     for i in 3:n
       j, dj = jacobi_and_derivative(ξ,i-3,1,1)
@@ -369,16 +391,16 @@ end
 function _hessian_1d_mc0!(h::AbstractMatrix{T},x,a,b,order,d) where T
   @assert order > 0
   n = order + 1
-  y = zero(T)
-  z = one(T)
-  @inbounds h[d,1] = y
-  @inbounds h[d,2] = y
+  z = zero(T)
+  o = one(T)
+  @inbounds h[d,1] = z
+  @inbounds h[d,2] = z
   if n > 2
     ξ = ( 2*x[d] - ( a[d] + b[d] ) ) / ( b[d] - a[d] )
-    v1 = z - x[d]
+    v1 = o - x[d]
     v2 = x[d]
-    dv1 = -z
-    dv2 = z
+    dv1 = -o
+    dv2 = o
     for i in 3:n
       j, dj = jacobi_and_derivative(ξ,i-3,1,1)
       _, d2j = jacobi_and_derivative(ξ,i-4,2,2)
@@ -387,3 +409,28 @@ function _hessian_1d_mc0!(h::AbstractMatrix{T},x,a,b,order,d) where T
   end
 end
 
+
+#######################################
+# Generic 1D internal polynomial APIs #
+#######################################
+
+# For possible use with UniformPolyBasis etc.
+# Make it for x∈[0,1] like the other 1D bases.
+
+function _evaluate_1d!(::Type{ModalC0},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number}
+  a = zero(x)
+  b = zero(x) .+ one(T)
+  @inline _evaluate_1d_mc0!(c,x,a,b,K,d)
+end
+
+function _gradient_1d!(::Type{ModalC0},::Val{K},g::AbstractMatrix{T},x,d) where {K,T<:Number}
+  a = zero(x)
+  b = zero(x) .+ one(T)
+  @inline _gradient_1d_mc0!(g,x,a,b,K,d)
+end
+
+function _hessian_1d!(::Type{ModalC0},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number}
+  a = zero(x)
+  b = zero(x) .+ one(T)
+  @inline _hessian_1d_mc0!(h,x,a,b,K,d)
+end
