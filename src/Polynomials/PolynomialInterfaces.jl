@@ -68,9 +68,29 @@ Return the maximum polynomial order in a dimension, is should be `0` in 0D.
 @inline get_order(::PolynomialBasis{D,V,K}) where {D,V,K} = K
 
 
-################################
-# Generic field implementation #
-################################
+###########
+# Helpers #
+###########
+
+_q_filter( e,order)  = (maximum(e,init=0) <= order) # ℚₙ
+_qs_filter(e,order)  = (maximum(e,init=0) == order) # ℚₙ\ℚ₍ₙ₋₁₎
+_p_filter( e,order)  = (sum(e) <= order)            # ℙₙ
+_ps_filter(e,order)  = (sum(e) == order)            # ℙₙ\ℙ₍ₙ₋₁₎
+_ser_filter(e,order) = (sum( [ i for i in e if i>1 ] ) <= order) # Serendipity
+
+function _define_terms(filter,orders)
+  t = orders .+ 1
+  g = (0 .* orders) .+ 1
+  cis = CartesianIndices(t)
+  co = CartesianIndex(g)
+  maxorder = maximum(orders, init=0)
+  [ ci for ci in cis if filter(Int[Tuple(ci-co)...],maxorder) ]
+end
+
+
+#########################################
+# Generic array of field implementation #
+#########################################
 
 function _return_cache(
   f::PolynomialBasis{D}, x,::Type{G},::Val{N_deriv}) where {D,G,N_deriv}
@@ -162,6 +182,53 @@ function evaluate!(cache,
 end
 
 
+##############################################
+# Optimizing of evaluation at a single point #
+##############################################
+
+function return_cache(f::PolynomialBasis,x::Point)
+  xs = [x]
+  cf = return_cache(f,xs)
+  v = evaluate!(cf,f,xs)
+  r = CachedArray(zeros(eltype(v),(size(v,2),)))
+  r, cf, xs
+end
+
+function evaluate!(cache,f::PolynomialBasis,x::Point)
+  r, cf, xs = cache
+  xs[1] = x
+  v = evaluate!(cf,f,xs)
+  ndof = size(v,2)
+  setsize!(r,(ndof,))
+  a = r.array
+  copyto!(a,v)
+  a
+end
+
+function return_cache(
+  f::FieldGradientArray{N,<:PolynomialBasis}, x::Point) where N
+
+  xs = [x]
+  cf = return_cache(f,xs)
+  v = evaluate!(cf,f,xs)
+  r = CachedArray(zeros(eltype(v),(size(v,2),)))
+  r, cf, xs
+end
+
+function evaluate!(
+  cache, f::FieldGradientArray{N,<:PolynomialBasis}, x::Point) where N
+
+  r, cf, xs = cache
+  xs[1] = x
+  v = evaluate!(cf,f,xs)
+  ndof = size(v,2)
+  setsize!(r,(ndof,))
+  a = r.array
+  copyto!(a,v)
+  a
+end
+
+
 ###############################
 # nD internal polynomial APIs #
 ###############################
@@ -224,53 +291,6 @@ function _hessian_nd!(
   s::MMatrix)
 
   @abstractmethod
-end
-
-
-##############################################
-# Optimizing of evaluation at a single point #
-##############################################
-
-function return_cache(f::PolynomialBasis,x::Point)
-  xs = [x]
-  cf = return_cache(f,xs)
-  v = evaluate!(cf,f,xs)
-  r = CachedArray(zeros(eltype(v),(size(v,2),)))
-  r, cf, xs
-end
-
-function evaluate!(cache,f::PolynomialBasis,x::Point)
-  r, cf, xs = cache
-  xs[1] = x
-  v = evaluate!(cf,f,xs)
-  ndof = size(v,2)
-  setsize!(r,(ndof,))
-  a = r.array
-  copyto!(a,v)
-  a
-end
-
-function return_cache(
-  f::FieldGradientArray{N,<:PolynomialBasis}, x::Point) where N
-
-  xs = [x]
-  cf = return_cache(f,xs)
-  v = evaluate!(cf,f,xs)
-  r = CachedArray(zeros(eltype(v),(size(v,2),)))
-  r, cf, xs
-end
-
-function evaluate!(
-  cache, f::FieldGradientArray{N,<:PolynomialBasis}, x::Point) where N
-
-  r, cf, xs = cache
-  xs[1] = x
-  v = evaluate!(cf,f,xs)
-  ndof = size(v,2)
-  setsize!(r,(ndof,))
-  a = r.array
-  copyto!(a,v)
-  a
 end
 
 

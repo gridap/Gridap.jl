@@ -18,7 +18,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 
-using Gridap.Polynomials: _q_filter, _s_filter_mc0
+using Gridap.Polynomials: _q_filter, _ser_filter
 using Gridap.Polynomials: _compute_filter_mask
 using Gridap.Polynomials: _define_terms, _sort_by_nfaces!
 

@@ -87,10 +87,6 @@ get_extrusion(p::SerendipityPolytope{D}) where D = Point(tfill(HEX_AXIS,Val{D}()
 
 # Implemented polytope interface for LagrangianRefFEs
 
-function _ser_filter(e,order)
-  sum( [ i for i in e if i>1 ] ) <= order
-end
-
 function compute_monomial_basis(::Type{T},p::SerendipityPolytope{D},orders) where {T,D}
   MonomialBasis(Val(D),T,orders,_ser_filter)
 end

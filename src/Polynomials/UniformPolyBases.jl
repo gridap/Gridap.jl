@@ -60,9 +60,12 @@ end
 """
     UniformPolyBasis(::Type{PT}, ::Val{D}, ::Type{V}, orders::Tuple [, filter=_q_filter])
 
-This constructor allows to pass a tuple `orders` containing the polynomial order
-to be used in each of the `D` spatial dimensions in order to construct a
-tensorial anisotropic `D`-multivariate space 𝕊.
+This constructor allows to pass a tuple `orders` containing the maximal
+polynomial order to be used in each of the `D` spatial dimensions in order to
+construct a tensorial anisotropic `D`-multivariate space 𝕊.
+
+If a filter is provided, it is applied on the cartesian product terms
+CartesianIndices(`orders`), with maximum(`orders`) as order argument.
 """
 function UniformPolyBasis(
   ::Type{PT}, ::Val{D}, ::Type{V}, orders::NTuple{D,Int}, filter::Function=_q_filter
@@ -78,7 +81,7 @@ end
 Return a `UniformPolyBasis{D,V,order,PT}` where 𝕊 is defined by the terms
 filtered by
 
-    term -> `filter`(term, `order`).
+    term -> filter(term, order).
 
 See the [Filter functions](@ref) section of the documentation for more details.
 """
@@ -125,26 +128,6 @@ Return the D-tuple of polynomial orders in each spatial dimension
 function get_orders(b::UniformPolyBasis)
   b.orders
 end
-
-
-###########
-# Helpers #
-###########
-
-_q_filter( e,order) = (maximum(e,init=0) <= order) # ℚₙ
-_qs_filter(e,order) = (maximum(e,init=0) == order) # ℚₙ\ℚ₍ₙ₋₁₎
-_p_filter( e,order) = (sum(e) <= order)     # ℙₙ
-_ps_filter(e,order) = (sum(e) == order)     # ℙₙ\ℙ₍ₙ₋₁₎
-
-function _define_terms(filter,orders)
-  t = orders .+ 1
-  g = (0 .* orders) .+ 1
-  cis = CartesianIndices(t)
-  co = CartesianIndex(g)
-  maxorder = maximum(orders, init=0)
-  [ ci for ci in cis if filter(Int[Tuple(ci-co)...],maxorder) ]
-end
-
 
 #################################
 # nD evaluations implementation #

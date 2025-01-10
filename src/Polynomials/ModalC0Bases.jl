@@ -104,8 +104,6 @@ end
 
 # Helpers
 
-_s_filter_mc0(e,o) = ( sum( [ i for i in e if i>1 ] ) <= o )
-
 function _sort_by_nfaces!(terms::Vector{CartesianIndex{D}},orders) where D
 
   # Generate indices of n-faces and order s.t.
