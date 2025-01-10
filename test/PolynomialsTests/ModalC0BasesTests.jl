@@ -95,10 +95,10 @@ b2u= UniformPolyBasis(ModalC0,Val(2),V,order)
 ∇b2  = Broadcasting(∇)(b2)
 ∇b2u = Broadcasting(∇)(b2u)
 
-b2x   = eachcol(evaluate(b2,    [x1,x2,x3,]))
-b2xu  = eachcol(evaluate(b2u,   [x1,x2,x3,]))
-∇b2x  = eachcol(evaluate(∇b2,   [x1,x2,x3,]))
-∇b2xu = eachcol(evaluate(∇b2u,  [x1,x2,x3,]))
+b2x   = collect(eachcol(evaluate(b2,    [x1,x2,x3,])))
+b2xu  = collect(eachcol(evaluate(b2u,   [x1,x2,x3,])))
+∇b2x  = collect(eachcol(evaluate(∇b2,   [x1,x2,x3,])))
+∇b2xu = collect(eachcol(evaluate(∇b2u,  [x1,x2,x3,])))
 
 # re order basis polynomials as each basis has different ordering ...
 b2x_perm   = b2x[  sortperm(b2x)[  invperm(sortperm(b2xu))]]
