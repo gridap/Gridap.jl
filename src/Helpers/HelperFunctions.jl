@@ -39,12 +39,14 @@ function first_and_tail(a::Tuple)
 end
 
 """
-    public_names_in_md(m::Module)
+    public_names_in_md(m::Module[; change_link=Dict())
 
 Return a string displaying exported and other public names of the module for
-printing in markdown.
+printing in markdown, as a reference ```"[`name`](@ref)"```.
+If the dictionary `change_link` has a key for `name`, then it is used as a link
+instead of `name` itself: ```"[`name`](@ref \$(change_link[name]) )"```
 """
-function public_names_in_md(m::Module)
+function public_names_in_md(m::Module; change_link=Dict())
   publics = filter(!=(nameof(m)), names(m))
   exported = filter(n->Base.isexported(m,n), publics)
   non_exported_publics = filter(∉(exported), publics)
@@ -53,14 +55,32 @@ function public_names_in_md(m::Module)
 
   s = """
   ### Exported names
-  [`$(join(exported,"`](@ref), [`"))`](@ref)
+
   """
+
+  for name in exported
+    if haskey(change_link, name)
+      s *= "[`" * String(name) * "`](@ref " * change_link[name] * "), "
+    else
+      s *= "[`"*String(name)*"`](@ref), "
+    end
+  end
 
   isempty(non_exported_publics) && return s
 
-  s * """
+  s *= """
 
   ### Other public names
-  [`$(join(non_exported_publics,"`](@ref), [`"))`](@ref)
+
   """
+
+  for name in non_exported_publics
+    if haskey(change_link, name)
+      s *= "[`" * String(name) * "`](@ref " * change_link[name] * "), "
+    else
+      s *= "[`" * String(name) * "`](@ref), "
+    end
+  end
+
+  return s
 end

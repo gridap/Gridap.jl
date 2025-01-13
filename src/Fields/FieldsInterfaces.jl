@@ -67,8 +67,18 @@ evaluate!(c,f::Field,x::Point) = @abstractmethod
 
 # Differentiation
 
+"""
+    function gradient end
+
+Abstract gradient, see [`Field`](@ref).
+"""
 function gradient end
 const ∇ = gradient
+"""
+    ∇∇(f) = gradient(gradient(f))
+
+hessian of f
+"""
 ∇∇(f) = gradient(gradient(f))
 
 gradient(f,::Val{1}) = ∇(f)

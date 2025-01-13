@@ -22,8 +22,16 @@ The module is structured in the following sub-modules:
 - [`Gridap.ODEs`](@ref)
 - [`Gridap.Adaptivity`](@ref)
 
-The exported names are:
-$(EXPORTS)
+$(Helpers.public_names_in_md(@__MODULE__; change_link=Dict(
+  :∇  => "gradient",
+  :∫  => "Integrand",
+  :⊗  => "Gridap.TensorValues.outer",
+  :⊙  => "Gridap.TensorValues.inner",
+  :×  => "cross",
+  :⋅  => "dot",
+  :⋅¹ => "dot",
+  :⋅² => "Gridap.TensorValues.double_contraction"
+)))
 """
 module Gridap
 
