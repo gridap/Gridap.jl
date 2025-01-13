@@ -108,18 +108,6 @@ function get_patch_dofs(space::FESpace,ptopo::PatchTopology)
 end
 
 """
-function get_cell_dof_ids(f::FESpace,ttrian::PatchTriangulation)
-  tface_to_dofs = get_cell_dof_ids(f,ttrian.trian)
-
-  trian = get_triangulation(f)
-  pface_to_patch = get_pface_to_patch(ttrian.ptopo,num_cell_dims(trian))
-  tface_to_patch = view(pface_to_patch,ttrian.tface_to_pface)
-
-  return pair_arrays(tface_to_dofs,tface_to_patch)
-end
-"""
-
-"""
 function get_patch_dofs(space::MultiFieldFESpace,ptopo::PatchTopology)
   offsets = get_field_offsets(space)
   sf_patch_dofs = map(space) do sf
@@ -132,17 +120,20 @@ end
 
 function assemble_matrix(assem::PatchAssembler,cellmat)
   patch_sizes = map(tuple,blocklengths(assem.rows),blocklengths(assem.cols))
-  PatchAssemblyMap(assem,patch_sizes,cellmat)
+  k = PatchAssemblyMap(assem,patch_sizes,cellmat)
+  return lazy_map(k,collect(1:Geometry.num_patches(assem.ptopo)))
 end
 
 function assemble_vector(assem::PatchAssembler,cellvec)
   patch_sizes = map(tuple,blocklengths(assem.rows))
-  PatchAssemblyMap(assem,patch_sizes,cellvec)
+  k = PatchAssemblyMap(assem,patch_sizes,cellvec)
+  return lazy_map(k,collect(1:Geometry.num_patches(assem.ptopo)))
 end
 
 function assemble_matrix_and_vector(assem::PatchAssembler,celldata)
-  patch_sizes = map((r,c) -> ((r,c),r),blocklengths(assem.rows),blocklengths(assem.cols))
-  PatchAssemblyMap(assem,patch_sizes,celldata)
+  patch_sizes = map((r,c) -> ((r,c),(r,)),blocklengths(assem.rows),blocklengths(assem.cols))
+  k = PatchAssemblyMap(assem,patch_sizes,celldata)
+  return lazy_map(k,collect(1:Geometry.num_patches(assem.ptopo)))
 end
 
 function assemble_matrix(f::Function,a::PatchAssembler,U::FESpace,V::FESpace)
@@ -198,14 +189,14 @@ function collect_patch_cell_matrix(assem::PatchAssembler,trial::FESpace,test::FE
 end
 
 function collect_patch_cell_vector(assem::PatchAssembler,test::FESpace,a::DomainContribution)
-  w, r = collect_cell_vector(test,a)
+  w, _r = collect_cell_vector(test,a)
   p, q = collect_cell_patch(assem.ptopo,a)
   r = attach_patch_map(AssemblyStrategyMap{:rows}(assem.strategy),_r,q)
   return (w, r, p)
 end
 
 function _collect_patch_cell_matvec(assem::PatchAssembler,trial::FESpace,test::FESpace,a::DomainContribution)
-  w, r, c = _collect_cell_matvec(trial,test,a)
+  w, _r, _c = _collect_cell_matvec(trial,test,a)
   p, q = collect_cell_patch(assem.ptopo,a)
   r = attach_patch_map(AssemblyStrategyMap{:rows}(assem.strategy),_r,q)
   c = attach_patch_map(AssemblyStrategyMap{:cols}(assem.strategy),_c,q)
@@ -242,11 +233,57 @@ struct PatchAssemblyMap{T} <: Map
   cell_data
 end
 
-function Arrays.return_cache(k::PatchAssemblyMap{NTuple{2,Int}},patch)
-  res = zeros(k.patch_sizes[patch])
+# Mat & Vec assembly
 
+function Arrays.return_cache(k::PatchAssemblyMap,patch)
+  res = zeros(k.patch_sizes[patch])
+  caches = patch_assembly_cache(res,k.cell_data)
+  return CachedArray(res), caches
+end
+
+function Arrays.evaluate!(cache,k::PatchAssemblyMap,patch)
+  c_res, caches = cache
+  setsize!(c_res,k.patch_sizes[patch])
+  res = c_res.array
+  fill!(res,zero(eltype(res)))
+  patch_assembly!(caches,res,k.cell_data,patch)
+  return res
+end
+
+# Mat-Vec assembly
+
+function Arrays.return_cache(k::PatchAssemblyMap{<:Tuple{<:Tuple,<:Tuple}},patch)
+  mat, vec = zeros(k.patch_sizes[patch][1]), zeros(k.patch_sizes[patch][2])
+
+  matvecdata, matdata, vecdata = k.cell_data
+  mat_caches = patch_assembly_cache(mat,matdata)
+  vec_caches = patch_assembly_cache(vec,vecdata)
+  matvec_caches = patch_assembly_cache(mat,vec,matvecdata)
+
+  return CachedArray(mat), CachedArray(vec), matvec_caches, mat_caches, vec_caches
+end
+
+function Arrays.evaluate!(cache,k::PatchAssemblyMap{<:Tuple{<:Tuple,<:Tuple}},patch)
+  c_mat, c_vec, matvec_caches, mat_caches, vec_caches = cache
+  matvecdata, matdata, vecdata = k.cell_data
+
+  setsize!(c_mat,k.patch_sizes[patch][1])
+  setsize!(c_vec,k.patch_sizes[patch][2])
+  mat, vec = c_mat.array, c_vec.array
+
+  fill!(mat,zero(eltype(mat)))
+  fill!(vec,zero(eltype(vec)))
+
+  patch_assembly!(matvec_caches,mat,vec,matvecdata,patch)
+  patch_assembly!(mat_caches,mat,matdata,patch)
+  patch_assembly!(vec_caches,vec,vecdata,patch)
+  
+  return mat, vec
+end
+
+function patch_assembly_cache(mat::Matrix,cell_matdata)
   caches = ()
-  for (cell_vals, cell_rows, cell_cols, patch_cells) in zip(k.cell_data...)
+  for (cell_vals, cell_rows, cell_cols, patch_cells) in zip(cell_matdata...)
     rows_cache = array_cache(cell_rows)
     cols_cache = array_cache(cell_cols)
     vals_cache = array_cache(cell_vals)
@@ -255,29 +292,74 @@ function Arrays.return_cache(k::PatchAssemblyMap{NTuple{2,Int}},patch)
     cols1 = getindex!(cols_cache,cell_cols,1)
     vals1 = getindex!(vals_cache,cell_vals,1)
 
-    add_cache = return_cache(AddEntriesMap(+),res,vals1,rows1,cols1)
+    add_cache = return_cache(AddEntriesMap(+),mat,vals1,rows1,cols1)
 
     add_caches = (add_cache, vals_cache, rows_cache, cols_cache)
     cells_cache = array_cache(patch_cells)
     caches = (caches...,(add_caches, cells_cache))
   end
-
-  return CachedArray(res), caches
+  return caches
 end
 
-function Arrays.evaluate!(cache,k::PatchAssemblyMap{NTuple{2,Int}},patch)
-  c_res, caches = cache
-
-  setsize!(c_res,k.patch_sizes[patch])
-  res = c_res.array
-
-  fill!(res,zero(eltype(res)))
-  
-  for (c,cell_vals, cell_rows, cell_cols, patch_cells) in zip(caches, k.cell_data...)
+function patch_assembly!(caches,mat::Matrix,cell_matdata,patch)
+  for (c, cell_vals, cell_rows, cell_cols, patch_cells) in zip(caches, cell_matdata...)
     ac, cc = c
     cells = getindex!(cc, patch_cells, patch)
-    _numeric_loop_matrix!(res,ac,cell_vals,cell_rows,cell_cols,cells)
+    _numeric_loop_matrix!(mat,ac,cell_vals,cell_rows,cell_cols,cells)
   end
-  
-  return res
+end
+
+function patch_assembly_cache(vec::Vector,cell_vecdata)
+  caches = ()
+  for (cell_vals, cell_rows, patch_cells) in zip(cell_vecdata...)
+    rows_cache = array_cache(cell_rows)
+    vals_cache = array_cache(cell_vals)
+
+    rows1 = getindex!(rows_cache,cell_rows,1)
+    vals1 = getindex!(vals_cache,cell_vals,1)
+
+    add_cache = return_cache(AddEntriesMap(+),vec,vals1,rows1)
+
+    add_caches = (add_cache, vals_cache, rows_cache)
+    cells_cache = array_cache(patch_cells)
+    caches = (caches...,(add_caches, cells_cache))
+  end
+  return caches
+end
+
+function patch_assembly!(caches,vec::Vector,cell_vecdata,patch)
+  for (c, cell_vals, cell_rows, patch_cells) in zip(caches, cell_vecdata...)
+    ac, cc = c
+    cells = getindex!(cc, patch_cells, patch)
+    _numeric_loop_vector!(vec,ac,cell_vals,cell_rows,cells)
+  end
+end
+
+function patch_assembly_cache(mat::Matrix,vec::Vector,cell_matvecdata)
+  caches = ()
+  for (cell_vals, cell_rows, cell_cols, patch_cells) in zip(cell_matvecdata...)
+    rows_cache = array_cache(cell_rows)
+    cols_cache = array_cache(cell_cols)
+    vals_cache = array_cache(cell_vals)
+
+    rows1 = getindex!(rows_cache,cell_rows,1)
+    cols1 = getindex!(cols_cache,cell_cols,1)
+    mat1, vec1 = getindex!(vals_cache,cell_vals,1)
+
+    add_mat_cache = return_cache(AddEntriesMap(+),mat,mat1,rows1,cols1)
+    add_vec_cache = return_cache(AddEntriesMap(+),vec,vec1,rows1)
+
+    add_caches = (add_mat_cache, add_vec_cache, vals_cache, rows_cache, cols_cache)
+    cells_cache = array_cache(patch_cells)
+    caches = (caches...,(add_caches, cells_cache))
+  end
+  return caches
+end
+
+function patch_assembly!(caches,mat::Matrix,vec::Vector,cell_matvecdata,patch)
+  for (c, cell_vals, cell_rows, cell_cols, patch_cells) in zip(caches, cell_matvecdata...)
+    ac, cc = c
+    cells = getindex!(cc, patch_cells, patch)
+    _numeric_loop_matvec!(mat,vec,ac,cell_vals,cell_rows,cell_cols,cells)
+  end
 end

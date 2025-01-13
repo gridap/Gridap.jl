@@ -289,7 +289,7 @@ end
   add_cache, vals_cache, rows_cache = caches
   @assert length(cell_vals) == length(cell_rows)
   add! = AddEntriesMap(+)
-  for cell in 1:cells
+  for cell in cells
     rows = getindex!(rows_cache,cell_rows,cell)
     vals = getindex!(vals_cache,cell_vals,cell)
     evaluate!(add_cache,add!,vec,vals,rows)

@@ -24,7 +24,9 @@ VΓ = FESpace(Γ,reffe)
 assem_Ω = FESpaces.PatchAssembler(ptopo,VΩ,VΩ)
 assem_Γ = FESpaces.PatchAssembler(ptopo,VΓ,VΓ)
 
+f(x) = x[1] + x[2]
 biform(u,v,dΩ) = ∫(u⋅v)dΩ
+liform(v,dΩ) = ∫(v⋅f)dΩ
 aΩ(u,v) = biform(u,v,Measure(Ω,2*order))
 aΓ(u,v) = biform(u,v,Measure(Γ,2*order))
 
@@ -32,15 +34,19 @@ aΩp(u,v) = biform(u,v,Measure(Ωp,2*order))
 aΓp(u,v) = biform(u,v,Measure(Γp,2*order))
 a_mixed(u,v) = aΩp(u,v) + aΓp(u,v)
 
+lΩp(v) = liform(v,Measure(Ωp,2*order))
+lΓp(v) = liform(v,Measure(Γp,2*order))
+l_mixed(v) = lΩp(v) + lΓp(v)
 
-AΩ_map = assemble_matrix(aΩp,assem_Ω,VΩ,VΩ)
-AΩ = lazy_map(AΩ_map,collect(1:Geometry.num_patches(ptopo)))
+AΩ = assemble_matrix(aΩp,assem_Ω,VΩ,VΩ)
+bΩ = assemble_vector(lΩp,assem_Ω,VΩ)
+AbΩ = assemble_matrix_and_vector(aΩp,lΩp,assem_Ω,VΩ,VΩ)
 AΩ_arr = collect_cell_matrix(VΩ,VΩ,aΩ(get_fe_basis(VΩ),get_trial_fe_basis(VΩ)))[1][1]
 all(map(isequal,AΩ,AΩ_arr))
 
-AΓ_map = assemble_matrix(aΓp,assem_Γ,VΓ,VΓ)
-AΓ = lazy_map(AΓ_map,collect(1:Geometry.num_patches(ptopo)))
+AΓ = assemble_matrix(aΓp,assem_Γ,VΓ,VΓ)
 AΓ_arr = collect_cell_matrix(VΓ,VΓ,aΓ(get_fe_basis(VΓ),get_trial_fe_basis(VΓ)))[1][1]
 
-A_map = assemble_matrix(a_mixed,assem_Ω,VΩ,VΩ)
-A = lazy_map(A_map,collect(1:Geometry.num_patches(ptopo)))
+A = assemble_matrix(a_mixed,assem_Ω,VΩ,VΩ)
+b = assemble_vector(l_mixed,assem_Ω,VΩ)
+Ab = assemble_matrix_and_vector(a_mixed,l_mixed,assem_Ω,VΩ,VΩ)
