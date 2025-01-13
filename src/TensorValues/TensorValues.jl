@@ -33,6 +33,8 @@ SymTensorValue( SMatrix{2}(1,2,3,4) ) # SymTensorValue{2, Int64, 3}(1, 3, 4)
 ```
 
 See the official documentation for more details.
+
+$(public_names_in_md(@__MODULE__))
 """
 module TensorValues
 

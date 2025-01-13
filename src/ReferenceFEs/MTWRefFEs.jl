@@ -9,7 +9,7 @@ const mtw = MardalTaiWinther()
 
 Mardal-Tai-Winther reference finite element.
 
-References: 
+References:
 
 - `A Robust Finite Element Method for Darcy-Stokes Flow`, Mardal, Tai and Winther (2002)
 - `Transformations for Piola-mapped elements`, Aznaran, Farrell and Kirby (2022)
@@ -21,9 +21,9 @@ function MardalTaiWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
   @asset order == 3 "MardalTaiWinther Reference FE is by definition of order 3"
   # TODO: We should just not allow this to be an argument
 
-  prebasis = MonomialBasis{D}(VectorValue{D,T},3,Polynomials._p_filter)
-  eb = MonomialBasis{1}(T,0,Polynomials._p_filter)
-  fb = MonomialBasis{D-1}(T,1,Polynomials._p_filter)
+  prebasis = MonomialBasis(Val(D),VectorValue{D,T},3,Polynomials._p_filter)
+  eb = MonomialBasis(Val(1),T,0,Polynomials._p_filter)
+  fb = MonomialBasis(Val(D-1),T,1,Polynomials._p_filter)
 
   function emom(φ,μ,ds) # Edge moment function: σ_K(φ,μ) = ∫((φ⋅t)*μ)dK
     t = get_edge_tangent(ds)

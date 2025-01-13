@@ -1,10 +1,7 @@
 """
 This module provides a set of helper macros and helper functions
 
-The exported macros are:
-
-$(EXPORTS)
-
+$(public_names_in_md(@__MODULE__))
 """
 module Helpers
 using DocStringExtensions
@@ -26,6 +23,7 @@ export get_val_parameter
 export first_and_tail
 export GridapType
 export set_debug_mode, set_performance_mode
+export public_names_in_md
 #export operate
 
 include("Preferences.jl")
