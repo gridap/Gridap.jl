@@ -158,6 +158,13 @@ function generate_data_and_ptrs(vv::AbstractArray{<:AbstractArray{T}}) where T
   (data, ptrs)
 end
 
+function generate_ptrs(vv::AbstractArray{<:AbstractArray{T}}) where T
+  ptrs = Vector{Int32}(undef,length(vv)+1)
+  _generate_data_and_ptrs_fill_ptrs!(ptrs,vv)
+  length_to_ptrs!(ptrs)
+  ptrs
+end
+
 function _generate_data_and_ptrs_fill_ptrs!(ptrs,vv)
   c = array_cache(vv)
   k = 1

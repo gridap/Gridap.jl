@@ -610,8 +610,6 @@ function generate_cell_to_faces(
 end
 
 function _generate_ftype_to_refface(::Val{d},ctype_to_lftype_to_refface,ctype_to_lface_to_lftype) where d
-
-
   i_to_refface = vcat( ctype_to_lftype_to_refface... )
 
   i = 1
@@ -645,7 +643,6 @@ function _generate_ftype_to_refface(::Val{d},ctype_to_lftype_to_refface,ctype_to
   end
 
   (ftype_to_refface, ctype_to_lface_to_ftype)
-
 end
 
 function generate_face_to_face_type(
@@ -701,6 +698,11 @@ end
 
 function generate_facet_to_isboundary(face_to_cells::Table)
   _generate_facet_to_isboundary(face_to_cells.ptrs)
+end
+
+function generate_facet_to_isboundary(face_to_cells)
+  ptrs = Arrays.generate_ptrs(face_to_cells)
+  _generate_facet_to_isboundary(ptrs)
 end
 
 function generate_face_to_isboundary(

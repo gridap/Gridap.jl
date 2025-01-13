@@ -11,6 +11,7 @@ using FillArrays
 
 using LinearAlgebra: ⋅
 using Statistics: mean
+using DataStructures: SortedSet
 
 using Gridap.Helpers
 using Gridap.Arrays
@@ -233,6 +234,8 @@ include("AppendedTriangulations.jl")
 include("CompressedCellArrays.jl")
 
 include("Polytopal.jl")
+
+include("PatchTriangulations.jl")
 
 include("HybridTriangulations.jl")
 
