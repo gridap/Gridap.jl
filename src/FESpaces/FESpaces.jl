@@ -257,11 +257,23 @@ include("DiscreteModelWithFEMaps.jl")
 include("ConstantFESpaces.jl")
 
 export get_free_values
+"""
+    get_free_values(args...)
+
+!!! danger
+    get_free_values has been removed. Use get_free_dof_values instead.
+"""
 function get_free_values(args...)
   @unreachable "get_free_values has been removed. Use get_free_dof_values instead."
 end
 
 export get_dirichlet_values
+"""
+    get_dirichlet_values(args...)
+
+!!! danger
+    get_dirichlet_values has been removed. Use get_dirichlet_dof_values instead.
+"""
 function get_dirichlet_values(args...)
   @unreachable "get_dirichlet_values has been removed. Use get_dirichlet_dof_values instead."
 end
