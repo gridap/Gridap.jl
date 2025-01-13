@@ -5,7 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.18.10] - 2025-01-13
+
+### Added
+
+- Added corresponding function `get_tangent_vector` to `get_normal_vector`. This method calculates the (unique up to sign) tangential unit vector to edges in 2D meshes, by rotating the normal (nx, ny) -> (ny, -nx). Since PR[#1071](https://github.com/gridap/Gridap.jl/pull/1071).
+
+## [0.18.9] - 2025-01-13
+
+
+### Fixed
+
+- BUG in `FineToCoarseFields.jl`. Since PR[#1074](https://github.com/gridap/Gridap.jl/pull/1074)
 
 ### Added
 

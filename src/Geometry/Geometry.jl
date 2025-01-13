@@ -73,6 +73,7 @@ import Gridap.ReferenceFEs: num_cell_dims
 import Gridap.ReferenceFEs: num_point_dims
 import Gridap.ReferenceFEs: simplexify
 import Gridap.ReferenceFEs: get_facet_normal
+import Gridap.ReferenceFEs: get_edge_tangent
 import Gridap.ReferenceFEs: Quadrature
 
 export GridTopology
@@ -110,6 +111,7 @@ export get_cell_ref_coordinates
 export get_cell_reffe
 export get_cell_shapefuns
 export get_facet_normal
+export get_edge_tangent
 export test_triangulation
 export get_cell_map
 
