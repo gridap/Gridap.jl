@@ -7,7 +7,9 @@ $(public_names_in_md(@__MODULE__; change_link=Dict(
   :×  => "cross",
   :⋅  => "dot",
   :⋅¹ => "dot",
-  :⋅² => "Gridap.TensorValues.double_contraction"
+  :⋅² => "Gridap.TensorValues.double_contraction",
+  :ReferenceDomain  => "DomainStyle",
+  :PhysicalDomain   => "DomainStyle"
 )))
 """
 module CellData

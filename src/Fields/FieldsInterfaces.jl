@@ -470,7 +470,10 @@ evaluate!(cache,::Broadcasting{typeof(∘)},f::Field,g::Field) = f∘g
 # Integration
 
 """
-Integration of a given field in the "physical" space
+    integrate(a::Field,x::AbstractVector{<:Point},w::AbstractVector{<:Real})
+
+Numerical integration of a given field in the "physical" space. `a` is the field,
+`x` the quadrature points and `w` the quadrature weights.
 """
 function integrate(a::Field,x::AbstractVector{<:Point},w::AbstractVector{<:Real})
   cache = return_cache(integrate,a,x,w)
@@ -478,7 +481,10 @@ function integrate(a::Field,x::AbstractVector{<:Point},w::AbstractVector{<:Real}
 end
 
 """
-Integration of a given field in the "reference" space
+    integrate(a::Field,q::AbstractVector{<:Point},w::AbstractVector{<:Real},j::Field)
+
+Numerical integration of a given field in the "reference" space. `j` is the
+Jacobian field of the geometrical mapping .
 """
 function integrate(a::Field,q::AbstractVector{<:Point},w::AbstractVector{<:Real},j::Field)
   cache = return_cache(integrate,a,q,w,j)

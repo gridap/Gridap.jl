@@ -24,13 +24,15 @@ The module is structured in the following sub-modules:
 
 $(Helpers.public_names_in_md(@__MODULE__; change_link=Dict(
   :∇  => "gradient",
-  :∫  => "Integrand",
+  :∫  => "CellData.Integrand",
   :⊗  => "Gridap.TensorValues.outer",
   :⊙  => "Gridap.TensorValues.inner",
   :×  => "cross",
   :⋅  => "dot",
   :⋅¹ => "dot",
-  :⋅² => "Gridap.TensorValues.double_contraction"
+  :⋅² => "Gridap.TensorValues.double_contraction",
+  :ReferenceDomain  => "DomainStyle",
+  :PhysicalDomain   => "DomainStyle"
 )))
 """
 module Gridap

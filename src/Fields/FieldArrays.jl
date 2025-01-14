@@ -460,6 +460,8 @@ Base.setindex!(a::TransposeFieldIndices,v,i::Integer) = (a.matrix[i] = v)
 # Integration
 
 """
+    integrate(a::AbstractArray{<:Field},x::AbstractVector{<:Point},w::AbstractVector{<:Real})
+
 Integration of a given array of fields in the "physical" space
 """
 function integrate(a::AbstractArray{<:Field},x::AbstractVector{<:Point},w::AbstractVector{<:Real})
@@ -468,6 +470,8 @@ function integrate(a::AbstractArray{<:Field},x::AbstractVector{<:Point},w::Abstr
 end
 
 """
+    integrate(a::AbstractArray{<:Field},q::AbstractVector{<:Point},w::AbstractVector{<:Real},j::Field)
+
 Integration of a given array of fields in the "reference" space
 """
 function integrate(a::AbstractArray{<:Field},q::AbstractVector{<:Point},w::AbstractVector{<:Real},j::Field)
@@ -538,7 +542,7 @@ for T in (:(Point),:(AbstractArray{<:Point}))
       cf = return_cache(f,gx)
       return cg, cf
     end
-    
+
     function evaluate!(cache, k::BroadcastOpFieldArray{typeof(∘)},x::$T)
       cg, cf = cache
       f, g = k.args
@@ -733,7 +737,7 @@ for op in (:*,:⋅,:⊙,:⊗)
   end
 end
 
-# Optimisations to 
+# Optimisations to
 # lazy_map(Broadcasting(constant_field),a::AbstractArray{<:AbstractArray{<:Number}})
 
 struct ConstantFieldArray{T,N,A} <: AbstractArray{ConstantField{T},N}
