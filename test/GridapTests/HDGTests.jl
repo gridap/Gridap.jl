@@ -89,5 +89,3 @@ ns = numerical_setup(symbolic_setup(solver,A),A)
 x = zeros(size(b))
 solve!(x,ns,b)
 sh = FEFunction(M_test,x)
-
-
