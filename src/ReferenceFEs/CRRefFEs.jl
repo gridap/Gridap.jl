@@ -1,4 +1,13 @@
+"""
+    struct CR  <: ReferenceFEName
+"""
 struct CR <: ReferenceFEName end
+
+"""
+    const cr = CR()
+
+Singleton of the [`CR`](@ref) reference FE name.
+"""
 const cr = CR()
 
 """
@@ -6,7 +15,6 @@ CRRefFE(::Type{et},p::Polytope,order::Integer) where et
 
 The `order` argument has the following meaning: the divergence of the  functions in this basis
 is in the P space of degree `order-1`.
-
 """
 function CRRefFE(::Type{T},p::Polytope,order::Integer) where T
   D = num_dims(p)

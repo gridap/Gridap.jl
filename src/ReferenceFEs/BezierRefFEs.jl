@@ -1,5 +1,13 @@
+"""
+    struct Bezier  <: ReferenceFEName
+"""
 struct Bezier <: ReferenceFEName end
 
+"""
+    const bezier = Bezier()
+
+Singleton of the [`Bezier`](@ref) reference FE name.
+"""
 const bezier = Bezier()
 
 struct BezierRefFE{D} <: LagrangianRefFE{D}

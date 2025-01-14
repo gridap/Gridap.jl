@@ -190,6 +190,10 @@ function compress_cell_data(cell_data::AbstractArray)
   """
 end
 
+"""
+    compress_cell_data(a::CompressedArray)
+    compress_cell_data(a::Fill)
+"""
 function compress_cell_data(a::CompressedArray)
   a.values, a.ptrs
 end

@@ -6,7 +6,7 @@ Xiao-Gimbutas symmetric quadrature rule for simplices.
 
 # Constructor: 
 
-    `Quadrature(p::Polytope,xiao_gimbutas::XiaoGimbutas,degree::Integer;T::Type{<:AbstractFloat}=Float64)`
+    Quadrature(p::Polytope,xiao_gimbutas::XiaoGimbutas,degree::Integer;T::Type{<:AbstractFloat}=Float64)
 
 # Reference: 
 

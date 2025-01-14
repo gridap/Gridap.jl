@@ -14,8 +14,16 @@ plus the following ones
 """
 abstract type LagrangianRefFE{D} <: ReferenceFE{D} end
 
+"""
+    struct Lagrangian  <: ReferenceFEName
+"""
 struct Lagrangian <: ReferenceFEName end
 
+"""
+    const lagrangian = Lagrangian()
+
+Singleton of the [`Lagrangian`](@ref) reference FE name.
+"""
 const lagrangian = Lagrangian()
 
 """

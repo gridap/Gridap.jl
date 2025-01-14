@@ -1,5 +1,13 @@
+"""
+    struct BDM <: PushforwardRefFE <: ReferenceFEName
+"""
 struct BDM <: PushforwardRefFE end
 
+"""
+    const bdm = BDM()
+
+Singleton of the [`BDM`](@ref) reference FE name.
+"""
 const bdm = BDM()
 
 Pushforward(::Type{<:BDM}) = ContraVariantPiolaMap()
@@ -9,7 +17,6 @@ BDMRefFE(::Type{et},p::Polytope,order::Integer) where et
 
 The `order` argument has the following meaning: the divergence of the  functions in this basis
 is in the P space of degree `order-1`.
-
 """
 function BDMRefFE(::Type{T},p::Polytope,order::Integer) where T
   D = num_dims(p)
