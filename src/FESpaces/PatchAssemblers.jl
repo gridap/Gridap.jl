@@ -363,3 +363,27 @@ function patch_assembly!(caches,mat::Matrix,vec::Vector,cell_matvecdata,patch)
     _numeric_loop_matvec!(mat,vec,ac,cell_vals,cell_rows,cell_cols,cells)
   end
 end
+
+
+###########################################################################################
+
+struct LocalSolveMap{A} <: Map
+  pivot :: A
+end
+
+LocalSolveMap() = LocalSolveMap(NoPivot())
+
+function Arrays.lazy_map(k::LocalSolveMap,mats::AbstractVector{<:AbstractMatrix}, vecs::AbstractVector{<:AbstractVector})
+  matvec = pair_arrays(mats,vecs)
+  return lazy_map(k,matvec)
+end
+
+Arrays.return_cache(::LocalSolveMap,matvec) = nothing
+
+function Arrays.evaluate!(cache,k::LocalSolveMap,matvec)
+  mat, vec = matvec
+  f = lu!(mat,k.pivot;check=false)
+  @check issuccess(f) "Factorization failed"
+  ldiv!(f,vec)
+  return vec
+end

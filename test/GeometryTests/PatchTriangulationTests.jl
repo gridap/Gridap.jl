@@ -50,3 +50,6 @@ AΓ_arr = collect_cell_matrix(VΓ,VΓ,aΓ(get_fe_basis(VΓ),get_trial_fe_basis(V
 A = assemble_matrix(a_mixed,assem_Ω,VΩ,VΩ)
 b = assemble_vector(l_mixed,assem_Ω,VΩ)
 Ab = assemble_matrix_and_vector(a_mixed,l_mixed,assem_Ω,VΩ,VΩ)
+x1 = lazy_map(FESpaces.LocalSolveMap(),A,b)
+x2 = lazy_map(FESpaces.LocalSolveMap(),Ab)
+
