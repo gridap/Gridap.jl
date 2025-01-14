@@ -54,7 +54,8 @@ x1 = lazy_map(FESpaces.LocalSolveMap(),A,b)
 x2 = lazy_map(FESpaces.LocalSolveMap(),Ab)
 
 
-# MultiField
+# MultiField + Static condensation
+
 using Gridap.MultiField
 using Gridap.CellData
 

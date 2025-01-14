@@ -1519,3 +1519,26 @@ end
 
 LinearAlgebra.diag(a::MatrixBlockView) = view(a.array.array, diag(a.block_map))
 LinearAlgebra.diag(a::MatrixBlock) = view(a.array,diag(CartesianIndices(a.array)))
+
+_zero_entries!(a::ArrayBlockView) = _zero_entries!(a.array)
+
+function Arrays.CachedArray(a::ArrayBlockView)
+  ArrayBlockView(CachedArray(a.array),a.block_map)
+end
+
+function unwrap_cached_array(a::ArrayBlockView)
+  cache = return_cache(unwrap_cached_array,a)
+  evaluate!(cache,unwrap_cached_array,a)
+end
+
+function return_cache(::typeof(unwrap_cached_array),a::ArrayBlockView)
+  cache = return_cache(unwrap_cached_array,a.array)
+  array = evaluate!(cache,unwrap_cached_array,a.array)
+  return ArrayBlockView(array,a.block_map), cache
+end
+
+function evaluate!(cache,::typeof(unwrap_cached_array),a::ArrayBlockView)
+  r, c = cache
+  evaluate!(c,unwrap_cached_array,a.array)
+  return r
+end
