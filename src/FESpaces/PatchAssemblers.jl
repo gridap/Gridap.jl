@@ -55,7 +55,20 @@ function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:rows},ids::AbstractArray
   gids
 end
 
-Arrays.return_cache(k::AssemblyStrategyMap,ids::ArrayBlock,patch) = return_cache(k,ids)
+function Arrays.return_cache(k::AssemblyStrategyMap,ids::ArrayBlock,patch)
+  fi = testitem(ids)
+  ci = return_cache(k,fi,patch)
+  gi = evaluate!(ci,k,fi,patch)
+  b = Array{typeof(ci),ndims(ids)}(undef,size(ids))
+  for i in eachindex(ids.array)
+    if ids.touched[i]
+      ki = return_cache(k,ids.array[i],patch)
+      b[i] = return_cache(k,ids.array[i],patch)
+    end
+  end
+  array = Array{typeof(gi),ndims(ids)}(undef,size(ids))
+  ArrayBlock(array,ids.touched), b
+end
 
 function Arrays.evaluate!(cache,k::AssemblyStrategyMap,ids::ArrayBlock,patch)
   a,b = cache
@@ -68,8 +81,8 @@ function Arrays.evaluate!(cache,k::AssemblyStrategyMap,ids::ArrayBlock,patch)
 end
 
 struct PatchAssembler <: Assembler
-  ptopo    :: PatchTopology
-  strategy :: PatchAssemblyStrategy
+  ptopo :: PatchTopology
+  strategy
   rows
   cols
 end
@@ -81,8 +94,8 @@ function PatchAssembler(ptopo::PatchTopology,trial::FESpace,test::FESpace)
   patch_rows = get_patch_dofs(test,ptopo)
   patch_cols = get_patch_dofs(trial,ptopo)
   strategy = PatchAssemblyStrategy(ptopo,patch_rows,patch_cols)
-  rows = blockedrange(map(length,patch_rows))
-  cols = blockedrange(map(length,patch_cols))
+  rows = map(length,patch_rows)
+  cols = map(length,patch_cols)
   return PatchAssembler(ptopo,strategy,rows,cols)
 end
 
@@ -107,31 +120,20 @@ function get_patch_dofs(space::FESpace,ptopo::PatchTopology)
   return patch_to_dofs
 end
 
-"""
-function get_patch_dofs(space::MultiFieldFESpace,ptopo::PatchTopology)
-  offsets = get_field_offsets(space)
-  sf_patch_dofs = map(space) do sf
-    get_patch_dofs(sf,ptopo)
-  end
-  mf_patch_dofs = append_tables_locally(offsets,sf_patch_dofs)
-  return mf_patch_dofs
-end
-"""
-
 function assemble_matrix(assem::PatchAssembler,cellmat)
-  patch_sizes = map(tuple,blocklengths(assem.rows),blocklengths(assem.cols))
+  patch_sizes = map(tuple,assem.rows,assem.cols)
   k = PatchAssemblyMap(assem,patch_sizes,cellmat)
   return lazy_map(k,collect(1:Geometry.num_patches(assem.ptopo)))
 end
 
 function assemble_vector(assem::PatchAssembler,cellvec)
-  patch_sizes = map(tuple,blocklengths(assem.rows))
+  patch_sizes = map(tuple,assem.rows)
   k = PatchAssemblyMap(assem,patch_sizes,cellvec)
   return lazy_map(k,collect(1:Geometry.num_patches(assem.ptopo)))
 end
 
 function assemble_matrix_and_vector(assem::PatchAssembler,celldata)
-  patch_sizes = map((r,c) -> ((r,c),(r,)),blocklengths(assem.rows),blocklengths(assem.cols))
+  patch_sizes = map((r,c) -> ((r,c),(r,)),assem.rows,assem.cols)
   k = PatchAssemblyMap(assem,patch_sizes,celldata)
   return lazy_map(k,collect(1:Geometry.num_patches(assem.ptopo)))
 end
@@ -236,16 +238,35 @@ end
 # Mat & Vec assembly
 
 function Arrays.return_cache(k::PatchAssemblyMap,patch)
-  res = zeros(k.patch_sizes[patch])
+  _zeros(s::NTuple{N,Int}) where N = zeros(s...)
+  function _zeros(s::NTuple{N,BlockedOneTo}) where N
+    bs = map(blocklength,s)
+    ss = map(blocklengths,s)
+    array = [ zeros(ntuple(i -> ss[i][I[i]], Val(N))) for I in CartesianIndices(bs) ]
+    ArrayBlock(array,fill(true,bs))
+  end
+  res = _zeros(k.patch_sizes[patch])
   caches = patch_assembly_cache(res,k.cell_data)
-  return CachedArray(res), caches
+
+  c_res = CachedArray(res)
+  uwr_cache = return_cache(Fields.unwrap_cached_array,c_res)
+
+  return c_res, uwr_cache, caches
 end
 
 function Arrays.evaluate!(cache,k::PatchAssemblyMap,patch)
-  c_res, caches = cache
-  setsize!(c_res,k.patch_sizes[patch])
-  res = c_res.array
-  fill!(res,zero(eltype(res)))
+  _setsize!(a,s::NTuple{N,Int}) where N = setsize!(a,s)
+  function _setsize!(a,s::NTuple{N,BlockedOneTo}) where N
+    bs = map(blocklength,s)
+    ss = map(blocklengths,s)
+    for I in CartesianIndices(bs)
+      setsize!(a.array[I],ntuple(i -> ss[i][I[i]], Val(N)))
+    end
+  end
+  c_res, uwr_cache, caches = cache
+  _setsize!(c_res,k.patch_sizes[patch])
+  res = evaluate!(uwr_cache,Fields.unwrap_cached_array,c_res)
+  Fields._zero_entries!(res)
   patch_assembly!(caches,res,k.cell_data,patch)
   return res
 end
@@ -253,26 +274,46 @@ end
 # Mat-Vec assembly
 
 function Arrays.return_cache(k::PatchAssemblyMap{<:Tuple{<:Tuple,<:Tuple}},patch)
-  mat, vec = zeros(k.patch_sizes[patch][1]), zeros(k.patch_sizes[patch][2])
+  _zeros(s::NTuple{N,Int}) where N = zeros(s...)
+  function _zeros(s::NTuple{N,BlockedOneTo}) where N
+    bs = map(blocklength,s)
+    ss = map(blocklengths,s)
+    array = [ zeros(ntuple(i -> ss[i][I[i]], Val(N))) for I in CartesianIndices(bs) ]
+    ArrayBlock(array,fill(true,bs))
+  end
+  mat, vec = _zeros(k.patch_sizes[patch][1]), _zeros(k.patch_sizes[patch][2])
 
   matvecdata, matdata, vecdata = k.cell_data
   mat_caches = patch_assembly_cache(mat,matdata)
   vec_caches = patch_assembly_cache(vec,vecdata)
   matvec_caches = patch_assembly_cache(mat,vec,matvecdata)
 
-  return CachedArray(mat), CachedArray(vec), matvec_caches, mat_caches, vec_caches
+  c_mat, c_vec = CachedArray(mat), CachedArray(vec)
+  uwm_cache = return_cache(Fields.unwrap_cached_array,c_mat)
+  uwv_cache = return_cache(Fields.unwrap_cached_array,c_vec)
+
+  return c_mat, c_vec, uwm_cache, uwv_cache, matvec_caches, mat_caches, vec_caches
 end
 
 function Arrays.evaluate!(cache,k::PatchAssemblyMap{<:Tuple{<:Tuple,<:Tuple}},patch)
-  c_mat, c_vec, matvec_caches, mat_caches, vec_caches = cache
+  _setsize!(a,s::NTuple{N,Int}) where N = setsize!(a,s)
+  function _setsize!(a,s::NTuple{N,BlockedOneTo}) where N
+    bs = map(blocklength,s)
+    ss = map(blocklengths,s)
+    for I in CartesianIndices(bs)
+      setsize!(a.array[I],ntuple(i -> ss[i][I[i]], Val(N)))
+    end
+  end
+  c_mat, c_vec, uwm_cache, uwv_cache, matvec_caches, mat_caches, vec_caches = cache
   matvecdata, matdata, vecdata = k.cell_data
 
-  setsize!(c_mat,k.patch_sizes[patch][1])
-  setsize!(c_vec,k.patch_sizes[patch][2])
-  mat, vec = c_mat.array, c_vec.array
+  _setsize!(c_mat,k.patch_sizes[patch][1])
+  _setsize!(c_vec,k.patch_sizes[patch][2])
+  mat = evaluate!(uwm_cache,Fields.unwrap_cached_array,c_mat)
+  vec = evaluate!(uwv_cache,Fields.unwrap_cached_array,c_vec)
 
-  fill!(mat,zero(eltype(mat)))
-  fill!(vec,zero(eltype(vec)))
+  Fields._zero_entries!(mat)
+  Fields._zero_entries!(vec)
 
   patch_assembly!(matvec_caches,mat,vec,matvecdata,patch)
   patch_assembly!(mat_caches,mat,matdata,patch)
@@ -281,7 +322,10 @@ function Arrays.evaluate!(cache,k::PatchAssemblyMap{<:Tuple{<:Tuple,<:Tuple}},pa
   return mat, vec
 end
 
-function patch_assembly_cache(mat::Matrix,cell_matdata)
+const MatOrMatBlock = Union{AbstractMatrix,MatrixBlock}
+const VecOrVecBlock = Union{AbstractVector,VectorBlock}
+
+function patch_assembly_cache(mat::MatOrMatBlock,cell_matdata)
   caches = ()
   for (cell_vals, cell_rows, cell_cols, patch_cells) in zip(cell_matdata...)
     rows_cache = array_cache(cell_rows)
@@ -301,7 +345,7 @@ function patch_assembly_cache(mat::Matrix,cell_matdata)
   return caches
 end
 
-function patch_assembly!(caches,mat::Matrix,cell_matdata,patch)
+function patch_assembly!(caches,mat::MatOrMatBlock,cell_matdata,patch)
   for (c, cell_vals, cell_rows, cell_cols, patch_cells) in zip(caches, cell_matdata...)
     ac, cc = c
     cells = getindex!(cc, patch_cells, patch)
@@ -309,7 +353,7 @@ function patch_assembly!(caches,mat::Matrix,cell_matdata,patch)
   end
 end
 
-function patch_assembly_cache(vec::Vector,cell_vecdata)
+function patch_assembly_cache(vec::VecOrVecBlock,cell_vecdata)
   caches = ()
   for (cell_vals, cell_rows, patch_cells) in zip(cell_vecdata...)
     rows_cache = array_cache(cell_rows)
@@ -327,7 +371,7 @@ function patch_assembly_cache(vec::Vector,cell_vecdata)
   return caches
 end
 
-function patch_assembly!(caches,vec::Vector,cell_vecdata,patch)
+function patch_assembly!(caches,vec::VecOrVecBlock,cell_vecdata,patch)
   for (c, cell_vals, cell_rows, patch_cells) in zip(caches, cell_vecdata...)
     ac, cc = c
     cells = getindex!(cc, patch_cells, patch)
@@ -335,7 +379,7 @@ function patch_assembly!(caches,vec::Vector,cell_vecdata,patch)
   end
 end
 
-function patch_assembly_cache(mat::Matrix,vec::Vector,cell_matvecdata)
+function patch_assembly_cache(mat::MatOrMatBlock,vec::VecOrVecBlock,cell_matvecdata)
   caches = ()
   for (cell_vals, cell_rows, cell_cols, patch_cells) in zip(cell_matvecdata...)
     rows_cache = array_cache(cell_rows)
@@ -356,14 +400,13 @@ function patch_assembly_cache(mat::Matrix,vec::Vector,cell_matvecdata)
   return caches
 end
 
-function patch_assembly!(caches,mat::Matrix,vec::Vector,cell_matvecdata,patch)
+function patch_assembly!(caches,mat::MatOrMatBlock,vec::VecOrVecBlock,cell_matvecdata,patch)
   for (c, cell_vals, cell_rows, cell_cols, patch_cells) in zip(caches, cell_matvecdata...)
     ac, cc = c
     cells = getindex!(cc, patch_cells, patch)
     _numeric_loop_matvec!(mat,vec,ac,cell_vals,cell_rows,cell_cols,cells)
   end
 end
-
 
 ###########################################################################################
 
@@ -386,4 +429,38 @@ function Arrays.evaluate!(cache,k::LocalSolveMap,matvec)
   @check issuccess(f) "Factorization failed"
   ldiv!(f,vec)
   return vec
+end
+
+###########################################################################################
+
+struct StaticCondensationMap{A} <: Map
+  pivot :: A
+end
+
+StaticCondensationMap() = StaticCondensationMap(NoPivot())
+
+function Arrays.lazy_map(k::StaticCondensationMap,mats::AbstractVector{<:MatrixBlock}, vecs::AbstractVector{<:VectorBlock})
+  matvec = pair_arrays(mats,vecs)
+  return lazy_map(k,matvec)
+end
+
+Arrays.return_cache(::StaticCondensationMap,matvec) = nothing
+
+function Arrays.evaluate!(cache,k::StaticCondensationMap,matvec)
+  mat, vec = matvec
+  @check size(mat.array) == (2,2)
+  @check size(vec.array) == (2,)
+
+  Kii, Kib, Kbi, Kbb = mat.array
+  bi, bb = vec.array
+
+  f = lu!(Kii,k.pivot;check=false)
+  @check issuccess(f) "Factorization failed"
+  ldiv!(f,bi)
+  ldiv!(f,Kib)
+
+  mul!(bb,Kbi,bi,-1,1)
+  mul!(Kbb,Kbi,Kib,-1,1)
+
+  return Kbb, bb
 end

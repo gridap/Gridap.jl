@@ -52,4 +52,6 @@ include("MultiFieldFEAutodiff.jl")
 
 include("BlockSparseMatrixAssemblers.jl")
 
+include("PatchAssemblers.jl")
+
 end # module

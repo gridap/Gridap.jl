@@ -53,3 +53,29 @@ Ab = assemble_matrix_and_vector(a_mixed,l_mixed,assem_Ω,VΩ,VΩ)
 x1 = lazy_map(FESpaces.LocalSolveMap(),A,b)
 x2 = lazy_map(FESpaces.LocalSolveMap(),Ab)
 
+
+# MultiField
+using Gridap.MultiField
+using Gridap.CellData
+
+Π(u) = change_domain(u,Γp,DomainStyle(u))
+function a_mf((u1,_u2),(v1,_v2))
+  u2, v2 = Π(_u2), Π(_v2)
+  aΩp(u1,v1) + aΓp(u2,v2) + aΓp(u1,v2) + aΓp(u2,v1)
+end
+function l_mf((v1,_v2))
+  v2 = Π(_v2)
+  lΩp(v1) + 2*lΓp(v2) + 2*lΓp(v1)
+end
+
+mfs = MultiField.ConsecutiveMultiFieldStyle()
+X = MultiFieldFESpace([VΩ,VΓ];style=mfs)
+assem = FESpaces.PatchAssembler(ptopo,X,X)
+Ab = assemble_matrix_and_vector(a_mf,l_mf,assem,X,X)
+x = lazy_map(FESpaces.LocalSolveMap(),Ab)
+
+mfs = MultiField.BlockMultiFieldStyle()
+X = MultiFieldFESpace([VΩ,VΓ];style=mfs)
+assem = FESpaces.PatchAssembler(ptopo,X,X)
+Ab = assemble_matrix_and_vector(a_mf,l_mf,assem,X,X)
+x = lazy_map(FESpaces.StaticCondensationMap(),Ab)

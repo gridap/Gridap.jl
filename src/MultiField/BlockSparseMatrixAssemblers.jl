@@ -59,7 +59,7 @@ function get_block_ranges(NB::Integer,SB,P)
   return map(i-> var_perm[ptrs[i]:ptrs[i+1]-1], 1:NB)
 end
 
-function get_block_map(::BlockSparseMatrixAssembler{NB,NV,SB,P}) where {NB,NV,SB,P}
+function get_block_map(NB,NV,SB,P)
   ranges = get_block_ranges(NB,SB,P)
   block_map = Matrix{CartesianIndex{2}}(undef,NV,NV)
   for I in CartesianIndices((NB,NB))
@@ -71,6 +71,8 @@ function get_block_map(::BlockSparseMatrixAssembler{NB,NV,SB,P}) where {NB,NV,SB
   end
   return block_map
 end
+
+get_block_map(::BlockSparseMatrixAssembler{NB,NV,SB,P}) where {NB,NV,SB,P} = get_block_map(NB,NV,SB,P)
 
 # Constructors
 
