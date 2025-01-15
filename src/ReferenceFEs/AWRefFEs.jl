@@ -22,7 +22,7 @@ function ArnoldWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
 
   VT = SymTensorValue{2,T}
   prebasis = MonomialBasis(Val(2),VT,3,Polynomials._p_filter)
-  fb = MonomialBasis(Val(D-1),T,0,Polynomials._p_filter)
+  fb = MonomialBasis(Val(1),T,0,Polynomials._p_filter)
   cb = map(constant_field,component_basis(VT))
 
   function cmom(φ,μ,ds) # Cell and Node moment function: σ_K(φ,μ) = ∫(φ:μ)dK
