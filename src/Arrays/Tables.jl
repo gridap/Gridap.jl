@@ -222,10 +222,14 @@ function _append_count!(pa,pb,na,nb)
 end
 
 """
+    const UNSET = 0
 """
 const UNSET = 0
 
 """
+    find_inverse_index_map(a_to_b, nb=maximum(a_to_b))
+
+return `b_to_a`
 """
 function find_inverse_index_map(a_to_b, nb=maximum(a_to_b))
   T = eltype(a_to_b)
@@ -235,6 +239,8 @@ function find_inverse_index_map(a_to_b, nb=maximum(a_to_b))
 end
 
 """
+    find_inverse_index_map!(b_to_a, a_to_b)
+Inverse of `a_to_b` in place in `b_to_a`.
 """
 function find_inverse_index_map!(b_to_a, a_to_b)
   for (a,b) in enumerate(a_to_b)
@@ -245,6 +251,7 @@ function find_inverse_index_map!(b_to_a, a_to_b)
 end
 
 """
+    append_tables_globally(tables::Table...)
 """
 function append_tables_globally(tables::Table{T,Vd,Vp}...) where {T,Vd,Vp}
   first_table, = tables
@@ -282,8 +289,6 @@ function append_tables_locally(tables::Table...)
   append_tables_locally(offsets,tables)
 end
 
-"""
-"""
 function append_tables_locally(offsets::NTuple, tables::NTuple)
 
   first_table, = tables
