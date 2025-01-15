@@ -19,10 +19,10 @@ References:
 function ArnoldWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
   @assert p == TRI "ArnoldWinther Reference FE only defined for TRIangles"
   conforming = true # TODO: Make this an argument
-  
+
   VT = SymTensorValue{2,T}
-  prebasis = MonomialBasis{2}(VT,3,Polynomials._p_filter)
-  fb = MonomialBasis{D-1}(T,0,Polynomials._p_filter)
+  prebasis = MonomialBasis(Val(2),VT,3,Polynomials._p_filter)
+  fb = MonomialBasis(Val(D-1),T,0,Polynomials._p_filter)
   cb = map(constant_field,component_basis(VT))
 
   function cmom(φ,μ,ds) # Cell and Node moment function: σ_K(φ,μ) = ∫(φ:μ)dK

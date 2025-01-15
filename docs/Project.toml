@@ -1,6 +1,7 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Gridap = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
+Kroki = "b3565e16-c1f2-4fe9-b4ab-221c88942068"
 
 [compat]
 Documenter = "1.0"

@@ -8,23 +8,25 @@ using Gridap.Polynomials
 using Gridap.ReferenceFEs
 using JSON
 
+using Gridap.ReferenceFEs: monomial_basis
+
 orders = (2,3)
-b = MonomialBasis(Float64,QUAD,orders)
+b = monomial_basis(Float64,QUAD,orders)
 r = [(0,0), (1,0), (2,0), (0,1), (1,1), (2,1), (0,2), (1,2), (2,2), (0,3), (1,3), (2,3)]
 @test get_exponents(b) == r
 
 orders = (1,1,2)
-b = MonomialBasis(Float64,WEDGE,orders)
+b = monomial_basis(Float64,WEDGE,orders)
 r = [(0,0,0), (1,0,0), (0,1,0), (0,0,1), (1,0,1), (0,1,1), (0,0,2), (1,0,2), (0,1,2)]
 @test get_exponents(b) == r
 
 orders = (1,1,1)
-b = MonomialBasis(Float64,PYRAMID,orders)
+b = monomial_basis(Float64,PYRAMID,orders)
 r = [(0,0,0), (1,0,0), (0,1,0), (1,1, 0), (0,0,1)]
 @test get_exponents(b) == r
 
 orders = (1,1,1)
-b = MonomialBasis(Float64,TET,orders)
+b = monomial_basis(Float64,TET,orders)
 r = [(0,0,0), (1,0,0), (0,1,0), (0,0,1)]
 @test get_exponents(b) == r
 
@@ -71,7 +73,7 @@ dofs = LagrangianDofBasis(SymTensorValue{2,Int},VERTEX,())
 dofs = LagrangianDofBasis(SymTracelessTensorValue{2,Int},VERTEX,())
 @test dofs.node_and_comp_to_dof == SymTracelessTensorValue{2,Int}[(1,2)]
 
-b = MonomialBasis(VectorValue{2,Int},VERTEX,())
+b = monomial_basis(VectorValue{2,Int},VERTEX,())
 @test length(b) == 2
 @test evaluate(b,Point{0,Int}[(),()]) == VectorValue{2,Int}[(1, 0) (0, 1); (1, 0) (0, 1)]
 

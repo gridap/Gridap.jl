@@ -136,7 +136,7 @@ end
     if active_faces[offset+iface]
       face = Polytope{d}(p,iface)
       face_ref_x = get_vertex_coordinates(face)
-      face_prebasis = MonomialBasis(Float64,face,1)
+      face_prebasis = monomial_basis(Float64,face,1)
       change = inv(evaluate(face_prebasis,face_ref_x))
       face_shapefuns = linear_combination(change,face_prebasis)
       face_vertex_ids = get_faces(p,d,0)[iface]
