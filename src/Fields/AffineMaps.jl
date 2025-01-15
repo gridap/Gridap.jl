@@ -1,4 +1,7 @@
 
+"""
+    struct AffineMap <: Map
+"""
 struct AffineMap <: Map end
 
 function return_cache(::AffineMap,G::TensorValue{D1,D2},y0::Point{D2},x::Point{D1}) where {D1,D2}
@@ -13,8 +16,13 @@ end
 
 
 """
-A Field with this form
-y = x⋅G + y0
+    struct AffineField{D1,D2,T,L} <: Field
+
+A Field with the form:
+
+    y = x⋅G + y0
+
+with `G`::TensorValue{`D1`,`D2`,`T`,`L`} and `y0`::Point{`D2`,`T`}.
 """
 struct AffineField{D1,D2,T,L} <: Field
   gradient::TensorValue{D1,D2,T,L}
@@ -27,6 +35,11 @@ struct AffineField{D1,D2,T,L} <: Field
   end
 end
 
+"""
+    affine_map(gradient, origin) = AffineField(gradient, origin)
+
+See [`AffineField`](@ref).
+"""
 affine_map(gradient,origin) = AffineField(gradient,origin)
 
 function Base.zero(::Type{<:AffineField{D1,D2,T}}) where {D1,D2,T}

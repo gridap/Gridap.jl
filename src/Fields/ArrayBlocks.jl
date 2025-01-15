@@ -21,6 +21,11 @@
 # uh [c][lf][np]
 
 
+"""
+    struct ArrayBlock{A,N}
+
+
+"""
 struct ArrayBlock{A,N}
   array::Array{A,N}
   touched::Array{Bool,N}
@@ -30,7 +35,13 @@ struct ArrayBlock{A,N}
   end
 end
 
+"""
+    const VectorBlock = ArrayBlock{A,1}
+"""
 const VectorBlock = ArrayBlock{A,1} where A
+"""
+    const MatrixBlock = ArrayBlock{A,2}
+"""
 const MatrixBlock = ArrayBlock{A,2} where A
 
 Base.size(b::ArrayBlock) = size(b.array)
@@ -232,11 +243,20 @@ function evaluate!(cache,::ZeroBlockMap,a,b::ArrayBlock)
   cache
 end
 
+"""
+    struct BlockMap{N} <: Map
+"""
 struct BlockMap{N} <: Map
   size::NTuple{N,Int}
   indices::Vector{CartesianIndex{N}}
 end
 
+"""
+    function BlockMap(length::Integer, index::Integer)
+    function BlockMap(length::Integer, indices::Vector{<:Integer})
+    function BlockMap(size::NTuple{N}, index::Integer)
+    function BlockMap(size::NTuple{N}, indices::Vector{<:NTuple{N}})
+"""
 function BlockMap(l::Integer,i::Integer)
   s = (l,)
   ci = CartesianIndex((i,))
@@ -411,6 +431,9 @@ function evaluate!(cache,f::ArrayBlock,x)
   g
 end
 
+"""
+    linear_combination(u::ArrayBlock, f::ArrayBlock)
+"""
 function linear_combination(u::ArrayBlock,f::ArrayBlock)
   i::Int = findfirst(f.touched)
   fi = f.array[i]
@@ -1487,13 +1510,22 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
 end
 
 # ArrayBlock views
+"""
+    struct ArrayBlockView{A,N,M}
+"""
 struct ArrayBlockView{A,N,M}
   array::ArrayBlock{A,M}
   block_map::Array{CartesianIndex{M},N}
 end
 
 Base.view(a::ArrayBlock{A,M},b::Array{CartesianIndex{M},N}) where {A,M,N} = ArrayBlockView(a,b)
+"""
+    const MatrixBlockView{A} = ArrayBlockView{A,2,2}
+"""
 const MatrixBlockView{A} = ArrayBlockView{A,2,2} where A
+"""
+    const VectorBlockView{A} = ArrayBlockView{A,1,1}
+"""
 const VectorBlockView{A} = ArrayBlockView{A,1,1} where A
 
 Base.size(a::ArrayBlockView) = size(a.block_map)
