@@ -212,6 +212,10 @@ export update_coordinates!
 
 export ConstantFESpace
 
+export get_facet_measure
+export get_facet_centroid
+export get_facet_diameter
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")

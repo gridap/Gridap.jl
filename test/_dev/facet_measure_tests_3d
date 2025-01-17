@@ -1,0 +1,61 @@
+using Gridap
+using Gridap.ReferenceFEs
+using Gridap.Geometry
+using Gridap.Fields
+using Gridap.Arrays
+using Gridap.ReferenceFEs
+using Gridap.Polynomials
+using Gridap.Helpers
+
+using FillArrays
+using LinearAlgebra
+
+
+function get_facet_measure(p::Polytope{3}, face::Int) 
+
+    measures = Float64[]
+
+    dim = get_dimranges(p)[face+1]
+    face_ents = get_face_coordinates(p)[dim]
+    if face == 0
+        
+        for entity in face_ents
+            push!(measures, 0.0)
+        end
+    elseif face == 1
+
+        for entity in face_ents
+            p1, p2 = entity
+            push!(measures, norm(p2-p1))
+        end
+    elseif face == 2
+        if isa(p, ExtrusionPolytope{3})
+            if p == HEX 
+                pface = QUAD
+                
+            elseif p == TET
+                pface = TRI
+                
+            end
+        elseif isa(p, Polyhedron)        
+            perm = collect(1:length(p.edge_vertex_graph))
+        end
+
+    elseif face == 3
+        @notimplemented "not implemented yet"
+    end
+    return measures
+end
+
+
+p3d = TET
+get_facet_measure(p3d,2)
+
+dim3d = get_dimranges(p3d)[2+1]
+face_ents = get_face_coordinates(p3d)[dim3d]
+perm = [1,2,3]
+area = map(face_ents) do x
+    shoelace(x)
+end
+
+

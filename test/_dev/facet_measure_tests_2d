@@ -1,0 +1,194 @@
+using Gridap
+using Gridap.ReferenceFEs
+using Gridap.Geometry
+using Gridap.Fields
+using Gridap.Arrays
+using Gridap.ReferenceFEs
+using Gridap.Polynomials
+using Gridap.Helpers
+
+using FillArrays
+using LinearAlgebra
+
+function shoelace(face_ents)
+        shift = circshift(face_ents, -1)
+        
+        area_components = map(face_ents, shift) do x1, x2
+            x1[1] * x2[2] - x2[1] * x1[2] 
+        end
+        area = 0.5 * abs(sum(area_components))
+        return area
+end
+
+function get_facet_measure(p::Polytope{2}, face::Int) 
+
+    measures = Float64[]
+
+    if isa(p, ExtrusionPolytope{2})
+        if p == QUAD 
+            perm = [1,2,4,3]
+        elseif p == TRI
+            perm = [1,2,3]
+        end
+    elseif isa(p, Polygon)   
+        perm = collect(1:length(p.edge_vertex_graph))
+    end
+
+    dim = get_dimranges(p)[face+1]
+    face_ents = get_face_coordinates(p)[dim]
+    if face == 0
+        for entity in face_ents
+            push!(measures, 0.0)
+        end
+    elseif face == 1
+        for entity in face_ents
+            p1, p2 = entity
+            push!(measures, norm(p2-p1))
+        end
+    elseif face == 2
+        # Shoelace / Gauss area algo
+        face_ents = map(Reindex(face_ents...),perm)
+        area = shoelace(face_ents)
+        push!(measures, area)
+    end
+    return measures
+end
+
+
+
+function get_facet_centroid(p::Polytope{2}, face::Int)
+    
+    dim = get_dimranges(p)[face+1]
+    face_coords = get_face_coordinates(p)[dim]
+    if isa(p, ExtrusionPolytope{2})
+        if face == 1 || face == 2
+    
+            centroid = mean.(face_coords)
+        end
+    elseif isa(p, Polygon)   
+        perm = collect(1:length(p.edge_vertex_graph))
+        
+        if face == 1
+            centroid = mean.(face_coords)
+        elseif face == 2
+            ents = map(Reindex(face_coords...),perm)
+            shift = circshift(ents, -1)
+
+            components_x = map(ents, shift) do x1, x2
+                ( x1[1] + x2[1] ) * ( x1[1] * x2[2] - x2[1] * x1[2]  )
+            end
+            
+            components_y = map(ents, shift) do x1, x2
+                ( x1[2] + x2[2] ) * ( x1[1] * x2[2] - x2[1] * x1[2]  )
+            end
+            
+            area = get_facet_measure(pentagon, 2)
+            centroid_x = (1 ./ (6*area)) * sum(components_x)
+            centroid_y = (1 ./ (6*area)) * sum(components_y)        
+            centroid = VectorValue{2, Float64}(centroid_x..., centroid_y...)
+        end
+    end
+    return centroid
+end
+
+function get_facet_diameter(p::Polytope{2}, face::Int)
+    dim = get_dimranges(p)[face+1]
+    X = get_face_coordinates(p)[dim]
+    if face == 1
+        h = map(X) do x
+            norm(x[1]-x[2])
+        end
+    elseif face == 2
+        h = 0.0  
+        n_sides = length(X...)
+        for i in 1:(n_sides-1)                                              
+           for j in (i+1):n_sides                                 
+               h = max(h, norm(X[1][i] - X[1][j]));    
+           end                                                    
+        end    
+    end
+    return h
+end
+
+
+p = TRI
+get_facet_measure(p, 0)
+get_facet_measure(p, 1)    
+get_facet_measure(p, 2)
+
+
+q = QUAD
+get_facet_measure(q, 0)
+get_facet_measure(q, 1)    
+get_facet_measure(q, 2)
+
+pent = VectorValue{2,Float64}[(0,0), (3,0), (3.0,2.0), (1.5,4), (0,4)]
+pent = Polygon(pent)
+get_facet_measure(pent, 0)
+get_facet_measure(pent, 1)    
+get_facet_measure(pent, 2)
+
+get_facet_centroid(p, 2)
+get_facet_centroid(q, 1)
+get_facet_centroid(pent, 2)
+
+
+get_facet_diameter(p,2)
+get_facet_diameter(q,2)
+get_facet_diameter(pent,2)
+
+
+function get_facet_measure(p::Polytope{3}, face::Int) 
+
+    measures = Float64[]
+
+    dim = get_dimranges(p)[face+1]
+    face_ents = get_face_coordinates(p)[dim]
+    if face == 0
+        
+        for entity in face_ents
+            push!(measures, 0.0)
+        end
+    elseif face == 1
+
+        for entity in face_ents
+            p1, p2 = entity
+            push!(measures, norm(p2-p1))
+        end
+    elseif face == 2
+        if isa(p, ExtrusionPolytope{3})
+            if p == HEX 
+                pface = QUAD
+                
+            elseif p == TET
+                pface = TRI
+                
+            end
+        elseif isa(p, Polyhedron)        
+            perm = collect(1:length(p.edge_vertex_graph))
+        end
+
+    elseif face == 3
+        @notimplemented "not implemented yet"
+    end
+    return measures
+end
+
+p2d = TRI
+dim2d = get_dimranges(p2d)[2+1]
+face_ents = get_face_coordinates(p2d)[dim2d]
+perm = [1,2,3]
+map(Reindex(face_ents...),perm)
+
+p3d = TET
+get_facet_measure(p3d,2)
+
+dim3d = get_dimranges(p3d)[2+1]
+face_ents = get_face_coordinates(p3d)[dim3d]
+perm = [1,2,3]
+area = map(face_ents) do x
+    shoelace(x)
+end
+
+face_ents[1]
+
