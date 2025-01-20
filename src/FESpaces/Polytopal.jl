@@ -76,37 +76,25 @@ end
 
 struct CentroidCoordinateChangeMap <: Map end
 
-# function centroid_map(poly::Polytope{D}) where D
-#   pmin, pmax = get_bounding_box(poly)
-#   o = VectorValue(ntuple(i->1.0,Val(D)))
-#   xc = 0.5 * (pmin + pmax)
-#   h = 0.5 * (pmax - pmin)
-#   return affine_map(TensorValues.diagonal_tensor(o ./ h), -xc ./ h)
-# end
-
 function centroid_map(poly::Polytope{D}) where D
+  pmin, pmax = get_bounding_box(poly)
   o = VectorValue(ntuple(i->1.0,Val(D)))
+  # xc = 0.5 * (pmin + pmax)
   xc = get_facet_centroid(poly, D)
-  h = get_facet_diameter(poly, D)
+  h = 0.5 * (pmax - pmin)
   return affine_map(TensorValues.diagonal_tensor(o ./ h), -xc ./ h)
 end
-
 
 function Arrays.lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{typeof(centroid_map)}},x::AbstractVector)
   polys = a.args[1]
   lazy_map(CentroidCoordinateChangeMap(),polys,x)
 end
 
-# function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope{D},x::Point{D}) where D
-#   pmin, pmax = get_bounding_box(poly)
-#   xc = 0.5 * (pmin + pmax)
-#   h = 0.5 * (pmax - pmin)
-#   return (x - xc) ./ h
-# end
-
 function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope{D},x::Point{D}) where D
+  pmin, pmax = get_bounding_box(poly)
+  # xc = 0.5 * (pmin + pmax)
   xc = get_facet_centroid(poly, D)
-  h  = get_facet_diameter(poly, D) 
+  h = 0.5 * (pmax - pmin)
   return (x - xc) ./ h
 end
 
@@ -114,24 +102,13 @@ function Arrays.return_cache(::CentroidCoordinateChangeMap,poly::Polytope{D},x::
   return CachedArray(similar(x))
 end
 
-# function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope{D},x::AbstractVector{<:Point{D}}) where D
-#   setsize!(cache,size(x))
-#   y = cache.array
-#   pmin, pmax = get_bounding_box(poly)
-#   xc = 0.5 * (pmin + pmax)
-#   h = 0.5 * (pmax - pmin)
-#   for i in eachindex(x)
-#     y[i] = (x[i] - xc) ./ h
-#   end
-#   return y
-# end
-
 function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope{D},x::AbstractVector{<:Point{D}}) where D
   setsize!(cache,size(x))
   y = cache.array
-  # pmin, pmax = get_bounding_box(poly)
+  pmin, pmax = get_bounding_box(poly)
+  # xc = 0.5 * (pmin + pmax)
   xc = get_facet_centroid(poly, D)
-  h = get_facet_diameter(poly, D)
+  h = 0.5 * (pmax - pmin)
   for i in eachindex(x)
     y[i] = (x[i] - xc) ./ h
   end
