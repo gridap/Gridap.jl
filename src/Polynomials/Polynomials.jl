@@ -87,6 +87,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 
 using PolynomialBases: jacobi, jacobi_and_derivative
+using Combinatorics: multiexponents, multinomial
 
 import Gridap.Fields: evaluate!
 import Gridap.Fields: return_cache
@@ -110,6 +111,7 @@ export MonomialBasis
 export LegendreBasis
 export ChebyshevBasis
 export BernsteinBasis
+export BernsteinBasisOnSimplex
 
 export CompWiseTensorPolyBasis
 export QGradBasis
