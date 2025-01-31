@@ -201,11 +201,17 @@ bx  = _bx( D,order,x)
 Hbx = _Hbx(D,order,x,H)
 test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
 
+b = BernsteinBasisOnSimplexDC(Val(D),V,order)
+test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
+
 order = 1
 b = BernsteinBasisOnSimplex(Val(D),V,order)
 bx  = _bx( D,order,x)
 ∇bx = _∇bx(D,order,x,G)
 Hbx = _Hbx(D,order,x,H)
+test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
+
+b = BernsteinBasisOnSimplexDC(Val(D),V,order)
 test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
 
 order = 2
@@ -215,11 +221,17 @@ bx  = _bx( D,order,x)
 Hbx = _Hbx(D,order,x,H)
 test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
 
+b = BernsteinBasisOnSimplexDC(Val(D),V,order)
+test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
+
 order = 3
 b = BernsteinBasisOnSimplex(Val(D),V,order)
 bx  = _bx( D,order,x)
 ∇bx = _∇bx(D,order,x,G)
 Hbx = _Hbx(D,order,x,H)
+test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
+
+b = BernsteinBasisOnSimplexDC(Val(D),V,order)
 test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
 
 order = 4
@@ -229,6 +241,9 @@ bx  = _bx( D,order,x)
 Hbx = _Hbx(D,order,x,H)
 test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
 test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
+
+b = BernsteinBasisOnSimplexDC(Val(D),V,order)
+test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
 
 
 # Vector valued in 2D
@@ -253,6 +268,9 @@ Hbx = H[(2., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 2., 0.
 test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
 test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 
+b = BernsteinBasisOnSimplexDC(Val(D),V,order)
+test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
+
 # scalar valued in 3D
 
 x = [Point(0.,0.,1.), Point(.5,.5,.5), Point(1.,.2,.4), Point(.2,.4,.3)]
@@ -270,5 +288,8 @@ bx  = _bx( D,order,x)
 Hbx = _Hbx(D,order,x,H)
 test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
 test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
+
+b = BernsteinBasisOnSimplexDC(Val(D),V,order)
+test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
 
 end # module
