@@ -65,26 +65,25 @@ end
 ###########
 
 """
-    _cart_to_bary!(λ, x::Point{D,T})
+    _cart_to_bary(x::Point{D,T})
 
 Converts the cartesian coordinates `x` into the barycentric coordinates with
-respect to the reference simplex, that is `λ`=(x1, ..., xD, 1-x1-x2-...-xD), in
-place in `λ`.
+respect to the reference simplex, that is `λ`=(x1, ..., xD, 1-x1-x2-...-xD).
 """
-@inline function _cart_to_bary!(λ, x::Point{D,T}) where {D,T}
-  s = zero(T)
+@inline function _cart_to_bary(x::Point{D,T}) where {D,T}
+  λ = zero(MVector{D+1,T})
 
+  s = zero(T)
   @inbounds begin
     for d in 1:D
       xd = x[d]
       s += xd
       λ[d] = x[d]
     end
-
     λ[D+1] = 1-s
   end
 
-  return λ
+  return Tuple(λ)
 end
 
 """
@@ -168,8 +167,7 @@ function _evaluate_nd!(
   terms  = _get_terms(b)
   coefs = multinoms(Val(K),Val(D))
 
-  λ = zero(MVector{D+1,T})
-  _cart_to_bary!(λ, x)
+  λ = _cart_to_bary(x)
 
   for d in 1:(D+1)
     _evaluate_1d!(Monomial,Val(K),c,λ,d) # compute powers 0:K of all bary. coords.
@@ -197,8 +195,7 @@ function _gradient_nd!(
   terms = _get_terms(b)
   coefs = multinoms(Val(K),Val(D))
 
-  λ = zero(MVector{N,T})
-  _cart_to_bary!(λ, x)
+  λ = _cart_to_bary(x)
 
   for d in 1:N
     _derivatives_1d!(Monomial,Val(K),(c,g),λ,d)
@@ -237,8 +234,7 @@ function _hessian_nd!(
   terms = _get_terms(b)
   coefs = multinoms(Val(K),Val(D))
 
-  λ = zero(MVector{D+1,T})
-  _cart_to_bary!(λ, x)
+  λ = _cart_to_bary(x)
 
   for d in 1:N
     _derivatives_1d!(Monomial,Val(K),(c,g,h),λ,d)
@@ -255,14 +251,14 @@ function _hessian_nd!(
       for q in 1:D
         for d in 1:D
           if d != q && d != t
-            # si q == t, D-1 facteurs
-            # sinon,     D-2 facteurs
+            # if q == t, D-1 factors
+            # else,      D-2 factors
             s[t,q] *= c[d,ci[d]]
           elseif q == t # == d
-            # +2 facteurs -> D+1
+            # +2 factors -> D+1
             s[t,q] *= (h[d,ci[d]]*c[N,ci[N]] -2g[d,ci[d]]*g[N,ci[N]] + c[d,ci[d]]*h[N,ci[N]])
           elseif d == q # q ≠ t, we multiply once with the factors with q and t derivative terms
-            # +3 facteurs -> D+1
+            # +3 factors -> D+1
             s[t,q] *=(  g[t,ci[t]]*g[q,ci[q]]*c[N,ci[N]]
                       - g[t,ci[t]]*c[q,ci[q]]*g[N,ci[N]]
                       - c[t,ci[t]]*g[q,ci[q]]*g[N,ci[N]]
@@ -503,13 +499,13 @@ end
 ########################
 
 """
-    _L_slice(L,α,::Val{K}) = K-sum(first(α,L))
+    _L_slice(L,α::NTuple{N}) where N = sum(last(α,N-L))
 
-where `L` ∈ 1:length(α)
+where `L` ∈ 1:N
 
-For a given positive Bernstein term `α` of sum `K`, return the index (starting
+For a given positive Bernstein term `α`, return the index (starting
 from 0) of the (D-`L`)-slice to which `α` belongs within the (D-`L`-1)-slice of
-the D-multiexponent simplex.
+the D-multiexponent simplex (D = `N`-1).
 
 In a D-multiexponent simplex of elements `α`, flattened in a vector in
 lexicographic order, the (D-`L`)-slices are the consecutive `α`s
@@ -517,7 +513,7 @@ having iddentical first `L` indices `α`.
 
 For example, the (3-1)=2 slices of the tetrahedral multiexponents (3 simplex) are triangle multiexponents.
 """
-_L_slice(L,α,::Val{K}) where K = K-sum(first(α,L))
+_L_slice(L,α::NTuple{N}) where N = sum(last(α,N-L))
 
 """
     _L_slices_size(L,D,l) = binomial(D-L+l,  D-L+1)
@@ -529,37 +525,47 @@ Those numbers are the "(`D`-`L`)-simplex numbers".
 _L_slices_size(L,D,l) = binomial(D-L+l,  D-L+1)
 
 """
-    _simplex_multi_id_to_linear_id(α::NTuple{N,Int},::Val{K})
+    _simplex_multi_id_to_linear_id(α::NTuple{N,Int})
 
-For a given positive Bernstein term `α` of sum `K`, return the linear index of
+For a given positive Bernstein term `α`, return the linear index of
 the associated Bernstein polynomial, that is the `i` such that
 
     (i,α) ∈ enumerate(bernstein_terms(Val(K),Val(N-1))
+
+where K = sum(`α`).
 """
-function _simplex_multi_id_to_linear_id(α::NTuple{N,Int},vK::Val) where N
+function _simplex_multi_id_to_linear_id(α::NTuple{N}) where N
   D = N-1
-  i = sum( _L_slices_size(L, D, _L_slice(L,α,vK)) for L in 1:D) + 1
+  i = sum( _L_slices_size(L, D, _L_slice(L,α)) for L in 1:D) + 1
   i
 end
 
 """
-    _sub_multi_indices(α::NTuple{N,Int},::Val(K))
+    _sub_multi_indices(α::NTuple{N,Int})
 
-Given a positive multi-index `α` of sum `K`, return a tuple of couples
+Given a positive multi-index `α`, return a tuple of couples
 (`id`, `d`) for `d` in 1:`N` for which the multi-index `αd⁻` = `α`-e`d` is
 positive (that is `α`[`d`]>0), and `id` is the linear index of `αd⁻`
 (see [`_simplex_multi_id_to_linear_id`](@ref)).
 """
-function _sub_multi_indices(α::NTuple{N,Int},::Val{K}) where {N,K}
+function _sub_multi_indices(α::NTuple{N,Int}) where N
   sub_ids = tuple()
   for d in 1:N
     if α[d] > 0
       αd⁻ = ntuple( j -> α[j] - ==(d,j), N)
-      id⁻ = _simplex_multi_id_to_linear_id(αd⁻,Val(K-1))
+      id⁻ = _simplex_multi_id_to_linear_id(αd⁻)
       sub_ids = (sub_ids..., (id⁻, d, αd⁻))
     end
   end
   return sub_ids
+end
+
+function _de_Casteljau_indices(K,D)
+  terms = bernstein_terms(Val(K),Val(D))
+  # The Iterators.reverse is important to avoid erasing values of previous
+  # iteration that are still needed later (for the in-place de Casteljau iteration).
+  rev_terms = Iterators.reverse(enumerate(terms))
+  return ( (id,_sub_multi_indices(α .- 1)) for (id,α) in rev_terms )
 end
 
 ################################
@@ -619,20 +625,26 @@ function _setsize!(f::BernsteinBasisOnSimplexDC{D}, np, r, t...) where D
   end
 end
 
-function _De_Casteljau_step_nD!(c, λ, vK::Val, vD::Val)
+# @generated function as otherwise the time and allocation for
+# computing the indices are the bottlneck...
+@generated function _De_Casteljau_nD!(c, λ, ::Val{K}, ::Val{D}) where {K,D}
   z = zero(eltype(c))
-  @inbounds begin
-    for (id,α) in Iterators.reverse(enumerate(bernstein_terms(vK,vD)))
-      sub_ids = _sub_multi_indices(α .- 1,vK)
+  ex_v = Vector{Expr}()
+  for Ki in 1:K
+    for (id,sub_ids) in _de_Casteljau_indices(Ki,D)
 
-      s = z
+      # s = 0.
+      push!(ex_v, :(s = $z))
       for (idα⁻, d) in sub_ids
-        s += λ[d]*c[idα⁻]
+        # s += λ[d]*c[idα⁻]
+        push!(ex_v, :(@inbounds s += λ[$d]*c[$idα⁻]))
       end
 
-      c[id] = s
+      # c[id] = s
+      push!(ex_v, :(@inbounds c[$id] = s))
     end
   end
+  return Expr(:block, ex_v...)
 end
 
 function _evaluate_nd!(
@@ -640,18 +652,13 @@ function _evaluate_nd!(
   r::AbstractMatrix{V}, i,
   c::AbstractVector{T}) where {D,V,K,T}
 
-  λ = zero(MVector{D+1,T})
-  _cart_to_bary!(λ, x)
-
-  o = one(T)
-  c[1] = o
-  for order in 1:K
-    _De_Casteljau_step_nD!(c,λ,Val(order),Val(D))
-  end
+  λ = _cart_to_bary(x)
+  c[1] = one(T)
+  _De_Casteljau_nD!(c,λ,Val(K),Val(D))
 
   k = 1
   for s in c
-    k = _uniform_set_value!(r,i,s,k) # good order ???
+    k = _uniform_set_value!(r,i,s,k)
   end
 end
 
@@ -666,8 +673,7 @@ function _gradient_nd!(
   terms = _get_terms(b)
   coefs = multinoms(Val(K),Val(D))
 
-  λ = zero(MVector{N,T})
-  _cart_to_bary!(λ, x)
+  λ = _cart_to_bary(x)
 
   for d in 1:N
     _derivatives_1d!(Monomial,Val(K),(c,g),λ,d)
@@ -706,8 +712,7 @@ function _hessian_nd!(
   terms = _get_terms(b)
   coefs = multinoms(Val(K),Val(D))
 
-  λ = zero(MVector{D+1,T})
-  _cart_to_bary!(λ, x)
+  λ = _cart_to_bary(x)
 
   for d in 1:N
     _derivatives_1d!(Monomial,Val(K),(c,g,h),λ,d)
