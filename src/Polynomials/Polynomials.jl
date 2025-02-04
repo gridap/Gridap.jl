@@ -80,6 +80,7 @@ module Polynomials
 
 using DocStringExtensions
 using LinearAlgebra: mul!
+using LinearAlgebra: I
 using StaticArrays
 using Gridap.Helpers
 using Gridap.Arrays

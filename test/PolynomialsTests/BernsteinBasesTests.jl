@@ -240,7 +240,7 @@ bx  = _bx( D,order,x)
 ∇bx = _∇bx(D,order,x,G)
 Hbx = _Hbx(D,order,x,H)
 test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
-test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
+test_field_array(b,x[1],bx[1,:],≈,grad=∇bx[1,:],gradgrad=Hbx[1,:])
 
 b = BernsteinBasisOnSimplexDC(Val(D),V,order)
 test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
