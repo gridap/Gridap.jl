@@ -122,15 +122,15 @@ function get_o2n_faces_map(ncell_to_ocell::Vector{T}) where {T<:Integer}
     iC = ncell_to_ocell[iF]
     ptrs[iC+1] += 1
   end
-  length_to_ptrs!(ptrs)
+  Arrays.length_to_ptrs!(ptrs)
 
-  cnts = fill(0,nC)
-  data = fill(zero(T),ptrs[end])
+  data = fill(zero(T),ptrs[end]-1)
   for iF in 1:nF
     iC = ncell_to_ocell[iF]
-    data[ptrs[iC]+cnts[iC]] = iF
-    cnts[iC] += 1
+    data[ptrs[iC]] = iF
+    ptrs[iC] += 1
   end
+  Arrays.rewind_ptrs!(ptrs)
 
   ocell_to_ncell = Table(data,ptrs)
   return ocell_to_ncell
@@ -219,6 +219,7 @@ function get_d_to_fface_to_cface(glue::AdaptivityGlue{<:RefinementGlue},
   rrules = get_old_cell_refinement_rules(glue)
   ccell_to_d_to_faces = lazy_map(rr->map(d->Geometry.get_faces(get_grid_topology(rr.ref_grid),Dc,d),0:Dc),rrules)
   ccell_to_d_to_fface_to_parent_face = lazy_map(get_d_to_face_to_parent_face,rrules)
+  fcell_to_child_id = glue.n2o_cell_to_child_id
 
   # Global data, concerning the complete meshes
   ccell_to_fcell = glue.o2n_faces_map
@@ -234,7 +235,8 @@ function get_d_to_fface_to_cface(glue::AdaptivityGlue{<:RefinementGlue},
       local_d_to_fface_to_parent_dim = ccell_to_d_to_fface_to_parent_face[ccell]
     # For each fine subcell:
     # child_id -> Local Id of the fine cell within the refinement rule (ccell)
-    for (child_id,fcell) in enumerate(ccell_to_fcell[ccell])
+    for fcell in ccell_to_fcell[ccell]
+      child_id = fcell_to_child_id[fcell]
       # For each fine face on the fine subcell: 
       # d     -> Dimension of the fine face
       # iF    -> Local Id of the fine face within the fine cell
@@ -244,7 +246,7 @@ function get_d_to_fface_to_cface(glue::AdaptivityGlue{<:RefinementGlue},
           # Local Id of the fine face within the refinement rule
           fface_child_id = ccell_to_d_to_faces[ccell][d+1][child_id][iF]
           # Local Id of the coarse parent face within the coarse cell
-          parent    = local_d_to_fface_to_parent_face[d+1][fface_child_id]
+          parent = local_d_to_fface_to_parent_face[d+1][fface_child_id]
 
           # Global Id of the coarse parent face, and it's dimension
           cface_dim = local_d_to_fface_to_parent_dim[d+1][fface_child_id]
@@ -261,17 +263,17 @@ end
 
 # FaceLabeling refinement
 
-function _refine_face_labeling(coarse_labeling::FaceLabeling,
+function refine_face_labeling(coarse_labeling::FaceLabeling,
                                glue  :: AdaptivityGlue,
                                ctopo :: GridTopology,
                                ftopo :: GridTopology)
   d_to_fface_to_cface,
     d_to_fface_to_cface_dim = get_d_to_fface_to_cface(glue,ctopo,ftopo)
 
-  return _refine_face_labeling(coarse_labeling,d_to_fface_to_cface,d_to_fface_to_cface_dim)
+  return refine_face_labeling(coarse_labeling,d_to_fface_to_cface,d_to_fface_to_cface_dim)
 end
 
-function _refine_face_labeling(coarse_labeling::FaceLabeling,
+function refine_face_labeling(coarse_labeling::FaceLabeling,
                                d_to_fface_to_cface,
                                d_to_fface_to_cface_dim)
   tag_to_name = copy(coarse_labeling.tag_to_name)
@@ -295,4 +297,32 @@ function _refine_face_labeling(coarse_labeling::FaceLabeling,
   end
   
   return Geometry.FaceLabeling(d_to_dface_to_entity,tag_to_entities,tag_to_name)  
+end
+
+"""
+    blocked_refinement_glue(rrules::AbstractVector{<:RefinementRule})
+
+Given an array of RefinementRules for each coarse cell, returns an AdaptivityGlue
+where children from the same parent are placed in contiguous blocks.
+"""
+function blocked_refinement_glue(
+  rrules::AbstractVector{<:RefinementRule{<:Polytope{Dc}}}
+) where Dc
+  nC_old = length(rrules)
+  nC_new = sum(num_subcells,rrules)
+
+  f2c_cell_map      = Vector{Int}(undef,nC_new)
+  fcell_to_child_id = Vector{Int}(undef,nC_new)
+
+  k = 1
+  for iC = 1:nC_old
+    rr = rrules[iC]
+    range = k:k+num_subcells(rr)-1
+    f2c_cell_map[range] .= iC
+    fcell_to_child_id[range] .= collect(1:num_subcells(rr))
+    k += num_subcells(rr)
+  end
+
+  f2c_faces_map = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
+  return AdaptivityGlue(f2c_faces_map,fcell_to_child_id,rrules)
 end

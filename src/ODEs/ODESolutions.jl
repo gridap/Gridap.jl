@@ -9,8 +9,8 @@ a set of time steps. It is an iterator that computes the solution at each time
 step in a lazy fashion when accessing the solution.
 
 # Mandatory
-- [`Base.iterate(odesltn)`](@ref)
-- [`Base.iterate(odesltn, state)`](@ref)
+- [`iterate(odesltn)`](@ref)
+- [`iterate(odesltn, state)`](@ref)
 """
 abstract type ODESolution <: GridapType end
 

@@ -29,14 +29,18 @@ end
       minus::B
     end
 """
-struct SkeletonTriangulation{Dc,Dp,B} <: Triangulation{Dc,Dp}
+struct SkeletonTriangulation{Dc,Dp,B,C} <: Triangulation{Dc,Dp}
   plus::B
-  minus::B
-  function SkeletonTriangulation(plus::B,minus::B) where B<:Triangulation
-    Dc = num_cell_dims(plus)
-    Dp = num_point_dims(plus)
+  minus::C
+  function SkeletonTriangulation(plus::B,minus::C) where {B<:Triangulation,C<:Triangulation}
+    DcP = num_cell_dims(plus)
+    DpP = num_point_dims(plus)
+    DcM = num_cell_dims(minus)
+    DpP = num_point_dims(minus)
+    @assert DcP == DcM
+    @assert DpP == DpP
     #@assert Dc + 1 == Dp
-    new{Dc,Dp,B}(plus,minus)
+    new{DcP,DpP,B,C}(plus,minus)
   end
 end
 
@@ -87,6 +91,12 @@ end
 function get_facet_normal(trian::SkeletonTriangulation)
   plus = get_facet_normal(trian.plus)
   minus = get_facet_normal(trian.minus)
+  SkeletonPair(plus,minus)
+end
+
+function get_edge_tangent(trian::SkeletonTriangulation)
+  plus = get_edge_tangent(trian.plus)
+  minus = get_edge_tangent(trian.minus)
   SkeletonPair(plus,minus)
 end
 

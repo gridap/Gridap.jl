@@ -60,13 +60,13 @@ for N in 0:order_max
       for T_ex in Ts
         ex_odeop = ODEOperatorMock{T_ex}(ex_forms, ex_forcing)
         imex_odeop = IMEXODEOperator(im_odeop, ex_odeop)
-        # odeops = (odeops..., imex_odeop)
+        odeops = (odeops..., imex_odeop)
       end
     end
 
     # Compute expected residual
     f = forcing(t)
-    copy!(exp_r, f)
+    copy!(exp_r, -f)
     for (ui, formi) in zip(us, forms)
       form = formi(t)
       exp_r .+= form * ui

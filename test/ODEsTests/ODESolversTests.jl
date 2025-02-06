@@ -51,7 +51,7 @@ for N in 1:order_max
 
   f = forcing(tx)
   fill!(exp_r, zero(eltype(exp_r)))
-  exp_r .+= f
+  exp_r .= -f
 
   m = last(forms)(tx)
   fillstored!(exp_J, zero(eltype(exp_J)))

@@ -113,11 +113,20 @@ end
 
 function get_normal_vector(trian::Triangulation)
   cell_normal = get_facet_normal(trian)
-  get_normal_vector(trian,cell_normal)
+  get_normal_vector(trian, cell_normal)
 end
 
-function get_normal_vector(trian::Triangulation,cell_normal::AbstractArray)
-  GenericCellField(cell_normal,trian,ReferenceDomain())
+function get_tangent_vector(trian::Triangulation)
+  cell_tangent = get_edge_tangent(trian)
+  get_tangent_vector(trian, cell_tangent)
+end
+
+function get_normal_vector(trian::Triangulation,cell_vectors::AbstractArray)
+  GenericCellField(cell_vectors,trian,ReferenceDomain())
+end
+
+function get_tangent_vector(trian::Triangulation,cell_vectors::AbstractArray)
+  GenericCellField(cell_vectors,trian,ReferenceDomain())
 end
 
 evaluate!(cache,f::Function,x::CellPoint) = CellField(f,get_triangulation(x))(x)
@@ -156,7 +165,7 @@ function change_domain(a::CellField,strian::Triangulation,::ReferenceDomain,ttri
   if strian === ttrian
     return a
   end
-  @assert is_change_possible(strian,ttrian) msg
+  @check is_change_possible(strian,ttrian) msg
   D = num_cell_dims(strian)
   sglue = get_glue(strian,Val(D))
   tglue = get_glue(ttrian,Val(D))
@@ -172,7 +181,7 @@ function change_domain(a::CellField,strian::Triangulation,::PhysicalDomain,ttria
   if strian === ttrian
     return a
   end
-  @assert is_change_possible(strian,ttrian) msg
+  @check is_change_possible(strian,ttrian) msg
   D = num_cell_dims(strian)
   sglue = get_glue(strian,Val(D))
   tglue = get_glue(ttrian,Val(D))
@@ -477,16 +486,22 @@ struct OperationCellField{DS} <: CellField
     @assert length(args) > 0
     trian = get_triangulation(first(args))
     domain_style = DomainStyle(first(args))
-    @check all( map(i->DomainStyle(i)==domain_style,args) )
-    #@check all( map(i->get_triangulation(i)===trian,args) )
+    @check all(i -> DomainStyle(i) == domain_style, args)
 
     # This is only to catch errors in user code
     # as soon as possible.
-    if num_cells(trian)>0
-      x = _get_cell_points(args...)
-      ax = map(i->i(x),args)
-      axi = map(first,ax)
-      r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
+    if num_cells(trian) > 0
+      @check begin
+        pts = _get_cell_points(args...)
+        #x = testitem(get_data(pts))
+        #f = map(ak -> testitem(get_data(ak)), args)
+        #fx = map(fk -> return_value(fk,x), f)
+        #r = Fields.BroadcastingFieldOpMap(op.op)(fx...)
+        ax = map(i->i(pts),args)
+        axi = map(first,ax)
+        r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
+        true
+      end
     end
 
     new{typeof(domain_style)}(op,args,trian,domain_style,Dict())
@@ -534,12 +549,6 @@ get_triangulation(f::OperationCellField) = f.trian
 DomainStyle(::Type{OperationCellField{DS}}) where DS = DS()
 
 function evaluate!(cache,f::OperationCellField,x::CellPoint)
-  #key = (:evaluate,objectid(x))
-  #if ! haskey(f.memo,key)
-  #  ax = map(i->i(x),f.args)
-  #  f.memo[key] = lazy_map(Fields.BroadcastingFieldOpMap(f.op.op),ax...)
-  #end
-  #f.memo[key]
   ax = map(i->i(x),f.args)
   lazy_map(Fields.BroadcastingFieldOpMap(f.op.op),ax...)
 end
@@ -717,6 +726,12 @@ function get_normal_vector(trian::Triangulation,cell_normal::SkeletonPair)
   SkeletonPair(plus,minus)
 end
 
+function get_tangent_vector(trian::Triangulation,cell_tangent::SkeletonPair)
+  plus = get_normal_vector(trian,cell_tangent.plus)
+  minus = get_normal_vector(trian,cell_tangent.minus)
+  SkeletonPair(plus,minus)
+end
+
 for op in (:outer,:*,:dot)
   @eval begin
     ($op)(a::CellField,b::SkeletonPair{<:CellField}) = Operation($op)(a,b)
@@ -800,8 +815,8 @@ end
 struct KDTreeSearch
   num_nearest_vertices::Int
   accept_points_outside::Bool
-  function KDTreeSearch(;num_nearest_vertices=1, accept_points_outside=false)
-    new(num_nearest_vertices, accept_points_outside)
+  function KDTreeSearch(;num_nearest_vertices=1)
+    new(num_nearest_vertices)
   end
 end
 

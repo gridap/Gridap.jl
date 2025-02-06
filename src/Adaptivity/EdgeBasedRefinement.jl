@@ -29,9 +29,191 @@ Note on RefinementRules and Orientation of the refined grids:
       X_coarse = Φ∘β(X_fine)
 """
 
+
+"""
+    abstract type EdgeBasedRefinement <: AdaptivityMethod end
+
+Abstract type representing edge-based refinement methods. Edge-based refinement methods
+are the ones where all new nodes are created from the faces of the parent mesh.
+This allows the new connectivity to easily be computed from the parent connectivity.
+
+Any edge-based refinement method has to implement the following API: 
+
+- [`setup_edge_based_rrules`](@ref)
+
+"""
 abstract type EdgeBasedRefinement <: AdaptivityMethod end
 
+function refine(method::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,Dp};cells_to_refine=nothing) where {Dc,Dp}
+  # cells_to_refine can be
+  #    a) nothing -> All cells get refined
+  #    b) AbstractArray{<:Bool} of size num_cells(model)
+  #            -> Only cells such that cells_to_refine[iC] == true get refined
+  #    c) AbstractArray{<:Integer} 
+  #            -> Cells for which gid ∈ cells_to_refine get refined
+  ctopo = get_grid_topology(model)
+  coarse_labels = get_face_labeling(model)
+  # Create new model
+  rrules, faces_list = setup_edge_based_rrules(method, model.grid_topology,cells_to_refine)
+  topo   = refine_edge_based_topology(ctopo,rrules,faces_list)
+  reffes = map(p->LagrangianRefFE(Float64,p,1),get_polytopes(topo))
+  grid   = UnstructuredGrid(
+    get_vertex_coordinates(topo),
+    get_faces(topo,Dc,0),reffes,
+    get_cell_type(topo),
+    OrientationStyle(topo)
+  )
+  glue = blocked_refinement_glue(rrules)
+  labels = refine_face_labeling(coarse_labels,glue,model.grid_topology,topo)
+  ref_model = UnstructuredDiscreteModel(grid,topo,labels)
+  return AdaptedDiscreteModel(ref_model,model,glue)
+end
 
+function refine_edge_based_topology(
+  topo::UnstructuredGridTopology{Dc},
+  rrules::AbstractVector{<:RefinementRule},
+  faces_list::Tuple
+) where {Dc}
+  coords_new  = get_new_coordinates_from_faces(topo,faces_list)
+  c2n_map_new = get_refined_cell_to_vertex_map(topo,rrules,faces_list)
+  polys_new, cell_type_new = _get_cell_polytopes(rrules)
+  orientation = NonOriented()
+  return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,polys_new,orientation)
+end
+
+"""
+    setup_edge_based_rrules(method::EdgeBasedRefinement,topo::UnstructuredGridTopology,cells_to_refine)
+
+Given an UnstructuredTopology and a list of cells to refine, returns a vector
+of refinement rules and a list of the faces (called refined faces) where new 
+vertices will be created.
+"""
+function setup_edge_based_rrules(::EdgeBasedRefinement,topo::UnstructuredGridTopology{Dc},cells_to_refine) where Dc
+  @abstractmethod
+end
+
+function setup_edge_based_rrules(method::EdgeBasedRefinement,topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Bool}) where Dc
+  return setup_edge_based_rrules(method,topo,findall(cells_to_refine))
+end
+
+"""
+    get_new_coordinates_from_faces(p::Union{Polytope{D},GridTopology{D}},faces_list::Tuple)
+
+Given a Polytope or GridTopology and a list of refined d-faces, returns the new coordinates
+of the vertices created on those faces: 
+  - If the face is a 0-face (node), the new vertex is the node itself.
+  - For d > 0, the new vertex is the barycenter of the face.
+The new vertices are ordered by parent dimension and face id (in that order).
+"""
+function get_new_coordinates_from_faces(p::Union{Polytope{D},GridTopology{D}},faces_list::Tuple) where {D}
+  @check length(faces_list) == D+1
+
+  nN_new     = sum(length,faces_list)
+  coords_old = get_vertex_coordinates(p)
+  coords_new = Vector{eltype(coords_old)}(undef,nN_new)
+
+  n = 1
+  # Nodes
+  if !isempty(faces_list[1])
+    for node in faces_list[1]
+      coords_new[n] = coords_old[node]
+      n += 1
+    end
+  end
+  # Faces (d > 0)
+  for (d,dfaces) in enumerate(faces_list[2:end])
+    if !isempty(dfaces)
+      d2n_map = get_faces(p,d,0)
+      cache = array_cache(d2n_map)
+      for face in dfaces
+        face_nodes = getindex!(cache,d2n_map,face)
+        coords_new[n] = sum(coords_old[face_nodes])/length(face_nodes)
+        n += 1
+      end
+    end
+  end
+
+  return coords_new
+end
+
+"""
+    get_refined_cell_to_vertex_map(
+      topo::UnstructuredGridTopology{Dc},
+      rrules::AbstractVector{<:RefinementRule},
+      faces_list::Tuple
+    )
+
+Given an UnstructuredGridTopology, a vector of RefinementRules and a list of refined faces,
+returns the cell-to-vertex connectivity of the refined topology.
+"""
+function get_refined_cell_to_vertex_map(
+  topo::UnstructuredGridTopology{Dc},
+  rrules::AbstractVector{<:RefinementRule},
+  faces_list::Tuple
+) where Dc
+  @check length(faces_list) == Dc+1
+  d_to_nfaces = map(Df -> num_faces(topo,Df), 0:Dc)
+  d_to_cell_to_dface = map(Df -> get_faces(topo,Dc,Df), 0:Dc-1)
+
+  # Offsets for new vertices
+  d_to_offset = [1,map(length,faces_list)...]
+  length_to_ptrs!(d_to_offset)
+  d_to_offset = d_to_offset[1:end-1]
+
+  # Maps from refined faces (i.e new vertices) to old faces
+  d_to_faces_reindexing = map(d_to_nfaces,d_to_offset,faces_list) do nfaces,offset,ref_faces
+    faces_reindexing = find_inverse_index_map(ref_faces,nfaces)
+    return map(f -> iszero(f) ? 0 : f + offset - 1, faces_reindexing)
+  end
+
+  # For a given parent cell, return the new node gids (corresponding to the refined faces)
+  function cell_to_reindexed_faces(::Val{2},cell)
+    N = view(d_to_cell_to_dface[1],cell)
+    E = view(d_to_faces_reindexing[2],view(d_to_cell_to_dface[2],cell))
+    C = [d_to_faces_reindexing[3][cell]]
+    return (N,E,C)
+  end
+  function cell_to_reindexed_faces(::Val{3},cell)
+    N = view(d_to_cell_to_dface[1],cell)
+    E = view(d_to_faces_reindexing[2],view(d_to_cell_to_dface[2],cell))
+    F = view(d_to_faces_reindexing[3],view(d_to_cell_to_dface[3],cell))
+    C = [d_to_faces_reindexing[4][cell]]
+    return (N,E,F,C)
+  end
+
+  # Allocate ptr and data arrays for new connectivity
+  nC_new    = sum(rr -> num_subcells(rr), rrules)
+  nData_new = sum(rr -> sum(length,rr.ref_grid.grid.cell_node_ids), rrules)
+  ptrs_new  = Vector{Int}(undef,nC_new+1)
+  data_new  = Vector{Int}(undef,nData_new)
+
+  k = 1
+  ptrs_new[1] = 1
+  for iC = 1:d_to_nfaces[Dc+1]
+    rr = rrules[iC]
+
+    # New vertex ids from old face ids
+    faces = cell_to_reindexed_faces(Val(Dc),iC)
+    sub_conn = get_relabeled_connectivity(rr,faces)
+
+    nChild = length(sub_conn)
+    ptrs_new[k:k+nChild] .= sub_conn.ptrs .+ (ptrs_new[k] - 1)
+    data_new[ptrs_new[k]:ptrs_new[k+nChild]-1] .= sub_conn.data
+    k = k+nChild
+  end
+
+  return Table(data_new,ptrs_new)
+end
+
+############################################################################################
+
+# NVB Refinement (Nearest Vertex Bissection)
+
+"""
+    struct NVBRefinement{T} <: EdgeBasedRefinement
+
+A refinement method for TRIs, where a selected cell is refined by bisecting the longest edge.
+"""
 struct NVBRefinement{T} <: EdgeBasedRefinement
   cell_to_longest_edge_lid::Vector{T}
   cell_to_longest_edge_gid::Vector{T}
@@ -79,98 +261,17 @@ end
 
 NVBRefinement(model::AdaptedDiscreteModel) = NVBRefinement(model.model)
 
-struct RedGreenRefinement <: EdgeBasedRefinement end
-
-function refine(method::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,Dp};cells_to_refine=nothing) where {Dc,Dp}
-  # cells_to_refine can be
-  #    a) nothing -> All cells get refined
-  #    b) AbstractArray{<:Bool} of size num_cells(model)
-  #            -> Only cells such that cells_to_refine[iC] == true get refined
-  #    c) AbstractArray{<:Integer} 
-  #            -> Cells for which gid ∈ cells_to_refine get refined
-  ctopo = get_grid_topology(model)
-  coarse_labels = get_face_labeling(model)
-  # Create new model
-  rrules, faces_list = setup_edge_based_rrules(method, model.grid_topology,cells_to_refine)
-  topo   = _refine_unstructured_topology(ctopo,rrules,faces_list)
-  reffes = map(p->LagrangianRefFE(Float64,p,1),get_polytopes(topo))
-  grid   = UnstructuredGrid(get_vertex_coordinates(topo),
-			    get_faces(topo,Dc,0),reffes,
-			    get_cell_type(topo),
-			    OrientationStyle(topo))
-  glue = _get_refinement_glue(topo,model.grid_topology,rrules)
-  labels = _refine_face_labeling(coarse_labels,glue,model.grid_topology,topo)
-  ref_model = UnstructuredDiscreteModel(grid,topo,labels)
-  return AdaptedDiscreteModel(ref_model,model,glue)
+function setup_edge_based_rrules(method::NVBRefinement, topo::UnstructuredGridTopology{Dc},::Nothing) where Dc
+  setup_edge_based_rrules(method, topo, collect(1:num_faces(topo,Dc)))
 end
 
-function _refine_unstructured_topology(topo::UnstructuredGridTopology{Dc},
-                                      rrules::AbstractVector{<:RefinementRule},
-                                      faces_list::Tuple) where {Dc}
-  coords_new  = get_new_coordinates_from_faces(topo,faces_list)
-  c2n_map_new = get_refined_cell_to_vertex_map(topo,rrules,faces_list)
-  polys_new, cell_type_new = _get_cell_polytopes(rrules)
-
-  # We can guarantee the new topology is oriented if
-  #   1 - the old topology was oriented
-  #   2 - we have a single type of polytope (i.e new topo is not mixed)
-  #orientation = NonOriented()
-  orientation = NonOriented()
-
-  return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,polys_new,orientation)
-end
-
-function _get_refinement_glue(ftopo ::UnstructuredGridTopology{Dc},
-                              ctopo ::UnstructuredGridTopology{Dc},
-                              rrules::AbstractVector{<:RefinementRule}) where {Dc}
-  nC_old = num_faces(ctopo,Dc)
-  nC_new = num_faces(ftopo,Dc)
-
-  f2c_cell_map      = Vector{Int}(undef,nC_new)
-  fcell_to_child_id = Vector{Int}(undef,nC_new)
-
-  k = 1
-  for iC = 1:nC_old
-    rr = rrules[iC]
-    range = k:k+num_subcells(rr)-1
-    f2c_cell_map[range] .= iC
-    fcell_to_child_id[range] .= collect(1:num_subcells(rr))
-    k += num_subcells(rr)
-  end
-
-  f2c_faces_map = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
-  return AdaptivityGlue(f2c_faces_map,fcell_to_child_id,rrules)
-end
-
-"""
-Given an UnstructuredTopology and a list of cells_to_refine, provides an edge-based coloring
-for the topology:
-
-  - If a cell is completely refined, it is colored RED
-  - If a cell touches more than one refined (RED) cell, it becomes RED.
-  - If a cell touches a single refined (RED) cell, it is colored GREEN.
-
-The method returns a vector of Red/Green refinement rules, as well the list of
-vertices, edges and cells which correspond to new vertices in the refined topology.
-"""
-function setup_edge_based_rrules(::EdgeBasedRefinement, topo::UnstructuredGridTopology{Dc},::Nothing) where Dc
-  rrules     = lazy_map(RedRefinementRule,CompressedArray(topo.polytopes,topo.cell_type))
-  faces_list = _redgreen_refined_faces_list(topo,rrules,[true])
-  return rrules, faces_list
-end
-
-function setup_edge_based_rrules(::EdgeBasedRefinement,topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Bool}) where Dc
-  return setup_edge_based_rrules(topo,findall(cells_to_refine))
-end
-
-_shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer} = circshift(v, -(i - 1))
-
-function setup_edge_based_rrules(method::NVBRefinement, topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}) where Dc
+function setup_edge_based_rrules(
+  method::NVBRefinement, topo::UnstructuredGridTopology{Dc}, cells_to_refine::AbstractArray{<:Integer}
+) where Dc
   nE = num_faces(topo,1)
-  c2e_map       = get_faces(topo,Dc,1)
-  c2e_map_cache = array_cache(c2e_map)
-  e2c_map       = get_faces(topo,1,Dc)
-  polys       = topo.polytopes
+  c2e_map = get_faces(topo,Dc,1)
+  e2c_map = get_faces(topo,1,Dc)
+  polys   = topo.polytopes
   cell_types  = topo.cell_type
   cell_color  = copy(cell_types) # WHITE
   # Hardcoded for TRI
@@ -184,43 +285,39 @@ function setup_edge_based_rrules(method::NVBRefinement, topo::UnstructuredGridTo
   c_to_longest_edge_lid = method.cell_to_longest_edge_lid
   is_refined = falses(nE)
   # Loop over cells and mark edges to refine i.e. is_refined
-  # The reason to not loop directly on c is that we need to change c within
-  # a given iteration of the for loop
-  for i in 1:length(cells_to_refine)
-    c = cells_to_refine[i]
-    e_longest = c_to_longest_edge_gid[c]
+  for i in eachindex(cells_to_refine)
     # Has to terminate because an edge is marked each iteration or we skip an
     # iteration due to a boundary cell
-    while !is_refined[e_longest]
-      is_refined[e_longest] = true
-      c_nbor_lid = findfirst(c′ -> c′ != c, e2c_map[e_longest])
-      if isnothing(c_nbor_lid) # We've reach the boundary
+    c = cells_to_refine[i]
+    e = c_to_longest_edge_gid[c]
+    while !is_refined[e]
+      is_refined[e] = true
+      e_cells = view(e2c_map,e)
+      if length(e_cells) == 1 # We've reach the boundary
         continue
       else
-        # Get the longest edge of the neighbor
-        c_nbor_gid = e2c_map[e_longest][c_nbor_lid]
-        e_longest = c_to_longest_edge_gid[c_nbor_gid]
-        # Set the current cell gid to that of the neighbor
-        c = c_nbor_gid
+        # Propagate to neighboring cell
+        c = ifelse(e_cells[1] == c, e_cells[2], e_cells[1])
+        e = c_to_longest_edge_gid[c]
       end
     end
   end
   # Loop over cells and refine based on marked edges
   for c in 1:length(c2e_map)
-    c_edges = getindex!(c2e_map_cache, c2e_map, c)
+    c_edges = view(c2e_map,c)
     refined_edge_lids = findall(is_refined[c_edges])
-    # GREEN refinement because only one edge should be bisected
     if length(refined_edge_lids) == 1
+      # GREEN refinement because only one edge should be bisected
       ref_edge = refined_edge_lids[1]
       cell_color[c] = GREEN + Int8(ref_edge-1)
-      # BLUE refinement: two bisected
     elseif length(refined_edge_lids) == 2
+      # BLUE refinement: two bisected
       long_ref_edge_lid = c_to_longest_edge_lid[c]
       short_ref_edge_lid = setdiff(refined_edge_lids, long_ref_edge_lid)[1]
       blue_idx = BLUE_dict[(long_ref_edge_lid, short_ref_edge_lid)]
       cell_color[c] = BLUE + Int8(blue_idx - 1)
-      # DOUBLE BLUE refinement: three bisected edges (somewhat rare)
     elseif length(refined_edge_lids) == 3
+      # DOUBLE BLUE refinement: three bisected edges (somewhat rare)
       long_ref_edge_lid = c_to_longest_edge_lid[c]
       cell_color[c] = BLUE_DOUBLE + Int(long_ref_edge_lid - 1)
     end
@@ -249,10 +346,50 @@ function setup_edge_based_rrules(method::NVBRefinement, topo::UnstructuredGridTo
   end
   rrules = CompressedArray(color_rrules,cell_color)
   face_list = _redgreen_refined_faces_list(topo, rrules, is_refined)
+  
   return rrules, face_list
 end
 
-function setup_edge_based_rrules(::RedGreenRefinement, topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}) where Dc
+############################################################################################
+
+# RedGreen Refinement
+
+"""
+    struct RedGreenRefinement <: EdgeBasedRefinement
+
+Red-Green conformal refinement method. The refinement follows the following rules:
+
+  - If a cell is completely refined, it is colored RED
+  - If a cell touches more than one refined (RED) cell, it becomes RED.
+  - If a cell touches a single refined (RED) cell, it is colored GREEN.
+
+The resulting mesh is always conformal.
+"""
+struct RedGreenRefinement <: EdgeBasedRefinement end
+
+function setup_edge_based_rrules(::RedGreenRefinement, topo::UnstructuredGridTopology{Dc},::Nothing) where Dc
+  rrules = lazy_map(RedRefinementRule,CompressedArray(topo.polytopes,topo.cell_type))
+
+  ref_nodes = 1:num_faces(topo,0)
+  ref_edges = 1:num_faces(topo,1)
+  ref_cells = findall(_has_interior_point,rrules)
+
+  if Dc == 2
+    faces_list = (ref_nodes,ref_edges,ref_cells)
+  else
+    @check length(topo.polytopes) == 1 "Mixed meshes not supported yet."
+    p = first(topo.polytopes)
+    ref_faces = is_simplex(p) ? Int32[] : 1:num_faces(topo,2)
+    faces_list = (ref_nodes,ref_edges,ref_faces,ref_cells)
+  end
+
+  return rrules, faces_list
+end
+
+function setup_edge_based_rrules(
+  ::RedGreenRefinement, topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}
+) where Dc
+  @check Dc == 2
   nC = num_cells(topo)
   nE = num_faces(topo,1)
   c2e_map     = get_faces(topo,Dc,1)
@@ -328,79 +465,70 @@ function _redgreen_refined_faces_list(topo::UnstructuredGridTopology{2},rrules,e
   return (ref_nodes,ref_edges,ref_cells)
 end
 
-function get_new_coordinates_from_faces(p::Union{Polytope{D},GridTopology{D}},faces_list::Tuple) where {D}
-  @check length(faces_list) == D+1
+############################################################################################
 
-  nN_new     = sum(x->length(x),faces_list)
-  coords_old = get_vertex_coordinates(p)
-  coords_new = Vector{eltype(coords_old)}(undef,nN_new)
+# Barycentric refinement
 
-  n = 1
-  for (d,dfaces) in enumerate(faces_list)
-    if length(dfaces) > 0
-      nf = length(dfaces)
-      d2n_map = get_faces(p,d-1,0)
-      coords_new[n:n+nf-1] .= map(f -> sum(coords_old[d2n_map[f]])/length(d2n_map[f]), dfaces)
-      n += nf
-    end
-  end
+"""
+    struct BarycentricRefinementMethod <: EdgeBasedRefinement end
 
-  return coords_new
+Barycentric refinement method. Each selected cell is refined by adding a new vertex at the
+barycenter of the cell. Then the cell is split into subcells by connecting the new vertex
+to the vertices of the parent cell. Always results in a conformal mesh.
+"""
+struct BarycentricRefinement <: EdgeBasedRefinement end
+
+function setup_edge_based_rrules(
+  method::BarycentricRefinement, topo::UnstructuredGridTopology{Dc}, ::Nothing
+) where Dc
+  setup_edge_based_rrules(method,topo,collect(1:num_faces(topo,Dc)))
 end
 
-function get_refined_cell_to_vertex_map(topo::UnstructuredGridTopology{2},
-                                        rrules::AbstractVector{<:RefinementRule},
-                                        faces_list::Tuple)
-  @notimplementedif !all(map(p -> p ∈ [QUAD,TRI],topo.polytopes))
-  nN_old,nE_old,nC_old  = num_faces(topo,0),num_faces(topo,1),num_faces(topo,2)
-  c2n_map = get_faces(topo,2,0)
-  c2e_map = get_faces(topo,2,1)
-  ref_edges = faces_list[2]
+function setup_edge_based_rrules(
+  ::BarycentricRefinement, topo::UnstructuredGridTopology{Dc}, cells_to_refine::AbstractArray{<:Integer}
+) where Dc
+  @assert (length(get_polytopes(topo)) == 1)
 
-  # Allocate map ptr and data arrays
-  nC_new    = sum(rr -> num_subcells(rr), rrules)
-  nData_new = sum(rr -> sum(ids->length(ids),rr.ref_grid.grid.cell_node_ids), rrules)
+  p = first(topo.polytopes)
+  A = is_simplex(p)
+  B = (p ∈ (QUAD,HEX)) && length(cells_to_refine) == num_faces(topo,Dc)
+  @check A || B "Barycentric refinement only supported for simplicial meshes or QUAD meshes with all cells refined."
 
-  ptrs_new  = Vector{Int}(undef,nC_new+1)
-  data_new  = Vector{Int}(undef,nData_new)
-
-  cell_is_refined = lazy_map(rr->isa(RefinementRuleType(rr),RedRefinement),rrules)
-  if all(cell_is_refined)
-    edges_reindexing = 1:nE_old
-  else
-    edges_reindexing = lazy_map(Reindex(find_inverse_index_map(ref_edges,nE_old)),1:nE_old)
+  if A # Simplicial meshes
+    ptrs = fill(1,num_faces(topo,Dc))
+    ptrs[cells_to_refine] .= 2
+    rrules = CompressedArray([WhiteRefinementRule(p),BarycentricRefinementRule(p)],ptrs)
+  else # QUAD/HEX meshes
+    ptrs = fill(1,num_faces(topo,Dc))
+    rrules = CompressedArray([BarycentricRefinementRule(p),],ptrs)
   end
 
-  k = 1
-  ptrs_new[1] = 1
-  C = nN_old + length(ref_edges) + 1
-  for iC = 1:nC_old
-    rr = rrules[iC]
-
-    # New Node gids from old N,E,C lids
-    N = c2n_map[iC]
-    E = edges_reindexing[c2e_map[iC]] .+ nN_old
-    sub_conn = get_relabeled_connectivity(rr,(N,E,[C]))
-
-    nChild = length(sub_conn)
-    ptrs_new[k:k+nChild] .=  sub_conn.ptrs .+ (ptrs_new[k] - 1)
-    data_new[ptrs_new[k]:ptrs_new[k+nChild]-1] .= sub_conn.data
-    k = k+nChild
-
-    _has_interior_point(rr) && (C += 1)
+  ref_nodes = 1:num_faces(topo,0)
+  if Dc == 2
+    faces_list = (ref_nodes,Int32[],cells_to_refine)
+  elseif p == TET
+    faces_list = (ref_nodes,Int32[],Int32[],cells_to_refine)
+  else p == HEX
+    faces_to_refine = 1:num_faces(topo,2)
+    faces_list = (ref_nodes,Int32[],faces_to_refine,cells_to_refine)
   end
 
-  return Table(data_new,ptrs_new)
+  return rrules, faces_list
 end
 
-###############################################################################
+############################################################################################
+
 # EdgeBasedRefinementRules
 
 abstract type EdgeBasedRefinementRule <: RefinementRuleType end
+
+# List of available RefinementRules:
 struct RedRefinement <: EdgeBasedRefinementRule end
+struct GreenRefinement{P} <: EdgeBasedRefinementRule end
 struct BlueRefinement{P, Q} <: EdgeBasedRefinementRule end
 struct BlueDoubleRefinement{P} <: EdgeBasedRefinementRule end
-struct GreenRefinement{P} <: EdgeBasedRefinementRule end
+struct BarycentricRefinementRule <: EdgeBasedRefinementRule end
+struct PowellSabinRefinement <: EdgeBasedRefinementRule end
 
 _has_interior_point(rr::RefinementRule) = _has_interior_point(rr,RefinementRuleType(rr))
 _has_interior_point(rr::RefinementRule,::RefinementRuleType) = false
@@ -408,8 +536,12 @@ _has_interior_point(rr::RefinementRule,::RefinementRuleType) = false
 """
 RefinementRule representing a non-refined cell.
 """
-function WhiteRefinementRule(p::Polytope)
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(LagrangianRefFE(Float64,p,1)))
+function WhiteRefinementRule(p::Polytope{D}) where D
+  coords = get_vertex_coordinates(p)
+  conn = Table(get_faces(p,D,0))
+  cell_types = Int32[1]
+  reffes = [LagrangianRefFE(Float64,p,1)]
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types;has_affine_map=true)
   return RefinementRule(WithoutRefinement(),p,ref_grid)
 end
 
@@ -418,7 +550,7 @@ Edge-based RefinementRule where a new vertex is added to
 each edge of the original Polytope.
 """
 function RedRefinementRule(p::Polytope)
-  @notimplementedif (p ∉ [TRI,QUAD,HEX])
+  @notimplementedif (p ∉ [TRI,TET,QUAD,HEX])
 
   faces_list = _get_red_refined_faces_list(p)
   coords = get_new_coordinates_from_faces(p,faces_list)
@@ -426,13 +558,15 @@ function RedRefinementRule(p::Polytope)
   polys, cell_types, conn = _get_red_refined_connectivity(p)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types;has_affine_map=true)
   return RefinementRule(RedRefinement(),p,ref_grid)
 end
 
 function _get_red_refined_faces_list(p::Polytope)
   if p == TRI
     return (Int32[1,2,3],Int32[1,2,3],Int32[])
+  elseif p == TET
+    return (Int32[1,2,3,4],Int32[1,2,3,4,5,6],Int32[],Int32[])
   elseif p == QUAD
     return (Int32[1,2,3,4],Int32[1,2,3,4],Int32[1])
   elseif p == HEX
@@ -450,6 +584,19 @@ function _get_red_refined_connectivity(p::Polytope)
                       3,5,6,
                       4,5,6]
     conn_ptrs = Int32[1,4,7,10,13]
+    return polys, cell_type, Table(conn_data,conn_ptrs)
+  elseif p == TET
+    polys     = [TET]
+    cell_type = Int32[1,1,1,1,1,1,1,1]
+    conn_data = Int32[1,5,6,8,
+                      5,2,7,9,
+                      6,7,3,10,
+                      8,9,10,4,
+                      5,7,10,9,
+                      8,5,10,9,
+                      5,10,7,6,
+                      8,10,5,6]
+    conn_ptrs = Int32[1,5,9,13,17,21,25,29,33]
     return polys, cell_type, Table(conn_data,conn_ptrs)
   elseif p == QUAD
     polys     = [QUAD]
@@ -479,14 +626,11 @@ end
 
 function _has_interior_point(rr::RefinementRule,::RedRefinement)
   p = get_polytope(rr)
-  if p ∈ [QUAD,HEX]
-    return true
-  end
-  return false
+  return !is_simplex(p)
 end
 
 # [Face dimension][Coarse Face id] -> [Fine faces]
-function get_d_to_face_to_child_faces(rr::RefinementRule,::RedRefinement)
+function get_d_to_face_to_child_faces(::RedRefinement,rr::RefinementRule)
   p = get_polytope(rr)
   if p == QUAD
     return [
@@ -603,7 +747,7 @@ function GreenRefinementRule(p::Polytope{2},ref_edge::Integer)
   polys, cell_types, conn = _get_green_refined_connectivity(p,ref_edge)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
   return RefinementRule(GreenRefinement{ref_edge}(),p,ref_grid)
 end
 
@@ -658,7 +802,7 @@ function BlueRefinementRule(p::Polytope{2}, long_ref_edge::Integer, short_ref_ed
   polys, cell_types, conn = _get_blue_refined_connectivity(p,long_ref_edge, short_ref_edge)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
   return RefinementRule(BlueRefinement{long_ref_edge, short_ref_edge}(),p,ref_grid)
 end
 
@@ -700,7 +844,7 @@ function BlueDoubleRefinementRule(p::Polytope{2}, long_ref_edge::Integer)
   coords = get_new_coordinates_from_faces(p,faces_list)
   polys, cell_types, conn = _get_blue_double_refined_connectivity(p,long_ref_edge)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
-  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
   return RefinementRule(BlueDoubleRefinement{long_ref_edge}(),p,ref_grid)
 end
 
@@ -732,6 +876,144 @@ function _get_blue_double_refined_connectivity(p::Polytope{2}, long_ref_edge)
 end
 
 """
+RefinementRule representing barycentric refinement of a Polytope. A single
+vertex is added in the center, then joined to the vertices of the original
+Polytope.
+"""
+function BarycentricRefinementRule(p::Polytope)
+  @notimplementedif (p ∉ (TRI,TET,QUAD,HEX))
+
+  faces_list = _get_barycentric_refined_faces_list(p)
+  coords = get_new_coordinates_from_faces(p,faces_list)
+
+  polys, cell_types, conn = _get_barycentric_refined_connectivity(p)
+  reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
+
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
+  return RefinementRule(BarycentricRefinementRule(),p,ref_grid)
+end
+
+function _get_barycentric_refined_faces_list(p::Polytope)
+  if p == TRI
+    return (Int32[1,2,3],Int32[],Int32[1])
+  elseif p == TET
+    return (Int32[1,2,3,4],Int32[],Int32[],Int32[1])
+  elseif p == QUAD
+    return (Int32[1,2,3,4],Int32[],Int32[1])
+  elseif p == HEX
+    return (Int32[1,2,3,4,5,6,7,8],Int32[],Int32[1,2,3,4,5,6],Int32[1])
+  end
+  @notimplemented
+end
+
+function _get_barycentric_refined_connectivity(p::Polytope)
+  if p == TRI
+    polys     = [TRI]
+    cell_type = [1, 1, 1]
+    conn_data = [1, 2, 4,
+                 2, 3, 4,
+                 3, 1, 4]
+    conn_ptrs = [1, 4, 7, 10]
+    return polys, cell_type, Table(conn_data,conn_ptrs)
+  elseif p == TET
+    polys     = [TET]
+    cell_type = [1, 1, 1, 1]
+    conn_data = [5, 1, 2, 3,
+                 5, 1, 2, 4,
+                 5, 1, 3, 4,
+                 5, 2, 3, 4]
+    conn_ptrs = [1, 5, 9, 13, 17]
+    return polys, cell_type, Table(conn_data,conn_ptrs)
+  elseif p == QUAD
+    polys     = [TRI]
+    cell_type = [1, 1, 1, 1]
+    conn_data = [1, 2, 5,
+                 2, 4, 5,
+                 4, 3, 5,
+                 3, 1, 5]
+    conn_ptrs = [1, 4, 7, 10, 13]
+    return polys, cell_type, Table(conn_data,conn_ptrs)
+  elseif p == HEX # For HEX, we also create a new vertex in the center of each face
+    # Connectivity for each face: Face corners + face node + barycenter
+    face_conn = [
+      6, 1, 2, 5,
+      6, 2, 4, 5,
+      6, 3, 4, 5,
+      6, 1, 3, 5,
+    ]
+    n_TET  = 4 # Number of new TETs per polytope face (i.e per QUAD)
+    n_FACE = 6 # Number of faces in a HEX
+    n_NODE = 8 # Number of nodes in a HEX
+    polys     = [TET]
+    cell_type = fill(1, n_TET*n_FACE)
+    face_to_node = Geometry.get_faces(p,2,0)
+    conn_data = vcat([vcat(nodes...,face+n_NODE,n_NODE+n_FACE+1)[face_conn] for (face,nodes) in enumerate(face_to_node)]...)
+    conn_ptrs = [i*4+1 for i in 0:(n_TET*n_FACE)]
+    return polys, cell_type, Table(conn_data,conn_ptrs)
+  end
+  @notimplemented
+end
+
+"""
+RefinementRule representing the Powell-Sabin split of TRI, and it's extension to
+3-demensional TETs (Worsey-Farin split).
+"""
+function PowellSabinRefinementRule(p::Polytope)
+  @notimplementedif (p ∉ [TRI,TET])
+
+  faces_list = _get_powellsabin_refined_faces_list(p)
+  coords = get_new_coordinates_from_faces(p,faces_list)
+
+  polys, cell_types, conn = _get_powellsabin_refined_connectivity(p)
+  reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
+
+  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
+  return RefinementRule(PowellSabinRefinement(),p,ref_grid)
+end
+
+function _get_powellsabin_refined_faces_list(p::Polytope)
+  if p == TRI
+    return (Int32[1,2,3],Int32[1,2,3],Int32[1])
+  elseif p == TET
+    return (Int32[1,2,3,4],Int32[1,2,3,4,5,6],Int32[1,2,3,4],Int32[1])
+  end
+  @notimplemented
+end
+
+function _get_powellsabin_refined_connectivity(p::Polytope)
+  # A) For TRIs, we add a new vertices 
+  #       - in the center of the triangle
+  #       - in the middle of each edge
+  # and then connect the center vertex to all other vertices (nodes + new edge vertices). 
+  # This yields 6 new triangles.
+  # B) For TETs, we do do the same process for each face (which is a TRI), and then connect 
+  #    every new triangle to the center of the TET. This yields 24=n_TRI*n_FACE new TETs.
+
+  n_TRI  = 6 # Number of children in a refined TRI
+  n_FACE = 4 # Number of faces in a TET
+  conn_data_TRI = [1, 4, 7,
+                  4, 2, 7,
+                  2, 6, 7,
+                  6, 3, 7,
+                  5, 3, 7,
+                  1, 5, 7]
+  if p == TRI
+    polys = [TRI]
+    cell_type = fill(1, n_TRI)
+    conn_ptrs = collect(1:3:n_TRI*3+1)
+    return polys, cell_type, Table(conn_data_TRI,conn_ptrs)
+  elseif p == TET
+    polys     = [TET]
+    cell_type = fill(1, n_TRI*n_FACE)
+    face_conn = [[1,2,3,5,6,7,11],[1,2,4,5,8,9,12],[1,3,4,6,8,10,13],[2,3,4,7,9,10,14]]
+    conn_data = vcat([[lazy_map(Reindex(face_conn[f]),conn_data_TRI[1+(i-1)*3:i*3])...,15] for i in 1:n_TRI for f in 1:n_FACE]...)
+    conn_ptrs = collect(1:4:n_TRI*n_FACE*4+1)
+    return polys, cell_type, Table(conn_data,conn_ptrs)
+  end
+  @notimplemented
+end
+
+"""
 Provided the gids of the coarse cell faces as a Tuple(vertices,edges,cell) and the
 edge-based RefinementRule we want to apply, returns the connectivity of all the refined
 children cells.
@@ -742,39 +1024,62 @@ end
 
 get_relabeled_connectivity(::RefinementRuleType,::RefinementRule,faces_gids) = @notimplemented
 
-function get_relabeled_connectivity(::WithoutRefinement,rr::RefinementRule{P},faces_gids) where P<:Polytope{2}
+function get_relabeled_connectivity(::WithoutRefinement,rr::RefinementRule,faces_gids)
   conn = rr.ref_grid.grid.cell_node_ids
   gids = faces_gids[1]
   new_data = lazy_map(Reindex(gids),conn.data)
   return Table(new_data,conn.ptrs)
 end
 
-function get_relabeled_connectivity(::RedRefinement,rr::RefinementRule{P},faces_gids) where P<:Polytope{2}
+function get_relabeled_connectivity(::RedRefinement,rr::RefinementRule,faces_gids)
   conn = rr.ref_grid.grid.cell_node_ids
-  gids = [faces_gids[1]...,faces_gids[2]...,faces_gids[3]...]
+  if is_simplex(get_polytope(rr)) # TRI, TET only adds vertices to edges
+    gids = vcat(faces_gids[1]...,faces_gids[2]...)
+  else # QUAD, HEX adds vertices to edges, faces and interior
+    gids = vcat(faces_gids...)    
+  end
   new_data = lazy_map(Reindex(gids),conn.data)
   return Table(new_data,conn.ptrs)
 end
 
-function get_relabeled_connectivity(::GreenRefinement{N},rr::RefinementRule{P},faces_gids) where {N,P<:Polytope{2}}
+function get_relabeled_connectivity(::GreenRefinement{N},rr::RefinementRule{<:Polytope{2}},faces_gids) where N
   conn = rr.ref_grid.grid.cell_node_ids
   gids = [faces_gids[1]...,faces_gids[2][N]]
   new_data = lazy_map(Reindex(gids),conn.data)
   return Table(new_data,conn.ptrs)
 end
 
-function get_relabeled_connectivity(::BlueRefinement{N, M},rr::RefinementRule{P},faces_gids) where {N, M, P<:Polytope{2}}
+function get_relabeled_connectivity(::BlueRefinement{N, M},rr::RefinementRule{<:Polytope{2}},faces_gids) where {N, M}
   conn = rr.ref_grid.grid.cell_node_ids
   gids = [faces_gids[1]...,faces_gids[2][N], faces_gids[2][M]]
   new_data = lazy_map(Reindex(gids),conn.data)
   return Table(new_data,conn.ptrs)
 end
 
-function get_relabeled_connectivity(::BlueDoubleRefinement{N},rr::RefinementRule{P},faces_gids) where {N, P<:Polytope{2}}
+function get_relabeled_connectivity(::BlueDoubleRefinement{N},rr::RefinementRule{<:Polytope{2}},faces_gids) where {N}
   conn = rr.ref_grid.grid.cell_node_ids
   # Sort needed for non-longest edge gids
   other_ids = setdiff(collect(1:3), N) |> sort
   gids = [faces_gids[1]..., faces_gids[2][other_ids]..., faces_gids[2][N]]
+  new_data = lazy_map(Reindex(gids),conn.data)
+  return Table(new_data,conn.ptrs)
+end
+
+function get_relabeled_connectivity(::BarycentricRefinementRule,rr::RefinementRule{<:Polytope{D}},faces_gids) where D
+  conn = rr.ref_grid.grid.cell_node_ids
+  if (get_polytope(rr) != HEX) # TRI, TET, QUAD
+    gids = [faces_gids[1]...,faces_gids[D+1]...] # Polytope nodes + Barycenter
+  else # HEX
+    gids = [faces_gids[1]...,faces_gids[D]...,faces_gids[D+1]...] # Polytope nodes + Faces + Barycenter
+  end
+  new_data = lazy_map(Reindex(gids),conn.data)
+  return Table(new_data,conn.ptrs)
+end
+
+function get_relabeled_connectivity(::PowellSabinRefinement,rr::RefinementRule,faces_gids)
+  @check is_simplex(get_polytope(rr))
+  conn = rr.ref_grid.grid.cell_node_ids
+  gids = vcat(faces_gids...)
   new_data = lazy_map(Reindex(gids),conn.data)
   return Table(new_data,conn.ptrs)
 end

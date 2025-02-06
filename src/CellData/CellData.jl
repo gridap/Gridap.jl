@@ -9,6 +9,10 @@ using Test
 using DocStringExtensions
 using FillArrays
 
+using NearestNeighbors
+using StaticArrays
+using DataStructures
+
 using Gridap.Helpers
 using Gridap.Algebra
 using Gridap.Arrays
@@ -16,9 +20,6 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
-
-using NearestNeighbors
-using StaticArrays
 
 import Gridap.Arrays: lazy_append
 import Gridap.Arrays: get_array
@@ -34,6 +35,7 @@ import Gridap.Geometry: get_triangulation
 import Gridap.TensorValues: inner, outer, double_contraction, symmetric_part
 import LinearAlgebra: det, tr, cross, dot, ⋅, rmul!
 import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose, real, imag, conj
+import Statistics: mean
 
 export gradient, ∇
 export ∇∇
@@ -59,6 +61,7 @@ export Integrand
 export ∫
 export CellDof
 export get_normal_vector
+export get_tangent_vector
 export get_cell_measure
 export Interpolable
 export KDTreeSearch

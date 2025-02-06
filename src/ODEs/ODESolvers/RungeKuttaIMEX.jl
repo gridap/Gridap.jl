@@ -2,7 +2,7 @@
     struct IMEXRungeKutta <: ODESolver
 
 Implicit-Explicit Runge-Kutta ODE solver.
-```math
+```
 mass(tx, ux) vx + im_res(tx, ux) = 0,
 
 tx = t_n + c[i] * dt

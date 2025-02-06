@@ -35,6 +35,7 @@ const ε = 100 * eps()
 
 include("TimeDerivatives.jl")
 
+export TimeSpaceFunction
 export time_derivative
 export ∂t
 export ∂tt
@@ -70,8 +71,6 @@ include("StageOperators.jl")
 export StageOperator
 export NonlinearStageOperator
 export LinearStageOperator
-
-export massless_residual_weights
 
 include("ODESolvers.jl")
 

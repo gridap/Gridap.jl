@@ -9,6 +9,7 @@ module Polynomials
 
 using DocStringExtensions
 using LinearAlgebra: mul!
+using StaticArrays
 using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.TensorValues

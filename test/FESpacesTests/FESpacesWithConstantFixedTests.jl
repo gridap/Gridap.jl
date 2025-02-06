@@ -23,8 +23,14 @@ test_single_field_fe_space(V0)
 uh0 = interpolate(V0) do x
     sin(4*pi*(x[1]+x[2]^2)) + 3
 end
-using Gridap.Visualization
 
-#writevtk(trian,"trian",nsubcells=20,cellfields=["uh0"=>uh0])
+V1 = FESpaceWithConstantFixed(V,false,rand(1:num_free_dofs(V)))
+test_single_field_fe_space(V1)
+
+@test Gridap.FESpaces.ConstantApproach(V1) == Gridap.FESpaces.DoNotFixConstant()
+
+uh1 = interpolate(V1) do x
+    sin(4*pi*(x[1]+x[2]^2)) + 3
+end
 
 end # module

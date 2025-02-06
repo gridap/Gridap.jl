@@ -13,8 +13,8 @@ using Gridap.ODEs
     struct ODEOperatorMock <: ODEOperator end
 
 Mock linear ODE of arbitrary order
-```math
-∑_{0 ≤ k ≤ N} form_k(t) ∂t^k u + forcing(t) = 0.
+```
+∑_{0 ≤ k ≤ N} form_k(t) ∂t^k u - forcing(t) = 0.
 ```
 """
 struct ODEOperatorMock{T} <: ODEOperator{T}
@@ -43,7 +43,7 @@ function Algebra.residual!(
 )
   order = get_order(odeop)
   !add && fill!(r, zero(eltype(r)))
-  axpy!(1, odeop.forcing(t), r)
+  axpy!(-1, odeop.forcing(t), r)
   for k in 0:order
     mat = odeop.forms[k+1](t)
     axpy!(1, mat * us[k+1], r)
@@ -58,7 +58,7 @@ function Algebra.residual!(
 )
   order = get_order(odeop)
   !add && fill!(r, zero(eltype(r)))
-  axpy!(1, odeop.forcing(t), r)
+  axpy!(-1, odeop.forcing(t), r)
   for k in 0:order-1
     mat = odeop.forms[k+1](t)
     axpy!(1, mat * us[k+1], r)
@@ -76,7 +76,7 @@ function Algebra.residual!(
 )
   order = get_order(odeop)
   !add && fill!(r, zero(eltype(r)))
-  axpy!(1, odeop.forcing(t), r)
+  axpy!(-1, odeop.forcing(t), r)
   for k in 0:order
     mat = odeop.forms[k+1](t)
     axpy!(1, mat * us[k+1], r)

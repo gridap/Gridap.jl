@@ -46,6 +46,7 @@ import Gridap.ReferenceFEs: num_nodes
 import Gridap.ReferenceFEs: is_first_order
 import Gridap.ReferenceFEs: get_faces
 import Gridap.ReferenceFEs: get_face_vertices
+import Gridap.ReferenceFEs: get_face_coordinates
 import Gridap.ReferenceFEs: get_dimranges
 import Gridap.ReferenceFEs: get_dimrange
 import Gridap.ReferenceFEs: num_faces
@@ -69,6 +70,7 @@ import Gridap.ReferenceFEs: num_cell_dims
 import Gridap.ReferenceFEs: num_point_dims
 import Gridap.ReferenceFEs: simplexify
 import Gridap.ReferenceFEs: get_facet_normal
+import Gridap.ReferenceFEs: get_edge_tangent
 import Gridap.ReferenceFEs: Quadrature
 
 export GridTopology
@@ -96,8 +98,6 @@ export is_oriented
 export is_regular
 export expand_cell_data
 export compress_cell_data
-export compress_contributions
-export compress_ids
 
 export UnstructuredGridTopology
 
@@ -108,6 +108,7 @@ export get_cell_ref_coordinates
 export get_cell_reffe
 export get_cell_shapefuns
 export get_facet_normal
+export get_edge_tangent
 export test_triangulation
 export get_cell_map
 
