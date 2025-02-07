@@ -38,7 +38,7 @@ function backward_static_condensation(ptopo,X,Y,a,l,xb)
   patch_rows_bb = assem.strategy.array.array[2,2].patch_rows
   patch_cols_bb = assem.strategy.array.array[2,2].patch_cols
 
-  # To discuss: can patch_rows and patch_cols be different for a patch?
+  # To discuss: can patch_rows and patch_cols be different from each other for a patch?
   patchwise_xb = map(patch_rows_bb) do patch_row
     patchwise_xb = xb[patch_row]
     return patchwise_xb
@@ -74,7 +74,7 @@ ptopo = Geometry.PatchTopology(model)
 Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
 
 # Reference FEs
-order = 1
+order = 4
 reffeV = ReferenceFE(lagrangian, VectorValue{D, Float64}, order; space=:P)
 reffeQ = ReferenceFE(lagrangian, Float64, order; space=:P)
 reffeM = ReferenceFE(lagrangian, Float64, order; space=:P)
@@ -112,8 +112,8 @@ Asc, bsc = statically_condensed_assembly(ptopo,X,Y,M,M_test,a,l)
 
 solver = LUSolver()
 ns = numerical_setup(symbolic_setup(solver,Asc),Asc)
-xb = zeros(size(b))
-solve!(xb,ns,b)
+xb = zeros(size(bsc))
+solve!(xb,ns,bsc)
 sh = FEFunction(M_test,xb)
 
 xi = backward_static_condensation(ptopo,X,Y,a,l,xb)
