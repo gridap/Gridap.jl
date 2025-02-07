@@ -93,7 +93,7 @@ function PolytopalGrid(topo::PolytopalGridTopology{Dc}) where Dc
 end
 
 OrientationStyle(::Type{<:PolytopalGrid}) = NonOriented()
-get_reffes(g::PolytopalGrid) = @notimplemented
+get_reffes(g::PolytopalGrid) = g.polytopes
 get_polytopes(g::PolytopalGrid) = g.polytopes
 get_cell_type(g::PolytopalGrid) = Base.OneTo(length(g.polytopes))
 get_node_coordinates(g::PolytopalGrid) = g.node_coordinates
