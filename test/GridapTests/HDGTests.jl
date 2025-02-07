@@ -33,6 +33,32 @@ function statically_condensed_assembly(ptopo,X,Y,M,M_test,a,l)
   return A, b
 end
 
+function backward_static_condensation(ptopo,X,Y,a,l,xb)
+  assem = FESpaces.PatchAssembler(ptopo,X,Y)
+  patch_rows_bb = assem.strategy.array.array[2,2].patch_rows
+  patch_cols_bb = assem.strategy.array.array[2,2].patch_cols
+
+  # To discuss: can patch_rows and patch_cols be different for a patch?
+  patchwise_xb = map(patch_rows_bb) do patch_row
+    patchwise_xb = xb[patch_row]
+    return patchwise_xb
+  end
+
+  full_matvecs = assemble_matrix_and_vector(a,l,assem,X,Y)
+  patchwise_xi_vec = lazy_map(Gridap.FESpaces.BackwardStaticCondensationMap(),full_matvecs,patchwise_xb)
+
+  patch_rows_ii = assem.strategy.array.array[1,1].patch_rows
+  patch_cols_ii = assem.strategy.array.array[1,1].patch_cols
+  patchwise_xi_vecdata = ([patchwise_xi_vec,],[patch_rows_ii,],[patch_cols_ii,])
+
+  Xi = MultiFieldFESpace([X[1],X[2]])
+  Yi = MultiFieldFESpace([Y[1],Y[2]])
+  assem = SparseMatrixAssembler(Xi,Yi)
+  xi = assemble_vector(assem, patchwise_xi_vecdata)
+  wh = FEFunction(Yi,xi)
+  return wh
+end
+
 u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
 q(x) = -∇(u)(x)
 f(x) = (∇ ⋅ q)(x)
@@ -82,10 +108,13 @@ a((qh,uh,sh),(vh,wh,lh)) = ∫( qh⋅vh - uh*(∇⋅vh) - qh⋅∇(wh) )dΩp + �
                            ∫((Πn(qh) + τ*(Π(uh) - sh))*(Π(wh) + lh))dΓp
 l((vh,wh,hatmh)) = ∫( f*wh )*dΩp
 
-A, b = statically_condensed_assembly(ptopo,X,Y,M,M_test,a,l)
+Asc, bsc = statically_condensed_assembly(ptopo,X,Y,M,M_test,a,l)
 
 solver = LUSolver()
-ns = numerical_setup(symbolic_setup(solver,A),A)
-x = zeros(size(b))
-solve!(x,ns,b)
-sh = FEFunction(M_test,x)
+ns = numerical_setup(symbolic_setup(solver,Asc),Asc)
+xb = zeros(size(b))
+solve!(xb,ns,b)
+sh = FEFunction(M_test,xb)
+
+xi = backward_static_condensation(ptopo,X,Y,a,l,xb)
+wh, qh = xi

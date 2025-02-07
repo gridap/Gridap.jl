@@ -478,3 +478,35 @@ function Arrays.evaluate!(cache,k::StaticCondensationMap,matvec)
 
   return Kbb, bb
 end
+
+###########################################################################################
+
+struct BackwardStaticCondensationMap{A} <: Map
+  pivot :: A
+end
+
+BackwardStaticCondensationMap() = BackwardStaticCondensationMap(NoPivot())
+
+
+Arrays.return_cache(::BackwardStaticCondensationMap, matvec, x) = nothing
+
+function Arrays.evaluate!(cache,k::BackwardStaticCondensationMap, matvec, x)
+  mat, vec = matvec
+  @check size(mat.array) == (2,2)
+  @check size(vec.array) == (2,)
+
+  Kii, Kbi, Kib, Kbb = mat.array
+  bi, bb = vec.array
+
+  f = lu!(Kii, k.pivot; check=false)
+  @check issuccess(f) "Factorization failed"
+
+  # Use patchwise statically condensed solution x
+  bb .= x
+
+  # Reconstruct interior solution
+  mul!(bi, Kib, bb, -1, 1)  # bi = bi - Kib * x_b
+  ldiv!(f, bi)  # bi = Kii^{-1} * (bi - Kib * x_b)
+
+  return bi
+end
