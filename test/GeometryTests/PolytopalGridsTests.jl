@@ -22,9 +22,12 @@ using CairoMakie
 
 model = CartesianDiscreteModel((0,1,0,1),(4,4))
 
-pmodel = Geometry.PolytopalDiscreteModel(model)
-vmodel = Geometry.voronoi(simplexify(model))
+pmodel = Gridap.Geometry.PolytopalDiscreteModel(model)
+vmodel = Gridap.Geometry.voronoi(Gridap.ReferenceFEs.simplexify(model))
 polys = get_polytopes(vmodel)
+
+# 
+writevtk(vmodel,"polygonal_model")
 
 viz(vmodel;color=1:num_cells(vmodel),showpoints=true,showsegments=true)
 

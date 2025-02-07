@@ -240,14 +240,15 @@ function get_vtknodes(p::SerendipityPolytope,basis::MonomialBasis)
   get_vtknodes(p.hex,basis)
 end
 
-# function get_vtkid(p::Polygon{2, Float64, Nothing},basis::MonomialBasis)
-#   return 7
-# end
+# TO discuss
+function get_vtkid(p::Polygon{2, Float64, Nothing},basis::MonomialBasis)
+  return 7
+end
 
-# function get_vtknodes(p::Polygon{2, Float64, Nothing},basis::MonomialBasis)
-#   n_nodes = length(p.edge_vertex_graph)
-#   return collect(1:n_nodes)
-# end
+function get_vtknodes(p::Polygon{2, Float64, Nothing},basis::MonomialBasis)
+  n_nodes = length(p.edge_vertex_graph)
+  return collect(1:n_nodes)
+end
 
 
 function _vtkinfo_extrusion_polytope(p,exponents)
