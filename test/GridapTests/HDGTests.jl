@@ -63,7 +63,7 @@ u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
 q(x) = -∇(u)(x)
 f(x) = (∇ ⋅ q)(x)
 
-nc = (4,4)
+nc = (8,8)
 model = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),nc))
 D = num_cell_dims(model)
 Ω = Triangulation(ReferenceFE{D}, model)
