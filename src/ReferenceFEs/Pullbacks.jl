@@ -33,6 +33,12 @@ function evaluate!(
   Broadcasting(Operation(k))(f_ref,args...)
 end
 
+function evaluate!(
+  cache, k::Pushforward, f_ref::Field, args...
+)
+  Operation(k)(f_ref,args...)
+end
+
 function Arrays.lazy_map(
   ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{Broadcasting{Operation{<:Pushforward}}}}
 )
@@ -210,15 +216,23 @@ struct DoubleContraVariantPiolaMap <: Pushforward end
 function evaluate!(
   cache, ::DoubleContraVariantPiolaMap, v_ref::Number, Jt::Number
 )
-  _Jt = (1. / meas(Jt)) * Jt
-  return symmetric_part(transpose(_Jt) ⋅ v_ref ⋅ _Jt)
+  _Jt = (1. / det(Jt)) * Jt
+  res = transpose(_Jt) ⋅ v_ref ⋅ _Jt
+  #if !isapprox(Jt, TensorValue(1.0,0.0,0.0,1.0))
+    println("DCVPM: ", get_array(v_ref), " ", get_array(Jt), " ", get_array(res),)
+  #end
+  return symmetric_part(res)
 end
 
 function evaluate!(
   cache, ::InversePushforward{DoubleContraVariantPiolaMap}, v_phys::Number, Jt::Number
 )
-  iJt = meas(Jt) * pinvJt(Jt)
-  return symmetric_part(transpose(iJt) ⋅ v_phys ⋅ iJt)
+  iJt = det(Jt) * pinvJt(Jt)
+  res = transpose(iJt) ⋅ v_phys ⋅ iJt
+  #if !isapprox(Jt, TensorValue(1.0,0.0,0.0,1.0))
+    println("iDCVPM: ", get_array(v_phys), " ", get_array(Jt), " ", get_array(res),)
+  #end
+  return symmetric_part(res)
 end
 
 # DoubleCoVariantPiolaMap

@@ -2,9 +2,26 @@
 """
     abstract type Quadrature{D,T} <: GridapType end
 
--[`get_coordinates(q::Quadrature)`](@ref)
--[`get_weights(q::Quadrature)`](@ref)
--[`test_quadrature`](@ref)
+Abstract type representing a quadrature rule.
+
+Instances of this type should implement the following API:
+
+  - [`get_coordinates(q::Quadrature)`](@ref)
+  - [`get_weights(q::Quadrature)`](@ref)
+  - [`get_name(q::Quadrature)`](@ref)
+
+The following methods are implemented by default:
+
+  - [`num_points(q::Quadrature)`](@ref)
+  - [`num_point_dims(q::Quadrature)`](@ref)
+  - [`num_dims(q::Quadrature)`](@ref)
+  - [`test_quadrature`](@ref)
+
+To include a new quadrature in the factory, one should define a new `QuadratureName` subtype 
+and a new factory method: 
+
+    Quadrature(p::Polytope,name::QuadratureName,args...;kwargs...)
+
 """
 abstract type Quadrature{D,T} <: GridapType end
 
@@ -12,6 +29,8 @@ abstract type Quadrature{D,T} <: GridapType end
 
 """
     get_coordinates(q::Quadrature)
+
+Returns the quadrature points.
 """
 function get_coordinates(q::Quadrature)
   @abstractmethod
@@ -19,6 +38,8 @@ end
 
 """
     get_weights(q::Quadrature)
+
+Returns the quadrature weights.
 """
 function get_weights(q::Quadrature)
   @abstractmethod
@@ -26,6 +47,8 @@ end
 
 """
     get_name(q::Quadrature)
+
+Returns the name of the quadrature.
 """
 function get_name(q::Quadrature)
   @abstractmethod
