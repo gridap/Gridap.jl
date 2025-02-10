@@ -1569,7 +1569,7 @@ function seed_block!(
   return duals
 end
 
-function extract_gradient_block!(::Type{T}, result::VectorBlock{A}, dual::ForwardDiff.Dual, offsets) where {T,A}
+function extract_gradient_block!(::Type{T}, result::VectorBlock{A}, dual, offsets) where {T,A}
   for i in eachindex(result.touched)
     if result.touched[i]
       @inbounds extract_gradient_block!(T, result.array[i], dual, offsets[i])
@@ -1578,10 +1578,15 @@ function extract_gradient_block!(::Type{T}, result::VectorBlock{A}, dual::Forwar
   return result
 end
 
-function extract_gradient_block!(::Type{T}, result, dual, offset) where {T}
+function extract_gradient_block!(::Type{T}, result::AbstractArray, dual::ForwardDiff.Dual, offset) where {T}
   for j in eachindex(result)
     @inbounds result[j] = ForwardDiff.partials(T,dual,j+offset)
   end
+  return result
+end
+
+function extract_gradient_block!(::Type{T}, result::AbstractArray, dual::Real, offset) where {T}
+  fill!(result,zero(dual))
   return result
 end
 
@@ -1596,11 +1601,16 @@ function extract_jacobian_block!(::Type{T}, result::MatrixBlock{A}, dual::Vector
   return result
 end
 
-function extract_jacobian_block!(::Type{T}, result, dual, offset) where {T}
+function extract_jacobian_block!(::Type{T}, result::AbstractArray, dual::AbstractArray{<:ForwardDiff.Dual}, offset) where {T}
   for k in axes(result,1)
     for l in axes(result,2)
       @inbounds result[k,l] = ForwardDiff.partials(T,dual[k],l+offset)
     end
   end
+  return result
+end
+
+function extract_jacobian_block!(::Type{T}, result::AbstractArray, dual::AbstractArray{<:Real}, offset) where {T}
+  fill!(result,zero(eltype(dual)))
   return result
 end
