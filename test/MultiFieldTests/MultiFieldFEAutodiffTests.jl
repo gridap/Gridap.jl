@@ -151,12 +151,13 @@ X = MultiFieldFESpace([U, P])
 
 xh = FEFunction(X,rand(num_free_dofs(X)))
 
+cell_u = get_cell_dof_values(xh)
+xh_bis = CellField(X,cell_u)
+cf = SkeletonCellFieldPair(xh,xh_bis)
+
 Λ = SkeletonTriangulation(model)
 dΛ = Measure(Λ,2)
 n_Λ = get_normal_vector(Λ)
-
-cell_x = FESpaces._get_cell_dof_values(xh,Λ)
-cf = SkeletonCellFieldPair(X,cell_x)
 
 g_Λ((uh,ph)) = ∫( mean(uh) + mean(ph) + mean(uh)*mean(ph) )dΛ
 f_Λ((uh,ph)) = ∫( mean(uh*uh) + mean(uh*ph) + mean(ph*ph) )dΛ

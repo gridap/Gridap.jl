@@ -164,8 +164,6 @@ function evaluate!(cache,::typeof(unwrap_cached_array),a::ArrayBlock)
   r
 end
 
-#LinearAlgebra.promote_leaf_eltypes(a::ArrayBlock) = LinearAlgebra.promote_leaf_eltypes(a.array)
-
 function Base.:≈(a::AbstractArray{<:ArrayBlock},b::AbstractArray{<:ArrayBlock})
   all(z->z[1]≈z[2],zip(a,b))
 end
@@ -314,6 +312,82 @@ function lazy_map(k::Broadcasting{typeof(gradient)},a::LazyArray{<:Fill{<:BlockM
   args = map(i->lazy_map(k,i),a.args)
   bm = a.maps.value
   lazy_map(bm,args...)
+end
+
+struct MergeBlockMap{N,M} <: Map
+  size::NTuple{N,Int}
+  indices::Vector{Vector{Tuple{CartesianIndex{M},CartesianIndex{N}}}}
+end
+
+function return_cache(k::MergeBlockMap{N,M},a::ArrayBlock{A,M}...) where {A,N,M}
+  array = Array{A,N}(undef,k.size)
+  touched = fill(false,k.size)
+  for (t,I) in enumerate(k.indices)
+    at = a[t]
+    for (j,i) in I
+      if at.touched[j]
+        array[i] = at[j]
+        touched[i] = true
+      end
+    end
+  end
+  ArrayBlock(array,touched)
+end
+
+function evaluate!(cache,k::MergeBlockMap{N,M},a::ArrayBlock{A,M}...) where {A,N,M}
+  @check size(cache) == k.size
+  for (t,I) in enumerate(k.indices)
+    at = a[t]
+    for (j,i) in I
+      if at.touched[j]
+        cache.array[i] = at[j]
+      end
+    end
+  end
+  cache
+end
+
+struct BlockBroadcasting{F} <: Map
+  f::F
+end
+
+# Do not broadcast on non-block arguments
+return_cache(k::BlockBroadcasting,a,b...) = return_cache(k.f,a,b...)
+evaluate!(cache,k::BlockBroadcasting,a,b...) = evaluate!(cache,k.f,a,b...)
+
+function return_cache(k::BlockBroadcasting,a::ArrayBlock{A,N},b::ArrayBlock...) where {A,N}
+  @check all(a.touched == bi.touched for bi in b)
+
+  i = findfirst(a.touched)
+  ai = (a.array[i],(bi.array[i] for bi in b)...)
+  ci = return_cache(k.f,ai...)
+  ri = evaluate!(ci,k.f,ai...)
+
+  array = Array{typeof(ri),N}(undef,size(a))
+  caches = Array{typeof(ci),N}(undef,size(a))
+  for i in eachindex(a.array)
+    if a.touched[i]
+      ai = (a.array[i],(bi.array[i] for bi in b)...)
+      caches[i] = return_cache(k.f,ai...)
+    end
+  end
+
+  return ArrayBlock(array,a.touched), caches
+end
+
+function evaluate!(cache,k::BlockBroadcasting,a::ArrayBlock{A,N},b::ArrayBlock...) where {A,N}
+  @check cache.touched == a.touched
+  @check all(a.touched == bi.touched for bi in b)
+
+  r, c = cache
+  for i in eachindex(a.array)
+    if a.touched[i]
+      ai = (a.array[i],(bi.array[i] for bi in b)...)
+      r.array[i] = evaluate!(c[i],k.f,ai...)
+    end
+  end
+
+  return r
 end
 
 function return_cache(f::ArrayBlock{A,N},x) where {A,N}
