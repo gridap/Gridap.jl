@@ -41,16 +41,16 @@ xh = FEFunction(Y,rand(num_free_dofs(Y)))
 #display(g(xh,dy)[Ω][end])
 ##display(h(xh,dx,dy)[Ω][end])
 
-@test j(xh,dx,dy)[Ω][end][1,1] != nothing
-@test j(xh,dx,dy)[Ω][end][2,1] != nothing
-@test j(xh,dx,dy)[Ω][end][1,2] != nothing
-@test j(xh,dx,dy)[Ω][end][2,2] != nothing
-@test g(xh,dy)[Ω][end][1] != nothing
-@test g(xh,dy)[Ω][end][2] != nothing
-@test h(xh,dx,dy)[Ω][end][1,1] != nothing
-@test h(xh,dx,dy)[Ω][end][2,1] != nothing
-@test h(xh,dx,dy)[Ω][end][1,2] != nothing
-@test h(xh,dx,dy)[Ω][end][2,2] != nothing
+@test !isnothing(j(xh,dx,dy)[Ω][end][1,1])
+@test !isnothing(j(xh,dx,dy)[Ω][end][2,1])
+@test !isnothing(j(xh,dx,dy)[Ω][end][1,2])
+@test !isnothing(j(xh,dx,dy)[Ω][end][2,2])
+@test !isnothing(g(xh,dy)[Ω][end][1])
+@test !isnothing(g(xh,dy)[Ω][end][2])
+@test !isnothing(h(xh,dx,dy)[Ω][end][1,1])
+@test !isnothing(h(xh,dx,dy)[Ω][end][2,1])
+@test !isnothing(h(xh,dx,dy)[Ω][end][1,2])
+@test !isnothing(h(xh,dx,dy)[Ω][end][2,2])
 
 V1 = FESpace(model,ReferenceFE(lagrangian,Float64,2))
 V2 = FESpace(model,ReferenceFE(lagrangian,Float64,1))
@@ -60,16 +60,16 @@ dx = get_trial_fe_basis(Y)
 dy = get_fe_basis(Y)
 xh = FEFunction(Y,rand(num_free_dofs(Y)))
 
-@test j(xh,dx,dy)[Ω][end][1,1] != nothing
-@test j(xh,dx,dy)[Ω][end][2,1] != nothing
-@test j(xh,dx,dy)[Ω][end][1,2] != nothing
-@test j(xh,dx,dy)[Ω][end][2,2] != nothing
-@test g(xh,dy)[Ω][end][1] != nothing
-@test g(xh,dy)[Ω][end][2] != nothing
-@test h(xh,dx,dy)[Ω][end][1,1] != nothing
-@test h(xh,dx,dy)[Ω][end][2,1] != nothing
-@test h(xh,dx,dy)[Ω][end][1,2] != nothing
-@test h(xh,dx,dy)[Ω][end][2,2] != nothing
+@test !isnothing(j(xh,dx,dy)[Ω][end][1,1])
+@test !isnothing(j(xh,dx,dy)[Ω][end][2,1])
+@test !isnothing(j(xh,dx,dy)[Ω][end][1,2])
+@test !isnothing(j(xh,dx,dy)[Ω][end][2,2])
+@test !isnothing(g(xh,dy)[Ω][end][1])
+@test !isnothing(g(xh,dy)[Ω][end][2])
+@test !isnothing(h(xh,dx,dy)[Ω][end][1,1])
+@test !isnothing(h(xh,dx,dy)[Ω][end][2,1])
+@test !isnothing(h(xh,dx,dy)[Ω][end][1,2])
+@test !isnothing(h(xh,dx,dy)[Ω][end][2,2])
 
 eu(uh) = ∫( uh*uh )dΩ
 ep(ph) = ∫( ph*ph )dΩ

@@ -376,10 +376,10 @@ function return_cache(k::BlockBroadcasting,a::ArrayBlock{A,N},b::ArrayBlock...) 
 end
 
 function evaluate!(cache,k::BlockBroadcasting,a::ArrayBlock{A,N},b::ArrayBlock...) where {A,N}
-  @check cache.touched == a.touched
-  @check all(a.touched == bi.touched for bi in b)
-
   r, c = cache
+  @check r.touched == a.touched
+  @check all(a.touched == bi.touched for bi in b)
+  
   for i in eachindex(a.array)
     if a.touched[i]
       ai = (a.array[i],(bi.array[i] for bi in b)...)
@@ -1627,6 +1627,7 @@ function _alloc_jacobian(ydual::Vector,xdual::Vector)
   zeros(T,length(ydual),length(xdual))
 end
 
+# Skeleton + Multifield: The VectorBlock corresponds to +/-
 function _alloc_jacobian(ydual::VectorBlock,xdual::Vector)
   i = findfirst(ydual.touched)
   ai = _alloc_jacobian(ydual.array[i],xdual)
@@ -1712,6 +1713,7 @@ function extract_jacobian_block!(::Type{T}, result::MatrixBlock{A}, dual::Vector
   return result
 end
 
+# Skeleton + Multifield: The VectorBlocks correspond to +/-
 function extract_jacobian_block!(::Type{T}, result::VectorBlock{A}, dual::VectorBlock{B}, offset) where {T,A,B}
   for i in axes(result.touched,1)
     if result.touched[i]
