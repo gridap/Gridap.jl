@@ -11,6 +11,7 @@ using Gridap.FESpaces
 using Gridap.MultiField
 
 using ForwardDiff
+using SparseArrays
 
 domain = (0,1,0,1)
 partition = (2,2)
@@ -206,5 +207,29 @@ test_array(gridapgradg,fdgradg,≈)
 gridapgrada = assemble_vector(gradient(a_Λ,xh),X)
 fdgrada = ForwardDiff.gradient(a_Λ_,θ)
 test_array(gridapgrada,fdgrada,≈)
+
+function jac_uh_free_dofs(j,xh,θ)
+  dir_u = similar(xh[1].dirichlet_values,eltype(θ))
+  dir_p = similar(xh[2].dirichlet_values,eltype(θ))
+  X = xh.fe_space
+  θ_uh = restrict_to_field(X,θ,1)
+  θ_ph = restrict_to_field(X,θ,2)
+  uh = FEFunction(X[1],θ_uh,dir_u)
+  ph = FEFunction(X[2],θ_ph,dir_p)
+  xh = MultiFieldFEFunction(θ,xh.fe_space,[uh,ph])
+
+  T = eltype(θ)
+  matrix_type = SparseMatrixCSC{T,Int}
+  vector_type = Vector{T}
+  assem = SparseMatrixAssembler(matrix_type,vector_type,X,X)
+  assemble_vector(v->j(xh,v), assem, X)
+end
+
+J_Λ((uh,ph),(duh,dph)) = ∫( mean(duh)*mean(uh)*mean(uh) + mean(dph)*mean(ph)*mean(uh) + mean(duh)*mean(ph) )dΛ
+J_Λ_(θ) = jac_uh_free_dofs(J_Λ,xh,θ)
+
+gridapjacf = assemble_matrix((du,dv) -> jacobian(u -> J_Λ(u,dv),xh),X,X)
+fdjacf = ForwardDiff.jacobian(J_Λ_,θ)
+test_array(gridapjacf,fdjacf,≈)
 
 end # module

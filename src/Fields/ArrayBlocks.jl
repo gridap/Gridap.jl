@@ -1612,14 +1612,51 @@ function Arrays.evaluate!(result,::AutoDiffMap,cfg::BlockConfig{typeof(ForwardDi
 end
 
 function return_cache(::AutoDiffMap,cfg::BlockConfig{typeof(ForwardDiff.jacobian),T},ydual) where T
-  ydual isa VectorBlock{<:AbstractArray} || throw(ForwardDiff.JACOBIAN_ERROR)
-  result = similar(ydual*transpose(cfg.duals), ForwardDiff.valtype(eltype(eltype(ydual))))
+  ydual isa VectorBlock || throw(ForwardDiff.JACOBIAN_ERROR)
+  result = _alloc_jacobian(ydual,cfg.duals)
   return result
 end
 
 function evaluate!(result,::AutoDiffMap,cfg::BlockConfig{typeof(ForwardDiff.jacobian),T},ydual) where T
   extract_jacobian_block!(T, result, ydual, cfg.offsets)
   return result
+end
+
+function _alloc_jacobian(ydual::Vector,xdual::Vector)
+  T = ForwardDiff.valtype(eltype(ydual))
+  zeros(T,length(ydual),length(xdual))
+end
+
+function _alloc_jacobian(ydual::VectorBlock,xdual::Vector)
+  i = findfirst(ydual.touched)
+  ai = _alloc_jacobian(ydual.array[i],xdual)
+  ni = size(ydual.array,1)
+  array = Vector{typeof(ai)}(undef,ni)
+  for i in 1:ni
+    if ydual.touched[i]
+      array[i] = _alloc_jacobian(ydual.array[i],xdual)
+    end
+  end
+  ArrayBlock(array,ydual.touched)
+end
+
+function _alloc_jacobian(ydual::VectorBlock,xdual::VectorBlock)
+  i = findfirst(ydual.touched)
+  j = findfirst(xdual.touched)
+  ai = _alloc_jacobian(ydual.array[i],xdual.array[j])
+
+  ni, nj = size(ydual.array,1), size(xdual.array,1)
+  array = Matrix{typeof(ai)}(undef,ni,nj)
+  touched = fill(false,ni,nj)
+  for i in 1:ni
+    for j in 1:nj
+      if ydual.touched[i] && xdual.touched[j]
+        array[i,j]   = _alloc_jacobian(ydual.array[i],xdual.array[j])
+        touched[i,j] = true
+      end
+    end
+  end
+  ArrayBlock(array,touched)
 end
 
 function seed_block!(
@@ -1670,6 +1707,16 @@ function extract_jacobian_block!(::Type{T}, result::MatrixBlock{A}, dual::Vector
       if result.touched[i,j]
         @inbounds extract_jacobian_block!(T, result.array[i,j], dual.array[i], offsets[j])
       end
+    end
+  end
+  return result
+end
+
+function extract_jacobian_block!(::Type{T}, result::VectorBlock{A}, dual::VectorBlock{B}, offset) where {T,A,B}
+  for i in axes(result.touched,1)
+    if result.touched[i]
+      @check dual.touched[i]
+      @inbounds extract_jacobian_block!(T, result.array[i], dual.array[i], offset)
     end
   end
   return result
