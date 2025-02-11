@@ -351,10 +351,6 @@ struct BlockBroadcasting{F} <: Map
   f::F
 end
 
-# Do not broadcast on non-block arguments
-return_cache(k::BlockBroadcasting,a,b...) = return_cache(k.f,a,b...)
-evaluate!(cache,k::BlockBroadcasting,a,b...) = evaluate!(cache,k.f,a,b...)
-
 function return_cache(k::BlockBroadcasting,a::ArrayBlock{A,N},b::ArrayBlock...) where {A,N}
   @check all(a.touched == bi.touched for bi in b)
 
