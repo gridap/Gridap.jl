@@ -1,4 +1,4 @@
-module HDGConvgTests
+module PolytopalHDGConvgTests
 
   using Gridap
   using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
@@ -66,31 +66,29 @@ module HDGConvgTests
 
   function solve_Poisson_HDG(domain,nc,order,u,f)
     model = UnstructuredDiscreteModel(CartesianDiscreteModel(domain,nc))
-    D = num_cell_dims(model)
-    Ω = Triangulation(ReferenceFE{D}, model)
-    Γ = Triangulation(ReferenceFE{D-1}, model)
+    vmodel = Gridap.Geometry.voronoi(simplexify(model))
 
-    ptopo = Geometry.PatchTopology(model)
-    Ωp = Geometry.PatchTriangulation(model,ptopo)
-    Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
+    D = num_cell_dims(vmodel)
+    Ω = Triangulation(ReferenceFE{D}, vmodel)
+    Γ = Triangulation(ReferenceFE{D-1}, vmodel)
+    polys = get_polytopes(vmodel)
+    h = maximum( map(p->get_facet_diameter(p,D),polys) )
 
-    # Reference FEs
-    reffeV = ReferenceFE(lagrangian, VectorValue{D, Float64}, order; space=:P)
-    reffeQ = ReferenceFE(lagrangian, Float64, order; space=:P)
-    reffeM = ReferenceFE(lagrangian, Float64, order; space=:P)
+    ptopo = Geometry.PatchTopology(vmodel)
+    Ωp = Geometry.PatchTriangulation(vmodel,ptopo)
+    Γp = Geometry.PatchBoundaryTriangulation(vmodel,ptopo)
 
-    # HDG test FE Spaces
-    V_test = TestFESpace(Ω, reffeV; conformity=:L2)
-    Q_test = TestFESpace(Ω, reffeQ; conformity=:L2)
+    # HDG bulk spaces
+    V = FESpaces.PolytopalFESpace(Ω, VectorValue{D, Float64}, order; space=:P)
+    Q = FESpaces.PolytopalFESpace(Ω, Float64, order; space=:P)
+    
+    # HDG skeleton space(s)
+    reffeM = ReferenceFE(lagrangian, Float64, order; space=:P) 
     M_test = TestFESpace(Γ, reffeM; conformity=:L2, dirichlet_tags="boundary")
-
-    # HDG trial FE Spaces
-    V = TrialFESpace(V_test)
-    Q = TrialFESpace(Q_test)
     M = TrialFESpace(M_test, u)
 
     mfs = MultiField.BlockMultiFieldStyle(2,(2,1))
-    Y = MultiFieldFESpace([V_test, Q_test, M_test];style=mfs)
+    Y = MultiFieldFESpace([V, Q, M_test];style=mfs)
     X = MultiFieldFESpace([V, Q, M];style=mfs)
 
     τ = 1.0 # HDG stab parameter
@@ -122,7 +120,7 @@ module HDGConvgTests
     eu = u - uh
     l2u = sqrt( sum( ∫( eu ⋅ eu )dΩp ) ) # TO discuss: Is this integration consistent?
 
-    return l2u
+    return l2u, h
   end
 
   function convg_test(domain,ncs,order,u,f)
@@ -130,10 +128,9 @@ module HDGConvgTests
     el2 = Float64[]
     hs = Float64[]
     for nc in ncs
-      l2 = solve_Poisson_HDG(domain,nc,order,u,f)
-      println(l2)
-      push!(el2,l2)
-      h = 1/nc[1]
+      l2u, h = solve_Poisson_HDG(domain,nc,order,u,f)
+      println(l2u)
+      push!(el2,l2u)
       push!(hs,h)
     end
     println(el2)
@@ -155,7 +152,7 @@ module HDGConvgTests
 
   domain = (0,1,0,1)
   ncs = [(2,2),(4,4),(8,8),(16,16),(32,32),(64,64),(128,128)]
-  order = 3
+  order = 2
 
   el, hs = convg_test(domain,ncs,order,u,f)
   println("Slope L2-norm u: $(slope(hs,el))")

@@ -4,10 +4,11 @@
       # private fields
     end
 """
+# To discuss: Changing cell_type::Vector{Int8} to cell_type::Vector{Int64} for polytope
 struct UnstructuredGridTopology{Dc,Dp,T,O} <: GridTopology{Dc,Dp}
   vertex_coordinates::Vector{Point{Dp,T}}
   n_m_to_nface_to_mfaces::Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}
-  cell_type::Vector{Int8}
+  cell_type::Vector{Int64}
   polytopes::Vector{Polytope{Dc}}
   orientation_style::O
 end

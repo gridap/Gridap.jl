@@ -237,3 +237,6 @@ function voronoi(topo::GridTopology{Dc}) where Dc
 
   return PolytopalGridTopology(new_node_coords,new_c2n,polytopes)
 end
+
+############################################################################################
+get_polytopes(grid::GridPortion) = get_polytopes(grid.parent)

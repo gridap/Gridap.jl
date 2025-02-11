@@ -1,7 +1,7 @@
 
 using Gridap
-using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
-using Gridap.CellData, Gridap.Fields, Gridap.Helpers
+using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField, Gridap.Polynomials
+using Gridap.CellData, Gridap.Fields, Gridap.ReferenceFEs, Gridap.Helpers
 
 function get_abs_normal_vector(trian)
   function normal(c)
@@ -67,34 +67,42 @@ u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
 q(x) = -∇(u)(x)
 f(x) = (∇ ⋅ q)(x)
 
-nc = (2,2)
+nc = (16,16)
 model = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),nc))
-D = num_cell_dims(model)
-Ω = Triangulation(ReferenceFE{D}, model)
-Γ = Triangulation(ReferenceFE{D-1}, model)
 
-ptopo = Geometry.PatchTopology(model)
-Ωp = Geometry.PatchTriangulation(model,ptopo)
-Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
+pmodel = Gridap.Geometry.PolytopalDiscreteModel(model)
+vmodel = Gridap.Geometry.voronoi(simplexify(model))
+polys = get_polytopes(vmodel)
+
+h = maximum( map(p->get_facet_diameter(p,D),polys) )
+
+# writevtk(vmodel,"polygonal_model")
+
+D = num_cell_dims(vmodel)
+Ω = Triangulation(ReferenceFE{D}, vmodel)
+Γ = Triangulation(ReferenceFE{D-1}, vmodel)
+
+ptopo = Geometry.PatchTopology(vmodel)
+Ωp = Geometry.PatchTriangulation(vmodel,ptopo)
+Γp = Geometry.PatchBoundaryTriangulation(vmodel,ptopo)
 
 # Reference FEs
 order = 1
-reffeV = ReferenceFE(lagrangian, VectorValue{D, Float64}, order; space=:P)
-reffeQ = ReferenceFE(lagrangian, Float64, order; space=:P)
-reffeM = ReferenceFE(lagrangian, Float64, order; space=:P)
+# reffeV = ReferenceFE(lagrangian, VectorValue{D, Float64}, order; space=:P)
+# reffeQ = ReferenceFE(lagrangian, Float64, order; space=:P)
 
-# HDG test FE Spaces
-V_test = TestFESpace(Ω, reffeV; conformity=:L2)
-Q_test = TestFESpace(Ω, reffeQ; conformity=:L2)
+
+V = FESpaces.PolytopalFESpace(Ω, VectorValue{D, Float64}, order; space=:P)
+Q = FESpaces.PolytopalFESpace(Ω, Float64, order; space=:P)
+
+
+reffeM = ReferenceFE(lagrangian, Float64, order; space=:P) 
 M_test = TestFESpace(Γ, reffeM; conformity=:L2, dirichlet_tags="boundary")
-
-# HDG trial FE Spaces
-V = TrialFESpace(V_test)
-Q = TrialFESpace(Q_test)
 M = TrialFESpace(M_test, u)
 
+
 mfs = MultiField.BlockMultiFieldStyle(2,(2,1))
-Y = MultiFieldFESpace([V_test, Q_test, M_test];style=mfs)
+Y = MultiFieldFESpace([V, Q, M_test];style=mfs)
 X = MultiFieldFESpace([V, Q, M];style=mfs)
 
 τ = 1.0 # HDG stab parameter
@@ -105,6 +113,8 @@ dΓp = Measure(Γp,degree)
 nrel = get_normal_vector(Γp)
 nabs = get_abs_normal_vector(Γp)
 n = (nrel⋅nabs)⋅nabs
+
+
 
 Πn(u) = u⋅n
 Π(u) = change_domain(u,Γp,DomainStyle(u))
@@ -122,3 +132,4 @@ sh = FEFunction(M_test,xb)
 
 xi = backward_static_condensation(ptopo,X,Y,a,l,xb)
 wh, qh = xi
+

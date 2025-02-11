@@ -26,6 +26,27 @@ function PolytopalFESpace(
   )
 end
 
+function PolytopalFESpace(
+  trian::Triangulation{Dc},::Type{T}, order::Integer;space::Symbol=Gridap.ReferenceFEs._default_space(get_polytopes(trian)[1]), vector_type = Vector{T}
+) where {Dc,T}
+  ncells = num_cells(trian)
+  if space == :P
+    prebasis = Polynomials.MonomialBasis{Dc}(T, order, Polynomials._p_filter)
+  else
+    prebasis = Polynomials.MonomialBasis{Dc}(T, order)
+  end
+  cell_prebasis = Fill(prebasis, ncells)
+  cell_change = lazy_map(centroid_map, get_polytopes(trian))
+  cell_shapefuns = lazy_map(Broadcasting(∘), cell_prebasis, cell_change)
+  fe_basis = SingleFieldFEBasis(cell_shapefuns, trian, TestBasis(), PhysicalDomain())
+  cell_dof_ids, ndofs = compute_discontinuous_cell_dofs(
+    Base.OneTo(ncells), Fill(length(prebasis), ncells)
+  )
+  return PolytopalFESpace(
+    vector_type,ndofs,cell_dof_ids,fe_basis,nothing
+  )
+end
+
 function PolytopalFESpace(model::DiscreteModel, args...; kwargs...)
   PolytopalFESpace(Triangulation(model), args...; kwargs...)
 end
@@ -79,8 +100,8 @@ struct CentroidCoordinateChangeMap <: Map end
 function centroid_map(poly::Polytope{D}) where D
   pmin, pmax = get_bounding_box(poly)
   o = VectorValue(ntuple(i->1.0,Val(D)))
-  # xc = 0.5 * (pmin + pmax)
-  xc = get_facet_centroid(poly, D)
+  xc = 0.5 * (pmin + pmax)
+  # xc = get_facet_centroid(poly, D) # reverting to original
   h = 0.5 * (pmax - pmin)
   return affine_map(TensorValues.diagonal_tensor(o ./ h), -xc ./ h)
 end
@@ -92,8 +113,8 @@ end
 
 function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope{D},x::Point{D}) where D
   pmin, pmax = get_bounding_box(poly)
-  # xc = 0.5 * (pmin + pmax)
-  xc = get_facet_centroid(poly, D)
+  xc = 0.5 * (pmin + pmax)
+  # xc = get_facet_centroid(poly, D) # reverting to original
   h = 0.5 * (pmax - pmin)
   return (x - xc) ./ h
 end
@@ -106,8 +127,8 @@ function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope{D},
   setsize!(cache,size(x))
   y = cache.array
   pmin, pmax = get_bounding_box(poly)
-  # xc = 0.5 * (pmin + pmax)
-  xc = get_facet_centroid(poly, D)
+  xc = 0.5 * (pmin + pmax)
+  # xc = get_facet_centroid(poly, D) # reverting to original
   h = 0.5 * (pmax - pmin)
   for i in eachindex(x)
     y[i] = (x[i] - xc) ./ h
@@ -127,11 +148,11 @@ function shoelace(face_ents)
   return area
 end
 
-function get_facet_measure(p::Polytope{2}, face::Int) 
-
+function get_facet_measure(p::Polytope{D}, face::Int) where D
   measures = Float64[]
-
-  if isa(p, ExtrusionPolytope{2})
+  if D == 3
+      @notimplemented
+  elseif isa(p, ExtrusionPolytope{2})
       if p == QUAD 
           perm = [1,2,4,3]
       elseif p == TRI
@@ -161,11 +182,15 @@ function get_facet_measure(p::Polytope{2}, face::Int)
 end
 
 
-function get_facet_centroid(p::Polytope{2}, face::Int)
+function get_facet_centroid(p::Polytope{D}, face::Int) where D
   
+  if D == 3
+      @notimplemented
+  end
+
   dim = get_dimranges(p)[face+1]
   face_coords = get_face_coordinates(p)[dim]
-  if isa(p, ExtrusionPolytope{2})
+  if isa(p, ExtrusionPolytope{2}) || isa(p, ExtrusionPolytope{1})
       if face == 1 || face == 2
           centroid = mean.(face_coords)
       end
@@ -194,7 +219,10 @@ function get_facet_centroid(p::Polytope{2}, face::Int)
   return centroid
 end
 
-function get_facet_diameter(p::Polytope{2}, face::Int)
+function get_facet_diameter(p::Polytope{D}, face::Int) where D
+  if D == 3
+      @notimplemented
+  end
   dim = get_dimranges(p)[face+1]
   X = get_face_coordinates(p)[dim]
   if face == 1
