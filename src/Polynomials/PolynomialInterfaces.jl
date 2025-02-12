@@ -102,10 +102,12 @@ function _return_cache(
   ndof_1d = get_order(f) + 1
   # Cache for the returned array
   r = CachedArray(zeros(G,(np,ndof)))
+  # Mutable cache for one N_deriv's derivative of a T-valued scalar polynomial
+  s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
   # Cache for the 1D basis function values in each dimension (to be
   # tensor-producted), and of their N_deriv'th 1D derivatives
   t = ntuple( _ -> CachedArray(zeros(T,(D,ndof_1d ))), Val(N_deriv+1))
-  (r, t...)
+  (r, s, t...)
 end
 
 function return_cache(f::PolynomialBasis{D,V}, x::AbstractVector{<:Point}) where {D,V}
@@ -139,7 +141,7 @@ function evaluate!(cache,
   f::PolynomialBasis,
   x::AbstractVector{<:Point})
 
-  r, c = cache
+  r, _, c = cache
   np = length(x)
   _setsize!(f,np,r,c)
   for i in 1:np
@@ -154,10 +156,9 @@ function evaluate!(cache,
   x::AbstractVector{<:Point}) where {D,V}
 
   f = fg.fa
-  r, c, g = cache
+  r, s, c, g = cache
   np = length(x)
   _setsize!(f,np,r,c,g)
-  s = zero(Mutable(VectorValue{D,eltype(V)}))
   for i in 1:np
     @inbounds xi = x[i]
     _gradient_nd!(f,xi,r,i,c,g,s)
@@ -170,10 +171,9 @@ function evaluate!(cache,
   x::AbstractVector{<:Point}) where {D,V}
 
   f = fg.fa
-  r, c, g, h = cache
+  r, s, c, g, h = cache
   np = length(x)
   _setsize!(f,np,r,c,g,h)
-  s = zero(Mutable(TensorValue{D,D,eltype(V)}))
   for i in 1:np
     @inbounds xi = x[i]
     _hessian_nd!(f,xi,r,i,c,g,h,s)

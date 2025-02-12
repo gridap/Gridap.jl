@@ -134,7 +134,7 @@ end
 # nD evaluation implementation #
 ################################
 
-# Overlead _return_cache and _setsize to add +1 coordinate cache in t
+# Overload _return_cache and _setsize to add +1 coordinate cache in t
 function _return_cache(
   f::BernsteinBasisOnSimplex{D}, x,::Type{G},::Val{N_deriv}) where {D,G,N_deriv}
 
@@ -144,9 +144,10 @@ function _return_cache(
   ndof = length(f)
   ndof_1d = get_order(f) + 1
   r = CachedArray(zeros(G,(np,ndof)))
+  s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
   bernstein_D = D+1 # There are D+1 barycentryc coordinates
   t = ntuple( _ -> CachedArray(zeros(T,(bernstein_D,ndof_1d))), Val(N_deriv+1))
-  (r, t...)
+  (r, s, t...)
 end
 function _setsize!(f::BernsteinBasisOnSimplex{D}, np, r, t...) where D
   ndof = length(f)
@@ -648,7 +649,7 @@ end
 # nD evaluation implementation #
 ################################
 
-# Overlead _return_cache and _setsize for in place D-dimensional de Casteljau algorithm
+# Overload _return_cache and _setsize for in place D-dimensional de Casteljau algorithm
 function _return_cache(
   f::BernsteinBasisOnSimplexDC{D}, x,::Type{G},::Val{N_deriv}) where {D,G,N_deriv}
 
@@ -660,10 +661,11 @@ function _return_cache(
   ndof_scalar = _binomial(Val(K+D),Val(D))
 
   r = CachedArray(zeros(G,(np,ndof)))
+  s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
   c = CachedVector(zeros(T,ndof_scalar))
   # The cache t here holds all scalar nD-Bernstein polymials, no other caches needed for derivatives
   t = ntuple( _ -> nothing, Val(N_deriv))
-  (r, c, t...)
+  (r, s, c, t...)
 end
 function _setsize!(f::BernsteinBasisOnSimplexDC{D}, np, r, t...) where D
   K = get_order(f)

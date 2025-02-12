@@ -1,4 +1,4 @@
-module ChangeBasisTests
+module PolynomialInterfacesTests
 
 using Test
 using Gridap.Fields
@@ -61,20 +61,15 @@ Base.size(::MockPolyBasis) = (1,)
 @test length(mb) == 1
 
 
-r, c = return_cache(mb,x)
-
+r, _, c = return_cache(mb,x)
 @test_throws ErrorException Polynomials._evaluate_nd!(mb, xi, r, 1, c)
 
 ∇mb = FieldGradientArray{1}(mb)
-r, c, g = return_cache(∇mb,x)
-s = MVector{D,T}(0.)
-
+r, s, c, g = return_cache(∇mb,x)
 @test_throws ErrorException Polynomials._gradient_nd!(mb, xi, r, 1, c, g, s)
 
 Hmb = FieldGradientArray{2}(mb)
-r, c, g, h = return_cache(Hmb,x)
-s = MMatrix{D,D,T}(0.)
-
+r, s, c, g, h = return_cache(Hmb,x)
 @test_throws ErrorException Polynomials._hessian_nd!(mb, xi, r, 1, c, g, h, s)
 
 
