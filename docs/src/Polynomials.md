@@ -231,9 +231,9 @@ filters can be used to define associated polynomial spaces:
 | space       | filter                                                           |
 | :-----------| :--------------------------------------------------------------- |
 | ℚᴰ          | `_q_filter(e,order) = maximum(e) <= order`                       |
-| ℚᴰₙ\\ℚᴰₙ₋₁  | `_qs_filter(e,order) = maximum(e) == order`                      |
+| ℚᴰₙ\\ℚᴰₙ₋₁  | `_qh_filter(e,order) = maximum(e) == order`                      |
 | ℙᴰ          | `_p_filter(e,order) = sum(e) <= order`                           |
-| ℙᴰₙ\\ℙᴰₙ₋₁  | `_ps_filter(e,order) = sum(e) == order`                          |
+| ℙᴰₙ\\ℙᴰₙ₋₁  | `_ph_filter(e,order) = sum(e) == order`                          |
 | 𝕊rᴰₙ        | `_ser_filter(e,order) = sum( [ i for i in e if i>1 ] ) <= order` |
 
 

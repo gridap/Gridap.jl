@@ -5,7 +5,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 
-using Gridap.Polynomials: _q_filter, _qs_filter, _p_filter, _ps_filter
+using Gridap.Polynomials: _q_filter, _qh_filter, _p_filter, _ph_filter
 
 @test isHierarchical(Monomial) == true
 
@@ -254,11 +254,11 @@ order = 2
 @test _q_filter( (1,1) ,order) == true
 @test _q_filter( (3,1) ,order) == false
 
-@test _qs_filter( (1,2) ,order) == true
-@test _qs_filter( (2,0) ,order) == true
-@test _qs_filter( (2,2) ,order) == true
-@test _qs_filter( (1,1) ,order) == false
-@test _qs_filter( (3,1) ,order) == false
+@test _qh_filter( (1,2) ,order) == true
+@test _qh_filter( (2,0) ,order) == true
+@test _qh_filter( (2,2) ,order) == true
+@test _qh_filter( (1,1) ,order) == false
+@test _qh_filter( (3,1) ,order) == false
 
 @test _p_filter( (1,2) ,order) == false
 @test _p_filter( (2,0) ,order) == true
@@ -267,10 +267,10 @@ order = 2
 @test _p_filter( (3,1) ,order) == false
 @test _p_filter( (0,1) ,order) == true
 
-@test _ps_filter( (1,2) ,order) == false
-@test _ps_filter( (2,0) ,order) == true
-@test _ps_filter( (2,2) ,order) == false
-@test _ps_filter( (1,1) ,order) == true
-@test _ps_filter( (3,1) ,order) == false
+@test _ph_filter( (1,2) ,order) == false
+@test _ph_filter( (2,0) ,order) == true
+@test _ph_filter( (2,2) ,order) == false
+@test _ph_filter( (1,1) ,order) == true
+@test _ph_filter( (3,1) ,order) == false
 
 end # module
