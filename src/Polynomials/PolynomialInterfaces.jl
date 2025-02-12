@@ -7,10 +7,6 @@
 
 Abstract type for polynomial bases families/types. It has trait
 [`isHierarchical`](@ref).
-
-The currently implemented families are [Monomial](@ref), [Legendre](@ref),
-[Chebyshev](@ref), [ModalC0](@ref) and [Bernstein](@ref). Only Bernstein is not
-hierarchical.
 """
 abstract type Polynomial  <: Field end
 
@@ -20,6 +16,10 @@ abstract type Polynomial  <: Field end
 Return `true` if the 1D basis of order `K` of the given [`Polynomial`](@ref)
 basis family is the union of the basis of order `K-1` and an other order `K`
 polynomial. Equivalently, if the iᵗʰ basis polynomial is of order i-1.
+
+The currently implemented families are [Monomial](@ref), [Legendre](@ref),
+[Chebyshev](@ref), [ModalC0](@ref) and [Bernstein](@ref). Only Bernstein is not
+hierarchical.
 """
 isHierarchical(::Type{<:Polynomial}) = @abstractmethod
 

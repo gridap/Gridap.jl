@@ -113,7 +113,6 @@ export LegendreBasis
 export ChebyshevBasis
 export BernsteinBasis
 export BernsteinBasisOnSimplex
-export BernsteinBasisOnSimplexDC
 
 export CompWiseTensorPolyBasis
 export QGradBasis

@@ -90,21 +90,24 @@ B^K_{n}(x) = \binom{K}{n} x^n (1-x)^{K-n}\qquad\text{ for } 0\leq n\leq K.
 
 The ``D``-multivariate Bernstein polynomials of degree ``K`` are defined by
 ```math
-B^{D,K}_\alpha(x) = \binom{K}{\alpha} λ^\alpha\qquad\text{for } |\alpha|=K
+B^{D,K}_α(\boldsymbol x) = \binom{K}{α} λ(\boldsymbol x)^α\qquad\text{for } |α|=K
 ```
 where
-- ``\alpha`` belongs to ``\{ \alpha\in \}`` where ``N = D+1``
-- ``\binom{K}{\alpha} = \frac{K!}{\alpha_1 !\alpha_2 !\dots\alpha_N!}`` and ``|\alpha|=\sum_{1\leq i\leq N} \alpha_i``
+- ``α`` belongs to ``I_{D,K}=\{ α\in \llbracket 0, K\rrbracket^{N} \quad\big|\quad |α| = K \}`` where ``N = D+1``
+- ``\binom{|α|}{α} = \frac{|α|!}{α!} = \frac{K!}{α_1 !α_2 !\dotsα_N!}`` and ``K=|α|=\sum_{1\leq i\leq N} α_i``
+- ``λ(\boldsymbol x) = \big(x_1,\, x_2,\, \dots,\, x_D,\, 1-\sum_{1\leq i\leq D} x_i\big)``
 
-The superscript ``D`` and ``K`` can be omitted because they are always
-determined by ``\alpha`` using ``D=\#(α)-1`` and ``K=|α|``.
-The set ``\{B_\alpha\}_{\#(\alpha)=D+1,\,|\alpha|=K}`` is a basis of
-``\mathbb{P}^D_K``, implemented by [`BernsteinBasisOnSimplex`](@ref).
-
-The basis polynomials sum to ``1`` and are positive on the reference D-simplex
+This ``λ`` is the barycentric coordinates relative to the reference D-simplex
 ```math
     \Big\{ \boldsymbol{x}\in\mathbb{R}^D \quad\big|\quad x_i\geq 0\ \forall i,\quad \sum_i x_i\leq 1 \Big\}.
 ```
+
+The superscript ``D`` and ``K`` can be omitted because they are always
+determined by ``α`` using ``D=\#(α)-1`` and ``K=|α|``.
+The set ``\{B_α\}_{α\in I_{D,K}}`` is a basis of
+``\mathbb{P}^D_K``, implemented by [`BernsteinBasisOnSimplex`](@ref).
+
+The Bernstein polynomials sum to ``1``, and are positive on their corresponding reference D-simplex.
 
 #### ModalC0 polynomials
 
@@ -131,13 +134,13 @@ Let us denote ``\mathbb{P}_K(x)`` the space of univariate polynomials of order u
 Then, ``\mathbb{Q}^D`` and ``\mathbb{P}^D`` are the spaces for Lagrange elements
 on D-cubes and D-simplices respectively, defined by
 ```math
-\mathbb{Q}^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^\alpha \quad\big|\quad 0\leq
-    \alpha_1, \alpha_2, \dots, \alpha_D \leq K \quad\big\},
+\mathbb{Q}^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^α \quad\big|\quad 0\leq
+    α_1, α_2, \dots, α_D \leq K \quad\big\},
 ```
 and
 ```math
-\mathbb{P}^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^\alpha \quad\big|\quad 0\leq
-    \alpha_1, \alpha_2, \dots, \alpha_D \leq K;\quad \sum_{d=1}^D \alpha_d \leq
+\mathbb{P}^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^α \quad\big|\quad 0\leq
+    α_1, α_2, \dots, α_D \leq K;\quad \sum_{d=1}^D α_d \leq
     K \quad\big\}.
 ```
 
@@ -148,11 +151,11 @@ To note, there is ``\mathbb{P}_K = \mathbb{P}^1_K = \mathbb{Q}^1_K``.
 The serendipity space, commonly used for serendipity finite elements on n-cubes,
 are defined by
 ```math
-\mathbb{S}r^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^\alpha \quad\big|\quad 0\leq
-    \alpha_1, \alpha_2, \dots, \alpha_D \leq K;\quad
-    \sum_{d=1}^D \alpha_d\;\mathbb{1}_{[2,K]}(\alpha_d) \leq K \quad\big\}
+\mathbb{S}r^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^α \quad\big|\quad 0\leq
+    α_1, α_2, \dots, α_D \leq K;\quad
+    \sum_{d=1}^D α_d\;\mathbb{1}_{[2,K]}(α_d) \leq K \quad\big\}
 ```
-where ``\mathbb{1}_{[2,K]}(\alpha_d)`` is ``1`` if ``\alpha_d\geq 2`` or else
+where ``\mathbb{1}_{[2,K]}(α_d)`` is ``1`` if ``α_d\geq 2`` or else
 ``0``.
 
 #### Homogeneous P and Q spaces
@@ -160,14 +163,14 @@ where ``\mathbb{1}_{[2,K]}(\alpha_d)`` is ``1`` if ``\alpha_d\geq 2`` or else
 It will later be useful to define the homogeneous Q spaces
 ```math
 \tilde{\mathbb{Q}}^D_K = \mathbb{Q}^D_K\backslash\mathbb{Q}^D_{K-1} =
-    \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^\alpha \quad\big|\quad 0\leq \alpha_1,
-    \alpha_2, \dots, \alpha_D \leq K; \quad \text{max}(\alpha) = K \quad\big\},
+    \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^α \quad\big|\quad 0\leq α_1,
+    α_2, \dots, α_D \leq K; \quad \text{max}(α) = K \quad\big\},
 ```
 and homogeneous P spaces
 ```math
 \tilde{\mathbb{P}}^D_K = \mathbb{P}^D_K\backslash \mathbb{P}^D_{K-1} =
-    \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^\alpha \quad\big|\quad 0\leq \alpha_1,
-    \alpha_2, \dots, \alpha_D \leq K;\quad \sum_{d=1}^D \alpha_d = K \quad\big\}.
+    \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^α \quad\big|\quad 0\leq α_1,
+    α_2, \dots, α_D \leq K;\quad \sum_{d=1}^D α_d = K \quad\big\}.
 ```
 
 
@@ -222,20 +225,18 @@ The signature of the filter functions should be
     (term,order) -> Bool
 
 where `term` is a tuple of `D` integers containing the exponents of a
-multivariate monomial, that correspond to the multi-index ``\alpha`` previously
+multivariate monomial, that correspond to the multi-index ``α`` previously
 used in the P/Q spaces definitions.
 
-When using [`hierarchical`](@ref isHierarchical) 1D bases, the following
-filters can be used to define associated polynomial spaces:
+The following example filters can be used to define associated polynomial spaces:
 
-| space       | filter                                                           |
-| :-----------| :--------------------------------------------------------------- |
-| ℚᴰ          | `_q_filter(e,order) = maximum(e) <= order`                       |
-| ℚᴰₙ\\ℚᴰₙ₋₁  | `_qh_filter(e,order) = maximum(e) == order`                      |
-| ℙᴰ          | `_p_filter(e,order) = sum(e) <= order`                           |
-| ℙᴰₙ\\ℙᴰₙ₋₁  | `_ph_filter(e,order) = sum(e) == order`                          |
-| 𝕊rᴰₙ        | `_ser_filter(e,order) = sum( [ i for i in e if i>1 ] ) <= order` |
-
+| space       | filter                                                       | possible family                       |
+| :-----------| :------------------------------------------------------------| :------------------------------------ |
+| ℚᴰ          | `_q_filter(e,order) = maximum(e) <= order`                   | All                                   |
+| ℚᴰₙ\\ℚᴰₙ₋₁  | `_qh_filter(e,order) = maximum(e) == order`                  | [`Monomial`](@ref)                    |
+| ℙᴰ          | `_p_filter(e,order) = sum(e) <= order`                       | All                                   |
+| ℙᴰₙ\\ℙᴰₙ₋₁  | `_ph_filter(e,order) = sum(e) == order`                      | [`Monomial`](@ref)                    |
+| 𝕊rᴰₙ        | `_ser_filter(e,order) = sum( i for i in e if i>1 ) <= order` | [`hierarchical`](@ref isHierarchical) |
 
 ## Types for polynomial families
 

@@ -469,29 +469,290 @@ end
 ###################################################
 
 """
-    BernsteinBasisOnSimplexDC{D,V,K} <: PolynomialBasis{D,V,K,Bernstein}
+    BernsteinBasisOnSimplex{D,V,K} <: PolynomialBasis{D,V,K,Bernstein}
 
 This basis uses barycentric coordinates defined by the vertices of the
-reference `D`-simplexDC.
+reference `D`-simplex.
 """
-struct BernsteinBasisOnSimplexDC{D,V,K} <: PolynomialBasis{D,V,K,Bernstein}
-  function BernsteinBasisOnSimplexDC{D}(::Type{V},order::Int) where {D,V}
+struct BernsteinBasisOnSimplex{D,V,K} <: PolynomialBasis{D,V,K,Bernstein}
+  function BernsteinBasisOnSimplex{D}(::Type{V},order::Int) where {D,V}
     K = Int(order)
     new{D,V,K}()
   end
 end
 
-function BernsteinBasisOnSimplexDC(::Val{D},::Type{V},order::Int) where {D,V}
-  BernsteinBasisOnSimplexDC{D}(V,order)
+function BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int) where {D,V}
+  BernsteinBasisOnSimplex{D}(V,order)
 end
 
-Base.size(::BernsteinBasisOnSimplexDC{D,V,K}) where {D,V,K} = (num_indep_components(V)*binomial(D+K,D),)
-_get_terms(::BernsteinBasisOnSimplexDC{D,V,K}) where {D,V,K} = bernstein_terms(Val(K), Val(D))
+Base.size(::BernsteinBasisOnSimplex{D,V,K}) where {D,V,K} = (num_indep_components(V)*binomial(D+K,D),)
+_get_terms(::BernsteinBasisOnSimplex{D,V,K}) where {D,V,K} = bernstein_terms(Val(K), Val(D))
 
-function get_exponents(b::BernsteinBasisOnSimplexDC)
+function get_exponents(b::BernsteinBasisOnSimplex)
   indexbase = 1
   terms = _get_terms(b)
   [Tuple(t) .- indexbase for t in terms]
+end
+
+
+#####################
+# Bernstein Helpers #
+#####################
+
+"""
+    bernstein_terms(::Val{K},::Val{D})
+
+Return the set of multi-indices for the `D`-dimensional Bernstein basis of
+order `K`, that is
+
+    { α ∈ ⟦0,K⟧ᴺ} | |α| = K }
+
+sorted in decreasing lexicographic order, e.g.
+    {300, 210, 201, 120, 111, 102, 030, 021, 012, 003}
+for D=2, K=3.
+"""
+@generated function bernstein_terms(::Val{K},::Val{D}) where {K,D}
+  multi_exponents = collect( tuple(v...) for v in multiexponents(D+1,K))
+  terms = tuple(multi_exponents...)
+  :( return $terms )
+end
+
+"""
+    _cart_to_bary(x::Point{D,T})
+
+Converts the cartesian coordinates `x` into the barycentric coordinates with
+respect to the reference simplex, that is `λ`=(x1, ..., xD, 1-x1-x2-...-xD).
+"""
+@inline function _cart_to_bary(x::Point{D,T}) where {D,T}
+  λ = zero(MVector{D+1,T})
+
+  s = zero(T)
+  @inbounds begin
+    for d in 1:D
+      xd = x[d]
+      s += xd
+      λ[d] = x[d]
+    end
+    λ[D+1] = 1-s
+  end
+
+  return Tuple(λ)
+end
+
+"""
+    binom(::Val{K}, ::Val{I})
+
+Returns the binomial coefficient C(K,I).
+"""
+_binomial(::Val{K},::Val{I}) where {K,I} = binomial(K,I)
+
+"""
+    binoms(::Val{K})
+
+Returns the tuple of binomials ( C₍ₖ₀₎, C₍ₖ₁₎, ..., C₍ₖₖ₎ ).
+"""
+binoms(::Val{K}) where K = ntuple( i -> binomial(K,i-1), Val(K+1))
+
+"""
+    multinoms(::Val{K}, ::Val{D})
+
+Returns the tuple of multinomial coefficients for each term in
+[`bernstein_terms`](@ref)(Val(`K`),Val(`D`)). For e.g. a term `t`, the
+multinomial can be computed by `factorial(sum(t)) ÷ prod(factorial.(t)`
+"""
+@generated function multinoms(::Val{K},::Val{D}) where {K,D}
+  terms = bernstein_terms(Val(K),Val(D))
+  multinomials = tuple( (multinomial(α...) for α in terms)... )
+  Meta.parse("return $multinomials")
+end
+
+################################
+# nD evaluation implementation #
+################################
+
+# Overload _return_cache and _setsize for in place D-dimensional de Casteljau algorithm
+function _return_cache(
+  f::BernsteinBasisOnSimplex{D}, x,::Type{G},::Val{N_deriv}) where {D,G,N_deriv}
+
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  T = eltype(G)
+  K = get_order(f)
+  np = length(x)
+  ndof = length(f)
+  ndof_scalar = _binomial(Val(K+D),Val(D))
+
+  r = CachedArray(zeros(G,(np,ndof)))
+  s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
+  c = CachedVector(zeros(T,ndof_scalar))
+  # The cache t here holds all scalar nD-Bernstein polymials, no other caches needed for derivatives
+  t = ntuple( _ -> nothing, Val(N_deriv))
+  (r, s, c, t...)
+end
+
+function _setsize!(f::BernsteinBasisOnSimplex{D}, np, r, t...) where D
+  K = get_order(f)
+  ndof = length(f)
+  ndof_scalar = _binomial(Val(K+D),Val(D))
+  setsize!(r,(np,ndof))
+  setsize!(t[1],(ndof_scalar,))
+end
+
+# @generated functions as otherwise the time and allocation for
+# computing the indices are the bottlneck...
+@generated function _downwards_de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{K0}=Val(1)) where {K,D,K0}
+  z = zero(eltype(c))
+  ex_v = Vector{Expr}()
+  for Ki in K0:K
+    # For all |α| = Ki
+    for (id,sub_ids) in _downwards_de_Casteljau_indices(Ki,D)
+
+      # s = 0.
+      push!(ex_v, :(s = $z))
+      # For all |β| = |α|-1; β ≥ 0
+      for (id_β, d) in sub_ids
+        # s +=  λ_d * B_β
+        push!(ex_v, :(@inbounds s += λ[$d]*c[$id_β]))
+      end
+
+      # c[id] = B_α
+      push!(ex_v, :(@inbounds c[$id] = s))
+    end
+  end
+  return Expr(:block, ex_v...)
+end
+
+# /!\ Not tested, might be wrong implemented in place like this
+@generated function _de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{Kf}=Val(0)) where {K,D,Kf}
+  z = zero(eltype(c))
+  ex_v = Vector{Expr}()
+  for Ki in (K-1):-1:Kf
+    # For all |α| = Ki
+    for (id,sup_ids) in _de_Casteljau_indices(Ki,D)
+
+      # s = 0.
+      push!(ex_v, :(s = $z))
+      # For all |β| = |α|+1
+      for (id_β, d) in sup_ids
+        # s += λ_d * B_β
+        push!(ex_v, :(@inbounds s += λ[$d]*c[$id_β]))
+      end
+
+      # c[id] = B_α (= s)
+      push!(ex_v, :(@inbounds c[$id] = s))
+    end
+  end
+  return Expr(:block, ex_v...)
+end
+
+
+function _evaluate_nd!(
+  b::BernsteinBasisOnSimplex{D,V,K}, x,
+  r::AbstractMatrix{V}, i,
+  c::AbstractVector{T}) where {D,V,K,T}
+
+  λ = _cart_to_bary(x)
+  c[1] = one(T)
+  _downwards_de_Casteljau_nD!(c,λ,Val(K),Val(D))
+
+  k = 1
+  for s in c
+    k = _cartprod_set_value!(r,i,s,k)
+  end
+end
+
+# ∂t(B_α) = K ∑_β B_β ( δ_β_(α-et) - δ_β_(α-eN) )
+# for  1 ≤ t ≤ D and |β| = |α|-1
+@generated function _grad_Bα_from_Bα⁻!(r,i,c,s,::Val{K},::Val{D},::Type{V}) where {K,D,V}
+  indexbase = 1
+  ex_v = Vector{Expr}()
+  ncomp = num_indep_components(V)
+  z = zero(eltype(c))
+  N = D+1
+  e = _unit_basis_vectors(N)
+
+  for (id_α,α) in enumerate(bernstein_terms(Val(K),Val(D)))
+    push!(ex_v, :(@inbounds s .= $z))  # s = 0
+    for (id_β, i) in _sub_multi_indices(α)
+      β = @. α - e[i]
+      push!(ex_v, :(@inbounds B_β = c[$id_β]))
+      # s[t] = Σ_β B_β ( δ_β_(α-et) - δ_β_(α-eN) )
+      for q in 1:D
+        (β == α .- e[q]) && push!(ex_v, :(@inbounds s[$q] += B_β))
+        (β == α .- e[N]) && push!(ex_v, :(@inbounds s[$q] -= B_β))
+      end
+    end
+    push!(ex_v, :(@inbounds s .*= $K)) # s = Ks.
+
+    k = ncomp*(id_α-1) + 1
+    push!(ex_v, :(_cartprod_set_derivative!(r,i,s,$k,V)))
+  end
+
+  return Expr(:block, ex_v...)
+end
+
+function _gradient_nd!(
+  b::BernsteinBasisOnSimplex{D,V,K}, x,
+  r::AbstractMatrix{G}, i,
+  c::AbstractVector{T},
+  g::Nothing,
+  s::MVector{D,T}) where {D,V,K,G,T}
+
+  λ = _cart_to_bary(x)
+  c[1] = one(T)
+  _downwards_de_Casteljau_nD!(c,λ,Val(K-1),Val(D))
+
+  _grad_Bα_from_Bα⁻!(r,i,c,s,Val(K),Val(D),V)
+end
+
+# ∂t∂q(B_α) = K(K-1) ∑_β B_β ( δ_β_(α-et-eq) - δ_β_(α-et-eN) - δ_β_(α-eN-eq) + δ_β_(α-eN-eN) )
+# for  1 ≤ t,q ≤ D and |β| = |α|-2
+@generated function _hess_Bα_from_Bα⁻⁻!(r,i,c,s,::Val{K},::Val{D},::Type{V}) where {K,D,V}
+  indexbase = 1
+  ex_v = Vector{Expr}()
+  ncomp = num_indep_components(V)
+  z = zero(eltype(c))
+  N = D+1
+  KK = K*(K-1)
+  e = _unit_basis_vectors(N)
+
+  for (id_α,α) in enumerate(bernstein_terms(Val(K),Val(D)))
+
+    push!(ex_v, :(@inbounds s .= $z))     # s = 0
+    for (id_β, i, j) in _sub_sub_multi_indices(α)
+      β = @. α - e[i] - e[j]
+      push!(ex_v, :(@inbounds B_β = c[$id_β]))
+      # s[t,q] = Σ_β B_β ( δ_β_(α-et-eq) - δ_β_(α-et-eN) - δ_β_(α-eN-eq) + δ_β_(α-eN-eN))
+      for t in 1:D
+        for q in 1:D
+          (β == @. α-e[t]-e[q]) && push!(ex_v, :(@inbounds s[$t,$q] += B_β))
+          (β == @. α-e[t]-e[N]) && push!(ex_v, :(@inbounds s[$t,$q] -= B_β))
+          (β == @. α-e[N]-e[q]) && push!(ex_v, :(@inbounds s[$t,$q] -= B_β))
+          (β == @. α-e[N]-e[N]) && push!(ex_v, :(@inbounds s[$t,$q] += B_β))
+        end
+      end
+    end
+    push!(ex_v, :(@inbounds s .*= $KK))  # s = K(K-1)s
+
+    k = ncomp*(id_α-1) + 1
+    push!(ex_v, :(_cartprod_set_derivative!(r,i,s,$k,V)))
+  end
+
+  return Expr(:block, ex_v...)
+end
+
+function _hessian_nd!(
+  b::BernsteinBasisOnSimplex{D,V,K}, x,
+  r::AbstractMatrix{G}, i,
+  c::AbstractVector{T},
+  g::Nothing,
+  h::Nothing,
+  s::MMatrix{D,D,T}) where {D,V,K,G,T}
+
+  λ = _cart_to_bary(x)
+  c[1] = one(T)
+  _downwards_de_Casteljau_nD!(c,λ,Val(K-2),Val(D))
+
+  _hess_Bα_from_Bα⁻⁻!(r,i,c,s,Val(K),Val(D),V)
 end
 
 
@@ -622,10 +883,9 @@ erased B_β replaced by B_α won't be used to compute the remainings B_γ for |�
 with γ>α in lexicographic order.
 """
 function _downwards_de_Casteljau_indices(K,D)
-  indexbase = 1
   terms = bernstein_terms(Val(K),Val(D))
   rev_enum_terms = Iterators.reverse(enumerate(terms))
-  return ( (id,_sub_multi_indices(α .- indexbase)) for (id,α) in rev_enum_terms )
+  return ( (id,_sub_multi_indices(α)) for (id,α) in rev_enum_terms )
 end
 
 """
@@ -640,200 +900,183 @@ erased B_β replaced by B_α won't be used to compute the remainings B_γ for |�
 with γ<α in lexicographic order.
 """
 function _de_Casteljau_indices(K,D)
-  indexbase = 1
   terms = bernstein_terms(Val(K),Val(D))
-  return ( (id,_sup_multi_indices(α .- indexbase)) for (id,α) in enumerate(terms) )
-end
-
-################################
-# nD evaluation implementation #
-################################
-
-# Overload _return_cache and _setsize for in place D-dimensional de Casteljau algorithm
-function _return_cache(
-  f::BernsteinBasisOnSimplexDC{D}, x,::Type{G},::Val{N_deriv}) where {D,G,N_deriv}
-
-  @assert D == length(eltype(x)) "Incorrect number of point components"
-  T = eltype(G)
-  K = get_order(f)
-  np = length(x)
-  ndof = length(f)
-  ndof_scalar = _binomial(Val(K+D),Val(D))
-
-  r = CachedArray(zeros(G,(np,ndof)))
-  s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
-  c = CachedVector(zeros(T,ndof_scalar))
-  # The cache t here holds all scalar nD-Bernstein polymials, no other caches needed for derivatives
-  t = ntuple( _ -> nothing, Val(N_deriv))
-  (r, s, c, t...)
-end
-function _setsize!(f::BernsteinBasisOnSimplexDC{D}, np, r, t...) where D
-  K = get_order(f)
-  ndof = length(f)
-  ndof_scalar = _binomial(Val(K+D),Val(D))
-  setsize!(r,(np,ndof))
-  setsize!(t[1],(ndof_scalar,))
-end
-
-# @generated functions as otherwise the time and allocation for
-# computing the indices are the bottlneck...
-@generated function _downwards_de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{K0}=Val(1)) where {K,D,K0}
-  z = zero(eltype(c))
-  ex_v = Vector{Expr}()
-  for Ki in K0:K
-    # For all |α| = Ki
-    for (id,sub_ids) in _downwards_de_Casteljau_indices(Ki,D)
-
-      # s = 0.
-      push!(ex_v, :(s = $z))
-      # For all |β| = |α|-1; β ≥ 0
-      for (id_β, d) in sub_ids
-        # s +=  λ_d * B_β
-        push!(ex_v, :(@inbounds s += λ[$d]*c[$id_β]))
-      end
-
-      # c[id] = B_α
-      push!(ex_v, :(@inbounds c[$id] = s))
-    end
-  end
-  return Expr(:block, ex_v...)
-end
-
-# /!\ Not tested, might be wrong implemented in place like this
-@generated function _de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{Kf}=Val(0)) where {K,D,Kf}
-  z = zero(eltype(c))
-  ex_v = Vector{Expr}()
-  for Ki in (K-1):-1:Kf
-    # For all |α| = Ki
-    for (id,sup_ids) in _de_Casteljau_indices(Ki,D)
-
-      # s = 0.
-      push!(ex_v, :(s = $z))
-      # For all |β| = |α|+1
-      for (id_β, d) in sup_ids
-        # s += λ_d * B_β
-        push!(ex_v, :(@inbounds s += λ[$d]*c[$id_β]))
-      end
-
-      # c[id] = B_α (= s)
-      push!(ex_v, :(@inbounds c[$id] = s))
-    end
-  end
-  return Expr(:block, ex_v...)
+  return ( (id,_sup_multi_indices(α)) for (id,α) in enumerate(terms) )
 end
 
 
-function _evaluate_nd!(
-  b::BernsteinBasisOnSimplexDC{D,V,K}, x,
-  r::AbstractMatrix{V}, i,
-  c::AbstractVector{T}) where {D,V,K,T}
 
-  λ = _cart_to_bary(x)
-  c[1] = one(T)
-  _downwards_de_Casteljau_nD!(c,λ,Val(K),Val(D))
-
-  k = 1
-  for s in c
-    k = _uniform_set_value!(r,i,s,k)
-  end
-end
-
-# ∂t(B_α) = K ∑_β B_β ( δ_β_(α-et) - δ_β_(α-eN) )
-# for  1 ≤ t ≤ D and |β| = |α|-1
-@generated function _grad_Bα_from_Bα⁻!(r,i,c,s,::Val{K},::Val{D},::Type{V}) where {K,D,V}
-  indexbase = 1
-  ex_v = Vector{Expr}()
-  ncomp = num_indep_components(V)
-  z = zero(eltype(c))
-  N = D+1
-  e = _unit_basis_vectors(N)
-
-  for (id_α,term) in enumerate(bernstein_terms(Val(K),Val(D)))
-    α = term .- indexbase
-
-    push!(ex_v, :(@inbounds s .= $z))  # s = 0
-    for (id_β, i) in _sub_multi_indices(α)
-      β = @. α - e[i]
-      push!(ex_v, :(@inbounds B_β = c[$id_β]))
-      # s[t] = Σ_β B_β ( δ_β_(α-et) - δ_β_(α-eN) )
-      for q in 1:D
-        (β == α .- e[q]) && push!(ex_v, :(@inbounds s[$q] += B_β))
-        (β == α .- e[N]) && push!(ex_v, :(@inbounds s[$q] -= B_β))
-      end
-    end
-    push!(ex_v, :(@inbounds s .*= $K)) # s = Ks.
-
-    k = ncomp*(id_α-1) + 1
-    push!(ex_v, :(_uniform_set_derivative!(r,i,s,$k,V)))
-  end
-
-  return Expr(:block, ex_v...)
-end
-
-function _gradient_nd!(
-  b::BernsteinBasisOnSimplexDC{D,V,K}, x,
-  r::AbstractMatrix{G}, i,
-  c::AbstractVector{T},
-  g::Nothing,
-  s::MVector{D,T}) where {D,V,K,G,T}
-
-  λ = _cart_to_bary(x)
-  c[1] = one(T)
-  _downwards_de_Casteljau_nD!(c,λ,Val(K-1),Val(D))
-
-  _grad_Bα_from_Bα⁻!(r,i,c,s,Val(K),Val(D),V)
-end
-
-# ∂t∂q(B_α) = K(K-1) ∑_β B_β ( δ_β_(α-et-eq) - δ_β_(α-et-eN) - δ_β_(α-eN-eq) + δ_β_(α-eN-eN) )
-# for  1 ≤ t,q ≤ D and |β| = |α|-2
-@generated function _hess_Bα_from_Bα⁻⁻!(r,i,c,s,::Val{K},::Val{D},::Type{V}) where {K,D,V}
-  indexbase = 1
-  ex_v = Vector{Expr}()
-  ncomp = num_indep_components(V)
-  z = zero(eltype(c))
-  N = D+1
-  KK = K*(K-1)
-  e = _unit_basis_vectors(N)
-
-  for (id_α,term) in enumerate(bernstein_terms(Val(K),Val(D)))
-    α = term .- indexbase
-
-    push!(ex_v, :(@inbounds s .= $z))     # s = 0
-    for (id_β, i, j) in _sub_sub_multi_indices(α)
-      β = @. α - e[i] - e[j]
-      push!(ex_v, :(@inbounds B_β = c[$id_β]))
-      # s[t,q] = Σ_β B_β ( δ_β_(α-et-eq) - δ_β_(α-et-eN) - δ_β_(α-eN-eq) + δ_β_(α-eN-eN))
-      for t in 1:D
-        for q in 1:D
-          (β == @. α-e[t]-e[q]) && push!(ex_v, :(@inbounds s[$t,$q] += B_β))
-          (β == @. α-e[t]-e[N]) && push!(ex_v, :(@inbounds s[$t,$q] -= B_β))
-          (β == @. α-e[N]-e[q]) && push!(ex_v, :(@inbounds s[$t,$q] -= B_β))
-          (β == @. α-e[N]-e[N]) && push!(ex_v, :(@inbounds s[$t,$q] += B_β))
-        end
-      end
-    end
-    push!(ex_v, :(@inbounds s .*= $KK))  # s = K(K-1)s
-
-    k = ncomp*(id_α-1) + 1
-    push!(ex_v, :(_uniform_set_derivative!(r,i,s,$k,V)))
-  end
-
-  return Expr(:block, ex_v...)
-end
-
-function _hessian_nd!(
-  b::BernsteinBasisOnSimplexDC{D,V,K}, x,
-  r::AbstractMatrix{G}, i,
-  c::AbstractVector{T},
-  g::Nothing,
-  h::Nothing,
-  s::MMatrix{D,D,T}) where {D,V,K,G,T}
-
-  λ = _cart_to_bary(x)
-  c[1] = one(T)
-  _downwards_de_Casteljau_nD!(c,λ,Val(K-2),Val(D))
-
-  _hess_Bα_from_Bα⁻⁻!(r,i,c,s,Val(K),Val(D),V)
-end
-
-
+#  ####################################################
+#  # Bernstein bases on simplices Naive implementation#
+#  ####################################################
+#
+#  """
+#      BernsteinBasisOnSimplex{D,V,K} <: PolynomialBasis{D,V,K,Bernstein}
+#
+#  This basis uses barycentric coordinates defined by the vertices of the
+#  reference `D`-simplex.
+#  """
+#  struct BernsteinBasisOnSimplex{D,V,K} <: PolynomialBasis{D,V,K,Bernstein}
+#    function BernsteinBasisOnSimplex{D}(::Type{V},order::Int) where {D,V}
+#      K = Int(order)
+#      new{D,V,K}()
+#    end
+#  end
+#
+#  function BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int) where {D,V}
+#    BernsteinBasisOnSimplex{D}(V,order)
+#  end
+#
+#  Base.size(::BernsteinBasisOnSimplex{D,V,K}) where {D,V,K} = (num_indep_components(V)*binomial(D+K,D),)
+#  _get_terms(::BernsteinBasisOnSimplex{D,V,K}) where {D,V,K} = bernstein_terms(Val(K), Val(D))
+#
+#  function get_exponents(b::BernsteinBasisOnSimplex)
+#    indexbase = 1
+#    terms = _get_terms(b)
+#    [Tuple(t) .- indexbase for t in terms]
+#  end
+#
+#
+#  ################################
+#  # nD evaluation implementation #
+#  ################################
+#
+#  # Overload _return_cache and _setsize to add +1 coordinate cache in t
+#  function _return_cache(
+#    f::BernsteinBasisOnSimplex{D}, x,::Type{G},::Val{N_deriv}) where {D,G,N_deriv}
+#
+#    @assert D == length(eltype(x)) "Incorrect number of point components"
+#    T = eltype(G)
+#    np = length(x)
+#    ndof = length(f)
+#    ndof_1d = get_order(f) + 1
+#    r = CachedArray(zeros(G,(np,ndof)))
+#    s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
+#    bernstein_D = D+1 # There are D+1 barycentryc coordinates
+#    t = ntuple( _ -> CachedArray(zeros(T,(bernstein_D,ndof_1d))), Val(N_deriv+1))
+#    (r, s, t...)
+#  end
+#  function _setsize!(f::BernsteinBasisOnSimplex{D}, np, r, t...) where D
+#    ndof = length(f)
+#    ndof_1d = get_order(f) + 1
+#    setsize!(r,(np,ndof))
+#    bernstein_D = D+1 # There are D+1 barycentryc coordinates
+#    for c in t
+#      setsize!(c,(bernstein_D,ndof_1d))
+#    end
+#  end
+#
+#
+#  function _evaluate_nd!(
+#    b::BernsteinBasisOnSimplex{D,V,K}, x,
+#    r::AbstractMatrix{V}, i,
+#    c::AbstractMatrix{T}) where {D,V,K,T}
+#
+#    terms  = _get_terms(b)
+#    coefs = multinoms(Val(K),Val(D))
+#
+#    λ = _cart_to_bary(x)
+#
+#    for d in 1:(D+1)
+#      _evaluate_1d!(Monomial,Val(K),c,λ,d) # compute powers 0:K of all bary. coords.
+#    end
+#
+#    k = 1
+#    for (ci,m) in zip(terms,coefs)
+#
+#      for d in 1:(D+1)
+#        @inbounds m *= c[d,ci[d]]
+#      end
+#
+#      k = _cartprod_set_value!(r,i,m,k)
+#    end
+#  end
+#
+#  function _gradient_nd!(
+#    b::BernsteinBasisOnSimplex{D,V,K}, x,
+#    r::AbstractMatrix{G}, i,
+#    c::AbstractMatrix{T},
+#    g::AbstractMatrix{T},
+#    s::MVector{D,T}) where {D,V,K,G,T}
+#
+#    N = D+1
+#    terms = _get_terms(b)
+#    coefs = multinoms(Val(K),Val(D))
+#
+#    λ = _cart_to_bary(x)
+#
+#    for d in 1:N
+#      _derivatives_1d!(Monomial,Val(K),(c,g),λ,d)
+#    end
+#
+#    k = 1
+#    @inbounds for (ci,m) in zip(terms,coefs)
+#
+#      for i in eachindex(s)
+#        s[i] = m
+#      end
+#
+#      for q in 1:D
+#        for d in 1:D
+#          if d != q
+#            s[q] *= c[d,ci[d]]
+#          else
+#            s[q] *= g[q,ci[q]]*c[N,ci[N]] - g[N,ci[N]]*c[q,ci[q]]
+#          end
+#        end
+#      end
+#
+#      k = _cartprod_set_derivative!(r,i,s,k,V)
+#    end
+#  end
+#
+#  function _hessian_nd!(
+#    b::BernsteinBasisOnSimplex{D,V,K}, x,
+#    r::AbstractMatrix{G}, i,
+#    c::AbstractMatrix{T},
+#    g::AbstractMatrix{T},
+#    h::AbstractMatrix{T},
+#    s::MMatrix{D,D,T}) where {D,V,K,G,T}
+#
+#    N = D+1
+#    terms = _get_terms(b)
+#    coefs = multinoms(Val(K),Val(D))
+#
+#    λ = _cart_to_bary(x)
+#
+#    for d in 1:N
+#      _derivatives_1d!(Monomial,Val(K),(c,g,h),λ,d)
+#    end
+#
+#    k = 1
+#    @inbounds for (ci,m) in zip(terms,coefs)
+#
+#      for i in eachindex(s)
+#        s[i] = m
+#      end
+#
+#      for t in 1:D
+#        for q in 1:D
+#          for d in 1:D
+#            if d != q && d != t
+#              # if q == t, D-1 factors
+#              # else,      D-2 factors
+#              s[t,q] *= c[d,ci[d]]
+#            elseif q == t # == d
+#              # +2 factors -> D+1
+#              s[t,q] *= (h[d,ci[d]]*c[N,ci[N]] -2g[d,ci[d]]*g[N,ci[N]] + c[d,ci[d]]*h[N,ci[N]])
+#            elseif d == q # q ≠ t, we multiply once with the factors with q and t derivative terms
+#              # +3 factors -> D+1
+#              s[t,q] *=(  g[t,ci[t]]*g[q,ci[q]]*c[N,ci[N]]
+#                        - g[t,ci[t]]*c[q,ci[q]]*g[N,ci[N]]
+#                        - c[t,ci[t]]*g[q,ci[q]]*g[N,ci[N]]
+#                        + c[t,ci[t]]*c[q,ci[q]]*h[N,ci[N]])
+#            end
+#          end
+#        end
+#      end
+#
+#      k = _cartprod_set_derivative!(r,i,s,k,V)
+#    end
+#  end
+#

@@ -24,6 +24,7 @@ pages = [
   "Developper notes" => Any[
     "dev-notes/block-assemblers.md",
     "dev-notes/pullbacks.md",
+    "dev-notes/bernstein.md",
   ],
 ]
 
