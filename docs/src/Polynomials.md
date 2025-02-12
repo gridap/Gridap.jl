@@ -82,12 +82,29 @@ The analog second kind shifted Chebyshev polynomials can be implemented by
 
 #### Bernstein polynomials
 
-The [`Bernstein`](@ref) polynomials forming a basis of ``\mathbb{P}_K`` are
-defined by
+The univariate [`Bernstein`](@ref) polynomials forming a basis of ``\mathbb{P}_K``
+are defined by
 ```math
 B^K_{n}(x) = \binom{K}{n} x^n (1-x)^{K-n}\qquad\text{ for } 0\leq n\leq K.
 ```
-They are positive on ``[0,1]`` and sum to ``1``.
+
+The ``D``-multivariate Bernstein polynomials of degree ``K`` are defined by
+```math
+B^{D,K}_\alpha(x) = \binom{K}{\alpha} λ^\alpha\qquad\text{for } |\alpha|=K
+```
+where
+- ``\alpha`` belongs to ``\{ \alpha\in \}`` where ``N = D+1``
+- ``\binom{K}{\alpha} = \frac{K!}{\alpha_1 !\alpha_2 !\dots\alpha_N!}`` and ``|\alpha|=\sum_{1\leq i\leq N} \alpha_i``
+
+The superscript ``D`` and ``K`` can be omitted because they are always
+determined by ``\alpha`` using ``D=\#(α)-1`` and ``K=|α|``.
+The set ``\{B_\alpha\}_{\#(\alpha)=D+1,\,|\alpha|=K}`` is a basis of
+``\mathbb{P}^D_K``, implemented by [`BernsteinBasisOnSimplex`](@ref).
+
+The basis polynomials sum to ``1`` and are positive on the reference D-simplex
+```math
+    \Big\{ \boldsymbol{x}\in\mathbb{R}^D \quad\big|\quad x_i\geq 0\ \forall i,\quad \sum_i x_i\leq 1 \Big\}.
+```
 
 #### ModalC0 polynomials
 
@@ -252,7 +269,7 @@ ModalC0
 
 ```@docs
 PolynomialBasis
-get_order
+get_order(::PolynomialBasis)
 MonomialBasis(args...)
 MonomialBasis
 LegendreBasis(args...)
@@ -269,6 +286,7 @@ BernsteinBasis(args...)
 
 ```@docs
 BernsteinBasis
+BernsteinBasisOnSimplex
 PGradBasis
 QGradBasis
 PCurlGradBasis
@@ -282,7 +300,7 @@ QCurlGradBasis
 UniformPolyBasis
 UniformPolyBasis(::Type, ::Val{D}, ::Type, ::Int, ::Function) where D
 UniformPolyBasis(::Type, ::Val{D}, ::Type{V}, ::NTuple{D,Int}, ::Function) where {D,V}
-get_orders
+get_orders(::UniformPolyBasis)
 get_exponents
 CompWiseTensorPolyBasis
 NedelecPolyBasisOnSimplex

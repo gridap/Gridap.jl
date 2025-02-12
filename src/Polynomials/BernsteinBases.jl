@@ -329,7 +329,7 @@ end
 # First derivative of the jth Bernstein poly of order K at x:
 # (Bᵏⱼ)'(x) = K * ( Bᵏ⁻¹ⱼ₋₁(x) - Bᵏ⁻¹ⱼ(x) )
 #           = K * x^(j-1) * (1-x)^(K-j-1) * ((1-x)*binom(K-1,j-1) - x*binom(K-1,j))
-function _gradient_1d!(::Type{Bernstein},::Val{K}, g::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _gradient_1d!(::Type{Bernstein},::Val{K},g::AbstractMatrix{T},x,d) where {K,T<:Number}
   @inbounds begin
     n = K + 1 # n > 2
 
@@ -498,7 +498,30 @@ end
 # de Casteljau helpers #
 ########################
 
-unit_basis_vectors(D) = collect( ntuple( i -> i==j, Val(D)) for j in 1:D )
+"""
+    _unit_basis_vectors(D)
+
+Return a length-`D` tuple `e` such that `e[j]` is the tuple (δᵢⱼ)ᵢ.
+"""
+_unit_basis_vectors(D) = ntuple( j -> ntuple( i -> i==j, Val(D)), Val(D))
+
+"""
+    _simplex_multi_id_to_linear_id(α::NTuple{N,Int})
+
+For a given Bernstein multi-index `α`, return the associated linear
+index of `α` flattened in decreasing lexicographic order, that is the `i` such that
+
+    (i,α) ∈ enumerate(bernstein_terms(Val(K),Val(N-1))
+
+where K = sum(`α`). The greater `α` in lexicographic order, that is
+(K, 0, ..., 0), is at index `i=1, and the smaller, (0, ..., 0, K), is at
+index `i`=binom(D+K, D) (where D = #`α`-1, K=|`α`|).
+"""
+function _simplex_multi_id_to_linear_id(α::NTuple{N}) where N
+  D = N-1
+  i = sum( _L_slices_size(L, D, _L_slice(L,α)) for L in 1:D) + 1
+  return i
+end
 
 """
     _L_slice(L,α::NTuple{N}) where N = sum(last(α,N-L))
@@ -527,22 +550,6 @@ Those numbers are the "(`D`-`L`)-simplex numbers".
 _L_slices_size(L,D,l) = binomial(D-L+l,  D-L+1)
 
 """
-    _simplex_multi_id_to_linear_id(α::NTuple{N,Int})
-
-For a given positive Bernstein term `α`, return the linear index of
-the associated Bernstein polynomial, that is the `i` such that
-
-    (i,α) ∈ enumerate(bernstein_terms(Val(K),Val(N-1))
-
-where K = sum(`α`).
-"""
-function _simplex_multi_id_to_linear_id(α::NTuple{N}) where N
-  D = N-1
-  i = sum( _L_slices_size(L, D, _L_slice(L,α)) for L in 1:D) + 1
-  i
-end
-
-"""
     _sub_multi_indices(α::NTuple{N,Int})
 
 Given a positive multi-index `α`, return a tuple of couples
@@ -552,7 +559,7 @@ positive (that is `α`[`d`]>0), and `id` is the linear index of `αd⁻`
 """
 function _sub_multi_indices(α::NTuple{N,Int}) where N
   sub_ids = tuple()
-  e = unit_basis_vectors(N)
+  e = _unit_basis_vectors(N)
   for i in 1:N
     α⁻ =  α .- e[i]
     if all(α⁻ .≥ 0)
@@ -571,7 +578,7 @@ Like [`_sub_multi_indices`](@ref), but return triples (`id`, `t`, `q`) with
 """
 function _sub_sub_multi_indices(α::NTuple{N,Int}) where N
   sub_ids = tuple()
-  e = unit_basis_vectors(N)
+  e = _unit_basis_vectors(N)
   for i in 1:N
     for j in i:N
       α⁻⁻ = @. α - e[i] - e[j]
@@ -593,7 +600,7 @@ Given a positive multi-index `α`, return a `N`-tuple of couples
 """
 function _sup_multi_indices(α::NTuple{N,Int}) where N
   sup_ids = tuple()
-  e = unit_basis_vectors(N)
+  e = _unit_basis_vectors(N)
   for i in 1:N
     α⁺ = α .+ e[i]
     id⁺ = _simplex_multi_id_to_linear_id(α⁺)
@@ -602,16 +609,36 @@ function _sup_multi_indices(α::NTuple{N,Int}) where N
   return sup_ids
 end
 
-function _upwards_de_Casteljau_indices(K,D)
+"""
+    _downwards_de_Casteljau_indices(K,D)
+
+Indices for in-place de Casteljau algorithm to compute quantities indexed by all
+α s.t. |α|=`K` and #α=`D`+1 from quantities indexed by β s.t. |β|=`K`-1 and #α=#β.
+
+Iterations are  in reverse lexicographic order (left to right), because α-ei is
+always stored on the left of α (as α-ei < α in lexicographic order), so the
+erased B_β replaced by B_α won't be used to compute the remainings B_γ for |γ|=`K`
+with γ>α in lexicographic order.
+"""
+function _downwards_de_Casteljau_indices(K,D)
   indexbase = 1
   terms = bernstein_terms(Val(K),Val(D))
-  # The Iterators.reverse is important to avoid erasing values of previous
-  # iteration that are still needed later (for the in-place de Casteljau iteration).
   rev_enum_terms = Iterators.reverse(enumerate(terms))
   return ( (id,_sub_multi_indices(α .- indexbase)) for (id,α) in rev_enum_terms )
 end
 
-function _downwards_de_Casteljau_indices(K,D)
+"""
+    _de_Casteljau_indices(K,D)
+
+Indices for in-place de Casteljau algorithm to compute quantities indexed by all
+α s.t. |α|=`K` and #α=`D`+1 from quantities indexed by β s.t. |β|=`K`+1 and #α=#β.
+
+Iterations are in lexicographic order (right to left), because α+ei is
+always stored on the right of α (as α+ei > α in lexicographic order), so the
+erased B_β replaced by B_α won't be used to compute the remainings B_γ for |γ|=`K`
+with γ<α in lexicographic order.
+"""
+function _de_Casteljau_indices(K,D)
   indexbase = 1
   terms = bernstein_terms(Val(K),Val(D))
   return ( (id,_sup_multi_indices(α .- indexbase)) for (id,α) in enumerate(terms) )
@@ -648,40 +675,45 @@ end
 
 # @generated functions as otherwise the time and allocation for
 # computing the indices are the bottlneck...
-@generated function _upwards_de_Casteljau_nD!(c, λ, ::Val{K}, ::Val{D}, v::Val{K0}=Val(1)) where {K,D,K0}
+@generated function _downwards_de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{K0}=Val(1)) where {K,D,K0}
   z = zero(eltype(c))
   ex_v = Vector{Expr}()
   for Ki in K0:K
-    for (id,sub_ids) in _upwards_de_Casteljau_indices(Ki,D)
+    # For all |α| = Ki
+    for (id,sub_ids) in _downwards_de_Casteljau_indices(Ki,D)
 
       # s = 0.
       push!(ex_v, :(s = $z))
-      for (idα⁻, d) in sub_ids
-        # s += λ[d]*c[idα⁻]
-        push!(ex_v, :(@inbounds s += λ[$d]*c[$idα⁻]))
+      # For all |β| = |α|-1; β ≥ 0
+      for (id_β, d) in sub_ids
+        # s +=  λ_d * B_β
+        push!(ex_v, :(@inbounds s += λ[$d]*c[$id_β]))
       end
 
-      # c[id] = s
+      # c[id] = B_α
       push!(ex_v, :(@inbounds c[$id] = s))
     end
   end
   return Expr(:block, ex_v...)
 end
 
-@generated function _downwards_de_Casteljau_nD!(c, λ, ::Val{K}, ::Val{D}, v::Val{Kf}=Val(0)) where {K,D,Kf}
+# /!\ Not tested, might be wrong implemented in place like this
+@generated function _de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{Kf}=Val(0)) where {K,D,Kf}
   z = zero(eltype(c))
   ex_v = Vector{Expr}()
   for Ki in (K-1):-1:Kf
-    for (id,sup_ids) in _downwards_de_Casteljau_indices(Ki,D)
+    # For all |α| = Ki
+    for (id,sup_ids) in _de_Casteljau_indices(Ki,D)
 
       # s = 0.
       push!(ex_v, :(s = $z))
-      for (idα⁺, d) in sup_ids
-        # s += λ[d]*c[idα⁺]
-        push!(ex_v, :(@inbounds s += λ[$d]*c[$idα⁺]))
+      # For all |β| = |α|+1
+      for (id_β, d) in sup_ids
+        # s += λ_d * B_β
+        push!(ex_v, :(@inbounds s += λ[$d]*c[$id_β]))
       end
 
-      # c[id] = s
+      # c[id] = B_α (= s)
       push!(ex_v, :(@inbounds c[$id] = s))
     end
   end
@@ -696,7 +728,7 @@ function _evaluate_nd!(
 
   λ = _cart_to_bary(x)
   c[1] = one(T)
-  _upwards_de_Casteljau_nD!(c,λ,Val(K),Val(D))
+  _downwards_de_Casteljau_nD!(c,λ,Val(K),Val(D))
 
   k = 1
   for s in c
@@ -704,28 +736,30 @@ function _evaluate_nd!(
   end
 end
 
-# ∇B_α = K ∑_d ∇λ_d * B_{α-e_d}
+# ∂t(B_α) = K ∑_β B_β ( δ_β_(α-et) - δ_β_(α-eN) )
+# for  1 ≤ t ≤ D and |β| = |α|-1
 @generated function _grad_Bα_from_Bα⁻!(r,i,c,s,::Val{K},::Val{D},::Type{V}) where {K,D,V}
   indexbase = 1
   ex_v = Vector{Expr}()
   ncomp = num_indep_components(V)
   z = zero(eltype(c))
   N = D+1
-  e = unit_basis_vectors(N)
+  e = _unit_basis_vectors(N)
 
   for (id_α,term) in enumerate(bernstein_terms(Val(K),Val(D)))
     α = term .- indexbase
-    # s = 0.
-    push!(ex_v, :(@inbounds s .= $z))
 
-    for (id_α⁻, i) in _sub_multi_indices(α)
+    push!(ex_v, :(@inbounds s .= $z))  # s = 0
+    for (id_β, i) in _sub_multi_indices(α)
       β = @. α - e[i]
-      push!(ex_v, :(@inbounds KBα⁻ = $K*c[$id_α⁻]))
+      push!(ex_v, :(@inbounds B_β = c[$id_β]))
+      # s[t] = Σ_β B_β ( δ_β_(α-et) - δ_β_(α-eN) )
       for q in 1:D
-        (β == α .- e[q]) && push!(ex_v, :(@inbounds s[$q] += KBα⁻))
-        (β == α .- e[N]) && push!(ex_v, :(@inbounds s[$q] -= KBα⁻))
+        (β == α .- e[q]) && push!(ex_v, :(@inbounds s[$q] += B_β))
+        (β == α .- e[N]) && push!(ex_v, :(@inbounds s[$q] -= B_β))
       end
     end
+    push!(ex_v, :(@inbounds s .*= $K)) # s = Ks.
 
     k = ncomp*(id_α-1) + 1
     push!(ex_v, :(_uniform_set_derivative!(r,i,s,$k,V)))
@@ -743,12 +777,13 @@ function _gradient_nd!(
 
   λ = _cart_to_bary(x)
   c[1] = one(T)
-  _upwards_de_Casteljau_nD!(c,λ,Val(K-1),Val(D))
+  _downwards_de_Casteljau_nD!(c,λ,Val(K-1),Val(D))
 
   _grad_Bα_from_Bα⁻!(r,i,c,s,Val(K),Val(D),V)
 end
 
-# ∇B_α = K ∑_d ∇λ_d * B_{α-e_d}
+# ∂t∂q(B_α) = K(K-1) ∑_β B_β ( δ_β_(α-et-eq) - δ_β_(α-et-eN) - δ_β_(α-eN-eq) + δ_β_(α-eN-eN) )
+# for  1 ≤ t,q ≤ D and |β| = |α|-2
 @generated function _hess_Bα_from_Bα⁻⁻!(r,i,c,s,::Val{K},::Val{D},::Type{V}) where {K,D,V}
   indexbase = 1
   ex_v = Vector{Expr}()
@@ -756,26 +791,26 @@ end
   z = zero(eltype(c))
   N = D+1
   KK = K*(K-1)
-  e = unit_basis_vectors(N)
+  e = _unit_basis_vectors(N)
 
   for (id_α,term) in enumerate(bernstein_terms(Val(K),Val(D)))
     α = term .- indexbase
-    # s = 0.
-    push!(ex_v, :(@inbounds s .= $z))
 
-    for (id_α⁻⁻, i, j) in _sub_sub_multi_indices(α)
+    push!(ex_v, :(@inbounds s .= $z))     # s = 0
+    for (id_β, i, j) in _sub_sub_multi_indices(α)
       β = @. α - e[i] - e[j]
-      push!(ex_v, :(@inbounds KKBα⁻⁻ = $KK*c[$id_α⁻⁻]))
-
+      push!(ex_v, :(@inbounds B_β = c[$id_β]))
+      # s[t,q] = Σ_β B_β ( δ_β_(α-et-eq) - δ_β_(α-et-eN) - δ_β_(α-eN-eq) + δ_β_(α-eN-eN))
       for t in 1:D
         for q in 1:D
-          (β == @. α-e[t]-e[q]) && push!(ex_v, :(@inbounds s[$t,$q] += KKBα⁻⁻))
-          (β == @. α-e[t]-e[N]) && push!(ex_v, :(@inbounds s[$t,$q] -= KKBα⁻⁻))
-          (β == @. α-e[N]-e[q]) && push!(ex_v, :(@inbounds s[$t,$q] -= KKBα⁻⁻))
-          (β == @. α-e[N]-e[N]) && push!(ex_v, :(@inbounds s[$t,$q] += KKBα⁻⁻))
+          (β == @. α-e[t]-e[q]) && push!(ex_v, :(@inbounds s[$t,$q] += B_β))
+          (β == @. α-e[t]-e[N]) && push!(ex_v, :(@inbounds s[$t,$q] -= B_β))
+          (β == @. α-e[N]-e[q]) && push!(ex_v, :(@inbounds s[$t,$q] -= B_β))
+          (β == @. α-e[N]-e[N]) && push!(ex_v, :(@inbounds s[$t,$q] += B_β))
         end
       end
     end
+    push!(ex_v, :(@inbounds s .*= $KK))  # s = K(K-1)s
 
     k = ncomp*(id_α-1) + 1
     push!(ex_v, :(_uniform_set_derivative!(r,i,s,$k,V)))
@@ -794,7 +829,7 @@ function _hessian_nd!(
 
   λ = _cart_to_bary(x)
   c[1] = one(T)
-  _upwards_de_Casteljau_nD!(c,λ,Val(K-2),Val(D))
+  _downwards_de_Casteljau_nD!(c,λ,Val(K-2),Val(D))
 
   _hess_Bα_from_Bα⁻⁻!(r,i,c,s,Val(K),Val(D),V)
 end

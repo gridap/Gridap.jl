@@ -60,6 +60,7 @@ end
     struct CompWiseTensorPolyBasis
     struct RaviartThomasPolyBasis
     struct NedelecPolyBasisOnSimplex
+    struct BernsteinBasisOnSimplex
     struct ModalC0Basis {
       +get_orders
     }
@@ -69,6 +70,7 @@ end
   PolynomialBasis <|-- CompWiseTensorPolyBasis
   PolynomialBasis <|-- RaviartThomasPolyBasis
   PolynomialBasis <|-- NedelecPolyBasisOnSimplex
+  PolynomialBasis <|-- BernsteinBasisOnSimplex
   PolynomialBasis <|-- ModalC0Basis
 
   object "(<:Polynomial)Basis" as m1

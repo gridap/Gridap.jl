@@ -63,7 +63,7 @@ abstract type PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}  end
 """
     get_order(b::PolynomialBasis{D,V,K}) = K
 
-Return the maximum polynomial order in a dimension, is should be `0` in 0D.
+Return the maximum polynomial order in a dimension, or `0` in 0D.
 """
 @inline get_order(::PolynomialBasis{D,V,K}) where {D,V,K} = K
 
