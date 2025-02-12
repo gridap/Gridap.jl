@@ -20,11 +20,14 @@ using CairoMakie
 # end
 # Makie.args_preferred_axis(pg::PlotGrid)= num_point_dims(pg.grid)<=2 ? Makie.Axis : Makie.LScene
 
-model = CartesianDiscreteModel((0,1,0,1),(4,4))
+model = CartesianDiscreteModel((0,1,0,1),(2,2))
 
-pmodel = Geometry.PolytopalDiscreteModel(model)
-vmodel = Geometry.voronoi(simplexify(model))
+pmodel = Gridap.Geometry.PolytopalDiscreteModel(model)
+vmodel = Gridap.Geometry.voronoi(Gridap.ReferenceFEs.simplexify(model))
 polys = get_polytopes(vmodel)
+
+# 
+writevtk(vmodel,"polygonal_model")
 
 viz(vmodel;color=1:num_cells(vmodel),showpoints=true,showsegments=true)
 
@@ -32,16 +35,20 @@ viz(vmodel;color=1:num_cells(vmodel),showpoints=true,showsegments=true)
 Γ = Boundary(vmodel)
 Λ = Skeleton(vmodel)
 
-order = 3
+order = 1
 u_exact(x) = x[1]^order + x[2]^order
 
 dΩ = Measure(Ω,2*order)
 dΓ = Measure(Γ,2*order)
 dΛ = Measure(Λ,2*order)
 
+trian = get_triangulation(Ω)
+grid  = get_grid(trian) 
+@enter get_polytopes(grid)
+
 sum(∫(1)dΩ)
 
-V = FESpaces.PolytopalFESpace(Ω,order)
+V = FESpaces.PolytopalFESpace(Ω,order,space=:P)
 
 # L2 projection
 mass_lhs(u,v) = ∫(u⋅v)dΩ

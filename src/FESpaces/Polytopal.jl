@@ -9,11 +9,23 @@ end
 
 # Constructors 
 
+function _filter_from_space(space::Symbol)
+  if space == :P
+    return Polynomials._p_filter
+  elseif space == :Q
+    return Polynomials._q_filter
+  elseif space == :S
+    return Polynomials._s_filter
+  else
+    @notimplemented
+  end
+end
+
 function PolytopalFESpace(
-  trian::Triangulation{Dc}, order::Integer; T = Float64, vector_type = Vector{T}
-) where Dc
+  trian::Triangulation{Dc},::Type{T},order::Integer; space = :P, vector_type = Vector{T}
+) where {Dc,T}
   ncells = num_cells(trian)
-  prebasis = Polynomials.MonomialBasis{Dc}(T, order)
+  prebasis = Polynomials.MonomialBasis{Dc}(T, order, _filter_from_space(space))
   cell_prebasis = Fill(prebasis, ncells)
   cell_change = lazy_map(centroid_map, get_polytopes(trian))
   cell_shapefuns = lazy_map(Broadcasting(∘), cell_prebasis, cell_change)
@@ -80,6 +92,7 @@ function centroid_map(poly::Polytope{D}) where D
   pmin, pmax = get_bounding_box(poly)
   o = VectorValue(ntuple(i->1.0,Val(D)))
   xc = 0.5 * (pmin + pmax)
+  # xc = get_facet_centroid(poly, D) # reverting to original
   h = 0.5 * (pmax - pmin)
   return affine_map(TensorValues.diagonal_tensor(o ./ h), -xc ./ h)
 end
@@ -92,6 +105,7 @@ end
 function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope{D},x::Point{D}) where D
   pmin, pmax = get_bounding_box(poly)
   xc = 0.5 * (pmin + pmax)
+  # xc = get_facet_centroid(poly, D) # reverting to original
   h = 0.5 * (pmax - pmin)
   return (x - xc) ./ h
 end
@@ -105,9 +119,112 @@ function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope{D},
   y = cache.array
   pmin, pmax = get_bounding_box(poly)
   xc = 0.5 * (pmin + pmax)
+  # xc = get_facet_centroid(poly, D) # reverting to original
   h = 0.5 * (pmax - pmin)
   for i in eachindex(x)
     y[i] = (x[i] - xc) ./ h
   end
   return y
+end
+
+##################
+
+function shoelace(face_ents)
+  shift = circshift(face_ents, -1)
+  area_components = map(face_ents, shift) do x1, x2
+    x1[1] * x2[2] - x2[1] * x1[2] 
+  end
+  area = 0.5 * abs(sum(area_components))
+  return area
+end
+
+function get_facet_measure(p::Polytope{D}, face::Int) where D
+  measures = Float64[]
+  if D == 3
+    @notimplemented
+  elseif isa(p, ExtrusionPolytope{2})
+    if p == QUAD 
+      perm = [1,2,4,3]
+    elseif p == TRI
+      perm = [1,2,3]
+    end
+  elseif isa(p, Polygon)   
+    perm = collect(1:length(p.edge_vertex_graph))
+  end
+
+  dim = get_dimranges(p)[face+1]
+  face_ents = get_face_coordinates(p)[dim]
+  if face == 0
+    for entity in face_ents
+      push!(measures, 0.0)
+    end
+  elseif face == 1
+    for entity in face_ents
+      p1, p2 = entity
+      push!(measures, norm(p2-p1))
+    end
+  elseif face == 2
+    face_ents = map(Reindex(face_ents...),perm)
+    area = shoelace(face_ents)
+    push!(measures, area)
+  end
+  return measures
+end
+
+function get_facet_centroid(p::Polytope{D}, face::Int) where D
+
+  if D == 3
+    @notimplemented
+  end
+
+  dim = get_dimranges(p)[face+1]
+  face_coords = get_face_coordinates(p)[dim]
+  if isa(p, ExtrusionPolytope{2}) || isa(p, ExtrusionPolytope{1})
+    if face == 1 || face == 2
+      centroid = mean.(face_coords)
+    end
+  elseif isa(p, Polygon)
+    perm = collect(1:length(p.edge_vertex_graph))
+    if face == 1
+      centroid = mean.(face_coords)
+    elseif face == 2
+      ents = map(Reindex(face_coords...),perm)
+      shift = circshift(ents, -1)
+
+      components_x = map(ents, shift) do x1, x2
+        ( x1[1] + x2[1] ) * ( x1[1] * x2[2] - x2[1] * x1[2] )
+      end
+      components_y = map(ents, shift) do x1, x2
+        ( x1[2] + x2[2] ) * ( x1[1] * x2[2] - x2[1] * x1[2] )
+      end
+      
+      area = get_facet_measure(p, face)
+      centroid_x = (1 ./ (6*area)) * sum(components_x)
+      centroid_y = (1 ./ (6*area)) * sum(components_y)        
+      centroid = VectorValue{2, Float64}(centroid_x..., centroid_y...)
+    end
+  end
+  return centroid
+end
+
+function get_facet_diameter(p::Polytope{D}, face::Int) where D
+  if D == 3
+    @notimplemented
+  end
+  dim = get_dimranges(p)[face+1]
+  X = get_face_coordinates(p)[dim]
+  if face == 1
+    h = map(X) do x
+      norm(x[1]-x[2])
+    end
+  elseif face == 2
+    h = 0.0  
+    n_sides = length(X...)
+    for i in 1:(n_sides-1)
+      for j in (i+1):n_sides
+        h = max(h, norm(X[1][i] - X[1][j]))
+      end
+    end
+  end
+  return h
 end

@@ -36,7 +36,7 @@ Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 Meshes = "eacbb407-ea5a-433e-ab97-5258b1ca43fa"
 
 [extensions]
-MeshesExt = ["Meshes","Makie"]
+MeshesExt = ["Meshes", "Makie"]
 
 [compat]
 AbstractTrees = "0.3.3, 0.4"
