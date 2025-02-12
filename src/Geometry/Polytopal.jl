@@ -57,6 +57,20 @@ get_vertex_coordinates(g::PolytopalGridTopology) = g.vertex_coordinates
 get_cell_type(g::PolytopalGridTopology) = Base.OneTo(length(g.polytopes))
 get_polytopes(g::PolytopalGridTopology) = g.polytopes
 
+function GridTopology(::Type{<:Polytope{Df}},topo::PolytopalGridTopology) where Df
+  node_coordinates = get_vertex_coordinates(topo)
+  face_to_nodes = get_faces(topo,Df,0)
+  if iszero(Df) || isone(Df)
+    polytopes = [ifelse(iszero(Df), VERTEX, SEGMENT)]
+    face_to_ftype = fill(Int8(1),num_faces(topo,Df))
+    ftopo = UnstructuredGridTopology(node_coordinates, face_to_nodes, face_to_ftype, polytopes)
+  else
+    face_to_polytopes = get_reffaces(Polytope{Df},topo)
+    ftopo = PolytopalGridTopology(node_coordinates, face_to_nodes, face_to_polytopes)
+  end
+  return ftopo
+end
+
 ############################################################################################
 
 struct PolytopalGrid{Dc,Dp,Tp,Tn} <: Grid{Dc,Dp}

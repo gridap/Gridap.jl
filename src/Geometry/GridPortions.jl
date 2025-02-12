@@ -64,6 +64,10 @@ function get_reffes(grid::GridPortion)
   get_reffes(grid.parent)
 end
 
+function get_polytopes(grid::GridPortion)
+  get_polytopes(grid.parent)
+end
+
 function get_cell_type(grid::GridPortion)
   lazy_map(Reindex(get_cell_type(grid.parent)),grid.cell_to_parent_cell)
 end

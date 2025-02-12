@@ -3,6 +3,8 @@ using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField, Gridap.Polynomials
 using Gridap.CellData, Gridap.Fields, Gridap.ReferenceFEs, Gridap.Helpers
 
+using Gridap.FESpaces: get_facet_diameter
+
 function get_abs_normal_vector(trian)
   function normal(c)
     t = c[2] - c[1]
@@ -74,13 +76,16 @@ pmodel = Gridap.Geometry.PolytopalDiscreteModel(model)
 vmodel = Gridap.Geometry.voronoi(simplexify(model))
 polys = get_polytopes(vmodel)
 
-h = maximum( map(p->get_facet_diameter(p,D),polys) )
+h = maximum(map(p->get_facet_diameter(p,D), polys))
 
 # writevtk(vmodel,"polygonal_model")
 
 D = num_cell_dims(vmodel)
 Ω = Triangulation(ReferenceFE{D}, vmodel)
 Γ = Triangulation(ReferenceFE{D-1}, vmodel)
+
+Γ = Boundary(vmodel)
+grid = Γ.trian.grid
 
 ptopo = Geometry.PatchTopology(vmodel)
 Ωp = Geometry.PatchTriangulation(vmodel,ptopo)
@@ -95,11 +100,9 @@ order = 1
 V = FESpaces.PolytopalFESpace(Ω, VectorValue{D, Float64}, order; space=:P)
 Q = FESpaces.PolytopalFESpace(Ω, Float64, order; space=:P)
 
-
 reffeM = ReferenceFE(lagrangian, Float64, order; space=:P) 
 M_test = TestFESpace(Γ, reffeM; conformity=:L2, dirichlet_tags="boundary")
 M = TrialFESpace(M_test, u)
-
 
 mfs = MultiField.BlockMultiFieldStyle(2,(2,1))
 Y = MultiFieldFESpace([V, Q, M_test];style=mfs)
