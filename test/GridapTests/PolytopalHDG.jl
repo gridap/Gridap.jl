@@ -84,9 +84,6 @@ D = num_cell_dims(vmodel)
 Ω = Triangulation(ReferenceFE{D}, vmodel)
 Γ = Triangulation(ReferenceFE{D-1}, vmodel)
 
-Γ = Boundary(vmodel)
-grid = Γ.trian.grid
-
 ptopo = Geometry.PatchTopology(vmodel)
 Ωp = Geometry.PatchTriangulation(vmodel,ptopo)
 Γp = Geometry.PatchBoundaryTriangulation(vmodel,ptopo)
