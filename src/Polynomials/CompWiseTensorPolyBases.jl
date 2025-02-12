@@ -69,10 +69,13 @@ function _evaluate_nd!(
   orders = b.orders
   comp_terms = get_comp_terms(b)
 
+  Kd = Val(K)
   for d in 1:D
-    # for each coordinate d, the order at which the basis should be evaluated is
-    # the maximum d-order for any component l
-    Kd = Val(maximum(orders[:,d]))
+    # The optimization below of fine tuning Kd is a bottlneck if not put in a
+    # function due to runtime dispatch and creation of Val(Kd)
+    #  # for each coordinate d, the order at which the basis should be evaluated is
+    #  # the maximum d-order for any component l
+    #  Kd = Val(maximum(orders[:,d]))
     _evaluate_1d!(PT,Kd,c,x,d)
   end
 
@@ -118,10 +121,8 @@ function _gradient_nd!(
   orders = b.orders
   comp_terms = get_comp_terms(b)
 
+  Kd = Val(K)
   for d in 1:D
-    # for each spatial coordinate d, the order at which the basis should be
-    # evaluated is the maximum d-order for any component l
-    Kd = Val(maximum(orders[:,d]))
     _derivatives_1d!(PT,Kd,(c,g),x,d)
   end
 
@@ -198,10 +199,8 @@ function _hessian_nd!(
   orders = b.orders
   comp_terms = get_comp_terms(b)
 
+  Kd = Val(K)
   for d in 1:D
-    # for each spatial coordinate d, the order at which the basis should be
-    # evaluated is the maximum d-order for any component l
-    Kd = Val(maximum(orders[:,d]))
     _derivatives_1d!(PT,Kd,(c,g,h),x,d)
   end
 
