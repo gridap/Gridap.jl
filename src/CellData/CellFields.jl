@@ -815,8 +815,8 @@ end
 struct KDTreeSearch
   num_nearest_vertices::Int
   accept_points_outside::Bool
-  function KDTreeSearch(;num_nearest_vertices=1)
-    new(num_nearest_vertices)
+  function KDTreeSearch(;num_nearest_vertices=1, accept_points_outside=false )
+    new(num_nearest_vertices, accept_points_outside)
   end
 end
 
