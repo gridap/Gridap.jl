@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added AMR-related methods `mark` and `estimate` to `Adaptivity` module. Implemented Dorfler marking strategy. Since PR[#1063](https://github.com/gridap/Gridap.jl/pull/1063).
 
-- Documentation and refactoring of Gridap.Polynomials. Since PR[#TODO](https://github.com/gridap/Gridap.jl/pull/#TODO).
+- Documentation and refactoring of Gridap.Polynomials. Since PR[#1072](https://github.com/gridap/Gridap.jl/pull/#1072).
 - Two new families of polynomial bases in addition to `Monomial`, `Legendre` (former `Jacobi`) and `ModalC0`: `Chebyshev` and `Bernstein`
 - `MonomialBasis` and `Q[Curl]GradMonomialBasis` have been generalized to `Legendre`, `Chebyshev` and `Bernstein` using the new `CartProdPolyBasis` and `CompWiseTensorPolyBasis` respectively.
 - `PCurlGradMonomialBasis` has been generalized to `Legendre` and `Chebyshev` using the new `RaviartThomasPolyBasis`.
