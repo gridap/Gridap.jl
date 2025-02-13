@@ -57,7 +57,11 @@ get_vertex_coordinates(g::PolytopalGridTopology) = g.vertex_coordinates
 get_cell_type(g::PolytopalGridTopology) = Base.OneTo(length(g.polytopes))
 get_polytopes(g::PolytopalGridTopology) = g.polytopes
 
-function GridTopology(::Type{<:Polytope{Df}},topo::PolytopalGridTopology) where Df
+function GridTopology(::Type{<:Polytope{Dc}},topo::PolytopalGridTopology{Dc}) where Dc
+  return topo
+end
+
+function GridTopology(::Type{<:Polytope{Df}},topo::PolytopalGridTopology{Dc}) where {Df,Dc}
   node_coordinates = get_vertex_coordinates(topo)
   face_to_nodes = get_faces(topo,Df,0)
   if iszero(Df) || isone(Df)
