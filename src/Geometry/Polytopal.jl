@@ -26,14 +26,42 @@ end
 function PolytopalGridTopology(topo::UnstructuredGridTopology{Dc}) where Dc
   polys, ctypes = get_polytopes(topo), get_cell_type(topo)
   cell_polys = expand_cell_data(polys,ctypes)
-  cell_nodes = get_faces(topo,Dc,0)
   vertex_coords = get_vertex_coordinates(topo)
-  if Dc == 2
-    polytopes = map(Polygon,cell_polys,lazy_map(Broadcasting(Reindex(vertex_coords)),cell_nodes))
-  else
-    polytopes = map(Polyhedron,cell_polys,lazy_map(Broadcasting(Reindex(vertex_coords)),cell_nodes))
-  end
+  polytopes, cell_nodes = generate_polytopes(
+    cell_polys,get_faces(topo,Dc,0),vertex_coords
+  )
   PolytopalGridTopology(vertex_coords,cell_nodes,polytopes)
+end
+
+function oriented_cell_nodes(
+  node_coordinates::AbstractVector{<:Point{2}},cell_nodes::Table{T}
+) where T
+  ptrs = cell_nodes.ptrs
+  data = zeros(T, length(cell_nodes.data))
+  for cell in 1:length(cell_nodes)
+    nodes = view(cell_nodes,cell)
+    perm  = orient_nodes(view(node_coordinates,nodes))
+    data[ptrs[cell]:ptrs[cell+1]-1] .= nodes[perm]
+  end
+  return Table(data,ptrs)
+end
+
+function generate_polytopes(
+  cell_polys::AbstractArray{<:Polytope{2}},cell_nodes,node_coordinates
+)
+  o_cell_nodes = oriented_cell_nodes(node_coordinates,cell_nodes)
+  cell_coordinates = lazy_map(Broadcasting(Reindex(node_coordinates)),o_cell_nodes)
+  polytopes = map(Polygon,cell_coordinates)
+  return polytopes, o_cell_nodes
+end
+
+function generate_polytopes(
+  cell_polys::AbstractArray{<:Polytope{3}},cell_nodes,node_coordinates
+)
+  polytopes = map(cell_polys,cell_nodes) do p, nodes
+    GeneralPolytope{3}(node_coordinates[nodes],get_faces(p,1,0))
+  end
+  return polytopes, cell_nodes
 end
 
 function num_faces(g::PolytopalGridTopology{Dc},d::Integer) where Dc
@@ -98,16 +126,15 @@ end
 
 function PolytopalGrid(grid::Grid{Dc}) where Dc
   node_coordinates = collect1d(get_node_coordinates(grid))
-  cell_node_ids = Table(get_cell_node_ids(grid))
   cell_polys = expand_cell_data(get_polytopes(grid),get_cell_type(grid))
-  polytopes = map(GeneralPolytope{Dc},cell_polys,get_cell_coordinates(grid))
+  polytopes, cell_node_ids = generate_polytopes(
+    cell_polys,Table(get_cell_node_ids(grid)),node_coordinates
+  )
   PolytopalGrid(node_coordinates,cell_node_ids,polytopes)
 end
 
 function PolytopalGrid(topo::PolytopalGridTopology{Dc}) where Dc
-  PolytopalGrid(
-    get_vertex_coordinates(topo), get_faces(topo,Dc,0), get_polytopes(topo)
-  )
+  PolytopalGrid(get_vertex_coordinates(topo), get_faces(topo,Dc,0), get_polytopes(topo))
 end
 
 OrientationStyle(::Type{<:PolytopalGrid}) = NonOriented()
