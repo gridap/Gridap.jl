@@ -13,9 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Documentation and refactoring of Gridap.Polynomials. Since PR[#TODO](https://github.com/gridap/Gridap.jl/pull/#TODO).
 - Two new families of polynomial bases in addition to `Monomial`, `Legendre` (former `Jacobi`) and `ModalC0`: `Chebyshev` and `Bernstein`
-- `MonomialBasis` and `Q[Curl]GradMonomialBasis` have been generalized to `Legendre`, `Chebyshev` and `Bernstein` using the new `UniformPolyBasis` and `CompWiseTensorPolyBasis` respectively.
+- `MonomialBasis` and `Q[Curl]GradMonomialBasis` have been generalized to `Legendre`, `Chebyshev` and `Bernstein` using the new `CartProdPolyBasis` and `CompWiseTensorPolyBasis` respectively.
 - `PCurlGradMonomialBasis` has been generalized to `Legendre` and `Chebyshev` using the new `RaviartThomasPolyBasis`.
-- New aliases and high level constructor for `UniformPolyBasis` (former MonomialBasis): `MonomialBasis`, `LegendreBasis`, `ChebyshevBasis` and `BernsteinBasis`.
+- New aliases and high level constructor for `CartProdPolyBasis` (former MonomialBasis): `MonomialBasis`, `LegendreBasis`, `ChebyshevBasis` and `BernsteinBasis`.
 - New high level constructors for Nedelec and Raviart-Thomas polynomial bases:
     - Nedelec on simplex `PGradBasis(PT<:Polynomial, Val(D), order)`
     - Nedelec on n-cubes `QGradBasis(PT<:Polynomial, Val(D), order)`
@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Existing Jacobi polynomial bases/spaces were renamed to Legendre (which they were).
 - `Monomial` is now subtype of the new abstract type`Polynomial <: Field`
-- `MonomialBasis` is now an alias for `UniformPolyBasis{...,Monomial}`
+- `MonomialBasis` is now an alias for `CartProdPolyBasis{...,Monomial}`
 - All polynomial bases are now subtypes of the new abstract type `PolynomialBasis <: AbstractVector{<:Polynomial}`
 - `get_order(b::(Q/P)[Curl]Grad...)`, now returns the order of the basis, +1 than the order parameter passed to the constructor.
 - `NedelecPreBasisOnSimplex` is renamed `NedelecPolyBasisOnSimplex`

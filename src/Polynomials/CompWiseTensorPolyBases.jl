@@ -28,7 +28,7 @@ struct CompWiseTensorPolyBasis{D,V,K,PT,L} <: PolynomialBasis{D,V,K,PT}
 
     msg1 = "The orders matrix rows number must match the number of independent components of V"
     @check L == num_indep_components(V) msg1
-    msg2 = "The Component Wise construction is useless for one component, use UniformPolyBasis instead"
+    msg2 = "The Component Wise construction is useless for one component, use CartProdPolyBasis instead"
     @check L > 1 msg2
     @check D > 0
     @check isconcretetype(PT) "PT needs to be a concrete <:Polynomial type"
@@ -181,7 +181,7 @@ the `k`ᵗʰ basis polynomial, whose nonzero component in `V` is the `l`ᵗʰ.
   return Expr(:block, body ,:(return k+1))
 end
 
-# See _uniform_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
+# See _cartprod_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
 @generated function _comp_wize_set_derivative!(
   r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
 
@@ -262,7 +262,7 @@ b = QGradBasis(Monomial, Val(3), Float64, 2)
 For more details, see [`CompWiseTensorPolyBasis`](@ref), as `QGradBasis` returns
 an instance of\\
 `CompWiseTensorPolyBasis{D, VectorValue{D,T}, order+1, PT}` for `D`>1, or\\
-`UniformPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
+`CartProdPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
 """
 function QGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
@@ -277,7 +277,7 @@ function QGradBasis(::Type{PT},::Val{1},::Type{T},order::Int) where {PT,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
 
   V = VectorValue{1,T}
-  UniformPolyBasis(PT, Val(1), V, order+1)
+  CartProdPolyBasis(PT, Val(1), V, order+1)
 end
 
 
@@ -310,7 +310,7 @@ b = QCurlGradBasis(Bernstein, Val(2), Float64, 3)
 For more details, see [`CompWiseTensorPolyBasis`](@ref), as `QCurlGradBasis`
 returns an instance of\\
 `CompWiseTensorPolyBasis{D, VectorValue{D,T}, order+1, PT}` for `D`>1, or\\
-`UniformPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
+`CartProdPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
 """
 function QCurlGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
@@ -325,5 +325,5 @@ function QCurlGradBasis(::Type{PT},::Val{1},::Type{T},order::Int) where {PT,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
 
   V = VectorValue{1,T}
-  UniformPolyBasis(PT, Val(1), V, order+1)
+  CartProdPolyBasis(PT, Val(1), V, order+1)
 end

@@ -5,7 +5,7 @@ Basis of the vector valued (`V<:VectorValue{D}`) space ℕ𝔻ᴰₙ(△) for `D
 This space is the polynomial space for Nedelec elements on simplices with
 curl in (ℙᴰₙ)ᴰ. Its maximum degree is n+1 = `K`. `get_order` on it returns `K`.
 
-Currently, the basis is implemented as the union of a UniformPolyBasis{...,PT}
+Currently, the basis is implemented as the union of a CartProdPolyBasis{...,PT}
 for ℙᴰₙ and a monomial basis for x × (ℙᴰₙ \\ ℙᴰₙ₋₁)ᴰ.
 """
 struct NedelecPolyBasisOnSimplex{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
@@ -32,7 +32,7 @@ function return_cache(
   np = length(x)
   ndofs = length(f)
   a = zeros(V,(np,ndofs))
-  P = UniformPolyBasis(PT,Val(D),V,K-1,_p_filter)
+  P = CartProdPolyBasis(PT,Val(D),V,K-1,_p_filter)
   cP = return_cache(P,x)
   CachedArray(a), cP, P
 end
@@ -123,7 +123,7 @@ function return_cache(
   xi = testitem(x)
   G = gradient_type(V,xi)
   a = zeros(G,(np,ndofs))
-  mb = UniformPolyBasis(PT,Val(D),V,K-1,_p_filter)
+  mb = CartProdPolyBasis(PT,Val(D),V,K-1,_p_filter)
   P = Broadcasting(∇)(mb)
   cP = return_cache(P,x)
   CachedArray(a), cP, P

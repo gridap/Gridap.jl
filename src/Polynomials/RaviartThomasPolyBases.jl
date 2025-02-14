@@ -14,7 +14,7 @@ The space 𝕊ₙ, typically ℙᴰₙ or ℚᴰₙ, does not need to have a ten
 structure of 1D scalar spaces. Thus, the ℝ𝕋ᴰₙ component's scalar spaces are not
 tensor products either.
 
-𝕊ₙ is defined like a scalar valued [`UniformPolyBasis`](@ref) via the `_filter`
+𝕊ₙ is defined like a scalar valued [`CartProdPolyBasis`](@ref) via the `_filter`
 argument of the constructor, by default `_p_filter` for ℙᴰₙ.
 As a consequence, `PT` must be hierarchical, see [`isHierarchical`](@ref).
 """
@@ -215,7 +215,7 @@ b = PCurlGradBasis(Monomial, Val(3), Float64, 2)
 For more details, see [`RaviartThomasPolyBasis`](@ref), as `PCurlGradBasis` returns
 an instance of\\
 `RaviartThomasPolyBasis{D, VectorValue{D,T}, order+1, PT}`  for `D`>1, or\\
-`UniformPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
+`CartProdPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
 """
 function PCurlGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
   RaviartThomasPolyBasis{D}(PT, T, order)
@@ -225,5 +225,5 @@ function PCurlGradBasis(::Type{PT},::Val{1},::Type{T},order::Int) where {PT,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
 
   V = VectorValue{1,T}
-  UniformPolyBasis(PT, Val(1), V, order+1)
+  CartProdPolyBasis(PT, Val(1), V, order+1)
 end

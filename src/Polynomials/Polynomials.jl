@@ -105,7 +105,7 @@ export Bernstein
 export PolynomialBasis
 export get_order
 
-export UniformPolyBasis
+export CartProdPolyBasis
 export get_exponents
 export get_orders
 export MonomialBasis
@@ -135,7 +135,7 @@ export PCurlGradMonomialBasis
 
 include("PolynomialInterfaces.jl")
 
-include("UniformPolyBases.jl")
+include("CartProdPolyBases.jl")
 
 include("CompWiseTensorPolyBases.jl")
 

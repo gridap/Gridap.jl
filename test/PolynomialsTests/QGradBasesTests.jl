@@ -148,7 +148,7 @@ T = Float64
 V = VectorValue{D,T}
 b = QGradBasis(PT,Val(D),T,order)
 
-@test b isa UniformPolyBasis{D,V,order+1,PT}
+@test b isa CartProdPolyBasis{D,V,order+1,PT}
 
 @test_throws AssertionError QGradBasis(PT,Val(D),V,order)
 

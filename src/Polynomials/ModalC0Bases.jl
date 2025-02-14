@@ -50,8 +50,8 @@ At last, all scalar basis polynomial will have its bounding box `(a[i],b[i])`,
 but they are assumed iddentical if only two points `a` and `b` are provided,
 and default to `a=Point{D}(0...)`, `b=Point{D}(1...)` if not provided.
 
-The basis is uniform, isotropic if one `order` is provided, or anisotropic if a
-`D` tuple `orders` is provided.
+The basis is a cartesian product when multi-valued, isotropic if one `order` is
+provided, or anisotropic if a `D` tuple `orders` is provided.
 """
 function ModalC0Basis() end
 
@@ -414,7 +414,7 @@ end
 # Generic 1D internal polynomial APIs #
 #######################################
 
-# For possible use with UniformPolyBasis etc.
+# For possible use with CartProdPolyBasis etc.
 # Make it for x∈[0,1] like the other 1D bases.
 
 function _evaluate_1d!(::Type{ModalC0},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number}

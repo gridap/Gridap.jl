@@ -8,16 +8,16 @@ struct Bernstein <: Polynomial end
 isHierarchical(::Type{Bernstein}) = false
 
 
-##########################################
-# Uniform tensor product Bernstein bases #
-##########################################
+#####################################
+# Cartesian product Bernstein bases #
+#####################################
 
 """
-    BernsteinBasis{D,V,K} = UniformPolyBasis{D,V,K,Bernstein}
+    BernsteinBasis{D,V,K} = CartProdPolyBasis{D,V,K,Bernstein}
 
-Alias for uniform Bernstein multivariate scalar' or `Multivalue`'d basis.
+Alias for cartesian product Bernstein basis, scalar valued or multivalued.
 """
-const BernsteinBasis{D,V,K} = UniformPolyBasis{D,V,K,Bernstein}
+const BernsteinBasis{D,V,K} = CartProdPolyBasis{D,V,K,Bernstein}
 
 """
     BernsteinBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)
@@ -26,7 +26,7 @@ const BernsteinBasis{D,V,K} = UniformPolyBasis{D,V,K,Bernstein}
 
 High level constructors of [`BernsteinBasis`](@ref).
 """
-BernsteinBasis(args...) = UniformPolyBasis(Bernstein, args...)
+BernsteinBasis(args...) = CartProdPolyBasis(Bernstein, args...)
 
 
 ################################

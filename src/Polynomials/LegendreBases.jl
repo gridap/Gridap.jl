@@ -8,11 +8,11 @@ struct Legendre <: Polynomial   end
 isHierarchical(::Type{Legendre}) = true
 
 """
-    LegendreBasis{D,V,K} = UniformPolyBasis{D,V,K,Legendre}
+    LegendreBasis{D,V,K} = CartProdPolyBasis{D,V,K,Legendre}
 
-Alias for Legendre multivariate scalar' or `Multivalue`'d basis.
+Alias for cartesian product Legendre basis, scalar valued or multi-valued.
 """
-const LegendreBasis{D,V,K} = UniformPolyBasis{D,V,K,Legendre}
+const LegendreBasis{D,V,K} = CartProdPolyBasis{D,V,K,Legendre}
 
 """
     LegendreBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)
@@ -21,7 +21,7 @@ const LegendreBasis{D,V,K} = UniformPolyBasis{D,V,K,Legendre}
 
 High level constructors of [`LegendreBasis`](@ref).
 """
-LegendreBasis(args...) = UniformPolyBasis(Legendre, args...)
+LegendreBasis(args...) = CartProdPolyBasis(Legendre, args...)
 
 
 # 1D evaluation implementation

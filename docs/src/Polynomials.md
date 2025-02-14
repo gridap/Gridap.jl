@@ -117,7 +117,7 @@ polynomials ``\phi_K`` for which ``\phi_K(0) = \delta_{0K}`` and ``\phi_K(1) =
 17 of [Badia-Neiva-Verdugo 2022](https://doi.org/10.1016/j.camwa.2022.09.027).
 
 When `ModalC0` is used as a `<:Polynomial` parameter in
-[`UniformPolyBasis`](@ref) or other bases (except `ModalC0Basis`), the trivial
+[`CartProdPolyBasis`](@ref) or other bases (except `ModalC0Basis`), the trivial
 bounding box `(a=Point{D}(0...), b=Point{D}(1...))` is assumed, which
 coincides with the usual definition of the ModalC0 bases.
 
@@ -298,10 +298,10 @@ QCurlGradBasis
 ![](./assets/poly_2.svg)
 
 ```@docs
-UniformPolyBasis
-UniformPolyBasis(::Type, ::Val{D}, ::Type, ::Int, ::Function) where D
-UniformPolyBasis(::Type, ::Val{D}, ::Type{V}, ::NTuple{D,Int}, ::Function) where {D,V}
-get_orders(::UniformPolyBasis)
+CartProdPolyBasis
+CartProdPolyBasis(::Type, ::Val{D}, ::Type, ::Int, ::Function) where D
+CartProdPolyBasis(::Type, ::Val{D}, ::Type{V}, ::NTuple{D,Int}, ::Function) where {D,V}
+get_orders(::CartProdPolyBasis)
 get_exponents
 CompWiseTensorPolyBasis
 NedelecPolyBasisOnSimplex
