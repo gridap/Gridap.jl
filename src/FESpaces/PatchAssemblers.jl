@@ -509,3 +509,36 @@ function Arrays.evaluate!(cache,k::BackwardStaticCondensationMap, matvec, x)
 
   return bi
 end
+
+###########################################################################################
+struct ReconstructionOperatorMap{A} <: Map
+  pivot :: A
+end
+
+ReconstructionOperatorMap() = ReconstructionOperatorMap(NoPivot())
+
+Arrays.return_cache(::ReconstructionOperatorMap, lhs_mats, rhs_mats) = nothing
+
+function Arrays.evaluate!(cache::Nothing, k::ReconstructionOperatorMap, lhs_mats, rhs_mats)
+  @check size(lhs_mats.array) == (2,2)
+  @check size(rhs_mats.array) == (2,2)
+
+  App, Aλp, Apλ, _ = lhs_mats.array
+  BpΩ, BλΩ, BpΓ,_  = rhs_mats.array
+
+  μT = tr(App)/norm(Apλ)^2
+  
+  #A = App + μT * Apλ*Aλp
+  mul!(App, Apλ, Aλp, μT, 1)
+  
+  # BΩ = _BΩ + μT * Apλ * BλΩ
+  mul!(BpΩ, Apλ, BλΩ, μT, 1)
+
+  Ainv = lu(App,k.pivot;check=false)
+  @check issuccess(Ainv) "Factorization failed"
+
+  PuΩ = ldiv!(Ainv,BpΩ)
+  PuΓ = ldiv!(Ainv,BpΓ)
+
+  return PuΩ, PuΓ
+end
