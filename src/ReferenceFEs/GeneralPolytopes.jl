@@ -91,7 +91,7 @@ function GeneralPolytope{D}(
   isopen::Bool,
   data) where D
 
-  GeneralPolytope{D}(collect(vertices),graph,isopen,data)
+  GeneralPolytope{D}(collect(vertices),collect(Vector{Int32},graph),isopen,data)
 end
 
 """
@@ -544,10 +544,11 @@ end
 
 function generate_facet_to_vertices(poly::Polygon)
   graph = get_graph(poly)
+  n = length(graph)
   T = Vector{Int32}[]
-  for v in 1:length(graph)
-    vnext = v == length(graph) ? 1 : v+1
-    @assert vnext ∈ graph[v]
+  for v in eachindex(graph)
+    vnext = ifelse(v == n, 1, v+1)
+    @check vnext ∈ graph[v]
     push!(T,[v,vnext])
   end
   T
