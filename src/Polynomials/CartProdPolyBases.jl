@@ -117,7 +117,7 @@ Tuple{Int,Int}[(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (
 """
 function get_exponents(b::CartProdPolyBasis)
   indexbase = 1
-  [Tuple(t) .- indexbase for t in b.terms]
+  Tuple(Tuple(t) .- indexbase for t in b.terms)
 end
 
 """

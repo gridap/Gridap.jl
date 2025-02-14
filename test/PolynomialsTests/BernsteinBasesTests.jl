@@ -7,6 +7,7 @@ using Gridap.Arrays
 using Gridap.Polynomials
 using Gridap.Polynomials: binoms
 using ForwardDiff
+using StaticArrays
 
 @test isHierarchical(Bernstein) == false
 
@@ -44,7 +45,7 @@ end
 order = 0
 b = BernsteinBasis(Val(1),V,order)
 @test get_order(b) == 0
-@test get_orders(b) == (0,)
+@test get_exponents(b) == ((0,),)
 
 bx =   [ 1.; 1.; 1.;; ]
 ∇bx = G[ 0.; 0.; 0.;; ]
@@ -151,23 +152,25 @@ test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 # Tests for ND Bernstein polynomial #
 #####################################
 
-function bernstein_nD(D,K)
+function bernstein_nD(D,K,x2λ=nothing)
   terms = Polynomials.bernstein_terms(Val(K),Val(D))
-  coefs = Polynomials.multinoms(Val(K),Val(D))
-  N = length(coefs)
+  N = length(terms)
 
   x -> begin
     @assert length(x) == D
     vals = zeros(eltype(x),N)
 
-    # change to barycentric coords
-    λ = zeros(eltype(x), D+1)
-    copyto!(λ, x)
-    λ[D+1] = 1 - sum(x)
+    # change to barycentric coords of reference simplex
+    if isnothing(x2λ)
+      λ = zeros(eltype(x), D+1)
+      copyto!(λ, x)
+      λ[D+1] = 1 - sum(x)
+    else
+      λ = x2λ*SVector(1, x...)
+    end
 
-    # apply formula
     for i in 1:N
-      vals[i] = coefs[i]
+      vals[i] = Polynomials.multinomial(terms[i]...)
       for (λi,ei) in zip(λ,terms[i])
         vals[i] *= λi^ei
       end
@@ -179,10 +182,9 @@ end
 _∇(b) = x -> ForwardDiff.jacobian(b, get_array(x))
 _H(b) = x -> ForwardDiff.jacobian(y -> ForwardDiff.jacobian(b, y), get_array(x))
 
-_bx( D,order,x)   = transpose(reduce(hcat, (                                  bernstein_nD(D,order )(xi)           for xi in x)))
-_∇bx(D,order,x,G) = transpose(reduce(hcat, ( map(G,        eachrow(        _∇(bernstein_nD(D,order))(xi)))         for xi in x)))
-_Hbx(D,order,x,H) = transpose(reduce(hcat, ( map(splat(H), eachrow(reshape(_H(bernstein_nD(D,order))(xi), :,D*D))) for xi in x)))
-
+_bx( D,order,x,  x2λ=nothing) = transpose(reduce(hcat, (                                  bernstein_nD(D,order,x2λ )(xi)           for xi in x)))
+_∇bx(D,order,x,G,x2λ=nothing) = transpose(reduce(hcat, ( map(G,        eachrow(        _∇(bernstein_nD(D,order,x2λ))(xi)))         for xi in x)))
+_Hbx(D,order,x,H,x2λ=nothing) = transpose(reduce(hcat, ( map(splat(H), eachrow(reshape(_H(bernstein_nD(D,order,x2λ))(xi), :,D*D))) for xi in x)))
 
 D = 2
 x = [Point(1.,0.), Point(.0,.5), Point(1.,.5), Point(.2,.3)]
@@ -195,6 +197,8 @@ H = gradient_type(G,x1)
 
 order = 0
 b = BernsteinBasisOnSimplex(Val(D),V,order)
+@test get_order(b) == 0
+@test get_exponents(b) == ((0,0,0),)
 bx  = _bx( D,order,x)
 ∇bx = _∇bx(D,order,x,G)
 Hbx = _Hbx(D,order,x,H)
@@ -202,6 +206,7 @@ test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
 
 order = 1
 b = BernsteinBasisOnSimplex(Val(D),V,order)
+@test get_exponents(b) == ((1,0,0), (0,1,0), (0,0,1))
 bx  = _bx( D,order,x)
 ∇bx = _∇bx(D,order,x,G)
 Hbx = _Hbx(D,order,x,H)
@@ -209,6 +214,7 @@ test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
 
 order = 2
 b = BernsteinBasisOnSimplex(Val(D),V,order)
+@test get_exponents(b) == ((2,0,0), (1,1,0), (1,0,1), (0,2,0), (0,1,1), (0,0,2))
 bx  = _bx( D,order,x)
 ∇bx = _∇bx(D,order,x,G)
 Hbx = _Hbx(D,order,x,H)
@@ -268,5 +274,63 @@ bx  = _bx( D,order,x)
 Hbx = _Hbx(D,order,x,H)
 test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
 test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
+
+
+############################################################################
+# Tests for ND Bernstein polynomial with arbitrary barycentric coordinates #
+############################################################################
+
+D = 2
+T = Float64
+vertices = (Point(5.,0.), Point(7.,2.), Point(0.,3.))
+
+b = BernsteinBasisOnSimplex(Val(2), Float64, 3, vertices)
+x = [Point(.0,.5), Point(1.,.5), Point(.2,.3), Point(5.,0.), Point(7.,2.), Point(0.,3.)]
+x1 = x[1]
+
+for xi in x
+  λi = Polynomials._cart_to_bary(xi, b.cart_to_bary_matrix)
+  @test sum(λi) ≈ 1.
+  @test xi ≈ sum(λi .* vertices)
+end
+
+
+# Scalar value in 2D
+D = 2
+vertices = (Point(5.,0.), Point(7.,2.), Point(0.,3.))
+x2λ = Polynomials._compute_cart_to_bary_matrix(vertices)
+
+T = Float64
+G = gradient_type(V,x1)
+H = gradient_type(G,x1)
+
+order = 4
+b = BernsteinBasisOnSimplex(Val(D),V,order,vertices)
+bx  = _bx( D,order,x,  x2λ)
+∇bx = _∇bx(D,order,x,G,x2λ)
+Hbx = _Hbx(D,order,x,H,x2λ)
+test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
+test_field_array(b,x1,bx[1,:],≈,grad=∇bx[1,:],gradgrad=Hbx[1,:])
+
+
+# scalar valued in 3D
+D = 3
+vertices = (Point(5.,0.,0.), Point(7.,0.,2.), Point(0.,3.,3.), Point(3.,0.,3.))
+x2λ = Polynomials._compute_cart_to_bary_matrix(vertices)
+
+x = [Point(0.,0.,1.), Point(.5,.5,.5), Point(1.,.2,.4), Point(.2,.4,.3)]
+x1 = x[1]
+
+V = Float64
+G = gradient_type(V,x1)
+H = gradient_type(G,x1)
+
+order = 4
+b = BernsteinBasisOnSimplex(Val(D),V,order,vertices)
+bx  = _bx( D,order,x,  x2λ)
+∇bx = _∇bx(D,order,x,G,x2λ)
+Hbx = _Hbx(D,order,x,H,x2λ)
+test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
+test_field_array(b,x1,bx[1,:],≈,grad=∇bx[1,:],gradgrad=Hbx[1,:])
 
 end # module
