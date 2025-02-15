@@ -511,15 +511,15 @@ function Arrays.evaluate!(cache,k::BackwardStaticCondensationMap, matvec, x)
 end
 
 ###########################################################################################
-struct ReconstructionOperatorMap{A} <: Map
+struct HHO_ReconstructionOperatorMap{A} <: Map
   pivot :: A
 end
 
-ReconstructionOperatorMap() = ReconstructionOperatorMap(NoPivot())
+HHO_ReconstructionOperatorMap() = HHO_ReconstructionOperatorMap(NoPivot())
 
-Arrays.return_cache(::ReconstructionOperatorMap, lhs_mats, rhs_mats) = nothing
+Arrays.return_cache(::HHO_ReconstructionOperatorMap, lhs_mats, rhs_mats) = nothing
 
-function Arrays.evaluate!(cache::Nothing, k::ReconstructionOperatorMap, lhs_mats, rhs_mats)
+function Arrays.evaluate!(cache::Nothing, k::HHO_ReconstructionOperatorMap, lhs_mats, rhs_mats)
   @check size(lhs_mats.array) == (2,2)
   @check size(rhs_mats.array) == (2,2)
 
@@ -534,11 +534,66 @@ function Arrays.evaluate!(cache::Nothing, k::ReconstructionOperatorMap, lhs_mats
   # BΩ = _BΩ + μT * Apλ * BλΩ
   mul!(BpΩ, Apλ, BλΩ, μT, 1)
 
-  Ainv = lu(App,k.pivot;check=false)
+  Ainv = lu!(App,k.pivot;check=false)
   @check issuccess(Ainv) "Factorization failed"
 
-  PuΩ = ldiv!(Ainv,BpΩ)
-  PuΓ = ldiv!(Ainv,BpΓ)
+  RuΩ = ldiv!(Ainv,BpΩ)
+  RuΓ = ldiv!(Ainv,BpΓ)
+
+  return RuΩ, RuΓ
+end
+
+###########################################################################################
+# struct HHO_L2ProjectionOperatorMap{A} <: Map
+#   pivot :: A
+# end
+
+# HHO_L2ProjectionOperatorMap() = HHO_L2ProjectionOperatorMap(NoPivot())
+
+# Arrays.return_cache(::HHO_L2ProjectionOperatorMap, bulk_lhs_mats, bulk_rhs_mats, skel_lhs_mats, skel_rhs_mats) = nothing
+
+# function Arrays.evaluate!(cache::Nothing,k::HHO_L2ProjectionOperatorMap, bulk_lhs_mats, bulk_rhs_mats, skel_lhs_mats, skel_rhs_mats)
+#   # Bulk
+#   Att = bulk_lhs_mats
+#   Mtt = bulk_rhs_mats
+
+#   Att_inv = lu!(Att,k.pivot;check=false)
+#   @check issuccess(Att_inv) "Factorization failed"
+#   PuΩ = ldiv!(Att_inv, Mtt)
+  
+#   # Skeleton
+#   Aff = skel_lhs_mats
+#   Mtf = skel_rhs_mats
+
+#   Aff_inv = lu!(Aff,k.pivot;check=false)
+#   @check issuccess(Aff_inv) "Factorization failed"
+#   PuΓ = ldiv!(Aff_inv, Mtf)
+
+#   return PuΩ, PuΓ
+# end
+
+struct HHO_L2ProjectionOperatorMap{A} <: Map
+  pivot :: A
+end
+
+HHO_L2ProjectionOperatorMap() = HHO_L2ProjectionOperatorMap(NoPivot())
+
+Arrays.return_cache(::HHO_L2ProjectionOperatorMap, lhs_mats, rhs_mats) = nothing
+
+function Arrays.evaluate!(cache::Nothing,k::HHO_L2ProjectionOperatorMap, lhs_mats, rhs_mats)
+
+  Att, _, _, Aff = lhs_mats.array
+  Mtt, Mtf, _, _ = rhs_mats.array 
+
+  Att_inv = lu!(Att,k.pivot;check=false)
+  @check issuccess(Att_inv) "Factorization failed"
+  PuΩ = ldiv!(Att_inv, Mtt)
+  
+  Aff_inv = lu!(Aff,k.pivot;check=false)
+  @check issuccess(Aff_inv) "Factorization failed"
+  PuΓ = ldiv!(Aff_inv, Mtf)
 
   return PuΩ, PuΓ
 end
+
+
