@@ -67,7 +67,7 @@ function _evaluate_1d!(::Type{Bernstein},::Val{K},v::AbstractMatrix{T},x,d) wher
     end
   end
   # still optimisable for K > 2/3:
-  # - compute bj = binoms(k,j) at compile time (binoms(Val(K)) function)
+  # - compute bj = binomials(k,j) ∀j at compile time
   # - compute vj = xʲ*(1-x)ᴷ⁻ʲ recursively in place like De Casteljau (saving half the redundant multiplications)
   # - do it in a stack allocated cache (MVector, Bumber.jl)
   # - @simd affect bj * vj in v[d,i] for all j
@@ -224,13 +224,14 @@ end
 ###################################################
 
 """
-    BernsteinBasisOnSimplex{D,V,K} <: PolynomialBasis{D,V,K,Bernstein}
+    BernsteinBasisOnSimplex{D,V,K,M} <: PolynomialBasis{D,V,K,Bernstein}
 
-This basis uses barycentric coordinates relative to the given vertices, or if
-not given relative to that of the reference `D`-simplex by default.
+Type for the multivariate Bernstein basis in barycentric coordinates.
+`M` is Nothing for the reference tetrahedra bary. coords., or `SMatrix{D+1,D+1}`
+if some simplex (triangle, tetrahedra, ...) vertices coordinates are given.
 """
 struct BernsteinBasisOnSimplex{D,V,K,M} <: PolynomialBasis{D,V,K,Bernstein}
-  cart_to_bary_matrix::M # Union{ Nothing, SMatrix{D+1,D+1} }
+  cart_to_bary_matrix::M #  Nothing or SMatrix{D+1,D+1}
 
   function BernsteinBasisOnSimplex{D}(::Type{V},order::Int,vertices=nothing) where {D,V}
     @check isnothing(vertices) || vertices isa NTuple{D+1,<:Point{D}}
@@ -245,8 +246,10 @@ end
     BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int)
     BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int,vertices::NTuple{D+1,<:Point{D}})
 
-This basis uses barycentric coordinates defined by the vertices of the
-reference `D`-simplex.
+Constructor for [`BernsteinBasisOnSimplex`](@ref).
+
+If specified, the simplex defined by the `vertices` - used to compute the
+barycentric coordinates from - must be non-degenerated (have nonzero volume).
 """
 function BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int,vertices=nothing) where {D,V}
   BernsteinBasisOnSimplex{D}(V,order,vertices)
@@ -265,7 +268,8 @@ get_exponents(::BernsteinBasisOnSimplex{D,V,K}) where {D,V,K} = bernstein_terms(
     _compute_cart_to_bary_matrix(::Nothing) = nothing
 
 For the given the vertices of a `D`-simplex, computes the change of coordinate
-matrix `x_to_λ` from cartesian to barycentric, s.t. `λ` = `x_to_λ` * `x`.
+matrix `x_to_λ` from cartesian to barycentric, that is `λ` = `x_to_λ` * `x`
+such that `sum(λ) == 1` and `x == sum(λ .* vertices)`.
 """
 function _compute_cart_to_bary_matrix(vertices::NTuple{N,Point{D,T}}) where {N,D,T}
   @check N == D+1 "A D simplex is defined by D+1 (linearly independent) vertices"
@@ -279,7 +283,7 @@ function _compute_cart_to_bary_matrix(vertices::NTuple{N,Point{D,T}}) where {N,D
   try
     x_to_λ = inv(λ_to_x)
   catch
-    throw(DomainError(vertices, "The simplex defined by the given vertices is degenerated."))
+    throw(DomainError(vertices, "The simplex defined by the given vertices is degenerated (is flat / has zero volume)."))
   end
   return SMatrix{N,N,T}(x_to_λ)
 end
@@ -325,18 +329,12 @@ for D=2, K=3.
 end
 
 """
-    binom(::Val{K}, ::Val{I})
+    _binomial(::Val{K}, ::Val{I})
 
 Returns the binomial coefficient C(K,I).
 """
 _binomial(::Val{K},::Val{I}) where {K,I} = binomial(K,I)
 
-"""
-    binoms(::Val{K})
-
-Returns the tuple of binomials ( C₍ₖ₀₎, C₍ₖ₁₎, ..., C₍ₖₖ₎ ).
-"""
-binoms(::Val{K}) where K = ntuple( i -> binomial(K,i-1), Val(K+1))
 
 ################################
 # nD evaluation implementation #
@@ -344,78 +342,30 @@ binoms(::Val{K}) where K = ntuple( i -> binomial(K,i-1), Val(K+1))
 
 # Overload _return_cache and _setsize for in place D-dimensional de Casteljau algorithm
 function _return_cache(
-  f::BernsteinBasisOnSimplex{D}, x,::Type{G},::Val{N_deriv}) where {D,G,N_deriv}
+  b::BernsteinBasisOnSimplex{D}, x,::Type{G},::Val{N_deriv}) where {D,G,N_deriv}
 
   @assert D == length(eltype(x)) "Incorrect number of point components"
   T = eltype(G)
-  K = get_order(f)
+  K = get_order(b)
   np = length(x)
-  ndof = length(f)
+  ndof = length(b)
   ndof_scalar = _binomial(Val(K+D),Val(D))
 
   r = CachedArray(zeros(G,(np,ndof)))
   s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
   c = CachedVector(zeros(T,ndof_scalar))
-  # The cache t here holds all scalar nD-Bernstein polymials, no other caches needed for derivatives
+  # The cache c here holds all scalar nD-Bernstein polynomials, no other caches needed for derivatives
   t = ntuple( _ -> nothing, Val(N_deriv))
   (r, s, c, t...)
 end
 
-function _setsize!(f::BernsteinBasisOnSimplex{D}, np, r, t...) where D
-  K = get_order(f)
-  ndof = length(f)
+function _setsize!(b::BernsteinBasisOnSimplex{D}, np, r, t...) where D
+  K = get_order(b)
+  ndof = length(b)
   ndof_scalar = _binomial(Val(K+D),Val(D))
   setsize!(r,(np,ndof))
   setsize!(t[1],(ndof_scalar,))
 end
-
-# @generated functions as otherwise the time and allocation for
-# computing the indices are the bottlneck...
-@generated function _downwards_de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{K0}=Val(1)) where {K,D,K0}
-  z = zero(eltype(c))
-  ex_v = Vector{Expr}()
-  for Ki in K0:K
-    # For all |α| = Ki
-    for (id,sub_ids) in _downwards_de_Casteljau_indices(Ki,D)
-
-      # s = 0.
-      push!(ex_v, :(s = $z))
-      # For all |β| = |α|-1; β ≥ 0
-      for (id_β, d) in sub_ids
-        # s +=  λ_d * B_β
-        push!(ex_v, :(@inbounds s += λ[$d]*c[$id_β]))
-      end
-
-      # c[id] = B_α
-      push!(ex_v, :(@inbounds c[$id] = s))
-    end
-  end
-  return Expr(:block, ex_v...)
-end
-
-# /!\ Not tested, might be wrong implemented in place like this
-@generated function _de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{Kf}=Val(0)) where {K,D,Kf}
-  z = zero(eltype(c))
-  ex_v = Vector{Expr}()
-  for Ki in (K-1):-1:Kf
-    # For all |α| = Ki
-    for (id,sup_ids) in _de_Casteljau_indices(Ki,D)
-
-      # s = 0.
-      push!(ex_v, :(s = $z))
-      # For all |β| = |α|+1
-      for (id_β, d) in sup_ids
-        # s += λ_d * B_β
-        push!(ex_v, :(@inbounds s += λ[$d]*c[$id_β]))
-      end
-
-      # c[id] = B_α (= s)
-      push!(ex_v, :(@inbounds c[$id] = s))
-    end
-  end
-  return Expr(:block, ex_v...)
-end
-
 
 function _evaluate_nd!(
   b::BernsteinBasisOnSimplex{D,V,K}, x,
@@ -463,6 +413,80 @@ function _hessian_nd!(
   _downwards_de_Casteljau_nD!(c,λ,Val(K-2),Val(D))
 
   _hess_Bα_from_Bα⁻⁻!(r,i,c,s,Val(K),Val(D),V,x_to_λ)
+end
+
+# @generated functions as otherwise the time and allocation for
+# computing the indices are the bottlneck...
+"""
+    _downwards_de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{K0}=Val(1))
+
+Iteratively applies de Casteljau algorithm in reverse in place using `λ`s as
+coefficients.
+
+If `K0 = 1`, `λ` are the barycentric coordinates of some point x and `c[1] = 1`,
+this computes all order `K` Bernstein basis polynomials at x:
+
+    c[α_lin_index] = B_α(x) ∀α in bernstein_terms(Val(K),Val(D))
+
+where α\\_lin\\_index = [`_simplex_multi_id_to_linear_id`](@ref)(α).
+"""
+@generated function _downwards_de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{K0}=Val(1)) where {K,D,K0}
+  z = zero(eltype(c))
+  ex_v = Vector{Expr}()
+  for Ki in K0:K
+    # For all |α| = Ki
+    for (id,sub_ids) in _downwards_de_Casteljau_indices(Ki,D)
+
+      # s = 0.
+      push!(ex_v, :(s = $z))
+      # For all |β| = |α|-1; β ≥ 0
+      for (id_β, d) in sub_ids
+        # s +=  λ_d * B_β
+        push!(ex_v, :(@inbounds s += λ[$d]*c[$id_β]))
+      end
+
+      # c[id] = B_α
+      push!(ex_v, :(@inbounds c[$id] = s))
+    end
+  end
+  return Expr(:block, ex_v...)
+end
+
+"""
+    _de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{Kf}=Val(0))
+
+Iteratively applies de Casteljau algorithm in place using `λ`s as
+coefficients.
+
+If `Kf = 0`, `λ` are the barycentric coordinates of some x and `c` contains
+the Bernstein coefficients of a polynomial p (that is p(x) = ∑\\_α c\\_α B\\_α(x) for
+α in [`bernstein_terms`](@ref)(Val(`K`),Val(`D`)) ), this computes
+
+    c[1] = p(x)
+
+where ∀α, c\\_α must be initially stored in `c`[`α_lin_index`], where
+`α_lin_index` = [`_simplex_multi_id_to_linear_id`](@ref)(α).
+"""
+@generated function _de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{Kf}=Val(0)) where {K,D,Kf}
+  z = zero(eltype(c))
+  ex_v = Vector{Expr}()
+  for Ki in (K-1):-1:Kf
+    # For all |α| = Ki
+    for (id,sup_ids) in _de_Casteljau_indices(Ki,D)
+
+      # s = 0.
+      push!(ex_v, :(s = $z))
+      # For all |β| = |α|+1
+      for (id_β, d) in sup_ids
+        # s += λ_d * B_β
+        push!(ex_v, :(@inbounds s += λ[$d]*c[$id_β]))
+      end
+
+      # c[id] = B_α (= s)
+      push!(ex_v, :(@inbounds c[$id] = s))
+    end
+  end
+  return Expr(:block, ex_v...)
 end
 
 
@@ -733,7 +757,7 @@ end
 #    ndof_1d = get_order(f) + 1
 #    r = CachedArray(zeros(G,(np,ndof)))
 #    s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
-#    bernstein_D = D+1 # There are D+1 barycentryc coordinates
+#    bernstein_D = D+1 # There are D+1 barycentric coordinates
 #    t = ntuple( _ -> CachedArray(zeros(T,(bernstein_D,ndof_1d))), Val(N_deriv+1))
 #    (r, s, t...)
 #  end
@@ -741,7 +765,7 @@ end
 #    ndof = length(f)
 #    ndof_1d = get_order(f) + 1
 #    setsize!(r,(np,ndof))
-#    bernstein_D = D+1 # There are D+1 barycentryc coordinates
+#    bernstein_D = D+1 # There are D+1 barycentric coordinates
 #    for c in t
 #      setsize!(c,(bernstein_D,ndof_1d))
 #    end

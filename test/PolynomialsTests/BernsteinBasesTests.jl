@@ -5,7 +5,6 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Arrays
 using Gridap.Polynomials
-using Gridap.Polynomials: binoms
 using ForwardDiff
 using StaticArrays
 
@@ -107,7 +106,7 @@ test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 # Order 3
 
 function bernstein(K,N)
-  b = binoms(Val(K))
+  b = ntuple( i -> binomial(K,i-1), Val(K+1)) # all binomial(i,K) for 0≤i≤K
   t -> b[N+1]*(t^N)*((1-t)^(K-N))
 end
 _∇(b) = t -> ForwardDiff.derivative(b, t)
