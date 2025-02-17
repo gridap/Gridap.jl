@@ -1029,17 +1029,40 @@ b = 4.0 - 3.0*im
 @test outer(a,b) == a*b
 @test inner(a,b) == a*b
 
-@test real(VectorValue(1+1im)) == VectorValue(1)
-@test real(VectorValue(1+1im, 1+1im)) == VectorValue(1, 1)
-@test real(VectorValue(1+1im, 1+1im, 1+1im)) == VectorValue(1, 1, 1)
-@test real(TensorValue(1+1im, 1+1im, 1+1im, 1+1im)) == TensorValue(1, 1, 1, 1)
-@test real(SymTracelessTensorValue(1+1im, 1+1im)) == SymTracelessTensorValue(1, 1)
+v1 = VectorValue(1+1im)
+v2 = VectorValue(1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = VectorValue(1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
 
-@test imag(VectorValue(1+1im)) == VectorValue(1)
-@test imag(VectorValue(1+1im, 1+1im)) == VectorValue(1, 1)
-@test imag(VectorValue(1+1im, 1+1im, 1+1im)) == VectorValue(1, 1, 1)
-@test imag(TensorValue(1+1im, 1+1im, 1+1im, 1+1im)) == TensorValue(1, 1, 1, 1)
-@test imag(SymTracelessTensorValue(1+1im, 1+1im)) == SymTracelessTensorValue(1, 1)
+v1 = VectorValue(1+1im, 1+1im)
+v2 = VectorValue(1, 1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = VectorValue(1-1im, 1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
+
+v1 = VectorValue(1+1im, 1+1im, 1+1im)
+v2 = VectorValue(1, 1, 1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = VectorValue(1-1im, 1-1im, 1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
+
+v1 = TensorValue(1+1im, 1+1im, 1+1im, 1+1im)
+v2 = TensorValue(1, 1, 1, 1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = TensorValue(1-1im, 1-1im, 1-1im, 1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
+
+v1 = SymTracelessTensorValue(1+1im, 1+1im)
+v2 = SymTracelessTensorValue(1, 1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = SymTracelessTensorValue(1-1im, 1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
 
 # Broadcast
 a = VectorValue(1,2,3)
