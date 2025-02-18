@@ -335,6 +335,32 @@ function get_face_tag_index(labeling::FaceLabeling,tags,d::Integer)
   face_to_tag
 end
 
+"""
+    restrict(labels::FaceLabeling,d_to_dface_to_parent_dface)
+"""
+function restrict(labels::FaceLabeling,d_to_dface_to_parent_dface)
+  D = length(d_to_dface_to_parent_dface)-1
+
+  d_to_dface_to_entity = [
+    zeros(Int32,length(d_to_dface_to_parent_dface[d+1])) for d in 0:D
+  ]
+
+  for d in 0:D
+    face_to_label = d_to_dface_to_entity[d+1]
+    oface_to_label = labels.d_to_dface_to_entity[d+1]
+    face_to_oface = d_to_dface_to_parent_dface[d+1]
+    for face in eachindex(face_to_label)
+      oface = face_to_oface[face]
+      label = oface_to_label[oface]
+      face_to_label[face] = label
+    end
+  end
+
+  tag_to_entities = copy(labels.tag_to_entities)
+  tag_to_name     = copy(labels.tag_to_name)
+  return FaceLabeling(d_to_dface_to_entity,tag_to_entities,tag_to_name)
+end
+
 function _prepare_tags(labeling,tags::Vector{<:Integer})
   tags
 end

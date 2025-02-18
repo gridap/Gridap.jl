@@ -113,29 +113,17 @@ function get_active_model(t::Triangulation)
 end
 
 function compute_active_model(t::Triangulation)
+  _restrict(model,::Grid,tface_to_mface) = restrict(model,tface_to_mface)
+  function _restrict(model,grid::GridPortion,tface_to_mface)
+    @check grid.cell_to_parent_cell == tface_to_mface
+    restrict(model,grid)
+  end
   D = num_cell_dims(t)
   glue = get_glue(t,Val(D))
-  @assert glue.mface_to_tface !== nothing
+  @assert !isnothing(glue.mface_to_tface)
   bgmodel = get_background_model(t)
   model = DiscreteModel(Polytope{D},bgmodel)
-  _restrict_model(model,get_grid(t),glue.tface_to_mface)
-end
-
-function _restrict_model(model,grid::Grid,tface_to_mface)
-  _restrict_model(model,tface_to_mface)
-end
-
-function _restrict_model(model,grid::GridPortion,tface_to_mface)
-  @check grid.cell_to_parent_cell == tface_to_mface
-  DiscreteModelPortion(model,grid)
-end
-
-function _restrict_model(model,tface_to_mface)
-  DiscreteModelPortion(model,tface_to_mface)
-end
-
-function _restrict_model(model,tface_to_mface::IdentityVector)
-  model
+  _restrict(model,get_grid(t),glue.tface_to_mface)
 end
 
 # This is the most basic Triangulation
@@ -283,12 +271,6 @@ function extend(a::LazyArray{<:Fill{typeof(linear_combination)}},b::PosNegPartit
   d2 = extend(a.args[2],b)
   lazy_map(linear_combination,d1,d2)
 end
-
-#function extend(a::LazyArray{<:Fill},b::PosNegPartition)
-#  k = a.maps.value
-#  args = map(i->extend(i,b),a.args)
-#  lazy_map(k,args...)
-#end
 
 """
 """
@@ -498,10 +480,9 @@ function Base.view(glue::FaceToFaceGlue,ids::AbstractArray)
 end
 
 function get_facet_normal(trian::TriangulationView)
-  n = get_facet_normal(trian.parent)
-  restrict(n,trian.cell_to_parent_cell)
+  restrict(get_facet_normal(trian.parent),trian.cell_to_parent_cell)
 end
 
 function get_cell_map(trian::TriangulationView)
-  lazy_map(Reindex(get_cell_map(trian.parent)),trian.cell_to_parent_cell)
+  restrict(get_cell_map(trian.parent),trian.cell_to_parent_cell)
 end

@@ -14,23 +14,28 @@ struct GridPortion{Dc,Dp,G} <: Grid{Dc,Dp}
   @doc """
       GridPortion(parent::Grid{Dc,Dp},cell_to_parent_cell::Vector{Int32}) where {Dc,Dp}
   """
-  function GridPortion(parent::Grid,cell_to_parent_cell::AbstractVector{<:Integer})
-
-    Dc = num_cell_dims(parent)
-    Dp = num_point_dims(parent)
-
+  function GridPortion(
+    parent::Grid{Dc,Dp},cell_to_parent_cell::AbstractVector{<:Integer}
+  ) where {Dc,Dp}
     parent_cell_to_parent_nodes = get_cell_node_ids(parent)
     nparent_nodes = num_nodes(parent)
-    parent_node_to_coords = get_node_coordinates(parent)
-
     node_to_parent_node, parent_node_to_node = _find_active_nodes(
-      parent_cell_to_parent_nodes,cell_to_parent_cell,nparent_nodes)
-
+      parent_cell_to_parent_nodes,cell_to_parent_cell,nparent_nodes
+    )
     cell_to_nodes = _renumber_cell_nodes(
-      parent_cell_to_parent_nodes,parent_node_to_node,cell_to_parent_cell)
-
-    new{Dc,Dp,typeof(parent)}(parent,cell_to_parent_cell,node_to_parent_node,cell_to_nodes)
+      parent_cell_to_parent_nodes,parent_node_to_node,cell_to_parent_cell
+    )
+    G = typeof(parent)
+    new{Dc,Dp,G}(parent,cell_to_parent_cell,node_to_parent_node,cell_to_nodes)
   end
+end
+
+"""
+    restrict(grid::Grid, cell_to_parent_cell::AbstractVector{<:Integer})
+    restrict(grid::Grid, parent_cell_to_mask::AbstractArray{Bool})
+"""
+@inline function restrict(grid::Grid,args...;kwargs...)
+  GridPortion(grid,args...;kwargs...)
 end
 
 function GridPortion(parent::Grid,parent_cell_to_mask::AbstractArray{Bool})
@@ -76,7 +81,7 @@ function get_facet_normal(grid::GridPortion)
   lazy_map(Reindex(get_facet_normal(grid.parent)),grid.cell_to_parent_cell)
 end
 
-# The following are not strictly needed, sine there is a default implementation for them.
+# The following are not strictly needed, since there is a default implementation for them.
 # In any case, we delegate just in case the underlying grid defines more performant versions
 function get_cell_coordinates(grid::GridPortion)
   lazy_map(Reindex(get_cell_coordinates(grid.parent)),grid.cell_to_parent_cell)

@@ -537,6 +537,19 @@ function GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::Abstr
   UnstructuredGridTopology(_grid,cell_to_vertices,vertex_to_node)
 end
 
+"""
+    restrict(topo::GridTopology, cell_to_parent_cell::AbstractVector{<:Integer})
+    restrict(topo::GridTopology, parent_cell_to_mask::AbstractVector{Bool})
+"""
+function restrict(topo::GridTopology, cell_to_parent_cell::AbstractVector{<:Integer})
+  restrict(UnstructuredGridTopology(topo), cell_to_parent_cell)
+end
+
+function restrict(topo::GridTopology,parent_cell_to_mask::AbstractVector{Bool})
+  cell_to_parent_cell = findall(parent_cell_to_mask)
+  restrict(topo, cell_to_parent_cell)
+end
+
 # Helpers
 
 function  _compute_cell_perm_indices!(

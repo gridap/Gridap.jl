@@ -26,8 +26,9 @@ pmodel = Gridap.Geometry.PolytopalDiscreteModel(model)
 vmodel = Gridap.Geometry.voronoi(Gridap.ReferenceFEs.simplexify(model))
 polys = get_polytopes(vmodel)
 
-# 
-writevtk(vmodel,"polygonal_model")
+Geometry.restrict(vmodel,[1,2,3,4])
+
+writevtk(vmodel,"tmp/polygonal_model")
 
 viz(vmodel;color=1:num_cells(vmodel),showpoints=true,showsegments=true)
 
@@ -44,11 +45,10 @@ dΛ = Measure(Λ,2*order)
 
 trian = get_triangulation(Ω)
 grid  = get_grid(trian) 
-@enter get_polytopes(grid)
 
 sum(∫(1)dΩ)
 
-V = FESpaces.PolytopalFESpace(Ω,order,space=:P)
+V = FESpaces.PolytopalFESpace(Ω,Float64,order,space=:P)
 
 # L2 projection
 mass_lhs(u,v) = ∫(u⋅v)dΩ
@@ -59,6 +59,11 @@ uh = solve(op)
 
 eh = uh - u_exact
 sum(∫(eh⋅eh)dΩ)
+
+writevtk(
+  Triangulation(vmodel),"tmp/polygonal_trian",
+  cellfields = Dict("uh" => uh, "u_exact" => u_exact, "eh" => eh),
+)
 
 # DG Poisson
 β = 100.0
