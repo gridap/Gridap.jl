@@ -242,7 +242,7 @@ end
 
 # This is the low-level functionality to move from one Triangulation to another
 
-@inline function restrict(a::AbstractArray,b::AbstractArray)
+function restrict(a::AbstractArray,b::AbstractArray)
   lazy_map(Reindex(a),b)
 end
 
@@ -480,9 +480,9 @@ function Base.view(glue::FaceToFaceGlue,ids::AbstractArray)
 end
 
 function get_facet_normal(trian::TriangulationView)
-  lazy_map(Reindex(get_facet_normal(trian.parent)),trian.cell_to_parent_cell)
+  restrict(get_facet_normal(trian.parent),trian.cell_to_parent_cell)
 end
 
 function get_cell_map(trian::TriangulationView)
-  lazy_map(Reindex(get_cell_map(trian.parent)),trian.cell_to_parent_cell)
+  restrict(get_cell_map(trian.parent),trian.cell_to_parent_cell)
 end
