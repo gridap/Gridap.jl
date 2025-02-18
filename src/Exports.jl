@@ -222,15 +222,6 @@ function cell_measure(args...)
   """
 end
 
-export restrict
-function restrict(args...)
-  Helpers.@unreachable """\n
-  Function restrict has been removed. The user does not need to explicitly
-  restrict to a given Triangulation any more. The code does it undere the hood.
-  This error message will be deleted in future versions.
-  """
-end
-
 export FETerm
 function FETerm(args...)
   Helpers.@unreachable """\n

@@ -240,7 +240,7 @@ end
 get_edge_tangent(trian::BoundaryTriangulation) = get_edge_tangent(trian, trian.glue)
 
 function get_edge_tangent(trian::BoundaryTriangulation, glue)
-  @notimplementedif Dp != 2 "get_edge_tangent only implemented for 2D"
+  @notimplementedif num_point_dims(trian) != 2 "get_edge_tangent only implemented for 2D"
   face_s_n = get_facet_normal(trian, glue)
   rotate_normal_2d(n) = VectorValue(n[2], -n[1])
   face_s_t = lazy_map(Operation(rotate_normal_2d), face_s_n)

@@ -13,10 +13,33 @@ function PolytopalGridTopology(
   @check length(cell_vertices) == length(polytopes)
 
   n = Dc+1
+  n_vertices = length(vertex_coordinates)
   n_m_to_nface_to_mfaces = Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,n,n)
   n_m_to_nface_to_mfaces[Dc+1,0+1] = cell_vertices
-  vertex_cells = generate_cells_around(cell_vertices,length(vertex_coordinates))
+  vertex_cells = generate_cells_around(cell_vertices,n_vertices)
   n_m_to_nface_to_mfaces[0+1,Dc+1] = vertex_cells
+
+  PolytopalGridTopology{Dc,Dp,T}(
+    vertex_coordinates, n_m_to_nface_to_mfaces, polytopes
+  )
+end
+
+function PolytopalGridTopology(
+  vertex_coordinates::Vector{<:Point{Dp,T}},
+  d_to_dface_vertices::Vector{<:Table},
+  polytopes::Vector{<:GeneralPolytope{Dc}}
+) where {Dc,Dp,T}
+  @check length(cell_vertices) == length(polytopes)
+
+  n = Dc+1
+  n_vertices = length(vertex_coordinates)
+  n_m_to_nface_to_mfaces = Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,n,n)
+  for d in 0:D
+    dface_to_vertices = d_to_dface_vertices[d+1]
+    n_m_to_nface_to_mfaces[d+1,0+1] = dface_to_vertices
+    vertex_to_dfaces = generate_cells_around(dface_to_vertices,n_vertices)
+    n_m_to_nface_to_mfaces[0+1,d+1] = vertex_to_dfaces
+  end
 
   PolytopalGridTopology{Dc,Dp,T}(
     vertex_coordinates, n_m_to_nface_to_mfaces, polytopes
@@ -103,6 +126,33 @@ function GridTopology(::Type{<:Polytope{Df}},topo::PolytopalGridTopology{Dc}) wh
   return ftopo
 end
 
+function restrict(topo::PolytopalGridTopology, cell_to_parent_cell::AbstractVector{<:Integer})
+  D = num_cell_dims(topo)
+  n_m_to_parent_nface_to_parent_mface = [
+    Table(get_faces(topo,n,m)) for n in 0:D, m in 0:D 
+  ]
+  d_to_dface_to_parent_dface = [
+    _setup_dface_to_parent_dface(
+      Val{d}(),
+      Val{D}(),
+      n_m_to_parent_nface_to_parent_mface[D+1,d+1],
+      num_faces(topo,d),
+      cell_to_parent_cell
+    ) for d in 0:D
+  ]
+  d_to_dface_to_vertices  = [
+    _setup_connectivities_d(
+      n_m_to_parent_nface_to_parent_mface[d+1,0+1],
+      d_to_dface_to_parent_dface[d+1],
+      d_to_dface_to_parent_dface[0+1],
+      num_faces(topo,0)
+    ) for d in 0:D
+  ]
+  vertex_coordinates = get_vertex_coordinates(topo)[d_to_dface_to_parent_dface[0+1]]
+  polytopes = get_polytopes(topo)[cell_to_parent_cell]
+  return PolytopalGridTopology(vertex_coordinates,d_to_dface_to_vertices,polytopes)
+end
+
 ############################################################################################
 
 struct PolytopalGrid{Dc,Dp,Tp,Tn} <: Grid{Dc,Dp}
@@ -150,6 +200,20 @@ function get_facet_normal(g::PolytopalGrid)
   g.facet_normal
 end
 
+function restrict(grid::PolytopalGrid, cell_to_parent_cell::AbstractVector{<:Integer})
+  parent_cell_to_parent_nodes = get_cell_node_ids(grid)
+  nparent_nodes = num_nodes(grid)
+  node_to_parent_node, parent_node_to_node = _find_active_nodes(
+    parent_cell_to_parent_nodes,cell_to_parent_cell,nparent_nodes
+  )
+  cell_to_nodes = _renumber_cell_nodes(
+    parent_cell_to_parent_nodes,parent_node_to_node,cell_to_parent_cell
+  )
+  node_coordinates = get_node_coordinates(grid)[node_to_parent_node]
+  polytopes = get_polytopes(grid)[cell_to_parent_cell]
+  return PolytopalGrid(node_coordinates,cell_to_nodes,polytopes)
+end
+
 ############################################################################################
 
 struct PolytopalDiscreteModel{Dc,Dp,Tp,Tn} <: DiscreteModel{Dc,Dp}
@@ -164,6 +228,8 @@ function PolytopalDiscreteModel(model::DiscreteModel)
   labels = get_face_labeling(model)
   return PolytopalDiscreteModel(grid,topo,labels)
 end
+
+PolytopalDiscreteModel(model::PolytopalDiscreteModel) = model
 
 get_grid(model::PolytopalDiscreteModel) = model.grid
 get_grid_topology(model::PolytopalDiscreteModel) = model.grid_topology
@@ -199,6 +265,13 @@ end
 
 function Grid(::Type{ReferenceFE{Dc}},model::PolytopalDiscreteModel{Dc}) where {Dc}
   get_grid(model)
+end
+
+function restrict(model::PolytopalDiscreteModel, cell_to_parent_cell::AbstractVector{<:Integer})
+  grid = restrict(get_grid(model),cell_to_parent_cell)
+  topo = restrict(get_grid_topology(model),cell_to_parent_cell)
+  labels = restrict(get_face_labeling(model),cell_to_parent_cell)
+  return PolytopalDiscreteModel(grid,topo,labels)
 end
 
 ############################################################################################

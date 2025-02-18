@@ -97,7 +97,6 @@ function generate_patch_faces(ptopo::PatchTopology{Dc},Df) where Dc
   Arrays.length_to_ptrs!(ptrs)
 
   data = zeros(Int,ptrs[end]-1)
-  empty!(pfaces)
   for patch in 1:n_patches
     cells = view(patch_cells,patch)
     for cell in cells
