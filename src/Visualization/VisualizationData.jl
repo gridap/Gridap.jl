@@ -26,6 +26,12 @@ end
 function visualization_data(
   trian::Triangulation, filebase::AbstractString;
   order=-1, nsubcells=-1, celldata=Dict(), cellfields=Dict())
+  visualization_data(get_grid(trian),trian,filebase;order,nsubcells,celldata,cellfields)
+end
+
+function visualization_data(
+  ::Grid, trian::Triangulation, filebase::AbstractString;
+  order=-1, nsubcells=-1, celldata=Dict(), cellfields=Dict())
 
   if order == -1 && nsubcells == -1
     # Use the given cells as visualization cells
@@ -47,6 +53,19 @@ function visualization_data(
   pdata = _prepare_pdata(trian,cellfields,visgrid.cell_to_refpoints)
 
   (VisualizationData(visgrid,filebase;celldata=cdata,nodaldata=pdata),)
+end
+
+function visualization_data(
+  ::Geometry.PolytopalGrid, trian::Triangulation, filebase::AbstractString;
+  order=-1, nsubcells=-1, celldata=Dict(), cellfields=Dict())
+  @notimplementedif order != -1 "order kw-argument is not implemented for PolytopalGrid"
+  @notimplementedif nsubcells != -1 "nsubcells kw-argument is not implemented for PolytopalGrid"
+
+  grid = get_grid(trian)
+  cdata = _prepare_cdata(celldata,Base.OneTo(num_cells(trian)))
+  pdata = _prepare_pdata(trian,cellfields,CellData.get_data(get_cell_points(trian)))
+
+  (VisualizationData(grid,filebase;celldata=cdata,nodaldata=pdata),)
 end
 
 function _prepare_node_to_coords(cell_to_points)
@@ -149,19 +168,14 @@ function _prepare_cdata(celldata,sub_cell_to_cell)
     cell_to_a = collect(get_array(v))
     T = eltype(cell_to_a)
     sub_cell_to_a = zeros(T,length(sub_cell_to_cell))
-    _fill_sub_cell_to_a!(sub_cell_to_a,cell_to_a,sub_cell_to_cell)
+    for (sub_cell, cell) in enumerate(sub_cell_to_cell)
+      sub_cell_to_a[sub_cell] = cell_to_a[cell]
+    end
     cdata[k] = sub_cell_to_a
   end
-  k2 = "cell"
-  @assert ! haskey(cdata,k2) "cell is a reserved key"
-  cdata[k2] = sub_cell_to_cell
-  cdata
-end
-
-function _fill_sub_cell_to_a!(sub_cell_to_a,cell_to_a,sub_cell_to_cell)
-  for (sub_cell, cell) in enumerate(sub_cell_to_cell)
-    sub_cell_to_a[sub_cell] = cell_to_a[cell]
-  end
+  @assert ! haskey(cdata,"cell") "cell is a reserved key"
+  cdata["cell"] = sub_cell_to_cell
+  return cdata
 end
 
 struct VisualizationGrid{Dc,Dp} <: Grid{Dc,Dp}
@@ -191,22 +205,24 @@ function VisualizationGrid(trian::Triangulation, ref_grids::AbstractArray{<:Unst
   ctype_to_scell_to_snodes = map(get_cell_node_ids,ref_grids)
 
   sub_cell_to_nodes, sub_cell_to_cell = _prepare_sub_cell_to_nodes(
-    cell_to_ctype,ctype_to_scell_to_snodes,cell_to_offset)
+    cell_to_ctype,ctype_to_scell_to_snodes,cell_to_offset
+  )
 
   ctype_to_reffes = map(get_reffes,ref_grids)
   ctype_to_scell_type = map(get_cell_type,ref_grids)
   sctype_to_reffe, sub_cell_to_sctype = _prepare_sctype_to_reffe(
-    ctype_to_reffes,ctype_to_scell_type,cell_to_ctype)
+    ctype_to_reffes,ctype_to_scell_type,cell_to_ctype
+  )
 
   sub_grid = UnstructuredGrid(
     node_to_coords,
     sub_cell_to_nodes,
     sctype_to_reffe,
     sub_cell_to_sctype,
-    NonOriented())
+    NonOriented()
+  )
 
   VisualizationGrid(sub_grid,sub_cell_to_cell,cell_to_refpoints)
-
 end
 
 function visualization_data(p::Polytope,filebase)

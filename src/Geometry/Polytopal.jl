@@ -29,12 +29,11 @@ function PolytopalGridTopology(
   d_to_dface_vertices::Vector{<:Table},
   polytopes::Vector{<:GeneralPolytope{Dc}}
 ) where {Dc,Dp,T}
-  @check length(cell_vertices) == length(polytopes)
 
   n = Dc+1
   n_vertices = length(vertex_coordinates)
   n_m_to_nface_to_mfaces = Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,n,n)
-  for d in 0:D
+  for d in 0:Dc
     dface_to_vertices = d_to_dface_vertices[d+1]
     n_m_to_nface_to_mfaces[d+1,0+1] = dface_to_vertices
     vertex_to_dfaces = generate_cells_around(dface_to_vertices,n_vertices)
@@ -150,7 +149,8 @@ function restrict(topo::PolytopalGridTopology, cell_to_parent_cell::AbstractVect
   ]
   vertex_coordinates = get_vertex_coordinates(topo)[d_to_dface_to_parent_dface[0+1]]
   polytopes = get_polytopes(topo)[cell_to_parent_cell]
-  return PolytopalGridTopology(vertex_coordinates,d_to_dface_to_vertices,polytopes)
+  subtopo = PolytopalGridTopology(vertex_coordinates,d_to_dface_to_vertices,polytopes)
+  return subtopo, d_to_dface_to_parent_dface
 end
 
 ############################################################################################
@@ -199,6 +199,8 @@ function get_facet_normal(g::PolytopalGrid)
   @assert g.facet_normal != nothing "This Grid does not have information about normals."
   g.facet_normal
 end
+
+get_cell_ref_coordinates(g::PolytopalGrid) = get_cell_coordinates(g)
 
 function restrict(grid::PolytopalGrid, cell_to_parent_cell::AbstractVector{<:Integer})
   parent_cell_to_parent_nodes = get_cell_node_ids(grid)
@@ -269,8 +271,8 @@ end
 
 function restrict(model::PolytopalDiscreteModel, cell_to_parent_cell::AbstractVector{<:Integer})
   grid = restrict(get_grid(model),cell_to_parent_cell)
-  topo = restrict(get_grid_topology(model),cell_to_parent_cell)
-  labels = restrict(get_face_labeling(model),cell_to_parent_cell)
+  topo, d_to_dface_to_parent_dface = restrict(get_grid_topology(model),cell_to_parent_cell)
+  labels = restrict(get_face_labeling(model),d_to_dface_to_parent_dface)
   return PolytopalDiscreteModel(grid,topo,labels)
 end
 

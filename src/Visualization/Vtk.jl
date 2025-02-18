@@ -139,8 +139,7 @@ function _vtkpoints(trian)
   reshape(reinterpret(Float64,xflat),(D,length(x)))
 end
 
-function _vtkcells(trian)
-
+function _vtkcells(trian::Grid)
   type_to_reffe = get_reffes(trian)
   cell_to_type = get_cell_type(trian)
   type_to_vtkid = map(get_vtkid, type_to_reffe)
@@ -170,20 +169,16 @@ function _generate_vtk_cells(
 
   cells = 1:length(cell_to_type)
   for cell in cells
-
     t = cell_to_type[cell]
     vtkid = type_to_vtkid[t]
     vtknodes = type_to_vtknodes[t]
 
     nodes = getindex!(cache,cell_to_nodes,cell)
     meshcell = MeshCell(d[vtkid], nodes[vtknodes])
-
     push!(meshcells,meshcell)
-
   end
 
   meshcells
-
 end
 
 _data_component_names(v) = nothing
@@ -382,5 +377,27 @@ function _vtkcelltypedict()
   d[VTK_LAGRANGE_TETRAHEDRON.vtk_id] = VTK_LAGRANGE_TETRAHEDRON
   d[VTK_LAGRANGE_HEXAHEDRON.vtk_id] = VTK_LAGRANGE_HEXAHEDRON
   #d[VTK_BIQUADRATIC_HEXAHEDRON.vtk_id] = VTK_BIQUADRATIC_HEXAHEDRON
+  d[VTK_POLYGON.vtk_id] = VTK_POLYGON
+  d[VTK_POLYHEDRON.vtk_id] = VTK_POLYHEDRON
   d
+end
+
+# Polytopal
+
+function _vtkcells(trian::Geometry.PolytopalGrid)
+  D = num_cell_dims(trian)
+  @notimplementedif D != 2
+
+  polys = get_polytopes(trian)
+  cell_to_nodes = get_cell_node_ids(trian)
+  
+  V = eltype(cell_to_nodes)
+  meshcells = Vector{MeshCell{WriteVTK.VTKCellTypes.VTKCellType,V}}(undef, length(polys))
+
+  for (cell, poly) in enumerate(polys)
+    nodes = cell_to_nodes[cell]
+    meshcells[cell] = MeshCell(VTK_POLYGON, nodes)
+  end
+
+  meshcells
 end
