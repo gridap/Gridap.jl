@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.11]
+
+### Changed
+
+- `real` and `imag` functions now return a real TensorValue. Since PR[#1080](https://github.com/gridap/Gridap.jl/pull/1080)
+
 ## [0.18.10] - 2025-01-13
 
 ### Added
