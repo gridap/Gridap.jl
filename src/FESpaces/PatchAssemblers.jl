@@ -430,7 +430,7 @@ end
 
 LocalSolveMap() = LocalSolveMap(NoPivot())
 
-function Arrays.lazy_map(k::LocalSolveMap,mats::AbstractVector{<:AbstractMatrix}, vecs::AbstractVector{<:AbstractVector})
+function Arrays.lazy_map(k::LocalSolveMap, mats::AbstractVector, vecs::AbstractVector)
   matvec = pair_arrays(mats,vecs)
   return lazy_map(k,matvec)
 end
@@ -543,57 +543,77 @@ function Arrays.evaluate!(cache::Nothing, k::HHO_ReconstructionOperatorMap, lhs_
   return RuΩ, RuΓ
 end
 
+
 ###########################################################################################
-# struct HHO_L2ProjectionOperatorMap{A} <: Map
-#   pivot :: A
-# end
+# Temporary solution
 
-# HHO_L2ProjectionOperatorMap() = HHO_L2ProjectionOperatorMap(NoPivot())
-
-# Arrays.return_cache(::HHO_L2ProjectionOperatorMap, bulk_lhs_mats, bulk_rhs_mats, skel_lhs_mats, skel_rhs_mats) = nothing
-
-# function Arrays.evaluate!(cache::Nothing,k::HHO_L2ProjectionOperatorMap, bulk_lhs_mats, bulk_rhs_mats, skel_lhs_mats, skel_rhs_mats)
-#   # Bulk
-#   Att = bulk_lhs_mats
-#   Mtt = bulk_rhs_mats
-
-#   Att_inv = lu!(Att,k.pivot;check=false)
-#   @check issuccess(Att_inv) "Factorization failed"
-#   PuΩ = ldiv!(Att_inv, Mtt)
-  
-#   # Skeleton
-#   Aff = skel_lhs_mats
-#   Mtf = skel_rhs_mats
-
-#   Aff_inv = lu!(Aff,k.pivot;check=false)
-#   @check issuccess(Aff_inv) "Factorization failed"
-#   PuΓ = ldiv!(Aff_inv, Mtf)
-
-#   return PuΩ, PuΓ
-# end
-
-struct HHO_L2ProjectionOperatorMap{A} <: Map
+struct HHOStaticCondensationMap{A} <: Map
   pivot :: A
 end
 
-HHO_L2ProjectionOperatorMap() = HHO_L2ProjectionOperatorMap(NoPivot())
+HHOStaticCondensationMap() = HHOStaticCondensationMap(NoPivot())
 
-Arrays.return_cache(::HHO_L2ProjectionOperatorMap, lhs_mats, rhs_mats) = nothing
+Arrays.return_cache(::HHOStaticCondensationMap, ac_mat, as_mat, vec) = nothing
 
-function Arrays.evaluate!(cache::Nothing,k::HHO_L2ProjectionOperatorMap, lhs_mats, rhs_mats)
-
-  Att, _, _, Aff = lhs_mats.array
-  Mtt, Mtf, _, _ = rhs_mats.array 
-
-  Att_inv = lu!(Att,k.pivot;check=false)
-  @check issuccess(Att_inv) "Factorization failed"
-  PuΩ = ldiv!(Att_inv, Mtt)
+function Arrays.evaluate!(cache::Nothing, k::HHOStaticCondensationMap, ac_mat::MatrixBlock, as_mat::MatrixBlock, vec::VectorBlock)
   
-  Aff_inv = lu!(Aff,k.pivot;check=false)
-  @check issuccess(Aff_inv) "Factorization failed"
-  PuΓ = ldiv!(Aff_inv, Mtf)
+  @check size(as_mat.array) == (2,2)
+  @check size(ac_mat.array) == (2,2)
+  @check size(vec.array) == (2,)
 
-  return PuΩ, PuΓ
+  Kcii, Kcbi, Kcib, Kcbb = ac_mat.array
+  Ksii, Ksbi, Ksib, Ksbb = as_mat.array
+  bi, bb = vec.array
+
+  Kii = Kcii + Ksii
+  Kbi = Kcbi + Ksbi
+  Kib = Kcib + Ksib
+  Kbb = Kcbb + Ksbb
+
+  f = lu!(Kii,k.pivot;check=false)
+  @check issuccess(f) "Factorization failed"
+  ldiv!(f,bi)
+  ldiv!(f,Kib)
+
+  mul!(bb,Kbi,bi,-1,1)
+  mul!(Kbb,Kbi,Kib,-1,1)
+
+  return Kbb, bb
 end
 
+###########################################################################################
 
+struct HHOBackwardStaticCondensationMap{A} <: Map
+  pivot :: A
+end
+
+HHOBackwardStaticCondensationMap() = HHOBackwardStaticCondensationMap(NoPivot())
+
+Arrays.return_cache(::HHOBackwardStaticCondensationMap, ac_mat, as_mat, vec, x) = nothing
+
+function Arrays.evaluate!(cache,k::BackwardStaticCondensationMap, ac_mat::MatrixBlock, as_mat::MatrixBlock, vec::VectorBlock, x)
+  @check size(ac_mat.array) == (2,2)
+  @check size(as_mat.array) == (2,2)
+  @check size(vec.array) == (2,)
+
+  Kcii, Kcbi, Kcib, Kcbb = ac_mat.array
+  Ksii, Ksbi, Ksib, Ksbb = as_mat.array
+  bi, bb = vec.array
+
+  Kii = Kcii + Ksii
+  Kbi = Kcbi + Ksbi
+  Kib = Kcib + Ksib
+  Kbb = Kcbb + Ksbb
+
+  f = lu!(Kii, k.pivot; check=false)
+  @check issuccess(f) "Factorization failed"
+
+  # Use patchwise statically condensed solution x
+  bb .= x
+
+  # Reconstruct interior solution
+  mul!(bi, Kib, bb, -1, 1)  # bi = bi - Kib * x_b
+  ldiv!(f, bi)  # bi = Kii^{-1} * (bi - Kib * x_b)
+
+  return bi
+end

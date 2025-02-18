@@ -78,7 +78,7 @@ ptopo = Geometry.PatchTopology(model)
 Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
 
 # Reference FEs
-order = 1
+order = 0
 reffeV = ReferenceFE(lagrangian, VectorValue{D, Float64}, order; space=:P)
 reffeQ = ReferenceFE(lagrangian, Float64, order; space=:P)
 reffeM = ReferenceFE(lagrangian, Float64, order; space=:P)
@@ -86,7 +86,8 @@ reffeM = ReferenceFE(lagrangian, Float64, order; space=:P)
 # HDG test FE Spaces
 V_test = TestFESpace(Ω, reffeV; conformity=:L2)
 Q_test = TestFESpace(Ω, reffeQ; conformity=:L2)
-M_test = TestFESpace(Γ, reffeM; conformity=:L2, dirichlet_tags="boundary")
+# M_test = TestFESpace(Γ, reffeM; conformity=:L2, dirichlet_tags="boundary")
+M_test = TestFESpace(Γ, reffeM; conformity=:L2)
 
 # HDG trial FE Spaces
 V = TrialFESpace(V_test)
@@ -102,15 +103,33 @@ X = MultiFieldFESpace([V, Q, M];style=mfs)
 degree = 2*(order+1)
 dΩp = Measure(Ωp,degree)
 dΓp = Measure(Γp,degree)
-nrel = get_normal_vector(Γp)
-nabs = get_abs_normal_vector(Γp)
-n = (nrel⋅nabs)⋅nabs
+# nrel = get_normal_vector(Γp)
+# nabs = get_abs_normal_vector(Γp)
+# n = (nrel⋅nabs)⋅nabs
+n = get_normal_vector(Γp)
 
 Πn(u) = u⋅n
 Π(u) = change_domain(u,Γp,DomainStyle(u))
 a((qh,uh,sh),(vh,wh,lh)) = ∫( qh⋅vh - uh*(∇⋅vh) - qh⋅∇(wh) )dΩp + ∫(sh*Πn(vh))dΓp +
                            ∫((Πn(qh) + τ*(Π(uh) - sh))*(Π(wh) + lh))dΓp
-l((vh,wh,hatmh)) = ∫( f*wh )*dΩp
+l((vh,wh,lh)) = ∫( f*wh )*dΩp
+
+# a((qh,uh,sh),(vh,wh,lh)) = ∫(sh*Πn(vh))dΓp
+
+# vh, wh, lh = get_fe_basis(Y);
+# qh, uh, sh = get_trial_fe_basis(X);
+
+# ahdg = a((qh,uh,sh),(vh,wh,lh))
+# ahdg_cO = get_contribution(ahdg, Ωp) 
+# ahdg_cG = get_contribution(ahdg, Γp)  
+
+# w, _r, _c = FESpaces.collect_cell_matrix(X,Y,ahdg)
+# assem = FESpaces.PatchAssembler(ptopo,X,Y)
+# p, qq = FESpaces.collect_cell_patch(assem.ptopo,ahdg)
+
+# cell_mat = FESpaces.collect_patch_cell_matrix(assem,X,Y,ahdg)
+
+# full_matvecs = assemble_matrix(assem, cell_mat)
 
 Asc, bsc = statically_condensed_assembly(ptopo,X,Y,M,M_test,a,l)
 

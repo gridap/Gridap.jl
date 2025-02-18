@@ -4,17 +4,6 @@ module PolytopalHDGConvgTests
   using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
   using Gridap.CellData, Gridap.Fields, Gridap.Helpers
 
-  function get_abs_normal_vector(trian)
-    function normal(c)
-      t = c[2] - c[1]
-      n = VectorValue(-t[2],t[1])
-      n = n/norm(n)
-      return n
-    end
-    face_coords = get_cell_coordinates(trian)
-    face_normals = lazy_map(constant_field,lazy_map(normal,face_coords))
-    return CellData.GenericCellField(face_normals,trian,ReferenceDomain())
-  end
 
   function statically_condensed_assembly(ptopo,X,Y,M,M_test,a,l)
     # Lazily assemble the global patch-systems and 
@@ -72,7 +61,7 @@ module PolytopalHDGConvgTests
     Ω = Triangulation(ReferenceFE{D}, vmodel)
     Γ = Triangulation(ReferenceFE{D-1}, vmodel)
     polys = get_polytopes(vmodel)
-    h = maximum( map(p->get_facet_diameter(p,D),polys) )
+    h = maximum( map(p->FESpaces.get_facet_diameter(p,D),polys) )
 
     ptopo = Geometry.PatchTopology(vmodel)
     Ωp = Geometry.PatchTriangulation(vmodel,ptopo)
@@ -96,10 +85,8 @@ module PolytopalHDGConvgTests
     degree = 2*(order+1)
     dΩp = Measure(Ωp,degree)
     dΓp = Measure(Γp,degree)
-    nrel = get_normal_vector(Γp)
-    nabs = get_abs_normal_vector(Γp)
-    n = (nrel⋅nabs)⋅nabs
-
+    n = get_normal_vector(Γp)
+    
     Πn(u) = u⋅n
     Π(u) = change_domain(u,Γp,DomainStyle(u))
     a((qh,uh,sh),(vh,wh,lh)) = ∫( qh⋅vh - uh*(∇⋅vh) - qh⋅∇(wh) )dΩp + ∫(sh*Πn(vh))dΓp +
@@ -152,7 +139,7 @@ module PolytopalHDGConvgTests
 
   domain = (0,1,0,1)
   ncs = [(2,2),(4,4),(8,8),(16,16),(32,32),(64,64),(128,128)]
-  order = 2
+  order = 4
 
   el, hs = convg_test(domain,ncs,order,u,f)
   println("Slope L2-norm u: $(slope(hs,el))")

@@ -4,17 +4,17 @@ module HDGConvgTests
   using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
   using Gridap.CellData, Gridap.Fields, Gridap.Helpers
 
-  function get_abs_normal_vector(trian)
-    function normal(c)
-      t = c[2] - c[1]
-      n = VectorValue(-t[2],t[1])
-      n = n/norm(n)
-      return n
-    end
-    face_coords = get_cell_coordinates(trian)
-    face_normals = lazy_map(constant_field,lazy_map(normal,face_coords))
-    return CellData.GenericCellField(face_normals,trian,ReferenceDomain())
-  end
+  # function get_abs_normal_vector(trian)
+  #   function normal(c)
+  #     t = c[2] - c[1]
+  #     n = VectorValue(-t[2],t[1])
+  #     n = n/norm(n)
+  #     return n
+  #   end
+  #   face_coords = get_cell_coordinates(trian)
+  #   face_normals = lazy_map(constant_field,lazy_map(normal,face_coords))
+  #   return CellData.GenericCellField(face_normals,trian,ReferenceDomain())
+  # end
 
   function statically_condensed_assembly(ptopo,X,Y,M,M_test,a,l)
     # Lazily assemble the global patch-systems and 
@@ -98,9 +98,7 @@ module HDGConvgTests
     degree = 2*(order+1)
     dΩp = Measure(Ωp,degree)
     dΓp = Measure(Γp,degree)
-    nrel = get_normal_vector(Γp)
-    nabs = get_abs_normal_vector(Γp)
-    n = (nrel⋅nabs)⋅nabs
+    n = get_normal_vector(Γp)
 
     Πn(u) = u⋅n
     Π(u) = change_domain(u,Γp,DomainStyle(u))
@@ -155,7 +153,7 @@ module HDGConvgTests
 
   domain = (0,1,0,1)
   ncs = [(2,2),(4,4),(8,8),(16,16),(32,32),(64,64),(128,128)]
-  order = 3
+  order = 2
 
   el, hs = convg_test(domain,ncs,order,u,f)
   println("Slope L2-norm u: $(slope(hs,el))")
