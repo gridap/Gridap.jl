@@ -101,7 +101,7 @@ function get_cell_measures(rr::RefinementRule)
   return measures
 end
 
-function get_cell_polytopes(rr::Union{RefinementRule,AbstractArray{<:RefinementRule}})
+function Geometry.get_cell_polytopes(rr::Union{RefinementRule,AbstractArray{<:RefinementRule}})
   polys, cell_type = _get_cell_polytopes(rr)
   return CompressedArray(polys,cell_type)
 end

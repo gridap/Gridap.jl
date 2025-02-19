@@ -23,7 +23,7 @@ using CairoMakie
 model = CartesianDiscreteModel((0,1,0,1),(2,2))
 
 pmodel = Gridap.Geometry.PolytopalDiscreteModel(model)
-vmodel = Gridap.Geometry.voronoi(Gridap.ReferenceFEs.simplexify(model))
+vmodel = Gridap.Geometry.voronoi(Gridap.Geometry.simplexify(model))
 polys = get_polytopes(vmodel)
 
 Geometry.restrict(vmodel,[1,2,3,4])
