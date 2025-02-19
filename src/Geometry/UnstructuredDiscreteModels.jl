@@ -175,12 +175,8 @@ function _prepare_tvertices(
     vertices = getindex!(c1,cell_vertices,cell)
     nodes = getindex!(c2,cell_nodes,cell)
     for (lvertex,lnode) in enumerate(lvertex_lnode)
-      v = vertices[lvertex]
-      n = nodes[lnode]
-      #if vertex_node[v] != UNSET_ID
-      vertex_node[v] = n
-      #end
-      node_vertex[n] = v
+      vertex_node[v] = nodes[lnode]
+      node_vertex[n] = vertices[lvertex]
     end
   end
 

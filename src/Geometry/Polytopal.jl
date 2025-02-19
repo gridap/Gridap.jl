@@ -187,6 +187,7 @@ function PolytopalGrid(topo::PolytopalGridTopology{Dc}) where Dc
   PolytopalGrid(get_vertex_coordinates(topo), get_faces(topo,Dc,0), get_polytopes(topo))
 end
 
+is_first_order(::PolytopalGrid) = true
 OrientationStyle(::Type{<:PolytopalGrid}) = NonOriented()
 get_reffes(g::PolytopalGrid) = @notimplemented
 get_polytopes(g::PolytopalGrid) = g.polytopes

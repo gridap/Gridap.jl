@@ -4,6 +4,14 @@ struct RefinementGlue <: AdaptivityGlueType end
 struct MixedGlue <: AdaptivityGlueType end
 
 """
+    struct AdaptivityGlue{GT,Dc} <: GridapType
+      n2o_faces_map
+      n2o_cell_to_child_id
+      refinement_rules
+      o2n_faces_map
+      is_refined
+    end
+
 Glue containing the map between two nested triangulations. The contained datastructures will 
 depend on the type of glue. There are two types of `AdaptivityGlue`: 
 
@@ -71,6 +79,8 @@ select_refined_cells(n2o_cell_map::Vector) = Fill(true,length(n2o_cell_map))
 select_refined_cells(n2o_cell_map::Table) = map(x -> length(x) == 1, n2o_cell_map)
 
 """
+    get_n2o_reference_coordinate_map(g::AdaptivityGlue)
+
 For each fine cell, returns the map Φ st. x_coarse = ϕ(x_fine)
 """
 function get_n2o_reference_coordinate_map(g::AdaptivityGlue{RefinementGlue})
@@ -84,9 +94,11 @@ function get_n2o_reference_coordinate_map(g::AdaptivityGlue{MixedGlue})
 end
 
 """
-  Given a map from new cells to old cells, computes the inverse map.
-  In the general case (refinement+coarsening), the n2o map is a Table, 
-  but the algorithm is optimized for Vectors (refinement only).
+    get_o2n_faces_map(ncell_to_ocell::Table)
+
+Given a map from new cells to old cells, computes the inverse map.
+In the general case (refinement+coarsening), the n2o map is a Table, 
+but the algorithm is optimized for Vectors (refinement only).
 """
 function get_o2n_faces_map(ncell_to_ocell::Table{T}) where {T<:Integer}
   nC = maximum(ncell_to_ocell.data)
@@ -137,8 +149,10 @@ function get_o2n_faces_map(ncell_to_ocell::Vector{T}) where {T<:Integer}
 end
 
 """
-  Given a `RefinementGlue`, returns an array containing the refinement rules for each
-  cell in the new mesh. 
+    get_new_cell_refinement_rules(g::AdaptivityGlue)
+
+Given a `RefinementGlue`, returns an array containing the refinement rules for each
+cell in the new mesh. 
 """
 function get_new_cell_refinement_rules(g::AdaptivityGlue{<:RefinementGlue})
   old_rrules = g.refinement_rules
@@ -154,8 +168,10 @@ function get_new_cell_refinement_rules(g::AdaptivityGlue{<:MixedGlue})
 end
 
 """
-  Given a `RefinementGlue`, returns an array containing the refinement rules for each
-  cell in the old mesh. 
+    get_old_cell_refinement_rules(g::AdaptivityGlue)
+
+Given a `RefinementGlue`, returns an array containing the refinement rules for each
+cell in the old mesh. 
 """
 function get_old_cell_refinement_rules(g::AdaptivityGlue)
   return g.refinement_rules
@@ -164,9 +180,9 @@ end
 # Data re-indexing
 
 """
-  `function n2o_reindex(new_data,g::AdaptivityGlue) -> old_data`
+    n2o_reindex(new_data,g::AdaptivityGlue) -> old_data
 
-  Reindexes a cell-wise array from the new mesh to the old mesh.
+Reindexes a cell-wise array from the new mesh to the old mesh.
 """
 function n2o_reindex(new_data,g::AdaptivityGlue)
   ocell_to_ncell = g.o2n_faces_map
@@ -174,9 +190,9 @@ function n2o_reindex(new_data,g::AdaptivityGlue)
 end
 
 """
-  `function o2n_reindex(old_data,g::AdaptivityGlue) -> new_data`
+    o2n_reindex(old_data,g::AdaptivityGlue) -> new_data
 
-  Reindexes a cell-wise array from the old mesh to the new mesh.
+Reindexes a cell-wise array from the old mesh to the new mesh.
 """
 function o2n_reindex(old_data,g::AdaptivityGlue{GT,Dc}) where {GT,Dc}
   ncell_to_ocell = g.n2o_faces_map[Dc+1]
@@ -203,14 +219,16 @@ function get_d_to_fface_to_cface(::AdaptivityGlue,::GridTopology,::GridTopology)
   @notimplemented
 end
 
-"
- For each child/fine face, returns the parent/coarse face containing it. The parent 
- face might have higher dimension. 
+"""
+    get_d_to_fface_to_cface(glue::AdaptivityGlue,ctopo::GridTopology,ftopo::GridTopology)
 
- Returns two arrays: 
+For each child/fine face, returns the parent/coarse face containing it. The parent 
+face might have higher dimension. 
+
+Returns two arrays: 
   - [dimension][fine face gid] -> coarse parent face gid
   - [dimension][fine face gid] -> coarse parent face dimension
-"
+"""
 function get_d_to_fface_to_cface(glue::AdaptivityGlue{<:RefinementGlue},
                                  ctopo::GridTopology{Dc},
                                  ftopo::GridTopology{Dc}) where Dc
@@ -263,19 +281,30 @@ end
 
 # FaceLabeling refinement
 
-function refine_face_labeling(coarse_labeling::FaceLabeling,
-                               glue  :: AdaptivityGlue,
-                               ctopo :: GridTopology,
-                               ftopo :: GridTopology)
+"""
+    refine_face_labeling(
+      coarse_labeling::FaceLabeling,
+      glue::AdaptivityGlue,
+      ctopo::GridTopology,
+      ftopo::GridTopology
+    )
+"""
+function refine_face_labeling(
+  coarse_labeling::FaceLabeling,
+  glue  :: AdaptivityGlue,
+  ctopo :: GridTopology,
+  ftopo :: GridTopology
+)
   d_to_fface_to_cface,
     d_to_fface_to_cface_dim = get_d_to_fface_to_cface(glue,ctopo,ftopo)
-
   return refine_face_labeling(coarse_labeling,d_to_fface_to_cface,d_to_fface_to_cface_dim)
 end
 
-function refine_face_labeling(coarse_labeling::FaceLabeling,
-                               d_to_fface_to_cface,
-                               d_to_fface_to_cface_dim)
+function refine_face_labeling(
+  coarse_labeling::FaceLabeling,
+  d_to_fface_to_cface,
+  d_to_fface_to_cface_dim
+)
   tag_to_name = copy(coarse_labeling.tag_to_name)
   tag_to_entities = copy(coarse_labeling.tag_to_entities)
   

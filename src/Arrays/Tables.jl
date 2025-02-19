@@ -348,6 +348,7 @@ Equivalent to
     [a[i] for in 1:length(a)]
 """
 collect1d(a) = [a[i] for i in 1:length(a)]
+collect1d(a::Vector) = a
 
 function lazy_map(::typeof(getindex),a::Table,b::AbstractArray{<:Integer})
   LocalItemFromTable(a,b)
