@@ -116,9 +116,9 @@ module HDGConvgTests
 
     xi = backward_static_condensation(ptopo,X,Y,a,l,xb)
     qh, uh = xi
-
+ 
     eu = u - uh
-    l2u = sqrt( sum( ∫( eu ⋅ eu )dΩp ) ) # TO discuss: Is this integration consistent?
+    l2u = sqrt( sum( ∫( eu ⋅ eu )dΩp ) ) 
 
     return l2u
   end
