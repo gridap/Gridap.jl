@@ -99,10 +99,25 @@ function _compute_cell_ids(uh,ttrian)
   tglue = get_glue(ttrian,Val(D))
   @notimplementedif !isa(sglue,FaceToFaceGlue)
   @notimplementedif !isa(tglue,FaceToFaceGlue)
-  scells = IdentityVector(Int32(num_cells(strian)))
-  mcells = extend(scells,sglue.mface_to_tface)
-  tcells = lazy_map(Reindex(mcells),tglue.tface_to_mface)
-  collect(tcells)
+  
+  # Note: In the case where `strian` does not fully cover `ttrian`, 
+  # tface_to_sface will have negative indices.
+  # The negative indices will be dealt with within `autodiff_array_reindex`
+  k = 1
+  mface_to_sface = sglue.mface_to_tface
+  tface_to_mface = tglue.tface_to_mface
+  tface_to_sface = zeros(Int32,length(tface_to_mface))
+  for (tface,mface) in enumerate(tface_to_mface)
+    sface = mface_to_sface[mface]
+    if sface > 0
+      tface_to_sface[tface] = sface
+    else
+      tface_to_sface[tface] = -k
+      k += 1
+    end
+  end
+
+  return tface_to_sface
 end
 
 # Skeleton AD

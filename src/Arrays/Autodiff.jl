@@ -27,7 +27,7 @@ function autodiff_array_gradient(a,i_to_x,j_to_i)
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
-  j_to_cfg = lazy_map(Reindex(i_to_cfg),j_to_i)
+  j_to_cfg = autodiff_array_reindex(i_to_cfg,j_to_i)
   j_to_result = lazy_map(AutoDiffMap(),j_to_cfg,j_to_ydual)
   j_to_result
 end
@@ -37,14 +37,25 @@ function autodiff_array_jacobian(a,i_to_x,j_to_i)
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
-  j_to_cfg = lazy_map(Reindex(i_to_cfg),j_to_i)
+  j_to_cfg = autodiff_array_reindex(i_to_cfg,j_to_i)
   j_to_result = lazy_map(AutoDiffMap(),j_to_cfg,j_to_ydual)
   j_to_result
 end
 
-function autodiff_array_hessian(a,i_to_x,i_to_j)
-  agrad = i_to_y -> autodiff_array_gradient(a,i_to_y,i_to_j)
-  autodiff_array_jacobian(agrad,i_to_x,i_to_j)
+function autodiff_array_hessian(a,i_to_x,j_to_i)
+  agrad = i_to_y -> autodiff_array_gradient(a,i_to_y,j_to_i)
+  autodiff_array_jacobian(agrad,i_to_x,j_to_i)
+end
+
+function autodiff_array_reindex(i_to_val, j_to_i)
+  n_neg = count(j -> j < 0, j_to_i)
+  if iszero(n_neg)
+    j_to_val = lazy_map(Reindex(i_to_val),j_to_i)
+  else
+    neg_to_val = Fill(testitem(i_to_val),n_neg)
+    j_to_val = lazy_map(PosNegReindex(i_to_val,neg_to_val),j_to_i)
+  end
+  return j_to_val
 end
 
 struct ConfigMap{
