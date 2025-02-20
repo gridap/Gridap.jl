@@ -1,19 +1,19 @@
 
 function autodiff_array_gradient(a,i_to_x)
-  dummy_forwarddiff_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_forwarddiff_tag),i_to_x)
-  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.gradient,dummy_forwarddiff_tag),i_to_x)
+  dummy_tag = ()->()
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_tag),i_to_x)
+  i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
-  i_to_result = lazy_map(AutoDiffMap(ForwardDiff.gradient),i_to_ydual,i_to_x,i_to_cfg)
+  i_to_result = lazy_map(AutoDiffMap(),i_to_cfg,i_to_ydual)
   i_to_result
 end
 
 function autodiff_array_jacobian(a,i_to_x)
-  dummy_forwarddiff_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_forwarddiff_tag),i_to_x)
-  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.jacobian,dummy_forwarddiff_tag),i_to_x)
+  dummy_tag = ()->()
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_tag),i_to_x)
+  i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
-  i_to_result = lazy_map(AutoDiffMap(ForwardDiff.jacobian),i_to_ydual,i_to_x,i_to_cfg)
+  i_to_result = lazy_map(AutoDiffMap(),i_to_cfg,i_to_ydual)
   i_to_result
 end
 
@@ -23,28 +23,39 @@ function autodiff_array_hessian(a,i_to_x)
 end
 
 function autodiff_array_gradient(a,i_to_x,j_to_i)
-  dummy_forwarddiff_tag = ()->()
-  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.gradient,dummy_forwarddiff_tag),i_to_x)
+  dummy_tag = ()->()
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_tag),i_to_x)
+  i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
-  j_to_x = lazy_map(Reindex(i_to_x),j_to_i)
-  j_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_forwarddiff_tag),j_to_x)
-  j_to_result = lazy_map(AutoDiffMap(ForwardDiff.gradient),j_to_ydual,j_to_x,j_to_cfg)
+  j_to_cfg = autodiff_array_reindex(i_to_cfg,j_to_i)
+  j_to_result = lazy_map(AutoDiffMap(),j_to_cfg,j_to_ydual)
   j_to_result
 end
 
 function autodiff_array_jacobian(a,i_to_x,j_to_i)
-  dummy_forwarddiff_tag = ()->()
-  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.jacobian,dummy_forwarddiff_tag),i_to_x)
+  dummy_tag = ()->()
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_tag),i_to_x)
+  i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
-  j_to_x = lazy_map(Reindex(i_to_x),j_to_i)
-  j_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_forwarddiff_tag),j_to_x)
-  j_to_result = lazy_map(AutoDiffMap(ForwardDiff.jacobian),j_to_ydual,j_to_x,j_to_cfg)
+  j_to_cfg = autodiff_array_reindex(i_to_cfg,j_to_i)
+  j_to_result = lazy_map(AutoDiffMap(),j_to_cfg,j_to_ydual)
   j_to_result
 end
 
-function autodiff_array_hessian(a,i_to_x,i_to_j)
-  agrad = i_to_y -> autodiff_array_gradient(a,i_to_y,i_to_j)
-  autodiff_array_jacobian(agrad,i_to_x,i_to_j)
+function autodiff_array_hessian(a,i_to_x,j_to_i)
+  agrad = i_to_y -> autodiff_array_gradient(a,i_to_y,j_to_i)
+  autodiff_array_jacobian(agrad,i_to_x,j_to_i)
+end
+
+function autodiff_array_reindex(i_to_val, j_to_i)
+  n_neg = count(j -> j < 0, j_to_i)
+  if iszero(n_neg)
+    j_to_val = lazy_map(Reindex(i_to_val),j_to_i)
+  else
+    neg_to_val = Fill(testitem(i_to_val),n_neg)
+    j_to_val = lazy_map(PosNegReindex(i_to_val,neg_to_val),j_to_i)
+  end
+  return j_to_val
 end
 
 struct ConfigMap{
@@ -54,7 +65,7 @@ struct ConfigMap{
   f::F # ForwardDiff operation
   tag::T # function for config tag name
 end
-# constructor with nothing as the tag, for backwards compatibility
+
 ConfigMap(f) = ConfigMap(f,nothing)
 
 # TODO Prescribing long chunk size can lead to slow compilation times!
@@ -72,52 +83,36 @@ function evaluate!(cfg,k::ConfigMap,x)
   cfg
 end
 
-struct DualizeMap{
-  F <: Union{typeof(ForwardDiff.gradient),typeof(ForwardDiff.jacobian)},
-  T <: Union{<:Function,Nothing}} <: Map
+struct DualizeMap <: Map end
 
-  f::F # ForwardDiff operation
-  tag::T # function for config tag name
-end
-# constructor with nothing as the tag, for backwards compatibility
-DualizeMap(f) = DualizeMap(f,nothing)
-
-function return_cache(k::DualizeMap,x)
-  return_cache(ConfigMap(k.f,k.tag),x)
-end
-
-function evaluate!(cfg,k::DualizeMap,x)
-  xdual = cfg.duals
-  ForwardDiff.seed!(xdual, x, cfg.seeds)
+function evaluate!(cache,::DualizeMap,cfg,x)
+  xdual, seeds = cfg.duals, cfg.seeds
+  ForwardDiff.seed!(xdual, x, seeds)
   xdual
 end
 
-struct AutoDiffMap{F} <: Map
-  f::F
-end
+struct AutoDiffMap <: Map end
 
-function return_cache(k::AutoDiffMap,ydual,x,cfg::ForwardDiff.GradientConfig{T}) where T
+function return_cache(::AutoDiffMap,cfg::ForwardDiff.GradientConfig,ydual)
   ydual isa Real || throw(ForwardDiff.GRAD_ERROR)
-  result = similar(x, ForwardDiff.valtype(ydual))
-  result
+  result = similar(cfg.duals, ForwardDiff.valtype(ydual))
+  return result
 end
 
-function evaluate!(result,k::AutoDiffMap,ydual,x,cfg::ForwardDiff.GradientConfig{T}) where T
-  @notimplementedif ForwardDiff.chunksize(cfg) != length(x)
-  @notimplementedif length(result) != length(x)
+function evaluate!(result,::AutoDiffMap,cfg::ForwardDiff.GradientConfig{T},ydual) where T
+  @check ForwardDiff.chunksize(cfg) == length(result)
   result = ForwardDiff.extract_gradient!(T, result, ydual)
   return result
 end
 
-function return_cache(k::AutoDiffMap,ydual,x,cfg::ForwardDiff.JacobianConfig{T,V,N}) where {T,V,N}
+function return_cache(::AutoDiffMap,cfg::ForwardDiff.JacobianConfig{T,V,N},ydual) where {T,V,N}
   ydual isa AbstractArray || throw(ForwardDiff.JACOBIAN_ERROR)
   result = similar(ydual, ForwardDiff.valtype(eltype(ydual)), length(ydual), N)
-  result
+  return result
 end
 
-function evaluate!(result,k::AutoDiffMap,ydual,x,cfg::ForwardDiff.JacobianConfig{T,V,N}) where {T,V,N}
-  @notimplementedif ForwardDiff.chunksize(cfg) != length(x)
-  @notimplementedif size(result,2) != length(x)
+function evaluate!(result,::AutoDiffMap,cfg::ForwardDiff.JacobianConfig{T,V,N},ydual) where {T,V,N}
+  @check ForwardDiff.chunksize(cfg) == size(result,2)
   ForwardDiff.extract_jacobian!(T, result, ydual, N)
   ForwardDiff.extract_value!(T, result, ydual)
   return result

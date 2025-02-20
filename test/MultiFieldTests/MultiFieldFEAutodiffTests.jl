@@ -11,6 +11,7 @@ using Gridap.FESpaces
 using Gridap.MultiField
 
 using ForwardDiff
+using SparseArrays
 
 domain = (0,1,0,1)
 partition = (2,2)
@@ -40,16 +41,16 @@ xh = FEFunction(Y,rand(num_free_dofs(Y)))
 #display(g(xh,dy)[Ω][end])
 ##display(h(xh,dx,dy)[Ω][end])
 
-@test j(xh,dx,dy)[Ω][end][1,1] != nothing
-@test j(xh,dx,dy)[Ω][end][2,1] != nothing
-@test j(xh,dx,dy)[Ω][end][1,2] != nothing
-@test j(xh,dx,dy)[Ω][end][2,2] != nothing
-@test g(xh,dy)[Ω][end][1] != nothing
-@test g(xh,dy)[Ω][end][2] != nothing
-@test h(xh,dx,dy)[Ω][end][1,1] != nothing
-@test h(xh,dx,dy)[Ω][end][2,1] != nothing
-@test h(xh,dx,dy)[Ω][end][1,2] != nothing
-@test h(xh,dx,dy)[Ω][end][2,2] != nothing
+@test !isnothing(j(xh,dx,dy)[Ω][end][1,1])
+@test !isnothing(j(xh,dx,dy)[Ω][end][2,1])
+@test !isnothing(j(xh,dx,dy)[Ω][end][1,2])
+@test !isnothing(j(xh,dx,dy)[Ω][end][2,2])
+@test !isnothing(g(xh,dy)[Ω][end][1])
+@test !isnothing(g(xh,dy)[Ω][end][2])
+@test !isnothing(h(xh,dx,dy)[Ω][end][1,1])
+@test !isnothing(h(xh,dx,dy)[Ω][end][2,1])
+@test !isnothing(h(xh,dx,dy)[Ω][end][1,2])
+@test !isnothing(h(xh,dx,dy)[Ω][end][2,2])
 
 V1 = FESpace(model,ReferenceFE(lagrangian,Float64,2))
 V2 = FESpace(model,ReferenceFE(lagrangian,Float64,1))
@@ -59,16 +60,16 @@ dx = get_trial_fe_basis(Y)
 dy = get_fe_basis(Y)
 xh = FEFunction(Y,rand(num_free_dofs(Y)))
 
-@test j(xh,dx,dy)[Ω][end][1,1] != nothing
-@test j(xh,dx,dy)[Ω][end][2,1] != nothing
-@test j(xh,dx,dy)[Ω][end][1,2] != nothing
-@test j(xh,dx,dy)[Ω][end][2,2] != nothing
-@test g(xh,dy)[Ω][end][1] != nothing
-@test g(xh,dy)[Ω][end][2] != nothing
-@test h(xh,dx,dy)[Ω][end][1,1] != nothing
-@test h(xh,dx,dy)[Ω][end][2,1] != nothing
-@test h(xh,dx,dy)[Ω][end][1,2] != nothing
-@test h(xh,dx,dy)[Ω][end][2,2] != nothing
+@test !isnothing(j(xh,dx,dy)[Ω][end][1,1])
+@test !isnothing(j(xh,dx,dy)[Ω][end][2,1])
+@test !isnothing(j(xh,dx,dy)[Ω][end][1,2])
+@test !isnothing(j(xh,dx,dy)[Ω][end][2,2])
+@test !isnothing(g(xh,dy)[Ω][end][1])
+@test !isnothing(g(xh,dy)[Ω][end][2])
+@test !isnothing(h(xh,dx,dy)[Ω][end][1,1])
+@test !isnothing(h(xh,dx,dy)[Ω][end][2,1])
+@test !isnothing(h(xh,dx,dy)[Ω][end][1,2])
+@test !isnothing(h(xh,dx,dy)[Ω][end][2,2])
 
 eu(uh) = ∫( uh*uh )dΩ
 ep(ph) = ∫( ph*ph )dΩ
@@ -151,6 +152,10 @@ X = MultiFieldFESpace([U, P])
 
 xh = FEFunction(X,rand(num_free_dofs(X)))
 
+cell_u = get_cell_dof_values(xh)
+xh_bis = CellField(X,cell_u)
+cf = SkeletonCellFieldPair(xh,xh_bis)
+
 Λ = SkeletonTriangulation(model)
 dΛ = Measure(Λ,2)
 n_Λ = get_normal_vector(Λ)
@@ -202,5 +207,29 @@ test_array(gridapgradg,fdgradg,≈)
 gridapgrada = assemble_vector(gradient(a_Λ,xh),X)
 fdgrada = ForwardDiff.gradient(a_Λ_,θ)
 test_array(gridapgrada,fdgrada,≈)
+
+function jac_uh_free_dofs(j,xh,θ)
+  dir_u = similar(xh[1].dirichlet_values,eltype(θ))
+  dir_p = similar(xh[2].dirichlet_values,eltype(θ))
+  X = xh.fe_space
+  θ_uh = restrict_to_field(X,θ,1)
+  θ_ph = restrict_to_field(X,θ,2)
+  uh = FEFunction(X[1],θ_uh,dir_u)
+  ph = FEFunction(X[2],θ_ph,dir_p)
+  xh = MultiFieldFEFunction(θ,xh.fe_space,[uh,ph])
+
+  T = eltype(θ)
+  matrix_type = SparseMatrixCSC{T,Int}
+  vector_type = Vector{T}
+  assem = SparseMatrixAssembler(matrix_type,vector_type,X,X)
+  assemble_vector(v->j(xh,v), assem, X)
+end
+
+J_Λ((uh,ph),(duh,dph)) = ∫( mean(duh)*mean(uh)*mean(uh) + mean(dph)*mean(ph)*mean(uh) + mean(duh)*mean(ph) )dΛ
+J_Λ_(θ) = jac_uh_free_dofs(J_Λ,xh,θ)
+
+gridapjacf = assemble_matrix((du,dv) -> jacobian(u -> J_Λ(u,dv),xh),X,X)
+fdjacf = ForwardDiff.jacobian(J_Λ_,θ)
+test_array(gridapjacf,fdjacf,≈)
 
 end # module
