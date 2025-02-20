@@ -154,11 +154,11 @@ function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair)
   j_to_ydual_plus, j_to_ydual_minus = a(i_to_xdual)
 
   # Work for plus side
-  j_to_cfg_plus = lazy_map(Reindex(i_to_cfg),j_to_i.plus)
+  j_to_cfg_plus = Arrays.autodiff_array_reindex(i_to_cfg,j_to_i.plus)
   j_to_result_plus = lazy_map(AutoDiffMap(),j_to_cfg_plus,j_to_ydual_plus)
 
   # Work for minus side
-  j_to_cfg_minus = lazy_map(Reindex(i_to_cfg),j_to_i.minus)
+  j_to_cfg_minus = Arrays.autodiff_array_reindex(i_to_cfg,j_to_i.minus)
   j_to_result_minus = lazy_map(AutoDiffMap(),j_to_cfg_minus,j_to_ydual_minus)
 
   # Assemble on SkeletonTriangulation expects an array of interior of facets
@@ -183,11 +183,11 @@ function Arrays.autodiff_array_jacobian(a, i_to_x, j_to_i::SkeletonPair)
   j_to_ydual_plus, j_to_ydual_minus = a(i_to_xdual)
 
   # Work for plus side
-  j_to_cfg_plus = lazy_map(Reindex(i_to_cfg),j_to_i.plus)
+  j_to_cfg_plus = Arrays.autodiff_array_reindex(i_to_cfg,j_to_i.plus)
   j_to_result_plus = lazy_map(AutoDiffMap(),j_to_cfg_plus,j_to_ydual_plus)
 
   # Work for minus side
-  j_to_cfg_minus = lazy_map(Reindex(i_to_cfg),j_to_i.minus)
+  j_to_cfg_minus = Arrays.autodiff_array_reindex(i_to_cfg,j_to_i.minus)
   j_to_result_minus = lazy_map(AutoDiffMap(),j_to_cfg_minus,j_to_ydual_minus)
 
   # Merge the columns into a 2x2 block matrix
