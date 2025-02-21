@@ -93,7 +93,7 @@ u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
 q(x) = -∇(u)(x)
 f(x) = (∇ ⋅ q)(x)
 
-nc = (1,1)
+nc = (2,2)
 model = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),nc))
 D = num_cell_dims(model)
 Ω = Triangulation(ReferenceFE{D}, model)
@@ -113,7 +113,6 @@ V_test = TestFESpace(Ω, reffeV; conformity=:L2)
 Mbd_test = TestFESpace(Γ, reffeM; conformity=:L2, dirichlet_tags="boundary")  # For assembly and imposing boundary conditions
 M_test = TestFESpace(Γ, reffeM; conformity=:L2)   # For computing local opearotrs 
 
-
 V   = TrialFESpace(V_test)
 M   = TrialFESpace(M_test) 
 Mbd = TrialFESpace(Mbd_test, u)
@@ -123,6 +122,24 @@ Ybd = MultiFieldFESpace([V_test, Mbd_test];style=mfs) # For assembly and imposin
 Xbd = MultiFieldFESpace([V, Mbd];style=mfs) # For assembly and imposing boundary conditions
 Y   = MultiFieldFESpace([V_test, M_test];style=mfs) # For computing local opearotrs
 X   = MultiFieldFESpace([V, M];style=mfs) # For computing local opearotrs
+
+Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
+dΩ = Measure(Ω,2*(order+1))
+mass(u,v,dΩ) = ∫(u⋅v)dΩ
+massΩ(u,v) = mass(u,v,dΩ)
+massΓ(u,v) = mass(u,Π(v,Γp),dΓp)
+PΩ = FESpaces.LocalOperator(
+  FESpaces.LocalSolveMap(), V, massΩ, massΩ
+)
+PΓ = FESpaces.LocalOperator(
+  FESpaces.LocalSolveMap(), M, massΓ, massΓ; trian_out = Γp
+)
+
+R_reffe = ReferenceFE(lagrangian, Float64, order+1; space=:P)
+R_space = FESpace(Ω, R_reffe; conformity=:L2)
+vR = get_fe_basis(R_space)
+PvΩ = evaluate(PΩ,vR)
+PvΓ = evaluate(PΓ,vR)
 
 degree = order+2 
 dΩp = Measure(Ωp,degree)
@@ -202,3 +219,5 @@ arr = get_array(PΩ_R - PΓ_R)
 δFT_arr = get_array(δFT)
 PΩ_R_arr = get_array(PΩ_R);
 PΓ_R_arr = get_array(PΓ_R);
+
+

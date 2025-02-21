@@ -253,6 +253,17 @@ function _sum_lazy_array(cache,a)
   r
 end
 
+lazy_collect(a) = collect(a)
+
+function lazy_collect(a::LazyArray{A,T} where A) where T
+  cache = array_cache(a)
+  r = Vector{T}(undef,length(a))
+  for i in eachindex(a)
+    r[i] = getindex!(cache,a,i)
+  end
+  r
+end
+
 function testitem(a::LazyArray{A,T} where A) where T
   if length(a) > 0
     first(a)

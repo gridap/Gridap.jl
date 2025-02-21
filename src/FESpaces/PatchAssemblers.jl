@@ -424,6 +424,108 @@ end
 
 ###########################################################################################
 
+struct LocalOperator
+  local_map :: Map
+  trian_out :: Triangulation
+  space_out :: FESpace
+  weakform  :: Function
+  collect_coefficients :: Bool
+end
+
+function LocalOperator(
+  local_map::Map,
+  ptopo::PatchTopology,
+  space_to::FESpace,
+  space_from::FESpace,
+  lhs::Function,
+  rhs::Function;
+  space_out::FESpace = space_to,
+  trian_out::Triangulation = get_triangulation(space_out),
+  collect_coefficients::Bool = true
+)
+  function weakform(u_from)
+    u_to = get_trial_fe_basis(space_to)
+    v_to = get_fe_basis(space_to)
+
+    lhs_assem = PatchAssembler(ptopo,space_to,space_to)
+    lhs_mats = assemble_matrix(lhs_assem,lhs(u_to,v_to))
+
+    rhs_assem = PatchAssembler(ptopo,space_to,space_from)
+    rhs_mats = assemble_matrix(rhs_assem,rhs(u_from,v_to))
+
+    pair_arrays(lhs_mats,rhs_mats)
+  end
+
+  return LocalOperator(local_map,trian_out,space_out,weakform,collect_coefficients)
+end
+
+function LocalOperator(
+  local_map::Map,
+  space_to::FESpace,
+  lhs::Function,
+  rhs::Function;
+  space_out::FESpace = space_to,
+  trian_out::Triangulation = get_triangulation(space_out),
+  collect_coefficients::Bool = true
+)
+  function weakform(u_from)
+    u_to = get_trial_fe_basis(space_to)
+    v_to = get_fe_basis(space_to)
+
+    lhs_c = lhs(u_to,v_to)
+    @check all(t -> t === trian_out, get_domains(lhs_c))
+    lhs_mats = get_contribution(lhs_c, trian_out)
+
+    rhs_c = rhs(u_from,v_to)
+    @check all(t -> t === trian_out, get_domains(rhs_c))
+    rhs_mats = get_contribution(rhs_c, trian_out)
+
+    pair_arrays(lhs_mats,rhs_mats)
+  end
+
+  return LocalOperator(local_map,trian_out,space_out,weakform,collect_coefficients)
+end
+
+function Arrays.evaluate!(
+  cache,k::LocalOperator,v::SingleFieldFEBasis{<:TestBasis}
+)
+  cell_v = CellData.get_data(v)
+  cell_u = lazy_map(transpose,cell_v)
+  u = FESpaces.similar_fe_basis(v,cell_u,get_triangulation(v),TrialBasis(),DomainStyle(v))
+  
+  data = _compute_local_solves(k,u)
+  return GenericCellField(data,get_triangulation(u),ReferenceDomain())
+end
+
+function Arrays.evaluate!(
+  cache,k::LocalOperator,u::SingleFieldFEBasis{<:TrialBasis}
+)
+  _data = _compute_local_solves(k,u)
+  data = lazy_map(transpose,_data)
+  return GenericCellField(data,get_triangulation(u),ReferenceDomain())
+end
+
+function Arrays.evaluate!(
+  cache,k::LocalOperator,u::SingleFieldFEFunction
+)
+  data = _compute_local_solves(k,u)
+  return GenericCellField(data,get_triangulation(u),ReferenceDomain())
+end
+
+function _compute_local_solves(
+  k::LocalOperator,u::CellField
+)
+  cell_coeffs = lazy_map(k.local_map,k.weakform(u))
+  if k.collect_coefficients
+    cell_coeffs = Arrays.lazy_collect(cell_coeffs)
+  end
+  v_out = get_fe_basis(k.space_out)
+  cell_basis = CellData.get_data(change_domain(v_out,k.trian_out,DomainStyle(v_out)))
+  return lazy_map(linear_combination,cell_coeffs,cell_basis)
+end
+
+###########################################################################################
+
 struct LocalSolveMap{A} <: Map
   pivot :: A
 end
@@ -435,9 +537,9 @@ function Arrays.lazy_map(k::LocalSolveMap, mats::AbstractVector, vecs::AbstractV
   return lazy_map(k,matvec)
 end
 
-Arrays.return_cache(::LocalSolveMap,matvec) = nothing
+Arrays.return_cache(::LocalSolveMap, matvec) = nothing
 
-function Arrays.evaluate!(cache,k::LocalSolveMap,matvec)
+function Arrays.evaluate!(cache,k::LocalSolveMap, matvec)
   mat, vec = matvec
   f = lu!(mat,k.pivot;check=false)
   @check issuccess(f) "Factorization failed"
@@ -453,14 +555,14 @@ end
 
 StaticCondensationMap() = StaticCondensationMap(NoPivot())
 
-function Arrays.lazy_map(k::StaticCondensationMap,mats::AbstractVector{<:MatrixBlock}, vecs::AbstractVector{<:VectorBlock})
+function Arrays.lazy_map(k::StaticCondensationMap, mats::AbstractVector{<:MatrixBlock}, vecs::AbstractVector{<:VectorBlock})
   matvec = pair_arrays(mats,vecs)
   return lazy_map(k,matvec)
 end
 
-Arrays.return_cache(::StaticCondensationMap,matvec) = nothing
+Arrays.return_cache(::StaticCondensationMap, matvec) = nothing
 
-function Arrays.evaluate!(cache,k::StaticCondensationMap,matvec)
+function Arrays.evaluate!(cache,k::StaticCondensationMap, matvec)
   mat, vec = matvec
   @check size(mat.array) == (2,2)
   @check size(vec.array) == (2,)
@@ -524,14 +626,14 @@ function Arrays.evaluate!(cache::Nothing, k::HHO_ReconstructionOperatorMap, lhs_
   @check size(rhs_mats.array) == (2,2)
 
   App, Aλp, Apλ, _ = lhs_mats.array
-  BpΩ, BλΩ, BpΓ,_  = rhs_mats.array
+  BpΩ, BλΩ, BpΓ, _ = rhs_mats.array
 
   μT = tr(App)/norm(Apλ)^2
   
-  #A = App + μT * Apλ*Aλp
+  # App = App + μT * Apλ * Aλp
   mul!(App, Apλ, Aλp, μT, 1)
   
-  # BΩ = _BΩ + μT * Apλ * BλΩ
+  # BpΩ = BpΩ + μT * Apλ * BλΩ
   mul!(BpΩ, Apλ, BλΩ, μT, 1)
 
   Ainv = lu!(App,k.pivot;check=false)

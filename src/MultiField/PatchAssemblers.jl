@@ -110,3 +110,31 @@ function FESpaces.PatchAssembler(
   cols = map(block_cols -> blockedrange(map(length,block_cols)),zip(block_patch_cols...))
   return FESpaces.PatchAssembler(ptopo,strategies,rows,cols)
 end
+
+###########################################################################################
+
+function Arrays.evaluate!(
+  cache,k::FESpaces.LocalOperator,u::MultiFieldFEBasisComponent
+)
+  nfields, fieldid = u.nfields, u.fieldid
+  block_fields(fields,::TestBasis) = lazy_map(BlockMap(nfields,fieldid),fields)
+  block_fields(fields,::TrialBasis) = lazy_map(BlockMap((1,nfields),fieldid),fields)
+
+  sf = evaluate!(nothing,k,u.single_field)
+  sf_data = CellData.get_data(sf)
+  mf_data = block_fields(sf_data,BasisStyle(u.single_field))
+  return CellData.similar_cell_field(sf,mf_data,get_triangulation(sf),DomainStyle(sf))
+end
+
+function Arrays.evaluate!(
+  cache,k::FESpaces.LocalOperator,u::MultiFieldCellField
+)
+  nfields, fieldid = u.nfields, u.fieldid
+  block_fields(fields,::TestBasis) = lazy_map(BlockMap(nfields,fieldid),fields)
+  block_fields(fields,::TrialBasis) = lazy_map(BlockMap((1,nfields),fieldid),fields)
+
+  sf = evaluate!(nothing,k,u.single_field)
+  sf_data = CellData.get_data(sf)
+  mf_data = block_fields(sf_data,BasisStyle(u.single_field))
+  return CellData.similar_cell_field(sf,mf_data,get_triangulation(sf),DomainStyle(sf))
+end

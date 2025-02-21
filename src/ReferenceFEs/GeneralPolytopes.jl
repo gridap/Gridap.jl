@@ -7,7 +7,7 @@
 
   In 2 dimensions ([`Polygon`](@ref)), the representation of the polygon is a closed polyline.
 
-  In 3 dimensions ([`Polyhedron`](@ref)), the rotation system generates the connectivities, each   facet is a closed cycle of the graph.
+  In 3 dimensions ([`Polyhedron`](@ref)), the rotation system generates the connectivities, each facet is a closed cycle of the graph.
   This construction allows complex geometrical operations, e.g., intersecting polytopes by halfspaces.
   See also,
 
