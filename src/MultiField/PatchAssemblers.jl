@@ -121,20 +121,53 @@ function Arrays.evaluate!(
   block_fields(fields,::TrialBasis) = lazy_map(BlockMap((1,nfields),fieldid),fields)
 
   sf = evaluate!(nothing,k,u.single_field)
-  sf_data = CellData.get_data(sf)
-  mf_data = block_fields(sf_data,BasisStyle(u.single_field))
-  return CellData.similar_cell_field(sf,mf_data,get_triangulation(sf),DomainStyle(sf))
+  data = block_fields(CellData.get_data(sf),BasisStyle(u.single_field))
+  return CellData.similar_cell_field(sf,data,get_triangulation(sf),DomainStyle(sf))
+end
+
+function Arrays.evaluate!(
+  cache,k::FESpaces.LocalOperator,u::MultiFieldFEFunction
+)
+  evaluate!(cache,k,u.multi_cell_field)
 end
 
 function Arrays.evaluate!(
   cache,k::FESpaces.LocalOperator,u::MultiFieldCellField
 )
-  nfields, fieldid = u.nfields, u.fieldid
-  block_fields(fields,::TestBasis) = lazy_map(BlockMap(nfields,fieldid),fields)
-  block_fields(fields,::TrialBasis) = lazy_map(BlockMap((1,nfields),fieldid),fields)
+  block_fields(fields,::TestBasis,i) = lazy_map(BlockMap(nfields,i),fields)
+  block_fields(fields,::TrialBasis,i) = lazy_map(BlockMap((1,nfields),i),fields)
 
-  sf = evaluate!(nothing,k,u.single_field)
-  sf_data = CellData.get_data(sf)
-  mf_data = block_fields(sf_data,BasisStyle(u.single_field))
-  return CellData.similar_cell_field(sf,mf_data,get_triangulation(sf),DomainStyle(sf))
+  is_basis = all(f -> isa(f,MultiFieldFEBasisComponent), u.single_fields)
+  is_test  = is_basis && all(f -> isa(BasisStyle(f),TestBasis), u.single_fields)
+  is_trial = is_basis && !is_test
+  bstyle = ifelse(is_test, TestBasis(), TrialBasis())
+  v = ifelse(is_test, MultiFieldCellField(map(transpose,u)), u)
+  
+  mf_data = FESpaces._compute_local_solves(k,v)
+
+  nfields = num_fields(u)
+  single_fields = map(1:nfields,mf_data,u) do i, sf_data, sf
+    sf_data = ifelse(is_trial, lazy_map(transpose,sf_data), sf_data)
+    sf_data = ifelse(is_basis, block_fields(sf_data,bstyle,i), sf_data)
+    GenericCellField(sf_data,k.trian_out,DomainStyle(sf))
+  end
+
+  return MultiFieldCellField(single_fields)
+end
+
+function FESpaces._compute_local_solves(
+  k::FESpaces.LocalOperator,u::MultiFieldCellField
+)
+  nfields = num_fields(u)
+  cell_coeffs = lazy_map(k.local_map,k.weakform(u))
+  if k.collect_coefficients
+    cell_coeffs = Arrays.lazy_collect(cell_coeffs)
+  end
+  v_out = get_fe_basis(k.space_out)
+  cell_basis = CellData.get_data(change_domain(v_out,k.trian_out,DomainStyle(v_out)))
+  cell_fields = map(1:nfields) do i
+    coeffs_i = map(x -> getindex(x,i), cell_coeffs)
+    lazy_map(linear_combination,coeffs_i,cell_basis)
+  end
+  return cell_fields
 end

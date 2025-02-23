@@ -366,7 +366,7 @@ end
 
 # Efficient version:
 function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
-  cache1,cache2 = cache
+  cache1, cache2 = cache
   searchmethod, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map = cache1
   cell_f_cache, f_cache, cell_f, f₀ = cache2
   @check f === f₀ "Wrong cache"
@@ -374,7 +374,7 @@ function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
   ncells = length(cell_map)
   x_to_cell(x) = _point_to_cell!(cache1,x)
   point_to_cell = map(x_to_cell,point_to_x)
-  cell_to_points,point_to_lpoint = make_inverse_table(point_to_cell,ncells)
+  cell_to_points, point_to_lpoint = make_inverse_table(point_to_cell,ncells)
   cell_to_xs = lazy_map(Broadcasting(Reindex(point_to_x)),cell_to_points)
   cell_to_f = get_array(f)
   cell_to_fxs = lazy_map(evaluate,cell_to_f,cell_to_xs)
@@ -384,14 +384,14 @@ function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
 end
 
 function compute_cell_points_from_vector_of_points(xs::AbstractVector{<:Point}, trian::Triangulation, domain_style::PhysicalDomain)
-    searchmethod = KDTreeSearch()
-    cache1 = _point_to_cell_cache(searchmethod,trian)
-    x_to_cell(x) = _point_to_cell!(cache1, x)
-    point_to_cell = map(x_to_cell, xs)
-    ncells = num_cells(trian)
-    cell_to_points, point_to_lpoint = make_inverse_table(point_to_cell, ncells)
-    cell_to_xs = lazy_map(Broadcasting(Reindex(xs)), cell_to_points)
-    cell_point_xs = CellPoint(cell_to_xs, trian, PhysicalDomain())
+  searchmethod = KDTreeSearch()
+  cache = _point_to_cell_cache(searchmethod,trian)
+  x_to_cell(x) = _point_to_cell!(cache, x)
+  point_to_cell = map(x_to_cell, xs)
+  ncells = num_cells(trian)
+  cell_to_points, point_to_lpoint = make_inverse_table(point_to_cell, ncells)
+  cell_to_xs = lazy_map(Broadcasting(Reindex(xs)), cell_to_points)
+  return CellPoint(cell_to_xs, trian, PhysicalDomain())
 end
 
 (a::CellField)(x) = evaluate(a,x)

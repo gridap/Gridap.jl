@@ -448,10 +448,14 @@ function LocalOperator(
     v_to = get_fe_basis(space_to)
 
     lhs_assem = PatchAssembler(ptopo,space_to,space_to)
-    lhs_mats = assemble_matrix(lhs_assem,lhs(u_to,v_to))
+    lhs_mats = assemble_matrix(
+      lhs_assem,collect_patch_cell_matrix(lhs_assem,space_to,space_to,lhs(u_to,v_to))
+    )
 
-    rhs_assem = PatchAssembler(ptopo,space_to,space_from)
-    rhs_mats = assemble_matrix(rhs_assem,rhs(u_from,v_to))
+    rhs_assem = PatchAssembler(ptopo,space_from,space_to)
+    rhs_mats = assemble_matrix(
+      rhs_assem,collect_patch_cell_matrix(rhs_assem,space_from,space_to,rhs(u_from,v_to))
+    )
 
     pair_arrays(lhs_mats,rhs_mats)
   end
@@ -494,7 +498,7 @@ function Arrays.evaluate!(
   u = FESpaces.similar_fe_basis(v,cell_u,get_triangulation(v),TrialBasis(),DomainStyle(v))
   
   data = _compute_local_solves(k,u)
-  return GenericCellField(data,get_triangulation(u),ReferenceDomain())
+  return GenericCellField(data,k.trian_out,ReferenceDomain())
 end
 
 function Arrays.evaluate!(
@@ -502,14 +506,14 @@ function Arrays.evaluate!(
 )
   _data = _compute_local_solves(k,u)
   data = lazy_map(transpose,_data)
-  return GenericCellField(data,get_triangulation(u),ReferenceDomain())
+  return GenericCellField(data,k.trian_out,ReferenceDomain())
 end
 
 function Arrays.evaluate!(
   cache,k::LocalOperator,u::SingleFieldFEFunction
 )
   data = _compute_local_solves(k,u)
-  return GenericCellField(data,get_triangulation(u),ReferenceDomain())
+  return GenericCellField(data,k.trian_out,ReferenceDomain())
 end
 
 function _compute_local_solves(
@@ -532,15 +536,12 @@ end
 
 LocalSolveMap() = LocalSolveMap(NoPivot())
 
-function Arrays.lazy_map(k::LocalSolveMap, mats::AbstractVector, vecs::AbstractVector)
-  matvec = pair_arrays(mats,vecs)
-  return lazy_map(k,matvec)
+function Arrays.evaluate!(cache,k::LocalSolveMap, matvec::Tuple)
+  mat, vec = matvec
+  evaluate!(cache,k,mat,vec)
 end
 
-Arrays.return_cache(::LocalSolveMap, matvec) = nothing
-
-function Arrays.evaluate!(cache,k::LocalSolveMap, matvec)
-  mat, vec = matvec
+function Arrays.evaluate!(cache,k::LocalSolveMap, mat, vec)
   f = lu!(mat,k.pivot;check=false)
   @check issuccess(f) "Factorization failed"
   ldiv!(f,vec)
@@ -555,20 +556,17 @@ end
 
 StaticCondensationMap() = StaticCondensationMap(NoPivot())
 
-function Arrays.lazy_map(k::StaticCondensationMap, mats::AbstractVector{<:MatrixBlock}, vecs::AbstractVector{<:VectorBlock})
-  matvec = pair_arrays(mats,vecs)
-  return lazy_map(k,matvec)
+function Arrays.evaluate!(cache,k::StaticCondensationMap, matvec::Tuple)
+  mat, vec = matvec
+  evaluate!(cache,k,mat,vec)
 end
 
-Arrays.return_cache(::StaticCondensationMap, matvec) = nothing
+function Arrays.evaluate!(cache,k::StaticCondensationMap, mat, vec)
+  @check size(mat) == (2,2)
+  @check size(vec) == (2,)
 
-function Arrays.evaluate!(cache,k::StaticCondensationMap, matvec)
-  mat, vec = matvec
-  @check size(mat.array) == (2,2)
-  @check size(vec.array) == (2,)
-
-  Kii, Kbi, Kib, Kbb = mat.array
-  bi, bb = vec.array
+  Kii, Kbi, Kib, Kbb = get_array(mat)
+  bi, bb = get_array(vec)
 
   f = lu!(Kii,k.pivot;check=false)
   @check issuccess(f) "Factorization failed"
@@ -589,25 +587,24 @@ end
 
 BackwardStaticCondensationMap() = BackwardStaticCondensationMap(NoPivot())
 
-Arrays.return_cache(::BackwardStaticCondensationMap, matvec, x) = nothing
-
-function Arrays.evaluate!(cache,k::BackwardStaticCondensationMap, matvec, x)
+function Arrays.evaluate!(cache,k::BackwardStaticCondensationMap, matvec::Tuple, xb)
   mat, vec = matvec
-  @check size(mat.array) == (2,2)
-  @check size(vec.array) == (2,)
+  evaluate!(cache,k,mat,vec,xb)
+end
 
-  Kii, Kbi, Kib, Kbb = mat.array
-  bi, bb = vec.array
+function Arrays.evaluate!(cache,k::BackwardStaticCondensationMap, mat, vec, xb)
+  @check size(mat) == (2,2)
+  @check size(vec) == (2,)
+
+  Kii, Kbi, Kib, Kbb = get_array(mat)
+  bi, bb = get_array(vec)
 
   f = lu!(Kii, k.pivot; check=false)
   @check issuccess(f) "Factorization failed"
 
-  # Use patchwise statically condensed solution x
-  bb .= x
-
   # Reconstruct interior solution
-  mul!(bi, Kib, bb, -1, 1)  # bi = bi - Kib * x_b
-  ldiv!(f, bi)  # bi = Kii^{-1} * (bi - Kib * x_b)
+  mul!(bi, Kib, xb, -1, 1)  # bi = bi - Kib * xb
+  ldiv!(f, bi)              # bi = Kii^{-1} * (bi - Kib * xb)
 
   return bi
 end
@@ -619,14 +616,17 @@ end
 
 HHO_ReconstructionOperatorMap() = HHO_ReconstructionOperatorMap(NoPivot())
 
-Arrays.return_cache(::HHO_ReconstructionOperatorMap, lhs_mats, rhs_mats) = nothing
+function Arrays.evaluate!(cache::Nothing, k::HHO_ReconstructionOperatorMap, mats::Tuple)
+  lhs, rhs = mats
+  evaluate!(cache, k, lhs, rhs)
+end
 
-function Arrays.evaluate!(cache::Nothing, k::HHO_ReconstructionOperatorMap, lhs_mats, rhs_mats)
-  @check size(lhs_mats.array) == (2,2)
-  @check size(rhs_mats.array) == (2,2)
+function Arrays.evaluate!(cache::Nothing, k::HHO_ReconstructionOperatorMap, lhs, rhs)
+  @check size(lhs) == (2,2)
+  @check size(rhs) == (2,2)
 
-  App, Aλp, Apλ, _ = lhs_mats.array
-  BpΩ, BλΩ, BpΓ, _ = rhs_mats.array
+  App, Aλp, Apλ, _ = get_array(lhs)
+  BpΩ, BλΩ, BpΓ, _ = get_array(rhs)
 
   μT = tr(App)/norm(Apλ)^2
   

@@ -242,8 +242,9 @@ end
 function compute_dirichlet_values_for_tags!(
   dirichlet_values,
   dirichlet_values_scratch,
-  f::SingleFieldFESpace,tag_to_object)
-
+  f::SingleFieldFESpace,
+  tag_to_object
+)
   dirichlet_dof_to_tag = get_dirichlet_dof_tag(f)
   _tag_to_object = _convert_to_collectable(tag_to_object,num_dirichlet_tags(f))
   for (tag, object) in enumerate(_tag_to_object)

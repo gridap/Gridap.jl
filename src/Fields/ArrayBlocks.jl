@@ -90,6 +90,8 @@ function Base.show(io::IO,k::MIME"text/plain",o::ArrayBlock)
   end
 end
 
+Arrays.get_array(b::ArrayBlock) = b.array
+
 function Arrays.testitem(f::ArrayBlock{A}) where A
   @notimplementedif !isconcretetype(A)
   i = findall(f.touched)

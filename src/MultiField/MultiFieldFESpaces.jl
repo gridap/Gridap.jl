@@ -1,18 +1,24 @@
 abstract type MultiFieldStyle end
 
 """
-  The DoF ids of the collective space are the concatenation of the DoF ids of the
-  individual spaces.
+    struct ConsecutiveMultiFieldStyle <: MultiFieldStyle end
+
+The DoF ids of the collective space are the concatenation of the DoF ids of the
+individual spaces.
 """
 struct ConsecutiveMultiFieldStyle <: MultiFieldStyle end
 
 """
-  Similar to ConsecutiveMultiFieldStyle, but we keep the original DoF ids of the
-  individual spaces for better block assembly (see BlockSparseMatrixAssembler).
-  Takes three parameters: 
-   - NB: Number of assembly blocks
-   - SB: Size of each assembly block, as a Tuple.
-   - P : Permutation of the variables of the multifield space when assembling, as a Tuple.
+    struct BlockMultiFieldStyle{NB,SB,P} <: MultiFieldStyle end
+
+Similar to ConsecutiveMultiFieldStyle, but we keep the original DoF ids of the
+individual spaces for better block assembly (see BlockSparseMatrixAssembler).
+
+Takes three parameters: 
+
+  - NB: Number of assembly blocks
+  - SB: Size of each assembly block, as a Tuple.
+  - P : Permutation of the variables of the multifield space when assembling, as a Tuple.
 """
 struct BlockMultiFieldStyle{NB,SB,P} <: MultiFieldStyle end
 
@@ -45,7 +51,9 @@ function BlockMultiFieldStyle(::BlockMultiFieldStyle{0,0,0},spaces)
 end
 
 """
-  Not implemented yet. 
+    struct StridedMultiFieldStyle <: MultiFieldStyle end
+
+Not implemented yet. 
 """
 struct StridedMultiFieldStyle <: MultiFieldStyle end
 
@@ -64,15 +72,14 @@ struct MultiFieldFESpace{MS<:MultiFieldStyle,CS<:ConstraintStyle,V} <: FESpace
   function MultiFieldFESpace(
     ::Type{V},
     spaces::Vector{<:SingleFieldFESpace},
-    multi_field_style::MultiFieldStyle) where V
-    @assert length(spaces) > 0
+    multi_field_style::MultiFieldStyle
+  ) where V
+    @assert !isempty(spaces)
+
+    is_constrained = any(has_constraints,spaces)
+    constraint_style = ifelse(is_constrained, Constrained(), UnConstrained())
 
     MS = typeof(multi_field_style)
-    if any( map(has_constraints,spaces) )
-      constraint_style = Constrained()
-    else
-      constraint_style = UnConstrained()
-    end
     CS = typeof(constraint_style)
     new{MS,CS,V}(V,spaces,multi_field_style,constraint_style)
   end
@@ -106,16 +113,12 @@ MultiFieldStyle(f::MultiFieldFESpace) = MultiFieldStyle(typeof(f))
 function FESpaces.get_triangulation(f::MultiFieldFESpace)
   s1 = first(f.spaces)
   trian = get_triangulation(s1)
-  @check all(map(i->trian===get_triangulation(i),f.spaces))
+  @check all(s -> trian === get_triangulation(s), f.spaces)
   trian
 end
 
 function FESpaces.num_free_dofs(f::MultiFieldFESpace)
-  n = 0
-  for U in f.spaces
-    n += num_free_dofs(U)
-  end
-  n
+  mapreduce(num_free_dofs,+,f.spaces;init=0)
 end
 
 function FESpaces.get_free_dof_ids(f::MultiFieldFESpace)

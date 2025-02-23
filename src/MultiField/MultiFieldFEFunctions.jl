@@ -17,12 +17,7 @@ struct MultiFieldFEFunction{T<:MultiFieldCellField} <: FEFunction
 
     multi_cell_field = MultiFieldCellField(map(i->i.cell_field,single_fe_functions))
     T = typeof(multi_cell_field)
-
-    new{T}(
-      single_fe_functions,
-      free_values,
-      space,
-      multi_cell_field)
+    new{T}(single_fe_functions,free_values,space,multi_cell_field)
   end
 end
 
@@ -41,7 +36,7 @@ function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction)
   """
   trians = map(get_triangulation,f.fe_space.spaces)
   trian = first(trians)
-  @check all(map(t->is_change_possible(t,trian),trians)) msg
+  @check all(t -> is_change_possible(t,trian), trians) msg
   get_cell_dof_values(f,trian)
 end
 
@@ -53,12 +48,6 @@ function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction,trian::Triangulati
   nblocks = length(uhs)
   lazy_map(BlockMap(nblocks,active_block_ids),active_block_data...)
 end
-
-#function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction,trian::SkeletonTriangulation)
-#  cell_values_plus = get_cell_dof_values(f,trian.plus)
-#  cell_values_minus = get_cell_dof_values(f,trian.minus)
-#  lazy_map(BlockMap(2,[1,2]),cell_values_plus,cell_values_minus)
-#end
 
 """
     num_fields(m::MultiFieldFEFunction)

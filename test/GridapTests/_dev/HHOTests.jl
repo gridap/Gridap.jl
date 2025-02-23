@@ -125,6 +125,8 @@ X   = MultiFieldFESpace([V, M];style=mfs) # For computing local opearotrs
 
 Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
 dΩ = Measure(Ω,2*(order+1))
+dΩp = Measure(Ωp,2*(order+1))
+dΓp = Measure(Γp,2*(order+1))
 mass(u,v,dΩ) = ∫(u⋅v)dΩ
 massΩ(u,v) = mass(u,v,dΩ)
 massΓ(u,v) = mass(u,Π(v,Γp),dΓp)
@@ -140,6 +142,22 @@ R_space = FESpace(Ω, R_reffe; conformity=:L2)
 vR = get_fe_basis(R_space)
 PvΩ = evaluate(PΩ,vR)
 PvΓ = evaluate(PΓ,vR)
+
+
+Λ_reffe = ReferenceFE(lagrangian, Float64, 0; space=:P)
+Λ_space = FESpace(Ω, Λ_reffe; conformity=:L2)
+nrel = get_normal_vector(Γp)
+Πn(v) = ∇(v)⋅nrel
+rec_lhs((u,λ),(v,μ))   = ∫( (∇(u)⋅∇(v)) + (μ*u) + (λ*v) )dΩp   # u ∈ Vr_trial, v ∈ Vr_test
+rec_rhs((uT,uF),(v,μ)) =  ∫( (∇(uT)⋅∇(v)) + (uT*μ) )dΩp + ∫( (uF - Π(uT,Γp))*(Πn(v)) )dΓp    # (uT,uF) ∈ X, v ∈ Vr_test
+
+W = MultiFieldFESpace([R_space, Λ_space];style=mfs)
+R = FESpaces.LocalOperator(
+  FESpaces.HHO_ReconstructionOperatorMap(), ptopo, W, X, rec_lhs, rec_rhs; space_out = R_space
+)
+vX = get_trial_fe_basis(X)
+Ru = evaluate(R,vX)
+RuΩ, RuΓ = Ru
 
 degree = order+2 
 dΩp = Measure(Ωp,degree)
