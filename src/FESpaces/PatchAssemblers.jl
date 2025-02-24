@@ -490,6 +490,16 @@ function LocalOperator(
   return LocalOperator(local_map,trian_out,space_out,weakform,collect_coefficients)
 end
 
+(P::LocalOperator)(u) = evaluate(P,u)
+
+function Arrays.evaluate!(
+  cache,k::LocalOperator,space::FESpace
+)
+  u = evaluate!(cache,k,get_trial_fe_basis(space))
+  v = similar_cell_field(u,lazy_map(transpose,CellData.get_data(u)),get_triangulation(u),DomainStyle(u))
+  return u, v
+end
+
 function Arrays.evaluate!(
   cache,k::LocalOperator,v::SingleFieldFEBasis{<:TestBasis}
 )

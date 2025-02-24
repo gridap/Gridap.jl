@@ -76,8 +76,6 @@ pmodel = Gridap.Geometry.PolytopalDiscreteModel(model)
 vmodel = Gridap.Geometry.voronoi(simplexify(model))
 polys = get_polytopes(vmodel)
 
-h = maximum(map(p->get_facet_diameter(p,D), polys))
-
 # writevtk(vmodel,"polygonal_model")
 
 D = num_cell_dims(vmodel)
@@ -92,7 +90,6 @@ ptopo = Geometry.PatchTopology(vmodel)
 order = 1
 # reffeV = ReferenceFE(lagrangian, VectorValue{D, Float64}, order; space=:P)
 # reffeQ = ReferenceFE(lagrangian, Float64, order; space=:P)
-
 
 V = FESpaces.PolytopalFESpace(Ω, VectorValue{D, Float64}, order; space=:P)
 Q = FESpaces.PolytopalFESpace(Ω, Float64, order; space=:P)

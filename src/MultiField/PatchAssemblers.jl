@@ -114,6 +114,16 @@ end
 ###########################################################################################
 
 function Arrays.evaluate!(
+  cache,k::FESpaces.LocalOperator,space::MultiFieldFESpace
+)
+  u = evaluate!(cache,k,get_trial_fe_basis(space))
+  v = map(u) do ui
+    CellData.similar_cell_field(ui,lazy_map(transpose,CellData.get_data(ui)),get_triangulation(ui),DomainStyle(ui))
+  end |> MultiFieldCellField
+  return u, v
+end
+
+function Arrays.evaluate!(
   cache,k::FESpaces.LocalOperator,u::MultiFieldFEBasisComponent
 )
   nfields, fieldid = u.nfields, u.fieldid

@@ -22,7 +22,7 @@ function _filter_from_space(space::Symbol)
 end
 
 function PolytopalFESpace(
-  trian::Triangulation{Dc},::Type{T},order::Integer; space = :P, vector_type = Vector{T}
+  trian::Triangulation{Dc},::Type{T},order::Integer; space = :P, vector_type = Vector{_dof_type(T)}
 ) where {Dc,T}
   ncells = num_cells(trian)
   prebasis = Polynomials.MonomialBasis{Dc}(T, order, _filter_from_space(space))
