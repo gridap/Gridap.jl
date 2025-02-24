@@ -5,6 +5,7 @@ using Test
 using Gridap.TensorValues
 using Gridap.Arrays
 using LinearAlgebra
+using Gridap.TensorValues: _eltype
 
 # Comparison
 
@@ -1029,17 +1030,46 @@ b = 4.0 - 3.0*im
 @test outer(a,b) == a*b
 @test inner(a,b) == a*b
 
-@test real(VectorValue(1+1im)) == VectorValue(1)
-@test real(VectorValue(1+1im, 1+1im)) == VectorValue(1, 1)
-@test real(VectorValue(1+1im, 1+1im, 1+1im)) == VectorValue(1, 1, 1)
-@test real(TensorValue(1+1im, 1+1im, 1+1im, 1+1im)) == TensorValue(1, 1, 1, 1)
-@test real(SymTracelessTensorValue(1+1im, 1+1im)) == SymTracelessTensorValue(1, 1)
+v1 = VectorValue(1+1im)
+v2 = VectorValue(1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = VectorValue(1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
 
-@test imag(VectorValue(1+1im)) == VectorValue(1)
-@test imag(VectorValue(1+1im, 1+1im)) == VectorValue(1, 1)
-@test imag(VectorValue(1+1im, 1+1im, 1+1im)) == VectorValue(1, 1, 1)
-@test imag(TensorValue(1+1im, 1+1im, 1+1im, 1+1im)) == TensorValue(1, 1, 1, 1)
-@test imag(SymTracelessTensorValue(1+1im, 1+1im)) == SymTracelessTensorValue(1, 1)
+v1 = VectorValue(1+1im, 1+1im)
+v2 = VectorValue(1, 1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = VectorValue(1-1im, 1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
+
+v1 = VectorValue(1+1im, 1+1im, 1+1im)
+v2 = VectorValue(1, 1, 1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = VectorValue(1-1im, 1-1im, 1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
+
+v1 = TensorValue(1+1im, 1+1im, 1+1im, 1+1im)
+v2 = TensorValue(1, 1, 1, 1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = TensorValue(1-1im, 1-1im, 1-1im, 1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
+
+v1 = SymTracelessTensorValue(1+1im, 1+1im)
+v2 = SymTracelessTensorValue(1, 1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = SymTracelessTensorValue(1-1im, 1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
+
+#_eltype
+@test _eltype(real,Tuple{},VectorValue(1.0,2.0))==Union{}
+@test _eltype(real,Tuple{},VectorValue(1.0,2.0),VectorValue(2.0,3.0),VectorValue(3.0,4.0))==Union{}
+a=VectorValue(4.0,5.0)
+@test _eltype(real,a,VectorValue(1.0,2.0+im),VectorValue(2.0,3.0),VectorValue(3.0,4.0))==eltype(a)
 
 # Broadcast
 a = VectorValue(1,2,3)

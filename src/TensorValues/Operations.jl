@@ -188,12 +188,28 @@ function -(::SymTracelessTensorValue,::MultiValue) error("Subtraction"*_err) end
 function +(::MultiValue,::SymTracelessTensorValue) error("Addition"   *_err) end
 function -(::MultiValue,::SymTracelessTensorValue) error("Subtraction"*_err) end
 
+@inline function _eltype(op,r,a...)
+  eltype(r)
+end
+
+@inline function _eltype(op,r::Tuple{},a...)
+  typeof(reduce(op,zero.(eltype.(a))))
+end
+
 @inline function _eltype(op,r,a,b)
   eltype(r)
 end
 
 @inline function _eltype(op,r::Tuple{},a,b)
   typeof(op(zero(eltype(a)),zero(eltype(b))))
+end
+
+@inline function _eltype(op,r,a)
+  eltype(r)
+end
+
+@inline function _eltype(op,r::Tuple{},a)
+  typeof(op(zero(eltype(a))))
 end
 
 ###############################################################
@@ -760,12 +776,16 @@ for op in (:conj,:real,:imag)
   @eval begin
     function ($op)(a::T) where {T<:MultiValue}
       r = map($op, a.data)
-      T(r)
+      T2 = _eltype($op,r,a)
+      M  = change_eltype(a,T2)
+      M(r)
     end
 
     function ($op)(a::SymTracelessTensorValue)
       r = map($op, a.data)
-      SymTracelessTensorValue(r[1:end-1])
+      T2 = _eltype($op,r,a)
+      M  = change_eltype(a,T2)
+      M(r[1:end-1])
     end
   end
 end
