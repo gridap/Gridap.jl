@@ -125,9 +125,9 @@ end
 """
 """
 function gather_free_values!(free_values,f::SingleFieldFESpace,cell_vals)
-    dirichlet_values = zero_dirichlet_values(f)
-    gather_free_and_dirichlet_values!(free_values,dirichlet_values,f,cell_vals)
-    free_values
+  dirichlet_values = zero_dirichlet_values(f)
+  gather_free_and_dirichlet_values!(free_values,dirichlet_values,f,cell_vals)
+  free_values
 end
 
 function CellField(fs::SingleFieldFESpace,cell_vals)
