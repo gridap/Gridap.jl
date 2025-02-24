@@ -18,7 +18,7 @@ function projection_operator(V, Ω, dΩ)
   Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
   mass(u,v) = ∫(u⋅Π(v,Ω))dΩ
   P = FESpaces.LocalOperator(
-    FESpaces.LocalSolveMap(), V, mass, mass
+    FESpaces.LocalSolveMap(), V, mass, mass; trian_out = Ω
   )
   return P
 end
@@ -38,6 +38,29 @@ function reconstruction_operator(ptopo,L,X,Ωp,Γp,dΩp,dΓp)
     FESpaces.HHO_ReconstructionOperatorMap(), ptopo, W, X, lhs, rhs; space_out = L
   )
   return R
+end
+
+function patch_dof_ids_w_bcs(ptopo,M::FESpace,MD::FESpace)
+  ids_D = get_cell_dof_ids(MD)
+  ids = get_cell_dof_ids(M)
+  
+  id_map = zeros(Int32,num_free_dofs(M))
+  for (I,ID) in zip(ids,ids_D)
+    id_map[I] = ID
+  end
+  
+  patch_dofs = FESpaces.get_patch_dofs(M,ptopo)
+  patch_dofs_D = lazy_map(Broadcasting(Reindex(id_map)),patch_dofs)
+
+  return patch_dofs_D
+end
+
+function patch_dof_ids_w_bcs(ptopo,X::MultiFieldFESpace,XD::MultiFieldFESpace)
+  nfields = MultiField.num_fields(X)
+  pids = map(X,XD) do M, MD
+    patch_dof_ids_w_bcs(ptopo,M,MD)
+  end
+  lazy_map(BlockMap(nfields,collect(1:nfields)),pids...)
 end
 
 ##############################################################
@@ -77,74 +100,39 @@ PΓ = projection_operator(M, Γp, dΓp)
 
 R = reconstruction_operator(ptopo,L,X,Ωp,Γp,dΩp,dΓp)
 
-Ru, Rv = evaluate(R,X)
-RuΩ, RuΓ = Ru
-RvΩ, RvΓ = Rv
+M0 = TestFESpace(Γ, reffe_M; conformity=:L2, dirichlet_tags="boundary")  # For assembly and imposing boundary conditions
+MD = TrialFESpace(M0, u)
 
-degree = order+2 
-dΩp = Measure(Ωp,degree)
-dΓp = Measure(Γp,degree)
+Y0 = MultiFieldFESpace([V, M0];style=mfs)
+YD = MultiFieldFESpace([V, MD];style=mfs)
 
-RvΩ, RuΩ, RvΓ, RuΓ  = reconstruction_operator(X, ptopo, Ω, dΩp, dΓp, order)
+function a(u,v)
+  Ru_Ω, Ru_Γ = R(u)
+  Rv_Ω, Rv_Γ = R(v)
+  return ∫(∇(Ru_Ω)⋅∇(Rv_Ω) + ∇(Ru_Γ)⋅∇(Rv_Γ))dΩ
+end
 
-# V = FESpace(Ω, ReferenceFE(lagrangian,Float64,order+1;space=:P); conformity=:L2)
-# uh = get_fe_basis(V)
-# PvΩ  = projection_operator(uh, order, Ω, Ωp)
-# PvΓ  = projection_operator(uh, order, Γ, Γp)
+hF = 1 / CellField(get_array(∫(1)dΓp),Γp)
+function s(u,v)
+  function S(u)
+    u_Ω, u_Γ = u
+    return PΓ(u_Ω) - u_Γ
+  end
+  return ∫(hF * (S(u)⋅S(v)))dΓp
+end
 
-a_consistency = consistency(RvΩ, RuΩ, RvΓ, RuΓ, X) 
+function biform(u,v)
+  c_a = a(u,v)
+  c_s = s(u,v)
 
-assem = FESpaces.PatchAssembler(ptopo,X,Y)
-cell_mats = collect_cell_matrix(X,Y,a_consistency)
-# full_mats = assemble_matrix(SparseMatrixAssembler(X,Y),cell_mats)
-patch_rows_ii = assem.strategy.array.array[1,1].patch_rows
-# patch_col_ii = assem.strategy.array.array[1,1].patch_cols
-patch_rows_ib = assem.strategy.array.array[1,2].patch_rows
-# patch_col_ib = assem.strategy.array.array[1,2].patch_cols
-patch_rows_bi = assem.strategy.array.array[2,1].patch_rows
-patch_rows_bb = assem.strategy.array.array[2,2].patch_rows
+  dofs_a = patch_dof_ids_w_bcs(ptopo,X,YD)
+  dofs_s = get_cell_dof_ids(YD,Γp)
+  matdata = ([get_array(c_a),get_array(c_s)],[dofs_a,dofs_s],[dofs_a,dofs_s])
+  assemble_matrix(SparseMatrixAssembler(YD,YD),matdata)
+end
 
+x = get_trial_fe_basis(YD)
+y = get_fe_basis(YD)
 
-Mbd = TestFESpace(Γ, reffeM; conformity=:L2, dirichlet_tags="boundary")  # For assembly and imposing boundary conditions
-Mbd = TrialFESpace(Mbd_test, u)
-
-
-# matvecdata = ([cell_mats,],[patch_rows,],[patch_cols,])
-# matdata = ([],[],[]) # dummy matdata
-# # vecdata = ([],[],[]) # dummy vecdata
-# data = (matvecdata, matdata, vecdata)
-# A, b = assemble_matrix_and_vector(SparseMatrixAssembler(M,M_test),data)
-
-
-# full_matvecs = assemble_matrix(a_consistency,assem,Xbd,Ybd)
-# sc_matvecs = lazy_map(FESpaces.StaticCondensationMap(),full_matvecs)
-
-# # Regular assembly of the statically-assembled systems
-# patch_rows = assem.strategy.array.array[2,2].patch_rows
-# patch_cols = assem.strategy.array.array[2,2].patch_cols
-# matvecdata = ([sc_matvecs,],[patch_rows,],[patch_cols,])
-# matdata = ([],[],[]) # dummy matdata
-# vecdata = ([],[],[]) # dummy vecdata
-# data = (matvecdata, matdata, vecdata)
-# A, b = assemble_matrix_and_vector(SparseMatrixAssembler(M,M_test),data)
-
-hF = CellField(get_array(∫(1)dΓp),Γp)
-hFinv = 1/hF
-
-
-Π(v) = change_domain(v,Γp,DomainStyle(v))
-
-uT, uF = get_trial_fe_basis(X);
-vT, vF = get_fe_basis(Y);
-
-δFT = ∫(hFinv * (uF - Π(uT))*(vF - Π(vT)) )*dΓp
-PΩ_R = ∫(hFinv * (mf_PuΩ_RΩ)*(mf_PvΩ_RΩ) )*dΓp + ∫(hFinv * (mf_PuΩ_RΓ)*(mf_PvΩ_RΓ) )*dΓp  # Cannot club them together. strian !=== ttrian. Why?
-PΓ_R = ∫(hFinv * (mf_PuΓ_RΩ)*(mf_PvΓ_RΩ) )*dΓp + ∫(hFinv * (mf_PuΓ_RΓ)*(mf_PvΓ_RΓ) )*dΓp # Cannot club them together. strian !=== ttrian. Why?
-
-arr = get_array(PΩ_R - PΓ_R)
- 
-δFT_arr = get_array(δFT)
-PΩ_R_arr = get_array(PΩ_R);
-PΓ_R_arr = get_array(PΓ_R);
-
+A = biform(x,y)
 

@@ -147,15 +147,25 @@ function Arrays.evaluate!(
   block_fields(fields,::TestBasis,i) = lazy_map(BlockMap(nfields,i),fields)
   block_fields(fields,::TrialBasis,i) = lazy_map(BlockMap((1,nfields),i),fields)
 
+  nfields = num_fields(u)
   is_basis = all(f -> isa(f,MultiFieldFEBasisComponent), u.single_fields)
   is_test  = is_basis && all(f -> isa(BasisStyle(f),TestBasis), u.single_fields)
   is_trial = is_basis && !is_test
   bstyle = ifelse(is_test, TestBasis(), TrialBasis())
-  v = ifelse(is_test, MultiFieldCellField(map(transpose,u)), u)
+
+  if is_test
+    fields = map(1:nfields,u) do i,u
+      sf_data = lazy_map(transpose,CellData.get_data(u.single_field))
+      sf = FESpaces.similar_fe_basis(u.single_field,sf_data,get_triangulation(u),TrialBasis(),DomainStyle(u))
+      MultiFieldFEBasisComponent(sf,i,nfields)
+    end
+    v = MultiFieldCellField(fields)
+  else
+    v = u
+  end
   
   mf_data = FESpaces._compute_local_solves(k,v)
 
-  nfields = num_fields(u)
   single_fields = map(1:nfields,mf_data,u) do i, sf_data, sf
     sf_data = ifelse(is_trial, lazy_map(transpose,sf_data), sf_data)
     sf_data = ifelse(is_basis, block_fields(sf_data,bstyle,i), sf_data)
