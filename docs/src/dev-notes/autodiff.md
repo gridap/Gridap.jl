@@ -55,3 +55,5 @@ end
 ```
 
 where `j_to_i` is a mapping from the cells of the integrand `Triangulation` to the cells of the `FESpace` `U`. We then move the configurations into the final `Triangulation`, to be able to correctly extract the partials. The remaining steps are the same as before.
+
+Analog functions are implemented for the Jacobian, where local contributions will now be matrices that hold ``(\partial r_j / \partial u_i)(u_0)`` for each local residual ``r_j`` (corresponding to the local DoFs of the test space) and each local DoF of the trial space. These contributions are then assembled into the global Jacobian.
