@@ -200,29 +200,3 @@ function Arrays.autodiff_array_jacobian(a, i_to_x, j_to_i::SkeletonPair)
   k = is_single_field ? Fields.MergeBlockMap((2,2),I) : Fields.BlockBroadcasting(Fields.MergeBlockMap((2,2),I))
   lazy_map(k,j_to_result_plus,j_to_result_minus)
 end
-
-function return_cache(k::Arrays.AutoDiffMap,cfg::ForwardDiff.JacobianConfig,ydual::VectorBlock)
-  i = first(findall(ydual.touched))
-  yi = ydual.array[i]
-  ci = return_cache(k,cfg,yi)
-  ri = evaluate!(ci,k,cfg,yi)
-  cache = Vector{typeof(ci)}(undef,length(ydual.array))
-  array = Vector{typeof(ri)}(undef,length(ydual.array))
-  for i in eachindex(ydual.array)
-    if ydual.touched[i]
-      cache[i] = return_cache(k,cfg,ydual.array[i])
-    end
-  end
-  result = ArrayBlock(array,ydual.touched)
-  return result, cache
-end
-
-function evaluate!(cache,k::Arrays.AutoDiffMap,cfg::ForwardDiff.JacobianConfig,ydual::VectorBlock)
-  r, c = cache
-  for i in eachindex(ydual.array)
-    if ydual.touched[i]
-      r.array[i] = evaluate!(c[i],k,cfg,ydual.array[i])
-    end
-  end
-  return r
-end

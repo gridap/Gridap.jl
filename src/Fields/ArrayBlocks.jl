@@ -1515,7 +1515,35 @@ end
 LinearAlgebra.diag(a::MatrixBlockView) = view(a.array.array, diag(a.block_map))
 LinearAlgebra.diag(a::MatrixBlock) = view(a.array,diag(CartesianIndices(a.array)))
 
-# Autodiff
+# Autodiff - Skeleton + SingleField
+
+function return_cache(k::Arrays.AutoDiffMap,cfg::ForwardDiff.JacobianConfig,ydual::VectorBlock)
+  i = findfirst(ydual.touched)
+  yi = ydual.array[i]
+  ci = return_cache(k,cfg,yi)
+  ri = evaluate!(ci,k,cfg,yi)
+  cache = Vector{typeof(ci)}(undef,length(ydual.array))
+  array = Vector{typeof(ri)}(undef,length(ydual.array))
+  for i in eachindex(ydual.array)
+    if ydual.touched[i]
+      cache[i] = return_cache(k,cfg,ydual.array[i])
+    end
+  end
+  result = ArrayBlock(array,ydual.touched)
+  return result, cache
+end
+
+function evaluate!(cache,k::Arrays.AutoDiffMap,cfg::ForwardDiff.JacobianConfig,ydual::VectorBlock)
+  r, c = cache
+  for i in eachindex(ydual.array)
+    if ydual.touched[i]
+      r.array[i] = evaluate!(c[i],k,cfg,ydual.array[i])
+    end
+  end
+  return r
+end
+
+# Autodiff - MultiField
 
 struct BlockConfig{C,T,V,N,D,O} <: ForwardDiff.AbstractConfig{N}
   seeds::NTuple{N,ForwardDiff.Partials{N,V}}
@@ -1562,38 +1590,6 @@ function evaluate!(cache,k::DualizeMap,cfg::BlockConfig,x)
   xdual, seeds, offsets = cfg.duals, cfg.seeds, cfg.offsets
   seed_block!(xdual, x, seeds, offsets)
   return xdual
-end
-
-function evaluate!(cache,k::DualizeMap,cfg::BlockConfig,x,block_id::CartesianIndex{N}) where N
-  xdual, seeds, offsets = cfg.duals, cfg.seeds, cfg.offsets
-  for i in 1:N
-    @inbounds offsets = offsets[block_id[i]]
-    @inbounds xdual = xdual.array[block_id[i]]
-  end
-  seed_block!(xdual, x, seeds, offsets)
-  return xdual
-end
-
-function Arrays.lazy_map(
-  ::DualizeMap,cfg::AbstractArray{<:BlockConfig},x::LazyArray{<:Fill{BlockMap{1}}}
-)
-  k = x.maps.value
-  xdual_blocks = map(k.indices,x.args) do k, xk
-    block_id = CartesianIndex(k,)
-    lazy_map(DualizeMap(),cfg,xk,Fill(block_id,length(cfg)))
-  end
-  lazy_map(k,xdual_blocks...)
-end
-
-function Arrays.lazy_map(
-  ::DualizeMap,cfg::AbstractArray{<:BlockConfig},x::LazyArray{<:Fill{BlockMap{1}}},block_ids::Fill{NTuple{N,Int}}
-) where N
-  k = x.maps.value
-  xdual_blocks = map(k.indices,x.args) do k, xk
-    block_id = CartesianIndex(block_ids.value,k)
-    lazy_map(DualizeMap(),cfg,xk,Fill(block_id,length(cfg)))
-  end
-  lazy_map(k,xdual_blocks...)
 end
 
 function Arrays.return_cache(::AutoDiffMap,cfg::BlockConfig{typeof(ForwardDiff.gradient),T},ydual) where T
