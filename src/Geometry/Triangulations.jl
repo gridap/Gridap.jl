@@ -301,7 +301,7 @@ end
 
 function extend(
   a::LazyArray{<:Fill,T},b::PosNegPartition
-) where T <: Union{Field,AbstractVector{<:Field},Dof,AbstractVector{<:Dof}}
+) where T <: Union{Field,AbstractArray{<:Field},Dof,AbstractArray{<:Dof}}
   k = a.maps.value
   args = map(i->extend(i,b),a.args)
   lazy_map(k,args...)
