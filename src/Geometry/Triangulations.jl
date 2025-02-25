@@ -306,11 +306,17 @@ function extend(a::LazyArray{<:Fill{typeof(linear_combination)}},b::PosNegPartit
   lazy_map(linear_combination,d1,d2)
 end
 
-#function extend(a::LazyArray{<:Fill},b::PosNegPartition)
-#  k = a.maps.value
-#  args = map(i->extend(i,b),a.args)
-#  lazy_map(k,args...)
-#end
+function extend(a::LazyArray{<:Fill{Broadcasting{Operation{typeof(dot)}}}},b::PosNegPartition)
+  d1 = extend(a.args[1],b)
+  d2 = extend(a.args[2],b)
+  lazy_map(Broadcasting(Operation(dot)),d1,d2)
+end
+
+# function extend(a::LazyArray{<:Fill},b::PosNegPartition)
+#   k = a.maps.value
+#   args = map(i->extend(i,b),a.args)
+#   lazy_map(k,args...)
+# end
 
 """
 """
