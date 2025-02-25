@@ -3,17 +3,6 @@ using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
 using Gridap.ReferenceFEs
 
-function consistency(rec_vΩ, rec_uΩ, rec_vΓ, rec_uΓ, X)
-
-  nfields = length(X.spaces)
-  RvΩ = MultiField.MultiFieldFEBasisComponent(rec_vΩ,1,nfields)
-  RuΩ = MultiField.MultiFieldFEBasisComponent(rec_uΩ,1,nfields)
-  RvΓ = MultiField.MultiFieldFEBasisComponent(rec_vΓ,2,nfields)
-  RuΓ = MultiField.MultiFieldFEBasisComponent(rec_uΓ,2,nfields)
-
-    return ∫( (RuΩ*RvΩ)+(RuΩ*RvΓ)+(RuΓ*RvΩ)+(RuΓ*RvΓ) )Measure(Ω,4)
-end
-
 function projection_operator(V, Ω, dΩ)
   Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
   mass(u,v) = ∫(u⋅Π(v,Ω))dΩ
@@ -80,8 +69,7 @@ end
 
 ##############################################################
 u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
-q(x) = -∇(u)(x)
-f(x) = (∇ ⋅ q)(x)
+f(x) = -Δ(u)(x)
 
 nc = (2,2)
 model = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),nc))
