@@ -81,14 +81,14 @@ ptopo = Geometry.PatchTopology(model)
 Ωp = Geometry.PatchTriangulation(model,ptopo)
 Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
 
-order = 0
+order = 1
 qdegree = order+1
 
 dΩ = Measure(Ω,qdegree)
 dΩp = Measure(Ωp,qdegree)
 dΓp = Measure(Γp,qdegree)
 
-reffe_V = ReferenceFE(lagrangian, Float64, order; space=:P)   # Bulk space
+reffe_V = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Bulk space
 reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)   # Skeleton space
 reffe_L = ReferenceFE(lagrangian, Float64, order+1; space=:P) # Reconstruction space
 V = FESpace(Ω, reffe_V; conformity=:L2)
@@ -98,7 +98,7 @@ L = FESpace(Ω, reffe_L; conformity=:L2)
 mfs = MultiField.BlockMultiFieldStyle(2,(1,1))
 X   = MultiFieldFESpace([V, M];style=mfs)
 
-PΩ = projection_operator(V, Ω, dΩ)
+
 PΓ = projection_operator(M, Γp, dΓp)
 
 R = reconstruction_operator(ptopo,L,X,Ωp,Γp,dΩp,dΓp)
@@ -112,16 +112,16 @@ YD = MultiFieldFESpace([V, MD];style=mfs)
 function a(u,v)
   Ru_Ω, Ru_Γ = R(u)
   Rv_Ω, Rv_Γ = R(v)
-  return ∫(∇(Ru_Ω)⋅∇(Rv_Ω) + ∇(Ru_Γ)⋅∇(Rv_Γ))dΩp
+  return ∫(∇(Ru_Ω)⋅∇(Rv_Ω) + ∇(Ru_Γ)⋅∇(Rv_Ω) + ∇(Ru_Ω)⋅∇(Rv_Γ) + ∇(Ru_Γ)⋅∇(Rv_Γ))dΩp
 end
 
-hF = 1 / CellField(get_array(∫(1)dΓp),Γp)
+hT = 1 / CellField(get_array(∫(1)dΩp),Ωp)
 function s(u,v)
   function S(u)
     u_Ω, u_Γ = u
     return PΓ(u_Ω) - u_Γ
   end
-  return ∫(hF * (S(u)⋅S(v)))dΓp
+  return ∫(hT * (S(u)⋅S(v)))dΓp
 end
 
 l((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
