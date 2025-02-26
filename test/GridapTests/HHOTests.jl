@@ -71,7 +71,7 @@ end
 u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
 f(x) = -Δ(u)(x)
 
-nc = (2,2)
+nc = (16,16)
 model = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),nc))
 D = num_cell_dims(model)
 Ω = Triangulation(ReferenceFE{D}, model)
@@ -82,15 +82,14 @@ ptopo = Geometry.PatchTopology(model)
 Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
 
 order = 1
-qdegree = order+1
+qdegree = 2*(order+1)
 
-dΩ = Measure(Ω,qdegree)
 dΩp = Measure(Ωp,qdegree)
 dΓp = Measure(Γp,qdegree)
 
 reffe_V = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Bulk space
-reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)   # Skeleton space
-reffe_L = ReferenceFE(lagrangian, Float64, order+1; space=:P) # Reconstruction space
+reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)     # Skeleton space
+reffe_L = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Reconstruction space
 V = FESpace(Ω, reffe_V; conformity=:L2)
 M = FESpace(Γ, reffe_M; conformity=:L2)
 L = FESpace(Ω, reffe_L; conformity=:L2)
@@ -100,7 +99,6 @@ X   = MultiFieldFESpace([V, M];style=mfs)
 
 
 PΓ = projection_operator(M, Γp, dΓp)
-
 R = reconstruction_operator(ptopo,L,X,Ωp,Γp,dΩp,dΓp)
 
 M0 = TestFESpace(Γ, reffe_M; conformity=:L2, dirichlet_tags="boundary")  # For assembly and imposing boundary conditions
@@ -115,13 +113,13 @@ function a(u,v)
   return ∫(∇(Ru_Ω)⋅∇(Rv_Ω) + ∇(Ru_Γ)⋅∇(Rv_Ω) + ∇(Ru_Ω)⋅∇(Rv_Γ) + ∇(Ru_Γ)⋅∇(Rv_Γ))dΩp
 end
 
-hT = 1 / CellField(get_array(∫(1)dΩp),Ωp)
+hTinv = 1 / CellField(get_array(∫(1)dΩp),Ωp)
 function s(u,v)
   function S(u)
     u_Ω, u_Γ = u
     return PΓ(u_Ω) - u_Γ
   end
-  return ∫(hT * (S(u)⋅S(v)))dΓp
+  return ∫(hTinv * (S(u)⋅S(v)))dΓp
 end
 
 l((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
