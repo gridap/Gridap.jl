@@ -81,9 +81,21 @@ function generate_polytopes(
   cell_polys::AbstractArray{<:Polytope{3}},cell_nodes,node_coordinates
 )
   polytopes = map(cell_polys,cell_nodes) do p, nodes
-    GeneralPolytope{3}(node_coordinates[nodes],get_faces(p,1,0))
+    Polyhedron(p,node_coordinates[nodes])
   end
   return polytopes, cell_nodes
+end
+
+function compute_reffaces(::Type{Polytope{Df}}, g::PolytopalGridTopology{Dc}) where {Df,Dc}
+  cell_to_face = get_faces(g,Dc,Df)
+  face_to_cell = lazy_map(getindex, get_faces(g,Df,Dc), Fill(1,num_faces(g,Df)))
+  face_to_lface = find_local_index(face_to_cell,cell_to_face)
+  face_to_poly  = lazy_map(Reindex(get_polytopes(g)),face_to_cell)
+  return map(Polytope{Df},face_to_poly,face_to_lface), Base.OneTo(num_faces(g,Df))
+end
+
+function compute_reffaces(::Type{Polytope{Dc}}, g::PolytopalGridTopology{Dc}) where Dc
+  (get_polytopes(g), get_cell_type(g))
 end
 
 function num_faces(g::PolytopalGridTopology{Dc},d::Integer) where Dc

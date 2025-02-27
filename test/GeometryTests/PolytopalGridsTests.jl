@@ -29,7 +29,6 @@ polys = get_polytopes(vmodel)
 Geometry.restrict(vmodel,[1,2,3,4])
 
 writevtk(vmodel,"tmp/polygonal_model")
-
 viz(vmodel;color=1:num_cells(vmodel),showpoints=true,showsegments=true)
 
 Ω = Triangulation(vmodel)
@@ -81,3 +80,12 @@ uh = solve(op)
 
 eh = uh - u_exact
 sum(∫(eh⋅eh)dΩ)
+
+###########################
+# 3D
+
+model = CartesianDiscreteModel((0,1,0,1,0,1),(2,2,2))
+
+pmodel = Gridap.Geometry.PolytopalDiscreteModel(model)
+polys = get_polytopes(pmodel)
+writevtk(pmodel,"tmp/polygonal_model";append=false)
