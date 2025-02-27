@@ -15,8 +15,8 @@ module HHOConvgTests
   end
 
   function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
-    reffe_Λ = ReferenceFE(lagrangian, Float64, 0; space=:P)
-    Λ = FESpace(Ω, reffe_Λ; conformity=:L2)
+
+    Λ = FESpaces.PolytopalFESpace(Ω, Float64, 0; space=:P)
 
     nrel = get_normal_vector(Γp)
     Πn(v) = ∇(v)⋅nrel
@@ -75,28 +75,27 @@ module HHOConvgTests
   ##############################################################
   function solve_Poisson_HHO(domain,nc,order,uex,f)
     model = UnstructuredDiscreteModel(CartesianDiscreteModel(domain,nc))
-    D = num_cell_dims(model)
-    Ω = Triangulation(ReferenceFE{D}, model)
-    Γ = Triangulation(ReferenceFE{D-1}, model)
+    vmodel = Gridap.Geometry.voronoi(simplexify(model))
 
-    ptopo = Geometry.PatchTopology(model)
-    Ωp = Geometry.PatchTriangulation(model,ptopo)
-    Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
+    D = num_cell_dims(vmodel)
+    Ω = Triangulation(ReferenceFE{D}, vmodel)
+    Γ = Triangulation(ReferenceFE{D-1}, vmodel)
+
+    ptopo = Geometry.PatchTopology(vmodel)
+    Ωp = Geometry.PatchTriangulation(vmodel,ptopo)
+    Γp = Geometry.PatchBoundaryTriangulation(vmodel,ptopo)
 
     qdegree = 2*(order+1)
     dΩp = Measure(Ωp,qdegree)
     dΓp = Measure(Γp,qdegree)
 
-    reffe_V = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Bulk space
-    reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)     # Skeleton space
-    reffe_L = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Reconstruction space
-    V = FESpace(Ω, reffe_V; conformity=:L2)
-    M = FESpace(Γ, reffe_M; conformity=:L2)
-    L = FESpace(Ω, reffe_L; conformity=:L2)
+    V = FESpaces.PolytopalFESpace(Ω, Float64, order+1; space=:P) # Bulk space
+    reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)  
+    M = FESpace(Γ, reffe_M; conformity=:L2)                      # Skeleton space
+    L = FESpaces.PolytopalFESpace(Ω, Float64, order+1; space=:P) # Reconstruction space
 
     mfs = MultiField.BlockMultiFieldStyle(2,(1,1))
     X   = MultiFieldFESpace([V, M];style=mfs)
-
 
     PΓ = projection_operator(M, Γp, dΓp)
     R = reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
@@ -113,8 +112,10 @@ module HHOConvgTests
       return ∫(∇(Ru_Ω)⋅∇(Rv_Ω) + ∇(Ru_Γ)⋅∇(Rv_Ω) + ∇(Ru_Ω)⋅∇(Rv_Γ) + ∇(Ru_Γ)⋅∇(Rv_Γ))dΩp
     end
 
-    # hTinv = 1 ./ CellField(get_array(∫(1)dΩp),Ωp)
-    hTinv = 1 ./ CellField((sqrt(2).*sqrt.(get_array(∫(1)dΩp))),Ωp)
+    polys = get_polytopes(vmodel)
+    hT = map(x -> FESpaces.get_facet_diameter(x,D), polys)
+
+    hTinv = 1 ./ CellField(hT,Ωp)
     function s(u,v)
       function S(u)
         u_Ω, u_Γ = u
@@ -133,8 +134,8 @@ module HHOConvgTests
 
       dofs_a, cellvals, cellmask = patch_dof_ids_w_bcs(ptopo,X,YD)
       cell_matvec = attach_dirichlet(get_array(a(u,v)),cellvals,cellmask)
-      p = Geometry.get_patch_faces(ptopo,num_cell_dims(model))
-      q = Base.OneTo(num_cells(model))
+      p = Geometry.get_patch_faces(ptopo,num_cell_dims(vmodel))
+      q = Base.OneTo(num_cells(vmodel))
 
       rows_a = FESpaces.attach_patch_map(FESpaces.AssemblyStrategyMap{:rows}(assem.strategy),[dofs_a],[q])[1]
       cols_a = FESpaces.attach_patch_map(FESpaces.AssemblyStrategyMap{:cols}(assem.strategy),[dofs_a],[q])[1]
@@ -197,7 +198,7 @@ module HHOConvgTests
     l2u= sqrt( sum(∫(eu ⋅ eu)dΩp) )
     h1u= l2u + sqrt( sum(∫(∇(eu) ⋅ ∇(eu))dΩp) )
 
-    h = maximum( sqrt(2)*sqrt.( get_array(∫(1)dΩp) ) )
+    h = maximum(hT)
 
     return l2u, h1u, h
   end
@@ -230,8 +231,8 @@ module HHOConvgTests
   f(x) = -Δ(uex)(x)
 
   domain = (0,1,0,1)
-  ncs = [(2,2),(4,4),(8,8),(16,16),(32,32),(64,64),(128,128)]
-  order = 2
+  ncs = [(2,2),(4,4),(8,8),(16,16),(32,32),(64,64),(128,128),(256,256)]
+  order = 0
 
   el2s, eh1s, hs = convg_test(domain,ncs,order,uex,f)
   println("Slope L2-norm u: $(slope(hs,el2s))")

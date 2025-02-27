@@ -12,9 +12,9 @@ function projection_operator(V, Ω, dΩ)
   return P
 end
 
-function reconstruction_operator(ptopo,L,X,Ωp,Γp,dΩp,dΓp)
-  reffe_Λ = ReferenceFE(lagrangian, Float64, 0; space=:P)
-  Λ = FESpace(Ω, reffe_Λ; conformity=:L2)
+function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
+
+  Λ = FESpaces.PolytopalFESpace(Ω, Float64, 0; space=:P)
 
   nrel = get_normal_vector(Γp)
   Πn(v) = ∇(v)⋅nrel
@@ -73,33 +73,34 @@ f(x) = -Δ(u)(x)
 
 nc = (2,2)
 model = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),nc))
-D = num_cell_dims(model)
-Ω = Triangulation(ReferenceFE{D}, model)
-Γ = Triangulation(ReferenceFE{D-1}, model)
+pmodel = Gridap.Geometry.PolytopalDiscreteModel(model)
+vmodel = Gridap.Geometry.voronoi(simplexify(model))
 
-ptopo = Geometry.PatchTopology(model)
-Ωp = Geometry.PatchTriangulation(model,ptopo)
-Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
+D = num_cell_dims(vmodel)
+Ω = Triangulation(ReferenceFE{D}, vmodel)
+Γ = Triangulation(ReferenceFE{D-1}, vmodel)
 
-order = 1
+ptopo = Geometry.PatchTopology(vmodel)
+Ωp = Geometry.PatchTriangulation(vmodel,ptopo)
+Γp = Geometry.PatchBoundaryTriangulation(vmodel,ptopo)
+
+order = 0
 qdegree = 2*(order+1)
 
 dΩp = Measure(Ωp,qdegree)
 dΓp = Measure(Γp,qdegree)
 
-reffe_V = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Bulk space
-reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)     # Skeleton space
-reffe_L = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Reconstruction space
-V = FESpace(Ω, reffe_V; conformity=:L2)
-M = FESpace(Γ, reffe_M; conformity=:L2)
-L = FESpace(Ω, reffe_L; conformity=:L2)
+V = FESpaces.PolytopalFESpace(Ω, Float64, order+1; space=:P) # Bulk space
+reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)  
+M = FESpace(Γ, reffe_M; conformity=:L2)                      # Skeleton space
+L = FESpaces.PolytopalFESpace(Ω, Float64, order+1; space=:P) # Reconstruction space
 
 mfs = MultiField.BlockMultiFieldStyle(2,(1,1))
 X   = MultiFieldFESpace([V, M];style=mfs)
 
 
 PΓ = projection_operator(M, Γp, dΓp)
-R = reconstruction_operator(ptopo,L,X,Ωp,Γp,dΩp,dΓp)
+R = reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
 
 M0 = TestFESpace(Γ, reffe_M; conformity=:L2, dirichlet_tags="boundary")  # For assembly and imposing boundary conditions
 MD = TrialFESpace(M0, u)
@@ -113,7 +114,9 @@ function a(u,v)
   return ∫(∇(Ru_Ω)⋅∇(Rv_Ω) + ∇(Ru_Γ)⋅∇(Rv_Ω) + ∇(Ru_Ω)⋅∇(Rv_Γ) + ∇(Ru_Γ)⋅∇(Rv_Γ))dΩp
 end
 
-hTinv = 1 ./ CellField((sqrt(2).*sqrt.(get_array(∫(1)dΩp))),Ωp)
+polys = get_polytopes(vmodel)
+hT = map(x -> FESpaces.get_facet_diameter(x,D), polys)
+hTinv = 1 ./ CellField(hT,Ωp)
 function s(u,v)
   function S(u)
     u_Ω, u_Γ = u
@@ -148,8 +151,8 @@ function patch_weakform(u,v)
 
   dofs_a, cellvals, cellmask = patch_dof_ids_w_bcs(ptopo,X,YD)
   cell_matvec = attach_dirichlet(get_array(a(u,v)),cellvals,cellmask)
-  p = Geometry.get_patch_faces(ptopo,num_cell_dims(model))
-  q = Base.OneTo(num_cells(model))
+  p = Geometry.get_patch_faces(ptopo,num_cell_dims(vmodel))
+  q = Base.OneTo(num_cells(vmodel))
 
   rows_a = FESpaces.attach_patch_map(FESpaces.AssemblyStrategyMap{:rows}(assem.strategy),[dofs_a],[q])[1]
   cols_a = FESpaces.attach_patch_map(FESpaces.AssemblyStrategyMap{:cols}(assem.strategy),[dofs_a],[q])[1]
