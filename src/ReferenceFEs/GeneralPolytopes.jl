@@ -70,7 +70,7 @@ function GeneralPolytope{D}(
   data) where D
 
   n = D+1
-  n_m_to_nface_to_mfaces = Matrix{Vector{Vector{Int}}}(undef,n,n )
+  n_m_to_nface_to_mfaces = Matrix{Vector{Vector{Int}}}(undef,n,n)
   dimranges = Vector{UnitRange{Int}}(undef,0)
   dface_nfaces = Vector{Vector{Int}}(undef,0)
   facedims = Vector{Int32}(undef,0)
@@ -131,10 +131,10 @@ function Polygon(p::Polytope{2},vertices::AbstractVector{<:Point};kwargs...)
     e_v_graph = [[2,3],[3,1],[1,2]]
     perm = [1,2,3]
   elseif p == QUAD
-    e_v_graph = [[2, 3],[4, 1],[1, 4],[3, 2]]
+    e_v_graph = [[2,3],[4,1],[1,4],[3,2]]
     perm = [1,2,4,3]
   else
-    @unreachable
+    @notimplemented
   end
   vertices = map(Reindex(vertices),perm)
   e_v_graph = map(Reindex(e_v_graph),perm)
@@ -155,21 +155,21 @@ end
 
 function Polyhedron(p::Polytope{3},vertices::AbstractVector{<:Point};kwargs...)
   if p == TET
-    e_v_graph = [[2,4,3],[3,4,1],[1,4,2],[1,2,3]]
+    e_v_graph = [Int32[2,4,3],Int32[3,4,1],Int32[1,4,2],Int32[1,2,3]]
   elseif p == HEX
     e_v_graph = [
-      [5, 2, 3],
-      [6, 4, 1],
-      [7, 1, 4],
-      [8, 3, 2],
-      [1, 7, 6],
-      [2, 5, 8],
-      [3, 8, 5],
-      [4, 6, 7] ]
+      Int32[5, 2, 3],
+      Int32[6, 4, 1],
+      Int32[7, 1, 4],
+      Int32[8, 3, 2],
+      Int32[1, 7, 6],
+      Int32[2, 5, 8],
+      Int32[3, 8, 5],
+      Int32[4, 6, 7]
+    ]
   else
-    @unreachable
+    @notimplemented
   end
-  e_v_graph = map(i->Int32.(i),e_v_graph)
   data = generate_polytope_data(p;kwargs...)
   Polyhedron(vertices,e_v_graph,data)
 end
@@ -226,7 +226,7 @@ Base.isopen(a::GeneralPolytope) = a.isopen
 
   It returns whether a vertex is connected to any other vertex.
 """
-function isactive(p::Polyhedron,vertex::Integer)
+function isactive(p::GeneralPolytope,vertex::Integer)
   !isempty( get_graph(p)[vertex] )
 end
 
