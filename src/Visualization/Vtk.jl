@@ -384,19 +384,29 @@ end
 
 # Polytopal
 
-function _vtkcells(trian::Geometry.PolytopalGrid)
-  D = num_cell_dims(trian)
-  @notimplementedif D != 2
-
+function _vtkcells(trian::Geometry.PolytopalGrid{2})
   polys = get_polytopes(trian)
   cell_to_nodes = get_cell_node_ids(trian)
   
   V = eltype(cell_to_nodes)
   meshcells = Vector{MeshCell{WriteVTK.VTKCellTypes.VTKCellType,V}}(undef, length(polys))
-
   for (cell, poly) in enumerate(polys)
     nodes = cell_to_nodes[cell]
     meshcells[cell] = MeshCell(VTK_POLYGON, nodes)
+  end
+
+  meshcells
+end
+
+function _vtkcells(trian::Geometry.PolytopalGrid{3})
+  polys = get_polytopes(trian)
+  cell_to_nodes = get_cell_node_ids(trian)
+  
+  meshcells = Vector{WriteVTK.VTKPolyhedron}(undef, length(polys))
+  for (cell, poly) in enumerate(polys)
+    nodes = cell_to_nodes[cell]
+    face_to_node = map(lnodes -> Tuple(nodes[lnodes]), get_faces(poly,2,0))
+    meshcells[cell] = WriteVTK.VTKPolyhedron(nodes, face_to_node...)
   end
 
   meshcells
