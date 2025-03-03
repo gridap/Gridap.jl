@@ -91,9 +91,8 @@ function Base.show(io::IO,k::MIME"text/plain",o::ArrayBlock)
   end
 end
 
-<<<<<<< HEAD
 Arrays.get_array(b::ArrayBlock) = b.array
-=======
+
 function Base.similar(x::ArrayBlock{A,N}, T) where {A,N}
   touched = copy(x.touched)
   B = typeof(similar(testvalue(A),T))
@@ -105,7 +104,6 @@ function Base.similar(x::ArrayBlock{A,N}, T) where {A,N}
   end
   ArrayBlock(array,touched)
 end
->>>>>>> 6db1059ae004afaa5ba9764ed865e27872bfc5ac
 
 function Arrays.testitem(f::ArrayBlock{A}) where A
   @notimplementedif !isconcretetype(A)
