@@ -297,6 +297,15 @@ function CellData.CellField(fe::MultiFieldFESpace,cell_values)
   MultiFieldCellField(single_fields)
 end
 
+# Optimisation of the above
+function CellData.CellField(fe::MultiFieldFESpace,cell_values::LazyArray{<:Fill{BlockMap{1}}})
+  single_fields = map(1:length(fe.spaces)) do i
+    cell_values_field = cell_values.args[i]
+    CellField(fe.spaces[i],cell_values_field)
+  end
+  MultiFieldCellField(single_fields)
+end
+
 """
     restrict_to_field(f::MultiFieldFESpace,free_values::AbstractVector,field::Integer)
 """

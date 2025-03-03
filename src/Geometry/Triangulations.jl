@@ -260,6 +260,11 @@ function extend(tface_to_val,mface_to_tface::PosNegPartition)
   lazy_map(PosNegReindex(ipos_to_val,ineg_to_val),i_to_iposneg)
 end
 
+# NOTE: The following is needed to properly extend FEFunctions, in cases where the FESpace
+# is defined on weird Triangulations (see e.g. issue #1085). 
+# The main purpose is to ensure we obtain operations of VoidBasis, not VoidField. I.e 
+# we want to dispatch down to `_pos_neg_data_basis` (see below).
+
 function extend(a::LazyArray{<:Fill{typeof(transpose)}},b::PosNegPartition)
   c = a.args[1]
   d = extend(c,b)
@@ -271,6 +276,18 @@ function extend(a::LazyArray{<:Fill{typeof(linear_combination)}},b::PosNegPartit
   d2 = extend(a.args[2],b)
   lazy_map(linear_combination,d1,d2)
 end
+
+function extend(a::LazyArray{<:Fill{<:Broadcasting{<:Operation}}},b::PosNegPartition) 
+  k = a.maps.value
+  args = map(i->extend(i,b),a.args)
+  lazy_map(k,args...)
+end
+
+# function extend(a::LazyArray{<:Fill},b::PosNegPartition)
+#   k = a.maps.value
+#   args = map(i->extend(i,b),a.args)
+#   lazy_map(k,args...)
+# end
 
 """
 """
