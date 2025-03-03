@@ -26,7 +26,7 @@ println( num_dofs(reffe) )
 function SerendipityRefFE(::Type{T},p::Polytope,order::Int) where T
   @assert is_n_cube(p) "Polytope not compatible with serendipity elements"
   if order > 0
-    sp = SerendipityPolytope(p) 
+    sp = SerendipityPolytope(p)
   else
     sp = p
   end
@@ -87,12 +87,8 @@ get_extrusion(p::SerendipityPolytope{D}) where D = Point(tfill(HEX_AXIS,Val{D}()
 
 # Implemented polytope interface for LagrangianRefFEs
 
-function _s_filter(e,order)
-  sum( [ i for i in e if i>1 ] ) <= order
-end
-
 function compute_monomial_basis(::Type{T},p::SerendipityPolytope{D},orders) where {T,D}
-  MonomialBasis{D}(T,orders,_s_filter)
+  MonomialBasis(Val(D),T,orders,_ser_filter)
 end
 
 function compute_own_nodes(p::SerendipityPolytope{0},orders)

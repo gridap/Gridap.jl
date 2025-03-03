@@ -94,7 +94,7 @@ end
 function compute_node_to_bezier_node(prebasis::MonomialBasis{D,T},nodes) where {D,T}
   orders = get_orders(prebasis)
   terms = _coords_to_terms(nodes,orders)
-  _prebasis = MonomialBasis{D}(T,orders,terms)
+  _prebasis = MonomialBasis(Val(D),T,orders,terms)
   _exps = get_exponents(_prebasis)
   exps = get_exponents(prebasis)
   [ findfirst( isequal(i), exps) for i in _exps ]

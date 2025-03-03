@@ -1,7 +1,6 @@
 """
 
-Exported names are
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__))
 """
 module Geometry
 

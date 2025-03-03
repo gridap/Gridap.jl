@@ -150,7 +150,7 @@ function compute_cell_to_modalC0_reffe(
   ndofs, predofs, lag_reffe, face_dofs = compute_reffe_data(T,p,orders,space=space)
   face_own_dofs = get_face_own_dofs(lag_reffe,GradConformity())
 
-  filter = space == :Q ? _q_filter : _s_filter_mc0
+  filter = space == :Q ? _q_filter : _ser_filter
 
   sh(bbs) = begin
     a = fill(Point{D,eltype(T)}(tfill(zero(eltype(T)),Val{D}())),ndofs)
@@ -181,7 +181,7 @@ function compute_cell_to_modalC0_reffe(
   @notimplementedif ! is_n_cube(p)
   @notimplementedif minimum(orders) < one(eltype(orders))
 
-  filter = space == :Q ? _q_filter : _s_filter_mc0
+  filter = space == :Q ? _q_filter : _ser_filter
 
   ndofs, predofs, lag_reffe, face_dofs = compute_reffe_data(T,p,orders,space=space)
   reffe = GenericRefFE{ModalC0}(ndofs,

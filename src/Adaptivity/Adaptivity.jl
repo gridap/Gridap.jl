@@ -1,5 +1,7 @@
 """
   Mesh Adaptivity for Gridap
+
+$(public_names_in_md(@__MODULE__))
 """
 module Adaptivity
 
@@ -45,7 +47,6 @@ export DorflerMarking, mark, estimate
 include("RefinementRules.jl")
 include("FineToCoarseFields.jl")
 include("OldToNewFields.jl")
-include("FineToCoarseReferenceFEs.jl")
 include("AdaptivityGlues.jl")
 include("AdaptedDiscreteModels.jl")
 include("AdaptedTriangulations.jl")

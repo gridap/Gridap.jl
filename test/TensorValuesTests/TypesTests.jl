@@ -117,7 +117,7 @@ a = [11.0 21.0; NaN 22.0]
 @test convert(SymTensorValue{2,Float64},a) == SymTensorValue{2,Float64,3}(11.0, 21.0, 22.0)
 
 # Constructors (SymTracelessTensorValue)
-q_none = SymTracelessTensorValue{0, Int64, 0}()
+q_none = SymTracelessTensorValue{0, Int, 0}()
 q = SymTracelessTensorValue()
 @test q == q_none
 q = SymTracelessTensorValue{0}()
@@ -681,13 +681,13 @@ a = SymTensorValue(11,21,22)
 @test change_eltype(SymTensorValue{2,Float64},Int) == SymTensorValue{2,Int}
 @test isa(Tuple(a),Tuple)
 @test Tuple(a) == a.data
-b = Matrix{Int64}(undef,2,2)
+b = Matrix{Int}(undef,2,2)
 b[1,1] = a[1,1]
 b[1,2] = a[1,2]
 b[2,1] = a[2,1]
 b[2,2] = a[2,2]
 a = SymTensorValue(11,21,22)
-bt = SymTensorValue{2,Int64}(b)
+bt = SymTensorValue{2,Int}(b)
 @test all(bt .== a)
 
 a = SymTracelessTensorValue(11,21)
@@ -695,12 +695,12 @@ a = SymTracelessTensorValue(11,21)
 @test change_eltype(SymTracelessTensorValue{2,Float64},Int) == SymTracelessTensorValue{2,Int}
 @test isa(Tuple(a),Tuple)
 @test Tuple(a) == a.data
-b = Matrix{Int64}(undef,2,2)
+b = Matrix{Int}(undef,2,2)
 b[1,1] = a[1,1]
 b[1,2] = a[1,2]
 b[2,1] = a[2,1]
 b[2,2] = a[2,2]
-bt = SymTracelessTensorValue{2,Int64}(b)
+bt = SymTracelessTensorValue{2,Int}(b)
 @test all(bt .== a)
 
 a = SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)

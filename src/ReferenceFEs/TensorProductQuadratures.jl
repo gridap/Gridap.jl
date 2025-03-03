@@ -1,4 +1,14 @@
 
+"""
+  struct TensorProduct <: QuadratureName
+
+Tensor product quadrature rule for n-cubes, obtained as the
+tensor product of 1d Gauss-Legendre quadratures.
+
+# Constructor: 
+
+    Quadrature(p::Polytope{D},tensor_product,degrees::Union{Integer,NTuple{D,Integer}};T::Type{<:AbstractFloat}=Float64) where D
+"""
 struct TensorProduct <: QuadratureName end
 
 const tensor_product = TensorProduct()
