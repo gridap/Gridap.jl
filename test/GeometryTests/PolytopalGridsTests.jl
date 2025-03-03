@@ -89,3 +89,4 @@ model = CartesianDiscreteModel((0,1,0,1,0,1),(2,2,2))
 pmodel = Gridap.Geometry.PolytopalDiscreteModel(model)
 polys = get_polytopes(pmodel)
 writevtk(pmodel,"tmp/polygonal_model";append=false)
+

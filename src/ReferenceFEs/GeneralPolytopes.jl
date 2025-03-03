@@ -241,7 +241,7 @@ function check_polytope_graph(p::GeneralPolytope)
 end
 
 function check_polytope_graph(graph::AbstractVector{<:AbstractVector})
-  for v in 1:length(graph)
+  for v in eachindex(graph)
     !isempty(graph[v]) || continue
     for vneig in graph[v]
       vneig > 0 || continue
@@ -303,7 +303,7 @@ function num_faces(p::GeneralPolytope{D},d::Integer) where D
   elseif d == D
     1
   else
-    length( get_faces(p,d,0) )
+    length(get_faces(p,d,0))
   end
 end
 
@@ -532,7 +532,7 @@ end
 function generate_edge_to_vertices(poly::GeneralPolytope)
   graph = get_graph(poly)
   T = Vector{Int32}[]
-  for v in 1:length(graph)
+  for v in eachindex(graph)
     for vneig in graph[v]
       if vneig > v
         push!(T,[v,vneig])
