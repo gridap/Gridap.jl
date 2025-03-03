@@ -202,6 +202,9 @@ d = evaluate!(cache,k,A,b,c)
 
 @test transpose(A) != nothing
 
+b1 = b[1]
+b1*transpose(b1)
+
 A11 = A[1,1]
 A11t = transpose(A11)
 

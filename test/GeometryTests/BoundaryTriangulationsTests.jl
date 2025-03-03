@@ -110,6 +110,11 @@ face_to_nvec_s = lazy_map(evaluate,face_to_nvec,face_to_s)
 test_array(face_to_nvec_s,collect(face_to_nvec_s))
 @test isa(face_to_nvec_s,Geometry.FaceCompressedVector)
 
+face_to_tvec = get_edge_tangent(btrian)
+face_to_tvec_s = lazy_map(evaluate,face_to_tvec,face_to_s)
+test_array(face_to_tvec_s,collect(face_to_tvec_s))
+@test isa(face_to_tvec_s,Geometry.FaceCompressedVector)
+
 #print_op_tree(face_shapefuns_q)
 #print_op_tree(face_grad_shapefuns_q)
 #print_op_tree(face_to_nvec_s)
@@ -146,6 +151,16 @@ r = Vector{Point{2,Float64}}[
   [(0.0,1.0),(0.0,1.0)],[(-1.0,0.0),(-1.0,0.0)],
   [(0.0,1.0),(0.0,1.0)],[(1.0,-0.0),(1.0,-0.0)]]
 test_array(nvec_s,r)
+
+tvec = get_edge_tangent(btrian)
+
+tvec_s = lazy_map(evaluate,tvec,s)
+
+rotate_90(x) = [Point(x[1][2], -x[1][1]), Point(x[2][2], -x[2][1])]
+
+rr = rotate_90.(r)
+
+test_array(rr, tvec_s)
 
 cellids = collect(1:num_cells(model))
 

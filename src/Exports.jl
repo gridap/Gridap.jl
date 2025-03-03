@@ -141,6 +141,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish CellData mean
 @publish CellData update_state!
 @publish CellData get_normal_vector
+@publish CellData get_tangent_vector
 using Gridap.CellData: ∫; export ∫
 @publish CellData get_cell_measure
 @publish CellData get_physical_coordinate

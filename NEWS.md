@@ -7,10 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- Added AMR-related methods `mark` and `estimate` to `Adaptivity` module. Implemented Dorfler marking strategy. Since PR[#1063](https://github.com/gridap/Gridap.jl/pull/1063).
-
 - Documentation and refactoring of Gridap.Polynomials. Since PR[#TODO](https://github.com/gridap/Gridap.jl/pull/#TODO).
 - Two new families of polynomial bases in addition to `Monomial`, `Legendre` (former `Jacobi`) and `ModalC0`: `Chebyshev` and `Bernstein`
 - `MonomialBasis` and `Q[Curl]GradMonomialBasis` have been generalized to `Legendre`, `Chebyshev` and `Bernstein` using the new `UniformPolyBasis` and `CompWiseTensorPolyBasis` respectively.
@@ -21,6 +17,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Nedelec on n-cubes `QGradBasis(PT<:Polynomial, Val(D), order)`
     - Raviart on simplex `PCurlGradBasis(PT<:Polynomial, Val(D), order)`
     - Raviart on n-cubes `QCurlGradBasis(PT<:Polynomial, Val(D), order)`
+
+## [0.18.10] - 2025-03-04
+
+### Added
+
+- Added corresponding function `get_tangent_vector` to `get_normal_vector`. This method calculates the (unique up to sign) tangential unit vector to edges in 2D meshes, by rotating the normal (nx, ny) -> (ny, -nx). Since PR[#1071](https://github.com/gridap/Gridap.jl/pull/1071).
+
+### Fixed
+
+- Fixed autodiff-related issues [#661](https://github.com/gridap/Gridap.jl/issues/661), [#1052](https://github.com/gridap/Gridap.jl/issues/1052) and [#1085](https://github.com/gridap/Gridap.jl/issues/1085). Since PR[#1070](https://github.com/gridap/Gridap.jl/pull/1070).
+
+### Changed
+
+- `real` and `imag` functions now return a real TensorValue. Since PR[#1080](https://github.com/gridap/Gridap.jl/pull/1080).
+- Refactor of automatic differentiation for multi-field spaces. Now there is a more consistent implementation covering all cases. Since PR[#1070](https://github.com/gridap/Gridap.jl/pull/1070).
+
+## [0.18.9] - 2025-01-13
+
+### Added
+
+- Added AMR-related methods `mark` and `estimate` to `Adaptivity` module. Implemented Dorfler marking strategy. Since PR[#1063](https://github.com/gridap/Gridap.jl/pull/1063).
+
+### Fixed
+
+- BUG in `FineToCoarseFields.jl`. Since PR[#1074](https://github.com/gridap/Gridap.jl/pull/1074).
 
 ### Changed
 

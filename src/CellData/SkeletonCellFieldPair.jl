@@ -76,7 +76,7 @@ into it. Ideally, if we could parse and extract only the Skeleton integration
 terms from the functional's julia function form, this fix is not required, but
 this is not trivial to do. On the positive side, since the evaluations are all
 lazy and not used, this doesn't put any noticeable memory or computational
-overhead. Ofcourse, it is made sure that the such plus side pick doesn't happen
+overhead. Of course, it is made sure that the such plus side pick doesn't happen
 when the integration over the SkeletonTriangulation
 =#
 # If SkeletonCellFieldPair is evaluated we just pick the plus side parent
