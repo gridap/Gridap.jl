@@ -53,14 +53,14 @@ function map_cols!(gids,a::AssemblyStrategy,cols)
   nothing
 end
 
-function map_cell_rows(strategy::AssemblyStrategy,cell_ids)
+function map_cell_rows(strategy::AssemblyStrategy,cell_ids,args...)
   k = AssemblyStrategyMap{:rows}(strategy)
-  lazy_map(k,cell_ids)
+  lazy_map(k,cell_ids,args...)
 end
 
-function map_cell_cols(strategy::AssemblyStrategy,cell_ids)
+function map_cell_cols(strategy::AssemblyStrategy,cell_ids,args...)
   k = AssemblyStrategyMap{:cols}(strategy)
-  lazy_map(k,cell_ids)
+  lazy_map(k,cell_ids,args...)
 end
 
 struct AssemblyStrategyMap{S,T} <: Map
@@ -70,45 +70,44 @@ struct AssemblyStrategyMap{S,T} <: Map
   end
 end
 
-function Arrays.return_cache(a::AssemblyStrategyMap,ids::AbstractArray)
+function Arrays.return_cache(a::AssemblyStrategyMap,ids::AbstractArray,args...)
   gids = similar(ids,Int,axes(ids))
   CachedArray(gids)
 end
 
-function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:cols},ids::AbstractArray)
+function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:cols},ids::AbstractArray,args...)
   setsize!(cache,size(ids))
   gids = cache.array
-  map_cols!(gids,a.strategy,ids)
+  map_cols!(gids,a.strategy,ids,args...)
   gids
 end
 
-function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:rows},ids::AbstractArray)
+function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:rows},ids::AbstractArray,args...)
   setsize!(cache,size(ids))
   gids = cache.array
-  map_rows!(gids,a.strategy,ids)
+  map_rows!(gids,a.strategy,ids,args...)
   gids
 end
 
-function Arrays.return_cache(k::AssemblyStrategyMap,ids::ArrayBlock)
+function Arrays.return_cache(k::AssemblyStrategyMap,ids::ArrayBlock,args...)
   fi = testitem(ids)
-  ci = return_cache(k,fi)
-  gi = evaluate!(ci,k,fi)
+  ci = return_cache(k,fi,args...)
+  gi = evaluate!(ci,k,fi,args...)
   b = Array{typeof(ci),ndims(ids)}(undef,size(ids))
   for i in eachindex(ids.array)
     if ids.touched[i]
-      ki = return_cache(k,ids.array[i])
-      b[i] = return_cache(k,ids.array[i])
+      b[i] = return_cache(k,ids.array[i],args...)
     end
   end
   array = Array{typeof(gi),ndims(ids)}(undef,size(ids))
   ArrayBlock(array,ids.touched), b
 end
 
-function Arrays.evaluate!(cache,k::AssemblyStrategyMap,ids::ArrayBlock)
-  a,b = cache
+function Arrays.evaluate!(cache,k::AssemblyStrategyMap,ids::ArrayBlock,args...)
+  a, b = cache
   for i in eachindex(ids.array)
     if ids.touched[i]
-      a.array[i] = evaluate!(b[i],k,ids.array[i])
+      a.array[i] = evaluate!(b[i],k,ids.array[i],args...)
     end
   end
   a

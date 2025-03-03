@@ -3,62 +3,6 @@ using Gridap.Geometry: PatchTopology, get_patch_faces
 using DataStructures: SortedSet
 using BlockArrays
 
-struct BlockAssemblyStrategyMap{S,A}
-  blocks::A
-  function BlockAssemblyStrategyMap{S}(strategies) where S
-    blocks = map(AssemblyStrategyMap{S},strategies)
-    A = typeof(blocks)
-    new{S,A}(blocks)
-  end
-  function BlockAssemblyStrategyMap{S}(strategies,block_map) where S
-    blocks = map(block_map) do I
-      FESpaces.AssemblyStrategyMap{S}(strategies[I])
-    end
-    A = typeof(blocks)
-    new{S,A}(blocks)
-  end
-end
-
-function FESpaces.AssemblyStrategyMap{S}(strategies::ArrayBlockView) where S
-  BlockAssemblyStrategyMap{S}(strategies.array.array,strategies.block_map)
-end
-
-function Arrays.return_cache(k::BlockAssemblyStrategyMap,ids::ArrayBlock,patch)
-  si = testitem(k.blocks)
-  fi = testitem(ids)
-  ci = return_cache(si,fi,patch)
-  gi = evaluate!(ci,si,fi,patch)
-  b = Array{typeof(ci),ndims(ids)}(undef,size(ids))
-  for i in eachindex(ids.array)
-    if ids.touched[i]
-      ki = return_cache(si,ids.array[i])
-      b[i] = return_cache(si,ids.array[i])
-    end
-  end
-  array = Array{typeof(gi),ndims(ids)}(undef,size(ids))
-  ArrayBlock(array,ids.touched), b
-end
-
-function Arrays.evaluate!(cache,k::BlockAssemblyStrategyMap{:rows},ids::ArrayBlock,patch)
-  a,b = cache
-  for i in eachindex(ids.array)
-    if ids.touched[i]
-      a.array[i] = evaluate!(b[i],k.blocks[i,1],ids.array[i],patch)
-    end
-  end
-  a
-end
-
-function Arrays.evaluate!(cache,k::BlockAssemblyStrategyMap{:cols},ids::ArrayBlock,patch)
-  a,b = cache
-  for i in eachindex(ids.array)
-    if ids.touched[i]
-      a.array[i] = evaluate!(b[i],k.blocks[1,i],ids.array[i],patch)
-    end
-  end
-  a
-end
-
 ###########################
 
 function FESpaces.get_patch_dofs(space::MultiFieldFESpace,ptopo::Geometry.PatchTopology)

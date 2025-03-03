@@ -80,34 +80,8 @@ end
 
 function generate_patch_faces(ptopo::PatchTopology{Dc},Df) where Dc
   cell_to_faces = get_faces(ptopo.topo,Dc,Df)
-
-  n_patches = num_patches(ptopo)
   patch_cells = get_patch_cells(ptopo)
-  
-  pfaces = SortedSet{Int32}()
-  ptrs = zeros(Int32,n_patches+1)
-  for patch in 1:n_patches
-    cells = view(patch_cells,patch)
-    for cell in cells
-      push!(pfaces, view(cell_to_faces,cell)...)
-    end
-    ptrs[patch+1] += length(pfaces)
-    empty!(pfaces)
-  end
-  Arrays.length_to_ptrs!(ptrs)
-
-  data = zeros(Int,ptrs[end]-1)
-  for patch in 1:n_patches
-    cells = view(patch_cells,patch)
-    for cell in cells
-      push!(pfaces, view(cell_to_faces,cell)...)
-    end
-    data[ptrs[patch]:ptrs[patch+1]-1] = collect(pfaces)
-    empty!(pfaces)
-  end
-
-  patch_faces = Table(data,ptrs)
-  return patch_faces
+  return Arrays.merge_entries(cell_to_faces, patch_cells; acc = SortedSet{Int32}())
 end
 
 function get_patch_boundary_info(ptopo::PatchTopology{Dc}) where Dc

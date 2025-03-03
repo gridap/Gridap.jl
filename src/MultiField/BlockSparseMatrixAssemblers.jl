@@ -128,40 +128,40 @@ end
 
 for T in [:MatrixBlock,:MatrixBlockView]
   @eval begin
-    function FESpaces.map_cell_rows(strategy::$T{<:AssemblyStrategy},cell_ids)
-      strats = diag(strategy)
+    function FESpaces.map_cell_rows(strategy::$T{<:AssemblyStrategy},cell_ids,args...)
+      strats = [strategy[i,1] for i in axes(strategy,1)]
       k = map(FESpaces.AssemblyStrategyMap{:rows},strats)
-      return lazy_map(k,cell_ids)
+      return lazy_map(k,cell_ids,args...)
     end
-    function FESpaces.map_cell_cols(strategy::$T{<:AssemblyStrategy},cell_ids)
-      strats = diag(strategy)
+    function FESpaces.map_cell_cols(strategy::$T{<:AssemblyStrategy},cell_ids,args...)
+      strats = [strategy[1,i] for i in axes(strategy,2)]
       k = map(FESpaces.AssemblyStrategyMap{:cols},strats)
-      return lazy_map(k,cell_ids)
+      return lazy_map(k,cell_ids,args...)
     end
   end
 end
 
-function Arrays.return_cache(k::Array{<:FESpaces.AssemblyStrategyMap},ids::ArrayBlock)
+function Arrays.return_cache(k::Array{<:FESpaces.AssemblyStrategyMap},ids::ArrayBlock,args...)
   fi = testitem(ids)
   ki = testitem(k)
-  ci = return_cache(ki,fi)
-  gi = evaluate!(ci,ki,fi)
+  ci = return_cache(ki,fi,args...)
+  gi = evaluate!(ci,ki,fi,args...)
   b = Array{typeof(ci),ndims(ids)}(undef,size(ids))
   for i in eachindex(ids.array)
     if ids.touched[i]
-      ki = return_cache(k[i],ids.array[i])
-      b[i] = return_cache(k[i],ids.array[i])
+      ki = return_cache(k[i],ids.array[i],args...)
+      b[i] = return_cache(k[i],ids.array[i],args...)
     end
   end
   array = Array{typeof(gi),ndims(ids)}(undef,size(ids))
   ArrayBlock(array,ids.touched), b
 end
 
-function Arrays.evaluate!(cache,k::Array{<:FESpaces.AssemblyStrategyMap},ids::ArrayBlock)
+function Arrays.evaluate!(cache,k::Array{<:FESpaces.AssemblyStrategyMap},ids::ArrayBlock,args...)
   a,b = cache
   for i in eachindex(ids.array)
     if ids.touched[i]
-      a.array[i] = evaluate!(b[i],k[i],ids.array[i])
+      a.array[i] = evaluate!(b[i],k[i],ids.array[i],args...)
     end
   end
   a

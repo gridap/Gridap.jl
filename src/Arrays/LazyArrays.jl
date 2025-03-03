@@ -260,15 +260,7 @@ function lazy_collect(a::LazyArray{A,T} where A) where T
   r = Vector{T}(undef,length(a))
   for i in eachindex(a)
     m = getindex!(cache,a,i)
-    if isa(m,NTuple)
-      r[i] = map(x -> similar(x),m)
-      r[i] = map(r[i], m) do _r, _m
-        _r .= _m 
-      end
-    else
-      r[i] = similar(m)
-      r[i] .= m
-    end 
+    r[i] = deepcopy(m)
   end
   r
 end

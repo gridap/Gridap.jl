@@ -11,7 +11,7 @@ struct PatchAssemblyStrategy{A,B} <: AssemblyStrategy
   patch_cols :: B
 end
 
-function map_patch_rows!(gids,a::PatchAssemblyStrategy,rows,patch)
+function map_rows!(gids,a::PatchAssemblyStrategy,rows,patch)
   prows = a.patch_rows[patch]
   u = -one(eltype(gids))
   for i in eachindex(rows)
@@ -25,7 +25,7 @@ function map_patch_rows!(gids,a::PatchAssemblyStrategy,rows,patch)
   nothing
 end
 
-function map_patch_cols!(gids,a::PatchAssemblyStrategy,cols,patch)
+function map_cols!(gids,a::PatchAssemblyStrategy,cols,patch)
   pcols = a.patch_cols[patch]
   u = -one(eltype(gids))
   for i in eachindex(cols)
@@ -37,47 +37,6 @@ function map_patch_cols!(gids,a::PatchAssemblyStrategy,cols,patch)
     end
   end
   nothing
-end
-
-Arrays.return_cache(a::AssemblyStrategyMap,ids::AbstractArray,patch) = return_cache(a,ids)
-
-function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:cols},ids::AbstractArray,patch)
-  setsize!(cache,size(ids))
-  gids = cache.array
-  map_patch_cols!(gids,a.strategy,ids,patch)
-  gids
-end
-
-function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:rows},ids::AbstractArray,patch)
-  setsize!(cache,size(ids))
-  gids = cache.array
-  map_patch_rows!(gids,a.strategy,ids,patch)
-  gids
-end
-
-function Arrays.return_cache(k::AssemblyStrategyMap,ids::ArrayBlock,patch)
-  fi = testitem(ids)
-  ci = return_cache(k,fi,patch)
-  gi = evaluate!(ci,k,fi,patch)
-  b = Array{typeof(ci),ndims(ids)}(undef,size(ids))
-  for i in eachindex(ids.array)
-    if ids.touched[i]
-      ki = return_cache(k,ids.array[i],patch)
-      b[i] = return_cache(k,ids.array[i],patch)
-    end
-  end
-  array = Array{typeof(gi),ndims(ids)}(undef,size(ids))
-  ArrayBlock(array,ids.touched), b
-end
-
-function Arrays.evaluate!(cache,k::AssemblyStrategyMap,ids::ArrayBlock,patch)
-  a,b = cache
-  for i in eachindex(ids.array)
-    if ids.touched[i]
-      a.array[i] = evaluate!(b[i],k,ids.array[i],patch)
-    end
-  end
-  a
 end
 
 struct PatchAssembler <: Assembler
@@ -101,24 +60,17 @@ end
 
 function get_patch_dofs(space::FESpace,ptopo::PatchTopology)
   trian = get_triangulation(space)
-
   Df = num_cell_dims(trian)
   face_to_tface = get_glue(trian,Val(Df)).mface_to_tface
   @notimplementedif isnothing(face_to_tface)
-  tface_to_dofs = get_cell_dof_ids(space)
+
+  face_dof_ids = extend(get_cell_dof_ids(space),face_to_tface)
   patch_to_faces = get_patch_faces(ptopo,Df)
 
-  patch_to_dofs = map(patch_to_faces) do pfaces
-    tfaces = filter(x->x>0,face_to_tface[pfaces])
-    dofs = SortedSet{Int}()
-    for tface in tfaces
-      tface_dofs = filter(x->x>0,view(tface_to_dofs,tface))
-      !isempty(tface_dofs) && push!(dofs,tface_dofs...)
-    end
-    collect(dofs)
-  end |> Table
-
-  return patch_to_dofs
+  patch_dof_ids = Arrays.merge_entries(
+    face_dof_ids, patch_to_faces ; acc=SortedSet{Int}(), post=dofs->filter(x->x>0,dofs)
+  )
+  return patch_dof_ids
 end
 
 function assemble_matrix(assem::PatchAssembler,cellmat)
@@ -175,10 +127,10 @@ function collect_cell_patch(ptopo::PatchTopology,a::DomainContribution)
   return p, q
 end
 
-function attach_patch_map(k,r,q)
+function attach_patch_map(f,strat,r,q)
   c = []
   for (ri,qi) in zip(r,q)
-    push!(c,lazy_map(k,ri,qi))
+    push!(c,f(strat,ri,qi))
   end
   return c
 end
@@ -186,23 +138,23 @@ end
 function collect_patch_cell_matrix(assem::PatchAssembler,trial::FESpace,test::FESpace,a::DomainContribution)
   w, _r, _c = collect_cell_matrix(trial,test,a)
   p, q = collect_cell_patch(assem.ptopo,a)
-  r = attach_patch_map(AssemblyStrategyMap{:rows}(assem.strategy),_r,q)
-  c = attach_patch_map(AssemblyStrategyMap{:cols}(assem.strategy),_c,q)
+  r = attach_patch_map(map_cell_rows,assem.strategy,_r,q)
+  c = attach_patch_map(map_cell_cols,assem.strategy,_c,q)
   return (w, r, c, p)
 end
 
 function collect_patch_cell_vector(assem::PatchAssembler,test::FESpace,a::DomainContribution)
   w, _r = collect_cell_vector(test,a)
   p, q = collect_cell_patch(assem.ptopo,a)
-  r = attach_patch_map(AssemblyStrategyMap{:rows}(assem.strategy),_r,q)
+  r = attach_patch_map(map_cell_rows,assem.strategy,_r,q)
   return (w, r, p)
 end
 
 function _collect_patch_cell_matvec(assem::PatchAssembler,trial::FESpace,test::FESpace,a::DomainContribution)
   w, _r, _c = _collect_cell_matvec(trial,test,a)
   p, q = collect_cell_patch(assem.ptopo,a)
-  r = attach_patch_map(AssemblyStrategyMap{:rows}(assem.strategy),_r,q)
-  c = attach_patch_map(AssemblyStrategyMap{:cols}(assem.strategy),_c,q)
+  r = attach_patch_map(map_cell_rows,assem.strategy,_r,q)
+  c = attach_patch_map(map_cell_cols,assem.strategy,_c,q)
   return (w, r, c, p)
 end
 

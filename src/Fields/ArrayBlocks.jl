@@ -33,6 +33,7 @@ end
 const VectorBlock = ArrayBlock{A,1} where A
 const MatrixBlock = ArrayBlock{A,2} where A
 
+Base.axes(b::ArrayBlock,i) = axes(b.array,i)
 Base.size(b::ArrayBlock) = size(b.array)
 Base.length(b::ArrayBlock) = length(b.array)
 Base.eltype(::Type{<:ArrayBlock{A}}) where A = A
@@ -1503,6 +1504,7 @@ Base.view(a::ArrayBlock{A,M},b::Array{CartesianIndex{M},N}) where {A,M,N} = Arra
 const MatrixBlockView{A} = ArrayBlockView{A,2,2} where A
 const VectorBlockView{A} = ArrayBlockView{A,1,1} where A
 
+Base.axes(a::ArrayBlockView,i) = axes(a.block_map,i)
 Base.size(a::ArrayBlockView) = size(a.block_map)
 Base.length(b::ArrayBlockView) = length(b.block_map)
 Base.eltype(::Type{<:ArrayBlockView{A}}) where A = A

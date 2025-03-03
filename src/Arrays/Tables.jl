@@ -486,6 +486,52 @@ function find_local_nbor_index(a_to_b, a_to_c, c_to_lb_to_b::Table)
   return a_to_lb
 end
 
+"""
+    merge_entries(a_to_lb_to_b, c_to_la_to_a) -> c_to_lb_to_b
+
+Merge the entries of `a_to_lb_to_b`, grouping them by `c_to_la_to_a`. Returns 
+the merged table `c_to_lb_to_b`.
+
+Accepts the following keyword arguments:
+
+- `acc`: Accumulator for the entries of `a_to_lb_to_b`. Default to a `Set`, ensuring 
+         that the resulting entries are unique.
+- `post`: Postprocessing function to apply to the accumulator before storing the resulting entries.
+          Defaults to the identity, but can be used to perform local sorts or filters, for example.
+"""
+function merge_entries(
+  a_to_lb_to_b::AbstractVector{<:AbstractVector{T}},
+  c_to_la_to_a::AbstractVector{<:AbstractVector{Ti}}; 
+  acc  = Set{T}(),
+  post = identity
+) where {T,Ti<:Integer}
+  
+  n_c = length(c_to_la_to_a)
+  ptrs = zeros(Int32,n_c+1)
+  for c in 1:n_c
+    for a in view(c_to_la_to_a,c)
+      bs = view(a_to_lb_to_b,a)
+      !isempty(bs) && push!(acc, bs...)
+    end
+    ptrs[c+1] += length(post(acc))
+    empty!(acc)
+  end
+  length_to_ptrs!(ptrs)
+
+  data = zeros(T,ptrs[end]-1)
+  for c in 1:n_c
+    for a in view(c_to_la_to_a,c)
+      bs = view(a_to_lb_to_b,a)
+      !isempty(bs) && push!(acc, bs...)
+    end
+    data[ptrs[c]:ptrs[c+1]-1] = post(collect(acc))
+    empty!(acc)
+  end
+
+  c_to_lb_to_b = Table(data,ptrs)
+  return c_to_lb_to_b
+end
+
 function to_dict(table::Table)
   dict = Dict{Symbol,Any}()
   dict[:data] = table.data
