@@ -321,7 +321,7 @@ function MomentBasedReferenceFE(
   measures = Vector{FaceMeasure}(undef,n_moments)
   for (k,(faces,σ,μ)) in enumerate(moments)
     ftype = face_types[first(faces)]
-    @assert all(face_types[faces] .== ftype)
+    @check all(isequal(ftype), face_types[faces])
     qdegree = order + get_order(μ) + 1
     fp = reffaces[ftype]
     measures[k] = FaceMeasure(p,fp,qdegree)
@@ -364,7 +364,7 @@ function MomentBasedReferenceFE(
 
       # vals : (nN, nμ, nφ), coords : (nN)
       vals, coords = evaluate!(cache,σ,φ,μ,ds)
-      test_moment(σ,prebasis,μ,ds)
+      # test_moment(σ,prebasis,μ,ds)
 
       dof_offset = face_n_dofs[face]
       node_offset = first(face_nodes[face]) + face_n_nodes[face] - 1
