@@ -2,10 +2,7 @@ struct CR <: ReferenceFEName end
 const cr = CR()
 
 """
-CRRefFE(::Type{et},p::Polytope,order::Integer) where et
-
-The `order` argument has the following meaning: the divergence of the  functions in this basis
-is in the P space of degree `order-1`.
+    CRRefFE(::Type{et},p::Polytope,order::Integer) where et
 
 """
 function CRRefFE(::Type{T},p::Polytope,order::Integer) where T
@@ -18,7 +15,7 @@ function CRRefFE(::Type{T},p::Polytope,order::Integer) where T
     @notimplemented "CR Reference FE only available for simplices and lowest order"
   end
 
-  function fmom(φ,μ,ds) # Face moment function : σ_F(φ,μ) = 1/|F| ( ∫((φ)*μ)dF )
+  function fmom(φ,μ,ds) # Face moment function : σ_F(φ,μ) = 1/|F| ∫(φ⋅μ)dF
     D = num_dims(ds.cpoly)
     facet_measure = get_facet_measure(ds.cpoly, D-1)
     facet_measure_1 = Gridap.Fields.ConstantField(1 / facet_measure[ds.face])
@@ -30,9 +27,8 @@ function CRRefFE(::Type{T},p::Polytope,order::Integer) where T
     (get_dimrange(p,D-1),fmom,fb), # Face moments
   ]
 
-  return Gridap.ReferenceFEs.MomentBasedReferenceFE(CR(),p,prebasis,moments,L2Conformity())
+  return MomentBasedReferenceFE(CR(),p,prebasis,moments,L2Conformity())
 end
-
 
 function ReferenceFE(p::Polytope,::CR, order)
   CRRefFE(Float64,p,order)

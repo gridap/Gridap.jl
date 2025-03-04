@@ -218,9 +218,6 @@ function evaluate!(
 )
   _Jt = (1. / det(Jt)) * Jt
   res = transpose(_Jt) ⋅ v_ref ⋅ _Jt
-  #if !isapprox(Jt, TensorValue(1.0,0.0,0.0,1.0))
-    println("DCVPM: ", get_array(v_ref), " ", get_array(Jt), " ", get_array(res),)
-  #end
   return symmetric_part(res)
 end
 
@@ -229,9 +226,6 @@ function evaluate!(
 )
   iJt = det(Jt) * pinvJt(Jt)
   res = transpose(iJt) ⋅ v_phys ⋅ iJt
-  #if !isapprox(Jt, TensorValue(1.0,0.0,0.0,1.0))
-    println("iDCVPM: ", get_array(v_phys), " ", get_array(Jt), " ", get_array(res),)
-  #end
   return symmetric_part(res)
 end
 

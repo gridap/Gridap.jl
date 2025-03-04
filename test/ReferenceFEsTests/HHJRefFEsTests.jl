@@ -60,7 +60,7 @@ get_face_own_dofs_permutations(reffe)
 M = evaluate(dofs_ref, basis_ref)
 @test M ≈ I(num_dofs(reffe))
 
-model = simplexify(CartesianDiscreteModel((0,1,0,1), (1,1));positive=true)
+model = simplexify(CartesianDiscreteModel((0,1,0,1), (1,1)))
 #model = nonpermutedmodel()
 topo = get_grid_topology(model)
 cell_to_nodes = Geometry.get_faces(topo,2,0)
@@ -101,7 +101,7 @@ get_cell_dof_values(uh_bis)
 cf = uh
 get_free_dof_values(cf)
 
-print_op_tree(cf.cell_field.cell_field)
+#print_op_tree(cf.cell_field.cell_field)
 
 #μ_c = MonomialBasis(Val(2),SymTensorValue{2,Float64},order-1,Polynomials._p_filter)
 #μ_c = get_shapefuns(LagrangianRefFE(SymTensorValue{2,Float64}, TRI, order-1))

@@ -104,14 +104,16 @@ function evaluate!(cache,k::NormalSignMap,reffe,facet_own_dofs,cell)
 
   setsize!(dof_sign_cache, (num_dofs(reffe),))
   dof_sign = dof_sign_cache.array
-  fill!(dof_sign, one(eltype(dof_sign)))
+
+  o = one(eltype(dof_sign))
+  fill!(dof_sign, o)
 
   facets = getindex!(cell_facets_cache,cell_facets,cell)
   for (lfacet,facet) in enumerate(facets)
     owner = facet_owners[facet]
     if owner != cell
       for dof in facet_own_dofs[lfacet]
-        dof_sign[dof] = -1.0
+        dof_sign[dof] = -o
       end
     end
   end
