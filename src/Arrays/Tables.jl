@@ -102,7 +102,7 @@ function getindex!(c,a::Table,i::Integer)
   pini -= 1
   r = c.array
   for j in 1:l
-     @inbounds r[j] = a.data[pini+j]
+    @inbounds r[j] = a.data[pini+j]
   end
   r
 end
@@ -410,21 +410,54 @@ end
     find_local_index(c_to_a, c_to_b, b_to_la_to_a) -> c_to_lc
 """
 function find_local_index(
-  c_to_a, c_to_b, b_to_lc_to_a :: Table
+  c_to_a :: AbstractVector, c_to_b :: AbstractVector, b_to_la_to_a :: Table; T = Int8
 )
-  c_to_lc = fill(Int8(-1),length(c_to_a))
+  c_to_lc = fill(T(-1),length(c_to_a))
   for (c,a) in enumerate(c_to_a)
     b = c_to_b[c]
-    pini = b_to_lc_to_a.ptrs[b]
-    pend = b_to_lc_to_a.ptrs[b+1]-1
+    pini = b_to_la_to_a.ptrs[b]
+    pend = b_to_la_to_a.ptrs[b+1]-1
     for (lc,p) in enumerate(pini:pend)
-      if a == b_to_lc_to_a.data[p]
-        c_to_lc[c] = Int8(lc)
+      if a == b_to_la_to_a.data[p]
+        c_to_lc[c] = T(lc)
         break
       end
     end
   end
   return c_to_lc
+end
+
+function find_local_index(
+  c_to_la_to_a :: AbstractVector{<:AbstractVector}, c_to_b :: AbstractVector, b_to_la_to_a :: Table; T = Int8
+)
+  c1 = array_cache(c_to_la_to_a)
+  c2 = array_cache(b_to_la_to_a)
+  ptrs = generate_ptrs(c_to_la_to_a)
+  data = fill(T(-1),ptrs[end]-1)
+  for c in eachindex(c_to_la_to_a)
+    b = c_to_b[c]
+    lin_to_a = getindex!(c1,c_to_la_to_a,c)
+    lout_to_a = getindex!(c2,b_to_la_to_a,b)
+
+    pin, pout = sortperm(lin_to_a), sortperm(lout_to_a)
+    nin, nout = length(lin_to_a), length(lout_to_a)
+    kin, kout = 1, 1
+    while kin <= nin && kout <= nout
+      ain = lin_to_a[pin[kin]]
+      aout = lout_to_a[pout[kout]]
+      if ain == aout
+        k = ptrs[c] + pin[kin] - 1
+        data[k] = T(pout[kout])
+        kin += 1
+        kout += 1
+      elseif ain < aout
+        kin += 1
+      else
+        kout += 1
+      end
+    end
+  end
+  return Table(data,ptrs)
 end
 
 """
@@ -505,12 +538,15 @@ function merge_entries(
   acc  = Set{T}(),
   post = identity
 ) where {T,Ti<:Integer}
-  
+  c1 = array_cache(a_to_lb_to_b)
+  c2 = array_cache(c_to_la_to_a)
+
   n_c = length(c_to_la_to_a)
   ptrs = zeros(Int32,n_c+1)
   for c in 1:n_c
-    for a in view(c_to_la_to_a,c)
-      bs = view(a_to_lb_to_b,a)
+    as = getindex!(c2,c_to_la_to_a,c)
+    for a in as
+      bs = getindex!(c1,a_to_lb_to_b,a)
       !isempty(bs) && push!(acc, bs...)
     end
     ptrs[c+1] += length(post(acc))
@@ -520,8 +556,9 @@ function merge_entries(
 
   data = zeros(T,ptrs[end]-1)
   for c in 1:n_c
-    for a in view(c_to_la_to_a,c)
-      bs = view(a_to_lb_to_b,a)
+    as = getindex!(c2,c_to_la_to_a,c)
+    for a in as
+      bs = getindex!(c1,a_to_lb_to_b,a)
       !isempty(bs) && push!(acc, bs...)
     end
     data[ptrs[c]:ptrs[c+1]-1] = post(collect(acc))
@@ -530,6 +567,67 @@ function merge_entries(
 
   c_to_lb_to_b = Table(data,ptrs)
   return c_to_lb_to_b
+end
+
+"""
+    block_identity_array(ptrs;T=Int)
+
+Given a vector of pointers of length `n+1`, returns a vector of length `ptrs[end]-1` 
+where the entries are the index of the block to which each entry belongs.
+
+# Example
+
+```julia
+
+julia> block_identity_array([1,3,7])
+
+6-element Vector{Int64}:
+ 1
+ 1
+ 2
+ 2
+ 2
+ 2
+```
+"""
+function block_identity_array(ptrs;T=Int)
+  n = length(ptrs)-1
+  a = Vector{T}(undef,ptrs[end]-1)
+  for i in 1:n
+    a[ptrs[i]:ptrs[i+1]-1] .= i
+  end
+  return a
+end
+
+"""
+    local_identity_array(ptrs;T=Int)
+
+Given a vector of pointers of length `n+1`, returns a vector of length `ptrs[end]-1`
+where the entries are the local index of the entry within the block it belongs to.
+
+# Example
+
+```julia
+
+julia> local_identity_array([1,3,7])
+
+6-element Vector{Int64}:
+ 1
+ 2
+ 1
+ 2
+ 3
+ 4
+```
+"""
+function local_identity_array(ptrs;T=Int)
+  n = length(ptrs)-1
+  a = Vector{T}(undef,ptrs[end]-1)
+  for i in 1:n
+    ni = ptrs[i+1]-ptrs[i]
+    a[ptrs[i]:ptrs[i+1]-1] .= 1:ni
+  end
+  return a
 end
 
 function to_dict(table::Table)

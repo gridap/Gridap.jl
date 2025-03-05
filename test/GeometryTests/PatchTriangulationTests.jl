@@ -1,6 +1,8 @@
 
 using Gridap
-using Gridap.Geometry, Gridap.FESpaces
+using Gridap.Geometry, Gridap.FESpaces, Gridap.Arrays
+
+using DataStructures
 
 model = CartesianDiscreteModel((0,1,0,1),(4,4))
 
@@ -53,7 +55,6 @@ Ab = assemble_matrix_and_vector(a_mixed,l_mixed,assem_Ω,VΩ,VΩ)
 x1 = lazy_map(FESpaces.LocalSolveMap(),A,b)
 x2 = lazy_map(FESpaces.LocalSolveMap(),Ab)
 
-
 # MultiField + Static condensation
 
 using Gridap.MultiField
@@ -80,3 +81,44 @@ X = MultiFieldFESpace([VΩ,VΓ];style=mfs)
 assem = FESpaces.PatchAssembler(ptopo,X,X)
 Ab = assemble_matrix_and_vector(a_mf,l_mf,assem,X,X)
 x = lazy_map(FESpaces.StaticCondensationMap(),Ab)
+
+########################################################################
+
+model = CartesianDiscreteModel((0,1,0,1),(4,4))
+
+ptopo = Geometry.PatchTopology(model)
+
+patch_cells = Geometry.get_patch_cells(ptopo)
+patch_facets = Geometry.get_patch_facets(ptopo)
+patch_nodes = Geometry.get_patch_faces(ptopo,0)
+
+Ωp = Geometry.PatchTriangulation(model,ptopo)
+Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
+Λp = Geometry.PatchTriangulation(ReferenceFE{1},model,ptopo)
+
+Ω = Triangulation(model)
+Γ = Triangulation(ReferenceFE{1},model)
+
+order = 1
+reffe = ReferenceFE(lagrangian,Float64,order)
+VΩ = FESpace(Ω,reffe,conformity=:L2)
+VΓ = FESpace(Γ,reffe,conformity=:L2)
+
+mface_to_dofs = get_cell_dof_ids(VΓ,Triangulation(ReferenceFE{1},model))
+pface_to_dofs = get_cell_dof_ids(VΓ,Λp)
+patch_to_dofs = Arrays.merge_entries(mface_to_dofs,patch_to_lpface_to_mface;acc=OrderedSet{Int32}())
+pface_to_ldofs = find_local_index(pface_to_dofs,pface_to_patch,patch_to_dofs)
+
+Df = 1
+patch_to_lpface_to_mface = Geometry.get_patch_faces(ptopo,Df)
+pface_to_patch = Geometry.get_pface_to_patch(ptopo,Df)
+pface_to_lpface = Geometry.get_pface_to_lpface(ptopo,Df)
+
+strian = Γp # get_triangulation(VΓ)
+sglue = get_glue(strian,Val(Df))
+sface_to_mface = sglue.tface_to_mface
+mface_to_sface = sglue.mface_to_tface
+
+sface_to_pface = strian.tface_to_pface
+sface_to_patch = lazy_map(Reindex(pface_to_patch),sface_to_pface)
+sface_to_lpface = lazy_map(Reindex(pface_to_lpface),sface_to_pface)

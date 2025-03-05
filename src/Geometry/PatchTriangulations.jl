@@ -36,6 +36,9 @@ function num_patches(ptopo::PatchTopology)
   length(get_patch_cells(ptopo))
 end
 
+num_cell_dims(::PatchTopology{Dc}) where Dc = Dc
+num_point_dims(::PatchTopology{Dc,Dp}) where {Dc,Dp} = Dp
+
 num_cells(ptopo::PatchTopology{Dc}) where Dc = num_faces(ptopo,Dc)
 num_faces(ptopo::PatchTopology,d) = length(get_patch_faces(ptopo,d).data)
 
@@ -68,12 +71,7 @@ end
     patch_extend(PD::PatchTopology{Dc},patch_to_data,Df=Dc) -> pface_to_data
 """
 function patch_extend(ptopo::PatchTopology{Dc},patch_to_data,Df=Dc) where Dc
-  pface_to_patch = fill(0,num_faces(ptopo,Df))
-  patch_offsets = get_patch_faces(ptopo,Df).ptrs
-  for patch in 1:num_patches(ptopo)
-    pface_to_patch[patch_offsets[patch]:patch_offsets[patch+1]-1] .= patch
-  end
-
+  pface_to_patch = Arrays.block_identity_array(get_patch_faces(ptopo,Df).ptrs)
   pface_to_data = lazy_map(Reindex(patch_to_data),pface_to_patch)
   return pface_to_data
 end
@@ -115,8 +113,12 @@ end
 
 function get_pface_to_patch(ptopo::PatchTopology,Df)
   patch_faces = get_patch_faces(ptopo,Df)
-  patch_pfaces = Table(Base.OneTo(num_faces(ptopo,Df)),patch_faces.ptrs)
-  return Arrays.flatten_partition(patch_pfaces)
+  return Arrays.block_identity_array(patch_faces.ptrs)
+end
+
+function get_pface_to_lpface(ptopo::PatchTopology,Df)
+  patch_faces = get_patch_faces(ptopo,Df)
+  return Arrays.local_identity_array(patch_faces.ptrs)
 end
 
 # PatchTriangulation
@@ -151,10 +153,18 @@ get_facet_normal(trian::PatchTriangulation) = get_facet_normal(trian.trian)
 
 # Constructors
 
-function PatchTriangulation(model::DiscreteModel{Dc},ptopo::PatchTopology{Dc}) where Dc
-  patch_cells = get_patch_cells(ptopo)
-  trian = Triangulation(model,patch_cells.data)
-  tcell_to_pcell = Base.OneTo(num_faces(ptopo,Dc))
+function PatchTriangulation(model::DiscreteModel,ptopo::PatchTopology)
+  D = num_cell_dims(model)
+  PatchTriangulation(ReferenceFE{D},model,ptopo)
+end
+
+function PatchTriangulation(
+  ::Type{ReferenceFE{D}},model::DiscreteModel,ptopo::PatchTopology
+) where D
+  @check num_cell_dims(model) == num_cell_dims(ptopo)
+  patch_faces = get_patch_faces(ptopo,D)
+  trian = Triangulation(ReferenceFE{D},model,patch_faces.data)
+  tcell_to_pcell = Base.OneTo(num_faces(ptopo,D))
   return PatchTriangulation(trian,ptopo,tcell_to_pcell)
 end
 
