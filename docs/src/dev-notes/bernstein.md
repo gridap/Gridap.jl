@@ -207,13 +207,31 @@ spaces ``ℙ_r^{(-)}Λ^k(T)`` admit the geometric decomposition:
 where ``B_α`` are the scalar Bernstein polynomials implemented by
 [`BernsteinBasisOnSimplex`](@ref), and ``φ^J`` are the Whitney forms
 ```math
-φ^J = \sum_{0≤j≤k} (-1)^{j} λ_j \, \text{d}λ^{J\backslash j} \quad\text{where}\quad
-\text{d}λ^{J\backslash j} = \underset{i\in J\backslash \{J_j\} }{\bigwedge}\text{d}λ^{i},
+φ^J = \sum_{0≤l≤k} (-1)^{l} λ_l \, \text{d}λ^{J\backslash l} \quad\text{where}\quad
+\text{d}λ^{J\backslash l} = \underset{j\in J\backslash \{J_l\} }{\bigwedge}\text{d}λ^{j},
 ```
-``φ^J `` is a ``k``-form of polynomial order ``1``. In a polytopal tetrahedron
-``T`` (flat faces), the 1-forms ``\text{d}λ^i`` are homogeneous and coefficients
-expression in the canonical basis ``\{\text{d}x^I\}_I`` is
+``φ^J `` is a ``k``-form of polynomial order ``1``. We now need to express
+``\text{d}λ^{J\backslash l}`` in the Cartesian basis ``{\text{d}x^I}``.
+
+In a polytopal tetrahedron
+``T`` (flat faces), the 1-forms ``\text{d}λ^j:=\text{d}(λ_j)`` is homogeneous,
+ its coefficients in the canonical basis are derived by
 ```math
+\text{d}λ^j = (\nabla(λ_j))^♭ = δ_{ki}\partial_{k}λ_j\,\text{d}x^i = \partial_{i}λ_j\,\text{d}x^i = M_{i+1,j}\,\text{d}x^i
+```
+where ``{}^♭`` is the flat map, the metric ``g_{ki}=δ_{ki}`` is trivial and
+``M_{i+1,j}`` are components of the barycentric change of coordinate matrix
+``M`` such that
+```math
+λ(\boldsymbol{x}) = M \cdot (1\, x_1\, ...\, x_D) \quad\text{or}\quad
+λ_j(\boldsymbol{x}) = (e_j)^T \cdot M \cdot (1\, x_1\, ...\, x_D).
+```
+
+
+```math
+\text{d}λ^{J\backslash l} = \text{det}\big(M_I^{J\backslash l}\big)\text{d}x^I
+\quad\text{where}\quad M_I^{J\backslash l} = (M_{i+1,j})_{\{i\in I,\,
+j\in{J\backslash l}\}}
 ```
 
 
