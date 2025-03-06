@@ -65,6 +65,7 @@ function OverlappingFaceToCellGlue(
     face_to_lcell,
     face_to_ftype,
     cell_to_ctype,
+    nothing,
     cell_to_lface_to_pindex,
     ctype_to_lface_to_ftype
   )

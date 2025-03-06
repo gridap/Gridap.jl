@@ -1,11 +1,12 @@
 
-struct FaceToCellGlue{A,B,C} <: GridapType
+struct FaceToCellGlue{A,B,C,D} <: GridapType
   face_to_bgface::A
   face_to_cell::Vector{Int32}
   face_to_lface::Vector{Int8}
   face_to_lcell::Vector{Int8}
   face_to_ftype::B
   cell_to_ctype::C
+  bgface_to_lcell::D # TODO: Remove this (currently used in GridapEmbedded)
   cell_to_lface_to_pindex::Table{Int8,Vector{Int8},Vector{Int32}}
   ctype_to_lface_to_ftype::Vector{Vector{Int8}}
 end
@@ -49,6 +50,7 @@ function FaceToCellGlue(
     face_to_lcell,
     face_to_ftype,
     cell_to_ctype,
+    bgface_to_lcell,
     cell_to_lface_to_pindex,
     ctype_to_lface_to_ftype)
 end
