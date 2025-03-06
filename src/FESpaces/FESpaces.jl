@@ -266,6 +266,8 @@ include("Polytopal.jl")
 
 include("PatchAssemblers.jl")
 
+include("PatchFESpaces.jl")
+
 export get_free_values
 function get_free_values(args...)
   @unreachable "get_free_values has been removed. Use get_free_dof_values instead."

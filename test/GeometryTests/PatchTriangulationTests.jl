@@ -122,3 +122,28 @@ mface_to_sface = sglue.mface_to_tface
 sface_to_pface = strian.tface_to_pface
 sface_to_patch = lazy_map(Reindex(pface_to_patch),sface_to_pface)
 sface_to_lpface = lazy_map(Reindex(pface_to_lpface),sface_to_pface)
+
+
+V = FESpace(Γ,reffe,conformity=:L2,dirichlet_tags="boundary")
+
+nfree = num_free_dofs(V)
+ndir = num_dirichlet_dofs(V)
+free_ids = ndir+1:nfree+ndir
+dir_ids = ndir:-1:1
+
+V0 = FESpaces.renumber_free_and_dirichlet_dof_ids(V,free_ids,dir_ids)
+
+v_ids = get_cell_dof_ids(V)
+v0_ids = get_cell_dof_ids(V0)
+
+p_v_ids = FESpaces.generate_patch_dof_ids(V,ptopo)
+p_v0_ids = FESpaces.generate_patch_dof_ids(V0,ptopo)
+
+pface_to_pdof_v = FESpaces.generate_pface_to_pdofs(V,ptopo,Λp,p_v_ids)
+pface_to_pdof_v0 = FESpaces.generate_pface_to_pdofs(V0,ptopo,Λp,p_v0_ids)
+pface_to_pdof_v == pface_to_pdof_v0
+
+
+PV = FESpaces.PatchFESpace(V,ptopo)
+
+

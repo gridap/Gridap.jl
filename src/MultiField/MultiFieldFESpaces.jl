@@ -108,6 +108,18 @@ end
 MultiFieldStyle(::Type{MultiFieldFESpace{S,B,V}}) where {S,B,V} = S()
 MultiFieldStyle(f::MultiFieldFESpace) = MultiFieldStyle(typeof(f))
 
+"""
+    num_fields(f::MultiFieldFESpace)
+"""
+function num_fields(f::MultiFieldFESpace)
+  length(f.spaces)
+end
+
+Base.iterate(m::MultiFieldFESpace) = iterate(m.spaces)
+Base.iterate(m::MultiFieldFESpace,state) = iterate(m.spaces,state)
+Base.getindex(m::MultiFieldFESpace,field_id::Integer) = m.spaces[field_id]
+Base.length(m::MultiFieldFESpace) = length(m.spaces)
+
 # Implementation of FESpace
 
 function FESpaces.get_triangulation(f::MultiFieldFESpace)
@@ -410,12 +422,6 @@ function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace,trian::Triangulati
   lazy_map( (args...) -> +(args...)>0,  data...)
 end
 
-#function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace,trian::SkeletonTriangulation)
-#  plus = get_cell_isconstrained(f,trian.plus)
-#  minus = get_cell_isconstrained(f,trian.minus)
-#  lazy_map((l,r)-> l||r,plus,minus)
-#end
-
 function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace)
   msg = """\n
   This method does not make sense for multi-field
@@ -441,12 +447,6 @@ function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace,trian::Triangulatio
   lazy_map( (args...) -> +(args...)>0,  data...)
 end
 
-#function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace,trian::SkeletonTriangulation)
-#  plus = get_cell_is_dirichlet(f,trian.plus)
-#  minus = get_cell_is_dirichlet(f,trian.minus)
-#  lazy_map((l,r)-> l||r,plus,minus)
-#end
-
 function FESpaces.get_cell_constraints(f::MultiFieldFESpace)
   msg = """\n
   This method does not make sense for multi-field
@@ -470,12 +470,6 @@ function FESpaces.get_cell_constraints(f::MultiFieldFESpace,trian::Triangulation
   lazy_map(BlockMap(blockshape,blockindices),active_block_data...)
 end
 
-#function FESpaces.get_cell_constraints(f::MultiFieldFESpace,trian::SkeletonTriangulation)
-#  cell_values_plus = get_cell_constraints(f,trian.plus)
-#  cell_values_minus = get_cell_constraints(f,trian.minus)
-#  lazy_map(BlockMap((2,2),[(1,1),(2,2)]),cell_values_plus,cell_values_minus)
-#end
-
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace)
   msg = """\n
   This method does not make sense for multi-field
@@ -492,12 +486,6 @@ end
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::Triangulation)
   get_cell_dof_ids(f,trian,MultiFieldStyle(f))
 end
-
-#function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::SkeletonTriangulation)
-#  cell_values_plus = get_cell_dof_ids(f,trian.plus)
-#  cell_values_minus = get_cell_dof_ids(f,trian.minus)
-#  lazy_map(BlockMap(2,[1,2]),cell_values_plus,cell_values_minus)
-#end
 
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,::Triangulation,::MultiFieldStyle)
   @notimplemented
@@ -561,43 +549,6 @@ function Arrays.evaluate!(cache,k::Broadcasting{typeof(_sum_if_first_positive)},
   end
   r
 end
-
-# API for multi field case
-
-"""
-    num_fields(f::MultiFieldFESpace)
-"""
-function num_fields(f::MultiFieldFESpace)
-  length(f.spaces)
-end
-
-Base.iterate(m::MultiFieldFESpace) = iterate(m.spaces)
-
-Base.iterate(m::MultiFieldFESpace,state) = iterate(m.spaces,state)
-
-Base.getindex(m::MultiFieldFESpace,field_id::Integer) = m.spaces[field_id]
-
-Base.length(m::MultiFieldFESpace) = length(m.spaces)
-
-# API for the ConsecutiveMultiFieldStyle
-import Gridap.FESpaces: interpolate
-import Gridap.FESpaces: interpolate_everywhere
-import Gridap.FESpaces: interpolate_dirichlet
-
-@deprecate(
-  interpolate(fs::MultiFieldFESpace, object),
-  interpolate(object, fs::MultiFieldFESpace)
-)
-
-@deprecate(
-  interpolate_everywhere(fs::MultiFieldFESpace, object),
-  interpolate_everywhere(object, fs::MultiFieldFESpace)
-)
-
-@deprecate(
-  interpolate_dirichlet(fs::MultiFieldFESpace, object),
-  interpolate_dirichlet(object, fs::MultiFieldFESpace)
-)
 
 """
 The resulting MultiFieldFEFunction is in the space (in particular it fulfills Dirichlet BCs
