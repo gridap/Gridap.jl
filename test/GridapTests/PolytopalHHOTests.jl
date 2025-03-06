@@ -38,7 +38,7 @@ function patch_dof_ids_w_bcs(ptopo,M::FESpace,MD::FESpace)
     id_map[I] = ID
   end
   
-  patch_dofs = FESpaces.get_patch_dofs(M,ptopo)
+  patch_dofs = FESpaces.get_patch_assembly_ids(M,ptopo)
   patch_dofs_D = lazy_map(Broadcasting(Reindex(id_map)),patch_dofs)
 
   free_values = zero_free_values(MD)

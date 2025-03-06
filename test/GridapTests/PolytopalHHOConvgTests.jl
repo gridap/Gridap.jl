@@ -41,7 +41,7 @@ module HHOConvgTests
       id_map[I] = ID
     end
     
-    patch_dofs = FESpaces.get_patch_dofs(M,ptopo)
+    patch_dofs = FESpaces.get_patch_assembly_ids(M,ptopo)
     patch_dofs_D = lazy_map(Broadcasting(Reindex(id_map)),patch_dofs)
 
     free_values = zero_free_values(MD)

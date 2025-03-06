@@ -539,3 +539,15 @@ function collect_cell_matrix_and_vector(
   liform = DomainContribution()
   collect_cell_matrix_and_vector(trial,test,biform,liform,uhd)
 end
+
+function merge_assembly_data(data...)
+  @assert allequal(length,data)
+  map(vcat,data...)
+end
+
+function merge_assembly_matvec_data(data...)
+  matvecdata = merge_assembly_data(map(x -> x[1], data)...)
+  matdata = merge_assembly_data(map(x -> x[2], data)...)
+  vecdata = merge_assembly_data(map(x -> x[3], data)...)
+  (matvecdata, matdata, vecdata)
+end

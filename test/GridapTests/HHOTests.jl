@@ -22,49 +22,12 @@ function reconstruction_operator(ptopo,L,X,Ωp,Γp,dΩp,dΓp)
   lhs((u,λ),(v,μ))   = ∫( (∇(u)⋅∇(v)) + (μ*u) + (λ*v) )dΩp
   rhs((uT,uF),(v,μ)) =  ∫( (∇(uT)⋅∇(v)) + (uT*μ) )dΩp + ∫( (uF - Π(uT,Γp))*(Πn(v)) )dΓp
   
+  Y = FESpaces.FESpaceWithoutBCs(X)
   W = MultiFieldFESpace([L,Λ];style=mfs)
   R = FESpaces.LocalOperator(
-    FESpaces.HHO_ReconstructionOperatorMap(), ptopo, W, X, lhs, rhs; space_out = L
+    FESpaces.HHO_ReconstructionOperatorMap(), ptopo, W, Y, lhs, rhs; space_out = L
   )
   return R
-end
-
-function patch_dof_ids_w_bcs(ptopo,M::FESpace,MD::FESpace)
-  ids_D = get_cell_dof_ids(MD)
-  ids = get_cell_dof_ids(M)
-  
-  id_map = zeros(Int32,num_free_dofs(M))
-  for (I,ID) in zip(ids,ids_D)
-    id_map[I] = ID
-  end
-  
-  patch_dofs = FESpaces.get_patch_dofs(M,ptopo)
-  patch_dofs_D = lazy_map(Broadcasting(Reindex(id_map)),patch_dofs)
-
-  free_values = zero_free_values(MD)
-  dirichlet_values = get_dirichlet_dof_values(MD)
-  cell_values = lazy_map(Broadcasting(Gridap.Arrays.PosNegReindex(free_values,dirichlet_values)),patch_dofs_D)
-  cell_mask = collect(Bool,lazy_map(dofs -> any(dof -> dof < 0, dofs),patch_dofs_D))
-
-  return patch_dofs_D, cell_values, cell_mask
-end
-
-function patch_dof_ids_w_bcs(ptopo,X::MultiFieldFESpace,XD::MultiFieldFESpace)
-  nfields = MultiField.num_fields(X)
-
-  pids, cv, cm = [], [], []
-  map(X,XD) do M, MD
-    a, b, c = patch_dof_ids_w_bcs(ptopo,M,MD)
-    push!(pids,a)
-    push!(cv,b)
-    push!(cm,c)
-  end
-
-  patch_dofs = lazy_map(BlockMap(nfields,collect(1:nfields)),pids...)
-  cell_values = lazy_map(BlockMap(nfields,collect(1:nfields)),cv...)
-  cell_mask = map(any,zip(cm...))
-
-  return patch_dofs, cell_values, cell_mask
 end
 
 ##############################################################
@@ -91,21 +54,17 @@ reffe_V = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Bulk space
 reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)     # Skeleton space
 reffe_L = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Reconstruction space
 V = FESpace(Ω, reffe_V; conformity=:L2)
-M = FESpace(Γ, reffe_M; conformity=:L2)
+M = FESpace(Γ, reffe_M; conformity=:L2, dirichlet_tags="boundary")
 L = FESpace(Ω, reffe_L; conformity=:L2)
+N = TrialFESpace(M,u)
 
 mfs = MultiField.BlockMultiFieldStyle(2,(1,1))
-X   = MultiFieldFESpace([V, M];style=mfs)
-
+X  = MultiFieldFESpace([V, N];style=mfs)
+Y  = MultiFieldFESpace([V, M];style=mfs)
+Xp = FESpaces.PatchFESpace(X,ptopo)
 
 PΓ = projection_operator(M, Γp, dΓp)
-R = reconstruction_operator(ptopo,L,X,Ωp,Γp,dΩp,dΓp)
-
-M0 = TestFESpace(Γ, reffe_M; conformity=:L2, dirichlet_tags="boundary")  # For assembly and imposing boundary conditions
-MD = TrialFESpace(M0, u)
-
-Y0 = MultiFieldFESpace([V, M0];style=mfs)
-YD = MultiFieldFESpace([V, MD];style=mfs)
+R = reconstruction_operator(ptopo,L,Y,Ωp,Γp,dΩp,dΓp)
 
 function a(u,v)
   Ru_Ω, Ru_Γ = R(u)
@@ -125,40 +84,22 @@ end
 l((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
 
 function weakform(u,v)
-  assem = SparseMatrixAssembler(YD,YD)
+  assem = SparseMatrixAssembler(X,Y)
 
-  data = FESpaces.collect_cell_matrix_and_vector(YD,YD,s(u,v),l(v),zero(YD))
-  matvecdata, matdata, vecdata = data
+  data1 = FESpaces.collect_cell_matrix_and_vector(X,Y,s(u,v),l(v),zero(X))
+  data2 = FESpaces.collect_cell_matrix_and_vector(Xp,Xp,a(u,v),DomainContribution(),zero(Xp))
+  data = FESpaces.merge_assembly_matvec_data(data1,data2)
 
-  dofs_a, cellvals, cellmask = patch_dof_ids_w_bcs(ptopo,X,YD)
-  cell_matvec = attach_dirichlet(get_array(a(u,v)),cellvals,cellmask)
-  push!(matvecdata[1],cell_matvec)
-  push!(matvecdata[2],dofs_a)
-  push!(matvecdata[3],dofs_a)
-
-  data = (matvecdata,matdata,vecdata)
   assemble_matrix_and_vector(assem,data)
 end
 
 function patch_weakform(u,v)
-  assem = FESpaces.PatchAssembler(ptopo,YD,YD)
+  assem = FESpaces.PatchAssembler(ptopo,X,Y)
 
-  data = FESpaces.collect_patch_cell_matrix_and_vector(assem,YD,YD,s(u,v),l(v),zero(YD))
-  matvecdata, matdata, vecdata = data
+  data1 = FESpaces.collect_patch_cell_matrix_and_vector(assem,X,Y,s(u,v),l(v),zero(X))
+  data2 = FESpaces.collect_patch_cell_matrix_and_vector(assem,Xp,Xp,a(u,v),DomainContribution(),zero(Xp))
+  data = FESpaces.merge_assembly_matvec_data(data1,data2)
 
-  dofs_a, cellvals, cellmask = patch_dof_ids_w_bcs(ptopo,X,YD)
-  cell_matvec = attach_dirichlet(get_array(a(u,v)),cellvals,cellmask)
-  p = Geometry.get_patch_faces(ptopo,num_cell_dims(model))
-  q = Base.OneTo(num_cells(model))
-
-  rows_a = FESpaces.attach_patch_map(FESpaces.AssemblyStrategyMap{:rows}(assem.strategy),[dofs_a],[q])[1]
-  cols_a = FESpaces.attach_patch_map(FESpaces.AssemblyStrategyMap{:cols}(assem.strategy),[dofs_a],[q])[1]
-  push!(matvecdata[1],cell_matvec)
-  push!(matvecdata[2],rows_a)
-  push!(matvecdata[3],cols_a)
-  push!(matvecdata[4],p)
-
-  data = (matvecdata,matdata,vecdata)
   return assemble_matrix_and_vector(assem,data)
 end
 
@@ -166,19 +107,19 @@ function sc_assembly(u,v)
   full_matvecs = patch_weakform(u,v)
   sc_matvecs = lazy_map(FESpaces.StaticCondensationMap(),full_matvecs)
 
-  assem = FESpaces.PatchAssembler(ptopo,YD,YD)
+  assem = FESpaces.PatchAssembler(ptopo,X,Y)
   patch_rows = assem.strategy.array.array[2,2].patch_rows
   patch_cols = assem.strategy.array.array[2,2].patch_cols
   matvecdata = ([sc_matvecs,],[patch_rows,],[patch_cols,])
   matdata = ([],[],[]) # dummy matdata
   vecdata = ([],[],[]) # dummy vecdata
   data = (matvecdata, matdata, vecdata)
-  A, b = assemble_matrix_and_vector(SparseMatrixAssembler(MD,M0),data)
+  A, b = assemble_matrix_and_vector(SparseMatrixAssembler(N,M),data)
   return A, b
 end
 
 function backward_sc(xb)
-  assem = FESpaces.PatchAssembler(ptopo,YD,YD)
+  assem = FESpaces.PatchAssembler(ptopo,X,Y)
   patch_rows_bb = assem.strategy.array.array[2,2].patch_rows
 
   patchwise_xb = map(patch_rows_bb) do patch_row
@@ -186,7 +127,7 @@ function backward_sc(xb)
     return patchwise_xb
   end
 
-  full_matvecs = patch_weakform(get_trial_fe_basis(YD),get_fe_basis(YD))
+  full_matvecs = patch_weakform(get_trial_fe_basis(X),get_fe_basis(Y))
   patchwise_xi_vec = lazy_map(Gridap.FESpaces.BackwardStaticCondensationMap(),full_matvecs,patchwise_xb)
 
   patch_rows_ii = assem.strategy.array.array[1,1].patch_rows
@@ -198,10 +139,10 @@ function backward_sc(xb)
   return wh
 end
 
-A, b = weakform(get_trial_fe_basis(YD),get_fe_basis(YD))
+A, b = weakform(get_trial_fe_basis(X),get_fe_basis(Y))
 x = A \ b
 
-Asc, bsc = sc_assembly(get_trial_fe_basis(YD),get_fe_basis(YD))
+Asc, bsc = sc_assembly(get_trial_fe_basis(X),get_fe_basis(Y))
 xb = Asc \ bsc
 
 wh = backward_sc(xb)

@@ -50,15 +50,15 @@ get_rows(assembler::PatchAssembler) = assembler.rows
 get_cols(assembler::PatchAssembler) = assembler.cols
 
 function PatchAssembler(ptopo::PatchTopology,trial::FESpace,test::FESpace)
-  patch_rows = get_patch_dofs(test,ptopo)
-  patch_cols = get_patch_dofs(trial,ptopo)
+  patch_rows = get_patch_assembly_ids(test,ptopo)
+  patch_cols = get_patch_assembly_ids(trial,ptopo)
   strategy = PatchAssemblyStrategy(ptopo,patch_rows,patch_cols)
   rows = map(length,patch_rows)
   cols = map(length,patch_cols)
   return PatchAssembler(ptopo,strategy,rows,cols)
 end
 
-function get_patch_dofs(space::FESpace,ptopo::PatchTopology)
+function get_patch_assembly_ids(space::FESpace,ptopo::PatchTopology)
   trian = get_triangulation(space)
   Df = num_cell_dims(trian)
   face_to_tface = get_glue(trian,Val(Df)).mface_to_tface
@@ -67,10 +67,12 @@ function get_patch_dofs(space::FESpace,ptopo::PatchTopology)
   face_dof_ids = extend(get_cell_dof_ids(space),face_to_tface)
   patch_to_faces = get_patch_faces(ptopo,Df)
 
-  patch_dof_ids = Arrays.merge_entries(
-    face_dof_ids, patch_to_faces ; acc=SortedSet{Int}(), post=dofs->filter(x->x>0,dofs)
+  patch_rows = Arrays.merge_entries(
+    face_dof_ids, patch_to_faces ; 
+    acc  = SortedSet{Int32}(), 
+    post = dofs->filter(x->x>0,dofs)
   )
-  return patch_dof_ids
+  return patch_rows
 end
 
 function assemble_matrix(assem::PatchAssembler,cellmat)

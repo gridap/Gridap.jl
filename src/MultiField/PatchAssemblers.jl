@@ -5,28 +5,28 @@ using BlockArrays
 
 ###########################
 
-function FESpaces.get_patch_dofs(space::MultiFieldFESpace,ptopo::Geometry.PatchTopology)
+function FESpaces.get_patch_assembly_ids(space::MultiFieldFESpace,ptopo::Geometry.PatchTopology)
   mfs = MultiFieldStyle(space)
-  FESpaces.get_patch_dofs(mfs,space,ptopo)
+  FESpaces.get_patch_assembly_ids(mfs,space,ptopo)
 end
 
-function FESpaces.get_patch_dofs(
+function FESpaces.get_patch_assembly_ids(
   ::ConsecutiveMultiFieldStyle,space::MultiFieldFESpace,ptopo::Geometry.PatchTopology
 )
   offsets = compute_field_offsets(space) |> Tuple
   sf_patch_dofs = map(space) do sf
-    FESpaces.get_patch_dofs(sf,ptopo)
+    FESpaces.get_patch_assembly_ids(sf,ptopo)
   end |> Tuple
   mf_patch_dofs = Arrays.append_tables_locally(offsets,sf_patch_dofs)
   return mf_patch_dofs
 end
 
-function FESpaces.get_patch_dofs(
+function FESpaces.get_patch_assembly_ids(
   ::BlockMultiFieldStyle{NB,SB,P},space::MultiFieldFESpace,ptopo::Geometry.PatchTopology
 ) where {NB,SB,P}
   offsets = compute_field_offsets(space) |> Tuple
   sf_patch_dofs = map(space) do sf
-    FESpaces.get_patch_dofs(sf,ptopo)
+    FESpaces.get_patch_assembly_ids(sf,ptopo)
   end |> Tuple
 
   block_ranges = get_block_ranges(NB,SB,P)
@@ -42,8 +42,8 @@ function FESpaces.PatchAssembler(
 ) where MS <: BlockMultiFieldStyle{NB,SB,P} where {NB,SB,P}
   NV = length(test.spaces)
   block_map = get_block_map(NB,NV,SB,P)
-  block_patch_rows = FESpaces.get_patch_dofs(test,ptopo)
-  block_patch_cols = FESpaces.get_patch_dofs(trial,ptopo)
+  block_patch_rows = FESpaces.get_patch_assembly_ids(test,ptopo)
+  block_patch_cols = FESpaces.get_patch_assembly_ids(trial,ptopo)
   block_strategies = map(CartesianIndices((NB,NB))) do I
     patch_rows = block_patch_rows[I[1]]
     patch_cols = block_patch_cols[I[2]]
@@ -53,6 +53,22 @@ function FESpaces.PatchAssembler(
   rows = map(block_rows -> blockedrange(map(length,block_rows)),zip(block_patch_rows...))
   cols = map(block_cols -> blockedrange(map(length,block_cols)),zip(block_patch_cols...))
   return FESpaces.PatchAssembler(ptopo,strategies,rows,cols)
+end
+
+###########################################################################################
+
+function FESpaces.PatchFESpace(space::MultiFieldFESpace,ptopo::PatchTopology)
+  spaces = map(space) do sf
+    FESpaces.PatchFESpace(sf,ptopo)
+  end
+  style = MultiFieldStyle(space)
+  return MultiFieldFESpace(spaces;style=style)
+end
+
+function FESpaces.FESpaceWithoutBCs(space::MultiFieldFESpace)
+  spaces = map(FESpaces.FESpaceWithoutBCs,space)
+  style = MultiFieldStyle(space)
+  return MultiFieldFESpace(spaces;style=style)
 end
 
 ###########################################################################################
