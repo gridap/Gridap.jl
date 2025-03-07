@@ -151,3 +151,88 @@ function FESpaces._compute_local_solves(
   end
   return cell_fields
 end
+
+###########################################################################################
+
+struct StaticCondensationOperator <: FEOperator
+  full_space :: FESpace
+  eliminated_space :: FESpace
+  retained_space :: FESpace
+  patch_assem :: Assembler
+  eliminated_assem :: Assembler
+  retained_assem :: Assembler
+  full_matvecs
+  sc_op
+end
+
+function StaticCondensationOperator(
+  full_space :: FESpace,
+  eliminated_space :: FESpace,
+  retained_space :: FESpace,
+  patch_assem,
+  full_matvecs,
+)
+  n_elim = num_fields(eliminated_space)
+  n_ret = num_fields(retained_space)
+  @assert isa(MultiFieldStyle(full_space),BlockMultiFieldStyle{2,(n_elim,n_ret)})
+
+  eliminated_assem = SparseMatrixAssembler(eliminated_space,eliminated_space)
+  retained_assem = SparseMatrixAssembler(retained_space,retained_space)
+
+  Asc, bsc = statically_condensed_assembly(retained_assem,patch_assem,full_matvecs)
+  sc_op = AffineFEOperator(retained_space,retained_space,Asc,bsc)
+
+  return StaticCondensationOperator(
+    full_space,eliminated_space,retained_space,
+    patch_assem,eliminated_assem,retained_assem,
+    full_matvecs,sc_op
+  )
+end
+
+function StaticCondensationOperator(
+  ptopo :: PatchTopology,
+  full_space :: FESpace,
+  eliminated_space :: FESpace,
+  retained_space :: FESpace,
+  biform :: Function,
+  liform :: Function
+)
+  patch_assem = FESpaces.PatchAssembler(ptopo,full_space,full_space)
+  full_matvecs = assemble_matrix_and_vector(biform,liform,patch_assem,full_space,full_space)
+  return StaticCondensationOperator(
+    full_space,eliminated_space,retained_space,
+    patch_assem,full_matvecs
+  )
+end
+
+function statically_condensed_assembly(retained_assem,patch_assem,full_matvecs)
+  sc_matvecs = lazy_map(FESpaces.StaticCondensationMap(),full_matvecs)
+  rows = patch_assem.strategy.array.array[2,2].patch_rows
+  cols = patch_assem.strategy.array.array[2,2].patch_cols
+  data = (([sc_matvecs,],[rows,],[cols,]), ([],[],[]), ([],[]))
+  assemble_matrix_and_vector(retained_assem,data)
+end
+
+function backward_static_condensation(eliminated_assem,patch_assem,full_matvecs,x_retained)
+  rows_elim = patch_assem.strategy.array.array[1,1].patch_rows
+  rows_ret = patch_assem.strategy.array.array[2,2].patch_rows
+
+  patch_x_ret = lazy_map(Broadcasting(Reindex(x_retained)),rows_ret)
+  patch_x_elim = lazy_map(FESpaces.BackwardStaticCondensationMap(),full_matvecs,patch_x_ret)
+
+  vecdata = ([patch_x_elim,],[rows_elim,])
+  assemble_vector(eliminated_assem,vecdata)
+end
+
+function backward_static_condensation(op::StaticCondensationOperator,x_retained::AbstractVector)
+  backward_static_condensation(op.eliminated_assem,op.patch_assem,op.full_matvecs,x_retained)
+end
+
+function backward_static_condensation(op::StaticCondensationOperator,xh_retained)
+  x_ret = get_free_dof_values(xh_retained)
+  x_elim = backward_static_condensation(op,x_ret)
+  return FEFunction(op.eliminated_space,x_elim)
+end
+
+FESpaces.get_trial(op::StaticCondensationOperator) = op.full_space
+FESpaces.get_test(op::StaticCondensationOperator) = op.full_space

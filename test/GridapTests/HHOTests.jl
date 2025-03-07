@@ -66,6 +66,9 @@ Xp = FESpaces.PatchFESpace(X,ptopo)
 PΓ = projection_operator(M, Γp, dΓp)
 R = reconstruction_operator(ptopo,L,Y,Ωp,Γp,dΩp,dΓp)
 
+global_assem = SparseMatrixAssembler(X,Y)
+patch_assem = FESpaces.PatchAssembler(ptopo,X,Y)
+
 function a(u,v)
   Ru_Ω, Ru_Γ = R(u)
   Rv_Ω, Rv_Γ = R(v)
@@ -83,67 +86,28 @@ end
 
 l((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
 
-function weakform(u,v)
-  assem = SparseMatrixAssembler(X,Y)
-
+function weakform()
+  u, v = get_trial_fe_basis(X), get_fe_basis(Y)
   data1 = FESpaces.collect_cell_matrix_and_vector(X,Y,s(u,v),l(v),zero(X))
   data2 = FESpaces.collect_cell_matrix_and_vector(Xp,Xp,a(u,v),DomainContribution(),zero(Xp))
   data = FESpaces.merge_assembly_matvec_data(data1,data2)
-
-  assemble_matrix_and_vector(assem,data)
+  assemble_matrix_and_vector(global_assem,data)
 end
 
-function patch_weakform(u,v)
-  assem = FESpaces.PatchAssembler(ptopo,X,Y)
-
-  data1 = FESpaces.collect_patch_cell_matrix_and_vector(assem,X,Y,s(u,v),l(v),zero(X))
-  data2 = FESpaces.collect_patch_cell_matrix_and_vector(assem,Xp,Xp,a(u,v),DomainContribution(),zero(Xp))
+function patch_weakform()
+  u, v = get_trial_fe_basis(X), get_fe_basis(Y)
+  data1 = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,X,Y,s(u,v),l(v),zero(X))
+  data2 = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,Xp,a(u,v),DomainContribution(),zero(Xp))
   data = FESpaces.merge_assembly_matvec_data(data1,data2)
-
-  return assemble_matrix_and_vector(assem,data)
+  return assemble_matrix_and_vector(patch_assem,data)
 end
 
-function sc_assembly(u,v)
-  full_matvecs = patch_weakform(u,v)
-  sc_matvecs = lazy_map(FESpaces.StaticCondensationMap(),full_matvecs)
-
-  assem = FESpaces.PatchAssembler(ptopo,X,Y)
-  patch_rows = assem.strategy.array.array[2,2].patch_rows
-  patch_cols = assem.strategy.array.array[2,2].patch_cols
-  matvecdata = ([sc_matvecs,],[patch_rows,],[patch_cols,])
-  matdata = ([],[],[]) # dummy matdata
-  vecdata = ([],[],[]) # dummy vecdata
-  data = (matvecdata, matdata, vecdata)
-  A, b = assemble_matrix_and_vector(SparseMatrixAssembler(N,M),data)
-  return A, b
-end
-
-function backward_sc(xb)
-  assem = FESpaces.PatchAssembler(ptopo,X,Y)
-  patch_rows_bb = assem.strategy.array.array[2,2].patch_rows
-
-  patchwise_xb = map(patch_rows_bb) do patch_row
-    patchwise_xb = xb[patch_row]
-    return patchwise_xb
-  end
-
-  full_matvecs = patch_weakform(get_trial_fe_basis(X),get_fe_basis(Y))
-  patchwise_xi_vec = lazy_map(Gridap.FESpaces.BackwardStaticCondensationMap(),full_matvecs,patchwise_xb)
-
-  patch_rows_ii = assem.strategy.array.array[1,1].patch_rows
-  patch_cols_ii = assem.strategy.array.array[1,1].patch_cols
-  patchwise_xi_vecdata = ([patchwise_xi_vec,],[patch_rows_ii,],[patch_cols_ii,])
-
-  xi = assemble_vector(SparseMatrixAssembler(V,V), patchwise_xi_vecdata)
-  wh = FEFunction(V,xi)
-  return wh
-end
-
-A, b = weakform(get_trial_fe_basis(X),get_fe_basis(Y))
+# Monolithic solve
+A, b = weakform()
 x = A \ b
 
-Asc, bsc = sc_assembly(get_trial_fe_basis(X),get_fe_basis(Y))
-xb = Asc \ bsc
+# Static condensation
+op = MultiField.StaticCondensationOperator(X,V,N,patch_assem,patch_weakform())
 
-wh = backward_sc(xb)
-xi = get_free_dof_values(wh)
+ub = solve(op.sc_op) 
+ui = MultiField.backward_static_condensation(op,ub)

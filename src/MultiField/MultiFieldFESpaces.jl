@@ -110,10 +110,12 @@ MultiFieldStyle(f::MultiFieldFESpace) = MultiFieldStyle(typeof(f))
 
 """
     num_fields(f::MultiFieldFESpace)
+
+Number of spaces within the multi-field space. 
+Defaults to 1 for SingleFieldFESpaces.
 """
-function num_fields(f::MultiFieldFESpace)
-  length(f.spaces)
-end
+num_fields(f::MultiFieldFESpace) = length(f.spaces)
+num_fields(f::SingleFieldFESpace) = 1
 
 Base.iterate(m::MultiFieldFESpace) = iterate(m.spaces)
 Base.iterate(m::MultiFieldFESpace,state) = iterate(m.spaces,state)
