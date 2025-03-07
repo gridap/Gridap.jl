@@ -190,7 +190,7 @@ function StaticCondensationOperator(
 end
 
 function StaticCondensationOperator(
-  ptopo :: PatchTopology,
+  ptopo,
   full_space :: FESpace,
   eliminated_space :: FESpace,
   retained_space :: FESpace,
