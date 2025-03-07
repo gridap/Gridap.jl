@@ -3,24 +3,12 @@ using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
 
-function get_abs_normal_vector(trian)
-  function normal(c)
-    t = c[2] - c[1]
-    n = VectorValue(-t[2],t[1])
-    n = n/norm(n)
-    return n
-  end
-  face_coords = get_cell_coordinates(trian)
-  face_normals = lazy_map(constant_field,lazy_map(normal,face_coords))
-  return CellData.GenericCellField(face_normals,trian,ReferenceDomain())
-end
-
 u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
 q(x) = -∇(u)(x)
 f(x) = (∇ ⋅ q)(x)
 
 nc = (2,2)
-model = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),nc))
+model = UnstructuredDiscreteModel(simplexify(CartesianDiscreteModel((0,1,0,1),nc)))
 D = num_cell_dims(model)
 Ω = Triangulation(ReferenceFE{D}, model)
 Γ = Triangulation(ReferenceFE{D-1}, model)
@@ -38,8 +26,7 @@ reffeM = ReferenceFE(lagrangian, Float64, order; space=:P)
 # HDG test FE Spaces
 V_test = TestFESpace(Ω, reffeV; conformity=:L2)
 Q_test = TestFESpace(Ω, reffeQ; conformity=:L2)
-# M_test = TestFESpace(Γ, reffeM; conformity=:L2, dirichlet_tags="boundary")
-M_test = TestFESpace(Γ, reffeM; conformity=:L2)
+M_test = TestFESpace(Γ, reffeM; conformity=:L2, dirichlet_tags="boundary")
 
 # HDG trial FE Spaces
 V = TrialFESpace(V_test)

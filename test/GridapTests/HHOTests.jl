@@ -6,23 +6,25 @@ using Gridap.ReferenceFEs
 function projection_operator(V, Ω, dΩ)
   Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
   mass(u,v) = ∫(u⋅Π(v,Ω))dΩ
+  V0 = FESpaces.FESpaceWithoutBCs(V)
   P = FESpaces.LocalOperator(
-    FESpaces.LocalSolveMap(), V, mass, mass; trian_out = Ω
+    FESpaces.LocalSolveMap(), V0, mass, mass; trian_out = Ω
   )
   return P
 end
 
-function reconstruction_operator(ptopo,L,X,Ωp,Γp,dΩp,dΓp)
+function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
   reffe_Λ = ReferenceFE(lagrangian, Float64, 0; space=:P)
   Λ = FESpace(Ω, reffe_Λ; conformity=:L2)
 
   nrel = get_normal_vector(Γp)
   Πn(v) = ∇(v)⋅nrel
   Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
-  lhs((u,λ),(v,μ))   = ∫( (∇(u)⋅∇(v)) + (μ*u) + (λ*v) )dΩp
+  lhs((u,λ),(v,μ))   =  ∫( (∇(u)⋅∇(v)) + (μ*u) + (λ*v) )dΩp
   rhs((uT,uF),(v,μ)) =  ∫( (∇(uT)⋅∇(v)) + (uT*μ) )dΩp + ∫( (uF - Π(uT,Γp))*(Πn(v)) )dΓp
   
   Y = FESpaces.FESpaceWithoutBCs(X)
+  mfs = Y.multi_field_style
   W = MultiFieldFESpace([L,Λ];style=mfs)
   R = FESpaces.LocalOperator(
     FESpaces.HHO_ReconstructionOperatorMap(), ptopo, W, Y, lhs, rhs; space_out = L
@@ -50,6 +52,9 @@ qdegree = 2*(order+1)
 dΩp = Measure(Ωp,qdegree)
 dΓp = Measure(Γp,qdegree)
 
+##########################
+# Mixed order variant
+##########################
 reffe_V = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Bulk space
 reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)     # Skeleton space
 reffe_L = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Reconstruction space
@@ -64,7 +69,7 @@ Y  = MultiFieldFESpace([V, M];style=mfs)
 Xp = FESpaces.PatchFESpace(X,ptopo)
 
 PΓ = projection_operator(M, Γp, dΓp)
-R = reconstruction_operator(ptopo,L,Y,Ωp,Γp,dΩp,dΓp)
+R  = reconstruction_operator(ptopo,L,Y,Ωp,Γp,dΩp,dΓp)
 
 global_assem = SparseMatrixAssembler(X,Y)
 patch_assem = FESpaces.PatchAssembler(ptopo,X,Y)
@@ -75,13 +80,13 @@ function a(u,v)
   return ∫(∇(Ru_Ω)⋅∇(Rv_Ω) + ∇(Ru_Γ)⋅∇(Rv_Ω) + ∇(Ru_Ω)⋅∇(Rv_Γ) + ∇(Ru_Γ)⋅∇(Rv_Γ))dΩp
 end
 
-hTinv = 1 ./ CellField((sqrt(2).*sqrt.(get_array(∫(1)dΩp))),Ωp)
+hTinv =  CellField(1 ./ (sqrt(2).*sqrt.(get_array(∫(1)dΩp))),Ωp)
 function s(u,v)
-  function S(u)
+  function SΓ(u)
     u_Ω, u_Γ = u
     return PΓ(u_Ω) - u_Γ
   end
-  return ∫(hTinv * (S(u)⋅S(v)))dΓp
+  return ∫(hTinv * (SΓ(u)⋅SΓ(v)))dΓp
 end
 
 l((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp

@@ -228,3 +228,30 @@ function get_facet_diameter(p::Polytope{D}, face::Int) where D
   end
   return h
 end
+
+################## 
+
+function FESpaces.renumber_free_and_dirichlet_dof_ids(
+  space::FESpaces.PolytopalFESpace,free_dof_ids,dir_dof_ids
+)
+  @assert num_free_dofs(space) == length(free_dof_ids)
+  @assert num_dirichlet_dofs(space) == length(dir_dof_ids)
+
+  k = PosNegReindex(free_dof_ids,dir_dof_ids)
+  cell_dof_ids = lazy_map(Broadcasting(k),get_cell_dof_ids(space))
+
+  ndofs = length(free_dof_ids) + length(dir_dof_ids)
+  nfree = sum(i -> i > 0, free_dof_ids; init= 0) + sum(i -> i > 0, dir_dof_ids; init= 0)
+  ndirichlet = ndofs - nfree
+
+  cell_is_dirichlet = map(I -> any(i -> i < 0, I), cell_dof_ids)
+  dirichlet_cells = collect(Int32,findall(cell_is_dirichlet))
+
+  return PolytopalFESpace(
+    space.vector_type,
+    ndofs,
+    cell_dof_ids,
+    space.fe_basis,
+    space.metadata
+  )
+end
