@@ -34,7 +34,7 @@ C = inner.(g,B) # inner product of g against all TensorValues in the array B
 # C = [2494 2494 2494 2494 2494]
 ```
 
-To create a [`::MultiValue`](@ref) tensor from components, these should be given
+To create a [`MultiValue`](@ref) tensor from components, these should be given
 as separate arguments or all gathered in a `tuple`. The order of the arguments
 is the order of the linearized Cartesian indices of the corresponding array
 (order of the `Base.LinearIndices` indices):

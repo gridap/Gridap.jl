@@ -1,7 +1,6 @@
 """
 
-The exported names are
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__))
 """
 module FESpaces
 
@@ -220,9 +219,7 @@ include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
 
-include("DivConformingFESpaces.jl")
-
-include("CurlConformingFESpaces.jl")
+include("Pullbacks.jl")
 
 include("FESpaceFactories.jl")
 
@@ -253,8 +250,6 @@ include("ZeroMeanFESpaces.jl")
 include("CLagrangianFESpaces.jl")
 
 include("DirichletFESpaces.jl")
-
-#include("ExtendedFESpaces.jl")
 
 include("FESpacesWithLinearConstraints.jl")
 

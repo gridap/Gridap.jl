@@ -15,8 +15,8 @@ order = 0
 
 reffe = NedelecRefFE(et,p,order)
 test_reference_fe(reffe)
-@test num_terms(get_prebasis(reffe)) == 4
-@test get_order(get_prebasis(reffe)) == 0
+@test length(get_prebasis(reffe)) == 4
+@test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 4
 
 @test Conformity(reffe) == CurlConformity()
@@ -28,9 +28,9 @@ order = 1
 
 reffe = NedelecRefFE(et,p,order)
 test_reference_fe(reffe)
-@test num_terms(get_prebasis(reffe)) == 12
+@test length(get_prebasis(reffe)) == 12
 @test num_dofs(reffe) == 12
-@test get_order(get_prebasis(reffe)) == 1
+@test get_order(get_prebasis(reffe)) == 2
 
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
@@ -53,8 +53,8 @@ order = 0
 
 reffe = NedelecRefFE(et,p,order)
 test_reference_fe(reffe)
-@test num_terms(get_prebasis(reffe)) == 6
-@test get_order(get_prebasis(reffe)) == 0
+@test length(get_prebasis(reffe)) == 6
+@test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 6
 @test Conformity(reffe) == CurlConformity()
 
@@ -94,8 +94,8 @@ order = 0
 
 reffe = NedelecRefFE(et,p,order)
 test_reference_fe(reffe)
-@test num_terms(get_prebasis(reffe)) == 3
-@test get_order(get_prebasis(reffe)) == 0
+@test length(get_prebasis(reffe)) == 3
+@test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 3
 @test Conformity(reffe) == CurlConformity()
 dof_basis = get_dof_basis(reffe)
@@ -114,14 +114,14 @@ dof_basis = get_dof_basis(reffe)
 
 # Factory function
 reffe = ReferenceFE(QUAD,nedelec,0)
-@test num_terms(get_prebasis(reffe)) == 4
-@test get_order(get_prebasis(reffe)) == 0
+@test length(get_prebasis(reffe)) == 4
+@test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 4
 @test Conformity(reffe) == CurlConformity()
 
 reffe = ReferenceFE(QUAD,nedelec,Float64,0)
-@test num_terms(get_prebasis(reffe)) == 4
-@test get_order(get_prebasis(reffe)) == 0
+@test length(get_prebasis(reffe)) == 4
+@test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 4
 @test Conformity(reffe) == CurlConformity()
 
@@ -137,31 +137,31 @@ et = Float64
 order = 1
 reffe = NedelecRefFE(et,p,order)
 test_reference_fe(reffe)
-@test num_terms(get_prebasis(reffe)) == 20
-@test get_order(get_prebasis(reffe)) == 1
+@test length(get_prebasis(reffe)) == 20
+@test get_order(get_prebasis(reffe)) == 2
 @test num_dofs(reffe) == 20
 @test Conformity(reffe) == CurlConformity()
 dof_basis = get_dof_basis(reffe)
 
 face_odofs_L2 = get_face_own_dofs(reffe,L2Conformity())
 
-@test face_odofs_L2 == [Int64[], Int64[], Int64[], Int64[], 
-                     Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], 
+@test face_odofs_L2 == [Int64[], Int64[], Int64[], Int64[],
+                     Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[],
                     collect(1:20)]
 
 face_odofs    = get_face_own_dofs(reffe)
 face_cdofs    = get_face_dofs(reffe)
 
-@test face_odofs == [Int64[], Int64[], Int64[], Int64[], 
-                    [1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16], [17, 18], [19, 20], 
+@test face_odofs == [Int64[], Int64[], Int64[], Int64[],
+                    [1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16], [17, 18], [19, 20],
                     Int64[]]
 
-@test face_cdofs == [Int64[], Int64[], Int64[], Int64[], 
-                     [1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], 
-                     [1, 2, 3, 4, 5, 6, 13, 14], [1, 2, 7, 8, 9, 10, 15, 16], [3, 4, 7, 8, 11, 12, 17, 18], [5, 6, 9, 10, 11, 12, 19, 20], 
+@test face_cdofs == [Int64[], Int64[], Int64[], Int64[],
+                     [1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12],
+                     [1, 2, 3, 4, 5, 6, 13, 14], [1, 2, 7, 8, 9, 10, 15, 16], [3, 4, 7, 8, 11, 12, 17, 18], [5, 6, 9, 10, 11, 12, 19, 20],
                      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]]
 
-                     
+
 #display(face_odofs)
 
 using Gridap.Geometry

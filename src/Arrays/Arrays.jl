@@ -6,7 +6,7 @@ This module provides:
 
 The exported names in this module are:
 
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__))
 """
 module Arrays
 
@@ -47,9 +47,8 @@ export testargs
 export inverse_map
 
 export Broadcasting
-
 export Operation
-
+export InverseMap
 
 # LazyArray
 

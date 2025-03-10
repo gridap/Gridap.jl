@@ -1,7 +1,6 @@
 """
 
-The exported names are
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__))
 """
 module ReferenceFEs
 
@@ -19,7 +18,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 
-using Gridap.Polynomials: _q_filter, _s_filter_mc0
+using Gridap.Polynomials: _q_filter, _ser_filter
 using Gridap.Polynomials: _compute_filter_mask
 using Gridap.Polynomials: _define_terms, _sort_by_nfaces!
 
@@ -33,7 +32,6 @@ import Gridap.Arrays: return_type
 import Gridap.Fields: evaluate
 import Gridap.Fields: lazy_map
 import Gridap.Fields: linear_combination
-import Gridap.Polynomials: MonomialBasis
 
 import Gridap.Polynomials: get_order
 import Gridap.Polynomials: get_orders
@@ -56,6 +54,7 @@ export get_dimranges
 export get_dimrange
 export get_vertex_coordinates
 export get_facet_normal
+export get_facet_measure
 export get_facet_orientations
 export get_edge_tangent
 export get_vertex_permutations
@@ -182,9 +181,9 @@ export BDMRefFE
 export NedelecRefFE
 export BezierRefFE
 export ModalC0RefFE
+export CRRefFE
 
 export Lagrangian
-export DivConforming
 export RaviartThomas
 export BDM
 export Nedelec
@@ -197,6 +196,7 @@ export bdm
 export nedelec
 export bezier
 export modalC0
+export cr
 
 export Quadrature
 export QuadratureName
@@ -245,11 +245,17 @@ include("StrangQuadratures.jl")
 
 include("XiaoGimbutasQuadratures.jl")
 
+include("Pullbacks.jl")
+
+include("MomentBasedReferenceFEs.jl")
+
 include("RaviartThomasRefFEs.jl")
 
 include("BDMRefFEs.jl")
 
 include("NedelecRefFEs.jl")
+
+include("CRRefFEs.jl")
 
 include("MockDofs.jl")
 

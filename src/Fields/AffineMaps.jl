@@ -22,6 +22,12 @@ end
 
 affine_map(gradient,origin) = AffineField(gradient,origin)
 
+function Base.zero(::Type{<:AffineField{D1,D2,T}}) where {D1,D2,T}
+  gradient = TensorValue{D1,D2}(tfill(zero(T),Val{D1*D2}()))
+  origin = Point{D2,T}(tfill(zero(T),Val{D2}()))
+  AffineField(gradient,origin)
+end
+
 function evaluate!(cache,f::AffineField,x::Point)
   G = f.gradient
   y0 = f.origin

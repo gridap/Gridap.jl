@@ -229,26 +229,32 @@ function Arrays.return_cache(a::MacroFEBasis,xc::AbstractArray{<:Point})
   k = CoarseToFinePointMap()
   geo_cache = return_cache(k,rr,xc)
   xf, ids = evaluate!(geo_cache,k,rr,xc)
+  xf_cache = array_cache(xf)
 
-  eval_caches = map(return_cache,a.fine_data,xf)
+  # NOTE: xf may be empty for some subcells, so it's safer to use testvalue
+  xt = testvalue(xc)
+  eval_caches = map(ffields -> return_cache(ffields,xt),a.fine_data)
 
-  T = eltype(evaluate!(first(eval_caches),first(a.fine_data),first(xf)))
+  T = eltype(evaluate!(first(eval_caches),first(a.fine_data),xt))
   res_cache = CachedArray(zeros(T,length(xc),length(a)))
-  return res_cache, k, geo_cache, eval_caches
+  return res_cache, k, geo_cache, eval_caches, xf_cache
 end
 
 function Arrays.evaluate!(caches, a::MacroFEBasis,xc::AbstractArray{<:Point})
-  res_cache, k, geo_cache, eval_caches = caches
+  res_cache, k, geo_cache, eval_caches, xf_cache = caches
   setsize!(res_cache,(length(xc),length(a)))
   res = res_cache.array
 
   fill!(res,zero(eltype(res)))
   xf, ids = evaluate!(geo_cache,k,a.rrule,xc)
   
-  for fcell in 1:num_subcells(a.rrule)
-    r = xf.ptrs[fcell]:xf.ptrs[fcell+1]-1
-    vals = evaluate!(eval_caches[fcell],a.fine_data[fcell],view(xf.data,r))
-    I  = view(ids.data,r)
+  for fcell in 1:num_subcells(a.rrule) 
+    xf_k = getindex!(xf_cache,xf,fcell)
+    if isempty(xf_k)
+      continue
+    end
+    vals = evaluate!(eval_caches[fcell],a.fine_data[fcell],xf_k)
+    I = view(ids,fcell)
     J = a.ids.fcell_to_cids[fcell]
     res[I,J] .= vals
   end

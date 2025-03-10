@@ -1,60 +1,60 @@
+
 struct DivConformity <: Conformity end
 
-abstract type DivConforming <: ReferenceFEName end
+# RaviartThomas
 
-struct RaviartThomas <: DivConforming end
-
+struct RaviartThomas <: PushforwardRefFE end
 const raviart_thomas = RaviartThomas()
+
+Pushforward(::Type{<:RaviartThomas}) = ContraVariantPiolaMap()
 
 """
     RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
 The `order` argument has the following meaning: the divergence of the  functions in this basis
 is in the Q space of degree `order`.
-
 """
-function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
-
-  D = num_dims(p)
+function RaviartThomasRefFE(
+  ::Type{T},p::Polytope{D},order::Integer
+) where {T,D}
 
   if is_n_cube(p)
-    prebasis = QCurlGradMonomialBasis{D}(et,order)
+    prebasis = QCurlGradBasis(Legendre,Val(D),T,order)         # Prebasis
+    cb = QGradBasis(Legendre,Val(D),T,order-1)                 # Cell basis
+    fb = LegendreBasis(Val(D-1),T,order,Polynomials._q_filter) # Face basis
   elseif is_simplex(p)
-    prebasis = PCurlGradMonomialBasis{D}(et,order)
+    prebasis = PCurlGradBasis(Monomial,Val(D),T,order)                        # Prebasis
+    cb = LegendreBasis(Val(D),VectorValue{D,T},order-1,Polynomials._p_filter) # Cell basis
+    fb = LegendreBasis(Val(D-1),T,order,Polynomials._p_filter)                # Face basis
   else
-    @notimplemented "H(div) Reference FE only available for cubes and simplices"
+    @notimplemented "Raviart-Thomas Reference FE only available for cubes and simplices"
   end
 
-  nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,GenericField(identity))
+  function cmom(φ,μ,ds) # Cell moment function: σ_K(φ,μ) = ∫(φ·μ)dK
+    Broadcasting(Operation(⋅))(φ,μ)
+  end
+  function fmom(φ,μ,ds) # Face moment function : σ_F(φ,μ) = ∫((φ·n)*μ)dF
+    n = get_facet_normal(ds)
+    φn = Broadcasting(Operation(⋅))(φ,n)
+    Broadcasting(Operation(*))(φn,μ)
+  end
 
-  face_own_dofs = _face_own_dofs_from_moments(nf_moments)
+  moments = Tuple[
+    (get_dimrange(p,D-1),fmom,fb), # Face moments
+  ]
+  if (order > 0)
+    push!(moments,(get_dimrange(p,D),cmom,cb)) # Cell moments
+  end
 
-  face_dofs = face_own_dofs
-
-  dof_basis = MomentBasedDofBasis(nf_nodes, nf_moments)
-
-  ndofs = num_dofs(dof_basis)
-
-  metadata = nothing
-
-  reffe = GenericRefFE{RaviartThomas}(
-    ndofs,
-    p,
-    prebasis,
-    dof_basis,
-    DivConformity(),
-    metadata,
-    face_dofs)
-
-  reffe
+  return MomentBasedReferenceFE(RaviartThomas(),p,prebasis,moments,DivConformity())
 end
 
-function ReferenceFE(p::Polytope,::RaviartThomas, order)
-  RaviartThomasRefFE(Float64,p,order)
+function ReferenceFE(p::Polytope,::RaviartThomas,order;kwargs...)
+  RaviartThomasRefFE(Float64,p,order;kwargs...)
 end
 
-function ReferenceFE(p::Polytope,::RaviartThomas,::Type{T}, order) where T
-  RaviartThomasRefFE(T,p,order)
+function ReferenceFE(p::Polytope,::RaviartThomas,::Type{T},order;kwargs...) where T
+  RaviartThomasRefFE(T,p,order;kwargs...)
 end
 
 function Conformity(reffe::GenericRefFE{RaviartThomas},sym::Symbol)
@@ -76,352 +76,16 @@ function get_face_own_dofs(reffe::GenericRefFE{RaviartThomas}, conf::DivConformi
   get_face_dofs(reffe)
 end
 
-function _RT_nodes_and_moments(::Type{et}, p::Polytope, order::Integer, phi::Field) where et
-
-  D = num_dims(p)
-  ft = VectorValue{D,et}
-  pt = Point{D,et}
-
-  nf_nodes = [ zeros(pt,0) for face in 1:num_faces(p)]
-  nf_moments = [ zeros(ft,0,0) for face in 1:num_faces(p)]
-
-  fcips, fmoments = _RT_face_values(p,et,order,phi)
-  frange = get_dimrange(p,D-1)
-  nf_nodes[frange] = fcips
-  nf_moments[frange] = fmoments
-
-  if (order > 0)
-    ccips, cmoments = _RT_cell_values(p,et,order,phi)
-    crange = get_dimrange(p,D)
-    nf_nodes[crange] = ccips
-    nf_moments[crange] = cmoments
-  end
-
-  nf_nodes, nf_moments
+# TODO: Please remove me
+function legendreBasis(::Type{T},p::Polytope,orders) where T
+  compute_legendre_basis(T,p,orders)
 end
-
-# Ref FE to faces geomaps
-function _ref_face_to_faces_geomap(p,fp)
-  cfvs = get_face_coordinates(p,num_dims(fp))
-  nc = length(cfvs)
-  freffe = LagrangianRefFE(Float64,fp,1)
-  fshfs = get_shapefuns(freffe)
-  cfshfs = fill(fshfs, nc)
-  fgeomap = lazy_map(linear_combination,cfvs,cfshfs)
+function legendreBasis(::Type{T},p::Polytope{D},order::Int) where {D,T}
+  orders = tfill(order,Val{D}())
+  legendreBasis(T,p,orders)
 end
-
-function _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
-  nc = length(fgeomap)
-  c_fips = fill(fips,nc)
-  c_wips = fill(wips,nc)
-  pquad = lazy_map(evaluate,fgeomap,c_fips)
-
-  if is_n_cube(p)
-    c_detwips = c_wips
-  elseif is_simplex(p)
-    # Must account for diagonals in simplex discretizations to get the correct
-    # scaling
-    Jt1 = lazy_map(∇,fgeomap)
-    Jt1_ips = lazy_map(evaluate,Jt1,c_fips)
-    det_J = lazy_map(Broadcasting(meas),Jt1_ips)
-
-    c_detwips = collect(lazy_map(Broadcasting(*),c_wips,det_J))
-  end
-
-  c_fips, pquad, c_detwips
-end
-
-function _broadcast(::Type{T},n,b) where T
-  c = Array{T}(undef,size(b))
-  for (ii, i) in enumerate(b)
-    c[ii] = i⋅n
-  end
-  return c
-end
-
-function _RT_face_moments(p, fshfs, c_fips, fcips, fwips,phi)
-  nc = length(c_fips)
-  cfshfs = fill(fshfs, nc)
-  cvals = lazy_map(evaluate,cfshfs,c_fips)
-  cvals = [fwips[i].*cvals[i] for i in 1:nc]
-  fns = get_facet_normal(p)
-
-  # Must express the normal in terms of the real/reference system of
-  # coordinates (depending if phi≡I or phi is a mapping, resp.)
-  # Hence, J = transpose(grad(phi))
-
-  Jt = fill(∇(phi),nc)
-  Jt_inv = lazy_map(Operation(pinvJt),Jt)
-  det_Jt = lazy_map(Operation(meas),Jt)
-  change = lazy_map(*,det_Jt,Jt_inv)
-  change_ips = lazy_map(evaluate,change,fcips)
-
-  cvals = [ _broadcast(typeof(n),n,J.*b) for (n,b,J) in zip(fns,cvals,change_ips)]
-
-  return cvals
-end
-
-# It provides for every face the nodes and the moments arrays
-function _RT_face_values(p,et,order,phi)
-
-  # Reference facet
-  @assert is_simplex(p) || is_n_cube(p) "We are assuming that all n-faces of the same n-dim are the same."
-  fp = Polytope{num_dims(p)-1}(p,1)
-
-  # geomap from ref face to polytope faces
-  fgeomap = _ref_face_to_faces_geomap(p,fp)
-
-  # Nodes are integration points (for exact integration)
-  # Thus, we define the integration points in the reference
-  # face polytope (fips and wips). Next, we consider the
-  # n-face-wise arrays of nodes in fp (constant cell array c_fips)
-  # the one of the points in the polytope after applying the geopmap
-  # (fcips), and the weights for these nodes (fwips, a constant cell array)
-  # Nodes (fcips)
-  degree = (order)*2
-  fquad = Quadrature(fp,degree)
-  fips = get_coordinates(fquad)
-  wips = get_weights(fquad)
-
-  c_fips, fcips, fwips = _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
-
-  # Moments (fmoments)
-  # The RT prebasis is expressed in terms of shape function
-  fshfs = MonomialBasis(et,fp,order)
-
-  # Face moments, i.e., M(Fi)_{ab} = q_RF^a(xgp_RFi^b) w_Fi^b n_Fi ⋅ ()
-  fmoments = _RT_face_moments(p, fshfs, c_fips, fcips, fwips, phi)
-
-  return fcips, fmoments
-
-end
-
-function _RT_cell_moments(p, cbasis, ccips, cwips)
-  # Interior DOFs-related basis evaluated at interior integration points
-  ishfs_iips = evaluate(cbasis,ccips)
-  return cwips.⋅ishfs_iips
-end
-
-_p_filter(e,order) = (sum(e) <= order)
-
-# It provides for every cell the nodes and the moments arrays
-function _RT_cell_values(p,et,order,phi)
-  # Compute integration points at interior
-  degree = 2*(order)
-  iquad = Quadrature(p,degree)
-  ccips = get_coordinates(iquad)
-  cwips = get_weights(iquad)
-
-  # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
-  if is_n_cube(p)
-    cbasis = QGradMonomialBasis{num_dims(p)}(et,order-1)
-  elseif is_simplex(p)
-    T = VectorValue{num_dims(p),et}
-    cbasis = MonomialBasis{num_dims(p)}(T,order-1, _p_filter)
-  else
-    @notimplemented
-  end
-  cell_moments = _RT_cell_moments(p, cbasis, ccips, cwips )
-
-  # Must scale weights using phi map to get the correct integrals
-  # scaling = meas(grad(phi))
-  Jt = ∇(phi)
-  Jt_inv = pinvJt(Jt)
-  det_Jt = meas(Jt)
-  change = det_Jt*Jt_inv
-  change_ips = evaluate(change,ccips)
-
-  cmoments = change_ips.⋅cell_moments
-
-  return [ccips], [cmoments]
-
-end
-
-function _face_own_dofs_from_moments(f_moments)
-  face_dofs = Vector{Int}[]
-  o = 1
-  for moments in f_moments
-    ndofs = size(moments,2)
-    dofs = collect(o:(o+ndofs-1))
-    push!(face_dofs,dofs)
-    o += ndofs
-  end
-  face_dofs
-end
-
-struct Moment <: Dof end
-
-struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
-  nodes::Vector{P}
-  face_moments::Vector{Array{V}}
-  face_nodes::Vector{UnitRange{Int}}
-
-  function MomentBasedDofBasis(nodes,f_moments,f_nodes)
-    P = eltype(nodes)
-    V = eltype(eltype(f_moments))
-    new{P,V}(nodes,f_moments,f_nodes)
-  end
-
-  function MomentBasedDofBasis(f_nodes,f_moments)
-    P = eltype(eltype(f_nodes))
-    V = eltype(eltype(f_moments))
-    nodes = P[]
-    face_nodes = UnitRange{Int}[]
-    nfaces = length(f_nodes)
-    n = 1
-    for fi in 1:nfaces
-      nodes_fi = f_nodes[fi]
-      nini = n
-      for node_fi in nodes_fi
-        push!(nodes,node_fi)
-        n += 1
-      end
-      nend = n-1
-      push!(face_nodes,nini:nend)
-    end
-    new{P,V}(nodes,f_moments,face_nodes)
-  end
-end
-
-Base.size(a::MomentBasedDofBasis) = (length(a.nodes),)
-Base.axes(a::MomentBasedDofBasis) = (axes(a.nodes,1),)
-# @santiagobadia : Not sure we want to create the moment dofs
-Base.getindex(a::MomentBasedDofBasis,i::Integer) = Moment()
-Base.IndexStyle(::MomentBasedDofBasis) = IndexLinear()
-
-get_nodes(b::MomentBasedDofBasis) = b.nodes
-get_face_moments(b::MomentBasedDofBasis) = b.face_moments
-get_face_nodes_dofs(b::MomentBasedDofBasis) = b.face_nodes
-
-function num_dofs(b::MomentBasedDofBasis)
-  n = 0
-  for m in b.face_moments
-    n += size(m,2)
-  end
-  n
-end
-
-function return_cache(b::MomentBasedDofBasis,field)
-  cf = return_cache(field,b.nodes)
-  vals = evaluate!(cf,field,b.nodes)
-  ndofs = num_dofs(b)
-  r = _moment_dof_basis_cache(vals,ndofs)
-  c = CachedArray(r)
-  (c, cf)
-end
-
-function _moment_dof_basis_cache(vals::AbstractVector,ndofs)
-  T = eltype(vals)
-  r = fill(zero(eltype(T))*0.,ndofs)
-end
-
-function _moment_dof_basis_cache(vals::AbstractMatrix,ndofs)
-  _, npdofs = size(vals)
-  T = eltype(vals)
-  r = fill(zero(eltype(T))*0.,ndofs,npdofs)
-end
-
-function evaluate!(cache,b::MomentBasedDofBasis,field)
-  c, cf = cache
-  vals = evaluate!(cf,field,b.nodes)
-  dofs = c.array
-  _eval_moment_dof_basis!(dofs,vals,b)
-  dofs
-end
-
-function _eval_moment_dof_basis!(dofs,vals::AbstractVector,b)
-  o = 1
-  z = zero(eltype(dofs))
-  face_nodes = b.face_nodes
-  face_moments = b.face_moments
-  for face in 1:length(face_moments)
-    moments = face_moments[face]
-    if length(moments) != 0
-      nodes = face_nodes[face]
-      ni,nj = size(moments)
-      for j in 1:nj
-        dofs[o] = z
-        for i in 1:ni
-          dofs[o] += moments[i,j]⋅vals[nodes[i]]
-        end
-        o += 1
-      end
-    end
-  end
-end
-
-function _eval_moment_dof_basis!(dofs,vals::AbstractMatrix,b)
-  o = 1
-  na = size(vals,2)
-  z = zero(eltype(dofs))
-  face_nodes = b.face_nodes
-  face_moments = b.face_moments
-  for face in 1:length(face_moments)
-    moments = face_moments[face]
-    if length(moments) != 0
-      nodes = face_nodes[face]
-      ni,nj = size(moments)
-      for j in 1:nj
-        for a in 1:na
-          dofs[o,a] = z
-          for i in 1:ni
-            dofs[o,a] += moments[i,j]⋅vals[nodes[i],a]
-          end
-        end
-        o += 1
-      end
-    end
-  end
-end
-
-struct ContraVariantPiolaMap <: Map end
-
-function evaluate!(
-  cache,
-  ::Broadcasting{typeof(∇)},
-  a::Fields.BroadcastOpFieldArray{ContraVariantPiolaMap})
-  v, Jt, detJ,sign_flip = a.args
-  # Assuming J comes from an affine map
-  ∇v = Broadcasting(∇)(v)
-  k = ContraVariantPiolaMap()
-  Broadcasting(Operation(k))(∇v,Jt,detJ,sign_flip)
-end
-
-function lazy_map(
-  ::Broadcasting{typeof(gradient)},
-  a::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}})
-  v, Jt, detJ,sign_flip = a.args
-  ∇v = lazy_map(Broadcasting(∇),v)
-  k = ContraVariantPiolaMap()
-  lazy_map(Broadcasting(Operation(k)),∇v,Jt,detJ,sign_flip)
-end
-
-function evaluate!(cache,::ContraVariantPiolaMap,
-                   v::Number,
-                   Jt::Number,
-                   detJ::Number,
-                   sign_flip::Bool)
-  ((-1)^sign_flip*v)⋅((1/detJ)*Jt)
-end
-
-function evaluate!(cache,
-                   k::ContraVariantPiolaMap,
-                   v::AbstractVector{<:Field},
-                   phi::Field,
-                   sign_flip::AbstractVector{<:Field})
-  Jt = ∇(phi)
-  detJ = Operation(meas)(Jt)
-  Broadcasting(Operation(k))(v,Jt,detJ,sign_flip)
-end
-
-function lazy_map(
-  k::ContraVariantPiolaMap,
-  cell_ref_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
-  cell_map::AbstractArray{<:Field},
-  sign_flip::AbstractArray{<:AbstractArray{<:Field}})
-
-  cell_Jt = lazy_map(∇,cell_map)
-  cell_detJ = lazy_map(Operation(meas),cell_Jt)
-
-  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt,cell_detJ,sign_flip)
+function compute_legendre_basis(::Type{T},p::ExtrusionPolytope{D},orders) where {D,T}
+  extrusion = Tuple(p.extrusion)
+  terms = _monomial_terms(extrusion,orders)
+  LegendreBasis(Val(D),T,orders,terms)
 end

@@ -13,7 +13,7 @@ using Gridap.Polynomials
 
 D = 2
 order = 1
-f = MonomialBasis{D}(Float64,order)
+f = MonomialBasis(Val(D),Float64,order)
 
 nodes = Point{2,Int}[(0,0),(1,0),(0,1),(1,1)]
 change = inv(evaluate(f,nodes))

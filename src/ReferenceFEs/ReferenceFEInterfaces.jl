@@ -399,11 +399,11 @@ associated with the dof basis `predofs` and the basis `shapefuns`.
 
 It is equivalent to
 
-    change = inv(evaluate(predofs,shapefuns))
+    change = transpose(inv(evaluate(predofs,shapefuns)))
     linear_combination(change,predofs) # i.e. transpose(change)*predofs
 """
 function compute_dofs(predofs,shapefuns)
-  change = inv(evaluate(predofs,shapefuns))
+  change = transpose(inv(evaluate(predofs,shapefuns)))
   linear_combination(change,predofs)
 end
 

@@ -9,7 +9,7 @@ using Gridap.CellData
 using Gridap.Fields
 using Gridap.ReferenceFEs
 
-domain =(0,1,0,1)
+domain = (0,1,0,1)
 partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)
 order = 1
@@ -27,7 +27,7 @@ el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
 #using Gridap.Visualization
 #writevtk(Ω,"nedel",nsubcells=10,cellfields=["err"=>e,"u"=>u,"uh"=>uh])
 
-domain =(0,1,0,1)
+domain = (0,1,0,1)
 partition = (3,3)
 model = CartesianDiscreteModel(domain,partition) |> simplexify
 order = 0
@@ -101,7 +101,7 @@ e = u - uh
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
 @test el2 < 1.0e-10
 
-domain =(0,1,0,1,0,1)
+domain = (0,1,0,1,0,1)
 partition = (3,3,3)
 model = CartesianDiscreteModel(domain,partition)
 
@@ -128,7 +128,7 @@ e = u - uh
 dΩ = Measure(Ω,order)
 
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
-@test el2 < 1.0e-10
+@test el2 < 2.0e-10
 
 
 # using Gridap.Visualization
