@@ -32,6 +32,8 @@ using Test
 
 @testset "StrangQuadratures" begin include("StrangQuadraturesTests.jl") end
 
+@testset "XiaoGimbutasQuadratures" begin include("XiaoGimbutasQuadraturesTests.jl") end
+
 @testset "RaviartThomasRefFEs" begin include("RaviartThomasRefFEsTests.jl") end
 
 @testset "NedelecRefFEs" begin include("NedelecRefFEsTests.jl") end

@@ -23,4 +23,8 @@ end
   include("MacroFEStokesTests.jl")
 end
 
+@testset "AMR" begin
+  include("AdaptiveMeshRefinementTests.jl")
+end
+
 end # module

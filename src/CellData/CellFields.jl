@@ -113,11 +113,20 @@ end
 
 function get_normal_vector(trian::Triangulation)
   cell_normal = get_facet_normal(trian)
-  get_normal_vector(trian,cell_normal)
+  get_normal_vector(trian, cell_normal)
 end
 
-function get_normal_vector(trian::Triangulation,cell_normal::AbstractArray)
-  GenericCellField(cell_normal,trian,ReferenceDomain())
+function get_tangent_vector(trian::Triangulation)
+  cell_tangent = get_edge_tangent(trian)
+  get_tangent_vector(trian, cell_tangent)
+end
+
+function get_normal_vector(trian::Triangulation,cell_vectors::AbstractArray)
+  GenericCellField(cell_vectors,trian,ReferenceDomain())
+end
+
+function get_tangent_vector(trian::Triangulation,cell_vectors::AbstractArray)
+  GenericCellField(cell_vectors,trian,ReferenceDomain())
 end
 
 evaluate!(cache,f::Function,x::CellPoint) = CellField(f,get_triangulation(x))(x)
@@ -709,6 +718,12 @@ end
 function get_normal_vector(trian::Triangulation,cell_normal::SkeletonPair)
   plus = get_normal_vector(trian,cell_normal.plus)
   minus = get_normal_vector(trian,cell_normal.minus)
+  SkeletonPair(plus,minus)
+end
+
+function get_tangent_vector(trian::Triangulation,cell_tangent::SkeletonPair)
+  plus = get_normal_vector(trian,cell_tangent.plus)
+  minus = get_normal_vector(trian,cell_tangent.minus)
   SkeletonPair(plus,minus)
 end
 
