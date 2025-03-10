@@ -9,10 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added definition for `DiracDelta` with `Triangulation` argument.
+- Added definition for `DiracDelta` with `Triangulation` argument. Since
+  PR[#1087](https://github.com/gridap/Gridap.jl/pull/1087).
 
 ### Fixed
 
+- Fixed the failure of hessian over sum/product two `Field`s or `CellField`s as
+  reported in issue [#875](https://github.com/gridap/Gridap.jl/issues/875) by
+  adding the relevant manual chain rules. Since
+  PR[#1053](https://github.com/gridap/Gridap.jl/pull/1053).
 
 ### Changed
 
