@@ -203,4 +203,51 @@ h_N = (2*f_N+g)⋅g
 hx_N = h_N(x_N)
 test_array(hx_N,collect(hx_N))
 
+# tests for hessian rules applied to sum and product of two cell-fields
+
+reffe = ReferenceFE(lagrangian,Float64,2)
+V = TestFESpace(model,reffe,conformity=:H1,dirichlet_tags="boundary")
+U = TrialFESpace(V,x -> exp(-norm(x)))
+
+n = num_free_dofs(U)
+uh = FEFunction(U,rand(n))
+qh = FEFunction(U,rand(n))
+
+p = Point(0.1,0.2)
+
+cf1 = ∇(uh + qh)
+@test cf1(p) ≈ ∇(uh)(p) + ∇(qh)(p)
+
+cf2 = ∇(uh*qh)
+@test cf2(p) ≈ (qh*∇(uh))(p) + (uh*∇(qh))(p)
+
+cf3 = Δ(uh + qh) # equiv to tr(∇∇(⋅)), making it an OperationCellField
+@test cf3(p) ≈ Δ(uh)(p) + Δ(qh)(p)
+
+cf4 = ∇∇(uh + qh)
+@test cf4(p) ≈ ∇∇(uh)(p) + ∇∇(qh)(p)
+
+cf5 = ∇∇(uh*qh)
+@test get_array(cf5(p)) ≈ get_array(qh(p) * ∇∇(uh)(p) + uh(p) * ∇∇(qh)(p) + ∇(qh)(p) ⊗ ∇(uh)(p) + ∇(uh)(p) ⊗ ∇(qh)(p))   
+
+cf6 = Δ(uh*qh)
+@test cf6(p) ≈ tr(get_array(qh(p) * ∇∇(uh)(p) + uh(p) * ∇∇(qh)(p) + ∇(qh)(p) ⊗ ∇(uh)(p) + ∇(uh)(p) ⊗ ∇(qh)(p)))
+
+# above tests for CellPoint usage
+Ω = Triangulation(model)
+dΩ = Measure(Ω,3)
+cp = get_cell_points(dΩ)
+
+@test prod(cf1(cp) .≈ ∇(uh)(cp) + ∇(qh)(cp))
+
+@test prod(cf2(cp) .≈ (qh*∇(uh))(cp) + (uh*∇(qh))(cp))
+
+@test prod(cf3(cp) .≈ Δ(uh)(cp) + Δ(qh)(cp))
+
+@test prod(cf4(cp) .≈ ∇∇(uh)(cp) + ∇∇(qh)(cp))
+
+@test prod(cf5(cp) .≈ (qh * ∇∇(uh))(cp) + (uh * ∇∇(qh))(cp) + (∇(qh) ⊗ ∇(uh))(cp) + (∇(uh) ⊗ ∇(qh))(cp)) 
+
+@test prod(cf6(cp) .≈ map(i -> tr.(i), cf5(cp)))
+
 end # module
