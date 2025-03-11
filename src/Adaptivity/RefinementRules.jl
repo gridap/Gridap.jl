@@ -881,7 +881,7 @@ function test_refinement_rule(rr::RefinementRule; debug=false)
   end
 
   cell_measures = get_cell_measures(rr)
-  cell_polys = get_cell_polytopes(rr)
+  cell_polys = Geometry.get_cell_polytopes(rr)
 
   return nothing
 end
