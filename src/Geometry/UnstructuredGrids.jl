@@ -189,7 +189,7 @@ function to_dict(grid::UnstructuredGrid)
 end
 
 function from_dict(::Type{UnstructuredGrid},dict::Dict{Symbol,Any})
-  x = collect1d(dict[:node_coordinates])
+  x = dict[:node_coordinates]
   T = eltype(x)
   Dp = dict[:Dp]
   node_coordinates::Vector{Point{Dp,T}} = reinterpret(Point{Dp,T},x)
