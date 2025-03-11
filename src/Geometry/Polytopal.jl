@@ -1,4 +1,19 @@
 
+"""
+    struct PolytopalGridTopology{Dc,Dp,Tp} <: GridTopology{Dc,Dp}
+      vertex_coordinates::Vector{Point{Dp,Tp}}
+      n_m_to_nface_to_mfaces::Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}
+      polytopes::Vector{GeneralPolytope{Dc,Dp,Tp,Nothing}}
+    end
+
+Grid topology for polytopal grids.
+
+Constructors: 
+
+    PolytopalGridTopology(topo::UnstructuredGridTopology)
+    PolytopalGridTopology(vertex_coordinates,cell_vertices,polytopes)
+
+"""
 struct PolytopalGridTopology{Dc,Dp,Tp} <: GridTopology{Dc,Dp}
   vertex_coordinates::Vector{Point{Dp,Tp}}
   n_m_to_nface_to_mfaces::Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}
@@ -80,9 +95,8 @@ end
 function generate_polytopes(
   cell_polys::AbstractArray{<:Polytope{3}},cell_nodes,node_coordinates
 )
-  polytopes = map(cell_polys,cell_nodes) do p, nodes
-    Polyhedron(p,node_coordinates[nodes])
-  end
+  cell_coordinates = lazy_map(Broadcasting(Reindex(node_coordinates)),cell_nodes)
+  polytopes = map(Polyhedron,cell_polys,cell_coordinates)
   return polytopes, cell_nodes
 end
 
@@ -167,6 +181,23 @@ end
 
 ############################################################################################
 
+"""
+    struct PolytopalGrid{Dc,Dp,Tp,Tn} <: Grid{Dc,Dp}
+      node_coordinates::Vector{Point{Dp,Tp}}
+      cell_node_ids::Table{Int32,Vector{Int32},Vector{Int32}}
+      polytopes::Vector{GeneralPolytope{Dc,Dp,Tp,Nothing}}
+      facet_normal::Tn
+    end
+
+Grid for polytopal meshes.
+
+Constructors: 
+
+    PolytopalGrid(grid::Grid)
+    PolytopalGrid(topo::PolytopalGridTopology)
+    PolytopalGrid(node_coordinates,cell_node_ids,polytopes[,facet_normal=nothing])
+
+"""
 struct PolytopalGrid{Dc,Dp,Tp,Tn} <: Grid{Dc,Dp}
   node_coordinates::Vector{Point{Dp,Tp}}
   cell_node_ids::Table{Int32,Vector{Int32},Vector{Int32}}
@@ -231,6 +262,20 @@ end
 
 ############################################################################################
 
+"""
+    struct PolytopalDiscreteModel{Dc,Dp,Tp,Tn} <: DiscreteModel{Dc,Dp}
+      grid::PolytopalGrid{Dc,Dp,Tp,Tn}
+      grid_topology::PolytopalGridTopology{Dc,Dp,Tp}
+      labels::FaceLabeling
+    end
+
+Discrete model for polytopal grids.
+
+Constructors: 
+
+    PolytopalDiscreteModel(model::DiscreteModel)
+    PolytopalDiscreteModel(grid::PolytopalGrid,grid_topology::PolytopalGridTopology,labels::FaceLabeling)
+"""
 struct PolytopalDiscreteModel{Dc,Dp,Tp,Tn} <: DiscreteModel{Dc,Dp}
   grid::PolytopalGrid{Dc,Dp,Tp,Tn}
   grid_topology::PolytopalGridTopology{Dc,Dp,Tp}
@@ -298,6 +343,12 @@ function orient_nodes(v)
   sortperm(v, by = x -> _angle(c,x), rev = true)
 end
 
+"""
+    voronoi(model::DiscreteModel) -> PolytopalDiscreteModel
+    voronoi(topo::GridTopology) -> PolytopalGridTopology
+
+Given a mesh, computes it's associated Voronoi mesh.
+"""
 function voronoi(model::DiscreteModel)
   new_topo = voronoi(get_grid_topology(model))
   new_grid = PolytopalGrid(new_topo)
