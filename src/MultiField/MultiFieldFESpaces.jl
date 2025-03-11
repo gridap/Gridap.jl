@@ -50,6 +50,45 @@ function BlockMultiFieldStyle(::BlockMultiFieldStyle{0,0,0},spaces)
   return BlockMultiFieldStyle(NB)
 end
 
+@inline get_block_parameters(::BlockMultiFieldStyle{NB,SB,P}) where {NB,SB,P} = (NB,SB,P)
+
+@inline function has_trivial_blocks(NB,SB,P)
+  NV = sum(SB)
+  return isequal(NB,NV) && isequal(P,ntuple(i -> i, NV))
+end
+
+function get_block_ranges(NB,SB,P)
+  ptrs = [1,SB...]
+  length_to_ptrs!(ptrs)
+  var_perm = [P...]
+  return [var_perm[ptrs[i]:ptrs[i+1]-1] for i in 1:NB]
+end
+
+function get_block_map(NB,SB,P)
+  NV = length(P)
+  ranges = get_block_ranges(NB,SB,P)
+  block_map = Vector{CartesianIndex{1}}(undef,NV)
+  for I in CartesianIndices((NB,))
+    block_map[ranges[I]] .= I
+  end
+  return block_map
+end
+
+function get_block_map(NBr,SBr,Pr,NBc,SBc,Pc)
+  NVr, NVc = length(Pr), length(Pc)
+  row_ranges = get_block_ranges(NBr,SBr,Pr)
+  col_ranges = get_block_ranges(NBc,SBc,Pc)
+  block_map = Matrix{CartesianIndex{2}}(undef,NVr,NVc)
+  for I in CartesianIndices((NBr,NBc))
+    i_range = row_ranges[I[1]]
+    j_range = col_ranges[I[2]]
+    for i in i_range, j in j_range
+      block_map[i,j] = I
+    end
+  end
+  return block_map
+end
+
 """
     struct StridedMultiFieldStyle <: MultiFieldStyle end
 

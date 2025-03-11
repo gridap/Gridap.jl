@@ -38,18 +38,22 @@ function FESpaces.get_patch_assembly_ids(
 end
 
 function FESpaces.PatchAssembler(
-  ptopo::PatchTopology,trial::MultiFieldFESpace{MS},test::MultiFieldFESpace{MS}
-) where MS <: BlockMultiFieldStyle{NB,SB,P} where {NB,SB,P}
-  NV = length(test.spaces)
-  block_map = get_block_map(NB,NV,SB,P)
+  ptopo::PatchTopology,
+  trial::MultiFieldFESpace{<:BlockMultiFieldStyle},
+  test::MultiFieldFESpace{<:BlockMultiFieldStyle},
+)
+  NBr, SBr, Pr = get_block_parameters(MultiFieldStyle(test))
+  NBc, SBc, Pc = get_block_parameters(MultiFieldStyle(trial))
+
+  block_map = get_block_map(NBr,SBr,Pr,NBc,SBc,Pc)
   block_patch_rows = FESpaces.get_patch_assembly_ids(test,ptopo)
   block_patch_cols = FESpaces.get_patch_assembly_ids(trial,ptopo)
-  block_strategies = map(CartesianIndices((NB,NB))) do I
+  block_strategies = map(CartesianIndices((NBr,NBc))) do I
     patch_rows = block_patch_rows[I[1]]
     patch_cols = block_patch_cols[I[2]]
     FESpaces.PatchAssemblyStrategy(ptopo,patch_rows,patch_cols)
   end
-  strategies = ArrayBlockView(ArrayBlock(block_strategies,fill(true,(NB,NB))),block_map)
+  strategies = ArrayBlockView(ArrayBlock(block_strategies,fill(true,(NBr,NBc))),block_map)
   rows = map(block_rows -> blockedrange(map(length,block_rows)),zip(block_patch_rows...))
   cols = map(block_cols -> blockedrange(map(length,block_cols)),zip(block_patch_cols...))
   return FESpaces.PatchAssembler(ptopo,strategies,rows,cols)

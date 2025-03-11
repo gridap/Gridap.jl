@@ -88,7 +88,8 @@ end
 
 struct CentroidCoordinateChangeMap <: Map end
 
-function centroid_map(poly::Polytope{D}) where D
+function centroid_map(poly::Polytope)
+  D = num_point_dims(poly)
   pmin, pmax = get_bounding_box(poly)
   o = VectorValue(ntuple(i->1.0,Val(D)))
   xc = 0.5 * (pmin + pmax)
@@ -102,7 +103,7 @@ function Arrays.lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{typeof(centroid_
   lazy_map(CentroidCoordinateChangeMap(),polys,x)
 end
 
-function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope{D},x::Point{D}) where D
+function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope,x::Point)
   pmin, pmax = get_bounding_box(poly)
   xc = 0.5 * (pmin + pmax)
   # xc = get_facet_centroid(poly, D) # reverting to original
@@ -110,11 +111,11 @@ function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope{D},
   return (x - xc) ./ h
 end
 
-function Arrays.return_cache(::CentroidCoordinateChangeMap,poly::Polytope{D},x::AbstractVector{<:Point{D}}) where D
+function Arrays.return_cache(::CentroidCoordinateChangeMap,poly::Polytope,x::AbstractVector{<:Point})
   return CachedArray(similar(x))
 end
 
-function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope{D},x::AbstractVector{<:Point{D}}) where D
+function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope,x::AbstractVector{<:Point})
   setsize!(cache,size(x))
   y = cache.array
   pmin, pmax = get_bounding_box(poly)
