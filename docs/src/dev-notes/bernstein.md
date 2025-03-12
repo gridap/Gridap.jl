@@ -123,17 +123,17 @@ language to usual differential calculus and the implemented algorithm.
 
 Again, a ``D``-dimensional simplex ``T`` is defined by ``N=D+1`` vertices
 ``\{v_1, v_2, ..., v_N\}=\{v_i\}_{i\in 1:N}``. We uniquely identify a
-``d``-dimensional face ``f`` of ``T`` by the set of the ``d+1`` increasing
-indices of its vertices:
+``d``-dimensional face ``f`` of ``T`` by the set ``F`` of the ``d+1``
+increasing indices of its vertices:
 ```math
-f\sim I_f = \{i_0, i_1, ..., i_d\} \qquad\text{such that } 1≤ i_0 < i_1 < ... <i_d≤ N .
+f\sim F = \{f_0, f_1, ..., f_d\} \qquad\text{such that } 1≤ f_0 < f_1 < ... <f_d≤ N .
 ```
 In particular, ``T\sim \{1:N\}``. We write ``f\subset T`` for any face of
 ``T``, including ``T`` itself or its vertices.
-``T`` has ``\binom{N}{d+1}`` ``d``-dimensional faces, indexed ``\forall\,1≤ i_0
-< i_1 < ... < i_d ≤ N``. The dimension of a face ``f`` is ``\#I_f``, and we
-write ``{"∀\,\#J=d+1"}`` for all the index sets of the ``d``-dimensional faces of
-``T``.
+``T`` has ``\binom{N}{d+1}`` ``d``-dimensional faces, indexed ``\forall\,1≤ f_0
+< f_1 < ... < f_d ≤ N``. The dimension of a face ``f`` is ``\#F``, and we
+write ``{"∀\,\#J=d+1"}`` for all the increasing index sets of the
+``d``-dimensional faces of ``T``.
 
 Using Einstein's convention of summation on repeated indices, a degree-``k``
 dimension-``D`` form ``ω`` can be written in the canonical Cartesian basis as
@@ -155,7 +155,7 @@ The main feature of the ``ℙ_r^{(-)}Λ^k`` bases is that each basis polynomial
 ``\boldsymbol{x}_α`` inside ``f``), in the sense that the trace of ``ω^{f,α}``
 on another face ``g\subset T`` is zero when ``g`` does not contain ``f``:
 ```math
-f\not\subset g\ \rightarrow\ \text{tr}_g ω^{f,α} = 0, \quad\forall f,g \subseteq T,\ \forall \llbracket α\rrbracket\subseteq I_f, α>0,
+f\not\subset g\ \rightarrow\ \text{tr}_g ω^{f,α} = 0, \quad\forall f,g \subseteq T,\ \forall \llbracket α\rrbracket\subseteq F, α>0,
 ```
 including any face ``g\neq f`` of dimension less or equal that of ``f``.
 
@@ -165,7 +165,7 @@ are no bubble functions of degree ``k`` on faces of dimension ``<k``, so the
 spaces ``ℙ_r^{(-)}Λ^k(T)`` admit the geometric decomposition:
 ```math
 ℙ_r^{(-)}Λ^k(T) = \underset{f\subset T}{\oplus}\ \mathring{ℙ}_r^{(-)}Λ^k(f)
-= \underset{k≤d≤D}{\oplus}\underset{\quad I_f=0≤ i_0 < ... < i_d ≤ D}{\oplus}\ \mathring{ℙ}_r^{(-)}Λ^k(T,f).
+= \underset{k≤d≤D}{\oplus}\underset{\quad F=0≤ i_0 < ... < i_d ≤ D}{\oplus}\ \mathring{ℙ}_r^{(-)}Λ^k(T,f).
 ```
 
 #### Bubble functions ``\mathring{ℙ}_r^-Λ^k``
@@ -173,7 +173,7 @@ spaces ``ℙ_r^{(-)}Λ^k(T)`` admit the geometric decomposition:
 The ``ℙ^-`` type bubble basis polynomials associated to a face ``f\subset T``
 are defined by
 ```math
-\mathring{ℙ}_r^-Λ^k(T,f) = \text{span}\big\{ \bar{ω}_α^J = B_α φ^J \quad\big|\quad |α|=r-1,\ \#J=k+1,\ ⟦α⟧∪J=I_f,\ α_i=0 \text{ if } i< \text{min}(J) \big\}\newline
+\mathring{ℙ}_r^-Λ^k(T,f) = \text{span}\big\{ \bar{ω}_α^J = B_α φ^J \quad\big|\quad |α|=r-1,\ \#J=k+1,\ ⟦α⟧∪J=F,\ α_i=0 \text{ if } i< \text{min}(J) \big\}\newline
 ```
 where ``B_α`` are the scalar Bernstein polynomials implemented by
 [`BernsteinBasisOnSimplex`](@ref), and ``φ^J`` are the Whitney forms:
@@ -244,25 +244,25 @@ The ``ℙ`` type bubble basis polynomials associated to a face ``f\subset T``
 are defined by
 ```math
 \mathring{ℙ}_rΛ^k(T,f) = \text{span}\big\{ ω_{α,f}^J=B_α Ψ_{α,f}^J
-\quad\big|\quad |α|=r,\ \#J=k,\ ⟦α⟧∪J=I_f,\ α_i=0 \text{ if } i< \text{min}(I_f
+\quad\big|\quad |α|=r,\ \#J=k,\ ⟦α⟧∪J=F,\ α_i=0 \text{ if } i< \text{min}(F
 \backslash J) \big\},
 ```
 where ``Ψ_{α,f}^J`` are defined by
 ```math
     Ψ_{α,f}^J = \underset{j\in J}{\bigwedge} Ψ_{α,f}^j
 \quad\text{where}\quad
- Ψ_{α,f}^j = \mathrm{d}λ^j - \frac{α_j}{|α|}\sum_{l\in I_f}\mathrm{d}λ^l.
+ Ψ_{α,f}^j = \mathrm{d}λ^j - \frac{α_j}{|α|}\sum_{l\in F}\mathrm{d}λ^l.
 ```
 Again, we need their coordinates in the Cartesian basis ``\mathrm{d}x^I``:
 ```math
-Ψ_{α,f}^j = M_{j,i+1}\mathrm{d}x^i - \frac{α_j}{|α|}\sum_{l\in I_f}M_{l,i+1}\mathrm{d}x^i
-= \big(M_{j,i+1} - \frac{α_j}{|α|}\sum_{l\in I_f}M_{l,i+1}\big)\mathrm{d}x^i
+Ψ_{α,f}^j = M_{j,i+1}\mathrm{d}x^i - \frac{α_j}{|α|}\sum_{l\in F}M_{l,i+1}\mathrm{d}x^i
+= \big(M_{j,i+1} - \frac{α_j}{|α|}\sum_{l\in F}M_{l,i+1}\big)\mathrm{d}x^i
 ```
 so
 ```math
 Ψ_{α,f}^j = ψ_{α,f,i}^j \mathrm{d}x^i
 \quad\text{where}\quad
-ψ_{α,f,i}^j = M_{j,i+1} - \frac{α_j}{|α|}\sum_{l\in I_f}M_{l,i+1}
+ψ_{α,f,i}^j = M_{j,i+1} - \frac{α_j}{|α|}\sum_{l\in F}M_{l,i+1}
 ```
 and
 
@@ -296,10 +296,13 @@ end
 #### Optimizations for the reference simplex
 
 In the reference simplex ``\hat{T}``, the vertices and thus coefficients of
-``M`` are known at compile time, so the coefficients ``\hat{m}_I^J`` and
-``\hat{ψ}_{α,f,I}^J`` can be hard-coded at compile time in the `@generated`
-functions to avoid storing them in the basis and accessing them at runtime. Let
-us derive the formulas for them.
+``M`` are known at compile time, so the coefficients ``m_I^J`` and
+``ψ_{α,f,I}^J`` in ``\hat{T}``, denoted by ``\hat{m}_I^J`` and
+``\hat{ψ}_{α,f,I}^J`` respectively, can be hard-coded at compile time in the
+`@generated` functions to avoid storing them in the basis and accessing them at
+runtime. Let us derive the formulas for them.
+
+##### Coefficients ``\hat{m}_I^J``
 
 It was shown in the Barycentric coordinates section above that ``M_{j,i+1} =
 δ_{i+1,j} - δ_{1j}``. Let ``\#I=k`` and ``\#J=k``, and let
@@ -320,10 +323,59 @@ k}{\Pi}δ_{I_l}^{J_l}``. So in ``\hat{T}``, there is
 \bar{ω}_{α,I}^{J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, \hat{m}_I^{J\backslash l}.
 ```
 
+##### Coefficients ``\hat{ψ}_{α,f,I}^J``
+```math
+\hat{ψ}_{α,f,i}^j = δ_{i+1,j} - δ_{1j} - \frac{α_j}{|α|}\sum_{l\in F}δ_{i+1,l} - δ_{1l}
+= δ_{i+1,j} - δ_{1j} + \big( δ_{1,F_1}-\sum_{l\in F}δ_{i+1,l} \big)\frac{α_j}{|α|}
+```
+
+```math
+\hat{ψ}_{α,f,I}^J = \mathrm{det}\Big( \Big(
+    δ_{I_i+1,J_j}-δ_{1,J_j} - \big( δ_{1,F_1}-\sum_{l\in F}δ_{I_i+1,l} \big)\frac{α_{J_j}}{|α|}
+\Big)_{1\leq i,j\leq k} \Big)
+```
+
+We can use the matrix determinant lemma ``\mathrm{det}(A + uv^T) = \mathrm{det}(A) + v^T\mathrm{adj}(A)u`` with
+```math
+A_{ij}=(δ_{I_i+1,J_j}-δ_{1,J_j})_{1\leq i,j\leq k},\qquad u^i = δ_{1,F_1}-\sum_{l\in F}δ_{I_i+1,l}, \qquad v^j = \frac{α_{J_j}}{|α|}.
+```
+The determinant ``\mathrm{det}(A)=\hat{m}_I^{J}`` was computed above, but
+``\mathrm{adj}(A)``, the transpose of the cofactor matrix of ``A``, is also
+needed. Let ``s=δ_1^{J_1}`` and ``m,p,q`` defined by
+```math
+m = \text{min } \{i\,|\, J_i-s \notin I,\,i>s\},\ \quad
+p = \text{min } \{j\,|\, I_j+s \notin J\}  \quad\text{and}\quad
+q = \text{min } \{j\,|\, I_j+s \notin J,\,j>p\},
+```
+where ``\text{min}\,\emptyset=0``, and let ``n`` be the number
+of columns of zeros of ``A``, defined by ``n =\# \{\ i\ |\ J_i-s\notin I\}``.
+Then it can be shown that ``\text{rank}(A)=k-n+s``, and the following table
+gives the required information to apply the matrix determinant lemma and
+formulas for ``\hat{ψ}_{α,f,I}^J``
+```math
+\begin{array}{|c|c|c|c|c|}
+\hline
+s = δ_1^{J_1} & n & \mathrm{rank}(A) & \mathrm{adj}(A) & \hat{ψ}_{α,f,I}^J \\
+\hline
+0   & 0       & k       & δ_{ij}                         & 1 + u \cdot v\\
+\hline
+0   & 1       & k-1     & (-1)^{m+p}δ_i^m δ^p_j          & (-1)^{m+p}u^m v^p \\
+\hline
+1   & 1       & k       &                          & (-1)^p(1-u^p|v|+\underset{1\leq l<p}{\sum}v^{l+1}u^l + \underset{p<l\leq k}{\sum}v^{l}u^l) \\
+\hline\hspace{1mm}
+1   & 2       & k-1     & (-1)^{m+p+q}δ_i^m(δ^q_j-δ^p_j) & (-1)^{m+p+q}u^m(v^q-v^p) \\
+\hline
+0/1 & 2+s\leq & k-2\geq & 0 & 0 \\
+\hline
+\end{array}
+```
+In this table, ``m``, ``p`` and ``q`` depend on ``I`` and ``J``, ``u``
+depends on ``F`` and ``I``, and ``v`` depends on ``α`` and ``J``.
+
 ```math
 ```
 
-##### Useful lemmas
+##### Useful lemmas TODO
 
 ##### Lemma 1
 For ``I`` and ``J`` two increasing sets of indices of same size ``k``,
@@ -341,6 +393,15 @@ the first row, giving
 \mathrm{det}\big( (δ_{I_i, J_j})_{1\leq i,j\leq k} \big) = δ_{I_1}^{J_1} \mathrm{det}\big((δ_{I_i, J_j})_{2\leq i,j\leq k}\big).
 ```
 The same argument is repeated recursively to obtain the result.
+
+##### Lemma X
+
+Let us determine the rank of ``A`` from ``I`` and ``J``, leading to 6
+possibilities for the expression of the adjoint depending on weather the rank
+of ``A`` is ``k``, ``k-1`` or ``<k``, and weather ``J_1`` is ``1``.
+If ``\mathrm{rank}(A)\leq k-2``, both ``\mathrm{det}(A)`` and
+``\mathrm{adj}(A)`` vanish.
+
 ## References
 
 [1] [M.J. Lai & L.L. Schumaker, Spline Functions on Triangulations, Chapter 2 - Bernstein–Bézier Methods for Bivariate Polynomials, pp. 18 - 61.](https://doi.org/10.1017/CBO9780511721588.003)
