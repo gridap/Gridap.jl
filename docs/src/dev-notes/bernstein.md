@@ -159,17 +159,19 @@ degree ``r``. In this section, we give a summary of the basis definition,
 translation of the formulas in the paper from the differential geometry
 language to usual differential calculus and the implemented algorithm.
 
+#### Face and form coefficients indexing
+
 Again, a ``D``-dimensional simplex ``T`` is defined by ``N=D+1`` vertices
 ``\{v_1, v_2, ..., v_N\}=\{v_i\}_{i\in 1:N}``. We uniquely identify a
 ``d``-dimensional face ``f`` of ``T`` by the set ``F`` of the ``d+1``
 increasing indices of its vertices:
 ```math
-f\sim F = \{f_0, f_1, ..., f_d\} \qquad\text{such that } 1≤ f_0 < f_1 < ... <f_d≤ N .
+f\sim F = \{F_0, F_1, ..., F_d\} \qquad\text{such that } 1≤ F_0 < F_1 < ... <F_d≤ N .
 ```
 In particular, ``T\sim \{1:N\}``. We write ``f\subset T`` for any face of
 ``T``, including ``T`` itself or its vertices.
-``T`` has ``\binom{N}{d+1}`` ``d``-dimensional faces, indexed ``\forall\,1≤ f_0
-< f_1 < ... < f_d ≤ N``. The dimension of a face ``f`` is ``\#F``, and we
+``T`` has ``\binom{N}{d+1}`` ``d``-dimensional faces, indexed ``\forall\,1≤ F_0
+< F_1 < ... < F_d ≤ N``. The dimension of a face ``f`` is ``\#F``, and we
 write ``{"∀\,\#J=d+1"}`` for all the increasing index sets of the
 ``d``-dimensional faces of ``T``.
 
@@ -178,13 +180,14 @@ dimension-``D`` form ``ω`` can be written in the canonical Cartesian basis as
 ``ω = ω_I\,\text{d}x^I``, where the basis is
 ```math
 \big\{ \text{d}x^I = \underset{i\in I}{\bigwedge}\text{d}x^{i}
-=\text{d}x^{i_1}\wedge ...\wedge \text{d}x^{i_k} \quad\big|\quad I=\{i_1, ...,
-i_k\} \text{ for }1≤ i_1 < ... < i_k ≤ D\big\},
+=\text{d}x^{I_1}\wedge ...\wedge \text{d}x^{I_k} \quad\big|\quad I=\{I_1, ...,
+I_k\} \text{ for }1≤ I_1 < ... < I_k ≤ D\big\},
 ```
 ``\{ω_I\}_I\in\mathbb{R}^\binom{D}{k}`` is the vector of coefficients of ``ω``,
 and ``\{\text{d}x^i\}_{1≤ i≤ D}`` is the canonical covector basis (basis
 of ``\text{T}_x T``) such that ``\text{d}x^i(\partial_{x_j})=δ_{ij}``.
 
+TODO choose linear ordering
 
 #### Geometric decomposition
 
@@ -313,7 +316,7 @@ and
 Finally, the ``\binom{D}{k}`` coordinates of ``ω_{α,f}^{J}=B_α Ψ_{α,f}^J`` in the
 basis ``\mathrm{d}x^I`` are
 ```math
-ω_{α,f,I}^{J} = B_α ψ_{α,f,I}^J,
+ω_{α,f,I}^{J} = B_α\, ψ_{α,f,I}^J,
 ```
 where the ``\binom{D+r}{k+r}\binom{r+k}{k}\binom{D}{k}
 =\mathrm{dim}(ℙ_rΛ^k(T^D))\times\# (\{\mathrm{d}x^I\}_I)`` coefficients
@@ -331,6 +334,44 @@ for (Ψ_αfJ, α) in Ψ_α_couples
 end
 ```
 
+#### Exterior derivatives of the basis forms
+
+
+#### Gradient and Hessian of the coefficient vectors
+
+For retro-compatibility with the rest of Gridap, let us derive the formula for
+the gradient and hessian of the form coefficient vectors
+``\{\bar{ω}_{α,f,I}^{J}\}_I`` and ``\{ω_{α,f,I}^{J}\}_I``. We will express them
+in function of the scalar Bernstein polynomial derivatives already implemented
+by `BernsteinBasisOnSimplex`.
+
+##### Coefficient vector ``\{\bar{ω}_{α,f,I}^{J}\}_I``
+
+Recall ``\bar{ω}_{α,I}^{J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, m_I^{J\backslash
+l}``, the derivatives are not immediate to compute because both ``B_α`` and
+``λ_l`` depend on ``\boldsymbol{x}``, let us first use ``B_α λ_l = \frac{α_l +
+1}{|α|+1}B_{α+e_l}`` to write the coefficients in Bernstein form as follows
+```math
+\bar{ω}_{α,I}^{J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, m_I^{J\backslash l} =
+\frac{1}{r}\sum_{0≤l≤k} (-1)^{l} (α_l +1)  m_i^{j\backslash l}\, b_{α+e_l},
+```
+where ``|α|+1`` was replaced with ``r``, the polynomial degree of
+``\bar{ω}_{α,I}^{J}``. As a consequence, for any Cartesian coordinate indices
+``1\leq p,q\leq D``, we get
+```math
+\partial_q \bar{ω}_{α,I}^{J} = \frac{1}{r}\sum_{0≤l≤k} (-1)^{l} (α_l +1)  m_i^{j\backslash l}\, \partial_q B_{α+e_l},\\
+\partial_t\partial_q \bar{ω}_{α,I}^{J} = \frac{1}{r}\sum_{0≤l≤k} (-1)^{l} (α_l +1)  m_i^{j\backslash l}\, \partial_t\partial_q B_{α+e_l}.
+```
+
+##### Coefficient vector ``\{ω_{α,f,I}^{J}\}_I``
+
+Recall ``ω_{α,f,I}^{J} = B_α\, ψ_{α,f,I}^J``, the derivatives are easy to
+compute because only ``B_α`` depends on ``\boldsymbol{x}``, leading to
+```math
+\partial_q\, ω_{α,f,I}^{J} = ψ_{α,f,I}^J\; \partial_q B_α,\\
+\partial_t\partial_q\, ω_{α,f,I}^{J} = ψ_{α,f,I}^J\; \partial_t\partial_q B_α.
+```
+
 #### Optimizations for the reference simplex
 
 In the reference simplex ``\hat{T}``, the vertices and thus coefficients of
@@ -342,68 +383,66 @@ runtime. Let us derive the formulas for them.
 
 ##### Coefficients ``\hat{m}_I^J``
 
-It was shown in the Barycentric coordinates section above that ``M_{j,i+1} =
-δ_{i+1,j} - δ_{1j}``. Let ``\#I=k`` and ``\#J=k``, and let
-``m = \underset{1\leq i\leq k-1}{\text{argfirst }}(I_i+1\neq J_i)`` or
-``m=k`` if no different index is found. Then it can be shown that
+It was shown in the Barycentric coordinates section above that
+``M_{j,i+1} = δ_{i+1,j} - δ_{1j}``. Let ``\#I=k`` and ``\#J=k``. We need
+to compute the determinant of the matrix
 ```math
-\hat{m}_I^J = \mathrm{det}\big((δ_{I_i+1,J_j}-δ_{1,J_j})_{1\leq i,j\leq k}\big) =
-
-\left\{\begin{array}{cl}
-    (-1)^m δ_{I\backslash m \;+ 1}^{J\backslash 1}& \text{ if } J_1 = 1\\
-δ_{I+1}^{J} &\text{ else }
-\end{array}\right.
-,
+\hat{M}_{IJ}=(δ_{I_i+1,J_j}-δ_{1,J_j})_{1\leq i,j\leq k}.
 ```
-where ``I+1=\{I_1+1, ...,I_k+1\}`` and ``δ_I^J = \underset{1\leq l\leq
-k}{\Pi}δ_{I_l}^{J_l}``. So in ``\hat{T}``, there is
+Let us define:
+- ``s=δ_1^{J_1}``, that indicates if ``\hat{M}_{IJ}`` contains a column of ``-1``,
+- ``p = \text{min } \{j\,|\, I_j+s \notin J\}`` where ``\text{min}\,\emptyset=0``, the index of the first row of ``\hat{M}_{IJ}`` containing no ``1``. ``p=0`` if and only if ``\hat{M}_{IJ}`` is the identity matrix.
+- ``n`` be the number of columns of zeros of ``\hat{M}_{IJ}``, defined by ``n =\# \{\ i\ |\ J_i-s\notin I\}``.
+Then it can be shown that ``k-n`` is the rank of ``\hat{M}_{IJ}``, and that
+```math
+\hat{m}_I^J = \mathrm{det}(\hat{M}_{IJ}) = (-1)^pδ_{n,0},
+```
+so in ``\hat{T}``, there is
 ```math
 \bar{ω}_{α,I}^{J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, \hat{m}_I^{J\backslash l}.
 ```
 
 ##### Coefficients ``\hat{ψ}_{α,f,I}^J``
+The expression of ``ψ_{α,f,i}^j`` in ``\hat{T}`` is
 ```math
-\hat{ψ}_{α,f,i}^j = δ_{i+1,j} - δ_{1j} - \frac{α_j}{|α|}\sum_{l\in F}δ_{i+1,l} - δ_{1l}
-= δ_{i+1,j} - δ_{1j} + \big( δ_{1,F_1}-\sum_{l\in F}δ_{i+1,l} \big)\frac{α_j}{|α|}
+\hat{ψ}_{α,f,i}^j = M_{j,i+1} - \frac{α_j}{|α|}\sum_{l\in F}δ_{i+1,l} - δ_{1l}
+= M_{j,i+1} + \big( δ_{1,F_1}-\sum_{l\in F}δ_{i+1,l} \big)\frac{α_j}{|α|}
 ```
+leading to
+```math
+\hat{ψ}_{α,f,I}^J  = \mathrm{det}\Big(\hat{M}_{IJ} + u\,v^{\mathrm{T}}\Big)
+\quad\text{where}\quad
+u^i = δ_{1,F_1}-\sum_{l\in F}δ_{I_i+1,l}, \qquad v^j = \frac{α_{J_j}}{|α|}.
+```
+We can use the following matrix determinant lemma:
+```math
+\mathrm{det}(\hat{M}_{IJ} + uv^T) =
+\mathrm{det}(\hat{M}_{IJ}) + v^T\mathrm{adj}(\hat{M}_{IJ})u.
+```
+The determinant ``\mathrm{det}(\hat{M}_{IJ})=\hat{m}_I^{J}`` was computed
+above, but ``\mathrm{adj}(\hat{M}_{IJ})``, the transpose of the cofactor matrix
+of ``\hat{M}_{IJ}``, is also needed. Let ``s=δ_1^{J_1}``, ``n`` and ``p`` be
+defined as above, and additionally define
+- ``q = \text{min } \{j\,|\,j>p,\ I_j+s \notin J\}``, the index of the second row of ``\hat{M}_{IJ}`` containing no ``1`` (``q=0`` if there isn't any),
+- ``m = \text{min } \{i\,|\,i>s,\ J_i-s \notin I\}``, the index of the first column of ``\hat{M}_{IJ}`` containing only zeros (``m=0`` if there isn't any).
 
-```math
-\hat{ψ}_{α,f,I}^J = \mathrm{det}\Big( \Big(
-    δ_{I_i+1,J_j}-δ_{1,J_j} - \big( δ_{1,F_1}-\sum_{l\in F}δ_{I_i+1,l} \big)\frac{α_{J_j}}{|α|}
-\Big)_{1\leq i,j\leq k} \Big)
-```
-
-We can use the matrix determinant lemma ``\mathrm{det}(A + uv^T) = \mathrm{det}(A) + v^T\mathrm{adj}(A)u`` with
-```math
-A_{ij}=(δ_{I_i+1,J_j}-δ_{1,J_j})_{1\leq i,j\leq k},\qquad u^i = δ_{1,F_1}-\sum_{l\in F}δ_{I_i+1,l}, \qquad v^j = \frac{α_{J_j}}{|α|}.
-```
-The determinant ``\mathrm{det}(A)=\hat{m}_I^{J}`` was computed above, but
-``\mathrm{adj}(A)``, the transpose of the cofactor matrix of ``A``, is also
-needed. Let ``s=δ_1^{J_1}`` and ``m,p,q`` defined by
-```math
-m = \text{min } \{i\,|\, J_i-s \notin I,\,i>s\},\ \quad
-p = \text{min } \{j\,|\, I_j+s \notin J\}  \quad\text{and}\quad
-q = \text{min } \{j\,|\, I_j+s \notin J,\,j>p\},
-```
-where ``\text{min}\,\emptyset=0``, and let ``n`` be the number
-of columns of zeros of ``A``, defined by ``n =\# \{\ i\ |\ J_i-s\notin I\}``.
-Then it can be shown that ``\text{rank}(A)=k-n+s``, and the following table
-gives the required information to apply the matrix determinant lemma and
-formulas for ``\hat{ψ}_{α,f,I}^J``
+Then the following table gives the required information to apply the matrix
+determinant lemma and formulas for ``\hat{ψ}_{α,f,I}^J``
 ```math
 \begin{array}{|c|c|c|c|c|}
 \hline
-s = δ_1^{J_1} & n & \mathrm{rank}(A) & \mathrm{adj}(A) & \hat{ψ}_{α,f,I}^J \\
+s  & n & \mathrm{rank}\hat{M}_{IJ} & \mathrm{adj}\hat{M}_{IJ} & \hat{ψ}_{α,f,I}^J \\
 \hline
-0   & 0       & k       & δ_{ij}                         & 1 + u \cdot v\\
 \hline
-0   & 1       & k-1     & (-1)^{m+p}δ_i^m δ^p_j          & (-1)^{m+p}u^m v^p \\
+0   & 0 & k   & δ_{ij}                         & 1 + u \cdot v\\
 \hline
-1   & 1       & k       &                          & (-1)^p(1-u^p|v|+\underset{1\leq l<p}{\sum}v^{l+1}u^l + \underset{p<l\leq k}{\sum}v^{l}u^l) \\
+0   & 1 & k-1 & (-1)^{m+p}δ_i^m δ^p_j          & (-1)^{m+p}u^m v^p \\
+\hline
+1   & 0 & k   & (-1)^p(δ_{J_i,I_j+1}-δ_{p,J_j})& (-1)^p(1-u^p|v|+\underset{1\leq l<p}{\sum}v^{l+1}u^l + \underset{p<l\leq k}{\sum}v^{l}u^l) \\
 \hline\hspace{1mm}
-1   & 2       & k-1     & (-1)^{m+p+q}δ_i^m(δ^q_j-δ^p_j) & (-1)^{m+p+q}u^m(v^q-v^p) \\
+1   & 1 & k-1 & (-1)^{m+p+q}δ_i^m(δ^q_j-δ^p_j) & (-1)^{m+p+q}u^m(v^q-v^p) \\
 \hline
-0/1 & 2+s\leq & k-2\geq & 0 & 0 \\
+0/1 & \geq 2 & \leq k-2 & 0 & 0 \\
 \hline
 \end{array}
 ```
@@ -412,6 +451,15 @@ depends on ``F`` and ``I``, and ``v`` depends on ``α`` and ``J``.
 
 ```math
 ```
+
+
+#### Trace of the basis forms on the simplex faces
+
+TODO
+
+#### Hodge operator of the basis forms
+
+TODO
 
 ##### Useful lemmas TODO
 
