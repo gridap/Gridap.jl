@@ -79,4 +79,8 @@ labels = FaceLabeling(model)
 @test num_entities(labels) == 2
 @test num_tags(labels) == 2
 
+cell_to_tag = [1,1,2,2,3]
+tag_to_name = ["tag1","tag2","tag3"]
+labels = FaceLabeling(model,cell_to_tag,tag_to_name)
+
 end # module
