@@ -192,21 +192,23 @@ TODO choose linear ordering
 #### Geometric decomposition
 
 The main feature of the ``ℙ_r^{(-)}Λ^k`` bases is that each basis polynomial
-``ω^{f,α}`` is associated with a face ``f`` of ``T`` (and a domain point
-``\boldsymbol{x}_α`` inside ``f``), in the sense that the trace of ``ω^{f,α}``
-on another face ``g\subset T`` is zero when ``g`` does not contain ``f``:
+``ω^{α,J}`` is associated with a face ``f`` of ``T`` via ``{F=⟦α⟧∪J}`` with
+``J\subset F`` a face of ``f`` and ``α`` a simplex index whose associated
+domain point ``\boldsymbol{x}_α`` is inside ``f``. Importantly, the trace of
+``ω^{α,J}`` on another face ``g\subset T`` is zero when ``g`` does not contain
+``f``:
 ```math
-f\not\subset g\ \rightarrow\ \text{tr}_g ω^{f,α} = 0, \quad\forall f,g \subseteq T,\ \forall \llbracket α\rrbracket\subseteq F, α>0,
+f\not\subset g\ \rightarrow\ \text{tr}_g ω^{α,J} = 0, \quad\forall f,g \subseteq T,\ \forall α,J \text{ s.t. }\llbracket α\rrbracket\cup J = F,
 ```
 including any face ``g\neq f`` of dimension less or equal that of ``f``.
 
-These basis polynomials ``ω^{f,α}`` are called bubble functions associated to
+These basis polynomials ``ω^{α,J}`` are called bubble functions associated to
 ``f``, the space they span is called ``\mathring{ℙ}_r^{(-)}Λ^k(T,f)``. There
 are no bubble functions of degree ``k`` on faces of dimension ``<k``, so the
 spaces ``ℙ_r^{(-)}Λ^k(T)`` admit the geometric decomposition:
 ```math
 ℙ_r^{(-)}Λ^k(T) = \underset{f\subset T}{\oplus}\ \mathring{ℙ}_r^{(-)}Λ^k(f)
-= \underset{k≤d≤D}{\oplus}\underset{\quad F=0≤ i_0 < ... < i_d ≤ D}{\oplus}\ \mathring{ℙ}_r^{(-)}Λ^k(T,f).
+= \underset{k≤d≤D}{\oplus}\underset{\quad F=1≤ F_0 < ... < F_d ≤ N}{\oplus}\ \mathring{ℙ}_r^{(-)}Λ^k(T,f).
 ```
 
 #### Bubble functions ``\mathring{ℙ}_r^-Λ^k``
@@ -214,7 +216,7 @@ spaces ``ℙ_r^{(-)}Λ^k(T)`` admit the geometric decomposition:
 The ``ℙ^-`` type bubble basis polynomials associated to a face ``f\subset T``
 are defined by
 ```math
-\mathring{ℙ}_r^-Λ^k(T,f) = \text{span}\big\{ \bar{ω}_α^J = B_α φ^J \quad\big|\quad |α|=r-1,\ \#J=k+1,\ ⟦α⟧∪J=F,\ α_i=0 \text{ if } i< \text{min}(J) \big\}\newline
+\mathring{ℙ}_r^-Λ^k(T,f) = \text{span}\big\{ \bar{ω}^{α,J} = B_α φ^J \ \big| \ |α|=r\!-\!1,\ \#J=k\!+\!1,\ ⟦α⟧∪J=F,\ α_i=0 \text{ if } i< \text{min}(J) \big\}\newline
 ```
 where ``B_α`` are the scalar Bernstein polynomials implemented by
 [`BernsteinBasisOnSimplex`](@ref), and ``φ^J`` are the Whitney forms:
@@ -239,15 +241,15 @@ where ``{}^♭`` is the flat map, the metric ``g_{ki}=δ_{ki}`` is trivial and
 So the exterior products ``\text{d}λ^{J\backslash l}`` are expressed using
 determinants of ``k``-minors of ``M`` as follows:
 ```math
-    \text{d}λ^{J\backslash l} = m_I^{J\backslash l}\text{d}x^I
+\text{d}λ^{J\backslash l} = m_I^{J\backslash l}\text{d}x^I
 \quad\text{where}\quad m_I^J
-    = \text{det}\big( (\partial_{I_i}λ_{J_j})_{1\leq i,j\leq k} \big)
-    = \text{det}\big( (M_{J_j,I_i+1})_{1\leq i,j\leq k} \big),
+= \text{det}\big( (\partial_{I_i}λ_{J_j})_{1\leq i,j\leq k} \big)
+= \text{det}\big( (M_{J_j,I_i+1})_{1\leq i,j\leq k} \big),
 ```
-and we obtain the coordinates of ``\bar{ω}_α^{J}=B_α φ^J`` in the basis
+and we obtain the coordinates of ``\bar{ω}^{α,J}=B_α φ^J`` in the basis
 ``\mathrm{d}x^I`` are
 ```math
-\bar{ω}_{α,I}^{J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, m_I^{J\backslash l}.
+\bar{ω}_{I}^{α,J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, m_I^{J\backslash l}.
 ```
 There are ``\binom{D}{k}`` coordinates. The ``\binom{D}{k}\binom{N}{k}``
 coefficients ``\{m_I^{J}\}_{I,J}`` are constant in ``T`` and are pre-computed
@@ -255,15 +257,16 @@ from ``M`` at the creation of the basis `TODO`.
 
 Finally, the pseudocode to evaluate our basis of ``ℙ_r^-Λ^k(T)`` at
 ``\boldsymbol{x}`` is
-```
+```julia
 compute λ(x)
 compute B_α(x) for all |α|=r-1
 
 for d in k:D
-    for #f = k, f≤N
+    for f in d_faces_of_dim_D_simplex(d,D) # that is increasing_perms(d+1,D+1)
         for α,J in bubble_indices(k,f)
             J' = [J\J1, J\J2, ..., J\Jk]
-            for #I = k, I≤D
+            ω_αJ = 0 # zero vector of length D choose k
+            for I in increasing_perms(k,D)
                 s = 0
                 for l in 1:k
                     Jl = J'[l]
@@ -271,7 +274,7 @@ for d in k:D
                 end
                 ω_αJ[I] = B_α * s
             end
-            set_value(result, ω_αJ})
+            set_value(result[αJ], ω_αJ)
         end
     end
 end
@@ -284,100 +287,133 @@ The loops are unrolled and the indices are pre-computed at compile time using a
 The ``ℙ`` type bubble basis polynomials associated to a face ``f\subset T``
 are defined by
 ```math
-\mathring{ℙ}_rΛ^k(T,f) = \text{span}\big\{ ω_{α,f}^J=B_α Ψ_{α,f}^J
+\mathring{ℙ}_rΛ^k(T,f) = \text{span}\big\{ ω^{α,J}=B_α Ψ^{α,J}
 \quad\big|\quad |α|=r,\ \#J=k,\ ⟦α⟧∪J=F,\ α_i=0 \text{ if } i< \text{min}(F
 \backslash J) \big\},
 ```
-where ``Ψ_{α,f}^J`` are defined by
+where ``Ψ^{α,J}`` are defined by
 ```math
-    Ψ_{α,f}^J = \underset{j\in J}{\bigwedge} Ψ_{α,f}^j
+Ψ^{α,J} = \underset{j\in J}{\bigwedge} Ψ^{α,F(α,J),j}
 \quad\text{where}\quad
- Ψ_{α,f}^j = \mathrm{d}λ^j - \frac{α_j}{|α|}\sum_{l\in F}\mathrm{d}λ^l.
+Ψ^{α,F,j} = \mathrm{d}λ^j - \frac{α_j}{|α|}\sum_{l\in F}\mathrm{d}λ^l,
 ```
-Again, we need their coordinates in the Cartesian basis ``\mathrm{d}x^I``:
+and recall that ``F`` is uniquely determined by ``α`` and ``J`` through
+``F=⟦α⟧∪J``. Again, we need their coordinates in the Cartesian basis
+``\mathrm{d}x^I``:
 ```math
-Ψ_{α,f}^j = M_{j,i+1}\mathrm{d}x^i - \frac{α_j}{|α|}\sum_{l\in F}M_{l,i+1}\mathrm{d}x^i
+Ψ^{α,F,j} = M_{j,i+1}\mathrm{d}x^i - \frac{α_j}{|α|}\sum_{l\in F}M_{l,i+1}\mathrm{d}x^i
 = \big(M_{j,i+1} - \frac{α_j}{|α|}\sum_{l\in F}M_{l,i+1}\big)\mathrm{d}x^i
 ```
 so
 ```math
-Ψ_{α,f}^j = ψ_{α,f,i}^j \mathrm{d}x^i
+Ψ^{α,F,j} = ψ_{i}^{α,F,j} \mathrm{d}x^i
 \quad\text{where}\quad
-ψ_{α,f,i}^j = M_{j,i+1} - \frac{α_j}{|α|}\sum_{l\in F}M_{l,i+1}
+ψ_{i}^{α,F,j} = M_{j,i+1} - \frac{α_j}{|α|}\sum_{l\in F}M_{l,i+1}
 ```
 and
 
 ```math
-Ψ_{α,f}^J = ψ_{α,f,I}^J \mathrm{d}x^I
+Ψ^{α,J} = ψ_I^{α,J} \mathrm{d}x^I
 \quad\text{where}\quad
-ψ_{α,f,I}^J = \text{det}\big( (ψ_{α,f,i}^j)_{i\in I,\,j\in J} \big).
+ψ_I^{α,J} = \text{det}\big( (ψ_{i}^{α,F,j})_{i\in I,\,j\in J} \big).
 ```
 
-Finally, the ``\binom{D}{k}`` coordinates of ``ω_{α,f}^{J}=B_α Ψ_{α,f}^J`` in the
+Finally, the ``\binom{D}{k}`` coordinates of ``ω^{α,J}=B_α Ψ^{α,J}`` in the
 basis ``\mathrm{d}x^I`` are
 ```math
-ω_{α,f,I}^{J} = B_α\, ψ_{α,f,I}^J,
+ω_{I}^{α,J} = B_α\, ψ_I^{α,J},
 ```
 where the ``\binom{D+r}{k+r}\binom{r+k}{k}\binom{D}{k}
 =\mathrm{dim}(ℙ_rΛ^k(T^D))\times\# (\{\mathrm{d}x^I\}_I)`` coefficients
-``ψ_{α,f,I}^J`` depend only on ``T`` and are pre-computed at the construction
+``ψ_I^{α,J}`` depend only on ``T`` and are pre-computed at the construction
 of the basis `TODO`.
 
 The pseudocode to evaluate the basis can be written in simpler way:
-```
+```julia
 compute λ(x)
 compute B_α(x) for all |α|=r
 
-for (Ψ_αfJ, α) in Ψ_α_couples
-    ω_αfJ = B_α * Ψ_αfJ
-    set_value(result, ω_αfJ)
+for (Ψ_αJ, α) in Ψ_α_couples
+    ω_αJ = B_α * Ψ_αJ
+    set_value(result[αJ], ω_αJ)
 end
 ```
-
-#### Exterior derivatives of the basis forms
-
 
 #### Gradient and Hessian of the coefficient vectors
 
 For retro-compatibility with the rest of Gridap, let us derive the formula for
 the gradient and hessian of the form coefficient vectors
-``\{\bar{ω}_{α,f,I}^{J}\}_I`` and ``\{ω_{α,f,I}^{J}\}_I``. We will express them
+``\{\bar{ω}_{I}^{α,J}\}_I`` and ``\{ω_{I}^{α,J}\}_I``. We will express them
 in function of the scalar Bernstein polynomial derivatives already implemented
 by `BernsteinBasisOnSimplex`.
 
-##### Coefficient vector ``\{\bar{ω}_{α,f,I}^{J}\}_I``
+##### Coefficient vector ``\{\bar{ω}_{I}^{α,J}\}_I``
 
-Recall ``\bar{ω}_{α,I}^{J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, m_I^{J\backslash
+Recall ``\bar{ω}_{I}^{α,J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, m_I^{J\backslash
 l}``, the derivatives are not immediate to compute because both ``B_α`` and
 ``λ_l`` depend on ``\boldsymbol{x}``, let us first use ``B_α λ_l = \frac{α_l +
 1}{|α|+1}B_{α+e_l}`` to write the coefficients in Bernstein form as follows
 ```math
-\bar{ω}_{α,I}^{J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, m_I^{J\backslash l} =
-\frac{1}{r}\sum_{0≤l≤k} (-1)^{l} (α_l +1)  m_i^{j\backslash l}\, b_{α+e_l},
+\bar{ω}_{I}^{α,J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, m_I^{J\backslash l} =
+\frac{1}{r}\sum_{0≤l≤k} (-1)^{l} (α_l +1)  m_I^{J\backslash l}\, B_{α+e_l},
 ```
 where ``|α|+1`` was replaced with ``r``, the polynomial degree of
-``\bar{ω}_{α,I}^{J}``. As a consequence, for any Cartesian coordinate indices
+``\bar{ω}_{I}^{α,J}``. As a consequence, for any Cartesian coordinate indices
 ``1\leq p,q\leq D``, we get
 ```math
-\partial_q \bar{ω}_{α,I}^{J} = \frac{1}{r}\sum_{0≤l≤k} (-1)^{l} (α_l +1)  m_i^{j\backslash l}\, \partial_q B_{α+e_l},\\
-\partial_t\partial_q \bar{ω}_{α,I}^{J} = \frac{1}{r}\sum_{0≤l≤k} (-1)^{l} (α_l +1)  m_i^{j\backslash l}\, \partial_t\partial_q B_{α+e_l}.
+\partial_q \bar{ω}_{I}^{α,J} = \frac{1}{r}\sum_{0≤l≤k} (-1)^{l} (α_l +1)  m_I^{J\backslash l}\, \partial_q B_{α+e_l},\\
+\partial_t\partial_q \bar{ω}_{I}^{α,J} = \frac{1}{r}\sum_{0≤l≤k} (-1)^{l} (α_l +1)  m_I^{J\backslash l}\, \partial_t\partial_q B_{α+e_l}.
 ```
 
-##### Coefficient vector ``\{ω_{α,f,I}^{J}\}_I``
+##### Coefficient vector ``\{ω_{I}^{α,J}\}_I``
 
-Recall ``ω_{α,f,I}^{J} = B_α\, ψ_{α,f,I}^J``, the derivatives are easy to
+Recall ``ω_{I}^{α,J} = B_α\, ψ_I^{α,J}``. The derivatives are easy to
 compute because only ``B_α`` depends on ``\boldsymbol{x}``, leading to
 ```math
-\partial_q\, ω_{α,f,I}^{J} = ψ_{α,f,I}^J\; \partial_q B_α,\\
-\partial_t\partial_q\, ω_{α,f,I}^{J} = ψ_{α,f,I}^J\; \partial_t\partial_q B_α.
+\partial_q\, ω_{I}^{α,J} = ψ_I^{α,J}\; \partial_q B_α,\\
+\partial_t\partial_q\, ω_{I}^{α,J} = ψ_I^{α,J}\; \partial_t\partial_q B_α.
 ```
+
+#### Exterior derivative of the basis forms
+
+The exterior derivative of a ``k``-form ``ω=ω_I\,\mathrm{d}x^I`` is the
+``k\!+\!1``-form
+```math
+\mathrm{d}ω = \partial_iω_I\, \mathrm{d}x^i \wedge \mathrm{d}x^I.
+```
+We need to express ``\mathrm{d}ω`` in the basis of ``k+1`` forms. Let
+``\#I=k\!+\!1`` with ``k<D`` (otherwise ``\mathrm{d}ω=0``). Because the
+exterior product is alternating, only the coefficients ``ω_{I\backslash
+\{I_q\}}`` for ``I_q\in I`` contribute to ``(\mathrm{d}ω)_I``, so one can
+deduce
+```math
+(\mathrm{d}ω)_I = \underset{1\leq q\leq k+1}{\sum} (-1)^{q-1}\ \partial_{I_q} ω_{I\backslash q}\,  \mathrm{d}x^I.
+```
+
+##### Polynomial forms ``\mathrm{d}\,\bar{ω}^{α,J}``
+
+For all ``|α|=r\!-\!1``, ``\,\#J=k\!+\!1`` and ``\#I = k\!+\!1`` (with ``k\!<\!D``):
+```math
+(\mathrm{d}\,\bar{ω}^{α,J})_I = \frac{1}{r}\underset{0\leq l\leq k}{\sum} (-1)^{l}(α_l +1)
+\underset{1\leq q\leq k+1}{\sum} (-1)^{q-1}\ m_{I\backslash q}^{J\backslash l}\ \partial_{I_q} B_{α+e_l}.
+```
+
+##### Polynomial forms ``\mathrm{d}\,ω^{α,J}``
+
+For all ``|α|=r``, ``\,\#J=k`` and ``\#I = k\!+\!1`` (with ``k\!<\!D``):
+```math
+(\mathrm{d}\,ω^{α,J})_I =
+\underset{1\leq q\leq k+1}{\sum} (-1)^{q-1}\ ψ_{I\backslash q}^{α,J\backslash l}\ \partial_{I_q} B_α.
+```
+
+
 
 #### Optimizations for the reference simplex
 
 In the reference simplex ``\hat{T}``, the vertices and thus coefficients of
 ``M`` are known at compile time, so the coefficients ``m_I^J`` and
-``ψ_{α,f,I}^J`` in ``\hat{T}``, denoted by ``\hat{m}_I^J`` and
-``\hat{ψ}_{α,f,I}^J`` respectively, can be hard-coded at compile time in the
+``ψ_I^{α,J}`` in ``\hat{T}``, denoted by ``\hat{m}_I^J`` and
+``\hat{ψ}_I^{α,J}`` respectively, can be hard-coded at compile time in the
 `@generated` functions to avoid storing them in the basis and accessing them at
 runtime. Let us derive the formulas for them.
 
@@ -391,28 +427,30 @@ to compute the determinant of the matrix
 ```
 Let us define:
 - ``s=δ_1^{J_1}``, that indicates if ``\hat{M}_{IJ}`` contains a column of ``-1``,
-- ``p = \text{min } \{j\,|\, I_j+s \notin J\}`` where ``\text{min}\,\emptyset=0``, the index of the first row of ``\hat{M}_{IJ}`` containing no ``1``. ``p=0`` if and only if ``\hat{M}_{IJ}`` is the identity matrix.
-- ``n`` be the number of columns of zeros of ``\hat{M}_{IJ}``, defined by ``n =\# \{\ i\ |\ J_i-s\notin I\}``.
+- ``p = \text{min } \{j\,|\, I_j+s \notin J\}`` where ``\text{min}\,\emptyset=0``, the index of the first row of ``\hat{M}_{IJ}`` containing no ``1``. ``p=0`` if and only if ``\hat{M}_{IJ}`` is the identity matrix,
+- ``n =\# \{\ i\ |\ J_i-s\notin I\}``, the number of columns of zeros of ``\hat{M}_{IJ}``.
+
 Then it can be shown that ``k-n`` is the rank of ``\hat{M}_{IJ}``, and that
 ```math
-\hat{m}_I^J = \mathrm{det}(\hat{M}_{IJ}) = (-1)^pδ_{n,0},
+\hat{m}_I^J = \mathrm{det}(\hat{M}_{IJ}) = (-1)^{p(I,J)}δ_0^{n(I,J)},
 ```
-so in ``\hat{T}``, there is
+where the dependency of ``p,n`` on ``I,J`` is made explicit, so in ``\hat{T}``,
+there is
 ```math
-\bar{ω}_{α,I}^{J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, \hat{m}_I^{J\backslash l}.
+\bar{ω}_{I}^{α,J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, \hat{m}_I^{J\backslash l}.
 ```
 
-##### Coefficients ``\hat{ψ}_{α,f,I}^J``
-The expression of ``ψ_{α,f,i}^j`` in ``\hat{T}`` is
+##### Coefficients ``\hat{ψ}_I^{α,J}``
+The expression of ``ψ_{i}^{α,F,j}`` in ``\hat{T}`` is
 ```math
-\hat{ψ}_{α,f,i}^j = M_{j,i+1} - \frac{α_j}{|α|}\sum_{l\in F}δ_{i+1,l} - δ_{1l}
-= M_{j,i+1} + \big( δ_{1,F_1}-\sum_{l\in F}δ_{i+1,l} \big)\frac{α_j}{|α|}
+\hat{ψ}_{i}^{α,F,j} = M_{j,i+1} - \frac{α_j}{|α|}\sum_{l\in F}δ_{i+1,l} - δ_{1l}
+= M_{j,i+1} + \big( δ_{1,F_0}-\sum_{l\in F}δ_{i+1,l} \big)\frac{α_j}{|α|}
 ```
 leading to
 ```math
-\hat{ψ}_{α,f,I}^J  = \mathrm{det}\Big(\hat{M}_{IJ} + u\,v^{\mathrm{T}}\Big)
+\hat{ψ}_I^{α,J}  = \mathrm{det}\Big(\hat{M}_{IJ} + u\,v^{\mathrm{T}}\Big)
 \quad\text{where}\quad
-u^i = δ_{1,F_1}-\sum_{l\in F}δ_{I_i+1,l}, \qquad v^j = \frac{α_{J_j}}{|α|}.
+u^i = δ_{1,F_0}-\sum_{l\in F}δ_{I_i+1,l}, \qquad v^j = \frac{α_{J_j}}{|α|}.
 ```
 We can use the following matrix determinant lemma:
 ```math
@@ -427,11 +465,11 @@ defined as above, and additionally define
 - ``m = \text{min } \{i\,|\,i>s,\ J_i-s \notin I\}``, the index of the first column of ``\hat{M}_{IJ}`` containing only zeros (``m=0`` if there isn't any).
 
 Then the following table gives the required information to apply the matrix
-determinant lemma and formulas for ``\hat{ψ}_{α,f,I}^J``
+determinant lemma and formulas for ``\hat{ψ}_I^{α,J}``
 ```math
 \begin{array}{|c|c|c|c|c|}
 \hline
-s  & n & \mathrm{rank}\hat{M}_{IJ} & \mathrm{adj}\hat{M}_{IJ} & \hat{ψ}_{α,f,I}^J \\
+s  & n & \mathrm{rank}\hat{M}_{IJ} & \mathrm{adj}\hat{M}_{IJ} & \hat{ψ}_I^{α,J} \\
 \hline
 \hline
 0   & 0 & k   & δ_{ij}                         & 1 + u \cdot v\\
@@ -459,7 +497,34 @@ TODO
 
 #### Hodge operator of the basis forms
 
-TODO
+The Hodge operator of the canonical basis forms ``\mathrm{d}x^I`` in an
+Euclidean (Riemannian) space is
+```math
+\star \mathrm{d}x^I = \mathrm{sgn}\left(I\!*\!\bar{I}\,\right)\mathrm{d}x^{\bar{I}}
+```
+where ``\bar{I}`` is the increasing permutation ``\{1:D\}\backslash I``, such that
+the concatenated permutation ``I\!*\!\bar{I}`` is a permutation of ``\{1:D\}``. The
+sign of this permutation can be efficiently computed with
+```julia
+function perm_sign(I,D)
+    i, k, acc, delta = 1, 1, 0, 0
+    while k <= length(I)
+        if I[k] == i
+            acc += delta
+            k += 1
+        else
+            delta += 1
+        end
+        i += 1
+    end
+    return iseven(acc) ? 1 : -1
+end
+```
+The Hodge operator is a change of basis between ``k``-forms and
+``(D-k)``-forms, whose representation as a (square) matrix is anti-diagonal
+with ``\pm 1`` on the diagonal with our choice of ordering the ``I``s in
+lexicographic order. So we encode the operator into a ``\binom{D}{k}`` vector
+of ``\pm 1`` computed at compile time (c.f. `TODO`).
 
 ##### Useful lemmas TODO
 
