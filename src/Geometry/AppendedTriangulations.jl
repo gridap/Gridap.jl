@@ -102,6 +102,27 @@ function lazy_append(a::Triangulation,b::Triangulation)
   AppendedTriangulation(a,b)
 end
 
+function restrict(grid::AppendedGrid,cell_to_parent_cell)
+  na = num_cells(grid.a)
+  nb = num_cells(grid.b)
+  k = findfirst(c -> c > na, cell_to_parent_cell)
+  if isnothing(k)
+    restrict(grid.a,cell_to_parent_cell)
+  elseif isone(k)
+    restrict(grid.b,cell_to_parent_cell .- na)
+  else
+    a_cells = cell_to_parent_cell[1:k-1]
+    b_cells = cell_to_parent_cell[k:end] .- na
+
+    is_split = all(c -> 1 <= c <= na, a_cells) && all(c -> 1 <= c <= nb, b_cells)
+    @notimplementedif !is_split "Cells cannot be cleanly split between grids"
+
+    a = restrict(grid.a,a_cells)
+    b = restrict(grid.b,b_cells)
+    lazy_append(a,b)
+  end
+end
+
 struct AppendedTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
   a::A
   b::B
