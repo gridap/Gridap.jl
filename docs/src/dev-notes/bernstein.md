@@ -128,14 +128,16 @@ Again, a ``D``-dimensional simplex ``T`` is defined by ``N=D+1`` vertices
 ``d``-dimensional face ``f`` of ``T`` by the set ``F`` of the ``d+1``
 increasing indices of its vertices:
 ```math
-f\sim F = \{F_0, F_1, ..., F_d\} \qquad\text{such that } 1≤ F_0 < F_1 < ... <F_d≤ N .
+f\sim F = \{F_1, F_2, ..., F_{d+1}\}
+\qquad\text{such that } 1≤ F_1 < F_2 < ... <F_{d+1}≤ N .
 ```
 In particular, ``T\sim \{1:N\}``. We write ``f\subset T`` for any face of
 ``T``, including ``T`` itself or its vertices.
-``T`` has ``\binom{N}{d+1}`` ``d``-dimensional faces, indexed ``\forall\,1≤ F_0
-< F_1 < ... < F_d ≤ N``. The dimension of a face ``f`` is ``\#F``, and we
+``T`` has ``\binom{N}{d+1}`` ``d``-dimensional faces, indexed ``\forall\,1≤ F_1
+< F_2 < ... < F_{d+1} ≤ N``. The dimension of a face ``f`` is ``\#F``, and we
 write ``{"∀\,\#J=d+1"}`` for all the increasing index sets of the
-``d``-dimensional faces of ``T``.
+``d``-dimensional faces of ``T``. We will sometimes write ``J(i)`` instead of
+``J_i`` for readability purpose when it appears as a subscript.
 
 Using Einstein's convention of summation on repeated indices, a degree-``k``
 dimension-``D`` form ``ω`` can be written in the canonical Cartesian basis as
@@ -170,20 +172,23 @@ are no bubble functions of degree ``k`` on faces of dimension ``<k``, so the
 spaces ``ℙ_r^{(-)}Λ^k(T)`` admit the geometric decomposition:
 ```math
 ℙ_r^{(-)}Λ^k(T) = \underset{f\subset T}{\oplus}\ \mathring{ℙ}_r^{(-)}Λ^k(f)
-= \underset{k≤d≤D}{\oplus}\underset{\quad F=1≤ F_0 < ... < F_d ≤ N}{\oplus}\ \mathring{ℙ}_r^{(-)}Λ^k(T,f).
+= \underset{k≤d≤D}{\oplus}\underset{\quad F=1≤ F_1 < ... < F_{d+1} ≤ N}{\oplus}\ \mathring{ℙ}_r^{(-)}Λ^k(T,f).
 ```
+
+TODO chose linear indexing ``(α,J)(k,r,f)``
 
 #### Bubble functions ``\mathring{ℙ}_r^-Λ^k``
 
 The ``ℙ^-`` type bubble basis polynomials associated to a face ``f\subset T``
 are defined by
 ```math
-\mathring{ℙ}_r^-Λ^k(T,f) = \text{span}\big\{ \bar{ω}^{α,J} = B_α φ^J \ \big| \ |α|=r\!-\!1,\ \#J=k\!+\!1,\ ⟦α⟧∪J=F,\ α_i=0 \text{ if } i< \text{min}(J) \big\}\newline
+\mathring{ℙ}_r^-Λ^k(T,f) = \text{span}\big\{ \bar{ω}^{α,J} =
+B_α φ^J \ \big| \ |α|=r\!-\!1,\ \#J=k\!+\!1,\ ⟦α⟧∪J=F,\ α_i=0 \text{ if } i< \text{min}(J) \big\}\newline
 ```
 where ``B_α`` are the scalar Bernstein polynomials implemented by
 [`BernsteinBasisOnSimplex`](@ref), and ``φ^J`` are the Whitney forms:
 ```math
-φ^J = \sum_{0≤l≤k} (-1)^{l} λ_l \, \text{d}λ^{J\backslash l} \quad\text{where}\quad
+φ^J = \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \, \text{d}λ^{J\backslash l} \quad\text{where}\quad
 \text{d}λ^{J\backslash l} = \underset{j\in J\backslash \{J_l\} }{\bigwedge}\text{d}λ^{j},
 ```
 ``φ^J `` is a ``k``-form of polynomial order ``1``. We now need to express
@@ -201,17 +206,17 @@ where ``{}^♭`` is the flat map, the metric ``g_{ki}=δ_{ki}`` is trivial and
 ``M`` introduced in the Barycentric coordinates section above.
 
 So the exterior products ``\text{d}λ^{J\backslash l}`` are expressed using
-determinants of ``k``-minors of ``M`` as follows:
+the ``k``-minors ``m_I^{J\backslash l}`` of ``M^\intercal`` as follows:
 ```math
 \text{d}λ^{J\backslash l} = m_I^{J\backslash l}\text{d}x^I
 \quad\text{where}\quad m_I^J
-= \text{det}\big( (\partial_{I_i}λ_{J_j})_{1\leq i,j\leq k} \big)
-= \text{det}\big( (M_{J_j,I_i+1})_{1\leq i,j\leq k} \big),
+= \text{det}\big( (\partial_{I(i)}λ_{J(j)})_{1\leq i,j\leq k} \big)
+= \text{det}\big( (M_{J(j),I(i)+1})_{1\leq i,j\leq k} \big),
 ```
 and we obtain the coordinates of ``\bar{ω}^{α,J}=B_α φ^J`` in the basis
 ``\mathrm{d}x^I`` are
 ```math
-\bar{ω}_{I}^{α,J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, m_I^{J\backslash l}.
+\bar{ω}_{I}^{α,J} = B_α \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \, m_I^{J\backslash l}.
 ```
 There are ``\binom{D}{k}`` coordinates. The ``\binom{D}{k}\binom{N}{k}``
 coefficients ``\{m_I^{J}\}_{I,J}`` are constant in ``T`` and are pre-computed
@@ -231,8 +236,9 @@ for d in k:D
             for I in increasing_perms(k,D)
                 s = 0
                 for l in 1:k
-                    Jl = J'[l]
-                    s += (-1)^l * λ_l * m[I][Jl]
+                    jl = J[l]
+                    J_l = J'[l]
+                    s += -(-1)^l * λ[jl] * m[I][J_l]
                 end
                 ω_αJ[I] = B_α * s
             end
@@ -311,20 +317,22 @@ by `BernsteinBasisOnSimplex`.
 
 ##### Coefficient vector ``\{\bar{ω}_{I}^{α,J}\}_I``
 
-Recall ``\bar{ω}_{I}^{α,J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, m_I^{J\backslash
-l}``, the derivatives are not immediate to compute because both ``B_α`` and
-``λ_l`` depend on ``\boldsymbol{x}``, let us first use ``B_α λ_l = \frac{α_l +
-1}{|α|+1}B_{α+e_l}`` to write the coefficients in Bernstein form as follows
+Recall ``\bar{ω}_{I}^{α,J} = B_α \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \,
+m_I^{J\backslash l}``, the derivatives are not immediate to compute because
+both ``B_α`` and ``λ_{J(l)}`` depend on ``\boldsymbol{x}``, let us first use ``B_α
+λ_{J(l)} = \frac{α_{J(l)} + 1}{|α|+1}B_{α+e(J,l)}`` where ``e(J,l) =
+\big(δ_i^{J_l}\big)_{1\leq i\leq N}`` to write the coefficients in Bernstein form as
+follows
 ```math
-\bar{ω}_{I}^{α,J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, m_I^{J\backslash l} =
-\frac{1}{r}\sum_{0≤l≤k} (-1)^{l} (α_l +1)  m_I^{J\backslash l}\, B_{α+e_l},
+\bar{ω}_{I}^{α,J} = B_α \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \, m_I^{J\backslash l} =
+\frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1)  m_I^{J\backslash l}\, B_{α+e(J,l)},
 ```
 where ``|α|+1`` was replaced with ``r``, the polynomial degree of
 ``\bar{ω}_{I}^{α,J}``. As a consequence, for any Cartesian coordinate indices
 ``1\leq p,q\leq D``, we get
 ```math
-\partial_q \bar{ω}_{I}^{α,J} = \frac{1}{r}\sum_{0≤l≤k} (-1)^{l} (α_l +1)  m_I^{J\backslash l}\, \partial_q B_{α+e_l},\\
-\partial_t\partial_q \bar{ω}_{I}^{α,J} = \frac{1}{r}\sum_{0≤l≤k} (-1)^{l} (α_l +1)  m_I^{J\backslash l}\, \partial_t\partial_q B_{α+e_l}.
+\partial_q \bar{ω}_{I}^{α,J} = \frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1)  m_I^{J\backslash l}\, \partial_q B_{α+e(J,l)},\\
+\partial_t\partial_q \bar{ω}_{I}^{α,J} = \frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1)  m_I^{J\backslash l}\, \partial_t\partial_q B_{α+e(J,l)}.
 ```
 
 ##### Coefficient vector ``\{ω_{I}^{α,J}\}_I``
@@ -338,26 +346,27 @@ compute because only ``B_α`` depends on ``\boldsymbol{x}``, leading to
 
 #### Exterior derivative of the basis forms
 
-The exterior derivative of a ``k``-form ``ω=ω_I\,\mathrm{d}x^I`` is the
+The exterior derivative of a ``k``-form ``ω=ω_{\tilde{I}}\,\mathrm{d}x^{\tilde{I}}`` is the
 ``k\!+\!1``-form
 ```math
-\mathrm{d}ω = \partial_iω_I\, \mathrm{d}x^i \wedge \mathrm{d}x^I.
+\mathrm{d}ω = \partial_i ω_{\tilde{I}}\, \mathrm{d}x^i \wedge \mathrm{d}x^{\tilde{I}}
+\qquad\text{ where }\qquad \#\tilde{I} = k
 ```
-We need to express ``\mathrm{d}ω`` in the basis of ``k+1`` forms. Let
-``\#I=k\!+\!1`` with ``k<D`` (otherwise ``\mathrm{d}ω=0``). Because the
-exterior product is alternating, only the coefficients ``ω_{I\backslash
-\{I_q\}}`` for ``I_q\in I`` contribute to ``(\mathrm{d}ω)_I``, so one can
-deduce
+We need to express ``\mathrm{d}ω`` in the basis of ``k+1`` forms. Let ``I``
+such that ``\#I=k\!+\!1`` with ``k<D`` (otherwise ``\mathrm{d}ω=0``). Because
+the exterior product is alternating, the coefficients that contribute to
+``(\mathrm{d}ω)_{I}`` are ``\partial_i ω_{\tilde{I}}`` for which ``i=I_q`` and ``\tilde{I}
+= I\backslash \{I_q\}`` with ``1\leq q\leq k+1``, so one can deduce
 ```math
-(\mathrm{d}ω)_I = \underset{1\leq q\leq k+1}{\sum} (-1)^{q-1}\ \partial_{I_q} ω_{I\backslash q}\,  \mathrm{d}x^I.
+(\mathrm{d}ω)_I = \underset{1\leq q\leq k+1}{\sum} (-1)^{q-1}\ \partial_{I(q)} ω_{I\backslash q}\,  \mathrm{d}x^I.
 ```
 
 ##### Polynomial forms ``\mathrm{d}\,\bar{ω}^{α,J}``
 
 For all ``|α|=r\!-\!1``, ``\,\#J=k\!+\!1`` and ``\#I = k\!+\!1`` (with ``k\!<\!D``):
 ```math
-(\mathrm{d}\,\bar{ω}^{α,J})_I = \frac{1}{r}\underset{0\leq l\leq k}{\sum} (-1)^{l}(α_l +1)
-\underset{1\leq q\leq k+1}{\sum} (-1)^{q-1}\ m_{I\backslash q}^{J\backslash l}\ \partial_{I_q} B_{α+e_l}.
+(\mathrm{d}\,\bar{ω}^{α,J})_I = \frac{1}{r}\underset{1\leq l\leq k+1}{\sum} (-1)^{l+1}(α_{J(l)}+1)
+\underset{1\leq q\leq k+1}{\sum} (-1)^{q-1}\ m_{I\backslash q}^{J\backslash l}\ \partial_{I(q)} B_{α+e(J,l)}\;
 ```
 
 ##### Polynomial forms ``\mathrm{d}\,ω^{α,J}``
@@ -365,7 +374,7 @@ For all ``|α|=r\!-\!1``, ``\,\#J=k\!+\!1`` and ``\#I = k\!+\!1`` (with ``k\!<\!
 For all ``|α|=r``, ``\,\#J=k`` and ``\#I = k\!+\!1`` (with ``k\!<\!D``):
 ```math
 (\mathrm{d}\,ω^{α,J})_I =
-\underset{1\leq q\leq k+1}{\sum} (-1)^{q-1}\ ψ_{I\backslash q}^{α,J\backslash l}\ \partial_{I_q} B_α.
+\underset{1\leq q\leq k+1}{\sum} (-1)^{q-1}\ ψ_{I\backslash q}^{α,J}\ \partial_{I(q)} B_α.
 ```
 
 
@@ -385,7 +394,7 @@ It was shown in the Barycentric coordinates section above that
 ``M_{j,i+1} = δ_{i+1,j} - δ_{1j}``. Let ``\#I=k`` and ``\#J=k``. We need
 to compute the determinant of the matrix
 ```math
-\hat{M}_{IJ}=(δ_{I_i+1,J_j}-δ_{1,J_j})_{1\leq i,j\leq k}.
+\hat{M}_{IJ}=(δ_{I(i)+1,\,J(j)}-δ_{1,J(j)})_{1\leq i,j\leq k}.
 ```
 Let us define:
 - ``s=δ_1^{J_1}``, that indicates if ``\hat{M}_{IJ}`` contains a column of ``-1``,
@@ -399,7 +408,7 @@ Then it can be shown that ``k-n`` is the rank of ``\hat{M}_{IJ}``, and that
 where the dependency of ``p,n`` on ``I,J`` is made explicit, so in ``\hat{T}``,
 there is
 ```math
-\bar{ω}_{I}^{α,J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, \hat{m}_I^{J\backslash l}.
+\bar{ω}_{I}^{α,J} = B_α \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \, \hat{m}_I^{J\backslash l}.
 ```
 
 ##### Coefficients ``\hat{ψ}_I^{α,J}``
@@ -410,14 +419,14 @@ The expression of ``ψ_{i}^{α,F,j}`` in ``\hat{T}`` is
 ```
 leading to
 ```math
-\hat{ψ}_I^{α,J}  = \mathrm{det}\Big(\hat{M}_{IJ} + u\,v^{\mathrm{T}}\Big)
+\hat{ψ}_I^{α,J}  = \mathrm{det}\Big(\hat{M}_{IJ} + u\,v^{\intercal}\Big)
 \quad\text{where}\quad
-u^i = δ_{1,F_0}-\sum_{l\in F}δ_{I_i+1,l}, \qquad v^j = \frac{α_{J_j}}{|α|}.
+u^i = δ_{1,F(0)}-\sum_{l\in F}δ_{I(i)+1,\,l}, \qquad v^j = \frac{α_{J(j)}}{|α|}.
 ```
 We can use the following matrix determinant lemma:
 ```math
-\mathrm{det}(\hat{M}_{IJ} + uv^T) =
-\mathrm{det}(\hat{M}_{IJ}) + v^T\mathrm{adj}(\hat{M}_{IJ})u.
+\mathrm{det}(\hat{M}_{IJ} + uv^\intercal) =
+\mathrm{det}(\hat{M}_{IJ}) + v^\intercal\mathrm{adj}(\hat{M}_{IJ})u.
 ```
 The determinant ``\mathrm{det}(\hat{M}_{IJ})=\hat{m}_I^{J}`` was computed
 above, but ``\mathrm{adj}(\hat{M}_{IJ})``, the transpose of the cofactor matrix
@@ -438,7 +447,7 @@ s  & n & \mathrm{rank}\hat{M}_{IJ} & \mathrm{adj}\hat{M}_{IJ} & \hat{ψ}_I^{α,J
 \hline
 0   & 1 & k-1 & (-1)^{m+p}δ_i^m δ^p_j          & (-1)^{m+p}u^m v^p \\
 \hline
-1   & 0 & k   & (-1)^p(δ_{J_i,I_j+1}-δ_{p,J_j})& (-1)^p(1-u^p|v|+\underset{1\leq l<p}{\sum}v^{l+1}u^l + \underset{p<l\leq k}{\sum}v^{l}u^l) \\
+1   & 0 & k   & (-1)^p(δ_{J(i),\,I(j)+1}-δ_{p,J(j)})& (-1)^p(1-u^p|v|+\underset{1\leq l<p}{\sum}v^{l+1}u^l + \underset{p<l\leq k}{\sum}v^{l}u^l) \\
 \hline\hspace{1mm}
 1   & 1 & k-1 & (-1)^{m+p+q}δ_i^m(δ^q_j-δ^p_j) & (-1)^{m+p+q}u^m(v^q-v^p) \\
 \hline
