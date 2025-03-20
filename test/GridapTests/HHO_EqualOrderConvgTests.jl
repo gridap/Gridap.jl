@@ -123,7 +123,7 @@ module HHO_EqualOrderConvgTests
     l((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
 
 
-    hTinv =  CellField(1 ./ (sqrt(2).*sqrt.(get_array(∫(1)dΩp))),Ωp)
+    hFinv =  CellField(1 ./ get_array(∫(1)dΓp),Γp)
     function SΓa(u)
       u_Ω, u_Γ = u
       return PΓ(u_Ω) - u_Γ 
@@ -132,7 +132,7 @@ module HHO_EqualOrderConvgTests
     SΓa_v = SΓa(v)
     SΓb_u = (PΓRuΩ + PΓRuΓ)
     SΓb_v = (PΓRvΩ + PΓRvΓ)
-    mass_Γ(u,v) = ∫( hTinv * (u*Π(v,Γp)) )dΓp
+    mass_Γ(u,v) = ∫( hFinv * (u*Π(v,Γp)) )dΓp
 
     Xp = FESpaces.PatchFESpace(X,ptopo)
     patch_assem = FESpaces.PatchAssembler(ptopo,X,Y)
@@ -191,7 +191,7 @@ module HHO_EqualOrderConvgTests
 
   domain = (0,1,0,1)
   ncs = [(2,2),(4,4),(8,8),(16,16),(32,32),(64,64),(128,128),(256,256)]
-  order = 2
+  order = 1
 
   el2s, eh1s, hs = convg_test(domain,ncs,order,uex,f)
   println("Slope L2-norm u: $(slope(hs,el2s))")

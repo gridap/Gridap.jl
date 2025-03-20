@@ -75,7 +75,7 @@ ptopo = Geometry.PatchTopology(model)
 Ωp = Geometry.PatchTriangulation(model,ptopo)
 Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
 
-order = 1
+order = 0
 qdegree = 2*(order+1)
 
 dΩp = Measure(Ωp,qdegree)
@@ -130,9 +130,7 @@ end
 
 l((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
 
-
-hTinv =  CellField(1 ./ (sqrt(2).*sqrt.(get_array(∫(1)dΩp))),Ωp)
-
+hFinv =  CellField(1 ./ get_array(∫(1)dΓp) ,Γp)
 function SΓa(u)
   u_Ω, u_Γ = u
   return PΓ(u_Ω) - u_Γ 
@@ -141,7 +139,8 @@ SΓa_u = SΓa(u)
 SΓa_v = SΓa(v)
 SΓb_u = (PΓRuΩ + PΓRuΓ)
 SΓb_v = (PΓRvΩ + PΓRvΓ)
-mass_Γ(u,v) = ∫( hTinv * (u*Π(v,Γp)) )dΓp
+mass_Γ(u,v) = ∫( hFinv * (u*Π(v,Γp)) )dΓp
+
 
 function weakform()
   ll = FESpaces.collect_cell_matrix_and_vector(Xp,Xp,a(u,v),DomainContribution(),zero(Xp))

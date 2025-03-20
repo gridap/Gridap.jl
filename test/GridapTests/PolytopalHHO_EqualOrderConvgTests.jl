@@ -108,7 +108,7 @@ module PolytopalHHO_EqualOrderConvgTests
 
 
     # (PΓ ∘ (I - PΩ) )(R(u)) = (PΓ((I-PΩ)(R(u))))
-    u, v = get_trial_fe_basis(X), get_fe_basis(Y)
+    u, v = get_trial_fe_basis(X), get_fe_basis(Y);
     Ru = R(u)
     PΓRuΩ, PΓRuΓ, PΓRvΩ, PΓRvΓ = projection_operator(Ru, Ωp, Γp, PΓ, PΩRΩ, PΩRΓ)
     #####
@@ -122,9 +122,8 @@ module PolytopalHHO_EqualOrderConvgTests
     l((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
 
 
-    polys = get_polytopes(vmodel)
-    hT = map(x -> FESpaces.get_facet_diameter(x,D), polys)
-    hTinv =  CellField(1 ./ hT,Ωp)
+
+    hFinv =  CellField(1 ./ get_array(∫(1)dΓp) ,Γp)
     function SΓa(u)
       u_Ω, u_Γ = u
       return PΓ(u_Ω) - u_Γ 
@@ -133,7 +132,7 @@ module PolytopalHHO_EqualOrderConvgTests
     SΓa_v = SΓa(v)
     SΓb_u = (PΓRuΩ + PΓRuΓ)
     SΓb_v = (PΓRvΩ + PΓRvΓ)
-    mass_Γ(u,v) = ∫( hTinv * (u*Π(v,Γp)) )dΓp
+    mass_Γ(u,v) = ∫( hFinv * (u*Π(v,Γp)) )dΓp
 
     patch_assem = FESpaces.PatchAssembler(ptopo,X,Y)
 
@@ -157,7 +156,8 @@ module PolytopalHHO_EqualOrderConvgTests
     l2u = sqrt(sum( ∫(eu * eu)dΩp))
     h1u = l2u + sqrt(sum( ∫(∇(eu) ⋅ ∇(eu))dΩp))
 
-    h = maximum( hT )
+    polys = get_polytopes(vmodel)
+    h = maximum( map(x -> FESpaces.get_facet_diameter(x,D), polys) )
 
     return l2u, h1u, h
   end
