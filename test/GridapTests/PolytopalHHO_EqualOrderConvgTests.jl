@@ -1,4 +1,4 @@
-module HHO_EqualOrderConvgTests
+module PolytopalHHO_EqualOrderConvgTests
 
   using Gridap
   using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
@@ -16,8 +16,8 @@ module HHO_EqualOrderConvgTests
   end
 
   function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
-    reffe_Λ = ReferenceFE(lagrangian, Float64, 0; space=:P)
-    Λ = FESpace(Ω, reffe_Λ; conformity=:L2)
+
+    Λ = FESpaces.PolytopalFESpace(Ω, Float64, 0; space=:P)
 
     nrel = get_normal_vector(Γp)
     Πn(v) = ∇(v)⋅nrel
@@ -67,25 +67,24 @@ module HHO_EqualOrderConvgTests
 
   function solve_Poisson_HHO(domain,nc,order,uex,f)
     model = UnstructuredDiscreteModel(CartesianDiscreteModel(domain,nc))
-    D = num_cell_dims(model)
-    Ω = Triangulation(ReferenceFE{D}, model)
-    Γ = Triangulation(ReferenceFE{D-1}, model)
+    vmodel = Gridap.Geometry.voronoi(simplexify(model))
+    D = num_cell_dims(vmodel)
+    Ω = Triangulation(ReferenceFE{D}, vmodel)
+    Γ = Triangulation(ReferenceFE{D-1}, vmodel)
 
-    ptopo = Geometry.PatchTopology(model)
-    Ωp = Geometry.PatchTriangulation(model,ptopo)
-    Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
+    ptopo = Geometry.PatchTopology(vmodel)
+    Ωp = Geometry.PatchTriangulation(vmodel,ptopo)
+    Γp = Geometry.PatchBoundaryTriangulation(vmodel,ptopo)
 
     qdegree = 2*(order+1)
 
     dΩp = Measure(Ωp,qdegree)
     dΓp = Measure(Γp,qdegree)
 
-    reffe_V = ReferenceFE(lagrangian, Float64, order; space=:P)     # Bulk space
-    reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)     # Skeleton space
-    reffe_L = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Reconstruction space
-    V = FESpace(Ω, reffe_V; conformity=:L2)
+    reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)  # Skeleton space
+    V = FESpaces.PolytopalFESpace(Ω, Float64, order; space=:P)   # Bulk Space
     M = FESpace(Γ, reffe_M; conformity=:L2, dirichlet_tags="boundary")
-    L = FESpace(Ω, reffe_L; conformity=:L2)
+    L = FESpaces.PolytopalFESpace(Ω, Float64, order+1; space=:P) # Reconstruction space
     N = TrialFESpace(M,uex)
 
     mfs = MultiField.BlockMultiFieldStyle(2,(1,1))
@@ -123,8 +122,9 @@ module HHO_EqualOrderConvgTests
     l((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
 
 
-    hTinv =  CellField(1 ./ (sqrt(2).*sqrt.(get_array(∫(1)dΩp))),Ωp)
-
+    polys = get_polytopes(vmodel)
+    hT = map(x -> FESpaces.get_facet_diameter(x,D), polys)
+    hTinv =  CellField(1 ./ hT,Ωp)
     function SΓa(u)
       u_Ω, u_Γ = u
       return PΓ(u_Ω) - u_Γ 
@@ -135,7 +135,6 @@ module HHO_EqualOrderConvgTests
     SΓb_v = (PΓRvΩ + PΓRvΓ)
     mass_Γ(u,v) = ∫( hTinv * (u*Π(v,Γp)) )dΓp
 
-    Xp = FESpaces.PatchFESpace(X,ptopo)
     patch_assem = FESpaces.PatchAssembler(ptopo,X,Y)
 
     function patch_weakform()
@@ -158,7 +157,7 @@ module HHO_EqualOrderConvgTests
     l2u = sqrt(sum( ∫(eu * eu)dΩp))
     h1u = l2u + sqrt(sum( ∫(∇(eu) ⋅ ∇(eu))dΩp))
 
-    h = maximum( sqrt(2)*sqrt.( get_array(∫(1)dΩp) ) )
+    h = maximum( hT )
 
     return l2u, h1u, h
   end
@@ -191,8 +190,8 @@ module HHO_EqualOrderConvgTests
   f(x) = -Δ(uex)(x)
 
   domain = (0,1,0,1)
-  ncs = [(2,2),(4,4),(8,8),(16,16),(32,32),(64,64),(128,128),(256,256)]
-  order = 2
+  ncs = [(2,2),(4,4),(8,8),(16,16),(32,32),(64,64),(128,128)]
+  order = 0
 
   el2s, eh1s, hs = convg_test(domain,ncs,order,uex,f)
   println("Slope L2-norm u: $(slope(hs,el2s))")
