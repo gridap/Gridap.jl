@@ -78,6 +78,7 @@ export allocate_odecache
 export ode_start
 export ode_march!
 export ode_finish!
+export update_sysslr!
 
 export test_ode_solver
 
