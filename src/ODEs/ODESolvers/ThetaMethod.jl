@@ -162,7 +162,7 @@ function ode_march!(
     J, r, reuse, sysslvrcache
   )
 
-  # Update the sysslr if required. By default it does nothing.
+  # Update the sysslvr if required. By default it does nothing.
   update_sysslvr!(sysslvr, ws, usx)
   
   sysslvrcache = solve!(x, sysslvr, stageop, sysslvrcache)
