@@ -158,7 +158,7 @@ and ``ℙ_rΛ^k(T^D)`` (we write ``ℙ_r^{(-)}Λ^k`` for either one of them) der
 degree ``r``. In this section, we give a summary of the basis definition,
 translation of the formulas in the paper from the differential geometry
 language to usual differential calculus and the implemented algorithm.
-
+ℙ_r^-Λ^k(T\^D)
 #### Face and form coefficients indexing
 
 Again, a ``D``-dimensional simplex ``T`` is defined by ``N=D+1`` vertices
@@ -248,8 +248,8 @@ the ``k``-minors ``m_I^{J\backslash l}`` of ``M^\intercal`` as follows:
 ```math
 \text{d}λ^{J\backslash l} = m_I^{J\backslash l}\text{d}x^I
 \quad\text{where}\quad m_I^J
-= \text{det}\big( (\partial_{I(i)}λ_{J(j)})_{1\leq i,j\leq k} \big)
-= \text{det}\big( (M_{J(j),I(i)+1})_{1\leq i,j\leq k} \big),
+= \text{det}\big( (\partial_{I(i)}λ_{J(j)})_{1≤ i,j≤ k} \big)
+= \text{det}\big( (M_{J(j),I(i)+1})_{1≤ i,j≤ k} \big),
 ```
 and we obtain the coordinates of ``\bar{ω}^{α,J}=B_α φ^J`` in the basis
 ``\mathrm{d}x^I`` are
@@ -266,23 +266,19 @@ Finally, the pseudocode to evaluate our basis of ``ℙ_r^-Λ^k(T)`` at
 compute λ(x)
 compute B_α(x) for all |α|=r-1
 
-for d in k:D
-    for f in d_faces_of_dim_D_simplex(d,D) # that is increasing_perms(d+1,D+1)
-        for α,J in bubble_indices(k,f)
-            J' = [J\J1, J\J2, ..., J\Jk]
-            ω_αJ = 0 # zero vector of length D choose k
-            for I in increasing_perms(k,D)
-                s = 0
-                for l in 1:k
-                    jl = J[l]
-                    J_l = J'[l]
-                    s += -(-1)^l * λ[jl] * m[I][J_l]
-                end
-                ω_αJ[I] = B_α * s
-            end
-            set_value(result[αJ], ω_αJ)
+for (d, F, dF_bubbles) in P⁻Λ_bubble_indices(r,k,D)
+  for (i_αJ, α, J) in dF_bubbles # 1 ≤ i_αJ ≤ length(ℙᵣ⁻Λᵏ(Tᴰ))
+    ω_αJ = 0 # zero vector of length D choose k
+    for I in increasing_perms(D,k)
+        s = 0
+        for (l, J_l) in enumerate(sub_iperms(J))
+          Jl = J[l]
+          s += -(-1)^l * λ[Jl] * m[I][J_l]
         end
+        ω_αJ[I] = B_α * s
     end
+    set_value(result, i_αJ, ω_αJ)
+  end
 end
 ```
 The loops are unrolled and the indices are pre-computed at compile time using a
@@ -359,7 +355,7 @@ Recall ``\bar{ω}_{I}^{α,J} = B_α \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \,
 m_I^{J\backslash l}``, the derivatives are not immediate to compute because
 both ``B_α`` and ``λ_{J(l)}`` depend on ``\boldsymbol{x}``, let us first use ``B_α
 λ_{J(l)} = \frac{α_{J(l)} + 1}{|α|+1}B_{α+e(J,l)}`` where ``e(J,l) =
-\big(δ_i^{J_l}\big)_{1\leq i\leq N}`` to write the coefficients in Bernstein form as
+\big(δ_i^{J_l}\big)_{1≤ i≤ N}`` to write the coefficients in Bernstein form as
 follows
 ```math
 \bar{ω}_{I}^{α,J} = B_α \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \, m_I^{J\backslash l} =
@@ -367,7 +363,7 @@ follows
 ```
 where ``|α|+1`` was replaced with ``r``, the polynomial degree of
 ``\bar{ω}_{I}^{α,J}``. As a consequence, for any Cartesian coordinate indices
-``1\leq p,q\leq D``, we get
+``1≤ p,q≤ D``, we get
 ```math
 \partial_q \bar{ω}_{I}^{α,J} = \frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1)  m_I^{J\backslash l}\, \partial_q B_{α+e(J,l)},\\
 \partial_t\partial_q \bar{ω}_{I}^{α,J} = \frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1)  m_I^{J\backslash l}\, \partial_t\partial_q B_{α+e(J,l)}.
@@ -394,17 +390,17 @@ We need to express ``\mathrm{d}ω`` in the basis of ``k+1`` forms. Let ``I``
 such that ``\#I=k\!+\!1`` with ``k<D`` (otherwise ``\mathrm{d}ω=0``). Because
 the exterior product is alternating, the coefficients that contribute to
 ``(\mathrm{d}ω)_{I}`` are ``\partial_i ω_{\tilde{I}}`` for which ``i=I_q`` and ``\tilde{I}
-= I\backslash \{I_q\}`` with ``1\leq q\leq k+1``, so one can deduce
+= I\backslash \{I_q\}`` with ``1≤ q≤ k+1``, so one can deduce
 ```math
-(\mathrm{d}ω)_I = \underset{1\leq q\leq k+1}{\sum} (-1)^{q-1}\ \partial_{I(q)} ω_{I\backslash q}\,  \mathrm{d}x^I.
+(\mathrm{d}ω)_I = \underset{1≤ q≤ k+1}{\sum} (-1)^{q-1}\ \partial_{I(q)} ω_{I\backslash q}\,  \mathrm{d}x^I.
 ```
 
 ##### Polynomial forms ``\mathrm{d}\,\bar{ω}^{α,J}``
 
 For all ``|α|=r\!-\!1``, ``\,\#J=k\!+\!1`` and ``\#I = k\!+\!1`` (with ``k\!<\!D``):
 ```math
-(\mathrm{d}\,\bar{ω}^{α,J})_I = \frac{1}{r}\underset{1\leq l\leq k+1}{\sum} (-1)^{l+1}(α_{J(l)}+1)
-\underset{1\leq q\leq k+1}{\sum} (-1)^{q-1}\ m_{I\backslash q}^{J\backslash l}\ \partial_{I(q)} B_{α+e(J,l)}\;
+(\mathrm{d}\,\bar{ω}^{α,J})_I = \frac{1}{r}\underset{1≤ l≤ k+1}{\sum} (-1)^{l+1}(α_{J(l)}+1)
+\underset{1≤ q≤ k+1}{\sum} (-1)^{q-1}\ m_{I\backslash q}^{J\backslash l}\ \partial_{I(q)} B_{α+e(J,l)}\;
 ```
 
 ##### Polynomial forms ``\mathrm{d}\,ω^{α,J}``
@@ -412,7 +408,7 @@ For all ``|α|=r\!-\!1``, ``\,\#J=k\!+\!1`` and ``\#I = k\!+\!1`` (with ``k\!<\!
 For all ``|α|=r``, ``\,\#J=k`` and ``\#I = k\!+\!1`` (with ``k\!<\!D``):
 ```math
 (\mathrm{d}\,ω^{α,J})_I =
-\underset{1\leq q\leq k+1}{\sum} (-1)^{q-1}\ ψ_{I\backslash q}^{α,J}\ \partial_{I(q)} B_α.
+\underset{1≤ q≤ k+1}{\sum} (-1)^{q-1}\ ψ_{I\backslash q}^{α,J}\ \partial_{I(q)} B_α.
 ```
 
 
@@ -432,7 +428,7 @@ It was shown in the Barycentric coordinates section above that
 ``M_{j,i+1} = δ_{i+1,j} - δ_{1j}``. Let ``\#I=k`` and ``\#J=k``. We need
 to compute the determinant of the matrix
 ```math
-\hat{M}_{IJ}=(δ_{I(i)+1,\,J(j)}-δ_{1,J(j)})_{1\leq i,j\leq k}.
+\hat{M}_{IJ}=(δ_{I(i)+1,\,J(j)}-δ_{1,J(j)})_{1≤ i,j≤ k}.
 ```
 Let us define:
 - ``s=δ_1^{J_1}``, that indicates if ``\hat{M}_{IJ}`` contains a column of ``-1``,
@@ -485,11 +481,11 @@ s  & n & \mathrm{rank}\hat{M}_{IJ} & \mathrm{adj}\hat{M}_{IJ} & \hat{ψ}_I^{α,J
 \hline
 0   & 1 & k-1 & (-1)^{m+p}δ_i^m δ^p_j          & (-1)^{m+p}u^m v^p \\
 \hline
-1   & 0 & k   & (-1)^p(δ_{J(i),\,I(j)+1}-δ_{p,J(j)})& (-1)^p(1-u^p|v|+\underset{1\leq l<p}{\sum}v^{l+1}u^l + \underset{p<l\leq k}{\sum}v^{l}u^l) \\
+1   & 0 & k   & (-1)^p(δ_{J(i),\,I(j)+1}-δ_{p,J(j)})& (-1)^p(1-u^p|v|+\underset{1≤ l<p}{\sum}v^{l+1}u^l + \underset{p<l≤ k}{\sum}v^{l}u^l) \\
 \hline\hspace{1mm}
 1   & 1 & k-1 & (-1)^{m+p+q}δ_i^m(δ^q_j-δ^p_j) & (-1)^{m+p+q}u^m(v^q-v^p) \\
 \hline
-0/1 & \geq 2 & \leq k-2 & 0 & 0 \\
+0/1 & \geq 2 & ≤ k-2 & 0 & 0 \\
 \hline
 \end{array}
 ```
@@ -540,7 +536,7 @@ of ``\pm 1`` computed at compile time (c.f. `TODO`).
 ##### Lemma 1
 For ``I`` and ``J`` two increasing sets of indices of same size ``k``,
 ```math
-\mathrm{det}\big( (δ_{I_i, J_j})_{1\leq i,j\leq k} \big) = δ_I^J \ \text{(}= \underset{1\leq i\leq k}{\Pi} δ_{I_i}^{J_i} \text{)}
+\mathrm{det}\big( (δ_{I_i, J_j})_{1≤ i,j≤ k} \big) = δ_I^J \ \text{(}= \underset{1≤ i≤ k}{\Pi} δ_{I_i}^{J_i} \text{)}
 ```
 
 Proof:
@@ -550,7 +546,7 @@ Suppose ``I_1\neq J_1``, because both sets are strictly increasing, either
 the determinant would be zero, otherwise one can do a Laplace expansion along
 the first row, giving
 ```math
-\mathrm{det}\big( (δ_{I_i, J_j})_{1\leq i,j\leq k} \big) = δ_{I_1}^{J_1} \mathrm{det}\big((δ_{I_i, J_j})_{2\leq i,j\leq k}\big).
+\mathrm{det}\big( (δ_{I_i, J_j})_{1≤ i,j≤ k} \big) = δ_{I_1}^{J_1} \mathrm{det}\big((δ_{I_i, J_j})_{2≤ i,j≤ k}\big).
 ```
 The same argument is repeated recursively to obtain the result.
 
@@ -559,7 +555,7 @@ The same argument is repeated recursively to obtain the result.
 Let us determine the rank of ``A`` from ``I`` and ``J``, leading to 6
 possibilities for the expression of the adjoint depending on weather the rank
 of ``A`` is ``k``, ``k-1`` or ``<k``, and weather ``J_1`` is ``1``.
-If ``\mathrm{rank}(A)\leq k-2``, both ``\mathrm{det}(A)`` and
+If ``\mathrm{rank}(A)≤ k-2``, both ``\mathrm{det}(A)`` and
 ``\mathrm{adj}(A)`` vanish.
 
 ## References
