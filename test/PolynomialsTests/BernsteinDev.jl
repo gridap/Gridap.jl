@@ -10,7 +10,7 @@ using BenchmarkTools
 using ProfileView
 using StaticArrays
 using Combinatorics
-
+using Base.Iterators: take
 
 N = 1000
 D = 2; V = Float64; order = 3
@@ -24,7 +24,7 @@ using Gridap.Polynomials: _downwards_de_Casteljau_indices
 #using Gridap.Polynomials: _upwards_de_Casteljau_nD!# (c, λ, ::Val{K}, ::Val{D}) where {K,D}
 using Gridap.Polynomials: _downwards_de_Casteljau_nD!# (c, λ, ::Val{K}, ::Val{D}) where {K,D}
 using Gridap.Polynomials: _cart_to_bary # (c, λ, ::Val{K}, ::Val{D}) where {K,D}
-using Gridap.Polynomials: bernstein_terms # (c, λ, ::Val{K}, ::Val{D}) where {K,D}
+import Gridap.Polynomials: bernstein_terms # (c, λ, ::Val{K}, ::Val{D}) where {K,D}
 using Gridap.Polynomials: _sub_sub_multi_indices
 
 function _up_de_Casteljau_nD_cost(K,D)
@@ -119,327 +119,142 @@ end
 #  end
 #end
 
-#for term in bernstein_terms(Val(4),Val(2))
-#  α = term .- 1
-#  print(α)
-#  for ss in _sub_sub_multi_indices(α)
-#    print(" ")
-#    print(ss)
-#  end
-#  println()
-#end
-
-
-module IncreasingPermutations
-using Core: UnsignedMultiplicativeInverse
-using Gridap.TensorValues
-using Gridap.Fields
-using Gridap.Arrays
-using Gridap.Polynomials
-using Gridap.Helpers
-using ForwardDiff
-using BenchmarkTools
-using ProfileView
-using StaticArrays
-using Combinatorics
-
-import Base
-
-export IncreasingPermutation
-export linear_index
-export minus_one_iperms
-export complement
-export increasing_perms
-
-const MAX_D = 8
-const NB_IPERMS = 2^MAX_D
-
-struct IncreasingPermutation{k,D} <: AbstractSet{Int}
-  bits::UInt8
-
-  function IncreasingPermutation{k,D}(bits::Unsigned) where {k,D}
-    @check 0 ≤ D ≤ MAX_D "Only permutation of ⟦1,`D`≤$MAX_D⟧ are currently supported, got D=$D"
-    @check 0 ≤ k ≤ D "0 ≤ k ≤ D is required, got k=$k and D=$D"
-    mask_D = ~((~zero(bits))<<D) # mask = 0b0...01...1  with D ones
-    used_bits = bits & mask_D    # keep relevant bits
-    @check count_ones(used_bits)==k "permutation `bits` does not countain k=$k ones in its first D=$D bits"
-    new{k,D}(bits)
-  end
-  function IncreasingPermutation{k,D}(perm) where {k,D}
-    @check 0 ≤ D ≤ MAX_D "Only permutation of ⟦1,`D`≤$MAX_D⟧ are currently supported, got D=$D"
-    @check 0 ≤ k ≤ D "0 ≤ k ≤ D is required, got k=$k and D=$D"
-    @check k == length(perm) "`perm` is not of length k=$k"
-    @check all(@. 1 ≤ perm ≤ D) "`perm` is not a permutation of ⟦1,`D`⟧"
-    iszero(k) && return new{k,D}(0)
-
-    bits = mapreduce(t -> 1<<(t-1), +, perm)
-    @check count_ones(bits)==k "`perm` was not (strictly) increasing"
-    new{k,D}(bits)
-  end
-end
-
-Base.convert(::Type{IncreasingPermutation{k,D}}, x::Unsigned) where {k,D} = IncreasingPermutation{k,D}(x)
-
-IncreasingPermutation(perm, D) = IncreasingPermutation(perm, Val(D))
-IncreasingPermutation(perm, ::Val{D}) where D = IncreasingPermutation{length(perm),D}(perm)
-IncreasingPermutation(perm::Unsigned, D) = IncreasingPermutation(perm, Val(D))
-function IncreasingPermutation(bits::Unsigned, ::Val{D}) where D
-  mask_D = ~((~zero(bits))<<D) # mask = 0b0...01...1  with D ones
-  used_bits = bits & mask_D    # keep relevant bits
-  IncreasingPermutation{count_ones(used_bits),D}(used_bits)
-end
-
-# Iteration Interface
-Base.length(::IncreasingPermutation{k}) where k = k
-Base.iterate(::IncreasingPermutation{0}) = nothing
-Base.isdone(::IncreasingPermutation{k}, state) where k = state[1]==k
-
-function Base.iterate(iperm::IncreasingPermutation{k,D}) where {k,D}
-  bits = iperm.bits
-  curr, pos = 0, 0
-  while pos ≤ D
-    pos += 1
-    if bits & 1 ≠ 0
-      curr += 1
-      return (pos, (curr, pos))
-    end
-    bits = bits >> 1
-  end
-  @unreachable
-end
-
-function Base.iterate(iperm::IncreasingPermutation{k,D}, state) where {k,D}
-  curr, pos = state
-  curr == k && return nothing
-
-  bits = iperm.bits >> pos
-  while pos ≤ D
-    pos += 1
-    if bits & 1 ≠ 0
-      curr += 1
-      return (pos, (curr, pos))
-    end
-    bits = bits >> 1
-  end
-  @unreachable
-end
-
-# Indexing Interface
-Base.IndexStyle(::IncreasingPermutation) = IndexLinear()
-Base.keys(::IncreasingPermutation{k}) where k = Base.OneTo(k)
-Base.firstindex(::IncreasingPermutation) = 1
-Base.lastindex(::IncreasingPermutation{k}) where k = k
-
-function Base.getindex(iperm::IncreasingPermutation{k}, i) where k
-  @check 1 ≤ i ≤ k "Indices in IncreasingPermutations{$k} are 1:$k"
-
-  bits = iperm.bits
-  curr, pos = 0, 0
-  while curr < i
-    pos += 1
-    if bits & 1 ≠ 0
-      curr += 1
-    end
-    bits = bits >> 1
-  end
-  return Int(pos)
-end
-
-# Iterable Collection API
-
-function Base.in(item, ipa::IncreasingPermutation)
-  isint = try isinteger(item) catch _ return false end
-  !isint && return false
-  return ipa.bits & (1<<(Int(item)-1)) ≠ 0
-end
-
-function Base.indexin(items, iperm::IncreasingPermutation)
-  indexes = similar(items, Union{Nothing, Int64})
-  for i in eachindex(items)
-    it = items[i]
-
-    if it ∈ iperm
-      bits_before = iperm.bits << (MAX_D-Int(it))
-      indexes[i] =  count_ones(bits_before)
-    else
-      indexes[i] = nothing
-    end
-  end
-  return indexes
-end
-
-Base.maximum(iperm::IncreasingPermutation{k}; init=0) where k = getindex(iperm, k)
-Base.maximum(iperm::IncreasingPermutation{0}) = throw(ArgumentError())
-Base.maximum(iperm::IncreasingPermutation{0}; init) = Int(init)
-
-Base.minimum(iperm::IncreasingPermutation{k}; init=0) where k = getindex(iperm, 1)
-Base.minimum(iperm::IncreasingPermutation{0}) = throw(ArgumentError())
-Base.minimum(iperm::IncreasingPermutation{0}; init) = Int(init)
-
-
-# Set API
-function Base.union(ipa::IncreasingPermutation{ka,D}, ipb::IncreasingPermutation{kb,D}) where {ka,kb,D}
-  cbits = ipa.bits | ipb.bits
-  k = count_ones(cbits)
-  IncreasingPermutation{k,D}(cbits)
-end
-
-function Base.intersect(ipa::IncreasingPermutation{ka,D}, ipb::IncreasingPermutation{kb,D}) where {ka,kb,D}
-  cbits = ipa.bits & ipb.bits
-  k = count_ones(cbits)
-  IncreasingPermutation{k,D}(cbits)
-end
-
-
-function Base.setdiff(ipa::IncreasingPermutation{ka,D}, ipb::IncreasingPermutation{kb,D}) where {ka,kb,D}
-  # TODO
-end
-
-function Base.symdiff(ipa::IncreasingPermutation{ka,D}, ipb::IncreasingPermutation{kb,D}) where {ka,kb,D}
-  # TODO
-end
-
-function Base.issubset(ipa::IncreasingPermutation, ipb::IncreasingPermutation)
-  return ipa.bits | ipb.bits == ipb.bits
-end
-
-function Base.issetequal(ipa::IncreasingPermutation, ipb::IncreasingPermutation)
-  return ipa.bits == ipb.bits
-end
-
-function Base.isdisjoint(ipa::IncreasingPermutation, ipb::IncreasingPermutation)
-  return ipa.bits & ipb.bits == zero(UInt8)
-end
-
-# Other API
-"""
-    complement(iperm::IncreasingPermutation{k,D}) where {k,D}
-
-TBW
-"""
-function complement(iperm::IncreasingPermutation{k,D}) where {k,D}
-  bits = iperm.bits
-  mask_D = ~((~zero(UInt8))<<D)      # mask = 0b0...01...1  with D ones
-  complement_bits = (~bits) & mask_D # reverse the D first bits
-  return IncreasingPermutation{D-k,D}(complement_bits)
-end
-
-"""
-    linear_index(iperm::IncreasingPermutation)
-
-TBW
-"""
-function linear_index(iperm::IncreasingPermutation)
-  return iperm_to_k_linearindex[iperm.bits]
-end
-
-function generate_iperm_to_k_linearindex()
-  res = MVector{NB_IPERMS,UInt8}(undef)
-
-  curr_indices = zero(MVector{MAX_D+1,UInt8})
-  for bits in 0:NB_IPERMS-1
-    k = count_ones(bits)
-    curr_indices[k+1] += 1
-    res[bits+1] = curr_indices[k+1]
-  end
-
-  return SVector(res)
-end
-
-const iperm_to_k_linearindex = generate_iperm_to_k_linearindex()
-
-
-"""
-    minus_one_iperms(iperm::IncreasingPermutation{k,D}) where {k,D}
-
-TBW
-"""
-function minus_one_iperms(::IncreasingPermutation{0,D}) where D
-  minus_one_iperms_bits = iperm_to_k_minus_one_iperms[1]
-  T = IncreasingPermutation{0,D}
-  minus_one_iperms = reinterpret(T, minus_one_iperms_bits)
-  minus_one_iperms
-end
-function minus_one_iperms(iperm::IncreasingPermutation{k,D}) where {k,D}
-  minus_one_iperms_bits = iperm_to_k_minus_one_iperms[iperm.bits+1]
-  T = IncreasingPermutation{k-1,D}
-  minus_one_iperms = reinterpret(T, minus_one_iperms_bits)
-  minus_one_iperms
-end
-
-function generate_iperm_to_k_minus_one_iperms()
-  res = SizedVector{NB_IPERMS,Vector{UInt8}}(undef)
-  for bits in 0:NB_IPERMS-1
-    res[bits+1] = generate_k_minus_one_iperms(UInt8(bits))
-  end
-  return SVector(res)
-end
-
-function generate_k_minus_one_iperms(bits::UInt8)
-  max_bit = 1 << (MAX_D-1)
-  k = count_ones(bits)
-  minus_one_iperms = Vector{UInt8}(undef, k)
-
-  bits_left = bits
-  curr, pos = k, MAX_D
-  while curr > 0
-    if bits_left & max_bit ≠ 0
-      curr -= 1
-      minus_one_iperms[k-curr] = bits & ~( 1<<(pos-1) )
-    end
-    bits_left = bits_left << 1
-    pos -= 1
-  end
-  minus_one_iperms
-end
-
-const iperm_to_k_minus_one_iperms = generate_iperm_to_k_minus_one_iperms()
-
-
-"""
-    increasing_perms(::Val{k},::Val{D})
-
-Return a tuple (I_i) of all the increasing permutation of 1:D of length k:
-1≤ I_1 < ... < I_{k} ≤ N
-sorted in decreasing lexicographic order, e.g.
-    {12, 13, 14, 23, 24, 34}
-for k=2, D=4.
-"""
-@generated function increasing_perms(::Val{k},::Val{D}) where {k,D}
-  iszero(k) && return :( return (0,) )
-  perms = Iterators.filter(issorted, permutations(1:D,k)) .|> (perm->IncreasingPermutation{k,D}(perm))
-  :( return $perms )
-end
-increasing_perms(k,D) = increasing_perms(Val(k),Val(D))
-
-# Display
-function Base.show(io::IO, iperm::IncreasingPermutation{k,D}) where {k,D}
-  iszero(k) && print(io,"∅")
-  print(io,"$(join(decode(iperm)))")
-end
-function Base.show(io::IO, ::MIME"text/plain", iperm::IncreasingPermutation{k,D}) where {k,D}
-  if iszero(k)
-    print(io,"IncreasingPermutation{$k,$D}(∅)")
-  else
-    print(io,"IncreasingPermutation{$k,$D}($(join(decode(iperm),",")))")
-  end
-end
-
-function decode(iperm::IncreasingPermutation{k,D}) where {k,D}
-  bits = iperm.bits
-  curr, pos = 0, 1
-  decperm = MVector{k,Int}(undef)
-  while curr < k
-    if bits & 1 ≠ 0
-      curr += 1
-      decperm[curr] = pos
-    end
-    bits = bits >> 1
-    pos += 1
-  end
-  Tuple(decperm)
-end
-
-end # module IncreasingPermutations
+include("IncreasingPermutationsTuple.jl")
 
 using .IncreasingPermutations
+
+@inline function minor(M,I,J)
+  @check length(I) == length(J)
+  @check I ⊆ axes(M)[1]
+  @check J ⊆ axes(M)[2]
+
+  k = length(I)
+  T = eltype(M)
+  m = MMatrix{k,k,T}(undef)
+  for (i, Ii) in enumerate(I)
+    for (j, Jj) in enumerate(J)
+      #m[i,j] = M[Ii,Jj]
+      @inbounds m[i,j] = M[Ii,Jj]
+    end
+  end
+  det(m)
+end
+
+function all_k_minors!(m,M,::Val{k}) where {k}
+  D = size(M)[1]
+  Λᵏᴰ = increasing_perms(Val(D),Val(k))
+  @inbounds begin
+    for (i, I) in enumerate(Λᵏᴰ)
+      for (j, J) in enumerate(Λᵏᴰ)
+        m[i,j] = minor(M,I,J)
+      end
+    end
+  end
+end
+
+function _bench(D=8,k=4)
+  M = rand(SMatrix{D,D,Float64})
+  nb_perms = binomial(D,k)
+  m = MMatrix{nb_perms,nb_perms,Float64}(undef)
+  Vk = Val(k)
+  @btime all_k_minors!($m,$M,$(Vk))
+end
+
+bernstein_terms(k,D) = bernstein_terms(Val(k),Val(D))
+
+function supp(α)
+  s = Int[]
+  for (i,αi) in enumerate(α)
+    if αi > 0
+      push!(s, i)
+    end
+  end
+  Tuple(s)
+end
+
+function _P⁻Λ_F_bubble_indices(r,k,D,F,i)
+  N = D + 1
+  ids = []
+  for α in bernstein_terms(r-1,N)
+    for J in increasing_perms(N,k+1)
+      j = minimum(J)-1
+      if issetequal(supp(α) ∪ J, F) && all(α[1:j] .== 0)
+        push!(ids, (i, α, J))
+        i += 1
+      end
+    end
+  end
+  tuple(ids...)
+end
+
+function _PΛ_F_bubble_indices(r,k,D,F,i)
+  N = D + 1
+  ids = []
+  for α in bernstein_terms(r,N)
+    for J in increasing_perms(N,k)
+      j = minimum(setdiff(F,J))-1
+      if issetequal(supp(α) ∪ J, F) && all(α[1:j] .== 0)
+        push!(ids, (i, α, J))
+        i += 1
+      end
+    end
+  end
+  tuple(ids...)
+end
+
+r,k,D = 2, 2, 3
+
+PΛ_bubble_indices(r,k,D) = PΛ_bubble_indices(Val(r),Val(k),Val(D))
+@generated function PΛ_bubble_indices(::Val{r},::Val{k},::Val{D}) where {r,k,D}
+  i=0
+  d_F_bubbles = []
+  for d in k:D
+    for F in increasing_perms(D+1, d+1)
+      dF_bubbles = _PΛ_F_bubble_indices(r,k,D,F,i)
+      push!(d_F_bubbles, (d, F, dF_bubbles))
+      i += length(dF_bubbles)
+    end
+  end
+  @check i == binomial(r+k,k)*binomial(D+r,D-k)
+  d_F_bubbles = tuple(d_F_bubbles...)
+  :( $(d_F_bubbles) )
+end
+
+P⁻Λ_bubble_indices(r,k,D) = P⁻Λ_bubble_indices(Val(r),Val(k),Val(D))
+@generated function P⁻Λ_bubble_indices(::Val{r},::Val{k},::Val{D}) where {r,k,D}
+  i=0
+  d_F_bubbles = []
+  for d in k:D
+    for F in increasing_perms(D+1, d+1)
+      dF_bubbles = _P⁻Λ_F_bubble_indices(r,k,D,F,i)
+      push!(d_F_bubbles, (d, F, dF_bubbles))
+      i += length(dF_bubbles)
+    end
+  end
+  @check i == binomial(r+k-1,k)*binomial(D+r,D-k)
+  d_F_bubbles = tuple(d_F_bubbles...)
+  :( $(d_F_bubbles) )
+end
+
+function P_bubles(;r=2,k=2,D=3)
+  for (d, F, dF_bubbles) in PΛ_bubble_indices(r,k,D)
+    println("d = $d, F=$F, F*=$(complement(F))")
+    for (i, α, J) in dF_bubbles
+      println("i=$i, α=$α, J=$J")
+    end
+    println()
+  end
+end
+
+function Pm_bubles(;r=2,k=2,D=3)
+  for (d, F, dF_bubbles) in P⁻Λ_bubble_indices(r,k,D)
+    println("d = $d, F=$F, F*=$(complement(F))")
+    for (i, α, J) in dF_bubbles
+      println("i=$i, α=$α, J=$J")
+      for (l,J_l) in enumerate(sub_iperms(J))
+        println("sgn=$(-(-1)^l), J[l]=$(J[l]), J\\l=$(J_l)")
+      end
+    end
+    println()
+  end
+end
