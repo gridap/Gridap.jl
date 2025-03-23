@@ -218,8 +218,7 @@ struct MultiFieldFEBasisComponent{B} <: FEBasis
     end
     B = typeof(single_field)
     cell_bs = get_data(single_field)
-    bsty = BasisStyle(single_field)
-    cell_basis = block_dofs(cell_bs,bsty,fieldid,nfields)
+    cell_basis = block_dofs(cell_bs,BasisStyle(single_field),fieldid,nfields)
     new{B}(cell_basis,single_field,fieldid,nfields)
   end
 end

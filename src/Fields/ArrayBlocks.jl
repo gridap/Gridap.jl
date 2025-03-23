@@ -35,6 +35,7 @@ const MatrixBlock = ArrayBlock{A,2} where A
 
 Base.axes(b::ArrayBlock,i) = axes(b.array,i)
 Base.size(b::ArrayBlock) = size(b.array)
+Base.size(b::ArrayBlock,i) = size(b.array,i)
 Base.length(b::ArrayBlock) = length(b.array)
 Base.eltype(::Type{<:ArrayBlock{A}}) where A = A
 Base.eltype(b::ArrayBlock{A}) where A = A
@@ -235,6 +236,29 @@ function evaluate!(cache,::ZeroBlockMap,a,b::ArrayBlock)
   cache
 end
 
+"""
+    struct BlockMap{N} <: Map
+        size::NTuple{N,Int}
+        indices::Vector{CartesianIndex{N}}
+    end
+
+A `BlockMap` maps `M = length(indices)` arrays to a single array of N-dimensinal blocks, 
+where only the blocks indexed by `indices` are touched and contain the corresponding 
+entry of the input arrays.
+
+## Constructors:
+
+    BlockMap(l::Integer,i::Integer) ≡ BlockMap((l,),[CartesianIndex((i,))])
+    BlockMap(l::Integer,inds::Vector{<:Integer}) ≡ BlockMap((l,),[CartesianIndex((i,)) for i in inds])
+    BlockMap(s::NTuple,i::Integer) ≡ BlockMap(s,[CartesianIndex(i)])
+    BlockMap(s::NTuple,inds::Vector{<:NTuple}) ≡ BlockMap(s,[CartesianIndex(i) for i in inds])
+
+## Usage:
+
+```julia
+  lazy_map(BlockMap(2,[1,2]),a,b)
+```
+"""
 struct BlockMap{N} <: Map
   size::NTuple{N,Int}
   indices::Vector{CartesianIndex{N}}
@@ -317,6 +341,19 @@ function lazy_map(k::Broadcasting{typeof(gradient)},a::LazyArray{<:Fill{<:BlockM
   lazy_map(bm,args...)
 end
 
+"""
+    struct MergeBlockMap{N,M} <: Map
+        size::NTuple{N,Int}
+        indices::Vector{Vector{Tuple{CartesianIndex{M},CartesianIndex{N}}}}
+    end
+
+A `MergeBlockMap` create a single array of N-dimensional blocks from `L=length(indices)` 
+input arrays of M-dimensional blocks. 
+
+For the l-th input array `a_l`, the vector of tuples in `indices[l]` contains the 
+mapping between the indices of the blocks in `a_l` and the indices of the blocks in
+the output array, i.e `a_out[P[2]] = a_l[P[1]] ∀ P ∈ indices[l], ∀ l `.
+"""
 struct MergeBlockMap{N,M} <: Map
   size::NTuple{N,Int}
   indices::Vector{Vector{Tuple{CartesianIndex{M},CartesianIndex{N}}}}
@@ -350,8 +387,33 @@ function evaluate!(cache,k::MergeBlockMap{N,M},a::ArrayBlock{A,M}...) where {A,N
   cache
 end
 
+"""
+    struct BlockBroadcasting{F} <: Map
+      f::F
+    end
+
+A `BlockBroadcasting` broadcasts a map `f` block-wise over the input arrays.
+"""
 struct BlockBroadcasting{F} <: Map
   f::F
+end
+
+function return_value(k::BlockBroadcasting,a::ArrayBlock{A,N},b::ArrayBlock...) where {A,N}
+  @check all(a.touched == bi.touched for bi in b)
+
+  i = findfirst(a.touched)
+  ai = (a.array[i],(bi.array[i] for bi in b)...)
+  ri = return_value(k.f,ai...)
+
+  array = Array{typeof(ri),N}(undef,size(a))
+  for i in eachindex(a.array)
+    if a.touched[i]
+      ai = (a.array[i],(bi.array[i] for bi in b)...)
+      array[i] = return_value(k.f,ai...)
+    end
+  end
+
+  return ArrayBlock(array,a.touched)
 end
 
 function return_cache(k::BlockBroadcasting,a::ArrayBlock{A,N},b::ArrayBlock...) where {A,N}
@@ -1592,7 +1654,7 @@ end
 
 @inline block_offsets(x::Vector, offset) = offset, offset + length(x)
 
-function block_offsets(x::VectorBlock{A}, offset) where A
+function block_offsets(x::VectorBlock, offset)
   offsets = ()
   for i in eachindex(x.touched)
     if x.touched[i]
@@ -1680,8 +1742,8 @@ function _alloc_jacobian(ydual::VectorBlock,xdual::VectorBlock)
 end
 
 function seed_block!(
-  duals::VectorBlock{A}, x::VectorBlock{B}, seeds::NTuple{N,ForwardDiff.Partials{N}}, offsets
-) where {N,A,B}
+  duals::VectorBlock, x::VectorBlock, seeds::NTuple{N,ForwardDiff.Partials{N}}, offsets
+) where N
   for i in eachindex(duals.touched)
     if duals.touched[i]
       @check x.touched[i]
@@ -1700,7 +1762,7 @@ function seed_block!(
   return duals
 end
 
-function extract_gradient_block!(::Type{T}, result::VectorBlock{A}, dual, offsets) where {T,A}
+function extract_gradient_block!(::Type{T}, result::VectorBlock, dual, offsets) where T
   for i in eachindex(result.touched)
     if result.touched[i]
       @inbounds extract_gradient_block!(T, result.array[i], dual, offsets[i])
@@ -1721,7 +1783,7 @@ function extract_gradient_block!(::Type{T}, result::AbstractArray, dual::Real, o
   return result
 end
 
-function extract_jacobian_block!(::Type{T}, result::MatrixBlock{A}, dual::VectorBlock{B}, offsets) where {T,A,B}
+function extract_jacobian_block!(::Type{T}, result::MatrixBlock, dual::VectorBlock, offsets) where T
   for i in axes(result.touched,1)
     for j in axes(result.touched,2)
       if result.touched[i,j]
@@ -1733,7 +1795,7 @@ function extract_jacobian_block!(::Type{T}, result::MatrixBlock{A}, dual::Vector
 end
 
 # Skeleton + Multifield: The VectorBlocks correspond to +/-
-function extract_jacobian_block!(::Type{T}, result::VectorBlock{A}, dual::VectorBlock{B}, offset) where {T,A,B}
+function extract_jacobian_block!(::Type{T}, result::VectorBlock, dual::VectorBlock, offset) where T
   for i in axes(result.touched,1)
     if result.touched[i]
       @check dual.touched[i]

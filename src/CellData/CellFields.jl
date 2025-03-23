@@ -72,6 +72,10 @@ function similar_cell_field(f::CellField,cell_data,trian,ds)
   GenericCellField(cell_data,trian,ds)
 end
 
+@inline function similar_cell_field(f,cell_data)
+  similar_cell_field(f,cell_data,get_triangulation(f),DomainStyle(f))
+end
+
 function Base.show(io::IO,::MIME"text/plain",f::CellField)
   show(io,f)
   print(io,":")
@@ -239,9 +243,6 @@ end
 get_data(f::GenericCellField) = f.cell_field
 get_triangulation(f::GenericCellField) = f.trian
 DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
-function similar_cell_field(f::GenericCellField,cell_data,trian,ds)
-  GenericCellField(cell_data,trian,ds)
-end
 
 """
    dist = distance(polytope::ExtrusionPolytope,

@@ -96,29 +96,38 @@ function Arrays.evaluate!(
 
   sf = evaluate!(nothing,k,u.single_field)
   data = block_fields(CellData.get_data(sf),BasisStyle(u.single_field))
-  return CellData.similar_cell_field(sf,data,get_triangulation(sf),DomainStyle(sf))
+  return CellData.similar_cell_field(sf,data)
 end
 
-function Arrays.evaluate!(
+@inline function Arrays.evaluate!(
   cache,k::FESpaces.LocalOperator,u::MultiFieldFEFunction
 )
   evaluate!(cache,k,u.multi_cell_field)
 end
 
+# TODO: The following is a bit of a mess... we would like to return (and allow as inputs)
+# a MultiFieldCellField of GenericCellFields. Unfortunately, the changes of domain for 
+# blocked cell-data is not implemented. Rather, there are specific functions for the 
+# change of domain of MultiFieldFEBasisComponent.
+# What tod do? We woudl need to somehow add methods to the `extend`/`pos_neg_data` machinery.
 function Arrays.evaluate!(
   cache,k::FESpaces.LocalOperator,u::MultiFieldCellField
 )
   block_fields(fields,::TestBasis,i) = lazy_map(BlockMap(nfields,i),fields)
   block_fields(fields,::TrialBasis,i) = lazy_map(BlockMap((1,nfields),i),fields)
+  _is_test(v::MultiFieldFEBasisComponent) = isa(BasisStyle(v),TestBasis)
+  _is_trial(v::MultiFieldFEBasisComponent) = isa(BasisStyle(v),TrialBasis)
+  _is_test(v) = eltype(get_data(v)) <: VectorBlock
+  _is_trial(v) = eltype(get_data(v)) <: MatrixBlock
 
   nfields = num_fields(u)
-  is_basis = all(f -> isa(f,MultiFieldFEBasisComponent), u.single_fields)
-  is_test  = is_basis && all(f -> isa(BasisStyle(f),TestBasis), u.single_fields)
-  is_trial = is_basis && !is_test
-  bstyle = ifelse(is_test, TestBasis(), TrialBasis())
+  is_test  = all(_is_test, u.single_fields)
+  is_trial = all(_is_trial, u.single_fields)
+  is_basis = is_test || is_trial
 
   if is_test
     fields = map(1:nfields,u) do i,u
+      @assert isa(u,MultiFieldFEBasisComponent)
       sf_data = lazy_map(transpose,CellData.get_data(u.single_field))
       sf = FESpaces.similar_fe_basis(u.single_field,sf_data,get_triangulation(u),TrialBasis(),DomainStyle(u))
       MultiFieldFEBasisComponent(sf,i,nfields)
@@ -130,10 +139,17 @@ function Arrays.evaluate!(
   
   mf_data = FESpaces._compute_local_solves(k,v)
 
-  single_fields = map(1:nfields,mf_data,u) do i, sf_data, sf
-    sf_data = ifelse(is_trial, lazy_map(transpose,sf_data), sf_data)
-    sf_data = ifelse(is_basis, block_fields(sf_data,bstyle,i), sf_data)
-    GenericCellField(sf_data,k.trian_out,DomainStyle(sf))
+  # bstyle = ifelse(is_test, TestBasis(), TrialBasis())
+  single_fields = map(1:nfields,mf_data,u) do i, sf_data, u
+    sf_data = is_trial ? lazy_map(transpose,sf_data) : sf_data
+    # sf_data = is_basis ? block_fields(sf_data,bstyle,i) : sf_data
+    # GenericCellField(sf_data,k.trian_out,DomainStyle(u))
+    if is_basis
+      sf = FESpaces.similar_fe_basis(u.single_field,sf_data,k.trian_out,BasisStyle(u),DomainStyle(u))
+      MultiFieldFEBasisComponent(sf,i,nfields)
+    else
+      GenericCellField(sf_data,k.trian_out,DomainStyle(u))
+    end
   end
 
   return MultiFieldCellField(single_fields)

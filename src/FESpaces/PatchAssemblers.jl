@@ -190,18 +190,23 @@ struct PatchAssemblyMap{T} <: Map
   cell_data
 end
 
+_unview(a) = a
+_unview(a::ArrayBlockView) = a.array
+
 function _alloc_cache(::PatchAssemblyStrategy,s::NTuple{N,Int}) where N
   zeros(s...)
 end
 
-function _alloc_cache(::PatchAssemblyStrategy,s::NTuple{N,<:BlockedOneTo}) where N
+function _alloc_cache(::PatchAssemblyStrategy,s::Tuple{Vararg{BlockedOneTo}})
+  N  = length(s)
   bs = map(blocklength,s)
   ss = map(blocklengths,s)
   array = [ zeros(ntuple(i -> ss[i][I[i]], Val(N))) for I in CartesianIndices(bs) ]
   ArrayBlock(array,fill(true,bs))
 end
 
-function _alloc_cache(b::ArrayBlockView,s::NTuple{N,<:BlockedOneTo}) where N
+function _alloc_cache(b::ArrayBlockView,s::Tuple{Vararg{BlockedOneTo}})
+  N = length(s)
   bs = map(blocklength,s)
   ss = map(blocklengths,s)
   array = [ zeros(ntuple(i -> ss[i][I[i]], Val(N))) for I in CartesianIndices(bs) ]
@@ -213,7 +218,8 @@ function _resize_cache!(a,::PatchAssemblyStrategy,s::NTuple{N,Int}) where N
   setsize!(a,s)
 end
 
-function _resize_cache!(a,::PatchAssemblyStrategy,s::NTuple{N,<:BlockedOneTo}) where N
+function _resize_cache!(a,::PatchAssemblyStrategy,s::Tuple{Vararg{BlockedOneTo}})
+  N = length(s)
   bs = map(blocklength,s)
   ss = map(blocklengths,s)
   for I in CartesianIndices(bs)
@@ -221,16 +227,14 @@ function _resize_cache!(a,::PatchAssemblyStrategy,s::NTuple{N,<:BlockedOneTo}) w
   end
 end
 
-function _resize_cache!(a,b::ArrayBlockView,s::NTuple{N,<:BlockedOneTo}) where N
+function _resize_cache!(a,::ArrayBlockView,s::Tuple{Vararg{BlockedOneTo}})
+  N = length(s)
   bs = map(blocklength,s)
   ss = map(blocklengths,s)
   for I in CartesianIndices(bs)
     setsize!(a.array.array[I],ntuple(i -> ss[i][I[i]], Val(N)))
   end
 end
-
-_unview(a) = a
-_unview(a::ArrayBlockView) = a.array
 
 # Mat & Vec assembly
 
@@ -240,7 +244,6 @@ function Arrays.return_cache(k::PatchAssemblyMap,patch)
 
   c_res = CachedArray(res)
   uwr_cache = return_cache(Fields.unwrap_cached_array,c_res)
-
   return c_res, uwr_cache, caches
 end
 
@@ -457,10 +460,9 @@ end
 function Arrays.evaluate!(
   cache,k::LocalOperator,v::SingleFieldFEBasis{<:TestBasis}
 )
-  cell_v = CellData.get_data(v)
-  cell_u = lazy_map(transpose,cell_v)
-  u = FESpaces.similar_fe_basis(v,cell_u,get_triangulation(v),TrialBasis(),DomainStyle(v))
-  
+  u = FESpaces.similar_fe_basis(
+    v,lazy_map(transpose,get_data(v)),get_triangulation(v),TrialBasis(),DomainStyle(v)
+  )
   data = _compute_local_solves(k,u)
   return GenericCellField(data,k.trian_out,ReferenceDomain())
 end
@@ -474,9 +476,13 @@ function Arrays.evaluate!(
 end
 
 function Arrays.evaluate!(
-  cache,k::LocalOperator,u::SingleFieldFEFunction
+  cache,k::LocalOperator,v::CellField
 )
-  data = _compute_local_solves(k,u)
+  is_test(v) = eltype(get_data(v)) <: AbstractVector{<:Field}
+  is_trial(v) = eltype(get_data(v)) <: AbstractMatrix{<:Field}
+  u = is_test(v) ? similar_cell_field(v,lazy_map(transpose,get_data(v))) : v
+  _data = _compute_local_solves(k,u)
+  data = is_trial(v) ? lazy_map(transpose,_data) : _data
   return GenericCellField(data,k.trian_out,ReferenceDomain())
 end
 
@@ -510,6 +516,17 @@ function Arrays.evaluate!(cache,k::LocalSolveMap, mat, vec)
   @check issuccess(f) "Factorization failed"
   ldiv!(f,vec)
   return vec
+end
+
+function Arrays.evaluate!(cache,k::LocalSolveMap, mat::MatrixBlock, vec::MatrixBlock)
+  @check size(mat,1) == size(mat,2) == size(vec,1) == 1
+  f = lu!(get_array(mat)[1,1],k.pivot;check=false)
+  @check issuccess(f) "Factorization failed"
+  v = reshape(get_array(vec),size(vec,2))
+  for i in eachindex(v)
+    ldiv!(f,v[i])
+  end
+  return v
 end
 
 ###########################################################################################
