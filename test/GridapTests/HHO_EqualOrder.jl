@@ -77,9 +77,6 @@ qdegree = 2*(order+1)
 dΩp = Measure(Ωp,qdegree)
 dΓp = Measure(Γp,qdegree)
 
-##########################
-# Mixed order variant
-##########################
 reffe_V = ReferenceFE(lagrangian, Float64, order; space=:P)     # Bulk space
 reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)     # Skeleton space
 reffe_L = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Reconstruction space
@@ -119,15 +116,20 @@ function SΓa(u)
   u_Ω, u_Γ = u
   return PΓ(u_Ω) - u_Γ 
 end
+# function SΓb(Ru)
+#   function minus(a::MultiField.MultiFieldFEBasisComponent,b::MultiField.MultiFieldFEBasisComponent)
+#     sf = a.single_field - b.single_field
+#     sf_basis = FESpaces.SingleFieldFEBasis(CellData.get_data(sf),get_triangulation(sf),BasisStyle(a),DomainStyle(sf))
+#     MultiField.MultiFieldFEBasisComponent(sf_basis,a.fieldid,a.nfields)
+#   end
+#   minus(a,b) = MultiFieldCellField(map(minus,a,b))
+#   SΓb_Ω, SΓb_Γ = PΓ_mf(minus(Ru,PΩ_mf(Ru)))
+#   return SΓb_Ω + SΓb_Γ
+# end
 function SΓb(Ru)
-  function minus(a::MultiField.MultiFieldFEBasisComponent,b::MultiField.MultiFieldFEBasisComponent)
-    sf = a.single_field - b.single_field
-    sf_basis = FESpaces.SingleFieldFEBasis(CellData.get_data(sf),get_triangulation(sf),BasisStyle(a),DomainStyle(sf))
-    MultiField.MultiFieldFEBasisComponent(sf_basis,a.fieldid,a.nfields)
-  end
-  minus(a,b) = MultiFieldCellField(map(minus,a,b))
-  SΓb_Ω, SΓb_Γ = PΓ_mf(minus(Ru,PΩ_mf(Ru)))
-  return SΓb_Ω + SΓb_Γ
+  PΓRu_Ω, PΓRu_Γ = PΓ_mf(Ru)
+  PΓPΩRu_Ω, PΓPΩRu_Γ = PΓ_mf(PΩ_mf(Ru))
+  return (PΓRu_Ω - PΓPΩRu_Ω) + (PΓRu_Γ - PΓPΩRu_Γ)
 end
 
 function weakform(u,v)
