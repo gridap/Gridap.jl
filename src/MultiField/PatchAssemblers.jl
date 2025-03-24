@@ -140,15 +140,16 @@ function Arrays.evaluate!(
   mf_data = FESpaces._compute_local_solves(k,v)
 
   # bstyle = ifelse(is_test, TestBasis(), TrialBasis())
+  dstyle = DomainStyle(get_fe_basis(k.space_out))
   single_fields = map(1:nfields,mf_data,u) do i, sf_data, u
     sf_data = is_trial ? lazy_map(transpose,sf_data) : sf_data
     # sf_data = is_basis ? block_fields(sf_data,bstyle,i) : sf_data
     # GenericCellField(sf_data,k.trian_out,DomainStyle(u))
     if is_basis
-      sf = FESpaces.similar_fe_basis(u.single_field,sf_data,k.trian_out,BasisStyle(u),DomainStyle(u))
+      sf = FESpaces.similar_fe_basis(u.single_field,sf_data,k.trian_out,BasisStyle(u),dstyle)
       MultiFieldFEBasisComponent(sf,i,nfields)
     else
-      GenericCellField(sf_data,k.trian_out,DomainStyle(u))
+      GenericCellField(sf_data,k.trian_out,dstyle)
     end
   end
 
