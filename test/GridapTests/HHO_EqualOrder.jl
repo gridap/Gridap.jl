@@ -126,6 +126,8 @@ end
 #   SΓb_Ω, SΓb_Γ = PΓ_mf(minus(Ru,PΩ_mf(Ru)))
 #   return SΓb_Ω + SΓb_Γ
 # end
+
+# SΓ = SΓa + SΓb = (PΓ ∘ (I - PΩ) )(R(u)) = (PΓ((I-PΩ)(R(u))))
 function SΓb(Ru)
   PΓRu_Ω, PΓRu_Γ = PΓ_mf(Ru)
   PΓPΩRu_Ω, PΓPΩRu_Γ = PΓ_mf(PΩ_mf(Ru))
@@ -176,3 +178,5 @@ uΩ = MultiField.backward_static_condensation(op,uΓ)
 
 eu = uΩ - uex 
 sqrt(sum( ∫(eu * eu)dΩp))
+
+R(uΩ)

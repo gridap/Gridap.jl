@@ -1,9 +1,8 @@
-module HHO_EqualOrderConvgTests
-
   using Gridap
   using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
   using Gridap.CellData, Gridap.Fields, Gridap.Helpers
   using Gridap.ReferenceFEs
+
 
   function projection_operator(V, Ω, dΩ)
     Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
@@ -42,8 +41,8 @@ module HHO_EqualOrderConvgTests
   end
 
   function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
-    reffe_Λ = ReferenceFE(lagrangian, Float64, 0; space=:P)
-    Λ = FESpace(Ω, reffe_Λ; conformity=:L2)
+
+    Λ = FESpaces.PolytopalFESpace(Ω, Float64, 0; space=:P)
 
     nrel = get_normal_vector(Γp)
     Πn(v) = ∇(v)⋅nrel
@@ -60,11 +59,10 @@ module HHO_EqualOrderConvgTests
     return R
   end
 
-  function potential_reconstruction(ptopo, X, L, R, uΩ, uΓ)
+  function potential_reconstruction(X, L, R, uΩ, uΓ)
     u = get_trial_fe_basis(X);
     RuΩ, RuΓ =  R(u)
-    
-    Xp = FESpaces.PatchFESpace(X,ptopo)
+  
     cvΩ = FESpaces.scatter_free_and_dirichlet_values(Xp[1],get_free_dof_values(uΩ),get_dirichlet_dof_values(X[1]))
     cvΓ = FESpaces.scatter_free_and_dirichlet_values(Xp[2],get_free_dof_values(uΓ),get_dirichlet_dof_values(X[2]))
   
@@ -77,27 +75,30 @@ module HHO_EqualOrderConvgTests
 
   ##############################################################
 
-  function solve_Poisson_HHO(domain,nc,order,uex,f)
-    model = UnstructuredDiscreteModel(CartesianDiscreteModel(domain,nc))
-    D = num_cell_dims(model)
-    Ω = Triangulation(ReferenceFE{D}, model)
-    Γ = Triangulation(ReferenceFE{D-1}, model)
+  uex(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
+  f(x) = -Δ(uex)(x)
+  nc = (2,2)
+  order = 0
 
-    ptopo = Geometry.PatchTopology(model)
-    Ωp = Geometry.PatchTriangulation(model,ptopo)
-    Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
+    model = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),nc))
+    vmodel = Gridap.Geometry.voronoi(simplexify(model))
+    D = num_cell_dims(vmodel)
+    Ω = Triangulation(ReferenceFE{D}, vmodel)
+    Γ = Triangulation(ReferenceFE{D-1}, vmodel)
+
+    ptopo = Geometry.PatchTopology(vmodel)
+    Ωp = Geometry.PatchTriangulation(vmodel,ptopo)
+    Γp = Geometry.PatchBoundaryTriangulation(vmodel,ptopo)
 
     qdegree = 2*(order+1)
 
     dΩp = Measure(Ωp,qdegree)
     dΓp = Measure(Γp,qdegree)
 
-    reffe_V = ReferenceFE(lagrangian, Float64, order; space=:P)     # Bulk space
-    reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)     # Skeleton space
-    reffe_L = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Reconstruction space
-    V = FESpace(Ω, reffe_V; conformity=:L2)
+    reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)  # Skeleton space
+    V = FESpaces.PolytopalFESpace(Ω, Float64, order; space=:P)   # Bulk Space
     M = FESpace(Γ, reffe_M; conformity=:L2, dirichlet_tags="boundary")
-    L = FESpace(Ω, reffe_L; conformity=:L2)
+    L = FESpaces.PolytopalFESpace(Ω, Float64, order+1; space=:P) # Reconstruction space
     N = TrialFESpace(M,uex)
 
     mfs = MultiField.BlockMultiFieldStyle(2,(1,1))
@@ -109,7 +110,7 @@ module HHO_EqualOrderConvgTests
     PΓ = projection_operator(M, Γp, dΓp)
     PΓ_mf = mf_projection_operator(M, Γp, dΓp)
     PΩ_mf = patch_projection_operator(ptopo,V,Xp,Ωp,dΩp)
-
+    
     ##### 
     function a(Ru,Rv)
       Ru_Ω, Ru_Γ = Ru
@@ -131,7 +132,6 @@ module HHO_EqualOrderConvgTests
       return (PΓRu_Ω - PΓPΩRu_Ω) + (PΓRu_Γ - PΓPΩRu_Γ)
     end
 
-    Xp = FESpaces.PatchFESpace(X,ptopo)
     patch_assem = FESpaces.PatchAssembler(ptopo,X,Y)
 
     function patch_weakform(u,v)
@@ -150,59 +150,33 @@ module HHO_EqualOrderConvgTests
 
     # Static condensation
     u, v = get_trial_fe_basis(X), get_fe_basis(Y);
+
     op = MultiField.StaticCondensationOperator(X,V,N,patch_assem,patch_weakform(u,v))
 
     uΓ = solve(op.sc_op) 
     uΩ = MultiField.backward_static_condensation(op,uΓ)
 
+    eu  = uΩ - uex 
+    l2u = sqrt(sum( ∫(eu * eu)dΩp))
+    h1u = l2u + sqrt(sum( ∫(∇(eu) ⋅ ∇(eu))dΩp))
 
-    Ruh = potential_reconstruction(ptopo, X, L, R, uΩ, uΓ)
-    eRuh = Ruh - uex
-    l2u = sqrt(sum( ∫(eRuh * eRuh)dΩp))
-    h1u = l2u + sqrt(sum( ∫(∇(eRuh) ⋅ ∇(eRuh))dΩp))
+    polys = get_polytopes(vmodel)
+    h = maximum( map(x -> FESpaces.get_facet_diameter(x,D), polys) )
 
-    # eu  = uΩ - uex 
-    # l2u = sqrt(sum( ∫(eu * eu)dΩp))
-    # h1u = l2u + sqrt(sum( ∫(∇(eu) ⋅ ∇(eu))dΩp))
+    # cvΩ = FESpaces.scatter_free_and_dirichlet_values(Xp[1],get_free_dof_values(uΩ),get_dirichlet_dof_values(X[1]))
+    # cvΓ = FESpaces.scatter_free_and_dirichlet_values(Xp[2],get_free_dof_values(uΓ),get_dirichlet_dof_values(X[2]))
 
-    h = maximum( sqrt(2)*sqrt.( get_array(∫(1)dΩp) ) )
+    # RuΩ, RuΓ =  R(u)
+    # coeffs_Ω = map(*,get_data(RuΩ).args[1].args[1].args[1],cvΩ)
+    # coeffs_Γ = map(*,get_data(RuΓ).args[1].args[1].args[1],cvΓ)
+    # coeffs = map((a,b) -> a .+ b,coeffs_Ω,coeffs_Γ)
 
-    return l2u, h1u, h
-  end
+    # uk = FEFunction(L,FESpaces.gather_free_values(L,coeffs))
+    # ek = uk - uex
 
-  function convg_test(domain,ncs,order,uex,f)
-        
-    el2 = Float64[]
-    eh1 = Float64[]
-    hs = Float64[]
-    for nc in ncs
-      l2, h1, h = solve_Poisson_HHO(domain,nc,order,uex,f)
-      push!(el2,l2)
-      push!(eh1,h1)
-      push!(hs,h)
-    end
-    println(el2)
-    println(eh1)
-    println(hs)
-    el2, eh1, hs
-  end
+    Ruh = potential_reconstruction(X, L, R, uΩ, uΓ)
+    eRu = Ruh - uex
+    l2u = sqrt(sum( ∫(ek * ek)dΩp))
+    h1u = l2u + sqrt(sum( ∫(∇(ek) ⋅ ∇(ek))dΩp))
 
-  function slope(hs,errors)
-    x = log10.(hs)
-    y = log10.(errors)
-    linreg = hcat(fill!(similar(x), 1), x) \ y
-    linreg[2]
-  end
 
-  uex(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
-  f(x) = -Δ(uex)(x)
-
-  domain = (0,1,0,1)
-  ncs = [(2,2),(4,4),(8,8),(16,16),(32,32),(64,64),(128,128)]
-  order = 1
-
-  el2s, eh1s, hs = convg_test(domain,ncs,order,uex,f)
-  println("Slope L2-norm u: $(slope(hs,el2s))")
-  println("Slope H1-norm u: $(slope(hs,eh1s))")
-
-end # module

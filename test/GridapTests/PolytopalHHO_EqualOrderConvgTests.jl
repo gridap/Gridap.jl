@@ -15,6 +15,32 @@ module PolytopalHHO_EqualOrderConvgTests
     return P
   end
 
+  function mf_projection_operator(V, Ω, dΩ)
+    Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
+    lhs((p,),(q,)) = ∫(p⋅q)dΩ
+    rhs((uT,uF),(q,)) = ∫(Π(uT,Ω)⋅q + Π(uF,Ω)⋅q)dΩ
+    V0 = FESpaces.FESpaceWithoutBCs(V)
+    W = MultiFieldFESpace([V0],style=MultiField.BlockMultiFieldStyle())
+    P = FESpaces.LocalOperator(
+      FESpaces.LocalSolveMap(), W, lhs, rhs; trian_out = Ω, space_out = V
+    )
+    return P
+  end
+  
+  function patch_projection_operator(ptopo,V,X,Ω,dΩ)
+    Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
+    lhs((p,),(q,)) = ∫(p⋅q)dΩ
+    rhs((uT,uF),(q,)) = ∫(Π(uT,Ω)⋅q + Π(uF,Ω)⋅q)dΩ
+  
+    V0 = FESpaces.FESpaceWithoutBCs(V)
+    Y = FESpaces.FESpaceWithoutBCs(X)
+    W = MultiFieldFESpace([V0],style=MultiField.BlockMultiFieldStyle())
+    P = FESpaces.LocalOperator(
+      FESpaces.LocalSolveMap(), ptopo, W, Y, lhs, rhs; trian_out = Ω, space_out = V
+    )
+    return P
+  end
+
   function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
 
     Λ = FESpaces.PolytopalFESpace(Ω, Float64, 0; space=:P)
@@ -34,34 +60,20 @@ module PolytopalHHO_EqualOrderConvgTests
     return R
   end
 
-  function projection_operator(Ru, Ωp, Γp, PΓ::FESpaces.LocalOperator, PΩRΩ::FESpaces.LocalOperator, PΩRΓ::FESpaces.LocalOperator)
-       
-    RuΩ, RuΓ = Ru
-    _RuΩ = FESpaces.SingleFieldFEBasis(lazy_map(transpose,RuΩ.cell_field.args[1].args[1]),Ωp,FESpaces.TrialBasis(),ReferenceDomain())
-    _RuΓ = FESpaces.SingleFieldFEBasis(lazy_map(transpose,RuΓ.cell_field.args[1].args[1]),Ωp,FESpaces.TrialBasis(),ReferenceDomain())
-
-
-    PΩ_RuΩ = PΩRΩ(_RuΩ)
-    PΩ_RuΓ = PΩRΓ(_RuΓ)
-
-    wΩ = FESpaces.SingleFieldFEBasis(CellData.get_data(_RuΩ - PΩ_RuΩ),Ωp,FESpaces.TrialBasis(),ReferenceDomain())
-    wΓ = FESpaces.SingleFieldFEBasis(CellData.get_data(_RuΓ - PΩ_RuΓ),Ωp,FESpaces.TrialBasis(),ReferenceDomain())
-
-    PΓwΩ = PΓ(wΩ)
-    PΓwΓ = PΓ(wΓ)  
-
-    _PΓwΩ = FESpaces.SingleFieldFEBasis(CellData.get_data(PΓwΩ),Γp,FESpaces.TrialBasis(),ReferenceDomain())
-    _PΓwΓ = FESpaces.SingleFieldFEBasis(CellData.get_data(PΓwΓ),Γp,FESpaces.TrialBasis(),ReferenceDomain())
-    _PΓsΩ = FESpaces.SingleFieldFEBasis(lazy_map(transpose,CellData.get_data(PΓwΩ)),Γp,FESpaces.TestBasis(),ReferenceDomain())
-    _PΓsΓ = FESpaces.SingleFieldFEBasis(lazy_map(transpose,CellData.get_data(PΓwΓ)),Γp,FESpaces.TestBasis(),ReferenceDomain())
-
-    mf_PΓwΩ = MultiField.MultiFieldFEBasisComponent(_PΓwΩ,1,2)
-    mf_PΓwΓ = MultiField.MultiFieldFEBasisComponent(_PΓwΓ,2,2)
-    mf_PΓsΩ = MultiField.MultiFieldFEBasisComponent(_PΓsΩ,1,2)
-    mf_PΓsΓ = MultiField.MultiFieldFEBasisComponent(_PΓsΓ,2,2)
-
-    return mf_PΓwΩ, mf_PΓwΓ, mf_PΓsΩ, mf_PΓsΓ
-  end
+  function potential_reconstruction(ptopo, X, L, R, uΩ, uΓ)
+    u = get_trial_fe_basis(X);
+    RuΩ, RuΓ =  R(u)
+    
+    Xp = FESpaces.PatchFESpace(X,ptopo)
+    cvΩ = FESpaces.scatter_free_and_dirichlet_values(Xp[1],get_free_dof_values(uΩ),get_dirichlet_dof_values(X[1]))
+    cvΓ = FESpaces.scatter_free_and_dirichlet_values(Xp[2],get_free_dof_values(uΓ),get_dirichlet_dof_values(X[2]))
+  
+    coeffs_Ω = map(*,get_data(RuΩ).args[1].args[1].args[1],cvΩ)
+    coeffs_Γ = map(*,get_data(RuΓ).args[1].args[1].args[1],cvΓ)
+    coeffs = map((a,b) -> a .+ b,coeffs_Ω,coeffs_Γ)
+  
+    return FEFunction(L,FESpaces.gather_free_values(L,coeffs))
+  end  
 
   ##############################################################
 
@@ -94,67 +106,67 @@ module PolytopalHHO_EqualOrderConvgTests
 
     R  = reconstruction_operator(ptopo,L,Y,Ωp,Γp,dΩp,dΓp)
     PΓ = projection_operator(M, Γp, dΓp)
+    PΓ_mf = mf_projection_operator(M, Γp, dΓp)
+    PΩ_mf = patch_projection_operator(ptopo,V,Xp,Ωp,dΩp)
 
-
-    ######
-    Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
-    mass(u,v,Ω,dΩ) = ∫(u⋅Π(v,Ω))dΩ
-    mass_Ω(u,v) = mass(u,v,Ωp,dΩp)
-    M0 = FESpaces.FESpaceWithoutBCs(M)
-    M0p = FESpaces.PatchFESpace(M0,ptopo)
-
-    PΩRΩ = FESpaces.LocalOperator(FESpaces.LocalSolveMap(), ptopo, V, V, mass_Ω, mass_Ω)
-    PΩRΓ = FESpaces.LocalOperator(FESpaces.LocalSolveMap(), ptopo, V, M0p, mass_Ω, mass_Ω)
-
-
-    # (PΓ ∘ (I - PΩ) )(R(u)) = (PΓ((I-PΩ)(R(u))))
-    u, v = get_trial_fe_basis(X), get_fe_basis(Y);
-    Ru = R(u)
-    PΓRuΩ, PΓRuΓ, PΓRvΩ, PΓRvΓ = projection_operator(Ru, Ωp, Γp, PΓ, PΩRΩ, PΩRΓ)
-    #####
-
-    function a(u,v)
-      Ru_Ω, Ru_Γ = R(u)
-      Rv_Ω, Rv_Γ = R(v)
+    function a(Ru,Rv)
+      Ru_Ω, Ru_Γ = Ru
+      Rv_Ω, Rv_Γ = Rv
       return ∫(∇(Ru_Ω)⋅∇(Rv_Ω) + ∇(Ru_Γ)⋅∇(Rv_Ω) + ∇(Ru_Ω)⋅∇(Rv_Γ) + ∇(Ru_Γ)⋅∇(Rv_Γ))dΩp
     end
 
     l((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
 
-
-
-    hFinv =  CellField(1 ./ get_array(∫(1)dΓp) ,Γp)
+    hFinv =  CellField(1 ./ get_array(∫(1)dΓp),Γp)
     function SΓa(u)
       u_Ω, u_Γ = u
       return PΓ(u_Ω) - u_Γ 
     end
-    SΓa_u = SΓa(u)
-    SΓa_v = SΓa(v)
-    SΓb_u = (PΓRuΩ + PΓRuΓ)
-    SΓb_v = (PΓRvΩ + PΓRvΓ)
-    mass_Γ(u,v) = ∫( hFinv * (u*Π(v,Γp)) )dΓp
+    function SΓb(Ru)
+      PΓRu_Ω, PΓRu_Γ = PΓ_mf(Ru)
+      PΓPΩRu_Ω, PΓPΩRu_Γ = PΓ_mf(PΩ_mf(Ru))
+      return (PΓRu_Ω - PΓPΩRu_Ω) + (PΓRu_Γ - PΓPΩRu_Γ)
+    end
 
     patch_assem = FESpaces.PatchAssembler(ptopo,X,Y)
 
-    function patch_weakform()
+    function patch_weakform(u,v)
+      mass_Γ(u,v) = ∫(hFinv*(u*v))dΓp
+      Ru, Rv = R(u), R(v)
+      SΓa_u, SΓa_v = SΓa(u), SΓa(v)
+      SΓb_u, SΓb_v = SΓb(Ru), SΓb(Rv)
       aa = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,X,X,mass_Γ(SΓa_u,SΓa_v),l(v),zero(X))
       ab = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,X,Xp,mass_Γ(SΓa_u,SΓb_v),DomainContribution(),zero(X))
       ba = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,X,mass_Γ(SΓb_u,SΓa_v),DomainContribution(),zero(Xp))
       bb = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,Xp,mass_Γ(SΓb_u,SΓb_v),DomainContribution(),zero(Xp))
-      ll = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,Xp,a(u,v),DomainContribution(),zero(Xp))
+      ll = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,Xp,a(Ru,Rv),DomainContribution(),zero(Xp))
       data = FESpaces.merge_assembly_matvec_data(aa,ab,ba,bb,ll)
       return assemble_matrix_and_vector(patch_assem,data)
     end
 
     # Static condensation
-    op = MultiField.StaticCondensationOperator(X,V,N,patch_assem,patch_weakform())
+    u, v = get_trial_fe_basis(X), get_fe_basis(Y);
+    op = MultiField.StaticCondensationOperator(X,V,N,patch_assem,patch_weakform(u,v))
 
     uΓ = solve(op.sc_op) 
     uΩ = MultiField.backward_static_condensation(op,uΓ)
 
-    eu  = uΩ - uex 
-    l2u = sqrt(sum( ∫(eu * eu)dΩp))
-    h1u = l2u + sqrt(sum( ∫(∇(eu) ⋅ ∇(eu))dΩp))
+    cvΩ = FESpaces.scatter_free_and_dirichlet_values(Xp[1],get_free_dof_values(uΩ),get_dirichlet_dof_values(X[1]))
+    cvΓ = FESpaces.scatter_free_and_dirichlet_values(Xp[2],get_free_dof_values(uΓ),get_dirichlet_dof_values(X[2]))
+
+    RuΩ, RuΓ =  R(u)
+    coeffs_Ω = map(*,get_data(RuΩ).args[1].args[1].args[1],cvΩ)
+    coeffs_Γ = map(*,get_data(RuΓ).args[1].args[1].args[1],cvΓ)
+    coeffs = map((a,b) -> a .+ b,coeffs_Ω,coeffs_Γ)
+
+    Ruh = potential_reconstruction(ptopo, X, L, R, uΩ, uΓ)
+    eRuh = Ruh - uex
+    l2u = sqrt(sum( ∫(eRuh * eRuh)dΩp))
+    h1u = l2u + sqrt(sum( ∫(∇(eRuh) ⋅ ∇(eRuh))dΩp))
+
+    # eu  = uΩ - uex 
+    # l2u = sqrt(sum( ∫(eu * eu)dΩp))
+    # h1u = l2u + sqrt(sum( ∫(∇(eu) ⋅ ∇(eu))dΩp))
 
     polys = get_polytopes(vmodel)
     h = maximum( map(x -> FESpaces.get_facet_diameter(x,D), polys) )
@@ -190,7 +202,7 @@ module PolytopalHHO_EqualOrderConvgTests
   f(x) = -Δ(uex)(x)
 
   domain = (0,1,0,1)
-  ncs = [(2,2),(4,4),(8,8),(16,16),(32,32),(64,64),(128,128)]
+  ncs = [(2,2),(4,4),(8,8),(16,16),(32,32),(64,64),(128,128),(256,256)]
   order = 0
 
   el2s, eh1s, hs = convg_test(domain,ncs,order,uex,f)
