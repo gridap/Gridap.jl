@@ -3,7 +3,7 @@
 #################################
 
 """
-    struct CartProdPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
+    struct CartProdPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
 
 "Cartesian product polynomial basis"
 
@@ -26,7 +26,8 @@ passed in a constructor.
 This type fully implements the [`Field`](@ref) interface, with up to second
 order derivatives.
 """
-struct CartProdPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
+struct CartProdPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
+  max_order::Int
   orders::NTuple{D,Int}
   terms::Vector{CartesianIndex{D}}
 
@@ -41,11 +42,12 @@ struct CartProdPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
     K = maximum(orders; init=0)
     msg =  "Some term contain a higher index than the maximum degree + 1."
     @check all( term -> (maximum(Tuple(term), init=0) <= K+1), terms) msg
-    new{D,V,K,PT}(orders,terms)
+    new{D,V,PT}(K,orders,terms)
   end
 end
 
 @inline Base.size(a::CartProdPolyBasis{D,V}) where {D,V} = (length(a.terms)*num_indep_components(V),)
+@inline get_order(b::CartProdPolyBasis) = b.max_order
 
 function CartProdPolyBasis(
    ::Type{PT},
@@ -134,23 +136,20 @@ end
 #################################
 
 function _evaluate_nd!(
-  b::CartProdPolyBasis{D,V,K,PT}, x,
+  b::CartProdPolyBasis{D,V,PT}, x,
   r::AbstractMatrix{V}, i,
-  c::AbstractMatrix{T}) where {D,V,K,PT,T}
+  c::AbstractMatrix{T}, VK::Val) where {D,V,PT,T}
 
-  terms  = b.terms
-  orders = b.orders
-
-  Kd = Val(K)
   for d in 1:D
-    # The optimization below of fine tuning Kd is a bottlneck if not put in a
-    # function due to runtime dispatch and creation of Val(Kd)
-    # Kd = Val(orders[d])
-    _evaluate_1d!(PT,Kd,c,x,d)
+    # The optimization below of fine tuning Kd for `orders` is a bottlneck if
+    # `orders` are not passed in `Val`s, due to runtime dispatch depending on
+    # none inferable Val(b.orders[d])
+    # Kd = Val(b.orders[d])
+    _evaluate_1d!(PT,VK,c,x,d)
   end
 
   k = 1
-  for ci in terms
+  for ci in b.terms
 
     s = one(T)
     for d in 1:D
@@ -195,22 +194,18 @@ function _cartprod_set_value!(r::AbstractMatrix{V},i,s::T,k) where {V,T}
 end
 
 function _gradient_nd!(
-  b::CartProdPolyBasis{D,V,K,PT}, x,
+  b::CartProdPolyBasis{D,V,PT}, x,
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
-  s::MVector{D,T}) where {D,V,K,PT,G,T}
+  s::MVector{D,T}, VK::Val) where {D,V,PT,G,T}
 
-  terms  = b.terms
-  orders = b.orders
-
-  Kd = Val(K)
   for d in 1:D
-    _derivatives_1d!(PT,Kd,(c,g),x,d)
+    _derivatives_1d!(PT,VK,(c,g),x,d)
   end
 
   k = 1
-  for ci in terms
+  for ci in b.terms
 
     for i in eachindex(s)
       @inbounds s[i] = one(T)
@@ -336,24 +331,20 @@ end
 end
 
 function _hessian_nd!(
-  b::CartProdPolyBasis{D,V,K,PT}, x,
+  b::CartProdPolyBasis{D,V,PT}, x,
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   h::AbstractMatrix{T},
-  s::MMatrix{D,D,T}) where {D,V,K,PT,G,T}
+  s::MMatrix{D,D,T}, VK::Val) where {D,V,PT,G,T}
 
-  terms  = b.terms
-  orders = b.orders
-
-  Kd = Val(K)
   for d in 1:D
-    _derivatives_1d!(PT,Kd,(c,g,h),x,d)
+    _derivatives_1d!(PT,VK,(c,g,h),x,d)
   end
 
   k = 1
 
-  for ci in terms
+  for ci in b.terms
 
     for i in eachindex(s)
       @inbounds s[i] = one(T)

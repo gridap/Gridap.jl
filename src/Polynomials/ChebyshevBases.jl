@@ -11,11 +11,11 @@ struct Chebyshev{kind} <: Polynomial end
 isHierarchical(::Type{<:Chebyshev}) = true
 
 """
-    ChebyshevBasis{D,V,kind,K} = CartProdPolyBasis{D,V,K,Chebyshev{kind}}
+    ChebyshevBasis{D,V,kind} = CartProdPolyBasis{D,V,Chebyshev{kind}}
 
 Alias for cartesian product Chebyshev basis, scalar valued or multivalued.
 """
-const ChebyshevBasis{D,V,kind,K} = CartProdPolyBasis{D,V,K,Chebyshev{kind}}
+const ChebyshevBasis{D,V,kind} = CartProdPolyBasis{D,V,Chebyshev{kind}}
 
 """
     ChebyshevBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector; kind=:T)

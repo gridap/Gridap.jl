@@ -1,5 +1,5 @@
 """
-    RaviartThomasPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
+    RaviartThomasPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
 
 Basis of the vector valued (`V<:VectorValue{D}`) space
 
@@ -18,7 +18,8 @@ tensor products either.
 argument of the constructor, by default `_p_filter` for ℙᴰₙ.
 As a consequence, `PT` must be hierarchical, see [`isHierarchical`](@ref).
 """
-struct RaviartThomasPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
+struct RaviartThomasPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
+  max_order::Int
   pterms::Vector{CartesianIndex{D}}
   sterms::Vector{CartesianIndex{D}}
 
@@ -51,11 +52,12 @@ struct RaviartThomasPolyBasis{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
     _minus_one_order_filter = term -> _filter(Tuple(term) .- indexbase, order-1)
     sterms = filter(!_minus_one_order_filter, pterms)
 
-    new{D,V,order+1,PT}(pterms,sterms)
+    new{D,V,PT}(order+1,pterms,sterms)
   end
 end
 
-Base.size(a::RaviartThomasPolyBasis{D}) where {D} = (D*length(a.pterms) + length(a.sterms), )
+Base.size(b::RaviartThomasPolyBasis{D}) where {D} = (D*length(b.pterms) + length(b.sterms), )
+get_order(b::RaviartThomasPolyBasis) = b.max_order
 
 
 #################################
@@ -63,16 +65,12 @@ Base.size(a::RaviartThomasPolyBasis{D}) where {D} = (D*length(a.pterms) + length
 #################################
 
 function _evaluate_nd!(
-  b::RaviartThomasPolyBasis{D,V,K,PT}, x,
+  b::RaviartThomasPolyBasis{D,V,PT}, x,
   r::AbstractMatrix{V}, i,
-  c::AbstractMatrix{T}) where {D,V,K,PT,T}
-
-  pterms = b.pterms
-  sterms = b.sterms
+  c::AbstractMatrix{T}, VK::Val) where {D,V,PT,T}
 
   for d in 1:D
-    Kv = Val(K)
-    _evaluate_1d!(PT,Kv,c,x,d)
+    _evaluate_1d!(PT,VK,c,x,d)
   end
 
   m = zero(Mutable(V))
@@ -80,7 +78,7 @@ function _evaluate_nd!(
 
   @inbounds begin
     for l in 1:D
-      for ci in pterms
+      for ci in b.pterms
 
         s = one(T)
         for d in 1:D
@@ -91,7 +89,7 @@ function _evaluate_nd!(
       end
     end
 
-    for ci in sterms
+    for ci in b.sterms
       for i in 1:D
         m[i] = zero(T)
       end
@@ -114,18 +112,14 @@ function _evaluate_nd!(
 end
 
 function _gradient_nd!(
-  b::RaviartThomasPolyBasis{D,V,K,PT}, x,
+  b::RaviartThomasPolyBasis{D,V,PT}, x,
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
-  s::MVector{D,T}) where {D,V,K,PT,G,T}
-
-  pterms = b.pterms
-  sterms = b.sterms
+  s::MVector{D,T}, VK::Val) where {D,V,PT,G,T}
 
   for d in 1:D
-    Kv = Val(K)
-    _derivatives_1d!(PT,Kv,(c,g),x,d)
+    _derivatives_1d!(PT,VK,(c,g),x,d)
   end
 
   m = zero(Mutable(G))
@@ -133,7 +127,7 @@ function _gradient_nd!(
 
   @inbounds begin
     for l in 1:D
-      for ci in pterms
+      for ci in b.pterms
 
         for i in eachindex(s)
           s[i] = one(T)
@@ -153,7 +147,7 @@ function _gradient_nd!(
       end
     end
 
-    for ci in sterms
+    for ci in b.sterms
 
       for i in eachindex(m)
         m[i] = zero(T)

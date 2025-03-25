@@ -8,11 +8,11 @@ struct Legendre <: Polynomial   end
 isHierarchical(::Type{Legendre}) = true
 
 """
-    LegendreBasis{D,V,K} = CartProdPolyBasis{D,V,K,Legendre}
+    LegendreBasis{D,V} = CartProdPolyBasis{D,V,Legendre}
 
 Alias for cartesian product Legendre basis, scalar valued or multi-valued.
 """
-const LegendreBasis{D,V,K} = CartProdPolyBasis{D,V,K,Legendre}
+const LegendreBasis{D,V} = CartProdPolyBasis{D,V,Legendre}
 
 """
     LegendreBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)

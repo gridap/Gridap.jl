@@ -44,28 +44,29 @@ isHierarchical(::Type{<:Polynomial}) = @abstractmethod
 # ndof_1d: maximum of 1D polynomial vector in any spatial dimension
 
 """
-    PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}
+    PolynomialBasis{D,V,PT<:Polynomial} <: AbstractVector{PT}
 
 Abstract type representing a generic multivariate polynomial basis.
 The parameters are:
 - `D`: the spatial dimension
 - `V`: the image values type, a concrete type `<:Real` or `<:MultiValue`
-- `K`: the maximum order of a basis polynomial in a spatial component
 - `PT <: Polynomial`: the family of the basis polynomials (must be a concrete type).
+
+The implementations also stores `K`: the maximum order of a basis polynomial in a spatial component
 """
-abstract type PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}  end
+abstract type PolynomialBasis{D,V,PT<:Polynomial} <: AbstractVector{PT}  end
 
 @inline Base.size(::PolynomialBasis{D,V}) where {D,V} = @abstractmethod
-@inline Base.getindex(::PolynomialBasis{D,V,K,PT}, i::Integer) where {D,V,K,PT} = PT()
+@inline Base.getindex(::PolynomialBasis{D,V,PT}, i::Integer) where {D,V,PT} = PT()
 @inline Base.IndexStyle(::PolynomialBasis) = IndexLinear()
 @inline return_type(::PolynomialBasis{D,V}) where {D,V} = V
 
 """
-    get_order(b::PolynomialBasis{D,V,K}) = K
+    get_order(b::PolynomialBasis)
 
 Return the maximum polynomial order in a dimension, or `0` in 0D.
 """
-@inline get_order(::PolynomialBasis{D,V,K}) where {D,V,K} = K
+@inline get_order(::PolynomialBasis) = @abstractmethod
 
 
 ###########
@@ -137,6 +138,14 @@ function _setsize!(f::PolynomialBasis{D}, np, r, t...) where D
   end
 end
 
+"""
+    _get_static_parameters(::PolynomialBasis)
+
+Return a tuple static of parameters appended to low level `[...]_nd!` evaluation
+calls, default is `( Val(get_order(b)), )`.
+"""
+_get_static_parameters(b::PolynomialBasis) = ( Val(get_order(b)), )
+
 function evaluate!(cache,
   f::PolynomialBasis,
   x::AbstractVector{<:Point})
@@ -144,9 +153,10 @@ function evaluate!(cache,
   r, _, c = cache
   np = length(x)
   _setsize!(f,np,r,c)
+  params = _get_static_parameters(f)
   for i in 1:np
     @inbounds xi = x[i]
-    _evaluate_nd!(f,xi,r,i,c)
+    _evaluate_nd!(f,xi,r,i,c,params...)
   end
   r.array
 end
@@ -159,9 +169,10 @@ function evaluate!(cache,
   r, s, c, g = cache
   np = length(x)
   _setsize!(f,np,r,c,g)
+  params = _get_static_parameters(f)
   for i in 1:np
     @inbounds xi = x[i]
-    _gradient_nd!(f,xi,r,i,c,g,s)
+    _gradient_nd!(f,xi,r,i,c,g,s,params...)
   end
   r.array
 end
@@ -174,9 +185,10 @@ function evaluate!(cache,
   r, s, c, g, h = cache
   np = length(x)
   _setsize!(f,np,r,c,g,h)
+  params = _get_static_parameters(f)
   for i in 1:np
     @inbounds xi = x[i]
-    _hessian_nd!(f,xi,r,i,c,g,h,s)
+    _hessian_nd!(f,xi,r,i,c,g,h,s,params...)
   end
   r.array
 end
@@ -234,7 +246,7 @@ end
 ###############################
 
 """
-    _evaluate_nd!(b,xi,r,i,c)
+    _evaluate_nd!(b,xi,r,i,c,params...)
 
 Compute and assign: `r`[`i`] = `b`(`xi`) = (`b`₁(`xi`), ..., `b`ₙ(`xi`))
 
@@ -245,13 +257,13 @@ row of `r`.
 function _evaluate_nd!(
   b::PolynomialBasis, xi,
   r::AbstractMatrix, i,
-  c::AbstractMatrix)
+  c::AbstractMatrix, params...)
 
   @abstractmethod
 end
 
 """
-    _gradient_nd!(b,xi,r,i,c,g,s)
+    _gradient_nd!(b,xi,r,i,c,g,s,params...)
 
 Compute and assign: `r`[`i`] = ∇`b`(`xi`) = (∇`b`₁(`xi`), ..., ∇`b`ₙ(`xi`))
 
@@ -260,19 +272,20 @@ for gradients of `b`ₖ(`xi`), and
 
 - `g` is a mutable `D`×`K` cache (for the 1D polynomials first derivatives).
 - `s` is a mutable length `D` cache for ∇`b`ₖ(`xi`).
+- `params` are optional parameters returned by [`_get_static_parameters(b)`](@ref _get_static_parameters)
 """
 function _gradient_nd!(
   b::PolynomialBasis, xi,
   r::AbstractMatrix, i,
   c::AbstractMatrix,
   g::AbstractMatrix,
-  s::MVector)
+  s::MVector, params...)
 
   @abstractmethod
 end
 
 """
-    _hessian_nd!(b,xi,r,i,c,g,h,s)
+    _hessian_nd!(b,xi,r,i,c,g,h,s,params...)
 
 Compute and assign: `r`[`i`] = H`b`(`xi`) = (H`b`₁(`xi`), ..., H`b`ₙ(`xi`))
 
@@ -288,7 +301,7 @@ function _hessian_nd!(
   c::AbstractMatrix,
   g::AbstractMatrix,
   h::AbstractMatrix,
-  s::MMatrix)
+  s::MMatrix, params...)
 
   @abstractmethod
 end

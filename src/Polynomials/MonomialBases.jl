@@ -8,11 +8,11 @@ struct Monomial <: Polynomial   end
 isHierarchical(::Type{Monomial}) = true
 
 """
-    MonomialBasis{D,V,K} = CartProdPolyBasis{D,V,K,Monomial}
+    MonomialBasis{D,V} = CartProdPolyBasis{D,V,Monomial}
 
 Alias for cartesian product monomial basis, scalar valued or multi-valued.
 """
-const MonomialBasis{D,V,K} = CartProdPolyBasis{D,V,K,Monomial}
+const MonomialBasis{D,V} = CartProdPolyBasis{D,V,Monomial}
 
 """
     MonomialBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)

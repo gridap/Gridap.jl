@@ -13,11 +13,11 @@ isHierarchical(::Type{Bernstein}) = false
 #####################################
 
 """
-    BernsteinBasis{D,V,K} = CartProdPolyBasis{D,V,K,Bernstein}
+    BernsteinBasis{D,V} = CartProdPolyBasis{D,V,Bernstein}
 
 Alias for cartesian product Bernstein basis, scalar valued or multivalued.
 """
-const BernsteinBasis{D,V,K} = CartProdPolyBasis{D,V,K,Bernstein}
+const BernsteinBasis{D,V} = CartProdPolyBasis{D,V,Bernstein}
 
 """
     BernsteinBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)
@@ -224,13 +224,14 @@ end
 ###################################################
 
 """
-    BernsteinBasisOnSimplex{D,V,K,M} <: PolynomialBasis{D,V,K,Bernstein}
+    BernsteinBasisOnSimplex{D,V,M} <: PolynomialBasis{D,V,Bernstein}
 
 Type for the multivariate Bernstein basis in barycentric coordinates.
 `M` is Nothing for the reference tetrahedra bary. coords., or `SMatrix{D+1,D+1}`
 if some simplex (triangle, tetrahedra, ...) vertices coordinates are given.
 """
-struct BernsteinBasisOnSimplex{D,V,K,M} <: PolynomialBasis{D,V,K,Bernstein}
+struct BernsteinBasisOnSimplex{D,V,M} <: PolynomialBasis{D,V,Bernstein}
+  max_order::Int
   cart_to_bary_matrix::M #  Nothing or SMatrix{D+1,D+1}
 
   function BernsteinBasisOnSimplex{D}(::Type{V},order::Int,vertices=nothing) where {D,V}
@@ -238,7 +239,7 @@ struct BernsteinBasisOnSimplex{D,V,K,M} <: PolynomialBasis{D,V,K,Bernstein}
     K = Int(order)
     cart_to_bary_matrix = _compute_cart_to_bary_matrix(vertices)
     M = typeof(cart_to_bary_matrix) # Nothing or SMatrix
-    new{D,V,K,M}(cart_to_bary_matrix)
+    new{D,V,M}(K,cart_to_bary_matrix)
   end
 end
 
@@ -255,8 +256,9 @@ function BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int,vertices=nothing)
   BernsteinBasisOnSimplex{D}(V,order,vertices)
 end
 
-Base.size(::BernsteinBasisOnSimplex{D,V,K}) where {D,V,K} = (num_indep_components(V)*binomial(D+K,D),)
-get_exponents(::BernsteinBasisOnSimplex{D,V,K}) where {D,V,K} = bernstein_terms(Val(K), Val(D))
+Base.size(b::BernsteinBasisOnSimplex{D,V}) where {D,V} = (num_indep_components(V)*binomial(D+get_order(b),D),)
+get_exponents(b::BernsteinBasisOnSimplex{D}) where D = bernstein_terms(Val(get_order(b)), Val(D))
+get_order(b::BernsteinBasisOnSimplex) = b.max_order
 
 
 #####################
@@ -328,13 +330,6 @@ for D=2, K=3.
   :( return $terms )
 end
 
-"""
-    _binomial(::Val{K}, ::Val{I})
-
-Returns the binomial coefficient C(K,I).
-"""
-_binomial(::Val{K},::Val{I}) where {K,I} = binomial(K,I)
-
 
 ################################
 # nD evaluation implementation #
@@ -349,7 +344,7 @@ function _return_cache(
   K = get_order(b)
   np = length(x)
   ndof = length(b)
-  ndof_scalar = _binomial(Val(K+D),Val(D))
+  ndof_scalar = binomial(K+D,D)
 
   r = CachedArray(zeros(G,(np,ndof)))
   s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
@@ -362,19 +357,19 @@ end
 function _setsize!(b::BernsteinBasisOnSimplex{D}, np, r, t...) where D
   K = get_order(b)
   ndof = length(b)
-  ndof_scalar = _binomial(Val(K+D),Val(D))
+  ndof_scalar = binomial(K+D,D)
   setsize!(r,(np,ndof))
   setsize!(t[1],(ndof_scalar,))
 end
 
 function _evaluate_nd!(
-  b::BernsteinBasisOnSimplex{D,V,K}, x,
+  b::BernsteinBasisOnSimplex{D,V}, x,
   r::AbstractMatrix{V}, i,
-  c::AbstractVector{T}) where {D,V,K,T}
+  c::AbstractVector{T}, VK::Val) where {D,V,T}
 
   λ = _cart_to_bary(x, b.cart_to_bary_matrix)
   c[1] = one(T)
-  _downwards_de_Casteljau_nD!(c,λ,Val(K),Val(D))
+  _downwards_de_Casteljau_nD!(c,λ,VK,Val(D))
 
   k = 1
   for s in c
@@ -383,11 +378,11 @@ function _evaluate_nd!(
 end
 
 function _gradient_nd!(
-  b::BernsteinBasisOnSimplex{D,V,K}, x,
+  b::BernsteinBasisOnSimplex{D,V}, x,
   r::AbstractMatrix{G}, i,
   c::AbstractVector{T},
   g::Nothing,
-  s::MVector{D,T}) where {D,V,K,G,T}
+  s::MVector{D,T}, ::Val{K}) where {D,V,G,T,K}
 
   x_to_λ = b.cart_to_bary_matrix
   λ = _cart_to_bary(x, x_to_λ)
@@ -399,12 +394,12 @@ function _gradient_nd!(
 end
 
 function _hessian_nd!(
-  b::BernsteinBasisOnSimplex{D,V,K}, x,
+  b::BernsteinBasisOnSimplex{D,V}, x,
   r::AbstractMatrix{G}, i,
   c::AbstractVector{T},
   g::Nothing,
   h::Nothing,
-  s::MMatrix{D,D,T}) where {D,V,K,G,T}
+  s::MMatrix{D,D,T}, ::Val{K}) where {D,V,G,T,K}
 
   x_to_λ = b.cart_to_bary_matrix
   λ = _cart_to_bary(x, x_to_λ)
@@ -723,15 +718,15 @@ end
 #######################################################
 #
 #  """
-#      BernsteinBasisOnSimplex{D,V,K} <: PolynomialBasis{D,V,K,Bernstein}
+#      BernsteinBasisOnSimplex{D,V} <: PolynomialBasis{D,V,Bernstein}
 #
 #  This basis uses barycentric coordinates defined by the vertices of the
 #  reference `D`-simplex.
 #  """
-#  struct BernsteinBasisOnSimplex{D,V,K} <: PolynomialBasis{D,V,K,Bernstein}
+#  struct BernsteinBasisOnSimplex{D,V} <: PolynomialBasis{D,V,Bernstein}
 #    function BernsteinBasisOnSimplex{D}(::Type{V},order::Int) where {D,V}
 #      K = Int(order)
-#      new{D,V,K}()
+#      new{D,V}()
 #    end
 #  end
 #
@@ -739,8 +734,8 @@ end
 #    BernsteinBasisOnSimplex{D}(V,order)
 #  end
 #
-#  Base.size(::BernsteinBasisOnSimplex{D,V,K}) where {D,V,K} = (num_indep_components(V)*binomial(D+K,D),)
-#  get_exponents(::BernsteinBasisOnSimplex{D,V,K}) where {D,V,K} = bernstein_terms(Val(K), Val(D))
+#  Base.size(::BernsteinBasisOnSimplex{D,V}) where {D,V} = (num_indep_components(V)*binomial(D+K,D),)
+#  get_exponents(::BernsteinBasisOnSimplex{D,V}) where {D,V} = bernstein_terms(Val(K), Val(D))
 #
 #  ################################
 #  # nD evaluation implementation #
@@ -773,10 +768,11 @@ end
 #
 #
 #  function _evaluate_nd!(
-#    b::BernsteinBasisOnSimplex{D,V,K}, x,
+#    b::BernsteinBasisOnSimplex{D,V}, x,
 #    r::AbstractMatrix{V}, i,
-#    c::AbstractMatrix{T}) where {D,V,K,T}
+#    c::AbstractMatrix{T}) where {D,V,T}
 #
+#    K = get_order(b)
 #    terms  = _get_terms(b)
 #    coefs = multinoms(Val(K),Val(D))
 #
@@ -798,12 +794,13 @@ end
 #  end
 #
 #  function _gradient_nd!(
-#    b::BernsteinBasisOnSimplex{D,V,K}, x,
+#    b::BernsteinBasisOnSimplex{D,V}, x,
 #    r::AbstractMatrix{G}, i,
 #    c::AbstractMatrix{T},
 #    g::AbstractMatrix{T},
-#    s::MVector{D,T}) where {D,V,K,G,T}
+#    s::MVector{D,T}) where {D,V,G,T}
 #
+#    K = get_order(b)
 #    N = D+1
 #    terms = _get_terms(b)
 #    coefs = multinoms(Val(K),Val(D))
@@ -836,12 +833,12 @@ end
 #  end
 #
 #  function _hessian_nd!(
-#    b::BernsteinBasisOnSimplex{D,V,K}, x,
+#    b::BernsteinBasisOnSimplex{D,V}, x,
 #    r::AbstractMatrix{G}, i,
 #    c::AbstractMatrix{T},
 #    g::AbstractMatrix{T},
 #    h::AbstractMatrix{T},
-#    s::MMatrix{D,D,T}) where {D,V,K,G,T}
+#    s::MMatrix{D,D,T}) where {D,V,G,T}
 #
 #    N = D+1
 #    terms = _get_terms(b)

@@ -60,7 +60,7 @@ T = Float64
 V = VectorValue{D,T}
 b = PGradBasis(PT,Val(D),T,order)
 
-@test b isa CartProdPolyBasis{D,V,order+1,PT}
+@test b isa CartProdPolyBasis{D,V,PT}
 
 @test_throws AssertionError PGradBasis(PT,Val(D),V,order)
 
