@@ -7,14 +7,34 @@
       cell_types::Vector{Int8}
     end
 """
-struct UnstructuredGrid{Dc,Dp,Tp,O,Tn} <: Grid{Dc,Dp}
+struct UnstructuredGrid{Dc,Dp,Tp,O,Tn,Tm} <: Grid{Dc,Dp}
   node_coordinates::Vector{Point{Dp,Tp}}
   cell_node_ids::Table{Int32,Vector{Int32},Vector{Int32}}
-  reffes::Vector{<:LagrangianRefFE{Dc}}
+  reffes::Vector{LagrangianRefFE{Dc}}
   cell_types::Vector{Int8}
   orientation_style::O
   facet_normal::Tn
-  cell_map
+  cell_map::Tm
+
+  function UnstructuredGrid(
+    node_coordinates::Vector{Point{Dp,Tp}},
+    cell_node_ids::Table{Ti},
+    reffes::Vector{<:LagrangianRefFE{Dc}},
+    cell_types::Vector,
+    orientation_style::O,
+    facet_normal::Tn,
+    cell_map::Tm
+  ) where {Dc,Dp,Tp,Ti,O,Tn,Tm}
+    new{Dc,Dp,Tp,O,Tn,Tm}(
+      node_coordinates,
+      cell_node_ids,
+      reffes,
+      cell_types,
+      orientation_style,
+      facet_normal,
+      cell_map
+    )
+  end
 end
 
 """
@@ -48,11 +68,9 @@ function UnstructuredGrid(
     cell_map)
 end
 
-function get_has_affine_map(ctype_reffe)
-  ctype_poly = map(get_polytope,ctype_reffe)
-  has_affine_map =
-    all(map(is_first_order,ctype_reffe)) &&
-    ( all(map(is_simplex,ctype_poly)) || all(map(p->num_dims(p)==1,ctype_poly)) )
+function get_has_affine_map(reffes)
+  polys = map(get_polytope,reffes)
+  all(is_first_order,reffes) && (all(is_simplex,polys) || all(map(p->isone(num_dims(p)),polys)))
 end
 
 function _compute_cell_map(node_coords,cell_node_ids,ctype_reffe,cell_ctype, has_affine_map)
