@@ -10,7 +10,7 @@
 struct UnstructuredGrid{Dc,Dp,Tp,O,Tn} <: Grid{Dc,Dp}
   node_coordinates::Vector{Point{Dp,Tp}}
   cell_node_ids::Table{Int32,Vector{Int32},Vector{Int32}}
-  reffes::Vector{LagrangianRefFE{Dc}}
+  reffes::Vector{<:LagrangianRefFE{Dc}}
   cell_types::Vector{Int8}
   orientation_style::O
   facet_normal::Tn
@@ -23,8 +23,8 @@ end
       cell_node_ids::Table{Ti},
       reffes::Vector{<:LagrangianRefFE{Dc}},
       cell_types::Vector,
-      orientation_style::OrientationStyle=NonOriented()) where {Dc,Dp,Tp,Ti}
-    end
+      orientation_style::OrientationStyle=NonOriented()
+    ) where {Dc,Dp,Tp,Ti}
 
 Low-level constructor.
 """
