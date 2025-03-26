@@ -15,43 +15,37 @@ struct UnstructuredGrid{Dc,Dp,Tp,O,Tn} <: Grid{Dc,Dp}
   orientation_style::O
   facet_normal::Tn
   cell_map
-  @doc """
-      function UnstructuredGrid(
-        node_coordinates::Vector{Point{Dp,Tp}},
-        cell_node_ids::Table{Ti},
-        reffes::Vector{<:LagrangianRefFE{Dc}},
-        cell_types::Vector,
-        orientation_style::OrientationStyle=NonOriented()) where {Dc,Dp,Tp,Ti}
-      end
+end
 
-  Low-level inner constructor.
-  """
-  function UnstructuredGrid(
-    node_coordinates::Vector{Point{Dp,Tp}},
-    cell_node_ids::Table{Ti},
-    reffes::Vector{<:LagrangianRefFE{Dc}},
-    cell_types::Vector,
-    orientation_style::OrientationStyle=NonOriented(),
-    facet_normal=nothing;
-    has_affine_map=nothing) where {Dc,Dp,Tp,Ti}
-
-    if has_affine_map === nothing
-      _has_affine_map = get_has_affine_map(reffes)
-    else
-      _has_affine_map = has_affine_map
+"""
+    function UnstructuredGrid(
+      node_coordinates::Vector{Point{Dp,Tp}},
+      cell_node_ids::Table{Ti},
+      reffes::Vector{<:LagrangianRefFE{Dc}},
+      cell_types::Vector,
+      orientation_style::OrientationStyle=NonOriented()) where {Dc,Dp,Tp,Ti}
     end
-    cell_map = _compute_cell_map(node_coordinates,cell_node_ids,reffes,cell_types,_has_affine_map)
-    B = typeof(orientation_style)
-    Tn = typeof(facet_normal)
-    new{Dc,Dp,Tp,B,Tn}(
-      node_coordinates,
-      cell_node_ids,
-      reffes,
-      cell_types,
-      orientation_style,
-      facet_normal,
-      cell_map)
-  end
+
+Low-level constructor.
+"""
+function UnstructuredGrid(
+  node_coordinates::Vector{<:Point},
+  cell_node_ids::Table,
+  reffes::Vector{<:LagrangianRefFE},
+  cell_types::Vector,
+  orientation_style::OrientationStyle=NonOriented(),
+  facet_normal=nothing;
+  has_affine_map=get_has_affine_map(reffes)
+)
+  cell_map = _compute_cell_map(node_coordinates,cell_node_ids,reffes,cell_types,has_affine_map)
+  UnstructuredGrid(
+    node_coordinates,
+    cell_node_ids,
+    reffes,
+    cell_types,
+    orientation_style,
+    facet_normal,
+    cell_map)
 end
 
 function get_has_affine_map(ctype_reffe)
