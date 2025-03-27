@@ -246,6 +246,11 @@ end
 
 get_cell_ref_coordinates(g::PolytopalGrid) = get_cell_coordinates(g)
 
+function restrict(grid::PolytopalGrid, cell_to_parent_cell::AbstractVector{Bool})
+  cell_to_parent_cell = findall(cell_to_parent_cell)
+  restrict(grid,cell_to_parent_cell)
+end
+
 function restrict(grid::PolytopalGrid, cell_to_parent_cell::AbstractVector{<:Integer})
   parent_cell_to_parent_nodes = get_cell_node_ids(grid)
   nparent_nodes = num_nodes(grid)
