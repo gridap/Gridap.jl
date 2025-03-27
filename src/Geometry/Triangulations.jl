@@ -180,7 +180,7 @@ function Triangulation(
   mgrid = Grid(ReferenceFE{d},model)
   # Grid portion is OK here since this is usually used to
   # define a FE space
-  tgrid = GridPortion(mgrid,filter)
+  tgrid = restrict(mgrid,filter)
   tface_to_mface = tgrid.cell_to_parent_cell
   BodyFittedTriangulation(model,tgrid,tface_to_mface)
 end

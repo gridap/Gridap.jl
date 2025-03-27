@@ -232,6 +232,8 @@ end
     add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{String})
     add_tag_from_tags!(lab::FaceLabeling, name::String, tag::Int)
     add_tag_from_tags!(lab::FaceLabeling, name::String, tag::String)
+
+Adds a new tag `name`, given by the union of the tags `tags`.
 """
 function add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{Int})
   entities = Int32[]
