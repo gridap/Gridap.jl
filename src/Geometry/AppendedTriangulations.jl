@@ -124,7 +124,12 @@ function restrict(grid::AppendedGrid,cell_to_parent_cell)
   _restrict_appended_grid(restrict,grid,cell_to_parent_cell)
 end
 
-function _restrict_appended_grid(f,grid::AppendedGrid,cell_to_parent_cell)
+function _restrict_appended_grid(f,grid::AppendedGrid,filter::AbstractVector{Bool})
+  cell_to_parent_cell = findall(filter)
+  _restrict_appended_grid(f,grid,cell_to_parent_cell)
+end
+
+function _restrict_appended_grid(f,grid::AppendedGrid,cell_to_parent_cell::AbstractVector{<:Integer})
   na = num_cells(grid.a)
   nb = num_cells(grid.b)
   k = findfirst(c -> c > na, cell_to_parent_cell)
