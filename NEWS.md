@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Modified the `LinearStageOperator` struct to align it with the `NonlinearStageOperator`. Added `usx`, `ws` and `tx` as new fields in the struct. 
+- Modified the `LinearStageOperator` struct to align it with the `NonlinearStageOperator`. Added `usx`, `ws` and `tx` as new fields in the struct. Since PR[#1089](https://github.com/gridap/Gridap.jl/pull/1089).
 
 ### Added
 
