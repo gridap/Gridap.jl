@@ -11,6 +11,10 @@ struct AppendedGrid{Dc,Dp,A,B} <: Grid{Dc,Dp}
   end
 end
 
+function num_cells(t::AppendedGrid)
+  return num_cells(t.a) + num_cells(t.b)
+end
+
 function get_node_coordinates(t::AppendedGrid)
   xa = get_node_coordinates(t.a)
   xb = get_node_coordinates(t.b)
@@ -38,6 +42,16 @@ end
 function get_reffes(t::AppendedGrid)
   ra = get_reffes(t.a)
   rb = get_reffes(t.b)
+  if ra === rb
+    ra
+  else
+    vcat(ra,rb)
+  end
+end
+
+function get_polytopes(t::AppendedGrid)
+  ra = get_polytopes(t.a)
+  rb = get_polytopes(t.b)
   if ra === rb
     ra
   else
