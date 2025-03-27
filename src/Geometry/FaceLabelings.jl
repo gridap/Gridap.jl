@@ -263,6 +263,97 @@ function add_tag_from_tags!(labels::FaceLabeling, name::String, tag::String)
 end
 
 """
+    add_tag_from_tags_intersection!(labels::FaceLabeling, name::String, tags::Vector{Int})
+    add_tag_from_tags_intersection!(labels::FaceLabeling, name::String, tags::Vector{String})
+
+Adds a new tag `name`, given by the intersection of the tags `tags`.
+"""
+function add_tag_from_tags_intersection!(labels::FaceLabeling, name::String, tags::Vector{Int})
+  f(entity_tags) = issubset(tags,entity_tags)
+  add_tag_from_tag_filter!(labels,name,f)
+end
+
+function add_tag_from_tags_intersection!(labels::FaceLabeling, name::String, names::Vector{String})
+  tags = [get_tag_from_name(labels,name) for name in names ]
+  add_tag_from_tags_intersection!(labels,name,tags)
+end
+
+"""
+    add_tag_from_tags_complementary!(lab::FaceLabeling, name::String, tags::Vector{Int})
+    add_tag_from_tags_complementary!(lab::FaceLabeling, name::String, tags::Vector{String})
+    add_tag_from_tags_complementary!(lab::FaceLabeling, name::String, tag::Int)
+    add_tag_from_tags_complementary!(lab::FaceLabeling, name::String, tag::String)
+
+Adds a new tag `name`, given by the complementary of the tags `tags`.
+"""
+function add_tag_from_tags_complementary!(labels::FaceLabeling, name::String, tags::Vector{Int})
+  f(entity_tags) = isdisjoint(tags,entity_tags)
+  add_tag_from_tag_filter!(labels,name,f)
+end
+
+function add_tag_from_tags_complementary!(labels::FaceLabeling, name::String, names::Vector{String})
+  tags = [get_tag_from_name(labels,name) for name in names ]
+  add_tag_from_tags_complementary!(labels,name,tags)
+end
+
+function add_tag_from_tags_complementary!(labels::FaceLabeling, name::String, tag::Int)
+  tags = [tag,]
+  add_tag_from_tags_complementary!(labels,name,tags)
+end
+
+function add_tag_from_tags_complementary!(labels::FaceLabeling, name::String, tag::String)
+  tags = [tag,]
+  add_tag_from_tags_complementary!(labels,name,tags)
+end
+
+"""
+    add_tag_from_tags_setdiff!(lab::FaceLabeling, name::String, tags_include::Vector{Int}, tags_exclude::Vector{Int})
+    add_tag_from_tags_setdiff!(lab::FaceLabeling, name::String, tags_include::Vector{String}, tags_exclude::Vector{String})
+
+Adds a new tag `name`, given by the set difference between `tags_include` and `tags_exclude`.
+"""
+function add_tag_from_tags_setdiff!(
+  labels::FaceLabeling, name::String, tags_include::Vector{Int}, tags_exclude::Vector{Int}
+)
+  f(entity_tags) = issubset(tags_include,entity_tags) && isdisjoint(tags_exclude,entity_tags)
+  add_tag_from_tag_filter!(labels,name,f)
+end
+
+function add_tag_from_tags_setdiff!(
+  labels::FaceLabeling, name::String, names_include::Vector{String}, names_exclude::Vector{String}
+)
+  tags_include = [get_tag_from_name(labels,name) for name in names_include ]
+  tags_exclude = [get_tag_from_name(labels,name) for name in names_exclude ]
+  add_tag_from_tags_setdiff!(labels,name,tags_include,tags_exclude)
+end
+
+"""
+    add_tag_from_tag_filter!(lab::FaceLabeling, name::String, filter::Function)
+
+Adds a new tag `name`, by including all entities selected by a filter function. 
+The filter function must have signature 
+
+    filter(entity_tags::Vector{Int}) -> Bool
+
+where `entity_tags` are the tags of a particular geometrical entity.
+"""
+function add_tag_from_tag_filter!(
+  labels::FaceLabeling, name::String, filter::Function
+)
+  tag_to_entities = labels.tag_to_entities
+  n_entities = maximum(maximum,tag_to_entities)
+  entity_to_tags = [Int32[] for i in 1:n_entities]
+  for (tag,entities) in enumerate(tag_to_entities)
+    for e in entities
+      push!(entity_to_tags[e],tag)
+    end
+  end
+
+  entities = collect(Int32,findall(filter,entity_to_tags))
+  add_tag!(labels,name,entities)
+end
+
+"""
     get_face_mask(labeling::FaceLabeling,tags::Vector{Int},d::Integer)
     get_face_mask(labeling::FaceLabeling,tags::Vector{String},d::Integer)
     get_face_mask(labeling::FaceLabeling,tag::Int,d::Integer)
