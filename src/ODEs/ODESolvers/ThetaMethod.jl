@@ -161,7 +161,7 @@ function ode_march!(
     tx, usx, ws,
     J, r, reuse, sysslvrcache
   )
-  
+
   sysslvrcache = solve!(x, sysslvr, stageop, sysslvrcache)
 
   # Update state
