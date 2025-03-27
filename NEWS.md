@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Modified the `LinearStageOperator` struct to align it with the `NonlinearStageOperator`. Added `usx`, `ws` and `tx` as new fields in the struct. 
+
 ### Added
 
 - Added definition for `DiracDelta` with `Triangulation` argument. Since
