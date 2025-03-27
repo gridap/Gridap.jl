@@ -244,9 +244,6 @@ function ode_start(
     tx, usx, ws,
     J, r, false, sysslvrcache
   )
-  
-  # Update the sysslvr if required. By default it does nothing.
-  update_sysslvr!(sysslvr, ws, usx)
 
   sysslvrcache = solve!(x, sysslvr, stageop, sysslvrcache)
 
@@ -312,9 +309,6 @@ function ode_march!(
     tx, usx, ws,
     J, r, reuse, sysslvrcache
   )
-
-  # Update the sysslvr if required. By default it does nothing.
-  update_sysslvr!(sysslvr, ws, usx)
 
   sysslvrcache = solve!(x, sysslvr, stageop, sysslvrcache)
 

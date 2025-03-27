@@ -9,10 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added the function `update_sysslvr!` in Gridap.ODEs. This gives the user the ability to modify the system solver by overloading this function. Currently implemented for Linear cases of GeneralizedAlpha1, GeneralizedAlpha2 and ThetaMethod. Since PR[#1089](https://github.com/gridap/Gridap.jl/pull/1089)
-
-### Added
-
 - Added definition for `DiracDelta` with `Triangulation` argument. Since
   PR[#1087](https://github.com/gridap/Gridap.jl/pull/1087).
 

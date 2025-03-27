@@ -96,11 +96,6 @@ function ode_finish!(
   (uF, odecache)
 end
 
-# Provision for updating the system solver. 
-# By default it does nothing. 
-function update_sysslvr!(sysslvr, ws, usx)
-end
-
 ########
 # Test #
 ########
