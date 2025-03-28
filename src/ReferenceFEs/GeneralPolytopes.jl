@@ -330,6 +330,19 @@ function get_facet_normal(p::Polyhedron)
   end
 end
 
+function get_facet_normal(p::Polyhedron,lfacet::Integer)
+  D = 3
+  v = get_faces(p,D-1,0)[lfacet]
+  coords = get_vertex_coordinates(p)
+  v1 = coords[v[2]]-coords[v[1]]
+  v2 = coords[v[3]]-coords[v[1]]
+  v1 /= norm(v1)
+  v2 /= norm(v2)
+  n = v1 × v2
+  n /= norm(n)
+  return n
+end
+
 function get_facet_normal(p::Polygon)
   D = 2
   f_to_v = get_faces(p,D-1,0)
@@ -340,6 +353,17 @@ function get_facet_normal(p::Polygon)
     n = VectorValue( e[2], -e[1] )
     n /= norm(n)
   end
+end
+
+function get_facet_normal(p::Polygon,lfacet::Integer)
+  D = 2
+  v = get_faces(p,D-1,0)[lfacet]
+  coords = get_vertex_coordinates(p)
+  @notimplementedif num_components(eltype(coords)) != 2
+  e = coords[v[2]]-coords[v[1]]
+  n = VectorValue(e[2],-e[1] )
+  n /= norm(n)
+  return n
 end
 
 function get_edge_tangent(p::GeneralPolytope)

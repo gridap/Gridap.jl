@@ -108,6 +108,13 @@ function compute_reffaces(::Type{Polytope{Df}}, g::PolytopalGridTopology{Dc}) wh
   return map(Polytope{Df},face_to_poly,face_to_lface), Base.OneTo(num_faces(g,Df))
 end
 
+function compute_cell_permutations(g::PolytopalGridTopology,d::Integer)
+  D = num_cell_dims(g)
+  cell_to_dfaces = Table(get_faces(g,D,d))
+  data = ones(Int8,length(cell_to_dfaces.data))
+  return Table(data,cell_to_dfaces.ptrs)
+end
+
 function compute_reffaces(::Type{Polytope{Dc}}, g::PolytopalGridTopology{Dc}) where Dc
   (get_polytopes(g), get_cell_type(g))
 end

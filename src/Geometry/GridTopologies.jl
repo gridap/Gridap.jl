@@ -403,30 +403,29 @@ end
 
 """
     get_isboundary_face(g::GridTopology)
+    get_isboundary_face(g::GridTopology,d::Integer)
+
+Returns a vector of booleans indicating if the face is a boundary face. Boundary faces 
+are defined in the following way: 
+- If `d = D-1`, i.e facets, a boundary facet is a facet that is adjacent to only one cell.
+- Otherwise, a face is a boundary face if it belongs to a boundary facet.
+
+If no target dimension is specified, all dimensions are returned.
 """
 function get_isboundary_face(g::GridTopology)
   compute_isboundary_face(g)
 end
 
-"""
-    get_isboundary_face(g::GridTopology,d::Integer)
-"""
 function get_isboundary_face(g::GridTopology,d::Integer)
   compute_isboundary_face(g,d)
 end
 
-"""
-    compute_isboundary_face(g::GridTopology)
-"""
 function compute_isboundary_face(g::GridTopology)
   D = num_cell_dims(g)
   d_to_dface_to_isboundary = [compute_isboundary_face(g,d) for d in 0:D]
   vcat(d_to_dface_to_isboundary...)
 end
 
-"""
-    compute_isboundary_face(g::GridTopology,d::Integer)
-"""
 function compute_isboundary_face(g::GridTopology,d::Integer)
   D = num_cell_dims(g)
   if d == D-1
@@ -464,30 +463,27 @@ end
 
 """
     get_cell_permutations(top::GridTopology)
+    get_cell_permutations(top::GridTopology,d::Integer)
+
+Returns an cell-wise array of permutations. For each cell, the entry contains the permutations
+of the local d-faces of the cell w.r.t the global d-faces of the mesh.
+
+If no target dimension is specified, all dimensions are returned.
 """
 function get_cell_permutations(top::GridTopology)
   compute_cell_permutations(top)
 end
 
-"""
-    get_cell_permutations(top::GridTopology,d::Integer)
-"""
 function get_cell_permutations(top::GridTopology,d::Integer)
   compute_cell_permutations(top,d)
 end
 
-"""
-    compute_cell_permutations(top::GridTopology)
-"""
 function compute_cell_permutations(top::GridTopology)
   D = num_cell_dims(top)
   tables = (compute_cell_permutations(top,d) for d in 0:D)
   append_tables_locally(tables...)
 end
 
-"""
-    compute_cell_permutations(top::GridTopology,d::Integer)
-"""
 function compute_cell_permutations(top::GridTopology,d::Integer)
 
   D = num_cell_dims(top)

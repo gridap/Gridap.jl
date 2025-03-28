@@ -181,6 +181,10 @@ function get_cell_node_ids(grid::GridView)
   lazy_map(Reindex(get_cell_node_ids(grid.parent)),grid.cell_to_parent_cell)
 end
 
+function get_polytopes(grid::GridView)
+  get_polytopes(grid.parent)
+end
+
 function get_reffes(grid::GridView)
   get_reffes(grid.parent)
 end

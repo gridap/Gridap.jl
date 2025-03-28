@@ -219,6 +219,8 @@ include("UnstructuredDiscreteModels.jl")
 
 include("CartesianDiscreteModels.jl")
 
+include("Polytopal.jl")
+
 include("MappedDiscreteModels.jl")
 
 include("GridPortions.jl")
@@ -234,8 +236,6 @@ include("SkeletonTriangulations.jl")
 include("AppendedTriangulations.jl")
 
 include("CompressedCellArrays.jl")
-
-include("Polytopal.jl")
 
 include("PatchTriangulations.jl")
 
