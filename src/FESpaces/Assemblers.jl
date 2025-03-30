@@ -323,9 +323,13 @@ function assemble_matrix_and_vector!(f::Function,b::Function,M::AbstractMatrix,r
   assemble_matrix_and_vector!(M,r,a,collect_cell_matrix_and_vector(U,V,f(u,v),b(v)))
 end
 
-function assemble_matrix_and_vector!(
-  f::Function,b::Function,M::AbstractMatrix,r::AbstractVector,a::Assembler,U::FESpace,V::FESpace,uhd
-)
+function assemble_matrix_and_vector(f::Function,b::Function,a::Assembler,U::FESpace,V::FESpace,uhd)
+  v = get_fe_basis(V)
+  u = get_trial_fe_basis(U)
+  assemble_matrix_and_vector(a,collect_cell_matrix_and_vector(U,V,f(u,v),b(v),uhd))
+end
+
+function assemble_matrix_and_vector!(f::Function,b::Function,M::AbstractMatrix,r::AbstractVector,a::Assembler,U::FESpace,V::FESpace,uhd)
   v = get_fe_basis(V)
   u = get_trial_fe_basis(U)
   assemble_matrix_and_vector!(M,r,a,collect_cell_matrix_and_vector(U,V,f(u,v),b(v),uhd))
