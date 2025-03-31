@@ -25,31 +25,31 @@ The `Number` convention is used when no indices are provided: `arg` is returned.
 @propagate_inbounds getindex(arg::MultiValue) = @propagate_inbounds arg
 
 # Cartesian indexing style implementation
-function getindex(arg::VectorValue,i::Integer)
-  @check @boundscheck checkbounds(arg,i) === nothing
+@propagate_inbounds function getindex(arg::VectorValue,i::Integer)
+  @boundscheck @check checkbounds(arg,i) === nothing
   @inbounds arg.data[i]
 end
 
-function getindex(arg::TensorValue{D},i::Integer,j::Integer) where D
-  @check @boundscheck checkbounds(arg,i,j) === nothing
+@propagate_inbounds function getindex(arg::TensorValue{D},i::Integer,j::Integer) where D
+  @boundscheck @check checkbounds(arg,i,j) === nothing
   index = _2d_tensor_linear_index(D,i,j)
   @inbounds arg.data[index]
 end
 
-function getindex(arg::AbstractSymTensorValue{D},i::Integer,j::Integer) where D
-  @check @boundscheck checkbounds(arg,i,j) === nothing
+@propagate_inbounds function getindex(arg::AbstractSymTensorValue{D},i::Integer,j::Integer) where D
+  @boundscheck @check checkbounds(arg,i,j) === nothing
   index = _2d_sym_tensor_linear_index(D,i,j)
   @inbounds arg.data[index]
 end
 
-function getindex(arg::SymFourthOrderTensorValue{D},i::Integer,j::Integer,k::Integer,l::Integer) where D
-  @check @boundscheck checkbounds(arg,i,j,k,l) === nothing
+@propagate_inbounds function getindex(arg::SymFourthOrderTensorValue{D},i::Integer,j::Integer,k::Integer,l::Integer) where D
+  @boundscheck @check checkbounds(arg,i,j,k,l) === nothing
   index = _4d_sym_tensor_linear_index(D,i,j,k,l)
   @inbounds arg.data[index]
 end
 
-function getindex(arg::ThirdOrderTensorValue{D1,D2},i::Integer,j::Integer,k::Integer) where {D1,D2}
-  @check @boundscheck checkbounds(arg,i,j,k) === nothing
+@propagate_inbounds function getindex(arg::ThirdOrderTensorValue{D1,D2},i::Integer,j::Integer,k::Integer) where {D1,D2}
+  @boundscheck @check checkbounds(arg,i,j,k) === nothing
   index = _3d_tensor_linear_index(D1,D2,i,j,k)
   @inbounds arg.data[index]
 end
