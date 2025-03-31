@@ -7,10 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- Modified the `LinearStageOperator` struct to align it with the `NonlinearStageOperator`. Added `usx`, `ws` and `tx` as new fields in the struct. Since PR[#1089](https://github.com/gridap/Gridap.jl/pull/1089).
-
 ### Added
 
 - Added definition for `DiracDelta` with `Triangulation` argument. Since
@@ -25,7 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-
+- Modified the `LinearStageOperator` struct to align it with the `NonlinearStageOperator`. Added `usx`, `ws` and `tx` as new fields in the struct. Since PR[#1089](https://github.com/gridap/Gridap.jl/pull/1089).
+- Misc `TensorValues` improvements since PR [#1092](https://github.com/gridap/Gridap.jl/pull/1092).
+    - `MultiValue`s can now be indexed by tuples of mixed `Integer` and `CartesianIndex`
+    - Indexing in `MultiValue`s now performs bound checks, that can be disabled using `@inbounds` or Gridap's performance execution mode.
+    - Make sure that the result of all operation (empty/zero tensor) of correctly promoted (element) type when applied to tensor(s) of length zero
+    - An argument error is now thrown when calling `tr(::ThirdOrderTensorValue{A,B})` with `A!=B`
 
 ## [0.18.10] - 2025-03-04
 
