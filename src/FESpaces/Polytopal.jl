@@ -1,9 +1,14 @@
 
 struct PolytopalFESpace{V,M} <: SingleFieldFESpace
   vector_type::Type{V}
-  ndofs::Int
+  nfree::Int
+  ndirichlet::Int
   cell_dofs_ids::AbstractArray
   fe_basis::CellField
+  cell_is_dirichlet::Vector{Bool}
+  dirichlet_dof_tag::Vector{Int8}
+  dirichlet_cells::Vector{Int32}
+  ntags::Int
   metadata::M
 end
 
@@ -22,43 +27,107 @@ function _filter_from_space(space::Symbol)
 end
 
 function PolytopalFESpace(
-  trian::Triangulation{Dc},::Type{T},order::Integer; space = :P, vector_type = Vector{_dof_type(T)}
-) where {Dc,T}
-  ncells = num_cells(trian)
-  prebasis = Polynomials.MonomialBasis{Dc}(T, order, _filter_from_space(space))
-  cell_prebasis = Fill(prebasis, ncells)
-  cell_change = lazy_map(centroid_map, get_polytopes(trian))
-  cell_shapefuns = lazy_map(Broadcasting(∘), cell_prebasis, cell_change)
-  fe_basis = SingleFieldFEBasis(cell_shapefuns, trian, TestBasis(), PhysicalDomain())
-  cell_dof_ids, ndofs = compute_discontinuous_cell_dofs(
-    Base.OneTo(ncells), Fill(length(prebasis), ncells)
+  t::Triangulation,args...;trian=nothing,kwargs...
+)
+  @check isnothing(trian)
+  model = get_active_model(t)
+  PolytopalFESpace(model,args...;trian=t,kwargs...)
+end
+
+function PolytopalFESpace(
+  model::DiscreteModel,::Type{T},order::Integer;
+  space=:P,vector_type=nothing,
+  kwargs...
+) where {T}
+  D = num_cell_dims(model)
+  prebasis = Polynomials.MonomialBasis{D}(T, order, _filter_from_space(space))
+  cell_prebasis = Fill(prebasis, num_cells(model))
+  vtype = ifelse(!isnothing(vector_type),vector_type,Vector{_dof_type(T)})
+  PolytopalFESpace(vtype,model,cell_prebasis;kwargs...)
+end
+
+function PolytopalFESpace(
+  vector_type::Type,
+  model::DiscreteModel,
+  cell_prebasis::AbstractArray; 
+  trian = Triangulation(model),
+  labels = get_face_labeling(model),
+  dirichlet_tags=Int[],
+  dirichlet_masks=nothing
+)
+  Dc = num_cell_dims(model)
+
+  cell_polytopes = Geometry.get_cell_polytopes(model)
+  if eltype(cell_polytopes) <: ReferenceFEs.GeneralPolytope
+    cell_change = lazy_map(centroid_map, cell_polytopes)
+    cell_shapefuns = lazy_map(Broadcasting(∘), cell_prebasis, cell_change)
+    domain_style = PhysicalDomain()
+  else
+    cell_shapefuns = cell_prebasis
+    domain_style = ReferenceDomain()
+  end
+  fe_basis = SingleFieldFEBasis(cell_shapefuns, trian, TestBasis(), domain_style)
+  
+  ncomps = num_components(return_type(first(cell_prebasis)))
+  if !isnothing(dirichlet_masks)
+    @check length(dirichlet_masks) == ncomps
+    dirichlet_components = dirichlet_masks
+  else
+    dirichlet_components = fill(false,ncomps)
+  end
+
+  ntags = length(dirichlet_tags)
+  cell_to_tag = get_face_tag_index(labels,dirichlet_tags,Dc)
+  cell_is_dirichlet = map(!isequal(UNSET),cell_to_tag)
+  ctype_to_prebasis, cell_to_ctype = compress_cell_data(cell_prebasis)
+  ctype_to_conformity = map(MonomialDofConformity,ctype_to_prebasis)
+  ctype_to_ldof_to_comp = map(c -> c.dof_to_comp,ctype_to_conformity)
+  cell_dof_ids, nfree, ndir, dirichlet_dof_tag, dirichlet_cells = compute_discontinuous_cell_dofs(
+    cell_to_ctype, ctype_to_ldof_to_comp, cell_to_tag, dirichlet_components
   )
+
+  metadata = ctype_to_conformity
   return PolytopalFESpace(
-    vector_type,ndofs,cell_dof_ids,fe_basis,nothing
+    vector_type,nfree,ndir,cell_dof_ids,fe_basis,
+    cell_is_dirichlet,dirichlet_dof_tag,dirichlet_cells,ntags,
+    metadata
   )
 end
 
-function PolytopalFESpace(model::DiscreteModel, args...; kwargs...)
-  PolytopalFESpace(Triangulation(model), args...; kwargs...)
+struct MonomialDofConformity{D,V}
+  orders::NTuple{D,Int}
+  terms::Vector{CartesianIndex{D}}
+  dof_to_term::Vector{Int}
+  dof_to_comp::Vector{Int}
+  term_and_comp_to_dof::Vector{V}
+end
+
+function MonomialDofConformity(basis::Polynomials.MonomialBasis)
+  T = return_type(basis)
+  nterms = length(basis.terms)
+  dof_to_term, dof_to_comp, term_and_comp_to_dof = ReferenceFEs._generate_dof_layout_node_major(T,nterms)
+  MonomialDofConformity(
+    basis.orders, basis.terms, dof_to_term, dof_to_comp, term_and_comp_to_dof
+  )
 end
 
 # FESpace interface
 
 ConstraintStyle(::Type{<:PolytopalFESpace}) = UnConstrained()
-get_free_dof_ids(f::PolytopalFESpace) = Base.OneTo(f.ndofs)
+get_free_dof_ids(f::PolytopalFESpace) = Base.OneTo(f.nfree)
 get_fe_basis(f::PolytopalFESpace) = f.fe_basis
 get_fe_dof_basis(f::PolytopalFESpace) = @notimplemented
 get_cell_dof_ids(f::PolytopalFESpace) = f.cell_dofs_ids
 get_triangulation(f::PolytopalFESpace) = get_triangulation(f.fe_basis)
 get_dof_value_type(f::PolytopalFESpace{V}) where V = eltype(V)
 get_vector_type(f::PolytopalFESpace{V}) where V = V
-get_cell_is_dirichlet(f::PolytopalFESpace) = Fill(false,num_cells(get_triangulation(f)))
+get_cell_is_dirichlet(f::PolytopalFESpace) = f.cell_is_dirichlet
 
 # SingleFieldFESpace interface
 
-get_dirichlet_dof_ids(f::PolytopalFESpace) = Base.OneTo(0)
-num_dirichlet_tags(f::PolytopalFESpace) = 0
-get_dirichlet_dof_tag(f::PolytopalFESpace) = Int8[]
+get_dirichlet_dof_ids(f::PolytopalFESpace) = Base.OneTo(f.ndirichlet)
+num_dirichlet_tags(f::PolytopalFESpace) = f.ntags
+get_dirichlet_dof_tag(f::PolytopalFESpace) = f.dirichlet_dof_tag
 
 function scatter_free_and_dirichlet_values(f::PolytopalFESpace,free_values,dirichlet_values)
   @check length(dirichlet_values) == 0 "PolytopalFESpace does not support Dirichlet values"
@@ -80,8 +149,17 @@ function gather_free_and_dirichlet_values!(free_vals,dirichlet_vals,f::Polytopal
 end
 
 function gather_dirichlet_values!(dirichlet_vals,f::PolytopalFESpace,cell_vals)
-  @check length(dirichlet_vals) == 0 "PolytopalFESpace does not support Dirichlet values"
-  dirichlet_vals
+  cell_dofs = get_cell_dof_ids(f)
+  cache_vals = array_cache(cell_vals)
+  cache_dofs = array_cache(cell_dofs)
+  free_vals = zero_free_values(f)
+  cells = f.dirichlet_cells
+  _free_and_dirichlet_values_fill!(
+    free_vals, dirichlet_vals,
+    cache_vals, cache_dofs,
+    cell_vals, cell_dofs, cells
+  )
+  return dirichlet_vals
 end
 
 # Change of coordinate map
@@ -250,9 +328,14 @@ function FESpaces.renumber_free_and_dirichlet_dof_ids(
 
   return PolytopalFESpace(
     space.vector_type,
-    ndofs,
+    nfree,
+    ndirichlet,
     cell_dof_ids,
     space.fe_basis,
+    cell_is_dirichlet,
+    space.dirichlet_dof_tag,
+    dirichlet_cells,
+    space.ntags,
     space.metadata
   )
 end

@@ -104,6 +104,7 @@ dΛ = Measure(Λ,2*order)
 sum(∫(1)dΩ)
 
 V = FESpaces.PolytopalFESpace(Ω,Float64,order,space=:P)
+VΓ = FESpaces.PolytopalFESpace(Γ,VectorValue{3,Float64},order,space=:P,dirichlet_tags=["boundary"],dirichlet_masks=[true,false,true])
 
 # L2 projection
 mass_lhs(u,v) = ∫(u⋅v)dΩ

@@ -346,6 +346,8 @@ function restrict(model::PolytopalDiscreteModel, cell_to_parent_cell::AbstractVe
   return PolytopalDiscreteModel(grid,topo,labels)
 end
 
+@inline restrict(model::PolytopalDiscreteModel, ::IdentityVector) = model
+
 ############################################################################################
 # Voronoi meshes
 
