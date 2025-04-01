@@ -9,6 +9,7 @@ struct PolytopalFESpace{V,M} <: SingleFieldFESpace
   dirichlet_dof_tag::Vector{Int8}
   dirichlet_cells::Vector{Int32}
   ntags::Int
+  order::Int
   metadata::M
 end
 
@@ -68,6 +69,7 @@ function PolytopalFESpace(
   end
   fe_basis = SingleFieldFEBasis(cell_shapefuns, trian, TestBasis(), domain_style)
   
+  order = maximum(Polynomials.get_order,cell_prebasis)
   ncomps = num_components(return_type(first(cell_prebasis)))
   if !isnothing(dirichlet_masks)
     @check length(dirichlet_masks) == ncomps
@@ -90,7 +92,7 @@ function PolytopalFESpace(
   return PolytopalFESpace(
     vector_type,nfree,ndir,cell_dof_ids,fe_basis,
     cell_is_dirichlet,dirichlet_dof_tag,dirichlet_cells,ntags,
-    metadata
+    order,metadata
   )
 end
 
@@ -129,10 +131,28 @@ get_dirichlet_dof_ids(f::PolytopalFESpace) = Base.OneTo(f.ndirichlet)
 num_dirichlet_tags(f::PolytopalFESpace) = f.ntags
 get_dirichlet_dof_tag(f::PolytopalFESpace) = f.dirichlet_dof_tag
 
+function _cell_vals(f::PolytopalFESpace,object)
+  dΩ = Measure(get_triangulation(f),2*f.order)
+  u, v = get_trial_fe_basis(f), get_fe_basis(f)
+
+  lhs = get_array(∫(u⋅v)dΩ)
+  rhs = get_array(∫(v⋅object)dΩ)
+  cell_vals = lazy_map(LocalSolveMap(),lhs,rhs)
+  return cell_vals
+end
+
+_cell_vals(f::TrialFESpace{<:PolytopalFESpace},object) = _cell_vals(f.space,object)
+
 function scatter_free_and_dirichlet_values(f::PolytopalFESpace,free_values,dirichlet_values)
-  @check length(dirichlet_values) == 0 "PolytopalFESpace does not support Dirichlet values"
+  @check eltype(free_values) == eltype(dirichlet_values) """\n
+  The entries stored in free_values and dirichlet_values should be of the same type.
+
+  This error shows up e.g. when trying to build a FEFunction from a vector of integers
+  if the Dirichlet values of the underlying space are of type Float64, or when the
+  given free values are Float64 and the Dirichlet values ComplexF64.
+  """
   cell_dof_ids = get_cell_dof_ids(f)
-  lazy_map(Broadcasting(Reindex(free_values)),cell_dof_ids)
+  lazy_map(Broadcasting(PosNegReindex(free_values,dirichlet_values)),cell_dof_ids)
 end
 
 function gather_free_and_dirichlet_values!(free_vals,dirichlet_vals,f::PolytopalFESpace,cell_vals)
@@ -164,47 +184,61 @@ end
 
 # Change of coordinate map
 
-struct CentroidCoordinateChangeMap <: Map end
-
 function centroid_map(poly::Polytope)
-  D = num_point_dims(poly)
-  pmin, pmax = get_bounding_box(poly)
-  o = VectorValue(ntuple(i->1.0,Val(D)))
+  D, Dp = num_dims(poly), num_point_dims(poly)
+  centroid_map(Val(D),Val(Dp),get_vertex_coordinates(poly))
+end
+
+function centroid_map(::Val{D},::Val{D},vertices) where D
+  pmin, pmax = get_bounding_box(vertices)
   xc = 0.5 * (pmin + pmax)
-  # xc = get_facet_centroid(poly, D) # reverting to original
   h = 0.5 * (pmax - pmin)
-  return affine_map(TensorValues.diagonal_tensor(o ./ h), -xc ./ h)
+  G = TensorValues.diagonal_tensor(VectorValue(ntuple(i -> 1.0/h[i], Val(D))))
+  O = -xc⋅G
+  return affine_map(G,O)
 end
 
-function Arrays.lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{typeof(centroid_map)}},x::AbstractVector)
-  polys = a.args[1]
-  lazy_map(CentroidCoordinateChangeMap(),polys,x)
-end
-
-function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope,x::Point)
-  pmin, pmax = get_bounding_box(poly)
+function centroid_map(::Val{D},::Val{Dp},vertices) where {D,Dp}
+  @check Dp > D
+  t_space = ReferenceFEs.compute_tangent_space(Val(D),vertices)
+  K = TensorValues.tensor_from_columns(t_space...)
+  pmin, pmax = get_bounding_box(v -> v⋅K, vertices)
   xc = 0.5 * (pmin + pmax)
-  # xc = get_facet_centroid(poly, D) # reverting to original
   h = 0.5 * (pmax - pmin)
-  return (x - xc) ./ h
+  G = TensorValues.diagonal_tensor(VectorValue(ntuple(i -> 1.0/h[i], Val(D))))
+  O = -xc⋅G
+  return affine_map(K⋅G,O)
 end
 
-function Arrays.return_cache(::CentroidCoordinateChangeMap,poly::Polytope,x::AbstractVector{<:Point})
-  return CachedArray(similar(x))
-end
-
-function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope,x::AbstractVector{<:Point})
-  setsize!(cache,size(x))
-  y = cache.array
-  pmin, pmax = get_bounding_box(poly)
-  xc = 0.5 * (pmin + pmax)
-  # xc = get_facet_centroid(poly, D) # reverting to original
-  h = 0.5 * (pmax - pmin)
-  for i in eachindex(x)
-    y[i] = (x[i] - xc) ./ h
-  end
-  return y
-end
+# struct CentroidCoordinateChangeMap <: Map end
+# 
+# function Arrays.lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{typeof(centroid_map)}},x::AbstractVector)
+#   polys = a.args[1]
+#   lazy_map(CentroidCoordinateChangeMap(),polys,x)
+# end
+# 
+# function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope,x::Point)
+#   pmin, pmax = get_bounding_box(poly)
+#   xc = 0.5 * (pmin + pmax)
+#   h = 0.5 * (pmax - pmin)
+#   return (x - xc) ./ h
+# end
+# 
+# function Arrays.return_cache(::CentroidCoordinateChangeMap,poly::Polytope,x::AbstractVector{<:Point})
+#   return CachedArray(similar(x))
+# end
+# 
+# function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope,x::AbstractVector{<:Point})
+#   setsize!(cache,size(x))
+#   y = cache.array
+#   pmin, pmax = get_bounding_box(poly)
+#   xc = 0.5 * (pmin + pmax)
+#   h = 0.5 * (pmax - pmin)
+#   for i in eachindex(x)
+#     y[i] = (x[i] - xc) ./ h
+#   end
+#   return y
+# end
 
 ##################
 
@@ -336,6 +370,7 @@ function FESpaces.renumber_free_and_dirichlet_dof_ids(
     space.dirichlet_dof_tag,
     dirichlet_cells,
     space.ntags,
+    space.order,
     space.metadata
   )
 end

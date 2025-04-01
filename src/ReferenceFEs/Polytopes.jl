@@ -256,9 +256,9 @@ Returns `D`.
 """
 num_dims(p::Polytope) = num_dims(typeof(p))
 
-num_cell_dims(p::Polytope) = num_dims(p)
+num_cell_dims(p::Polytope) = num_cell_dims(typeof(p))
 
-num_point_dims(p::Polytope) = num_dims(p)
+num_point_dims(p::Polytope) = num_point_dims(typeof(p))
 
 """
     num_faces(p::Polytope)
@@ -657,17 +657,25 @@ function _find_indexin!(a_to_index, a_to_b, index_to_b,pred::Function=(==))
 end
 
 """
-    get_bounding_box(p::Polytope{D}) where D
+    get_bounding_box(p::Polytope)
 """
-function get_bounding_box(p::Polytope{D}) where D
+function get_bounding_box(p::Polytope)
   vertex_to_coords = get_vertex_coordinates(p)
-  P = eltype(vertex_to_coords)
+  get_bounding_box(vertex_to_coords)
+end
+
+get_bounding_box(points) = get_bounding_box(identity,points)
+
+function get_bounding_box(f,points)
+  P = typeof(f(first(points)))
   T = eltype(P)
+  D = length(P)
   pmin = Point(tfill(T(Inf),Val{D}()))
   pmax = Point(tfill(T(-Inf),Val{D}()))
-  for coord in vertex_to_coords
-    pmin = min.(pmin,coord)
-    pmax = max.(pmax,coord)
+  for p in points
+    fp = f(p)
+    pmin = min.(pmin,fp)
+    pmax = max.(pmax,fp)
   end
   (pmin,pmax)
 end

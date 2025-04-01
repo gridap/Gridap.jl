@@ -205,14 +205,12 @@ Base.getindex(a::GeneralPolytope,i::Integer) = a.vertices[i]
 """
 @inline get_graph(a::GeneralPolytope) = a.edge_vertex_graph
 
-
 """
     get_metadata(p::GeneralPolytope)
 
   It return the metadata stored in the polytope `p`.
 """
 get_metadata(a::GeneralPolytope) = a.metadata
-
 
 """
     isopen(p::GeneralPolytope) -> Bool
@@ -321,26 +319,47 @@ function get_facet_normal(p::Polyhedron)
   f_to_v = get_faces(p,D-1,0)
   coords = get_vertex_coordinates(p)
   map(f_to_v) do v
-    v1 = coords[v[2]]-coords[v[1]]
-    v2 = coords[v[3]]-coords[v[1]]
-    v1 /= norm(v1)
-    v2 /= norm(v2)
+    v1, v2 = compute_tangent_space(Val(2),coords[v])
     n = v1 × v2
     n /= norm(n)
   end
 end
 
 function get_facet_normal(p::Polyhedron,lfacet::Integer)
-  D = 3
-  v = get_faces(p,D-1,0)[lfacet]
+  v = get_faces(p,2,0)[lfacet]
   coords = get_vertex_coordinates(p)
-  v1 = coords[v[2]]-coords[v[1]]
-  v2 = coords[v[3]]-coords[v[1]]
-  v1 /= norm(v1)
-  v2 /= norm(v2)
+  v1, v2 = compute_tangent_space(Val(2),coords[v])
   n = v1 × v2
   n /= norm(n)
   return n
+end
+
+function compute_tangent_space(::Val{1},coords;tol=1e-10)
+  v1 = coords[2]-coords[1]
+  v1 /= norm(v1)
+  return v1
+end
+
+function compute_tangent_space(::Val{D},coords;tol=1e-10) where D
+  np = length(coords)
+  p0 = first(coords)
+  k = 1
+  ns = 0
+  space = ()
+  while (ns < D) && (k < np)
+    v = coords[k+1]-p0
+    for vi in space
+      v -= (v⋅vi)*vi
+    end
+    w = norm(v)
+    if w > tol
+      space = (space...,v/w)
+      ns += 1
+    end
+    k += 1
+  end
+  @check ns == D "Tangent space cannot be computed! Too many colinear points"
+  return space
 end
 
 function get_facet_normal(p::Polygon)
