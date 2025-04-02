@@ -56,8 +56,9 @@ function visualization_data(
 end
 
 function visualization_data(
-  ::Geometry.PolytopalGrid, trian::Triangulation, filebase::AbstractString;
-  order=-1, nsubcells=-1, celldata=Dict(), cellfields=Dict())
+  ::Union{Geometry.PolytopalGrid,Geometry.GridView{Dc,Dp,<:Geometry.PolytopalGrid}}, 
+  trian::Triangulation, filebase::AbstractString;
+  order=-1, nsubcells=-1, celldata=Dict(), cellfields=Dict()) where {Dc,Dp}
   @notimplementedif order != -1 "order kw-argument is not implemented for PolytopalGrid"
   @notimplementedif nsubcells != -1 "nsubcells kw-argument is not implemented for PolytopalGrid"
 
