@@ -1,4 +1,4 @@
-module PolytopalHHO_EqualOrderConvgTests
+module HHOPolytopalConvgTests
 
   using Gridap
   using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField

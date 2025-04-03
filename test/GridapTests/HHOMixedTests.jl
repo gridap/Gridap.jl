@@ -1,3 +1,5 @@
+module HHOMixedTests
+
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
@@ -116,3 +118,5 @@ op = MultiField.StaticCondensationOperator(X,V,N,patch_assem,patch_weakform())
 
 ub = solve(op.sc_op) 
 ui = MultiField.backward_static_condensation(op,ub)
+
+end # module

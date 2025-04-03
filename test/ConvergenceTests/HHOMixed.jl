@@ -1,4 +1,4 @@
-module HHOConvgTests
+module HHOMixedConvgTests
 
   using Gridap
   using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField

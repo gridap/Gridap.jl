@@ -1,3 +1,5 @@
+module HHOTests
+
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
@@ -177,6 +179,6 @@ uΓ = solve(op.sc_op)
 uΩ = MultiField.backward_static_condensation(op,uΓ)
 
 eu = uΩ - uex 
-sqrt(sum( ∫(eu * eu)dΩp))
+err = sqrt(sum( ∫(eu * eu)dΩp))
 
-R(uΩ)
+end

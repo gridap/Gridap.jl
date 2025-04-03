@@ -1,4 +1,4 @@
-module PolytopalHHOConvgTests
+module HHOMixedPolytopalConvgTests
 
   using Gridap
   using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField

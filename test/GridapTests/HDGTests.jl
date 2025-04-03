@@ -1,3 +1,4 @@
+module HDGTests
 
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
@@ -54,3 +55,5 @@ l((vh,wh,lh)) = ∫( f*wh )*dΩp
 op = MultiField.StaticCondensationOperator(ptopo,X_full,X_elim,X_ret,a,l)
 sh = solve(op.sc_op)
 wh, qh = MultiField.backward_static_condensation(op,sh)
+
+end # module

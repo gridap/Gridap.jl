@@ -1,4 +1,4 @@
-module HHO_EqualOrderConvgTests
+module HHOConvgTests
 
   using Gridap
   using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField

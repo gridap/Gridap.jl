@@ -1,3 +1,4 @@
+module HDGPolytopalTests
 
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField, Gridap.Polynomials
@@ -74,4 +75,4 @@ op = MultiField.StaticCondensationOperator(ptopo,X_full,X_elim,X_ret,a,l)
 sh = solve(op.sc_op)
 qh, uh = MultiField.backward_static_condensation(op,sh)
 
-
+end # module
