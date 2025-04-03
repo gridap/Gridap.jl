@@ -176,45 +176,39 @@ end
 get_triangulation(model) = Triangulation(model)
 
 function Triangulation(
-  ::Type{ReferenceFE{d}},model::DiscreteModel,filter::AbstractArray) where d
+  ::Type{ReferenceFE{d}}, model::DiscreteModel, tface_to_mface::AbstractVector{<:Integer}
+) where d
   mgrid = Grid(ReferenceFE{d},model)
-  # Grid portion is OK here since this is usually used to
-  # define a FE space
-  tgrid = restrict(mgrid,filter)
-  tface_to_mface = tgrid.cell_to_parent_cell
+  tgrid = restrict(mgrid,tface_to_mface)
   BodyFittedTriangulation(model,tgrid,tface_to_mface)
 end
 
-function Triangulation(model::DiscreteModel,filter::AbstractArray)
-  d = num_cell_dims(model)
-  Triangulation(ReferenceFE{d},model,filter)
+function Triangulation(
+  ::Type{ReferenceFE{d}}, model::DiscreteModel, mface_filter::AbstractArray{Bool}
+) where d
+  tface_to_mface = findall(collect1d(mface_filter))
+  Triangulation(ReferenceFE{d},model,tface_to_mface)
 end
 
 function Triangulation(
-  ::Type{ReferenceFE{d}},
-  model::DiscreteModel,
-  labels::FaceLabeling;tags=nothing) where d
-
-  if tags === nothing
-    grid = Grid(ReferenceFE{d},model)
-    tface_to_mface = IdentityVector(num_cells(grid))
-    BodyFittedTriangulation(model,grid,tface_to_mface)
+  ::Type{ReferenceFE{d}}, model::DiscreteModel, labels::FaceLabeling; tags=nothing
+) where d
+  if isnothing(tags)
+    tface_to_mface = IdentityVector(num_faces(model,d))
   else
-    mface_to_mask = get_face_mask(labels,tags,d)
-    Triangulation(ReferenceFE{d},model,mface_to_mask)
+    tface_to_mface = findall(get_face_mask(labels,tags,d))
   end
+  Triangulation(ReferenceFE{d},model,tface_to_mface)
 end
 
-function Triangulation(
-  ::Type{ReferenceFE{d}},model::DiscreteModel;kwargs...) where d
+function Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel;kwargs...) where d
   labels = get_face_labeling(model)
   Triangulation(ReferenceFE{d},model,labels;kwargs...)
 end
 
-function Triangulation(model::DiscreteModel;kwargs...)
+function Triangulation(model::DiscreteModel,args...;kwargs...)
   d = num_cell_dims(model)
-  labels = get_face_labeling(model)
-  Triangulation(ReferenceFE{d},model,labels;kwargs...)
+  Triangulation(ReferenceFE{d},model,args...;kwargs...)
 end
 
 function Triangulation(trian::Triangulation,args...;kwargs...)
@@ -227,13 +221,13 @@ function Triangulation(trian::Triangulation)
   trian
 end
 
-function Triangulation(trian::Triangulation,x::AbstractArray{<:Integer})
-  view(trian,x)
+function Triangulation(trian::Triangulation,sface_to_tface::AbstractArray{<:Integer})
+  view(trian,sface_to_tface)
 end
 
-function Triangulation(trian::Triangulation,x::AbstractArray{<:Bool})
-  y = findall(collect1d(x))
-  view(trian,y)
+function Triangulation(trian::Triangulation,tface_filter::AbstractArray{<:Bool})
+  sface_to_tface = findall(collect1d(tface_filter))
+  view(trian,sface_to_tface)
 end
 
 function Interior(args...;kwargs...)
