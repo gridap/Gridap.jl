@@ -191,6 +191,13 @@ function Triangulation(
 end
 
 function Triangulation(
+  ::Type{ReferenceFE{d}}, model::DiscreteModel, mface_filter::AbstractVector{Bool}
+) where d
+  tface_to_mface = findall(mface_filter)
+  Triangulation(ReferenceFE{d},model,tface_to_mface)
+end
+
+function Triangulation(
   ::Type{ReferenceFE{d}}, model::DiscreteModel, labels::FaceLabeling; tags=nothing
 ) where d
   if isnothing(tags)
