@@ -62,15 +62,15 @@ Base.size(::MockPolyBasis) = (1,)
 
 
 r, _, c = return_cache(mb,x)
-@test_throws ErrorException Polynomials._evaluate_nd!(mb, xi, r, 1, c)
+@test_throws ErrorException Polynomials._evaluate_nd!(mb, xi, r, 1, c, nothing)
 
 ∇mb = FieldGradientArray{1}(mb)
 r, s, c, g = return_cache(∇mb,x)
-@test_throws ErrorException Polynomials._gradient_nd!(mb, xi, r, 1, c, g, s)
+@test_throws ErrorException Polynomials._gradient_nd!(mb, xi, r, 1, c, g, s, nothing)
 
 Hmb = FieldGradientArray{2}(mb)
 r, s, c, g, h = return_cache(Hmb,x)
-@test_throws ErrorException Polynomials._hessian_nd!(mb, xi, r, 1, c, g, h, s)
+@test_throws ErrorException Polynomials._hessian_nd!(mb, xi, r, 1, c, g, h, s, nothing)
 
 
 end

@@ -141,10 +141,10 @@ end
 """
     _get_static_parameters(::PolynomialBasis)
 
-Return a tuple static of parameters appended to low level `[...]_nd!` evaluation
-calls, default is `( Val(get_order(b)), )`.
+Return a (tuple of) static parameter(s) appended to low level `[...]_nd!` evaluation
+calls, default is `Val(get_order(b))`.
 """
-_get_static_parameters(b::PolynomialBasis) = ( Val(get_order(b)), )
+_get_static_parameters(b::PolynomialBasis) = Val(get_order(b))
 
 function evaluate!(cache,
   f::PolynomialBasis,
@@ -156,7 +156,7 @@ function evaluate!(cache,
   params = _get_static_parameters(f)
   for i in 1:np
     @inbounds xi = x[i]
-    _evaluate_nd!(f,xi,r,i,c,params...)
+    _evaluate_nd!(f,xi,r,i,c,params)
   end
   r.array
 end
@@ -172,7 +172,7 @@ function evaluate!(cache,
   params = _get_static_parameters(f)
   for i in 1:np
     @inbounds xi = x[i]
-    _gradient_nd!(f,xi,r,i,c,g,s,params...)
+    _gradient_nd!(f,xi,r,i,c,g,s,params)
   end
   r.array
 end
@@ -188,7 +188,7 @@ function evaluate!(cache,
   params = _get_static_parameters(f)
   for i in 1:np
     @inbounds xi = x[i]
-    _hessian_nd!(f,xi,r,i,c,g,h,s,params...)
+    _hessian_nd!(f,xi,r,i,c,g,h,s,params)
   end
   r.array
 end
@@ -246,7 +246,7 @@ end
 ###############################
 
 """
-    _evaluate_nd!(b,xi,r,i,c,params...)
+    _evaluate_nd!(b,xi,r,i,c,params)
 
 Compute and assign: `r`[`i`] = `b`(`xi`) = (`b`₁(`xi`), ..., `b`ₙ(`xi`))
 
@@ -257,13 +257,13 @@ row of `r`.
 function _evaluate_nd!(
   b::PolynomialBasis, xi,
   r::AbstractMatrix, i,
-  c::AbstractMatrix, params...)
+  c::AbstractMatrix, params)
 
   @abstractmethod
 end
 
 """
-    _gradient_nd!(b,xi,r,i,c,g,s,params...)
+    _gradient_nd!(b,xi,r,i,c,g,s,params)
 
 Compute and assign: `r`[`i`] = ∇`b`(`xi`) = (∇`b`₁(`xi`), ..., ∇`b`ₙ(`xi`))
 
@@ -272,20 +272,20 @@ for gradients of `b`ₖ(`xi`), and
 
 - `g` is a mutable `D`×`K` cache (for the 1D polynomials first derivatives).
 - `s` is a mutable length `D` cache for ∇`b`ₖ(`xi`).
-- `params` are optional parameters returned by [`_get_static_parameters(b)`](@ref _get_static_parameters)
+- `params` is an optional (tuple of) parameter(s) returned by [`_get_static_parameters(b)`](@ref _get_static_parameters)
 """
 function _gradient_nd!(
   b::PolynomialBasis, xi,
   r::AbstractMatrix, i,
   c::AbstractMatrix,
   g::AbstractMatrix,
-  s::MVector, params...)
+  s::MVector, params)
 
   @abstractmethod
 end
 
 """
-    _hessian_nd!(b,xi,r,i,c,g,h,s,params...)
+    _hessian_nd!(b,xi,r,i,c,g,h,s,params)
 
 Compute and assign: `r`[`i`] = H`b`(`xi`) = (H`b`₁(`xi`), ..., H`b`ₙ(`xi`))
 
@@ -301,7 +301,7 @@ function _hessian_nd!(
   c::AbstractMatrix,
   g::AbstractMatrix,
   h::AbstractMatrix,
-  s::MMatrix, params...)
+  s::MMatrix, params)
 
   @abstractmethod
 end

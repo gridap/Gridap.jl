@@ -179,12 +179,12 @@ end
 # nD evaluations implementation #
 #################################
 
-_get_static_parameters(::ModalC0Basis) = ()
+_get_static_parameters(::ModalC0Basis) = nothing
 
 function _evaluate_nd!(
   basis::ModalC0Basis{D,V,T}, x,
   r::AbstractMatrix{V}, i,
-  c::AbstractMatrix{T}) where {D,V,T}
+  c::AbstractMatrix{T}, ::Nothing) where {D,V,T}
 
   terms  = basis.terms
   orders = basis.orders
@@ -229,7 +229,7 @@ function _gradient_nd!(
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
-  s::MVector{D,T}) where {D,V,T,G}
+  s::MVector{D,T}, ::Nothing) where {D,V,T,G}
 
   terms  = basis.terms
   orders = basis.orders
@@ -311,7 +311,7 @@ function _hessian_nd!(
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   h::AbstractMatrix{T},
-  s::MMatrix{D,D,T}) where {D,V,T,G}
+  s::MMatrix{D,D,T}, ::Nothing) where {D,V,T,G}
 
   terms  = basis.terms
   orders = basis.orders
