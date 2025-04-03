@@ -260,7 +260,7 @@ end
 
 function lazy_collect(cache,a)
   T = eltype(a)
-  r = Vector{T}(undef,length(a))
+  r = Array{T}(undef,size(a))
   for i in eachindex(a)
     ai = getindex!(cache,a,i)
     r[i] = deepcopy(ai)
