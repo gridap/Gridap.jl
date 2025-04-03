@@ -162,7 +162,7 @@ function FESpaces._compute_local_solves(
   nfields = num_fields(u)
   cell_coeffs = lazy_map(k.local_map,k.weakform(u))
   if k.collect_coefficients
-    cell_coeffs = collect(cell_coeffs)
+    cell_coeffs = Arrays.lazy_collect(cell_coeffs)
   end
   v_out = get_fe_basis(k.space_out)
   cell_basis = CellData.get_data(change_domain(v_out,k.trian_out,DomainStyle(v_out)))

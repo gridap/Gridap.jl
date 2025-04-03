@@ -253,13 +253,8 @@ function lazy_sum(cache,a)
   r
 end
 
-function Base.collect(a::LazyArray{A,T} where A) where T
+function lazy_collect(a::LazyArray{A,T} where A) where T
   cache = array_cache(a)
-  lazy_collect(cache,a)
-end
-
-function lazy_collect(cache,a)
-  T = eltype(a)
   r = Array{T}(undef,size(a))
   for i in eachindex(a)
     ai = getindex!(cache,a,i)
