@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.18.11] - 2025-04-01
 
 ### Added
 
@@ -21,6 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+<<<<<<< HEAD
+=======
+- Modified the `LinearStageOperator` struct to align it with the `NonlinearStageOperator`. Added `usx`, `ws` and `tx` as new fields in the struct. Since PR[#1089](https://github.com/gridap/Gridap.jl/pull/1089).
+- Misc `TensorValues` improvements since PR [#1092](https://github.com/gridap/Gridap.jl/pull/1092).
+    - `MultiValue`s can now be indexed by tuples of mixed `Integer` and `CartesianIndex`
+    - Indexing in `MultiValue`s now performs bound checks, that can be disabled using `@inbounds` or Gridap's performance execution mode.
+    - Make sure that the result of all operation (empty/zero tensor) of correctly promoted (element) type when applied to tensor(s) of length zero
+    - An argument error is now thrown when calling `tr(::ThirdOrderTensorValue{A,B})` with `A!=B`
+
+>>>>>>> 7beb9099b16951f742206e863d52ffb92ed5e551
 ## [0.18.10] - 2025-03-04
 
 ### Added
