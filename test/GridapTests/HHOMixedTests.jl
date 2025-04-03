@@ -33,7 +33,7 @@ function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
 end
 
 ##############################################################
-uex(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
+u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
 f(x) = -Δ(u)(x)
 
 nc = (2,2)
@@ -55,113 +55,21 @@ dΓp = Measure(Γp,qdegree)
 ##########################
 # Mixed order variant
 ##########################
-reffe_V = ReferenceFE(lagrangian, Float64, order; space=:P)     # Bulk space
+reffe_V = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Bulk space
 reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)     # Skeleton space
 reffe_L = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Reconstruction space
 V = FESpace(Ω, reffe_V; conformity=:L2)
 M = FESpace(Γ, reffe_M; conformity=:L2, dirichlet_tags="boundary")
 L = FESpace(Ω, reffe_L; conformity=:L2)
-N = TrialFESpace(M,uex)
+N = TrialFESpace(M,u)
 
 mfs = MultiField.BlockMultiFieldStyle(2,(1,1))
 X  = MultiFieldFESpace([V, N];style=mfs)
 Y  = MultiFieldFESpace([V, M];style=mfs)
 Xp = FESpaces.PatchFESpace(X,ptopo)
 
-R  = reconstruction_operator(ptopo,L,Y,Ωp,Γp,dΩp,dΓp)
 PΓ = projection_operator(M, Γp, dΓp)
-PΩ = projection_operator(V, Ωp, dΩp)
-
-u = get_trial_fe_basis(X);
-v = get_fe_basis(Y);
-
-# SΓa
-function SΓa(u)
-  u_Ω, u_Γ = u
-  return PΓ(u_Ω) - u_Γ
-end
-
-uT, uF = u;
-@enter PΓ(uT)
-Sa = SΓa(u)
-
-@enter Ru = R(u)
-
-Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
-mass(u,v,Ω,dΩ) = ∫(u⋅Π(v,Ω))dΩ
-V0 = FESpaces.FESpaceWithoutBCs(V)
-
-pu = get_trial_fe_basis(V0)
-pv = get_fe_basis(V)
-lhs = mass(pu, pv, Ωp, dΩp)
-RuΩ, RuΓ = Ru
-# rhs = mass(RuΩ, pv, Ωp, dΩp) + mass(RuΓ, pv, Ωp, dΩp)
-rhs = ∫( (RuΩ+RuΓ) * pv)dΩp 
-
-_RuΩ = FESpaces.SingleFieldFEBasis(lazy_map(transpose,RuΩ.cell_field.args[1].args[1]),Ωp,FESpaces.TrialBasis(),ReferenceDomain())
-_RuΓ = FESpaces.SingleFieldFEBasis(lazy_map(transpose,RuΓ.cell_field.args[1].args[1]),Ωp,FESpaces.TrialBasis(),ReferenceDomain())
-
-rhs_Ω = ∫(_RuΩ* pv)dΩp
-rhs_Γ = ∫(_RuΓ* pv)dΩp
-get_array(rhs_Γ)[1]
-
-mean_Γ = get_array(∫(_RuΓ)dΩp)
-
-lhs_assem = FESpaces.PatchAssembler(ptopo,V0,V0)
-lhs_mats  = FESpaces.assemble_matrix(
-  lhs_assem,FESpaces.collect_patch_cell_matrix(lhs_assem,V0,V0,lhs)
-)
-
-rhs_assem_Ω = FESpaces.PatchAssembler(ptopo,V,V0)
-rhs_mats_Ω  = FESpaces.assemble_matrix(
-  rhs_assem_Ω,FESpaces.collect_patch_cell_matrix(rhs_assem_Ω,V,V0,rhs_Ω)
-)
-
-M0 = FESpaces.FESpaceWithoutBCs(M)
-M0p = FESpaces.PatchFESpace(M0,ptopo)
-rhs_assem_Γ = FESpaces.PatchAssembler(ptopo,M0p,V0)
-rhs_mats_Γ = FESpaces.assemble_matrix(
-  rhs_assem_Γ,FESpaces.collect_patch_cell_matrix(rhs_assem_Γ,M0p,V0,rhs_Γ)
-)
-
-mass_Ω(u,v) = mass(u,v,Ωp,dΩp)
-PΩRΩ = FESpaces.LocalOperator(FESpaces.LocalSolveMap(), ptopo, V0, V, mass_Ω, mass_Ω)
-PΩRΓ = FESpaces.LocalOperator(FESpaces.LocalSolveMap(), ptopo, V0, M0p, mass_Ω, mass_Ω)
-
-PΩRuΩ = PΩRΩ(_RuΩ)
-PΩRuΓ = PΩRΓ(_RuΓ)
-
-wΩ = FESpaces.SingleFieldFEBasis(CellData.get_data(_RuΩ - PRuΩ),Ωp,FESpaces.TrialBasis(),ReferenceDomain())
-wΓ = FESpaces.SingleFieldFEBasis(CellData.get_data(_RuΓ - PRuΓ),Ωp,FESpaces.TrialBasis(),ReferenceDomain())
-
-PΓwΩ = PΓ(wΩ)
-PΓwΓ = PΓ(wΓ)
-
-_PΓwΩ = FESpaces.SingleFieldFEBasis(CellData.get_data(PΓwΩ),Γp,FESpaces.TrialBasis(),ReferenceDomain())
-_PΓwΓ = FESpaces.SingleFieldFEBasis(CellData.get_data(PΓwΓ),Γp,FESpaces.TrialBasis(),ReferenceDomain())
-
-mf_PΓwΩ = MultiField.MultiFieldFEBasisComponent(_PΓwΩ,1,2)
-mf_PΓwΓ = MultiField.MultiFieldFEBasisComponent(_PΓwΓ,2,2)
-
-
-uΩ, uΓ = u;
-PΓuΩ = PΓ(uΩ)  
-∫(PΓuΩ + mf_PΓwΩ + mf_PΓwΓ)dΓp
-
-
-# P = FESpaces.LocalOperator(
-#   FESpaces.LocalSolveMap(), V0, mass, mass; trian_out = Ω
-# )
-
-
-
-
-
-
-
-
-
-
+R  = reconstruction_operator(ptopo,L,Y,Ωp,Γp,dΩp,dΓp)
 
 global_assem = SparseMatrixAssembler(X,Y)
 patch_assem = FESpaces.PatchAssembler(ptopo,X,Y)
@@ -182,10 +90,6 @@ function s(u,v)
 end
 
 l((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
-
-S = ∫(hTinv*SΓa(u))*dΓp
-
-data2 = FESpaces.collect_cell_matrix_and_vector(Xp,Xp,a(u,v),DomainContribution(),zero(Xp))
 
 function weakform()
   u, v = get_trial_fe_basis(X), get_fe_basis(Y)

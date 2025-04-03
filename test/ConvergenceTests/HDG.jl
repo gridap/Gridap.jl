@@ -59,7 +59,6 @@ module HDGConvgTests
   end
 
   function convg_test(domain,ncs,order,u,f)
-    
     el2 = Float64[]
     hs = Float64[]
     for nc in ncs
@@ -80,7 +79,6 @@ module HDGConvgTests
     linreg = hcat(fill!(similar(x), 1), x) \ y
     linreg[2]
   end
-
 
   u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
   q(x) = -∇(u)(x)

@@ -30,6 +30,15 @@ using Test
 
 @time @testset "PoissonLagrangeMultiplier" begin include("PoissonLagrangeMultiplierTests.jl") end
 
+@testset "Hybrid Methods" begin
+  @time @testset "Poisson - HDG" begin include("HDGTests.jl") end
+  @time @testset "Poisson - HHO" begin include("HHOTests.jl") end
+  @time @testset "Poisson - HHO (mixed order)" begin include("HHOMixedTests.jl") end
+  @time @testset "Poisson - HDG polytopal" begin include("HDGPolytopalTests.jl") end
+  @time @testset "Poisson - HHO polytopal" begin include("HHOPolytopalTests.jl") end
+  @time @testset "Poisson - HHO polytopal (mixed order)" begin include("HHOMixedPolytopalTests.jl") end
+end
+
 @time @testset "EmptyDomains" begin include("EmptyDomainsTests.jl") end
 
 @time @testset "Issue614" begin include("issue_614.jl") end
