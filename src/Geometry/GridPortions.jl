@@ -38,6 +38,8 @@ end
   GridPortion(grid,args...;kwargs...)
 end
 
+@inline GridPortion(parent::Grid,::IdentityVector) = parent
+
 function GridPortion(parent::Grid,parent_cell_to_mask::AbstractArray{Bool})
   cell_to_parent_cell = findall(collect1d(parent_cell_to_mask))
   GridPortion(parent,cell_to_parent_cell)
