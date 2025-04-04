@@ -47,7 +47,7 @@ grid  = get_grid(trian)
 
 sum(∫(1)dΩ)
 
-V = FESpaces.PolytopalFESpace(Ω,Float64,order,space=:P)
+V = FESpaces.PolytopalFESpace(Ω,Float64,order;space=:P,hierarchical=true,orthonormal=true)
 
 # L2 projection
 mass_lhs(u,v) = ∫(u⋅v)dΩ

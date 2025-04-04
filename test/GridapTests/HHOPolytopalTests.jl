@@ -177,7 +177,7 @@ h = maximum( map(x -> FESpaces.get_facet_diameter(x,D), polys) )
 # ek = uk - uex
 
 Ruh = potential_reconstruction(X, L, R, uΩ, uΓ)
-eRu = Ruh - uex
+ek  = Ruh - uex
 l2u = sqrt(sum( ∫(ek * ek)dΩp))
 h1u = l2u + sqrt(sum( ∫(∇(ek) ⋅ ∇(ek))dΩp))
 

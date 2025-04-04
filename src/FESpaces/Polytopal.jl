@@ -37,11 +37,15 @@ end
 
 function PolytopalFESpace(
   model::DiscreteModel,::Type{T},order::Integer;
-  space=:P,vector_type=nothing,
+  space=:P,vector_type=nothing,hierarchical=false,
   kwargs...
 ) where {T}
   D = num_cell_dims(model)
   prebasis = Polynomials.MonomialBasis{D}(T, order, _filter_from_space(space))
+  if hierarchical
+    lt(t1,t2) = (maximum(Tuple(t1)) < maximum(Tuple(t2))) || isless(t1,t2)
+    sort!(prebasis.terms;lt)
+  end
   cell_prebasis = Fill(prebasis, num_cells(model))
   vtype = ifelse(!isnothing(vector_type),vector_type,Vector{_dof_type(T)})
   PolytopalFESpace(vtype,model,cell_prebasis;kwargs...)
@@ -53,11 +57,13 @@ function PolytopalFESpace(
   cell_prebasis::AbstractArray; 
   trian = Triangulation(model),
   labels = get_face_labeling(model),
-  dirichlet_tags=Int[],
-  dirichlet_masks=nothing
+  dirichlet_tags = Int[],
+  dirichlet_masks = nothing,
+  orthonormal = false,
 )
   Dc = num_cell_dims(model)
 
+  order = maximum(Polynomials.get_order,cell_prebasis)
   cell_polytopes = Geometry.get_cell_polytopes(model)
   if eltype(cell_polytopes) <: ReferenceFEs.GeneralPolytope
     cell_change = lazy_map(centroid_map, cell_polytopes)
@@ -67,9 +73,11 @@ function PolytopalFESpace(
     cell_shapefuns = cell_prebasis
     domain_style = ReferenceDomain()
   end
+  if orthonormal
+    cell_shapefuns = orthogonalise_basis(cell_shapefuns, trian, order)
+  end
   fe_basis = SingleFieldFEBasis(cell_shapefuns, trian, TestBasis(), domain_style)
   
-  order = maximum(Polynomials.get_order,cell_prebasis)
   ncomps = num_components(return_type(first(cell_prebasis)))
   if !isnothing(dirichlet_masks)
     @check length(dirichlet_masks) == ncomps
@@ -208,6 +216,52 @@ function centroid_map(::Val{D},::Val{Dp},vertices) where {D,Dp}
   G = TensorValues.diagonal_tensor(VectorValue(ntuple(i -> 1.0/h[i], Val(D))))
   O = -xc⋅G
   return affine_map(K⋅G,O)
+end
+
+# Orthogonalisation
+
+function orthogonalise_basis(cell_basis,trian,order)
+  cell_quads = Quadrature(trian,2*order)
+  cell_integ = lazy_map(Broadcasting(Operation(⋅)),cell_basis,lazy_map(transpose,cell_basis))
+  cell_vals  = lazy_map(evaluate,cell_integ,lazy_map(get_coordinates,cell_quads))
+  cell_mass  = lazy_map(IntegrationMap(),cell_vals,lazy_map(get_weights,cell_quads))
+  cell_coeffs = lazy_map(OrthogonaliseBasisMap(),cell_mass)
+  return lazy_map(linear_combination,cell_coeffs,cell_basis)
+end
+
+struct OrthogonaliseBasisMap <: Map end
+
+function Arrays.return_cache(::OrthogonaliseBasisMap,M::Matrix)
+  return CachedArray(similar(M))
+end
+
+function Arrays.evaluate!(cache,::OrthogonaliseBasisMap,M::Matrix)
+  setsize!(cache,size(M))
+  N = cache.array
+  gram_shmidt!(N,M)
+  return N
+end
+
+function gram_shmidt!(N,M)
+  n = size(M,1)
+  fill!(N,0.0)
+  for i in 1:n
+    N[i,i] = 1.0
+  end
+
+  Nk = eachcol(N)
+  for i in 1:n
+    Ni = Nk[i]
+    for j in 1:i-1
+      Nj = Nk[j]
+      rij = dot(Ni, M, Nj)
+      Ni .-= rij .* Nj
+    end
+    rii = sqrt(dot(Ni, M , Ni))
+    Ni ./= rii
+  end
+
+  return N
 end
 
 # struct CentroidCoordinateChangeMap <: Map end
