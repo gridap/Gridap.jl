@@ -250,3 +250,47 @@ function Base.show(io::IO, ::MIME"text/plain", combi::Combination{D}) where D
     print(io,"Combination{$D}($(join(combi.data,",")))")
   end
 end
+
+"""
+supp(α)
+
+TBW
+"""
+function supp(α)
+  s = Int[]
+  for (i,αi) in enumerate(α)
+    if αi > 0
+      push!(s, i)
+    end
+  end
+  Tuple(s)
+end
+
+function minor(M,I,J)
+  @check length(I) == length(J)
+  @check I ⊆ axes(M)[1]
+  @check J ⊆ axes(M)[2]
+
+  k = length(I)
+  T = eltype(M)
+  m = MMatrix{k,k,T}(undef)
+  for (i, Ii) in enumerate(I)
+    for (j, Jj) in enumerate(J)
+      @inbounds m[i,j] = M[Ii,Jj]
+    end
+  end
+  det(m)
+end
+
+function all_k_minors!(m,M,::Val{k}) where {k}
+  D = size(M)[1]
+  Λᵏᴰ = sorted_combinations(Val(D),Val(k))
+  @inbounds begin
+    for (i, I) in enumerate(Λᵏᴰ)
+      for (j, J) in enumerate(Λᵏᴰ)
+        m[i,j] = @inline minor(M,I,J)
+      end
+    end
+  end
+end
+
