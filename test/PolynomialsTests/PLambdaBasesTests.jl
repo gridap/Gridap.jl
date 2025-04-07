@@ -266,17 +266,17 @@ bx  = evaluate(b,x)
 Gbx = evaluate(Broadcasting(∇)(b),x)
 Hbx = evaluate(Broadcasting(∇∇)(b),x)
 
-k = 2
-b = PLambdaBasis(Val(D),T,r,k)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
-
-
-b = PLambdaBasis(Val(D),T,r,k,vertices)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
+#k = 2
+#b = PLambdaBasis(Val(D),T,r,k)
+#bx  = evaluate(b,x)
+#Gbx = evaluate(Broadcasting(∇)(b),x)
+#Hbx = evaluate(Broadcasting(∇∇)(b),x)
+#
+#
+#b = PLambdaBasis(Val(D),T,r,k,vertices)
+#bx  = evaluate(b,x)
+#Gbx = evaluate(Broadcasting(∇)(b),x)
+#Hbx = evaluate(Broadcasting(∇∇)(b),x)
 
 k = 3
 
