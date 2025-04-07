@@ -10,11 +10,11 @@ simplices, P`r`Λ`ᴷ`(△`ᴰ`).
 
 Reference: D. N. Arnold and A. Logg, Periodic Table of the Finite Elements, SIAM News, vol. 47 no. 9, November 2014
 """
-struct PLambdaBasis{D,T,C,L,B} <: PolynomialBasis{D,VectorValue{L,T},Bernstein}
+struct PLambdaBasis{D,T,C,L,B,LC} <: PolynomialBasis{D,VectorValue{L,T},Bernstein}
   r::Int
   k::Int
   scalar_bernstein_basis::B
-  Ψ::SMatrix{L,C,T}
+  Ψ::SMatrix{L,C,T,LC}
 
   function PLambdaBasis{D}(::Type{T}, r, k, vertices=nothing) where {D,T}
     @check T<:Real "T needs to be <:Real since represents the scalar type"
@@ -27,13 +27,14 @@ struct PLambdaBasis{D,T,C,L,B} <: PolynomialBasis{D,VectorValue{L,T},Bernstein}
 
     L = binomial(D,k) # Number of components of a basis form
     C = binomial(r+k,k)*binomial(D+r,D-k) # Number of basis polynomials
+    LC = L*C
 
     b = BernsteinBasisOnSimplex{D}(T, r, vertices)
     B = typeof(b)
-    Ψ = MMatrix{L,C,T}(undef)
+    Ψ = MMatrix{L,C,T,LC}(undef)
     _compute_PΛ_basis_form_coefficient!(Ψ,r,k,D,b,vertices)
 
-    new{D,T,C,L,B}(r,k,b,Ψ)
+    new{D,T,C,L,B,LC}(r,k,b,Ψ)
   end
 end
 
@@ -202,22 +203,25 @@ function _setsize!(b::PLambdaBasis{D}, np, ω, t...) where D
   end
 end
 
+function _get_static_parameters(b::PLambdaBasis)
+  r = get_FEEC_poly_degree(b)
+  k = get_FEEC_form_degree(b)
+  return (Val(r), Val(k))
+end
+
 function _evaluate_nd!(
   b::PLambdaBasis{D,T}, x,
   ω::AbstractMatrix{V}, i,
-  c::AbstractVector{T}) where {D,V,T}
+  c::AbstractVector{T},
+  ::Tuple{Val{r},Val{k}}) where {D,V,T,r,k}
 
-  r = get_FEEC_poly_degree(b)
-  k = get_FEEC_form_degree(b)
   λ = _cart_to_bary(x, get_cart_to_bary_matrix(b))
 
   # _evaluate_nd!(::BernsteinBasisOnSimplex) without set_value
   c[1] = one(T)
   _downwards_de_Casteljau_nD!(c,λ,Val(r),Val(D))
 
-  # TODO optimize, this is type unstable, return vectors instead of tuples in PΛ ? (and use @inbounds?)
-  # pass Val(r), Val(k) ?
-  for (_, _, dF_bubbles) in PΛ_bubble_indices(r,k,D)
+  for (_, _, dF_bubbles) in PΛ_bubble_indices(Val(r),Val(k),Val(D))
     for (w, α, _) in dF_bubbles
       id_α = _simplex_multi_id_to_linear_id(α) # TODO optimize this
       #println("α $α, r $r, k $k, D $D, id_α $id_α, c $c")
