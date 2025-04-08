@@ -100,13 +100,14 @@ function _compute_PΛ_basis_form_coefficient!(Ψ,Vr,Vk,VD::Val{D},b,vertices) wh
         update_φ_αF!(φ_αF,b,α,F,Vr)
         α_prec = α
       end
+
       if _DG_calculus_style(V) # false ATM
         for (I_id,I) in enumerate(sorted_combinations(VD,Vk))
-          Ψw[I_id] = @inline minor(φ_αF,I,J)
+          Ψw[I_id] = minor(φ_αF,I,J,Vk)
         end
       else
         for (sgnIcomp, Istar_id, I) in hodged_basis_forms(VD,Vk)
-          Ψw[Istar_id] = sgnIcomp * @inline minor(φ_αF,I,J)
+          Ψw[Istar_id] = sgnIcomp * minor(φ_αF,I,J,Vk)
         end
       end
       Ψ[w] = Ψw
@@ -133,11 +134,11 @@ function _compute_PΛ_basis_form_coefficient!(
     for (w, α, _, J) in dF_bubbles
       if _DG_calculus_style(V) # false ATM
         for (I_id,I) in enumerate(sorted_combinations(VD,Vk))
-          Ψw[I_id] = _hat_Ψ(Vr,α,F,I,J,T)
+          Ψw[I_id] = _hat_Ψ(Vr,Vk,α,F,I,J,T)
         end
       else
         for (sgnIcomp, Istar_id, I) in hodged_basis_forms(VD,Vk)
-          Ψw[Istar_id] = sgnIcomp * _hat_Ψ(Vr,α,F,I,J,T)
+          Ψw[Istar_id] = sgnIcomp * _hat_Ψ(Vr,Vk,α,F,I,J,T)
         end
       end
       Ψ[w] = Ψw
@@ -146,35 +147,39 @@ function _compute_PΛ_basis_form_coefficient!(
 end
 
 """
-    _hat_Ψ(::Val{r},α,F,I,J,T)::T
+    _hat_Ψ(::Val{r},::Val{k},α,F,I,J,T)::T
 
 PLambdaBasis.Ψ matrix elements in the reference simplex, T is the scalar return type
-"""
-function _hat_Ψ(Vr,α,F,I,J,::Type{T})::T where T
-  @check Val(sum(α)) == Vr
-  @check length(I) == length(J) # thanks to dispatch on zero length J below
 
-  iszero(length(J)) && return one(T) # 0 forms
-  Vk = Val(length(J))
+This is actually not faster than computing the matrices and the minors
+explicitely like when vertices are given, but lets keep it here in case we want
+to compute these at compile time one day.
+"""
+function _hat_Ψ(Vr::Val{r},Vk::Val{k},α,F,I,J,::Type{T})::T where {T,r,k}
+  @check sum(α) == r
+  @check length(I) == length(J) == k
+
+  iszero(k) && return one(T) # 0 forms
 
   @inbounds begin
 
     s = Int(isone(J[1]))
-    n = count(i-> (J[i]-1)∉I, (s+1):length(J))
+    n = count(i-> (J[i]-1)∉I, (1+s):k)
 
     n > 1 && return 0. # rank M_IJ inferior to 2
 
-    p = _find_first_val_or_zero(j-> (I[j]+1)∉J, 1, length(J))
+    p = _find_first_val_or_zero(j-> (I[j]+1)∉J, 1, k)
 
     if isone(n)        # rank M_IJ is 1
-      m = _find_first_val_or_zero(i-> (J[i]-1)∉I, (s+1), length(J))
-      u_m, v_p = _u(m,F,I), _v(p,α,J,Vr)
-      iszero(s) && return (-1)^(m+p)*u_m*v_p
+      m = _find_first_val_or_zero(i-> (J[i]-1)∉I, (s+1), k)
+      u_p, v_m = _u(p,F,I), _v(m,α,J,Vr)
+      sgn = isodd(m+p) ? -1 : 1
+      iszero(s) && return sgn*u_p*v_m
 
-      q = _find_first_val_or_zero(j-> (I[j]+s)∉J, (p+1), length(J))
-      @check !iszero(q)
-      v_q = _v(q,α,J,Vr)
-      return (-1)^(m+p+q) * u_m * (v_q - v_p)
+      q = _find_first_val_or_zero(j-> (I[j]+s)∉J, (p+1), k)
+      u_q = _u(q,F,I)
+      sgn *= isodd(q) ? -1 : 1
+      return sgn * v_m * (u_q - u_p)
     end
 
     u, v = _u(F,I,Vk), _v(α,J,Vr,Vk)
@@ -188,12 +193,13 @@ function _hat_Ψ(Vr,α,F,I,J,::Type{T})::T where T
         sum_v += vlp
         Ψ_IJ += vlp*u[l]
       end
-      for l in (p+1):length(J)
+      for l in (p+1):k
         vl = v[l]
         sum_v += vl
         Ψ_IJ += vl*u[l]
       end
-      return (-1)^p * (Ψ_IJ - u[p]*sum_v)
+      sgn = isodd(p) ? -1 : 1
+      return sgn * (Ψ_IJ - u[p]*sum_v)
     end
 
   end
