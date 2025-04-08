@@ -131,7 +131,8 @@ function get_pface_to_lpface(ptopo::PatchTopology,Df)
 end
 
 function get_patch_to_tfaces(ptopo::PatchTopology,d::Integer,::IdentityVector)
-  return get_patch_faces(ptopo,d)
+  patch_to_faces = get_patch_faces(ptopo,d)
+  Table(IdentityVector(num_faces(ptopo,d)),patch_to_faces.ptrs)
 end
 
 function get_patch_to_tfaces(ptopo::PatchTopology,d::Integer,tface_to_pface)
