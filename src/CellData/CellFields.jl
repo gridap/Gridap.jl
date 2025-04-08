@@ -278,7 +278,8 @@ function _point_to_cell!(cache, x::Point)
   searchmethod, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache = cache
 
   # Loop over the first m.num_nearest_vertex
-  for (id,dist) in zip(knn(kdtree, SVector(Tuple(x)), searchmethod.num_nearest_vertices, true)...)
+  x_val = ForwardDiff.value.(x.data)
+  for (id,dist) in zip(knn(kdtree, SVector(Tuple(x_val)), searchmethod.num_nearest_vertices, true)...)
 
     # Find all neighbouring cells
     cells = getindex!(table_cache,vertex_to_cells,id)
@@ -830,7 +831,7 @@ return_cache(f::CellField,x::Point) = return_cache(Interpolable(f),x)
 function return_cache(a::Interpolable,x::Point)
   f = a.uh
   trian = get_triangulation(f)
-  cache1 = _point_to_cell_cache(a.searchmethod,trian)
+  cache1 = _point_to_cell_cache(a.searchmethod,trian,x)
 
   cell_f = get_array(f)
   cell_f_cache = array_cache(cell_f)
@@ -841,11 +842,11 @@ function return_cache(a::Interpolable,x::Point)
   return cache1,cache2
 end
 
-function _point_to_cell_cache(searchmethod::KDTreeSearch,trian::Triangulation)
+function _point_to_cell_cache(searchmethod::KDTreeSearch,trian::Triangulation,x)
   model = get_active_model(trian)
   topo = get_grid_topology(model)
   vertex_coordinates = Geometry.get_vertex_coordinates(topo)
-  kdtree = KDTree(map(nc -> SVector(Tuple(nc)), vertex_coordinates))
+  kdtree = KDTree(map(nc -> SVector(NTuple{length(nc),eltype(nc)}(nc)), vertex_coordinates))
   D = num_cell_dims(trian)
   vertex_to_cells = get_faces(topo, 0, D)
   cell_to_ctype = get_cell_type(trian)
