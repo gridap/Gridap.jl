@@ -266,12 +266,11 @@ function supp(α)
   Tuple(s)
 end
 
-function minor(M,I,J)
+function minor(M,I,J,::Val{k}) where k
   @check length(I) == length(J)
   @check I ⊆ axes(M)[1]
   @check J ⊆ axes(M)[2]
 
-  k = length(I)
   T = eltype(M)
   m = MMatrix{k,k,T}(undef)
   for (i, Ii) in enumerate(I)
@@ -282,13 +281,13 @@ function minor(M,I,J)
   det(m)
 end
 
-function all_k_minors!(m,M,::Val{k}) where {k}
+function all_k_minors!(m,M,Vk::Val) 
   D = size(M)[1]
-  Λᵏᴰ = sorted_combinations(Val(D),Val(k))
+  Λᵏᴰ = sorted_combinations(Val(D),Vk)
   @inbounds begin
     for (i, I) in enumerate(Λᵏᴰ)
       for (j, J) in enumerate(Λᵏᴰ)
-        m[i,j] = @inline minor(M,I,J)
+        m[i,j] = @inline minor(M,I,J,Vk)
       end
     end
   end

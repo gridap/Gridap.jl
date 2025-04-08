@@ -412,8 +412,8 @@ to compute the determinant of the matrix
 ```
 Let us define:
 - ``s=δ_1^{J_1}``, that indicates if ``\hat{M}_{IJ}`` contains a column of ``-1``,
-- ``p = \text{min } \{j\,|\, I_j+s \notin J\}`` where ``\text{min}\,\emptyset=0``, the index of the first row of ``\hat{M}_{IJ}`` containing no ``1``. ``p=0`` if and only if ``\hat{M}_{IJ}`` is the identity matrix,
-- ``n =\# \{\ i\ |\ J_i-s\notin I\}``, the number of columns of zeros of ``\hat{M}_{IJ}``.
+- ``p = \text{min } \{j\,|\, I_j+1 \notin J\}`` where ``\text{min}\,\emptyset=0``, the index of the first row of ``\hat{M}_{IJ}`` containing no ``1``. ``p=0`` if and only if ``\hat{M}_{IJ}`` is the identity matrix,
+- ``n =\# \{\ i\ |\ i>s,\, J_i-1\notin I\}``, the number of columns of zeros of ``\hat{M}_{IJ}``.
 
 Then it can be shown that ``k-n`` is the rank of ``\hat{M}_{IJ}``, and that
 ```math
@@ -446,8 +446,8 @@ The determinant ``\mathrm{det}(\hat{M}_{IJ})=\hat{m}_I^{J}`` was computed
 above, but ``\mathrm{adj}(\hat{M}_{IJ})``, the transpose of the cofactor matrix
 of ``\hat{M}_{IJ}``, is also needed. Let ``s=δ_1^{J_1}``, ``n`` and ``p`` be
 defined as above, and additionally define
-- ``q = \text{min } \{j\,|\,j>p,\ I_j+s \notin J\}``, the index of the second row of ``\hat{M}_{IJ}`` containing no ``1`` (``q=0`` if there isn't any),
-- ``m = \text{min } \{i\,|\,i>s,\ J_i-s \notin I\}``, the index of the first column of ``\hat{M}_{IJ}`` containing only zeros (``m=0`` if there isn't any).
+- ``q = \text{min } \{j\,|\,j>p,\ I_j+1 \notin J\}``, the index of the second row of ``\hat{M}_{IJ}`` containing no ``1`` (``q=0`` if there isn't any),
+- ``m = \text{min } \{i\,|\,i>s,\ J_i-1 \notin I\}``, the index of the first column of ``\hat{M}_{IJ}`` containing only zeros (``m=0`` if there isn't any).
 
 Then the following table gives the required information to apply the matrix
 determinant lemma and formulas for ``\hat{ψ}_I^{α,J}``
@@ -459,11 +459,11 @@ s  & n & \mathrm{rank}\hat{M}_{IJ} & \mathrm{adj}\hat{M}_{IJ} & \hat{ψ}_I^{α,J
 \hline
 0   & 0 & k   & δ_{ij}                         & 1 + u \cdot v\\
 \hline
-0   & 1 & k-1 & (-1)^{m+p}δ_i^m δ^p_j          & (-1)^{m+p}u^m v^p \\
+0   & 1 & k-1 & (-1)^{m+p}δ_i^m δ^p_j          & (-1)^{m+p}v^m u^p \\
 \hline
 1   & 0 & k   & (-1)^p(δ_{J(i),\,I(j)+1}-δ_{p,J(j)})& (-1)^p(1-u^p|v|+\underset{1≤ l<p}{\sum}v^{l+1}u^l + \underset{p<l≤ k}{\sum}v^{l}u^l) \\
 \hline\hspace{1mm}
-1   & 1 & k-1 & (-1)^{m+p+q}δ_i^m(δ^q_j-δ^p_j) & (-1)^{m+p+q}u^m(v^q-v^p) \\
+1   & 1 & k-1 & (-1)^{m+p+q}δ_i^m(δ^q_j-δ^p_j) & (-1)^{m+p+q}v^m(u^q-u^p) \\
 \hline
 0/1 & \geq 2 & ≤ k-2 & 0 & 0 \\
 \hline
