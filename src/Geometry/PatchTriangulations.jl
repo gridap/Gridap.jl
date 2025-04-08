@@ -22,14 +22,23 @@ function PatchTopology(topo::GridTopology{Dc},patch_cells::Table) where Dc
   PatchTopology(topo,d_to_patch_to_dpfaces)
 end
 
-function PatchTopology(topo::GridTopology{Dc},Df=Dc) where Dc
+function PatchTopology(
+  ::Type{ReferenceFE{Df}},model::DiscreteModel;
+  labels = get_face_labeling(model), tags = nothing
+) where Df
+  Dc = num_cell_dims(model)
+  topo = get_grid_topology(model)
   patch_cells = get_faces(topo,Df,Dc)
+  if !isnothing(tags)
+    patches = findall(get_face_mask(labels,tags,Df))
+    patch_cells = patch_cells[patches]
+  end
   PatchTopology(topo,patch_cells)
 end
 
-function PatchTopology(model::DiscreteModel,args...)
-  topo = get_grid_topology(model)
-  PatchTopology(topo,args...)
+function PatchTopology(model::DiscreteModel;kwargs...)
+  D = num_cell_dims(model)
+  PatchTopology(ReferenceFE{D},model;kwargs...)
 end
 
 function num_patches(ptopo::PatchTopology)
@@ -113,15 +122,61 @@ end
 
 function get_pface_to_patch(ptopo::PatchTopology,Df)
   patch_faces = get_patch_faces(ptopo,Df)
-  return Arrays.block_identity_array(patch_faces.ptrs)
+  return Arrays.block_identity_array(patch_faces.ptrs;T=Int32)
 end
 
 function get_pface_to_lpface(ptopo::PatchTopology,Df)
   patch_faces = get_patch_faces(ptopo,Df)
-  return Arrays.local_identity_array(patch_faces.ptrs)
+  return Arrays.local_identity_array(patch_faces.ptrs;T=Int32)
+end
+
+function get_patch_to_tfaces(ptopo::PatchTopology,d::Integer,::IdentityVector)
+  return get_patch_faces(ptopo,d)
+end
+
+function get_patch_to_tfaces(ptopo::PatchTopology,d::Integer,tface_to_pface)
+  pface_to_tface = find_inverse_index_map(tface_to_pface,num_faces(ptopo,d))
+  patch_to_faces = get_patch_faces(ptopo,d)
+
+  n_tfaces = length(tface_to_pface)
+  n_patches = num_patches(ptopo)
+  data = zeros(Int32, n_tfaces)
+  ptrs = zeros(Int32, n_patches+1)
+
+  k = 0
+  for patch in 1:n_patches
+    pfaces = patch_to_faces.ptrs[patch]:patch_to_faces.ptrs[patch+1]-1
+    for pface in pfaces
+      tface = pface_to_tface[pface]
+      if tface > 0
+        data[k+1] = tface
+        ptrs[patch+1] += 1
+        k += 1
+      end
+    end
+  end
+  Arrays.length_to_ptrs!(ptrs)
+
+  return Table(data,ptrs)
 end
 
 # PatchTriangulation
+
+struct PatchGlue{Dc,A}
+  tface_to_pface  :: A
+  tface_to_patch  :: Vector{Int32}
+  patch_to_tfaces :: Table{Int32,Vector{Int32},Vector{Int32}}
+  function PatchGlue{Dc}(
+    ptopo::PatchTopology,tface_to_pface
+  ) where Dc
+    pface_to_patch = get_pface_to_patch(ptopo,Dc)
+    tface_to_patch = pface_to_patch[tface_to_pface]
+    patch_to_tfaces = get_patch_to_tfaces(ptopo,Dc,tface_to_pface)
+
+    A = typeof(tface_to_pface)
+    new{Dc,A}(tface_to_pface,tface_to_patch,patch_to_tfaces)
+  end
+end
 
 """
     struct PatchTriangulation{Dc,Dp} <: Triangulation{Dc,Dp}
@@ -133,14 +188,15 @@ Wrapper around a Triangulation, for patch-based assembly.
 struct PatchTriangulation{Dc,Dp,A,B,C} <: Triangulation{Dc,Dp}
   trian :: A
   ptopo :: B
-  tface_to_pface :: C
+  glue  :: C
   function PatchTriangulation(
     trian::Triangulation{Dc,Dp},
     ptopo::PatchTopology,
     tface_to_pface::AbstractVector{<:Integer}
   ) where {Dc,Dp}
-    A, B, C = typeof(trian), typeof(ptopo), typeof(tface_to_pface)
-    new{Dc,Dp,A,B,C}(trian,ptopo,tface_to_pface)
+    glue = PatchGlue{Dc}(ptopo,tface_to_pface)
+    A, B, C = typeof(trian), typeof(ptopo), typeof(glue)
+    new{Dc,Dp,A,B,C}(trian,ptopo,glue)
   end
 end
 
@@ -153,19 +209,30 @@ get_facet_normal(trian::PatchTriangulation) = get_facet_normal(trian.trian)
 
 # Constructors
 
-function PatchTriangulation(model::DiscreteModel,ptopo::PatchTopology)
+function PatchTriangulation(model::DiscreteModel,ptopo::PatchTopology;kwargs...)
   D = num_cell_dims(model)
-  PatchTriangulation(ReferenceFE{D},model,ptopo)
+  PatchTriangulation(ReferenceFE{D},model,ptopo;kwargs...)
 end
 
 function PatchTriangulation(
-  ::Type{ReferenceFE{D}},model::DiscreteModel,ptopo::PatchTopology
+  ::Type{ReferenceFE{D}},model::DiscreteModel,ptopo::PatchTopology;tags=nothing
 ) where D
   @check num_cell_dims(model) == num_cell_dims(ptopo)
   patch_faces = get_patch_faces(ptopo,D)
-  trian = Triangulation(ReferenceFE{D},model,patch_faces.data)
-  tcell_to_pcell = Base.OneTo(num_faces(ptopo,D))
-  return PatchTriangulation(trian,ptopo,tcell_to_pcell)
+  pface_to_face = patch_faces.data
+
+  if !isnothing(tags)
+    labels = get_face_labeling(model)
+    face_to_mask = get_face_mask(labels,tags,D)
+    pface_to_mask = lazy_map(Reindex(face_to_mask),pface_to_face)
+    tface_to_pface = findall(pface_to_mask)
+  else
+    tface_to_pface = IdentityVector(num_faces(ptopo,D))
+  end
+
+  tface_to_face = lazy_map(Reindex(pface_to_face),tface_to_pface)
+  trian = Triangulation(ReferenceFE{D},model,tface_to_face)
+  return PatchTriangulation(trian,ptopo,tface_to_pface)
 end
 
 function PatchBoundaryTriangulation(model::DiscreteModel{Dc},ptopo::PatchTopology{Dc};tags=nothing) where Dc

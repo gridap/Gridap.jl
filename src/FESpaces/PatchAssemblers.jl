@@ -115,16 +115,9 @@ function collect_cell_patch(ptopo::PatchTopology,a::DomainContribution)
   for strian in get_domains(a)
     @assert isa(strian,Geometry.PatchTriangulation)
     @assert strian.ptopo === ptopo
-    Df = num_cell_dims(strian)
-
-    patch_to_faces = get_patch_faces(ptopo,Df)
-    pface_to_tface = find_inverse_index_map(strian.tface_to_pface,num_faces(ptopo,Df))
-    patch_to_tfaces = Table(pface_to_tface,patch_to_faces.ptrs)
-    push!(p,patch_to_tfaces)
-
-    pface_to_patch = Geometry.get_pface_to_patch(ptopo,Df)
-    tface_to_patch = lazy_map(Reindex(pface_to_patch),strian.tface_to_pface)
-    push!(q,tface_to_patch)
+    glue = strian.glue
+    push!(p,glue.patch_to_tfaces)
+    push!(q,glue.tface_to_patch)
   end
   return p, q
 end
