@@ -278,7 +278,7 @@ function _point_to_cell!(cache, x::Point)
   searchmethod, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache = cache
 
   # Loop over the first m.num_nearest_vertex
-  x_val = ForwardDiff.value.(x.data)
+  x_val = ForwardDiff.value(x)
   for (id,dist) in zip(knn(kdtree, SVector(Tuple(x_val)), searchmethod.num_nearest_vertices, true)...)
 
     # Find all neighbouring cells
