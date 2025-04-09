@@ -348,7 +348,7 @@ function lazy_map(
 end
 
 function evaluate!(cache,::CoVariantPiolaMap,v::Number,Jt::Number)
-  (pinvJt(Jt))⋅ v# we multiply by the right side to compute the gradient correctly
+   v⋅ transpose(pinvJt(Jt))# we multiply by the right side to compute the gradient correctly
 end
 
 function evaluate!(cache,k::CoVariantPiolaMap,v::AbstractVector{<:Field},phi::Field)
