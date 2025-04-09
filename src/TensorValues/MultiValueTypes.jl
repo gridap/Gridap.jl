@@ -142,3 +142,9 @@ of Paraview. Else, if max(S)>3, they are labeled by integers starting from "1".
 function indep_components_names(::Type{MultiValue{S,T,N,L}}) where {S,T,N,L}
   return ["$i" for i in 1:L]
 end
+
+@inline function ForwardDiff.value(x::MultiValue{S,<:ForwardDiff.Dual}) where S
+  VT = change_eltype(x,ForwardDiff.valtype(eltype(x)))
+  data = map(ForwardDiff.value,x.data)
+  return VT(data)
+end
