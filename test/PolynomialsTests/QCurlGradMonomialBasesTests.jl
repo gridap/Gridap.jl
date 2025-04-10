@@ -18,6 +18,7 @@ b = QCurlGradMonomialBasis{D}(T,order)
 
 @test num_terms(b) == 4
 @test get_order(b) == 0
+@test return_type(b) == V
 
 xi = Point(2,3,5)
 np = 5

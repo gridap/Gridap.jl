@@ -20,6 +20,7 @@ b = QGradMonomialBasis{D}(T,order)
 @test num_terms(b) == 4
 @test b.order == 0
 @test get_order(b) == 0
+@test return_type(b) == V
 
 xi = Point(2,3,5)
 np = 5
@@ -94,6 +95,7 @@ b = Polynomials.NedelecPrebasisOnSimplex{D}(order)
 
 V = VectorValue{D, Float64}
 v = V[(1,0,0),(0,1,0),(0,0,1),(-3,2,0),(-5,0,2),(0,-5,3)]
+@test return_type(b) == V
 
 G = gradient_type(V,xi)
 g = G[

@@ -40,7 +40,7 @@ function QCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
 end
 
 # @santiagobadia: This is dirty, I would put here VectorValue{D,T}
-return_type(::QCurlGradMonomialBasis{D,T}) where {D,T} = T
+return_type(::QCurlGradMonomialBasis{D,T}) where {D,T} = VectorValue{D,T}
 
 function return_cache(f::QCurlGradMonomialBasis,x::AbstractVector{<:Point})
   return_cache(f.qgrad,x)
