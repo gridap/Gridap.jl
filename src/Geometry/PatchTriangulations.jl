@@ -2,14 +2,13 @@
 """
     struct PatchTopology{Dc,Dp} <: GridapType
       topo :: GridTopology{Dc,Dp}
-      d_to_patch_to_dpfaces :: Vector{Table{Int32,Vector{Int32},Vector{Int32}}}
-      d_to_dpface_to_dface :: Vector{Vector{Int32}}
+      d_to_patch_to_dfaces :: Vector{Table{Int32,Vector{Int32},Vector{Int32}}}
     end
 
 # Fields: 
 
 - `topo`: Underlying grid topology
-- `d_to_patch_to_dpfaces`: For each dimension `d`, a table mapping each patch to it's d-faces.
+- `d_to_patch_to_dfaces`: For each dimension `d`, a table mapping each patch to it's d-faces.
 """
 struct PatchTopology{Dc,Dp} <: GridapType
   topo :: GridTopology{Dc,Dp}
@@ -181,10 +180,17 @@ end
 
 """
     struct PatchTriangulation{Dc,Dp} <: Triangulation{Dc,Dp}
-      ...
+      trian :: Triangulation{Dc,Dp}
+      ptopo :: PatchTopology
+      glue  :: PatchGlue{Dc}
     end
 
 Wrapper around a Triangulation, for patch-based assembly.
+
+# Fields:
+- `trian`: Underlying triangulation. In general, this can be a non-injective triangulation.
+- `ptopo`: Patch topology, to which the triangulation faces can be mapped
+- `glue`: Patch glue, mapping triangulation faces to the patches
 """
 struct PatchTriangulation{Dc,Dp,A,B,C} <: Triangulation{Dc,Dp}
   trian :: A
@@ -210,6 +216,10 @@ get_facet_normal(trian::PatchTriangulation) = get_facet_normal(trian.trian)
 
 # Constructors
 
+"""
+    PatchTriangulation(model::DiscreteModel,ptopo::PatchTopology;tags=nothing)
+    PatchTriangulation(::Type{ReferenceFE{D}},model::DiscreteModel,ptopo::PatchTopology;tags=nothing)
+"""
 function PatchTriangulation(model::DiscreteModel,ptopo::PatchTopology;kwargs...)
   D = num_cell_dims(model)
   PatchTriangulation(ReferenceFE{D},model,ptopo;kwargs...)
@@ -236,6 +246,9 @@ function PatchTriangulation(
   return PatchTriangulation(trian,ptopo,tface_to_pface)
 end
 
+"""
+    PatchBoundaryTriangulation(model::DiscreteModel,ptopo::PatchTopology{Dc};tags=nothing)
+"""
 function PatchBoundaryTriangulation(model::DiscreteModel{Dc},ptopo::PatchTopology{Dc};tags=nothing) where Dc
   patch_faces = get_patch_faces(ptopo,Dc-1)
   pface_to_face = patch_faces.data

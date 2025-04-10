@@ -69,6 +69,49 @@ function _fill_ctype_to_lface_to_ftype!(
   end
 end
 
+function OverlappingFaceToCellGlue(
+  topo::GridTopology,
+  cell_grid::Grid,
+  face_grid::Grid,
+  face_to_bgface::AbstractVector,
+  face_to_lcell::AbstractVector
+)
+  Dc = num_cell_dims(cell_grid)
+  Df = num_cell_dims(face_grid)
+  bgface_to_cells = get_faces(topo,Df,Dc)
+  cell_to_bgfaces = get_faces(topo,Dc,Df)
+  cell_to_lface_to_pindex = Table(get_cell_permutations(topo,Df))
+
+  face_to_cells = lazy_map(Reindex(bgface_to_cells), face_to_bgface)
+  face_to_cell  = collect(Int32,lazy_map(getindex,face_to_cells,face_to_lcell))
+  face_to_lface = find_local_index(face_to_bgface,face_to_cell,cell_to_bgfaces)
+
+  f = (p) -> fill(Int8(UNSET), num_faces(p,Df))
+  ctype_to_lface_to_ftype = map(f, get_polytopes(cell_grid))
+  face_to_ftype = get_cell_type(face_grid)
+  cell_to_ctype = get_cell_type(cell_grid)
+
+  _fill_ctype_to_lface_to_ftype!(
+    ctype_to_lface_to_ftype,
+    face_to_cell,
+    face_to_lface,
+    face_to_ftype,
+    cell_to_ctype
+  )
+
+  FaceToCellGlue(
+    face_to_bgface,
+    face_to_cell,
+    face_to_lface,
+    face_to_lcell,
+    face_to_ftype,
+    cell_to_ctype,
+    nothing,
+    cell_to_lface_to_pindex,
+    ctype_to_lface_to_ftype
+  )
+end
+
 function get_children(n::TreeNode, a::FaceToCellGlue)
   (
     similar_tree_node(n,a.face_to_cell),

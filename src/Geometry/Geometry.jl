@@ -239,6 +239,4 @@ include("CompressedCellArrays.jl")
 
 include("PatchTriangulations.jl")
 
-include("HybridTriangulations.jl")
-
 end # module

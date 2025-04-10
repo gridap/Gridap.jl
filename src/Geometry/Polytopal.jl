@@ -361,7 +361,8 @@ end
     voronoi(model::DiscreteModel) -> PolytopalDiscreteModel
     voronoi(topo::GridTopology) -> PolytopalGridTopology
 
-Given a mesh, computes it's associated Voronoi mesh.
+Given a mesh, computes it's associated Voronoi mesh. 
+NOTE: Only working in 2D.
 """
 function voronoi(model::DiscreteModel)
   new_topo = voronoi(get_grid_topology(model))

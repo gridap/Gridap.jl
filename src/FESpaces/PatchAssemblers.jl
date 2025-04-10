@@ -4,7 +4,6 @@ using DataStructures: SortedSet
 using BlockArrays
 
 # PatchAssembler
-
 struct PatchAssemblyStrategy{A,B} <: AssemblyStrategy
   ptopo :: PatchTopology
   patch_rows :: A
