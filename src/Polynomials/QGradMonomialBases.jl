@@ -21,7 +21,7 @@ Base.size(a::QGradMonomialBasis) = (_ndofs_qgrad(a),)
 # @santiagobadia : Not sure we want to create the monomial machinery
 Base.getindex(a::QGradMonomialBasis,i::Integer) = Monomial()
 Base.IndexStyle(::QGradMonomialBasis) = IndexLinear()
-return_type(::QGradMonomialBasis{D,T}) where {D,T} = T
+return_type(::QGradMonomialBasis{D,T}) where {D,T} = VectorValue{D,T}
 
 """
     QGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
@@ -256,7 +256,7 @@ end
 Base.getindex(a::NedelecPrebasisOnSimplex,i::Integer) = Monomial()
 Base.IndexStyle(::Type{<:NedelecPrebasisOnSimplex}) = IndexLinear()
 
-return_type(::NedelecPrebasisOnSimplex)  = Float64
+return_type(::NedelecPrebasisOnSimplex{D}) where {D} = VectorValue{D,Float64}
 num_terms(a::NedelecPrebasisOnSimplex) = length(a)
 get_order(f::NedelecPrebasisOnSimplex) = f.order
 
