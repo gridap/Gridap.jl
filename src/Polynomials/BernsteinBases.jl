@@ -610,7 +610,6 @@ function bernstein_term_id(α, ::Val{D})::Int where D
   i = sum(_L_slices_size(L, D, _L_slice(L,α,Val(D))) for L in 1:D; init=0) + 1
   return i
 end
-_simplex_multi_id_to_linear_id(α::NTuple{1}) = 1
 
 """
     _L_slice(L, α::BernsteinTerm, ::Val{N}) where N = sum(last(α,N-L))
