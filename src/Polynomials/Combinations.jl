@@ -4,100 +4,92 @@
 
 import Base
 
-const MAX_PRECOMP_D = 8
-const NB_PRECOMP_IPERMS = 2^MAX_PRECOMP_D
-const Val_Precomp_D = Union{Val{0},Val{1},Val{2},Val{3},Val{4},Val{5},Val{6},Val{7},Val{8}}
+const Combination = Vector{Int}
+const BubbleIndexSet = Tuple{Int, BernsteinTerm, Int, Combination}
+const Bubble = Tuple{Int, Combination, Vector{BubbleIndexSet}}
 
-"""
-    Combination{D} <: AbstractSet{Int}
+struct Bubbles <: AbstractVector{Bubble}
+  bubbles::Vector{Bubble}
+end
+Base.size(b_set::Bubbles) = size(b_set.bubbles)
+Base.IndexStyle(::Type{Bubbles}) = IndexStyle(Vector{Bubble})
+Base.getindex( b_set::Bubbles,      i::Int) = getindex( b_set.bubbles,      i::Int)
+Base.setindex!(b_set::Bubbles, val, i::Int) = setindex!(b_set.bubbles, val, i::Int)
 
-"""
-struct Combination{D} <: AbstractSet{Int}
-  data::Vector{Int}
+struct PLambdaIndices
+  # An objectid can be stored here to keep track of what's inside and perform
+  # sanity check when reusing the indices elsewhere, e.g. objectid( (r,k,D,:P) )
+  # for a PᵣΛᵏ(△ᴰ) basis indices.
+  identity::UInt
 
-  function Combination{D}(data::Vector{Int}) where {D}
-    k = length(data)
-    @check 0 ≤ k ≤ D "0 ≤ k ≤ D is required, got k=length(data)=$k and D=$D"
-    @check issorted(data) && allunique(data) "the given tuple is not (strictly) increasing, perm=$perm"
-    @check all(@. 1 ≤ data ≤ D) "the given array is not a subset of ⟦1,`D`⟧, perm=$perm"
-    new{D}(data)
-  end
+  # bubble indices given by P(m)Λ_bubbles
+  bubbles::Bubbles
+
+  # combination_index(I) -> (combination_index(I), I, sgnIcomp) ∀ I ∈ sorted_combinations(D,k)
+  components::Vector{Tuple{Int, Combination, Int}}
+
+  # _ID(J) -> ( l, _ID( J\{J(l)} ), J\{J(l)} )
+  ID_to_sub_combi_infos::Vector{Tuple{Int, Int, Combination}}
 end
 
-#Base.convert(::Type{NTuple{k,Int}}, x::Combination{k}) where k = x.data
+  # _ID(combi) -> combination_index(combi)
+  #ID_to_combi_index::Vector{Int}
 
-function Combination{D}(perm::NTuple{k,Int}) where {D,k}
-  data = Int[ i for i in perm ]
-  Combination{D}(data)
-end
-function Combination{D}(perm::AbstractVector{Int}) where {D}
-  data = Int[ i for i in perm ]
-  Combination{D}(data)
-end
-Combination(perm, D) = Combination(perm, Val(D))
-Combination(perm, ::Val{D}) where D = Combination{D}(sort(unique(perm)))
-Combination{D}() where D = Combination{D}( () )
+
+## Display
+#function Base.show(io::IO, combi::Combination{D}) where D
+#  k = length(combi)
+#  iszero(k) && print(io,"∅")
+#  print(io,"$(join(combi.data))")
+#end
+#function Base.show(io::IO, ::MIME"text/plain", combi::Combination{D}) where D
+#  k = length(combi)
+#  if iszero(k)
+#    print(io,"Combination{$D}(∅)")
+#  else
+#    print(io,"Combination{$D}($(join(combi.data,",")))")
+#  end
+#end
 
 """
     _ID(combi::Combination)
-    _ID(data::Vector{Int})
 
-Internal iddentifyer of a permutation of length `k` (it is independant of the second struct parameter).
+Internal iddentifyer of a combination of length `k`, that it is independant of
+the struct parameter `D`.
+
+This is slightly cheaper than a [`Base.hash`](@ref), and gives indices in
+1:binomial(max(`combi`),k) usable to store combinations in arrays.
 """
-_ID(combi::Combination) = _ID(combi.data)
-_ID(data::Vector{Int}) = mapreduce(t -> 1<<(t-1), +, data, init=0) + 1
+_ID(data::Combination) = mapreduce(t -> 1<<(t-1), +, data, init=0) + 1
 
-# Not type stable, do not use at runtime
-function _ID_to_data(ID::Integer)
+function _ID_to_combi(ID::Integer)
   @check ID > 0
   bits = ID-1
-  curr, pos = 0, 1
   k = count_ones(bits)
-  data = Vector{Int}(undef, k)
+  combi = Vector{Int}(undef, k)
+  @inbounds _ID_to_combi!(combi, bits, k)
+end
+function _ID_to_combi!(combi::Combination, ID::Integer)
+  @check ID > 0
+  bits = ID-1
+  k = count_ones(bits)
+  @boundscheck checkbounds(combi,k)
+  @inbounds _ID_to_combi!(combi, bits, k)
+end
+@propagate_inbounds function _ID_to_combi!(combi, bits, k)
+  curr, pos = 0, 1
   while curr < k
     if bits & 1 ≠ 0
       curr += 1
-      data[curr] = pos
+      @inbounds combi[curr] = pos
     end
     bits = bits >> 1
     pos += 1
   end
-  data
+  combi
 end
 
 _ID_to_k(ID::Integer) = count_ones(ID-1)
-
-
-# Iteration Interface
-Base.length(combi::Combination) = length(combi.data)
-Base.iterate(combi::Combination, state...) = Base.iterate(combi.data, state...)
-Base.isdone(combi::Combination, state...) = Base.isdone(combi.data, state...)
-
-# Indexing Interface
-Base.IndexStyle(::Combination) = IndexLinear()
-Base.keys(combi::Combination) = Base.keys(combi)
-Base.firstindex(::Combination) = 1
-Base.lastindex(combi::Combination) = Base.lastindex(combi.data)
-
-Base.getindex(combi::Combination, i) = combi.data[i]
-
-# Iterable Collection API
-
-Base.in(item, ipa::Combination) = in(item, ipa.data)
-Base.indexin(items, combi::Combination) = indexin(items, combi.data)
-
-Base.maximum(combi::Combination; kw...) = Base.maximum(combi.data; kw...)
-Base.minimum(combi::Combination; kw...) = Base.minimum(combi.data; kw...)
-
-# Set & Ordering API
-
-for fun in (:union, :intersect, :setdiff, :symdiff, :issubset, :issetequal, :isdisjoint, :isequal)
-  @eval begin
-    Base.$fun(a::Combination, b::Combination) = $fun(a.data, b.data)
-  end
-end
-
-Base.isunordered(combi::Combination) = false
 
 """
     Base.isless(a::Combination, b::Combination)
@@ -109,9 +101,6 @@ Unlike with the usual (left-digit to right-digit) lexicographic order, the
 index of sorted `Combination`s of same length `k` is independant of the
 dimension `D`, see [`sorted_combinations`](@ref).
 """
-function Base.isless(a::Combination, b::Combination)
-  isless(reverse(a.data), reverse(b.data))
-end
 
 # Other API
 
@@ -130,23 +119,23 @@ sorted in right-to-left lexicographic order, e.g.
 
 See also [`Base.isless`](@ref).
 """
-sorted_combinations(D,k) = sorted_combinations(Val(D),Val(k))
+sorted_combinations(D::Int,k::Int) = sorted_combinations(Val(D),Val(k))
 
 @generated function sorted_combinations(::Val{D},::Val{k}) where {D,k}
-  iszero(k) && return :( return [Combination{D}( () )] )
+  iszero(k) && return :( return [ () ] )
   comp_rev_perm(tup) = ntuple(i -> D-tup[k-i+1]+1, Val(k))
-  inc_perms = combinations(1:D,k) .|> (tup -> Combination{D}(comp_rev_perm(tup))) |> reverse
+  inc_perms = combinations(1:D,k) .|> (tup -> comp_rev_perm(tup)) |> reverse
   :( return $inc_perms )
 end
 
 """
-    complement(combi::Combination{D}) where D
+    complement(combi, Val(D))
 
 TBW
 """
-function complement(combi::Combination{D}) where D
+function complement(combi, ::Val{D}) where D
   k = length(combi)
-  comp = Vector{Int}(undef, D-k)
+  comp = Combination(undef, D-k)
   curr_perm, curr_comp = 1, 1
   for i in 1:D
     if curr_perm ≤ k && combi[curr_perm] == i
@@ -156,7 +145,7 @@ function complement(combi::Combination{D}) where D
       curr_comp += 1
     end
   end
-  return Combination{D}(comp)
+  comp
 end
 
 """
@@ -179,76 +168,70 @@ function combination_sign(combi::Combination)
 end
 
 """
-    combination_index(combi::Combination)
+    combination_index(combi)
 
 Linear index of `combi` amongst combinations of the same size `k`,
-sorted in right-to-left lexicographic order. It depends on `k` but not on `D`,
-see [`sorted_combinations`](@ref).
+sorted in right-to-left lexicographic order. It depends on `k` but not on the
+space dimension, see [`sorted_combinations`](@ref).
 """
-function combination_index(combi::Combination{D}) where D
-  combination_index(combi, Val(D))
+@inline function combination_index(combi)
+  k = length(combi)
+  return sum( binomial(combi[i]-1, i) for i in 1:k; init=0) + 1
 end
-@inline function combination_index(combi::Combination, ::Val_Precomp_D)
-  precomp_ID_to_combi_index[_ID(combi)]
-end
-
-@inline function combination_index(combi::Combination{D}, _) where D
-  ID = _ID(combi)
-  if haskey(memo_ID_to_combi_index, ID)
-    return memo_ID_to_combi_index[ID]
-  else
-    combi_index = findfirst(==(combi), sorted_combinations(Val(D),Val(k)))
-    isnothing(combi_index) && @unreachable
-    memo_ID_to_combi_index[ID] = combi_index
-    return combi_index
-  end
-end
-
-const memo_ID_to_combi_index = IdDict{Int,Int}()
-
-function generate_ID_to_combi_index()
-  ID_to_combi_index = MVector{NB_PRECOMP_IPERMS,Int}(undef)
-  curr_indices = zero(MVector{MAX_PRECOMP_D+1,UInt8})
-  for ID in 1:NB_PRECOMP_IPERMS
-    k = _ID_to_k(ID)
-    curr_indices[k+1] += 1
-    ID_to_combi_index[ID] = curr_indices[k+1]
-  end
-  SVector(ID_to_combi_index)
-end
-
-const precomp_ID_to_combi_index = generate_ID_to_combi_index()
-
 
 """
     sub_combinations(combi::Combination{D})
 
-Return a tuple containing the `k-1` combinations `combi\\combi[i]` for 1 ≤ i ≤ `k`.
+Return a vector containing the `k-1` combinations `combi\\combi[i]` for 1 ≤ i ≤ `k`,
+where `k=length(combi)`.
 """
-function sub_combinations(combi::Combination{D}) where D
+function sub_combinations(combi::Combination)
   k = length(combi)
-  iszero(k) && return Combination{D}[]
-  m1_combi_datas = Vector{Combination{D}}(undef, k)
+  iszero(k) && return Combination()
+  sub_combis = Vector{Combination}(undef, k)
   for i in 1:k
-    mi_data = ntuple(j -> combi.data[j + Int(j≥i)],Val(k-1))
-    m1_combi_datas[i] = Combination{D}(mi_data)
+    sub_combi = Int[combi[j + Int(j≥i)] for j in 1:(k-1)]
+    sub_combis[i] = sub_combi
   end
-  return m1_combi_datas
+  return sub_combis
 end
 
-# Display
-function Base.show(io::IO, combi::Combination{D}) where D
+
+#TODO
+function _sub_combinations_ids!(sub_ids::AbstractVector{Tuple{Int,Int}}, combi::Combination)
   k = length(combi)
-  iszero(k) && print(io,"∅")
-  print(io,"$(join(combi.data))")
-end
-function Base.show(io::IO, ::MIME"text/plain", combi::Combination{D}) where D
-  k = length(combi)
-  if iszero(k)
-    print(io,"Combination{$D}(∅)")
-  else
-    print(io,"Combination{$D}($(join(combi.data,",")))")
+  @check length(sub_ids) >= k
+  sub_combi = MVector{k-1,Int}(undef)
+  for i in 1:k
+    sub_combi .= ntuple(j -> combi[j + Int(j≥i)],k-1)
+    sub_combi_id = combination_index(sub_combi)
+    sub_ids[i] = (i, sub_combi_id)
   end
+  k
+end
+
+function combination_index(combi::Combination, combi_ids::PLambdaIndices)
+  id = _ID(combi)
+  combi_ids.ID_to_combi_index[id]
+end
+
+function sub_combinations(combi::Combination, combi_ids::PLambdaIndices)
+  id = _ID(combi)
+  combi_ids.ID_to_sub_combi_infos[id]
+end
+
+function generate_ID_to_combi_index(D)
+  nb_precomp_iperms = 2^D
+  ID_to_combi_index = Vector{Int}(undef, nb_precomp_iperms)
+
+  curr_indices = zero(MVector{D+1,Int})
+  for ID in 1:nb_precomp_iperms
+    k = _ID_to_k(ID)
+    curr_indices[k+1] += 1
+    ID_to_combi_index[ID] = curr_indices[k+1]
+  end
+
+  ID_to_combi_index
 end
 
 """
@@ -263,7 +246,7 @@ function supp(α)
       push!(s, i)
     end
   end
-  Tuple(s)
+  s
 end
 
 function minor(M,I,J,::Val{k}) where k
@@ -273,15 +256,15 @@ function minor(M,I,J,::Val{k}) where k
 
   T = eltype(M)
   m = MMatrix{k,k,T}(undef)
-  for (i, Ii) in enumerate(I)
-    for (j, Jj) in enumerate(J)
+  for (i, Ii) in enumerate(take(I,k))
+    for (j, Jj) in enumerate(take(J,k))
       @inbounds m[i,j] = M[Ii,Jj]
     end
   end
   det(m)
 end
 
-function all_k_minors!(m,M,Vk::Val) 
+function all_k_minors!(m,M,Vk::Val)
   D = size(M)[1]
   Λᵏᴰ = sorted_combinations(Val(D),Vk)
   @inbounds begin

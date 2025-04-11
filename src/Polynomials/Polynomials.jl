@@ -137,8 +137,6 @@ export ModalC0Basis
 
 include("PolynomialInterfaces.jl")
 
-include("Combinations.jl")
-
 include("CartProdPolyBases.jl")
 
 include("CompWiseTensorPolyBases.jl")
@@ -156,6 +154,8 @@ include("ChebyshevBases.jl")
 include("BernsteinBases.jl")
 
 include("ModalC0Bases.jl")
+
+include("Combinations.jl")
 
 include("PLambdaBases.jl")
 
