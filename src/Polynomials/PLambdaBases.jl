@@ -1,267 +1,9 @@
-
-#####################
-# Combination type  #
-#####################
-
-import Base
-
-const MAX_PRECOMP_D = 8
-const NB_PRECOMP_IPERMS = 2^MAX_PRECOMP_D
-const Val_Precomp_D = Union{Val{0},Val{1},Val{2},Val{3},Val{4},Val{5},Val{6},Val{7},Val{8}}
-
-"""
-Combination{k,D} <: AbstractSet{Int}
-
-
-"""
-struct Combination{k,D} <: AbstractSet{Int}
-  data::NTuple{k,Int}
-
-  function Combination{k,D}(perm::NTuple{k,Int}) where {k,D}
-    @check 0 ≤ k ≤ D "0 ≤ k ≤ D is required, got k=$k and D=$D"
-    @check issorted(perm) && allunique(perm) "the given tuple is not (strictly) increasing, perm=$perm"
-    @check all(@. 1 ≤ perm ≤ D) "the given tuple is not a subset of ⟦1,`D`⟧, perm=$perm"
-    new{k,D}(perm)
-  end
-end
-
-Base.convert(::Type{NTuple{k,Int}}, x::Combination{k}) where k = x.data
-
-Combination(perm, D) = Combination(perm, Val(D))
-Combination(perm, ::Val{D}) where D = Combination{length(perm),D}(Tuple(sort(unique(perm))))
-Combination{0,D}() where D = Combination{0,D}( () )
-function Combination{k,D}(v::AbstractVector) where {k,D}
-  @check k == length(v) "Isnconsistentcy between permutation length and number of given indices"
-  Combination{k,D}( Tuple(v) )
-end
-
-"""
-_ID(combi::Combination{k})
-_ID(data::NTtuple{k,Int})
-
-Internal iddentifyer of a permutation of length `k` (it is independant of the second struct parameter).
-"""
-_ID(combi::Combination) = _ID(combi.data)
-_ID(data::NTuple{k,Int}) where k = mapreduce(t -> 1<<(t-1), +, data, init=0) + 1
-
-# Not type stable, do not use at runtime
-function _ID_to_data(ID::Integer)
-  @check ID > 0
-  bits = ID-1
-  curr, pos = 0, 1
-  k = count_ones(bits)
-  data = MVector{k,Int}(undef)
-  while curr < k
-    if bits & 1 ≠ 0
-      curr += 1
-      data[curr] = pos
-    end
-    bits = bits >> 1
-    pos += 1
-  end
-  Tuple(data)
-end
-
-_ID_to_k(ID::Integer) = count_ones(ID-1)
-
-
-# Iteration Interface
-Base.length(::Combination{k}) where k = k
-Base.iterate(::Combination{0}) = nothing
-Base.isdone(combi::Combination) = Base.isdone(combi.data)
-Base.isdone(combi::Combination, state) = Base.isdone(combi.data, state)
-
-Base.iterate(combi::Combination) = iterate(combi.data)
-Base.iterate(combi::Combination, state) = iterate(combi.data, state)
-
-# Indexing Interface
-Base.IndexStyle(::Combination) = IndexLinear()
-Base.keys(::Combination{k}) where k = Base.OneTo(k)
-Base.firstindex(::Combination) = 1
-Base.lastindex(::Combination{k}) where k = k
-
-function Base.getindex(combi::Combination{k}, i) where k
-  @check 1 ≤ i ≤ k "Indices in Combinations{$k} are 1:$k, got $i"
-  combi.data[i]
-end
-
-# Iterable Collection API
-
-Base.in(item, ipa::Combination) = in(item, ipa.data)
-Base.indexin(items, combi::Combination) = indexin(items, combi.data)
-
-Base.maximum(combi::Combination{k}; init) where k = combi[k]
-Base.maximum(combi::Combination{0}; init) = maximum((); init=Int(init))
-
-Base.minimum(combi::Combination{k}; init) where k = combi[1]
-Base.minimum(combi::Combination{0}; init) = minimum((); init=Int(init))
-
-
-# Set & Ordering API
-
-for fun in (:union, :intersect, :setdiff, :symdiff, :issubset, :issetequal, :isdisjoint, :isequal)
-  @eval begin
-    Base.$fun(a::Combination, b::Combination) = $fun(a.data, b.data)
-  end
-end
-
-Base.isunordered(combi::Combination) = false
-
-"""
-Base.isless(a::Combination, b::Combination)
-
-The ordering of `Combination` is right-digit to left-digit
-lexicographic order, e.g. 12 < 13 < 23 < 14 < 24 < 34.
-
-Unlike with the usual (left-digit to right-digit) lexicographic order, the
-index of sorted `Combination`s of same length `k` is independant of the
-dimension `D`, see [`sorted_combinations`](@ref).
-"""
-function Base.isless(a::Combination, b::Combination)
-  isless(reverse(a.data), reverse(b.data))
-end
-
-# Other API
-
-"""
-sorted_combinations(D,k)
-sorted_combinations(::Val{D},::Val{k})
-
-Return a vector [Iᵢ]ᵢ of all the combinations of 1:D of length k:
-
-1≤ I_1 < ... < I_k ≤ N
-
-sorted in right-to-left lexicographic order, e.g.
-
-[12, 13, 23]               for k=2, D=3
-[12, 13, 23, 14, 24, 34]   for k=2, D=4
-
-See also [`Base.isless`](@ref).
-"""
-sorted_combinations(D,k) = sorted_combinations(Val(D),Val(k))
-
-@generated function sorted_combinations(::Val{D},::Val{k}) where {D,k}
-  iszero(k) && return :( return [Combination{0,D}( () )] )
-  comp_rev_perm(tup) = ntuple(i -> D-tup[k-i+1]+1, Val(k))
-  inc_perms = combinations(1:D,k) .|> (tup -> Combination{k,D}(comp_rev_perm(tup))) |> reverse
-  :( return $inc_perms )
-end
-
-"""
-complement(combi::Combination{k,D}) where {k,D}
-
-TBW
-"""
-function complement(combi::Combination{k,D}) where {k,D}
-  comp = MVector{D-k,Int}(undef)
-  curr_perm, curr_comp = 1, 1
-  for i in 1:D
-    if curr_perm ≤ k && combi[curr_perm] == i
-      curr_perm += 1
-    else
-      comp[curr_comp] = i
-      curr_comp += 1
-    end
-  end
-  return Combination{D-k,D}(Tuple(comp))
-end
-
-"""
-combination_sign(combi::Combination)
-
-TBW
-"""
-function combination_sign(combi::Combination)
-  i, k, acc, delta = 1, 1, 0, 0
-  while k <= length(combi)
-    if combi[k] == i
-      acc += delta
-      k += 1
-    else
-      delta += 1
-    end
-    i += 1
-  end
-  return iseven(acc) ? 1 : -1
-end
-
-"""
-combination_index(combi::Combination)
-
-Linear index of `combi` amongst combinations of the same size `k`,
-sorted in right-to-left lexicographic order. It depends on `k` but not on `D`,
-see [`sorted_combinations`](@ref).
-"""
-function combination_index(combi::Combination{k,D}) where {k,D}
-  combination_index(combi, Val(D))
-end
-@inline function combination_index(combi::Combination, ::Val_Precomp_D)
-  precomp_ID_to_combi_index[_ID(combi)]
-end
-
-@inline function combination_index(combi::Combination{k,D}, _) where {k,D}
-  ID = _ID(combi)
-  if haskey(memo_ID_to_combi_index, ID)
-    return memo_ID_to_combi_index[ID]
-  else
-    combi_index = findfirst(==(combi), sorted_combinations(Val(D),Val(k)))
-    isnothing(combi_index) && @unreachable
-    memo_ID_to_combi_index[ID] = combi_index
-    return combi_index
-  end
-end
-
-const memo_ID_to_combi_index = IdDict{Int,Int}()
-
-function generate_ID_to_combi_index()
-  ID_to_combi_index = MVector{NB_PRECOMP_IPERMS,Int}(undef)
-  curr_indices = zero(MVector{MAX_PRECOMP_D+1,UInt8})
-  for ID in 1:NB_PRECOMP_IPERMS
-    k = _ID_to_k(ID)
-    curr_indices[k+1] += 1
-    ID_to_combi_index[ID] = curr_indices[k+1]
-  end
-  SVector(ID_to_combi_index)
-end
-
-const precomp_ID_to_combi_index = generate_ID_to_combi_index()
-
-
-"""
-sub_combinations(combi::Combination{k,D})
-
-Return a tuple containing the `k-1` combinations `combi\\combi[i]` for 1 ≤ i ≤ `k`.
-"""
-sub_combinations(::Combination{0,D}) where D = tuple()
-function sub_combinations(combi::Combination{k,D}) where {k,D}
-  @check k>0
-  iszero(k) && return Tuple{}[]
-  m1_combi_datas = MVector{k,Combination{k-1,D}}(undef)
-  for i in 1:k
-    mi_data = ntuple(j -> combi.data[j + Int(j≥i)],Val(k-1))
-    m1_combi_datas[i] = Combination{k-1,D}(mi_data)
-  end
-  return Tuple(m1_combi_datas)
-end
-
-# Display
-function Base.show(io::IO, combi::Combination{k,D}) where {k,D}
-  iszero(k) && print(io,"∅")
-  print(io,"$(join(combi.data))")
-end
-function Base.show(io::IO, ::MIME"text/plain", combi::Combination{k,D}) where {k,D}
-  if iszero(k)
-    print(io,"Combination{$k,$D}(∅)")
-  else
-    print(io,"Combination{$k,$D}($(join(combi.data,",")))")
-  end
-end
 #################################
 # Tensorial nD polynomial bases #
 #################################
 
 """
-struct PLambda{D,T,L,K,B,P} <: PolynomialBasis{D,VectorValue{L,T},K,Bernstein}
+struct PLambda{D,T,L,B,P} <: PolynomialBasis{D,VectorValue{L,T},Bernstein}
 
 Finite Element Exterior Calculus polynomial basis for the spaces `D`-dimensional
 simplices, P`r`Λ`ᴷ`(△`ᴰ`).
@@ -272,7 +14,7 @@ struct PLambdaBasis{D,T,L,P,B} <: PolynomialBasis{D,VectorValue{L,T},Bernstein}
   r::Int
   k::Int
   Ψ::P
-  b::B
+  scalar_bernstein_basis::B
 
   function PLambdaBasis{D}(::Type{T},r,k,vertices=nothing) where {D,T}
     @check T<:Real "T needs to be <:Real since represents the scalar type"
@@ -297,7 +39,6 @@ struct PLambdaBasis{D,T,L,P,B} <: PolynomialBasis{D,VectorValue{L,T},Bernstein}
       P = SMatrix{L,C,T}
       Ψ = MMatrix{L,C,T}(undef)
       Ψ = _compute_PΛ_basis_form_coefficient!(Ψ,r,k,D,b,vertices)
-      # Ψ = convert(P, Ψ) # isn't this automatic ?
     end
 
     new{D,T,L,P,B}(r,k,Ψ,b)
@@ -316,12 +57,10 @@ function Base.size(b::PLambdaBasis{D}) where D
   r, k = b.r, b.k
   return (binomial(r+k,k)*binomial(D+r,D-k), )
 end
-
-Base.getindex(b::PLambdaBasis, i::Integer) = Bernstein()
-Base.IndexStyle(::PLambdaBasis) = IndexLinear()
-get_dimension(::PLambdaBasis{D}) where D = D
 get_order(b::PLambdaBasis) = get_FEEC_poly_degree(b)
-return_type(::PLambdaBasis{D,T,L}) where {D,T,L} = VectorValue{L,T}
+
+get_cart_to_bary_matrix(b::PLambdaBasis) = b.scalar_bernstein_basis.cart_to_bary_matrix
+#get_dimension(::PLambdaBasis{D}) where D = D
 
 
 ###################
@@ -358,7 +97,7 @@ end
 end
 
 """
-_hat_Ψ(r,α,F,I,J,T)::T
+    _hat_Ψ(r,α,F,I,J,T)::T
 
 PLambdaBasis.Ψ matrix elements in the reference simplex, T is the scalar return type
 """
@@ -374,20 +113,14 @@ function _hat_Ψ(r,α,F,I,J,::Type{T})::T where T
 
     n > 1 && return 0. # rank M_IJ inferior to 2
 
-    p = _findfirst_or_zero(j-> (I[j]+1)∉J, 1:length(J))
-    if iszero(p)
-      println("p0 $I $J $s $n")
-    end
+    p = _find_first_val_or_zero(j-> (I[j]+1)∉J, 1, length(J))
 
     if isone(n)        # rank M_IJ is 1
-      m = _findfirst_or_zero(i-> (J[i]-1)∉I, (s+1):length(J))
-      if iszero(m)
-        println("m0 $I $J $s $n")
-      end
+      m = _find_first_val_or_zero(i-> (J[i]-1)∉I, (s+1), length(J))
       u_m, v_p = _u(m,F,I), _v(p,α,J,r)
       iszero(s) && return (-1)^(m+p)*u_m*v_p
 
-      q = _findfirst_or_zero(j-> (I[j]+s)∉J, (p+1):length(J))
+      q = _find_first_val_or_zero(j-> (I[j]+s)∉J, (p+1), length(J))
       @check !iszero(q)
       v_q = _v(q,α,J,r)
       return (-1)^(m+p+q) * u_m * (v_q - v_p)
@@ -417,9 +150,9 @@ function _hat_Ψ(r,α,F,I,J,::Type{T})::T where T
 end
 _hat_Ψ(r,α,F,I,J::Combination{0},::Type{T}) where T = one(T) # 0 forms
 
-function _findfirst_or_zero(pred, v)
-  r = findfirst(pred,v)
-  return isnothing(r) ? 0 : r
+@propagate_inbounds function _find_first_val_or_zero(pred, start, stop)
+  r = findfirst(pred,start:stop)
+  return isnothing(r) ? 0 : r+start-1
 end
 
 @propagate_inbounds _u(i,F,I)   = Int(isone(F[1])) - Int(I[i]+1 in F)
@@ -438,8 +171,8 @@ function _return_cache(
   r = get_order(b)
   np = length(x)
   ndof = length(b)
-  ndof_bernstein = _binomial(Val(r+D),Val(D))
-  ndof_val = _binomial(Val(r+D),Val(D))
+  ndof_bernstein = binomial(r+D,D)
+  ndof_val = binomial(r+D,D)
 
   r = CachedArray(zeros(G,(np,ndof)))
   s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
@@ -450,30 +183,12 @@ function _return_cache(
   (r, s, c, t...)
 end
 
-#function return_cache(b::PLambdaBasis, x::AbstractVector{<:Point})
-#  return_cache(b._basis,x)
-#end
-
-#function evaluate!(cache, b::PLambdaBasis, x::AbstractVector{<:Point})
-#  evaluate!(cache, b._basis, x)
-#end
-
-# Derivatives, option 2:
-
 function return_cache(
   fg::FieldGradientArray{1,<:PLambdaBasis},
   x::AbstractVector{<:Point})
 
   fg_b = FieldGradientArray{1}(fg.fa._basis)
   return (fg_b, return_cache(fg_b,x))
-end
-
-function evaluate!(cache,
-                   fg::FieldGradientArray{1,<:PLambdaBasis},
-                   x::AbstractVector{<:Point})
-
-  fg_b, b_cache = cache
-  evaluate!(b_cache, fg_b, x)
 end
 
 function return_cache(
@@ -484,12 +199,77 @@ function return_cache(
   return (fg_b, return_cache(fg_b,x))
 end
 
-function evaluate!(cache,
-                   fg::FieldGradientArray{2,<:PLambdaBasis},
-                   x::AbstractVector{<:Point})
+function _evaluate_nd!(
+  b::PLambdaBasis{D,T}, x,
+  ω::AbstractMatrix{V}, i,
+  c::AbstractVector{T}) where {D,V,T}
 
-  fg_b, b_cache = cache
-  evaluate!(b_cache, fg_b, x)
+  r = get_FEEC_poly_degree(b)
+  k = get_FEEC_form_degree(b)
+  λ = _cart_to_bary(x, get_cart_to_bary_matrix(b))
+
+  # _evaluate_nd!(::BernsteinBasisOnSimplex) without set_value
+  c[1] = one(T)
+  _downwards_de_Casteljau_nD!(c,λ,Val(r),Val(D))
+
+  for (_, _, dF_bubbles) in PΛ_bubble_indices(r,k,D)
+    for (w, α, _) in dF_bubbles
+      id_α = _simplex_multi_id_to_linear_id(α)
+      ω[i][w] = c[id_α] .* b.Ψ[w] # Bα(x)*Ψ_w
+    end
+  end
+end
+
+function _gradient_nd!(
+  b::PLambdaBasis{D,T}, x,
+  ∇ω::AbstractMatrix{G}, i,
+  c::AbstractVector{T},
+  ∇B::MMatrix{1,LB,VectorValue{D,T}},
+  s::MVector{D,T}) where {D,G,T,LB}
+
+  #r = get_FEEC_poly_degree(b)
+  #k = get_FEEC_form_degree(b)
+  #x_to_λ = get_cart_to_bary_matrix(b)
+  #λ = _cart_to_bary(x, x_to_λ)
+  #c[1] = one(T)
+  #_downwards_de_Casteljau_nD!(c,λ,Val(r-1),Val(D))
+  #_grad_Bα_from_Bα⁻!(∇B,1,c,s,Val(r),Val(D),T,x_to_λ)
+
+  # _gradient_nd!(::BernsteinBasisOnSimplex) with set_value in our cache ∇B
+  _gradient_nd!(b.B, x, ∇B, 1, c, nothing, s)
+
+  for (_, _, dF_bubbles) in PΛ_bubble_indices(r,k,D)
+    for (w, α, _) in dF_bubbles
+      id_α = _simplex_multi_id_to_linear_id(α) # TODO optimize this
+      ∇ω[i][w] = ∇B[1,id_α] ⊗  VectorValue(b.Ψ[w])
+    end
+  end
+end
+
+function _hessian_nd!(
+  b::PLambdaBasis{D,T}, x,
+  Hω::AbstractMatrix{G}, i,
+  c::AbstractVector{T},
+  HB::MMatrix{1,LB,TensorValue{D,D,T}},
+  s::MMatrix{D,T}) where {D,G,T,LB}
+
+  #r = get_FEEC_poly_degree(b)
+  #k = get_FEEC_form_degree(b)
+  #x_to_λ = get_cart_to_bary_matrix(b)
+  #λ = _cart_to_bary(x, x_to_λ)
+  #c[1] = one(T)
+  #_downwards_de_Casteljau_nD!(c,λ,Val(r-2),Val(D))
+  #_hess_Bα_from_Bα⁻⁻!(HB,1,c,s,Val(r),Val(D),T,x_to_λ)
+
+  # _hessian_nd!(::BernsteinBasisOnSimplex) with set_value in our cache HB
+  _hessian_nd!(b.B, x, HB, 1, c, nothing, nothing, s)
+
+  for (_, _, dF_bubbles) in PΛ_bubble_indices(r,k,D)
+    for (w, α, _) in dF_bubbles
+      id_α = _simplex_multi_id_to_linear_id(α) # TODO optimize this
+      Hω[i][w] = HB[1,id_α] ⊗  VectorValue(b.Ψ[w])
+    end
+  end
 end
 
 
