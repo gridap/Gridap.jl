@@ -290,7 +290,6 @@ b = PLambdaBasis(Val(D),T,r,k,vertices)
 bx  = evaluate(b,x)
 Gbx = evaluate(Broadcasting(∇)(b),x)
 Hbx = evaluate(Broadcasting(∇∇)(b),x)
-divbx=evaluate(Broadcasting(hodge4D_and_div)(b),x)
 
 k = 4
 b = PLambdaBasis(Val(D),T,r,k)

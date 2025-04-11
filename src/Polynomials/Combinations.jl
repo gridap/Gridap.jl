@@ -227,13 +227,13 @@ Return a tuple containing the `k-1` combinations `combi\\combi[i]` for 1 ≤ i �
 """
 function sub_combinations(combi::Combination{D}) where D
   k = length(combi)
-  iszero(k) && return Tuple{}[]
+  iszero(k) && return Combination{D}[]
   m1_combi_datas = Vector{Combination{D}}(undef, k)
   for i in 1:k
     mi_data = ntuple(j -> combi.data[j + Int(j≥i)],Val(k-1))
     m1_combi_datas[i] = Combination{D}(mi_data)
   end
-  return Tuple(m1_combi_datas)
+  return m1_combi_datas
 end
 
 # Display
