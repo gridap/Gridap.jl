@@ -116,6 +116,7 @@ export ChebyshevBasis
 export BernsteinBasis
 export BernsteinBasisOnSimplex
 export PLambdaBasis
+export PmLambdaBasis
 
 export CompWiseTensorPolyBasis
 export QGradBasis

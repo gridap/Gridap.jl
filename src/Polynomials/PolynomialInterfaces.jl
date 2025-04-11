@@ -96,7 +96,6 @@ end
 function _return_cache(
   f::PolynomialBasis{D}, x,::Type{G},::Val{N_deriv}) where {D,G,N_deriv}
 
-  @assert D == length(eltype(x)) "Incorrect number of point components"
   T = eltype(G)
   np = length(x)
   ndof = length(f)
@@ -112,6 +111,7 @@ function _return_cache(
 end
 
 function return_cache(f::PolynomialBasis{D,V}, x::AbstractVector{<:Point}) where {D,V}
+  @assert D == length(eltype(x)) "Incorrect number of point components"
   _return_cache(f,x,V,Val(0))
 end
 
@@ -119,6 +119,7 @@ function return_cache(
   fg::FieldGradientArray{N,<:PolynomialBasis{D,V}},
   x::AbstractVector{<:Point}) where {N,D,V}
 
+  @assert D == length(eltype(x)) "Incorrect number of point components"
   f = fg.fa
   xi = testitem(x)
   G = V

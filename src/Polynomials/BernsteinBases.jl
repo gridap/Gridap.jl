@@ -340,7 +340,6 @@ end
 function _return_cache(
   b::BernsteinBasisOnSimplex{D}, x,::Type{G},::Val{N_deriv}) where {D,G,N_deriv}
 
-  @assert D == length(eltype(x)) "Incorrect number of point components"
   T = eltype(G)
   K = get_order(b)
   np = length(x)
@@ -733,7 +732,6 @@ end
 #  function _return_cache(
 #    f::BernsteinBasisOnSimplex{D}, x,::Type{G},::Val{N_deriv}) where {D,G,N_deriv}
 #
-#    @assert D == length(eltype(x)) "Incorrect number of point components"
 #    T = eltype(G)
 #    np = length(x)
 #    ndof = length(f)

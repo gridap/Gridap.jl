@@ -1,6 +1,89 @@
-#################################
-# Tensorial nD polynomial bases #
-#################################
+#####################################
+# P⁻LambdaBasis nD polynomial bases #
+#####################################
+
+"""
+struct PmLambdaBasis{D,V,L,B} <: PolynomialBasis{D,V,Bernstein}
+
+Finite Element Exterior Calculus polynomial basis for the spaces `D`-dimensional
+simplices, P`r`⁻Λ`ᴷ`(△`ᴰ`), but with polynomial forms explicitely transformed
+into vectors using the standard equivalence with usual vector calculus (given
+by the flat map ♭).
+
+`V` is `VectorValue{L,T}` where
+`L` is binomial(`D`,`k`)
+`B` is the concrete type of the `BernsteinBasisOnSimplex` necessary for the evaluation of the polynomials.
+
+The number of basis polynomials is binomial(`r`+`k`-1,`k`)*binomial(`D`+`r`,`D`-`k`).
+
+Reference: D. N. Arnold and A. Logg, Periodic Table of the Finite Elements, SIAM News, vol. 47 no. 9, November 2014
+"""
+struct PmLambdaBasis{D,V,LN,B} <: PolynomialBasis{D,V,Bernstein}
+  r::Int
+  k::Int
+  scalar_bernstein_basis::B
+  m::SVector{LN,V}
+
+  function PmLambdaBasis{D}(::Type{T}, r, k, vertices=nothing; diff_geo_calculus_style=false) where {D,T}
+    @check T<:Real "T needs to be <:Real since represents the scalar type"
+    @check k in 0:D "The form order k must be in 0:D"
+    @check r > 0    "The polynomial order r must be positive"
+    if !isnothing(vertices)
+      @check length(vertices) == D+1 "$D+1 vertices are required to define a $D-dim simplex, got $(length(vertices))"
+      @check eltype(vertices) <: Point{D} "Vertices should be of type Point{$D}, got $(eltype(vertices))"
+    end
+
+    L = binomial(D,k) # Number of components of a basis form
+    #C = binomial(r+k,k)*binomial(D+r,D-k) # Number of basis polynomials
+
+    if diff_geo_calculus_style
+      @notimplemented
+    else
+      (D>3 && ( 1 < k < D-1)) && @unreachable "Vector calculus proxy of differential form bases not available for D=$D and k=$k"
+      V = VectorValue{L,T}
+    end
+
+    b = BernsteinBasisOnSimplex{D}(T, r, vertices)
+    B = typeof(b)
+    LN = binomial(D+1,k) # Number of k faces of a D dimensional tetrahedron
+    m = zero(MVector{LN,V})
+    _compute_PmΛ_basis_form_coefficient!(m,k,D,b,vertices)
+
+    if isone(L) && !diff_geo_calculus_style
+      V = T
+      m = reinterpret(T, m)
+    end
+
+    new{D,V,LN,B}(r,k,b,m)
+  end
+end
+
+function PmLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing; diff_geo_calculus_style=false) where {D,T}
+  PmLambdaBasis{D}(T,r,k,vertices; diff_geo_calculus_style)
+end
+
+"""
+    _DG_calculus_style(::V) = false
+
+Temporary API to signal that the coefficient of `V`-valued polynomial forms
+should be transformed into classic vector calulus components using Hodge star
+operator.
+"""
+_DG_calculus_style(::V) where V = false
+
+get_FEEC_poly_degree(b::PmLambdaBasis) = b.r
+get_FEEC_form_degree(b::PmLambdaBasis) = b.k
+get_FEEC_family(::PmLambdaBasis) = :P⁻
+
+function Base.size(b::PmLambdaBasis{D}) where D
+  r = get_FEEC_poly_degree(b)
+  k = get_FEEC_form_degree(b)
+  binomial(r+k,k)*binomial(D+r,D-k)
+end
+
+####################################
+# PLambdaBasis nD polynomial bases #
+####################################
 
 """
 struct PLambdaBasis{D,V,C,B} <: PolynomialBasis{D,V,Bernstein}
@@ -59,29 +142,206 @@ function PLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing; diff_geo_calculus
   PLambdaBasis{D}(T,r,k,vertices; diff_geo_calculus_style)
 end
 
-"""
-    _DG_calculus_style(::V) = false
-
-Temporary API to signal that the coefficient of `V`-valued polynomial forms
-should be transformed into classic vector calulus components using Hodge star
-operator.
-"""
-_DG_calculus_style(::V) where V = false
-
 get_FEEC_poly_degree(b::PLambdaBasis) = b.r
 get_FEEC_form_degree(b::PLambdaBasis) = b.k
 get_FEEC_family(::PLambdaBasis) = :P
 
 Base.size(::PLambdaBasis{D,V,C}) where {D,V,C} = (C,)
-get_order(b::PLambdaBasis) = get_FEEC_poly_degree(b)
-
-get_cart_to_bary_matrix(b::PLambdaBasis) = b.scalar_bernstein_basis.cart_to_bary_matrix
-#get_dimension(::PLambdaBasis{D}) where D = D
 
 
-###################
-# Implementation  #
-###################
+##########################
+# Common Implementation  #
+##########################
+
+const PΛBases = Union{PmLambdaBasis, PLambdaBasis}
+
+get_order(b::PΛBases) = get_FEEC_poly_degree(b)
+get_cart_to_bary_matrix(b::PΛBases) = b.scalar_bernstein_basis.cart_to_bary_matrix
+
+function _return_cache(b::PΛBases,x,::Type{G},::Val{N_deriv}) where {G,N_deriv}
+  T = eltype(G)
+  np = length(x)
+  ndof = length(b)
+  ndof_bernstein = length(b.scalar_bernstein_basis)
+
+  r = CachedArray(zeros(G,(np,ndof)))
+  # Cache for all scalar nD-Bernstein polynomials
+  cB = CachedVector(zeros(T,ndof_bernstein))
+  if N_deriv > 0
+    DB = T
+    xi = testitem(x)
+    for _ in 1:N_deriv
+      DB = gradient_type(DB,xi)
+    end
+    # Cache for all scalar nD-Bernstein polynomials N_deriv's derivative
+    t = (( nothing for _ in 2:N_deriv)..., CachedArray(zeros(DB,(1,ndof_bernstein))))
+    s = MArray{Tuple{size(DB)...},T}(undef)
+  else
+    t = ()
+    s = nothing
+  end
+  (r, s, cB, t...)
+end
+
+function _setsize!(b::PΛBases, np, ω, t...)
+  ndof = length(b)
+  ndof_bernstein = length(b.scalar_bernstein_basis)
+  setsize!(ω,(np,ndof))
+  setsize!(t[1],(ndof_bernstein,))
+  if length(t) > 1
+    setsize!(t[end],(1,ndof_bernstein))
+  end
+end
+
+function _get_static_parameters(b::PΛBases)
+  r = get_FEEC_poly_degree(b)
+  k = get_FEEC_form_degree(b)
+  return (Val(r), Val(k))
+end
+
+
+#################################
+# PmLambdaBasis Implementation  #
+#################################
+
+function _compute_PmΛ_basis_form_coefficient!(m,k::Int,D::Int,b,vertices)
+  Vk, VD = Val(k), Val(D)
+  _compute_PmΛ_basis_form_coefficient!(m,Vk,VD,b,vertices)
+end
+function _compute_PmΛ_basis_form_coefficient!(m,Vk,VD::Val{D},b,vertices) where D
+  V = eltype(m)
+  M = transpose(b.cart_to_bary_matrix[:,2:end])
+  m_J = Mutable(V)(undef)
+  @inbounds for (J_id,J) in enumerate(sorted_combinations(Val(D+1),Vk))
+    for (I_id,I) in enumerate(sorted_combinations(VD,Vk))
+      m_J[I_id] = minor(M,I,J,Vk)
+    end
+    m[J_id] = m_J
+  end
+  nothing
+end
+
+function _compute_PmΛ_basis_form_coefficient!(
+  m,Vk::Val{k},VD::Val{D},b,vertices::Nothing) where {D,k}
+
+  if iszero(k) # so V is scalar, no change of basis
+    m .= 1
+    return nothing
+  end
+
+  V = eltype(m)
+  m_J = Mutable(V)(undef)
+  @inbounds for (J_id,J) in enumerate(sorted_combinations(Val(D+1),Vk))
+    s = Int(isone(J[1]))
+    for (I_id,I) in enumerate(sorted_combinations(VD,Vk))
+      n = count(i-> (J[i]-1)∉I, (1+s):k)
+      if iszero(n)
+        p = _find_first_val_or_zero(j-> (I[j]+1)∉J, 1, k)
+        m_J[I_id] = _minusone_if_odd_else_one(p)
+      else
+        m_J[I_id] = 0
+      end
+    end
+    m[J_id] = m_J
+  end
+  nothing
+end
+
+# API
+function _evaluate_nd!(
+  b::PmLambdaBasis{D,V}, x,
+  ω::AbstractMatrix{V}, i, c,
+   ::Tuple{Val{r},Val{k}}) where {D,V,r,k}
+
+  λ = _cart_to_bary(x, get_cart_to_bary_matrix(b))
+
+  # _evaluate_nd!(::BernsteinBasisOnSimplex) without set_value
+  c[1] = 1
+  _downwards_de_Casteljau_nD!(c,λ,Val(r-1),Val(D))
+
+  @inbounds for (_, _, dF_bubbles) in PmΛ_bubble_indices(Val(r),Val(k),Val(D))
+    for (w, _, α_id, J) in dF_bubbles
+      Bα = c[α_id]
+      ω_w = zero(V)
+
+      for (l,J_sub_l_id) in _sub_combinations_ids(J)
+        sgn = _minusone_if_odd_else_one(l)
+        λ_j = λ[J[l]]
+        m_Jl = b.m[J_sub_l_id]
+
+        ω_w += sgn * λ_j * m_Jl
+      end
+
+      ω[i,w] = Bα * ω_w
+    end
+  end
+end
+
+function _gradient_nd!(
+   b::PmLambdaBasis{D}, x,
+  ∇ω::AbstractMatrix{G}, i, c,
+  ∇B::AbstractMatrix{<:VectorValue{D}},
+   s::MVector{D},
+    ::Tuple{Val{r},Val{k}}) where {D,G,r,k}
+
+  _gradient_nd!(b.scalar_bernstein_basis, x, ∇B, 1, c, nothing, s, Val(r))
+
+  @inbounds for (_, _, dF_bubbles) in PmΛ_bubble_indices(Val(r),Val(k),Val(D))
+    for (w, α, _, J) in dF_bubbles
+      ∇ω_w = zero(G)
+
+      for (l,J_sub_l_id) in _sub_combinations_ids(J)
+        j = J[l]
+        α_pj = α .+ ntuple(i->Int(i==j), Val(D+2))
+        α_pj_id = bernstein_term_id(α_pj)
+
+        ∇Bα_pj = ∇B[1,α_pj_id]
+        s_α_j = α_pj[j] * _minusone_if_odd_else_one(l)
+        m_Jl = b.m[J_sub_l_id]
+
+        ∇ω_w += (s_α_j .* ∇Bα_pj) ⊗ m_Jl
+      end
+
+      ∇ω[i,w] = ∇ω_w / r
+    end
+  end
+end
+
+function _hessian_nd!(
+   b::PmLambdaBasis{D}, x,
+  Hω::AbstractMatrix{G}, i, c,
+    ::Nothing,
+  HB::AbstractMatrix{<:TensorValue{D,D}},
+   s::MMatrix{D,D},
+    ::Tuple{Val{r},Val{k}}) where {D,G,r,k}
+
+  _hessian_nd!(b.scalar_bernstein_basis, x, HB, 1, c, nothing, nothing, s, Val(r))
+
+  @inbounds for (_, _, dF_bubbles) in PmΛ_bubble_indices(Val(r),Val(k),Val(D))
+    for (w, α, _, J) in dF_bubbles
+      Hω_w = zero(G)
+
+      for (l,J_sub_l_id) in _sub_combinations_ids(J)
+        j = J[l]
+        α_pj = α .+ ntuple(i->Int(i==j), Val(D+2))
+        α_pj_id = bernstein_term_id(α_pj)
+
+        HBα_pj = HB[1,α_pj_id]
+        s_α_j = α_pj[j] * _minusone_if_odd_else_one(l)
+        m_Jl = b.m[J_sub_l_id]
+
+        Hω_w +=  (s_α_j .* HBα_pj) ⊗ m_Jl
+      end
+
+      Hω[i,w] = Hω_w / r
+    end
+  end
+end
+
+
+#################################
+# PLambdaBasis Implementation  #
+#################################
 
 function _compute_PΛ_basis_form_coefficient!(Ψ,r::Int,k::Int,D::Int,b,vertices)
   Vr, Vk, VD = Val(r), Val(k), Val(D)
@@ -113,6 +373,7 @@ function _compute_PΛ_basis_form_coefficient!(Ψ,Vr,Vk,VD::Val{D},b,vertices) wh
       Ψ[w] = Ψw
     end
   end
+  nothing
 end
 
 @inline function update_φ_αF!(φ_αF,b,α,F,::Val{r}) where r
@@ -144,6 +405,7 @@ function _compute_PΛ_basis_form_coefficient!(
       Ψ[w] = Ψw
     end
   end
+  nothing
 end
 
 """
@@ -198,17 +460,12 @@ function _hat_Ψ(Vr::Val{r},Vk::Val{k},α,F,I,J,::Type{T})::T where {T,r,k}
         sum_v += vl
         Ψ_IJ += vl*u[l]
       end
-      sgn = isodd(p) ? -1 : 1
+      sgn = _minusone_if_odd_else_one(p)
       return sgn * (Ψ_IJ - u[p]*sum_v)
     end
 
   end
   @unreachable
-end
-
-@propagate_inbounds function _find_first_val_or_zero(pred, start, stop)
-  r = findfirst(pred,start:stop)
-  return isnothing(r) ? 0 : r+start-1
 end
 
 @propagate_inbounds _u(i::Int,F,I)   = Int(isone(F[1])) - Int(I[i]+1 in F)
@@ -219,62 +476,15 @@ end
 
 # API
 
-function _return_cache(
-  b::PLambdaBasis{D},x,::Type{G},::Val{N_deriv}) where {D,G,N_deriv}
-
-  @assert D == length(eltype(x)) "Incorrect number of point components"
-  T = eltype(G)
-  r = get_order(b)
-  np = length(x)
-  ndof = length(b)
-  ndof_bernstein = length(b.scalar_bernstein_basis)
-
-  r = CachedArray(zeros(G,(np,ndof)))
-  # Cache for all scalar nD-Bernstein polynomials
-  cB = CachedVector(zeros(T,ndof_bernstein))
-  if N_deriv > 0
-    DB = T
-    xi = testitem(x)
-    for _ in 1:N_deriv
-      DB = gradient_type(DB,xi)
-    end
-    # Cache for all scalar nD-Bernstein polynomials N_deriv's derivative
-    t = (( nothing for _ in 2:N_deriv)..., CachedArray(zeros(DB,(1,ndof_bernstein))))
-    s = MArray{Tuple{size(DB)...},T}(undef)
-  else
-    t = ()
-    s = nothing
-  end
-  (r, s, cB, t...)
-end
-
-function _setsize!(b::PLambdaBasis{D}, np, ω, t...) where D
-  r = get_order(b)
-  ndof = length(b)
-  ndof_bernstein = length(b.scalar_bernstein_basis)
-  setsize!(ω,(np,ndof))
-  setsize!(t[1],(ndof_bernstein,))
-  if length(t) > 1
-    setsize!(t[end],(1,ndof_bernstein))
-  end
-end
-
-function _get_static_parameters(b::PLambdaBasis)
-  r = get_FEEC_poly_degree(b)
-  k = get_FEEC_form_degree(b)
-  return (Val(r), Val(k))
-end
-
 function _evaluate_nd!(
   b::PLambdaBasis{D,V}, x,
-  ω::AbstractMatrix{V}, i,
-  c::AbstractVector{T},
-  ::Tuple{Val{r},Val{k}}) where {D,V,T,r,k}
+  ω::AbstractMatrix{V}, i, c,
+   ::Tuple{Val{r},Val{k}}) where {D,V,r,k}
 
   λ = _cart_to_bary(x, get_cart_to_bary_matrix(b))
 
   # _evaluate_nd!(::BernsteinBasisOnSimplex) without set_value
-  c[1] = one(T)
+  c[1] = 1
   _downwards_de_Casteljau_nD!(c,λ,Val(r),Val(D))
 
   @inbounds for (_, _, dF_bubbles) in PΛ_bubble_indices(Val(r),Val(k),Val(D))
@@ -287,12 +497,11 @@ function _evaluate_nd!(
 end
 
 function _gradient_nd!(
-  b::PLambdaBasis{D}, x,
-  ∇ω::AbstractMatrix{G}, i,
-   c::AbstractVector{T},
-  ∇B::AbstractMatrix{<:VectorValue{D,T}},
-   s::MVector{D,T},
-  ::Tuple{Val{r},Val{k}}) where {D,G,T,r,k}
+   b::PLambdaBasis{D}, x,
+  ∇ω::AbstractMatrix, i, c,
+  ∇B::AbstractMatrix{<:VectorValue{D}},
+   s::MVector{D},
+    ::Tuple{Val{r},Val{k}}) where {D,r,k}
 
   _gradient_nd!(b.scalar_bernstein_basis, x, ∇B, 1, c, nothing, s, Val(r))
 
@@ -306,13 +515,12 @@ function _gradient_nd!(
 end
 
 function _hessian_nd!(
-  b::PLambdaBasis{D}, x,
-  Hω::AbstractMatrix{G}, i,
-   c::AbstractVector{T},
+   b::PLambdaBasis{D}, x,
+  Hω::AbstractMatrix, i, c,
     ::Nothing,
-  HB::AbstractMatrix{<:TensorValue{D,D,T}},
-   s::MMatrix{D,D,T},
-  ::Tuple{Val{r},Val{k}}) where {D,G,T,r,k}
+  HB::AbstractMatrix{<:TensorValue{D,D}},
+   s::MMatrix{D,D},
+    ::Tuple{Val{r},Val{k}}) where {D,r,k}
 
   _hessian_nd!(b.scalar_bernstein_basis, x, HB, 1, c, nothing, nothing, s, Val(r))
 
@@ -330,7 +538,15 @@ end
 # PLambda bases helpers  #
 ##########################
 
-function _P⁻Λ_F_bubble_indices(r,k,D,F,i)
+@propagate_inbounds function _minusone_if_odd_else_one(i)
+  isodd(i) ? -1 : 1
+end
+@propagate_inbounds function _find_first_val_or_zero(pred, start, stop)
+  r = findfirst(pred,start:stop)
+  return isnothing(r) ? 0 : r+start-1
+end
+
+function _PmΛ_F_bubble_indices(r,k,D,F,i)
   N = D + 1
   ids = Tuple{Int64, BernsteinTerm, Int, Combination{N}}[]
   for α in bernstein_terms(r-1,N)
@@ -344,6 +560,22 @@ function _P⁻Λ_F_bubble_indices(r,k,D,F,i)
     end
   end
   ids
+end
+
+PmΛ_bubble_indices(r,k,D) = PmΛ_bubble_indices(Val(r),Val(k),Val(D))
+@generated function PmΛ_bubble_indices(::Val{r},::Val{k},::Val{D}) where {r,k,D}
+  i=0
+  N = D + 1
+  d_F_bubbles = Tuple{Int64, Combination{N}, Vector{Tuple{Int64, NTuple{N+1, Int64}, Int, Combination{N}}}}[]
+  for d in k:D
+    for F in sorted_combinations(D+1, d+1)
+      dF_bubbles = _PmΛ_F_bubble_indices(r,k,D,F,i)
+      push!(d_F_bubbles, (d, F, dF_bubbles))
+      i += length(dF_bubbles)
+    end
+  end
+  @check i == binomial(r+k-1,k)*binomial(D+r,D-k)
+  :( $(d_F_bubbles) )
 end
 
 function _PΛ_F_bubble_indices(r,k,D,F,i)
@@ -379,34 +611,13 @@ PΛ_bubble_indices(r,k,D) = PΛ_bubble_indices(Val(r),Val(k),Val(D))
   :( $(d_F_bubbles) )
 end
 
-P⁻Λ_bubble_indices(r,k,D) = P⁻Λ_bubble_indices(Val(r),Val(k),Val(D))
-@generated function P⁻Λ_bubble_indices(::Val{r},::Val{k},::Val{D}) where {r,k,D}
-  i=0
-  N = D + 1
-  d_F_bubbles = Tuple{Int64, Combination{N}, Vector{Tuple{Int64, BernsteinTerm, Int, Combination{N}}}}[]
-  for d in k:D
-    for F in sorted_combinations(D+1, d+1)
-      dF_bubbles = _P⁻Λ_F_bubble_indices(r,k,D,F,i)
-      push!(d_F_bubbles, (d, F, dF_bubbles))
-      i += length(dF_bubbles)
-    end
-  end
-  @check i == binomial(r+k-1,k)*binomial(D+r,D-k)
-  :( $(d_F_bubbles) )
-end
-
-# TODO Apply Hodge
-sorted_and_sub_combinations(::Val,::Val{0}) = Tuple{}[]
-@generated function sorted_and_sub_combinations(::Val{D},::Val{k}) where {D,k}
+_all_combis_and_sub_combi_ids(::Val,::Val{0}) = Tuple{}[]
+@generated function _all_combis_and_sub_combi_ids(::Val{D},::Val{k}) where {D,k}
   @check k>0
-  res = Tuple{Int, Combination{D}, Vector{Tuple{Int, Combination{D}, Int}}}[]
+  res = Tuple{Int, Combination{D}, Vector{Tuple{Int, Int}}}[]
   for (I_id,I) in enumerate(sorted_combinations(D,k))
-    sub_combis = Tuple{Int, Combination{D}, Int}[]
-    for (q,I_sub_q) in enumerate(sub_combinations(I))
-      I_sub_q_id = combination_index(I_sub_q)
-      push!(sub_combis, (q, I_sub_q, I_sub_q_id) )
-    end
-    push!(res, (I_id, I, sub_combis))
+    sub_combi_ids = _sub_combinations_ids(I)
+    push!(res, (I_id, I, sub_combi_ids))
   end
   :( $(res) )
 end
