@@ -62,6 +62,7 @@ pkg> add Gridap
 ## Plugins
 
 - [GridapDistributed](https://github.com/gridap/GridapDistributed.jl) Distributed-memory extension of Gridap.
+- [GridapSolvers](https://github.com/gridap/GridapSolvers.jl) Scalable multiphysics finite element solvers.
 - [GridapEmbedded](https://github.com/gridap/GridapEmbedded.jl) Embedded finite elements in Julia.
 - [GridapGmsh](https://github.com/gridap/GridapGmsh.jl) Generate a FE mesh with [GMSH](https://www.gmsh.info) and use it in Gridap.
 - [GridapMakie](https://github.com/gridap/GridapMakie.jl) Makie plotting recipes for Gridap.

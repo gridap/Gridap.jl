@@ -25,6 +25,7 @@ pages = [
     "dev-notes/block-assemblers.md",
     "dev-notes/pullbacks.md",
     "dev-notes/bernstein.md",
+    "dev-notes/autodiff.md",
   ],
 ]
 

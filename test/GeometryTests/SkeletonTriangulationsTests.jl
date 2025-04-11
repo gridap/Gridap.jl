@@ -1,6 +1,7 @@
 module SkeletonTriangulationsTests
 
 using Test
+using Gridap
 using Gridap.TensorValues
 using Gridap.Arrays
 using Gridap.Fields
@@ -52,6 +53,7 @@ vn = get_facet_normal(vtrian)
 Ω = Triangulation(model)
 Γ = BoundaryTriangulation(model)
 Λ = SkeletonTriangulation(Γ)
+normal = get_normal_vector(Λ)
 @test Λ.rtrian === Γ
 @test isa(Λ.dtrian,SkeletonTriangulation)
 glue = get_glue(Λ,Val(3))
@@ -110,13 +112,27 @@ itrian = InterfaceTriangulation(Ω_in,Ω_out)
 #writevtk(trian,"trian",celldata=["inout"=>cell_to_inout])
 #writevtk(itrian,"itrian",nsubcells=10,cellfields=["ni"=>ni,"nl"=>nl,"nr"=>nr])
 
+ti = get_tangent_vector(itrian)
+tl = get_tangent_vector(ltrian)
+tr = get_tangent_vector(rtrian)
+
+@test ti isa SkeletonPair
+@test tl isa Gridap.CellData.GenericCellField
+@test tr isa Gridap.CellData.GenericCellField 
+
 reffe = LagrangianRefFE(Float64,QUAD,(2,2))
 conf = CDConformity((CONT,DISC))
 face_own_dofs = get_face_own_dofs(reffe,conf)
 strian = SkeletonTriangulation(model,reffe,face_own_dofs)
 test_triangulation(strian)
 ns = get_facet_normal(strian)
+ts = get_edge_tangent(strian)
 @test length(ns.⁺) == num_cells(strian)
+@test length(ts.⁺) == num_cells(strian)
+# Test orthogonality
+should_be_zero = lazy_map(Broadcasting(Operation(dot)), ns.plus, ts.plus)
+ndot_t_evaluated = evaluate(should_be_zero, VectorValue.(0:0.05:1))
+@test maximum(ndot_t_evaluated) < 1e-15
 
 #using Gridap.Visualization
 #writevtk(strian,"strian",cellfields=["normal"=>ns])
