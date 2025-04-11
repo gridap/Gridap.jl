@@ -158,7 +158,7 @@ and ``ℙ_rΛ^k(T^D)`` (we write ``ℙ_r^{(-)}Λ^k`` for either one of them) der
 degree ``r``. In this section, we give a summary of the basis definition,
 translation of the formulas in the paper from the differential geometry
 language to usual differential calculus and the implemented algorithm.
-ℙ_r^-Λ^k(T\^D)
+
 #### Face and form coefficients indexing
 
 Again, a ``D``-dimensional simplex ``T`` is defined by ``N=D+1`` vertices
@@ -174,8 +174,8 @@ In particular, ``T\sim \{1:N\}``. We write ``f\subset T`` for any face of
 ``T`` has ``\binom{N}{d+1}`` ``d``-dimensional faces, indexed ``\forall\,1≤ F_1
 < F_2 < ... < F_{d+1} ≤ N``. The dimension of a face ``f`` is ``\#F``, and we
 write ``{"∀\,\#J=d+1"}`` for all the increasing index sets of the
-``d``-dimensional faces of ``T``. We will sometimes write ``J(i)`` instead of
-``J_i`` for readability purpose when it appears as a subscript.
+``d``-dimensional faces of ``T``. We will sometimes write ``_{J(i)}`` instead of
+``_{J_i}`` for readability purpose when it appears as a subscript.
 
 Using Einstein's convention of summation on repeated indices, a degree-``k``
 dimension-``D`` form ``ω`` can be written in the canonical Cartesian basis as
@@ -189,7 +189,12 @@ I_k\} \text{ for }1≤ I_1 < ... < I_k ≤ D\big\},
 and ``\{\text{d}x^i\}_{1≤ i≤ D}`` is the canonical covector basis (basis
 of ``\text{T}_x T``) such that ``\text{d}x^i(\partial_{x_j})=δ_{ij}``.
 
-TODO choose linear ordering
+These sets of indices ``I,J,F`` are ``k``-combinations of ``{1:D/N}``,
+implemented by the type [`Combination{k,D/N}`](@ref Combination). It provides a
+generator [`sorted_combinations`](@ref) of all ``D``-dimensional
+``k``-combinations, and a fast function ([`combination_index`](@ref)) to
+compute the corresponding linear index of a combination amongst combinations of
+same size, used to store e.g. form components ``ω_I`` in numerical collections.
 
 #### Geometric decomposition
 
@@ -213,7 +218,20 @@ spaces ``ℙ_r^{(-)}Λ^k(T)`` admit the geometric decomposition:
 = \underset{k≤d≤D}{\oplus}\underset{\quad F=1≤ F_1 < ... < F_{d+1} ≤ N}{\oplus}\ \mathring{ℙ}_r^{(-)}Λ^k(T,f).
 ```
 
-TODO chose linear indexing ``(α,J)(k,r,f)``
+Given ``k,r`` and ``D``, the functions [`PΛ_bubble_indices`](@ref) and
+[`P⁻Λ_bubble_indices`](@ref) implement an iterator efficiently iterating over
+each ``d``-face``f`` to which a bubble space ``\mathring{ℙ}_r^{(-)}Λ^k(T^D,f)``
+is associated, and for each bubble space, a triple ``(w_{αJ}, α, J)`` where
+``w_{αJ}`` is the linear index of a shape function of ``ℙ_r^{(-)}Λ^k(T^D)``,
+and ``(α,J)`` are data necessary to compute the basis polynomials (defined in
+the next section). These iterators are used as follows:
+```julia
+for (d, F, dF_bubbles) in P(⁻)Λ_bubble_indices(r,k,D)
+  for (w, α, J) in dF_bubbles
+      # Do something to basis polynomial w
+  end
+end
+```
 
 #### Bubble functions ``\mathring{ℙ}_r^-Λ^k``
 
@@ -251,12 +269,12 @@ the ``k``-minors ``m_I^{J\backslash l}`` of ``M^\intercal`` as follows:
 = \text{det}\big( (\partial_{I(i)}λ_{J(j)})_{1≤ i,j≤ k} \big)
 = \text{det}\big( (M_{J(j),I(i)+1})_{1≤ i,j≤ k} \big),
 ```
-and we obtain the coordinates of ``\bar{ω}^{α,J}=B_α φ^J`` in the basis
-``\mathrm{d}x^I`` are
+and we obtain the components of ``\bar{ω}^{α,J}=B_α φ^J`` in the basis
+``\mathrm{d}x^I``
 ```math
 \bar{ω}_{I}^{α,J} = B_α \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \, m_I^{J\backslash l}.
 ```
-There are ``\binom{D}{k}`` coordinates. The ``\binom{D}{k}\binom{N}{k}``
+There are ``\binom{D}{k}`` components. The ``\binom{D}{k}\binom{N}{k}``
 coefficients ``\{m_I^{J}\}_{I,J}`` are constant in ``T`` and are pre-computed
 from ``M`` at the creation of the basis `TODO`.
 
@@ -269,7 +287,7 @@ compute B_α(x) for all |α|=r-1
 for (d, F, dF_bubbles) in P⁻Λ_bubble_indices(r,k,D)
   for (i_αJ, α, J) in dF_bubbles # 1 ≤ i_αJ ≤ length(ℙᵣ⁻Λᵏ(Tᴰ))
     ω_αJ = 0 # zero vector of length D choose k
-    for I in increasing_perms(D,k)
+    for I in sorted_combinations(D,k)
         s = 0
         for (l, J_l) in enumerate(sub_iperms(J))
           Jl = J[l]
@@ -300,7 +318,7 @@ where ``Ψ^{α,J}`` are defined by
 Ψ^{α,F,j} = \mathrm{d}λ^j - \frac{α_j}{|α|}\sum_{l\in F}\mathrm{d}λ^l,
 ```
 and recall that ``F`` is uniquely determined by ``α`` and ``J`` through
-``F=⟦α⟧∪J``. Again, we need their coordinates in the Cartesian basis
+``F=⟦α⟧∪J``. Again, we need their components in the Cartesian basis
 ``\mathrm{d}x^I``:
 ```math
 Ψ^{α,F,j} = M_{j,i+1}\mathrm{d}x^i - \frac{α_j}{|α|}\sum_{l\in F}M_{l,i+1}\mathrm{d}x^i
@@ -320,7 +338,7 @@ and
 ψ_I^{α,J} = \text{det}\big( (ψ_{i}^{α,F,j})_{i\in I,\,j\in J} \big).
 ```
 
-Finally, the ``\binom{D}{k}`` coordinates of ``ω^{α,J}=B_α Ψ^{α,J}`` in the
+Finally, the ``\binom{D}{k}`` components of ``ω^{α,J}=B_α Ψ^{α,J}`` in the
 basis ``\mathrm{d}x^I`` are
 ```math
 ω_{I}^{α,J} = B_α\, ψ_I^{α,J},
@@ -507,9 +525,11 @@ Euclidean (Riemannian) space is
 ```math
 \star \mathrm{d}x^I = \mathrm{sgn}\left(I\!*\!\bar{I}\,\right)\mathrm{d}x^{\bar{I}}
 ```
-where ``\bar{I}`` is the increasing permutation ``\{1:D\}\backslash I``, such that
-the concatenated permutation ``I\!*\!\bar{I}`` is a permutation of ``\{1:D\}``. The
-sign of this permutation can be efficiently computed with
+where ``\bar{I}`` is the complement of ``I`` in ``1:D``, that is the
+combination ``\{1:D\}\backslash I`` such that the concatenated permutation
+``I\!*\!\bar{I}`` is a permutation of ``\{1:D\}``. ``\bar{I}`` is implemented
+by [`complement(I)`](@ref complement). The sign of this permutation can be
+efficiently computed with
 ```julia
 function perm_sign(I,D)
     i, k, acc, delta = 1, 1, 0, 0
@@ -534,7 +554,7 @@ of ``\pm 1`` computed at compile time (c.f. `TODO`).
 ##### Useful lemmas TODO
 
 ##### Lemma 1
-For ``I`` and ``J`` two increasing sets of indices of same size ``k``,
+For ``I`` and ``J`` two combinations of same size ``k``,
 ```math
 \mathrm{det}\big( (δ_{I_i, J_j})_{1≤ i,j≤ k} \big) = δ_I^J \ \text{(}= \underset{1≤ i≤ k}{\Pi} δ_{I_i}^{J_i} \text{)}
 ```

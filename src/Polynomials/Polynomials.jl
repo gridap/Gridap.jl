@@ -95,6 +95,7 @@ using Base.Iterators: take
 import Gridap.Fields: evaluate!
 import Gridap.Fields: return_cache
 import Gridap.Arrays: return_type
+import Base.@propagate_inbounds
 
 export Polynomial
 export isHierarchical
@@ -151,6 +152,8 @@ include("ChebyshevBases.jl")
 include("BernsteinBases.jl")
 
 include("ModalC0Bases.jl")
+
+include("PLambdaBases.jl")
 
 include("Deprecated.jl")
 

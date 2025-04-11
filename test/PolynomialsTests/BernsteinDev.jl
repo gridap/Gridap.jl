@@ -119,9 +119,9 @@ end
 #  end
 #end
 
-include("IncreasingPermutationsTuple.jl")
+include("Combinations.jl")
 
-using .IncreasingPermutations
+using .Combinations
 
 @inline function minor(M,I,J)
   @check length(I) == length(J)
@@ -133,7 +133,6 @@ using .IncreasingPermutations
   m = MMatrix{k,k,T}(undef)
   for (i, Ii) in enumerate(I)
     for (j, Jj) in enumerate(J)
-      #m[i,j] = M[Ii,Jj]
       @inbounds m[i,j] = M[Ii,Jj]
     end
   end
@@ -142,7 +141,7 @@ end
 
 function all_k_minors!(m,M,::Val{k}) where {k}
   D = size(M)[1]
-  Λᵏᴰ = increasing_perms(Val(D),Val(k))
+  Λᵏᴰ = sorted_combinations(Val(D),Val(k))
   @inbounds begin
     for (i, I) in enumerate(Λᵏᴰ)
       for (j, J) in enumerate(Λᵏᴰ)
@@ -176,7 +175,7 @@ function _P⁻Λ_F_bubble_indices(r,k,D,F,i)
   N = D + 1
   ids = []
   for α in bernstein_terms(r-1,N)
-    for J in increasing_perms(N,k+1)
+    for J in sorted_combinations(N,k+1)
       j = minimum(J)-1
       if issetequal(supp(α) ∪ J, F) && all(α[1:j] .== 0)
         push!(ids, (i, α, J))
@@ -191,7 +190,7 @@ function _PΛ_F_bubble_indices(r,k,D,F,i)
   N = D + 1
   ids = []
   for α in bernstein_terms(r,N)
-    for J in increasing_perms(N,k)
+    for J in sorted_combinations(N,k)
       j = minimum(setdiff(F,J))-1
       if issetequal(supp(α) ∪ J, F) && all(α[1:j] .== 0)
         push!(ids, (i, α, J))
@@ -209,7 +208,7 @@ PΛ_bubble_indices(r,k,D) = PΛ_bubble_indices(Val(r),Val(k),Val(D))
   i=0
   d_F_bubbles = []
   for d in k:D
-    for F in increasing_perms(D+1, d+1)
+    for F in sorted_combinations(D+1, d+1)
       dF_bubbles = _PΛ_F_bubble_indices(r,k,D,F,i)
       push!(d_F_bubbles, (d, F, dF_bubbles))
       i += length(dF_bubbles)
@@ -225,7 +224,7 @@ P⁻Λ_bubble_indices(r,k,D) = P⁻Λ_bubble_indices(Val(r),Val(k),Val(D))
   i=0
   d_F_bubbles = []
   for d in k:D
-    for F in increasing_perms(D+1, d+1)
+    for F in sorted_combinations(D+1, d+1)
       dF_bubbles = _P⁻Λ_F_bubble_indices(r,k,D,F,i)
       push!(d_F_bubbles, (d, F, dF_bubbles))
       i += length(dF_bubbles)
@@ -238,9 +237,17 @@ end
 
 function P_bubles(;r=2,k=2,D=3)
   for (d, F, dF_bubbles) in PΛ_bubble_indices(r,k,D)
+    s = Set()
     println("d = $d, F=$F, F*=$(complement(F))")
     for (i, α, J) in dF_bubbles
-      println("i=$i, α=$α, J=$J")
+      print("i=$i, α=$α, J=$J")
+      println("  REDUNDANT")
+      #if α in s
+      #  println("  REDUNDANT")
+      #else
+      #  println()
+      #  push!(s,α)
+      #end
     end
     println()
   end
@@ -251,9 +258,9 @@ function Pm_bubles(;r=2,k=2,D=3)
     println("d = $d, F=$F, F*=$(complement(F))")
     for (i, α, J) in dF_bubbles
       println("i=$i, α=$α, J=$J")
-      for (l,J_l) in enumerate(sub_iperms(J))
-        println("sgn=$(-(-1)^l), J[l]=$(J[l]), J\\l=$(J_l)")
-      end
+      #for (l,J_l) in enumerate(sub_combinations(J))
+        #println("sgn=$(-(-1)^l), J[l]=$(J[l]), J\\l=$(J_l)")
+      #end
     end
     println()
   end
