@@ -297,7 +297,7 @@ Converts the cartesian coordinates `x` into the barycentric coordinates with
 respect to the reference simplex, that is `λ`=(x1, ..., xD, 1-x1-x2-...-xD).
 """
 @inline function _cart_to_bary(x::Point{D,T}, ::Nothing) where {D,T}
-  return SVector(x..., 1-sum(x))
+  return SVector(1-sum(x), x...)
 end
 
 """
@@ -507,7 +507,6 @@ end
   ex_v = Vector{Expr}()
   ncomp = num_indep_components(V)
   z = zero(eltype(c))
-  N = D+1
   δ(i,j) = Int(i==j)
   sub_ids = MVector{D+1,Tuple{Int,Int}}(undef)
 
@@ -520,8 +519,8 @@ end
       # s[q] = Σ_β B_β ∇λ(eq)_i
       for q in 1:D
         if x_to_λ == Nothing
-          # ∇λ(eq)_i = δiq - δiN
-          Cqi = δ(i,q) - δ(i,N)
+          # ∇λ(eq)_i = δ_{q+1,i} - δ_1i
+          Cqi = δ(i,q+1) - δ(1,i)
           iszero(Cqi) || push!(ex_v, :(@inbounds s[$q] += $Cqi*B_β))
         else
           # ∇λ(eq)_i = ei (x_to_λ*(e1 - e_{q+1}) - x_to_λ*(e1)) = ei*x_to_λ*e_{q+1}
@@ -547,10 +546,8 @@ end
   ex_v = Vector{Expr}()
   ncomp = num_indep_components(V)
   z = zero(eltype(c))
-  N = D+1
   δ(i,j) = Int(i==j)
-  C(q,t,i,j) = (δ(i,q)-δ(i,N))*(δ(j,t)-δ(j,N))
-  #C(q,t,i,j) = (δ(i,q+1)-δ(i,1))*(δ(j,t+1)-δ(j,1))
+  C(q,t,i,j) = (δ(i,q+1)-δ(i,1))*(δ(j,t+1)-δ(j,1))
   N_max_ssα = binomial(D+2,2)
   sub_sub_α_ids = MVector{N_max_ssα, NTuple{3,Int}}(undef)
 
