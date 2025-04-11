@@ -152,7 +152,7 @@ test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 #####################################
 
 function bernstein_nD(D,K,x2λ=nothing)
-  terms = Polynomials.bernstein_terms(Val(K),Val(D))
+  terms = Polynomials.bernstein_terms(K,D)
   N = length(terms)
 
   x -> begin
@@ -197,7 +197,6 @@ H = gradient_type(G,x1)
 order = 0
 b = BernsteinBasisOnSimplex(Val(D),V,order)
 @test get_order(b) == 0
-@test get_exponents(b) == ((0,0,0),)
 bx  = _bx( D,order,x)
 ∇bx = _∇bx(D,order,x,G)
 Hbx = _Hbx(D,order,x,H)
@@ -205,7 +204,6 @@ test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
 
 order = 1
 b = BernsteinBasisOnSimplex(Val(D),V,order)
-@test get_exponents(b) == ((1,0,0), (0,1,0), (0,0,1))
 bx  = _bx( D,order,x)
 ∇bx = _∇bx(D,order,x,G)
 Hbx = _Hbx(D,order,x,H)
@@ -213,7 +211,6 @@ test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
 
 order = 2
 b = BernsteinBasisOnSimplex(Val(D),V,order)
-@test get_exponents(b) == ((2,0,0), (1,1,0), (1,0,1), (0,2,0), (0,1,1), (0,0,2))
 bx  = _bx( D,order,x)
 ∇bx = _∇bx(D,order,x,G)
 Hbx = _Hbx(D,order,x,H)

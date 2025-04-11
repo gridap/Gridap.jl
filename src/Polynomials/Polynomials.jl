@@ -88,7 +88,8 @@ using Gridap.TensorValues
 using Gridap.Fields
 
 using PolynomialBases: jacobi, jacobi_and_derivative
-using Combinatorics: multiexponents, multinomial
+using Combinatorics: multiexponents, multinomial, combinations
+using Base.Iterators: take
 
 import Gridap.Fields: evaluate!
 import Gridap.Fields: return_cache
