@@ -1132,8 +1132,8 @@ t10c = TensorValue{1,0,ComplexF32}()
 t01c = TensorValue{0,1,ComplexF32}()
 
 @test conj(st0) === st0
-@test real(st0) === SymTracelessTensorValue{0, Float64, 0}()
-@test imag(st0) === SymTracelessTensorValue{0, Float64, 0}()
+@test real(st0) === SymTracelessTensorValue{0,Float64}()
+@test imag(st0) === SymTracelessTensorValue{0,Float64}()
 @test tr(t00) === zero(Float32)
 @test tr(t220) === VectorValue{0,ComplexF16}()
 @test adjoint(t00) === t00
