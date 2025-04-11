@@ -268,7 +268,7 @@ simplices, P`r`Λ`ᴷ`(△`ᴰ`).
 
 Reference: D. N. Arnold and A. Logg, Periodic Table of the Finite Elements, SIAM News, vol. 47 no. 9, November 2014
 """
-struct PLambdaBasis{D,T,L,K,P,B} <: PolynomialBasis{D,VectorValue{L,T},K,Bernstein}
+struct PLambdaBasis{D,T,L,P,B} <: PolynomialBasis{D,VectorValue{L,T},Bernstein}
   r::Int
   k::Int
   Ψ::P
@@ -300,7 +300,7 @@ struct PLambdaBasis{D,T,L,K,P,B} <: PolynomialBasis{D,VectorValue{L,T},K,Bernste
       # Ψ = convert(P, Ψ) # isn't this automatic ?
     end
 
-    new{D,T,L,K,P,B}(r,k,Ψ,b)
+    new{D,T,L,P,B}(r,k,Ψ,b)
   end
 end
 
