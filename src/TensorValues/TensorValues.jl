@@ -45,6 +45,7 @@ using Gridap.Helpers
 using Gridap.Arrays
 using LinearAlgebra
 using Random
+using ForwardDiff
 
 export MultiValue
 export VectorValue
