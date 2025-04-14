@@ -177,7 +177,11 @@ end
 
 function _array_cache!(dict::Dict,a::LazyArray)
   @boundscheck begin
-    @notimplementedif ! all(map(isconcretetype, map(eltype, a.args)))
+    if ! all(map(isconcretetype, map(eltype, a.args)))
+      for n in 1:length(a.args)
+        @notimplementedif ! all(map(isconcretetype, map(eltype, a.args[n])))
+      end
+    end
     if ! (eltype(a.maps) <: Function)
       @notimplementedif ! isconcretetype(eltype(a.maps))
     end
