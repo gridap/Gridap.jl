@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added functionality to allow automatic differentiation of integrals with respect to evaluation positions xh where xh is a FEFunction. Since PR[#1095](https://github.com/gridap/Gridap.jl/pull/1095)
 
+## [Unreleased]
+
+### Fixed
+
+- Fix bug for issue [#927](https://github.com/gridap/Gridap.jl/issues/927), where Nedelec FE would not work on faces (Dc < Dp). Since PR[#1094](https://github.com/gridap/Gridap.jl/pull/1094).
+
 ## [0.18.11] - 2025-04-01
 
 ### Added
