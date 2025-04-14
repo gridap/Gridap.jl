@@ -265,3 +265,16 @@ function Pm_bubles(;r=2,k=2,D=3)
     println()
   end
 end
+
+
+function all_k_minors!(m,M,Vk::Val)
+  D = size(M)[1]
+  Λᵏᴰ = sorted_combinations(Val(D),Vk)
+  @inbounds begin
+    for (i, I) in enumerate(Λᵏᴰ)
+      for (j, J) in enumerate(Λᵏᴰ)
+        m[i,j] = @inline minor(M,I,J,Vk)
+      end
+    end
+  end
+end
