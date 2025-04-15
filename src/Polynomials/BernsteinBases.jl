@@ -227,15 +227,15 @@ end
     BernsteinBasisOnSimplex{D,V,M} <: PolynomialBasis{D,V,Bernstein}
 
 Type for the multivariate Bernstein basis in barycentric coordinates.
-`M` is Nothing for the reference tetrahedra bary. coords., or `SMatrix{D+1,D+1}`
-if some simplex (triangle, tetrahedra, ...) vertices coordinates are given.
+`M` is Nothing for the reference tetrahedra, or `SMatrix{D+1,D+1}`
+if some simplex (triangle, tetrahedra, ...) vertices coordinates are specified.
 """
 struct BernsteinBasisOnSimplex{D,V,M} <: PolynomialBasis{D,V,Bernstein}
   max_order::Int
   cart_to_bary_matrix::M #  Nothing or SMatrix{D+1,D+1}
 
   function BernsteinBasisOnSimplex{D}(::Type{V},order::Int,vertices=nothing) where {D,V}
-    @check isnothing(vertices) || vertices isa NTuple{D+1,<:Point{D}}
+    @check isnothing(vertices) || ( length(vertices)==(D+1) && eltype(vertices) <: Point{D} )
     K = Int(order)
     cart_to_bary_matrix = _compute_cart_to_bary_matrix(vertices)
     M = typeof(cart_to_bary_matrix) # Nothing or SMatrix
@@ -245,12 +245,13 @@ end
 
 """
     BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int)
-    BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int,vertices::NTuple{D+1,<:Point{D}})
+    BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int,vertices)
 
-Constructor for [`BernsteinBasisOnSimplex`](@ref).
+Constructors for [`BernsteinBasisOnSimplex`](@ref).
 
-If specified, the simplex defined by the `vertices` - used to compute the
-barycentric coordinates from - must be non-degenerated (have nonzero volume).
+If specified, `vertices` is a collection of `D`+1 values type <: Point{`D`}. The
+simplex defined by `vertices` -- used to compute the barycentric coordinates
+from -- must be non-degenerated (have nonzero volume).
 """
 function BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int,vertices=nothing) where {D,V}
   BernsteinBasisOnSimplex{D}(V,order,vertices)
@@ -410,8 +411,7 @@ function _hessian_nd!(
   _hess_Bα_from_Bα⁻⁻!(r,i,c,s,Val(K),Val(D),V,x_to_λ)
 end
 
-# @generated functions as otherwise the time and allocation for
-# computing the indices are the bottlneck...
+# @generated functions as otherwise the time for computing the indices are the bottlneck...
 """
     _downwards_de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{K0}=Val(1))
 
