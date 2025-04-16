@@ -445,7 +445,7 @@ function Arrays.evaluate!(
   cache,k::LocalOperator,space::FESpace
 )
   u = evaluate!(cache,k,get_trial_fe_basis(space))
-  v = similar_cell_field(u,lazy_map(transpose,CellData.get_data(u)),get_triangulation(u),DomainStyle(u))
+  v = CellData.similar_cell_field(u,lazy_map(transpose,CellData.get_data(u)),get_triangulation(u),DomainStyle(u))
   return u, v
 end
 
@@ -472,7 +472,7 @@ function Arrays.evaluate!(
 )
   is_test(v) = eltype(get_data(v)) <: AbstractVector{<:Field}
   is_trial(v) = eltype(get_data(v)) <: AbstractMatrix{<:Field}
-  u = is_test(v) ? similar_cell_field(v,lazy_map(transpose,get_data(v))) : v
+  u = is_test(v) ? CellData.similar_cell_field(v,lazy_map(transpose,get_data(v))) : v
   _data = _compute_local_solves(k,u)
   data = is_trial(v) ? lazy_map(transpose,_data) : _data
   return GenericCellField(data,k.trian_out,ReferenceDomain())
