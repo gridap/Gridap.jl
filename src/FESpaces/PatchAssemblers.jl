@@ -456,7 +456,8 @@ function Arrays.evaluate!(
     v,lazy_map(transpose,get_data(v)),get_triangulation(v),TrialBasis(),DomainStyle(v)
   )
   data = _compute_local_solves(k,u)
-  return GenericCellField(data,k.trian_out,ReferenceDomain())
+  domain = DomainStyle(get_fe_basis(k.space_out))
+  return GenericCellField(data,k.trian_out,domain)
 end
 
 function Arrays.evaluate!(
@@ -464,7 +465,8 @@ function Arrays.evaluate!(
 )
   _data = _compute_local_solves(k,u)
   data = lazy_map(transpose,_data)
-  return GenericCellField(data,k.trian_out,ReferenceDomain())
+  domain = DomainStyle(get_fe_basis(k.space_out))
+  return GenericCellField(data,k.trian_out,domain)
 end
 
 function Arrays.evaluate!(
@@ -475,7 +477,8 @@ function Arrays.evaluate!(
   u = is_test(v) ? CellData.similar_cell_field(v,lazy_map(transpose,get_data(v))) : v
   _data = _compute_local_solves(k,u)
   data = is_trial(v) ? lazy_map(transpose,_data) : _data
-  return GenericCellField(data,k.trian_out,ReferenceDomain())
+  domain = DomainStyle(get_fe_basis(k.space_out))
+  return GenericCellField(data,k.trian_out,domain)
 end
 
 function _compute_local_solves(
