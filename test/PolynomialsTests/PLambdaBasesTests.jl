@@ -27,7 +27,7 @@ for k in 0:D
       passed == passed && w == w_prev+1
       w_prev = w
 
-      passed = passed && all(α .≥ 0) && sum(α)==r-1 && length(α)==N+1 &&
+      passed = passed && all(α .≥ 0) && sum(α)==r-1 && length(α)==N &&
             α_id == bernstein_term_id(α) &&
             all( bernstein_term_id( [α[j]+Int(i==j) for j in eachindex(α)] ) == αpi_id
                 for (i,αpi_id) in enumerate(sup_α_ids) )
