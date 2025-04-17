@@ -21,6 +21,11 @@ function evaluate!(cache,::typeof(*),a::AbstractMatrix{<:Number},b::AbstractMatr
   c
 end
 
+"""
+    struct MulAddMap{T} <: Map
+
+Map for operation a,b,c -> LinearAlgepra.mul!(copy(c),a,b,`α`,`β`)
+"""
 struct MulAddMap{T} <: Map
   α::T
   β::T
@@ -40,6 +45,11 @@ function evaluate!(cache,k::MulAddMap,a,b,c)
   d
 end
 
+"""
+    struct AddEntriesMap{F} <: Map
+
+[`Map`](@ref) for [`add_entries!`](@ref) where `F` is the combine function.
+"""
 struct AddEntriesMap{F} <: Map
   combine::F
 end
@@ -52,6 +62,12 @@ function evaluate!(cache,k::AddEntriesMap,A,v,i)
   add_entries!(k.combine,A,v,i)
 end
 
+"""
+    struct TouchEntriesMap <: Map
+
+Dummy [`AddEntriesMap`](@ref) used to keep track of sparsity patterns in symbolic
+assemblies, see the symbolic methods of [`SparseMatrixAssembler`](@ref Gridap.FESpaces.SparseMatrixAssembler).
+"""
 struct TouchEntriesMap <: Map end
 
 function evaluate!(cache,k::TouchEntriesMap,A,v,i,j)

@@ -183,7 +183,7 @@ end
 """
     append_ptrs(pa,pb)
 
-Append two vectors of pointers.
+Concatenate two vectors of pointers in a new vector.
 """
 function append_ptrs(pa::AbstractVector{T},pb::AbstractVector{T}) where T
   p = copy(pa)
@@ -191,6 +191,10 @@ function append_ptrs(pa::AbstractVector{T},pb::AbstractVector{T}) where T
 end
 
 """
+    append_ptrs!(pa,pb)
+
+Similar to [`append_ptrs`](@ref), but appends `pb` at the end of `pa`, in place
+in `pa`.
 """
 function append_ptrs!(pa::AbstractVector{T},pb::AbstractVector{T}) where T
   na = length(pa)-1
@@ -346,6 +350,11 @@ function lazy_map(::typeof(getindex),a::Table,b::AbstractArray{<:Integer})
   LocalItemFromTable(a,b)
 end
 
+"""
+    get_local_item(a::Table,li::Integer)
+
+View in the `li`ᵗʰ column of `a` (the `li`ᵗʰ items in each list/row of `a`).
+"""
 function get_local_item(a::Table,li::Integer)
   LocalItemFromTable(a,Fill(li,length(a)))
 end
