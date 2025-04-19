@@ -190,12 +190,13 @@ end
 function _evaluate!(
   cache,
   fg::FieldGradientArray{1,MonomialBasis{D,T}},
-  x::AbstractVector{<:Point},
-  TisbitsType::Val{true}) where {D,T}
+  x::AbstractVector{Tp},
+  TisbitsType::Val{true}) where {D,T,Tp<:Point}
 
   f = fg.fa
   r, v, c, g = cache
-  z = zero(Mutable(VectorValue{D,eltype(T)}))
+  Tz = VectorValue{D,eltype(gradient_type(T,zero(Tp)))}
+  z = zero(Mutable(Tz))
   np = length(x)
   ndof = length(f)
   n = 1 + _maximum(f.orders)
