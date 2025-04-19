@@ -5,15 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.18.12] - 2025-04-19
 
-### Added 
+### Added
 
 - Added functionality to allow automatic differentiation of integrals with respect to evaluation positions xh where xh is a FEFunction. Since PR[#1095](https://github.com/gridap/Gridap.jl/pull/1095)
 
 ### Fixed
 
 - Fix bug for issue [#927](https://github.com/gridap/Gridap.jl/issues/927), where Nedelec FE would not work on faces (Dc < Dp). Since PR[#1094](https://github.com/gridap/Gridap.jl/pull/1094).
+- Added support to evaluate polynomial bases on dualized points. Since PR[#1100](https://github.com/gridap/Gridap.jl/pull/1100).
 
 ## [0.18.11] - 2025-04-01
 
