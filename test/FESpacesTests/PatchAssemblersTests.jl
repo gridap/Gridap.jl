@@ -18,7 +18,7 @@ function generate_model()
   return model
 end
 
-function compute_number_ofcells(model,domain_tags,integration_tags)
+function compute_number_of_cells(model,domain_tags,integration_tags)
   D = num_cell_dims(model)
   labels = get_face_labeling(model)
 
@@ -48,7 +48,7 @@ function test_patch_assembly(model,domain_tags,integration_tags)
   Ω = Triangulation(ReferenceFE{D},model;tags=domain_tags)
   Γ = Triangulation(ReferenceFE{D-1},model;tags=domain_tags)
 
-  n_domain_cells, n_integration_cells, n_integration_faces = compute_number_ofcells(model,domain_tags,integration_tags)
+  n_domain_cells, n_integration_cells, n_integration_faces = compute_number_of_cells(model,domain_tags,integration_tags)
   
   ptopo = Geometry.PatchTopology(model;tags=domain_tags)
   n_patches = Geometry.num_patches(ptopo)
@@ -76,20 +76,30 @@ function test_patch_assembly(model,domain_tags,integration_tags)
   passem1 = FESpaces.PatchAssembler(ptopo,VΩ,VΩ)
   a1(uΩ,vΩ) = laplacian(uΩ,vΩ,dΩp)
   l1(vΩ) = ∫(f⋅vΩ)dΩp
+  mats1 = assemble_matrix(a1,passem1,VΩ,VΩ)
+  vecs1 = assemble_vector(l1,passem1,VΩ)
   matvecs1 = assemble_matrix_and_vector(a1,l1,passem1,VΩ,VΩ)
-  @test length(collect(matvecs1)) == n_patches
+  display(length(collect(mats1)))
+  display(length(collect(vecs1)))
+  display(length(collect(matvecs1)))
+  display(n_patches)
+  @test length(collect(mats1)) == length(collect(vecs1)) == length(collect(matvecs1)) == n_patches
   
   passem2 = FESpaces.PatchAssembler(ptopo,VΓ,VΓ)
   a2(uΓ,vΓ) = mass(uΓ,vΓ,Γp,dΓp)
   l2(vΓ) = ∫(f⋅vΓ)dΓp
+  mats2 = assemble_matrix(a2,passem2,VΓ,VΓ)
+  vecs2 = assemble_vector(l2,passem2,VΓ)
   matvecs2 = assemble_matrix_and_vector(a2,l2,passem2,VΓ,VΓ)
-  @test length(collect(matvecs2)) == n_patches
+  @test length(collect(mats2)) == length(collect(vecs2)) == length(collect(matvecs2)) == n_patches
   
   passem3 = FESpaces.PatchAssembler(ptopo,X,X)
   a3((uΩ,uΓ),(vΩ,vΓ)) = laplacian(uΩ,vΩ,dΩp) + mass(uΓ,vΩ,Γp,dΓp) + mass(uΩ,vΓ,Γp,dΓp) + mass(uΓ,vΓ,Γp,dΓp)
   l3((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
+  mats3 = assemble_matrix(a3,passem3,X,X)
+  vecs3 = assemble_vector(l3,passem3,X)
   matvecs3 = assemble_matrix_and_vector(a3,l3,passem3,X,X)
-  @test length(collect(matvecs3)) == n_patches
+  @test length(collect(mats3)) == length(collect(vecs3)) == length(collect(matvecs3)) == n_patches
 end
 
 model = generate_model()

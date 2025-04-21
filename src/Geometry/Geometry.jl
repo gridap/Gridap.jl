@@ -219,7 +219,7 @@ include("UnstructuredDiscreteModels.jl")
 
 include("CartesianDiscreteModels.jl")
 
-include("Polytopal.jl")
+include("PolytopalDiscreteModels.jl")
 
 include("MappedDiscreteModels.jl")
 

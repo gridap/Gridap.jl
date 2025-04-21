@@ -110,10 +110,12 @@ function test_grid(trian::Grid{Dc,Dp}) where {Dc,Dp}
   @test num_point_dims(typeof(trian)) == Dp
   cell_coords = get_cell_coordinates(trian)
   @test isa(cell_coords,AbstractArray{<:AbstractVector{<:Point}})
-  reffes = get_reffes(trian)
-  @test isa(reffes,AbstractVector{<:LagrangianRefFE{Dc}})
   polys = get_polytopes(trian)
   @test isa(polys,AbstractVector{<:Polytope{Dc}})
+  if !any(p->isa(p,GeneralPolytope),polys)
+    reffes = get_reffes(trian)
+    @test isa(reffes,AbstractVector{<:LagrangianRefFE{Dc}})
+  end
   cell_types = get_cell_type(trian)
   @test isa(cell_types,AbstractArray{<:Integer})
   ncells = num_cells(trian)
