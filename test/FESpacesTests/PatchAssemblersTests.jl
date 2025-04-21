@@ -79,10 +79,6 @@ function test_patch_assembly(model,domain_tags,integration_tags)
   mats1 = assemble_matrix(a1,passem1,VΩ,VΩ)
   vecs1 = assemble_vector(l1,passem1,VΩ)
   matvecs1 = assemble_matrix_and_vector(a1,l1,passem1,VΩ,VΩ)
-  display(length(collect(mats1)))
-  display(length(collect(vecs1)))
-  display(length(collect(matvecs1)))
-  display(n_patches)
   @test length(collect(mats1)) == length(collect(vecs1)) == length(collect(matvecs1)) == n_patches
   
   passem2 = FESpaces.PatchAssembler(ptopo,VΓ,VΓ)

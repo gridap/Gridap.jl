@@ -31,13 +31,6 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
-[weakdeps]
-Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
-Meshes = "eacbb407-ea5a-433e-ab97-5258b1ca43fa"
-
-[extensions]
-MeshesExt = ["Meshes", "Makie"]
-
 [compat]
 AbstractTrees = "0.3.3, 0.4"
 Aqua = "0.8"
@@ -54,8 +47,6 @@ JLD2 = "0.5"
 JSON = "0.21"
 LineSearches = "7.0.1"
 LinearAlgebra = "1"
-Makie = "0.21.18"
-Meshes = "0.52.9"
 NLsolve = "4.5.1"
 NearestNeighbors = "0.4.8"
 PolynomialBases = "0.4.13"
