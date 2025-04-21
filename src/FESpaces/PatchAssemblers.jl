@@ -109,6 +109,12 @@ function assemble_matrix_and_vector(f::Function,b::Function,a::PatchAssembler,U:
   assemble_matrix_and_vector(a,collect_patch_cell_matrix_and_vector(a,U,V,f(u,v),b(v)))
 end
 
+function assemble_matrix_and_vector(f::Function,b::Function,a::PatchAssembler,U::FESpace,V::FESpace,uhd)
+  v = get_fe_basis(V)
+  u = get_trial_fe_basis(U)
+  assemble_matrix_and_vector(a,collect_patch_cell_matrix_and_vector(a,U,V,f(u,v),b(v),uhd))
+end
+
 function collect_cell_patch(ptopo::PatchTopology,a::DomainContribution)
   p, q = [], []
   for strian in get_domains(a)

@@ -7,6 +7,36 @@ using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
 using Gridap.ReferenceFEs
 
+function projection_operator(V, Ω, dΩ)
+  Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
+  mass(u,v) = ∫(u⋅Π(v,Ω))dΩ
+  V0 = FESpaces.FESpaceWithoutBCs(V)
+  P = FESpaces.LocalOperator(
+    FESpaces.LocalSolveMap(), V0, mass, mass; trian_out = Ω
+  )
+  return P
+end
+
+function reconstruction_operator(ptopo,X,Ω,Γp,dΩp,dΓp,order)
+  reffe_L = ReferenceFE(lagrangian, Float64, order+1; space=:P)
+  L = FESpace(Ω, reffe_L; conformity=:L2)
+  reffe_Λ = ReferenceFE(lagrangian, Float64, 0; space=:P)
+  Λ = FESpace(Ω, reffe_Λ; conformity=:L2)
+
+  n = get_normal_vector(Γp)
+  Πn(v) = ∇(v)⋅n
+  Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
+  lhs((u,λ),(v,μ))   =  ∫( (∇(u)⋅∇(v)) + (μ*u) + (λ*v) )dΩp
+  rhs((uT,uF),(v,μ)) =  ∫( (∇(uT)⋅∇(v)) + (uT*μ) )dΩp + ∫( (uF - Π(uT,Γp))*(Πn(v)) )dΓp
+  
+  Y = FESpaces.FESpaceWithoutBCs(X)
+  W = MultiFieldFESpace([L,Λ];style=MultiField.MultiFieldStyle(Y))
+  R = FESpaces.LocalOperator(
+    FESpaces.HHO_ReconstructionOperatorMap(), ptopo, W, Y, lhs, rhs; space_out = L
+  )
+  return R
+end
+
 function generate_model()
   model = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),(4,4)))
   labels = get_face_labeling(model)
@@ -43,7 +73,12 @@ function compute_number_of_cells(model,domain_tags,integration_tags)
   return n_domain_cells, n_integration_cells, n_integration_faces
 end
 
-function test_patch_assembly(model,domain_tags,integration_tags)
+function test_operator(P,V)
+  u, v = get_trial_fe_basis(V), get_fe_basis(V)
+  Pu, Pv = P(u), P(v)
+end
+
+function test_patch_assembly(model,domain_tags,integration_tags;order=1)
   D = num_cell_dims(model)
   Ω = Triangulation(ReferenceFE{D},model;tags=domain_tags)
   Γ = Triangulation(ReferenceFE{D-1},model;tags=domain_tags)
@@ -59,10 +94,11 @@ function test_patch_assembly(model,domain_tags,integration_tags)
   @test Geometry.num_cells(Ωp) == n_integration_cells
   @test length(unique(get_glue(Γp,Val(1)).tface_to_mface)) == n_integration_faces
   
-  order = 1
-  VΩ = FESpaces.PolytopalFESpace(Ω,Float64,order)
-  VΓ = FESpaces.PolytopalFESpace(Γ,Float64,order)
-  X = MultiFieldFESpace([VΩ,VΓ])
+  reffe = ReferenceFE(lagrangian, Float64, order; space=:P)
+  VΩ = FESpace(Ω,reffe; conformity=:L2)
+  VΓ = FESpace(Γ,reffe; conformity=:L2)
+  X  = MultiFieldFESpace([VΩ,VΓ])
+  Xb = MultiFieldFESpace([VΩ,VΓ],style=MultiField.BlockMultiFieldStyle())
   
   qdegree = 2*(order+1)
   dΩp = Measure(Ωp,qdegree)
@@ -86,7 +122,7 @@ function test_patch_assembly(model,domain_tags,integration_tags)
   l2(vΓ) = ∫(f⋅vΓ)dΓp
   mats2 = assemble_matrix(a2,passem2,VΓ,VΓ)
   vecs2 = assemble_vector(l2,passem2,VΓ)
-  matvecs2 = assemble_matrix_and_vector(a2,l2,passem2,VΓ,VΓ)
+  matvecs2 = assemble_matrix_and_vector(a2,l2,passem2,VΓ,VΓ,zero(VΓ))
   @test length(collect(mats2)) == length(collect(vecs2)) == length(collect(matvecs2)) == n_patches
   
   passem3 = FESpaces.PatchAssembler(ptopo,X,X)
@@ -96,6 +132,26 @@ function test_patch_assembly(model,domain_tags,integration_tags)
   vecs3 = assemble_vector(l3,passem3,X)
   matvecs3 = assemble_matrix_and_vector(a3,l3,passem3,X,X)
   @test length(collect(mats3)) == length(collect(vecs3)) == length(collect(matvecs3)) == n_patches
+
+  passem4 = FESpaces.PatchAssembler(ptopo,Xb,Xb)
+  a4((uΩ,uΓ),(vΩ,vΓ)) = laplacian(uΩ,vΩ,dΩp) + mass(uΓ,vΩ,Γp,dΓp) + mass(uΩ,vΓ,Γp,dΓp) + mass(uΓ,vΓ,Γp,dΓp)
+  l4((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
+  mats4 = assemble_matrix(a4,passem4,Xb,Xb)
+  vecs4 = assemble_vector(l4,passem4,Xb)
+  matvecs4 = assemble_matrix_and_vector(a4,l4,passem4,Xb,Xb)
+  @test length(collect(mats4)) == length(collect(vecs4)) == length(collect(matvecs4)) == n_patches
+
+  # Local Operators
+  PΩ = projection_operator(VΩ,Ωp,dΩp)
+  test_operator(PΩ,VΩ)
+
+  PΓ = projection_operator(VΓ,Γp,dΓp)
+  test_operator(PΓ,VΓ)
+  test_operator(PΓ,VΩ)
+
+  R  = reconstruction_operator(ptopo,Xb,Ωp,Γp,dΩp,dΓp,order)
+  test_operator(R,Xb)
+
 end
 
 model = generate_model()
@@ -107,7 +163,7 @@ test_patch_assembly(model,nothing,nothing)
 
 # Case 1:
 #  - PatchTopology spans all cells
-#  - Integration a subset of patches
+#  - Integration on a subset of patches
 test_patch_assembly(model,nothing,"D")
 
 # Case 2:
@@ -117,7 +173,7 @@ test_patch_assembly(model,"D",nothing)
 
 # Case 3:
 #  - PatchTopology spans a subset of cells
-#  - Integration a subset of patches
+#  - Integration on a subset of patches
 test_patch_assembly(model,"D","B")
 
 end
