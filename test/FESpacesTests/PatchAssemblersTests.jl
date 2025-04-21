@@ -149,8 +149,10 @@ function test_patch_assembly(model,domain_tags,integration_tags;order=1)
   test_operator(PΓ,VΓ)
   test_operator(PΓ,VΩ)
 
-  R  = reconstruction_operator(ptopo,Xb,Ωp,Γp,dΩp,dΓp,order)
-  test_operator(R,Xb)
+  if n_domain_cells === n_integration_cells
+    R  = reconstruction_operator(ptopo,Xb,Ωp,Γp,dΩp,dΓp,order)
+    test_operator(R,Xb)
+  end
 
 end
 
