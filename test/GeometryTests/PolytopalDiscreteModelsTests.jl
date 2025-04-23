@@ -20,10 +20,10 @@ function test_model(model)
   Λ = Skeleton(model)
 
   d = tempdir()
-  writevtk(model,d*"polytopal_model")
-  writevtk(Ω,d*"polytopal_trian")
-  writevtk(Γ,d*"polytopal_boundary")
-  writevtk(Λ,d*"polytopal_skeleton")
+  writevtk(model,d*"/polytopal_model")
+  writevtk(Ω,d*"/polytopal_trian")
+  writevtk(Γ,d*"/polytopal_boundary")
+  writevtk(Λ,d*"/polytopal_skeleton")
 end
 
 model = CartesianDiscreteModel((0,1,0,1),(2,2))

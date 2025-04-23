@@ -26,6 +26,7 @@ function PolytopalGridTopology(
   polytopes::Vector{<:GeneralPolytope{Dc}}
 ) where {Dc,Dp,T}
   @check length(cell_vertices) == length(polytopes)
+  @check all(p -> isone(ReferenceFEs.compute_orientation(p)),polytopes)
 
   n = Dc+1
   n_vertices = length(vertex_coordinates)
@@ -44,6 +45,7 @@ function PolytopalGridTopology(
   d_to_dface_vertices::Vector{<:Table},
   polytopes::Vector{<:GeneralPolytope{Dc}}
 ) where {Dc,Dp,T}
+  @check all(p -> isone(ReferenceFEs.compute_orientation(p)),polytopes)
 
   n = Dc+1
   n_vertices = length(vertex_coordinates)
@@ -100,23 +102,24 @@ function generate_polytopes(
   return polytopes, cell_nodes
 end
 
+function compute_reffaces(::Type{Polytope{0}}, g::PolytopalGridTopology{Dc}) where Dc
+  return [VERTEX], fill(Int8(1),num_faces(g,0))
+end
+
+function compute_reffaces(::Type{Polytope{1}}, g::PolytopalGridTopology{Dc}) where Dc
+  [SEGMENT], fill(Int8(1),num_faces(g,1))
+end
+
+function compute_reffaces(::Type{Polytope{Dc}}, g::PolytopalGridTopology{Dc}) where Dc
+  (get_polytopes(g), get_cell_type(g))
+end
+
 function compute_reffaces(::Type{Polytope{Df}}, g::PolytopalGridTopology{Dc}) where {Df,Dc}
   cell_to_face = get_faces(g,Dc,Df)
   face_to_cell = lazy_map(getindex, get_faces(g,Df,Dc), Fill(1,num_faces(g,Df)))
   face_to_lface = find_local_index(face_to_cell,cell_to_face)
   face_to_poly  = lazy_map(Reindex(get_polytopes(g)),face_to_cell)
   return map(Polytope{Df},face_to_poly,face_to_lface), Base.OneTo(num_faces(g,Df))
-end
-
-function compute_cell_permutations(g::PolytopalGridTopology,d::Integer)
-  D = num_cell_dims(g)
-  cell_to_dfaces = Table(get_faces(g,D,d))
-  data = ones(Int8,length(cell_to_dfaces.data))
-  return Table(data,cell_to_dfaces.ptrs)
-end
-
-function compute_reffaces(::Type{Polytope{Dc}}, g::PolytopalGridTopology{Dc}) where Dc
-  (get_polytopes(g), get_cell_type(g))
 end
 
 function num_faces(g::PolytopalGridTopology{Dc},d::Integer) where Dc
@@ -271,6 +274,10 @@ function restrict(grid::PolytopalGrid, cell_to_parent_cell::AbstractVector{<:Int
   polytopes = get_polytopes(grid)[cell_to_parent_cell]
   return PolytopalGrid(node_coordinates,cell_to_nodes,polytopes)
 end
+
+# TODO: This is not exactly the correct, but to do it correctly we have to deal 
+# with  type dispatching correctly...
+Base.view(a::Geometry.PolytopalGrid,b::AbstractArray) = Geometry.restrict(a,b)
 
 ############################################################################################
 

@@ -712,3 +712,23 @@ function simplexify_surface(poly::Polyhedron)
   end
   get_vertex_coordinates(poly),T
 end
+
+function compute_orientation(p::GeneralPolytope{D}) where D
+  cc = mean(get_vertex_coordinates(p))
+  cf = mean(first(get_face_coordinates(p,D-1)))
+  n = get_facet_normal(p,1)
+  s = sign(dot(n,cf-cc))
+  return s
+end
+
+# Admissible permutations for Polygons are the ones that 
+# preserve the orientation of the circular graph that defines it.
+# For 2D polytopes, this will always be positive. For 3D polytopes, i.e 
+# faces of a polyhedron, the orientation can also be negative.
+function get_vertex_permutations(p::GeneralPolytope{2})
+  base = collect(1:num_vertices(p))
+  pos_perms = [circshift(base,i-1) for i in 1:num_vertices(p)]
+  base = reverse(base)
+  neg_perms = [circshift(base,i-1) for i in 1:num_vertices(p)]
+  return vcat(pos_perms,neg_perms)
+end

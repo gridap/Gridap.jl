@@ -498,13 +498,13 @@ function compute_cell_permutations(top::GridTopology,d::Integer)
   end
 
   face_to_fvertex_to_vertex = Table(get_faces(top,d,0))
-  face_to_ftype = get_face_type(top,d)
-  reffaces = get_reffaces(Polytope{d},top)
-  ftype_to_pindex_to_cfvertex_to_fvertex = map(get_vertex_permutations,reffaces)
+  ftype_to_fpoly, face_to_ftype = compute_reffaces(Polytope{d},top)
+  ftype_to_pindex_to_cfvertex_to_fvertex = map(get_vertex_permutations,ftype_to_fpoly)
+
   cell_to_cvertex_to_vertex = Table(get_faces(top,D,0))
   cell_to_ctype = get_cell_type(top)
-  polytopes = get_polytopes(top)
-  ctype_to_lface_to_cvertices = map( (p)->get_faces(p,d,0), polytopes )
+  ctype_to_cpoly = get_polytopes(top)
+  ctype_to_lface_to_cvertices = map(p -> get_faces(p,d,0), ctype_to_cpoly)
 
   _compute_cell_perm_indices!(
     cell_to_lface_to_pindex,
@@ -514,9 +514,10 @@ function compute_cell_permutations(top::GridTopology,d::Integer)
     ctype_to_lface_to_cvertices,
     face_to_fvertex_to_vertex,
     face_to_ftype,
-    ftype_to_pindex_to_cfvertex_to_fvertex)
+    ftype_to_pindex_to_cfvertex_to_fvertex
+  )
 
-  cell_to_lface_to_pindex
+  return cell_to_lface_to_pindex
 end
 
 """
