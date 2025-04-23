@@ -463,8 +463,15 @@ function restrict(labels::FaceLabeling,d_to_dface_to_parent_dface)
 end
 
 """
-    Base.merge!(a::FaceLabeling,b::FaceLabeling)
+    Base.merge!(a::FaceLabeling,b::FaceLabeling...)
 """
+function Base.merge!(a::FaceLabeling,b::FaceLabeling...)
+  for b_ in b
+    merge!(a,b_)
+  end
+  return a
+end
+
 function Base.merge!(a::FaceLabeling,b::FaceLabeling)
   msg = "merge! not implemented if FaceLabeling objects have common tags"
   @notimplementedif !isempty(intersect(a.tag_to_name,b.tag_to_name)) msg
@@ -489,10 +496,12 @@ function Base.merge!(a::FaceLabeling,b::FaceLabeling)
     b_dface_to_entity = b.d_to_dface_to_entity[d+1]
     @assert length(a_dface_to_entity) == length(b_dface_to_entity)
     for dface in eachindex(a_dface_to_entity)
-      if isequal(a_dface_to_entity[dface],UNSET)
-        # If a is UNSET, take b
+      a_unset = isequal(a_dface_to_entity[dface],UNSET)
+      b_unset = isequal(b_dface_to_entity[dface],UNSET)
+      if a_unset && !b_unset
+        # If a is UNSET but not b, take b
         a_dface_to_entity[dface] = b_dface_to_entity[dface] + offset
-      elseif !isequal(b_dface_to_entity[dface],UNSET)
+      elseif !a_unset && !b_unset
         # If both are set, we consider the combined entity
         dface_entities = (a_dface_to_entity[dface],b_dface_to_entity[dface]+offset)
 
@@ -507,12 +516,28 @@ function Base.merge!(a::FaceLabeling,b::FaceLabeling)
 
         a_dface_to_entity[dface] = entities[dface_entities]
       end
+      # If a is set but not b, or if both are unset, we do nothing
     end
   end
 
   return a
 end
 
+"""
+    face_labeling_from_cell_tags(topo::GridTopology,cell_to_tag::Vector{<:Integer},tag_to_name::Vector{String})
+
+Creates a FaceLabeling object from a GridTopology and a vector containing a tag for each cell.
+
+You can use this function to add custom cell-defined tags to a pre-existing FaceLabeling, by 
+calling `merge!` on the two FaceLabeling objects, i.e 
+
+```julia
+  labels = FaceLabeling(topo)
+  additional_labels = face_labeling_from_cell_tags(topo,cell_to_tag,tag_to_name)
+  merge!(labels,additional_labels)
+```
+
+"""
 function face_labeling_from_cell_tags(topo::GridTopology, cell_to_tag, tag_to_name)
   D = num_cell_dims(topo)
   n_tags = length(tag_to_name)
@@ -548,6 +573,44 @@ function face_labeling_from_cell_tags(topo::GridTopology, cell_to_tag, tag_to_na
   end
 
   foreach(unique!,tag_to_entities)
+  return FaceLabeling(d_to_dface_to_entity,tag_to_entities,tag_to_name)
+end
+
+"""
+    face_labeling_from_vertex_filter(topo::GridTopology, name::String, filter::Function)
+
+Creates a FaceLabeling object from a GridTopology and a coordinate-based filter function. 
+The filter function takes in vertex coordinates and returns a boolean values. A geometrical 
+entity is tagged if all its vertices pass the filter.
+
+You can use this function to add custom vertex-defined tags to a pre-existing FaceLabeling, by
+calling `merge!` on the two FaceLabeling objects, i.e
+
+```julia
+  labels = FaceLabeling(topo)
+  additional_labels = face_labeling_from_vertex_filter(topo,name,filter)
+  merge!(labels,additional_labels)
+```
+
+"""
+function face_labeling_from_vertex_filter(topo::GridTopology, name, filter)
+  D = num_cell_dims(topo)
+  d_to_dface_to_entity = [fill(UNSET,num_faces(topo,d)) for d in 0:D]
+
+  vertex_mask = map(filter,get_vertex_coordinates(topo))
+
+  for d in 0:D
+    dface_to_vertices = get_faces(topo,d,0)
+    dface_to_entity = d_to_dface_to_entity[d+1]
+    for (dface,vertices) in enumerate(dface_to_vertices)
+      if all(vertex_mask[vertices])
+        dface_to_entity[dface] = 1
+      end
+    end
+  end
+
+  tag_to_entities = [Int32[1]]
+  tag_to_name = [name]
   return FaceLabeling(d_to_dface_to_entity,tag_to_entities,tag_to_name)
 end
 
