@@ -1170,7 +1170,7 @@ function _fill_face_in_cells_around!(
   cells_around,
   lface_of_cells_around)
 
-  for icell_around in 1:length(cells_around)
+  for icell_around in eachindex(cells_around)
     cell_around = cells_around[icell_around]
     if cell_around == UNSET
       continue
@@ -1192,7 +1192,7 @@ function _find_cells_around_vertices!(
   ncells_around = UNSET
   ncells_around_scratch = UNSET
 
-  for ivertex in 1:length(vertices)
+  for ivertex in eachindex(vertices)
     vertex = vertices[ivertex]
     if vertex == UNSET
       continue
@@ -1269,7 +1269,7 @@ function _find_lface_of_cells_around_lface!(
 
   lface_of_cells_around .= UNSET
 
-  for icell_around in 1:length(cells_around)
+  for icell_around in eachindex(cells_around)
     cell_around = cells_around[icell_around]
     if cell_around == UNSET
       continue
@@ -1285,7 +1285,6 @@ function _find_lface_of_cells_around_lface!(
       ctype_to_lface_to_lvertices)
 
     lface_of_cells_around[icell_around] = lface_of_cell_around
-
   end
 
 end
@@ -1302,11 +1301,7 @@ function _find_lface_with_same_vertices(
   ctype = cell_to_ctype[cell]
   lface_to_lvertices = ctype_to_lface_to_lvertices[ctype]
 
-  nlfaces = length(lface_to_lvertices)
-  c = cell_to_vertices_ptrs[cell]-1
-
-  for lface in 1:nlfaces
-
+  for lface in eachindex(lface_to_lvertices)
     _fill_vertices_in_lface!(
       vertices_scratch,
       lface,
@@ -1318,11 +1313,9 @@ function _find_lface_with_same_vertices(
     if _set_equal(vertices,vertices_scratch)
       return lface
     end
-
   end
 
   return UNSET
-
 end
 
 function _fill_vertices_in_lface!(
@@ -1334,12 +1327,11 @@ function _fill_vertices_in_lface!(
   cell_to_vertices_ptrs)
 
   vertices .= UNSET
-  c = cell_to_vertices_ptrs[cell] - 1
+  offset = cell_to_vertices_ptrs[cell] - 1
   lvertices = lface_to_lvertices[lface]
-  nlfvertex = length(lvertices)
-  for lfvertex in 1:nlfvertex
+  for lfvertex in eachindex(lvertices)
     lvertex = lvertices[lfvertex]
-    vertex = cell_to_vertices_data[c+lvertex]
+    vertex = cell_to_vertices_data[offset+lvertex]
     vertices[lfvertex] = vertex
   end
 
@@ -1356,7 +1348,7 @@ function _set_equal(vertices,vertices_scratch)
 end
 
 function _is_subset(vertices,vertices_scratch)
-  for i in 1:length(vertices)
+  for i in eachindex(vertices)
     v = vertices[i]
     if v == UNSET
       continue
@@ -1660,5 +1652,3 @@ function  _fill_gface_to_face!(
   end
 
 end
-
-
