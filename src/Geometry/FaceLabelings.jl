@@ -341,7 +341,7 @@ function add_tag_from_tag_filter!(
   labels::FaceLabeling, name::String, filter::Function
 )
   tag_to_entities = labels.tag_to_entities
-  n_entities = maximum(maximum,tag_to_entities)
+  n_entities = maximum(e -> maximum(e,init=0), tag_to_entities)
   entity_to_tags = [Int32[] for i in 1:n_entities]
   for (tag,entities) in enumerate(tag_to_entities)
     for e in entities
