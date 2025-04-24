@@ -595,10 +595,10 @@ function  _compute_cell_perm_indices!(
 end
 
 function generate_cells_around(
-  cell_to_faces::Table,
-  nfaces::Integer = length(cell_to_faces.data)==0 ? 0 : maximum(cell_to_faces.data))
-
-  data, ptrs = _face_to_cells(cell_to_faces.data,cell_to_faces.ptrs,nfaces)
+  cell_to_faces::Table{T},
+  nfaces::Integer = maximum(cell_to_faces.data,init=zero(T))
+) where T
+  data, ptrs = Arrays.inverse_table(cell_to_faces.data,cell_to_faces.ptrs,nfaces)
   Table(data,ptrs)
 end
 
@@ -620,36 +620,29 @@ function generate_cell_to_faces(
 end
 
 function _generate_ftype_to_refface(::Val{d},ctype_to_lftype_to_refface,ctype_to_lface_to_lftype) where d
-  i_to_refface = vcat( ctype_to_lftype_to_refface... )
-
-  i = 1
-  ctype_to_lftype_to_i = Vector{Int}[]
-  for ctype in 1:length(ctype_to_lftype_to_refface)
-    lftype_to_i = Int[]
-    for lftype in length(ctype_to_lftype_to_refface[ctype])
-      push!(lftype_to_i, i)
-      i +=1
-    end
-    push!(ctype_to_lftype_to_i, lftype_to_i)
-  end
-
+  nctypes = length(ctype_to_lftype_to_refface)
+  i_to_refface = vcat(ctype_to_lftype_to_refface...)
   ftype_to_refface, i_to_ftype = _find_unique_with_indices(i_to_refface)
 
-  ctype_to_lftype_to_ftype = copy(ctype_to_lftype_to_i)
-  for ctype in 1:length(ctype_to_lftype_to_i)
-    for lftype in 1:length(ctype_to_lftype_to_i[ctype])
-      i = ctype_to_lftype_to_i[ctype][lftype]
+  i = 1
+  ctype_to_lftype_to_ftype = Vector{Vector{Int}}(undef,nctypes)
+  for ctype in 1:nctypes
+    nlftypes = length(ctype_to_lftype_to_refface[ctype])
+    lftype_to_ftype = Vector{Int}(undef,nlftypes)
+    for lftype in 1:nlftypes
       ftype = i_to_ftype[i]
-      ctype_to_lftype_to_ftype[ctype][lftype] = ftype
+      lftype_to_ftype[lftype] = ftype
+      i += 1
     end
+    ctype_to_lftype_to_ftype[ctype] = lftype_to_ftype
   end
 
-  ctype_to_lface_to_ftype = Vector{Int}[]
-  for ctype in 1:length(ctype_to_lftype_to_ftype)
+  ctype_to_lface_to_ftype = Vector{Vector{Int}}(undef,nctypes)
+  for ctype in 1:nctypes
     lface_to_lftype = ctype_to_lface_to_lftype[ctype]
     lftype_to_ftype = ctype_to_lftype_to_ftype[ctype]
     lface_to_ftype = lftype_to_ftype[lface_to_lftype]
-    push!(ctype_to_lface_to_ftype,lface_to_ftype)
+    ctype_to_lface_to_ftype[ctype] = lface_to_ftype
   end
 
   (ftype_to_refface, ctype_to_lface_to_ftype)
@@ -891,57 +884,6 @@ function  _generate_object_to_isboundary_fill!(
         object_to_isboundary[object] = true
         break
       end
-    end
-  end
-
-end
-
-function _face_to_cells(
-  cell_to_faces_data::AbstractVector{L},
-  cell_to_faces_ptrs::AbstractVector{P},
-  nfaces) where {L,P}
-
-  face_to_cells_ptrs = zeros(P,nfaces+1)
-
-  _face_to_cells_count!(
-    face_to_cells_ptrs, cell_to_faces_data)
-
-  length_to_ptrs!(face_to_cells_ptrs)
-
-  ndata = face_to_cells_ptrs[end]-1
-
-  face_to_cells_data = Vector{L}(undef,ndata)
-
-  _face_to_cells_fill!(
-    face_to_cells_data, face_to_cells_ptrs,
-    cell_to_faces_data, cell_to_faces_ptrs)
-
-  rewind_ptrs!(face_to_cells_ptrs)
-
-  (face_to_cells_data, face_to_cells_ptrs)
-
-end
-
-function _face_to_cells_count!(
-    face_to_cells_ptrs, cell_to_faces_data)
-  for i=1:length(cell_to_faces_data)
-    face_to_cells_ptrs[cell_to_faces_data[i]+1]+=1
-  end
-end
-
-function _face_to_cells_fill!(
-    face_to_cells_data, face_to_cells_ptrs,
-    cell_to_faces_data, cell_to_faces_ptrs)
-
-  ncells = length(cell_to_faces_ptrs) - 1
-  for cell in 1:ncells
-    a = cell_to_faces_ptrs[cell]
-    b = cell_to_faces_ptrs[cell+1]-one(typeof(a))
-    for p in a:b
-      face = cell_to_faces_data[p]
-      q = face_to_cells_ptrs[face]
-      face_to_cells_data[q] = cell
-      face_to_cells_ptrs[face] = q + one(typeof(q))
     end
   end
 

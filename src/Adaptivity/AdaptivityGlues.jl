@@ -51,7 +51,7 @@ struct AdaptivityGlue{GT,Dc,A,B,C,D,E} <: GridapType
     end
     Dc = length(n2o_faces_map)-1
     is_refined    = select_refined_cells(n2o_faces_map[Dc+1])
-    o2n_faces_map = get_o2n_faces_map(n2o_faces_map[Dc+1])
+    o2n_faces_map = Arrays.inverse_table(n2o_faces_map[Dc+1])
     A = typeof(n2o_faces_map)
     B = typeof(n2o_cell_to_child_id)
     C = typeof(refinement_rules)
@@ -91,61 +91,6 @@ end
 
 function get_n2o_reference_coordinate_map(g::AdaptivityGlue{MixedGlue})
   @notimplemented
-end
-
-"""
-    get_o2n_faces_map(ncell_to_ocell::Table)
-
-Given a map from new cells to old cells, computes the inverse map.
-In the general case (refinement+coarsening), the n2o map is a Table, 
-but the algorithm is optimized for Vectors (refinement only).
-"""
-function get_o2n_faces_map(ncell_to_ocell::Table{T}) where {T<:Integer}
-  nC = maximum(ncell_to_ocell.data)
-  
-  ptrs = fill(0,nC+1)
-  for ccell in ncell_to_ocell.data
-    ptrs[ccell+1] += 1
-  end
-  Arrays.length_to_ptrs!(ptrs)
-
-  data = Vector{Int}(undef,ptrs[end]-1)
-  for fcell = 1:length(ncell_to_ocell.ptrs)-1
-    for j = ncell_to_ocell.ptrs[fcell]:ncell_to_ocell.ptrs[fcell+1]-1
-      ccell = ncell_to_ocell.data[j]
-      data[ptrs[ccell]] = fcell
-      ptrs[ccell] += 1
-    end
-  end
-  Arrays.rewind_ptrs!(ptrs)
-
-  ocell_to_ncell = Table(data,ptrs)
-  return ocell_to_ncell
-end
-
-function get_o2n_faces_map(ncell_to_ocell::Vector{T}) where {T<:Integer}
-  (length(ncell_to_ocell) == 0) && (return Table(T[],T[]))
-
-  nC = maximum(ncell_to_ocell)
-  nF = length(ncell_to_ocell)
-
-  ptrs = fill(0,nC+1)
-  for iF in 1:nF
-    iC = ncell_to_ocell[iF]
-    ptrs[iC+1] += 1
-  end
-  Arrays.length_to_ptrs!(ptrs)
-
-  data = fill(zero(T),ptrs[end]-1)
-  for iF in 1:nF
-    iC = ncell_to_ocell[iF]
-    data[ptrs[iC]] = iF
-    ptrs[iC] += 1
-  end
-  Arrays.rewind_ptrs!(ptrs)
-
-  ocell_to_ncell = Table(data,ptrs)
-  return ocell_to_ncell
 end
 
 """

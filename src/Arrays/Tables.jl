@@ -18,6 +18,16 @@ struct Table{T,Vd<:AbstractVector{T},Vp<:AbstractVector} <: AbstractVector{Vecto
 end
 
 """
+"""
+get_ptrs_eltype(::Table{T,Vd,Vp}) where {T,Vd,Vp} = eltype(Vp)
+get_ptrs_eltype(::Type{Table{T,Vd,Vp}}) where {T,Vd,Vp} = eltype(Vp)
+
+"""
+"""
+get_data_eltype(::Table{T,Vd,Vp}) where {T,Vd,Vp} = T
+get_data_eltype(::Type{Table{T,Vd,Vp}}) where {T,Vd,Vp} = T
+
+"""
     Table(a::AbstractArray{<:AbstractArray})
 
 Build a table from a vector of vectors. If the inputs are
@@ -28,9 +38,7 @@ function Table(a::AbstractArray{<:AbstractArray})
   Table(data,ptrs)
 end
 
-function Table(a::Table)
-  a
-end
+Table(a::Table) = a
 
 function Base.convert(::Type{Table{T,Vd,Vp}},table::Table{Ta,Vda,Vpa}) where {T,Vd,Vp,Ta,Vda,Vpa}
   data = convert(Vd,table.data)
@@ -229,6 +237,10 @@ end
 const UNSET = 0
 
 """
+    find_inverse_index_map(a_to_b[, nb=maximum(a_to_b)])
+    find_inverse_index_map!(b_to_a, a_to_b)
+
+Given a vector of indices `a_to_b`, returns the inverse index map `b_to_a`.
 """
 function find_inverse_index_map(a_to_b, nb=maximum(a_to_b))
   T = eltype(a_to_b)
@@ -237,8 +249,6 @@ function find_inverse_index_map(a_to_b, nb=maximum(a_to_b))
   b_to_a
 end
 
-"""
-"""
 function find_inverse_index_map!(b_to_a, a_to_b)
   for (a,b) in enumerate(a_to_b)
     if b != UNSET
@@ -247,34 +257,69 @@ function find_inverse_index_map!(b_to_a, a_to_b)
   end
 end
 
+function inverse_table(
+  a_to_lb_to_b::Table{T}, nb = maximum(a_to_lb_to_b.data,init=zero(T))
+) where T
+  data, ptrs = inverse_table(
+    a_to_lb_to_b.data, a_to_lb_to_b.ptrs, nb
+  )
+  a_to_lb_to_b = Table(data,ptrs)
+  return a_to_lb_to_b
+end
+
+function inverse_table(
+  a_to_b::AbstractVector{T}, nb = maximum(a_to_b,init=zero(T))
+) where T
+  na = length(a_to_b)
+  data, ptrs = inverse_table(
+    a_to_b, 1:(na+1), nb
+  )
+  a_to_lb_to_b = Table(data,ptrs)
+  return a_to_lb_to_b
+end
+
+function inverse_table(
+  a_to_lb_to_b_data::AbstractVector{L},
+  a_to_lb_to_b_ptrs::AbstractVector{P},
+  nb::Integer
+) where {L,P}
+
+  o = one(P)
+  ptrs = zeros(P,nb+1)
+  @inbounds for b in a_to_lb_to_b_data
+    ptrs[b+1] += o
+  end
+  length_to_ptrs!(ptrs)
+
+  na = length(a_to_lb_to_b_ptrs)-1
+  data = Vector{L}(undef,ptrs[end]-1)
+  @inbounds for a in 1:na
+    s = a_to_lb_to_b_ptrs[a]
+    e = a_to_lb_to_b_ptrs[a+1] - o
+    @inbounds for p in s:e
+      b = a_to_lb_to_b_data[p]
+      data[ptrs[b]] = a
+      ptrs[b] += o
+    end
+  end
+  rewind_ptrs!(ptrs)
+
+  return data, ptrs
+end
+
 """
 """
-function append_tables_globally(tables::Table{T,Vd,Vp}...) where {T,Vd,Vp}
-  first_table, = tables
+function append_tables_globally(
+  first_table::Table{T,Vd,Vp},tables::Table{T,Vd,Vp}...
+) where {T,Vd,Vp}
   data = copy(first_table.data)
   ptrs = copy(first_table.ptrs)
-  for (i,table) in enumerate(tables)
-    if  i != 1
-      append!(data,table.data)
-      append_ptrs!(ptrs,table.ptrs)
-    end
+  for table in tables
+    append!(data,table.data)
+    append_ptrs!(ptrs,table.ptrs)
   end
   Table(data,ptrs)
 end
-
-function append_tables_globally()
-  @unreachable "At least one table has to be provided"
-end
-
-"""
-"""
-get_ptrs_eltype(::Table{T,Vd,Vp}) where {T,Vd,Vp} = eltype(Vp)
-get_ptrs_eltype(::Type{Table{T,Vd,Vp}}) where {T,Vd,Vp} = eltype(Vp)
-
-"""
-"""
-get_data_eltype(::Table{T,Vd,Vp}) where {T,Vd,Vp} = T
-get_data_eltype(::Type{Table{T,Vd,Vp}}) where {T,Vd,Vp} = T
 
 """
     append_tables_locally(tables::Table...)
@@ -288,11 +333,10 @@ end
 """
 """
 function append_tables_locally(offsets::NTuple, tables::NTuple)
-
+  @check length(offsets) == length(tables) !== 0 "Offsets and tables must have the same length"
   first_table, = tables
-
-  @check all( map(length,tables) .== length(first_table) ) "All tables must have the same length"
-  ndata = sum( (length(table.data) for table in tables) )
+  @check all(t -> length(t) == length(first_table), tables) "All tables must have the same length"
+  ndata = sum(t -> length(t.data), tables)
 
   T = get_data_eltype(first_table)
   P = get_ptrs_eltype(first_table)
@@ -303,21 +347,14 @@ function append_tables_locally(offsets::NTuple, tables::NTuple)
   for table in tables
     _append_tables_locally_count!(ptrs,table)
   end
-
   length_to_ptrs!(ptrs)
 
   for (offset,table) in zip(offsets,tables)
     _append_tables_locally_fill!(data,ptrs,offset,table)
   end
-
   rewind_ptrs!(ptrs)
 
   Table(data,ptrs)
-
-end
-
-function append_tables_locally(offsets::Tuple{}, tables::Tuple{})
-  @unreachable "At least one table has to be provided"
 end
 
 function  _append_tables_locally_count!(ptrs,table)
