@@ -83,7 +83,7 @@ function PolytopalFESpace(
     @check length(dirichlet_masks) == ncomps
     dirichlet_components = dirichlet_masks
   else
-    dirichlet_components = fill(false,ncomps)
+    dirichlet_components = fill(true,ncomps)
   end
 
   ntags = length(dirichlet_tags)

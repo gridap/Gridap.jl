@@ -8,16 +8,22 @@ using Gridap.Fields, Gridap.FESpaces, Gridap.CellData
 using FillArrays
 
 function test_l2_proj(model,V,order,u_exact)
-  Ω = Triangulation(model)
+  U = TrialFESpace(V,u_exact)
+
+  Ω = get_triangulation(V)
   dΩ = Measure(Ω,2*order)
 
   mass_lhs(u,v) = ∫(u⋅v)dΩ
   mass_rhs(v) = ∫(v⋅u_exact)dΩ
   
-  op = AffineFEOperator(mass_lhs,mass_rhs,V,V)
+  op = AffineFEOperator(mass_lhs,mass_rhs,U,V)
   uh = solve(op)
   
   eh = uh - u_exact
+  @test sum(∫(eh⋅eh)dΩ) < 1e-10
+
+  uh_i = interpolate(u_exact,U)
+  eh = uh - uh_i
   @test sum(∫(eh⋅eh)dΩ) < 1e-10
 
   # TODO: Bug for D == 3
@@ -87,11 +93,19 @@ test_dg_lap(pmodel,V,order,u_exact_3d)
 
 # 3D skeleton
 
-u_exact_3d_skel(x) = VectorValue(x[1]^order,x[2]^order,x[3]^order)
 Γ = Triangulation(ReferenceFE{2},model)
-VΓ = FESpaces.PolytopalFESpace(Γ,VectorValue{3,Float64},order,space=:P,dirichlet_tags=["boundary"],dirichlet_masks=[true,false,true])
 
-UΓ = TrialFESpace(VΓ,u_exact_3d_skel)
-uh = interpolate(u_exact_3d_skel,UΓ)
+VΓ = FESpaces.PolytopalFESpace(Γ,Float64,order,space=:P,dirichlet_tags=["boundary"])
+@test any(get_cell_dof_ids(VΓ).data .< 0)
+test_l2_proj(pmodel,VΓ,order,u_exact_3d)
+
+u_exact_3d_vec(x) = VectorValue(x[1]^order,x[2]^order,x[3]^order)
+VΓ = FESpaces.PolytopalFESpace(Γ,VectorValue{3,Float64},order,space=:P,dirichlet_tags=["boundary"],hierarchical=true,orthonormal=true)
+@test any(get_cell_dof_ids(VΓ).data .< 0)
+test_l2_proj(pmodel,VΓ,order,u_exact_3d_vec)
+
+VΓ = FESpaces.PolytopalFESpace(Γ,VectorValue{3,Float64},order,space=:P,dirichlet_tags=["boundary"],dirichlet_masks=[true,false,true])
+@test any(get_cell_dof_ids(VΓ).data .< 0)
+test_l2_proj(pmodel,VΓ,order,u_exact_3d_vec)
 
 end
