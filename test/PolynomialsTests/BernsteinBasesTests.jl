@@ -21,7 +21,7 @@ V = Float64
 G = gradient_type(V,x1)
 H = gradient_type(G,x1)
 
-function test_internals(order,x,bx,∇bx,Hbx)
+function test_internals(order,x,bx,Gbx,Hbx)
   sz = (1,order+1)
   for (i,xi) in enumerate(x)
     v2 = zeros(sz)
@@ -30,7 +30,7 @@ function test_internals(order,x,bx,∇bx,Hbx)
 
     g2 = zeros(sz)
     Polynomials._gradient_1d!(Bernstein,Val(order),g2,xi,1)
-    @test all( [ bxi[1]≈vxi[1] for (bxi,vxi) in zip(∇bx[i,:],g2[:,1]) ] )
+    @test all( [ bxi[1]≈vxi[1] for (bxi,vxi) in zip(Gbx[i,:],g2[:,1]) ] )
 
     h2 = zeros(sz)
     Polynomials._hessian_1d!(Bernstein,Val(order),h2,xi,1)
@@ -47,13 +47,13 @@ b = BernsteinBasis(Val(1),V,order)
 @test get_exponents(b) == ((0,),)
 
 bx =   [ 1.; 1.; 1.;; ]
-∇bx = G[ 0.; 0.; 0.;; ]
+Gbx = G[ 0.; 0.; 0.;; ]
 Hbx = H[ 0.; 0.; 0.;; ]
 
-test_internals(order,x,bx,∇bx,Hbx)
+test_internals(order,x,bx,Gbx,Hbx)
 
-test_field_array(b,x,bx,grad=∇bx,gradgrad=Hbx)
-test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
+test_field_array(b,x,bx,grad=Gbx,gradgrad=Hbx)
+test_field_array(b,x[1],bx[1,:],grad=Gbx[1,:],gradgrad=Hbx[1,:])
 
 
 # Order 1
@@ -65,7 +65,7 @@ bx = [ 1.0  0.
        0.  1.0
        0.6  0.4]
 
-∇bx = G[ -1. 1.
+Gbx = G[ -1. 1.
          -1. 1.
          -1. 1. ]
 
@@ -73,10 +73,10 @@ Hbx = H[  0. 0.
           0. 0.
           0. 0. ]
 
-test_internals(order,x,bx,∇bx,Hbx)
+test_internals(order,x,bx,Gbx,Hbx)
 
-test_field_array(b,x,bx,grad=∇bx,gradgrad=Hbx)
-test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
+test_field_array(b,x,bx,grad=Gbx,gradgrad=Hbx)
+test_field_array(b,x[1],bx[1,:],grad=Gbx[1,:],gradgrad=Hbx[1,:])
 
 
 # Order 2
@@ -89,7 +89,7 @@ bx  = [ 1.0   0.    0.
         0.36  0.48  0.16]
 
 
-∇bx = G[ -2.  2.   0.
+Gbx = G[ -2.  2.   0.
           0. -2.   2.
         -1.2  0.4  .8 ]
 
@@ -97,10 +97,10 @@ Hbx = H[  2. -4. 2.
           2. -4. 2.
           2. -4. 2. ]
 
-test_internals(order,x,bx,∇bx,Hbx)
+test_internals(order,x,bx,Gbx,Hbx)
 
-test_field_array(b,x,bx,≈, grad=∇bx,gradgrad=Hbx)
-test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
+test_field_array(b,x,bx,≈, grad=Gbx,gradgrad=Hbx)
+test_field_array(b,x[1],bx[1,:],grad=Gbx[1,:],gradgrad=Hbx[1,:])
 
 
 # Order 3
@@ -113,7 +113,7 @@ _∇(b) = t -> ForwardDiff.derivative(b, t)
 _H(b) = t -> ForwardDiff.derivative(y -> ForwardDiff.derivative(b, y), t)
 
 _bx_1D( order,x)   = [      bernstein(order,n)( xi[1])  for xi in x,  n in 0:order]
-_∇bx_1D(order,x,G) = [ G(_∇(bernstein(order,n))(xi[1])) for xi in x,  n in 0:order]
+_Gbx_1D(order,x,G) = [ G(_∇(bernstein(order,n))(xi[1])) for xi in x,  n in 0:order]
 _Hbx_1D(order,x,H) = [ H(_H(bernstein(order,n))(xi[1])) for xi in x,  n in 0:order]
 
 order = 3
@@ -123,13 +123,13 @@ b = BernsteinBasis(Val(1),V,order)
 #    -x3+3x2-3x+1  3x3-6x2+3x -3x3+3x2 x3
 bx  = _bx_1D( order,x)
 #   -3x2+6x-3  9x2-12x+3  -9x2+6x 3x2
-∇bx = _∇bx_1D(order,x,G)
+Gbx = _Gbx_1D(order,x,G)
 #    -6x+6 18x-12 -18x+6  6x
 Hbx = _Hbx_1D(order,x,H)
-test_internals(order,x,bx,∇bx,Hbx)
+test_internals(order,x,bx,Gbx,Hbx)
 
-test_field_array(b,x,bx,≈, grad=∇bx,gradgrad=Hbx)
-test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
+test_field_array(b,x,bx,≈, grad=Gbx,gradgrad=Hbx)
+test_field_array(b,x[1],bx[1,:],grad=Gbx[1,:],gradgrad=Hbx[1,:])
 
 
 # Order 4
@@ -138,13 +138,13 @@ order = 4
 b = BernsteinBasis(Val(1),V,order)
 
 bx  = _bx_1D( order,x)
-∇bx = _∇bx_1D(order,x,G)
+Gbx = _Gbx_1D(order,x,G)
 Hbx = _Hbx_1D(order,x,H)
 
-test_internals(order,x,bx,∇bx,Hbx)
+test_internals(order,x,bx,Gbx,Hbx)
 
-test_field_array(b,x,bx,≈, grad=∇bx,gradgrad=Hbx)
-test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
+test_field_array(b,x,bx,≈, grad=Gbx,gradgrad=Hbx)
+test_field_array(b,x[1],bx[1,:],grad=Gbx[1,:],gradgrad=Hbx[1,:])
 
 
 #####################################
@@ -180,7 +180,7 @@ _∇(b) = x -> ForwardDiff.jacobian(b, get_array(x))
 _H(b) = x -> ForwardDiff.jacobian(y -> ForwardDiff.jacobian(b, y), get_array(x))
 
 _bx( D,order,x,  x2λ=nothing) = transpose(reduce(hcat, (                                  bernstein_nD(D,order,x2λ )(xi)           for xi in x)))
-_∇bx(D,order,x,G,x2λ=nothing) = transpose(reduce(hcat, ( map(G,        eachrow(        _∇(bernstein_nD(D,order,x2λ))(xi)))         for xi in x)))
+_Gbx(D,order,x,G,x2λ=nothing) = transpose(reduce(hcat, ( map(G,        eachrow(        _∇(bernstein_nD(D,order,x2λ))(xi)))         for xi in x)))
 _Hbx(D,order,x,H,x2λ=nothing) = transpose(reduce(hcat, ( map(splat(H), eachrow(reshape(_H(bernstein_nD(D,order,x2λ))(xi), :,D*D))) for xi in x)))
 
 D = 2
@@ -196,38 +196,38 @@ order = 0
 b = BernsteinBasisOnSimplex(Val(D),V,order)
 @test get_order(b) == 0
 bx  = _bx( D,order,x)
-∇bx = _∇bx(D,order,x,G)
+Gbx = _Gbx(D,order,x,G)
 Hbx = _Hbx(D,order,x,H)
-test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
+test_field_array(b,x,bx,≈, grad=Gbx, gradgrad=Hbx)
 
 order = 1
 b = BernsteinBasisOnSimplex(Val(D),V,order)
 bx  = _bx( D,order,x)
-∇bx = _∇bx(D,order,x,G)
+Gbx = _Gbx(D,order,x,G)
 Hbx = _Hbx(D,order,x,H)
-test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
+test_field_array(b,x,bx,≈, grad=Gbx, gradgrad=Hbx)
 
 order = 2
 b = BernsteinBasisOnSimplex(Val(D),V,order)
 bx  = _bx( D,order,x)
-∇bx = _∇bx(D,order,x,G)
+Gbx = _Gbx(D,order,x,G)
 Hbx = _Hbx(D,order,x,H)
-test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
+test_field_array(b,x,bx,≈, grad=Gbx, gradgrad=Hbx)
 
 order = 3
 b = BernsteinBasisOnSimplex(Val(D),V,order)
 bx  = _bx( D,order,x)
-∇bx = _∇bx(D,order,x,G)
+Gbx = _Gbx(D,order,x,G)
 Hbx = _Hbx(D,order,x,H)
-test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
+test_field_array(b,x,bx,≈, grad=Gbx, gradgrad=Hbx)
 
 order = 4
 b = BernsteinBasisOnSimplex(Val(D),V,order)
 bx  = _bx( D,order,x)
-∇bx = _∇bx(D,order,x,G)
+Gbx = _Gbx(D,order,x,G)
 Hbx = _Hbx(D,order,x,H)
-test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
-test_field_array(b,x[1],bx[1,:],≈,grad=∇bx[1,:],gradgrad=Hbx[1,:])
+test_field_array(b,x,bx,≈, grad=Gbx, gradgrad=Hbx)
+test_field_array(b,x[1],bx[1,:],≈,grad=Gbx[1,:],gradgrad=Hbx[1,:])
 
 # Vector valued in 2D
 V = VectorValue{3,Float64}
@@ -239,7 +239,7 @@ b = BernsteinBasisOnSimplex(Val(D),V,order)
 bx  = V[(0., 0., 0.) (0., 0., 0.) (0., 0., 0.) (0., 0., 0.) (0., 0., 0.) (0., 0., 0.) (0., 0., 0.) (0., 0., 0.) (0., 0., 0.) (1., 0., 0.) (0., 1., 0.) (0., 0., 1.) (0., 0., 0.) (0., 0., 0.) (0., 0., 0.) (0., 0., 0.) (0., 0., 0.) (0., 0., 0.);
         (0.25, 0., 0.) (0., 0.25, 0.) (0., 0., 0.25) (0., 0., 0.) (0., 0., 0.) (0., 0., 0.) (0.5, 0., 0.) (0., 0.5, 0.) (0., 0., 0.5) (0., 0., 0.) (0., 0., 0.) (0., 0., 0.) (0., 0., 0.) (0., 0., 0.) (0., 0., 0.) (0.25, 0., 0.) (0., 0.25, 0.) (0., 0., 0.25);
         (0.25, 0., 0.) (0., 0.25, 0.) (0., 0., 0.25) (-1., 0., 0.) (0., -1., 0.) (0., 0., -1.) (-0.5, 0., 0.) (0., -0.5, 0.) (0., 0., -0.5) (1., 0., 0.) (0., 1., 0.) (0., 0., 1.) (1., 0., 0.) (0., 1., 0.) (0., 0., 1.) (0.25, 0., 0.) (0., 0.25, 0.) (0., 0., 0.25); (0.25, 0., 0.) (0., 0.25, 0.) (0., 0., 0.25) (0.2, 0., 0.) (0., 0.2, 0.) (0., 0., 0.2) (0.3, 0., 0.) (0., 0.3, 0.) (0., 0., 0.3) (0.04000000000000001, 0., 0.) (0., 0.04000000000000001, 0.) (0., 0., 0.04000000000000001) (0.12, 0., 0.) (0., 0.12, 0.) (0., 0., 0.12) (0.09, 0., 0.) (0., 0.09, 0.) (0., 0., 0.09)]
-∇bx = G[(0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0.) (-2., -2., 0., 0., 0., 0.) (0., 0., -2., -2., 0., 0.) (0., 0., 0., 0., -2., -2.) (0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0.) (2., 0., 0., 0., 0., 0.) (0., 0., 2., 0., 0., 0.) (0., 0., 0., 0., 2., 0.) (0., 2., 0., 0., 0., 0.) (0., 0., 0., 2., 0., 0.) (0., 0., 0., 0., 0., 2.) (0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0.);
+Gbx = G[(0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0.) (-2., -2., 0., 0., 0., 0.) (0., 0., -2., -2., 0., 0.) (0., 0., 0., 0., -2., -2.) (0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0.) (2., 0., 0., 0., 0., 0.) (0., 0., 2., 0., 0., 0.) (0., 0., 0., 0., 2., 0.) (0., 2., 0., 0., 0., 0.) (0., 0., 0., 2., 0., 0.) (0., 0., 0., 0., 0., 2.) (0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0.);
         (-1., -1., 0., 0., 0., 0.) (0., 0., -1., -1., 0., 0.) (0., 0., 0., 0., -1., -1.) (1., 0., 0., 0., 0., 0.) (0., 0., 1., 0., 0., 0.) (0., 0., 0., 0., 1., 0.) (-1., 0., 0., 0., 0., 0.) (0., 0., -1., 0., 0., 0.) (0., 0., 0., 0., -1., 0.) (0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0.) (1., 0., 0., 0., 0., 0.) (0., 0., 1., 0., 0., 0.) (0., 0., 0., 0., 1., 0.) (0., 1., 0., 0., 0., 0.) (0., 0., 0., 1., 0., 0.) (0., 0., 0., 0., 0., 1.);
         (1., 1., 0., 0., 0., 0.) (0., 0., 1., 1., 0., 0.) (0., 0., 0., 0., 1., 1.) (-3.0, -2., 0., 0., 0., 0.) (0., 0., -3.0, -2., 0., 0.) (0., 0., 0., 0., -3.0, -2.) (-1., -2., 0., 0., 0., 0.) (0., 0., -1., -2., 0., 0.) (0., 0., 0., 0., -1., -2.) (2., 0., 0., 0., 0., 0.) (0., 0., 2., 0., 0., 0.) (0., 0., 0., 0., 2., 0.) (1., 2., 0., 0., 0., 0.) (0., 0., 1., 2., 0., 0.) (0., 0., 0., 0., 1., 2.) (0., 1., 0., 0., 0., 0.) (0., 0., 0., 1., 0., 0.) (0., 0., 0., 0., 0., 1.);
         (-1., -1., 0., 0., 0., 0.) (0., 0., -1., -1., 0., 0.) (0., 0., 0., 0., -1., -1.) (0.6, -0.4, 0., 0., 0., 0.) (0., 0., 0.6, -0.4, 0., 0.) (0., 0., 0., 0., 0.6, -0.4) (-0.6, 0.4, 0., 0., 0., 0.) (0., 0., -0.6, 0.4, 0., 0.) (0., 0., 0., 0., -0.6, 0.4) (0.4, 0., 0., 0., 0., 0.) (0., 0., 0.4, 0., 0., 0.) (0., 0., 0., 0., 0.4, 0.) (0.6, 0.4, 0., 0., 0., 0.) (0., 0., 0.6, 0.4, 0., 0.) (0., 0., 0., 0., 0.6, 0.4) (0., 0.6, 0., 0., 0., 0.) (0., 0., 0., 0.6, 0., 0.) (0., 0., 0., 0., 0., 0.6)]
@@ -247,8 +247,8 @@ Hbx = H[(2., 2., 2., 2., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 2., 2.
         (2., 2., 2., 2., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 2., 2., 2., 2., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., 2., 2., 2., 2.) (-4.0, -2., -2., 0., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., -4.0, -2., -2., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., -4.0, -2., -2., 0.) (0., -2., -2., -4.0, 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., -2., -2., -4.0, 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., 0., -2., -2., -4.0) (2., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 2., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., 2., 0., 0., 0.) (0., 2., 2., 0., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 2., 2., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., 0., 2., 2., 0.) (0., 0., 0., 2., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 2., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 2.);
         (2., 2., 2., 2., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 2., 2., 2., 2., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., 2., 2., 2., 2.) (-4.0, -2., -2., 0., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., -4.0, -2., -2., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., -4.0, -2., -2., 0.) (0., -2., -2., -4.0, 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., -2., -2., -4.0, 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., 0., -2., -2., -4.0) (2., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 2., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., 2., 0., 0., 0.) (0., 2., 2., 0., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 2., 2., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., 0., 2., 2., 0.) (0., 0., 0., 2., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 2., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 2.);
         (2., 2., 2., 2., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 2., 2., 2., 2., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., 2., 2., 2., 2.) (-4.0, -2., -2., 0., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., -4.0, -2., -2., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., -4.0, -2., -2., 0.) (0., -2., -2., -4.0, 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., -2., -2., -4.0, 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., 0., -2., -2., -4.0) (2., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 2., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., 2., 0., 0., 0.) (0., 2., 2., 0., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 2., 2., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., 0., 2., 2., 0.) (0., 0., 0., 2., 0., 0., 0., 0., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 2., 0., 0., 0., 0.) (0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 2.)]
-test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
-test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
+test_field_array(b,x,bx,≈, grad=Gbx, gradgrad=Hbx)
+test_field_array(b,x[1],bx[1,:],grad=Gbx[1,:],gradgrad=Hbx[1,:])
 
 # scalar valued in 3D
 
@@ -263,10 +263,10 @@ order = 4
 D = 3
 b = BernsteinBasisOnSimplex(Val(D),V,order)
 bx  = _bx( D,order,x)
-∇bx = _∇bx(D,order,x,G)
+Gbx = _Gbx(D,order,x,G)
 Hbx = _Hbx(D,order,x,H)
-test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
-test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
+test_field_array(b,x,bx,≈, grad=Gbx, gradgrad=Hbx)
+test_field_array(b,x[1],bx[1,:],grad=Gbx[1,:],gradgrad=Hbx[1,:])
 
 
 ############################################################################
@@ -300,10 +300,10 @@ H = gradient_type(G,x1)
 order = 4
 b = BernsteinBasisOnSimplex(Val(D),V,order,vertices)
 bx  = _bx( D,order,x,  x2λ)
-∇bx = _∇bx(D,order,x,G,x2λ)
+Gbx = _Gbx(D,order,x,G,x2λ)
 Hbx = _Hbx(D,order,x,H,x2λ)
-test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
-test_field_array(b,x1,bx[1,:],≈,grad=∇bx[1,:],gradgrad=Hbx[1,:])
+test_field_array(b,x,bx,≈, grad=Gbx, gradgrad=Hbx)
+test_field_array(b,x1,bx[1,:],≈,grad=Gbx[1,:],gradgrad=Hbx[1,:])
 
 
 # scalar valued in 3D
@@ -321,9 +321,9 @@ H = gradient_type(G,x1)
 order = 4
 b = BernsteinBasisOnSimplex(Val(D),V,order,vertices)
 bx  = _bx( D,order,x,  x2λ)
-∇bx = _∇bx(D,order,x,G,x2λ)
+Gbx = _Gbx(D,order,x,G,x2λ)
 Hbx = _Hbx(D,order,x,H,x2λ)
-test_field_array(b,x,bx,≈, grad=∇bx, gradgrad=Hbx)
-test_field_array(b,x1,bx[1,:],≈,grad=∇bx[1,:],gradgrad=Hbx[1,:])
+test_field_array(b,x,bx,≈, grad=Gbx, gradgrad=Hbx)
+test_field_array(b,x1,bx[1,:],≈,grad=Gbx[1,:],gradgrad=Hbx[1,:])
 
 end # module
