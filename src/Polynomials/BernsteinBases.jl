@@ -226,9 +226,16 @@ end
 """
     BernsteinBasisOnSimplex{D,V,M} <: PolynomialBasis{D,V,Bernstein}
 
-Type for the multivariate Bernstein basis in barycentric coordinates.
-`M` is Nothing for the reference tetrahedra bary. coords., or `SMatrix{D+1,D+1}`
-if some simplex (triangle, tetrahedra, ...) vertices coordinates are given.
+Type for the multivariate Bernstein basis in barycentric coordinates,
+c.f. [Bernstein polynomials](@ref) section of the documentation. If `V` is not
+scalar, a Cartesian product of the Bernstein scalar basis is made for each
+independent component of `V`.
+
+The index of `B_α` in the basis is [`bernstein_term_id(α)`](@ref bernstein_term_id).
+
+`M` is Nothing for the reference tetrahedra barycentric coordinates or
+`SMatrix{D+1,D+1}` if some simplex (triangle, tetrahedra, ...) vertices
+coordinates are given.
 """
 struct BernsteinBasisOnSimplex{D,V,M} <: PolynomialBasis{D,V,Bernstein}
   max_order::Int
@@ -311,23 +318,23 @@ the `x_to_λ` change of coordinate matrix, see [`_compute_cart_to_bary_matrix`](
   return x_to_λ*x_1
 end
 
-const BernsteinTerm = Vector{Int}
-
 """
     bernstein_terms(K,D)
 
-Return the set of multi-indices for the `D`-dimensional Bernstein basis of
+Return the vector of multi-indices for the `D`-dimensional Bernstein basis of
 order `K`, that is
 
-    { α ∈ ⟦0,K⟧ᴺ} | |α| = K }
+``{ α ∈ ⟦0,K⟧ᴰ⁺¹} | |α| = K }``
 
 sorted in decreasing lexicographic order, e.g.
-    {300, 210, 201, 120, 111, 102, 030, 021, 012, 003}
-for D=2, K=3.
+
+``{200, 110, 101, 020, 011, 002}``
+
+for K=2, D=2.
 """
 function bernstein_terms(K,D)
   terms = collect(multiexponents(D+1,K))
-  terms = convert(Vector{BernsteinTerm}, terms)
+  terms = convert(Vector{Vector{Int}}, terms)
 end
 
 
@@ -390,7 +397,7 @@ function _gradient_nd!(
   c[1] = one(T)
   _downwards_de_Casteljau_nD!(c,λ,Val(K-1),Val(D))
 
-  _grad_Bα_from_Bα⁻!(r,i,c,s,Val(K),Val(D),V,x_to_λ)
+  _grad_Bα_from_Bαm!(r,i,c,s,Val(K),Val(D),V,x_to_λ)
 end
 
 function _hessian_nd!(
@@ -407,7 +414,7 @@ function _hessian_nd!(
   c[1] = one(T)
   _downwards_de_Casteljau_nD!(c,λ,Val(K-2),Val(D))
 
-  _hess_Bα_from_Bα⁻⁻!(r,i,c,s,Val(K),Val(D),V,x_to_λ)
+  _hess_Bα_from_Bαmm!(r,i,c,s,Val(K),Val(D),V,x_to_λ)
 end
 
 # @generated functions as otherwise the time and allocation for
@@ -418,12 +425,12 @@ end
 Iteratively applies de Casteljau algorithm in reverse in place using `λ`s as
 coefficients.
 
-If `K0 = 1`, `λ` are the barycentric coordinates of some point x and `c[1] = 1`,
-this computes all order `K` Bernstein basis polynomials at x:
+If `K0 = 1`, `λ` are the barycentric coordinates of some point `x` and `c[1] = 1`,
+this computes all order `K` basis Bernstein polynomials at `x`:
 
-    c[α_lin_index] = B_α(x) ∀α in bernstein_terms(Val(K),Val(D))
+``c[α_id] = B_α(x)  ∀α in bernstein_terms(K,D)``
 
-where α\\_lin\\_index = [`bernstein_term_id`](@ref)(α).
+where `α_id` = [`bernstein_term_id`](@ref)(α).
 """
 @generated function _downwards_de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{K0}=Val(1)) where {K,D,K0}
   z = zero(eltype(c))
@@ -460,14 +467,14 @@ end
 Iteratively applies de Casteljau algorithm in place using `λ`s as
 coefficients.
 
-If `Kf = 0`, `λ` are the barycentric coordinates of some x and `c` contains
-the Bernstein coefficients of a polynomial p (that is p(x) = ∑\\_α c\\_α B\\_α(x) for
-α in [`bernstein_terms`](@ref)(Val(`K`),Val(`D`)) ), this computes
+If `Kf = 0`, `λ` are the barycentric coordinates of some point `x` and `c` contains
+the Bernstein coefficients ``c_α`` of a polynomial ``p`` (that is ``p(x) = ∑_α c_α B_α(x)`` for
+``α`` in [`bernstein_terms`](@ref)(`K`,`D`) ), this computes
 
-    c[1] = p(x)
+``c[1] = p(x)``
 
-where ∀α, c\\_α must be initially stored in `c`[`α_lin_index`], where
-`α_lin_index` = [`bernstein_term_id`](@ref)(α).
+where the ``c_α`` must be initially stored in `c`[`α_id`], where
+`α_id` = [`bernstein_term_id`](@ref)(α).
 """
 @generated function _de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{Kf}=Val(0)) where {K,D,Kf}
   z = zero(eltype(c))
@@ -501,7 +508,7 @@ end
 
 # ∂t(B_α) = K ∑_β B_β ( δ_β_(α-et) - δ_β_(α-eN) )
 # for  1 ≤ t ≤ D and |β| = |α|-1
-@generated function _grad_Bα_from_Bα⁻!(
+@generated function _grad_Bα_from_Bαm!(
     r,i,c,s,::Val{K},::Val{D},::Type{V},x_to_λ=nothing) where {K,D,V}
 
   ex_v = Vector{Expr}()
@@ -541,7 +548,7 @@ end
 
 # ∂t∂q(B_α) = K(K-1) ∑_β B_β ( δ_β_(α-et-eq) - δ_β_(α-et-eN) - δ_β_(α-eN-eq) + δ_β_(α-eN-eN) )
 # for  1 ≤ t,q ≤ D and |β| = |α|-2
-@generated function _hess_Bα_from_Bα⁻⁻!(
+@generated function _hess_Bα_from_Bαmm!(
     r,i,c,s,::Val{K},::Val{D},::Type{V},x_to_λ=nothing) where {K,D,V}
 
   ex_v = Vector{Expr}()
@@ -598,11 +605,9 @@ For a given Bernstein multi-index `α` (vector or tuple), return the associated
 linear index of `α` flattened in decreasing lexicographic order, that is the `i`
 such that
 
-    (i,α) ∈ enumerate(bernstein_terms(Val(K),Val(D))
+    (i,α) ∈ enumerate(bernstein_terms(K,D))
 
-where K = sum(`α`). The greater `α` in lexicographic order, that is
-(K, 0, ..., 0), is at index `i=1, and the smaller, (0, ..., 0, K), is at
-index `i`=binom(D+K, D) (where D = #`α`-1, K=|`α`|).
+where K = sum(`α`), see also [`bernstein_terms`](@ref).
 """
 bernstein_term_id(α) = bernstein_term_id(α,Val(length(α)-1))
 bernstein_term_id(α, ::Val{0})::Int = 1
@@ -613,34 +618,31 @@ function bernstein_term_id(α, ::Val{D})::Int where D
   return i
 end
 
+
+# For a given Bernstein term `α`, return the index (starting from 0) of the
+# (D-`L`)-slice to which `α` belongs within the (D-`L`-1)-slice of
+# the D-multiexponent simplex (D = `N`-1).
+#
+# In a D-multiexponent simplex of elements `α`, flattened in a vector in
+# lexicographic order, the (D-`L`)-slices are the consecutive `α`s
+# having iddentical first `L` indices `α`.
 """
-    _L_slice(L, α::BernsteinTerm, ::Val{N}) where N = sum(last(α,N-L))
+    _L_slice(L, α, ::Val{N})
 
-where `L` ∈ 1:N
-
-For a given Bernstein term `α`, return the index (starting from 0) of the
-(D-`L`)-slice to which `α` belongs within the (D-`L`-1)-slice of
-the D-multiexponent simplex (D = `N`-1).
-
-In a D-multiexponent simplex of elements `α`, flattened in a vector in
-lexicographic order, the (D-`L`)-slices are the consecutive `α`s
-having iddentical first `L` indices `α`.
-
-For example, the (3-1)=2 slices of the tetrahedral multiexponents (3 simplex) are triangle multiexponents.
+where `L` ∈ 1:N, returns `sum( α[i] for i in (L+1):(D+1) )`.
 """
 @inline _L_slice(L, α, ::Val{D}) where D = @inbounds sum( α[i] for i in (L+1):(D+1) )
 
+# Return the length of the `l`-1 first (`D`-`L`)-slices in the
+# `D`-multiexponent simplex (flattened in lexicographic order).
+# Those numbers are the "(`D`-`L`)-simplex numbers".
 """
     _L_slices_size(L,D,l) = binomial(D-L+l,  D-L+1)
-
-Return the length of the `l`-1 first (`D`-`L`)-slices in the
-`D`-multiexponent simplex (flattened in lexicographic order).
-Those numbers are the "(`D`-`L`)-simplex numbers".
 """
 _L_slices_size(L,D,l) = binomial(D-L+l,  D-L+1)
 
 """
-    _sub_multi_indices!(sub_ids, α::BernsteinTerm)
+    _sub_multi_indices!(sub_ids, α)
 
 Given a positive multi-index `α`, sets in place in `sub_ids` the couples
 (`id`, `d`) with `d` in 1:`N` for which the multi-index `αd⁻` = `α`-e`d` is
@@ -649,7 +651,7 @@ positive (that is `α`[`d`]>0), and `id` is the linear index of `αd⁻`
 
 The function returns the number of sub indices set.
 """
-function _sub_multi_indices!(sub_ids, α::BernsteinTerm, ::Val{N}) where N
+function _sub_multi_indices!(sub_ids, α, ::Val{N}) where N
   @check length(sub_ids) >= N
   nb_sα = 0
   for i in 1:N
@@ -664,13 +666,13 @@ function _sub_multi_indices!(sub_ids, α::BernsteinTerm, ::Val{N}) where N
 end
 
 """
-    _sub_sub_multi_indices!(sub_ids, α::BernsteinTerm, ::Val{N})
+    _sub_sub_multi_indices!(sub_ids, α, ::Val{N})
 
 Like [`_sub_multi_indices`](@ref), but sets the triples (`id`, `t`, `q`) in `sub_ids`,
 with `t,q` in 1:`N` for which the multi-index `αd⁻⁻` = `α`-e`t`-e`q` is positive,
 and returns the number of triples set.
 """
-function _sub_sub_multi_indices!(sub_ids, α::BernsteinTerm, ::Val{N}) where N
+function _sub_sub_multi_indices!(sub_ids, α, ::Val{N}) where N
   @check length(sub_ids) >= binomial(N+1,2)
   nb_ssα = 0
   for i in 1:N
@@ -687,12 +689,12 @@ function _sub_sub_multi_indices!(sub_ids, α::BernsteinTerm, ::Val{N}) where N
 end
 
 """
-    _sup_multi_indices!(sup_ids, α::BernsteinTerm, ::Val{N})
+    _sup_multi_indices!(sup_ids, α, ::Val{N})
 
 Like [`_sub_multi_indices!`](@ref), but sets the indices for the `N` multi-indices
 `αd⁺` = `α`+e`d` for 1≤d≤`N`, and returns `N`
 """
-function _sup_multi_indices!(sup_ids, α::BernsteinTerm, ::Val{N}) where N
+function _sup_multi_indices!(sup_ids, α, ::Val{N}) where N
   @check length(sup_ids) >= N
   for i in 1:N
     α⁺ =  ntuple(k -> α[k]+Int(k==i), Val(N))
@@ -725,7 +727,7 @@ end
 #  end
 #
 #  Base.size(::BernsteinBasisOnSimplex{D,V}) where {D,V} = (num_indep_components(V)*binomial(D+K,D),)
-#  get_exponents(::BernsteinBasisOnSimplex{D,V}) where {D,V} = bernstein_terms(Val(K), Val(D))
+#  get_exponents(::BernsteinBasisOnSimplex{D,V}) where {D,V} = bernstein_terms(K,D)
 #
 #  ################################
 #  # nD evaluation implementation #
@@ -876,11 +878,11 @@ end
 #     multinoms(::Val{K}, ::Val{D})
 #
 # Returns the tuple of multinomial coefficients for each term in
-# [`bernstein_terms`](@ref)(Val(`K`),Val(`D`)). For e.g. a term `t`, the
+# [`bernstein_terms`](@ref)(`K`,`D`). For e.g. a term `t`, the
 # multinomial can be computed by `factorial(sum(t)) ÷ prod(factorial.(t)`
 # """
 # @generated function multinoms(::Val{K},::Val{D}) where {K,D}
-#   terms = bernstein_terms(Val(K),Val(D))
+#   terms = bernstein_terms(K,D)
 #   multinomials = tuple( (multinomial(α...) for α in terms)... )
 #   Meta.parse("return $multinomials")
 # end
