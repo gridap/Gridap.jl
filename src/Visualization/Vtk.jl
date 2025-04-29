@@ -163,19 +163,14 @@ function _generate_vtk_cells(
   type_to_vtknodes)
 
   V = eltype(cell_to_nodes)
-  meshcells = MeshCell{WriteVTK.VTKCellTypes.VTKCellType,V}[]
+  meshcells = Vector{MeshCell{WriteVTK.VTKCellTypes.VTKCellType,V}}(undef, length(cell_to_type))
 
   d = _vtkcelltypedict()
-
-  cells = 1:length(cell_to_type)
-  for cell in cells
-    t = cell_to_type[cell]
-    vtkid = type_to_vtkid[t]
-    vtknodes = type_to_vtknodes[t]
-
+  for (cell,type) in enumerate(cell_to_type)
+    vtkid = type_to_vtkid[type]
+    vtknodes = type_to_vtknodes[type]
     nodes = getindex!(cache,cell_to_nodes,cell)
-    meshcell = MeshCell(d[vtkid], nodes[vtknodes])
-    push!(meshcells,meshcell)
+    meshcells[cell] = MeshCell(d[vtkid], nodes[vtknodes])
   end
 
   meshcells

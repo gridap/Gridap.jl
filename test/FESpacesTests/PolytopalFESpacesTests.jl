@@ -26,15 +26,12 @@ function test_l2_proj(model,V,order,u_exact)
   eh = uh - uh_i
   @test sum(∫(eh⋅eh)dΩ) < 1e-10
 
-  # TODO: Bug for D == 3
-  if num_cell_dims(model) != 3
-    d = tempdir()
-    writevtk(
-      Ω,d*"/polytopal_l2_proj",
-      cellfields=["uh" => uh],
-      celldata=["cell_id"=>collect(1:num_cells(Ω))],
-    )
-  end
+  d = tempdir()
+  writevtk(
+    Ω,d*"/polytopal_l2_proj",
+    cellfields=["uh" => uh],
+    celldata=["cell_id"=>collect(1:num_cells(Ω))],
+  )
 end
 
 function test_dg_lap(model,V,order,u_exact)
@@ -92,7 +89,6 @@ test_l2_proj(pmodel,V,order,u_exact_3d)
 test_dg_lap(pmodel,V,order,u_exact_3d)
 
 # 3D skeleton
-
 Γ = Triangulation(ReferenceFE{2},model)
 
 VΓ = FESpaces.PolytopalFESpace(Γ,Float64,order,space=:P,dirichlet_tags=["boundary"])
