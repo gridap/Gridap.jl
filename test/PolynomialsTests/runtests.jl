@@ -24,6 +24,8 @@ using Test
 
 @testset "PLambdaBases" begin include("PLambdaBasesTests.jl") end
 
+@testset "FEECPolyBasis" begin include("ExteriorCalculusBasesTests.jl") end
+
 #@testset "ChangeBasis" begin include("ChangeBasisTests.jl") end
 
 end # module

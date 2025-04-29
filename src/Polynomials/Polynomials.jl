@@ -106,6 +106,7 @@ export Bernstein
 
 export PolynomialBasis
 export get_order
+export get_dimension
 
 export CartProdPolyBasis
 export get_exponents
@@ -116,9 +117,14 @@ export ChebyshevBasis
 export BernsteinBasis
 export BernsteinBasisOnSimplex
 
-export PLambdaBasis
+export FEECPolyBasis
+export get_FEEC_poly_degree
+export get_FEEC_form_degree
+export get_FEEC_family
+
 export PmLambdaBasis
 export PmΛ_bubbles
+export PLambdaBasis
 export PΛ_bubbles
 export get_bubbles
 export print_indices
@@ -151,6 +157,8 @@ include("CompWiseTensorPolyBases.jl")
 include("NedelecPolyBases.jl")
 
 include("RaviartThomasPolyBases.jl")
+
+include("ExteriorCalculusBases.jl")
 
 include("MonomialBases.jl")
 
