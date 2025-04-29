@@ -41,7 +41,7 @@ isHierarchical(::Type{<:Polynomial}) = @abstractmethod
 # K:       integer polynomial order (maximum order of any component and in any direction in nD).
 # np:      number of points at which a basis is evaluated
 # ndof:    number of basis polynomials
-# ndof_1d: maximum of 1D polynomial vector in any spatial dimension
+# ndof_1d: maximum number of 1D monomial in any spatial dimension
 
 """
     PolynomialBasis{D,V,PT<:Polynomial} <: AbstractVector{PT}
@@ -107,7 +107,7 @@ function _return_cache(
   s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
   # Cache for the 1D basis function values in each dimension (to be
   # tensor-producted), and of their N_deriv'th 1D derivatives
-  t = ntuple( _ -> CachedArray(zeros(T,(D,ndof_1d ))), Val(N_deriv+1))
+  t = ntuple( _ -> CachedArray(zeros(T,(D,ndof_1d))), Val(N_deriv+1))
   (r, s, t...)
 end
 
@@ -251,14 +251,13 @@ end
 Compute and assign: `r`[`i`] = `b`(`xi`) = (`b`₁(`xi`), ..., `b`ₙ(`xi`))
 
 where n = length(`b`) (cardinal of the basis), that is the function computes
-the basis polynomials at a single point `xi` and setting the result in the `i`th
+the basis polynomials at a single point `xi` and sets the result in the `i`th
 row of `r`.
-"""
-function _evaluate_nd!(
-  b::PolynomialBasis, xi,
-  r::AbstractMatrix, i,
-  c::AbstractMatrix, params)
 
+- `c` is an implementation specific cache for temporary computation of `b`(`xi`).
+- `params` is an optional (tuple of) parameter(s) returned by [`_get_static_parameters(b)`](@ref _get_static_parameters)
+"""
+function _evaluate_nd!(b::PolynomialBasis, xi, r::AbstractMatrix, i, c, params)
   @abstractmethod
 end
 
@@ -270,17 +269,10 @@ Compute and assign: `r`[`i`] = ∇`b`(`xi`) = (∇`b`₁(`xi`), ..., ∇`b`ₙ(`
 where n = length(`b`) (cardinal of the basis), like [`_evaluate_nd!`](@ref) but
 for gradients of `b`ₖ(`xi`), and
 
-- `g` is a mutable `D`×`K` cache (for the 1D polynomials first derivatives).
+- `g` is an implementation specific cache for temporary computation of `∇b`(`xi`).
 - `s` is a mutable length `D` cache for ∇`b`ₖ(`xi`).
-- `params` is an optional (tuple of) parameter(s) returned by [`_get_static_parameters(b)`](@ref _get_static_parameters)
 """
-function _gradient_nd!(
-  b::PolynomialBasis, xi,
-  r::AbstractMatrix, i,
-  c::AbstractMatrix,
-  g::AbstractMatrix,
-  s::MVector, params)
-
+function _gradient_nd!(b::PolynomialBasis, xi, r::AbstractMatrix, i, c, g, s::MVector, params)
   @abstractmethod
 end
 
@@ -292,17 +284,10 @@ Compute and assign: `r`[`i`] = H`b`(`xi`) = (H`b`₁(`xi`), ..., H`b`ₙ(`xi`))
 where n = length(`b`) (cardinal of the basis), like [`_evaluate_nd!`](@ref) but
 for hessian matrices/tensor of `b`ₖ(`xi`), and
 
-- `h` is a mutable `D`×`K` cache (for the 1D polynomials second derivatives).
+- `h` is an implementation specific cache for temporary computation of `∇∇b`(`xi`).
 - `s` is a mutable `D`×`D` cache for H`b`ₖ(`xi`).
 """
-function _hessian_nd!(
-  b::PolynomialBasis, xi,
-  r::AbstractMatrix, i,
-  c::AbstractMatrix,
-  g::AbstractMatrix,
-  h::AbstractMatrix,
-  s::MMatrix, params)
-
+function _hessian_nd!(b::PolynomialBasis, xi, r::AbstractMatrix, i, c, g, h, s::MMatrix, params)
   @abstractmethod
 end
 

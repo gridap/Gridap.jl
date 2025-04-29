@@ -72,26 +72,189 @@ function Pm_bubles(;r=2,k=2,D=3)
   end
 end
 
+T = Float64
+
+# 0D                                           0D #
+D = 0
+vertices = (Point{D,T}(),)
+x = [vertices[1]]
+x1 = x[1]
+
+k = 0
+r = 1
+b = PLambdaBasis(Val(D),T,r,k)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+r = 2
+b = PLambdaBasis(Val(D),T,r,k)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+r = 3
+b = PLambdaBasis(Val(D),T,r,k)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+r = 4
+b = PLambdaBasis(Val(D),T,r,k)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+b = PLambdaBasis(Val(D),T,r,k,vertices)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+# 1D                                           1D #
+D = 1
+Pt = Point{D,T}
+vertices = (Pt(.5),Pt(1.))
+x = [xi for xi in vertices]
+x1 = x[1]
+
+r = 4
+k = 0
+b = PLambdaBasis(Val(D),T,r,k)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+b = PLambdaBasis(Val(D),T,r,k,vertices)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+k = 1
+b = PLambdaBasis(Val(D),T,r,k)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+b = PLambdaBasis(Val(D),T,r,k,vertices)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+# 2D                                           2D #
+D = 2
+Pt = Point{D,T}
+vertices = (Pt(0., 0.5),Pt(1.,0),Pt(.5,1.))
+x = [xi for xi in vertices]
+x1 = x[1]
+
+r = 4
+k = 0
+b = PLambdaBasis(Val(D),T,r,k)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+b = PLambdaBasis(Val(D),T,r,k,vertices)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+k = 1
+b = PLambdaBasis(Val(D),T,r,k)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+b = PLambdaBasis(Val(D),T,r,k,vertices)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+k = 2
+b = PLambdaBasis(Val(D),T,r,k)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+b = PLambdaBasis(Val(D),T,r,k,vertices)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+
+# 3D                                           3D #
+D = 3
+Pt = Point{D,T}
+vertices = (Pt(0., 0., 0.5),Pt(1.,0,0),Pt(0,.5,0),Pt(0,.5,.5))
+x = [xi for xi in vertices]
+x1 = x[1]
+
+r = 4
+k = 0
+b = PLambdaBasis(Val(D),T,r,k)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+b = PLambdaBasis(Val(D),T,r,k,vertices)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+k = 1
+b = PLambdaBasis(Val(D),T,r,k)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+b = PLambdaBasis(Val(D),T,r,k,vertices)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+k = 2
+b = PLambdaBasis(Val(D),T,r,k)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+b = PLambdaBasis(Val(D),T,r,k,vertices)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+k = 3
+b = PLambdaBasis(Val(D),T,r,k)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+b = PLambdaBasis(Val(D),T,r,k,vertices)
+evaluate(b,x)
+evaluate(Broadcasting(∇)(b),x)
+evaluate(Broadcasting(∇∇)(b),x)
+
+
 end # module
 
-using .PLambdaBasisTests
-
-function α_to_I(::NTuple{0,Int})
-  return Combination{0,0}()
-end
-function α_to_I(α::NTuple{k,Int}) where k
-  r = sum(α)
-  v = zero(MVector{r,Int})
-  i_v = 1
-  i = 1
-  for α_i in α
-    for _ in 1:α_i
-      v[i_v] = i
-      i += 1
-      i_v += 1
-    end
-    i += 1
-  end
-  #println(r,k,r+k-1,v)
-  return Gridap.Polynomials.Combination{r,k+r-1}(v)
-end
+#using .PLambdaBasisTests
+#
+#function α_to_I(::NTuple{0,Int})
+#  return Combination{0,0}()
+#end
+#function α_to_I(α::NTuple{k,Int}) where k
+#  r = sum(α)
+#  v = zero(MVector{r,Int})
+#  i_v = 1
+#  i = 1
+#  for α_i in α
+#    for _ in 1:α_i
+#      v[i_v] = i
+#      i += 1
+#      i_v += 1
+#    end
+#    i += 1
+#  end
+#  #println(r,k,r+k-1,v)
+#  return Gridap.Polynomials.Combination{r,k+r-1}(v)
+#end
