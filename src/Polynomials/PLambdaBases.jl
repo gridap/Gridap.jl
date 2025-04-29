@@ -250,7 +250,7 @@ struct PLambdaBasis{D,V,C,B} <: PolynomialBasis{D,V,Bernstein}
     b = BernsteinBasisOnSimplex{D}(T, r, vertices)
     B = typeof(b)
     Ψ = zero(MVector{C,V})
-    _compute_PΛ_basis_form_coefficient!(Ψ,r,k,D,b,vertices,indices)
+    _compute_PΛ_basis_form_coefficient!(Ψ,r,k,Val(D),b,vertices,indices)
 
     if isone(L) && !diff_geo_calculus_style
       V = T
@@ -296,8 +296,8 @@ They can be vizualized using [`print_indices(b)`](@ref print_indices).
 """
 get_bubbles(b::PΛBases) = b._indices.bubbles
 get_order(b::PΛBases) = get_FEEC_poly_degree(b)
-get_cart_to_bary_matrix(b::PΛBases) = b.scalar_bernstein_basis.cart_to_bary_matrix
 print_indices(b::PΛBases) = println(b._indices)
+_get_cart_to_bary_matrix(b::PΛBases) = b.scalar_bernstein_basis.cart_to_bary_matrix
 
 function _return_cache(b::PΛBases,x,::Type{G},::Val{N_deriv}) where {G,N_deriv}
   T = eltype(G)
@@ -344,9 +344,9 @@ end
     _basis_forms_components(D,k,DG_style)
 
 If `DG_style`==true, return the triples (`I_id`, `I`, 1) for each D-dimensional
-k-form components dxᴵ = dxᴵ¹ ∧ dxᴵ² ∧ ... ∧ dxᴵᵏ where `I` is a combination of 1:`D`,
-the components ordered like in [`_sorted_combinations`](@ref) with
-`I_id` = _combination_index(I).
+k-form components dxᴵ = dxᴵ¹ ∧ dxᴵ² ∧ ... ∧ dxᴵᵏ where `I` is a combination of
+1:`D` and `I_id` = _combination_index(I), the components are ordered like in
+[`_sorted_combinations`](@ref).
 
 If `DG_style`==false, the indices are changed to implement the vector proxy of
 the differential forms ω defined by:
@@ -415,7 +415,15 @@ end
 """
     PmΛ_bubbles(r,k,D)
 
-TODO
+Generates the indices caracterizing the basis function of `PmLambdaBasis`,
+described in the Bernstein bases algorithm Developper notes of the official
+documentation, and are used as follows:
+
+    for (F, bubble_functions) in PmΛ_bubbles(r,k,D)
+      for (w, α, α_id, J, sub_J_ids, sup_α_ids) in bubble_functions
+        # ...
+      end
+    end
 """
 function PmΛ_bubbles(r,k,D)
   w=0
@@ -479,7 +487,7 @@ function _evaluate_nd!(
   ::Val{r}) where {D,r}
 
   V = eltype(ω)
-  λ = _cart_to_bary(x, get_cart_to_bary_matrix(b))
+  λ = _cart_to_bary(x, _get_cart_to_bary_matrix(b))
 
   # _evaluate_nd!(::BernsteinBasisOnSimplex) without set_value
   c[1] = 1
@@ -601,7 +609,15 @@ end
 """
     PΛ_bubbles(r,k,D)
 
-TODO
+Generates the indices caracterizing the basis function of `PLambdaBasis`,
+described in the Bernstein bases algorithm Developper notes of the official
+documentation, and are used as follows:
+
+    for (F, bubble_functions) in PΛ_bubbles(r,k,D)
+      for (w, α, α_id, J) in bubble_functions
+        # ...
+      end
+    end
 """
 function PΛ_bubbles(r,k,D)
   w=0
@@ -618,12 +634,9 @@ function PΛ_bubbles(r,k,D)
   bubbles
 end
 
-function _compute_PΛ_basis_form_coefficient!(Ψ,r::Int,k::Int,D::Int,b,vertices,indices)
-  Vr, Vk, VD = Val(r), Val(k), Val(D)
-  _compute_PΛ_basis_form_coefficient!(Ψ,Vr,Vk,VD,b,vertices,indices)
-end
-function _compute_PΛ_basis_form_coefficient!(Ψ,Vr,Vk,::Val{D},b,vertices,indices) where D
+function _compute_PΛ_basis_form_coefficient!(Ψ,r,k,::Val{D},b,vertices,indices) where D
   N = D+1
+  Vk = Val(k)
   V = eltype(Ψ)
   T = eltype(V)
   α_prec = ntuple(_->-1, N)
@@ -632,7 +645,7 @@ function _compute_PΛ_basis_form_coefficient!(Ψ,Vr,Vk,::Val{D},b,vertices,indic
   @inbounds for (F, bubble_functions) in indices.bubbles
     for (w, α, _, J) in bubble_functions
       if α ≠ α_prec
-        _update_φ_αF!(φ_αF,b,α,F,Vr)
+        _update_φ_αF!(φ_αF,b,α,F,r)
         α_prec = α
       end
 
@@ -645,7 +658,7 @@ function _compute_PΛ_basis_form_coefficient!(Ψ,Vr,Vk,::Val{D},b,vertices,indic
   nothing
 end
 
-@inline function _update_φ_αF!(φ_αF,b,α,F,::Val{r}) where r
+@inline function _update_φ_αF!(φ_αF,b,α,F,r)
   M = b.cart_to_bary_matrix
   @inbounds for ci in CartesianIndices(φ_αF)
     i, j = ci[1], ci[2]
@@ -655,15 +668,16 @@ end
 end
 
 function _compute_PΛ_basis_form_coefficient!(
-  Ψ,Vr,Vk,::Val,b,vertices::Nothing,indices)
+  Ψ,r,k,::Val,b,vertices::Nothing,indices)
 
+  Vk = Val(k)
   V = eltype(Ψ)
   T = eltype(V)
   Ψw = Mutable(V)(undef)
   @inbounds for (F, bubble_functions) in indices.bubbles
     for (w, α, _, J) in bubble_functions
       for (I_id, I, I_sgn) in indices.components
-        Ψw[I_id] = I_sgn * _hat_Ψ(Vr,Vk,α,F,I,J,T)
+        Ψw[I_id] = I_sgn * _hat_Ψ(r,Vk,α,F,I,J,T)
       end
       Ψ[w] = Ψw
     end
@@ -680,7 +694,7 @@ This is actually not faster than computing the matrices and the minors
 explicitely like when vertices are given, but lets keep it here in case we want
 to compute these at compile time one day.
 """
-function _hat_Ψ(Vr::Val{r},Vk::Val{k},α,F,I,J,::Type{T})::T where {T,r,k}
+function _hat_Ψ(r,Vk::Val{k},α,F,I,J,::Type{T})::T where {T,k}
   @check sum(α) == r
   @check length(I) == length(J) == k
 
@@ -697,7 +711,7 @@ function _hat_Ψ(Vr::Val{r},Vk::Val{k},α,F,I,J,::Type{T})::T where {T,r,k}
 
     if isone(n)        # rank M_IJ is 1
       m = _findfirst_val_or_zero(i-> (J[i]-1)∉I, (s+1), k)
-      u_p, v_m = _u(p,F,I), _v(m,α,J,Vr)
+      u_p, v_m = _u(p,F,I), _v(m,α,J,r)
       sgn = isodd(m+p) ? -1 : 1
       iszero(s) && return sgn*u_p*v_m
 
@@ -707,7 +721,7 @@ function _hat_Ψ(Vr::Val{r},Vk::Val{k},α,F,I,J,::Type{T})::T where {T,r,k}
       return sgn * v_m * (u_q - u_p)
     end
 
-    u, v = _u(F,I,Vk), _v(α,J,Vr,Vk)
+    u, v = _u(F,I,Vk), _v(α,J,r,Vk)
     if iszero(s)
       return 1 + sum( u .* v )
     else
@@ -733,8 +747,8 @@ end
 
 @propagate_inbounds _u(i::Int,F,I)   = Int(isone(F[1])) - Int(I[i]+1 in F)
 @propagate_inbounds _u(F::Vector{Int},I,Vk) = ntuple(i->_u(i,F,I), Vk)
-@propagate_inbounds _v(j::Int,α,J,::Val{r}) where r = α[J[j]]/r
-@propagate_inbounds _v(α::Vector{Int},J,Vr,Vk) = ntuple(j->_v(j,α,J,Vr), Vk)
+@propagate_inbounds _v(j::Int,α,J,r) = α[J[j]]/r
+@propagate_inbounds _v(α::Vector{Int},J,r,Vk) = ntuple(j->_v(j,α,J,r), Vk)
 
 # API
 
@@ -743,7 +757,7 @@ function _evaluate_nd!(
   ω::AbstractMatrix, i, c,
   ::Val{r}) where {D,r}
 
-  λ = _cart_to_bary(x, get_cart_to_bary_matrix(b))
+  λ = _cart_to_bary(x, _get_cart_to_bary_matrix(b))
 
   # _evaluate_nd!(::BernsteinBasisOnSimplex) without set_value
   c[1] = 1
@@ -948,7 +962,7 @@ function _minor(M,I,J,::Val{k}) where k
   @check J ⊆ axes(M)[2]
 
   T = eltype(M)
-  m = MMatrix{k,k,T}(undef)
+  m = MMatrix{k,k,T,k*k}(undef)
   for (i, Ii) in enumerate(take(I,k))
     for (j, Jj) in enumerate(take(J,k))
       @inbounds m[i,j] = M[Ii,Jj]
