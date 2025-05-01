@@ -5,14 +5,15 @@
 """
     struct CartProdPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
 
-"Cartesian product polynomial basis"
+"Cartesian product of a scalar tensor polynomial basis"
 
 Type representing a basis of a (an)isotropic `D`-multivariate `V`-valued
 cartesian product polynomial space
 
 `V`(𝕊, 𝕊, ..., 𝕊)
 
-where 𝕊 is a scalar multivariate polynomial space.
+where the scalar space 𝕊 is a (subspace of a) tensor product space of an
+univariate polynomial basis.
 
 The scalar polynomial basis spanning 𝕊 is defined as
 
@@ -20,7 +21,7 @@ The scalar polynomial basis spanning 𝕊 is defined as
 
 where bαᵢ`ᴷ`(xᵢ) is the αᵢth 1D basis polynomial of the basis `PT` of order `K`
 evaluated at xᵢ (iᵗʰ comp. of x), and where α = (α₁, α₂, ..., α`D`) is a
-multi-index in `terms`, a subset of ⟦0,`K`⟧`ᴰ`. `terms` is a field that can be
+multi-index in `terms`, a subset of {0:`K`}`ᴰ`. `terms` is a field that can be
 passed in a constructor.
 
 This type fully implements the [`Field`](@ref) interface, with up to second

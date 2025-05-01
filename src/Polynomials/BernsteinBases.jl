@@ -15,7 +15,8 @@ isHierarchical(::Type{Bernstein}) = false
 """
     BernsteinBasis{D,V} = CartProdPolyBasis{D,V,Bernstein}
 
-Alias for cartesian product Bernstein basis, scalar valued or multivalued.
+Alias for cartesian product of a scalar tensor 1D-Bernstein basis, scalar valued
+or multivalued.
 """
 const BernsteinBasis{D,V} = CartProdPolyBasis{D,V,Bernstein}
 
@@ -252,12 +253,13 @@ end
 
 """
     BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int)
-    BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int,vertices::NTuple{D+1,<:Point{D}})
+    BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int,vertices)
 
 Constructor for [`BernsteinBasisOnSimplex`](@ref).
 
-If specified, the simplex defined by the `vertices` - used to compute the
-barycentric coordinates from - must be non-degenerated (have nonzero volume).
+If specified, `vertices` is a collection of `D+1` `Point{D}` defining a simplex
+used to compute the barycentric coordinates from, it must be non-degenerated
+(have nonzero volume).
 """
 function BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int,vertices=nothing) where {D,V}
   BernsteinBasisOnSimplex{D}(V,order,vertices)
@@ -324,13 +326,9 @@ end
 Return the vector of multi-indices for the `D`-dimensional Bernstein basis of
 order `K`, that is
 
-``{ α ∈ ⟦0,K⟧ᴰ⁺¹} | |α| = K }``
+{ α ∈ {0:K}ᴰ⁺¹ | |α| = K }
 
-sorted in decreasing lexicographic order, e.g.
-
-``{200, 110, 101, 020, 011, 002}``
-
-for K=2, D=2.
+ordered in decreasing lexicographic order, e.g. {200, 110, 101, 020, 011, 002} for K=2, D=2.
 """
 function bernstein_terms(K,D)
   terms = collect(multiexponents(D+1,K))
@@ -506,8 +504,8 @@ where the ``c_α`` must be initially stored in `c`[`α_id`], where
 end
 
 
-# ∂t(B_α) = K ∑_β B_β ( δ_β_(α-et) - δ_β_(α-eN) )
-# for  1 ≤ t ≤ D and |β| = |α|-1
+# ∂q(B_α) = K ∑_{1 ≤ i ≤ N} ∂q(λi) B_β
+# for  1 ≤ q ≤ D and β = α-ei
 @generated function _grad_Bα_from_Bαm!(
     r,i,c,s,::Val{K},::Val{D},::Type{V},x_to_λ=nothing) where {K,D,V}
 
@@ -522,17 +520,17 @@ end
     push!(ex_v, :(@inbounds s .= $z))  # s = 0
 
     nb_sα = _sub_multi_indices!(sub_ids, α, Val(D+1))
-    for (id_β, i) in take(sub_ids, nb_sα)
+    for (id_β, i) in take(sub_ids, nb_sα) # β = α - ei
       push!(ex_v, :(@inbounds B_β = c[$id_β]))
-      # s[q] = Σ_β B_β ∇λ(eq)_i
+      # s[q] = Σ_β ∂q(λi) B_β
       for q in 1:D
         if x_to_λ == Nothing
-          # ∇λ(eq)_i = δiq - δiN
+          # ∂q(λi) = δiq - δiN
           Cqi = δ(i,q) - δ(i,N)
           iszero(Cqi) || push!(ex_v, :(@inbounds s[$q] += $Cqi*B_β))
         else
-          # ∇λ(eq)_i = ei (x_to_λ*(e1 - e_{q+1}) - x_to_λ*(e1)) = ei*x_to_λ*e_{q+1}
-          # ∇λ(eq)_i = x_to_λ[i,q+1]
+          # ∂q(λi) = ei (x_to_λ*(e1 - e{q+1}) - x_to_λ*(e1)) = ei * x_to_λ * e{q+1}
+          # ∂q(λi) = x_to_λ[i,q+1]
           push!(ex_v, :(@inbounds s[$q] += x_to_λ[$i,$(q+1)]*B_β))
         end
       end
@@ -546,8 +544,8 @@ end
   return Expr(:block, ex_v...)
 end
 
-# ∂t∂q(B_α) = K(K-1) ∑_β B_β ( δ_β_(α-et-eq) - δ_β_(α-et-eN) - δ_β_(α-eN-eq) + δ_β_(α-eN-eN) )
-# for  1 ≤ t,q ≤ D and |β| = |α|-2
+# ∂t(∂q(B_α)) = K(K-1) ∑_{1 ≤ i,j ≤ N} ∂t(λj) ∂q(λi) B_β
+# for  1 ≤ t,q ≤ D and β = α - ei - ej
 @generated function _hess_Bα_from_Bαmm!(
     r,i,c,s,::Val{K},::Val{D},::Type{V},x_to_λ=nothing) where {K,D,V}
 
@@ -557,7 +555,6 @@ end
   N = D+1
   δ(i,j) = Int(i==j)
   C(q,t,i,j) = (δ(i,q)-δ(i,N))*(δ(j,t)-δ(j,N))
-  #C(q,t,i,j) = (δ(i,q+1)-δ(i,1))*(δ(j,t+1)-δ(j,1))
   N_max_ssα = binomial(D+2,2)
   sub_sub_α_ids = MVector{N_max_ssα, NTuple{3,Int}}(undef)
 
@@ -568,10 +565,10 @@ end
     for (id_β, i, j) in take(sub_sub_α_ids, nb_subsub)
 
       push!(ex_v, :(@inbounds B_β = c[$id_β]))
-      # s[t,q] = Σ_β B_β ( δ_β_(α-et-eq) - δ_β_(α-et-eN) - δ_β_(α-eN-eq) + δ_β_(α-eN-eN))
       for t in 1:D
         for q in 1:D
           if x_to_λ == Nothing
+          # s[t,q] = Σ_β B_β (δ_iq - δ_iN)*(δ_jt - δ_jN)
                    Cβ  = C(q,t,i,j)
             if i≠j Cβ += C(q,t,j,i) end
             iszero(Cβ) || push!(ex_v, :(@inbounds s[$t,$q] += $Cβ*B_β))
@@ -602,7 +599,7 @@ end
     bernstein_term_id(α, ::Val{D})
 
 For a given Bernstein multi-index `α` (vector or tuple), return the associated
-linear index of `α` flattened in decreasing lexicographic order, that is the `i`
+linear index of `α` ordered in decreasing lexicographic order, that is the `i`
 such that
 
     (i,α) ∈ enumerate(bernstein_terms(K,D))
@@ -623,8 +620,8 @@ end
 # (D-`L`)-slice to which `α` belongs within the (D-`L`-1)-slice of
 # the D-multiexponent simplex (D = `N`-1).
 #
-# In a D-multiexponent simplex of elements `α`, flattened in a vector in
-# lexicographic order, the (D-`L`)-slices are the consecutive `α`s
+# In a D-multiexponent simplex of elements `α`, ordered in a vector in
+# decreasing lexicographic order, the (D-`L`)-slices are the consecutive `α`s
 # having iddentical first `L` indices `α`.
 """
     _L_slice(L, α, ::Val{N})
@@ -634,7 +631,7 @@ where `L` ∈ 1:N, returns `sum( α[i] for i in (L+1):(D+1) )`.
 @inline _L_slice(L, α, ::Val{D}) where D = @inbounds sum( α[i] for i in (L+1):(D+1) )
 
 # Return the length of the `l`-1 first (`D`-`L`)-slices in the
-# `D`-multiexponent simplex (flattened in lexicographic order).
+# `D`-multiexponent simplex (ordered in decreasing lexicographic order).
 # Those numbers are the "(`D`-`L`)-simplex numbers".
 """
     _L_slices_size(L,D,l) = binomial(D-L+l,  D-L+1)

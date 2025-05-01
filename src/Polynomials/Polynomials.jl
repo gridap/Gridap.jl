@@ -113,7 +113,10 @@ export MonomialBasis
 export LegendreBasis
 export ChebyshevBasis
 export BernsteinBasis
+
 export BernsteinBasisOnSimplex
+export bernstein_terms
+export bernstein_term_id
 
 export CompWiseTensorPolyBasis
 export QGradBasis
