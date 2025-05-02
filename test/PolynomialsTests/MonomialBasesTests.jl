@@ -53,13 +53,13 @@ test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 
 # Real-valued Q space with an isotropic order
 
-orders = (1,2)
+orders = (1,3)
 V = Float64
 G = gradient_type(V,xi)
 b = MonomialBasis(Val(2),V,orders)
 
-v = V[1.0, 2.0, 3.0, 6.0, 9.0, 18.0]
-g = G[(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (3.0, 2.0), (0.0, 6.0), (9.0, 12.0)]
+v = V[1.0, 2.0, 3.0, 6.0, 9.0, 18.0, 27.0, 54.0]
+g = G[(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (3.0, 2.0), (0.0, 6.0), (9.0, 12.0), (0., 27.0), (27.0, 54.0)]
 
 bx = repeat(permutedims(v),np)
 ∇bx = repeat(permutedims(g),np)

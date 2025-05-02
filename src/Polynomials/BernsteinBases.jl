@@ -243,9 +243,11 @@ struct BernsteinBasisOnSimplex{D,V,M} <: PolynomialBasis{D,V,Bernstein}
   cart_to_bary_matrix::M #  Nothing or SMatrix{D+1,D+1}
 
   function BernsteinBasisOnSimplex{D}(::Type{V},order::Int,vertices=nothing) where {D,V}
-    @check isnothing(vertices) || vertices isa NTuple{D+1,<:Point{D}}
+    msg = "A D simplex defined by D+1 (linearly independent) vertices of type <:Point{D} is required"
+    @check (isnothing(vertices) || length(vertices) == D+1 && eltype(vertices) <: Point{D}) msg
+
     K = Int(order)
-    cart_to_bary_matrix = _compute_cart_to_bary_matrix(vertices)
+    cart_to_bary_matrix = _compute_cart_to_bary_matrix(vertices, Val(D+1))
     M = typeof(cart_to_bary_matrix) # Nothing or SMatrix
     new{D,V,M}(K,cart_to_bary_matrix)
   end
@@ -274,30 +276,27 @@ get_order(b::BernsteinBasisOnSimplex) = b.max_order
 #####################
 
 """
-    _compute_cart_to_bary_matrix(vertices::NTuple{N,Point{D,T}})
-    _compute_cart_to_bary_matrix(::Nothing) = nothing
+    _compute_cart_to_bary_matrix(vertices, ::Val{N})
+    _compute_cart_to_bary_matrix(::Nothing,::Val) = nothing
 
-For the given the vertices of a `D`-simplex, computes the change of coordinate
-matrix `x_to_λ` from cartesian to barycentric, that is `λ` = `x_to_λ` * `x`
-such that `sum(λ) == 1` and `x == sum(λ .* vertices)`.
+For the given the vertices of a `D`-simplex (`D` = `N`-1, computes the change
+of coordinate matrix `x_to_λ` from cartesian to barycentric, that is
+`λ` = `x_to_λ` * `x` such that `sum(λ) == 1` and `x == sum(λ .* vertices)`.
 """
-function _compute_cart_to_bary_matrix(vertices::NTuple{N,Point{D,T}}) where {N,D,T}
-  @check N == D+1 "A D simplex is defined by D+1 (linearly independent) vertices"
-
+function _compute_cart_to_bary_matrix(vertices, ::Val{N}) where N
+  T = eltype(eltype(vertices))
   λ_to_x = MMatrix{N,N,T}(undef)
   for (i,v) in enumerate(vertices)
     λ_to_x[:,i] .= tuple(one(T), v...)
   end
 
-  local x_to_λ
-  try
-    x_to_λ = inv(λ_to_x)
-  catch
-    throw(DomainError(vertices, "The simplex defined by the given vertices is degenerated (is flat / has zero volume)."))
-  end
+  x_to_λ = inv(λ_to_x) # Doesn't throw if singular because this is a StaticArrays Matrix
+  msg =  "The simplex defined by the given vertices is degenerated (is flat / has zero volume)."
+  !all(isfinite, x_to_λ) && throw(DomainError(vertices,msg))
+
   return SMatrix{N,N,T}(x_to_λ)
 end
-_compute_cart_to_bary_matrix(::Nothing) = nothing
+_compute_cart_to_bary_matrix(::Nothing, ::Val) = nothing
 
 """
     _cart_to_bary(x::Point{D,T}, ::Nothing)
@@ -596,7 +595,6 @@ end
 
 """
     bernstein_term_id(α)
-    bernstein_term_id(α, ::Val{D})
 
 For a given Bernstein multi-index `α` (vector or tuple), return the associated
 linear index of `α` ordered in decreasing lexicographic order, that is the `i`
@@ -606,12 +604,10 @@ such that
 
 where K = sum(`α`), see also [`bernstein_terms`](@ref).
 """
-bernstein_term_id(α) = bernstein_term_id(α,Val(length(α)-1))
-bernstein_term_id(α, ::Val{0})::Int = 1
-
-function bernstein_term_id(α, ::Val{D})::Int where D
-  @check length(α) == D+1
-  i = sum(_L_slices_size(L, D, _L_slice(L,α,Val(D))) for L in 1:D; init=0) + 1
+function bernstein_term_id(α)
+  D = length(α)-1
+  @check D ≥ 0
+  @inbounds i = sum(_L_slices_size(L, D, _L_slice_2(L,α,D)) for L in 1:D; init=0) + 1
   return i
 end
 
@@ -624,11 +620,11 @@ end
 # decreasing lexicographic order, the (D-`L`)-slices are the consecutive `α`s
 # having iddentical first `L` indices `α`.
 """
-    _L_slice(L, α, ::Val{N})
+    _L_slice(L, α, D)
 
 where `L` ∈ 1:N, returns `sum( α[i] for i in (L+1):(D+1) )`.
 """
-@inline _L_slice(L, α, ::Val{D}) where D = @inbounds sum( α[i] for i in (L+1):(D+1) )
+Base.@propagate_inbounds _L_slice_2(L, α, D) = sum( α[i] for i in (L+1):(D+1) )
 
 # Return the length of the `l`-1 first (`D`-`L`)-slices in the
 # `D`-multiexponent simplex (ordered in decreasing lexicographic order).
