@@ -53,29 +53,31 @@ end
   a1 <|-left- PolynomialBasis
 
   together {
-    struct UniformPolyBasis {
+    struct CartProdPolyBasis {
       +get_exponents
       +get_orders
     }
     struct CompWiseTensorPolyBasis
     struct RaviartThomasPolyBasis
     struct NedelecPolyBasisOnSimplex
+    struct BernsteinBasisOnSimplex
     struct ModalC0Basis {
       +get_orders
     }
   }
 
-  PolynomialBasis <|-- UniformPolyBasis
+  PolynomialBasis <|-- CartProdPolyBasis
   PolynomialBasis <|-- CompWiseTensorPolyBasis
   PolynomialBasis <|-- RaviartThomasPolyBasis
   PolynomialBasis <|-- NedelecPolyBasisOnSimplex
+  PolynomialBasis <|-- BernsteinBasisOnSimplex
   PolynomialBasis <|-- ModalC0Basis
 
   object "(<:Polynomial)Basis" as m1
   object "QGrad[<:Polynomial]Basis\nQCurlGrad[<:Polynomial]Basis" as m2
   object "PCurlGrad[<:Polynomial]Basis" as m4
   object "PGradMonomialBasis" as m5
-  UniformPolyBasis <-down- m1
+  CartProdPolyBasis <-down- m1
   CompWiseTensorPolyBasis <-down- m2
   RaviartThomasPolyBasis <-down- m4
   NedelecPolyBasisOnSimplex <-down- m5

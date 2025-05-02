@@ -1,14 +1,14 @@
 """
-    NedelecPolyBasisOnSimplex{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
+    NedelecPolyBasisOnSimplex{D,V,PT} <: PolynomialBasis{D,V,PT}
 
 Basis of the vector valued (`V<:VectorValue{D}`) space ℕ𝔻ᴰₙ(△) for `D`=2,3.
 This space is the polynomial space for Nedelec elements on simplices with
 curl in (ℙᴰₙ)ᴰ. Its maximum degree is n+1 = `K`. `get_order` on it returns `K`.
 
-Currently, the basis is implemented as the union of a UniformPolyBasis{...,PT}
+Currently, the basis is implemented as the union of a CartProdPolyBasis{...,PT}
 for ℙᴰₙ and a monomial basis for x × (ℙᴰₙ \\ ℙᴰₙ₋₁)ᴰ.
 """
-struct NedelecPolyBasisOnSimplex{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
+struct NedelecPolyBasisOnSimplex{D,V,PT} <: PolynomialBasis{D,V,PT}
   order::Int
   function NedelecPolyBasisOnSimplex{D}(::Type{PT},::Type{T},order::Integer) where {D,PT<:Polynomial,T}
     @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
@@ -16,23 +16,26 @@ struct NedelecPolyBasisOnSimplex{D,V,K,PT} <: PolynomialBasis{D,V,K,PT}
     @notimplementedif !(D in (2,3))
     K = Int(order)+1
     V = VectorValue{D,T}
-    new{D,V,K,PT}(Int(order))
+    new{D,V,PT}(Int(order))
   end
 end
 
-function Base.size(a::NedelecPolyBasisOnSimplex{D}) where D
-  k = a.order+1
-  n = div(k*prod(i->(k+i),2:D),factorial(D-1))
+get_order(f::NedelecPolyBasisOnSimplex) = f.order + 1 # Return actual maximum poly order
+
+function Base.size(f::NedelecPolyBasisOnSimplex{D}) where D
+  K = get_order(f)
+  n = div(K*prod(i->(K+i),2:D),factorial(D-1))
   (n,)
 end
 
 function return_cache(
-  f::NedelecPolyBasisOnSimplex{D,V,K,PT},x::AbstractVector{<:Point}) where {D,V,K,PT}
+  f::NedelecPolyBasisOnSimplex{D,V,PT},x::AbstractVector{<:Point}) where {D,V,PT}
 
+  K = get_order(f)
   np = length(x)
   ndofs = length(f)
   a = zeros(V,(np,ndofs))
-  P = UniformPolyBasis(PT,Val(D),V,K-1,_p_filter)
+  P = CartProdPolyBasis(PT,Val(D),V,K-1,_p_filter)
   cP = return_cache(P,x)
   CachedArray(a), cP, P
 end
@@ -115,15 +118,16 @@ function evaluate!(
 end
 
 function return_cache(
-  g::FieldGradientArray{1,<:NedelecPolyBasisOnSimplex{D,V,K,PT}},
-  x::AbstractVector{<:Point}) where {D,V,K,PT}
+  g::FieldGradientArray{1,<:NedelecPolyBasisOnSimplex{D,V,PT}},
+  x::AbstractVector{<:Point}) where {D,V,PT}
   f = g.fa
+  K = get_order(f)
   np = length(x)
   ndofs = length(f)
   xi = testitem(x)
   G = gradient_type(V,xi)
   a = zeros(G,(np,ndofs))
-  mb = UniformPolyBasis(PT,Val(D),V,K-1,_p_filter)
+  mb = CartProdPolyBasis(PT,Val(D),V,K-1,_p_filter)
   P = Broadcasting(∇)(mb)
   cP = return_cache(P,x)
   CachedArray(a), cP, P

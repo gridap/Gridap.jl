@@ -39,13 +39,13 @@ b1 = ModalC0Basis{1}(V,order,a,b)
                                      (0.0,) (0.0,) (3.4641016151377544,) (-1.4907119849998598,);
                                      (0.0,) (0.0,) (3.4641016151377544,) (2.9814239699997196,)]
 
-# Validate generic 1D implem using UniformPolyBasis
+# Validate generic 1D implem using CartProdPolyBasis
 
 order = 3
 a = fill(Point(0.),order+1)
 b = fill(Point(1.),order+1)
 b1 = ModalC0Basis{1}(V,order,a,b)
-b1u= UniformPolyBasis(ModalC0,Val(1),V,order)
+b1u= CartProdPolyBasis(ModalC0,Val(1),V,order)
 
 ∇b1  = Broadcasting(∇)(b1)
 ∇b1u = Broadcasting(∇)(b1u)
@@ -83,7 +83,7 @@ H = gradient_type(G,x1)
                                             (0.0, 0.5590169943749475, 0.5590169943749475, 1.118033988749895);
                                             (0.0, -2.23606797749979, -2.23606797749979, 0.0) ]
 
-# Validate generic 2D implem using UniformPolyBasis
+# Validate generic 2D implem using CartProdPolyBasis
 
 order = 3
 len_b2 = (order+1)^2
@@ -91,7 +91,7 @@ a = fill(Point(0.,0.), len_b2)
 b = fill(Point(1.,1.), len_b2)
 
 b2 = ModalC0Basis{2}(V,order,a,b)
-b2u= UniformPolyBasis(ModalC0,Val(2),V,order)
+b2u= CartProdPolyBasis(ModalC0,Val(2),V,order)
 ∇b2  = Broadcasting(∇)(b2)
 ∇b2u = Broadcasting(∇)(b2u)
 

@@ -8,11 +8,11 @@ struct Monomial <: Polynomial   end
 isHierarchical(::Type{Monomial}) = true
 
 """
-    MonomialBasis{D,V,K} = UniformPolyBasis{D,V,K,Monomial}
+    MonomialBasis{D,V} = CartProdPolyBasis{D,V,Monomial}
 
-Alias for monomial Multivariate scalar' or `Multivalue`'d basis.
+Alias for cartesian product monomial basis, scalar valued or multi-valued.
 """
-const MonomialBasis{D,V,K} = UniformPolyBasis{D,V,K,Monomial}
+const MonomialBasis{D,V} = CartProdPolyBasis{D,V,Monomial}
 
 """
     MonomialBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)
@@ -21,7 +21,7 @@ const MonomialBasis{D,V,K} = UniformPolyBasis{D,V,K,Monomial}
 
 High level constructors of [`MonomialBasis`](@ref).
 """
-MonomialBasis(args...) = UniformPolyBasis(Monomial, args...)
+MonomialBasis(args...) = CartProdPolyBasis(Monomial, args...)
 
 function PGradBasis(::Type{Monomial},::Val{D},::Type{T},order::Int) where {D,T}
   NedelecPolyBasisOnSimplex{D}(Monomial,T,order)
@@ -29,7 +29,7 @@ end
 function PGradBasis(::Type{Monomial},::Val{1},::Type{T},order::Int) where T
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
   V = VectorValue{1,T}
-  UniformPolyBasis(Monomial, Val(1), V, order+1)
+  CartProdPolyBasis(Monomial, Val(1), V, order+1)
 end
 
 # 1D evaluation implementation
@@ -75,6 +75,66 @@ function _hessian_1d!(::Type{Monomial},::Val{K},h::AbstractMatrix{T},x,d) where 
   for i in 3:n
     @inbounds h[d,i] = (i-1)*(i-2)*xn
     xn *= xd
+  end
+end
+
+
+# Optimizations for 0 to 1/2 derivatives at once
+
+function _derivatives_1d!(::Type{Monomial},v::Val_01,t::NTuple{2},x,d)
+  @inline _evaluate_1d!(Monomial, v, t[1], x, d)
+  @inline _gradient_1d!(Monomial, v, t[2], x, d)
+end
+
+function _derivatives_1d!(::Type{Monomial},::Val{K},t::NTuple{2},x,d) where K
+  @inbounds begin
+    n = K + 1 # n > 2
+    v, g = t
+    T = eltype(v)
+
+    z = zero(T)
+    xn = one(T)
+    xd = x[d]
+
+    v[d,1] = xn
+    g[d,1] = z
+    for i in 2:n
+      g[d,i] = (i-1)*xn
+      xn *= xd
+      v[d,i] = xn
+    end
+  end
+end
+
+
+function _derivatives_1d!(::Type{Monomial},v::Val_012,t::NTuple{3},x,d)
+  @inline _evaluate_1d!(Monomial, v, t[1], x, d)
+  @inline _gradient_1d!(Monomial, v, t[2], x, d)
+  @inline _hessian_1d!( Monomial, v, t[3], x, d)
+end
+
+function _derivatives_1d!(::Type{Monomial},::Val{K},t::NTuple{3},x,d) where K
+  @inbounds begin
+    n = K + 1 # n > 2
+    v, g, h = t
+    T = eltype(v)
+
+    z = zero(T)
+    o = one(T)
+    xd = x[d]
+
+    v[d,1] = o;  g[d,1] = z; h[d,1] = z
+    v[d,2] = xd; g[d,2] = o; h[d,2] = z
+
+    xn  = xd
+    xnn = o
+    for i in 3:n
+      h[d,i] = (i-1)*xnn
+      xnn  = (i-1)*xn
+      g[d,i] = xnn
+      xn *= xd
+      v[d,i] = xn
+    end
   end
 end
 

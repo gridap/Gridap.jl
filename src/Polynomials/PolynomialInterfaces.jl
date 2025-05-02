@@ -7,10 +7,6 @@
 
 Abstract type for polynomial bases families/types. It has trait
 [`isHierarchical`](@ref).
-
-The currently implemented families are [Monomial](@ref), [Legendre](@ref),
-[Chebyshev](@ref), [ModalC0](@ref) and [Bernstein](@ref). Only Bernstein is not
-hierarchical.
 """
 abstract type Polynomial  <: Field end
 
@@ -20,6 +16,10 @@ abstract type Polynomial  <: Field end
 Return `true` if the 1D basis of order `K` of the given [`Polynomial`](@ref)
 basis family is the union of the basis of order `K-1` and an other order `K`
 polynomial. Equivalently, if the iᵗʰ basis polynomial is of order i-1.
+
+The currently implemented families are [Monomial](@ref), [Legendre](@ref),
+[Chebyshev](@ref), [ModalC0](@ref) and [Bernstein](@ref). Only Bernstein is not
+hierarchical.
 """
 isHierarchical(::Type{<:Polynomial}) = @abstractmethod
 
@@ -44,28 +44,29 @@ isHierarchical(::Type{<:Polynomial}) = @abstractmethod
 # ndof_1d: maximum of 1D polynomial vector in any spatial dimension
 
 """
-    PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}
+    PolynomialBasis{D,V,PT<:Polynomial} <: AbstractVector{PT}
 
 Abstract type representing a generic multivariate polynomial basis.
 The parameters are:
 - `D`: the spatial dimension
 - `V`: the image values type, a concrete type `<:Real` or `<:MultiValue`
-- `K`: the maximum order of a basis polynomial in a spatial component
 - `PT <: Polynomial`: the family of the basis polynomials (must be a concrete type).
+
+The implementations also stores `K`: the maximum order of a basis polynomial in a spatial component
 """
-abstract type PolynomialBasis{D,V,K,PT<:Polynomial} <: AbstractVector{PT}  end
+abstract type PolynomialBasis{D,V,PT<:Polynomial} <: AbstractVector{PT}  end
 
 @inline Base.size(::PolynomialBasis{D,V}) where {D,V} = @abstractmethod
-@inline Base.getindex(::PolynomialBasis{D,V,K,PT}, i::Integer) where {D,V,K,PT} = PT()
+@inline Base.getindex(::PolynomialBasis{D,V,PT}, i::Integer) where {D,V,PT} = PT()
 @inline Base.IndexStyle(::PolynomialBasis) = IndexLinear()
 @inline return_type(::PolynomialBasis{D,V}) where {D,V} = V
 
 """
-    get_order(b::PolynomialBasis{D,V,K}) = K
+    get_order(b::PolynomialBasis)
 
-Return the maximum polynomial order in a dimension, is should be `0` in 0D.
+Return the maximum polynomial order in a dimension, or `0` in 0D.
 """
-@inline get_order(::PolynomialBasis{D,V,K}) where {D,V,K} = K
+@inline get_order(::PolynomialBasis) = @abstractmethod
 
 
 ###########
@@ -73,9 +74,9 @@ Return the maximum polynomial order in a dimension, is should be `0` in 0D.
 ###########
 
 _q_filter( e,order)  = (maximum(e,init=0) <= order) # ℚₙ
-_qs_filter(e,order)  = (maximum(e,init=0) == order) # ℚₙ\ℚ₍ₙ₋₁₎
+_qh_filter(e,order)  = (maximum(e,init=0) == order) # ℚₙ\ℚ₍ₙ₋₁₎
 _p_filter( e,order)  = (sum(e) <= order)            # ℙₙ
-_ps_filter(e,order)  = (sum(e) == order)            # ℙₙ\ℙ₍ₙ₋₁₎
+_ph_filter(e,order)  = (sum(e) == order)            # ℙₙ\ℙ₍ₙ₋₁₎
 _ser_filter(e,order) = (sum( [ i for i in e if i>1 ] ) <= order) # Serendipity
 
 function _define_terms(filter,orders)
@@ -102,10 +103,12 @@ function _return_cache(
   ndof_1d = get_order(f) + 1
   # Cache for the returned array
   r = CachedArray(zeros(G,(np,ndof)))
+  # Mutable cache for one N_deriv's derivative of a T-valued scalar polynomial
+  s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
   # Cache for the 1D basis function values in each dimension (to be
   # tensor-producted), and of their N_deriv'th 1D derivatives
   t = ntuple( _ -> CachedArray(zeros(T,(D,ndof_1d ))), Val(N_deriv+1))
-  (r, t...)
+  (r, s, t...)
 end
 
 function return_cache(f::PolynomialBasis{D,V}, x::AbstractVector{<:Point}) where {D,V}
@@ -135,16 +138,25 @@ function _setsize!(f::PolynomialBasis{D}, np, r, t...) where D
   end
 end
 
+"""
+    _get_static_parameters(::PolynomialBasis)
+
+Return a (tuple of) static parameter(s) appended to low level `[...]_nd!` evaluation
+calls, default is `Val(get_order(b))`.
+"""
+_get_static_parameters(b::PolynomialBasis) = Val(get_order(b))
+
 function evaluate!(cache,
   f::PolynomialBasis,
   x::AbstractVector{<:Point})
 
-  r, c = cache
+  r, _, c = cache
   np = length(x)
   _setsize!(f,np,r,c)
+  params = _get_static_parameters(f)
   for i in 1:np
     @inbounds xi = x[i]
-    _evaluate_nd!(f,xi,r,i,c)
+    _evaluate_nd!(f,xi,r,i,c,params)
   end
   r.array
 end
@@ -154,13 +166,13 @@ function evaluate!(cache,
   x::AbstractVector{<:Point}) where {D,V}
 
   f = fg.fa
-  r, c, g = cache
+  r, s, c, g = cache
   np = length(x)
   _setsize!(f,np,r,c,g)
-  s = zero(Mutable(VectorValue{D,eltype(V)}))
+  params = _get_static_parameters(f)
   for i in 1:np
     @inbounds xi = x[i]
-    _gradient_nd!(f,xi,r,i,c,g,s)
+    _gradient_nd!(f,xi,r,i,c,g,s,params)
   end
   r.array
 end
@@ -170,13 +182,13 @@ function evaluate!(cache,
   x::AbstractVector{<:Point}) where {D,V}
 
   f = fg.fa
-  r, c, g, h = cache
+  r, s, c, g, h = cache
   np = length(x)
   _setsize!(f,np,r,c,g,h)
-  s = zero(Mutable(TensorValue{D,D,eltype(V)}))
+  params = _get_static_parameters(f)
   for i in 1:np
     @inbounds xi = x[i]
-    _hessian_nd!(f,xi,r,i,c,g,h,s)
+    _hessian_nd!(f,xi,r,i,c,g,h,s,params)
   end
   r.array
 end
@@ -234,7 +246,7 @@ end
 ###############################
 
 """
-    _evaluate_nd!(b,xi,r,i,c)
+    _evaluate_nd!(b,xi,r,i,c,params)
 
 Compute and assign: `r`[`i`] = `b`(`xi`) = (`b`₁(`xi`), ..., `b`ₙ(`xi`))
 
@@ -245,13 +257,13 @@ row of `r`.
 function _evaluate_nd!(
   b::PolynomialBasis, xi,
   r::AbstractMatrix, i,
-  c::AbstractMatrix)
+  c::AbstractMatrix, params)
 
   @abstractmethod
 end
 
 """
-    _gradient_nd!(b,xi,r,i,c,g,s)
+    _gradient_nd!(b,xi,r,i,c,g,s,params)
 
 Compute and assign: `r`[`i`] = ∇`b`(`xi`) = (∇`b`₁(`xi`), ..., ∇`b`ₙ(`xi`))
 
@@ -260,19 +272,20 @@ for gradients of `b`ₖ(`xi`), and
 
 - `g` is a mutable `D`×`K` cache (for the 1D polynomials first derivatives).
 - `s` is a mutable length `D` cache for ∇`b`ₖ(`xi`).
+- `params` is an optional (tuple of) parameter(s) returned by [`_get_static_parameters(b)`](@ref _get_static_parameters)
 """
 function _gradient_nd!(
   b::PolynomialBasis, xi,
   r::AbstractMatrix, i,
   c::AbstractMatrix,
   g::AbstractMatrix,
-  s::MVector)
+  s::MVector, params)
 
   @abstractmethod
 end
 
 """
-    _hessian_nd!(b,xi,r,i,c,g,h,s)
+    _hessian_nd!(b,xi,r,i,c,g,h,s,params)
 
 Compute and assign: `r`[`i`] = H`b`(`xi`) = (H`b`₁(`xi`), ..., H`b`ₙ(`xi`))
 
@@ -288,7 +301,7 @@ function _hessian_nd!(
   c::AbstractMatrix,
   g::AbstractMatrix,
   h::AbstractMatrix,
-  s::MMatrix)
+  s::MMatrix, params)
 
   @abstractmethod
 end

@@ -1,5 +1,5 @@
 """
-    CompWiseTensorPolyBasis{D,V,K,PT,L} <: PolynomialBasis{D,V,K,PT}
+    CompWiseTensorPolyBasis{D,V,PT,L} <: PolynomialBasis{D,V,PT}
 
 "Polynomial basis of component wise tensor product polynomial spaces"
 
@@ -20,7 +20,8 @@ with `L`>1, where the scalar `D`-multivariate spaces 𝕊ˡ (for 1 ≤ l ≤ `L`
 The `L`×`D` matrix of orders α is given in the constructor, and `K` is the
 maximum of α. Any 1D polynomial family `PT<:Polynomial` is usable.
 """
-struct CompWiseTensorPolyBasis{D,V,K,PT,L} <: PolynomialBasis{D,V,K,PT}
+struct CompWiseTensorPolyBasis{D,V,PT,L} <: PolynomialBasis{D,V,PT}
+  max_order::Int
   orders::SMatrix{L,D,Int}
 
   function CompWiseTensorPolyBasis{D}(
@@ -28,29 +29,30 @@ struct CompWiseTensorPolyBasis{D,V,K,PT,L} <: PolynomialBasis{D,V,K,PT}
 
     msg1 = "The orders matrix rows number must match the number of independent components of V"
     @check L == num_indep_components(V) msg1
-    msg2 = "The Component Wise construction is useless for one component, use UniformPolyBasis instead"
+    msg2 = "The Component Wise construction is useless for one component, use CartProdPolyBasis instead"
     @check L > 1 msg2
     @check D > 0
     @check isconcretetype(PT) "PT needs to be a concrete <:Polynomial type"
     K = maximum(orders)
 
-    new{D,V,K,PT,L}(orders)
+    new{D,V,PT,L}(K,orders)
   end
 end
 
 Base.size(a::CompWiseTensorPolyBasis) = ( sum(prod.(eachrow(a.orders .+ 1))), )
+get_order(b::CompWiseTensorPolyBasis) = b.max_order
 
 """
     get_comp_terms(f::CompWiseTensorPolyBasis{D,V})
 
 Return a tuple (terms\\_1, ..., terms\\_l, ..., terms\\_L) containing, for each
 component of V, the Cartesian indices iterator over the terms that define 𝕊ˡ,
-that is all elements of ⟦1,`o`(l,1)+1⟧ × ⟦1,`o`(l,2)+1⟧ × … × ⟦1,`o`(l,D)+1⟧.
+that is all elements of {1 : `o`(l,1)+1} × {1 : `o`(l,2)+1} × … × {1 : `o`(l,D)+1}.
 
 E.g., if `orders=[ 0 1; 1 0]`, then the `comp_terms` are
 `( CartesianIndices{2}((1,2)), CartesianIndices{2}((2,1)) )`.
 """
-function get_comp_terms(f::CompWiseTensorPolyBasis{D,V,K,PT,L}) where {D,V,K,PT,L}
+function get_comp_terms(f::CompWiseTensorPolyBasis{D,V,PT,L}) where {D,V,PT,L}
   _terms(l) = CartesianIndices( Tuple(f.orders[l,:] .+ 1) )
   comp_terms = ntuple(l -> _terms(l), Val(L))
   comp_terms::NTuple{L,CartesianIndices{D}}
@@ -62,24 +64,21 @@ end
 #################################
 
 function _evaluate_nd!(
-  b::CompWiseTensorPolyBasis{D,V,K,PT,L}, x,
+  b::CompWiseTensorPolyBasis{D,V,PT,L}, x,
   r::AbstractMatrix{V}, i,
-  c::AbstractMatrix{T}) where {D,V,K,PT,L,T}
-
-  orders = b.orders
-  comp_terms = get_comp_terms(b)
+  c::AbstractMatrix{T}, VK::Val) where {D,V,PT,L,T}
 
   for d in 1:D
-    # for each coordinate d, the order at which the basis should be evaluated is
-    # the maximum d-order for any component l
-    Kd = Val(maximum(orders[:,d]))
-    _evaluate_1d!(PT,Kd,c,x,d)
+    # The optimization below of fine tuning Kd is a bottlneck if not put in a
+    # function due to runtime dispatch and creation of Val(Kd)
+    #  # for each coordinate d, the order at which the basis should be evaluated is
+    #  # the maximum d-order for any component l
+    #  Kd = Val(maximum(b.orders[:,d]))
+    _evaluate_1d!(PT,VK,c,x,d)
   end
 
-  m = zero(Mutable(V))
   k = 1
-
-  for (l,terms) in enumerate(comp_terms)
+  for (l,terms) in enumerate(get_comp_terms(b))
     for ci in terms
 
       s = one(T)
@@ -109,25 +108,18 @@ function _comp_wize_set_value!(r::AbstractMatrix{V},i,s::T,k,l) where {V,T}
 end
 
 function _gradient_nd!(
-  b::CompWiseTensorPolyBasis{D,V,K,PT,L}, x,
+  b::CompWiseTensorPolyBasis{D,V,PT,L}, x,
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
-  s::MVector{D,T}) where {D,V,K,PT,L,G,T}
-
-  orders = b.orders
-  comp_terms = get_comp_terms(b)
+  s::MVector{D,T}, VK::Val) where {D,V,PT,L,G,T}
 
   for d in 1:D
-    # for each spatial coordinate d, the order at which the basis should be
-    # evaluated is the maximum d-order for any component l
-    Kd = Val(maximum(orders[:,d]))
-    _derivatives_1d!(PT,Kd,(c,g),x,d)
+    _derivatives_1d!(PT,VK,(c,g),x,d)
   end
 
   k = 1
-
-  for (l,terms) in enumerate(comp_terms)
+  for (l,terms) in enumerate(get_comp_terms(b))
     for ci in terms
 
       for i in eachindex(s)
@@ -150,7 +142,7 @@ function _gradient_nd!(
 end
 
 """
-    _comp_wize_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{V})
+    _comp_wize_set_derivative!(r::AbstractMatrix{G},i,s,k,::Val{l},::Type{V})
 
 ```
 z = zero(s)
@@ -180,7 +172,7 @@ the `k`ᵗʰ basis polynomial, whose nonzero component in `V` is the `l`ᵗʰ.
   return Expr(:block, body ,:(return k+1))
 end
 
-# See _uniform_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
+# See _cartprod_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
 @generated function _comp_wize_set_derivative!(
   r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
 
@@ -188,26 +180,19 @@ end
 end
 
 function _hessian_nd!(
-  b::CompWiseTensorPolyBasis{D,V,K,PT,L}, x,
+  b::CompWiseTensorPolyBasis{D,V,PT,L}, x,
   r::AbstractMatrix{H}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   h::AbstractMatrix{T},
-  s::MMatrix{D,D,T}) where {D,V,K,PT,L,H,T}
-
-  orders = b.orders
-  comp_terms = get_comp_terms(b)
+  s::MMatrix{D,D,T}, VK::Val) where {D,V,PT,L,H,T}
 
   for d in 1:D
-    # for each spatial coordinate d, the order at which the basis should be
-    # evaluated is the maximum d-order for any component l
-    Kd = Val(maximum(orders[:,d]))
-    _derivatives_1d!(PT,Kd,(c,g,h),x,d)
+    _derivatives_1d!(PT,VK,(c,g,h),x,d)
   end
 
   k = 1
-
-  for (l,terms) in enumerate(comp_terms)
+  for (l,terms) in enumerate(get_comp_terms(b))
     for ci in terms
 
       for i in eachindex(s)
@@ -263,7 +248,7 @@ b = QGradBasis(Monomial, Val(3), Float64, 2)
 For more details, see [`CompWiseTensorPolyBasis`](@ref), as `QGradBasis` returns
 an instance of\\
 `CompWiseTensorPolyBasis{D, VectorValue{D,T}, order+1, PT}` for `D`>1, or\\
-`UniformPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
+`CartProdPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
 """
 function QGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
@@ -278,7 +263,7 @@ function QGradBasis(::Type{PT},::Val{1},::Type{T},order::Int) where {PT,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
 
   V = VectorValue{1,T}
-  UniformPolyBasis(PT, Val(1), V, order+1)
+  CartProdPolyBasis(PT, Val(1), V, order+1)
 end
 
 
@@ -311,7 +296,7 @@ b = QCurlGradBasis(Bernstein, Val(2), Float64, 3)
 For more details, see [`CompWiseTensorPolyBasis`](@ref), as `QCurlGradBasis`
 returns an instance of\\
 `CompWiseTensorPolyBasis{D, VectorValue{D,T}, order+1, PT}` for `D`>1, or\\
-`UniformPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
+`CartProdPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
 """
 function QCurlGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
@@ -326,5 +311,5 @@ function QCurlGradBasis(::Type{PT},::Val{1},::Type{T},order::Int) where {PT,T}
   @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
 
   V = VectorValue{1,T}
-  UniformPolyBasis(PT, Val(1), V, order+1)
+  CartProdPolyBasis(PT, Val(1), V, order+1)
 end
