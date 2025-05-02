@@ -56,15 +56,18 @@ test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 orders = (1,3)
 V = Float64
 G = gradient_type(V,xi)
+H = gradient_type(G,xi)
 b = MonomialBasis(Val(2),V,orders)
 
 v = V[1.0, 2.0, 3.0, 6.0, 9.0, 18.0, 27.0, 54.0]
 g = G[(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (3.0, 2.0), (0.0, 6.0), (9.0, 12.0), (0., 27.0), (27.0, 54.0)]
+h = H[(0.0, 0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 0.0), (0.0, 1.0, 1.0, 0.0), (0.0, 0.0, 0.0, 2.0), (0.0, 6.0, 6.0, 4.0), (0.0, 0.0, 0.0, 18.0), (0.0, 27.0, 27.0, 36.0)]
 
 bx = repeat(permutedims(v),np)
 ∇bx = repeat(permutedims(g),np)
-test_field_array(b,x,bx,grad=∇bx)
-test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:])
+Hbx = repeat(permutedims(h),np)
+test_field_array(b,x,bx,grad=∇bx,gradgrad=Hbx)
+test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 
 # Vector-valued Q space with isotropic order
 
