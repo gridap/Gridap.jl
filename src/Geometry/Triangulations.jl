@@ -231,7 +231,7 @@ function Triangulation(
 
   if tags === nothing
     grid = Grid(ReferenceFE{d},model)
-    tface_to_mface = IdentityVector(num_cells(grid))
+    tface_to_mface = IdentityVector(Int32(num_cells(grid)))
     BodyFittedTriangulation(model,grid,tface_to_mface)
   else
     mface_to_mask = get_face_mask(labels,tags,d)

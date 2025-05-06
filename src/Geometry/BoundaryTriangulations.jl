@@ -136,7 +136,7 @@ function BoundaryTriangulation(
   bgface_to_mask::AbstractVector{Bool},
   bgface_to_lcell::AbstractVector{<:Integer})
 
-  face_to_bgface = findall(bgface_to_mask)
+  face_to_bgface = convert(Vector{Int32},findall(bgface_to_mask))
   BoundaryTriangulation(model,face_to_bgface,bgface_to_lcell)
 end
 
