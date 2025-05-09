@@ -327,7 +327,6 @@ function _Nedelec_face_values_simplex(p,et,order; kind=1)
   if kind == 1
     fshfs = MonomialBasis{Df}(T,order-1,(e,k)->sum(e)<=k)
   else
-    # @wei3li not sure if this one is correct
     fshfs = PCurlGradMonomialBasis{Df}(et, order - 2)
   end
 
@@ -382,7 +381,9 @@ function _Nedelec_cell_values(p,et,order; kind=1)
     if kind == 1
       cbasis = MonomialBasis{D}(T,order-D+1,(e,k)->sum(e)<=k)
     else
-      cbasis = PCurlGradMonomialBasis{D}(et, order - 2)
+      # For TRI, cell moments are also face moments, bases are RT_{order - 2}
+      # For TET, bases for cell/body moments are RT_{order - 3}
+      cbasis = PCurlGradMonomialBasis{D}(et, order - D)
     end
   end
   cmoments = _Nedelec_cell_moments(p, cbasis, ccips, cwips )
