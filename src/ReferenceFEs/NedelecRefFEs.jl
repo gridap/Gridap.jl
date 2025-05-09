@@ -4,6 +4,12 @@ struct Nedelec <: ReferenceFEName end
 
 const nedelec = Nedelec()
 
+struct Nedelec2 <: ReferenceFEName end
+
+const nedelec2 = Nedelec2()
+
+const Nedelecs = Union{Nedelec,Nedelec2}
+
 """
     NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
 
@@ -47,6 +53,31 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   reffe
 end
 
+function Nedelec2RefFE(::Type{et}, p::Polytope, order::Integer) where {et}
+  vet = VectorValue{num_dims(p),et}
+  if is_simplex(p)
+    prebasis = MonomialBasis(vet, p, order)
+  else
+    @unreachable "Nedelec 2nd kind Reference FE is only available for simplices"
+  end
+
+  nf_nodes, nf_moments = _Nedelec2_nodes_and_moments(et, p, order)
+
+  face_dofs = _face_own_dofs_from_moments(nf_moments)
+
+  dof_basis = MomentBasedDofBasis(nf_nodes, nf_moments)
+
+  GenericRefFE{Nedelec2}(
+    num_dofs(dof_basis),
+    p,
+    prebasis,
+    dof_basis,
+    CurlConformity(),
+    nothing,
+    face_dofs
+  )
+end
+
 function ReferenceFE(p::Polytope,::Nedelec, order)
   NedelecRefFE(Float64,p,order)
 end
@@ -55,7 +86,15 @@ function ReferenceFE(p::Polytope,::Nedelec,::Type{T}, order) where T
   NedelecRefFE(T,p,order)
 end
 
-function Conformity(reffe::GenericRefFE{Nedelec},sym::Symbol)
+function ReferenceFE(p::Polytope, ::Nedelec2, order)
+  Nedelec2RefFE(Float64, p, order)
+end
+
+function ReferenceFE(p::Polytope, ::Nedelec2, ::Type{T}, order) where {T}
+  Nedelec2RefFE(T, p, order)
+end
+
+function Conformity(reffe::GenericRefFE{<:Nedelecs},sym::Symbol)
   hcurl = (:Hcurl,:HCurl)
   if sym == :L2
     L2Conformity()
@@ -96,7 +135,7 @@ function get_face_dofs(reffe::GenericRefFE{Nedelec,Dc}) where Dc
           for dof in cface_own_dofs
               push!(face_dofs[face],dof)
           end
-        end 
+        end
       end
       for dof in face_own_dofs[face]
         push!(face_dofs[face],dof)
@@ -106,6 +145,9 @@ function get_face_dofs(reffe::GenericRefFE{Nedelec,Dc}) where Dc
   face_dofs
 end
 
+function get_face_own_dofs(reffe::GenericRefFE{Nedelec2}, conf::CurlConformity)
+  get_face_dofs(reffe)
+end
 
 function _Nedelec_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
 
@@ -144,6 +186,37 @@ function _Nedelec_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) whe
     nf_nodes[crange] = ccips
     nf_moments[crange] = cmoments
 
+  end
+
+  nf_nodes, nf_moments
+end
+
+function _Nedelec2_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where {et}
+  @notimplementedif !is_simplex(p)
+
+  D = num_dims(p)
+  ft, pt = VectorValue{D,et}, Point{D,et}
+
+  nf_nodes = [zeros(pt, 0) for _ in 1:num_faces(p)]
+  nf_moments = [zeros(ft, 0, 0) for _ in 1:num_faces(p)]
+
+  ecips, emoments = _Nedelec_edge_values(p, et, order)
+  erange = get_dimrange(p, 1)
+  nf_nodes[erange] = ecips
+  nf_moments[erange] = emoments
+
+  if D == 3 && order > 1
+    ecips, emoments = _Nedelec_face_values_simplex(p, et, order; kind=2)
+    erange = get_dimrange(p, D - 1)
+    nf_nodes[erange] = ecips
+    nf_moments[erange] = emoments
+  end
+
+  if order > D - 1
+    ccips, cmoments = _Nedelec_cell_values(p, et, order; kind=2)
+    crange = get_dimrange(p, D)
+    nf_nodes[crange] = ccips
+    nf_moments[crange] = cmoments
   end
 
   nf_nodes, nf_moments
@@ -232,7 +305,7 @@ function _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
   return cvals
 end
 
-function _Nedelec_face_values_simplex(p,et,order)
+function _Nedelec_face_values_simplex(p,et,order; kind=1)
 
   # Reference facet
   @assert is_simplex(p) "We are assuming that all n-faces of the same n-dim are the same."
@@ -250,7 +323,13 @@ function _Nedelec_face_values_simplex(p,et,order)
   c_fips, fcips, fwips, fJtips = _nfaces_evaluation_points_weights_with_jac(p, fgeomap, fips, wips)
 
   Df = num_dims(fp)
-  fshfs = MonomialBasis{Df}(VectorValue{Df,et},order-1,(e,k)->sum(e)<=k)
+  T = VectorValue{Df,et}
+  if kind == 1
+    fshfs = MonomialBasis{Df}(T,order-1,(e,k)->sum(e)<=k)
+  else
+    # @wei3li not sure if this one is correct
+    fshfs = PCurlGradMonomialBasis{Df}(et, order - 2)
+  end
 
   fmoments = _Nedelec_face_moments_simplex(p, fshfs, c_fips, fcips, fwips, fJtips)
 
@@ -286,7 +365,7 @@ function _Nedelec_face_moments_simplex(p, fshfs, c_fips, fcips, fwips, fJtips)
 end
 
 # It provides for every cell the nodes and the moments arrays
-function _Nedelec_cell_values(p,et,order)
+function _Nedelec_cell_values(p,et,order; kind=1)
 
   # Compute integration points at interior
   degree = 2*(order)
@@ -299,7 +378,12 @@ function _Nedelec_cell_values(p,et,order)
     cbasis = QCurlGradMonomialBasis{num_dims(p)}(et,order-1)
   else
     D = num_dims(p)
-    cbasis = MonomialBasis{D}(VectorValue{D,et},order-D+1,(e,k)->sum(e)<=k)
+    T = VectorValue{D,et}
+    if kind == 1
+      cbasis = MonomialBasis{D}(T,order-D+1,(e,k)->sum(e)<=k)
+    else
+      cbasis = PCurlGradMonomialBasis{D}(et, order - 2)
+    end
   end
   cmoments = _Nedelec_cell_moments(p, cbasis, ccips, cwips )
 

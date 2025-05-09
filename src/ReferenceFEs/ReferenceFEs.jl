@@ -180,6 +180,7 @@ export SerendipityRefFE
 export RaviartThomasRefFE
 export BDMRefFE
 export NedelecRefFE
+export Nedelec2RefFE
 export BezierRefFE
 export ModalC0RefFE
 
@@ -188,6 +189,8 @@ export DivConforming
 export RaviartThomas
 export BDM
 export Nedelec
+export Nedelec2
+export Nedelecs
 export Bezier
 export ModalC0
 
@@ -195,6 +198,7 @@ export lagrangian
 export raviart_thomas
 export bdm
 export nedelec
+export nedelec2
 export bezier
 export modalC0
 

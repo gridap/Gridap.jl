@@ -1,7 +1,7 @@
 
 function get_cell_dof_basis(
   model::DiscreteModel,
-  cell_reffe::AbstractArray{<:GenericRefFE{Nedelec}},
+  cell_reffe::AbstractArray{<:GenericRefFE{<:Nedelecs}},
   ::CurlConformity)
   cell_map  = get_cell_map(Triangulation(model))
   phi       = cell_map[1]
@@ -49,7 +49,7 @@ end
 
 function get_cell_shapefuns(
   model::DiscreteModel,
-  cell_reffe::AbstractArray{<:GenericRefFE{Nedelec}},
+  cell_reffe::AbstractArray{<:GenericRefFE{<:Nedelecs}},
   ::CurlConformity)
 
   cell_reffe_shapefuns = lazy_map(get_shapefuns,cell_reffe)
@@ -57,4 +57,3 @@ function get_cell_shapefuns(
   k = ReferenceFEs.CoVariantPiolaMap()
   lazy_map(k,cell_reffe_shapefuns,cell_map)
 end
-
