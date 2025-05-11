@@ -30,4 +30,6 @@ using Test
 
 @testset "PatchAssemblersTests" begin include("PatchAssemblersTests.jl") end
 
+@testset "PolytopalFESpacesTests" begin include("PolytopalFESpacesTests.jl") end
+
 end # module
