@@ -13,9 +13,13 @@ function test_model(model)
   Geometry.restrict(model,[1,2,3,4])
 
   # Triangulations
-  Ω = Triangulation(ReferenceFE{D},model)
+
+  for d in 0:D
+    trian = Triangulation(ReferenceFE{d},model)
+    test_triangulation(trian)
+  end
+
   Ω = Triangulation(ReferenceFE{D},model,[1,2,3,4])
-  Γ = Triangulation(ReferenceFE{D-1},model)
   Γ = Boundary(model)
   Λ = Skeleton(model)
 

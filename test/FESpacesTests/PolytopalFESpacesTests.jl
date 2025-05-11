@@ -79,6 +79,22 @@ V = FESpaces.PolytopalFESpace(pmodel,Float64,order,space=:P,hierarchical=true,or
 test_l2_proj(pmodel,V,order,u_exact_2d)
 test_dg_lap(pmodel,V,order,u_exact_2d)
 
+# 2D skeleton
+Γ = Triangulation(ReferenceFE{1},model)
+
+VΓ = FESpaces.PolytopalFESpace(Γ,Float64,order,space=:P,dirichlet_tags=["boundary"])
+@test any(get_cell_dof_ids(VΓ).data .< 0)
+test_l2_proj(pmodel,VΓ,order,u_exact_2d)
+
+u_exact_2d_vec(x) = VectorValue(x[1]^order,x[2]^order)
+VΓ = FESpaces.PolytopalFESpace(Γ,VectorValue{2,Float64},order,space=:P,dirichlet_tags=["boundary"],hierarchical=true,orthonormal=true)
+@test any(get_cell_dof_ids(VΓ).data .< 0)
+test_l2_proj(pmodel,VΓ,order,u_exact_2d_vec)
+
+VΓ = FESpaces.PolytopalFESpace(Γ,VectorValue{2,Float64},order,space=:P,dirichlet_tags=["boundary"],dirichlet_masks=[true,false])
+@test any(get_cell_dof_ids(VΓ).data .< 0)
+test_l2_proj(pmodel,VΓ,order,u_exact_2d_vec)
+
 # 3D bulk
 u_exact_3d(x) = x[1]^order + x[2]^order + x[3]^order
 model = CartesianDiscreteModel((0,1,0,1,0,1),(2,2,2))

@@ -25,6 +25,8 @@ test_polytope(p,optional=true)
 @test Polytope{1}(p,1) == SEGMENT
 @test Polytope{0}(p,1) == VERTEX
 @test simplexify(p) == ([[1,2,3]],TRI)
+quad = Quadrature(p,2)
+test_quadrature(quad)
 
 p = Polygon(QUAD)
 test_polytope(p,optional=true)
@@ -43,6 +45,8 @@ test_polytope(p,optional=true)
 @test Polytope{1}(p,1) == SEGMENT
 @test Polytope{0}(p,1) == VERTEX
 @test simplexify(p) == ([[1,2,3],[1,3,4]],TRI)
+quad = Quadrature(p,2)
+test_quadrature(quad)
 
 p = Polyhedron(TET)
 test_polytope(p,optional=true)
@@ -73,6 +77,8 @@ x,t = simplexify_surface(p)
 @test t == get_faces(p,2,0)
 x,t = simplexify_interior(p)
 @test t == [[1,2,4,3]]
+quad = Quadrature(p,2)
+test_quadrature(quad)
 
 p = Polyhedron(HEX)
 test_polytope(p,optional=true)
@@ -113,5 +119,7 @@ x,t = simplexify_surface(p)
 x,t = simplexify_interior(p)
 @test t == [
   [1,2,4,8],[1,2,8,6],[1,3,7,8],[1,3,8,4],[1,5,6,8],[1,5,8,7]]
+quad = Quadrature(p,2)
+test_quadrature(quad)
 
 end # module
