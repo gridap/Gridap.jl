@@ -58,6 +58,14 @@ test_reference_fe(reffe)
 @test num_dofs(reffe) == 6
 @test Conformity(reffe) == CurlConformity()
 
+## Nedelec elements of 2nd kind
+reffe2 = Nedelec2RefFE(et, p, 1)
+test_reference_fe(reffe2)
+@test length(get_prebasis(reffe2)) == 12
+@test get_order(get_prebasis(reffe2)) == 1
+@test num_dofs(reffe2) == 12
+@test Conformity(reffe2) == CurlConformity()
+
 #using Gridap.Geometry
 #p = TRI
 #D = num_dims(p)
@@ -100,6 +108,20 @@ test_reference_fe(reffe)
 @test Conformity(reffe) == CurlConformity()
 dof_basis = get_dof_basis(reffe)
 
+## Nedelec elements of 2nd kind
+reffe2 = Nedelec2RefFE(et, p, 1)
+test_reference_fe(reffe2)
+@test length(get_prebasis(reffe2)) == 6
+@test get_order(get_prebasis(reffe2)) == 1
+@test num_dofs(reffe2) == 6
+@test Conformity(reffe2) == CurlConformity()
+
+reffe3 = Nedelec2RefFE(et, p, 2)
+test_reference_fe(reffe3)
+@test length(get_prebasis(reffe3)) == 12
+@test get_order(get_prebasis(reffe3)) == 2
+@test num_dofs(reffe3) == 12
+@test Conformity(reffe3) == CurlConformity()
 #using Gridap.Geometry
 #using Gridap.Visualization
 #grid = compute_reference_grid(p,10)
@@ -137,7 +159,7 @@ et = Float64
 order = 1
 reffe = NedelecRefFE(et,p,order)
 test_reference_fe(reffe)
-@test num_terms(get_prebasis(reffe)) == 20
+@test length(get_prebasis(reffe)) == 20
 @test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 20
 @test Conformity(reffe) == CurlConformity()
@@ -145,23 +167,31 @@ dof_basis = get_dof_basis(reffe)
 
 face_odofs_L2 = get_face_own_dofs(reffe,L2Conformity())
 
-@test face_odofs_L2 == [Int64[], Int64[], Int64[], Int64[], 
-                     Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], 
+@test face_odofs_L2 == [Int64[], Int64[], Int64[], Int64[],
+                     Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[],
                     collect(1:20)]
 
 face_odofs    = get_face_own_dofs(reffe)
 face_cdofs    = get_face_dofs(reffe)
 
-@test face_odofs == [Int64[], Int64[], Int64[], Int64[], 
-                    [1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16], [17, 18], [19, 20], 
+@test face_odofs == [Int64[], Int64[], Int64[], Int64[],
+                    [1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16], [17, 18], [19, 20],
                     Int64[]]
 
-@test face_cdofs == [Int64[], Int64[], Int64[], Int64[], 
-                     [1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], 
-                     [1, 2, 3, 4, 5, 6, 13, 14], [1, 2, 7, 8, 9, 10, 15, 16], [3, 4, 7, 8, 11, 12, 17, 18], [5, 6, 9, 10, 11, 12, 19, 20], 
+@test face_cdofs == [Int64[], Int64[], Int64[], Int64[],
+                     [1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12],
+                     [1, 2, 3, 4, 5, 6, 13, 14], [1, 2, 7, 8, 9, 10, 15, 16], [3, 4, 7, 8, 11, 12, 17, 18], [5, 6, 9, 10, 11, 12, 19, 20],
                      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]]
 
-                     
+## Nedelec elements of 2nd kind
+reffe2 = Nedelec2RefFE(et, p, 2)
+test_reference_fe(reffe2)
+@test length(get_prebasis(reffe2)) == 30
+@test get_order(get_prebasis(reffe2)) == 2
+@test num_dofs(reffe2) == 30
+@test Conformity(reffe2) == CurlConformity()
+
+
 #display(face_odofs)
 
 using Gridap.Geometry
