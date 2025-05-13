@@ -1,14 +1,19 @@
 struct CurlConformity <: Conformity end
 
-struct Nedelec <: ReferenceFEName end
+struct Nedelec <: ReferenceFEName
+  kind::Int
+
+  function Nedelec(kind::Integer=1)
+    new(Int(kind))
+  end
+end
 
 const nedelec = Nedelec()
 
-struct Nedelec2 <: ReferenceFEName end
+const nedelec1 = nedelec
 
-const nedelec2 = Nedelec2()
+const nedelec2 = Nedelec(2)
 
-const Nedelecs = Union{Nedelec,Nedelec2}
 
 """
     NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
@@ -67,7 +72,7 @@ function Nedelec2RefFE(::Type{et}, p::Polytope, order::Integer) where {et}
 
   dof_basis = MomentBasedDofBasis(nf_nodes, nf_moments)
 
-  GenericRefFE{Nedelec2}(
+  GenericRefFE{Nedelec}(
     num_dofs(dof_basis),
     p,
     prebasis,
@@ -78,23 +83,19 @@ function Nedelec2RefFE(::Type{et}, p::Polytope, order::Integer) where {et}
   )
 end
 
-function ReferenceFE(p::Polytope,::Nedelec, order)
-  NedelecRefFE(Float64,p,order)
-end
+function ReferenceFE(p::Polytope, ne::Nedelec, order)
+  isone(ne.kind) && (return NedelecRefFE(Float64,p,order))
 
-function ReferenceFE(p::Polytope,::Nedelec,::Type{T}, order) where T
-  NedelecRefFE(T,p,order)
-end
-
-function ReferenceFE(p::Polytope, ::Nedelec2, order)
   Nedelec2RefFE(Float64, p, order)
 end
 
-function ReferenceFE(p::Polytope, ::Nedelec2, ::Type{T}, order) where {T}
-  Nedelec2RefFE(T, p, order)
+function ReferenceFE(p::Polytope, ne::Nedelec,::Type{T}, order) where T
+  isone(ne.kind) && (return NedelecRefFE(T,p,order))
+
+  Nedelec2RefFE(Float64, p, order)
 end
 
-function Conformity(reffe::GenericRefFE{<:Nedelecs},sym::Symbol)
+function Conformity(reffe::GenericRefFE{<:Nedelec},sym::Symbol)
   hcurl = (:Hcurl,:HCurl)
   if sym == :L2
     L2Conformity()
@@ -143,10 +144,6 @@ function get_face_dofs(reffe::GenericRefFE{Nedelec,Dc}) where Dc
     end
   end
   face_dofs
-end
-
-function get_face_own_dofs(reffe::GenericRefFE{Nedelec2}, conf::CurlConformity)
-  get_face_dofs(reffe)
 end
 
 function _Nedelec_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et

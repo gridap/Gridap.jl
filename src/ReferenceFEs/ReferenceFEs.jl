@@ -189,8 +189,6 @@ export DivConforming
 export RaviartThomas
 export BDM
 export Nedelec
-export Nedelec2
-export Nedelecs
 export Bezier
 export ModalC0
 
@@ -198,6 +196,7 @@ export lagrangian
 export raviart_thomas
 export bdm
 export nedelec
+export nedelec1
 export nedelec2
 export bezier
 export modalC0
