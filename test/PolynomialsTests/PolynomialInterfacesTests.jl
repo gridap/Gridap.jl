@@ -1,4 +1,4 @@
-module ChangeBasisTests
+module PolynomialInterfacesTests
 
 using Test
 using Gridap.Fields
@@ -42,17 +42,17 @@ Polynomials._derivatives_1d!(MockPolynomial, Val(1), (c,), xi, 1)
 
 T = Float64
 D = 1
-struct MockPolyBasis <: PolynomialBasis{D,T,0,MockPolynomial} end
+struct MockPolyBasis <: PolynomialBasis{D,T,MockPolynomial} end
 
 mb = MockPolyBasis()
-
 
 # Implemented interfaces
 @test IndexStyle(mb) == IndexLinear()
 @test return_type(mb) == T
-@test get_order(mb) == 0
 @test mb[1] == MockPolynomial()
+@test_throws ErrorException get_order(mb)
 
+Polynomials.get_order(b::MockPolyBasis) = 0
 
 # Interfaces to implement
 @test_throws ErrorException size(mb)
@@ -61,21 +61,16 @@ Base.size(::MockPolyBasis) = (1,)
 @test length(mb) == 1
 
 
-r, c = return_cache(mb,x)
-
-@test_throws ErrorException Polynomials._evaluate_nd!(mb, xi, r, 1, c)
+r, _, c = return_cache(mb,x)
+@test_throws ErrorException Polynomials._evaluate_nd!(mb, xi, r, 1, c, nothing)
 
 ∇mb = FieldGradientArray{1}(mb)
-r, c, g = return_cache(∇mb,x)
-s = MVector{D,T}(0.)
-
-@test_throws ErrorException Polynomials._gradient_nd!(mb, xi, r, 1, c, g, s)
+r, s, c, g = return_cache(∇mb,x)
+@test_throws ErrorException Polynomials._gradient_nd!(mb, xi, r, 1, c, g, s, nothing)
 
 Hmb = FieldGradientArray{2}(mb)
-r, c, g, h = return_cache(Hmb,x)
-s = MMatrix{D,D,T}(0.)
-
-@test_throws ErrorException Polynomials._hessian_nd!(mb, xi, r, 1, c, g, h, s)
+r, s, c, g, h = return_cache(Hmb,x)
+@test_throws ErrorException Polynomials._hessian_nd!(mb, xi, r, 1, c, g, h, s, nothing)
 
 
 end

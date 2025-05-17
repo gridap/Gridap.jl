@@ -80,11 +80,11 @@ num_components(T::Type{<:MultiValue}) = @unreachable "$T type is too abstract to
     num_indep_components(::Type{<:Number})
     num_indep_components(a::Number)
 
-Number of independant components of a `Number`, that is `num_components`
+Number of independent components of a `Number`, that is `num_components`
 minus the number of components determined from others by symmetries or constraints.
 
-For example, a `TensorValue{3,3}` has 9 independant components, a `SymTensorValue{3}`
-has 6 and a `SymTracelessTensorValue{3}` has 5. But they all have 9 (non independant) components.
+For example, a `TensorValue{3,3}` has 9 independent components, a `SymTensorValue{3}`
+has 6 and a `SymTracelessTensorValue{3}` has 5. But they all have 9 (non independent) components.
 """
 num_indep_components(::Type{T}) where T<:Number = num_components(T)
 num_indep_components(::T) where T<:Number = num_indep_components(T)
@@ -110,7 +110,7 @@ end
     indep_comp_getindex(a::Number,i)
 
 Get the `i`th independent component of `a`. It only differs from `getindex(a,i)`
-when the components of `a` are interdependant, see [`num_indep_components`](@ref).
+when the components of `a` are interdependent, see [`num_indep_components`](@ref).
 `i` should be in `1:num_indep_components(a)`.
 """
 function indep_comp_getindex(a::Number,i)

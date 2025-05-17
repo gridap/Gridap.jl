@@ -56,19 +56,19 @@ end
 """
     struct MappedDofBasis{T<:Dof,MT,BT} <: AbstractVector{T}
       F :: MT
-      σ :: BT
+      Σ :: BT
       args
     end
 
-Represents η = σ∘F, evaluated as η(φ) = σ(F(φ,args...))
+Represents { η = σ∘F : σ ∈ Σ }, evaluated as η(φ) = σ(F(φ,args...)) where
 
-  - σ : V* -> R is a dof basis
-  - F : W  -> V is a map between function spaces
+- σ : V -> R  are dofs on V
+- F : W  -> V is a map between function spaces
 
-Intended combinations would be: 
+Intended combinations would be:
 
-- σ : V* -> R dof basis in the physical domain and F* : V̂ -> V is a pushforward map.
-- ̂σ : V̂* -> R dof basis in the reference domain and (F*)^-1 : V -> V̂ is an inverse pushforward map.
+- Σ ⊂ V* a dof basis in the physical domain and F* : V̂ -> V is a pushforward map.
+- ̂Σ ⊂ V̂* a dof basis in the reference domain and (F*)⁻¹ : V -> V̂ is an inverse pushforward map.
 
 """
 struct MappedDofBasis{T<:Dof,MT,BT,A} <: AbstractVector{T}

@@ -8,13 +8,14 @@ Reference: Eq. (17) in https://doi.org/10.1016/j.camwa.2022.09.027
 struct ModalC0 <: Polynomial end
 
 """
-    ModalC0Basis{D,V,T,K} <: PolynomialBasis{D,V,K,ModalC0}
+    ModalC0Basis{D,V,T} <: PolynomialBasis{D,V,ModalC0}
 
 Tensor product basis of generalised modal C0 1D basis from section 5.2 in
 https://doi.org/10.1016/j.camwa.2022.09.027.
 See also [ModalC0 polynomials](@ref) section of the documentation.
 """
-struct ModalC0Basis{D,V,T,K} <: PolynomialBasis{D,V,K,ModalC0}
+struct ModalC0Basis{D,V,T} <: PolynomialBasis{D,V,ModalC0}
+  max_order::Int
   orders::NTuple{D,Int}
   terms::Vector{CartesianIndex{D}}
   a::Vector{Point{D,T}}
@@ -32,7 +33,7 @@ struct ModalC0Basis{D,V,T,K} <: PolynomialBasis{D,V,K,ModalC0}
     @check T == eltype(V) "Point and polynomial values should have the same scalar body"
     K = maximum(orders, init=0)
 
-    new{D,V,T,K}(orders,terms,a,b)
+    new{D,V,T}(K,orders,terms,a,b)
   end
 end
 
@@ -50,8 +51,8 @@ At last, all scalar basis polynomial will have its bounding box `(a[i],b[i])`,
 but they are assumed iddentical if only two points `a` and `b` are provided,
 and default to `a=Point{D}(0...)`, `b=Point{D}(1...)` if not provided.
 
-The basis is uniform, isotropic if one `order` is provided, or anisotropic if a
-`D` tuple `orders` is provided.
+The basis is a cartesian product when multi-valued, isotropic if one `order` is
+provided, or anisotropic if a `D` tuple `orders` is provided.
 """
 function ModalC0Basis() end
 
@@ -118,7 +119,8 @@ end
 
 # API
 
-@inline Base.size(a::ModalC0Basis{D,V}) where {D,V} = (length(a.terms)*num_indep_components(V),)
+@inline Base.size(b::ModalC0Basis{D,V}) where {D,V} = (length(b.terms)*num_indep_components(V),)
+@inline get_order(b::ModalC0Basis) = b.max_order
 
 function get_orders(b::ModalC0Basis)
   b.orders
@@ -177,10 +179,12 @@ end
 # nD evaluations implementation #
 #################################
 
+_get_static_parameters(::ModalC0Basis) = nothing
+
 function _evaluate_nd!(
-  basis::ModalC0Basis{D,V,T,K}, x,
+  basis::ModalC0Basis{D,V,T}, x,
   r::AbstractMatrix{V}, i,
-  c::AbstractMatrix{T}) where {D,V,T,K}
+  c::AbstractMatrix{T}, ::Nothing) where {D,V,T}
 
   terms  = basis.terms
   orders = basis.orders
@@ -221,11 +225,11 @@ end
 end
 
 function _gradient_nd!(
-  basis::ModalC0Basis{D,V,T,K}, x,
+  basis::ModalC0Basis{D,V,T}, x,
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
-  s::MVector{D,T}) where {D,V,T,K,G}
+  s::MVector{D,T}, ::Nothing) where {D,V,T,G}
 
   terms  = basis.terms
   orders = basis.orders
@@ -302,12 +306,12 @@ end
 end
 
 function _hessian_nd!(
-  basis::ModalC0Basis{D,V,T,K}, x,
+  basis::ModalC0Basis{D,V,T}, x,
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   h::AbstractMatrix{T},
-  s::MMatrix{D,D,T}) where {D,V,T,K,G}
+  s::MMatrix{D,D,T}, ::Nothing) where {D,V,T,G}
 
   terms  = basis.terms
   orders = basis.orders
@@ -414,7 +418,7 @@ end
 # Generic 1D internal polynomial APIs #
 #######################################
 
-# For possible use with UniformPolyBasis etc.
+# For possible use with CartProdPolyBasis etc.
 # Make it for x∈[0,1] like the other 1D bases.
 
 function _evaluate_1d!(::Type{ModalC0},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number}

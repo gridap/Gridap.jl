@@ -11,11 +11,11 @@ struct Chebyshev{kind} <: Polynomial end
 isHierarchical(::Type{<:Chebyshev}) = true
 
 """
-    ChebyshevBasis{D,V,kind,K} = UniformPolyBasis{D,V,K,Chebyshev{kind}}
+    ChebyshevBasis{D,V,kind} = CartProdPolyBasis{D,V,Chebyshev{kind}}
 
-Alias for Chebyshev multivariate scalar' or `Multivalue`'d basis.
+Alias for cartesian product Chebyshev basis, scalar valued or multivalued.
 """
-const ChebyshevBasis{D,V,kind,K} = UniformPolyBasis{D,V,K,Chebyshev{kind}}
+const ChebyshevBasis{D,V,kind} = CartProdPolyBasis{D,V,Chebyshev{kind}}
 
 """
     ChebyshevBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector; kind=:T)
@@ -24,9 +24,9 @@ const ChebyshevBasis{D,V,kind,K} = UniformPolyBasis{D,V,K,Chebyshev{kind}}
 
 High level constructors of [`ChebyshevBasis`](@ref).
 """
-ChebyshevBasis(args...; kind=:T) = UniformPolyBasis(Chebyshev{kind}, args...)
+ChebyshevBasis(args...; kind=:T) = CartProdPolyBasis(Chebyshev{kind}, args...)
 
-function UniformPolyBasis(
+function CartProdPolyBasis(
   ::Type{Chebyshev{:U}}, ::Val{D}, ::Type{V}, ::Int) where {D, V}
 
   @notimplemented "1D evaluation for second kind need to be implemented here"

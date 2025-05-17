@@ -94,7 +94,7 @@ T = Float64
 V = VectorValue{D,T}
 b = QCurlGradBasis(PT,Val(D),T,order)
 
-@test b isa UniformPolyBasis{D,V,order+1,PT}
+@test b isa CartProdPolyBasis{D,V,PT}
 
 @test_throws AssertionError QCurlGradBasis(PT,Val(D),V,order)
 

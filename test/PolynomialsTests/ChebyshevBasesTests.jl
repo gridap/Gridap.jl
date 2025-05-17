@@ -4,7 +4,6 @@ using Test
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
-using Gridap.Polynomials: binoms
 using ForwardDiff
 
 @test isHierarchical(Chebyshev) == true
