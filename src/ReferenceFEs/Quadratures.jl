@@ -70,6 +70,7 @@ function test_quadrature(q::Quadrature{D,T}) where {D,T}
   @test D == num_point_dims(q)
   @test D == num_dims(typeof(q))
   @test D == num_point_dims(typeof(q))
+  @test all(x -> x > 0, w)
 end
 
 # Generic concrete implementation

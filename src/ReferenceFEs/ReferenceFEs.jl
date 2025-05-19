@@ -237,6 +237,8 @@ include("CDLagrangianRefFEs.jl")
 
 include("Quadratures.jl")
 
+include("SegmentQuadratures.jl")
+
 include("TensorProductQuadratures.jl")
 
 include("DuffyQuadratures.jl")
