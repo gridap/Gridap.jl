@@ -127,7 +127,7 @@ struct PmLambdaBasis{D,V,LN,B} <: PolynomialBasis{D,V,Bernstein}
   _indices::PLambdaIndices
 
   function PmLambdaBasis{D}(::Type{T}, r, k, vertices=nothing;
-                            diff_geo_calculus_style=false, indices=nothing) where {D,T}
+        diff_geo_calculus_style=false, indices=nothing, rotate_90=false) where {D,T}
 
     @check T<:Real "T needs to be <:Real since represents the scalar type, got $T"
     @check k in 0:D "The form order k must be in 0:D, got $k"
@@ -137,12 +137,12 @@ struct PmLambdaBasis{D,V,LN,B} <: PolynomialBasis{D,V,Bernstein}
       @check eltype(vertices) <: Point{D} "Vertices should be of type <:Point{$D}, got $(eltype(vertices))"
     end
 
-    indices = _generate_or_check_PmΛ_indices(r,k,D,diff_geo_calculus_style,indices)
+    indices = _generate_or_check_PmΛ_indices(r,k,D,diff_geo_calculus_style,indices,rotate_90)
 
     L = binomial(D,k) # Number of components of a basis form
 
     if diff_geo_calculus_style
-      @notimplemented
+      @notimplemented "A new MultiValue type and associated algebraic operations ∧/⋆/𝑑/δ need to be implemented to use form valued polynomials"
     else
       (D>3 && ( 1 < k < D-1)) && @unreachable "Vector calculus proxy of differential form bases not available for D=$D and k=$k"
       V = VectorValue{L,T}
@@ -164,17 +164,18 @@ struct PmLambdaBasis{D,V,LN,B} <: PolynomialBasis{D,V,Bernstein}
 end
 
 """
-    PmLambdaBasis(::Val{D}, T, r, k, vertices=nothing; indices=nothing)
+    PmLambdaBasis(::Val{D}, T, r, k, vertices=nothing; kwargs...)
 
 Constructors for [`PmLambdaBasis`](@ref) of scalar type `T`.
 If `vertices` are specified, they must define a non-degenerate simplex, c.f. [`BernsteinBasisOnSimplex`](@ref).
 
-The `indices::PLambdaIndices` may be provided to avoid allocations or filter the bubbles.
+The kwargs are the following:
+- `indices::PLambdaIndices=nothing`: may be provided to avoid allocations of new bubbles, or filter the bubbles spaces,
+- `diff_geo_calculus_style=false`: for choosing `k`-form valued polynomials instead of vector valued polynomials,
+- `rotate_90=false`: In 2`D` for `k`=1, tells to apply a 90° rotation of the vector proxied polynomials ((x,y) -> (-y,x)), needed for Raviart-Thomas.
 """
-function PmLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing;
-                       diff_geo_calculus_style=false, indices=nothing) where {D,T}
-
-  PmLambdaBasis{D}(T,r,k,vertices; diff_geo_calculus_style, indices)
+function PmLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
+  PmLambdaBasis{D}(T,r,k,vertices; kwargs...)
 end
 
 """
@@ -221,7 +222,7 @@ struct PLambdaBasis{D,V,C,B} <: PolynomialBasis{D,V,Bernstein}
   _indices::PLambdaIndices
 
   function PLambdaBasis{D}(::Type{T}, r, k, vertices=nothing;
-                           diff_geo_calculus_style=false, indices=nothing) where {D,T}
+        diff_geo_calculus_style=false, indices=nothing, rotate_90=false) where {D,T}
 
     @check T<:Real "T needs to be <:Real since represents the scalar type, got $T"
     @check k in 0:D "The form order k must be in 0:D, got $k"
@@ -231,13 +232,13 @@ struct PLambdaBasis{D,V,C,B} <: PolynomialBasis{D,V,Bernstein}
       @check eltype(vertices) <: Point{D} "Vertices should be of type <:Point{$D}, got $(eltype(vertices))"
     end
 
-    indices = _generate_or_check_PΛ_indices(r,k,D,diff_geo_calculus_style,indices)
+    indices = _generate_or_check_PΛ_indices(r,k,D,diff_geo_calculus_style,indices,rotate_90)
 
     L = binomial(D,k) # Number of components of a basis form
     C = _last_bubble_function_index(indices) # Cardinal of the basis
 
     if diff_geo_calculus_style
-      @notimplemented
+      @notimplemented "A new MultiValue type and associated algebraic operations ∧/⋆/𝑑/δ need to be implemented to use form valued polynomials"
     else
       (D>3 && ( 1 < k < D-1)) && @unreachable "Vector calculus proxy of differential form bases not available for D=$D and k=$k"
       V = VectorValue{L,T}
@@ -258,21 +259,18 @@ struct PLambdaBasis{D,V,C,B} <: PolynomialBasis{D,V,Bernstein}
 end
 
 """
-    PLambdaBasis(::Val{D}, T, r, k, vertices=nothing; indices=nothing)
+    PLambdaBasis(::Val{D}, T, r, k, vertices=nothing; kwargs...)
 
 Constructors for [`PLambdaBasis`](@ref) of scalar type `T`.
 If `vertices` are specified, they must define a non-degenerate simplex, c.f. [`BernsteinBasisOnSimplex`](@ref).
 
-The `indices::PLambdaIndices` may be provided to avoid allocations or filter the bubbles.
+The kwargs are the following:
+- `indices::PLambdaIndices=nothing`: may be provided to avoid allocations of new bubbles, or filter the bubbles spaces,
+- `diff_geo_calculus_style=false`: for choosing `k`-form valued polynomials instead of vector valued polynomials,
+- `rotate_90=false`: In 2`D` for `k`=1, tells to apply a 90° rotation of the vector proxied polynomials ((x,y) -> (-y,x)), needed for BDM.
 """
-function PLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing;
-                      diff_geo_calculus_style=false, indices=nothing) where {D,T}
-  #if r==0
-  #  # Trick to avoid implementing PLambdaBasis for r = 0 ... (Whitney forms)
-  #  k = iszero(k) ? D : k
-  #  return PmLambdaBasis{D}(T,r+1,k,vertices; diff_geo_calculus_style, indices)
-  #end
-  PLambdaBasis{D}(T,r,k,vertices; diff_geo_calculus_style, indices)
+function PLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
+  PLambdaBasis{D}(T,r,k,vertices; kwargs...)
 end
 
 get_FEEC_poly_degree(b::PLambdaBasis) = b.r
@@ -365,10 +363,11 @@ the same order), such that the components of the vector proxy v of a `k`-form ω
 If `k` ∈ {0,1,`D`}, the triple are the same. If `k`=`D`-1, the hodge star is not
 trivial so the order of the components is reversed and the signs are 1, -1, 1, -1 ...
 """
-function _basis_forms_components(D,k,DG_style)
+function _basis_forms_components(D,k,DG_style,rot_90)
   components = Vector{Tuple{ Int, Vector{Int}, Int}}(undef, binomial(D,k))
   for (I_id, I) in enumerate(_sorted_combinations(D,k))
-    if DG_style || k<2
+    # The rotation for 2D Raviart-Thomas/BDM is actually considering k to be D-1 rather than 1, that is applying ♯.
+    if DG_style || k<2 && !rot_90
       components[I_id] = (I_id, I, 1)
     else # if k == D, I = [1:D] and this is just (1, [], 1) (but that works)
       Icomp = _complement(I, D)
@@ -385,14 +384,14 @@ end
 # PmLambdaBasis Implementation #
 ################################
 
-function _generate_or_check_PmΛ_indices(r,k,D,DG_style,::Nothing)
+function _generate_or_check_PmΛ_indices(r,k,D,DG_style,::Nothing,rot_90)
   identity = objectid( (r,k,D,:P⁻,DG_style) )
   bubbles = PmΛ_bubbles(r,k,D)
-  components = _basis_forms_components(D,k,DG_style)
+  components = _basis_forms_components(D,k,DG_style,rot_90)
   return PLambdaIndices(identity,bubbles,components)
 end
 
-function _generate_or_check_PmΛ_indices(r,k,D,DG_style,indices::PLambdaIndices)
+function _generate_or_check_PmΛ_indices(r,k,D,DG_style,indices::PLambdaIndices,_)
   _check_PΛ_indices(r,k,D,:P⁻,DG_style,indices)
   return indices
 end
@@ -580,10 +579,10 @@ end
 # PLambdaBasis Implementation #
 ###############################
 
-function _generate_or_check_PΛ_indices(r,k,D,DG_style,::Nothing)
+function _generate_or_check_PΛ_indices(r,k,D,DG_style,::Nothing,rot_90)
   identity = objectid( (r,k,D,:P,DG_style) )
   bubbles = PΛ_bubbles(r,k,D)
-  components = _basis_forms_components(D,k,DG_style)
+  components = _basis_forms_components(D,k,DG_style,rot_90)
   return PLambdaIndices(identity,bubbles,components)
 end
 
