@@ -1,5 +1,6 @@
 module HHOMixedTests
 
+using Test
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
@@ -35,10 +36,11 @@ function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
 end
 
 ##############################################################
-u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
+# u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
+u(x) = x[1] + x[2]
 f(x) = -Δ(u)(x)
 
-nc = (2,2)
+nc = (8,8)
 model = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),nc))
 D = num_cell_dims(model)
 Ω = Triangulation(ReferenceFE{D}, model)
@@ -110,13 +112,17 @@ function patch_weakform()
 end
 
 # Monolithic solve
-A, b = weakform()
-x = A \ b
+# A, b = weakform()
+# x = A \ b
 
 # Static condensation
 op = MultiField.StaticCondensationOperator(X,V,N,patch_assem,patch_weakform())
 
 ub = solve(op.sc_op) 
 ui = MultiField.backward_static_condensation(op,ub)
+
+dΩ = Measure(Ω,qdegree)
+l2_ui = sqrt(sum(∫((ui - u)⋅(ui - u))*dΩ))
+@test l2_ui < 1e-10
 
 end # module

@@ -531,67 +531,6 @@ function Arrays.evaluate!(cache,k::LocalSolveMap, mat::MatrixBlock, vec::MatrixB
 end
 
 ###########################################################################################
-
-struct StaticCondensationMap{A} <: Map
-  pivot :: A
-end
-
-StaticCondensationMap() = StaticCondensationMap(NoPivot())
-
-function Arrays.evaluate!(cache,k::StaticCondensationMap, matvec::Tuple)
-  mat, vec = matvec
-  evaluate!(cache,k,mat,vec)
-end
-
-function Arrays.evaluate!(cache,k::StaticCondensationMap, mat, vec)
-  @check size(mat) == (2,2)
-  @check size(vec) == (2,)
-
-  Kii, Kbi, Kib, Kbb = get_array(mat)
-  bi, bb = get_array(vec)
-
-  f = lu!(Kii,k.pivot;check=false)
-  @check issuccess(f) "Factorization failed"
-  ldiv!(f,bi)
-  ldiv!(f,Kib)
-
-  mul!(bb,Kbi,bi,-1,1)
-  mul!(Kbb,Kbi,Kib,-1,1)
-
-  return Kbb, bb
-end
-
-###########################################################################################
-
-struct BackwardStaticCondensationMap{A} <: Map
-  pivot :: A
-end
-
-BackwardStaticCondensationMap() = BackwardStaticCondensationMap(NoPivot())
-
-function Arrays.evaluate!(cache,k::BackwardStaticCondensationMap, matvec::Tuple, xb)
-  mat, vec = matvec
-  evaluate!(cache,k,mat,vec,xb)
-end
-
-function Arrays.evaluate!(cache,k::BackwardStaticCondensationMap, mat, vec, xb)
-  @check size(mat) == (2,2)
-  @check size(vec) == (2,)
-
-  Kii, Kbi, Kib, Kbb = get_array(mat)
-  bi, bb = get_array(vec)
-
-  f = lu!(Kii, k.pivot; check=false)
-  @check issuccess(f) "Factorization failed"
-
-  # Reconstruct interior solution
-  mul!(bi, Kib, xb, -1, 1)  # bi = bi - Kib * xb
-  ldiv!(f, bi)              # bi = Kii^{-1} * (bi - Kib * xb)
-
-  return bi
-end
-
-###########################################################################################
 struct HHO_ReconstructionOperatorMap{A} <: Map
   pivot :: A
 end

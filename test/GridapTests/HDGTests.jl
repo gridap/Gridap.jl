@@ -1,10 +1,12 @@
 module HDGTests
 
+using Test
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
 
-u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
+# u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
+u(x) = x[1] + x[2]
 q(x) = -∇(u)(x)
 f(x) = (∇ ⋅ q)(x)
 
@@ -19,7 +21,7 @@ ptopo = Geometry.PatchTopology(model)
 Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
 
 # Reference FEs
-order = 0
+order = 1
 reffeV = ReferenceFE(lagrangian, VectorValue{D, Float64}, order; space=:P)
 reffeQ = ReferenceFE(lagrangian, Float64, order; space=:P)
 reffeM = ReferenceFE(lagrangian, Float64, order; space=:P)
@@ -55,5 +57,9 @@ l((vh,wh,lh)) = ∫( f*wh )*dΩp
 op = MultiField.StaticCondensationOperator(ptopo,X_full,X_elim,X_ret,a,l)
 sh = solve(op.sc_op)
 wh, qh = MultiField.backward_static_condensation(op,sh)
+
+dΩ = Measure(Ω,degree)
+l2_wh = sqrt(sum(∫((qh - u)⋅(qh - u))*dΩ))
+@test l2_wh < 1e-10
 
 end # module

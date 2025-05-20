@@ -80,7 +80,7 @@ mfs = MultiField.BlockMultiFieldStyle()
 X = MultiFieldFESpace([VΩ,VΓ];style=mfs)
 assem = FESpaces.PatchAssembler(ptopo,X,X)
 Ab = assemble_matrix_and_vector(a_mf,l_mf,assem,X,X)
-x = lazy_map(FESpaces.StaticCondensationMap(),Ab)
+x = lazy_map(MultiField.StaticCondensationMap(),Ab)
 
 ########################################################################
 

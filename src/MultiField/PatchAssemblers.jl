@@ -219,7 +219,7 @@ function StaticCondensationOperator(
   liform :: Function
 )
   patch_assem = FESpaces.PatchAssembler(ptopo,full_space,full_space)
-  full_matvecs = assemble_matrix_and_vector(biform,liform,patch_assem,full_space,full_space)
+  full_matvecs = assemble_matrix_and_vector(biform,liform,patch_assem,full_space,full_space,zero(full_space))
   return StaticCondensationOperator(
     full_space,eliminated_space,retained_space,
     patch_assem,full_matvecs
@@ -227,7 +227,7 @@ function StaticCondensationOperator(
 end
 
 function statically_condensed_assembly(retained_assem,patch_assem,full_matvecs)
-  sc_matvecs = lazy_map(FESpaces.StaticCondensationMap(),full_matvecs)
+  sc_matvecs = lazy_map(StaticCondensationMap(),full_matvecs)
   rows = patch_assem.strategy.array.array[2,2].patch_rows
   cols = patch_assem.strategy.array.array[2,2].patch_cols
   data = (([sc_matvecs,],[rows,],[cols,]), ([],[],[]), ([],[]))
@@ -239,7 +239,7 @@ function backward_static_condensation(eliminated_assem,patch_assem,full_matvecs,
   rows_ret = patch_assem.strategy.array.array[2,2].patch_rows
 
   patch_x_ret = lazy_map(Broadcasting(Reindex(x_retained)),rows_ret)
-  patch_x_elim = lazy_map(FESpaces.BackwardStaticCondensationMap(),full_matvecs,patch_x_ret)
+  patch_x_elim = lazy_map(BackwardStaticCondensationMap(),full_matvecs,patch_x_ret)
 
   vecdata = ([patch_x_elim,],[rows_elim,])
   assemble_vector(eliminated_assem,vecdata)
@@ -257,3 +257,60 @@ end
 
 FESpaces.get_trial(op::StaticCondensationOperator) = op.full_space
 FESpaces.get_test(op::StaticCondensationOperator) = op.full_space
+
+struct StaticCondensationMap{A} <: Map
+  pivot :: A
+end
+
+StaticCondensationMap() = StaticCondensationMap(NoPivot())
+
+function Arrays.evaluate!(cache,k::StaticCondensationMap, matvec::Tuple)
+  mat, vec = matvec
+  evaluate!(cache,k,mat,vec)
+end
+
+function Arrays.evaluate!(cache,k::StaticCondensationMap, mat, vec)
+  @check size(mat) == (2,2)
+  @check size(vec) == (2,)
+
+  Kii, Kbi, Kib, Kbb = get_array(mat)
+  bi, bb = get_array(vec)
+
+  f = lu!(Kii,k.pivot;check=false)
+  @check issuccess(f) "Factorization failed"
+  ldiv!(f,bi)
+  ldiv!(f,Kib)
+
+  mul!(bb,Kbi,bi,-1,1)
+  mul!(Kbb,Kbi,Kib,-1,1)
+
+  return Kbb, bb
+end
+
+struct BackwardStaticCondensationMap{A} <: Map
+  pivot :: A
+end
+
+BackwardStaticCondensationMap() = BackwardStaticCondensationMap(NoPivot())
+
+function Arrays.evaluate!(cache,k::BackwardStaticCondensationMap, matvec::Tuple, xb)
+  mat, vec = matvec
+  evaluate!(cache,k,mat,vec,xb)
+end
+
+function Arrays.evaluate!(cache,k::BackwardStaticCondensationMap, mat, vec, xb)
+  @check size(mat) == (2,2)
+  @check size(vec) == (2,)
+
+  Kii, Kbi, Kib, Kbb = get_array(mat)
+  bi, bb = get_array(vec)
+
+  f = lu!(Kii, k.pivot; check=false)
+  @check issuccess(f) "Factorization failed"
+
+  # Reconstruct interior solution
+  mul!(bi, Kib, xb, -1, 1)  # bi = bi - Kib * xb
+  ldiv!(f, bi)              # bi = Kii^{-1} * (bi - Kib * xb)
+
+  return bi
+end

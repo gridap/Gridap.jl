@@ -52,6 +52,10 @@ function PatchFESpace(space::SingleFieldFESpace,ptopo::PatchTopology)
   )
 end
 
+function PatchFESpace(space::TrialFESpace,ptopo::PatchTopology)
+  TrialFESpace(space.dirichlet_values,PatchFESpace(space.space,ptopo))
+end
+
 function generate_patch_dof_ids(
   space::SingleFieldFESpace,ptopo::PatchTopology
 )
