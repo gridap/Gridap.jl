@@ -279,6 +279,20 @@ end
 # with  type dispatching correctly...
 Base.view(a::Geometry.PolytopalGrid,b::AbstractArray) = Geometry.restrict(a,b)
 
+function Grid(::Type{ReferenceFE{Df}},p::GeneralPolytope{Dc}) where {Df,Dc}
+  vertex_coordinates = get_vertex_coordinates(p)
+  face_to_vertices = Table(get_faces(p,Df,0))
+  if iszero(Df) || isone(Df)
+    reffes = [ifelse(iszero(Df), VERTEX1, SEG2)]
+    face_to_ftype = fill(Int8(1),num_faces(p,Df))
+    grid = UnstructuredGrid(vertex_coordinates, face_to_vertices, reffes, face_to_ftype)
+  else
+    face_to_polytopes = get_reffaces(Polytope{Df},p)
+    grid = PolytopalGrid(vertex_coordinates, face_to_vertices, face_to_polytopes)
+  end
+  return grid
+end
+
 ############################################################################################
 
 """

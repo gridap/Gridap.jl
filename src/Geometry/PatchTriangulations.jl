@@ -97,7 +97,7 @@ function get_patch_boundary_info(ptopo::PatchTopology{Dc}) where Dc
   patch_faces = get_patch_faces(ptopo,Df)
   face_to_cells = get_faces(topo,Df,Dc)
 
-  n_pfaces = num_faces(ptopo,Dc-1)
+  n_pfaces = num_faces(ptopo,Df)
   pface_to_isboundary = fill(false,n_pfaces)
   pface_to_lcell = fill(Int8(1),n_pfaces)
 
@@ -111,20 +111,20 @@ function get_patch_boundary_info(ptopo::PatchTopology{Dc}) where Dc
       if isone(length(lcells))
         pface_to_isboundary[k] = true
         pface_to_lcell[k] = Int8(lcells[1])
-        k += 1
       end
+      k += 1
     end
   end
 
   return pface_to_isboundary, pface_to_lcell
 end
 
-function get_pface_to_patch(ptopo::PatchTopology,Df)
+function get_pface_to_patch(ptopo::PatchTopology,Df::Integer)
   patch_faces = get_patch_faces(ptopo,Df)
   return Arrays.block_identity_array(patch_faces.ptrs;T=Int32)
 end
 
-function get_pface_to_lpface(ptopo::PatchTopology,Df)
+function get_pface_to_lpface(ptopo::PatchTopology,Df::Integer)
   patch_faces = get_patch_faces(ptopo,Df)
   return Arrays.local_identity_array(patch_faces.ptrs;T=Int32)
 end
@@ -277,4 +277,11 @@ function PatchBoundaryTriangulation(model::DiscreteModel{Dc},ptopo::PatchTopolog
   trian = BoundaryTriangulation(face_trian,face_glue)
 
   return PatchTriangulation(trian,ptopo,tface_to_pface)
+end
+
+function get_patch_faces(trian::PatchTriangulation)
+  Df = num_cell_dims(trian)
+  tface_to_face = get_glue(trian,Val(Df)).tface_to_mface
+  patch_to_tfaces = trian.glue.patch_to_tfaces
+  return Table(lazy_map(Reindex(tface_to_face),patch_to_tfaces.data),patch_to_tfaces.ptrs)
 end
