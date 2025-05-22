@@ -54,4 +54,25 @@ topo = get_grid_topology(model)
 ptopo = Geometry.PatchTopology(topo,patch_cells)
 
 cmodel = Adaptivity.coarsen(model,ptopo)
-writevtk(cmodel,"tmp/cmodel";append=false)
+writevtk(Triangulation(cmodel),"tmp/cmodel";append=false)
+
+############################################################################################
+
+D = 3
+nc = (3,3,3)
+domain = (0,1,0,1,0,1)
+model = Geometry.PolytopalDiscreteModel(CartesianDiscreteModel(domain,nc))
+writevtk(Triangulation(ReferenceFE{1},model),"tmp/model";append=false)
+
+patch_cells = Table([
+  [1],[2,3,4,5,6,7,8,9],[10,11,13,14,19,20,22,23],[12,15,16,17,18],[21,24],[25,26],[27]
+])
+topo = get_grid_topology(model)
+ptopo = Geometry.PatchTopology(topo,patch_cells)
+
+cmodel = Adaptivity.coarsen(model,ptopo)
+writevtk(Triangulation(ReferenceFE{1},cmodel),"tmp/cmodel";append=false)
+
+for (i,p) in enumerate(get_polytopes(cmodel))
+  writevtk(p,"tmp/p_$i";append=false)
+end
