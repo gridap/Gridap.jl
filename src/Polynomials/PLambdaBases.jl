@@ -161,6 +161,36 @@ struct PmLambdaBasis{D,V,LN,B} <: PolynomialBasis{D,V,Bernstein}
 
     new{D,V,LN,B}(r,k,b,m,indices)
   end
+
+  @doc """
+      PmLambdaBasis(b::PmLambdaBasis, faces::Vector{Int}...)
+
+  Create a new basis which is `b` restricted to the bubble spaces for F ∈ `faces`.
+  """
+  function PmLambdaBasis(_b::PmLambdaBasis{D,V,LN,B}, faces::Vector{Int}...) where {D,V,LN,B}
+    # Notation: _old, new
+    _indices = _b._indices
+    _bubbles = _indices.bubbles
+    bubbles = similar(_bubbles, length(faces))
+
+    w = 1
+    for (Fid, F) in enumerate(faces)
+      F_id = findfirst(bub -> bub[1] == F, _bubbles)
+      @assert !isnothing(F_id) "No bubble associated to face $F in the given basis"
+
+      _F_bubfuns = _bubbles[F_id][2]
+      F_bubfuns = similar(_F_bubfuns)
+      for (i, _fun) in enumerate(_F_bubfuns)
+        # re-use all α,J, etc... to minimise allocation, just change w
+        F_bubfuns[i] = (w, _fun[2:end]...)
+        w += 1
+      end
+      bubbles[Fid] = (F, F_bubfuns)
+    end
+
+    indices = PLambdaIndices(_indices.identity, bubbles, _indices.components)
+    new{D,V,LN,B}(_b.r, _b.k, _b.scalar_bernstein_basis, _b.m, indices)
+  end
 end
 
 """
@@ -256,6 +286,43 @@ struct PLambdaBasis{D,V,C,B} <: PolynomialBasis{D,V,Bernstein}
 
     new{D,V,C,B}(r,k,b,Ψ,indices)
   end
+
+  @doc """
+      PLambdaBasis(b::PLambdaBasis, faces::Vector{Int}...)
+
+  Create a new basis which is `b` restricted to the bubble spaces for F ∈ `faces`.
+  """
+  function PLambdaBasis(_b::PLambdaBasis{D,V,_C,B}, faces::Vector{Int}...) where {D,V,_C,B}
+    # Notation: _old, new
+    _indices = _b._indices
+    _bubbles = _indices.bubbles
+    _Ψ = _b.Ψ
+
+    bubbles = similar(_bubbles, length(faces))
+    Ψ = zero(MVector{_C,V}) # cache of maximum possible size
+    w = 1
+
+    for (Fid, F) in enumerate(faces)
+      F_id = findfirst(bub -> bub[1] == F, _bubbles)
+      @assert !isnothing(F_id) "No bubble associated to face $F in the given basis"
+
+      _F_bubfuns = _bubbles[F_id][2]
+      F_bubfuns = similar(_F_bubfuns)
+      for (i, _fun) in enumerate(_F_bubfuns)
+        # re-use all α,J, etc... to minimise allocation, just change w
+        (_w, _fun_ids...) = _fun
+        F_bubfuns[i] = (w, _fun_ids...)
+        Ψ[w] = _Ψ[_w]
+        w += 1
+      end
+      bubbles[Fid] = (F, F_bubfuns)
+    end
+
+    C = w-1
+    Ψ = SVector{C,V}( Ψ[1:C] )
+    indices = PLambdaIndices(_indices.identity, bubbles, _indices.components)
+    new{D,V,C,B}(_b.r, _b.k, _b.scalar_bernstein_basis, Ψ, indices)
+  end
 end
 
 """
@@ -297,7 +364,7 @@ They can be vizualized using [`print_indices(b)`](@ref print_indices).
 """
 get_bubbles(b::PΛBases) = b._indices.bubbles
 get_order(b::PΛBases) = get_FEEC_poly_degree(b)
-print_indices(b::PΛBases) = println(b._indices)
+print_indices(b::PΛBases) = show(stdout, MIME"text/plain"(), b._indices)
 _get_cart_to_bary_matrix(b::PΛBases) = b.scalar_bernstein_basis.cart_to_bary_matrix
 
 function _return_cache(b::PΛBases,x,::Type{G},::Val{N_deriv}) where {G,N_deriv}
@@ -643,8 +710,6 @@ function PΛ_bubbles(r,k,D)
       w += length(bubble_functions)
     end
   end
-  #println(r,k,D,w,binomial(r+k,k)*binomial(D+r,D-k))
-  #println(r,k,D,w,binomial(r+D,D)*binomial(D,k))
   @check w == binomial(r+k,k)*binomial(D+r,D-k)
   bubbles
 end
