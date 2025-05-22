@@ -3,17 +3,17 @@ function coarsen(model::Geometry.PolytopalDiscreteModel,ptopo::Geometry.PatchTop
   new_polys, new_connectivity = generate_patch_polytopes(model,ptopo)
 
   vertex_coords = get_vertex_coordinates(get_grid_topology(model))
-
   new_to_old = unique(new_connectivity.data)
   old_to_new = find_inverse_index_map(new_to_old)
-
   new_vertex_coords = vertex_coords[new_to_old]
-  map!(old -> old_to_new[old], new_connectivity.data,new_connectivity.data)
+  map!(old -> old_to_new[old], new_connectivity.data, new_connectivity.data)
 
   new_topo = Geometry.PolytopalGridTopology(new_vertex_coords,new_connectivity,new_polys)
   new_grid = Geometry.PolytopalGrid(new_topo)
   new_labels = FaceLabeling(new_topo)
-  return Geometry. PolytopalDiscreteModel(new_grid,new_topo,new_labels)
+  new_model = Geometry.PolytopalDiscreteModel(new_grid,new_topo,new_labels)
+
+  return new_model
 end
 
 function generate_patch_polytopes(model::DiscreteModel, ptopo::Geometry.PatchTopology)
