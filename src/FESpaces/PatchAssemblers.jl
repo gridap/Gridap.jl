@@ -549,7 +549,12 @@ function Arrays.evaluate!(cache::Nothing, k::HHO_ReconstructionOperatorMap, lhs,
   App, Aλp, Apλ, _ = get_array(lhs)
   BpΩ, BλΩ, BpΓ, _ = get_array(rhs)
 
-  μT = tr(App)/norm(Apλ)^2
+  # μT = norm(App)/norm(Apλ*Aλp) is a heuristic choice for the penalty parameter
+  if isone(size(Apλ,1))
+    μT = tr(App)/norm(Apλ)^2 # Single constraint
+  else
+    μT = tr(App)/norm(Apλ*Aλp) # Multiple constraints
+  end
   
   # App = App + μT * Apλ * Aλp
   mul!(App, Apλ, Aλp, μT, 1)

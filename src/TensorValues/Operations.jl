@@ -920,6 +920,24 @@ end
 
 symmetric_part(v::AbstractSymTensorValue) = v
 
+"""
+    skew_symmetric_part(v::MultiValue{Tuple{D,D}})::MultiValue{Tuple{D,D}}
+
+Return the asymmetric part of second order tensor, that is `½(v - vᵀ)`.
+Return `v` if  `v isa AbstractSymTensorValue`.
+"""
+@generated function skew_symmetric_part(v::MultiValue{Tuple{D,D},T}) where {D,T}
+  iszero(D) && return :( zero(TensorValue{0,0,T}) )
+  str = "("
+  for j in 1:D
+      for i in 1:D
+          str *= "0.5*v[$i,$j] - 0.5*v[$j,$i], "
+      end
+  end
+  str *= ")"
+  Meta.parse("TensorValue{D,D}($str)")
+end
+
 ###############################################################
 # diag
 ###############################################################

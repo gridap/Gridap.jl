@@ -9,6 +9,8 @@ function FESpaceWithoutBCs(space::SingleFieldFESpace)
   return renumber_free_and_dirichlet_dof_ids(space,free_ids,dir_ids)
 end
 
+FESpaceWithoutBCs(space::ConstantFESpace) = space
+
 function PatchFESpace(space::SingleFieldFESpace,ptopo::PatchTopology)
   vector_type = get_vector_type(space)
 
