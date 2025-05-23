@@ -5,6 +5,10 @@ References:
 - A hybrid high-order locking-free method for linear elasticity on general meshes. Di Pietro et al. 2014
 - Locking-free hybrid high-order method for linear elasticity. Carstensen et al. 2024
 
+TODO: 
+
+- I believe the papers use regular HHO. Can we find a reference for mixed order? 
+- Check convergence rates
 """
 
 using Test

@@ -1,4 +1,15 @@
 
+"""
+References: 
+
+- A discontinuous skeletal method for the viscosity-dependent Stokes problem. Di Pietro et al. 2016
+- The hybrid high-order method for polytopal meshes. Di Pietro, Droniou. 2020
+
+TODO: 
+
+- For static condensation, we need to be able to split the pressure into a constant and zero mean part. 
+"""
+
 using Test
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
@@ -100,8 +111,8 @@ reffe_Q = ReferenceFE(lagrangian, Float64, order; space=:P) # Pressure space
 V = FESpace(Ω, reffe_V; conformity=:L2)
 M = FESpace(Γ, reffe_M; conformity=:L2, dirichlet_tags="boundary")
 L = FESpace(Ω, reffe_L; conformity=:L2)
-Q = FESpace(Ω, reffe_Q; conformity=:L2)
-Λ = ConstantFESpace(Ω)
+Q = FESpace(Ω, reffe_Q; conformity=:L2) # Pressure space
+Λ = ConstantFESpace(Ω) # Lagrange multiplier for zero mean
 N = TrialFESpace(M,u)
 
 mfs = MultiField.BlockMultiFieldStyle(2,(1,3))
