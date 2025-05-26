@@ -394,22 +394,23 @@ function LocalOperator(
   space_from::FESpace,
   lhs::Function,
   rhs::Function;
+  space_test::FESpace = space_to,
   space_out::FESpace = space_to,
   trian_out::Triangulation = get_triangulation(space_out),
   collect_coefficients::Bool = true
 )
   function weakform(u_from)
     u_to = get_trial_fe_basis(space_to)
-    v_to = get_fe_basis(space_to)
+    v_to = get_fe_basis(space_test)
 
-    lhs_assem = PatchAssembler(ptopo,space_to,space_to)
+    lhs_assem = PatchAssembler(ptopo,space_to,space_test)
     lhs_mats = assemble_matrix(
-      lhs_assem,collect_patch_cell_matrix(lhs_assem,space_to,space_to,lhs(u_to,v_to))
+      lhs_assem,collect_patch_cell_matrix(lhs_assem,space_to,space_test,lhs(u_to,v_to))
     )
 
-    rhs_assem = PatchAssembler(ptopo,space_from,space_to)
+    rhs_assem = PatchAssembler(ptopo,space_from,space_test)
     rhs_mats = assemble_matrix(
-      rhs_assem,collect_patch_cell_matrix(rhs_assem,space_from,space_to,rhs(u_from,v_to))
+      rhs_assem,collect_patch_cell_matrix(rhs_assem,space_from,space_test,rhs(u_from,v_to))
     )
 
     pair_arrays(lhs_mats,rhs_mats)
@@ -423,13 +424,14 @@ function LocalOperator(
   space_to::FESpace,
   lhs::Function,
   rhs::Function;
+  space_test::FESpace = space_to,
   space_out::FESpace = space_to,
   trian_out::Triangulation = get_triangulation(space_out),
   collect_coefficients::Bool = true
 )
   function weakform(u_from)
     u_to = get_trial_fe_basis(space_to)
-    v_to = get_fe_basis(space_to)
+    v_to = get_fe_basis(space_test)
 
     lhs_c = lhs(u_to,v_to)
     @check all(t -> t === trian_out, get_domains(lhs_c))
