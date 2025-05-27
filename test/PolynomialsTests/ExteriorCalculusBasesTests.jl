@@ -17,17 +17,13 @@ FEEC_length(r,k,D,::Val{:S }) = sum( 2^(D-d)*binomial(D,d)*binomial(r-d+2k,d)*bi
 
 T = Float64   # scalar type
 r = 3         # Polynomial order
-
 no_hessian = true
-@inline function _test_bases(b::FEECPolyBasis, b2, no_hessian=false)
-  #D = get_dimension(b)
-  r = get_FEEC_poly_degree(b)
-  k = get_FEEC_form_degree(b)
-  F = get_FEEC_family(b)
+
+@inline function _test_bases(b, b2, r,k,F,D, no_hessian=false)
   @test length(b) == FEEC_length(r,k,D,Val(F))
-  @test b._basis isa typeof(b2)
+  @test b isa typeof(b2)
   @test evaluate(b,x) == evaluate(b2,x)
-  @test evaluate(Broadcasting(∇ )(b),x) == evaluate(Broadcasting(∇ )(b2),x)
+  @test evaluate(Broadcasting(∇)(b),x) == evaluate(Broadcasting(∇)(b2),x)
   if no_hessian
     @test_throws ErrorException evaluate(Broadcasting(∇∇)(b),x) == evaluate(Broadcasting(∇∇)(b2),x)
   else
@@ -36,203 +32,200 @@ no_hessian = true
 end
 
 # 1D
-D = 1
 V = T
 x = [Point(0.),Point(1.),Point(.4)]
 
-k = 0
-b = FEECPolyBasis(Val(D),T,r,k,:P⁻)
+D, k = 1, 0
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P⁻)
 b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:P⁻,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:P)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P)
 b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:P,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:Q⁻)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:Q⁻)
 b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_q_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:Q⁻,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:S)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:S)
 b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_ser_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:S,D)
 
 
-k = 1
+D, k = 1, 1
 V = T
-b = FEECPolyBasis(Val(D),T,r,k,:P⁻)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P⁻)
 b2 = CartProdPolyBasis(Monomial,Val(D),T,r-1,_p_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:P⁻,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:P)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P)
 b2 = CartProdPolyBasis(Monomial,Val(D),T,r,_p_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:P,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:Q⁻)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:Q⁻)
 b2 = CartProdPolyBasis(Monomial,Val(D),T,r-1,_q_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:Q⁻,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:S)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:S)
 b2 = CartProdPolyBasis(Monomial,Val(D),T,r,_ser_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:S,D)
 
 
 # 2D
-D = 2
 V = T
 x = [Point(0.,0.),Point(1.,0),Point(0,.4),Point(.6,.4)]
 
-k = 0
-b = FEECPolyBasis(Val(D),T,r,k,:P⁻)
+D, k = 2, 0
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P⁻)
 b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:P⁻,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:P)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P)
 b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:P ,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:Q⁻)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:Q⁻)
 b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_q_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:Q⁻,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:S)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:S)
 b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_ser_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:S ,D)
 
 
-k = 1
+D, k = 2, 1
 V = VectorValue{D,T}
-b = FEECPolyBasis(Val(D),T,r,k,:P⁻)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P⁻)
 b2 = PCurlGradBasis(Monomial,Val(D),T,r-1)
-@test b._basis isa PolynomialBasis{D,V,Monomial}
-_test_bases(b,b2,no_hessian)
+@test b isa PolynomialBasis{D,V,Monomial}
+_test_bases(b,b2,r,k,:P⁻,D,no_hessian)
 
-b = FEECPolyBasis(Val(D),T,r,k,:P)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P)
 b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
-@test b._basis isa PolynomialBasis{D,V,Monomial}
-_test_bases(b,b2)
+@test b isa PolynomialBasis{D,V,Monomial}
+_test_bases(b,b2,r,k,:P,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:Q⁻)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:Q⁻)
 b2 = QCurlGradBasis(Monomial,Val(D),T,r-1)
-@test b._basis isa PolynomialBasis{D,V,Monomial}
-_test_bases(b,b2)
+@test b isa PolynomialBasis{D,V,Monomial}
+_test_bases(b,b2,r,k,:Q⁻,D)
 
-@test_throws ErrorException FEECPolyBasis(Val(D),T,r,k,:S)
-# b = FEECPolyBasis(Val(D),T,r,k,:S)
+@test_throws ErrorException FEECPolyBasis_trampoline(Val(D),T,r,k,:S)
+# b = FEECPolyBasis_trampoline(Val(D),T,r,k,:S)
 # b2 = # TODO
-# @test b._basis isa PolynomialBasis{D,V,r,Monomial}
-#_test_bases(b,b2)
+# @test b isa PolynomialBasis{D,V,r,Monomial}
+#_test_bases(b,b3,r,k,:S,D)
 
 
-k = 2
+D, k = 2, 2
 V = T
-b = FEECPolyBasis(Val(D),T,r,k,:P⁻)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P⁻)
 b2 = CartProdPolyBasis(Monomial,Val(D),T,r-1,_p_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:P⁻,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:P)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P)
 b2 = CartProdPolyBasis(Monomial,Val(D),T,r,_p_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:P,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:Q⁻)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:Q⁻)
 b2 = CartProdPolyBasis(Monomial,Val(D),T,r-1,_q_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:Q⁻,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:S)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:S)
 b2 = CartProdPolyBasis(Monomial,Val(D),T,r,_p_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:S,D)
 
 
 # 3D
-D = 3
 V = T
 x = [Point(0.,0,0),Point(1.,0,0),Point(0,.4,.3),Point(.6,.4,.5)]
 
-k = 0
-b = FEECPolyBasis(Val(D),T,r,k,:P⁻)
+D, k = 3, 0
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P⁻)
 b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:P⁻,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:P)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P)
 b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:P,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:Q⁻)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:Q⁻)
 b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_q_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:Q⁻,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:S)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:S)
 b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_ser_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:S,D)
 
 
-k = 1
+D, k = 3, 1
 V = VectorValue{D,T}
-b = FEECPolyBasis(Val(D),T,r,k,:P⁻)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P⁻)
 b2 = PGradBasis(Monomial,Val(D),T,r-1)
-@test b._basis isa PolynomialBasis{D,V,Monomial}
-_test_bases(b,b2,no_hessian)
+@test b isa PolynomialBasis{D,V,Monomial}
+_test_bases(b,b2,r,k,:P⁻,D,no_hessian)
 
-@test_throws ErrorException FEECPolyBasis(Val(D),T,r,k,:P)
-# b = FEECPolyBasis(Val(D),T,r,k,:P)
+@test_throws ErrorException FEECPolyBasis_trampoline(Val(D),T,r,k,:P)
+# b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P)
 # b2 =
-# @test b._basis isa PolynomialBasis{D,V,r,Monomial}
-# _test_bases(b,b2)
+# @test b isa PolynomialBasis{D,V,r,Monomial}
+# _test_bases(b,b2,r,k,:P,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:Q⁻)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:Q⁻)
 b2 = QGradBasis(Monomial,Val(D),T,r-1)
-@test b._basis isa PolynomialBasis{D,V,Monomial}
-_test_bases(b,b2)
+@test b isa PolynomialBasis{D,V,Monomial}
+_test_bases(b,b2,r,k,:Q⁻,D)
 
-@test_throws ErrorException FEECPolyBasis(Val(D),T,r,k,:S)
-# b = FEECPolyBasis(Val(D),T,r,k,:P)
+@test_throws ErrorException FEECPolyBasis_trampoline(Val(D),T,r,k,:S)
+# b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P)
 # b2 =
-# @test b._basis isa PolynomialBasis{D,V,r,Monomial}
-# _test_bases(b,b2)
+# @test b isa PolynomialBasis{D,V,r,Monomial}
+# _test_bases(b,b2,r,k,:S,D)
 
 
-k = 2
+D, k = 3, 2
 V = VectorValue{D,T}
-b = FEECPolyBasis(Val(D),T,r,k,:P⁻)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P⁻)
 b2 = PCurlGradBasis(Monomial,Val(D),T,r-1)
-@test b._basis isa PolynomialBasis{D,V,Monomial}
-_test_bases(b,b2,no_hessian)
+@test b isa PolynomialBasis{D,V,Monomial}
+_test_bases(b,b2,r,k,:P⁻,D,no_hessian)
 
-@test_throws ErrorException FEECPolyBasis(Val(D),T,r,k,:P)
-# b = FEECPolyBasis(Val(D),T,r,k,:P)
+@test_throws ErrorException FEECPolyBasis_trampoline(Val(D),T,r,k,:P)
+# b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P)
 # b2 =
-# @test b._basis isa PolynomialBasis{D,V,r,Monomial}
-# _test_bases(b,b2)
+# @test b isa PolynomialBasis{D,V,r,Monomial}
+# _test_bases(b,b2,r,k,:P,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:Q⁻)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:Q⁻)
 b2 = QCurlGradBasis(Monomial,Val(D),T,r-1)
-@test b._basis isa PolynomialBasis{D,V,Monomial}
-_test_bases(b,b2)
+@test b isa PolynomialBasis{D,V,Monomial}
+_test_bases(b,b2,r,k,:Q⁻,D)
 
-@test_throws ErrorException FEECPolyBasis(Val(D),T,r,k,:S)
-# b = FEECPolyBasis(Val(D),T,r,k,:P)
+@test_throws ErrorException FEECPolyBasis_trampoline(Val(D),T,r,k,:S)
+# b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P)
 # b2 =
-# @test b._basis isa PolynomialBasis{D,V,r,Monomial}
-# _test_bases(b,b2)
+# @test b isa PolynomialBasis{D,V,r,Monomial}
+# _test_bases(b,b2,r,k,:S,D)
 
 
-k = 3
+D, k = 3, 3
 V = T
-b = FEECPolyBasis(Val(D),T,r,k,:P⁻)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P⁻)
 b2 = CartProdPolyBasis(Monomial,Val(D),T,r-1,_p_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:P⁻,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:P)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:P)
 b2 = CartProdPolyBasis(Monomial,Val(D),T,r,_p_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:P,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:Q⁻)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:Q⁻)
 b2 = CartProdPolyBasis(Monomial,Val(D),T,r-1,_q_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:Q⁻,D)
 
-b = FEECPolyBasis(Val(D),T,r,k,:S)
+b = FEECPolyBasis_trampoline(Val(D),T,r,k,:S)
 b2 = CartProdPolyBasis(Monomial,Val(D),T,r,_p_filter)
-_test_bases(b,b2)
+_test_bases(b,b2,r,k,:S,D)
 
 
 end # module

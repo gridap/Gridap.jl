@@ -117,10 +117,10 @@ export ChebyshevBasis
 export BernsteinBasis
 export BernsteinBasisOnSimplex
 
-export FEECPolyBasis
-export get_FEEC_poly_degree
-export get_FEEC_form_degree
-export get_FEEC_family
+export FEECPolyBasis_trampoline
+#export get_FEEC_poly_degree
+#export get_FEEC_form_degree
+#export get_FEEC_family
 
 export PmLambdaBasis
 export PmΛ_bubbles
