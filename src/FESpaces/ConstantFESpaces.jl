@@ -101,3 +101,123 @@ function gather_free_and_dirichlet_values!(free_vals, dirichlet_vals, f::Constan
 
   (free_vals,dirichlet_vals)
 end
+
+############################################################################################
+
+"""
+    struct MultiConstantFESpace{N,V,T} <: SingleFieldFESpace end
+
+    MultiConstantFESpace(model::DiscreteModel,tags::Vector,D::Integer)
+    MultiConstantFESpace(trians::Vector{<:BoundaryTriangulation{Df}})
+
+Extension of `ConstantFESpace`, representing a FESpace which is constant on each 
+of it's N triangulations.
+"""
+struct MultiConstantFESpace{N,T,V} <: SingleFieldFESpace
+  space :: FESpace
+  trian :: Triangulation
+  face_dofs :: Table{Int32}
+end
+
+function MultiConstantFESpace(
+  trian::Triangulation, tface_to_subtrian;
+  vector_type::Type{V} = Vector{Float64},
+  field_type::Type{T} = Float64
+) where {T,V}
+  N = maximum(tface_to_subtrian)
+  reffe = ReferenceFE(lagrangian,T,0)
+  space = FESpace(trian,reffe)
+
+  face_dofs = Table(collect(Int32,tface_to_subtrian),Base.OneTo(Int32(num_cells(trian)+1)))
+  return MultiConstantFESpace{N,T,V}(space,trian,face_dofs)
+end
+
+function MultiConstantFESpace(
+  model::DiscreteModel,tags::Vector,D;
+  labels = get_face_labeling(model),
+  field_type = Float64, vector_type = Vector{Float64}
+)
+  function onlyonetrue(masks)
+    s = sum(masks)
+    @assert s <= 1 "Each face must only have one associated tag!"
+    return isone(s)
+  end
+
+  masks = map(tag -> get_face_mask(labels,tag,D), tags)
+  tfaces = findall(map(onlyonetrue,zip(masks...)))
+  @check !isempty(tfaces)
+
+  tface_to_subtrian = fill(Int32(0),length(tfaces))
+  for (k,mask) in enumerate(masks)
+    tface_mask = view(mask,tfaces)
+    tface_to_subtrian[tface_mask] .= Int32(k)
+  end
+  @check !any(iszero,tface_to_subtrian)
+
+  trian = Triangulation(ReferenceFE{D},model,tfaces)
+  return MultiConstantFESpace(trian,tface_to_subtrian;field_type,vector_type)
+end
+
+function MultiConstantFESpace(
+  trians::Vector{<:BoundaryTriangulation{Df}};
+  field_type = Float64, vector_type = Vector{Float64}
+) where Df
+  model = get_background_model(first(trians))
+  @check all(get_background_model(trian) === model for trian in trians)
+
+  bgfaces = map(t -> t.glue.face_to_bgface, trians)
+
+  tface_to_mface = bgfaces[1]
+  tface_to_subtrian = ones(Int32,length(tface_to_mface))
+  for (k,tf) in enumerate(bgfaces[2:end])
+    @assert isempty(intersect(tface_to_mface,tf))
+    tface_to_mface = vcat(tface_to_mface,tf)
+    tface_to_subtrian = vcat(tface_to_subtrian,fill(Int32(k+1),length(tf)))
+  end
+
+  trian = Triangulation(ReferenceFE{Df},model,tface_to_mface)
+  MultiConstantFESpace(trian,tface_to_subtrian;field_type,vector_type)
+end
+
+# SingleFieldFESpace API
+
+FESpaces.get_free_dof_ids(::MultiConstantFESpace{N,T}) where {N,T} = Base.OneTo(Int32(N*num_components(T)))
+FESpaces.get_vector_type(::MultiConstantFESpace{N,T,V}) where {N,T,V} = V
+
+FESpaces.ConstraintStyle(::Type{<:MultiConstantFESpace}) = UnConstrained()
+FESpaces.get_dirichlet_dof_values(::MultiConstantFESpace{N,T}) where {N,T} = T[]
+FESpaces.get_dirichlet_dof_ids(f::MultiConstantFESpace) = Base.OneTo(zero(Int32))
+FESpaces.num_dirichlet_tags(f::MultiConstantFESpace) = 0
+FESpaces.get_dirichlet_dof_tag(f::MultiConstantFESpace) = Int8[]
+
+FESpaces.get_fe_basis(f::MultiConstantFESpace) = get_fe_basis(f.space)
+FESpaces.get_fe_dof_basis(f::MultiConstantFESpace) = get_fe_dof_basis(f.space)
+
+Base.zero(f::MultiConstantFESpace) = zero(f.space)
+
+Geometry.get_triangulation(f::MultiConstantFESpace) = f.trian
+FESpaces.get_cell_dof_ids(f::MultiConstantFESpace) = f.face_dofs
+
+function FESpaces.scatter_free_and_dirichlet_values(f::MultiConstantFESpace,fv,dv)
+  cell_dof_ids = get_cell_dof_ids(f)
+  lazy_map(Broadcasting(PosNegReindex(fv,dv)),cell_dof_ids)
+end
+
+function FESpaces.gather_free_and_dirichlet_values!(free_values, dirichlet_values,f::MultiConstantFESpace,cell_vals)
+  cell_dofs = get_cell_dof_ids(f)
+  cache_vals = array_cache(cell_vals)
+  cache_dofs = array_cache(cell_dofs)
+  cells = 1:length(cell_vals)
+
+  FESpaces._free_and_dirichlet_values_fill!(
+    free_values,
+    dirichlet_values,
+    cache_vals,
+    cache_dofs,
+    cell_vals,
+    cell_dofs,
+    cells
+  )
+
+  (free_values,dirichlet_values)
+end

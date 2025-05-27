@@ -27,6 +27,19 @@ function _filter_from_space(space::Symbol)
   end
 end
 
+function _prebasis_from_space(D,T,order,space)
+  if space == :RT
+    @assert D >= 2
+    prebasis = Polynomials.PCurlGradMonomialBasis{D}(T, order)
+  elseif space == :ND
+    @assert D >= 2
+    prebasis = Polynomials.NedelecPrebasisOnSimplex{D}(order)
+  else
+    prebasis = Polynomials.MonomialBasis{D}(T, order, _filter_from_space(space))
+  end
+  return prebasis
+end
+
 function PolytopalFESpace(
   t::Triangulation,args...;trian=nothing,kwargs...
 )
@@ -41,7 +54,7 @@ function PolytopalFESpace(
   kwargs...
 ) where {T}
   D = num_cell_dims(model)
-  prebasis = Polynomials.MonomialBasis{D}(T, order, _filter_from_space(space))
+  prebasis = _prebasis_from_space(D,T,order,space)
   if hierarchical
     lt(t1,t2) = (maximum(Tuple(t1)) < maximum(Tuple(t2))) || isless(t1,t2)
     sort!(prebasis.terms;lt)
@@ -87,16 +100,28 @@ function PolytopalFESpace(
   end
 
   ntags = length(dirichlet_tags)
-  cell_to_tag = get_face_tag_index(labels,dirichlet_tags,Dc)
-  cell_is_dirichlet = map(!isequal(UNSET),cell_to_tag)
-  ctype_to_prebasis, cell_to_ctype = compress_cell_data(cell_prebasis)
-  ctype_to_conformity = map(MonomialDofConformity,ctype_to_prebasis)
-  ctype_to_ldof_to_comp = map(c -> c.dof_to_comp,ctype_to_conformity)
-  cell_dof_ids, nfree, ndir, dirichlet_dof_tag, dirichlet_cells = compute_discontinuous_cell_dofs(
-    cell_to_ctype, ctype_to_ldof_to_comp, cell_to_tag, dirichlet_components
-  )
+  if ntags != 0
+    cell_to_tag = get_face_tag_index(labels,dirichlet_tags,Dc)
+    cell_is_dirichlet = map(!isequal(UNSET),cell_to_tag)
+    ctype_to_prebasis, cell_to_ctype = compress_cell_data(cell_prebasis)
+    ctype_to_conformity = map(MonomialDofConformity,ctype_to_prebasis)
+    ctype_to_ldof_to_comp = map(c -> c.dof_to_comp, ctype_to_conformity)
+    cell_dof_ids, nfree, ndir, dirichlet_dof_tag, dirichlet_cells = compute_discontinuous_cell_dofs(
+      cell_to_ctype, ctype_to_ldof_to_comp, cell_to_tag, dirichlet_components
+    )
+    metadata = ctype_to_conformity
+  else
+    ndir = 0
+    dirichlet_dof_tag = Int8[]
+    dirichlet_cells = Int32[]
+    cell_is_dirichlet = fill(false,num_cells(trian))
 
-  metadata = ctype_to_conformity
+    ctype_to_prebasis, cell_to_ctype = compress_cell_data(cell_prebasis)
+    ctype_to_ndofs = map(length,ctype_to_prebasis)
+    cell_dof_ids, nfree = compute_discontinuous_cell_dofs(cell_to_ctype,ctype_to_ndofs)
+    metadata = nothing
+  end
+
   return PolytopalFESpace(
     vector_type,nfree,ndir,cell_dof_ids,fe_basis,
     cell_is_dirichlet,dirichlet_dof_tag,dirichlet_cells,ntags,
@@ -113,6 +138,15 @@ struct MonomialDofConformity{D,V}
 end
 
 function MonomialDofConformity(basis::Polynomials.MonomialBasis)
+  T = return_type(basis)
+  nterms = length(basis.terms)
+  dof_to_term, dof_to_comp, term_and_comp_to_dof = ReferenceFEs._generate_dof_layout_node_major(T,nterms)
+  MonomialDofConformity(
+    basis.orders, basis.terms, dof_to_term, dof_to_comp, term_and_comp_to_dof
+  )
+end
+
+function MonomialDofConformity(basis::Polynomials.PCurlGradMonomialBasis)
   T = return_type(basis)
   nterms = length(basis.terms)
   dof_to_term, dof_to_comp, term_and_comp_to_dof = ReferenceFEs._generate_dof_layout_node_major(T,nterms)

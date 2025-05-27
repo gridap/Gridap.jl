@@ -39,10 +39,10 @@ function compute_discontinuous_cell_dofs(cell_to_ctype,ctype_to_nldofs)
   end
   length_to_ptrs!(ptrs)
 
-  ndata = ptrs[end]-1
-  data = collect(Int32,1:ndata)
+  nfree = ptrs[end]-1
+  data = collect(Int32,1:nfree)
   
-  (Table(data,ptrs), ndata)
+  return Table(data,ptrs), nfree
 end
 
 function compute_discontinuous_cell_dofs(

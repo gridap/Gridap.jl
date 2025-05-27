@@ -285,3 +285,32 @@ function get_patch_faces(trian::PatchTriangulation)
   patch_to_tfaces = trian.glue.patch_to_tfaces
   return Table(lazy_map(Reindex(tface_to_face),patch_to_tfaces.data),patch_to_tfaces.ptrs)
 end
+
+# Domain changes between PatchTriangulations: 
+#
+# The idea here is that we cannot go from a PatchTriangulation to a Triangulation because
+# the PatchTriangulation, in general, IS NOT injective. 
+# I.e the tface_to_face map is not injective.
+# However, two PatchTriangulations from the same PatchTopology can be mapped to each other
+# since the map tface_to_pface IS injective.
+
+function get_patch_glue(trian::PatchTriangulation)
+  ptopo, glue = trian.ptopo, trian.glue
+
+  tface_to_pface = glue.tface_to_pface
+  pface_to_tface = PosNegPartition(tface_to_pface,num_faces(ptopo,num_cell_dims(trian)))
+  tface_to_pface_map = Fill(GenericField(identity),num_cells(trian))
+  FaceToFaceGlue(tface_to_pface,tface_to_pface_map,pface_to_tface)
+end
+
+function is_change_possible(strian::PatchTriangulation,ttrian::PatchTriangulation)
+  if strian === ttrian || is_change_possible(strian.trian,ttrian.trian)
+    return true
+  end
+  if num_cell_dims(strian) != num_cell_dims(ttrian)
+    return false
+  end
+  sglue = get_patch_glue(strian)
+  tglue = get_patch_glue(ttrian)
+  return is_change_possible(sglue,tglue)
+end
