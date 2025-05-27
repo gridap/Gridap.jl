@@ -77,10 +77,11 @@ end
 
 ##############################################################
 
-uex(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
+# uex(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
+uex(x) = x[1]+x[2]
 f(x) = -Δ(uex)(x)
 nc = (2,2)
-order = 0
+order = 1
 
 model = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),nc))
 vmodel = Gridap.Geometry.voronoi(simplexify(model))
@@ -93,7 +94,6 @@ ptopo = Geometry.PatchTopology(vmodel)
 Γp = Geometry.PatchBoundaryTriangulation(vmodel,ptopo)
 
 qdegree = 2*(order+1)
-
 dΩp = Measure(Ωp,qdegree)
 dΓp = Measure(Γp,qdegree)
 
@@ -152,7 +152,6 @@ end
 
 # Static condensation
 u, v = get_trial_fe_basis(X), get_fe_basis(Y);
-
 op = MultiField.StaticCondensationOperator(X,V,N,patch_assem,patch_weakform(u,v))
 
 uΓ = solve(op.sc_op) 
@@ -162,23 +161,11 @@ eu  = uΩ - uex
 l2u = sqrt(sum( ∫(eu * eu)dΩp))
 h1u = l2u + sqrt(sum( ∫(∇(eu) ⋅ ∇(eu))dΩp))
 
-polys = get_polytopes(vmodel)
-h = maximum( map(x -> FESpaces.get_facet_diameter(x,D), polys) )
-
-# cvΩ = FESpaces.scatter_free_and_dirichlet_values(Xp[1],get_free_dof_values(uΩ),get_dirichlet_dof_values(X[1]))
-# cvΓ = FESpaces.scatter_free_and_dirichlet_values(Xp[2],get_free_dof_values(uΓ),get_dirichlet_dof_values(X[2]))
-
-# RuΩ, RuΓ =  R(u)
-# coeffs_Ω = map(*,get_data(RuΩ).args[1].args[1].args[1],cvΩ)
-# coeffs_Γ = map(*,get_data(RuΓ).args[1].args[1].args[1],cvΓ)
-# coeffs = map((a,b) -> a .+ b,coeffs_Ω,coeffs_Γ)
-
-# uk = FEFunction(L,FESpaces.gather_free_values(L,coeffs))
-# ek = uk - uex
-
 Ruh = potential_reconstruction(X, L, R, uΩ, uΓ)
 ek  = Ruh - uex
 l2u = sqrt(sum( ∫(ek * ek)dΩp))
 h1u = l2u + sqrt(sum( ∫(∇(ek) ⋅ ∇(ek))dΩp))
+
+@test l2u < 1e-10
 
 end # module

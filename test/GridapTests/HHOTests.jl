@@ -1,5 +1,6 @@
 module HHOTests
 
+using Test
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
@@ -60,7 +61,8 @@ function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
 end
 
 ##############################################################
-uex(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
+# uex(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
+uex(x) = x[1]+x[2]
 f(x) = -Δ(uex)(x)
 
 nc = (2,2)
@@ -73,7 +75,7 @@ ptopo = Geometry.PatchTopology(model)
 Ωp = Geometry.PatchTriangulation(model,ptopo)
 Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
 
-order = 0
+order = 1
 qdegree = 2*(order+1)
 
 dΩp = Measure(Ωp,qdegree)
@@ -96,7 +98,7 @@ Yp = FESpaces.PatchFESpace(Y,ptopo)
 R  = reconstruction_operator(ptopo,L,Y,Ωp,Γp,dΩp,dΓp)
 PΓ = projection_operator(M, Γp, dΓp)
 PΓ_mf = mf_projection_operator(M, Γp, dΓp)
-PΩ_mf = patch_projection_operator(ptopo,V,Xp,Ωp,dΩp)
+PΩ_mf = patch_projection_operator(ptopo,V,Yp,Ωp,dΩp)
 
 global_assem = SparseMatrixAssembler(X,Y)
 patch_assem = FESpaces.PatchAssembler(ptopo,X,Y)
@@ -118,18 +120,7 @@ function SΓa(u)
   u_Ω, u_Γ = u
   return PΓ(u_Ω) - u_Γ 
 end
-# function SΓb(Ru)
-#   function minus(a::MultiField.MultiFieldFEBasisComponent,b::MultiField.MultiFieldFEBasisComponent)
-#     sf = a.single_field - b.single_field
-#     sf_basis = FESpaces.SingleFieldFEBasis(CellData.get_data(sf),get_triangulation(sf),BasisStyle(a),DomainStyle(sf))
-#     MultiField.MultiFieldFEBasisComponent(sf_basis,a.fieldid,a.nfields)
-#   end
-#   minus(a,b) = MultiFieldCellField(map(minus,a,b))
-#   SΓb_Ω, SΓb_Γ = PΓ_mf(minus(Ru,PΩ_mf(Ru)))
-#   return SΓb_Ω + SΓb_Γ
-# end
 
-# SΓ = SΓa + SΓb = (PΓ ∘ (I - PΩ) )(R(u)) = (PΓ((I-PΩ)(R(u))))
 function SΓb(Ru)
   PΓRu_Ω, PΓRu_Γ = PΓ_mf(Ru)
   PΓPΩRu_Ω, PΓPΩRu_Γ = PΓ_mf(PΩ_mf(Ru))
@@ -156,7 +147,8 @@ x = A \ b
 ub, us = FEFunction(X,x);
 
 eh = ub - uex
-sqrt(sum(∫(eh⋅eh)dΩp))
+err = sqrt(sum(∫(eh⋅eh)dΩp))
+@test err < 1e-10
 
 function patch_weakform(u,v)
   mass_Γ(u,v) = ∫(hFinv*(u*v))dΓp
@@ -180,5 +172,6 @@ uΩ = MultiField.backward_static_condensation(op,uΓ)
 
 eu = uΩ - uex 
 err = sqrt(sum( ∫(eu * eu)dΩp))
+@test err < 1e-10
 
 end

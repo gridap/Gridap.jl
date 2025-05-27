@@ -10,6 +10,7 @@ function FESpaceWithoutBCs(space::SingleFieldFESpace)
 end
 
 FESpaceWithoutBCs(space::ConstantFESpace) = space
+FESpaceWithoutBCs(space::TrialFESpace) = FESpaceWithoutBCs(space.space)
 
 function PatchFESpace(space::SingleFieldFESpace,ptopo::PatchTopology)
   vector_type = get_vector_type(space)
