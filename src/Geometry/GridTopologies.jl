@@ -286,6 +286,15 @@ function get_face_coordinates(g::GridTopology,d::Integer)
 end
 
 """
+    get_cell_polytopes(topo::GridTopology)
+"""
+function get_cell_polytopes(topo::GridTopology)
+  type_to_poly = get_polytopes(topo)
+  cell_to_type = get_cell_type(topo)
+  expand_cell_data(type_to_poly,cell_to_type)
+end
+
+"""
     is_simplex(p::GridTopology) -> Bool
 """
 function is_simplex(p::GridTopology)

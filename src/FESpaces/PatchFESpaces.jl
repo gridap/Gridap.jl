@@ -84,3 +84,74 @@ function generate_pface_to_pdofs(
   pface_to_pdofs = find_local_index(pface_to_dofs,pface_to_patch,patch_to_dofs)
   return pface_to_pdofs
 end
+
+# Changes of domain
+
+function CellData.change_domain(
+  a::CellField,strian::Geometry.PatchTriangulation,::ReferenceDomain,ttrian::Geometry.PatchTriangulation,::ReferenceDomain
+)
+  if strian === ttrian
+    return a
+  end
+  if is_change_possible(strian.trian,ttrian.trian)
+    b = change_domain(a,strian.trian,ReferenceDomain(),ttrian.trian,ReferenceDomain())
+    return CellData.similar_cell_field(b,CellData.get_data(b),ttrian,ReferenceDomain())
+  end
+  @assert num_cell_dims(strian) == num_cell_dims(ttrian)
+  sglue = Geometry.get_patch_glue(strian)
+  tglue = Geometry.get_patch_glue(ttrian)
+  @check is_change_possible(sglue,tglue)
+  return CellData.change_domain_ref_ref(a,ttrian,sglue,tglue)
+end
+
+function CellData.change_domain(
+  a::CellField,strian::Geometry.PatchTriangulation,::PhysicalDomain,ttrian::Geometry.PatchTriangulation,::PhysicalDomain
+)
+  if strian === ttrian
+    return a
+  end
+  if is_change_possible(strian.trian,ttrian.trian)
+    b = change_domain(a,strian.trian,PhysicalDomain(),ttrian.trian,PhysicalDomain())
+    return CellData.similar_cell_field(b,CellData.get_data(b),ttrian,PhysicalDomain())
+  end
+  @assert num_cell_dims(strian) == num_cell_dims(ttrian)
+  sglue = Geometry.get_patch_glue(strian)
+  tglue = Geometry.get_patch_glue(ttrian)
+  @check is_change_possible(sglue,tglue)
+  return CellData.change_domain_phys_phys(a,ttrian,sglue,tglue)
+end
+
+function get_cell_fe_data(fun,f::SingleFieldFESpace,ttrian::Geometry.PatchTriangulation)
+  strian = get_triangulation(f)
+  get_cell_fe_data(fun,f,strian,ttrian)
+end
+
+function get_cell_fe_data(fun,f,strian::Triangulation,ttrian::Geometry.PatchTriangulation)
+  sface_to_data = fun(f)
+  if strian === ttrian
+    return sface_to_data
+  end
+  @check is_change_possible(strian,ttrian)
+  D = num_cell_dims(strian)
+  sglue = get_glue(strian,Val(D))
+  tglue = get_glue(ttrian,Val(D))
+  get_cell_fe_data(fun,sface_to_data,sglue,tglue)
+end
+
+function get_cell_fe_data(fun,f,strian::Geometry.PatchTriangulation,ttrian::Geometry.PatchTriangulation)
+  sface_to_data = fun(f)
+  if strian === ttrian
+    return sface_to_data
+  end
+  if is_change_possible(strian.trian,ttrian.trian)
+    D = num_cell_dims(strian)
+    sglue = get_glue(strian,Val(D))
+    tglue = get_glue(ttrian,Val(D))
+    return get_cell_fe_data(fun,sface_to_data,sglue,tglue)
+  end
+  @assert num_cell_dims(strian) == num_cell_dims(ttrian)
+  sglue = Geometry.get_patch_glue(strian)
+  tglue = Geometry.get_patch_glue(ttrian)
+  @check is_change_possible(sglue,tglue)
+  return get_cell_fe_data(fun,sface_to_data,sglue,tglue)
+end
