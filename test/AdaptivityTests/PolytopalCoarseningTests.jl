@@ -15,33 +15,34 @@ end
 outdir = "tmp/"
 mkpath(outdir)
 
-D = 2
-n = 2
-nc = (n,fill(1,D-1)...)
-domain = (0,n,repeat([0,1],D-1)...)
-model = Geometry.PolytopalDiscreteModel(CartesianDiscreteModel(domain,nc))
+for D in 2:3
+  n = 2
+  nc = (n,fill(1,D-1)...)
+  domain = (0,n,repeat([0,1],D-1)...)
+  model = Geometry.PolytopalDiscreteModel(CartesianDiscreteModel(domain,nc))
 
-topo = get_grid_topology(model)
-ptopo = Geometry.PatchTopology(topo,Table([collect(1:n)]))
+  topo = get_grid_topology(model)
+  ptopo = Geometry.PatchTopology(topo,Table([collect(1:n)]))
 
-cell_polys = get_polytopes(topo)
-cell_perms = get_cell_permutations(topo)
-cell_to_facets = get_faces(topo,D,D-1)
-facet_to_cells = get_faces(topo,D-1,D)
+  cell_polys = get_polytopes(topo)
+  cell_perms = get_cell_permutations(topo)
+  cell_to_facets = get_faces(topo,D,D-1)
+  facet_to_cells = get_faces(topo,D-1,D)
 
-facet = findfirst(x -> length(x) == 2, facet_to_cells)
-c1, c2 = facet_to_cells[facet]
-p1, p2 = cell_polys[c1], cell_polys[c2]
-lf1, lf2 = findfirst(isequal(facet), cell_to_facets[c1]), findfirst(isequal(facet), cell_to_facets[c2])
-f1, f2 = select_facet(p1,lf1,cell_perms[c1]), select_facet(p2,lf2,cell_perms[c2])
+  facet = findfirst(x -> length(x) == 2, facet_to_cells)
+  c1, c2 = facet_to_cells[facet]
+  p1, p2 = cell_polys[c1], cell_polys[c2]
+  lf1, lf2 = findfirst(isequal(facet), cell_to_facets[c1]), findfirst(isequal(facet), cell_to_facets[c2])
+  f1, f2 = select_facet(p1,lf1,cell_perms[c1]), select_facet(p2,lf2,cell_perms[c2])
 
-p = ReferenceFEs.merge_polytopes(p1, p2, f1, f2)
-q = ReferenceFEs.polytope_from_faces(D,get_vertex_coordinates(p),get_faces(p,D-1,0))
+  p = ReferenceFEs.merge_polytopes(p1, p2, f1, f2)
+  q, _ = ReferenceFEs.polytope_from_faces(D,get_vertex_coordinates(p),get_faces(p,D-1,0))
 
-writevtk(p1,joinpath(outdir,"p1");append=false)
-writevtk(p2,joinpath(outdir,"p2");append=false)
-writevtk(p,joinpath(outdir,"p");append=false)
-writevtk(q,joinpath(outdir,"q");append=false)
+  writevtk(p1,joinpath(outdir,"p1");append=false)
+  writevtk(p2,joinpath(outdir,"p2");append=false)
+  writevtk(p,joinpath(outdir,"p");append=false)
+  writevtk(q,joinpath(outdir,"q");append=false)
+end
 
 ############################################################################################
 
