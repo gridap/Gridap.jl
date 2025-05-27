@@ -38,3 +38,27 @@ function LinearAlgebra.dot(a::MultiFieldCellField,b::MultiFieldCellField)
   @check num_fields(a) == num_fields(b)
   return sum(map(dot,a.single_fields,b.single_fields))
 end
+
+function Base.show(io::IO,::MIME"text/plain",f::MultiFieldCellField)
+  show(io,f)
+  print(io,":")
+  show_multifield(io,f)
+end
+
+function show_multifield(io,f)
+  trian = get_triangulation(first(f))
+  print(io,"\n num_fields: $(num_fields(f))")
+  if all(fi -> trian === get_triangulation(fi), f)
+    print(io,"\n num_cells: $(num_cells(trian))")
+    print(io,"\n DomainStyle: $(DomainStyle(f))")
+    print(io,"\n Triangulation: $(trian)")
+    print(io,"\n Triangulation id: $(objectid(trian))")
+  else
+    print(io,"\n DomainStyle: $(DomainStyle(f))")
+    print(io,"\n Triangulations: ")
+    for fi in f
+      ti = get_triangulation(fi)
+      print(io,"\n  > $(ti): num_cells = $(num_cells(ti)), id = $(objectid(ti))")
+    end
+  end
+end

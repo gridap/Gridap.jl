@@ -1,5 +1,6 @@
 module HHOMixedPolytopalTests
 
+using Test
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
@@ -36,7 +37,8 @@ end
 
 
 ##############################################################
-u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
+#u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
+u(x) = x[1] + x[2]
 f(x) = -Δ(u)(x)
 
 nc = (2,2)
@@ -51,7 +53,7 @@ ptopo = Geometry.PatchTopology(vmodel)
 Ωp = Geometry.PatchTriangulation(vmodel,ptopo)
 Γp = Geometry.PatchBoundaryTriangulation(vmodel,ptopo)
 
-order = 0
+order = 1
 qdegree = 2*(order+1)
 
 dΩp = Measure(Ωp,qdegree)
@@ -59,7 +61,7 @@ dΓp = Measure(Γp,qdegree)
 
 reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)  
 V = FESpaces.PolytopalFESpace(Ω, Float64, order+1; space=:P) # Bulk space
-M = FESpace(Γ, reffe_M; conformity=:L2)                      # Skeleton space
+M = FESpace(Γ, reffe_M; conformity=:L2, dirichlet_tags="boundary") # Skeleton space
 L = FESpaces.PolytopalFESpace(Ω, Float64, order+1; space=:P) # Reconstruction space
 N = TrialFESpace(M,u)
 
@@ -113,10 +115,21 @@ end
 A, b = weakform()
 x = A \ b
 
+ui, ub = FEFunction(X,x)
+eu  = ui - u 
+l2u = sqrt(sum( ∫(eu * eu)dΩp))
+h1u = l2u + sqrt(sum( ∫(∇(eu) ⋅ ∇(eu))dΩp))
+@test l2u < 1e-10
+
 # Static condensation
 op = MultiField.StaticCondensationOperator(X,V,N,patch_assem,patch_weakform())
 
 ub = solve(op.sc_op) 
 ui = MultiField.backward_static_condensation(op,ub)
+
+eu  = ui - u
+l2u = sqrt(sum( ∫(eu * eu)dΩp))
+h1u = l2u + sqrt(sum( ∫(∇(eu) ⋅ ∇(eu))dΩp))
+@test l2u < 1e-10
 
 end

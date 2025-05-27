@@ -72,3 +72,9 @@ function LinearAlgebra.dot(a::MultiFieldFEFunction,b::MultiFieldCellField)
   @check num_fields(a) == num_fields(b)
   return sum(map(dot,a,b))
 end
+
+function Base.show(io::IO,::MIME"text/plain",f::MultiFieldFEFunction)
+  show(io,f)
+  print(io,":")
+  show_multifield(io,f)
+end
