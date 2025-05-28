@@ -343,11 +343,12 @@ function compute_face_own_nodes(model::PolytopalDiscreteModel,d::Integer)
 end
 
 function Grid(::Type{ReferenceFE{Df}},model::PolytopalDiscreteModel{Dc}) where {Df,Dc}
-  node_coordinates = get_node_coordinates(model)
-  face_to_nodes = Table(get_face_nodes(model,Df))
+  topo = get_grid_topology(model)
+  node_coordinates = get_vertex_coordinates(topo)
+  face_to_nodes = Table(get_faces(topo,Df,0))
   if iszero(Df) || isone(Df)
     reffes = [ifelse(iszero(Df), VERTEX1, SEG2)]
-    face_to_ftype = fill(Int8(1),num_faces(get_grid_topology(model),Df))
+    face_to_ftype = fill(Int8(1),num_faces(topo,Df))
     grid = UnstructuredGrid(node_coordinates, face_to_nodes, reffes, face_to_ftype)
   else
     face_to_polytopes = get_reffaces(Polytope{Df},get_grid_topology(model))
