@@ -221,14 +221,14 @@ get_facet_normal(trian::PatchTriangulation) = get_facet_normal(trian.trian)
     PatchTriangulation(::Type{ReferenceFE{D}},model::DiscreteModel,ptopo::PatchTopology;tags=nothing)
 """
 function PatchTriangulation(model::DiscreteModel,ptopo::PatchTopology;kwargs...)
-  D = num_cell_dims(model)
+  D = min(num_cell_dims(model), num_cell_dims(ptopo))
   PatchTriangulation(ReferenceFE{D},model,ptopo;kwargs...)
 end
 
 function PatchTriangulation(
   ::Type{ReferenceFE{D}},model::DiscreteModel,ptopo::PatchTopology;tags=nothing
 ) where D
-  @check num_cell_dims(model) == num_cell_dims(ptopo)
+  @check D <= num_cell_dims(ptopo) <= num_cell_dims(model)
   patch_faces = get_patch_faces(ptopo,D)
   pface_to_face = patch_faces.data
 

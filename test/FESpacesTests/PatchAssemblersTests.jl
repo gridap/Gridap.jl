@@ -152,6 +152,19 @@ function test_patch_assembly(model,domain_tags,integration_tags;order=1)
   if n_domain_cells === n_integration_cells
     R  = reconstruction_operator(ptopo,Xb,Ωp,Γp,dΩp,dΓp,order)
     test_operator(R,Xb)
+
+    function a_R(u,v)
+      RuΩ, RuΓ = R(u)
+      RvΩ, RvΓ = R(v)
+      return laplacian(RuΩ,RvΩ,dΩp) + laplacian(RuΓ,RvΩ,dΩp) + laplacian(RuΩ,RvΓ,dΩp) + mass(RuΓ,RvΓ,Γp,dΓp)
+    end
+
+    Xp = FESpaces.PatchFESpace(X,ptopo)
+    passem_R = FESpaces.PatchAssembler(ptopo,X,X)
+    u, v = get_trial_fe_basis(X), get_fe_basis(X)
+    cell_mats = FESpaces.collect_patch_cell_matrix(passem_R,Xp,Xp,a_R(u,v))
+    cell_R = assemble_matrix(passem_R,cell_mats)
+    @test length(collect(cell_R)) == n_patches
   end
 
 end

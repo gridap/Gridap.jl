@@ -146,15 +146,6 @@ function MonomialDofConformity(basis::Polynomials.MonomialBasis)
   )
 end
 
-function MonomialDofConformity(basis::Polynomials.PCurlGradMonomialBasis)
-  T = return_type(basis)
-  nterms = length(basis.terms)
-  dof_to_term, dof_to_comp, term_and_comp_to_dof = ReferenceFEs._generate_dof_layout_node_major(T,nterms)
-  MonomialDofConformity(
-    basis.orders, basis.terms, dof_to_term, dof_to_comp, term_and_comp_to_dof
-  )
-end
-
 # FESpace interface
 
 ConstraintStyle(::Type{<:PolytopalFESpace}) = UnConstrained()

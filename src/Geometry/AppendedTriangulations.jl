@@ -116,11 +116,11 @@ function lazy_append(a::Triangulation,b::Triangulation)
   AppendedTriangulation(a,b)
 end
 
-function Base.view(grid::AppendedGrid,cell_to_parent_cell)
+function Base.view(grid::AppendedGrid,cell_to_parent_cell::AbstractArray)
   _restrict_appended_grid(view,grid,cell_to_parent_cell)
 end
 
-function restrict(grid::AppendedGrid,cell_to_parent_cell)
+function restrict(grid::AppendedGrid,cell_to_parent_cell::AbstractArray)
   _restrict_appended_grid(restrict,grid,cell_to_parent_cell)
 end
 
