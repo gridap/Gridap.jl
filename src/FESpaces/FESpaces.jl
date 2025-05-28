@@ -262,7 +262,7 @@ include("DiscreteModelWithFEMaps.jl")
 
 include("ConstantFESpaces.jl")
 
-include("Polytopal.jl")
+include("PolytopalFESpaces.jl")
 
 include("PatchAssemblers.jl")
 
