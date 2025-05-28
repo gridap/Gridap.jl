@@ -478,11 +478,11 @@ function Base.merge!(a::FaceLabeling,b::FaceLabeling)
   @assert length(a.d_to_dface_to_entity) == length(b.d_to_dface_to_entity)
 
   D = length(a.d_to_dface_to_entity) - 1
-  offset = maximum(maximum,a.tag_to_entities)
+  offset = maximum(maximum,a.tag_to_entities;init=0)
   append!(a.tag_to_name, b.tag_to_name)
   append!(a.tag_to_entities, (e .+ offset for e in b.tag_to_entities))
 
-  n_entities = offset + maximum(maximum,b.tag_to_entities)
+  n_entities = offset + maximum(maximum,b.tag_to_entities;init=0)
   entity_to_tags = [Int32[] for i in 1:n_entities]
   for (tag,entities) in enumerate(a.tag_to_entities)
     for e in entities
