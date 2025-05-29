@@ -51,6 +51,8 @@ include("BlockSparseMatrixAssemblers.jl")
 
 include("PatchAssemblers.jl")
 
+include("StaticCondensationOperators.jl")
+
 include("MultiFieldAutodiff.jl")
 
 end # module

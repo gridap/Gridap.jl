@@ -201,7 +201,7 @@ l2_p = l2_error(ph,p,dΩp) # Because p is not zero mean
 
 # Static condensation
 op = MultiField.StaticCondensationOperator(
-  X,MultiFieldFESpace([V,Q̂]),MultiFieldFESpace([N,Q̄,Λ]),patch_assem,patch_weakform(x,y)
+  X,patch_assem,patch_weakform(x,y)
 )
 
 xh = solve(op)
