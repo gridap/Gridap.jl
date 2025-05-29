@@ -48,4 +48,21 @@ shapefuns = get_shapefuns(reffe)
 
 @test get_own_dofs_permutations(reffe) == face_own_dofs_permutations[end]
 
+# dof prebasis inversion from given shape functions
+dofprebasis = dofs
+shapefuns = prebasis # just to get nontrivial dofs change of basis matrix
+
+reffe = GenericRefFE{typeof(conf)}(
+  ndofs, polytope, dofprebasis, conf, metadata, face_dofs, shapefuns)
+
+test_reference_fe(reffe)
+
+@test get_face_own_dofs(reffe,L2Conformity()) == [[], [], [], [], [], [], [], [], [1, 2, 3, 4]]
+@test get_face_own_dofs_permutations(reffe,L2Conformity()) == [[[]], [[]], [[]], [[]], [[]], [[]], [[]], [[]], [[1, 2, 3, 4]]]
+@test get_own_dofs_permutations(reffe) == face_own_dofs_permutations[end]
+
+dofs = get_dof_basis(reffe)
+
+@test evaluate(dofs,shapefuns) == [1.0 0.0 0.0 0.0; 0.0 1.0 0.0 0.0; 0.0 0.0 1.0 0.0; 0.0 0.0 0.0 1.0]
+
 end # module
