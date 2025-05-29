@@ -5,9 +5,6 @@ References:
 - A discontinuous skeletal method for the viscosity-dependent Stokes problem. Di Pietro et al. 2016
 - The hybrid high-order method for polytopal meshes. Di Pietro, Droniou. 2020
 
-TODO: 
-
-- For static condensation, we need to be able to split the pressure into a constant and zero mean part. 
 """
 
 using Test
@@ -58,7 +55,7 @@ function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
   R = FESpaces.LocalOperator(
     FESpaces.HHO_ReconstructionOperatorMap(), ptopo, W, Y, lhs, rhs; space_out = L
   )
-  _R(u) = swap_field_ids(R(swap_field_ids(u,[1,2],2)),[1,2],4)
+  _R(u) = swap_field_ids(R(swap_field_ids(u,[1,2],2)),[1,3],5)
   return _R
 end
 
@@ -74,7 +71,7 @@ function divergence_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
   D = FESpaces.LocalOperator(
     FESpaces.LocalSolveMap(), ptopo, W, Y, lhs, rhs; space_out = L
   )
-  _D(u) = swap_field_ids(D(swap_field_ids(u,[1,2],2)),[1,2],4)
+  _D(u) = swap_field_ids(D(swap_field_ids(u,[1,2],2)),[1,3],5)
   return _D
 end
 
@@ -112,12 +109,16 @@ V = FESpace(Ω, reffe_V; conformity=:L2)
 M = FESpace(Γ, reffe_M; conformity=:L2, dirichlet_tags="boundary")
 L = FESpace(Ω, reffe_L; conformity=:L2)
 Q = FESpace(Ω, reffe_Q; conformity=:L2) # Pressure space
+
+Q̂ = FESpaces.PolytopalFESpace(Ω, Float64, order; local_kernel=:constants)
+Q̄ = FESpaces.PolytopalFESpace(Ω, Float64, 0) 
+
 Λ = ConstantFESpace(Ω) # Lagrange multiplier for zero mean
 N = TrialFESpace(M,u)
 
-mfs = MultiField.BlockMultiFieldStyle(2,(1,3))
-X  = MultiFieldFESpace([V, N, Q, Λ];style=mfs)
-Y  = MultiFieldFESpace([V, M, Q, Λ];style=mfs)
+mfs = MultiField.BlockMultiFieldStyle(2,(2,3))
+X  = MultiFieldFESpace([V, Q̂, N, Q̄, Λ];style=mfs)
+Y  = MultiFieldFESpace([V, Q̂, M, Q̄, Λ];style=mfs)
 Xp = FESpaces.PatchFESpace(X,ptopo)
 
 YR = MultiFieldFESpace([V, M];style=MultiField.BlockMultiFieldStyle(2,(1,1)))
@@ -156,13 +157,14 @@ end
 l((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
 
 function weakform(x,y)
-  u, p, λ = (x[1],x[2]), x[3], x[4]
-  v, q, μ = (y[1],y[2]), y[3], y[4]
+  u, p̂, p̄, λ = (x[1],x[3]), x[2], x[4], x[5]
+  v, q̂, q̄, μ = (y[1],y[3]), y[2], y[4], y[5]
+  p, q = p̂ + p̄, q̂ + q̄
 
   Ru, Rv = R(u), R(v)
   Du, Dv = D(u), D(v)
 
-  data1 = FESpaces.collect_cell_matrix_and_vector(X,Y,s(u,v)+c(p,μ)+c(q,λ),l(v),zero(X))
+  data1 = FESpaces.collect_cell_matrix_and_vector(X,Y,s(u,v)+c(p̄,μ)+c(q̄,λ),l(v),zero(X))
   data2 = FESpaces.collect_cell_matrix_and_vector(Xp,Xp,a(Ru,Rv),DomainContribution(),zero(Xp))
   data3 = FESpaces.collect_cell_matrix_and_vector(Xp,X,b(Du,q),DomainContribution(),zero(Xp))
   data4 = FESpaces.collect_cell_matrix_and_vector(X,Xp,b(Dv,p),DomainContribution(),zero(X))
@@ -170,12 +172,20 @@ function weakform(x,y)
   assemble_matrix_and_vector(global_assem,data)
 end
 
-function patch_weakform()
-  u, v = get_trial_fe_basis(X), get_fe_basis(Y)
-  data1 = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,X,Y,s(u,v),l(v),zero(X))
-  data2 = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,Xp,a(u,v),DomainContribution(),zero(Xp))
-  data = FESpaces.merge_assembly_matvec_data(data1,data2)
-  return assemble_matrix_and_vector(patch_assem,data)
+function patch_weakform(x,y)
+  u, p̂, p̄, λ = (x[1],x[3]), x[2], x[4], x[5]
+  v, q̂, q̄, μ = (y[1],y[3]), y[2], y[4], y[5]
+  p, q = p̂ + p̄, q̂ + q̄
+
+  Ru, Rv = R(u), R(v)
+  Du, Dv = D(u), D(v)
+
+  data1 = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,X,Y,s(u,v)+c(p̄,μ)+c(q̄,λ),l(v),zero(X))
+  data2 = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,Xp,a(Ru,Rv),DomainContribution(),zero(Xp))
+  data3 = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,X,b(Du,q),DomainContribution(),zero(Xp))
+  data4 = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,X,Xp,b(Dv,p),DomainContribution(),zero(X))
+  data = FESpaces.merge_assembly_matvec_data(data1,data2,data3,data4)
+  assemble_matrix_and_vector(patch_assem,data)
 end
 
 x, y = get_trial_fe_basis(X), get_fe_basis(Y)
@@ -183,17 +193,19 @@ x, y = get_trial_fe_basis(X), get_fe_basis(Y)
 # Monolithic solve
 A, B = weakform(x,y)
 xh = FEFunction(X, A \ B)
-uhT, uhF, ph = xh[1], xh[2], xh[3]+xh[4]
+uhT, uhF, ph = xh[1], xh[3], xh[2]+xh[4]
 
 l2_uT = l2_error(uhT,u,dΩp)
 l2_uF = l2_error(uhF,u,dΓp)
 l2_p = l2_error(ph,p,dΩp) # Because p is not zero mean
 
 # Static condensation
-op = MultiField.StaticCondensationOperator(X,V,N,patch_assem,patch_weakform())
+op = MultiField.StaticCondensationOperator(
+  X,MultiFieldFESpace([V,Q̂]),MultiFieldFESpace([N,Q̄,Λ]),patch_assem,patch_weakform(x,y)
+)
 
-ub = solve(op.sc_op) 
-ui = MultiField.backward_static_condensation(op,ub)
+xh = solve(op)
+ui, ub, ph = xh[1], xh[3], xh[2]+xh[4]
 
 l2_ui = sqrt(sum(∫((ui - u)⋅(ui - u))*dΩ))
 @test l2_ui < 1e-10

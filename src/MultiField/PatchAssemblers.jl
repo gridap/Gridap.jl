@@ -226,6 +226,29 @@ function StaticCondensationOperator(
   )
 end
 
+function Algebra.solve(op::StaticCondensationOperator)
+  solver = LinearFESolver()
+  solve(solver,op)
+end
+
+function Algebra.solve!(uh,solver::LinearFESolver,op::StaticCondensationOperator,::Nothing)
+  x_eliminated, x_retained = blocks(get_free_dof_values(uh))
+  uh_eliminated = FEFunction(op.eliminated_space,x_eliminated)
+  uh_retained = FEFunction(op.retained_space,x_retained)
+  cache = solve!(uh_retained,solver,op.sc_op,nothing)
+  backward_static_condensation!(uh_eliminated,op,uh_retained)
+  return uh, cache
+end
+
+function Algebra.solve!(uh,solver::LinearFESolver,op::StaticCondensationOperator,cache)
+  x_eliminated, x_retained = blocks(get_free_dof_values(uh))
+  uh_eliminated = FEFunction(op.eliminated_space,x_eliminated)
+  uh_retained = FEFunction(op.retained_space,x_retained)
+  cache = solve!(uh_retained,solver,op.sc_op,cache)
+  backward_static_condensation!(uh_eliminated,op,uh_retained)
+  return uh, cache
+end
+
 function statically_condensed_assembly(retained_assem,patch_assem,full_matvecs)
   sc_matvecs = lazy_map(StaticCondensationMap(),full_matvecs)
   rows = patch_assem.strategy.array.array[2,2].patch_rows
@@ -234,7 +257,7 @@ function statically_condensed_assembly(retained_assem,patch_assem,full_matvecs)
   assemble_matrix_and_vector(retained_assem,data)
 end
 
-function backward_static_condensation(eliminated_assem,patch_assem,full_matvecs,x_retained)
+function backward_static_condensation!(x_eliminated, eliminated_assem,patch_assem,full_matvecs,x_retained)
   rows_elim = patch_assem.strategy.array.array[1,1].patch_rows
   rows_ret = patch_assem.strategy.array.array[2,2].patch_rows
 
@@ -242,17 +265,34 @@ function backward_static_condensation(eliminated_assem,patch_assem,full_matvecs,
   patch_x_elim = lazy_map(BackwardStaticCondensationMap(),full_matvecs,patch_x_ret)
 
   vecdata = ([patch_x_elim,],[rows_elim,])
-  assemble_vector(eliminated_assem,vecdata)
+  assemble_vector!(x_eliminated,eliminated_assem,vecdata)
+end
+
+function backward_static_condensation!(
+  x_eliminated::AbstractVector,op::StaticCondensationOperator,x_retained::AbstractVector
+)
+  backward_static_condensation!(x_eliminated,op.eliminated_assem,op.patch_assem,op.full_matvecs,x_retained)
+end
+
+function backward_static_condensation!(
+  xh_eliminated,op::StaticCondensationOperator,xh_retained
+)
+  x_eliminated = get_free_dof_values(xh_eliminated)
+  x_retained = get_free_dof_values(xh_retained)
+  backward_static_condensation!(x_eliminated,op,x_retained)
+  return xh_eliminated
 end
 
 function backward_static_condensation(op::StaticCondensationOperator,x_retained::AbstractVector)
-  backward_static_condensation(op.eliminated_assem,op.patch_assem,op.full_matvecs,x_retained)
+  x_eliminated = zero_free_values(op.eliminated_space)
+  backward_static_condensation!(x_eliminated,op,x_retained)
+  return x_eliminated
 end
 
 function backward_static_condensation(op::StaticCondensationOperator,xh_retained)
-  x_ret = get_free_dof_values(xh_retained)
-  x_elim = backward_static_condensation(op,x_ret)
-  return FEFunction(op.eliminated_space,x_elim)
+  xh_eliminated = zero(op.eliminated_space)
+  backward_static_condensation!(xh_eliminated,op,xh_retained)
+  return xh_eliminated
 end
 
 FESpaces.get_trial(op::StaticCondensationOperator) = op.full_space

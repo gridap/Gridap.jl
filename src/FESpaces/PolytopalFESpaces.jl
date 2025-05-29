@@ -105,6 +105,7 @@ function PolytopalFESpace(
 
   ntags = length(dirichlet_tags)
   if ntags != 0
+    @notimplementedif !isnothing(local_kernel)
     cell_to_tag = get_face_tag_index(labels,dirichlet_tags,Dc)
     cell_is_dirichlet = map(!isequal(UNSET),cell_to_tag)
     ctype_to_prebasis, cell_to_ctype = compress_cell_data(cell_prebasis)
@@ -120,8 +121,8 @@ function PolytopalFESpace(
     dirichlet_cells = Int32[]
     cell_is_dirichlet = fill(false,num_cells(trian))
 
-    ctype_to_prebasis, cell_to_ctype = compress_cell_data(cell_prebasis)
-    ctype_to_ndofs = map(length,ctype_to_prebasis)
+    ctype_to_shapefuns, cell_to_ctype = compress_cell_data(cell_shapefuns)
+    ctype_to_ndofs = map(length,ctype_to_shapefuns)
     cell_dof_ids, nfree = compute_discontinuous_cell_dofs(cell_to_ctype,ctype_to_ndofs)
     metadata = nothing
   end
