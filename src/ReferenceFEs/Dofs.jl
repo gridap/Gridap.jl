@@ -23,6 +23,13 @@ struct LinearCombinationDofVector{T,V,F} <: AbstractVector{T}
     values::AbstractMatrix{<:Number},
     dofs::AbstractVector{<:Dof}
   )
+    @check size(values,1) == length(dofs) """\n
+    Incompatible sizes for performing the linear combination
+
+        linear_combination(values,dofs) = transpose(values)*dofs
+
+    size(values,1) != length(dofs)
+    """
     T = eltype(dofs)
     V = typeof(values)
     F = typeof(dofs)
@@ -42,7 +49,7 @@ function return_cache(b::LinearCombinationDofVector,field)
   k = Fields.LinearCombinationMap(:)
   cf = return_cache(b.dofs,field)
   fx = evaluate!(cf,b.dofs,field)
-  ck = return_cache(k,b.values,fx)
+  ck = return_cache(k,fx,transpose(b.values))
   return cf, ck
 end
 
@@ -50,7 +57,7 @@ function evaluate!(cache,b::LinearCombinationDofVector,field)
   cf, ck = cache
   k = Fields.LinearCombinationMap(:)
   fx = evaluate!(cf,b.dofs,field)
-  return evaluate!(ck,k,b.values,fx)
+  return evaluate!(ck,k,fx,transpose(b.values))
 end
 
 """
