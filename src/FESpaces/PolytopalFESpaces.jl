@@ -73,6 +73,7 @@ function PolytopalFESpace(
   dirichlet_tags = Int[],
   dirichlet_masks = nothing,
   orthonormal = false,
+  local_kernel = nothing
 )
   Dc = num_cell_dims(model)
 
@@ -85,6 +86,9 @@ function PolytopalFESpace(
   else
     cell_shapefuns = cell_prebasis
     domain_style = ReferenceDomain()
+  end
+  if !isnothing(local_kernel)
+    cell_shapefuns = remove_local_kernel(cell_shapefuns, trian, order, local_kernel)
   end
   if orthonormal
     cell_shapefuns = orthogonalise_basis(cell_shapefuns, trian, order)
@@ -267,6 +271,8 @@ function Arrays.evaluate!(cache,::OrthogonaliseBasisMap,M::Matrix)
   return N
 end
 
+# Orthogonalise a basis against itself, with respect 
+# of the inner product defined by M
 function gram_shmidt!(N,M)
   n = size(M,1)
   fill!(N,0.0)
@@ -284,6 +290,71 @@ function gram_shmidt!(N,M)
     end
     rii = sqrt(dot(Ni, M , Ni))
     Ni ./= rii
+  end
+
+  return N
+end
+
+# Local kernel removal 
+
+function remove_local_kernel(cell_basis,trian,order,local_kernel)
+  if isa(local_kernel,Function) 
+    local_kernel_func = local_kernel
+  else 
+    local_kernel_func = _kernel_from_symbol(local_kernel,cell_basis)
+  end
+  
+  cell_quads = Quadrature(trian,2*order)
+  cell_integ = local_kernel_func(lazy_map(transpose,cell_basis))
+  cell_vals = lazy_map(evaluate,cell_integ,lazy_map(get_coordinates,cell_quads))
+  cell_kernel = lazy_map(IntegrationMap(),cell_vals,lazy_map(get_weights,cell_quads))
+  cell_coeffs = lazy_map(NullspaceMap(),cell_kernel)
+  return lazy_map(linear_combination,cell_coeffs,cell_basis)
+end
+
+# Stolen from the MomentBased branch
+component_basis(T::Type{<:Real}) = [one(T)]
+function component_basis(V::Type{<:MultiValue})
+  T = eltype(V)
+  n = num_components(V)
+  z, o = zero(T), one(T)
+  return [V(ntuple(i -> ifelse(i == j, o, z),Val(n))) for j in 1:n]
+end
+
+function _kernel_from_symbol(k::Symbol,cell_basis)
+  basis = first(cell_basis)
+  if k == :constants
+    fields = map(constant_field,component_basis(return_type(basis)))
+    cell_fields = Fill(fields, length(cell_basis))
+    kernel(cell_basis) = lazy_map(Broadcasting(Operation(⊙)),cell_fields,cell_basis)
+  else
+    @notimplemented
+  end
+  return kernel
+end
+
+struct NullspaceMap{T} <: Map
+  tol::T
+end
+
+NullspaceMap() = NullspaceMap(10*eps(Float64))
+
+function Arrays.return_cache(::NullspaceMap,K::Matrix)
+  return CachedArray(similar(K))
+end
+
+function Arrays.evaluate!(cache,k::NullspaceMap,K::Matrix)
+  f = svd(K;full=true) # If K is not square, there svd! doesn't really use cache
+  
+  n = size(K, 2)
+  m = sum(s -> s > k.tol, f.S)
+  setsize!(cache, (n, n - m))
+  N = cache.array
+
+  for i in 1:n
+    for j in (m+1):n
+      N[i,j-m] = f.Vt[j,i]
+    end
   end
 
   return N
