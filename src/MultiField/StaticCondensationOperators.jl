@@ -37,11 +37,8 @@ end
 function StaticCondensationOperator(
   full_space::FESpace, args...; kwargs...
 )
-  mfs = MultiFieldStyle(full_space)
-  @assert isa(mfs,BlockMultiFieldStyle{2})
-  I_elim, I_ret = get_block_ranges(get_block_parameters(mfs)...)
-  eliminated_space = MultiFieldFESpace([full_space[i] for i in I_elim])
-  retained_space = MultiFieldFESpace([full_space[i] for i in I_ret])
+  @check isa(MultiFieldStyle(full_space),BlockMultiFieldStyle{2})
+  eliminated_space, retained_space = blocks(full_space)
   return StaticCondensationOperator(
     full_space, eliminated_space, retained_space, args...; kwargs...
   )
@@ -66,11 +63,8 @@ end
 function StaticCondensationOperator(
   ptopo, full_space::FESpace, args...; kwargs...
 )
-  mfs = MultiFieldStyle(full_space)
-  @assert isa(mfs,BlockMultiFieldStyle{2})
-  I_elim, I_ret = get_block_ranges(get_block_parameters(mfs)...)
-  eliminated_space = MultiFieldFESpace([full_space[i] for i in I_elim])
-  retained_space = MultiFieldFESpace([full_space[i] for i in I_ret])
+  @check isa(MultiFieldStyle(full_space),BlockMultiFieldStyle{2})
+  eliminated_space, retained_space = blocks(full_space)
   return StaticCondensationOperator(
     ptopo, full_space, eliminated_space, retained_space, args...; kwargs...
   )

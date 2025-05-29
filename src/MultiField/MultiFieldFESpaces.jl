@@ -127,8 +127,9 @@ end
 """
     MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
 """
-function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace}; 
-                           style = ConsecutiveMultiFieldStyle())
+function MultiFieldFESpace(
+  spaces::Vector{<:SingleFieldFESpace}; style = ConsecutiveMultiFieldStyle()
+)
   Ts = map(get_dof_value_type,spaces)
   T  = typeof(*(map(zero,Ts)...))
   if isa(style,BlockMultiFieldStyle)
@@ -160,6 +161,24 @@ Base.iterate(m::MultiFieldFESpace) = iterate(m.spaces)
 Base.iterate(m::MultiFieldFESpace,state) = iterate(m.spaces,state)
 Base.getindex(m::MultiFieldFESpace,field_id::Integer) = m.spaces[field_id]
 Base.length(m::MultiFieldFESpace) = length(m.spaces)
+
+function BlockArrays.blocks(f::MultiFieldFESpace{<:BlockMultiFieldStyle})
+  block_ranges = get_block_ranges(get_block_parameters(MultiFieldStyle(f))...)
+  block_spaces = map(block_ranges) do range
+    isone(length(range)) ? f[range[1]] : MultiFieldFESpace(f.spaces[range])
+  end
+  return block_spaces
+end
+
+function combine_fespaces(spaces::Vector{<:FESpace})
+  NB = length(spaces)
+  SB = Tuple(map(num_fields,spaces))
+  sf_spaces = vcat(map(split_fespace,spaces)...)
+  return MultiFieldFESpace(sf_spaces; style = BlockMultiFieldStyle(NB,SB))
+end
+
+split_fespace(space::FESpace) = [space]
+split_fespace(space::MultiFieldFESpace) = [space...]
 
 # Implementation of FESpace
 

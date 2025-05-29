@@ -4,11 +4,8 @@ References:
 
 - A hybrid high-order locking-free method for linear elasticity on general meshes. Di Pietro et al. 2014
 - Locking-free hybrid high-order method for linear elasticity. Carstensen et al. 2024
+- The hybrid high-order method for polytopal meshes. Di Pietro, Droniou. 2020
 
-TODO: 
-
-- I believe the papers use regular HHO. Can we find a reference for mixed order? 
-- Check convergence rates
 """
 
 using Test
@@ -17,7 +14,6 @@ using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
 using Gridap.ReferenceFEs, Gridap.TensorValues
 
-skew_symmetric_gradient(f) = Operation(TensorValues.skew_symmetric_part)(gradient(f))
 ν(f) = skew_symmetric_gradient(f)
 
 function projection_operator(V, Ω, dΩ)
@@ -52,10 +48,51 @@ function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
   return R
 end
 
+function divergence_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
+  nrel = get_normal_vector(Γp)
+  Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
+  lhs((p,),(q,))   =  ∫(p⋅q)dΩp
+  rhs((uT,uF),(q,)) =  ∫((∇⋅uT)⋅q)dΩp + ∫((uF - Π(uT,Γp))⋅nrel * q)dΓp
+  
+  Y = FESpaces.FESpaceWithoutBCs(X)
+  mfs = MultiField.BlockMultiFieldStyle(1)
+  W = MultiFieldFESpace([L];style=mfs)
+  D = FESpaces.LocalOperator(
+    FESpaces.LocalSolveMap(), ptopo, W, Y, lhs, rhs; space_out = L
+  )
+  return D
+end
+
+function gradient_operator(ptopo,X,order,Ω,Γp,dΩp,dΓp)
+  reffe_L = ReferenceFE(lagrangian,SymTensorValue{2,Float64}, order; space = :P)
+  L = FESpace(Ω, reffe_L; conformity=:L2)
+
+  nΓ = get_normal_vector(Γp)
+  Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
+  lhs((p,),(q,))   =  ∫(p⊙q)dΩp
+  rhs((uT,uF),(q,)) =  ∫(ε(uT)⊙q)dΩp + ∫((uF - Π(uT,Γp)) ⋅ (q⋅nΓ))dΓp
+  
+  Y = FESpaces.FESpaceWithoutBCs(X)
+  W = MultiFieldFESpace([L];style=MultiField.BlockMultiFieldStyle(1))
+  G = FESpaces.LocalOperator(
+    FESpaces.LocalSolveMap(), ptopo, W, Y, lhs, rhs; space_out = L
+  )
+  return G
+end
+
 ##############################################################
 # u(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
+
+μ = 1.0
+λ = 1.0
+I2 = one(SymTensorValue{2,Float64})
+I4 = one(SymFourthOrderTensorValue{2,Float64})
+C = λ * I2⊗I2 + μ * I4 # Isotropic elasticity tensor
+
 u(x) = VectorValue(sin(2*π*x[1])*sin(2*π*x[2]),cos(2*π*x[1])*cos(2*π*x[2]))
-f(x) = -(∇⋅(ε(u)))(x)
+g(x) = C⊙(ε(u)(x))
+f(x) = -(∇⋅g)(x)
+
 
 D = 2
 n = 64
@@ -68,7 +105,7 @@ ptopo = Geometry.PatchTopology(model)
 Ωp = Geometry.PatchTriangulation(model,ptopo)
 Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
 
-order = 1
+order = 2
 qdegree = 2*(order+1)
 
 dΩp = Measure(Ωp,qdegree)
@@ -92,14 +129,17 @@ Xp = FESpaces.PatchFESpace(X,ptopo)
 
 PΓ = projection_operator(M, Γp, dΓp)
 R  = reconstruction_operator(ptopo,L,Y,Ωp,Γp,dΩp,dΓp)
+G  = gradient_operator(ptopo,X,order,Ωp,Γp,dΩp,dΓp)
 
 global_assem = SparseMatrixAssembler(X,Y)
 patch_assem = FESpaces.PatchAssembler(ptopo,X,Y)
 
 function a(u,v)
-  Ru_Ω, Ru_Γ = R(u)
-  Rv_Ω, Rv_Γ = R(v)
-  return ∫(ε(Ru_Ω)⊙ε(Rv_Ω) + ε(Ru_Γ)⊙ε(Rv_Ω) + ε(Ru_Ω)⊙ε(Rv_Γ) + ε(Ru_Γ)⊙ε(Rv_Γ))dΩp
+  Gu_Ω, Gu_Γ = G(u)
+  Gv_Ω, Gv_Γ = G(v)
+  Gu = Gu_Ω + Gu_Γ
+  Gv = Gv_Ω + Gv_Γ
+  return ∫(Gu⊙C⊙Gv)dΩp
 end
 
 hTinv =  CellField(1 ./ (sqrt(2).*sqrt.(get_array(∫(1)dΩp))),Ωp)
@@ -129,15 +169,9 @@ function patch_weakform()
   return assemble_matrix_and_vector(patch_assem,data)
 end
 
-# Monolithic solve
-# A, b = weakform()
-# x = A \ b
-
 # Static condensation
-op = MultiField.StaticCondensationOperator(X,V,N,patch_assem,patch_weakform())
-
-ub = solve(op.sc_op) 
-ui = MultiField.backward_static_condensation(op,ub)
+op = MultiField.StaticCondensationOperator(X,patch_assem,patch_weakform())
+ui, ub = solve(op)
 
 dΩ = Measure(Ω,qdegree)
 l2_ui = sqrt(sum(∫((ui - u)⋅(ui - u))*dΩ))
