@@ -181,7 +181,7 @@ export BDMRefFE
 export NedelecRefFE
 export BezierRefFE
 export ModalC0RefFE
-export CRRefFE
+export CrouzeixRaviartRefFE
 
 export Lagrangian
 export RaviartThomas
@@ -196,7 +196,7 @@ export bdm
 export nedelec
 export bezier
 export modalC0
-export cr
+export crouzeix_raviart
 
 export Quadrature
 export QuadratureName
@@ -257,7 +257,7 @@ include("BDMRefFEs.jl")
 
 include("NedelecRefFEs.jl")
 
-include("CRRefFEs.jl")
+include("CrouzeixRaviartRefFEs.jl")
 
 include("MockDofs.jl")
 
