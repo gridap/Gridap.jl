@@ -11,6 +11,7 @@ using Test
   @time @testset "Poisson - HDG polytopal" begin include("HDGPolytopal.jl") end
   @time @testset "Poisson - HHO polytopal" begin include("HHOPolytopal.jl") end
   @time @testset "Poisson - HHO polytopal (mixed order)" begin include("HHOMixedPolytopal.jl") end
+  @time @testset "Elasticity - HHO (mixed order)" begin include("HHOMixedElasticity.jl") end
 end
 
 end

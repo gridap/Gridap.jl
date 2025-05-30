@@ -1,9 +1,12 @@
-module HHOMixedConvgTests
+module HHOMixxedElasticutyConvgTests
 
+using Test
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
-using Gridap.ReferenceFEs
+using Gridap.ReferenceFEs, Gridap.TensorValues
+
+ν(f) = skew_symmetric_gradient(f)
 
 function projection_operator(V, Ω, dΩ)
   Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
@@ -15,29 +18,25 @@ function projection_operator(V, Ω, dΩ)
   return P
 end
 
-function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
-  reffe_Λ = ReferenceFE(lagrangian, Float64, 0; space=:P)
-  Λ = FESpace(Ω, reffe_Λ; conformity=:L2)
+function gradient_operator(ptopo,X,order,Ω,Γp,dΩp,dΓp)
+  reffe_L = ReferenceFE(lagrangian,SymTensorValue{2,Float64}, order; space = :P)
+  L = FESpace(Ω, reffe_L; conformity=:L2)
 
-  n = get_normal_vector(Γp)
-  Πn(v) = ∇(v)⋅n
+  nΓ = get_normal_vector(Γp)
   Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
-  lhs((u,λ),(v,μ))   = ∫( (∇(u)⋅∇(v)) + (μ*u) + (λ*v) )dΩp
-  rhs((uT,uF),(v,μ)) =  ∫( (∇(uT)⋅∇(v)) + (uT*μ) )dΩp + ∫( (uF - Π(uT,Γp))*(Πn(v)) )dΓp
+  lhs((p,),(q,))   =  ∫(p⊙q)dΩp
+  rhs((uT,uF),(q,)) =  ∫(ε(uT)⊙q)dΩp + ∫((uF - Π(uT,Γp)) ⋅ (q⋅nΓ))dΓp
   
   Y = FESpaces.FESpaceWithoutBCs(X)
-  mfs = Y.multi_field_style
-  W = MultiFieldFESpace([L,Λ];style=mfs)
-  R = FESpaces.LocalOperator(
-    FESpaces.HHO_ReconstructionOperatorMap(), ptopo, W, Y, lhs, rhs; space_out = L
+  W = MultiFieldFESpace([L];style=MultiField.BlockMultiFieldStyle(1))
+  G = FESpaces.LocalOperator(
+    FESpaces.LocalSolveMap(), ptopo, W, Y, lhs, rhs; space_out = L
   )
-  return R
+  return G
 end
 
-##############################################################
-#   HHO: Mixed order variant
-##############################################################
-function solve_Poisson_HHO(domain,nc,order,uex,f)
+function solve_Elasticity_HHO(domain,nc,order,uex,f,C)
+
   model = UnstructuredDiscreteModel(CartesianDiscreteModel(domain,nc))
   D = num_cell_dims(model)
   Ω = Triangulation(ReferenceFE{D}, model)
@@ -48,31 +47,36 @@ function solve_Poisson_HHO(domain,nc,order,uex,f)
   Γp = Geometry.PatchBoundaryTriangulation(model,ptopo)
 
   qdegree = 2*(order+1)
+
   dΩp = Measure(Ωp,qdegree)
   dΓp = Measure(Γp,qdegree)
 
-  reffe_V = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Bulk space
-  reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)     # Skeleton space
-  reffe_L = ReferenceFE(lagrangian, Float64, order+1; space=:P)   # Reconstruction space
+  ##########################
+  # Mixed order variant
+  ##########################
+  reffe_V = ReferenceFE(lagrangian, VectorValue{D,Float64}, order+1; space=:P)   # Bulk space
+  reffe_M = ReferenceFE(lagrangian, VectorValue{D,Float64}, order; space=:P)     # Skeleton space
   V = FESpace(Ω, reffe_V; conformity=:L2)
   M = FESpace(Γ, reffe_M; conformity=:L2, dirichlet_tags="boundary")
-  L = FESpace(Ω, reffe_L; conformity=:L2)
-  N = TrialFESpace(M,uex)
+  N = TrialFESpace(M,u)
 
   mfs = MultiField.BlockMultiFieldStyle(2,(1,1))
-  X   = MultiFieldFESpace([V, N];style=mfs)
-  Y   = MultiFieldFESpace([V, M];style=mfs) 
+  X  = MultiFieldFESpace([V, N];style=mfs)
+  Y  = MultiFieldFESpace([V, M];style=mfs)
   Xp = FESpaces.PatchFESpace(X,ptopo)
 
   PΓ = projection_operator(M, Γp, dΓp)
-  R  = reconstruction_operator(ptopo,L,Y,Ωp,Γp,dΩp,dΓp)
+  G  = gradient_operator(ptopo,X,order,Ωp,Γp,dΩp,dΓp)
 
+  global_assem = SparseMatrixAssembler(X,Y)
   patch_assem = FESpaces.PatchAssembler(ptopo,X,Y)
 
   function a(u,v)
-    Ru_Ω, Ru_Γ = R(u)
-    Rv_Ω, Rv_Γ = R(v)
-    return ∫(∇(Ru_Ω)⋅∇(Rv_Ω) + ∇(Ru_Γ)⋅∇(Rv_Ω) + ∇(Ru_Ω)⋅∇(Rv_Γ) + ∇(Ru_Γ)⋅∇(Rv_Γ))dΩp
+    Gu_Ω, Gu_Γ = G(u)
+    Gv_Ω, Gv_Γ = G(v)
+    Gu = Gu_Ω + Gu_Γ
+    Gv = Gv_Ω + Gv_Γ
+    return ∫(Gu⊙C⊙Gv)dΩp
   end
 
   hTinv =  CellField(1 ./ (sqrt(2).*sqrt.(get_array(∫(1)dΩp))),Ωp)
@@ -86,6 +90,14 @@ function solve_Poisson_HHO(domain,nc,order,uex,f)
 
   l((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
 
+  function weakform()
+    u, v = get_trial_fe_basis(X), get_fe_basis(Y)
+    data1 = FESpaces.collect_cell_matrix_and_vector(X,Y,s(u,v),l(v),zero(X))
+    data2 = FESpaces.collect_cell_matrix_and_vector(Xp,Xp,a(u,v),DomainContribution(),zero(Xp))
+    data = FESpaces.merge_assembly_matvec_data(data1,data2)
+    assemble_matrix_and_vector(global_assem,data)
+  end
+
   function patch_weakform()
     u, v = get_trial_fe_basis(X), get_fe_basis(Y)
     data1 = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,X,Y,s(u,v),l(v),zero(X))
@@ -95,34 +107,30 @@ function solve_Poisson_HHO(domain,nc,order,uex,f)
   end
 
   # Static condensation
-  op = MultiField.StaticCondensationOperator(X,V,N,patch_assem,patch_weakform())
+  op = MultiField.StaticCondensationOperator(X,patch_assem,patch_weakform())
+  ui, ub = solve(op)
 
-  ub = solve(op.sc_op) 
-  ui = MultiField.backward_static_condensation(op,ub)
-
-  eu = uex - ui
-  l2u= sqrt( sum(∫(eu ⋅ eu)dΩp) )
-  h1u= l2u + sqrt( sum(∫(∇(eu) ⋅ ∇(eu))dΩp) )
+  eu = u - ui
+  l2u = sqrt( sum(∫(eu ⋅ eu)dΩp) )
+  h1u = l2u + sqrt( sum(∫(ε(eu) ⊙ ε(eu))dΩp) )
 
   h = maximum( sqrt(2)*sqrt.( get_array(∫(1)dΩp) ) )
-
   return l2u, h1u, h
 end
 
-function convg_test(domain,ncs,order,uex,f)
-    
+function convg_test(domain,ncs,order,uex,f,C)
   el2 = Float64[]
   eh1 = Float64[]
   hs = Float64[]
   for nc in ncs
-    l2, h1, h = solve_Poisson_HHO(domain,nc,order,uex,f)
+    println("  > Solving for nc = $(nc)")
+    l2, h1, h = solve_Elasticity_HHO(domain,nc,order,uex,f,C)
     push!(el2,l2)
     push!(eh1,h1)
     push!(hs,h)
   end
-  println(el2)
-  println(eh1)
-  println(hs)
+  println("L2 error = ", el2)
+  println("H1 error = ", eh1)
   el2, eh1, hs
 end
 
@@ -133,15 +141,22 @@ function slope(hs,errors)
   linreg[2]
 end
 
-uex(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
-f(x) = -Δ(uex)(x)
+μ = 1.0
+λ = 1.0
+I2 = one(SymTensorValue{2,Float64})
+I4 = one(SymFourthOrderTensorValue{2,Float64})
+C = λ * I2⊗I2 + μ * I4 # Isotropic elasticity tensor
+
+u(x) = VectorValue(sin(2*π*x[1])*sin(2*π*x[2]),cos(2*π*x[1])*cos(2*π*x[2]))
+g(x) = C⊙(ε(u)(x))
+f(x) = -(∇⋅g)(x)
 
 domain = (0,1,0,1)
 ncs = [(2,2),(4,4),(8,8),(16,16),(32,32),(64,64),(128,128),(256,256)]
 order = 1
 
-el2s, eh1s, hs = convg_test(domain,ncs,order,uex,f)
+el2s, eh1s, hs = convg_test(domain,ncs,order,u,f,C)
 println("Slope L2-norm u: $(slope(hs,el2s))")
 println("Slope H1-norm u: $(slope(hs,eh1s))")
 
-end # module
+end
