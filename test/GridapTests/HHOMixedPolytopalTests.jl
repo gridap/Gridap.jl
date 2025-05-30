@@ -122,10 +122,8 @@ h1u = l2u + sqrt(sum( ∫(∇(eu) ⋅ ∇(eu))dΩp))
 @test l2u < 1e-10
 
 # Static condensation
-op = MultiField.StaticCondensationOperator(X,V,N,patch_assem,patch_weakform())
-
-ub = solve(op.sc_op) 
-ui = MultiField.backward_static_condensation(op,ub)
+op = MultiField.StaticCondensationOperator(X,patch_assem,patch_weakform())
+ui, ub = solve(op) 
 
 eu  = ui - u
 l2u = sqrt(sum( ∫(eu * eu)dΩp))

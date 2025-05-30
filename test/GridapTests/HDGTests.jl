@@ -10,8 +10,8 @@ u(x) = x[1] + x[2]
 q(x) = -∇(u)(x)
 f(x) = (∇ ⋅ q)(x)
 
-nc = (2,2)
-model = UnstructuredDiscreteModel(simplexify(CartesianDiscreteModel((0,1,0,1),nc)))
+nc = (4,4)
+model = simplexify(CartesianDiscreteModel((0,1,0,1),nc))
 D = num_cell_dims(model)
 Ω = Triangulation(ReferenceFE{D}, model)
 Γ = Triangulation(ReferenceFE{D-1}, model)
@@ -37,16 +37,13 @@ Q = TrialFESpace(Q_test)
 M = TrialFESpace(M_test, u)
 
 mfs = MultiField.BlockMultiFieldStyle(2,(2,1))
-X_full = MultiFieldFESpace([V, Q, M];style=mfs)
-X_elim = MultiFieldFESpace([V, Q])
-X_ret = M
-
-τ = 1.0 # HDG stab parameter
+X = MultiFieldFESpace([V, Q, M];style=mfs)
 
 degree = 2*(order+1)
 dΩp = Measure(Ωp,degree)
 dΓp = Measure(Γp,degree)
 
+τ = 1.0 # HDG stab parameter
 n = get_normal_vector(Γp)
 Πn(u) = u⋅n
 Π(u) = change_domain(u,Γp,DomainStyle(u))
@@ -54,12 +51,12 @@ a((qh,uh,sh),(vh,wh,lh)) = ∫( qh⋅vh - uh*(∇⋅vh) - qh⋅∇(wh) )dΩp + �
                            ∫((Πn(qh) + τ*(Π(uh) - sh))*(Π(wh) + lh))dΓp
 l((vh,wh,lh)) = ∫( f*wh )*dΩp
 
-op = MultiField.StaticCondensationOperator(ptopo,X_full,X_elim,X_ret,a,l)
-sh = solve(op.sc_op)
-wh, qh = MultiField.backward_static_condensation(op,sh)
+op = MultiField.StaticCondensationOperator(ptopo,X,a,l)
+qh, uh, sh = solve(op)
 
 dΩ = Measure(Ω,degree)
-l2_wh = sqrt(sum(∫((qh - u)⋅(qh - u))*dΩ))
-@test l2_wh < 1e-10
+eh = uh - u
+l2_uh = sqrt(sum(∫(eh⋅eh)*dΩ))
+@test l2_uh < 1e-10
 
 end # module

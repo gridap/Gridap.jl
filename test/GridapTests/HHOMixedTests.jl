@@ -116,10 +116,9 @@ end
 # x = A \ b
 
 # Static condensation
-op = MultiField.StaticCondensationOperator(X,V,N,patch_assem,patch_weakform())
+op = MultiField.StaticCondensationOperator(X,patch_assem,patch_weakform())
 
-ub = solve(op.sc_op) 
-ui = MultiField.backward_static_condensation(op,ub)
+ui, ub = solve(op) 
 
 dΩ = Measure(Ω,qdegree)
 l2_ui = sqrt(sum(∫((ui - u)⋅(ui - u))*dΩ))
