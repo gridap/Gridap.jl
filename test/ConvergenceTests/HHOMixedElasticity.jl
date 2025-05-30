@@ -58,7 +58,7 @@ function solve_Elasticity_HHO(domain,nc,order,uex,f,C)
   reffe_M = ReferenceFE(lagrangian, VectorValue{D,Float64}, order; space=:P)     # Skeleton space
   V = FESpace(Ω, reffe_V; conformity=:L2)
   M = FESpace(Γ, reffe_M; conformity=:L2, dirichlet_tags="boundary")
-  N = TrialFESpace(M,u)
+  N = TrialFESpace(M,uex)
 
   mfs = MultiField.BlockMultiFieldStyle(2,(1,1))
   X  = MultiFieldFESpace([V, N];style=mfs)
@@ -110,7 +110,7 @@ function solve_Elasticity_HHO(domain,nc,order,uex,f,C)
   op = MultiField.StaticCondensationOperator(X,patch_assem,patch_weakform())
   ui, ub = solve(op)
 
-  eu = u - ui
+  eu = uex - ui
   l2u = sqrt( sum(∫(eu ⋅ eu)dΩp) )
   h1u = l2u + sqrt( sum(∫(ε(eu) ⊙ ε(eu))dΩp) )
 
