@@ -103,10 +103,6 @@ PΩ_mf = patch_projection_operator(ptopo,V,Yp,Ωp,dΩp)
 global_assem = SparseMatrixAssembler(X,Y)
 patch_assem = FESpaces.PatchAssembler(ptopo,X,Y)
 
-u, v = get_trial_fe_basis(X), get_fe_basis(Y);
-
-Ru, Rv = R(u), R(v)
-
 function a(Ru,Rv)
   Ru_Ω, Ru_Γ = Ru
   Rv_Ω, Rv_Γ = Rv
@@ -127,7 +123,9 @@ function SΓb(Ru)
   return (PΓRu_Ω - PΓPΩRu_Ω) + (PΓRu_Γ - PΓPΩRu_Γ)
 end
 
-function weakform(u,v)
+function weakform()
+  u, v = get_trial_fe_basis(X), get_fe_basis(X)
+
   mass_Γ(u,v) = ∫(hFinv*(u*v) )dΓp
   Ru, Rv = R(u), R(v)
   SΓa_u, SΓa_v = SΓa(u), SΓa(v)
@@ -141,16 +139,9 @@ function weakform(u,v)
   return assemble_matrix_and_vector(global_assem,data)
 end
 
-A, b = weakform(u,v)
-x = A \ b
+function patch_weakform()
+  u, v = get_trial_fe_basis(X), get_fe_basis(X);
 
-ub, us = FEFunction(X,x);
-
-eh = ub - uex
-err = sqrt(sum(∫(eh⋅eh)dΩp))
-@test err < 1e-10
-
-function patch_weakform(u,v)
   mass_Γ(u,v) = ∫(hFinv*(u*v))dΓp
   Ru, Rv = R(u), R(v)
   SΓa_u, SΓa_v = SΓa(u), SΓa(v)
@@ -164,13 +155,25 @@ function patch_weakform(u,v)
   return assemble_matrix_and_vector(patch_assem,data)
 end
 
-# Static condensation
-op = MultiField.StaticCondensationOperator(X,V,N,patch_assem,patch_weakform(u,v))
+A, b = weakform()
+x = A \ b
+ui, ub = FEFunction(X,x);
 
-uΓ = solve(op.sc_op) 
-uΩ = MultiField.backward_static_condensation(op,uΓ)
+eh = ui - uex
+err = sqrt(sum(∫(eh⋅eh)dΩp))
+@test err < 1e-10
+
+# Static condensation
+op = MultiField.StaticCondensationOperator(X,patch_assem,patch_weakform())
+xh = solve(op)
+uΩ, uΓ = xh
 
 eu = uΩ - uex 
+err = sqrt(sum( ∫(eu * eu)dΩp))
+@test err < 1e-10
+
+Rxh = R(xh)
+eu = Rxh - uex
 err = sqrt(sum( ∫(eu * eu)dΩp))
 @test err < 1e-10
 

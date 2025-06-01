@@ -404,14 +404,24 @@ function LocalOperator(
     v_to = get_fe_basis(space_test)
 
     lhs_assem = PatchAssembler(ptopo,space_to,space_test)
-    lhs_mats = assemble_matrix(
-      lhs_assem,collect_patch_cell_matrix(lhs_assem,space_to,space_test,lhs(u_to,v_to))
+    lhs_contr = lhs(u_to,v_to)
+    lhs_mats  = assemble_matrix(
+      lhs_assem,collect_patch_cell_matrix(lhs_assem,space_to,space_test,lhs_contr)
     )
 
     rhs_assem = PatchAssembler(ptopo,space_from,space_test)
-    rhs_mats = assemble_matrix(
-      rhs_assem,collect_patch_cell_matrix(rhs_assem,space_from,space_test,rhs(u_from,v_to))
-    )
+    rhs_contr = rhs(u_from,v_to)
+    if CellData.is_matrix_contribution(rhs_contr)
+      rhs_mats = assemble_matrix(
+        rhs_assem,collect_patch_cell_matrix(rhs_assem,space_from,space_test,rhs_contr)
+      )
+    elseif CellData.is_vector_contribution(rhs_contr)
+      rhs_mats = assemble_vector(
+        rhs_assem,collect_patch_cell_vector(rhs_assem,space_test,rhs_contr)
+      )
+    else
+      @unreachable
+    end
 
     pair_arrays(lhs_mats,rhs_mats)
   end
@@ -498,7 +508,21 @@ function _compute_local_solves(
   end
   v_out = get_fe_basis(k.space_out)
   cell_basis = CellData.get_data(change_domain(v_out,k.trian_out,DomainStyle(v_out)))
-  return lazy_map(linear_combination,cell_coeffs,cell_basis)
+
+  T = eltype(cell_coeffs)
+  if T <: AbstractArray
+    cell_fields = lazy_map(linear_combination,cell_coeffs,cell_basis)
+  elseif T <: Tuple
+    nfields = fieldcount(T)
+    cell_fields = ntuple(nfields) do i
+      coeffs_i = lazy_map(Base.Fix2(getindex,i), cell_coeffs)
+      lazy_map(linear_combination, coeffs_i, cell_basis)
+    end
+  else
+    @unreachable
+  end
+
+  return cell_fields
 end
 
 ###########################################################################################
@@ -529,7 +553,7 @@ function Arrays.evaluate!(cache,k::LocalSolveMap, mat::MatrixBlock, vec::MatrixB
   for i in eachindex(v)
     ldiv!(f,v[i])
   end
-  return v
+  return Tuple(v)
 end
 
 ###########################################################################################
@@ -571,4 +595,31 @@ function Arrays.evaluate!(cache::Nothing, k::HHO_ReconstructionOperatorMap, lhs,
   RuΓ = ldiv!(Ainv,BpΓ)
 
   return RuΩ, RuΓ
+end
+
+function Arrays.evaluate!(cache::Nothing, k::HHO_ReconstructionOperatorMap, lhs, rhs::VectorBlock)
+  @check size(lhs) == (2,2)
+  @check size(rhs) == (2,)
+
+  App, Aλp, Apλ, _ = get_array(lhs)
+  Bp, Bλ = get_array(rhs)
+
+  # μT = norm(App)/norm(Apλ*Aλp) is a heuristic choice for the penalty parameter
+  if isone(size(Apλ,1))
+    μT = tr(App)/norm(Apλ)^2 # Single constraint
+  else
+    μT = tr(App)/norm(Apλ*Aλp) # Multiple constraints
+  end
+  
+  # App = App + μT * Apλ * Aλp
+  mul!(App, Apλ, Aλp, μT, 1)
+  
+  # Bp = Bp + μT * Apλ * Bλ
+  mul!(Bp, Apλ, Bλ, μT, 1)
+
+  Ainv = lu!(App,k.pivot;check=false)
+  @check issuccess(Ainv) "Factorization failed"
+
+  Ru = ldiv!(Ainv,Bp)
+  return (Ru,)
 end

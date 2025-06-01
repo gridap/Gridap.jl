@@ -120,6 +120,7 @@ function Arrays.evaluate!(
   _is_test(v) = eltype(get_data(v)) <: VectorBlock
   _is_trial(v) = eltype(get_data(v)) <: MatrixBlock
 
+  domain = DomainStyle(get_fe_basis(k.space_out))
   nfields = num_fields(u)
   is_test  = all(_is_test, u.single_fields)
   is_trial = all(_is_trial, u.single_fields)
@@ -139,12 +140,13 @@ function Arrays.evaluate!(
   
   mf_data = FESpaces._compute_local_solves(k,v)
 
-  # bstyle = ifelse(is_test, TestBasis(), TrialBasis())
-  domain = DomainStyle(get_fe_basis(k.space_out))
+  if length(mf_data) != nfields
+    @assert isone(length(mf_data))
+    return GenericCellField(only(mf_data),k.trian_out,domain)
+  end
+
   single_fields = map(1:nfields,mf_data,u) do i, sf_data, u
     sf_data = is_trial ? lazy_map(transpose,sf_data) : sf_data
-    # sf_data = is_basis ? block_fields(sf_data,bstyle,i) : sf_data
-    # GenericCellField(sf_data,k.trian_out,DomainStyle(u))
     if is_basis
       sf = FESpaces.similar_fe_basis(u.single_field,sf_data,k.trian_out,BasisStyle(u),domain)
       MultiFieldFEBasisComponent(sf,i,nfields)
@@ -154,21 +156,4 @@ function Arrays.evaluate!(
   end
 
   return MultiFieldCellField(single_fields)
-end
-
-function FESpaces._compute_local_solves(
-  k::FESpaces.LocalOperator,u::MultiFieldCellField
-)
-  nfields = num_fields(u)
-  cell_coeffs = lazy_map(k.local_map,k.weakform(u))
-  if k.collect_coefficients
-    cell_coeffs = Arrays.lazy_collect(cell_coeffs)
-  end
-  v_out = get_fe_basis(k.space_out)
-  cell_basis = CellData.get_data(change_domain(v_out,k.trian_out,DomainStyle(v_out)))
-  cell_fields = map(1:nfields) do i
-    coeffs_i = map(x -> getindex(x,i), cell_coeffs)
-    lazy_map(linear_combination,coeffs_i,cell_basis)
-  end
-  return cell_fields
 end

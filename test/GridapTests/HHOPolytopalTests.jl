@@ -62,20 +62,6 @@ function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
   return R
 end
 
-function potential_reconstruction(X, L, R, uΩ, uΓ)
-  u = get_trial_fe_basis(X);
-  RuΩ, RuΓ =  R(u)
-
-  cvΩ = FESpaces.scatter_free_and_dirichlet_values(Xp[1],get_free_dof_values(uΩ),get_dirichlet_dof_values(X[1]))
-  cvΓ = FESpaces.scatter_free_and_dirichlet_values(Xp[2],get_free_dof_values(uΓ),get_dirichlet_dof_values(X[2]))
-
-  coeffs_Ω = map(*,get_data(RuΩ).args[1].args[1].args[1],cvΩ)
-  coeffs_Γ = map(*,get_data(RuΓ).args[1].args[1].args[1],cvΓ)
-  coeffs = map((a,b) -> a .+ b,coeffs_Ω,coeffs_Γ)
-
-  return FEFunction(L,FESpaces.gather_free_values(L,coeffs))
-end
-
 ##############################################################
 
 # uex(x) = sin(2*π*x[1])*sin(2*π*x[2])*(1-x[1])*x[2]*(1-x[2])
@@ -153,16 +139,16 @@ end
 
 # Static condensation
 u, v = get_trial_fe_basis(X), get_fe_basis(Y);
-op = MultiField.StaticCondensationOperator(X,V,N,patch_assem,patch_weakform(u,v))
+op = MultiField.StaticCondensationOperator(X,patch_assem,patch_weakform(u,v))
 
-uΓ = solve(op.sc_op) 
-uΩ = MultiField.backward_static_condensation(op,uΓ)
+xh = solve(op)
+uΩ, uΓ = xh
 
 eu  = uΩ - uex 
 l2u = sqrt(sum( ∫(eu * eu)dΩp))
 h1u = l2u + sqrt(sum( ∫(∇(eu) ⋅ ∇(eu))dΩp))
 
-Ruh = potential_reconstruction(X, L, R, uΩ, uΓ)
+Ruh = R(xh)
 ek  = Ruh - uex
 l2u = sqrt(sum( ∫(ek * ek)dΩp))
 h1u = l2u + sqrt(sum( ∫(∇(ek) ⋅ ∇(ek))dΩp))
