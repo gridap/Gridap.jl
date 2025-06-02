@@ -386,6 +386,7 @@ function return_cache(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::Abstr
   CachedArray(r)
 end
 
+#  r = fx * v   i.e.  r[p,j] = Σᵢ fx[p,i]*v[i,j]
 function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractMatrix)
   @check size(fx,2) == size(v,1)
   setsize!(cache,(size(fx,1),size(v,2)))
@@ -538,7 +539,7 @@ for T in (:(Point),:(AbstractArray{<:Point}))
       cf = return_cache(f,gx)
       return cg, cf
     end
-    
+
     function evaluate!(cache, k::BroadcastOpFieldArray{typeof(∘)},x::$T)
       cg, cf = cache
       f, g = k.args
@@ -733,7 +734,7 @@ for op in (:*,:⋅,:⊙,:⊗)
   end
 end
 
-# Optimisations to 
+# Optimisations to
 # lazy_map(Broadcasting(constant_field),a::AbstractArray{<:AbstractArray{<:Number}})
 
 struct ConstantFieldArray{T,N,A} <: AbstractArray{ConstantField{T},N}
