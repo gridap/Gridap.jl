@@ -9,10 +9,10 @@ const raviart_thomas = RaviartThomas()
 Pushforward(::Type{<:RaviartThomas}) = ContraVariantPiolaMap()
 
 """
-    RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
+    RaviartThomasRefFE(::Type{T}, p::Polytope, order::Integer)
 
-The `order` argument has the following meaning: the divergence of the  functions in this basis
-is in the Q space of degree `order`.
+The `order` argument has the following meaning: the divergence of the functions
+in this basis is in the Q space of degree `order`. `T` is the type of scalar components.
 """
 function RaviartThomasRefFE(
   ::Type{T},p::Polytope{D},order::Integer
@@ -74,18 +74,4 @@ end
 
 function get_face_own_dofs(reffe::GenericRefFE{RaviartThomas}, conf::DivConformity)
   get_face_dofs(reffe)
-end
-
-# TODO: Please remove me
-function legendreBasis(::Type{T},p::Polytope,orders) where T
-  compute_legendre_basis(T,p,orders)
-end
-function legendreBasis(::Type{T},p::Polytope{D},order::Int) where {D,T}
-  orders = tfill(order,Val{D}())
-  legendreBasis(T,p,orders)
-end
-function compute_legendre_basis(::Type{T},p::ExtrusionPolytope{D},orders) where {D,T}
-  extrusion = Tuple(p.extrusion)
-  terms = _monomial_terms(extrusion,orders)
-  LegendreBasis(Val(D),T,orders,terms)
 end

@@ -153,7 +153,7 @@ function set_face!(m::FaceMeasure{Df},face::Int) where {Df}
   return m
 end
 
-# TODO: Normals are accesed, but tangent are computed on demand. This means 
+# TODO: Normals are accesed, but tangent are computed on demand. This means
 # that we will be repeating work unless we cache them.
 function get_facet_normal(m::FaceMeasure{Df,Dc}) where {Df,Dc}
   @assert Df == Dc - 1
@@ -166,9 +166,10 @@ function get_edge_tangent(m::FaceMeasure{1,Dc}) where {Dc}
   return ConstantField(t[m.face])
 end
 
-# Extends a Df-dimensional vector to a Dc-dimensional one that 
-# lives in the tangent space of the Dc-embedded Df-dimensional manifold.
-# Equivalent to transpose(∇(fmap))
+# Matrix of the contravariant piola map from `m.fpoly` to to the face `m.face`
+# of `m.cpoly`, used to extend a Df-dimensional vector in `m.fpoly` to a
+# Dc-dimensional one that lives in the tangent space of the Dc-embedded Df-dimensional
+# manifold `m.face`.
 function get_extension(m::FaceMeasure{Df,Dc}) where {Df,Dc}
   @assert Df == Dc - 1
   vs = ReferenceFEs._nfaces_vertices(Float64,m.cpoly,Df)[m.face]
@@ -186,9 +187,9 @@ end
 function get_facet_measure(p::Polytope{D}, face::Int) where D
   measures = Float64[]
   facet_entities = get_face_coordinates(p)
-  for entity in facet_entities   
+  for entity in facet_entities
     n = length(entity)
-    if n == 1 
+    if n == 1
        push!(measures, 0.0)  # A point has zero measure
     elseif n == 2
         # Length of an edge
@@ -204,7 +205,7 @@ function get_facet_measure(p::Polytope{D}, face::Int) where D
       end
       push!(measures, perimeter)
     elseif n == 3 && D == 3
-      # Area of a simplex 
+      # Area of a simplex
       p1, p2, p3 = entity
       v1 = [p2[i] - p1[i] for i in 1:D]
       v2 = [p3[i] - p1[i] for i in 1:D]
@@ -241,7 +242,7 @@ function Arrays.return_cache(
 
   detJ = Broadcasting(Operation(meas))(Broadcasting(∇)(fmap))
   detJ_cache = return_cache(detJ,xf)
-  
+
   f_cache = return_cache(f,xf)
   return fmap_cache, detJ_cache, f_cache, xf, w
 end
@@ -277,7 +278,7 @@ function component_basis(V::Type{<:MultiValue})
 end
 
 """
-A moment is given by a triplet (f,σ,μ) where 
+A moment is given by a triplet (f,σ,μ) where
   - f is vector of ids of faces Fk
   - σ is a function σ(φ,μ,ds) that returns a Field-like object to be integrated over each Fk
   - μ is a polynomials basis on Fk
@@ -320,7 +321,7 @@ function MomentBasedReferenceFE(
     face_n_dofs[faces] .+= length(μ)
     face_n_nodes[faces] .+= num_points(ds.quad)
   end
-  
+
   # Compute face moment and node indices
   n_dofs = 0
   n_nodes = 0

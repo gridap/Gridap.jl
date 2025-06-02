@@ -182,15 +182,13 @@ end
 
 
 """
-    get_face_own_nodes(g::DiscreteModel,d::Integer)
+    get_face_own_nodes(g::DiscreteModel)
+    get_face_own_nodes(g::DiscreteModel, d::Integer)
 """
 function get_face_own_nodes(g::DiscreteModel,d::Integer)
   compute_face_own_nodes(g,d)
 end
 
-"""
-    get_face_own_nodes(g::DiscreteModel)
-"""
 function get_face_own_nodes(g::DiscreteModel)
   compute_face_own_nodes(g)
 end

@@ -3,7 +3,7 @@ struct ModalC0 <: ReferenceFEName end
 const modalC0 = ModalC0()
 
 """
-  ModalC0RefFE(::Type{T},p::Polytope{D},orders) where {T,D}
+    ModalC0RefFE(::Type{T}, p::Polytope{D}, orders)
 
 Returns an instance of `GenericRefFE{ModalC0}` representing a ReferenceFE with
 Modal C0-continuous shape functions (multivariate scalar-valued, vector-valued,

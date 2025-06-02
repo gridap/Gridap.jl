@@ -7,10 +7,10 @@ const nedelec = Nedelec()
 Pushforward(::Type{<:Nedelec}) = CoVariantPiolaMap()
 
 """
-    NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
+    NedelecRefFE(::Type{T}, p::Polytope, order::Integer)
 
-The `order` argument has the following meaning: the curl of the  functions in this basis
-is in the Q space of degree `order`.
+The `order` argument has the following meaning: the curl of the  functions in
+this basis is in the Q space of degree `order`. `T` is the type of scalar components.
 """
 function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   D = num_dims(p)

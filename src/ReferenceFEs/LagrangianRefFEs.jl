@@ -2,13 +2,13 @@
 """
     abstract type LagrangianRefFE{D} <: ReferenceFE{D}
 
-Abstract type representing a Lagrangian reference FE. Lagrangian in the sense that
-`get_dof_basis` returns an instance of `LagrangianDofBasis`.
-The interface for this type is defined with the methods of `ReferenceFE`
-plus the following ones
+Abstract type representing a Lagrangian reference FE. Lagrangian in the sense
+that [`get_dof_basis`](@ref) returns a [`LagrangianDofBasis`](@ref).
 
-- [`get_face_own_nodes(reffe::LagrangianRefFE,conf::Conformity)`](@ref)
-- [`get_face_own_nodes_permutations(reffe::LagrangianRefFE,conf::Conformity)`](@ref)
+Implements [`ReferenceFE`](@ref)'s interface plus the following ones
+
+- [`get_face_own_nodes(reffe::LagrangianRefFE, conf::Conformity)`](@ref)
+- [`get_face_own_nodes_permutations(reffe::LagrangianRefFE, conf::Conformity)`](@ref)
 - [`get_face_nodes(reffe::LagrangianRefFE)`](@ref)
 
 """
@@ -19,15 +19,24 @@ struct Lagrangian <: ReferenceFEName end
 const lagrangian = Lagrangian()
 
 """
-    get_face_own_nodes(reffe::LagrangianRefFE,conf::Conformity)
+    get_face_own_nodes(reffe::LagrangianRefFE[, conf::Conformity][, d::Int])
+
+Return a vector containing, for each face of `reffe`'s polytope, the indices of
+the nodes that belong to the interior of the face. This determines which DoFs
+will be glued together in the global FE space because every DoF is placed at a node.
+
+Node ownership to faces depends on the [`Conformity`](@ref) in the same way than
+DoF ownership does, c.f. [`get_face_own_dofs(::ReferenceFE, ...)`](@ref
+get_face_own_dofs).
+
+If `conf` is given, the ownership is computed for `conf` and not for `reffe`'s
+conformity. If `d` is given, the returned vector only contains the data for the
+`d`-dimensional faces of `reffe`'s polytope.
 """
 function get_face_own_nodes(reffe::LagrangianRefFE,conf::Conformity)
   @abstractmethod
 end
 
-"""
-    get_face_own_nodes(reffe::LagrangianRefFE)
-"""
 function get_face_own_nodes(reffe::LagrangianRefFE)
   conf = Conformity(reffe)
   get_face_own_nodes(reffe,conf)
@@ -45,16 +54,18 @@ function _get_face_own_nodes_l2(reffe::LagrangianRefFE)
 end
 
 """
-    get_face_own_nodes_permutations(reffe::LagrangianRefFE,conf::Conformity)
+    get_face_own_nodes_permutations(reffe::LagrangianRefFE[, conf::Conformity][, d::Integer])
+
+Like [`get_face_own_nodes_permutations`](@ref), but the indices are that of the
+nodes instead of that of the DoFs. They are different for vector/tensor-valued
+elements, for which several DoFs are placed at the same node (one per
+inpedendent component).
 """
 function get_face_own_nodes_permutations(reffe::LagrangianRefFE,conf::Conformity)
   face_own_nodes = get_face_own_nodes(reffe,conf)
   _trivial_face_own_dofs_permutations(face_own_nodes)
 end
 
-"""
-    get_face_own_nodes_permutations(reffe::LagrangianRefFE)
-"""
 function get_face_own_nodes_permutations(reffe::LagrangianRefFE)
   conf = Conformity(reffe)
   get_face_own_nodes_permutations(reffe,conf)
@@ -62,6 +73,14 @@ end
 
 """
     get_face_nodes(reffe::LagrangianRefFE)
+    get_face_nodes(reffe::LagrangianRefFE, d::Integer)
+
+Returns a vector of vector that, for each face of `reffe`'s polytope, stores the
+nodes ids in the closure of the face. The difference with [`get_face_own_nodes`](@ref)
+is that this includes nodes owned by the boundary faces of each face.
+
+If `d` is given, the returned vector only contains the data for the
+`d`-dimensional faces of `reffe`'s polytope.
 """
 function get_face_nodes(reffe::LagrangianRefFE)
   @abstractmethod
@@ -99,6 +118,8 @@ end
 
 """
     get_node_coordinates(reffe::LagrangianRefFE)
+
+Get the vector of unique coordinate vectors of each node of `reffe`'s DoFs.
 """
 function get_node_coordinates(reffe::LagrangianRefFE)
   dofs = get_dof_basis(reffe)
@@ -107,11 +128,15 @@ end
 
 """
     num_nodes(reffe::LagrangianRefFE)
+
+Return the number of unique nodes at which `reffe`'s DoFs are placed.
 """
 num_nodes(reffe::LagrangianRefFE) = length(get_node_coordinates(reffe))
 
 """
     get_node_and_comp_to_dof(reffe::LagrangianRefFE)
+
+Delegated to `reffe`'s DoFs, see [`LagrangianDofBasis`](@ref).
 """
 function get_node_and_comp_to_dof(reffe::LagrangianRefFE)
   dofs = get_dof_basis(reffe)
@@ -120,6 +145,8 @@ end
 
 """
     get_dof_to_node(reffe::LagrangianRefFE)
+
+Delegated to `reffe`'s DoFs, see [`LagrangianDofBasis`](@ref).
 """
 function get_dof_to_node(reffe::LagrangianRefFE)
   dofs = get_dof_basis(reffe)
@@ -128,6 +155,8 @@ end
 
 """
     get_dof_to_comp(reffe::LagrangianRefFE)
+
+Delegated to `reffe`'s DoFs, see [`LagrangianDofBasis`](@ref).
 """
 function get_dof_to_comp(reffe::LagrangianRefFE)
   dofs = get_dof_basis(reffe)
@@ -135,77 +164,69 @@ function get_dof_to_comp(reffe::LagrangianRefFE)
 end
 
 """
-    get_own_nodes_permutations(reffe::LagrangianRefFE,conf::Conformity)
+    get_own_nodes_permutations(reffe::LagrangianRefFE)
+    get_own_nodes_permutations(reffe::LagrangianRefFE, conf::Conformity)
+
+Like [`get_face_own_nodes_permutations`](@ref), but only return the last
+permutations vector, that of the nodes owned by the cell (but not its boundary faces).
 """
 function get_own_nodes_permutations(reffe::LagrangianRefFE,conf::Conformity)
-  n = num_faces(reffe)
-  get_face_own_nodes_permutations(reffe,conf)[n]
+  last(get_face_own_nodes_permutations(reffe,conf))
 end
 
-"""
-    get_own_nodes_permutations(reffe::LagrangianRefFE)
-"""
 function get_own_nodes_permutations(reffe::LagrangianRefFE)
   conf = Conformity(reffe)
   get_own_nodes_permutations(reffe,conf)
 end
 
 """
-    get_vertex_node(reffe::LagrangianRefFE,conf::Conformity) -> Vector{Int}
+    get_vertex_node(reffe::LagrangianRefFE) -> Vector{Int}
+    get_vertex_node(reffe::LagrangianRefFE, conf::Conformity) -> Vector{Int}
+
+Return a vector containing, for each vertex of `reffe`'s polytope, the index of
+the node at this vertex. An error is thrown if a vertex does not own any node
+(e.g. for L2Conformity or order zero element).
+
+If `conf` is given, the node ownership is computed for `conf` and not for
+`reffe`'s conformity.
 """
 function get_vertex_node(reffe::LagrangianRefFE,conf::Conformity)
   d = 0
   p = get_polytope(reffe)
   range = get_dimranges(p)[d+1]
   vertex_to_nodes = get_face_own_nodes(reffe,conf)[range]
+  msg = @lazy_str"Not all vertices own a node for the given $reffe and conformity $conf"
+  @check all(map(v -> !isempty(v), vertex_to_nodes)) msg
   map(first, vertex_to_nodes)
 end
 
-"""
-    get_vertex_node(reffe::LagrangianRefFE) -> Vector{Int}
-"""
 function get_vertex_node(reffe::LagrangianRefFE)
   conf = Conformity(reffe)
   get_vertex_node(reffe,conf)
 end
 
-"""
-    get_face_own_nodes(reffe::LagrangianRefFE,conf::Conformity,d::Integer)
-"""
 function get_face_own_nodes(reffe::LagrangianRefFE,conf::Conformity,d::Integer)
   p = get_polytope(reffe)
   range = get_dimrange(p,d)
   get_face_own_nodes(reffe,conf)[range]
 end
 
-"""
-    get_face_own_nodes(reffe::LagrangianRefFE,d::Integer)
-"""
 function get_face_own_nodes(reffe::LagrangianRefFE,d::Integer)
   conf = Conformity(reffe)
   get_face_own_nodes(reffe,conf,d)
 end
 
-"""
-    get_face_own_nodes_permutations(reffe::LagrangianRefFE,conf::Conformity,d::Integer)
-"""
 function get_face_own_nodes_permutations(reffe::LagrangianRefFE,conf::Conformity,d::Integer)
   p = get_polytope(reffe)
   range = get_dimrange(p,d)
   get_face_own_nodes_permutations(reffe,conf)[range]
 end
 
-"""
-    get_face_own_nodes_permutations(reffe::LagrangianRefFE,d::Integer)
-"""
 function get_face_own_nodes_permutations(reffe::LagrangianRefFE,d::Integer)
   conf = Conformity(reffe)
   get_face_own_nodes_permutations(reffe,conf,d)
 end
 
-"""
-    get_face_nodes(reffe::LagrangianRefFE,d::Integer)
-"""
 function get_face_nodes(reffe::LagrangianRefFE,d::Integer)
   p = get_polytope(reffe)
   range = get_dimrange(p,d)
@@ -325,14 +346,18 @@ function (==)(a::LagrangianRefFE, b::LagrangianRefFE)
 end
 
 """
-    get_order(reffe::LagrangianRefFE)
+    get_order(reffe::LagrangianRefFE) = get_order(get_prebasis(reffe))
+
+The polynomial basis is a [`MonomialBasis`](@ref).
 """
 function get_order(reffe::LagrangianRefFE)
   get_order(get_prebasis(reffe))
 end
 
 """
-    get_orders(reffe::LagrangianRefFE)
+    get_orders(reffe::LagrangianRefFE) = get_orders(get_prebasis(reffe))
+
+The polynomial basis is a [`MonomialBasis`](@ref).
 """
 function get_orders(reffe::LagrangianRefFE)
   get_orders(get_prebasis(reffe))
@@ -340,6 +365,7 @@ end
 
 # Generic implementation
 """
+
     struct GenericLagrangianRefFE{C,D} <: LagrangianRefFE{D}
       reffe::GenericRefFE{C,D}
       face_nodes::Vector{Vector{Int}}

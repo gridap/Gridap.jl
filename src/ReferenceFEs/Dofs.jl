@@ -75,7 +75,7 @@ Represents { η = σ∘F : σ ∈ Σ }, evaluated as η(φ) = σ(F(φ,args...)) 
 Intended combinations would be:
 
 - Σ ⊂ V* a dof basis in the physical domain and F* : V̂ -> V is a pushforward map.
-- ̂Σ ⊂ V̂* a dof basis in the reference domain and (F*)⁻¹ : V -> V̂ is an inverse pushforward map.
+- Σ̂ ⊂ V̂* a dof basis in the reference domain and (F*)⁻¹ : V -> V̂ is an inverse pushforward map.
 
 """
 struct MappedDofBasis{T<:Dof,MT,BT,A} <: AbstractVector{T}

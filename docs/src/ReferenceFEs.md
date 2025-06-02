@@ -50,7 +50,7 @@ Pages   = ["/Quadratures.jl"]
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["TensorProductQuadratures.jl","DuffyQuadratures.jl","StrangeQuadratures.jl","XiaoGimbutasQuadratures.jl"]
+Pages   = ["TensorProductQuadratures.jl","DuffyQuadratures.jl","StrangQuadratures.jl","XiaoGimbutasQuadratures.jl"]
 ```
 
 ## ReferenceFEs
@@ -86,5 +86,5 @@ Pages   = ["MomentBasedReferenceFEs.jl","Pullbacks.jl"]
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CRRefFEs.jl"]
+Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CrouzeixRaviartRefFEs.jl"]
 ```

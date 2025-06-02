@@ -1,21 +1,21 @@
 """
     struct GeneralPolytope{D,Dp,Tp} <: Polytope{D}
 
-  The `GeneralPolytope` is definded defined by a set of vertices and a rototation
-  system (a planar oriented graph). This polytopal representation can represent
-  any polytope in 2 and 3 dimensions.
+The `GeneralPolytope` is definded defined by a set of vertices and a rotation
+system (a planar oriented graph). This polytopal representation can represent
+any polytope in 2 and 3 dimensions.
 
-  In 2 dimensions ([`Polygon`](@ref)), the representation of the polygon is a closed polyline.
+In 2 dimensions ([`Polygon`](@ref)), the representation of the polygon is a closed polyline.
 
-  In 3 dimensions ([`Polyhedron`](@ref)), the rotation system generates the connectivities, each   facet is a closed cycle of the graph.
-  This construction allows complex geometrical operations, e.g., intersecting polytopes by halfspaces.
-  See also,
+In 3 dimensions ([`Polyhedron`](@ref)), the rotation system generates the connectivities, each   facet is a closed cycle of the graph.
+This construction allows complex geometrical operations, e.g., intersecting polytopes by halfspaces.
+See also,
 
-  > K. Sugihara, "A robust and consistent algorithm for intersecting convex polyhedra", Comput. Graph. Forum 13 (3) (1994) 45–54, doi: [10.1111/1467-8659.1330045](https://doi.org/10.1111/1467-8659.1330045)
+> K. Sugihara, "A robust and consistent algorithm for intersecting convex polyhedra", Comput. Graph. Forum 13 (3) (1994) 45–54, doi: [10.1111/1467-8659.1330045](https://doi.org/10.1111/1467-8659.1330045)
 
-  > D. Powell, T. Abel, "An exact general remeshing scheme applied to physically conservative voxelization", J. Comput. Phys. 297 (Sept. 2015) 340–356, doi: [10.1016/j.jcp.2015.05.022](https://doi.org/10.1016/j.jcp.2015.05.022.
+> D. Powell, T. Abel, "An exact general remeshing scheme applied to physically conservative voxelization", J. Comput. Phys. 297 (Sept. 2015) 340–356, doi: [10.1016/j.jcp.2015.05.022](https://doi.org/10.1016/j.jcp.2015.05.022.
 
-  > S. Badia, P. A. Martorell, F. Verdugo. "Geometrical discretisations for unfitted finite elements on explicit boundary representations", J.Comput. Phys. 460 (2022): 111162. doi: [10.1016/j.jcp.2022.111162](https://doi.org/10.1016/j.jcp.2022.111162)
+> S. Badia, P. A. Martorell, F. Verdugo. "Geometrical discretisations for unfitted finite elements on explicit boundary representations", J.Comput. Phys. 460 (2022): 111162. doi: [10.1016/j.jcp.2022.111162](https://doi.org/10.1016/j.jcp.2022.111162)
 """
 struct GeneralPolytope{D,Dp,Tp,Td} <: Polytope{D}
   vertices::Vector{Point{Dp,Tp}}
@@ -50,14 +50,14 @@ end
 """
     Polygon = GeneralPolytope{2}
 
-  A polygon is a [`GeneralPolytope`](@ref) in 2 dimensions.
+A polygon is a [`GeneralPolytope`](@ref) in 2 dimensions.
 """
 const Polygon = GeneralPolytope{2}
 
 """
     Polyhedron = GeneralPolytope{3}
 
-  A polyhedron is a [`GeneralPolytope`](@ref) in 3 dimensions.
+A polyhedron is a [`GeneralPolytope`](@ref) in 3 dimensions.
 """
 const Polyhedron = GeneralPolytope{3}
 
@@ -95,10 +95,10 @@ function GeneralPolytope{D}(
 end
 
 """
-    GeneralPolytope{D}(vertices,graph;kwargs...)
+    GeneralPolytope{D}(vertices, graph; kwargs...)
 
-  Constructor of a [`GeneralPolytope`](@ref) that generates a polytope of
-  D dimensions with the given `vertices` and `graph` of connectivities.
+Constructor of a [`GeneralPolytope`](@ref) that generates a polytope of
+D dimensions with the given `vertices` and `graph` of connectivities.
 """
 function GeneralPolytope{D}(
   vertices::AbstractVector{<:Point},
@@ -201,7 +201,7 @@ Base.getindex(a::GeneralPolytope,i::Integer) = a.vertices[i]
 """
     get_graph(p::GeneralPolytope) -> Vector{Vector{Int32}}
 
-  It returns the edge-vertex graph of the polytope `p`.
+Returns the edge-vertex graph of `p`.
 """
 @inline get_graph(a::GeneralPolytope) = a.edge_vertex_graph
 
@@ -209,7 +209,7 @@ Base.getindex(a::GeneralPolytope,i::Integer) = a.vertices[i]
 """
     get_metadata(p::GeneralPolytope)
 
-  It return the metadata stored in the polytope `p`.
+Return the metadata stored in `p`.
 """
 get_metadata(a::GeneralPolytope) = a.metadata
 
@@ -217,14 +217,14 @@ get_metadata(a::GeneralPolytope) = a.metadata
 """
     isopen(p::GeneralPolytope) -> Bool
 
-  In return whether the polytope is watter tight or not.
+Return whether `p` is watertight or not.
 """
 Base.isopen(a::GeneralPolytope) = a.isopen
 
 """
-    isactive(p::GeneralPolytope,vertex::Integer) -> Bool
+    isactive(p::GeneralPolytope, vertex::Integer) -> Bool
 
-  It returns whether a vertex is connected to any other vertex.
+Returns whether `p`'s vertex of index `vertex` is connected to any other vertex of `p`.
 """
 function isactive(p::Polyhedron,vertex::Integer)
   !isempty( get_graph(p)[vertex] )
@@ -233,8 +233,7 @@ end
 """
     check_polytope_graph(p::GeneralPolytope) -> Bool
 
-  It checks whether the graph is well-constructed. The graph must be oriented
-  and planar.
+It checks whether `p`'s graph is well-constructed, i.e. if it is oriented and planar.
 """
 function check_polytope_graph(p::GeneralPolytope)
   check_polytope_graph(get_graph(p))
@@ -578,11 +577,12 @@ function simplexify_interior(p::Polygon)
 end
 
 """
-    simplexify_interior(p::Polyhedron)
+    simplexify_interior(p::Polyhedron) -> (coords, triangles)
 
-  `simplex_interior` computes a simplex partition of the volume inside
-  the Polyhedron `p`.
-  It returns a vector of coordinates and an array of connectivitties.
+`simplex_interior` computes a simplex partition of the volume inside the Polyhedron `p`.
+
+Returns a vector of coordinates `coords` and a vector `triangles` containing the
+connectivitty vectors defining each triangle of the partition.
 """
 function simplexify_interior(poly::Polyhedron)
   !isopen(poly) || return simplexify_surface(poly)
@@ -635,11 +635,12 @@ function simplexify_interior(poly::Polyhedron)
 end
 
 """
-    simplexify_surface(p::Polyhedron)
+    simplexify_surface(p::Polyhedron) -> (coords, triangles)
 
-  `simplex_surface` computes a simplex partition of the surface bounding
-  the Polyhedron `p`.
-  It returns a vector of coordinates and an array of connectivitties.
+Computes a simplex partition of the boundary of `p`.
+
+Returns a vector of coordinates `coords` and a vector `triangles` containing the
+connectivitty vectors defining each triangle of the partition.
 """
 function simplexify_surface(poly::Polyhedron)
   istouch = map( i -> falses(length(i)), get_graph(poly) )

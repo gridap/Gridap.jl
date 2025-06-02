@@ -1,10 +1,10 @@
 
 """
-    abstract type Quadrature{D,T} <: GridapType end
+    abstract type Quadrature{D,T} <: GridapType
 
--[`get_coordinates(q::Quadrature)`](@ref)
--[`get_weights(q::Quadrature)`](@ref)
--[`test_quadrature`](@ref)
+- [`get_coordinates(q::Quadrature)`](@ref)
+- [`get_weights(q::Quadrature)`](@ref)
+- [`test_quadrature`](@ref)
 """
 abstract type Quadrature{D,T} <: GridapType end
 
@@ -39,16 +39,16 @@ end
 num_points(q::Quadrature) = length(get_weights(q))
 
 """
-    num_point_dims(::Quadrature{D}) where D
-    num_point_dims(::Type{<:Quadrature{D}}) where D
+    num_point_dims(::Quadrature{D})
+    num_point_dims(::Type{<:Quadrature{D}})
 """
 num_point_dims(::Quadrature{D}) where D = D
 
 num_point_dims(::Type{<:Quadrature{D}}) where D = D
 
 """
-    num_dims(::Quadrature{D}) where D where D
-    num_dims(::Type{<:Quadrature{D}}) where D
+    num_dims(::Quadrature{D})
+    num_dims(::Type{<:Quadrature{D}})
 """
 num_dims(::Quadrature{D}) where D = D
 
@@ -57,7 +57,7 @@ num_dims(::Type{<:Quadrature{D}}) where D = D
 # Tester
 
 """
-    test_quadrature(q::Quadrature{D,T}) where {D,T}
+    test_quadrature(q::Quadrature{D,T})
 """
 function test_quadrature(q::Quadrature{D,T}) where {D,T}
   x = get_coordinates(q)
@@ -76,7 +76,9 @@ end
 # Generic concrete implementation
 
 """
-    struct GenericQuadrature{D,T,C <: AbstractVector{Point{D,T}},W <: AbstractVector{T}} <: Quadrature{D,T}
+    struct GenericQuadrature{D,T,
+        C <: AbstractVector{Point{D,T}}, W <: AbstractVector{T}} <: Quadrature{D,T}
+
       coordinates::Vector{Point{D,T}}
       weights::Vector{T}
       name::String
@@ -121,7 +123,7 @@ end
 Quadrature(name::QuadratureName,args...;kwargs...) = (name, args, kwargs)
 
 """
-    Quadrature(polytope::Polytope{D},degree) where D
+    Quadrature(polytope::Polytope{D}, degree)
 """
 function Quadrature(p::Polytope,degree;T::Type{<:AbstractFloat}=Float64)
   if is_n_cube(p)
