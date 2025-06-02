@@ -265,15 +265,15 @@ function Arrays.return_cache(k::PatchAssemblyMap,patch)
   caches = patch_assembly_cache(res,k.cell_data)
 
   c_res = CachedArray(res)
-  uwr_cache = return_cache(Fields.unwrap_cached_array,c_res)
+  uwr_cache = return_cache(Arrays.unwrap_cached_array,c_res)
   return c_res, uwr_cache, caches
 end
 
 function Arrays.evaluate!(cache,k::PatchAssemblyMap,patch)
   c_res, uwr_cache, caches = cache
   _resize_cache!(c_res,k.assem.strategy,k.patch_sizes[patch])
-  res = evaluate!(uwr_cache,Fields.unwrap_cached_array,c_res)
-  Fields._zero_entries!(res)
+  res = evaluate!(uwr_cache,Arrays.unwrap_cached_array,c_res)
+  Arrays.fill_entries!(res,zero(Arrays.entry_type(res)))
   patch_assembly!(caches,res,k.cell_data,patch)
   return _unview(res)
 end
@@ -290,8 +290,8 @@ function Arrays.return_cache(k::PatchAssemblyMap{<:Tuple{<:Tuple,<:Tuple}},patch
   matvec_caches = patch_assembly_cache(mat,vec,matvecdata)
 
   c_mat, c_vec = CachedArray(mat), CachedArray(vec)
-  uwm_cache = return_cache(Fields.unwrap_cached_array,c_mat)
-  uwv_cache = return_cache(Fields.unwrap_cached_array,c_vec)
+  uwm_cache = return_cache(Arrays.unwrap_cached_array,c_mat)
+  uwv_cache = return_cache(Arrays.unwrap_cached_array,c_vec)
 
   return c_mat, c_vec, uwm_cache, uwv_cache, matvec_caches, mat_caches, vec_caches
 end
@@ -302,11 +302,11 @@ function Arrays.evaluate!(cache,k::PatchAssemblyMap{<:Tuple{<:Tuple,<:Tuple}},pa
 
   _resize_cache!(c_mat,k.assem.strategy,k.patch_sizes[patch][1])
   _resize_cache!(c_vec,k.assem.strategy,k.patch_sizes[patch][2])
-  mat = evaluate!(uwm_cache,Fields.unwrap_cached_array,c_mat)
-  vec = evaluate!(uwv_cache,Fields.unwrap_cached_array,c_vec)
+  mat = evaluate!(uwm_cache,Arrays.unwrap_cached_array,c_mat)
+  vec = evaluate!(uwv_cache,Arrays.unwrap_cached_array,c_vec)
 
-  Fields._zero_entries!(mat)
-  Fields._zero_entries!(vec)
+  Arrays.fill_entries!(mat,zero(Arrays.entry_type(mat)))
+  Arrays.fill_entries!(vec,zero(Arrays.entry_type(vec)))
 
   patch_assembly!(matvec_caches,mat,vec,matvecdata,patch)
   patch_assembly!(mat_caches,mat,matdata,patch)

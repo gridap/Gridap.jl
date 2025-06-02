@@ -1,4 +1,4 @@
-module BlocksTests
+module FieldArrayBlocksTests
 
 using Gridap.TensorValues
 using Gridap.Arrays
@@ -7,7 +7,6 @@ using Gridap.Fields: ArrayBlock, MockFieldArray, MockField, BroadcastingFieldOpM
 using Test
 using FillArrays
 using LinearAlgebra
-#using Gridap.ReferenceFEs
 
 b = ArrayBlock([Int[],[1,2,3,4]],Bool[0,1])
 @test length(b) == 2
@@ -16,13 +15,6 @@ b = ArrayBlock([Int[],[1,2,3,4]],Bool[0,1])
 @test b[1] == nothing
 @test b[2] == [1,2,3,4]
 b2 = ArrayBlock([ rand(2,3) for i in 1:4, j in 1:3],rand([true,false],4,3))
-
-#@show b
-#display(b)
-#@show b2
-#display(b2)
-#display(rand(3,4))
-#display(rand(3))
 
 @test typeof(testvalue(typeof(b))) == typeof(b)
 
@@ -230,9 +222,4 @@ k!(vec,c11,I11)
 k!(mat,A,I,J)
 k!(vec,c,I)
 
-#display(A)
-#display(c)
-#display(A[1,1])
-#display(c[1])
-#display(c[1][2])
 end # module

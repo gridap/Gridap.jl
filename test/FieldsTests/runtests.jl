@@ -16,7 +16,7 @@ using Test
 
 @testset "LazyFieldArrays" begin include("LazyFieldArraysTests.jl") end
 
-@testset "ArrayBlocks" begin include("ArrayBlocksTests.jl") end
+@testset "FieldArrayBlocks" begin include("FieldArrayBlocksTests.jl") end
 
 @testset "InverseFields" begin include("InverseFieldsTests.jl") end
 

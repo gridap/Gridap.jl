@@ -110,7 +110,7 @@ end
 
 function _cache_compress(array::ArrayBlock)
   c1 = CachedArray(deepcopy(array))
-  c2 = return_cache(Fields.unwrap_cached_array,c1)
+  c2 = return_cache(Arrays.unwrap_cached_array,c1)
   c1,c2
 end
 
@@ -144,7 +144,7 @@ function _uncached_compress!(a::CachedArray,c2)
 end
 
 function _uncached_compress!(c1::ArrayBlock,c2)
-  evaluate!(c2,Fields.unwrap_cached_array,c1)
+  evaluate!(c2,Arrays.unwrap_cached_array,c1)
 end
 
 function _uncached_compress!(c1::Tuple,c2)
