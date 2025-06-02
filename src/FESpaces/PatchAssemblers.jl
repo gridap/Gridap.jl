@@ -180,6 +180,30 @@ function collect_patch_cell_matrix_and_vector(
   (matvecdata, matdata, vecdata)
 end
 
+function collect_and_merge_cell_matrix(assem::PatchAssembler,contributions...)
+  data = ()
+  for c in contributions
+    data = (data..., collect_patch_cell_matrix(assem,c...))
+  end
+  merge_assembly_data(data...)
+end
+
+function collect_and_merge_cell_vector(assem::PatchAssembler,contributions...)
+  data = ()
+  for c in contributions
+    data = (data..., collect_patch_cell_vector(assem,c...))
+  end
+  merge_assembly_data(data...)
+end
+
+function collect_and_merge_cell_matrix_and_vector(assem::PatchAssembler,contributions...)
+  data = ()
+  for c in contributions
+    data = (data..., collect_patch_cell_matrix_and_vector(assem,c...))
+  end
+  merge_assembly_matvec_data(data...)
+end
+
 # PatchAssemblyMap
 
 struct PatchAssemblyMap{T} <: Map
@@ -533,27 +557,56 @@ end
 
 LocalSolveMap() = LocalSolveMap(NoPivot())
 
-function Arrays.evaluate!(cache,k::LocalSolveMap, matvec::Tuple)
-  mat, vec = matvec
-  evaluate!(cache,k,mat,vec)
+Arrays.return_value(k::LocalSolveMap, matvec::Tuple) = return_value(k,matvec[1],matvec[2])
+Arrays.return_cache(k::LocalSolveMap, matvec::Tuple) = return_cache(k,matvec[1],matvec[2])
+Arrays.evaluate!(cache, k::LocalSolveMap, matvec::Tuple) = evaluate!(cache,k,matvec[1],matvec[2])
+
+Arrays.return_value(k::LocalSolveMap, mat, vec) = similar(vec)
+
+function Arrays.return_cache(k::LocalSolveMap, mat, vec)
+  CachedArray(mat), CachedArray(vec)
 end
 
 function Arrays.evaluate!(cache,k::LocalSolveMap, mat, vec)
-  f = lu!(mat,k.pivot;check=false)
+  cmat, cvec = cache
+
+  setsize!(cmat, size(mat))
+  copy!(cmat.array, mat)
+  f = lu!(cmat.array,k.pivot;check=false)
   @check issuccess(f) "Factorization failed"
-  ldiv!(f,vec)
-  return vec
+
+  setsize!(cvec, size(vec))
+  ldiv!(cvec.array,f,vec)
+
+  return cvec.array
+end
+
+function Arrays.return_value(k::LocalSolveMap, mat::MatrixBlock, vec::MatrixBlock)
+  ntuple(i -> similar(get_array(vec)[i]), size(vec,2))
+end
+
+function Arrays.return_cache(k::LocalSolveMap, mat::MatrixBlock, vec::MatrixBlock)
+  @check size(mat,1) == size(mat,2) == size(vec,1) == 1
+  CachedArray(get_array(mat)[1,1]), ntuple(i -> CachedArray(get_array(vec)[i]), size(vec,2))
 end
 
 function Arrays.evaluate!(cache,k::LocalSolveMap, mat::MatrixBlock, vec::MatrixBlock)
   @check size(mat,1) == size(mat,2) == size(vec,1) == 1
-  f = lu!(get_array(mat)[1,1],k.pivot;check=false)
+  cmat, cvec = cache
+
+  m = get_array(mat)[1,1]
+  setsize!(cmat, size(m))
+  copy!(cmat.array, m)
+  f = lu!(cmat.array,k.pivot;check=false)
   @check issuccess(f) "Factorization failed"
-  v = reshape(get_array(vec),size(vec,2))
+
+  v = get_array(vec)
   for i in eachindex(v)
-    ldiv!(f,v[i])
+    setsize!(cvec[i], size(v[i]))
+    ldiv!(cvec[i].array,f,v[i])
   end
-  return Tuple(v)
+
+  return ntuple(i -> cvec[i].array, size(vec,2))
 end
 
 ###########################################################################################

@@ -9,13 +9,13 @@ end
 
 function testargs(k::PosNegReindex,i::Integer)
   @check length(k.values_pos) !=0 || length(k.values_neg) != 0 "This map has empty domain"
-  @check eltype(k.values_pos) == eltype(k.values_neg) "This map is type-instable"
+  @check eltype(k.values_pos) == eltype(k.values_neg) "This map is type-unstable"
   length(k.values_pos) !=0 ? (one(i),) : (-one(i))
 end
 
 function return_value(k::PosNegReindex,i::Integer)
   if length(k.values_pos)==0 && length(k.values_neg)==0
-    @check eltype(k.values_pos) == eltype(k.values_neg) "This map is type-instable"
+    @check eltype(k.values_pos) == eltype(k.values_neg) "This map is type-unstable"
     testitem(k.values_pos)
   else
     evaluate(k,testargs(k,i)...)

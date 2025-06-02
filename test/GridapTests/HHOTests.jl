@@ -130,12 +130,14 @@ function weakform()
   Ru, Rv = R(u), R(v)
   SΓa_u, SΓa_v = SΓa(u), SΓa(v)
   SΓb_u, SΓb_v = SΓb(Ru), SΓb(Rv)
-  ll = FESpaces.collect_cell_matrix_and_vector(Xp,Xp,a(Ru,Rv),DomainContribution(),zero(Xp))
-  aa = FESpaces.collect_cell_matrix_and_vector(X,X,mass_Γ(SΓa_u,SΓa_v),l(v),zero(X))
-  ab = FESpaces.collect_cell_matrix_and_vector(X,Xp,mass_Γ(SΓa_u,SΓb_v),DomainContribution(),zero(X))
-  ba = FESpaces.collect_cell_matrix_and_vector(Xp,X,mass_Γ(SΓb_u,SΓa_v),DomainContribution(),zero(Xp))
-  bb = FESpaces.collect_cell_matrix_and_vector(Xp,Xp,mass_Γ(SΓb_u,SΓb_v),DomainContribution(),zero(Xp))
-  data = FESpaces.merge_assembly_matvec_data(ll,aa,ab,ba,bb)
+
+  data = FESpaces.collect_and_merge_cell_matrix_and_vector(
+    (Xp, Xp, a(Ru,Rv) + mass_Γ(SΓb_u,SΓb_v), DomainContribution(), zero(Xp)),
+    (X, X, mass_Γ(SΓa_u,SΓa_v), l(v), zero(X)),
+    (X, Xp, mass_Γ(SΓa_u,SΓb_v), DomainContribution(), zero(X)),
+    (Xp, X, mass_Γ(SΓb_u,SΓa_v), DomainContribution(), zero(Xp)),
+  )
+
   return assemble_matrix_and_vector(global_assem,data)
 end
 
@@ -146,12 +148,14 @@ function patch_weakform()
   Ru, Rv = R(u), R(v)
   SΓa_u, SΓa_v = SΓa(u), SΓa(v)
   SΓb_u, SΓb_v = SΓb(Ru), SΓb(Rv)
-  ll = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,Xp,a(Ru,Rv),DomainContribution(),zero(Xp))
-  aa = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,X,X,mass_Γ(SΓa_u,SΓa_v),l(v),zero(X))
-  ab = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,X,Xp,mass_Γ(SΓa_u,SΓb_v),DomainContribution(),zero(X))
-  ba = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,X,mass_Γ(SΓb_u,SΓa_v),DomainContribution(),zero(Xp))
-  bb = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,Xp,mass_Γ(SΓb_u,SΓb_v),DomainContribution(),zero(Xp))
-  data = FESpaces.merge_assembly_matvec_data(ll,aa,ab,ba,bb)
+
+  data = FESpaces.collect_and_merge_cell_matrix_and_vector(patch_assem,
+    (Xp, Xp, a(Ru,Rv) + mass_Γ(SΓb_u,SΓb_v), DomainContribution(), zero(Xp)),
+    (X, X, mass_Γ(SΓa_u,SΓa_v), l(v), zero(X)),
+    (X, Xp, mass_Γ(SΓa_u,SΓb_v), DomainContribution(), zero(X)),
+    (Xp, X, mass_Γ(SΓb_u,SΓa_v), DomainContribution(), zero(Xp)),
+  )
+
   return assemble_matrix_and_vector(patch_assem,data)
 end
 
@@ -160,8 +164,8 @@ x = A \ b
 ui, ub = FEFunction(X,x);
 
 eh = ui - uex
-err = sqrt(sum(∫(eh⋅eh)dΩp))
-@test err < 1e-10
+el2 = sqrt(sum(∫(eh⋅eh)dΩp))
+@test el2 < 1e-10
 
 # Static condensation
 op = MultiField.StaticCondensationOperator(X,patch_assem,patch_weakform())
@@ -169,12 +173,12 @@ xh = solve(op)
 uΩ, uΓ = xh
 
 eu = uΩ - uex 
-err = sqrt(sum( ∫(eu * eu)dΩp))
-@test err < 1e-10
+el2 = sqrt(sum( ∫(eu * eu)dΩp))
+@test el2 < 1e-10
 
 Rxh = R(xh)
 eu = Rxh - uex
-err = sqrt(sum( ∫(eu * eu)dΩp))
-@test err < 1e-10
+el2 = sqrt(sum( ∫(eu * eu)dΩp))
+@test el2 < 1e-10
 
 end

@@ -544,6 +544,32 @@ function collect_cell_matrix_and_vector(
   collect_cell_matrix_and_vector(trial,test,biform,liform,uhd)
 end
 
+# Merging contributions in matrix/vector format
+
+function collect_and_merge_cell_matrix(contributions...)
+  data = ()
+  for c in contributions
+    data = (data..., collect_cell_matrix(c...))
+  end
+  merge_assembly_data(data...)
+end
+
+function collect_and_merge_cell_vector(contributions...)
+  data = ()
+  for c in contributions
+    data = (data..., collect_cell_vector(c...))
+  end
+  merge_assembly_data(data...)
+end
+
+function collect_and_merge_cell_matrix_and_vector(contributions...)
+  data = ()
+  for c in contributions
+    data = (data..., collect_cell_matrix_and_vector(c...))
+  end
+  merge_assembly_matvec_data(data...)
+end
+
 function merge_assembly_data(data...)
   @assert allequal(length,data)
   map(vcat,data...)
