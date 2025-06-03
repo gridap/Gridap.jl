@@ -220,8 +220,8 @@ end
 
 function setsize_op!(::typeof(copy),a::ArrayBlock,b::ArrayBlock)
   @check size(a) == size(b)
-  for i in eachindex(a.array)
-    if a.touched[i]
+  for i in eachindex(b.array)
+    if b.touched[i]
       setsize_op!(copy,a.array[i],b.array[i])
     end
   end
