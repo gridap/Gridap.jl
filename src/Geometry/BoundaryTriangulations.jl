@@ -6,9 +6,8 @@ struct FaceToCellGlue{A,B,C,D} <: GridapType
   face_to_lcell::Vector{Int8}
   face_to_ftype::B
   cell_to_ctype::C
-  bgface_to_lcell::D # TODO: Remove this (currently used in GridapEmbedded)
   cell_to_lface_to_pindex::Table{Int8,Vector{Int8},Vector{Int32}}
-  ctype_to_lface_to_ftype::Vector{Vector{Int8}}
+  ctype_to_lface_to_ftype::D
 end
 
 function FaceToCellGlue(
@@ -31,17 +30,12 @@ function FaceToCellGlue(
   face_to_lface = collect(Int8,lazy_map(Reindex(bgface_to_lface), face_to_bgface))
   face_to_lcell = collect(Int8,lazy_map(Reindex(bgface_to_lcell), face_to_bgface))
 
-  f = (p)->fill(Int8(UNSET),num_faces(p,Df))
-  ctype_to_lface_to_ftype = map( f, get_polytopes(cell_grid) )
   face_to_ftype = get_cell_type(face_grid)
   cell_to_ctype = get_cell_type(cell_grid)
 
-  _fill_ctype_to_lface_to_ftype!(
-    ctype_to_lface_to_ftype,
-    face_to_cell,
-    face_to_lface,
-    face_to_ftype,
-    cell_to_ctype)
+  ctype_to_lface_to_ftype = generate_ctype_to_lface_to_ftype(
+    cell_grid, face_grid, face_to_cell, face_to_lface, face_to_ftype, cell_to_ctype
+  )
 
   FaceToCellGlue(
     face_to_bgface,
@@ -50,23 +44,8 @@ function FaceToCellGlue(
     face_to_lcell,
     face_to_ftype,
     cell_to_ctype,
-    bgface_to_lcell,
     cell_to_lface_to_pindex,
     ctype_to_lface_to_ftype)
-end
-
-function _fill_ctype_to_lface_to_ftype!(
-  ctype_to_lface_to_ftype,
-  face_to_cell,
-  face_to_lface,
-  face_to_ftype,
-  cell_to_ctype)
-  for (face, cell) in enumerate(face_to_cell)
-    ctype = cell_to_ctype[cell]
-    lface = face_to_lface[face]
-    ftype = face_to_ftype[face]
-    ctype_to_lface_to_ftype[ctype][lface] = ftype
-  end
 end
 
 function OverlappingFaceToCellGlue(
@@ -86,17 +65,11 @@ function OverlappingFaceToCellGlue(
   face_to_cell  = collect(Int32,lazy_map(getindex,face_to_cells,face_to_lcell))
   face_to_lface = find_local_index(face_to_bgface,face_to_cell,cell_to_bgfaces)
 
-  f = (p) -> fill(Int8(UNSET), num_faces(p,Df))
-  ctype_to_lface_to_ftype = map(f, get_polytopes(cell_grid))
   face_to_ftype = get_cell_type(face_grid)
   cell_to_ctype = get_cell_type(cell_grid)
 
-  _fill_ctype_to_lface_to_ftype!(
-    ctype_to_lface_to_ftype,
-    face_to_cell,
-    face_to_lface,
-    face_to_ftype,
-    cell_to_ctype
+  ctype_to_lface_to_ftype = generate_ctype_to_lface_to_ftype(
+    cell_grid, face_grid, face_to_cell, face_to_lface, face_to_ftype, cell_to_ctype
   )
 
   FaceToCellGlue(
@@ -106,10 +79,30 @@ function OverlappingFaceToCellGlue(
     face_to_lcell,
     face_to_ftype,
     cell_to_ctype,
-    nothing,
     cell_to_lface_to_pindex,
     ctype_to_lface_to_ftype
   )
+end
+
+function generate_ctype_to_lface_to_ftype(
+  cell_grid::Grid, face_grid::Grid, face_to_cell, face_to_lface, face_to_ftype, cell_to_ctype
+)
+  Df = num_cell_dims(face_grid)
+  f(p) = fill(Int8(UNSET),num_faces(p,Df))
+  ctype_to_lface_to_ftype = map(f, get_polytopes(cell_grid))
+  for (face, cell) in enumerate(face_to_cell)
+    ctype = cell_to_ctype[cell]
+    lface = face_to_lface[face]
+    ftype = face_to_ftype[face]
+    ctype_to_lface_to_ftype[ctype][lface] = ftype
+  end
+  return ctype_to_lface_to_ftype
+end
+
+function generate_ctype_to_lface_to_ftype(
+  cell_grid::PolytopalGrid{3}, face_grid::PolytopalGrid{2}, face_to_cell, face_to_lface, face_to_ftype, cell_to_ctype
+)
+  return nothing # Too expensive and not needed for polytopal grids
 end
 
 function get_children(n::TreeNode, a::FaceToCellGlue)

@@ -155,7 +155,7 @@ end
 
 function Polyhedron(p::Polytope{3},vertices::AbstractVector{<:Point};kwargs...)
   if p == TET
-    e_v_graph = [Int32[2,4,3],Int32[3,4,1],Int32[1,4,2],Int32[1,2,3]]
+    e_v_graph = [Int32[3,4,2],Int32[1,4,3],Int32[2,4,1],Int32[3,2,1]]
   elseif p == HEX
     e_v_graph = [
       Int32[5, 2, 3],
@@ -362,11 +362,19 @@ function compute_tangent_space(::Val{D},coords;tol=1e-10) where D
   return space
 end
 
-function get_facet_normal(p::Polygon)
-  D = 2
-  f_to_v = get_faces(p,D-1,0)
+# Normal for a Polygon embedded in 3D space
+function get_cell_normal(p::Polygon{3})
   coords = get_vertex_coordinates(p)
-  @notimplementedif num_components(eltype(coords)) != 2
+  v1, v2 = compute_tangent_space(Val(2),coords)
+  n = v1 × v2
+  n /= norm(n)
+  return n
+end
+
+# Normal for edges of a Polygon embedded in 2D space
+function get_facet_normal(p::Polygon{2})
+  f_to_v = get_faces(p,1,0)
+  coords = get_vertex_coordinates(p)
   map(f_to_v) do v
     e = coords[v[2]]-coords[v[1]]
     n = VectorValue( e[2], -e[1] )
@@ -374,15 +382,26 @@ function get_facet_normal(p::Polygon)
   end
 end
 
-function get_facet_normal(p::Polygon,lfacet::Integer)
-  D = 2
-  v = get_faces(p,D-1,0)[lfacet]
+function get_facet_normal(p::Polygon{2},lfacet::Integer)
+  v = get_faces(p,1,0)[lfacet]
   coords = get_vertex_coordinates(p)
-  @notimplementedif num_components(eltype(coords)) != 2
   e = coords[v[2]]-coords[v[1]]
   n = VectorValue(e[2],-e[1] )
   n /= norm(n)
   return n
+end
+
+# Normal for edges of a Polygon embedded in 3D space
+function get_facet_normal(p::Polygon{3})
+  t = get_edge_tangent(p)
+  n = get_cell_normal(p)
+  return t .× n
+end
+
+function get_facet_normal(p::Polygon{3},lfacet::Integer)
+  t = get_edge_tangent(p,lfacet)
+  n = get_cell_normal(p)
+  return t × n
 end
 
 function get_edge_tangent(p::GeneralPolytope)
@@ -392,6 +411,13 @@ function get_edge_tangent(p::GeneralPolytope)
     e = coords[v[2]]-coords[v[1]]
     e / norm(e)
   end
+end
+
+function get_edge_tangent(p::GeneralPolytope,ledge::Integer)
+  v = get_faces(p,1,0)[ledge]
+  coords = get_vertex_coordinates(p)
+  e = coords[v[2]]-coords[v[1]]
+  return e / norm(e)
 end
 
 function get_dimranges(p::GeneralPolytope)

@@ -10,9 +10,11 @@ u(x) = x[1] + x[2]
 q(x) = -∇(u)(x)
 f(x) = (∇ ⋅ q)(x)
 
-nc = (4,4)
-model = simplexify(CartesianDiscreteModel((0,1,0,1),nc))
-D = num_cell_dims(model)
+D = 3
+nc = Tuple(fill(4, D))
+domain = Tuple(repeat([0, 1], D))
+model = simplexify(CartesianDiscreteModel(domain,nc))
+
 Ω = Triangulation(ReferenceFE{D}, model)
 Γ = Triangulation(ReferenceFE{D-1}, model)
 
