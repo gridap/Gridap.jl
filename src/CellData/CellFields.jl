@@ -277,15 +277,26 @@ end
 function _point_to_cell!(cache, x::Point)
   searchmethod, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache = cache
 
-  # Loop over the first m.num_nearest_vertex
-  x_val = ForwardDiff.value(x)
-  for (id,dist) in zip(knn(kdtree, SVector(Tuple(x_val)), searchmethod.num_nearest_vertices, true)...)
+  function cell_distance(cell::Integer)
+    ctype = cell_to_ctype[cell]
+    polytope = ctype_to_polytope[ctype]
+    cmap = cell_map[cell]
+    inv_cmap = inverse_map(cmap)
+    return distance(polytope, inv_cmap, x)
+  end
+
+  # Find the nearest vertices to the point `x` in the triangulation
+  vertices, distances = knn(kdtree, get_array(ForwardDiff.value(x)), searchmethod.num_nearest_vertices, true)
+
+  T = eltype(distances)
+  tol = max(1000*eps(T), T(searchmethod.tol))
+  for vertex in vertices
 
     # Find all neighbouring cells
-    cells = getindex!(table_cache,vertex_to_cells,id)
+    cells = getindex!(table_cache,vertex_to_cells,vertex)
     @assert !isempty(cells)
 
-    # Calculate the distance from the point to all the cells. Without
+    # Calculate the distance from the point to all the neighbor cells. Without
     # round-off, and with non-overlapping cells, the distance would be
     # negative for exactly one cell and positive for all other ones. Due
     # to round-off, the distance can be slightly negative or slightly
@@ -293,15 +304,7 @@ function _point_to_cell!(cache, x::Point)
     # vertices. In this case, choose the cell with the smallest
     # distance, and check that the distance (if positive) is at most at
     # round-off level.
-    T = eltype(dist)
-    function cell_distance(cell::Integer)
-      ctype = cell_to_ctype[cell]
-      polytope = ctype_to_polytope[ctype]
-      cmap = cell_map[cell]
-      inv_cmap = inverse_map(cmap)
-      return distance(polytope, inv_cmap, x)
-    end
-    # findmin, without allocating an array
+
     cell = zero(eltype(cells))
     dist = T(Inf)
     for jcell in cells
@@ -312,8 +315,7 @@ function _point_to_cell!(cache, x::Point)
       end
     end
 
-    dist ≤ 1000eps(T) && return cell
-
+    (dist < tol) && return cell
   end
 
   # Output error message if cell not found
@@ -808,10 +810,12 @@ function (a::SkeletonPair{<:CellField})(x)
 end
 
 # Interpolable struct
-struct KDTreeSearch
+struct KDTreeSearch{T}
   num_nearest_vertices::Int
-  function KDTreeSearch(;num_nearest_vertices=1)
-    new(num_nearest_vertices)
+  tol::T
+  function KDTreeSearch(; num_nearest_vertices=1, tol=1.e-10)
+    T = typeof(tol)
+    new{T}(num_nearest_vertices, tol)
   end
 end
 
@@ -819,7 +823,7 @@ struct Interpolable{M,A} <: Function
   uh::A
   tol::Float64
   searchmethod::M
-  function Interpolable(uh; tol=1e-6, searchmethod=KDTreeSearch())
+  function Interpolable(uh; tol=1e-10, searchmethod=KDTreeSearch(; tol=tol))
     new{typeof(searchmethod),typeof(uh)}(uh, tol,searchmethod)
   end
 end
