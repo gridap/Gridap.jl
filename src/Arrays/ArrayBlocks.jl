@@ -219,7 +219,7 @@ function CachedArray(a::ArrayBlock)
 end
 
 function setsize_op!(::typeof(copy),a::ArrayBlock,b::ArrayBlock)
-  @check a.touched == b.touched
+  @check size(a) == size(b)
   for i in eachindex(a.array)
     if a.touched[i]
       setsize_op!(copy,a.array[i],b.array[i])
