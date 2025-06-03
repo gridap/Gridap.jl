@@ -12,6 +12,7 @@ using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
 using Gridap.ReferenceFEs
+using Gridap.Arrays
 
 function l2_error(uh,u,dΩ)
   eh = uh - u
@@ -33,7 +34,7 @@ function projection_operator(V, Ω, dΩ)
   mass(u,v) = ∫(u⋅Π(v,Ω))dΩ
   V0 = FESpaces.FESpaceWithoutBCs(V)
   P = FESpaces.LocalOperator(
-    FESpaces.LocalSolveMap(), V0, mass, mass; trian_out = Ω
+    LocalSolveMap(), V0, mass, mass; trian_out = Ω
   )
   return P
 end
@@ -48,7 +49,7 @@ function divergence_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
   mfs = MultiField.BlockMultiFieldStyle(1)
   W = MultiFieldFESpace([L];style=mfs)
   D = FESpaces.LocalOperator(
-    FESpaces.LocalSolveMap(), ptopo, W, Y, lhs, rhs; space_out = L
+    LocalSolveMap(), ptopo, W, Y, lhs, rhs; space_out = L
   )
   _D(u) = swap_field_ids(D(swap_field_ids(u,[1,2],2)),[1,2],3)
   return _D
@@ -69,7 +70,7 @@ function hdiv_reconstruction_operator(ptopo, order, X, Ω, Γ, Γp, dΩp, dΓp)
   Y = FESpaces.FESpaceWithoutBCs(X)
 
   RT = FESpaces.LocalOperator(
-    FESpaces.LocalSolveMap(RowMaximum()), ptopo, W1, Y, lhs, rhs; space_out = L, space_test = W2
+    LocalSolveMap(RowMaximum()), ptopo, W1, Y, lhs, rhs; space_out = L, space_test = W2
   )
   _RT(u) = swap_field_ids(RT(swap_field_ids(u,[1,2],2)),[1,2],3)
   return _RT

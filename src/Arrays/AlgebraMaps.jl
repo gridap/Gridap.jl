@@ -239,3 +239,162 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
     end # @eval
   end # for VT
 end # end for T
+
+###########################################################################################
+# Local solver maps
+
+"""
+    LocalSolveMap(; factorize! = lu!, pivot = NoPivot())
+
+A map for solving local linear systems, relying on a factorization method.
+
+Given a left-hand-side matrix `mat` and a set of N right-hand-side arrays `lhs`, 
+returns an N-Tuple of arrays containing the solutions to the linear systems defined by 
+
+Each system is given by `A*x_i = b_i`, and the solution is computed as 
+`x_i = ldiv!(factorize!(A,pivot),b_i)`
+
+"""
+struct LocalSolveMap{A,B} <: Map
+  factorize! :: A
+  pivot :: B
+end
+
+LocalSolveMap(; factorize! = lu!, pivot = NoPivot()) = LocalSolveMap(factorize!, pivot)
+
+Arrays.return_value(k::LocalSolveMap, matvec::Tuple) = return_value(k,matvec[1],matvec[2])
+Arrays.return_cache(k::LocalSolveMap, matvec::Tuple) = return_cache(k,matvec[1],matvec[2])
+Arrays.evaluate!(cache, k::LocalSolveMap, matvec::Tuple) = evaluate!(cache,k,matvec[1],matvec[2])
+
+Arrays.return_value(k::LocalSolveMap, mat, vec) = similar(vec)
+
+function Arrays.return_cache(k::LocalSolveMap, mat, vec)
+  CachedArray(mat), CachedArray(vec)
+end
+
+function Arrays.evaluate!(cache,k::LocalSolveMap, mat, vec)
+  cmat, cvec = cache
+
+  setsize!(cmat, size(mat))
+  copy!(cmat.array, mat)
+  f = k.factorize!(cmat.array,k.pivot;check=false)
+  @check issuccess(f) "Factorization failed"
+
+  setsize!(cvec, size(vec))
+  ldiv!(cvec.array,f,vec)
+
+  return cvec.array
+end
+
+function Arrays.return_value(k::LocalSolveMap, mat::MatrixBlock, vec::MatrixBlock)
+  ntuple(i -> similar(get_array(vec)[i]), size(vec,2))
+end
+
+function Arrays.return_cache(k::LocalSolveMap, mat::MatrixBlock, vec::MatrixBlock)
+  @check size(mat,1) == size(mat,2) == size(vec,1) == 1
+  CachedArray(get_array(mat)[1,1]), ntuple(i -> CachedArray(get_array(vec)[i]), size(vec,2))
+end
+
+function Arrays.evaluate!(cache,k::LocalSolveMap, mat::MatrixBlock, vec::MatrixBlock)
+  @check size(mat,1) == size(mat,2) == size(vec,1) == 1
+  cmat, cvec = cache
+
+  m = get_array(mat)[1,1]
+  setsize!(cmat, size(m))
+  copy!(cmat.array, m)
+  f = k.factorize!(cmat.array,k.pivot;check=false)
+  @check issuccess(f) "Factorization failed"
+
+  v = get_array(vec)
+  for i in eachindex(v)
+    setsize!(cvec[i], size(v[i]))
+    ldiv!(cvec[i].array,f,v[i])
+  end
+
+  return ntuple(i -> cvec[i].array, size(vec,2))
+end
+
+###########################################################################################
+
+"""
+    LocalPenaltySolveMap(; factorize! = lu!, pivot = NoPivot())
+
+A map for solving local constrained linear systems, relying on a factorization method.
+
+Given a left-hand-side 2x2 block matrix matrix`mat` and a set of 2xN right-hand-side arrays `lhs`, 
+returns an N-Tuple of arrays containing the solutions to the linear systems. 
+
+Each system is given by `A*[x_i; λ_i] = b_i`, where `A = [App, Aλp; Apλ, 0]` is the
+augmented matrix, and `b_i = [Bp; Bλ]` is the right-hand side vector. The solution is 
+computed using a penalty method, as `x_i = ldiv!(factorize!(C,pivot),d_i)` with 
+`C = App + μT * Apλ * Aλp` and `d_i = Bp + μT * Apλ * Bλ`, where `μT` is a penalty parameter.
+The penalty parameter μT is heuristically chosen as `μT = norm(App)/norm(Apλ*Aλp)`.
+
+"""
+struct LocalPenaltySolveMap{A,B} <: Map
+  factorize! :: A
+  pivot :: B
+end
+
+LocalPenaltySolveMap(; factorize! = lu!, pivot = NoPivot()) = LocalPenaltySolveMap(factorize!, pivot)
+
+function Arrays.evaluate!(cache::Nothing, k::LocalPenaltySolveMap, mats::Tuple)
+  lhs, rhs = mats
+  evaluate!(cache, k, lhs, rhs)
+end
+
+function Arrays.evaluate!(cache::Nothing, k::LocalPenaltySolveMap, lhs, rhs::VectorBlock)
+  @check size(lhs) == (2,2)
+  @check size(rhs) == (2,)
+
+  App, Aλp, Apλ, _ = get_array(lhs)
+  Bp, Bλ = get_array(rhs)
+
+  # μT = norm(App)/norm(Apλ*Aλp) is a heuristic choice for the penalty parameter
+  if isone(size(Apλ,1))
+    μT = tr(App)/norm(Apλ)^2 # Single constraint
+  else
+    μT = tr(App)/norm(Apλ*Aλp) # Multiple constraints
+  end
+  
+  # App = App + μT * Apλ * Aλp
+  mul!(App, Apλ, Aλp, μT, 1)
+  
+  # Bp = Bp + μT * Apλ * Bλ
+  mul!(Bp, Apλ, Bλ, μT, 1)
+
+  Ainv = k.factorize!(App,k.pivot;check=false)
+  @check issuccess(Ainv) "Factorization failed"
+
+  Ru = ldiv!(Ainv,Bp)
+  return (Ru,)
+end
+
+function Arrays.evaluate!(cache::Nothing, k::LocalPenaltySolveMap, lhs, rhs)
+  @check size(lhs) == (2,2)
+  @check size(rhs) == (2,2)
+
+  App, Aλp, Apλ, _ = get_array(lhs)
+  BpΩ, BλΩ, BpΓ, _ = get_array(rhs)
+
+  # μT = norm(App)/norm(Apλ*Aλp) is a heuristic choice for the penalty parameter
+  if isone(size(Apλ,1))
+    μT = tr(App)/norm(Apλ)^2 # Single constraint
+  else
+    μT = tr(App)/norm(Apλ*Aλp) # Multiple constraints
+  end
+  
+  # App = App + μT * Apλ * Aλp
+  mul!(App, Apλ, Aλp, μT, 1)
+  
+  # BpΩ = BpΩ + μT * Apλ * BλΩ
+  mul!(BpΩ, Apλ, BλΩ, μT, 1)
+
+  Ainv = k.factorize!(App,k.pivot;check=false)
+  @check issuccess(Ainv) "Factorization failed"
+
+  RuΩ = ldiv!(Ainv,BpΩ)
+  RuΓ = ldiv!(Ainv,BpΓ)
+
+  return RuΩ, RuΓ
+end

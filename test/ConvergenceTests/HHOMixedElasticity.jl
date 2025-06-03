@@ -5,6 +5,7 @@ using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
 using Gridap.ReferenceFEs, Gridap.TensorValues
+using Gridap.Arrays
 
 ν(f) = skew_symmetric_gradient(f)
 
@@ -13,7 +14,7 @@ function projection_operator(V, Ω, dΩ)
   mass(u,v) = ∫(u⋅Π(v,Ω))dΩ
   V0 = FESpaces.FESpaceWithoutBCs(V)
   P = FESpaces.LocalOperator(
-    FESpaces.LocalSolveMap(), V0, mass, mass; trian_out = Ω
+    LocalSolveMap(), V0, mass, mass; trian_out = Ω
   )
   return P
 end
@@ -30,7 +31,7 @@ function gradient_operator(ptopo,X,order,Ω,Γp,dΩp,dΓp)
   Y = FESpaces.FESpaceWithoutBCs(X)
   W = MultiFieldFESpace([L];style=MultiField.BlockMultiFieldStyle(1))
   G = FESpaces.LocalOperator(
-    FESpaces.LocalSolveMap(), ptopo, W, Y, lhs, rhs; space_out = L
+    LocalSolveMap(), ptopo, W, Y, lhs, rhs; space_out = L
   )
   return G
 end

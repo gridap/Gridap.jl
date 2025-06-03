@@ -266,6 +266,8 @@ include("PolytopalFESpaces.jl")
 
 include("PatchAssemblers.jl")
 
+include("LocalFEOperators.jl")
+
 include("PatchFESpaces.jl")
 
 export get_free_values

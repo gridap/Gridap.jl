@@ -133,6 +133,9 @@ import Gridap.Io: from_dict
 export AddEntriesMap
 export TouchEntriesMap
 
+export LocalSolveMap
+export LocalPenaltySolveMap
+
 export ∑
 
 include("Interface.jl")

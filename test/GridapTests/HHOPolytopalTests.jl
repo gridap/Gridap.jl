@@ -5,14 +5,14 @@ using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
 using Gridap.ReferenceFEs
-
+using Gridap.Arrays
 
 function projection_operator(V, Ω, dΩ)
   Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
   mass(u,v) = ∫(u⋅Π(v,Ω))dΩ
   V0 = FESpaces.FESpaceWithoutBCs(V)
   P = FESpaces.LocalOperator(
-    FESpaces.LocalSolveMap(), V0, mass, mass; trian_out = Ω
+    LocalSolveMap(), V0, mass, mass; trian_out = Ω
   )
   return P
 end
@@ -24,7 +24,7 @@ function mf_projection_operator(V, Ω, dΩ)
   V0 = FESpaces.FESpaceWithoutBCs(V)
   W = MultiFieldFESpace([V0],style=MultiField.BlockMultiFieldStyle())
   P = FESpaces.LocalOperator(
-    FESpaces.LocalSolveMap(), W, lhs, rhs; trian_out = Ω, space_out = V
+    LocalSolveMap(), W, lhs, rhs; trian_out = Ω, space_out = V
   )
   return P
 end
@@ -38,7 +38,7 @@ function patch_projection_operator(ptopo,V,X,Ω,dΩ)
   Y = FESpaces.FESpaceWithoutBCs(X)
   W = MultiFieldFESpace([V0],style=MultiField.BlockMultiFieldStyle())
   P = FESpaces.LocalOperator(
-    FESpaces.LocalSolveMap(), ptopo, W, Y, lhs, rhs; trian_out = Ω, space_out = V
+    LocalSolveMap(), ptopo, W, Y, lhs, rhs; trian_out = Ω, space_out = V
   )
   return P
 end
@@ -57,7 +57,7 @@ function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
   mfs = Y.multi_field_style
   W = MultiFieldFESpace([L,Λ];style=mfs)
   R = FESpaces.LocalOperator(
-    FESpaces.HHO_ReconstructionOperatorMap(), ptopo, W, Y, lhs, rhs; space_out = L
+    LocalPenaltySolveMap(), ptopo, W, Y, lhs, rhs; space_out = L
   )
   return R
 end

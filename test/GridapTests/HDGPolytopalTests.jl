@@ -3,6 +3,7 @@ module HDGPolytopalTests
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField, Gridap.Polynomials
 using Gridap.CellData, Gridap.Fields, Gridap.ReferenceFEs, Gridap.Helpers
+using Gridap.Arrays
 
 using Gridap.FESpaces: get_facet_diameter
 
@@ -11,7 +12,7 @@ function projection_operator(V, Ω, dΩ)
     mass(u,v) = ∫(u⋅Π(v,Ω))dΩ
     V0 = FESpaces.FESpaceWithoutBCs(V)
     P = FESpaces.LocalOperator(
-      FESpaces.LocalSolveMap(), V0, mass, mass; trian_out = Ω
+      LocalSolveMap(), V0, mass, mass; trian_out = Ω
     )
     return P
 end
