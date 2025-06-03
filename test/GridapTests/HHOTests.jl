@@ -11,7 +11,7 @@ function projection_operator(V, Ω, dΩ)
   Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
   mass(u,v) = ∫(u⋅Π(v,Ω))dΩ
   V0 = FESpaces.FESpaceWithoutBCs(V)
-  P = FESpaces.LocalOperator(
+  P = LocalOperator(
     LocalSolveMap(), V0, mass, mass; trian_out = Ω
   )
   return P
@@ -23,7 +23,7 @@ function mf_projection_operator(V, Ω, dΩ)
   rhs((uT,uF),(q,)) = ∫(Π(uT,Ω)⋅q + Π(uF,Ω)⋅q)dΩ
   V0 = FESpaces.FESpaceWithoutBCs(V)
   W = MultiFieldFESpace([V0],style=MultiField.BlockMultiFieldStyle())
-  P = FESpaces.LocalOperator(
+  P = LocalOperator(
     LocalSolveMap(), W, lhs, rhs; trian_out = Ω, space_out = V
   )
   return P
@@ -37,7 +37,7 @@ function patch_projection_operator(ptopo,V,X,Ω,dΩ)
   V0 = FESpaces.FESpaceWithoutBCs(V)
   Y = FESpaces.FESpaceWithoutBCs(X)
   W = MultiFieldFESpace([V0],style=MultiField.BlockMultiFieldStyle())
-  P = FESpaces.LocalOperator(
+  P = LocalOperator(
     LocalSolveMap(), ptopo, W, Y, lhs, rhs; trian_out = Ω, space_out = V
   )
   return P
@@ -55,7 +55,7 @@ function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
   
   Y = FESpaces.FESpaceWithoutBCs(X)
   W = MultiFieldFESpace([L,Λ];style=MultiField.MultiFieldStyle(Y))
-  R = FESpaces.LocalOperator(
+  R = LocalOperator(
     LocalPenaltySolveMap(), ptopo, W, Y, lhs, rhs; space_out = L
   )
   return R

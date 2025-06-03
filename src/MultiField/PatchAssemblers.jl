@@ -78,7 +78,7 @@ end
 ###########################################################################################
 
 function Arrays.evaluate!(
-  cache,k::FESpaces.LocalOperator,space::MultiFieldFESpace
+  cache,k::LocalOperator,space::MultiFieldFESpace
 )
   u = evaluate!(cache,k,get_trial_fe_basis(space))
   v = map(u) do ui
@@ -88,7 +88,7 @@ function Arrays.evaluate!(
 end
 
 function Arrays.evaluate!(
-  cache,k::FESpaces.LocalOperator,u::MultiFieldFEBasisComponent
+  cache,k::LocalOperator,u::MultiFieldFEBasisComponent
 )
   nfields, fieldid = u.nfields, u.fieldid
   block_fields(fields,::TestBasis) = lazy_map(BlockMap(nfields,fieldid),fields)
@@ -100,7 +100,7 @@ function Arrays.evaluate!(
 end
 
 @inline function Arrays.evaluate!(
-  cache,k::FESpaces.LocalOperator,u::MultiFieldFEFunction
+  cache,k::LocalOperator,u::MultiFieldFEFunction
 )
   evaluate!(cache,k,u.multi_cell_field)
 end
@@ -111,7 +111,7 @@ end
 # change of domain of MultiFieldFEBasisComponent.
 # What tod do? We woudl need to somehow add methods to the `extend`/`pos_neg_data` machinery.
 function Arrays.evaluate!(
-  cache,k::FESpaces.LocalOperator,u::MultiFieldCellField
+  cache,k::LocalOperator,u::MultiFieldCellField
 )
   block_fields(fields,::TestBasis,i) = lazy_map(BlockMap(nfields,i),fields)
   block_fields(fields,::TrialBasis,i) = lazy_map(BlockMap((1,nfields),i),fields)

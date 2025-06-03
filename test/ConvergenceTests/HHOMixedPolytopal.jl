@@ -10,7 +10,7 @@ function projection_operator(V, Ω, dΩ)
   Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
   mass(u,v) = ∫(u⋅Π(v,Ω))dΩ
   V0 = FESpaces.FESpaceWithoutBCs(V)
-  P = FESpaces.LocalOperator(
+  P = LocalOperator(
     LocalSolveMap(), V0, mass, mass; trian_out = Ω
   )
   return P
@@ -29,7 +29,7 @@ function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
   Y = FESpaces.FESpaceWithoutBCs(X)
   mfs = Y.multi_field_style
   W = MultiFieldFESpace([L,Λ];style=mfs)
-  R = FESpaces.LocalOperator(
+  R = LocalOperator(
     LocalPenaltySolveMap(), ptopo, W, Y, lhs, rhs; space_out = L
   )
   return R

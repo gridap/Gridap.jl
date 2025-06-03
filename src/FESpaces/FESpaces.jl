@@ -212,6 +212,9 @@ export update_coordinates!
 
 export ConstantFESpace
 
+export PatchAssembler
+export LocalOperator
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")

@@ -195,6 +195,10 @@ export FaceToFaceGlue
 export BodyFittedTriangulation
 export move_contributions
 
+export PatchTopology
+export PatchTriangulation
+export PatchBoundaryTriangulation
+
 include("Grids.jl")
 
 include("GridMocks.jl")

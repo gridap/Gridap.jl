@@ -11,7 +11,7 @@ function projection_operator(V, Ω, dΩ)
   Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
   mass(u,v) = ∫(u⋅Π(v,Ω))dΩ
   V0 = FESpaces.FESpaceWithoutBCs(V)
-  P = FESpaces.LocalOperator(
+  P = LocalOperator(
     LocalSolveMap(), V0, mass, mass; trian_out = Ω
   )
   return P
