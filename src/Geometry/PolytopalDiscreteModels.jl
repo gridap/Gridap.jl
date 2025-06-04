@@ -318,7 +318,7 @@ end
 function PolytopalDiscreteModel(model::DiscreteModel)
   grid = PolytopalGrid(get_grid(model))
   topo = PolytopalGridTopology(get_grid_topology(model))
-  labels = get_face_labeling(model)
+  labels = FaceLabeling(topo)
   return PolytopalDiscreteModel(grid,topo,labels)
 end
 

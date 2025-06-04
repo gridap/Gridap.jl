@@ -24,7 +24,7 @@ u(x) = x[1] + x[2]
 q(x) = -∇(u)(x)
 f(x) = (∇ ⋅ q)(x)
 
-D = 2
+D = 3
 nc = Tuple(fill(4, D))
 domain = Tuple(repeat([0, 1], D))
 model = simplexify(CartesianDiscreteModel(domain,nc);positive=true)
@@ -64,7 +64,7 @@ degree = 2*(order+1)
 dΩp = Measure(Ωp,degree)
 dΓp = Measure(Γp,degree)
 
-τT = CellField(1 ./ sqrt.(get_array(∫(1)dΩp)), Ωp) # HDG stab parameter
+τT = CellField(1 ./ get_array(∫(1)dΓp) .^(D-1), Γp) # HDG stab parameter
 n = get_normal_vector(Γp)
 Πn(u) = u⋅n
 Π(u) = change_domain(u,Γp,DomainStyle(u))
@@ -74,7 +74,7 @@ PΓ = projection_operator(M, Γp, dΓp)
 Pqhn(qh,uh,sh) = Πn(qh) + τT * (PΓ(uh)-sh) # double vector valued function on mesh / Transmission condition
 a((qh,uh,sh),(vh,wh,lh)) = ∫( qh⋅vh - uh*(∇⋅vh) - qh⋅∇(wh) )dΩp + ∫(sh*Πn(vh))dΓp +
                            ∫(Pqhn(qh,uh,sh)*(Π(wh) + lh))dΓp 
-l((vh,wh,hatmh)) = ∫( f*wh )*dΩp
+l((vh,wh,lh)) = ∫( f*wh )*dΩp
 
 op = MultiField.StaticCondensationOperator(ptopo,X,a,l)
 qh, uh, sh = solve(op)
