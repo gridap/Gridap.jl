@@ -17,8 +17,8 @@ function projection_operator(V, Ω, dΩ)
   return P
 end
 
-function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
-
+function reconstruction_operator(ptopo,order,X,Ω,Γp,dΩp,dΓp)
+  L = FESpaces.PolytopalFESpace(Ω, Float64, order+1; space=:P)
   Λ = FESpaces.PolytopalFESpace(Ω, Float64, 0; space=:P)
 
   n = get_normal_vector(Γp)
@@ -42,11 +42,17 @@ end
 u(x) = x[1] + x[2]
 f(x) = -Δ(u)(x)
 
-nc = (2,2)
-model = UnstructuredDiscreteModel(simplexify(CartesianDiscreteModel((0,1,0,1),nc)))
-vmodel = Gridap.Geometry.voronoi(model)
+D = 3
+nc = Tuple(fill(2,D))
+domain = Tuple(repeat([0,1],D))
+model = simplexify(CartesianDiscreteModel(domain,nc);positive=true)
 
-D = num_cell_dims(vmodel)
+if D == 2
+  vmodel = Gridap.Geometry.voronoi(model)
+else
+  vmodel = Geometry.PolytopalDiscreteModel(model)
+end
+
 Ω = Triangulation(ReferenceFE{D}, vmodel)
 Γ = Triangulation(ReferenceFE{D-1}, vmodel)
 
@@ -60,10 +66,13 @@ qdegree = 2*(order+1)
 dΩp = Measure(Ωp,qdegree)
 dΓp = Measure(Γp,qdegree)
 
-reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P)  
 V = FESpaces.PolytopalFESpace(Ω, Float64, order+1; space=:P) # Bulk space
-M = FESpace(Γ, reffe_M; conformity=:L2, dirichlet_tags="boundary") # Skeleton space
-L = FESpaces.PolytopalFESpace(Ω, Float64, order+1; space=:P) # Reconstruction space
+if D == 2
+  reffe_M = ReferenceFE(lagrangian, Float64, order; space=:P) 
+  M = FESpace(Γ, reffe_M; conformity=:L2, dirichlet_tags="boundary") # Skeleton space
+else
+  M = FESpaces.PolytopalFESpace(Γ, Float64, order; space=:P, dirichlet_tags="boundary")
+end
 N = TrialFESpace(M,u)
 
 mfs = MultiField.BlockMultiFieldStyle(2,(1,1))
@@ -72,7 +81,7 @@ Y   = MultiFieldFESpace([V, M];style=mfs)
 Xp  = FESpaces.PatchFESpace(X,ptopo)
 
 PΓ = projection_operator(M, Γp, dΓp)
-R  = reconstruction_operator(ptopo,L,Y,Ωp,Γp,dΩp,dΓp)
+R  = reconstruction_operator(ptopo,order,Y,Ωp,Γp,dΩp,dΓp)
 
 global_assem = SparseMatrixAssembler(X,Y)
 patch_assem = FESpaces.PatchAssembler(ptopo,X,Y)
@@ -83,8 +92,7 @@ function a(u,v)
   return ∫(∇(Ru_Ω)⋅∇(Rv_Ω) + ∇(Ru_Γ)⋅∇(Rv_Ω) + ∇(Ru_Ω)⋅∇(Rv_Γ) + ∇(Ru_Γ)⋅∇(Rv_Γ))dΩp
 end
 
-polys = get_polytopes(vmodel)
-hT = map(x -> FESpaces.get_facet_diameter(x,D), polys)
+hT = collect(get_array(∫(1)dΩp))
 hTinv = CellField(1 ./ hT,Ωp)
 function s(u,v)
   function SΓ(u)
