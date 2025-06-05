@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix bug for issue [#927](https://github.com/gridap/Gridap.jl/issues/927), where Nedelec FE would not work on faces (Dc < Dp). Since PR[#1094](https://github.com/gridap/Gridap.jl/pull/1094).
 - Added support to evaluate polynomial bases on dualized points. Since PR[#1100](https://github.com/gridap/Gridap.jl/pull/1100).
-- Fix bug in `get_bounding_box`. Since PR[#1107](https://github.com/gridap/Gridap.jl/pull/1107).
+- Fix bug in `get_bounding_box`. Since PR[#1108](https://github.com/gridap/Gridap.jl/pull/1108).
 
 ## [0.18.11] - 2025-04-01
 
