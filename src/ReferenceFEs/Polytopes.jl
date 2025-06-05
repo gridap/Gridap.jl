@@ -660,18 +660,14 @@ end
     get_bounding_box(p::Polytope{D}) where D
 """
 function get_bounding_box(p::Polytope{D}) where D
-  vertex_to_coords = get_vertex_coordinates(p)
-  P = eltype(vertex_to_coords)
-  T = eltype(P)
-  pmin = Point(tfill(T(Inf),Val{D}()))
-  pmax = Point(tfill(T(-Inf),Val{D}()))
-  for coord in vertex_to_coords
-    if coord < pmin
-      pmin = coord
-    end
-    if coord > pmax
-      pmax = coord
-    end
+  vertices_coords = get_vertex_coordinates(p)
+  P = eltype(vertices_coords)
+  @check length(P) == D
+  pmin = P( tfill( Inf,Val(D)) )
+  pmax = P( tfill(-Inf,Val(D)) )
+  for coord in vertices_coords
+      pmin = min.(coord, pmin)
+      pmax = max.(coord, pmax)
   end
   (pmin,pmax)
 end
