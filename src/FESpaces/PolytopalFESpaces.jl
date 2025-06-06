@@ -75,6 +75,7 @@ function PolytopalFESpace(
   orthonormal = false,
   local_kernel = nothing
 )
+  T = return_type(first(cell_prebasis))
   Dc = num_cell_dims(model)
 
   order = maximum(Polynomials.get_order,cell_prebasis)
@@ -88,7 +89,7 @@ function PolytopalFESpace(
     domain_style = ReferenceDomain()
   end
   if !isnothing(local_kernel)
-    cell_shapefuns = remove_local_kernel(cell_shapefuns, trian, order, local_kernel)
+    cell_shapefuns = remove_local_kernel(cell_shapefuns, trian, T, order, local_kernel)
   end
   if orthonormal
     cell_shapefuns = orthogonalise_basis(cell_shapefuns, trian, order)
@@ -298,11 +299,11 @@ end
 
 # Local kernel removal 
 
-function remove_local_kernel(cell_basis,trian,order,local_kernel)
+function remove_local_kernel(cell_basis,trian,T,order,local_kernel)
   if isa(local_kernel,Function) 
     local_kernel_func = local_kernel
   else 
-    local_kernel_func = _kernel_from_symbol(local_kernel,cell_basis)
+    local_kernel_func = _kernel_from_symbol(local_kernel,T,cell_basis)
   end
   
   cell_quads = Quadrature(trian,2*order)
@@ -322,10 +323,9 @@ function component_basis(V::Type{<:MultiValue})
   return [V(ntuple(i -> ifelse(i == j, o, z),Val(n))) for j in 1:n]
 end
 
-function _kernel_from_symbol(k::Symbol,cell_basis)
-  basis = first(cell_basis)
+function _kernel_from_symbol(k::Symbol,T,cell_basis)
   if k == :constants
-    fields = map(constant_field,component_basis(return_type(basis)))
+    fields = map(constant_field,component_basis(T))
     cell_fields = Fill(fields, length(cell_basis))
     kernel(cell_basis) = lazy_map(Broadcasting(Operation(⊙)),cell_fields,cell_basis)
   else

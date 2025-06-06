@@ -11,37 +11,67 @@ FESpace that is constant over the provided model/triangulation. Typically used a
 lagrange multipliers. The kwargs `vector_type` and `field_type` are used to specify the
 types of the dof-vector and dof-value respectively.
 """
-struct ConstantFESpace{V,T,A,B,C} <: SingleFieldFESpace
-  trian::Triangulation
-  cell_basis::A
-  cell_dof_basis::B
-  cell_dof_ids::C
+struct ConstantFESpace{V,T,A,B,C,D} <: SingleFieldFESpace
+  trian::A
+  cell_basis::B
+  cell_dof_basis::C
+  cell_dof_ids::D
 
   function ConstantFESpace(
-    model::DiscreteModel{Dc},
-    trian::Triangulation{Dc};
-    vector_type::Type{V}=Vector{Float64},
-    field_type::Type{T}=Float64
-  ) where {Dc,V,T}
-    @assert num_cells(model) == num_cells(trian)
-
-    basis, reffe_args, reffe_kwargs = ReferenceFE(lagrangian,T,0)
-    cell_reffe = ReferenceFE(model,basis,reffe_args...;reffe_kwargs...)
-    cell_basis_array = lazy_map(get_shapefuns,cell_reffe)
-
-    cell_basis = SingleFieldFEBasis(
-      cell_basis_array, trian, TestBasis(), ReferenceDomain()
-    )
-    cell_dof_basis = CellDof(
-      lazy_map(get_dof_basis,cell_reffe),trian,ReferenceDomain()
-    )
-    cell_dof_ids = Fill(Int32(1):Int32(num_indep_components(field_type)),num_cells(trian))
-
-    A = typeof(cell_basis)
-    B = typeof(cell_dof_basis)
-    C = typeof(cell_dof_ids)
-    new{V,T,A,B,C}(trian, cell_basis, cell_dof_basis, cell_dof_ids)
+    trian::Triangulation,
+    cell_basis::FEBasis,
+    cell_dof_basis::CellDof,
+    cell_dof_ids::AbstractVector{<:AbstractVector{<:Integer}},
+    vector_type::Type{V},
+    field_type::Type{T}
+  ) where {V,T}
+    A, B, C, D = typeof(trian), typeof(cell_basis), typeof(cell_dof_basis), typeof(cell_dof_ids)
+    new{V,T,A,B,C,D}(trian, cell_basis, cell_dof_basis, cell_dof_ids)
   end
+end
+
+function ConstantFESpace(
+  model::DiscreteModel{Dc},
+  trian::Triangulation{Dc};
+  vector_type::Type{V}=Vector{Float64},
+  field_type::Type{T}=Float64
+) where {Dc,V,T}
+  @assert num_cells(model) == num_cells(trian)
+
+  basis, reffe_args, reffe_kwargs = ReferenceFE(lagrangian,T,0)
+  cell_reffe = ReferenceFE(model,basis,reffe_args...;reffe_kwargs...)
+  cell_basis_array = lazy_map(get_shapefuns,cell_reffe)
+
+  cell_basis = SingleFieldFEBasis(
+    cell_basis_array, trian, TestBasis(), ReferenceDomain()
+  )
+  cell_dof_basis = CellDof(
+    lazy_map(get_dof_basis,cell_reffe),trian,ReferenceDomain()
+  )
+  cell_dof_ids = Fill(Int32(1):Int32(num_indep_components(field_type)),num_cells(trian))
+
+  return ConstantFESpace(trian, cell_basis, cell_dof_basis, cell_dof_ids, vector_type, field_type)
+end
+
+function ConstantFESpace(
+  model::Geometry.PolytopalDiscreteModel{Dc},
+  trian::Triangulation{Dc};
+  vector_type::Type{V}=Vector{Float64},
+  field_type::Type{T}=Float64
+) where {Dc,V,T}
+  @assert num_cells(model) == num_cells(trian)
+
+  ncells = num_cells(trian)
+  prebasis = Polynomials.MonomialBasis{Dc}(T, 0)
+  cell_basis = SingleFieldFEBasis(
+    Fill(prebasis, ncells), trian, TestBasis(), ReferenceDomain()
+  )
+  cell_dof_basis = CellDof(
+    Fill(ReferenceFEs.MockDofBasis([zero(VectorValue{Dc,Float64})]), ncells),trian,ReferenceDomain()
+  )
+  cell_dof_ids = Fill(Int32(1):Int32(num_indep_components(field_type)),ncells)
+
+  return ConstantFESpace(trian, cell_basis, cell_dof_basis, cell_dof_ids, vector_type, field_type)
 end
 
 function ConstantFESpace(model::DiscreteModel; kwargs...)
@@ -66,6 +96,8 @@ get_dirichlet_dof_values(f::ConstantFESpace{V}) where V = eltype(V)[]
 get_fe_basis(f::ConstantFESpace) = f.cell_basis
 
 get_fe_dof_basis(f::ConstantFESpace) = f.cell_dof_basis
+
+get_dof_value_type(f::ConstantFESpace) = Float64
 
 get_free_dof_ids(f::ConstantFESpace) = Base.OneTo(length(f.cell_dof_ids[1]))
 
