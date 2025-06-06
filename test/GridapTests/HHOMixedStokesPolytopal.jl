@@ -40,8 +40,7 @@ end
 
 function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
   D = num_cell_dims(Ω)
-  reffe_Λ = ReferenceFE(lagrangian, VectorValue{D,Float64}, 0)
-  Λ = FESpace(Ω, reffe_Λ; conformity=:L2)
+  Λ = FESpaces.PolytopalFESpace(Ω, VectorValue{D,Float64}, 0)
 
   nrel = get_normal_vector(Γp)
   Πn(v) = nrel⋅∇(v)
@@ -110,15 +109,6 @@ Q = FESpaces.PolytopalFESpace(Ω, Float64, order) # Pressure space
 
 Q̂ = FESpaces.PolytopalFESpace(Ω, Float64, order; local_kernel=:constants)
 Q̄ = FESpaces.PolytopalFESpace(Ω, Float64, 0) 
-
-
-prebasis = Q.fe_basis.cell_basis.args[1][1]
-change = Q.fe_basis.cell_basis.args[2][1]
-
-f1 = evaluate(Broadcasting(∘),prebasis,change)
-f2 = evaluate(Broadcasting(Operation(prebasis)),change)
-evaluate(f2,Point(0.5,0.5))
-
 
 Λ = ConstantFESpace(Ω) # Lagrange multiplier for zero mean
 N = TrialFESpace(M,u)
