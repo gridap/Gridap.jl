@@ -170,8 +170,10 @@ function _bernstein_term(
   args = (order,a...,i...)
   if is_simplex(p)
     _bernstein_term(args...)
-  else
+  elseif is_n_cube(p)
     _bernstein_term_n_cube(args...)
+  else
+    @unreachable "Bezier reference FEs only defined on simplices and n-cubes, got $p."
   end
 end
 

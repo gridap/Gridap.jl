@@ -1,4 +1,8 @@
 
+struct Serendipity <: ReferenceFEName end
+
+const serendipity = Serendipity()
+
 """
     SerendipityRefFE(::Type{T}, p::Polytope, order::Int)
     SerendipityRefFE(::Type{T}, p::Polytope, orders::Tuple)

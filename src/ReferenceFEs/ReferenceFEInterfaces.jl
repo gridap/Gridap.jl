@@ -62,12 +62,20 @@ abstract type ReferenceFE{D} <: GridapType end
 abstract type ReferenceFEName end
 
 # Extensible factory function
+"""
+    ReferenceFE(p::Polytope, name::ReferenceFEName[, ::Type], order; kwargs...)
+
+"""
 function ReferenceFE(p::Polytope, basis::ReferenceFEName, args...; kwargs...)
   @unreachable """\n
   Undefined factory function ReferenceFE for basis $basis and the given arguments.
   """
 end
 
+"""
+    ReferenceFE(basis::ReferenceFEName, args...; kwargs...)
+
+"""
 ReferenceFE(basis::ReferenceFEName, args...; kwargs...) = (basis, args, kwargs)
 
 """
