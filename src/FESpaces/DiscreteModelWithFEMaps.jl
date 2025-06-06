@@ -90,8 +90,9 @@ function _compute_node_coordinates(grid,xh)
 
 end
 
+"""
+"""
 function add_mesh_displacement!(grid::GridWithFEMap,dh::FEFunction)
-
   Xh = grid.fe_map
 
   Xh_fv = get_free_dof_values(Xh)
@@ -101,11 +102,11 @@ function add_mesh_displacement!(grid::GridWithFEMap,dh::FEFunction)
   Xh_dv .= Xh_dv .+ get_dirichlet_dof_values(get_fe_space(dh))
 
   _compute_node_coordinates(grid,Xh)
-
 end
 
+"""
+"""
 function update_coordinates!(grid::GridWithFEMap,dh::FEFunction)
-
   Xh = grid.fe_map
 
   Xh_fv = get_free_dof_values(Xh)
@@ -115,7 +116,6 @@ function update_coordinates!(grid::GridWithFEMap,dh::FEFunction)
   Xh_dv .= get_dirichlet_dof_values(get_fe_space(dh))
 
   _compute_node_coordinates(grid,Xh)
-
 end
 
 # Interface
@@ -138,6 +138,12 @@ get_facet_normal(grid::GridWithFEMap) = get_facet_normal(grid.grid)
 #   end
 # end
 
+"""
+    DiscreteModelWithFEMap(model::DiscreteModel,order; kwargs...)
+    DiscreteModelWithFEMap(model,orders::AbstractArray; kwargs...)
+
+Returns a [`MappedDiscreteModel`](@ref).
+"""
 function DiscreteModelWithFEMap(model::DiscreteModel,order; kwargs...)
   mapped_grid = GridWithFEMap(model,order;kwargs...)
   MappedDiscreteModel(model,mapped_grid)

@@ -17,6 +17,9 @@ get_face_to_parent_face(model::DiscreteModelPortion,d::Integer) = model.d_to_dfa
 
 get_cell_to_parent_cell(model::DiscreteModelPortion) = get_face_to_parent_face(model,num_cell_dims(model))
 
+"""
+    get_parent_model(model::DiscreteModelPortion)
+"""
 get_parent_model(model::DiscreteModelPortion) = model.parent_model
 
 """

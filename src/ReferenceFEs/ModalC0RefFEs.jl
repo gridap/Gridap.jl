@@ -1,5 +1,13 @@
+"""
+    struct ModalC0  <: ReferenceFEName
+"""
 struct ModalC0 <: ReferenceFEName end
 
+"""
+    const modalC0 = ModalC0()
+
+Singleton of the [`ModalC0`](@ref) reference FE name.
+"""
 const modalC0 = ModalC0()
 
 """

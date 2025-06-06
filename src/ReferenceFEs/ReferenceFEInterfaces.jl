@@ -272,8 +272,8 @@ function compress_cell_data(cell_data::AbstractArray)
 end
 
 """
-    compress_cell_data(cell_data::Fill) -> id_to_data, cell_to_id
     compress_cell_data(cell_data::CompressedArray) -> id_to_data, cell_to_id
+    compress_cell_data(cell_data::Fill) -> id_to_data, cell_to_id
 
 Takes an array, iddentifies the unique values it contains, and returns the
 vector of unique values and an array `cell_to_id` same shape as the input, but

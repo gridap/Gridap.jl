@@ -55,9 +55,20 @@ function _compact_values_ptrs(a)
   end
 end
 
+"""
+    struct AppendedArray{T,A,B} <: AbstractVector{T}
+
+Type for a lazily appended array.
+"""
 struct AppendedArray{T,A,B} <: AbstractVector{T}
   a::A
   b::B
+
+  """
+      AppendedArray(a::AbstractArray,b::AbstractArray)
+
+  Return a [`AppendedArray`](@ref).
+  """
   function AppendedArray(a::AbstractArray,b::AbstractArray)
     A = typeof(a)
     B = typeof(b)

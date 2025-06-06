@@ -1,5 +1,13 @@
+"""
+    struct BDM <: PushforwardRefFE <: ReferenceFEName
+"""
 struct BDM <: PushforwardRefFE end
 
+"""
+    const bdm = BDM()
+
+Singleton of the [`BDM`](@ref) reference FE name.
+"""
 const bdm = BDM()
 
 Pushforward(::Type{<:BDM}) = ContraVariantPiolaMap()
@@ -8,7 +16,8 @@ Pushforward(::Type{<:BDM}) = ContraVariantPiolaMap()
     BDMRefFE(::Type{T}, p::Polytope, order::Integer)
 
 The `order` argument has the following meaning: the divergence of the  functions
-in this basis is in the P space of degree `order-1`. `T` is the type of scalar components.
+in this basis is in the ℙ space of degree `order-1`. `T` is the type of scalar
+components.
 """
 function BDMRefFE(::Type{T},p::Polytope,order::Integer) where T
   D = num_dims(p)

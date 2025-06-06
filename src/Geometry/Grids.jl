@@ -209,6 +209,9 @@ function get_cell_map(trian::Grid)
   lazy_map(linear_combination,cell_to_coords,cell_to_shapefuns)
 end
 
+"""
+    get_cell_coordinates(grid::Grid)
+"""
 function get_cell_coordinates(trian::Grid)
   node_to_coords = get_node_coordinates(trian)
   cell_to_nodes = get_cell_node_ids(trian)

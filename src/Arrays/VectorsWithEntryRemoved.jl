@@ -1,6 +1,16 @@
+"""
+    struct VectorWithEntryRemoved{T,A} <: AbstractVector{T}
+"""
 struct VectorWithEntryRemoved{T,A} <: AbstractVector{T}
   a::A
   index::Int
+
+  """
+      VectorWithEntryRemoved(a::AbstractVector,index::Integer)
+
+  Return a `VectorWithEntryRemoved` that is `a` but with the `index`'s entry lazily removed.
+  Beware, `a` is not copied, only referenced.
+  """
   function VectorWithEntryRemoved(a::AbstractVector,index::Integer)
     A = typeof(a)
     T = eltype(a)
