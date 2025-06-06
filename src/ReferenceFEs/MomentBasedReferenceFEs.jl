@@ -3,6 +3,12 @@
 
 struct Moment <: Dof end
 
+"""
+    struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
+
+Basis of moment DoFs, where `P` is the type of the quadrature nodes, and `V` the value type of the
+shape functions.
+"""
 struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
   nodes::Vector{P}
   face_moments::Vector{Array{V}}
@@ -278,10 +284,23 @@ function component_basis(V::Type{<:MultiValue})
 end
 
 """
-A moment is given by a triplet (f,σ,μ) where
-  - f is vector of ids of faces Fk
-  - σ is a function σ(φ,μ,ds) that returns a Field-like object to be integrated over each Fk
-  - μ is a polynomials basis on Fk
+    MomentBasedReferenceFE(
+      name::ReferenceFEName,
+      p::Polytope{D},
+      prebasis::AbstractVector{<:Field},
+      moments::AbstractVector{<:Tuple},
+      conformity::Conformity;
+    )
+
+Constructs a ReferenceFEs on `p` with a moment DoF basis.
+
+`moments` is a vector of moments, each one is given by a triplet (f,σ,μ) where
+  - f is vector of ids of faces Fₖ of `p`
+  - σ is a function σ(φ,μ,ds) that returns a Field-like object to be integrated over each Fₖ
+  - μ is a polynomials basis on Fₖ
+
+The moment DoFs are thus defined by φ -> ∫_Fₖ σ(φ,μᵢ,ds).
+In the final basis, DoFs are ordered by moment, then by face, then by "test" polynomial.
 
 We are assuming that all the faces in a moment are of the same type.
 """

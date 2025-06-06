@@ -325,9 +325,10 @@ end
 Return the vector of multi-indices for the `D`-dimensional Bernstein basis of
 order `K`, that is
 
-{ α ∈ {0:K}ᴰ⁺¹ | |α| = K }
+``Iₖᴰ = { α ∈ {0:K}ᴰ⁺¹ | |α| = K }``
 
-ordered in decreasing lexicographic order, e.g. {200, 110, 101, 020, 011, 002} for K=2, D=2.
+ordered in decreasing lexicographic order, e.g. {200, 110, 101, 020, 011, 002}
+for K=2, D=2.
 """
 function bernstein_terms(K,D)
   terms = collect(multiexponents(D+1,K))
@@ -416,7 +417,7 @@ end
 
 # @generated functions as otherwise the time and allocation for
 # computing the indices are the bottlneck...
-"""
+@doc """
     _downwards_de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{K0}=Val(1))
 
 Iteratively applies de Casteljau algorithm in reverse in place using `λ`s as
@@ -425,7 +426,7 @@ coefficients.
 If `K0 = 1`, `λ` are the barycentric coordinates of some point `x` and `c[1] = 1`,
 this computes all order `K` basis Bernstein polynomials at `x`:
 
-``c[α_id] = B_α(x)  ∀α in bernstein_terms(K,D)``
+``c[α_id] = B_α(x)  ∀α in \text{bernstein_terms}(K,D)``
 
 where `α_id` = [`bernstein_term_id`](@ref)(α).
 """
@@ -473,6 +474,8 @@ the Bernstein coefficients ``c_α`` of a polynomial ``p`` (that is ``p(x) = ∑_
 where the ``c_α`` must be initially stored in `c`[`α_id`], where
 `α_id` = [`bernstein_term_id`](@ref)(α).
 """
+function _de_Casteljau_nD! end #
+
 @generated function _de_Casteljau_nD!(c, λ,::Val{K},::Val{D},::Val{Kf}=Val(0)) where {K,D,Kf}
   z = zero(eltype(c))
   ex_v = Vector{Expr}()

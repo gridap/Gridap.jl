@@ -1,3 +1,10 @@
+"""
+    abstract type Dof <: Map
+
+Abstract type for a degree of freedom, seen as a linear form over a functional
+space (typically a polynomial space). The domain is thus a [`Field`](@ref) set
+and the range the scalar set.
+"""
 abstract type Dof <: Map end
 
 """

@@ -1,4 +1,6 @@
-
+"""
+    struct CurlConformity <: Conformity
+"""
 struct CurlConformity <: Conformity end
 
 """

@@ -1,3 +1,6 @@
+"""
+    struct GradConformity <: Conformity
+"""
 struct GradConformity <: Conformity end
 const H1Conformity = GradConformity
 
@@ -115,7 +118,7 @@ end
 
 Vector of indices containing, for each face of `reffe`'s polytope, the
 refference FE of that face in
-[`get_reffaces(ReferenceFE{d}, reffe)`](@ref get_reffaces(::Type{RefereceFE},)).
+[`get_reffaces(ReferenceFE{d}, reffe)`](@ref get_reffaces(::Type{ReferenceFE},)).
 """
 function get_face_type(reffe::GenericLagrangianRefFE{GradConformity}, d::Integer)
   _, iface_to_ftype = _compute_reffes_and_face_types(reffe,Val{d}())

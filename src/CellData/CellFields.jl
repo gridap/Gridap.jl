@@ -119,6 +119,9 @@ function get_normal_vector(trian::Triangulation)
   get_normal_vector(trian, cell_normal)
 end
 
+"""
+    get_tangent_vector(trian::Triangulation)
+"""
 function get_tangent_vector(trian::Triangulation)
   cell_tangent = get_edge_tangent(trian)
   get_tangent_vector(trian, cell_tangent)

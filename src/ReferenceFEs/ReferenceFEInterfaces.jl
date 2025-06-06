@@ -15,6 +15,9 @@ constructors accept, are:
 """
 abstract type Conformity end
 
+"""
+    struct L2Conformity <: Conformity
+"""
 struct L2Conformity <: Conformity end
 
 """
