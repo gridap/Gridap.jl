@@ -20,6 +20,7 @@ in this basis is in the ℙ space of degree `order-1`. `T` is the type of scalar
 components.
 """
 function BDMRefFE(::Type{T},p::Polytope,order::Integer) where T
+  @notimplemented "BDM Reference FE only available for order > 0, got order=$order"
   D = num_dims(p)
 
   if is_simplex(p)

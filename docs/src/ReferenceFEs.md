@@ -21,31 +21,31 @@ ReferenceFE(::ReferenceFEName, args...; kwargs...)
 
 The following table summarizes the elements implemented in Gridap (legend below).
 
-| Name                                                                                    | Gridap name                                  | PTFE name  | Polytopes   | Order   | Conformity|
-| :-------------------------------------------------------------------------------------- | :------------------------------------------- | :--------- | :---------- | :------ | :-------- |
-| [Lagrangian](https://defelement.org/elements/lagrange.html)                             | [`lagrangian`](@ref LagrangianRefFE)         | 𝓟⁽⁻⁾Λ⁰     | △           | ``≥1``  | `:H1`     |
-|                                                                                         |                                              | 𝓠⁻Λ⁰       | ``\square`` | ``≥1``  | `:H1`     |
-|                                                                                         |                                              |       |`WEDGE`,`PYRAMID` | ``≥1``  | `:H1`     |
-| [Serendipity](https://defelement.org/elements/serendipity.html)                         | [`serendipity`](@ref SerendipityRefFE)       | 𝓢Λ⁰        | ``\square`` | ``≥1``  | `:H1`     |
-| [Bezier](https://defelement.org/elements/bernstein.html)                                | [`bezier`](@ref BezierRefFE)                 | 𝓟⁻Λ⁰       | △           | ``≥1``  | `:H1`     |
-|                                                                                         |                                              | 𝓠⁻Λ⁰       | ``\square`` | ``≥1``  | `:H1`     |
-| [ModalC0](https://doi.org/10.48550/arXiv.2201.06632)                                    | [`modalC0`](@ref ModalC0RefFE)               | 𝓠⁻Λ⁰       | ``\square`` | ``≥1``  | `:H1`     |
-|                                                                                                                                                                                         |
-| [Nédélec (first kind)](https://defelement.org/elements/nedelec1.html)                   | [`nedelec`](@ref NedelecRefFE)               | 𝓟⁻Λ¹       | △           | ``≥0``  | `:Hcurl`  |
-|                                                                                         |                                              | 𝓠⁻Λ¹       | ``\square`` | ``≥0``  | `:Hcurl`  |
-| [Nédélec (second kind)](https://defelement.org/elements/nedelec2.html)                  | `TODO`                                       | 𝓟Λ¹        | △           | `TODO`  | `:Hcurl`  |
-|                                                                                                                                                                                         |
-| [Raviart-Thomas](https://defelement.org/elements/raviart-thomas.html)                   | [`raviart_thomas`](@ref LagrangianRefFE)     | 𝓟⁻Λᴰ⁻¹     | △           | ``≥0``  | `:Hdiv`   |
-|                                                                                         |                                              | 𝓠⁻Λᴰ⁻¹     | ``\square`` | ``≥0``  | `:Hdiv`   |
-| [Brezzi-Douglas-Marini](https://defelement.org/elements/brezzi-douglas-marini.html)     | [`bdm`](@ref BDMRefFE)                       | 𝓟Λᴰ⁻¹      | △           | ``≥1``  | `:Hdiv`   |
-| [Mardal-Tai-Winther](https://defelement.org/elements/mardal-tai-winther.html)           | `TODO` [`mtw`](@ref MardalTaiWintherRefFE)   |            | △           | ``3``   |           |
-|                                                                                                                                                                                         |
-| [Crouzeix-Raviart](https://defelement.org/elements/crouzeix-raviart.html)               |[`couzeix_raviart`](@ref CrouzeixRaviartRefFE)|            |  `TRI`      | ``1``   | `:L2`     |
-| [discontinuous Lagrangian](https://defelement.org/elements/discontinuous-lagrange.html) | [`lagrangian`](@ref LagrangianRefFE)         | ...Λᴰ      | as above... | ``≥0``  | `:L2`     |
-| Serendipity, Bezier, ModalC0                                                            | as above ...                                 |            |             | ``≥0``  | `:L2`     |
-|                                                                                                                                                                                         |
-| [Arnold-Winther](https://defelement.org/elements/arnold-winther.html)                   | `TODO` [`arnoldwinther`](@ref ArnoldWintherRefFE)|            | `TRI`       | ``2``   | `:Hdiv`   |
-| [Hellan-Herrmann-Jhonson](https://defelement.org/elements/hellan-herrmann-johnson.html) | `TODO` [`hhj`](@ref HellanHerrmannJhonsonRefFE)  |            | `TRI`       |  TODO   | `:Hdiv`   |
+| Name                                                                                    | Gridap name                                  | PTFE name  | Polytopes   | Order          | Conformity|
+| :-------------------------------------------------------------------------------------- | :------------------------------------------- | :--------- | :---------- | :------------- | :-------- |
+| [Lagrangian](https://defelement.org/elements/lagrange.html)                             | [`lagrangian`](@ref LagrangianRefFE)         | 𝓟⁽⁻⁾Λ⁰     | △           | ``{r≥1, r}``   | `:H1`     |
+|                                                                                         |                                              | 𝓠⁻Λ⁰       | ``\square`` | ``{r≥1, r}``   | `:H1`     |
+|                                                                                         |                                              |      |`WEDGE`, `PYRAMID` | ``{r≥1, r}``   | `:H1`     |
+| [Serendipity](https://defelement.org/elements/serendipity.html)                         | [`serendipity`](@ref SerendipityRefFE)       | 𝓢Λ⁰        | ``\square`` | ``{r≥1, r}``   | `:H1`     |
+| [Bezier](https://defelement.org/elements/bernstein.html)                                | [`bezier`](@ref BezierRefFE)                 | 𝓟⁻Λ⁰       | △           | ``{r≥1, r}``   | `:H1`     |
+|                                                                                         |                                              | 𝓠⁻Λ⁰       | ``\square`` | ``{r≥1, r}``   | `:H1`     |
+| [ModalC0](https://doi.org/10.48550/arXiv.2201.06632)                                    | [`modalC0`](@ref ModalC0RefFE)               | 𝓠⁻Λ⁰       | ``\square`` | ``{r≥1, r}``   | `:H1`     |
+|                                                                                                                                                                                                |
+| [Nédélec (first kind)](https://defelement.org/elements/nedelec1.html)                   | [`nedelec`](@ref NedelecRefFE)               | 𝓟⁻Λ¹       | △           | ``{r≥1, r+1}`` | `:Hcurl`  |
+|                                                                                         |                                              | 𝓠⁻Λ¹       | ``\square`` | ``{r≥1, r+1}`` | `:Hcurl`  |
+| [Nédélec (second kind)](https://defelement.org/elements/nedelec2.html)                  | `TODO`                                       | 𝓟Λ¹        | △           | ``{r≥1, r+2}`` | `:Hcurl`  |
+|                                                                                                                                                                                                |
+| [Raviart-Thomas](https://defelement.org/elements/raviart-thomas.html)                   | [`raviart_thomas`](@ref LagrangianRefFE)     | 𝓟⁻Λᴰ⁻¹     | △           | ``{r≥0, r+1}`` | `:Hdiv`   |
+|                                                                                         |                                              | 𝓠⁻Λᴰ⁻¹     | ``\square`` | ``{r≥0, r+1}`` | `:Hdiv`   |
+| [Brezzi-Douglas-Marini](https://defelement.org/elements/brezzi-douglas-marini.html)     | [`bdm`](@ref BDMRefFE)                       | 𝓟Λᴰ⁻¹      | △           | ``{r≥1, r}  `` | `:Hdiv`   |
+| [Mardal-Tai-Winther](https://defelement.org/elements/mardal-tai-winther.html)           | `TODO` [`mtw`](@ref MardalTaiWintherRefFE)   |            | △           | `TODO`         | `:Hdiv`   |
+|                                                                                                                                                                                                |
+| [Crouzeix-Raviart](https://defelement.org/elements/crouzeix-raviart.html)               |[`couzeix_raviart`](@ref CrouzeixRaviartRefFE)|            |  `TRI`      | ``{r=1, r}``   | `:L2`     |
+| [discontinuous Lagrangian](https://defelement.org/elements/discontinuous-lagrange.html) | [`lagrangian`](@ref LagrangianRefFE)         | ...Λᴰ      | as above    | ``{r≥0, r}``   | `:L2`     |
+| Serendipity, Bezier, ModalC0                                                            | as above                                     |            |             | ``{r≥0, r}``   | `:L2`     |
+|                                                                                                                                                                                                |
+| [Arnold-Winther](https://defelement.org/elements/arnold-winther.html)                   | `TODO` [`arnoldwinther`](@ref ArnoldWintherRefFE)|        | `TRI`       | `TODO` ``2``   | `:Hdiv`   |
+| [Hellan-Herrmann-Jhonson](https://defelement.org/elements/hellan-herrmann-johnson.html) | `TODO` [`hhj`](@ref HellanHerrmannJhonsonRefFE)  |        | `TRI`       | `TODO`         | `:Hdiv`   |
 
 ###### Legend
 
