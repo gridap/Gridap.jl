@@ -143,6 +143,10 @@ function compute_shapefun_bboxes!(
   end
 end
 
+"""
+  compute_cell_to_modalC0_reffe(p::Polytope{D}, ncells::Int, ::Type{T}, orders[, bbox];
+        space::Symbol=_default_space(p))
+"""
 function compute_cell_to_modalC0_reffe(
   p::Polytope{D},
   ncells::Int,

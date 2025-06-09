@@ -56,6 +56,11 @@ function LagrangianDofBasis(::Type{V},nodes::Vector{<:Point}) where V
   LagrangianDofBasis(nodes,r...)
 end
 
+"""
+    get_nodes(b::LagrangianDofBasis)
+
+Get the vector of DoF nodes of `b`.
+"""
 get_nodes(b::LagrangianDofBasis) = b.nodes
 get_dof_to_node(b::LagrangianDofBasis) = b.dof_to_node
 get_dof_to_comp(b::LagrangianDofBasis) = b.dof_to_comp

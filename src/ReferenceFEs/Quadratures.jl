@@ -112,6 +112,12 @@ end
 
 # Quadrature factory
 
+"""
+    abstract type QuadratureName
+
+Supertype of all singleton types representing a quadrature name, e.g.
+[`tensor_product`](@ref).
+"""
 abstract type QuadratureName end
 
 @noinline function Quadrature(p::Polytope,name::QuadratureName,args...;kwargs...)

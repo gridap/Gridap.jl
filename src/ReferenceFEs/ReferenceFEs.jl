@@ -101,7 +101,6 @@ export Dof
 export get_nodes
 export get_face_moments
 export get_face_nodes_dofs
-export get_nodes
 export evaluate!
 export return_cache
 export return_type
@@ -188,6 +187,7 @@ export BDM
 export Nedelec
 export Bezier
 export ModalC0
+export CrouzeixRaviart
 
 export lagrangian
 export raviart_thomas

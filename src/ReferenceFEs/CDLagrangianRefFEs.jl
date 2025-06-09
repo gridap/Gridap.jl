@@ -1,4 +1,7 @@
+# These shouln't be exported from ReferenceFEs
+""" """
 const CONT = 0
+""" """
 const DISC = 1
 
 """

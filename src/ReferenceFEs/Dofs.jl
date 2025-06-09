@@ -117,7 +117,7 @@ function Arrays.evaluate!(cache, b::MappedDofBasis, fields)
 end
 
 """
-    test_dof(dof,field,v;cmp::Function=(==))
+    test_dof(dof,field,v; cmp::Function=(==))
 
 Test that the `Dof` interface is properly implemented
 for object `dof`. It also checks if the object `dof`
@@ -128,6 +128,11 @@ function test_dof(dof::Dof,field,v;cmp::Function=(==))
   _test_dof(dof,field,v,cmp)
 end
 
+"""
+    test_dof_array(dofs::AbstractArray{<:Dof}, field, v; cmp::Function=(==))
+
+Like [`test_dof`](@ref) for a DoF basis.
+"""
 function test_dof_array(dof::AbstractArray{<:Dof},field,v;cmp::Function=(==))
   _test_dof(dof,field,v,cmp)
 end

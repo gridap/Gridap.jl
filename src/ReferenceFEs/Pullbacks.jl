@@ -147,6 +147,9 @@ end
 
 # ContraVariantPiolaMap
 
+"""
+    struct ContraVariantPiolaMap <: Pushforward
+"""
 struct ContraVariantPiolaMap <: Pushforward end
 
 function evaluate!(

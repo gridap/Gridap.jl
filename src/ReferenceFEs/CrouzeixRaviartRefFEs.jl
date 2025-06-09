@@ -8,7 +8,7 @@ struct CrouzeixRaviart <: ReferenceFEName end
 
 Singleton of the [`CrouzeixRaviart`](@ref) reference FE name.
 """
-const couzeix_raviart = CrouzeixRaviart()
+const crouzeix_raviart = CrouzeixRaviart()
 
 """
     CrouzeixRaviartRefFE(::Type{T}, p::Polytope, order::Integer)

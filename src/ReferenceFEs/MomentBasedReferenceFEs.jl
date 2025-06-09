@@ -46,8 +46,25 @@ Base.axes(a::MomentBasedDofBasis) = (Base.OneTo(num_dofs(a)),)
 Base.getindex(a::MomentBasedDofBasis,i::Integer) = Moment()
 Base.IndexStyle(::MomentBasedDofBasis) = IndexLinear()
 
+"""
+    get_nodes(b::MomentBasedDofBasis)
+
+Get the vector of DoF quadrature nodes of `b`.
+"""
 get_nodes(b::MomentBasedDofBasis) = b.nodes
+
+"""
+    get_face_moments(b::MomentBasedDofBasis)
+
+Return the vector of discretized moments for each face of the underlying polytope.
+"""
 get_face_moments(b::MomentBasedDofBasis) = b.face_moments
+
+"""
+    get_face_nodes_dofs(b::MomentBasedDofBasis)
+
+Return the moment quadrature node indices owned by each face of the underlying polytope.
+"""
 get_face_nodes_dofs(b::MomentBasedDofBasis) = b.face_nodes
 
 function num_dofs(b::MomentBasedDofBasis)
@@ -190,6 +207,11 @@ end
 # end
 
 # TO DO: Bug in 3D, when n==2; n==4 and D==3. Also, working on this to make better and more general.
+"""
+    get_facet_measure(p::Polytope{D}, face::Int)
+
+Surface area of `p`'s face `face`.
+"""
 function get_facet_measure(p::Polytope{D}, face::Int) where D
   measures = Float64[]
   facet_entities = get_face_coordinates(p)
