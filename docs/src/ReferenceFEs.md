@@ -4,59 +4,83 @@ CurrentModule = Gridap.ReferenceFEs
 
 # Gridap.ReferenceFEs
 
-The following are the following finite elements implemented in Gridap. The
-conformities are the default ones, but every element also implement the
-[L2Conformity](@ref).
-
-A reference finite element can be manually constructed using
-```@doc
-ReferenceFE(::Polytope, ::ReferenceFEName, args...; kwargs...)
-```
-
-| Name                    | Gridap name     | PTFE name  | polytopes   | orders  | conf.     | ref.|
-| :---------------------- | :-------------  | :--------- | :--------   | :------ | :-------- | :-- |
-| Lagrangian              | `lagrangian`    | 𝓟⁽⁻⁾Λ⁰     | △           | ``≥1``  | `:H1`     |     |
-|                         |                 | 𝓠⁻Λ⁰       | ``\square`` | ``≥1``  | `:H1`     |     |
-|                         |                 |       |`WEDGE`,`PYRAMID` | ``≥1``  | `:H1`     |     |
-| Serendipity             | `serendipity`   | 𝓢Λ⁰        | ``\square`` | ``≥1``  | `:H1`     |     |
-| Bezier                  | `bezier`        | 𝓟⁻Λ⁰       | △           | ``≥1``  | `:H1`     |     |
-|                         |                 | 𝓠⁻Λ⁰       | ``\square`` | ``≥1``  | `:H1`     |     |
-| ModalC0                 | `modalC0`       | 𝓠⁻Λ⁰       | ``\square`` | ``≥1``  | `:H1`     |     |
-|                                                                                                  |
-| Nédélec (first kind)    | `nedelec`       | 𝓟⁻Λ¹       | △           | ``≥0``  | `:Hcurl`  |     |
-|                         |                 | 𝓠⁻Λ¹       | ``\square`` | ``≥0``  | `:Hcurl`  |     |
-| Nédélec (second kind)   | `nedelec`       | 𝓟Λ¹        | △           | `TODO`  | `:Hcurl`  |     |
-|                                                                                                  |
-| Raviart-Thomas          | `raviart_thomas`| 𝓟⁻Λᴰ⁻¹     | △           | ``≥0``  | `:Hdiv`   |     |
-|                         |                 | 𝓠⁻Λᴰ⁻¹     | ``\square`` | ``≥0``  | `:Hdiv`   |     |
-| Brezzi-Douglas-Marini   | `bdm`           | 𝓟Λᴰ⁻¹      | △           | ``≥1``  | `:Hdiv`   |     |
-| Mardal-Tai-Winther      | `mtw`           |            | △           | ``3``   |           |     |
-|                                                                                                  |
-| Discontinuous Lagrangian| `lagrangian`    | 𝓟⁽⁻⁾Λᴰ     | △           | ``≥0``  | `:L2`     |     |
-|                         |                 | 𝓠⁻Λᴰ       | ``\square`` | ``≥0``  | `:L2`     |     |
-|                         |                 |       |`WEDGE`,`PYRAMID` | ``≥0``  | `:L2`     |     |
-| Crouzeix-Raviart        |`couzeix_raviart`|            |  `TRI`      | ``1``   | `:L2`     |     |
-|                                                                                                  |
-| Arnold-Winther          | `arnoldwinther` |            | `TRI`       | ``2``   | `:Hdivdiv`|     |
-| Hellan-Herrmann-Jhonson | `hhj`           |            | `TRI`       | `TODO`  | `:Hdivdiv`|     |
-
-###### Legend
-- Gridap name: the name ([ReferenceFEName](@ref) singleton) to use in Gridap
-APIs, with a link to the docstring of the element constructor.
-- PTFE name: name of the element family in the [Periodic Table of the Finite
-Elements](https://www-users.cse.umn.edu/~arnold/femtable/index.html) [1]
-- Polytopes:
-    - △ simplices (`SEGMENT`, `TRI`  (triangle),      `TET` (tetrahedron))
-    - ``\square`` n-cubes   (`SEGMENT`, `QUAD` (quadridateral), `HEX` (hexahedron)
-- Implemented polynomial order parameter
-- Reference: link to the [DefElement](https://defelement.org/) page of the
-element, containing all the details defining the element and references.
-
 #### Contents
 
 ```@contents
 Pages = ["ReferenceFEs.md"]
 Depth = 2:3
+```
+
+
+## Reference FE summary
+
+A reference finite element is defined using the following signature
+```@docs; canonical=false
+ReferenceFE(::ReferenceFEName, args...; kwargs...)
+```
+
+The following table summarizes the elements implemented in Gridap (legend below).
+
+| Name                                                                                    | Gridap name                                  | PTFE name  | Polytopes   | Order   | Conformity|
+| :-------------------------------------------------------------------------------------- | :------------------------------------------- | :--------- | :---------- | :------ | :-------- |
+| [Lagrangian](https://defelement.org/elements/lagrange.html)                             | [`lagrangian`](@ref LagrangianRefFE)         | 𝓟⁽⁻⁾Λ⁰     | △           | ``≥1``  | `:H1`     |
+|                                                                                         |                                              | 𝓠⁻Λ⁰       | ``\square`` | ``≥1``  | `:H1`     |
+|                                                                                         |                                              |       |`WEDGE`,`PYRAMID` | ``≥1``  | `:H1`     |
+| [Serendipity](https://defelement.org/elements/serendipity.html)                         | [`serendipity`](@ref SerendipityRefFE)       | 𝓢Λ⁰        | ``\square`` | ``≥1``  | `:H1`     |
+| [Bezier](https://defelement.org/elements/bernstein.html)                                | [`bezier`](@ref BezierRefFE)                 | 𝓟⁻Λ⁰       | △           | ``≥1``  | `:H1`     |
+|                                                                                         |                                              | 𝓠⁻Λ⁰       | ``\square`` | ``≥1``  | `:H1`     |
+| [ModalC0](https://doi.org/10.48550/arXiv.2201.06632)                                    | [`modalC0`](@ref ModalC0RefFE)               | 𝓠⁻Λ⁰       | ``\square`` | ``≥1``  | `:H1`     |
+|                                                                                                                                                                                         |
+| [Nédélec (first kind)](https://defelement.org/elements/nedelec1.html)                   | [`nedelec`](@ref NedelecRefFE)               | 𝓟⁻Λ¹       | △           | ``≥0``  | `:Hcurl`  |
+|                                                                                         |                                              | 𝓠⁻Λ¹       | ``\square`` | ``≥0``  | `:Hcurl`  |
+| [Nédélec (second kind)](https://defelement.org/elements/nedelec2.html)                  | `TODO`                                       | 𝓟Λ¹        | △           | `TODO`  | `:Hcurl`  |
+|                                                                                                                                                                                         |
+| [Raviart-Thomas](https://defelement.org/elements/raviart-thomas.html)                   | [`raviart_thomas`](@ref LagrangianRefFE)     | 𝓟⁻Λᴰ⁻¹     | △           | ``≥0``  | `:Hdiv`   |
+|                                                                                         |                                              | 𝓠⁻Λᴰ⁻¹     | ``\square`` | ``≥0``  | `:Hdiv`   |
+| [Brezzi-Douglas-Marini](https://defelement.org/elements/brezzi-douglas-marini.html)     | [`bdm`](@ref BDMRefFE)                       | 𝓟Λᴰ⁻¹      | △           | ``≥1``  | `:Hdiv`   |
+| [Mardal-Tai-Winther](https://defelement.org/elements/mardal-tai-winther.html)           | `TODO` [`mtw`](@ref MardalTaiWintherRefFE)   |            | △           | ``3``   |           |
+|                                                                                                                                                                                         |
+| [Crouzeix-Raviart](https://defelement.org/elements/crouzeix-raviart.html)               |[`couzeix_raviart`](@ref CrouzeixRaviartRefFE)|            |  `TRI`      | ``1``   | `:L2`     |
+| [discontinuous Lagrangian](https://defelement.org/elements/discontinuous-lagrange.html) | [`lagrangian`](@ref LagrangianRefFE)         | ...Λᴰ      | as above... | ``≥0``  | `:L2`     |
+| Serendipity, Bezier, ModalC0                                                            | as above ...                                 |            |             | ``≥0``  | `:L2`     |
+|                                                                                                                                                                                         |
+| [Arnold-Winther](https://defelement.org/elements/arnold-winther.html)                   | `TODO` [`arnoldwinther`](@ref ArnoldWintherRefFE)|            | `TRI`       | ``2``   | `:Hdiv`   |
+| [Hellan-Herrmann-Jhonson](https://defelement.org/elements/hellan-herrmann-johnson.html) | `TODO` [`hhj`](@ref HellanHerrmannJhonsonRefFE)  |            | `TRI`       |  TODO   | `:Hdiv`   |
+
+###### Legend
+
+- Name: usual name of the element and link to its
+    [DefElement](https://defelement.org/) page, containing all the details
+    defining the element and references.
+- Gridap name: the name  to use in the Gridap APIs (it is a [`ReferenceFEName`](@ref ReferenceFEs.ReferenceFEName)
+    singleton), with a link to the docstring of the element constructor.
+- PTFE name: name of the element family in the [Periodic Table of the Finite
+    Elements](https://www-users.cse.umn.edu/~arnold/femtable/index.html) [1]
+- Polytopes:
+    - △ simplices (`SEGMENT`, `TRI`  (triangle),      `TET` (tetrahedron))
+    - ``\square`` n-cubes   (`SEGMENT`, `QUAD` (quadridateral), `HEX` (hexahedron)
+- Order: Implemented range for the polynomial order parameter, and the actual
+    maximum polynomial degree of the shape functions.
+- Conformity: default [`Conformity`](@ref). All the elements also implement `:L2`
+    conformity (discontinuous methods).
+
+##### Additional information
+
+The `lagrangian`, `modalC0` and `bezier` elements support anisotropic orders on
+`QUAD` and `HEX`, leveraging the tensor product basis in each dimension.
+
+Also, a Cartesian product finite-element space is available for `lagrangian`,
+`serendipity` and `modalC0` elements, for all polytopes. It means that a tensor
+type ([`<:MultiValue`](@ref Gridap.TensorValues)) can be given as value type
+argument `T`, for example `VectorValue{3,Float64}` or
+`SymTensorValue{2,Float64}`. The DoFs are duplicated for each independent
+component of the tensor.
+
+The `modalC0` element has the particularity that it's polytope and thus the
+shape function support can be adapted to the physical element.
+
+```@docs
+ReferenceFEs
 ```
 
 ## Polytopes

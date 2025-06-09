@@ -59,16 +59,45 @@ The interface is tested with
 """
 abstract type ReferenceFE{D} <: GridapType end
 
+"""
+    abstract type ReferenceFEName
+
+Supertype for the reference finite element name singleton types, e.g. [`lagrangian`](@ref).
+Instances are used to select a reference FE in the [`ReferenceFE`](@ref ReferenceFE(n::ReferenceFEName,a...;k...)) constructor.
+"""
 abstract type ReferenceFEName end
 
 # Extensible factory function
-"""
-    ReferenceFE(p::Polytope, name::ReferenceFEName[, ::Type], order; kwargs...)
 
 """
-function ReferenceFE(p::Polytope, basis::ReferenceFEName, args...; kwargs...)
+    ReferenceFE(name::ReferenceFEName[, T::Type], order;  kwargs...)
+    ReferenceFE(name::ReferenceFEName[, T::Type], orders; kwargs...)
+
+Signature defining a reference finite element of specific `name`, value type `T`
+and `order(s)` (but yet unspecified cell polytope).
+
+# Arguments
+- `T`: type of scalar components of the shape function values, `Float64` by default.
+  For elements supporting Cartesian product space of a scalar one (e.g. [`lagrangian`](@ref)), this can be a tensor type like `VectorValue{2,Float64}`.
+- `order::Int`: the polynomial order parameter, or
+- `orders::NTuple{D,Int}`: a tuple of order per space dimension for anysotropic elements.
+
+Keyword arguments are `name` specific.
+"""
+ReferenceFE(name::ReferenceFEName, args...; kwargs...) = (name, args, kwargs)
+
+"""
+    ReferenceFE(p::Polytope, args...; kwargs...)
+
+Return the specified reference FE implemented on `p`.
+
+The `args` and `kwargs` are the arguments of
+[`ReferenceFE(::ReferenceFEName, ...; ...)`](@ref
+ReferenceFE(::ReferenceFEName,a...;k...)), reffe name included.
+"""
+function ReferenceFE(p::Polytope, name::ReferenceFEName, args...; kwargs...)
   @unreachable """\n
-  Undefined factory function ReferenceFE for basis $basis and the given arguments.
+  Undefined factory function ReferenceFE for element $name and the given arguments.
   """
 end
 
@@ -76,12 +105,6 @@ end
 function ReferenceFE(p::Polytope, name::ReferenceFEName, order; kwargs...)
     ReferenceFE(p,name,Float64,order; kwargs...)
 end
-
-"""
-    ReferenceFE(basis::ReferenceFEName, args...; kwargs...)
-
-"""
-ReferenceFE(basis::ReferenceFEName, args...; kwargs...) = (basis, args, kwargs)
 
 """
     num_dofs(reffe::ReferenceFE) -> Int
