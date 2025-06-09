@@ -28,6 +28,9 @@ end
   @time @testset "Poisson - HDG polytopal" begin include("HDGPolytopalTests.jl") end
   @time @testset "Poisson - HHO polytopal" begin include("HHOPolytopalTests.jl") end
   @time @testset "Poisson - HHO polytopal (mixed order)" begin include("HHOMixedPolytopalTests.jl") end
+  @time @testset "Elasticity - HHO (mixed order)" begin include("HHOMixedElasticity.jl") end
+  @time @testset "Stokes - HHO (mixed order)" begin include("HHOMixedStokes.jl") end
+  @time @testset "Stokes - HHO polytopal (mixed order)" begin include("HHOMixedStokesPolytopal.jl") end
 end
 
 @time @testset "SurfaceCoupling" begin include("SurfaceCouplingTests.jl") end

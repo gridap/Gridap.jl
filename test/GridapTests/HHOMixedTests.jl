@@ -98,17 +98,23 @@ l((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
 
 function weakform()
   u, v = get_trial_fe_basis(X), get_fe_basis(Y)
-  data1 = FESpaces.collect_cell_matrix_and_vector(X,Y,s(u,v),l(v),zero(X))
-  data2 = FESpaces.collect_cell_matrix_and_vector(Xp,Xp,a(u,v),DomainContribution(),zero(Xp))
-  data = FESpaces.merge_assembly_matvec_data(data1,data2)
+
+  data = FESpaces.collect_and_merge_cell_matrix_and_vector(
+    (Xp, Xp, a(u,v), DomainContribution(), zero(Xp)),
+    (X, Y, s(u,v), l(v), zero(X))
+  )
+
   assemble_matrix_and_vector(global_assem,data)
 end
 
 function patch_weakform()
   u, v = get_trial_fe_basis(X), get_fe_basis(Y)
-  data1 = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,X,Y,s(u,v),l(v),zero(X))
-  data2 = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,Xp,a(u,v),DomainContribution(),zero(Xp))
-  data = FESpaces.merge_assembly_matvec_data(data1,data2)
+
+  data = FESpaces.collect_and_merge_cell_matrix_and_vector(patch_assem,
+    (Xp, Xp, a(u,v), DomainContribution(), zero(Xp)),
+    (X, Y, s(u,v), l(v), zero(X))
+  )
+
   return assemble_matrix_and_vector(patch_assem,data)
 end
 
@@ -118,7 +124,6 @@ end
 
 # Static condensation
 op = MultiField.StaticCondensationOperator(X,patch_assem,patch_weakform())
-
 ui, ub = solve(op) 
 
 dΩ = Measure(Ω,qdegree)

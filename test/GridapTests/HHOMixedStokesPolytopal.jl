@@ -161,11 +161,12 @@ function weakform(x,y)
   Ru, Rv = R(u), R(v)
   Du, Dv = D(u), D(v)
 
-  data1 = FESpaces.collect_cell_matrix_and_vector(X,Y,s(u,v)+c(p̄,μ)+c(q̄,λ),l(v),zero(X))
-  data2 = FESpaces.collect_cell_matrix_and_vector(Xp,Xp,a(Ru,Rv),DomainContribution(),zero(Xp))
-  data3 = FESpaces.collect_cell_matrix_and_vector(Xp,X,b(Du,q),DomainContribution(),zero(Xp))
-  data4 = FESpaces.collect_cell_matrix_and_vector(X,Xp,b(Dv,p),DomainContribution(),zero(X))
-  data = FESpaces.merge_assembly_matvec_data(data1,data2,data3,data4)
+  data = FESpaces.collect_and_merge_cell_matrix_and_vector(
+    (Xp, Xp, a(Ru,Rv), DomainContribution(), zero(Xp)),
+    (X, Y, s(u,v)+c(p̄,μ)+c(q̄,λ), l(v), zero(X)),
+    (X, Xp, b(Dv,p), DomainContribution(), zero(X)),
+    (Xp, X, b(Du,q), DomainContribution(), zero(Xp))
+  )
   assemble_matrix_and_vector(global_assem,data)
 end
 
@@ -177,11 +178,12 @@ function patch_weakform(x,y)
   Ru, Rv = R(u), R(v)
   Du, Dv = D(u), D(v)
 
-  data1 = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,X,Y,s(u,v)+c(p̄,μ)+c(q̄,λ),l(v),zero(X))
-  data2 = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,Xp,a(Ru,Rv),DomainContribution(),zero(Xp))
-  data3 = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,X,b(Du,q),DomainContribution(),zero(Xp))
-  data4 = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,X,Xp,b(Dv,p),DomainContribution(),zero(X))
-  data = FESpaces.merge_assembly_matvec_data(data1,data2,data3,data4)
+  data = FESpaces.collect_and_merge_cell_matrix_and_vector(patch_assem,
+    (Xp, Xp, a(Ru,Rv), DomainContribution(), zero(Xp)),
+    (X, Y, s(u,v)+c(p̄,μ)+c(q̄,λ), l(v), zero(X)),
+    (X, Xp, b(Dv,p), DomainContribution(), zero(X)),
+    (Xp, X, b(Du,q), DomainContribution(), zero(Xp))
+  )
   assemble_matrix_and_vector(patch_assem,data)
 end
 

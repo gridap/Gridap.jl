@@ -123,23 +123,26 @@ end
 
 patch_assem = FESpaces.PatchAssembler(ptopo,X,Y)
 
-function patch_weakform(u,v)
+function patch_weakform()
+  u, v = get_trial_fe_basis(X), get_fe_basis(Y);
+
   mass_Γ(u,v) = ∫(hFinv*(u*v))dΓp
   Ru, Rv = R(u), R(v)
   SΓa_u, SΓa_v = SΓa(u), SΓa(v)
   SΓb_u, SΓb_v = SΓb(Ru), SΓb(Rv)
-  ll = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,Xp,a(Ru,Rv),DomainContribution(),zero(Xp))
-  aa = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,X,X,mass_Γ(SΓa_u,SΓa_v),l(v),zero(X))
-  ab = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,X,Xp,mass_Γ(SΓa_u,SΓb_v),DomainContribution(),zero(X))
-  ba = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,X,mass_Γ(SΓb_u,SΓa_v),DomainContribution(),zero(Xp))
-  bb = FESpaces.collect_patch_cell_matrix_and_vector(patch_assem,Xp,Xp,mass_Γ(SΓb_u,SΓb_v),DomainContribution(),zero(Xp))
-  data = FESpaces.merge_assembly_matvec_data(ll,aa,ab,ba,bb)
+
+  data = FESpaces.collect_and_merge_cell_matrix_and_vector(patch_assem,
+    (Xp, Xp, a(Ru,Rv) + mass_Γ(SΓb_u,SΓb_v), DomainContribution(), zero(Xp)),
+    (X, X, mass_Γ(SΓa_u,SΓa_v), l(v), zero(X)),
+    (X, Xp, mass_Γ(SΓa_u,SΓb_v), DomainContribution(), zero(X)),
+    (Xp, X, mass_Γ(SΓb_u,SΓa_v), DomainContribution(), zero(Xp)),
+  )
+
   return assemble_matrix_and_vector(patch_assem,data)
 end
 
 # Static condensation
-u, v = get_trial_fe_basis(X), get_fe_basis(Y);
-op = MultiField.StaticCondensationOperator(X,patch_assem,patch_weakform(u,v))
+op = MultiField.StaticCondensationOperator(X,patch_assem,patch_weakform())
 
 xh = solve(op)
 uΩ, uΓ = xh
