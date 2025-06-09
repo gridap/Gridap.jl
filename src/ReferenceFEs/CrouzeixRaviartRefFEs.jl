@@ -41,14 +41,10 @@ function CrouzeixRaviartRefFE(::Type{T},p::Polytope,order::Integer) where T
   return Gridap.ReferenceFEs.MomentBasedReferenceFE(CrouzeixRaviart(),p,prebasis,moments,L2Conformity())
 end
 
-
-function ReferenceFE(p::Polytope,::CrouzeixRaviart, order)
-  CrouzeixRaviartRefFE(Float64,p,order)
-end
-
 function ReferenceFE(p::Polytope,::CrouzeixRaviart,::Type{T}, order) where T
   CrouzeixRaviartRefFE(T,p,order)
 end
+
 
 function Conformity(reffe::GenericRefFE{CrouzeixRaviart},sym::Symbol)
   if sym == :L2

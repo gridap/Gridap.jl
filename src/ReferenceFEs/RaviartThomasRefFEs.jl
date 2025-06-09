@@ -61,10 +61,6 @@ function RaviartThomasRefFE(
   return MomentBasedReferenceFE(RaviartThomas(),p,prebasis,moments,DivConformity())
 end
 
-function ReferenceFE(p::Polytope,::RaviartThomas,order;kwargs...)
-  RaviartThomasRefFE(Float64,p,order;kwargs...)
-end
-
 function ReferenceFE(p::Polytope,::RaviartThomas,::Type{T},order;kwargs...) where T
   RaviartThomasRefFE(T,p,order;kwargs...)
 end

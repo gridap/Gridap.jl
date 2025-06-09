@@ -49,10 +49,6 @@ function BDMRefFE(::Type{T},p::Polytope,order::Integer) where T
   return MomentBasedReferenceFE(BDM(),p,prebasis,moments,DivConformity())
 end
 
-function ReferenceFE(p::Polytope,::BDM, order)
-  BDMRefFE(Float64,p,order)
-end
-
 function ReferenceFE(p::Polytope,::BDM,::Type{T}, order) where T
   BDMRefFE(T,p,order)
 end

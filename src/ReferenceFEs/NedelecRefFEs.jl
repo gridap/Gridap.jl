@@ -76,10 +76,6 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   return MomentBasedReferenceFE(Nedelec(),p,prebasis,moments,CurlConformity())
 end
 
-function ReferenceFE(p::Polytope,::Nedelec, order)
-  NedelecRefFE(Float64,p,order)
-end
-
 function ReferenceFE(p::Polytope,::Nedelec,::Type{T}, order) where T
   NedelecRefFE(T,p,order)
 end

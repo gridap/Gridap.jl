@@ -57,10 +57,6 @@ function ArnoldWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
   return MomentBasedReferenceFE(ArnoldWinther(),p,prebasis,moments,DivConformity())
 end
 
-function ReferenceFE(p::Polytope,::ArnoldWinther, order)
-  ArnoldWintherRefFE(Float64,p,order)
-end
-
 function ReferenceFE(p::Polytope,::ArnoldWinther,::Type{T}, order) where T
   ArnoldWintherRefFE(T,p,order)
 end

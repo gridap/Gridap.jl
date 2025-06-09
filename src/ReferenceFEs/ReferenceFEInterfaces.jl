@@ -72,6 +72,11 @@ function ReferenceFE(p::Polytope, basis::ReferenceFEName, args...; kwargs...)
   """
 end
 
+# Default component/value type
+function ReferenceFE(p::Polytope, name::ReferenceFEName, order; kwargs...)
+    ReferenceFE(p,name,Float64,order; kwargs...)
+end
+
 """
     ReferenceFE(basis::ReferenceFEName, args...; kwargs...)
 

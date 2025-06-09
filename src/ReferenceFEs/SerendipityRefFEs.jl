@@ -45,6 +45,11 @@ function SerendipityRefFE(::Type{T},p::Polytope,orders::Tuple) where T
   SerendipityRefFE(T,p,order)
 end
 
+function ReferenceFE(p::Polytope,::Serendipity,::Type{T},order;kwargs...) where T
+  SerendipityRefFE(T,p,order;kwargs...)
+end
+
+
 # Helper private type
 struct SerendipityPolytope{D,P} <: Polytope{D}
   hex::P
