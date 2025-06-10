@@ -79,6 +79,8 @@ V = FESpaces.PolytopalFESpace(pmodel,Float64,order,space=:P,hierarchical=true,or
 test_l2_proj(pmodel,V,order,u_exact_2d)
 test_dg_lap(pmodel,V,order,u_exact_2d)
 
+V = FESpaces.PolytopalFESpace(pmodel,Float64,order,space=:P,local_kernel=:constants)
+
 # 2D skeleton
 Γ = Triangulation(ReferenceFE{1},model)
 
