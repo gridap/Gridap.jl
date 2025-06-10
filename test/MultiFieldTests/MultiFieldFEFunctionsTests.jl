@@ -30,6 +30,7 @@ X = MultiFieldFESpace([U,P])
 
 free_values = rand(num_free_dofs(X))
 xh = FEFunction(X,free_values)
+display(xh)
 test_fe_function(xh)
 uh, ph = xh
 

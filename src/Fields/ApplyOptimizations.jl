@@ -25,6 +25,16 @@ end
 # Optimization for
 #
 #  g = lazy_map(transpose,cell_to_i_to_f)
+#  lazy_map(transpose,g) -> cell_to_i_to_f
+#
+function lazy_map(k::typeof(transpose),a::LazyArray{<:Fill{typeof(transpose)}})
+  parent = a.args[1]
+  return parent
+end
+
+# Optimization for
+#
+#  g = lazy_map(transpose,cell_to_i_to_f)
 #  lazy_map(evaluate,g)
 #
 function lazy_map(

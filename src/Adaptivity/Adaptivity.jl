@@ -54,5 +54,6 @@ include("CompositeQuadratures.jl")
 include("EdgeBasedRefinement.jl")
 include("SimplexifyRefinement.jl")
 include("AdaptiveMeshRefinement.jl")
+include("PolytopalRefinement.jl")
 
 end # module

@@ -5,7 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.19.0] - 2025-06-10
+
+### Added
+
+- Support for polytopal meshes in 2D and 3D. New structures `PolytopalGridTopology`, `PolytopalGrid` and `PolytopalDiscreteModel`. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- Support for non-overlapping triangulations. Both `BodyFittedTriangulation` and `BoundaryTriangulation` have been extended to support repeated face ids. In particular, the `FaceToCellGlue` has a new constructor. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- Support for patch-wise integration and local solves. New structures `PatchTopology`, `PatchTriangulation` and `PatchAssembler` have been added. These structures allow for the integration, assembly and solution of local problems on (potentially overlapping) patches of the mesh. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- Support for polynomial spaces on polytopal meshes. New structure `PolytopalFESpace` has been added. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- With all of the above, we have support for hybrid non-conforming methods on polytopal meshes. Examples have been added for HDG and HHO in 2D and 3D. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
 
 ### Fixed
 

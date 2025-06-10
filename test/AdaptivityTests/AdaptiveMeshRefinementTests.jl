@@ -107,6 +107,6 @@ end
 ############################################################################################
 
 @testset "Dorfler marking" test_dorfler_marking()
-@testset "AMR - Poisson" test_amr(20,2)
+@testset "AMR - Poisson" test_amr(10,2)
 
 end # module

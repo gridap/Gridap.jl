@@ -138,3 +138,34 @@ function  _free_and_dirichlet_values_fill!(
   end
 
 end
+
+function renumber_free_and_dirichlet_dof_ids(
+  space::UnconstrainedFESpace,free_dof_ids,dir_dof_ids
+)
+  @assert num_free_dofs(space) == length(free_dof_ids)
+  @assert num_dirichlet_dofs(space) == length(dir_dof_ids)
+
+  k = PosNegReindex(free_dof_ids,dir_dof_ids)
+  cell_dof_ids = lazy_map(Broadcasting(k),get_cell_dof_ids(space))
+
+  ndofs = length(free_dof_ids) + length(dir_dof_ids)
+  nfree = sum(i -> i > 0, free_dof_ids; init= 0) + sum(i -> i > 0, dir_dof_ids; init= 0)
+  ndirichlet = ndofs - nfree
+
+  cell_is_dirichlet = map(I -> any(i -> i < 0, I), cell_dof_ids)
+  dirichlet_cells = collect(Int32,findall(cell_is_dirichlet))
+
+  return UnconstrainedFESpace(
+    space.vector_type,
+    nfree,
+    ndirichlet,
+    cell_dof_ids,
+    space.fe_basis,
+    space.fe_dof_basis,
+    cell_is_dirichlet,
+    space.dirichlet_dof_tag,
+    dirichlet_cells,
+    space.ntags,
+    space.metadata
+  )
+end

@@ -33,6 +33,6 @@ function Base.sum(a::VectorWithEntryInserted)
 end
 
 function Base.setindex!(a::VectorWithEntryInserted,v,i::Integer)
-   i < a.index ? (a.a[i] = v) :
+  i < a.index ? (a.a[i] = v) :
                  (i==a.index ? a.value = v : a.a[i-1]=v)
 end

@@ -53,14 +53,14 @@ function map_cols!(gids,a::AssemblyStrategy,cols)
   nothing
 end
 
-function map_cell_rows(strategy::AssemblyStrategy,cell_ids)
+function map_cell_rows(strategy::AssemblyStrategy,cell_ids,args...)
   k = AssemblyStrategyMap{:rows}(strategy)
-  lazy_map(k,cell_ids)
+  lazy_map(k,cell_ids,args...)
 end
 
-function map_cell_cols(strategy::AssemblyStrategy,cell_ids)
+function map_cell_cols(strategy::AssemblyStrategy,cell_ids,args...)
   k = AssemblyStrategyMap{:cols}(strategy)
-  lazy_map(k,cell_ids)
+  lazy_map(k,cell_ids,args...)
 end
 
 struct AssemblyStrategyMap{S,T} <: Map
@@ -70,45 +70,44 @@ struct AssemblyStrategyMap{S,T} <: Map
   end
 end
 
-function Arrays.return_cache(a::AssemblyStrategyMap,ids::AbstractArray)
+function Arrays.return_cache(a::AssemblyStrategyMap,ids::AbstractArray,args...)
   gids = similar(ids,Int,axes(ids))
   CachedArray(gids)
 end
 
-function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:cols},ids::AbstractArray)
+function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:cols},ids::AbstractArray,args...)
   setsize!(cache,size(ids))
   gids = cache.array
-  map_cols!(gids,a.strategy,ids)
+  map_cols!(gids,a.strategy,ids,args...)
   gids
 end
 
-function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:rows},ids::AbstractArray)
+function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:rows},ids::AbstractArray,args...)
   setsize!(cache,size(ids))
   gids = cache.array
-  map_rows!(gids,a.strategy,ids)
+  map_rows!(gids,a.strategy,ids,args...)
   gids
 end
 
-function Arrays.return_cache(k::AssemblyStrategyMap,ids::ArrayBlock)
+function Arrays.return_cache(k::AssemblyStrategyMap,ids::ArrayBlock,args...)
   fi = testitem(ids)
-  ci = return_cache(k,fi)
-  gi = evaluate!(ci,k,fi)
+  ci = return_cache(k,fi,args...)
+  gi = evaluate!(ci,k,fi,args...)
   b = Array{typeof(ci),ndims(ids)}(undef,size(ids))
   for i in eachindex(ids.array)
     if ids.touched[i]
-      ki = return_cache(k,ids.array[i])
-      b[i] = return_cache(k,ids.array[i])
+      b[i] = return_cache(k,ids.array[i],args...)
     end
   end
   array = Array{typeof(gi),ndims(ids)}(undef,size(ids))
   ArrayBlock(array,ids.touched), b
 end
 
-function Arrays.evaluate!(cache,k::AssemblyStrategyMap,ids::ArrayBlock)
-  a,b = cache
+function Arrays.evaluate!(cache,k::AssemblyStrategyMap,ids::ArrayBlock,args...)
+  a, b = cache
   for i in eachindex(ids.array)
     if ids.touched[i]
-      a.array[i] = evaluate!(b[i],k,ids.array[i])
+      a.array[i] = evaluate!(b[i],k,ids.array[i],args...)
     end
   end
   a
@@ -324,9 +323,13 @@ function assemble_matrix_and_vector!(f::Function,b::Function,M::AbstractMatrix,r
   assemble_matrix_and_vector!(M,r,a,collect_cell_matrix_and_vector(U,V,f(u,v),b(v)))
 end
 
-function assemble_matrix_and_vector!(
-  f::Function,b::Function,M::AbstractMatrix,r::AbstractVector,a::Assembler,U::FESpace,V::FESpace,uhd
-)
+function assemble_matrix_and_vector(f::Function,b::Function,a::Assembler,U::FESpace,V::FESpace,uhd)
+  v = get_fe_basis(V)
+  u = get_trial_fe_basis(U)
+  assemble_matrix_and_vector(a,collect_cell_matrix_and_vector(U,V,f(u,v),b(v),uhd))
+end
+
+function assemble_matrix_and_vector!(f::Function,b::Function,M::AbstractMatrix,r::AbstractVector,a::Assembler,U::FESpace,V::FESpace,uhd)
   v = get_fe_basis(V)
   u = get_trial_fe_basis(U)
   assemble_matrix_and_vector!(M,r,a,collect_cell_matrix_and_vector(U,V,f(u,v),b(v),uhd))
@@ -420,9 +423,6 @@ function collect_cell_matrix(trial::FESpace,test::FESpace,a::DomainContribution)
     cell_mat_rc = attach_constraints_rows(test,cell_mat_c,trian)
     rows = get_cell_dof_ids(test,trian)
     cols = get_cell_dof_ids(trial,trian)
-    #push!(w,compress_contributions(cell_mat_rc,trian))
-    #push!(r,compress_ids(rows,trian))
-    #push!(c,compress_ids(cols,trian))
     push!(w,cell_mat_rc)
     push!(r,rows)
     push!(c,cols)
@@ -439,8 +439,6 @@ function collect_cell_vector(test::FESpace,a::DomainContribution)
     @assert ndims(eltype(cell_vec)) == 1
     cell_vec_r = attach_constraints_rows(test,cell_vec,trian)
     rows = get_cell_dof_ids(test,trian)
-    #push!(w,compress_contributions(cell_vec_r,trian))
-    #push!(r,compress_ids(rows,trian))
     push!(w,cell_vec_r)
     push!(r,rows)
   end
@@ -459,9 +457,6 @@ function _collect_cell_matvec(trial::FESpace,test::FESpace,a::DomainContribution
     cell_mat_rc = attach_constraints_rows(test,cell_mat_c,trian)
     rows = get_cell_dof_ids(test,trian)
     cols = get_cell_dof_ids(trial,trian)
-    #push!(w,compress_contributions(cell_mat_rc,trian))
-    #push!(r,compress_ids(rows,trian))
-    #push!(c,compress_ids(cols,trian))
     push!(w,cell_mat_rc)
     push!(r,rows)
     push!(c,cols)
@@ -485,7 +480,6 @@ function collect_cell_matrix_and_vector(
   biform::DomainContribution,liform::DomainContribution,uhd::FEFunction)
 
   matvec, mat, vec = _pair_contribution_when_possible(biform,liform,uhd)
-
   matvecdata = _collect_cell_matvec(trial,test,matvec)
   matdata = collect_cell_matrix(trial,test,mat)
   vecdata = collect_cell_vector(test,vec)
@@ -548,4 +542,42 @@ function collect_cell_matrix_and_vector(
   trial::FESpace,test::FESpace,biform::DomainContribution,l::Number,uhd::FEFunction)
   liform = DomainContribution()
   collect_cell_matrix_and_vector(trial,test,biform,liform,uhd)
+end
+
+# Merging contributions in matrix/vector format
+
+function collect_and_merge_cell_matrix(contributions...)
+  data = ()
+  for c in contributions
+    data = (data..., collect_cell_matrix(c...))
+  end
+  merge_assembly_data(data...)
+end
+
+function collect_and_merge_cell_vector(contributions...)
+  data = ()
+  for c in contributions
+    data = (data..., collect_cell_vector(c...))
+  end
+  merge_assembly_data(data...)
+end
+
+function collect_and_merge_cell_matrix_and_vector(contributions...)
+  data = ()
+  for c in contributions
+    data = (data..., collect_cell_matrix_and_vector(c...))
+  end
+  merge_assembly_matvec_data(data...)
+end
+
+function merge_assembly_data(data...)
+  @assert allequal(length,data)
+  map(vcat,data...)
+end
+
+function merge_assembly_matvec_data(data...)
+  matvecdata = merge_assembly_data(map(x -> x[1], data)...)
+  matdata = merge_assembly_data(map(x -> x[2], data)...)
+  vecdata = merge_assembly_data(map(x -> x[3], data)...)
+  (matvecdata, matdata, vecdata)
 end

@@ -165,7 +165,7 @@ function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair)
   # where each entry is a 2-block BlockVector with the first block being the
   # contribution of the plus side and the second, the one of the minus side
   is_single_field = eltype(eltype(j_to_result_plus)) <: Number
-  k = is_single_field ? BlockMap(2,[1,2]) : Fields.BlockBroadcasting(BlockMap(2,[1,2]))
+  k = is_single_field ? BlockMap(2,[1,2]) : Arrays.BlockBroadcasting(BlockMap(2,[1,2]))
   lazy_map(k,j_to_result_plus,j_to_result_minus)
 end
 
@@ -197,6 +197,6 @@ function Arrays.autodiff_array_jacobian(a, i_to_x, j_to_i::SkeletonPair)
     [(CartesianIndex(1,), CartesianIndex(1, 2)), (CartesianIndex(2,), CartesianIndex(2, 2))]  # Minus -> Second column
   ]
   is_single_field = eltype(eltype(j_to_result_plus)) <: AbstractArray
-  k = is_single_field ? Fields.MergeBlockMap((2,2),I) : Fields.BlockBroadcasting(Fields.MergeBlockMap((2,2),I))
+  k = is_single_field ? Arrays.MergeBlockMap((2,2),I) : Arrays.BlockBroadcasting(Arrays.MergeBlockMap((2,2),I))
   lazy_map(k,j_to_result_plus,j_to_result_minus)
 end

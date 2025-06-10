@@ -72,6 +72,10 @@ function similar_cell_field(f::CellField,cell_data,trian,ds)
   GenericCellField(cell_data,trian,ds)
 end
 
+@inline function similar_cell_field(f,cell_data)
+  similar_cell_field(f,cell_data,get_triangulation(f),DomainStyle(f))
+end
+
 function Base.show(io::IO,::MIME"text/plain",f::CellField)
   show(io,f)
   print(io,":")
@@ -239,9 +243,6 @@ end
 get_data(f::GenericCellField) = f.cell_field
 get_triangulation(f::GenericCellField) = f.trian
 DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
-function similar_cell_field(f::GenericCellField,cell_data,trian,ds)
-  GenericCellField(cell_data,trian,ds)
-end
 
 """
    dist = distance(polytope::ExtrusionPolytope,
@@ -369,7 +370,7 @@ end
 
 # Efficient version:
 function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
-  cache1,cache2 = cache
+  cache1, cache2 = cache
   searchmethod, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map = cache1
   cell_f_cache, f_cache, cell_f, f₀ = cache2
   @check f === f₀ "Wrong cache"
@@ -377,7 +378,7 @@ function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
   ncells = length(cell_map)
   x_to_cell(x) = _point_to_cell!(cache1,x)
   point_to_cell = map(x_to_cell,point_to_x)
-  cell_to_points,point_to_lpoint = make_inverse_table(point_to_cell,ncells)
+  cell_to_points, point_to_lpoint = make_inverse_table(point_to_cell,ncells)
   cell_to_xs = lazy_map(Broadcasting(Reindex(point_to_x)),cell_to_points)
   cell_to_f = get_array(f)
   cell_to_fxs = lazy_map(evaluate,cell_to_f,cell_to_xs)
@@ -387,14 +388,14 @@ function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
 end
 
 function compute_cell_points_from_vector_of_points(xs::AbstractVector{<:Point}, trian::Triangulation, domain_style::PhysicalDomain)
-    searchmethod = KDTreeSearch()
-    cache1 = _point_to_cell_cache(searchmethod,trian)
-    x_to_cell(x) = _point_to_cell!(cache1, x)
-    point_to_cell = map(x_to_cell, xs)
-    ncells = num_cells(trian)
-    cell_to_points, point_to_lpoint = make_inverse_table(point_to_cell, ncells)
-    cell_to_xs = lazy_map(Broadcasting(Reindex(xs)), cell_to_points)
-    cell_point_xs = CellPoint(cell_to_xs, trian, PhysicalDomain())
+  searchmethod = KDTreeSearch()
+  cache = _point_to_cell_cache(searchmethod,trian)
+  x_to_cell(x) = _point_to_cell!(cache, x)
+  point_to_cell = map(x_to_cell, xs)
+  ncells = num_cells(trian)
+  cell_to_points, point_to_lpoint = make_inverse_table(point_to_cell, ncells)
+  cell_to_xs = lazy_map(Broadcasting(Reindex(xs)), cell_to_points)
+  return CellPoint(cell_to_xs, trian, PhysicalDomain())
 end
 
 (a::CellField)(x) = evaluate(a,x)
@@ -488,19 +489,19 @@ struct OperationCellField{DS} <: CellField
 
     # This is only to catch errors in user code
     # as soon as possible.
-    if num_cells(trian) > 0
-      @check begin
-        pts = _get_cell_points(args...)
-        #x = testitem(get_data(pts))
-        #f = map(ak -> testitem(get_data(ak)), args)
-        #fx = map(fk -> return_value(fk,x), f)
-        #r = Fields.BroadcastingFieldOpMap(op.op)(fx...)
-        ax = map(i->i(pts),args)
-        axi = map(first,ax)
-        r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
-        true
-      end
-    end
+    # if num_cells(trian) > 0
+    #   @check begin
+    #     pts = _get_cell_points(args...)
+    #     #x = testitem(get_data(pts))
+    #     #f = map(ak -> testitem(get_data(ak)), args)
+    #     #fx = map(fk -> return_value(fk,x), f)
+    #     #r = Fields.BroadcastingFieldOpMap(op.op)(fx...)
+    #     ax = map(i->i(pts),args)
+    #     axi = map(first,ax)
+    #     r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
+    #     true
+    #   end
+    # end
 
     new{typeof(domain_style)}(op,args,trian,domain_style,Dict())
   end
@@ -843,7 +844,7 @@ function return_cache(a::Interpolable,x::Point)
   f_cache = return_cache(cf,x)
   cache2 = cell_f_cache, f_cache, cell_f, f
 
-  return cache1,cache2
+  return cache1, cache2
 end
 
 function _point_to_cell_cache(searchmethod::KDTreeSearch,trian::Triangulation)
@@ -854,8 +855,7 @@ function _point_to_cell_cache(searchmethod::KDTreeSearch,trian::Triangulation)
   D = num_cell_dims(trian)
   vertex_to_cells = get_faces(topo, 0, D)
   cell_to_ctype = get_cell_type(trian)
-  ctype_to_reffe = get_reffes(trian)
-  ctype_to_polytope = map(get_polytope, ctype_to_reffe)
+  ctype_to_polytope = get_polytopes(trian)
   cell_map = get_cell_map(trian)
   table_cache = array_cache(vertex_to_cells)
   cache1 = searchmethod, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache
