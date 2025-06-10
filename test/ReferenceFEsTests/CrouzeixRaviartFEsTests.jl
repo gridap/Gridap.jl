@@ -5,6 +5,17 @@ using Gridap
 using Gridap.ReferenceFEs, Gridap.Geometry, Gridap.FESpaces, Gridap.Arrays, Gridap.TensorValues
 using Gridap.Helpers
 
+# Only defined for simplices and order 1
+@test_throws ErrorException CrouzeixRaviartRefFE(Float64,QUAD,1)
+@test_throws ErrorException CrouzeixRaviartRefFE(Float64,TRI,2)
+
+reffe = ReferenceFE(TRI, crouzeix_raviart, 1)
+reffec = CrouzeixRaviartRefFE(Float64, TRI, 1)
+@test typeof(reffe) == typeof(reffec)
+test_reference_fe(reffe)
+
+@test Conformity(reffe, :L2) == L2Conformity()
+@test_throws ErrorException Conformity(reffe, :H1)
 
 function solve_crScalarPoisson(partition, cells, u_exact)
   f(x) = - Δ(u_exact)(x)
@@ -91,8 +102,8 @@ function conv_test_Stokes(partition,ns,u,p)
         push!(el2p,l2p)
         push!(hs,h)
     end
-    println(el2u)
-    println(el2p)
+    #println(el2u)
+    #println(el2p)
     el2u, el2p, hs
 end
 
@@ -101,12 +112,12 @@ function conv_test_Poisson(partition,ns,u)
   hs = Float64[]
   for n in ns
   l2 = solve_crScalarPoisson(partition,(n,n),u)
-  println(l2)
+  #println(l2)
   h = 1.0/n
   push!(el2,l2)
   push!(hs,h)
   end
-  println(el2)
+  #println(el2)
   el2, hs
 end
 

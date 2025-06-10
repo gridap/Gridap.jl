@@ -188,6 +188,7 @@ export Nedelec
 export Bezier
 export ModalC0
 export CrouzeixRaviart
+export Serendipity
 
 export lagrangian
 export raviart_thomas
@@ -196,6 +197,7 @@ export nedelec
 export bezier
 export modalC0
 export crouzeix_raviart
+export serendipity
 
 export Quadrature
 export QuadratureName

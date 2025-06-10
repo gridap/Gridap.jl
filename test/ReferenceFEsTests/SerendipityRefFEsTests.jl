@@ -13,8 +13,13 @@ reffe = SerendipityRefFE(Float64,QUAD,2)
 @test get_face_own_nodes(reffe) == [[1], [2], [3], [4], [5], [6], [7], [8], Int[]]
 test_lagrangian_reference_fe(reffe)
 
+reffer = ReferenceFE(QUAD,serendipity,2)
+@test typeof(reffe) == typeof(reffer)
+@test get_node_coordinates(reffe) == get_node_coordinates(reffer)
+@test get_face_own_nodes(reffe) == get_face_own_nodes(reffer)
+
 reffe = SerendipityRefFE(Float64,QUAD,4)
-@test get_face_own_nodes(reffe) == [[1], [2], [3], [4], [5, 6, 7], [8, 9, 10], [11, 12, 13], [14, 15, 16], [17]] 
+@test get_face_own_nodes(reffe) == [[1], [2], [3], [4], [5, 6, 7], [8, 9, 10], [11, 12, 13], [14, 15, 16], [17]]
 test_lagrangian_reference_fe(reffe)
 
 reffe = SerendipityRefFE(Float64,HEX,2)

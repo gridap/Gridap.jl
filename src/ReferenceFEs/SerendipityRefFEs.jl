@@ -1,6 +1,14 @@
 
+"""
+    struct Serendipity  <: ReferenceFEName
+"""
 struct Serendipity <: ReferenceFEName end
 
+"""
+    const serendipity = Serendipity()
+
+Singleton of the [`Serendipity`](@ref) reference FE name.
+"""
 const serendipity = Serendipity()
 
 """

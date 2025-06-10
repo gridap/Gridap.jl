@@ -60,9 +60,9 @@ function public_names_in_md(m::Module; change_link=Dict())
 
   for name in exported
     if haskey(change_link, name)
-      s *= "[`" * String(name) * "`](@ref " * change_link[name] * "), "
+      s *= " [`" * String(name) * "`](@ref " * change_link[name] * "),"
     else
-      s *= "[`"*String(name)*"`](@ref), "
+      s *= " [`"*String(name)*"`](@ref),"
     end
   end
 
@@ -70,17 +70,19 @@ function public_names_in_md(m::Module; change_link=Dict())
 
   s *= """
 
+
   ### Other public names
 
   """
 
   for name in non_exported_publics
     if haskey(change_link, name)
-      s *= "[`" * String(name) * "`](@ref " * change_link[name] * "), "
+      s *= " [`" * String(name) * "`](@ref " * change_link[name] * "),"
     else
-      s *= "[`" * String(name) * "`](@ref), "
+      s *= " [`" * String(name) * "`](@ref),"
     end
   end
+  s *= "\n"
 
   return s
 end
