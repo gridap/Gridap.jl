@@ -5,6 +5,8 @@ struct CDConformity{D} <: Conformity
   cont::NTuple{D,Int}
 end
 
+Pushforward(::Type{Lagrangian}) = IdentityPiolaMap()
+
 function Conformity(reffe::GenericLagrangianRefFE{<:CDConformity},sym::Symbol)
   if sym == :L2
     L2Conformity()

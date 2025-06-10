@@ -18,6 +18,8 @@ struct Lagrangian <: ReferenceFEName end
 
 const lagrangian = Lagrangian()
 
+Pushforward(::Type{Lagrangian}) = IdentityPiolaMap()
+
 """
     get_face_own_nodes(reffe::LagrangianRefFE,conf::Conformity)
 """
@@ -355,6 +357,8 @@ end
 get_face_nodes(reffe::GenericLagrangianRefFE) = reffe.face_nodes
 
 # Reffe
+
+get_name(::Type{<:GenericLagrangianRefFE}) = Lagrangian()
 
 num_dofs(reffe::GenericLagrangianRefFE) = num_dofs(reffe.reffe)
 

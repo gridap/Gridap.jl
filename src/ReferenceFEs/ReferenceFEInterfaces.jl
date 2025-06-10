@@ -45,6 +45,15 @@ end
 ReferenceFE(basis::ReferenceFEName,args...;kwargs...) = (basis, args, kwargs)
 
 """
+    get_name(::ReferenceFE)
+    get_name(::Type{ReferenceFE})
+
+Returns the [ReferenceFEName](@ref) of the given reference FE.
+"""
+get_name(::Type{<:ReferenceFE})::ReferenceFEName = @abstractmethod
+get_name(reffe::ReferenceFE) = get_name(typeof(reffe))
+
+"""
     num_dofs(reffe::ReferenceFE) -> Int
 
 Returns the number of DOFs.
@@ -493,6 +502,8 @@ struct GenericRefFE{T,D} <: ReferenceFE{D}
       linear_combination(Eye{Int}(ndofs),shapefuns))
   end
 end
+
+get_name(::Type{<:GenericRefFE{Name}}) where Name = Name()
 
 num_dofs(reffe::GenericRefFE) = reffe.ndofs
 

@@ -1,10 +1,12 @@
 
-struct ArnoldWinther <: PushforwardRefFE end
+struct ArnoldWinther <: ReferenceFEName end
 
 const arnoldwinther = ArnoldWinther()
 
+Pushforward(::Type{ArnoldWinther}) = DoubleContraVariantPiolaMap()
+
 """
-    struct ArnoldWinther <: PushforwardRefFE end
+    struct ArnoldWinther <: ReferenceFEName end
     ArnoldWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
 
 Arnold-Winther reference finite element.

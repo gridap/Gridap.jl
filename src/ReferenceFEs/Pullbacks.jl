@@ -2,18 +2,16 @@
 """
     abstract type Pushforward <: Map end
 
-Represents a pushforward map F*, defined as 
+Represents a pushforward map F*, defined as
   F* : V̂ -> V
-where 
-  - V̂ is a function space on the reference cell K̂ and 
+where
+  - V̂ is a function space on the reference cell K̂ and
   - V is a function space on the physical cell K.
 """
 abstract type Pushforward <: Map end
 
-abstract type PushforwardRefFE <: ReferenceFEName end
-
-Pushforward(::Type{<:PushforwardRefFE}) = @abstractmethod
-Pushforward(name::PushforwardRefFE) = Pushforward(typeof(name))
+Pushforward(::Type{<:ReferenceFEName}) = @abstractmethod
+Pushforward(name::ReferenceFEName) = Pushforward(typeof(name))
 
 function Arrays.lazy_map(
   k::Pushforward, ref_cell_fields::AbstractArray, pf_args::AbstractArray...
@@ -56,10 +54,10 @@ end
 """
     const InversePushforward{PF} = InverseMap{PF} where PF <: Pushforward
 
-Represents the inverse of a pushforward map F*, defined as 
+Represents the inverse of a pushforward map F*, defined as
   (F*)^-1 : V -> V̂
-where 
-  - V̂ is a function space on the reference cell K̂ and 
+where
+  - V̂ is a function space on the reference cell K̂ and
   - V is a function space on the physical cell K.
 """
 const InversePushforward{PF} = InverseMap{PF} where PF <: Pushforward
@@ -87,10 +85,10 @@ end
 """
     struct Pullback{PF <: Pushforward} <: Map end
 
-Represents a pullback map F**, defined as 
+Represents a pullback map F**, defined as
   F** : V* -> V̂*
-where 
-  - V̂* is a dof space on the reference cell K̂ and 
+where
+  - V̂* is a dof space on the reference cell K̂ and
   - V* is a dof space on the physical cell K.
 Its action on physical dofs σ : V -> R is defined in terms of the pushforward map F* as
   ̂σ = F**(σ) := σ∘F* : V̂ -> R
@@ -119,10 +117,10 @@ end
 """
     struct InversePullback{PF <: Pushforward} <: Map end
 
-Represents the inverse of the pullback map F**, defined as 
+Represents the inverse of the pullback map F**, defined as
   (F**)^-1 : V̂* -> V*
-where 
-  - V̂* is a dof space on the reference cell K̂ and 
+where
+  - V̂* is a dof space on the reference cell K̂ and
   - V* is a dof space on the physical cell K.
 Its action on reference dofs ̂σ : V̂ -> R is defined in terms of the pushforward map F* as
   σ = (F**)^-1(̂σ) := ̂σ∘(F*)^-1 : V -> R
@@ -145,8 +143,23 @@ function evaluate!(
   return MappedDofBasis(inverse_map(pb.pushforward),σ_ref,args...)
 end
 
-# ContraVariantPiolaMap
+# Trivial / 1st Piola map
+struct IdentityPiolaMap <: Pushforward end
 
+function evaluate!(
+  cache, ::IdentityPiolaMap, v_ref::Number, Jt::Number
+)
+  return v_ref
+end
+
+function evaluate!(
+  cache, ::InversePushforward{IdentityPiolaMap}, v_phys::Number, Jt::Number
+)
+  return v_phys
+end
+
+
+# ContraVariantPiolaMap
 struct ContraVariantPiolaMap <: Pushforward end
 
 function evaluate!(
@@ -202,6 +215,24 @@ function evaluate!(
 )
   return v_phys ⋅ transpose(Jt)
 end
+
+# 4th Piola map
+struct BrokenPiolaMap <: Pushforward end
+
+function evaluate!(
+  cache, ::BrokenPiolaMap, v_ref::Number, Jt::Number
+)
+  idetJ = 1. / meas(Jt)
+  return v_ref * idetJ
+end
+
+function evaluate!(
+  cache, ::InversePushforward{BrokenPiolaMap}, v_phys::Number, Jt::Number
+)
+  detJ = meas(Jt)
+  return v_phys * detJ
+end
+
 
 # DoubleContraVariantPiolaMap
 

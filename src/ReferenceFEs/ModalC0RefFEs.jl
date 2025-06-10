@@ -2,6 +2,8 @@ struct ModalC0 <: ReferenceFEName end
 
 const modalC0 = ModalC0()
 
+Pushforward(::Type{ModalC0}) = IdentityPiolaMap()
+
 """
   ModalC0RefFE(::Type{T},p::Polytope{D},orders) where {T,D}
 

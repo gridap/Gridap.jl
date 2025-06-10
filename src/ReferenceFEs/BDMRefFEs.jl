@@ -1,8 +1,8 @@
-struct BDM <: PushforwardRefFE end
+struct BDM <: ReferenceFEName end
 
 const bdm = BDM()
 
-Pushforward(::Type{<:BDM}) = ContraVariantPiolaMap()
+Pushforward(::Type{BDM}) = ContraVariantPiolaMap()
 
 """
 BDMRefFE(::Type{et},p::Polytope,order::Integer) where et

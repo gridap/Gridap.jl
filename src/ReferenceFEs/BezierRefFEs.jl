@@ -2,6 +2,8 @@ struct Bezier <: ReferenceFEName end
 
 const bezier = Bezier()
 
+Pushforward(::Type{Bezier}) = IdentityPiolaMap()
+
 struct BezierRefFE{D} <: LagrangianRefFE{D}
   reffe::ReferenceFE{D}
   node_to_own_node::Vector{Int}

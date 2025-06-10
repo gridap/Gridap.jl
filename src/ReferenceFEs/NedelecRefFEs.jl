@@ -1,10 +1,10 @@
 
 struct CurlConformity <: Conformity end
 
-struct Nedelec <: PushforwardRefFE end
+struct Nedelec <: ReferenceFEName end
 const nedelec = Nedelec()
 
-Pushforward(::Type{<:Nedelec}) = CoVariantPiolaMap()
+Pushforward(::Type{Nedelec}) = CoVariantPiolaMap()
 
 """
     NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et

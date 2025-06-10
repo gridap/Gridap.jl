@@ -1,12 +1,12 @@
 
-struct HellanHerrmannJhonson <: PushforwardRefFE end
+struct HellanHerrmannJhonson <: ReferenceFEName end
 
 const hhj = HellanHerrmannJhonson()
 
-Pushforward(::Type{<:HellanHerrmannJhonson}) = DoubleContraVariantPiolaMap()
+Pushforward(::Type{HellanHerrmannJhonson}) = DoubleContraVariantPiolaMap()
 
 """
-    struct HellanHerrmannJhonson <: PushforwardRefFE end
+    struct HellanHerrmannJhonson <: ReferenceFEName end
     HellanHerrmannJhonsonRefFE(::Type{T},p::Polytope,order::Integer) where T
 
 Hellan-Herrmann-Jhonson reference finite element.
@@ -18,7 +18,7 @@ References:
 """
 function HellanHerrmannJhonsonRefFE(::Type{T},p::Polytope,order::Integer) where T
   @assert p == TRI "HellanHerrmannJhonson Reference FE only defined for TRIangles"
-  
+
   VT = SymTensorValue{2,T}
   prebasis = MonomialBasis{2}(VT,order,Polynomials._p_filter)
   fb = MonomialBasis{D-1}(T,order,Polynomials._p_filter)

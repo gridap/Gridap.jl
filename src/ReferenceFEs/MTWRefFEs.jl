@@ -1,10 +1,12 @@
 
-struct MardalTaiWinther <: PushforwardRefFE end
+struct MardalTaiWinther <: ReferenceFEName end
 
 const mtw = MardalTaiWinther()
 
+Pushforward(::Type{MardalTaiWinther}) = ContraVariantPiolaMap()
+
 """
-    struct MardalTaiWinther <: PushforwardRefFE end
+    struct MardalTaiWinther <: ReferenceFEName end
     MardalTaiWintherRefFE(::Type{et},p::Polytope,order::Integer) where et
 
 Mardal-Tai-Winther reference finite element.

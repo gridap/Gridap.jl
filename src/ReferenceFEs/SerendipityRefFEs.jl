@@ -1,7 +1,25 @@
 
 """
-    SerendipityRefFE(::Type{T},p::Polytope,order::Int) where T
-    SerendipityRefFE(::Type{T},p::Polytope,orders::Tuple) where T
+    struct Serendipity  <: ReferenceFEName
+"""
+struct Serendipity <: ReferenceFEName end
+
+"""
+    const serendipity = Serendipity()
+
+Singleton of the [`Serendipity`](@ref) reference FE name.
+"""
+const serendipity = Serendipity()
+
+Pushforward(::Type{Serendipity}) = IdentityPiolaMap()
+
+"""
+    SerendipityRefFE(::Type{T}, p::Polytope, order::Int)
+    SerendipityRefFE(::Type{T}, p::Polytope, orders::Tuple)
+
+Return a Lagrangian reference FE whose underlying approximation space is the
+serendipity polynomial space 𝕊r of order `order`. Implemented on n-cubes with
+homogneous order.
 
 Returns an instance of `LagrangianRefFE`, whose underlying approximation space
 is the serendipity space of order `order`. Implemented for order from 1 to 4.
