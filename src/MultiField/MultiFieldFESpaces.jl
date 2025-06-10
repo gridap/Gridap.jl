@@ -1,3 +1,5 @@
+"""
+"""
 abstract type MultiFieldStyle end
 
 """
@@ -9,7 +11,7 @@ struct ConsecutiveMultiFieldStyle <: MultiFieldStyle end
 """
   Similar to ConsecutiveMultiFieldStyle, but we keep the original DoF ids of the
   individual spaces for better block assembly (see BlockSparseMatrixAssembler).
-  Takes three parameters: 
+  Takes three parameters:
    - NB: Number of assembly blocks
    - SB: Size of each assembly block, as a Tuple.
    - P : Permutation of the variables of the multifield space when assembling, as a Tuple.
@@ -45,7 +47,7 @@ function BlockMultiFieldStyle(::BlockMultiFieldStyle{0,0,0},spaces)
 end
 
 """
-  Not implemented yet. 
+  Not implemented yet.
 """
 struct StridedMultiFieldStyle <: MultiFieldStyle end
 
@@ -81,7 +83,7 @@ end
 """
     MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
 """
-function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace}; 
+function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace};
                            style = ConsecutiveMultiFieldStyle())
   Ts = map(get_dof_value_type,spaces)
   T  = typeof(*(map(zero,Ts)...))

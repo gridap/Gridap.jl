@@ -44,10 +44,6 @@ function MardalTaiWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
   return MomentBasedReferenceFE(MardalTaiWinther(),p,prebasis,moments,DivConformity())
 end
 
-function ReferenceFE(p::Polytope,::MardalTaiWinther, order)
-  MardalTaiWintherRefFE(Float64,p,order)
-end
-
 function ReferenceFE(p::Polytope,::MardalTaiWinther,::Type{T}, order) where T
   MardalTaiWintherRefFE(T,p,order)
 end

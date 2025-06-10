@@ -1,3 +1,7 @@
+```@meta
+CurrentModule = Gridap.Polynomials
+```
+
 # Bernstein bases algorithms
 
 ### Barycentric coordinates
@@ -102,7 +106,7 @@ B_α`` can be evaluated at ``\bm{x}`` using the de Casteljau algorithms
 ```
 for ``l=1, 2, …, K`` where ``p_α^{(0)}=p_α``, ``λ=λ(\bm{x})`` and the
 result is ``p(\bm{x})=p_𝟎^{(K)}``. This algorithm is implemented (in
-place) by [`_de_Casteljau_nD!`](@ref).
+place) by [`_de_Casteljau_nD!`](@ref Polynomials._de_Casteljau_nD!).
 
 But Gridap implements the polynomial bases themselves instead of individual
 polynomials in a basis. To compute all ``B_α`` at ``\bm{x}``, one can
@@ -133,11 +137,18 @@ The gradient formula comes from [1, Eq. (2.28)], and the second is derived from
 the first using the fact that ``∂_qλ`` is homogeneous. The implementation of
 the gradient and hessian compute the ``B_β`` using
 `_downwards_de_Casteljau_nD!` up to order ``K-1`` and ``K-2`` respectively, and
-then the results are assembled by [`_grad_Bα_from_Bαm!`](@ref) and
-[`_hess_Bα_from_Bαmm!`](@ref) respectively. The implementation makes sure to
-only access each relevant ``B_β`` once per ``(∇/H)B_α`` computed. Also, on the
+then the results are assembled by `_grad_Bα_from_Bαm!` and
+`_hess_Bα_from_Bαmm!` respectively. The implementation makes sure to only
+access each relevant ``B_β`` once per ``(∇/H)B_α`` computed. Also, on the
 reference simplex, the barycentric coordinates derivatives are computed at
 compile time using ``∂_qλ_i = δ_{i q}-δ_{i N}``.
+
+## Low level docstrings
+
+```@docs
+_de_Casteljau_nD!
+_downwards_de_Casteljau_nD!
+```
 
 ## References
 

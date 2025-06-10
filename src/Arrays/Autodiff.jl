@@ -1,4 +1,6 @@
 
+"""
+"""
 function autodiff_array_gradient(a,i_to_x)
   dummy_tag = ()->()
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_tag),i_to_x)
@@ -8,6 +10,8 @@ function autodiff_array_gradient(a,i_to_x)
   i_to_result
 end
 
+"""
+"""
 function autodiff_array_jacobian(a,i_to_x)
   dummy_tag = ()->()
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_tag),i_to_x)
@@ -17,6 +21,8 @@ function autodiff_array_jacobian(a,i_to_x)
   i_to_result
 end
 
+"""
+"""
 function autodiff_array_hessian(a,i_to_x)
   agrad = i_to_y -> autodiff_array_gradient(a,i_to_y)
   autodiff_array_jacobian(agrad,i_to_x)
@@ -58,6 +64,12 @@ function autodiff_array_reindex(i_to_val, j_to_i)
   return j_to_val
 end
 
+"""
+  struct ConfigMap{F,T} <: Map
+
+Map for ForwardDiff.[`F`]Config(`T`,...) where `T` is tag function and `F` is
+either gradient or jacobian.
+"""
 struct ConfigMap{
   F <: Union{typeof(ForwardDiff.gradient),typeof(ForwardDiff.jacobian)},
   T <: Union{<:Function,Nothing}} <: Map
@@ -83,6 +95,9 @@ function evaluate!(cfg,k::ConfigMap,x)
   cfg
 end
 
+"""
+    struct DualizeMap <: Map
+"""
 struct DualizeMap <: Map end
 
 function evaluate!(cache,::DualizeMap,cfg,x)
@@ -91,6 +106,9 @@ function evaluate!(cache,::DualizeMap,cfg,x)
   xdual
 end
 
+"""
+    struct AutoDiffMap <: Map
+"""
 struct AutoDiffMap <: Map end
 
 function return_cache(::AutoDiffMap,cfg::ForwardDiff.GradientConfig,ydual)

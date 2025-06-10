@@ -98,12 +98,12 @@ function CellQuadrature(trian::AppendedTriangulation,quad::Quadrature;
                  integration_domain_style=integration_domain_style)
 end
 
-@deprecate( 
+@deprecate(
   CellQuadrature(trian::Triangulation,degree,ids::DomainStyle),
   CellQuadrature(trian::Triangulation,degree;data_domain_style=ReferenceDomain(),integration_domain_style=ids)
 )
 
-@deprecate( 
+@deprecate(
   CellQuadrature(trian::AppendedTriangulation,degree1,degree2,ids::DomainStyle),
   CellQuadrature(trian::AppendedTriangulation,degree1,degree2;data_domain_style=ReferenceDomain(),integration_domain_style=ids)
 )
@@ -172,6 +172,16 @@ function integrate(f::CellField,quad::CellQuadrature)
   end
 end
 
+"""
+    integrate(integrand, dΩ::Measure)
+    integrate(integrand, dΩ::CellQuadrature)
+    (integrand::Integrand) * dΩ
+    ∫(quantity) * dΩ
+    ∫(quantity)dΩ
+
+High level integral definition API, the `integrand` can be created using
+[`∫`](@ref Integrand).
+"""
 function integrate(a,quad::CellQuadrature)
   b = CellField(a,quad.trian,quad.data_domain_style)
   integrate(b,quad)
@@ -179,6 +189,12 @@ end
 
 # Some syntactic sugar
 
+"""
+    struct Integrand object end
+    ∫(object)
+
+Generic placeholder for a quantity `object` to be integrated against a [`CellQuadrature`](@ref).
+"""
 struct Integrand
   object
 end
@@ -190,6 +206,13 @@ const ∫ = Integrand
 
 # Cell measure
 
+"""
+    get_cell_measure(trian)
+    get_cell_measure(strian, ttrian)
+
+where all arguments are [`Triangulation`](@ref)s, returns a vector containing
+the volume of each cell of [`t`]`trian`.
+"""
 function get_cell_measure(trian::Triangulation)
   quad = CellQuadrature(trian,0)
   cell_to_dV = integrate(1,quad)

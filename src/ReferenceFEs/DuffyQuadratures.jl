@@ -5,12 +5,15 @@
 Duffy quadrature rule for simplices, obtained as the mapped
 tensor product of 1d Gauss-Jacobi and Gauss-Legendre quadratures.
 
-# Constructor: 
+# Constructor:
 
-    Quadrature(p::Polytope,duffy,degree::Integer;T::Type{<:AbstractFloat}=Float64)
+    Quadrature(p::Polytope, duffy, degree::Integer; T::Type{<:AbstractFloat}=Float64)
 """
 struct Duffy <: QuadratureName end
 
+"""
+    const duffy = Duffy()
+"""
 const duffy = Duffy()
 
 function Quadrature(p::Polytope,::Duffy,degree::Integer;T::Type{<:AbstractFloat}=Float64)
@@ -24,7 +27,7 @@ end
 function _duffy(degree::Integer,D::Int;T::Type{<:AbstractFloat}=Float64)
   quad_1d = [ gauss_jacobi_quadrature(degree,(D-1)-(d-1),0;T) for d in 1:D]
   coords_1d, weights_1d = map(first, quad_1d), map(last, quad_1d)
-  
+
   a = T(0.5)
   for d in (D-1):-1:1
     weights_1d[d] .*= a

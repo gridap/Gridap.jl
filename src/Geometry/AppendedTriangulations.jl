@@ -102,6 +102,11 @@ function lazy_append(a::Triangulation,b::Triangulation)
   AppendedTriangulation(a,b)
 end
 
+"""
+    AppendedTriangulation(a::Triangulation{Dc,Dp}, b::Triangulation{Dc,Dp})
+
+Union of two triangulations built on the same [`DiscreteModel`](@ref).
+"""
 struct AppendedTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
   a::A
   b::B

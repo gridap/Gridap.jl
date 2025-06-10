@@ -1,6 +1,8 @@
 """
 
-$(public_names_in_md(@__MODULE__))
+$(public_names_in_md(@__MODULE__; change_link=Dict(
+  :H1Conformity  => "GradConformity",
+)))
 """
 module ReferenceFEs
 
@@ -101,7 +103,6 @@ export Dof
 export get_nodes
 export get_face_moments
 export get_face_nodes_dofs
-export get_nodes
 export evaluate!
 export return_cache
 export return_type
@@ -114,7 +115,6 @@ export GenericRefFE
 export get_polytope
 export get_prebasis
 export get_dof_basis
-export Conformity
 export get_face_own_dofs
 export get_face_own_dofs_permutations
 export get_face_dofs
@@ -181,7 +181,7 @@ export BDMRefFE
 export NedelecRefFE
 export BezierRefFE
 export ModalC0RefFE
-export CRRefFE
+export CrouzeixRaviartRefFE
 
 export Lagrangian
 export RaviartThomas
@@ -189,6 +189,8 @@ export BDM
 export Nedelec
 export Bezier
 export ModalC0
+export CrouzeixRaviart
+export Serendipity
 
 export lagrangian
 export raviart_thomas
@@ -196,7 +198,8 @@ export bdm
 export nedelec
 export bezier
 export modalC0
-export cr
+export crouzeix_raviart
+export serendipity
 
 export Quadrature
 export QuadratureName
@@ -257,7 +260,7 @@ include("BDMRefFEs.jl")
 
 include("NedelecRefFEs.jl")
 
-include("CRRefFEs.jl")
+include("CrouzeixRaviartRefFEs.jl")
 
 include("MockDofs.jl")
 

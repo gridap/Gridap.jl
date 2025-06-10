@@ -69,21 +69,29 @@ function test_fe_function(f::FEFunction)
   @test length(cell_values) == num_cells(trian)
 end
 
+"""
+    abstract type FESpace <: GridapType end
+
+Abstract finite element space.
+"""
 abstract type FESpace <: GridapType end
 
 # Minimal FE interface (used by FEOperator)
 
 """
+    get_free_dof_ids(f::FESpace)
 """
 function get_free_dof_ids(f::FESpace)
   @abstractmethod
 end
 
 """
+    num_free_dofs(f::FESpace) = length(get_free_dof_ids(f))
 """
 num_free_dofs(f::FESpace) = length(get_free_dof_ids(f))
 
 """
+    zero_free_values(f::FESpace)
 """
 function zero_free_values(f::FESpace)
   V = get_vector_type(f)
@@ -92,6 +100,9 @@ function zero_free_values(f::FESpace)
   return free_values
 end
 
+"""
+    get_vector_type(fs::FESpace)
+"""
 function get_vector_type(fs::FESpace)
   @abstractmethod
 end
@@ -111,6 +122,9 @@ function get_triangulation(fe::FESpace)
 end
 
 # TODO this is quite hacky. Only needed by the zero mean space
+"""
+    EvaluationFunction(fe::FESpace, free_values) = FEFunction(fe,free_values)
+"""
 function EvaluationFunction(fe::FESpace, free_values)
   FEFunction(fe,free_values)
 end
@@ -126,6 +140,8 @@ function get_dof_value_type(f::FESpace)
   get_dof_value_type(get_fe_basis(f),get_fe_dof_basis(f))
 end
 
+"""
+"""
 function get_dof_value_type(cell_shapefuns::CellField,cell_dof_basis::CellDof)
   cell_dof_values = cell_dof_basis(cell_shapefuns)
   eltype(eltype(cell_dof_values))
@@ -165,6 +181,8 @@ function get_cell_dof_basis(f::FESpace)
   error(msg)
 end
 
+"""
+"""
 function get_trial_fe_basis(f::FESpace)
   v = get_fe_basis(f)
   cell_v = get_data(v)
@@ -179,10 +197,20 @@ end
 
 # Basis related
 
+"""
+    abstract type BasisStyle
+
+Trait for trial or test [`FEBasis`](@ref), the subtypes are the structs `TrialBasis` and `TestBasis`.
+"""
 abstract type BasisStyle end
 struct TrialBasis <: BasisStyle end
 struct TestBasis <: BasisStyle end
 
+"""
+    abstract type FEBasis <: CellField
+
+Has traits [BasisStyle](@ref) and [DomainStyle](@ref).
+"""
 abstract type FEBasis <: CellField end
 BasisStyle(::T) where T <: FEBasis = BasisStyle(T)
 DomainStyle(::T) where T <: FEBasis = DomainStyle(T)
@@ -250,16 +278,36 @@ end
 
 # Constraint-related
 
+"""
+    abstract type ConstraintStyle
+
+Trait for (un)constrained [`FESpace`](@ref)s, the subtypes are the structs
+[`Constrained`](@ref) and [`UnConstrained`](@ref).
+"""
 abstract type ConstraintStyle end
+"""
+    struct Constrained <: ConstraintStyle
+"""
 struct Constrained <: ConstraintStyle end
+"""
+    struct UnConstrained <: ConstraintStyle
+"""
 struct UnConstrained <: ConstraintStyle end
 
 ConstraintStyle(::Type{<:FESpace}) = @abstractmethod
 ConstraintStyle(::T) where T<:FESpace = ConstraintStyle(T)
 
+"""
+    has_constraints(::Type{<FESpace})
+    has_constraints(::FESpace)
+
+Return true if the `FESpace` (type) is [`Constrained`](@ref).
+"""
 has_constraints(::Type{T}) where T <:FESpace = ConstraintStyle(T) == Constrained()
 has_constraints(::T) where T <: FESpace = has_constraints(T)
 
+"""
+"""
 function get_cell_constraints(f::FESpace)
   get_cell_constraints(f,ConstraintStyle(f))
 end
@@ -284,6 +332,8 @@ function get_cell_fe_data(fun::typeof(get_cell_constraints),sface_to_data,sglue:
   lazy_map(BlockMap((2,2),[(1,1),(2,2)]),plus,minus)
 end
 
+"""
+"""
 function get_cell_isconstrained(f::FESpace)
   get_cell_isconstrained(f,ConstraintStyle(f))
 end
@@ -336,6 +386,8 @@ function attach_constraints_cols(f::FESpace,cellarr,ttrian,::Constrained)
   attach_constraints_cols(cellarr,cellconstr,cellmask)
 end
 
+"""
+"""
 function get_cell_is_dirichlet(f::FESpace)
   trian = get_triangulation(f)
   Fill(true,num_cells(trian))

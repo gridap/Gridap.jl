@@ -1,16 +1,27 @@
-
+"""
+    struct CurlConformity <: Conformity
+"""
 struct CurlConformity <: Conformity end
 
+"""
+    struct Nedelec <: PushforwardRefFE <: ReferenceFEName
+"""
 struct Nedelec <: PushforwardRefFE end
+
+"""
+    const nedelec = Nedelec()
+
+Singleton of the [`Nedelec`](@ref) reference FE name.
+"""
 const nedelec = Nedelec()
 
 Pushforward(::Type{<:Nedelec}) = CoVariantPiolaMap()
 
 """
-    NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
+    NedelecRefFE(::Type{T}, p::Polytope, order::Integer)
 
-The `order` argument has the following meaning: the curl of the  functions in this basis
-is in the Q space of degree `order`.
+The `order` argument has the following meaning: the curl of the  functions in
+this basis is in the Q space of degree `order`. `T` is the type of scalar components.
 """
 function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   D = num_dims(p)
@@ -63,10 +74,6 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   end
 
   return MomentBasedReferenceFE(Nedelec(),p,prebasis,moments,CurlConformity())
-end
-
-function ReferenceFE(p::Polytope,::Nedelec, order)
-  NedelecRefFE(Float64,p,order)
 end
 
 function ReferenceFE(p::Polytope,::Nedelec,::Type{T}, order) where T

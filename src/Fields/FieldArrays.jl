@@ -75,6 +75,11 @@ function testargs(f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Field
   testargs(testitem(f),x)
 end
 
+"""
+    test_field_array(f::AbstractArray{<:Field}, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
+
+For tests.
+"""
 function test_field_array(f::AbstractArray{<:Field}, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
   test_map(v,f,x;cmp=cmp)
   if grad != nothing
@@ -199,6 +204,10 @@ for op in (:∇,:∇∇)
   end
 end
 
+"""
+    linear_combination(a::AbstractVector{<:Number}, b::AbstractVector{<:Field})
+    linear_combination(a::AbstractMatrix{<:Number}, b::AbstractVector{<:Field})
+"""
 function linear_combination(a::AbstractMatrix{<:Number},b::AbstractVector{<:Field})
   #[ LinearCombinationField(a,b,i) for i in 1:size(a,2) ]
   LinearCombinationFieldVector(a,b)
@@ -461,6 +470,8 @@ Base.setindex!(a::TransposeFieldIndices,v,i::Integer) = (a.matrix[i] = v)
 # Integration
 
 """
+    integrate(a::AbstractArray{<:Field},x::AbstractVector{<:Point},w::AbstractVector{<:Real})
+
 Integration of a given array of fields in the "physical" space
 """
 function integrate(a::AbstractArray{<:Field},x::AbstractVector{<:Point},w::AbstractVector{<:Real})
@@ -469,6 +480,8 @@ function integrate(a::AbstractArray{<:Field},x::AbstractVector{<:Point},w::Abstr
 end
 
 """
+    integrate(a::AbstractArray{<:Field},q::AbstractVector{<:Point},w::AbstractVector{<:Real},j::Field)
+
 Integration of a given array of fields in the "reference" space
 """
 function integrate(a::AbstractArray{<:Field},q::AbstractVector{<:Point},w::AbstractVector{<:Real},j::Field)

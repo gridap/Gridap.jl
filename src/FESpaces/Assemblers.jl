@@ -1,5 +1,6 @@
 
 """
+    abstract type AssemblyStrategy
 """
 abstract type AssemblyStrategy end
 
@@ -114,6 +115,9 @@ function Arrays.evaluate!(cache,k::AssemblyStrategyMap,ids::ArrayBlock)
   a
 end
 
+"""
+    struct DefaultAssemblyStrategy <: AssemblyStrategy
+"""
 struct DefaultAssemblyStrategy <: AssemblyStrategy end
 
 row_map(a::DefaultAssemblyStrategy,row) = row
@@ -128,6 +132,9 @@ map_cell_rows(strategy::DefaultAssemblyStrategy,cell_ids) = cell_ids
 
 map_cell_cols(strategy::DefaultAssemblyStrategy,cell_ids) = cell_ids
 
+"""
+    struct GenericAssemblyStrategy{A,B,C,D} <: AssemblyStrategy
+"""
 struct GenericAssemblyStrategy{A,B,C,D} <: AssemblyStrategy
   row_map::A
   col_map::B
@@ -144,6 +151,7 @@ row_mask(a::GenericAssemblyStrategy,row) = a.row_mask(row)
 col_mask(a::GenericAssemblyStrategy,col) = a.col_mask(col)
 
 """
+    abstract type Assembler <: GridapType
 """
 abstract type Assembler <: GridapType end
 
@@ -219,6 +227,8 @@ function assemble_matrix_and_vector!(A,b,a::Assembler,data)
   @abstractmethod
 end
 
+"""
+"""
 function assemble_matrix_and_vector_add!(A,b,a::Assembler,data)
   @abstractmethod
 end
@@ -388,19 +398,27 @@ end
 
 # Abstract interface for computing the data to be sent to the assembler
 
+"""
+"""
 function collect_cell_matrix(trial::FESpace,test::FESpace,mat_contributions)
   @abstractmethod
 end
 
+"""
+"""
 function collect_cell_vector(test::FESpace,vec_contributions)
   @abstractmethod
 end
 
+"""
+"""
 function collect_cell_matrix_and_vector(
   trial::FESpace,test::FESpace,mat_contributions,vec_contributions)
   @abstractmethod
 end
 
+"""
+"""
 function collect_cell_matrix_and_vector(
   trial::FESpace,test::FESpace,mat_contributions,vec_contributions,uhd::FEFunction)
   @abstractmethod

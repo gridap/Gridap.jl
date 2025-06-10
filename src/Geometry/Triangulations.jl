@@ -1,7 +1,7 @@
 """
     abstract type Triangulation{Dt,Dp}
 
-A discredited physical domain associated with a `DiscreteModel{Dm,Dp}`.
+A discretized physical domain associated with a `DiscreteModel{Dm,Dp}`.
 
 `Dt` and `Dm` can be different.
 
@@ -11,15 +11,28 @@ The (mandatory) `Triangulation` interface can be tested with
 """
 abstract type Triangulation{Dc,Dp} <: Grid{Dc,Dp} end
 
+"""
+    get_background_model(t::Triangulation)
+
+Return the [`DiscreteModel`](@ref) the triangulation is associated with.
+"""
 function get_background_model(t::Triangulation)
   @abstractmethod
 end
 
+"""
+    get_grid(t::Triangulation)
+
+Return the [`Grid`](@ref) the triangulation is built on.
+"""
 function get_grid(t::Triangulation)
   @abstractmethod
 end
 
 # See possible types of glue below
+"""
+    get_glue(t::Triangulation,::Val{d})
+"""
 function get_glue(t::Triangulation,::Val{d}) where d
   nothing
 end
@@ -52,6 +65,9 @@ get_cell_reffe(trian::Triangulation) = get_cell_reffe(get_grid(trian))
 is_first_order(trian::Triangulation) = is_first_order(get_grid(trian))
 
 # This is the most used glue, but others are possible, see e.g. SkeletonGlue.
+"""
+    struct FaceToFaceGlue{A,B,C}
+"""
 struct FaceToFaceGlue{A,B,C}
   tface_to_mface::A
   tface_to_mface_map::B
@@ -85,7 +101,7 @@ end
 """
     best_target(trian1::Triangulation,trian2::Triangulation)
 
-  If possible, returns a `Triangulation` to which `CellDatum` objects can be transferred 
+  If possible, returns a `Triangulation` to which `CellDatum` objects can be transferred
   from `trian1` and `trian2`. Can be `trian1`, `trian2` or a new `Triangulation`.
 """
 function best_target(trian1::Triangulation,trian2::Triangulation)
@@ -107,6 +123,9 @@ function best_target(
   Triangulation(ReferenceFE{D},model)
 end
 
+"""
+    get_active_model(t::Triangulation)
+"""
 function get_active_model(t::Triangulation)
   compute_active_model(t)
 end
@@ -141,8 +160,12 @@ abstract type TrianFaceModelFaceMapInjectivity end;
 struct Injective    <: TrianFaceModelFaceMapInjectivity end;
 struct NonInjective <: TrianFaceModelFaceMapInjectivity end;
 
-# This is the most basic Triangulation
-# It represents a physical domain built using the faces of a DiscreteModel
+"""
+    BodyFittedTriangulation(model::DiscreteModel, grid::Grid, tface_to_mface)
+
+This is the most basic Triangulation, it represents a physical domain built
+using the faces of a DiscreteModel
+"""
 struct BodyFittedTriangulation{Dt,Dp,A,B,C,D<:TrianFaceModelFaceMapInjectivity} <: Triangulation{Dt,Dp}
   model::A
   grid::B
@@ -155,17 +178,17 @@ struct BodyFittedTriangulation{Dt,Dp,A,B,C,D<:TrianFaceModelFaceMapInjectivity} 
     B = typeof(grid)
     C = typeof(tface_to_mface)
 
-    # While we do not have a more definitive solution, we need to distinguish 
+    # While we do not have a more definitive solution, we need to distinguish
     # between injective and non-injective tface_to_mface maps.
-    # The inverse map, mface_to_tface, relies on PosNegPartition, which fails 
+    # The inverse map, mface_to_tface, relies on PosNegPartition, which fails
     # whenever the same mface is the image of more than one tface.
-    # In turn, I have required non-injective mappings for the computation of facet 
+    # In turn, I have required non-injective mappings for the computation of facet
     # integrals on non-conforming cell interfaces.
     if !(allunique(tface_to_mface))
       tface_to_mface_injectivity = NonInjective()
       D = typeof(tface_to_mface_injectivity)
       new{Dt,Dp,A,B,C,D}(model,grid,tface_to_mface)
-    else 
+    else
       tface_to_mface_injectivity = Injective()
       D = typeof(tface_to_mface_injectivity)
       new{Dt,Dp,A,B,C,D}(model,grid,tface_to_mface)
@@ -190,8 +213,8 @@ end
 function get_glue(trian::BodyFittedTriangulation{Dt,Dp,A,B,C,NonInjective},::Val{Dt}) where {Dt,Dp,A,B,C}
   tface_to_mface_map = Fill(GenericField(identity),num_cells(trian))
   mface_to_tface = nothing
-  # Whenever tface_to_mface is non-injective, we currently avoid the computation of 
-  # mface_to_tface, which relies on PosNegPartition. This is a limitation that we should 
+  # Whenever tface_to_mface is non-injective, we currently avoid the computation of
+  # mface_to_tface, which relies on PosNegPartition. This is a limitation that we should
   # face in the future on those scenarios on which we need mface_to_tface.
   FaceToFaceGlue(trian.tface_to_mface,tface_to_mface_map,mface_to_tface)
 end
@@ -270,6 +293,11 @@ function Triangulation(trian::Triangulation,x::AbstractArray{<:Bool})
   view(trian,y)
 end
 
+"""
+    Interior(args...; kwargs...)
+
+Alias for [`Triangulation`](@ref)(args...; kwargs...).
+"""
 function Interior(args...;kwargs...)
   Triangulation(args...;kwargs...)
 end
@@ -280,6 +308,8 @@ function restrict(a::AbstractArray,b::AbstractArray)
   lazy_map(Reindex(a),b)
 end
 
+"""
+"""
 function extend(tface_to_val,mface_to_tface)
   @notimplemented
 end
@@ -456,6 +486,10 @@ function _compose_glues(rglue::FaceToFaceGlue,dglue::FaceToFaceGlue)
   FaceToFaceGlue(dface_to_mface,dface_to_mface_map,mface_to_dface)
 end
 
+"""
+    struct GenericTriangulation{Dc,Dp,A,B,C} <: Triangulation{Dc,Dp}
+    GenericTriangulation(grid, model=nothing, glue=(nothing,...))
+"""
 struct GenericTriangulation{Dc,Dp,A,B,C} <: Triangulation{Dc,Dp}
   grid::A
   model::B

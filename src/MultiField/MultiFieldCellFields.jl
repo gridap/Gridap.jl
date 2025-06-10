@@ -1,7 +1,13 @@
+"""
+    struct MultiFieldCellField{DS<:DomainStyle} <: CellField
+"""
 struct MultiFieldCellField{DS<:DomainStyle} <: CellField
   single_fields::Vector{<:CellField}
   domain_style::DS
 
+  """
+      MultiFieldCellField(single_fields::Vector{<:CellField})
+  """
   function MultiFieldCellField(single_fields::Vector{<:CellField})
     @assert length(single_fields) > 0
     f1 = first(single_fields)
@@ -22,8 +28,9 @@ function CellData.get_data(f::MultiFieldCellField)
   Function get_data is not implemented for MultiFieldCellField at this moment.
   You need to extract the individual fields and then evaluate them separately.
 
-  If ever implement this, evaluating a `MultiFieldCellField` directly would provide,
-  at each evaluation point, a tuple with the value of the different fields.
+  If ever implement this, evaluating a [`MultiFieldCellField`](@ref) directly
+  would provide, at each evaluation point, a tuple with the value of the
+  different fields.
   """
   @notimplemented s
 end
