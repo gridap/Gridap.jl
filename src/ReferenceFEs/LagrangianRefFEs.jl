@@ -203,7 +203,7 @@ function get_vertex_node(reffe::LagrangianRefFE,conf::Conformity)
   p = get_polytope(reffe)
   range = get_dimranges(p)[d+1]
   vertex_to_nodes = get_face_own_nodes(reffe,conf)[range]
-  msg = @lazy_str"Not all vertices own a node for the given $reffe and conformity $conf"
+  msg = "Not all vertices own a node for the given $reffe and conformity $conf"
   @check all(map(v -> !isempty(v), vertex_to_nodes)) msg
   map(first, vertex_to_nodes)
 end
