@@ -16,7 +16,7 @@ module MockModule
 
   export C1
   export C2
-  public C3
+  #public C3  # would only work if we stop testing on VERSION < 1.11...
 end
 
 change_link=Dict(:C2 => "C1")
@@ -24,11 +24,11 @@ s = public_names_in_md(MockModule; change_link)
 @test s == """
   ### Exported names
 
-   [`C1`](@ref), [`C2`](@ref C1),
+   [`C1`](@ref), [`C2`](@ref C1),"""
 
-  ### Other public names
+  # ### Other public names
 
-   [`C3`](@ref),
-  """
+  #  [`C3`](@ref),
+  # """
 
 end # module
