@@ -552,12 +552,12 @@ function face_labeling_from_cell_tags(topo::GridTopology, cell_to_tag, tag_to_na
 
   # Face entities:
   n_entities = n_tags
-  entities = Dict{Tuple,Int32}()
+  entities = Dict{Set{Int},Int32}([Set{Int}(i) => i for i in 1:n_tags])
   for d in D-1:-1:0
     dface_to_cells = get_faces(topo,d,D)
     dface_to_entity = d_to_dface_to_entity[d+1]
     for (dface,cells) in enumerate(dface_to_cells)
-      dface_tags = Tuple(cell_to_tag[cells])
+      dface_tags = Set(cell_to_tag[cells])
       if haskey(entities,dface_tags)
         dface_entity = entities[dface_tags]
       else
