@@ -268,7 +268,10 @@ end
 function _prepare_sub_cell_to_nodes(
   cell_to_ctype,ctype_to_scell_to_snodes,cell_to_offset)
 
-  n_scells = sum(length(ctype_to_scell_to_snodes[ctype]) for ctype in cell_to_ctype)
+  n_scells = 0
+  for ctype in cell_to_ctype
+    n_scells += length(ctype_to_scell_to_snodes[ctype])
+  end
 
   scell = 1
   scell_to_cell = Vector{Int}(undef,n_scells)
@@ -310,8 +313,12 @@ function _prepare_sctype_to_reffe(cell_to_ctype,ctype_to_r_to_reffe,ctype_to_sce
   u_to_reffe, i_to_u = _find_unique_with_indices(i_to_reffe)
 
   n_ctypes = length(ctype_to_r_to_reffe)
-  n_scells = sum(length(ctype_to_scell_to_r[ctype]) for ctype in cell_to_ctype)
   ctype_to_nreffes = map(length,ctype_to_r_to_reffe)
+
+  n_scells = 0 
+  for ctype in cell_to_ctype
+    n_scells += length(ctype_to_scell_to_r[ctype])
+  end
   
   i = 1
   ctype_to_r_to_u = Vector{Vector{Int}}(undef,n_ctypes)
