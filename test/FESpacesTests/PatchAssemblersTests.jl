@@ -77,6 +77,9 @@ end
 function test_operator(P,V)
   u, v = get_trial_fe_basis(V), get_fe_basis(V)
   Pu, Pv = P(u), P(v)
+
+  uh = zero(U)
+  Ruh = P(uh)
 end
 
 function test_patch_assembly(model,domain_tags,integration_tags;order=1)

@@ -8,6 +8,13 @@ using LinearAlgebra
 A = ArrayBlock(reshape([fill(1.0,2,3),fill(0.0,0,0),fill(2.0,2,5), fill(3.0,4,5)],(2,2)), Bool[1 1; 0 1])
 B = ArrayBlock([fill(4.0,3),fill(5.0,5)], Bool[1,1])
 
+show(A)
+display(A)
+@test A ≈ copy(A)
+
+C = 3.0*A
+@test C ≈ A*3.0
+
 C = A*B
 Ct = transpose(C)
 Ct * C

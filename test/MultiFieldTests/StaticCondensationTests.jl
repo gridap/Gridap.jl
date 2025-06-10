@@ -37,8 +37,6 @@ M = TrialFESpace(M_test, u)
 
 mfs = MultiField.BlockMultiFieldStyle(2,(2,1))
 X_full = MultiFieldFESpace([V, Q, M];style=mfs)
-X_elim = MultiFieldFESpace([V, Q])
-X_ret = M
 
 τ = 1.0 # HDG stab parameter
 
@@ -53,9 +51,8 @@ a((qh,uh,sh),(vh,wh,lh)) = ∫( qh⋅vh - uh*(∇⋅vh) - qh⋅∇(wh) )dΩp + �
                            ∫((Πn(qh) + τ*(Π(uh) - sh))*(Π(wh) + lh))dΓp
 l((vh,wh,lh)) = ∫( f*wh )*dΩp
 
-op = MultiField.StaticCondensationOperator(ptopo,X_full,X_elim,X_ret,a,l)
-sh = solve(op.sc_op)
-qh, uh = MultiField.backward_static_condensation(op,sh)
+op = MultiField.StaticCondensationOperator(ptopo,X_full,a,l)
+qh, uh, sh = solve(op)
 
 eu = uh - u
 eq = qh - q
