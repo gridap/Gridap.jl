@@ -78,7 +78,7 @@ function test_operator(P,V)
   u, v = get_trial_fe_basis(V), get_fe_basis(V)
   Pu, Pv = P(u), P(v)
 
-  uh = zero(U)
+  uh = zero(V)
   Ruh = P(uh)
 end
 
