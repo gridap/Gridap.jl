@@ -2,9 +2,6 @@
     struct GradConformity <: Conformity
 """
 struct GradConformity <: Conformity end
-"""
-    const H1Conformity = GradConformity
-"""
 const H1Conformity = GradConformity
 
 
