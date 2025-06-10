@@ -343,6 +343,9 @@ struct TransientQuasilinearFEOpFromWeakForm <: TransientFEOperator{QuasilinearOD
 end
 
 # Constructor with manual jacobians
+"""
+
+"""
 function TransientQuasilinearFEOperator(
   mass::Function, res::Function, jacs::Tuple{Vararg{Function}},
   trial, test;
@@ -364,6 +367,9 @@ function TransientQuasilinearFEOperator(
 end
 
 # Constructor with flat arguments (orders 0, 1, 2)
+"""
+
+"""
 function TransientQuasilinearFEOperator(
   mass::Function, res::Function,
   jac::Function,
@@ -377,6 +383,16 @@ function TransientQuasilinearFEOperator(
   )
 end
 
+"""
+    TransientQuasilinearFEOperator(mass, res, jac,                trial, test[; assembler])
+    TransientQuasilinearFEOperator(mass, res, jac, jac_t,         trial, test[; assembler])
+    TransientQuasilinearFEOperator(mass, res, jac, jac_t, jac_tt, trial, test[; assembler])
+    TransientQuasilinearFEOperator(mass, res, jacs::Tuple,        trial, test[; assembler])
+    TransientQuasilinearFEOperator(mass, res, trial, test; order=1,[ assembler])
+
+Where `assembler` defaults to `SparseMatrixAssembler`(`trial`, `test)`.
+Returns a [`TransientQuasilinearFEOpFromWeakForm`](@ref).
+"""
 function TransientQuasilinearFEOperator(
   mass::Function, res::Function,
   jac::Function, jac_t::Function,
@@ -521,6 +537,17 @@ function TransientSemilinearFEOperator(
 end
 
 # Constructor with flat arguments (orders 0, 1, 2)
+"""
+    TransientSemilinearFEOperator(mass, res, jac,                trial, test; [constant_mass][, assembler])
+    TransientSemilinearFEOperator(mass, res, jac, jac_t,         trial, test; [constant_mass][, assembler])
+    TransientSemilinearFEOperator(mass, res, jac, jac_t, jac_tt, trial, test; [constant_mass][, assembler])
+    TransientSemilinearFEOperator(mass, res, jacs::Tuple,        trial, test; [constant_mass][, assembler])
+    TransientSemilinearFEOperator(mass, res, trial, test; order=1[, constant_mass][, assembler])
+
+Where `constant_mass` defaults to `false` and `assembler` defaults to
+`SparseMatrixAssembler`(`trial`, `test)`.
+Returns a [`TransientSemilinearFEOpFromWeakForm`](@ref).
+"""
 function TransientSemilinearFEOperator(
   mass::Function, res::Function,
   jac::Function,
@@ -665,6 +692,8 @@ struct TransientLinearFEOpFromWeakForm <: TransientFEOperator{LinearODE}
 end
 
 # Constructor with manual jacobians
+"""
+"""
 function TransientLinearFEOperator(
   forms::Tuple{Vararg{Function}}, res::Function, jacs::Tuple{Vararg{Function}},
   trial, test;
@@ -699,6 +728,15 @@ function TransientLinearFEOperator(
 end
 
 # Constructor with flat forms and automatic jacobians (orders 0, 1, 2)
+"""
+    TransientLinearFEOperator(mass, res, trial, test; constant_forms=(false,)[, assembler])
+    TransientLinearFEOperator(stiffness, mass, res, trial, test; constant_forms=(false, false)[, assembler])
+    TransientLinearFEOperator(stiffness, damping, mass, res, trial, test; constant_forms=(false, false, false)[, assembler])
+    TransientLinearFEOperator(forms, res, trial, test; constant_forms=(false, ...)[, assembler])
+
+where assembler defaults to `SparseMatrixAssembler`(`trial`, `test`).
+Returns a [`TransientLinearFEOpFromWeakForm`](@ref).
+"""
 function TransientLinearFEOperator(
   mass::Function, res::Function,
   trial, test;

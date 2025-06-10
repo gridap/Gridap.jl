@@ -3,22 +3,24 @@ struct PointValue{P} <: Dof
 end
 
 """
-    struct LagrangianDofBasis{P,V} <: AbstractArray{<:Dof}
+    struct LagrangianDofBasis{P,V} <: AbstractArray{PointValue{P}}
       nodes::Vector{P}
       dof_to_node::Vector{Int}
       dof_to_comp::Vector{Int}
       node_and_comp_to_dof::Vector{V}
     end
 
-Type that implements a Lagrangian dof basis.
+Type that implements a Lagrangian dof basis, that is a [`Dof`](@ref) basis where
+the DoFs are nodal evaluations. If the value type `V` is not scalar
+([`::MultiValue`](@ref MultiValue)'d), several DoFs may be associated to the same
+node, one for each independant component of `V`.
 
 Fields:
 
-- `nodes::Vector{P}` vector of points (`P<:Point`) storing the nodal coordinates
-- `node_and_comp_to_dof::Vector{V}` vector such that `node_and_comp_to_dof[node][comp]` returns the dof associated with node `node` and the component `comp` in the type `V`.
-- `dof_to_node::Vector{Int}` vector of integers such that `dof_to_node[dof]` returns the node id associated with dof id `dof`.
-- `dof_to_comp::Vector{Int}` vector of integers such that `dof_to_comp[dof]` returns the component id associated with dof id `dof`.
-
+- `nodes` vector of points ([`P<:Point`](@ref Point)) storing the nodal coordinates
+- `node_and_comp_to_dof` vector such that `node_and_comp_to_dof[node][comp]` returns the dof associated with node `node` and the component `comp` in the type `V`.
+- `dof_to_node` vector of integers such that `dof_to_node[dof]` returns the node id associated with dof id `dof`.
+- `dof_to_comp` vector of integers such that `dof_to_comp[dof]` returns the component id associated with dof id `dof`.
 """
 struct LagrangianDofBasis{P,V} <: AbstractVector{PointValue{P}}
   nodes::Vector{P}
@@ -44,16 +46,21 @@ function LagrangianDofBasis(dofs::LagrangianDofBasis{P},nodes::Vector{P}) where 
 end
 
 """
-    LagrangianDofBasis(::Type{T},nodes::Vector{<:Point}) where T
+    LagrangianDofBasis(::Type{V}, nodes::Vector{<:Point})
 
-Creates a `LagrangianDofBasis` for fields of value type `T` associated
+Creates a `LagrangianDofBasis` for fields of value type `V` associated
 with the vector of nodal coordinates `nodes`.
 """
-function LagrangianDofBasis(::Type{T},nodes::Vector{<:Point}) where T
-  r = _generate_dof_layout_node_major(T,length(nodes))
+function LagrangianDofBasis(::Type{V},nodes::Vector{<:Point}) where V
+  r = _generate_dof_layout_node_major(V,length(nodes))
   LagrangianDofBasis(nodes,r...)
 end
 
+"""
+    get_nodes(b::LagrangianDofBasis)
+
+Get the vector of DoF nodes of `b`.
+"""
 get_nodes(b::LagrangianDofBasis) = b.nodes
 get_dof_to_node(b::LagrangianDofBasis) = b.dof_to_node
 get_dof_to_comp(b::LagrangianDofBasis) = b.dof_to_comp
@@ -67,13 +74,13 @@ function _generate_dof_layout_node_major(::Type{<:Real},nnodes::Integer)
 end
 
 # Node major implementation
-function _generate_dof_layout_node_major(::Type{T},nnodes::Integer) where T<:MultiValue
-  V = change_eltype(T,Int)
-  ncomps = num_indep_components(T)
+function _generate_dof_layout_node_major(::Type{V},nnodes::Integer) where V<:MultiValue
+  Vi = change_eltype(V,Int)
+  ncomps = num_indep_components(Vi)
   ndofs = ncomps*nnodes
   dof_to_comp = zeros(Int,ndofs)
   dof_to_node = zeros(Int,ndofs)
-  node_and_comp_to_dof = Vector{V}(undef,nnodes)
+  node_and_comp_to_dof = Vector{Vi}(undef,nnodes)
   m = zero(MVector{ncomps,Int})
   for node in 1:nnodes
     for comp in 1:ncomps
@@ -98,22 +105,22 @@ function return_cache(b::LagrangianDofBasis,field)
 end
 
 function _lagr_dof_cache(node_comp_to_val::AbstractVector,ndofs)
-  T = eltype(node_comp_to_val)
-  r = zeros(eltype(T),ndofs)
+  V = eltype(node_comp_to_val)
+  r = zeros(eltype(V),ndofs)
 end
 
 function _lagr_dof_cache(node_pdof_comp_to_val::AbstractMatrix,ndofs)
   _, npdofs = size(node_pdof_comp_to_val)
-  T = eltype(node_pdof_comp_to_val)
-  r = zeros(eltype(T),ndofs,npdofs)
+  V = eltype(node_pdof_comp_to_val)
+  r = zeros(eltype(V),ndofs,npdofs)
 end
 
 function evaluate!(cache,b::LagrangianDofBasis,field)
   c, cf = cache
   vals = evaluate!(cf,field,b.nodes)
   ndofs = length(b.dof_to_node)
-  T = eltype(vals)
-  ncomps = num_indep_components(T)
+  V = eltype(vals)
+  ncomps = num_indep_components(V)
   @check ncomps == num_indep_components(eltype(b.node_and_comp_to_dof)) """\n
   Unable to evaluate LagrangianDofBasis. The number of components of the
   given Field does not match with the LagrangianDofBasis.

@@ -5,7 +5,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 
-using Gridap.Polynomials: _q_filter, _qs_filter, _p_filter, _ps_filter
+using Gridap.Polynomials: _q_filter, _qh_filter, _p_filter, _ph_filter
 
 @test isHierarchical(Monomial) == true
 
@@ -53,18 +53,21 @@ test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 
 # Real-valued Q space with an isotropic order
 
-orders = (1,2)
+orders = (1,3)
 V = Float64
 G = gradient_type(V,xi)
+H = gradient_type(G,xi)
 b = MonomialBasis(Val(2),V,orders)
 
-v = V[1.0, 2.0, 3.0, 6.0, 9.0, 18.0]
-g = G[(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (3.0, 2.0), (0.0, 6.0), (9.0, 12.0)]
+v = V[1.0, 2.0, 3.0, 6.0, 9.0, 18.0, 27.0, 54.0]
+g = G[(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (3.0, 2.0), (0.0, 6.0), (9.0, 12.0), (0., 27.0), (27.0, 54.0)]
+h = H[(0.0, 0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 0.0), (0.0, 1.0, 1.0, 0.0), (0.0, 0.0, 0.0, 2.0), (0.0, 6.0, 6.0, 4.0), (0.0, 0.0, 0.0, 18.0), (0.0, 27.0, 27.0, 36.0)]
 
 bx = repeat(permutedims(v),np)
 ∇bx = repeat(permutedims(g),np)
-test_field_array(b,x,bx,grad=∇bx)
-test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:])
+Hbx = repeat(permutedims(h),np)
+test_field_array(b,x,bx,grad=∇bx,gradgrad=Hbx)
+test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 
 # Vector-valued Q space with isotropic order
 
@@ -254,11 +257,11 @@ order = 2
 @test _q_filter( (1,1) ,order) == true
 @test _q_filter( (3,1) ,order) == false
 
-@test _qs_filter( (1,2) ,order) == true
-@test _qs_filter( (2,0) ,order) == true
-@test _qs_filter( (2,2) ,order) == true
-@test _qs_filter( (1,1) ,order) == false
-@test _qs_filter( (3,1) ,order) == false
+@test _qh_filter( (1,2) ,order) == true
+@test _qh_filter( (2,0) ,order) == true
+@test _qh_filter( (2,2) ,order) == true
+@test _qh_filter( (1,1) ,order) == false
+@test _qh_filter( (3,1) ,order) == false
 
 @test _p_filter( (1,2) ,order) == false
 @test _p_filter( (2,0) ,order) == true
@@ -267,10 +270,10 @@ order = 2
 @test _p_filter( (3,1) ,order) == false
 @test _p_filter( (0,1) ,order) == true
 
-@test _ps_filter( (1,2) ,order) == false
-@test _ps_filter( (2,0) ,order) == true
-@test _ps_filter( (2,2) ,order) == false
-@test _ps_filter( (1,1) ,order) == true
-@test _ps_filter( (3,1) ,order) == false
+@test _ph_filter( (1,2) ,order) == false
+@test _ph_filter( (2,0) ,order) == true
+@test _ph_filter( (2,2) ,order) == false
+@test _ph_filter( (1,1) ,order) == true
+@test _ph_filter( (3,1) ,order) == false
 
 end # module

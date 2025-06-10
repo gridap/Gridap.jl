@@ -61,6 +61,11 @@ arguments of the types of the objects `x`.
 """
 return_type(f,x...) = typeof(return_value(f,x...))
 
+"""
+    return_value(f,x...)
+
+Return a variable of the type of the image fx=`f`(`x`...) (possibly fx itself).
+"""
 return_value(f,x...) = evaluate(f,testargs(f,x...)...)
 
 """
@@ -297,6 +302,11 @@ function inverse_map(f)
   """
 end
 
+"""
+    struct InverseMap{F} <: Map
+
+Map for the inverse of the `Function` or [`Map`](@ref) `F`.
+"""
 struct InverseMap{F} <: Map
   original::F
 end

@@ -18,7 +18,7 @@ References:
 """
 function HellanHerrmannJhonsonRefFE(::Type{T},p::Polytope,order::Integer) where T
   @assert p == TRI "HellanHerrmannJhonson Reference FE only defined for TRIangles"
-  
+
   VT = SymTensorValue{2,T}
   prebasis = MonomialBasis(Val(2),VT,order,Polynomials._p_filter)
   #fb = MonomialBasis(Val(1),T,order,Polynomials._p_filter)
@@ -47,12 +47,9 @@ function HellanHerrmannJhonsonRefFE(::Type{T},p::Polytope,order::Integer) where 
   return MomentBasedReferenceFE(HellanHerrmannJhonson(),p,prebasis,moments,DivConformity())
 end
 
+# TODO move this to Field
 Polynomials.get_order(f::Fields.LinearCombinationFieldVector) = get_order(f.fields)
 Polynomials.get_order(f::AbstractVector{<:ConstantField}) = 0
-
-function ReferenceFE(p::Polytope,::HellanHerrmannJhonson, order)
-  HellanHerrmannJhonsonRefFE(Float64,p,order)
-end
 
 function ReferenceFE(p::Polytope,::HellanHerrmannJhonson,::Type{T}, order) where T
   HellanHerrmannJhonsonRefFE(T,p,order)

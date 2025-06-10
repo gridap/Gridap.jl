@@ -2,10 +2,10 @@
 """
     abstract type Pushforward <: Map end
 
-Represents a pushforward map F*, defined as 
+Represents a pushforward map F*, defined as
   F* : V̂ -> V
-where 
-  - V̂ is a function space on the reference cell K̂ and 
+where
+  - V̂ is a function space on the reference cell K̂ and
   - V is a function space on the physical cell K.
 """
 abstract type Pushforward <: Map end
@@ -62,10 +62,10 @@ end
 """
     const InversePushforward{PF} = InverseMap{PF} where PF <: Pushforward
 
-Represents the inverse of a pushforward map F*, defined as 
-  (F*)^-1 : V -> V̂
-where 
-  - V̂ is a function space on the reference cell K̂ and 
+Represents the inverse of a pushforward map F*, defined as
+  (F*)⁻¹ : V -> V̂
+where
+  - V̂ is a function space on the reference cell K̂ and
   - V is a function space on the physical cell K.
 """
 const InversePushforward{PF} = InverseMap{PF} where PF <: Pushforward
@@ -93,13 +93,13 @@ end
 """
     struct Pullback{PF <: Pushforward} <: Map end
 
-Represents a pullback map F**, defined as 
+Represents a pullback map F**, defined as
   F** : V* -> V̂*
-where 
-  - V̂* is a dof space on the reference cell K̂ and 
+where
+  - V̂* is a dof space on the reference cell K̂ and
   - V* is a dof space on the physical cell K.
 Its action on physical dofs σ : V -> R is defined in terms of the pushforward map F* as
-  ̂σ = F**(σ) := σ∘F* : V̂ -> R
+ σ̂ = F**(σ) := σ∘F* : V̂ -> R
 """
 struct Pullback{PF <: Pushforward} <: Map
   pushforward::PF
@@ -125,13 +125,13 @@ end
 """
     struct InversePullback{PF <: Pushforward} <: Map end
 
-Represents the inverse of the pullback map F**, defined as 
-  (F**)^-1 : V̂* -> V*
-where 
-  - V̂* is a dof space on the reference cell K̂ and 
+Represents the inverse of the pullback map F**, defined as
+  (F**)⁻¹ : V̂* -> V*
+where
+  - V̂* is a dof space on the reference cell K̂ and
   - V* is a dof space on the physical cell K.
-Its action on reference dofs ̂σ : V̂ -> R is defined in terms of the pushforward map F* as
-  σ = (F**)^-1(̂σ) := ̂σ∘(F*)^-1 : V -> R
+Its action on reference dofs σ̂ : V̂ -> R is defined in terms of the pushforward map F* as
+σ = (F**)⁻¹(σ̂) := σ̂∘(F*)⁻¹ : V -> R
 """
 const InversePullback{PB} = InverseMap{PB} where PB <: Pullback
 
@@ -153,6 +153,9 @@ end
 
 # ContraVariantPiolaMap
 
+"""
+    struct ContraVariantPiolaMap <: Pushforward
+"""
 struct ContraVariantPiolaMap <: Pushforward end
 
 function evaluate!(

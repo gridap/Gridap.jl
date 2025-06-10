@@ -89,7 +89,7 @@ struct BoundaryTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
   function BoundaryTriangulation(
     trian::BodyFittedTriangulation,
     glue)
-  
+
     Dc = num_cell_dims(trian)
     Dp = num_point_dims(trian)
     A = typeof(trian)
@@ -98,6 +98,11 @@ struct BoundaryTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
   end
 end
 
+"""
+    Boundary(args...; kwargs...)
+
+Alias for [`BoundaryTriangulation`](@ref)(args...; kwargs...).
+"""
 function Boundary(args...;kwargs...)
   BoundaryTriangulation(args...;kwargs...)
 end

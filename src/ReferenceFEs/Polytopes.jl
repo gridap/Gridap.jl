@@ -15,11 +15,16 @@ use *face*. In addition, we say
 - edge: for 1-faces
 - facet: for (`D-1`)-faces
 
+The following constants represent the main reference polytopes:
+[`VERTEX`](@ref), [`SEGMENT`](@ref) (edge), [`TRI`](@ref) (triangle),
+[`QUAD`](@ref) (quadrilateral), [`TET`](@ref) (tetrahedron), [`HEX`](@ref)
+(hexahedron), [`WEDGE`](@ref) (triangular prism) and [`PYRAMID`](@ref).
+
 The `Polytope` interface is defined by overloading the following functions
 
 - [`get_faces(p::Polytope)`](@ref)
 - [`get_dimranges(p::Polytope)`](@ref)
-- [`Polytope{N}(p::Polytope,faceid::Integer) where N`](@ref)
+- [`Polytope{D}(p::Polytope,faceid::Integer) where D`](@ref)
 - [`get_vertex_coordinates(p::Polytope)`](@ref)
 - [`(==)(a::Polytope{D},b::Polytope{D}) where D`](@ref)
 
@@ -37,6 +42,8 @@ The interface can be tested with the function
 
 - [`test_polytope`](@ref)
 
+There are two implementations, [`ExtrusionPolytope`](@ref) for usual reference
+polytopes ⊂ [0,1]ᴰ, and [`GeneralPolytope`](@ref).
 """
 abstract type Polytope{D} <: GridapType end
 
@@ -108,22 +115,21 @@ function get_dimranges(p::Polytope)
 end
 
 """
-    get_dimrange(p::Polytope,d::Integer)
+    get_dimrange(p::Polytope, d::Integer)
 
-Equivalent to
-
-    get_dimranges(p)[d+1]
+Indices range of the `d`-dimensional faces of `p`. Equivalent to
+[`get_dimranges(p)[d+1]`](@ref get_dimrange).
 """
 function get_dimrange(p::Polytope,d::Integer)
   get_dimranges(p)[d+1]
 end
 
 """
-    Polytope{N}(p::Polytope,faceid::Integer) where N
+    Polytope{D}(p::Polytope, faceid::Integer)
 
-Returns a `Polytope{N}` object representing the "reference" polytope of the `N`-face with id `faceid`.
-The value `faceid` refers to the numeration restricted to the dimension `N`
-(it starts with 1 for the first `N`-face).
+Returns a `Polytope{D}` object representing the "reference" polytope of the
+`D`-face of `p` with id `faceid`. The value `faceid` refers to the numeration
+restricted to the dimension `D` (it starts with 1 for the first `D`-face).
 """
 function Polytope{D}(p::Polytope,Dfaceid::Integer) where D
   @abstractmethod
@@ -132,8 +138,7 @@ end
 """
     get_vertex_coordinates(p::Polytope) -> Vector{Point{D,Float64}}
 
-Given a polytope `p` return a vector of points
-representing containing the coordinates of the vertices.
+Return a vector of points containing the coordinates of the vertices of `p`.
 """
 function get_vertex_coordinates(p::Polytope)
   @abstractmethod
@@ -162,17 +167,18 @@ end
     get_edge_tangent(p::Polytope) -> Vector{VectorValue{D,Float64}}
 
 Given a polytope `p`, returns a vector of `VectorValue` objects
-representing the unit tangent vectors to the polytope edges.
+representing the unit tangent vectors to the polytope edges, in the order of
+[`get_dimrange(p, 1)`](@ref get_dimrange).
 """
 function get_edge_tangent(p::Polytope)
   @abstractmethod
 end
 
 """
-    get_facet_normal(p::Polytope) -> Vector{VectorValue{D,Float64}}
+    get_facet_normal(p::Polytope{D}) -> Vector{VectorValue{D,Float64}}
 
-Given a polytope `p`, returns a vector of `VectorValue` objects
-representing the unit outward normal vectors to the polytope facets.
+Return a vector of `VectorValue`s representing the unit *outward* normal vectors
+to the facets of `p`.
 """
 function get_facet_normal(p::Polytope)
   @abstractmethod
@@ -181,10 +187,11 @@ end
 """
     get_facet_orientations(p::Polytope) -> Vector{Int}
 
-Given a polytope `p` returns a vector of integers of length `num_facets(p)`.
-Facets, whose vertices are ordered consistently with the
-outwards normal vector, receive value `1` in this vector. Otherwise, facets
-receive value `-1`.
+Return a vector of integers of length `num_facets(p)`.
+The facets whose vertices are ordered consistently with the outwards normal
+vector (w.r.t. right-hand rule convention) have value `1`, and the others `-1`.
+
+See also [`get_facet_normal`](@ref) and [`get_faces`](@ref).
 """
 function get_facet_orientations(p::Polytope)
   @abstractmethod
@@ -193,10 +200,17 @@ end
 """
     get_vertex_permutations(p::Polytope) -> Vector{Vector{Int}}
 
-Given a polytope `p`, returns a vector of vectors containing all admissible permutations
-of the polytope vertices. An admissible permutation is one such that, if the vertices of the polytope
-are re-labeled according to this permutation, the resulting polytope preserves the shape of the
-original one.
+Returns a vector of vectors containing all admissible permutations of the
+vertices of `p`. An admissible permutation is one such that, if the vertices of
+the polytope are re-labeled according to this permutation, the resulting
+polytope preserves the shape of the original one.
+
+These permutation are used to iddentify every possile way a geometrical map may
+permute the vertices of the boundary faces of a reference polytope (of dimension
+≤ 3) into the physical one. Only the iddentity permutation `[1, 2, …, N]` is
+returned for 3D polytopes with `N` vertices. Indeed, a (3≥D)-dimensional
+physical polytope `𝓟` is only mapped by one physical map, but its faces are
+mapped by the physical map of all adjascent elements.
 
 # Examples
 
@@ -209,6 +223,11 @@ println(perms)
 # output
 Array{Int,1}[[1, 2], [2, 1]]
 
+perms = get_vertex_permutations(TET)
+println(perms)
+
+# output
+Array{Int,1}[[1, 2], [2, 1]]
 ```
 The first admissible permutation for a segment is `[1,2]`,i.e., the identity.
 The second one is `[2,1]`, i.e., the first vertex is relabeled as `2` and the
@@ -242,50 +261,68 @@ end
 
 # Some generic API
 
-num_dims(::Type{<:Polytope{D}}) where D = D
-
-num_cell_dims(::Type{<:Polytope{D}}) where D = D
-
-num_point_dims(::Type{<:Polytope{D}}) where D = D
-
 """
-    num_dims(::Type{<:Polytope{D}}) where D
-    num_dims(p::Polytope{D}) where D
+    num_dims(::Type{<:Polytope{D}})
+    num_dims(p::Polytope{D})
 
 Returns `D`.
 """
+num_dims(::Type{<:Polytope{D}}) where D = D
 num_dims(p::Polytope) = num_dims(typeof(p))
 
-num_cell_dims(p::Polytope) = num_dims(p)
+"""
+    num_point_dims(::Type{<:Polytope{D}})
+    num_point_dims(p::Polytope{D})
 
+Returns `D`.
+"""
+num_point_dims(::Type{<:Polytope{D}}) where D = D
 num_point_dims(p::Polytope) = num_dims(p)
+
+"""
+    num_cell_dims(::Type{<:Polytope{D}})
+    num_cell_dims(p::Polytope{D})
+
+Returns `D`.
+"""
+num_cell_dims(::Type{<:Polytope{D}}) where D = D
+num_cell_dims(p::Polytope) = num_dims(p)
 
 """
     num_faces(p::Polytope)
 
-Returns the total number of faces in polytope `p` (from vertices to the polytope itself).
+Returns the total number of faces of `p` (counting `p` itself).
+
+# Examples
+
+```jldoctest
+num_faces(SEGMENT)
+
+#output
+3  # 2 vertices + 1 edge.
+```
 """
 function num_faces(p::Polytope)
   length(get_faces(p))
 end
 
 """
-    num_faces(p::Polytope,dim::Integer)
+    num_faces(p::Polytope, d::Integer)
 
-Returns the number of faces of dimension `dim` in polytope `p`.
+Returns the number of faces of dimension `d` of `p`.
 """
-function num_faces(p::Polytope,dim::Integer)
-  _num_faces(p,dim)
+function num_faces(p::Polytope,d::Integer)
+  _num_faces(p,d)
 end
 
-function _num_faces(p,dim)
-  length(get_dimranges(p)[dim+1])
+function _num_faces(p,d)
+  length(get_dimranges(p)[d+1])
 end
 
 """
     num_facets(p::Polytope)
 
-Returns the number of facets in the polytope `p`.
+Returns the number of facets of `p`.
 """
 function num_facets(p::Polytope)
   _num_facets(p)
@@ -303,7 +340,7 @@ end
 """
     num_edges(p::Polytope)
 
-Returns the number of edges in the polytope `p`.
+Returns the number of edges of `p`.
 """
 function num_edges(p::Polytope)
   _num_edges(p)
@@ -322,7 +359,7 @@ end
 """
     num_vertices(p::Polytope)
 
-Returns the number of vertices in the polytope `p`.
+Returns the number of vertices of `p`.
 """
 function num_vertices(p::Polytope)
   _num_vertices(p)
@@ -335,8 +372,7 @@ end
 """
     get_facedims(p::Polytope) -> Vector{Int}
 
-Given a polytope `p`, returns a vector indicating
-the dimension of each face in the polytope
+Return a vector indicating the dimension of each face of `p`.
 
 # Examples
 
@@ -371,12 +407,11 @@ function _get_facedims(::Type{T},p) where T
 end
 
 """
-    get_offsets(p::Polytope) -> Vector{Int}
+    get_offsets(p::Polytope{D}) -> Vector{Int}
 
-Given a polytope `p`, it returns a vector of integers. The position in
-the `d+1` entry in this vector is the offset that transforms a face id in
-the global numeration in the polytope to the numeration restricted to faces
-to dimension `d`.
+Return a vector whose d+1 entry is the integer offset between a face id in the
+global numeration of `p`'s faces to the numeration of `p`'s faces of
+dimension d, for d ∈ {0:`D`}.
 
 # Examples
 
@@ -387,8 +422,7 @@ offsets = get_offsets(SEGMENT)
 println(offsets)
 
 # output
-[0, 2]
-
+[0, 2]  # The first vertex is at 1+0, the first edge at 1+2, in get_faces(SEGMENT)
 ```
 """
 function get_offsets(p::Polytope)
@@ -410,9 +444,12 @@ function _get_offsets(p)
 end
 
 """
-    get_offset(p::Polytope,d::Integer)
+    get_offset(p::Polytope, d::Integer)
 
-Equivalent to `get_offsets(p)[d+1]`.
+Return the integer offset between a face id in the global numeration of `p`'s
+faces to the numeration of `p`'s faces of dimension `d`.
+
+Equivalent to [`get_offsets(p)[d+1]`](@ref get_offsets).
 """
 function get_offset(p::Polytope,d::Integer)
   _get_offset(p,d)
@@ -423,16 +460,18 @@ function _get_offset(p,d)
 end
 
 """
-    get_faces(p::Polytope,dimfrom::Integer,dimto::Integer) -> Vector{Vector{Int}}
+    get_faces(p::Polytope, dimfrom::Integer, dimto::Integer) -> Vector{Vector{Int}}
 
-For `dimfrom >= dimto` returns a vector that for each face of
-dimension `dimfrom` stores a vector of the ids of faces of
-dimension `dimto` on its boundary.
+For `dimfrom >= dimto`, returns a vector that, for each face of `p` of dimension
+`dimfrom`, stores a vector of the ids of faces of dimension `dimto` on its boundary.
 
-For `dimfrom < dimto` returns a vector that for each face of `dimfrom`
-stores a vector of the face ids of faces of dimension `dimto` that touch it.
+For `dimfrom < dimto`, returns a vector that, for each face of `p` of dimension
+`dimfrom`, stores a face ids vector containing the ids of the `dimto`-dimensional
+faces adjascent to (touching) it.
 
 The numerations used in this function are the ones restricted to each dimension.
+
+# Examples
 
 ```jldoctest
 using Gridap.ReferenceFEs
@@ -485,7 +524,30 @@ function _get_faces_dual(p,dimfrom,dimto)
 end
 
 """
-    get_face_dimranges(p::Polytope,d::Integer)
+    get_face_dimranges(p::Polytope)
+    get_face_dimranges(p::Polytope, d::Integer)
+
+Return a vector containing, for each face of `p`, the result of
+[`get_dimranges`](@ref) on the reference polytope of the face.
+
+If `d` is given, the returned vector only contains the data for the
+`d`-dimensional faces of `p`.
+
+# Examples
+
+2-faces of a pyramid
+
+```jldoctest
+get_face_dimranges(PYRAMID,2)
+
+# output
+5-element Vector{Vector{UnitRange{Int64}}}:
+ [1:4, 5:8, 9:9]  # one QUAD 2-face
+ [1:3, 4:6, 7:7]  # and four TRI 2-faces
+ [1:3, 4:6, 7:7]
+ [1:3, 4:6, 7:7]
+ [1:3, 4:6, 7:7]
+```
 """
 function get_face_dimranges(p::Polytope,d::Integer)
   n = num_faces(p,d)
@@ -509,10 +571,16 @@ end
 
 """
     get_face_vertices(p::Polytope) -> Vector{Vector{Int}}
-    get_face_vertices(p::Polytope,dim::Integer) -> Vector{Vector{Int}}
+    get_face_vertices(p::Polytope, d::Integer) -> Vector{Vector{Int}}
+
+Return a vector containing, for each face of `p`, the vector of indices of the
+vertices of that face.
+
+If `d` is given, the returned vector only contains the data for the
+`d`-dimensional faces of `p`.
 """
-function get_face_vertices(p::Polytope,dim::Integer)
-  get_faces(p,dim,0)
+function get_face_vertices(p::Polytope, d::Integer)
+  get_faces(p,d,0)
 end
 
 function get_face_vertices(p::Polytope)
@@ -527,11 +595,29 @@ function get_face_vertices(p::Polytope)
 end
 
 """
-    get_reffaces(::Type{Polytope{d}},p::Polytope) where d -> Vector{Polytope{d}}
+    get_reffaces(p::Polytope) -> Vector{<:Polytope}
+    get_reffaces(::Type{Polytope{d}}, p::Polytope) -> Vector{<:Polytope{d}}
 
-Get a vector of the unique polytopes for the faces of dimension `d`.
+Get a vector of the unique reference polytopes for the faces of `p`.
+
+If `d` is given, the returned vector contains the polytopes for the
+`d`-dimensional faces of `p` only.
 
 # Examples
+
+Get the unique polytopes constituting a triangle
+
+```jldoctest
+using Gridap.ReferenceFEs
+
+reffaces = get_reffaces(TRI)
+
+println(reffaces)
+
+# output
+ExtrusionPolytope{2}[VERTEX, SEGMENT, TRI]
+```
+
 
 Get the unique polytopes for the facets of a wedge.
 
@@ -543,10 +629,8 @@ reffaces = get_reffaces(Polytope{2},WEDGE)
 println(reffaces)
 
 # output
-Gridap.ReferenceFEs.ExtrusionPolytope{2}[TRI, QUAD]
-
+ExtrusionPolytope{2}[TRI, QUAD]
 ```
-
 """
 function get_reffaces(::Type{Polytope{d}},p::Polytope) where d
   ftype_to_refface, = _compute_reffaces_and_face_types(p,Val{d}())
@@ -559,10 +643,14 @@ function get_reffaces(p::Polytope)
 end
 
 """
-    get_face_type(p::Polytope,d::Integer) -> Vector{Int}
+    get_face_type(p::Polytope) -> Vector{Int}
+    get_face_type(p::Polytope, d::Integer) -> Vector{Int}
 
-Return a vector of integers denoting, for each face of dimension `d`, an index to the
-vector `get_reffaces(Polytope{d},p)`
+Return a vector containing, for each face of `p`, the index in
+`get_reffaces(p)` of the reference polytope of that face.
+
+If `d` is given, the returned vector contains the indices for the
+`d`-dimensional faces of `p` into `get_reffaces(Polytope{d},p)`.
 
 # Examples
 
@@ -586,7 +674,6 @@ Gridap.ReferenceFEs.ExtrusionPolytope{2}[TRI, QUAD]
 ```
 
 The three first facets are of type `1`, i.e, `QUAD`, and the last ones of type `2`, i.e., `TRI`.
-
 """
 function get_face_type(p::Polytope,d::Integer)
   _, iface_to_ftype = _compute_reffaces_and_face_types(p,Val{d}())
@@ -657,7 +744,11 @@ function _find_indexin!(a_to_index, a_to_b, index_to_b,pred::Function=(==))
 end
 
 """
-    get_bounding_box(p::Polytope{D}) where D
+    get_bounding_box(p::Polytope{D})
+
+Return a couple of `Point{D}`s defining a bounding box containing `p`. The box
+is the `D`-cuboid with all edges parallel to the Cartesian axes, and whose
+diametraly opposed vertices are the two returned vertices.
 """
 function get_bounding_box(p::Polytope{D}) where D
   vertex_to_coords = get_vertex_coordinates(p)
@@ -678,7 +769,13 @@ end
 
 """
     get_face_vertex_permutations(p::Polytope)
-    get_face_vertex_permutations(p::Polytope,d::Integer)
+    get_face_vertex_permutations(p::Polytope, d::Integer)
+
+Return a vector containing, for each face of `p`, the result of
+[`get_vertex_permutations`](@ref) on the reference polytope of the face.
+
+If `d` is given, the returned vector only contains the data for the
+`d`-dimensional faces of `p`.
 """
 function get_face_vertex_permutations(p::Polytope,d::Integer)
   reffaces = [ Polytope{d}(p, iface) for iface in 1:num_faces(p,d)]
@@ -693,7 +790,14 @@ end
 
 """
     get_face_coordinates(p::Polytope)
-    get_face_coordinates(p::Polytope,d::Integer)
+    get_face_coordinates(p::Polytope, d::Integer)
+
+
+Return a vector containing, for each face of `p`, the coordinates of the
+vertices of that face.
+
+If `d` is given, the returned vector only contains the data for the
+`d`-dimensional faces of `p`.
 """
 function get_face_coordinates(p::Polytope,d::Integer)
   vert_to_coord = get_vertex_coordinates(p)

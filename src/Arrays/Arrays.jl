@@ -174,6 +174,9 @@ include("VectorsWithEntryInserted.jl")
 
 include("PrintOpTrees.jl")
 
+"""
+Alias for `Base.sum`.
+"""
 const ∑ = sum
 
 end # module

@@ -1,81 +1,90 @@
 
 """
-  struct TensorProduct <: QuadratureName
+    struct TensorProduct <: QuadratureName
 
 Tensor product quadrature rule for n-cubes, obtained as the
 tensor product of 1d Gauss-Legendre quadratures.
 
-# Constructor: 
+# Constructor:
 
-    Quadrature(p::Polytope{D},tensor_product,degrees::Union{Integer,NTuple{D,Integer}};T::Type{<:AbstractFloat}=Float64) where D
+    Quadrature(p::Polytope{D}, tensor_product, degrees::Integer; T::Type=Float64)
+    Quadrature(p::Polytope{D}, tensor_product, degrees::NTuple{D,Integer}; T::Type=Float64)
 """
 struct TensorProduct <: QuadratureName end
 
+"""
+    const tensor_product = TensorProduct()
+"""
 const tensor_product = TensorProduct()
 
-function Quadrature(p::Polytope,::TensorProduct,degrees;T::Type{<:AbstractFloat}=Float64)
-  @assert is_n_cube(p) """\n
-  Tensor product quadrature rule only for n-cubes.
-  """
-  @assert length(degrees) == num_dims(p)
-  _tensor_product_legendre(degrees;T=T)
+function Quadrature(p::Polytope,::TensorProduct,degrees; T::Type=Float64)
+  @assert is_n_cube(p) "Tensor product quadrature rule only for n-cubes."
+  D = num_dims(p)
+  if iszero(D)
+    coords, weights = [zero(Point{0,T})], [one(T)]
+  else
+    @assert length(degrees) == D
+    quad_1d = [ gauss_legendre_quadrature(degree;T) for degree in degrees ]
+    coords_1d, weights_1d = map(first, quad_1d), map(last, quad_1d)
+    coords, weights = _tensor_product(coords_1d, weights_1d)
+  end
+  GenericQuadrature(coords,weights,"Tensor product of 1d Gauss-Legendre quadratures of degrees $degrees")
 end
 
-function Quadrature(p::Polytope,name::TensorProduct,degree::Integer;T::Type{<:AbstractFloat}=Float64)
+function Quadrature(p::Polytope,name::TensorProduct,degree::Integer;kwargs...)
   degrees = ntuple(i->degree,Val(num_dims(p)))
-  Quadrature(p,name,degrees,T=T)
+  Quadrature(p,name,degrees;kwargs...)
 end
 
-# Low level constructor
+function Quadrature(p::Polytope,::TensorProduct,quadratures::Vector{<:Quadrature{1}})
+  @assert is_n_cube(p) "Tensor product quadrature rule only for n-cubes."
+  D = num_dims(p)
+  @assert length(quadratures) == D
 
-function _tensor_product_legendre(degrees;T::Type{<:AbstractFloat}=Float64)
-    D = length(degrees)
-    npoints = [ ceil(Int,(degrees[i]+1.0)/2.0) for i in 1:D ]
-    quads = [ gauss(T, npoints[i]) for i in 1:D ]
-    for i in 1:D
-      quads[i][1] .+= 1;
-      quads[i][1] .*= 1.0/2.0
-      quads[i][2] .*= 1.0/2.0
-    end
-    (coords, weights) = _tensor_product(Point{D,T},quads,npoints)
-    GenericQuadrature(coords,weights,"Tensor product of 1d Gauss-Legendre quadratures of degrees $degrees")
+  coords_1d = map(q -> map(xi -> xi[1], get_coordinates(q)), quadratures)
+  weights_1d = map(get_weights, quadratures)
+  coords, weights = _tensor_product(coords_1d, weights_1d)
+
+  names_1d = join(map(get_name, quadratures)," \n - ")
+  GenericQuadrature(coords,weights,"Tensor product of 1d quadratures given by: \n "*names_1d)
 end
 
 # Helpers
 
-function _tensor_product(::Type{Point{D,T}},quads,npoints) where {D,T}
-  @assert length(quads) == D
-  @assert length(npoints) == D
-  cis = CartesianIndices(tuple(npoints...))
-  n = prod(npoints)
-  coords = Vector{Point{D,T}}(undef,n)
-  weights = Vector{T}(undef,n)
-  _tensor_product!(quads,coords,weights,cis)
-  (coords, weights)
+function _tensor_product(
+  d_to_xs::Vector{Vector{T}},
+  d_to_ws::Vector{Vector{W}}
+) where {T,W}
+  D = length(d_to_xs)
+  d_to_n = map(length, d_to_xs)
+  cis = CartesianIndices(tuple(d_to_n...))
+
+  n = prod(d_to_n)
+  xs = Vector{Point{D,T}}(undef,n)
+  ws = Vector{W}(undef,n)
+  _tensor_product!(xs,ws,d_to_xs,d_to_ws,cis)
+  return xs, ws
 end
 
-function _tensor_product(::Type{Point{0,T}},quads,npoints) where T
-  coords = [zero(Point{0,T})]
-  weights = [one(T)]
-  coords, weights
-end
+function _tensor_product!(xs,ws,d_to_xs,d_to_ws,cis)
+  P = eltype(xs)
+  T = eltype(P)
+  W = eltype(ws)
+  D = length(P)
 
-function _tensor_product!(quads,coords,weights,cis)
-  p = zero(Mutable(eltype(coords)))
-  T = eltype(weights)
-  D = length(p)
-  lis = LinearIndices(cis)
+  k = 1
+  z = zero(T)
+  p = zeros(T,D)
   for ci in cis
-    p[:] = 0.0
-    w = one(T)
+    fill!(p,z)
+    w = one(W)
     for d in 1:D
-      xi = quads[d][1][ci[d]]
-      wi = quads[d][2][ci[d]]
-      p[d] = xi
-      w *= wi
+      p[d] = d_to_xs[d][ci[d]]
+      w *= d_to_ws[d][ci[d]]
     end
-    li = lis[ci]
-    coords[li] = p
-    weights[li] = w
+    xs[k] = p
+    ws[k] = w
+    k += 1
   end
+  return xs, ws
 end

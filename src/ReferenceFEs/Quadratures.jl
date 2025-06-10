@@ -1,6 +1,6 @@
 
 """
-    abstract type Quadrature{D,T} <: GridapType end
+    abstract type Quadrature{D,T} <: GridapType
 
 Abstract type representing a quadrature rule.
 
@@ -17,8 +17,8 @@ The following methods are implemented by default:
   - [`num_dims(q::Quadrature)`](@ref)
   - [`test_quadrature`](@ref)
 
-To include a new quadrature in the factory, one should define a new `QuadratureName` subtype 
-and a new factory method: 
+To include a new quadrature in the factory, one should define a new `QuadratureName` subtype
+and a new factory method:
 
     Quadrature(p::Polytope,name::QuadratureName,args...;kwargs...)
 
@@ -62,16 +62,16 @@ end
 num_points(q::Quadrature) = length(get_weights(q))
 
 """
-    num_point_dims(::Quadrature{D}) where D
-    num_point_dims(::Type{<:Quadrature{D}}) where D
+    num_point_dims(::Quadrature{D})
+    num_point_dims(::Type{<:Quadrature{D}})
 """
 num_point_dims(::Quadrature{D}) where D = D
 
 num_point_dims(::Type{<:Quadrature{D}}) where D = D
 
 """
-    num_dims(::Quadrature{D}) where D where D
-    num_dims(::Type{<:Quadrature{D}}) where D
+    num_dims(::Quadrature{D})
+    num_dims(::Type{<:Quadrature{D}})
 """
 num_dims(::Quadrature{D}) where D = D
 
@@ -80,7 +80,7 @@ num_dims(::Type{<:Quadrature{D}}) where D = D
 # Tester
 
 """
-    test_quadrature(q::Quadrature{D,T}) where {D,T}
+    test_quadrature(q::Quadrature{D,T})
 """
 function test_quadrature(q::Quadrature{D,T}) where {D,T}
   x = get_coordinates(q)
@@ -93,12 +93,15 @@ function test_quadrature(q::Quadrature{D,T}) where {D,T}
   @test D == num_point_dims(q)
   @test D == num_dims(typeof(q))
   @test D == num_point_dims(typeof(q))
+  @test all(x -> x > 0, w)
 end
 
 # Generic concrete implementation
 
 """
-    struct GenericQuadrature{D,T,C <: AbstractVector{Point{D,T}},W <: AbstractVector{T}} <: Quadrature{D,T}
+    struct GenericQuadrature{D,T,
+        C <: AbstractVector{Point{D,T}}, W <: AbstractVector{T}} <: Quadrature{D,T}
+
       coordinates::Vector{Point{D,T}}
       weights::Vector{T}
       name::String
@@ -132,6 +135,12 @@ end
 
 # Quadrature factory
 
+"""
+    abstract type QuadratureName
+
+Supertype of all singleton types representing a quadrature name, e.g.
+[`tensor_product`](@ref).
+"""
 abstract type QuadratureName end
 
 @noinline function Quadrature(p::Polytope,name::QuadratureName,args...;kwargs...)
@@ -143,7 +152,7 @@ end
 Quadrature(name::QuadratureName,args...;kwargs...) = (name, args, kwargs)
 
 """
-    Quadrature(polytope::Polytope{D},degree) where D
+    Quadrature(polytope::Polytope{D}, degree)
 """
 function Quadrature(p::Polytope,degree;T::Type{<:AbstractFloat}=Float64)
   if is_n_cube(p)

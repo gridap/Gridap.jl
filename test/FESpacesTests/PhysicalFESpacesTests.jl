@@ -49,4 +49,15 @@ uh = interpolate(u,V)
 e = u - uh
 @test sqrt(sum(∫(e*e)*dΩ)) < 10e-8
 
+# Checking that dofs and shapfuns from a reffe with a dof prebasis (and shapefun=prebasis) can be evaluated in physical space
+
+order = 3
+reffe = ReferenceFE(modalC0,Float64,order)
+V = FESpace(model,reffe,conformity=:H1)
+
+shfns_g = get_fe_basis(V)
+phys_shfns_g = change_domain(shfns_g,PhysicalDomain())
+dofs_f = get_fe_dof_basis(V)
+@test_nowarn dofs_f(phys_shfns_g)
+
 end #module

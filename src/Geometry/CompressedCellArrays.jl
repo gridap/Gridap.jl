@@ -1,3 +1,13 @@
+"""
+    move_contributions(scell_to_val, strian)
+    move_contributions(scell_to_val, strian, ttrian)
+    move_contributions(scell_to_val, sglue, tglue)
+    move_contributions(scell_to_val, sglue, tglue, nothing)
+    move_contributions(scell_to_val, sglue, tglue, mcell_to_scell::AbstractArray)
+
+where `scell_to_val` isa AbstractArray, `s`/`ttrian` isa Triangulation,
+`s`/`tglue` isa FaceToFaceGlue.
+"""
 function move_contributions(
   scell_to_val::AbstractArray, strian::Triangulation)
 
@@ -68,7 +78,7 @@ function return_cache(k::CombineContributionsMap{<:AbstractArray{<:Number}},scel
 end
 
 function evaluate!(cache,k::CombineContributionsMap{<:AbstractArray{<:Number}},scells)
-  z,c = cache 
+  z,c = cache
   val = zero(z)
   for scell in scells
     val += getindex!(c,k.scell_to_val,scell)

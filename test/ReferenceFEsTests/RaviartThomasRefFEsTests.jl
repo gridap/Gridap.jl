@@ -62,9 +62,7 @@ et = Float64
 reffe = RaviartThomasRefFE(et,p,order)
 
 dofs = get_dof_basis(reffe)
-nodes, nf_nodes, nf_moments =  get_nodes(dofs),
-                               get_face_nodes_dofs(dofs),
-                               get_face_moments(dofs)
+nodes, nf_nodes, nf_moments =  get_nodes(dofs), get_face_nodes_dofs(dofs), get_face_moments(dofs)
 nodes
 nf_nodes
 nf_moments

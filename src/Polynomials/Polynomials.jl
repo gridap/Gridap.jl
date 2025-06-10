@@ -11,10 +11,11 @@ The polynomial bases all subtype [`PolynomialBasis`](@ref), which subtypes
 or second derivatives.
 
 Constructors for commonly used bases (see the documentation for the spaces definitions):
-- ℚ spaces: `[Polynomial]Basis(Val(D), V, order)`
-- ℙ spaces: `[Polynomial]Basis(..., Polynomials._p_filter)`
-- ℚₙ\\ℚₙ₋₁: `[Polynomial]Basis(..., Polynomials._qs_filter)`
-- ℙₙ\\ℙₙ₋₁: `[Polynomial]Basis(..., Polynomials._ps_filter)`
+- ℚ  spaces: `[Polynomial]Basis(Val(D), V, order)`
+- ℙ  spaces: `[Polynomial]Basis(..., Polynomials._p_filter)`
+- 𝕊r spaces: `[Polynomial]Basis(..., Polynomials._ser_filter)`
+- ℚ̃  spaces: `[Polynomial]Basis(..., Polynomials._qh_filter)`
+- ℙ̃  spaces: `[Polynomial]Basis(..., Polynomials._ph_filter)`
 - ℕ𝔻(△): [`PGradBasis`](@ref)`(Val(D), T, order)`
 - ℕ𝔻(□): [`QGradBasis`](@ref)`(...)`
 - ℝ𝕋(△): [`PCurlGradBasis`](@ref)`(...)`
@@ -80,6 +81,7 @@ module Polynomials
 
 using DocStringExtensions
 using LinearAlgebra: mul!
+using LinearAlgebra: I
 using StaticArrays
 using Gridap.Helpers
 using Gridap.Arrays
@@ -87,6 +89,8 @@ using Gridap.TensorValues
 using Gridap.Fields
 
 using PolynomialBases: jacobi, jacobi_and_derivative
+using Combinatorics: multiexponents, multinomial, combinations
+using Base.Iterators: take
 
 import Gridap.Fields: evaluate!
 import Gridap.Fields: return_cache
@@ -103,13 +107,17 @@ export Bernstein
 export PolynomialBasis
 export get_order
 
-export UniformPolyBasis
+export CartProdPolyBasis
 export get_exponents
 export get_orders
 export MonomialBasis
 export LegendreBasis
 export ChebyshevBasis
 export BernsteinBasis
+
+export BernsteinBasisOnSimplex
+export bernstein_terms
+export bernstein_term_id
 
 export CompWiseTensorPolyBasis
 export QGradBasis
@@ -132,7 +140,7 @@ export PCurlGradMonomialBasis
 
 include("PolynomialInterfaces.jl")
 
-include("UniformPolyBases.jl")
+include("CartProdPolyBases.jl")
 
 include("CompWiseTensorPolyBases.jl")
 

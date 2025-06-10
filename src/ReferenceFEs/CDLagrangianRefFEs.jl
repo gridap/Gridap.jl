@@ -1,6 +1,14 @@
+# These shouln't be exported from ReferenceFEs
+""" """
 const CONT = 0
+""" """
 const DISC = 1
 
+"""
+    struct CDConformity{D} <: Conformity
+      cont::NTuple{D,Int}
+    end
+"""
 struct CDConformity{D} <: Conformity
   cont::NTuple{D,Int}
 end
