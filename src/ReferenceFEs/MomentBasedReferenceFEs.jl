@@ -104,8 +104,7 @@ function evaluate!(cache, b::MomentBasedDofBasis, field::Field)
       for j in 1:nj
         dofs[o] = z
         for i in 1:ni
-          dofs[o] += lincombine(moments[i,j],vals[nodes[i]])
-          #dofs[o] += dot(VectorValue(moments[i,j].data),VectorValue(vals[nodes[i]].data))
+          dofs[o] += inner(moments[i,j],vals[nodes[i]])
         end
         o += 1
       end
@@ -135,8 +134,7 @@ function evaluate!(cache, b::MomentBasedDofBasis, field::AbstractVector{<:Field}
         for a in 1:na
           dofs[o,a] = z
           for i in 1:ni
-            dofs[o,a] += lincombine(moments[i,j],vals[nodes[i],a])
-            #dofs[o,a] += dot(VectorValue(moments[i,j].data),VectorValue(vals[nodes[i],a].data))
+            dofs[o,a] += inner(moments[i,j],vals[nodes[i],a])
           end
         end
         o += 1
@@ -307,16 +305,30 @@ function Arrays.evaluate!(cache,f,ds::FaceMeasure)
   return fx, xc
 end
 
-component_basis(T::Type{<:Real}) = [one(T)]
-function component_basis(V::Type{<:MultiValue})
-  T = eltype(V)
-  n = num_indep_components(V)
-  z, o = zero(T), one(T)
-  return [V(ntuple(i -> ifelse(i == j, o, z),Val(n))) for j in 1:n]
-end
+"""
+    dual_component_basis_representatives(V::Type{<:MultiValue}) -> V[ Vᵢ... ]
+    dual_component_basis_representatives(T::Type{<:Real}) -> T[ 1, ]
 
-function lincombine(coeffs::T,values::T) where T <: MultiValue
-  dot(VectorValue(coeffs.data),VectorValue(values.data))
+Given a `Number` type `V` with N independent components, return a vector of
+N values {`Vᵢ`}ᵢ that define the form basis { Lⁱ := (u -> u ⊙ Vᵢ) }ᵢ that is the
+dual of the component basis { V(eᵢ) }ᵢ (where {eᵢ}ᵢ is the Cartesian basis of
+(`eltype(V)`)ᴺ).
+
+The `Lⁱ`/`Vᵢ` verify the property that for any `u::V`,
+
+    u = V( [ Lⁱ(u) for i ∈ 1:N ]... )
+      = V( [ u⊙Vᵢ  for i ∈ 1:N ]... )
+
+Rq, when `V` has dependent components, this is NOT an independent components
+basis because `Vᵢ ≠ V(eᵢ)` and
+
+    u ≠ sum( indep_comp_getindex(u,i)*Vᵢ for 1 ≤ i ≤ N )
+"""
+dual_component_basis_representatives(T::Type{<:Real}) = T[ 1 ]
+function dual_component_basis_representatives(V::Type{<:MultiValue})
+  n = num_indep_components(V)
+  B =  V[ V(ntuple(i -> ifelse(i == j, 1, 0),Val(n))) for j in 1:n ]
+  return @. B / (B⊙B) # necessary when all components aren't independent
 end
 
 """
@@ -356,7 +368,7 @@ function MomentBasedReferenceFE(
 
   T = return_type(prebasis)
   order = get_order(prebasis)
-  φ_vec = component_basis(T)
+  φ_vec = dual_component_basis_representatives(T)
   φ = map(constant_field,φ_vec)
 
   # Create face measures for each moment
@@ -431,7 +443,7 @@ end
 
 function test_moment(σ,prebasis,μ,ds)
   T = return_type(prebasis)
-  φ = map(constant_field,component_basis(T))
+  φ = map(constant_field,dual_component_basis_representatives(T))
   vals, coords = evaluate(σ,φ,μ,ds)
 
   φx = evaluate(prebasis, coords) # (nN, nφ)
@@ -441,7 +453,7 @@ function test_moment(σ,prebasis,μ,ds)
   for i in axes(vals,1)
     for j in axes(vals,2)
       cx = T(vals[i,j,:]...)
-      σx_bis[i,j,:] .= map(y -> lincombine(y,cx),φx[i,:])
+      σx_bis[i,j,:] .= map(y -> inner(y,cx),φx[i,:])
     end
   end
 
