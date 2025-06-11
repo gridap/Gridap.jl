@@ -20,6 +20,7 @@ b = QCurlGradBasis(PT,Val(D),T,order)
 
 @test length(b) == 4
 @test get_order(b) == 1
+@test return_type(b) == V
 
 @test_throws AssertionError QCurlGradBasis(PT,Val(D),V,order)
 

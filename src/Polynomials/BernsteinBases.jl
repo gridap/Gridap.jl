@@ -369,7 +369,7 @@ end
 
 function _evaluate_nd!(
   b::BernsteinBasisOnSimplex{D,V}, x,
-  r::AbstractMatrix{V}, i,
+  r::AbstractMatrix, i,
   c::AbstractVector{T}, VK::Val) where {D,V,T}
 
   λ = _cart_to_bary(x, b.cart_to_bary_matrix)

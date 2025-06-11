@@ -28,4 +28,8 @@ using Test
 
 @testset "ConstantFESpaceTests" begin include("ConstantFESpaceTests.jl") end
 
+@testset "PatchAssemblersTests" begin include("PatchAssemblersTests.jl") end
+
+@testset "PolytopalFESpacesTests" begin include("PolytopalFESpacesTests.jl") end
+
 end # module

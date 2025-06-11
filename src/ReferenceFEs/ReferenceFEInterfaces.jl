@@ -303,6 +303,11 @@ function expand_cell_data(type_to_data, cell_to_type::Fill)
   Fill(data, ncells)
 end
 
+function expand_cell_data(type_to_data, cell_to_type::Base.OneTo)
+  @assert length(type_to_data) == length(cell_to_type)
+  type_to_data
+end
+
 function compress_cell_data(cell_data::AbstractArray)
   @unreachable """\n
   The given cell data cannot be compressed. Describe your data with
@@ -327,6 +332,10 @@ end
 
 function compress_cell_data(a::Fill)
   fill(a.value, 1), Fill(1, length(a))
+end
+
+function compress_cell_data(a::Vector)
+  a, Base.OneTo(length(a))
 end
 
 # Test

@@ -4,7 +4,7 @@ using Test, BlockArrays, SparseArrays, LinearAlgebra
 using Gridap
 using Gridap.FESpaces, Gridap.ReferenceFEs, Gridap.MultiField
 
-function main(n_spaces,mfs,weakform,Ω,dΩ,U,V)
+function main(n_spaces,mfs_trial,mfs_test,weakform,Ω,U,V)
   biform, liform = weakform
 
   ############################################################################################
@@ -28,8 +28,8 @@ function main(n_spaces,mfs,weakform,Ω,dΩ,U,V)
   ############################################################################################
   # Block MultiFieldStyle
 
-  Yb = MultiFieldFESpace(fill(V,n_spaces);style=mfs)
-  Xb = MultiFieldFESpace(fill(U,n_spaces);style=mfs)
+  Yb = MultiFieldFESpace(fill(V,n_spaces);style=mfs_test)
+  Xb = MultiFieldFESpace(fill(U,n_spaces);style=mfs_trial)
   test_fe_space(Yb)
   test_fe_space(Xb)
 
@@ -102,8 +102,10 @@ biform3((u1,u2,u3),(v1,v2,v3)) = ∫(∇(u1)⋅∇(v1) + u2⋅v2 - u1⋅v2 - u3�
 liform3((v1,v2,v3)) = ∫(v1 - v2 + 2.0*v3)*dΩ
 
 for (n_spaces,weakform) in zip([2,3],[(biform2,liform2),(biform3,liform3)])
-  for mfs in [BlockMultiFieldStyle(),BlockMultiFieldStyle(2,(1,n_spaces-1))]
-    main(n_spaces,mfs,weakform,Ω,dΩ,U,V)
+  for mfs_trial in [BlockMultiFieldStyle(),BlockMultiFieldStyle(2,(1,n_spaces-1))]
+    for mfs_test in [BlockMultiFieldStyle(),BlockMultiFieldStyle(2,(1,n_spaces-1))]
+      main(n_spaces,mfs_trial,mfs_test,weakform,Ω,U,V)
+    end
   end
 end
 

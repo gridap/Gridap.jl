@@ -65,7 +65,7 @@ end
 
 function _evaluate_nd!(
   b::CompWiseTensorPolyBasis{D,V,PT,L}, x,
-  r::AbstractMatrix{V}, i,
+  r::AbstractMatrix, i,
   c::AbstractMatrix{T}, VK::Val) where {D,V,PT,L,T}
 
   for d in 1:D

@@ -19,6 +19,19 @@ test_map(c,*,a,b)
 cache = return_cache(*,a,b)
 @test evaluate!(cache,*,a,b) === evaluate!(cache,*,a,b)
 
+a = rand(3,4)
+b = 2.0
+
+c = a*b
+test_map(c,*,a,b)
+cache = return_cache(*,a,b)
+@test evaluate!(cache,*,a,b) === evaluate!(cache,*,a,b)
+
+c = b*a
+test_map(c,*,b,a)
+cache = return_cache(*,b,a)
+@test evaluate!(cache,*,b,a) === evaluate!(cache,*,b,a)
+
 a = 3
 b = 4
 

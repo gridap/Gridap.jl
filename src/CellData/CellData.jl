@@ -21,6 +21,7 @@ using FillArrays
 using NearestNeighbors
 using StaticArrays
 using DataStructures
+using ForwardDiff
 
 using Gridap.Helpers
 using Gridap.Algebra

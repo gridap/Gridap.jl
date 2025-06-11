@@ -53,11 +53,8 @@ end
 function CellQuadrature(trian::Triangulation,
                         cell_quad::AbstractVector{<:Quadrature},
                         dds::DomainStyle,ids::DomainStyle)
-  ctype_to_quad, cell_to_ctype = compress_cell_data(cell_quad)
-  ctype_to_point = map(get_coordinates,ctype_to_quad)
-  ctype_to_weight = map(get_weights,ctype_to_quad)
-  cell_point = expand_cell_data(ctype_to_point,cell_to_ctype)
-  cell_weight = expand_cell_data(ctype_to_weight,cell_to_ctype)
+  cell_point = lazy_map(get_coordinates,cell_quad)
+  cell_weight = lazy_map(get_weights,cell_quad)
   CellQuadrature(cell_quad,cell_point,cell_weight,trian,dds,ids)
 end
 
