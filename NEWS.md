@@ -45,6 +45,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `NedelecPreBasisOnSimplex{D}(args...)` in favor of `NedelecPolyBasisOnSimplex(Val(D), args...)`
 - `JacobiPolynomialBasis{D}(args...)` in favor of `LegendreBasis(Val(D), args...)`
 
+## [0.19.1] - 2025-06-11
+
+### Fixed
+
+- Minor bugfixes from v0.19. Since PR[#1111](https://github.com/gridap/Gridap.jl/pull/1111).
+
 ## [0.19.0] - 2025-06-10
 
 ### Added
