@@ -182,8 +182,8 @@ end
 _get_static_parameters(::ModalC0Basis) = nothing
 
 function _evaluate_nd!(
-  basis::ModalC0Basis{D,V,T}, x,
-  r::AbstractMatrix{V}, i,
+  basis::ModalC0Basis{D,V}, x,
+  r::AbstractMatrix, i,
   c::AbstractMatrix{T}, ::Nothing) where {D,V,T}
 
   terms  = basis.terms
@@ -225,7 +225,7 @@ end
 end
 
 function _gradient_nd!(
-  basis::ModalC0Basis{D,V,T}, x,
+  basis::ModalC0Basis{D,V}, x,
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
@@ -306,7 +306,7 @@ end
 end
 
 function _hessian_nd!(
-  basis::ModalC0Basis{D,V,T}, x,
+  basis::ModalC0Basis{D,V}, x,
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},

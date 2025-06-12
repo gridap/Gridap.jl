@@ -52,6 +52,7 @@ end
 get_node_coordinates(trian::Triangulation) = get_node_coordinates(get_grid(trian))
 get_cell_node_ids(trian::Triangulation) = get_cell_node_ids(get_grid(trian))
 get_reffes(trian::Triangulation) = get_reffes(get_grid(trian))
+get_polytopes(trian::Triangulation) = get_polytopes(get_grid(trian))
 get_cell_type(trian::Triangulation) = get_cell_type(get_grid(trian))
 get_facet_normal(trian::Triangulation) = get_facet_normal(get_grid(trian))
 
@@ -131,45 +132,31 @@ function get_active_model(t::Triangulation)
 end
 
 function compute_active_model(t::Triangulation)
+  _restrict(model,::Grid,tface_to_mface) = restrict(model,tface_to_mface)
+  function _restrict(model,grid::GridPortion,tface_to_mface)
+    @check grid.cell_to_parent_cell == tface_to_mface
+    restrict(model,grid)
+  end
   D = num_cell_dims(t)
   glue = get_glue(t,Val(D))
-  @assert glue.mface_to_tface !== nothing
+  @assert !isnothing(glue.mface_to_tface)
   bgmodel = get_background_model(t)
   model = DiscreteModel(Polytope{D},bgmodel)
-  _restrict_model(model,get_grid(t),glue.tface_to_mface)
+  _restrict(model,get_grid(t),glue.tface_to_mface)
 end
 
-function _restrict_model(model,grid::Grid,tface_to_mface)
-  _restrict_model(model,tface_to_mface)
-end
-
-function _restrict_model(model,grid::GridPortion,tface_to_mface)
-  @check grid.cell_to_parent_cell == tface_to_mface
-  DiscreteModelPortion(model,grid)
-end
-
-function _restrict_model(model,tface_to_mface)
-  DiscreteModelPortion(model,tface_to_mface)
-end
-
-function _restrict_model(model,tface_to_mface::IdentityVector)
-  model
-end
-
-abstract type TrianFaceModelFaceMapInjectivity end;
-struct Injective    <: TrianFaceModelFaceMapInjectivity end;
-struct NonInjective <: TrianFaceModelFaceMapInjectivity end;
-
-"""
-    BodyFittedTriangulation(model::DiscreteModel, grid::Grid, tface_to_mface)
-
-This is the most basic Triangulation, it represents a physical domain built
-using the faces of a DiscreteModel
-"""
-struct BodyFittedTriangulation{Dt,Dp,A,B,C,D<:TrianFaceModelFaceMapInjectivity} <: Triangulation{Dt,Dp}
+struct BodyFittedTriangulation{Dt,Dp,A,B,C} <: Triangulation{Dt,Dp}
   model::A
   grid::B
   tface_to_mface::C
+  injective::Bool
+
+  @doc """
+      BodyFittedTriangulation(model::DiscreteModel, grid::Grid, tface_to_mface)
+
+  This is the most basic Triangulation, it represents a physical domain built
+  using the faces of a DiscreteModel
+  """
   function BodyFittedTriangulation(model::DiscreteModel,grid::Grid,tface_to_mface)
     Dp = num_point_dims(model)
     @assert Dp == num_point_dims(grid)
@@ -177,51 +164,31 @@ struct BodyFittedTriangulation{Dt,Dp,A,B,C,D<:TrianFaceModelFaceMapInjectivity} 
     A = typeof(model)
     B = typeof(grid)
     C = typeof(tface_to_mface)
-
-    # While we do not have a more definitive solution, we need to distinguish
-    # between injective and non-injective tface_to_mface maps.
-    # The inverse map, mface_to_tface, relies on PosNegPartition, which fails
-    # whenever the same mface is the image of more than one tface.
-    # In turn, I have required non-injective mappings for the computation of facet
-    # integrals on non-conforming cell interfaces.
-    if !(allunique(tface_to_mface))
-      tface_to_mface_injectivity = NonInjective()
-      D = typeof(tface_to_mface_injectivity)
-      new{Dt,Dp,A,B,C,D}(model,grid,tface_to_mface)
-    else
-      tface_to_mface_injectivity = Injective()
-      D = typeof(tface_to_mface_injectivity)
-      new{Dt,Dp,A,B,C,D}(model,grid,tface_to_mface)
-    end
+    injective = isa(tface_to_mface,IdentityVector) || allunique(tface_to_mface)
+    new{Dt,Dp,A,B,C}(model,grid,tface_to_mface,injective)
   end
 end
 
 get_background_model(trian::BodyFittedTriangulation) = trian.model
 get_grid(trian::BodyFittedTriangulation) = trian.grid
 
-function get_glue(trian::BodyFittedTriangulation{Dt,Dp,A,B,C,Injective},::Val{Dt}) where {Dt,Dp,A,B,C}
+function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dt}) where Dt
+  n_mfaces = num_faces(trian.model,Dt)
+  n_faces = num_cells(trian)
   tface_to_mface_map = Fill(GenericField(identity),num_cells(trian))
-  if isa(trian.tface_to_mface,IdentityVector) && num_faces(trian.model,Dt) == num_cells(trian)
+  if isa(trian.tface_to_mface,IdentityVector) && (n_faces == n_mfaces)
+    # Case 1: The triangulation spans the whole model injectively
     mface_to_tface = trian.tface_to_mface
+  elseif trian.injective
+    # Case 2: The triangulation spans part of the model injectively
+    mface_to_tface = PosNegPartition(trian.tface_to_mface,Int32(n_mfaces))
   else
-    nmfaces = num_faces(trian.model,Dt)
-    mface_to_tface = PosNegPartition(trian.tface_to_mface,Int32(nmfaces))
+    # Case 3: The triangulation is non-injective, so we cannot map information
+    # back to the model (1-way glue model -> triangulation)
+    mface_to_tface = nothing
   end
   FaceToFaceGlue(trian.tface_to_mface,tface_to_mface_map,mface_to_tface)
 end
-
-function get_glue(trian::BodyFittedTriangulation{Dt,Dp,A,B,C,NonInjective},::Val{Dt}) where {Dt,Dp,A,B,C}
-  tface_to_mface_map = Fill(GenericField(identity),num_cells(trian))
-  mface_to_tface = nothing
-  # Whenever tface_to_mface is non-injective, we currently avoid the computation of
-  # mface_to_tface, which relies on PosNegPartition. This is a limitation that we should
-  # face in the future on those scenarios on which we need mface_to_tface.
-  FaceToFaceGlue(trian.tface_to_mface,tface_to_mface_map,mface_to_tface)
-end
-
-#function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dm}) where {Dt,Dm}
-#  @notimplemented
-#end
 
 function Base.view(t::BodyFittedTriangulation,ids::AbstractArray)
   model = t.model
@@ -233,45 +200,46 @@ end
 get_triangulation(model) = Triangulation(model)
 
 function Triangulation(
-  ::Type{ReferenceFE{d}},model::DiscreteModel,filter::AbstractArray) where d
+  ::Type{ReferenceFE{d}}, model::DiscreteModel, tface_to_mface::AbstractVector{<:Integer}
+) where d
   mgrid = Grid(ReferenceFE{d},model)
-  # Grid portion is OK here since this is usually used to
-  # define a FE space
-  tgrid = GridPortion(mgrid,filter)
-  tface_to_mface = tgrid.cell_to_parent_cell
+  tgrid = restrict(mgrid,tface_to_mface)
   BodyFittedTriangulation(model,tgrid,tface_to_mface)
 end
 
-function Triangulation(model::DiscreteModel,filter::AbstractArray)
-  d = num_cell_dims(model)
-  Triangulation(ReferenceFE{d},model,filter)
+function Triangulation(
+  ::Type{ReferenceFE{d}}, model::DiscreteModel, mface_filter::AbstractArray{Bool}
+) where d
+  tface_to_mface = findall(collect1d(mface_filter))
+  Triangulation(ReferenceFE{d},model,tface_to_mface)
 end
 
 function Triangulation(
-  ::Type{ReferenceFE{d}},
-  model::DiscreteModel,
-  labels::FaceLabeling;tags=nothing) where d
+  ::Type{ReferenceFE{d}}, model::DiscreteModel, mface_filter::AbstractVector{Bool}
+) where d
+  tface_to_mface = findall(mface_filter)
+  Triangulation(ReferenceFE{d},model,tface_to_mface)
+end
 
-  if tags === nothing
-    grid = Grid(ReferenceFE{d},model)
-    tface_to_mface = IdentityVector(num_cells(grid))
-    BodyFittedTriangulation(model,grid,tface_to_mface)
+function Triangulation(
+  ::Type{ReferenceFE{d}}, model::DiscreteModel, labels::FaceLabeling; tags=nothing
+) where d
+  if isnothing(tags)
+    tface_to_mface = IdentityVector(num_faces(model,d))
   else
-    mface_to_mask = get_face_mask(labels,tags,d)
-    Triangulation(ReferenceFE{d},model,mface_to_mask)
+    tface_to_mface = findall(get_face_mask(labels,tags,d))
   end
+  Triangulation(ReferenceFE{d},model,tface_to_mface)
 end
 
-function Triangulation(
-  ::Type{ReferenceFE{d}},model::DiscreteModel;kwargs...) where d
+function Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel;kwargs...) where d
   labels = get_face_labeling(model)
   Triangulation(ReferenceFE{d},model,labels;kwargs...)
 end
 
-function Triangulation(model::DiscreteModel;kwargs...)
+function Triangulation(model::DiscreteModel,args...;kwargs...)
   d = num_cell_dims(model)
-  labels = get_face_labeling(model)
-  Triangulation(ReferenceFE{d},model,labels;kwargs...)
+  Triangulation(ReferenceFE{d},model,args...;kwargs...)
 end
 
 function Triangulation(trian::Triangulation,args...;kwargs...)
@@ -284,13 +252,13 @@ function Triangulation(trian::Triangulation)
   trian
 end
 
-function Triangulation(trian::Triangulation,x::AbstractArray{<:Integer})
-  view(trian,x)
+function Triangulation(trian::Triangulation,sface_to_tface::AbstractArray{<:Integer})
+  view(trian,sface_to_tface)
 end
 
-function Triangulation(trian::Triangulation,x::AbstractArray{<:Bool})
-  y = findall(collect1d(x))
-  view(trian,y)
+function Triangulation(trian::Triangulation,tface_filter::AbstractArray{<:Bool})
+  sface_to_tface = findall(collect1d(tface_filter))
+  view(trian,sface_to_tface)
 end
 
 """
@@ -325,8 +293,8 @@ function extend(tface_to_val,mface_to_tface::PosNegPartition)
 end
 
 # NOTE: The following is needed to properly extend FEFunctions, in cases where the FESpace
-# is defined on weird Triangulations (see e.g. issue #1085). 
-# The main purpose is to ensure we obtain operations of VoidBasis, not VoidField. I.e 
+# is defined on weird Triangulations (see e.g. issue #1085).
+# The main purpose is to ensure we obtain operations of VoidBasis, not VoidField. I.e
 # we want to dispatch down to `_pos_neg_data_basis` (see below).
 
 function extend(a::LazyArray{<:Fill{typeof(transpose)}},b::PosNegPartition)
@@ -341,7 +309,13 @@ function extend(a::LazyArray{<:Fill{typeof(linear_combination)}},b::PosNegPartit
   lazy_map(linear_combination,d1,d2)
 end
 
-function extend(a::LazyArray{<:Fill{<:Broadcasting{<:Operation}}},b::PosNegPartition) 
+function extend(a::LazyArray{<:Fill{<:Broadcasting{<:Operation}}},b::PosNegPartition)
+  k = a.maps.value
+  args = map(i->extend(i,b),a.args)
+  lazy_map(k,args...)
+end
+
+function extend(a::LazyArray{<:Fill{<:Broadcasting{typeof(∘)}}},b::PosNegPartition)
   k = a.maps.value
   args = map(i->extend(i,b),a.args)
   lazy_map(k,args...)
@@ -565,10 +539,9 @@ function Base.view(glue::FaceToFaceGlue,ids::AbstractArray)
 end
 
 function get_facet_normal(trian::TriangulationView)
-  n = get_facet_normal(trian.parent)
-  restrict(n,trian.cell_to_parent_cell)
+  restrict(get_facet_normal(trian.parent),trian.cell_to_parent_cell)
 end
 
 function get_cell_map(trian::TriangulationView)
-  lazy_map(Reindex(get_cell_map(trian.parent)),trian.cell_to_parent_cell)
+  restrict(get_cell_map(trian.parent),trian.cell_to_parent_cell)
 end

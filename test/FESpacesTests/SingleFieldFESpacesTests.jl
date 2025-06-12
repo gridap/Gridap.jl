@@ -66,27 +66,4 @@ tol = 1e-9
 zh = zero(V0)
 @test isa(get_free_dof_values(zh),Vector{ComplexF64})
 
-
-#using Gridap.Visualization
-#trian = get_triangulation(model)
-#writevtk(trian,"trian",cellfields=["fh_real"=>real(fh),"fh_imag"=>imag(fh)])
-
-
-
-#using Gridap.Visualization
-#
-#trian = get_triangulation(model)
-#
-#writevtk(model,"model")
-#
-#writevtk(trian,"trian",cellfields=["fh" => fh, "uh" => uh])
-
-#
-#
-#strian = SkeletonTriangulation(model)
-#
-#fh_Γ = restrict(get_array(fh),strian)
-#
-#writevtk(strian,"strian",nsubcells=10,cellfields=["jump_fh" => jump(fh_Γ)])
-
 end # module

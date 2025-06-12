@@ -219,11 +219,18 @@ function get_reffes(g::CartesianGrid{D}) where D
   [reffe,]
 end
 
+function get_polytopes(g::CartesianGrid{D}) where D
+  p = Polytope(tfill(HEX_AXIS,Val{D}()))
+  [p,]
+end
+
 get_reffes(g::CartesianGrid{1}) = [SEG2,]
-
 get_reffes(g::CartesianGrid{2}) = [QUAD4,]
-
 get_reffes(g::CartesianGrid{3}) = [HEX8,]
+
+get_polytopes(g::CartesianGrid{1}) = [SEGMENT,]
+get_polytopes(g::CartesianGrid{2}) = [QUAD,]
+get_polytopes(g::CartesianGrid{3}) = [HEX,]
 
 """
     CartesianGrid(args...;kwargs...)

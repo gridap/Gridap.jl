@@ -54,7 +54,7 @@ function refine(method::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,
   ctopo = get_grid_topology(model)
   coarse_labels = get_face_labeling(model)
   # Create new model
-  rrules, faces_list = setup_edge_based_rrules(method, model.grid_topology,cells_to_refine)
+  rrules, faces_list = setup_edge_based_rrules(method,ctopo,cells_to_refine)
   topo   = refine_edge_based_topology(ctopo,rrules,faces_list)
   reffes = map(p->LagrangianRefFE(Float64,p,1),get_polytopes(topo))
   grid   = UnstructuredGrid(
@@ -64,7 +64,7 @@ function refine(method::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,
     OrientationStyle(topo)
   )
   glue = blocked_refinement_glue(rrules)
-  labels = refine_face_labeling(coarse_labels,glue,model.grid_topology,topo)
+  labels = refine_face_labeling(coarse_labels,glue,ctopo,topo)
   ref_model = UnstructuredDiscreteModel(grid,topo,labels)
   return AdaptedDiscreteModel(ref_model,model,glue)
 end

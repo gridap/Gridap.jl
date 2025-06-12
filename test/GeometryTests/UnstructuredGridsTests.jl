@@ -97,12 +97,9 @@ grid = UnstructuredGrid(get_node_coordinates(quad8))
 @test num_cell_dims(grid) == 0
 @test num_point_dims(grid) == 2
 
-## get low dim grid
-#
-#grid1 = UnstructuredGrid(ReferenceFE{1},trian)
-#@test num_cell_dims(grid1) == 1
+## IO
 
-grid =  UnstructuredGrid(GridMock())
+grid = UnstructuredGrid(GridMock())
 dict = to_dict(grid)
 g = from_dict(UnstructuredGrid,dict)
 test_grid(g)

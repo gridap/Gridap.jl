@@ -4,16 +4,9 @@
 """
 struct AffineMap <: Map end
 
-function return_cache(::AffineMap,G::TensorValue{D1,D2},y0::Point{D2},x::Point{D1}) where {D1,D2}
-  nothing
-end
-
-function evaluate!(
-  cache,::AffineMap,G::TensorValue{D1,D2},y0::Point{D2},x::Point{D1}
-) where {D1,D2}
+function evaluate!(cache,::AffineMap,G::TensorValue{D1,D2},y0::Point{D2},x::Point{D1}) where {D1,D2}
   x⋅G + y0
 end
-
 
 """
     struct AffineField{D1,D2,T,L} <: Field
@@ -29,8 +22,8 @@ struct AffineField{D1,D2,T,L} <: Field
   origin::Point{D2,T}
   function AffineField(
     gradient::TensorValue{D1,D2,T,L},
-    origin::Point{D2,T}) where {D1,D2,T,L}
-
+    origin::Point{D2,T}
+  ) where {D1,D2,T,L}
     new{D1,D2,T,L}(gradient,origin)
   end
 end
@@ -147,4 +140,11 @@ function lazy_map(
   gradients = a.args[1]
   origins = a.args[2]
   lazy_map(Broadcasting(AffineMap()),gradients,origins,x)
+end
+
+# Constructor from a simplex given by D1+1 points
+function affine_map(points::NTuple{D,Point{D2,T}}) where {D,D2,T}
+  origin, pk = first_and_tail(points)
+  gradient = TensorValues.tensor_from_rows(map(p -> p-origin, pk))
+  AffineField(gradient,origin)
 end

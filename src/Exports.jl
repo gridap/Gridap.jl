@@ -204,7 +204,5 @@ using Gridap.CellData: ∫; export ∫
 @publish ODEs TransientQuasilinearFEOperator
 @publish ODEs TransientLinearFEOperator
 
-# Deprecated / removed
-
 @publish FESpaces get_free_values
 @publish FESpaces get_dirichlet_values

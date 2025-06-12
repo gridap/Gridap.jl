@@ -13,10 +13,6 @@ function TrialFESpace(space::SingleFieldFESpace)
   space
 end
 
-#function TrialFESpace(space::TrialFESpace)
-#  space
-#end
-
 """
 """
 function TrialFESpace(space::SingleFieldFESpace,objects)

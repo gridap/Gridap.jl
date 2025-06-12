@@ -25,6 +25,7 @@ oldcell_to_mask = lazy_map(is_in,oldcell_to_coods)
 
 model = DiscreteModelPortion(oldmodel,oldcell_to_mask)
 test_discrete_model(model)
+@test Geometry.get_parent_model(model) === oldmodel
 
 model=DiscreteModel(Polytope{2},oldmodel)
 labels=get_face_labeling(oldmodel)
@@ -34,11 +35,8 @@ test_discrete_model(model)
 @test num_cell_dims(model)  == 2
 @test num_point_dims(model) == 3
 
-
-
 #using Gridap.Visualization
 #
 #writevtk(model,"model")
-
 
 end # module

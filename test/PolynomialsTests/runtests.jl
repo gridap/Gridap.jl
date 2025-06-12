@@ -22,6 +22,8 @@ using Test
 
 @testset "BernsteinBases" begin include("BernsteinBasesTests.jl") end
 
+@testset "ForwardDiffTests.jl" begin include("ForwardDiffTests.jl") end
+
 #@testset "ChangeBasis" begin include("ChangeBasisTests.jl") end
 
 end # module

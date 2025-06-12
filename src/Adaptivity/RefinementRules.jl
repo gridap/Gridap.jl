@@ -101,7 +101,7 @@ function get_cell_measures(rr::RefinementRule)
   return measures
 end
 
-function get_cell_polytopes(rr::Union{RefinementRule,AbstractArray{<:RefinementRule}})
+function Geometry.get_cell_polytopes(rr::Union{RefinementRule,AbstractArray{<:RefinementRule}})
   polys, cell_type = _get_cell_polytopes(rr)
   return CompressedArray(polys,cell_type)
 end
@@ -373,7 +373,7 @@ function get_face_subface_ldof_to_cell_ldof(
   
   model = get_ref_grid(rr)
   fine_face_grid = Grid(ReferenceFE{D},model)
-  fine_face_polys = CompressedArray(map(get_polytope,get_reffes(fine_face_grid)),get_cell_type(fine_face_grid))
+  fine_face_polys = CompressedArray(get_polytopes(fine_face_grid),get_cell_type(fine_face_grid))
 
   d_to_face_to_child_faces = get_d_to_face_to_child_faces(rr)
   face_to_child_faces = d_to_face_to_child_faces[D+1]
@@ -881,7 +881,7 @@ function test_refinement_rule(rr::RefinementRule; debug=false)
   end
 
   cell_measures = get_cell_measures(rr)
-  cell_polys = get_cell_polytopes(rr)
+  cell_polys = Geometry.get_cell_polytopes(rr)
 
   return nothing
 end

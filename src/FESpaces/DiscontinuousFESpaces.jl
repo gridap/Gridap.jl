@@ -39,8 +39,56 @@ function compute_discontinuous_cell_dofs(cell_to_ctype,ctype_to_nldofs)
   end
   length_to_ptrs!(ptrs)
 
-  ndata = ptrs[end]-1
-  data = collect(Int32,1:ndata)
+  nfree = ptrs[end]-1
+  data = collect(Int32,1:nfree)
   
-  (Table(data,ptrs), ndata)
+  return Table(data,ptrs), nfree
+end
+
+function compute_discontinuous_cell_dofs(
+  cell_to_ctype, ctype_to_ldof_to_comp, cell_to_tag, dirichlet_components
+)
+  ncells = length(cell_to_ctype)
+
+  ptrs = zeros(Int32,ncells+1)
+  for (cell, ctype) in enumerate(cell_to_ctype)
+    nldofs = length(ctype_to_ldof_to_comp[ctype])
+    ptrs[cell+1] = nldofs
+  end
+  length_to_ptrs!(ptrs)
+
+  ndofs = ptrs[end]-1
+  data = zeros(Int32,ndofs)
+  dirichlet_dof_tag = zeros(Int8,ndofs)
+
+  nfree = 0
+  ndir = 0
+  for (cell, ctype) in enumerate(cell_to_ctype)
+    ldof_to_comp = ctype_to_ldof_to_comp[ctype]
+    tag = cell_to_tag[cell]
+    if isequal(tag,UNSET)
+      nldofs = length(ldof_to_comp)
+      data[ptrs[cell]:ptrs[cell]+nldofs-1] = (nfree+1):(nfree+nldofs)
+      ptrs[cell] += nldofs
+      nfree += nldofs
+    else
+      for comp in ldof_to_comp
+        if dirichlet_components[comp]
+          ndir += 1
+          data[ptrs[cell]] = -ndir
+          dirichlet_dof_tag[ndir] = tag
+        else
+          nfree += 1
+          data[ptrs[cell]] = nfree
+        end
+        ptrs[cell] += 1
+      end
+    end
+  end
+  rewind_ptrs!(ptrs)
+
+  dirichlet_cells = collect(Int32,findall(!isequal(UNSET),cell_to_tag))
+  dirichlet_dof_tag = dirichlet_dof_tag[1:ndir]
+
+  return Table(data,ptrs), nfree, ndir, dirichlet_dof_tag, dirichlet_cells
 end

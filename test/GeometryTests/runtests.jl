@@ -38,4 +38,8 @@ using Test
 
 @testset "CompressedCellArrays" begin include("CompressedCellArraysTests.jl") end
 
+@testset "PolytopalDiscreteModels" begin include("PolytopalDiscreteModelsTests.jl") end
+
+@testset "PatchTriangulations" begin include("PatchTriangulationsTests.jl") end
+
 end # module

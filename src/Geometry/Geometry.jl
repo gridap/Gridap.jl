@@ -14,6 +14,8 @@ using DocStringExtensions
 using FillArrays
 
 using LinearAlgebra: ⋅
+using Statistics: mean
+using DataStructures: SortedSet
 
 using Gridap.Helpers
 using Gridap.Arrays
@@ -30,6 +32,7 @@ using Gridap.ReferenceFEs: _get_facedims
 using Gridap.ReferenceFEs: _get_offsets
 using Gridap.ReferenceFEs: _get_offset
 using Gridap.ReferenceFEs: _find_unique_with_indices
+using Gridap.ReferenceFEs: GeneralPolytope, Polygon, Polyhedron
 
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
@@ -196,6 +199,10 @@ export FaceToFaceGlue
 export BodyFittedTriangulation
 export move_contributions
 
+export PatchTopology
+export PatchTriangulation
+export PatchBoundaryTriangulation
+
 include("Grids.jl")
 
 include("GridMocks.jl")
@@ -220,6 +227,8 @@ include("UnstructuredDiscreteModels.jl")
 
 include("CartesianDiscreteModels.jl")
 
+include("PolytopalDiscreteModels.jl")
+
 include("MappedDiscreteModels.jl")
 
 include("GridPortions.jl")
@@ -235,5 +244,7 @@ include("SkeletonTriangulations.jl")
 include("AppendedTriangulations.jl")
 
 include("CompressedCellArrays.jl")
+
+include("PatchTriangulations.jl")
 
 end # module

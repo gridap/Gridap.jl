@@ -138,7 +138,7 @@ end
 
 function _evaluate_nd!(
   b::CartProdPolyBasis{D,V,PT}, x,
-  r::AbstractMatrix{V}, i,
+  r::AbstractMatrix, i,
   c::AbstractMatrix{T}, VK::Val) where {D,V,PT,T}
 
   for d in 1:D

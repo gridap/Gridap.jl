@@ -433,38 +433,37 @@ end
 
 # Cartesian grid topology with periodic BC
 
-function _cartesian_grid_topology_with_periodic_bcs(grid::UnstructuredGrid,
-  isperiodic::NTuple,
-  partition)
-
-  cell_to_vertices, vertex_to_node, =
-    _generate_cell_to_vertices_from_grid(grid, isperiodic, partition)
-  _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
+function _cartesian_grid_topology_with_periodic_bcs(
+  grid::UnstructuredGrid, isperiodic::NTuple, partition
+)
+  cell_to_vertices, vertex_to_node, _ = _generate_cell_to_vertices_from_grid(
+    grid, isperiodic, partition
+  )
+  UnstructuredGridTopology(grid,cell_to_vertices,vertex_to_node)
 end
 
-function _generate_cell_to_vertices_from_grid(grid::UnstructuredGrid,
-  isperiodic::NTuple, partition)
+function _generate_cell_to_vertices_from_grid(
+  grid::UnstructuredGrid, isperiodic::NTuple, partition
+)
+  @notimplementedif !is_first_order(grid) "Only implemented for first order grids"
 
-  if is_first_order(grid)
-    nodes = get_cell_node_ids(grid)
-    nnodes = num_nodes(grid)
-    num_nodes_x_dir = [partition[i]+1 for i in 1:length(partition)]
-    point_to_isperiodic, slave_point_to_point, slave_point_to_master_point =
-      _generate_slave_to_master_point(num_nodes_x_dir,isperiodic, nnodes)
+  nodes = get_cell_node_ids(grid)
+  nnodes = num_nodes(grid)
+  num_nodes_x_dir = [p+1 for p in partition]
+  point_to_isperiodic, slave_point_to_point, slave_point_to_master_point =
+    _generate_slave_to_master_point(num_nodes_x_dir,isperiodic, nnodes)
 
-    vertex_to_point = findall( .! point_to_isperiodic)
-    point_to_vertex = fill(-1,length(point_to_isperiodic))
-    point_to_vertex[vertex_to_point] = 1:length(vertex_to_point)
-    point_to_vertex[slave_point_to_point] = point_to_vertex[slave_point_to_master_point]
+  vertex_to_point = findall( .! point_to_isperiodic)
+  point_to_vertex = fill(-1,length(point_to_isperiodic))
+  point_to_vertex[vertex_to_point] = 1:length(vertex_to_point)
+  point_to_vertex[slave_point_to_point] = point_to_vertex[slave_point_to_master_point]
 
-    cell_to_vertices = Table(lazy_map(Broadcasting(Reindex(point_to_vertex)),nodes))
+  cell_to_vertices = Table(lazy_map(Broadcasting(Reindex(point_to_vertex)),nodes))
 
-    vertex_to_node = vertex_to_point
-    node_to_vertex = point_to_vertex
-  else
-    @notimplemented
-  end
-  (cell_to_vertices,vertex_to_node, node_to_vertex)
+  vertex_to_node = vertex_to_point
+  node_to_vertex = point_to_vertex
+
+  (cell_to_vertices, vertex_to_node, node_to_vertex)
 end
 
 function _generate_slave_to_master_point(num_nodes_x_dir::Vector{Int},

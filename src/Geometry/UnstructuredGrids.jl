@@ -189,7 +189,7 @@ function to_dict(grid::UnstructuredGrid)
 end
 
 function from_dict(::Type{UnstructuredGrid},dict::Dict{Symbol,Any})
-  x = collect1d(dict[:node_coordinates])
+  x = dict[:node_coordinates]
   T = eltype(x)
   Dp = dict[:Dp]
   node_coordinates::Vector{Point{Dp,T}} = reinterpret(Point{Dp,T},x)
@@ -203,103 +203,4 @@ function from_dict(::Type{UnstructuredGrid},dict::Dict{Symbol,Any})
     reffes,
     cell_type,
     O ? Oriented() : NonOriented())
-end
-
-function simplexify(grid::UnstructuredGrid;kwargs...)
-  reffes = get_reffes(grid)
-  @notimplementedif length(reffes) != 1
-  reffe = first(reffes)
-  order = 1
-  @notimplementedif get_order(reffe) != order
-  p = get_polytope(reffe)
-  ltcell_to_lpoints, simplex = simplexify(p;kwargs...)
-  cell_to_points = get_cell_node_ids(grid)
-  tcell_to_points = _refine_grid_connectivity(cell_to_points, ltcell_to_lpoints)
-  ctype_to_reffe = [LagrangianRefFE(Float64,simplex,order),]
-  tcell_to_ctype = fill(Int8(1),length(tcell_to_points))
-  point_to_coords = get_node_coordinates(grid)
-  UnstructuredGrid(
-    point_to_coords,
-    tcell_to_points,
-    ctype_to_reffe,
-    tcell_to_ctype,
-    Oriented())
-end
-
-function _refine_grid_connectivity(cell_to_points::Table, ltcell_to_lpoints)
-  data, ptrs = _refine_grid_connectivity(
-    cell_to_points.data,
-    cell_to_points.ptrs,
-    ltcell_to_lpoints)
-  Table(data,ptrs)
-end
-
-function _refine_grid_connectivity(
-  cell_to_points_data::AbstractVector{T},
-  cell_to_points_ptrs::AbstractVector{P},
-  ltcell_to_lpoints) where {T,P}
-
-  nltcells = length(ltcell_to_lpoints)
-  ncells = length(cell_to_points_ptrs) - 1
-  ntcells = ncells * nltcells
-
-  tcell_to_points_ptrs = zeros(P,ntcells+1)
-
-  _refine_grid_connectivity_count!(
-    tcell_to_points_ptrs,
-    ncells,
-    ltcell_to_lpoints)
-
-  length_to_ptrs!(tcell_to_points_ptrs)
-
-  ndata = tcell_to_points_ptrs[end]-1
-
-  tcell_to_points_data = zeros(T,ndata)
-
-  _refine_grid_connectivity!(
-    tcell_to_points_data,
-    cell_to_points_data,
-    cell_to_points_ptrs,
-    ltcell_to_lpoints )
-
-  (tcell_to_points_data, tcell_to_points_ptrs)
-
-end
-
-function  _refine_grid_connectivity_count!(
-    tcell_to_points_ptrs,
-    ncells,
-    ltcell_to_lpoints)
-
-  tcell = 1
-
-  for cell in 1:ncells
-    for lpoints in ltcell_to_lpoints
-      tcell_to_points_ptrs[tcell+1] = length(lpoints)
-      tcell +=1
-    end
-  end
-
-end
-
-function _refine_grid_connectivity!(
-    tcell_to_points_data,
-    cell_to_points_data,
-    cell_to_points_ptrs,
-    ltcell_to_lpoints )
-
-  ncells = length(cell_to_points_ptrs) - 1
-
-  k = 1
-  for cell in 1:ncells
-    a = cell_to_points_ptrs[cell]-1
-    for lpoints in ltcell_to_lpoints
-      for lpoint in lpoints
-        point = cell_to_points_data[a+lpoint]
-        tcell_to_points_data[k] = point
-        k += 1
-      end
-    end
-  end
-
 end

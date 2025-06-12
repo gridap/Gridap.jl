@@ -130,6 +130,33 @@ dΩ = Measure(Ω,order)
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
 @test el2 < 2.0e-10
 
+domain = (0,1,0,1,0,1)
+cells  = (2,2,2)
+model  = CartesianDiscreteModel(domain,cells)
+
+  # Restrict model to cube surface
+labels = get_face_labeling(model)
+bgface_to_mask = get_face_mask(labels,"boundary",2)
+Γface_to_bgface = findall(bgface_to_mask)
+Dc2Dp3model = DiscreteModelPortion(DiscreteModel(Polytope{2},model),Γface_to_bgface)
+
+order  = 0
+degree = 1
+
+reffe_nd = ReferenceFE(nedelec,Float64,order)
+V  = TestFESpace(Dc2Dp3model, reffe_nd ; conformity=:HCurl)
+U = TrialFESpace(V,u)
+reffe = ReferenceFE(lagrangian,Float64,order)
+Q = TestFESpace(Dc2Dp3model,reffe,conformity=:L2)
+P = TrialFESpace(Q)
+uh = FEFunction(V,rand(num_free_dofs(V)))
+vh = interpolate_everywhere(uh,V)
+
+Ω = Triangulation(Dc2Dp3model)
+dΩ = Measure(Ω,2*order)
+e=sqrt(sum(∫((uh-vh)⋅(uh-vh))dΩ))
+@test e < 1.0e-12
+
 
 # using Gridap.Visualization
 

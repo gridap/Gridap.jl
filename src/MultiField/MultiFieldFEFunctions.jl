@@ -17,12 +17,7 @@ struct MultiFieldFEFunction{T<:MultiFieldCellField} <: FEFunction
 
     multi_cell_field = MultiFieldCellField(map(i->i.cell_field,single_fe_functions))
     T = typeof(multi_cell_field)
-
-    new{T}(
-      single_fe_functions,
-      free_values,
-      space,
-      multi_cell_field)
+    new{T}(single_fe_functions,free_values,space,multi_cell_field)
   end
 end
 
@@ -41,7 +36,7 @@ function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction)
   """
   trians = map(get_triangulation,f.fe_space.spaces)
   trian = first(trians)
-  @check all(map(t->is_change_possible(t,trian),trians)) msg
+  @check all(t -> is_change_possible(t,trian), trians) msg
   get_cell_dof_values(f,trian)
 end
 
@@ -76,4 +71,10 @@ end
 function LinearAlgebra.dot(a::MultiFieldFEFunction,b::MultiFieldCellField)
   @check num_fields(a) == num_fields(b)
   return sum(map(dot,a,b))
+end
+
+function Base.show(io::IO,::MIME"text/plain",f::MultiFieldFEFunction)
+  show(io,f)
+  print(io,":")
+  show_multifield(io,f)
 end

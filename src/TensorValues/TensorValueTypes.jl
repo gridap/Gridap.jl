@@ -133,8 +133,42 @@ Return a diagonal `D`×`D` tensor with diagonal containing the elements of `v`.
     s[d] = "v.data[$i],"
   end
   str = join(s)
-  Meta.parse("TensorValue(($str))")
+  Meta.parse("TensorValue{D,D,T,$(D*D)}(($str))")
 end
+
+"""
+    tensor_from_columns(cols::NTuple{D2,VectorValue{D1,T}}) -> ::TensorValue{D1,D2,T}
+
+Return a `D1`×`D2` tensor with columns given by the `D1`-dimensional vectors in `cols`.
+"""
+@generated function tensor_from_columns(cols::NTuple{D2,VectorValue{D1,T}}) where {D1,D2,T}
+  s = ""
+  for j in 1:D2
+    for i in 1:D1
+      s *= "cols[$j].data[$i],"
+    end
+  end
+  Meta.parse("TensorValue{D1,D2,T,$(D1*D2)}(($s))")
+end
+
+tensor_from_columns(cols::VectorValue...) = tensor_from_columns(cols)
+
+"""
+    tensor_from_rows(rows::NTuple{D1,VectorValue{D2,T}}) -> ::TensorValue{D1,D2,T}
+
+Return a `D1`×`D2` tensor with rows given by the `D2`-dimensional vectors in `rows`.
+"""
+@generated function tensor_from_rows(rows::NTuple{D1,VectorValue{D2,T}}) where {D1,D2,T}
+  s = ""
+  for j in 1:D2
+    for i in 1:D1
+      s *= "rows[$i].data[$j],"
+    end
+  end
+  Meta.parse("TensorValue{D1,D2,T,$(D1*D2)}(($s))")
+end
+
+tensor_from_rows(rows::VectorValue...) = tensor_from_rows(rows)
 
 ###############################################################
 # Introspection (TensorValue)

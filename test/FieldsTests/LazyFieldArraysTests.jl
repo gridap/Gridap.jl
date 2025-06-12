@@ -87,6 +87,9 @@ for j in 1:na
   @test all([res_tbasis_a[j][i,1,:] == res_basis_a[j][i,:] for i in 1:np])
 end
 
+ttbasis_a = lazy_map(transpose,tbasis_a)
+@test ttbasis_a === basis_a
+
 c_r = array_cache(res_tbasis_a)
 # @btime getindex!($c_r,$res_tbasis_a,1);
 
@@ -228,5 +231,20 @@ res_∇field_a = lazy_map(evaluate,∇field_a,x_a)
 ∇basis_a = lazy_map(Broadcasting(∇),basis_a)
 res_∇basis_a = lazy_map(evaluate,∇basis_a,x_a)
 @test all(res_∇basis_a[1] .== TensorValue(2.0, 0.0, 0.0, 2.0))
+
+∇tbasis_a = lazy_map(Broadcasting(∇),tbasis_a)
+res_∇tbasis_a = lazy_map(evaluate,∇tbasis_a,x_a)
+@test all(res_∇tbasis_a[1] .== TensorValue(2.0, 0.0, 0.0, 2.0))
+
+# Hessian
+
+∇∇field_a = lazy_map(∇∇,field_a)
+res_∇∇field_a = lazy_map(evaluate,∇∇field_a,x_a)
+
+∇∇basis_a = lazy_map(Broadcasting(∇∇),basis_a)
+res_∇∇basis_a = lazy_map(evaluate,∇∇basis_a,x_a)
+
+∇∇tbasis_a = lazy_map(Broadcasting(∇∇),tbasis_a)
+res_∇∇tbasis_a = lazy_map(evaluate,∇∇tbasis_a,x_a)
 
 end # module

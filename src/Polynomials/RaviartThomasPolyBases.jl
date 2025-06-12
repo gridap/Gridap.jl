@@ -66,14 +66,14 @@ get_order(b::RaviartThomasPolyBasis) = b.max_order
 
 function _evaluate_nd!(
   b::RaviartThomasPolyBasis{D,V,PT}, x,
-  r::AbstractMatrix{V}, i,
-  c::AbstractMatrix{T}, VK::Val) where {D,V,PT,T}
+  r::AbstractMatrix{Vr}, i,
+  c::AbstractMatrix{T}, VK::Val) where {D,V,PT,Vr,T}
 
   for d in 1:D
     _evaluate_1d!(PT,VK,c,x,d)
   end
 
-  m = zero(Mutable(V))
+  m = zero(Mutable(Vr))
   k = 1
 
   @inbounds begin

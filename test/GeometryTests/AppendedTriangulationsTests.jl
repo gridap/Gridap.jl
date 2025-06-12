@@ -7,6 +7,8 @@ using Gridap.Geometry
 using Gridap.Fields
 using LinearAlgebra: ⋅
 
+using Gridap.Geometry: AppendedGrid, GridPortion, GridView
+
 domain = (0,1,0,1)
 partition = (10,10)
 model = CartesianDiscreteModel(domain,partition)
@@ -15,8 +17,6 @@ ncells = num_cells(model)
 nin = ceil(Int,2*ncells/3)
 cell_to_mask = fill(false,ncells)
 cell_to_mask[1:nin] .= true
-
-grid = get_grid(model)
 
 trian_in = Triangulation(model,cell_to_mask)
 test_triangulation(trian_in)
@@ -28,20 +28,30 @@ trian = lazy_append(trian_out,trian_in)
 test_triangulation(trian)
 
 @test isa(get_cell_coordinates(trian),AppendedArray)
-
 @test isa(get_cell_ref_coordinates(trian),AppendedArray)
-
 @test isa(get_cell_map(trian),AppendedArray)
-
 @test !isa(get_cell_reffe(trian),AppendedArray)
-
 @test isa(get_cell_shapefuns(trian),AppendedArray)
-
 @test isa(get_cell_type(trian),AppendedArray)
 
 glue = get_glue(trian,Val(2))
 @test isa(glue.tface_to_mface,AppendedArray)
 @test isa(glue.tface_to_mface_map,AppendedArray)
+
+grid = get_grid(trian)
+@test isa(grid,AppendedGrid)
+@test isa(get_cell_map(grid),AppendedArray)
+@test isa(get_cell_shapefuns(grid),AppendedArray)
+@test isa(get_cell_type(grid),AppendedArray)
+test_grid(grid)
+
+@test isa(Geometry.restrict(grid,collect(1:10)),GridPortion)
+@test isa(Geometry.restrict(grid,collect((ncells-10):ncells)),GridPortion)
+@test isa(Geometry.restrict(grid,collect(10:(ncells-10))),AppendedGrid)
+
+@test isa(view(grid,collect(1:10)),GridView)
+@test isa(view(grid,collect((ncells-10):ncells)),GridView)
+@test isa(view(grid,collect(10:(ncells-10))),AppendedGrid)
 
 btrian1 = Boundary(model,tags=5)
 btrian2 = Boundary(model,tags=2)

@@ -26,4 +26,8 @@ end
   include("AdaptiveMeshRefinementTests.jl")
 end
 
+@testset "PolytopalCoarsening" begin
+  include("PolytopalCoarseningTests.jl")
+end
+
 end # module

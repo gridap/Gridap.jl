@@ -35,6 +35,15 @@ Alias for the symmetric gradient
 const ε = symmetric_gradient
 
 """
+    skew_symmetric_gradient(f)
+"""
+skew_symmetric_gradient(f) = Operation(skew_symmetric_part)(gradient(f))
+
+function evaluate!(cache,::Broadcasting{typeof(skew_symmetric_gradient)},f)
+  Broadcasting(Operation(skew_symmetric_part))(Broadcasting(∇)(f))
+end
+
+"""
     curl(f)
 """
 curl(f) = Operation(grad2curl)(∇(f))
