@@ -22,7 +22,9 @@ function HellanHerrmannJhonsonRefFE(::Type{T},p::Polytope,order::Integer) where 
   VT = SymTensorValue{2,T}
   prebasis = MonomialBasis(Val(2),VT,order,Polynomials._p_filter)
   #fb = MonomialBasis(Val(1),T,order,Polynomials._p_filter)
+  #fb = MonomialBasis(Val(D-1),T,order,Polynomials._p_filter)
   fb = get_shapefuns(LagrangianRefFE(T, SEGMENT, order))
+  #cb = MonomialBasis(Val(2),VT,order-1,Polynomials._p_filter)
   #cb = MonomialBasis(Val(2),VT,order-1,Polynomials._p_filter)
   #cb = get_shapefuns(LagrangianRefFE(VT, TRI, order-1))
   cb = map(constant_field,[VT(0.,1.,0.),VT(-2.,1.,0.),VT(0.,-1.,2.)])

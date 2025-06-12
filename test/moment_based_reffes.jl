@@ -56,12 +56,12 @@ Arrays.return_type(::Polynomials.QGradMonomialBasis{D,T}) where {D,T} = T
 
 ############################################################################################
 
-# Doesnt work... 
+# Doesnt work...
 # function Arrays.return_value(k::Broadcasting{<:typeof(∘)},args::Union{Field,AbstractArray{<:Field}}...)
 #   f, g = args
 #   Fields.BroadcastOpFieldArray(f,g)
 # end
-# 
+#
 # function Arrays.evaluate!(cache,k::Broadcasting{<:typeof(∘)},args::Union{Field,AbstractArray{<:Field}}...)
 #   f, g = args
 #   Fields.BroadcastOpFieldArray(f,g)
@@ -138,20 +138,20 @@ struct MomentBasedReffe{T<:ReferenceFEName} <: ReferenceFEName
 end
 
 """
-A moment is given by a triplet (f,σ,μ) where 
+A moment is given by a triplet (f,σ,μ) where
   - f is id of a face Fk
   - σ is a function σ(φ,μ,ds) that returns a Field-like object to be integrated over Fk
   - μ is a polynomials basis on Fk
 
-Open questions: 
-  - Do we want to keep having structures face -> data? I guess if we had more than a single 
-    moment per face, we would aggregate them. 
-  - Can we always determine the minimum integration order for each moment? 
+Open questions:
+  - Do we want to keep having structures face -> data? I guess if we had more than a single
+    moment per face, we would aggregate them.
+  - Can we always determine the minimum integration order for each moment?
 
-Current pains: 
-- ReferenceFEs is loaded before CellData, i.e we do NOT have access to the 
+Current pains:
+- ReferenceFEs is loaded before CellData, i.e we do NOT have access to the
   CellField machinery to compute the moments.
-- Most operations that are defined for CellFields are not 100% working for arrays of Fields, 
+- Most operations that are defined for CellFields are not 100% working for arrays of Fields,
   where we tend to use the Broadcasting + Operation machinery.
   For example, ∇(φ) is explicitly deactivated in favor of Broadcasting(∇)(φ).
 """
@@ -223,7 +223,7 @@ function fmom_dot(φ,μ,ds)
 end
 
 function fmom_cross(φ,μ,ds)
-  o = get_facet_orientations(ds.poly)[ds.face] # Why do we need this? Is this to avoid a sign map? 
+  o = get_facet_orientations(ds.poly)[ds.face] # Why do we need this? Is this to avoid a sign map?
   n = o*get_normal(ds)
   E = get_extension(ds)
   Eμ = Broadcasting(Operation(⋅))(E,μ) # We have to extend the basis to 3D (see Nedelec)
@@ -243,8 +243,8 @@ D = 2
 p = (D==2) ? QUAD : HEX
 order = 1
 
-prebasis = QCurlGradMonomialBasis{D}(Float64,order)
-cb = QGradJacobiPolynomialBasis{D}(Float64,order-1)
+prebasis = QCurlGradMonomialBasis(Val(D), Float64,order)
+cb = QGradJacobiPolynomialBasis(Val(D), Float64,order-1)
 fb = JacobiBasis(Float64,SEGMENT,order)
 moments = [
   [(f+get_offset(p,1),fmom_dot,fb) for f in 1:num_faces(p,1)]..., # Face moments
@@ -266,9 +266,9 @@ D = 2
 p = (D==2) ? QUAD : HEX
 order = 1
 
-prebasis = QGradMonomialBasis{D}(Float64,order)
-cb = QCurlGradMonomialBasis{D}(Float64,order-1)
-fb = QGradMonomialBasis{D-1}(Float64,order-1)
+prebasis = QGradMonomialBasis(Val(D),Float64,order)
+cb = QCurlGradMonomialBasis(Val(D),Float64,order-1)
+fb = QGradMonomialBasis(Val(D-1),Float64,order-1)
 eb = MonomialBasis(Float64,SEGMENT,order)
 moments = [
   [(f+get_offset(p,1),emom,eb) for f in 1:num_faces(p,1)]..., # Edge moments
@@ -290,9 +290,9 @@ D = 3
 p = (D==2) ? QUAD : HEX
 order = 1
 
-prebasis = QGradMonomialBasis{D}(Float64,order)
-cb = QCurlGradMonomialBasis{D}(Float64,order-1)
-fb = QGradMonomialBasis{D-1}(Float64,order-1)
+prebasis = QGradMonomialBasis(Val(D),Float64,order)
+cb = QCurlGradMonomialBasis(Val(D),Float64,order-1)
+fb = QGradMonomialBasis(Val(D-1),Float64,order-1)
 eb = MonomialBasis(Float64,SEGMENT,order)
 moments = [
   [(f+get_offset(p,1),emom,eb) for f in 1:num_faces(p,1)]..., # Edge moments

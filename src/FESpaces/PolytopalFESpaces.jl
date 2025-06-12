@@ -21,7 +21,7 @@ function _filter_from_space(space::Symbol)
   elseif space == :Q
     return Polynomials._q_filter
   elseif space == :S
-    return Polynomials._s_filter
+    return Polynomials._ser_filter
   else
     @notimplemented
   end

@@ -15,7 +15,7 @@ xd = dualise.(x,2)
 
 order = 1
 V = Float64
-b = MonomialBasis{2}(V,order)
+b = MonomialBasis(Val(2),V,order)
 evaluate(b,xd)
 
 g = Broadcasting(∇)(b)
