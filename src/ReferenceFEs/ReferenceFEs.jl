@@ -252,6 +252,8 @@ include("StrangQuadratures.jl")
 
 include("XiaoGimbutasQuadratures.jl")
 
+include("PolytopalQuadratures.jl")
+
 include("Pullbacks.jl")
 
 include("MomentBasedReferenceFEs.jl")

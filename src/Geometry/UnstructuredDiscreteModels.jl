@@ -92,7 +92,7 @@ function from_dict(T::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
   D::Int = dict[:D]
   vertex_to_node::Vector{Int32} = dict[:vertex_node]
   orientation = OrientationStyle(grid)
-  polytopes = map(get_polytope, get_reffes(grid))
+  polytopes = get_polytopes(grid)
   cell_type = get_cell_type(grid)
   vertex_coordinates = get_node_coordinates(grid)[vertex_to_node]
 
@@ -177,10 +177,8 @@ function _prepare_tvertices(
     for (lvertex,lnode) in enumerate(lvertex_lnode)
       v = vertices[lvertex]
       n = nodes[lnode]
-      #if vertex_node[v] != UNSET_ID
-      vertex_node[v] = n
-      #end
-      node_vertex[n] = v
+      vertex_node[v] = nodes[lnode]
+      node_vertex[n] = vertices[lvertex]
     end
   end
 

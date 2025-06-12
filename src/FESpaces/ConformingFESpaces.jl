@@ -282,12 +282,8 @@ function _convert_dirichlet_components(dirichlet_tags::AbstractArray,dirichlet_c
   dirichlet_components
 end
 
-function _convert_dirichlet_components(dirichlet_tags::Integer,dirichlet_components)
-  dirichlet_components==nothing ? nothing : [dirichlet_components,]
-end
-
-function _convert_dirichlet_components(dirichlet_tags::AbstractString,dirichlet_components)
-  dirichlet_components==nothing ? nothing : [dirichlet_components,]
+function _convert_dirichlet_components(dirichlet_tags::Union{Integer,AbstractString},dirichlet_components)
+  ifelse(isnothing(dirichlet_components),nothing,[dirichlet_components,])
 end
 
 function _generate_face_to_own_dofs(

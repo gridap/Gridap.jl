@@ -111,8 +111,17 @@ function _return_cache(
   (r, s, t...)
 end
 
+function _return_val_eltype(b::PolynomialBasis{D,V}, x::AbstractVector{<:Point}) where {D,V}
+  xi = testitem(x)
+  zVc = zero(eltype(V))
+  zxic = zero(eltype(xi))
+  T = typeof(zVc*zxic)
+  change_eltype(V, T) # Necessary for dual number probagation for autodiff
+end
+
 function return_cache(f::PolynomialBasis{D,V}, x::AbstractVector{<:Point}) where {D,V}
-  _return_cache(f,x,V,Val(0))
+  Vr = _return_val_eltype(f,x)
+  _return_cache(f,x,Vr,Val(0))
 end
 
 function return_cache(
@@ -121,7 +130,7 @@ function return_cache(
 
   f = fg.fa
   xi = testitem(x)
-  G = V
+  G = _return_val_eltype(f,x)
   for _ in 1:N
     G = gradient_type(G,xi)
   end

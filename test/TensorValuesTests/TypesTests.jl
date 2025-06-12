@@ -66,6 +66,14 @@ m = convert(MMatrix{2,2,Float64},t)
 u = convert(NTuple{4,Float64},t)
 @test u == tuple(11.0, 12.0, 21.0, 22.0)
 
+v = (VectorValue(1.0,2.0),VectorValue(3.0,4.0),VectorValue(5.0,6.0))
+t = TensorValues.tensor_from_columns(v...)
+@test isa(t,TensorValue{2,3,Float64})
+@test t == TensorValue{2,3,Float64}(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
+t = TensorValues.tensor_from_rows(v...)
+@test isa(t,TensorValue{3,2,Float64})
+@test t == TensorValue{3,2,Float64}(1.0, 3.0, 5.0, 2.0, 4.0, 6.0)
+
 # Constructors (SymTensorValue)
 
 s = SymTensorValue( (11,21,22) )
