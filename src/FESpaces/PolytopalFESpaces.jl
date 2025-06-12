@@ -13,7 +13,7 @@ struct PolytopalFESpace{V,M} <: SingleFieldFESpace
   metadata::M
 end
 
-# Constructors 
+# Constructors
 
 function _filter_from_space(space::Symbol)
   if space == :P
@@ -30,12 +30,12 @@ end
 function _prebasis_from_space(D,T,order,space)
   if space == :RT
     @assert D >= 2
-    prebasis = Polynomials.PCurlGradMonomialBasis{D}(T, order)
+    prebasis = Polynomials.PCurlGradBasis(Monomial, Val(D), T, order)
   elseif space == :ND
     @assert D >= 2
-    prebasis = Polynomials.NedelecPrebasisOnSimplex{D}(order)
+    prebasis = Polynomials.PGradBasis(Monomial,Val(D), T, order)
   else
-    prebasis = Polynomials.MonomialBasis{D}(T, order, _filter_from_space(space))
+    prebasis = Polynomials.MonomialBasis(Val(D), T, order, _filter_from_space(space))
   end
   return prebasis
 end
@@ -67,7 +67,7 @@ end
 function PolytopalFESpace(
   vector_type::Type,
   model::DiscreteModel,
-  cell_prebasis::AbstractArray; 
+  cell_prebasis::AbstractArray;
   trian = Triangulation(model),
   labels = get_face_labeling(model),
   dirichlet_tags = Int[],
@@ -95,7 +95,7 @@ function PolytopalFESpace(
     cell_shapefuns = orthogonalise_basis(cell_shapefuns, trian, order)
   end
   fe_basis = SingleFieldFEBasis(cell_shapefuns, trian, TestBasis(), domain_style)
-  
+
   ncomps = num_components(return_type(first(cell_prebasis)))
   if !isnothing(dirichlet_masks)
     @check length(dirichlet_masks) == ncomps
@@ -273,7 +273,7 @@ function Arrays.evaluate!(cache,::OrthogonaliseBasisMap,M::Matrix)
   return N
 end
 
-# Orthogonalise a basis against itself, with respect 
+# Orthogonalise a basis against itself, with respect
 # of the inner product defined by M
 function gram_shmidt!(N,M)
   n = size(M,1)
@@ -297,15 +297,15 @@ function gram_shmidt!(N,M)
   return N
 end
 
-# Local kernel removal 
+# Local kernel removal
 
 function remove_local_kernel(cell_basis,trian,T,order,local_kernel)
-  if isa(local_kernel,Function) 
+  if isa(local_kernel,Function)
     local_kernel_func = local_kernel
-  else 
+  else
     local_kernel_func = _kernel_from_symbol(local_kernel,T,cell_basis)
   end
-  
+
   cell_quads = Quadrature(trian,2*order)
   cell_integ = local_kernel_func(lazy_map(transpose,cell_basis))
   cell_vals = lazy_map(evaluate,cell_integ,lazy_map(get_coordinates,cell_quads))
@@ -346,7 +346,7 @@ end
 
 function Arrays.evaluate!(cache,k::NullspaceMap,K::Matrix)
   f = svd(K;full=true) # If K is not square, there svd! doesn't really use cache
-  
+
   n = size(K, 2)
   m = sum(s -> s > k.tol, f.S)
   setsize!(cache, (n, n - m))
@@ -362,23 +362,23 @@ function Arrays.evaluate!(cache,k::NullspaceMap,K::Matrix)
 end
 
 # struct CentroidCoordinateChangeMap <: Map end
-# 
+#
 # function Arrays.lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{typeof(centroid_map)}},x::AbstractVector)
 #   polys = a.args[1]
 #   lazy_map(CentroidCoordinateChangeMap(),polys,x)
 # end
-# 
+#
 # function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope,x::Point)
 #   pmin, pmax = get_bounding_box(poly)
 #   xc = 0.5 * (pmin + pmax)
 #   h = 0.5 * (pmax - pmin)
 #   return (x - xc) ./ h
 # end
-# 
+#
 # function Arrays.return_cache(::CentroidCoordinateChangeMap,poly::Polytope,x::AbstractVector{<:Point})
 #   return CachedArray(similar(x))
 # end
-# 
+#
 # function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope,x::AbstractVector{<:Point})
 #   setsize!(cache,size(x))
 #   y = cache.array
@@ -396,7 +396,7 @@ end
 function shoelace(face_ents)
   shift = circshift(face_ents, -1)
   area_components = map(face_ents, shift) do x1, x2
-    x1[1] * x2[2] - x2[1] * x1[2] 
+    x1[1] * x2[2] - x2[1] * x1[2]
   end
   area = 0.5 * abs(sum(area_components))
   return area
@@ -407,15 +407,15 @@ end
 #   if D == 3
 #     @notimplemented
 #   elseif isa(p, ExtrusionPolytope{2})
-#     if p == QUAD 
+#     if p == QUAD
 #       perm = [1,2,4,3]
 #     elseif p == TRI
 #       perm = [1,2,3]
 #     end
-#   elseif isa(p, Polygon)   
+#   elseif isa(p, Polygon)
 #     perm = collect(1:length(p.edge_vertex_graph))
 #   end
-# 
+#
 #   dim = get_dimranges(p)[face+1]
 #   face_ents = get_face_coordinates(p)[dim]
 #   if face == 0
@@ -436,11 +436,11 @@ end
 # end
 
 # function get_facet_centroid(p::Polytope{D}, face::Int) where D
-# 
+#
 #   if D == 3
 #     @notimplemented
 #   end
-# 
+#
 #   dim = get_dimranges(p)[face+1]
 #   face_coords = get_face_coordinates(p)[dim]
 #   if isa(p, ExtrusionPolytope{2}) || isa(p, ExtrusionPolytope{1})
@@ -454,17 +454,17 @@ end
 #     elseif face == 2
 #       ents = map(Reindex(face_coords...),perm)
 #       shift = circshift(ents, -1)
-# 
+#
 #       components_x = map(ents, shift) do x1, x2
 #         ( x1[1] + x2[1] ) * ( x1[1] * x2[2] - x2[1] * x1[2] )
 #       end
 #       components_y = map(ents, shift) do x1, x2
 #         ( x1[2] + x2[2] ) * ( x1[1] * x2[2] - x2[1] * x1[2] )
 #       end
-#       
+#
 #       area = get_facet_measure(p, face)
 #       centroid_x = (1 ./ (6*area)) * sum(components_x)
-#       centroid_y = (1 ./ (6*area)) * sum(components_y)        
+#       centroid_y = (1 ./ (6*area)) * sum(components_y)
 #       centroid = VectorValue{2, Float64}(centroid_x..., centroid_y...)
 #     end
 #   end
@@ -482,7 +482,7 @@ function get_facet_diameter(p::Polytope{D}, face::Int) where D
       norm(x[1]-x[2])
     end
   elseif face == 2
-    h = 0.0  
+    h = 0.0
     n_sides = length(X...)
     for i in 1:(n_sides-1)
       for j in (i+1):n_sides
@@ -493,7 +493,7 @@ function get_facet_diameter(p::Polytope{D}, face::Int) where D
   return h
 end
 
-################## 
+##################
 
 function FESpaces.renumber_free_and_dirichlet_dof_ids(
   space::FESpaces.PolytopalFESpace,free_dof_ids,dir_dof_ids

@@ -66,13 +66,13 @@ struct QCurlGradMonomialBasis{D}
 end
 @deprecate QCurlGradMonomialBasis{D}(args...) where D QCurlGradBasis(Monomial, Val(D), args...)
 
-struct NedelecPreBasisOnSimplex{D}
-  function NedelecPreBasisOnSimplex()
+struct NedelecPrebasisOnSimplex{D}
+  function NedelecPrebasisOnSimplex()
     @unreachable
     new{0}()
   end
 end
-@deprecate NedelecPreBasisOnSimplex{D}(args...) where D NedelecPolyBasisOnSimplex{D}(args...) false
+@deprecate NedelecPrebasisOnSimplex{D}(args...) where D PGradBasis(Monomial,Val(D), args...) false
 
 """
     JacobiPolynomialBasis{D}(args...) where D
