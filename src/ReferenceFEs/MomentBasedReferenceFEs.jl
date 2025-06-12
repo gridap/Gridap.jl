@@ -63,7 +63,7 @@ get_face_moments(b::MomentBasedDofBasis) = b.face_moments
 """
     get_face_nodes_dofs(b::MomentBasedDofBasis)
 
-Return the moment quadrature node indices owned by each face of the underlying polytope.
+Return the moment quadrature node indices on each face of the underlying polytope.
 """
 get_face_nodes_dofs(b::MomentBasedDofBasis) = b.face_nodes
 
@@ -76,12 +76,11 @@ function num_dofs(b::MomentBasedDofBasis)
 end
 
 function return_cache(b::MomentBasedDofBasis{P,V}, field) where {P,V}
-  alloc_cache(vals::AbstractVector,T,ndofs) = zeros(T,ndofs)
-  alloc_cache(vals::AbstractMatrix,T,ndofs) = zeros(T,ndofs,size(vals,2))
   cf = return_cache(field,b.nodes)
   vals = evaluate!(cf,field,b.nodes)
-  T = typeof(inner(zero(V),zero(eltype(vals))))
-  r = alloc_cache(vals,T,num_dofs(b))
+  Vr = eltype(vals)
+  T = typeof( zero(V) ⊙ zero(Vr) )
+  r = Array{T}(undef, (num_dofs(b), size(field)...))
   c = CachedArray(r)
   return c, cf
 end
@@ -104,7 +103,7 @@ function evaluate!(cache, b::MomentBasedDofBasis, field::Field)
       for j in 1:nj
         dofs[o] = z
         for i in 1:ni
-          dofs[o] += inner(moments[i,j],vals[nodes[i]])
+          dofs[o] += moments[i,j] ⊙ vals[nodes[i]]
         end
         o += 1
       end
@@ -134,7 +133,7 @@ function evaluate!(cache, b::MomentBasedDofBasis, field::AbstractVector{<:Field}
         for a in 1:na
           dofs[o,a] = z
           for i in 1:ni
-            dofs[o,a] += inner(moments[i,j],vals[nodes[i],a])
+            dofs[o,a] += moments[i,j] ⊙ vals[nodes[i],a]
           end
         end
         o += 1
@@ -297,7 +296,7 @@ function Arrays.evaluate!(cache,f,ds::FaceMeasure)
 
   detJ = Broadcasting(Operation(meas))(Broadcasting(∇)(fmap))
   dF = evaluate!(detJ_cache,detJ,xf)
-  dF ./= sum(w .* dF)
+  #dF ./= sum(w .* dF)
 
   xc = evaluate!(fmap_cache,fmap,xf) # quad pts on the cell
   fx = evaluate!(f_cache,f,xf) # f evaluated on the quad pts
@@ -344,7 +343,7 @@ Constructs a ReferenceFEs on `p` with a moment DoF basis.
 
 `moments` is a vector of moments, each one is given by a triplet (f,σ,μ) where
   - f is vector of ids of faces Fₖ of `p`
-  - σ is a function σ(φ,μ,ds) that returns a Field-like object to be integrated over each Fₖ
+  - σ is a function σ(φ,μ,ds) linear in φ and μ that returns a Field-like object to be integrated over each Fₖ
   - μ is a polynomials basis on Fₖ
 
 The moment DoFs are thus defined by φ -> ∫_Fₖ σ(φ,μᵢ,ds).
