@@ -26,10 +26,10 @@
       touched::Array{Bool,N}
     end
 
-Block-wise storage of arrays, where `touched` indicates which blocks are active. Accessing 
-a non-touched block returns nothing. 
+Block-wise storage of arrays, where `touched` indicates which blocks are active. Accessing
+a non-touched block returns nothing.
 
-`ArrayBlock` is mostly used for multi-field and skeleton computations and assembly, 
+`ArrayBlock` is mostly used for multi-field and skeleton computations and assembly,
 where each block corresponds to a field or plus/minus respectively.
 Blocks might be nested in the case of multi-field computations on skeletons.
 
@@ -45,7 +45,17 @@ end
 
 get_array(b::ArrayBlock) = b.array
 
+"""
+    const VectorBlock = ArrayBlock{A,1}
+
+Alias, see also [`ArrayBlock`](@ref).
+"""
 const VectorBlock = ArrayBlock{A,1} where A
+"""
+    const MatrixBlock = ArrayBlock{A,2}
+
+Alias, see also [`ArrayBlock`](@ref).
+"""
 const MatrixBlock = ArrayBlock{A,2} where A
 
 Base.axes(b::ArrayBlock,i) = axes(b.array,i)
@@ -300,8 +310,8 @@ end
         indices::Vector{CartesianIndex{N}}
     end
 
-A `BlockMap` maps `M = length(indices)` arrays to a single array of N-dimensinal blocks, 
-where only the blocks indexed by `indices` are touched and contain the corresponding 
+A `BlockMap` maps `M = length(indices)` arrays to a single array of N-dimensinal blocks,
+where only the blocks indexed by `indices` are touched and contain the corresponding
 entry of the input arrays.
 
 ## Constructors:
@@ -397,10 +407,10 @@ end
         indices::Vector{Vector{Tuple{CartesianIndex{M},CartesianIndex{N}}}}
     end
 
-A `MergeBlockMap` create a single array of N-dimensional blocks from `L=length(indices)` 
-input arrays of M-dimensional blocks. 
+A `MergeBlockMap` create a single array of N-dimensional blocks from `L=length(indices)`
+input arrays of M-dimensional blocks.
 
-For the l-th input array `a_l`, the vector of tuples in `indices[l]` contains the 
+For the l-th input array `a_l`, the vector of tuples in `indices[l]` contains the
 mapping between the indices of the blocks in `a_l` and the indices of the blocks in
 the output array, i.e `a_out[P[2]] = a_l[P[1]] ∀ P ∈ indices[l], ∀ l `.
 """
@@ -490,7 +500,7 @@ function evaluate!(cache,k::BlockBroadcasting,a::ArrayBlock{A,N},b::ArrayBlock..
   r, c = cache
   @check r.touched == a.touched
   @check all(a.touched == bi.touched for bi in b)
-  
+
   for i in eachindex(a.array)
     if a.touched[i]
       ai = (a.array[i],(bi.array[i] for bi in b)...)
@@ -739,15 +749,30 @@ end
 
 # ArrayBlock views
 
+"""
+    struct ArrayBlockView{A,N,M}
+
+Low level container implementing view on [`ArrayBlock`](@ref).
+"""
 struct ArrayBlockView{A,N,M}
   array::ArrayBlock{A,M}
   block_map::Array{CartesianIndex{M},N}
 end
 
-Base.view(a::ArrayBlock{A,M},b::Array{CartesianIndex{M},N}) where {A,M,N} = ArrayBlockView(a,b)
+"""
+    const MatrixBlockView{A} = ArrayBlockView{A,2,2}
+
+Alias, see also [`ArrayBlockView`](@ref).
+"""
 const MatrixBlockView{A} = ArrayBlockView{A,2,2} where A
+"""
+    const VectorBlockView{A} = ArrayBlockView{A,1,1}
+
+Alias, see also [`ArrayBlockView`](@ref).
+"""
 const VectorBlockView{A} = ArrayBlockView{A,1,1} where A
 
+Base.view(a::ArrayBlock{A,M},b::Array{CartesianIndex{M},N}) where {A,M,N} = ArrayBlockView(a,b)
 Base.axes(a::ArrayBlockView,i) = axes(a.block_map,i)
 Base.size(a::ArrayBlockView) = size(a.block_map)
 Base.length(b::ArrayBlockView) = length(b.block_map)

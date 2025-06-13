@@ -83,6 +83,11 @@ and `order(s)` (but yet unspecified cell polytope).
 - `orders::NTuple{D,Int}`: a tuple of order per space dimension for anysotropic elements.
 
 Keyword arguments are `name` specific.
+
+!!! warning
+    This method only returns the tuple of its arguments, the actual Reference
+    FE(s) is(are) only built once the polytope(s) is(are) known. See the other
+    `ReferenceFE` methods or the FESpaces constructors.
 """
 ReferenceFE(name::ReferenceFEName, args...; kwargs...) = (name, args, kwargs)
 
