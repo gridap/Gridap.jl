@@ -552,7 +552,9 @@ m = mutable(v)
 @test isa(m,MArray)
 
 v = SymFourthOrderTensorValue{2}(1:9...)
-@test_throws ErrorException mutable(v) #notimplemented
+m = mutable(v)
+@test m == get_array(v)
+@test isa(m,MArray)
 
 M = Mutable(VectorValue{3,Int})
 @test M == MVector{3,Int}
@@ -563,7 +565,7 @@ M2 = Mutable(v)
 @test M == M2
 
 M = Mutable(TensorValue{3,3,Int})
-@test M == MMatrix{3,3,Int}
+@test M == MMatrix{3,3,Int,9}
 m = zero(M)
 v = TensorValue(m)
 @test isa(v,TensorValue{3,3,Int})
@@ -571,7 +573,7 @@ M2 = Mutable(v)
 @test M == M2
 
 M = Mutable(SymTensorValue{3,Int})
-@test M == MMatrix{3,3,Int}
+@test M == MMatrix{3,3,Int,9}
 m = zero(M)
 v = SymTensorValue(m)
 @test isa(v,SymTensorValue{3,Int})
@@ -579,7 +581,7 @@ M2 = Mutable(v)
 @test M == M2
 
 M = Mutable(SymTracelessTensorValue{3,Int})
-@test M == MMatrix{3,3,Int}
+@test M == MMatrix{3,3,Int,9}
 m = zero(M)
 v = SymTracelessTensorValue(m)
 @test isa(v,SymTracelessTensorValue{3,Int})
@@ -587,14 +589,20 @@ M2 = Mutable(v)
 @test M == M2
 
 M = Mutable(ThirdOrderTensorValue{3,1,2,Int})
-@test M == MArray{Tuple{3,1,2},Int}
+@test M == MArray{Tuple{3,1,2},Int,3,6}
 m = zero(M)
 v = ThirdOrderTensorValue(m)
 @test isa(v,ThirdOrderTensorValue{3,1,2,Int})
 M2 = Mutable(v)
 @test M == M2
 
-@test_throws ErrorException Mutable(SymFourthOrderTensorValue{2,Int}) # @notimplemented
+M = Mutable(SymFourthOrderTensorValue{2,Int})
+@test M == MArray{Tuple{2,2,2,2},Int,4,16}
+m = zero(M)
+v = SymFourthOrderTensorValue(m)
+@test isa(v,SymFourthOrderTensorValue{2,Int})
+M2 = Mutable(v)
+@test M == M2
 
 @test_throws ErrorException Mutable(MultiValue) # @abstractmethod
 
@@ -603,6 +611,7 @@ M2 = Mutable(v)
 @test num_components(1.0) == 1
 @test num_components(1) == 1
 @test num_components(VectorValue{3,Float64}) == 3
+@test num_components(AbstractSymTensorValue{2}) == 4
 @test num_components(VectorValue(1,2,3)) == 3
 @test num_components(TensorValue(1,2,3,4)) == 4
 @test num_components(SymTensorValue(1,2,3)) == 4
@@ -634,7 +643,7 @@ M2 = Mutable(v)
 @test_throws ErrorException num_components(VectorValue)
 @test_throws ErrorException num_components(TensorValue)
 @test_throws ErrorException num_components(TensorValue{2})
-@test_throws ErrorException num_components(AbstractSymTensorValue{2})
+@test_throws ErrorException num_components(AbstractSymTensorValue)
 @test_throws ErrorException num_components(SymTensorValue)
 @test_throws ErrorException num_components(SymTracelessTensorValue)
 @test_throws ErrorException num_components(ThirdOrderTensorValue{2,2})

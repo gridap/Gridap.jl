@@ -589,6 +589,34 @@ end
 const ⋅² = double_contraction
 
 ###############################################################
+# Congruent product
+###############################################################
+
+"""
+    congruent_prod(a, b)
+
+Given a square second order tensors `a` and a `b`, return `b`ᵀ⋅`a`⋅`b`.
+The type of the resulting value is (skew) symmetric stable w.r.t. `typeof(a)`.
+"""
+function congruent_prod(a::MultiValue{Tuple{D,D},Ta}, b::MultiValue{Tuple{D,D1},Tb}) where {D,D1,Ta,Tb}
+  T = promote_type(Ta,Tb)
+  V = _congruent_ret_type(a,D1)
+  (iszero(D) || iszero(D1)) && return zero(V{T})
+  V{T}(get_array(transpose(b) ⋅ a ⋅ b))
+end
+_congruent_ret_type(a,D1) = TensorValue{D1,D1}
+_congruent_ret_type(a::SymTensorValue,D1) = SymTensorValue{D1}
+_congruent_ret_type(a::SymTracelessTensorValue,D1) = SymTracelessTensorValue{D1}
+
+function congruent_prod(a::Number, b::Number)
+  msg = """ operation only defined for 2nd order tensors `a` and `b` with
+      `size(b,1) == size(a, 1) == size(a, 2)`, got `size(a)=$(size(a))` and
+      `size(b)=$(size(b))`.
+      """
+  @unreachable msg
+end
+
+###############################################################
 # Reductions
 ###############################################################
 

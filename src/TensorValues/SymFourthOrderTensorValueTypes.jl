@@ -56,15 +56,54 @@ SymFourthOrderTensorValue(data::Number...) = SymFourthOrderTensorValue(data)
 SymFourthOrderTensorValue{D}(data::Number...) where {D} = SymFourthOrderTensorValue{D}(data)
 SymFourthOrderTensorValue{D,T1}(data::Number...) where {D,T1} = SymFourthOrderTensorValue{D,T1}(data)
 
+# SymFourthOrderTensorValue single AbstractArray argument constructor
+
+#From square 4-dim Array
+@generated function _flatten_sym_fourth_order_tensor(data::AbstractArray,::Val{D}) where D
+  check_e = :( @check ($D,$D,$D,$D) == size(data) )
+  str = ""
+  for i in 1:D
+    for j in i:D
+      for k in 1:D
+        for l in k:D
+          str *= "data[$i,$j,$k,$l],"
+        end
+      end
+    end
+  end
+  ret_e = Meta.parse("return ($str)")
+  Expr(:block, check_e, ret_e)
+end
+
+SymFourthOrderTensorValue(data::AbstractArray{T}) where {T} = ((D,)=size(data); SymFourthOrderTensorValue{D}(data))
+SymFourthOrderTensorValue{D}(data::AbstractArray{T}) where {D,T} = SymFourthOrderTensorValue{D,T}(_flatten_sym_fourth_order_tensor(data,Val(D)))
+SymFourthOrderTensorValue{D,T1}(data::AbstractArray{T2}) where {D,T1,T2} = SymFourthOrderTensorValue{D,T1}(_flatten_sym_fourth_order_tensor(data,Val(D)))
+SymFourthOrderTensorValue{D,T1,L}(data::AbstractArray{T2}) where {D,T1,T2,L} = SymFourthOrderTensorValue{D,T1,L}(_flatten_sym_fourth_order_tensor(data,Val(D)))
+
 ###############################################################
 # Conversions (SymFourthOrderTensorValue)
 ###############################################################
 
 # Direct conversion
-convert(::Type{<:SymFourthOrderTensorValue{D,T}}, arg::Tuple) where {D,T} = SymFourthOrderTensorValue{D,T}(arg)
+#convert(::Type{<:SymFourthOrderTensorValue{D,T}}, arg::Tuple) where {D,T} = SymFourthOrderTensorValue{D,T}(arg)
+
+@generated function _SymFourthOrder_to_array(arg::SymFourthOrderTensorValue{D,T,L}) where {D,T,L}
+  str = ""
+  for l in 1:D
+    for k in 1:D
+      for j in 1:D
+        for i in 1:D
+          str *= "arg[$i,$j,$k,$l], "
+        end
+      end
+    end
+  end
+  Meta.parse("SArray{Tuple{D,D,D,D},T}(($str))")
+end
 
 # Inverse conversion
-convert(::Type{<:NTuple{L,T}}, arg::SymFourthOrderTensorValue) where {L,T} = NTuple{L,T}(Tuple(arg))
+convert(::Type{<:MArray{Tuple{D,D,D,D},T}}, arg::SymFourthOrderTensorValue) where {D,T} = MArray{Tuple{D,D,D,D},T}(_SymFourthOrder_to_array(arg))
+convert(::Type{<:SArray{Tuple{D,D,D,D},T}}, arg::SymFourthOrderTensorValue) where {D,T} = _SymFourthOrder_to_array(arg)
 
 # Internal conversion
 convert(::Type{<:SymFourthOrderTensorValue{D,T}}, arg::SymFourthOrderTensorValue{D}) where {D,T} = SymFourthOrderTensorValue{D,T}(Tuple(arg))
@@ -73,15 +112,6 @@ convert(::Type{<:SymFourthOrderTensorValue{D,T}}, arg::SymFourthOrderTensorValue
 ###############################################################
 # Other constructors and conversions (SymFourthOrderTensorValue)
 ###############################################################
-
-@generated function zero(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T}
-  L=(D*(D+1)÷2)^2
-  quote
-    SymFourthOrderTensorValue{D,T}(tfill(zero(T),Val{$L}()))
-  end
-end
-zero(::Type{<:SymFourthOrderTensorValue{D,T,L}}) where {D,T,L} = SymFourthOrderTensorValue{D,T}(tfill(zero(T),Val{L}()))
-zero(::SymFourthOrderTensorValue{D,T,L}) where {D,T,L} = zero(SymFourthOrderTensorValue{D,T,L})
 
 # This is in fact the "symmetrized" 4th order identity
 """
@@ -96,46 +126,11 @@ The scalar type `T2` of the result is `typeof(one(T)/2)`.
   str = join(["($i==$k && $j==$l) ?  ( $i==$j ? one($S) :  one($S)/2) : zero($S), " for i in 1:D for j in i:D for k in 1:D for l in k:D])
   Meta.parse("SymFourthOrderTensorValue{D,$S}(($str))")
 end
-one(::SymFourthOrderTensorValue{D,T}) where {D,T} = one(SymFourthOrderTensorValue{D,T})
 
-@generated function rand(rng::AbstractRNG,
-                         ::Random.SamplerType{<:SymFourthOrderTensorValue{D,T}}) where {D,T}
-  L=(D*(D+1)÷2)^2
-  quote
-    rand(rng, SymFourthOrderTensorValue{D,T,$L})
-  end
-end
-rand(rng::AbstractRNG,::Random.SamplerType{<:SymFourthOrderTensorValue{D,T,L}}) where {D,T,L} =
-  SymFourthOrderTensorValue{D,T}(Tuple(rand(rng, SVector{L,T})))
-
-Mutable(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T} = @notimplemented
-Mutable(::SymFourthOrderTensorValue{D,T}) where {D,T} = Mutable(SymFourthOrderTensorValue{D,T})
-mutable(a::SymFourthOrderTensorValue{D}) where D = @notimplemented
-
-change_eltype(::Type{SymFourthOrderTensorValue{D,T1}},::Type{T2}) where {D,T1,T2} = SymFourthOrderTensorValue{D,T2}
+change_eltype(::Type{<:SymFourthOrderTensorValue{D}},::Type{T2}) where {D,T2} = SymFourthOrderTensorValue{D,T2}
 change_eltype(::Type{SymFourthOrderTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymFourthOrderTensorValue{D,T2,L}
-change_eltype(::SymFourthOrderTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} = change_eltype(SymFourthOrderTensorValue{D,T1,L},T2)
 
-###############################################################
-# Introspection (SymFourthOrderTensorValue)
-###############################################################
-
-eltype(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T} = T
-eltype(::SymFourthOrderTensorValue{D,T}) where {D,T} = eltype(SymFourthOrderTensorValue{D,T})
-
-size(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = (D,D,D,D)
-size(::SymFourthOrderTensorValue{D}) where {D} = size(SymFourthOrderTensorValue{D})
-
-length(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = D*D*D*D
-length(::SymFourthOrderTensorValue{D}) where {D} = length(SymFourthOrderTensorValue{D})
-
-num_components(::Type{<:SymFourthOrderTensorValue}) = @unreachable "The dimension is needed to count components"
-num_components(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = length(SymFourthOrderTensorValue{D})
-num_components(::SymFourthOrderTensorValue{D}) where {D} = num_components(SymFourthOrderTensorValue{D})
-
-num_indep_components(::Type{<:SymFourthOrderTensorValue})  = num_components(SymFourthOrderTensorValue)
 num_indep_components(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = (D*(D+1)÷2)^2
-num_indep_components(::SymFourthOrderTensorValue{D}) where {D} = num_indep_components(SymFourthOrderTensorValue{D})
 
 ###############################################################
 # VTK export (SymFourthOrderTensorValue)
