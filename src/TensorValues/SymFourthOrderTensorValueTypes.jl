@@ -17,6 +17,11 @@ struct SymFourthOrderTensorValue{D,T,L} <: MultiValue{Tuple{D,D,D,D},T,4,L}
   end
 end
 
+function promote_rule(::Type{<:SymFourthOrderTensorValue{D,Ta}}, ::Type{<:SymFourthOrderTensorValue{D,Tb}}) where {D,Ta,Tb}
+  T = promote_type(Ta,Tb)
+  SymFourthOrderTensorValue{D,T}
+end
+
 ###############################################################
 # Constructors (SymFourthOrderTensorValue)
 ###############################################################

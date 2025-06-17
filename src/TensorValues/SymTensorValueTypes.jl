@@ -28,6 +28,11 @@ struct SymTensorValue{D,T,L} <: AbstractSymTensorValue{D,T,L}
     end
 end
 
+function promote_rule(::Type{<:SymTensorValue{D,Ta}}, ::Type{<:SymTensorValue{D,Tb}}) where {D,Ta,Tb}
+    T = promote_type(Ta,Tb)
+    SymTensorValue{D,T}
+end
+
 ###############################################################
 # Constructors (SymTensorValue)
 ###############################################################

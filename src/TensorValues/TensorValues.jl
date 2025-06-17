@@ -79,6 +79,7 @@ export indep_comp_getindex
 export indep_components_names
 
 import Base: show
+import Base: promote_rule
 import Base: zero, one
 import Base: +, -, *, /, \, ==, ≈, isless
 import Base: conj, real, imag

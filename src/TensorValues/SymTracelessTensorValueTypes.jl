@@ -36,6 +36,14 @@ end
 
 const QTensorValue = SymTracelessTensorValue
 
+function promote_rule(
+  ::Type{<:SymTracelessTensorValue{D,Ta}},
+  ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb}
+
+  T = promote_type(Ta,Tb)
+  SymTracelessTensorValue{D,T}
+end
+
 ###############################################################
 # Constructors (SymTracelessTensorValue)
 ###############################################################

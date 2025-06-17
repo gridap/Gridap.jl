@@ -17,6 +17,11 @@ struct TensorValue{D1,D2,T,L} <: MultiValue{Tuple{D1,D2},T,2,L}
     end
 end
 
+function promote_rule(::Type{<:TensorValue{D1,D2,Ta}}, ::Type{<:TensorValue{D1,D2,Tb}}) where {D1,D2,Ta,Tb}
+    T = promote_type(Ta,Tb)
+    TensorValue{D1,D2,T}
+end
+
 ###############################################################
 # Constructors
 ###############################################################

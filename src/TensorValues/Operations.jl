@@ -33,6 +33,36 @@ isless(a::Number,b::MultiValue) = all(isless.(a, b.data))
 isless(a::MultiValue,b::MultiValue) = @unreachable "Comparison is not defined between tensor of order greater than 1"
 
 ###############################################################
+# promotion and conversions
+###############################################################
+
+"""
+    const _Scalar = Union{Real,Complex}
+
+Abstract type for the scalar types that `MultiValue` support component-wise
+operations with.
+"""
+const _Scalar = Union{Real,Complex}
+
+promote_rule(::Type{<:MultiValue},::Type{<:MultiValue}) = Union{}
+
+convert(V::Type{<:MultiValue},  a::Number) = error("Cannot convert $a to type $V")
+convert(T::Type{<:_Scalar},  a::MultiValue) = error("Cannot convert $a to type $T")
+# TODO remove next two methods
+convert(::Type{V}, a::_Scalar)   where V<:MultiValue{S,T,D,1} where {S,T,D} = V(a)
+convert(::Type{T}, a::MultiValue{S,Ta,D,1}) where T<:_Scalar where {S,Ta,D} = T(a[1])
+
+# Promotion / conversion between the different kind of square tensors.
+promote_rule(::Type{<:TensorValue{D,D,Ta}},     ::Type{<:SymTensorValue{D,Tb}})          where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}
+promote_rule(::Type{<:TensorValue{D,D,Ta}},     ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}
+promote_rule(::Type{<:SymTensorValue{D,Ta}},    ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = SymTensorValue{D,promote_type(Ta,Tb)}
+
+convert(::Type{<:TensorValue{D,D,Ta}},  a::SymTensorValue{D,Tb})          where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}(get_array(a))
+convert(::Type{<:TensorValue{D,D,Ta}},  a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}(get_array(a))
+convert(::Type{<:SymTensorValue{D,Ta}}, a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = SymTensorValue{D,promote_type(Ta,Tb)}(a.data)
+
+
+###############################################################
 # Addition / subtraction
 ###############################################################
 
@@ -42,66 +72,18 @@ for op in (:+,:-)
   @eval begin
 
     function ($op)(a::T) where {T<:MultiValue}
-      r = map($op, a.data)
+      Li = num_indep_components(T)
+      r = map($op, a.data[1:Li])
       T(r)
     end
 
-    function ($op)(a::MultiValue,b::MultiValue)
-      @notimplemented "Not implemented or undefined operation \"$($op)\" on MultiValues of these shapes"
+    function ($op)(a::V,b::V)  where V<:MultiValue
+      Li = num_indep_components(V)
+      r = map(($op), a.data[1:Li], b.data[1:Li])
+      V(r)
     end
-
-    function ($op)(a::MultiValue{S},b::MultiValue{S})  where S
-      r = map(($op), a.data, b.data)
-      T = _eltype($op,r,a,b)
-      M = change_eltype(a,T)
-      M(r)
-    end
-
-    function ($op)(a::TensorValue{D,D},b::SymTensorValue{D}) where D
-      map(($op), a, TensorValue(get_array(b)))
-    end
-
-    function ($op)(a::SymTensorValue{D},b::TensorValue{D,D}) where D
-      map(($op), TensorValue(get_array(a)), b)
-    end
-
-    function ($op)(a::TensorValue{D,D},b::SymTracelessTensorValue{D}) where D
-      map(($op), a, TensorValue(get_array(b)))
-    end
-
-    function ($op)(a::SymTracelessTensorValue{D},b::TensorValue{D,D}) where D
-      map(($op), TensorValue(get_array(a)), b)
-    end
-
-    function ($op)(a::SymTracelessTensorValue{D},b::SymTensorValue{D}) where D
-      r = map(($op), a.data, b.data)
-      T = _eltype($op,r,a,b)
-      M = change_eltype(b,T)
-      M(r)
-    end
-
-    function ($op)(a::SymTensorValue{D},b::SymTracelessTensorValue{D}) where D
-      r = map(($op), a.data, b.data)
-      T = _eltype($op,r,a,b)
-      M = change_eltype(a,T)
-      M(r)
-    end
-
-    function ($op)(a::SymTracelessTensorValue)
-      r = map($op, a.data[1:end-1])
-      typeof(a)(r)
-    end
-
-    function ($op)(a::SymTracelessTensorValue{D},b::SymTracelessTensorValue{D}) where D
-      r = map(($op), a.data[1:end-1], b.data[1:end-1])
-      T = _eltype($op,r,a,b)
-      M = change_eltype(a,T)
-      M(r)
-    end
-
   end
 end
-
 
 ###############################################################
 # Matrix Division
@@ -137,15 +119,17 @@ end
 
 for op in (:+,:-,:*)
   @eval begin
-    function ($op)(a::MultiValue,b::Number)
-      r = _bc($op,a.data,b)
+    function ($op)(a::MultiValue,b::_Scalar)
+      Li = num_indep_components(a)
+      r = _bc($op,a.data[1:Li],b)
       T = _eltype($op,r,a,b)
       M  = change_eltype(a,T)
       M(r)
     end
 
-    function ($op)(a::Number,b::MultiValue)
-      r = _bc($op,a,b.data)
+    function ($op)(a::_Scalar,b::MultiValue)
+      Li = num_indep_components(b)
+      r = _bc($op,a,b.data[1:Li])
       T = _eltype($op,r,a,b)
       M  = change_eltype(b,T)
       M(r)
@@ -153,40 +137,19 @@ for op in (:+,:-,:*)
   end
 end
 
-function (*)(a::Number,b::SymTracelessTensorValue)
-  r = _bc(*,a,b.data[1:end-1])
-  T = _eltype(*,r,a,b)
-  M  = change_eltype(b,T)
-  M(r)
-end
+_err = "This operation is undefined for traceless tensors"
+(+)(::SymTracelessTensorValue,::_Scalar) =  error(_err)
+(+)(::_Scalar,::SymTracelessTensorValue) =  error(_err)
+(-)(::SymTracelessTensorValue,::_Scalar) =  error(_err)
+(-)(::_Scalar,::SymTracelessTensorValue) =  error(_err)
 
-function (*)(a::SymTracelessTensorValue,b::Number)
-  b*a
-end
-
-function (/)(a::MultiValue,b::Number)
-  r = _bc(/,a.data,b)
+function (/)(a::MultiValue,b::_Scalar)
+  Li = num_indep_components(a)
+  r = _bc(/,a.data[1:Li],b)
   T = _eltype(/,r,a,b)
   P  = change_eltype(a,T)
   P(r)
 end
-
-function (/)(a::SymTracelessTensorValue,b::Number)
-  r = _bc(/,a.data[1:end-1],b)
-  T = _eltype(/,r,a,b)
-  M  = change_eltype(a,T)
-  M(r)
-end
-
-const _err =  " with number is undefined for traceless tensors"
-function +(::SymTracelessTensorValue,::Number)     error("Addition"   *_err) end
-function -(::SymTracelessTensorValue,::Number)     error("Subtraction"*_err) end
-function +(::Number,::SymTracelessTensorValue)     error("Addition"   *_err) end
-function -(::Number,::SymTracelessTensorValue)     error("Subtraction"*_err) end
-function +(::SymTracelessTensorValue,::MultiValue) error("Addition"   *_err) end
-function -(::SymTracelessTensorValue,::MultiValue) error("Subtraction"*_err) end
-function +(::MultiValue,::SymTracelessTensorValue) error("Addition"   *_err) end
-function -(::MultiValue,::SymTracelessTensorValue) error("Subtraction"*_err) end
 
 @inline function _eltype(op,r,a...)
   eltype(r)
@@ -223,13 +186,6 @@ function (*)(a::MultiValue, b::MultiValue)
   """
   error(msg)
 end
-
-# Resolution of silly method ambiguity
-const _msg =  "Use use simple contraction dot aka ⋅ (\\cdot) or full contraction inner aka ⊙ (\\odot)"
-function *(::MultiValue,::SymTracelessTensorValue) @unreachable _msg end
-function *(::SymTracelessTensorValue,::MultiValue) @unreachable _msg end
-function *(::SymTracelessTensorValue,::AbstractSymTensorValue) @unreachable _msg end
-function *(::SymTracelessTensorValue,::SymTracelessTensorValue) @unreachable _msg end
 
 dot(a::MultiValue{Tuple{D}}, b::MultiValue{Tuple{D}}) where D = inner(a,b)
 
@@ -356,7 +312,7 @@ const ⋅¹ = dot
 # Inner product (full contraction)
 ###############################################################
 
-inner(a::Number,b::Number) = a*b
+inner(a::_Scalar,b::_Scalar) = a*b
 
 """
     inner(a::MultiValue{S}, b::MultiValue{S}) -> scalar
@@ -700,7 +656,7 @@ end
 
 """
     cross(a::VectorValue{3}, b::VectorValue{3}) -> VectorValue{3}
-    cross(a::VectorValue{2}, b::VectorValue{2}) -> Scalar
+    cross(a::VectorValue{2}, b::VectorValue{2}) -> scalar
     a × b
 
 Cross product of 2D and 3D vector.
@@ -795,8 +751,6 @@ formed by the rows of `J`, that is `sqrt(det(J⋅Jᵀ))`, or `abs(det(J))` if `D
 This is used to compute the contribution of the Jacobian matrix `J` of a changes of variables in integrals.
 """
 meas(a::MultiValue{Tuple{D,D}}) where D = abs(det(a))
-#meas( ::TensorValue{0,D,T}) where {T,D} = one(T)
-#meas( ::MultiValue{Tuple{0,0},T}) where {T} = one(T)
 
 function meas(v::MultiValue{Tuple{1,D}}) where D
   t = VectorValue(v.data)
@@ -833,17 +787,11 @@ Euclidean (2-)norm of `u`, namely `sqrt(inner(u,u))`.
 for op in (:conj,:real,:imag)
   @eval begin
     function ($op)(a::T) where {T<:MultiValue}
-      r = map($op, a.data)
+      Li = num_indep_components(a)
+      r = map($op, a.data[1:Li])
       T2 = _eltype($op,r,a)
       M  = change_eltype(a,T2)
       M(r)
-    end
-
-    function ($op)(a::T) where {T<:SymTracelessTensorValue}
-      r = map($op, a.data)
-      T2 = _eltype($op,r,a)
-      M  = change_eltype(a,T2)
-      M(r[1:end-1])
     end
   end
 end

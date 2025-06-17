@@ -14,6 +14,10 @@ struct VectorValue{D,T} <: MultiValue{Tuple{D},T,1,D}
     end
 end
 
+function promote_rule(::Type{VectorValue{D,Ta}}, ::Type{VectorValue{D,Tb}}) where {D,Ta,Tb}
+  VectorValue{D,promote_type(Ta,Tb)}
+end
+
 ###############################################################
 # Constructors (VectorValue)
 ###############################################################

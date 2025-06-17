@@ -14,6 +14,14 @@ struct ThirdOrderTensorValue{D1,D2,D3,T,L} <: MultiValue{Tuple{D1,D2,D3},T,3,L}
     end
 end
 
+function promote_rule(
+  ::Type{<:ThirdOrderTensorValue{D1,D2,D3,Ta}},
+  ::Type{<:ThirdOrderTensorValue{D1,D2,D3,Tb}}) where {D1,D2,D3,Ta,Tb}
+
+  T = promote_type(Ta,Tb)
+  ThirdOrderTensorValue{D1,D2,D3,T}
+end
+
 # Empty ThirdOrderTensorValue constructor
 
 ThirdOrderTensorValue()                       = ThirdOrderTensorValue{0,0,0,Int}(NTuple{0,Int}())
