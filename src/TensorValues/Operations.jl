@@ -54,10 +54,14 @@ convert(::Type{T}, a::MultiValue{S,Ta,D,1}) where T<:_Scalar where {S,Ta,D} = T(
 
 # Promotion / conversion between the different kind of square tensors.
 promote_rule(::Type{<:TensorValue{D,D,Ta}},     ::Type{<:SymTensorValue{D,Tb}})          where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}
+promote_rule(::Type{<:TensorValue{D,D,Ta}},     ::Type{<:SkewSymTensorValue{D,Tb}})      where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}
 promote_rule(::Type{<:TensorValue{D,D,Ta}},     ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}
+promote_rule(::Type{<:SymTensorValue{D,Ta}},    ::Type{<:SkewSymTensorValue{D,Tb}})      where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}
 promote_rule(::Type{<:SymTensorValue{D,Ta}},    ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = SymTensorValue{D,promote_type(Ta,Tb)}
+promote_rule(::Type{<:SkewSymTensorValue{D,Ta}},::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}
 
 convert(::Type{<:TensorValue{D,D,Ta}},  a::SymTensorValue{D,Tb})          where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}(get_array(a))
+convert(::Type{<:TensorValue{D,D,Ta}},  a::SkewSymTensorValue{D,Tb})      where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}(get_array(a))
 convert(::Type{<:TensorValue{D,D,Ta}},  a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}(get_array(a))
 convert(::Type{<:SymTensorValue{D,Ta}}, a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = SymTensorValue{D,promote_type(Ta,Tb)}(a.data)
 
@@ -67,6 +71,8 @@ convert(::Type{<:SymTensorValue{D,Ta}}, a::SymTracelessTensorValue{D,Tb}) where 
 ###############################################################
 
 Base.iszero(a::MultiValue) = all(iszero.(a.data))
+
+# TODO for SkewSymTensorValue + tests
 
 for op in (:+,:-)
   @eval begin
@@ -137,11 +143,12 @@ for op in (:+,:-,:*)
   end
 end
 
+const _AbstractTracelessTensor{D} = Union{SymTracelessTensorValue{D}, SkewSymTensorValue{D}}
 _err = "This operation is undefined for traceless tensors"
-(+)(::SymTracelessTensorValue,::_Scalar) =  error(_err)
-(+)(::_Scalar,::SymTracelessTensorValue) =  error(_err)
-(-)(::SymTracelessTensorValue,::_Scalar) =  error(_err)
-(-)(::_Scalar,::SymTracelessTensorValue) =  error(_err)
+(+)(::_AbstractTracelessTensor,::_Scalar) =  error(_err)
+(+)(::_Scalar,::_AbstractTracelessTensor) =  error(_err)
+(-)(::_AbstractTracelessTensor,::_Scalar) =  error(_err)
+(-)(::_Scalar,::_AbstractTracelessTensor) =  error(_err)
 
 function (/)(a::MultiValue,b::_Scalar)
   Li = num_indep_components(a)
@@ -344,6 +351,18 @@ end
   end
   str *= ")"
   Meta.parse(str)
+end
+
+function inner(a::SkewSymTensorValue{D,Ta}, b::SkewSymTensorValue{D,Tb}) where {D,Ta,Tb}
+  iszero(D) && return zero(promote_type(Ta,Tb))
+  2*inner(VectorValue(a.data), VectorValue(b.data))
+end
+
+function inner(a::SkewSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
+  zero(promote_type(Ta,Tb))
+end
+function inner(a::AbstractSymTensorValue{D,Tb}, b::SkewSymTensorValue{D,Ta}) where {D,Ta,Tb}
+  zero(promote_type(Ta,Tb))
 end
 
 function inner(a::MultiValue{Tuple{D,D,D,D}}, b::MultiValue{Tuple{D,D,D,D}}) where D
@@ -563,6 +582,7 @@ end
 _congruent_ret_type(a,D1) = TensorValue{D1,D1}
 _congruent_ret_type(a::SymTensorValue,D1) = SymTensorValue{D1}
 _congruent_ret_type(a::SymTracelessTensorValue,D1) = SymTracelessTensorValue{D1}
+_congruent_ret_type(a::SkewSymTensorValue,D1) = SkewSymTensorValue{D1}
 
 function congruent_prod(a::Number, b::Number)
   msg = """ operation only defined for 2nd order tensors `a` and `b` with
@@ -691,6 +711,8 @@ function det(a::MultiValue{Tuple{3,3}})
     (a_11*a_23*a_32 + a_12*a_21*a_33 + a_13*a_22*a_31)
 end
 
+det(::SkewSymTensorValue{3,T}) where T = zero(T)
+
 """
     inv(a::MultiValue{Tuple{D,D}})
 
@@ -698,8 +720,13 @@ Inverse of a second order tensor.
 """
 inv(a::MultiValue{Tuple{D,D}}) where D = TensorValue(inv(get_array(a)))
 
-# this has better perf than the D=2,3 specialization below
-inv(a::SymTracelessTensorValue{2}) = SymTracelessTensorValue(inv(get_array(a)))
+const InverseStableTensorTypes{D} = Union{SymTensorValue{D}, SkewSymTensorValue{D}}
+
+function inv(a::InverseStableTensorTypes{D}) where D
+  ai = inv(get_array(a))
+  T = change_eltype(a, eltype(ai))
+  T(ai)
+end
 
 function inv(a::MultiValue{Tuple{1,1}})
   r = 1/a[1]
@@ -730,6 +757,23 @@ function inv(a::MultiValue{Tuple{3,3}})
     ( a_11*a_22 - a_12*a_21 )*c)
  TensorValue{3}(data)
 end
+
+function inv(a::SymTensorValue{2})
+ c = 1/det(a)
+ T = change_eltype(a,typeof(c))
+ T(a[2,2]*c, -a[2,1]*c, a[1,1]*c)
+end
+
+inv( ::SymTracelessTensorValue{1,T}) where T = TensorValue{1,1,T}(inv(zero(T)))
+function inv(a::SymTracelessTensorValue{2})
+ c = -1/det(a)
+ T = change_eltype(a,typeof(c))
+ T(a[1,1]*c, a[2,1]*c)
+end
+
+inv( ::SkewSymTensorValue{1,T}) where T = TensorValue{1,1,T}(inv(zero(T)))
+inv(a::SkewSymTensorValue{2}) = (typeof(a))(inv(a.data[1]))
+inv(a::SkewSymTensorValue{3,T,L}) where {T,L} = SkewSymTensorValue{3,T}( tfill(inv(zero(T)), Val(L)) )
 
 ###############################################################
 # Measure
@@ -811,6 +855,7 @@ Return the trace of a second order square tensor, defined by `Σᵢ vᵢᵢ` or 
   Meta.parse(str[1:(end-1)])
 end
 tr(::SymTracelessTensorValue{D,T}) where {D,T} = zero(T)
+tr(::SkewSymTensorValue{D,T}) where {D,T} = zero(T)
 tr(::MultiValue{Tuple{A,B}}) where {A,B} = throw(ArgumentError("Second order tensor is not square"))
 
 """
@@ -867,27 +912,30 @@ end
 end
 
 adjoint(a::AbstractSymTensorValue) = conj(a)
+adjoint(a::SkewSymTensorValue) = conj(a)
 
 @inline adjoint(a::AbstractSymTensorValue{D,T} where {D,T<:Real}) = transpose(a)
 
 transpose(a::AbstractSymTensorValue) = a
+transpose(a::SkewSymTensorValue) = -a
 
 ###############################################################
-# Symmetric part
+# Symmetric and Skew symmetric parts
 ###############################################################
 
 """
     symmetric_part(v::MultiValue{Tuple{D,D}})::AbstractSymTensorValue
 
 Return the symmetric part of second order tensor, that is `½(v + vᵀ)`.
-Return `v` if  `v isa AbstractSymTensorValue`.
+Return `v` if  `v isa AbstractSymTensorValue`, and the zero symmetric tensor if
+`v  isa SkewSymTensorValue`.
 """
 @generated function symmetric_part(v::MultiValue{Tuple{D,D},T}) where {D,T}
   iszero(D) && return :( zero(SymTensorValue{0,T}) )
   str = "("
   for j in 1:D
       for i in j:D
-          str *= "0.5*v[$i,$j] + 0.5*v[$j,$i], "
+          str *= "(v[$i,$j] + v[$j,$i])/2, "
       end
   end
   str *= ")"
@@ -895,24 +943,29 @@ Return `v` if  `v isa AbstractSymTensorValue`.
 end
 
 symmetric_part(v::AbstractSymTensorValue) = v
+symmetric_part(::SkewSymTensorValue{D,T}) where {D,T} = zero(SymTensorValue{D,T})
 
 """
-    skew_symmetric_part(v::MultiValue{Tuple{D,D}})::MultiValue{Tuple{D,D}}
+    skew_symmetric_part(v::MultiValue{Tuple{D,D}})::SkewSymTensorValue{D}
 
-Return the asymmetric part of second order tensor, that is `½(v - vᵀ)`.
-Return `v` if  `v isa AbstractSymTensorValue`.
+Return the asymmetric part of `v`, that is `½(v - vᵀ)`.
+Return the zero skew symmetric tensor if `v  isa AbstractSymTensorValue`, and
+`v` itself if  `v  isa SkewSymTensorValue`.
 """
 @generated function skew_symmetric_part(v::MultiValue{Tuple{D,D},T}) where {D,T}
-  iszero(D) && return :( zero(TensorValue{0,0,T}) )
+  iszero(D) && return :( zero(SkewSymTensorValue{0,T}) )
   str = "("
-  for j in 1:D
-      for i in 1:D
-          str *= "0.5*v[$i,$j] - 0.5*v[$j,$i], "
+  for i in 1:D
+    for j in i+1:D
+        str *= "(v[$i,$j] - v[$j,$i])/2, "
       end
   end
   str *= ")"
-  Meta.parse("TensorValue{D,D}($str)")
+  Meta.parse("SkewSymTensorValue{D}($str)")
 end
+
+skew_symmetric_part(::AbstractSymTensorValue{D,T}) where {D,T} = zero(SkewSymTensorValue{D,T})
+skew_symmetric_part(v::SkewSymTensorValue) = v
 
 ###############################################################
 # diag
@@ -920,6 +973,10 @@ end
 
 function LinearAlgebra.diag(a::MultiValue{Tuple{D,D},T}) where {D,T}
   VectorValue{D,T}((a[i,i] for i in 1:D)...)
+end
+
+function LinearAlgebra.diag(a::SkewSymTensorValue{D,T}) where {D,T}
+  zero(VectorValue{D,T})
 end
 
 ###############################################################

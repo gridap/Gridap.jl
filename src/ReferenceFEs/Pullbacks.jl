@@ -220,16 +220,14 @@ function evaluate!(
   cache, ::DoubleContraVariantPiolaMap, v_ref::Number, Jt::Number
 )
   _Jt = (1. / det(Jt)) * Jt
-  res = transpose(_Jt) ⋅ v_ref ⋅ _Jt
-  return symmetric_part(res)
+  return congruent_prod(v_ref, _Jt) # symmetry stable _Jtᵀ ⋅ v_ref ⋅ _Jt
 end
 
 function evaluate!(
   cache, ::InversePushforward{DoubleContraVariantPiolaMap}, v_phys::Number, Jt::Number
 )
   iJt = det(Jt) * pinvJt(Jt)
-  res = transpose(iJt) ⋅ v_phys ⋅ iJt
-  return symmetric_part(res)
+  return congruent_prod(v_phys, iJt) # symmetry stable iJtᵀ ⋅ v_ref ⋅ iJt
 end
 
 # DoubleCoVariantPiolaMap
@@ -240,11 +238,11 @@ function evaluate!(
   cache, ::DoubleCoVariantPiolaMap, v_ref::Number, Jt::Number
 )
   iJt = pinvJt(Jt)
-  return iJt ⋅ v_ref ⋅ transpose(iJt)
+  return congruent_prod(v_ref, transpose(iJt)) # symmetry stable iJt ⋅ v_ref ⋅ iJtᵀ
 end
 
 function evaluate!(
   cache, ::InversePushforward{DoubleCoVariantPiolaMap}, v_phys::Number, Jt::Number
 )
-  return Jt ⋅ v_phys ⋅ transpose(Jt)
+  return congruent_prod(v_ref, transpose(Jt)) # symmetry stable Jt ⋅ v_phys ⋅ Jtᵀ
 end

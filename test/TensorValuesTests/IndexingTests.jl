@@ -41,14 +41,17 @@ end
 
 s = SymTensorValue{2}(11,21,22)
 q = SymTracelessTensorValue{2}(11,21)
+K = SkewSymTensorValue{2}(21)
 t = TensorValue(convert(SMatrix{2,2,Int},s))
 p = TensorValue(convert(SMatrix{2,2,Int},q))
+r = TensorValue(convert(SMatrix{2,2,Int},K))
 
-@test size(s) == size(q) == (2,2)
-@test length(s) == length(q) == 4
-@test lastindex(s) == lastindex(q) == length(s)
+@test size(s) == size(q) == size(K) == (2,2)
+@test length(s) == length(q) == length(K) == 4
+@test lastindex(s) == lastindex(q) == lastindex(K) == length(s)
 @test s[end] == 22
 @test q[end] == -11
+@test K[begin] == K[end] == 0
 
 for (k,i) in enumerate(eachindex(t))
     @test s[i] == t[k]
@@ -56,9 +59,13 @@ end
 for (k,i) in enumerate(eachindex(p))
     @test q[i] == p[k]
 end
+for (k,i) in enumerate(eachindex(r))
+    @test K[i] == r[k]
+end
 
 @test s[2,1] == q[2,1] == 21
-@test s[2] == q[2] == 21
+@test s[2] == q[2] == -K[2] == 21
+@test s[3] == q[3] == K[3] == 21
 @test q[1] == -q[4]
 
 for (k,si) in enumerate(t)
@@ -66,6 +73,9 @@ for (k,si) in enumerate(t)
 end
 for (k,qi) in enumerate(p)
   @test qi == q[k]
+end
+for (k,Ki) in enumerate(r)
+  @test Ki == K[k]
 end
 
 v = @SMatrix zeros(2,3)
