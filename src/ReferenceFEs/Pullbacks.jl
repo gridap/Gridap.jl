@@ -219,24 +219,6 @@ function evaluate!(
   return v_phys ⋅ transpose(Jt)
 end
 
-# 4th Piola map
-struct BrokenPiolaMap <: Pushforward end
-
-function evaluate!(
-  cache, ::BrokenPiolaMap, v_ref::Number, Jt::Number
-)
-  idetJ = 1. / meas(Jt)
-  return v_ref * idetJ
-end
-
-function evaluate!(
-  cache, ::InversePushforward{BrokenPiolaMap}, v_phys::Number, Jt::Number
-)
-  detJ = meas(Jt)
-  return v_phys * detJ
-end
-
-
 # DoubleContraVariantPiolaMap
 
 struct DoubleContraVariantPiolaMap <: Pushforward end

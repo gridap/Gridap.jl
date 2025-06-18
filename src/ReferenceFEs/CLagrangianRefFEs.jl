@@ -4,8 +4,6 @@
 struct GradConformity <: Conformity end
 const H1Conformity = GradConformity
 
-Pushforward(::Type{Lagrangian}) = IdentityPiolaMap()
-
 function Conformity(reffe::GenericLagrangianRefFE{GradConformity},sym::Symbol)
   h1 = (:H1,:C0,:Hgrad)
   if sym == :L2
