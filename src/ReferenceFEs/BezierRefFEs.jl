@@ -1,9 +1,22 @@
+"""
+    struct Bezier  <: ReferenceFEName
+"""
 struct Bezier <: ReferenceFEName end
 
+"""
+    const bezier = Bezier()
+
+Singleton of the [`Bezier`](@ref) reference FE name.
+"""
 const bezier = Bezier()
 
 Pushforward(::Type{Bezier}) = IdentityPiolaMap()
 
+"""
+    struct BezierRefFE{D} <: LagrangianRefFE{D}
+
+The dof basis does not interpolate into the shape functions basis
+"""
 struct BezierRefFE{D} <: LagrangianRefFE{D}
   reffe::ReferenceFE{D}
   node_to_own_node::Vector{Int}
@@ -11,7 +24,14 @@ struct BezierRefFE{D} <: LagrangianRefFE{D}
   metadata
 end
 
+"""
+    BezierRefFE(::Type{T}, p::Polytope{D}, orders)
+
+`T` must be scalar.
+"""
 function BezierRefFE(::Type{T},p::Polytope{D},orders) where {D,T}
+  @notimplementedif T isa MultiValue "Only scalar valued BezierRefFE are implemented, got T=$T."
+
   reffe = LagrangianRefFE(T,p,orders)
   nodes = get_node_coordinates(reffe)
   prebasis = get_prebasis(reffe)
@@ -164,8 +184,10 @@ function _bernstein_term(
   args = (order,a...,i...)
   if is_simplex(p)
     _bernstein_term(args...)
-  else
+  elseif is_n_cube(p)
     _bernstein_term_n_cube(args...)
+  else
+    @unreachable "Bezier reference FEs only defined on simplices and n-cubes, got $p."
   end
 end
 

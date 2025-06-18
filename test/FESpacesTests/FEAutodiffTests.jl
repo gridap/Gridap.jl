@@ -236,4 +236,11 @@ test_array(jac_gridap_h,jac_forwdiff_h,≈)
 # jac_forwdiff_j = ForwardDiff.jacobian(f_,θ)
 # test_array(jac_gridap_j,jac_forwdiff_j,≈)
 
+reffex = ReferenceFE(lagrangian,VectorValue{2,Float64},1)
+Vx = FESpace(Ω,reffex)
+xh = interpolate(VectorValue(0.0,0.0),Vx)
+g(x) = uh(VectorValue(x[1],x[2]))
+f(x) = ∫(g∘(x))dΩ
+gradient(f,xh)
+
 end # module

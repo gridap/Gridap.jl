@@ -1,18 +1,26 @@
+"""
+"""
 abstract type MultiFieldStyle end
 
 """
-  The DoF ids of the collective space are the concatenation of the DoF ids of the
-  individual spaces.
+    struct ConsecutiveMultiFieldStyle <: MultiFieldStyle end
+
+The DoF ids of the collective space are the concatenation of the DoF ids of the
+individual spaces.
 """
 struct ConsecutiveMultiFieldStyle <: MultiFieldStyle end
 
 """
-  Similar to ConsecutiveMultiFieldStyle, but we keep the original DoF ids of the
-  individual spaces for better block assembly (see BlockSparseMatrixAssembler).
-  Takes three parameters: 
-   - NB: Number of assembly blocks
-   - SB: Size of each assembly block, as a Tuple.
-   - P : Permutation of the variables of the multifield space when assembling, as a Tuple.
+    struct BlockMultiFieldStyle{NB,SB,P} <: MultiFieldStyle end
+
+Similar to ConsecutiveMultiFieldStyle, but we keep the original DoF ids of the
+individual spaces for better block assembly (see [`BlockSparseMatrixAssembler`](@ref)).
+
+Takes three parameters:
+
+ - NB: Number of assembly blocks
+ - SB: Size of each assembly block, as a Tuple.
+ - P : Permutation of the variables of the multifield space when assembling, as a Tuple.
 """
 struct BlockMultiFieldStyle{NB,SB,P} <: MultiFieldStyle end
 
@@ -44,8 +52,49 @@ function BlockMultiFieldStyle(::BlockMultiFieldStyle{0,0,0},spaces)
   return BlockMultiFieldStyle(NB)
 end
 
+@inline get_block_parameters(::BlockMultiFieldStyle{NB,SB,P}) where {NB,SB,P} = (NB,SB,P)
+
+@inline function has_trivial_blocks(NB,SB,P)
+  NV = sum(SB)
+  return isequal(NB,NV) && isequal(P,ntuple(i -> i, NV))
+end
+
+function get_block_ranges(NB,SB,P)
+  ptrs = [1,SB...]
+  length_to_ptrs!(ptrs)
+  var_perm = [P...]
+  return [var_perm[ptrs[i]:ptrs[i+1]-1] for i in 1:NB]
+end
+
+function get_block_map(NB,SB,P)
+  NV = length(P)
+  ranges = get_block_ranges(NB,SB,P)
+  block_map = Vector{CartesianIndex{1}}(undef,NV)
+  for I in CartesianIndices((NB,))
+    block_map[ranges[I]] .= I
+  end
+  return block_map
+end
+
+function get_block_map(NBr,SBr,Pr,NBc,SBc,Pc)
+  NVr, NVc = length(Pr), length(Pc)
+  row_ranges = get_block_ranges(NBr,SBr,Pr)
+  col_ranges = get_block_ranges(NBc,SBc,Pc)
+  block_map = Matrix{CartesianIndex{2}}(undef,NVr,NVc)
+  for I in CartesianIndices((NBr,NBc))
+    i_range = row_ranges[I[1]]
+    j_range = col_ranges[I[2]]
+    for i in i_range, j in j_range
+      block_map[i,j] = I
+    end
+  end
+  return block_map
+end
+
 """
-  Not implemented yet. 
+    struct StridedMultiFieldStyle <: MultiFieldStyle end
+
+Not implemented yet.
 """
 struct StridedMultiFieldStyle <: MultiFieldStyle end
 
@@ -64,25 +113,28 @@ struct MultiFieldFESpace{MS<:MultiFieldStyle,CS<:ConstraintStyle,V} <: FESpace
   function MultiFieldFESpace(
     ::Type{V},
     spaces::Vector{<:SingleFieldFESpace},
-    multi_field_style::MultiFieldStyle) where V
-    @assert length(spaces) > 0
+    multi_field_style::MultiFieldStyle
+  ) where V
+    @assert !isempty(spaces)
+
+    is_constrained = any(has_constraints,spaces)
+    constraint_style = ifelse(is_constrained, Constrained(), UnConstrained())
 
     MS = typeof(multi_field_style)
-    if any( map(has_constraints,spaces) )
-      constraint_style = Constrained()
-    else
-      constraint_style = UnConstrained()
-    end
     CS = typeof(constraint_style)
     new{MS,CS,V}(V,spaces,multi_field_style,constraint_style)
   end
 end
 
 """
-    MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
+    MultiFieldFESpace(::Type{V}, spaces::Vector{<:SingleFieldFESpace})
+    MultiFieldFESpace(           spaces::Vector{<:SingleFieldFESpace};
+      style = ConsecutiveMultiFieldStyle()
+    )
 """
-function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace}; 
-                           style = ConsecutiveMultiFieldStyle())
+function MultiFieldFESpace(
+  spaces::Vector{<:SingleFieldFESpace}; style = ConsecutiveMultiFieldStyle()
+)
   Ts = map(get_dof_value_type,spaces)
   T  = typeof(*(map(zero,Ts)...))
   if isa(style,BlockMultiFieldStyle)
@@ -101,21 +153,49 @@ end
 MultiFieldStyle(::Type{MultiFieldFESpace{S,B,V}}) where {S,B,V} = S()
 MultiFieldStyle(f::MultiFieldFESpace) = MultiFieldStyle(typeof(f))
 
+"""
+    num_fields(f::MultiFieldFESpace)
+
+Number of spaces within the multi-field space.
+Defaults to 1 for SingleFieldFESpaces.
+"""
+num_fields(f::MultiFieldFESpace) = length(f.spaces)
+num_fields(f::SingleFieldFESpace) = 1
+
+Base.iterate(m::MultiFieldFESpace) = iterate(m.spaces)
+Base.iterate(m::MultiFieldFESpace,state) = iterate(m.spaces,state)
+Base.getindex(m::MultiFieldFESpace,field_id::Integer) = m.spaces[field_id]
+Base.length(m::MultiFieldFESpace) = length(m.spaces)
+
+function BlockArrays.blocks(f::MultiFieldFESpace{<:BlockMultiFieldStyle})
+  block_ranges = get_block_ranges(get_block_parameters(MultiFieldStyle(f))...)
+  block_spaces = map(block_ranges) do range
+    isone(length(range)) ? f[range[1]] : MultiFieldFESpace(f.spaces[range])
+  end
+  return block_spaces
+end
+
+function combine_fespaces(spaces::Vector{<:FESpace})
+  NB = length(spaces)
+  SB = Tuple(map(num_fields,spaces))
+  sf_spaces = vcat(map(split_fespace,spaces)...)
+  return MultiFieldFESpace(sf_spaces; style = BlockMultiFieldStyle(NB,SB))
+end
+
+split_fespace(space::FESpace) = [space]
+split_fespace(space::MultiFieldFESpace) = [space...]
+
 # Implementation of FESpace
 
 function FESpaces.get_triangulation(f::MultiFieldFESpace)
   s1 = first(f.spaces)
   trian = get_triangulation(s1)
-  @check all(map(i->trian===get_triangulation(i),f.spaces))
+  @check all(s -> trian === get_triangulation(s), f.spaces)
   trian
 end
 
 function FESpaces.num_free_dofs(f::MultiFieldFESpace)
-  n = 0
-  for U in f.spaces
-    n += num_free_dofs(U)
-  end
-  n
+  mapreduce(num_free_dofs,+,f.spaces;init=0)
 end
 
 function FESpaces.get_free_dof_ids(f::MultiFieldFESpace)
@@ -162,8 +242,7 @@ struct MultiFieldFEBasisComponent{B} <: FEBasis
     end
     B = typeof(single_field)
     cell_bs = get_data(single_field)
-    bsty = BasisStyle(single_field)
-    cell_basis = block_dofs(cell_bs,bsty,fieldid,nfields)
+    cell_basis = block_dofs(cell_bs,BasisStyle(single_field),fieldid,nfields)
     new{B}(cell_basis,single_field,fieldid,nfields)
   end
 end
@@ -407,12 +486,6 @@ function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace,trian::Triangulati
   lazy_map( (args...) -> +(args...)>0,  data...)
 end
 
-#function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace,trian::SkeletonTriangulation)
-#  plus = get_cell_isconstrained(f,trian.plus)
-#  minus = get_cell_isconstrained(f,trian.minus)
-#  lazy_map((l,r)-> l||r,plus,minus)
-#end
-
 function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace)
   msg = """\n
   This method does not make sense for multi-field
@@ -438,12 +511,6 @@ function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace,trian::Triangulatio
   lazy_map( (args...) -> +(args...)>0,  data...)
 end
 
-#function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace,trian::SkeletonTriangulation)
-#  plus = get_cell_is_dirichlet(f,trian.plus)
-#  minus = get_cell_is_dirichlet(f,trian.minus)
-#  lazy_map((l,r)-> l||r,plus,minus)
-#end
-
 function FESpaces.get_cell_constraints(f::MultiFieldFESpace)
   msg = """\n
   This method does not make sense for multi-field
@@ -467,12 +534,6 @@ function FESpaces.get_cell_constraints(f::MultiFieldFESpace,trian::Triangulation
   lazy_map(BlockMap(blockshape,blockindices),active_block_data...)
 end
 
-#function FESpaces.get_cell_constraints(f::MultiFieldFESpace,trian::SkeletonTriangulation)
-#  cell_values_plus = get_cell_constraints(f,trian.plus)
-#  cell_values_minus = get_cell_constraints(f,trian.minus)
-#  lazy_map(BlockMap((2,2),[(1,1),(2,2)]),cell_values_plus,cell_values_minus)
-#end
-
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace)
   msg = """\n
   This method does not make sense for multi-field
@@ -489,12 +550,6 @@ end
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::Triangulation)
   get_cell_dof_ids(f,trian,MultiFieldStyle(f))
 end
-
-#function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::SkeletonTriangulation)
-#  cell_values_plus = get_cell_dof_ids(f,trian.plus)
-#  cell_values_minus = get_cell_dof_ids(f,trian.minus)
-#  lazy_map(BlockMap(2,[1,2]),cell_values_plus,cell_values_minus)
-#end
 
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,::Triangulation,::MultiFieldStyle)
   @notimplemented
@@ -558,43 +613,6 @@ function Arrays.evaluate!(cache,k::Broadcasting{typeof(_sum_if_first_positive)},
   end
   r
 end
-
-# API for multi field case
-
-"""
-    num_fields(f::MultiFieldFESpace)
-"""
-function num_fields(f::MultiFieldFESpace)
-  length(f.spaces)
-end
-
-Base.iterate(m::MultiFieldFESpace) = iterate(m.spaces)
-
-Base.iterate(m::MultiFieldFESpace,state) = iterate(m.spaces,state)
-
-Base.getindex(m::MultiFieldFESpace,field_id::Integer) = m.spaces[field_id]
-
-Base.length(m::MultiFieldFESpace) = length(m.spaces)
-
-# API for the ConsecutiveMultiFieldStyle
-import Gridap.FESpaces: interpolate
-import Gridap.FESpaces: interpolate_everywhere
-import Gridap.FESpaces: interpolate_dirichlet
-
-@deprecate(
-  interpolate(fs::MultiFieldFESpace, object),
-  interpolate(object, fs::MultiFieldFESpace)
-)
-
-@deprecate(
-  interpolate_everywhere(fs::MultiFieldFESpace, object),
-  interpolate_everywhere(object, fs::MultiFieldFESpace)
-)
-
-@deprecate(
-  interpolate_dirichlet(fs::MultiFieldFESpace, object),
-  interpolate_dirichlet(object, fs::MultiFieldFESpace)
-)
 
 """
 The resulting MultiFieldFEFunction is in the space (in particular it fulfills Dirichlet BCs

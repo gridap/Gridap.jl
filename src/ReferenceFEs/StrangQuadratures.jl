@@ -4,12 +4,15 @@
 
 Strang quadrature rule for simplices.
 
-# Constructor: 
+# Constructor:
 
     Quadrature(p::Polytope,strang,degree::Integer;T::Type{<:AbstractFloat}=Float64)
 """
 struct Strang <: QuadratureName end
 
+"""
+    const strang = Strang()
+"""
 const strang = Strang()
 
 function Quadrature(p::Polytope,::Strang,degree::Integer;T::Type{<:AbstractFloat}=Float64)

@@ -192,6 +192,8 @@ function compute_cell_space(cellfe::CellFE,trian::Triangulation)
   )
 end
 
+"""
+"""
 function compute_cell_space(cell_fe,trian::Triangulation)
   cell_shapefuns, cell_dof_basis, d1, d2 = _compute_cell_space(cell_fe)
   SingleFieldFEBasis(cell_shapefuns,trian,TestBasis(),d1), CellDof(cell_dof_basis,trian,d2)
@@ -282,12 +284,8 @@ function _convert_dirichlet_components(dirichlet_tags::AbstractArray,dirichlet_c
   dirichlet_components
 end
 
-function _convert_dirichlet_components(dirichlet_tags::Integer,dirichlet_components)
-  dirichlet_components==nothing ? nothing : [dirichlet_components,]
-end
-
-function _convert_dirichlet_components(dirichlet_tags::AbstractString,dirichlet_components)
-  dirichlet_components==nothing ? nothing : [dirichlet_components,]
+function _convert_dirichlet_components(dirichlet_tags::Union{Integer,AbstractString},dirichlet_components)
+  ifelse(isnothing(dirichlet_components),nothing,[dirichlet_components,])
 end
 
 function _generate_face_to_own_dofs(

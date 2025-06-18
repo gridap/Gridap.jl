@@ -123,6 +123,8 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 
 ## BezierRefFE
 
+@test_throws ErrorException BezierRefFE(Float64,WEDGE,3) # only n-cubes & simplices
+
 tri = BezierRefFE(Float64,TRI,(3,3))
 nodes = get_node_coordinates(tri) * 5
 ϕ = get_shapefuns(tri)

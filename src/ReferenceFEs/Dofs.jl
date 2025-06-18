@@ -1,3 +1,10 @@
+"""
+    abstract type Dof <: Map
+
+Abstract type for a degree of freedom, seen as a linear form over a functional
+space (typically a polynomial space). The domain is thus a [`Field`](@ref) set
+and the range the scalar set.
+"""
 abstract type Dof <: Map end
 
 """
@@ -75,7 +82,7 @@ Represents { η = σ∘F : σ ∈ Σ }, evaluated as η(φ) = σ(F(φ,args...)) 
 Intended combinations would be:
 
 - Σ ⊂ V* a dof basis in the physical domain and F* : V̂ -> V is a pushforward map.
-- ̂Σ ⊂ V̂* a dof basis in the reference domain and (F*)⁻¹ : V -> V̂ is an inverse pushforward map.
+- Σ̂ ⊂ V̂* a dof basis in the reference domain and (F*)⁻¹ : V -> V̂ is an inverse pushforward map.
 
 """
 struct MappedDofBasis{T<:Dof,MT,BT,A} <: AbstractVector{T}
@@ -110,7 +117,7 @@ function Arrays.evaluate!(cache, b::MappedDofBasis, fields)
 end
 
 """
-    test_dof(dof,field,v;cmp::Function=(==))
+    test_dof(dof,field,v; cmp::Function=(==))
 
 Test that the `Dof` interface is properly implemented
 for object `dof`. It also checks if the object `dof`
@@ -121,6 +128,11 @@ function test_dof(dof::Dof,field,v;cmp::Function=(==))
   _test_dof(dof,field,v,cmp)
 end
 
+"""
+    test_dof_array(dofs::AbstractArray{<:Dof}, field, v; cmp::Function=(==))
+
+Like [`test_dof`](@ref) for a DoF basis.
+"""
 function test_dof_array(dof::AbstractArray{<:Dof},field,v;cmp::Function=(==))
   _test_dof(dof,field,v,cmp)
 end

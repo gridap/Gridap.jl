@@ -6,6 +6,26 @@ Fields are evaluated at vectors of `Point` objects.
 """
 const Point{D,T} = VectorValue{D,T}
 
+
+# Old out of date documention
+#
+# Moreover, if the [`gradient(f)`](@ref) is not provided, a default implementation that uses the
+# following functions will be used.
+#
+# - [`evaluate_gradient!(cache,f,x)`](@ref)
+# - [`return_gradient_cache(f,x)`](@ref)
+#
+# Higher order derivatives require the implementation of
+#
+# - [`evaluate_hessian!(cache,f,x)`](@ref)
+# - [`return_hessian_cache(f,x)`](@ref)
+#
+# These four methods are only designed to be called by the default implementation of [`field_gradient(f)`](@ref) and thus
+# cannot be assumed that they are available for an arbitrary field. For this reason, these functions are not
+# exported. The general way of evaluating a gradient of a field is to
+# build the gradient with [`gradient(f)`](@ref) and evaluating the resulting object. For evaluating
+# the hessian, use two times `gradient`.
+
 """
     abstract type Field <: Map
 
@@ -32,25 +52,6 @@ A `Field` can also provide its gradient if the following function is implemented
 Higher derivatives can be obtained if the resulting object also implements this method.
 
 
-The next paragraph is out-of-date:
-
-Moreover, if the [`gradient(f)`](@ref) is not provided, a default implementation that uses the
-following functions will be used.
-
-- [`evaluate_gradient!(cache,f,x)`](@ref)
-- [`return_gradient_cache(f,x)`](@ref)
-
-Higher order derivatives require the implementation of
-
-- [`evaluate_hessian!(cache,f,x)`](@ref)
-- [`return_hessian_cache(f,x)`](@ref)
-
-These four methods are only designed to be called by the default implementation of [`field_gradient(f)`](@ref) and thus
-cannot be assumed that they are available for an arbitrary field. For this reason, these functions are not
-exported. The general way of evaluating a gradient of a field is to
-build the gradient with [`gradient(f)`](@ref) and evaluating the resulting object. For evaluating
-the hessian, use two times `gradient`.
-
 The interface can be tested with
 
 - [`test_field`](@ref)
@@ -67,8 +68,18 @@ evaluate!(c,f::Field,x::Point) = @abstractmethod
 
 # Differentiation
 
+"""
+    function gradient end
+
+Abstract gradient, see [`Field`](@ref).
+"""
 function gradient end
 const ∇ = gradient
+"""
+    ∇∇(f) = gradient(gradient(f))
+
+hessian of f
+"""
 ∇∇(f) = gradient(gradient(f))
 
 gradient(f,::Val{1}) = ∇(f)
@@ -79,8 +90,17 @@ evaluate!(cache,::Broadcasting{typeof(∇∇)},a::Field) = ∇∇(a)
 lazy_map(::Broadcasting{typeof(∇)},a::AbstractArray{<:Field}) = lazy_map(∇,a)
 lazy_map(::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field}) = lazy_map(∇∇,a)
 
+"""
+    push_∇(∇a::Field, ϕ::Field) = pinvJt(∇(ϕ))⋅∇a
+
+Pushforward of `∇a` by the mapping `ϕ`, or covariant Piola transform.
+"""
 push_∇(∇a::Field,ϕ::Field) = pinvJt(∇(ϕ))⋅∇a
 
+"""
+    function pinvJt(Jt::MultiValue{Tuple{D,D}}) = inv(Jt)
+    function pinvJt(Jt::MultiValue{Tuple{D1,D2}}) = transpose(inv(Jt⋅transpose(J))⋅Jt)
+"""
 function pinvJt(Jt::MultiValue{Tuple{D,D}}) where D
   inv(Jt)
 end
@@ -91,6 +111,8 @@ function pinvJt(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
   transpose(inv(Jt⋅J)⋅Jt)
 end
 
+"""
+"""
 function push_∇∇(∇∇a::Field,ϕ::Field)
   @notimplemented """\n
   Second order derivatives of quantities defined in the reference domain not implemented yet.
@@ -234,10 +256,20 @@ gradient(z::ZeroField) = ZeroField(gradient(z.field))
 # is assumed to implement the Field interface.
 # I think it is conceptually better to have ConstantField as struct otherwise we break the invariant
 # "for any object wrapped in a GenericField we can assume that it implements the Field interface"
+"""
+    struct ConstantField{T<:Number} <: Field
+
+Constant field with value of type `T`.
+"""
 struct ConstantField{T<:Number} <: Field
   value::T
 end
 
+"""
+    constant_field(value) = ConstantField(value)
+
+See [`ConstantField`](@ref).
+"""
 constant_field(a) = ConstantField(a)
 
 Base.zero(::Type{ConstantField{T}}) where T = ConstantField(zero(T))
@@ -437,6 +469,43 @@ for op in (:*,:⋅,:⊙,:⊗)
   end
 end
 
+# Hessian (∇∇) of sum
+
+for op in (:+,:-)
+  @eval begin
+    function ∇∇(a::OperationField{typeof($op)})
+      f = a.fields
+      g = map( ∇∇, f)
+      $op(g...)
+    end
+  end
+end
+
+# Hessian (∇∇) of product
+
+function product_rule_hessian(fun,f1,f2,∇f1,∇f2,∇∇f1,∇∇f2)
+  msg = "Product rule not implemented for product $fun between types $(typeof(f1)) and $(typeof(f2))"
+  @notimplemented msg
+end
+
+function product_rule_hessian(::typeof(*),f1::Real,f2::Real,∇f1,∇f2,∇∇f1,∇∇f2)
+  ∇∇f1*f2 + ∇∇f2*f1 + ∇f1⊗∇f2 + ∇f2⊗∇f1
+end
+
+for op in (:*,)
+  @eval begin
+    function ∇∇(a::OperationField{typeof($op)})
+      f = a.fields
+      @notimplementedif length(f) != 2
+      f1, f2 = f
+      g1, g2 = map(gradient, f)
+      h1, h2 = map(∇∇, f)
+      prod_rule_hess(F1,F2,G1,G2,H1,H2) = product_rule_hessian($op,F1,F2,G1,G2,H1,H2)
+      Operation(prod_rule_hess)(f1,f2,g1,g2,h1,h2)
+    end
+  end
+end
+
 # Chain rule
 function gradient(f::OperationField{<:Field})
   a = f.op
@@ -460,7 +529,10 @@ evaluate!(cache,::Broadcasting{typeof(∘)},f::Field,g::Field) = f∘g
 # Integration
 
 """
-Integration of a given field in the "physical" space
+    integrate(a::Field,x::AbstractVector{<:Point},w::AbstractVector{<:Real})
+
+Numerical integration of a given field in the "physical" space. `a` is the field,
+`x` the quadrature points and `w` the quadrature weights.
 """
 function integrate(a::Field,x::AbstractVector{<:Point},w::AbstractVector{<:Real})
   cache = return_cache(integrate,a,x,w)
@@ -468,7 +540,10 @@ function integrate(a::Field,x::AbstractVector{<:Point},w::AbstractVector{<:Real}
 end
 
 """
-Integration of a given field in the "reference" space
+    integrate(a::Field,q::AbstractVector{<:Point},w::AbstractVector{<:Real},j::Field)
+
+Numerical integration of a given field in the "reference" space. `j` is the
+Jacobian field of the geometrical mapping .
 """
 function integrate(a::Field,q::AbstractVector{<:Point},w::AbstractVector{<:Real},j::Field)
   cache = return_cache(integrate,a,q,w,j)
@@ -504,6 +579,12 @@ function evaluate!(cache,::typeof(integrate),a,q,w,j)
   evaluate!(ck,IntegrationMap(),aq,w,jq)
 end
 
+"""
+    struct IntegrationMap <: Map
+
+[`Map`](@ref) for low level [`integrate`](@ref), that is computation of
+vectorized discrete quadratures.
+"""
 struct IntegrationMap <: Map end
 
 function evaluate!(cache,k::IntegrationMap,ax::AbstractVector,w)
@@ -661,12 +742,18 @@ function test_field(f::Field, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
   true
 end
 
+"""
+    struct VoidFieldMap <: Map
+"""
 struct VoidFieldMap <: Map
   isvoid::Bool
 end
 
 Arrays.evaluate!(cache,k::VoidFieldMap,b) = VoidField(b,k.isvoid)
 
+"""
+    struct VoidField{F} <: Field
+"""
 struct VoidField{F} <: Field
   field::F
   isvoid::Bool
@@ -715,12 +802,18 @@ function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{VoidFieldMap}},x::Abstr
   lazy_map(evaluate,a.args[1],x)
 end
 
+"""
+    struct VoidBasisMap <: Map
+"""
 struct VoidBasisMap <: Map
   isvoid::Bool
 end
 
 Arrays.evaluate!(cache,k::VoidBasisMap,b) = VoidBasis(b,k.isvoid)
 
+"""
+    struct VoidBasis{T,N,A} <: AbstractArray{T,N}
+"""
 struct VoidBasis{T,N,A} <: AbstractArray{T,N}
   basis::A
   isvoid::Bool

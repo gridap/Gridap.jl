@@ -11,10 +11,11 @@ The polynomial bases all subtype [`PolynomialBasis`](@ref), which subtypes
 or second derivatives.
 
 Constructors for commonly used bases (see the documentation for the spaces definitions):
-- ℚ spaces: `[Polynomial]Basis(Val(D), V, order)`
-- ℙ spaces: `[Polynomial]Basis(..., Polynomials._p_filter)`
-- ℚₙ\\ℚₙ₋₁: `[Polynomial]Basis(..., Polynomials._qh_filter)`
-- ℙₙ\\ℙₙ₋₁: `[Polynomial]Basis(..., Polynomials._ph_filter)`
+- ℚ  spaces: `[Polynomial]Basis(Val(D), V, order)`
+- ℙ  spaces: `[Polynomial]Basis(..., Polynomials._p_filter)`
+- 𝕊r spaces: `[Polynomial]Basis(..., Polynomials._ser_filter)`
+- ℚ̃  spaces: `[Polynomial]Basis(..., Polynomials._qh_filter)`
+- ℙ̃  spaces: `[Polynomial]Basis(..., Polynomials._ph_filter)`
 - ℕ𝔻(△): [`PGradBasis`](@ref)`(Val(D), T, order)`
 - ℕ𝔻(□): [`QGradBasis`](@ref)`(...)`
 - ℝ𝕋(△): [`PCurlGradBasis`](@ref)`(...)`

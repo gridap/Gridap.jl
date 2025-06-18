@@ -20,6 +20,7 @@ References:
 """
 function ArnoldWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
   @assert p == TRI "ArnoldWinther Reference FE only defined for TRIangles"
+  @assert order == 2 "ArnoldWinther Reference FE only defined for order 2"
   conforming = true # TODO: Make this an argument
 
   VT = SymTensorValue{2,T}
@@ -56,10 +57,6 @@ function ArnoldWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
   end
 
   return MomentBasedReferenceFE(ArnoldWinther(),p,prebasis,moments,DivConformity())
-end
-
-function ReferenceFE(p::Polytope,::ArnoldWinther, order)
-  ArnoldWintherRefFE(Float64,p,order)
 end
 
 function ReferenceFE(p::Polytope,::ArnoldWinther,::Type{T}, order) where T

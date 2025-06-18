@@ -1,16 +1,20 @@
 
 """
-  struct TensorProduct <: QuadratureName
+    struct TensorProduct <: QuadratureName
 
 Tensor product quadrature rule for n-cubes, obtained as the
 tensor product of 1d Gauss-Legendre quadratures.
 
-# Constructor: 
+# Constructor:
 
-    Quadrature(p::Polytope{D},tensor_product,degrees::Union{Integer,NTuple{D,Integer}};T::Type=Float64) where D
+    Quadrature(p::Polytope{D}, tensor_product, degrees::Integer; T::Type=Float64)
+    Quadrature(p::Polytope{D}, tensor_product, degrees::NTuple{D,Integer}; T::Type=Float64)
 """
 struct TensorProduct <: QuadratureName end
 
+"""
+    const tensor_product = TensorProduct()
+"""
 const tensor_product = TensorProduct()
 
 function Quadrature(p::Polytope,::TensorProduct,degrees; T::Type=Float64)
@@ -36,11 +40,11 @@ function Quadrature(p::Polytope,::TensorProduct,quadratures::Vector{<:Quadrature
   @assert is_n_cube(p) "Tensor product quadrature rule only for n-cubes."
   D = num_dims(p)
   @assert length(quadratures) == D
-  
+
   coords_1d = map(q -> map(xi -> xi[1], get_coordinates(q)), quadratures)
   weights_1d = map(get_weights, quadratures)
   coords, weights = _tensor_product(coords_1d, weights_1d)
-  
+
   names_1d = join(map(get_name, quadratures)," \n - ")
   GenericQuadrature(coords,weights,"Tensor product of 1d quadratures given by: \n "*names_1d)
 end
@@ -54,7 +58,7 @@ function _tensor_product(
   D = length(d_to_xs)
   d_to_n = map(length, d_to_xs)
   cis = CartesianIndices(tuple(d_to_n...))
-  
+
   n = prod(d_to_n)
   xs = Vector{Point{D,T}}(undef,n)
   ws = Vector{W}(undef,n)
@@ -67,7 +71,7 @@ function _tensor_product!(xs,ws,d_to_xs,d_to_ws,cis)
   T = eltype(P)
   W = eltype(ws)
   D = length(P)
-  
+
   k = 1
   z = zero(T)
   p = zeros(T,D)

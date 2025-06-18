@@ -1,5 +1,8 @@
 
 """
+    struct DomainContribution <: GridapType
+
+Struct to gather contributions from one or several domain(s) ([`Triangulation`](@ref)s).
 """
 struct DomainContribution <: GridapType
   dict::OrderedDict{Triangulation,AbstractArray} # ordered so that iteration is deterministic (#1002)
@@ -7,10 +10,23 @@ end
 
 DomainContribution() = DomainContribution(OrderedDict{Triangulation,AbstractArray}())
 
+"""
+    num_domains(a::DomainContribution)
+"""
 num_domains(a::DomainContribution) = length(a.dict)
 
+"""
+    get_domains(a::DomainContribution)
+"""
 get_domains(a::DomainContribution) = keys(a.dict)
 
+Base.isempty(a::DomainContribution) = iszero(length(a.dict))
+
+"""
+    get_contribution(a::DomainContribution, trian::Triangulation)
+
+Returns the array of contributions on `trian` in `a`.
+"""
 function get_contribution(a::DomainContribution,trian::Triangulation)
   if haskey(a.dict,trian)
      return a.dict[trian]
@@ -23,6 +39,9 @@ end
 
 Base.getindex(a::DomainContribution,trian::Triangulation) = get_contribution(a,trian)
 
+"""
+    add_contribution!(a::DomainContribution, trian::Triangulation, b::AbstractArray, op=+)
+"""
 function add_contribution!(a::DomainContribution,trian::Triangulation,b::AbstractArray,op=+)
 
   S = eltype(b)
@@ -35,23 +54,22 @@ function add_contribution!(a::DomainContribution,trian::Triangulation,b::Abstrac
     """
   end
 
-  if length(a.dict) > 0
-    T = eltype(first(values(a.dict)))
-    if T <: AbstractMatrix || S<:(ArrayBlock{A,2} where A)
+  if !isempty(a)
+    if is_matrix_contribution(a)
       @assert S<:AbstractMatrix || S<:(ArrayBlock{A,2} where A) """\n
       You are trying to add a contribution with eltype $(S) to a DomainContribution that
       stores cell-wise matrices.
 
       Make sure that you are defining the terms in your weak form correctly.
       """
-    elseif T <: AbstractVector || S<:(ArrayBlock{A,1} where A)
+    elseif is_vector_contribution(a)
       @assert S<:AbstractVector || S<:(ArrayBlock{A,1} where A) """\n
       You are trying to add a contribution with eltype $(S) to a DomainContribution that
       stores cell-wise vectors.
 
       Make sure that you are defining the terms in your weak form correctly.
       """
-    elseif T <: Number
+    elseif is_scalar_contribution(a)
       @assert S<:Number """\n
       You are trying to add a contribution with eltype $(S) to a DomainContribution that
       stores cell-wise numbers.
@@ -71,6 +89,21 @@ function add_contribution!(a::DomainContribution,trian::Triangulation,b::Abstrac
     end
   end
   a
+end
+
+function is_scalar_contribution(a::DomainContribution)
+  T = eltype(first(values(a.dict)))
+  return T <: Number
+end
+
+function is_vector_contribution(a::DomainContribution)
+  T = eltype(first(values(a.dict)))
+  return (T <: AbstractVector) || (T <: ArrayBlock{A,1} where A)
+end
+
+function is_matrix_contribution(a::DomainContribution)
+  T = eltype(first(values(a.dict)))
+  return (T <: AbstractMatrix) || (T <: ArrayBlock{A,2} where A)
 end
 
 Base.sum(a::DomainContribution)= sum(map(sum,values(a.dict)))
@@ -113,6 +146,11 @@ function get_array(a::DomainContribution)
   a.dict[first(keys(a.dict))]
 end
 
+"""
+    abstract type Measure <: GridapType
+
+For measures to integrate against, see [`integrate`](@ref).
+"""
 abstract type Measure <: GridapType end
 
 function integrate(f,b::Measure)
@@ -152,9 +190,13 @@ function integrate(f,b::GenericMeasure)
 end
 
 """
-  Composite Measure
+    struct CompositeMeasure <: Measure
+      ttrian :: Triangulation
+      itrian :: Triangulation
+      quad   :: CellQuadrature
+    end
 
-  Measure such that the integration and target triangulations are different. 
+  Measure such that the integration and target triangulations are different.
 
   - ttrian: Target triangulation, where the domain contribution lives.
   - itrian: Integration triangulation, where the integration takes place.

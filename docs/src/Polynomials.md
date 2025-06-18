@@ -147,7 +147,7 @@ To note, there is ``ℙ_K = ℙ^1_K = ℚ^1_K``.
 The serendipity space, commonly used for serendipity finite elements on n-cubes,
 are defined by
 ```math
-\mathbb{S}r^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^α \quad\big|\quad 0 ≤
+𝕊r^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^α \quad\big|\quad 0 ≤
     α_1, α_2, \dots, α_D  ≤ K;\quad
     ∑_{d=1}^D α_d\;\mathbb{1}_{[2,K]}(α_d)  ≤ K \quad\big\}
 ```
@@ -226,13 +226,13 @@ used in the P/Q spaces definitions.
 
 The following example filters can be used to define associated polynomial spaces:
 
-| space       | filter                                                       | possible family                       |
-| :-----------| :------------------------------------------------------------| :------------------------------------ |
-| ℚᴰ          | `_q_filter(e,order) = maximum(e) <= order`                   | All                                   |
-| ℚᴰₙ\\ℚᴰₙ₋₁  | `_qh_filter(e,order) = maximum(e) == order`                  | [`Monomial`](@ref)                    |
-| ℙᴰ          | `_p_filter(e,order) = sum(e) <= order`                       | All                                   |
-| ℙᴰₙ\\ℙᴰₙ₋₁  | `_ph_filter(e,order) = sum(e) == order`                      | [`Monomial`](@ref)                    |
-| 𝕊rᴰₙ        | `_ser_filter(e,order) = sum( i for i in e if i>1 ) <= order` | [`hierarchical`](@ref isHierarchical) |
+| space | filter                                                       | possible family                       |
+| :-----| :------------------------------------------------------------| :------------------------------------ |
+| ℚᴰ    | `_q_filter(e,order) = maximum(e) <= order`                   | All                                   |
+| ℚ̃ᴰₙ   | `_qh_filter(e,order) = maximum(e) == order`                  | [`Monomial`](@ref)                    |
+| ℙᴰ    | `_p_filter(e,order) = sum(e) <= order`                       | All                                   |
+| ℙ̃ᴰₙ   | `_ph_filter(e,order) = sum(e) == order`                      | [`Monomial`](@ref)                    |
+| 𝕊rᴰₙ  | `_ser_filter(e,order) = sum( i for i in e if i>1 ) <= order` | [`hierarchical`](@ref isHierarchical) |
 
 ## Types for polynomial families
 

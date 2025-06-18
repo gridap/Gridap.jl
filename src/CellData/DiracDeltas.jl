@@ -7,8 +7,23 @@ struct GenericDiracDelta{D,Dt,S<:DiracDeltaSupportType} <: GridapType
   dΓ::Measure
 end
 
+"""
+    const DiracDelta{D} = GenericDiracDelta{D,D,IsGridEntity}
+"""
 const DiracDelta{D} = GenericDiracDelta{D,D,IsGridEntity}
 
+"""
+    DiracDelta{D}(model::DiscreteModel, degree; tags)
+    DiracDelta{0}(model::DiscreteModel; tags)
+    DiracDelta{D}(model::DiscreteModel, labeling::FaceLabeling, degree; tags)
+    DiracDelta{0}(model::DiscreteModel, labeling::FaceLabeling; tags)
+    DiracDelta{D}(model::DiscreteModel, face_to_bgface::AbstractVector{<:Integer}, degree)
+    DiracDelta{D}(model::DiscreteModel, bgface_to_mask::AbstractVector{Bool}, degree)
+    DiracDelta(   model::DiscreteModel{D}, p::Point{D,T})
+    DiracDelta(   model::DiscreteModel{D}, pvec::Vector{Point{D,T}})
+
+where `degree` isa `Integer`.
+"""
 function DiracDelta{D}(
   model::DiscreteModel,
   face_to_bgface::AbstractVector{<:Integer},
@@ -117,4 +132,29 @@ function DiracDelta(model::DiscreteModel{D}, pvec::Vector{Point{D,T}}) where {D,
   trianv = view(trian,cell_ids)
   pmeas = Measure(CellQuadrature(pquad,points,weights_x_cell,trianv,PhysicalDomain(),PhysicalDomain()))
   GenericDiracDelta{0,D,NotGridEntity}(trianv,pmeas)
+end
+
+
+function DiracDelta(trian::Triangulation{Dt}, pvec::Vector{Point{D,T}}) where {Dt,D,T}
+  cell_to_pindices = _cell_to_pindices(pvec,trian)
+  cell_ids = collect(keys(cell_to_pindices))
+  cell_points = collect(values(cell_to_pindices))
+  points = map(i->pvec[cell_points[i]], 1:length(cell_ids))
+  weights_x_cell = Fill.(one(T),length.(cell_points))
+  pquad = map(i -> GenericQuadrature(points[i],weights_x_cell[i]), 1:length(cell_ids))
+  trianv = view(trian,cell_ids)
+  pmeas = Measure(CellQuadrature(pquad,points,weights_x_cell,trianv,PhysicalDomain(),PhysicalDomain()))
+  GenericDiracDelta{0,Dt,NotGridEntity}(trianv,pmeas)
+end
+
+
+function DiracDelta(trian::Triangulation{Dt}, p::Point{D,T}) where {Dt,D,T}    
+  cache = _point_to_cell_cache(KDTreeSearch(),trian)
+  cell = _point_to_cell!(cache, p)
+  trianv = view(trian,[cell])
+  point = [p]
+  weight = [one(T)]
+  pquad = GenericQuadrature(point,weight)
+  pmeas = Measure(CellQuadrature([pquad],[pquad.coordinates],[pquad.weights],trianv,PhysicalDomain(),PhysicalDomain()))
+  GenericDiracDelta{0,Dt,NotGridEntity}(trianv,pmeas)
 end

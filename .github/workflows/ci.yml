@@ -15,9 +15,9 @@ jobs:
       fail-fast: false
       matrix: # Main tests for linux
         version:
-          - '1.8'
           - '1.9'
           - '1.10'
+          - '1.11'
         os:
           - ubuntu-latest
         arch:

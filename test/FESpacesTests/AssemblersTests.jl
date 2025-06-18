@@ -160,6 +160,27 @@ A,b = assemble_matrix_and_vector(assem,data)
 x = A\b
 @test x ≈ b
 
+# Multiple data contributions
+
+data = FESpaces.collect_and_merge_cell_matrix_and_vector(
+  (U,V,mat_contribs,vec_contribs,uhd),
+  (U,V,mat_contribs,vec_contribs,uhd)
+)
+A, b = assemble_matrix_and_vector(assem,data)
+
+data = FESpaces.collect_and_merge_cell_matrix(
+  (U,V,mat_contribs),
+  (U,V,mat_contribs)
+)
+A = assemble_matrix(assem,data)
+
+data = FESpaces.collect_and_merge_cell_vector(
+  (V,vec_contribs),
+  (V,vec_contribs)
+)
+b = assemble_vector(assem,data)
+
+########################################
 
 mutable struct MyArrayCounter
   count

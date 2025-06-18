@@ -53,11 +53,8 @@ end
 function CellQuadrature(trian::Triangulation,
                         cell_quad::AbstractVector{<:Quadrature},
                         dds::DomainStyle,ids::DomainStyle)
-  ctype_to_quad, cell_to_ctype = compress_cell_data(cell_quad)
-  ctype_to_point = map(get_coordinates,ctype_to_quad)
-  ctype_to_weight = map(get_weights,ctype_to_quad)
-  cell_point = expand_cell_data(ctype_to_point,cell_to_ctype)
-  cell_weight = expand_cell_data(ctype_to_weight,cell_to_ctype)
+  cell_point = lazy_map(get_coordinates,cell_quad)
+  cell_weight = lazy_map(get_weights,cell_quad)
   CellQuadrature(cell_quad,cell_point,cell_weight,trian,dds,ids)
 end
 
@@ -98,12 +95,12 @@ function CellQuadrature(trian::AppendedTriangulation,quad::Quadrature;
                  integration_domain_style=integration_domain_style)
 end
 
-@deprecate( 
+@deprecate(
   CellQuadrature(trian::Triangulation,degree,ids::DomainStyle),
   CellQuadrature(trian::Triangulation,degree;data_domain_style=ReferenceDomain(),integration_domain_style=ids)
 )
 
-@deprecate( 
+@deprecate(
   CellQuadrature(trian::AppendedTriangulation,degree1,degree2,ids::DomainStyle),
   CellQuadrature(trian::AppendedTriangulation,degree1,degree2;data_domain_style=ReferenceDomain(),integration_domain_style=ids)
 )
@@ -172,6 +169,16 @@ function integrate(f::CellField,quad::CellQuadrature)
   end
 end
 
+"""
+    integrate(integrand, dΩ::Measure)
+    integrate(integrand, dΩ::CellQuadrature)
+    (integrand::Integrand) * dΩ
+    ∫(quantity) * dΩ
+    ∫(quantity)dΩ
+
+High level integral definition API, the `integrand` can be created using
+[`∫`](@ref Integrand).
+"""
 function integrate(a,quad::CellQuadrature)
   b = CellField(a,quad.trian,quad.data_domain_style)
   integrate(b,quad)
@@ -179,6 +186,12 @@ end
 
 # Some syntactic sugar
 
+"""
+    struct Integrand object end
+    ∫(object)
+
+Generic placeholder for a quantity `object` to be integrated against a [`CellQuadrature`](@ref).
+"""
 struct Integrand
   object
 end
@@ -190,6 +203,13 @@ const ∫ = Integrand
 
 # Cell measure
 
+"""
+    get_cell_measure(trian)
+    get_cell_measure(strian, ttrian)
+
+where all arguments are [`Triangulation`](@ref)s, returns a vector containing
+the volume of each cell of [`t`]`trian`.
+"""
 function get_cell_measure(trian::Triangulation)
   quad = CellQuadrature(trian,0)
   cell_to_dV = integrate(1,quad)

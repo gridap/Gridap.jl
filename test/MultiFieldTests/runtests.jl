@@ -18,4 +18,6 @@ using Test
 
 @testset "BlockSparseMatrixAssemblers" begin include("BlockSparseMatrixAssemblersTests.jl") end
 
+@testset "StaticCondensation" begin include("StaticCondensationTests.jl") end
+
 end # module

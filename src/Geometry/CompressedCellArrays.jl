@@ -1,3 +1,13 @@
+"""
+    move_contributions(scell_to_val, strian)
+    move_contributions(scell_to_val, strian, ttrian)
+    move_contributions(scell_to_val, sglue, tglue)
+    move_contributions(scell_to_val, sglue, tglue, nothing)
+    move_contributions(scell_to_val, sglue, tglue, mcell_to_scell::AbstractArray)
+
+where `scell_to_val` isa AbstractArray, `s`/`ttrian` isa Triangulation,
+`s`/`tglue` isa FaceToFaceGlue.
+"""
 function move_contributions(
   scell_to_val::AbstractArray, strian::Triangulation)
 
@@ -68,7 +78,7 @@ function return_cache(k::CombineContributionsMap{<:AbstractArray{<:Number}},scel
 end
 
 function evaluate!(cache,k::CombineContributionsMap{<:AbstractArray{<:Number}},scells)
-  z,c = cache 
+  z,c = cache
   val = zero(z)
   for scell in scells
     val += getindex!(c,k.scell_to_val,scell)
@@ -110,7 +120,7 @@ end
 
 function _cache_compress(array::ArrayBlock)
   c1 = CachedArray(deepcopy(array))
-  c2 = return_cache(Fields.unwrap_cached_array,c1)
+  c2 = return_cache(Arrays.unwrap_cached_array,c1)
   c1,c2
 end
 
@@ -144,7 +154,7 @@ function _uncached_compress!(a::CachedArray,c2)
 end
 
 function _uncached_compress!(c1::ArrayBlock,c2)
-  evaluate!(c2,Fields.unwrap_cached_array,c1)
+  evaluate!(c2,Arrays.unwrap_cached_array,c1)
 end
 
 function _uncached_compress!(c1::Tuple,c2)

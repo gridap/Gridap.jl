@@ -5,6 +5,32 @@ using Gridap.Fields
 using Gridap.Polynomials
 using Gridap.ReferenceFEs
 
+# Abstract API
+
+struct MockRefFEName <: ReferenceFEName end
+@test_throws ErrorException ReferenceFE(VERTEX, MockRefFEName(), 0)
+
+struct MockRefFE{D} <: ReferenceFE{D} end
+D = 0
+reffe = MockRefFE{D}()
+@test_throws ErrorException num_dofs(reffe)
+@test_throws ErrorException get_polytope(reffe)
+@test_throws ErrorException get_prebasis(reffe)
+@test_throws ErrorException get_dof_basis(reffe)
+@test_throws ErrorException Conformity(reffe)
+@test_throws ErrorException Conformity(reffe,nothing)
+@test_throws ErrorException Conformity(reffe,:L2)
+@test Conformity(reffe, L2Conformity()) == L2Conformity()
+@test_throws ErrorException get_face_dofs(reffe)
+@test_throws ErrorException get_face_own_dofs(reffe, nothing)
+
+@test num_dims(reffe) == D
+@test num_dims(typeof(reffe)) == D
+@test num_cell_dims(reffe) == D
+@test num_cell_dims(typeof(reffe)) == D
+@test num_point_dims(reffe) == D
+@test num_point_dims(typeof(reffe)) == D
+
 D = 2
 T = Float64
 order = 1

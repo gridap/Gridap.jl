@@ -21,10 +21,8 @@ Return a Lagrangian reference FE whose underlying approximation space is the
 serendipity polynomial space 𝕊r of order `order`. Implemented on n-cubes with
 homogneous order.
 
-Returns an instance of `LagrangianRefFE`, whose underlying approximation space
-is the serendipity space of order `order`. Implemented for order from 1 to 4.
 The type of the polytope `p` has to implement all the queries detailed in the
-constructor [`LagrangianRefFE(::Type{T},p::Polytope{D},orders) where {T,D}`](@ref).
+constructor [`LagrangianRefFE(::Type{T}, p::Polytope{D}, orders) where {T,D}`](@ref).
 
 # Examples
 
@@ -53,9 +51,14 @@ end
 
 function SerendipityRefFE(::Type{T},p::Polytope,orders::Tuple) where T
   order = first(orders)
-  @assert all( orders .== order ) "Anisotropic serentopity FEs not allowed"
+  @assert all( orders .== order ) "Serendipity FEs must be isotropic, got orders $orders."
   SerendipityRefFE(T,p,order)
 end
+
+function ReferenceFE(p::Polytope,::Serendipity,::Type{T},order;kwargs...) where T
+  SerendipityRefFE(T,p,order;kwargs...)
+end
+
 
 # Helper private type
 struct SerendipityPolytope{D,P} <: Polytope{D}

@@ -1,6 +1,8 @@
 """
 
-$(public_names_in_md(@__MODULE__))
+$(public_names_in_md(@__MODULE__; change_link=Dict(
+  :∇  => "gradient",
+)))
 """
 module Fields
 
@@ -13,7 +15,7 @@ import Gridap.Arrays: testitem
 using Gridap.Helpers
 using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable, @check
-using Gridap.Helpers: tfill
+using Gridap.Helpers: tfill, first_and_tail
 
 using Gridap.Algebra: mul!
 
@@ -43,6 +45,9 @@ import Gridap.Arrays: return_value
 import Gridap.Arrays: evaluate!
 import Gridap.Arrays: lazy_map
 import Gridap.Arrays: array_cache
+import Gridap.Arrays: ArrayBlock, VectorBlock, MatrixBlock
+import Gridap.Arrays: ArrayBlockView, VectorBlockView, MatrixBlockView
+import Gridap.Arrays: BlockMap, ZeroBlockMap
 
 export evaluate
 export evaluate!
@@ -88,6 +93,14 @@ export linear_combination
 export integrate
 export IntegrationMap
 
+export VoidField
+export VoidFieldMap
+export VoidBasis
+export VoidBasisMap
+
+export DensifyInnerMostBlockLevelMap
+
+# Re-export from Gridap.Arrays
 export ArrayBlock
 export VectorBlock
 export MatrixBlock
@@ -95,13 +108,6 @@ export BlockMap
 export ArrayBlockView
 export VectorBlockView
 export MatrixBlockView
-
-export VoidField
-export VoidFieldMap
-export VoidBasis
-export VoidBasisMap
-
-export DensifyInnerMostBlockLevelMap
 
 include("FieldsInterfaces.jl")
 
@@ -117,7 +123,8 @@ include("DiffOperators.jl")
 
 include("AutoDiff.jl")
 
-include("ArrayBlocks.jl")
+# include("ArrayBlocks.jl") # Partially moved to Gridap.Arrays
+include("FieldArrayBlocks.jl")
 
 include("InverseFields.jl")
 
