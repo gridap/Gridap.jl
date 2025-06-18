@@ -44,7 +44,7 @@ using Test
 
 @testset "ModalC0RefFEs" begin include("ModalC0RefFEsTests.jl") end
 
-@testset "HHJRefFEs" begin include("HHJRefFEsTests.jl") end
+#@testset "HHJRefFEs" begin include("HHJRefFEsTests.jl") end
 
 @testset "BDMRefFEs" begin include("BDMRefFEsTests.jl") end
 

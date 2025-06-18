@@ -296,38 +296,12 @@ function Arrays.evaluate!(cache,f,ds::FaceMeasure)
 
   detJ = Broadcasting(Operation(meas))(Broadcasting(∇)(fmap))
   dF = evaluate!(detJ_cache,detJ,xf)
-  #dF ./= sum(w .* dF)
+  #dF ./= sum(w .* dF) #  This breaks Crouzeix-Raviart
 
   xc = evaluate!(fmap_cache,fmap,xf) # quad pts on the cell
   fx = evaluate!(f_cache,f,xf) # f evaluated on the quad pts
   fx .= (w .* dF) .* fx
   return fx, xc
-end
-
-"""
-    dual_component_basis_representatives(V::Type{<:MultiValue}) -> V[ Vᵢ... ]
-    dual_component_basis_representatives(T::Type{<:Real}) -> T[ 1, ]
-
-Given a `Number` type `V` with N independent components, return a vector of
-N values {`Vᵢ`}ᵢ that define the form basis { Lⁱ := (u -> u ⊙ Vᵢ) }ᵢ that is the
-dual of the component basis { V(eᵢ) }ᵢ (where {eᵢ}ᵢ is the Cartesian basis of
-(`eltype(V)`)ᴺ).
-
-The `Lⁱ`/`Vᵢ` verify the property that for any `u::V`,
-
-    u = V( [ Lⁱ(u) for i ∈ 1:N ]... )
-      = V( [ u⊙Vᵢ  for i ∈ 1:N ]... )
-
-Rq, when `V` has dependent components, this is NOT an independent components
-basis because `Vᵢ ≠ V(eᵢ)` and
-
-    u ≠ sum( indep_comp_getindex(u,i)*Vᵢ for 1 ≤ i ≤ N )
-"""
-dual_component_basis_representatives(T::Type{<:Real}) = T[ 1 ]
-function dual_component_basis_representatives(V::Type{<:MultiValue})
-  n = num_indep_components(V)
-  B =  V[ V(ntuple(i -> ifelse(i == j, 1, 0),Val(n))) for j in 1:n ]
-  return @. B / (B⊙B) # necessary when all components aren't independent
 end
 
 """
@@ -367,7 +341,7 @@ function MomentBasedReferenceFE(
 
   T = return_type(prebasis)
   order = get_order(prebasis)
-  φ_vec = dual_component_basis_representatives(T)
+  φ_vec = representatives_of_componentbasis_dual(T)
   φ = map(constant_field,φ_vec)
 
   # Create face measures for each moment

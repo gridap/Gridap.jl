@@ -80,6 +80,8 @@ export congruent_prod
 export data_index
 export indep_comp_getindex
 export indep_components_names
+export component_basis
+export representatives_of_componentbasis_dual
 
 import Base: show
 import Base: promote_rule

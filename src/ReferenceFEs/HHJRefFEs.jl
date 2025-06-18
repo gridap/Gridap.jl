@@ -19,15 +19,17 @@ References:
 function HellanHerrmannJhonsonRefFE(::Type{T},p::Polytope,order::Integer) where T
   @assert p == TRI "HellanHerrmannJhonson Reference FE only defined for TRIangles"
 
-  VT = SymTensorValue{2,T}
-  prebasis = MonomialBasis(Val(2),VT,order,Polynomials._p_filter)
+  D = 2 # num_dims(p)
+  VT = SymTensorValue{D,T}
+  prebasis = MonomialBasis(Val(D),VT,order,Polynomials._p_filter)
+  fb = MonomialBasis(Val(D-1),T,order,Polynomials._p_filter)
+  cb = MonomialBasis(Val(D),VT,order-1,Polynomials._p_filter)
+  # TODO clean this
   #fb = MonomialBasis(Val(1),T,order,Polynomials._p_filter)
-  #fb = MonomialBasis(Val(D-1),T,order,Polynomials._p_filter)
-  fb = get_shapefuns(LagrangianRefFE(T, SEGMENT, order))
-  #cb = MonomialBasis(Val(2),VT,order-1,Polynomials._p_filter)
+  #fb = get_shapefuns(LagrangianRefFE(T, SEGMENT, order))
   #cb = MonomialBasis(Val(2),VT,order-1,Polynomials._p_filter)
   #cb = get_shapefuns(LagrangianRefFE(VT, TRI, order-1))
-  cb = map(constant_field,[VT(0.,1.,0.),VT(-2.,1.,0.),VT(0.,-1.,2.)])
+  #cb = map(constant_field,[VT(0.,1.,0.),VT(-2.,1.,0.),VT(0.,-1.,2.)])
 
   function cmom(φ,μ,ds) # Cell and Node moment function: σ_K(φ,μ) = ∫(φ:μ)dK
     Broadcasting(Operation(⊙))(φ,μ)
@@ -49,7 +51,7 @@ function HellanHerrmannJhonsonRefFE(::Type{T},p::Polytope,order::Integer) where 
   return MomentBasedReferenceFE(HellanHerrmannJhonson(),p,prebasis,moments,DivConformity())
 end
 
-# TODO move this to Field
+# TODO remove those
 Polynomials.get_order(f::Fields.LinearCombinationFieldVector) = get_order(f.fields)
 Polynomials.get_order(f::AbstractVector{<:ConstantField}) = 0
 
@@ -76,6 +78,7 @@ function get_face_own_dofs(reffe::GenericRefFE{HellanHerrmannJhonson}, conf::Div
   reffe.face_dofs
 end
 
+# TODO this is currently exactly the function from Nedelec, should be modified or factorized
 function get_face_dofs(reffe::GenericRefFE{HellanHerrmannJhonson,Dc}) where Dc
   face_dofs = [Int[] for i in 1:num_faces(reffe)]
   face_own_dofs = get_face_own_dofs(reffe)

@@ -38,15 +38,8 @@ eltype(::MultiValue{S,T}) where {S,T} = T
 length(::Type{<:MultiValue{S}}) where S = prod(size(MultiValue{S}))
 length(a::MultiValue)  = length(typeof(a))
 
-size(::Type{<:MultiValue{S}}) where S = _size_from_tuple_type(S)
+size(::Type{<:MultiValue{S}}) where S<:Tuple = tuple(S.parameters...)
 size(a::MultiValue) = size(typeof(a))
-
-_size_from_tuple_type(::Type{Tuple{}}) = ()
-_size_from_tuple_type(::Type{Tuple{D}}) where D = (D,)
-_size_from_tuple_type(::Type{Tuple{D1,D2}}) where {D1,D2} = (D1,D2)
-_size_from_tuple_type(::Type{Tuple{D1,D2,D3}}) where {D1,D2,D3} = (D1,D2,D3)
-_size_from_tuple_type(::Type{Tuple{D1,D2,D3,D4}}) where {D1,D2,D3,D4} = (D1,D2,D3,D4)
-_size_from_tuple_type(::Type{S}) where S = @notimplemented
 
 """
     num_components(::Type{<:Number})
@@ -193,6 +186,64 @@ of Paraview. Else, if max(S)>3, they are labeled by integers starting from "1".
 """
 function indep_components_names(::Type{MultiValue{S,T,N,L}}) where {S,T,N,L}
   return ["$i" for i in 1:L]
+end
+
+"""
+    component_basis(V::Type{<:MultiValue}) -> V[ Vᵢ... ]
+    component_basis(T::Type{<:Real}) -> [ one(T) ]
+    component_basis(a::T<:Number)
+
+Given a `Number` type `V` with N independent components, return a vector of
+N values ``{ Vᵢ=V(eᵢ) }`` forming the component basis of ``{ u : u isa V}``
+(where ``{eᵢ}`` is the Cartesian basis of (`eltype(V)`)ᴺ).
+
+The `Vᵢ` verify the property that for any `u::V`,
+
+    u = sum( indep_comp_getindex(u,i)*Vᵢ for i ∈ 1:N )
+"""
+component_basis(a::Number) = component_basis(typeof(a))
+component_basis(T::Type{<:Number}) = [ one(T) ]
+function component_basis(V::Type{<:MultiValue})
+  T = eltype(V)
+  Li = num_indep_components(V)
+  return V[ ntuple(i -> T(i == j), Li) for j in 1:Li ]
+end
+
+"""
+    representatives_of_componentbasis_dual(V::Type{<:MultiValue}) -> V[ Vᵢ... ]
+    representatives_of_componentbasis_dual(T::Type{<:Real}) -> [ one(T) ]
+    representatives_of_componentbasis_dual(a::V<:Number)
+
+Given a `Number` type `V` with N independent components, return a vector of
+N values ``{ Vᵢ }`` that define the form basis ``{ Lⁱ := (u -> u ⊙ Vᵢ) }`` that
+is the dual of the component basis ``{ V(eᵢ) }`` (where ``{eᵢ}`` is the
+Cartesian basis of (`eltype(V)`)ᴺ).
+
+The `Lⁱ`/`Vᵢ` verify the property that for any `u::V`,
+
+    u = V( [ Lⁱ(u) for i ∈ 1:N ]... )
+      = V( [ u⊙Vᵢ  for i ∈ 1:N ]... )
+
+Rq, when `V` has dependent components, the `Vᵢ` are NOT a component basis because
+`Vᵢ ≠ V(eᵢ)` and
+
+    u ≠ sum( indep_comp_getindex(u,i)*Vᵢ for i ∈ 1:N )
+"""
+representatives_of_componentbasis_dual(a::Number) = representatives_of_componentbasis_dual(typeof(a))
+representatives_of_componentbasis_dual(T::Type{<:Real}) = [ one(T) ]
+function representatives_of_componentbasis_dual(V::Type{<:MultiValue})
+  V = typeof(zero(V)) # makes V concrete for type inference
+  N = num_indep_components(V)
+  T = eltype(V)
+  B = component_basis(V)
+
+  M = MMatrix{N,N,T}(undef)
+  for ci in CartesianIndices(M)
+    M[ci] = B[ci[1]] ⊙ B[ci[2]]
+  end
+  Minv = inv(M)
+
+  return V[ Tuple(Minv[i,:]) for i in 1:N ]
 end
 
 @inline function ForwardDiff.value(x::MultiValue{S,<:ForwardDiff.Dual}) where S

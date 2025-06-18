@@ -72,8 +72,6 @@ convert(::Type{<:SymTensorValue{D,Ta}}, a::SymTracelessTensorValue{D,Tb}) where 
 
 Base.iszero(a::MultiValue) = all(iszero.(a.data))
 
-# TODO for SkewSymTensorValue + tests
-
 for op in (:+,:-)
   @eval begin
 
@@ -353,6 +351,25 @@ end
   Meta.parse(str)
 end
 
+@generated function inner(a::SymFourthOrderTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
+  iszero(D) && return :( zero($(promote_type(Ta,Tb))) )
+
+  S = Tuple{D,D,D,D}
+  VInt = change_eltype(a,Int)
+  # each independent component appear either 1,2 of 4 times in inputs
+  strs = Dict( 1=>"(", 2=>"2*(", 4=>"4*(" )
+
+  # for each independent component, add its product in the sum of the
+  # corresponding multiplicative factor
+  for (i, fi) in enumerate(component_basis(VInt))
+    factor = @invoke inner(fi::MultiValue{S,Int},fi::MultiValue{S,Int}) # use the generic but slower method
+    strs[factor] *= "indep_comp_getindex(a,$i) * indep_comp_getindex(b,$i) +"
+  end
+
+  str = string(strs[1][1:(end-1)], ") + ", strs[2][1:(end-1)], ") + ", strs[4][1:(end-1)], ")")
+  Meta.parse(str)
+end
+
 function inner(a::SkewSymTensorValue{D,Ta}, b::SkewSymTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return zero(promote_type(Ta,Tb))
   2*inner(VectorValue(a.data), VectorValue(b.data))
@@ -365,10 +382,7 @@ function inner(a::AbstractSymTensorValue{D,Tb}, b::SkewSymTensorValue{D,Ta}) whe
   zero(promote_type(Ta,Tb))
 end
 
-function inner(a::MultiValue{Tuple{D,D,D,D}}, b::MultiValue{Tuple{D,D,D,D}}) where D
-  double_contraction(a,b)
-end
-
+# TODO These two methods make no sense and shold be removed
 function inner(a::MultiValue{Tuple{D,D,D,D}}, b::MultiValue{Tuple{D,D}}) where D
   double_contraction(a,b)
 end
@@ -982,7 +996,6 @@ end
 ###############################################################
 # Broadcast
 ###############################################################
-# TODO more cases need to be added
 
 function Base.broadcasted(f,a::VectorValue,b::VectorValue)
   VectorValue(map(f,a.data,b.data))

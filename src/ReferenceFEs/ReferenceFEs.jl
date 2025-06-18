@@ -191,7 +191,7 @@ export Bezier
 export ModalC0
 export CrouzeixRaviart
 export Serendipity
-export HellanHerrmannJhonson
+#export HellanHerrmannJhonson
 
 export lagrangian
 export raviart_thomas
@@ -201,7 +201,7 @@ export bezier
 export modalC0
 export crouzeix_raviart
 export serendipity
-export hhj
+#export hhj
 
 export Quadrature
 export QuadratureName
@@ -266,7 +266,7 @@ include("NedelecRefFEs.jl")
 
 include("CrouzeixRaviartRefFEs.jl")
 
-include("HHJRefFEs.jl")
+#include("HHJRefFEs.jl")
 
 include("MockDofs.jl")
 

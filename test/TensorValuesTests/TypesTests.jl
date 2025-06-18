@@ -726,4 +726,19 @@ a = SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
 @test isa(Tuple(a),Tuple)
 @test Tuple(a) == a.data
 
+for V in (VectorValue, SymTensorValue, SkewSymTensorValue,
+            SymTracelessTensorValue, SymFourthOrderTensorValue)
+
+  VD = V{3,Float32}
+  u = rand(VD)
+  comp_basis = component_basis(VD)
+  dual_basis_rpzs = representatives_of_componentbasis_dual(VD)
+
+  @test length(comp_basis) == length(dual_basis_rpzs) == num_indep_components(VD)
+  @test eltype(comp_basis) <: VD
+  @test eltype(dual_basis_rpzs) <: VD
+  @test u ≈ sum( indep_comp_getindex(u,i) * Vi for (i,Vi) in enumerate(comp_basis) )
+  @test u ≈ V( (u ⊙ Vi for Vi in dual_basis_rpzs)... )
+end
+
 end # module TypesTests

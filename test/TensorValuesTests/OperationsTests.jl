@@ -1270,7 +1270,7 @@ f0  = SymFourthOrderTensorValue{0,ComplexF16}()
 @test t00 ⊙ t00   === zero(Float32)
 @test t00 ⊙ f0    === SymTensorValue{0,ComplexF32,0}()
 @test f0  ⊙ t00   === SymTensorValue{0,ComplexF32,0}()
-@test f0  ⊙ f0    === SymFourthOrderTensorValue{0, ComplexF16}()
+@test f0  ⊙ f0    === zero(ComplexF16)
 
 t12  = TensorValue{1,2,Float32}(0,0)
 t10  = TensorValue{1,0,Float32}()
