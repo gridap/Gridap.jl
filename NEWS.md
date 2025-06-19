@@ -126,6 +126,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added AMR-related methods `mark` and `estimate` to `Adaptivity` module. Implemented Dorfler marking strategy. Since PR[#1063](https://github.com/gridap/Gridap.jl/pull/1063).
 
+- Documentation and refactoring of Gridap.Polynomials. Since PR[#1072](https://github.com/gridap/Gridap.jl/pull/#1072).
+- Two new families of polynomial bases in addition to `Monomial`, `Legendre` (former `Jacobi`) and `ModalC0`: `Chebyshev` and `Bernstein`
+- `MonomialBasis` and `Q[Curl]GradMonomialBasis` have been generalized to `Legendre`, `Chebyshev` and `Bernstein` using the new `CartProdPolyBasis` and `CompWiseTensorPolyBasis` respectively.
+- `PCurlGradMonomialBasis` has been generalized to `Legendre` and `Chebyshev` using the new `RaviartThomasPolyBasis`.
+- New aliases and high level constructor for `CartProdPolyBasis` (former MonomialBasis): `MonomialBasis`, `LegendreBasis`, `ChebyshevBasis` and `BernsteinBasis`.
+- New high level constructors for Nedelec and Raviart-Thomas polynomial bases:
+    - Nedelec on simplex `PGradBasis(PT<:Polynomial, Val(D), order)`
+    - Nedelec on n-cubes `QGradBasis(PT<:Polynomial, Val(D), order)`
+    - Raviart on simplex `PCurlGradBasis(PT<:Polynomial, Val(D), order)`
+    - Raviart on n-cubes `QCurlGradBasis(PT<:Polynomial, Val(D), order)`
+
 ### Fixed
 
 - BUG in `FineToCoarseFields.jl`. Since PR[#1074](https://github.com/gridap/Gridap.jl/pull/1074).
