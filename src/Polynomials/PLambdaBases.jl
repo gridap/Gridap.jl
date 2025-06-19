@@ -225,7 +225,7 @@ struct PLambdaBasis{D,V,C,B} <: PolynomialBasis{D,V,Bernstein}
 
     @check T<:Real "T needs to be <:Real since represents the scalar type, got $T"
     @check k in 0:D "The form order k must be in 0:D, got $k"
-    @check r > 0    "The polynomial order r must be positive, got $r"
+    @check r ≥ 0    "The polynomial order r must be positive, got $r"
     if !isnothing(vertices)
       @check length(vertices) == D+1 "$D+1 vertices are required to define a $D-dim simplex, got $(length(vertices))"
       @check eltype(vertices) <: Point{D} "Vertices should be of type <:Point{$D}, got $(eltype(vertices))"
@@ -267,6 +267,11 @@ The `indices::PLambdaIndices` may be provided to avoid allocations or filter the
 """
 function PLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing;
                       diff_geo_calculus_style=false, indices=nothing) where {D,T}
+  #if r==0
+  #  # Trick to avoid implementing PLambdaBasis for r = 0 ... (Whitney forms)
+  #  k = iszero(k) ? D : k
+  #  return PmLambdaBasis{D}(T,r+1,k,vertices; diff_geo_calculus_style, indices)
+  #end
   PLambdaBasis{D}(T,r,k,vertices; diff_geo_calculus_style, indices)
 end
 
@@ -618,8 +623,19 @@ documentation, and are used as follows:
     end
 """
 function PΛ_bubbles(r,k,D)
-  w=0
   bubbles = Bubble[]
+  if r == 0
+    F = [1:(D+1)...]
+    α = zeros(Int,D+1)
+    bubble_functions = BubbleFunction[]
+    for i in 1:binomial(D,k)
+      push!(bubble_functions, (i, α, 1, [], [], [])) # J has no meaning there
+    end
+    push!(bubbles, (F, bubble_functions))
+    return bubbles
+  end
+
+  w=0
   for d in k:D
     for F in _sorted_combinations(D+1, d+1)
       bubble_functions = _PΛ_F_bubble_functions(r,k,D,F,w)
@@ -628,6 +644,8 @@ function PΛ_bubbles(r,k,D)
       w += length(bubble_functions)
     end
   end
+  #println(r,k,D,w,binomial(r+k,k)*binomial(D+r,D-k))
+  #println(r,k,D,w,binomial(r+D,D)*binomial(D,k))
   @check w == binomial(r+k,k)*binomial(D+r,D-k)
   bubbles
 end
@@ -636,6 +654,9 @@ function _compute_PΛ_basis_form_coefficient!(Ψ,r,k,::Val{D},b,vertices,indices
   N = D+1
   Vk = Val(k)
   V = eltype(Ψ)
+
+  iszero(r) && return _order_0_Ψ!(Ψ)
+
   T = eltype(V)
   α_prec = ntuple(_->-1, N)
   φ_αF = MMatrix{D,N,T}(undef)
@@ -665,6 +686,15 @@ end
   end
 end
 
+function _order_0_Ψ!(Ψ)
+  V = eltype(Ψ)
+  T = eltype(V)
+  for w in eachindex(Ψ)
+    Ψ[w] = ntuple( i -> T(i==w), length(V))
+  end
+  nothing
+end
+
 function _compute_PΛ_basis_form_coefficient!(
   Ψ,r,k,::Val,b,vertices::Nothing,indices)
 
@@ -672,6 +702,9 @@ function _compute_PΛ_basis_form_coefficient!(
   V = eltype(Ψ)
   T = eltype(V)
   Ψw = Mutable(V)(undef)
+
+  iszero(r) && return _order_0_Ψ!(Ψ)
+
   @inbounds for (F, bubble_functions) in indices.bubbles
     for (w, α, _, J) in bubble_functions
       for (I_id, I, I_sgn) in indices.components

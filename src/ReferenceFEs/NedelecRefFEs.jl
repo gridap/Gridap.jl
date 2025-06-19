@@ -32,10 +32,18 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
     fb = QGradBasis(Monomial,Val(D-1),et,order-1)   # Face basis
     cb = QCurlGradBasis(Monomial,Val(D),et,order-1) # Cell basis
   elseif is_simplex(p)
-    prebasis = PGradBasis(Monomial,Val(D),et,order) # Prebasis
-    eb = MonomialBasis(Val(1),et,order)             # Edge basis
-    fb = MonomialBasis(Val(D-1),VectorValue{D-1,et},order-1,Polynomials._p_filter) # Face basis
-    cb = MonomialBasis(Val(D),VectorValue{D,et},order-D+1,Polynomials._p_filter)   # Cell basis
+    #prebasis = PGradBasis(Monomial,Val(D),et,order) # Prebasis
+    prebasis = PmLambdaBasis(Val(D),et,order+1,1) # Prebasis
+    #eb = MonomialBasis(Val(1),et,order)             # Edge basis
+    eb = PLambdaBasis(Val(1),et,order,0)          # Edge basis
+    #fb = if D >2
+    #  MonomialBasis(Val(D-1),VectorValue{D-1,et},order-1,Polynomials._p_filter) # Face basis
+    #else
+    #  MonomialBasis(Val(D-1),et,order-1,Polynomials._p_filter) # Face basis
+    #end
+    fb = order>0 ? PLambdaBasis(Val(D-1),et,order-1,1) : nothing      # Face basis
+    #cb = MonomialBasis(Val(D),VectorValue{D,et},order-D+1,Polynomials._p_filter)   # Cell basis
+    cb = order>0 ? PLambdaBasis(Val(D),et,order-1,1) : nothing       # Cell basis
   else
     @unreachable "Nedelec Reference FE only implemented for n-cubes and simplices"
   end
