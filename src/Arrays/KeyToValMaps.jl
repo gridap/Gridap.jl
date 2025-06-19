@@ -1,3 +1,8 @@
+"""
+    struct KeyToValMap{T<:Function} <: Map
+
+Map for lazily filling a `Dict` the outputs of the function `T` over an array of inputs.
+"""
 struct KeyToValMap{T<:Function} <: Map
   key_to_val::T
 end

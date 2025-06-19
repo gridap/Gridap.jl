@@ -115,11 +115,17 @@ function CellField(f,trian::Triangulation)
   CellField(f,trian,ReferenceDomain())
 end
 
+"""
+    get_normal_vector(trian::Triangulation)
+"""
 function get_normal_vector(trian::Triangulation)
   cell_normal = get_facet_normal(trian)
   get_normal_vector(trian, cell_normal)
 end
 
+"""
+    get_tangent_vector(trian::Triangulation)
+"""
 function get_tangent_vector(trian::Triangulation)
   cell_tangent = get_edge_tangent(trian)
   get_tangent_vector(trian, cell_tangent)
@@ -341,6 +347,9 @@ return_cache(f::CellField,xs::AbstractVector{<:Point}) = return_cache(f,testitem
 #   return map(x->evaluate!(cache,f,x), xs)
 # end
 
+"""
+    make_inverse_table(i2j::AbstractVector{<:Integer}, nj::Int)
+"""
 function make_inverse_table(i2j::AbstractVector{<:Integer},nj::Int)
   ni = length(i2j)
   @assert nj≥0
@@ -387,6 +396,10 @@ function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
   collect(point_to_fx)          # Collect into a plain array
 end
 
+"""
+    compute_cell_points_from_vector_of_points(xs::AbstractVector{<:Point},
+        trian::Triangulation, domain_style::PhysicalDomain)
+"""
 function compute_cell_points_from_vector_of_points(xs::AbstractVector{<:Point}, trian::Triangulation, domain_style::PhysicalDomain)
   searchmethod = KDTreeSearch()
   cache = _point_to_cell_cache(searchmethod,trian)
@@ -750,9 +763,24 @@ function evaluate!(cache,k::Operation,a::SkeletonPair{<:CellField},b::CellField)
   SkeletonPair(plus,minus)
 end
 
+"""
+    jump(a::CellField)
+    jump(a::SkeletonPair{<:CellField})
+
+Jump operator at interior facets of the supporting `Triangulation`, defined by
+`jump`(`a` n) = ⟦`a` n⟧ = `a`⁺n⁺ + `a`⁻n⁻, where n is an oriented normal field
+to the interior facets, n⁺ = -n⁻ are the normal pointing into the element on the +
+and - side of the facets, and `a`⁺/`a`⁻ are the restrictions of `a` to each
+element respectively.
+"""
 jump(a::CellField) = a.⁺ - a.⁻
 jump(a::SkeletonPair{<:CellField}) = a.⁺ + a.⁻ # a.⁻ results from multiplying by n.⁻. Thus we need to sum.
 
+"""
+    mean(a::CellField)
+
+Similar to [`jump`](@ref), but for the mean operator `a` ⟶ (`a`⁺ + `a`⁻)/2.
+"""
 mean(a::CellField) = Operation(_mean)(a.⁺,a.⁻)
 _mean(x,y) = 0.5*x + 0.5*y
 
@@ -811,6 +839,8 @@ function (a::SkeletonPair{<:CellField})(x)
 end
 
 # Interpolable struct
+"""
+"""
 struct KDTreeSearch{T}
   num_nearest_vertices::Int
   tol::T
@@ -820,10 +850,17 @@ struct KDTreeSearch{T}
   end
 end
 
+"""
+    struct Interpolable{M,A} <: Function
+"""
 struct Interpolable{M,A} <: Function
   uh::A
   tol::Float64
   searchmethod::M
+
+  @doc """
+      Interpolable(uh; tol=1e-6, searchmethod=KDTreeSearch(; tol=tol))
+  """
   function Interpolable(uh; tol=1e-10, searchmethod=KDTreeSearch(; tol=tol))
     new{typeof(searchmethod),typeof(uh)}(uh, tol,searchmethod)
   end

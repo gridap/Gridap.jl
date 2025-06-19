@@ -56,6 +56,11 @@ end
 
 # MulAddMap: Cached version of `mul!(d,a,b,α,β)`
 
+"""
+    struct MulAddMap{T} <: Map
+
+Map for operation a,b,c -> LinearAlgepra.mul!(copy(c),a,b,`α`,`β`)
+"""
 struct MulAddMap{T} <: Map
   α::T
   β::T
@@ -99,6 +104,11 @@ end
 
 # Assembly Maps: AddEntriesMap and TouchEntriesMap
 
+"""
+    struct AddEntriesMap{F} <: Map
+
+[`Map`](@ref) for [`add_entries!`](@ref) where `F` is the combine function.
+"""
 struct AddEntriesMap{F} <: Map
   combine::F
 end
@@ -111,6 +121,12 @@ function evaluate!(cache,k::AddEntriesMap,A,v,i)
   add_entries!(k.combine,A,v,i)
 end
 
+"""
+    struct TouchEntriesMap <: Map
+
+Dummy [`AddEntriesMap`](@ref) used to keep track of sparsity patterns in symbolic
+assemblies, see the symbolic methods of [`SparseMatrixAssembler`](@ref Gridap.FESpaces.SparseMatrixAssembler).
+"""
 struct TouchEntriesMap <: Map end
 
 function evaluate!(cache,k::TouchEntriesMap,A,v,i,j)
@@ -248,10 +264,10 @@ end # end for T
 
 A map for solving local linear systems, relying on a factorization method.
 
-Given a left-hand-side matrix `mat` and a set of N right-hand-side arrays `lhs`, 
-returns an N-Tuple of arrays containing the solutions to the linear systems defined by 
+Given a left-hand-side matrix `mat` and a set of N right-hand-side arrays `lhs`,
+returns an N-Tuple of arrays containing the solutions to the linear systems defined by
 
-Each system is given by `A*x_i = b_i`, and the solution is computed as 
+Each system is given by `A*x_i = b_i`, and the solution is computed as
 `x_i = ldiv!(factorize!(A,pivot),b_i)`
 
 """
@@ -321,12 +337,12 @@ end
 
 A map for solving local constrained linear systems, relying on a factorization method.
 
-Given a left-hand-side 2x2 block matrix matrix`mat` and a set of 2xN right-hand-side arrays `lhs`, 
-returns an N-Tuple of arrays containing the solutions to the linear systems. 
+Given a left-hand-side 2x2 block matrix matrix`mat` and a set of 2xN right-hand-side arrays `lhs`,
+returns an N-Tuple of arrays containing the solutions to the linear systems.
 
 Each system is given by `A*[x_i; λ_i] = b_i`, where `A = [App, Aλp; Apλ, 0]` is the
-augmented matrix, and `b_i = [Bp; Bλ]` is the right-hand side vector. The solution is 
-computed using a penalty method, as `x_i = ldiv!(factorize!(C,pivot),d_i)` with 
+augmented matrix, and `b_i = [Bp; Bλ]` is the right-hand side vector. The solution is
+computed using a penalty method, as `x_i = ldiv!(factorize!(C,pivot),d_i)` with
 `C = App + μT * Apλ * Aλp` and `d_i = Bp + μT * Apλ * Bλ`, where `μT` is a penalty parameter.
 The penalty parameter μT is heuristically chosen as `μT = norm(App)/norm(Apλ*Aλp)`.
 
@@ -356,10 +372,10 @@ function Arrays.evaluate!(cache::Nothing, k::LocalPenaltySolveMap, lhs, rhs::Vec
   else
     μT = tr(App)/norm(Apλ*Aλp) # Multiple constraints
   end
-  
+
   # App = App + μT * Apλ * Aλp
   mul!(App, Apλ, Aλp, μT, 1)
-  
+
   # Bp = Bp + μT * Apλ * Bλ
   mul!(Bp, Apλ, Bλ, μT, 1)
 
@@ -383,10 +399,10 @@ function Arrays.evaluate!(cache::Nothing, k::LocalPenaltySolveMap, lhs, rhs)
   else
     μT = tr(App)/norm(Apλ*Aλp) # Multiple constraints
   end
-  
+
   # App = App + μT * Apλ * Aλp
   mul!(App, Apλ, Aλp, μT, 1)
-  
+
   # BpΩ = BpΩ + μT * Apλ * BλΩ
   mul!(BpΩ, Apλ, BλΩ, μT, 1)
 

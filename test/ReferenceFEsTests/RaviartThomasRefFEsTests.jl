@@ -21,10 +21,12 @@ order = 0
 
 reffe = RaviartThomasRefFE(et,p,order)
 test_reference_fe(reffe)
-@test num_terms(get_prebasis(reffe)) == 4
-@test get_order(get_prebasis(reffe)) == 0
+@test length(get_prebasis(reffe)) == 4
+@test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 4
 @test Conformity(reffe) == DivConformity()
+
+
 p = QUAD
 D = num_dims(QUAD)
 et = Float64
@@ -32,9 +34,9 @@ order = 1
 
 reffe = RaviartThomasRefFE(et,p,order)
 test_reference_fe(reffe)
-@test num_terms(get_prebasis(reffe)) == 12
+@test length(get_prebasis(reffe)) == 12
 @test num_dofs(reffe) == 12
-@test get_order(get_prebasis(reffe)) == 1
+@test get_order(get_prebasis(reffe)) == 2
 
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
@@ -60,9 +62,7 @@ et = Float64
 reffe = RaviartThomasRefFE(et,p,order)
 
 dofs = get_dof_basis(reffe)
-nodes, nf_nodes, nf_moments =  get_nodes(dofs),
-                               get_face_nodes_dofs(dofs),
-                               get_face_moments(dofs)
+nodes, nf_nodes, nf_moments =  get_nodes(dofs), get_face_nodes_dofs(dofs), get_face_moments(dofs)
 nodes
 nf_nodes
 nf_moments
@@ -78,10 +78,11 @@ order = 0
 
 reffe = RaviartThomasRefFE(et,p,order)
 test_reference_fe(reffe)
-@test num_terms(get_prebasis(reffe)) == 4
+@test length(get_prebasis(reffe)) == 4
 @test num_dofs(reffe) == 4
-@test get_order(get_prebasis(reffe)) == 0
+@test get_order(get_prebasis(reffe)) == 1
 @test Conformity(reffe) == DivConformity()
+
 
 p = TET
 D = num_dims(p)
@@ -90,9 +91,9 @@ order = 2
 
 reffe = RaviartThomasRefFE(et,p,order)
 test_reference_fe(reffe)
-@test num_terms(get_prebasis(reffe)) == 36
+@test length(get_prebasis(reffe)) == 36
 @test num_dofs(reffe) == 36
-@test get_order(get_prebasis(reffe)) == 2
+@test get_order(get_prebasis(reffe)) == 3
 @test Conformity(reffe) == DivConformity()
 
 prebasis = get_prebasis(reffe)
@@ -111,14 +112,14 @@ test_dof_array(dof_basis,prebasis,r)
 
 # Factory function
 reffe = ReferenceFE(QUAD,raviart_thomas,0)
-@test num_terms(get_prebasis(reffe)) == 4
-@test get_order(get_prebasis(reffe)) == 0
+@test length(get_prebasis(reffe)) == 4
+@test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 4
 @test Conformity(reffe) == DivConformity()
 
 reffe = ReferenceFE(QUAD,raviart_thomas,Float64,0)
-@test num_terms(get_prebasis(reffe)) == 4
-@test get_order(get_prebasis(reffe)) == 0
+@test length(get_prebasis(reffe)) == 4
+@test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 4
 @test Conformity(reffe) == DivConformity()
 

@@ -1,7 +1,8 @@
 """
 
-The exported names are
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__; change_link=Dict(
+  :H1Conformity  => "GradConformity",
+)))
 """
 module ReferenceFEs
 
@@ -19,7 +20,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 
-using Gridap.Polynomials: _q_filter, _s_filter_mc0
+using Gridap.Polynomials: _q_filter, _ser_filter
 using Gridap.Polynomials: _compute_filter_mask
 using Gridap.Polynomials: _define_terms, _sort_by_nfaces!
 
@@ -33,7 +34,6 @@ import Gridap.Arrays: return_type
 import Gridap.Fields: evaluate
 import Gridap.Fields: lazy_map
 import Gridap.Fields: linear_combination
-import Gridap.Polynomials: MonomialBasis
 
 import Gridap.Polynomials: get_order
 import Gridap.Polynomials: get_orders
@@ -56,6 +56,7 @@ export get_dimranges
 export get_dimrange
 export get_vertex_coordinates
 export get_facet_normal
+export get_facet_measure
 export get_facet_orientations
 export get_edge_tangent
 export get_vertex_permutations
@@ -102,7 +103,6 @@ export Dof
 export get_nodes
 export get_face_moments
 export get_face_nodes_dofs
-export get_nodes
 export evaluate!
 export return_cache
 export return_type
@@ -115,7 +115,6 @@ export GenericRefFE
 export get_polytope
 export get_prebasis
 export get_dof_basis
-export Conformity
 export get_face_own_dofs
 export get_face_own_dofs_permutations
 export get_face_dofs
@@ -182,14 +181,16 @@ export BDMRefFE
 export NedelecRefFE
 export BezierRefFE
 export ModalC0RefFE
+export CrouzeixRaviartRefFE
 
 export Lagrangian
-export DivConforming
 export RaviartThomas
 export BDM
 export Nedelec
 export Bezier
 export ModalC0
+export CrouzeixRaviart
+export Serendipity
 
 export lagrangian
 export raviart_thomas
@@ -197,6 +198,8 @@ export bdm
 export nedelec
 export bezier
 export modalC0
+export crouzeix_raviart
+export serendipity
 
 export Quadrature
 export QuadratureName
@@ -237,6 +240,8 @@ include("CDLagrangianRefFEs.jl")
 
 include("Quadratures.jl")
 
+include("SegmentQuadratures.jl")
+
 include("TensorProductQuadratures.jl")
 
 include("DuffyQuadratures.jl")
@@ -245,20 +250,24 @@ include("StrangQuadratures.jl")
 
 include("XiaoGimbutasQuadratures.jl")
 
+include("PolytopalQuadratures.jl")
+
+include("Pullbacks.jl")
+
+include("MomentBasedReferenceFEs.jl")
+
 include("RaviartThomasRefFEs.jl")
 
 include("BDMRefFEs.jl")
 
 include("NedelecRefFEs.jl")
 
+include("CrouzeixRaviartRefFEs.jl")
+
 include("MockDofs.jl")
 
 include("BezierRefFEs.jl")
 
 include("ModalC0RefFEs.jl")
-
-include("LinearCombinationDofVectors.jl")
-
-include("PolytopalQuadratures.jl")
 
 end # module

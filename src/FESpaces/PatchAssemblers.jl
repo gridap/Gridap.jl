@@ -38,6 +38,9 @@ function map_cols!(gids,a::PatchAssemblyStrategy,cols,patch)
   nothing
 end
 
+"""
+    struct PatchAssembler <: Assembler
+"""
 struct PatchAssembler <: Assembler
   ptopo :: PatchTopology
   strategy
@@ -67,8 +70,8 @@ function get_patch_assembly_ids(space::FESpace,ptopo::PatchTopology)
   patch_to_faces = get_patch_faces(ptopo,Df)
 
   patch_rows = Arrays.merge_entries(
-    face_dof_ids, patch_to_faces ; 
-    acc  = SortedSet{Int32}(), 
+    face_dof_ids, patch_to_faces ;
+    acc  = SortedSet{Int32}(),
     post = dofs->filter(x->x>0,dofs)
   )
   return patch_rows
@@ -311,7 +314,7 @@ function Arrays.evaluate!(cache,k::PatchAssemblyMap{<:Tuple{<:Tuple,<:Tuple}},pa
   patch_assembly!(matvec_caches,mat,vec,matvecdata,patch)
   patch_assembly!(mat_caches,mat,matdata,patch)
   patch_assembly!(vec_caches,vec,vecdata,patch)
-  
+
   return _unview(mat), _unview(vec)
 end
 

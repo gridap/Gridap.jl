@@ -16,6 +16,29 @@ import Base: ==
 
 struct MockVertex <: Polytope{0} end
 
+# Abstract API
+p = MockVertex()
+@test_throws ErrorException get_faces(p)
+@test_throws ErrorException get_dimranges(p)
+@test_throws ErrorException get_dimrange(p,0)
+@test_throws ErrorException get_vertex_coordinates(p)
+@test_throws ErrorException get_vertex_permutations(p)
+@test_throws ErrorException get_edge_tangent(p)
+@test_throws ErrorException get_facet_normal(p)
+@test_throws ErrorException get_facet_orientations(p)
+@test_throws ErrorException p == p
+@test_throws ErrorException Polytope{0}(p,0)
+@test_throws ErrorException is_simplex(p)
+@test_throws ErrorException is_n_cube(p)
+@test_throws ErrorException simplexify(p)
+
+@test num_dims(p) == 0
+@test num_dims(typeof(p)) == 0
+@test num_cell_dims(p) == 0
+@test num_cell_dims(typeof(p)) == 0
+@test num_point_dims(p) == 0
+@test num_point_dims(typeof(p)) == 0
+
 get_faces(p::MockVertex) = [[1]]
 
 get_dimranges(p::MockVertex) = [1:1]
