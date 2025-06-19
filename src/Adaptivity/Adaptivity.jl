@@ -26,6 +26,7 @@ import Gridap.Geometry: get_grid, get_grid_topology, get_face_labeling
 import Gridap.Geometry: Triangulation, is_change_possible, best_target, get_background_model
 import Gridap.Geometry: move_contributions
 import Gridap.CellData: change_domain
+import Gridap.ReferenceFEs: Pushforward
 
 export RefinementRule
 export get_cell_map, get_inverse_cell_map
