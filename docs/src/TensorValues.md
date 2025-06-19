@@ -10,6 +10,7 @@ tensors:
 - 1st order [`VectorValue`](@ref),
 - 2nd order [`TensorValue`](@ref),
 - 2nd order and symmetric [`SymTensorValue`](@ref),
+- 2nd order and skew symmetric [`SkewSymTensorValue`](@ref),
 - 2nd order, symmetric and traceless [`SymTracelessTensorValue`](@ref),
 - 3rd order [`ThirdOrderTensorValue`](@ref),
 - 4th order and symmetric [`SymFourthOrderTensorValue`](@ref).
@@ -71,6 +72,7 @@ The following concrete tensor types are currently implemented:
 VectorValue
 TensorValue
 SymTensorValue
+SkewSymTensorValue
 SymTracelessTensorValue
 ThirdOrderTensorValue
 SymFourthOrderTensorValue
@@ -83,7 +85,7 @@ MultiValue
 AbstractSymTensorValue
 ```
 
-## Interface
+## Interface and operations
 
 The tensor types implement methods for the following `Base` functions: `getindex`, `length`, `size`, `rand`, `zero`, `real`, `imag` and `conj`.
 
@@ -99,6 +101,8 @@ mutable
 Mutable
 num_indep_components
 indep_comp_getindex
+component_basis
+representatives_of_componentbasis_dual
 indep_components_names
 change_eltype
 
@@ -116,6 +120,8 @@ outer
 det
 inv
 symmetric_part
+skew_symmetric_part
+congruent_prod
 ```
 
 #### For first order tensors

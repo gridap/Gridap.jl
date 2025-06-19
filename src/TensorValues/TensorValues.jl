@@ -3,8 +3,8 @@ Immutable tensor types for Gridap. The currently implemented tensor types are
 - 1st order [`VectorValue`](@ref),
 - 2nd order [`TensorValue`](@ref),
 - 2nd order and symmetric [`SymTensorValue`](@ref),
-- 2nd order, symmetric and traceless [`SymTracelessTensorValue`](@ref),
 - 2nd order and skew symmetric [`SkewSymTensorValue`](@ref),
+- 2nd order, symmetric and traceless [`SymTracelessTensorValue`](@ref),
 - 3rd order [`ThirdOrderTensorValue`](@ref),
 - 4th order and symmetric [`SymFourthOrderTensorValue`](@ref).
 

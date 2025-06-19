@@ -194,8 +194,8 @@ end
     component_basis(a::T<:Number)
 
 Given a `Number` type `V` with N independent components, return a vector of
-N values ``{ Vᵢ=V(eᵢ) }`` forming the component basis of ``{ u : u isa V}``
-(where ``{eᵢ}`` is the Cartesian basis of (`eltype(V)`)ᴺ).
+N values ``\\{ Vᵢ=V(eᵢ) \\}_i`` forming the component basis of ``\\{ u : u\\text{ isa }V\\}``
+(where ``\\{eᵢ\\}_i`` is the Cartesian basis of (`eltype(V)`)ᴺ).
 
 The `Vᵢ` verify the property that for any `u::V`,
 
@@ -215,8 +215,8 @@ end
     representatives_of_componentbasis_dual(a::V<:Number)
 
 Given a `Number` type `V` with N independent components, return a vector of
-N values ``{ Vᵢ }`` that define the form basis ``{ Lⁱ := (u -> u ⊙ Vᵢ) }`` that
-is the dual of the component basis ``{ V(eᵢ) }`` (where ``{eᵢ}`` is the
+N values ``\\{ Vᵢ \\}_i`` that define the form basis ``\\{ Lⁱ := (u -> u ⊙ Vᵢ) \\}_i`` that
+is the dual of the component basis ``\\{ V(eᵢ) \\}_i`` (where ``\\{eᵢ\\}_i`` is the
 Cartesian basis of (`eltype(V)`)ᴺ).
 
 The `Lⁱ`/`Vᵢ` verify the property that for any `u::V`,
