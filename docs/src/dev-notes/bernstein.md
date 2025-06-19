@@ -150,10 +150,10 @@ _de_Casteljau_nD!
 _downwards_de_Casteljau_nD!
 ```
 
-# Bernstein basis generalization for ``P_r^{(-)}Λ^k`` spaces
+# Bernstein basis generalization for ``ℙ_r^{(-)}Λ^k`` spaces
 
-The `TODO` basis implements the polynomial bases for the spaces ``ℙ_r^-Λ^k``
-and ``ℙ_rΛ^k`` (we write ``P_r^{(-)}Λ^k`` for either one of them) derived in
+The `TODO` basis implements the polynomial bases for the spaces ``ℙ_r^-Λ^k(T^D)``
+and ``ℙ_rΛ^k(T^D)`` (we write ``ℙ_r^{(-)}Λ^k`` for either one of them) derived in
 [2] on simplices of any dimension, for any form degree ``k`` and polynomial
 degree ``r``. In this section, we give a summary of the basis definition,
 translation of the formulas in the paper from the differential geometry
@@ -182,13 +182,13 @@ dimension-``D`` form ``ω`` can be written in the canonical Cartesian basis as
 i_k\} \text{ for }1≤ i_1 < ... < i_k ≤ D\big\},
 ```
 ``\{ω_I\}_I\in\mathbb{R}^\binom{D}{k}`` is the vector of coefficients of ``ω``,
-and ``\{\text{d}x^i\}_{1\leq i\leq D}`` is the canonical covector basis (basis
+and ``\{\text{d}x^i\}_{1≤ i≤ D}`` is the canonical covector basis (basis
 of ``\text{T}_x T``) such that ``\text{d}x^i(\partial_{x_j})=δ_{ij}``.
 
 
 #### Geometric decomposition
 
-The main feature of the ``P_r^{(-)}Λ^k`` bases is that each basis polynomial
+The main feature of the ``ℙ_r^{(-)}Λ^k`` bases is that each basis polynomial
 ``ω^{f,α}`` is associated with a face ``f`` of ``T`` (and a domain point
 ``\boldsymbol{x}_α`` inside ``f``), in the sense that the trace of ``ω^{f,α}``
 on another face ``g\subset T`` is zero when ``g`` does not contain ``f``:
@@ -211,7 +211,7 @@ spaces ``ℙ_r^{(-)}Λ^k(T)`` admit the geometric decomposition:
 The ``ℙ^-`` type bubble basis polynomials associated to a face ``f\subset T``
 are defined by
 ```math
-\mathring{ℙ}_r^-Λ^k(T,f) = \text{span}\big\{B_α φ^J \quad\big|\quad |α|=r-1,\ \#J=k+1,\ ⟦α⟧∪J=I_f,\ α_i=0 \text{ if } i< \text{min}(J) \big\}\newline
+\mathring{ℙ}_r^-Λ^k(T,f) = \text{span}\big\{ \bar{ω}_α^J = B_α φ^J \quad\big|\quad |α|=r-1,\ \#J=k+1,\ ⟦α⟧∪J=I_f,\ α_i=0 \text{ if } i< \text{min}(J) \big\}\newline
 ```
 where ``B_α`` are the scalar Bernstein polynomials implemented by
 [`BernsteinBasisOnSimplex`](@ref), and ``φ^J`` are the Whitney forms:
@@ -226,27 +226,29 @@ In a polytopal simplex ``T`` (flat faces), the 1-forms
 ``\text{d}λ^j:=\text{d}(λ_j)`` is homogeneous, its coefficients in the
 canonical basis are derived by
 ```math
-\text{d}λ^j = (\nabla(λ_j))^♭ = δ_{ki}\partial_{k}λ_j\,\text{d}x^i = \partial_{i}λ_j\,\text{d}x^i = M_{i+1,j}\,\text{d}x^i
+\text{d}λ^j = (\nabla(λ_j))^♭ = δ_{ki}\partial_{k}λ_j\,\text{d}x^i =
+\partial_{i}λ_j\,\text{d}x^i = M_{j,i+1}\,\text{d}x^i
 ```
 where ``{}^♭`` is the flat map, the metric ``g_{ki}=δ_{ki}`` is trivial and
-``M_{i+1,j}`` are components of the barycentric change of coordinate matrix
+``M_{j,i+1}`` are components of the barycentric change of coordinate matrix
 ``M`` introduced in the Barycentric coordinates section above.
 
 So the exterior products ``\text{d}λ^{J\backslash l}`` are expressed using
 determinants of ``k``-minors of ``M`` as follows:
 ```math
     \text{d}λ^{J\backslash l} = m_I^{J\backslash l}\text{d}x^I
-\quad\text{where}\quad m_I^{J\backslash l}
-    = \text{det}\big(M_I^{J\backslash l}\big)
-    = \text{det}(M_{i+1,j})_{\{i\in I,\, j\in{J\backslash l}\}},
+\quad\text{where}\quad m_I^J
+    = \text{det}\big( (\partial_{I_i}λ_{J_j})_{1\leq i,j\leq k} \big)
+    = \text{det}\big( (M_{J_j,I_i+1})_{1\leq i,j\leq k} \big),
 ```
-and finally the coordinates of ``ω^{α,J}:=B_α φ^J`` in the basis ``\mathrm{d}x^I`` are
+and we obtain the coordinates of ``\bar{ω}_α^{J}=B_α φ^J`` in the basis
+``\mathrm{d}x^I`` are
 ```math
-ω_I^{α,J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, m_I^{J\backslash l}.
+\bar{ω}_{α,I}^{J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, m_I^{J\backslash l}.
 ```
 There are ``\binom{D}{k}`` coordinates. The ``\binom{D}{k}\binom{N}{k}``
-coefficients ``\{m_I^{J}\}_{I,J}`` are constant and are pre-computed from ``M``
-at the creation of the basis `TODO`.
+coefficients ``\{m_I^{J}\}_{I,J}`` are constant in ``T`` and are pre-computed
+from ``M`` at the creation of the basis `TODO`.
 
 Finally, the pseudocode to evaluate our basis of ``ℙ_r^-Λ^k(T)`` at
 ``\boldsymbol{x}`` is
@@ -264,9 +266,9 @@ for d in k:D
                     Jl = J'[l]
                     s += (-1)^l * λ_l * m[I][Jl]
                 end
-                ω^{α,J}_I = B_α * s
+                ω_αJ[I] = B_α * s
             end
-            set_value ω^{α,J}
+            set_value(result, ω_αJ})
         end
     end
 end
@@ -276,21 +278,107 @@ The loops are unrolled and the indices are pre-computed at compile time using a
 
 #### Bubble functions ``\mathring{ℙ}_rΛ^k``
 
-The ``ℙ^-`` type bubble basis polynomials associated to a face ``f\subset T``
+The ``ℙ`` type bubble basis polynomials associated to a face ``f\subset T``
 are defined by
 ```math
-\mathring{ℙ}_rΛ^k(T,f) = \text{span}\big\{B_α ψ_J^{α,f} \quad\big|\quad |α|=r,\ \#J=k,\ ⟦α⟧∪J=I_f,\ α_i=0 \text{ if } i< \text{min}(I_f \backslash J) \big\},
+\mathring{ℙ}_rΛ^k(T,f) = \text{span}\big\{ ω_{α,f}^J=B_α Ψ_{α,f}^J
+\quad\big|\quad |α|=r,\ \#J=k,\ ⟦α⟧∪J=I_f,\ α_i=0 \text{ if } i< \text{min}(I_f
+\backslash J) \big\},
 ```
-where ``ψ_J^{α,f}`` are defined by
+where ``Ψ_{α,f}^J`` are defined by
 ```math
-    ψ^{α,J,f} = \underset{j\in J}{\bigwedge} ψ^{α,j,f}
+    Ψ_{α,f}^J = \underset{j\in J}{\bigwedge} Ψ_{α,f}^j
 \quad\text{where}\quad
-    ψ^{α,j,f} = \mathrm{d}λ^j - \frac{α_j}{|α|}\sum_{i\in I_f}\mathrm{d}λ^i.
+ Ψ_{α,f}^j = \mathrm{d}λ^j - \frac{α_j}{|α|}\sum_{l\in I_f}\mathrm{d}λ^l.
+```
+Again, we need their coordinates in the Cartesian basis ``\mathrm{d}x^I``:
+```math
+Ψ_{α,f}^j = M_{j,i+1}\mathrm{d}x^i - \frac{α_j}{|α|}\sum_{l\in I_f}M_{l,i+1}\mathrm{d}x^i
+= \big(M_{j,i+1} - \frac{α_j}{|α|}\sum_{l\in I_f}M_{l,i+1}\big)\mathrm{d}x^i
+```
+so
+```math
+Ψ_{α,f}^j = ψ_{α,f,i}^j \mathrm{d}x^i
+\quad\text{where}\quad
+ψ_{α,f,i}^j = M_{j,i+1} - \frac{α_j}{|α|}\sum_{l\in I_f}M_{l,i+1}
+```
+and
+
+```math
+Ψ_{α,f}^J = ψ_{α,f,I}^J \mathrm{d}x^I
+\quad\text{where}\quad
+ψ_{α,f,I}^J = \text{det}\big( (ψ_{α,f,i}^j)_{i\in I,\,j\in J} \big).
+```
+
+Finally, the ``\binom{D}{k}`` coordinates of ``ω_{α,f}^{J}=B_α Ψ_{α,f}^J`` in the
+basis ``\mathrm{d}x^I`` are
+```math
+ω_{α,f,I}^{J} = B_α ψ_{α,f,I}^J,
+```
+where the ``\binom{D+r}{k+r}\binom{r+k}{k}\binom{D}{k}
+=\mathrm{dim}(ℙ_rΛ^k(T^D))\times\# (\{\mathrm{d}x^I\}_I)`` coefficients
+``ψ_{α,f,I}^J`` depend only on ``T`` and are pre-computed at the construction
+of the basis `TODO`.
+
+The pseudocode to evaluate the basis can be written in simpler way:
+```
+compute λ(x)
+compute B_α(x) for all |α|=r
+
+for (Ψ_αfJ, α) in Ψ_α_couples
+    ω_αfJ = B_α * Ψ_αfJ
+    set_value(result, ω_αfJ)
+end
+```
+
+#### Optimizations for the reference simplex
+
+In the reference simplex ``\hat{T}``, the vertices and thus coefficients of
+``M`` are known at compile time, so the coefficients ``\hat{m}_I^J`` and
+``\hat{ψ}_{α,f,I}^J`` can be hard-coded at compile time in the `@generated`
+functions to avoid storing them in the basis and accessing them at runtime. Let
+us derive the formulas for them.
+
+It was shown in the Barycentric coordinates section above that ``M_{j,i+1} =
+δ_{i+1,j} - δ_{1j}``. Let ``\#I=k`` and ``\#J=k``, and let
+``m = \underset{1\leq i\leq k-1}{\text{argfirst }}(I_i+1\neq J_i)`` or
+``m=k`` if no different index is found. Then it can be shown that
+```math
+\hat{m}_I^J = \mathrm{det}\big((δ_{I_i+1,J_j}-δ_{1,J_j})_{1\leq i,j\leq k}\big) =
+
+\left\{\begin{array}{cl}
+    (-1)^m δ_{I\backslash m \;+ 1}^{J\backslash 1}& \text{ if } J_1 = 1\\
+δ_{I+1}^{J} &\text{ else }
+\end{array}\right.
+,
+```
+where ``I+1=\{I_1+1, ...,I_k+1\}`` and ``δ_I^J = \underset{1\leq l\leq
+k}{\Pi}δ_{I_l}^{J_l}``. So in ``\hat{T}``, there is
+```math
+\bar{ω}_{α,I}^{J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, \hat{m}_I^{J\backslash l}.
 ```
 
 ```math
 ```
 
+##### Useful lemmas
+
+##### Lemma 1
+For ``I`` and ``J`` two increasing sets of indices of same size ``k``,
+```math
+\mathrm{det}\big( (δ_{I_i, J_j})_{1\leq i,j\leq k} \big) = δ_I^J \ \text{(}= \underset{1\leq i\leq k}{\Pi} δ_{I_i}^{J_i} \text{)}
+```
+
+Proof:
+Suppose ``I_1\neq J_1``, because both sets are strictly increasing, either
+``I_1 < J_1 < J_j`` and the first row of the matrix contains only zeros, or
+``I_i > I_1 > J_1`` and the first column contains only zeros. So in both cases,
+the determinant would be zero, otherwise one can do a Laplace expansion along
+the first row, giving
+```math
+\mathrm{det}\big( (δ_{I_i, J_j})_{1\leq i,j\leq k} \big) = δ_{I_1}^{J_1} \mathrm{det}\big((δ_{I_i, J_j})_{2\leq i,j\leq k}\big).
+```
+The same argument is repeated recursively to obtain the result.
 ## References
 
 [1] [M.J. Lai & L.L. Schumaker, Spline Functions on Triangulations, Chapter 2 - Bernstein–Bézier Methods for Bivariate Polynomials, pp. 18 - 61.](https://doi.org/10.1017/CBO9780511721588.003)
