@@ -305,7 +305,8 @@ Converts the cartesian coordinates `x` into the barycentric coordinates with
 respect to the reference simplex, that is `λ`=(x1, ..., xD, 1-x1-x2-...-xD).
 """
 @inline function _cart_to_bary(x::Point{D,T}, ::Nothing) where {D,T}
-  return SVector(1-sum(x), x...)
+  sum_x = sum(x,init=zero(T))
+  return SVector(1-sum_x, x...)
 end
 
 """
@@ -611,6 +612,7 @@ function bernstein_term_id(α)
   @inbounds i = sum(_L_slices_size(L, D, _L_slice_2(L,α,D)) for L in 1:D; init=0) + 1
   return i
 end
+_simplex_multi_id_to_linear_id(α::NTuple{1}) = 1
 
 
 # For a given Bernstein term `α`, return the index (starting from 0) of the

@@ -3,60 +3,49 @@
 #################################
 
 """
-struct PLambda{D,T,L,B,P} <: PolynomialBasis{D,VectorValue{L,T},Bernstein}
+struct PLambda{D,T,C,L,B} <: PolynomialBasis{D,VectorValue{L,T},Bernstein}
 
 Finite Element Exterior Calculus polynomial basis for the spaces `D`-dimensional
 simplices, P`r`Λ`ᴷ`(△`ᴰ`).
 
 Reference: D. N. Arnold and A. Logg, Periodic Table of the Finite Elements, SIAM News, vol. 47 no. 9, November 2014
 """
-struct PLambdaBasis{D,T,L,P,B} <: PolynomialBasis{D,VectorValue{L,T},Bernstein}
+struct PLambdaBasis{D,T,C,L,B} <: PolynomialBasis{D,VectorValue{L,T},Bernstein}
   r::Int
   k::Int
-  Ψ::P
   scalar_bernstein_basis::B
+  Ψ::SMatrix{L,C,T}
 
-  function PLambdaBasis{D}(::Type{T},r,k,vertices=nothing) where {D,T}
+  function PLambdaBasis{D}(::Type{T}, r, k, vertices=nothing) where {D,T}
     @check T<:Real "T needs to be <:Real since represents the scalar type"
     @check k in 0:D "The form order k must be in 0:D"
     @check r > 0    "The polynomial order r must be positive"
     if !isnothing(vertices)
       @check length(vertices) == D+1 "$D+1 vertices are required to define a $D-dim simplex, got $(length(vertices))"
-      @check eltype(vertices) isa Point{D} "Vertices should be of type Point{$D}, got $(eltype(vertices))"
+      @check eltype(vertices) <: Point{D} "Vertices should be of type Point{$D}, got $(eltype(vertices))"
     end
 
-    L = binomial(k,D) # Number of components of a basis form
+    L = binomial(D,k) # Number of components of a basis form
     C = binomial(r+k,k)*binomial(D+r,D-k) # Number of basis polynomials
 
-    b = BernsteinBasisOnSimplex{D}(T, r, vertices=vertices)
+    b = BernsteinBasisOnSimplex{D}(T, r, vertices)
     B = typeof(b)
+    Ψ = MMatrix{L,C,T}(undef)
+    _compute_PΛ_basis_form_coefficient!(Ψ,r,k,D,b,vertices)
 
-    if isnothing(vertices)
-      Ψ = nothing
-      P = Nothing
-    else
-      # Col major: the L components of a basis form are stored contiguously
-      P = SMatrix{L,C,T}
-      Ψ = MMatrix{L,C,T}(undef)
-      Ψ = _compute_PΛ_basis_form_coefficient!(Ψ,r,k,D,b,vertices)
-    end
-
-    new{D,T,L,P,B}(r,k,Ψ,b)
+    new{D,T,C,L,B}(r,k,b,Ψ)
   end
 end
 
 function PLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing) where {D,T}
-  PLambdaBasis{D}(T,r,vertices)
+  PLambdaBasis{D}(T,r,k,vertices)
 end
 
 get_FEEC_poly_degree(b::PLambdaBasis) = b.r
 get_FEEC_form_degree(b::PLambdaBasis) = b.k
 get_FEEC_family(::PLambdaBasis) = :P
 
-function Base.size(b::PLambdaBasis{D}) where D
-  r, k = b.r, b.k
-  return (binomial(r+k,k)*binomial(D+r,D-k), )
-end
+Base.size(::PLambdaBasis{D,T,C}) where {D,T,C} = (C,)
 get_order(b::PLambdaBasis) = get_FEEC_poly_degree(b)
 
 get_cart_to_bary_matrix(b::PLambdaBasis) = b.scalar_bernstein_basis.cart_to_bary_matrix
@@ -66,8 +55,6 @@ get_cart_to_bary_matrix(b::PLambdaBasis) = b.scalar_bernstein_basis.cart_to_bary
 ###################
 # Implementation  #
 ###################
-
-_compute_PΛ_basis_form_coefficient!(Ψ,r,k,D,b,::Nothing) = nothing # done in _hat_Ψ
 
 function _compute_PΛ_basis_form_coefficient!(Ψ,r,k,D,b,vertices)
   N = D+1
@@ -80,7 +67,7 @@ function _compute_PΛ_basis_form_coefficient!(Ψ,r,k,D,b,vertices)
         update_φ_αF!(φ_αF,b,α,F,r)
         α_prec = α
       end
-      for (iI,I) in enumerate(sorted_combinations(Val{k},Val{D}))
+      for (iI,I) in enumerate(sorted_combinations(D,k))
         Ψ[iI,w] = @inline minor(φ_αF,I,J)
       end
     end
@@ -92,7 +79,18 @@ end
   @inbounds for ci in CartesianIndices(φ_αF)
     i, j = ci[1], ci[2]
     mF = sum(M[Fl,i+1] for Fl in F; init=0)
-    φ_αF[i][j] = M[j,i+1] - α[j]*mF/r
+    φ_αF[ci] = M[j,i+1] - α[j]*mF/r
+  end
+end
+
+function _compute_PΛ_basis_form_coefficient!(Ψ,r,k,D,b,::Nothing)
+  T = eltype(Ψ)
+  for (_, F, dF_bubbles) in PΛ_bubble_indices(r,k,D)
+    for (w, α, J) in dF_bubbles
+      for (iI,I) in enumerate(sorted_combinations(D,k))
+        Ψ[iI,w] = _hat_Ψ(r,α,F,I,J,T)
+      end
+    end
   end
 end
 
@@ -172,31 +170,35 @@ function _return_cache(
   np = length(x)
   ndof = length(b)
   ndof_bernstein = binomial(r+D,D)
-  ndof_val = binomial(r+D,D)
 
   r = CachedArray(zeros(G,(np,ndof)))
-  s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
-  # Cache for all scalar nD-Bernstein polynomials, no other caches needed for derivatives
-  c = CachedVector(zeros(T,ndof_scalar))
-  # Cache for 1
-  t = ntuple( _ -> nothing, Val(N_deriv))
-  (r, s, c, t...)
+  # Cache for all scalar nD-Bernstein polynomials
+  cB = CachedVector(zeros(T,ndof_bernstein))
+  if N_deriv > 0
+    DB = T
+    xi = testitem(x)
+    for _ in 1:N_deriv
+      DB = gradient_type(DB,xi)
+    end
+    # Cache for all scalar nD-Bernstein polynomials N_deriv's derivative
+    t = (( nothing for _ in 2:N_deriv)..., CachedArray(zeros(DB,(1,ndof_bernstein))))
+    s = MArray{Tuple{size(DB)...},T}(undef)
+  else
+    t = ()
+    s = nothing
+  end
+  (r, s, cB, t...)
 end
 
-function return_cache(
-  fg::FieldGradientArray{1,<:PLambdaBasis},
-  x::AbstractVector{<:Point})
-
-  fg_b = FieldGradientArray{1}(fg.fa._basis)
-  return (fg_b, return_cache(fg_b,x))
-end
-
-function return_cache(
-  fg::FieldGradientArray{2,<:PLambdaBasis},
-  x::AbstractVector{<:Point})
-
-  fg_b = FieldGradientArray{2}(fg.fa._basis)
-  return (fg_b, return_cache(fg_b,x))
+function _setsize!(b::PLambdaBasis{D}, np, ω, t...) where D
+  r = get_order(b)
+  ndof = length(b)
+  ndof_bernstein = binomial(r+D,D)
+  setsize!(ω,(np,ndof))
+  setsize!(t[1],(ndof_bernstein,))
+  if length(t) > 1
+    setsize!(t[end],(1,ndof_bernstein))
+  end
 end
 
 function _evaluate_nd!(
@@ -214,60 +216,48 @@ function _evaluate_nd!(
 
   for (_, _, dF_bubbles) in PΛ_bubble_indices(r,k,D)
     for (w, α, _) in dF_bubbles
-      id_α = _simplex_multi_id_to_linear_id(α)
-      ω[i][w] = c[id_α] .* b.Ψ[w] # Bα(x)*Ψ_w
+      id_α = _simplex_multi_id_to_linear_id(α) # TODO optimize this
+      #println("α $α, r $r, k $k, D $D, id_α $id_α, c $c")
+      ω[i,w] = c[id_α] .* VectorValue(b.Ψ[:,w]) # Bα(x)*Ψ_w
     end
   end
 end
 
 function _gradient_nd!(
-  b::PLambdaBasis{D,T}, x,
+   b::PLambdaBasis{D,T}, x,
   ∇ω::AbstractMatrix{G}, i,
-  c::AbstractVector{T},
-  ∇B::MMatrix{1,LB,VectorValue{D,T}},
-  s::MVector{D,T}) where {D,G,T,LB}
+   c::AbstractVector{T},
+  ∇B::AbstractMatrix{VectorValue{D,T}},
+   s::MVector{D,T}) where {D,G,T}
 
-  #r = get_FEEC_poly_degree(b)
-  #k = get_FEEC_form_degree(b)
-  #x_to_λ = get_cart_to_bary_matrix(b)
-  #λ = _cart_to_bary(x, x_to_λ)
-  #c[1] = one(T)
-  #_downwards_de_Casteljau_nD!(c,λ,Val(r-1),Val(D))
-  #_grad_Bα_from_Bα⁻!(∇B,1,c,s,Val(r),Val(D),T,x_to_λ)
-
-  # _gradient_nd!(::BernsteinBasisOnSimplex) with set_value in our cache ∇B
-  _gradient_nd!(b.B, x, ∇B, 1, c, nothing, s)
+  r = get_FEEC_poly_degree(b)
+  k = get_FEEC_form_degree(b)
+  _gradient_nd!(b.scalar_bernstein_basis, x, ∇B, 1, c, nothing, s)
 
   for (_, _, dF_bubbles) in PΛ_bubble_indices(r,k,D)
     for (w, α, _) in dF_bubbles
       id_α = _simplex_multi_id_to_linear_id(α) # TODO optimize this
-      ∇ω[i][w] = ∇B[1,id_α] ⊗  VectorValue(b.Ψ[w])
+      ∇ω[i,w] = ∇B[1,id_α] ⊗  VectorValue(b.Ψ[:,w])
     end
   end
 end
 
 function _hessian_nd!(
-  b::PLambdaBasis{D,T}, x,
+   b::PLambdaBasis{D,T}, x,
   Hω::AbstractMatrix{G}, i,
-  c::AbstractVector{T},
-  HB::MMatrix{1,LB,TensorValue{D,D,T}},
-  s::MMatrix{D,T}) where {D,G,T,LB}
+   c::AbstractVector{T},
+    ::Nothing,
+  HB::AbstractMatrix{<:TensorValue{D,D,T}},
+   s::MMatrix{D,D,T}) where {D,G,T}
 
-  #r = get_FEEC_poly_degree(b)
-  #k = get_FEEC_form_degree(b)
-  #x_to_λ = get_cart_to_bary_matrix(b)
-  #λ = _cart_to_bary(x, x_to_λ)
-  #c[1] = one(T)
-  #_downwards_de_Casteljau_nD!(c,λ,Val(r-2),Val(D))
-  #_hess_Bα_from_Bα⁻⁻!(HB,1,c,s,Val(r),Val(D),T,x_to_λ)
-
-  # _hessian_nd!(::BernsteinBasisOnSimplex) with set_value in our cache HB
-  _hessian_nd!(b.B, x, HB, 1, c, nothing, nothing, s)
+  r = get_FEEC_poly_degree(b)
+  k = get_FEEC_form_degree(b)
+  _hessian_nd!(b.scalar_bernstein_basis, x, HB, 1, c, nothing, nothing, s)
 
   for (_, _, dF_bubbles) in PΛ_bubble_indices(r,k,D)
     for (w, α, _) in dF_bubbles
       id_α = _simplex_multi_id_to_linear_id(α) # TODO optimize this
-      Hω[i][w] = HB[1,id_α] ⊗  VectorValue(b.Ψ[w])
+      Hω[i,w] = HB[1,id_α] ⊗  VectorValue(b.Ψ[:,w])
     end
   end
 end
@@ -276,7 +266,6 @@ end
 ##########################
 # PLambda bases helpers  #
 ##########################
-
 
 PΛ_bubble_indices(r,k,D) = PΛ_bubble_indices(Val(r),Val(k),Val(D))
 @generated function PΛ_bubble_indices(::Val{r},::Val{k},::Val{D}) where {r,k,D}
@@ -317,8 +306,8 @@ function _P⁻Λ_F_bubble_indices(r,k,D,F,i)
     for J in sorted_combinations(N,k+1)
       j = minimum(J)-1
       if issetequal(supp(α) ∪ J, F) && all(α[1:j] .== 0)
-        push!(ids, (i, α, J))
         i += 1
+        push!(ids, (i, α, J))
       end
     end
   end
@@ -328,12 +317,12 @@ end
 function _PΛ_F_bubble_indices(r,k,D,F,i)
   N = D + 1
   ids = []
-  for α in bernstein_terms(r,N)
+  for α in bernstein_terms(r,D)
     for J in sorted_combinations(N,k)
       j = minimum(setdiff(F,J))-1
       if issetequal(supp(α) ∪ J, F) && all(α[1:j] .== 0)
-        push!(ids, (i, α, J))
         i += 1
+        push!(ids, (i, α, J))
       end
     end
   end
