@@ -44,7 +44,7 @@ On the reference simplex defined by the vertices `get_vertex_coordinates(SEGMENT
 ```math
 \begin{aligned}
 v_1     & = (0\ 0\ ⋯\ 0), \\
-v_2     & = (1\ 0\ ⋯\ 0), \\
+v_2     & = (0\ 1\ ⋯\ 0), \\
 ⋮  &         \\
 v_N     & = (0\ ⋯\ 0\ 1),
 \end{aligned}
@@ -152,45 +152,51 @@ _downwards_de_Casteljau_nD!
 
 # Bernstein basis generalization for ``P_r^{(-)}Λ^k`` spaces
 
-The TODO basis implements the polynomial bases for the spaces ``ℙ_r^-Λ^k`` and
-``ℙ_rΛ^k`` (writing ``P_r^{(-)}Λ^k`` for either one of them) on simplices of
-any dimension derived in [2]. In this section, we give the translation of the
-formulas in the paper from the differential geometry language to usual
-differential calculus and the implemented algorithm.
+The `TODO` basis implements the polynomial bases for the spaces ``ℙ_r^-Λ^k``
+and ``ℙ_rΛ^k`` (we write ``P_r^{(-)}Λ^k`` for either one of them) derived in
+[2] on simplices of any dimension, for any form degree ``k`` and polynomial
+degree ``r``. In this section, we give a summary of the basis definition,
+translation of the formulas in the paper from the differential geometry
+language to usual differential calculus and the implemented algorithm.
 
-A ``D``-dimensional simplex ``T`` is defined by ``N=D+1`` vertices ``\{v_0, v_1,
-..., v_D\}=\{v_i\}_{i\in 1:D}``. We uniquely identify a ``d``-dimensional face
-``f`` of ``T`` by the set of the ``d+1`` increasing indices of its vertices:
+Again, a ``D``-dimensional simplex ``T`` is defined by ``N=D+1`` vertices
+``\{v_1, v_2, ..., v_N\}=\{v_i\}_{i\in 1:N}``. We uniquely identify a
+``d``-dimensional face ``f`` of ``T`` by the set of the ``d+1`` increasing
+indices of its vertices:
 ```math
-f\sim I_f = \{i_0, i_1, ..., i_d\} \qquad\text{such that } 0≤ i_0 < i_1 < ... <i_d≤ D .
+f\sim I_f = \{i_0, i_1, ..., i_d\} \qquad\text{such that } 1≤ i_0 < i_1 < ... <i_d≤ N .
 ```
-In particular, ``T\sim \{0:D\}``. We write ``f\subset T`` for any face of
+In particular, ``T\sim \{1:N\}``. We write ``f\subset T`` for any face of
 ``T``, including ``T`` itself or its vertices.
-``T`` has ``\binom{N}{d+1}`` ``d``-dimensional faces, indexed ``\forall 0≤ i_0
-< i_1 < ... < i_d ≤ D``. The dimension of a face ``f`` is ``\#I_f``, and we
-write "``∀\#J=d``" for all the multi-indices of the ``D``-dimensional faces of
+``T`` has ``\binom{N}{d+1}`` ``d``-dimensional faces, indexed ``\forall\,1≤ i_0
+< i_1 < ... < i_d ≤ N``. The dimension of a face ``f`` is ``\#I_f``, and we
+write ``{"∀\,\#J=d+1"}`` for all the index sets of the ``d``-dimensional faces of
 ``T``.
 
 Using Einstein's convention of summation on repeated indices, a degree-``k``
 dimension-``D`` form ``ω`` can be written in the canonical Cartesian basis as
 ``ω = ω_I\,\text{d}x^I``, where the basis is
 ```math
-\big\{ \text{d}x^I = \underset{j\in I}{\bigwedge}\text{d}x^{j}
+\big\{ \text{d}x^I = \underset{i\in I}{\bigwedge}\text{d}x^{i}
 =\text{d}x^{i_1}\wedge ...\wedge \text{d}x^{i_k} \quad\big|\quad I=\{i_1, ...,
 i_k\} \text{ for }1≤ i_1 < ... < i_k ≤ D\big\},
 ```
-and ``\{ω_I\}_I\in\mathbb{R}^\binom{D}{k}`` is the vector of coefficients.
+``\{ω_I\}_I\in\mathbb{R}^\binom{D}{k}`` is the vector of coefficients of ``ω``,
+and ``\{\text{d}x^i\}_{1\leq i\leq D}`` is the canonical covector basis (basis
+of ``\text{T}_x T``) such that ``\text{d}x^i(\partial_{x_j})=δ_{ij}``.
 
 
 #### Geometric decomposition
-The main feature of the bases ``P_r^{(-)}Λ^k`` is that each basis polynomial
+
+The main feature of the ``P_r^{(-)}Λ^k`` bases is that each basis polynomial
 ``ω^{f,α}`` is associated with a face ``f`` of ``T`` (and a domain point
-``\boldsymbol{x}_α`` strictly inside ``f``), in the sense that the trace of
-``ω^{f,α}`` on another face ``g\subset T`` is zero when ``g`` does not contain
-``f``:
+``\boldsymbol{x}_α`` inside ``f``), in the sense that the trace of ``ω^{f,α}``
+on another face ``g\subset T`` is zero when ``g`` does not contain ``f``:
 ```math
-f\not\subset g\ \rightarrow\ \text{tr}_g ω^{f,α} = 0, \quad\forall f,g \subseteq T,\ \forall \llbracket α\rrbracket\subseteq I_f, α>0.
+f\not\subset g\ \rightarrow\ \text{tr}_g ω^{f,α} = 0, \quad\forall f,g \subseteq T,\ \forall \llbracket α\rrbracket\subseteq I_f, α>0,
 ```
+including any face ``g\neq f`` of dimension less or equal that of ``f``.
+
 These basis polynomials ``ω^{f,α}`` are called bubble functions associated to
 ``f``, the space they span is called ``\mathring{ℙ}_r^{(-)}Λ^k(T,f)``. There
 are no bubble functions of degree ``k`` on faces of dimension ``<k``, so the
@@ -201,11 +207,14 @@ spaces ``ℙ_r^{(-)}Λ^k(T)`` admit the geometric decomposition:
 ```
 
 #### Bubble functions ``\mathring{ℙ}_r^-Λ^k``
+
+The ``ℙ^-`` type bubble basis polynomials associated to a face ``f\subset T``
+are defined by
 ```math
 \mathring{ℙ}_r^-Λ^k(T,f) = \text{span}\big\{B_α φ^J \quad\big|\quad |α|=r-1,\ \#J=k+1,\ ⟦α⟧∪J=I_f,\ α_i=0 \text{ if } i< \text{min}(J) \big\}\newline
 ```
 where ``B_α`` are the scalar Bernstein polynomials implemented by
-[`BernsteinBasisOnSimplex`](@ref), and ``φ^J`` are the Whitney forms
+[`BernsteinBasisOnSimplex`](@ref), and ``φ^J`` are the Whitney forms:
 ```math
 φ^J = \sum_{0≤l≤k} (-1)^{l} λ_l \, \text{d}λ^{J\backslash l} \quad\text{where}\quad
 \text{d}λ^{J\backslash l} = \underset{j\in J\backslash \{J_l\} }{\bigwedge}\text{d}λ^{j},
@@ -213,31 +222,70 @@ where ``B_α`` are the scalar Bernstein polynomials implemented by
 ``φ^J `` is a ``k``-form of polynomial order ``1``. We now need to express
 ``\text{d}λ^{J\backslash l}`` in the Cartesian basis ``{\text{d}x^I}``.
 
-In a polytopal tetrahedron
-``T`` (flat faces), the 1-forms ``\text{d}λ^j:=\text{d}(λ_j)`` is homogeneous,
- its coefficients in the canonical basis are derived by
+In a polytopal simplex ``T`` (flat faces), the 1-forms
+``\text{d}λ^j:=\text{d}(λ_j)`` is homogeneous, its coefficients in the
+canonical basis are derived by
 ```math
 \text{d}λ^j = (\nabla(λ_j))^♭ = δ_{ki}\partial_{k}λ_j\,\text{d}x^i = \partial_{i}λ_j\,\text{d}x^i = M_{i+1,j}\,\text{d}x^i
 ```
 where ``{}^♭`` is the flat map, the metric ``g_{ki}=δ_{ki}`` is trivial and
 ``M_{i+1,j}`` are components of the barycentric change of coordinate matrix
-``M`` such that
+``M`` introduced in the Barycentric coordinates section above.
+
+So the exterior products ``\text{d}λ^{J\backslash l}`` are expressed using
+determinants of ``k``-minors of ``M`` as follows:
 ```math
-λ(\boldsymbol{x}) = M \cdot (1\, x_1\, ...\, x_D) \quad\text{or}\quad
-λ_j(\boldsymbol{x}) = (e_j)^T \cdot M \cdot (1\, x_1\, ...\, x_D).
+    \text{d}λ^{J\backslash l} = m_I^{J\backslash l}\text{d}x^I
+\quad\text{where}\quad m_I^{J\backslash l}
+    = \text{det}\big(M_I^{J\backslash l}\big)
+    = \text{det}(M_{i+1,j})_{\{i\in I,\, j\in{J\backslash l}\}},
 ```
-
-
+and finally the coordinates of ``ω^{α,J}:=B_α φ^J`` in the basis ``\mathrm{d}x^I`` are
 ```math
-\text{d}λ^{J\backslash l} = \text{det}\big(M_I^{J\backslash l}\big)\text{d}x^I
-\quad\text{where}\quad M_I^{J\backslash l} = (M_{i+1,j})_{\{i\in I,\,
-j\in{J\backslash l}\}}
+ω_I^{α,J} = B_α \sum_{0≤l≤k} (-1)^{l} λ_l \, m_I^{J\backslash l}.
 ```
+There are ``\binom{D}{k}`` coordinates. The ``\binom{D}{k}\binom{N}{k}``
+coefficients ``\{m_I^{J}\}_{I,J}`` are constant and are pre-computed from ``M``
+at the creation of the basis `TODO`.
 
+Finally, the pseudocode to evaluate our basis of ``ℙ_r^-Λ^k(T)`` at
+``\boldsymbol{x}`` is
+```
+compute λ(x)
+compute B_α(x) for all |α|=r-1
+
+for d in k:D
+    for #f = k, f≤N
+        for α,J in bubble_indices(k,f)
+            J' = [J\J1, J\J2, ..., J\Jk]
+            for #I = k, I≤D
+                s = 0
+                for l in 1:k
+                    Jl = J'[l]
+                    s += (-1)^l * λ_l * m[I][Jl]
+                end
+                ω^{α,J}_I = B_α * s
+            end
+            set_value ω^{α,J}
+        end
+    end
+end
+```
+The loops are unrolled and the indices are pre-computed at compile time using a
+`@generated` function barrier in `TODO`.
 
 #### Bubble functions ``\mathring{ℙ}_rΛ^k``
+
+The ``ℙ^-`` type bubble basis polynomials associated to a face ``f\subset T``
+are defined by
 ```math
-\mathring{ℙ}_rΛ^k(T,f) = \text{span}\big\{B_α ψ_J^{α,f} \quad\big|\quad |α|=r,\ \#J=k,\ ⟦α⟧∪J=I_f,\ α_i=0 \text{ if } i< \text{min}(I_f \backslash J) \big\}
+\mathring{ℙ}_rΛ^k(T,f) = \text{span}\big\{B_α ψ_J^{α,f} \quad\big|\quad |α|=r,\ \#J=k,\ ⟦α⟧∪J=I_f,\ α_i=0 \text{ if } i< \text{min}(I_f \backslash J) \big\},
+```
+where ``ψ_J^{α,f}`` are defined by
+```math
+    ψ^{α,J,f} = \underset{j\in J}{\bigwedge} ψ^{α,j,f}
+\quad\text{where}\quad
+    ψ^{α,j,f} = \mathrm{d}λ^j - \frac{α_j}{|α|}\sum_{i\in I_f}\mathrm{d}λ^i.
 ```
 
 ```math
