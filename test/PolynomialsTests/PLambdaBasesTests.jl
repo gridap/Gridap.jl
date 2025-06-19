@@ -75,41 +75,37 @@ T = Float64
 #  end
 #end
 
+# TODO validation of precomputation in reference simplex
+
 # 0D                                           0D #
 D = 0
 vertices = (Point{D,T}(),)
 x = [vertices[1]]
 x1 = x[1]
 
-k = 0
-r = 1
-b = PLambdaBasis(Val(D),T,r,k)
-evaluate(b,x)
-evaluate(Broadcasting(∇)(b),x)
-evaluate(Broadcasting(∇∇)(b),x)
+for k in 0:D
+  for r in 1:4
+    b = PmLambdaBasis(Val(D),T,r,k)
+    evaluate(b,x)
+    evaluate(Broadcasting(∇)(b),x)
+    evaluate(Broadcasting(∇∇)(b),x)
 
-r = 2
-b = PLambdaBasis(Val(D),T,r,k)
-evaluate(b,x)
-evaluate(Broadcasting(∇)(b),x)
-evaluate(Broadcasting(∇∇)(b),x)
+    b = PmLambdaBasis(Val(D),T,r,k,vertices)
+    evaluate(b,x)
+    evaluate(Broadcasting(∇)(b),x)
+    evaluate(Broadcasting(∇∇)(b),x)
 
-r = 3
-b = PLambdaBasis(Val(D),T,r,k)
-evaluate(b,x)
-evaluate(Broadcasting(∇)(b),x)
-evaluate(Broadcasting(∇∇)(b),x)
+    b = PLambdaBasis(Val(D),T,r,k)
+    evaluate(b,x)
+    evaluate(Broadcasting(∇)(b),x)
+    evaluate(Broadcasting(∇∇)(b),x)
 
-r = 4
-b = PLambdaBasis(Val(D),T,r,k)
-evaluate(b,x)
-evaluate(Broadcasting(∇)(b),x)
-evaluate(Broadcasting(∇∇)(b),x)
-
-b = PLambdaBasis(Val(D),T,r,k,vertices)
-evaluate(b,x)
-evaluate(Broadcasting(∇)(b),x)
-evaluate(Broadcasting(∇∇)(b),x)
+    b = PLambdaBasis(Val(D),T,r,k,vertices)
+    evaluate(b,x)
+    evaluate(Broadcasting(∇)(b),x)
+    evaluate(Broadcasting(∇∇)(b),x)
+  end
+end
 
 # 1D                                           1D #
 D = 1
@@ -119,27 +115,28 @@ x = [xi for xi in vertices]
 x1 = x[1]
 
 r = 4
-k = 0
-b = PLambdaBasis(Val(D),T,r,k)
-evaluate(b,x)
-evaluate(Broadcasting(∇)(b),x)
-evaluate(Broadcasting(∇∇)(b),x)
+for k in 0:D
+  b = PmLambdaBasis(Val(D),T,r,k)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
 
-b = PLambdaBasis(Val(D),T,r,k,vertices)
-evaluate(b,x)
-evaluate(Broadcasting(∇)(b),x)
-evaluate(Broadcasting(∇∇)(b),x)
+  b = PmLambdaBasis(Val(D),T,r,k,vertices)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
 
-k = 1
-b = PLambdaBasis(Val(D),T,r,k)
-evaluate(b,x)
-evaluate(Broadcasting(∇)(b),x)
-evaluate(Broadcasting(∇∇)(b),x)
+  b = PLambdaBasis(Val(D),T,r,k)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
 
-b = PLambdaBasis(Val(D),T,r,k,vertices)
-evaluate(b,x)
-evaluate(Broadcasting(∇)(b),x)
-evaluate(Broadcasting(∇∇)(b),x)
+  b = PLambdaBasis(Val(D),T,r,k,vertices)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
+end
+
 
 # 2D                                           2D #
 D = 2
@@ -149,39 +146,27 @@ x = [xi for xi in vertices]
 x1 = x[1]
 
 r = 4
-k = 0
-b = PLambdaBasis(Val(D),T,r,k)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
+for k in 0:D
+  b = PmLambdaBasis(Val(D),T,r,k)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
 
-b = PLambdaBasis(Val(D),T,r,k,vertices)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
+  b = PmLambdaBasis(Val(D),T,r,k,vertices)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
 
-k = 1
-b = PLambdaBasis(Val(D),T,r,k)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
+  b = PLambdaBasis(Val(D),T,r,k)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
 
-b = PLambdaBasis(Val(D),T,r,k,vertices)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
-
-k = 2
-b = PLambdaBasis(Val(D),T,r,k)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
-
-b = PLambdaBasis(Val(D),T,r,k,vertices)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
-
+  b = PLambdaBasis(Val(D),T,r,k,vertices)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
+end
 
 # 3D                                           3D #
 D = 3
@@ -191,50 +176,28 @@ x = [xi for xi in vertices]
 x1 = x[1]
 
 r = 4
-k = 0
-b = PLambdaBasis(Val(D),T,r,k)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
+for k in 0:D
+  b = PmLambdaBasis(Val(D),T,r,k)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
 
-b = PLambdaBasis(Val(D),T,r,k,vertices)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
+  b = PmLambdaBasis(Val(D),T,r,k,vertices)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
 
-k = 1
-b = PLambdaBasis(Val(D),T,r,k)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
+  b = PLambdaBasis(Val(D),T,r,k)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
 
-b = PLambdaBasis(Val(D),T,r,k,vertices)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
+  b = PLambdaBasis(Val(D),T,r,k,vertices)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
+end
 
-k = 2
-b = PLambdaBasis(Val(D),T,r,k)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
-
-b = PLambdaBasis(Val(D),T,r,k,vertices)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
-
-
-k = 3
-b = PLambdaBasis(Val(D),T,r,k)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
-
-b = PLambdaBasis(Val(D),T,r,k,vertices)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
 
 # 4D                                           4D #
 D = 4
@@ -244,65 +207,27 @@ x = [xi for xi in vertices]
 x1 = x[1]
 
 r = 4
-k = 0
-b = PLambdaBasis(Val(D),T,r,k)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
+for k in (0,1,D-1,D)
+  b = PmLambdaBasis(Val(D),T,r,k)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
 
-b = PLambdaBasis(Val(D),T,r,k,vertices)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
+  b = PmLambdaBasis(Val(D),T,r,k,vertices)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
 
-k = 1
-b = PLambdaBasis(Val(D),T,r,k)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
+  b = PLambdaBasis(Val(D),T,r,k)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
 
-b = PLambdaBasis(Val(D),T,r,k,vertices)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
-
-#k = 2
-#b = PLambdaBasis(Val(D),T,r,k)
-#bx  = evaluate(b,x)
-#Gbx = evaluate(Broadcasting(∇)(b),x)
-#Hbx = evaluate(Broadcasting(∇∇)(b),x)
-#
-#
-#b = PLambdaBasis(Val(D),T,r,k,vertices)
-#bx  = evaluate(b,x)
-#Gbx = evaluate(Broadcasting(∇)(b),x)
-#Hbx = evaluate(Broadcasting(∇∇)(b),x)
-
-k = 3
-
-b = PLambdaBasis(Val(D),T,r,k)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
-
-
-b = PLambdaBasis(Val(D),T,r,k,vertices)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
-
-k = 4
-b = PLambdaBasis(Val(D),T,r,k)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
-
-
-b = PLambdaBasis(Val(D),T,r,k,vertices)
-bx  = evaluate(b,x)
-Gbx = evaluate(Broadcasting(∇)(b),x)
-Hbx = evaluate(Broadcasting(∇∇)(b),x)
-
+  b = PLambdaBasis(Val(D),T,r,k,vertices)
+  evaluate(b,x)
+  evaluate(Broadcasting(∇)(b),x)
+  evaluate(Broadcasting(∇∇)(b),x)
+end
 
 end # module
 

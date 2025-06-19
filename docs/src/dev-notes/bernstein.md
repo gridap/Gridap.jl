@@ -367,6 +367,19 @@ the gradient and hessian of the form coefficient vectors
 in function of the scalar Bernstein polynomial derivatives already implemented
 by `BernsteinBasisOnSimplex`.
 
+##### Coefficient vector ``\{ω_{I}^{α,J}\}_I``
+
+Recall ``ω_{I}^{α,J} = B_α\, ψ_I^{α,J}``. The derivatives are easy to
+compute because only ``B_α`` depends on ``\boldsymbol{x}``, leading to
+```math
+\partial_q\, ω_{I}^{α,J} = ψ_I^{α,J}\; \partial_q B_α,\qquad\text{or}\qquad ∇ω^{α,J} = ∇B_α ⊗ ψ^{α,J}\\
+
+\partial_t\partial_q\, ω_{I}^{α,J} = ψ_I^{α,J}\; \partial_t\partial_q B_α\qquad\text{or}\qquad ∇∇ω^{α,J} = ∇∇B_α ⊗ ψ^{α,J}.
+```
+where ``∇`` and ``∇∇`` are the standard gradient and hessian operators and
+``ψ^{α,J}`` is seen as a length-``\binom{D}{k}`` vector with no variance
+(not as a ``k``-form, which is an order ``k`` covariant tensor).
+
 ##### Coefficient vector ``\{\bar{ω}_{I}^{α,J}\}_I``
 
 Recall ``\bar{ω}_{I}^{α,J} = B_α \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \,
@@ -377,24 +390,22 @@ both ``B_α`` and ``λ_{J(l)}`` depend on ``\boldsymbol{x}``, let us first use `
 follows
 ```math
 \bar{ω}_{I}^{α,J} = B_α \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \, m_I^{J\backslash l} =
-\frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1)  m_I^{J\backslash l}\, B_{α+e(J,l)},
+\frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1)\ B_{α+e(J,l)}\, m_I^{J\backslash l},
 ```
 where ``|α|+1`` was replaced with ``r``, the polynomial degree of
 ``\bar{ω}_{I}^{α,J}``. As a consequence, for any Cartesian coordinate indices
 ``1≤ p,q≤ D``, we get
 ```math
-\partial_q \bar{ω}_{I}^{α,J} = \frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1)  m_I^{J\backslash l}\, \partial_q B_{α+e(J,l)},\\
-\partial_t\partial_q \bar{ω}_{I}^{α,J} = \frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1)  m_I^{J\backslash l}\, \partial_t\partial_q B_{α+e(J,l)}.
+\partial_q \bar{ω}_{I}^{α,J} = \frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1) \ \partial_q B_{α+e(J,l)}\, m_I^{J\backslash l},\\
+\partial_t\partial_q \bar{ω}_{I}^{α,J} = \frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1) \ \partial_t\partial_q B_{α+e(J,l)}\, m_I^{J\backslash l}.
 ```
-
-##### Coefficient vector ``\{ω_{I}^{α,J}\}_I``
-
-Recall ``ω_{I}^{α,J} = B_α\, ψ_I^{α,J}``. The derivatives are easy to
-compute because only ``B_α`` depends on ``\boldsymbol{x}``, leading to
+In tensor form, this is
 ```math
-\partial_q\, ω_{I}^{α,J} = ψ_I^{α,J}\; \partial_q B_α,\\
-\partial_t\partial_q\, ω_{I}^{α,J} = ψ_I^{α,J}\; \partial_t\partial_q B_α.
+\mathrm{D}ω^{α,J} = \frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1)\ \mathrm{D}\!B_{α+e(J,l)} ⊗ m^{J\backslash l}\\
 ```
+where ``\mathrm{D}`` is ``∇`` or ``∇∇``, the standard gradient and hessian operators,
+and ``\bar{ω}^{α,J}`` is again seen as a length-``\binom{D}{k}`` vector with no
+variance.
 
 #### Exterior derivative of the basis forms
 

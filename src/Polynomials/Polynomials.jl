@@ -120,6 +120,7 @@ export BernsteinBasisOnSimplex
 export bernstein_terms
 export bernstein_term_id
 export PLambdaBasis
+export PmLambdaBasis
 
 export CompWiseTensorPolyBasis
 export QGradBasis
