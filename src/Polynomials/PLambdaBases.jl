@@ -12,7 +12,7 @@
 
 # One bubble function:
 #               ω_w  =      (  w,             α, α_id,           J,   sub_J_ids,  sup_α_ids )
-const BubbleFunction = Tuple{Int, BernsteinTerm,  Int, Vector{Int}, Vector{Int}, Vector{Int}}
+const BubbleFunction = Tuple{Int, Vector{Int},  Int, Vector{Int}, Vector{Int}, Vector{Int}}
 
 # One bubble space associated to the d-dimensional face F
 # bubble_d_F =      (          F,    F_bubble_functions )
@@ -905,9 +905,9 @@ function _hessian_nd!(
 end
 
 
-########################################################
-# Combination, BernsteinTerm and PLambda bases helpers #
-########################################################
+#########################################################
+# Combination, Bernstein term and PLambda bases helpers #
+#########################################################
 
 # A combination is a set of positive integers sorted in increasing order
 # a.k.a an increasing collection of indices in a range 1:D
