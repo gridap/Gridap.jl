@@ -10,6 +10,8 @@ Singleton of the [`CrouzeixRaviart`](@ref) reference FE name.
 """
 const crouzeix_raviart = CrouzeixRaviart()
 
+Pushforward(::Type{CrouzeixRaviart}) = IdentityPiolaMap()
+
 """
     CrouzeixRaviartRefFE(::Type{T}, p::Polytope, order::Integer)
 

@@ -11,6 +11,8 @@ Singleton of the [`Serendipity`](@ref) reference FE name.
 """
 const serendipity = Serendipity()
 
+Pushforward(::Type{Serendipity}) = IdentityPiolaMap()
+
 """
     SerendipityRefFE(::Type{T}, p::Polytope, order::Int)
     SerendipityRefFE(::Type{T}, p::Polytope, orders::Tuple)

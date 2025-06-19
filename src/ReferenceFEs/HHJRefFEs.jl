@@ -1,12 +1,12 @@
 
-struct HellanHerrmannJhonson <: PushforwardRefFE end
+struct HellanHerrmannJhonson <: ReferenceFEName end
 
 const hhj = HellanHerrmannJhonson()
 
-Pushforward(::Type{<:HellanHerrmannJhonson}) = DoubleContraVariantPiolaMap()
+Pushforward(::Type{HellanHerrmannJhonson}) = DoubleContraVariantPiolaMap()
 
 """
-    struct HellanHerrmannJhonson <: PushforwardRefFE end
+    struct HellanHerrmannJhonson <: ReferenceFEName end
     HellanHerrmannJhonsonRefFE(::Type{T},p::Polytope,order::Integer) where T
 
 Hellan-Herrmann-Jhonson reference finite element.

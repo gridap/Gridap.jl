@@ -97,6 +97,8 @@ export HEX_AXIS
 export TET_AXIS
 export INVALID_PERM
 
+export IdentityPiolaMap
+export CoVariantPiolaMap
 export ContraVariantPiolaMap
 
 export Dof
@@ -112,6 +114,7 @@ export test_dof_array
 export ReferenceFE
 export ReferenceFEName
 export GenericRefFE
+export get_name
 export get_polytope
 export get_prebasis
 export get_dof_basis
@@ -228,6 +231,8 @@ include("LagrangianDofBases.jl")
 
 include("ReferenceFEInterfaces.jl")
 
+include("Pullbacks.jl")
+
 include("LagrangianRefFEs.jl")
 
 include("CLagrangianRefFEs.jl")
@@ -251,8 +256,6 @@ include("StrangQuadratures.jl")
 include("XiaoGimbutasQuadratures.jl")
 
 include("PolytopalQuadratures.jl")
-
-include("Pullbacks.jl")
 
 include("MomentBasedReferenceFEs.jl")
 

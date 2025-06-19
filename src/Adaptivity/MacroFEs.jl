@@ -327,6 +327,8 @@ end
 
 struct MacroRefFE <: ReferenceFEName end
 
+Pushforward(::Type{MacroRefFE}) = IdentityPiolaMap()
+
 """
     MacroReferenceFE(rrule::RefinementRule,reffes::AbstractVector{<:ReferenceFE})
 
