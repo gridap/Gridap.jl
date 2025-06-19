@@ -257,7 +257,7 @@ end
     BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int)
     BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int,vertices)
 
-Constructor for [`BernsteinBasisOnSimplex`](@ref).
+Constructors for [`BernsteinBasisOnSimplex`](@ref).
 
 If specified, `vertices` is a collection of `D+1` `Point{D}` defining a simplex
 used to compute the barycentric coordinates from, it must be non-degenerated
