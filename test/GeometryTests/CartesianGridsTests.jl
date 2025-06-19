@@ -125,4 +125,9 @@ test_grid(grid)
 grid = compute_linear_grid(HEX8)
 test_grid(grid)
 
+domain = (0,1,0,1,0,1,0,1)
+partition = (2,2,2,2)
+grid = CartesianGrid(domain,partition)
+test_grid(grid)
+
 end # module

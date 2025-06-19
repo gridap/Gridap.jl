@@ -17,12 +17,13 @@ References:
 
 """
 function HellanHerrmannJhonsonRefFE(::Type{T},p::Polytope,order::Integer) where T
-  @assert p == TRI "HellanHerrmannJhonson Reference FE only defined for TRIangles"
+  @notimplementedif p == TET
+  @assert p == TRI "HellanHerrmannJhonson Reference FE only defined for TRIangles and TETrahedra"
 
   VT = SymTensorValue{2,T}
-  prebasis = MonomialBasis{2}(VT,order,Polynomials._p_filter)
-  fb = MonomialBasis{D-1}(T,order,Polynomials._p_filter)
-  cb = MonomialBasis{2}(VT,order-1,Polynomials._p_filter)
+  prebasis = MonomialBasis(Val(2),VT,order,Polynomials._p_filter)
+  fb = MonomialBasis(Val(D-1),T,order,Polynomials._p_filter)
+  cb = MonomialBasis(Val(2),VT,order-1,Polynomials._p_filter)
 
   function cmom(φ,μ,ds) # Cell and Node moment function: σ_K(φ,μ) = ∫(φ:μ)dK
     Broadcasting(Operation(⊙))(φ,μ)

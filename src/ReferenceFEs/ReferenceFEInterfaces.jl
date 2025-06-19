@@ -83,6 +83,11 @@ and `order(s)` (but yet unspecified cell polytope).
 - `orders::NTuple{D,Int}`: a tuple of order per space dimension for anysotropic elements.
 
 Keyword arguments are `name` specific.
+
+!!! warning
+    This method only returns the tuple of its arguments, the actual Reference
+    FE(s) is(are) only built once the polytope(s) is(are) known. See the other
+    `ReferenceFE` methods or the FESpaces constructors.
 """
 ReferenceFE(name::ReferenceFEName, args...; kwargs...) = (name, args, kwargs)
 
@@ -303,6 +308,11 @@ function expand_cell_data(type_to_data, cell_to_type::Fill)
   Fill(data, ncells)
 end
 
+function expand_cell_data(type_to_data, cell_to_type::Base.OneTo)
+  @assert length(type_to_data) == length(cell_to_type)
+  type_to_data
+end
+
 function compress_cell_data(cell_data::AbstractArray)
   @unreachable """\n
   The given cell data cannot be compressed. Describe your data with
@@ -327,6 +337,10 @@ end
 
 function compress_cell_data(a::Fill)
   fill(a.value, 1), Fill(1, length(a))
+end
+
+function compress_cell_data(a::Vector)
+  a, Base.OneTo(length(a))
 end
 
 # Test

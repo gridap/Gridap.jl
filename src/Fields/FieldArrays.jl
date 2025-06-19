@@ -234,6 +234,15 @@ Base.size(a::LinearCombinationFieldVector) = (size(a.values,2),)
 Base.getindex(a::LinearCombinationFieldVector,i::Integer) = LinearCombinationField(a.values,a.fields,i)
 Base.IndexStyle(::Type{<:LinearCombinationField}) = IndexLinear()
 
+function Arrays.testitem(f::LinearCombinationFieldVector{V}) where V
+  if !iszero(size(f.values,2))
+    values = f.values
+  else
+    values = zeros(eltype(f.values),size(f.values,1),1)
+  end::V
+  LinearCombinationField(values,f.fields,1)
+end
+
 for T in (:(Point),:(AbstractVector{<:Point}))
   @eval begin
 

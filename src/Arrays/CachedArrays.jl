@@ -88,8 +88,7 @@ size(self::CachedArray) = size(self.array)
 """
 $(SIGNATURES)
 
-Changes the size of the `CachedArray` `a` to the size described the the tuple
-`s`.
+Changes the size of the `CachedArray` `a` to the size described the the tuple `s`.
 After calling `setsize!`, the array can store uninitialized values.
 """
 function setsize!(a::CachedArray{T,N},s::NTuple{N,Int}) where {T,N}
@@ -101,6 +100,7 @@ function setsize!(a::CachedArray{T,N},s::NTuple{N,Int}) where {T,N}
       a.buffer[s] = a.array
     end
   end
+  return a
 end
 
 function setsize!(a::CachedArray{T,N},s::NTuple{N,<:Integer}) where {T,N}
@@ -109,21 +109,21 @@ function setsize!(a::CachedArray{T,N},s::NTuple{N,<:Integer}) where {T,N}
 end
 
 @propagate_inbounds function getindex(self::CachedArray, kj::Integer)
-    self.array[kj]
+  self.array[kj]
 end
 
 @propagate_inbounds function getindex(self::CachedArray{T,N}, kj::Vararg{Integer,N}) where {T,N}
-    self.array[kj...]
+  self.array[kj...]
 end
 
 @propagate_inbounds function setindex!(B::CachedArray, v, kj::Integer)
-    B.array[kj] = v
-    v
+  B.array[kj] = v
+  v
 end
 
 @propagate_inbounds function setindex!(B::CachedArray{T,N}, v, kj::Vararg{Integer,N}) where {T,N}
-    B.array[kj...] = v
-    v
+  B.array[kj...] = v
+  v
 end
 
 function similar(::Type{CachedArray{T,N,A}},s::Tuple{Vararg{Int}}) where {T,N,A}
@@ -136,4 +136,28 @@ Base.convert(::Type{CachedArray{T,N,A}},a::CachedArray{T,N,A}) where {T,N,A} = a
 function Base.convert(::Type{CachedArray{T,N,A}},a::CachedArray) where {T,N,A}
   array = convert(A,a.array)
   CachedArray(array)
+end
+
+"""
+    $(SIGNATURES)
+
+Sets the size of the `CachedArray` to accomodate the result of the operation given 
+by `op(args...)`.
+"""
+function setsize_op!(op,c::CachedArray,args...)
+  @abstractmethod
+end
+
+function setsize_op!(::typeof(copy),c::CachedArray,a)
+  setsize!(c,size(a))
+end
+
+function setsize_op!(::typeof(*),c::CachedArray,a::AbstractMatrix,b::AbstractVector)
+  @check size(a,2) == length(b)
+  setsize!(c,(size(a,1),))
+end
+
+function setsize_op!(::typeof(*),c::CachedArray,a::AbstractMatrix,b::AbstractMatrix)
+  @check size(a,2) == size(b,1)
+  setsize!(c,(size(a,1),size(b,2)))
 end

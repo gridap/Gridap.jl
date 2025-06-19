@@ -241,14 +241,24 @@ Base.size(a::LazyArray{G,T,1} where {G,T}) = (length(a.maps),)
 
 function Base.sum(a::LazyArray)
   cache = array_cache(a)
-  _sum_lazy_array(cache,a)
+  lazy_sum(cache,a)
 end
 
-function _sum_lazy_array(cache,a)
+function lazy_sum(cache,a)
   r = zero(testitem(a))
   for i in eachindex(a)
     ai = getindex!(cache,a,i)
     r += ai
+  end
+  r
+end
+
+function lazy_collect(a::LazyArray{A,T} where A) where T
+  cache = array_cache(a)
+  r = Array{T}(undef,size(a))
+  for i in eachindex(a)
+    ai = getindex!(cache,a,i)
+    r[i] = deepcopy(ai)
   end
   r
 end

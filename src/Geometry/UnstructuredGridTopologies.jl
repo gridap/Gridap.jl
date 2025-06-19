@@ -45,8 +45,8 @@ function UnstructuredGridTopology(
     vertex_coordinates,
     n_m_to_nface_to_mfaces,
     cell_type,
-    polytopes,orientation_style)
-
+    polytopes,orientation_style
+  )
 end
 
 """
@@ -85,29 +85,27 @@ function UnstructuredGridTopology(
     n_m_to_nface_to_mfaces,
     cell_type,
     polytopes,
-    orientation_style)
-
+    orientation_style
+  )
 end
 
 """
     UnstructuredGridTopology(topo::GridTopology)
 """
 function UnstructuredGridTopology(topo::GridTopology)
-
   vertex_coordinates = collect1d(get_vertex_coordinates(topo))
   cell_type = collect1d(get_cell_type(topo))
   polytopes = get_polytopes(topo)
   D = num_cell_dims(topo)
   d_to_dface_vertices = [ Table(get_faces(topo,d,0)) for d in 0:D ]
   orientation = OrientationStyle(topo)
-
   UnstructuredGridTopology(
     vertex_coordinates,
     d_to_dface_vertices,
     cell_type,
     polytopes,
-    orientation)
-
+    orientation
+  )
 end
 
 function UnstructuredGridTopology(topo::UnstructuredGridTopology)
@@ -116,42 +114,32 @@ end
 
 """
     UnstructuredGridTopology(grid::UnstructuredGrid)
-
-    UnstructuredGridTopology(
-      grid::UnstructuredGrid,
-      cell_to_vertices::Table,
-      vertex_to_node::AbstractVector)
+    UnstructuredGridTopology(grid::UnstructuredGrid,cell_to_vertices::Table,vertex_to_node::AbstractVector)
 """
 function UnstructuredGridTopology(grid::UnstructuredGrid)
-  cell_to_vertices, vertex_to_node, = _generate_cell_to_vertices_from_grid(grid)
-  _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
+  cell_to_vertices, vertex_to_node, _ = _generate_cell_to_vertices_from_grid(grid)
+  UnstructuredGridTopology(grid,cell_to_vertices,vertex_to_node)
 end
 
 function UnstructuredGridTopology(grid::UnstructuredGrid, cell_to_vertices::Table, vertex_to_node::AbstractVector)
-  _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
-end
-
-function _generate_grid_topology_from_grid(grid::UnstructuredGrid,cell_to_vertices,vertex_to_node)
-
-  @notimplementedif (! is_regular(grid)) "Extrtacting the GridTopology form a Grid only implemented for the regular case"
+  @notimplementedif !is_regular(grid) "Extracting the GridTopology form a Grid only implemented for the regular case"
 
   node_to_coords = get_node_coordinates(grid)
-  if vertex_to_node == 1:num_nodes(grid)
+  if vertex_to_node == Base.OneTo(num_nodes(grid))
     vertex_to_coords = node_to_coords
   else
     vertex_to_coords = node_to_coords[vertex_to_node]
   end
-
   cell_to_type = get_cell_type(grid)
-  polytopes = map(get_polytope, get_reffes(grid))
+  polytopes = get_polytopes(grid)
 
   UnstructuredGridTopology(
     vertex_to_coords,
     cell_to_vertices,
     cell_to_type,
     polytopes,
-    OrientationStyle(grid))
-
+    OrientationStyle(grid)
+  )
 end
 
 function _generate_cell_to_vertices_from_grid(grid::UnstructuredGrid)
@@ -227,7 +215,6 @@ function _generate_cell_to_vertices(
   vertex_to_node = find_inverse_index_map(node_to_vertex)
 
   (cell_to_vertices_data, cell_to_vertices_ptrs, vertex_to_node, node_to_vertex)
-
 end
 
 function  _generate_cell_to_vertices_count!(
@@ -292,13 +279,13 @@ function GridTopology(::Type{<:Polytope{D}},topo::UnstructuredGridTopology) wher
   d_to_dface_vertices = [ get_faces(topo,d,0) for d in 0:D ]
   orientation = OrientationStyle(topo)
 
-  topo_d = UnstructuredGridTopology(
+  UnstructuredGridTopology(
     vertex_coordinates,
     d_to_dface_vertices,
     cell_type,
     polytopes,
-    orientation)
-
+    orientation
+  )
 end
 
 # Needed, do not remove
@@ -334,28 +321,28 @@ function _setup_faces!(g,dimfrom,dimto)
     return nothing
   end
   D = num_cell_dims(g)
-  if dimfrom==0
-    if dimto==0
+  if dimfrom == 0
+    if dimto == 0
       _setup_face_to_face!(g,dimfrom)
-    elseif dimto==D
+    elseif dimto == D
       nothing
     else
       _setup_face_to_vertices!(g,dimto)
     end
   elseif dimfrom == D
-    if dimto==0
+    if dimto == 0
       nothing
-    elseif dimto==D
+    elseif dimto == D
       _setup_face_to_face!(g,dimfrom)
     else
       _setup_cell_to_faces!(g,dimto)
     end
   else
-    if dimto==0
+    if dimto == 0
       _setup_face_to_vertices!(g,dimfrom)
-    elseif dimto==D
+    elseif dimto == D
       _setup_cell_to_faces!(g,dimfrom)
-    elseif dimto==dimfrom
+    elseif dimto == dimfrom
       _setup_face_to_face!(g,dimfrom)
     elseif dimfrom > dimto
       _setup_nface_to_mface!(g,dimfrom,dimto)
@@ -363,13 +350,12 @@ function _setup_faces!(g,dimfrom,dimto)
       _setup_nface_to_mface!(g,dimto,dimfrom)
     end
   end
-  nothing
+  return nothing
 end
 
 function _setup_cell_to_faces!(model,dimto)
 
   D = num_cell_dims(model)
-
   if isassigned(model.n_m_to_nface_to_mfaces,D+1,dimto+1)
     return
   end
@@ -409,8 +395,7 @@ function _setup_cell_to_faces!(model,dimto)
   model.n_m_to_nface_to_mfaces[D+1,dimto+1] = cell_to_faces
   model.n_m_to_nface_to_mfaces[dimto+1,D+1] = faces_to_cells
 
-  nothing
-
+  return nothing
 end
 
 function _setup_face_to_vertices!(model,dimfrom)
@@ -420,7 +405,6 @@ function _setup_face_to_vertices!(model,dimfrom)
   end
 
   D = num_cell_dims(model)
-
   cell_to_vertices = get_faces(model,D,0)
   cell_to_faces = get_faces(model,D,dimfrom)
   cell_to_ctype = get_cell_type(model)
@@ -428,7 +412,6 @@ function _setup_face_to_vertices!(model,dimfrom)
   ctype_to_lface_to_lvertices = map( (p)->get_faces(p,dimfrom,0), polytopes )
 
   nfaces = num_faces(model,dimfrom)
-
   face_to_vertices = generate_face_to_vertices(
     cell_to_vertices,
     cell_to_faces,
@@ -437,28 +420,22 @@ function _setup_face_to_vertices!(model,dimfrom)
     nfaces)
 
   nvertices = num_faces(model,0)
-
   vertex_to_faces = generate_cells_around(face_to_vertices,nvertices)
 
   model.n_m_to_nface_to_mfaces[dimfrom+1,0+1] = face_to_vertices
   model.n_m_to_nface_to_mfaces[0+1,dimfrom+1] = vertex_to_faces
 
-  nothing
-
+  return nothing
 end
 
-function _setup_face_to_face!(model,d)
-
-  if isassigned(model.n_m_to_nface_to_mfaces,d+1,d+1)
+function _setup_face_to_face!(topo,d)
+  if isassigned(topo.n_m_to_nface_to_mfaces,d+1,d+1)
     return
   end
-
-  nfaces = num_faces(model,d)
+  nfaces = num_faces(topo,d)
   id = identity_table(Int32,Int32,nfaces)
-  model.n_m_to_nface_to_mfaces[d+1,d+1] = id
-
+  topo.n_m_to_nface_to_mfaces[d+1,d+1] = id
   return
-
 end
 
 function _setup_nface_to_mface!(model,n,m)
@@ -487,6 +464,108 @@ function _setup_nface_to_mface!(model,n,m)
   model.n_m_to_nface_to_mfaces[n+1,m+1] = nface_to_mfaces
   model.n_m_to_nface_to_mfaces[m+1,n+1] = mface_to_nfaces
 
-  nothing
+  return nothing
+end
 
+# Topology restriction
+
+function restrict(
+  topo::UnstructuredGridTopology, cell_to_parent_cell::AbstractVector{<:Integer}
+)
+  D = num_cell_dims(topo)
+
+  n_m_to_parent_nface_to_parent_mface = [
+    Table(get_faces(topo,n,m)) for n in 0:D, m in 0:D ]
+
+  d_to_dface_to_parent_dface = [
+    _setup_dface_to_parent_dface(
+      Val{d}(),
+      Val{D}(),
+      n_m_to_parent_nface_to_parent_mface[D+1,d+1],
+      num_faces(topo,d),
+      cell_to_parent_cell
+    ) for d in 0:D]
+
+  d_to_dface_to_vertices  = [
+    _setup_connectivities_d(
+      n_m_to_parent_nface_to_parent_mface[d+1,0+1],
+      d_to_dface_to_parent_dface[d+1],
+      d_to_dface_to_parent_dface[0+1],
+      num_faces(topo,0)
+    ) for d in 0:D]
+
+  vertex_coordinates = get_vertex_coordinates(topo)[d_to_dface_to_parent_dface[0+1]]
+  cell_type = get_cell_type(topo)[d_to_dface_to_parent_dface[D+1]]
+  polytopes = get_polytopes(topo)
+  orientation_style = OrientationStyle(topo)
+
+  topo_p = UnstructuredGridTopology(
+    vertex_coordinates,
+    d_to_dface_to_vertices,
+    cell_type,
+    polytopes,
+    orientation_style)
+
+  topo_p, d_to_dface_to_parent_dface
+end
+
+function _setup_dface_to_parent_dface(
+  ::Val{Dc},
+  ::Val{Dc},
+  parent_cell_to_parent_dface::Table,
+  num_parent_dfaces,
+  cell_to_parent_cell
+) where Dc
+  dface_to_parent_dface = Int[]
+  parent_dface_touched  = fill(false,num_parent_dfaces)
+  for parent_cell in cell_to_parent_cell
+    pini = parent_cell_to_parent_dface.ptrs[parent_cell]
+    pend = parent_cell_to_parent_dface.ptrs[parent_cell+1]-1
+    for p in pini:pend
+      parent_dface = parent_cell_to_parent_dface.data[p]
+      if (!parent_dface_touched[parent_dface])
+         push!(dface_to_parent_dface,parent_dface)
+         parent_dface_touched[parent_dface] = true
+      end
+    end
+  end
+  dface_to_parent_dface
+end
+
+function _setup_dface_to_parent_dface(
+  ::Val{Df},
+  ::Val{Dc},
+  parent_cell_to_parent_dface::Table,
+  num_parent_dfaces,
+  cell_to_parent_cell
+) where {Df,Dc}
+  parent_dface_touched = fill(false,num_parent_dfaces)
+  for parent_cell in cell_to_parent_cell
+    pini = parent_cell_to_parent_dface.ptrs[parent_cell]
+    pend = parent_cell_to_parent_dface.ptrs[parent_cell+1]-1
+    for p in pini:pend
+      parent_dface = parent_cell_to_parent_dface.data[p]
+      parent_dface_touched[parent_dface] = true
+    end
+  end
+  dface_to_parent_dface = findall(parent_dface_touched)
+end
+
+function _setup_connectivities_d(
+  parent_nface_parent_mface::Table,
+  nface_to_parent_nface,
+  mface_to_parent_mface,
+  num_parent_mfaces
+)
+  parent_mface_to_mface = fill(-1,num_parent_mfaces)
+  parent_mface_to_mface[mface_to_parent_mface] .= 1:length(mface_to_parent_mface)
+
+  nface_to_mface = parent_nface_parent_mface[nface_to_parent_nface]
+  for p in 1:length(nface_to_mface.data)
+    parent_mface = nface_to_mface.data[p]
+    mface = parent_mface_to_mface[parent_mface]
+    @check mface > 0
+    nface_to_mface.data[p] = mface
+  end
+  nface_to_mface
 end
