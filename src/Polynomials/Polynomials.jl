@@ -119,8 +119,13 @@ export BernsteinBasis
 export BernsteinBasisOnSimplex
 export bernstein_terms
 export bernstein_term_id
+
 export PLambdaBasis
 export PmLambdaBasis
+export PmΛ_bubbles
+export PΛ_bubbles
+export get_bubbles
+export print_indices
 
 export CompWiseTensorPolyBasis
 export QGradBasis
