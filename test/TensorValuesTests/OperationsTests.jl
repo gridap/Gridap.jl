@@ -170,6 +170,56 @@ c = b - a
 r = SymTensorValue(4,4,-8)
 @test c==r
 
+a = SkewSymTensorValue(1,2,3)
+b = SkewSymTensorValue(4,5,6)
+
+c = -a
+r = SkewSymTensorValue(-1,-2,-3)
+@test c==r
+
+c = a + b
+r = SkewSymTensorValue(5,7,9)
+@test c==r
+
+c = a - b
+r = SkewSymTensorValue(-3,-3,-3)
+@test c==r
+
+a = SkewSymTensorValue(1,2,3)
+b = SymTracelessTensorValue(1:5...)
+
+c = a + b
+d = b + a
+r = TensorValue(1, 1, 1, 3, 4, 2, 5, 8, -5)
+@test c==r
+@test d==r
+
+c = a - b
+r = TensorValue(-1,-3,-5,-1,-4,-8,-1,-2,5)
+@test c==r
+
+c = b - a
+r = TensorValue(1,3,5,1,4,8,1,2,-5)
+@test c==r
+
+a = SkewSymTensorValue(1,2,3)
+b = SymTensorValue(1:6...)
+
+c = a + b
+d = b + a
+r = TensorValue(1, 1, 1, 3, 4, 2, 5, 8, 6)
+@test c==r
+@test d==r
+
+c = a - b
+r = TensorValue(-1,-3,-5,-1,-4,-8,-1,-2,-6)
+@test c==r
+
+c = b - a
+r = TensorValue(1,3,5,1,4,8,1,2,6)
+@test c==r
+
+
 a = SymTensorValue(5,6,7)
 b = TensorValue(1,2,3,4)
 
@@ -204,10 +254,29 @@ c = b - a
 r = TensorValue(-4,-4,-3,9)
 @test c==r
 
+a = SkewSymTensorValue(1,2,3)
+b = TensorValue(1:9...)
+
+c = a + b
+d = b + a
+r = TensorValue(1, 1, 1, 5, 5, 3, 9, 11, 9)
+@test c==r
+@test d==r
+
+c = a - b
+r = TensorValue(-1,-3,-5,-3,-5,-9,-5,-5,-9)
+@test c==r
+
+c = b - a
+r = TensorValue(1,3,5,3,5,9,5,5,9)
+@test c==r
+
+
 v = VectorValue(1,2)
 t = TensorValue(1,2,3,4)
 s = SymTensorValue(1,2,3)
 q = SymTracelessTensorValue(1,2)
+k = SkewSymTensorValue(1)
 r = ThirdOrderTensorValue(1:8...)
 f = SymFourthOrderTensorValue(1:9...)
 
@@ -220,6 +289,9 @@ f = SymFourthOrderTensorValue(1:9...)
 @test_throws ErrorException v+q
 @test_throws ErrorException v-q
 @test_throws ErrorException q-v
+@test_throws ErrorException v-k
+@test_throws ErrorException k-v
+
 @test_throws ErrorException q+0
 @test_throws ErrorException 0+q
 @test_throws ErrorException 0-q
@@ -240,6 +312,10 @@ f = SymFourthOrderTensorValue(1:9...)
 @test_throws ErrorException q*q
 @test_throws ErrorException v/q
 @test_throws ErrorException q/v
+@test_throws ErrorException v*k
+@test_throws ErrorException k*v
+@test_throws ErrorException v/k
+@test_throws ErrorException k/v
 
 # Matrix Division
 
@@ -258,6 +334,7 @@ c = st\a
 t = TensorValue(1,2,3,4,5,6,7,8,9)
 st = SymTensorValue(1,2,3,5,6,9)
 qt = SymTracelessTensorValue(1,2,3,5,6)
+sk = SkewSymTensorValue(1,2,3)
 s4ot = one(SymFourthOrderTensorValue{2,Int})
 a = VectorValue(1,2,3)
 
@@ -342,6 +419,21 @@ c = qt / 2
 r = SymTracelessTensorValue(.5,1,1.5,2.5,3)
 @test c == r
 
+c = 2 * sk
+@test isa(c,SkewSymTensorValue{3})
+r = SkewSymTensorValue(2,4,6)
+@test c == r
+
+c = sk * 2
+@test isa(c,SkewSymTensorValue{3})
+r = SkewSymTensorValue(2,4,6)
+@test c == r
+
+c = sk / 2
+@test isa(c,SkewSymTensorValue{3})
+r = SkewSymTensorValue(.5,1,1.5)
+@test c == r
+
 c = 2 * s4ot
 @test isa(c,SymFourthOrderTensorValue{2})
 r = SymFourthOrderTensorValue(2,0,0, 0,1,0, 0,0,2)
@@ -373,6 +465,8 @@ st  = SymTensorValue(1,2,3,5,6,9)
 st2 = SymTensorValue(9,6,5,3,2,1)
 qt  = SymTracelessTensorValue(1,2,3,5,6)
 qt2 = SymTracelessTensorValue(9,6,5,3,2)
+sk  = SkewSymTensorValue(1,2,3)
+sk2 = SkewSymTensorValue(3,2,1)
 
 c = a ⋅ b
 @test isa(c,Int)
@@ -393,6 +487,11 @@ c = qt ⋅ a
 r = VectorValue(14,30,-3)
 @test c == r
 
+c = sk ⋅ a
+@test isa(c,VectorValue{3,Int})
+r = VectorValue(8,8,-8)
+@test c == r
+
 c = s ⋅ t
 @test isa(c,TensorValue{3,3,Int})
 r = TensorValue(38,24,18,98,69,48,158,114,78)
@@ -408,6 +507,11 @@ c = qt ⋅ qt2
 r = TensorValue(36, 78, 33, 18, 39, 24, -27, -52, 99)
 @test c == r
 
+c = sk ⋅ sk2
+@test isa(c,TensorValue{3,3,Int})
+r = TensorValue(-7, -6, 9, -2, -6, -6, 1, -2, -7)
+@test c == r
+
 c = st ⋅ qt2
 @test isa(c,TensorValue{3,3,Int})
 r = TensorValue(36, 78, 108, 18, 39, 54, -27, -52, -81)
@@ -418,6 +522,16 @@ c = qt2 ⋅ st
 r = TensorValue(36, 18, -27, 78, 39, -52, 108, 54, -81)
 @test c == r
 
+c = st ⋅ sk2
+@test isa(c,TensorValue{3,3,Int})
+r = TensorValue(-12, -27, -36, 0, 0, 0, 4, 9, 12)
+@test c == r
+
+c = sk2 ⋅ st
+@test isa(c,TensorValue{3,3,Int})
+r = TensorValue(12, 0, -4, 27, 0, -9, 36, 0, -12)
+@test c == r
+
 c = a ⋅ st
 @test isa(c,VectorValue{3,Int})
 r = VectorValue(14,30,42)
@@ -426,6 +540,11 @@ r = VectorValue(14,30,42)
 c = a ⋅ qt
 @test isa(c,VectorValue{3,Int})
 r = VectorValue(14,30,-3)
+@test c == r
+
+c = a ⋅ sk
+@test isa(c,VectorValue{3,Int})
+r = VectorValue(-8,-8,8)
 @test c == r
 
 a1 = VectorValue(1,0)
@@ -599,6 +718,9 @@ qt = SymTracelessTensorValue(9,8,7,5,4)
 @test det(qt) == det(TensorValue(get_array(qt)))
 @test inv(qt) ≈  inv(TensorValue(get_array(qt)))
 
+sk = SkewSymTensorValue(9,8,7)
+@test det(sk) == det(TensorValue(get_array(sk)))
+
 t = TensorValue(10)
 @test det(t) == 10
 @test inv(t) == TensorValue(1/10)
@@ -615,6 +737,9 @@ t += one(t)
 q = SymTracelessTensorValue(1,2)
 @test det(q) == det(TensorValue(get_array(q)))
 @test inv(q) == SymTracelessTensorValue(inv(get_array(q)))
+
+sk = SkewSymTensorValue(1,2,3)
+@test det(sk) == 0
 
 t = TensorValue{2,3}(1:6...)
 @test_throws ErrorException det(t)
@@ -635,6 +760,9 @@ st = SymTensorValue(1,2,3,5,6,9)
 
 qt = SymTracelessTensorValue(1,2,3,5,6)
 @test meas(qt) == meas(TensorValue(get_array(qt)))
+
+sk = SkewSymTensorValue(1,2,3)
+@test meas(sk) == meas(TensorValue(get_array(sk)))
 
 v = TensorValue{1,2}(10,20)
 @test meas(v) == sqrt(500)
@@ -694,11 +822,27 @@ st = SymTensorValue(1,2,3,5,6,9)
 qt = SymTracelessTensorValue(1,2,3,5,6)
 @test tr(qt) == tr(TensorValue(get_array(qt)))
 
+sk = SkewSymTensorValue(1,2,3)
+@test tr(sk) == tr(TensorValue(get_array(sk)))
+
 @test get_array(symmetric_part(t)) == get_array(TensorValue(1.0, 3.0, 5.0, 3.0, 5.0, 7.0, 5.0, 7.0, 9.0))
 @test symmetric_part(st) == symmetric_part(TensorValue(get_array(st)))
 @test symmetric_part(st) === st
 @test symmetric_part(qt) == symmetric_part(TensorValue(get_array(qt)))
 @test symmetric_part(qt) === qt
+ss = symmetric_part(sk)
+@test zero(ss) == ss == symmetric_part(TensorValue(get_array(sk)))
+
+@test skew_symmetric_part(sk) == SkewSymTensorValue(get_array(sk))
+@test sk === skew_symmetric_part(sk)
+skt = .5(t - t')
+@test skew_symmetric_part(skt) == SkewSymTensorValue(get_array(skt))
+skt = .5(st - st')
+sk = skew_symmetric_part(skt)
+@test zero(sk) == sk == SkewSymTensorValue(get_array(skt))
+skt = .5(qt - qt')
+sk = skew_symmetric_part(skt)
+@test zero(sk) == sk == SkewSymTensorValue(get_array(skt))
 
 a = TensorValue(1,2,3,4)
 b = a'
@@ -735,6 +879,12 @@ sa = SymTracelessTensorValue(1,2,3,5,6)
 sb = sa'
 @test adjoint(sa) == sb
 @test sb == SymTracelessTensorValue(1,2,3,5,6)
+@test sa⋅sb == TensorValue(get_array(sa))⋅TensorValue(get_array(sb))
+
+sa = SkewSymTensorValue(1,2,3)
+sb = sa'
+@test adjoint(sa) == sb
+@test sb == SkewSymTensorValue(1,2,3)
 @test sa⋅sb == TensorValue(get_array(sa))⋅TensorValue(get_array(sb))
 
 u = VectorValue(1.0,2.0)
@@ -819,6 +969,16 @@ odot_contraction = Vector(get_array(a_tensor ⋅² b_tensor))
 odot_contraction_array = 1*a[:,1,1] + 2*a[:,1,2] + 3*a[:,1,3] + 2*a[:,2,1] +
   4*a[:,2,2] + 5*a[:,2,3] + 3*a[:,3,1] + 5*a[:,3,2] + (-5)*a[:,3,3]
 @test odot_contraction == odot_contraction_array
+
+a = reshape(Vector(1:27),(3,3,3))
+a_tensor = ThirdOrderTensorValue(a...)
+b_tensor = SkewSymTensorValue((1:3)...)
+b = Matrix(get_array(b_tensor))
+odot_contraction = Vector(get_array(a_tensor ⋅² b_tensor))
+odot_contraction_array = 0*a[:,1,1] + 1*a[:,1,2] + 2*a[:,1,3] - 1*a[:,2,1] +
+  0*a[:,2,2] + 3*a[:,2,3] - 2*a[:,3,1] - 3*a[:,3,2] + 0*a[:,3,3]
+@test odot_contraction == odot_contraction_array
+
 
 # double Contractions w/ products
 
@@ -1022,6 +1182,13 @@ v2 = SymTracelessTensorValue(1, 1)
 v2 = SymTracelessTensorValue(1-1im, 1-1im)
 @test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
 
+v1 = SkewSymTensorValue(1+1im)
+v2 = SkewSymTensorValue(1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = SkewSymTensorValue(1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
+
 #_eltype
 @test _eltype(real,Tuple{},VectorValue(1.0,2.0))==Union{}
 @test _eltype(real,Tuple{},VectorValue(1.0,2.0),VectorValue(2.0,3.0),VectorValue(3.0,4.0))==Union{}
@@ -1071,6 +1238,7 @@ t20 = TensorValue{2,0,Float32}()
 t02 = TensorValue{0,2,Float32}()
 t23 = TensorValue{2,3,Float32}(0,0,0,0,0,0)
 st0 = SymTracelessTensorValue{0,ComplexF64}()
+sk0 = SkewSymTensorValue{0,ComplexF64}()
 t210= ThirdOrderTensorValue{2,1,0,ComplexF16}()
 t012= ThirdOrderTensorValue{0,1,2,ComplexF16}()
 t123= ThirdOrderTensorValue{1,2,3,Float64}(0,0,0,0,0,0)
@@ -1080,6 +1248,8 @@ f0  = SymFourthOrderTensorValue{0,ComplexF16}()
 @test t20 ⋅ v0    === VectorValue{2,Float64}(0,0)
 @test v0  ⋅ st0   === VectorValue{0,ComplexF64}()
 @test st0 ⋅ v0    === VectorValue{0,ComplexF64}()
+@test v0  ⋅ sk0   === VectorValue{0,ComplexF64}()
+@test sk0 ⋅ v0    === VectorValue{0,ComplexF64}()
 @test t20 ⋅ t02   === TensorValue{2,2,Float32}(0,0,0,0)
 @test t02 ⋅ t20   === TensorValue{0,0,Float32}()
 @test v0   ⋅ t012 === TensorValue{1,2,ComplexF64}(0,0)
@@ -1089,17 +1259,23 @@ f0  = SymFourthOrderTensorValue{0,ComplexF16}()
 @test t012 ⋅ t23  === ThirdOrderTensorValue{0,1,3,ComplexF32}()
 @test t02  ⋅ t210 === ThirdOrderTensorValue{0,1,0,ComplexF32}()
 
+@test sk0 ⊙ sk0   === zero(ComplexF64)
 @test st0 ⊙ st0   === zero(ComplexF64)
 @test st0 ⊙ t00   === zero(ComplexF64)
 @test t00 ⊙ st0   === zero(ComplexF64)
+@test st0 ⊙ sk0   === zero(ComplexF64)
+@test sk0 ⊙ st0   === zero(ComplexF64)
+@test sk0 ⊙ t00   === zero(ComplexF64)
+@test t00 ⊙ sk0   === zero(ComplexF64)
 @test t00 ⊙ t00   === zero(Float32)
 @test t00 ⊙ f0    === SymTensorValue{0,ComplexF32,0}()
 @test f0  ⊙ t00   === SymTensorValue{0,ComplexF32,0}()
-@test f0  ⊙ f0    === SymFourthOrderTensorValue{0, ComplexF16}()
+@test f0  ⊙ f0    === zero(ComplexF16)
 
 t12  = TensorValue{1,2,Float32}(0,0)
 t10  = TensorValue{1,0,Float32}()
 st2  = SymTracelessTensorValue{2,Float32}(0,0)
+sk2  = SkewSymTensorValue{2,Float32}(0)
 t022 = ThirdOrderTensorValue{0,2,2,ComplexF16}()
 t220 = ThirdOrderTensorValue{2,2,0,ComplexF16}()
 t200 = ThirdOrderTensorValue{2,0,0,Float64}()
@@ -1110,12 +1286,16 @@ t002 = ThirdOrderTensorValue{0,0,2,Float64}()
 @test f0   ⋅² t00  === SymTensorValue{0,ComplexF32,0}()
 @test st0  ⋅² f0   === SymTensorValue{0,ComplexF64,0}()
 @test f0   ⋅² st0  === SymTensorValue{0,ComplexF64,0}()
+@test sk0  ⋅² f0   === SymTensorValue{0,ComplexF64,0}()
+@test f0   ⋅² sk0  === SymTensorValue{0,ComplexF64,0}()
 @test t012 ⋅² t12  === VectorValue{0,ComplexF32}()
 @test t210 ⋅² t10  === VectorValue{2,ComplexF32}(0,0)
 @test t200 ⋅² st0  === VectorValue{2,ComplexF64}(0,0)
 @test t022 ⋅² st2  === VectorValue{0,ComplexF32}()
+@test t022 ⋅² sk2  === VectorValue{0,ComplexF32}()
 @test st0  ⋅² t002 === VectorValue{2,ComplexF64}(0,0)
 @test st2  ⋅² t220 === VectorValue{0,ComplexF32}()
+@test sk2  ⋅² t220 === VectorValue{0,ComplexF32}()
 @test t022 ⋅² t220 === TensorValue{0,0,ComplexF16}()
 @test t200 ⋅² t002 === TensorValue{2,2,Float64}(0,0,0,0)
 @test f0   ⋅² f0   === SymFourthOrderTensorValue{0,ComplexF16}()
@@ -1134,6 +1314,9 @@ t01c = TensorValue{0,1,ComplexF32}()
 @test conj(st0) === st0
 @test real(st0) === SymTracelessTensorValue{0,Float64}()
 @test imag(st0) === SymTracelessTensorValue{0,Float64}()
+@test conj(sk0) === sk0
+@test real(sk0) === SkewSymTensorValue{0,Float64}()
+@test imag(sk0) === SkewSymTensorValue{0,Float64}()
 @test tr(t00) === zero(Float32)
 @test tr(t220) === VectorValue{0,ComplexF16}()
 @test adjoint(t00) === t00

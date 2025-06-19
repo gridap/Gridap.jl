@@ -74,7 +74,7 @@ function (==)(a::MockSegment,b::MockSegment)
   true
 end
 
-get_vertex_coordinates(p::MockSegment) = Point{1,Float64}[(0),(1)]
+get_vertex_coordinates(p::MockSegment) = Point{1,Float64}[(0,),(1,)]
 
 struct MockQuad <: Polytope{2} end
 

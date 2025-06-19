@@ -4,6 +4,7 @@ Immutable tensor types for Gridap. The currently implemented tensor types are
 - 2nd order [`TensorValue`](@ref),
 - 2nd order and symmetric [`SymTensorValue`](@ref),
 - 2nd order, symmetric and traceless [`SymTracelessTensorValue`](@ref),
+- 2nd order and skew symmetric [`SkewSymTensorValue`](@ref),
 - 3rd order [`ThirdOrderTensorValue`](@ref),
 - 4th order and symmetric [`SymFourthOrderTensorValue`](@ref).
 
@@ -55,6 +56,7 @@ export TensorValue
 export AbstractSymTensorValue
 export SymTensorValue
 export SymTracelessTensorValue
+export SkewSymTensorValue
 export QTensorValue
 export SymFourthOrderTensorValue
 export ThirdOrderTensorValue
@@ -74,11 +76,15 @@ export ⊗
 export ⋅¹
 export ⋅²
 export double_contraction
+export congruent_prod
 export data_index
 export indep_comp_getindex
 export indep_components_names
+export component_basis
+export representatives_of_componentbasis_dual
 
 import Base: show
+import Base: promote_rule
 import Base: zero, one
 import Base: +, -, *, /, \, ==, ≈, isless
 import Base: conj, real, imag
@@ -108,6 +114,8 @@ include("TensorValueTypes.jl")
 include("SymTensorValueTypes.jl")
 
 include("SymTracelessTensorValueTypes.jl")
+
+include("SkewSymTensorValueTypes.jl")
 
 include("SymFourthOrderTensorValueTypes.jl")
 
