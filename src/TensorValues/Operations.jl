@@ -794,8 +794,10 @@ end
 
 Euclidean (2-)norm of `u`, namely `sqrt(inner(u,u))`.
 """
-@inline norm(u::MultiValue{Tuple{D}}) where D = sqrt(inner(u,u))
-@inline norm(u::MultiValue{Tuple{D1,D2}}) where {D1,D2} = sqrt(inner(u,u))
+@inline norm(u::MultiValue{Tuple{D},<:Real}) where D = sqrt(inner(u,u))
+@inline norm(u::MultiValue{Tuple{D}}) where D = sqrt(real(inner(u,conj(u))))
+@inline norm(u::MultiValue{Tuple{D1,D2},<:Real}) where {D1,D2} = sqrt(inner(u,u))
+@inline norm(u::MultiValue{Tuple{D1,D2}}) where {D1,D2} = sqrt(real(inner(u,conj(u))))
 @inline norm(u::MultiValue{Tuple{0},T}) where T = sqrt(zero(T))
 
 ###############################################################
