@@ -36,23 +36,10 @@ isless(a::MultiValue,b::MultiValue) = @unreachable "Comparison is not defined be
 # promotion and conversions
 ###############################################################
 
-"""
-    const _Scalar = Union{Real,Complex}
-
-Abstract type for the scalar types that `MultiValue` support component-wise
-operations with.
-"""
-const _Scalar = Union{Real,Complex}
-
+# No default promotion /conversion for tensors of different type names
 promote_rule(::Type{<:MultiValue},::Type{<:MultiValue}) = Union{}
 
-convert(V::Type{<:MultiValue},  a::Number) = error("Cannot convert $a to type $V")
-convert(T::Type{<:_Scalar},  a::MultiValue) = error("Cannot convert $a to type $T")
-# TODO remove next two methods
-convert(::Type{V}, a::_Scalar)   where V<:MultiValue{S,T,D,1} where {S,T,D} = V(a)
-convert(::Type{T}, a::MultiValue{S,Ta,D,1}) where T<:_Scalar where {S,Ta,D} = T(a[1])
-
-# Promotion / conversion between the different kind of square tensors.
+# But promotion and conversion between the different types of square tensors.
 promote_rule(::Type{<:TensorValue{D,D,Ta}},     ::Type{<:SymTensorValue{D,Tb}})          where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}
 promote_rule(::Type{<:TensorValue{D,D,Ta}},     ::Type{<:SkewSymTensorValue{D,Tb}})      where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}
 promote_rule(::Type{<:TensorValue{D,D,Ta}},     ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}
@@ -65,6 +52,23 @@ convert(::Type{<:TensorValue{D,D,Ta}},  a::SkewSymTensorValue{D,Tb})      where 
 convert(::Type{<:TensorValue{D,D,Ta}},  a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}(get_array(a))
 convert(::Type{<:SymTensorValue{D,Ta}}, a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = SymTensorValue{D,promote_type(Ta,Tb)}(a.data)
 
+"""
+    const _Scalar = Union{Real,Complex}
+
+Abstract type for the scalar types that `MultiValue` support component-wise
+operations with.
+"""
+const _Scalar = Union{Real,Complex}
+
+# TODO deprecate next two methods ? A few stuff depend on this behavior but very ugly.
+function convert(V::Type{<:MultiValue}, a::T) where T<:_Scalar
+  isone(length(V)) && isone(num_indep_components(V)) || error("Cannot convert value of type $V to type $T")
+  V(a)
+end
+function convert(T::Type{<:_Scalar}, a::V) where V<:MultiValue
+  isone(length(a)) || error("Cannot convert value of type $V to type $T")
+  T(a[1])
+end
 
 ###############################################################
 # Addition / subtraction
@@ -785,7 +789,7 @@ function inv(a::SymTracelessTensorValue{2})
 end
 
 inv( ::SkewSymTensorValue{1,T}) where T = TensorValue{1,1,T}(inv(zero(T)))
-inv(a::SkewSymTensorValue{2}) = (typeof(a))(inv(a.data[1]))
+inv(a::SkewSymTensorValue{2}) = (typeof(a))(-inv(a.data[1]))
 inv(a::SkewSymTensorValue{3,T,L}) where {T,L} = SkewSymTensorValue{3,T}( tfill(inv(zero(T)), Val(L)) )
 
 ###############################################################

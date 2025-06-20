@@ -11,6 +11,7 @@ a = SMatrix{2,2}(1,2,3,4)
 t = TensorValue(a)
 @test isa(t,TensorValue{2,2,Int})
 @test convert(SMatrix{2,2,Int},t) == [1 3;2 4]
+@test_throws MethodError convert(SMatrix{1,2,Int},t)
 
 a = MMatrix{2,2}(1,2,3,4)
 t = TensorValue(a)
@@ -81,6 +82,7 @@ t = TensorValues.tensor_from_rows(v...)
 s = SymTensorValue( (11,21,22) )
 @test isa(s,SymTensorValue{2,Int})
 @test convert(SMatrix{2,2,Int},s) == [11 21;21 22]
+@test_throws MethodError convert(SMatrix{1,2,Int},s)
 
 s = SymTensorValue(11,21,22)
 @test isa(s,SymTensorValue{2,Int})
@@ -152,6 +154,7 @@ q = rand(SymTracelessTensorValue{0,Int})
 q = SymTracelessTensorValue( (11,21) )
 @test isa(q,SymTracelessTensorValue{2,Int})
 @test convert(SMatrix{2,2,Int},q) == [11 21;21 -11]
+@test_throws MethodError convert(SMatrix{1,2,Int},q)
 
 q = SymTracelessTensorValue{2,Int,3}( (11,21) )
 @test isa(q,SymTracelessTensorValue{2,Int,3})
@@ -225,14 +228,14 @@ q = SkewSymTensorValue()
 @test q == q_none
 q = SkewSymTensorValue{0}()
 @test q == q_none
-q = SkewSymTensorValue{0}()
-@test q == q_none
 q = SkewSymTensorValue(Tuple{}())
 @test q == q_none
 q = SkewSymTensorValue{0}(Tuple{}())
 @test q == q_none
 
 q_zero = SkewSymTensorValue{1,Int}(NTuple{0,Int}())
+q = SkewSymTensorValue{1}()
+@test q == q_zero
 q = SkewSymTensorValue{1}(Tuple{}())
 @test q == q_zero
 q = SkewSymTensorValue{1,Int}(Tuple{}())
@@ -245,6 +248,7 @@ q = rand(SkewSymTensorValue{0,Int})
 q = SkewSymTensorValue( (12,) )
 @test isa(q,SkewSymTensorValue{2,Int})
 @test convert(SMatrix{2,2,Int},q) == [0 12;-12 0]
+@test_throws MethodError convert(SMatrix{1,2,Int},q)
 
 q = SkewSymTensorValue{2,Int,1}( (12,) )
 @test isa(q,SkewSymTensorValue{2,Int,1})
@@ -254,25 +258,33 @@ q = SkewSymTensorValue{2,Int,1}(12)
 @test isa(q,SkewSymTensorValue{2,Int,1})
 @test convert(SMatrix{2,2,Int},q) == [0 12;-12 0]
 
+q = SkewSymTensorValue( (12.,13,23) )
+@test isa(q,SkewSymTensorValue{3,Float64})
+@test convert(SMatrix{3,3,Int},q) == [0 12 13; -12 0 23; -13 -23 0]
+
 q = SkewSymTensorValue(12)
 @test isa(q,SkewSymTensorValue{2,Int})
 @test convert(SMatrix{2,2,Int},q) == [0 12;-12 0]
 
-q = SkewSymTensorValue{2}( (12,) )
-@test isa(q,SkewSymTensorValue{2,Int})
-@test convert(SMatrix{2,2,Int},q) == [0 12;-12 0]
+q = SkewSymTensorValue{3}( (12.,13,23) )
+@test isa(q,SkewSymTensorValue{3,Float64})
+@test convert(SMatrix{3,3,Int},q) == [0 12 13; -12 0 23; -13 -23 0]
 
 q = SkewSymTensorValue{2}( 12 )
 @test isa(q,SkewSymTensorValue{2,Int})
 @test convert(SMatrix{2,2,Int},q) == [0 12;-12 0]
 
-q = SkewSymTensorValue{2,Int}( (12,) )
-@test isa(q,SkewSymTensorValue{2,Int})
-@test convert(SMatrix{2,2,Int},q) == [0 12;-12 0]
+q = SkewSymTensorValue{3,Int}( (12.,13,23) )
+@test isa(q,SkewSymTensorValue{3,Int})
+@test convert(SMatrix{3,3,Int},q) == [0 12 13; -12 0 23; -13 -23 0]
 
 q = SkewSymTensorValue{2,Float64}(12)
 @test isa(q,SkewSymTensorValue{2,Float64})
 @test convert(SMatrix{2,2,Int},q) == [0 12;-12 0]
+
+q = SkewSymTensorValue{3,Int,3}( (12.,13,23) )
+@test isa(q,SkewSymTensorValue{3,Int,3})
+@test convert(SMatrix{3,3,Int},q) == [0 12 13; -12 0 23; -13 -23 0]
 
 q = SkewSymTensorValue{0,Int}( () )
 @test isa(q,SkewSymTensorValue{0,Int})
@@ -363,6 +375,7 @@ a = SVector(1)
 g = VectorValue(a)
 @test isa(g,VectorValue{1,Int})
 @test convert(SVector{1,Int},g) == [1,]
+@test_throws MethodError convert(SVector{2,Int},g)
 
 a = SVector(1,2,3,4)
 g = VectorValue(a)
@@ -716,6 +729,34 @@ M2 = Mutable(v)
 
 @test_throws ErrorException Mutable(MultiValue) # @abstractmethod
 
+# conversion with scalar for Tensors with exactly one physical component
+v  = VectorValue(1)
+t2 = TensorValue(1)
+s  = SymTensorValue(1)
+t3 = ThirdOrderTensorValue(1)
+f  = SymFourthOrderTensorValue(1)
+@test Float64[ v ]  == [ 1. ]
+@test Float64[ t2 ] == [ 1. ]
+@test Float64[ s ]  == [ 1. ]
+@test Float64[ t3 ] == [ 1. ]
+@test Float64[ f ]  == [ 1. ]
+@test VectorValue{1}[ 1 ] == [ v ]
+@test TensorValue{1,1,Int,1}[ 1 ] == [ t2 ]
+@test SymTensorValue{1,Int}[ 1 ] == [ s ]
+@test ThirdOrderTensorValue{1,1,1,Int,1}[ 1 ] == [ t3 ]
+@test SymFourthOrderTensorValue{1,Int}[ 1 ] == [ f ]
+
+v  = VectorValue(1,2)
+st = SymTracelessTensorValue{1}()
+sk = SkewSymTensorValue(1)
+@test Float64[ st ] == [ 0. ]
+@test_throws ErrorException Float64[ v ]
+@test_throws ErrorException Float64[ sk ]
+@test_throws ErrorException VectorValue{2,Int,2}[ 1 ]
+@test_throws ErrorException SymTracelessTensorValue{1,Int,0}[ 1 ]
+@test_throws ErrorException SkewSymTensorValue{1,Int,1}[ 1 ]
+
+# component number APIs
 @test num_components(Int) == 1
 @test num_components(Float64) == 1
 @test num_components(1.0) == 1

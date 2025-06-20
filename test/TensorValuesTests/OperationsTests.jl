@@ -753,6 +753,10 @@ c = det(t)
 c = inv(t)
 @test isa(c,TensorValue{3})
 
+st = SymTensorValue(1:3...)
+@test det(st) == det(TensorValue(get_array(st)))
+@test inv(st) ≈  inv(TensorValue(get_array(st)))
+
 st = SymTensorValue(9,8,7,5,4,1)
 @test det(st) == det(TensorValue(get_array(st)))
 @test inv(st) ≈  inv(TensorValue(get_array(st)))
@@ -761,8 +765,17 @@ qt = SymTracelessTensorValue(9,8,7,5,4)
 @test det(qt) == det(TensorValue(get_array(qt)))
 @test inv(qt) ≈  inv(TensorValue(get_array(qt)))
 
-sk = SkewSymTensorValue(9,8,7)
+sk = SkewSymTensorValue(2.)
 @test det(sk) == det(TensorValue(get_array(sk)))
+@test inv(sk) ≈  inv(TensorValue(get_array(sk)))
+
+sk = SkewSymTensorValue(1. : 3. ...)
+@test det(sk) == det(TensorValue(get_array(sk)))
+@test inv(sk) ==  SkewSymTensorValue(Inf,Inf,Inf)
+
+sk = SkewSymTensorValue(1:6...)
+@test det(sk) == det(TensorValue(get_array(sk)))
+@test inv(sk) ≈  inv(TensorValue(get_array(sk)))
 
 t = TensorValue(10)
 @test det(t) == 10
