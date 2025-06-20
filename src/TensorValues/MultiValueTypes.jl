@@ -66,6 +66,11 @@ has 6 and a `SymTracelessTensorValue{3}` has 5. But they all have 9 (non indepen
 num_indep_components(::Type{T}) where T<:Number = num_components(T)
 num_indep_components(::T) where T<:Number = num_indep_components(T)
 
+"""
+!!! warning
+    Deprecated in favor on [`num_components`](@ref).
+"""
+function n_components end
 @deprecate n_components num_components
 
 
@@ -142,11 +147,17 @@ convert(::Type{<:NTuple{L,T}}, arg::MultiValue) where {L,T} = NTuple{L,T}(Tuple(
 # This should probably not be exported, as (accessing) the data field of
 # MultiValue is not a public api
 """
-Transforms Cartesian indices to linear indices that index `MultiValue`'s private internal storage, this should'nt be used.
+Previously used to transform Cartesian indices to linear indices that index `MultiValue`'s private internal storage.
+
+!!! warning
+    Deprecated, not all components of all tensors are stored anymore, so this
+    index is ill defined. Use `getindex` or [`indep_comp_getindex`](@ref)
+    instead of this.
 """
 function data_index(::Type{<:MultiValue},i...)
   @abstractmethod
 end
+@deprecate data_index getindex
 
 # The order of export of components is that of their position in the .data
 # field, but the actual method "choosing" the export order is

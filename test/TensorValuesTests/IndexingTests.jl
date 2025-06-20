@@ -4,6 +4,9 @@ using Test
 using Gridap.TensorValues
 using StaticArrays
 
+@test Base.IndexStyle(MultiValue) == IndexCartesian()
+@test Base.IndexStyle(VectorValue()) == IndexCartesian()
+
 a = (3,4,5,1)
 
 v = VectorValue{4}(a)
@@ -15,6 +18,8 @@ v = VectorValue{4}(a)
 @test length(v) == 4
 @test lastindex(v) == length(v)
 @test v[end] == a[end]
+@test_throws BoundsError v[end+1]
+@test_throws BoundsError v[0]
 
 for (k,i) in enumerate(eachindex(v))
   @test v[i] == a[k]
@@ -26,6 +31,8 @@ t = TensorValue{2}(a)
 @test length(t) == 4
 @test lastindex(t) == length(t)
 @test t[end] == a[end]
+@test_throws BoundsError t[end+1]
+@test_throws BoundsError t[0,0]
 
 for (k,i) in enumerate(eachindex(t))
   @test t[i] == a[k]
@@ -52,6 +59,12 @@ r = TensorValue(convert(SMatrix{2,2,Int},K))
 @test s[end] == 22
 @test q[end] == -11
 @test K[begin] == K[end] == 0
+@test_throws BoundsError s[end+1]
+@test_throws BoundsError s[0,0]
+@test_throws BoundsError q[end+1]
+@test_throws BoundsError q[0,0]
+@test_throws BoundsError K[end+1]
+@test_throws BoundsError K[0,0]
 
 for (k,i) in enumerate(eachindex(t))
     @test s[i] == t[k]

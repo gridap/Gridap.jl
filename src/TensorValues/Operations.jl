@@ -594,8 +594,7 @@ function congruent_prod(a::MultiValue{Tuple{D,D},Ta}, b::MultiValue{Tuple{D,D1},
   V{T}(get_array(transpose(b) ⋅ a ⋅ b))
 end
 _congruent_ret_type(a,D1) = TensorValue{D1,D1}
-_congruent_ret_type(a::SymTensorValue,D1) = SymTensorValue{D1}
-_congruent_ret_type(a::SymTracelessTensorValue,D1) = SymTracelessTensorValue{D1}
+_congruent_ret_type(a::AbstractSymTensorValue,D1) = SymTensorValue{D1}
 _congruent_ret_type(a::SkewSymTensorValue,D1) = SkewSymTensorValue{D1}
 
 function congruent_prod(a::Number, b::Number)
@@ -926,9 +925,7 @@ end
 end
 
 adjoint(a::AbstractSymTensorValue) = conj(a)
-adjoint(a::SkewSymTensorValue) = conj(a)
-
-@inline adjoint(a::AbstractSymTensorValue{D,T} where {D,T<:Real}) = transpose(a)
+adjoint(a::SkewSymTensorValue) = -conj(a)
 
 transpose(a::AbstractSymTensorValue) = a
 transpose(a::SkewSymTensorValue) = -a

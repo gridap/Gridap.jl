@@ -89,9 +89,6 @@ SymFourthOrderTensorValue{D,T1,L}(data::AbstractArray{T2}) where {D,T1,T2,L} = S
 # Conversions (SymFourthOrderTensorValue)
 ###############################################################
 
-# Direct conversion
-#convert(::Type{<:SymFourthOrderTensorValue{D,T}}, arg::Tuple) where {D,T} = SymFourthOrderTensorValue{D,T}(arg)
-
 @generated function _SymFourthOrder_to_array(arg::SymFourthOrderTensorValue{D,T,L}) where {D,T,L}
   str = ""
   for l in 1:D

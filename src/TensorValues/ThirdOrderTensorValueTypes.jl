@@ -33,7 +33,10 @@ ThirdOrderTensorValue{0,0,0}(data::NTuple{0}) = ThirdOrderTensorValue{0,0,0,Int}
 # ThirdOrderTensorValue single NTuple argument constructor
 
 @generated function ThirdOrderTensorValue(data::NTuple{L,T}) where {L,T}
-  D=Int(cbrt(L))
+  msg = "Invalid number of scalar arguments in ThirdOrderTensorValue constructor, expecting a cube number, got L=$L"
+  V = cbrt(L)
+  @assert floor(Int,V) == ceil(Int,V) msg
+  D=Int(V)
   quote
     ThirdOrderTensorValue{$D,$D,$D,T}(data)
   end

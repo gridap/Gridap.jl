@@ -60,7 +60,9 @@ t = TensorValue{2,2,Int}(1,2.0,3,4)
 a = [11.0 21.0; 12.0 22.0]
 @test isa(a,AbstractArray{Float64,2})
 t = convert(TensorValue{2,2,Float64},a)
-@test  t == TensorValue{2,2,Float64,3}(11.0, 12.0, 21.0, 22.0)
+@test  t == TensorValue{2,2,Float64,3}(11, 12, 21, 22)
+t = convert(TensorValue{2,2,Float32},a)
+@test  t == TensorValue{2,2,Float32,3}(11, 12, 21, 22)
 m = convert(MMatrix{2,2,Float64},t)
 @test m == MMatrix{2}(11.0, 12.0, 21.0, 22.0)
 u = convert(NTuple{4,Float64},t)
@@ -215,6 +217,99 @@ m = convert(MMatrix{2,2,Float64},t)
 @test m == MMatrix{2}(11.0, 21.0, 21.0, -11.0)
 u = convert(NTuple{3,Float64},t)
 @test u == tuple(11.0, 21.0, -11.0)
+
+# Constructors (SkewSymTensorValue)
+
+q_none = SkewSymTensorValue{0, Int, 0}()
+q = SkewSymTensorValue()
+@test q == q_none
+q = SkewSymTensorValue{0}()
+@test q == q_none
+q = SkewSymTensorValue{0}()
+@test q == q_none
+q = SkewSymTensorValue(Tuple{}())
+@test q == q_none
+q = SkewSymTensorValue{0}(Tuple{}())
+@test q == q_none
+
+q_zero = SkewSymTensorValue{1,Int}(NTuple{0,Int}())
+q = SkewSymTensorValue{1}(Tuple{}())
+@test q == q_zero
+q = SkewSymTensorValue{1,Int}(Tuple{}())
+@test q == q_zero
+
+q = rand(SkewSymTensorValue{0,Int})
+@test eltype(q) == Int
+@test eltype(typeof(q)) == Int
+
+q = SkewSymTensorValue( (12,) )
+@test isa(q,SkewSymTensorValue{2,Int})
+@test convert(SMatrix{2,2,Int},q) == [0 12;-12 0]
+
+q = SkewSymTensorValue{2,Int,1}( (12,) )
+@test isa(q,SkewSymTensorValue{2,Int,1})
+@test convert(SMatrix{2,2,Int},q) == [0 12;-12 0]
+
+q = SkewSymTensorValue{2,Int,1}(12)
+@test isa(q,SkewSymTensorValue{2,Int,1})
+@test convert(SMatrix{2,2,Int},q) == [0 12;-12 0]
+
+q = SkewSymTensorValue(12)
+@test isa(q,SkewSymTensorValue{2,Int})
+@test convert(SMatrix{2,2,Int},q) == [0 12;-12 0]
+
+q = SkewSymTensorValue{2}( (12,) )
+@test isa(q,SkewSymTensorValue{2,Int})
+@test convert(SMatrix{2,2,Int},q) == [0 12;-12 0]
+
+q = SkewSymTensorValue{2}( 12 )
+@test isa(q,SkewSymTensorValue{2,Int})
+@test convert(SMatrix{2,2,Int},q) == [0 12;-12 0]
+
+q = SkewSymTensorValue{2,Int}( (12,) )
+@test isa(q,SkewSymTensorValue{2,Int})
+@test convert(SMatrix{2,2,Int},q) == [0 12;-12 0]
+
+q = SkewSymTensorValue{2,Float64}(12)
+@test isa(q,SkewSymTensorValue{2,Float64})
+@test convert(SMatrix{2,2,Int},q) == [0 12;-12 0]
+
+q = SkewSymTensorValue{0,Int}( () )
+@test isa(q,SkewSymTensorValue{0,Int})
+@test convert(SMatrix{0,0,Int},q) == Array{Any,2}(undef,0,0)
+
+q = SkewSymTensorValue{0,Int}()
+@test isa(q,SkewSymTensorValue{0,Int})
+@test convert(SMatrix{0,0,Int},q) == Array{Any,2}(undef,0,0)
+
+q = SkewSymTensorValue{1,Int}( () )
+@test isa(q,SkewSymTensorValue{1,Int})
+@test convert(SMatrix{1,1,Int},q) == zeros(Int,1,1)
+
+q = SkewSymTensorValue{1,Int}()
+@test isa(q,SkewSymTensorValue{1,Int})
+@test convert(SMatrix{1,1,Int},q) == zeros(Int,1,1)
+
+q = SkewSymTensorValue(12.0)
+@test isa(q,SkewSymTensorValue{2,Float64})
+@test convert(SMatrix{2,2,Float64},q) == [0. 12.;-12. 0.]
+
+q = SkewSymTensorValue{2}(12.0)
+@test isa(q,SkewSymTensorValue{2,Float64})
+@test convert(SMatrix{2,2,Float64},q) == [0. 12.;-12. 0.]
+
+q = SkewSymTensorValue{2,Int}(12.)
+@test isa(q,SkewSymTensorValue{2,Int})
+@test convert(SMatrix{2,2,Float64},q) == [0 12.;-12. 0]
+
+a = [NaN 12.0; NaN NaN]
+@test isa(a,AbstractArray{Float64,2})
+t = convert(SkewSymTensorValue{2,Float64},a)
+@test  t == SkewSymTensorValue{2,Float64,3}(12.0)
+m = convert(MMatrix{2,2,Float64},t)
+@test m == MMatrix{2}(0, -12.0, 12.0, 0)
+u = convert(NTuple{1,Float64},t)
+@test u == tuple(12.0)
 
 # Constructors (SymFourthOrderTensorValue)
 
@@ -563,6 +658,7 @@ v = VectorValue(m)
 @test isa(v,VectorValue{3,Int})
 M2 = Mutable(v)
 @test M == M2
+@test M[ v ] == M[ m ] # convert test
 
 M = Mutable(TensorValue{3,3,Int})
 @test M == MMatrix{3,3,Int,9}
@@ -571,6 +667,7 @@ v = TensorValue(m)
 @test isa(v,TensorValue{3,3,Int})
 M2 = Mutable(v)
 @test M == M2
+@test M[ v ] == M[ m ]
 
 M = Mutable(SymTensorValue{3,Int})
 @test M == MMatrix{3,3,Int,9}
@@ -579,6 +676,7 @@ v = SymTensorValue(m)
 @test isa(v,SymTensorValue{3,Int})
 M2 = Mutable(v)
 @test M == M2
+@test M[ v ] == M[ m ]
 
 M = Mutable(SymTracelessTensorValue{3,Int})
 @test M == MMatrix{3,3,Int,9}
@@ -587,6 +685,16 @@ v = SymTracelessTensorValue(m)
 @test isa(v,SymTracelessTensorValue{3,Int})
 M2 = Mutable(v)
 @test M == M2
+@test M[ v ] == M[ m ]
+
+M = Mutable(SkewSymTensorValue{3,Int})
+@test M == MMatrix{3,3,Int,9}
+m = zero(M)
+v = SkewSymTensorValue(m)
+@test isa(v,SkewSymTensorValue{3,Int})
+M2 = Mutable(v)
+@test M == M2
+@test M[ v ] == M[ m ]
 
 M = Mutable(ThirdOrderTensorValue{3,1,2,Int})
 @test M == MArray{Tuple{3,1,2},Int,3,6}
@@ -595,6 +703,7 @@ v = ThirdOrderTensorValue(m)
 @test isa(v,ThirdOrderTensorValue{3,1,2,Int})
 M2 = Mutable(v)
 @test M == M2
+@test M[ v ] == M[ m ]
 
 M = Mutable(SymFourthOrderTensorValue{2,Int})
 @test M == MArray{Tuple{2,2,2,2},Int,4,16}
@@ -603,6 +712,7 @@ v = SymFourthOrderTensorValue(m)
 @test isa(v,SymFourthOrderTensorValue{2,Int})
 M2 = Mutable(v)
 @test M == M2
+@test M[ v ] == M[ m ]
 
 @test_throws ErrorException Mutable(MultiValue) # @abstractmethod
 
@@ -733,6 +843,8 @@ for V in (VectorValue, SymTensorValue, SkewSymTensorValue,
   u = rand(VD)
   comp_basis = component_basis(VD)
   dual_basis_rpzs = representatives_of_componentbasis_dual(VD)
+  @test comp_basis == component_basis(u)
+  @test dual_basis_rpzs == representatives_of_componentbasis_dual(u)
 
   @test length(comp_basis) == length(dual_basis_rpzs) == num_indep_components(VD)
   @test eltype(comp_basis) <: VD

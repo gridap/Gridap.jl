@@ -106,6 +106,11 @@ c = a - b
 r = TensorValue(-4, -4, -4, -4)
 @test c==r
 
+b  = TensorValue(5.,6,7,8) # promote_rule test
+c = a - b
+r = TensorValue(-4.,-4,-4,-4)
+@test c===r
+
 a = SymTensorValue(1,2,3)
 b = SymTensorValue(5,6,7)
 
@@ -120,6 +125,11 @@ r = SymTensorValue(6,8,10)
 c = b - a
 r = SymTensorValue(4,4,4)
 @test c==r
+
+b = SymTensorValue(5.,6,7)
+c = a + b
+r = SymTensorValue(6.,8,10)
+@test c===r
 
 a = TensorValue(1,2,3,4)
 b = SymTensorValue(5,6,7)
@@ -153,6 +163,11 @@ c = a - b
 r = SymTracelessTensorValue(-4,-4)
 @test c==r
 
+b = SymTracelessTensorValue(5.,6)
+c = a + b
+r = SymTracelessTensorValue(6.,8)
+@test c===r
+
 a = SymTensorValue(1,2,3)
 b = SymTracelessTensorValue(5,6)
 
@@ -184,6 +199,11 @@ r = SkewSymTensorValue(5,7,9)
 c = a - b
 r = SkewSymTensorValue(-3,-3,-3)
 @test c==r
+
+b = SkewSymTensorValue(4.,5,6)
+c = a + b
+r = SkewSymTensorValue(5.,7,9)
+@test c===r
 
 a = SkewSymTensorValue(1,2,3)
 b = SymTracelessTensorValue(1:5...)
@@ -271,6 +291,26 @@ c = b - a
 r = TensorValue(1,3,5,3,5,9,5,5,9)
 @test c==r
 
+a = ThirdOrderTensorValue(1:8...)
+b = ThirdOrderTensorValue(9:16...)
+
+c = -a
+r=ThirdOrderTensorValue(-1,-2,-3,-4,-5,-6,-7,-8)
+@test c==r
+
+c = a + b
+r=ThirdOrderTensorValue(10,12,14,16,18,20,22,24)
+@test c==r
+
+c = a - b
+r=ThirdOrderTensorValue(-8,-8,-8,-8,-8,-8,-8,-8)
+@test c==r
+
+b = ThirdOrderTensorValue(9.,10:16...)
+c = a + b
+r = ThirdOrderTensorValue(10.,12,14,16,18,20,22,24)
+@test c===r
+
 
 v = VectorValue(1,2)
 t = TensorValue(1,2,3,4)
@@ -328,6 +368,9 @@ c = t\a
 st = one(SymTensorValue{3,Int})
 c = st\a
 @test c == a
+
+@test_throws ErrorException one(SkewSymTensorValue{3,Int})
+@test_throws ErrorException one(MultiValue)
 
 # Operations by a scalar
 
@@ -825,6 +868,10 @@ qt = SymTracelessTensorValue(1,2,3,5,6)
 sk = SkewSymTensorValue(1,2,3)
 @test tr(sk) == tr(TensorValue(get_array(sk)))
 
+t23 = TensorValue{2,3}(1:6...)
+@test_throws ArgumentError tr(t23)
+
+
 @test get_array(symmetric_part(t)) == get_array(TensorValue(1.0, 3.0, 5.0, 3.0, 5.0, 7.0, 5.0, 7.0, 9.0))
 @test symmetric_part(st) == symmetric_part(TensorValue(get_array(st)))
 @test symmetric_part(st) === st
@@ -869,22 +916,25 @@ sb = sa'
 @test sb == SymTensorValue(1,2,3,5,6,9)
 @test sa⋅sb == TensorValue(get_array(sa))⋅TensorValue(get_array(sb))
 
-sa = SymTensorValue(1,2,3,5,6,9)
-sb = sa'
-@test transpose(sa) == sb
-@test sb == SymTensorValue(1,2,3,5,6,9)
+sa = SymTensorValue(1+im,2,3,5,6,9)
+sb = SymTensorValue(1-im,2,3,5,6,9)
+@test sa' == sb
+@test adjoint(sa) == sb
+@test transpose(sa) === sa
 @test sa⋅sb == TensorValue(get_array(sa))⋅TensorValue(get_array(sb))
 
-sa = SymTracelessTensorValue(1,2,3,5,6)
-sb = sa'
+sa = SymTracelessTensorValue(1+im,2,3,5,6)
+sb = SymTracelessTensorValue(1-im,2,3,5,6)
+@test sa' == sb
 @test adjoint(sa) == sb
-@test sb == SymTracelessTensorValue(1,2,3,5,6)
+@test transpose(sa) === sa
 @test sa⋅sb == TensorValue(get_array(sa))⋅TensorValue(get_array(sb))
 
-sa = SkewSymTensorValue(1,2,3)
-sb = sa'
+sa = SkewSymTensorValue(1+im,2,3)
+sb = SkewSymTensorValue(-1+im,-2,-3)
+@test sa' == sb
 @test adjoint(sa) == sb
-@test sb == SkewSymTensorValue(1,2,3)
+@test transpose(sa) === -sa
 @test sa⋅sb == TensorValue(get_array(sa))⋅TensorValue(get_array(sb))
 
 u = VectorValue(1.0,2.0)
@@ -1140,6 +1190,32 @@ for ci in CartesianIndices((3,3))
   @test t2_dot_t1[ci] == sum(t2[ci[1],i]*t1[i,ci[2]] for i in 1:3)
 end
 
+# product of congruence
+
+t = TensorValue{2,3}(1:6...)
+t2 = TensorValue{2,2}(1:4...)
+s = SymTensorValue{2}(1,2,3)
+st = SymTracelessTensorValue{2}(1,2)
+sk = SkewSymTensorValue{2}(1)
+
+r = congruent_prod(t2,t)
+@test r isa TensorValue{3,3}
+@test r == t'⋅t2⋅t
+
+r = congruent_prod(s,t)
+@test r isa SymTensorValue{3}
+@test get_array(r) == get_array(t'⋅s⋅t)
+
+r = congruent_prod(sk,t)
+@test r isa SkewSymTensorValue{3}
+@test get_array(r) == get_array(t'⋅sk⋅t)
+
+r = congruent_prod(st,t)
+@test r isa SymTensorValue{3}
+@test get_array(r) == get_array(t'⋅st⋅t)
+
+@test_throws ErrorException congruent_prod(t,t2) # incompatible size
+
 # Complex
 
 a = 1.0 + 3.0*im
@@ -1227,7 +1303,8 @@ c = a .* b
 @test isa(c,SymTensorValue)
 @test c.data == map(*,a.data,b.data)
 
-@test diag(a) == VectorValue(1,-1)
+a = SkewSymTensorValue(1,2,3)
+@test diag(a) == zero(VectorValue(1:3...))
 
 # Operation involving empty tensors (check type promotion)
 

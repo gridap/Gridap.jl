@@ -35,6 +35,11 @@ SkewSymTensorValue{0,T}() where {T}    = SkewSymTensorValue{0,T}(NTuple{0,T}())
 SkewSymTensorValue(data::NTuple{0})    = SkewSymTensorValue{0,Int}(data)
 SkewSymTensorValue{0}(data::NTuple{0}) = SkewSymTensorValue{0,Int}(data)
 
+# 1D SkewSymTensorValue missing constructor
+
+SkewSymTensorValue{1}()                = SkewSymTensorValue{1,Int}(NTuple{0,Int}())
+SkewSymTensorValue{1}(data::NTuple{0}) = SkewSymTensorValue{1,Int}(data)
+
 # SkewSymTensorValue single NTuple argument constructor
 
 @generated function SkewSymTensorValue(data::NTuple{L,T}) where {L,T}
