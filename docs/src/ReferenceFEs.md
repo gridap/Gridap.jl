@@ -38,14 +38,14 @@ The following table summarizes the elements implemented in Gridap (legend below)
 | [Raviart-Thomas](https://defelement.org/elements/raviart-thomas.html)                   | [`raviart_thomas`](@ref LagrangianRefFE)     | 𝓟⁻Λᴰ⁻¹     | `TRI`,`TET` | ``{r≥0, r+1}`` | `:Hdiv`   |
 |                                                                                         |                                              | 𝓠⁻Λᴰ⁻¹     | `QUAD`,`HEX`| ``{r≥0, r+1}`` | `:Hdiv`   |
 | [Brezzi-Douglas-Marini](https://defelement.org/elements/brezzi-douglas-marini.html)     | [`bdm`](@ref BDMRefFE)                       | 𝓟Λᴰ⁻¹      | `TRI`,`TET` | ``{r≥1, r}  `` | `:Hdiv`   |
-| [Mardal-Tai-Winther](https://defelement.org/elements/mardal-tai-winther.html)           | `TODO` [`mtw`](@ref MardalTaiWintherRefFE)   |            | `TRI`,`TET` | ``{r=1, D+1}`` | `:Hdiv`   |
+| [Mardal-Tai-Winther](https://defelement.org/elements/mardal-tai-winther.html)           | `TODO` `mtw`                                 |            | `TRI`,`TET` | ``{r=1, D+1}`` | `:Hdiv`   |
 |                                                                                                                                                                                                |
 | [Crouzeix-Raviart](https://defelement.org/elements/crouzeix-raviart.html)               |[`couzeix_raviart`](@ref CrouzeixRaviartRefFE)|            |  `TRI`      | ``{r=1, r}``   | `:L2`     |
 | [discontinuous Lagrangian](https://defelement.org/elements/discontinuous-lagrange.html) | [`lagrangian`](@ref LagrangianRefFE)         | ...Λᴰ      | as above    | ``{r≥0, r}``   | `:L2`     |
 | Serendipity, Bezier, ModalC0                                                            | as above                                     |            |             | ``{r≥0, r}``   | `:L2`     |
 |                                                                                                                                                                                                |
-| [Arnold-Winther](https://defelement.org/elements/arnold-winther.html)                   | `TODO` [`arnoldwinther`](@ref ArnoldWintherRefFE)|        | `TRI`       | ``{r=2, 4}``   | `:Hdiv`   |
-| [Hellan-Herrmann-Jhonson](https://defelement.org/elements/hellan-herrmann-johnson.html) | `TODO` [`hhj`](@ref HellanHerrmannJhonsonRefFE)  |        | `TRI`       | ``{TODO, r}``  | `:Hdiv`   |
+| [Arnold-Winther](https://defelement.org/elements/arnold-winther.html)                   | `TODO`  `arnoldwinther`                      |        | `TRI`       | ``{r=2, 4}``   | `:Hdiv`   |
+| [Hellan-Herrmann-Jhonson](https://defelement.org/elements/hellan-herrmann-johnson.html) | `TODO`  `hhj`                                |        | `TRI`       | ``{TODO, r}``  | `:Hdiv`   |
 
 ###### Legend
 

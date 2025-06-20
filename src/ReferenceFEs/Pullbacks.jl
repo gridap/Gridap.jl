@@ -33,6 +33,12 @@ function evaluate!(
   Broadcasting(Operation(k))(f_ref,args...)
 end
 
+function evaluate!(
+  cache, k::Pushforward, f_ref::Field, args...
+)
+  Operation(k)(f_ref,args...)
+end
+
 function Arrays.lazy_map(
   ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{Broadcasting{Operation{<:Pushforward}}}}
 )
@@ -213,15 +219,15 @@ struct DoubleContraVariantPiolaMap <: Pushforward end
 function evaluate!(
   cache, ::DoubleContraVariantPiolaMap, v_ref::Number, Jt::Number
 )
-  _Jt = meas(Jt) * Jt
-  return transpose(_Jt) ⋅ v_ref ⋅ _Jt
+  _Jt = (1. / det(Jt)) * Jt
+  return congruent_prod(v_ref, _Jt) # symmetry stable _Jtᵀ ⋅ v_ref ⋅ _Jt
 end
 
 function evaluate!(
   cache, ::InversePushforward{DoubleContraVariantPiolaMap}, v_phys::Number, Jt::Number
 )
-  iJt = meas(Jt) * pinvJt(Jt)
-  return transpose(iJt) ⋅ v_phys ⋅ iJt
+  iJt = det(Jt) * pinvJt(Jt)
+  return congruent_prod(v_phys, iJt) # symmetry stable iJtᵀ ⋅ v_ref ⋅ iJt
 end
 
 # DoubleCoVariantPiolaMap
@@ -232,11 +238,11 @@ function evaluate!(
   cache, ::DoubleCoVariantPiolaMap, v_ref::Number, Jt::Number
 )
   iJt = pinvJt(Jt)
-  return iJt ⋅ v_ref ⋅ transpose(iJt)
+  return congruent_prod(v_ref, transpose(iJt)) # symmetry stable iJt ⋅ v_ref ⋅ iJtᵀ
 end
 
 function evaluate!(
   cache, ::InversePushforward{DoubleCoVariantPiolaMap}, v_phys::Number, Jt::Number
 )
-  return Jt ⋅ v_phys ⋅ transpose(Jt)
+  return congruent_prod(v_ref, transpose(Jt)) # symmetry stable Jt ⋅ v_phys ⋅ Jtᵀ
 end

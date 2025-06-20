@@ -314,15 +314,6 @@ function remove_local_kernel(cell_basis,trian,T,order,local_kernel)
   return lazy_map(linear_combination,cell_coeffs,cell_basis)
 end
 
-# Stolen from the MomentBased branch
-component_basis(T::Type{<:Real}) = [one(T)]
-function component_basis(V::Type{<:MultiValue})
-  T = eltype(V)
-  n = num_components(V)
-  z, o = zero(T), one(T)
-  return [V(ntuple(i -> ifelse(i == j, o, z),Val(n))) for j in 1:n]
-end
-
 function _kernel_from_symbol(k::Symbol,T,cell_basis)
   if k == :constants
     fields = map(constant_field,component_basis(T))

@@ -34,7 +34,7 @@ field = GenericField(x->v*x[1])
 
 cache = return_cache(dof_basis,field)
 r = evaluate!(cache, dof_basis, field)
-@enter test_dof_array(dof_basis,field,r)
+test_dof_array(dof_basis,field,r)
 
 cache = return_cache(dof_basis,prebasis)
 r = evaluate!(cache, dof_basis, prebasis)

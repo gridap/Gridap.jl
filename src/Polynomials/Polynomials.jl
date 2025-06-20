@@ -131,12 +131,6 @@ export PCurlGradBasis
 
 export ModalC0Basis
 
-# deprecated
-export num_terms
-export QGradMonomialBasis
-export QCurlGradMonomialBasis
-export PCurlGradMonomialBasis
-
 
 include("PolynomialInterfaces.jl")
 

@@ -63,7 +63,7 @@ get_face_moments(b::MomentBasedDofBasis) = b.face_moments
 """
     get_face_nodes_dofs(b::MomentBasedDofBasis)
 
-Return the moment quadrature node indices owned by each face of the underlying polytope.
+Return the moment quadrature node indices on each face of the underlying polytope.
 """
 get_face_nodes_dofs(b::MomentBasedDofBasis) = b.face_nodes
 
@@ -76,12 +76,11 @@ function num_dofs(b::MomentBasedDofBasis)
 end
 
 function return_cache(b::MomentBasedDofBasis{P,V}, field) where {P,V}
-  alloc_cache(vals::AbstractVector,T,ndofs) = zeros(T,ndofs)
-  alloc_cache(vals::AbstractMatrix,T,ndofs) = zeros(T,ndofs,size(vals,2))
   cf = return_cache(field,b.nodes)
   vals = evaluate!(cf,field,b.nodes)
-  T = typeof(dot(zero(V),zero(eltype(vals))))
-  r = alloc_cache(vals,T,num_dofs(b))
+  Vr = eltype(vals)
+  T = typeof( zero(V) ⊙ zero(Vr) )
+  r = Array{T}(undef, (num_dofs(b), size(field)...))
   c = CachedArray(r)
   return c, cf
 end
@@ -104,7 +103,7 @@ function evaluate!(cache, b::MomentBasedDofBasis, field::Field)
       for j in 1:nj
         dofs[o] = z
         for i in 1:ni
-          dofs[o] += moments[i,j]⋅vals[nodes[i]]
+          dofs[o] += moments[i,j] ⊙ vals[nodes[i]]
         end
         o += 1
       end
@@ -134,7 +133,7 @@ function evaluate!(cache, b::MomentBasedDofBasis, field::AbstractVector{<:Field}
         for a in 1:na
           dofs[o,a] = z
           for i in 1:ni
-            dofs[o,a] += moments[i,j]⋅vals[nodes[i],a]
+            dofs[o,a] += moments[i,j] ⊙ vals[nodes[i],a]
           end
         end
         o += 1
@@ -159,13 +158,13 @@ mutable struct FaceMeasure{Df,Dc}
     # Quadrature on the face
     quad = Quadrature(fpoly,order)
     # Face to cell coordinate map
-    if Df == Dc
-      fmaps = [GenericField(identity)]
-    else # TODO: Could this be an AffineMap?
+    #if Df == Dc
+    #  fmaps = [GenericField(identity)]
+    #else # TODO: Could this be an AffineMap?
       fcoords = get_face_coordinates(cpoly,Df)
       basis = get_shapefuns(LagrangianRefFE(Float64,fpoly,1))
       fmaps = map(c -> linear_combination(c,basis),fcoords)
-    end
+    #end
     new{Df,Dc}(1,cpoly,fpoly,quad,fmaps)
   end
 end
@@ -262,7 +261,23 @@ function Arrays.return_cache(
 )
   fmap = ds.fmaps[ds.face]
   φf = transpose(Broadcasting(Operation(∘))(φ,fmap))
-  f = σ(φf,μ,ds)
+  return_cache(σ(φf,μ,ds),ds)
+end
+
+function Arrays.evaluate!(
+  cache,
+  σ::Function,                # σ(φ,μ,ds) -> Field/Array{Field}
+  φ::AbstractArray{<:Field},  # φ: prebasis (defined on the cell)
+  μ::AbstractArray{<:Field},  # μ: polynomial basis (defined on the face)
+  ds::FaceMeasure             # ds: face measure
+)
+  fmap = ds.fmaps[ds.face]
+  φf = transpose(Broadcasting(Operation(∘))(φ,fmap))
+  evaluate!(cache,σ(φf,μ,ds),ds)
+end
+
+function Arrays.return_cache(f,ds::FaceMeasure)
+  fmap = ds.fmaps[ds.face]
 
   xf = get_coordinates(ds.quad)
   w = get_weights(ds.quad)
@@ -275,34 +290,18 @@ function Arrays.return_cache(
   return fmap_cache, detJ_cache, f_cache, xf, w
 end
 
-function Arrays.evaluate!(
-  cache,
-  σ::Function,                # σ(φ,μ,ds) -> Field/Array{Field}
-  φ::AbstractArray{<:Field},  # φ: prebasis (defined on the cell)
-  μ::AbstractArray{<:Field},  # μ: polynomial basis (defined on the face)
-  ds::FaceMeasure             # ds: face measure
-)
+function Arrays.evaluate!(cache,f,ds::FaceMeasure)
   fmap_cache, detJ_cache, f_cache, xf, w = cache
-
   fmap = ds.fmaps[ds.face]
-  φf = transpose(Broadcasting(Operation(∘))(φ,fmap))
-  f = σ(φf,μ,ds)
 
   detJ = Broadcasting(Operation(meas))(Broadcasting(∇)(fmap))
   dF = evaluate!(detJ_cache,detJ,xf)
+  #dF ./= sum(w .* dF) #  This breaks Crouzeix-Raviart
 
   xc = evaluate!(fmap_cache,fmap,xf) # quad pts on the cell
   fx = evaluate!(f_cache,f,xf) # f evaluated on the quad pts
   fx .= (w .* dF) .* fx
   return fx, xc
-end
-
-component_basis(T::Type{<:Real}) = [one(T)]
-function component_basis(V::Type{<:MultiValue})
-  T = eltype(V)
-  n = num_components(V)
-  z, o = zero(T), one(T)
-  return [V(ntuple(i -> ifelse(i == j, o, z),Val(n))) for j in 1:n]
 end
 
 """
@@ -318,7 +317,7 @@ Constructs a ReferenceFEs on `p` with a moment DoF basis.
 
 `moments` is a vector of moments, each one is given by a triplet (f,σ,μ) where
   - f is vector of ids of faces Fₖ of `p`
-  - σ is a function σ(φ,μ,ds) that returns a Field-like object to be integrated over each Fₖ
+  - σ is a function σ(φ,μ,ds) linear in φ and μ that returns a Field-like object to be integrated over each Fₖ
   - μ is a polynomials basis on Fₖ
 
 The moment DoFs are thus defined by φ -> ∫_Fₖ σ(φ,μᵢ,ds).
@@ -330,7 +329,7 @@ function MomentBasedReferenceFE(
   name::ReferenceFEName,
   p::Polytope{D},
   prebasis::AbstractVector{<:Field},
-  moments::AbstractVector{<:Tuple},#{<:AbstractVector{Int},<:Function,<:AbstractVector{<:Field}}},
+  moments::AbstractVector{<:Tuple},
   conformity::Conformity;
 ) where D
 
@@ -342,14 +341,14 @@ function MomentBasedReferenceFE(
 
   T = return_type(prebasis)
   order = get_order(prebasis)
-  φ_vec = component_basis(T)
+  φ_vec = representatives_of_componentbasis_dual(T)
   φ = map(constant_field,φ_vec)
 
   # Create face measures for each moment
   measures = Vector{FaceMeasure}(undef,n_moments)
   for (k,(faces,σ,μ)) in enumerate(moments)
     ftype = face_types[first(faces)]
-    @assert all(face_types[faces] .== ftype)
+    @check all(isequal(ftype), face_types[faces])
     qdegree = order + get_order(μ) + 1
     fp = reffaces[ftype]
     measures[k] = FaceMeasure(p,fp,qdegree)
@@ -392,12 +391,13 @@ function MomentBasedReferenceFE(
 
       # vals : (nN, nμ, nφ), coords : (nN)
       vals, coords = evaluate!(cache,σ,φ,μ,ds)
+      # test_moment(σ,prebasis,μ,ds)
 
       dof_offset = face_n_dofs[face]
       node_offset = first(face_nodes[face]) + face_n_nodes[face] - 1
       for i in axes(vals,1)
         for j in axes(vals,2)
-          face_moments[face][i,j+dof_offset] = dot(vals[i,j,:],φ_vec)
+          face_moments[face][i,j+dof_offset] = T(vals[i,j,:]...)
         end
         nodes[i+node_offset] = coords[i]
       end
@@ -412,4 +412,40 @@ function MomentBasedReferenceFE(
   return GenericRefFE{typeof(name)}(
     n_dofs, p, prebasis, dof_basis, conformity, metadata, face_own_dofs
   )
+end
+
+function test_moment(σ,prebasis,μ,ds)
+  T = return_type(prebasis)
+  φ = map(constant_field,dual_component_basis_representatives(T))
+  vals, coords = evaluate(σ,φ,μ,ds)
+
+  φx = evaluate(prebasis, coords) # (nN, nφ)
+  σx, _ = evaluate(σ,prebasis,μ,ds)
+
+  σx_bis = zeros(size(vals,1),size(vals,2),size(σx,3))
+  for i in axes(vals,1)
+    for j in axes(vals,2)
+      cx = T(vals[i,j,:]...)
+      σx_bis[i,j,:] .= map(y -> inner(y,cx),φx[i,:])
+    end
+  end
+
+  println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+
+  println(" > Values: ")
+  for i in axes(vals,2)
+    println("    >> Mu = ",i)
+    for j in axes(vals,3)
+      println("     >>> Phi -> ", sum(vals[:,i,j]))
+    end
+  end
+
+  println(" > Moments: ")
+  for i in axes(vals,1)
+    display(σx[i,:,:])
+    display(σx_bis[i,:,:])
+    println("----------------------------------------")
+  end
+  @assert σx ≈ σx_bis
+  println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 end
