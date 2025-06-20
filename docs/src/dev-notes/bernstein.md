@@ -4,7 +4,7 @@ CurrentModule = Gridap.Polynomials
 
 # Bernstein bases algorithms
 
-### Barycentric coordinates
+## Barycentric coordinates
 
 A ``D``-dimensional simplex ``T`` is defined by ``N=D+1`` vertices ``\{v_1,
 v_2, …, v_N\}=\{v_i\}_{i∈1:N}``. The barycentric coordinates
@@ -30,8 +30,8 @@ affine, and is implemented using:
 \end{array}\right)^{-1}
 ```
 where the inverse exists because ``T`` is non-degenerate [1], cf. functions
-`_cart_to_bary` and `_compute_cart_to_bary_matrix`. Additionally, we have
-``∂_{x_i} λ_j(\bm{x}) = M_{j,i+1}``, so
+[`_cart_to_bary`](@ref) and [`_compute_cart_to_bary_matrix`](@ref). Additionally,
+we have ``∂_{x_i} λ_j(\bm{x}) = M_{j,i+1}``, so
 ```math
 ∇ λ_j = M_{2:N, j}.
 ```
@@ -56,7 +56,7 @@ the matrix ``M`` is not stored because
 ∂_{x_i} λ_j = δ_{i+1,j} - δ_{1j} = M_{j,i+1}.
 ```
 
-### Bernstein polynomials definition
+## Bernstein polynomials definition
 
 The univariate [`Bernstein`](@ref) polynomials forming a basis of ``ℙ_K``
 are defined by
@@ -143,14 +143,7 @@ access each relevant ``B_β`` once per ``(∇/H)B_α`` computed. Also, on the
 reference simplex, the barycentric coordinates derivatives are computed at
 compile time using ``∂_qλ_i = δ_{i q}-δ_{i N}``.
 
-## Low level docstrings
-
-```@docs
-_de_Casteljau_nD!
-_downwards_de_Casteljau_nD!
-```
-
-# Bernstein basis generalization for ``ℙ_r^{(-)}Λ^k`` spaces
+## Bernstein basis generalization for ``ℙΛ`` spaces
 
 The [`PmLambdaBasis`](@ref) and [`PLambdaBasis`](@ref) bases respectively
 implement the polynomial bases for the spaces ``ℙ_r^-Λ^k(T^D)`` and
@@ -160,8 +153,8 @@ degree ``r``. These spaces include and generalize several standard FE
 polynomial spaces, see the Periodic Table of the Finite Elements [3].
 
 The following notes explain the implementation in detail. For the moment, only
-the space with form order ``k = 0,1,D-1`` and ``D`` are available, because the
-forms are translated into their vector calculus proxy.
+the space with form order ``{k = 0,1,D-1}`` and ``D`` are available, because the
+forms are translated into their [vector calculus proxy](@ref "Translation between forms and vectors").
 
 #### Face and form coefficients indexing
 
@@ -194,9 +187,9 @@ and ``\{\text{d}x^i\}_{1≤ i≤ D}`` is the canonical covector basis (basis
 of ``\text{T}_x T``) such that ``\text{d}x^i(∂_{x_j})=δ_{ij}``.
 
 These sets of indices ``I,J,F`` are ``k``-combinations of ``{1:D/N}``, stored
-in `Vector{Int}`. A generator [`sorted_combinations`](@ref) returns a vector
+in `Vector{Int}`. A generator [`_sorted_combinations`](@ref) returns a vector
 containing all the ``D``-dimensional ``k``-combinations, and
-[`combination_index`](@ref) can be used to compute the index of a combination
+[`_combination_index`](@ref) can be used to compute the index of a combination
 in this vector. This `k`-combinations ordering defines the indices of form
 components ``ω_I`` in numerical collections. The order is independent of the
 dimension.
@@ -205,17 +198,19 @@ dimension.
 
 By default, the polynomial forms of order ``k = 0,1,D-1`` and ``D`` are
 translated into their equivalents in the standard vector calculus framework
-(assuming the simplex ``T`` Euclidean).
+(assuming the simplex is Euclidean).
 
-| ``k``    | Form value                               | Vector proxy value     | Proxy value type |
-| :------- | :--------------------------------------- | :--------------------- | :--------------- |
-| ``0  ``  | ``ω ∈ \mathbb{R}``                       | ``ω♯ = ω``             | `T`              |
-| ``1  ``  | ``ω = ω_i \mathrm{d}x^i``                | ``ω♯ = \sum_i ω_i \boldsymbol{e}_i``|`VectorValue{D,T}`|
-| ``D-1>1``| ``ω=ω_{I}\mathrm{d}x^{I}`` | ``(⋆ω)♯ =\ \underset{i=\{1:D\}\backslash I}{\sum} (-1)^{i+1} ω_i \boldsymbol{e}_i`` |`VectorValue{D,T}`|
-| ``D  ``  | ``ω=ω_{\{1:D\}}\mathrm{d}x^{\{1:D\}} ``  | ``(⋆ω)♯=ω_{\{1:D\}}``  |`T`               |
+| ``k``    | Form value                               | Vector proxy value          | Proxy value type |
+| :------- | :--------------------------------------- | :-------------------------- | :--------------- |
+| ``0  ``  | ``ω ∈ \mathbb{R}``                       | ``ω♯ = ω``                  | `T`              |
+| ``1  ``  | ``ω = ω_i \mathrm{d}x^i``                | ``ω♯ = \sum_i ω_i \bm{e}_i``|`VectorValue{D,T}`|
+| ``D-1≥1``| ``ω=ω_{I}\mathrm{d}x^{I}`` | ``(⋆ω)♯ =\ \underset{I=\{1:D\}\backslash\{i\}}{\sum_i} (-1)^{i+1} ω_{I} \boldsymbol{e}_i`` |`VectorValue{D,T}`|
+| ``D  ``  | ``ω=ω_{\{1:D\}}\mathrm{d}x^{\{1:D\}} ``  | ``(⋆ω)♯=ω_{\{1:D\}}``       |`T`               |
 
 This change of coordinate is implemented by [`_basis_forms_components`](@ref),
 the indices of a basis `b::P(m)LambdaBasis` are stored in `b._indices.components`.
+For ``{D=2}`` and ``{k=1}``, the default proxy is ``ω♯``. The user may choose the
+``(⋆ω)♯`` proxy (for div-conforming spaces) using the kwarg `rotate_90=true`.
 
 #### Geometric decomposition
 
@@ -271,7 +266,7 @@ where
 - `α` is a `Vector{Int}`,
 - `α_id` is [`bernstein_term_id(α)`](@ref bernstein_term_id), the index of `Bα` in the scalar [`BernsteinBasisOnSimplex`](@ref),
 - `J` is a `Vector{Int}`,
-- `sub_J_ids` is a `::Vector{Int}` are the [`combination_index`](@ref) of each ``J\backslash \{J(l)\}`` for ``1\leq l\leq \#J``,
+- `sub_J_ids` is a `::Vector{Int}` are the [`_combination_index`](@ref) of each ``J\backslash \{J(l)\}`` for ``1\leq l\leq \#J``,
 - `sup_α_ids` is a `::Vector{Int}` are the [`bernstein_term_id`](@ref) of each ``α+e_i`` for ``1\leq i\leq \#α``.
 
 The implementation is flexible enough to select a subset of the bubble spaces,
@@ -305,7 +300,7 @@ and we obtain the components of ``ω̄^{α,J}=B_α φ^J`` in the basis
 ```
 The ``\binom{D}{k}\binom{N}{k}`` coefficients ``\{m_I^{J}\}_{I,J}`` are
 constant in ``T`` and are pre-computed from ``M`` in
-[`_compute_PmΛ_basis_coefficients!`](@ref) at the creation of `PmLambdaBasis`
+`_compute_PmΛ_basis_coefficients!` at the creation of `PmLambdaBasis`
 and stored in its field `m`.
 
 Finally, the pseudocode to evaluate our basis ``ω̄`` of ``ℙ_r^-Λ^k(T)`` at
@@ -377,8 +372,8 @@ basis ``\mathrm{d}x^I`` are
 where the ``\binom{D+r}{k+r}\binom{r+k}{k}\binom{D}{k}
 =\mathrm{dim}(ℙ_rΛ^k(T^D))\times\# (\{\mathrm{d}x^I\}_I)`` coefficients
 ``ψ_I^{α,J}`` depend only on ``T`` and are pre-computed in
-[`_compute_PΛ_basis_form_coefficient!`](@ref) at the construction of
-`PLambdaBasis` and stored in its field `Ψ`.
+`_compute_PΛ_basis_form_coefficient!` at the construction of `PLambdaBasis` and
+stored in its field `Ψ`.
 
 The pseudocode to evaluate our basis ``ω`` of ``ℙ_rΛ^k(T)`` at
 ``\boldsymbol{x}`` is
@@ -570,6 +565,21 @@ s  & n & \mathrm{rank}\hat{M}_{IJ} & \mathrm{adj}\hat{M}_{IJ} & \hat{ψ}_I^{α,J
 ```
 In this table, ``m``, ``p`` and ``q`` depend on ``I`` and ``J``, ``u``
 depends on ``F`` and ``I``, and ``v`` depends on ``α`` and ``J``.
+
+### Low level docstrings
+
+```@docs
+_compute_cart_to_bary_matrix
+_cart_to_bary
+_de_Casteljau_nD!
+_downwards_de_Casteljau_nD!
+_combination_index
+_sorted_combinations
+_basis_forms_components
+_combination_sign
+_complement
+```
+
 
 ## References
 

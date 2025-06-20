@@ -36,7 +36,8 @@ function RaviartThomasRefFE(
     fb = LegendreBasis(Val(D-1),T,order,Polynomials._q_filter) # Face basis
   elseif is_simplex(p)
     #prebasis = PCurlGradBasis(Monomial,Val(D),T,order)                        # Prebasis
-    prebasis = PmLambdaBasis(Val(D),T,order+1,D-1) # Prebasis
+    rotate_90 = D==2
+    prebasis = PmLambdaBasis(Val(D),T,order+1,D-1;rotate_90) # Prebasis
     #cb = LegendreBasis(Val(D),VectorValue{D,T},order-1,Polynomials._p_filter) # Cell basis
     cb = order>0 ? PLambdaBasis(Val(D),T,order-1,D-1) : nothing       # Cell basis
     #fb = LegendreBasis(Val(D-1),T,order,Polynomials._p_filter)                # Face basis

@@ -207,6 +207,15 @@ D-simplices are defined by
 these bases are of dimension K+1 and the divergence of their elements are in
 ``ℚ^D_K`` and ``ℙ^D_K`` respectively.
 
+#### ``ℙ_r^{-}Λ^k`` and ``ℙ_rΛ^k`` bases
+
+Those bases are a generalization of the scalar Bernstein bases to the spaces for
+the two principal finite element families forming a de Rham complex on simplices.
+They are respectively implemented by [`PmLambdaBasis`](@ref) and
+[`PmLambdaBasis`](@ref). Their definition with references, and implementation
+details are provided in [this](@ref "Bernstein-basis-generalization-for-ℙΛ-spaces")
+developer note.
+
 
 #### Filter functions
 
@@ -291,6 +300,8 @@ PGradBasis
 QGradBasis
 PCurlGradBasis
 QCurlGradBasis
+PmLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
+PLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
 ```
 ## Low level APIs and internals
 
@@ -307,6 +318,15 @@ NedelecPolyBasisOnSimplex
 RaviartThomasPolyBasis
 ModalC0Basis
 ModalC0Basis()
+PmLambdaBasis
+PLambdaBasis
+PmLambdaBasis(::PmLambdaBasis{D,V,LN,B}, ::Vector{Int}...) where {D,V,LN,B}
+PLambdaBasis(::PLambdaBasis{D,V,LN,B}, ::Vector{Int}...) where {D,V,LN,B}
+print_indices
+get_bubbles
+PΛ_bubbles
+PmΛ_bubbles
+PLambdaIndices
 ```
 
 ### Deprecated APIs

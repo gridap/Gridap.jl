@@ -43,7 +43,7 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
     #end
     fb = order>0 ? PLambdaBasis(Val(D-1),et,order-1,1) : nothing      # Face basis
     #cb = MonomialBasis(Val(D),VectorValue{D,et},order-D+1,Polynomials._p_filter)   # Cell basis
-    cb = order>0 ? PLambdaBasis(Val(D),et,order-1,1) : nothing       # Cell basis
+    cb = order>D-2 ? PLambdaBasis(Val(D),et,order-D+1,1) : nothing       # Cell basis
   else
     @unreachable "Nedelec Reference FE only implemented for n-cubes and simplices"
   end

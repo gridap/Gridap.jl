@@ -60,16 +60,36 @@ D = num_dims(TRI)
 et = Float64
 
 reffe = RaviartThomasRefFE(et,p,order)
+dof_basis = get_dof_basis(reffe)
+prebasis = get_prebasis(reffe)
 
 dofs = get_dof_basis(reffe)
 nodes, nf_nodes, nf_moments =  get_nodes(dofs), get_face_nodes_dofs(dofs), get_face_moments(dofs)
-nodes
-nf_nodes
-nf_moments
+
+order = 3
+p = TRI
+D = num_dims(TRI)
+et = Float64
+
+reffe = RaviartThomasRefFE(et,p,order)
+prebasis = get_prebasis(reffe)
+dof_basis = get_dof_basis(reffe)
+
+v = VectorValue(3.0,0.0)
+field = GenericField(x->v*x[1])
+
+dofs = get_dof_basis(reffe)
+nodes, nf_nodes, nf_moments =  get_nodes(dofs), get_face_nodes_dofs(dofs), get_face_moments(dofs)
+
+cache = return_cache(dof_basis,field)
+r = evaluate!(cache, dof_basis, field)
+test_dof_array(dof_basis,field,r)
+
+cache = return_cache(dof_basis,prebasis)
+r = evaluate!(cache, dof_basis, prebasis)
+test_dof_array(dof_basis,prebasis,r)
 
 ###
-
-
 
 p = TET
 D = num_dims(TET)

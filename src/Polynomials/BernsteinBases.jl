@@ -279,9 +279,9 @@ get_order(b::BernsteinBasisOnSimplex) = b.max_order
     _compute_cart_to_bary_matrix(vertices, ::Val{N})
     _compute_cart_to_bary_matrix(::Nothing,::Val) = nothing
 
-For the given the vertices of a `D`-simplex (`D` = `N`-1, computes the change
-of coordinate matrix `x_to_λ` from cartesian to barycentric, that is
-`λ` = `x_to_λ` * `x` such that `sum(λ) == 1` and `x == sum(λ .* vertices)`.
+For the given the vertices of a `D`-simplex (`D` = `N`-1), computes the change
+of coordinate matrix `x_to_λ` from cartesian to barycentric, such that
+`λ` = `x_to_λ` * `x` with `sum(λ) == 1` and `x == sum(λ .* vertices)`.
 """
 function _compute_cart_to_bary_matrix(vertices, ::Val{N}) where N
   T = eltype(eltype(vertices))
@@ -301,8 +301,8 @@ _compute_cart_to_bary_matrix(::Nothing, ::Val) = nothing
 """
     _cart_to_bary(x::Point{D,T}, ::Nothing)
 
-Converts the cartesian coordinates `x` into the barycentric coordinates with
-respect to the reference simplex, that is `λ`=(x1, ..., xD, 1-x1-x2-...-xD).
+Compute the barycentric coordinates with respect to the reference simplex of the
+given cartesian coordinates `x`, that is `λ`=(x1, ..., xD, 1-x1-x2-...-xD).
 """
 @inline function _cart_to_bary(x::Point{D,T}, ::Nothing) where {D,T}
   sum_x = sum(x,init=zero(T))
@@ -312,7 +312,7 @@ end
 """
     _cart_to_bary(x::Point{D,T}, x_to_λ)
 
-Converts the cartesian coordinates `x` into the barycentric coordinates using
+Compute the barycentric coordinates of the given cartesian coordinates `x` using
 the `x_to_λ` change of coordinate matrix, see [`_compute_cart_to_bary_matrix`](@ref).
 """
 @inline function _cart_to_bary(x::Point{D,T}, x_to_λ) where {D,T}
@@ -426,7 +426,7 @@ coefficients.
 If `K0 = 1`, `λ` are the barycentric coordinates of some point `x` and `c[1] = 1`,
 this computes all order `K` basis Bernstein polynomials at `x`:
 
-``c[α_id] = B_α(x)  ∀α in \text{bernstein_terms}(K,D)``
+`c[α_id] = B_α(x)  ∀α ∈ bernstein_terms(K,D)`
 
 where `α_id` = [`bernstein_term_id`](@ref)(α).
 """

@@ -177,7 +177,7 @@ _∇(b) = x -> ForwardDiff.jacobian(b, get_array(x))
 _H(b) = x -> ForwardDiff.jacobian(y -> ForwardDiff.jacobian(b, y), get_array(x))
 
 _bx( D,order,x,  x2λ=nothing) = transpose(reduce(hcat, (                                    bernstein_nD(D,order,x2λ )(xi)           for xi in x)))
-_∇bx(D,order,x,G,x2λ=nothing) = transpose(reduce(hcat, ( map(G,          eachrow(        _∇(bernstein_nD(D,order,x2λ))(xi)))         for xi in x)))
+_Gbx(D,order,x,G,x2λ=nothing) = transpose(reduce(hcat, ( map(G,          eachrow(        _∇(bernstein_nD(D,order,x2λ))(xi)))         for xi in x)))
 _Hbx(D,order,x,H,x2λ=nothing) = transpose(reduce(hcat, ( map(x->H(x...), eachrow(reshape(_H(bernstein_nD(D,order,x2λ))(xi), :,D*D))) for xi in x)))
 
 D = 2

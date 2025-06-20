@@ -25,11 +25,12 @@ function BDMRefFE(::Type{T},p::Polytope,order::Integer) where T
   @check 2 ≤ D ≤ 3 && is_simplex(p) "BDM Reference FE only available for simplices of dimension 2 and 3"
 
   #prebasis = MonomialBasis(Val(D),VectorValue{D,T},order,Polynomials._p_filter)
-  prebasis = PLambdaBasis(Val(D),T,order,D-1) # Prebasis
+  rotate_90 = D==2 # actually this does'nt change anything for BDM, at least when using vector proxies
+  prebasis = PLambdaBasis(Val(D),T,order,D-1; rotate_90) # Prebasis
   #fb = MonomialBasis(Val(D-1),T,order,Polynomials._p_filter)
-  fb = order≥0 ? PmLambdaBasis(Val(D-1),T,order,0) : nothing       # Face basis
+  fb = PmLambdaBasis(Val(D-1),T,order,0)        # Face basis
   #cb = PGradBasis(Monomial,Val(D),T,order-2)
-  cb = order>1 ? PmLambdaBasis(Val(D),T,order-1,D-1) : nothing       # Cell basis
+  cb = order>1 ? PmLambdaBasis(Val(D),T,order-1,1) : nothing       # Cell basis
 
   function cmom(φ,μ,ds) # Cell moment function: σ_K(φ,μ) = ∫(φ·μ)dK
     Broadcasting(Operation(⋅))(φ,μ)
