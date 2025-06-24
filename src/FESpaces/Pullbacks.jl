@@ -7,10 +7,11 @@ function get_cell_dof_basis(
 ) where T <: ReferenceFE
 
   pushforward = Pushforward(get_name(T))
-  if pushforward isa IdentityPiolaMap
+  if isnothing(pushforward)
     lazy_map(get_dof_basis,cell_reffe)
   else
-    cell_change, cell_args = get_cell_pushforward(pushforward, model, cell_reffe)
+    pushforward, cell_change, cell_args = get_cell_pushforward(
+      pushforward, model, cell_reffe, conf)
     cell_ref_dofs = lazy_map(get_dof_basis, cell_reffe)
     cell_phy_dofs = lazy_map(inverse_map(Pullback(pushforward)), cell_ref_dofs, cell_args...)
     lazy_map(linear_combination, cell_change, cell_phy_dofs) # TODO: Inverse and transpose
@@ -22,10 +23,11 @@ function get_cell_shapefuns(
 ) where T <: ReferenceFE
 
   pushforward = Pushforward(get_name(T))
-  if pushforward isa IdentityPiolaMap
+  if isnothing(pushforward)
     lazy_map(get_shapefuns,cell_reffe)
   else
-    cell_change, cell_args = get_cell_pushforward(pushforward, model, cell_reffe)
+    pushforward, cell_change, cell_args = get_cell_pushforward(
+      pushforward, model, cell_reffe, conf)
     cell_ref_fields = lazy_map(get_shapefuns, cell_reffe)
     cell_phy_fields = lazy_map(pushforward, cell_ref_fields, cell_args...)
     lazy_map(linear_combination, cell_change, cell_phy_fields)
@@ -33,7 +35,7 @@ function get_cell_shapefuns(
 end
 
 function get_cell_pushforward(
-  ::Pushforward, model::DiscreteModel, cell_reffe
+  ::Pushforward, model::DiscreteModel, cell_reffe, conformity
 )
   @abstractmethod
 end
@@ -41,23 +43,23 @@ end
 # ContraVariantPiolaMap
 
 function get_cell_pushforward(
-  ::ContraVariantPiolaMap, model::DiscreteModel, cell_reffe
+  p::ContraVariantPiolaMap, model::DiscreteModel, cell_reffe, conf
 )
   cell_map  = get_cell_map(get_grid(model))
   Jt = lazy_map(Broadcasting(∇),cell_map)
   change = get_sign_flip(model, cell_reffe)
-  return change, (Jt,)
+  return p, change, (Jt,)
 end
 
 # CoVariantPiolaMap
 
 function get_cell_pushforward(
-  ::CoVariantPiolaMap, model::DiscreteModel, cell_reffe
+  p::CoVariantPiolaMap, model::DiscreteModel, cell_reffe, conf
 )
   cell_map = get_cell_map(get_grid(model))
   Jt = lazy_map(Broadcasting(∇),cell_map)
   change = lazy_map(r -> Diagonal(ones(num_dofs(r))), cell_reffe) # TODO: Replace by edge-signs
-  return change, (Jt,)
+  return p, change, (Jt,)
 end
 
 # NormalSignMap

@@ -10,7 +10,7 @@ where
 """
 abstract type Pushforward <: Map end
 
-Pushforward(::Type{<:ReferenceFEName}) = @abstractmethod
+Pushforward(::Type{<:ReferenceFEName}) = nothing
 Pushforward(name::ReferenceFEName) = Pushforward(typeof(name))
 
 function Arrays.lazy_map(
@@ -142,22 +142,6 @@ function evaluate!(
   pb = inverse_map(k)
   return MappedDofBasis(inverse_map(pb.pushforward),σ_ref,args...)
 end
-
-# Trivial / 1st Piola map
-struct IdentityPiolaMap <: Pushforward end
-
-function evaluate!(
-  cache, ::IdentityPiolaMap, v_ref::Number, Jt::Number
-)
-  return v_ref
-end
-
-function evaluate!(
-  cache, ::InversePushforward{IdentityPiolaMap}, v_phys::Number, Jt::Number
-)
-  return v_phys
-end
-
 
 # ContraVariantPiolaMap
 """

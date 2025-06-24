@@ -10,8 +10,6 @@ Singleton of the [`ModalC0`](@ref) reference FE name.
 """
 const modalC0 = ModalC0()
 
-Pushforward(::Type{ModalC0}) = IdentityPiolaMap()
-
 """
     ModalC0RefFE(::Type{T}, p::Polytope{D}, orders)
 
