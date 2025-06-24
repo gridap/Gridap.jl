@@ -29,14 +29,14 @@ function Base.getindex(a::FineToCoarseIndices,cid::Integer)
 end
 
 # Note for developpers:
-# We use FineToCoarseArray to represent many data-structures, from quadrature points to 
-# finite-element basis. For performance reasons, we sometimes want to keep a copy of the 
-# coarse data (but not always!). For instance: 
-#  - for quad points, we want to keep the coarse points. Otherwise, we woudl have to 
-#    recompute them for every cell when the CompositeQuadrature is used with other 
-#    gridap basis. 
-#  - for finite-element basis, we do NOT want to generate the coarse basis, otherwise 
-#    we would be creating it many times (when it should never be used). In this case, we 
+# We use FineToCoarseArray to represent many data-structures, from quadrature points to
+# finite-element basis. For performance reasons, we sometimes want to keep a copy of the
+# coarse data (but not always!). For instance:
+#  - for quad points, we want to keep the coarse points. Otherwise, we woudl have to
+#    recompute them for every cell when the CompositeQuadrature is used with other
+#    gridap basis.
+#  - for finite-element basis, we do NOT want to generate the coarse basis, otherwise
+#    we would be creating it many times (when it should never be used). In this case, we
 #    create it on the go (see getindex! specialisations).
 # All in all, this is why coarse_data can be of type Nothing.
 struct FineToCoarseArray{T,A,B,C} <: AbstractVector{T}
@@ -169,7 +169,7 @@ end
 function Arrays.return_cache(a::MacroDofBasis,b::MacroFEBasis)
   @check a.rrule == b.rrule
   caches = map(return_cache,a.fine_data,b.fine_data)
-  
+
   T = eltype(evaluate!(first(caches),first(a.fine_data),first(b.fine_data)))
   res = zeros(T,length(a),length(b))
   return res, caches
@@ -247,8 +247,8 @@ function Arrays.evaluate!(caches, a::MacroFEBasis,xc::AbstractArray{<:Point})
 
   fill!(res,zero(eltype(res)))
   xf, ids = evaluate!(geo_cache,k,a.rrule,xc)
-  
-  for fcell in 1:num_subcells(a.rrule) 
+
+  for fcell in 1:num_subcells(a.rrule)
     xf_k = getindex!(xf_cache,xf,fcell)
     if isempty(xf_k)
       continue
@@ -276,7 +276,7 @@ end
 function Arrays.return_cache(a::MacroFEBasis,b::FineToCoarseArray{<:Point})
   @check a.rrule == b.rrule
   caches = map(return_cache,a.fine_data,b.fine_data)
-  
+
   T = eltype(evaluate!(first(caches),first(a.fine_data),first(b.fine_data)))
   res_cache = CachedArray(zeros(T,length(b),length(a)))
   return res_cache, caches
@@ -326,8 +326,6 @@ end
 # MacroReferenceFE
 
 struct MacroRefFE <: ReferenceFEName end
-
-Pushforward(::Type{MacroRefFE}) = IdentityPiolaMap()
 
 """
     MacroReferenceFE(rrule::RefinementRule,reffes::AbstractVector{<:ReferenceFE})
@@ -405,8 +403,8 @@ end
 
 """
     get_cface_to_own_dofs(
-      rrule::RefinementRule, 
-      space::FESpace, 
+      rrule::RefinementRule,
+      space::FESpace,
       reffes::AbstractVector{<:ReferenceFE}
     )
 
@@ -426,8 +424,8 @@ end
 
 """
     get_cface_to_dofs(
-      rrule::RefinementRule, 
-      space::FESpace, 
+      rrule::RefinementRule,
+      space::FESpace,
       reffes::AbstractVector{<:ReferenceFE}
     )
 
@@ -467,7 +465,7 @@ function get_cface_to_own_fface_to_own_dofs(
   space::FESpace,
   reffes::AbstractVector{<:ReferenceFE}
 )
-  cface_to_own_fface_to_own_dofs, _ = 
+  cface_to_own_fface_to_own_dofs, _ =
     _compute_cface_to_own_fface_to_own_dofs_and_permutations(rrule,space,reffes)
   return cface_to_own_fface_to_own_dofs
 end
@@ -483,7 +481,7 @@ function _compute_cface_to_own_fface_to_own_dofs_and_permutations(
 ) where Dc
   poly = get_polytope(rrule)
   topo = get_grid_topology(rrule.ref_grid)
-  
+
   coffsets = get_offsets(poly)
   foffsets = get_offsets(topo)
 
@@ -505,7 +503,7 @@ function _compute_cface_to_own_fface_to_own_dofs_and_permutations(
 
   # We need to collect the dofs for each fine face, but the owned dofs are given cell-wise.
   # So we need to iterate over the cells and identify which fine face we are looking at...
-  # Since we are going to see some faces more than once, we keep track of which ones we 
+  # Since we are going to see some faces more than once, we keep track of which ones we
   # have already seen through the `touched` array.
   # We also collect local dof permutations on that face, which will be aggregated later.
   cface_to_own_fface_to_dofs = [
@@ -556,7 +554,7 @@ end
       reffes::AbstractVector{<:ReferenceFE}
     )
 
-Given a RefinementRule and information on the dofs owned by each fine face, compute 
+Given a RefinementRule and information on the dofs owned by each fine face, compute
 the permutations of the dofs owned by each coarse face.
 """
 function get_cface_to_own_dof_permutations(
@@ -565,12 +563,12 @@ function get_cface_to_own_dof_permutations(
   reffes::AbstractVector{<:ReferenceFE}
 )
   # Dof permutation data
-  cface_to_fface_to_dofs, 
-    cface_to_fface_to_fpindex_to_ldofs = 
+  cface_to_fface_to_dofs,
+    cface_to_fface_to_fpindex_to_ldofs =
       _compute_cface_to_own_fface_to_own_dofs_and_permutations(rrule,space,reffes)
 
-  # We need to convert the dof numberings (which are in the rrule numeration) into 
-  # the local numeration of the coarse faces. 
+  # We need to convert the dof numberings (which are in the rrule numeration) into
+  # the local numeration of the coarse faces.
   cface_to_fface_to_ldofs = map(cface_to_fface_to_dofs) do fface_to_dofs
     fface_to_ldofs = Vector{Vector{Int}}(undef,length(fface_to_dofs))
     offset = 0
@@ -583,7 +581,7 @@ function get_cface_to_own_dof_permutations(
   end
 
   # Topological permutation data
-  cface_to_cpindex_to_ffaces, 
+  cface_to_cpindex_to_ffaces,
     cface_to_cpindex_to_fpindex = get_cface_to_own_fface_permutations(rrule)
 
   # Allocate output
@@ -602,8 +600,8 @@ function get_cface_to_own_dof_permutations(
       p_ffaces = cface_to_cpindex_to_ffaces[cface][cpindex]      # Permuted fine faces
       fface_pindex = cface_to_cpindex_to_fpindex[cface][cpindex] # Local fine permutation index
 
-      # Collect dofs for each fine face owned by the coarse face, 
-      # and permute them according to the two-level permutation induced by 
+      # Collect dofs for each fine face owned by the coarse face,
+      # and permute them according to the two-level permutation induced by
       # the coarse permutation (see `get_cface_to_own_fface_permutations`)
       dofs = Int32[]
       for (p_fface,fpindex) in zip(p_ffaces,fface_pindex)
