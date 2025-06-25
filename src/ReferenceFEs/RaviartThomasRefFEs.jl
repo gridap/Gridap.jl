@@ -7,9 +7,9 @@ struct DivConformity <: Conformity end
 # RaviartThomas
 
 """
-    struct RaviartThomas <: PushforwardRefFE <: ReferenceFEName
+    struct RaviartThomas <: ReferenceFEName
 """
-struct RaviartThomas <: PushforwardRefFE end
+struct RaviartThomas <: ReferenceFEName end
 
 """
     const raviart_thomas = RaviartThomas()
@@ -18,7 +18,7 @@ Singleton of the [`RaviartThomas`](@ref) reference FE name.
 """
 const raviart_thomas = RaviartThomas()
 
-Pushforward(::Type{<:RaviartThomas}) = ContraVariantPiolaMap()
+Pushforward(::Type{RaviartThomas}) = ContraVariantPiolaMap()
 
 """
     RaviartThomasRefFE(::Type{T}, p::Polytope, order::Integer)

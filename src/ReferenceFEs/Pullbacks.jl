@@ -10,10 +10,8 @@ where
 """
 abstract type Pushforward <: Map end
 
-abstract type PushforwardRefFE <: ReferenceFEName end
-
-Pushforward(::Type{<:PushforwardRefFE}) = @abstractmethod
-Pushforward(name::PushforwardRefFE) = Pushforward(typeof(name))
+Pushforward(::Type{<:ReferenceFEName}) = nothing
+Pushforward(name::ReferenceFEName) = Pushforward(typeof(name))
 
 function Arrays.lazy_map(
   k::Pushforward, ref_cell_fields::AbstractArray, pf_args::AbstractArray...
@@ -146,7 +144,6 @@ function evaluate!(
 end
 
 # ContraVariantPiolaMap
-
 """
     struct ContraVariantPiolaMap <: Pushforward
 """
