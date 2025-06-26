@@ -375,11 +375,23 @@ function _eval_moment_dof_basis!(dofs,vals::AbstractMatrix,b)
 end
 
 struct ContraVariantPiolaMap <: Map end
+struct ScaledContraVariantPiolaMap <: Map end
 
 function evaluate!(
   cache,
   ::Broadcasting{typeof(∇)},
   a::Fields.BroadcastOpFieldArray{ContraVariantPiolaMap})
+  v, Jt, detJ,sign_flip = a.args
+  # Assuming J comes from an affine map
+  ∇v = Broadcasting(∇)(v)
+  k = ContraVariantPiolaMap()
+  Broadcasting(Operation(k))(∇v,Jt,detJ,sign_flip)
+end
+
+function evaluate!(
+  cache,
+  ::Broadcasting{typeof(∇)},
+  a::Fields.BroadcastOpFieldArray{ScaledContraVariantPiolaMap})
   v, Jt, detJ,sign_flip = a.args
   # Assuming J comes from an affine map
   ∇v = Broadcasting(∇)(v)
@@ -396,12 +408,30 @@ function lazy_map(
   lazy_map(Broadcasting(Operation(k)),∇v,Jt,detJ,sign_flip)
 end
 
+function lazy_map(
+  ::Broadcasting{typeof(gradient)},
+  a::LazyArray{<:Fill{Broadcasting{Operation{ScaledContraVariantPiolaMap}}}})
+  v, Jt, detJ,sign_flip = a.args
+  ∇v = lazy_map(Broadcasting(∇),v)
+  k = ScaledContraVariantPiolaMap()
+  lazy_map(Broadcasting(Operation(k)),∇v,Jt,detJ,sign_flip)
+end
+
 function evaluate!(cache,::ContraVariantPiolaMap,
                    v::Number,
                    Jt::Number,
                    detJ::Number,
                    sign_flip::Bool)
   ((-1)^sign_flip*v)⋅((1/detJ)*Jt)
+end
+
+function evaluate!(cache,::ScaledContraVariantPiolaMap,
+                   v::Number,
+                   Jt::Number, 
+                   detJ::Number,
+                   sign_flip::Bool)
+  D = size(Jt)[1]
+  ((-1)^sign_flip*v)⋅((1/(detJ^(1/D)))*Jt)
 end
 
 function evaluate!(cache,
@@ -415,7 +445,7 @@ function evaluate!(cache,
 end
 
 function lazy_map(
-  k::ContraVariantPiolaMap,
+  k::Union{ContraVariantPiolaMap,ScaledContraVariantPiolaMap},
   cell_ref_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
   cell_map::AbstractArray{<:Field},
   sign_flip::AbstractArray{<:AbstractArray{<:Field}})

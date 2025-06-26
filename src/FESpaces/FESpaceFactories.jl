@@ -71,7 +71,8 @@ function FESpace(
   dirichlet_tags=Int[],
   dirichlet_masks=nothing,
   constraint=nothing,
-  vector_type=nothing)
+  vector_type=nothing,
+  map_type=nothing)
 
   conf = Conformity(testitem(cell_reffe),conformity)
 
@@ -89,8 +90,13 @@ function FESpace(
       trian)
     return V
   end
+  
+  if map_type == nothing
+    cell_fe = CellFE(model,cell_reffe,conf)
+  else
+    cell_fe = CellFE(model,cell_reffe,conf,map_type)
+  end
 
-  cell_fe = CellFE(model,cell_reffe,conf)
   _vector_type = _get_vector_type(vector_type,cell_fe,trian)
   if conformity in (L2Conformity(),:L2) && dirichlet_tags == Int[]
     F = _DiscontinuousFESpace(_vector_type,trian,cell_fe)
