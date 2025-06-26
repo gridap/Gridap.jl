@@ -374,8 +374,9 @@ function _eval_moment_dof_basis!(dofs,vals::AbstractMatrix,b)
   end
 end
 
-struct ContraVariantPiolaMap <: Map end
-struct ScaledContraVariantPiolaMap <: Map end
+abstract type ContraVariantPiolaMapType <: Map end
+struct ContraVariantPiolaMap <: ContraVariantPiolaMapType end
+struct ScaledContraVariantPiolaMap <: ContraVariantPiolaMapType end
 
 function evaluate!(
   cache,

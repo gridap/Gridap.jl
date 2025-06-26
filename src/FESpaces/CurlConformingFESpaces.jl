@@ -2,7 +2,9 @@
 function get_cell_dof_basis(
   model::DiscreteModel,
   cell_reffe::AbstractArray{<:GenericRefFE{Nedelec}},
-  ::CurlConformity)
+  ::CurlConformity,
+  args...;
+  kwargs...)
   cell_map  = get_cell_map(Triangulation(model))
   phi       = cell_map[1]
   reffe     = cell_reffe[1]
@@ -50,7 +52,9 @@ end
 function get_cell_shapefuns(
   model::DiscreteModel,
   cell_reffe::AbstractArray{<:GenericRefFE{Nedelec}},
-  ::CurlConformity)
+  ::CurlConformity, 
+  args...;
+  kwargs...)
 
   cell_reffe_shapefuns = lazy_map(get_shapefuns,cell_reffe)
   cell_map = get_cell_map(Triangulation(model))

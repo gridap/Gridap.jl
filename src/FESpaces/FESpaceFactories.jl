@@ -72,7 +72,7 @@ function FESpace(
   dirichlet_masks=nothing,
   constraint=nothing,
   vector_type=nothing,
-  map_type=nothing)
+  contra_variant_piola_map_type::ContraVariantPiolaMapType=ContraVariantPiolaMap())
 
   conf = Conformity(testitem(cell_reffe),conformity)
 
@@ -91,11 +91,7 @@ function FESpace(
     return V
   end
   
-  if map_type == nothing
-    cell_fe = CellFE(model,cell_reffe,conf)
-  else
-    cell_fe = CellFE(model,cell_reffe,conf,map_type)
-  end
+  cell_fe = CellFE(model,cell_reffe,conf;contra_variant_piola_map_type=contra_variant_piola_map_type)
 
   _vector_type = _get_vector_type(vector_type,cell_fe,trian)
   if conformity in (L2Conformity(),:L2) && dirichlet_tags == Int[]

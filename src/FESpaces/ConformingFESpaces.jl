@@ -95,14 +95,15 @@ function CellFE(
   model::DiscreteModel,
   cell_reffe::AbstractArray{<:ReferenceFE},
   conformity::Conformity,
-  args...
+  args...;
+  kwargs...
  )
   cell_conformity = CellConformity(cell_reffe,conformity)
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
   ctype_num_dofs = map(num_dofs,ctype_reffe)
   ctype_ldof_comp = map(reffe->get_dof_to_comp(reffe),ctype_reffe)
-  cell_shapefuns = get_cell_shapefuns(model,cell_reffe,conformity,args...)
-  cell_dof_basis = get_cell_dof_basis(model,cell_reffe,conformity,args...)
+  cell_shapefuns = get_cell_shapefuns(model,cell_reffe,conformity,args...;kwargs...)
+  cell_dof_basis = get_cell_dof_basis(model,cell_reffe,conformity,args...;kwargs...)
   cell_shapefuns_domain = ReferenceDomain()
   cell_dof_basis_domain = cell_shapefuns_domain
   max_order = maximum(map(get_order,ctype_reffe))
@@ -122,13 +123,17 @@ end
 
 function get_cell_dof_basis(model::DiscreteModel,
                             cell_reffe::AbstractArray{<:ReferenceFE},
-                            ::Conformity)
+                            ::Conformity,
+                            args...;
+                            kwargs...)
   lazy_map(get_dof_basis,cell_reffe)
 end
 
 function get_cell_shapefuns(model::DiscreteModel,
                             cell_reffe::AbstractArray{<:ReferenceFE},
-                            ::Conformity)
+                            ::Conformity, 
+                            args...;
+                            kwargs...)
   lazy_map(get_shapefuns,cell_reffe)
 end
 
