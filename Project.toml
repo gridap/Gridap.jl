@@ -31,6 +31,14 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
+[weakdeps]
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
+[extensions]
+GridapMakieExt = ["GLMakie","Makie","GeometryBasics"]
+
 [compat]
 AbstractTrees = "0.3.3, 0.4"
 Aqua = "0.8"
@@ -43,10 +51,13 @@ FastGaussQuadrature = "0.4.5, 1"
 FileIO = "1.5"
 FillArrays = "1.11"
 ForwardDiff = "0.10.14, 1"
+GeometryBasics = "0.5"
+GLMakie = "0.13"
 JLD2 = "0.5"
 JSON = "0.21"
 LineSearches = "7.0.1"
 LinearAlgebra = "1"
+Makie = "0.24"
 NLsolve = "4.5.1"
 NearestNeighbors = "0.4.8"
 PolynomialBases = "0.4.13"
@@ -59,11 +70,11 @@ StaticArrays = "1.4"
 Statistics = "1"
 Test = "1"
 WriteVTK = "1.21.1"
-julia = "1.9"
+julia = "1.10"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Aqua", "Test"]
+test = ["GLMakie", "Aqua", "Test"]
