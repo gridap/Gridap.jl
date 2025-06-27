@@ -52,7 +52,7 @@ function get_cell_shapefuns(model::DiscreteModel,
                             ::DivConformity,
                             args...; 
                             sign_flip=get_sign_flip(model, cell_reffe),
-                            contra_variant_piola_map_type=ContraVariantPiolaMap(),
+                            contra_variant_piola_map_type::ContraVariantPiolaMapType=ContraVariantPiolaMap(),
                             kwargs...)
     cell_reffe_shapefuns=lazy_map(get_shapefuns,cell_reffe)
     
