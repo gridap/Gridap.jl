@@ -34,6 +34,8 @@ using Test
 
 @time @testset "Adaptivity" begin include("AdaptivityTests/runtests.jl") end
 
+@time @testset "GridapMakieExt" begin include("GridapMakieExtTests/runtests.jl") end
+
 @time @testset "Aqua" begin include("Aqua.jl") end
 
 end # module
