@@ -396,7 +396,7 @@ function evaluate!(
   v, Jt, detJ,sign_flip = a.args
   # Assuming J comes from an affine map
   ∇v = Broadcasting(∇)(v)
-  k = ContraVariantPiolaMap()
+  k = ScaledContraVariantPiolaMap()
   Broadcasting(Operation(k))(∇v,Jt,detJ,sign_flip)
 end
 
@@ -418,21 +418,12 @@ function lazy_map(
   lazy_map(Broadcasting(Operation(k)),∇v,Jt,detJ,sign_flip)
 end
 
-function evaluate!(cache,::ContraVariantPiolaMap,
-                   v::Number,
-                   Jt::Number,
-                   detJ::Number,
-                   sign_flip::Bool)
-  ((-1)^sign_flip*v)⋅((1/detJ)*Jt)
-end
-
-function evaluate!(cache,::ScaledContraVariantPiolaMap,
+function evaluate!(cache,::ContraVariantPiolaMapType,
                    v::Number,
                    Jt::Number, 
                    detJ::Number,
                    sign_flip::Bool)
-  D = size(Jt)[1]
-  ((-1)^sign_flip*v)⋅((1/(detJ^(1/D)))*Jt)
+  ((-1)^sign_flip*v)⋅((1/(detJ))*Jt)
 end
 
 function evaluate!(cache,
@@ -445,8 +436,18 @@ function evaluate!(cache,
   Broadcasting(Operation(k))(v,Jt,detJ,sign_flip)
 end
 
+function evaluate!(cache,
+                   k::ScaledContraVariantPiolaMap,
+                   v::AbstractVector{<:Field},
+                   phi::Field,
+                   sign_flip::AbstractVector{<:Field})
+  Jt = ∇(phi)
+  scaled_detJ = Operation(scaled_meas)(Jt)
+  Broadcasting(Operation(k))(v,Jt,scaled_detJ,sign_flip)
+end
+
 function lazy_map(
-  k::Union{ContraVariantPiolaMap,ScaledContraVariantPiolaMap},
+  k::ContraVariantPiolaMap,
   cell_ref_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
   cell_map::AbstractArray{<:Field},
   sign_flip::AbstractArray{<:AbstractArray{<:Field}})
@@ -455,4 +456,16 @@ function lazy_map(
   cell_detJ = lazy_map(Operation(meas),cell_Jt)
 
   lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt,cell_detJ,sign_flip)
+end
+
+function lazy_map(
+  k::ScaledContraVariantPiolaMap,
+  cell_ref_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
+  cell_map::AbstractArray{<:Field},
+  sign_flip::AbstractArray{<:AbstractArray{<:Field}})
+
+  cell_Jt = lazy_map(∇,cell_map)
+  cell_scaled_detJ = lazy_map(Operation(scaled_meas),cell_Jt)
+
+  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt,cell_scaled_detJ,sign_flip)
 end
