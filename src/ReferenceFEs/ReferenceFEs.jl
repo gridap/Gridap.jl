@@ -96,7 +96,9 @@ export HEX_AXIS
 export TET_AXIS
 export INVALID_PERM
 
+export ContraVariantPiolaMapType
 export ContraVariantPiolaMap
+export ScaledContraVariantPiolaMap
 
 export Dof
 export get_nodes
