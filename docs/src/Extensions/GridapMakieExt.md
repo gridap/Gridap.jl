@@ -1,9 +1,9 @@
-```@meta
-CurrentModule = GridapMakieExt
-```
-
 # GridapMakieExt
 
+!!! info "Acknowledgement"
+    The `GridapMakieExt` extension is a continuation of the package [GridapMakie.jl](https://github.com/gridap/GridapMakie.jl) which was developped by [Francesc Verdugo](mailto:fverdugo@cimne.upc.edu), [Jan Weidner](mailto:jw3126@gmail.com) and other contributors.
+
+    A significant part of this package has been developed in the framework of the Google Summer of Code 2021 project [[Gridap] Visualizing PDE approximations in Julia with Gridap.jl and Makie.jl](https://summerofcode.withgoogle.com/projects/#6231266174697472).
 
 ## Overview
 
@@ -14,11 +14,8 @@ open-source package ecosystem, [GridapMakie.jl](https://github.com/gridap/Gridap
 Code 2021 program, GridapMakie adopts [Makie.jl](https://github.com/JuliaPlots/Makie.jl) as a second visualization back-end for
 Gridap.jl simulations. This package is thought as a built-in tool to assess the user in their FE calculations with a smoother workflow
 in a highly intuitive API.
-`GridapMakie.jl` is now an extension of `Gridap.jl` named `GridapMakieExt`.
 
-## Acknowledgement
-
-A significant part of this package has been developed in the framework of the Google Summer of Code 2021 project [[Gridap] Visualizing PDE approximations in Julia with Gridap.jl and Makie.jl](https://summerofcode.withgoogle.com/projects/#6231266174697472).
+[GridapMakie.jl](https://github.com/gridap/GridapMakie.jl) is now an extension of [Makie.jl](https://github.com/JuliaPlots/Makie.jl) named `GridapMakieExt`.
 
 ## Installation
 
@@ -56,9 +53,7 @@ fig=plot(uh)
 save("images/1d_Fig1.png", fig)
 ````
 
-<p align="center">
-<img src="./assets/1d_Fig1.png" width="500"/>
-</p>
+![1d_Fig1.png](../assets/GridapMakieExt/1d_Fig1.png)
 
 We may also plot the function with a line and its value at the boundaries
 ````julia
@@ -68,9 +63,7 @@ plot!(Γ,uh,color=:red)
 save("images/1d_Fig2.png", fig)
 ````
 
-<p align="center">
-<img src="./assets/1d_Fig2.png" width="500"/>
-</p>
+![1d_Fig2.png](../assets/GridapMakieExt/1d_Fig2.png)
 
 ### 2D Plots
 
@@ -92,9 +85,7 @@ scatter!(Ω, marker=:star8, markersize=20, color=:blue)
 save("images/2d_Fig1.png", fig)
 ````
 
-<p align="center">
-<img src="./assets/2d_Fig1.png" width="500"/>
-</p>
+![2d_Fig1.png](../assets/GridapMakieExt/2d_Fig1.png)
 
 We now consider a FE function `uh` constructed with Gridap
 
@@ -112,9 +103,7 @@ Colorbar(fig[1,2], plt)
 save("images/2d_Fig11.png", fig)
 ````
 
-<p align="center">
-<img src="./assets/2d_Fig11.png" width="500"/>
-</p>
+![2d_Fig11.png](../assets/GridapMakieExt/2d_Fig11.png)
 
 On the other hand, we may as well plot cell values
 
@@ -125,9 +114,7 @@ Colorbar(fig[2,1], plt, vertical=false)
 save("images/2d_Fig13.png", fig)
 ````
 
-<p align="center">
-<img src="./assets/2d_Fig13.png" width="500"/>
-</p>
+![2d_Fig13.png](../assets/GridapMakieExt/2d_Fig13.png)
 
 If we are only interested in the boundary of Ω, namely Γ
 
@@ -138,9 +125,7 @@ Colorbar(fig[1,2], plt)
 save("images/2d_Fig111.png", fig)
 ````
 
-<p align="center">
-<img src="./assets/2d_Fig111.png" width="500"/>
-</p>
+![2d_Fig111.png](../assets/GridapMakieExt/2d_Fig111.png)
 
 ### 3D Plots
 
@@ -164,9 +149,7 @@ wireframe!(∂Ω, color=:black)
 save("images/3d_Fig1.png", fig)
 ````
 
-<p align="center">
-<img src="./assets/3d_Fig1.png" width="500"/>
-</p>
+![3d_Fig1.png](../assets/GridapMakieExt/3d_Fig1.png)
 
 ````julia
 v(x) = sin(π*(x[1]+x[2]+x[3]))
@@ -175,9 +158,7 @@ Colorbar(fig[1,2], plt)
 save("images/3d_Fig2.png", fig)
 ````
 
-<p align="center">
-<img src="./assets/3d_Fig2.png" width="500"/>
-</p>
+![3d_Fig2.png](../assets/GridapMakieExt/3d_Fig2.png)
 
 we can even plot functions in certain subdomains, e.g.
 
@@ -188,9 +169,7 @@ wireframe!(∂Ω, linewidth=0.5, color=:gray)
 save("images/3d_Fig3.png", fig)
 ````
 
-<p align="center">
-<img src="./assets/3d_Fig3.png" width="500"/>
-</p>
+![3d_Fig3.png](../assets/GridapMakieExt/3d_Fig3.png)
 
 ### Animations and interactivity
 
@@ -211,8 +190,6 @@ record(fig, "images/animation.gif", timestamps; framerate=framerate) do this_t
 end
 ````
 
-<p align="center">
-<img src="./assets/animation.gif" width="500"/>
-</p>
+![animation.gif](../assets/GridapMakieExt/animation.gif)
 
 
