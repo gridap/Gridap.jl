@@ -71,5 +71,5 @@ jobs:
           julia --color=yes --project=. --check-bounds=yes --depwarn=error -e '
             using Pkg; Pkg.instantiate()'
       - run: |
-          julia --color=yes --project=. --check-bounds=yes --depwarn=error -e '
+          DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --color=yes --project=. --check-bounds=yes --depwarn=error -e '
             include("test/GridapTests/runtests.jl")'
