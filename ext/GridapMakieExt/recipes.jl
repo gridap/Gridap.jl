@@ -23,36 +23,12 @@ function setup_face_color(color::AbstractArray, grid::Grid, face_to_cell)
 end
 
 @Makie.recipe MeshField begin
-    linewidth = @inherit linewidth
-    linecap = @inherit linecap
-    joinstyle = @inherit joinstyle
-    linestyle = nothing
-    miter_limit = @inherit miter_limit
-    cycle      = nothing
-    uv_transform = Makie.automatic
-    matcap = nothing
-    marker = @inherit marker
-    markersize = @inherit markersize
-    strokecolor = @inherit markerstrokecolor
-    strokewidth = @inherit markerstrokewidth
-    glowcolor = (:black, 0.0)
-    glowwidth = 0.0
-    rotation = Makie.Billboard()
-    marker_offset = Makie.Vec3f(0)
-    font = @inherit markerfont
-    distancefield = nothing
-    interpolate = true
-    font = "default"
-    uv_offset_width = (0.0, 0.0, 0.0, 0.0)
-    markerspace = :pixel
-    depthsorting = false
-    Makie.mixin_generic_plot_attributes()...
-    Makie.mixin_colormap_attributes()...
-    Makie.mixin_shading_attributes()...
+    Makie.DocumentedAttributes(merge(Makie.documented_attributes(Makie.Mesh).d,Makie.documented_attributes(Makie.LineSegments).d,Makie.documented_attributes(Makie.Scatter).d))...
     fxaa = false
     shading    = Makie.NoShading
     colormap   = :bluesreds
     color = :pink
+    cycle      = nothing
 end
 
 Makie.plottype(::Triangulation{<:Any,1}) = Makie.Scatter
