@@ -98,12 +98,16 @@ function generate_patch_faces(ptopo::PatchTopology,dimfrom::Integer,dimto::Integ
   fface_to_tface = get_faces(ptopo.topo,dimfrom,dimto)
 
   k = 1
-  ptrs = Vector{Int32}(undef, num_faces(ptopo,dimfrom)+1)
+  ptrs = zeros(Int32, num_faces(ptopo,dimfrom)+1)
   for patch in 1:npatches
     ffaces = view(patch_to_fface,patch)
+    tfaces = view(patch_to_tface,patch)
     for fface in ffaces
       f_tfaces = view(fface_to_tface,fface)
-      ptrs[k+1] = length(f_tfaces)
+      for f in f_tfaces
+        pos = searchsortedfirst(tfaces,f)
+        ptrs[k+1] += Int32(pos != length(tfaces)+1)
+      end
       k += 1
     end
   end
@@ -120,24 +124,47 @@ function generate_patch_faces(ptopo::PatchTopology,dimfrom::Integer,dimto::Integ
       f_tfaces = view(fface_to_tface,fface)
       for f in f_tfaces
         pos = searchsortedfirst(tfaces,f)
-        @assert pos != length(tfaces)+1
-        data[k] = pos + offset
-        k += 1
+        if pos != length(tfaces)+1
+          data[ptrs[k]] = pos + offset
+          ptrs[k] += 1
+        end
       end
+      k += 1
     end
   end
+  @assert k == length(ptrs)
+  Arrays.rewind_ptrs!(ptrs)
 
   return Table(data,ptrs)
 end
 
-function get_patch_boundary_info(ptopo::PatchTopology{Dc}) where Dc
-  Df = Dc - 1 # TODO: Make general
-  topo = ptopo.topo
-  patch_cells = get_patch_cells(ptopo)
-  patch_faces = get_patch_faces(ptopo,Df)
-  face_to_cells = get_faces(topo,Df,Dc)
+function compute_isboundary_face(ptopo::PatchTopology{Dc},d::Integer) where Dc
+  if d == Dc # Cells are never boundary
+    return fill(false,num_faces(ptopo,Dc))
+  else
+    isboundary_facet, _ = get_patch_boundary_info(ptopo)
+    if d == Dc-1 # Facets
+      return isboundary_facet
+    else # Faces: Boundary if belongs to a boundary facet
+      facet_to_faces = generate_patch_faces(ptopo,Dc-1,d)
+      face_mask = fill(false,num_faces(ptopo,d))
+      for (facet,mask) in enumerate(isboundary_facet)
+        if mask
+          faces = view(facet_to_faces,facet)
+          face_mask[faces] .= true
+        end
+      end
+      return face_mask
+    end
+  end
+end
 
-  n_pfaces = num_faces(ptopo,Df)
+function get_patch_boundary_info(ptopo::PatchTopology{Dc}) where Dc
+  patch_cells = get_patch_cells(ptopo)
+  patch_faces = get_patch_faces(ptopo,Dc-1)
+  face_to_cells = get_faces(ptopo.topo,Dc-1,Dc)
+
+  n_pfaces = num_faces(ptopo,Dc-1)
   pface_to_isboundary = fill(false,n_pfaces)
   pface_to_lcell = fill(Int8(1),n_pfaces)
 
