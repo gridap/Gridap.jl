@@ -525,3 +525,27 @@ function FESpaces.renumber_free_and_dirichlet_dof_ids(
     space.metadata
   )
 end
+
+function get_cell_conformity(space::PolytopalFESpace)
+  trian = get_triangulation(space)
+  
+  monomial_conformity = only(space.metadata)
+  ndofs = length(monomial_conformity.dof_to_term)
+  D = length(monomial_conformity.orders)
+
+  cell_ctype = get_cell_type(trian)
+  ctype_poly = get_polytopes(trian)
+
+  ctype_lface_own_ldofs = map(ctype_poly) do p
+    nfaces = num_faces(p)
+    [ifelse(isequal(face,nfaces),collect(1:ndofs),Int[]) for face in 1:nfaces]
+  end
+  ctype_lface_pindex_pdofs = map(ReferenceFEs._trivial_face_own_dofs_permutations, ctype_lface_own_ldofs)
+  d_ctype_num_faces = [
+    map(p -> num_faces(p,d), ctype_poly) for d in 0:D
+  ]
+
+  return CellConformity(
+    cell_ctype, ctype_lface_own_ldofs, ctype_lface_pindex_pdofs, d_ctype_num_faces
+  )
+end

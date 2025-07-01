@@ -46,6 +46,10 @@ function _d_ctype_ldface_own_ldofs(a::CellConformity)
     for d in 1:num_ds ]
 end
 
+function get_cell_conformity(space::UnconstrainedFESpace{V,<:CellConformity}) where V
+  return space.metadata
+end
+
 """
 Minimum data required to build a conforming FE space.
 At this moment, the some cell-wise info is compressed on cell types.

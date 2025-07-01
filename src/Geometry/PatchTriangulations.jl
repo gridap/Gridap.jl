@@ -90,6 +90,46 @@ function generate_patch_faces(ptopo::PatchTopology{Dc},Df) where Dc
   return Arrays.merge_entries(cell_to_faces, patch_cells; acc = SortedSet{Int32}())
 end
 
+function generate_patch_faces(ptopo::PatchTopology,dimfrom::Integer,dimto::Integer)
+  npatches = num_patches(ptopo)
+
+  patch_to_fface = get_patch_faces(ptopo,dimfrom)
+  patch_to_tface = get_patch_faces(ptopo,dimto)
+  fface_to_tface = get_faces(ptopo.topo,dimfrom,dimto)
+
+  k = 1
+  ptrs = Vector{Int32}(undef, num_faces(ptopo,dimfrom)+1)
+  for patch in 1:npatches
+    ffaces = view(patch_to_fface,patch)
+    for fface in ffaces
+      f_tfaces = view(fface_to_tface,fface)
+      ptrs[k+1] = length(f_tfaces)
+      k += 1
+    end
+  end
+  @assert k == length(ptrs)
+  Arrays.length_to_ptrs!(ptrs)
+
+  k = 1
+  data = Vector{Int32}(undef, ptrs[end])
+  for patch in 1:npatches
+    ffaces = view(patch_to_fface,patch)
+    tfaces = view(patch_to_tface,patch)
+    offset = patch_to_tface.ptrs[patch] - 1
+    for fface in ffaces
+      f_tfaces = view(fface_to_tface,fface)
+      for f in f_tfaces
+        pos = searchsortedfirst(tfaces,f)
+        @assert pos != length(tfaces)+1
+        data[k] = pos + offset
+        k += 1
+      end
+    end
+  end
+
+  return Table(data,ptrs)
+end
+
 function get_patch_boundary_info(ptopo::PatchTopology{Dc}) where Dc
   Df = Dc - 1 # TODO: Make general
   topo = ptopo.topo

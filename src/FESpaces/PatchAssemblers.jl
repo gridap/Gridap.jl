@@ -11,12 +11,14 @@ struct PatchAssemblyStrategy{A,B} <: AssemblyStrategy
 end
 
 function map_rows!(gids,a::PatchAssemblyStrategy,rows,patch)
-  prows = a.patch_rows[patch]
+  prows = view(a.patch_rows,patch)
+  n = length(prows)
   u = -one(eltype(gids))
   for i in eachindex(rows)
     ri = rows[i]
     if ri > 0
-      gids[i] = searchsortedfirst(prows,ri)
+      gid = searchsortedfirst(prows,ri)
+      gids[i] = ifelse(isequal(gid,n+1), u, gid)
     else
       gids[i] = u
     end
@@ -25,12 +27,14 @@ function map_rows!(gids,a::PatchAssemblyStrategy,rows,patch)
 end
 
 function map_cols!(gids,a::PatchAssemblyStrategy,cols,patch)
-  pcols = a.patch_cols[patch]
+  pcols = view(a.patch_cols,patch)
+  n = length(pcols)
   u = -one(eltype(gids))
   for i in eachindex(cols)
     ci = cols[i]
     if ci > 0
-      gids[i] = searchsortedfirst(pcols,ci)
+      gid = searchsortedfirst(pcols,ri)
+      gids[i] = ifelse(isequal(gid,n+1), u, gid)
     else
       gids[i] = u
     end
