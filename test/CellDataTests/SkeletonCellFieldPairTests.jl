@@ -175,11 +175,4 @@ a_Λ((uh,ph)) = ∫( - jump(uh*n_Λ)⊙mean(∇(ph))
 
 # Operations between SkeletonPairs
 
-x = get_cell_points(Λ)
-n_Λ = get_normal_vector(Λ)
-n = (Operation(sqrt)((n_Λ⋅n_Λ)))
-m = Operation(norm)(n_Λ)
-@test n.plus(x) == m.plus(x)
-@test n.minus(x) == m.minus(x)
-
 end # module

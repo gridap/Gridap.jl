@@ -71,6 +71,11 @@ tt = get_triangulation(n_S.plus)
 
 @test is_change_possible(ts,tt) == true
 
+a = (Operation(sqrt)((n_S⋅n_S)))
+b = Operation(norm)(n_S)
+@test n.plus(x_S) == m.plus(x_S)
+@test n.minus(x_S) == m.minus(x_S)
+
 nf_S = n_S⋅∇(f)
 
 jnf_S = jump(n_S⋅∇(f))
