@@ -73,8 +73,8 @@ tt = get_triangulation(n_S.plus)
 
 a = (Operation(sqrt)((n_S⋅n_S)))
 b = Operation(norm)(n_S)
-@test n.plus(x_S) == m.plus(x_S)
-@test n.minus(x_S) == m.minus(x_S)
+@test a.plus(x_S) == b.plus(x_S)
+@test a.minus(x_S) == b.minus(x_S)
 
 nf_S = n_S⋅∇(f)
 
