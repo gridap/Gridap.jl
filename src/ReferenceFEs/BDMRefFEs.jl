@@ -1,7 +1,7 @@
 """
-    struct BDM <: PushforwardRefFE <: ReferenceFEName
+    struct BDM <: ReferenceFEName
 """
-struct BDM <: PushforwardRefFE end
+struct BDM <: ReferenceFEName end
 
 """
     const bdm = BDM()
@@ -10,7 +10,7 @@ Singleton of the [`BDM`](@ref) reference FE name.
 """
 const bdm = BDM()
 
-Pushforward(::Type{<:BDM}) = ContraVariantPiolaMap()
+Pushforward(::Type{BDM}) = ContraVariantPiolaMap()
 
 """
     BDMRefFE(::Type{T}, p::Polytope, order::Integer)

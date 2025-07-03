@@ -4,9 +4,9 @@
 struct CurlConformity <: Conformity end
 
 """
-    struct Nedelec <: PushforwardRefFE <: ReferenceFEName
+    struct Nedelec <: ReferenceFEName
 """
-struct Nedelec <: PushforwardRefFE end
+struct Nedelec <: ReferenceFEName end
 
 """
     const nedelec = Nedelec()

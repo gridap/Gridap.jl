@@ -134,7 +134,7 @@ Pages   = ["TensorProductQuadratures.jl","DuffyQuadratures.jl","StrangQuadrature
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["ReferenceFEInterfaces.jl","Dofs.jl","LinearCombinationDofVectors.jl"]
+Pages   = ["ReferenceFEInterfaces.jl","Dofs.jl","LinearCombinationDofVectors.jl","Pullbacks.jl"]
 ```
 
 ### Nodal ReferenceFEs
@@ -152,7 +152,7 @@ Pages   = ["LagrangianRefFEs.jl","LagrangianDofBases.jl","SerendipityRefFEs.jl",
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["MomentBasedReferenceFEs.jl","Pullbacks.jl"]
+Pages   = ["MomentBasedReferenceFEs.jl"]
 ```
 
 #### Available Moment-Based ReferenceFEs
