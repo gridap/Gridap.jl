@@ -2,7 +2,7 @@
 """
     abstract type Pushforward <: Map end
 
-Represents a pushforward map F*, defined as
+Represents a pushforward map F\\*, defined as
   F* : V̂ -> V
 where
   - V̂ is a function space on the reference cell K̂ and
@@ -10,8 +10,23 @@ where
 """
 abstract type Pushforward <: Map end
 
-Pushforward(::Type{<:ReferenceFEName}) = nothing
-Pushforward(name::ReferenceFEName) = Pushforward(typeof(name))
+"""
+    Pushforward(::ReferenceFEName, conf::Conformity)
+    Pushforward(::Type{<:ReferenceFEName}, conf::Conformity)
+
+Return the pushforward to use to map the shape functions of the given
+element with conformity `conf`. For L2 conformity, the trivial
+[`IdentityPiolaMap`](@ref) is always returned.
+
+For new `ReferenceFEName`, the default pushforward is `IdentityPiolaMap`. Types
+that want to change the default may only overload
+[`Pushforward(::Type{<:ReferenceFEName})`](@ref).
+"""
+Pushforward(name::ReferenceFEName, conf::Conformity) = Pushforward(typeof(name),conf)
+
+Pushforward(::Type{<:ReferenceFEName}, ::L2Conformity) = IdentityPiolaMap()
+Pushforward(T::Type{<:ReferenceFEName}, ::Conformity) = Pushforward(T)
+Pushforward(::Type{<:ReferenceFEName}) = IdentityPiolaMap()
 
 function Arrays.lazy_map(
   k::Pushforward, ref_cell_fields::AbstractArray, pf_args::AbstractArray...
@@ -54,7 +69,7 @@ end
 """
     const InversePushforward{PF} = InverseMap{PF} where PF <: Pushforward
 
-Represents the inverse of a pushforward map F*, defined as
+Represents the inverse of a pushforward map F\\*, defined as
   (F*)⁻¹ : V -> V̂
 where
   - V̂ is a function space on the reference cell K̂ and
@@ -85,7 +100,7 @@ end
 """
     struct Pullback{PF <: Pushforward} <: Map end
 
-Represents a pullback map F**, defined as
+Represents a pullback map F\\**, defined as
   F** : V* -> V̂*
 where
   - V̂* is a dof space on the reference cell K̂ and
@@ -117,7 +132,7 @@ end
 """
     struct InversePullback{PF <: Pushforward} <: Map end
 
-Represents the inverse of the pullback map F**, defined as
+Represents the inverse of the pullback map F\\**, defined as
   (F**)⁻¹ : V̂* -> V*
 where
   - V̂* is a dof space on the reference cell K̂ and
@@ -143,7 +158,17 @@ function evaluate!(
   return MappedDofBasis(inverse_map(pb.pushforward),σ_ref,args...)
 end
 
+##############
+# Piola maps #
+##############
+
+"""
+    struct IdentityPiolaMap <: Pushforward
+"""
+struct IdentityPiolaMap <: Pushforward end
+
 # ContraVariantPiolaMap
+
 """
     struct ContraVariantPiolaMap <: Pushforward
 """
@@ -189,6 +214,9 @@ end
 
 # CoVariantPiolaMap
 
+"""
+    struct CoVariantPiolaMap <: Pushforward
+"""
 struct CoVariantPiolaMap <: Pushforward end
 
 function evaluate!(

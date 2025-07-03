@@ -1,17 +1,14 @@
 
-# TODO: We probably want to export these from Gridap.ReferenceFEs
-using Gridap.ReferenceFEs: Pushforward, Pullback
-
 function get_cell_dof_basis(
   model::DiscreteModel, cell_reffe::AbstractArray{T}, conf::Conformity
 ) where T <: ReferenceFE
 
-  pushforward = Pushforward(get_name(T))
-  if isnothing(pushforward)
+  pushforward = Pushforward(get_name(T), conf)
+  if pushforward isa IdentityPiolaMap
     lazy_map(get_dof_basis,cell_reffe)
   else
     pushforward, cell_change, cell_args = get_cell_pushforward(
-      pushforward, model, cell_reffe, conf)
+      pushforward, model, cell_reffe)
     cell_ref_dofs = lazy_map(get_dof_basis, cell_reffe)
     cell_phy_dofs = lazy_map(inverse_map(Pullback(pushforward)), cell_ref_dofs, cell_args...)
     lazy_map(linear_combination, cell_change, cell_phy_dofs) # TODO: Inverse and transpose
@@ -22,12 +19,12 @@ function get_cell_shapefuns(
   model::DiscreteModel, cell_reffe::AbstractArray{T}, conf::Conformity
 ) where T <: ReferenceFE
 
-  pushforward = Pushforward(get_name(T))
-  if isnothing(pushforward)
+  pushforward = Pushforward(get_name(T), conf)
+  if pushforward isa IdentityPiolaMap
     lazy_map(get_shapefuns,cell_reffe)
   else
     pushforward, cell_change, cell_args = get_cell_pushforward(
-      pushforward, model, cell_reffe, conf)
+      pushforward, model, cell_reffe)
     cell_ref_fields = lazy_map(get_shapefuns, cell_reffe)
     cell_phy_fields = lazy_map(pushforward, cell_ref_fields, cell_args...)
     lazy_map(linear_combination, cell_change, cell_phy_fields)
@@ -35,7 +32,7 @@ function get_cell_shapefuns(
 end
 
 function get_cell_pushforward(
-  ::Pushforward, model::DiscreteModel, cell_reffe, conformity
+  ::Pushforward, model::DiscreteModel, cell_reffe
 )
   @abstractmethod
 end
@@ -43,7 +40,7 @@ end
 # ContraVariantPiolaMap
 
 function get_cell_pushforward(
-  p::ContraVariantPiolaMap, model::DiscreteModel, cell_reffe, conf
+  p::ContraVariantPiolaMap, model::DiscreteModel, cell_reffe
 )
   cell_map  = get_cell_map(get_grid(model))
   Jt = lazy_map(Broadcasting(∇),cell_map)
@@ -54,7 +51,7 @@ end
 # CoVariantPiolaMap
 
 function get_cell_pushforward(
-  p::CoVariantPiolaMap, model::DiscreteModel, cell_reffe, conf
+  p::CoVariantPiolaMap, model::DiscreteModel, cell_reffe
 )
   cell_map = get_cell_map(get_grid(model))
   Jt = lazy_map(Broadcasting(∇),cell_map)
