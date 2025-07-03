@@ -76,6 +76,8 @@ ns2 = Operation(norm)(n_S)
 @test ns1.plus(x_S) == ns2.plus(x_S)
 @test ns1.minus(x_S) == ns2.minus(x_S)
 
+change_domain(n_S,ReferenceDomain(),PhysicalDomain())
+
 nf_S = n_S⋅∇(f)
 
 jnf_S = jump(n_S⋅∇(f))
