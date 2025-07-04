@@ -52,16 +52,26 @@ end
 get_rows(assembler::PatchAssembler) = assembler.rows
 get_cols(assembler::PatchAssembler) = assembler.cols
 
-function PatchAssembler(ptopo::PatchTopology,trial::FESpace,test::FESpace)
-  patch_rows = get_patch_assembly_ids(test,ptopo)
-  patch_cols = get_patch_assembly_ids(trial,ptopo)
+function PatchAssembler(ptopo::PatchTopology,trial::FESpace,test::FESpace;kwargs...)
+  patch_rows = get_patch_assembly_ids(test,ptopo;kwargs...)
+  patch_cols = get_patch_assembly_ids(trial,ptopo;kwargs...)
   strategy = PatchAssemblyStrategy(ptopo,patch_rows,patch_cols)
   rows = map(length,patch_rows)
   cols = map(length,patch_cols)
   return PatchAssembler(ptopo,strategy,rows,cols)
 end
 
-function get_patch_assembly_ids(space::FESpace,ptopo::PatchTopology)
+function get_patch_assembly_ids(space::FESpace,ptopo::PatchTopology;mask=nothing)
+  if isnothing(mask)
+    _patch_assembly_ids_all(space,ptopo)
+  elseif mask == :boundary
+    _patch_assembly_ids_noboundary(space,ptopo)
+  else
+    @notimplemented
+  end :: Table{Int32,Vector{Int32},Vector{Int32}}
+end
+
+function _patch_assembly_ids_all(space::FESpace,ptopo::PatchTopology)
   trian = get_triangulation(space)
   Df = num_cell_dims(trian)
   face_to_tface = get_glue(trian,Val(Df)).mface_to_tface
@@ -75,6 +85,44 @@ function get_patch_assembly_ids(space::FESpace,ptopo::PatchTopology)
     acc  = SortedSet{Int32}(), 
     post = dofs->filter(x->x>0,dofs)
   )
+  return patch_rows
+end
+
+function _patch_assembly_ids_noboundary(space::FESpace,ptopo::PatchTopology)
+  strian = get_triangulation(space)
+  model = get_background_model(strian)
+  topo = get_grid_topology(model)
+
+  D = num_cell_dims(strian)
+  ttrian = PatchTriangulation(ReferenceFE{D},model,ptopo)
+
+  tface_to_mface = get_glue(ttrian, Val(D)).tface_to_mface
+  mface_to_sface = get_glue(strian, Val(D)).mface_to_tface
+  tface_to_sface = mface_to_sface[tface_to_mface]
+
+  d_to_dpface_to_mask = map(0:D-1) do d
+    dpface_to_dface = Geometry.get_patch_faces(ptopo,d).data
+    dpface_to_isboundary = Geometry.compute_isboundary_face(ptopo,d)
+    dpface_to_mask = lazy_map(Reindex(get_isboundary_face(topo,d)), dpface_to_dface)
+    return map((a,b) -> a && !b, dpface_to_isboundary, dpface_to_mask)
+  end
+
+  cell_conformity = get_cell_conformity(space)
+  d_to_tcell_to_tdface = [ Geometry.generate_patch_faces(ptopo,D,d) for d in 0:D-1 ]
+  tcell_to_ldof_mask = generate_cell_dof_mask(
+    cell_conformity,tface_to_sface,d_to_tcell_to_tdface,d_to_dpface_to_mask;reverse=true
+  )
+
+  tcell_dof_ids = get_cell_dof_ids(space,ttrian)
+  tcell_dof_ids_masked = lazy_map(getindex, tcell_dof_ids, tcell_to_ldof_mask)
+  patch_to_tfaces = Geometry.get_patch_to_tfaces(ptopo,D,ttrian.glue.tface_to_pface)
+
+  patch_rows = Arrays.merge_entries(
+    tcell_dof_ids_masked, patch_to_tfaces; 
+    acc  = SortedSet{Int32}(), 
+    post = dofs -> filter(x->x>0,dofs)
+  )
+
   return patch_rows
 end
 
