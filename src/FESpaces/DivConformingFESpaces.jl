@@ -212,12 +212,15 @@ function DIV(f::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}
   fsign_flip=lazy_map(Broadcasting(Operation(x->(-1)^x)), fsign_flip)
   lazy_map(Broadcasting(Operation(*)),fsign_flip,div_ϕrgₖ)
 end
+# To fix the issue for D>2 with this operator we need to pass detJ^{(D-1)/D} in the returned lazy_map 
 function DIV(f::LazyArray{<:Fill{Broadcasting{Operation{ScaledContraVariantPiolaMap}}}})
   ϕrgₖ        = f.args[1]
   scaled_detJ = f.args[3]
   fsign_flip  = f.args[4]
   div_ϕrgₖ = lazy_map(Broadcasting(divergence),ϕrgₖ)
   fsign_flip=lazy_map(Broadcasting(Operation(x->(-1)^x)), fsign_flip)
+  # scaled_detJ = lazy_map(Broadcasting(Operation(x->x^(D-1))), scaled_detJ) 
+  # Update this so that we can access D!
   lazy_map(Broadcasting(Operation(*)),scaled_detJ,fsign_flip,div_ϕrgₖ)
 end
 function DIV(a::LazyArray{<:Fill{typeof(linear_combination)}})
