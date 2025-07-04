@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.19.2] - 2025-xx-xx
 
+### Added
+
+- Added missing operations between `SkeletonPairs`. Since PR[#1122](https://github.com/gridap/Gridap.jl/pull/1122).
+
 ### Fixed
 
 - Update `norm` function to be compatible with complex vectors and tensors. Since PR[#1118](https://github.com/gridap/Gridap.jl/pull/1118).

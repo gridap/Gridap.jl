@@ -731,11 +731,18 @@ function get_tangent_vector(trian::Triangulation,cell_tangent::SkeletonPair)
   SkeletonPair(plus,minus)
 end
 
-for op in (:outer,:*,:dot)
+for op in (:outer,:*,:dot,:inner,:/)
   @eval begin
     ($op)(a::CellField,b::SkeletonPair{<:CellField}) = Operation($op)(a,b)
     ($op)(a::SkeletonPair{<:CellField},b::CellField) = Operation($op)(a,b)
+    ($op)(a::SkeletonPair{<:CellField},b::SkeletonPair{<:CellField}) = Operation($op)(a,b)
   end
+end
+
+function evaluate!(cache,k::Operation,a::SkeletonPair{<:CellField})
+  plus = k(a.plus)
+  minus = k(a.minus)
+  SkeletonPair(plus,minus)
 end
 
 function evaluate!(cache,k::Operation,a::CellField,b::SkeletonPair{<:CellField})
@@ -745,6 +752,12 @@ function evaluate!(cache,k::Operation,a::CellField,b::SkeletonPair{<:CellField})
 end
 
 function evaluate!(cache,k::Operation,a::SkeletonPair{<:CellField},b::CellField)
+  plus = k(a.plus,b.plus)
+  minus = k(a.minus,b.minus)
+  SkeletonPair(plus,minus)
+end
+
+function evaluate!(cache,k::Operation,a::SkeletonPair{<:CellField},b::SkeletonPair{<:CellField})
   plus = k(a.plus,b.plus)
   minus = k(a.minus,b.minus)
   SkeletonPair(plus,minus)
@@ -793,6 +806,12 @@ for fun in (:change_domain_ref_ref,:change_domain_phys_phys)
     end
 
   end
+end
+
+function change_domain(a::SkeletonPair, ::ReferenceDomain, ::PhysicalDomain)
+  plus = change_domain(a.plus,ReferenceDomain(),PhysicalDomain())
+  minus = change_domain(a.minus,ReferenceDomain(),PhysicalDomain())
+  return SkeletonPair(plus,minus)
 end
 
 # Just to provide more meaningful error messages
