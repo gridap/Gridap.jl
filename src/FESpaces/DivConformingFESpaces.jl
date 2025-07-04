@@ -24,13 +24,14 @@
 #   shape function corresponding to the global DoF.
 # * We do NOT have to use the signed determinant, but its absolute value, in the Piola Map.
 
-struct TransformRTDofBasis{Dc,Dp} <: Map end ;
+struct TransformRTDofBasis{Dc,Dp,k<:ContraVariantPiolaMapType} <: Map end ;
 
 function get_cell_dof_basis(model::DiscreteModel,
                             cell_reffe::AbstractArray{<:GenericRefFE{<:DivConforming}},
                             ::DivConformity,
                             args...; 
                             sign_flip=get_sign_flip(model, cell_reffe),
+                            contra_variant_piola_map_type::ContraVariantPiolaMapType=ContraVariantPiolaMap(),
                             kwargs...)
     cell_map  = get_cell_map(Triangulation(model))
     phi       = cell_map[1]
@@ -43,7 +44,7 @@ function get_cell_dof_basis(model::DiscreteModel,
     et        = eltype(return_type(get_prebasis(reffe)))
     pt        = Point{Dc,et}
     Dp        = first(size(return_type(phi,zero(pt))))
-    k         = TransformRTDofBasis{Dc,Dp}()
+    k         = TransformRTDofBasis{Dc,Dp,typeof(contra_variant_piola_map_type)}()
     lazy_map(k,cell_reffe,Jtx,sign_flip)
 end
 
@@ -128,10 +129,10 @@ function get_sign_flip(model::DiscreteModel,
             IdentityVector(Int32(num_cells(model))))
 end
 
-function return_cache(::TransformRTDofBasis{Dc,Dp},
+function return_cache(::TransformRTDofBasis{Dc,Dp,k},
                       reffe::GenericRefFE{<:DivConforming},
                       Jtx,
-                      ::AbstractVector{Bool}) where {Dc,Dp}
+                      ::AbstractVector{Bool}) where {Dc,Dp,k}
   p = get_polytope(reffe)
   prebasis = get_prebasis(reffe)
   order = get_order(prebasis)
@@ -149,10 +150,10 @@ function return_cache(::TransformRTDofBasis{Dc,Dp},
 end
 
 function evaluate!(cache,
-                   ::TransformRTDofBasis,
+                   ::TransformRTDofBasis{Dc,Dp,<:ContraVariantPiolaMap},
                    reffe::GenericRefFE{<:DivConforming},
                    Jt_q,
-                   sign_flip::AbstractVector{Bool})
+                   sign_flip::AbstractVector{Bool}) where {Dc,Dp}
   nodes, nf_nodes, nf_moments, face_moments = cache
   face_own_dofs=get_face_own_dofs(reffe)
   for face in 1:length(face_moments)
@@ -173,6 +174,30 @@ function evaluate!(cache,
   MomentBasedDofBasis(nodes,face_moments,nf_nodes)
 end
 
+function evaluate!(cache,
+                   ::TransformRTDofBasis{Dc,Dp,<:ScaledContraVariantPiolaMap},
+                   reffe::GenericRefFE{<:DivConforming},
+                   Jt_q,
+                   sign_flip::AbstractVector{Bool}) where {Dc,Dp}
+  nodes, nf_nodes, nf_moments, face_moments = cache
+  face_own_dofs=get_face_own_dofs(reffe)
+  for face in 1:length(face_moments)
+    nf_moments_face   = nf_moments[face]
+    face_moments_face = face_moments[face]
+    if length(nf_moments_face) > 0
+      sign = (-1)^sign_flip[face_own_dofs[face][1]]
+      num_qpoints, num_moments = size(nf_moments_face)
+      for i in 1:num_qpoints
+        Jt_q_i = Jt_q[nf_nodes[face][i]]
+        change = sign * scaled_meas(Jt_q_i) * pinvJt(Jt_q_i)
+        for j in 1:num_moments
+          face_moments_face[i,j] = change ⋅ nf_moments_face[i,j]
+        end
+      end
+    end
+  end
+  MomentBasedDofBasis(nodes,face_moments,nf_nodes)
+end
 
 # Support for DIV operator
 function DIV(f::LazyArray{<:Fill{T}}) where T
@@ -186,6 +211,14 @@ function DIV(f::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}
   div_ϕrgₖ = lazy_map(Broadcasting(divergence),ϕrgₖ)
   fsign_flip=lazy_map(Broadcasting(Operation(x->(-1)^x)), fsign_flip)
   lazy_map(Broadcasting(Operation(*)),fsign_flip,div_ϕrgₖ)
+end
+function DIV(f::LazyArray{<:Fill{Broadcasting{Operation{ScaledContraVariantPiolaMap}}}})
+  ϕrgₖ        = f.args[1]
+  scaled_detJ = f.args[3]
+  fsign_flip  = f.args[4]
+  div_ϕrgₖ = lazy_map(Broadcasting(divergence),ϕrgₖ)
+  fsign_flip=lazy_map(Broadcasting(Operation(x->(-1)^x)), fsign_flip)
+  lazy_map(Broadcasting(Operation(*)),scaled_detJ,fsign_flip,div_ϕrgₖ)
 end
 function DIV(a::LazyArray{<:Fill{typeof(linear_combination)}})
   i_to_basis = DIV(a.args[2])
