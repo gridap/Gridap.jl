@@ -33,7 +33,7 @@ function map_cols!(gids,a::PatchAssemblyStrategy,cols,patch)
   for i in eachindex(cols)
     ci = cols[i]
     if ci > 0
-      gid = searchsortedfirst(pcols,ri)
+      gid = searchsortedfirst(pcols,ci)
       gids[i] = ifelse(isequal(gid,n+1), u, gid)
     else
       gids[i] = u
@@ -83,7 +83,7 @@ function _patch_assembly_ids_all(space::FESpace,ptopo::PatchTopology)
   patch_rows = Arrays.merge_entries(
     face_dof_ids, patch_to_faces ; 
     acc  = SortedSet{Int32}(), 
-    post = dofs->filter(x->x>0,dofs)
+    post = dofs->filter(x -> x > 0, dofs)
   )
   return patch_rows
 end
@@ -120,7 +120,7 @@ function _patch_assembly_ids_noboundary(space::FESpace,ptopo::PatchTopology)
   patch_rows = Arrays.merge_entries(
     tcell_dof_ids_masked, patch_to_tfaces; 
     acc  = SortedSet{Int32}(), 
-    post = dofs -> filter(x->x>0,dofs)
+    post = dofs -> filter(x -> x > 0, dofs)
   )
 
   return patch_rows
