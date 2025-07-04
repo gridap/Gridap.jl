@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Update `norm` function to be compatible with complex vectors and tensors. Since PR[#1118](https://github.com/gridap/Gridap.jl/pull/1118).
+- Add the extension `GridapMakieExt`
 
 ## [0.19.1] - 2025-06-11
 
