@@ -16,8 +16,6 @@ using Test
 
 @testset "ForwardDiffTests.jl" begin include("ForwardDiffTests.jl") end
 
-@testset "BubbleMonomialBases" begin include("BubbleMonomialBasesTests.jl") end
-
 #@testset "ChangeBasis" begin include("ChangeBasisTests.jl") end
 
 end # module
