@@ -44,4 +44,6 @@ using Test
 
 @testset "ModalC0RefFEs" begin include("ModalC0RefFEsTests.jl") end
 
+@testset "BubbleRefFEs" begin include("BubbleRefFEsTests.jl") end
+
 end # module
