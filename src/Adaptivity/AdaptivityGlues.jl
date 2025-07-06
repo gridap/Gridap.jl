@@ -51,7 +51,7 @@ struct AdaptivityGlue{GT,Dc,A,B,C,D,E} <: GridapType
     end
     Dc = length(n2o_faces_map)-1
     is_refined    = select_refined_cells(n2o_faces_map[Dc+1])
-    o2n_faces_map = Arrays.inverse_table(n2o_faces_map[Dc+1])
+    o2n_faces_map = Arrays.inverse_table(n2o_faces_map[Dc+1], length(refinement_rules))
     A = typeof(n2o_faces_map)
     B = typeof(n2o_cell_to_child_id)
     C = typeof(refinement_rules)
