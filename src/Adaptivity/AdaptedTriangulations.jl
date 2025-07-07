@@ -73,6 +73,40 @@ function Geometry.Triangulation(::Type{ReferenceFE{d}},model::AdaptedDiscreteMod
   return AdaptedTriangulation(trian,model)
 end
 
+function Geometry.Triangulation(
+  ::Type{ReferenceFE{d}}, model::AdaptedDiscreteModel, tface_to_mface::AbstractVector{<:Integer}
+) where d
+  mgrid = Grid(ReferenceFE{d},model)
+  tgrid = restrict(mgrid,tface_to_mface)
+  BodyFittedTriangulation(model,tgrid,tface_to_mface)
+end
+
+function Geometry.Triangulation(
+  ::Type{ReferenceFE{d}}, model::AdaptedDiscreteModel, mface_filter::AbstractArray{Bool}
+) where d
+  tface_to_mface = findall(collect1d(mface_filter))
+  Triangulation(ReferenceFE{d},model,tface_to_mface)
+end
+
+function Geometry.Triangulation(
+  ::Type{ReferenceFE{d}}, model::AdaptedDiscreteModel, mface_filter::AbstractVector{Bool}
+) where d
+  tface_to_mface = findall(mface_filter)
+  Triangulation(ReferenceFE{d},model,tface_to_mface)
+end
+
+function Geometry.Triangulation(
+  ::Type{ReferenceFE{d}}, model::AdaptedDiscreteModel, labels::FaceLabeling; tags=nothing
+) where d
+  if isnothing(tags)
+    tface_to_mface = IdentityVector(num_faces(model,d))
+  else
+    tface_to_mface = findall(get_face_mask(labels,tags,d))
+  end
+  Triangulation(ReferenceFE{d},model,tface_to_mface)
+end
+
+
 function Geometry.Triangulation(trian::AdaptedTriangulation,args...;kwargs...)
   return AdaptedTriangulation(Triangulation(trian.trian,args...;kwargs...),trian.adapted_model)
 end
