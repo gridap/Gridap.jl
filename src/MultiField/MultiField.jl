@@ -55,4 +55,6 @@ include("StaticCondensationOperators.jl")
 
 include("MultiFieldAutodiff.jl")
 
+include("MultiFieldFEBasesAddition.jl")
+
 end # module

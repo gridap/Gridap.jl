@@ -182,6 +182,7 @@ export BDMRefFE
 export NedelecRefFE
 export BezierRefFE
 export ModalC0RefFE
+export BubbleRefFE
 
 export Lagrangian
 export DivConforming
@@ -190,6 +191,7 @@ export BDM
 export Nedelec
 export Bezier
 export ModalC0
+export Bubble
 
 export lagrangian
 export raviart_thomas
@@ -197,6 +199,7 @@ export bdm
 export nedelec
 export bezier
 export modalC0
+export bubble
 
 export Quadrature
 export QuadratureName
@@ -256,6 +259,8 @@ include("MockDofs.jl")
 include("BezierRefFEs.jl")
 
 include("ModalC0RefFEs.jl")
+
+include("BubbleRefFEs.jl")
 
 include("LinearCombinationDofVectors.jl")
 
