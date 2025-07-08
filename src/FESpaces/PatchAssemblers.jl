@@ -12,13 +12,14 @@ end
 
 function map_rows!(gids,a::PatchAssemblyStrategy,rows,patch)
   prows = view(a.patch_rows,patch)
-  n = length(prows)
+  n = length(prows)+1
   u = -one(eltype(gids))
   for i in eachindex(rows)
     ri = rows[i]
     if ri > 0
       gid = searchsortedfirst(prows,ri)
-      gids[i] = ifelse(isequal(gid,n+1), u, gid)
+      found = !isequal(gid,n) && isequal(prows[gid],ri)
+      gids[i] = ifelse(found, gid, u)
     else
       gids[i] = u
     end
@@ -28,13 +29,14 @@ end
 
 function map_cols!(gids,a::PatchAssemblyStrategy,cols,patch)
   pcols = view(a.patch_cols,patch)
-  n = length(pcols)
+  n = length(pcols)+1
   u = -one(eltype(gids))
   for i in eachindex(cols)
     ci = cols[i]
     if ci > 0
       gid = searchsortedfirst(pcols,ci)
-      gids[i] = ifelse(isequal(gid,n+1), u, gid)
+      found = !isequal(gid,n) && isequal(pcols[gid],ci)
+      gids[i] = ifelse(found, gid, u)
     else
       gids[i] = u
     end
