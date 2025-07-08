@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added missing operations between `SkeletonPairs`. Since PR[#1122](https://github.com/gridap/Gridap.jl/pull/1122).
+- Added bubble elements for simplex and cube-like polytopes. Since PR[#1124](https://github.com/gridap/Gridap.jl/pull/1124)
 
 ### Fixed
 
