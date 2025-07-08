@@ -10,15 +10,29 @@
 - `topo`: Underlying grid topology
 - `d_to_patch_to_dfaces`: For each dimension `d`, a table mapping each patch to it's d-faces.
 """
-struct PatchTopology{Dc,Dp} <: GridapType
+struct PatchTopology{Dc,Dp,A} <: GridapType
   topo :: GridTopology{Dc,Dp}
   d_to_patch_to_dfaces :: Vector{Table{Int32,Vector{Int32},Vector{Int32}}}
+  metadata :: A
+  function PatchTopology(
+    topo::GridTopology{Dc,Dp},
+    d_to_patch_to_dfaces::Vector{Table{Int32,Vector{Int32},Vector{Int32}}},
+    metadata=nothing
+  ) where {Dc,Dp}
+    A = typeof(metadata)
+    new{Dc,Dp,A}(topo,d_to_patch_to_dfaces,metadata)
+  end
 end
 
-function PatchTopology(topo::GridTopology{Dc},patch_cells::Table) where Dc
+function PatchTopology(topo::GridTopology{Dc},patch_cells::Table,metadata=nothing) where Dc
   d_to_patch_to_dpfaces = Vector{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,Dc+1)
   d_to_patch_to_dpfaces[Dc+1] = patch_cells
-  PatchTopology(topo,d_to_patch_to_dpfaces)
+  PatchTopology(topo,d_to_patch_to_dpfaces,metadata)
+end
+
+struct StarPatchMetadata
+  root_dim :: Int8
+  patch_roots :: Vector{Int32}
 end
 
 function PatchTopology(
@@ -28,11 +42,14 @@ function PatchTopology(
   Dc = num_cell_dims(model)
   topo = get_grid_topology(model)
   patch_cells = get_faces(topo,Df,Dc)
+  patch_roots = collect(Int32,1:num_faces(topo,Df))
   if !isnothing(tags)
     patches = findall(get_face_mask(labels,tags,Df))
     patch_cells = patch_cells[patches]
+    patch_roots = patch_roots[patches]
   end
-  PatchTopology(topo,patch_cells)
+  metadata = StarPatchMetadata(Int8(Df),patch_roots)
+  PatchTopology(topo,patch_cells,metadata)
 end
 
 function PatchTopology(model::DiscreteModel;kwargs...)
