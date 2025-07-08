@@ -5,6 +5,8 @@ using Gridap.ReferenceFEs
 using Gridap.Polynomials
 using Gridap.TensorValues
 using Gridap.Fields: LinearCombinationFieldVector
+using Statistics: mean
+using Gridap.Arrays: evaluate
 
 # mini bubble tests
 et = Float64

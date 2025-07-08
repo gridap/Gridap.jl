@@ -14,7 +14,7 @@ function BubbleRefFE(::Type{T}, p::Polytope{D}; type = :mini, coeffs = nothing, 
 		@error "You must specify both `terms` and `coeffs` or neither."
 	end
 
-	orders = Tuple(maximum(terms) - one(eltype(terms)))
+	orders = Tuple(maximum(terms) - oneunit(eltype(terms)))
 	prebasis = linear_combination(coeffs, MonomialBasis{D}(T, orders, terms))
 	x0 = mean(get_vertex_coordinates(p))
 	dofs = LagrangianDofBasis(T, [x0])
