@@ -17,7 +17,7 @@ struct NodeToDofGlue{T}
 end
 
 function get_cell_conformity(space::UnconstrainedFESpace{V,<:NodeToDofGlue{T}}) where {V,T}
-  cell_polys = get_cell_polytopes(get_triangulation(space))
+  cell_polys = Geometry.get_cell_polytopes(get_triangulation(space))
   polys, ctypes = compress_cell_data(cell_polys)
   reffes = map(p -> LagrangianRefFE(change_eltype(T,eltype(V)),p,1), polys)
   cell_reffe = expand_cell_data(reffes,ctypes)
