@@ -363,6 +363,41 @@ function PatchBoundaryTriangulation(model::DiscreteModel{Dc},ptopo::PatchTopolog
   return PatchTriangulation(trian,ptopo,tface_to_pface)
 end
 
+function PatchSkeletonTriangulation(model::DiscreteModel{Dc},ptopo::PatchTopology{Dc}; tags=nothing) where Dc
+  patch_faces = get_patch_faces(ptopo,Dc-1)
+  pface_to_face = patch_faces.data
+
+  # Create p-face mask
+  if !isnothing(tags)
+    labels = get_face_labeling(model)
+    face_to_mask = get_face_mask(labels,tags,Dc-1)
+    pface_to_mask = lazy_map(Reindex(face_to_mask),pface_to_face)
+  else
+    pface_to_mask = Fill(true,num_faces(ptopo,Dc-1))
+  end
+
+  # Merge with boundary mask
+  pface_to_isboundary, _ = get_patch_boundary_info(ptopo)
+  tface_to_pface = findall(lazy_map((a,b) -> !a && b, pface_to_isboundary, pface_to_mask))
+  tface_to_face  = pface_to_face[tface_to_pface]
+  ntfaces = length(tface_to_face)
+
+  # Create overlapping boundary triangulation
+  topo = get_grid_topology(model)
+  cell_grid = get_grid(model)
+  face_grid = view(Grid(ReferenceFE{Dc-1},model),tface_to_face)
+  face_trian = BodyFittedTriangulation(model,face_grid,tface_to_face)
+
+  face_glue_plus = OverlappingFaceToCellGlue(topo,cell_grid,face_grid,tface_to_face,fill(Int8(1),ntfaces))
+  trian_plus = BoundaryTriangulation(face_trian,face_glue_plus)
+
+  face_glue_minus = OverlappingFaceToCellGlue(topo,cell_grid,face_grid,tface_to_face,fill(Int8(2),ntfaces))
+  trian_minus = BoundaryTriangulation(face_trian,face_glue_minus)
+
+  trian = SkeletonTriangulation(trian_plus,trian_minus)
+  return PatchTriangulation(trian,ptopo,tface_to_pface)
+end
+
 function get_patch_faces(trian::PatchTriangulation)
   Df = num_cell_dims(trian)
   tface_to_face = get_glue(trian,Val(Df)).tface_to_mface
