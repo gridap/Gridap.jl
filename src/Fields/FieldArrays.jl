@@ -536,6 +536,12 @@ return_value(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_value(Br
 return_cache(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_cache(Broadcasting(a.op),args...)
 evaluate!(cache,a::BroadcastingFieldOpMap,args::AbstractArray...) = evaluate!(cache,Broadcasting(a.op),args...)
 
+function return_cache(k::BroadcastingFieldOpMap,a::AbstractArray{<:Field},b::AbstractArray{<:Field}) 
+  O = typeof(k.op)
+  F = Tuple{eltype(a), eltype(b)}
+  CachedVector(OperationField{O, F})
+end
+
 # Follow optimizations are very important to achieve performance
 
 function evaluate!(
