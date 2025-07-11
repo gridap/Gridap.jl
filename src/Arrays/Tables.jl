@@ -377,6 +377,23 @@ function _append_tables_locally_fill!(data,ptrs,offset,table)
   end
 end
 
+function remove_empty_entries!(table::Table)
+  ptrs = table.ptrs
+  
+  i = 1
+  n = length(table)
+  while i <= n
+    if ptrs[i] == ptrs[i+1]
+      deleteat!(ptrs,i+1)
+      n -= 1
+    else
+      i += 1
+    end
+  end
+
+  return table
+end
+
 """
     collect1d(a)
 

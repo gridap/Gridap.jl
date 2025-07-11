@@ -101,8 +101,8 @@ function _patch_assembly_ids_star(
   Dr, patch_roots = metadata.root_dim, metadata.patch_roots
 
   # A dpface is masked (removed) iff
-  #  A) It is a boundary of the patch
-  #  B) It is not connected to the root of the patch
+  #  - It is a boundary of the patch, AND
+  #  - It is not connected to the root of the patch
   d_to_dpface_to_mask = map(0:D-1) do d
 
     dpface_to_dface = Geometry.get_patch_faces(ptopo,d).data
