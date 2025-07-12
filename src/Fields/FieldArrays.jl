@@ -517,7 +517,7 @@ function testitem(a::BroadcastOpFieldArray)
   fs = map(testitem,a.args)
   return_value(Operation(a.op),fs...)
 end
-for op in (tr,dot)
+for op in (tr,dot,:-)
   @eval function testvalue(::Type{BroadcastOpFieldArray{typeof($op),T,N,A}}) where {T,N,A}
     fs = tuple((testvalue(fi) for fi in A.parameters)...)
     BroadcastOpFieldArray($op,fs...)

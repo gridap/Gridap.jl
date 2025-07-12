@@ -488,14 +488,21 @@ function gradient(f::OperationField{<:Field})
   y⋅x
 end
 
-# Base.zero
+# Arrays.testvalue
 # dot,tr,pinvJt for push_∇
 for op in (:+,:-,:*,dot,tr,pinvJt)
-  @eval begin
-    function testvalue(::Type{OperationField{typeof($op),F}}) where F
-      fields = tuple((testvalue(f) for f in F.parameters)...)
-      OperationField($op,fields)
-    end
+  @eval function testvalue(::Type{OperationField{typeof($op),F}}) where F
+    fields = tuple((testvalue(f) for f in F.parameters)...)
+    OperationField($op,fields)
+  end
+end
+
+# use `OperationField` rather than `ZeroField` 
+# to ensure consistency while using `CachedArray`
+for op in (:+,:-)
+  @eval function Base.zero(::Type{OperationField{typeof($op),F}}) where F
+    fields = tuple((zero(f) for f in F.parameters)...)
+    OperationField($op,fields)
   end
 end
 
