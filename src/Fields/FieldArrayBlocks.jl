@@ -420,8 +420,8 @@ end
 # Case 2: ArrayBlock + ArrayBlock of same dimension
 
 function return_value(k::BroadcastingFieldOpMap,f::ArrayBlock{A,N},g::ArrayBlock{B,N}) where {A,B,N}
-  fi = testitem(f)
-  gi = testitem(g)
+  fi = testvalue(A)
+  gi = testvalue(B)
   hi = return_value(k,fi,gi)
   a = Array{typeof(hi),N}(undef,size(f.array))
   fill!(a,hi)
@@ -430,8 +430,8 @@ end
 
 function return_cache(k::BroadcastingFieldOpMap,f::ArrayBlock{A,N},g::ArrayBlock{B,N}) where {A,B,N}
   @notimplementedif size(f) != size(g)
-  fi = testitem(f)
-  gi = testitem(g)
+  fi = testvalue(A)
+  gi = testvalue(B)
   ci = return_cache(k,fi,gi)
   hi = evaluate!(ci,k,fi,gi)
   m = ZeroBlockMap()
@@ -633,17 +633,18 @@ function evaluate!(cache,k::BroadcastingFieldOpMap,a::Union{ArrayBlock,AbstractA
 end
 
 for op in (:+,:-,:*)
+  local type = :(Broadcasting{<:Union{Operation{typeof($op)}, typeof($op)}})
   @eval begin
 
-    function return_value(k::Broadcasting{Operation{typeof($op)}},f::ArrayBlock,g::ArrayBlock)
+    function return_value(k::$type,f::ArrayBlock,g::ArrayBlock)
       return_value(BroadcastingFieldOpMap($op),f,g)
     end
 
-    function return_cache(k::Broadcasting{Operation{typeof($op)}},f::ArrayBlock,g::ArrayBlock)
+    function return_cache(k::$type,f::ArrayBlock,g::ArrayBlock)
       return_cache(BroadcastingFieldOpMap($op),f,g)
     end
 
-    function evaluate!(cache,k::Broadcasting{Operation{typeof($op)}},f::ArrayBlock,g::ArrayBlock)
+    function evaluate!(cache,k::$type,f::ArrayBlock,g::ArrayBlock)
       evaluate!(cache,BroadcastingFieldOpMap($op),f,g)
     end
 
@@ -656,4 +657,8 @@ end
 
 function Base.:-(a::ArrayBlock,b::ArrayBlock)
   BroadcastingFieldOpMap(-)(a,b)
+end
+
+function Base.:-(a::ArrayBlock)
+  BroadcastingFieldOpMap(-)(a)
 end

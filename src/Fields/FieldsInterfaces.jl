@@ -313,6 +313,10 @@ struct OperationField{O,F} <: Field
   fields::F
 end
 
+function testvalue(::Type{OperationField{O,F}}) where {O,F}
+  return OperationField(testvalue(O),tuple((testvalue(f) for f in F.parameters)...))
+end
+
 function return_value(c::OperationField,x::Point)
   fx = map(f -> return_value(f,x),c.fields)
   return_value(c.op,fx...)
@@ -482,6 +486,17 @@ function gradient(f::OperationField{<:Field})
   x = ∇(a)∘b
   y = ∇(b)
   y⋅x
+end
+
+# Base.zero
+# dot,tr,pinvJt for push_∇
+for op in (:+,:-,:*,dot,tr,pinvJt)
+  @eval begin
+    function testvalue(::Type{OperationField{typeof($op),F}}) where F
+      fields = tuple((testvalue(f) for f in F.parameters)...)
+      OperationField($op,fields)
+    end
+  end
 end
 
 # Composition
@@ -785,6 +800,7 @@ function Base.getindex(a::VoidBasis,i::Integer)
 end
 
 Arrays.testitem(a::VoidBasis) = testitem(a.basis)
+testvalue(::Type{VoidBasis{T,N,A}}) where {T,N,A} = VoidBasis(testvalue(A),true)
 
 function _zero_size(a::VoidBasis{T,1} where T)
   (0,)
