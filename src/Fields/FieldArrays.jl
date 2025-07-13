@@ -201,7 +201,7 @@ function Base.zero(::Type{LinearCombinationField{V,F}}) where {V,F}
   values = testvalue(V)
   fields = testvalue(F)
   colums = 1
-  return LinearCombinationField(values,fields,colums)
+  LinearCombinationField(values,fields,colums)
 end
 
 for op in (:∇,:∇∇)
@@ -240,7 +240,7 @@ Base.getindex(a::LinearCombinationFieldVector,i::Integer) = LinearCombinationFie
 Base.IndexStyle(::Type{<:LinearCombinationField}) = IndexLinear()
 
 function testvalue(::Type{LinearCombinationFieldVector{V,F}}) where {V,F}
-  return linear_combination(testvalue(V), testvalue(F))
+  linear_combination(testvalue(V), testvalue(F))
 end
 
 function Arrays.testitem(f::LinearCombinationFieldVector{V}) where V
@@ -564,7 +564,11 @@ evaluate!(cache,a::BroadcastingFieldOpMap,args::AbstractArray...) = evaluate!(ca
 # only for `Field`, which is needed when using `CachedArray`.
 function testitem(
   a::LazyArray{A,<:ArrayBlock{<:Transpose{<:Field}}}) where {A} 
-  testvalue(eltype(a))
+  if length(a) > 0 && typeof(first(a)) == eltype(a)
+    first(a)
+  else
+    testvalue(eltype(a))
+  end
 end
 
 function return_cache(k::BroadcastingFieldOpMap,a::AbstractArray{<:Field},b::AbstractArray{<:Field})

@@ -314,7 +314,7 @@ struct OperationField{O,F} <: Field
 end
 
 function testvalue(::Type{OperationField{O,F}}) where {O,F}
-  return OperationField(testvalue(O),tuple((testvalue(f) for f in F.parameters)...))
+  OperationField(testvalue(O),tuple((testvalue(f) for f in F.parameters)...))
 end
 
 function return_value(c::OperationField,x::Point)
