@@ -313,8 +313,10 @@ struct OperationField{O,F} <: Field
   fields::F
 end
 
-function testvalue(::Type{OperationField{O,F}}) where {O,F}
-  OperationField(testvalue(O),tuple((testvalue(f) for f in F.parameters)...))
+function testvalue(::Type{OperationField{O,F}}) where {O<:Field,F<:Tuple}
+  op = testvalue(O)
+  fields = map(testvalue,fieldtypes(F))
+  OperationField(op,fields)
 end
 
 function return_value(c::OperationField,x::Point)
@@ -491,8 +493,8 @@ end
 # Arrays.testvalue
 # dot,tr,pinvJt for push_∇
 for op in (:+,:-,:*,dot,tr,pinvJt)
-  @eval function testvalue(::Type{OperationField{typeof($op),F}}) where F
-    fields = tuple((testvalue(f) for f in F.parameters)...)
+  @eval function testvalue(::Type{OperationField{typeof($op),F}}) where {F<:Tuple}
+    fields = map(testvalue,fieldtypes(F))
     OperationField($op,fields)
   end
 end
@@ -500,8 +502,8 @@ end
 # use `OperationField` rather than `ZeroField` 
 # to ensure consistency while using `CachedArray`
 for op in (:+,:-)
-  @eval function Base.zero(::Type{OperationField{typeof($op),F}}) where F
-    fields = tuple((zero(f) for f in F.parameters)...)
+  @eval function Base.zero(::Type{OperationField{typeof($op),F}}) where {F<:Tuple}
+    fields = map(testvalue,fieldtypes(F))
     OperationField($op,fields)
   end
 end
