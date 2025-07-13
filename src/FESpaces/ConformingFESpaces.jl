@@ -565,6 +565,11 @@ function generate_cell_dof_mask(
   tcell_dof_mask = Vector{Vector{Bool}}(undef, length(tcell_to_scell))
 
   for (tcell,scell) in enumerate(tcell_to_scell)
+    if scell < 1
+      tcell_dof_mask[tcell] = Bool[]
+      continue
+    end
+
     ctype = scell_ctype[scell]
     dof_mask = fill(false,ctype_ndofs[ctype])
 
