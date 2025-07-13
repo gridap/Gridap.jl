@@ -633,17 +633,18 @@ function evaluate!(cache,k::BroadcastingFieldOpMap,a::Union{ArrayBlock,AbstractA
 end
 
 for op in (:+,:-,:*)
+  local type = :(Broadcasting{<:Union{Operation{typeof($op)}, typeof($op)}})
   @eval begin
 
-    function return_value(k::Broadcasting{typeof($op)},f::ArrayBlock,g::ArrayBlock)
+    function return_value(k::$type,f::ArrayBlock,g::ArrayBlock)
       return_value(BroadcastingFieldOpMap($op),f,g)
     end
 
-    function return_cache(k::Broadcasting{typeof($op)},f::ArrayBlock,g::ArrayBlock)
+    function return_cache(k::$type,f::ArrayBlock,g::ArrayBlock)
       return_cache(BroadcastingFieldOpMap($op),f,g)
     end
 
-    function evaluate!(cache,k::Broadcasting{typeof($op)},f::ArrayBlock,g::ArrayBlock)
+    function evaluate!(cache,k::$type,f::ArrayBlock,g::ArrayBlock)
       evaluate!(cache,BroadcastingFieldOpMap($op),f,g)
     end
 
@@ -656,4 +657,8 @@ end
 
 function Base.:-(a::ArrayBlock,b::ArrayBlock)
   BroadcastingFieldOpMap(-)(a,b)
+end
+
+function Base.:-(a::ArrayBlock)
+  BroadcastingFieldOpMap(-)(a)
 end

@@ -102,6 +102,11 @@ struct FieldGradientArray{Ng,A,T,N} <: AbstractArray{T,N}
   end
 end
 
+function testvalue(::Type{<:FieldGradientArray{Ng,A}}) where {Ng,A}
+  f = testvalue(A)
+  FieldGradientArray{Ng}(f)
+end
+
 function return_value(k::Broadcasting{typeof(∇)},a::AbstractArray{<:Field})
   evaluate(k,a)
 end
@@ -190,6 +195,15 @@ for T in (:(Point),:(AbstractVector{<:Point}))
   end
 end
 
+# use `LinearCombinationField` rather than `ZeroField` 
+# to ensure consistency while using `CachedArray`
+function Base.zero(::Type{LinearCombinationField{V,F}}) where {V,F}
+  values = testvalue(V)
+  fields = testvalue(F)
+  colums = 1
+  LinearCombinationField(values,fields,colums)
+end
+
 for op in (:∇,:∇∇)
   @eval begin
     function $op(a::LinearCombinationField)
@@ -224,6 +238,10 @@ end
 Base.size(a::LinearCombinationFieldVector) = (size(a.values,2),)
 Base.getindex(a::LinearCombinationFieldVector,i::Integer) = LinearCombinationField(a.values,a.fields,i)
 Base.IndexStyle(::Type{<:LinearCombinationField}) = IndexLinear()
+
+function testvalue(::Type{LinearCombinationFieldVector{V,F}}) where {V,F}
+  linear_combination(testvalue(V), testvalue(F))
+end
 
 function Arrays.testitem(f::LinearCombinationFieldVector{V}) where V
   if !iszero(size(f.values,2))
@@ -499,6 +517,12 @@ function testitem(a::BroadcastOpFieldArray)
   fs = map(testitem,a.args)
   return_value(Operation(a.op),fs...)
 end
+for op in (tr,dot,:-)
+  @eval function testvalue(::Type{BroadcastOpFieldArray{typeof($op),T,N,A}}) where {T,N,A<:Tuple}
+    fs = map(testvalue,fieldtypes(A))
+    BroadcastOpFieldArray($op,fs...)
+  end
+end
 
 for T in (:(Point),:(AbstractArray{<:Point}))
   @eval begin
@@ -535,6 +559,24 @@ evaluate!(cache,a::BroadcastingFieldOpMap,args...) = evaluate!(cache,Broadcastin
 return_value(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_value(Broadcasting(a.op),args...)
 return_cache(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_cache(Broadcasting(a.op),args...)
 evaluate!(cache,a::BroadcastingFieldOpMap,args::AbstractArray...) = evaluate!(cache,Broadcasting(a.op),args...)
+
+# The following code is implemented to store `Transpose`
+# only for `Field`, which is needed when using `CachedArray`.
+function testitem(
+  a::LazyArray{A,<:ArrayBlock{<:Transpose{<:Field}}}) where {A} 
+  if length(a) > 0 && typeof(first(a)) == eltype(a)
+    first(a)
+  else
+    testvalue(eltype(a))
+  end
+end
+
+function return_cache(k::BroadcastingFieldOpMap,a::AbstractArray{<:Field},b::AbstractArray{<:Field})
+  @check size(a) == size(b) || (length(a)==0 && length(b)==0) 
+  O = typeof(k.op)
+  F = Tuple{eltype(a),eltype(b)}
+  CachedArray(OperationField{O,F},ndims(a))
+end
 
 # Follow optimizations are very important to achieve performance
 
