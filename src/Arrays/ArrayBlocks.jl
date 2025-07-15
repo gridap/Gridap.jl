@@ -26,18 +26,18 @@
       touched::Array{Bool,N}
     end
 
-Block-wise storage of arrays, where `touched` indicates which blocks are active. Accessing 
-a non-touched block returns nothing. 
+Block-wise storage of arrays, where `touched` indicates which blocks are active. Accessing
+a non-touched block returns nothing.
 
-`ArrayBlock` is mostly used for multi-field and skeleton computations and assembly, 
+`ArrayBlock` is mostly used for multi-field and skeleton computations and assembly,
 where each block corresponds to a field or plus/minus respectively.
 Blocks might be nested in the case of multi-field computations on skeletons.
 
 """
 struct ArrayBlock{A,N}
-  array::Array{A,N}
-  touched::Array{Bool,N}
-  function ArrayBlock(array::Array{A,N},touched::Array{Bool,N}) where {A,N}
+  array::AbstractArray{A,N}
+  touched::AbstractArray{Bool,N}
+  function ArrayBlock(array::AbstractArray{A,N},touched::AbstractArray{Bool,N}) where {A,N}
     @check size(array) == size(touched)
     new{A,N}(array,touched)
   end
@@ -56,6 +56,9 @@ Base.eltype(::Type{<:ArrayBlock{A}}) where A = A
 Base.eltype(b::ArrayBlock{A}) where A = A
 Base.ndims(b::ArrayBlock{A,N}) where {A,N} = N
 Base.ndims(::Type{ArrayBlock{A,N}}) where {A,N} = N
+
+Base.iterate(a::VectorBlock) = iterate(a.array)
+
 function Base.getindex(b::ArrayBlock,i...)
   if !b.touched[i...]
     return nothing
@@ -300,8 +303,8 @@ end
         indices::Vector{CartesianIndex{N}}
     end
 
-A `BlockMap` maps `M = length(indices)` arrays to a single array of N-dimensinal blocks, 
-where only the blocks indexed by `indices` are touched and contain the corresponding 
+A `BlockMap` maps `M = length(indices)` arrays to a single array of N-dimensinal blocks,
+where only the blocks indexed by `indices` are touched and contain the corresponding
 entry of the input arrays.
 
 ## Constructors:
@@ -397,10 +400,10 @@ end
         indices::Vector{Vector{Tuple{CartesianIndex{M},CartesianIndex{N}}}}
     end
 
-A `MergeBlockMap` create a single array of N-dimensional blocks from `L=length(indices)` 
-input arrays of M-dimensional blocks. 
+A `MergeBlockMap` create a single array of N-dimensional blocks from `L=length(indices)`
+input arrays of M-dimensional blocks.
 
-For the l-th input array `a_l`, the vector of tuples in `indices[l]` contains the 
+For the l-th input array `a_l`, the vector of tuples in `indices[l]` contains the
 mapping between the indices of the blocks in `a_l` and the indices of the blocks in
 the output array, i.e `a_out[P[2]] = a_l[P[1]] ∀ P ∈ indices[l], ∀ l `.
 """
@@ -490,7 +493,7 @@ function evaluate!(cache,k::BlockBroadcasting,a::ArrayBlock{A,N},b::ArrayBlock..
   r, c = cache
   @check r.touched == a.touched
   @check all(a.touched == bi.touched for bi in b)
-  
+
   for i in eachindex(a.array)
     if a.touched[i]
       ai = (a.array[i],(bi.array[i] for bi in b)...)

@@ -1,4 +1,3 @@
-using Gridap.FESpaces: _change_argument, _compute_cell_ids, autodiff_array_gradient
 
 function CellData.SkeletonCellFieldPair(
   cf_plus::Union{MultiFieldFEFunction,MultiFieldCellField},
@@ -8,61 +7,88 @@ function CellData.SkeletonCellFieldPair(
   MultiFieldCellField(cfs)
 end
 
-## MultiField AD for different triangulations
-# function FESpaces._gradient(f,uh::MultiFieldFEFunction,fuh::DomainContribution)
-function my_new_gradient(f,uh::MultiFieldFEFunction,fuh::DomainContribution)
-  # if _check_trians(uh)
-    # _mf_gradient_same_trian(f,uh,fuh)
-  # else
-    _mf_gradient(f,uh,fuh)
-  # end
-end
+#################################
+## Split and monolithic multifield autodiff
+# - split: compute the gradient for each field separately
+# - monolithic: compute the gradient for all fields together (original)
+#
+# For most problems, the split version is faster because the ForwardDiff
+# chunk size is smaller. In addition, the split version allows for different
+# triangulations.
+#
+# TODO: Currently, this is only implemented for the gradient and jacobian.
+#  The Hessian is slightly proplematic because the off-diagonal blocks are
+#  missed. This is because the basis is baked into f as it is in jacobian.
 
-# When same triangulation, do as usual
-function _mf_gradient_same_trian(f,uh,fuh)
-  terms = DomainContribution()
-  for trian in get_domains(fuh)
-    g = _change_argument(gradient,f,trian,uh)
-    cell_u = get_cell_dof_values(uh)
-    cell_id = _compute_cell_ids(uh,trian)
-    cell_grad = autodiff_array_gradient(g,cell_u,cell_id)
-    add_contribution!(terms,trian,cell_grad)
-  end
-  terms
-end
+grad_ops = [
+  (;op=:(FESpaces.gradient),split=:_mf_grad_split,mono=:(FESpaces._gradient)),
+  (;op=:(FESpaces.jacobian),split=:_mf_jac_split,mono=:(FESpaces._jacobian )),
+  # (;op=:(FESpaces.hessian ),split=:_mf_hes_split,mono=:(FESpaces._hessian  )),
+]
+for op in grad_ops
+  @eval begin
+    function $(op.op)(f::Function,uh::MultiFieldFEFunction;ad_type=:split)
+      fuh = f(uh)
+      if ad_type == :split
+        $(op.split)(f,uh,fuh)
+      elseif ad_type == :monolithic
+        $(op.mono)(f,uh,fuh)
+      else
+        @notimplemented """Unknown ad_type = $ad_type
+          Options:
+          - :split      -- compute the gradient for each field separately
+          - :monolithic -- compute the gradient for all fields together
+          """
+      end
+    end
 
-function _mf_gradient(f,uh,fuh)
-  _uh = uh.single_fe_functions
-  terms = [DomainContribution() for _ in 1:num_fields(uh)]
-  for k in 1:num_fields(uh)
-    cell_u = get_cell_dof_values(uh[k])
-    for trian in get_domains(fuh)
-      g = _change_argument(gradient,uk->f((_uh[1:k-1]...,uk,_uh[k+1:end]...)),trian,uh[k])
-      cell_id = _compute_cell_ids(uh[k],trian)
-      cell_grad = autodiff_array_gradient(g,cell_u,cell_id)
-      add_contribution!(terms[k],trian,cell_grad)
+    function $(op.split)(f,uh,fuh)
+      nfields = num_fields(uh)
+      terms = map(Base.OneTo(nfields)) do k
+        f_k = restrict_function(f,uh,k)
+        $(op.mono)(f_k,uh[k],f_k(uh[k]))
+      end
+      return _combine_contributions($(op.op),terms,fuh)
     end
   end
+end
 
+# Helpers
+function restrict_function(f,uh,k)
+  uk->f((uh[1:k-1]...,uk,uh[k+1:end]...))
+end
+
+function concat_contribs_vec(size,contribs...)
+  ArrayBlock([contribs...],size)
+end
+
+function concat_contribs_mat(touched,contribs...)
+  mat = map(ij->contribs[ij[2]][ij[1]],CartesianIndices(touched))
+  ArrayBlock(mat,touched)
+end
+
+GetIndex(k) = i->getindex(i,k)
+
+function _combine_contributions(::typeof(gradient),terms::Vector{DomainContribution},fuh::DomainContribution)
   contribs = DomainContribution()
+  nfields = length(terms)
   for trian in get_domains(fuh)
     trian_to_contrib = lazy_map(GetIndex(trian),terms)
-    contrib_to_touched = fill([true for _ in 1:num_fields(uh)],length(first(trian_to_contrib)));
-    mf_cell_grad = lazy_map(concat_contribs,contrib_to_touched,trian_to_contrib...);
+    contrib_to_touched = fill([true for _ in 1:nfields],length(first(trian_to_contrib)));
+    mf_cell_grad = lazy_map(concat_contribs_vec,contrib_to_touched,trian_to_contrib...);
     add_contribution!(contribs,trian,mf_cell_grad)
   end
   contribs
 end
 
-# Helpers
-function concat_contribs(size,contribs...)
-  ArrayBlock([contribs...],size)
-end
-
-GetIndex(k) = i->getindex(i,k)
-
-function _check_trians(f::MultiFieldFEFunction)
-  trians = map(get_triangulation,f.fe_space.spaces)
-  trian = first(trians)
-  all(t -> t===trian, trians)
+function _combine_contributions(::Union{typeof(jacobian),typeof(hessian)},terms::Vector{DomainContribution},fuh::DomainContribution)
+  contribs = DomainContribution()
+  nfields = length(terms)
+  for trian in get_domains(fuh)
+    trian_to_contrib = lazy_map(GetIndex(trian),terms)
+    contrib_to_touched = fill(trues(nfields,nfields),length(first(trian_to_contrib)));
+    mf_cell_grad = lazy_map(concat_contribs_mat,contrib_to_touched,trian_to_contrib...);
+    add_contribution!(contribs,trian,mf_cell_grad)
+  end
+  contribs
 end
