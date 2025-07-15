@@ -560,24 +560,6 @@ return_value(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_value(Br
 return_cache(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_cache(Broadcasting(a.op),args...)
 evaluate!(cache,a::BroadcastingFieldOpMap,args::AbstractArray...) = evaluate!(cache,Broadcasting(a.op),args...)
 
-# The following code is implemented to store `Transpose`
-# only for `Field`, which is needed when using `CachedArray`.
-function testitem(
-  a::LazyArray{A,<:ArrayBlock{<:Transpose{<:Field}}}) where {A} 
-  if length(a) > 0 && typeof(first(a)) == eltype(a)
-    first(a)
-  else
-    testvalue(eltype(a))
-  end
-end
-
-function return_cache(k::BroadcastingFieldOpMap,a::AbstractArray{<:Field},b::AbstractArray{<:Field})
-  @check size(a) == size(b) || (length(a)==0 && length(b)==0) 
-  O = typeof(k.op)
-  F = Tuple{eltype(a),eltype(b)}
-  CachedArray(OperationField{O,F},ndims(a))
-end
-
 # Follow optimizations are very important to achieve performance
 
 function evaluate!(

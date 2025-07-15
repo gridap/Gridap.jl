@@ -474,8 +474,8 @@ end
 #  _operate_cellfields(k,b...)
 #end
 
-struct OperationCellField{DS} <: CellField
-  op::Operation
+struct OperationCellField{DS,O} <: CellField
+  op::Operation{O}
   args::Tuple
   trian::Triangulation
   domain_style::DS
@@ -503,7 +503,8 @@ struct OperationCellField{DS} <: CellField
     #   end
     # end
 
-    new{typeof(domain_style)}(op,args,trian,domain_style,Dict())
+    DS, O = typeof(domain_style), typeof(op.op)
+    new{DS,O}(op,args,trian,domain_style,Dict())
   end
 end
 
@@ -545,11 +546,25 @@ function get_data(f::OperationCellField)
   lazy_map(Broadcasting(f.op),a...)
 end
 get_triangulation(f::OperationCellField) = f.trian
-DomainStyle(::Type{OperationCellField{DS}}) where DS = DS()
+DomainStyle(::Type{OperationCellField{DS,O}}) where {DS,O} = DS()
 
 function evaluate!(cache,f::OperationCellField,x::CellPoint)
   ax = map(i->i(x),f.args)
   lazy_map(Fields.BroadcastingFieldOpMap(f.op.op),ax...)
+end
+
+for diffop in (:gradient,:divergence,:curl,:∇∇)
+  for op in (:+,:-)
+    # Sometimes we cannot call `get_data` from the `OperatorCellField`. We dispatch
+    # sooner so that we can evaluate the gradient in specific cases.
+    # This is necessary to take the gradient of the sum of two FEBasis, for instance.
+    @eval begin
+      function Fields.$diffop(f::OperationCellField{DS,typeof($op)}) where {DS}
+        args = map($diffop,f.args)
+        OperationCellField(Operation($op),args...)
+      end
+    end
+  end
 end
 
 function change_domain(f::OperationCellField,target_trian::Triangulation,target_domain::DomainStyle)
