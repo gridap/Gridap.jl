@@ -141,6 +141,11 @@ ref_model = refine(model1;cells_to_refine=[6,7,10,11])
 visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"redgreen4"))
 #test_grid_transfers(model1,ref_model,1)
 
+# With boolean filter as input
+ref_model = refine(model1;cells_to_refine=fill(true,num_cells(model1)))
+visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"redgreen5"))
+test_grid_transfers(model1,ref_model,1)
+
 ## B) 2D meshes - TRIs
 
 ref_model = refine(model2)
