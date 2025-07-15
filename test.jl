@@ -42,6 +42,6 @@ uh = zero(X)
 grad = gradient(f,uh)
 @benchmark assemble_vector($grad,$X)
 
-@benchmark MultiField.my_new_gradient($f,$uh)
-grad = MultiField.my_new_gradient(f,uh)
+@benchmark MultiField.my_new_gradient($f,$uh,$(f(uh)))
+grad = MultiField.my_new_gradient(f,uh,f(uh))
 @benchmark assemble_vector($grad,$X)
