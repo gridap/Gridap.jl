@@ -390,6 +390,8 @@ get_face_nodes(reffe::GenericLagrangianRefFE) = reffe.face_nodes
 
 # Reffe
 
+get_name(::Type{<:GenericLagrangianRefFE}) = Lagrangian()
+
 num_dofs(reffe::GenericLagrangianRefFE) = num_dofs(reffe.reffe)
 
 get_polytope(reffe::GenericLagrangianRefFE) = get_polytope(reffe.reffe)

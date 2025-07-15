@@ -121,15 +121,17 @@ function CellFE(
 end
 
 function get_cell_dof_basis(model::DiscreteModel,
-                            cell_reffe::AbstractArray{<:ReferenceFE},
+                            cell_reffe::AbstractArray,
                             ::Conformity)
-  lazy_map(get_dof_basis,cell_reffe)
+  @abstractmethod
+  #lazy_map(get_dof_basis,cell_reffe)
 end
 
 function get_cell_shapefuns(model::DiscreteModel,
-                            cell_reffe::AbstractArray{<:ReferenceFE},
+                            cell_reffe::AbstractArray,
                             ::Conformity)
-  lazy_map(get_shapefuns,cell_reffe)
+  @abstractmethod
+  #lazy_map(get_shapefuns,cell_reffe)
 end
 
 # Low level conforming FE Space constructor
