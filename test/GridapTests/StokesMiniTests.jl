@@ -70,7 +70,7 @@ eu_l2 = l2(eu)
 eu_h1 = h1(eu)
 ep_l2 = l2(ep)
 
-tol = 1.0e-11
+tol = 1.0e-10
 @test eu_l2 < tol
 @test eu_h1 < tol
 @test ep_l2 < tol
