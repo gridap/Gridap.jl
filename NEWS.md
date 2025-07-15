@@ -5,11 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.19.xx]
+## [Unreleased]
 
 ### Fixed
 
 - `MultiFieldFEBasisComponent` now supports addition and subtraction. Since PR[#1130](https://github.com/gridap/Gridap.jl/pull/1130)
+- Removed method ambiguity in `Adaptivity.setup_edge_based_rrules`. Fixes issue [#1133](https://github.com/gridap/Gridap.jl/issues/1133). Since PR[#1135](https://github.com/gridap/Gridap.jl/pull/1135).
 
 ## [0.19.2] - 2025-07-08
 
