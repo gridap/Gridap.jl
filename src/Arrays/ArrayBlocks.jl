@@ -345,6 +345,8 @@ function BlockMap(s::NTuple,inds::Vector{<:NTuple})
   BlockMap(s,cis)
 end
 
+return_type(k::BlockMap{N},a::A...) where {A,N} = ArrayBlock{A,N}
+
 function return_cache(k::BlockMap{N},a::A...) where {A,N}
   array = Array{A,N}(undef,k.size)
   touched = fill(false,k.size)
