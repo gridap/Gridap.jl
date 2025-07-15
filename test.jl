@@ -5,7 +5,7 @@ using Gridap.CellData: is_change_possible
 using Test
 
 domain = (0,1,0,1)
-partition = (20,20)
+partition = (200,200)
 model = CartesianDiscreteModel(domain,partition)
 Ω = Triangulation(model)
 Γ = BoundaryTriangulation(model)
@@ -34,9 +34,9 @@ using BenchmarkTools
 V1 = FESpace(Ω,ReferenceFE(lagrangian,Float64,1))
 V2 = FESpace(Ω,ReferenceFE(lagrangian,Float64,2))
 V3 = FESpace(Ω,ReferenceFE(lagrangian,Float64,3))
-V4 = FESpace(Ω,ReferenceFE(lagrangian,Float64,4))
+V4 = FESpace(Ω,ReferenceFE(lagrangian,VectorValue{2,Float64},4))
 X = MultiFieldFESpace([V1,V2,V3,V4])
-f(xh) = ∫(xh[1]+xh[2]+xh[3]+xh[4])dΓ
+f(xh) = ∫(xh[1]+xh[2]+xh[3]+xh[4]⋅xh[4])dΩ
 uh = zero(X)
 @benchmark gradient($f,$uh)
 grad = gradient(f,uh)
