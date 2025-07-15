@@ -559,7 +559,7 @@ for diffop in (:gradient,:divergence,:curl,:∇∇)
     # sooner so that we can evaluate the gradient in specific cases.
     # This is necessary to take the gradient of the sum of two FEBasis, for instance.
     @eval begin
-      function ($diffop)(f::OperationCellField{DS,typeof($op)}) where {DS}
+      function Fields.($diffop)(f::OperationCellField{DS,typeof($op)}) where {DS}
         args = map($diffop,f.args)
         OperationCellField(Operation($op),args...)
       end
