@@ -96,6 +96,12 @@ function time_derivative(f::TransientSingleFieldCellField)
   TransientCellField(cellfield, derivatives)
 end
 
+function time_derivative(f::Vector{<:TransientCellField})
+  map(f) do f
+    time_derivative(f)
+  end
+end
+
 ################################
 # TransientMultiFieldCellField #
 ################################
@@ -123,6 +129,10 @@ end
 
 function TransientCellField(fields::TransientMultiFieldCellField, derivatives::Tuple)
   TransientMultiFieldCellField(fields, derivatives)
+end
+
+function ODEs.TransientCellField(cell_fields::Tuple, derivatives::NTuple{N,MultiFieldTypes}) where N
+  _to_transient_single_fields(cell_fields,derivatives)
 end
 
 # CellField interface
@@ -268,7 +278,7 @@ Convert a `TransientMultiFieldCellField` into a vector of
 function _to_transient_single_fields(multi_field, derivatives)
   transient_single_fields = TransientCellField[]
 
-  for index in 1:num_fields(multi_field)
+  for index in 1:length(multi_field)
     single_field = multi_field[index]
 
     single_derivatives = ()

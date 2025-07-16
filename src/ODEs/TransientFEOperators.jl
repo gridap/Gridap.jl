@@ -421,6 +421,7 @@ function TransientQuasilinearFEOperator(
     function jac_0(t, u, du, v)
       function res_0(y)
         u0 = TransientCellField(y, u.derivatives)
+        @show typeof(u0)
         ∂tNu0 = ∂t(u0, Val(order))
         mass(t, u0, ∂tNu0, v) + res(t, u0, v)
       end
