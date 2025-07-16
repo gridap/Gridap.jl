@@ -195,13 +195,10 @@ for T in (:(Point),:(AbstractVector{<:Point}))
   end
 end
 
-# use `LinearCombinationField` rather than `ZeroField` 
-# to ensure consistency while using `CachedArray`
-function Base.zero(::Type{LinearCombinationField{V,F}}) where {V,F}
-  values = testvalue(V)
+function testvalue(::Type{LinearCombinationField{V,F}}) where {V,F}
   fields = testvalue(F)
-  colums = 1
-  LinearCombinationField(values,fields,colums)
+  values = zeros(eltype(V), length(fields), 1)
+  LinearCombinationField(values,fields,1)
 end
 
 for op in (:∇,:∇∇)
@@ -240,7 +237,9 @@ Base.getindex(a::LinearCombinationFieldVector,i::Integer) = LinearCombinationFie
 Base.IndexStyle(::Type{<:LinearCombinationField}) = IndexLinear()
 
 function testvalue(::Type{LinearCombinationFieldVector{V,F}}) where {V,F}
-  linear_combination(testvalue(V), testvalue(F))
+  fields = testvalue(F)
+  values = zeros(eltype(V), length(fields), 0)
+  LinearCombinationFieldVector(values,fields)
 end
 
 function Arrays.testitem(f::LinearCombinationFieldVector{V}) where V
