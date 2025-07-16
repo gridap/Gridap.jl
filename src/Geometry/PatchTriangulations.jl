@@ -348,6 +348,19 @@ function restrict(
   return new_ptopo, d_to_dface_to_parent_dface
 end
 
+function extend_patches_by_single_layer(ptopo::PatchTopology{Dc}) where Dc
+  topo = ptopo.topo
+  nodes_to_cells = get_faces(topo,0,Dc)
+  patch_to_nodes = get_patch_faces(ptopo,0)
+
+  patch_cells = Arrays.merge_entries(
+    nodes_to_cells, patch_to_nodes; 
+    acc  = SortedSet{Int32}(), 
+    post = dofs -> filter(x -> x > 0, dofs)
+  )
+  return PatchTopology(topo, patch_cells, nothing)
+end
+
 # PatchTriangulation
 
 struct PatchGlue{Dc,A}

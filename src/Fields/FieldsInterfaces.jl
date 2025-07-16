@@ -137,6 +137,12 @@ function testargs(f::Field,x::AbstractArray{<:Point})
   (y,)
 end
 
+function return_value(f::Field,x::AbstractArray{<:Point})
+  T = return_type(f,testitem(x))
+  s = size(x)
+  zeros(T,s)
+end
+
 function return_cache(f::Field,x::AbstractArray{<:Point})
   T = return_type(f,testitem(x))
   s = size(x)
@@ -208,6 +214,11 @@ end
 return_cache(z::ZeroField,x::Point) = zero(return_type(z.field,x))
 evaluate!(cache,z::ZeroField,x::Point) = cache
 testvalue(::Type{ZeroField{F}}) where F = ZeroField(testvalue(F))
+
+function return_value(z::ZeroField,x::Point)
+  E = return_type(z.field,testitem(x))
+  zeros(E,size(x))
+end
 
 function return_cache(z::ZeroField,x::AbstractArray{<:Point})
   E = return_type(z.field,testitem(x))
@@ -317,6 +328,11 @@ function testvalue(::Type{OperationField{O,F}}) where {O<:Field,F<:Tuple}
   op = testvalue(O)
   fields = map(testvalue,fieldtypes(F))
   OperationField(op,fields)
+end
+
+function testvalue(::Type{OperationField{O,F}}) where {O,F<:Tuple}
+  fields = map(testvalue,fieldtypes(F))
+  OperationField(O(),fields)
 end
 
 function return_value(c::OperationField,x::Point)
@@ -488,24 +504,6 @@ function gradient(f::OperationField{<:Field})
   x = ∇(a)∘b
   y = ∇(b)
   y⋅x
-end
-
-# Arrays.testvalue
-# dot,tr,pinvJt for push_∇
-for op in (:+,:-,:*,dot,tr,pinvJt)
-  @eval function testvalue(::Type{OperationField{typeof($op),F}}) where {F<:Tuple}
-    fields = map(testvalue,fieldtypes(F))
-    OperationField($op,fields)
-  end
-end
-
-# use `OperationField` rather than `ZeroField` 
-# to ensure consistency while using `CachedArray`
-for op in (:+,:-)
-  @eval function Base.zero(::Type{OperationField{typeof($op),F}}) where {F<:Tuple}
-    fields = map(testvalue,fieldtypes(F))
-    OperationField($op,fields)
-  end
 end
 
 # Composition
