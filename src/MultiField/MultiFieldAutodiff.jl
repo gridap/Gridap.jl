@@ -18,7 +18,7 @@ end
 #
 # TODO: Currently, this is only implemented for the gradient and jacobian.
 #  The Hessian is slightly proplematic because the off-diagonal blocks are
-#  missed. This is because the basis is baked into f as it is in jacobian.
+#  missed. This is because the basis isn't baked into f as it is in jacobian.
 
 grad_ops = [
   (;op=:(FESpaces.gradient),split=:_mf_grad_split,mono=:(FESpaces._gradient)),
@@ -86,7 +86,7 @@ function _combine_contributions(::Union{typeof(jacobian),typeof(hessian)},terms:
   nfields = length(terms)
   for trian in get_domains(fuh)
     trian_to_contrib = lazy_map(GetIndex(trian),terms)
-    contrib_to_touched = fill(trues(nfields,nfields),length(first(trian_to_contrib)));
+    contrib_to_touched = fill(ones(Bool,nfields,nfields),length(first(trian_to_contrib)));
     mf_cell_grad = lazy_map(concat_contribs_mat,contrib_to_touched,trian_to_contrib...);
     add_contribution!(contribs,trian,mf_cell_grad)
   end

@@ -35,9 +35,9 @@ Blocks might be nested in the case of multi-field computations on skeletons.
 
 """
 struct ArrayBlock{A,N}
-  array::AbstractArray{A,N}
-  touched::AbstractArray{Bool,N}
-  function ArrayBlock(array::AbstractArray{A,N},touched::AbstractArray{Bool,N}) where {A,N}
+  array::Array{A,N}
+  touched::Array{Bool,N}
+  function ArrayBlock(array::Array{A,N},touched::Array{Bool,N}) where {A,N}
     @check size(array) == size(touched)
     new{A,N}(array,touched)
   end
