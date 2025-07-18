@@ -5,6 +5,11 @@ CurrentModule = Gridap.Geometry
 
 # Gridap.Geometry
 
+```@contents
+Pages = ["Geometry.md"]
+Depth = 3
+```
+
 ## DiscreteModels
 
 In Gridap, a `DiscreteModel` is the main object representing a discretized domain, where the finite element problem is defined adn solved. It has three main components: 
@@ -20,7 +25,7 @@ To get a deeper understanding of these three components, we encourage the reader
 ```@autodocs
 Modules = [Geometry,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["GridTopologies.jl","GridTopologyMocks.jl"]
+Pages   = ["/GridTopologies.jl","/GridTopologyMocks.jl"]
 ```
 
 ### Grid API
@@ -28,7 +33,7 @@ Pages   = ["GridTopologies.jl","GridTopologyMocks.jl"]
 ```@autodocs
 Modules = [Geometry,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["Grids.jl","GridMocks.jl"]
+Pages   = ["/Grids.jl","/GridMocks.jl"]
 ```
 
 ### FaceLabeling API
@@ -36,7 +41,7 @@ Pages   = ["Grids.jl","GridMocks.jl"]
 ```@autodocs
 Modules = [Geometry,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["FaceLabelings.jl"]
+Pages   = ["/FaceLabelings.jl"]
 ```
 
 ### DiscreteModel API
@@ -44,7 +49,7 @@ Pages   = ["FaceLabelings.jl"]
 ```@autodocs
 Modules = [Geometry,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["DiscreteModels.jl","DiscreteModelMocks.jl"]
+Pages   = ["/DiscreteModels.jl","/DiscreteModelMocks.jl"]
 ```
 
 ## Types of models
@@ -56,7 +61,7 @@ These are the main types of models used for unstructured meshes. They have their
 ```@autodocs
 Modules = [Geometry,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["UnstructuredDiscreteModels.jl","UnstructuredGrids.jl","UnstructuredGridTopologies.jl"]
+Pages   = ["/UnstructuredDiscreteModels.jl","/UnstructuredGrids.jl","/UnstructuredGridTopologies.jl"]
 ```
 
 ### CartesianDiscreteModels
@@ -66,7 +71,7 @@ Cartesian models are specific structures to represent cartesian domains, possibl
 ```@autodocs
 Modules = [Geometry,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["CartesianDiscreteModels.jl","CartesianGrids.jl"]
+Pages   = ["/CartesianDiscreteModels.jl","/CartesianGrids.jl"]
 ```
 
 ### PolytopalDiscreteModels
@@ -76,7 +81,7 @@ Polytopal models are used to represent meshes made of arbitrarily shaped polytop
 ```@autodocs
 Modules = [Geometry,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["PolytopalDiscreteModels.jl"]
+Pages   = ["/PolytopalDiscreteModels.jl"]
 ```
 
 ### Other models
@@ -84,7 +89,7 @@ Pages   = ["PolytopalDiscreteModels.jl"]
 ```@autodocs
 Modules = [Geometry,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["DiscreteModelPortions.jl","MappedDiscreteModels.jl","GridPortions.jl"]
+Pages   = ["/DiscreteModelPortions.jl","/MappedDiscreteModels.jl","/GridPortions.jl"]
 ```
 
 ## Triangulations
@@ -98,7 +103,7 @@ The most basic type of triangulation is the `BodyFittedTriangulation`. It repres
 ```@autodocs
 Modules = [Geometry,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["Triangulations.jl"]
+Pages   = ["/Triangulations.jl"]
 ```
 
 ### Boundary and Skeleton triangulations
@@ -110,7 +115,7 @@ To perform integration on interior faces, which have two neighboring cells, we c
 ```@autodocs
 Modules = [Geometry,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["BoundaryTriangulations.jl","SkeletonTriangulations.jl","CompressedCellArrays.jl"]
+Pages   = ["/BoundaryTriangulations.jl","/SkeletonTriangulations.jl","/CompressedCellArrays.jl"]
 ```
 
 ### Patch triangulations
@@ -120,7 +125,7 @@ We provide an API to integrate and solve problems on patches of cells. This API 
 ```@autodocs
 Modules = [Geometry,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["PatchTriangulations.jl"]
+Pages   = ["/PatchTriangulations.jl"]
 ```
 
 ### Other triangulations
@@ -128,5 +133,5 @@ Pages   = ["PatchTriangulations.jl"]
 ```@autodocs
 Modules = [Geometry,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["AppendedTriangulations.jl"]
+Pages   = ["/AppendedTriangulations.jl"]
 ```
