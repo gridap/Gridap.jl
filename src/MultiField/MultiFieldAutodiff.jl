@@ -58,24 +58,15 @@ function restrict_function(f,uh,k)
   uk->f((uh[1:k-1]...,uk,uh[k+1:end]...))
 end
 
-function concat_contribs_vec(size,contribs...)
-  ArrayBlock([contribs...],size)
-end
-
-function concat_contribs_mat(touched,contribs...)
-  mat = map(ij->contribs[ij[2]][ij[1]],CartesianIndices(touched))
-  ArrayBlock(mat,touched)
-end
-
 GetIndex(k) = i->getindex(i,k)
 
 function _combine_contributions(::typeof(gradient),terms::Vector{DomainContribution},fuh::DomainContribution)
   contribs = DomainContribution()
   nfields = length(terms)
+  block_map = BlockMap(nfields,collect(Base.OneTo(nfields)))
   for trian in get_domains(fuh)
-    trian_to_contrib = lazy_map(GetIndex(trian),terms)
-    contrib_to_touched = fill([true for _ in 1:nfields],length(first(trian_to_contrib)));
-    mf_cell_grad = lazy_map(concat_contribs_vec,contrib_to_touched,trian_to_contrib...);
+    trian_to_contrib = map(GetIndex(trian),terms)
+    mf_cell_grad = lazy_map(block_map,trian_to_contrib...)
     add_contribution!(contribs,trian,mf_cell_grad)
   end
   contribs
@@ -84,10 +75,11 @@ end
 function _combine_contributions(::Union{typeof(jacobian),typeof(hessian)},terms::Vector{DomainContribution},fuh::DomainContribution)
   contribs = DomainContribution()
   nfields = length(terms)
+  I = [[(CartesianIndex(j),CartesianIndex(j,i)) for j in 1:nfields] for i in 1:nfields]
+  block_map = Arrays.MergeBlockMap((nfields,nfields),I)
   for trian in get_domains(fuh)
-    trian_to_contrib = lazy_map(GetIndex(trian),terms)
-    contrib_to_touched = fill(ones(Bool,nfields,nfields),length(first(trian_to_contrib)));
-    mf_cell_grad = lazy_map(concat_contribs_mat,contrib_to_touched,trian_to_contrib...);
+    trian_to_contrib = map(GetIndex(trian),terms)
+    mf_cell_grad = lazy_map(block_map,trian_to_contrib...)
     add_contribution!(contribs,trian,mf_cell_grad)
   end
   contribs
