@@ -550,6 +550,38 @@ function _generate_diri_cells(
 
 end
 
+"""
+    generate_cell_dof_mask(
+      scell_conformity::CellConformity,
+      tcell_to_scell::Vector{<:Integer},
+      d_to_tcell_to_tdface,
+      d_to_tdface_to_mask;
+      reverse::Bool=false
+    )
+
+Given a `CellConformity` object, defined on a set of source cells (`scell`), and given 
+a cell/face/edge/node masks on a set of target cells (`tcell`), this function generates a mask
+for the degrees of freedom (dofs) on the target cells. 
+
+Parameters:
+
+- `scell_conformity`: The `CellConformity` object on the source cells (`scell`).
+- `tcell_to_scell`: A vector mapping target cells (`tcell`) to source cells (`scell`).
+- `d_to_tcell_to_tdface`: For each dimension `d`, a `Table` mapping target cells to its d-faces (edges, faces, ...)
+- `d_to_tdface_to_mask`: For each dimension `d`, an array of booleans indicating whether the d-face is masked or not.
+
+Returns:
+
+- `tcell_dof_mask`: A vector that for each target cell contains a boolean vector of size equal
+   to the number of dofs in that cell, containing the mask.
+
+Modes of operation:
+
+- If `reverse = false`, the function generates a mask where the dofs are
+  `true` if the corresponding d-face is masked (`true`).
+- If `reverse = true`, the mask is reversed, meaning that the dofs are `true` if 
+  the corresponding d-face is not masked (`false`).
+"""
 function generate_cell_dof_mask(
   scell_conformity::CellConformity,
   tcell_to_scell::Vector{<:Integer},

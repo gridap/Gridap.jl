@@ -104,18 +104,19 @@ function PolytopalFESpace(
     dirichlet_components = fill(true,ncomps)
   end
 
+  ctype_to_prebasis, cell_to_ctype = compress_cell_data(cell_prebasis)
+  ctype_to_conformity = map(MonomialDofConformity,ctype_to_prebasis)
+  metadata = ctype_to_conformity
+
   ntags = length(dirichlet_tags)
   if ntags != 0
     @notimplementedif !isnothing(local_kernel)
     cell_to_tag = get_face_tag_index(labels,dirichlet_tags,Dc)
     cell_is_dirichlet = map(!isequal(UNSET),cell_to_tag)
-    ctype_to_prebasis, cell_to_ctype = compress_cell_data(cell_prebasis)
-    ctype_to_conformity = map(MonomialDofConformity,ctype_to_prebasis)
     ctype_to_ldof_to_comp = map(c -> c.dof_to_comp, ctype_to_conformity)
     cell_dof_ids, nfree, ndir, dirichlet_dof_tag, dirichlet_cells = compute_discontinuous_cell_dofs(
       cell_to_ctype, ctype_to_ldof_to_comp, cell_to_tag, dirichlet_components
     )
-    metadata = ctype_to_conformity
   else
     ndir = 0
     dirichlet_dof_tag = Int8[]
@@ -125,7 +126,6 @@ function PolytopalFESpace(
     ctype_to_shapefuns = Base.OneTo(length(cell_shapefuns))
     ctype_to_ndofs = lazy_map(length,cell_shapefuns)
     cell_dof_ids, nfree = compute_discontinuous_cell_dofs(ctype_to_shapefuns,ctype_to_ndofs)
-    metadata = nothing
   end
 
   return PolytopalFESpace(
