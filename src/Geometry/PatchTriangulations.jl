@@ -323,7 +323,6 @@ function restrict(
 
     d_to_patch_to_dfaces[d+1] = Table(data,ptrs)
     if remove_empty_patches
-      println("Removing empty patches in dimension $d")
       Arrays.remove_empty_entries!(d_to_patch_to_dfaces[d+1])
     end
   end
@@ -480,6 +479,9 @@ function PatchBoundaryTriangulation(model::DiscreteModel{Dc},ptopo::PatchTopolog
   return PatchTriangulation(trian,ptopo,tface_to_pface)
 end
 
+"""
+    PatchSkeletonTriangulation(model::DiscreteModel,ptopo::PatchTopology{Dc};tags=nothing)
+"""
 function PatchSkeletonTriangulation(model::DiscreteModel{Dc},ptopo::PatchTopology{Dc}; tags=nothing) where Dc
   patch_faces = get_patch_faces(ptopo,Dc-1)
   pface_to_face = patch_faces.data
