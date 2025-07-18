@@ -53,7 +53,7 @@ gh3 = CellData.change_domain(gh2,Γp,PhysicalDomain())
 # Vertex-centric PatchTopology: All cells around each vertex
 
 ptopo = PatchTopology(ReferenceFE{0},model)
-@test isa(star_ptopo.metadata,Geometry.StarPatchMetadata)
+@test isa(ptopo.metadata,Geometry.StarPatchMetadata)
 
 ptopo_view = view(ptopo,collect(1:4))
 ptopo_rest, _ = Geometry.restrict(ptopo,collect(1:4))
