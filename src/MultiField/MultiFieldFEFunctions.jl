@@ -55,7 +55,9 @@ end
 num_fields(m::MultiFieldFEFunction) = length(m.single_fe_functions)
 Base.iterate(m::MultiFieldFEFunction) = iterate(m.single_fe_functions)
 Base.iterate(m::MultiFieldFEFunction,state) = iterate(m.single_fe_functions,state)
+Base.getindex(m::MultiFieldFEFunction,field_ids::AbstractUnitRange) = m.single_fe_functions[field_ids]
 Base.getindex(m::MultiFieldFEFunction,field_id::Integer) = m.single_fe_functions[field_id]
+Base.lastindex(m::MultiFieldFEFunction) = num_fields(m)
 Base.length(m::MultiFieldFEFunction) = num_fields(m)
 
 function LinearAlgebra.dot(a::MultiFieldFEFunction,b::MultiFieldFEFunction)
