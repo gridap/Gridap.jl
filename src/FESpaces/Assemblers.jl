@@ -31,7 +31,7 @@ function map_rows!(gids,a::AssemblyStrategy,rows)
   u = -one(eltype(gids))
   for i in eachindex(rows)
     ri = rows[i]
-    if ri>0 && row_mask(a,ri)
+    if ri > 0 && row_mask(a,ri)
       gids[i] = row_map(a,ri)
     else
       gids[i] = u
@@ -44,7 +44,7 @@ function map_cols!(gids,a::AssemblyStrategy,cols)
   u = -one(eltype(gids))
   for i in eachindex(cols)
     ri = cols[i]
-    if ri>0 && col_mask(a,ri)
+    if ri > 0 && col_mask(a,ri)
       gids[i] = col_map(a,ri)
     else
       gids[i] = u

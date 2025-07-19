@@ -253,6 +253,8 @@ function lazy_sum(cache,a)
   r
 end
 
+lazy_collect(a::AbstractArray) = a
+
 function lazy_collect(a::LazyArray{A,T} where A) where T
   cache = array_cache(a)
   r = Array{T}(undef,size(a))
