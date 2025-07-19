@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## Moment-based changes
 
 ### Added
 
@@ -50,6 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `[P/Q][Curl]GradMonomialBasis{D}(args...)` in favor of `[...]GradBasis(Monomial, Val(D), args...)`
 - `NedelecPreBasisOnSimplex{D}(args...)` in favor of `NedelecPolyBasisOnSimplex(Val(D), args...)`
 - `JacobiPolynomialBasis{D}(args...)` in favor of `LegendreBasis(Val(D), args...)`
+
+## [Unreleased]
 
 ### Added
 
