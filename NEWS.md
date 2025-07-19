@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added support for star-patch integration, i.e patch integration with masked patch boundaries. Since PR[#1138](https://github.com/gridap/Gridap.jl/pull/1138).
 
+### Fixed
+
+- Fixes issue [#1119](https://github.com/gridap/Gridap.jl/issues/1119), allowing evaluation of `CellFields` on arbitrary points on periodic meshes. Since PR[#1139](https://github.com/gridap/Gridap.jl/pull/1139).
+
 ## [0.19.3] - 2025-07-15
 
 ### Fixed
