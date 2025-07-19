@@ -77,8 +77,8 @@ dv = get_fe_basis(X)
 j = jacobian(uh->f2(uh,dv),uh)
 J = assemble_matrix(j,X,X)
 
-f2_jac(xh,dxh,yh) = ∫(dxh[1]⋅mean(yh[1])+dxh[2]⋅mean(yh[2])+dxh[1]⋅mean(xh[2])⋅mean(yh[2])+
-  mean(xh[1])⋅dxh[2]⋅mean(yh[2])+dxh[1]*mean(xh[3])*mean(yh[3])+mean(xh[1])*dxh[3]*mean(yh[3]))dΛ
+f2_jac(xh,dxh,yh) = ∫(mean(dxh[1])⋅mean(yh[1])+mean(dxh[2])⋅mean(yh[2])+mean(dxh[1])⋅mean(xh[2])⋅mean(yh[2]) +
+  mean(xh[1])⋅mean(dxh[2])⋅mean(yh[2])+mean(dxh[1])*mean(xh[3])*mean(yh[3])+mean(xh[1])*mean(dxh[3])*mean(yh[3]))dΛ
 op = FEOperator(f2,f2_jac,X,X)
 J_fwd = jacobian(op,uh)
 
