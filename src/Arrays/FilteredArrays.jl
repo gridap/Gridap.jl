@@ -1,4 +1,7 @@
 
+# This seems to be unused.
+"""
+"""
 struct FilterMap <: Map end
 
 function return_cache(k::FilterMap,f,a)

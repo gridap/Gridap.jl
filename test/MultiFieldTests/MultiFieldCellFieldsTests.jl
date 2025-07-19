@@ -65,7 +65,7 @@ X = MultiFieldFESpace([U,P])
 
 dv, dq = get_fe_basis(Y)
 du, dp = get_trial_fe_basis(X)
-display(dv)
+#display(dv)
 
 # sum of single spaces
 degree = 3

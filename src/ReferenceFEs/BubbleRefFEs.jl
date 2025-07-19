@@ -15,7 +15,7 @@ function BubbleRefFE(::Type{T}, p::Polytope{D}; type = :mini, coeffs = nothing, 
 	end
 
 	orders = Tuple(maximum(terms) - oneunit(eltype(terms)))
-	prebasis = linear_combination(coeffs, MonomialBasis{D}(T, orders, terms))
+	prebasis = linear_combination(coeffs, MonomialBasis(Val(D), T, orders, terms))
 	x0 = mean(get_vertex_coordinates(p))
 	dofs = LagrangianDofBasis(T, [x0])
 	ndofs = length(dofs)

@@ -44,6 +44,9 @@ function map_cols!(gids,a::PatchAssemblyStrategy,cols,patch)
   nothing
 end
 
+"""
+    struct PatchAssembler <: Assembler
+"""
 struct PatchAssembler <: Assembler
   ptopo :: PatchTopology
   strategy
@@ -393,7 +396,7 @@ function Arrays.evaluate!(cache,k::PatchAssemblyMap{<:Tuple{<:Tuple,<:Tuple}},pa
   patch_assembly!(matvec_caches,mat,vec,matvecdata,patch)
   patch_assembly!(mat_caches,mat,matdata,patch)
   patch_assembly!(vec_caches,vec,vecdata,patch)
-  
+
   return _unview(mat), _unview(vec)
 end
 

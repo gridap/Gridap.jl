@@ -2,7 +2,8 @@
 # This file implements code to evaluate CellFields on arbitrary points, based 
 # on tree searches.
 
-# Interpolable struct
+"""
+"""
 struct KDTreeSearch{T}
   num_nearest_vertices::Int
   tol::T
@@ -12,10 +13,16 @@ struct KDTreeSearch{T}
   end
 end
 
+"""
+    struct Interpolable{M,A} <: Function
+"""
 struct Interpolable{M,A} <: Function
   uh::A
   tol::Float64
   searchmethod::M
+  @doc """
+      Interpolable(uh; tol=1e-6, searchmethod=KDTreeSearch(; tol=tol))
+  """
   function Interpolable(uh; tol=1e-10, searchmethod=KDTreeSearch(; tol=tol))
     new{typeof(searchmethod),typeof(uh)}(uh, tol,searchmethod)
   end
@@ -70,6 +77,10 @@ function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
   return collect(point_to_fx) # Collect into a plain array
 end
 
+"""
+    compute_cell_points_from_vector_of_points(xs::AbstractVector{<:Point},
+        trian::Triangulation, domain_style::PhysicalDomain)
+"""
 function compute_cell_points_from_vector_of_points(
   xs::AbstractVector{<:Point}, trian::Triangulation, domain_style::PhysicalDomain
 )

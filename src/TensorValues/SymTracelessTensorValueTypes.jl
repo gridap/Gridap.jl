@@ -36,6 +36,14 @@ end
 
 const QTensorValue = SymTracelessTensorValue
 
+function promote_rule(
+  ::Type{<:SymTracelessTensorValue{D,Ta}},
+  ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb}
+
+  T = promote_type(Ta,Tb)
+  SymTracelessTensorValue{D,T}
+end
+
 ###############################################################
 # Constructors (SymTracelessTensorValue)
 ###############################################################
@@ -86,13 +94,15 @@ SymTracelessTensorValue{D,T1,L}(data::Number...) where {D,T1,L} = SymTracelessTe
 
 #From Square Matrices
 @generated function _flatten_upper_triangle_traceless(data::AbstractArray,::Val{D}) where D
+  check_e = :( @check ($D,$D) == size(data) )
   str = ""
   for i in 1:D-1
     for j in i:D
       str *= "data[$i,$j], "
     end
   end
-  Meta.parse("($str)")
+  ret_e = Meta.parse(" return ($str)")
+  Expr(:block, check_e, ret_e)
 end
 
 SymTracelessTensorValue(data::AbstractMatrix{T}) where {T} = ((D1,D2)=size(data); SymTracelessTensorValue{D1}(data))
@@ -114,73 +124,21 @@ SymTracelessTensorValue{D,T1,L}(data::AbstractMatrix{T2}) where {D,T1,T2,L} = Sy
   Meta.parse("SMatrix{D,D,T}(($str))")
 end
 
-# Direct conversion
-convert(::Type{<:SymTracelessTensorValue{D,T}}, arg::AbstractArray) where {D,T} = SymTracelessTensorValue{D,T}(arg)
-convert(::Type{<:SymTracelessTensorValue{D,T}}, arg::Tuple) where {D,T} = SymTracelessTensorValue{D,T}(arg)
-
 # Inverse conversion
-convert(::Type{<:MMatrix{D,D,T}}, arg::SymTracelessTensorValue) where {D,T} = MMatrix{D,D,T}(_SymTracelessTensorValue_to_array(arg))
-convert(::Type{<:SMatrix{D,D,T}}, arg::SymTracelessTensorValue) where {D,T} = _SymTracelessTensorValue_to_array(arg)
-convert(::Type{<:NTuple{L,T}}, arg::SymTracelessTensorValue) where {L,T} = NTuple{L,T}(Tuple(arg))
+convert(::Type{<:MArray{Tuple{D,D},T}}, arg::SymTracelessTensorValue) where {D,T} = MMatrix{D,D,T}(_SymTracelessTensorValue_to_array(arg))
+convert(::Type{<:SArray{Tuple{D,D},T}}, arg::SymTracelessTensorValue) where {D,T} = _SymTracelessTensorValue_to_array(arg)
 
 # Internal conversion
-convert(::Type{<:SymTracelessTensorValue{D,T}}, arg::SymTracelessTensorValue{D}) where {D,T} = SymTracelessTensorValue{D,T}(Tuple(arg))
-convert(::Type{<:SymTracelessTensorValue{D,T}}, arg::SymTracelessTensorValue{D,T}) where {D,T} = arg
+convert(::Type{<:SymTracelessTensorValue{D}}, arg::SymTracelessTensorValue{D}) where {D} = SymTracelessTensorValue{D}(Tuple(arg)[1:end-1])
+convert(::Type{<:SymTracelessTensorValue{D,T}}, arg::SymTracelessTensorValue{D}) where {D,T} = SymTracelessTensorValue{D,T}(Tuple(arg)[1:end-1])
 
 ###############################################################
 # Other constructors and conversions (SymTracelessTensorValue)
 ###############################################################
 
-zero(::Type{<:SymTracelessTensorValue{0,T}}) where {T} = SymTracelessTensorValue{0,T}()
-@generated function zero(::Type{<:SymTracelessTensorValue{D,T}}) where {D,T}
-  L=D*(D+1)÷2-1
-  quote
-    SymTracelessTensorValue{D,T}(tfill(zero(T),Val{$L}()))
-  end
-end
-
-zero(::Type{<:SymTracelessTensorValue{D,T,L}}) where {D,T,L} = SymTracelessTensorValue{D,T}(tfill(zero(T),Val{L-1}()))
-zero(::SymTracelessTensorValue{D,T,L}) where {D,T,L} = zero(SymTracelessTensorValue{D,T,L})
-
-rand(::AbstractRNG, ::Random.SamplerType{<:SymTracelessTensorValue{0,T}}) where {T} = SymTracelessTensorValue{0,T}()
-@generated function rand(rng::AbstractRNG,
-                         ::Random.SamplerType{<:SymTracelessTensorValue{D,T}}) where {D,T}
-  L=D*(D+1)÷2
-  quote
-    rand(rng, SymTracelessTensorValue{D,T,$L})
-  end
-end
-rand(rng::AbstractRNG,::Random.SamplerType{<:SymTracelessTensorValue{D,T,L}}) where {D,T,L} =
-  SymTracelessTensorValue{D,T}(Tuple(rand(rng, SVector{L-1,T})))
-
-Mutable(::Type{<:SymTracelessTensorValue{D,T}}) where {D,T} = MMatrix{D,D,T}
-Mutable(::SymTracelessTensorValue{D,T}) where {D,T} = Mutable(SymTracelessTensorValue{D,T})
-mutable(a::SymTracelessTensorValue{D}) where D = MMatrix{D,D}(Tuple(get_array(a)))
-
-change_eltype(::Type{SymTracelessTensorValue{D,T1}},::Type{T2}) where {D,T1,T2} = SymTracelessTensorValue{D,T2}
+change_eltype(::Type{<:SymTracelessTensorValue{D}},::Type{T2}) where {D,T2} = SymTracelessTensorValue{D,T2}
 change_eltype(::Type{SymTracelessTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymTracelessTensorValue{D,T2,L}
-change_eltype(::SymTracelessTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} = change_eltype(SymTracelessTensorValue{D,T1,L},T2)
 
-get_array(arg::SymTracelessTensorValue{D,T,L}) where {D,T,L} = convert(SMatrix{D,D,T}, arg)
-
-###############################################################
-# Introspection (SymTracelessTensorValue)
-###############################################################
-
-eltype(::Type{<:SymTracelessTensorValue{D,T}}) where {D,T} = T
-eltype(::SymTracelessTensorValue{D,T}) where {D,T} = eltype(SymTracelessTensorValue{D,T})
-
-size(::Type{<:SymTracelessTensorValue{D}}) where {D} = (D,D)
-size(::SymTracelessTensorValue{D}) where {D} = size(SymTracelessTensorValue{D})
-
-length(::Type{<:SymTracelessTensorValue{D}}) where {D} = D*D
-length(::SymTracelessTensorValue{D}) where {D} = length(SymTracelessTensorValue{D})
-
-num_components(::Type{<:SymTracelessTensorValue}) = @unreachable "The dimension is needed to count components"
-num_components(::Type{<:SymTracelessTensorValue{D}}) where {D} = length(SymTracelessTensorValue{D})
-num_components(::SymTracelessTensorValue{D}) where {D} = num_components(SymTracelessTensorValue{D})
-
-num_indep_components(::Type{<:SymTracelessTensorValue})  = num_components(SymTracelessTensorValue)
-num_indep_components(::Type{SymTracelessTensorValue{0}}) = 0
+num_indep_components(::Type{<:SymTracelessTensorValue{0}}) = 0
 num_indep_components(::Type{<:SymTracelessTensorValue{D}}) where {D} = D*(D+1)÷2-1
-num_indep_components(::SymTracelessTensorValue{D}) where {D} = num_indep_components(SymTracelessTensorValue{D})
+
