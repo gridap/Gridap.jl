@@ -284,8 +284,6 @@ include("ModalC0RefFEs.jl")
 
 include("BubbleRefFEs.jl")
 
-include("LinearCombinationDofVectors.jl")
-
 include("PolytopalQuadratures.jl")
 
 end # module
