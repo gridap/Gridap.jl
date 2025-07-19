@@ -63,6 +63,7 @@ export lazy_map
 
 export array_cache
 export getindex!
+export invalidate_cache!
 export testitem
 export testvalue
 export test_array
