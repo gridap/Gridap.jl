@@ -232,4 +232,77 @@ gridapjacf = assemble_matrix((du,dv) -> jacobian(u -> J_Λ(u,dv),xh),X,X)
 fdjacf = ForwardDiff.jacobian(J_Λ_,θ)
 test_array(gridapjacf,fdjacf,≈)
 
+## Test multiple triangulations
+domain = (0,1,0,1)
+partition = (5,5)
+model = CartesianDiscreteModel(domain,partition)
+Ω = Triangulation(model)
+Γ = BoundaryTriangulation(model,tags=["tag_5"])
+dΩ = Measure(Ω,2)
+dΓ = Measure(Γ,2)
+V1 = FESpace(Γ,ReferenceFE(lagrangian,Float64,1))
+V2 = FESpace(model,ReferenceFE(lagrangian,VectorValue{2,Float64},1))
+V3 = FESpace(model,ReferenceFE(lagrangian,Float64,1))
+X = MultiFieldFESpace([V1,V2,V3])
+f(xh) = ∫(xh[1]+xh[2]⋅xh[2]+xh[1]*xh[3])dΓ
+uh = zero(X)
+du = gradient(f,uh)
+du1 = gradient(x->f((x,uh[2],uh[3])),uh[1])
+du2 = gradient(x->f((uh[1],x,uh[3])),uh[2])
+du3 = gradient(x->f((uh[1],uh[2],x)),uh[3])
+
+@test lazy_map(Gridap.MultiField.GetIndex(1),du[Γ]) == du1[Γ]
+@test lazy_map(Gridap.MultiField.GetIndex(2),du[Γ]) == du2[Γ]
+@test lazy_map(Gridap.MultiField.GetIndex(3),du[Γ]) == du3[Γ]
+
+du1_vec = assemble_vector(du1,V1)
+du2_vec = assemble_vector(du2,V2)
+du3_vec = assemble_vector(du3,V3)
+du_vec = assemble_vector(du,X)
+
+@test du_vec == [du1_vec;du2_vec;du3_vec]
+
+f2(xh,yh) = ∫(xh[1]⋅yh[1]+xh[2]⋅yh[2]+xh[1]⋅xh[2]⋅yh[2]+xh[1]*xh[3]*yh[3])dΓ
+dv = get_fe_basis(X)
+j = jacobian(uh->f2(uh,dv),uh)
+J = assemble_matrix(j,X,X)
+
+f2_jac(xh,dxh,yh) = ∫(dxh[1]⋅yh[1]+dxh[2]⋅yh[2]+dxh[1]⋅xh[2]⋅yh[2]+xh[1]⋅dxh[2]⋅yh[2]+dxh[1]*xh[3]*yh[3]+xh[1]*dxh[3]*yh[3])dΓ
+op = FEOperator(f2,f2_jac,X,X)
+J_fwd = jacobian(op,uh)
+
+@test J_fwd == J
+
+Λ = SkeletonTriangulation(model)
+dΛ = Measure(Λ,2)
+f(xh) = ∫(mean(xh[1])+mean(xh[2])⋅mean(xh[2])+mean(xh[1])*mean(xh[3]))dΛ
+uh = zero(X)
+du = gradient(f,uh)
+du1 = gradient(x->f((x,uh[2],uh[3])),uh[1])
+du2 = gradient(x->f((uh[1],x,uh[3])),uh[2])
+du3 = gradient(x->f((uh[1],uh[2],x)),uh[3])
+
+@test lazy_map(Gridap.MultiField.GetIndex(1),du[Λ]) == du1[Λ]
+@test lazy_map(Gridap.MultiField.GetIndex(2),du[Λ]) == du2[Λ]
+@test lazy_map(Gridap.MultiField.GetIndex(3),du[Λ]) == du3[Λ]
+
+du1_vec = assemble_vector(du1,V1)
+du2_vec = assemble_vector(du2,V2)
+du3_vec = assemble_vector(du3,V3)
+du_vec = assemble_vector(du,X)
+
+@test du_vec == [du1_vec;du2_vec;du3_vec]
+
+f2(xh,yh) = ∫(mean(xh[1])⋅mean(yh[1])+mean(xh[2])⋅mean(yh[2])+mean(xh[1])⋅mean(xh[2])⋅mean(yh[2])+mean(xh[1])*mean(xh[3])*mean(yh[3]))dΛ
+dv = get_fe_basis(X)
+j = jacobian(uh->f2(uh,dv),uh)
+J = assemble_matrix(j,X,X)
+
+f2_jac(xh,dxh,yh) = ∫(dxh[1]⋅mean(yh[1])+dxh[2]⋅mean(yh[2])+dxh[1]⋅mean(xh[2])⋅mean(yh[2])+
+  mean(xh[1])⋅dxh[2]⋅mean(yh[2])+dxh[1]*mean(xh[3])*mean(yh[3])+mean(xh[1])*dxh[3]*mean(yh[3]))dΛ
+op = FEOperator(f2,f2_jac,X,X)
+J_fwd = jacobian(op,uh)
+
+@test J_fwd == J
+
 end # module
