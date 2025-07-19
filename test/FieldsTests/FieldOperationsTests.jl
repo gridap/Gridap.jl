@@ -49,12 +49,14 @@ fp = evaluate(f,p)
 ∇fp = evaluate(∇f,p)
 @test ∇fp == TensorValue(2.0, 0.0, 0.0, 2.0)
 test_field(f,p,fp,grad=∇fp)
+@test isa(testitem(f),typeof(f))
 
 c = return_cache(f,p)
 # @btime evaluate!($c,$f,$p)
 
 df = f+f
 test_field(df,p,2*fp,grad=2.0*∇fp)
+@test isa(testitem(df),typeof(df))
 
 c = return_cache(df,p)
 # @btime evaluate!($c,$df,$p)
@@ -68,6 +70,7 @@ evaluate(df,p)
 ∇dfp = 2*∇fp
 evaluate(∇df,p)
 test_field(df,p,fp*2.0,grad=∇dfp)
+@test isa(testitem(df),typeof(df))
 
 c = return_cache(df,p)
 # @btime evaluate!($c,$df,$p)
@@ -140,6 +143,7 @@ bdf = bf∘bf
 bdfx = evaluate(bdf,x)
 ∇bdfx = evaluate(∇bf,evaluate(bf,x)).⋅evaluate(∇bf,x)
 test_field(bdf,x,bdfx,grad=∇bdfx)
+@test isa(testitem(bdf),typeof(bdf))
 
 c = return_cache(∇bdf,x)
 # @btime evaluate!(c,∇bdf,x)

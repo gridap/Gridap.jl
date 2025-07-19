@@ -50,4 +50,6 @@ using Test
 
 @testset "CrouzeixRaviartFEs" begin include("CrouzeixRaviartFEsTests.jl") end
 
+@testset "BubbleRefFEs" begin include("BubbleRefFEsTests.jl") end
+
 end # module

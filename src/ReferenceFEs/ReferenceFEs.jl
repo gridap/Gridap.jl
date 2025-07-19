@@ -187,6 +187,7 @@ export NedelecRefFE
 export BezierRefFE
 export ModalC0RefFE
 export CrouzeixRaviartRefFE
+export BubbleRefFE
 
 export Lagrangian
 export RaviartThomas
@@ -197,6 +198,7 @@ export ModalC0
 export CrouzeixRaviart
 export Serendipity
 #export HellanHerrmannJhonson
+export Bubble
 
 export lagrangian
 export raviart_thomas
@@ -207,6 +209,7 @@ export modalC0
 export crouzeix_raviart
 export serendipity
 #export hhj
+export bubble
 
 export Quadrature
 export QuadratureName
@@ -278,5 +281,11 @@ include("MockDofs.jl")
 include("BezierRefFEs.jl")
 
 include("ModalC0RefFEs.jl")
+
+include("BubbleRefFEs.jl")
+
+include("LinearCombinationDofVectors.jl")
+
+include("PolytopalQuadratures.jl")
 
 end # module

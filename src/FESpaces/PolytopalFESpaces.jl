@@ -104,18 +104,19 @@ function PolytopalFESpace(
     dirichlet_components = fill(true,ncomps)
   end
 
+  ctype_to_prebasis, cell_to_ctype = compress_cell_data(cell_prebasis)
+  ctype_to_conformity = map(MonomialDofConformity,ctype_to_prebasis)
+  metadata = ctype_to_conformity
+
   ntags = length(dirichlet_tags)
   if ntags != 0
     @notimplementedif !isnothing(local_kernel)
     cell_to_tag = get_face_tag_index(labels,dirichlet_tags,Dc)
     cell_is_dirichlet = map(!isequal(UNSET),cell_to_tag)
-    ctype_to_prebasis, cell_to_ctype = compress_cell_data(cell_prebasis)
-    ctype_to_conformity = map(MonomialDofConformity,ctype_to_prebasis)
     ctype_to_ldof_to_comp = map(c -> c.dof_to_comp, ctype_to_conformity)
     cell_dof_ids, nfree, ndir, dirichlet_dof_tag, dirichlet_cells = compute_discontinuous_cell_dofs(
       cell_to_ctype, ctype_to_ldof_to_comp, cell_to_tag, dirichlet_components
     )
-    metadata = ctype_to_conformity
   else
     ndir = 0
     dirichlet_dof_tag = Int8[]
@@ -125,7 +126,6 @@ function PolytopalFESpace(
     ctype_to_shapefuns = Base.OneTo(length(cell_shapefuns))
     ctype_to_ndofs = lazy_map(length,cell_shapefuns)
     cell_dof_ids, nfree = compute_discontinuous_cell_dofs(ctype_to_shapefuns,ctype_to_ndofs)
-    metadata = nothing
   end
 
   return PolytopalFESpace(
@@ -514,5 +514,29 @@ function FESpaces.renumber_free_and_dirichlet_dof_ids(
     space.ntags,
     space.order,
     space.metadata
+  )
+end
+
+function get_cell_conformity(space::PolytopalFESpace)
+  trian = get_triangulation(space)
+  
+  monomial_conformity = only(space.metadata)
+  ndofs = length(monomial_conformity.dof_to_term)
+  D = length(monomial_conformity.orders)
+
+  cell_ctype = get_cell_type(trian)
+  ctype_poly = get_polytopes(trian)
+
+  ctype_lface_own_ldofs = map(ctype_poly) do p
+    nfaces = num_faces(p)
+    [ifelse(isequal(face,nfaces),collect(1:ndofs),Int[]) for face in 1:nfaces]
+  end
+  ctype_lface_pindex_pdofs = map(ReferenceFEs._trivial_face_own_dofs_permutations, ctype_lface_own_ldofs)
+  d_ctype_num_faces = [
+    map(p -> num_faces(p,d), ctype_poly) for d in 0:D
+  ]
+
+  return CellConformity(
+    cell_ctype, ctype_lface_own_ldofs, ctype_lface_pindex_pdofs, d_ctype_num_faces
   )
 end

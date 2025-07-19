@@ -173,4 +173,6 @@ a_Λ((uh,ph)) = ∫( - jump(uh*n_Λ)⊙mean(∇(ph))
 @test sum(g_Λ((uh_scfp_dual_plus,ph_scfp_dual_plus))).value == sum(g_Λ((uh,ph)))
 @test sum(a_Λ((uh_scfp_dual_plus,ph_scfp_dual_plus))).value == sum(a_Λ((uh,ph)))
 
+# Operations between SkeletonPairs
+
 end # module

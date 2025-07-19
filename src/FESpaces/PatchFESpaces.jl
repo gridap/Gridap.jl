@@ -4,8 +4,8 @@
 function FESpaceWithoutBCs(space::SingleFieldFESpace)
   nfree = num_free_dofs(space)
   ndir = num_dirichlet_dofs(space)
-  free_ids = ndir+1:nfree+ndir
-  dir_ids = ndir:-1:1 # Reverse order
+  free_ids = Int32(ndir+1):Int32(nfree+ndir)
+  dir_ids = Int32(ndir):Int32(-1):Int32(1) # Reverse order
   return renumber_free_and_dirichlet_dof_ids(space,free_ids,dir_ids)
 end
 
@@ -70,7 +70,8 @@ function generate_patch_dof_ids(
   tface_to_dofs = get_cell_dof_ids(space)
   mface_to_dofs = extend(tface_to_dofs,glue.mface_to_tface)
   patch_to_dofs = Arrays.merge_entries(
-    mface_to_dofs,patch_to_lpface_to_mface;acc=SortedSet{Int32}()
+    mface_to_dofs,patch_to_lpface_to_mface;
+    acc = SortedSet{Int32}()
   )
   return patch_to_dofs
 end

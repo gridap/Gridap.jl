@@ -103,6 +103,8 @@ include("CellDataInterface.jl")
 
 include("CellFields.jl")
 
+include("Interpolation.jl")
+
 include("CellQuadratures.jl")
 
 include("CellStates.jl")

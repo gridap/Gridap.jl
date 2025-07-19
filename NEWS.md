@@ -15,21 +15,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PCurlGradMonomialBasis` has been generalized to `Legendre` and `Chebyshev` using the new `RaviartThomasPolyBasis`.
 - New aliases and high level constructor for `CartProdPolyBasis` (former MonomialBasis): `MonomialBasis`, `LegendreBasis`, `ChebyshevBasis` and `BernsteinBasis`.
 - New high level constructors for Nedelec and Raviart-Thomas polynomial bases:
-    - Nedelec on simplex `PGradBasis(PT<:Polynomial, Val(D), order)`
-    - Nedelec on n-cubes `QGradBasis(PT<:Polynomial, Val(D), order)`
-    - Raviart on simplex `PCurlGradBasis(PT<:Polynomial, Val(D), order)`
-    - Raviart on n-cubes `QCurlGradBasis(PT<:Polynomial, Val(D), order)`
+  - Nedelec on simplex `PGradBasis(PT<:Polynomial, Val(D), order)`
+  - Nedelec on n-cubes `QGradBasis(PT<:Polynomial, Val(D), order)`
+  - Raviart on simplex `PCurlGradBasis(PT<:Polynomial, Val(D), order)`
+  - Raviart on n-cubes `QCurlGradBasis(PT<:Polynomial, Val(D), order)`
 - Added `BernsteinBasisOnSimplex` that implements Bernstein polynomials in barycentric coordinates, since PR[#1104](https://github.com/gridap/Gridap.jl/pull/#1104).
 - More documentation of `Gridap.ReferenceFEs`. Since PR[#1109](https://github.com/gridap/Gridap.jl/pull/#1109).
 
 - Some refactoring of `Gridap.TensorValues` to simplify maintenance and new implementations. Since PR[#1115](https://github.com/gridap/Gridap.jl/pull/#1115).
-    - Added `SkewSymTensorValue`: a new `<:MultiValue` 2nd order tensor type such that `transpose(s)==-s`.
-    - `congruent_prod`: new operation for 2nd order tensors: `a,b -> bᵀ⋅a⋅b` preserving symmetry of `a`.
-    - `component_basis` and `representatives_of_componentbasis_dual`: new APIs for `::MultiValue`s yielding bases of the vector space spanned by the independent components of a tensor type (1st method) and its dual space (2nd method).
+  - Added `SkewSymTensorValue`: a new `<:MultiValue` 2nd order tensor type such that `transpose(s)==-s`.
+  - `congruent_prod`: new operation for 2nd order tensors: `a,b -> bᵀ⋅a⋅b` preserving symmetry of `a`.
+  - `component_basis` and `representatives_of_componentbasis_dual`: new APIs for `::MultiValue`s yielding bases of the vector space spanned by the independent components of a tensor type (1st method) and its dual space (2nd method).
 
 ### Fixed
 
- - Fixed evaluation of `LinearCombinationDofVector` on vector of `<:Field`s (only impacts ModalC0 FEs and future moment based reffes)., since PR[#1105](https://github.com/gridap/Gridap.jl/pull/#1105).
+- Fixed evaluation of `LinearCombinationDofVector` on vector of `<:Field`s (only impacts ModalC0 FEs and future moment based reffes)., since PR[#1105](https://github.com/gridap/Gridap.jl/pull/#1105).
 
 ### Changed
 
@@ -50,6 +50,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `[P/Q][Curl]GradMonomialBasis{D}(args...)` in favor of `[...]GradBasis(Monomial, Val(D), args...)`
 - `NedelecPreBasisOnSimplex{D}(args...)` in favor of `NedelecPolyBasisOnSimplex(Val(D), args...)`
 - `JacobiPolynomialBasis{D}(args...)` in favor of `LegendreBasis(Val(D), args...)`
+
+### Added
+
+- Added support for star-patch integration, i.e patch integration with masked patch boundaries. Since PR[#1138](https://github.com/gridap/Gridap.jl/pull/1138).
+
+### Fixed
+
+- Fixes issue [#1119](https://github.com/gridap/Gridap.jl/issues/1119), allowing evaluation of `CellFields` on arbitrary points on periodic meshes. Since PR[#1139](https://github.com/gridap/Gridap.jl/pull/1139).
+
+## [0.19.3] - 2025-07-15
+
+### Fixed
+
+- `MultiFieldFEBasisComponent` now supports addition and subtraction. Since PR[#1130](https://github.com/gridap/Gridap.jl/pull/1130).
+- Fixed issues introduced in PR [#1130](https://github.com/gridap/Gridap.jl/pull/1130). Closes issue [#1131](https://github.com/gridap/Gridap.jl/issues/1131). Since PR [#1132](https://github.com/gridap/Gridap.jl/pull/1132).
+- Removed method ambiguity in `Adaptivity.setup_edge_based_rrules`. Fixes issue [#1133](https://github.com/gridap/Gridap.jl/issues/1133). Since PR[#1135](https://github.com/gridap/Gridap.jl/pull/1135).
+
+## [0.19.2] - 2025-07-08
+
+### Added
+
+- Added missing operations between `SkeletonPairs`. Since PR[#1122](https://github.com/gridap/Gridap.jl/pull/1122).
+- Added bubble elements for simplex and cube-like polytopes. Since PR[#1124](https://github.com/gridap/Gridap.jl/pull/1124)
+
+### Fixed
+
+- Update `norm` function to be compatible with complex vectors and tensors. Since PR[#1118](https://github.com/gridap/Gridap.jl/pull/1118).
+- `AdaptivityGlue` can now deal with non-surjective n2o maps. Since PR[#1126](https://github.com/gridap/Gridap.jl/pull/1126).
+
 
 ## [0.19.1] - 2025-06-11
 

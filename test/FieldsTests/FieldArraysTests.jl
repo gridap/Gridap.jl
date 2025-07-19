@@ -292,6 +292,7 @@ b = VectorValue{2,Float64}[(1,1),(4,2),(3,5),(1,2)]
 
 f = linear_combination(b,a)
 @test isa(f,Fields.LinearCombinationField)
+@test isa(testvalue(f),Fields.LinearCombinationField)
 
 fp = transpose(b)*avals
 ∇fp = zero(TensorValue{2,2,Float64,4})
@@ -319,13 +320,13 @@ test_field(f,z,f.(z),grad=∇(f).(z))
 
 # ij_to_vals*j_to_f
 
-avals =rand(4)
+avals = rand(4)
 a = MockField.(avals)
 b = zeros(VectorValue{2,Float64},4,3)
 
 f = linear_combination(b,a)
-#@show typeof(f)
 @test isa(f,Fields.LinearCombinationFieldVector)
+@test isa(testvalue(f),Fields.LinearCombinationFieldVector)
 
 fp = transpose(b)*avals
 ∇fp = zeros(TensorValue{2,2,Float64,4},3)
@@ -351,7 +352,19 @@ test_field_array(f,z,result(f,z),grad=result(∇.(f),z))
 #c = return_cache(∇f,x)
 #@btime evaluate!($c,$∇f,$x)
 
+avals = rand(4)
+a = ConstantField.(avals)
+b = zeros(VectorValue{2,Float64},4,3)
+f = linear_combination(b,a)
 
+ff = Broadcasting(Operation(meas))(f)
+evaluate(ff,p)
+@test isa(testvalue(ff),typeof(ff))
+
+g = GenericField(identity)
+ff = evaluate(Broadcasting(∘),f,g)
+evaluate(ff,p)
+@test isa(testvalue(ff),typeof(ff))
 
 ## Test MockField
 #

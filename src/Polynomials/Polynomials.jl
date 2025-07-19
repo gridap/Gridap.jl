@@ -95,6 +95,7 @@ using Base.Iterators: take
 import Gridap.Fields: evaluate!
 import Gridap.Fields: return_cache
 import Gridap.Arrays: return_type
+import Gridap.Arrays: testvalue
 
 export Polynomial
 export isHierarchical
