@@ -16,10 +16,10 @@ cells = (3,3)
 model = CartesianDiscreteModel(domain,cells)
 
 trian = Triangulation(model)
-trian_N =BoundaryTriangulation(model)
-trian_D =BoundaryTriangulation(model,tags="tag_8")
-trian_S =SkeletonTriangulation(model)
-trian_0 =Triangulation(model,Int32[])
+trian_N = BoundaryTriangulation(model)
+trian_D = BoundaryTriangulation(model,tags="tag_8")
+trian_S = SkeletonTriangulation(model)
+trian_0 = Triangulation(model,Int32[])
 
 trian_sv = view(trian_S,[1,5,4,2])
 nv = get_normal_vector(trian_sv)
@@ -70,6 +70,13 @@ ts = get_triangulation(∇(f))
 tt = get_triangulation(n_S.plus)
 
 @test is_change_possible(ts,tt) == true
+
+ns1 = (Operation(sqrt)((n_S⋅n_S)))
+ns2 = Operation(norm)(n_S)
+@test ns1.plus(x_S) == ns2.plus(x_S)
+@test ns1.minus(x_S) == ns2.minus(x_S)
+
+change_domain(n_S,ReferenceDomain(),PhysicalDomain())
 
 nf_S = n_S⋅∇(f)
 

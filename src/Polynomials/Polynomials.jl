@@ -91,11 +91,12 @@ using Gridap.Fields
 using PolynomialBases: jacobi, jacobi_and_derivative
 using Combinatorics: multiexponents, multinomial, combinations
 using Base.Iterators: take
+using Base: @propagate_inbounds
 
 import Gridap.Fields: evaluate!
 import Gridap.Fields: return_cache
 import Gridap.Arrays: return_type
-import Base.@propagate_inbounds
+import Gridap.Arrays: testvalue
 
 export Polynomial
 export isHierarchical

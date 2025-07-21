@@ -165,7 +165,7 @@ testvalue(::Type{T}) where T = zero(T)
 testvalue(v) = testvalue(typeof(v))
 
 function testvalue(::Type{T}) where T<:AbstractArray{E,N} where {E,N}
-   similar(T,tfill(0,Val(N))...)
+  similar(T,tfill(0,Val(N))...)
 end
 
 # When the jacobian of a residual is obtained through automatic differentiation,
@@ -282,3 +282,8 @@ function test_array(
   end
   true
 end
+
+"""
+Alias for `Base.sum`.
+"""
+const ∑ = sum

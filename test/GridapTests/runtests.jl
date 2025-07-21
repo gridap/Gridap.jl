@@ -13,6 +13,7 @@ using Test
   @time @testset "HCurl" begin include("HCurlTests.jl") end
   @time @testset "StokesTaylorHood" begin include("StokesTaylorHoodTests.jl") end
   @time @testset "StokesNitsche" begin include("StokesNitscheTests.jl") end
+  @time @testset "StokesMini" begin include("StokesMiniTests.jl") end
 end
 
 @testset "DG Methods" begin

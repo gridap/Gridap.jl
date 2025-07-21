@@ -105,8 +105,8 @@ SkewSymTensorValue{D,T1,L}(data::AbstractMatrix{T2}) where {D,T1,T2,L} = SkewSym
 end
 
 # Inverse conversion
-convert(::Type{<:MArray{Tuple{D,D},T}}, arg::SkewSymTensorValue) where {D,T} = MMatrix{D,D,T}(_SkewSymTensorValue_to_array(arg))
-convert(::Type{<:SArray{Tuple{D,D},T}}, arg::SkewSymTensorValue) where {D,T} = _SkewSymTensorValue_to_array(arg)
+convert(::Type{<:MArray{Tuple{D,D},T}}, arg::SkewSymTensorValue{D}) where {D,T} = MMatrix{D,D,T}(_SkewSymTensorValue_to_array(arg))
+convert(::Type{<:SArray{Tuple{D,D},T}}, arg::SkewSymTensorValue{D}) where {D,T} = _SkewSymTensorValue_to_array(arg)
 
 # Internal conversion
 convert(::Type{<:SkewSymTensorValue{D,T}}, arg::SkewSymTensorValue{D}) where {D,T} = SkewSymTensorValue{D,T}(Tuple(arg))

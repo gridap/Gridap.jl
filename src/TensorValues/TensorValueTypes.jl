@@ -79,8 +79,8 @@ TensorValue{D1,D2,T1,L}(data::AbstractMatrix{T2}) where {D1,D2,T1,T2,L} = Tensor
 ###############################################################
 
 # Inverse conversion
-convert(::Type{<:SArray{Tuple{D1,D2},T}}, arg::TensorValue) where {D1,D2,T} = SMatrix{D1,D2,T}(Tuple(arg))
-convert(::Type{<:MArray{Tuple{D1,D2},T}}, arg::TensorValue) where {D1,D2,T} = MMatrix{D1,D2,T}(Tuple(arg))
+convert(::Type{<:SArray{Tuple{D1,D2},T}}, arg::TensorValue{D1,D2}) where {D1,D2,T} = SMatrix{D1,D2,T}(Tuple(arg))
+convert(::Type{<:MArray{Tuple{D1,D2},T}}, arg::TensorValue{D1,D2}) where {D1,D2,T} = MMatrix{D1,D2,T}(Tuple(arg))
 
 # Internal conversion
 convert(::Type{<:TensorValue{D1,D2,T}}, arg::TensorValue{D1,D2}) where {D1,D2,T} = TensorValue{D1,D2,T}(Tuple(arg))

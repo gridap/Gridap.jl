@@ -52,4 +52,6 @@ using Test
 
 @testset "BDMRefFEsTests" begin include("BDMRefFEsTests.jl") end
 
+@testset "BubbleRefFEs" begin include("BubbleRefFEsTests.jl") end
+
 end # module
