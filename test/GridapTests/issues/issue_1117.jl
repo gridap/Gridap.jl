@@ -17,4 +17,4 @@ vα1 = getindex!(cell_vec_cache, cell_vec_lazy, 1)[1]
 α[] = 2.0 # The memoized values in the LazyArray cache are not valid anymore
 invalidate_cache!(cell_vec_cache)
 vα2 = getindex!(cell_vec_cache, cell_vec_lazy, 1)[1]
-@test vα1 ≠ vα2 == b(v)[Ω][1]
+@test vα1 ≠ vα2 == b(v)[Ω][1][1]
