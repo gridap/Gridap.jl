@@ -5,28 +5,30 @@ using BlockArrays
 
 ###########################
 
-function FESpaces.get_patch_assembly_ids(space::MultiFieldFESpace,ptopo::Geometry.PatchTopology)
+function FESpaces.get_patch_assembly_ids(
+  space::MultiFieldFESpace, ptopo::Geometry.PatchTopology; kwargs...
+)
   mfs = MultiFieldStyle(space)
-  FESpaces.get_patch_assembly_ids(mfs,space,ptopo)
+  FESpaces.get_patch_assembly_ids(mfs,space,ptopo;kwargs...)
 end
 
 function FESpaces.get_patch_assembly_ids(
-  ::ConsecutiveMultiFieldStyle,space::MultiFieldFESpace,ptopo::Geometry.PatchTopology
+  ::ConsecutiveMultiFieldStyle, space::MultiFieldFESpace, ptopo::Geometry.PatchTopology; kwargs...
 )
   offsets = compute_field_offsets(space) |> Tuple
   sf_patch_dofs = map(space) do sf
-    FESpaces.get_patch_assembly_ids(sf,ptopo)
+    FESpaces.get_patch_assembly_ids(sf,ptopo;kwargs...)
   end |> Tuple
   mf_patch_dofs = Arrays.append_tables_locally(offsets,sf_patch_dofs)
   return mf_patch_dofs
 end
 
 function FESpaces.get_patch_assembly_ids(
-  ::BlockMultiFieldStyle{NB,SB,P},space::MultiFieldFESpace,ptopo::Geometry.PatchTopology
+  ::BlockMultiFieldStyle{NB,SB,P}, space::MultiFieldFESpace, ptopo::Geometry.PatchTopology; kwargs...
 ) where {NB,SB,P}
   offsets = compute_field_offsets(space) |> Tuple
   sf_patch_dofs = map(space) do sf
-    FESpaces.get_patch_assembly_ids(sf,ptopo)
+    FESpaces.get_patch_assembly_ids(sf,ptopo;kwargs...)
   end |> Tuple
 
   block_ranges = get_block_ranges(NB,SB,P)
@@ -40,14 +42,15 @@ end
 function FESpaces.PatchAssembler(
   ptopo::PatchTopology,
   trial::MultiFieldFESpace{<:BlockMultiFieldStyle},
-  test::MultiFieldFESpace{<:BlockMultiFieldStyle},
+  test::MultiFieldFESpace{<:BlockMultiFieldStyle};
+  kwargs...
 )
   NBr, SBr, Pr = get_block_parameters(MultiFieldStyle(test))
   NBc, SBc, Pc = get_block_parameters(MultiFieldStyle(trial))
 
   block_map = get_block_map(NBr,SBr,Pr,NBc,SBc,Pc)
-  block_patch_rows = FESpaces.get_patch_assembly_ids(test,ptopo)
-  block_patch_cols = FESpaces.get_patch_assembly_ids(trial,ptopo)
+  block_patch_rows = FESpaces.get_patch_assembly_ids(test,ptopo;kwargs...)
+  block_patch_cols = FESpaces.get_patch_assembly_ids(trial,ptopo;kwargs...)
   block_strategies = map(CartesianIndices((NBr,NBc))) do I
     patch_rows = block_patch_rows[I[1]]
     patch_cols = block_patch_cols[I[2]]

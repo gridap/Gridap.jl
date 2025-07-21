@@ -257,6 +257,12 @@ function find_inverse_index_map!(b_to_a, a_to_b)
   end
 end
 
+"""
+    inverse_table(a_to_lb_to_b::Table [, nb=maximum(a_to_lb_to_b.data)])
+    inverse_table(a_to_b::AbstractVector [, nb=maximum(a_to_b)])
+
+Returns the inverse of the input `Table` or non-injective array of integers, as a `Table`.
+"""
 function inverse_table(
   a_to_lb_to_b::Table{T}, nb = maximum(a_to_lb_to_b.data,init=zero(T))
 ) where T
@@ -375,6 +381,28 @@ function _append_tables_locally_fill!(data,ptrs,offset,table)
       ptrs[i] += 1
     end
   end
+end
+
+"""
+    remove_empty_entries!(table::Table)
+
+Given a `Table`, remove the entries that are empty by modifying its `ptrs` in-place.
+"""
+function remove_empty_entries!(table::Table)
+  ptrs = table.ptrs
+  
+  i = 1
+  n = length(table)
+  while i <= n
+    if ptrs[i] == ptrs[i+1]
+      deleteat!(ptrs,i+1)
+      n -= 1
+    else
+      i += 1
+    end
+  end
+
+  return table
 end
 
 """

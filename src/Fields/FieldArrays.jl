@@ -195,13 +195,10 @@ for T in (:(Point),:(AbstractVector{<:Point}))
   end
 end
 
-# use `LinearCombinationField` rather than `ZeroField` 
-# to ensure consistency while using `CachedArray`
-function Base.zero(::Type{LinearCombinationField{V,F}}) where {V,F}
-  values = testvalue(V)
+function testvalue(::Type{LinearCombinationField{V,F}}) where {V,F}
   fields = testvalue(F)
-  colums = 1
-  LinearCombinationField(values,fields,colums)
+  values = zeros(eltype(V), length(fields), 1)
+  LinearCombinationField(values,fields,1)
 end
 
 for op in (:∇,:∇∇)
@@ -214,7 +211,6 @@ for op in (:∇,:∇∇)
 end
 
 function linear_combination(a::AbstractMatrix{<:Number},b::AbstractVector{<:Field})
-  #[ LinearCombinationField(a,b,i) for i in 1:size(a,2) ]
   LinearCombinationFieldVector(a,b)
 end
 
@@ -240,7 +236,9 @@ Base.getindex(a::LinearCombinationFieldVector,i::Integer) = LinearCombinationFie
 Base.IndexStyle(::Type{<:LinearCombinationField}) = IndexLinear()
 
 function testvalue(::Type{LinearCombinationFieldVector{V,F}}) where {V,F}
-  linear_combination(testvalue(V), testvalue(F))
+  fields = testvalue(F)
+  values = zeros(eltype(V), length(fields), 0)
+  LinearCombinationFieldVector(values,fields)
 end
 
 function Arrays.testitem(f::LinearCombinationFieldVector{V}) where V
@@ -424,9 +422,11 @@ testitem(a::Transpose{<:Field}) = testitem(a.parent)
 evaluate!(cache,k::Broadcasting{typeof(∇)},a::Transpose{<:Field}) = transpose(k(a.parent))
 evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::Transpose{<:Field}) = transpose(k(a.parent))
 
+return_value(k::Transpose{<:Field},x::Point) = transpose(return_value(k.parent,x))
 return_cache(k::Transpose{<:Field},x::Point) = return_cache(k.parent,x)
 evaluate!(cache,k::Transpose{<:Field},x::Point) = transpose(evaluate!(cache,k.parent,x))
 
+return_value(k::Transpose{<:Field},x::AbstractVector{<:Point}) = TransposeFieldIndices(return_value(k.parent,x))
 return_cache(k::Transpose{<:Field},x::AbstractVector{<:Point}) = return_cache(k.parent,x)
 function evaluate!(cache,k::Transpose{<:Field},x::AbstractVector{<:Point})
   TransposeFieldIndices(evaluate!(cache,k.parent,x))
@@ -513,15 +513,26 @@ Base.size(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(size,a.
 Base.axes(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(axes,a.args)...)
 Base.IndexStyle(::Type{<:BroadcastOpFieldArray}) = IndexLinear()
 Base.getindex(a::BroadcastOpFieldArray,i::Integer) = broadcast(Operation(a.op),a.args...)[i]
+
 function testitem(a::BroadcastOpFieldArray)
   fs = map(testitem,a.args)
   return_value(Operation(a.op),fs...)
 end
-for op in (tr,dot,:-)
-  @eval function testvalue(::Type{BroadcastOpFieldArray{typeof($op),T,N,A}}) where {T,N,A<:Tuple}
-    fs = map(testvalue,fieldtypes(A))
-    BroadcastOpFieldArray($op,fs...)
-  end
+
+function testvalue(::Type{BroadcastOpFieldArray{O,T,N,A}}) where {O<:Field,T,N,A<:Tuple}
+  fs = map(testvalue,fieldtypes(A))
+  BroadcastOpFieldArray(testvalue(O),fs...)
+end
+
+function testvalue(::Type{BroadcastOpFieldArray{O,T,N,A}}) where {O,T,N,A<:Tuple}
+  @notimplementedif !Base.issingletontype(O) # Most maps, typeof(function), etc...
+  fs = map(testvalue,fieldtypes(A))
+  if hasproperty(O,:instance)
+    # This is because typeof(function) does not have a singleton constructor O()
+    BroadcastOpFieldArray(O.instance,fs...)
+  else
+    BroadcastOpFieldArray(O(),fs...)
+  end :: BroadcastOpFieldArray{O,T,N,A}
 end
 
 for T in (:(Point),:(AbstractArray{<:Point}))
