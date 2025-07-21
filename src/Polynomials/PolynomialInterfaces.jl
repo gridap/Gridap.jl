@@ -74,9 +74,9 @@ Return the maximum polynomial order in a dimension, or `0` in 0D.
 ###########
 
 _q_filter( e,order)  = (maximum(e,init=0) <= order) # ℚₙ
-_qh_filter(e,order)  = (maximum(e,init=0) == order) # ℚₙ\ℚ₍ₙ₋₁₎
+_qh_filter(e,order)  = (maximum(e,init=0) == order) # ℚ̃ₙ = ℚₙ\ℚ₍ₙ₋₁₎
 _p_filter( e,order)  = (sum(e) <= order)            # ℙₙ
-_ph_filter(e,order)  = (sum(e) == order)            # ℙₙ\ℙ₍ₙ₋₁₎
+_ph_filter(e,order)  = (sum(e) == order)            # ℙ̃ₙ = ℙₙ\ℙ₍ₙ₋₁₎
 _ser_filter(e,order) = (sum( [ i for i in e if i>1 ] ) <= order) # Serendipity
 
 function _define_terms(filter,orders)
@@ -110,9 +110,18 @@ function _return_cache(
   (r, s, t...)
 end
 
+function _return_val_eltype(b::PolynomialBasis{D,V}, x::AbstractVector{<:Point}) where {D,V}
+  xi = testitem(x)
+  zVc = zero(eltype(V))
+  zxic = zero(eltype(xi))
+  T = typeof(zVc*zxic)
+  change_eltype(V, T) # Necessary for dual number probagation for autodiff
+end
+
 function return_cache(f::PolynomialBasis{D,V}, x::AbstractVector{<:Point}) where {D,V}
   @assert D == length(eltype(x)) "Incorrect number of point components"
-  _return_cache(f,x,V,Val(0))
+  Vr = _return_val_eltype(f,x)
+  _return_cache(f,x,Vr,Val(0))
 end
 
 function return_cache(
@@ -122,7 +131,7 @@ function return_cache(
   @assert D == length(eltype(x)) "Incorrect number of point components"
   f = fg.fa
   xi = testitem(x)
-  G = V
+  G = _return_val_eltype(f,x)
   for _ in 1:N
     G = gradient_type(G,xi)
   end

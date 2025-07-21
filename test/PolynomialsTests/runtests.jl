@@ -26,6 +26,8 @@ using Test
 
 @testset "FEECPolyBasis" begin include("ExteriorCalculusBasesTests.jl") end
 
+@testset "ForwardDiffTests.jl" begin include("ForwardDiffTests.jl") end
+
 #@testset "ChangeBasis" begin include("ChangeBasisTests.jl") end
 
 end # module

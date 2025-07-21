@@ -11,10 +11,11 @@ The polynomial bases all subtype [`PolynomialBasis`](@ref), which subtypes
 or second derivatives.
 
 Constructors for commonly used bases (see the documentation for the spaces definitions):
-- ℚ spaces: `[Polynomial]Basis(Val(D), V, order)`
-- ℙ spaces: `[Polynomial]Basis(..., Polynomials._p_filter)`
-- ℚₙ\\ℚₙ₋₁: `[Polynomial]Basis(..., Polynomials._qh_filter)`
-- ℙₙ\\ℙₙ₋₁: `[Polynomial]Basis(..., Polynomials._ph_filter)`
+- ℚ  spaces: `[Polynomial]Basis(Val(D), V, order)`
+- ℙ  spaces: `[Polynomial]Basis(..., Polynomials._p_filter)`
+- 𝕊r spaces: `[Polynomial]Basis(..., Polynomials._ser_filter)`
+- ℚ̃  spaces: `[Polynomial]Basis(..., Polynomials._qh_filter)`
+- ℙ̃  spaces: `[Polynomial]Basis(..., Polynomials._ph_filter)`
 - ℕ𝔻(△): [`PGradBasis`](@ref)`(Val(D), T, order)`
 - ℕ𝔻(□): [`QGradBasis`](@ref)`(...)`
 - ℝ𝕋(△): [`PCurlGradBasis`](@ref)`(...)`
@@ -90,11 +91,12 @@ using Gridap.Fields
 using PolynomialBases: jacobi, jacobi_and_derivative
 using Combinatorics: multiexponents, multinomial, combinations
 using Base.Iterators: take
+using Base: @propagate_inbounds
 
 import Gridap.Fields: evaluate!
 import Gridap.Fields: return_cache
 import Gridap.Arrays: return_type
-import Base.@propagate_inbounds
+import Gridap.Arrays: testvalue
 
 export Polynomial
 export isHierarchical
@@ -115,7 +117,17 @@ export MonomialBasis
 export LegendreBasis
 export ChebyshevBasis
 export BernsteinBasis
+
 export BernsteinBasisOnSimplex
+export bernstein_terms
+export bernstein_term_id
+
+export PLambdaBasis
+export PmLambdaBasis
+export PmΛ_bubbles
+export PΛ_bubbles
+export get_bubbles
+export print_indices
 
 export FEECPolyBasis_trampoline
 #export get_FEEC_poly_degree
@@ -140,12 +152,6 @@ export RaviartThomasPolyBasis
 export PCurlGradBasis
 
 export ModalC0Basis
-
-# deprecated
-export num_terms
-export QGradMonomialBasis
-export QCurlGradMonomialBasis
-export PCurlGradMonomialBasis
 
 
 include("PolynomialInterfaces.jl")

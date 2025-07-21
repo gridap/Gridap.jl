@@ -5,7 +5,115 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Moment-based changes
+
+### Added
+
+- Documentation and refactoring of `Gridap.Polynomials`. Since PR[#1072](https://github.com/gridap/Gridap.jl/pull/#1072).
+- Two new families of polynomial bases in addition to `Monomial`, `Legendre` (former `Jacobi`) and `ModalC0`: `Chebyshev` and `Bernstein`
+- `MonomialBasis` and `Q[Curl]GradMonomialBasis` have been generalized to `Legendre`, `Chebyshev` and `Bernstein` using the new `CartProdPolyBasis` and `CompWiseTensorPolyBasis` respectively.
+- `PCurlGradMonomialBasis` has been generalized to `Legendre` and `Chebyshev` using the new `RaviartThomasPolyBasis`.
+- New aliases and high level constructor for `CartProdPolyBasis` (former MonomialBasis): `MonomialBasis`, `LegendreBasis`, `ChebyshevBasis` and `BernsteinBasis`.
+- New high level constructors for Nedelec and Raviart-Thomas polynomial bases:
+  - Nedelec on simplex `PGradBasis(PT<:Polynomial, Val(D), order)`
+  - Nedelec on n-cubes `QGradBasis(PT<:Polynomial, Val(D), order)`
+  - Raviart on simplex `PCurlGradBasis(PT<:Polynomial, Val(D), order)`
+  - Raviart on n-cubes `QCurlGradBasis(PT<:Polynomial, Val(D), order)`
+- Added `BernsteinBasisOnSimplex` that implements Bernstein polynomials in barycentric coordinates, since PR[#1104](https://github.com/gridap/Gridap.jl/pull/#1104).
+- More documentation of `Gridap.ReferenceFEs`. Since PR[#1109](https://github.com/gridap/Gridap.jl/pull/#1109).
+
+- Some refactoring of `Gridap.TensorValues` to simplify maintenance and new implementations. Since PR[#1115](https://github.com/gridap/Gridap.jl/pull/#1115).
+  - Added `SkewSymTensorValue`: a new `<:MultiValue` 2nd order tensor type such that `transpose(s)==-s`.
+  - `congruent_prod`: new operation for 2nd order tensors: `a,b -> bᵀ⋅a⋅b` preserving symmetry of `a`.
+  - `component_basis` and `representatives_of_componentbasis_dual`: new APIs for `::MultiValue`s yielding bases of the vector space spanned by the independent components of a tensor type (1st method) and its dual space (2nd method).
+
+### Fixed
+
+- Fixed evaluation of `LinearCombinationDofVector` on vector of `<:Field`s (only impacts ModalC0 FEs and future moment based reffes)., since PR[#1105](https://github.com/gridap/Gridap.jl/pull/#1105).
+
+### Changed
+
+- Existing Jacobi polynomial bases/spaces were renamed to Legendre (which they were).
+- `Monomial` is now subtype of the new abstract type`Polynomial <: Field`
+- `MonomialBasis` is now an alias for `CartProdPolyBasis{...,Monomial}`
+- All polynomial bases are now subtypes of the new abstract type `PolynomialBasis <: AbstractVector{<:Polynomial}`
+- `get_order(b::(Q/P)[Curl]Grad...)`, now returns the order of the basis, +1 than the order parameter passed to the constructor.
+- `NedelecPreBasisOnSimplex` is renamed `NedelecPolyBasisOnSimplex`
+- `JacobiPolynomial` is renamed `Legendre` and subtypes `Polynomial`
+- `JacobiPolynomialBasis` is renamed `LegendreBasis`
+- `ModalC0BasisFunction` is renamed `ModalC0` and subtypes `Polynomial`
+
+### Deprecated
+
+- `num_terms(f::AbstractVector{<:Field})` in favor of `length(f::PolynomialBasis)`
+- `MonomialBasis{D}(args...)` in favor of `MonomialBasis(Val(D), args...)`
+- `[P/Q][Curl]GradMonomialBasis{D}(args...)` in favor of `[...]GradBasis(Monomial, Val(D), args...)`
+- `NedelecPreBasisOnSimplex{D}(args...)` in favor of `NedelecPolyBasisOnSimplex(Val(D), args...)`
+- `JacobiPolynomialBasis{D}(args...)` in favor of `LegendreBasis(Val(D), args...)`
+
 ## [Unreleased]
+
+### Added
+
+- Added support for star-patch integration, i.e patch integration with masked patch boundaries. Since PR[#1138](https://github.com/gridap/Gridap.jl/pull/1138).
+
+### Fixed
+
+- Fixes issue [#1119](https://github.com/gridap/Gridap.jl/issues/1119), allowing evaluation of `CellFields` on arbitrary points on periodic meshes. Since PR[#1139](https://github.com/gridap/Gridap.jl/pull/1139).
+
+## [0.19.3] - 2025-07-15
+
+### Fixed
+
+- `MultiFieldFEBasisComponent` now supports addition and subtraction. Since PR[#1130](https://github.com/gridap/Gridap.jl/pull/1130).
+- Fixed issues introduced in PR [#1130](https://github.com/gridap/Gridap.jl/pull/1130). Closes issue [#1131](https://github.com/gridap/Gridap.jl/issues/1131). Since PR [#1132](https://github.com/gridap/Gridap.jl/pull/1132).
+- Removed method ambiguity in `Adaptivity.setup_edge_based_rrules`. Fixes issue [#1133](https://github.com/gridap/Gridap.jl/issues/1133). Since PR[#1135](https://github.com/gridap/Gridap.jl/pull/1135).
+
+## [0.19.2] - 2025-07-08
+
+### Added
+
+- Added missing operations between `SkeletonPairs`. Since PR[#1122](https://github.com/gridap/Gridap.jl/pull/1122).
+- Added bubble elements for simplex and cube-like polytopes. Since PR[#1124](https://github.com/gridap/Gridap.jl/pull/1124)
+
+### Fixed
+
+- Update `norm` function to be compatible with complex vectors and tensors. Since PR[#1118](https://github.com/gridap/Gridap.jl/pull/1118).
+- `AdaptivityGlue` can now deal with non-surjective n2o maps. Since PR[#1126](https://github.com/gridap/Gridap.jl/pull/1126).
+
+
+## [0.19.1] - 2025-06-11
+
+### Fixed
+
+- Minor bugfixes from v0.19. Since PR[#1111](https://github.com/gridap/Gridap.jl/pull/1111).
+
+## [0.19.0] - 2025-06-10
+
+### Added
+
+- Support for polytopal meshes in 2D and 3D. New structures `PolytopalGridTopology`, `PolytopalGrid` and `PolytopalDiscreteModel`. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- Support for non-overlapping triangulations. Both `BodyFittedTriangulation` and `BoundaryTriangulation` have been extended to support repeated face ids. In particular, the `FaceToCellGlue` has a new constructor. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- Support for patch-wise integration and local solves. New structures `PatchTopology`, `PatchTriangulation` and `PatchAssembler` have been added. These structures allow for the integration, assembly and solution of local problems on (potentially overlapping) patches of the mesh. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- Support for polynomial spaces on polytopal meshes. New structure `PolytopalFESpace` has been added. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- With all of the above, we have support for hybrid non-conforming methods on polytopal meshes. Examples have been added for HDG and HHO in 2D and 3D. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+
+### Fixed
+
+- The `tol` kwarg for `Interpolable` was unused. It is now used for the point-to-cell search, which was breaking for very small cell sizes. Since PR[#1106](https://github.com/gridap/Gridap.jl/pull/1106).
+
+## [0.18.12] - 2025-04-19
+
+### Added
+
+- Added functionality to allow automatic differentiation of integrals with respect to evaluation positions xh where xh is a FEFunction. Since PR[#1095](https://github.com/gridap/Gridap.jl/pull/1095)
+
+### Fixed
+
+- Fix bug for issue [#927](https://github.com/gridap/Gridap.jl/issues/927), where Nedelec FE would not work on faces (Dc < Dp). Since PR[#1094](https://github.com/gridap/Gridap.jl/pull/1094).
+- Added support to evaluate polynomial bases on dualized points. Since PR[#1100](https://github.com/gridap/Gridap.jl/pull/1100).
+
+## [0.18.11] - 2025-04-01
 
 ### Added
 
@@ -49,17 +157,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added AMR-related methods `mark` and `estimate` to `Adaptivity` module. Implemented Dorfler marking strategy. Since PR[#1063](https://github.com/gridap/Gridap.jl/pull/1063).
 
-- Documentation and refactoring of Gridap.Polynomials. Since PR[#1072](https://github.com/gridap/Gridap.jl/pull/#1072).
-- Two new families of polynomial bases in addition to `Monomial`, `Legendre` (former `Jacobi`) and `ModalC0`: `Chebyshev` and `Bernstein`
-- `MonomialBasis` and `Q[Curl]GradMonomialBasis` have been generalized to `Legendre`, `Chebyshev` and `Bernstein` using the new `CartProdPolyBasis` and `CompWiseTensorPolyBasis` respectively.
-- `PCurlGradMonomialBasis` has been generalized to `Legendre` and `Chebyshev` using the new `RaviartThomasPolyBasis`.
-- New aliases and high level constructor for `CartProdPolyBasis` (former MonomialBasis): `MonomialBasis`, `LegendreBasis`, `ChebyshevBasis` and `BernsteinBasis`.
-- New high level constructors for Nedelec and Raviart-Thomas polynomial bases:
-    - Nedelec on simplex `PGradBasis(PT<:Polynomial, Val(D), order)`
-    - Nedelec on n-cubes `QGradBasis(PT<:Polynomial, Val(D), order)`
-    - Raviart on simplex `PCurlGradBasis(PT<:Polynomial, Val(D), order)`
-    - Raviart on n-cubes `QCurlGradBasis(PT<:Polynomial, Val(D), order)`
-
 ### Fixed
 
 - BUG in `FineToCoarseFields.jl`. Since PR[#1074](https://github.com/gridap/Gridap.jl/pull/1074).
@@ -68,24 +165,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Low level optimisations to reduce allocations. `AffineMap` renamed to `AffineField`. New `AffineMap <: Map`, doing the same as `AffineField` without struct allocation. New `ConstantMap <: Map`, doing the same as `ConstantField` without struct allocation. Since PR[#1043](https://github.com/gridap/Gridap.jl/pull/1043).
 - `ConstantFESpaces` can now be built on triangulations. Since PR[#1069](https://github.com/gridap/Gridap.jl/pull/1069)
-
-- Existing Jacobi polynomial bases/spaces were renamed to Legendre (which they were).
-- `Monomial` is now subtype of the new abstract type`Polynomial <: Field`
-- `MonomialBasis` is now an alias for `CartProdPolyBasis{...,Monomial}`
-- All polynomial bases are now subtypes of the new abstract type `PolynomialBasis <: AbstractVector{<:Polynomial}`
-- `get_order(b::(Q/P)[Curl]Grad...)`, now returns the order of the basis, +1 than the order parameter passed to the constructor.
-- `NedelecPreBasisOnSimplex` is renamed `NedelecPolyBasisOnSimplex`
-- `JacobiPolynomial` is renamed `Legendre` and subtypes `Polynomial`
-- `JacobiPolynomialBasis` is renamed `LegendreBasis`
-- `ModalC0BasisFunction` is renamed `ModalC0` and subtypes `Polynomial`
-
-### Deprecated
-
-- `num_terms(f::AbstractVector{<:Field})` in favor of `length(f::PolynomialBasis)`
-- `MonomialBasis{D}(args...)` in favor of `MonomialBasis(Val(D), args...)`
-- `[P/Q][Curl]GradMonomialBasis{D}(args...)` in favor of `[...]GradBasis(Monomial, Val(D), args...)`
-- `NedelecPreBasisOnSimplex{D}(args...)` in favor of `NedelecPolyBasisOnSimplex(Val(D), args...)`
-- `JacobiPolynomialBasis{D}(args...)` in favor of `LegendreBasis(Val(D), args...)`
 
 ## [0.18.8] - 2024-12-2
 

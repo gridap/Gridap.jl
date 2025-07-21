@@ -2,18 +2,31 @@
 """
     abstract type Pushforward <: Map end
 
-Represents a pushforward map F*, defined as 
+Represents a pushforward map F\\*, defined as
   F* : V̂ -> V
-where 
-  - V̂ is a function space on the reference cell K̂ and 
+where
+  - V̂ is a function space on the reference cell K̂ and
   - V is a function space on the physical cell K.
 """
 abstract type Pushforward <: Map end
 
-abstract type PushforwardRefFE <: ReferenceFEName end
+"""
+    Pushforward(::ReferenceFEName, conf::Conformity)
+    Pushforward(::Type{<:ReferenceFEName}, conf::Conformity)
 
-Pushforward(::Type{<:PushforwardRefFE}) = @abstractmethod
-Pushforward(name::PushforwardRefFE) = Pushforward(typeof(name))
+Return the pushforward to use to map the shape functions of the given
+element with conformity `conf`. For L2 conformity, the trivial
+[`IdentityPiolaMap`](@ref) is always returned.
+
+For new `ReferenceFEName`, the default pushforward is `IdentityPiolaMap`. Types
+that want to change the default may only overload
+[`Pushforward(::Type{<:ReferenceFEName})`](@ref).
+"""
+Pushforward(name::ReferenceFEName, conf::Conformity) = Pushforward(typeof(name),conf)
+
+Pushforward(::Type{<:ReferenceFEName}, ::L2Conformity) = IdentityPiolaMap()
+Pushforward(T::Type{<:ReferenceFEName}, ::Conformity) = Pushforward(T)
+Pushforward(::Type{<:ReferenceFEName}) = IdentityPiolaMap()
 
 function Arrays.lazy_map(
   k::Pushforward, ref_cell_fields::AbstractArray, pf_args::AbstractArray...
@@ -31,6 +44,12 @@ function evaluate!(
   cache, k::Pushforward, f_ref::AbstractVector{<:Field}, args...
 )
   Broadcasting(Operation(k))(f_ref,args...)
+end
+
+function evaluate!(
+  cache, k::Pushforward, f_ref::Field, args...
+)
+  Operation(k)(f_ref,args...)
 end
 
 function Arrays.lazy_map(
@@ -56,10 +75,10 @@ end
 """
     const InversePushforward{PF} = InverseMap{PF} where PF <: Pushforward
 
-Represents the inverse of a pushforward map F*, defined as 
-  (F*)^-1 : V -> V̂
-where 
-  - V̂ is a function space on the reference cell K̂ and 
+Represents the inverse of a pushforward map F\\*, defined as
+  (F*)⁻¹ : V -> V̂
+where
+  - V̂ is a function space on the reference cell K̂ and
   - V is a function space on the physical cell K.
 """
 const InversePushforward{PF} = InverseMap{PF} where PF <: Pushforward
@@ -87,13 +106,13 @@ end
 """
     struct Pullback{PF <: Pushforward} <: Map end
 
-Represents a pullback map F**, defined as 
+Represents a pullback map F\\**, defined as
   F** : V* -> V̂*
-where 
-  - V̂* is a dof space on the reference cell K̂ and 
+where
+  - V̂* is a dof space on the reference cell K̂ and
   - V* is a dof space on the physical cell K.
 Its action on physical dofs σ : V -> R is defined in terms of the pushforward map F* as
-  ̂σ = F**(σ) := σ∘F* : V̂ -> R
+ σ̂ = F**(σ) := σ∘F* : V̂ -> R
 """
 struct Pullback{PF <: Pushforward} <: Map
   pushforward::PF
@@ -119,13 +138,13 @@ end
 """
     struct InversePullback{PF <: Pushforward} <: Map end
 
-Represents the inverse of the pullback map F**, defined as 
-  (F**)^-1 : V̂* -> V*
-where 
-  - V̂* is a dof space on the reference cell K̂ and 
+Represents the inverse of the pullback map F\\**, defined as
+  (F**)⁻¹ : V̂* -> V*
+where
+  - V̂* is a dof space on the reference cell K̂ and
   - V* is a dof space on the physical cell K.
-Its action on reference dofs ̂σ : V̂ -> R is defined in terms of the pushforward map F* as
-  σ = (F**)^-1(̂σ) := ̂σ∘(F*)^-1 : V -> R
+Its action on reference dofs σ̂ : V̂ -> R is defined in terms of the pushforward map F* as
+σ = (F**)⁻¹(σ̂) := σ̂∘(F*)⁻¹ : V -> R
 """
 const InversePullback{PB} = InverseMap{PB} where PB <: Pullback
 
@@ -145,8 +164,20 @@ function evaluate!(
   return MappedDofBasis(inverse_map(pb.pushforward),σ_ref,args...)
 end
 
+##############
+# Piola maps #
+##############
+
+"""
+    struct IdentityPiolaMap <: Pushforward
+"""
+struct IdentityPiolaMap <: Pushforward end
+
 # ContraVariantPiolaMap
 
+"""
+    struct ContraVariantPiolaMap <: Pushforward
+"""
 struct ContraVariantPiolaMap <: Pushforward end
 
 function evaluate!(
@@ -189,6 +220,9 @@ end
 
 # CoVariantPiolaMap
 
+"""
+    struct CoVariantPiolaMap <: Pushforward
+"""
 struct CoVariantPiolaMap <: Pushforward end
 
 function evaluate!(
@@ -210,15 +244,15 @@ struct DoubleContraVariantPiolaMap <: Pushforward end
 function evaluate!(
   cache, ::DoubleContraVariantPiolaMap, v_ref::Number, Jt::Number
 )
-  _Jt = meas(Jt) * Jt
-  return transpose(_Jt) ⋅ v_ref ⋅ _Jt
+  _Jt = (1. / det(Jt)) * Jt
+  return congruent_prod(v_ref, _Jt) # symmetry stable _Jtᵀ ⋅ v_ref ⋅ _Jt
 end
 
 function evaluate!(
   cache, ::InversePushforward{DoubleContraVariantPiolaMap}, v_phys::Number, Jt::Number
 )
-  iJt = meas(Jt) * pinvJt(Jt)
-  return transpose(iJt) ⋅ v_phys ⋅ iJt
+  iJt = det(Jt) * pinvJt(Jt)
+  return congruent_prod(v_phys, iJt) # symmetry stable iJtᵀ ⋅ v_ref ⋅ iJt
 end
 
 # DoubleCoVariantPiolaMap
@@ -229,11 +263,11 @@ function evaluate!(
   cache, ::DoubleCoVariantPiolaMap, v_ref::Number, Jt::Number
 )
   iJt = pinvJt(Jt)
-  return iJt ⋅ v_ref ⋅ transpose(iJt)
+  return congruent_prod(v_ref, transpose(iJt)) # symmetry stable iJt ⋅ v_ref ⋅ iJtᵀ
 end
 
 function evaluate!(
   cache, ::InversePushforward{DoubleCoVariantPiolaMap}, v_phys::Number, Jt::Number
 )
-  return Jt ⋅ v_phys ⋅ transpose(Jt)
+  return congruent_prod(v_ref, transpose(Jt)) # symmetry stable Jt ⋅ v_phys ⋅ Jtᵀ
 end

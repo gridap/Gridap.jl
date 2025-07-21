@@ -1,10 +1,12 @@
 
-struct ArnoldWinther <: PushforwardRefFE end
+struct ArnoldWinther <: ReferenceFEName end
 
 const arnoldwinther = ArnoldWinther()
 
+Pushforward(::Type{ArnoldWinther}) = DoubleContraVariantPiolaMap()
+
 """
-    struct ArnoldWinther <: PushforwardRefFE end
+    struct ArnoldWinther <: ReferenceFEName end
     ArnoldWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
 
 Arnold-Winther reference finite element.
@@ -18,11 +20,12 @@ References:
 """
 function ArnoldWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
   @assert p == TRI "ArnoldWinther Reference FE only defined for TRIangles"
+  @assert order == 2 "ArnoldWinther Reference FE only defined for order 2"
   conforming = true # TODO: Make this an argument
 
   VT = SymTensorValue{2,T}
   prebasis = MonomialBasis(Val(2),VT,3,Polynomials._p_filter)
-  fb = MonomialBasis(Val(D-1),T,0,Polynomials._p_filter)
+  fb = MonomialBasis(Val(1),T,0,Polynomials._p_filter)
   cb = map(constant_field,component_basis(VT))
 
   function cmom(φ,μ,ds) # Cell and Node moment function: σ_K(φ,μ) = ∫(φ:μ)dK
@@ -54,10 +57,6 @@ function ArnoldWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
   end
 
   return MomentBasedReferenceFE(ArnoldWinther(),p,prebasis,moments,DivConformity())
-end
-
-function ReferenceFE(p::Polytope,::ArnoldWinther, order)
-  ArnoldWintherRefFE(Float64,p,order)
 end
 
 function ReferenceFE(p::Polytope,::ArnoldWinther,::Type{T}, order) where T

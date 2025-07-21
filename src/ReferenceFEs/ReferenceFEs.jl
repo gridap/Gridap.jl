@@ -1,6 +1,8 @@
 """
 
-$(public_names_in_md(@__MODULE__))
+$(public_names_in_md(@__MODULE__; change_link=Dict(
+  :H1Conformity  => "GradConformity",
+)))
 """
 module ReferenceFEs
 
@@ -95,13 +97,16 @@ export HEX_AXIS
 export TET_AXIS
 export INVALID_PERM
 
+export Pushforward
+export Pullback
+export IdentityPiolaMap
+export CoVariantPiolaMap
 export ContraVariantPiolaMap
 
 export Dof
 export get_nodes
 export get_face_moments
 export get_face_nodes_dofs
-export get_nodes
 export evaluate!
 export return_cache
 export return_type
@@ -111,10 +116,10 @@ export test_dof_array
 export ReferenceFE
 export ReferenceFEName
 export GenericRefFE
+export get_name
 export get_polytope
 export get_prebasis
 export get_dof_basis
-export Conformity
 export get_face_own_dofs
 export get_face_own_dofs_permutations
 export get_face_dofs
@@ -181,7 +186,8 @@ export BDMRefFE
 export NedelecRefFE
 export BezierRefFE
 export ModalC0RefFE
-export CRRefFE
+export CrouzeixRaviartRefFE
+export BubbleRefFE
 
 export Lagrangian
 export RaviartThomas
@@ -189,6 +195,10 @@ export BDM
 export Nedelec
 export Bezier
 export ModalC0
+export CrouzeixRaviart
+export Serendipity
+#export HellanHerrmannJhonson
+export Bubble
 
 export lagrangian
 export raviart_thomas
@@ -196,7 +206,10 @@ export bdm
 export nedelec
 export bezier
 export modalC0
-export cr
+export crouzeix_raviart
+export serendipity
+#export hhj
+export bubble
 
 export Quadrature
 export QuadratureName
@@ -225,6 +238,8 @@ include("LagrangianDofBases.jl")
 
 include("ReferenceFEInterfaces.jl")
 
+include("Pullbacks.jl")
+
 include("LagrangianRefFEs.jl")
 
 include("CLagrangianRefFEs.jl")
@@ -237,6 +252,8 @@ include("CDLagrangianRefFEs.jl")
 
 include("Quadratures.jl")
 
+include("SegmentQuadratures.jl")
+
 include("TensorProductQuadratures.jl")
 
 include("DuffyQuadratures.jl")
@@ -245,7 +262,7 @@ include("StrangQuadratures.jl")
 
 include("XiaoGimbutasQuadratures.jl")
 
-include("Pullbacks.jl")
+include("PolytopalQuadratures.jl")
 
 include("MomentBasedReferenceFEs.jl")
 
@@ -255,12 +272,16 @@ include("BDMRefFEs.jl")
 
 include("NedelecRefFEs.jl")
 
-include("CRRefFEs.jl")
+include("CrouzeixRaviartRefFEs.jl")
+
+#include("HHJRefFEs.jl")
 
 include("MockDofs.jl")
 
 include("BezierRefFEs.jl")
 
 include("ModalC0RefFEs.jl")
+
+include("BubbleRefFEs.jl")
 
 end # module

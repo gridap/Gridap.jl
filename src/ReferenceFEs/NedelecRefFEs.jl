@@ -1,16 +1,27 @@
-
+"""
+    struct CurlConformity <: Conformity
+"""
 struct CurlConformity <: Conformity end
 
-struct Nedelec <: PushforwardRefFE end
-const nedelec = Nedelec()
-
-Pushforward(::Type{<:Nedelec}) = CoVariantPiolaMap()
+"""
+    struct Nedelec <: ReferenceFEName
+"""
+struct Nedelec <: ReferenceFEName end
 
 """
-    NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
+    const nedelec = Nedelec()
 
-The `order` argument has the following meaning: the curl of the  functions in this basis
-is in the Q space of degree `order`.
+Singleton of the [`Nedelec`](@ref) reference FE name.
+"""
+const nedelec = Nedelec()
+
+Pushforward(::Type{Nedelec}) = CoVariantPiolaMap()
+
+"""
+    NedelecRefFE(::Type{T}, p::Polytope, order::Integer)
+
+The `order` argument has the following meaning: the curl of the  functions in
+this basis is in the Q space of degree `order`. `T` is the type of scalar components.
 """
 function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   D = num_dims(p)
@@ -21,10 +32,18 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
     fb = QGradBasis(Monomial,Val(D-1),et,order-1)   # Face basis
     cb = QCurlGradBasis(Monomial,Val(D),et,order-1) # Cell basis
   elseif is_simplex(p)
-    prebasis = PGradBasis(Monomial,Val(D),et,order) # Prebasis
-    eb = MonomialBasis(Val(1),et,order)             # Edge basis
-    fb = MonomialBasis(Val(D-1),VectorValue{D-1,et},order-1,Polynomials._p_filter) # Face basis
-    cb = MonomialBasis(Val(D),VectorValue{D,et},order-D+1,Polynomials._p_filter)   # Cell basis
+    #prebasis = PGradBasis(Monomial,Val(D),et,order) # Prebasis
+    prebasis = PmLambdaBasis(Val(D),et,order+1,1) # Prebasis
+    #eb = MonomialBasis(Val(1),et,order)             # Edge basis
+    eb = PLambdaBasis(Val(1),et,order,0)          # Edge basis
+    #fb = if D >2
+    #  MonomialBasis(Val(D-1),VectorValue{D-1,et},order-1,Polynomials._p_filter) # Face basis
+    #else
+    #  MonomialBasis(Val(D-1),et,order-1,Polynomials._p_filter) # Face basis
+    #end
+    fb = order>0 ? PLambdaBasis(Val(D-1),et,order-1,1) : nothing      # Face basis
+    #cb = MonomialBasis(Val(D),VectorValue{D,et},order-D+1,Polynomials._p_filter)   # Cell basis
+    cb = order>D-2 ? PLambdaBasis(Val(D),et,order-D+1,1) : nothing       # Cell basis
   else
     @unreachable "Nedelec Reference FE only implemented for n-cubes and simplices"
   end
@@ -63,10 +82,6 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   end
 
   return MomentBasedReferenceFE(Nedelec(),p,prebasis,moments,CurlConformity())
-end
-
-function ReferenceFE(p::Polytope,::Nedelec, order)
-  NedelecRefFE(Float64,p,order)
 end
 
 function ReferenceFE(p::Polytope,::Nedelec,::Type{T}, order) where T

@@ -63,7 +63,12 @@ function residual_and_jacobian(op::NonlinearOperator,x::AbstractVector)
   (b, A)
 end
 
+"""
+    function hessian end
+"""
 function hessian end
+"""
+"""
 function hessian! end
 
 """

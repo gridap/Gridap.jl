@@ -1,18 +1,30 @@
 
+"""
+    struct DivConformity <: Conformity
+"""
 struct DivConformity <: Conformity end
 
 # RaviartThomas
 
-struct RaviartThomas <: PushforwardRefFE end
-const raviart_thomas = RaviartThomas()
-
-Pushforward(::Type{<:RaviartThomas}) = ContraVariantPiolaMap()
+"""
+    struct RaviartThomas <: ReferenceFEName
+"""
+struct RaviartThomas <: ReferenceFEName end
 
 """
-    RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
+    const raviart_thomas = RaviartThomas()
 
-The `order` argument has the following meaning: the divergence of the  functions in this basis
-is in the Q space of degree `order`.
+Singleton of the [`RaviartThomas`](@ref) reference FE name.
+"""
+const raviart_thomas = RaviartThomas()
+
+Pushforward(::Type{RaviartThomas}) = ContraVariantPiolaMap()
+
+"""
+    RaviartThomasRefFE(::Type{T}, p::Polytope, order::Integer)
+
+The `order` argument has the following meaning: the divergence of the functions
+in this basis is in the Q space of degree `order`. `T` is the type of scalar components.
 """
 function RaviartThomasRefFE(
   ::Type{T},p::Polytope{D},order::Integer
@@ -23,9 +35,13 @@ function RaviartThomasRefFE(
     cb = QGradBasis(Legendre,Val(D),T,order-1)                 # Cell basis
     fb = LegendreBasis(Val(D-1),T,order,Polynomials._q_filter) # Face basis
   elseif is_simplex(p)
-    prebasis = PCurlGradBasis(Monomial,Val(D),T,order)                        # Prebasis
-    cb = LegendreBasis(Val(D),VectorValue{D,T},order-1,Polynomials._p_filter) # Cell basis
-    fb = LegendreBasis(Val(D-1),T,order,Polynomials._p_filter)                # Face basis
+    #prebasis = PCurlGradBasis(Monomial,Val(D),T,order)                        # Prebasis
+    rotate_90 = D==2
+    prebasis = PmLambdaBasis(Val(D),T,order+1,D-1;rotate_90) # Prebasis
+    #cb = LegendreBasis(Val(D),VectorValue{D,T},order-1,Polynomials._p_filter) # Cell basis
+    cb = order>0 ? PLambdaBasis(Val(D),T,order-1,D-1) : nothing       # Cell basis
+    #fb = LegendreBasis(Val(D-1),T,order,Polynomials._p_filter)                # Face basis
+    fb = PLambdaBasis(Val(D-1),T,order,0)       # Face basis
   else
     @notimplemented "Raviart-Thomas Reference FE only available for cubes and simplices"
   end
@@ -49,10 +65,6 @@ function RaviartThomasRefFE(
   return MomentBasedReferenceFE(RaviartThomas(),p,prebasis,moments,DivConformity())
 end
 
-function ReferenceFE(p::Polytope,::RaviartThomas,order;kwargs...)
-  RaviartThomasRefFE(Float64,p,order;kwargs...)
-end
-
 function ReferenceFE(p::Polytope,::RaviartThomas,::Type{T},order;kwargs...) where T
   RaviartThomasRefFE(T,p,order;kwargs...)
 end
@@ -74,18 +86,4 @@ end
 
 function get_face_own_dofs(reffe::GenericRefFE{RaviartThomas}, conf::DivConformity)
   get_face_dofs(reffe)
-end
-
-# TODO: Please remove me
-function legendreBasis(::Type{T},p::Polytope,orders) where T
-  compute_legendre_basis(T,p,orders)
-end
-function legendreBasis(::Type{T},p::Polytope{D},order::Int) where {D,T}
-  orders = tfill(order,Val{D}())
-  legendreBasis(T,p,orders)
-end
-function compute_legendre_basis(::Type{T},p::ExtrusionPolytope{D},orders) where {D,T}
-  extrusion = Tuple(p.extrusion)
-  terms = _monomial_terms(extrusion,orders)
-  LegendreBasis(Val(D),T,orders,terms)
 end

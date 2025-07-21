@@ -47,7 +47,7 @@ get_order(b::CompWiseTensorPolyBasis) = b.max_order
 
 Return a tuple (terms\\_1, ..., terms\\_l, ..., terms\\_L) containing, for each
 component of V, the Cartesian indices iterator over the terms that define 𝕊ˡ,
-that is all elements of ⟦1,`o`(l,1)+1⟧ × ⟦1,`o`(l,2)+1⟧ × … × ⟦1,`o`(l,D)+1⟧.
+that is all elements of {1 : `o`(l,1)+1} × {1 : `o`(l,2)+1} × … × {1 : `o`(l,D)+1}.
 
 E.g., if `orders=[ 0 1; 1 0]`, then the `comp_terms` are
 `( CartesianIndices{2}((1,2)), CartesianIndices{2}((2,1)) )`.
@@ -65,7 +65,7 @@ end
 
 function _evaluate_nd!(
   b::CompWiseTensorPolyBasis{D,V,PT,L}, x,
-  r::AbstractMatrix{V}, i,
+  r::AbstractMatrix, i,
   c::AbstractMatrix{T}, VK::Val) where {D,V,PT,L,T}
 
   for d in 1:D

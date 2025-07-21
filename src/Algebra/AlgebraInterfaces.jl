@@ -335,8 +335,23 @@ end
 #    add_entries!(c,vs,is,js)
 #
 
+"""
+    struct Loop end
+"""
 struct Loop end
+"""
+    struct DoNotLoop end
+"""
 struct DoNotLoop end
+"""
+    LoopStyle(::Type)
+    LoopStyle(::T) where T = LoopStyle(T)
+
+Trait to tell if looping on nonzeros entries is necessary to count the values
+with a counter (see [`nz_counter`](@ref)) of an array of type `T`.
+
+Returns [`Loop()`](@ref Loop) or [`DoNotLoop`](@ref).
+"""
 LoopStyle(::Type) = DoNotLoop()
 LoopStyle(::T) where T = LoopStyle(T)
 
@@ -357,16 +372,30 @@ end
 
 # For dense arrays
 
+"""
+    struct ArrayBuilder{T}
+
+`T` is the type of array to be built.
+"""
 struct ArrayBuilder{T}
   array_type::Type{T}
 end
 
 ArrayBuilder(a::ArrayBuilder) = a
 
+"""
+    get_array_type(::ArrayBuilder{T}) = T
+"""
 get_array_type(::ArrayBuilder{T}) where T = T
 
+"""
+    ArrayCounter{T}(axes::A)
+
+where `T` is the target matrix/array type.
+"""
 struct ArrayCounter{T,A}
   axes::A
+
   function ArrayCounter{T}(axes::A) where {T,A<:Tuple{Vararg{AbstractUnitRange}}}
     new{T,A}(axes)
   end
@@ -380,27 +409,66 @@ LoopStyle(::Type{<:ArrayCounter}) = DoNotLoop()
 @inline add_entries!(c::Function,a::ArrayCounter,v,i) = a
 
 #nz_counter(::Type{T},axes) where T = ArrayCounter{T}(axes)
+
+"""
+    nz_counter(::ArrayBuilder{T},axes)
+
+Generate a counter ([`ArrayCounter`](@ref)) to count the nonzero values for an array type A.
+"""
 nz_counter(::ArrayBuilder{T},axes) where T = ArrayCounter{T}(axes)
 
+"""
+    nz_allocation(a::ArrayCounter{T})
+
+Allocates a vector that will serve as structural nonzero values internal storage
+for a matrix holding the values counted in `a`. See also
+[`create_from_nz`](@ref), `SparseArrays.nonzeros`.
+"""
 nz_allocation(a::ArrayCounter{T}) where T = fill!(similar(T,map(length,a.axes)),zero(eltype(T)))
 
+"""
+    create_from_nz(nz_alloc::AbstractArray)
+
+Creates a matrix from its nonzero values, allocated using [`nz_allocation`](@ref)
+and filled using [`add_entry!`](@ref) and/or [`add_entries!`](@ref).
+"""
 create_from_nz(a::AbstractArray) = a
 
 # For sparse matrices
 
+"""
+    struct MinCPU end
+
+Represent sparse matrix assembly strategy minimizing CPU cost.
+"""
 struct MinCPU end
 
+"""
+    struct MinMemory{T}
+
+Represent sparse matrix assembly strategy minimizing memory cost.
+"""
 struct MinMemory{T}
   maxnnz::T
 end
 
 MinMemory() = MinMemory(nothing)
 
+"""
+    struct SparseMatrixBuilder{T,A}
+"""
 struct SparseMatrixBuilder{T,A}
   matrix_type::Type{T}
   approach::A
 end
 
+"""
+    SparseMatrixBuilder(::Type{T}[, ::S])
+
+Create a builder for sparse matrix of type `T`, using assembly stategy `S()`,
+either [`MinCPU()`](@ref MinCPU) or [`MinMemory()`](@ref MinMemory).
+The default is `MinMemory()`.
+"""
 SparseMatrixBuilder(::Type{T}) where T = SparseMatrixBuilder(T,MinMemory())
 SparseMatrixBuilder(a::SparseMatrixBuilder) = a
 
@@ -502,6 +570,12 @@ function finalize_coo!(::Type,I,J,V,m,n)
   @abstractmethod
 end
 
+"""
+    nz_index(A::AbstractSparseMatrix,i,j)
+
+Index of `A`[`i`,`j`] in the structural nonzero values internal storage of `A`.
+See also `SparseArrays.nonzeros`.
+"""
 function nz_index(A::AbstractSparseMatrix,i,j)
   @abstractmethod
 end
@@ -530,6 +604,9 @@ function copy_entries!(a::T,b::T) where T<:AbstractSparseMatrix
   end
 end
 
+"""
+    allocate_coo_vectors(::Type{<:AbstractSparseMatrix{Tv,Ti}}, n::Integer)
+"""
 function allocate_coo_vectors(
    ::Type{<:AbstractSparseMatrix{Tv,Ti}},n::Integer) where {Tv,Ti}
   (zeros(Ti,n), zeros(Ti,n), zeros(Tv,n))

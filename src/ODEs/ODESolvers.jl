@@ -178,6 +178,13 @@ function _setindex_all!(a::CompressedArray, v, i::Integer)
   a
 end
 
+"""
+    RungeKutta(sysslvr_nl::NonlinearSolver, sysslvr_l::NonlinearSolver, dt::Real, tableau::AbstractTableau)
+    RungeKutta(sysslvr_nl::NonlinearSolver, dt::Real, tableau)
+    RungeKutta(sysslvr_nl::NonlinearSolver, sysslvr_l::NonlinearSolver, dt::Real, name::Symbol)
+
+The second constructor uses `sysslvr_nl` for the `sysslvr_l` argument.
+"""
 function RungeKutta(
   sysslvr_nl::NonlinearSolver, sysslvr_l::NonlinearSolver,
   dt::Real, tableau::AbstractTableau

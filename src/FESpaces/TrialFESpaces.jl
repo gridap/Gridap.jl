@@ -13,10 +13,6 @@ function TrialFESpace(space::SingleFieldFESpace)
   space
 end
 
-#function TrialFESpace(space::TrialFESpace)
-#  space
-#end
-
 """
 """
 function TrialFESpace(space::SingleFieldFESpace,objects)
@@ -57,11 +53,23 @@ end
 
 # Remove Dirichlet from the given space
 
+"""
+    HomogeneousTrialFESpace(U::SingleFieldFESpace)
+
+Return a ﷕SingleFieldFESpace` that is `U` but with Dirichlet values set to zero.
+"""
 function HomogeneousTrialFESpace(U::SingleFieldFESpace)
   dirichlet_values = zero_dirichlet_values(U)
   TrialFESpace(dirichlet_values,U)
 end
 
+"""
+    HomogeneousTrialFESpace!(dirichlet_values::AbstractVector,U::SingleFieldFESpace)
+
+Return a ﷕SingleFieldFESpace` that is `U` but with Dirichlet values set to zero.
+Uses `dirichlet_values` with zeros set in place for the container of the
+Dirichlet values of the returned space.
+"""
 function HomogeneousTrialFESpace!(dirichlet_values::AbstractVector,U::SingleFieldFESpace)
   fill!(dirichlet_values,zero(eltype(dirichlet_values)))
   TrialFESpace(dirichlet_values,U)
@@ -120,3 +128,5 @@ gather_dirichlet_values!(dv,f::TrialFESpace,cv) = gather_dirichlet_values!(dv,f.
 gather_free_values(f::TrialFESpace,cv) = gather_free_values(f.space,cv)
 
 gather_free_values!(fv,f::TrialFESpace,cv) = gather_free_values!(fv,f.space,cv)
+
+get_cell_conformity(f::TrialFESpace) = get_cell_conformity(f.space)

@@ -1,6 +1,16 @@
 """
-
-$(public_names_in_md(@__MODULE__))
+$(public_names_in_md(@__MODULE__; change_link=Dict(
+  :∇  => "gradient",
+  :∫  => "Integrand",
+  :⊗  => "Gridap.TensorValues.outer",
+  :⊙  => "Gridap.TensorValues.inner",
+  :×  => "cross",
+  :⋅  => "dot",
+  :⋅¹ => "dot",
+  :⋅² => "Gridap.TensorValues.double_contraction",
+  :ReferenceDomain  => "DomainStyle",
+  :PhysicalDomain   => "DomainStyle"
+)))
 """
 module CellData
 
@@ -11,6 +21,7 @@ using FillArrays
 using NearestNeighbors
 using StaticArrays
 using DataStructures
+using ForwardDiff
 
 using Gridap.Helpers
 using Gridap.Algebra
@@ -91,6 +102,8 @@ export SkeletonCellFieldPair
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
+
+include("Interpolation.jl")
 
 include("CellQuadratures.jl")
 

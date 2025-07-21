@@ -1,7 +1,18 @@
+"""
+    mutable struct VectorWithEntryInserted{T,A} <: AbstractVector{T}
+"""
 mutable struct VectorWithEntryInserted{T,A} <: AbstractVector{T}
   a::A
   index::Int
   value::T
+
+  """
+      VectorWithEntryInserted(a::AbstractVector,index::Integer,value)
+
+  Return a `VectorWithEntryInserted` that is `a` but with `value` lazily
+  inserted at position `index` (without memory reallocation).
+  Beware, `a` is not copied, only referenced.
+  """
   function VectorWithEntryInserted(a::AbstractVector,index::Integer,value)
     A = typeof(a)
     T = eltype(a)
@@ -33,6 +44,6 @@ function Base.sum(a::VectorWithEntryInserted)
 end
 
 function Base.setindex!(a::VectorWithEntryInserted,v,i::Integer)
-   i < a.index ? (a.a[i] = v) :
+  i < a.index ? (a.a[i] = v) :
                  (i==a.index ? a.value = v : a.a[i-1]=v)
 end
