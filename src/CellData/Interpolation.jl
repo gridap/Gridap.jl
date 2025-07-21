@@ -1,5 +1,5 @@
 
-# This file implements code to evaluate CellFields on arbitrary points, based 
+# This file implements code to evaluate CellFields on arbitrary points, based
 # on tree searches.
 
 """

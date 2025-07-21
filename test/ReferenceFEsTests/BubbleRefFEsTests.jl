@@ -11,42 +11,42 @@ using Gridap.Arrays: evaluate
 # mini bubble tests
 et = Float64
 for p in [SEGMENT, TRI, QUAD, TET, HEX]
-	for T in [et, VectorValue{2, et}, VectorValue{3, et}]
-		reffe = BubbleRefFE(T, p)
-		test_reference_fe(reffe)
+  for T in [et, VectorValue{2, et}, VectorValue{3, et}]
+    reffe = BubbleRefFE(T, p)
+    test_reference_fe(reffe)
 
-		N = num_components(T)
-		@test num_dofs(reffe) == N
-		@test Conformity(reffe) == L2Conformity()
-		@test get_polytope(reffe) == p
+    N = num_components(T)
+    @test num_dofs(reffe) == N
+    @test Conformity(reffe) == L2Conformity()
+    @test get_polytope(reffe) == p
 
-		face_dofs = fill(Int[], num_faces(p))
-		face_dofs[end] = 1:N
-		@test get_face_dofs(reffe) == face_dofs
+    face_dofs = fill(Int[], num_faces(p))
+    face_dofs[end] = 1:N
+    @test get_face_dofs(reffe) == face_dofs
 
-		prebasis = get_prebasis(reffe)
-		@test length(prebasis) == N
-		@test prebasis isa LinearCombinationFieldVector
+    prebasis = get_prebasis(reffe)
+    @test length(prebasis) == N
+    @test prebasis isa LinearCombinationFieldVector
 
-		shapefuns = get_shapefuns(reffe)
-		@test length(shapefuns) == N
+    shapefuns = get_shapefuns(reffe)
+    @test length(shapefuns) == N
 
-		dofs = get_dof_basis(reffe)
-		xs = get_face_coordinates(p)
-		bxs = map(mean, xs)
-		bx0 = bxs[end]
-		# dof is at the barycenter of the polytope
-		for dof in dofs
-			@test bx0 == dof.point
-		end
-		# equal to 1 at the barycenter
-		val = evaluate(dofs, shapefuns)
-		@test val == one(val)
+    dofs = get_dof_basis(reffe)
+    xs = get_face_coordinates(p)
+    bxs = map(mean, xs)
+    bx0 = bxs[end]
+    # dof is at the barycenter of the polytope
+    for dof in dofs
+      @test bx0 == dof.point
+    end
+    # equal to 1 at the barycenter
+    val = evaluate(dofs, shapefuns)
+    @test val == one(val)
 
-		# equal to 0 at the barycenters of each d < D faces
-		vals = evaluate(shapefuns, bxs[1:(end-1)])
-		@test all(vals .== zero(T))
-	end
+    # equal to 0 at the barycenters of each d < D faces
+    vals = evaluate(shapefuns, bxs[1:(end-1)])
+    @test all(vals .== zero(T))
+  end
 end
 
 # specific tests for TRI
