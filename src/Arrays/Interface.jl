@@ -58,8 +58,8 @@ evaluation to be computed (this is aimed to be used on lazy array caches).
 """
 invalidate_cache!(cache) = nothing
 function invalidate_cache!(cache::Tuple)
-    invalidate_cache!.(cache)
-    nothing
+  map(invalidate_cache!, cache)
+  nothing
 end
 
 """

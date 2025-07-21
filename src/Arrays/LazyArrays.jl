@@ -183,6 +183,11 @@ mutable struct IndexItemPair{T,V}
   item::V
 end
 
+function invalidate_cache!(cache::IndexItemPair)
+  cache.index = -1
+  nothing
+end
+
 function _array_cache!(dict::Dict,a::LazyArray)
   @check begin
     @notimplementedif ! all(map(isconcretetype, map(eltype, a.args)))
@@ -200,11 +205,6 @@ function _array_cache!(dict::Dict,a::LazyArray)
   #item = evaluate!(cgi,gi,testargs(gi,fi...)...)
   item = return_value(gi,fi...)
   (cg, cgi, cf), IndexItemPair(index, item)
-end
-
-function invalidate_cache!(cache::Tuple{<:Any, <:IndexItemPair})
-    cache[2].index = -1
-    invalidate_cache!(cache[1])
 end
 
 function getindex!(cache, a::LazyArray, i::Integer)
