@@ -110,6 +110,16 @@ function refine(model::UnstructuredDiscreteModel,args...;refinement_method="red_
   return refine(string_to_refinement(refinement_method, model),model,args...;kwargs...)
 end
 
+function refine(model::UnstructuredDiscreteModel,cell_partition::Int)
+  @check cell_partition >= 1 
+  if cell_partition == 1
+    model
+  else
+    cell_refine_masks = Fill(true,num_cells(model))
+    unstructured_uniform_refine(model,cell_partition;cell_refine_masks=cell_refine_masks)
+  end
+end
+
 # CartesianDiscreteModel refining
 
 function refine(model::CartesianDiscreteModel{Dc}, cell_partition::Int=2) where Dc
@@ -190,4 +200,17 @@ function get_d_to_fface_to_cface(model::AdaptedDiscreteModel)
   ctopo = get_grid_topology(get_parent(model))
   glue  = get_adaptivity_glue(model)
   return get_d_to_fface_to_cface(glue,ctopo,ftopo)
+end
+
+
+# DiscreteModelMock refining
+
+function refine(model::Geometry.DiscreteModelMock,cell_partition::Int)
+  @check cell_partition >= 1
+  if cell_partition == 1
+    model
+  else
+    cell_refine_masks = Fill(true,num_cells(model))
+    unstructured_uniform_refine(model,cell_partition;cell_refine_masks=cell_refine_masks)
+  end
 end
