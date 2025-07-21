@@ -10,6 +10,8 @@ using Gridap.Arrays: evaluate
 
 # mini bubble tests
 et = Float64
+max_order = 2
+
 for p in [SEGMENT, TRI, QUAD, TET, HEX]
   for T in [et, VectorValue{2, et}, VectorValue{3, et}]
     reffe = BubbleRefFE(T, p)
@@ -19,6 +21,7 @@ for p in [SEGMENT, TRI, QUAD, TET, HEX]
     @test num_dofs(reffe) == N
     @test Conformity(reffe) == L2Conformity()
     @test get_polytope(reffe) == p
+    @test get_order(reffe) == max_order
 
     face_dofs = fill(Int[], num_faces(p))
     face_dofs[end] = 1:N
@@ -67,5 +70,37 @@ xs = vec([VectorValue(x, y) for x in 0:0.1:1, y in 0:0.1:1])
 foo((x, y)) = 16*x*(1-x)*y*(1-y)
 
 @test all(map(_is_approx, evaluate(shapefuns, xs), foo.(xs)))
+
+# Test API boundaries
+
+# MINI bubble
+
+order = 1
+@test ReferenceFE(SEGMENT, bubble, order) isa GenericRefFE{Bubble}
+@test ReferenceFE(SEGMENT, bubble, Float64, order) isa GenericRefFE{Bubble}
+@test_throws ErrorException ReferenceFE(SEGMENT, bubble, 2)
+
+# Custom terms
+
+coeffs = [ 1.;; ]
+terms = [ CartesianIndex(6,2) ]
+poly_order = 5 # maximum(6-1, 2-1)
+reffe = BubbleRefFE(Float64, p; terms, coeffs)
+@test get_order(reffe) == poly_order
+
+# wrong order with respect to terms
+@test_throws AssertionError ReferenceFE(SEGMENT, bubble, 3; coeffs, terms)
+
+# dimension >0
+@test_throws ErrorException BubbleRefFE(Float64, VERTEX)
+
+# both terms and coeffs needed
+@test_throws ErrorException BubbleRefFE(Float64, p; terms)
+@test_throws ErrorException BubbleRefFE(Float64, p; coeffs)
+
+# wrong number of shapefuns
+coeffs = [ 1. 1.; ]
+terms =  [ CartesianIndex(6,2) ]
+@test_throws ErrorException BubbleRefFE(Float64, p; terms, coeffs)
 
 end

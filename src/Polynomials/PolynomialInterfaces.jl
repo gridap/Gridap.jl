@@ -67,6 +67,8 @@ abstract type PolynomialBasis{D,V,PT<:Polynomial} <: AbstractVector{PT}  end
 Return the maximum polynomial order in a dimension, or `0` in 0D.
 """
 @inline get_order(::PolynomialBasis) = @abstractmethod
+get_order(f::Fields.LinearCombinationFieldVector) = get_order(f.fields)
+get_order(f::AbstractVector{<:ConstantField}) = 0
 
 
 ###########

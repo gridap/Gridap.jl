@@ -42,6 +42,7 @@ The following table summarizes the elements implemented in Gridap (legend below)
 |                                                                                                                                                                                                |
 | [Crouzeix-Raviart](https://defelement.org/elements/crouzeix-raviart.html)               |[`couzeix_raviart`](@ref CrouzeixRaviartRefFE)|            |  `TRI`      | ``{r=1, r}``   | `:L2`     |
 | [discontinuous Lagrangian](https://defelement.org/elements/discontinuous-lagrange.html) | [`lagrangian`](@ref LagrangianRefFE)         | ...Λᴰ      | as above    | ``{r≥0, r}``   | `:L2`     |
+| [MINI bubble](@ref "Bubble reference FE")                                               | [`bubble`](@ref BubbleRefFE)                 |            |△,``\square``| ``{r=1, 2}``   | `:L2`     |
 | Serendipity, Bezier, ModalC0                                                            | as above                                     |            |             | ``{r≥0, r}``   | `:L2`     |
 |                                                                                                                                                                                                |
 | [Arnold-Winther](https://defelement.org/elements/arnold-winther.html)                   | `TODO`  `arnoldwinther`                      |        | `TRI`       | ``{r=2, 4}``   | `:Hdiv`   |
@@ -78,6 +79,12 @@ component of the tensor.
 
 The `modalC0` element has the particularity that it's polytope and thus the
 shape function support can be adapted to the physical element.
+
+###### Bubble reference FE
+
+The [`BubbleRefFE`](@ref) currently implements bubble space for MINI element,
+but the bubble can be fine-tuned. The MINI element on `TRI`angle is documented
+[here](https://defelement.org/elements/mini.html).
 
 ```@docs
 ReferenceFEs
@@ -142,7 +149,7 @@ Pages   = ["ReferenceFEInterfaces.jl","Dofs.jl","LinearCombinationDofVectors.jl"
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["LagrangianRefFEs.jl","LagrangianDofBases.jl","SerendipityRefFEs.jl","BezierRefFEs.jl","ModalC0RefFEs.jl"]
+Pages   = ["LagrangianRefFEs.jl","LagrangianDofBases.jl","SerendipityRefFEs.jl","BezierRefFEs.jl","ModalC0RefFEs.jl","BubbleRefFEs.jl"]
 ```
 
 ### Moment-Based ReferenceFEs
