@@ -1,10 +1,12 @@
+# some helper functions
 
+# if `a` is a `CompressedArray`, then replace `b.ptrs` with `a.ptrs`.
 _similar(::AbstractArray,b::CompressedArray) = b
+
 function _similar(a::CompressedArray,b::CompressedArray)
   n = Int( length(a.values)/length(b.values) )
   CompressedArray(repeat(b.values,n),a.ptrs)
 end
-
 
 @inline function _point_isless(x::Point{D},y::Point{D},atol=eps()) where {D}
   @inbounds for i ∈ D:-1:1
@@ -60,7 +62,14 @@ function _num_nodes(p::Polytope,n)::Int
     @notimplemented
   end
 end
+############################################################################################
+"""
+    cube_simplex_pattern_dimfid(p::Polytope{D}) where {D}
 
+Given a simplex or hypercube, return a dictionary to serve as a mapping `f` from 
+`pattern` to `(dim, fid)`. For example, for `QUAD`, `f[(-1, -1)]` returns `(0, 1)` because
+the origin corresponds to the first 0-dimensional point.
+"""
 function cube_simplex_pattern_dimfid(p::Polytope{D}) where {D}
   face_bcs::Vector{Point{D}} = map(mean,get_face_coordinates(p))
   dimfid = mapreduce(vcat,0:D) do d
@@ -75,7 +84,23 @@ function cube_simplex_pattern_dimfid(p::Polytope{D}) where {D}
   Dict{TKey,Tuple{Int,Int}}(broadcast(Pair,pt,dimfid)...)
 end
 
-function cube_simplex_reference_grid(p::Polytope,n::Integer,pt_map)
+@doc raw"""
+    cube_simplex_reference_grid(p::Polytope,n::Integer)
+
+Given a simplex or hypercube, return an `n`-partitioned grid, where the vertices
+are ordered according to the dimension and id of the face they belong to. 
+For example, when n = 2, the result for the `QUAD` and `TRI` are as follows:
+3 ---- 6 ---- 4     |     3
+|      |      |     |     | \
+|      |      |     |     |  \
+7 ---- 9 ---- 8     |     5 - 6
+|      |      |     |     | \ |\
+|      |      |     |     |  \| \
+1 ---- 5 ---- 2     |     1 - 4 - 2
+      QUAD          |        TRI
+"""
+function cube_simplex_reference_grid(p::Polytope,n::Integer)
+  pt_map = cube_simplex_pattern_dimfid(p)
   atol = 0.25 / n 
   if is_n_cube(p)
     ref_grid = Geometry._compute_linear_grid_from_n_cube(p,n)
@@ -105,12 +130,16 @@ function cube_simplex_reference_grid(p::Polytope,n::Integer,pt_map)
   )
 end
 
+"""
+    cube_simplex_interior_permutation(p::Polytope,n::Integer)
+
+Given a simplex or hypercube, return the permutation of lids of internal nodes induced by its vertex permutation.
+"""
 function cube_simplex_interior_permutation(p::Polytope,n::Integer)
   pcoords = get_vertex_coordinates(p)
   reffe = LagrangianRefFE(p)
   shapefuns = get_shapefuns(reffe)
-  pt_map = cube_simplex_pattern_dimfid(p)
-  grid = cube_simplex_reference_grid(p,n,pt_map)
+  grid = cube_simplex_reference_grid(p,n)
   coords = get_node_coordinates(grid)[end-_num_interior_nodes(p,n)+1:end]
   map(get_vertex_permutations(p)) do perm
     f = linear_combination(pcoords[perm],shapefuns)
@@ -118,6 +147,12 @@ function cube_simplex_interior_permutation(p::Polytope,n::Integer)
   end
 end
 
+"""
+    compute_d_dface_offsets(ctopo,cell_ref_grid,cell_refine_masks::AbstractVector{Bool})
+
+Given the coarse topology, cell-wise reference grid and refinement masks, return fine nodal offsets
+in each coarse faces.
+"""
 function compute_d_dface_offsets(ctopo,cell_ref_grid,cell_refine_masks::AbstractVector{Bool})
   @assert length(cell_refine_masks) == num_cells(ctopo)
   
@@ -154,6 +189,11 @@ function compute_d_dface_offsets(ctopo,cell_ref_grid,cell_refine_masks::Abstract
   d_dface_offsets
 end
 
+"""
+    compute_cell_offsets(ctopo,cell_ref_grid,cell_refine_masks::AbstractVector{Bool})
+
+Given the coarse topology, cell-wise reference grid and refinement masks, return cell-wise fine nodal offsets.
+"""
 function compute_cell_offsets(ctopo,cell_ref_grid,cell_refine_masks::AbstractVector{Bool})
   @assert length(cell_refine_masks) == num_cells(ctopo)
 
@@ -167,6 +207,15 @@ function compute_cell_offsets(ctopo,cell_ref_grid,cell_refine_masks::AbstractVec
   offsets
 end
 
+"""
+    unstructured_refine_cell_l2gmap_and_nnodes(
+      ctopo,
+      cell_ref_grid,
+      cell_refine_masks::AbstractVector{Bool},
+      cell_dface_permutations::AbstractVector)
+
+Cell-wise local-to-global fine nodal mappings and the number of all fine nodes.
+"""
 function unstructured_refine_cell_l2gmap_and_nnodes(
   ctopo,
   cell_ref_grid,
@@ -305,6 +354,22 @@ function unstructured_refine_topology(
   )
 end
 
+"""
+    unstructured_refine(
+      cm::DiscreteModel,
+      cell_refine_masks::AbstractVector{Bool},
+      cell_ref_grid::AbstractVector{<:UnstructuredGrid},
+      cell_dface_permutations::AbstractVector)
+
+Normally, given the cell-wise reference grids, a refined mesh can be constructed via `get_cell_map(cm)`. 
+However, since the `get_cell_map(cm)` does not contain permutation information for faces, we need 
+`cell_dface_permutations` to remap the newly generated points within each face accordingly. The `cell_refine_masks` 
+indicate which cells require refinement, which may lead to the presence of hanging nodes. However, this property is 
+preserved as it might be useful in future applications. 
+
+Note: if a face belongs to cells marked for refinement, it is always assumed that the newly introduced points
+within the face also belong to these refined cells. 
+"""
 function unstructured_refine(
   cm::DiscreteModel,
   cell_refine_masks::AbstractVector{Bool},
@@ -348,16 +413,22 @@ function unstructured_refine(
   AdaptedDiscreteModel(model,cm,glue)
 end
 
+
+"""
+    unstructured_uniform_refine(cm::DiscreteModel,n::Integer,cell_refine_masks::AbstractVector{Bool})
+
+Uniformly refine the given discrete model into `n` parts per dimension. It determine which coarse cells need to be refined
+based on `cell_refine_masks`.
+"""
 function unstructured_uniform_refine(cm::DiscreteModel,n::Integer,cell_refine_masks::AbstractVector{Bool})
   polytopes = get_polytopes(cm)
   cell_type = get_cell_type(cm)
-  pt_maps = map(cube_simplex_pattern_dimfid,polytopes)
   cmparr_ptrs = collect(cell_type)
   cmparr_ptrs[cell_refine_masks] .+= length(polytopes)
   cell_ref_grid = CompressedArray(
     vcat(
-      map((p,pt_map)->cube_simplex_reference_grid(p,1,pt_map),polytopes,pt_maps),
-      map((p,pt_map)->cube_simplex_reference_grid(p,n,pt_map),polytopes,pt_maps)
+      map(p->cube_simplex_reference_grid(p,1),polytopes),
+      map(p->cube_simplex_reference_grid(p,n),polytopes)
     ),
     cmparr_ptrs
   )
@@ -371,6 +442,14 @@ end
 # Tester
 
 function test_unstructured_uniform_refinement()
+  # _similar
+  A = CompressedArray([10,11,12,13],[1,2,3,4])
+  B = CompressedArray([20,21],[1,2])
+  C = [30,31,32]
+  @test _similar(C,A) == A
+  @test _similar(A,B) == [20,21,20,21]
+  @test_throws InexactError _similar(B,A)
+
   # _num_*
   n = 3
   polytopes = [SEGMENT,TRI,QUAD,TET,HEX]
