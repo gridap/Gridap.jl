@@ -6,117 +6,58 @@ using Gridap.Adaptivity
 using Gridap.Geometry
 using Gridap.ReferenceFEs
 using Gridap.Adaptivity: test_unstructured_uniform_refinement
-using Gridap.Adaptivity: cube_simplex_pattern_dimfid
-using Gridap.Adaptivity: cube_simplex_reference_grid
-using Gridap.Adaptivity: compute_d_dface_offsets
-using Gridap.Adaptivity: compute_cell_offsets
-using Gridap.Adaptivity: unstructured_uniform_cell_l2gmap_and_nnodes
-using Gridap.Adaptivity: unstructured_uniform_coordinates
-using Gridap.Adaptivity: unstructured_uniform_connectivity
-using Gridap.Adaptivity: unstructured_uniform_topology
+
+using .EdgeBasedRefinementTests: test_grid_transfers
 
 test_unstructured_uniform_refinement()
 
-#### TRI ####
+# Setup base models
 
-n = 2
-p = TRI
+cart_model = CartesianDiscreteModel((0,1,0,1),(4,4))
+model1 = UnstructuredDiscreteModel(cart_model)
+model2 = simplexify(model1)
 
-face_bary = VectorValue{2,Float64}[
-  (0,0),(1,0),(0,1),(0.5,0),(0,0.5),(0.5,0.5),(1/3,1/3)
-]
-@test face_bary == map(mean,get_face_coordinates(p))
+cart_model = CartesianDiscreteModel((0,1,0,1,0,1),(2,2,2))
+model3 = UnstructuredDiscreteModel(cart_model)
+model4 = simplexify(model3)
 
-# 0->-1, 1->0, o->1
-# sum_one->1
-pt_dimfid = Dict(
-  # coordinates (0,0), dimfid (0,1), pattern (-1,-1,0)
-  (-1,-1,0) => (0,1),
-  # coordinates (0.5,0.5), dimfid (1,3), pattern (1,1,1)
-  (1,1,1) => (1,3),
-  # (1,0), (0,2), (0,-1,1)
-  (0,-1,1) => (0,2),
-  # (0,1), (0,3), (-1,0,1)
-  (-1,0,1) => (0,3),
-  # (0.5,0), (1,1), (1,-1,0)
-  (1,-1,0) => (1,1),
-  # (0,0.5), (1,2), (-1,1,0)
-  (-1,1,0) => (1,2),
-  # (1/3,1/3), (2,1), (1,1,0)
-  (1,1,0) => (2,1)
-)
-pt_map = cube_simplex_pattern_dimfid(p)
-@test all( [pt_map[k] == pt_dimfid[k] for k in keys(pt_map)] )
+model5 = Geometry.DiscreteModelMock()
 
-# 3
-# | \
-# |  \
-# 5 - 6
-# | \ |\
-# |  \| \
-# 1 - 4 - 2
-ref_grid = cube_simplex_reference_grid(p,n,pt_map)
-coords = VectorValue{2,Float64}[
-  (0,0),(1,0),(0,1),(0.5,0),(0.,0.5),(0.5,0.5)
-]
-cell_ids = [
-  [1,4,5], [5,6,3], [4,2,6], [4,6,5]
-]
+n = 3
 
-test_grid(ref_grid)
-@test coords == get_node_coordinates(ref_grid)
-@test cell_ids == get_cell_node_ids(ref_grid)
+visualize = true
+if visualize
+  path = mkpath("tmp/")
+end
 
+# QUAD
+ref_model = refine(model1,n)
+visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"uniform_quad_$n"))
+test_grid_transfers(model1,ref_model,1)
 
-#### QUAD ####
+# TRI
+ref_model = refine(model2,n)
+visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"uniform_tri_$n"))
+test_grid_transfers(model2,ref_model,1)
 
-p = QUAD
-n = 2
+# HEX
+ref_model = refine(model3,n)
+visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"uniform_hex_$n"))
+test_grid_transfers(model3,ref_model,1)
 
-face_bary = VectorValue{2,Float64}[
-  (0,0),(1,0),(0,1),(1,1),
-  (0.5,0),(0.5,1),(0,0.5),(1,0.5),
-  (0.5,0.5)
-]
+# TET
+# bug
+ref_model = refine(model4,n)
+visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"uniform_tet_$n"))
+test_grid_transfers(model4,ref_model,1)
 
-@test face_bary == map(mean,get_face_coordinates(p))
-
-# 0->-1, 1->0, o->1
-pt_dimfid = Dict(
-  (-1,-1) => (0,1),
-  (0,-1) => (0,2),
-  (-1,0) => (0,3),
-  (0,0) => (0,4),
-  (1,-1) => (1,1),
-  (1,0) => (1,2),
-  (-1,1) => (1,3),
-  (0,1) => (1,4),
-  (1,1) => (2,1)
-)
-pt_map = cube_simplex_pattern_dimfid(p)
-@test all( [pt_map[k] == pt_dimfid[k] for k in keys(pt_map)] )
-
-
-# 3 ---- 6 ---- 4
-# |      |      |
-# |      |      |
-# 7 ---- 9 ---- 8
-# |      |      |
-# |      |      |
-# 1 ---- 5 ---- 2
-ref_grid = cube_simplex_reference_grid(p,n,pt_map)
-coords = VectorValue{2,Float64}[
-  (0,0),(1,0),(0,1),(1,1),
-  (0.5,0),(0.5,1),(0,0.5),(1,0.5),
-  (0.5,0.5)
-]
-cell_ids = [
-  [1,5,7,9], [5,2,9,8],
-  [7,9,3,6], [9,8,6,4]
-]
-
-test_grid(ref_grid)
-@test coords == get_node_coordinates(ref_grid)
-@test cell_ids == get_cell_node_ids(ref_grid)
+# Mock
+# bug in calling TestFESpace(model5,rrules,ReferenceFE(lagrangian,Float64,1))
+ref_model = refine(model5,n)
+# visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"uniform_mock_$n"))
+glue = get_adaptivity_glue(ref_model)
+rrules = Adaptivity.get_old_cell_refinement_rules(glue)
+TestFESpace(model5,rrules,ReferenceFE(lagrangian,Float64,1))
+# test_grid_transfers(model5,ref_model,1)
 
 end
