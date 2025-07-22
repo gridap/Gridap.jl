@@ -6,7 +6,7 @@ This module provides:
 
 The exported names in this module are:
 
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__))
 """
 module Arrays
 
@@ -53,6 +53,7 @@ export inverse_map
 
 export Broadcasting
 export Operation
+export InverseMap
 
 # LazyArray
 
@@ -178,7 +179,5 @@ include("AlgebraMaps.jl")
 include("Autodiff.jl")
 
 include("PrintOpTrees.jl")
-
-const ∑ = sum
 
 end # module

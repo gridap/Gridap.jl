@@ -1,3 +1,6 @@
+"""
+    struct DensifyInnerMostBlockLevelMap <: Map
+"""
 struct DensifyInnerMostBlockLevelMap <: Map
 end
 

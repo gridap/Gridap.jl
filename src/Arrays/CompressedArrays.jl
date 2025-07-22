@@ -4,6 +4,7 @@
       values::A
       ptrs::P
     end
+
 Type representing an array with a reduced set of values.
 The array is represented by a short array of values, namely
 the field `values`, and a large array of indices, namely the

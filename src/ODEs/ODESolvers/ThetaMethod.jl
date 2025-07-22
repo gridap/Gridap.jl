@@ -35,7 +35,13 @@ struct ThetaMethod <: ODESolver
   end
 end
 
+"""
+    MidPoint(sysslvr, dt) = ThetaMethod(sysslvr, dt, 0.5)
+"""
 MidPoint(sysslvr, dt) = ThetaMethod(sysslvr, dt, 0.5)
+"""
+    BackwardEuler(sysslvr, dt) = ThetaMethod(sysslvr, dt, 1)
+"""
 BackwardEuler(sysslvr, dt) = ThetaMethod(sysslvr, dt, 1)
 
 ##################
