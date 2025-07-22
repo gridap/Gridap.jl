@@ -76,27 +76,25 @@ function cube_simplex_pattern_dimfid(p::Polytope{D}) where {D}
 end
 
 function cube_simplex_reference_grid(p::Polytope,n::Integer,pt_map)
-  Dc = num_cell_dims(p)
   atol = 0.25 / n 
   if is_n_cube(p)
-    ref_grid = UnstructuredGrid(Geometry._compute_linear_grid_from_n_cube(p,n))
-    coords = get_node_coordinates(ref_grid)
+    ref_grid = Geometry._compute_linear_grid_from_n_cube(p,n)
+    coords = collect(vec(get_node_coordinates(ref_grid)))
     dimfids = map(c->pt_map[_to_cube_pattern(c,atol)],coords)
+    conn = Table(get_cell_node_ids(ref_grid))
   else 
-    ref_grid = Geometry._compute_linear_grid_from_simplex(p,n)
-    coords = get_node_coordinates(ref_grid)
+    coords,_conn = Geometry._compute_linear_grid_coords_from_simplex(p,n)
     dimfids = map(c->pt_map[_to_simplex_pattern(c,atol)],coords)
+    conn = Table(_conn)
   end
-  
   perm = sortperm(broadcast(tuple,dimfids,coords))
-  conn = Table(get_cell_node_ids(ref_grid))
   inv_perm = similar(perm)
   inv_perm[perm] = 1:length(perm)
   new_coords = coords[perm]
   new_conn = Table(inv_perm[conn.data],conn.ptrs)
-  reffes::Vector{LagrangianRefFE{Dc}} = get_reffes(ref_grid)
+  reffes = [ LagrangianRefFE(Float64,p,1) ]
   orientation_style = NonOriented()
-  cell_types = collect(get_cell_type(ref_grid))
+  cell_types = ones(Int8,length(conn))
 
   UnstructuredGrid(
     new_coords,
@@ -105,6 +103,19 @@ function cube_simplex_reference_grid(p::Polytope,n::Integer,pt_map)
     cell_types,
     orientation_style
   )
+end
+
+function cube_simplex_interior_permutation(p::Polytope,n::Integer)
+  pcoords = get_vertex_coordinates(p)
+  reffe = LagrangianRefFE(p)
+  shapefuns = get_shapefuns(reffe)
+  pt_map = cube_simplex_pattern_dimfid(p)
+  grid = cube_simplex_reference_grid(p,n,pt_map)
+  coords = get_node_coordinates(grid)[end-_num_interior_nodes(p,n)+1:end]
+  map(get_vertex_permutations(p)) do perm
+    f = linear_combination(pcoords[perm],shapefuns)
+    sortperm(evaluate(f,coords),lt=_point_isless)
+  end
 end
 
 function compute_d_dface_offsets(ctopo,cell_ref_grid,cell_refine_masks::AbstractVector{Bool})
@@ -156,36 +167,48 @@ function compute_cell_offsets(ctopo,cell_ref_grid,cell_refine_masks::AbstractVec
   offsets
 end
 
-function unstructured_refine_cell_l2gmap_and_nnodes(ctopo,cell_ref_grid,cell_refine_masks::AbstractVector{Bool})
-  @assert length(cell_refine_masks) == num_cells(ctopo)
+function unstructured_refine_cell_l2gmap_and_nnodes(
+  ctopo,
+  cell_ref_grid,
+  cell_refine_masks::AbstractVector{Bool},
+  cell_dface_permutations::AbstractVector)
+  @assert length(cell_refine_masks) == num_cells(ctopo) == length(cell_dface_permutations)
 
   Dc = num_cell_dims(ctopo)
   d_df_goffsets = compute_d_dface_offsets(ctopo,cell_ref_grid,cell_refine_masks)
   l2g_ptrs = compute_cell_offsets(ctopo,cell_ref_grid,cell_refine_masks)
   l2g_data = Vector{Int32}(undef,l2g_ptrs[end]-1)
   d_c2df = ntuple(d->Table(get_faces(ctopo,Dc,d)),Val{Dc}())
+  d_c2perm = ntuple(d->Table(get_cell_permutations(ctopo,d)),Val{Dc}())
   c2n = Table(get_faces(ctopo,Dc,0))
 
   @inbounds Threads.@threads for ci in 1:length(l2g_ptrs)-1
     lo = l2g_ptrs[ci]
-
     # vertices
-    (;data,ptrs) = c2n
-    l = ptrs[ci+1]-ptrs[ci]
-    copyto!(l2g_data,lo,data,ptrs[ci],l)
+    pini = c2n.ptrs[ci]
+    l = c2n.ptrs[ci+1]-pini
+    copyto!(l2g_data,lo,c2n.data,pini,l)
     lo += l
 
     # 1-face ~ (Dc)-face
+    dface_perm = cell_dface_permutations[ci]
     if cell_refine_masks[ci]
       for d in 1:Dc
-        (;data,ptrs) = d_c2df[d]
+        c2perm = d_c2perm[d]
+        c2df = d_c2df[d]
         goffsets = d_df_goffsets[d]
-        for i in ptrs[ci]:ptrs[ci+1]-1
-          fi = data[i]
-          for go in goffsets[fi]:goffsets[fi+1]-1
-            l2g_data[lo] = go
-            lo += 1
+        pini = c2df.ptrs[ci]
+        ndf = c2df.ptrs[ci+1] - pini
+        for i in 0:ndf-1
+          fi = c2df.data[pini+i]
+          tp = c2perm.data[pini+i]
+          perm = dface_perm[d][tp]
+          gini = goffsets[fi]
+          nn = goffsets[fi+1] - gini
+          for j in 0:nn-1
+            l2g_data[lo+perm[j+1]-1] = gini + j
           end
+          lo += nn
         end
       end
     end
@@ -218,7 +241,6 @@ function unstructured_refine_connectivity(cell_ref_conns,cell_l2g,n_cells)
   fci = 1
   @inbounds for ci in eachindex(cell_ref_conns)
     (;ptrs) = cell_ref_conns[ci]
-    # cptrs = conn.ptrs
     for i in 1:length(ptrs)-1
       conn_ptrs[fci+1] = conn_ptrs[fci] + ptrs[i+1] - ptrs[i]
       fci += 1
@@ -238,7 +260,12 @@ function unstructured_refine_connectivity(cell_ref_conns,cell_l2g,n_cells)
   Table(conn_data,conn_ptrs)
 end
 
-function unstructured_refine_topology(cell_ref_grid,ctopo,cell_map,cell_refine_masks)
+function unstructured_refine_topology(
+  cell_ref_grid,
+  ctopo,
+  cell_map,
+  cell_refine_masks::AbstractVector{Bool},
+  cell_dface_permutations::AbstractVector)
   polytopes = get_polytopes(ctopo)
   @notimplementedif !all( map(p->is_n_cube(p) || is_simplex(p),polytopes) )
 
@@ -246,7 +273,12 @@ function unstructured_refine_topology(cell_ref_grid,ctopo,cell_map,cell_refine_m
   cell_ref_coords = lazy_map(get_node_coordinates,cell_ref_grid)
   cell_ref_conns = lazy_map(get_cell_node_ids,cell_ref_grid)
   cell_type = get_cell_type(ctopo)
-  cell_l2g,n_nodes = unstructured_refine_cell_l2gmap_and_nnodes(ctopo,cell_ref_grid,cell_refine_masks)
+  cell_l2g,n_nodes = unstructured_refine_cell_l2gmap_and_nnodes(
+    ctopo,
+    cell_ref_grid,
+    cell_refine_masks,
+    cell_dface_permutations
+  )
   n_cells = sum(cell_lncells)
   coords = unstructured_refine_coordinates(cell_ref_coords,cell_l2g,cell_map,n_nodes)
   conn = unstructured_refine_connectivity(cell_ref_conns,cell_l2g,n_cells)
@@ -276,8 +308,9 @@ end
 function unstructured_refine(
   cm::DiscreteModel,
   cell_refine_masks::AbstractVector{Bool},
-  cell_ref_grid::AbstractVector{<:UnstructuredGrid})
-  @assert length(cell_refine_masks) == num_cells(cm)
+  cell_ref_grid::AbstractVector{<:UnstructuredGrid},
+  cell_dface_permutations::AbstractVector)
+  @assert length(cell_refine_masks) == num_cells(cm) == length(cell_dface_permutations)
 
   polytopes = get_polytopes(cm)
   ctopo = get_grid_topology(cm)
@@ -294,7 +327,13 @@ function unstructured_refine(
     cmparr_ptrs
   )
 
-  topo = unstructured_refine_topology(cell_ref_grid,ctopo,cell_map,cell_refine_masks)
+  topo = unstructured_refine_topology(
+    cell_ref_grid,
+    ctopo,
+    cell_map,
+    cell_refine_masks,
+    cell_dface_permutations
+  )
   grid = UnstructuredGrid(
     get_vertex_coordinates(topo),
     get_faces(topo,num_cell_dims(topo),0),
@@ -311,8 +350,9 @@ end
 
 function unstructured_uniform_refine(cm::DiscreteModel,n::Integer,cell_refine_masks::AbstractVector{Bool})
   polytopes = get_polytopes(cm)
+  cell_type = get_cell_type(cm)
   pt_maps = map(cube_simplex_pattern_dimfid,polytopes)
-  cmparr_ptrs = collect(get_cell_type(cm))
+  cmparr_ptrs = collect(cell_type)
   cmparr_ptrs[cell_refine_masks] .+= length(polytopes)
   cell_ref_grid = CompressedArray(
     vcat(
@@ -321,7 +361,11 @@ function unstructured_uniform_refine(cm::DiscreteModel,n::Integer,cell_refine_ma
     ),
     cmparr_ptrs
   )
-  unstructured_refine(cm,cell_refine_masks,cell_ref_grid)
+  dface_permutations = map(polytopes) do p 
+    map(fp->(cube_simplex_interior_permutation(fp,n)),get_reffaces(p)[2:end])
+  end
+  cell_dface_permutations = CompressedArray(dface_permutations,cell_type)
+  unstructured_refine(cm,cell_refine_masks,cell_ref_grid,cell_dface_permutations)
 end
 
 # Tester
