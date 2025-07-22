@@ -52,10 +52,6 @@ function HellanHerrmannJhonsonRefFE(::Type{T},p::Polytope,order::Integer) where 
   return MomentBasedReferenceFE(HellanHerrmannJhonson(),p,prebasis,moments,DivConformity())
 end
 
-# TODO remove those
-Polynomials.get_order(f::Fields.LinearCombinationFieldVector) = get_order(f.fields)
-Polynomials.get_order(f::AbstractVector{<:ConstantField}) = 0
-
 function ReferenceFE(p::Polytope,::HellanHerrmannJhonson,::Type{T}, order) where T
   HellanHerrmannJhonsonRefFE(T,p,order)
 end
