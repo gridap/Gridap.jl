@@ -1,3 +1,11 @@
+
+_similar(::AbstractArray,b::CompressedArray) = b
+function _similar(a::CompressedArray,b::CompressedArray)
+  n = Int( length(a.values)/length(b.values) )
+  CompressedArray(repeat(b.values,n),a.ptrs)
+end
+
+
 @inline function _point_isless(x::Point{D},y::Point{D},atol=eps()) where {D}
   @inbounds for i ∈ D:-1:1
     if x[i] < y[i] - atol
@@ -99,17 +107,23 @@ function cube_simplex_reference_grid(p::Polytope,n::Integer,pt_map)
   )
 end
 
-function compute_d_dface_offsets(ctopo,n,cell_refine_masks::AbstractVector{Bool})
+function compute_d_dface_offsets(ctopo,cell_ref_grid,cell_refine_masks::AbstractVector{Bool})
   @assert length(cell_refine_masks) == num_cells(ctopo)
   
   Dc = num_cell_dims(ctopo)
-  cell_dface_nnodes = CompressedArray(
-    map(
-      Broadcasting(p->_num_interior_nodes(p,n)),
-      map(get_reffaces,get_polytopes(ctopo))
-    )::Vector{Vector{Int}},
-    get_cell_type(ctopo)
-  )
+  polytopes = get_polytopes(ctopo)
+  cell_type = get_cell_type(ctopo) 
+  cell_polytope = _similar(cell_ref_grid,CompressedArray(polytopes,cell_type))
+  cell_dface_nnodes = lazy_map(cell_ref_grid,cell_polytope) do grid,p
+    pt_map = cube_simplex_pattern_dimfid(p)
+    coords = get_node_coordinates(grid)
+    if is_n_cube(p)
+      dimfids = map(c->pt_map[_to_cube_pattern(c)],coords)
+    else
+      dimfids = map(c->pt_map[_to_simplex_pattern(c)],coords)
+    end
+    map(d->Int32(count(==((d,1)),dimfids)),0:Dc)::Vector{Int32}
+  end
   d_dface_offsets = Vector{Vector{Int32}}(undef,Dc)
   for d in 1:Dc
     (;data,ptrs) = Table(get_faces(ctopo,d,Dc))
@@ -129,18 +143,11 @@ function compute_d_dface_offsets(ctopo,n,cell_refine_masks::AbstractVector{Bool}
   d_dface_offsets
 end
 
-function compute_cell_offsets(ctopo,n,cell_refine_masks::AbstractVector{Bool})
+function compute_cell_offsets(ctopo,cell_ref_grid,cell_refine_masks::AbstractVector{Bool})
   @assert length(cell_refine_masks) == num_cells(ctopo)
 
   Dc = num_cell_dims(ctopo)
-  polytopes = get_polytopes(ctopo)
-  ptrs = collect(get_cell_type(ctopo))
-  values = vcat(
-    map(num_vertices,polytopes),
-    map(p->_num_nodes(p,n),polytopes)
-  )
-  ptrs[cell_refine_masks] .+= length(polytopes)
-  cell_nnodes = CompressedArray(values,ptrs)
+  cell_nnodes = lazy_map(num_nodes,cell_ref_grid)
   offsets = Vector{Int32}(undef,num_faces(ctopo,Dc)+1)
   offsets[1] = 1
   @inbounds for ci in 1:length(offsets)-1
@@ -149,12 +156,12 @@ function compute_cell_offsets(ctopo,n,cell_refine_masks::AbstractVector{Bool})
   offsets
 end
 
-function unstructured_uniform_cell_l2gmap_and_nnodes(ctopo,n,cell_refine_masks::AbstractVector{Bool})
+function unstructured_refine_cell_l2gmap_and_nnodes(ctopo,cell_ref_grid,cell_refine_masks::AbstractVector{Bool})
   @assert length(cell_refine_masks) == num_cells(ctopo)
 
   Dc = num_cell_dims(ctopo)
-  d_df_goffsets = compute_d_dface_offsets(ctopo,n,cell_refine_masks)
-  l2g_ptrs = compute_cell_offsets(ctopo,n,cell_refine_masks)
+  d_df_goffsets = compute_d_dface_offsets(ctopo,cell_ref_grid,cell_refine_masks)
+  l2g_ptrs = compute_cell_offsets(ctopo,cell_ref_grid,cell_refine_masks)
   l2g_data = Vector{Int32}(undef,l2g_ptrs[end]-1)
   d_c2df = ntuple(d->Table(get_faces(ctopo,Dc,d)),Val{Dc}())
   c2n = Table(get_faces(ctopo,Dc,0))
@@ -188,7 +195,7 @@ function unstructured_uniform_cell_l2gmap_and_nnodes(ctopo,n,cell_refine_masks::
   Table(l2g_data,l2g_ptrs),n_nodes
 end
 
-function unstructured_uniform_coordinates(cell_ref_coords,cell_l2g,cell_map,n_nodes)
+function unstructured_refine_coordinates(cell_ref_coords,cell_l2g,cell_map,n_nodes)
   coords = similar(first(cell_ref_coords),n_nodes)
   cell_l2g = Table(cell_l2g)
   @inbounds Threads.@threads for ci in eachindex(cell_l2g)
@@ -204,7 +211,7 @@ function unstructured_uniform_coordinates(cell_ref_coords,cell_l2g,cell_map,n_no
   coords
 end
 
-function unstructured_uniform_connectivity(cell_ref_conns,cell_l2g,n_cells)
+function unstructured_refine_connectivity(cell_ref_conns,cell_l2g,n_cells)
   cell_ref_conns = lazy_map(Table, cell_ref_conns)
   conn_ptrs = Vector{Int32}(undef,n_cells+1)
   conn_ptrs[1] = 1
@@ -231,7 +238,7 @@ function unstructured_uniform_connectivity(cell_ref_conns,cell_l2g,n_cells)
   Table(conn_data,conn_ptrs)
 end
 
-function unstructured_uniform_topology(cell_ref_grid,ctopo,cell_map,n,cell_refine_masks)
+function unstructured_refine_topology(cell_ref_grid,ctopo,cell_map,cell_refine_masks)
   polytopes = get_polytopes(ctopo)
   @notimplementedif !all( map(p->is_n_cube(p) || is_simplex(p),polytopes) )
 
@@ -239,10 +246,10 @@ function unstructured_uniform_topology(cell_ref_grid,ctopo,cell_map,n,cell_refin
   cell_ref_coords = lazy_map(get_node_coordinates,cell_ref_grid)
   cell_ref_conns = lazy_map(get_cell_node_ids,cell_ref_grid)
   cell_type = get_cell_type(ctopo)
-  cell_l2g,n_nodes = unstructured_uniform_cell_l2gmap_and_nnodes(ctopo,n,cell_refine_masks)
+  cell_l2g,n_nodes = unstructured_refine_cell_l2gmap_and_nnodes(ctopo,cell_ref_grid,cell_refine_masks)
   n_cells = sum(cell_lncells)
-  coords = unstructured_uniform_coordinates(cell_ref_coords,cell_l2g,cell_map,n_nodes)
-  conn = unstructured_uniform_connectivity(cell_ref_conns,cell_l2g,n_cells)
+  coords = unstructured_refine_coordinates(cell_ref_coords,cell_l2g,cell_map,n_nodes)
+  conn = unstructured_refine_connectivity(cell_ref_conns,cell_l2g,n_cells)
   
   f_cell_type = similar(cell_type,n_cells)
   i = 1
@@ -266,25 +273,19 @@ function unstructured_uniform_topology(cell_ref_grid,ctopo,cell_map,n,cell_refin
   )
 end
 
-function unstructured_uniform_refine(cm::DiscreteModel,n::Integer;cell_refine_masks::AbstractVector{Bool})
+function unstructured_refine(
+  cm::DiscreteModel,
+  cell_refine_masks::AbstractVector{Bool},
+  cell_ref_grid::AbstractVector{<:UnstructuredGrid})
   @assert length(cell_refine_masks) == num_cells(cm)
 
   polytopes = get_polytopes(cm)
-  # cell_type = get_cell_type(cm)
   ctopo = get_grid_topology(cm)
   cgrid = get_grid(cm)
   cell_map = get_cell_map(cgrid)
-  # cell_polytope = CompressedArray(polytopes,cell_type)
-  pt_maps = map(cube_simplex_pattern_dimfid,polytopes)
   cmparr_ptrs = collect(get_cell_type(cm))
   cmparr_ptrs[cell_refine_masks] .+= length(polytopes)
-  cell_ref_grid = CompressedArray(
-    vcat(
-      map((p,pt_map)->cube_simplex_reference_grid(p,1,pt_map),polytopes,pt_maps),
-      map((p,pt_map)->cube_simplex_reference_grid(p,n,pt_map),polytopes,pt_maps)
-    ),
-    cmparr_ptrs
-  )
+  
   rrules = CompressedArray(
     vcat(
       map((p,g)->RefinementRule(WithoutRefinement(),p,g),polytopes,cell_ref_grid),
@@ -293,7 +294,7 @@ function unstructured_uniform_refine(cm::DiscreteModel,n::Integer;cell_refine_ma
     cmparr_ptrs
   )
 
-  topo = unstructured_uniform_topology(cell_ref_grid,ctopo,cell_map,n,cell_refine_masks)
+  topo = unstructured_refine_topology(cell_ref_grid,ctopo,cell_map,cell_refine_masks)
   grid = UnstructuredGrid(
     get_vertex_coordinates(topo),
     get_faces(topo,num_cell_dims(topo),0),
@@ -308,6 +309,20 @@ function unstructured_uniform_refine(cm::DiscreteModel,n::Integer;cell_refine_ma
   AdaptedDiscreteModel(model,cm,glue)
 end
 
+function unstructured_uniform_refine(cm::DiscreteModel,n::Integer,cell_refine_masks::AbstractVector{Bool})
+  polytopes = get_polytopes(cm)
+  pt_maps = map(cube_simplex_pattern_dimfid,polytopes)
+  cmparr_ptrs = collect(get_cell_type(cm))
+  cmparr_ptrs[cell_refine_masks] .+= length(polytopes)
+  cell_ref_grid = CompressedArray(
+    vcat(
+      map((p,pt_map)->cube_simplex_reference_grid(p,1,pt_map),polytopes,pt_maps),
+      map((p,pt_map)->cube_simplex_reference_grid(p,n,pt_map),polytopes,pt_maps)
+    ),
+    cmparr_ptrs
+  )
+  unstructured_refine(cm,cell_refine_masks,cell_ref_grid)
+end
 
 # Tester
 
