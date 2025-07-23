@@ -17,8 +17,7 @@ end
 # ve defined on different triangulations.
 #
 # TODO: Currently, this is only implemented for the gradient and jacobian.
-#  The Hessian is slightly proplematic because the off-diagonal blocks are
-#  missed. This is because the basis isn't baked into f as it is in jacobian.
+#  The Hessian is proplematic because the off-diagonal blocks are missed.
 
 for (op,_op) in ((:gradient,:_gradient),(:jacobian,:_jacobian),(:hessian,:_hessian))
   @eval begin

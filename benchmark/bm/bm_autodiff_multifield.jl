@@ -1,24 +1,23 @@
 using Gridap, Gridap.MultiField, Gridap.FESpaces
-using BenchmarkTools, ProfileView, Profile
+using BenchmarkTools
 
 function benchmark(V,uh,res)
   ## Gradient
   println("Gradient:")
   _res_grad(uh) = res(uh,uh)
-  _res_grafuh = _res_grad(uh)
-  g = gradient(_res_grad,uh)
+  g = gradient(_res_grad,uh;ad_type=:monolithic)
   G = assemble_vector(g,V)
-  @btime Gridap.FESpaces._gradient($_res_grad,$uh,$_res_grafuh);
+  @btime gradient($_res_grad,$uh;ad_type=$(:monolithic));
   @btime assemble_vector!($g,$G,$V);
 
-  # ## Jacobian
-  # println("Jacobian:")
-  # dv = get_fe_basis(V)
-  # _res_jac(uh) = res(uh,dv)
-  # j = jacobian(_res_jac,uh)
-  # J = assemble_matrix(j,V,V)
-  # @btime jacobian($_res_jac,$uh);
-  # @btime assemble_matrix!($j,$J,$V,$V);
+  ## Jacobian
+  println("Jacobian:")
+  dv = get_fe_basis(V)
+  _res_jac(uh) = res(uh,dv)
+  j = jacobian(_res_jac,uh;ad_type=:monolithic)
+  J = assemble_matrix(j,V,V)
+  @btime jacobian($_res_jac,$uh;ad_type=$(:monolithic));
+  @btime assemble_matrix!($j,$J,$V,$V);
 
   # ## Hessian
   # println("Hessian:")
@@ -32,20 +31,19 @@ function benchmark_new(V,uh,res)
   ## Gradient
   println("Gradient:")
   _res_grad(uh) = res(uh,uh)
-  _res_grafuh = _res_grad(uh)
-  g = Gridap.MultiField._mf_gradient(f,uh,fuh)(_res_grad,uh,_res_grafuh)
+  g = gradient(_res_grad,uh;ad_type=:split)
   G = assemble_vector(g,V)
-  @btime Gridap.MultiField._mf_gradient(f,uh,fuh)($_res_grad,$uh,$_res_grafuh);
+  @btime gradient($_res_grad,$uh;ad_type=$(:split));
   @btime assemble_vector!($g,$G,$V);
 
-  # ## Jacobian
-  # println("Jacobian:")
-  # dv = get_fe_basis(V)
-  # _res_jac(uh) = res(uh,dv)
-  # j = jacobian(_res_jac,uh)
-  # J = assemble_matrix(j,V,V)
-  # @btime jacobian($_res_jac,$uh);
-  # @btime assemble_matrix!($j,$J,$V,$V);
+  ## Jacobian
+  println("Jacobian:")
+  dv = get_fe_basis(V)
+  _res_jac(uh) = res(uh,dv)
+  j = jacobian(_res_jac,uh;ad_type=:split)
+  J = assemble_matrix(j,V,V)
+  @btime jacobian($_res_jac,$uh;ad_type=$(:split));
+  @btime assemble_matrix!($j,$J,$V,$V);
 
   # ## Hessian
   # println("Hessian:")
@@ -80,3 +78,6 @@ main_mf_new(64,Float64,1);
 
 main_mf(64,VectorValue{2,Float64},1);
 main_mf_new(64,VectorValue{2,Float64},1);
+
+main_mf(64,VectorValue{2,Float64},2);
+main_mf_new(64,VectorValue{2,Float64},2);
