@@ -12,13 +12,13 @@ using .EdgeBasedRefinementTests: test_grid_transfers
 test_unstructured_uniform_refinement()
 
 # Setup base models
-
+has_affine_map = true
 cart_model = CartesianDiscreteModel((0,1,0,1),(4,4))
-model1 = UnstructuredDiscreteModel(cart_model)
+model1 = UnstructuredDiscreteModel(cart_model;has_affine_map)
 model2 = simplexify(model1)
 
 cart_model = CartesianDiscreteModel((0,1,0,1,0,1),(2,2,2))
-model3 = UnstructuredDiscreteModel(cart_model)
+model3 = UnstructuredDiscreteModel(cart_model;has_affine_map)
 model4 = simplexify(model3)
 
 model5 = Geometry.DiscreteModelMock()
@@ -52,12 +52,8 @@ visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"uniform_tet_
 test_grid_transfers(model4,ref_model,1)
 
 # Mock
-# bug in calling TestFESpace(model5,rrules,ReferenceFE(lagrangian,Float64,1))
 ref_model = refine(model5,n)
-# visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"uniform_mock_$n"))
-glue = get_adaptivity_glue(ref_model)
-rrules = Adaptivity.get_old_cell_refinement_rules(glue)
-TestFESpace(model5,rrules,ReferenceFE(lagrangian,Float64,1))
-# test_grid_transfers(model5,ref_model,1)
+visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"uniform_mock_$n"))
+test_grid_transfers(model5,ref_model,1)
 
 end
