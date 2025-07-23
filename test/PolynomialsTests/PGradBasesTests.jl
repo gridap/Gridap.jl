@@ -21,6 +21,7 @@ PT = Monomial
 order = 0
 D = 3
 b = NedelecPolyBasisOnSimplex{D}(PT, T, order)
+@test testvalue(typeof(b)) isa typeof(b)
 
 V = VectorValue{D, Float64}
 v = V[(1,0,0),(0,1,0),(0,0,1),(-3,2,0),(-5,0,2),(0,-5,3)]
@@ -42,6 +43,7 @@ x = fill(xi,np)
 order = 0
 D = 2
 b = NedelecPolyBasisOnSimplex{D}(PT, T, order)
+@test testvalue(typeof(b)) isa typeof(b)
 V = VectorValue{D, Float64}
 v = V[(1,0),(0,1),(-3,2)]
 G = gradient_type(V,xi)
@@ -61,6 +63,7 @@ V = VectorValue{D,T}
 b = PGradBasis(PT,Val(D),T,order)
 
 @test b isa CartProdPolyBasis{D,V,PT}
+@test testvalue(typeof(b)) isa typeof(b)
 
 @test_throws AssertionError PGradBasis(PT,Val(D),V,order)
 

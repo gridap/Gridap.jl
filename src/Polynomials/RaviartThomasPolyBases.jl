@@ -59,6 +59,10 @@ end
 Base.size(b::RaviartThomasPolyBasis{D}) where {D} = (D*length(b.pterms) + length(b.sterms), )
 get_order(b::RaviartThomasPolyBasis) = b.max_order
 
+function testvalue(::Type{RaviartThomasPolyBasis{D,V,PT}}) where {D,V,PT}
+  T = eltype(V)
+  RaviartThomasPolyBasis{D}(PT, T, 0)
+end
 
 #################################
 # nD evaluations implementation #

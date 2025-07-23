@@ -1,6 +1,7 @@
 module ModalC0BasesTests
 
 using Test
+using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
@@ -45,6 +46,7 @@ order = 3
 a = fill(Point(0.),order+1)
 b = fill(Point(1.),order+1)
 b1 = ModalC0Basis{1}(V,order,a,b)
+@test testvalue(typeof(b1)) isa typeof(b1)
 b1u= CartProdPolyBasis(ModalC0,Val(1),V,order)
 
 ∇b1  = Broadcasting(∇)(b1)

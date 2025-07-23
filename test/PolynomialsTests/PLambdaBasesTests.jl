@@ -87,6 +87,8 @@ function _test_bases_in_ref_simplex(VD, T, r, k)
   evaluate(Broadcasting(∇∇)(bv),x)
 
   @test b.Ψ == bv.Ψ
+
+  @test testvalue(typeof(b)) isa typeof(b)
 end
 
 T = Float64

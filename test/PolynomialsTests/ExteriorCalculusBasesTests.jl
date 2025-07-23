@@ -24,6 +24,7 @@ no_hessian = true
   @test b isa typeof(b2)
   @test evaluate(b,x) == evaluate(b2,x)
   @test evaluate(Broadcasting(∇)(b),x) == evaluate(Broadcasting(∇)(b2),x)
+  @test testvalue(typeof(b)) isa typeof(b)
   if no_hessian
     @test_throws ErrorException evaluate(Broadcasting(∇∇)(b),x) == evaluate(Broadcasting(∇∇)(b2),x)
   else

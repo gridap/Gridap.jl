@@ -23,6 +23,7 @@ hierarchical.
 """
 isHierarchical(::Type{<:Polynomial}) = @abstractmethod
 
+testvalue(::Type{PT}) where PT<:Polynomial = isconcretetype(PT) ? PT() : @abstractmethod
 
 ###########################################
 # Polynomial basis abstract type and APIs #
@@ -67,6 +68,7 @@ abstract type PolynomialBasis{D,V,PT<:Polynomial} <: AbstractVector{PT}  end
 Return the maximum polynomial order in a dimension, or `0` in 0D.
 """
 @inline get_order(::PolynomialBasis) = @abstractmethod
+testvalue(::Type{<:PolynomialBasis}) = @abstractmethod
 
 
 ###########

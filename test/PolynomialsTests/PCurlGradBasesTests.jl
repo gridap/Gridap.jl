@@ -18,6 +18,7 @@ T = Float64
 V = VectorValue{D,T}
 G = gradient_type(V,xi)
 b = PCurlGradBasis(PT, Val(D),T,order)
+@test testvalue(typeof(b)) isa typeof(b)
 
 v = V[
   (1.0,  0.0), (4.0,  0.0), (16.0, 0.0), (2.0,  0.0), (8.0,  0.0), (4.0,  0.0), # pterm ex
@@ -72,6 +73,7 @@ D = 1
 T = Float64
 V = VectorValue{D,T}
 b = PCurlGradBasis(PT,Val(D),T,order)
+@test testvalue(typeof(b)) isa typeof(b)
 
 @test b isa CartProdPolyBasis{D,V,PT}
 

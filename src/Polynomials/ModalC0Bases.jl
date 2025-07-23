@@ -126,6 +126,13 @@ function get_orders(b::ModalC0Basis)
   b.orders
 end
 
+function testvalue(::Type{ModalC0Basis{D,V,T}}) where {D,V,T}
+  orders = tfill(1,Val{D}())
+  sa = Point{D,T}(tfill(zero(T),Val(D)))
+  sb = Point{D,T}(tfill( one(T),Val(D)))
+  ModalC0Basis{D}(V,orders,sa,sb)
+end
+
 # Helpers
 
 function _sort_by_nfaces!(terms::Vector{CartesianIndex{D}},orders) where D

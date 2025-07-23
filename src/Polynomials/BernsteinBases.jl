@@ -270,6 +270,12 @@ end
 Base.size(b::BernsteinBasisOnSimplex{D,V}) where {D,V} = (num_indep_components(V)*binomial(D+get_order(b),D),)
 get_order(b::BernsteinBasisOnSimplex) = b.max_order
 
+function testvalue(::Type{BernsteinBasisOnSimplex{D,V,M}}) where {D,V,M}
+  m = M==Nothing ? M() : zero(M)
+  @assert m isa M
+  BernsteinBasisOnSimplex{D}(V,0,m)
+end
+
 
 #####################
 # Bernstein Helpers #

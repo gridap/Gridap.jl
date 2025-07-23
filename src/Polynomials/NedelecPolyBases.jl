@@ -28,6 +28,11 @@ function Base.size(f::NedelecPolyBasisOnSimplex{D}) where D
   (n,)
 end
 
+function testvalue(::Type{NedelecPolyBasisOnSimplex{D,V,PT}}) where {D,V,PT}
+  T = eltype(V)
+  NedelecPolyBasisOnSimplex{D}(PT,T,0)
+end
+
 function return_cache(
   f::NedelecPolyBasisOnSimplex{D,V,PT},x::AbstractVector{<:Point}) where {D,V,PT}
 

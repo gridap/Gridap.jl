@@ -21,6 +21,7 @@ b = QGradBasis(PT, Val(D),T,order)
 
 @test length(b) == 4
 @test get_order(b) == 1
+@test testvalue(typeof(b)) isa typeof(b)
 
 @test_throws AssertionError QGradBasis(PT,Val(D),V,order)
 
@@ -96,6 +97,7 @@ V = VectorValue{D,T}
 G = gradient_type(V,xi)
 H = gradient_type(G,xi)
 b = QGradBasis(PT, Val(D),T,order)
+@test testvalue(typeof(b)) isa typeof(b)
 
 v = V[
 # (1., 0.), (x , 0.), (y , 0.), (xy, 0.), (y², 0.), (xy², 0.),
@@ -149,6 +151,7 @@ V = VectorValue{D,T}
 b = QGradBasis(PT,Val(D),T,order)
 
 @test b isa CartProdPolyBasis{D,V,PT}
+@test testvalue(typeof(b)) isa typeof(b)
 
 @test_throws AssertionError QGradBasis(PT,Val(D),V,order)
 

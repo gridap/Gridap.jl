@@ -42,6 +42,11 @@ end
 Base.size(a::CompWiseTensorPolyBasis) = ( sum(prod.(eachrow(a.orders .+ 1))), )
 get_order(b::CompWiseTensorPolyBasis) = b.max_order
 
+function testvalue(::Type{<:CompWiseTensorPolyBasis{D,V,PT}}) where {D,V,PT}
+  L = num_indep_components(V)
+  CompWiseTensorPolyBasis{D}(PT,V,zero(SMatrix{L,D,Int}))
+end
+
 """
     get_comp_terms(f::CompWiseTensorPolyBasis{D,V})
 

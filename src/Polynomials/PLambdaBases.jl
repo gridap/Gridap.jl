@@ -202,6 +202,11 @@ struct PmLambdaBasis{D,V,LN,B} <: PolynomialBasis{D,V,Bernstein}
     indices = PLambdaIndices(_indices.identity, bubbles, _indices.components)
     new{D,V,LN,B}(_b.r, _b.k, _b.scalar_bernstein_basis, _b.m, indices)
   end
+
+  function PmLambdaBasis{D,V,LN,B}() where {D,V,LN,B} # just for testvalue
+    indices = _generate_or_check_PmΛ_indices(1,0,0,false,nothing,false)
+    new{D,V,LN,B}(0,0,testvalue(B),zero(SVector{LN,V}),indices)
+  end
 end
 
 """
@@ -233,6 +238,10 @@ get_FEEC_form_degree(b::PmLambdaBasis) = b.k
 get_FEEC_family(::PmLambdaBasis) = :P⁻
 
 Base.size(b::PmLambdaBasis) = (_last_bubble_function_index(b._indices), )
+
+function testvalue(::Type{PmLambdaBasis{D,V,LN,B}}) where {D,V,LN,B}
+  PmLambdaBasis{D,V,LN,B}()
+end
 
 ####################################
 # PLambdaBasis nD polynomial bases #
@@ -336,6 +345,11 @@ struct PLambdaBasis{D,V,C,B} <: PolynomialBasis{D,V,Bernstein}
     indices = PLambdaIndices(_indices.identity, bubbles, _indices.components)
     new{D,V,C,B}(_b.r, _b.k, _b.scalar_bernstein_basis, Ψ, indices)
   end
+
+  function PLambdaBasis{D,V,C,B}() where {D,V,C,B} # Just for testvalue
+    indices = _generate_or_check_PΛ_indices(1,0,0,false,nothing,false)
+    new{D,V,C,B}(0,0,testvalue(B),zero(SVector{C,V}),indices)
+  end
 end
 
 """
@@ -359,6 +373,9 @@ get_FEEC_family(::PLambdaBasis) = :P
 
 Base.size(::PLambdaBasis{D,V,C}) where {D,V,C} = (C, )
 
+function testvalue(::Type{PLambdaBasis{D,V,C,B}}) where {D,V,C,B}
+  PLambdaBasis{D,V,C,B}()
+end
 
 ##########################
 # Common Implementation  #

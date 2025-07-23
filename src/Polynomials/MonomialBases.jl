@@ -7,21 +7,12 @@ struct Monomial <: Polynomial   end
 
 isHierarchical(::Type{Monomial}) = true
 
-testvalue(::Type{Monomial}) = Monomial()
-function testvalue(::Type{<:AbstractVector{Monomial}})
-  @notimplemented
-end
-
 """
     MonomialBasis{D,V} = CartProdPolyBasis{D,V,Monomial}
 
 Alias for cartesian product monomial basis, scalar valued or multi-valued.
 """
 const MonomialBasis{D,V} = CartProdPolyBasis{D,V,Monomial}
-
-function testvalue(::Type{MonomialBasis{D,T}}) where {D,T}
-  MonomialBasis{D}(T,tfill(0,Val{D}()),CartesianIndex{D}[])
-end
 
 """
     MonomialBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)
