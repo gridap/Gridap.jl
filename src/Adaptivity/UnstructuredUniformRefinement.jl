@@ -148,13 +148,13 @@ function cube_simplex_interior_permutation(p::Polytope,n::Integer)
 end
 
 """
-    compute_d_dface_offsets(ctopo,cell_ref_grid,cell_refine_masks::AbstractVector{Bool})
+    compute_d_dface_offsets(ctopo,cell_ref_grid)
 
-Given the coarse topology, cell-wise reference grid and refinement masks, return fine nodal offsets
+Given the coarse topology and cell-wise reference grid, return fine nodal offsets
 in each coarse faces.
 """
-function compute_d_dface_offsets(ctopo,cell_ref_grid,cell_refine_masks::AbstractVector{Bool})
-  @assert length(cell_refine_masks) == num_cells(ctopo)
+function compute_d_dface_offsets(ctopo,cell_ref_grid)
+  @assert length(cell_ref_grid) == num_cells(ctopo)
   
   Dc = num_cell_dims(ctopo)
   polytopes = get_polytopes(ctopo)
@@ -176,7 +176,9 @@ function compute_d_dface_offsets(ctopo,cell_ref_grid,cell_refine_masks::Abstract
     d_offsets = similar(ptrs,Int32)
     d_offsets[1] = d == 1 ? num_vertices(ctopo)+1 : d_dface_offsets[d-1][end]
     @inbounds for dfi = 1:length(d_offsets)-1
-      I = findfirst(i->cell_refine_masks[i],view(data,ptrs[dfi]:ptrs[dfi+1]-1))
+      I = findfirst(view(data,ptrs[dfi]:ptrs[dfi+1]-1)) do i 
+        num_vertices(cell_polytope[i]) < num_nodes(cell_ref_grid[i])
+      end
       if !isnothing(I)
         ci = data[ptrs[dfi]] + I - 1
         d_offsets[dfi+1] = d_offsets[dfi] + cell_dface_nnodes[ci][d+1]
@@ -190,12 +192,12 @@ function compute_d_dface_offsets(ctopo,cell_ref_grid,cell_refine_masks::Abstract
 end
 
 """
-    compute_cell_offsets(ctopo,cell_ref_grid,cell_refine_masks::AbstractVector{Bool})
+    compute_cell_offsets(ctopo,cell_ref_grid)
 
-Given the coarse topology, cell-wise reference grid and refinement masks, return cell-wise fine nodal offsets.
+Given the coarse topology and cell-wise reference grid, return cell-wise fine nodal offsets.
 """
-function compute_cell_offsets(ctopo,cell_ref_grid,cell_refine_masks::AbstractVector{Bool})
-  @assert length(cell_refine_masks) == num_cells(ctopo)
+function compute_cell_offsets(ctopo,cell_ref_grid)
+  @assert length(cell_ref_grid) == num_cells(ctopo)
 
   Dc = num_cell_dims(ctopo)
   cell_nnodes = lazy_map(num_nodes,cell_ref_grid)
@@ -211,7 +213,6 @@ end
     unstructured_refine_cell_l2gmap_and_nnodes(
       ctopo,
       cell_ref_grid,
-      cell_refine_masks::AbstractVector{Bool},
       cell_dface_permutations::AbstractVector)
 
 Cell-wise local-to-global fine nodal mappings and the number of all fine nodes.
@@ -219,17 +220,17 @@ Cell-wise local-to-global fine nodal mappings and the number of all fine nodes.
 function unstructured_refine_cell_l2gmap_and_nnodes(
   ctopo,
   cell_ref_grid,
-  cell_refine_masks::AbstractVector{Bool},
   cell_dface_permutations::AbstractVector)
-  @assert length(cell_refine_masks) == num_cells(ctopo) == length(cell_dface_permutations)
+  @assert num_cells(ctopo) == length(cell_dface_permutations) == length(cell_ref_grid)
 
   Dc = num_cell_dims(ctopo)
-  d_df_goffsets = compute_d_dface_offsets(ctopo,cell_ref_grid,cell_refine_masks)
-  l2g_ptrs = compute_cell_offsets(ctopo,cell_ref_grid,cell_refine_masks)
+  d_df_goffsets = compute_d_dface_offsets(ctopo,cell_ref_grid)
+  l2g_ptrs = compute_cell_offsets(ctopo,cell_ref_grid)
   l2g_data = Vector{Int32}(undef,l2g_ptrs[end]-1)
   d_c2df = ntuple(d->Table(get_faces(ctopo,Dc,d)),Val{Dc}())
   d_c2perm = ntuple(d->Table(get_cell_permutations(ctopo,d)),Val{Dc}())
   c2n = Table(get_faces(ctopo,Dc,0))
+  cell_polytope = CompressedArray(get_polytopes(ctopo),get_cell_type(ctopo))
 
   @inbounds Threads.@threads for ci in 1:length(l2g_ptrs)-1
     lo = l2g_ptrs[ci]
@@ -241,7 +242,7 @@ function unstructured_refine_cell_l2gmap_and_nnodes(
 
     # 1-face ~ (Dc)-face
     dface_perm = cell_dface_permutations[ci]
-    if cell_refine_masks[ci]
+    if num_vertices(cell_polytope[ci]) < num_nodes(cell_ref_grid[ci])
       for d in 1:Dc
         c2perm = d_c2perm[d]
         c2df = d_c2df[d]
@@ -313,7 +314,6 @@ function unstructured_refine_topology(
   cell_ref_grid,
   ctopo,
   cell_map,
-  cell_refine_masks::AbstractVector{Bool},
   cell_dface_permutations::AbstractVector)
   polytopes = get_polytopes(ctopo)
   @notimplementedif !all( map(p->is_n_cube(p) || is_simplex(p),polytopes) )
@@ -325,7 +325,6 @@ function unstructured_refine_topology(
   cell_l2g,n_nodes = unstructured_refine_cell_l2gmap_and_nnodes(
     ctopo,
     cell_ref_grid,
-    cell_refine_masks,
     cell_dface_permutations
   )
   n_cells = sum(cell_lncells)
@@ -357,46 +356,44 @@ end
 """
     unstructured_refine(
       cm::DiscreteModel,
-      cell_refine_masks::AbstractVector{Bool},
       cell_ref_grid::AbstractVector{<:UnstructuredGrid},
       cell_dface_permutations::AbstractVector)
 
 Normally, given the cell-wise reference grids, a refined mesh can be constructed via `get_cell_map(cm)`. 
 However, since the `get_cell_map(cm)` does not contain permutation information for faces, we need 
-`cell_dface_permutations` to remap the newly generated points within each face accordingly. The `cell_refine_masks` 
-indicate which cells require refinement, which may lead to the presence of hanging nodes. However, this property is 
-preserved as it might be useful in future applications. 
+`cell_dface_permutations` to remap the newly generated points within each face accordingly. This approache
+may lead to the presence of hanging nodes. However, this property is preserved as it might be useful 
+in future applications. 
 
 Note: if a face belongs to cells marked for refinement, it is always assumed that the newly introduced points
 within the face also belong to these refined cells. 
 """
 function unstructured_refine(
   cm::DiscreteModel,
-  cell_refine_masks::AbstractVector{Bool},
   cell_ref_grid::AbstractVector{<:UnstructuredGrid},
   cell_dface_permutations::AbstractVector)
-  @assert length(cell_refine_masks) == num_cells(cm) == length(cell_dface_permutations)
+  @assert num_cells(cm) == length(cell_dface_permutations) == length(cell_ref_grid)
 
-  polytopes = get_polytopes(cm)
   ctopo = get_grid_topology(cm)
   cgrid = get_grid(cm)
   cell_map = get_cell_map(cgrid)
-  cmparr_ptrs = collect(get_cell_type(cm))
-  cmparr_ptrs[cell_refine_masks] .+= length(polytopes)
-  
-  rrules = CompressedArray(
-    vcat(
-      map((p,g)->RefinementRule(WithoutRefinement(),p,g),polytopes,cell_ref_grid),
-      map((p,g)->RefinementRule(GenericRefinement(),p,g),polytopes,cell_ref_grid)
-    ),
-    cmparr_ptrs
+  cell_polytope = _similar(
+    cell_ref_grid,
+    CompressedArray(get_polytopes(ctopo),get_cell_type(ctopo))
   )
 
+  rrules = lazy_map(cell_polytope,cell_ref_grid) do p,g
+    if num_vertices(p) < num_nodes(g)
+      RefinementRule(GenericRefinement(),p,g)
+    else
+      RefinementRule(GenericRefinement(),p,g)
+    end
+  end
+  
   topo = unstructured_refine_topology(
     cell_ref_grid,
     ctopo,
     cell_map,
-    cell_refine_masks,
     cell_dface_permutations
   )
   grid = UnstructuredGrid(
@@ -417,8 +414,8 @@ end
 """
     unstructured_uniform_refine(cm::DiscreteModel,n::Integer,cell_refine_masks::AbstractVector{Bool})
 
-Uniformly refine the given discrete model into `n` parts per dimension. It determine which coarse cells need to be refined
-based on `cell_refine_masks`.
+Uniformly refine the given discrete model into `n` parts per dimension. It determine which coarse cells 
+need to be refined based on `cell_refine_masks`.
 """
 function unstructured_uniform_refine(cm::DiscreteModel,n::Integer,cell_refine_masks::AbstractVector{Bool})
   polytopes = get_polytopes(cm)
@@ -436,7 +433,7 @@ function unstructured_uniform_refine(cm::DiscreteModel,n::Integer,cell_refine_ma
     map(fp->(cube_simplex_interior_permutation(fp,n)),get_reffaces(p)[2:end])
   end
   cell_dface_permutations = CompressedArray(dface_permutations,cell_type)
-  unstructured_refine(cm,cell_refine_masks,cell_ref_grid,cell_dface_permutations)
+  unstructured_refine(cm,cell_ref_grid,cell_dface_permutations)
 end
 
 # Tester
