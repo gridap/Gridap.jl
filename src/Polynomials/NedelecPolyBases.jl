@@ -5,8 +5,23 @@ Basis of the vector valued (`V<:VectorValue{D}`) space ℕ𝔻ᴰₙ(△) for `D
 This space is the polynomial space for Nedelec elements on simplices with
 curl in (ℙᴰₙ)ᴰ. Its maximum degree is n+1 = `K`. `get_order` on it returns `K`.
 
+   ℕ𝔻ᴰₙ(△) = (ℙᴰₙ)ᴰ ⊕ x × (ℙᴰₙ \\ ℙᴰₙ₋₁)ᴰ
+
 Currently, the basis is implemented as the union of a CartProdPolyBasis{...,PT}
 for ℙᴰₙ and a monomial basis for x × (ℙᴰₙ \\ ℙᴰₙ₋₁)ᴰ.
+
+!!! warning
+    Using this basis is not recommanded, [`PmLambdaBasis`](@ref) is better numerically conditioned for higher degrees, they are obtained by using `Bernstein` as argument of [`FEEC_poly_basis`](@ref) .
+
+# Examples
+These return instances of `NedelecPolyBasisOnSimplex`
+```jldoctest
+# a basis for Nedelec on triangles with curl in ℙ²₁
+b = FEEC_poly_basis(Val(2),Float64,2,1,:P⁻,Monomial)
+
+# a basis for Nedelec on tetrahedra with curl in ℙ³₁
+b = FEEC_poly_basis(Val(3),Float64,2,1,:P⁻,Monomial)
+```
 """
 struct NedelecPolyBasisOnSimplex{D,V,PT} <: PolynomialBasis{D,V,PT}
   order::Int
@@ -252,36 +267,3 @@ function evaluate!(
   end
   a
 end
-
-####################################
-# Basis for Nedelec on D-simplices #
-####################################
-
-"""
-    PGradBasis(::Type{Monomial}, ::Val{D}, ::Type{T}, order::Int) :: PolynomialBasis
-
-Return a basis of
-
-ℕ𝔻ᴰₙ(△) = (ℙᴰₙ)ᴰ ⊕ x × (ℙᴰₙ \\ ℙᴰₙ₋₁)ᴰ
-
-with n=`order`, the polynomial space for Nedelec elements on `D`-dimensional
-simplices with scalar type `T`. `D` must be 1, 2 or 3.
-
-The `order`=n argument has the following meaning: the curl of the  functions in
-this basis is in (ℙᴰₙ)ᴰ.
-
-# Example:
-
-```jldoctest
-# a basis for Nedelec on tetrahedra with curl in ℙ₂
-b = PGradBasis(Monomial, Val(3), Float64, 2)
-```
-"""
-function PGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
-  # Although NedelecPolyBasisOnSimplex can be constructed with any PT<Polynomial,
-  # the code explicitely uses monomials for the terms of  x×(ℙₙ \\ ℙₙ₋₁)ᴰ, so I
-  # disable them here.
-  # But one can use NedelecPolyBasisOnSimplex{D}(PT,T,order) if they wish.
-  @notimplemented "Nedelec on simplices is only implemented for monomials"
-end
-

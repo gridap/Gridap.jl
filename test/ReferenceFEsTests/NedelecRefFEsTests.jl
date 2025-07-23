@@ -46,6 +46,36 @@ cache = return_cache(dof_basis,prebasis)
 r = evaluate!(cache, dof_basis, prebasis)
 test_dof_array(dof_basis,prebasis,r)
 
+order = 3
+reffe = NedelecRefFE(et,p,order)
+test_reference_fe(reffe)
+
+p = HEX
+D = num_dims(HEX)
+et = Float64
+order = 2
+
+reffe = NedelecRefFE(et,p,order)
+test_reference_fe(reffe)
+@test length(get_prebasis(reffe)) == 144
+@test num_dofs(reffe) == 144
+@test get_order(get_prebasis(reffe)) == 3
+
+prebasis = get_prebasis(reffe)
+dof_basis = get_dof_basis(reffe)
+
+v = VectorValue(3.0,1.0,-2.)
+field = GenericField(x->v*x[1]*x[2]*x[3])
+
+cache = return_cache(dof_basis,field)
+r = evaluate!(cache, dof_basis, field)
+test_dof_array(dof_basis,field,r)
+
+cache = return_cache(dof_basis,prebasis)
+r = evaluate!(cache, dof_basis, prebasis)
+test_dof_array(dof_basis,prebasis,r)
+
+
 p = TET
 D = num_dims(p)
 et = Float64

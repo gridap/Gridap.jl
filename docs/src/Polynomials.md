@@ -239,7 +239,7 @@ The following example filters can be used to define associated polynomial spaces
 | :-----| :------------------------------------------------------------| :------------------------------------ |
 | ℚᴰ    | `_q_filter(e,order) = maximum(e) <= order`                   | All                                   |
 | ℚ̃ᴰₙ   | `_qh_filter(e,order) = maximum(e) == order`                  | [`Monomial`](@ref)                    |
-| ℙᴰ    | `_p_filter(e,order) = sum(e) <= order`                       | All                                   |
+| ℙᴰ    | `_p_filter(e,order) = sum(e) <= order`                       | [`hierarchical`](@ref isHierarchical) |
 | ℙ̃ᴰₙ   | `_ph_filter(e,order) = sum(e) == order`                      | [`Monomial`](@ref)                    |
 | 𝕊rᴰₙ  | `_ser_filter(e,order) = sum( i for i in e if i>1 ) <= order` | [`hierarchical`](@ref isHierarchical) |
 
@@ -276,6 +276,8 @@ ModalC0
 ```@docs
 PolynomialBasis
 get_order(::PolynomialBasis)
+FEEC_poly_basis
+FEEC_space_definition_checks
 MonomialBasis(args...)
 MonomialBasis
 LegendreBasis(args...)
@@ -296,10 +298,6 @@ BernsteinBasisOnSimplex
 BernsteinBasisOnSimplex(::Val,::Type,::Int,vertices=nothing)
 bernstein_terms
 bernstein_term_id
-PGradBasis
-QGradBasis
-PCurlGradBasis
-QCurlGradBasis
 PmLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
 PLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
 ```
@@ -338,4 +336,8 @@ PCurlGradMonomialBasis
 QGradMonomialBasis
 QCurlGradMonomialBasis
 JacobiPolynomialBasis
+PGradBasis
+QGradBasis
+PCurlGradBasis
+QCurlGradBasis
 ```

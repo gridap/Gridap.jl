@@ -12,6 +12,9 @@ const bdm = BDM()
 
 Pushforward(::Type{BDM}) = ContraVariantPiolaMap()
 
+# BDM is  or SᵣΛᴰ⁻¹ rotated in 2D, only the former is implemented
+_BDM_basis(D,T,PT,order) =
+
 """
     BDMRefFE(::Type{T}, p::Polytope, order::Integer)
 
@@ -24,13 +27,13 @@ function BDMRefFE(::Type{T},p::Polytope,order::Integer) where T
   D = num_dims(p)
   @check 2 ≤ D ≤ 3 && is_simplex(p) "BDM Reference FE only available for simplices of dimension 2 and 3"
 
-  #prebasis = MonomialBasis(Val(D),VectorValue{D,T},order,Polynomials._p_filter)
-  rotate_90 = D==2 # actually this does'nt change anything for BDM, at least when using vector proxies
-  prebasis = PLambdaBasis(Val(D),T,order,D-1; rotate_90) # Prebasis
-  #fb = MonomialBasis(Val(D-1),T,order,Polynomials._p_filter)
-  fb = PmLambdaBasis(Val(D-1),T,order,0)        # Face basis
-  #cb = PGradBasis(Monomial,Val(D),T,order-2)
-  cb = order>1 ? PmLambdaBasis(Val(D),T,order-1,1) : nothing       # Cell basis
+  rotate_90 = (D==2)
+  k = D-1
+  PT = Bernstein # Could be a Kwargs, any basis works
+
+  prebasis =     FEEC_poly_basis(Val(D),  T,order  ,k,:P, PT; rotate_90) # PᵣΛᴰ⁻¹
+  fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:P⁻,Bernstein)            # Facet basis P⁻ᵨΛ⁰(△ᴰ⁻¹), ρ = r
+  cb = order>1 ? FEEC_poly_basis(Val(D),  T,order-1,1,:P⁻,Bernstein) : nothing  # Cell basis  P⁻ᵨΛ¹(△ᴰ),   ρ = r-1
 
   function cmom(φ,μ,ds) # Cell moment function: σ_K(φ,μ) = ∫(φ·μ)dK
     Broadcasting(Operation(⋅))(φ,μ)

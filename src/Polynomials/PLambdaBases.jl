@@ -1,6 +1,44 @@
 # The theory and notations used in this file are documented in detail in the
 # Bernstein bases algorithms Developper notes of the official documentation.
 
+"""
+    FEEC_space_definition_checks(::Val{D}, T, r, k, F, rotate_90)
+
+Check if the argument define a valid Finite Element Exterior Calculus (FEEC) polynomial space,
+as defined in the Periodic Table of the Finite Elements, `FᵣΛᵏ` in dimension `D`.
+
+# Arguments
+- `D`: spatial dimension
+- `T::Type`: scalar components type
+- `r::Int`: polynomial order
+- `k::Int`: form order
+- `F::Symbol`: family, i.e. `:P⁻`, `:P`, `:Q⁻` or `:S`
+- `rotate_90::Bool`, only if `D`=2 and `k=1`, tells to use the vector proxy corresponding to div conform function instead of curl conform ones.
+"""
+function FEEC_space_definition_checks(
+  ::Val{D},::Type{T},r::Int,k::Int,F::Symbol, rotate_90::Bool, diff_geo_calculus_style::Bool=false
+) where {D,T}
+
+  @check T<:Real "T needs to be <:Real since represents the scalar type, got $T"
+  @check F in (:P⁻,:P,:Q⁻,:S) "F must be either :P⁻,:P,:Q⁻ or :S, got $F."
+  @check k in 0:D "The form order k must be in 0:D, got k=$k and D=$D."
+  @check r ≥ 0    "The polynomial order r must be positive, got $r."
+
+  if diff_geo_calculus_style
+    @notimplemented "A new MultiValue type and associated algebraic operations ∧/⋆/𝑑/δ need to be implemented to use form valued polynomials."
+  elseif D>3 && ( 1 < k < D-1)
+    @unreachable "Vector calculus proxy of differential form bases are only available for `k`=0,1,`D`-1 and `D`, got k=$k and D=$D."
+  end
+
+  if rotate_90 && !(!diff_geo_calculus_style && isone(k) && D==2)
+    @warn """The `rotate_90` kwarg only makes sense for 2D vector proxied forms
+              of degree 1, it will be ignored and may lead to errors.
+              Got k=$k, D=$D for F=$F
+          """
+  end
+  true
+end
+
 #######################
 # PLambdaIndices type #
 #######################
@@ -140,24 +178,13 @@ struct PmLambdaBasis{D,V,LN,B} <: PolynomialBasis{D,V,Bernstein}
   function PmLambdaBasis{D}(::Type{T}, r, k, vertices=nothing;
         diff_geo_calculus_style=false, indices=nothing, rotate_90=false) where {D,T}
 
-    @check T<:Real "T needs to be <:Real since represents the scalar type, got $T"
-    @check k in 0:D "The form order k must be in 0:D, got $k"
-    @check r > 0    "The polynomial order r must be positive, got $r"
-    if !isnothing(vertices)
-      @check length(vertices) == D+1 "$D+1 vertices are required to define a $D-dim simplex, got $(length(vertices))"
-      @check eltype(vertices) <: Point{D} "Vertices should be of type <:Point{$D}, got $(eltype(vertices))"
-    end
+    FEEC_space_definition_checks(Val(D), T, r, k, :P⁻, rotate_90, diff_geo_calculus_style)
+    _simplex_vertices_checks(Val(D), vertices)
 
     indices = _generate_or_check_PmΛ_indices(r,k,D,diff_geo_calculus_style,indices,rotate_90)
 
     L = binomial(D,k) # Number of components of a basis form
-
-    if diff_geo_calculus_style
-      @notimplemented "A new MultiValue type and associated algebraic operations ∧/⋆/𝑑/δ need to be implemented to use form valued polynomials"
-    else
-      (D>3 && ( 1 < k < D-1)) && @unreachable "Vector calculus proxy of differential form bases not available for D=$D and k=$k"
-      V = VectorValue{L,T}
-    end
+    V = VectorValue{L,T} # To update once diff_geo_calculus_style is implemented
 
     b = BernsteinBasisOnSimplex{D}(T, r, vertices)
     B = typeof(b)
@@ -274,25 +301,14 @@ struct PLambdaBasis{D,V,C,B} <: PolynomialBasis{D,V,Bernstein}
   function PLambdaBasis{D}(::Type{T}, r, k, vertices=nothing;
         diff_geo_calculus_style=false, indices=nothing, rotate_90=false) where {D,T}
 
-    @check T<:Real "T needs to be <:Real since represents the scalar type, got $T"
-    @check k in 0:D "The form order k must be in 0:D, got $k"
-    @check r ≥ 0    "The polynomial order r must be positive, got $r"
-    if !isnothing(vertices)
-      @check length(vertices) == D+1 "$D+1 vertices are required to define a $D-dim simplex, got $(length(vertices))"
-      @check eltype(vertices) <: Point{D} "Vertices should be of type <:Point{$D}, got $(eltype(vertices))"
-    end
+    FEEC_space_definition_checks(Val(D), T, r, k, :P⁻, rotate_90, diff_geo_calculus_style)
+    _simplex_vertices_checks(Val(D), vertices)
 
     indices = _generate_or_check_PΛ_indices(r,k,D,diff_geo_calculus_style,indices,rotate_90)
 
     L = binomial(D,k) # Number of components of a basis form
+    V = VectorValue{L,T} # To update once diff_geo_calculus_style is implemented
     C = _last_bubble_function_index(indices) # Cardinal of the basis
-
-    if diff_geo_calculus_style
-      @notimplemented "A new MultiValue type and associated algebraic operations ∧/⋆/𝑑/δ need to be implemented to use form valued polynomials"
-    else
-      (D>3 && ( 1 < k < D-1)) && @unreachable "Vector calculus proxy of differential form bases not available for D=$D and k=$k"
-      V = VectorValue{L,T}
-    end
 
     b = BernsteinBasisOnSimplex{D}(T, r, vertices)
     B = typeof(b)

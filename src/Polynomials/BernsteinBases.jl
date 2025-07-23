@@ -243,13 +243,19 @@ struct BernsteinBasisOnSimplex{D,V,M} <: PolynomialBasis{D,V,Bernstein}
   cart_to_bary_matrix::M #  Nothing or SMatrix{D+1,D+1}
 
   function BernsteinBasisOnSimplex{D}(::Type{V},order::Int,vertices=nothing) where {D,V}
-    msg = "A D simplex defined by D+1 (linearly independent) vertices of type <:Point{D} is required"
-    @check (isnothing(vertices) || length(vertices) == D+1 && eltype(vertices) <: Point{D}) msg
+    _simplex_vertices_checks(Val(D), vertices)
 
     K = Int(order)
     cart_to_bary_matrix = _compute_cart_to_bary_matrix(vertices, Val(D+1))
     M = typeof(cart_to_bary_matrix) # Nothing or SMatrix
     new{D,V,M}(K,cart_to_bary_matrix)
+  end
+end
+
+function _simplex_vertices_checks(::Val{D}, vertices) where D
+  if !isnothing(vertices)
+    @check length(vertices) == D+1 "$D+1 vertices are required to define a $D-dim simplex, got $(length(vertices))"
+    @check eltype(vertices) <: Point{D} "Vertices should be of type <:Point{$D}, got $(eltype(vertices))"
   end
 end
 

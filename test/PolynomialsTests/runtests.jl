@@ -24,7 +24,7 @@ using Test
 
 @testset "PLambdaBases" begin include("PLambdaBasesTests.jl") end
 
-@testset "FEECPolyBasis" begin include("ExteriorCalculusBasesTests.jl") end
+@testset "FEECBases" begin include("ExteriorCalculusBasesTests.jl") end
 
 @testset "ForwardDiffTests.jl" begin include("ForwardDiffTests.jl") end
 

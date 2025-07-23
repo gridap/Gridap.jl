@@ -30,20 +30,22 @@ function RaviartThomasRefFE(
   ::Type{T},p::Polytope{D},order::Integer
 ) where {T,D}
 
+  rotate_90 = D==2
+  k = D-1
+
   if is_n_cube(p)
-    prebasis = QCurlGradBasis(Legendre,Val(D),T,order)         # Prebasis
-    cb = QGradBasis(Legendre,Val(D),T,order-1)                 # Cell basis
-    fb = LegendreBasis(Val(D-1),T,order,Polynomials._q_filter) # Face basis
+    PT = Legendre # Could be a Kwargs, any hierarchical basis works
+    @check PT ≠ Bernstein # broken for Bernstein in prebasis or cb, might be an issue of ordering of the basis polynomials
+    prebasis =     FEEC_poly_basis(Val(D),  T,order+1,k,:Q⁻,PT; rotate_90) # Q⁻ᵣΛᵏ(□ᴰ)
+    fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:Q⁻,PT)            # Facet basis Q⁻ᵨΛ⁰(□ᴰ⁻¹), ρ = r-1
+    cb = order>0 ? FEEC_poly_basis(Val(D),  T,order  ,1,:Q⁻,PT) : nothing  # Cell basis  Q⁻ᵨΛ¹(□ᴰ),   ρ = r-1
   elseif is_simplex(p)
-    #prebasis = PCurlGradBasis(Monomial,Val(D),T,order)                        # Prebasis
-    rotate_90 = D==2
-    prebasis = PmLambdaBasis(Val(D),T,order+1,D-1;rotate_90) # Prebasis
-    #cb = LegendreBasis(Val(D),VectorValue{D,T},order-1,Polynomials._p_filter) # Cell basis
-    cb = order>0 ? PLambdaBasis(Val(D),T,order-1,D-1) : nothing       # Cell basis
-    #fb = LegendreBasis(Val(D-1),T,order,Polynomials._p_filter)                # Face basis
-    fb = PLambdaBasis(Val(D-1),T,order,0)       # Face basis
+    PT = Bernstein # Could be a Kwargs, any basis works
+    prebasis =     FEEC_poly_basis(Val(D),  T,order+1,k,:P⁻,PT; rotate_90) # P⁻ᵣΛᵏ(△ᴰ)
+    fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:P ,PT)            # Facet basis PᵨΛ⁰(△ᴰ⁻¹), ρ = r-1
+    cb = order>0 ? FEEC_poly_basis(Val(D),  T,order-1,1,:P ,PT) : nothing  # Cell basis  PᵨΛ¹(△ᴰ),   ρ = r-2
   else
-    @notimplemented "Raviart-Thomas Reference FE only available for cubes and simplices"
+    @notimplemented "Raviart-Thomas Reference FE only available for n-cubes and simplices"
   end
 
   function cmom(φ,μ,ds) # Cell moment function: σ_K(φ,μ) = ∫(φ·μ)dK
