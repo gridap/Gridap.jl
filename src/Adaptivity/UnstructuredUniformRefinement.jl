@@ -120,13 +120,15 @@ function cube_simplex_reference_grid(p::Polytope,n::Integer)
   reffes = [ LagrangianRefFE(Float64,p,1) ]
   orientation_style = NonOriented()
   cell_types = ones(Int8,length(conn))
+  has_affine_map = true
 
   UnstructuredGrid(
     new_coords,
     new_conn,
     reffes,
     cell_types,
-    orientation_style
+    orientation_style;
+    has_affine_map
   )
 end
 
@@ -357,7 +359,8 @@ end
     unstructured_refine(
       cm::DiscreteModel,
       cell_ref_grid::AbstractVector{<:UnstructuredGrid},
-      cell_dface_permutations::AbstractVector)
+      cell_dface_permutations::AbstractVector;
+      has_affine_map::Union{Nothing,Bool}=nothing)
 
 Normally, given the cell-wise reference grids, a refined mesh can be constructed via `get_cell_map(cm)`. 
 However, since the `get_cell_map(cm)` does not contain permutation information for faces, we need 
@@ -371,12 +374,14 @@ within the face also belong to these refined cells.
 function unstructured_refine(
   cm::DiscreteModel,
   cell_ref_grid::AbstractVector{<:UnstructuredGrid},
-  cell_dface_permutations::AbstractVector)
+  cell_dface_permutations::AbstractVector;
+  has_affine_map::Union{Nothing,Bool}=nothing)
   @assert num_cells(cm) == length(cell_dface_permutations) == length(cell_ref_grid)
 
   ctopo = get_grid_topology(cm)
   cgrid = get_grid(cm)
   cell_map = get_cell_map(cgrid)
+  _is_affine(fs) = isconcretetype(typeof(fs)) && fs isa AbstractArray{<:AffineField}
   cell_polytope = _similar(
     cell_ref_grid,
     CompressedArray(get_polytopes(ctopo),get_cell_type(ctopo))
@@ -386,7 +391,7 @@ function unstructured_refine(
     if num_vertices(p) < num_nodes(g)
       RefinementRule(GenericRefinement(),p,g)
     else
-      RefinementRule(GenericRefinement(),p,g)
+      RefinementRule(WithoutRefinement(),p,g)
     end
   end
   
@@ -396,12 +401,18 @@ function unstructured_refine(
     cell_map,
     cell_dface_permutations
   )
+  if has_affine_map isa Nothing
+    cell_ref_is_affine = lazy_map(g->_is_affine(get_cell_map(g)),cell_ref_grid)
+    has_affine_map = all(cell_ref_is_affine) && _is_affine(cell_map)
+  end
+
   grid = UnstructuredGrid(
     get_vertex_coordinates(topo),
     get_faces(topo,num_cell_dims(topo),0),
     get_reffes(cgrid),
     get_cell_type(topo),
-    OrientationStyle(topo)
+    OrientationStyle(topo);
+    has_affine_map
   )
 
   glue = blocked_refinement_glue(rrules)
@@ -412,12 +423,21 @@ end
 
 
 """
-    unstructured_uniform_refine(cm::DiscreteModel,n::Integer,cell_refine_masks::AbstractVector{Bool})
+    unstructured_uniform_refine(
+      cm::DiscreteModel,
+      n::Integer,
+      cell_refine_masks::AbstractVector{Bool};
+      kwargs...)
 
 Uniformly refine the given discrete model into `n` parts per dimension. It determine which coarse cells 
 need to be refined based on `cell_refine_masks`.
 """
-function unstructured_uniform_refine(cm::DiscreteModel,n::Integer,cell_refine_masks::AbstractVector{Bool})
+function unstructured_uniform_refine(
+  cm::DiscreteModel,
+  n::Integer,
+  cell_refine_masks::AbstractVector{Bool};
+  kwargs...)
+
   polytopes = get_polytopes(cm)
   cell_type = get_cell_type(cm)
   cmparr_ptrs = collect(cell_type)
@@ -433,7 +453,7 @@ function unstructured_uniform_refine(cm::DiscreteModel,n::Integer,cell_refine_ma
     map(fp->(cube_simplex_interior_permutation(fp,n)),get_reffaces(p)[2:end])
   end
   cell_dface_permutations = CompressedArray(dface_permutations,cell_type)
-  unstructured_refine(cm,cell_ref_grid,cell_dface_permutations)
+  unstructured_refine(cm,cell_ref_grid,cell_dface_permutations;kwargs...)
 end
 
 # Tester
