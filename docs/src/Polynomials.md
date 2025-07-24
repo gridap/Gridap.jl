@@ -331,13 +331,8 @@ PLambdaIndices
 
 ```@docs
 num_terms
-PGradMonomialBasis
 PCurlGradMonomialBasis
 QGradMonomialBasis
 QCurlGradMonomialBasis
 JacobiPolynomialBasis
-PGradBasis
-QGradBasis
-PCurlGradBasis
-QCurlGradBasis
 ```

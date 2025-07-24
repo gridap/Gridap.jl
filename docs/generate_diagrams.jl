@@ -29,11 +29,11 @@ end
     struct Bernstein
   }
 
-  Polynomial <|-- Monomial
-  Polynomial <|-- Legendre
-  Polynomial <|-- Chebyshev
-  Polynomial <|-- ModalC0
-  Polynomial <|-- Bernstein
+  Polynomial <|.. Monomial
+  Polynomial <|.. Legendre
+  Polynomial <|.. Chebyshev
+  Polynomial <|.. ModalC0
+  Polynomial <|.. Bernstein
 
   @enduml
   """
@@ -66,21 +66,34 @@ end
     }
   }
 
-  PolynomialBasis <|-- CartProdPolyBasis
-  PolynomialBasis <|-- CompWiseTensorPolyBasis
-  PolynomialBasis <|-- RaviartThomasPolyBasis
-  PolynomialBasis <|-- NedelecPolyBasisOnSimplex
-  PolynomialBasis <|-- BernsteinBasisOnSimplex
-  PolynomialBasis <|-- ModalC0Basis
+  struct PLambdaBasis {
+    +print_indices
+  }
+  struct PmLambdaBasis {
+    +print_indices
+  }
+
+  PolynomialBasis <|.. CartProdPolyBasis
+  PolynomialBasis <|.. CompWiseTensorPolyBasis
+  PolynomialBasis <|.. RaviartThomasPolyBasis
+  PolynomialBasis <|.. NedelecPolyBasisOnSimplex
+  PolynomialBasis <|.. BernsteinBasisOnSimplex
+  PolynomialBasis <|.. ModalC0Basis
+  PolynomialBasis <|.. PmLambdaBasis
+  PolynomialBasis <|.. PLambdaBasis
 
   object "(<:Polynomial)Basis" as m1
-  object "QGrad[<:Polynomial]Basis\nQCurlGrad[<:Polynomial]Basis" as m2
-  object "PCurlGrad[<:Polynomial]Basis" as m4
-  object "PGradMonomialBasis" as m5
-  CartProdPolyBasis <-down- m1
-  CompWiseTensorPolyBasis <-down- m2
-  RaviartThomasPolyBasis <-down- m4
-  NedelecPolyBasisOnSimplex <-down- m5
+  object "FEEC_poly_basis" as m2
+
+  CartProdPolyBasis <-- m1
+  PmLambdaBasis o-- BernsteinBasisOnSimplex
+  PLambdaBasis o-- BernsteinBasisOnSimplex
+  CartProdPolyBasis <-- m2
+  CompWiseTensorPolyBasis <-- m2
+  RaviartThomasPolyBasis <-- m2
+  NedelecPolyBasisOnSimplex <-- m2
+  PmLambdaBasis <-- m2
+  PLambdaBasis <-- m2
 
   @enduml
   """

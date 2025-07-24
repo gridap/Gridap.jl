@@ -70,13 +70,13 @@ b = FEEC_poly_basis(Val(D),Float64,r,k,:P⁻)                 # basis of order 3
 D, k, r = 3, 1, 1+1
 b = FEEC_poly_basis(Val(D),Float64,r,k,:Q⁻)                 # basis of order 2
 
-# a basis for Raviart-Thomas on tetrahedra with divergence in ℙ₂
-D, k, r = 3, 3-1, 2+1
-b = FEEC_poly_basis(Val(D),Float64,r,k,:P⁻)                 # basis of order 3
-
 # a basis for Raviart-Thomas on quadrilateral with divergence in ℚ₁
 D, k, r = 2, 2-1, 1+1
 b = FEEC_poly_basis(Val(D),Float64,r,k,:Q⁻; rotate_90=true) # basis of order 3
+
+# a basis for Raviart-Thomas on tetrahedra with divergence in ℙ₂
+D, k, r = 3, 3-1, 2+1
+b = FEEC_poly_basis(Val(D),Float64,r,k,:P⁻)                 # basis of order 3
 ```
 
 $(public_names_in_md(@__MODULE__))
@@ -104,30 +104,32 @@ import Gridap.Arrays: testvalue
 
 export Polynomial
 export isHierarchical
-export Monomial
-export Legendre
-export Chebyshev
-export ModalC0
-export Bernstein
 
 export PolynomialBasis
 export get_order
-export get_dimension
 
 export CartProdPolyBasis
 export get_exponents
 export get_orders
+export Monomial
 export MonomialBasis
 export LegendreBasis
+export Legendre
 export ChebyshevBasis
+export Chebyshev
+export Bernstein
 export BernsteinBasis
 
 export BernsteinBasisOnSimplex
 export bernstein_terms
 export bernstein_term_id
 
-export FEEC_space_definition_checks
-export FEEC_poly_basis
+export CompWiseTensorPolyBasis
+export NedelecPolyBasisOnSimplex
+export RaviartThomasPolyBasis
+
+export ModalC0Basis
+export ModalC0
 
 export PLambdaBasis
 export PmLambdaBasis
@@ -139,24 +141,8 @@ export print_indices
 #export get_FEEC_form_degree
 #export get_FEEC_family
 
-export PmLambdaBasis
-export PmΛ_bubbles
-export PLambdaBasis
-export PΛ_bubbles
-export get_bubbles
-export print_indices
-
-export CompWiseTensorPolyBasis
-export QGradBasis
-export QCurlGradBasis
-
-export NedelecPolyBasisOnSimplex
-export PGradBasis
-
-export RaviartThomasPolyBasis
-export PCurlGradBasis
-
-export ModalC0Basis
+export FEEC_space_definition_checks
+export FEEC_poly_basis
 
 
 include("PolynomialInterfaces.jl")
@@ -169,8 +155,6 @@ include("NedelecPolyBases.jl")
 
 include("RaviartThomasPolyBases.jl")
 
-include("ExteriorCalculusBases.jl")
-
 include("MonomialBases.jl")
 
 include("LegendreBases.jl")
@@ -182,6 +166,8 @@ include("BernsteinBases.jl")
 include("ModalC0Bases.jl")
 
 include("PLambdaBases.jl")
+
+include("ExteriorCalculusBases.jl")
 
 include("Deprecated.jl")
 

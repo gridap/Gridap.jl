@@ -98,8 +98,8 @@ _test_bases(b,b2,r,k,:S ,D)
 D, k = 2, 1
 V = VectorValue{D,T}
 
-b = FEEC_poly_basis(Val(D),T,r,k,:P⁻)
-b2 = PGradBasis(Monomial,Val(D),T,r-1)
+b = FEEC_poly_basis(Val(D),T,r,k,:P⁻,Monomial)
+b2 = NedelecPolyBasisOnSimplex{D}(Monomial,T,r-1)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:P⁻,D,no_hessian)
 
@@ -108,8 +108,10 @@ b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:P,D)
 
-b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻)
-b2 = QGradBasis(Monomial,Val(D),T,r-1)
+b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,Monomial)
+m = Tuple( r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D )
+orders = SMatrix{D,D,Int}(m)
+b2 = CompWiseTensorPolyBasis{D}(Monomial, V, orders)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:Q⁻,D)
 
@@ -119,8 +121,8 @@ _test_bases(b,b2,r,k,:Q⁻,D)
 # @test b isa PolynomialBasis{D,V,r,Monomial}
 #_test_bases(b,b3,r,k,:S,D)
 
-b = FEEC_poly_basis(Val(D),T,r,k,:P⁻; rotate_90=true)
-b2 = PCurlGradBasis(Monomial,Val(D),T,r-1)
+b = FEEC_poly_basis(Val(D),T,r,k,:P⁻,Monomial; rotate_90=true)
+b2 = RaviartThomasPolyBasis{D}(Monomial,T,r-1)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:P⁻,D,no_hessian)
 
@@ -129,8 +131,10 @@ b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:P,D)
 
-b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻; rotate_90=true)
-b2 = QCurlGradBasis(Monomial,Val(D),T,r-1)
+b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,Monomial; rotate_90=true)
+m = Tuple( r-1 + (i==j ? 1 : 0) for i in 1:D, j in 1:D )
+orders = SMatrix{D,D,Int}(m)
+b2 = CompWiseTensorPolyBasis{D}(Monomial,V,orders)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:Q⁻,D)
 
@@ -185,7 +189,7 @@ _test_bases(b,b2,r,k,:S,D)
 D, k = 3, 1
 V = VectorValue{D,T}
 b = FEEC_poly_basis(Val(D),T,r,k,:P⁻)
-b2 = PGradBasis(Monomial,Val(D),T,r-1)
+b2 = NedelecPolyBasisOnSimplex{D}(Monomial,T,r-1)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:P⁻,D,no_hessian)
 
@@ -196,7 +200,9 @@ b2 = MonomialBasis(Val(D),V,r,Polynomials._p_filter)
 _test_bases(b,b2,r,k,:P,D)
 
 b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻)
-b2 = QGradBasis(Monomial,Val(D),T,r-1)
+m = Tuple( r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D )
+orders = SMatrix{D,D,Int}(m)
+b2 = CompWiseTensorPolyBasis{D}(Monomial, V, orders)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:Q⁻,D)
 
@@ -209,19 +215,20 @@ _test_bases(b,b2,r,k,:Q⁻,D)
 
 D, k = 3, 2
 V = VectorValue{D,T}
-b = FEEC_poly_basis(Val(D),T,r,k,:P⁻)
-b2 = PCurlGradBasis(Monomial,Val(D),T,r-1)
+b = FEEC_poly_basis(Val(D),T,r,k,:P⁻,Monomial)
+b2 = RaviartThomasPolyBasis{D}(Monomial,T,r-1)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:P⁻,D,no_hessian)
 
-#@test_throws ErrorException FEEC_poly_basis(Val(D),T,r,k,:P)
-b = FEEC_poly_basis(Val(D),T,r,k,:P)
+b = FEEC_poly_basis(Val(D),T,r,k,:P,Monomial)
 b2 = MonomialBasis(Val(D),V,r,Polynomials._p_filter)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:P,D)
 
-b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻)
-b2 = QCurlGradBasis(Monomial,Val(D),T,r-1)
+b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,Monomial)
+m = Tuple( r-1 + (i==j ? 1 : 0) for i in 1:D, j in 1:D )
+orders = SMatrix{D,D,Int}(m)
+b2 = CompWiseTensorPolyBasis{D}(Monomial, V, orders)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:Q⁻,D)
 

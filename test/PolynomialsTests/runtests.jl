@@ -6,13 +6,9 @@ using Test
 
 @testset "MonomialBases" begin include("MonomialBasesTests.jl") end
 
-@testset "QGradBases" begin include("QGradBasesTests.jl") end
+@testset "CurlConformBases" begin include("CurlConformBasesTests.jl") end
 
-@testset "QCurlGradBases" begin include("QCurlGradBasesTests.jl") end
-
-@testset "PGradBases" begin include("PGradBasesTests.jl") end
-
-@testset "PCurlGradBases" begin include("PCurlGradBasesTests.jl") end
+@testset "DivConformBases" begin include("DivConformBasesTests.jl") end
 
 @testset "ModalC0Bases" begin include("ModalC0BasesTests.jl") end
 

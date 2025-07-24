@@ -23,15 +23,6 @@ High level constructors of [`MonomialBasis`](@ref).
 """
 MonomialBasis(args...) = CartProdPolyBasis(Monomial, args...)
 
-function PGradBasis(::Type{Monomial},::Val{D},::Type{T},order::Int) where {D,T}
-  NedelecPolyBasisOnSimplex{D}(Monomial,T,order)
-end
-function PGradBasis(::Type{Monomial},::Val{1},::Type{T},order::Int) where T
-  @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
-  V = VectorValue{1,T}
-  CartProdPolyBasis(Monomial, Val(1), V, order+1)
-end
-
 # 1D evaluation implementation
 
 function _evaluate_1d!(::Type{Monomial},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number}
