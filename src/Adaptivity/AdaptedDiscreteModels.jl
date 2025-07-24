@@ -110,6 +110,11 @@ function refine(model::UnstructuredDiscreteModel,args...;refinement_method="red_
   return refine(string_to_refinement(refinement_method, model),model,args...;kwargs...)
 end
 
+"""
+    refine(model::UnstructuredDiscreteModel,cell_partition::Int)
+
+Refine the given unstructured model into `cell_partition` equal subdivisions.
+"""
 function refine(model::UnstructuredDiscreteModel,cell_partition::Int)
   @check cell_partition >= 1 
   if cell_partition == 1
@@ -204,7 +209,11 @@ end
 
 
 # DiscreteModelMock refining
+"""
+    refine(model::Geometry.DiscreteModelMock,cell_partition::Int)
 
+Refine mock object into `cell_partition` equal subdivisions.
+"""
 function refine(model::Geometry.DiscreteModelMock,cell_partition::Int)
   @check cell_partition >= 1
   if cell_partition == 1
