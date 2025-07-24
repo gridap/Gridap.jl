@@ -644,38 +644,19 @@ function return_value(k::BroadcastingFieldOpMap,a::Union{ArrayBlock,AbstractArra
 end
 
 function return_cache(k::BroadcastingFieldOpMap,a::Union{ArrayBlock,AbstractArray}...)
-  _replace_nz_blocks(a::ArrayBlock,bi::ArrayBlock) = bi
-  function _replace_nz_blocks(a::ArrayBlock,bi::AbstractArray)
-    N = ndims(a.array)
-    array = Array{typeof(bi),N}(undef,size(a))
-    for i in eachindex(a.array)
-      if a.touched[i]
-        array[i] = bi
-      end
-    end
-    ArrayBlock(array,a.touched)
-  end
-  inds = findall(ai->isa(ai,ArrayBlock),a)
-  @notimplementedif length(inds) == 0
-  a1 = a[inds[1]]
-  b = map(ai->_replace_nz_blocks(a1,ai),a)
+  i = findfirst(Base.Fix2(isa,ArrayBlock),a)
+  @notimplementedif isnothing(i)
+  m = Arrays.MatchingBlockMap(a[i])
+  cm = map(ai -> return_cache(m, ai), a)
+  b = map((ci,ai) -> evaluate!(ci, m, ai), cm, a)
   c = return_cache(k,b...)
-  c,b
+  return c, m, cm
 end
 
 function evaluate!(cache,k::BroadcastingFieldOpMap,a::Union{ArrayBlock,AbstractArray}...)
-  _replace_nz_blocks!(a::ArrayBlock,bi::ArrayBlock) = bi
-  function _replace_nz_blocks!(a::ArrayBlock,bi::AbstractArray)
-    for i in eachindex(a.array)
-      if a.touched[i]
-        a.array[i] = bi
-      end
-    end
-    a
-  end
-  c, b = cache
-  d = map((i,j)->_replace_nz_blocks!(i,j),b,a)
-  evaluate!(c,k,d...)
+  c, m, cm = cache
+  b = map((ci,ai) -> evaluate!(ci, m, ai), cm, a)
+  evaluate!(c,k,b...)
 end
 
 for op in (:+,:-,:*)
