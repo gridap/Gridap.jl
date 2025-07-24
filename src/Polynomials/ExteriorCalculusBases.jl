@@ -2,24 +2,41 @@
 # (Proxied) Form valued nD polynomial bases #
 #############################################
 
-_ensure_hierarchical(PT) = !isHierarchical(PT) && @unreachable
+_ensure_hierarchical(PT) = !isHierarchical(PT) && @unreachable "Polynomial family must be hierarchical, got $PT."
+
+function _default_poly_type(F)
+  F ∈ (:P, :P⁻) && return Bernstein
+  F ∈ (:Q⁻,:S)  && return Legendre
+  Monomial
+end
 
 """
-    FEEC_poly_basis(::Val{D},T,r,k,F::Symbol, PT=Monomial; kwargs...)
+    FEEC_poly_basis(::Val{D},T,r,k,F::Symbol, PT=_default_poly_type(F); kwargs...)
+
+"Factory for polynomial basis of Finite Element Exterior Calculus spaces"
 
 Return, if it is implemented, a polynomial basis for the space  `FᵣΛᵏ` in
 dimension `D`, with `T` the scalar component type and `PT<:Polynomial` the
 polynomial basis family.
 
-The arguments defining a valid space are documented and defined by [`FEEC_space_definition_checks`](@ref).
+The default `PT` is `Bernstein` on simplices and `Legendre` on D-cubes.
 
-Kwargs:
+# Arguments
+- `D`: spatial dimension
+- `T::Type`: scalar components type
+- `r::Int`: polynomial order
+- `k::Int`: form order
+- `F::Symbol`: family, i.e. `:P⁻`, `:P`, `:Q⁻` or `:S`
+### kwargs
 - `rotate_90::Bool`: only if `D`=2 and `k`=1, tells to use the vector proxy corresponding to div conform function instead of curl conform ones.
 - `vertices=nothing`: for `PT=Bernstein` bases on simplices (`F = :P` or `:P⁻`), the basis is defined on the simplex defined by `vertices` instead of the reference one.
 """ # document diff_geo_calculus_style once its implemented
-function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,::Type{PT}=Monomial;
-    diff_geo_calculus_style=false, rotate_90=false, vertices=nothing) where {D,T,PT<:Polynomial}
+function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(F);
+    diff_geo_calculus_style=false, rotate_90=false, vertices=nothing) where {D,T}
 
+  @assert PT <: Polynomial
+
+  # these call FEEC_space_definition_checks internally
   F == :P⁻ && PT == Bernstein && return PmLambdaBasis(Val(D),T,r,k,vertices)
   F == :P  && PT == Bernstein && return PLambdaBasis( Val(D),T,r,k,vertices)
 

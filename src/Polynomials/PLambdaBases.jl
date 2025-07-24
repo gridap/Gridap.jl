@@ -7,13 +7,7 @@
 Check if the argument define a valid Finite Element Exterior Calculus (FEEC) polynomial space,
 as defined in the Periodic Table of the Finite Elements, `FᵣΛᵏ` in dimension `D`.
 
-# Arguments
-- `D`: spatial dimension
-- `T::Type`: scalar components type
-- `r::Int`: polynomial order
-- `k::Int`: form order
-- `F::Symbol`: family, i.e. `:P⁻`, `:P`, `:Q⁻` or `:S`
-- `rotate_90::Bool`, only if `D`=2 and `k=1`, tells to use the vector proxy corresponding to div conform function instead of curl conform ones.
+The arguments are also described in [`FEEC_poly_basis`](@ref).
 """
 function FEEC_space_definition_checks(
   ::Val{D},::Type{T},r::Int,k::Int,F::Symbol, rotate_90::Bool, diff_geo_calculus_style::Bool=false
