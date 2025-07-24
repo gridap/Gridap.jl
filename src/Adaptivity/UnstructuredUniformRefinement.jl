@@ -356,6 +356,43 @@ function unstructured_refine_topology(
 end
 
 """
+    cube_simplex_refine_facelabeling(glue,ctopo,ftopo,ccell_map,clabeling,atol=eps())
+"""
+function cube_simplex_refine_facelabeling(glue,ctopo,ftopo,ccell_map,clabeling,atol=eps())
+  Dc = num_cell_dims(ctopo)
+  ccell_polytope = CompressedArray(get_polytopes(ctopo),get_cell_type(ctopo))
+  ccell_pt_map = lazy_map(cube_simplex_pattern_dimfid,ccell_polytope)
+  n2o_cell_map = Adaptivity.o2n_reindex(1:num_cells(ctopo),glue)
+  tag_to_name = copy(clabeling.tag_to_name)
+  tag_to_entities = copy(clabeling.tag_to_entities)
+  d_to_dface_to_entity = Vector{Vector{Int32}}(undef,Dc+1)
+  ccell_inv_map = lazy_map(inverse_map,ccell_map)
+  d_cc2dfs = ntuple(d->Table(get_faces(ctopo,Dc,d-1)),Val{Dc+1}())
+
+  @inbounds for d in 0:Dc
+    df2c = get_faces(ftopo,d,Dc)
+    df_bary = lazy_map(mean,get_face_coordinates(ftopo,d))
+    dface_to_entity = Vector{Int32}(undef,length(df2c))
+    Threads.@threads for fid in eachindex(df2c)
+      ci = df2c.data[df2c.ptrs[fid]]
+      cci = n2o_cell_map[ci]
+      ref_coord = evaluate(ccell_inv_map[cci],df_bary[fid])
+      if is_n_cube(ccell_polytope[cci])
+        pt = _to_cube_pattern(ref_coord,atol)
+      else
+        pt = _to_simplex_pattern(ref_coord,atol)
+      end
+      dim,clid = ccell_pt_map[cci][pt]
+      cc2df = d_cc2dfs[dim+1]
+      cgid = cc2df.data[cc2df.ptrs[cci]+clid-1]
+      dface_to_entity[fid] = clabeling.d_to_dface_to_entity[dim+1][cgid]
+    end
+    d_to_dface_to_entity[d+1] = dface_to_entity
+  end
+  FaceLabeling(d_to_dface_to_entity,tag_to_entities,tag_to_name)
+end
+
+"""
     unstructured_refine(
       cm::DiscreteModel,
       cell_ref_grid::AbstractVector{<:UnstructuredGrid},
@@ -382,12 +419,14 @@ function unstructured_refine(
   ctopo = get_grid_topology(cm)
   cgrid = get_grid(cm)
   cell_map = get_cell_map(cgrid)
-  _is_affine(fs) = isconcretetype(typeof(fs)) && fs isa AbstractArray{<:AffineField}
+  polytopes = get_polytopes(ctopo)
   cell_polytope = _similar(
     cell_ref_grid,
-    CompressedArray(get_polytopes(ctopo),get_cell_type(ctopo))
+    CompressedArray(polytopes,get_cell_type(ctopo))
   )
 
+  _is_affine(fs) = isconcretetype(typeof(fs)) && fs isa AbstractArray{<:AffineField}
+  
   rrules = lazy_map(cell_polytope,cell_ref_grid) do p,g
     if num_vertices(p) < num_nodes(g)
       RefinementRule(GenericRefinement(),p,g)
@@ -417,8 +456,13 @@ function unstructured_refine(
   )
 
   glue = blocked_refinement_glue(rrules)
-  face_labeling = FaceLabeling(topo)
-  model = UnstructuredDiscreteModel(grid,topo,face_labeling)
+  clabeling = get_face_labeling(cm)
+  if all( map(p->is_n_cube(p)||is_simplex(p),polytopes) )
+    labeling = cube_simplex_refine_facelabeling(glue,ctopo,topo,cell_map,clabeling)
+  else
+    labeling = refine_face_labeling(clabeling,glue,ctopo,topo)
+  end
+  model = UnstructuredDiscreteModel(grid,topo,labeling)
   AdaptedDiscreteModel(model,cm,glue)
 end
 
