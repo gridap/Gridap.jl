@@ -61,9 +61,22 @@ du1 = gradient(x->f((x,uh[2],uh[3])),uh[1])
 du2 = gradient(x->f((uh[1],x,uh[3])),uh[2])
 du3 = gradient(x->f((uh[1],uh[2],x)),uh[3])
 
+Xbis = MultiFieldFESpace([V1,V1,V1])
+uhbis = zero(Xbis)
+du_bis = gradient(f,uhbis;ad_type=:monolithic)
+
 @test lazy_map(Gridap.MultiField.GetIndex(1),du[Λ]) == du1[Λ]
 @test lazy_map(Gridap.MultiField.GetIndex(2),du[Λ]) == du2[Λ]
 @test lazy_map(Gridap.MultiField.GetIndex(3),du[Λ]) == du3[Λ]
+
+V4 = FESpace(Λ,ReferenceFE(lagrangian,Float64,1))
+
+get_cell_dof_ids(V1,Λ)
+get_cell_dof_ids(V2,Λ)
+get_cell_dof_ids(V3,Λ)
+get_cell_dof_ids(V4,Λ)
+
+get_cell_dof_ids(X,Λ)
 
 du1_vec = assemble_vector(du1,V1)
 du2_vec = assemble_vector(du2,V2)
