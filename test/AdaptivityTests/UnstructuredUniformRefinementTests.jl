@@ -7,7 +7,7 @@ using Gridap.Geometry
 using Gridap.ReferenceFEs
 using Gridap.Adaptivity: test_unstructured_uniform_refinement
 
-using .EdgeBasedRefinementTests: test_grid_transfers
+using ..EdgeBasedRefinementTests: test_grid_transfers
 
 test_unstructured_uniform_refinement()
 
@@ -25,7 +25,7 @@ model5 = Geometry.DiscreteModelMock()
 
 n = 3
 
-visualize = true
+visualize = false
 if visualize
   path = mkpath("tmp/")
 end
@@ -46,7 +46,6 @@ visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"uniform_hex_
 test_grid_transfers(model3,ref_model,1)
 
 # TET
-# bug
 ref_model = refine(model4,n)
 visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"uniform_tet_$n"))
 test_grid_transfers(model4,ref_model,1)

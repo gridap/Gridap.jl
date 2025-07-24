@@ -377,6 +377,7 @@ function unstructured_refine(
   cell_dface_permutations::AbstractVector;
   has_affine_map::Union{Nothing,Bool}=nothing)
   @assert num_cells(cm) == length(cell_dface_permutations) == length(cell_ref_grid)
+  @notimplementedif num_nodes(cm) != num_vertices(cm) "Periodic cases are not supported now."
 
   ctopo = get_grid_topology(cm)
   cgrid = get_grid(cm)
