@@ -30,9 +30,9 @@ du1 = gradient(x->f((x,uh[2],uh[3])),uh[1])
 du2 = gradient(x->f((uh[1],x,uh[3])),uh[2])
 du3 = gradient(x->f((uh[1],uh[2],x)),uh[3])
 
-@test lazy_map(Gridap.MultiField.GetIndex(1),du[Γ]) == du1[Γ]
-@test lazy_map(Gridap.MultiField.GetIndex(2),du[Γ]) == du2[Γ]
-@test lazy_map(Gridap.MultiField.GetIndex(3),du[Γ]) == du3[Γ]
+@test lazy_map(Base.Fix2(getindex,1),du[Γ]) == du1[Γ]
+@test lazy_map(Base.Fix2(getindex,2),du[Γ]) == du2[Γ]
+@test lazy_map(Base.Fix2(getindex,3),du[Γ]) == du3[Γ]
 
 du1_vec = assemble_vector(du1,V1)
 du2_vec = assemble_vector(du2,V2)
@@ -52,6 +52,13 @@ J_fwd = jacobian(op,uh)
 
 @test J_fwd == J
 
+# Skel
+V1 = FESpace(Γ,ReferenceFE(lagrangian,Float64,1),conformity=:L2)
+V2 = FESpace(model,ReferenceFE(lagrangian,VectorValue{2,Float64},1),conformity=:L2)
+V3 = FESpace(model,ReferenceFE(lagrangian,Float64,1),conformity=:L2)
+X = MultiFieldFESpace([V1,V2,V3])
+uh = zero(X)
+
 Λ = SkeletonTriangulation(model)
 dΛ = Measure(Λ,2)
 f(xh) = ∫(mean(xh[1])+mean(xh[2])⋅mean(xh[2])+mean(xh[1])*mean(xh[3]))dΛ
@@ -61,22 +68,9 @@ du1 = gradient(x->f((x,uh[2],uh[3])),uh[1])
 du2 = gradient(x->f((uh[1],x,uh[3])),uh[2])
 du3 = gradient(x->f((uh[1],uh[2],x)),uh[3])
 
-Xbis = MultiFieldFESpace([V1,V1,V1])
-uhbis = zero(Xbis)
-du_bis = gradient(f,uhbis;ad_type=:monolithic)
-
-@test lazy_map(Gridap.MultiField.GetIndex(1),du[Λ]) == du1[Λ]
-@test lazy_map(Gridap.MultiField.GetIndex(2),du[Λ]) == du2[Λ]
-@test lazy_map(Gridap.MultiField.GetIndex(3),du[Λ]) == du3[Λ]
-
-V4 = FESpace(Λ,ReferenceFE(lagrangian,Float64,1))
-
-get_cell_dof_ids(V1,Λ)
-get_cell_dof_ids(V2,Λ)
-get_cell_dof_ids(V3,Λ)
-get_cell_dof_ids(V4,Λ)
-
-get_cell_dof_ids(X,Λ)
+@test lazy_map(Base.Fix2(getindex,1),du[Λ]) == du1[Λ]
+@test lazy_map(Base.Fix2(getindex,2),du[Λ]) == du2[Λ]
+@test lazy_map(Base.Fix2(getindex,3),du[Λ]) == du3[Λ]
 
 du1_vec = assemble_vector(du1,V1)
 du2_vec = assemble_vector(du2,V2)
@@ -85,6 +79,7 @@ du_vec = assemble_vector(du,X)
 
 @test du_vec == [du1_vec;du2_vec;du3_vec]
 
+# Skel jac
 f2(xh,yh) = ∫(mean(xh[1])⋅mean(yh[1])+mean(xh[2])⋅mean(yh[2])+mean(xh[1])⋅mean(xh[2])⋅mean(yh[2])+mean(xh[1])*mean(xh[3])*mean(yh[3]))dΛ
 dv = get_fe_basis(X)
 j = jacobian(uh->f2(uh,dv),uh)

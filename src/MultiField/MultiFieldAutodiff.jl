@@ -13,13 +13,13 @@ end
 # - monolithic: compute the gradient for all fields together (original)
 #
 # For most problems, the split version is faster because the ForwardDiff
-# chunk size is smaller. In addition, the split version allows for fields to 
+# chunk size is smaller. In addition, the split version allows for fields to
 # ve defined on different triangulations.
 #
 # TODO: Currently, this is only implemented for the gradient and jacobian.
 #  The Hessian is proplematic because the off-diagonal blocks are missed.
 
-for (op,_op) in ((:gradient,:_gradient),(:jacobian,:_jacobian),(:hessian,:_hessian))
+for (op,_op) in ((:gradient,:_gradient),(:jacobian,:_jacobian))#,(:hessian,:_hessian))
   @eval begin
 
     function FESpaces.$(op)(f::Function,uh::MultiFieldFEFunction;ad_type=:split)
@@ -46,23 +46,24 @@ for (op,_op) in ((:gradient,:_gradient),(:jacobian,:_jacobian))
     function multifield_autodiff_split(::typeof($op),f,uh,fuh)
       nfields = num_fields(uh)
       terms = map(Base.OneTo(nfields)) do k
-        # Although technically wrong, we can reuse fuh for each field since 
+        # Although technically wrong, we can reuse fuh for each field since
         # we only use it to extract the triangulations
         f_k = uk -> f((uh[1:k-1]...,uk,uh[k+1:end]...))
-        FESpaces.$(_op)(f_k,uh[k],fuh) 
+        FESpaces.$(_op)(f_k,uh[k],fuh)
       end
       return _combine_contributions($op,terms,fuh)
     end
-    
+
   end
 end
 
-# There are many choices for the Hessian, but I think the most efficient should be 
-# to compute the gradient monolithically, then its jacobian in split mode.
-function multifield_autodiff_split(::typeof(hessian),f,uh,fuh)
-  g(x) = FESpaces._gradient(f,x,fuh)
-  multifield_autodiff_split(jacobian,g,uh,fuh)
-end
+# # There are many choices for the Hessian, but I think the most efficient should be
+# # to compute the gradient monolithically, then its jacobian in split mode.
+# # TODO: This doesn't work because _gradient expects uh inheriting from FEFunction.
+# function multifield_autodiff_split(::typeof(hessian),f,uh,fuh)
+#   g(x) = FESpaces._gradient(f,x,fuh)
+#   multifield_autodiff_split(jacobian,g,uh,fuh)
+# end
 
 function _combine_contributions(::typeof(gradient),terms::Vector{DomainContribution},fuh::DomainContribution)
   contribs = DomainContribution()
