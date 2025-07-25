@@ -11,10 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added low-level API `Arrays.invalidate_cache!(cache)` that forces the re-computation of values in `LazyArray` caches. Since PR[#1137](https://github.com/gridap/Gridap.jl/pull/1137).
 - Added support for star-patch integration, i.e patch integration with masked patch boundaries. Since PR[#1138](https://github.com/gridap/Gridap.jl/pull/1138).
+- Added the uniform refinement approache for unstructured meshes that consist of n-cubes and simplexies. Since PR[#1143](https://github.com/gridap/Gridap.jl/pull/1143).
 
 ### Fixed
 
 - Fixes issue [#1119](https://github.com/gridap/Gridap.jl/issues/1119), allowing evaluation of `CellFields` on arbitrary points on periodic meshes. Since PR[#1139](https://github.com/gridap/Gridap.jl/pull/1139).
+- Fixed issue [#1141](https://github.com/gridap/Gridap.jl/issues/1141).
 
 ## [0.19.3] - 2025-07-15
 
