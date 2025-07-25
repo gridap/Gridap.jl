@@ -349,6 +349,115 @@ function bernstein_terms(K,D)
 end
 
 
+########################
+# de Casteljau helpers #
+########################
+
+"""
+    bernstein_term_id(α)
+
+For a given Bernstein multi-index `α` (vector or tuple), return the associated
+linear index of `α` ordered in decreasing lexicographic order, that is the `i`
+such that
+
+    (i,α) ∈ enumerate(bernstein_terms(K,D))
+
+where K = sum(`α`), see also [`bernstein_terms`](@ref).
+"""
+function bernstein_term_id(α)
+  D = length(α)-1
+  @check D ≥ 0
+  @inbounds i = sum(_L_slices_size(L, D, _L_slice_2(L,α,D)) for L in 1:D; init=0) + 1
+  return i
+end
+
+
+# For a given Bernstein term `α`, return the index (starting from 0) of the
+# (D-`L`)-slice to which `α` belongs within the (D-`L`-1)-slice of
+# the D-multiexponent simplex (D = `N`-1).
+#
+# In a D-multiexponent simplex of elements `α`, ordered in a vector in
+# decreasing lexicographic order, the (D-`L`)-slices are the consecutive `α`s
+# having iddentical first `L` indices `α`.
+"""
+    _L_slice(L, α, D)
+
+where `L` ∈ 1:N, returns `sum( α[i] for i in (L+1):(D+1) )`.
+"""
+Base.@propagate_inbounds _L_slice_2(L, α, D) = sum( α[i] for i in (L+1):(D+1) )
+
+# Return the length of the `l`-1 first (`D`-`L`)-slices in the
+# `D`-multiexponent simplex (ordered in decreasing lexicographic order).
+# Those numbers are the "(`D`-`L`)-simplex numbers".
+"""
+    _L_slices_size(L,D,l) = binomial(D-L+l,  D-L+1)
+"""
+_L_slices_size(L,D,l) = binomial(D-L+l,  D-L+1)
+
+"""
+    _sub_multi_indices!(sub_ids, α)
+
+Given a positive multi-index `α`, sets in place in `sub_ids` the couples
+(`id`, `d`) with `d` in 1:`N` for which the multi-index `αd⁻` = `α`-e`d` is
+positive (that is `α`[`d`]>0), and `id` is the linear index of `αd⁻`
+(see [`bernstein_term_id`](@ref)).
+
+The function returns the number of sub indices set.
+"""
+function _sub_multi_indices!(sub_ids, α, ::Val{N}) where N
+  @check length(sub_ids) >= N
+  nb_sα = 0
+  for i in 1:N
+    α⁻ =  ntuple(k -> α[k]-Int(k==i), Val(N))
+    if all(α⁻ .≥ 0)
+      nb_sα += 1
+      id⁻ = bernstein_term_id(α⁻)
+      sub_ids[nb_sα] = (id⁻, i)
+    end
+  end
+  return nb_sα
+end
+
+"""
+    _sub_sub_multi_indices!(sub_ids, α, ::Val{N})
+
+Like [`_sub_multi_indices`](@ref), but sets the triples (`id`, `t`, `q`) in `sub_ids`,
+with `t,q` in 1:`N` for which the multi-index `αd⁻⁻` = `α`-e`t`-e`q` is positive,
+and returns the number of triples set.
+"""
+function _sub_sub_multi_indices!(sub_ids, α, ::Val{N}) where N
+  @check length(sub_ids) >= binomial(N+1,2)
+  nb_ssα = 0
+  for i in 1:N
+    for j in i:N
+      α⁻⁻ =  ntuple(k -> α[k]-Int(k==i)-Int(k==j), Val(N))
+      if all(α⁻⁻ .≥ 0)
+        nb_ssα += 1
+        id⁻⁻ = bernstein_term_id(α⁻⁻)
+        sub_ids[nb_ssα] = (id⁻⁻, i, j)
+      end
+    end
+  end
+  return nb_ssα
+end
+
+"""
+    _sup_multi_indices!(sup_ids, α, ::Val{N})
+
+Like [`_sub_multi_indices!`](@ref), but sets the indices for the `N` multi-indices
+`αd⁺` = `α`+e`d` for 1≤d≤`N`, and returns `N`
+"""
+function _sup_multi_indices!(sup_ids, α, ::Val{N}) where N
+  @check length(sup_ids) >= N
+  for i in 1:N
+    α⁺ =  ntuple(k -> α[k]+Int(k==i), Val(N))
+    id⁺ = bernstein_term_id(α⁺)
+    sup_ids[i] = (id⁺, i)
+  end
+  return N
+end
+
+
 ################################
 # nD evaluation implementation #
 ################################
@@ -598,115 +707,6 @@ end
   end
 
   return Expr(:block, ex_v...)
-end
-
-
-########################
-# de Casteljau helpers #
-########################
-
-"""
-    bernstein_term_id(α)
-
-For a given Bernstein multi-index `α` (vector or tuple), return the associated
-linear index of `α` ordered in decreasing lexicographic order, that is the `i`
-such that
-
-    (i,α) ∈ enumerate(bernstein_terms(K,D))
-
-where K = sum(`α`), see also [`bernstein_terms`](@ref).
-"""
-function bernstein_term_id(α)
-  D = length(α)-1
-  @check D ≥ 0
-  @inbounds i = sum(_L_slices_size(L, D, _L_slice_2(L,α,D)) for L in 1:D; init=0) + 1
-  return i
-end
-
-
-# For a given Bernstein term `α`, return the index (starting from 0) of the
-# (D-`L`)-slice to which `α` belongs within the (D-`L`-1)-slice of
-# the D-multiexponent simplex (D = `N`-1).
-#
-# In a D-multiexponent simplex of elements `α`, ordered in a vector in
-# decreasing lexicographic order, the (D-`L`)-slices are the consecutive `α`s
-# having iddentical first `L` indices `α`.
-"""
-    _L_slice(L, α, D)
-
-where `L` ∈ 1:N, returns `sum( α[i] for i in (L+1):(D+1) )`.
-"""
-Base.@propagate_inbounds _L_slice_2(L, α, D) = sum( α[i] for i in (L+1):(D+1) )
-
-# Return the length of the `l`-1 first (`D`-`L`)-slices in the
-# `D`-multiexponent simplex (ordered in decreasing lexicographic order).
-# Those numbers are the "(`D`-`L`)-simplex numbers".
-"""
-    _L_slices_size(L,D,l) = binomial(D-L+l,  D-L+1)
-"""
-_L_slices_size(L,D,l) = binomial(D-L+l,  D-L+1)
-
-"""
-    _sub_multi_indices!(sub_ids, α)
-
-Given a positive multi-index `α`, sets in place in `sub_ids` the couples
-(`id`, `d`) with `d` in 1:`N` for which the multi-index `αd⁻` = `α`-e`d` is
-positive (that is `α`[`d`]>0), and `id` is the linear index of `αd⁻`
-(see [`bernstein_term_id`](@ref)).
-
-The function returns the number of sub indices set.
-"""
-function _sub_multi_indices!(sub_ids, α, ::Val{N}) where N
-  @check length(sub_ids) >= N
-  nb_sα = 0
-  for i in 1:N
-    α⁻ =  ntuple(k -> α[k]-Int(k==i), Val(N))
-    if all(α⁻ .≥ 0)
-      nb_sα += 1
-      id⁻ = bernstein_term_id(α⁻)
-      sub_ids[nb_sα] = (id⁻, i)
-    end
-  end
-  return nb_sα
-end
-
-"""
-    _sub_sub_multi_indices!(sub_ids, α, ::Val{N})
-
-Like [`_sub_multi_indices`](@ref), but sets the triples (`id`, `t`, `q`) in `sub_ids`,
-with `t,q` in 1:`N` for which the multi-index `αd⁻⁻` = `α`-e`t`-e`q` is positive,
-and returns the number of triples set.
-"""
-function _sub_sub_multi_indices!(sub_ids, α, ::Val{N}) where N
-  @check length(sub_ids) >= binomial(N+1,2)
-  nb_ssα = 0
-  for i in 1:N
-    for j in i:N
-      α⁻⁻ =  ntuple(k -> α[k]-Int(k==i)-Int(k==j), Val(N))
-      if all(α⁻⁻ .≥ 0)
-        nb_ssα += 1
-        id⁻⁻ = bernstein_term_id(α⁻⁻)
-        sub_ids[nb_ssα] = (id⁻⁻, i, j)
-      end
-    end
-  end
-  return nb_ssα
-end
-
-"""
-    _sup_multi_indices!(sup_ids, α, ::Val{N})
-
-Like [`_sub_multi_indices!`](@ref), but sets the indices for the `N` multi-indices
-`αd⁺` = `α`+e`d` for 1≤d≤`N`, and returns `N`
-"""
-function _sup_multi_indices!(sup_ids, α, ::Val{N}) where N
-  @check length(sup_ids) >= N
-  for i in 1:N
-    α⁺ =  ntuple(k -> α[k]+Int(k==i), Val(N))
-    id⁺ = bernstein_term_id(α⁺)
-    sup_ids[i] = (id⁺, i)
-  end
-  return N
 end
 
 
