@@ -104,6 +104,7 @@ ReferenceFEs.get_order(reffe::FineToCoarseRefFE)     = get_order(reffe.reffe)
 
 ReferenceFEs.Conformity(reffe::FineToCoarseRefFE,sym::Symbol) = Conformity(reffe.reffe,sym)
 ReferenceFEs.get_face_own_dofs(reffe::FineToCoarseRefFE,conf::Conformity) = get_face_own_dofs(reffe.reffe,conf)
+ReferenceFEs.get_face_own_dofs_permutations(reffe::FineToCoarseRefFE,conf::Conformity) = get_face_own_dofs_permutations(reffe.reffe,conf)
 
 
 function ReferenceFEs.ReferenceFE(p::Polytope,rrule::RefinementRule,name::ReferenceFEName,order)
