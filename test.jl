@@ -53,14 +53,14 @@ J_fwd = jacobian(op,uh)
 @test J_fwd == J
 
 # Skel
-V1 = FESpace(Γ,ReferenceFE(lagrangian,Float64,1),conformity=:L2)
+V1 = FESpace(Triangulation(model,1:10),ReferenceFE(lagrangian,Float64,1),conformity=:L2)
 V2 = FESpace(model,ReferenceFE(lagrangian,VectorValue{2,Float64},1),conformity=:L2)
 V3 = FESpace(model,ReferenceFE(lagrangian,Float64,1),conformity=:L2)
 X = MultiFieldFESpace([V1,V2,V3])
 uh = zero(X)
-
 Λ = SkeletonTriangulation(model)
 dΛ = Measure(Λ,2)
+
 f(xh) = ∫(mean(xh[1])+mean(xh[2])⋅mean(xh[2])+mean(xh[1])*mean(xh[3]))dΛ
 uh = zero(X)
 du = gradient(f,uh)

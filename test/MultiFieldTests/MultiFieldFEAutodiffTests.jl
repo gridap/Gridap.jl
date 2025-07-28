@@ -273,7 +273,7 @@ J_fwd = jacobian(op,uh)
 
 @test J_fwd == J
 
-V1 = FESpace(Γ,ReferenceFE(lagrangian,Float64,1),conformity=:L2)
+V1 = FESpace(Triangulation(model,1:10),ReferenceFE(lagrangian,Float64,1),conformity=:L2)
 V2 = FESpace(model,ReferenceFE(lagrangian,VectorValue{2,Float64},1),conformity=:L2)
 V3 = FESpace(model,ReferenceFE(lagrangian,Float64,1),conformity=:L2)
 X = MultiFieldFESpace([V1,V2,V3])

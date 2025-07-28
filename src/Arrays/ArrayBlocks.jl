@@ -57,7 +57,7 @@ Base.eltype(b::ArrayBlock{A}) where A = A
 Base.ndims(b::ArrayBlock{A,N}) where {A,N} = N
 Base.ndims(::Type{ArrayBlock{A,N}}) where {A,N} = N
 
-Base.iterate(a::VectorBlock) = iterate(a.array)
+# Base.iterate(a::VectorBlock) = iterate(a.array)
 
 function Base.getindex(b::ArrayBlock,i...)
   if !b.touched[i...]
