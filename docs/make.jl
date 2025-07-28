@@ -41,7 +41,7 @@ makedocs(
   modules = [Gridap],
   pages = pages,
   doctest = false,
-  warnonly = [:cross_references,:missing_docs],
+  warnonly = [:missing_docs], # ,:cross_references
   checkdocs = :exports,
 )
 

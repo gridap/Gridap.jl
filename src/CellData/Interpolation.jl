@@ -1,5 +1,5 @@
 
-# This file implements code to evaluate CellFields on arbitrary points, based 
+# This file implements code to evaluate CellFields on arbitrary points, based
 # on tree searches.
 
 """
@@ -194,6 +194,9 @@ function distance(polytope::ExtrusionPolytope, inv_cmap::Field, x::Point)
   end
 end
 
+"""
+    make_inverse_table(i2j::AbstractVector{<:Integer}, nj::Int)
+"""
 function make_inverse_table(i2j::AbstractVector{<:Integer},nj::Int)
   ni = length(i2j)
   @assert nj≥0
