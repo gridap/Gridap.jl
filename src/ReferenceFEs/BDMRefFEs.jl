@@ -12,9 +12,6 @@ const bdm = BDM()
 
 Pushforward(::Type{BDM}) = ContraVariantPiolaMap()
 
-# BDM is  or SᵣΛᴰ⁻¹ rotated in 2D, only the former is implemented
-_BDM_basis(D,T,PT,order) =
-
 """
     BDMRefFE(::Type{T}, p::Polytope, order::Integer)
 
