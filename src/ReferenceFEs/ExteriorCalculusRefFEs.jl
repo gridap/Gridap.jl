@@ -1,0 +1,65 @@
+############################################
+# (Proxied) Form valued FEEC reference FEs #
+############################################
+
+function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
+  rotate_90=false, diff_geo_calculus_style=false, kwargs...) where D
+
+  FEEC_space_definition_checks(Val(D),T,r,k,F,rotate_90,diff_geo_calculus_style)
+  @check r>0 "Exterior calculus FEs starts at r=1"
+
+  # This logic should keep consistent with the Table in the ReferenceFEs documentation
+  (name, order) = if F == :P⁻
+    @check is_simplex(p)
+    if     k == 0
+      Lagrangian(), r
+    elseif k == D
+      Lagrangian(), r-1
+    elseif k == 1 && !rotate_90
+      Nedelec(), r-1
+    else # must be k = D-1 && rotate_90 = true if k = 1
+      RaviartThomas(), r-1
+    end
+  elseif F == :P
+    @check is_simplex(p) && r>0
+    if     k == 0
+      @check r>0 "P⁻Λᵏ starts at r=1"
+      Lagrangian(), r
+    elseif k == D
+      Lagrangian(), r
+    elseif k == 1 && !rotate_90
+      @notimplemented "Second kind nedelec not implemented yet"
+      # Nedelec2(), r-1
+    else # must be k = D-1 && rotate_90 = true if k = 1
+      BDM(), r-1
+    end
+  elseif F == :Q⁻
+    @check is_n_cube(p) && r>0
+    if     k == 0
+      Lagrangian(), r
+    elseif k == D
+      Lagrangian(), r-1
+    elseif k == 1 && !rotate_90
+      Nedelec(), r-1
+    else # must be k = D-1 && rotate_90 = true if k = 1
+      RaviartThomas(), r-1
+    end
+  elseif F == :S⁻
+    if     k == 0
+      Serendipity(), r
+    elseif k == D
+      return ReferenceFE(T,Lagrangian(),T,r;space=:P) # ℙᴰᵣ space ≡ SᵣΛᴰ
+    else
+      @notimplemented "BDM on n-cubes and trimmed Serendipity Nedelec not implemented yet"
+    #elseif k == 1 && !rotate_90
+    #  Nedelec2(), r-1
+    #else # must be k = D-1 && rotate_90 = true if k = 1
+    #  BDM(), r-1
+    end
+  else
+    @unreachable
+  end
+
+  ReferenceFE(p,name,order; kwargs...)
+end
+
