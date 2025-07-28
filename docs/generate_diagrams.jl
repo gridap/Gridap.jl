@@ -60,7 +60,9 @@ end
     struct CompWiseTensorPolyBasis
     struct RaviartThomasPolyBasis
     struct NedelecPolyBasisOnSimplex
-    struct BernsteinBasisOnSimplex
+    struct BernsteinBasisOnSimplex {
+      +get_orders
+    }
     struct ModalC0Basis {
       +get_orders
     }
