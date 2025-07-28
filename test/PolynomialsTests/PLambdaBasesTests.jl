@@ -7,7 +7,6 @@ using Gridap.Arrays
 using Gridap.Polynomials
 using ForwardDiff
 using StaticArrays
-using BenchmarkTools
 
 using Gridap.Polynomials: _combination_index, bernstein_term_id
 
