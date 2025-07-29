@@ -2,6 +2,7 @@ module MultiFieldFEAutodiffTests
 
 using Test
 
+using Gridap
 using Gridap.Algebra
 using Gridap.Arrays
 using Gridap.Geometry
