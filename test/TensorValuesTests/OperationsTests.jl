@@ -8,6 +8,16 @@ using LinearAlgebra
 using Gridap.TensorValues: _eltype
 
 # Comparison
+a0 = 0
+a1 = 1
+b = VectorValue(1,3,3)
+
+@test (a0 < b) == true
+@test (a0 <= b) == true
+@test (a0 == b) == false
+@test (a1 < b) == false
+@test (a1 <= b) == true
+
 
 a = VectorValue(1,2,3)
 b = VectorValue(1,3,3)
@@ -41,8 +51,11 @@ b = VectorValue(2,1,6)
 @test [a,a] == [a,a]
 @test [a,a] ≈ [a,a]
 
-c = TensorValue(1,2,3,4)
-
+c = TensorValue(1:9...)
+@test !(a==c)
+@test !(a≈c)
+@test !([a,a]==[c,c])
+@test !([a,a]≈[c,c])
 @test_throws ErrorException (a < c)
 @test_throws ErrorException (a <= c)
 
@@ -718,6 +731,9 @@ e = VectorValue(10,20)
 k = TensorValue(1,2,3,4)
 @test tr(outer(e,k)) == VectorValue(50,110)
 
+a = TensorValue{0,0}()
+@test_throws ErrorException outer(a,a) # FourthOrderTensorValue isn't implemented
+
 # Cross product
 
 a = VectorValue(1,2,3)
@@ -761,9 +777,17 @@ st = SymTensorValue(9,8,7,5,4,1)
 @test det(st) == det(TensorValue(get_array(st)))
 @test inv(st) ≈  inv(TensorValue(get_array(st)))
 
+qk = SkewSymTensorValue{1,Int}()
+@test det(qk) == det(TensorValue(get_array(qk)))
+@test inv(qk) ≈  inv(TensorValue(get_array(qk)))
+
 qt = SymTracelessTensorValue(9,8,7,5,4)
 @test det(qt) == det(TensorValue(get_array(qt)))
 @test inv(qt) ≈  inv(TensorValue(get_array(qt)))
+
+sk = SkewSymTensorValue{1,Int}()
+@test det(sk) == det(TensorValue(get_array(sk)))
+@test inv(sk) ≈  inv(TensorValue(get_array(sk)))
 
 sk = SkewSymTensorValue(2.)
 @test det(sk) == det(TensorValue(get_array(sk)))
@@ -949,6 +973,11 @@ sb = SkewSymTensorValue(-1+im,-2,-3)
 @test adjoint(sa) == sb
 @test transpose(sa) === -sa
 @test sa⋅sb == TensorValue(get_array(sa))⋅TensorValue(get_array(sb))
+
+u = VectorValue()
+v = VectorValue{0,ComplexF64}()
+@test norm(u) == 0
+@test norm(v) == 0. + 0im
 
 u = VectorValue(1.0,2.0)
 v = VectorValue(2.0,3.0)

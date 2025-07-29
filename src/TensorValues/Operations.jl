@@ -2,8 +2,10 @@
 # Comparison
 ###############################################################
 
+(==)(a::Number, b::MultiValue) = false
 (==)(a::MultiValue, b::MultiValue) = false
 (==)(a::MultiValue{S}, b::MultiValue{S}) where {S} = a.data == b.data
+(≈)(a::MultiValue, b::MultiValue) = false
 (≈)(a::MultiValue{S}, b::MultiValue{S}) where {S} = isapprox(get_array(a), get_array(b))
 (≈)(a::MultiValue{S,T1,N,0} where {T1}, b::MultiValue{S,T2,N,0} where {T2}) where {S,N} = true
 
@@ -34,7 +36,13 @@ function isless(a::MultiValue{Tuple{L}}, b::MultiValue{Tuple{L}}) where {L}
 end
 
 isless(a::Number, b::MultiValue) = all(isless.(a, b.data))
+function <=(a::Number, b::MultiValue)
+  all(a .<= b.data) # default doesen't work because a==b is always false
+end
 isless(a::MultiValue, b::MultiValue) = @unreachable "Comparison is not defined between tensor of order greater than 1"
+function <=(a::MultiValue, b::MultiValue)
+  isless(a,b) || isequal(a,b)
+end
 
 ###############################################################
 # promotion and conversions
@@ -805,14 +813,14 @@ function inv(a::SymTensorValue{2})
   T(a[2, 2] * c, -a[2, 1] * c, a[1, 1] * c)
 end
 
-inv(::SymTracelessTensorValue{1,T}) where {T} = TensorValue{1,1,T}(inv(zero(T)))
+inv(::SymTracelessTensorValue{1,T}) where {T} = TensorValue{1,1}(inv(zero(T)))
 function inv(a::SymTracelessTensorValue{2})
   c = -1 / det(a)
   T = change_eltype(a, typeof(c))
   T(a[1, 1] * c, a[2, 1] * c)
 end
 
-inv(::SkewSymTensorValue{1,T}) where {T} = TensorValue{1,1,T}(inv(zero(T)))
+inv(::SkewSymTensorValue{1,T}) where {T} = TensorValue{1,1}(inv(zero(T)))
 inv(a::SkewSymTensorValue{2}) = (typeof(a))(-inv(a.data[1]))
 inv(a::SkewSymTensorValue{3,T,L}) where {T,L} = SkewSymTensorValue{3,T}(tfill(inv(zero(T)), Val(L)))
 
@@ -865,7 +873,8 @@ Euclidean (2-)norm of `u`, namely `sqrt(inner(u,u))`.
 @inline norm(u::MultiValue{Tuple{D}}) where {D} = sqrt(real(inner(u, conj(u))))
 @inline norm(u::MultiValue{Tuple{D1,D2},<:Real}) where {D1,D2} = sqrt(inner(u, u))
 @inline norm(u::MultiValue{Tuple{D1,D2}}) where {D1,D2} = sqrt(real(inner(u, conj(u))))
-@inline norm(u::MultiValue{Tuple{0},T}) where {T} = sqrt(zero(T))
+@inline norm(u::MultiValue{Tuple{0},T}) where T<:Real= sqrt(zero(T))
+@inline norm(u::MultiValue{Tuple{0},T}) where {T} = sqrt(real(zero(T)))
 
 ###############################################################
 # conj, real, imag

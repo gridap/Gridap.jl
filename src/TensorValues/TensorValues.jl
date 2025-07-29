@@ -110,7 +110,7 @@ export representatives_of_componentbasis_dual
 import Base: show
 import Base: promote_rule
 import Base: zero, one
-import Base: +, -, *, /, \, ==, ≈, isless
+import Base: +, -, *, /, \, ==, ≈, isless, <=
 import Base: conj, real, imag
 import Base: sum, maximum, minimum
 import Base: getindex, iterate, eachindex, lastindex
