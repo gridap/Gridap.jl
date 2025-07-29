@@ -16,13 +16,15 @@ function Base.getproperty(a::CellConformity, sym::Symbol)
     _d_ctype_offset(a)
   elseif sym == :d_ctype_ldface_own_ldofs
     _d_ctype_ldface_own_ldofs(a)
+  elseif sym == :ctype_ndofs
+    _ctype_ndofs(a)
   else
     getfield(a, sym)
   end
 end
 
 function Base.propertynames(x::CellConformity, private::Bool=false)
-  (fieldnames(typeof(x))...,:d_ctype_offset,:d_ctype_ldface_own_ldofs)
+  (fieldnames(typeof(x))...,:d_ctype_offset,:d_ctype_ldface_own_ldofs,:ctype_ndofs)
 end
 
 function _d_ctype_offset(a::CellConformity)
@@ -44,6 +46,30 @@ function _d_ctype_ldface_own_ldofs(a::CellConformity)
     for ldface in 1:a.d_ctype_num_dfaces[d][ctype] ]
     for ctype in 1:num_ctypes ]
     for d in 1:num_ds ]
+end
+
+function _ctype_ndofs(a::CellConformity)
+  num_ctypes = length(a.ctype_lface_own_ldofs)
+  num_ds = length(a.d_ctype_num_dfaces)
+  [sum(map(length,a.ctype_lface_own_ldofs[ctype])) for ctype in 1:num_ctypes]
+end
+
+function get_d_ctype_lface_dofs(a::CellConformity, ctype_to_poly)
+  ctype_lface_dofs = get_ctype_lface_dofs(a,ctype_to_poly)
+  num_ctypes = length(a.ctype_lface_own_ldofs)
+  num_ds = length(a.d_ctype_num_dfaces)
+  [[[ ctype_lface_dofs[ctype][ldface+a.d_ctype_offset[d][ctype]]
+    for ldface in 1:a.d_ctype_num_dfaces[d][ctype] ]
+    for ctype in 1:num_ctypes ]
+    for d in 1:num_ds ]
+end
+
+function get_ctype_lface_dofs(a::CellConformity, ctype_to_poly)
+  return map(ReferenceFEs.face_own_data_to_face_data,ctype_to_poly,a.ctype_lface_own_ldofs)
+end
+
+function get_cell_conformity(space::UnconstrainedFESpace{V,<:CellConformity}) where V
+  return space.metadata
 end
 
 """
@@ -522,6 +548,78 @@ function _generate_diri_cells(
 
   diri_cells
 
+end
+
+"""
+    generate_cell_dof_mask(
+      scell_conformity::CellConformity,
+      tcell_to_scell::Vector{<:Integer},
+      d_to_tcell_to_tdface,
+      d_to_tdface_to_mask;
+      reverse::Bool=false
+    )
+
+Given a `CellConformity` object, defined on a set of source cells (`scell`), and given 
+a cell/face/edge/node masks on a set of target cells (`tcell`), this function generates a mask
+for the degrees of freedom (dofs) on the target cells. 
+
+Parameters:
+
+- `scell_conformity`: The `CellConformity` object on the source cells (`scell`).
+- `tcell_to_scell`: A vector mapping target cells (`tcell`) to source cells (`scell`).
+- `d_to_tcell_to_tdface`: For each dimension `d`, a `Table` mapping target cells to its d-faces (edges, faces, ...)
+- `d_to_tdface_to_mask`: For each dimension `d`, an array of booleans indicating whether the d-face is masked or not.
+
+Returns:
+
+- `tcell_dof_mask`: A vector that for each target cell contains a boolean vector of size equal
+   to the number of dofs in that cell, containing the mask.
+
+Modes of operation:
+
+- If `reverse = false`, the function generates a mask where the dofs are
+  `true` if the corresponding d-face is masked (`true`).
+- If `reverse = true`, the mask is reversed, meaning that the dofs are `true` if 
+  the corresponding d-face is not masked (`false`).
+"""
+function generate_cell_dof_mask(
+  scell_conformity::CellConformity,
+  tcell_to_scell::Vector{<:Integer},
+  d_to_tcell_to_tdface,
+  d_to_tdface_to_mask;
+  reverse::Bool=false
+)
+  scell_ctype = scell_conformity.cell_ctype
+  ctype_ndofs = scell_conformity.ctype_ndofs
+  d_ctype_ldface_own_ldofs = scell_conformity.d_ctype_ldface_own_ldofs
+  D = length(d_ctype_ldface_own_ldofs) - 1
+
+  tcell_dof_mask = Vector{Vector{Bool}}(undef, length(tcell_to_scell))
+
+  for (tcell,scell) in enumerate(tcell_to_scell)
+    if scell < 1
+      tcell_dof_mask[tcell] = Bool[]
+      continue
+    end
+
+    ctype = scell_ctype[scell]
+    dof_mask = fill(false,ctype_ndofs[ctype])
+
+    for d in 0:D-1
+      ldface_to_ldofs = d_ctype_ldface_own_ldofs[d+1][ctype]
+      tdfaces = view(d_to_tcell_to_tdface[d+1],tcell)
+      for (ldface,tdface) in enumerate(tdfaces)
+        if d_to_tdface_to_mask[d+1][tdface]
+          ldofs = ldface_to_ldofs[ldface]
+          dof_mask[ldofs] .= true
+        end
+      end
+    end
+
+    tcell_dof_mask[tcell] = xor.(dof_mask,reverse)
+  end
+
+  return tcell_dof_mask
 end
 
 struct CellDofsNonOriented <:AbstractVector{Vector{Int32}}

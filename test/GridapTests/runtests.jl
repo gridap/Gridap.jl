@@ -39,14 +39,16 @@ end
 @time @testset "IsotropicDamage" begin include("IsotropicDamageTests.jl") end
 
 @testset "Issue reproducers" begin
-  @time @testset "Issue614" begin include("issues/issue_614.jl") end
-  @time @testset "Issue689" begin include("issues/issue_689.jl") end
-  @time @testset "Issue722" begin include("issues/issue_722.jl") end
-  @time @testset "Issue743" begin include("issues/issue_743.jl") end
-  @time @testset "Issue760" begin include("issues/issue_760.jl") end
-  @time @testset "Issue770" begin include("issues/issue_770.jl") end
-  @time @testset "Issue778" begin include("issues/issue_778.jl") end
-  @time @testset "Issue869" begin include("issues/issue_869.jl") end
+  @time @testset "Issue614"  begin include("issues/issue_614.jl")  end
+  @time @testset "Issue689"  begin include("issues/issue_689.jl")  end
+  @time @testset "Issue722"  begin include("issues/issue_722.jl")  end
+  @time @testset "Issue743"  begin include("issues/issue_743.jl")  end
+  @time @testset "Issue760"  begin include("issues/issue_760.jl")  end
+  @time @testset "Issue770"  begin include("issues/issue_770.jl")  end
+  @time @testset "Issue778"  begin include("issues/issue_778.jl")  end
+  @time @testset "Issue869"  begin include("issues/issue_869.jl")  end
+  @time @testset "Issue974"  begin include("issues/issue_974.jl")  end
+  @time @testset "Issue1117" begin include("issues/issue_1117.jl") end
 end
 
 @time @testset "EmptyDomains" begin include("EmptyDomainsTests.jl") end

@@ -276,3 +276,9 @@ end
 function _convert_to_collectable(object::Number,ntags)
   _convert_to_collectable(Fill(object,ntags),ntags)
 end
+
+"""
+"""
+function get_cell_conformity(::SingleFieldFESpace)
+  @abstractmethod
+end

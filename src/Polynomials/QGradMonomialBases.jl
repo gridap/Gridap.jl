@@ -23,6 +23,10 @@ Base.getindex(a::QGradMonomialBasis,i::Integer) = Monomial()
 Base.IndexStyle(::QGradMonomialBasis) = IndexLinear()
 return_type(::QGradMonomialBasis{D,T}) where {D,T} = VectorValue{D,T}
 
+function testvalue(::Type{QGradMonomialBasis{D,T}}) where {D,T}
+  QGradMonomialBasis{D}(T,0)
+end
+
 """
     QGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
 

@@ -711,6 +711,28 @@ function get_face_coordinates(p::Polytope)
   vcat(p...)
 end
 
+# Aggregate own data into faces
+
+function face_own_data_to_face_data(
+  poly::Polytope{D},face_own_data::AbstractVector{<:AbstractVector{T}}
+) where {D,T}
+  face_data = Vector{Vector{T}}(undef,num_faces(poly))
+  for d in 0:D
+    d_offset = get_offset(poly,d)
+    for dface in 1:num_faces(poly,d)
+      data = T[]
+      for dd in 0:d
+        dd_offset = get_offset(poly,dd)
+        for ddface in get_faces(poly,d,dd)[dface]
+          append!(data, face_own_data[ddface+dd_offset])
+        end
+      end
+      face_data[dface+d_offset] = data
+    end
+  end
+  return face_data
+end
+
 # Testers
 
 """

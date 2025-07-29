@@ -67,16 +67,30 @@ function Base.view(t::AdaptedTriangulation,ids::AbstractArray)
 end
 
 # Wrap constructors
-function Geometry.Triangulation(
-  ::Type{ReferenceFE{d}},model::AdaptedDiscreteModel,filter::AbstractArray) where d
-  
-  trian = Triangulation(ReferenceFE{d},get_model(model),filter)
+
+function Geometry.Triangulation(::Type{ReferenceFE{d}},model::AdaptedDiscreteModel,args...;kwargs...) where d
+  trian = Triangulation(ReferenceFE{d},get_model(model),args...;kwargs...)
   return AdaptedTriangulation(trian,model)
 end
 
 function Geometry.Triangulation(
-  ::Type{ReferenceFE{d}},model::AdaptedDiscreteModel,labels::FaceLabeling;kwargs...) where d
-  trian = Triangulation(ReferenceFE{d},get_model(model),labels;kwargs...)
+  ::Type{ReferenceFE{d}}, model::AdaptedDiscreteModel, tface_to_mface::AbstractVector{<:Integer}
+) where d
+  trian = Triangulation(ReferenceFE{d},get_model(model),tface_to_mface)
+  return AdaptedTriangulation(trian,model)
+end
+
+function Geometry.Triangulation(
+  ::Type{ReferenceFE{d}}, model::AdaptedDiscreteModel, mface_filter::AbstractArray{Bool}
+) where d
+  trian = Triangulation(ReferenceFE{d},get_model(model),mface_filter)
+  return AdaptedTriangulation(trian,model)
+end
+
+function Geometry.Triangulation(
+  ::Type{ReferenceFE{d}}, model::AdaptedDiscreteModel, mface_filter::AbstractVector{Bool}
+) where d
+  trian = Triangulation(ReferenceFE{d},get_model(model),mface_filter)
   return AdaptedTriangulation(trian,model)
 end
 

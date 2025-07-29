@@ -10,15 +10,29 @@
 - `topo`: Underlying grid topology
 - `d_to_patch_to_dfaces`: For each dimension `d`, a table mapping each patch to it's d-faces.
 """
-struct PatchTopology{Dc,Dp} <: GridapType
+struct PatchTopology{Dc,Dp,A} <: GridapType
   topo :: GridTopology{Dc,Dp}
   d_to_patch_to_dfaces :: Vector{Table{Int32,Vector{Int32},Vector{Int32}}}
+  metadata :: A
+  function PatchTopology(
+    topo::GridTopology{Dc,Dp},
+    d_to_patch_to_dfaces::Vector{Table{Int32,Vector{Int32},Vector{Int32}}},
+    metadata=nothing
+  ) where {Dc,Dp}
+    A = typeof(metadata)
+    new{Dc,Dp,A}(topo,d_to_patch_to_dfaces,metadata)
+  end
 end
 
-function PatchTopology(topo::GridTopology{Dc},patch_cells::Table) where Dc
+function PatchTopology(topo::GridTopology{Dc},patch_cells::Table,metadata=nothing) where Dc
   d_to_patch_to_dpfaces = Vector{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,Dc+1)
   d_to_patch_to_dpfaces[Dc+1] = patch_cells
-  PatchTopology(topo,d_to_patch_to_dpfaces)
+  PatchTopology(topo,d_to_patch_to_dpfaces,metadata)
+end
+
+struct StarPatchMetadata
+  root_dim :: Int8
+  patch_roots :: Vector{Int32}
 end
 
 function PatchTopology(
@@ -28,11 +42,14 @@ function PatchTopology(
   Dc = num_cell_dims(model)
   topo = get_grid_topology(model)
   patch_cells = get_faces(topo,Df,Dc)
+  patch_roots = collect(Int32,1:num_faces(topo,Df))
   if !isnothing(tags)
     patches = findall(get_face_mask(labels,tags,Df))
     patch_cells = patch_cells[patches]
+    patch_roots = patch_roots[patches]
   end
-  PatchTopology(topo,patch_cells)
+  metadata = StarPatchMetadata(Int8(Df),patch_roots)
+  PatchTopology(topo,patch_cells,metadata)
 end
 
 function PatchTopology(model::DiscreteModel;kwargs...)
@@ -90,14 +107,81 @@ function generate_patch_faces(ptopo::PatchTopology{Dc},Df) where Dc
   return Arrays.merge_entries(cell_to_faces, patch_cells; acc = SortedSet{Int32}())
 end
 
-function get_patch_boundary_info(ptopo::PatchTopology{Dc}) where Dc
-  Df = Dc - 1 # TODO: Make general
-  topo = ptopo.topo
-  patch_cells = get_patch_cells(ptopo)
-  patch_faces = get_patch_faces(ptopo,Df)
-  face_to_cells = get_faces(topo,Df,Dc)
+function generate_patch_faces(ptopo::PatchTopology,dimfrom::Integer,dimto::Integer)
+  npatches = num_patches(ptopo)
 
-  n_pfaces = num_faces(ptopo,Df)
+  patch_to_fface = get_patch_faces(ptopo,dimfrom)
+  patch_to_tface = get_patch_faces(ptopo,dimto)
+  fface_to_tface = get_faces(ptopo.topo,dimfrom,dimto)
+
+  k = 1
+  ptrs = zeros(Int32, num_faces(ptopo,dimfrom)+1)
+  for patch in 1:npatches
+    ffaces = view(patch_to_fface,patch)
+    tfaces = view(patch_to_tface,patch)
+    for fface in ffaces
+      f_tfaces = view(fface_to_tface,fface)
+      for f in f_tfaces
+        pos = searchsortedfirst(tfaces,f)
+        ptrs[k+1] += Int32(pos != length(tfaces)+1)
+      end
+      k += 1
+    end
+  end
+  @assert k == length(ptrs)
+  Arrays.length_to_ptrs!(ptrs)
+
+  k = 1
+  data = Vector{Int32}(undef, ptrs[end])
+  for patch in 1:npatches
+    ffaces = view(patch_to_fface,patch)
+    tfaces = view(patch_to_tface,patch)
+    offset = patch_to_tface.ptrs[patch] - 1
+    for fface in ffaces
+      f_tfaces = view(fface_to_tface,fface)
+      for f in f_tfaces
+        pos = searchsortedfirst(tfaces,f)
+        if pos != length(tfaces)+1
+          data[ptrs[k]] = pos + offset
+          ptrs[k] += 1
+        end
+      end
+      k += 1
+    end
+  end
+  @assert k == length(ptrs)
+  Arrays.rewind_ptrs!(ptrs)
+
+  return Table(data,ptrs)
+end
+
+function compute_isboundary_face(ptopo::PatchTopology{Dc},d::Integer) where Dc
+  if d == Dc # Cells are never boundary
+    return fill(false,num_faces(ptopo,Dc))
+  else
+    isboundary_facet, _ = get_patch_boundary_info(ptopo)
+    if d == Dc-1 # Facets
+      return isboundary_facet
+    else # Faces: Boundary if belongs to a boundary facet
+      facet_to_faces = generate_patch_faces(ptopo,Dc-1,d)
+      face_mask = fill(false,num_faces(ptopo,d))
+      for (facet,mask) in enumerate(isboundary_facet)
+        if mask
+          faces = view(facet_to_faces,facet)
+          face_mask[faces] .= true
+        end
+      end
+      return face_mask
+    end
+  end
+end
+
+function get_patch_boundary_info(ptopo::PatchTopology{Dc}) where Dc
+  patch_cells = get_patch_cells(ptopo)
+  patch_faces = get_patch_faces(ptopo,Dc-1)
+  face_to_cells = get_faces(ptopo.topo,Dc-1,Dc)
+
+  n_pfaces = num_faces(ptopo,Dc-1)
   pface_to_isboundary = fill(false,n_pfaces)
   pface_to_lcell = fill(Int8(1),n_pfaces)
 
@@ -158,6 +242,122 @@ function get_patch_to_tfaces(ptopo::PatchTopology,d::Integer,tface_to_pface)
   Arrays.length_to_ptrs!(ptrs)
 
   return Table(data,ptrs)
+end
+
+function Base.view(ptopo::PatchTopology, cell_to_parent_cell::AbstractArray{<:Integer})
+  ptopo_view, _ = patch_topology_view(ptopo, cell_to_parent_cell)
+  return ptopo_view
+end
+
+function patch_topology_view(ptopo::PatchTopology, cell_to_parent_cell::AbstractArray{<:Integer})
+  Dc = num_cell_dims(ptopo)
+  n_patches = num_patches(ptopo)
+
+  topo = ptopo.topo
+  cell_to_tag = fill(1,num_cells(topo))
+  cell_to_tag[cell_to_parent_cell] .= 2
+  labels = face_labeling_from_cell_tags(topo,cell_to_tag,["out","in"])
+
+  d_to_patch_to_dfaces = Vector{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,Dc+1)
+  d_to_dpface_to_parent_dpface = Vector{Vector{Int32}}(undef,Dc+1)
+  for d in 0:Dc
+    patch_to_dfaces = get_patch_faces(ptopo,d)
+    dface_mask = get_face_mask(labels,"in",d)
+    is_in = Base.Fix1(getindex, dface_mask)
+
+    ptrs = zeros(Int32, n_patches+1)
+    for patch in 1:n_patches
+      dfaces = view(patch_to_dfaces,patch)
+      ptrs[patch+1] = count(is_in,dfaces)
+    end
+    Arrays.length_to_ptrs!(ptrs)
+
+    data = zeros(Int32, ptrs[end]-1)
+    for patch in 1:n_patches
+      dfaces = view(patch_to_dfaces,patch)
+      range = ptrs[patch]:ptrs[patch+1]-1
+      data[range] .= Iterators.filter(is_in, dfaces)
+    end
+
+    d_to_patch_to_dfaces[d+1] = Table(data,ptrs)
+    d_to_dpface_to_parent_dpface[d+1] = findall(lazy_map(Reindex(dface_mask),patch_to_dfaces.data))
+  end
+
+  ptopo_view = PatchTopology(topo, d_to_patch_to_dfaces, ptopo.metadata)
+  return ptopo_view, d_to_dpface_to_parent_dpface
+end
+
+function restrict(
+  ptopo::PatchTopology, cell_to_parent_cell::AbstractArray{<:Integer}; 
+  remove_empty_patches = false
+)
+  Dc = num_cell_dims(ptopo)
+  n_patches = num_patches(ptopo)
+
+  topo = ptopo.topo
+  restricted_topo, d_to_dface_to_parent_dface = restrict(topo,cell_to_parent_cell)
+
+  d_to_patch_to_dfaces = Vector{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,Dc+1)
+  for d in 0:Dc
+    dface_to_parent_dface = d_to_dface_to_parent_dface[d+1]
+    parent_dface_to_dface = find_inverse_index_map(
+      dface_to_parent_dface, num_faces(topo,d)
+    )
+    patch_to_parent_dfaces = get_patch_faces(ptopo,d)
+    
+    ptrs = zeros(Int32, n_patches+1)
+    for patch in 1:n_patches
+      parent_dfaces = view(patch_to_parent_dfaces,patch)
+      dfaces = view(parent_dface_to_dface,parent_dfaces)
+      ptrs[patch+1] = count(!iszero,dfaces)
+    end
+    Arrays.length_to_ptrs!(ptrs)
+
+    data = zeros(Int32, ptrs[end]-1)
+    for patch in 1:n_patches
+      parent_dfaces = view(patch_to_parent_dfaces,patch)
+      dfaces = view(parent_dface_to_dface,parent_dfaces)
+      range = ptrs[patch]:ptrs[patch+1]-1
+      data[range] .= Iterators.filter(!iszero, dfaces)
+    end
+
+    d_to_patch_to_dfaces[d+1] = Table(data,ptrs)
+    if remove_empty_patches
+      Arrays.remove_empty_entries!(d_to_patch_to_dfaces[d+1])
+    end
+  end
+
+  if isa(ptopo.metadata,StarPatchMetadata)
+    root_dim = ptopo.metadata.root_dim
+    parent_rface_to_rface = find_inverse_index_map(
+      d_to_dface_to_parent_dface[root_dim+1],num_faces(topo,root_dim)
+    )
+    patch_roots = parent_rface_to_rface[ptopo.metadata.patch_roots]
+    if remove_empty_patches
+      patch_roots = filter!(iszero, patch_roots)
+    end
+    metadata = StarPatchMetadata(root_dim, patch_roots)
+  else
+    metadata = nothing
+  end
+
+  new_ptopo = PatchTopology(
+    restricted_topo, d_to_patch_to_dfaces, metadata
+  )
+  return new_ptopo, d_to_dface_to_parent_dface
+end
+
+function extend_patches_by_single_layer(ptopo::PatchTopology{Dc}) where Dc
+  topo = ptopo.topo
+  nodes_to_cells = get_faces(topo,0,Dc)
+  patch_to_nodes = get_patch_faces(ptopo,0)
+
+  patch_cells = Arrays.merge_entries(
+    nodes_to_cells, patch_to_nodes; 
+    acc  = SortedSet{Int32}(), 
+    post = dofs -> filter(x -> x > 0, dofs)
+  )
+  return PatchTopology(topo, patch_cells, nothing)
 end
 
 # PatchTriangulation
@@ -277,6 +477,63 @@ function PatchBoundaryTriangulation(model::DiscreteModel{Dc},ptopo::PatchTopolog
   trian = BoundaryTriangulation(face_trian,face_glue)
 
   return PatchTriangulation(trian,ptopo,tface_to_pface)
+end
+
+"""
+    PatchSkeletonTriangulation(model::DiscreteModel,ptopo::PatchTopology{Dc};tags=nothing)
+"""
+function PatchSkeletonTriangulation(model::DiscreteModel{Dc},ptopo::PatchTopology{Dc}; tags=nothing) where Dc
+  patch_faces = get_patch_faces(ptopo,Dc-1)
+  pface_to_face = patch_faces.data
+
+  # Create p-face mask
+  if !isnothing(tags)
+    labels = get_face_labeling(model)
+    face_to_mask = get_face_mask(labels,tags,Dc-1)
+    pface_to_mask = lazy_map(Reindex(face_to_mask),pface_to_face)
+  else
+    pface_to_mask = Fill(true,num_faces(ptopo,Dc-1))
+  end
+
+  # Merge with boundary mask
+  pface_to_isboundary, _ = get_patch_boundary_info(ptopo)
+  tface_to_pface = findall(lazy_map((a,b) -> !a && b, pface_to_isboundary, pface_to_mask))
+  tface_to_face  = pface_to_face[tface_to_pface]
+  ntfaces = length(tface_to_face)
+
+  # Create overlapping boundary triangulation
+  topo = get_grid_topology(model)
+  cell_grid = get_grid(model)
+  face_grid = view(Grid(ReferenceFE{Dc-1},model),tface_to_face)
+  face_trian = BodyFittedTriangulation(model,face_grid,tface_to_face)
+
+  face_glue_plus = OverlappingFaceToCellGlue(topo,cell_grid,face_grid,tface_to_face,fill(Int8(1),ntfaces))
+  trian_plus = BoundaryTriangulation(face_trian,face_glue_plus)
+
+  face_glue_minus = OverlappingFaceToCellGlue(topo,cell_grid,face_grid,tface_to_face,fill(Int8(2),ntfaces))
+  trian_minus = BoundaryTriangulation(face_trian,face_glue_minus)
+
+  trian = SkeletonTriangulation(trian_plus,trian_minus)
+  return PatchTriangulation(trian,ptopo,tface_to_pface)
+end
+
+for TT in (:PatchBoundaryTriangulation,:PatchSkeletonTriangulation)
+  @eval begin
+    function $TT(trian::Triangulation{Dc},ptopo::PatchTopology{Dc}; kwargs...) where Dc
+      # Create the Boundary/Skeleton triangulation on a restricted PatchTopology
+      model = get_background_model(trian)
+      tcell_to_mcell = get_glue(trian,Val(Dc)).tface_to_mface
+      ptopo_view, d_to_dface_to_parent_dface = patch_topology_view(ptopo,tcell_to_mcell)
+      ptrian = $TT(model,ptopo_view; kwargs...)
+
+      # Reindex the tface_to_pface map
+      tface_to_pface = ptrian.glue.tface_to_pface
+      tface_to_parent_pface = d_to_dface_to_parent_dface[Dc][tface_to_pface]
+      return PatchTriangulation(
+        ptrian.trian, ptopo, tface_to_parent_pface
+      )
+    end
+  end
 end
 
 function get_patch_faces(trian::PatchTriangulation)

@@ -116,3 +116,5 @@ gather_dirichlet_values!(dv,f::TrialFESpace,cv) = gather_dirichlet_values!(dv,f.
 gather_free_values(f::TrialFESpace,cv) = gather_free_values(f.space,cv)
 
 gather_free_values!(fv,f::TrialFESpace,cv) = gather_free_values!(fv,f.space,cv)
+
+get_cell_conformity(f::TrialFESpace) = get_cell_conformity(f.space)
