@@ -265,8 +265,8 @@ du_vec = assemble_vector(du,X)
 
 f2(xh,yh) = ∫(xh[1]⋅yh[1]+xh[2]⋅yh[2]+xh[1]⋅xh[2]⋅yh[2]+xh[1]*xh[3]*yh[3])dΓ
 dv = get_fe_basis(X)
-j = jacobian(uh->f2(uh,dv),uh)
-J = assemble_matrix(j,X,X)
+_j = jacobian(uh->f2(uh,dv),uh)
+J = assemble_matrix(_j,X,X)
 
 f2_jac(xh,dxh,yh) = ∫(dxh[1]⋅yh[1]+dxh[2]⋅yh[2]+dxh[1]⋅xh[2]⋅yh[2]+xh[1]⋅dxh[2]⋅yh[2]+dxh[1]*xh[3]*yh[3]+xh[1]*dxh[3]*yh[3])dΓ
 op = FEOperator(f2,f2_jac,X,X)
@@ -302,8 +302,8 @@ du_vec = assemble_vector(du,X)
 
 f2(xh,yh) = ∫(mean(xh[1])⋅mean(yh[1])+mean(xh[2])⋅mean(yh[2])+mean(xh[1])⋅mean(xh[2])⋅mean(yh[2])+mean(xh[1])*mean(xh[3])*mean(yh[3]))dΛ
 dv = get_fe_basis(X)
-j = jacobian(uh->f2(uh,dv),uh)
-J = assemble_matrix(j,X,X)
+_j = jacobian(uh->f2(uh,dv),uh)
+J = assemble_matrix(_j,X,X)
 
 f2_jac(xh,dxh,yh) = ∫(mean(dxh[1])⋅mean(yh[1])+mean(dxh[2])⋅mean(yh[2])+mean(dxh[1])⋅mean(xh[2])⋅mean(yh[2]) +
   mean(xh[1])⋅mean(dxh[2])⋅mean(yh[2])+mean(dxh[1])*mean(xh[3])*mean(yh[3])+mean(xh[1])*mean(dxh[3])*mean(yh[3]))dΛ
