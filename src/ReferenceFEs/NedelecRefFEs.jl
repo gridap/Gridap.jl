@@ -30,13 +30,13 @@ function NedelecRefFE(::Type{T},p::Polytope,order::Integer) where T
   if is_n_cube(p)
     PT = Legendre # Could be a Kwargs, any hierarchical basis works
     @check PT ≠ Bernstein # broken for Bernstein in prebasis or cb, might be an issue of ordering of the basis polynomials
-    prebasis =     FEEC_poly_basis(Val(D),T,order+1,1,:Q⁻,PT;) # Q⁻ᵣΛ¹(□ᴰ)
+    prebasis =     FEEC_poly_basis(Val(D),T,order+1,1,:Q⁻,PT;) # Q⁻ᵣΛ¹(□ᴰ), r = order+1
     eb =           FEEC_poly_basis(Val(1),T,order,0,  :Q⁻,PT;)                     # Edge basis  Q⁻ᵨΛ⁰(□¹), ρ = r-1
     fb = order>0 ? FEEC_poly_basis(Val(2),T,order,1,  :Q⁻,PT; rotate_90) : nothing # Facet basis Q⁻ᵨΛ¹(□²), ρ = r-1 (only D=3)
     cb = order>0 ? FEEC_poly_basis(Val(D),T,order,D-1,:Q⁻,PT; rotate_90) : nothing # Cell basis  Q⁻ᵨΛ¹(□ᴰ), ρ = r-1
   elseif is_simplex(p)
     PT = Bernstein # Could be a Kwargs, any basis works
-    prebasis =       FEEC_poly_basis(Val(D),T,order+1,1,  :P⁻,PT) # P⁻ᵣΛ¹(△ᴰ)
+    prebasis =       FEEC_poly_basis(Val(D),T,order+1,1,  :P⁻,PT) # P⁻ᵣΛ¹(△ᴰ), r = order+1
     eb =             FEEC_poly_basis(Val(1),T,order,0,    :P ,PT)                      # Edge basis  PᵨΛ⁰(△¹), ρ = r-1
     fb = order>0 ?   FEEC_poly_basis(Val(2),T,order-1,1,  :P ,PT; rotate_90) : nothing # Facet basis PᵨΛ¹(△²), ρ = r-2 (only D=3)
     cb = order>D-2 ? FEEC_poly_basis(Val(D),T,order-D+1,1,:P ,PT; rotate_90) : nothing # Cell basis  PᵨΛ¹(△ᴰ), ρ = r-D

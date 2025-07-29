@@ -6,7 +6,11 @@ function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
   rotate_90=false, diff_geo_calculus_style=false, kwargs...) where D
 
   FEEC_space_definition_checks(Val(D),T,r,k,F,rotate_90,diff_geo_calculus_style)
-  @check r>0 "Exterior calculus FEs starts at r=1"
+  if (k==D && F∈(:P,:S))
+    @check r ≥ 0 "This exterior calculus FEs starts at r=0"
+  else
+    @check r ≥ 1 "This exterior calculus FEs starts at r=1"
+  end
 
   # This logic should keep consistent with the Table in the ReferenceFEs documentation
   (name, order) = if F == :P⁻

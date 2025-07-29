@@ -16,7 +16,7 @@ Pushforward(::Type{BDM}) = ContraVariantPiolaMap()
     BDMRefFE(::Type{T}, p::Polytope, order::Integer)
 
 The `order` argument has the following meaning: the divergence of the  functions
-in this basis is in the ℙ space of degree `order-1`. `T` is the type of scalar
+in this basis is in the ℙ space of degree `order`. `T` is the type of scalar
 components.
 """
 function BDMRefFE(::Type{T},p::Polytope,order::Integer) where T
@@ -28,7 +28,7 @@ function BDMRefFE(::Type{T},p::Polytope,order::Integer) where T
   k = D-1
   PT = Bernstein # Could be a Kwargs, any basis works
 
-  prebasis =     FEEC_poly_basis(Val(D),  T,order  ,k,:P, PT; rotate_90) # PᵣΛᴰ⁻¹
+  prebasis =     FEEC_poly_basis(Val(D),  T,order  ,k,:P, PT; rotate_90) # PᵣΛᴰ⁻¹, r = order
   fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:P⁻,Bernstein)            # Facet basis P⁻ᵨΛ⁰(△ᴰ⁻¹), ρ = r
   cb = order>1 ? FEEC_poly_basis(Val(D),  T,order-1,1,:P⁻,Bernstein) : nothing  # Cell basis  P⁻ᵨΛ¹(△ᴰ),   ρ = r-1
 

@@ -36,12 +36,12 @@ function RaviartThomasRefFE(
   if is_n_cube(p)
     PT = Legendre # Could be a Kwargs, any hierarchical basis works
     @check PT ≠ Bernstein # broken for Bernstein in prebasis or cb, might be an issue of ordering of the basis polynomials
-    prebasis =     FEEC_poly_basis(Val(D),  T,order+1,k,:Q⁻,PT; rotate_90) # Q⁻ᵣΛᵏ(□ᴰ)
+    prebasis =     FEEC_poly_basis(Val(D),  T,order+1,k,:Q⁻,PT; rotate_90) # Q⁻ᵣΛᵏ(□ᴰ), r = order+1
     fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:Q⁻,PT)            # Facet basis Q⁻ᵨΛ⁰(□ᴰ⁻¹), ρ = r-1
     cb = order>0 ? FEEC_poly_basis(Val(D),  T,order  ,1,:Q⁻,PT) : nothing  # Cell basis  Q⁻ᵨΛ¹(□ᴰ),   ρ = r-1
   elseif is_simplex(p)
     PT = Bernstein # Could be a Kwargs, any basis works
-    prebasis =     FEEC_poly_basis(Val(D),  T,order+1,k,:P⁻,PT; rotate_90) # P⁻ᵣΛᵏ(△ᴰ)
+    prebasis =     FEEC_poly_basis(Val(D),  T,order+1,k,:P⁻,PT; rotate_90) # P⁻ᵣΛᵏ(△ᴰ), r = order+1
     fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:P ,PT)            # Facet basis PᵨΛ⁰(△ᴰ⁻¹), ρ = r-1
     cb = order>0 ? FEEC_poly_basis(Val(D),  T,order-1,1,:P ,PT) : nothing  # Cell basis  PᵨΛ¹(△ᴰ),   ρ = r-2
   else
