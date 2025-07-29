@@ -113,8 +113,11 @@ end
 
 function evaluate!(result,::AutoDiffMap,cfg::ForwardDiff.JacobianConfig{T,V,N},ydual) where {T,V,N}
   @check ForwardDiff.chunksize(cfg) == size(result,2)
-  ForwardDiff.extract_jacobian!(T, result, ydual, N)
-  ForwardDiff.extract_value!(T, result, ydual)
+  if length(ydual) > 0 # TODO: Temporary fix, sometimes ydual.touched is incorrectly true for the
+                       #       case of SkeletonTriangulation + MultiField on different triangulations.
+    ForwardDiff.extract_jacobian!(T, result, ydual, N)
+    ForwardDiff.extract_value!(T, result, ydual)
+  end
   return result
 end
 
