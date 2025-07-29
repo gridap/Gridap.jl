@@ -19,7 +19,7 @@ end
 # TODO: Currently, this is only implemented for the gradient and jacobian.
 #  The Hessian is proplematic because the off-diagonal blocks are missed.
 
-for (op,_op) in ((:gradient,:_gradient),(:jacobian,:_jacobian))#,(:hessian,:_hessian))
+for (op,_op) in ((:gradient,:_gradient),(:jacobian,:_jacobian))
   @eval begin
 
     function FESpaces.$(op)(f::Function,uh::MultiFieldFEFunction;ad_type=:split)
@@ -56,14 +56,6 @@ for (op,_op) in ((:gradient,:_gradient),(:jacobian,:_jacobian))
 
   end
 end
-
-# # There are many choices for the Hessian, but I think the most efficient should be
-# # to compute the gradient monolithically, then its jacobian in split mode.
-# # TODO: This doesn't work because _gradient expects uh inheriting from FEFunction.
-# function multifield_autodiff_split(::typeof(hessian),f,uh,fuh)
-#   g(x) = FESpaces._gradient(f,x,fuh)
-#   multifield_autodiff_split(jacobian,g,uh,fuh)
-# end
 
 function _combine_contributions(::typeof(gradient),terms::Vector{DomainContribution},fuh::DomainContribution)
   contribs = DomainContribution()
