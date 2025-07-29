@@ -57,7 +57,7 @@ for (op,_op) in ((:gradient,:_gradient),(:jacobian,:_jacobian))
   end
 end
 
-function _combine_contributions(::typeof(gradient),terms::Vector{DomainContribution},fuh::DomainContribution)
+function _combine_contributions(::typeof(gradient),terms,fuh::DomainContribution)
   contribs = DomainContribution()
   nfields = length(terms)
   block_map = BlockMap(nfields,collect(Base.OneTo(nfields)))
@@ -69,7 +69,7 @@ function _combine_contributions(::typeof(gradient),terms::Vector{DomainContribut
   contribs
 end
 
-function _combine_contributions(::typeof(jacobian),terms::Vector{DomainContribution},fuh::DomainContribution)
+function _combine_contributions(::typeof(jacobian),terms,fuh::DomainContribution)
   contribs = DomainContribution()
   nfields = length(terms)
   I = [[(CartesianIndex(j),CartesianIndex(j,i)) for j in 1:nfields] for i in 1:nfields]
