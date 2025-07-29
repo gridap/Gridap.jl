@@ -278,9 +278,13 @@ get_order(b::BernsteinBasisOnSimplex) = b.max_order
 get_orders(b::BernsteinBasisOnSimplex{D}) where D = tfill(get_order(b), Val(D))
 
 function testvalue(::Type{BernsteinBasisOnSimplex{D,V,M}}) where {D,V,M}
-  m = M==Nothing ? M() : zero(M)
-  @assert m isa M
-  BernsteinBasisOnSimplex{D}(V,0,m)
+  if M == Nothing
+    vertices = nothing
+  else
+    Pt = Point{D,eltype(M)}
+    vertices = ntuple( j -> Pt( ntuple( i -> j==i+1, Val(D)) ), Val(D+1))
+  end
+  BernsteinBasisOnSimplex{D}(V,0,vertices)
 end
 
 

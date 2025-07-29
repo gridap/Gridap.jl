@@ -283,16 +283,21 @@ test_field_array(b,x[1],bx[1,:],grad=Gbx[1,:],gradgrad=Hbx[1,:])
 ############################################################################
 # Tests for ND Bernstein polynomial with arbitrary barycentric coordinates #
 ############################################################################
+#
+T = Float64
+
+D = 0
+vertices = (Point(), )
+b = BernsteinBasisOnSimplex(Val(D), Float64, 3, vertices)
 
 D = 2
-T = Float64
 
 vertices = (Point(0.,1.), Point(0.,2.), Point(0.,3.))
 @test_throws DomainError Polynomials._compute_cart_to_bary_matrix(vertices, Val(D+1))
 
 vertices = (Point(5.,0.), Point(7.,2.), Point(0.,3.))
 
-b = BernsteinBasisOnSimplex(Val(2), Float64, 3, vertices)
+b = BernsteinBasisOnSimplex(Val(D), Float64, 3, vertices)
 x = [Point(.0,.5), Point(1.,.5), Point(.2,.3), Point(5.,0.), Point(7.,2.), Point(0.,3.)]
 x1 = x[1]
 
@@ -308,7 +313,6 @@ D = 2
 vertices = (Point(5.,0.), Point(7.,2.), Point(0.,3.))
 x2λ = Polynomials._compute_cart_to_bary_matrix(vertices, Val(D+1))
 
-T = Float64
 G = gradient_type(V,x1)
 H = gradient_type(G,x1)
 

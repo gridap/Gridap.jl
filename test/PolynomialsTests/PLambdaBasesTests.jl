@@ -10,7 +10,7 @@ using StaticArrays
 
 using Gridap.Polynomials: _combination_index, bernstein_term_id
 
-r = 4
+r = 3 # all possible bubble spaces are non empty
 
 # Bubble indices validation
 
@@ -60,86 +60,93 @@ for k in 0:D
 end
 
 
-# TODO validation of precomputation in reference simplex
+# Bases tests
 
-function _test_bases_in_ref_simplex(VD, T, r, k)
-  b   = PmLambdaBasis(VD,T,r,k)
-  evaluate(b,x)
-  evaluate(Broadcasting(∇)(b),x)
-  evaluate(Broadcasting(∇∇)(b),x)
+function _test_testvalue(b, Bx, Gx, Hx)
+  b0 = testvalue(b)
+  @test b0 isa typeof(b)
 
-  bv  = PmLambdaBasis(VD,T,r,k,vertices)
-  evaluate(bv,x)
-  evaluate(Broadcasting(∇)(bv),x)
-  evaluate(Broadcasting(∇∇)(bv),x)
+  @test evaluate(b0,x)                   isa typeof(Bx)
+  @test evaluate(Broadcasting(∇)(b0),x)  isa typeof(Gx)
+  @test evaluate(Broadcasting(∇∇)(b0),x) isa typeof(Hx)
+end
 
-  @test b.m == bv.m
+function _test_basis(VD::Val{D}, T, r, k, vertices) where D
+  for PΛB in (PmLambdaBasis, PLambdaBasis)
+    b   = PΛB(VD,T,r,k)
+    @test contains(sprint(show, MIME"text/plain"(), b._indices), "PᵣΛᵏ(△ᴰ) basis indices, r=$r k=$k D=$D")
 
-  b   = PLambdaBasis(VD,T,r,k)
-  evaluate(b,x)
-  evaluate(Broadcasting(∇)(b),x)
-  evaluate(Broadcasting(∇∇)(b),x)
+    b2  = PΛB(VD,T,r,k; indices=b._indices) # indices recycling
+    @test b == b2
+    @test b2._indices == b._indices
 
-  bv  = PLambdaBasis(VD,T,r,k,vertices)
-  evaluate(bv,x)
-  evaluate(Broadcasting(∇)(bv),x)
-  evaluate(Broadcasting(∇∇)(bv),x)
+    faces = [bubble[1] for bubble in get_bubbles(b)] # bubble space selection
+    b2  = PΛB(b, faces...)
+    @test b == b2
 
-  @test b.Ψ == bv.Ψ
+    Bx = evaluate(b,x)
+    Gx = evaluate(Broadcasting(∇)(b),x)
+    Hx = evaluate(Broadcasting(∇∇)(b),x)
+    _test_testvalue(b, Bx, Gx, Hx)
 
-  @test testvalue(typeof(b)) isa typeof(b)
+    bv  = PΛB(VD,T,r,k,vertices)
+    Bx = evaluate(bv,x)
+    Gx = evaluate(Broadcasting(∇)(bv),x)
+    Hx = evaluate(Broadcasting(∇∇)(bv),x)
+    _test_testvalue(bv, Bx, Gx, Hx)
+  end
 end
 
 T = Float64
 
 # 0D                                           0D #
 D = 0
-vertices = (Point{D,T}(),)
+vertices = [Point{D,T}()]
 x = [vertices[1]]
 k = 0
 
-_test_bases_in_ref_simplex(Val(D), T, r, k)
+_test_basis(Val(D), T, r, k, vertices)
 
 # 1D                                           1D #
 D = 1
 Pt = Point{D,T}
-vertices = (Pt(0.),Pt(1.))
+vertices = [Pt(0.),Pt(1.)]
 x = [xi for xi in vertices]
 
 for k in 0:D
-  _test_bases_in_ref_simplex(Val(D), T, r, k)
+  _test_basis(Val(D), T, r, k, vertices)
 end
 
 
 # 2D                                           2D #
 D = 2
 Pt = Point{D,T}
-vertices = (Pt(0., 0),Pt(1.,0),Pt(0.,1.))
+vertices = [Pt(0., 0),Pt(1.,0),Pt(0.,1.)]
 x = [xi for xi in vertices]
 
 for k in 0:D
-  _test_bases_in_ref_simplex(Val(D), T, r, k)
+  _test_basis(Val(D), T, r, k, vertices)
 end
 
 # 3D                                           3D #
 D = 3
 Pt = Point{D,T}
-vertices = (Pt(0.,0,0),Pt(1.,0,0),Pt(0,1.,0),Pt(0,0,1.))
+vertices = [Pt(0.,0,0),Pt(1.,0,0),Pt(0,1.,0),Pt(0,0,1.)]
 x = [xi for xi in vertices]
 
 for k in 0:D
-  _test_bases_in_ref_simplex(Val(D), T, r, k)
+  _test_basis(Val(D), T, r, k, vertices)
 end
 
 # 4D                                           4D #
 D = 4
 Pt = Point{D,T}
-vertices = (Pt(0.,0,0,0),Pt(1.,0,0,0),Pt(0,1.,0,0),Pt(0,0,1.,0),Pt(0,0,0,1.))
+vertices = [Pt(0.,0,0,0),Pt(1.,0,0,0),Pt(0,1.,0,0),Pt(0,0,1.,0),Pt(0,0,0,1.)]
 x = [xi for xi in vertices]
 
 for k in 0:D
   k == 2 && continue # no vector proxy
-  _test_bases_in_ref_simplex(Val(D), T, r, k)
+  _test_basis(Val(D), T, r, k, vertices)
 end
 
 end # module

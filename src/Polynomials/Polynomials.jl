@@ -137,9 +137,6 @@ export PmΛ_bubbles
 export PΛ_bubbles
 export get_bubbles
 export print_indices
-#export get_FEEC_poly_degree
-#export get_FEEC_form_degree
-#export get_FEEC_family
 
 export FEEC_space_definition_checks
 export FEEC_poly_basis

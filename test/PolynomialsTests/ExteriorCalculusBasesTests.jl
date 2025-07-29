@@ -1,5 +1,6 @@
 module ExteriorCalculusBasesTests
 
+using Base: diff_names
 using Test
 using Gridap.TensorValues
 using Gridap.Fields
@@ -14,6 +15,19 @@ using StaticArrays
 @test Polynomials._default_poly_type(:Q⁻) == Legendre
 @test Polynomials._default_poly_type(:S)  == Legendre
 @test Polynomials._default_poly_type(:default) == Monomial
+
+# differential geometry / exterior calculus isn't implemented yet
+diff_geo_calculus_style = true
+@test_throws ErrorException FEEC_space_definition_checks(Val(0),Float64,0,0,:P,false,diff_geo_calculus_style)
+
+# no vector proxy for 1 < k < D-1 forms
+D,k = 4, 2
+@test_throws ErrorException FEEC_space_definition_checks(Val(D),Float64,0,k,:P)
+
+# rotate_90 is for 2D 1-forms
+rotate_90 = true
+@test_warn "`rotate_90` kwarg" FEEC_space_definition_checks(Val(2),Float64,0,2,:P,rotate_90)
+@test_warn "`rotate_90` kwarg" FEEC_space_definition_checks(Val(3),Float64,0,1,:P,rotate_90)
 
 # Source: https://www-users.cse.umn.edu/~arnold/femtable/background.html
 FEEC_length(r,k,D,::Val{:P⁻}) = binomial(r+D,r+k)*binomial(r+k-1,k)
@@ -199,7 +213,6 @@ b2 = NedelecPolyBasisOnSimplex{D}(Monomial,T,r-1)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:P⁻,D,no_hessian)
 
-#@test_throws ErrorException FEEC_poly_basis(Val(D),T,r,k,:P,Monomial)
 b = FEEC_poly_basis(Val(D),T,r,k,:P,Monomial)
 b2 = MonomialBasis(Val(D),V,r,Polynomials._p_filter)
 @test b isa PolynomialBasis{D,V,Monomial}
@@ -263,5 +276,8 @@ b = FEEC_poly_basis(Val(D),T,r,k,:S,Monomial)
 b2 = CartProdPolyBasis(Monomial,Val(D),T,r,_p_filter)
 _test_bases(b,b2,r,k,:S,D)
 
+
+@test_throws ErrorException FEEC_poly_basis(Val(4),T,r,1,:P⁻,Monomial)
+@test_throws ErrorException FEEC_poly_basis(Val(4),T,r,2,:P⁻,Monomial)
 
 end # module
