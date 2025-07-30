@@ -11,12 +11,15 @@ struct PatchAssemblyStrategy{A,B} <: AssemblyStrategy
 end
 
 function map_rows!(gids,a::PatchAssemblyStrategy,rows,patch)
-  prows = a.patch_rows[patch]
+  prows = view(a.patch_rows,patch)
+  n = length(prows)+1
   u = -one(eltype(gids))
   for i in eachindex(rows)
     ri = rows[i]
     if ri > 0
-      gids[i] = searchsortedfirst(prows,ri)
+      gid = searchsortedfirst(prows,ri)
+      found = !isequal(gid,n) && isequal(prows[gid],ri)
+      gids[i] = ifelse(found, gid, u)
     else
       gids[i] = u
     end
@@ -25,12 +28,15 @@ function map_rows!(gids,a::PatchAssemblyStrategy,rows,patch)
 end
 
 function map_cols!(gids,a::PatchAssemblyStrategy,cols,patch)
-  pcols = a.patch_cols[patch]
+  pcols = view(a.patch_cols,patch)
+  n = length(pcols)+1
   u = -one(eltype(gids))
   for i in eachindex(cols)
     ci = cols[i]
     if ci > 0
-      gids[i] = searchsortedfirst(pcols,ci)
+      gid = searchsortedfirst(pcols,ci)
+      found = !isequal(gid,n) && isequal(pcols[gid],ci)
+      gids[i] = ifelse(found, gid, u)
     else
       gids[i] = u
     end
@@ -48,16 +54,26 @@ end
 get_rows(assembler::PatchAssembler) = assembler.rows
 get_cols(assembler::PatchAssembler) = assembler.cols
 
-function PatchAssembler(ptopo::PatchTopology,trial::FESpace,test::FESpace)
-  patch_rows = get_patch_assembly_ids(test,ptopo)
-  patch_cols = get_patch_assembly_ids(trial,ptopo)
+function PatchAssembler(ptopo::PatchTopology,trial::FESpace,test::FESpace;kwargs...)
+  patch_rows = get_patch_assembly_ids(test,ptopo;kwargs...)
+  patch_cols = get_patch_assembly_ids(trial,ptopo;kwargs...)
   strategy = PatchAssemblyStrategy(ptopo,patch_rows,patch_cols)
   rows = map(length,patch_rows)
   cols = map(length,patch_cols)
   return PatchAssembler(ptopo,strategy,rows,cols)
 end
 
-function get_patch_assembly_ids(space::FESpace,ptopo::PatchTopology)
+function get_patch_assembly_ids(space::FESpace,ptopo::PatchTopology;assembly=:all)
+  if assembly == :all
+    _patch_assembly_ids_all(space,ptopo)
+  elseif assembly == :star
+    _patch_assembly_ids_star(space,ptopo)
+  else
+    @notimplemented
+  end :: Table{Int32,Vector{Int32},Vector{Int32}}
+end
+
+function _patch_assembly_ids_all(space::FESpace,ptopo::PatchTopology)
   trian = get_triangulation(space)
   Df = num_cell_dims(trian)
   face_to_tface = get_glue(trian,Val(Df)).mface_to_tface
@@ -69,8 +85,74 @@ function get_patch_assembly_ids(space::FESpace,ptopo::PatchTopology)
   patch_rows = Arrays.merge_entries(
     face_dof_ids, patch_to_faces ; 
     acc  = SortedSet{Int32}(), 
-    post = dofs->filter(x->x>0,dofs)
+    post = dofs->filter(x -> x > 0, dofs)
   )
+  return patch_rows
+end
+
+function _patch_assembly_ids_star(
+  space::FESpace, ptopo::PatchTopology
+)
+  @check ptopo.metadata isa Geometry.StarPatchMetadata """
+    PatchTopology does not have StarPatchMetadata metadata.
+  """
+  D = num_cell_dims(ptopo)
+  topo, metadata = ptopo.topo, ptopo.metadata
+  Dr, patch_roots = metadata.root_dim, metadata.patch_roots
+
+  # A dpface is masked (removed) iff
+  #  - It is a boundary of the patch, AND
+  #  - It is not connected to the root of the patch
+  d_to_dpface_to_mask = map(0:D-1) do d
+
+    dpface_to_dface = Geometry.get_patch_faces(ptopo,d).data
+    dpface_to_patch = Geometry.get_pface_to_patch(ptopo,d)
+    root_to_dfaces = Geometry.get_faces(topo,Dr,d)
+    
+    dpface_to_mask = Geometry.compute_isboundary_face(ptopo,d)
+    for (dpface, dface) in enumerate(dpface_to_dface)
+      !dpface_to_mask[dpface] && continue # Already interior
+      # Check if it is connected to the root
+      root = patch_roots[dpface_to_patch[dpface]]
+      dpface_to_mask[dpface] = (dface ∉ view(root_to_dfaces,root))
+    end
+
+    return dpface_to_mask
+  end
+
+  return _patch_assembly_ids_masked(space,ptopo,d_to_dpface_to_mask)
+end
+
+function _patch_assembly_ids_masked(
+  space::FESpace, ptopo::PatchTopology, d_to_dpface_to_mask;
+  reverse = true
+)
+  strian = get_triangulation(space)
+  model = get_background_model(strian)
+
+  D = num_cell_dims(strian)
+  ttrian = PatchTriangulation(ReferenceFE{D},model,ptopo)
+
+  tface_to_mface = get_glue(ttrian, Val(D)).tface_to_mface
+  mface_to_sface = get_glue(strian, Val(D)).mface_to_tface
+  tface_to_sface = mface_to_sface[tface_to_mface]
+
+  cell_conformity = get_cell_conformity(space)
+  d_to_tcell_to_tdface = [ Geometry.generate_patch_faces(ptopo,D,d) for d in 0:D-1 ]
+  tcell_to_ldof_mask = generate_cell_dof_mask(
+    cell_conformity,tface_to_sface,d_to_tcell_to_tdface,d_to_dpface_to_mask;reverse
+  )
+
+  tcell_dof_ids = get_cell_dof_ids(space,ttrian)
+  tcell_dof_ids_masked = lazy_map(getindex, tcell_dof_ids, tcell_to_ldof_mask)
+  patch_to_tfaces = Geometry.get_patch_to_tfaces(ptopo,D,ttrian.glue.tface_to_pface)
+
+  patch_rows = Arrays.merge_entries(
+    tcell_dof_ids_masked, patch_to_tfaces; 
+    acc  = SortedSet{Int32}(), 
+    post = dofs -> filter(x -> x > 0, dofs)
+  )
+
   return patch_rows
 end
 

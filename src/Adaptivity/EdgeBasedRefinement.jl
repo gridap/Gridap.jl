@@ -82,7 +82,8 @@ function refine_edge_based_topology(
 end
 
 """
-    setup_edge_based_rrules(method::EdgeBasedRefinement,topo::UnstructuredGridTopology,cells_to_refine)
+    setup_edge_based_rrules(method::EdgeBasedRefinement,topo::UnstructuredGridTopology,cells_to_refine::AbstractArray{<:Integer})
+    setup_edge_based_rrules(method::EdgeBasedRefinement,topo::UnstructuredGridTopology,cells_to_refine::AbstractArray{<:Bool})
 
 Given an UnstructuredTopology and a list of cells to refine, returns a vector
 of refinement rules and a list of the faces (called refined faces) where new 
@@ -90,10 +91,6 @@ vertices will be created.
 """
 function setup_edge_based_rrules(::EdgeBasedRefinement,topo::UnstructuredGridTopology{Dc},cells_to_refine) where Dc
   @abstractmethod
-end
-
-function setup_edge_based_rrules(method::EdgeBasedRefinement,topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Bool}) where Dc
-  return setup_edge_based_rrules(method,topo,findall(cells_to_refine))
 end
 
 """
@@ -265,6 +262,10 @@ function setup_edge_based_rrules(method::NVBRefinement, topo::UnstructuredGridTo
   setup_edge_based_rrules(method, topo, collect(1:num_faces(topo,Dc)))
 end
 
+function setup_edge_based_rrules(method::NVBRefinement,topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Bool}) where Dc
+  return setup_edge_based_rrules(method,topo,findall(cells_to_refine))
+end
+
 function setup_edge_based_rrules(
   method::NVBRefinement, topo::UnstructuredGridTopology{Dc}, cells_to_refine::AbstractArray{<:Integer}
 ) where Dc
@@ -386,8 +387,12 @@ function setup_edge_based_rrules(::RedGreenRefinement, topo::UnstructuredGridTop
   return rrules, faces_list
 end
 
+function setup_edge_based_rrules(method::RedGreenRefinement,topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Bool}) where Dc
+  return setup_edge_based_rrules(method,topo,findall(cells_to_refine))
+end
+
 function setup_edge_based_rrules(
-  ::RedGreenRefinement, topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}
+  ::RedGreenRefinement, topo::UnstructuredGridTopology{Dc}, cells_to_refine::AbstractArray{<:Integer}
 ) where Dc
   @check Dc == 2
   nC = num_cells(topo)
@@ -1093,4 +1098,3 @@ function counts_to_ptrs(counts::Vector{<:Integer})
   length_to_ptrs!(ptrs)
   ptrs
 end
-

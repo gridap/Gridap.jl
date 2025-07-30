@@ -4,6 +4,7 @@ using Test
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
+using Gridap.Arrays: testvalue
 
 xi = Point(2,3)
 np = 5
@@ -16,6 +17,7 @@ V = Float64
 G = gradient_type(V,xi)
 H = gradient_type(G,xi)
 b = MonomialBasis{2}(V,order)
+@test testvalue(typeof(b)) isa typeof(b)
 @test get_order(b) == 0
 @test get_orders(b) == (0,0)
 

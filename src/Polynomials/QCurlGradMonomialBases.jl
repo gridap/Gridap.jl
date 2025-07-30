@@ -21,6 +21,10 @@ Base.size(a::QCurlGradMonomialBasis) = (length(a.qgrad),)
 Base.getindex(a::QCurlGradMonomialBasis,i::Integer) = Monomial()
 Base.IndexStyle(::QCurlGradMonomialBasis) = IndexLinear()
 
+function testvalue(::Type{QCurlGradMonomialBasis{D,T}}) where {D,T}
+  QCurlGradMonomialBasis{D}(T,0)
+end
+
 """
     QCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
 

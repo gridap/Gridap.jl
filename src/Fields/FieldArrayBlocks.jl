@@ -39,6 +39,14 @@ end
 
 # evaluate + ArrayBlock
 
+function return_value(f::ArrayBlock{A,N},x) where {A,N}
+  fi = testitem(f)
+  fix = return_value(fi,x)
+  g = Array{typeof(fix),N}(undef,size(f.array))
+  fill!(g,fix)
+  ArrayBlock(g,f.touched)
+end
+
 function return_cache(f::ArrayBlock{A,N},x) where {A,N}
   fi = testitem(f)
   li = return_cache(fi,x)
@@ -78,6 +86,16 @@ function linear_combination(u::ArrayBlock,f::ArrayBlock)
     end
   end
   ArrayBlock(g,f.touched)
+end
+
+function return_value(k::LinearCombinationMap,u::ArrayBlock,fx::ArrayBlock)
+  i::Int = findfirst(fx.touched)
+  fxi = fx.array[i]
+  ui = u.array[i]
+  ufxi = return_value(k,ui,fxi)
+  g = Vector{typeof(ufxi)}(undef,size(fx.array))
+  fill!(g,ufxi)
+  ArrayBlock(g,fx.touched)
 end
 
 function return_cache(k::LinearCombinationMap,u::ArrayBlock,fx::ArrayBlock)
@@ -133,6 +151,14 @@ function Base.transpose(f::ArrayBlock{A,2} where A)
       end
     end
   end
+  ArrayBlock(g,collect(transpose(f.touched)))
+end
+
+function return_value(k::TransposeMap,f::ArrayBlock{A,1} where A)
+  fi = testitem(f)
+  fix = return_value(k,fi)
+  g = Matrix{typeof(fix)}(undef,(1,length(f.array)))
+  fill!(g,fix)
   ArrayBlock(g,collect(transpose(f.touched)))
 end
 
@@ -327,6 +353,26 @@ function evaluate!(cache,k::Broadcasting{<:Operation},h::Field,f::ArrayBlock)
   g
 end
 
+# Show error for everything else
+#
+# This is not implemented for a good reason, as it is not clear how to return a 
+# concrete type that would make sense.
+#
+# For example, let's assume we have a MultiFieldFEBasis with components xh = (uh, ph)
+# and we want to have yh = uh + ph
+# As long as both evaluate to the same type of scalar T, we can evaluate uh(x) and ph(x)
+# separately and then add them to obtain yh(x). The resulting ArrayBlock would have 
+# a concrete block type Array{T,N}. 
+# In general, the final evaluated weakform has to be of the same scalar type regardless 
+# of the basis functions used in each variable, since it needs to be integrated. 
+# So the final result can always be broadcasted to a concrete block type that we can wrap in 
+# an ArrayBlock.
+# However, this is NOT true for the fields themselves. If I do yh = uh + ph, what I should
+# return is yh = [uh, 0] + [0, ph] = [uh, ph]. Therefore in each block I would have a
+# different field type, which would then make the ArrayBlock type ambiguous.
+#
+# This is why all of these cases are disabled, and one should be careful when defining new stuff.
+
 function return_value(k::Broadcasting{<:Operation},h::ArrayBlock,f::ArrayBlock)
   evaluate(k,h,f)
 end
@@ -336,7 +382,7 @@ function return_cache(k::Broadcasting{<:Operation},h::ArrayBlock,f::ArrayBlock{A
 end
 
 function evaluate!(cache,k::Broadcasting{<:Operation},h::ArrayBlock,f::ArrayBlock)
-  @notimplemented
+  @notimplemented 
 end
 
 # BroadcastingFieldOpMap for ArrayBlocks
@@ -656,4 +702,8 @@ end
 
 function Base.:-(a::ArrayBlock,b::ArrayBlock)
   BroadcastingFieldOpMap(-)(a,b)
+end
+
+function Base.:-(a::ArrayBlock)
+  BroadcastingFieldOpMap(-)(a)
 end
