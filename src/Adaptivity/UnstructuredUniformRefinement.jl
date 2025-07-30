@@ -1,13 +1,5 @@
 # some helper functions
 
-# if `a` is a `CompressedArray`, then replace `b.ptrs` with `a.ptrs`.
-_similar(::AbstractArray,b::CompressedArray) = b
-
-function _similar(a::CompressedArray,b::CompressedArray)
-  n = Int( length(a.values)/length(b.values) )
-  CompressedArray(repeat(b.values,n),a.ptrs)
-end
-
 @inline function _point_isless(x::Point{D},y::Point{D},atol=eps()) where {D}
   @inbounds for i ∈ D:-1:1
     if x[i] < y[i] - atol
@@ -150,18 +142,23 @@ function cube_simplex_interior_permutation(p::Polytope,n::Integer)
 end
 
 """
-    compute_d_dface_offsets(ctopo,cell_ref_grid)
+    unstructured_compute_d_dface_new_offsets(ctopo,cell_ref_grid)
 
 Given the coarse topology and cell-wise reference grid, return fine nodal offsets
 in each coarse faces.
 """
-function compute_d_dface_offsets(ctopo,cell_ref_grid)
+function unstructured_compute_d_dface_new_offsets(ctopo,cell_ref_grid)
   @assert length(cell_ref_grid) == num_cells(ctopo)
   
   Dc = num_cell_dims(ctopo)
   polytopes = get_polytopes(ctopo)
   cell_type = get_cell_type(ctopo) 
-  cell_polytope = _similar(cell_ref_grid,CompressedArray(polytopes,cell_type))
+  if isa(cell_ref_grid,CompressedArray)
+    n = Int( length(cell_ref_grid.values)/length(polytopes) )
+    cell_polytope = CompressedArray(repeat(polytopes,n),cell_ref_grid.ptrs)
+  else
+    cell_polytope = CompressedArray(polytopes,cell_type)
+  end
   cell_dface_nnodes = lazy_map(cell_ref_grid,cell_polytope) do grid,p
     pt_map = cube_simplex_pattern_dimfid(p)
     coords = get_node_coordinates(grid)
@@ -194,11 +191,11 @@ function compute_d_dface_offsets(ctopo,cell_ref_grid)
 end
 
 """
-    compute_cell_offsets(ctopo,cell_ref_grid)
+    unstructured_compute_cell_new_offsets(ctopo,cell_ref_grid)
 
 Given the coarse topology and cell-wise reference grid, return cell-wise fine nodal offsets.
 """
-function compute_cell_offsets(ctopo,cell_ref_grid)
+function unstructured_compute_cell_new_offsets(ctopo,cell_ref_grid)
   @assert length(cell_ref_grid) == num_cells(ctopo)
 
   Dc = num_cell_dims(ctopo)
@@ -226,8 +223,8 @@ function unstructured_refine_cell_l2gmap_and_nnodes(
   @assert num_cells(ctopo) == length(cell_dface_permutations) == length(cell_ref_grid)
 
   Dc = num_cell_dims(ctopo)
-  d_df_goffsets = compute_d_dface_offsets(ctopo,cell_ref_grid)
-  l2g_ptrs = compute_cell_offsets(ctopo,cell_ref_grid)
+  d_df_goffsets = unstructured_compute_d_dface_new_offsets(ctopo,cell_ref_grid)
+  l2g_ptrs = unstructured_compute_cell_new_offsets(ctopo,cell_ref_grid)
   l2g_data = Vector{Int32}(undef,l2g_ptrs[end]-1)
   d_c2df = ntuple(d->Table(get_faces(ctopo,Dc,d)),Val{Dc}())
   d_c2perm = ntuple(d->Table(get_cell_permutations(ctopo,d)),Val{Dc}())
@@ -420,10 +417,12 @@ function unstructured_refine(
   cgrid = get_grid(cm)
   cell_map = get_cell_map(cgrid)
   polytopes = get_polytopes(ctopo)
-  cell_polytope = _similar(
-    cell_ref_grid,
-    CompressedArray(polytopes,get_cell_type(ctopo))
-  )
+  if isa(cell_ref_grid,CompressedArray)
+    n = Int( length(cell_ref_grid.values)/length(polytopes) )
+    cell_polytope = CompressedArray(repeat(polytopes,n),cell_ref_grid.ptrs)
+  else
+    cell_polytope = CompressedArray(polytopes,cell_type)
+  end
 
   _is_affine(fs) = isconcretetype(typeof(fs)) && fs isa AbstractArray{<:AffineField}
   
@@ -504,14 +503,6 @@ end
 # Tester
 
 function test_unstructured_uniform_refinement()
-  # _similar
-  A = CompressedArray([10,11,12,13],[1,2,3,4])
-  B = CompressedArray([20,21],[1,2])
-  C = [30,31,32]
-  @test _similar(C,A) == A
-  @test _similar(A,B) == [20,21,20,21]
-  @test_throws InexactError _similar(B,A)
-
   # _num_*
   n = 3
   polytopes = [SEGMENT,TRI,QUAD,TET,HEX]
