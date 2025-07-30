@@ -37,8 +37,8 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
   @assert PT <: Polynomial
 
   # these call FEEC_space_definition_checks internally
-  F == :P⁻ && PT == Bernstein && return BarycentricPmΛBasis(Val(D),T,r,k,vertices)
-  F == :P  && PT == Bernstein && return BarycentricPΛBasis( Val(D),T,r,k,vertices)
+  F == :P⁻ && PT == Bernstein && return BarycentricPmΛBasis(Val(D),T,r,k,vertices; rotate_90, DG_calc)
+  F == :P  && PT == Bernstein && return BarycentricPΛBasis( Val(D),T,r,k,vertices; rotate_90, DG_calc)
 
   FEEC_space_definition_checks(Val(D), T, r, k, F, rotate_90, DG_calc)
   @notimplementedif DG_calc # This ensures 0≤k≤D≤3
