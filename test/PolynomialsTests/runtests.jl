@@ -18,7 +18,7 @@ using Test
 
 @testset "BernsteinBases" begin include("BernsteinBasesTests.jl") end
 
-@testset "PLambdaBases" begin include("PLambdaBasesTests.jl") end
+@testset "BarycentricPΛBases" begin include("BarycentricPΛBases.jl") end
 
 @testset "FEECBases" begin include("ExteriorCalculusBasesTests.jl") end
 

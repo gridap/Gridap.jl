@@ -30,18 +30,18 @@ The default `PT` is `Bernstein` on simplices and `Legendre` on D-cubes.
 ### kwargs
 - `rotate_90::Bool`: only if `D`=2 and `k`=1, tells to use the vector proxy corresponding to div conform function instead of curl conform ones.
 - `vertices=nothing`: for `PT=Bernstein` bases on simplices (`F = :P` or `:P⁻`), the basis is defined on the simplex defined by `vertices` instead of the reference one.
-""" # document diff_geo_calculus_style once its implemented
+""" # document DG_calc once it's implemented
 function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(F);
-    diff_geo_calculus_style=false, rotate_90=false, vertices=nothing) where {D,T}
+    DG_calc=false, rotate_90=false, vertices=nothing) where {D,T}
 
   @assert PT <: Polynomial
 
   # these call FEEC_space_definition_checks internally
-  F == :P⁻ && PT == Bernstein && return PmLambdaBasis(Val(D),T,r,k,vertices)
-  F == :P  && PT == Bernstein && return PLambdaBasis( Val(D),T,r,k,vertices)
+  F == :P⁻ && PT == Bernstein && return BarycentricPmΛBasis(Val(D),T,r,k,vertices)
+  F == :P  && PT == Bernstein && return BarycentricPΛBasis( Val(D),T,r,k,vertices)
 
-  FEEC_space_definition_checks(Val(D), T, r, k, F, rotate_90, diff_geo_calculus_style)
-  @notimplementedif diff_geo_calculus_style # This ensures 0≤k≤D≤3
+  FEEC_space_definition_checks(Val(D), T, r, k, F, rotate_90, DG_calc)
+  @notimplementedif DG_calc # This ensures 0≤k≤D≤3
 
   if k == 0
     # Scalar H1 conforming functions

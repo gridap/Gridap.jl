@@ -17,8 +17,8 @@ using StaticArrays
 @test Polynomials._default_poly_type(:default) == Monomial
 
 # differential geometry / exterior calculus isn't implemented yet
-diff_geo_calculus_style = true
-@test_throws ErrorException FEEC_space_definition_checks(Val(0),Float64,0,0,:P,false,diff_geo_calculus_style)
+DG_calc = true
+@test_throws ErrorException FEEC_space_definition_checks(Val(0),Float64,0,0,:P,false,DG_calc)
 
 # no vector proxy for 1 < k < D-1 forms
 D,k = 4, 2

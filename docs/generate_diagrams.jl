@@ -68,10 +68,10 @@ end
     }
   }
 
-  struct PLambdaBasis {
+  struct BarycentricPΛBasis {
     +print_indices
   }
-  struct PmLambdaBasis {
+  struct BarycentricPmΛBasis {
     +print_indices
   }
 
@@ -81,21 +81,21 @@ end
   PolynomialBasis <|.. NedelecPolyBasisOnSimplex
   PolynomialBasis <|.. BernsteinBasisOnSimplex
   PolynomialBasis <|.. ModalC0Basis
-  PolynomialBasis <|.. PmLambdaBasis
-  PolynomialBasis <|.. PLambdaBasis
+  PolynomialBasis <|.. BarycentricPmΛBasis
+  PolynomialBasis <|.. BarycentricPΛBasis
 
   object "(<:Polynomial)Basis" as m1
   object "FEEC_poly_basis" as m2
 
   CartProdPolyBasis <-- m1
-  PmLambdaBasis o-- BernsteinBasisOnSimplex
-  PLambdaBasis o-- BernsteinBasisOnSimplex
+  BarycentricPmΛBasis o-- BernsteinBasisOnSimplex
+  BarycentricPΛBasis o-- BernsteinBasisOnSimplex
   CartProdPolyBasis <-- m2
   CompWiseTensorPolyBasis <-- m2
   RaviartThomasPolyBasis <-- m2
   NedelecPolyBasisOnSimplex <-- m2
-  PmLambdaBasis <-- m2
-  PLambdaBasis <-- m2
+  BarycentricPmΛBasis <-- m2
+  BarycentricPΛBasis <-- m2
 
   @enduml
   """

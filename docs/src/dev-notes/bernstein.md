@@ -145,7 +145,7 @@ compile time using ``∂_qλ_i = δ_{i q}-δ_{i N}``.
 
 ## Bernstein basis generalization for ``ℙΛ`` spaces
 
-The [`PmLambdaBasis`](@ref) and [`PLambdaBasis`](@ref) bases respectively
+The [`BarycentricPmΛBasis`](@ref) and [`BarycentricPΛBasis`](@ref) bases respectively
 implement the polynomial bases for the spaces ``ℙ_r^-Λ^k(T^D)`` and
 ``ℙ_rΛ^k(T^D)`` (we write ``ℙ_r^{(-)}Λ^k`` for either one of them) derived in
 [2] on simplices of any dimension, for any form degree ``k`` and polynomial
@@ -262,7 +262,7 @@ for (F, bubble_functions) in PΛ_bubbles(r,k,D)  # d = length(F)
 end
 ```
 where
-- `w` is the index of ``ω̄^{α,J}`` in the whole `PmLambdaBasis`,
+- `w` is the index of ``ω̄^{α,J}`` in the whole `BarycentricPmΛBasis`,
 - `α` is a `Vector{Int}`,
 - `α_id` is [`bernstein_term_id(α)`](@ref bernstein_term_id), the index of `Bα` in the scalar [`BernsteinBasisOnSimplex`](@ref),
 - `J` is a `Vector{Int}`,
@@ -270,7 +270,7 @@ where
 - `sup_α_ids` is a `::Vector{Int}` are the [`bernstein_term_id`](@ref) of each ``α+e_i`` for ``1\leq i\leq \#α``.
 
 The implementation is flexible enough to select a subset of the bubble spaces,
-the bubbles of a `b::PmLambdaBasis` are obtained via [`get_bubbles(b)`](@ref
+the bubbles of a `b::BarycentricPmΛBasis` are obtained via [`get_bubbles(b)`](@ref
 get_bubbles) (do NOT modify them).
 
 We now need to express ``\text{d}λ^{J\backslash l}`` in the Cartesian basis
@@ -300,7 +300,7 @@ and we obtain the components of ``ω̄^{α,J}=B_α φ^J`` in the basis
 ```
 The ``\binom{D}{k}\binom{N}{k}`` coefficients ``\{m_I^{J}\}_{I,J}`` are
 constant in ``T`` and are pre-computed from ``M`` in
-`_compute_PmΛ_basis_coefficients!` at the creation of `PmLambdaBasis`
+`_compute_PmΛ_basis_coefficients!` at the creation of `BarycentricPmΛBasis`
 and stored in its field `m`.
 
 Finally, the pseudocode to evaluate our basis ``ω̄`` of ``ℙ_r^-Λ^k(T)`` at
@@ -340,7 +340,7 @@ where ``Ψ^{α,J}`` [2, Eq. (8.3)] are defined by
 \quad\text{and}\quad
 Ψ^{α,F,j} = \mathrm{d}λ^j - \frac{α_j}{|α|}\sum_{l∈F}\mathrm{d}λ^l,
 ```
-where ``F(α,J)=⟦α⟧∪J``. `get_bubbles(b::PLambdaBasis)` provides the bubbles of
+where ``F(α,J)=⟦α⟧∪J``. `get_bubbles(b::BarycentricPΛBasis)` provides the bubbles of
 `b`, their bubble function indices are `(w, α, α_id, J)` only (do NOT modify
 them).
 
@@ -372,7 +372,7 @@ basis ``\mathrm{d}x^I`` are
 where the ``\binom{D+r}{k+r}\binom{r+k}{k}\binom{D}{k}
 =\mathrm{dim}(ℙ_rΛ^k(T^D))\times\# (\{\mathrm{d}x^I\}_I)`` coefficients
 ``ψ_I^{α,J}`` depend only on ``T`` and are pre-computed in
-`_compute_PΛ_basis_form_coefficient!` at the construction of `PLambdaBasis` and
+`_compute_PΛ_basis_form_coefficient!` at the construction of `BarycentricPΛBasis` and
 stored in its field `Ψ`.
 
 The pseudocode to evaluate our basis ``ω`` of ``ℙ_rΛ^k(T)`` at

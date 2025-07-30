@@ -211,8 +211,8 @@ these bases are of dimension K+1 and the divergence of their elements are in
 
 Those bases are a generalization of the scalar Bernstein bases to the spaces for
 the two principal finite element families forming a de Rham complex on simplices.
-They are respectively implemented by [`PmLambdaBasis`](@ref) and
-[`PmLambdaBasis`](@ref). Their definition with references, and implementation
+They are respectively implemented by [`BarycentricPmΛBasis`](@ref) and
+[`BarycentricPmΛBasis`](@ref). Their definition with references, and implementation
 details are provided in [this](@ref "Bernstein-basis-generalization-for-ℙΛ-spaces")
 developer note.
 
@@ -298,8 +298,8 @@ BernsteinBasisOnSimplex
 BernsteinBasisOnSimplex(::Val,::Type,::Int,vertices=nothing)
 bernstein_terms
 bernstein_term_id
-PmLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
-PLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
+BarycentricPmΛBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
+BarycentricPΛBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
 ```
 ## Low level APIs and internals
 
@@ -316,15 +316,15 @@ NedelecPolyBasisOnSimplex
 RaviartThomasPolyBasis
 ModalC0Basis
 ModalC0Basis()
-PmLambdaBasis
-PLambdaBasis
-PmLambdaBasis(::PmLambdaBasis{D,V,LN,B}, ::Vector{Int}...) where {D,V,LN,B}
-PLambdaBasis(::PLambdaBasis{D,V,LN,B}, ::Vector{Int}...) where {D,V,LN,B}
+BarycentricPmΛBasis
+BarycentricPΛBasis
+BarycentricPmΛBasis(::BarycentricPmΛBasis{D,V,LN,B}, ::Vector{Int}...) where {D,V,LN,B}
+BarycentricPΛBasis(::BarycentricPΛBasis{D,V,LN,B}, ::Vector{Int}...) where {D,V,LN,B}
 print_indices
 get_bubbles
 PΛ_bubbles
 PmΛ_bubbles
-PLambdaIndices
+BarycentricPΛIndices
 ```
 
 ### Deprecated APIs

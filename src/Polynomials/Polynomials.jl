@@ -131,10 +131,10 @@ export RaviartThomasPolyBasis
 export ModalC0Basis
 export ModalC0
 
-export PLambdaBasis
-export PmLambdaBasis
-export PmΛ_bubbles
+export BarycentricPΛBasis
+export BarycentricPmΛBasis
 export PΛ_bubbles
+export PmΛ_bubbles
 export get_bubbles
 export print_indices
 
@@ -162,7 +162,7 @@ include("BernsteinBases.jl")
 
 include("ModalC0Bases.jl")
 
-include("PLambdaBases.jl")
+include("BarycentricPΛBases.jl")
 
 include("ExteriorCalculusBases.jl")
 
