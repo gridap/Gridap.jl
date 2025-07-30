@@ -386,7 +386,8 @@ Return a vector containing the [`ReferenceFE`](@ref) specified by `args` and
 
 The `args` and `kwargs` are all arguments accepted by
 [`ReferenceFE(::ReferenceFEName, ...; ...)`](@ref
-ReferenceFE(::ReferenceFEName,a...;k...)), reffe name included.
+ReferenceFE(::ReferenceFEName,a...;k...)) or [`ReferenceFE(F::Symbol, ...; ...)`](@ref
+ReferenceFE(::Symbol,a...;k...)), first argument included.
 """
 function ReferenceFE(model::DiscreteModel,args...;kwargs...)
   ctype_to_polytope = get_polytopes(model)

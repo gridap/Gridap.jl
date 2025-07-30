@@ -50,6 +50,10 @@ end
 @inline Base.size(a::CartProdPolyBasis{D,V}) where {D,V} = (length(a.terms)*num_indep_components(V),)
 @inline get_order(b::CartProdPolyBasis) = b.max_order
 
+function testvalue(::Type{CartProdPolyBasis{D,V,PT}}) where {D,V,PT}
+  CartProdPolyBasis{D}(PT,V,tfill(0,Val(D)),CartesianIndex{D}[])
+end
+
 function CartProdPolyBasis(
    ::Type{PT},
    ::Val{D},

@@ -207,6 +207,15 @@ D-simplices are defined by
 these bases are of dimension K+1 and the divergence of their elements are in
 ``ℚ^D_K`` and ``ℙ^D_K`` respectively.
 
+#### ``ℙ_r^{-}Λ^k`` and ``ℙ_rΛ^k`` bases
+
+Those bases are a generalization of the scalar Bernstein bases to the spaces for
+the two principal finite element families forming a de Rham complex on simplices.
+They are respectively implemented by [`PmLambdaBasis`](@ref) and
+[`PmLambdaBasis`](@ref). Their definition with references, and implementation
+details are provided in [this](@ref "Bernstein-basis-generalization-for-ℙΛ-spaces")
+developer note.
+
 
 #### Filter functions
 
@@ -230,7 +239,7 @@ The following example filters can be used to define associated polynomial spaces
 | :-----| :------------------------------------------------------------| :------------------------------------ |
 | ℚᴰ    | `_q_filter(e,order) = maximum(e) <= order`                   | All                                   |
 | ℚ̃ᴰₙ   | `_qh_filter(e,order) = maximum(e) == order`                  | [`Monomial`](@ref)                    |
-| ℙᴰ    | `_p_filter(e,order) = sum(e) <= order`                       | All                                   |
+| ℙᴰ    | `_p_filter(e,order) = sum(e) <= order`                       | [`hierarchical`](@ref isHierarchical) |
 | ℙ̃ᴰₙ   | `_ph_filter(e,order) = sum(e) == order`                      | [`Monomial`](@ref)                    |
 | 𝕊rᴰₙ  | `_ser_filter(e,order) = sum( i for i in e if i>1 ) <= order` | [`hierarchical`](@ref isHierarchical) |
 
@@ -267,6 +276,8 @@ ModalC0
 ```@docs
 PolynomialBasis
 get_order(::PolynomialBasis)
+FEEC_poly_basis
+FEEC_space_definition_checks
 MonomialBasis(args...)
 MonomialBasis
 LegendreBasis(args...)
@@ -287,10 +298,8 @@ BernsteinBasisOnSimplex
 BernsteinBasisOnSimplex(::Val,::Type,::Int,vertices=nothing)
 bernstein_terms
 bernstein_term_id
-PGradBasis
-QGradBasis
-PCurlGradBasis
-QCurlGradBasis
+PmLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
+PLambdaBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
 ```
 ## Low level APIs and internals
 
@@ -307,13 +316,21 @@ NedelecPolyBasisOnSimplex
 RaviartThomasPolyBasis
 ModalC0Basis
 ModalC0Basis()
+PmLambdaBasis
+PLambdaBasis
+PmLambdaBasis(::PmLambdaBasis{D,V,LN,B}, ::Vector{Int}...) where {D,V,LN,B}
+PLambdaBasis(::PLambdaBasis{D,V,LN,B}, ::Vector{Int}...) where {D,V,LN,B}
+print_indices
+get_bubbles
+PΛ_bubbles
+PmΛ_bubbles
+PLambdaIndices
 ```
 
 ### Deprecated APIs
 
 ```@docs
 num_terms
-PGradMonomialBasis
 PCurlGradMonomialBasis
 QGradMonomialBasis
 QCurlGradMonomialBasis

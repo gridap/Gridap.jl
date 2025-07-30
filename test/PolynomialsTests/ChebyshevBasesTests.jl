@@ -1,6 +1,7 @@
 module ChebyshevBasisTests
 
 using Test
+using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
@@ -41,6 +42,7 @@ order = 0
 b = ChebyshevBasis(Val(1),V,order)
 @test get_order(b) == 0
 @test get_orders(b) == (0,)
+@test testvalue(typeof(b)) isa typeof(b)
 
 bx  = [      chebyshev_T(n)( xi[1])  for xi in x,  n in 0:order]
 ∇bx = [ G(_∇(chebyshev_T(n))(xi[1])) for xi in x,  n in 0:order]

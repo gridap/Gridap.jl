@@ -6,7 +6,10 @@ Type representing Chebyshev polynomials of the
 - second kind: `Chebyshev{:U}`
 C.f. [Chebyshev polynomials](@ref) section.
 """
-struct Chebyshev{kind} <: Polynomial end
+struct Chebyshev{kind} <: Polynomial
+  Chebyshev{:T}() = new{:T}()
+  Chebyshev{:U}() = new{:U}()
+end
 
 isHierarchical(::Type{<:Chebyshev}) = true
 

@@ -30,10 +30,10 @@ end
 function _prebasis_from_space(D,T,order,space)
   if space == :RT
     @assert D >= 2
-    prebasis = Polynomials.PCurlGradBasis(Monomial, Val(D), T, order)
+    prebasis = Polynomials.FEEC_poly_basis(Val(D),T,order+1,D-1,:Q⁻,Monomial; rotate_90=(D==2))
   elseif space == :ND
     @assert D >= 2
-    prebasis = Polynomials.PGradBasis(Monomial,Val(D), T, order)
+    prebasis = Polynomials.NedelecPolyBasisOnSimplex{D}(Monomial, T, order)
   else
     prebasis = Polynomials.MonomialBasis(Val(D), T, order, _filter_from_space(space))
   end
@@ -519,7 +519,7 @@ end
 
 function get_cell_conformity(space::PolytopalFESpace)
   trian = get_triangulation(space)
-  
+
   monomial_conformity = only(space.metadata)
   ndofs = length(monomial_conformity.dof_to_term)
   D = length(monomial_conformity.orders)

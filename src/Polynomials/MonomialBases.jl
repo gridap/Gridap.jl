@@ -7,21 +7,12 @@ struct Monomial <: Polynomial   end
 
 isHierarchical(::Type{Monomial}) = true
 
-testvalue(::Type{Monomial}) = Monomial()
-function testvalue(::Type{<:AbstractVector{Monomial}})
-  @notimplemented
-end
-
 """
     MonomialBasis{D,V} = CartProdPolyBasis{D,V,Monomial}
 
 Alias for cartesian product monomial basis, scalar valued or multi-valued.
 """
 const MonomialBasis{D,V} = CartProdPolyBasis{D,V,Monomial}
-
-function testvalue(::Type{MonomialBasis{D,T}}) where {D,T}
-  MonomialBasis{D}(T,tfill(0,Val{D}()),CartesianIndex{D}[])
-end
 
 """
     MonomialBasis(::Val{D}, ::Type{V}, order::Int, terms::Vector)
@@ -31,15 +22,6 @@ end
 High level constructors of [`MonomialBasis`](@ref).
 """
 MonomialBasis(args...) = CartProdPolyBasis(Monomial, args...)
-
-function PGradBasis(::Type{Monomial},::Val{D},::Type{T},order::Int) where {D,T}
-  NedelecPolyBasisOnSimplex{D}(Monomial,T,order)
-end
-function PGradBasis(::Type{Monomial},::Val{1},::Type{T},order::Int) where T
-  @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
-  V = VectorValue{1,T}
-  CartProdPolyBasis(Monomial, Val(1), V, order+1)
-end
 
 # 1D evaluation implementation
 

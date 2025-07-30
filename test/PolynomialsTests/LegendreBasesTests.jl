@@ -1,6 +1,7 @@
 module LegendreBasisTests
 
 using Test
+using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Fields: Broadcasting
@@ -37,6 +38,7 @@ x1 = Point(0.0,0.0)
 x2 = Point(0.5,0.5)
 x3 = Point(1.0,1.0)
 b2 = LegendreBasis(Val(2),V,order)
+@test testvalue(typeof(b2)) isa typeof(b2)
 ∇b2 = Broadcasting(∇)(b2)
 ∇∇b2 = Broadcasting(∇)(∇b2)
 

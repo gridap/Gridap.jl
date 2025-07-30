@@ -14,11 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `MonomialBasis` and `Q[Curl]GradMonomialBasis` have been generalized to `Legendre`, `Chebyshev` and `Bernstein` using the new `CartProdPolyBasis` and `CompWiseTensorPolyBasis` respectively.
 - `PCurlGradMonomialBasis` has been generalized to `Legendre` and `Chebyshev` using the new `RaviartThomasPolyBasis`.
 - New aliases and high level constructor for `CartProdPolyBasis` (former MonomialBasis): `MonomialBasis`, `LegendreBasis`, `ChebyshevBasis` and `BernsteinBasis`.
-- New high level constructors for Nedelec and Raviart-Thomas polynomial bases:
-  - Nedelec on simplex `PGradBasis(PT<:Polynomial, Val(D), order)`
-  - Nedelec on n-cubes `QGradBasis(PT<:Polynomial, Val(D), order)`
-  - Raviart on simplex `PCurlGradBasis(PT<:Polynomial, Val(D), order)`
-  - Raviart on n-cubes `QCurlGradBasis(PT<:Polynomial, Val(D), order)`
+- New high level factory `FEEC_poly_basis` for the bases for the scalar Lagrange, Nedelec, Raviart-Thomas, BDM spaces, and all other spaces of the Periodic Table of the Finite Elements. (for Serendipity, only scalar is supported). For example:
+  - Nedelec on simplex `FEEC_poly_basis(Val(D),Float64,order+1,  1,:P⁻)`
+  - Nedelec on n-cubes `FEEC_poly_basis(Val(D),Float64,order+1,  1,:Q⁻)`
+  - Raviart on simplex `FEEC_poly_basis(Val(D),Float64,order+1,D-1,:P⁻; rotate_90=(D==2))`
+  - Raviart on n-cubes `FEEC_poly_basis(Val(D),Float64,order+1,D-1,:Q⁻; rotate_90=(D==2))`
+  - BDM     on simplex `FEEC_poly_basis(Val(D),Float64,order+1,D-1,:P ; rotate_90=(D==2))`
 - Added `BernsteinBasisOnSimplex` that implements Bernstein polynomials in barycentric coordinates, since PR[#1104](https://github.com/gridap/Gridap.jl/pull/#1104).
 - More documentation of `Gridap.ReferenceFEs`. Since PR[#1109](https://github.com/gridap/Gridap.jl/pull/#1109).
 
@@ -37,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Monomial` is now subtype of the new abstract type`Polynomial <: Field`
 - `MonomialBasis` is now an alias for `CartProdPolyBasis{...,Monomial}`
 - All polynomial bases are now subtypes of the new abstract type `PolynomialBasis <: AbstractVector{<:Polynomial}`
-- `get_order(b::(Q/P)[Curl]Grad...)`, now returns the order of the basis, +1 than the order parameter passed to the constructor.
+- `get_order`, now always returns the maximum order of the basis, the correspondence with `ReferenceFEs` constructors is summarized in the documentation of the module.
 - `NedelecPreBasisOnSimplex` is renamed `NedelecPolyBasisOnSimplex`
 - `JacobiPolynomial` is renamed `Legendre` and subtypes `Polynomial`
 - `JacobiPolynomialBasis` is renamed `LegendreBasis`
@@ -47,9 +48,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `num_terms(f::AbstractVector{<:Field})` in favor of `length(f::PolynomialBasis)`
 - `MonomialBasis{D}(args...)` in favor of `MonomialBasis(Val(D), args...)`
-- `[P/Q][Curl]GradMonomialBasis{D}(args...)` in favor of `[...]GradBasis(Monomial, Val(D), args...)`
-- `NedelecPreBasisOnSimplex{D}(args...)` in favor of `NedelecPolyBasisOnSimplex(Val(D), args...)`
+- `[P/Q][Curl]GradMonomialBasis{D}(args...)` in favor of `FEEC_poly_basis`
+- `NedelecPreBasisOnSimplex{D}(order)` in favor of `NedelecPolyBasisOnSimplex(Val(D), Float64, order)`
 - `JacobiPolynomialBasis{D}(args...)` in favor of `LegendreBasis(Val(D), args...)`
+
+### Removed
 
 ## [Unreleased]
 

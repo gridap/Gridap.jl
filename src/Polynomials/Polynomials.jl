@@ -16,10 +16,10 @@ Constructors for commonly used bases (see the documentation for the spaces defin
 - 𝕊r spaces: `[Polynomial]Basis(..., Polynomials._ser_filter)`
 - ℚ̃  spaces: `[Polynomial]Basis(..., Polynomials._qh_filter)`
 - ℙ̃  spaces: `[Polynomial]Basis(..., Polynomials._ph_filter)`
-- ℕ𝔻(△): [`PGradBasis`](@ref)`(Val(D), T, order)`
-- ℕ𝔻(□): [`QGradBasis`](@ref)`(...)`
-- ℝ𝕋(△): [`PCurlGradBasis`](@ref)`(...)`
-- ℝ𝕋(□): [`QCurlGradBasis`](@ref)`(...)`
+
+For bases for the Nélélec, Raviart-Thomas and BDM element spaces, use
+[`FEEC_poly_basis`](@ref) with the arguments found in the
+[ReferenceFEs summary](@ref "Reference FE summary") of the documentation.
 
 ### Examples
 
@@ -62,17 +62,21 @@ D = 3; n = 1
 b = MonomialBasis(Val(D), VectorValue{D,Float64}, n, Polynomials._p_filter)
 evaluate(b, Point(.1, .2, .3)
 
-# a basis for Nedelec on tetrahedra with curl in ℙ₂
-b = PGradBasis(Monomial, Val(3), Float64, 2)          # basis of order 3
+# a basis for Nedelec on tetrahedra with curl in ℙ³₂
+D, k, r = 3, 1, 2+1
+b = FEEC_poly_basis(Val(D),Float64,r,k,:P⁻)                 # basis of order 3
 
-# a basis for Nedelec on hexahedra with divergence in ℚ₂
-b = QGradBasis(Bernstein, Val(3), Float64, 2)         # basis of order 3
+# a basis for Nedelec on hexahedra with curl in ℚ³₁
+D, k, r = 3, 1, 1+1
+b = FEEC_poly_basis(Val(D),Float64,r,k,:Q⁻)                 # basis of order 2
+
+# a basis for Raviart-Thomas on quadrilateral with divergence in ℚ₁
+D, k, r = 2, 2-1, 1+1
+b = FEEC_poly_basis(Val(D),Float64,r,k,:Q⁻; rotate_90=true) # basis of order 3
 
 # a basis for Raviart-Thomas on tetrahedra with divergence in ℙ₂
-b = PCurlGradBasis(Chebyshev{:T}, Val(3), Float64, 2) # basis of order 3
-
-# a basis for Raviart-Thomas on rectangles with divergence in ℚ₃
-b = QCurlGradBasis(Bernstein, Val(2), Float64, 3)     # basis of order 4
+D, k, r = 3, 3-1, 2+1
+b = FEEC_poly_basis(Val(D),Float64,r,k,:P⁻)                 # basis of order 3
 ```
 
 $(public_names_in_md(@__MODULE__))
@@ -91,6 +95,7 @@ using Gridap.Fields
 using PolynomialBases: jacobi, jacobi_and_derivative
 using Combinatorics: multiexponents, multinomial, combinations
 using Base.Iterators: take
+using Base: @propagate_inbounds
 
 import Gridap.Fields: evaluate!
 import Gridap.Fields: return_cache
@@ -99,11 +104,6 @@ import Gridap.Arrays: testvalue
 
 export Polynomial
 export isHierarchical
-export Monomial
-export Legendre
-export Chebyshev
-export ModalC0
-export Bernstein
 
 export PolynomialBasis
 export get_order
@@ -111,9 +111,13 @@ export get_order
 export CartProdPolyBasis
 export get_exponents
 export get_orders
+export Monomial
 export MonomialBasis
 export LegendreBasis
+export Legendre
 export ChebyshevBasis
+export Chebyshev
+export Bernstein
 export BernsteinBasis
 
 export BernsteinBasisOnSimplex
@@ -121,16 +125,21 @@ export bernstein_terms
 export bernstein_term_id
 
 export CompWiseTensorPolyBasis
-export QGradBasis
-export QCurlGradBasis
-
 export NedelecPolyBasisOnSimplex
-export PGradBasis
-
 export RaviartThomasPolyBasis
-export PCurlGradBasis
 
 export ModalC0Basis
+export ModalC0
+
+export PLambdaBasis
+export PmLambdaBasis
+export PmΛ_bubbles
+export PΛ_bubbles
+export get_bubbles
+export print_indices
+
+export FEEC_space_definition_checks
+export FEEC_poly_basis
 
 
 include("PolynomialInterfaces.jl")
@@ -152,6 +161,10 @@ include("ChebyshevBases.jl")
 include("BernsteinBases.jl")
 
 include("ModalC0Bases.jl")
+
+include("PLambdaBases.jl")
+
+include("ExteriorCalculusBases.jl")
 
 include("Deprecated.jl")
 

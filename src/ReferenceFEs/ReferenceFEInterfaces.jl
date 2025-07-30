@@ -72,9 +72,11 @@ abstract type ReferenceFEName end
 """
     ReferenceFE(name::ReferenceFEName[, T::Type], order;  kwargs...)
     ReferenceFE(name::ReferenceFEName[, T::Type], orders; kwargs...)
+    ReferenceFE(F::Symbol, r, k, [, T::Type]; kwargs...)
 
-Signature defining a reference finite element of specific `name`, value type `T`
-and `order(s)` (but yet unspecified cell polytope).
+Signatures defining a reference finite element (but yet unspecified cell polytope):
+- an element [`name`](@ref ReferenceFEName), value type `T` and `order(s)`, or
+- a FEEC family `F ∈ (:P⁻, :P, :Q⁻, :S)`, with polynomial order `r` and form order `k`.
 
 # Arguments
 - `T`: type of scalar components of the shape function values, `Float64` by default.
@@ -82,7 +84,9 @@ and `order(s)` (but yet unspecified cell polytope).
 - `order::Int`: the polynomial order parameter, or
 - `orders::NTuple{D,Int}`: a tuple of order per space dimension for anysotropic elements.
 
-Keyword arguments are `name` specific.
+Keyword arguments are element specific, except
+- `rotate_90::Bool=false`, set to true for div-conforming FEEC bases in 2D.
+
 
 !!! warning
     This method only returns the tuple of its arguments, the actual Reference
@@ -90,6 +94,7 @@ Keyword arguments are `name` specific.
     `ReferenceFE` methods or the FESpaces constructors.
 """
 ReferenceFE(name::ReferenceFEName, args...; kwargs...) = (name, args, kwargs)
+ReferenceFE(F::Symbol, args...; kwargs...) = (F, args, kwargs)
 
 """
     ReferenceFE(p::Polytope, args...; kwargs...)
@@ -98,17 +103,22 @@ Return the specified reference FE implemented on `p`.
 
 The `args` and `kwargs` are the arguments of
 [`ReferenceFE(::ReferenceFEName, ...; ...)`](@ref
-ReferenceFE(::ReferenceFEName,a...;k...)), reffe name included.
+ReferenceFE(::ReferenceFEName,a...;k...)) or [`ReferenceFE(F::Symbol, ...; ...)`](@ref
+ReferenceFE(::Symbol,a...;k...)), first argument included.
 """
-function ReferenceFE(p::Polytope, name::ReferenceFEName, args...; kwargs...)
+function ReferenceFE(p::Polytope, args...; kwargs...)
   @unreachable """\n
-  Undefined factory function ReferenceFE for element $name and the given arguments.
+  Undefined factory function ReferenceFE for the given arguments:\n
+  - args: $args,
+  - kwargs: $kwargs.
   """
 end
-
 # Default component/value type
 function ReferenceFE(p::Polytope, name::ReferenceFEName, order; kwargs...)
-    ReferenceFE(p,name,Float64,order; kwargs...)
+  ReferenceFE(p,name,Float64,order; kwargs...)
+end
+function ReferenceFE(p::Polytope,F::Symbol,r,k; kwargs...)
+  ReferenceFE(p,F,r,k,Float64; kwargs...) # implemented in ExteriorCalculusRefFEs.jl
 end
 
 """
@@ -213,7 +223,7 @@ or throws an `ErrorException` otherwise.
 
 For example, if `reffe` is a Lagrangian refference FE with `H1Conformity`,
 the function would return `L2Conformity()` and `H1Conformity()` for
-respectively `conf=:L2` and `:H1` (because L² is in H¹), but would error on
+respectively `conf=:L2` and `:H1` (because H¹ is in L²), but would error on
 `conf=:Hcurl`.
 """
 function Conformity(reffe::ReferenceFE, sym::Symbol)
@@ -664,3 +674,23 @@ get_face_dofs(reffe::GenericRefFE) = reffe.face_dofs
 get_shapefuns(reffe::GenericRefFE) = reffe.shapefuns
 
 get_metadata(reffe::GenericRefFE) = reffe.metadata
+
+function ==(reffe1::GenericRefFE, reffe2::GenericRefFE)
+  false
+end
+
+# TODO The hash is not consistent with this
+function ==(reffe1::GenericRefFE{T,D}, reffe2::GenericRefFE{T,D}) where {T,D}
+  t = true
+  t = t && reffe1.ndofs       == reffe2.ndofs
+  t = t && reffe1.polytope    == reffe2.polytope
+  t = t && reffe1.prebasis    == reffe2.prebasis
+  # Trick: only compare dofs OR shapefuns, one of those is a linear_combination
+  # that does not implement ==
+  t = t && ((reffe1.dofs      == reffe2.dofs)
+        || (reffe1.shapefuns  == reffe2.shapefuns))
+  t = t && reffe1.conformity  == reffe2.conformity
+  t = t && reffe1.metadata    == reffe2.metadata
+  t = t && reffe1.face_dofs   == reffe2.face_dofs
+  t
+end

@@ -1,4 +1,4 @@
-module QGradMonomialBasesTests
+module CurlConformBasesTests
 
 using Test
 using Gridap.TensorValues
@@ -6,35 +6,43 @@ using Gridap.Fields
 using Gridap.Arrays
 using Gridap.Polynomials
 
+PT = Monomial
+T = Float64
+k = 1
+
+#################################################
+# Curl conform bases on n-cubes (non Bernstein) #
+#################################################
+
 xi = Point(2,3)
 np = 5
 x = fill(xi,np)
-PT = Monomial
 
 # 3D
 order = 0
+r = order+1
 D = 2
-T = Float64
-V = VectorValue{D,T}
-G = gradient_type(V,xi)
-b = QGradBasis(PT, Val(D),T,order)
+b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,PT)
 
 @test length(b) == 4
 @test get_order(b) == 1
+@test testvalue(typeof(b)) isa typeof(b)
 
-@test_throws AssertionError QGradBasis(PT,Val(D),V,order)
+V = VectorValue{D,T}
+@test_throws AssertionError FEEC_poly_basis(Val(D),V,r,k,:Q⁻,PT)
 
 xi = Point(2,3,5)
 np = 5
 x = fill(xi,np)
 
 order = 0
+r = order+1
 D = 3
 T = Float64
 V = VectorValue{D,T}
 G = gradient_type(V,xi)
 H = gradient_type(G,xi)
-b = QGradBasis(PT, Val(D),T,order)
+b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,PT)
 
 v = V[
 # (1.0, 0.0, 0.0), ( y , 0.0, 0.0), ( z , 0.0, 0.0), ( yz , 0.0, 0.0),
@@ -90,12 +98,13 @@ np = 5
 x = fill(xi,np)
 
 order = 1
+r = order+1
 D = 2
-T = Float64
 V = VectorValue{D,T}
 G = gradient_type(V,xi)
 H = gradient_type(G,xi)
-b = QGradBasis(PT, Val(D),T,order)
+b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,PT)
+@test testvalue(typeof(b)) isa typeof(b)
 
 v = V[
 # (1., 0.), (x , 0.), (y , 0.), (xy, 0.), (y², 0.), (xy², 0.),
@@ -143,29 +152,84 @@ test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 # 1D
 
 order = 0
+r = order+1
 D = 1
-T = Float64
-V = VectorValue{D,T}
-b = QGradBasis(PT,Val(D),T,order)
+b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,PT)
 
-@test b isa CartProdPolyBasis{D,V,PT}
-
-@test_throws AssertionError QGradBasis(PT,Val(D),V,order)
+@test b isa CartProdPolyBasis{D,T,PT}
+@test testvalue(typeof(b)) isa typeof(b)
 
 # Misc
 
 # Derivatives not implemented for symetric tensor types
 
-T = Float64
 V = SymTensorValue{D,T}
 G = gradient_type(V,xi)
 r = zeros(G, (1,1))
 @test_throws ErrorException Polynomials._comp_wize_set_derivative!(r,0,0,0,V)
 
-T = Float64
 V = SymTracelessTensorValue{D,T}
 G = gradient_type(V,xi)
 r = zeros(G, (1,1))
 @test_throws ErrorException Polynomials._comp_wize_set_derivative!(r,0,0,0,V)
+
+
+###################################################
+# Curl conform bases on simplices (non Bernstein) #
+###################################################
+
+xi = Point(2.,3.,5.)
+np = 3
+x = fill(xi,np)
+
+order = 0
+D = 3
+b = NedelecPolyBasisOnSimplex{D}(PT, T, order)
+@test testvalue(typeof(b)) isa typeof(b)
+
+V = VectorValue{D, Float64}
+v = V[(1,0,0),(0,1,0),(0,0,1),(-3,2,0),(-5,0,2),(0,-5,3)]
+
+G = gradient_type(V,xi)
+g = G[
+  (0,0,0, 0,0,0, 0,0,0), (0,0,0, 0,0,0, 0,0,0), (0,0,0, 0,0,0, 0,0,0),
+  (0,-1,0, 1,0,0, 0,0,0),(0,0,-1, 0,0,0, 1,0,0),(0,0,0, 0,0,-1, 0,1,0)]
+
+bx = repeat(permutedims(v),np)
+∇bx = repeat(permutedims(g),np)
+test_field_array(b,x,bx,grad=∇bx)
+test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:])
+
+xi = Point(2.,3.)
+np = 4
+x = fill(xi,np)
+
+order = 0
+D = 2
+b = NedelecPolyBasisOnSimplex{D}(PT, T, order)
+@test testvalue(typeof(b)) isa typeof(b)
+V = VectorValue{D, Float64}
+v = V[(1,0),(0,1),(-3,2)]
+G = gradient_type(V,xi)
+g = G[(0,0, 0,0), (0,0, 0,0), (0,-1, 1,0)]
+bx = repeat(permutedims(v),np)
+∇bx = repeat(permutedims(g),np)
+test_field_array(b,x,bx,grad=∇bx)
+test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:])
+
+
+# 1D
+
+order = 0
+r = order+1
+D = 1
+b = FEEC_poly_basis(Val(D),T,r,k,:P⁻,PT)
+
+@test b isa CartProdPolyBasis{D,T,PT}
+@test testvalue(typeof(b)) isa typeof(b)
+
+# D > 3 not implemented
+
+@test_throws ErrorException NedelecPolyBasisOnSimplex{4}(PT, T, order)
 
 end # module
