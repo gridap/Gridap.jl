@@ -107,6 +107,7 @@ export isHierarchical
 
 export PolynomialBasis
 export get_order
+export get_dimension
 
 export CartProdPolyBasis
 export get_exponents

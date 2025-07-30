@@ -62,6 +62,12 @@ abstract type PolynomialBasis{D,V,PT<:Polynomial} <: AbstractVector{PT}  end
 @inline Base.IndexStyle(::PolynomialBasis) = IndexLinear()
 @inline return_type(::PolynomialBasis{D,V}) where {D,V} = V
 
+
+"""
+    get_dimension(::PolynomialBasis{D}) -> D
+"""
+@inline get_dimension(::PolynomialBasis{D}) where D = D
+
 """
     get_order(b::PolynomialBasis)
 
