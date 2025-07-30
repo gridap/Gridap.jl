@@ -132,16 +132,24 @@ test_dof_array(dof_basis,prebasis,r)
 
 # Factory function
 reffe = ReferenceFE(QUAD,raviart_thomas,0)
+@test reffe == ReferenceFE(QUAD,:Q⁻,1,1; rotate_90=true) # r=1, k=1
 @test length(get_prebasis(reffe)) == 4
 @test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 4
 @test Conformity(reffe) == DivConformity()
 
 reffe = ReferenceFE(QUAD,raviart_thomas,Float64,0)
+@test reffe == ReferenceFE(QUAD,:Q⁻,1,1, Float64; rotate_90=true) # r=1, k=1
 @test length(get_prebasis(reffe)) == 4
 @test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 4
 @test Conformity(reffe) == DivConformity()
+
+reffe = ReferenceFE(HEX,raviart_thomas,0)
+@test reffe == ReferenceFE(HEX,:Q⁻,1,2) # r=1, k=2
+
+reffe = ReferenceFE(TET,raviart_thomas,0)
+@test reffe == ReferenceFE(TET,:P⁻,1,2) # r=1, k=2
 
 @test Conformity(reffe,:L2) == L2Conformity()
 @test Conformity(reffe,:Hdiv) == DivConformity()

@@ -231,6 +231,28 @@ face_cdofs    = get_face_dofs(reffe)
   [61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72],  # facet 234
   [73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84]]  # cell
 
+# Factory function: r=1, k=1
+reffe = ReferenceFE(QUAD,nedelec,0)
+@test reffe == ReferenceFE(QUAD,:Q⁻,1,1)
+
+reffe = ReferenceFE(QUAD,nedelec,Float64,0)
+@test reffe == ReferenceFE(QUAD,:Q⁻,1,1, Float64)
+
+reffe = ReferenceFE(TRI,nedelec,0)
+@test reffe == ReferenceFE(TRI,:P⁻,1,1)
+
+reffe = ReferenceFE(HEX,nedelec,0)
+@test reffe == ReferenceFE(HEX,:Q⁻,1,1)
+
+reffe = ReferenceFE(TET,nedelec,0)
+@test reffe == ReferenceFE(TET,:P⁻,1,1)
+
+# (Serendipity) Nedelec 2nd kind not implemented
+@test_throws ErrorException ReferenceFE(TRI, :P,1,1)
+@test_throws ErrorException ReferenceFE(TET, :P,1,1)
+@test_throws ErrorException ReferenceFE(QUAD,:S,1,1)
+@test_throws ErrorException ReferenceFE(HEX, :S,1,1)
+
 #display(face_odofs)
 
 using Gridap.Geometry

@@ -6,10 +6,8 @@ function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
   rotate_90=false, diff_geo_calculus_style=false, kwargs...) where D
 
   FEEC_space_definition_checks(Val(D),T,r,k,F,rotate_90,diff_geo_calculus_style)
-  if (k==D && F∈(:P,:S))
-    @check r ≥ 0 "This exterior calculus FEs starts at r=0"
-  else
-    @check r ≥ 1 "This exterior calculus FEs starts at r=1"
+  if !(k==D && F∈(:P,:S))
+    @check r ≥ 1 "This exterior calculus FE starts at r=1, (F,r,k) = ($F,$r,$k)"
   end
 
   # This logic should keep consistent with the Table in the ReferenceFEs documentation
@@ -25,20 +23,20 @@ function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
       RaviartThomas(), r-1
     end
   elseif F == :P
-    @check is_simplex(p) && r>0
+    @check is_simplex(p) #&& r>0
     if     k == 0
-      @check r>0 "P⁻Λᵏ starts at r=1"
+      #@check r>0 "P⁻Λᵏ starts at r=1"
       Lagrangian(), r
     elseif k == D
       Lagrangian(), r
     elseif k == 1 && !rotate_90
       @notimplemented "Second kind nedelec not implemented yet"
-      # Nedelec2(), r-1
+      # Nedelec2(), r
     else # must be k = D-1 && rotate_90 = true if k = 1
-      BDM(), r-1
+      BDM(), r
     end
   elseif F == :Q⁻
-    @check is_n_cube(p) && r>0
+    @check is_n_cube(p) #&& r>0
     if     k == 0
       Lagrangian(), r
     elseif k == D
@@ -48,17 +46,18 @@ function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
     else # must be k = D-1 && rotate_90 = true if k = 1
       RaviartThomas(), r-1
     end
-  elseif F == :S⁻
+  elseif F == :S
+    @check is_n_cube(p) #&& r>0
     if     k == 0
       Serendipity(), r
     elseif k == D
-      return ReferenceFE(T,Lagrangian(),T,r;space=:P) # ℙᴰᵣ space ≡ SᵣΛᴰ
+      return ReferenceFE(p,Lagrangian(),T,r; space=:P) # ℙᴰᵣ space ≡ SᵣΛᴰ
     else
-      @notimplemented "BDM on n-cubes and trimmed Serendipity Nedelec not implemented yet"
+      @notimplemented "BDM on n-cubes and Serendipity Nedelec not implemented yet"
     #elseif k == 1 && !rotate_90
-    #  Nedelec2(), r-1
+    #  Nedelec2(), r
     #else # must be k = D-1 && rotate_90 = true if k = 1
-    #  BDM(), r-1
+    #  BDM(), r
     end
   else
     @unreachable

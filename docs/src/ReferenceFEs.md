@@ -65,10 +65,9 @@ The following table summarizes the elements implemented in Gridap (legend below)
     - ``\square`` n-cubes   (`SEGMENT`, `QUAD` (quadridateral), `HEX` (hexahedron)
 - Order: ( _definition of ``r`` and ``o``_; _``k``_ ) where
     1. ``r`` is the FEEC polynomial degree parameter (if defined).
-    1. ``o`` is the order parameter of the non FEEC constructor (using [`name::ReferenceFEName`](@ref ReferenceFEName)),
-    2. ``k`` is the maximum polynomial order of the shape functions in one direction (Lagrange superdegree), defined in function of `k`/`o`,
-- Conformity: default [`Conformity`](@ref). All the elements also implement `:L2`
-    conformity (discontinuous methods).
+    1. ``o`` is the `order` parameter of the non FEEC `ReferenceFE` constructor (using [`name::ReferenceFEName`](@ref ReferenceFEName)),
+    2. ``k`` is the maximum polynomial order of the shape functions in one direction (Lagrange superdegree), defined in function of `k` or `o`,
+- Conformity: supported [`Conformity`](@ref). All the elements also implement `:L2` conformity.
 
 ##### Additional information
 

@@ -128,16 +128,25 @@ test_dof_array(dof_basis,prebasis,r)
 
 # Factory function
 reffe = ReferenceFE(TET,bdm,1)
+@test reffe == ReferenceFE(TET,:P,1,2) # r=1, k=2
 @test length(get_prebasis(reffe)) == 12
 @test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 12
 @test Conformity(reffe) == DivConformity()
 
 reffe = ReferenceFE(TET,bdm,Float64,1)
+@test reffe == ReferenceFE(TET,:P,1,2,Float64) # r=1, k=2
 @test length(get_prebasis(reffe)) == 12
 @test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 12
 @test Conformity(reffe) == DivConformity()
+
+reffe = ReferenceFE(TRI,bdm,1)
+@test reffe == ReferenceFE(TRI,:P,1,1; rotate_90=true) # r=1, k=2
+
+# Serendipity BDM not implemented
+@test_throws ErrorException ReferenceFE(QUAD,:S,1,1; rotate_90=true)
+@test_throws ErrorException ReferenceFE(HEX, :S,1,2)
 
 @test Conformity(reffe,:L2) == L2Conformity()
 @test Conformity(reffe,:Hdiv) == DivConformity()

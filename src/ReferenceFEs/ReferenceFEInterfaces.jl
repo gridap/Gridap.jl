@@ -118,7 +118,7 @@ function ReferenceFE(p::Polytope, name::ReferenceFEName, order; kwargs...)
   ReferenceFE(p,name,Float64,order; kwargs...)
 end
 function ReferenceFE(p::Polytope,F::Symbol,r,k; kwargs...)
-  ReferenceFE(p,F,r,k,Float64; kwargs...)
+  ReferenceFE(p,F,r,k,Float64; kwargs...) # implemented in ExteriorCalculusRefFEs.jl
 end
 
 """
@@ -223,7 +223,7 @@ or throws an `ErrorException` otherwise.
 
 For example, if `reffe` is a Lagrangian refference FE with `H1Conformity`,
 the function would return `L2Conformity()` and `H1Conformity()` for
-respectively `conf=:L2` and `:H1` (because L² is in H¹), but would error on
+respectively `conf=:L2` and `:H1` (because H¹ is in L²), but would error on
 `conf=:Hcurl`.
 """
 function Conformity(reffe::ReferenceFE, sym::Symbol)
@@ -674,3 +674,23 @@ get_face_dofs(reffe::GenericRefFE) = reffe.face_dofs
 get_shapefuns(reffe::GenericRefFE) = reffe.shapefuns
 
 get_metadata(reffe::GenericRefFE) = reffe.metadata
+
+function ==(reffe1::GenericRefFE, reffe2::GenericRefFE)
+  false
+end
+
+# TODO The hash is not consistent with this
+function ==(reffe1::GenericRefFE{T,D}, reffe2::GenericRefFE{T,D}) where {T,D}
+  t = true
+  t = t && reffe1.ndofs       == reffe2.ndofs
+  t = t && reffe1.polytope    == reffe2.polytope
+  t = t && reffe1.prebasis    == reffe2.prebasis
+  # Trick: only compare dofs OR shapefuns, one of those is a linear_combination
+  # that does not implement ==
+  t = t && ((reffe1.dofs      == reffe2.dofs)
+        || (reffe1.shapefuns  == reffe2.shapefuns))
+  t = t && reffe1.conformity  == reffe2.conformity
+  t = t && reffe1.metadata    == reffe2.metadata
+  t = t && reffe1.face_dofs   == reffe2.face_dofs
+  t
+end
