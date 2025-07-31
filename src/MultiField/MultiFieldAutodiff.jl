@@ -1,4 +1,3 @@
-
 function CellData.SkeletonCellFieldPair(
   cf_plus::Union{MultiFieldFEFunction,MultiFieldCellField},
   cf_minus::Union{MultiFieldFEFunction,MultiFieldCellField}
@@ -18,10 +17,8 @@ end
 #
 # TODO: Currently, this is only implemented for the gradient and jacobian.
 #  The Hessian is proplematic because the off-diagonal blocks are missed.
-
 for (op,_op) in ((:gradient,:_gradient),(:jacobian,:_jacobian))
   @eval begin
-
     function FESpaces.$(op)(f::Function,uh::MultiFieldFEFunction;ad_type=:split)
       fuh = f(uh)
       if ad_type == :split
@@ -29,14 +26,21 @@ for (op,_op) in ((:gradient,:_gradient),(:jacobian,:_jacobian))
       elseif ad_type == :monolithic
         FESpaces.$(_op)(f,uh,fuh)
       else
-        @notimplemented """Unknown ad_type = $ad_type
-          Options:
-          - :split      -- compute the gradient for each field separately, then merge
-          - :monolithic -- compute the gradient for all fields together
-          """
+        @notimplemented UNKNOWN_AD_TYPE(ad_type)
       end
     end
+  end
+end
 
+# Defaults to monolithic for the Hessian
+function FESpaces.hessian(f::Function,uh::MultiFieldFEFunction;ad_type=:monolithic)
+  fuh = f(uh)
+  if ad_type == :split
+    @notimplemented "Hessian AD with ad_type = :split is not currently implemented. Use ad_type = :monolithic instead."
+  elseif ad_type == :monolithic
+    FESpaces._hessian(f,uh,fuh)
+  else
+    @notimplemented UNKNOWN_AD_TYPE(ad_type)
   end
 end
 
@@ -81,3 +85,9 @@ function _combine_contributions(::typeof(jacobian),terms,fuh::DomainContribution
   end
   contribs
 end
+
+UNKNOWN_AD_TYPE(ad_type) = """Unknown ad_type = $ad_type
+  Options:
+  - :split      -- compute the gradient for each field separately, then merge
+  - :monolithic -- compute the gradient for all fields together
+"""
