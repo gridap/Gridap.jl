@@ -28,7 +28,7 @@ jobs:
           arch: ${{ matrix.arch }}
       - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
       - uses: julia-actions/cache@v2
-      - uses: julia-actions/julia-downgrade-compat@v1
+      - uses: julia-actions/julia-downgrade-compat@v2
         with: # As per documentation, we exclude packages within the Julia standard library
           skip: LinearAlgebra,SparseArrays,Random,Statistics,Test
       - uses: julia-actions/julia-buildpkg@v1
