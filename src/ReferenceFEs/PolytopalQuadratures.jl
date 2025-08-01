@@ -1,26 +1,28 @@
 
-struct PolytopalQuadrature{D,T,P<:GeneralPolytope{D},Q<:Quadrature{D,T}} <: Quadrature{D,T}
-  poly :: P
-  quad :: Q
-  conn :: Vector{Vector{Int32}}
+struct PolytopalQuadrature{D,T,Q<:Quadrature{D,T}} <: Quadrature{D,T}
+  quad   :: Q
+  conn   :: Vector{Vector{Int32}}
+  coords :: Vector{Point{D,T}}
 end
 
 function Quadrature(poly::GeneralPolytope{D},args...;kwargs...) where D
   conn, simplex = simplexify(poly)
   quad = Quadrature(simplex,args...;kwargs...)
-  PolytopalQuadrature(poly,quad,conn)
+  coords = get_vertex_coordinates(poly)
+  PolytopalQuadrature(quad,conn,coords)
 end
 
 function Quadrature(poly::GeneralPolytope{D},quad::Quadrature{D}) where D
   conn, simplex = simplexify(poly)
+  coords = get_vertex_coordinates(poly)
   @check get_polytope(quad) == simplex
-  PolytopalQuadrature(poly,quad,conn)
+  PolytopalQuadrature(quad,conn,coords)
 end
 
 # Quadrature API
 
-function get_name(q::PolytopalQuadrature{D,T,P,Q}) where {D,T,P,Q}
-  "PolytopalQuadrature{$(D),$(T),$(P),$(Q)}"
+function get_name(q::PolytopalQuadrature{D,T,Q}) where {D,T,Q}
+  "PolytopalQuadrature{$(D),$(T),$(Q)}"
 end
 
 get_coordinates(q::PolytopalQuadrature) = evaluate(PQuadCoordsMap(),q)
@@ -40,8 +42,7 @@ end
 struct PQuadCoordsMap <: Map end
 
 function Arrays.return_cache(::PQuadCoordsMap, q::PolytopalQuadrature)
-  conn = q.conn
-  coords = get_vertex_coordinates(q.poly)
+  conn, coords = q.conn, q.coords
   cmap = affine_map(Tuple(coords[first(conn)]))
   
   x = get_coordinates(q.quad)
@@ -54,8 +55,7 @@ end
 
 function Arrays.evaluate!(cache,::PQuadCoordsMap, q::PolytopalQuadrature)
   y_cache, cmap_cache = cache
-  coords = get_vertex_coordinates(q.poly)
-  conn = q.conn
+  conn, coords = q.conn, q.coords
 
   x = get_coordinates(q.quad)
   setsize!(y_cache,(length(x)*length(conn),))
@@ -78,8 +78,7 @@ function Arrays.return_cache(::PQuadWeightsMap, q::PolytopalQuadrature)
 end
 
 function Arrays.evaluate!(cache,::PQuadWeightsMap, q::PolytopalQuadrature)
-  conn = q.conn
-  coords = get_vertex_coordinates(q.poly)
+  conn, coords = q.conn, q.coords
 
   w = get_weights(q.quad)
   setsize!(cache,(length(w)*length(conn),))
