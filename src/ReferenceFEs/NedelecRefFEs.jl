@@ -1,9 +1,4 @@
 """
-    struct CurlConformity <: Conformity
-"""
-struct CurlConformity <: Conformity end
-
-"""
     struct Nedelec <: ReferenceFEName
 """
 struct Nedelec <: ReferenceFEName end

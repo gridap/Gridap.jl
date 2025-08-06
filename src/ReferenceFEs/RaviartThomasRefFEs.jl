@@ -1,9 +1,4 @@
 
-"""
-    struct DivConformity <: Conformity
-"""
-struct DivConformity <: Conformity end
-
 # RaviartThomas
 
 """

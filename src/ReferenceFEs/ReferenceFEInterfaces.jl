@@ -21,6 +21,23 @@ abstract type Conformity end
 struct L2Conformity <: Conformity end
 
 """
+    struct GradConformity <: Conformity
+"""
+struct GradConformity <: Conformity end
+const H1Conformity = GradConformity
+
+"""
+    struct CurlConformity <: Conformity
+"""
+struct CurlConformity <: Conformity end
+
+"""
+    struct DivConformity <: Conformity
+"""
+struct DivConformity <: Conformity end
+
+
+"""
     abstract type ReferenceFE{D} <: GridapType
 
 Abstract type representing a Reference finite element. `D` is the underlying
