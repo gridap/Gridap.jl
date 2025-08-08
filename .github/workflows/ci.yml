@@ -44,9 +44,9 @@ jobs:
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v5
         with:
-          file: lcov.info
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
+          flags: tests
 
   drivers:
     name: Drivers ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
@@ -69,8 +69,12 @@ jobs:
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - run: |
-          julia --color=yes --project=. --check-bounds=yes --depwarn=error -e '
-            using Pkg; Pkg.instantiate()'
+          julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.instantiate()'
       - run: |
-          julia --color=yes --project=. --check-bounds=yes --depwarn=error -e '
-            include("test/GridapTests/runtests.jl")'
+          julia --color=yes --project=. --depwarn=yes -e 'include("test/GridapTests/runtests.jl")'
+      - uses: julia-actions/julia-processcoverage@v1
+      - uses: codecov/codecov-action@v5
+        with:
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: drivers

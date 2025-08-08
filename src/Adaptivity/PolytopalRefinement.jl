@@ -1,4 +1,12 @@
 
+# Notes: 
+# We need to restrict the input to PolytopalDiscreteModel. This would not be strictly 
+# necessary (we can still aggregate other models), but we are currently limited 
+# because we need that all polytopes are positively-oriented rotation systems (like GeneralPolytopes). 
+# Unfortunately our ExtrusionPolytopes are not.
+# To make it work for any model, we would have to reindex the face nodes to ensure the faces
+# are correctly oriented.
+
 function coarsen(model::Geometry.PolytopalDiscreteModel,ptopo::Geometry.PatchTopology)
   new_polys, new_connectivity = generate_patch_polytopes(model,ptopo)
 
