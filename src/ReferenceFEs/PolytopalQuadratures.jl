@@ -1,8 +1,16 @@
 
-struct PolytopalQuadrature{D,T,Q<:Quadrature{D,T}} <: Quadrature{D,T}
+struct PolytopalQuadrature{D,Dp,T,Q<:Quadrature{D,T}} <: Quadrature{D,T}
   quad   :: Q
   conn   :: Vector{Vector{Int32}}
-  coords :: Vector{Point{D,T}}
+  coords :: Vector{Point{Dp,T}}
+  function PolytopalQuadrature(
+    quad::Quadrature{D,T}, 
+    conn::Vector{Vector{Int32}}, 
+    coords::Vector{Point{Dp,T}}
+  ) where {D,Dp,T}
+    Q = typeof(quad)
+    new{D,Dp,T,Q}(quad, conn, coords)
+  end
 end
 
 function Quadrature(poly::GeneralPolytope{D},args...;kwargs...) where D
