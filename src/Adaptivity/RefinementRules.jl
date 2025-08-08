@@ -36,7 +36,15 @@ function RefinementRule(
   ref_trian = Triangulation(ref_grid)
   cmaps = collect1d(cell_maps)
   icmaps = collect1d(lazy_map(Fields.inverse_map,cell_maps))
-  p2c_cache = CellData._point_to_cell_cache(CellData.KDTreeSearch(),ref_trian)
+  # If there are simplices in the mesh, then for a given point, there may exist a symmetric point of it 
+  # with respect to the nearest facet, leading to the identification of an incorrect element and resulting
+  # in an error. In ther worst case, if this point is the circumcenter, there may be as many wrong points
+  # as the number of facets. Therefore we need to find an additional point. 
+  polytopes = get_polytopes(ref_grid)
+  has_simplex = any(map(is_simplex,polytopes))
+  max_num_facets = mapreduce(num_facets,maximum,polytopes)
+  num_nearest_vertices = has_simplex ? min(max_num_facets+1,num_nodes(ref_grid)) : 1
+  p2c_cache = CellData._point_to_cell_cache(CellData.KDTreeSearch(;num_nearest_vertices),ref_trian)
   return RefinementRule(T,poly,ref_grid,cmaps,icmaps,p2c_cache)
 end
 
