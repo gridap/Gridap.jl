@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added low-level API `Arrays.invalidate_cache!(cache)` that forces the re-computation of values in `LazyArray` caches. Since PR[#1137](https://github.com/gridap/Gridap.jl/pull/1137).
 - Added support for star-patch integration, i.e patch integration with masked patch boundaries. Since PR[#1138](https://github.com/gridap/Gridap.jl/pull/1138).
 
 ### Fixed
