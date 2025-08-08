@@ -571,7 +571,7 @@ function collect_and_merge_cell_matrix_and_vector(contributions...)
 end
 
 function merge_assembly_data(data...)
-  @assert allequal(length,data)
+  @assert allequal(map(length,data))
   map(vcat,data...)
 end
 
