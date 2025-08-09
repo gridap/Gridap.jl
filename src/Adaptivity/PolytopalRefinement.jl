@@ -43,7 +43,7 @@ function generate_patch_polytopes(model::DiscreteModel, ptopo::Geometry.PatchTop
 
   new_connectivity = Vector{Vector{Int32}}(undef, npatches)
   new_polys = Vector{GeneralPolytope{D}}(undef, npatches)
-  for patch in 1:npatches
+  Threads.@threads for patch in 1:npatches
     cells = view(patch_cells,patch)
     if isone(length(cells))
       new_polys[patch] = polys[first(cells)]
