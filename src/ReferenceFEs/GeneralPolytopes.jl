@@ -268,17 +268,11 @@ simplex_polytope(::Val{2}) = TRI
 
 simplex_polytope(::Val{3}) = TET
 
-function Polytope{0}(p::GeneralPolytope,faceid::Integer)
-  VERTEX
-end
+Polytope{0}(p::GeneralPolytope,faceid::Integer) = VERTEX
 
-function Polytope{1}(p::GeneralPolytope,faceid::Integer)
-  SEGMENT
-end
+Polytope{1}(p::GeneralPolytope,faceid::Integer) = SEGMENT
 
-function Polytope{D}(p::GeneralPolytope{D},faceid::Integer) where D
-  p
-end
+Polytope{D}(p::GeneralPolytope{D},faceid::Integer) where D = p
 
 function Polytope{2}(p::Polyhedron,faceid::Integer)
   f_to_v = get_faces(p,2,0)

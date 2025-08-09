@@ -24,11 +24,12 @@ function coarsen(model::Geometry.PolytopalDiscreteModel,ptopo::Geometry.PatchTop
   return new_model
 end
 
-function generate_patch_polytopes(model::DiscreteModel, ptopo::Geometry.PatchTopology)
+function generate_patch_polytopes(
+  model::DiscreteModel{D}, ptopo::Geometry.PatchTopology{D}
+) where D
   topo = get_grid_topology(model)
   @assert topo === ptopo.topo
 
-  D = num_cell_dims(topo)
   polys = get_polytopes(topo)
   vertex_coordinates = get_vertex_coordinates(topo)
   cell_to_vertices = get_faces(topo,D,0)
@@ -51,7 +52,8 @@ function generate_patch_polytopes(model::DiscreteModel, ptopo::Geometry.PatchTop
       continue
     end
     
-    _vertices = Set{Int32}()
+    nv = 0
+    glob_to_loc = OrderedDict{Int32,Int32}()
     tfaces = view(patch_to_tfaces,patch)
     connectivity = Vector{Vector{Int32}}(undef, length(tfaces))
     for (k,tface) in enumerate(tfaces)
@@ -62,13 +64,15 @@ function generate_patch_polytopes(model::DiscreteModel, ptopo::Geometry.PatchTop
       fperm = get_vertex_permutations(Polytope{D-1}(polys[cell],lface))[pindex]
 
       connectivity[k] = face_to_vertices[face][fperm]
-      push!(_vertices, connectivity[k]...)
+      for i in eachindex(connectivity[k])
+        val = get!(glob_to_loc, connectivity[k][i], nv+1)
+        connectivity[k][i] = val # map global vertex index to local index
+        nv += (val == nv + 1) # increment only if not already present
+      end
     end
 
-    vertices = collect(_vertices)
+    vertices = collect(keys(glob_to_loc))
     coords = vertex_coordinates[vertices]
-    glob_to_loc = Dict{Int32,Int32}( v => k for (k,v) in enumerate(vertices))
-    foreach(y -> map!(x -> glob_to_loc[x], y, y), connectivity)
 
     new_polys[patch], vperm = ReferenceFEs.polytope_from_faces(D,coords,connectivity)
     new_connectivity[patch] = vertices[vperm]
