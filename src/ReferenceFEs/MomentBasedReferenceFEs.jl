@@ -21,25 +21,25 @@ struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
     new{P,V}(nodes,f_moments,f_nodes,f_own_moms)
   end
 
-  function MomentBasedDofBasis(f_nodes,f_moments,f_own_moms)
-    P = eltype(eltype(f_nodes))
-    V = eltype(eltype(f_moments))
-    nodes = P[]
-    face_nodes = UnitRange{Int}[]
-    nfaces = length(f_nodes)
-    n = 1
-    for fi in 1:nfaces
-      nodes_fi = f_nodes[fi]
-      nini = n
-      for node_fi in nodes_fi
-        push!(nodes,node_fi)
-        n += 1
-      end
-      nend = n-1
-      push!(face_nodes,nini:nend)
-    end
-    new{P,V}(nodes,f_moments,face_nodes,f_own_moms)
-  end
+  #function MomentBasedDofBasis(f_nodes,f_moments,f_own_moms)
+  #  P = eltype(eltype(f_nodes))
+  #  V = eltype(eltype(f_moments))
+  #  nodes = P[]
+  #  face_nodes = UnitRange{Int}[]
+  #  nfaces = length(f_nodes)
+  #  n = 1
+  #  for fi in 1:nfaces
+  #    nodes_fi = f_nodes[fi]
+  #    nini = n
+  #    for node_fi in nodes_fi
+  #      push!(nodes,node_fi)
+  #      n += 1
+  #    end
+  #    nend = n-1
+  #    push!(face_nodes,nini:nend)
+  #  end
+  #  new{P,V}(nodes,f_moments,face_nodes,f_own_moms)
+  #end
 end
 
 Base.size(a::MomentBasedDofBasis) = (num_dofs(a),)
@@ -253,41 +253,41 @@ function MomentBasedDofBasis(
   MomentBasedDofBasis(nodes, face_moments, face_nodes, face_own_moms)
 end
 
-function test_moment(σ,prebasis,μ,ds)
-  T = return_type(prebasis)
-  φ = map(constant_field,dual_component_basis_representatives(T))
-  vals, coords = evaluate(σ,φ,μ,ds)
-
-  φx = evaluate(prebasis, coords) # (nN, nφ)
-  σx, _ = evaluate(σ,prebasis,μ,ds)
-
-  σx_bis = zeros(size(vals,1),size(vals,2),size(σx,3))
-  for i in axes(vals,1)
-    for j in axes(vals,2)
-      cx = T(vals[i,j,:]...)
-      σx_bis[i,j,:] .= map(y -> inner(y,cx),φx[i,:])
-    end
-  end
-
-  println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-
-  println(" > Values: ")
-  for i in axes(vals,2)
-    println("    >> Mu = ",i)
-    for j in axes(vals,3)
-      println("     >>> Phi -> ", sum(vals[:,i,j]))
-    end
-  end
-
-  println(" > Moments: ")
-  for i in axes(vals,1)
-    display(σx[i,:,:])
-    display(σx_bis[i,:,:])
-    println("----------------------------------------")
-  end
-  @assert σx ≈ σx_bis
-  println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-end
+#function test_moment(σ,prebasis,μ,ds)
+#  T = return_type(prebasis)
+#  φ = map(constant_field,dual_component_basis_representatives(T))
+#  vals, coords = evaluate(σ,φ,μ,ds)
+#
+#  φx = evaluate(prebasis, coords) # (nN, nφ)
+#  σx, _ = evaluate(σ,prebasis,μ,ds)
+#
+#  σx_bis = zeros(size(vals,1),size(vals,2),size(σx,3))
+#  for i in axes(vals,1)
+#    for j in axes(vals,2)
+#      cx = T(vals[i,j,:]...)
+#      σx_bis[i,j,:] .= map(y -> inner(y,cx),φx[i,:])
+#    end
+#  end
+#
+#  println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+#
+#  println(" > Values: ")
+#  for i in axes(vals,2)
+#    println("    >> Mu = ",i)
+#    for j in axes(vals,3)
+#      println("     >>> Phi -> ", sum(vals[:,i,j]))
+#    end
+#  end
+#
+#  println(" > Moments: ")
+#  for i in axes(vals,1)
+#    display(σx[i,:,:])
+#    display(σx_bis[i,:,:])
+#    println("----------------------------------------")
+#  end
+#  @assert σx ≈ σx_bis
+#  println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+#end
 
 
 ###############
