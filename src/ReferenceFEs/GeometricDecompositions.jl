@@ -159,7 +159,7 @@ polynomials of `b` be oriented outwards the facet.
 The gluing of div-conforming shape functions assumes that all facet-owned
 shapefuns have consistent orientation between facets (if the first shapefun of
 facet 1 has outwards flux, all first shapefun of other facets must also have
-outwards flux), see also [`NormalSignMap`](@ref).
+outwards flux), see also [`NormalSignMap`](@ref Gridap.FESpaces.NormalSignMap).
 
 This is not the case for the `BarycentricP(m)ΛBases` by default, their flux is
 oriented like the sign of the permutation of the facet node indices.

@@ -276,6 +276,7 @@ ModalC0
 ```@docs
 PolynomialBasis
 get_order(::PolynomialBasis)
+get_dimension(::PolynomialBasis)
 FEEC_poly_basis
 FEEC_space_definition_checks
 MonomialBasis(args...)

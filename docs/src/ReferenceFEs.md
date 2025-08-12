@@ -195,7 +195,7 @@ decomposition"). It could be easily generalized to bases on n-cubes.
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["GeometricDecompitions.jl"]
+Pages   = ["GeometricDecompositions.jl"]
 ```
 
 #### Available Moment-Based ReferenceFEs

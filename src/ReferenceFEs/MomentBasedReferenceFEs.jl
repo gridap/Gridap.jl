@@ -161,7 +161,7 @@ Creates a basis of DoFs defined by moments on faces of `p`.
 `moments` is a vector of moment descriptors, each one is given by a triplet
 (f,σ,μ) where
   - f is collection of ids of faces Fₖ of `p`, that index `get_faces(p)`,
-  - σ is a function σ(φ,μ,ds) **linear** in φ and μ that takes two Field-vectors φ and μ and a [`FaceMeasure`](@ref) ds and returns a Field-like object to be integrated over each face Fₖ,
+  - σ is a function σ(φ,μ,ds) **linear** in φ and μ that takes two Field-vectors φ and μ and a `FaceMeasure` ds and returns a Field-like object to be integrated over each face Fₖ,
   - μ is a polynomials basis on Fₖ.
 
 The moment DoFs are thus defined by φ -> ∫_Fₖ σ(φ,μᵢ,ds)dFₖ,  ∀ σ,k,i.
