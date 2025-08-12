@@ -163,7 +163,39 @@ Pages   = ["LagrangianRefFEs.jl","LagrangianDofBases.jl","SerendipityRefFEs.jl",
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["MomentBasedReferenceFEs.jl"]
+Pages   = ["MomentBasedReferenceFEs.jl","GeometricDecompitions.jl"]
+```
+
+##### Geometric decompositions
+
+The kwarg `sh_is_pb=true` means that the shape functions are defined as the
+basis polynomials of the pre-basis, the basis must verify a geometric
+decomposition. `sh_is_pb` is only available for BDM, Raviart-Thomas and
+Nédélec elements, and set to true by default on simplices. Otherwise, if
+`sh_is_pb=false`, the shape functions are defined as the dual basis of the DoF
+basis.
+
+The geometric decomposition API consist in the methods
+- [`has_geometric_decomposition(polybasis,p,conf)`](@ref),
+- [`get_face_own_funs(polybasis,p,conf)`](@ref),
+- [`get_facet_flux_sign_flip(polybasis,p,conf)`](@ref).
+where `polybasis` is a polynomial basis, `p` a polytope and `conf` a conformity.
+
+This API ensures that each polynomial `𝑝ᵢ` of the basis are all associated to a
+face of `p`, such that the `conf`-trace of `𝑝ᵢ` (scalar trace, tangential trace,
+normal trace) over another face `g` of `p` is zero whenever `g` does not
+contain `f`, and that these polynomial can be glued together with conformity
+`conf` in the physical space.
+
+Currently, only [`BernsteinBasisOnSimplex`](@ref),
+[`BarycentricPmΛBasis`](@ref) and [`BarycentricPΛBasis`](@ref) implement it,
+see also Bernstein basis [Geometric decomposition](@ref "Geometric
+decomposition"). It could be easily generalized to bases on n-cubes.
+
+```@autodocs
+Modules = [ReferenceFEs,]
+Order   = [:type, :constant, :macro, :function]
+Pages   = ["GeometricDecompitions.jl"]
 ```
 
 #### Available Moment-Based ReferenceFEs

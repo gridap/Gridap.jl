@@ -427,12 +427,8 @@ Constructs a ReferenceFEs on `p` with a moment DoF (pre-)basis defined by
 
 If `sh_is_pb=true`, `prebasis` is used as shape functions.
 This requires it to fullfill a geometric decomposition relative to the faces of
-`p` for `conformity`.
-
-The geometric decompositions API is defined by
-- [`has_geometric_decomposition(prebasis,p,conformity)`](@ref),
-- [`get_face_own_funs(prebasis,p,conformity)`](@ref),
-- [`get_facet_flux_sign_flip(prebasis,p,conformity)`](@ref).
+`p` for `conformity`, see the [*Geometric decompositions*](@ref "Geometric decompositions")
+section in the docs.
 """
 function MomentBasedReferenceFE(
   name::ReferenceFEName,

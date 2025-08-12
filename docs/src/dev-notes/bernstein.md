@@ -208,13 +208,13 @@ translated into their equivalents in the standard vector calculus framework
 | ``D  ``  | ``ω=ω_{\{1:D\}}\mathrm{d}x^{\{1:D\}} ``  | ``(⋆ω)♯=ω_{\{1:D\}}``       |`T`               |
 
 This change of coordinate is implemented by [`_basis_forms_components`](@ref),
-the indices of a basis `b::P(m)LambdaBasis` are stored in `b._indices.components`.
+the indices of a basis `b::BarycentricP(m)ΛBasis` are stored in `b._indices.components`.
 For ``{D=2}`` and ``{k=1}``, the default proxy is ``ω♯``. The user may choose the
 ``(⋆ω)♯`` proxy (for div-conforming spaces) using the kwarg `rotate_90=true`.
 
 #### Geometric decomposition
 
-The main feature of the `P(m)LambdaBasis` bases is that each basis polynomial
+The main feature of the `BarycentricP(m)ΛBasis` bases is that each basis polynomial
 ``ω^{α,J}`` is associated with a face ``F`` of ``T`` via ``{F=⟦α⟧∪J}`` with
 ``J`` a face of ``F`` and ``α`` a Bernstein index whose associated domain point
 ``\boldsymbol{x}_α`` is geometrically inside ``F``. Importantly, the trace of
