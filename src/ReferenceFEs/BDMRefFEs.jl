@@ -13,13 +13,13 @@ const bdm = BDM()
 Pushforward(::Type{BDM}) = ContraVariantPiolaMap()
 
 """
-    BDMRefFE(::Type{T}, p::Polytope, order::Integer)
+    BDMRefFE(::Type{T}, p::Polytope, order::Integer; sh_is_pb=true)
 
 The `order` argument has the following meaning: the divergence of the  functions
 in this basis is in the ℙ space of degree `order`. `T` is the type of scalar
 components.
 """
-function BDMRefFE(::Type{T},p::Polytope,order::Integer) where T
+function BDMRefFE(::Type{T},p::Polytope,order::Integer; sh_is_pb=true) where T
   @check order > 0 "BDM Reference FE only available for order > 0, got order=$order"
   D = num_dims(p)
   @check 2 ≤ D ≤ 3 && is_simplex(p) "BDM Reference FE only available for simplices of dimension 2 and 3"
@@ -48,11 +48,11 @@ function BDMRefFE(::Type{T},p::Polytope,order::Integer) where T
     push!(moments,(get_dimrange(p,D),cmom,cb)) # Cell moments
   end
 
-  return MomentBasedReferenceFE(BDM(),p,prebasis,moments,DivConformity())
+  return MomentBasedReferenceFE(BDM(),p,prebasis,moments,DivConformity(); sh_is_pb)
 end
 
-function ReferenceFE(p::Polytope,::BDM,::Type{T}, order) where T
-  BDMRefFE(T,p,order)
+function ReferenceFE(p::Polytope,::BDM,::Type{T}, order; kwargs...) where T
+  BDMRefFE(T,p,order; kwargs...)
 end
 
 function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)

@@ -13,12 +13,14 @@ const nedelec = Nedelec()
 Pushforward(::Type{Nedelec}) = CoVariantPiolaMap()
 
 """
-    NedelecRefFE(::Type{T}, p::Polytope, order::Integer)
+    NedelecRefFE(::Type{T}, p::Polytope, order::Integer; sh_is_pb=true)
 
 The `order` argument has the following meaning: the curl of the  functions in
 this basis is in the ℙ/ℚ space of degree `order`. `T` is the type of scalar components.
+
+`sh_is_pb` is only used if `p` is a simplex.
 """
-function NedelecRefFE(::Type{T},p::Polytope,order::Integer) where T
+function NedelecRefFE(::Type{T},p::Polytope,order::Integer; sh_is_pb=true) where T
   D = num_dims(p)
   rotate_90 = D==2
 
@@ -72,7 +74,8 @@ function NedelecRefFE(::Type{T},p::Polytope,order::Integer) where T
     push!(moments,(get_dimrange(p,D),cmom,cb))   # Cell moments
   end
 
-  return MomentBasedReferenceFE(Nedelec(),p,prebasis,moments,CurlConformity())
+  sh_is_pb = sh_is_pb && is_simplex(p)
+  return MomentBasedReferenceFE(Nedelec(),p,prebasis,moments,CurlConformity(); sh_is_pb)
 end
 
 function ReferenceFE(p::Polytope,::Nedelec,::Type{T}, order) where T

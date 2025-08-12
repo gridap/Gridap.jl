@@ -63,8 +63,9 @@ reffe = RaviartThomasRefFE(et,p,order)
 dof_basis = get_dof_basis(reffe)
 prebasis = get_prebasis(reffe)
 
-dofs = get_dof_basis(reffe)
-nodes, nf_nodes, nf_moments =  get_nodes(dofs), get_face_nodes_dofs(dofs), get_face_moments(dofs)
+# By default, on simplices, the element uses a raw poly basis as shapefuns, and a dof prebasis
+predofs = get_dof_basis(reffe).predofs
+nodes, nf_nodes, nf_moments =  get_nodes(predofs), get_face_nodes_dofs(predofs), get_face_moments(predofs)
 
 order = 3
 p = TRI
@@ -78,8 +79,8 @@ dof_basis = get_dof_basis(reffe)
 v = VectorValue(3.0,0.0)
 field = GenericField(x->v*x[1])
 
-dofs = get_dof_basis(reffe)
-nodes, nf_nodes, nf_moments =  get_nodes(dofs), get_face_nodes_dofs(dofs), get_face_moments(dofs)
+predofs = get_dof_basis(reffe).predofs
+nodes, nf_nodes, nf_moments =  get_nodes(predofs), get_face_nodes_dofs(predofs), get_face_moments(predofs)
 
 cache = return_cache(dof_basis,field)
 r = evaluate!(cache, dof_basis, field)

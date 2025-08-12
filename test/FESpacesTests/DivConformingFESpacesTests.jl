@@ -2,6 +2,7 @@ module DivConformingFESpacesTests
 
 using Test
 using Gridap.Geometry
+using Gridap.Arrays
 using Gridap.ReferenceFEs
 using Gridap.FESpaces
 using Gridap.CellData
@@ -47,7 +48,7 @@ function test_div_v_q_equiv(U,V,P,Q,Ω)
   @test norm(v1-v2) < tol
 end
 
-#@testset "Test Raviart-Thomas" begin
+@testset "Test Raviart-Thomas" begin
 
   domain = (0,1,0,1)
   partition = (3,3)
@@ -56,7 +57,7 @@ end
   order = 1
   u(x) = x
 
-  reffe = ReferenceFE(raviart_thomas,order)
+  reffe = ReferenceFE(QUAD,raviart_thomas,order)
   V = TestFESpace(model,reffe,dirichlet_tags = [1,6])
   test_single_field_fe_space(V)
   U = TrialFESpace(V,u)
@@ -79,19 +80,48 @@ end
   #using Gridap.Visualization
   #
   #writevtk(Ω,"trian",nsubcells=10,cellfields=["uh"=>uh])
+  order = 1
+
+  reffe = ReferenceFE(TRI,raviart_thomas,order)
+
+  domain = (0,1,0,2)
+  partition = (2,2)
+  model = simplexify(CartesianDiscreteModel(domain,partition))
+
+  V = FESpace(model,reffe,conformity=DivConformity())
+  test_single_field_fe_space(V)
+  U = TrialFESpace(V,u)
+
+  reffe = ReferenceFE(lagrangian,Float64,order)
+  Q = TestFESpace(model,reffe,conformity=:L2)
+  P = TrialFESpace(Q)
+
+  v(x) = VectorValue(-0.5*x[1]+1.0,-0.5*x[2])
+  vh = interpolate(v,V)
+  e = v - vh
+
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω,2*order)
+
+  el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
+  @test el2 < 1.0e-10
+
+  test_div_v_q_equiv(U,V,P,Q,Ω)
+
+  #using Gridap.Visualization
+  #
+  #writevtk(trian,"test",order=3,cellfields=["vh"=>vh])
 
   order = 1
 
   reffe = ReferenceFE(TET,raviart_thomas,order)
 
-  domain = (0,1,0,1,0,1)
-  partition = (3,3,3)
+  domain = (0,1,0,2,-1,2)
+  partition = (3,3,2)
   model = simplexify(CartesianDiscreteModel(domain,partition))
 
-  labels = get_face_labeling(model)
-  dir_tags = Array{Integer}(undef,0)
-
   V = FESpace(model,reffe,conformity=DivConformity())
+  test_single_field_fe_space(V)
   U = TrialFESpace(V,u)
 
   reffe = ReferenceFE(lagrangian,Float64,order)
@@ -109,10 +139,6 @@ end
   @test el2 < 1.0e-10
 
   test_div_v_q_equiv(U,V,P,Q,Ω)
-
-  #using Gridap.Visualization
-  #
-  #writevtk(trian,"test",order=3,cellfields=["vh"=>vh])
 
   # Tests on manifold
 
@@ -146,7 +172,7 @@ end
 
   test_div_v_q_equiv(U,V,P,Q,Ω)
 
-#end
+end
 
 @testset "Test BDM" begin
 
@@ -158,7 +184,7 @@ order = 1
 
 u(x) = x
 
-reffe = ReferenceFE(bdm,order)
+reffe = ReferenceFE(TRI,bdm,order)
 
 V = TestFESpace(model,reffe,dirichlet_tags = [1,6])
 test_single_field_fe_space(V)
@@ -223,7 +249,7 @@ Dc2Dp3model = DiscreteModelPortion(DiscreteModel(Polytope{2},model),Γface_to_bg
 order  = 1
 degree = 2
 
-reffe_bdm = ReferenceFE(bdm,Float64,order)
+reffe_bdm = ReferenceFE(TRI,bdm,Float64,order)
 V  = FESpace(Dc2Dp3model, reffe_bdm ; conformity=:HDiv)
 U = TrialFESpace(V,u)
 reffe = ReferenceFE(lagrangian,Float64,order)

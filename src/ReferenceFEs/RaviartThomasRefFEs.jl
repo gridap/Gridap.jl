@@ -16,14 +16,15 @@ const raviart_thomas = RaviartThomas()
 Pushforward(::Type{RaviartThomas}) = ContraVariantPiolaMap()
 
 """
-    RaviartThomasRefFE(::Type{T}, p::Polytope, order::Integer)
+    RaviartThomasRefFE(::Type{T}, p::Polytope, order::Integer; sh_is_pb=true)
 
 The `order` argument has the following meaning: the divergence of the functions
 in this basis is in the Q space of degree `order`. `T` is the type of scalar components.
+
+`sh_is_pb` is only used if `p` is a simplex.
 """
 function RaviartThomasRefFE(
-  ::Type{T},p::Polytope{D},order::Integer
-) where {T,D}
+  ::Type{T},p::Polytope{D},order::Integer; sh_is_pb=true) where {T,D}
 
   rotate_90 = D==2
   k = D-1
@@ -59,7 +60,8 @@ function RaviartThomasRefFE(
     push!(moments,(get_dimrange(p,D),cmom,cb)) # Cell moments
   end
 
-  return MomentBasedReferenceFE(RaviartThomas(),p,prebasis,moments,DivConformity())
+  sh_is_pb = sh_is_pb && is_simplex(p)
+  return MomentBasedReferenceFE(RaviartThomas(),p,prebasis,moments,DivConformity(); sh_is_pb)
 end
 
 function ReferenceFE(p::Polytope,::RaviartThomas,::Type{T},order;kwargs...) where T
