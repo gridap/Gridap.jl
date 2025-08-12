@@ -5,7 +5,13 @@
 """
     has_geometric_decomposition(shapefuns, p::Polytope, ::Conformity) -> Bool
 
-TODO
+Tells whether `shapefuns` is a geometrically decomposed basis on `p` for the
+given conformity. This is always true for `L2Conformity()`.
+
+Otherwise, the decomposition is defined relatively to the appropriate trace:
+- For `GradConformity()`, the trace is the restriction to the face, defined on all boundary faces,
+- For `CurlConformity()`, the trace is the tangential trace to edges and tangential component to 2D facets,
+- For `DivConformity()`, the trace is the normal trace to facets (rotated tangents in 2D).
 """
 has_geometric_decomposition(shapefuns, p::Polytope, ::Conformity) = false
 has_geometric_decomposition(shapefuns, p::Polytope, ::L2Conformity) = true
@@ -13,7 +19,11 @@ has_geometric_decomposition(shapefuns, p::Polytope, ::L2Conformity) = true
 """
     get_face_own_funs(shapefuns, p::Polytope, ::Conformity) -> Vector{Vector{Int}}
 
-TODO
+Essentially the same as [`get_face_own_dofs`](@ref), but for the `shapefuns`
+basis instead of a DoF basis.
+
+`shapefun` must implement the geometric decomposition on `p` for the given
+conformity, this can be checked using [`has_geometric_decomposition`](@ref).
 """
 get_face_own_funs(shapefuns, ::Polytope, ::Conformity) = @abstractmethod
 
@@ -27,9 +37,31 @@ function _l2_conforming_own_funs(shapefuns,p)
   r
 end
 
-####################################################
-# Barycentric P(⁻)Λ bases geometric decompositions #
-####################################################
+"""
+    get_facet_flux_sign_flip(shapefun, p::Polytope, ::DivConformity)
+
+Return the (diagonal) change of basis matrix to make the flux of facet-owned
+polynomials of `b` be oriented outwards the facet.
+
+`shapefun` must implement the geometric decomposition on `p` for `DivConformity()`,
+this can be checked using [`has_geometric_decomposition`](@ref).
+
+# Extended help
+
+The gluing of div-conforming shape functions assumes that all facet-owned
+shapefuns have consistent orientation between facets (if the first shapefun of
+facet 1 has outwards flux, all first shapefun of other facets must also have
+outwards flux), see also [`NormalSignMap`](@ref Gridap.FESpaces.NormalSignMap).
+
+This is not the case for the `BarycentricP(m)ΛBases` by default, their flux is
+oriented like the sign of the permutation of the facet node indices.
+"""
+get_facet_flux_sign_flip(shapefuns, ::Polytope, ::L2Conformity) = @abstractmethod
+
+
+##############################################################
+# Geometric decompositions of barycentric bases on simplices #
+##############################################################
 
 # BernsteinBasisOnSimplex
 
@@ -148,22 +180,6 @@ function get_face_own_funs(b::_BaryPΛBasis, p::Polytope, conf::Conformity)
   face_own_funs
 end
 
-"""
-    get_facet_flux_sign_flip(b::BarycentricP(m)ΛBasis, p, ::DivConformity)
-
-Return the (diagonal) change of basis matrix to make the flux of of facet-owned
-polynomials of `b` be oriented outwards the facet.
-
-# Extended help
-
-The gluing of div-conforming shape functions assumes that all facet-owned
-shapefuns have consistent orientation between facets (if the first shapefun of
-facet 1 has outwards flux, all first shapefun of other facets must also have
-outwards flux), see also [`NormalSignMap`](@ref).
-
-This is not the case for the `BarycentricP(m)ΛBases` by default, their flux is
-oriented like the sign of the permutation of the facet node indices.
-"""
 function get_facet_flux_sign_flip(
   b::_BaryPΛBasis, p::Polytope{D}, conf::DivConformity) where D
 
@@ -175,8 +191,8 @@ function get_facet_flux_sign_flip(
     if face ∈ facet_range
       sign_flip[own_funs] .= iseven(face-first(facet_range)) ? -1 : 1
       # Equivalent definition:
-      #F = get_faces(p)[face][1:D]
-      #(isodd(Polynomials._combination_index(F)) ? -1 : 1)
+      # F = get_faces(p)[face][1:D]
+      # sign_flip[own_funs] = -Polynomials._combination_sign(F))
     end
   end
 
