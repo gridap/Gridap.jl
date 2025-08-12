@@ -66,7 +66,7 @@ get_facet_flux_sign_flip(shapefuns, ::Polytope, ::L2Conformity) = @abstractmetho
 # BernsteinBasisOnSimplex
 
 function has_geometric_decomposition(
-  b::BernsteinBasisOnSimplex{D,V}, p::Polytope, conf::Conformity) where {D,V}
+  b::BernsteinBasisOnSimplex{D}, p::Polytope, conf::Conformity) where D
 
   conf isa L2Conformity && return true
 
@@ -79,14 +79,14 @@ function has_geometric_decomposition(
     return false
   end
 
-  # TODO generalize to cartesian product of :H1 conforming BernsteinBasisOnSimplex
-  V <: MultiValue && !isone(length(V)) && return false
   conf isa H1Conformity && return true
 
   false
 end
 
-function get_face_own_funs(b::BernsteinBasisOnSimplex, p::Polytope, conf::Conformity)
+function get_face_own_funs(
+  b::BernsteinBasisOnSimplex{D,V}, p::Polytope, conf::Conformity) where {D,V}
+
   @check has_geometric_decomposition(b,p,conf)
 
   conf isa L2Conformity && return _l2_conforming_own_funs(b,p)
@@ -95,15 +95,18 @@ function get_face_own_funs(b::BernsteinBasisOnSimplex, p::Polytope, conf::Confor
   num_faces = length(faces)
   face_own_funs = Vector{Int}[ Int[] for _ in 1:num_faces]
 
-  D = get_dimension(b)
   K = get_order(b)
-  # TODO generalize to cartesian product of :H1 conforming BernsteinBasisOnSimplex
-  for (id, α) in enumerate(bernstein_terms(K,D))
+  ncomp = num_indep_components(V)
+  id = 1
+  for α in bernstein_terms(K,D)
     F = findall(>(0), α)                    # vertices of the face owning x_α
     face = findfirst(face -> F⊆face, faces) # p face number
     # this should be guaranteed by has_geometric_decomposition
     isnothing(face) && @unreachable
-    push!(face_own_funs[face], id)
+    # the ncomp components holding the Bα scalar shapefun are contiguous due
+    # to Polynomials._cartprod_set_value!
+    append!(face_own_funs[face], id:id+ncomp-1)
+    id += ncomp
   end
 
   face_own_funs
@@ -172,6 +175,7 @@ function get_face_own_funs(b::_BaryPΛBasis, p::Polytope, conf::Conformity)
     face = findfirst(face -> F⊆face, faces)
     # this should be guaranteed by has_geometric_decomposition
     isnothing(face) && @unreachable
+    # Polynomials._check_PΛ_indices guaranties bubble shapefun ids are contiguous
     w_first = first(bubble_functions)[1]
     w_last  = last( bubble_functions)[1]
     face_own_funs[face] = collect(w_first:w_last)

@@ -281,6 +281,10 @@ for p in (SEGMENT,TRI,TET,SIMPL4)
   b = BernsteinBasisOnSimplex(Val(D),et,r)
   _test_geometric_decomposition(b,p,conf)
 
+  b = BernsteinBasisOnSimplex(Val(D),SkewSymTensorValue{3,et},r)
+  @test has_geometric_decomposition(b,p,conf)
+  _test_geometric_decomposition(b,p,conf)
+
   b = BarycentricPmΛBasis(Val(D),et,r,0)
   _test_geometric_decomposition(b,p,conf)
 
