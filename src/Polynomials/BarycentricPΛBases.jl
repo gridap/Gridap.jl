@@ -86,11 +86,24 @@ function _check_PΛ_indices(r,k,D,F,DG_style, indices::BarycentricPΛIndices, ro
   # otherwise wrong result or segfault due to @inbounds in evaluating functions
   # are expected
   @assert objectid( (r,k,D,F,DG_style,rot_90) ) == indices.identity
+
   @check begin
     ordered_bf_ids = [ bubfun[1] for bub in indices.bubbles for bubfun in bub[2] ]
     C = length(ordered_bf_ids)
     ordered_bf_ids == 1:C
   end "Invalid BarycentricPΛIndices: bubble functions are not numbered from 1 to length(b) in the bubble indices"
+
+  @check begin
+    unique_faces = Set()
+    for bubble in indices.bubbles
+      push!(unique_faces, sort(bubble[1]))
+    end
+    length(unique_faces) == length(indices.bubbles)
+  end """
+    Invalid BarycentricPΛIndices: all bubble functions to a face must be
+    gathered in a unique Bubble, duplicated bubble faces were found in the given
+    indices
+  """
 end
 
 """
