@@ -68,7 +68,7 @@ end
 Return the vector of `d`-volumes of the `d`-faces of `p`.
 """ # TODO: Generalize
 function _get_dfaces_measure(p::Polytope{D}, d::Int) where D
-  @notimplementedif (!is_simplex(p) || D>3) "Only implemented for simplices of dim up to 3."
+  @notimplementedif (!is_simplex(p) || d>3) "Only implemented for simplices of dim up to 3."
   measures = Float64[]
   dfaces_vertices = get_face_coordinates(p,d)
   for entity in dfaces_vertices
@@ -86,10 +86,9 @@ function _get_dfaces_measure(p::Polytope{D}, d::Int) where D
       push!(measures, area)
     elseif n == 4 && d == 3 # Volume of a tetrahedron
       p1, p2, p3, p4 = entity
-      v1 = p2 - p1
-      v2 = p3 - p1
-      v3 = p4 - p1
-      volume = abs(dot(v1, cross(v2, v3))) / 6
+      v = (p2-p1, p3-p1, p4-p1)
+      t = TensorValue( Tuple(vi⋅vj for vj in v for vi in v) )
+      volume = sqrt(abs(det(t)))/6
       push!(measures, volume)
     end
   end

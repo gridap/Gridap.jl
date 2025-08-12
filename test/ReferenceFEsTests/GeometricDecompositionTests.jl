@@ -327,4 +327,28 @@ for p in (TRI,TET,SIMPL4)
   _test_geometric_decomposition(b,p,conf)
 end
 
+#######################################
+# L2 Conform Geometric decompositions #
+#######################################
+
+conf = L2Conformity()
+
+p = VERTEX
+b = [ ConstantField(1) ]
+@test has_geometric_decomposition(b,p,conf)
+@test get_face_own_funs(b,p,conf) == [ [1] ]
+
+p = QUAD
+b = [ ConstantField(vi) for vi in component_basis(VectorValue{3,et}) ]
+@test has_geometric_decomposition(b,p,conf)
+@test get_face_own_funs(b,p,conf) == [
+  Int[], Int[], Int[], Int[], Int[], Int[], Int[], Int[], Int[1,2,3],
+]
+
+# Other APIs
+conf = CDConformity( (CONT,DISC) )
+@test !has_geometric_decomposition(b,p,conf)
+@test_throws ErrorException get_face_own_funs(b,p,conf)
+
 end # module
+
