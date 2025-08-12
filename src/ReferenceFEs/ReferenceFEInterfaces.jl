@@ -591,7 +591,7 @@ Note that some fields in this `struct` are type unstable deliberately in order t
 type signature. Don't access them in computationally expensive functions,
 instead extract the required fields before and pass them to the computationally expensive function.
 """
-struct GenericRefFE{T,D} <: ReferenceFE{D}
+@ahe struct GenericRefFE{T,D} <: ReferenceFE{D}
   ndofs::Int
   polytope::Polytope{D}
   prebasis::AbstractVector{<:Field}
@@ -692,22 +692,3 @@ get_shapefuns(reffe::GenericRefFE) = reffe.shapefuns
 
 get_metadata(reffe::GenericRefFE) = reffe.metadata
 
-function ==(reffe1::GenericRefFE, reffe2::GenericRefFE)
-  false
-end
-
-# TODO The hash is not consistent with this
-function ==(reffe1::GenericRefFE{T,D}, reffe2::GenericRefFE{T,D}) where {T,D}
-  t = true
-  t = t && reffe1.ndofs       == reffe2.ndofs
-  t = t && reffe1.polytope    == reffe2.polytope
-  t = t && reffe1.prebasis    == reffe2.prebasis
-  # Trick: only compare dofs OR shapefuns, one of those is a linear_combination
-  # that does not implement ==
-  t = t && ((reffe1.dofs      == reffe2.dofs)
-        || (reffe1.shapefuns  == reffe2.shapefuns))
-  t = t && reffe1.conformity  == reffe2.conformity
-  t = t && reffe1.metadata    == reffe2.metadata
-  t = t && reffe1.face_dofs   == reffe2.face_dofs
-  t
-end

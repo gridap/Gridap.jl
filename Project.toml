@@ -5,6 +5,7 @@ version = "0.19.3"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
+AutoHashEquals = "15f4f7f2-30c1-5605-9d31-71845cf9641f"
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 BlockArrays = "8e7c35d0-a365-5155-bbbb-fb81a777f24e"
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
@@ -34,6 +35,7 @@ WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 [compat]
 AbstractTrees = "0.3.3, 0.4"
 Aqua = "0.8"
+AutoHashEquals = "2.2.0"
 BSON = "0.3.4"
 BlockArrays = "1"
 Combinatorics = "1"
