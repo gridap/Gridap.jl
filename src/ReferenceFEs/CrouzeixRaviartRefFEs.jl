@@ -68,13 +68,13 @@ end
 Return the vector of `d`-volumes of the `d`-faces of `p`.
 """ # TODO: Generalize
 function _get_dfaces_measure(p::Polytope{D}, d::Int) where D
-  @notimplementedif !is_simplex(p) || D>3 "only implemented for simplices of dim up to 3".
+  @notimplementedif (!is_simplex(p) || D>3) "Only implemented for simplices of dim up to 3."
   measures = Float64[]
   dfaces_vertices = get_face_coordinates(p,d)
   for entity in dfaces_vertices
     n = length(entity)
     if n == 1  # The set containing one point has cardinal 1
-       push!(measures, 1.0)
+      push!(measures, 1.0)
     elseif n == 2 # Length of an edge
       p1, p2 = entity
       push!(measures, norm(p2-p1))
@@ -93,6 +93,6 @@ function _get_dfaces_measure(p::Polytope{D}, d::Int) where D
       push!(measures, volume)
     end
   end
-  return measures
+  measures
 end
 

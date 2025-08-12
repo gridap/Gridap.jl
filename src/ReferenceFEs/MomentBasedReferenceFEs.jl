@@ -170,10 +170,10 @@ In the final basis, DoFs are ordered by moment, then by face, then by "test" pol
 All the faces in a moment must be of the same type (have same reference face).
 """
 function MomentBasedDofBasis(
-    p::Polytope,
+    p::Polytope{D},
     prebasis::AbstractVector{<:Field},
     moments::AbstractVector{<:Tuple},
-  )
+  ) where D
 
   n_faces = num_faces(p)
   n_moments = length(moments)
@@ -415,7 +415,7 @@ end
 """
     MomentBasedReferenceFE(
       name::ReferenceFEName,
-      p::Polytope{D},
+      p::Polytope,
       prebasis::AbstractVector{<:Field},
       moments::AbstractVector{<:Tuple},
       conformity::Conformity;
@@ -432,12 +432,12 @@ section in the docs.
 """
 function MomentBasedReferenceFE(
   name::ReferenceFEName,
-  p::Polytope{D},
+  p::Polytope,
   prebasis::AbstractVector{<:Field},
   moments::AbstractVector{<:Tuple},
   conformity::Conformity;
   sh_is_pb=false
-) where D
+)
 
   dof_basis = MomentBasedDofBasis(p, prebasis, moments)
   n_dofs = length(dof_basis)
