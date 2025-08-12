@@ -253,7 +253,14 @@ function is_n_cube(p::Polytope)
 end
 
 """
-    simplexify(p::Polytope) -> Tuple{Vector{Vector{Int}},Polytope}
+    simplexify(p::Polytope; kwargs...) -> ( Vector{Vector{Int}}, ref_simplex )
+
+Returns a partition of `p` into simplices. The returned couple contains the
+vector of each simplex connectivity array, and the reference simplex of the
+partition simplices. The node coordinates are that of `p`.
+
+`ExtrusionPolytope`s of dimension ≤3 support the `positive=true` kwarg.
+If set to true, all resulting simplices will keep the orientation of the original polytope.
 """
 function simplexify(p::Polytope;kwargs...)
   @abstractmethod

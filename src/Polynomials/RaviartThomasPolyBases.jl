@@ -11,7 +11,7 @@ This ℝ𝕋ᴰₙ is the polynomial space for Raviart-Thomas elements with dive
 Its maximum degree, that `get_order` returns, is n+1 = `K`.
 
 !!! warning
-    Using this basis on simplices is not recommanded, [`PmLambdaBasis`](@ref) is better numerically conditioned for higher degrees, they are obtained by using `Bernstein` as argument of [`FEEC_poly_basis`](@ref) .
+    Using this basis on simplices is not recommanded, [`BarycentricPmΛBasis`](@ref) is better numerically conditioned for higher degrees, they are obtained by using `Bernstein` as argument of [`FEEC_poly_basis`](@ref) .
 
 # Example:
 

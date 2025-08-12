@@ -168,10 +168,14 @@ end
 # Piola maps #
 ##############
 
+# In what follows,
+# - F is the geometrical map F:K̂->K
+# - Jt = ∇F = (Jac(F))ᵀ
+
 """
     struct IdentityPiolaMap <: Pushforward
 """
-struct IdentityPiolaMap <: Pushforward end
+struct IdentityPiolaMap <: Pushforward end # φ̂ -> φ = φ̂∘F⁻¹
 
 # ContraVariantPiolaMap
 
@@ -180,14 +184,14 @@ struct IdentityPiolaMap <: Pushforward end
 """
 struct ContraVariantPiolaMap <: Pushforward end
 
-function evaluate!(
+function evaluate!( # φ̂ -> φ = (|det(J)|⁻¹J φ̂)∘F⁻¹
   cache, ::ContraVariantPiolaMap, v_ref::Number, Jt::Number
 )
   idetJ = 1. / meas(Jt)
   return v_ref ⋅ (idetJ * Jt)
 end
 
-function evaluate!(
+function evaluate!( # φ -> φ̂ = |det(J)| J⁻¹ φ∘F
   cache, ::InversePushforward{ContraVariantPiolaMap}, v_phys::Number, Jt::Number
 )
   detJ = meas(Jt)
@@ -225,13 +229,13 @@ end
 """
 struct CoVariantPiolaMap <: Pushforward end
 
-function evaluate!(
+function evaluate!( # φ̂ -> φ = (J⁻ᵀ φ̂)∘F⁻¹
   cache, ::CoVariantPiolaMap, v_ref::Number, Jt::Number
 )
   return v_ref ⋅ transpose(pinvJt(Jt))
 end
 
-function evaluate!(
+function evaluate!( # φ -> φ̂ = Jᵀ φ∘F
   cache, ::InversePushforward{CoVariantPiolaMap}, v_phys::Number, Jt::Number
 )
   return v_phys ⋅ transpose(Jt)
@@ -241,14 +245,14 @@ end
 
 struct DoubleContraVariantPiolaMap <: Pushforward end
 
-function evaluate!(
+function evaluate!( # φ̂ -> φ = (det(J)⁻² J φ̂ Jᵀ)∘F⁻¹
   cache, ::DoubleContraVariantPiolaMap, v_ref::Number, Jt::Number
 )
   _Jt = (1. / det(Jt)) * Jt
   return congruent_prod(v_ref, _Jt) # symmetry stable _Jtᵀ ⋅ v_ref ⋅ _Jt
 end
 
-function evaluate!(
+function evaluate!( # φ -> φ̂ = det(J)² J⁻¹ φ∘F J⁻ᵀ
   cache, ::InversePushforward{DoubleContraVariantPiolaMap}, v_phys::Number, Jt::Number
 )
   iJt = det(Jt) * pinvJt(Jt)
@@ -259,14 +263,14 @@ end
 
 struct DoubleCoVariantPiolaMap <: Pushforward end
 
-function evaluate!(
+function evaluate!( # φ̂ -> φ = (J⁻ᵀ φ̂ J⁻¹)∘F⁻¹
   cache, ::DoubleCoVariantPiolaMap, v_ref::Number, Jt::Number
 )
   iJt = pinvJt(Jt)
   return congruent_prod(v_ref, transpose(iJt)) # symmetry stable iJt ⋅ v_ref ⋅ iJtᵀ
 end
 
-function evaluate!(
+function evaluate!( # φ -> φ̂ = Jᵀ φ∘F J
   cache, ::InversePushforward{DoubleCoVariantPiolaMap}, v_phys::Number, Jt::Number
 )
   return congruent_prod(v_ref, transpose(Jt)) # symmetry stable Jt ⋅ v_phys ⋅ Jtᵀ

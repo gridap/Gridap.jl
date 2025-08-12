@@ -371,9 +371,9 @@ function Grid(::Type{ReferenceFE{d}},model::DiscreteModel{d}) where d
 end
 
 """
-    simplexify(model::DiscreteModel)
+    simplexify(model::DiscreteModel; kwargs...)
 """
-function simplexify(model::DiscreteModel;kwargs...)
+function simplexify(model::DiscreteModel; kwargs...)
   umodel = UnstructuredDiscreteModel(model)
   simplexify(umodel;kwargs...)
 end

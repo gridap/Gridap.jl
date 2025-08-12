@@ -6,8 +6,8 @@ struct Moment <: Dof end
 """
     struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
 
-Basis of moment DoFs, where `P` is the type of the quadrature nodes, and `V` the value type of the
-shape functions.
+Implementation of the discretized moment DoFs basis, where `P` is the type of
+the quadrature nodes, and `V` the value type of the shape functions.
 """
 struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
   nodes::Vector{P}
