@@ -12,13 +12,13 @@ struct AdaptedTriangulation{Dc,Dp,A<:Triangulation{Dc,Dp},B<:AdaptedDiscreteMode
   trian::A
   adapted_model::B
 
-  function AdaptedTriangulation(trian::Triangulation{Dc,Dp},model::AdaptedDiscreteModel{Dc2,Dp}) where {Dc,Dc2,Dp}
+  function AdaptedTriangulation(trian::Triangulation{Df,Dp},model::AdaptedDiscreteModel{Dc,Dp}) where {Df,Dc,Dp}
     @check !isa(trian,AdaptedTriangulation)
     @check get_background_model(trian) === get_model(model)
-    @check Dc <= Dc2
+    @check Df <= Dc
     A = typeof(trian)
     B = typeof(model)
-    return new{Dc,Dp,A,B}(trian,model)
+    return new{Df,Dp,A,B}(trian,model)
   end
 end
 
@@ -31,6 +31,7 @@ function get_adaptivity_glue(t::AdaptedTriangulation)
 end
 
 # Relationships
+
 function is_child(t1::AdaptedTriangulation,t2::Triangulation)
   return is_child(get_adapted_model(t1),get_background_model(t2))
 end
@@ -369,7 +370,6 @@ function change_domain_n2o(f_fine,ftrian::AdaptedTriangulation{Dc},ctrian::Trian
   end
 end
 
-
 # Specialisation for Skeleton Pairs
 
 function change_domain_o2n(f_old,old_trian::Triangulation,new_trian::AdaptedTriangulation{Dc,Dp,<:SkeletonTriangulation}) where {Dc,Dp}
@@ -404,5 +404,3 @@ function change_domain_n2o(f_new::CellData.CellFieldAt,new_trian::AdaptedTriangu
   end
   return change_domain_n2o(f_new,new_trian,_old_trian)
 end
-
-
