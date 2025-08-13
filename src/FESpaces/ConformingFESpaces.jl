@@ -605,7 +605,7 @@ function generate_cell_dof_mask(
     ctype = scell_ctype[scell]
     dof_mask = fill(false,ctype_ndofs[ctype])
 
-    for d in 0:D-1
+    for d in 0:D
       ldface_to_ldofs = d_ctype_ldface_own_ldofs[d+1][ctype]
       tdfaces = view(d_to_tcell_to_tdface[d+1],tcell)
       for (ldface,tdface) in enumerate(tdfaces)
@@ -616,6 +616,7 @@ function generate_cell_dof_mask(
       end
     end
 
+    
     tcell_dof_mask[tcell] = xor.(dof_mask,reverse)
   end
 
