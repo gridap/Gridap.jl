@@ -62,12 +62,12 @@ Return the vector of discretized moments for each face of the underlying polytop
 get_face_moments(b::MomentBasedDofBasis) = b.face_moments
 
 """
-    get_face_own_moments(b::MomentBasedDofBasis)
+    get_face_own_dofs(b::MomentBasedDofBasis)
 
-Return the id of the moment owned by each face of the underlying polytope, this
-is what [`get_face_own_dofs`](@ref) returns if `b` is a DoF basis.
+The ownership of `b`'s dofs to faces of the underlying polytope is defined as
+the face the moment was defined on.
 """
-get_face_own_moments(b::MomentBasedDofBasis) = b.face_own_moms
+get_face_own_dofs(b::MomentBasedDofBasis) = b.face_own_moms
 
 """
     get_face_nodes_dofs(b::MomentBasedDofBasis)
@@ -429,6 +429,10 @@ If `sh_is_pb=true`, `prebasis` is used as shape functions.
 This requires it to fullfill a geometric decomposition relative to the faces of
 `p` for `conformity`, see the [*Geometric decompositions*](@ref "Geometric decompositions")
 section in the docs.
+
+Warning, this function does not check that the moments are properly defined to implement
+the given `conformity`. It is assumed that if ``σ(φ) = 0`` for a moment ``σ``
+owned by a face ``f`` of `p`, then the `conformity`-trace of ``φ`` over ``f`` is zero.
 """
 function MomentBasedReferenceFE(
   name::ReferenceFEName,
@@ -464,7 +468,7 @@ function MomentBasedReferenceFE(
   end
 
   # else, standard prebasis inversion
-  face_own_dofs = get_face_own_moments(dof_basis)
+  face_own_dofs = get_face_own_dofs(dof_basis)
   GenericRefFE{typeof(name)}(
     n_dofs, p, prebasis, dof_basis, conformity, metadata, face_own_dofs
   )
