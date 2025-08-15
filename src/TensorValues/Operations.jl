@@ -59,17 +59,6 @@ convert(::Type{<:TensorValue{D,D,Ta}},  a::SymTensorValue{D,Tb})          where 
 convert(::Type{<:TensorValue{D,D,Ta}},  a::SkewSymTensorValue{D,Tb})      where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}(get_array(a))
 convert(::Type{<:TensorValue{D,D,Ta}},  a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}(get_array(a))
 convert(::Type{<:SymTensorValue{D,Ta}}, a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = SymTensorValue{D,promote_type(Ta,Tb)}(a.data)
-#promote_rule(::Type{<:TensorValue{D,D,Ta}}, ::Type{<:SymTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}
-#promote_rule(::Type{<:TensorValue{D,D,Ta}}, ::Type{<:SkewSymTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}
-#promote_rule(::Type{<:TensorValue{D,D,Ta}}, ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}
-#promote_rule(::Type{<:SymTensorValue{D,Ta}}, ::Type{<:SkewSymTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}
-#promote_rule(::Type{<:SymTensorValue{D,Ta}}, ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = SymTensorValue{D,promote_type(Ta, Tb)}
-#promote_rule(::Type{<:SkewSymTensorValue{D,Ta}}, ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}
-#
-#convert(::Type{<:TensorValue{D,D,Ta}}, a::SymTensorValue{D,Tb}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}(get_array(a))
-#convert(::Type{<:TensorValue{D,D,Ta}}, a::SkewSymTensorValue{D,Tb}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}(get_array(a))
-#convert(::Type{<:TensorValue{D,D,Ta}}, a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}(get_array(a))
-#convert(::Type{<:SymTensorValue{D,Ta}}, a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = SymTensorValue{D,promote_type(Ta, Tb)}(a.data)
 
 """
     const _Scalar = Union{Real,Complex}
