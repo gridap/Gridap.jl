@@ -12,6 +12,7 @@ using LinearAlgebra
 using StaticArrays
 using Combinatorics
 using FillArrays
+using AutoHashEquals: @auto_hash_equals as @ahe
 using ..Gridap
 
 using Gridap.Helpers
@@ -56,7 +57,6 @@ export get_dimranges
 export get_dimrange
 export get_vertex_coordinates
 export get_facet_normal
-export get_facet_measure
 export get_facet_orientations
 export get_edge_tangent
 export get_vertex_permutations
@@ -155,6 +155,9 @@ export is_Q
 export is_P
 export is_S
 
+export has_geometric_decomposition
+export get_face_own_funs
+
 export MomentBasedDofBasis
 export get_face_own_nodes
 export get_face_nodes
@@ -237,6 +240,10 @@ include("Dofs.jl")
 include("LagrangianDofBases.jl")
 
 include("ReferenceFEInterfaces.jl")
+
+include("GeometricDecompositions.jl")
+
+include("ExteriorCalculusRefFEs.jl")
 
 include("Pullbacks.jl")
 

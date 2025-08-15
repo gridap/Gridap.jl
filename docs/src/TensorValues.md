@@ -64,9 +64,9 @@ indep_components_names
 change_eltype
 
 inner
-dot
+dot(::MultiValue,::MultiValue)
 double_contraction
-outer
+outer(::MultiValue,::MultiValue)
 ```
 
 ### Other type specific interfaces
@@ -103,7 +103,7 @@ meas
 #### For `VectorValue` of length 2 and 3
 
 ```@docs
-cross
+cross(::VectorValue,::VectorValue)
 ```
 
 #### For second order non-traceless and symmetric fourth order tensors

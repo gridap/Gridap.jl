@@ -4,8 +4,13 @@
 Type representing ModalC0 polynomials, c.f. [ModalC0 polynomials](@ref) section.
 
 Reference: Eq. (17) in https://doi.org/10.1016/j.camwa.2022.09.027
+
+The first 1D polynomial, 1-x, is of order 1 instead of 0, and the last one, x,
+is of order 1 istead of K. So the complete 1D basis isn't hierarchical.
 """
 struct ModalC0 <: Polynomial end
+
+isHierarchical(::Type{ModalC0}) = false
 
 """
     ModalC0Basis{D,V,T} <: PolynomialBasis{D,V,ModalC0}
@@ -124,6 +129,13 @@ end
 
 function get_orders(b::ModalC0Basis)
   b.orders
+end
+
+function testvalue(::Type{ModalC0Basis{D,V,T}}) where {D,V,T}
+  orders = tfill(1,Val{D}())
+  sa = Point{D,T}(tfill(zero(T),Val(D)))
+  sb = Point{D,T}(tfill( one(T),Val(D)))
+  ModalC0Basis{D}(V,orders,sa,sb)
 end
 
 # Helpers

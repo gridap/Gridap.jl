@@ -29,11 +29,11 @@ end
     struct Bernstein
   }
 
-  Polynomial <|-- Monomial
-  Polynomial <|-- Legendre
-  Polynomial <|-- Chebyshev
-  Polynomial <|-- ModalC0
-  Polynomial <|-- Bernstein
+  Polynomial <|.. Monomial
+  Polynomial <|.. Legendre
+  Polynomial <|.. Chebyshev
+  Polynomial <|.. ModalC0
+  Polynomial <|.. Bernstein
 
   @enduml
   """
@@ -60,27 +60,42 @@ end
     struct CompWiseTensorPolyBasis
     struct RaviartThomasPolyBasis
     struct NedelecPolyBasisOnSimplex
-    struct BernsteinBasisOnSimplex
+    struct BernsteinBasisOnSimplex {
+      +get_orders
+    }
     struct ModalC0Basis {
       +get_orders
     }
   }
 
-  PolynomialBasis <|-- CartProdPolyBasis
-  PolynomialBasis <|-- CompWiseTensorPolyBasis
-  PolynomialBasis <|-- RaviartThomasPolyBasis
-  PolynomialBasis <|-- NedelecPolyBasisOnSimplex
-  PolynomialBasis <|-- BernsteinBasisOnSimplex
-  PolynomialBasis <|-- ModalC0Basis
+  struct BarycentricPΛBasis {
+    +print_indices
+  }
+  struct BarycentricPmΛBasis {
+    +print_indices
+  }
+
+  PolynomialBasis <|.. CartProdPolyBasis
+  PolynomialBasis <|.. CompWiseTensorPolyBasis
+  PolynomialBasis <|.. RaviartThomasPolyBasis
+  PolynomialBasis <|.. NedelecPolyBasisOnSimplex
+  PolynomialBasis <|.. BernsteinBasisOnSimplex
+  PolynomialBasis <|.. ModalC0Basis
+  PolynomialBasis <|.. BarycentricPmΛBasis
+  PolynomialBasis <|.. BarycentricPΛBasis
 
   object "(<:Polynomial)Basis" as m1
-  object "QGrad[<:Polynomial]Basis\nQCurlGrad[<:Polynomial]Basis" as m2
-  object "PCurlGrad[<:Polynomial]Basis" as m4
-  object "PGradMonomialBasis" as m5
-  CartProdPolyBasis <-down- m1
-  CompWiseTensorPolyBasis <-down- m2
-  RaviartThomasPolyBasis <-down- m4
-  NedelecPolyBasisOnSimplex <-down- m5
+  object "FEEC_poly_basis" as m2
+
+  CartProdPolyBasis <-- m1
+  BarycentricPmΛBasis o-- BernsteinBasisOnSimplex
+  BarycentricPΛBasis o-- BernsteinBasisOnSimplex
+  CartProdPolyBasis <-- m2
+  CompWiseTensorPolyBasis <-- m2
+  RaviartThomasPolyBasis <-- m2
+  NedelecPolyBasisOnSimplex <-- m2
+  BarycentricPmΛBasis <-- m2
+  BarycentricPΛBasis <-- m2
 
   @enduml
   """

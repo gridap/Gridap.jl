@@ -67,7 +67,7 @@ function get_cell_pushforward(
 )
   cell_map = get_cell_map(get_grid(model))
   Jt = lazy_map(Broadcasting(∇),cell_map)
-  change = lazy_map(r -> Diagonal(ones(num_dofs(r))), cell_reffe)
+  change = lazy_map(r -> Diagonal(fill(one(Float64), num_dofs(r))), cell_reffe)
   #change = get_sign_flip(model, cell_reffe)
   return DoubleContraVariantPiolaMap(), change, (Jt,)
 end
@@ -78,6 +78,18 @@ end
     struct NormalSignMap <: Map
       ...
     end
+
+The `NormalSignMap` compute the signs to apply to the mapped reference normals,
+for each facet of a physical cell.
+
+Each physical facet ``f`` is shared by up to two cells ``K`` and ``K'``. The
+orientation of the physical/global normal to ``f`` is chosen by the main cell
+``K``, the first one in the list of adjascent cells to ``f`` in the grid topology.
+
+The physical/global normal is the (normalized) Piola mapped reference normal to
+``f̂ = F⁻¹(f)`` where ``F`` is the geometrical map ``F:K̂->K``. It is also minus
+the (normalized) Piola mapped reference normal to ``f̂' = F'⁻¹(f)`` where ``F'``
+is the geometrical map ``F':K̂->K'``.
 """
 struct NormalSignMap{T} <: Map
   model::T

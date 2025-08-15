@@ -19,6 +19,22 @@ with `L`>1, where the scalar `D`-multivariate spaces 𝕊ˡ (for 1 ≤ l ≤ `L`
 
 The `L`×`D` matrix of orders α is given in the constructor, and `K` is the
 maximum of α. Any 1D polynomial family `PT<:Polynomial` is usable.
+
+# Examples
+These return instances of `CompWiseTensorPolyBasis`
+```jldoctest
+# a basis for Raviart-Thomas on quadrilateral with divergence in ℚ₃
+b = FEEC_poly_basis(Val(2),Float64,4,1,:Q⁻; rotate_90)
+
+# a basis for Raviart-Thomas on hexahedra with divergence in ℚ₃
+b = FEEC_poly_basis(Val(3),Float64,4,2,:Q⁻)
+
+# a basis for Nedelec on triangle with curl in ℚ₃
+b = FEEC_poly_basis(Val(2),Float64,4,1,:Q⁻)
+
+# a basis for Nedelec on hexahedra with curl in ℚ₃
+b = FEEC_poly_basis(Val(3),Float64,4,1,:Q⁻)
+```
 """
 struct CompWiseTensorPolyBasis{D,V,PT,L} <: PolynomialBasis{D,V,PT}
   max_order::Int
@@ -41,6 +57,11 @@ end
 
 Base.size(a::CompWiseTensorPolyBasis) = ( sum(prod.(eachrow(a.orders .+ 1))), )
 get_order(b::CompWiseTensorPolyBasis) = b.max_order
+
+function testvalue(::Type{<:CompWiseTensorPolyBasis{D,V,PT}}) where {D,V,PT}
+  L = num_indep_components(V)
+  CompWiseTensorPolyBasis{D}(PT,V,zero(SMatrix{L,D,Int}))
+end
 
 """
     get_comp_terms(f::CompWiseTensorPolyBasis{D,V})
@@ -218,98 +239,3 @@ function _hessian_nd!(
   end
 end
 
-
-################################
-# Basis for Nedelec on D-cubes #
-################################
-
-"""
-    QGradBasis(::Type{PT}, ::Val{D}, ::Type{T}, order::Int) :: PolynomialBasis
-
-Return a basis of
-
-ℕ𝔻ᴰₙ(□) = (ℚᴰₙ)ᴰ ⊕ x × (ℚᴰₙ \\ ℚᴰₙ₋₁)ᴰ
-
-with n=`order`, the polynomial space for Nedelec elements on `D`-dimensional
-cubes with scalar type `T`.
-
-The `order`=n argument has the following meaning: the curl of the  functions in
-this basis is in (ℚᴰₙ)ᴰ.
-
-`PT<:Polynomial` is the choice of the family of the scalar 1D basis polynomials.
-
-# Example:
-
-```jldoctest
-# a basis for Nedelec on hexahedra with divergence in ℚ₂
-b = QGradBasis(Monomial, Val(3), Float64, 2)
-```
-
-For more details, see [`CompWiseTensorPolyBasis`](@ref), as `QGradBasis` returns
-an instance of\\
-`CompWiseTensorPolyBasis{D, VectorValue{D,T}, order+1, PT}` for `D`>1, or\\
-`CartProdPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
-"""
-function QGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
-  @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
-
-  V = VectorValue{D,T}
-  m = [ order + (i==j ? 0 : 1) for i in 1:D, j in 1:D ]
-  orders = SMatrix{D,D,Int}(m)
-  CompWiseTensorPolyBasis{D}(PT, V, orders)
-end
-
-function QGradBasis(::Type{PT},::Val{1},::Type{T},order::Int) where {PT,T}
-  @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
-
-  V = VectorValue{1,T}
-  CartProdPolyBasis(PT, Val(1), V, order+1)
-end
-
-
-#######################################
-# Basis for Raviart-Thomas on D-cubes #
-#######################################
-
-"""
-    QCurlGradBasis(::Type{PT}, ::Val{D}, ::Type{T}, order::Int) :: PolynomialBasis
-
-Return a basis of
-
-ℝ𝕋ᴰₙ(□) = (ℚᴰₙ)ᴰ ⊕ x (ℚᴰₙ \\ ℚᴰₙ₋₁)
-
-with n=`order`, the polynomial space for Raviart-Thomas elements on
-`D`-dimensional cubes with scalar type `T`.
-
-The `order`=n argument has the following meaning: the divergence of the functions
-in this basis is in ℚᴰₙ.
-
-`PT<:Polynomial` is the choice of the family of the scalar 1D basis polynomials.
-
-# Example:
-
-```jldoctest
-# a basis for Raviart-Thomas on rectangles with divergence in ℚ₃
-b = QCurlGradBasis(Bernstein, Val(2), Float64, 3)
-```
-
-For more details, see [`CompWiseTensorPolyBasis`](@ref), as `QCurlGradBasis`
-returns an instance of\\
-`CompWiseTensorPolyBasis{D, VectorValue{D,T}, order+1, PT}` for `D`>1, or\\
-`CartProdPolyBasis{1, VectorValue{1,T}, order+1, PT}` for `D`=1.
-"""
-function QCurlGradBasis(::Type{PT},::Val{D},::Type{T},order::Int) where {PT,D,T}
-  @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
-
-  V = VectorValue{D,T}
-  m = [ order + (i==j ? 1 : 0) for i in 1:D, j in 1:D ]
-  orders = SMatrix{D,D,Int}(m)
-  CompWiseTensorPolyBasis{D}(PT, V, orders)
-end
-
-function QCurlGradBasis(::Type{PT},::Val{1},::Type{T},order::Int) where {PT,T}
-  @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
-
-  V = VectorValue{1,T}
-  CartProdPolyBasis(PT, Val(1), V, order+1)
-end

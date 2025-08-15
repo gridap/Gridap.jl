@@ -1,9 +1,4 @@
 """
-    struct CurlConformity <: Conformity
-"""
-struct CurlConformity <: Conformity end
-
-"""
     struct Nedelec <: ReferenceFEName
 """
 struct Nedelec <: ReferenceFEName end
@@ -18,26 +13,32 @@ const nedelec = Nedelec()
 Pushforward(::Type{Nedelec}) = CoVariantPiolaMap()
 
 """
-    NedelecRefFE(::Type{T}, p::Polytope, order::Integer)
+    NedelecRefFE(::Type{T}, p::Polytope, order::Integer; sh_is_pb=true)
 
 The `order` argument has the following meaning: the curl of the  functions in
-this basis is in the Q space of degree `order`. `T` is the type of scalar components.
+this basis is in the ℙ/ℚ space of degree `order`. `T` is the type of scalar components.
+
+`sh_is_pb` is only used if `p` is a simplex.
 """
-function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
+function NedelecRefFE(::Type{T},p::Polytope,order::Integer; sh_is_pb=true) where T
   D = num_dims(p)
+  rotate_90 = D==2
 
   if is_n_cube(p)
-    prebasis = QGradBasis(Monomial,Val(D),et,order) # Prebasis
-    eb = MonomialBasis(Val(1),et,order)             # Edge basis
-    fb = QGradBasis(Monomial,Val(D-1),et,order-1)   # Face basis
-    cb = QCurlGradBasis(Monomial,Val(D),et,order-1) # Cell basis
+    PT = Legendre # Could be a Kwargs, any hierarchical basis works
+    @check PT ≠ Bernstein # broken for Bernstein in prebasis or cb, might be an issue of ordering of the basis polynomials
+    prebasis =     FEEC_poly_basis(Val(D),T,order+1,1,:Q⁻,PT;) # Q⁻ᵣΛ¹(□ᴰ), r = order+1
+    eb =           FEEC_poly_basis(Val(1),T,order,0,  :Q⁻,PT;)                     # Edge basis  Q⁻ᵨΛ⁰(□¹), ρ = r-1
+    fb = order>0 ? FEEC_poly_basis(Val(2),T,order,1,  :Q⁻,PT; rotate_90) : nothing # Facet basis Q⁻ᵨΛ¹(□²), ρ = r-1 (only D=3)
+    cb = order>0 ? FEEC_poly_basis(Val(D),T,order,D-1,:Q⁻,PT; rotate_90) : nothing # Cell basis  Q⁻ᵨΛ¹(□ᴰ), ρ = r-1
   elseif is_simplex(p)
-    prebasis = PGradBasis(Monomial,Val(D),et,order) # Prebasis
-    eb = MonomialBasis(Val(1),et,order)             # Edge basis
-    fb = MonomialBasis(Val(D-1),VectorValue{D-1,et},order-1,Polynomials._p_filter) # Face basis
-    cb = MonomialBasis(Val(D),VectorValue{D,et},order-D+1,Polynomials._p_filter)   # Cell basis
+    PT = Bernstein # Could be a Kwargs, any basis works
+    prebasis =       FEEC_poly_basis(Val(D),T,order+1,1,  :P⁻,PT) # P⁻ᵣΛ¹(△ᴰ), r = order+1
+    eb =             FEEC_poly_basis(Val(1),T,order,0,    :P ,PT)                      # Edge basis  PᵨΛ⁰(△¹), ρ = r-1
+    fb = order>0 ?   FEEC_poly_basis(Val(2),T,order-1,1,  :P ,PT; rotate_90) : nothing # Facet basis PᵨΛ¹(△²), ρ = r-2 (only D=3)
+    cb = order>D-2 ? FEEC_poly_basis(Val(D),T,order-D+1,1,:P ,PT; rotate_90) : nothing # Cell basis  PᵨΛ¹(△ᴰ), ρ = r-D
   else
-    @unreachable "Nedelec Reference FE only implemented for n-cubes and simplices"
+    @notimplemented "Nedelec Reference FE only implemented for n-cubes and simplices"
   end
 
   function cmom(φ,μ,ds) # Cell moment function: σ_K(φ,μ) = ∫(φ⋅μ)dK
@@ -73,7 +74,8 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
     push!(moments,(get_dimrange(p,D),cmom,cb))   # Cell moments
   end
 
-  return MomentBasedReferenceFE(Nedelec(),p,prebasis,moments,CurlConformity())
+  sh_is_pb = sh_is_pb && is_simplex(p)
+  return MomentBasedReferenceFE(Nedelec(),p,prebasis,moments,CurlConformity(); sh_is_pb)
 end
 
 function ReferenceFE(p::Polytope,::Nedelec,::Type{T}, order) where T

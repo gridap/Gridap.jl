@@ -5,74 +5,47 @@
     Deprecated in favor of length(a).
 """
 function num_terms end
-
 @deprecate num_terms(a::PolynomialBasis) length(a)
 
 @deprecate MonomialBasis{D}(args...) where D MonomialBasis(Val(D), args...)
 
 """
-    PGradMonomialBasis{D}(args...) where D
+    PCurlGradMonomialBasis{D}(T,order::Int) where D
 
 !!! warning
-    Deprecated in favor of PGradBasis(Monomial, Val(D), args...).
-"""
-struct PGradMonomialBasis{D}
-  function PGradMonomialBasis()
-    @unreachable
-    new{0}()
-  end
-end
-@deprecate PGradMonomialBasis{D}(args...) where D PGradBasis(Monomial, Val(D), args...) false
-
-"""
-    PCurlGradMonomialBasis{D}(args...) where D
-
-!!! warning
-    Deprecated in favor of PCurlGradBasis(Monomial, Val(D), args...).
+    Deprecated in favor of `FEEC_poly_basis(Val(D),T,order+1,D-1,:P⁻,Monomial; rotate_90=(D==2))`.
 """
 struct PCurlGradMonomialBasis{D}
-  function PCurlGradMonomialBasis()
-    @unreachable
-    new{0}()
-  end
+  function PCurlGradMonomialBasis end # prevents any instantiation
 end
-@deprecate PCurlGradMonomialBasis{D}(args...) where D PCurlGradBasis(Monomial, Val(D), args...)
+@deprecate PCurlGradMonomialBasis{D}(::Type{T},order::Int) where {T,D} FEEC_poly_basis(Val(D),T,order+1,D-1,:P⁻,Monomial; rotate_90=(D==2))
 
 """
-    QGradMonomialBasis{D}(args...) where D
+    QGradMonomialBasis{D}(T,order::Int) where D
 
 !!! warning
-    Deprecated in favor of QGradBasis(Monomial, Val(D), args...).
+    Deprecated in favor of `FEEC_poly_basis(Val(D),T,order+1,1,:Q⁻,Monomial)`.
 """
 struct QGradMonomialBasis{D}
-  function QGradMonomialBasis()
-    @unreachable
-    new{0}()
-  end
+  function QGradMonomialBasis end
 end
-@deprecate QGradMonomialBasis{D}(args...) where D QGradBasis(Monomial, Val(D), args...)
+@deprecate QGradMonomialBasis{D}(::Type{T},order::Int) where {T,D} FEEC_poly_basis(Val(D),T,order+1,1,:Q⁻,Monomial)
 
 """
-    QCurlGradMonomialBasis{D}(args...) where D
+    QCurlGradMonomialBasis{D}(T,order::Int) where D
 
 !!! warning
-    Deprecated in favor of QCurlGradBasis(Monomial, Val(D), args...).
+    Deprecated in favor of `FEEC_poly_basis(Val(D),T,order+1,D-1,:Q⁻,Monomial; rotate_90=(D==2))`.
 """
 struct QCurlGradMonomialBasis{D}
-  function QCurlGradMonomialBasis()
-    @unreachable
-    new{0}()
-  end
+  function QCurlGradMonomialBasis end
 end
-@deprecate QCurlGradMonomialBasis{D}(args...) where D QCurlGradBasis(Monomial, Val(D), args...)
+@deprecate QCurlGradMonomialBasis{D}(::Type{T},order::Int) where {T,D} FEEC_poly_basis(Val(D),T,order+1,D-1,:Q⁻,Monomial; rotate_90=(D==2))
 
 struct NedelecPrebasisOnSimplex{D}
-  function NedelecPrebasisOnSimplex()
-    @unreachable
-    new{0}()
-  end
+  function NedelecPrebasisOnSimplex end
 end
-@deprecate NedelecPrebasisOnSimplex{D}(args...) where D PGradBasis(Monomial,Val(D), args...) false
+@deprecate NedelecPrebasisOnSimplex{D}(order::Int) where D NedelecPolyBasisOnSimplex{D}(Monomial, Float64, order) false
 
 """
     JacobiPolynomialBasis{D}(args...) where D
@@ -81,9 +54,6 @@ end
     Deprecated in favor of LegendreBasis(Val(D), args...).
 """
 struct JacobiPolynomialBasis{D}
-  function JacobiPolynomialBasis()
-    @unreachable
-    new{0}()
-  end
+  function JacobiPolynomialBasis end
 end
 @deprecate JacobiPolynomialBasis{D}(args...) where D LegendreBasis(Val(D), args...)

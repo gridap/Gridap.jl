@@ -21,6 +21,23 @@ abstract type Conformity end
 struct L2Conformity <: Conformity end
 
 """
+    struct GradConformity <: Conformity
+"""
+struct GradConformity <: Conformity end
+const H1Conformity = GradConformity
+
+"""
+    struct CurlConformity <: Conformity
+"""
+struct CurlConformity <: Conformity end
+
+"""
+    struct DivConformity <: Conformity
+"""
+struct DivConformity <: Conformity end
+
+
+"""
     abstract type ReferenceFE{D} <: GridapType
 
 Abstract type representing a Reference finite element. `D` is the underlying
@@ -72,9 +89,11 @@ abstract type ReferenceFEName end
 """
     ReferenceFE(name::ReferenceFEName[, T::Type], order;  kwargs...)
     ReferenceFE(name::ReferenceFEName[, T::Type], orders; kwargs...)
+    ReferenceFE(F::Symbol, r, k, [, T::Type]; kwargs...)
 
-Signature defining a reference finite element of specific `name`, value type `T`
-and `order(s)` (but yet unspecified cell polytope).
+Signatures defining a reference finite element (but yet unspecified cell polytope) from:
+- an element [`name`](@ref ReferenceFEName), value type `T` and `order(s)`, or
+- a FEEC family `F ∈ (:P⁻, :P, :Q⁻, :S)`, with polynomial order `r` and form order `k`.
 
 # Arguments
 - `T`: type of scalar components of the shape function values, `Float64` by default.
@@ -82,7 +101,9 @@ and `order(s)` (but yet unspecified cell polytope).
 - `order::Int`: the polynomial order parameter, or
 - `orders::NTuple{D,Int}`: a tuple of order per space dimension for anysotropic elements.
 
-Keyword arguments are `name` specific.
+Keyword arguments are element specific, except
+- `rotate_90::Bool=false`, set to true for div-conforming FEEC bases in 2D (only if k=1).
+
 
 !!! warning
     This method only returns the tuple of its arguments, the actual Reference
@@ -90,6 +111,7 @@ Keyword arguments are `name` specific.
     `ReferenceFE` methods or the FESpaces constructors.
 """
 ReferenceFE(name::ReferenceFEName, args...; kwargs...) = (name, args, kwargs)
+ReferenceFE(F::Symbol, args...; kwargs...) = (F, args, kwargs)
 
 """
     ReferenceFE(p::Polytope, args...; kwargs...)
@@ -98,17 +120,22 @@ Return the specified reference FE implemented on `p`.
 
 The `args` and `kwargs` are the arguments of
 [`ReferenceFE(::ReferenceFEName, ...; ...)`](@ref
-ReferenceFE(::ReferenceFEName,a...;k...)), reffe name included.
+ReferenceFE(::ReferenceFEName,a...;k...)) or [`ReferenceFE(F::Symbol, ...; ...)`](@ref
+ReferenceFE(::Symbol,a...;k...)), first argument included.
 """
-function ReferenceFE(p::Polytope, name::ReferenceFEName, args...; kwargs...)
-  @unreachable """\n
-  Undefined factory function ReferenceFE for element $name and the given arguments.
+function ReferenceFE(p::Polytope, args...; kwargs...)
+  @unreachable """
+  Undefined factory function ReferenceFE for the given arguments:
+  - args: $args,
+  - kwargs: $kwargs.
   """
 end
-
 # Default component/value type
 function ReferenceFE(p::Polytope, name::ReferenceFEName, order; kwargs...)
-    ReferenceFE(p,name,Float64,order; kwargs...)
+  ReferenceFE(p,name,Float64,order; kwargs...)
+end
+function ReferenceFE(p::Polytope,F::Symbol,r,k; kwargs...)
+  ReferenceFE(p,F,r,k,Float64; kwargs...) # implemented in ExteriorCalculusRefFEs.jl
 end
 
 """
@@ -213,7 +240,7 @@ or throws an `ErrorException` otherwise.
 
 For example, if `reffe` is a Lagrangian refference FE with `H1Conformity`,
 the function would return `L2Conformity()` and `H1Conformity()` for
-respectively `conf=:L2` and `:H1` (because L² is in H¹), but would error on
+respectively `conf=:L2` and `:H1` (because H¹ is in L²), but would error on
 `conf=:Hcurl`.
 """
 function Conformity(reffe::ReferenceFE, sym::Symbol)
@@ -564,7 +591,7 @@ Note that some fields in this `struct` are type unstable deliberately in order t
 type signature. Don't access them in computationally expensive functions,
 instead extract the required fields before and pass them to the computationally expensive function.
 """
-struct GenericRefFE{T,D} <: ReferenceFE{D}
+@ahe struct GenericRefFE{T,D} <: ReferenceFE{D}
   ndofs::Int
   polytope::Polytope{D}
   prebasis::AbstractVector{<:Field}
@@ -664,3 +691,4 @@ get_face_dofs(reffe::GenericRefFE) = reffe.face_dofs
 get_shapefuns(reffe::GenericRefFE) = reffe.shapefuns
 
 get_metadata(reffe::GenericRefFE) = reffe.metadata
+
