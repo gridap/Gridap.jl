@@ -8,6 +8,7 @@ using Gridap.Geometry
     TikzPictures.TikzPicture(model::DiscreteModel;kwargs...)
     TikzPictures.TikzPicture(grid::Grid;kwargs...)
     TikzPictures.TikzPicture(topo::GridTopology;kwargs...)
+    TikzPictures.TikzPicture(topo::Polytope;kwargs...)
 
 Returns a `TikzPicture` for the given model, grid, or topology. 
 
@@ -34,6 +35,12 @@ end
 function TikzPictures.TikzPicture(topo::GridTopology;kwargs...)
   edge_to_nodes = Geometry.get_faces(topo, 1, 0)
   node_coordinates = Geometry.get_vertex_coordinates(topo)
+  draw_graph(edge_to_nodes, node_coordinates; kwargs...)
+end
+
+function TikzPictures.TikzPicture(poly::Polytope;kwargs...)
+  edge_to_nodes = Geometry.get_faces(poly, 1, 0)
+  node_coordinates = Geometry.get_vertex_coordinates(poly)
   draw_graph(edge_to_nodes, node_coordinates; kwargs...)
 end
 
