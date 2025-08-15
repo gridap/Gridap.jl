@@ -23,7 +23,7 @@ Fields:
 - `values::AbstractMatrix{<:Number}` the matrix of the change from dof basis (b) to (a)
 - `predofs::AbstractVector{T}` A type representing dof pre-basis (b), with `T<:Dof`
 """
-struct LinearCombinationDofVector{T,V,F} <: AbstractVector{T}
+@ahe struct LinearCombinationDofVector{T,V,F} <: AbstractVector{T}
   values::V
   predofs::F
   function LinearCombinationDofVector(
