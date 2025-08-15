@@ -26,7 +26,6 @@ function PolytopalGridTopology(
   polytopes::Vector{<:GeneralPolytope{Dc}}
 ) where {Dc,Dp,T}
   @check length(cell_vertices) == length(polytopes)
-  @check all(p -> isone(ReferenceFEs.compute_orientation(p)),polytopes)
 
   n = Dc+1
   n_vertices = length(vertex_coordinates)
@@ -45,7 +44,6 @@ function PolytopalGridTopology(
   d_to_dface_vertices::Vector{<:Table},
   polytopes::Vector{<:GeneralPolytope{Dc}}
 ) where {Dc,Dp,T}
-  @check all(p -> isone(ReferenceFEs.compute_orientation(p)),polytopes)
 
   n = Dc+1
   n_vertices = length(vertex_coordinates)
