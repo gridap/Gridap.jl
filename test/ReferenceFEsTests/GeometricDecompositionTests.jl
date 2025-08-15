@@ -29,8 +29,8 @@ import Gridap.Arrays: evaluate!
 # FaceIntegralFormVector #
 ##########################
 
-# The MomentBasedDofBasis cannot implement the L2-norm of integral functional on
-# Polytope faces, becase the norm is nonlinear. An alternative implementation is
+# The MomentBasedDofBasis cannot implement the L2 trace norms on
+# Polytope faces, because the norm is nonlinear. An alternative implementation is
 # introduced here to test the trace norms of the geometrically decomposed bases.
 
 const _μ = MonomialBasis(Val(0),Float64,0) # a length-1 dummy basis that won't be evaluated
@@ -46,7 +46,7 @@ If put in src, this should be a supertype of `Dof`, the latter being a *linear* 
 abstract type Form <: Map end
 
 """
-    MomentBasedReferenceFE(
+    FaceIntegralFormVector(
       p::Polytope{D},
       order::Int,
       faces_and_forms_integrands::Vector{Tuple{Vector{Int},Function}}
@@ -57,9 +57,9 @@ Constructs a vector of (nonlinear) forms that are integrals over faces of `p`.
 `faces_and_forms_integrands` is a collection of form definitions, each one is
 given by a couple (faces_ids, σ) where
   - faces_ids is vector of ids of faces Fₖ of `p`
-  - σ is the form integrand φ,ds -> σ(φ,ds) that returns a scalar-valued Field-like object to be integrated over each Fₖ
+  - σ is the form integrand φ,_,ds -> σ(φ,_,ds) that returns a scalar-valued Field-like object to be integrated over each Fₖ
 
-The forms are thus defined by φ -> ∫_Fₖ σ(φ,ds).
+The forms are thus defined by φ -> ∫_Fₖ σ(φ,_,ds).
 
 In the final basis, the forms are ordered by moment descriptor, then by face.
 
@@ -160,9 +160,9 @@ function evaluate!(cache, b::FaceIntegralFormVector, f::AbstractVector{<:Field})
 end
 
 
-##########################################################################
-# Moment for L2-norm of traces, and geometric decompositsons trace-forms #
-##########################################################################
+###########################################################################################
+# Traces L2-norm descriptors and geometric decompositions trace-forms for each conformity #
+###########################################################################################
 
 function zero_moment(φ,_,ds) # zero_f(φ) = ∫ 0 df
   C0 = ConstantField(0)
@@ -232,13 +232,8 @@ function get_trace_forms(p::Polytope{D}, field, ::DivConformity) where D
   FaceIntegralFormVector(p,qorder,trace_forms)
 end
 
-order = 2
-r = order+1
-et = Float64
-tol = 1000*eps(et)
 
-SIMPL4 = ExtrusionPolytope(tfill(TET_AXIS,Val(4)))
-
+# Traces Test function
 function _test_geometric_decomposition(b,p,conf,face_own_funs=get_face_own_funs(b,p,conf))
   @test has_geometric_decomposition(b,p,conf)
 
@@ -268,6 +263,13 @@ function _test_geometric_decomposition(b,p,conf,face_own_funs=get_face_own_funs(
   @test pass
 end
 
+order = 2
+r = order+1
+et = Float64
+tol = 1000*eps(et)
+
+SIMPL4 = ExtrusionPolytope(tfill(TET_AXIS,Val(4)))
+
 ##################################
 # Grad conforming decompositions #
 ##################################
@@ -282,7 +284,6 @@ for p in (SEGMENT,TRI,TET,SIMPL4)
   _test_geometric_decomposition(b,p,conf)
 
   b = BernsteinBasisOnSimplex(Val(D),SkewSymTensorValue{3,et},r)
-  @test has_geometric_decomposition(b,p,conf)
   _test_geometric_decomposition(b,p,conf)
 
   b = BarycentricPmΛBasis(Val(D),et,r,0)

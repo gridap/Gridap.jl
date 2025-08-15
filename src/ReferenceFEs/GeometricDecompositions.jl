@@ -196,7 +196,7 @@ function get_facet_flux_sign_flip(
       sign_flip[own_funs] .= iseven(face-first(facet_range)) ? -1 : 1
       # Equivalent definition:
       # F = get_faces(p)[face][1:D]
-      # sign_flip[own_funs] = -Polynomials._combination_sign(F))
+      # sign_flip[own_funs] .= -Polynomials._combination_sign(F))
     end
   end
 

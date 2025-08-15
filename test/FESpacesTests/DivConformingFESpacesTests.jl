@@ -96,9 +96,9 @@ end
   Q = TestFESpace(model,reffe,conformity=:L2)
   P = TrialFESpace(Q)
 
-  v(x) = VectorValue(-0.5*x[1]+1.0,-0.5*x[2])
-  vh = interpolate(v,V)
-  e = v - vh
+  v2(x) = VectorValue(-0.5*x[1]+1.0,-0.5*x[2])
+  vh = interpolate(v2,V)
+  e = v2 - vh
 
   Ω = Triangulation(model)
   dΩ = Measure(Ω,2*order)
@@ -128,9 +128,9 @@ end
   Q = TestFESpace(model,reffe,conformity=:L2)
   P = TrialFESpace(Q)
 
-  v(x) = VectorValue(-0.5*x[1]+1.0,-0.5*x[2],-0.5*x[3])
-  vh = interpolate(v,V)
-  e = v - vh
+  v3(x) = VectorValue(-0.5*x[1]+1.0,-0.5*x[2],-0.5*x[3])
+  vh = interpolate(v3,V)
+  e = v3 - vh
 
   Ω = Triangulation(model)
   dΩ = Measure(Ω,2*order)

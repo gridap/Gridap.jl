@@ -91,7 +91,7 @@ abstract type ReferenceFEName end
     ReferenceFE(name::ReferenceFEName[, T::Type], orders; kwargs...)
     ReferenceFE(F::Symbol, r, k, [, T::Type]; kwargs...)
 
-Signatures defining a reference finite element (but yet unspecified cell polytope):
+Signatures defining a reference finite element (but yet unspecified cell polytope) from:
 - an element [`name`](@ref ReferenceFEName), value type `T` and `order(s)`, or
 - a FEEC family `F ∈ (:P⁻, :P, :Q⁻, :S)`, with polynomial order `r` and form order `k`.
 
@@ -102,7 +102,7 @@ Signatures defining a reference finite element (but yet unspecified cell polytop
 - `orders::NTuple{D,Int}`: a tuple of order per space dimension for anysotropic elements.
 
 Keyword arguments are element specific, except
-- `rotate_90::Bool=false`, set to true for div-conforming FEEC bases in 2D.
+- `rotate_90::Bool=false`, set to true for div-conforming FEEC bases in 2D (only if k=1).
 
 
 !!! warning
@@ -124,8 +124,8 @@ ReferenceFE(::ReferenceFEName,a...;k...)) or [`ReferenceFE(F::Symbol, ...; ...)`
 ReferenceFE(::Symbol,a...;k...)), first argument included.
 """
 function ReferenceFE(p::Polytope, args...; kwargs...)
-  @unreachable """\n
-  Undefined factory function ReferenceFE for the given arguments:\n
+  @unreachable """
+  Undefined factory function ReferenceFE for the given arguments:
   - args: $args,
   - kwargs: $kwargs.
   """

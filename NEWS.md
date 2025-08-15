@@ -28,9 +28,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `congruent_prod`: new operation for 2nd order tensors: `a,b -> bᵀ⋅a⋅b` preserving symmetry of `a`.
   - `component_basis` and `representatives_of_componentbasis_dual`: new APIs for `::MultiValue`s yielding bases of the vector space spanned by the independent components of a tensor type (1st method) and its dual space (2nd method).
 
+- Refactoring of moment-based ReferenceFEs, those using face-integral linear forms for DoFs, including `RaviartThomas`, `Nedelec`, `BDM` and `CrouzeixRaviart`. Since PR[#1048](https://github.com/gridap/Gridap.jl/pull/#1048).
+  - The mid-level `MomentBasedRefFE` factory function creates moment based refFEs
+  - The low-level `FaceMeasure` implements the numerical integration of a bilinear integrand over the faces of a polytope.
+  - The low-level `MomentBasedDofBasis` implements a discretized basis of moment DoF
+- Unified the high-level constructors of ReferenceFEs
+- New high level `ReferenceFE`s constructor using Arnold et al FEEC notations (Periodic Table of the Finite Elements): `ReferenceFE(F::Symbol, r, k, [, T::Type]; kwargs...)` with `F` the element family, `r` polynomial order and `k` the form order.
+- Documented the implemented ReferenceFEs with available order and other information in the `ReferenceFEs` section of the doc.
+
+- API for Geometric decomposition of polynomial bases, implemented for simplices. Since PR[#1144](https://github.com/gridap/Gridap.jl/pull/1144).
+  The geometric decomposition API consist in the methods `has_geometric_decomposition`, `get_face_own_funs` and `get_facet_flux_sign_flip`.
+
 ### Fixed
 
 - Fixed evaluation of `LinearCombinationDofVector` on vector of `<:Field`s (only impacts ModalC0 FEs and future moment based reffes)., since PR[#1105](https://github.com/gridap/Gridap.jl/pull/#1105).
+- Minor `MuliValue` bugfixes for `isless` and `<=` with scalars.
 
 ### Changed
 
@@ -43,6 +55,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `JacobiPolynomial` is renamed `Legendre` and subtypes `Polynomial`
 - `JacobiPolynomialBasis` is renamed `LegendreBasis`
 - `ModalC0BasisFunction` is renamed `ModalC0` and subtypes `Polynomial`
+- On simplices, the default polynomial bases of BDM, Nédélec and Raviart-Thomas RefFEs have changed for barycentric polynomial bases which lead to better conditioned systems for higher order.
+- Similarly, on n-cubes, the default polynomial bases of BDM, Nédélec and Raviart-Thomas RefFEs have changed for Legendre (tensor-product) polynomial bases instead of Monomials.
+- Changed `Base.==` for `ReferenceFE`s, and implemented it for `LinearCombinationFieldVector` and `LinearCombinationDofVector`. The implementation now uses AutoHashEquals.jl, so RefFEs are now only equal if they have the same prebasis, shapefun and dofs.
+- Monomial (pre)bases have been replaced with Bernstein / Barycentric bases for non-scalar finite elements on simplices.
 
 ### Deprecated
 

@@ -6,7 +6,7 @@ struct Moment <: Dof end
 """
     struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
 
-Implementation of the discretized moment DoFs basis, where `P` is the type of
+Implementation of a basis of discretized moment DoFs, where `P` is the type of
 the quadrature nodes, and `V` the value type of the shape functions.
 """
 struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
@@ -21,6 +21,7 @@ struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
     new{P,V}(nodes,f_moments,f_nodes,f_own_moms)
   end
 
+  # Unused and untested
   #function MomentBasedDofBasis(f_nodes,f_moments,f_own_moms)
   #  P = eltype(eltype(f_nodes))
   #  V = eltype(eltype(f_moments))
@@ -253,6 +254,7 @@ function MomentBasedDofBasis(
   MomentBasedDofBasis(nodes, face_moments, face_nodes, face_own_moms)
 end
 
+# Unused and untested
 #function test_moment(σ,prebasis,μ,ds)
 #  T = return_type(prebasis)
 #  φ = map(constant_field,dual_component_basis_representatives(T))
