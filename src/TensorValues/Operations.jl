@@ -11,13 +11,9 @@
 
 function (≈)(
   a::AbstractArray{<:MultiValue}, b::AbstractArray{<:MultiValue})
-  if size(a) != size(b)
-    return false
-  end
-  for (ai, bi) in zip(a, b)
-    if !(ai ≈ bi)
-      return false
-    end
+  size(a) != size(b) && return false
+  for (ai,bi) in zip(a,b)
+    !(ai≈bi) && return false
   end
   true
 end
@@ -52,17 +48,28 @@ end
 promote_rule(::Type{<:MultiValue}, ::Type{<:MultiValue}) = Union{}
 
 # But promotion and conversion between the different types of square tensors.
-promote_rule(::Type{<:TensorValue{D,D,Ta}}, ::Type{<:SymTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}
-promote_rule(::Type{<:TensorValue{D,D,Ta}}, ::Type{<:SkewSymTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}
-promote_rule(::Type{<:TensorValue{D,D,Ta}}, ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}
-promote_rule(::Type{<:SymTensorValue{D,Ta}}, ::Type{<:SkewSymTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}
-promote_rule(::Type{<:SymTensorValue{D,Ta}}, ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = SymTensorValue{D,promote_type(Ta, Tb)}
-promote_rule(::Type{<:SkewSymTensorValue{D,Ta}}, ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}
+promote_rule(::Type{<:TensorValue{D,D,Ta}},     ::Type{<:SymTensorValue{D,Tb}})          where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}
+promote_rule(::Type{<:TensorValue{D,D,Ta}},     ::Type{<:SkewSymTensorValue{D,Tb}})      where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}
+promote_rule(::Type{<:TensorValue{D,D,Ta}},     ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}
+promote_rule(::Type{<:SymTensorValue{D,Ta}},    ::Type{<:SkewSymTensorValue{D,Tb}})      where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}
+promote_rule(::Type{<:SymTensorValue{D,Ta}},    ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = SymTensorValue{D,promote_type(Ta,Tb)}
+promote_rule(::Type{<:SkewSymTensorValue{D,Ta}},::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}
 
-convert(::Type{<:TensorValue{D,D,Ta}}, a::SymTensorValue{D,Tb}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}(get_array(a))
-convert(::Type{<:TensorValue{D,D,Ta}}, a::SkewSymTensorValue{D,Tb}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}(get_array(a))
-convert(::Type{<:TensorValue{D,D,Ta}}, a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}(get_array(a))
-convert(::Type{<:SymTensorValue{D,Ta}}, a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = SymTensorValue{D,promote_type(Ta, Tb)}(a.data)
+convert(::Type{<:TensorValue{D,D,Ta}},  a::SymTensorValue{D,Tb})          where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}(get_array(a))
+convert(::Type{<:TensorValue{D,D,Ta}},  a::SkewSymTensorValue{D,Tb})      where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}(get_array(a))
+convert(::Type{<:TensorValue{D,D,Ta}},  a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}(get_array(a))
+convert(::Type{<:SymTensorValue{D,Ta}}, a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = SymTensorValue{D,promote_type(Ta,Tb)}(a.data)
+#promote_rule(::Type{<:TensorValue{D,D,Ta}}, ::Type{<:SymTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}
+#promote_rule(::Type{<:TensorValue{D,D,Ta}}, ::Type{<:SkewSymTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}
+#promote_rule(::Type{<:TensorValue{D,D,Ta}}, ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}
+#promote_rule(::Type{<:SymTensorValue{D,Ta}}, ::Type{<:SkewSymTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}
+#promote_rule(::Type{<:SymTensorValue{D,Ta}}, ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = SymTensorValue{D,promote_type(Ta, Tb)}
+#promote_rule(::Type{<:SkewSymTensorValue{D,Ta}}, ::Type{<:SymTracelessTensorValue{D,Tb}}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}
+#
+#convert(::Type{<:TensorValue{D,D,Ta}}, a::SymTensorValue{D,Tb}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}(get_array(a))
+#convert(::Type{<:TensorValue{D,D,Ta}}, a::SkewSymTensorValue{D,Tb}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}(get_array(a))
+#convert(::Type{<:TensorValue{D,D,Ta}}, a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta, Tb)}(get_array(a))
+#convert(::Type{<:SymTensorValue{D,Ta}}, a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = SymTensorValue{D,promote_type(Ta, Tb)}(a.data)
 
 """
     const _Scalar = Union{Real,Complex}
@@ -73,11 +80,11 @@ operations with.
 const _Scalar = Union{Real,Complex}
 
 # TODO deprecate next two methods ? A few stuff depend on this behavior but very ugly.
-function convert(V::Type{<:MultiValue}, a::T) where {T<:_Scalar}
+function convert(V::Type{<:MultiValue}, a::T) where T<:_Scalar
   isone(length(V)) && isone(num_indep_components(V)) || error("Cannot convert value of type $V to type $T")
   V(a)
 end
-function convert(T::Type{<:_Scalar}, a::V) where {V<:MultiValue}
+function convert(T::Type{<:_Scalar}, a::V) where V<:MultiValue
   isone(length(a)) || error("Cannot convert value of type $V to type $T")
   T(a[1])
 end
@@ -88,16 +95,16 @@ end
 
 Base.iszero(a::MultiValue) = all(iszero.(a.data))
 
-for op in (:+, :-)
+for op in (:+,:-)
   @eval begin
 
-    function ($op)(a::T) where {T<:MultiValue}
+    function ($op)(a::T) where T<:MultiValue
       Li = num_indep_components(T)
       r = map($op, a.data[1:Li])
       T(r)
     end
 
-    function ($op)(a::V, b::V) where {V<:MultiValue}
+    function ($op)(a::V, b::V) where V<:MultiValue
       Li = num_indep_components(V)
       r = map(($op), a.data[1:Li], b.data[1:Li])
       V(r)
@@ -109,7 +116,7 @@ end
 # Matrix Division
 ###############################################################
 
-function (\)(a::MultiValue{Tuple{D,D}} where {D}, b::MultiValue)
+function (\)(a::MultiValue{Tuple{D,D}} where D, b::MultiValue)
   r = get_array(a) \ get_array(b)
   T = change_eltype(b, eltype(r))
   T(r)
@@ -119,7 +126,7 @@ end
 # Operations with other numbers
 ###############################################################
 
-@generated function _bc(f, a::NTuple{N}, b::Number) where {N}
+@generated function _bc(f, a::NTuple{N}, b::Number) where N
   s = "("
   for i in 1:N
     s *= "f(a[$i],b), "
@@ -128,7 +135,7 @@ end
   Meta.parse(s)
 end
 
-@generated function _bc(f, b::Number, a::NTuple{N}) where {N}
+@generated function _bc(f, b::Number, a::NTuple{N}) where N
   s = "("
   for i in 1:N
     s *= "f(b,a[$i]), "
@@ -137,7 +144,7 @@ end
   Meta.parse(s)
 end
 
-for op in (:+, :-, :*)
+for op in (:+,:-,:*)
   @eval begin
     function ($op)(a::MultiValue, b::_Scalar)
       Li = num_indep_components(a)
@@ -209,7 +216,7 @@ function (*)(a::MultiValue, b::MultiValue)
   error(msg)
 end
 
-dot(a::MultiValue{Tuple{D}}, b::MultiValue{Tuple{D}}) where {D} = inner(a, b)
+dot(a::MultiValue{Tuple{D}}, b::MultiValue{Tuple{D}}) where D = inner(a, b)
 
 """
     dot(a::MultiValue{Tuple{...,D}}, b::MultiValue{Tuple{D,...}})
@@ -396,19 +403,19 @@ function inner(a::SkewSymTensorValue{D,Ta}, b::SkewSymTensorValue{D,Tb}) where {
 end
 
 function inner(a::SkewSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
-  zero(promote_type(Ta, Tb))
+  zero(promote_type(Ta,Tb))
 end
 function inner(a::AbstractSymTensorValue{D,Tb}, b::SkewSymTensorValue{D,Ta}) where {D,Ta,Tb}
-  zero(promote_type(Ta, Tb))
+  zero(promote_type(Ta,Tb))
 end
 
 # TODO These two methods make no sense and shold be removed
-function inner(a::MultiValue{Tuple{D,D,D,D}}, b::MultiValue{Tuple{D,D}}) where {D}
-  double_contraction(a, b)
+function inner(a::MultiValue{Tuple{D,D,D,D}}, b::MultiValue{Tuple{D,D}}) where D
+  double_contraction(a,b)
 end
 
-function inner(a::MultiValue{Tuple{D,D}}, b::MultiValue{Tuple{D,D,D,D}}) where {D}
-  double_contraction(a, b)
+function inner(a::MultiValue{Tuple{D,D}}, b::MultiValue{Tuple{D,D,D,D}}) where D
+  double_contraction(a,b)
 end
 
 const ⊙ = inner
@@ -431,7 +438,7 @@ preserves the symmetry (returns a symmetric tensor type).
 """
 function double_contraction(a::MultiValue{S1}, b::MultiValue{S2}) where {S1<:Tuple,S2<:Tuple}
   L1, L2 = length(S1.types), length(S2.types)
-  if L1 < 2 || L2 < 2
+  if L1<2 || L2<2
     @unreachable "Double contraction is only define for tensors of order more than 2, got $L1 and $L2."
   end
 
@@ -444,7 +451,7 @@ end
 
 # c_i = a_ij*b_ij
 function double_contraction(a::MultiValue{S}, b::MultiValue{S}) where {S<:Tuple{D1,D2}} where {D1,D2}
-  inner(a, b)
+  inner(a,b)
 end
 
 # c_i = a_ijk*b_jk
@@ -733,39 +740,31 @@ det(a::MultiValue) = @unreachable "det undefined for this tensor shape: $(size(a
 det(a::MultiValue{Tuple{1,1}}) = a[1]
 
 function det(a::MultiValue{Tuple{2,2}})
-  a_11 = a[1, 1]
-  a_12 = a[1, 2]
-  a_21 = a[2, 1]
-  a_22 = a[2, 2]
-  a_11 * a_22 - a_12 * a_21
+  a_11 = a[1, 1]; a_12 = a[1, 2]
+  a_21 = a[2, 1]; a_22 = a[2, 2]
+  a_11*a_22 - a_12*a_21
 end
 
 function det(a::MultiValue{Tuple{3,3}})
-  a_11 = a[1, 1]
-  a_12 = a[1, 2]
-  a_13 = a[1, 3]
-  a_21 = a[2, 1]
-  a_22 = a[2, 2]
-  a_23 = a[2, 3]
-  a_31 = a[3, 1]
-  a_32 = a[3, 2]
-  a_33 = a[3, 3]
-  a_11 * a_22 * a_33 + a_12 * a_23 * a_31 + a_13 * a_21 * a_32 -
-  (a_11 * a_23 * a_32 + a_12 * a_21 * a_33 + a_13 * a_22 * a_31)
+  a_11 = a[1,1]; a_12 = a[1,2]; a_13 = a[1,3]
+  a_21 = a[2,1]; a_22 = a[2,2]; a_23 = a[2,3]
+  a_31 = a[3,1]; a_32 = a[3,2]; a_33 = a[3,3]
+  a_11*a_22*a_33 + a_12*a_23*a_31 + a_13*a_21*a_32 -
+    (a_11*a_23*a_32 + a_12*a_21*a_33 + a_13*a_22*a_31)
 end
 
-det(::SkewSymTensorValue{3,T}) where {T} = zero(T)
+det(::SkewSymTensorValue{3,T}) where T = zero(T)
 
 """
     inv(a::MultiValue{Tuple{D,D}})
 
 Inverse of a second order tensor.
 """
-inv(a::MultiValue{Tuple{D,D}}) where {D} = TensorValue(inv(get_array(a)))
+inv(a::MultiValue{Tuple{D,D}}) where D = TensorValue(inv(get_array(a)))
 
 const InverseStableTensorTypes{D} = Union{SymTensorValue{D},SkewSymTensorValue{D}}
 
-function inv(a::InverseStableTensorTypes{D}) where {D}
+function inv(a::InverseStableTensorTypes{D}) where D
   ai = inv(get_array(a))
   T = change_eltype(a, eltype(ai))
   T(ai)
@@ -784,43 +783,37 @@ function inv(a::MultiValue{Tuple{2,2}})
 end
 
 function inv(a::MultiValue{Tuple{3,3}})
-  a_11 = a[1, 1]
-  a_12 = a[1, 2]
-  a_13 = a[1, 3]
-  a_21 = a[2, 1]
-  a_22 = a[2, 2]
-  a_23 = a[2, 3]
-  a_31 = a[3, 1]
-  a_32 = a[3, 2]
-  a_33 = a[3, 3]
-  c = 1 / det(a)
+  a_11 = a[1,1]; a_12 = a[1,2]; a_13 = a[1,3]
+  a_21 = a[2,1]; a_22 = a[2,2]; a_23 = a[2,3]
+  a_31 = a[3,1]; a_32 = a[3,2]; a_33 = a[3,3]
+  c = 1/det(a)
   data = (
-    (a_22 * a_33 - a_23 * a_32) * c,
-    -(a_21 * a_33 - a_23 * a_31) * c,
-    (a_21 * a_32 - a_22 * a_31) * c,
-    -(a_12 * a_33 - a_13 * a_32) * c,
-    (a_11 * a_33 - a_13 * a_31) * c,
-    -(a_11 * a_32 - a_12 * a_31) * c,
-    (a_12 * a_23 - a_13 * a_22) * c,
-    -(a_11 * a_23 - a_13 * a_21) * c,
-    (a_11 * a_22 - a_12 * a_21) * c)
+     ( a_22*a_33 - a_23*a_32 )*c,
+    -( a_21*a_33 - a_23*a_31 )*c,
+     ( a_21*a_32 - a_22*a_31 )*c,
+    -( a_12*a_33 - a_13*a_32 )*c,
+     ( a_11*a_33 - a_13*a_31 )*c,
+    -( a_11*a_32 - a_12*a_31 )*c,
+     ( a_12*a_23 - a_13*a_22 )*c,
+    -( a_11*a_23 - a_13*a_21 )*c,
+     ( a_11*a_22 - a_12*a_21 )*c)
   TensorValue{3}(data)
 end
 
 function inv(a::SymTensorValue{2})
-  c = 1 / det(a)
-  T = change_eltype(a, typeof(c))
-  T(a[2, 2] * c, -a[2, 1] * c, a[1, 1] * c)
+  c = 1/det(a)
+  T = change_eltype(a,typeof(c))
+  T(a[2,2]*c, -a[2,1]*c, a[1,1]*c)
 end
 
-inv(::SymTracelessTensorValue{1,T}) where {T} = TensorValue{1,1}(inv(zero(T)))
+inv(::SymTracelessTensorValue{1,T}) where T = TensorValue{1,1}(inv(zero(T)))
 function inv(a::SymTracelessTensorValue{2})
-  c = -1 / det(a)
-  T = change_eltype(a, typeof(c))
-  T(a[1, 1] * c, a[2, 1] * c)
+  c = -1/det(a)
+  T = change_eltype(a,typeof(c))
+  T(a[1,1]*c, a[2,1]*c)
 end
 
-inv(::SkewSymTensorValue{1,T}) where {T} = TensorValue{1,1}(inv(zero(T)))
+inv(::SkewSymTensorValue{1,T}) where T = TensorValue{1,1}(inv(zero(T)))
 inv(a::SkewSymTensorValue{2}) = (typeof(a))(-inv(a.data[1]))
 inv(a::SkewSymTensorValue{3,T,L}) where {T,L} = SkewSymTensorValue{3,T}(tfill(inv(zero(T)), Val(L)))
 
@@ -834,7 +827,7 @@ inv(a::SkewSymTensorValue{3,T,L}) where {T,L} = SkewSymTensorValue{3,T}(tfill(in
 
 Euclidean norm of a vector.
 """
-meas(a::MultiValue{Tuple{D}}) where {D} = sqrt(inner(a, a))
+meas(a::MultiValue{Tuple{D}}) where D = sqrt(inner(a, a))
 
 """
     meas(J::MultiValue{Tuple{D1,D2}})
@@ -843,24 +836,24 @@ Returns the absolute `D1`-dimensional volume of the parallelepiped
 formed by the rows of `J`, that is `sqrt(det(J⋅Jᵀ))`, or `abs(det(J))` if `D1`=`D2`.
 This is used to compute the contribution of the Jacobian matrix `J` of a changes of variables in integrals.
 """
-meas(a::MultiValue{Tuple{D,D}}) where {D} = abs(det(a))
+meas(a::MultiValue{Tuple{D,D}}) where D = abs(det(a))
 
-function meas(v::MultiValue{Tuple{1,D}}) where {D}
+function meas(v::MultiValue{Tuple{1,D}}) where D
   t = VectorValue(v.data)
   meas(t)
 end
 
 function meas(v::MultiValue{Tuple{2,3}})
-  n1 = v[1, 2] * v[2, 3] - v[1, 3] * v[2, 2]
-  n2 = v[1, 3] * v[2, 1] - v[1, 1] * v[2, 3]
-  n3 = v[1, 1] * v[2, 2] - v[1, 2] * v[2, 1]
+  n1 = v[1,2]*v[2,3] - v[1,3]*v[2,2]
+  n2 = v[1,3]*v[2,1] - v[1,1]*v[2,3]
+  n3 = v[1,1]*v[2,2] - v[1,2]*v[2,1]
   n = VectorValue(n1, n2, n3)
   meas(n)
 end
 
 function meas(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
   J = transpose(Jt)
-  sqrt(det(Jt ⋅ J))
+  sqrt(det(Jt⋅J))
 end
 
 """
@@ -869,24 +862,24 @@ end
 
 Euclidean (2-)norm of `u`, namely `sqrt(inner(u,u))`.
 """
-@inline norm(u::MultiValue{Tuple{D},<:Real}) where {D} = sqrt(inner(u, u))
-@inline norm(u::MultiValue{Tuple{D}}) where {D} = sqrt(real(inner(u, conj(u))))
+@inline norm(u::MultiValue{Tuple{D},<:Real}) where D = sqrt(inner(u, u))
+@inline norm(u::MultiValue{Tuple{D}}) where D = sqrt(real(inner(u, conj(u))))
 @inline norm(u::MultiValue{Tuple{D1,D2},<:Real}) where {D1,D2} = sqrt(inner(u, u))
 @inline norm(u::MultiValue{Tuple{D1,D2}}) where {D1,D2} = sqrt(real(inner(u, conj(u))))
 @inline norm(u::MultiValue{Tuple{0},T}) where T<:Real= sqrt(zero(T))
-@inline norm(u::MultiValue{Tuple{0},T}) where {T} = sqrt(real(zero(T)))
+@inline norm(u::MultiValue{Tuple{0},T}) where T = sqrt(real(zero(T)))
 
 ###############################################################
 # conj, real, imag
 ###############################################################
 
-for op in (:conj, :real, :imag)
+for op in (:conj,:real,:imag)
   @eval begin
-    function ($op)(a::T) where {T<:MultiValue}
+    function ($op)(a::T) where T<:MultiValue
       Li = num_indep_components(a)
       r = map($op, a.data[1:Li])
-      T2 = _eltype($op, r, a)
-      M = change_eltype(a, T2)
+      T2 = _eltype($op,r,a)
+      M = change_eltype(a,T2)
       M(r)
     end
   end
@@ -935,14 +928,13 @@ tr(::MultiValue{Tuple{A,B,C}}) where {A,B,C} = throw(ArgumentError("First two di
 # Adjoint and transpose
 ###############################################################
 
-adjoint(a::MultiValue{Tuple{D,D}}) where {D} = @notimplemented
-transpose(a::MultiValue{Tuple{D,D}}) where {D} = @notimplemented
+adjoint(a::MultiValue{Tuple{D,D}}) where D = @notimplemented
+transpose(a::MultiValue{Tuple{D,D}}) where D = @notimplemented
 
 @generated function adjoint(a::TensorValue{D1,D2,T}) where {D1,D2,T}
   str = ""
   for i in 1:D1
     for j in 1:D2
-      k = (j - 1) * D1 + i
       str *= "conj(a[$i,$j]), "
     end
   end
@@ -1022,7 +1014,7 @@ skew_symmetric_part(v::SkewSymTensorValue) = v
 ###############################################################
 
 function LinearAlgebra.diag(a::MultiValue{Tuple{D,D},T}) where {D,T}
-  VectorValue{D,T}((a[i, i] for i in 1:D)...)
+  VectorValue{D,T}((a[i,i] for i in 1:D)...)
 end
 
 function LinearAlgebra.diag(a::SkewSymTensorValue{D,T}) where {D,T}
