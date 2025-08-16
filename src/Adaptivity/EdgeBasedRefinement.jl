@@ -421,9 +421,9 @@ function setup_edge_based_rrules(
   # Propagate red/green flags
   # Queue invariant: Cells in queue are RED, every RED cell is only touched once
   q = Queue{Int}()
-  map(c->enqueue!(q,c),cells_to_refine)
+  map(c->push!(q,c),cells_to_refine)
   while !isempty(q)
-    c = dequeue!(q)
+    c = popfirst!(q)
     c_edges = c2e_map[c]
 
     # For each non-red neighboring cell
@@ -439,7 +439,7 @@ function setup_edge_based_rrules(
         cell_color[nbor] = RED + Int8(cell_types[nbor]-1)
         is_red[nbor] = true
         is_refined[nbor_edges] .= true
-        enqueue!(q,nbor)
+        push!(q,nbor)
       end
     end
   end
