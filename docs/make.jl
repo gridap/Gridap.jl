@@ -24,6 +24,9 @@ pages = [
     "ODEs" => "ODEs.md",
     "Adaptivity" => "Adaptivity.md",
   ],
+  "Extensions" => [
+    "TikzPictures" => "extensions/TikzPictures.md",
+  ],
   "Developper notes" => Any[
     "dev-notes/block-assemblers.md",
     "dev-notes/pullbacks.md",
@@ -41,7 +44,7 @@ makedocs(
   modules = [Gridap],
   pages = pages,
   doctest = false,
-  warnonly = [:missing_docs], # ,:cross_references
+  warnonly = [:missing_docs,:cross_references], # ,:cross_references
   checkdocs = :exports,
 )
 

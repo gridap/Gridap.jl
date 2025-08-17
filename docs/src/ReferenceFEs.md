@@ -61,12 +61,12 @@ The following table summarizes the elements implemented in Gridap (legend below)
 - FEEC name: name of the element family in the [Periodic Table of the Finite
     Elements](https://www-users.cse.umn.edu/~arnold/femtable/index.html) [1]
 - Polytopes:
-    - △ simplices (`SEGMENT`, `TRI`  (triangle),      `TET` (tetrahedron))
-    - ``\square`` n-cubes   (`SEGMENT`, `QUAD` (quadridateral), `HEX` (hexahedron)
+  - △ simplices (`SEGMENT`, `TRI`  (triangle),      `TET` (tetrahedron))
+  - ``\square`` n-cubes   (`SEGMENT`, `QUAD` (quadridateral), `HEX` (hexahedron))
 - Order: ( _definition of ``r`` and ``o``_; _``k``_ ) where
-    1. ``r`` is the FEEC polynomial degree parameter (if defined).
-    1. ``o`` is the `order` parameter of the non FEEC `ReferenceFE` constructor (using [`name::ReferenceFEName`](@ref ReferenceFEName)),
-    2. ``k`` is the maximum polynomial order of the shape functions in one direction (Lagrange superdegree), defined in function of `k` or `o`,
+  - ``r`` is the FEEC polynomial degree parameter (if defined).
+  - ``o`` is the `order` parameter of the non FEEC `ReferenceFE` constructor (using [`name::ReferenceFEName`](@ref ReferenceFEName)),
+  - ``k`` is the maximum polynomial order of the shape functions in one direction (Lagrange superdegree), defined in function of `k` or `o`,
 - Conformity: supported [`Conformity`](@ref). All the elements also implement `:L2` conformity.
 
 ##### Additional information
@@ -105,6 +105,16 @@ Pages   = ["/Polytopes.jl"]
 ```
 
 ### Extrusion Polytopes
+
+| Name | Extrusion | Nodes | Edges | Faces |
+| :--- | :-------- | :---- | :---- | :---- |
+| `SEGMENT` | `(HEX,)` | ![](assets/polytopes/SEGMENT_0.svg) | |  |
+| `TRI` | `(TET,TET)` | ![](assets/polytopes/TRI_0.svg) | ![](assets/polytopes/TRI_1.svg) | |
+| `QUAD` | `(HEX,HEX)` | ![](assets/polytopes/QUAD_0.svg) | ![](assets/polytopes/QUAD_1.svg) | |
+| `HEX` | `(HEX,HEX,HEX)` | ![](assets/polytopes/HEX_0.svg) | ![](assets/polytopes/HEX_1.svg) | ![](assets/polytopes/HEX_2.svg) |
+| `TET` | `(TET,TET,TET)` | ![](assets/polytopes/TET_0.svg) | ![](assets/polytopes/TET_1.svg) | ![](assets/polytopes/TET_2.svg) |
+| `WEDGE` | `(TET,TET,HEX)` | ![](assets/polytopes/WEDGE_0.svg) | ![](assets/polytopes/WEDGE_1.svg) | ![](assets/polytopes/WEDGE_2.svg) |
+| `PYRAMID` | `(HEX,HEX,TET)` | ![](assets/polytopes/PYRAMID_0.svg) | ![](assets/polytopes/PYRAMID_1.svg) | ![](assets/polytopes/PYRAMID_2.svg) |
 
 ```@autodocs
 Modules = [ReferenceFEs,]

@@ -893,7 +893,6 @@ const VERTEX = Polytope()
 """
 const SEGMENT = Polytope(HEX_AXIS)
 
-# TODO use larger names
 """
     const TRI = Polytope(TET_AXIS,TET_AXIS)
 """

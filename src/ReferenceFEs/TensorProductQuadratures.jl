@@ -41,26 +41,12 @@ function Quadrature(p::Polytope,::TensorProduct,quadratures::Vector{<:Quadrature
   D = num_dims(p)
   @assert length(quadratures) == D
 
-<<<<<<< HEAD
   coords_1d = map(q -> map(xi -> xi[1], get_coordinates(q)), quadratures)
   weights_1d = map(get_weights, quadratures)
   coords, weights = _tensor_product(coords_1d, weights_1d)
 
   names_1d = join(map(get_name, quadratures)," \n - ")
   GenericQuadrature(coords,weights,"Tensor product of 1d quadratures given by: \n "*names_1d)
-=======
-function _tensor_product_legendre(degrees;T::Type{<:AbstractFloat}=Float64)
-  D = length(degrees)
-  npoints = [ ceil(Int,(degrees[i]+1.0)/2.0) for i in 1:D ]
-  quads = [ gauss(T, npoints[i]) for i in 1:D ]
-  for i in 1:D
-    quads[i][1] .+= 1;
-    quads[i][1] .*= 1.0/2.0
-    quads[i][2] .*= 1.0/2.0
-  end
-  (coords, weights) = _tensor_product(Point{D,T},quads,npoints)
-  GenericQuadrature(coords,weights,"Tensor product of 1d Gauss-Legendre quadratures of degrees $degrees")
->>>>>>> 37298f7c800d5cca57587413a961fed0c05aefda
 end
 
 # Helpers
