@@ -1,6 +1,7 @@
 
 using Documenter
 using Gridap
+using TikzPictures
 
 pages = [
   "Home" => "index.md",

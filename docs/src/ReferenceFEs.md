@@ -11,7 +11,6 @@ Pages = ["ReferenceFEs.md"]
 Depth = 2:3
 ```
 
-
 ## Reference FE summary
 
 A reference finite element is defined using the following signature

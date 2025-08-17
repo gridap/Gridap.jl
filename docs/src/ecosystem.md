@@ -57,3 +57,4 @@ Some repositories providing applications using `Gridap`:
 
 - [GridapGeosciences.jl](https://github.com/gridapapps/GridapGeosciences.jl), a package to solve geophysical flow problems.
 - [GridapMHD.jl](https://github.com/gridapapps/GridapMHD.jl), a package for HPC-focussed magneto-hydrodynamics simulations.
+- [Mooring.jl](https://github.com/CMOE-TUDelft/Mooring.jl), a package for the simulation of mooring lines in offshore applications.

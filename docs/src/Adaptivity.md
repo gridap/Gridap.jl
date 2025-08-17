@@ -11,6 +11,13 @@ It provides
 - A generic interface to represent adapted meshes and a set of tools to work with Finite Element spaces defined on them. In particular, moving `CellFields` between parent and child meshes.
 - Particular implementations for conformally refining/coarsening 2D/3D meshes using several well-known strategies. In particular, Red-Green refinement and longest-edge bisection.
 
+#### Contents
+
+```@contents
+Pages = ["Adaptivity.md"]
+Depth = 2:3
+```
+
 ## Interface
 
 The following types are defined in the module:

@@ -65,7 +65,7 @@ function autodiff_array_reindex(i_to_val, j_to_i)
 end
 
 """
-  struct ConfigMap{F,T} <: Map
+    struct ConfigMap{F,T} <: Map
 
 Map for ForwardDiff.[`F`]Config(`T`,...) where `T` is tag function and `F` is
 either gradient or jacobian.
