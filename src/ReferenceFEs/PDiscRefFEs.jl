@@ -1,7 +1,7 @@
 
 function _PDiscRefFE(::Type{T},p::Polytope,orders) where T
     order = first(orders)
-    @notimplementedif any( orders .!= order ) "Anisotropic serentopity FEs not allowed"
+    @notimplementedif any( orders .!= order ) "Anisotropic serendipity FEs not allowed"
     _PDiscRefFE(T,p,order)
 end
 

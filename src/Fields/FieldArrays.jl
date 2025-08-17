@@ -223,7 +223,7 @@ function linear_combination(a::AbstractMatrix{<:Number},b::AbstractVector{<:Fiel
   LinearCombinationFieldVector(a,b)
 end
 
-struct LinearCombinationFieldVector{V,F} <: AbstractVector{LinearCombinationField{V,F}}
+@ahe struct LinearCombinationFieldVector{V,F} <: AbstractVector{LinearCombinationField{V,F}}
   values::V
   fields::F
   function LinearCombinationFieldVector(values::AbstractMatrix{<:Number},fields::AbstractVector{<:Field})

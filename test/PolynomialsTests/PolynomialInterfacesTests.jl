@@ -1,6 +1,7 @@
 module PolynomialInterfacesTests
 
 using Test
+using Gridap.Arrays
 using Gridap.Fields
 using Gridap.Polynomials
 using StaticArrays
@@ -15,6 +16,7 @@ x = fill(xi,np)
 
 struct MockPolynomial <: Polynomial end
 @test_throws ErrorException isHierarchical(Polynomial)
+@test_throws ErrorException testvalue(Polynomial)
 
 # Interfaces to implement
 @test_throws ErrorException isHierarchical(MockPolynomial)
@@ -51,6 +53,7 @@ mb = MockPolyBasis()
 @test return_type(mb) == T
 @test mb[1] == MockPolynomial()
 @test_throws ErrorException get_order(mb)
+@test_throws ErrorException testvalue(mb)
 
 Polynomials.get_order(b::MockPolyBasis) = 0
 

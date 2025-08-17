@@ -10,37 +10,37 @@ abstract type Dof <: Map end
 """
     struct LinearCombinationDofVector{T<:Dof,V,F} <: AbstractVector{T}
       values :: V
-      dofs   :: F
+      predofs:: F
     end
 
-Type that implements a dof basis (a) as the linear combination of a dof basis
-(b). The dofs are first evaluated at dof basis (b) (field `dofs`) and the
-dof values are next mapped to dof basis (a) applying a change of basis (field
+Type that implements a dof basis (a) as the linear combination of a dof pre-basis
+(b). The dofs are first evaluated at the dof pre-basis (b) (field `predofs`) and the
+predof values are next mapped to dof basis (a) applying a change of basis (field
 `values`).
 
 Fields:
 
 - `values::AbstractMatrix{<:Number}` the matrix of the change from dof basis (b) to (a)
-- `dofs::AbstractVector{T}` A type representing dof basis (b), with `T<:Dof`
+- `predofs::AbstractVector{T}` A type representing dof pre-basis (b), with `T<:Dof`
 """
-struct LinearCombinationDofVector{T,V,F} <: AbstractVector{T}
+@ahe struct LinearCombinationDofVector{T,V,F} <: AbstractVector{T}
   values::V
-  dofs::F
+  predofs::F
   function LinearCombinationDofVector(
     values::AbstractMatrix{<:Number},
-    dofs::AbstractVector{<:Dof}
+    predofs::AbstractVector{<:Dof}
   )
-    @check size(values,1) == length(dofs) """\n
+    @check size(values,1) == length(predofs) """\n
     Incompatible sizes for performing the linear combination
 
-        linear_combination(values,dofs) = transpose(values)*dofs
+        linear_combination(values,predofs) = transpose(values)*predofs
 
-    size(values,1) != length(dofs)
+    size(values,1) != length(predofs)
     """
-    T = eltype(dofs)
+    T = eltype(predofs)
     V = typeof(values)
-    F = typeof(dofs)
-    new{T,V,F}(values,dofs)
+    F = typeof(predofs)
+    new{T,V,F}(values,predofs)
   end
 end
 
@@ -54,8 +54,8 @@ end
 
 function return_cache(b::LinearCombinationDofVector,field)
   k = Fields.LinearCombinationMap(:)
-  cf = return_cache(b.dofs,field)
-  fx = evaluate!(cf,b.dofs,field)
+  cf = return_cache(b.predofs,field)
+  fx = evaluate!(cf,b.predofs,field)
   ck = return_cache(k,fx,transpose(b.values))
   return cf, ck
 end
@@ -63,7 +63,7 @@ end
 function evaluate!(cache,b::LinearCombinationDofVector,field)
   cf, ck = cache
   k = Fields.LinearCombinationMap(:)
-  fx = evaluate!(cf,b.dofs,field)
+  fx = evaluate!(cf,b.predofs,field)
   return evaluate!(ck,k,fx,transpose(b.values))
 end
 

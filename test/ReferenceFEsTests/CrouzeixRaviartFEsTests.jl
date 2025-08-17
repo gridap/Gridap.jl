@@ -11,9 +11,15 @@ using Gridap.Helpers
 
 reffe = ReferenceFE(TRI, crouzeix_raviart, 1)
 reffec = CrouzeixRaviartRefFE(Float64, TRI, 1)
-@test typeof(reffe) == typeof(reffec)
+@test reffe == reffec
 test_reference_fe(reffe)
+@test Conformity(reffe, :L2) == L2Conformity()
+@test_throws ErrorException Conformity(reffe, :H1)
 
+reffe = ReferenceFE(TET, crouzeix_raviart, 1)
+reffec = CrouzeixRaviartRefFE(Float64, TET, 1)
+@test reffe == reffec
+test_reference_fe(reffe)
 @test Conformity(reffe, :L2) == L2Conformity()
 @test_throws ErrorException Conformity(reffe, :H1)
 
@@ -155,7 +161,14 @@ elu, elp, hs = conv_test_Stokes(partition,ns,u_exact,p_exact)
 #println("Slope L2-norm p_Stokes: $(slope(hs,elp))")
 #println("Slope L2-norm u_Poisson: $(slope(hs,el))")
 
+
+# for fun to test _get_dfaces_measure in 4D
+SIMPL4 = ExtrusionPolytope(tfill(TET_AXIS,Val(4)))
+reffe = ReferenceFE(SIMPL4, crouzeix_raviart, 1)
+reffec = CrouzeixRaviartRefFE(Float64, SIMPL4, 1)
+@test reffe == reffec
+@test Conformity(reffe, :L2) == L2Conformity()
+@test_throws ErrorException Conformity(reffe, :H1)
+
 end # module
-
-
 

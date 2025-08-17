@@ -14,11 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `MonomialBasis` and `Q[Curl]GradMonomialBasis` have been generalized to `Legendre`, `Chebyshev` and `Bernstein` using the new `CartProdPolyBasis` and `CompWiseTensorPolyBasis` respectively.
 - `PCurlGradMonomialBasis` has been generalized to `Legendre` and `Chebyshev` using the new `RaviartThomasPolyBasis`.
 - New aliases and high level constructor for `CartProdPolyBasis` (former MonomialBasis): `MonomialBasis`, `LegendreBasis`, `ChebyshevBasis` and `BernsteinBasis`.
-- New high level constructors for Nedelec and Raviart-Thomas polynomial bases:
-  - Nedelec on simplex `PGradBasis(PT<:Polynomial, Val(D), order)`
-  - Nedelec on n-cubes `QGradBasis(PT<:Polynomial, Val(D), order)`
-  - Raviart on simplex `PCurlGradBasis(PT<:Polynomial, Val(D), order)`
-  - Raviart on n-cubes `QCurlGradBasis(PT<:Polynomial, Val(D), order)`
+- New high level factory `FEEC_poly_basis` for the bases for the scalar Lagrange, Nedelec, Raviart-Thomas, BDM spaces, and all other spaces of the Periodic Table of the Finite Elements. (for Serendipity, only scalar is supported). For example:
+  - Nedelec on simplex `FEEC_poly_basis(Val(D),Float64,order+1,  1,:P⁻)`
+  - Nedelec on n-cubes `FEEC_poly_basis(Val(D),Float64,order+1,  1,:Q⁻)`
+  - Raviart on simplex `FEEC_poly_basis(Val(D),Float64,order+1,D-1,:P⁻; rotate_90=(D==2))`
+  - Raviart on n-cubes `FEEC_poly_basis(Val(D),Float64,order+1,D-1,:Q⁻; rotate_90=(D==2))`
+  - BDM     on simplex `FEEC_poly_basis(Val(D),Float64,order+1,D-1,:P ; rotate_90=(D==2))`
 - Added `BernsteinBasisOnSimplex` that implements Bernstein polynomials in barycentric coordinates, since PR[#1104](https://github.com/gridap/Gridap.jl/pull/#1104).
 - More documentation of `Gridap.ReferenceFEs`. Since PR[#1109](https://github.com/gridap/Gridap.jl/pull/#1109).
 
@@ -27,9 +28,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `congruent_prod`: new operation for 2nd order tensors: `a,b -> bᵀ⋅a⋅b` preserving symmetry of `a`.
   - `component_basis` and `representatives_of_componentbasis_dual`: new APIs for `::MultiValue`s yielding bases of the vector space spanned by the independent components of a tensor type (1st method) and its dual space (2nd method).
 
+- Refactoring of moment-based ReferenceFEs, those using face-integral linear forms for DoFs, including `RaviartThomas`, `Nedelec`, `BDM` and `CrouzeixRaviart`. Since PR[#1048](https://github.com/gridap/Gridap.jl/pull/#1048).
+  - The mid-level `MomentBasedRefFE` factory function creates moment based refFEs
+  - The low-level `FaceMeasure` implements the numerical integration of a bilinear integrand over the faces of a polytope.
+  - The low-level `MomentBasedDofBasis` implements a discretized basis of moment DoF
+- Unified the high-level constructors of ReferenceFEs
+- New high level `ReferenceFE`s constructor using Arnold et al FEEC notations (Periodic Table of the Finite Elements): `ReferenceFE(F::Symbol, r, k, [, T::Type]; kwargs...)` with `F` the element family, `r` polynomial order and `k` the form order.
+- Documented the implemented ReferenceFEs with available order and other information in the `ReferenceFEs` section of the doc.
+
+- API for Geometric decomposition of polynomial bases, implemented for simplices. Since PR[#1144](https://github.com/gridap/Gridap.jl/pull/1144).
+  The geometric decomposition API consist in the methods `has_geometric_decomposition`, `get_face_own_funs` and `get_facet_flux_sign_flip`.
+
 ### Fixed
 
 - Fixed evaluation of `LinearCombinationDofVector` on vector of `<:Field`s (only impacts ModalC0 FEs and future moment based reffes)., since PR[#1105](https://github.com/gridap/Gridap.jl/pull/#1105).
+- Minor `MuliValue` bugfixes for `isless` and `<=` with scalars.
 
 ### Changed
 
@@ -37,19 +50,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Monomial` is now subtype of the new abstract type`Polynomial <: Field`
 - `MonomialBasis` is now an alias for `CartProdPolyBasis{...,Monomial}`
 - All polynomial bases are now subtypes of the new abstract type `PolynomialBasis <: AbstractVector{<:Polynomial}`
-- `get_order(b::(Q/P)[Curl]Grad...)`, now returns the order of the basis, +1 than the order parameter passed to the constructor.
+- `get_order`, now always returns the maximum order of the basis, the correspondence with `ReferenceFEs` constructors is summarized in the documentation of the module.
 - `NedelecPreBasisOnSimplex` is renamed `NedelecPolyBasisOnSimplex`
 - `JacobiPolynomial` is renamed `Legendre` and subtypes `Polynomial`
 - `JacobiPolynomialBasis` is renamed `LegendreBasis`
 - `ModalC0BasisFunction` is renamed `ModalC0` and subtypes `Polynomial`
+- On simplices, the default polynomial bases of BDM, Nédélec and Raviart-Thomas RefFEs have changed for barycentric polynomial bases which lead to better conditioned systems for higher order.
+- Similarly, on n-cubes, the default polynomial bases of BDM, Nédélec and Raviart-Thomas RefFEs have changed for Legendre (tensor-product) polynomial bases instead of Monomials.
+- Changed `Base.==` for `ReferenceFE`s, and implemented it for `LinearCombinationFieldVector` and `LinearCombinationDofVector`. The implementation now uses AutoHashEquals.jl, so RefFEs are now only equal if they have the same prebasis, shapefun and dofs.
+- Monomial (pre)bases have been replaced with Bernstein / Barycentric bases for non-scalar finite elements on simplices.
 
 ### Deprecated
 
 - `num_terms(f::AbstractVector{<:Field})` in favor of `length(f::PolynomialBasis)`
 - `MonomialBasis{D}(args...)` in favor of `MonomialBasis(Val(D), args...)`
-- `[P/Q][Curl]GradMonomialBasis{D}(args...)` in favor of `[...]GradBasis(Monomial, Val(D), args...)`
-- `NedelecPreBasisOnSimplex{D}(args...)` in favor of `NedelecPolyBasisOnSimplex(Val(D), args...)`
+- `[P/Q][Curl]GradMonomialBasis{D}(args...)` in favor of `FEEC_poly_basis`
+- `NedelecPreBasisOnSimplex{D}(order)` in favor of `NedelecPolyBasisOnSimplex(Val(D), Float64, order)`
 - `JacobiPolynomialBasis{D}(args...)` in favor of `LegendreBasis(Val(D), args...)`
+
+### Removed
 
 ## [Unreleased]
 
