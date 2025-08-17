@@ -305,25 +305,25 @@ function positive_simplexify_hypercube(dim::Integer)
 end
 
 function simplexify_hypercube(dim::Int)
-    @assert dim ≥ 0
-    # Determine simplices recursively
-    simplices = Vector{Int}[]
-    corner = 0
-    vertices = [corner]
-    next_corner!(simplices, dim, vertices, corner)
-    # Correct vertex numbering
-    for s in simplices
-        s .+= 1
+  @assert dim ≥ 0
+  # Determine simplices recursively
+  simplices = Vector{Int}[]
+  corner = 0
+  vertices = [corner]
+  next_corner!(simplices, dim, vertices, corner)
+  # Correct vertex numbering
+  for s in simplices
+    s .+= 1
+  end
+  # Check output
+  @assert length(simplices) == factorial(dim)
+  for s in simplices
+    @assert length(s) == dim+1
+    for v in s
+      @assert 1 ≤ v ≤ 2^dim
     end
-    # Check output
-    @assert length(simplices) == factorial(dim)
-    for s in simplices
-        @assert length(s) == dim+1
-        for v in s
-            @assert 1 ≤ v ≤ 2^dim
-        end
-    end
-    return simplices
+  end
+  return simplices
 end
 
 """
@@ -346,22 +346,22 @@ the top. The algorithm below finds all possible paths.
 """
 function next_corner!(simplices::Vector{Vector{Int}}, dim::Int,
                       vertices::Vector{Int}, corner::Int)
-    @assert count_ones(corner) == length(vertices) - 1
-    if length(vertices) == dim + 1
-        # We have all vertices; save the simplex
-        push!(simplices, vertices)
-        return
-    end
-    # Loop over all neighbouring corners
-    for d in 1:dim
-        bit = 1 << (d-1)
-        if (corner & bit) == 0
-            new_corner = corner | bit
-            new_vertices = [vertices; new_corner]
-            next_corner!(simplices, dim, new_vertices, new_corner)
-        end
-    end
+  @assert count_ones(corner) == length(vertices) - 1
+  if length(vertices) == dim + 1
+    # We have all vertices; save the simplex
+    push!(simplices, vertices)
     return
+  end
+  # Loop over all neighbouring corners
+  for d in 1:dim
+    bit = 1 << (d-1)
+    if (corner & bit) == 0
+      new_corner = corner | bit
+      new_vertices = [vertices; new_corner]
+      next_corner!(simplices, dim, new_vertices, new_corner)
+    end
+  end
+  return
 end
 
 function Base.show(io::IO,p::ExtrusionPolytope)
