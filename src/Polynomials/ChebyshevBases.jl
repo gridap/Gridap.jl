@@ -39,13 +39,12 @@ end
 # 1D evaluation implementation
 
 function _evaluate_1d!(
-  ::Type{Chebyshev{kind}},::Val{0},c::AbstractMatrix{T},x,d) where {kind,T<:Number}
+  ::Type{Chebyshev{kind}},K,c::AbstractMatrix{T},x,d) where {kind,T<:Number}
 
-  @inbounds c[d,1] = one(T)
-end
-
-function _evaluate_1d!(
-  ::Type{Chebyshev{kind}},::Val{K},c::AbstractMatrix{T},x,d) where {kind,K,T<:Number}
+  if iszero(K)
+    @inbounds c[1] = one(T)
+    return
+  end
 
   n = K + 1        # n > 1
   ξ = (2*x[d] - 1) # ξ ∈ [-1,1]
@@ -59,13 +58,12 @@ function _evaluate_1d!(
 end
 
 function _gradient_1d!(
-  ::Type{Chebyshev{:T}},::Val{0},g::AbstractMatrix{T},x,d) where T<:Number
+  ::Type{Chebyshev{:T}},K,g::AbstractMatrix{T},x,d) where T<:Number
 
-  @inbounds g[d,1] = zero(T)
-end
-
-function _gradient_1d!(
-  ::Type{Chebyshev{:T}},::Val{K},g::AbstractMatrix{T},x,d) where {K,T<:Number}
+  if iszero(K)
+    @inbounds g[d,1] = zero(T)
+    return
+  end
 
   n = K + 1  # n>1
   z = zero(T)
@@ -83,6 +81,7 @@ function _gradient_1d!(
   end
 end
 
-_gradient_1d!(::Type{Chebyshev{:U}},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number} = @notimplemented
-_hessian_1d!( ::Type{Chebyshev{:U}},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number} = @notimplemented
+_evaluate_1d!(::Type{Chebyshev{:U}},K,h::AbstractMatrix{T},x,d) where T<:Number = @notimplemented
+_gradient_1d!(::Type{Chebyshev{:U}},K,h::AbstractMatrix{T},x,d) where T<:Number = @notimplemented
+_hessian_1d!( ::Type{<:Chebyshev},  K,h::AbstractMatrix{T},x,d) where T<:Number = @notimplemented
 

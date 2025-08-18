@@ -25,17 +25,17 @@ D = 1
 K = 0
 c = zero(MMatrix{D,K+1})
 
-@test_throws ErrorException Polynomials._evaluate_1d!(MockPolynomial, Val(1), c, xi, 1)
-@test_throws ErrorException Polynomials._gradient_1d!(MockPolynomial, Val(1), c, xi, 1)
-@test_throws ErrorException Polynomials._hessian_1d!( MockPolynomial, Val(1), c, xi, 1)
-@test_throws ErrorException Polynomials._derivatives_1d!(MockPolynomial, Val(1), (nothing,nothing,nothing,nothing), xi, 1)
+@test_throws ErrorException Polynomials._evaluate_1d!(MockPolynomial, 1, c, xi, 1)
+@test_throws ErrorException Polynomials._gradient_1d!(MockPolynomial, 1, c, xi, 1)
+@test_throws ErrorException Polynomials._hessian_1d!( MockPolynomial, 1, c, xi, 1)
+@test_throws ErrorException Polynomials._derivatives_1d!(MockPolynomial, 1, (nothing,nothing,nothing,nothing), xi, 1)
 
 function Polynomials._evaluate_1d!(
-  ::Type{MockPolynomial},::Val{K}, cc::AbstractMatrix{T}, xi, d) where {K,T<:Number}
+  ::Type{MockPolynomial},K::Int, cc::AbstractMatrix{T}, xi, d) where T<:Number
 
   cc[1,1] = 1.
 end
-Polynomials._derivatives_1d!(MockPolynomial, Val(1), (c,), xi, 1)
+Polynomials._derivatives_1d!(MockPolynomial, 1, (c,), xi, 1)
 @test c[1][1] == 1.
 
 ###########################

@@ -129,8 +129,7 @@ b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
 _test_bases(b,b2,r,k,:P,D)
 
 b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,Monomial)
-m = Tuple( r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D )
-orders = SMatrix{D,D,Int}(m)
+orders = [ r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D ]
 b2 = CompWiseTensorPolyBasis{D}(Monomial, V, orders)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:Q⁻,D)
@@ -152,8 +151,7 @@ b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
 _test_bases(b,b2,r,k,:P,D)
 
 b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,Monomial; rotate_90=true)
-m = Tuple( r-1 + (i==j ? 1 : 0) for i in 1:D, j in 1:D )
-orders = SMatrix{D,D,Int}(m)
+orders = [ r-1 + (i==j ? 1 : 0) for i in 1:D, j in 1:D ]
 b2 = CompWiseTensorPolyBasis{D}(Monomial,V,orders)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:Q⁻,D)
@@ -219,8 +217,7 @@ b2 = MonomialBasis(Val(D),V,r,Polynomials._p_filter)
 _test_bases(b,b2,r,k,:P,D)
 
 b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,Monomial)
-m = Tuple( r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D )
-orders = SMatrix{D,D,Int}(m)
+orders = [ r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D ]
 b2 = CompWiseTensorPolyBasis{D}(Monomial, V, orders)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:Q⁻,D)
@@ -245,8 +242,7 @@ b2 = MonomialBasis(Val(D),V,r,Polynomials._p_filter)
 _test_bases(b,b2,r,k,:P,D)
 
 b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,Monomial)
-m = Tuple( r-1 + (i==j ? 1 : 0) for i in 1:D, j in 1:D )
-orders = SMatrix{D,D,Int}(m)
+orders = [ r-1 + (i==j ? 1 : 0) for i in 1:D, j in 1:D ]
 b2 = CompWiseTensorPolyBasis{D}(Monomial, V, orders)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:Q⁻,D)

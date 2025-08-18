@@ -25,8 +25,7 @@ function NedelecRefFE(::Type{T},p::Polytope,order::Integer; sh_is_pb=true) where
   rotate_90 = D==2
 
   if is_n_cube(p)
-    PT = Legendre # Could be a Kwargs, any hierarchical basis works
-    @check PT ≠ Bernstein # broken for Bernstein in prebasis or cb, might be an issue of ordering of the basis polynomials
+    PT = Bernstein # Could be a Kwargs, any basis works
     prebasis =     FEEC_poly_basis(Val(D),T,order+1,1,:Q⁻,PT;) # Q⁻ᵣΛ¹(□ᴰ), r = order+1
     eb =           FEEC_poly_basis(Val(1),T,order,0,  :Q⁻,PT;)                     # Edge basis  Q⁻ᵨΛ⁰(□¹), ρ = r-1
     fb = order>0 ? FEEC_poly_basis(Val(2),T,order,1,  :Q⁻,PT; rotate_90) : nothing # Facet basis Q⁻ᵨΛ¹(□²), ρ = r-1 (only D=3)

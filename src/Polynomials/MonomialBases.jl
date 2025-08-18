@@ -25,7 +25,7 @@ MonomialBasis(args...) = CartProdPolyBasis(Monomial, args...)
 
 # 1D evaluation implementation
 
-function _evaluate_1d!(::Type{Monomial},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _evaluate_1d!(::Type{Monomial},K::Int,c::AbstractMatrix{T},x,d) where T<:Number
   n = K + 1
   xn = one(T)
   @inbounds xd = x[d]
@@ -36,8 +36,7 @@ function _evaluate_1d!(::Type{Monomial},::Val{K},c::AbstractMatrix{T},x,d) where
   end
 end
 
-
-function _gradient_1d!(::Type{Monomial},::Val{K},g::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _gradient_1d!(::Type{Monomial},K,g::AbstractMatrix{T},x,d) where T<:Number
   n = K + 1
   z = zero(T)
   xn = one(T)
@@ -52,10 +51,14 @@ end
 
 
 function _hessian_1d!(::Type{Monomial},::Val{0},h::AbstractMatrix{T},x,d) where {T<:Number}
-  @inbounds h[d,1] = zero(T)
 end
 
-function _hessian_1d!(::Type{Monomial},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _hessian_1d!(::Type{Monomial},K,h::AbstractMatrix{T},x,d) where T<:Number
+  if iszero(K)
+    @inbounds h[d,1] = zero(T)
+    return
+  end
+
   n = K + 1 # n>1
   z = zero(T)
   xn = one(T)
@@ -72,12 +75,13 @@ end
 
 # Optimizations for 0 to 1/2 derivatives at once
 
-function _derivatives_1d!(::Type{Monomial},v::Val_01,t::NTuple{2},x,d)
-  @inline _evaluate_1d!(Monomial, v, t[1], x, d)
-  @inline _gradient_1d!(Monomial, v, t[2], x, d)
-end
+function _derivatives_1d!(::Type{Monomial},K,t::NTuple{2},x,d)
+  if K < 2
+    @inline _evaluate_1d!(Monomial, K, t[1], x, d)
+    @inline _gradient_1d!(Monomial, K, t[2], x, d)
+    return
+  end
 
-function _derivatives_1d!(::Type{Monomial},::Val{K},t::NTuple{2},x,d) where K
   @inbounds begin
     n = K + 1 # n > 2
     v, g = t
@@ -97,14 +101,14 @@ function _derivatives_1d!(::Type{Monomial},::Val{K},t::NTuple{2},x,d) where K
   end
 end
 
+function _derivatives_1d!(::Type{Monomial},K,t::NTuple{3},x,d)
+  if K < 3
+    @inline _evaluate_1d!(Monomial, K, t[1], x, d)
+    @inline _gradient_1d!(Monomial, K, t[2], x, d)
+    @inline _hessian_1d!( Monomial, K, t[3], x, d)
+    return
+  end
 
-function _derivatives_1d!(::Type{Monomial},v::Val_012,t::NTuple{3},x,d)
-  @inline _evaluate_1d!(Monomial, v, t[1], x, d)
-  @inline _gradient_1d!(Monomial, v, t[2], x, d)
-  @inline _hessian_1d!( Monomial, v, t[3], x, d)
-end
-
-function _derivatives_1d!(::Type{Monomial},::Val{K},t::NTuple{3},x,d) where K
   @inbounds begin
     n = K + 1 # n > 2
     v, g, h = t

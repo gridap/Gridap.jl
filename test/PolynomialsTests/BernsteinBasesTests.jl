@@ -25,15 +25,15 @@ function test_internals(order,x,bx,Gbx,Hbx)
   sz = (1,order+1)
   for (i,xi) in enumerate(x)
     v2 = zeros(sz)
-    Polynomials._evaluate_1d!(Bernstein,Val(order),v2,xi,1)
+    Polynomials._evaluate_1d!(Bernstein,order,v2,xi,1)
     @test all( [ bxi[1]≈vxi[1] for (bxi,vxi) in zip(bx[i,:],v2[:,1]) ] )
 
     g2 = zeros(sz)
-    Polynomials._gradient_1d!(Bernstein,Val(order),g2,xi,1)
+    Polynomials._gradient_1d!(Bernstein,order,g2,xi,1)
     @test all( [ bxi[1]≈vxi[1] for (bxi,vxi) in zip(Gbx[i,:],g2[:,1]) ] )
 
     h2 = zeros(sz)
-    Polynomials._hessian_1d!(Bernstein,Val(order),h2,xi,1)
+    Polynomials._hessian_1d!(Bernstein,order,h2,xi,1)
     @test all( [ bxi[1]≈vxi[1] for (bxi,vxi) in zip(Hbx[i,:],h2[:,1]) ] )
   end
 end

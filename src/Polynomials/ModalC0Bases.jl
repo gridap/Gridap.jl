@@ -374,7 +374,7 @@ end
 # Computers & Mathematics with Applications,
 # https://doi.org/10.1016/j.camwa.2022.09.027
 function _evaluate_1d_mc0!(c::AbstractMatrix{T},x,a,b,order,d) where T
-  @assert order > 0
+  @check order > 0
   n = order + 1
   o = one(T)
   @inbounds c[d,1] = o - x[d]
@@ -388,7 +388,7 @@ function _evaluate_1d_mc0!(c::AbstractMatrix{T},x,a,b,order,d) where T
 end
 
 function _gradient_1d_mc0!(g::AbstractMatrix{T},x,a,b,order,d) where T
-  @assert order > 0
+  @check order > 0
   n = order + 1
   o = one(T)
   @inbounds g[d,1] = -o
@@ -405,7 +405,7 @@ function _gradient_1d_mc0!(g::AbstractMatrix{T},x,a,b,order,d) where T
 end
 
 function _hessian_1d_mc0!(h::AbstractMatrix{T},x,a,b,order,d) where T
-  @assert order > 0
+  @check order > 0
   n = order + 1
   z = zero(T)
   o = one(T)
@@ -433,19 +433,19 @@ end
 # For possible use with CartProdPolyBasis etc.
 # Make it for x∈[0,1] like the other 1D bases.
 
-function _evaluate_1d!(::Type{ModalC0},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _evaluate_1d!(::Type{ModalC0},K,c::AbstractMatrix{T},x,d) where T<:Number
   a = zero(x)
   b = zero(x) .+ one(T)
   @inline _evaluate_1d_mc0!(c,x,a,b,K,d)
 end
 
-function _gradient_1d!(::Type{ModalC0},::Val{K},g::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _gradient_1d!(::Type{ModalC0},K,g::AbstractMatrix{T},x,d) where T<:Number
   a = zero(x)
   b = zero(x) .+ one(T)
   @inline _gradient_1d_mc0!(g,x,a,b,K,d)
 end
 
-function _hessian_1d!(::Type{ModalC0},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _hessian_1d!(::Type{ModalC0},K,h::AbstractMatrix{T},x,d) where T<:Number
   a = zero(x)
   b = zero(x) .+ one(T)
   @inline _hessian_1d_mc0!(h,x,a,b,K,d)
