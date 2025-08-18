@@ -34,10 +34,6 @@ BernsteinBasis(args...) = CartProdPolyBasis(Bernstein, args...)
 # 1D evaluation implementation #
 ################################
 
-function _evaluate_1d!(::Type{Bernstein},::Val{0},v::AbstractMatrix{T},x,d) where {T<:Number}
-  @inbounds v[d,1] = one(T)
-end
-
 @inline function _de_Casteljau_step_1D!(v,d,i,λ1,λ2)
   # i = k+1
 
@@ -49,12 +45,18 @@ end
   end
   # v₀ <- (1-x)v₀          # Bᵏ₀(x) = (1-x)*Bᵏ⁻¹₀(x)
   v[d,1] = λ1*v[d,1]
+  nothing
 end
 
 # jth Bernstein poly of order K at x:
 # Bᵏⱼ(x) = binom(K,j) * x^j * (1-x)^(K-j) = x*Bᵏ⁻¹ⱼ₋₁(x) + (1-x)*Bᵏ⁻¹ⱼ(x)
-function _evaluate_1d!(::Type{Bernstein},::Val{K},v::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _evaluate_1d!(::Type{Bernstein},K::Int,v::AbstractMatrix{T},x,d) where T<:Number
   @inbounds begin
+    if iszero(K)
+      v[1] = one(T)
+      return
+    end
+
     n = K + 1 # n > 1
     λ2 = x[d]
     λ1 = one(T) - λ2
@@ -74,24 +76,24 @@ function _evaluate_1d!(::Type{Bernstein},::Val{K},v::AbstractMatrix{T},x,d) wher
   # - @simd affect bj * vj in v[d,i] for all j
 end
 
-function _gradient_1d!(::Type{Bernstein},::Val{0},g::AbstractMatrix{T},x,d) where {T<:Number}
-  @inbounds g[d,1] = zero(T)
-end
-function _gradient_1d!(::Type{Bernstein},::Val{1},g::AbstractMatrix{T},x,d) where {T<:Number}
-  o = one(T)
-  @inbounds g[d,1] = -o
-  @inbounds g[d,2] =  o
-end
-
 # First derivative of the jth Bernstein poly of order K at x:
 # (Bᵏⱼ)'(x) = K * ( Bᵏ⁻¹ⱼ₋₁(x) - Bᵏ⁻¹ⱼ(x) )
 #           = K * x^(j-1) * (1-x)^(K-j-1) * ((1-x)*binom(K-1,j-1) - x*binom(K-1,j))
-function _gradient_1d!(::Type{Bernstein},::Val{K},g::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _gradient_1d!(::Type{Bernstein},K::Int,g::AbstractMatrix{T},x,d) where T<:Number
   @inbounds begin
+
+    if K<2 # base cases
+      z = zero(T)
+      o = one(T)
+      K==0 && (g[d,1] = z)
+      K==1 && (g[d,1] =-o;  g[d,2] = o)
+      return
+    end
+
     n = K + 1 # n > 2
 
     # De Casteljau for Bᵏ⁻¹ⱼ for j = k-1, k-2, ..., 1
-    _evaluate_1d!(Bernstein,Val(K-1),g,x,d)
+    _evaluate_1d!(Bernstein,K-1,g,x,d)
 
     # gₖ <- K*gₖ₋₁         # ∂ₓBᵏₖ(x) = K*Bᵏ⁻¹ₖ₋₁(x)
     g[d,n] = K*g[d,n-1]
@@ -105,32 +107,28 @@ function _gradient_1d!(::Type{Bernstein},::Val{K},g::AbstractMatrix{T},x,d) wher
 end
 
 
-function _hessian_1d!(::Type{Bernstein},::Val{0},h::AbstractMatrix{T},x,d) where {T<:Number}
-  @inbounds h[d,1] = zero(T)
-end
-function _hessian_1d!(::Type{Bernstein},::Val{1},h::AbstractMatrix{T},x,d) where {T<:Number}
-  @inbounds h[d,1] = zero(T)
-  @inbounds h[d,2] = zero(T)
-end
-function _hessian_1d!(::Type{Bernstein},::Val{2},h::AbstractMatrix{T},x,d) where {T<:Number}
-  o = one(T)
-  @inbounds h[d,1] =  2o
-  @inbounds h[d,2] = -4o
-  @inbounds h[d,3] =  2o
-end
-
 # Second derivative of the jth Bernstein poly of order K at x:
 # (Bᵏⱼ)''(x) = K(K-1) * ( Bᵏ⁻²ⱼ₋₂(x) -2*Bᵏ⁻²ⱼ₋₁(x) + Bᵏ⁻²ⱼ(x) )
 #            = K(K-1) * x^(j-2) * (1-x)^(K-j-2) * ( (1-x)^2*binom(K-2,j-2)
 #                  - 2x*(1-x)*binom(K-2,j-1) + (x)^2*binom(K-2,j)
 #              )
-function _hessian_1d!(::Type{Bernstein},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _hessian_1d!(::Type{Bernstein},K::Int,h::AbstractMatrix{T},x,d) where T<:Number
   @inbounds begin
+
+    if K<3 # base cases
+      z = zero(T)
+      o = one(T)
+      K==0 && (h[d,1] = z)
+      K==1 && (h[d,1] = z;  h[d,2] = z)
+      K==2 && (h[d,1] = 2o; h[d,2] = -4o; h[d,3] =  2o)
+      return
+    end
+
     n = K + 1 # n > 3
     KK = K*(K-1)
 
     # De Casteljau for Bᵏ⁻²ⱼ for j = k-2, k-3, ..., 1
-    _evaluate_1d!(Bernstein,Val(K-2),h,x,d)
+    _evaluate_1d!(Bernstein,K-2,h,x,d)
 
     # hₖ   <- K(K-1)*hₖ₋₂
     h[d,n] = KK*h[d,n-2]
@@ -149,12 +147,13 @@ function _hessian_1d!(::Type{Bernstein},::Val{K},h::AbstractMatrix{T},x,d) where
   end
 end
 
-function _derivatives_1d!(::Type{Bernstein},v::Val_01,t::NTuple{2},x,d)
-  @inline _evaluate_1d!(Bernstein, v, t[1], x, d)
-  @inline _gradient_1d!(Bernstein, v, t[2], x, d)
-end
+function _derivatives_1d!(::Type{Bernstein},K,t::NTuple{2},x,d)
+  if K < 2
+    @inline _evaluate_1d!(Bernstein, K, t[1], x, d)
+    @inline _gradient_1d!(Bernstein, K, t[2], x, d)
+    return
+  end
 
-function _derivatives_1d!(::Type{Bernstein},::Val{K},t::NTuple{2},x,d) where K
   @inbounds begin
     n = K + 1 # n > 2
     v, g = t
@@ -163,7 +162,7 @@ function _derivatives_1d!(::Type{Bernstein},::Val{K},t::NTuple{2},x,d) where K
     λ1 = one(eltype(v)) - λ2
 
     # De Casteljau for Bᵏ⁻¹ⱼ for j = k-1, k-2, ..., 1
-    _evaluate_1d!(Bernstein,Val(K-1),v,x,d)
+    _evaluate_1d!(Bernstein,K-1,v,x,d)
 
     # Compute gradients as _gradient_1d!
     g[d,n] = K*v[d,n-1]
@@ -177,13 +176,14 @@ function _derivatives_1d!(::Type{Bernstein},::Val{K},t::NTuple{2},x,d) where K
   end
 end
 
-function _derivatives_1d!(::Type{Bernstein},v::Val_012,t::NTuple{3},x,d)
-  @inline _evaluate_1d!(Bernstein, v, t[1], x, d)
-  @inline _gradient_1d!(Bernstein, v, t[2], x, d)
-  @inline _hessian_1d!( Bernstein, v, t[3], x, d)
-end
+function _derivatives_1d!(::Type{Bernstein},K,t::NTuple{3},x,d)
+  if K < 3
+    @inline _evaluate_1d!(Bernstein, K, t[1], x, d)
+    @inline _gradient_1d!(Bernstein, K, t[2], x, d)
+    @inline _hessian_1d!( Bernstein, K, t[3], x, d)
+    return
+  end
 
-function _derivatives_1d!(::Type{Bernstein},::Val{K},t::NTuple{3},x,d) where K
   @inbounds begin
     n = K + 1 # n > 3
     v, g, h = t
@@ -192,7 +192,7 @@ function _derivatives_1d!(::Type{Bernstein},::Val{K},t::NTuple{3},x,d) where K
     λ1 = one(eltype(v)) - λ2
 
     # De Casteljau until Bᵏ⁻²ⱼ ∀j
-    _evaluate_1d!(Bernstein,Val(K-2),v,x,d)
+    _evaluate_1d!(Bernstein,K-2,v,x,d)
 
     # Compute hessians as in _hessian_1d!
     KK = K*(K-1)

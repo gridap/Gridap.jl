@@ -28,7 +28,7 @@ LegendreBasis(args...) = CartProdPolyBasis(Legendre, args...)
 
 # TODO optimize evaluation by using the iterative formula explicitely
 
-function _evaluate_1d!(::Type{Legendre},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _evaluate_1d!(::Type{Legendre},K::Int,c::AbstractMatrix{T},x,d) where T<:Number
   n = K + 1
   @inbounds c[d,1] = one(T)
   if n > 1
@@ -43,7 +43,7 @@ function _evaluate_1d!(::Type{Legendre},::Val{K},c::AbstractMatrix{T},x,d) where
   end
 end
 
-function _gradient_1d!(::Type{Legendre},::Val{K},g::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _gradient_1d!(::Type{Legendre},K::Int,g::AbstractMatrix{T},x,d) where T<:Number
   n = K + 1
   z = zero(T)
   @inbounds g[d,1] = z
@@ -55,7 +55,7 @@ function _gradient_1d!(::Type{Legendre},::Val{K},g::AbstractMatrix{T},x,d) where
   end
 end
 
-function _hessian_1d!(::Type{Legendre},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _hessian_1d!(::Type{Legendre},K::Int,h::AbstractMatrix{T},x,d) where T<:Number
   n = K + 1
   z = zero(T)
   @inbounds h[d,1] = z

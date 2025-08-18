@@ -175,11 +175,17 @@ function evaluate!(cache,
   np = length(x)
   _setsize!(f,np,r,c)
   params = _get_static_parameters(f)
+  _loop_point_evals!(np,x,f,r,c,params)
+  r.array
+end
+
+# this is necessary to force inference of params and minimize runtime dispatches
+# to only one (the dispatch on this method)
+@noinline function _loop_point_evals!(np,x,f,r,c,params)
   for i in 1:np
     @inbounds xi = x[i]
     _evaluate_nd!(f,xi,r,i,c,params)
   end
-  r.array
 end
 
 function evaluate!(cache,
@@ -191,11 +197,16 @@ function evaluate!(cache,
   np = length(x)
   _setsize!(f,np,r,c,g)
   params = _get_static_parameters(f)
+  _loop_point_grads!(np,x,f,r,c,g,s,params)
+  r.array
+end
+
+@noinline function _loop_point_grads!(np,x,f,r,c,g,s,params)
   for i in 1:np
     @inbounds xi = x[i]
     _gradient_nd!(f,xi,r,i,c,g,s,params)
   end
-  r.array
+  nothing
 end
 
 function evaluate!(cache,
@@ -207,11 +218,16 @@ function evaluate!(cache,
   np = length(x)
   _setsize!(f,np,r,c,g,h)
   params = _get_static_parameters(f)
+  _loop_point_hess!(np,x,f,r,c,g,h,s,params)
+  r.array
+end
+
+@noinline function _loop_point_hess!(np,x,f,r,c,g,h,s,params)
   for i in 1:np
     @inbounds xi = x[i]
     _hessian_nd!(f,xi,r,i,c,g,h,s,params)
   end
-  r.array
+  nothing
 end
 
 
@@ -318,7 +334,7 @@ end
 ###############################
 
 """
-    _evaluate_1d!(PT::Type{<:Polynomial},::Val{K},c,x,d)
+    _evaluate_1d!(PT::Type{<:Polynomial},K,c,x,d)
 
 Evaluates in place the 1D basis polynomials of the family `PT` at one D-dim.
 point `x` along the given coordinate 1 ≤ `d` ≤ D.
@@ -326,60 +342,56 @@ point `x` along the given coordinate 1 ≤ `d` ≤ D.
 `c` is an AbstractMatrix of size (at least) `d`×(`K`+1), such that the
 1 ≤ i ≤ `k`+1 values are stored in `c[d,i]`.
 """
-function _evaluate_1d!(::Type{<:Polynomial},::Val{K},c::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _evaluate_1d!(::Type{<:Polynomial},K,c,x,d)
   @abstractmethod
 end
 
 """
-    _gradient_1d!(PT::Type{<:Polynomial},::Val{K},g,x,d)
+    _gradient_1d!(PT::Type{<:Polynomial},K,g,x,d)
 
 Like [`_evaluate_1d!`](@ref), but computes the first derivative of the basis
 polynomials.
 """
-function _gradient_1d!(::Type{<:Polynomial},::Val{K},g::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _gradient_1d!(::Type{<:Polynomial},K,g,x,d)
   @abstractmethod
 end
 
 """
-    _hessian_1d!(PT::Type{<:Polynomial},::Val{K},g,x,d)
+    _hessian_1d!(PT::Type{<:Polynomial},K,g,x,d)
 
 Like [`_evaluate_1d!`](@ref), but computes the second derivative of the basis
 polynomials.
 """
-function _hessian_1d!(::Type{<:Polynomial},::Val{K},h::AbstractMatrix{T},x,d) where {K,T<:Number}
+function _hessian_1d!(::Type{<:Polynomial},K,h::AbstractMatrix{T},x,d) where T<:Number
   @abstractmethod
 end
 
-# Dispatch helpers for base cases
-const Val_01  = Union{Val{0},Val{1}}
-const Val_012 = Union{Val{0},Val{1},Val{2}}
-
 """
-    _derivatives_1d!(PT::Type{<:Polynomial}, ::Val{K}, (c,g,...), x, d)
+    _derivatives_1d!(PT::Type{<:Polynomial}, K, (c,g,...), x, d)
 
 Same as calling
 ```
-_evaluate_1d!(PT, Val(K), c, x d)
-_gradient_1d!(PT, Val(K), g, x d)
+_evaluate_1d!(PT, K, c, x d)
+_gradient_1d!(PT, K, g, x d)
           ⋮
 ```
-but with possible performance optimization.
+but with performance optimization if implemented.
 """
-function _derivatives_1d!(  ::Type{<:Polynomial},v::Val,t::NTuple{N},x,d) where N
+function _derivatives_1d!(  ::Type{<:Polynomial},K,t::NTuple{N},x,d) where N
   @abstractmethod
 end
 
-function _derivatives_1d!(PT::Type{<:Polynomial},v::Val,t::NTuple{1},x,d)
-  @inline _evaluate_1d!(PT, v, t[1], x, d)
+function _derivatives_1d!(PT::Type{<:Polynomial},K,t::NTuple{1},x,d)
+  @inline _evaluate_1d!(PT, K, t[1], x, d)
 end
 
-function _derivatives_1d!(PT::Type{<:Polynomial},v::Val,t::NTuple{2},x,d)
-  @inline _evaluate_1d!(PT, v, t[1], x, d)
-  @inline _gradient_1d!(PT, v, t[2], x, d)
+function _derivatives_1d!(PT::Type{<:Polynomial},K,t::NTuple{2},x,d)
+  @inline _evaluate_1d!(PT, K, t[1], x, d)
+  @inline _gradient_1d!(PT, K, t[2], x, d)
 end
 
-function _derivatives_1d!(PT::Type{<:Polynomial},v::Val,t::NTuple{3},x,d)
-  @inline _evaluate_1d!(PT, v, t[1], x, d)
-  @inline _gradient_1d!(PT, v, t[2], x, d)
-  @inline _hessian_1d!( PT, v, t[3], x, d)
+function _derivatives_1d!(PT::Type{<:Polynomial},K,t::NTuple{3},x,d)
+  @inline _evaluate_1d!(PT, K, t[1], x, d)
+  @inline _gradient_1d!(PT, K, t[2], x, d)
+  @inline _hessian_1d!( PT, K, t[3], x, d)
 end
