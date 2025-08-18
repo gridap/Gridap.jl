@@ -12,7 +12,7 @@ Depth = 3
 
 ## DiscreteModels
 
-In Gridap, a `DiscreteModel` is the main object representing a discretized domain, where the finite element problem is defined adn solved. It has three main components: 
+In Gridap, a `DiscreteModel` is the main object representing a discretized domain, where the finite element problem is defined adn solved. It has three main components:
 
 - A `GridTopology`, which defines the topology of the mesh. That is the polytopes that make up the mesh as well as their connectivity. This object also provides the connectivity between all d-dimensional entities of the mesh, such as vertices, edges, faces, and cells.
 - A `Grid`, which defines the geometric properties of the mesh. That is, the coordinates of the vertices and the geometric map between the reference space of each polytope and the physical space.

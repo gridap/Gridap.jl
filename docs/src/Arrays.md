@@ -1,9 +1,15 @@
+# Gridap.Arrays
 
 ```@meta
 CurrentModule = Gridap.Arrays
 ```
 
-# Gridap.Arrays
+#### Contents
+
+```@contents
+Pages = ["Arrays.md"]
+Depth = 2:3
+```
 
 ## Map Interfaces
 

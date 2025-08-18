@@ -51,6 +51,18 @@ _getindex_nd!(s::IndexLinear,cache,a,i) = _getindex_1d!(s,cache,a,LinearIndices(
 _getindex_nd!(s::IndexCartesian,cache,a,i) = a[i]
 
 """
+    invalidate_cache!(cache) -> nothing
+
+Prevent possible memoized value(s) to be re-used, in order to force any future
+evaluation to be computed (this is aimed to be used on lazy array caches).
+"""
+invalidate_cache!(cache) = nothing
+function invalidate_cache!(cache::Tuple)
+  map(invalidate_cache!, cache)
+  nothing
+end
+
+"""
     array_cache(a::AbstractArray)
 
 Returns a cache object to be used in the [`getindex!`](@ref) function.
