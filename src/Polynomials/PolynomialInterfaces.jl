@@ -175,12 +175,20 @@ function evaluate!(cache,
   np = length(x)
   _setsize!(f,np,r,c)
   params = _get_static_parameters(f)
+  _loop_point_evals!(np,x,f,r,c,params)
+  r.array
+end
+
+# this is necessary to force inference of params and minimize runtime dispatches
+# to only one (the dispatch on this method)
+@noinline function _loop_point_evals!(np,x,f,r,c,params)#::Val{K} where K
   for i in 1:np
     @inbounds xi = x[i]
     _evaluate_nd!(f,xi,r,i,c,params)
   end
-  r.array
+  nothing
 end
+
 
 function evaluate!(cache,
   fg::FieldGradientArray{1,<:PolynomialBasis{D,V}},
@@ -191,11 +199,16 @@ function evaluate!(cache,
   np = length(x)
   _setsize!(f,np,r,c,g)
   params = _get_static_parameters(f)
+  _loop_point_grads!(np,x,f,r,c,g,s,params)
+  r.array
+end
+
+@noinline function _loop_point_grads!(np,x,f,r,c,g,s,params)
   for i in 1:np
     @inbounds xi = x[i]
     _gradient_nd!(f,xi,r,i,c,g,s,params)
   end
-  r.array
+  nothing
 end
 
 function evaluate!(cache,
@@ -207,11 +220,16 @@ function evaluate!(cache,
   np = length(x)
   _setsize!(f,np,r,c,g,h)
   params = _get_static_parameters(f)
+  _loop_point_hess!(np,x,f,r,c,g,h,s,params)
+  r.array
+end
+
+@noinline function _loop_point_hess!(np,x,f,r,c,g,h,s,params)
   for i in 1:np
     @inbounds xi = x[i]
     _hessian_nd!(f,xi,r,i,c,g,h,s,params)
   end
-  r.array
+  nothing
 end
 
 
