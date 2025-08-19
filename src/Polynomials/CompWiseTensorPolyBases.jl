@@ -112,12 +112,12 @@ function _evaluate_nd!(
   end
 
   k = 1
-  for (l,terms) in enumerate(get_comp_terms(b))
+  @inbounds for (l,terms) in enumerate(get_comp_terms(b))
 
     if !isHierarchical(PT)
-      @inbounds for d in 1:D
+      for d in 1:D
+        # compute 1D polynomials for first component or recompute them if order changed
         kld = b.orders[l,d]
-        # recompute 1D polynomials if order changed
         if isone(l) || kld ≠ b.orders[l-1,d]
           _evaluate_1d!(PT,kld,c,x,d)
         end
@@ -125,9 +125,9 @@ function _evaluate_nd!(
     end
 
     for ci in terms
-
       s = one(T)
-      @inbounds for d in 1:D
+
+      for d in 1:D
         s *= c[d,ci[d]]
       end
 
@@ -159,24 +159,33 @@ function _gradient_nd!(
   g::AbstractMatrix{T},
   s::MVector{D,T}, ::Val{K}) where {D,V,PT,G,T,K}
 
-  for d in 1:D
-    _derivatives_1d!(PT,K,(c,g),x,d)
+  if isHierarchical(PT)
+    for d in 1:D
+      _derivatives_1d!(PT,K,(c,g),x,d)
+    end
   end
 
   k = 1
-  for (l,terms) in enumerate(get_comp_terms(b))
-    for ci in terms
+  @inbounds for (l,terms) in enumerate(get_comp_terms(b))
 
-      for i in eachindex(s)
-        s[i] = one(T)
+    if !isHierarchical(PT)
+      for d in 1:D
+        kld = b.orders[l,d]
+        if isone(l) || kld ≠ b.orders[l-1,d]
+          _derivatives_1d!(PT,K,(c,g),x,d)
+        end
       end
+    end
+
+    for ci in terms
+      s .= one(T)
 
       for q in 1:D
         for d in 1:D
           if d != q
-            @inbounds s[q] *= c[d,ci[d]]
+            s[q] *= c[d,ci[d]]
           else
-            @inbounds s[q] *= g[d,ci[d]]
+            s[q] *= g[d,ci[d]]
           end
         end
       end
@@ -232,27 +241,37 @@ function _hessian_nd!(
   h::AbstractMatrix{T},
   s::MMatrix{D,D,T}, ::Val{K}) where {D,V,PT,H,T,K}
 
-  for d in 1:D
-    _derivatives_1d!(PT,K,(c,g,h),x,d)
+  if isHierarchical(PT)
+    for d in 1:D
+      _derivatives_1d!(PT,K,(c,g,h),x,d)
+    end
   end
 
-  k = 1
-  for (l,terms) in enumerate(get_comp_terms(b))
-    for ci in terms
 
-      for i in eachindex(s)
-        s[i] = one(T)
+  k = 1
+  @inbounds for (l,terms) in enumerate(get_comp_terms(b))
+
+    if !isHierarchical(PT)
+      for d in 1:D
+        kld = b.orders[l,d]
+        if isone(l) || kld ≠ b.orders[l-1,d]
+          _derivatives_1d!(PT,K,(c,g),x,d)
+        end
       end
+    end
+
+    for ci in terms
+      s .= one(T)
 
       for r in 1:D
         for q in 1:D
           for d in 1:D
             if d != q && d != r
-              @inbounds s[r,q] *= c[d,ci[d]]
+              s[r,q] *= c[d,ci[d]]
             elseif d == q && d ==r
-              @inbounds s[r,q] *= h[d,ci[d]]
+              s[r,q] *= h[d,ci[d]]
             else
-              @inbounds s[r,q] *= g[d,ci[d]]
+              s[r,q] *= g[d,ci[d]]
             end
           end
         end
