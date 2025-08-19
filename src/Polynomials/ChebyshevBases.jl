@@ -42,7 +42,7 @@ function _evaluate_1d!(
   ::Type{Chebyshev{kind}},K,c::AbstractMatrix{T},x,d) where {kind,T<:Number}
 
   if iszero(K)
-    @inbounds c[1] = one(T)
+    @inbounds c[d,1] = one(T)
     return
   end
 

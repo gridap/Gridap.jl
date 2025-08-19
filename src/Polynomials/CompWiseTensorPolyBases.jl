@@ -118,7 +118,7 @@ function _evaluate_nd!(
       @inbounds for d in 1:D
         kld = b.orders[l,d]
         # recompute 1D polynomials if order changed
-        if isone(l) || k ≠ b.orders[l-1,d]
+        if isone(l) || kld ≠ b.orders[l-1,d]
           _evaluate_1d!(PT,kld,c,x,d)
         end
       end

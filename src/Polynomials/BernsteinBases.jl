@@ -53,7 +53,7 @@ end
 function _evaluate_1d!(::Type{Bernstein},K::Int,v::AbstractMatrix{T},x,d) where T<:Number
   @inbounds begin
     if iszero(K)
-      v[1] = one(T)
+      v[d,1] = one(T)
       return
     end
 

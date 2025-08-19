@@ -146,7 +146,7 @@ function _evaluate_nd!(
   c::AbstractMatrix{T}, ::Val) where {D,V,PT,T}
 
   for d in 1:D
-     Kd = b.orders[d]
+    Kd = b.orders[d]
     _evaluate_1d!(PT,Kd,c,x,d)
   end
 
