@@ -434,18 +434,33 @@ end
 # Make it for x∈[0,1] like the other 1D bases.
 
 function _evaluate_1d!(::Type{ModalC0},K,c::AbstractMatrix{T},x,d) where T<:Number
+  if iszero(K)
+    @inbounds c[d,1] = one(T)
+    return
+  end
+
   a = zero(x)
   b = zero(x) .+ one(T)
   @inline _evaluate_1d_mc0!(c,x,a,b,K,d)
 end
 
 function _gradient_1d!(::Type{ModalC0},K,g::AbstractMatrix{T},x,d) where T<:Number
+  if iszero(K)
+    @inbounds g[d,1] = zero(T)
+    return
+  end
+
   a = zero(x)
   b = zero(x) .+ one(T)
   @inline _gradient_1d_mc0!(g,x,a,b,K,d)
 end
 
 function _hessian_1d!(::Type{ModalC0},K,h::AbstractMatrix{T},x,d) where T<:Number
+  if iszero(K)
+    @inbounds h[d,1] = zero(T)
+    return
+  end
+
   a = zero(x)
   b = zero(x) .+ one(T)
   @inline _hessian_1d_mc0!(h,x,a,b,K,d)
