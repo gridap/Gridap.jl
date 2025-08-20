@@ -101,6 +101,79 @@ function patch_extend(ptopo::PatchTopology{Dc},patch_to_data,Df=Dc) where Dc
   return pface_to_data
 end
 
+"""
+    is_cover(ptopo::PatchTopology)
+    is_cover(topo::GridTopology, patch_cells::Table)
+
+Returns `true` if the given patch topology is a cover of the underlying topology, i.e 
+if every cell in the topology is contained in at least one patch.
+"""
+function is_cover(ptopo::PatchTopology)
+  patch_cells = Geometry.get_patch_cells(ptopo)
+  is_cover(ptopo.topo, patch_cells)
+end
+
+function is_cover(topo::GridTopology, patch_cells)
+  cache = array_cache(patch_cells)
+  cell_is_covered = fill(false, num_cells(topo))
+  for patch in eachindex(patch_cells)
+    cells = getindex!(cache, patch_cells, patch)
+    cell_is_covered[cells] .= true
+  end
+  return all(cell_is_covered)
+end
+
+"""
+  is_partition(ptopo::PatchTopology; kwargs...)
+  is_partition(topo::GridTopology, patch_cells::Table; fail_fast = true)
+
+Check if the given patch topology is a valid partition of the underlying topology.
+
+To be a valid partition, the patches
+
+  - must cover the whole topology
+  - must be disjoint (i.e non-overlapping)
+  - must be connected (a patch cannot be split)
+
+If `fail_fast` is `true`, the function will exit as soon as it finds a patch that is not connected.
+Otherwise, it will check all patches and print a warning with the indices of the bad patches.
+
+"""
+function is_partition(ptopo::PatchTopology; kwargs...)
+  patch_cells = Geometry.get_patch_cells(ptopo)
+  is_partition(ptopo.topo, patch_cells; kwargs...)
+end
+
+function is_partition(topo::GridTopology, patch_cells; fail_fast = true)
+  if !is_cover(topo, patch_cells) || !isequal(sum(length, patch_cells), num_cells(topo))
+    return false # Not a cover or not disjoint
+  end
+
+  # Check patch connectivity
+  # We could return false at the first bad patch, but I'd rather get 
+  # all bad patch indices for debugging purposes.
+  D = num_cell_dims(topo)
+  cell_to_facets = get_faces(topo,D,D-1)
+  facet_to_cells = get_faces(topo,D-1,D)
+
+  cache = array_cache(patch_cells)
+  bad_patches = Int[]
+  for patch in eachindex(patch_cells)
+    cells = getindex!(cache, patch_cells, patch)
+    G = Graph(compute_graph(Set(cells), cell_to_facets, facet_to_cells))
+    if !is_connected(G)
+      push!(bad_patches, patch)
+      fail_fast && return false # Stop at the first bad patch
+    end
+  end
+
+  if !isempty(bad_patches)
+    @warn "The following patches are not connected: $(bad_patches)"
+    return false
+  end
+  return true
+end
+
 function generate_patch_faces(ptopo::PatchTopology{Dc},Df) where Dc
   cell_to_faces = get_faces(ptopo.topo,Dc,Df)
   patch_cells = get_patch_cells(ptopo)

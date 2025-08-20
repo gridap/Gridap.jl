@@ -8,6 +8,7 @@
 # are correctly oriented.
 
 function coarsen(model::Geometry.PolytopalDiscreteModel,ptopo::Geometry.PatchTopology; return_glue=false)
+  @check Geometry.is_partition(ptopo) "The patch topology is not a valid partition of the model"
   new_polys, new_connectivity = generate_patch_polytopes(model,ptopo)
 
   vertex_coords = get_vertex_coordinates(get_grid_topology(model))
@@ -84,7 +85,7 @@ function generate_patch_polytopes(
 
   new_connectivity = Vector{Vector{Int32}}(undef, npatches)
   new_polys = Vector{GeneralPolytope{D}}(undef, npatches)
-  Threads.@threads for patch in 1:npatches
+  for patch in 1:npatches
     cells = view(patch_cells,patch)
     if isone(length(cells))
       new_polys[patch] = polys[first(cells)]

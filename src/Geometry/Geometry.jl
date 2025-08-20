@@ -12,6 +12,8 @@ using FillArrays
 using LinearAlgebra: ⋅
 using Statistics: mean
 using DataStructures: SortedSet
+using SparseArrays: sparse
+using Graphs: Graph, is_connected
 
 using Gridap.Helpers
 using Gridap.Arrays
