@@ -85,11 +85,9 @@ function has_geometric_decomposition(
 end
 
 function get_face_own_funs(
-  b::BernsteinBasisOnSimplex{D,V}, p::Polytope, conf::Conformity) where {D,V}
+  b::BernsteinBasisOnSimplex{D,V}, p::Polytope, conf::GradConformity) where {D,V}
 
   @check has_geometric_decomposition(b,p,conf)
-
-  conf isa L2Conformity && return _l2_conforming_own_funs(b,p)
 
   faces = get_faces(p)
   num_faces = length(faces)
@@ -202,3 +200,75 @@ function get_facet_flux_sign_flip(
 
   sign_flip = Diagonal(sign_flip)
 end
+
+
+###############################################################
+# Geometric decompositions of tensor product bases on n-cubes #
+###############################################################
+
+"""Polynomial bases admitting a 1D geometric decomposition on the SEGMENT, ModalC0 and Bernstein"""
+const GD_1D_PT = Union{Polynomials.ModalC0, Bernstein}
+
+# says which poly of the Kth order 1D basis does the SEGMENT vertices own
+_SEGMENT_vertex_own_fun(::Type{Polynomials.ModalC0}, K) = (1, 2) # those are 1-x and x
+_SEGMENT_vertex_own_fun(::Type{Bernstein}, K) = (1, K+1)         # those are (1-x)ᴷ and xᴷ
+
+# CartProdPolyBasis
+
+function has_geometric_decomposition(
+  b::CartProdPolyBasis{D,V,<:GD_1D_PT}, p::Polytope, conf::Conformity) where {D,V}
+
+  conf isa L2Conformity && return true
+
+  get_order(b) < 1 && return false
+  !(is_n_cube(p) && D == num_dims(p)) && return false
+  if D<4
+    DCUBE = (VERTEX, SEGMENT, QUAD, HEX)[D+1]
+  else
+    DCUBE = ExtrusionPolytope(tfill(HEX_AXIS,Val(D)))
+  end
+  # Our 1D polynomial evaluations are decomposed in [0,1]ᴰ, so the vertices of
+  # p must be the same as the Reference D-cube
+  DCUBE_vertices = get_vertex_coordinates(DCUBE)
+  p_vertices = get_vertex_coordinates(p)
+  !all(p_vertices .∈ DCUBE_vertices) && return false
+
+  conf isa H1Conformity && return true
+
+  false
+end
+
+function get_face_own_funs(b::CartProdPolyBasis{D,V,PT}, p::Polytope, conf::GradConformity) where {D,V,PT<:GD_1D_PT}
+
+  @check has_geometric_decomposition(b,p,conf)
+
+  faces = get_faces(p)
+  num_faces = length(faces)
+  face_own_funs = Vector{Int}[ Int[] for _ in 1:num_faces]
+
+  V0, V1, V_int = 0,1,2
+
+  face_vertices = get_face_coordinates(p)
+  fixed_coords_to_face = Dict{NTuple{D,Int},Int}()
+  for (face,face_verts) in enumerate(face_vertices)
+    fixed_coords = ntuple( i ->
+        all(v->iszero(v[i]),face_verts) ? V0 :
+        all(v->isone( v[i]),face_verts) ? V1 :
+                                          V_int, Val(D))
+    fixed_coords_to_face[fixed_coords] = face
+  end
+
+  K = get_order(b)
+  s0_owned, s1_owned = _SEGMENT_vertex_own_fun(PT,K)
+  ncomp = num_indep_components(V)
+  id = 1
+  for ci in b.terms
+    own_coords = ntuple( i -> ci[i] == s0_owned ? V0 : ci[i] == s1_owned ? V1 : V_int, Val(D))
+    face = fixed_coords_to_face[own_coords]
+    append!(face_own_funs[face], id:id+ncomp-1)
+    id += ncomp
+  end
+
+  face_own_funs
+end
+

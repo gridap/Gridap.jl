@@ -263,12 +263,12 @@ function _test_geometric_decomposition(b,p,conf,face_own_funs=get_face_own_funs(
   @test pass
 end
 
-order = 2
-r = order+1
+r = 3
 et = Float64
 tol = 1000*eps(et)
 
 SIMPL4 = ExtrusionPolytope(tfill(TET_AXIS,Val(4)))
+NCUBE4 = ExtrusionPolytope(tfill(HEX_AXIS,Val(4)))
 
 ##################################
 # Grad conforming decompositions #
@@ -292,6 +292,26 @@ for p in (SEGMENT,TRI,TET,SIMPL4)
   b = BarycentricPΛBasis(Val(D),et,r,0)
   _test_geometric_decomposition(b,p,conf)
 end
+
+ModalC0 = Polynomials.ModalC0
+
+for p in (SEGMENT,QUAD,HEX,NCUBE4)
+  D = num_dims(p)
+  k =  0 # 0 forms
+
+  b = CartProdPolyBasis(ModalC0,  Val(D),et,r)
+  _test_geometric_decomposition(b,p,conf)
+
+  b = CartProdPolyBasis(Bernstein,Val(D),et,r)
+  _test_geometric_decomposition(b,p,conf)
+
+  b = CartProdPolyBasis(ModalC0,  Val(D), SkewSymTensorValue{3,et}, r)
+  _test_geometric_decomposition(b,p,conf)
+
+  b = CartProdPolyBasis(Bernstein,Val(D), SkewSymTensorValue{3,et}, r)
+  _test_geometric_decomposition(b,p,conf)
+end
+
 
 #########################################
 # Curl Conform Geometric decompositions #
