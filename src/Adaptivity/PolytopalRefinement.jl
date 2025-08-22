@@ -33,15 +33,22 @@ function coarsen(model::Geometry.PolytopalDiscreteModel,ptopo::Geometry.PatchTop
 end
 
 function generate_patch_adaptivity_glue(
-  ptopo, ftopo, ctopo, old_to_new_nodes, new_to_old_nodes,
+  ptopo, ftopo, ctopo, fine_to_coarse_nodes, coarse_to_fine_nodes
 )
   Dc = num_cell_dims(ftopo)
   fine_to_coarse_cells = Geometry.get_pface_to_patch(ptopo,Dc)
   coarse_to_fine_cells = Geometry.get_patch_cells(ptopo)
-  fine_child_ids = Geometry.get_pface_to_lpface(ptopo,Dc)
+  generate_patch_adaptivity_glue(
+    ftopo, ctopo, fine_to_coarse_cells, coarse_to_fine_cells, fine_to_coarse_nodes, coarse_to_fine_nodes
+  )
+end
 
+function generate_patch_adaptivity_glue(
+  ftopo, ctopo, fine_to_coarse_cells, coarse_to_fine_cells, fine_to_coarse_nodes, coarse_to_fine_nodes
+)
+  Dc = num_cell_dims(ftopo)
   fine_to_coarse_faces = Vector{Vector{Int32}}(undef, Dc+1)
-  fine_to_coarse_faces[1] = old_to_new_nodes
+  fine_to_coarse_faces[1] = fine_to_coarse_nodes
   fine_to_coarse_faces[Dc+1] = fine_to_coarse_cells
   for d in 1:Dc-1
     cface_to_cnodes = Geometry.get_faces(ctopo,d,0)
@@ -49,20 +56,21 @@ function generate_patch_adaptivity_glue(
     coarse_to_fine_faces = zeros(Int32, num_faces(ctopo,d))
     for cface in eachindex(cface_to_cnodes)
       cnodes = view(cface_to_cnodes, cface)
-      fnodes = view(new_to_old_nodes, cnodes)
-      fface = only(intersect((view(fnode_to_ffaces,fnode) for fnode in fnodes)...))
-      coarse_to_fine_faces[cface] = fface
+      fnodes = view(coarse_to_fine_nodes, cnodes)
+      if all(!iszero, fnodes)
+        fface = only(intersect((view(fnode_to_ffaces,fnode) for fnode in fnodes)...))
+        coarse_to_fine_faces[cface] = fface
+      end
     end
     fine_to_coarse_faces[d+1] = Arrays.find_inverse_index_map(coarse_to_fine_faces, num_faces(ftopo,d))
   end
 
+  fine_child_ids = Arrays.find_local_index(fine_to_coarse_cells, coarse_to_fine_cells)
   refinement_rules = Fill(WhiteRefinementRule(TRI), length(coarse_to_fine_cells))
   is_refined = select_refined_cells(fine_to_coarse_cells)
-  glue = AdaptivityGlue(
+  return AdaptivityGlue(
     RefinementGlue(), fine_to_coarse_faces, fine_child_ids, refinement_rules, is_refined, coarse_to_fine_cells
   )
-
-  return glue
 end
 
 function generate_patch_polytopes(
