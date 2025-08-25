@@ -234,8 +234,12 @@ end
 
 
 # Traces Test function
-function _test_geometric_decomposition(b,p,conf,face_own_funs=get_face_own_funs(b,p,conf))
-  @test has_geometric_decomposition(b,p,conf)
+function _test_geometric_decomposition(b,p,conf,
+  face_own_funs=get_face_own_funs(b,p,conf), skip_check=false)
+
+  if !skip_check
+    @test has_geometric_decomposition(b,p,conf)
+  end
 
   faces = get_faces(p)
   tr_forms = get_trace_forms(p,b,conf) # one form for each face in faces
@@ -278,7 +282,6 @@ conf = GradConformity()
 
 for p in (SEGMENT,TRI,TET,SIMPL4)
   D = num_dims(p)
-  k =  0 # 0 forms
 
   b = BernsteinBasisOnSimplex(Val(D),et,r)
   _test_geometric_decomposition(b,p,conf)
@@ -295,9 +298,12 @@ end
 
 ModalC0 = Polynomials.ModalC0
 
+# non-zero trace on both x=0. and 1. sides
+b = CartProdPolyBasis(ModalC0,Val(2),et,(0,1))
+@test !has_geometric_decomposition(b,QUAD,conf)
+
 for p in (SEGMENT,QUAD,HEX,NCUBE4)
   D = num_dims(p)
-  k =  0 # 0 forms
 
   b = CartProdPolyBasis(ModalC0,  Val(D),et,r)
   _test_geometric_decomposition(b,p,conf)
@@ -323,10 +329,29 @@ for p in (SEGMENT,TRI,TET) #,SIMPL4)
   D = num_dims(p)
   k = 1
 
-  b = BarycentricPmΛBasis(Val(D),et,r,k)
+  b = BarycentricPmΛBasis(Val(D),et,r,k) # Nédélec
   _test_geometric_decomposition(b,p,conf)
 
-  b = BarycentricPΛBasis(Val(D),et,r,k)
+  b = BarycentricPΛBasis(Val(D),et,r,k)  # Nédélec 2nd kind
+  _test_geometric_decomposition(b,p,conf)
+end
+
+D=2
+V = VectorValue{D,et}
+orders = [ (i==j ? 0 : 1) for i in 1:D, j in 1:D ]
+b = CompWiseTensorPolyBasis{D}(ModalC0,V,orders)   # RT
+@test !has_geometric_decomposition(b,QUAD,GradConformity())
+@test !has_geometric_decomposition(b,QUAD,DivConformity())
+
+for p in (QUAD,HEX)
+  D = num_dims(p)
+  V = VectorValue{D,et}
+  orders = [ r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D ]
+
+  b = CompWiseTensorPolyBasis{D}(ModalC0,V,orders)   # Nédélec
+  _test_geometric_decomposition(b,p,conf)
+
+  b = CompWiseTensorPolyBasis{D}(Bernstein,V,orders) # Nédélec
   _test_geometric_decomposition(b,p,conf)
 end
 
@@ -341,10 +366,29 @@ for p in (TRI,TET,SIMPL4)
   k = D-1 # flux forms
   rotate_90 = D==2
 
-  b = BarycentricPmΛBasis(Val(D),et,r,k; rotate_90)
+  b = BarycentricPmΛBasis(Val(D),et,r,k; rotate_90) # RT
   _test_geometric_decomposition(b,p,conf)
 
-  b = BarycentricPΛBasis(Val(D),et,r,k; rotate_90)
+  b = BarycentricPΛBasis(Val(D),et,r,k; rotate_90)  # BDM
+  _test_geometric_decomposition(b,p,conf)
+end
+
+D=2
+V = VectorValue{D,et}
+orders = [ (i==j ? 1 : 0) for i in 1:D, j in 1:D ]
+b = CompWiseTensorPolyBasis{D}(ModalC0,V,orders)   # RT
+@test !has_geometric_decomposition(b,QUAD,GradConformity())
+@test !has_geometric_decomposition(b,QUAD,CurlConformity())
+
+for p in (QUAD,HEX)
+  D = num_dims(p)
+  V = VectorValue{D,et}
+  orders = [ r-1 + (i==j ? 1 : 0) for i in 1:D, j in 1:D ]
+
+  b = CompWiseTensorPolyBasis{D}(ModalC0,V,orders)   # RT
+  _test_geometric_decomposition(b,p,conf)
+
+  b = CompWiseTensorPolyBasis{D}(Bernstein,V,orders) # RT
   _test_geometric_decomposition(b,p,conf)
 end
 

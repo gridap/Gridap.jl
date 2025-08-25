@@ -5,7 +5,7 @@
 
 Polynomial basis for a `D`-multivariate `V`-valued polynomial space:
 
-`V`(𝕊¹, 𝕊², ..., 𝕊ᴸ)
+`V`(𝕊¹, ∅, ..., ∅) ⊕ `V`(∅, 𝕊², ∅, ..., ∅) ⊕ ... ⊕ `V`(∅, ..., ∅, 𝕊ᴰ)
 
 with `L`>1, where the scalar `D`-multivariate spaces 𝕊ˡ (for 1 ≤ l ≤ `L`) of each
 (independent) component of `V` is the tensor product of 1D ℙ spaces of order

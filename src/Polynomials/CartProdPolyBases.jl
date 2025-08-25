@@ -10,7 +10,7 @@
 Type representing a basis of a (an)isotropic `D`-multivariate `V`-valued
 cartesian product polynomial space
 
-`V`(𝕊, 𝕊, ..., 𝕊)
+`V`(𝕊, ∅, ..., ∅) ⊕ `V`(∅, 𝕊, ∅, ..., ∅) ⊕ ... ⊕ `V`(∅, ..., ∅, 𝕊)
 
 where the scalar space 𝕊 is a (subspace of a) tensor product space of an
 univariate polynomial basis.
