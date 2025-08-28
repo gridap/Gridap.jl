@@ -109,7 +109,7 @@ test_reference_fe(reffe)
 dof_basis = get_dof_basis(reffe)
 
 ## Nedelec elements of 2nd kind
-reffe2 = Nedelec2RefFE(et, p, 1)
+reffe2 = ReferenceFE(p, nedelec2, et, 1)
 test_reference_fe(reffe2)
 @test length(get_prebasis(reffe2)) == 6
 @test get_order(get_prebasis(reffe2)) == 1
@@ -184,7 +184,7 @@ face_cdofs    = get_face_dofs(reffe)
                      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]]
 
 ## Nedelec elements of 2nd kind
-reffe2 = Nedelec2RefFE(et, p, 2)
+reffe2 = ReferenceFE(p, nedelec2, 2)
 test_reference_fe(reffe2)
 @test length(get_prebasis(reffe2)) == 30
 @test get_order(get_prebasis(reffe2)) == 2
