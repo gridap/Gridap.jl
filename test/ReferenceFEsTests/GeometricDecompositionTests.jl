@@ -351,6 +351,9 @@ for p in (SEGMENT,QUAD,HEX,NCUBE4)
   b = CartProdPolyBasis(Bernstein,Val(D),et,r)
   _test_geometric_decomposition(b,p,conf)
 
+  b = CartProdPolyBasis(ModalC0,  Val(D),et,r, Polynomials._ser_filter)
+  _test_geometric_decomposition(b,p,conf)
+
   b = CartProdPolyBasis(ModalC0,  Val(D), SkewSymTensorValue{3,et}, r)
   _test_geometric_decomposition(b,p,conf)
 

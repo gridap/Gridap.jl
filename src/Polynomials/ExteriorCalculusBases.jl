@@ -52,7 +52,7 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
     elseif F == :Q⁻            # Lagrange, ℚr space
       CartProdPolyBasis(PT,Val(D),T,r,_q_filter)
     elseif F == :S             # Lagrange, 𝕊r space
-      _ensure_hierarchical(PT)
+      PT==ModalC0 || _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),T,r,_ser_filter)
     end
 
@@ -68,7 +68,7 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
     elseif F == :Q⁻ # Lagrange, ℚr₋1 space
       CartProdPolyBasis(PT,Val(D),T,r-1,_q_filter)
     elseif F == :S  # Serendipity Lagrange ≡ ℙr space
-      _ensure_hierarchical(PT)
+      PT==ModalC0 || _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),T,r,_p_filter)
     end
 
