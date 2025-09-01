@@ -18,7 +18,7 @@ function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
     elseif k == D
       Lagrangian(), r-1
     elseif k == 1 && !rotate_90
-      Nedelec(), r-1
+      Nedelec{1}(), r-1
     else # must be k = D-1 && rotate_90 = true if k = 1
       RaviartThomas(), r-1
     end
@@ -30,8 +30,7 @@ function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
     elseif k == D
       Lagrangian(), r
     elseif k == 1 && !rotate_90
-      @notimplemented "Second kind nedelec not implemented yet"
-      # Nedelec2(), r
+      Nedelec{2}(), r
     else # must be k = D-1 && rotate_90 = true if k = 1
       BDM(), r
     end
@@ -42,7 +41,7 @@ function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
     elseif k == D
       Lagrangian(), r-1
     elseif k == 1 && !rotate_90
-      Nedelec(), r-1
+      Nedelec{1}(), r-1
     else # must be k = D-1 && rotate_90 = true if k = 1
       RaviartThomas(), r-1
     end
@@ -65,4 +64,3 @@ function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
 
   ReferenceFE(p,name,order; kwargs...)
 end
-

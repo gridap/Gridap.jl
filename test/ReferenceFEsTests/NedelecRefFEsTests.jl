@@ -8,6 +8,11 @@ using Gridap.TensorValues
 using Gridap.Fields: MockField
 using Gridap.ReferenceFEs
 
+
+@test Nedelec{1}() == nedelec
+@test Nedelec{1}() == nedelec1
+@test Nedelec{2}() == nedelec2
+
 p = QUAD
 D = num_dims(QUAD)
 et = Float64
@@ -140,6 +145,48 @@ test_reference_fe(reffe)
 @test Conformity(reffe) == CurlConformity()
 dof_basis = get_dof_basis(reffe)
 
+# tests for Nedelec elements of the second kind
+@test_throws AssertionError NedelecRefFE(Float64, QUAD, 1; kind=2)
+@test_throws AssertionError NedelecRefFE(Float64, HEX, 2; kind=2)
+@test_throws AssertionError NedelecRefFE(Float64, TRI, 0; kind=2)
+
+p = TRI
+et = Float64
+order = 1
+
+reffe2 = NedelecRefFE(et,p,order; kind=2)
+test_reference_fe(reffe2)
+@test length(get_prebasis(reffe2)) == 6
+@test get_order(get_prebasis(reffe2)) == 1
+@test num_dofs(reffe2) == 6
+@test Conformity(reffe2) == CurlConformity()
+dof_basis = get_dof_basis(reffe2)
+
+p = TRI
+et = Float64
+order = 2
+
+reffe2 = NedelecRefFE(et,p,order; kind=2)
+test_reference_fe(reffe2)
+@test length(get_prebasis(reffe2)) == 12
+@test get_order(get_prebasis(reffe2)) == 2
+@test num_dofs(reffe2) == 12
+@test Conformity(reffe2) == CurlConformity()
+dof_basis = get_dof_basis(reffe2)
+
+
+p = TET
+et = Float64
+order = 3
+
+reffe2 = NedelecRefFE(et,p,order; kind=2)
+test_reference_fe(reffe2)
+@test length(get_prebasis(reffe2)) == 60
+@test get_order(get_prebasis(reffe2)) == 3
+@test num_dofs(reffe2) == 60
+@test Conformity(reffe2) == CurlConformity()
+dof_basis = get_dof_basis(reffe2)
+
 
 #using Gridap.Geometry
 #using Gridap.Visualization
@@ -170,7 +217,6 @@ reffe = ReferenceFE(QUAD,nedelec,Float64,0)
 @test Conformity(reffe,:Hcurl) == CurlConformity()
 @test Conformity(reffe,:HCurl) == CurlConformity()
 
-@test Nedelec() == nedelec
 
 p = TET
 D = num_dims(p)
@@ -247,9 +293,13 @@ reffe = ReferenceFE(HEX,nedelec,0)
 reffe = ReferenceFE(TET,nedelec,0)
 @test reffe == ReferenceFE(TET,:P⁻,1,1)
 
-# (Serendipity) Nedelec 2nd kind not implemented
-@test_throws ErrorException ReferenceFE(TRI, :P,1,1)
-@test_throws ErrorException ReferenceFE(TET, :P,1,1)
+reffe2 = ReferenceFE(TRI,nedelec2,1)
+@test reffe2 == ReferenceFE(TRI,:P,1,1)
+
+reffe2 = ReferenceFE(TET,nedelec2,1)
+@test reffe2 == ReferenceFE(TET,:P,1,1)
+
+# Serendipity not implemented
 @test_throws ErrorException ReferenceFE(QUAD,:S,1,1)
 @test_throws ErrorException ReferenceFE(HEX, :S,1,1)
 
