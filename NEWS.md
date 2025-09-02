@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unified the high-level constructors of ReferenceFEs
 - New high level `ReferenceFE`s constructor using Arnold et al FEEC notations (Periodic Table of the Finite Elements): `ReferenceFE(F::Symbol, r, k, [, T::Type]; kwargs...)` with `F` the element family, `r` polynomial order and `k` the form order.
 - Documented the implemented ReferenceFEs with available order and other information in the `ReferenceFEs` section of the doc.
-
+- Implemented the Nedelec reference elements of the second kind `nedelec2`.
 - API for Geometric decomposition of polynomial bases, implemented for simplices. Since PR[#1144](https://github.com/gridap/Gridap.jl/pull/1144).
   The geometric decomposition API consist in the methods `has_geometric_decomposition`, `get_face_own_funs` and `get_facet_flux_sign_flip`.
 
