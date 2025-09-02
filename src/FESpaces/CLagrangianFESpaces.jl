@@ -97,13 +97,12 @@ function _use_clagrangian(trian::Triangulation,cell_reffe,conf::H1Conformity)
   end
   reffe1 = first(ctype_reffe1)
   reffe2 = first(ctype_reffe2)
-  if get_orders(reffe1) != get_orders(reffe2)
-    return false
-  end
-  if get_order(reffe1) != 1 # This can be relaxed in the future
-    return false
-  end
-  return true
+  !(reffe1 isa GenericLagrangianRefFE && reffe2 isa GenericLagrangianRefFE) && return false
+  get_orders(reffe1) != get_orders(reffe2) && return false
+  # This can be relaxed in the future
+  get_order(reffe1) != 1 && return false
+
+  true
 end
 
 function _unsafe_clagrangian(
