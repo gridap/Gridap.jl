@@ -64,10 +64,13 @@ function PatchAssembler(ptopo::PatchTopology,trial::FESpace,test::FESpace;kwargs
 end
 
 function get_patch_assembly_ids(space::FESpace,ptopo::PatchTopology;assembly=:all)
-  @check assembly ∈ (:all, :star, :interior, :boundary) """
-    Assembly type $assembly not recognized. Options are (:all, :star, :interior, :boundary).
-  """
   get_patch_assembly_ids(Val(assembly),space,ptopo) :: Table{Int32,Vector{Int32},Vector{Int32}}
+end
+
+function get_patch_assembly_ids(::Val,space::FESpace,ptopo::PatchTopology)
+  @notimplemented """
+    Patch assembly type not recognized. Options are (:all, :star, :interior, :boundary).
+  """
 end
 
 function get_patch_assembly_ids(::Val{:all},space::FESpace,ptopo::PatchTopology)
