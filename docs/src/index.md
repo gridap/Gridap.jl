@@ -12,6 +12,10 @@ The library currently supports linear and nonlinear PDE systems for scalar and v
 
 * The first step for new users is to visit the [Getting Started](@ref) page.
 
+* For a high-level overview of Gridap's capabilities, see [Gridap at a glance](@ref).
+
+* To explore the extended capabilities available through companion packages, check out the [Gridap ecosystem](@ref).
+
 * A set of tutorials written as Jupyter notebooks and html pages are available [here](https://github.com/gridap/Tutorials).
 
 * The detailed documentation is in the [Manual](@ref) section.
@@ -32,6 +36,7 @@ Here, one can find a list of resources to get started with this programming lang
 ```@contents
 Pages = [
   "Gridap.md",
+  "ecosystem.md",
   "Helpers.md",
   "Io.md",
   "Algebra.md",
