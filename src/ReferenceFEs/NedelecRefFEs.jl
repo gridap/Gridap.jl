@@ -36,8 +36,7 @@ function NedelecRefFE(::Type{T},p::Polytope,order::Integer; sh_is_pb=true, kind:
   rotate_90 = D==2
 
   if is_n_cube(p)
-    PT = Legendre # Could be a 
-    wargs, any basis works
+    PT = Legendre # Could be a wargs, any basis works
     @check kind == 1 "Nedelec reference elements of the second kind are only defined on simplices"
     prebasis =     FEEC_poly_basis(Val(D),T,order+1,1,:Q⁻,PT) # Q⁻ᵣΛ¹(□ᴰ), r = order+1
     eb =           FEEC_poly_basis(Val(1),T,order,0,  :Q⁻,PT)                      # Edge basis  Q⁻ᵨΛ⁰(□¹),  ρ = r-1
