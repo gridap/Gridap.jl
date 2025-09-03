@@ -143,14 +143,11 @@ end
 function _evaluate_nd!(
   b::CartProdPolyBasis{D,V,PT}, x,
   r::AbstractMatrix, i,
-  c::AbstractMatrix{T}, VK::Val) where {D,V,PT,T}
+  c::AbstractMatrix{T}, ::Val) where {D,V,PT,T}
 
   for d in 1:D
-    # The optimization below of fine tuning Kd for `orders` is a bottlneck if
-    # `orders` are not passed in `Val`s, due to runtime dispatch depending on
-    # none inferable Val(b.orders[d])
-    # Kd = Val(b.orders[d])
-    _evaluate_1d!(PT,VK,c,x,d)
+    Kd = b.orders[d]
+    _evaluate_1d!(PT,Kd,c,x,d)
   end
 
   k = 1
@@ -203,10 +200,10 @@ function _gradient_nd!(
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
-  s::MVector{D,T}, VK::Val) where {D,V,PT,G,T}
+  s::MVector{D,T}, ::Val{K}) where {D,V,PT,G,T,K}
 
   for d in 1:D
-    _derivatives_1d!(PT,VK,(c,g),x,d)
+    _derivatives_1d!(PT,K,(c,g),x,d)
   end
 
   k = 1
@@ -341,10 +338,10 @@ function _hessian_nd!(
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   h::AbstractMatrix{T},
-  s::MMatrix{D,D,T}, VK::Val) where {D,V,PT,G,T}
+  s::MMatrix{D,D,T}, ::Val{K}) where {D,V,PT,G,T,K}
 
   for d in 1:D
-    _derivatives_1d!(PT,VK,(c,g,h),x,d)
+    _derivatives_1d!(PT,K,(c,g,h),x,d)
   end
 
   k = 1

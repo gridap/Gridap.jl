@@ -84,10 +84,10 @@ end
 function _evaluate_nd!(
   b::RaviartThomasPolyBasis{D,V,PT}, x,
   r::AbstractMatrix{Vr}, i,
-  c::AbstractMatrix{T}, VK::Val) where {D,V,PT,Vr,T}
+  c::AbstractMatrix{T}, ::Val{K}) where {D,V,PT,Vr,T,K}
 
   for d in 1:D
-    _evaluate_1d!(PT,VK,c,x,d)
+    _evaluate_1d!(PT,K,c,x,d)
   end
 
   m = zero(Mutable(Vr))
@@ -133,10 +133,10 @@ function _gradient_nd!(
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
-  s::MVector{D,T}, VK::Val) where {D,V,PT,G,T}
+  s::MVector{D,T}, ::Val{K}) where {D,V,PT,G,T,K}
 
   for d in 1:D
-    _derivatives_1d!(PT,VK,(c,g),x,d)
+    _derivatives_1d!(PT,K,(c,g),x,d)
   end
 
   m = zero(Mutable(G))

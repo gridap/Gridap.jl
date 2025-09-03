@@ -90,13 +90,11 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
       elseif F == :Q⁻
         if rotate_90 # Raviart-Thomas
           # former QCurlGradBasis(PT,Val(D),T,r-1)
-          m = Tuple( r-1 + (i==j ? 1 : 0) for i in 1:D, j in 1:D )
-          orders = SMatrix{D,D,Int}(m)
+          orders = [ r-1 + (i==j ? 1 : 0) for i in 1:D, j in 1:D ]
           CompWiseTensorPolyBasis{D}(PT, V, orders)
         else         # Nedelec
           # former QGradBasis(PT,Val(D),T,r-1)
-          m = Tuple( r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D )
-          orders = SMatrix{D,D,Int}(m)
+          orders = [ r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D ]
           CompWiseTensorPolyBasis{D}(PT, V, orders)
         end
       elseif F == :S  # BDM on D-cubes
@@ -114,8 +112,7 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
         CartProdPolyBasis(PT,Val(D),V,r,Polynomials._p_filter) # rotation not needed
       elseif F == :Q⁻ # First kind Nedelec
         # former QGradBasis(PT,Val(D),T,r-1)
-        m = Tuple( r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D )
-        orders = SMatrix{D,D,Int}(m)
+        orders = [ r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D ]
         CompWiseTensorPolyBasis{D}(PT, V, orders)
       elseif F == :S  # "Serendipity second kind Nedelec" ?
         @notimplemented
@@ -138,8 +135,7 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
       CartProdPolyBasis(PT,Val(D),V,r,Polynomials._p_filter) # rotation not needed
     elseif F == :Q⁻ # Raviart-Thomas
       # former QCurlGradBasis(PT,Val(D),T,r-1)
-      m = Tuple( r-1 + (i==j ? 1 : 0) for i in 1:D, j in 1:D )
-      orders = SMatrix{D,D,Int}(m)
+      orders = [ r-1 + (i==j ? 1 : 0) for i in 1:D, j in 1:D ]
       CompWiseTensorPolyBasis{D}(PT, V, orders)
     elseif F == :S  # "3D Serendipity BDM" ?
       @notimplemented
