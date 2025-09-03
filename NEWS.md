@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added extension for `TikzPictures.jl`. Since PR[#1150](https://github.com/gridap/Gridap.jl/pull/1150).
+- Added `eigen` function support for `TensorValue` objects. Fixes issue [#1156](https://github.com/gridap/Gridap.jl/issues/1156). Since PR[#1157](https://github.com/gridap/Gridap.jl/pull/1157).
 
 ## [0.19.4] - 2025-08-09
 
