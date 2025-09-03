@@ -207,6 +207,8 @@ export lagrangian
 export raviart_thomas
 export bdm
 export nedelec
+export nedelec1
+export nedelec2
 export bezier
 export modalC0
 export crouzeix_raviart

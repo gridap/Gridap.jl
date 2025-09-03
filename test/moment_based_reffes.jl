@@ -274,7 +274,7 @@ moments = [
   [(f+get_offset(p,1),emom,eb) for f in 1:num_faces(p,1)]..., # Edge moments
   (num_faces(p),cmom,cb) # Cell moments
 ]
-reffe = MomentBasedReferenceFE(Nedelec(),p,prebasis,moments,CurlConformity())
+reffe = MomentBasedReferenceFE(Nedelec{1}(),p,prebasis,moments,CurlConformity())
 dofs = get_dof_basis(reffe)
 
 nd_reffe = NedelecRefFE(Float64,p,order)
@@ -299,7 +299,7 @@ moments = [
   [(f+get_offset(p,2),fmom_cross,fb) for f in 1:num_faces(p,2)]..., # Face moments
   (num_faces(p),cmom,cb) # Cell moments
 ]
-reffe = MomentBasedReferenceFE(Nedelec(),p,prebasis,moments,CurlConformity())
+reffe = MomentBasedReferenceFE(Nedelec{1}(),p,prebasis,moments,CurlConformity())
 dofs = get_dof_basis(reffe)
 
 nd_reffe = NedelecRefFE(Float64,p,order)

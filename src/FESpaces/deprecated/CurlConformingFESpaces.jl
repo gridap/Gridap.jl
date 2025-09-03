@@ -1,8 +1,8 @@
 
 function get_cell_dof_basis(
   model::DiscreteModel,
-  cell_reffe::AbstractArray{<:GenericRefFE{Nedelec}},
-  ::CurlConformity)
+  cell_reffe::AbstractArray{<:GenericRefFE{Nedelec{K}}},
+  ::CurlConformity) where K
 
   Dc        = num_dims(reffe)
   Dp        = first(size(return_type(phi,zero(pt))))
@@ -45,8 +45,8 @@ end
 
 function get_cell_shapefuns(
   model::DiscreteModel,
-  cell_reffe::AbstractArray{<:GenericRefFE{Nedelec}},
-  ::CurlConformity)
+  cell_reffe::AbstractArray{<:GenericRefFE{Nedelec{K}}},
+  ::CurlConformity) where K
 
   cell_reffe_shapefuns = lazy_map(get_shapefuns,cell_reffe)
   cell_map = get_cell_map(Triangulation(model))
