@@ -1,5 +1,0 @@
-# Gridap
-
-```@docs
-Gridap
-```

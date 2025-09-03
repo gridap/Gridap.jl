@@ -1,3 +1,5 @@
+"""
+"""
 abstract type MultiFieldStyle end
 
 """
@@ -12,13 +14,13 @@ struct ConsecutiveMultiFieldStyle <: MultiFieldStyle end
     struct BlockMultiFieldStyle{NB,SB,P} <: MultiFieldStyle end
 
 Similar to ConsecutiveMultiFieldStyle, but we keep the original DoF ids of the
-individual spaces for better block assembly (see BlockSparseMatrixAssembler).
+individual spaces for better block assembly (see [`BlockSparseMatrixAssembler`](@ref)).
 
-Takes three parameters: 
+Takes three parameters:
 
-  - NB: Number of assembly blocks
-  - SB: Size of each assembly block, as a Tuple.
-  - P : Permutation of the variables of the multifield space when assembling, as a Tuple.
+ - NB: Number of assembly blocks
+ - SB: Size of each assembly block, as a Tuple.
+ - P : Permutation of the variables of the multifield space when assembling, as a Tuple.
 """
 struct BlockMultiFieldStyle{NB,SB,P} <: MultiFieldStyle end
 
@@ -92,7 +94,7 @@ end
 """
     struct StridedMultiFieldStyle <: MultiFieldStyle end
 
-Not implemented yet. 
+Not implemented yet.
 """
 struct StridedMultiFieldStyle <: MultiFieldStyle end
 
@@ -125,7 +127,10 @@ struct MultiFieldFESpace{MS<:MultiFieldStyle,CS<:ConstraintStyle,V} <: FESpace
 end
 
 """
-    MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
+    MultiFieldFESpace(::Type{V}, spaces::Vector{<:SingleFieldFESpace})
+    MultiFieldFESpace(           spaces::Vector{<:SingleFieldFESpace};
+      style = ConsecutiveMultiFieldStyle()
+    )
 """
 function MultiFieldFESpace(
   spaces::Vector{<:SingleFieldFESpace}; style = ConsecutiveMultiFieldStyle()
@@ -151,7 +156,7 @@ MultiFieldStyle(f::MultiFieldFESpace) = MultiFieldStyle(typeof(f))
 """
     num_fields(f::MultiFieldFESpace)
 
-Number of spaces within the multi-field space. 
+Number of spaces within the multi-field space.
 Defaults to 1 for SingleFieldFESpaces.
 """
 num_fields(f::MultiFieldFESpace) = length(f.spaces)
