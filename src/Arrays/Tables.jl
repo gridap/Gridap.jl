@@ -304,8 +304,10 @@ function inverse_table(
     e = a_to_lb_to_b_ptrs[a+1] - o
     @inbounds for p in s:e
       b = a_to_lb_to_b_data[p]
-      data[ptrs[b]] = a
-      ptrs[b] += o
+      if b != UNSET
+        data[ptrs[b]] = a
+        ptrs[b] += o
+      end
     end
   end
   rewind_ptrs!(ptrs)
