@@ -747,6 +747,14 @@ function inv(a::MultiValue{Tuple{3,3}})
  TensorValue{3}(data)
 end
 
+"""
+    eigen(a::MultiValue{Tuple{D,D}})
+
+Eigenvalue decomposition of a square second order tensor.
+"""
+eigen(a::MultiValue{Tuple{D,D}}) where D = eigen(get_array(a))
+eigen(a::MultiValue) = @unreachable "eigen undefined for this tensor shape: $(size(a))"
+
 ###############################################################
 # Measure
 ###############################################################

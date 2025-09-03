@@ -620,6 +620,44 @@ t = TensorValue{2,3}(1:6...)
 @test_throws ErrorException det(t)
 @test_throws ErrorException inv(t)
 
+# Test eigen function
+t = TensorValue(1.0,2.0,3.0,4.0)
+result = eigen(t)
+expected = eigen(get_array(t))
+@test result.values ≈ expected.values
+@test result.vectors ≈ expected.vectors
+
+# Test different tensor types with eigen
+st = SymTensorValue(9.0,8.0,7.0,5.0,4.0,1.0)
+result_st = eigen(st)
+expected_st = eigen(get_array(st))
+@test result_st.values ≈ expected_st.values
+@test result_st.vectors ≈ expected_st.vectors
+
+qt = SymTracelessTensorValue(9.0,8.0,7.0,5.0,4.0)
+result_qt = eigen(qt)
+expected_qt = eigen(get_array(qt))
+@test result_qt.values ≈ expected_qt.values
+@test result_qt.vectors ≈ expected_qt.vectors
+
+# Test 1x1 case
+t1 = TensorValue(5.0)
+result1 = eigen(t1)
+expected1 = eigen(get_array(t1))
+@test result1.values ≈ expected1.values
+@test result1.vectors ≈ expected1.vectors
+
+# Test 3x3 case
+t3 = TensorValue(1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,10.0)
+result3 = eigen(t3)
+expected3 = eigen(get_array(t3))
+@test result3.values ≈ expected3.values
+@test result3.vectors ≈ expected3.vectors
+
+# Test error handling for non-square matrices
+t_nonsquare = TensorValue{2,3}(1:6...)
+@test_throws ErrorException eigen(t_nonsquare)
+
 # Measure
 
 a = VectorValue(1,2,3)
