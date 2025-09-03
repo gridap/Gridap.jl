@@ -64,26 +64,13 @@ function PatchAssembler(ptopo::PatchTopology,trial::FESpace,test::FESpace;kwargs
 end
 
 function get_patch_assembly_ids(space::FESpace,ptopo::PatchTopology;assembly=:all)
-  if assembly == :all
-    _patch_assembly_ids_all(space,ptopo)
-  elseif assembly == :star
-    # Takes all dofs owned by a face that is connected to the root of the patch.
-    # This is different than :interior for patches whose root is on the domain boundary.
-    _patch_assembly_ids_star(space,ptopo)
-  elseif assembly == :interior
-    # Takes all dofs owned by a face that is not boundary of the patch
-    _patch_assembly_ids_interior(space,ptopo)
-  elseif assembly == :boundary
-    # Takes all dofs owned by a face that is boundary of the patch
-    _patch_assembly_ids_boundary(space,ptopo)
-  else
-    @notimplemented """
-    Assembly type $assembly not implemented. Options are (:all, :star, :interior, :boundary).
-    """
-  end :: Table{Int32,Vector{Int32},Vector{Int32}}
+  @check assembly ∈ (:all, :star, :interior, :boundary) """
+    Assembly type $assembly not recognized. Options are (:all, :star, :interior, :boundary).
+  """
+  get_patch_assembly_ids(Val(assembly),space,ptopo) :: Table{Int32,Vector{Int32},Vector{Int32}}
 end
 
-function _patch_assembly_ids_all(space::FESpace,ptopo::PatchTopology)
+function get_patch_assembly_ids(::Val{:all},space::FESpace,ptopo::PatchTopology)
   trian = get_triangulation(space)
   Df = num_cell_dims(trian)
   face_to_tface = get_glue(trian,Val(Df)).mface_to_tface
@@ -100,7 +87,9 @@ function _patch_assembly_ids_all(space::FESpace,ptopo::PatchTopology)
   return patch_rows
 end
 
-function _patch_assembly_ids_star(space::FESpace, ptopo::PatchTopology)
+# Takes all dofs owned by a face that is connected to the root of the patch.
+# This is different than :interior for patches whose root is on the domain boundary.
+function get_patch_assembly_ids(::Val{:star},space::FESpace, ptopo::PatchTopology)
   @check ptopo.metadata isa Geometry.StarPatchMetadata """
     PatchTopology does not have StarPatchMetadata metadata.
   """
@@ -131,7 +120,8 @@ function _patch_assembly_ids_star(space::FESpace, ptopo::PatchTopology)
   return _patch_assembly_ids_masked(space,ptopo,d_to_dpface_to_mask)
 end
 
-function _patch_assembly_ids_boundary(space::FESpace, ptopo::PatchTopology;reverse=false)
+# Takes all dofs owned by a face that is not boundary of the patch
+function get_patch_assembly_ids(::Val{:boundary},space::FESpace, ptopo::PatchTopology;reverse=false)
   # A dpface is masked (removed) iff it is NOT boundary of the patch
   D = num_cell_dims(ptopo)
   d_to_dpface_to_mask = map(0:D) do d
@@ -140,8 +130,9 @@ function _patch_assembly_ids_boundary(space::FESpace, ptopo::PatchTopology;rever
   return _patch_assembly_ids_masked(space,ptopo,d_to_dpface_to_mask;reverse)
 end
 
-function _patch_assembly_ids_interior(space::FESpace, ptopo::PatchTopology)
-  return _patch_assembly_ids_boundary(space,ptopo;reverse=true)
+# Takes all dofs owned by a face that is boundary of the patch
+function get_patch_assembly_ids(::Val{:interior}, space::FESpace, ptopo::PatchTopology)
+  get_patch_assembly_ids(Val(:boundary),space,ptopo;reverse=true)
 end
 
 function _patch_assembly_ids_masked(
