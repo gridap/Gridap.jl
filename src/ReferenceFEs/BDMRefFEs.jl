@@ -13,20 +13,22 @@ const bdm = BDM()
 Pushforward(::Type{BDM}) = ContraVariantPiolaMap()
 
 """
-    BDMRefFE(::Type{T}, p::Polytope, order::Integer; sh_is_pb=true)
+    BDMRefFE(::Type{T}, p::Polytope, order::Integer; sh_is_pb=true, poly_type)
 
 The `order` argument has the following meaning: the divergence of the  functions
 in this basis is in the ℙ space of degree `order`. `T` is the type of scalar
 components.
 """
-function BDMRefFE(::Type{T},p::Polytope,order::Integer; sh_is_pb=true) where T
+function BDMRefFE(
+  ::Type{T},p::Polytope{D},order::Integer;
+  sh_is_pb=true, poly_type=_mom_reffe_default_PT(p)) where {T,D}
+
   @check order > 0 "BDM Reference FE only available for order > 0, got order=$order"
-  D = num_dims(p)
   @check 2 ≤ D ≤ 3 && is_simplex(p) "BDM Reference FE only available for simplices of dimension 2 and 3"
 
+  PT = poly_type
   rotate_90 = (D==2)
   k = D-1
-  PT = Bernstein # Could be a Kwargs, any basis works
 
   prebasis =     FEEC_poly_basis(Val(D),  T,order  ,k,:P, PT; rotate_90) # PᵣΛᴰ⁻¹, r = order
   fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:P⁻,Bernstein)            # Facet basis P⁻ᵨΛ⁰(△ᴰ⁻¹), ρ = r
@@ -48,7 +50,9 @@ function BDMRefFE(::Type{T},p::Polytope,order::Integer; sh_is_pb=true) where T
     push!(moments,(get_dimrange(p,D),cmom,cb)) # Cell moments
   end
 
-  return MomentBasedReferenceFE(BDM(),p,prebasis,moments,DivConformity(); sh_is_pb)
+  conf = DivConformity()
+  sh_is_pb = sh_is_pb && has_geometric_decomposition(prebasis,p,conf)
+  return MomentBasedReferenceFE(BDM(),p,prebasis,moments,conf; sh_is_pb)
 end
 
 function ReferenceFE(p::Polytope,::BDM,::Type{T}, order; kwargs...) where T

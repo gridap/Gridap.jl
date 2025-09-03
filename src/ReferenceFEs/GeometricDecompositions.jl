@@ -206,7 +206,7 @@ end
 # Geometric decompositions of tensor product bases on n-cubes #
 ###############################################################
 
-"""Polynomial bases admitting a 1D geometric decomposition on the SEGMENT, ModalC0 and Bernstein"""
+#Polynomial bases admitting a 1D geometric decomposition on the SEGMENT, currently `ModalC0` and `Bernstein`.
 const GD_1D_PT = Union{Polynomials.ModalC0, Bernstein}
 
 # says which poly of the Kth order 1D basis does the SEGMENT vertices own
@@ -345,4 +345,22 @@ function get_face_own_funs(
   end
   face_own_funs
 end
+
+function get_facet_flux_sign_flip(
+  b::CompWiseTensorPolyBasis{D,V,PT}, p::Polytope, conf::Conformity) where {D,V,PT<:GD_1D_PT}
+
+  facet_range = get_dimrange(p,D-1)
+  face_own_funs = get_face_own_funs(b,p,conf)
+  sign_flip = MVector(tfill(1, Val(length(b)))...)
+
+  for (face, own_funs) in enumerate(face_own_funs)
+    if face ∈ facet_range
+      # empirically determined, see tests
+      sign_flip[own_funs] .= iseven(face-first(facet_range)) ? -1 : 1
+    end
+  end
+
+  sign_flip = Diagonal(sign_flip)
+end
+
 

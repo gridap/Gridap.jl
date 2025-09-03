@@ -7,7 +7,8 @@ struct Nedelec{kind} <: ReferenceFEName
 end
 
 """
-    const nedelec = Nedelec{1}()
+    const nedelec  = Nedelec{1}()
+    const nedelec1 = Nedelec{1}()
 
 Singleton of the first kind of [`Nedelec`](@ref) reference FE name.
 """
@@ -24,20 +25,20 @@ const nedelec2 = Nedelec{2}()
 Pushforward(::Type{<:Nedelec}) = CoVariantPiolaMap()
 
 """
-    NedelecRefFE(::Type{T}, p::Polytope, order::Integer; sh_is_pb=true)
+    NedelecRefFE(::Type{T}, p::Polytope, order::Integer; sh_is_pb=true, poly_type)
 
 The `order` argument has the following meaning: the curl of the  functions in
 this basis is in the ℙ/ℚ space of degree `order`. `T` is the type of scalar components.
-
-`sh_is_pb` is only used if `p` is a simplex.
 """
-function NedelecRefFE(::Type{T},p::Polytope,order::Integer; sh_is_pb=true, kind::Int=1) where T
-  D = num_dims(p)
+function NedelecRefFE(
+  ::Type{T},p::Polytope{D},order::Integer; kind::Int=1,
+  sh_is_pb=true, poly_type=_mom_reffe_default_PT(p)) where {T,D}
+
+  PT = poly_type
   rotate_90 = D==2
 
   if is_n_cube(p)
-    PT = Legendre # Could be a 
-    wargs, any basis works
+    PT = Legendre # Could be a wargs, any basis works
     @check kind == 1 "Nedelec reference elements of the second kind are only defined on simplices"
     prebasis =     FEEC_poly_basis(Val(D),T,order+1,1,:Q⁻,PT) # Q⁻ᵣΛ¹(□ᴰ), r = order+1
     eb =           FEEC_poly_basis(Val(1),T,order,0,  :Q⁻,PT)                      # Edge basis  Q⁻ᵨΛ⁰(□¹),  ρ = r-1
@@ -94,8 +95,9 @@ function NedelecRefFE(::Type{T},p::Polytope,order::Integer; sh_is_pb=true, kind:
     push!(moments,(get_dimrange(p,D),cmom,cb))   # Cell moments
   end
 
-  sh_is_pb = sh_is_pb && is_simplex(p)
-  return MomentBasedReferenceFE(Nedelec{kind}(),p,prebasis,moments,CurlConformity(); sh_is_pb)
+  conf = CurlConformity()
+  sh_is_pb = sh_is_pb && has_geometric_decomposition(prebasis,p,conf)
+  return MomentBasedReferenceFE(Nedelec{kind}(),p,prebasis,moments,conf; sh_is_pb)
 end
 
 function ReferenceFE(p::Polytope,::Nedelec{K},::Type{T}, order; kwargs...) where {K, T}

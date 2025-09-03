@@ -192,6 +192,11 @@ function HDiv_facet_tr_norm(φ,_,ds) # tr_F(φ) = ∫ ‖φ⋅n‖ dF
   Broadcasting(Operation(norm))(φn)
 end
 
+function HDiv_facet_flux(φ,_,ds) #  ∫ φ⋅n dF
+  n = get_facet_normal(ds)
+  Broadcasting(Operation(⋅))(φ,n)
+end
+
 
 # zero form on each face
 function get_trace_forms(p::Polytope{D}, field, ::L2Conformity) where D
@@ -232,6 +237,13 @@ function get_trace_forms(p::Polytope{D}, field, ::DivConformity) where D
   FaceIntegralFormVector(p,qorder,trace_forms)
 end
 
+function get_normal_flux_forms(p::Polytope{D}, field) where D
+  facet_range = get_dimrange(p,D-1)
+  fun_flux_form = Tuple[ (facet_range, HDiv_facet_flux)  ]
+  qorder = get_order(field)+2
+  FaceIntegralFormVector(p,qorder,fun_flux_form)
+end
+
 
 # Traces Test function
 function _test_geometric_decomposition(b,p,conf,
@@ -265,6 +277,34 @@ function _test_geometric_decomposition(b,p,conf,
     end
   end
   @test pass
+
+  # test get_facet_flux_sign_flip
+  if conf isa DivConformity
+    normal_flux_forms = get_normal_flux_forms(p,b)
+    b_nrm_fluxes = evaluate(normal_flux_forms, b)
+
+    D = num_dims(p)
+    facet_range = get_dimrange(p,D-1)
+    facet_own_funs = face_own_funs[facet_range]
+
+    sign_flip = diag(get_facet_flux_sign_flip(b,p,conf))
+    fun_per_facet = length(first(facet_own_funs))
+    n_facets = length(facet_range)
+    own_flux_signs = Matrix{Float64}(undef, (n_facets,fun_per_facet))
+
+    for (lfacet, own_funs) in enumerate(facet_own_funs)
+      own_flux_signs[lfacet,:] = sign_flip[own_funs] .* sign.(b_nrm_fluxes[lfacet,own_funs])
+    end
+    # The (corrected) flux sign of the iᵗʰ fun of a facet must be the same as
+    # the iᵗʰ fun of all other facets, so we check that each column has allequal
+    # signs (for all columns).
+    @test mapreduce(allequal, &, eachcol(own_flux_signs))
+
+    # As it is currently written, this test is only meant to pass if all facets
+    # have the same bubble space. In case of anysotropic basis on `p`
+    # (non-uniform h-adaptivity), only facets of same degree / same bubble space
+    # could be compared
+  end
 end
 
 r = 3

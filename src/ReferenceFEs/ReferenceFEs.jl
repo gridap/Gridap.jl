@@ -2,6 +2,7 @@
 
 $(public_names_in_md(@__MODULE__; change_link=Dict(
   :H1Conformity  => "GradConformity",
+  :nedelec1  => "nedelec",
 )))
 """
 module ReferenceFEs
@@ -157,6 +158,7 @@ export is_S
 
 export has_geometric_decomposition
 export get_face_own_funs
+export get_facet_flux_sign_flip
 
 export MomentBasedDofBasis
 export get_face_own_nodes

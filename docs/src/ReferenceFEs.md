@@ -50,7 +50,7 @@ The following table summarizes the elements implemented in Gridap (legend below)
 | [Arnold-Winther](https://defelement.org/elements/arnold-winther.html)                   | `TODO`  `arnoldwinther`                      |           | `TRI`       | ``{o=2, 4}``    | `:Hdiv`   |
 | [Hellan-Herrmann-Jhonson](https://defelement.org/elements/hellan-herrmann-johnson.html) | `TODO`  `hhj`                                |           | `TRI`       | ``{TODO, o}``   | `:Hdiv`   |
 
-###### Legend
+##### Legend
 
 - Name: usual name of the element and link to its
     [DefElement](https://defelement.org/) page, containing all the details
@@ -65,10 +65,12 @@ The following table summarizes the elements implemented in Gridap (legend below)
 - Order: ( _definition of ``r`` and ``o``_; _``k``_ ) where
   - ``r`` is the FEEC polynomial degree parameter (if defined).
   - ``o`` is the `order` parameter of the non FEEC `ReferenceFE` constructor (using [`name::ReferenceFEName`](@ref ReferenceFEName)),
-  - ``k`` is the maximum polynomial order of the shape functions in one direction (Lagrange superdegree), defined in function of `k` or `o`,
+  - ``k`` is the maximum polynomial order of the shape functions in one direction (Lagrange superdegree), defined in function of ``r`` or ``o``,
 - Conformity: supported [`Conformity`](@ref). All the elements also implement `:L2` conformity.
 
-##### Additional information
+#### Additional information
+
+###### Anysotropic and Cartesian product elements
 
 The `lagrangian`, `modalC0` and `bezier` elements support anisotropic orders on
 `QUAD` and `HEX`, leveraging the tensor product basis in each dimension.
@@ -82,6 +84,14 @@ component of the tensor.
 
 The `modalC0` element has the particularity that it's polytope and thus the
 shape function support can be adapted to the physical element.
+
+###### `poly_type` keyword argument
+
+The `nedelec`, `raviart_thomas` and `bdm` elements constructors support the
+`poly_type::Type{<:Polynomial}` keyword argument, which gives the choice of the
+polynomial family to use as pre-basis and moment DoFs test basis. This changes
+the choice of DoF basis, but not the (dual) polynomial space spanned by the
+shape functions.
 
 ###### Bubble reference FE
 
@@ -172,17 +182,10 @@ Pages   = ["LagrangianRefFEs.jl","LagrangianDofBases.jl","SerendipityRefFEs.jl",
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["MomentBasedReferenceFEs.jl","GeometricDecompitions.jl"]
+Pages   = ["MomentBasedReferenceFEs.jl"]
 ```
 
 ##### Geometric decompositions
-
-The kwarg `sh_is_pb=true` means that the shape functions are defined as the
-basis polynomials of the pre-basis, the basis must verify a geometric
-decomposition. `sh_is_pb` is only available for BDM, Raviart-Thomas and
-Nédélec elements, and set to true by default on simplices. Otherwise, if
-`sh_is_pb=false`, the shape functions are defined as the dual basis of the DoF
-basis.
 
 The geometric decomposition API consist in the methods
 - [`has_geometric_decomposition(polybasis,p,conf)`](@ref),
@@ -190,20 +193,33 @@ The geometric decomposition API consist in the methods
 - [`get_facet_flux_sign_flip(polybasis,p,conf)`](@ref).
 where `polybasis` is a polynomial basis, `p` a polytope and `conf` a conformity.
 
-This API ensures that each polynomial `𝑝ᵢ` of the basis are all associated to a
-face of `p`, such that the `conf`-trace of `𝑝ᵢ` (scalar trace, tangential trace,
-normal trace) over another face `g` of `p` is zero whenever `g` does not
-contain `f`, and that these polynomial can be glued together with conformity
-`conf` in the physical space.
+This API ensures that:
+- each polynomial ``𝑝_i`` of the basis is associated to a face ``f`` of `p`,
+- the `conf`-trace of ``𝑝_i`` (scalar trace, tangential trace,
+    normal trace) over another face ``g`` of `p` is zero whenever ``g`` does not
+    contain ``f``, and
+- the polynomials owned by boundary faces can be glued together with conformity
+    `conf` in the physical space.
 
-Currently, only [`BernsteinBasisOnSimplex`](@ref),
-[`BarycentricPmΛBasis`](@ref) and [`BarycentricPΛBasis`](@ref) implement it,
-see also Bernstein basis [Geometric decomposition](@ref "Geometric
-decomposition"). It could be easily generalized to bases on n-cubes.
+The bases that currently support the geometric decomposition are:
+- the bases for ``P^-Λ^k`` and ``PΛ^k`` elements for `Bernstein` polynomial type (on simplices), see also Bernstein basis [Geometric decomposition](@ref "Geometric decomposition"),
+- the bases for ``Q^-Λ^k`` and ``SΛ^0`` elements for `ModalC0` and `Bernstein` polynomial types (on n-cubes).
+
+The keyword argument `sh_is_pb=true` means that, if possible, the shape
+functions are defined as the basis polynomials of the pre-basis. This is
+possible if the pre-basis verifies a geometric decomposition. Setting
+`sh_is_pb=false` forces the shape functions to be defined as the dual basis of
+the DoF basis. This kwarg do not alter the polynomial space and dual space
+respectively spanned by the shape-functions and the DoFs basis, but does change
+the DoF basis choice for the dual space.
+
+`sh_is_pb` is only available for BDM, Raviart-Thomas and Nédélec elements, and
+defaults to true. The kwarg is ignored if the pre-basis for the given
+`poly_type <: Polynomial` does not admit the geometric decomposition.
 
 ```@autodocs
 Modules = [ReferenceFEs,]
-Order   = [:type, :constant, :macro, :function]
+Order   = [:type, :macro, :function, :constant]
 Pages   = ["GeometricDecompositions.jl"]
 ```
 
