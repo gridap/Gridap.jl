@@ -172,7 +172,7 @@ function _gradient_nd!(
       for d in 1:D
         kld = b.orders[l,d]
         if isone(l) || kld ≠ b.orders[l-1,d]
-          _derivatives_1d!(PT,K,(c,g),x,d)
+          _derivatives_1d!(PT,kld,(c,g),x,d)
         end
       end
     end
@@ -255,7 +255,7 @@ function _hessian_nd!(
       for d in 1:D
         kld = b.orders[l,d]
         if isone(l) || kld ≠ b.orders[l-1,d]
-          _derivatives_1d!(PT,K,(c,g),x,d)
+          _derivatives_1d!(PT,kld,(c,g),x,d)
         end
       end
     end
