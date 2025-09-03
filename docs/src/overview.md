@@ -13,7 +13,7 @@ Gridap supports a wide range of finite element discretizations for solving PDEs:
 - **Conforming and nonconforming elements** - Choose from a variety of elements, with arbitrary polynomial order
 - **Support for constraints** - Constraints through Lagrange multipliers or linear constraints
 
-📖 **Learn more**: [FESpaces](@ref), [MultiField](@ref), [ReferenceFEs](@ref), [ODEs](@ref)
+📖 **Learn more**: [Gridap.FESpaces](@ref), [Gridap.MultiField](@ref), [Gridap.ReferenceFEs](@ref), [Gridap.ODEs](@ref)
 
 ## Mesh Support
 
@@ -23,7 +23,7 @@ Work with flexible mesh representations:
 - **Polytopal meshes** - Triangular/tetrahedral or quadrilateral/hexahedral elements
 - **Physical entity labeling** - Tag boundaries and regions for boundary conditions
 
-📖 **Learn more**: [Geometry](@ref)
+📖 **Learn more**: [Gridap.Geometry](@ref)
 
 ## Expandable building blocks
 
@@ -34,7 +34,7 @@ We provide a modular architecture that allows you seamlessly build your own low-
 - **Fields** - Arbitrary operations on local fields
 - **Quadratures** - Library of numerical quadratures for integration
 
-📖 **Learn more**: [Polynomials](@ref), [TensorValues](@ref), [Fields](@ref)
+📖 **Learn more**: [Gridap.Polynomials](@ref), [Gridap.TensorValues](@ref), [Gridap.Fields](@ref)
 
 ## Input/Output and Visualization
 
@@ -43,13 +43,13 @@ Get data in and results out:
 - **VTK support** - Export your results in VTK format for visualization
 - **JDL2** - Save and load Gridap objects
 
-📖 **Learn more**: [Io](@ref), [Visualization](@ref)
+📖 **Learn more**: [Gridap.Io](@ref), [Gridap.Visualization](@ref)
 
 ## Extended Ecosystem
 
 Gridap's capabilities are greatly extended through companion packages!
 
-📖 **Learn more**: [Ecosystem](@ref)
+📖 **Learn more**: [Gridap ecosystem](@ref)
 
 ## Performance mode
 

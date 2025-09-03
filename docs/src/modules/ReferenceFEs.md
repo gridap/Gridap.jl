@@ -107,13 +107,13 @@ Pages   = ["/Polytopes.jl"]
 
 | Name | Extrusion | Nodes | Edges | Faces |
 | :--- | :-------- | :---- | :---- | :---- |
-| `SEGMENT` | `(HEX,)` | ![](assets/polytopes/SEGMENT_0.svg) | |  |
-| `TRI` | `(TET,TET)` | ![](assets/polytopes/TRI_0.svg) | ![](assets/polytopes/TRI_1.svg) | |
-| `QUAD` | `(HEX,HEX)` | ![](assets/polytopes/QUAD_0.svg) | ![](assets/polytopes/QUAD_1.svg) | |
-| `HEX` | `(HEX,HEX,HEX)` | ![](assets/polytopes/HEX_0.svg) | ![](assets/polytopes/HEX_1.svg) | ![](assets/polytopes/HEX_2.svg) |
-| `TET` | `(TET,TET,TET)` | ![](assets/polytopes/TET_0.svg) | ![](assets/polytopes/TET_1.svg) | ![](assets/polytopes/TET_2.svg) |
-| `WEDGE` | `(TET,TET,HEX)` | ![](assets/polytopes/WEDGE_0.svg) | ![](assets/polytopes/WEDGE_1.svg) | ![](assets/polytopes/WEDGE_2.svg) |
-| `PYRAMID` | `(HEX,HEX,TET)` | ![](assets/polytopes/PYRAMID_0.svg) | ![](assets/polytopes/PYRAMID_1.svg) | ![](assets/polytopes/PYRAMID_2.svg) |
+| `SEGMENT` | `(HEX,)` | ![](../assets/polytopes/SEGMENT_0.svg) | |  |
+| `TRI` | `(TET,TET)` | ![](../assets/polytopes/TRI_0.svg) | ![](../assets/polytopes/TRI_1.svg) | |
+| `QUAD` | `(HEX,HEX)` | ![](../assets/polytopes/QUAD_0.svg) | ![](../assets/polytopes/QUAD_1.svg) | |
+| `HEX` | `(HEX,HEX,HEX)` | ![](../assets/polytopes/HEX_0.svg) | ![](../assets/polytopes/HEX_1.svg) | ![](../assets/polytopes/HEX_2.svg) |
+| `TET` | `(TET,TET,TET)` | ![](../assets/polytopes/TET_0.svg) | ![](../assets/polytopes/TET_1.svg) | ![](../assets/polytopes/TET_2.svg) |
+| `WEDGE` | `(TET,TET,HEX)` | ![](../assets/polytopes/WEDGE_0.svg) | ![](../assets/polytopes/WEDGE_1.svg) | ![](../assets/polytopes/WEDGE_2.svg) |
+| `PYRAMID` | `(HEX,HEX,TET)` | ![](../assets/polytopes/PYRAMID_0.svg) | ![](../assets/polytopes/PYRAMID_1.svg) | ![](../assets/polytopes/PYRAMID_2.svg) |
 
 ```@autodocs
 Modules = [ReferenceFEs,]
