@@ -251,7 +251,7 @@ shortened as `PT` in type parameters.
 ```@docs
 Polynomial
 ```
-![](./assets/poly_1.svg)
+![](../assets/poly_1.svg)
 !!! warning
     [`Polynomial`](@ref)s do not implement the `Field` interface, only the
     [`PolynomialBasis`](@ref) can be evaluated.
@@ -304,7 +304,7 @@ BarycentricPΛBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D
 ```
 ## Low level APIs and internals
 
-![](./assets/poly_2.svg)
+![](../assets/poly_2.svg)
 
 ```@docs
 CartProdPolyBasis
