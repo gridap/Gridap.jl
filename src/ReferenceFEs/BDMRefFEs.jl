@@ -31,8 +31,8 @@ function BDMRefFE(
   k = D-1
 
   prebasis =     FEEC_poly_basis(Val(D),  T,order  ,k,:P, PT; rotate_90) # PᵣΛᴰ⁻¹, r = order
-  fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:P⁻,Bernstein)            # Facet basis P⁻ᵨΛ⁰(△ᴰ⁻¹), ρ = r
-  cb = order>1 ? FEEC_poly_basis(Val(D),  T,order-1,1,:P⁻,Bernstein) : nothing  # Cell basis  P⁻ᵨΛ¹(△ᴰ),   ρ = r-1
+  fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:P⁻,PT)            # Facet basis P⁻ᵨΛ⁰(△ᴰ⁻¹), ρ = r
+  cb = order>1 ? FEEC_poly_basis(Val(D),  T,order-1,1,:P⁻,PT) : nothing  # Cell basis  P⁻ᵨΛ¹(△ᴰ),   ρ = r-1
 
   function cmom(φ,μ,ds) # Cell moment function: σ_K(φ,μ) = ∫(φ·μ)dK
     Broadcasting(Operation(⋅))(φ,μ)

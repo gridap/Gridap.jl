@@ -38,14 +38,12 @@ function NedelecRefFE(
   rotate_90 = D==2
 
   if is_n_cube(p)
-    PT = Legendre # Could be a wargs, any basis works
     @check kind == 1 "Nedelec reference elements of the second kind are only defined on simplices"
     prebasis =     FEEC_poly_basis(Val(D),T,order+1,1,:Q⁻,PT) # Q⁻ᵣΛ¹(□ᴰ), r = order+1
     eb =           FEEC_poly_basis(Val(1),T,order,0,  :Q⁻,PT)                      # Edge basis  Q⁻ᵨΛ⁰(□¹),  ρ = r-1
     fb = order>0 ? FEEC_poly_basis(Val(2),T,order,1,  :Q⁻,PT)            : nothing # Facet basis Q⁻ᵨΛ¹(□²),  ρ = r-1 (only D=3)
     cb = order>0 ? FEEC_poly_basis(Val(D),T,order,D-1,:Q⁻,PT; rotate_90) : nothing # Cell basis  Q⁻ᵨΛᴰ⁻¹(□ᴰ),ρ = r-1
   elseif is_simplex(p)
-    PT = Bernstein # Could be a Kwargs, any basis works
     if kind == 1
       prebasis =       FEEC_poly_basis(Val(D),T,order+1,1,    :P⁻,PT) # P⁻ᵣΛ¹(△ᴰ), r = order+1
       eb =             FEEC_poly_basis(Val(1),T,order,0,      :P ,PT)                           # Edge basis  PᵨΛ⁰(△¹),  ρ = r-1
