@@ -26,10 +26,10 @@
       touched::Array{Bool,N}
     end
 
-Block-wise storage of arrays, where `touched` indicates which blocks are active. Accessing 
-a non-touched block returns nothing. 
+Block-wise storage of arrays, where `touched` indicates which blocks are active. Accessing
+a non-touched block returns nothing.
 
-`ArrayBlock` is mostly used for multi-field and skeleton computations and assembly, 
+`ArrayBlock` is mostly used for multi-field and skeleton computations and assembly,
 where each block corresponds to a field or plus/minus respectively.
 Blocks might be nested in the case of multi-field computations on skeletons.
 
@@ -56,6 +56,9 @@ Base.eltype(::Type{<:ArrayBlock{A}}) where A = A
 Base.eltype(b::ArrayBlock{A}) where A = A
 Base.ndims(b::ArrayBlock{A,N}) where {A,N} = N
 Base.ndims(::Type{ArrayBlock{A,N}}) where {A,N} = N
+
+# Base.iterate(a::VectorBlock) = iterate(a.array)
+
 function Base.getindex(b::ArrayBlock,i...)
   if !b.touched[i...]
     return nothing
@@ -149,9 +152,7 @@ function Base.:(==)(a::ArrayBlock,b::ArrayBlock)
       if a.array[i] != b.array[i]
         return false
       end
-    elseif a.touched[i]
-      return false
-    elseif b.touched[i]
+    elseif a.touched[i] || b.touched[i]
       return false
     end
   end
@@ -300,8 +301,8 @@ end
         indices::Vector{CartesianIndex{N}}
     end
 
-A `BlockMap` maps `M = length(indices)` arrays to a single array of N-dimensinal blocks, 
-where only the blocks indexed by `indices` are touched and contain the corresponding 
+A `BlockMap` maps `M = length(indices)` arrays to a single array of N-dimensinal blocks,
+where only the blocks indexed by `indices` are touched and contain the corresponding
 entry of the input arrays.
 
 ## Constructors:
@@ -365,6 +366,24 @@ function evaluate!(cache,k::BlockMap{N},a::A...) where {A,N}
   cache
 end
 
+return_type(k::BlockMap{N},a::Union{ArrayBlock{A,M},A}...) where {A,M,N} = ArrayBlock{ArrayBlock{A,M},N}
+
+function return_cache(k::BlockMap{N},a::Union{ArrayBlock{A,M},A}...) where {A,M,N}
+  i = findfirst(Base.Fix2(isa,ArrayBlock),a)
+  @notimplementedif isnothing(i)
+  m = Arrays.MatchingBlockMap(a[i])
+  cm = map(ai -> return_cache(m, ai), a)
+  b = map((ci,ai) -> evaluate!(ci, m, ai), cm, a)
+  c = return_cache(k,b...)
+  return c, m, cm
+end
+
+function evaluate!(cache,k::BlockMap{N},a::Union{ArrayBlock{A,M},A}...) where {A,M,N}
+  c, m, cm = cache
+  b = map((ci,ai) -> evaluate!(ci, m, ai), cm, a)
+  evaluate!(c,k,b...)
+end
+
 # ZeroBlockMap
 
 struct ZeroBlockMap <: Map end
@@ -393,16 +412,44 @@ function evaluate!(cache,::ZeroBlockMap,a,b::ArrayBlock)
   cache
 end
 
+# MatchingBlockMap
+
+struct MatchingBlockMap{N} <: Map
+  touched :: Array{Bool,N}
+end
+
+MatchingBlockMap(a::ArrayBlock) = MatchingBlockMap(a.touched)
+
+function evaluate!(cache,k::MatchingBlockMap{N},a::ArrayBlock{A,N}) where {A,N}
+  @check k.touched == a.touched
+  return a
+end
+
+function return_cache(k::MatchingBlockMap{N},a) where N
+  A = typeof(a)
+  array = Array{A,N}(undef,size(k.touched))
+  return ArrayBlock(array,k.touched)
+end
+
+function evaluate!(cache,k::MatchingBlockMap{N},a) where N
+  for i in eachindex(k.touched)
+    if k.touched[i]
+      cache.array[i] = a
+    end
+  end
+  return cache
+end
+
 """
     struct MergeBlockMap{N,M} <: Map
         size::NTuple{N,Int}
         indices::Vector{Vector{Tuple{CartesianIndex{M},CartesianIndex{N}}}}
     end
 
-A `MergeBlockMap` create a single array of N-dimensional blocks from `L=length(indices)` 
-input arrays of M-dimensional blocks. 
+A `MergeBlockMap` create a single array of N-dimensional blocks from `L=length(indices)`
+input arrays of M-dimensional blocks.
 
-For the l-th input array `a_l`, the vector of tuples in `indices[l]` contains the 
+For the l-th input array `a_l`, the vector of tuples in `indices[l]` contains the
 mapping between the indices of the blocks in `a_l` and the indices of the blocks in
 the output array, i.e `a_out[P[2]] = a_l[P[1]] ∀ P ∈ indices[l], ∀ l `.
 """
@@ -492,7 +539,7 @@ function evaluate!(cache,k::BlockBroadcasting,a::ArrayBlock{A,N},b::ArrayBlock..
   r, c = cache
   @check r.touched == a.touched
   @check all(a.touched == bi.touched for bi in b)
-  
+
   for i in eachindex(a.array)
     if a.touched[i]
       ai = (a.array[i],(bi.array[i] for bi in b)...)
