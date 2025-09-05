@@ -32,29 +32,29 @@ this basis is in the ℙ/ℚ space of degree `order`. `T` is the type of scalar 
 """
 function NedelecRefFE(
   ::Type{T},p::Polytope{D},order::Integer; kind::Int=1,
-  sh_is_pb=true, poly_type=_mom_reffe_default_PT(p)) where {T,D}
+  sh_is_pb=true, poly_type=_mom_reffe_default_PT(p), mom_poly_type=poly_type) where {T,D}
 
-  PT = poly_type
+  PT, MPT = poly_type, mom_poly_type
   rotate_90 = D==2
 
   if is_n_cube(p)
     @check kind == 1 "Nedelec reference elements of the second kind are only defined on simplices"
     prebasis =     FEEC_poly_basis(Val(D),T,order+1,1,:Q⁻,PT) # Q⁻ᵣΛ¹(□ᴰ), r = order+1
-    eb =           FEEC_poly_basis(Val(1),T,order,0,  :Q⁻,PT)                      # Edge basis  Q⁻ᵨΛ⁰(□¹),  ρ = r-1
-    fb = order>0 ? FEEC_poly_basis(Val(2),T,order,1,  :Q⁻,PT)            : nothing # Facet basis Q⁻ᵨΛ¹(□²),  ρ = r-1 (only D=3)
-    cb = order>0 ? FEEC_poly_basis(Val(D),T,order,D-1,:Q⁻,PT; rotate_90) : nothing # Cell basis  Q⁻ᵨΛᴰ⁻¹(□ᴰ),ρ = r-1
+    eb =           FEEC_poly_basis(Val(1),T,order,0,  :Q⁻,MPT)                      # Edge basis  Q⁻ᵨΛ⁰(□¹),  ρ = r-1
+    fb = order>0 ? FEEC_poly_basis(Val(2),T,order,1,  :Q⁻,MPT)            : nothing # Facet basis Q⁻ᵨΛ¹(□²),  ρ = r-1 (only D=3)
+    cb = order>0 ? FEEC_poly_basis(Val(D),T,order,D-1,:Q⁻,MPT; rotate_90) : nothing # Cell basis  Q⁻ᵨΛᴰ⁻¹(□ᴰ),ρ = r-1
   elseif is_simplex(p)
     if kind == 1
       prebasis =       FEEC_poly_basis(Val(D),T,order+1,1,    :P⁻,PT) # P⁻ᵣΛ¹(△ᴰ), r = order+1
-      eb =             FEEC_poly_basis(Val(1),T,order,0,      :P ,PT)                           # Edge basis  PᵨΛ⁰(△¹),  ρ = r-1
-      fb = order>0 ?   FEEC_poly_basis(Val(2),T,order-1,1,    :P ,PT; rotate_90=true) : nothing # Facet basis PᵨΛ¹(△²),  ρ = r-2 (only D=3)
-      cb = order>D-2 ? FEEC_poly_basis(Val(D),T,order-D+1,D-1,:P ,PT; rotate_90)      : nothing # Cell basis  PᵨΛᴰ⁻¹(△ᴰ),ρ = r-D
+      eb =             FEEC_poly_basis(Val(1),T,order,0,      :P ,MPT)                           # Edge basis  PᵨΛ⁰(△¹),  ρ = r-1
+      fb = order>0 ?   FEEC_poly_basis(Val(2),T,order-1,1,    :P ,MPT; rotate_90=true) : nothing # Facet basis PᵨΛ¹(△²),  ρ = r-2 (only D=3)
+      cb = order>D-2 ? FEEC_poly_basis(Val(D),T,order-D+1,D-1,:P ,MPT; rotate_90)      : nothing # Cell basis  PᵨΛᴰ⁻¹(△ᴰ),ρ = r-D
     else
       @check order > 0 "the lowest order of Nedelec elements of second kind is 1"
       prebasis =     FEEC_poly_basis(Val(D),T,order,1,      :P ,PT) # PᵣΛ¹(△ᴰ), r = order
-      eb =           FEEC_poly_basis(Val(1),T,order,0,      :P⁻,PT)                           # Edge basis  P⁻ᵨΛ⁰(△¹),  ρ = r
-      fb = order>1 ? FEEC_poly_basis(Val(2),T,order-1,1,    :P⁻,PT; rotate_90=true) : nothing # Facet basis P⁻ᵨΛ¹(△²),  ρ = r-1 (only D=3)
-      cb = order≥D ? FEEC_poly_basis(Val(D),T,order-D+1,D-1,:P⁻,PT; rotate_90)      : nothing # Cell basis  P⁻ᵨΛᴰ⁻¹(△ᴰ),ρ = r-D+1
+      eb =           FEEC_poly_basis(Val(1),T,order,0,      :P⁻,MPT)                           # Edge basis  P⁻ᵨΛ⁰(△¹),  ρ = r
+      fb = order>1 ? FEEC_poly_basis(Val(2),T,order-1,1,    :P⁻,MPT; rotate_90=true) : nothing # Facet basis P⁻ᵨΛ¹(△²),  ρ = r-1 (only D=3)
+      cb = order≥D ? FEEC_poly_basis(Val(D),T,order-D+1,D-1,:P⁻,MPT; rotate_90)      : nothing # Cell basis  P⁻ᵨΛᴰ⁻¹(△ᴰ),ρ = r-D+1
     end
   else
     @notimplemented "Nedelec Reference FE only implemented for n-cubes and simplices"

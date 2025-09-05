@@ -21,18 +21,18 @@ components.
 """
 function BDMRefFE(
   ::Type{T},p::Polytope{D},order::Integer;
-  sh_is_pb=true, poly_type=_mom_reffe_default_PT(p)) where {T,D}
+  sh_is_pb=true, poly_type=_mom_reffe_default_PT(p), mom_poly_type=poly_type) where {T,D}
 
   @check order > 0 "BDM Reference FE only available for order > 0, got order=$order"
   @check 2 ≤ D ≤ 3 && is_simplex(p) "BDM Reference FE only available for simplices of dimension 2 and 3"
 
-  PT = poly_type
+  PT, MPT = poly_type, mom_poly_type
   rotate_90 = (D==2)
   k = D-1
 
   prebasis =     FEEC_poly_basis(Val(D),  T,order  ,k,:P, PT; rotate_90) # PᵣΛᴰ⁻¹, r = order
-  fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:P⁻,PT)            # Facet basis P⁻ᵨΛ⁰(△ᴰ⁻¹), ρ = r
-  cb = order>1 ? FEEC_poly_basis(Val(D),  T,order-1,1,:P⁻,PT) : nothing  # Cell basis  P⁻ᵨΛ¹(△ᴰ),   ρ = r-1
+  fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:P⁻,MPT)            # Facet basis P⁻ᵨΛ⁰(△ᴰ⁻¹), ρ = r
+  cb = order>1 ? FEEC_poly_basis(Val(D),  T,order-1,1,:P⁻,MPT) : nothing  # Cell basis  P⁻ᵨΛ¹(△ᴰ),   ρ = r-1
 
   function cmom(φ,μ,ds) # Cell moment function: σ_K(φ,μ) = ∫(φ·μ)dK
     Broadcasting(Operation(⋅))(φ,μ)

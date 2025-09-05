@@ -23,20 +23,20 @@ in this basis is in the Q space of degree `order`. `T` is the type of scalar com
 """
 function RaviartThomasRefFE(
   ::Type{T},p::Polytope{D},order::Integer;
-  sh_is_pb=true, poly_type=_mom_reffe_default_PT(p)) where {T,D}
+  sh_is_pb=true, poly_type=_mom_reffe_default_PT(p), mom_poly_type=poly_type) where {T,D}
 
-  PT = poly_type
+  PT, MPT = poly_type, mom_poly_type
   rotate_90 = D==2
   k = D-1
 
   if is_n_cube(p)
     prebasis =     FEEC_poly_basis(Val(D),  T,order+1,k,:Q⁻,PT; rotate_90) # Q⁻ᵣΛᵏ(□ᴰ), r = order+1
-    fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:Q⁻,PT)            # Facet basis Q⁻ᵨΛ⁰(□ᴰ⁻¹), ρ = r-1
-    cb = order>0 ? FEEC_poly_basis(Val(D),  T,order  ,1,:Q⁻,PT) : nothing  # Cell basis  Q⁻ᵨΛ¹(□ᴰ),   ρ = r-1
+    fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:Q⁻,MPT)            # Facet basis Q⁻ᵨΛ⁰(□ᴰ⁻¹), ρ = r-1
+    cb = order>0 ? FEEC_poly_basis(Val(D),  T,order  ,1,:Q⁻,MPT) : nothing  # Cell basis  Q⁻ᵨΛ¹(□ᴰ),   ρ = r-1
   elseif is_simplex(p)
     prebasis =     FEEC_poly_basis(Val(D),  T,order+1,k,:P⁻,PT; rotate_90) # P⁻ᵣΛᵏ(△ᴰ), r = order+1
-    fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:P ,PT)            # Facet basis PᵨΛ⁰(△ᴰ⁻¹), ρ = r-1
-    cb = order>0 ? FEEC_poly_basis(Val(D),  T,order-1,1,:P ,PT) : nothing  # Cell basis  PᵨΛ¹(△ᴰ),   ρ = r-2
+    fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:P ,MPT)            # Facet basis PᵨΛ⁰(△ᴰ⁻¹), ρ = r-1
+    cb = order>0 ? FEEC_poly_basis(Val(D),  T,order-1,1,:P ,MPT) : nothing  # Cell basis  PᵨΛ¹(△ᴰ),   ρ = r-2
   else
     @notimplemented "Raviart-Thomas Reference FE only available for n-cubes and simplices"
   end
