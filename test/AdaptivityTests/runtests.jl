@@ -18,4 +18,17 @@ end
   include("CompositeQuadratureTests.jl")
 end
 
+@testset "MacroFETests" begin
+  include("MacroFETests.jl")
+  include("MacroFEStokesTests.jl")
+end
+
+@testset "AMR" begin
+  include("AdaptiveMeshRefinementTests.jl")
+end
+
+@testset "PolytopalCoarsening" begin
+  include("PolytopalCoarseningTests.jl")
+end
+
 end # module

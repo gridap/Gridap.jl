@@ -11,11 +11,12 @@ struct ModalC0Basis{D,T,V} <: AbstractVector{ModalC0BasisFunction}
     terms::Vector{CartesianIndex{D}},
     a::Vector{Point{D,V}},
     b::Vector{Point{D,V}}) where {D,T,V}
+
     new{D,T,V}(orders,terms,a,b)
   end
 end
 
-@inline Base.size(a::ModalC0Basis{D,T,V}) where {D,T,V} = (length(a.terms)*num_components(T),)
+@inline Base.size(a::ModalC0Basis{D,T,V}) where {D,T,V} = (length(a.terms)*num_indep_components(T),)
 @inline Base.getindex(a::ModalC0Basis,i::Integer) = ModalC0BasisFunction()
 @inline Base.IndexStyle(::ModalC0Basis) = IndexLinear()
 
@@ -101,7 +102,7 @@ return_type(::ModalC0Basis{D,T,V}) where {D,T,V} = T
 function return_cache(f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {D,T,V}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = length(f.terms)*num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   r = CachedArray(zeros(T,(np,ndof)))
   v = CachedArray(zeros(T,(ndof,)))
@@ -112,7 +113,7 @@ end
 function evaluate!(cache,f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {D,T,V}
   r, v, c = cache
   np = length(x)
-  ndof = length(f.terms)*num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -134,7 +135,7 @@ function return_cache(
   f = fg.fa
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = length(f.terms)*num_components(V)
+  ndof = length(f)
   xi = testitem(x)
   T = gradient_type(V,xi)
   n = 1 + _maximum(f.orders)
@@ -153,7 +154,7 @@ function evaluate!(
   f = fg.fa
   r, v, c, g = cache
   np = length(x)
-  ndof = length(f.terms) * num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -176,7 +177,7 @@ function return_cache(
   f = fg.fa
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = length(f.terms)*num_components(V)
+  ndof = length(f)
   xi = testitem(x)
   T = gradient_type(gradient_type(V,xi),xi)
   n = 1 + _maximum(f.orders)
@@ -196,7 +197,7 @@ function evaluate!(
   f = fg.fa
   r, v, c, g, h = cache
   np = length(x)
-  ndof = length(f.terms) * num_components(T)
+  ndof = length(f)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -391,16 +392,11 @@ function _evaluate_nd_mc0!(
 end
 
 @inline function _set_value_mc0!(v::AbstractVector{V},s::T,k,l) where {V,T}
-  m = zero(Mutable(V))
+  ncomp = num_indep_components(V)
   z = zero(T)
-  js = eachindex(m)
-  for j in js
-    for i in js
-      @inbounds m[i] = z
-    end
-    @inbounds m[j] = s
-    i = k+l*(j-1)
-    @inbounds v[i] = m
+  for j in 1:ncomp
+    m = k+l*(j-1)
+    @inbounds v[m] = ntuple(i -> ifelse(i == j, s, z),Val(ncomp))
   end
   k+1
 end
@@ -461,24 +457,39 @@ end
   k+1
 end
 
-@inline function _set_gradient_mc0!(
+# Indexing and m definition should be fixed if G contains symmetries, that is
+# if the code is  optimized for symmetric tensor V valued FESpaces
+# (if gradient_type(V) returned a symmetric higher order tensor type G)
+@inline @generated function _set_gradient_mc0!(
   v::AbstractVector{G},s,k,l,::Type{V}) where {V,G}
+  # Git blame me for readable non-generated version
+  @notimplementedif num_indep_components(G) != num_components(G) "Not implemented for symmetric Jacobian or Hessian"
+  
+  m = Array{String}(undef, size(G))
+  N_val_dims = length(size(V))
+  s_size = size(G)[1:end-N_val_dims]
 
-  T = eltype(s)
-  m = zero(Mutable(G))
-  w = zero(V)
-  z = zero(T)
-  for (ij,j) in enumerate(CartesianIndices(w))
-    for i in CartesianIndices(m)
-      @inbounds m[i] = z
-    end
-    for i in CartesianIndices(s)
-      @inbounds m[i,j] = s[i]
-    end
-    i = k+l*(ij-1)
-    @inbounds v[i] = m
+  body = "T = eltype(s); z = zero(T);"
+  for ci in CartesianIndices(s_size)
+    id = join(Tuple(ci))
+    body *= "@inbounds s$id = s[$ci];"
   end
-  k+1
+  
+  V_size = size(V)
+  for (ij,j) in enumerate(CartesianIndices(V_size))
+    for i in CartesianIndices(m)
+      m[i] = "z"
+    end
+    for ci in CartesianIndices(s_size)
+      id = join(Tuple(ci))
+      m[ci,j] = "s$id"
+    end
+    body *= "i = k + l*($ij-1);"
+    body *= "@inbounds v[i] = ($(join(tuple(m...), ", ")));"
+  end
+
+  body = Meta.parse(string("begin ",body," end"))
+  return Expr(:block, body ,:(return k+1))
 end
 
 function _hessian_nd_mc0!(

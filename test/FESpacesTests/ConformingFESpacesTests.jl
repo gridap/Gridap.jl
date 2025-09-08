@@ -94,4 +94,30 @@ test_single_field_fe_space(V)
 V = FESpace(trian,reffe,dirichlet_tags=dirichlet_tags,dirichlet_masks=dirichlet_components)
 test_single_field_fe_space(V)
 
+######################
+
+V = FESpace(trian,ReferenceFE(lagrangian,Float64,1))
+cell_conformity = FESpaces.get_cell_conformity(V)
+@test FESpaces.get_d_ctype_lface_dofs(cell_conformity, polytopes) == [
+  [[[1],[2],[3],[4]]],
+  [[[1, 2], [3, 4], [1, 3], [2, 4]]],
+  [[[1, 2, 3, 4]]]
+]
+
+V = FESpace(trian,ReferenceFE(lagrangian,Float64,2))
+cell_conformity = FESpaces.get_cell_conformity(V)
+@test FESpaces.get_d_ctype_lface_dofs(cell_conformity, polytopes) == [
+  [[[1], [2], [3], [4]]],
+  [[[1, 2, 5], [3, 4, 6], [1, 3, 7], [2, 4, 8]]],
+  [[[1, 2, 3, 4, 5, 6, 7, 8, 9]]]
+]
+
+V = FESpaces.PolytopalFESpace(model,Float64,1,space=:P)
+cell_conformity = FESpaces.get_cell_conformity(V)
+@test FESpaces.get_d_ctype_lface_dofs(cell_conformity, polytopes) == [
+  [[[], [], [], []]],
+  [[[], [], [], []]],
+  [[[1, 2, 3]]]
+]
+
 end  # module

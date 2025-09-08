@@ -16,6 +16,14 @@ struct NodeToDofGlue{T}
   node_and_comp_to_dof::Vector{T}
 end
 
+function get_cell_conformity(space::UnconstrainedFESpace{V,<:NodeToDofGlue{T}}) where {V,T}
+  cell_polys = Geometry.get_cell_polytopes(get_triangulation(space))
+  polys, ctypes = compress_cell_data(cell_polys)
+  reffes = map(p -> LagrangianRefFE(change_eltype(T,eltype(V)),p,1), polys)
+  cell_reffe = expand_cell_data(reffes,ctypes)
+  return CellConformity(cell_reffe,H1Conformity())
+end
+
 """
     CLagrangianFESpace(::Type{T},grid::Triangulation) where T
 """
@@ -71,7 +79,8 @@ function CLagrangianFESpace(
     dirichlet_dof_tag,
     dirichlet_cells,
     ntags,
-    glue)
+    glue
+  )
 
   space
 end
@@ -119,7 +128,7 @@ end
 # Helpers
 
 _default_mask(::Type) = true
-_default_mask(::Type{T}) where T <: MultiValue = ntuple(i->true,Val{length(T)}())
+_default_mask(::Type{T}) where T <: MultiValue = ntuple(i->true,Val{num_indep_components(T)}())
 
 _dof_type(::Type{T}) where T = T
 _dof_type(::Type{T}) where T<:MultiValue = eltype(T)
@@ -193,8 +202,8 @@ function _generate_node_to_dof_glue_component_major(
   z::MultiValue,node_to_tag,tag_to_masks)
   nfree_dofs = 0
   ndiri_dofs = 0
-  ncomps = length(z)
-  @assert length(testitem(tag_to_masks)) == ncomps
+  ncomps = num_indep_components(z)
+  @check length(testitem(tag_to_masks)) == ncomps
   for (node,tag) in enumerate(node_to_tag)
     if tag == UNSET
       nfree_dofs += ncomps
@@ -215,10 +224,10 @@ function _generate_node_to_dof_glue_component_major(
   diri_dof_to_tag = ones(Int8,ndiri_dofs)
   T = change_eltype(z,Int32)
   nnodes = length(node_to_tag)
-  node_and_comp_to_dof = zeros(T,nnodes)
+  node_and_comp_to_dof = Vector{T}(undef,nnodes)
   nfree_dofs = 0
   ndiri_dofs = 0
-  m = zero(Mutable(T))
+  m = zero(MVector{ncomps, Int32})
   for (node,tag) in enumerate(node_to_tag)
     if tag == UNSET
       for comp in 1:ncomps
@@ -245,7 +254,7 @@ function _generate_node_to_dof_glue_component_major(
         end
       end
     end
-    node_and_comp_to_dof[node] = m
+    node_and_comp_to_dof[node] = Tuple(m)
   end
   glue = NodeToDofGlue(
    free_dof_to_node,
@@ -301,7 +310,7 @@ function _generate_cell_dofs_clagrangian(
   cell_to_ctype,
   node_and_comp_to_dof)
 
-  ncomps = num_components(z)
+  ncomps = num_indep_components(z)
 
   ctype_to_lnode_to_comp_to_ldof = map(get_node_and_comp_to_dof,ctype_to_reffe)
   ctype_to_num_ldofs = map(num_dofs,ctype_to_reffe)
@@ -353,8 +362,8 @@ function _fill_cell_dofs_clagrangian!(
     p = cell_to_dofs.ptrs[cell]-1
     for (lnode, node) in enumerate(nodes)
       for comp in 1:ncomps
-        ldof = lnode_and_comp_to_ldof[lnode][comp]
-        dof = node_and_comp_to_dof[node][comp]
+        ldof = indep_comp_getindex(lnode_and_comp_to_ldof[lnode], comp)
+        dof =  indep_comp_getindex(node_and_comp_to_dof[node], comp)
         cell_to_dofs.data[p+ldof] = dof
       end
     end

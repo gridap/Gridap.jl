@@ -26,6 +26,7 @@ using WriteVTK.VTKCellTypes: VTK_LAGRANGE_QUADRILATERAL
 using WriteVTK.VTKCellTypes: VTK_LAGRANGE_TRIANGLE
 using WriteVTK.VTKCellTypes: VTK_LAGRANGE_HEXAHEDRON
 using WriteVTK.VTKCellTypes: VTK_LAGRANGE_TETRAHEDRON
+using WriteVTK.VTKCellTypes: VTK_POLYGON, VTK_POLYHEDRON
 
 using Gridap.Helpers
 using Gridap.TensorValues
@@ -40,25 +41,17 @@ using Gridap.ReferenceFEs: SerendipityPolytope
 using FillArrays
 using Gridap.CellData
 
-import Gridap.Geometry: get_reffes
-import Gridap.Geometry: get_cell_type
-import Gridap.Geometry: get_node_coordinates
-import Gridap.Geometry: get_cell_node_ids
-
-#import AbstractTrees
+using Gridap.Algebra: length_to_ptrs!, rewind_ptrs!
 
 export writevtk
 export createvtk
 export createpvd
 export savepvd
 export write_vtk_file
-#export print_op_tree
 export visualization_data
 export VisualizationData
 
 include("VisualizationData.jl")
 include("Vtk.jl")
-
-#include("PrintOpTrees.jl")
 
 end # module

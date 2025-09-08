@@ -105,3 +105,7 @@ end
 function Base.unique(a::CompressedArray)
   unique(a.values)
 end
+
+function Base.view(a::CompressedArray,ids)
+  CompressedArray(a.values,view(a.ptrs,ids))
+end

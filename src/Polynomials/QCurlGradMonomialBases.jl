@@ -21,6 +21,10 @@ Base.size(a::QCurlGradMonomialBasis) = (length(a.qgrad),)
 Base.getindex(a::QCurlGradMonomialBasis,i::Integer) = Monomial()
 Base.IndexStyle(::QCurlGradMonomialBasis) = IndexLinear()
 
+function testvalue(::Type{QCurlGradMonomialBasis{D,T}}) where {D,T}
+  QCurlGradMonomialBasis{D}(T,0)
+end
+
 """
     QCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
 
@@ -30,7 +34,7 @@ The `order` argument has the following meaning: the divergence of the  functions
 is in the Q space of degree `order`.
 """
 function QCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
-  @assert T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
+  @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
   _order = order+1
   _t = tfill(_order,Val{D-1}())
   t = (_order+1,_t...)
@@ -40,7 +44,7 @@ function QCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
 end
 
 # @santiagobadia: This is dirty, I would put here VectorValue{D,T}
-return_type(::QCurlGradMonomialBasis{D,T}) where {D,T} = T
+return_type(::QCurlGradMonomialBasis{D,T}) where {D,T} = VectorValue{D,T}
 
 function return_cache(f::QCurlGradMonomialBasis,x::AbstractVector{<:Point})
   return_cache(f.qgrad,x)

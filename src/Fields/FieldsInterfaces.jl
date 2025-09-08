@@ -137,6 +137,12 @@ function testargs(f::Field,x::AbstractArray{<:Point})
   (y,)
 end
 
+function return_value(f::Field,x::AbstractArray{<:Point})
+  T = return_type(f,testitem(x))
+  s = size(x)
+  zeros(T,s)
+end
+
 function return_cache(f::Field,x::AbstractArray{<:Point})
   T = return_type(f,testitem(x))
   s = size(x)
@@ -205,9 +211,15 @@ struct ZeroField{F} <: Field
   field::F
 end
 
+return_value(z::ZeroField,x::Point) = zero(return_type(z.field,x))
 return_cache(z::ZeroField,x::Point) = zero(return_type(z.field,x))
 evaluate!(cache,z::ZeroField,x::Point) = cache
 testvalue(::Type{ZeroField{F}}) where F = ZeroField(testvalue(F))
+
+function return_value(z::ZeroField,x::AbstractArray{<:Point})
+  E = return_type(z.field,testitem(x))
+  zeros(E,size(x))
+end
 
 function return_cache(z::ZeroField,x::AbstractArray{<:Point})
   E = return_type(z.field,testitem(x))
@@ -288,6 +300,16 @@ function lazy_map(::Operation{typeof(inv)},a::LazyArray{<:Fill{typeof(constant_f
   lazy_map(constant_field,vinv)
 end
 
+struct ConstantMap <: Map end
+
+return_cache(::ConstantMap,v::Number,x::Point) = nothing
+evaluate!(cache,::ConstantMap,v::Number,x::Point) = v
+
+function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{typeof(constant_field)}},x::AbstractArray)
+  values = a.args[1]
+  lazy_map(Broadcasting(ConstantMap()),values,x)
+end
+
 ## Make Function behave like Field
 
 return_cache(f::FieldGradient{N,<:Function},x::Point) where N = gradient(f.object,Val(N))
@@ -301,6 +323,23 @@ A `Field` that is obtained as a given operation over a tuple of fields.
 struct OperationField{O,F} <: Field
   op::O
   fields::F
+end
+
+function testvalue(::Type{OperationField{O,F}}) where {O<:Field,F<:Tuple}
+  op = testvalue(O)
+  fields = map(testvalue,fieldtypes(F))
+  OperationField(op,fields)
+end
+
+function testvalue(::Type{OperationField{O,F}}) where {O,F<:Tuple}
+  @notimplementedif !Base.issingletontype(O) # Most maps, typeof(function), etc...
+  fields = map(testvalue,fieldtypes(F))
+  if hasproperty(O,:instance)
+    # This is because typeof(function) does not have a singleton constructor O()
+    OperationField(O.instance,fields)
+  else
+    OperationField(O(),fields)
+  end :: OperationField{O,F}
 end
 
 function return_value(c::OperationField,x::Point)
@@ -319,6 +358,11 @@ function evaluate!(cache,c::OperationField,x::Point)
   ck, cf = cache
   lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
   evaluate!(ck,c.op,lx...)
+end
+
+function return_value(c::OperationField,x::AbstractArray{<:Point})
+  fx = map(f -> return_value(f,x),c.fields)
+  c.op.(fx...)
 end
 
 function return_cache(c::OperationField,x::AbstractArray{<:Point})
@@ -418,6 +462,43 @@ for op in (:*,:⋅,:⊙,:⊗)
       g1, g2 = map(gradient, f)
       k(F1,F2,G1,G2) = product_rule($op,F1,F2,G1,G2)
       Operation(k)(f1,f2,g1,g2)
+    end
+  end
+end
+
+# Hessian (∇∇) of sum
+
+for op in (:+,:-)
+  @eval begin
+    function ∇∇(a::OperationField{typeof($op)})
+      f = a.fields
+      g = map( ∇∇, f)
+      $op(g...)
+    end
+  end
+end
+
+# Hessian (∇∇) of product
+
+function product_rule_hessian(fun,f1,f2,∇f1,∇f2,∇∇f1,∇∇f2)
+  msg = "Product rule not implemented for product $fun between types $(typeof(f1)) and $(typeof(f2))"
+  @notimplemented msg
+end
+
+function product_rule_hessian(::typeof(*),f1::Real,f2::Real,∇f1,∇f2,∇∇f1,∇∇f2)
+  ∇∇f1*f2 + ∇∇f2*f1 + ∇f1⊗∇f2 + ∇f2⊗∇f1
+end
+
+for op in (:*,)
+  @eval begin
+    function ∇∇(a::OperationField{typeof($op)})
+      f = a.fields
+      @notimplementedif length(f) != 2
+      f1, f2 = f
+      g1, g2 = map(gradient, f)
+      h1, h2 = map(∇∇, f)
+      prod_rule_hess(F1,F2,G1,G2,H1,H2) = product_rule_hessian($op,F1,F2,G1,G2,H1,H2)
+      Operation(prod_rule_hess)(f1,f2,g1,g2,h1,h2)
     end
   end
 end
@@ -733,6 +814,7 @@ function Base.getindex(a::VoidBasis,i::Integer)
 end
 
 Arrays.testitem(a::VoidBasis) = testitem(a.basis)
+testvalue(::Type{VoidBasis{T,N,A}}) where {T,N,A} = VoidBasis(testvalue(A),true)
 
 function _zero_size(a::VoidBasis{T,1} where T)
   (0,)

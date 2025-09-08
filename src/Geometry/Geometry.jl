@@ -10,6 +10,8 @@ using DocStringExtensions
 using FillArrays
 
 using LinearAlgebra: ⋅
+using Statistics: mean
+using DataStructures: SortedSet
 
 using Gridap.Helpers
 using Gridap.Arrays
@@ -26,6 +28,7 @@ using Gridap.ReferenceFEs: _get_facedims
 using Gridap.ReferenceFEs: _get_offsets
 using Gridap.ReferenceFEs: _get_offset
 using Gridap.ReferenceFEs: _find_unique_with_indices
+using Gridap.ReferenceFEs: GeneralPolytope, Polygon, Polyhedron
 
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
@@ -46,6 +49,7 @@ import Gridap.ReferenceFEs: num_nodes
 import Gridap.ReferenceFEs: is_first_order
 import Gridap.ReferenceFEs: get_faces
 import Gridap.ReferenceFEs: get_face_vertices
+import Gridap.ReferenceFEs: get_face_coordinates
 import Gridap.ReferenceFEs: get_dimranges
 import Gridap.ReferenceFEs: get_dimrange
 import Gridap.ReferenceFEs: num_faces
@@ -69,6 +73,7 @@ import Gridap.ReferenceFEs: num_cell_dims
 import Gridap.ReferenceFEs: num_point_dims
 import Gridap.ReferenceFEs: simplexify
 import Gridap.ReferenceFEs: get_facet_normal
+import Gridap.ReferenceFEs: get_edge_tangent
 import Gridap.ReferenceFEs: Quadrature
 
 export GridTopology
@@ -96,8 +101,6 @@ export is_oriented
 export is_regular
 export expand_cell_data
 export compress_cell_data
-export compress_contributions
-export compress_ids
 
 export UnstructuredGridTopology
 
@@ -108,6 +111,7 @@ export get_cell_ref_coordinates
 export get_cell_reffe
 export get_cell_shapefuns
 export get_facet_normal
+export get_edge_tangent
 export test_triangulation
 export get_cell_map
 
@@ -191,6 +195,10 @@ export FaceToFaceGlue
 export BodyFittedTriangulation
 export move_contributions
 
+export PatchTopology
+export PatchTriangulation
+export PatchBoundaryTriangulation
+
 include("Grids.jl")
 
 include("GridMocks.jl")
@@ -215,6 +223,8 @@ include("UnstructuredDiscreteModels.jl")
 
 include("CartesianDiscreteModels.jl")
 
+include("PolytopalDiscreteModels.jl")
+
 include("MappedDiscreteModels.jl")
 
 include("GridPortions.jl")
@@ -230,5 +240,7 @@ include("SkeletonTriangulations.jl")
 include("AppendedTriangulations.jl")
 
 include("CompressedCellArrays.jl")
+
+include("PatchTriangulations.jl")
 
 end # module

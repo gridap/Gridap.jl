@@ -21,6 +21,11 @@ Base.size(a::QGradMonomialBasis) = (_ndofs_qgrad(a),)
 # @santiagobadia : Not sure we want to create the monomial machinery
 Base.getindex(a::QGradMonomialBasis,i::Integer) = Monomial()
 Base.IndexStyle(::QGradMonomialBasis) = IndexLinear()
+return_type(::QGradMonomialBasis{D,T}) where {D,T} = VectorValue{D,T}
+
+function testvalue(::Type{QGradMonomialBasis{D,T}}) where {D,T}
+  QGradMonomialBasis{D}(T,0)
+end
 
 """
     QGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
@@ -31,7 +36,7 @@ The `order` argument has the following meaning: the curl of the  functions in th
 is in the Q space of degree `order`.
 """
 function QGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
-  @assert T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
+  @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
   _order = order + 1
   _t = tfill(_order+1,Val{D-1}())
   t = (_order,_t...)
@@ -48,7 +53,7 @@ num_terms(f::QGradMonomialBasis{D,T}) where {D,T} = length(f.terms)*D
 get_order(f::QGradMonomialBasis) = f.order
 
 function return_cache(f::QGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
-  @assert D == length(eltype(x)) "Incorrect number of point components"
+  @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_qgrad(f)
   n = 1 + f.order+1
@@ -82,7 +87,7 @@ function return_cache(
   x::AbstractVector{<:Point}) where {D,T}
 
   f = fg.fa
-  @assert D == length(eltype(x)) "Incorrect number of point components"
+  @check D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_qgrad(f)
   n = 1 + f.order+1
@@ -255,6 +260,7 @@ end
 Base.getindex(a::NedelecPrebasisOnSimplex,i::Integer) = Monomial()
 Base.IndexStyle(::Type{<:NedelecPrebasisOnSimplex}) = IndexLinear()
 
+return_type(::NedelecPrebasisOnSimplex{D}) where {D} = VectorValue{D,Float64}
 num_terms(a::NedelecPrebasisOnSimplex) = length(a)
 get_order(f::NedelecPrebasisOnSimplex) = f.order
 

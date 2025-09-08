@@ -5,7 +5,213 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.18.2] - 2024-05-02 
+## [Unreleased]
+
+### Added
+
+- Added extension for `TikzPictures.jl`. Since PR[#1150](https://github.com/gridap/Gridap.jl/pull/1150).
+- Added `eigen` function support for `TensorValue` objects. Fixes issue [#1156](https://github.com/gridap/Gridap.jl/issues/1156). Since PR[#1157](https://github.com/gridap/Gridap.jl/pull/1157).
+
+## [0.19.4] - 2025-08-09
+
+### Added
+
+- Added low-level API `Arrays.invalidate_cache!(cache)` that forces the re-computation of values in `LazyArray` caches. Since PR[#1137](https://github.com/gridap/Gridap.jl/pull/1137).
+- Added support for star-patch integration, i.e patch integration with masked patch boundaries. Since PR[#1138](https://github.com/gridap/Gridap.jl/pull/1138).
+- Added compatibility for `DataStructures.jl` v0.19.0. Since PR[#1149](https://github.com/gridap/Gridap.jl/pull/1149).
+
+### Changed
+
+- Small modifications to `PolytopalQuadrature` to make it more flexible. Since PR[#1149](https://github.com/gridap/Gridap.jl/pull/1149).
+
+### Fixed
+
+- Fixes issue [#1119](https://github.com/gridap/Gridap.jl/issues/1119), allowing evaluation of `CellFields` on arbitrary points on periodic meshes. Since PR[#1139](https://github.com/gridap/Gridap.jl/pull/1139).
+
+## [0.19.3] - 2025-07-15
+
+### Fixed
+
+- `MultiFieldFEBasisComponent` now supports addition and subtraction. Since PR[#1130](https://github.com/gridap/Gridap.jl/pull/1130).
+- Fixed issues introduced in PR [#1130](https://github.com/gridap/Gridap.jl/pull/1130). Closes issue [#1131](https://github.com/gridap/Gridap.jl/issues/1131). Since PR [#1132](https://github.com/gridap/Gridap.jl/pull/1132).
+- Removed method ambiguity in `Adaptivity.setup_edge_based_rrules`. Fixes issue [#1133](https://github.com/gridap/Gridap.jl/issues/1133). Since PR[#1135](https://github.com/gridap/Gridap.jl/pull/1135).
+
+## [0.19.2] - 2025-07-08
+
+### Added
+
+- Added missing operations between `SkeletonPairs`. Since PR[#1122](https://github.com/gridap/Gridap.jl/pull/1122).
+- Added bubble elements for simplex and cube-like polytopes. Since PR[#1124](https://github.com/gridap/Gridap.jl/pull/1124)
+
+### Fixed
+
+- Update `norm` function to be compatible with complex vectors and tensors. Since PR[#1118](https://github.com/gridap/Gridap.jl/pull/1118).
+- `AdaptivityGlue` can now deal with non-surjective n2o maps. Since PR[#1126](https://github.com/gridap/Gridap.jl/pull/1126).
+
+
+## [0.19.1] - 2025-06-11
+
+### Fixed
+
+- Minor bugfixes from v0.19. Since PR[#1111](https://github.com/gridap/Gridap.jl/pull/1111).
+
+## [0.19.0] - 2025-06-10
+
+### Added
+
+- Support for polytopal meshes in 2D and 3D. New structures `PolytopalGridTopology`, `PolytopalGrid` and `PolytopalDiscreteModel`. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- Support for non-overlapping triangulations. Both `BodyFittedTriangulation` and `BoundaryTriangulation` have been extended to support repeated face ids. In particular, the `FaceToCellGlue` has a new constructor. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- Support for patch-wise integration and local solves. New structures `PatchTopology`, `PatchTriangulation` and `PatchAssembler` have been added. These structures allow for the integration, assembly and solution of local problems on (potentially overlapping) patches of the mesh. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- Support for polynomial spaces on polytopal meshes. New structure `PolytopalFESpace` has been added. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- With all of the above, we have support for hybrid non-conforming methods on polytopal meshes. Examples have been added for HDG and HHO in 2D and 3D. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+
+### Fixed
+
+- The `tol` kwarg for `Interpolable` was unused. It is now used for the point-to-cell search, which was breaking for very small cell sizes. Since PR[#1106](https://github.com/gridap/Gridap.jl/pull/1106).
+
+## [0.18.12] - 2025-04-19
+
+### Added
+
+- Added functionality to allow automatic differentiation of integrals with respect to evaluation positions xh where xh is a FEFunction. Since PR[#1095](https://github.com/gridap/Gridap.jl/pull/1095)
+
+### Fixed
+
+- Fix bug for issue [#927](https://github.com/gridap/Gridap.jl/issues/927), where Nedelec FE would not work on faces (Dc < Dp). Since PR[#1094](https://github.com/gridap/Gridap.jl/pull/1094).
+- Added support to evaluate polynomial bases on dualized points. Since PR[#1100](https://github.com/gridap/Gridap.jl/pull/1100).
+
+## [0.18.11] - 2025-04-01
+
+### Added
+
+- Added definition for `DiracDelta` with `Triangulation` argument. Since
+  PR[#1087](https://github.com/gridap/Gridap.jl/pull/1087).
+
+### Fixed
+
+- Fixed the failure of hessian over sum/product two `Field`s or `CellField`s as
+  reported in issue [#875](https://github.com/gridap/Gridap.jl/issues/875) by
+  adding the relevant manual chain rules. Since
+  PR[#1053](https://github.com/gridap/Gridap.jl/pull/1053).
+
+### Changed
+
+- Modified the `LinearStageOperator` struct to align it with the `NonlinearStageOperator`. Added `usx`, `ws` and `tx` as new fields in the struct. Since PR[#1089](https://github.com/gridap/Gridap.jl/pull/1089).
+- Misc `TensorValues` improvements since PR [#1092](https://github.com/gridap/Gridap.jl/pull/1092).
+    - `MultiValue`s can now be indexed by tuples of mixed `Integer` and `CartesianIndex`
+    - Indexing in `MultiValue`s now performs bound checks, that can be disabled using `@inbounds` or Gridap's performance execution mode.
+    - Make sure that the result of all operation (empty/zero tensor) of correctly promoted (element) type when applied to tensor(s) of length zero
+    - An argument error is now thrown when calling `tr(::ThirdOrderTensorValue{A,B})` with `A!=B`
+
+## [0.18.10] - 2025-03-04
+
+### Added
+
+- Added corresponding function `get_tangent_vector` to `get_normal_vector`. This method calculates the (unique up to sign) tangential unit vector to edges in 2D meshes, by rotating the normal (nx, ny) -> (ny, -nx). Since PR[#1071](https://github.com/gridap/Gridap.jl/pull/1071).
+
+### Fixed
+
+- Fixed autodiff-related issues [#661](https://github.com/gridap/Gridap.jl/issues/661), [#1052](https://github.com/gridap/Gridap.jl/issues/1052) and [#1085](https://github.com/gridap/Gridap.jl/issues/1085). Since PR[#1070](https://github.com/gridap/Gridap.jl/pull/1070).
+
+### Changed
+
+- `real` and `imag` functions now return a real TensorValue. Since PR[#1080](https://github.com/gridap/Gridap.jl/pull/1080).
+- Refactor of automatic differentiation for multi-field spaces. Now there is a more consistent implementation covering all cases. Since PR[#1070](https://github.com/gridap/Gridap.jl/pull/1070).
+
+## [0.18.9] - 2025-01-13
+
+### Added
+
+- Added AMR-related methods `mark` and `estimate` to `Adaptivity` module. Implemented Dorfler marking strategy. Since PR[#1063](https://github.com/gridap/Gridap.jl/pull/1063).
+
+### Fixed
+
+- BUG in `FineToCoarseFields.jl`. Since PR[#1074](https://github.com/gridap/Gridap.jl/pull/1074).
+
+### Changed
+
+- Low level optimisations to reduce allocations. `AffineMap` renamed to `AffineField`. New `AffineMap <: Map`, doing the same as `AffineField` without struct allocation. New `ConstantMap <: Map`, doing the same as `ConstantField` without struct allocation. Since PR[#1043](https://github.com/gridap/Gridap.jl/pull/1043).
+- `ConstantFESpaces` can now be built on triangulations. Since PR[#1069](https://github.com/gridap/Gridap.jl/pull/1069)
+
+## [0.18.8] - 2024-12-2
+
+### Added
+
+- Added get_dof_value_type for FESpacesWithLinearConstraints. Since PR[#1062](https://github.com/gridap/Gridap.jl/pull/1062).
+- Added Xiao-Gimbutas quadratures for simplices. Since PR[#1058](https://github.com/gridap/Gridap.jl/pull/1058).
+- Small improvements of the documentation of `Gridap.TensorValues`. Since PR[#1051](https://github.com/gridap/Gridap.jl/pull/1051).
+
+### Fixed
+
+- Fixed #974, an error when weak form is real but unknown vector is complex. Since PR[#1050](https://github.com/gridap/Gridap.jl/pull/1050).
+- Fixed issue where barycentric refinement rule in 3D would not produce oriented meshes. Since PR[#1055](https://github.com/gridap/Gridap.jl/pull/1055).
+
+### Changed
+
+- Optimized MonomialBasis low-level functions. Since PR[#1059](https://github.com/gridap/Gridap.jl/pull/1059).
+
+## [0.18.7] - 2024-10-8
+
+### Added
+
+- Added MacroFElements. These are defined as having the basis/dof-basis of a FESpace created on top of a RefinementRule. Since PR[#1024](https://github.com/gridap/Gridap.jl/pull/1024).
+- Added Barycentric refinement rule in 2D and 3D. Added Simplexify refinement rule. Since PR[#1024](https://github.com/gridap/Gridap.jl/pull/1024).
+- Added names to vector and tensor components in VTK exports, to avoid Paraview's automatic (sometimes wrong) guesses. See `TensorValues.indep_components_names`. Since PR[#1038](https://github.com/gridap/Gridap.jl/pull/1038).
+- Misc improvements of the `TensorValues` module:  See `TensorValues.indep_components_names`. Since PR[#1040](https://github.com/gridap/Gridap.jl/pull/1040).
+  - Documented all symbols exported by the module
+  - Improved and added test for some API function of `MultiValue` (general `diag` of 2nd order tensors, fixed `convert` of 3rd order tensors to SArray, avoid unwanted fallback of `num_components` on `MultiValue` types with undefined dimensions, more autodiff tests, better `double_contraction` API (prevent invalid operation giving indexing errors and enable valid operations)).
+  - Added a clear separation between the physical components access (`getindex`, `num_components`) and the numerical access to the stored independent components (`num_indep_components`, `indep_comp_getindex`) to enable using symmetric tensor types as unknown in FE Spaces.
+  - Implemented automatic differentiation `gradient` and `laplacian` for second order tensor, and `divergence` for third order tensors.
+  - Added `AbstractSymTensorValue`, an abstract type for second order symmetric tensors, and `SymTracelessTensorValue` (aliased to `QTensorValue`), a type for traceless symmetric tensors. `SymTensorValue` is now subtype of `AbstractSymTensorValue`.
+  - A convergence test for Poisson problem of `QTensorValue` unknown field validates the implementation.
+- Added support for benchmarking, through `PkgBenchmark.jl`. Since PR[#1039](https://github.com/gridap/Gridap.jl/pull/1039).
+- Added code quality tests, through `Aqua.jl`. Since PR[#1039](https://github.com/gridap/Gridap.jl/pull/1039).
+
+### Fixed
+
+- Fixed constructor of RungeKutta with only one solver. Since PR[#999](https://github.com/gridap/Gridap.jl/pull/999).
+
+### Changed
+
+- Conforming FESpaces now keep track of their `CellConformity` info, within the `metadata` field. Since PR[#1042](https://github.com/gridap/Gridap.jl/pull/1042).
+
+## [0.18.6] - 2024-08-29
+
+### Fixed
+
+- Improved performance of PR[#967](https://github.com/gridap/Gridap.jl/pull/967). Along the way, opened the door to Triangulations of different type in SkeletonTriangulation. Since PR[#1026](https://github.com/gridap/Gridap.jl/pull/1026).
+
+## [0.18.5] - 2024-08-28
+
+### Changed
+
+- Misc changes required to support facet integration on non-conforming meshes. These changes do not involve methods of the public API. Since PR[#967](https://github.com/gridap/Gridap.jl/pull/967)
+
+## [0.18.4] - 2024-08-09
+
+### Changed
+
+- Added WriteVTK kwargs to control the output encoding for vtk files. Since PR[#1016](https://github.com/gridap/Gridap.jl/pull/1016).
+
+### Fixed
+
+- Passing `kwargs` from `refine` to `simplexify` functions in Adaptivity. Since PR[#1015](https://github.com/gridap/Gridap.jl/pull/1015).
+- Fixed `interpolate` for `ZeroMeanFESpace`. Since PR[#1020](https://github.com/gridap/Gridap.jl/pull/1020).
+- Fixed `gather_free_and_dirichlet_values!` for `FESpaceWithConstantFixed`. Since PR[#1020](https://github.com/gridap/Gridap.jl/pull/1020).
+
+## [0.18.3] - 2024-07-11
+
+### Added
+
+- Added more features to Adaptivity. Notably: 3D uniform edge-based refinement for HEX and TETs. Barycentric refinement for simplices. Simplexify as a new refinement strategy. Since PR[#1013](https://github.com/gridap/Gridap.jl/pull/1013).
+
+- Define `GeneralPolytope` that represents general polytopes in 2 and 3 dimensions. Since PR[#1006](https://github.com/gridap/Gridap.jl/pull/1006).
+
+### Changed
+
+- Added local preferences for Gridap through `Preferences.jl`. The macro `@check` can now be activated/deactivated by using the local preference `execution_mode`. Since PR[#1014](https://github.com/gridap/Gridap.jl/pull/1014).
+
+## [0.18.2] - 2024-05-02
 
 ### Fixed
 
@@ -53,7 +259,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Changed how `allocate_vector` works. Now it only allocates, instead of allocating+initialising to zero. Since PR[#963](https://github.com/gridap/Gridap.jl/pull/963).
-- Misc changes required to support facet integration on non-conforming meshes. These changes do not involve methods of the public API. Since PR[#967](https://github.com/gridap/Gridap.jl/pull/967)
 
 ### Fixed
 

@@ -7,7 +7,7 @@
 |**Build Status** |
 | [![Build Status](https://github.com/gridap/Gridap.jl/workflows/CI/badge.svg?branch=master)](https://github.com/gridap/Gridap.jl/actions?query=workflow%3ACI) [![Codecov](https://codecov.io/gh/gridap/Gridap.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/gridap/Gridap.jl) |
 | **Community** |
-| [![Join the chat at https://gitter.im/Gridap-jl/community](https://badges.gitter.im/Gridap-jl/community.svg)](https://gitter.im/Gridap-jl/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) |
+| [![Join the chat at https://gitter.im/Gridap-jl/community](https://badges.gitter.im/Gridap-jl/community.svg)](https://gitter.im/Gridap-jl/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Join the chat in Slack](https://img.shields.io/badge/chat-on_slack-purple?style=flat&logo=slack&logoColor=white)](https://julialang.slack.com/archives/C02AK382QSG) |
 | **Citation** |
 | [![DOI](https://joss.theoj.org/papers/10.21105/joss.02520/status.svg)](https://doi.org/10.21105/joss.02520) |
 
@@ -60,9 +60,11 @@ pkg> add Gridap
 ```
 
 ## Plugins
+
 - [GridapDistributed](https://github.com/gridap/GridapDistributed.jl) Distributed-memory extension of Gridap.
+- [GridapSolvers](https://github.com/gridap/GridapSolvers.jl) Scalable multiphysics finite element solvers.
 - [GridapEmbedded](https://github.com/gridap/GridapEmbedded.jl) Embedded finite elements in Julia.
-- [GridapGmsh](https://github.com/gridap/GridapGmsh.jl) Generate a FE mesh with [GMSH](www.gmsh.info) and use it in Gridap.
+- [GridapGmsh](https://github.com/gridap/GridapGmsh.jl) Generate a FE mesh with [GMSH](https://www.gmsh.info) and use it in Gridap.
 - [GridapMakie](https://github.com/gridap/GridapMakie.jl) Makie plotting recipes for Gridap.
 - [GridapPardiso](https://github.com/gridap/GridapPardiso.jl) Use the [Intel Pardiso MKL direct sparse solver](https://software.intel.com/en-us/mkl-developer-reference-fortran-intel-mkl-pardiso-parallel-direct-sparse-solver-interface) in Gridap.
 - [GridapPETSc](https://github.com/gridap/GridapPETSc.jl) Use [PETSc](https://petsc.org/) linear and nonlinear solvers in Gridap.

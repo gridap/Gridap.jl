@@ -9,6 +9,11 @@ using Test
 using DocStringExtensions
 using FillArrays
 
+using NearestNeighbors
+using StaticArrays
+using DataStructures
+using ForwardDiff
+
 using Gridap.Helpers
 using Gridap.Algebra
 using Gridap.Arrays
@@ -16,9 +21,6 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
-
-using NearestNeighbors
-using StaticArrays
 
 import Gridap.Arrays: lazy_append
 import Gridap.Arrays: get_array
@@ -60,6 +62,7 @@ export Integrand
 export ∫
 export CellDof
 export get_normal_vector
+export get_tangent_vector
 export get_cell_measure
 export Interpolable
 export KDTreeSearch
@@ -90,6 +93,8 @@ export SkeletonCellFieldPair
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
+
+include("Interpolation.jl")
 
 include("CellQuadratures.jl")
 

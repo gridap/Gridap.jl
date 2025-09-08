@@ -8,8 +8,10 @@ module ReferenceFEs
 using Test
 using DocStringExtensions
 using LinearAlgebra
+using StaticArrays
 using Combinatorics
 using FillArrays
+using ..Gridap
 
 using Gridap.Helpers
 using Gridap.Arrays
@@ -45,6 +47,9 @@ import Base: ==
 
 export Polytope
 export ExtrusionPolytope
+export GeneralPolytope
+export Polygon
+export Polyhedron
 export get_extrusion
 export get_faces
 export get_dimranges
@@ -99,12 +104,10 @@ export get_face_moments
 export get_face_nodes_dofs
 export get_nodes
 export evaluate!
-export evaluate_dof
 export return_cache
 export return_type
 export test_dof
 export test_dof_array
-# export evaluate_dof_array
 
 export ReferenceFE
 export ReferenceFEName
@@ -179,6 +182,7 @@ export BDMRefFE
 export NedelecRefFE
 export BezierRefFE
 export ModalC0RefFE
+export BubbleRefFE
 
 export Lagrangian
 export DivConforming
@@ -187,6 +191,7 @@ export BDM
 export Nedelec
 export Bezier
 export ModalC0
+export Bubble
 
 export lagrangian
 export raviart_thomas
@@ -194,6 +199,7 @@ export bdm
 export nedelec
 export bezier
 export modalC0
+export bubble
 
 export Quadrature
 export QuadratureName
@@ -208,10 +214,13 @@ export test_quadrature
 export tensor_product
 export duffy
 export strang
+export xiao_gimbutas
 
 include("Polytopes.jl")
 
 include("ExtrusionPolytopes.jl")
+
+include("GeneralPolytopes.jl")
 
 include("Dofs.jl")
 
@@ -237,6 +246,8 @@ include("DuffyQuadratures.jl")
 
 include("StrangQuadratures.jl")
 
+include("XiaoGimbutasQuadratures.jl")
+
 include("RaviartThomasRefFEs.jl")
 
 include("BDMRefFEs.jl")
@@ -249,6 +260,10 @@ include("BezierRefFEs.jl")
 
 include("ModalC0RefFEs.jl")
 
+include("BubbleRefFEs.jl")
+
 include("LinearCombinationDofVectors.jl")
+
+include("PolytopalQuadratures.jl")
 
 end # module

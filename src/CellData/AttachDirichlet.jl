@@ -55,7 +55,8 @@ end
 
 struct AttachDirichletMap <: Map
   muladd::MulAddMap{Int}
-  AttachDirichletMap() = new(MulAddMap(-1,1))
+  identity::MulAddMap{Int}
+  AttachDirichletMap() = new(MulAddMap(-1,1),MulAddMap(0,1))
 end
 
 function Arrays.return_value(k::AttachDirichletMap,matvec::Tuple,vals,mask)
@@ -70,13 +71,13 @@ function Arrays.return_cache(k::AttachDirichletMap,matvec::Tuple,vals,mask)
 end
 
 function Arrays.evaluate!(cache,k::AttachDirichletMap,matvec::Tuple,vals,mask)
+  mat, vec = matvec
   if mask
-    mat, vec = matvec
     vec_with_bcs = evaluate!(cache,k.muladd,mat,vals,vec)
-    (mat, vec_with_bcs)
   else
-    matvec
+    vec_with_bcs = evaluate!(cache,k.identity,mat,vals,vec)
   end
+  (mat, vec_with_bcs)
 end
 
 function Arrays.return_value(k::AttachDirichletMap,mat,vals,mask)

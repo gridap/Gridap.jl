@@ -1,20 +1,24 @@
 """
 """
-function writevtk(args...;kwargs...)
+function writevtk(args...;compress=false,append=true,ascii=false,vtkversion=:default,kwargs...)
   map(visualization_data(args...;kwargs...)) do visdata
     write_vtk_file(
-    visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata)
+      visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata,
+      compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
+    )
   end
 end
 
 """
 """
-function createvtk(args...;kwargs...)
+function createvtk(args...;compress=false,append=true,ascii=false,vtkversion=:default,kwargs...)
   v = visualization_data(args...;kwargs...)
   @notimplementedif length(v) != 1
   visdata = first(v)
   create_vtk_file(
-    visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata)
+    visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata,
+    compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
+  )
 end
 
 """
@@ -43,14 +47,21 @@ end
       trian::Grid,
       filebase;
       celldata=Dict(),
-      nodaldata=Dict())
+      nodaldata=Dict(),
+      vtk_kwargs...
+      )
 
 Low level entry point to vtk. Other vtk-related routines in Gridap eventually call this one.
-
+The optional WriteVTK kwargs `vtk_kwargs` are passed to the `vtk_grid` constructor.
 """
 function write_vtk_file(
-  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict())
-  vtkfile = create_vtk_file(trian, filebase, celldata=celldata, nodaldata=nodaldata)
+  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict(),
+  compress=false, append=true, ascii=false, vtkversion=:default
+)
+  vtkfile = create_vtk_file(
+    trian, filebase, celldata=celldata, nodaldata=nodaldata,
+    compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
+  )
   outfiles = vtk_save(vtkfile)
 end
 
@@ -60,25 +71,35 @@ end
       trian::Grid,
       filebase;
       celldata=Dict(),
-      nodaldata=Dict())
+      nodaldata=Dict(),
+      vtk_kwargs...
+    )
 
 Low level entry point to vtk. Other vtk-related routines in Gridap eventually call this one.
 This function only creates the vtkFile, without writing to disk.
 
+The optional WriteVTK kwargs `vtk_kwargs` are passed to the `vtk_grid` constructor.
 """
 function create_vtk_file(
-  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict())
+  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict(),
+  compress=false, append=true, ascii=false, vtkversion=:default
+)
 
   points = _vtkpoints(trian)
   cells = _vtkcells(trian)
-  vtkfile = vtk_grid(filebase, points, cells, compress=false)
+  vtkfile = vtk_grid(
+    filebase, points, cells,
+    compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
+  )
 
   if num_cells(trian)>0
     for (k,v) in celldata
-      vtk_cell_data(vtkfile, _prepare_data(v), k)
+      component_names = _data_component_names(v)
+      vtk_cell_data(vtkfile, _prepare_data(v), k; component_names)
     end
     for (k,v) in nodaldata
-      vtk_point_data(vtkfile, _prepare_data(v), k)
+      component_names = _data_component_names(v)
+      vtk_point_data(vtkfile, _prepare_data(v), k; component_names)
     end
   end
 
@@ -86,20 +107,26 @@ function create_vtk_file(
 end
 
 function create_pvtk_file(
-  trian::Grid, filebase;
-  part, nparts, ismain=(part==1), celldata=Dict(), nodaldata=Dict())
+  trian::Grid, filebase; part, nparts, ismain=(part==1), celldata=Dict(), nodaldata=Dict(),
+  compress=false, append=true, ascii=false, vtkversion=:default
+)
 
   points = _vtkpoints(trian)
   cells = _vtkcells(trian)
-  vtkfile = pvtk_grid(filebase, points, cells, compress=false;
-                      part=part, nparts=nparts, ismain=ismain)
+  vtkfile = pvtk_grid(
+    filebase, points, cells;part=part, nparts=nparts, ismain=ismain,
+    compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
+  )
 
   if num_cells(trian) > 0
     for (k, v) in celldata
-      vtkfile[k, VTKCellData()] = _prepare_data(v)
+      # component_names are actually always nothing as there are no field in ptvk atm
+      component_names = _data_component_names(v)
+      vtkfile[k, VTKCellData(), component_names=component_names] = _prepare_data(v)
     end
     for (k, v) in nodaldata
-      vtkfile[k, VTKPointData()] = _prepare_data(v)
+      component_names = _data_component_names(v)
+      vtkfile[k, VTKPointData(), component_names=component_names] = _prepare_data(v)
     end
   end
   return vtkfile
@@ -112,8 +139,7 @@ function _vtkpoints(trian)
   reshape(reinterpret(Float64,xflat),(D,length(x)))
 end
 
-function _vtkcells(trian)
-
+function _vtkcells(trian::Grid)
   type_to_reffe = get_reffes(trian)
   cell_to_type = get_cell_type(trian)
   type_to_vtkid = map(get_vtkid, type_to_reffe)
@@ -137,27 +163,22 @@ function _generate_vtk_cells(
   type_to_vtknodes)
 
   V = eltype(cell_to_nodes)
-  meshcells = MeshCell{WriteVTK.VTKCellTypes.VTKCellType,V}[]
+  meshcells = Vector{MeshCell{WriteVTK.VTKCellTypes.VTKCellType,V}}(undef, length(cell_to_type))
 
   d = _vtkcelltypedict()
-
-  cells = 1:length(cell_to_type)
-  for cell in cells
-
-    t = cell_to_type[cell]
-    vtkid = type_to_vtkid[t]
-    vtknodes = type_to_vtknodes[t]
-
+  for (cell,type) in enumerate(cell_to_type)
+    vtkid = type_to_vtkid[type]
+    vtknodes = type_to_vtknodes[type]
     nodes = getindex!(cache,cell_to_nodes,cell)
-    meshcell = MeshCell(d[vtkid], nodes[vtknodes])
-
-    push!(meshcells,meshcell)
-
+    meshcells[cell] = MeshCell(d[vtkid], nodes[vtknodes])
   end
 
   meshcells
-
 end
+
+_data_component_names(v) = nothing
+
+_data_component_names(v::AbstractArray{T}) where T<:MultiValue = indep_components_names(T)
 
 _prepare_data(v) = v
 
@@ -351,5 +372,37 @@ function _vtkcelltypedict()
   d[VTK_LAGRANGE_TETRAHEDRON.vtk_id] = VTK_LAGRANGE_TETRAHEDRON
   d[VTK_LAGRANGE_HEXAHEDRON.vtk_id] = VTK_LAGRANGE_HEXAHEDRON
   #d[VTK_BIQUADRATIC_HEXAHEDRON.vtk_id] = VTK_BIQUADRATIC_HEXAHEDRON
+  d[VTK_POLYGON.vtk_id] = VTK_POLYGON
+  d[VTK_POLYHEDRON.vtk_id] = VTK_POLYHEDRON
   d
+end
+
+# Polytopal
+
+function _vtkcells(trian::Geometry.PolytopalGrid{2})
+  polys = get_polytopes(trian)
+  cell_to_nodes = get_cell_node_ids(trian)
+  
+  V = eltype(cell_to_nodes)
+  meshcells = Vector{MeshCell{WriteVTK.VTKCellTypes.VTKCellType,V}}(undef, length(polys))
+  for (cell, poly) in enumerate(polys)
+    nodes = cell_to_nodes[cell]
+    meshcells[cell] = MeshCell(VTK_POLYGON, nodes)
+  end
+
+  meshcells
+end
+
+function _vtkcells(trian::Geometry.PolytopalGrid{3})
+  polys = get_polytopes(trian)
+  cell_to_nodes = get_cell_node_ids(trian)
+  
+  meshcells = Vector{WriteVTK.VTKPolyhedron}(undef, length(polys))
+  for (cell, poly) in enumerate(polys)
+    nodes = cell_to_nodes[cell]
+    face_to_node = map(lnodes -> Tuple(nodes[lnodes]), get_faces(poly,2,0))
+    meshcells[cell] = WriteVTK.VTKPolyhedron(nodes, face_to_node...)
+  end
+
+  meshcells
 end

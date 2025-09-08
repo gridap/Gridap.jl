@@ -23,7 +23,7 @@ function get_cell_fe_data(fun,f,ttrian)
   if strian === ttrian
     return sface_to_data
   end
-  @assert is_change_possible(strian,ttrian)
+  @check is_change_possible(strian,ttrian)
   D = num_cell_dims(strian)
   sglue = get_glue(strian,Val(D))
   tglue = get_glue(ttrian,Val(D))
@@ -184,8 +184,8 @@ struct TrialBasis <: BasisStyle end
 struct TestBasis <: BasisStyle end
 
 abstract type FEBasis <: CellField end
+BasisStyle(::Type{<:FEBasis}) = @abstractmethod
 BasisStyle(::T) where T <: FEBasis = BasisStyle(T)
-DomainStyle(::T) where T <: FEBasis = DomainStyle(T)
 
 struct SingleFieldFEBasis{BS<:BasisStyle,DS<:DomainStyle} <: FEBasis
   cell_basis::AbstractArray
