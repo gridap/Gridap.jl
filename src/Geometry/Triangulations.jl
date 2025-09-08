@@ -284,11 +284,11 @@ function extend(a::LazyArray{<:Fill{<:Broadcasting{<:Operation}}},b::PosNegParti
   lazy_map(k,args...)
 end
 
-function extend(a::LazyArray{<:Fill{<:Broadcasting{typeof(∘)}}},b::PosNegPartition) 
-  k = a.maps.value
-  args = map(i->extend(i,b),a.args)
-  lazy_map(k,args...)
-end
+# function extend(a::LazyArray{<:Fill{<:Broadcasting{typeof(∘)}}},b::PosNegPartition) 
+#   k = a.maps.value
+#   args = map(i->extend(i,b),a.args)
+#   lazy_map(k,args...)
+# end
 
 # function extend(a::LazyArray{<:Fill},b::PosNegPartition)
 #   k = a.maps.value
