@@ -32,6 +32,8 @@ end
 isless(a::Number,b::MultiValue) = all(isless.(a, b.data))
 isless(a::MultiValue,b::MultiValue) = @unreachable "Comparison is not defined between tensor of order greater than 1"
 
+isapprox(a::MultiValue,b::MultiValue;kwargs...) = isapprox(get_array(a),get_array(b);kwargs...)
+
 ###############################################################
 # Addition / subtraction
 ###############################################################
