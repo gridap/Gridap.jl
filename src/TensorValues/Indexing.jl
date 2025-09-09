@@ -7,6 +7,7 @@ LinearIndices(arg::MultiValue) = LinearIndices(size(arg))
 
 Base.IndexStyle(::MultiValue) = IndexCartesian()
 Base.IndexStyle(::Type{<:MultiValue}) = IndexCartesian()
+Base.keys(::IndexLinear, A::MultiValue) = Base.OneTo(length(A))
 
 """
     getindex(arg::MultiValue, inds...)
@@ -23,6 +24,16 @@ The `Number` convention is used when no indices are provided: `arg` is returned.
 @propagate_inbounds getindex(arg::MultiValue, inds...) = getindex(arg, to_indices(arg, inds)...)
 @propagate_inbounds getindex(arg::MultiValue, i::Integer) = getindex(arg, CartesianIndices(arg)[i])
 @propagate_inbounds getindex(arg::MultiValue) = @propagate_inbounds arg
+
+# Slice getindex (1D)
+@propagate_inbounds function getindex(arg::MultiValue, r::UnitRange{Int})
+  @boundscheck @check checkbounds(arg,r) === nothing
+  ntuple(i -> arg.data[r.start + (i-1)], length(r))
+end
+
+@propagate_inbounds function Base.getindex(arg::MultiValue, ::Colon)
+  ntuple(i -> arg.data[i], length(arg))
+end
 
 # Cartesian indexing style implementation
 @propagate_inbounds function getindex(arg::VectorValue,i::Integer)
@@ -58,6 +69,13 @@ end
 function Base.checkbounds(A::MultiValue{S}, I::Integer...) where S
   if CartesianIndex(I...) ∉ CartesianIndices(A)
     throw(BoundsError(A,I))
+  end
+  nothing
+end
+
+function Base.checkbounds(A::MultiValue{S}, r::UnitRange{Int}) where S
+  if any(i -> i < 1 || i > length(A), r)
+    throw(BoundsError(A,r))
   end
   nothing
 end
