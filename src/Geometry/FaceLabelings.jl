@@ -538,7 +538,10 @@ calling `merge!` on the two FaceLabeling objects, i.e
 ```
 
 """
-function face_labeling_from_cell_tags(topo::GridTopology, cell_to_tag, tag_to_name)
+function face_labeling_from_cell_tags(
+  topo::GridTopology, cell_to_tag, tag_to_name; 
+  split_dimensions = false
+)
   D = num_cell_dims(topo)
   n_tags = length(tag_to_name)
   tag_to_entities = [Int32[] for tag in 1:n_tags]
@@ -552,18 +555,18 @@ function face_labeling_from_cell_tags(topo::GridTopology, cell_to_tag, tag_to_na
 
   # Face entities:
   n_entities = n_tags
-  entities = Dict{Set{Int},Int32}([Set{Int}(i) => i for i in 1:n_tags])
+  entities = Dict{UInt64,Int32}([hash(Set{Int}(i)) => i for i in 1:n_tags])
   for d in D-1:-1:0
+    if split_dimensions
+      empty!(entities) # Reset entities
+    end
     dface_to_cells = get_faces(topo,d,D)
     dface_to_entity = d_to_dface_to_entity[d+1]
     for (dface,cells) in enumerate(dface_to_cells)
       dface_tags = Set(cell_to_tag[cells])
-      if haskey(entities,dface_tags)
-        dface_entity = entities[dface_tags]
-      else
+      dface_entity = get!(entities,hash(dface_tags),n_entities+1)
+      if dface_entity == n_entities+1 # New entity
         n_entities += 1
-        dface_entity = n_entities
-        entities[dface_tags] = dface_entity
         for tag in dface_tags
           push!(tag_to_entities[tag],dface_entity)
         end

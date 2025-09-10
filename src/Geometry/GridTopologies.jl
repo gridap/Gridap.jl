@@ -1089,16 +1089,12 @@ function _cell_to_faces_fill!(
   faces_around,
   faces_around_scratch)
 
-  ncells = length(cell_to_ctype)
+  for (cell,ctype) in enumerate(cell_to_ctype)
 
-  for cell in 1:ncells
-
-    ctype = cell_to_ctype[cell]
     lface_to_lvertices = ctype_to_lface_to_lvertices[ctype]
-    nlfaces = length(lface_to_lvertices)
-    a = cell_to_faces_ptrs[cell]-1
+    offset = cell_to_faces_ptrs[cell]-1
 
-    for lface in 1:nlfaces
+    for lface in eachindex(lface_to_lvertices)
 
       _fill_vertices_in_lface!(
         vertices,
@@ -1117,7 +1113,7 @@ function _cell_to_faces_fill!(
 
       for face in faces_around
         if face != UNSET
-          cell_to_faces_data[a+lface] = face
+          cell_to_faces_data[offset+lface] = face
           break
         end
       end
@@ -1159,9 +1155,7 @@ function _cell_to_faces_count!(
     type_to_nlfaces,
     cell_to_ctype)
 
-  ncells = length(cell_to_ctype)
-  for cell in 1:ncells
-    ctype = cell_to_ctype[cell]
+  for (cell,ctype) in enumerate(cell_to_ctype)
     nlfaces = type_to_nlfaces[ctype]
     cell_to_faces_ptrs[cell+1] = nlfaces
   end
@@ -1185,18 +1179,14 @@ function  _cell_to_faces_fill!(
 
   face = 1
 
-  ncells = length(cell_to_ctype)
+  for (cell,ctype) in enumerate(cell_to_ctype)
 
-  for cell in 1:ncells
-
-    ctype = cell_to_ctype[cell]
     lface_to_lvertices = ctype_to_lface_to_lvertices[ctype]
-    nlfaces = length(lface_to_lvertices)
-    a = cell_to_faces_ptrs[cell]-1
+    offset = cell_to_faces_ptrs[cell]-1
 
-    for lface in 1:nlfaces
+    for lface in eachindex(lface_to_lvertices)
 
-      if cell_to_faces_data[a+lface] != UNSET
+      if cell_to_faces_data[offset+lface] != UNSET
         continue
       end
 

@@ -204,6 +204,7 @@ Constructors:
     PolytopalGrid(grid::Grid)
     PolytopalGrid(topo::PolytopalGridTopology)
     PolytopalGrid(node_coordinates,cell_node_ids,polytopes[,facet_normal=nothing])
+    PolytopalGrid(polytopes::AbstractVector{<:GeneralPolytope})
 
 """
 struct PolytopalGrid{Dc,Dp,Tp,Tn} <: Grid{Dc,Dp}
@@ -236,6 +237,13 @@ end
 
 function PolytopalGrid(topo::PolytopalGridTopology{Dc}) where Dc
   PolytopalGrid(get_vertex_coordinates(topo), get_faces(topo,Dc,0), get_polytopes(topo))
+end
+
+function PolytopalGrid(polytopes::AbstractVector{<:GeneralPolytope})
+  node_coords = vcat((get_vertex_coordinates(q) for q in polytopes)...)
+  offsets = [1,(cumsum(map(num_vertices,polytopes)).+1)...]
+  cell_to_nodes = Table([ offsets[i]:offsets[i+1]-1 for i in 1:length(polytopes) ])
+  return PolytopalGrid(node_coords, cell_to_nodes, polytopes)
 end
 
 is_first_order(::PolytopalGrid) = true
@@ -325,6 +333,8 @@ PolytopalDiscreteModel(model::PolytopalDiscreteModel) = model
 get_grid(model::PolytopalDiscreteModel) = model.grid
 get_grid_topology(model::PolytopalDiscreteModel) = model.grid_topology
 get_face_labeling(model::PolytopalDiscreteModel) = model.labels
+
+get_cell_map(model::PolytopalDiscreteModel) = get_cell_map(get_grid(model))
 
 function compute_face_nodes(model::PolytopalDiscreteModel,d::Integer)
   topo = get_grid_topology(model)

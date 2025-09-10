@@ -124,6 +124,31 @@ function is_cover(topo::GridTopology, patch_cells)
 end
 
 """
+    is_disjoint(ptopo::PatchTopology)
+    is_disjoint(topo::GridTopology, patch_cells::Table)
+
+Check if the given patch topology is disjoint, i.e if no cell in the topology
+is contained in more than one patch.
+"""
+function is_disjoint(ptopo::PatchTopology)
+  patch_cells = Geometry.get_patch_cells(ptopo)
+  is_disjoint(ptopo.topo, patch_cells)
+end
+
+function is_disjoint(topo::GridTopology, patch_cells)
+  cache = array_cache(patch_cells)
+  cell_is_covered = fill(false, num_cells(topo))
+  for patch in eachindex(patch_cells)
+    cells = getindex!(cache, patch_cells, patch)
+    if any(view(cell_is_covered,cells))
+      return false
+    end
+    cell_is_covered[cells] .= true
+  end
+  return true
+end
+
+"""
   is_partition(ptopo::PatchTopology; kwargs...)
   is_partition(topo::GridTopology, patch_cells::Table; fail_fast = true)
 
@@ -144,9 +169,9 @@ function is_partition(ptopo::PatchTopology; kwargs...)
   is_partition(ptopo.topo, patch_cells; kwargs...)
 end
 
-function is_partition(topo::GridTopology, patch_cells; fail_fast = true)
-  if !is_cover(topo, patch_cells) || !isequal(sum(length, patch_cells), num_cells(topo))
-    return false # Not a cover or not disjoint
+function is_partition(topo::GridTopology, patch_cells; fail_fast = true, require_cover = true)
+  if (require_cover && !is_cover(topo, patch_cells)) || !is_disjoint(topo, patch_cells)
+    return false # Not disjoint
   end
 
   # Check patch connectivity
