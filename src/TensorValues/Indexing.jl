@@ -65,8 +65,8 @@ end
   @inbounds arg.data[index]
 end
 
-# Cartesian indexing slice-style
-@propagate_inbounds function getindex(A::TensorValue{D}, I::UnitRange{Int}, J::UnitRange{Int}) where D
+# Cartesian slice style implementation
+@propagate_inbounds function getindex(A::TensorValue{D1,D2}, I::UnitRange{Int}, J::UnitRange{Int}) where {D1,D2}
   @boundscheck @check checkbounds(A,I) === nothing
   @boundscheck @check checkbounds(A,J) === nothing
 
@@ -74,11 +74,15 @@ end
   TensorValue{nI,nJ}(ntuple(k -> begin
     j = J[(k-1) ÷ nI + 1]
     i = I[(k-1) % nI + 1]
-    @inbounds A.data[_2d_tensor_linear_index(D, i, j)]
+    @inbounds A.data[_2d_tensor_linear_index(D1, i, j)]
   end, nI*nJ))
 end
-@propagate_inbounds getindex(A::TensorValue{D}, ::Colon, J::UnitRange{Int}) where D = getindex(A, 1:D, J)
-@propagate_inbounds getindex(A::TensorValue{D}, I::UnitRange{Int}, ::Colon) where D = getindex(A, I, 1:D)
+@propagate_inbounds getindex(A::TensorValue{D1,D2}, ::Colon, J::UnitRange{Int}) where {D1,D2} = getindex(A, 1:D1, J)
+@propagate_inbounds getindex(A::TensorValue{D1,D2}, I::UnitRange{Int}, ::Colon) where {D1,D2} = getindex(A, I, 1:D2)
+@propagate_inbounds getindex(A::TensorValue{D1,D2}, i::Integer, J::UnitRange{Int}) where {D1,D2} = getindex(A, i:i, J)
+@propagate_inbounds getindex(A::TensorValue{D1,D2}, I::UnitRange{Int}, j::Integer) where {D1,D2} = getindex(A, I, j:j)
+@propagate_inbounds getindex(A::TensorValue{D1,D2}, ::Colon, j::Integer) where {D1,D2} = getindex(A, 1:D1, j:j)
+@propagate_inbounds getindex(A::TensorValue{D1,D2}, i::Integer, ::Colon) where {D1,D2} = getindex(A, i:i, 1:D2)
 
 # Check bounds
 function Base.checkbounds(A::MultiValue{S}, I::Integer...) where S
