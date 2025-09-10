@@ -4,8 +4,6 @@
 
 (==)(a::MultiValue,b::MultiValue) = false
 (==)(a::MultiValue{S},b::MultiValue{S}) where {S} = a.data == b.data
-(≈)(a::MultiValue{S},b::MultiValue{S}) where {S} = isapprox(get_array(a), get_array(b))
-(≈)(a::MultiValue{S,T1,N,0} where T1,b::MultiValue{S,T2,N,0} where T2) where {S,N} = true
 isapprox(a::MultiValue,b::MultiValue;kwargs...) = isapprox(get_array(a),get_array(b);kwargs...)
 
 function (≈)(
