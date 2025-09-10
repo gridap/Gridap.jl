@@ -28,11 +28,11 @@ The `Number` convention is used when no indices are provided: `arg` is returned.
 # Slice getindex (1D)
 @propagate_inbounds function getindex(arg::MultiValue, r::UnitRange{Int})
   @boundscheck @check checkbounds(arg,r) === nothing
-  ntuple(i -> arg.data[r.start + (i-1)], length(r))
+  @inbounds ntuple(i -> arg.data[r.start + (i-1)], length(r))
 end
 
 @propagate_inbounds function Base.getindex(arg::MultiValue, ::Colon)
-  ntuple(i -> arg.data[i], length(arg))
+  ard.data
 end
 
 # Cartesian indexing style implementation
@@ -65,7 +65,22 @@ end
   @inbounds arg.data[index]
 end
 
+# Cartesian indexing slice-style
+@propagate_inbounds function getindex(A::TensorValue{D}, I::UnitRange{Int}, J::UnitRange{Int}) where D
+  @boundscheck @check checkbounds(A,I) === nothing
+  @boundscheck @check checkbounds(A,J) === nothing
 
+  nI, nJ = length(I), length(J)
+  TensorValue{nI,nJ}(ntuple(k -> begin
+    j = J[(k-1) ÷ nI + 1]
+    i = I[(k-1) % nI + 1]
+    @inbounds A.data[_2d_tensor_linear_index(D, i, j)]
+  end, nI*nJ))
+end
+@propagate_inbounds getindex(A::TensorValue{D}, ::Colon, J::UnitRange{Int}) where D = getindex(A, 1:D, J)
+@propagate_inbounds getindex(A::TensorValue{D}, I::UnitRange{Int}, ::Colon) where D = getindex(A, I, 1:D)
+
+# Check bounds
 function Base.checkbounds(A::MultiValue{S}, I::Integer...) where S
   if CartesianIndex(I...) ∉ CartesianIndices(A)
     throw(BoundsError(A,I))
