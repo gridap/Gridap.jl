@@ -28,11 +28,11 @@ The `Number` convention is used when no indices are provided: `arg` is returned.
 # Slice getindex (1D)
 @propagate_inbounds function getindex(arg::MultiValue, r::UnitRange{Int})
   @boundscheck @check checkbounds(arg,r) === nothing
-  @inbounds ntuple(i -> arg.data[r.start + (i-1)], length(r))
+  @inbounds VectorValue(ntuple(i -> arg.data[r.start + (i-1)], length(r)))
 end
 
 @propagate_inbounds function Base.getindex(arg::MultiValue, ::Colon)
-  arg.data
+  VectorValue(arg.data)
 end
 
 # Cartesian indexing style implementation
