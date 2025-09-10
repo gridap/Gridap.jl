@@ -33,6 +33,8 @@ b = VectorValue(1,3,3)
 @test isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0))
 @test isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0), atol=eps(1.0))
 @test isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0), rtol=eps(1.0))
+@test !isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,4.0))
+@test_throws DimensionMismatch isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0,4.0))
 
 a = VectorValue(1,2,3)
 b = VectorValue(2,1,6)

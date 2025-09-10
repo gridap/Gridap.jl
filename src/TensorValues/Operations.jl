@@ -6,6 +6,7 @@
 (==)(a::MultiValue{S},b::MultiValue{S}) where {S} = a.data == b.data
 (≈)(a::MultiValue{S},b::MultiValue{S}) where {S} = isapprox(get_array(a), get_array(b))
 (≈)(a::MultiValue{S,T1,N,0} where T1,b::MultiValue{S,T2,N,0} where T2) where {S,N} = true
+isapprox(a::MultiValue,b::MultiValue;kwargs...) = isapprox(get_array(a),get_array(b);kwargs...)
 
 function (≈)(
   a::AbstractArray{<:MultiValue}, b::AbstractArray{<:MultiValue})
@@ -31,8 +32,6 @@ end
 
 isless(a::Number,b::MultiValue) = all(isless.(a, b.data))
 isless(a::MultiValue,b::MultiValue) = @unreachable "Comparison is not defined between tensor of order greater than 1"
-
-isapprox(a::MultiValue,b::MultiValue;kwargs...) = isapprox(get_array(a),get_array(b);kwargs...)
 
 ###############################################################
 # Addition / subtraction
