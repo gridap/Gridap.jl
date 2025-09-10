@@ -11,7 +11,7 @@ function isapprox(
   a::AbstractArray{<:MultiValue}, b::AbstractArray{<:MultiValue};kwargs...)
   if size(a) != size(b); return false; end
   for (ai,bi) in zip(a,b)
-    if !(ai≈bi); return false; end
+    if !isapprox(ai,bi;kwargs...); return false; end
   end
   true
 end
