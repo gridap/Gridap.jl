@@ -28,11 +28,11 @@ The `Number` convention is used when no indices are provided: `arg` is returned.
 # Slice getindex (1D)
 @propagate_inbounds function getindex(arg::MultiValue, r::UnitRange{Int})
   @boundscheck @check checkbounds(arg,r) === nothing
-  @inbounds VectorValue(ntuple(i -> arg.data[r.start + (i-1)], length(r)))
+  @inbounds ntuple(i -> arg.data[r.start + (i-1)], length(r))
 end
 
 @propagate_inbounds function Base.getindex(arg::MultiValue, ::Colon)
-  VectorValue(arg.data)
+  arg.data
 end
 
 # Cartesian indexing style implementation
@@ -65,37 +65,21 @@ end
   @inbounds arg.data[index]
 end
 
-# Cartesian slice style implementation
+# Cartesian slice-style implementation
 @propagate_inbounds function getindex(A::TensorValue{D1,D2}, I::UnitRange{Int}, J::UnitRange{Int}) where {D1,D2}
   @boundscheck @check checkbounds(A,I,J) === nothing
   nI, nJ = length(I), length(J)
-  TensorValue{nI,nJ}(ntuple(k -> begin
+  ntuple(k -> begin
     j = J[(k-1) ÷ nI + 1]
     i = I[(k-1) % nI + 1]
     @inbounds A[i,j]
-  end, nI*nJ))
+  end, nI*nJ)
 end
 @propagate_inbounds getindex(A::TensorValue{D1,D2}, ::Colon, J::UnitRange{Int}) where {D1,D2} = getindex(A, 1:D1, J)
 @propagate_inbounds getindex(A::TensorValue{D1,D2}, I::UnitRange{Int}, ::Colon) where {D1,D2} = getindex(A, I, 1:D2)
-
-@propagate_inbounds function getindex(A::TensorValue{D1,D2}, i::Integer, J::UnitRange{Int}) where {D1,D2}
-  @boundscheck @check checkbounds(A,i,J) === nothing
-  nJ = length(J)
-  VectorValue{nJ}(ntuple(k -> begin
-    @inbounds j = J[k]
-    @inbounds A[i,j]
-  end, nJ))
-end
+@propagate_inbounds getindex(A::TensorValue{D1,D2}, i::Integer, J::UnitRange{Int}) where {D1,D2} = getindex(A, i:i, J)
+@propagate_inbounds getindex(A::TensorValue{D1,D2}, I::UnitRange{Int}, j::Integer) where {D1,D2} = getindex(A, I, j:j)
 @propagate_inbounds getindex(A::TensorValue{D1,D2}, i::Integer, ::Colon) where {D1,D2} = getindex(A, i, 1:D2)
-
-@propagate_inbounds function getindex(A::TensorValue{D1,D2}, I::UnitRange{Int}, j::Integer) where {D1,D2}
-  @boundscheck @check checkbounds(A,I,j) === nothing
-  nI = length(I)
-  VectorValue{nI}(ntuple(k -> begin
-    @inbounds i = I[k]
-    @inbounds A[i,j]
-  end, nI))
-end
 @propagate_inbounds getindex(A::TensorValue{D1,D2}, ::Colon, j::Integer) where {D1,D2} = getindex(A, 1:D1, j)
 
 # Check bounds
