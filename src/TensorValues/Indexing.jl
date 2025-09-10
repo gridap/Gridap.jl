@@ -32,7 +32,7 @@ The `Number` convention is used when no indices are provided: `arg` is returned.
 end
 
 @propagate_inbounds function Base.getindex(arg::MultiValue, ::Colon)
-  ard.data
+  arg.data
 end
 
 # Cartesian indexing style implementation
