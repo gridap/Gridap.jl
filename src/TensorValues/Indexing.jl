@@ -90,17 +90,10 @@ function Base.checkbounds(A::MultiValue{S}, I::Integer...) where S
   nothing
 end
 
-function Base.checkbounds(A::MultiValue, inds::Union{Integer,UnitRange{Int},Colon}...)
-  axes = size(A)
-  for (ax, ind) in zip(axes, inds)
-    if ind isa Integer
-      if ind < 1 || ind > ax
-        throw(BoundsError(A, inds))
-      end
-    elseif ind isa UnitRange
-      if first(ind) < 1 || last(ind) > ax
-        throw(BoundsError(A, inds))
-      end
+function Base.checkbounds(A::MultiValue, inds::UnitRange{Int}...)
+  for (s, ind) in zip(size(A), inds)
+    if first(ind) < 1 || last(ind) > s
+      throw(BoundsError(A, inds))
     end
   end
   nothing
