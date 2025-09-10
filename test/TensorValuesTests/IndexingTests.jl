@@ -73,4 +73,9 @@ w = TensorValue(v)
 @test CartesianIndices(w) == CartesianIndices(v)
 @test LinearIndices(w) == LinearIndices(v)
 
+b = TensorValue{2,3}(1.,2,3,4,5,6)
+@test b[1,:] == VectorValue{3}(1.,3.,5.)
+@test b[1:1,:] == TensorValue{1,3}(1.,3.,5.)
+@test b[1:2,2:3] == TensorValue{2,2}(3.,4.,5.,6.)
+
 end # module IndexingTests
