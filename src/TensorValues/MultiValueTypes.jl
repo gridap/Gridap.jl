@@ -32,6 +32,11 @@ end
 # Other constructors and conversions implemented for more generic types
 ###############################################################
 
+axes(::Type{<:MultiValue{S}}) where S = map(SOneTo, tuple(S.parameters...))
+axes(a::MultiValue) = axes(typeof(a))
+axes(::Type{<:MultiValue{S,T,N}},d) where {S,T,N} = d::Integer <= N ? axes(MultiValue{S})[d] : SOneTo(1)
+axes(a::MultiValue,d::Integer) = axes(typeof(a),d)
+
 """
     change_eltype(m::Number,::Type{T2})
     change_eltype(M::Type{<:Number},::Type{T2})
@@ -43,6 +48,13 @@ For scalars (or any non MultiValue number), `change_eltype` returns T2.
 change_eltype(::Type{<:Number},::Type{T}) where {T} = T
 change_eltype(::Number,::Type{T2}) where {T2} = change_eltype(Number,T2)
 
+"""
+    MultiValue(a::SArray)
+
+If possible (`a` needs to be of order 1, 2 or 3), converts `a` to a value of
+type `<:MultiValue`.
+"""
+MultiValue(::SArray) = @notimplemented "The given SArray cannot be converted to a ::MultiValue."
 
 """
     Mutable(T::Type{<:MultiValue}) -> ::Type{<:MArray}

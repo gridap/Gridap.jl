@@ -1,28 +1,54 @@
-
-eachindex(arg::MultiValue) = eachindex(1:prod(size(arg)))
-lastindex(arg::MultiValue) = length(arg)
-
-CartesianIndices(arg::MultiValue) = CartesianIndices(size(arg))
-LinearIndices(arg::MultiValue) = LinearIndices(size(arg))
-
+# It would be better to keep IndexLinear style for VectorValue, TensorValue and
+# ThirdOrderTensorValue, their eachindex isn't as efficient as possible
 Base.IndexStyle(::MultiValue) = IndexCartesian()
 Base.IndexStyle(::Type{<:MultiValue}) = IndexCartesian()
+
+# Necessary overloads due to wrong ::Number defaults
+lastindex(arg::MultiValue) = length(arg)
+lastindex(arg::MultiValue, d::Int) = (@inline; last(axes(arg, d)))
+
+CartesianIndices(arg::MultiValue) = CartesianIndices(axes(arg))
+LinearIndices(arg::MultiValue) = LinearIndices(axes(arg))
+
+eachindex(arg::MultiValue) = CartesianIndices(arg)
+eachindex(::IndexCartesian, arg::MultiValue) = eachindex(arg)
+eachindex(::IndexLinear, arg::MultiValue) = SOneTo(length(arg))
+
+keys(arg::MultiValue) = CartesianIndices(axes(arg))
+keys(s::IndexStyle, arg::MultiValue) = eachindex(s, arg)
 
 """
     getindex(arg::MultiValue, inds...)
     getindex(arg::MultiValue, i::Integer)
     getindex(arg::MultiValue) = arg
 
-`MultiValue`s can be indexed like `Base.Array`s.
+`MultiValue`s can be indexed like `Base.AbstractArray`s.
 
-When indexing using a tupple `inds` (`IndexCartesian` style), `inds` may contain
-`Integer`s and `CartesianIndex`s , but no `S/MArray`s (unlike arrays of `StaticArrays`).
+The `Number` convention is used when no indices are provided: `arg[]` returns `arg`.
 
-The `Number` convention is used when no indices are provided: `arg` is returned.
-""" # Those three methods are necessary because MultiValue subtypes Number instead of AbstractArray
-@propagate_inbounds getindex(arg::MultiValue, inds...) = getindex(arg, to_indices(arg, inds)...)
+# Extented help
+
+Similarly to StaticArray.jl, the type of the returned value depend on
+inferability of the size from the type of the indices in `inds`.
+
+Indeed, `getindex` returns
+- a scalar (component) if `inds` contains only "scalars", i.e. `Integer` and `CartesianIndex`,
+- a `<:MultiValue` tensor if `inds` additionally contains statically inferable index ranges/sets such as `Colon()`/`:`, `SOneTo` or `StaticArray`,
+- an `Array` if `inds` additionally contains dynamically sized index sets such as `UnitRange`, `OneTo` or other types of `AbstractArray`.
+""" # Those methods are necessary because MultiValue subtypes Number instead of AbstractArray
 @propagate_inbounds getindex(arg::MultiValue, i::Integer) = getindex(arg, CartesianIndices(arg)[i])
-@propagate_inbounds getindex(arg::MultiValue) = @propagate_inbounds arg
+@propagate_inbounds getindex(arg::MultiValue) = arg
+# Size-inferable "scalar" indexing
+const _ScalarIndices = Union{Integer, CartesianIndex}
+@propagate_inbounds getindex(arg::MultiValue, inds::_ScalarIndices...) = getindex(arg, to_indices(arg, inds)...)
+# Size-inferable "array" indexing,
+const _StaticIndices = Union{Colon,SOneTo,StaticArray{<:Tuple, Int64},_ScalarIndices}
+# the conversion to SArray is only necessary when there are CartesianIndex in `inds`, see https://github.com/JuliaArrays/StaticArrays.jl/issues/1059
+@propagate_inbounds getindex(arg::MultiValue, inds::_StaticIndices...) = MultiValue(SArray(getindex(get_array(arg), inds...)))
+# Not size-inferable "array" indexing, returns ::Base.Array. Includes ::OneTo, Array{Bool}, etc.
+const _DynamicIndices= Union{AbstractArray,_StaticIndices}
+@propagate_inbounds getindex(arg::MultiValue, inds::_DynamicIndices...) = getindex(get_array(arg), inds...)
+
 
 # Cartesian indexing style implementation
 @propagate_inbounds function getindex(arg::VectorValue,i::Integer)
