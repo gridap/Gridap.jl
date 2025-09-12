@@ -90,9 +90,9 @@ import Base: adjoint
 import Base: transpose
 import Base: rand
 
-import LinearAlgebra: det, inv, tr, cross, dot, norm
+import LinearAlgebra: det, inv, tr, cross, dot, norm, eigen
 # Reexport from LinearAlgebra (just for convenience)
-export det, inv, tr, cross, dot, norm, ×, ⋅
+export det, inv, tr, cross, dot, norm, eigen, ×, ⋅
 
 import Gridap.Arrays: get_array
 
