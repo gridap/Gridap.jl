@@ -35,6 +35,10 @@ Indeed, `getindex` returns
 - a scalar (component) if `inds` contains only "scalars", i.e. `Integer` and `CartesianIndex`,
 - a `<:MultiValue` tensor if `inds` additionally contains statically inferable index ranges/sets such as `Colon()`/`:`, `SOneTo` or `StaticArray`,
 - an `Array` if `inds` additionally contains dynamically sized index sets such as `UnitRange`, `OneTo` or other types of `AbstractArray`.
+
+# warning
+  Indexing methods that do not return a scalars will loose any symmetry or other
+  known internal constraint, as in `SymTensorValue(1:6...)[SOneTo(2),SOneTo(2)]`
 """ # Those methods are necessary because MultiValue subtypes Number instead of AbstractArray
 @propagate_inbounds getindex(arg::MultiValue, i::Integer) = getindex(arg, CartesianIndices(arg)[i])
 @propagate_inbounds getindex(arg::MultiValue) = arg
