@@ -78,7 +78,7 @@ export indep_components_names
 
 import Base: show
 import Base: zero, one
-import Base: +, -, *, /, \, ==, isless, isapprox
+import Base: +, -, *, /, \, ==, ≈, isless
 import Base: conj, real, imag
 import Base: sum, maximum, minimum
 import Base: getindex, iterate, eachindex, lastindex
