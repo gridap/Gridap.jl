@@ -4,13 +4,13 @@
 
 (==)(a::MultiValue,b::MultiValue) = false
 (==)(a::MultiValue{S},b::MultiValue{S}) where {S} = a.data == b.data
-(≈)(a::MultiValue,b::MultiValue;kwargs...) = (≈)(get_array(a),get_array(b);kwargs...)
+(≈)(a::MultiValue,b::MultiValue;kwargs...) = ≈(get_array(a),get_array(b);kwargs...)
 
 function (≈)(
   a::AbstractArray{<:MultiValue}, b::AbstractArray{<:MultiValue}; kwargs...)
   if size(a) != size(b); return false; end
   for (ai,bi) in zip(a,b)
-    if !(≈)(ai,bi;kwargs...); return false; end
+    if !≈(ai,bi;kwargs...); return false; end
   end
   true
 end
