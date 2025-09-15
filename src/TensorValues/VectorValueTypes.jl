@@ -73,9 +73,9 @@ convert(::Type{<:NTuple{D,T}},  arg::VectorValue{D}) where {D,T} = NTuple{D,T}(T
 convert(::Type{<:VectorValue{D,T}}, arg::VectorValue{D}) where {D,T} = VectorValue{D,T}(Tuple(arg))
 convert(::Type{<:VectorValue{D,T}}, arg::VectorValue{D,T}) where {D,T} = arg
 
-# Construction from ::SArray
-MultiValue(a::SVector{D,T}) where {D,T} = convert(VectorValue{D,T}, a)
-VectorValue(a::SVector{D,T}) where {D,T} = MultiValue(a)
+# Construction from SArray or MArray
+MultiValue(a::StaticVector{D,T}) where {D,T} = convert(VectorValue{D,T}, a)
+VectorValue(a::StaticVector{D,T}) where {D,T} = MultiValue(a)
 
 ###############################################################
 # Other constructors and conversions (VectorValue)

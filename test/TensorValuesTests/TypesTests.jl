@@ -528,27 +528,27 @@ t = ThirdOrderTensorValue{2,2,2,Int}(1,2.0,3,4,5,6,7,8)
 
 v = VectorValue(3,2,1)
 m = mutable(v)
-@test m == get_array(v)
+@test m == get_array(v) == SArray(v)
 @test isa(m,MVector)
 
 v = TensorValue{2,3}(1,2,3,4,5,6)
 m = mutable(v)
-@test m == get_array(v)
+@test m == get_array(v) == SArray(v)
 @test isa(m,MMatrix)
 
 v = SymTensorValue{2}(1,2,3)
 m = mutable(v)
-@test m == get_array(v)
+@test m == get_array(v) == SArray(v)
 @test isa(m,MMatrix)
 
 v = SymTracelessTensorValue{2}(1,2)
 m = mutable(v)
-@test m == get_array(v)
+@test m == get_array(v) == SArray(v)
 @test isa(m,MMatrix)
 
 v = ThirdOrderTensorValue{2,1,3}(1:6...)
 m = mutable(v)
-@test m == get_array(v)
+@test m == get_array(v) == SArray(v)
 @test isa(m,MArray)
 
 v = SymFourthOrderTensorValue{2}(1:9...)

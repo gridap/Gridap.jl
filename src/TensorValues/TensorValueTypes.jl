@@ -87,8 +87,8 @@ convert(::Type{<:TensorValue{D1,D2,T}}, arg::TensorValue{D1,D2}) where {D1,D2,T}
 convert(::Type{<:TensorValue{D1,D2,T}}, arg::TensorValue{D1,D2,T}) where {D1,D2,T} = arg
 
 # Construction from ::SArray
-MultiValue(a::SMatrix{D1,D2,T}) where {D1,D2,T} = convert(TensorValue{D1,D2,T}, a)
-TensorValue(a::SMatrix{D1,D2,T}) where {D1,D2,T} = MultiValue(a)
+MultiValue(a::StaticMatrix{D1,D2,T}) where {D1,D2,T} = convert(TensorValue{D1,D2,T}, a)
+TensorValue(a::StaticMatrix{D1,D2,T}) where {D1,D2,T} = MultiValue(a)
 
 ###############################################################
 # Other constructors and conversions (TensorValue)

@@ -76,9 +76,9 @@ convert(::Type{<:NTuple{L,T1}}, arg::ThirdOrderTensorValue) where {L,T1} = NTupl
 convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3,T} = ThirdOrderTensorValue{D1,D2,D3,T}(Tuple(arg))
 convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = arg
 
-# Construction from ::SArray
-MultiValue(a::SArray{Tuple{D1,D2,D3},T}) where {D1,D2,D3,T} = convert(ThirdOrderTensorValue{D1,D2,D3,T}, a)
-ThirdOrderTensorValue(a::SArray{Tuple{D1,D2,D3},T}) where {D1,D2,D3,T} = MultiValue(a)
+# Construction from SArray or MArray
+MultiValue(a::StaticArray{Tuple{D1,D2,D3},T}) where {D1,D2,D3,T} = convert(ThirdOrderTensorValue{D1,D2,D3,T}, a)
+ThirdOrderTensorValue(a::StaticArray{Tuple{D1,D2,D3},T}) where {D1,D2,D3,T} = MultiValue(a)
 
 # other
 
