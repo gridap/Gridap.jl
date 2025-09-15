@@ -70,6 +70,8 @@ r = VectorValue(-1,1,-3)
 
 a = VectorValue{0,Float64}()
 b = VectorValue{0,Int}()
+@test a == b
+@test a ≈ b
 
 c = +a
 r = VectorValue{0,Float64}()
