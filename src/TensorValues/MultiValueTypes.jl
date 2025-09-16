@@ -37,6 +37,8 @@ function size(a::MultiValue{S,T,N}, d::Integer) where {S,T,N}
     return d > N ? 1 :  @inbounds size(a)[d] # @inbounds
 end
 
+## ATM it is not possible to implement array like axes because lazy_mapping
+## operations / broadcast rely on axes(::MultiValue) adopting the Number convention to return ().
 #axes(::Type{<:MultiValue{S}}) where S = map(SOneTo, tuple(S.parameters...))
 #axes(a::MultiValue) = axes(typeof(a))
 #axes(::Type{<:MultiValue{S,T,N}},d) where {S,T,N} = d::Integer <= N ? axes(MultiValue{S})[d] : SOneTo(1)

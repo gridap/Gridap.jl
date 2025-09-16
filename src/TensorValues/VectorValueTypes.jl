@@ -75,7 +75,6 @@ convert(::Type{<:VectorValue{D,T}}, arg::VectorValue{D,T}) where {D,T} = arg
 
 # Construction from SArray or MArray
 MultiValue(a::StaticVector{D,T}) where {D,T} = convert(VectorValue{D,T}, a)
-VectorValue(a::StaticVector{D,T}) where {D,T} = MultiValue(a)
 
 ###############################################################
 # Other constructors and conversions (VectorValue)

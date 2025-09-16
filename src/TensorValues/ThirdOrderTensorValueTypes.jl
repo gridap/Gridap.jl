@@ -78,7 +78,6 @@ convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::ThirdOrderTensorValue{
 
 # Construction from SArray or MArray
 MultiValue(a::StaticArray{Tuple{D1,D2,D3},T}) where {D1,D2,D3,T} = convert(ThirdOrderTensorValue{D1,D2,D3,T}, a)
-ThirdOrderTensorValue(a::StaticArray{Tuple{D1,D2,D3},T}) where {D1,D2,D3,T} = MultiValue(a)
 
 # other
 

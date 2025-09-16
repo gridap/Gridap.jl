@@ -11,11 +11,15 @@ a = SMatrix{2,2}(1,2,3,4)
 t = TensorValue(a)
 @test isa(t,TensorValue{2,2,Int})
 @test convert(SMatrix{2,2,Int},t) == [1 3;2 4]
+@test convert(SMatrix{2,2,Int},t) === SArray(t)
+@test convert(MMatrix{2,2,Int},t) == MArray(t)
+@test t === MultiValue(a)
 
 a = MMatrix{2,2}(1,2,3,4)
 t = TensorValue(a)
 @test isa(t,TensorValue{2,2,Int})
 @test convert(SMatrix{2,2,Int},t) == [1 3;2 4]
+@test t === MultiValue(a)
 
 t = TensorValue{2}((1,2,3,4))
 @test isa(t,TensorValue{2,2,Int})
@@ -44,6 +48,8 @@ t = TensorValue{1}((10,))
 t = TensorValue(1,2.0,3,4)
 @test isa(t,TensorValue{2,2,Float64})
 @test convert(SMatrix{2,2,Float64},t) == [1 3;2 4]
+@test convert(SMatrix{2,2,Float64},t) ===SMatrix(t)
+@test convert(MMatrix{2,2,Float64},t) == MMatrix(t)
 
 t = TensorValue{2}(1,2.0,3,4)
 @test isa(t,TensorValue{2,2,Float64})
@@ -268,6 +274,9 @@ a = SVector(1)
 g = VectorValue(a)
 @test isa(g,VectorValue{1,Int})
 @test convert(SVector{1,Int},g) == [1,]
+@test convert(SVector{1,Int},g) === SArray(g)
+@test convert(MVector{1,Int},g) ==  MArray(g)
+@test g === MultiValue(a)
 
 a = SVector(1,2,3,4)
 g = VectorValue(a)
@@ -278,6 +287,7 @@ a = MVector(1,2,3,4)
 g = VectorValue(a)
 @test isa(g,VectorValue{4,Int})
 @test convert(MVector{4,Int},g) == [1,2,3,4]
+@test g === MultiValue(a)
 
 g = VectorValue{4}((1,2,3,4))
 @test isa(g,VectorValue{4,Int})
@@ -499,6 +509,9 @@ s = "(1111, 1121, 1122, 2111, 2121, 2122, 2211, 2221, 2222)"
 a = SArray{Tuple{2,2,2}}(1,2,3,4,5,6,7,8)
 t = ThirdOrderTensorValue(a)
 @test isa(t,ThirdOrderTensorValue{2,2,2,Int})
+@test convert(SArray{Tuple{2,2,2},Int},t) === SArray(t)
+@test convert(MArray{Tuple{2,2,2},Int},t) == MArray(t)
+@test t === MultiValue(a)
 
 t = ThirdOrderTensorValue(1,2,3,4,5,6,7,8)
 @test isa(t,ThirdOrderTensorValue{2,2,2,Int})
