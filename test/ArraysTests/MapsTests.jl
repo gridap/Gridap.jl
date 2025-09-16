@@ -62,7 +62,7 @@ c = zeros(VectorValue{3,Int},2)
 broadcast!(⋅,c,a,b)
 test_map(c,f,a,b)
 # broadcast(⋅,a,b) to be fixed ?
-@test_throws "Cannot convert value of type Gridap.TensorValues.VectorValue{3, Int64} to type Int64" broadcast(⋅,a,b)
+@test_throws "no method matching Int64" broadcast(⋅,a,b)
 
 cache = return_cache(f,a,b)
 # @btime evaluate!($cache,$f,$a,$b)
