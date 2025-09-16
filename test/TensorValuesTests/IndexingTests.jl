@@ -8,6 +8,9 @@ a = (3,4,5,1)
 
 v = VectorValue{4}(a)
 
+@test IndexStyle(v) == IndexCartesian()
+@test IndexStyle(typeof(v)) == IndexCartesian()
+
 @test eltype(v) == Int
 @test eltype(typeof(v)) == Int
 
@@ -21,6 +24,9 @@ for (k,i) in enumerate(eachindex(v))
 end
 
 t = TensorValue{2}(a)
+
+@test IndexStyle(t) == IndexCartesian()
+@test IndexStyle(typeof(t)) == IndexCartesian()
 
 @test size(t) == (2,2)
 @test length(t) == 4

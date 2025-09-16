@@ -444,6 +444,13 @@ a = ones(Int,3)
 b = convert(VectorValue{3,Int},a)
 @test isa(b,VectorValue{3,Int})
 
+ab = Vector(b)
+@test ab isa Vector{Int}
+@test ab == a
+ab = Vector{Float64}(b)
+@test ab isa Vector{Float64}
+@test ab == a
+
 a = ones(Int,1)
 b = convert(VectorValue{1,Int},a)
 @test isa(b,VectorValue{1,Int})
@@ -454,6 +461,17 @@ b = convert(V,a)
 @test isa(b,V)
 b = V[a,a,a,]
 @test isa(b,Vector{V})
+
+a = ones(Int,(2,3))
+b = convert(TensorValue{2,3,Int},a)
+@test isa(b,TensorValue{2,3,Int})
+
+ab = Matrix(b)
+@test ab isa Matrix{Int}
+@test ab == a
+ab = Matrix{Float64}(b)
+@test ab isa Matrix{Float64}
+@test ab == a
 
 a = (11,21,22)
 V = SymTensorValue{2,Int,3}
@@ -468,6 +486,17 @@ b = convert(V,a)
 @test isa(b,V)
 b = V[a,a,a]
 @test isa(b,Vector{V})
+
+a = ones(Int,(2,3,1))
+b = convert(ThirdOrderTensorValue{2,3,1,Int},a)
+@test isa(b,ThirdOrderTensorValue{2,3,1,Int})
+
+ab = Array(b)
+@test ab isa Array{Int}
+@test ab == a
+ab = Array{Float64}(b)
+@test ab isa Array{Float64}
+@test ab == a
 
 a = (1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
 V = SymFourthOrderTensorValue{2,Int,9}
@@ -536,6 +565,11 @@ t = ThirdOrderTensorValue{2,2,2}(1,2.0,3,4,5,6,7,8)
 
 t = ThirdOrderTensorValue{2,2,2,Int}(1,2.0,3,4,5,6,7,8)
 @test isa(t,ThirdOrderTensorValue{2,2,2,Int})
+
+# Fourth order tensor not implemented
+
+a = SArray{Tuple{2,2,2,2}}(1:16...)
+@test_throws "cannot be converted" MultiValue(a)
 
 # Misc
 
