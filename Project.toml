@@ -31,6 +31,12 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
+[weakdeps]
+TikzPictures = "37f6aa50-8035-52d0-81c2-5a1d08754b2d"
+
+[extensions]
+TikzPicturesExt = "TikzPictures"
+
 [compat]
 AbstractTrees = "0.3.3, 0.4"
 Aqua = "0.8"
@@ -58,6 +64,7 @@ SparseMatricesCSR = "0.6.4"
 StaticArrays = "1.4"
 Statistics = "1"
 Test = "1"
+TikzPictures = "3"
 WriteVTK = "1.21.1"
 julia = "1.9"
 
@@ -66,4 +73,4 @@ Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Aqua", "Test"]
+test = ["Aqua", "Test", "TikzPictures"]
