@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added extension for `TikzPictures.jl`. Since PR[#1150](https://github.com/gridap/Gridap.jl/pull/1150).
 - Added `eigen` function support for `TensorValue` objects. Fixes issue [#1156](https://github.com/gridap/Gridap.jl/issues/1156). Since PR[#1157](https://github.com/gridap/Gridap.jl/pull/1157).
+- Added kwargs support for `isapprox` function on `MultiValue` objects. Since PR[1158](https://github.com/gridap/Gridap.jl/pull/1158)
 - Misc improvements of `TensorValues` APIs and indexing methods. Since PR[#1162](https://github.com/gridap/Gridap.jl/pull/1162).
     - Indexing tensors using slices (`:`/`Colon()`), (static)vectors or arrays, ranges (`OneTo`, `SOneTo`), or mix of them.
     - Implemented `Base.keys` that relates to the array shape of the `MultiValue`
