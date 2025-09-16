@@ -4,14 +4,13 @@
 
 (==)(a::MultiValue,b::MultiValue) = false
 (==)(a::MultiValue{S},b::MultiValue{S}) where {S} = a.data == b.data
-(≈)(a::MultiValue{S},b::MultiValue{S}) where {S} = isapprox(get_array(a), get_array(b))
-(≈)(a::MultiValue{S,T1,N,0} where T1,b::MultiValue{S,T2,N,0} where T2) where {S,N} = true
+(≈)(a::MultiValue,b::MultiValue;kwargs...) = ≈(get_array(a),get_array(b);kwargs...)
 
 function (≈)(
-  a::AbstractArray{<:MultiValue}, b::AbstractArray{<:MultiValue})
+  a::AbstractArray{<:MultiValue}, b::AbstractArray{<:MultiValue}; kwargs...)
   if size(a) != size(b); return false; end
   for (ai,bi) in zip(a,b)
-    if !(ai≈bi); return false; end
+    if !≈(ai,bi;kwargs...); return false; end
   end
   true
 end
