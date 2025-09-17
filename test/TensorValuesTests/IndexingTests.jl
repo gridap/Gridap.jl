@@ -166,4 +166,21 @@ mask = isodd.(v)
 mask = Matrix(mask)
 @test w[mask] == v[mask]
 
+# Some BoundsError tests
+
+# scalar indexing
+t = ThirdOrderTensorValue(1:8...)
+@test_throws BoundsError t[1,2]
+@test_throws BoundsError t[CartesianIndex(1,2)]
+
+# static
+@test_throws BoundsError t[:,2]
+@test_throws BoundsError t[v1,2]
+@test_throws BoundsError t[v1,v1]
+
+# dynamic
+@test_throws BoundsError t[o2,2]
+@test_throws BoundsError t[v1,2]
+@test_throws BoundsError t[v1,v1]
+
 end # module IndexingTests

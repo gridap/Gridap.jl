@@ -105,6 +105,8 @@ julia> t[mask]
 # Size-inferable "scalar" indexing
 const _ScalarIndices = Union{Integer, CartesianIndex}
 @propagate_inbounds getindex(arg::MultiValue, inds::_ScalarIndices...) = getindex(arg, to_indices(arg, inds)...)
+# Method to avoid infinite recursion in case of wrong number of scalar indices
+@propagate_inbounds getindex(arg::MultiValue, inds::Integer...) = (checkbounds(arg,inds...); @unreachable)
 # Size-inferable "array" indexing,
 const _StaticIndices = Union{Colon,SOneTo,StaticArray{<:Tuple, Int64},_ScalarIndices}
 # the conversion to SArray is only necessary when there are CartesianIndex in `inds`, see https://github.com/JuliaArrays/StaticArrays.jl/issues/1059
