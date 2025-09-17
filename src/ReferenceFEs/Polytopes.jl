@@ -658,6 +658,9 @@ end
 
 """
     get_bounding_box(p::Polytope)
+
+Returns a tuple `(pmin,pmax)` with the minimum and maximum points of 
+the axis-aligned bounding box containing the polytope `p`.
 """
 function get_bounding_box(p::Polytope)
   vertex_to_coords = get_vertex_coordinates(p)
@@ -678,6 +681,27 @@ function get_bounding_box(f,points)
     pmax = max.(pmax,fp)
   end
   (pmin,pmax)
+end
+
+"""
+    get_diameter(p::Polytope)
+
+Returns the diameter of the polytope `p`, defined as the maximum distance
+between any two vertices of the polytope.
+"""
+function get_diameter(p::Polytope)
+  vertex_to_coords = get_vertex_coordinates(p)
+  get_diameter(vertex_to_coords)
+end
+
+function get_diameter(points)
+  h = 0.0
+  for p in points
+    for q in points
+      h = max(h,norm(p-q))
+    end
+  end
+  h
 end
 
 """

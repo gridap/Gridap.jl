@@ -122,10 +122,8 @@ function PolytopalFESpace(
     dirichlet_dof_tag = Int8[]
     dirichlet_cells = Int32[]
     cell_is_dirichlet = fill(false,num_cells(trian))
-
-    ctype_to_shapefuns = Base.OneTo(length(cell_shapefuns))
     ctype_to_ndofs = lazy_map(length,cell_shapefuns)
-    cell_dof_ids, nfree = compute_discontinuous_cell_dofs(ctype_to_shapefuns,ctype_to_ndofs)
+    cell_dof_ids, nfree = compute_discontinuous_cell_dofs(cell_to_ctype,ctype_to_ndofs)
   end
 
   return PolytopalFESpace(

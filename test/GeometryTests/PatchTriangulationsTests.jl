@@ -6,7 +6,9 @@ using Gridap.Geometry, Gridap.FESpaces, Gridap.Arrays
 using Gridap.CellData
 
 using Gridap.Geometry: get_faces
-using Gridap.Geometry: PatchTopology, PatchTriangulation, PatchBoundaryTriangulation, PatchSkeletonTriangulation
+using Gridap.Geometry: PatchTopology, PatchTriangulation
+using Gridap.Geometry: PatchBoundaryTriangulation, PatchSkeletonTriangulation
+using Gridap.Geometry: InterfacePatchTopology
 
 model = CartesianDiscreteModel((0,1,0,1),(4,4))
 topo = get_grid_topology(model)
@@ -75,5 +77,22 @@ ptopo_view = view(ptopo,collect(1:4))
 Λp2 = PatchSkeletonTriangulation(model,ptopo_view)
 @test Λp1.trian.plus.trian.tface_to_mface == Λp2.trian.plus.trian.tface_to_mface
 @test Geometry.get_patch_faces(Λp1) == Geometry.get_patch_faces(Λp2)
+
+# Interface patch topology
+
+model = CartesianDiscreteModel((0,1,0,1),(2,2))
+topo = get_grid_topology(model)
+
+itopo = InterfacePatchTopology(model)
+@test Geometry.get_patch_cells(itopo) == [[1],[1],[1],[2],[2],[2],[3],[3],[3],[4],[4],[4]]
+@test Geometry.get_patch_faces(itopo,1) == [[1,3],[2],[4],[4],[5,7],[6],[2],[8,9],[10],[6],[10],[11,12]]
+Γp = Geometry.PatchBoundaryTriangulation(model,itopo)
+
+itopo = InterfacePatchTopology(
+  PatchTopology(topo, Table([[1,2],[3,4]]))
+)
+@test Geometry.get_patch_cells(itopo) == [[1,2],[1,2],[3,4],[3,4]]
+@test Geometry.get_patch_faces(itopo,1) == [[1,3,5,7],[2,6],[2,6],[8,9,11,12]]
+Γp = Geometry.PatchBoundaryTriangulation(model,itopo)
 
 end

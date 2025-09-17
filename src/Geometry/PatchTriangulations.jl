@@ -57,6 +57,52 @@ function PatchTopology(model::DiscreteModel;kwargs...)
   PatchTopology(ReferenceFE{D},model;kwargs...)
 end
 
+function InterfacePatchTopology(model::DiscreteModel; kwargs...)
+  ptopo = PatchTopology(model; kwargs...)
+  InterfacePatchTopology(ptopo)
+end
+
+function InterfacePatchTopology(ptopo::PatchTopology)
+  D = num_cell_dims(ptopo)
+
+  topo = ptopo.topo
+  face_to_cells = get_faces(topo,D-1,D)
+
+  patch_faces = get_patch_faces(ptopo,D-1)
+  pface_to_isboundary, pface_to_lcell = get_patch_boundary_info(ptopo)
+  face_to_patches = Arrays.inverse_table(patch_faces,num_faces(topo,D-1))
+  pface_to_face = patch_faces.data
+
+  ni = 0
+  pface = 0
+  id_to_iface = Dict{UInt64,Int32}()
+  pface_to_iface = zeros(Int32, num_faces(ptopo,D-1))
+  pface_to_cell = zeros(Int32, num_faces(ptopo,D-1))
+  for patch in eachindex(patch_faces)
+    for face in view(patch_faces,patch)
+      pface += 1
+      if !pface_to_isboundary[pface]
+        continue
+      end
+      patches = view(face_to_patches,face)
+      cells = view(face_to_cells,face)
+      key = hash(Set(patches))
+      iface = get!(id_to_iface, key, ni+1)
+      pface_to_iface[pface] = iface
+      pface_to_cell[pface] = cells[pface_to_lcell[pface]]
+      ni += isequal(iface,ni+1)
+    end
+    empty!(id_to_iface)
+  end
+  iface_to_pfaces = Arrays.inverse_table(pface_to_iface,ni)
+
+  d_to_iface_to_dfaces = Vector{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,D+1)
+  d_to_iface_to_dfaces[D+1] = Table(lazy_map(unique,lazy_map(Broadcasting(Reindex(pface_to_cell)), iface_to_pfaces)))
+  d_to_iface_to_dfaces[D] = Table(lazy_map(Broadcasting(Reindex(pface_to_face)), iface_to_pfaces))
+  
+  return PatchTopology(topo,d_to_iface_to_dfaces,nothing)
+end
+
 function num_patches(ptopo::PatchTopology)
   length(get_patch_cells(ptopo))
 end
@@ -254,24 +300,27 @@ function generate_patch_faces(ptopo::PatchTopology,dimfrom::Integer,dimto::Integ
 end
 
 function compute_isboundary_face(ptopo::PatchTopology{Dc},d::Integer) where Dc
-  if d == Dc # Cells are never boundary
+  # Cells
+  if d == Dc 
     return fill(false,num_faces(ptopo,Dc))
-  else
-    isboundary_facet, _ = get_patch_boundary_info(ptopo)
-    if d == Dc-1 # Facets
-      return isboundary_facet
-    else # Faces: Boundary if belongs to a boundary facet
-      facet_to_faces = generate_patch_faces(ptopo,Dc-1,d)
-      face_mask = fill(false,num_faces(ptopo,d))
-      for (facet,mask) in enumerate(isboundary_facet)
-        if mask
-          faces = view(facet_to_faces,facet)
-          face_mask[faces] .= true
-        end
-      end
-      return face_mask
+  end
+
+  # Facets
+  isboundary_facet, _ = get_patch_boundary_info(ptopo)
+  if d == Dc-1 
+    return isboundary_facet
+  end
+  
+  # Faces: Boundary if belongs to a boundary facet
+  facet_to_faces = generate_patch_faces(ptopo,Dc-1,d)
+  face_mask = fill(false,num_faces(ptopo,d))
+  for (facet,mask) in enumerate(isboundary_facet)
+    if mask
+      faces = view(facet_to_faces,facet)
+      face_mask[faces] .= true
     end
   end
+  return face_mask
 end
 
 function get_patch_boundary_info(ptopo::PatchTopology{Dc}) where Dc
