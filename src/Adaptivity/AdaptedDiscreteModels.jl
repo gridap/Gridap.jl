@@ -121,7 +121,7 @@ function refine(model::UnstructuredDiscreteModel,cell_partition::Int)
     model
   else
     cell_refine_masks = Fill(true,num_cells(model))
-    unstructured_uniform_refine(model,cell_partition,cell_refine_masks)
+    uniform_refine(model,cell_partition,cell_refine_masks)
   end
 end
 
@@ -220,6 +220,6 @@ function refine(model::Geometry.DiscreteModelMock,cell_partition::Int)
     model
   else
     cell_refine_masks = Fill(true,num_cells(model))
-    unstructured_uniform_refine(model,cell_partition,cell_refine_masks)
+    uniform_refine(model,cell_partition,cell_refine_masks)
   end
 end
