@@ -1,15 +1,13 @@
-module UnstructuredUniformRefinementTests
+module UniformRefinementTests
   
 using Test
 using Gridap
 using Gridap.Adaptivity
 using Gridap.Geometry
 using Gridap.ReferenceFEs
-using Gridap.Adaptivity: test_unstructured_uniform_refinement
+using Gridap.Adaptivity: uniform_refine
 
 using ..EdgeBasedRefinementTests: test_grid_transfers
-
-test_unstructured_uniform_refinement()
 
 # Setup base models
 has_affine_map = true
@@ -22,6 +20,9 @@ model3 = UnstructuredDiscreteModel(cart_model;has_affine_map)
 model4 = simplexify(model3)
 
 model5 = Geometry.DiscreteModelMock()
+
+periodic_model = CartesianDiscreteModel((0,1,0,1),(4,4);isperiodic=(true,false))
+model6 = UnstructuredDiscreteModel(periodic_model;has_affine_map)
 
 n = 3
 
@@ -53,6 +54,17 @@ test_grid_transfers(model4,ref_model,1)
 # Mock
 ref_model = refine(model5,n)
 visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"uniform_mock_$n"))
+test_grid_transfers(model5,ref_model,1)
+
+# Periodic QUAD
+ref_model = refine(model6,n)
+visualize && writevtk(ref_model,joinpath(path,"uniform_periodic_quad_$n"))
+# test_grid_transfers(model6,ref_model,1)
+
+# Partial refinement
+cell_refine_masks = [1,3,5]
+ref_model = uniform_refine(model5,n,cell_refine_masks)
+visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"uniform_mock_partial_$n"))
 test_grid_transfers(model5,ref_model,1)
 
 end

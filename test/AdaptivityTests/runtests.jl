@@ -12,7 +12,7 @@ using Test
   include("FineToCoarseFieldsTests.jl")
   include("RefinementRuleBoundaryTests.jl")
   include("MultifieldRefinementTests.jl")
-  include("UnstructuredUniformRefinementTests.jl")
+  include("UniformRefinementTests.jl")
 end
 
 @testset "CompositeQuadratures" begin
