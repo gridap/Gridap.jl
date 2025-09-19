@@ -258,8 +258,8 @@ dΛ = Measure(Λ,2)
 # Gradient
 f2(xh) = ∫(mean(xh)*mean(xh))dΛ
 dv = get_fe_basis(V);
-j = gradient(f2,uh)
-J = assemble_vector(j,V)
+j2 = gradient(f2,uh)
+J = assemble_vector(j2,V)
 
 df2(dxh,xh) = ∫(2*mean(dxh)*mean(xh))dΛ
 J_analytic = assemble_vector(dv->df2(dv,uh),V)
@@ -269,8 +269,8 @@ J_analytic = assemble_vector(dv->df2(dv,uh),V)
 # Jacobian
 f2(xh,yh) = ∫(mean(xh)*mean(xh)*mean(yh))dΛ
 dv = get_fe_basis(V);
-j = jacobian(uh->f2(uh,dv),uh)
-J = assemble_matrix(j,V,V)
+j3 = jacobian(uh->f2(uh,dv),uh)
+J = assemble_matrix(j3,V,V)
 
 df2(xh,dxh,yh) = ∫(2*mean(dxh)*mean(xh)*mean(yh))dΛ
 op = FEOperator(f2,df2,V,V)
