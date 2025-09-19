@@ -322,8 +322,65 @@ function run_multi_trian_tests()
   @test J_fwd == J
 end
 
+function run_edge_case_test()
+  for mod_type in (:skel_trian, :trian, :boundary)
+    for style in (ConsecutiveMultiFieldStyle(),BlockMultiFieldStyle())
+      model = CartesianDiscreteModel((0,1,0,1),(3,3))
+      Ω1 = Triangulation(model,[1,2,3])
+      if mod_type == :skel_trian
+        Λ = SkeletonTriangulation(model)
+      elseif mod_type == :trian
+        Λ = Triangulation(model)
+      elseif mod_type == :boundary
+        Λ = BoundaryTriangulation(model)
+      else
+        error()
+      end
+
+      V1 = FESpace(Ω1,ReferenceFE(lagrangian,Float64,1),conformity=:L2)
+      V2 = FESpace(Ω1,ReferenceFE(lagrangian,VectorValue{2,Float64},1),conformity=:L2)
+      V3 = FESpace(Ω1,ReferenceFE(lagrangian,Float64,1),conformity=:L2)
+      V = MultiFieldFESpace([V1,V2,V3];style)
+      uh = zero(V);
+      fill!(get_free_dof_values(uh),1.0)
+      dΛ = Measure(Λ,2)
+
+      # Gradient
+      f(xh) = ∫(mean(xh[1])+mean(xh[2])⋅mean(xh[2])+mean(xh[1])*mean(xh[3]))dΛ
+      dv = get_fe_basis(V);
+      j = gradient(f,uh;ad_type=:split)
+      J = assemble_vector(j,V)
+
+      j_mono = gradient(f,uh;ad_type=:monolithic)
+      J_mono = assemble_vector(j_mono,V)
+
+      df2(v,xh) = ∫(mean(v[1])+2*mean(v[2])⋅mean(xh[2])+mean(v[1])*mean(xh[3])+mean(xh[1])*mean(v[3]))dΛ
+      J_analytic = assemble_vector(dv->df2(dv,uh),V)
+      @test J ≈ J_analytic
+      @test J_mono ≈ J_analytic
+
+      # Jacobian
+      f2(xh,yh) = ∫(mean(xh[1])⋅mean(yh[1])+mean(xh[2])⋅mean(yh[2])+mean(xh[1])⋅mean(xh[2])⋅mean(yh[2])+mean(xh[1])*mean(xh[3])*mean(yh[3]))dΛ
+      dv = get_fe_basis(V);
+      j = jacobian(uh->f2(uh,dv),uh;ad_type=:split)
+      J = assemble_matrix(j,V,V)
+
+      j_mono = jacobian(uh->f2(uh,dv),uh;ad_type=:monolithic)
+      J_mono = assemble_matrix(j_mono,V,V)
+
+      df2(xh,dxh,yh) = ∫(mean(dxh[1])⋅mean(yh[1])+mean(dxh[2])⋅mean(yh[2])+mean(dxh[1])⋅mean(xh[2])⋅mean(yh[2]) +
+        mean(xh[1])⋅mean(dxh[2])⋅mean(yh[2])+mean(dxh[1])*mean(xh[3])*mean(yh[3])+mean(xh[1])*mean(dxh[3])*mean(yh[3]))dΛ
+      op = FEOperator(f2,df2,V,V)
+      J_analytic = jacobian(op,uh)
+
+      @test J ≈ J_analytic
+    end
+  end
+end
+
 run_tests(:split)
 run_tests(:monolithic)
 run_multi_trian_tests()
+run_edge_case_test()
 
 end # module
