@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Indexing tensors using slices (`:`/`Colon()`), (static)vectors or arrays, ranges (`OneTo`, `SOneTo`), or mix of them.
   - Implemented `Base.keys` that relates to the array shape of the `MultiValue`
   - Constructors `MV(::[S/M]Array)` and `SA(::MultiValue)` for any types `MV<:MultiValue` and `SA<:[S/M]Array` for arguments for which the conversion via `convert` is possible.
+- Added new way of doing AD for MultiField, where partials are computed separately for each field then merged together. Since PR[#1136](https://github.com/gridap/Gridap.jl/pull/1136).
 
 ## [0.19.4] - 2025-08-09
 
