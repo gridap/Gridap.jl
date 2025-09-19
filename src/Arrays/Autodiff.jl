@@ -233,12 +233,12 @@ function evaluate!(result,::AutoDiffMap,cfg::BlockConfig{typeof(ForwardDiff.jaco
   return result
 end
 
-function _alloc_jacobian(ydual::Vector,xdual::Vector)
+function _alloc_jacobian(ydual::AbstractVector,xdual::AbstractVector)
   T = ForwardDiff.valtype(eltype(ydual))
   CachedArray(zeros(T,length(ydual),length(xdual)))
 end
 
-function _setsize!(result::MatrixBlock,ydual::VectorBlock{<:Vector})
+function _setsize!(result::MatrixBlock,ydual::VectorBlock{<:AbstractVector})
   ni,nj = size(result)
   for i in 1:ni
     for j in 1:nj
@@ -250,7 +250,7 @@ function _setsize!(result::MatrixBlock,ydual::VectorBlock{<:Vector})
 end
 
 # Skeleton + Multifield: The VectorBlock corresponds to +/-
-function _alloc_jacobian(ydual::VectorBlock,xdual::Vector)
+function _alloc_jacobian(ydual::VectorBlock,xdual::AbstractVector)
   i = findfirst(ydual.touched)
   ai = _alloc_jacobian(ydual.array[i],xdual)
   ni = size(ydual.array,1)
