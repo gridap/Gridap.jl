@@ -99,7 +99,7 @@ jobs:
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - run: |
-          julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.instantiate()'
+          julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.instantiate(; target=:extensions)'
       - run: |
           julia --color=yes --project=. --depwarn=yes -e 'include("test/ExtensionTests/runtests.jl")'
       - uses: julia-actions/julia-processcoverage@v1
