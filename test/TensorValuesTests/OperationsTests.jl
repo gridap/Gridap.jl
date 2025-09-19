@@ -31,6 +31,10 @@ b = VectorValue(1,3,3)
 @test iszero(VectorValue(1,2,3) - VectorValue(1.0,2.0,3.0))
 @test iszero(zero(VectorValue(1,2,3)))
 @test isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0))
+@test isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0), atol=eps(1.0))
+@test isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0), rtol=eps(1.0))
+@test !isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,4.0))
+@test_throws DimensionMismatch isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0,4.0))
 
 a = VectorValue(1,2,3)
 b = VectorValue(2,1,6)
@@ -66,6 +70,8 @@ r = VectorValue(-1,1,-3)
 
 a = VectorValue{0,Float64}()
 b = VectorValue{0,Int}()
+@test a == b
+@test a ≈ b
 
 c = +a
 r = VectorValue{0,Float64}()
