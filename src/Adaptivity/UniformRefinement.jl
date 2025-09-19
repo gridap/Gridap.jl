@@ -1,12 +1,15 @@
+# Return the local indices of the fine points within each face.
 function _uniform_d_dface_own_lid(rr)
+	# NOTE: The nodes on the faces in each dimension 
+	# need to be ordered in a consistent manner.
 	grid = get_ref_grid(rr)
 	Dc = num_cell_dims(grid)
-	atol = 0.1 / (2 * num_nodes(grid))^(1/Dc)
+	atol = 0.1/(2*num_nodes(grid))^(1/Dc)
 	function _point_isless(x, y)
 		@inbounds for i ∈ Dc:-1:1
-			if x[i] < y[i] - atol
+			if x[i] < y[i]-atol
 				return true
-			elseif x[i] > y[i] + atol
+			elseif x[i] > y[i]+atol
 				return false
 			end
 		end
@@ -31,17 +34,24 @@ function _uniform_d_dface_own_lid(rr)
 	face_lids
 end
 
-function _uniform_d_dface_new_offsets(ctopo, cell_rr, cell_dface_n_innodes)
-	@assert length(cell_rr) == num_cells(ctopo)
+# For each dimension and each d-face, return the offsets
+# of the global indices associated with the refined mesh.
+function _uniform_d_dface_new_offsets(
+	ctopo,
+	cell_rr,
+	cell_dface_n_innodes)
 
+	@assert length(cell_rr) == num_cells(ctopo)
 	Dc = num_cell_dims(ctopo)
 	d_dface_offsets = Vector{Vector{Int32}}(undef, Dc)
 	for d in 1:Dc
 		(; data, ptrs) = Table(get_faces(ctopo, d, Dc))
 		d_offsets = similar(ptrs, Int32)
-		d_offsets[1] = d == 1 ? num_vertices(ctopo)+1 : d_dface_offsets[d-1][end]
+		d_offsets[1] = d==1 ? num_vertices(ctopo)+1 : d_dface_offsets[d-1][end]
 		@inbounds for dfi ∈ 1:(length(d_offsets)-1)
-			I = findfirst(i->cell_rr[i].T isa GenericRefinement, view(data, ptrs[dfi]:(ptrs[dfi+1]-1)))
+			I = findfirst(view(data, ptrs[dfi]:(ptrs[dfi+1]-1))) do i
+				cell_rr[i].T isa GenericRefinement
+			end
 			if !isnothing(I)
 				ci = data[ptrs[dfi]+I-1]
 				d_offsets[dfi+1] = d_offsets[dfi] + cell_dface_n_innodes[ci][d+1]
@@ -54,9 +64,9 @@ function _uniform_d_dface_new_offsets(ctopo, cell_rr, cell_dface_n_innodes)
 	d_dface_offsets
 end
 
+# Return the `ptrs` to construct the Table `cell_l2g_map`.
 function _uniform_l2g_ptrs(ctopo, cell_rr)
 	@assert length(cell_rr) == num_cells(ctopo)
-
 	cell_nnodes = lazy_map(r->num_nodes(get_ref_grid(r)), cell_rr)
 	offsets = Vector{Int32}(undef, num_cells(ctopo)+1)
 	offsets[1] = 1
@@ -66,7 +76,13 @@ function _uniform_l2g_ptrs(ctopo, cell_rr)
 	offsets
 end
 
-function _uniform_cell_l2gmap_and_nnodes(ctopo, cell_rr, cell_face_own_vertex_permutations)
+# Return the local-to-global map and the number of nodes
+# of the uniformly refined mesh.
+function _uniform_cell_l2gmap_and_nnodes(
+	ctopo,
+	cell_rr,
+	cell_face_own_vertex_permutations)
+
 	@assert num_cells(ctopo) == length(cell_rr)
 	Dc = num_cell_dims(ctopo)
 	cell_dface_n_innodes = lazy_map(cell_face_own_vertex_permutations, cell_rr) do fperms, rr
@@ -111,6 +127,7 @@ function _uniform_cell_l2gmap_and_nnodes(ctopo, cell_rr, cell_face_own_vertex_pe
 	Table(l2g_data, l2g_ptrs), n_nodes
 end
 
+# Return the coordinates of the uniformly refined mesh.
 function _uniformly_coordinates(cell_ref_coords, cell_l2g, cell_map, n_nodes)
 	coords = similar(first(cell_ref_coords), n_nodes)
 	cell_l2g = Table(cell_l2g)
@@ -127,6 +144,7 @@ function _uniformly_coordinates(cell_ref_coords, cell_l2g, cell_map, n_nodes)
 	coords
 end
 
+# Return the connectivity of the uniformly refined mesh.
 function _uniformly_connectivity(cell_ref_conns, cell_l2g, n_cells)
 	cell_ref_conns = lazy_map(Table, cell_ref_conns)
 	conn_ptrs = Vector{Int32}(undef, n_cells+1)
@@ -153,7 +171,8 @@ function _uniformly_connectivity(cell_ref_conns, cell_l2g, n_cells)
 	Table(conn_data, conn_ptrs)
 end
 
-function _uniformly_refin_grid_topology(
+# Construct the grid and topology for the uniformly refined grid.
+function _uniformly_refine_grid_topology(
 	cell_rr,
 	ctopo,
 	cgrid,
@@ -230,15 +249,29 @@ function _uniformly_refin_grid_topology(
 	)
 
 	return fgrid, ftopo
-
 end
 
+"""
+	uniform_refine(
+		cm::DiscreteModel,
+		n::Integer,
+		cell_refine_masks::AbstractVector{T};
+		has_affine_map::Union{Nothing, Bool} = nothing
+	) where T <: Union{Bool, Int}
+
+Uniformly refine the cells of the discrete model `cm` marked by `cell_refine_masks` `n` times.
+If `has_affine_map` is not provided, it is automatically determined.
+"""
 function uniform_refine(
 	cm::DiscreteModel,
 	n::Integer,
 	cell_refine_masks::AbstractVector{T};
 	has_affine_map::Union{Nothing, Bool} = nothing) where T <: Union{Bool, Int}
 
+  @check n > 1 "The number of uniform refinements must be at least one."
+  if n == 1
+    return cm
+  end
 	ctopo = get_grid_topology(cm)
 	cgrid = get_grid(cm)
 	cell_map = get_cell_map(cgrid)
@@ -246,7 +279,6 @@ function uniform_refine(
 	cmparr_ptrs = collect(get_cell_type(cm))
 	cmparr_ptrs[cell_refine_masks] .+= length(polytopes)
 
-	# cell-wise refinement rules
 	without_rr = map(polytopes) do p
 		RefinementRule(WithoutRefinement(), p, compute_reference_grid(p, 1))
 	end
@@ -262,7 +294,7 @@ function uniform_refine(
 		has_affine_map = all(cell_ref_is_affine) && _is_affine(cell_map)
 	end
 
-	grid, topo = _uniformly_refin_grid_topology(
+	grid, topo = _uniformly_refine_grid_topology(
 		cell_rr,
 		ctopo,
 		cgrid,
