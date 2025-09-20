@@ -5,7 +5,7 @@ using Gridap
 using Gridap.Adaptivity
 using Gridap.Geometry
 using Gridap.ReferenceFEs
-using Gridap.Adaptivity: uniform_refine
+using Gridap.Adaptivity: uniformly_refine
 
 using ..EdgeBasedRefinementTests: test_grid_transfers
 
@@ -63,7 +63,7 @@ visualize && writevtk(ref_model,joinpath(path,"uniform_periodic_quad_$n"))
 
 # Partial refinement
 cell_refine_masks = [1,3,5]
-ref_model = uniform_refine(model5,n,cell_refine_masks)
+ref_model = uniformly_refine(model5,n,cell_refine_masks)
 visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"uniform_mock_partial_$n"))
 test_grid_transfers(model5,ref_model,1)
 
