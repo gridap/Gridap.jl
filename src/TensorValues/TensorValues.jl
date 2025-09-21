@@ -82,18 +82,17 @@ import Base: +, -, *, /, \, ==, ≈, isless
 import Base: conj, real, imag
 import Base: sum, maximum, minimum
 import Base: getindex, iterate, eachindex, lastindex
-import Base: size, length, eltype
+import Base: size, axes, keys, length, eltype
 import Base: reinterpret
 import Base: convert
-import Base: CartesianIndices
-import Base: LinearIndices
+import Base: IndexStyle, CartesianIndices, LinearIndices
 import Base: adjoint
 import Base: transpose
 import Base: rand
 
-import LinearAlgebra: det, inv, tr, cross, dot, norm
+import LinearAlgebra: det, inv, tr, cross, dot, norm, eigen
 # Reexport from LinearAlgebra (just for convenience)
-export det, inv, tr, cross, dot, norm, ×, ⋅
+export det, inv, tr, cross, dot, norm, eigen, ×, ⋅
 
 import Gridap.Arrays: get_array
 
