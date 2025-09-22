@@ -5,7 +5,7 @@ Base.IndexStyle(::Type{<:MultiValue}) = IndexCartesian()
 
 # Necessary overloads due to wrong ::Number defaults
 lastindex(arg::MultiValue) = length(arg)
-lastindex(arg::MultiValue, d::Int64) = (@inline; size(arg, d))
+lastindex(arg::MultiValue, d::Integer) = (@inline; size(arg, d))
 
 # Gridap broadcast of some operation on ::MultiValue rely on Base.axes adopting
 # the Number convension (all MultiValue have axes `()` )
