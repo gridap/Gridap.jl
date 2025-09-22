@@ -5,7 +5,8 @@ Base.IndexStyle(::Type{<:MultiValue}) = IndexCartesian()
 
 # Necessary overloads due to wrong ::Number defaults
 lastindex(arg::MultiValue) = length(arg)
-lastindex(arg::MultiValue, d::Int64) = (@inline; size(arg, d))
+lastindex(arg::MultiValue, d::Integer) = (@inline; size(arg, d)) # needed for 32 bit systems
+lastindex(arg::MultiValue, d::Int64) = (@inline; size(arg, d))   # method ambiguity with base
 
 # Gridap broadcast of some operation on ::MultiValue rely on Base.axes adopting
 # the Number convension (all MultiValue have axes `()` )
@@ -108,7 +109,7 @@ const _ScalarIndices = Union{Integer, CartesianIndex}
 # Method to avoid infinite recursion in case of wrong number of scalar indices
 @propagate_inbounds getindex(arg::MultiValue, inds::Integer...) = (checkbounds(arg,inds...); @unreachable)
 # Size-inferable "array" indexing,
-const _StaticIndices = Union{Colon,SOneTo,StaticArray{<:Tuple, Int64},_ScalarIndices}
+const _StaticIndices = Union{Colon,SOneTo,StaticArray{<:Tuple, <:Union{Int32,Int64}},_ScalarIndices}
 # the conversion to SArray is only necessary when there are CartesianIndex in `inds`, see https://github.com/JuliaArrays/StaticArrays.jl/issues/1059
 @propagate_inbounds getindex(arg::MultiValue, inds::_StaticIndices...) = MultiValue(SArray(getindex(get_array(arg), inds...)))
 # Not size-inferable "array" indexing, returns ::Base.Array. Includes ::OneTo, Array{Bool}, etc.
