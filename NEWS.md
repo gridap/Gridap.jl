@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.19.5] - 2025-09-19
 
 ### Added
 
@@ -13,9 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `eigen` function support for `TensorValue` objects. Fixes issue [#1156](https://github.com/gridap/Gridap.jl/issues/1156). Since PR[#1157](https://github.com/gridap/Gridap.jl/pull/1157).
 - Added kwargs support for `isapprox` function on `MultiValue` objects. Since PR[1158](https://github.com/gridap/Gridap.jl/pull/1158)
 - Misc improvements of `TensorValues` APIs and indexing methods. Since PR[#1162](https://github.com/gridap/Gridap.jl/pull/1162).
-    - Indexing tensors using slices (`:`/`Colon()`), (static)vectors or arrays, ranges (`OneTo`, `SOneTo`), or mix of them.
-    - Implemented `Base.keys` that relates to the array shape of the `MultiValue`
-    - Constructors `MV(::[S/M]Array)` and `SA(::MultiValue)` for any types `MV<:MultiValue` and `SA<:[S/M]Array` for arguments for which the conversion via `convert` is possible.
+  - Indexing tensors using slices (`:`/`Colon()`), (static)vectors or arrays, ranges (`OneTo`, `SOneTo`), or mix of them.
+  - Implemented `Base.keys` that relates to the array shape of the `MultiValue`
+  - Constructors `MV(::[S/M]Array)` and `SA(::MultiValue)` for any types `MV<:MultiValue` and `SA<:[S/M]Array` for arguments for which the conversion via `convert` is possible.
+- Added new way of doing AD for MultiField, where partials are computed separately for each field then merged together. Since PR[#1136](https://github.com/gridap/Gridap.jl/pull/1136).
 
 ## [0.19.4] - 2025-08-09
 
@@ -52,7 +53,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update `norm` function to be compatible with complex vectors and tensors. Since PR[#1118](https://github.com/gridap/Gridap.jl/pull/1118).
 - `AdaptivityGlue` can now deal with non-surjective n2o maps. Since PR[#1126](https://github.com/gridap/Gridap.jl/pull/1126).
-
 
 ## [0.19.1] - 2025-06-11
 
