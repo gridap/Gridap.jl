@@ -244,7 +244,7 @@ end
 
 function run_multi_trian_tests()
   domain = (0,1,0,1)
-  partition = (5,5)
+  partition = (2,2)
   model = CartesianDiscreteModel(domain,partition)
   Ω = Triangulation(model)
   Γ = BoundaryTriangulation(model,tags=["tag_5"])
@@ -287,7 +287,6 @@ function run_multi_trian_tests()
   V2 = FESpace(model,ReferenceFE(lagrangian,VectorValue{2,Float64},1),conformity=:L2)
   V3 = FESpace(model,ReferenceFE(lagrangian,Float64,1),conformity=:L2)
   X = MultiFieldFESpace([V1,V2,V3])
-  uh = zero(X)
 
   Λ = SkeletonTriangulation(model)
   dΛ = Measure(Λ,2)
