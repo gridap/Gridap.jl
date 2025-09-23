@@ -77,11 +77,12 @@ function generate_patch_dof_ids(
 end
 
 function generate_pface_to_pdofs(
-  space::SingleFieldFESpace,ptopo::PatchTopology,ptrian::Geometry.PatchTriangulation,
-  patch_to_dofs = generate_patch_dof_ids(space,ptopo)
+  space::SingleFieldFESpace,ptrian::Geometry.PatchTriangulation,
 )
   Df = num_cell_dims(ptrian)
+  ptopo = ptrian.ptopo
   pface_to_dofs = get_cell_dof_ids(space,ptrian)
+  patch_to_dofs = generate_patch_dof_ids(space,ptopo)
   pface_to_patch = Geometry.get_pface_to_patch(ptopo,Df)
   pface_to_pdofs = find_local_index(pface_to_dofs,pface_to_patch,patch_to_dofs)
   return pface_to_pdofs
