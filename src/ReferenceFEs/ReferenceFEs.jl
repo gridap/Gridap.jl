@@ -2,6 +2,7 @@
 
 $(public_names_in_md(@__MODULE__; change_link=Dict(
   :H1Conformity  => "GradConformity",
+  :nedelec1  => "nedelec",
 )))
 """
 module ReferenceFEs

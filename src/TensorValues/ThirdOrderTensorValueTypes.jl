@@ -82,6 +82,9 @@ convert(::Type{<:MArray{Tuple{D1,D2,D3},T}}, arg::ThirdOrderTensorValue) where {
 convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3,T} = ThirdOrderTensorValue{D1,D2,D3,T}(Tuple(arg))
 convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = arg
 
+# Construction from SArray or MArray
+MultiValue(a::StaticArray{Tuple{D1,D2,D3},T}) where {D1,D2,D3,T} = convert(ThirdOrderTensorValue{D1,D2,D3,T}, a)
+
 # other
 change_eltype(::Type{<:ThirdOrderTensorValue{D1,D2,D3}},::Type{T2}) where {D1,D2,D3,T2} = ThirdOrderTensorValue{D1,D2,D3,T2}
 change_eltype(::Type{ThirdOrderTensorValue{D1,D2,D3,T1,L}},::Type{T2}) where {D1,D2,D3,T1,T2,L} = ThirdOrderTensorValue{D1,D2,D3,T2,L}

@@ -4,16 +4,14 @@
 
 (==)(a::Number, b::MultiValue) = false
 (==)(a::MultiValue, b::MultiValue) = false
-(==)(a::MultiValue{S}, b::MultiValue{S}) where {S} = a.data == b.data
-(≈)(a::MultiValue, b::MultiValue) = false
-(≈)(a::MultiValue{S}, b::MultiValue{S}) where {S} = isapprox(get_array(a), get_array(b))
-(≈)(a::MultiValue{S,T1,N,0} where {T1}, b::MultiValue{S,T2,N,0} where {T2}) where {S,N} = true
+(==)(a::MultiValue{S}, b::MultiValue{S}) where S = a.data == b.data
+(≈)(a::MultiValue,b::MultiValue;kwargs...) = ≈(get_array(a),get_array(b);kwargs...)
 
 function (≈)(
-  a::AbstractArray{<:MultiValue}, b::AbstractArray{<:MultiValue})
-  size(a) != size(b) && return false
+  a::AbstractArray{<:MultiValue}, b::AbstractArray{<:MultiValue}; kwargs...)
+  if size(a) != size(b); return false; end
   for (ai,bi) in zip(a,b)
-    !(ai≈bi) && return false
+    if !≈(ai,bi;kwargs...); return false; end
   end
   true
 end
@@ -805,6 +803,15 @@ end
 inv(::SkewSymTensorValue{1,T}) where T = TensorValue{1,1}(inv(zero(T)))
 inv(a::SkewSymTensorValue{2}) = (typeof(a))(-inv(a.data[1]))
 inv(a::SkewSymTensorValue{3,T,L}) where {T,L} = SkewSymTensorValue{3,T}(tfill(inv(zero(T)), Val(L)))
+
+"""
+    eigen(a::MultiValue{Tuple{D,D}})
+
+Eigenvalue decomposition of a square second order tensor.
+"""
+eigen(a::MultiValue{Tuple{D,D}}) where D = eigen(get_array(a))
+eigen(a::MultiValue) = @unreachable "eigen undefined for this tensor shape: $(size(a))"
+
 
 ###############################################################
 # Measure

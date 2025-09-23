@@ -23,36 +23,6 @@ C = inner.(g,B) # inner product of g against all TensorValues in the array B
 # C = [2494 2494 2494 2494 2494]
 ```
 
-To create a [`MultiValue`](@ref) tensor from components, these should be given
-as separate arguments or all gathered in a `tuple`. The order of the arguments
-is the order of the linearized Cartesian indices of the corresponding array
-(order of the `Base.LinearIndices` indices):
-```julia
-using StaticArrays
-t = TensorValue( (1, 2, 3, 4) )
-ts= convert(SMatrix{2,2,Int}, t)
-@show ts
-# 2×2 SMatrix{2, 2, Int64, 4} with indices SOneTo(2)×SOneTo(2):
-#  1  3
-#  2  4
-t2[1,2] == t[1,2] == 3 # true
-```
-For tensor types with symmetry, only the independent components should be given,
-see [`SymTensorValue`](@ref), [`SkewSymTensorValue`](@ref),
-[`SymTracelessTensorValue`](@ref) and [`SymFourthOrderTensorValue`](@ref).
-
-A `MultiValue` can be created from an `AbstractArray` of the same size. If the
-`MultiValue` type has internal constraints (e.g. symmetries), ONLY the required
-components are picked from the array WITHOUT CHECKING if the given array
-did respect the constraints:
-```julia
-SymTensorValue( [1 3; 2 4] )          # -> SymTensorValue{2, Int64, 3}(1, 3, 4)
-SymTensorValue( SMatrix{2}(1,2,3,4) ) # -> SymTensorValue{2, Int64, 3}(1, 3, 4)
-```
-
-`MultiValue`s can be converted to static and mutable arrays types from
-`StaticArrays.jl` using `convert` and [`mutable`](@ref), respectively.
-
 $(public_names_in_md(@__MODULE__; change_link=Dict(
   :QTensorValue  => "SymTracelessTensorValue",
   :×  => "cross",
@@ -114,18 +84,17 @@ import Base: +, -, *, /, \, ==, ≈, isless, <=
 import Base: conj, real, imag
 import Base: sum, maximum, minimum
 import Base: getindex, iterate, eachindex, lastindex
-import Base: size, length, eltype
+import Base: size, axes, keys, length, eltype
 import Base: reinterpret
 import Base: convert
-import Base: CartesianIndices
-import Base: LinearIndices
+import Base: IndexStyle, CartesianIndices, LinearIndices
 import Base: adjoint
 import Base: transpose
 import Base: rand
 
-import LinearAlgebra: det, inv, tr, cross, dot, norm
+import LinearAlgebra: det, inv, tr, cross, dot, norm, eigen
 # Reexport from LinearAlgebra (just for convenience)
-export det, inv, tr, cross, dot, norm, ×, ⋅
+export det, inv, tr, cross, dot, norm, eigen, ×, ⋅
 
 import Gridap.Arrays: get_array
 
