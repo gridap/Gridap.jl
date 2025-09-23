@@ -244,7 +244,7 @@ end
 
 function run_multi_trian_tests()
   domain = (0,1,0,1)
-  partition = (5,5)
+  partition = (3,3)
   model = CartesianDiscreteModel(domain,partition)
   Ω = Triangulation(model)
   Γ = BoundaryTriangulation(model,tags=["tag_5"])
