@@ -175,6 +175,8 @@ include("VectorsWithEntryInserted.jl")
 
 include("AlgebraMaps.jl")
 
+include("AccumulationMaps.jl")
+
 include("Autodiff.jl")
 
 include("PrintOpTrees.jl")

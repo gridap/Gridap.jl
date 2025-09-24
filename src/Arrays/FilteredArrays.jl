@@ -1,26 +1,20 @@
 
 struct FilterMap <: Map end
 
-function return_cache(k::FilterMap,f,a)
-  # vals = testitem(a)
-  vals = a
+function return_cache(::FilterMap,f,a)
   T = eltype(eltype(a))
-  r = zeros(T,length(vals))
-  c = CachedArray(r)
+  CachedArray(zeros(T,length(a)))
 end
 
-function evaluate!(cache,k::FilterMap,f,a)
-  c = cache
-  vals = a
-  filters = f
-  @check size(vals) == size(filters) "Local arrays mismatch"
-  setsize!(c,(sum(filters),))
-  r = c.array
+function evaluate!(cache,::FilterMap,f,a)
+  @check size(a) == size(f) "Local arrays mismatch"
+  setsize!(cache,(sum(f),))
+  r = cache.array
   i = 0
-  for (val,filter) in zip(vals,filters)
-    if filter
+  for (fi,ai) in zip(f,a)
+    if fi
       i += 1
-      r[i] = val
+      r[i] = ai
     end
   end
   r
