@@ -39,7 +39,7 @@ b = FEEC_poly_basis(Val(3),Float64,4,1,:Q⁻)
 struct CompWiseTensorPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
   max_order::Int
   orders::Matrix{Int}
-  comp_terms::Vector{CartesianIndices{D,NTuple{D,Base.OneTo{Int64}}}} # of length L
+  comp_terms::Vector{CartesianIndices{D,NTuple{D,Base.OneTo{Int}}}} # of length L
 
   @doc"""
     CompWiseTensorPolyBasis{D}(PT,V,orders::Matrix{Int})
@@ -90,7 +90,8 @@ get_comp_terms(f::CompWiseTensorPolyBasis) = f.comp_terms
 
 function _compute_comp_terms(::Val{D},::Type{V},orders) where {D,V}
   L = num_indep_components(V)
-  _terms(l) = CartesianIndices( Tuple(orders[l,:] .+ 1) )
+  _CI = CartesianIndices{D,NTuple{D,Base.OneTo{Int}}}
+  _terms(l) = _CI( Tuple(orders[l,:] .+ 1) )
   [ _terms(l) for l in 1:L ]
 end
 

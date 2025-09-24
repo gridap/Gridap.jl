@@ -10,7 +10,7 @@ as defined in the Periodic Table of the Finite Elements, `FᵣΛᵏ` in dimensio
 The arguments are also described in [`FEEC_poly_basis`](@ref).
 """
 function FEEC_space_definition_checks(
-  ::Val{D},::Type{T},r::Int,k::Int,F::Symbol, rotate_90::Bool=false, DG_calc::Bool=false
+  ::Val{D},::Type{T},r::Integer,k::Integer,F::Symbol, rotate_90::Bool=false, DG_calc::Bool=false
 ) where {D,T}
 
   @check T<:Real "T needs to be <:Real since represents the scalar type, got $T"
