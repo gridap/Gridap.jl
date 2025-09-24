@@ -90,8 +90,7 @@ get_comp_terms(f::CompWiseTensorPolyBasis) = f.comp_terms
 
 function _compute_comp_terms(::Val{D},::Type{V},orders) where {D,V}
   L = num_indep_components(V)
-  _CI = CartesianIndices{D,NTuple{D,Base.OneTo{Int}}}
-  _terms(l) = _CI( Tuple(orders[l,:] .+ 1) )
+  _terms(l) = CartesianIndices( Tuple(orders[l,:] .+ 1)::NTuple{D,Int} )
   [ _terms(l) for l in 1:L ]
 end
 
