@@ -52,9 +52,9 @@ x = Point{3,Float64}[(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)]
 
 p = SEGMENT
 test_polytope(p,optional=true)
-@test get_vertex_coordinates(p) == VectorValue{1,Float64}[(0),(1)]
-@test get_edge_tangent(p) == VectorValue{1,Float64}[(1)]
-@test get_facet_normal(p) == VectorValue{1,Float64}[(-1),(1)]
+@test get_vertex_coordinates(p) == VectorValue{1,Float64}[(0,),(1,)]
+@test get_edge_tangent(p) == VectorValue{1,Float64}[(1,)]
+@test get_facet_normal(p) == VectorValue{1,Float64}[(-1,),(1,)]
 perm = get_vertex_permutations(p)
 @test perm == [[1, 2], [2, 1]]
 

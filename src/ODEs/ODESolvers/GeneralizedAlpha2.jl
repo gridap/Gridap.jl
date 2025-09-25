@@ -43,6 +43,9 @@ function GeneralizedAlpha2(sysslvr::NonlinearSolver, dt::Real, ρ∞::Real)
   GeneralizedAlpha2(sysslvr, dt, αf, αm, γ, β)
 end
 
+"""
+    Newmark(sysslvr::NonlinearSolver, dt::Real, γ::Real, β::Real)
+"""
 function Newmark(sysslvr::NonlinearSolver, dt::Real, γ::Real, β::Real)
   γ01 = clamp(γ, 0, 1)
   if γ01 != γ

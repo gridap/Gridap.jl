@@ -19,6 +19,9 @@ end
 # it can be used to include a high order map implemented by any map that is
 # a `CellField`.
 # """
+"""
+    struct MappedGrid{Dc,Dp,T,M,L} <: Grid{Dc,Dp}
+"""
 struct MappedGrid{Dc,Dp,T,M,L} <: Grid{Dc,Dp}
   grid::Grid{Dc,Dp}
   geo_map::T  # Composition of old map and new one
@@ -57,7 +60,7 @@ get_reffes(grid::MappedGrid) = get_reffes(grid.grid)
 get_cell_type(grid::MappedGrid) = get_cell_type(grid.grid)
 
 """
-MappedDiscreteModel
+  struct MappedDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
 
 Represent a model with a `MappedGrid` grid.
 See also [`MappedGrid`](@ref).
