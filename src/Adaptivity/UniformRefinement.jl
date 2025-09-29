@@ -1,3 +1,156 @@
+# High level interfaces
+
+function refine(model::CartesianDiscreteModel{Dc}, cell_partition::Int=2) where Dc
+  partition = Tuple(fill(cell_partition,Dc))
+  return refine(model,partition)
+end
+
+function refine(model::CartesianDiscreteModel{Dc}, cell_partition::Tuple) where Dc
+  desc = Geometry.get_cartesian_descriptor(model)
+  nC   = desc.partition
+
+  # Refinement Glue
+  f2c_cell_map, fcell_to_child_id = _create_cartesian_f2c_maps(nC,cell_partition)
+  faces_map = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
+  reffe     = LagrangianRefFE(Float64,first(get_polytopes(model)),1)
+  rrules    = RefinementRule(reffe,cell_partition)
+  glue = AdaptivityGlue(faces_map,fcell_to_child_id,rrules)
+
+  # Refined model
+  domain     = _get_cartesian_domain(desc)
+  _model_ref = CartesianDiscreteModel(domain,cell_partition.*nC)
+
+  # Propagate face labels
+  coarse_labels = get_face_labeling(model)
+  coarse_topo   = get_grid_topology(model)
+  fine_topo     = get_grid_topology(_model_ref)
+  fine_labels   = refine_face_labeling(coarse_labels,glue,coarse_topo,fine_topo)
+
+  model_ref = CartesianDiscreteModel(get_grid(_model_ref),fine_topo,fine_labels)
+  return AdaptedDiscreteModel(model_ref,model,glue)
+end
+
+function refine(model::UnstructuredDiscreteModel,cell_partition::Int)
+  @check cell_partition >= 1 
+  if cell_partition == 1
+    model
+  else
+    cell_refine_masks = Fill(true,num_cells(model))
+    uniformly_refine(model,cell_partition,cell_refine_masks)
+  end
+end
+
+function refine(model::Geometry.DiscreteModelMock,cell_partition::Int)
+  @check cell_partition >= 1
+  if cell_partition == 1
+    model
+  else
+    cell_refine_masks = Fill(true,num_cells(model))
+    uniformly_refine(model,cell_partition,cell_refine_masks)
+  end
+end
+
+"""
+  uniformly_refine(
+    cm::DiscreteModel,
+    n::Integer,
+    cell_refine_masks::AbstractVector{T};
+    has_affine_map::Union{Nothing, Bool} = nothing
+  ) where T <: Union{Bool, Int}
+
+Uniformly refine the cells of the discrete model `cm` marked by `cell_refine_masks` `n` times.
+If `has_affine_map` is not provided, it is automatically determined.
+"""
+function uniformly_refine(
+  cm::DiscreteModel,
+  n::Integer,
+  cell_refine_masks::AbstractVector{T};
+  has_affine_map::Union{Nothing, Bool} = nothing) where T <: Union{Bool, Int}
+
+  @check n >= 1 "The number of uniform refinements must be at least one."
+  if n == 1
+    return cm
+  end
+  ctopo = get_grid_topology(cm)
+  cgrid = get_grid(cm)
+  cell_map = get_cell_map(cgrid)
+  polytopes = get_polytopes(ctopo)
+  cmparr_ptrs = collect(get_cell_type(cm))
+  cmparr_ptrs[cell_refine_masks] .+= length(polytopes)
+
+  without_rr = map(polytopes) do p
+    RefinementRule(WithoutRefinement(), p, compute_reference_grid(p, 1))
+  end
+  generic_rr = map(polytopes) do p
+    RefinementRule(GenericRefinement(), p, compute_reference_grid(p, n))
+  end
+  cell_rr = CompressedArray(vcat(without_rr, generic_rr), cmparr_ptrs)
+  _is_affine(fs) = isconcretetype(typeof(fs)) && fs isa AbstractArray{<:AffineField}
+  glue = blocked_refinement_glue(cell_rr)
+
+  if has_affine_map isa Nothing
+    cell_ref_is_affine = lazy_map(rr->_is_affine(get_cell_map(rr)), cell_rr)
+    has_affine_map = all(cell_ref_is_affine) && _is_affine(cell_map)
+  end
+
+  grid, topo = _uniformly_refine_grid_topology(
+    cell_rr,
+    ctopo,
+    cgrid,
+    cell_map,
+    has_affine_map,
+  )
+  clabeling = get_face_labeling(cm)
+  labeling = refine_face_labeling(clabeling, glue, ctopo, topo)
+  model = UnstructuredDiscreteModel(grid, topo, labeling)
+  AdaptedDiscreteModel(model, cm, glue)
+end
+
+# Implementation details
+
+function _get_cartesian_domain(desc::CartesianDescriptor{D}) where D
+  origin = desc.origin
+  corner = origin + VectorValue(desc.sizes .* desc.partition)
+  domain = Vector{eltype(origin)}(undef,2*D)
+  for d in 1:D
+    domain[d*2-1] = origin[d]
+    domain[d*2]   = corner[d]
+  end
+  return Tuple(domain)
+end
+
+@generated function _c2v(idx::Union{NTuple{N,T},CartesianIndex{N}},sizes::NTuple{N,T}) where {N,T}
+  res = :(idx[1])
+  for d in 1:N-1
+    ik = :((idx[$(d+1)]-1))
+    for k in 1:d
+        ik = :($ik * sizes[$k])
+    end
+    res = :($res + $ik)
+  end
+  return res
+end
+
+@generated function _create_cartesian_f2c_maps(nC::NTuple{N,T},ref::NTuple{N,T}) where {N,T}
+  J_f2c   = Meta.parse(prod(["(",["1+(I[$k]-1)÷ref[$k]," for k in 1:N]...,")"]))
+  J_child = Meta.parse(prod(["(",["1+(I[$k]-1)%ref[$k]," for k in 1:N]...,")"]))
+
+  return :(begin
+    nF = nC .* ref
+    f2c_map   = Vector{Int}(undef,prod(nF))
+    child_map = Vector{Int}(undef,prod(nF))
+
+    for (i,I) in enumerate(CartesianIndices(nF))
+      J_f2c   = $J_f2c
+      J_child = $J_child
+      f2c_map[i] = _c2v(J_f2c,nC)
+      child_map[i] = _c2v(J_child,ref)
+    end
+
+    return f2c_map, child_map
+  end)
+end
+
 # Return the local indices of the fine points within each face.
 function _uniform_d_dface_own_lid(rr)
   # NOTE: The nodes on the faces in each dimension 
@@ -249,60 +402,4 @@ function _uniformly_refine_grid_topology(
   )
 
   return fgrid, ftopo
-end
-
-"""
-  uniformly_refine(
-    cm::DiscreteModel,
-    n::Integer,
-    cell_refine_masks::AbstractVector{T};
-    has_affine_map::Union{Nothing, Bool} = nothing
-  ) where T <: Union{Bool, Int}
-
-Uniformly refine the cells of the discrete model `cm` marked by `cell_refine_masks` `n` times.
-If `has_affine_map` is not provided, it is automatically determined.
-"""
-function uniformly_refine(
-  cm::DiscreteModel,
-  n::Integer,
-  cell_refine_masks::AbstractVector{T};
-  has_affine_map::Union{Nothing, Bool} = nothing) where T <: Union{Bool, Int}
-
-  @check n > 1 "The number of uniform refinements must be at least one."
-  if n == 1
-    return cm
-  end
-  ctopo = get_grid_topology(cm)
-  cgrid = get_grid(cm)
-  cell_map = get_cell_map(cgrid)
-  polytopes = get_polytopes(ctopo)
-  cmparr_ptrs = collect(get_cell_type(cm))
-  cmparr_ptrs[cell_refine_masks] .+= length(polytopes)
-
-  without_rr = map(polytopes) do p
-    RefinementRule(WithoutRefinement(), p, compute_reference_grid(p, 1))
-  end
-  generic_rr = map(polytopes) do p
-    RefinementRule(GenericRefinement(), p, compute_reference_grid(p, n))
-  end
-  cell_rr = CompressedArray(vcat(without_rr, generic_rr), cmparr_ptrs)
-  _is_affine(fs) = isconcretetype(typeof(fs)) && fs isa AbstractArray{<:AffineField}
-  glue = blocked_refinement_glue(cell_rr)
-
-  if has_affine_map isa Nothing
-    cell_ref_is_affine = lazy_map(rr->_is_affine(get_cell_map(rr)), cell_rr)
-    has_affine_map = all(cell_ref_is_affine) && _is_affine(cell_map)
-  end
-
-  grid, topo = _uniformly_refine_grid_topology(
-    cell_rr,
-    ctopo,
-    cgrid,
-    cell_map,
-    has_affine_map,
-  )
-  clabeling = get_face_labeling(cm)
-  labeling = refine_face_labeling(clabeling, glue, ctopo, topo)
-  model = UnstructuredDiscreteModel(grid, topo, labeling)
-  AdaptedDiscreteModel(model, cm, glue)
 end
