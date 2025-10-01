@@ -62,10 +62,9 @@ function InterfacePatchTopology(model::DiscreteModel; kwargs...)
   InterfacePatchTopology(ptopo)
 end
 
-function InterfacePatchTopology(ptopo::PatchTopology)
-  D = num_cell_dims(ptopo)
-
+function InterfacePatchTopology(ptopo::PatchTopology; patch_ids = 1:num_patches(ptopo))
   topo = ptopo.topo
+  D = num_cell_dims(ptopo)
   face_to_cells = get_faces(topo,D-1,D)
 
   patch_faces = get_patch_faces(ptopo,D-1)
@@ -74,16 +73,15 @@ function InterfacePatchTopology(ptopo::PatchTopology)
   pface_to_face = patch_faces.data
 
   ni = 0
-  pface = 0
-  id_to_iface = Dict{UInt64,Int32}()
+  id_to_iface = Dict{UInt,Int32}()
   pface_to_iface = zeros(Int32, num_faces(ptopo,D-1))
   pface_to_cell = zeros(Int32, num_faces(ptopo,D-1))
-  for patch in eachindex(patch_faces)
-    for face in view(patch_faces,patch)
-      pface += 1
+  for patch in patch_ids
+    for pface in datarange(patch_faces,patch)
       if !pface_to_isboundary[pface]
         continue
       end
+      face = pface_to_face[pface]
       patches = view(face_to_patches,face)
       cells = view(face_to_cells,face)
       key = hash(Set(patches))

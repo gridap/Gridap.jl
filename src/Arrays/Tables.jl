@@ -84,7 +84,6 @@ end
 
 empty_table(l::Integer) = empty_table(Int,Int32,l)
 
-
 size(a::Table) = (length(a.ptrs)-1,)
 
 IndexStyle(::Type{<:Table}) = IndexLinear()
@@ -147,6 +146,108 @@ function Base.getindex(a::Table,ids::AbstractVector{<:Integer})
     end
   end
   Table(data,ptrs)
+end
+
+"""
+    datarange(a::Table,i::Integer)
+    datarange(a::Table,ids::UnitRange{<:Integer})
+
+Given a `Table` and an index or a range of indices, return the
+corresponding range of indices in the underlying data array.
+Similar to `nzrange` for sparse matrices, it allows for convenient 
+iteration over a table:
+
+```julia
+t = Table([[4,7],[8],[9,20,1]])
+for i in eachindex(t)
+  for k in datarange(t,i)
+    val = t.data[k]
+    # stuff ... 
+  end
+end
+```
+
+"""
+@inline function datarange(a::Table,i::Integer)
+  pini = a.ptrs[i]
+  pend = a.ptrs[i+1]-1
+  return pini:pend
+end
+
+@inline function datarange(a::Table,ids::UnitRange{<:Integer})
+  pini = a.ptrs[ids.start]
+  pend = a.ptrs[ids.stop+1]-1
+  return pini:pend
+end
+
+"""
+    dataview(a::Table, i::Integer)
+    dataview(a::Table, ids::UnitRange{<:Integer})
+
+Given a `Table` and an index or a range of indices, return a view
+of the corresponding entries in the underlying data array.
+
+Equivalent to `view(a.data, datarange(a,i))`.
+"""
+dataview(a::Table, ids) = view(a.data, datarange(a,ids))
+
+"""
+    dataiterator(a::Table)
+
+Iterate over the entries of `a` returning the triplets `(i,j,v)` where 
+
+- `i` is the outer index, 
+- `j` is the local inner index, and
+- `v` is the value `a[i][j]`.
+
+## Example
+
+```jldoctest
+julia> t = Table([[4.,7.],[8.],[9.,2.,1.]])
+
+julia> x = collect(dataiterator(t))
+
+julia> x
+6-element Vector{Tuple{Int64, Int64, Float64}}:
+ (1, 1, 4.)
+ (1, 2, 7.)
+ (2, 1, 8.)
+ (3, 1, 9.)
+ (3, 2, 2.)
+ (3, 3, 1.)
+```
+"""
+dataiterator(a::Table) = TableDataIterator(a)
+
+struct TableDataIterator{T,Vd,Vp}
+  t::Table{T,Vd,Vp}
+end
+
+Base.length(a::TableDataIterator) = length(a.t.data)
+Base.size(a::TableDataIterator) = (length(a.t.data),)
+Base.eltype(::Type{<:TableDataIterator{T}}) where T = Tuple{Int,Int,T}
+Base.IteratorSize(::Type{<:TableDataIterator}) = Base.HasLength()
+Base.IteratorEltype(::Type{<:TableDataIterator}) = Base.HasEltype()
+
+function Base.iterate(a::TableDataIterator)
+  isempty(a.t) && (return nothing)
+  i, j, v = 1, 1 , a.t.data[1]
+  return (i,j,v), (i,j)
+end
+
+function Base.iterate(a::TableDataIterator, state)
+  i, j = state
+  data = a.t.data
+  ptrs = a.t.ptrs
+  n = length(ptrs)
+  while (i < n) && (j+1 > ptrs[i+1] - ptrs[i])
+    i += 1
+    j = 0
+  end
+  (i == n) && (return nothing)
+  v = data[ptrs[i] + j]
+  j += 1
+  return (i,j,v), (i,j)
 end
 
 # Helper functions related with Tables
@@ -462,10 +563,7 @@ Base.IndexStyle(::Type{<:LocalIndexFromTable}) = IndexStyle(Table)
 
 @propagate_inbounds function Base.getindex(m::LocalIndexFromTable{T}, a::Integer) where T
   b = m.a_to_b[a]
-  pini = m.b_to_la_to_a.ptrs[b]
-  pend = m.b_to_la_to_a.ptrs[b+1]-1
-  la = zero(T)
-  for (la,p) in enumerate(pini:pend)
+  for (la,p) in enumerate(datarange(m.b_to_la_to_a,b))
     if a == m.b_to_la_to_a.data[p]
       return T(la)
     end
@@ -482,9 +580,7 @@ function find_local_index(
   c_to_lc = fill(T(-1),length(c_to_a))
   for (c,a) in enumerate(c_to_a)
     b = c_to_b[c]
-    pini = b_to_la_to_a.ptrs[b]
-    pend = b_to_la_to_a.ptrs[b+1]-1
-    for (lc,p) in enumerate(pini:pend)
+    for (lc,p) in enumerate(datarange(b_to_la_to_a,b))
       if a == b_to_la_to_a.data[p]
         c_to_lc[c] = T(lc)
         break
@@ -539,10 +635,8 @@ function flatten_partition(a_to_bs::Table,nb::Integer=maximum(a_to_bs.data))
 end
 
 function  flatten_partition!(b_to_a,a_to_bs::Table)
-  for a in 1:length(a_to_bs)
-    pini = a_to_bs.ptrs[a]
-    pend = a_to_bs.ptrs[a+1]-1
-    for p in pini:pend
+  for a in eachindex(a_to_bs)
+    for p in datarange(a_to_bs,a)
       b = a_to_bs.data[p]
       b_to_a[b] = a
     end
@@ -555,9 +649,7 @@ end
 function find_local_nbor_index(a_to_b, a_to_lb_to_b::Table)
   a_to_lb = Vector{Int8}(undef,length(a_to_b))
   for (a,b) in enumerate(a_to_b)
-    pini = a_to_lb_to_b.ptrs[a]
-    pend = a_to_lb_to_b.ptrs[a+1]-1
-    for (lb,p) in enumerate(pini:pend)
+    for (lb,p) in enumerate(datarange(a_to_lb_to_b,a))
       if b == a_to_lb_to_b.data[p]
         a_to_lb[a] = Int8(lb)
         break
@@ -574,9 +666,7 @@ function find_local_nbor_index(a_to_b, a_to_c, c_to_lb_to_b::Table)
   a_to_lb = Vector{Int8}(undef,length(a_to_b))
   for (a,b) in enumerate(a_to_b)
     c = a_to_c[a]
-    pini = c_to_lb_to_b.ptrs[c]
-    pend = c_to_lb_to_b.ptrs[c+1]-1
-    for (lb,p) in enumerate(pini:pend)
+    for (lb,p) in enumerate(datarange(c_to_lb_to_b,c))
       if b == c_to_lb_to_b.data[p]
         a_to_lb[a] = Int8(lb)
         break

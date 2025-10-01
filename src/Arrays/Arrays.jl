@@ -101,6 +101,9 @@ export collect1d
 export UNSET
 export get_local_item
 export find_local_index
+export datarange
+export dataiterator
+export dataview
 
 export IdentityVector
 
