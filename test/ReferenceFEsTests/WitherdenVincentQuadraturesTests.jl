@@ -27,8 +27,8 @@ for (p, refquad) in testcases
   end
 end
 
-_exact_integral_wedge((Ix, Iy, Iz)) = factorial(Ix - 1) * factorial(Iy - 1) / factorial(Ix + Iy) / Iz
-_exact_integral_pyramid((Ix, Iy, Iz)) = factorial(Ix + Iy) * factorial(Iz) / (factorial(Ix + Iy + Iz) * Ix * Iy * Iz)
+_exact_integral_wedge((Ix, Iy, Iz)) = factorial(big(Ix - 1)) * factorial(big(Iy - 1)) / factorial(big(Ix + Iy)) / Iz
+_exact_integral_pyramid((Ix, Iy, Iz)) = factorial(big(Ix + Iy)) * factorial(big(Iz)) / (factorial(big(Ix + Iy + Iz)) * Ix * Iy * Iz)
 
 for (p, _exact_integral) in ((WEDGE, _exact_integral_wedge), (PYRAMID, _exact_integral_pyramid))
   for degree in 1:maxdegree(p, witherden_vincent)

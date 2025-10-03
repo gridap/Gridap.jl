@@ -19,7 +19,7 @@ degree = 4
 quad = Quadrature(TET, duffy, degree, T=Float32)
 @test sum(get_weights(quad)) ≈ 0.5 * 1 / 3
 
-_exact_integral_simplex(I) = prod(i -> factorial(i - 1), I) / factorial(sum(I))
+_exact_integral_simplex(I) = prod(i -> factorial(big(i - 1)), I) / factorial(big(sum(I)))
 
 filter = (e, o) -> (sum(e) <= o)
 
