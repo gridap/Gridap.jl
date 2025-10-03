@@ -114,7 +114,7 @@ Equivalent to
 
     get_dimranges(p)[d+1]
 """
-function get_dimrange(p::Polytope,d::Integer)
+function get_dimrange(p::Polytope, d::Integer)
   get_dimranges(p)[d+1]
 end
 
@@ -125,7 +125,7 @@ Returns a `Polytope{N}` object representing the "reference" polytope of the `N`-
 The value `faceid` refers to the numeration restricted to the dimension `N`
 (it starts with 1 for the first `N`-face).
 """
-function Polytope{D}(p::Polytope,Dfaceid::Integer) where D
+function Polytope{D}(p::Polytope, Dfaceid::Integer) where D
   @abstractmethod
 end
 
@@ -148,11 +148,11 @@ Note that the operator `==` returns `false` by default for polytopes
 of different dimensions. Thus, this function has to be overloaded only
 for the case of polytopes `a` and `b` of same dimension.
 """
-function (==)(a::Polytope{D},b::Polytope{D}) where D
+function (==)(a::Polytope{D}, b::Polytope{D}) where D
   @abstractmethod
 end
 
-function (==)(a::Polytope,b::Polytope)
+function (==)(a::Polytope, b::Polytope)
   false
 end
 
@@ -236,7 +236,7 @@ end
 """
     simplexify(p::Polytope) -> Tuple{Vector{Vector{Int}},Polytope}
 """
-function simplexify(p::Polytope;kwargs...)
+function simplexify(p::Polytope; kwargs...)
   @abstractmethod
 end
 
@@ -274,11 +274,11 @@ end
 
 Returns the number of faces of dimension `dim` in polytope `p`.
 """
-function num_faces(p::Polytope,dim::Integer)
-  _num_faces(p,dim)
+function num_faces(p::Polytope, dim::Integer)
+  _num_faces(p, dim)
 end
 
-function _num_faces(p,dim)
+function _num_faces(p, dim)
   length(get_dimranges(p)[dim+1])
 end
 
@@ -294,7 +294,7 @@ end
 function _num_facets(p)
   D = num_dims(p)
   if D > 0
-    num_faces(p,D-1)
+    num_faces(p, D - 1)
   else
     0
   end
@@ -312,7 +312,7 @@ end
 function _num_edges(p)
   D = num_dims(p)
   if D > 0
-    num_faces(p,1)
+    num_faces(p, 1)
   else
     0
   end
@@ -329,7 +329,7 @@ function num_vertices(p::Polytope)
 end
 
 function _num_vertices(p)
-  num_faces(p,0)
+  num_faces(p, 0)
 end
 
 """
@@ -356,15 +356,15 @@ third face (the segment itself) has dimension 1
 
 """
 function get_facedims(p::Polytope)
-  _get_facedims(Int,p)
+  _get_facedims(Int, p)
 end
 
-function _get_facedims(::Type{T},p) where T
+function _get_facedims(::Type{T}, p) where T
   n = num_faces(p)
-  facedims = zeros(T,n)
+  facedims = zeros(T, n)
   dimrange = get_dimranges(p)
-  for (i,r) in enumerate(dimrange)
-    d = i-1
+  for (i, r) in enumerate(dimrange)
+    d = i - 1
     facedims[r] .= d
   end
   facedims
@@ -398,10 +398,10 @@ end
 function _get_offsets(p)
   D = num_dims(p)
   dimrange = get_dimranges(p)
-  offsets = zeros(Int,D+1)
+  offsets = zeros(Int, D + 1)
   k = 0
   for i in 0:D
-    d = i+1
+    d = i + 1
     offsets[d] = k
     r = dimrange[d]
     k += length(r)
@@ -414,11 +414,11 @@ end
 
 Equivalent to `get_offsets(p)[d+1]`.
 """
-function get_offset(p::Polytope,d::Integer)
-  _get_offset(p,d)
+function get_offset(p::Polytope, d::Integer)
+  _get_offset(p, d)
 end
 
-function _get_offset(p,d)
+function _get_offset(p, d)
   get_offsets(p)[d+1]
 end
 
@@ -448,37 +448,37 @@ Array{Int,1}[[1, 2], [3, 4], [1, 3], [2, 4]]
 Array{Int,1}[[1, 3], [1, 4], [2, 3], [2, 4]]
 ```
 """
-function get_faces(p::Polytope,dimfrom::Integer,dimto::Integer)
+function get_faces(p::Polytope, dimfrom::Integer, dimto::Integer)
   if dimfrom >= dimto
-    _get_faces_primal(p,dimfrom,dimto)
+    _get_faces_primal(p, dimfrom, dimto)
   else
-    _get_faces_dual(p,dimfrom,dimto)
+    _get_faces_dual(p, dimfrom, dimto)
   end
 end
 
-function _get_faces_primal(p,dimfrom,dimto)
+function _get_faces_primal(p, dimfrom, dimto)
   dimrange = get_dimranges(p)
   r = dimrange[dimfrom+1]
   faces = get_faces(p)
   faces_dimfrom = faces[r]
   n = length(faces_dimfrom)
-  faces_dimfrom_dimto = Vector{Vector{Int}}(undef,n)
-  offset = get_offset(p,dimto)
-  facefrom_dimranges = get_face_dimranges(p,dimfrom)
+  faces_dimfrom_dimto = Vector{Vector{Int}}(undef, n)
+  offset = get_offset(p, dimto)
+  facefrom_dimranges = get_face_dimranges(p, dimfrom)
   for i in 1:n
     rto = facefrom_dimranges[i][dimto+1]
-    faces_dimfrom_dimto[i] = faces_dimfrom[i][rto].-offset
+    faces_dimfrom_dimto[i] = faces_dimfrom[i][rto] .- offset
   end
   faces_dimfrom_dimto
 end
 
-function _get_faces_dual(p,dimfrom,dimto)
-  tface_to_ffaces = get_faces(p,dimto,dimfrom)
-  nffaces = num_faces(p,dimfrom)
+function _get_faces_dual(p, dimfrom, dimto)
+  tface_to_ffaces = get_faces(p, dimto, dimfrom)
+  nffaces = num_faces(p, dimfrom)
   fface_to_tfaces = [Int[] for in in 1:nffaces]
-  for (tface,ffaces) in enumerate(tface_to_ffaces)
+  for (tface, ffaces) in enumerate(tface_to_ffaces)
     for fface in ffaces
-      push!(fface_to_tfaces[fface],tface)
+      push!(fface_to_tfaces[fface], tface)
     end
   end
   fface_to_tfaces
@@ -487,13 +487,13 @@ end
 """
     get_face_dimranges(p::Polytope,d::Integer)
 """
-function get_face_dimranges(p::Polytope,d::Integer)
-  n = num_faces(p,d)
+function get_face_dimranges(p::Polytope, d::Integer)
+  n = num_faces(p, d)
   rs = Vector{UnitRange{Int}}[]
   for i in 1:n
-    f = Polytope{d}(p,i)
+    f = Polytope{d}(p, i)
     r = get_dimranges(f)
-    push!(rs,r)
+    push!(rs, r)
   end
   rs
 end
@@ -502,7 +502,7 @@ function get_face_dimranges(p::Polytope)
   rs = Vector{UnitRange{Int}}[]
   D = num_dims(p)
   for b in 0:D
-    rs = vcat(rs,get_face_dimranges(p,d))
+    rs = vcat(rs, get_face_dimranges(p, d))
   end
   rs
 end
@@ -511,16 +511,16 @@ end
     get_face_vertices(p::Polytope) -> Vector{Vector{Int}}
     get_face_vertices(p::Polytope,dim::Integer) -> Vector{Vector{Int}}
 """
-function get_face_vertices(p::Polytope,dim::Integer)
-  get_faces(p,dim,0)
+function get_face_vertices(p::Polytope, dim::Integer)
+  get_faces(p, dim, 0)
 end
 
 function get_face_vertices(p::Polytope)
   face_vertices = Vector{Int}[]
   for d in 0:num_dims(p)
-    dface_to_vertices = get_faces(p,d,0)
+    dface_to_vertices = get_faces(p, d, 0)
     for vertices in dface_to_vertices
-      push!(face_vertices,vertices)
+      push!(face_vertices, vertices)
     end
   end
   face_vertices
@@ -548,8 +548,8 @@ Gridap.ReferenceFEs.ExtrusionPolytope{2}[TRI, QUAD]
 ```
 
 """
-function get_reffaces(::Type{Polytope{d}},p::Polytope) where d
-  ftype_to_refface, = _compute_reffaces_and_face_types(p,Val{d}())
+function get_reffaces(::Type{Polytope{d}}, p::Polytope) where d
+  ftype_to_refface, = _compute_reffaces_and_face_types(p, Val{d}())
   collect(ftype_to_refface)
 end
 
@@ -588,8 +588,8 @@ Gridap.ReferenceFEs.ExtrusionPolytope{2}[TRI, QUAD]
 The three first facets are of type `1`, i.e, `QUAD`, and the last ones of type `2`, i.e., `TRI`.
 
 """
-function get_face_type(p::Polytope,d::Integer)
-  _, iface_to_ftype = _compute_reffaces_and_face_types(p,Val{d}())
+function get_face_type(p::Polytope, d::Integer)
+  _, iface_to_ftype = _compute_reffaces_and_face_types(p, Val{d}())
   iface_to_ftype
 end
 
@@ -598,8 +598,8 @@ function get_face_type(p::Polytope)
   iface_to_ftype
 end
 
-function _compute_reffaces_and_face_types(p::Polytope,::Val{d}) where d
-  iface_to_refface = [ Polytope{d}(p,iface) for iface in 1:num_faces(p,d) ]
+function _compute_reffaces_and_face_types(p::Polytope, ::Val{d}) where d
+  iface_to_refface = [Polytope{d}(p, iface) for iface in 1:num_faces(p, d)]
   _find_unique_with_indices(iface_to_refface)
 end
 
@@ -608,11 +608,11 @@ function _compute_reffaces_and_face_types(p::Polytope)
   d_to_refdfaces = Vector{Polytope}[]
   d_to_dface_to_ftype = Vector{Int8}[]
   for d in 0:D
-    reffaces, face_to_ftype = _compute_reffaces_and_face_types(p,Val(d))
-    push!(d_to_refdfaces,reffaces)
-    push!(d_to_dface_to_ftype,face_to_ftype)
+    reffaces, face_to_ftype = _compute_reffaces_and_face_types(p, Val(d))
+    push!(d_to_refdfaces, reffaces)
+    push!(d_to_dface_to_ftype, face_to_ftype)
   end
-  d_to_offset = zeros(Int,D+1)
+  d_to_offset = zeros(Int, D + 1)
   for d in 1:D
     d_to_offset[d+1] = d_to_offset[d] + length(d_to_refdfaces[d])
     d_to_dface_to_ftype[d+1] .+= d_to_offset[d+1]
@@ -623,31 +623,31 @@ end
 function _find_unique_with_indices(a_to_b)
   T = eltype(a_to_b)
   u_to_b = T[]
-  _find_unique!(u_to_b,a_to_b)
-  a_to_u = zeros(Int,length(a_to_b))
-  _find_indexin!(a_to_u,a_to_b,u_to_b)
+  _find_unique!(u_to_b, a_to_b)
+  a_to_u = zeros(Int, length(a_to_b))
+  _find_indexin!(a_to_u, a_to_b, u_to_b)
   (u_to_b, a_to_u)
 end
 
-function _find_unique!(f::Vector,itr,pred::Function=(==))
+function _find_unique!(f::Vector, itr, pred::Function=(==))
   for i in itr
     found = false
     for fi in f
-      if pred(i,fi)
+      if pred(i, fi)
         found = true
       end
     end
     if !found
-      push!(f,i)
+      push!(f, i)
     end
   end
   f
 end
 
-function _find_indexin!(a_to_index, a_to_b, index_to_b,pred::Function=(==))
-  for (a,b) in enumerate(a_to_b)
-    for (index,_b) in enumerate(index_to_b)
-      if pred(b,_b)
+function _find_indexin!(a_to_index, a_to_b, index_to_b, pred::Function=(==))
+  for (a, b) in enumerate(a_to_b)
+    for (index, _b) in enumerate(index_to_b)
+      if pred(b, _b)
         a_to_index[a] = index
         break
       end
@@ -664,34 +664,84 @@ function get_bounding_box(p::Polytope)
   get_bounding_box(vertex_to_coords)
 end
 
-get_bounding_box(points) = get_bounding_box(identity,points)
+get_bounding_box(points) = get_bounding_box(identity, points)
 
-function get_bounding_box(f,points)
+function get_bounding_box(f, points)
   P = typeof(f(first(points)))
   T = eltype(P)
   D = length(P)
-  pmin = Point(tfill(T(Inf),Val{D}()))
-  pmax = Point(tfill(T(-Inf),Val{D}()))
+  pmin = Point(tfill(T(Inf), Val{D}()))
+  pmax = Point(tfill(T(-Inf), Val{D}()))
   for p in points
     fp = f(p)
-    pmin = min.(pmin,fp)
-    pmax = max.(pmax,fp)
+    pmin = min.(pmin, fp)
+    pmax = max.(pmax, fp)
   end
-  (pmin,pmax)
+  (pmin, pmax)
+end
+
+"""
+    get_measure(p::Polytope)
+    get_measure(p::Polytope, vertex_coords)
+
+Returns the measure of the polytope `p` with coordinates `vertex_coords`.
+"""
+function get_measure(p::Polytope)
+  vertex_coords = get_vertex_coordinates(p)
+  get_measure(p, vertex_coords)
+end
+
+function get_measure(p::Polytope, vertex_coords)
+  conn, simplex = simplexify(p)
+  m = eltype(eltype(coords))
+  D = num_dims(p)
+  VD = Val(D + 1)
+  for ids in conn
+    field = affine_map(ntuple(i -> vertex_coords[ids[i]], VD))
+    m += meas(field.gradient)
+  end
+  m / factorial(D)
+end
+
+"""
+    get_diameter(p::Polytope)
+    get_diameter(p::Polytope, vertex_coords)
+    get_diameter(vertex_coords)
+
+Returns the diameter of the polytope `p` with coordinates `vertex_coords`, defined as
+the maximum distance between any two vertices of the polytope.
+"""
+function get_diameter(p::Polytope)
+  vertex_coords = get_vertex_coordinates(p)
+  get_diameter(vertex_coords)
+end
+
+function get_diameter(p::Polytope, vertex_coords)
+  get_diameter(vertex_coords)
+end
+
+function get_diameter(vertex_coords)
+  h = zero(eltype(eltype(vertex_coords)))
+  for p in vertex_coords
+    for q in vertex_coords
+      h = max(h, norm(p - q))
+    end
+  end
+  h
 end
 
 """
     get_face_vertex_permutations(p::Polytope)
     get_face_vertex_permutations(p::Polytope,d::Integer)
 """
-function get_face_vertex_permutations(p::Polytope,d::Integer)
-  reffaces = [ Polytope{d}(p, iface) for iface in 1:num_faces(p,d)]
-  map(get_vertex_permutations,reffaces)
+function get_face_vertex_permutations(p::Polytope, d::Integer)
+  reffaces = [Polytope{d}(p, iface) for iface in 1:num_faces(p, d)]
+  map(get_vertex_permutations, reffaces)
 end
 
 function get_face_vertex_permutations(p::Polytope)
   D = num_cell_dims(p)
-  p = [ get_face_vertex_permutations(p,d) for d in 0:D ]
+  p = [get_face_vertex_permutations(p, d) for d in 0:D]
   vcat(p...)
 end
 
@@ -699,31 +749,31 @@ end
     get_face_coordinates(p::Polytope)
     get_face_coordinates(p::Polytope,d::Integer)
 """
-function get_face_coordinates(p::Polytope,d::Integer)
+function get_face_coordinates(p::Polytope, d::Integer)
   vert_to_coord = get_vertex_coordinates(p)
-  face_to_vertices = get_faces(p,d,0)
-  collect(lazy_map(Broadcasting(Reindex(vert_to_coord)),face_to_vertices))
+  face_to_vertices = get_faces(p, d, 0)
+  collect(lazy_map(Broadcasting(Reindex(vert_to_coord)), face_to_vertices))
 end
 
 function get_face_coordinates(p::Polytope)
   D = num_cell_dims(p)
-  p = [ get_face_coordinates(p,d) for d in 0:D ]
+  p = [get_face_coordinates(p, d) for d in 0:D]
   vcat(p...)
 end
 
 # Aggregate own data into faces
 
 function face_own_data_to_face_data(
-  poly::Polytope{D},face_own_data::AbstractVector{<:AbstractVector{T}}
+  poly::Polytope{D}, face_own_data::AbstractVector{<:AbstractVector{T}}
 ) where {D,T}
-  face_data = Vector{Vector{T}}(undef,num_faces(poly))
+  face_data = Vector{Vector{T}}(undef, num_faces(poly))
   for d in 0:D
-    d_offset = get_offset(poly,d)
-    for dface in 1:num_faces(poly,d)
+    d_offset = get_offset(poly, d)
+    for dface in 1:num_faces(poly, d)
       data = T[]
       for dd in 0:d
-        dd_offset = get_offset(poly,dd)
-        for ddface in get_faces(poly,d,dd)[dface]
+        dd_offset = get_offset(poly, dd)
+        for ddface in get_faces(poly, d, dd)[dface]
           append!(data, face_own_data[ddface+dd_offset])
         end
       end
@@ -744,52 +794,52 @@ for the given object, and whether they return objects of the expected type.
 With `optional=false` (the default), only the mandatory functions are checked.
 With `optional=true`, the optional functions are also tested.
 """
-function test_polytope(p::Polytope{D};optional::Bool=false) where D
+function test_polytope(p::Polytope{D}; optional::Bool=false) where D
   @test D == num_dims(p)
   faces = get_faces(p)
-  @test isa(faces,Vector{Vector{Int}})
+  @test isa(faces, Vector{Vector{Int}})
   @test num_faces(p) == length(faces)
   offsets = get_offsets(p)
-  @test isa(offsets,Vector{Int})
-  @test length(offsets) == D+1
+  @test isa(offsets, Vector{Int})
+  @test length(offsets) == D + 1
   dimrange = get_dimranges(p)
-  @test isa(dimrange,Vector{UnitRange{Int}})
-  @test length(dimrange) == D+1
+  @test isa(dimrange, Vector{UnitRange{Int}})
+  @test length(dimrange) == D + 1
   @test p == p
   for d in 0:D
-    for id in 1:num_faces(p,d)
-      pd = Polytope{d}(p,id)
-      @test isa(pd,Polytope{d})
+    for id in 1:num_faces(p, d)
+      pd = Polytope{d}(p, id)
+      @test isa(pd, Polytope{d})
     end
   end
   for dimfrom in 0:D
     for dimto in 0:D
-      fs = get_faces(p,dimfrom,dimto)
-      @test isa(fs,Vector{Vector{Int}})
+      fs = get_faces(p, dimfrom, dimto)
+      @test isa(fs, Vector{Vector{Int}})
     end
   end
   reffaces = get_reffaces(p)
   facetypes = get_face_type(p)
-  @test isa(reffaces,Vector{<:Polytope})
-  @test isa(facetypes,Vector{<:Integer})
+  @test isa(reffaces, Vector{<:Polytope})
+  @test isa(facetypes, Vector{<:Integer})
   @test num_faces(p) == length(facetypes)
   x = get_vertex_coordinates(p)
-  @test isa(x,Vector{Point{D,Float64}})
-  @test length(x) == num_faces(p,0)
+  @test isa(x, Vector{Point{D,Float64}})
+  @test length(x) == num_faces(p, 0)
   face_x = get_face_coordinates(p)
-  @test isa(face_x,Vector{Vector{Point{D,Float64}}})
+  @test isa(face_x, Vector{Vector{Point{D,Float64}}})
   @test length(face_x) == num_faces(p)
   if optional
     fn = get_facet_normal(p)
-    @test isa(fn,Vector{VectorValue{D,Float64}})
+    @test isa(fn, Vector{VectorValue{D,Float64}})
     @test length(fn) == num_facets(p)
     or = get_facet_orientations(p)
-    @test isa(or,Vector{Int})
+    @test isa(or, Vector{Int})
     @test length(or) == num_facets(p)
     et = get_edge_tangent(p)
-    @test isa(et,Vector{VectorValue{D,Float64}})
+    @test isa(et, Vector{VectorValue{D,Float64}})
     @test length(et) == num_edges(p)
-    @test isa(is_simplex(p),Bool)
-    @test isa(is_n_cube(p),Bool)
+    @test isa(is_simplex(p), Bool)
+    @test isa(is_n_cube(p), Bool)
   end
 end
