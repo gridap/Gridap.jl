@@ -36,8 +36,8 @@ function generate_patch_adaptivity_glue(
   ptopo, ftopo, ctopo, fine_to_coarse_nodes, coarse_to_fine_nodes
 )
   Dc = num_cell_dims(ftopo)
-  fine_to_coarse_cells = Geometry.get_pface_to_patch(ptopo,Dc)
   coarse_to_fine_cells = Geometry.get_patch_cells(ptopo)
+  fine_to_coarse_cells = Arrays.flatten_partition(coarse_to_fine_cells, num_faces(ftopo,Dc))
   generate_patch_adaptivity_glue(
     ftopo, ctopo, fine_to_coarse_cells, coarse_to_fine_cells, fine_to_coarse_nodes, coarse_to_fine_nodes
   )
