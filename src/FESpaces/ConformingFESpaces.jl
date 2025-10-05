@@ -715,6 +715,7 @@ function generate_dof_mask(
   n_free_dofs;
   reverse::Bool=false
 )
+  scell_ctype = get_cell_type(scell_conformity)
   ctype_lface_own_ldofs = scell_conformity.ctype_lface_own_ldofs
   d_ctype_offset = scell_conformity.d_ctype_offset
   D = length(d_ctype_offset) - 1
@@ -754,7 +755,7 @@ end
 
 function generate_dof_mask(
   space::FESpace, labels::FaceLabeling, tags; 
-  reverse::Bool=false, cell_conformity = CellConformity(space)
+  cell_conformity = get_cell_conformity(space), reverse::Bool=false
 )
   trian = get_triangulation(space)
   model = get_background_model(trian)
@@ -767,7 +768,7 @@ function generate_dof_mask(
   d_to_face_to_dface = [Geometry.get_faces(topo,Df,d) for d in 0:Df]
 
   dof_to_mask = generate_dof_mask(
-    CellConformity(space), cell_dof_ids, mface_to_tface,
+    cell_conformity, cell_dof_ids, mface_to_tface,
     d_to_face_to_dface, d_to_dface_to_mask, num_free_dofs(space);
     reverse
   )
