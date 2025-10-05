@@ -222,6 +222,10 @@ FESpaces.get_vector_type(f::MultiFieldFESpace) = f.vector_type
 
 FESpaces.ConstraintStyle(::Type{MultiFieldFESpace{S,B,V}}) where {S,B,V} = B()
 
+function FESpaces.get_cell_conformity(space::MultiFieldFESpace)
+  map(get_cell_conformity,space.spaces)
+end
+
 struct MultiFieldFEBasisComponent{B} <: FEBasis
   cell_basis::AbstractArray
   single_field::B

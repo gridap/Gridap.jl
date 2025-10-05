@@ -30,7 +30,7 @@ conf = Conformity(testitem(cell_reffe))
 cell_fe = CellFE(model,cell_reffe,conf)
 
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-  cell_fe,CellConformity(cell_fe),grid_topology, face_labeling, dirichlet_tags)
+  CellConformity(cell_fe),grid_topology, face_labeling, dirichlet_tags)
 
 r = [
   [-1,1,4,5,14,15,16,17,35],[1,2,5,6,18,19,17,20,36],[2,3,6,7,21,22,20,23,37],
@@ -52,7 +52,7 @@ conf = Conformity(testitem(cell_reffe))
 cell_fe = CellFE(model,cell_reffe,conf)
 
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-  cell_fe,CellConformity(cell_fe),grid_topology, face_labeling, dirichlet_tags, dirichlet_components)
+  CellConformity(cell_fe),grid_topology, face_labeling, dirichlet_tags, dirichlet_components)
 
 r = [
   [-1,1,7,9,-2,2,8,10],[1,3,9,11,2,4,10,12],[3,5,11,13,4,6,12,14],
@@ -74,7 +74,7 @@ conf = Conformity(testitem(cell_reffe))
 cell_fe = CellFE(model,cell_reffe,conf)
 
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-  cell_fe,CellConformity(cell_fe), grid_topology, face_labeling, dirichlet_tags, dirichlet_components)
+  CellConformity(cell_fe), grid_topology, face_labeling, dirichlet_tags, dirichlet_components)
 
 reffe = ReferenceFE(lagrangian,VectorValue{2,Float64},3)
 

@@ -1,33 +1,150 @@
 
 """
+    abstract type CellConformity <: GridapType
+
 Minimum data required to describe dof ownership.
-At this moment, the cell-wise ownership is compressed on cell types.
-This can be relaxed in the future, to have an arbitrary cell-wise dof ownership.
 """
-struct CellConformity{T} <: GridapType
+abstract type CellConformity <: GridapType end
+
+"""
+"""
+function get_cell_conformity(::SingleFieldFESpace)
+  @abstractmethod
+end
+
+get_cell_conformity(f::UnconstrainedFESpace{V,<:CellConformity}) where V = f.metadata
+
+"""
+    struct GenericCellConformity <: CellConformity
+
+A generic CellConformity implementation that stores cell-wise data.
+"""
+struct GenericCellConformity{A,B,C,D,E} <: CellConformity
+  cell_lface_own_ldofs::A
+  cell_lface_pindex_pdofs::B
+  cell_d_num_dfaces::C
+  cell_num_dofs::D
+  cell_ldof_comp::E
+end
+
+Geometry.num_cells(c::GenericCellConformity) = length(c.cell_num_dofs)
+Geometry.get_cell_type(c::GenericCellConformity) = Base.OneTo(num_cells(c))
+
+"""
+    GenericCellConformity(cell_lface_own_ldofs, cell_d_num_dfaces)
+"""
+function GenericCellConformity(
+  cell_lface_own_ldofs :: AbstractVector{<:AbstractVector{<:AbstractVector{<:Integer}}},
+  cell_d_num_dfaces :: AbstractVector{<:AbstractVector{<:Integer}},
+)
+  cell_lface_pindex_pdofs = lazy_map(ReferenceFEs._trivial_face_own_dofs_permutations, cell_lface_own_ldofs)
+  cell_num_dofs = lazy_map(x -> sum(length, x), cell_lface_own_ldofs)
+  cell_ldof_comp = lazy_map(n -> fill(0,n), cell_num_dofs)
+  GenericCellConformity(
+    cell_lface_own_ldofs,
+    cell_lface_pindex_pdofs,
+    cell_d_num_dfaces,
+    cell_num_dofs,
+    cell_ldof_comp
+  )
+end
+
+"""
+    struct CompressedCellConformity{T} <: CellConformity
+
+CellConformity implementation that compresses cell-wise data
+on a few cell types.
+"""
+struct CompressedCellConformity{T} <: CellConformity
   cell_ctype::T
   ctype_lface_own_ldofs::Vector{Vector{Vector{Int}}}
   ctype_lface_pindex_pdofs::Vector{Vector{Vector{Vector{Int}}}}
   d_ctype_num_dfaces::Vector{Vector{Int}}
+  ctype_num_dofs::Vector{Int}
+  ctype_ldof_comp::Vector{Vector{Int}}
 end
 
-function Base.getproperty(a::CellConformity, sym::Symbol)
+Geometry.num_cells(c::CompressedCellConformity) = length(c.cell_ctype)
+Geometry.get_cell_type(c::CompressedCellConformity) = c.cell_ctype
+
+function CellConformity(
+  cell_ctype::AbstractVector{<:Integer},
+  ctype_lface_own_ldofs,
+  ctype_lface_pindex_pdofs,
+  d_ctype_num_dfaces,
+  ctype_num_dofs  = [sum(length, x) for x in ctype_lface_own_ldofs],
+  ctype_ldof_comp = [fill(0,n) for n in ctype_num_dofs]
+)
+  CompressedCellConformity(
+    cell_ctype,
+    ctype_lface_own_ldofs,
+    ctype_lface_pindex_pdofs,
+    d_ctype_num_dfaces,
+    ctype_num_dofs,
+    ctype_ldof_comp
+  )
+end
+
+"""
+    CellConformity(cell_reffe::AbstractArray{<:ReferenceFE},conf::Conformity)
+    CellConformity(cell_polys::AbstractArray{<:ReferenceFE},cell_basis::AbstractArray{<:AbstractArray{<:Field}},conf::Conformity)
+"""
+function CellConformity(cell_reffe::AbstractArray{<:ReferenceFE{D}},conf::Conformity) where D
+  ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
+  ctype_lface_own_ldofs = map(reffe -> get_face_own_dofs(reffe,conf),ctype_reffe)
+  ctype_lface_pindex_pdofs = map(reffe -> get_face_own_dofs_permutations(reffe,conf),ctype_reffe)
+  d_ctype_num_dfaces = [ map(reffe -> num_faces(get_polytope(reffe),d),ctype_reffe) for d in 0:D]
+  ctype_num_dofs = map(num_dofs, ctype_reffe)
+  ctype_ldof_comp = map(get_dof_to_comp, ctype_reffe)
+  return CellConformity(
+    cell_ctype,ctype_lface_own_ldofs,ctype_lface_pindex_pdofs,d_ctype_num_dfaces,ctype_num_dofs,ctype_ldof_comp
+  )
+end
+
+function CellConformity(
+  cell_polys::AbstractArray{<:Polytope{D}},cell_basis::AbstractArray{<:AbstractArray{<:Field}},conf::Conformity
+) where D
+  @check conf isa L2Conformity "Only L2 conformity is supported"
+  ctype_basis, cell_ctype = compress_cell_data(cell_basis)
+  ctype_poly, cell_ctype_poly = compress_cell_data(cell_polys)
+  @check isequal(cell_ctype,cell_ctype_poly) || isone(length(ctype_poly)) """
+    Inconsistent cell types between `cell_polys` and `cell_basis`
+  """
+  if isone(length(ctype_poly))
+    ctype_poly = fill(first(ctype_poly),length(ctype_basis))
+  end
+
+  ctype_lface_own_ldofs = map(ctype_poly) do p
+    nfaces = num_faces(p)
+    [ifelse(isequal(face,nfaces),collect(1:ndofs),Int[]) for face in 1:nfaces]
+  end
+  ctype_lface_pindex_pdofs = map(ReferenceFEs._trivial_face_own_dofs_permutations, ctype_lface_own_ldofs)
+  d_ctype_num_faces = [
+    map(p -> num_faces(p,d), ctype_poly) for d in 0:D
+  ]
+  ctype_num_dofs  = map(length, ctype_basis)
+  ctype_ldof_comp = [fill(0,n) for n in ctype_num_dofs]
+
+  return CellConformity(
+    cell_ctype,ctype_lface_own_ldofs,ctype_lface_pindex_pdofs,d_ctype_num_faces,ctype_num_dofs,ctype_ldof_comp
+  )
+end
+
+function Base.getproperty(a::CompressedCellConformity, sym::Symbol)
   if sym == :d_ctype_offset
     _d_ctype_offset(a)
   elseif sym == :d_ctype_ldface_own_ldofs
     _d_ctype_ldface_own_ldofs(a)
-  elseif sym == :ctype_ndofs
-    _ctype_ndofs(a)
   else
     getfield(a, sym)
   end
 end
 
-function Base.propertynames(x::CellConformity, private::Bool=false)
+function Base.propertynames(x::CompressedCellConformity, private::Bool=false)
   (fieldnames(typeof(x))...,:d_ctype_offset,:d_ctype_ldface_own_ldofs,:ctype_ndofs)
 end
 
-function _d_ctype_offset(a::CellConformity)
+function _d_ctype_offset(a::CompressedCellConformity)
   num_ctypes = length(a.ctype_lface_own_ldofs)
   num_ds = length(a.d_ctype_num_dfaces)
   d_ctype_offset = [ zeros(Int,num_ctypes) for d in 1:num_ds]
@@ -39,7 +156,7 @@ function _d_ctype_offset(a::CellConformity)
   d_ctype_offset
 end
 
-function _d_ctype_ldface_own_ldofs(a::CellConformity)
+function _d_ctype_ldface_own_ldofs(a::CompressedCellConformity)
   num_ctypes = length(a.ctype_lface_own_ldofs)
   num_ds = length(a.d_ctype_num_dfaces)
   [[[ a.ctype_lface_own_ldofs[ctype][ldface+a.d_ctype_offset[d][ctype]]
@@ -48,13 +165,7 @@ function _d_ctype_ldface_own_ldofs(a::CellConformity)
     for d in 1:num_ds ]
 end
 
-function _ctype_ndofs(a::CellConformity)
-  num_ctypes = length(a.ctype_lface_own_ldofs)
-  num_ds = length(a.d_ctype_num_dfaces)
-  [sum(map(length,a.ctype_lface_own_ldofs[ctype])) for ctype in 1:num_ctypes]
-end
-
-function get_d_ctype_lface_dofs(a::CellConformity, ctype_to_poly)
+function get_d_ctype_lface_dofs(a::CompressedCellConformity, ctype_to_poly)
   ctype_lface_dofs = get_ctype_lface_dofs(a,ctype_to_poly)
   num_ctypes = length(a.ctype_lface_own_ldofs)
   num_ds = length(a.d_ctype_num_dfaces)
@@ -64,24 +175,19 @@ function get_d_ctype_lface_dofs(a::CellConformity, ctype_to_poly)
     for d in 1:num_ds ]
 end
 
-function get_ctype_lface_dofs(a::CellConformity, ctype_to_poly)
+function get_ctype_lface_dofs(a::CompressedCellConformity, ctype_to_poly)
   return map(ReferenceFEs.face_own_data_to_face_data,ctype_to_poly,a.ctype_lface_own_ldofs)
 end
 
-function get_cell_conformity(space::UnconstrainedFESpace{V,<:CellConformity}) where V
-  return space.metadata
-end
-
 """
+    struct CellFE <: GridapType
+
 Minimum data required to build a conforming FE space.
 At this moment, the some cell-wise info is compressed on cell types.
 This can be relaxed in the future, and have an arbitrary cell-wise data.
 """
-struct CellFE{T} <: GridapType
-  cell_ctype::T
-  ctype_num_dofs::Vector{Int}
-  ctype_ldof_comp::Vector{Vector{Int}}
-  cell_conformity::CellConformity{T}
+struct CellFE <: GridapType
+  cell_conformity::CellConformity
   cell_shapefuns::AbstractArray{<:AbstractVector{<:Field}}
   cell_dof_basis::AbstractArray{<:AbstractVector{<:Dof}}
   cell_shapefuns_domain::DomainStyle
@@ -92,29 +198,13 @@ end
 # reasonable quadrature rule to integrate the shape functions. Only used by FESpace
 # constructors that need to integrate the shape functions (e.g., ZeroMeanFESpace).
 
-Geometry.num_cells(cell_fe::CellFE) = length(cell_fe.cell_ctype)
-
-function CellConformity(cell_fe::CellFE)
-  cell_fe.cell_conformity
-end
+CellConformity(cell_fe::CellFE) = cell_fe.cell_conformity
+Geometry.num_cells(cell_fe::CellFE) = num_cells(CellConformity(cell_fe))
+Geometry.get_cell_type(cell_fe::CellFE) = get_cell_type(CellConformity(cell_fe))
 
 """
-Generate A CellConformity from a vector of reference fes
-"""
-function CellConformity(cell_reffe::AbstractArray{<:ReferenceFE},conf::Conformity)
-  ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
-  ctype_lface_own_ldofs = map(reffe->get_face_own_dofs(reffe,conf),ctype_reffe)
-  ctype_lface_pindex_pdofs = map(reffe->get_face_own_dofs_permutations(reffe,conf),ctype_reffe)
-  D = num_dims(first(ctype_reffe))
-  d_ctype_num_dfaces = [ map(reffe->num_faces(get_polytope(reffe),d),ctype_reffe) for d in 0:D]
-  CellConformity(
-    cell_ctype,
-    ctype_lface_own_ldofs,
-    ctype_lface_pindex_pdofs,
-    d_ctype_num_dfaces)
-end
+    CellFE(model::DiscreteModel,cell_reffe::AbstractArray{<:ReferenceFE},conformity::Conformity, args...)
 
-"""
 Generate a CellFE from a vector of reference fes
 """
 function CellFE(
@@ -125,18 +215,12 @@ function CellFE(
  )
   cell_conformity = CellConformity(cell_reffe,conformity)
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
-  ctype_num_dofs = map(num_dofs,ctype_reffe)
-  ctype_ldof_comp = map(reffe->get_dof_to_comp(reffe),ctype_reffe)
   cell_shapefuns = get_cell_shapefuns(model,cell_reffe,conformity,args...)
   cell_dof_basis = get_cell_dof_basis(model,cell_reffe,conformity,args...)
   cell_shapefuns_domain = ReferenceDomain()
   cell_dof_basis_domain = cell_shapefuns_domain
   max_order = maximum(map(get_order,ctype_reffe))
-
   CellFE(
-    cell_ctype,
-    ctype_num_dofs,
-    ctype_ldof_comp,
     cell_conformity,
     cell_shapefuns,
     cell_dof_basis,
@@ -172,8 +256,9 @@ function _ConformingFESpace(
   grid_topology = get_grid_topology(model)
   ntags = length(dirichlet_tags)
 
+  cell_conformity = CellConformity(cell_fe)
   cell_dofs_ids, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-    cell_fe,CellConformity(cell_fe),grid_topology,face_labeling,dirichlet_tags,dirichlet_components
+    cell_conformity,grid_topology,face_labeling,dirichlet_tags,dirichlet_components
   )
   
   cell_shapefuns, cell_dof_basis = compute_cell_space(cell_fe,trian)
@@ -181,7 +266,7 @@ function _ConformingFESpace(
   cell_is_dirichlet = fill(false,num_cells(trian))
   cell_is_dirichlet[dirichlet_cells] .= true
 
-  metadata = CellConformity(cell_fe)
+  metadata = cell_conformity
   UnconstrainedFESpace(
     vector_type,
     nfree,
@@ -244,12 +329,11 @@ If `dirichlet_components`  is given, then `get_dof_to_comp` has to be defined
 for the reference elements in `reffes`.
 """
 function compute_conforming_cell_dofs(
-  cell_fe,cell_conformity,grid_topology,face_labeling,dirichlet_tags,dirichlet_components=nothing)
-
-  cell_to_ctype = cell_fe.cell_ctype
-  ctype_to_ldof_to_comp = cell_fe.ctype_ldof_comp
-  ctype_to_num_dofs = cell_fe.ctype_num_dofs
-
+  cell_conformity::CompressedCellConformity,grid_topology,face_labeling,dirichlet_tags,dirichlet_components=nothing
+)
+  cell_to_ctype = cell_conformity.cell_ctype
+  ctype_to_ldof_to_comp = cell_conformity.ctype_ldof_comp
+  ctype_to_num_dofs = cell_conformity.ctype_num_dofs
   d_to_ctype_to_ldface_to_own_ldofs = cell_conformity.d_ctype_ldface_own_ldofs
   ctype_to_lface_to_own_ldofs = cell_conformity.ctype_lface_own_ldofs
   ctype_to_lface_to_pindex_to_pdofs = cell_conformity.ctype_lface_pindex_pdofs
@@ -293,13 +377,13 @@ function compute_conforming_cell_dofs(
     ctype_to_lface_to_own_ldofs,
     ctype_to_num_dofs,
     face_to_own_dofs,
-    ctype_to_lface_to_pindex_to_pdofs)
+    ctype_to_lface_to_pindex_to_pdofs) |> Table
 
   diri_cells = _generate_diri_cells(
     d_to_dface_to_tag,
     d_to_cell_to_dfaces)
 
-  (Table(cell_dofs), nfree, ndiri, diri_dof_tag, diri_cells)
+  return cell_dofs, nfree, ndiri, diri_dof_tag, diri_cells
 end
 
 function _convert_dirichlet_components(dirichlet_tags::AbstractArray,dirichlet_components)
@@ -553,7 +637,7 @@ end
 """
     generate_cell_dof_mask(
       scell_conformity::CellConformity,
-      tcell_to_scell::Vector{<:Integer},
+      tcell_to_scell::AbstractVector{<:Integer},
       d_to_tcell_to_tdface,
       d_to_tdface_to_mask;
       reverse::Bool=false
@@ -583,19 +667,19 @@ Modes of operation:
   the corresponding d-face is not masked (`false`).
 """
 function generate_cell_dof_mask(
-  scell_conformity::CellConformity,
-  tcell_to_scell::Vector{<:Integer},
+  scell_conformity::CompressedCellConformity,
+  tcell_to_scell::AbstractVector{<:Integer},
   d_to_tcell_to_tdface,
   d_to_tdface_to_mask;
   reverse::Bool=false
 )
   scell_ctype = scell_conformity.cell_ctype
-  ctype_ndofs = scell_conformity.ctype_ndofs
+  ctype_ndofs = scell_conformity.ctype_num_dofs
   d_ctype_ldface_own_ldofs = scell_conformity.d_ctype_ldface_own_ldofs
   D = length(d_ctype_ldface_own_ldofs) - 1
 
+  caches = map(array_cache, d_to_tcell_to_tdface)
   tcell_dof_mask = Vector{Vector{Bool}}(undef, length(tcell_to_scell))
-
   for (tcell,scell) in enumerate(tcell_to_scell)
     if scell < 1
       tcell_dof_mask[tcell] = Bool[]
@@ -607,7 +691,7 @@ function generate_cell_dof_mask(
 
     for d in 0:D
       ldface_to_ldofs = d_ctype_ldface_own_ldofs[d+1][ctype]
-      tdfaces = view(d_to_tcell_to_tdface[d+1],tcell)
+      tdfaces = getindex!(caches[d+1],d_to_tcell_to_tdface[d+1],tcell)
       for (ldface,tdface) in enumerate(tdfaces)
         if d_to_tdface_to_mask[d+1][tdface]
           ldofs = ldface_to_ldofs[ldface]
@@ -616,11 +700,78 @@ function generate_cell_dof_mask(
       end
     end
 
-    
     tcell_dof_mask[tcell] = xor.(dof_mask,reverse)
   end
 
   return tcell_dof_mask
+end
+
+function generate_dof_mask(
+  scell_conformity::CompressedCellConformity,
+  scell_dof_ids::AbstractVector,
+  tcell_to_scell::AbstractVector{<:Integer},
+  d_to_tcell_to_tdface,
+  d_to_tdface_to_mask,
+  n_free_dofs;
+  reverse::Bool=false
+)
+  ctype_lface_own_ldofs = scell_conformity.ctype_lface_own_ldofs
+  d_ctype_offset = scell_conformity.d_ctype_offset
+  D = length(d_ctype_offset) - 1
+
+  caches = map(array_cache, d_to_tcell_to_tdface)
+  dofs_cache = array_cache(scell_dof_ids)
+
+  dof_to_mask = fill(false,n_free_dofs)
+  for (tcell,scell) in enumerate(tcell_to_scell)
+    (scell < 1) && continue
+
+    ctype = scell_ctype[scell]
+    dofs = getindex!(dofs_cache,scell_dof_ids,scell)
+    lface_own_ldofs = ctype_lface_own_ldofs[ctype]
+
+    for d in 0:D
+      offset = d_ctype_offset[d+1][ctype]
+      dfaces = getindex!(caches[d+1],d_to_tcell_to_tdface[d+1],tcell)
+      for (ldface,dface) in enumerate(dfaces)
+        mask = d_to_tdface_to_mask[d+1][dface]
+        ldofs = lface_own_ldofs[offset+ldface]
+        for ldof in ldofs
+          dof = dofs[ldof]
+          if dof > 0 # Avoid dirichlet dofs
+            dof_to_mask[dof] |= mask
+          end
+        end
+      end
+    end
+  end
+
+  if reverse
+    dof_to_mask .= .!dof_to_mask
+  end
+  return dof_to_mask
+end
+
+function generate_dof_mask(
+  space::FESpace, labels::FaceLabeling, tags; 
+  reverse::Bool=false, cell_conformity = CellConformity(space)
+)
+  trian = get_triangulation(space)
+  model = get_background_model(trian)
+  topo  = get_grid_topology(model)
+
+  Df = num_cell_dims(trian)
+  mface_to_tface = get_glue(trian,Val(Df)).mface_to_tface
+  cell_dof_ids = get_cell_dof_ids(space)
+  d_to_dface_to_mask = [get_face_mask(labels,tags,d) for d in 0:Df]
+  d_to_face_to_dface = [Geometry.get_faces(topo,Df,d) for d in 0:Df]
+
+  dof_to_mask = generate_dof_mask(
+    CellConformity(space), cell_dof_ids, mface_to_tface,
+    d_to_face_to_dface, d_to_dface_to_mask, num_free_dofs(space);
+    reverse
+  )
+  return dof_to_mask
 end
 
 struct CellDofsNonOriented <:AbstractVector{Vector{Int32}}
