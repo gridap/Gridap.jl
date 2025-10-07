@@ -208,7 +208,6 @@ function generate_dof_mask(
     if d_to_tdface_to_mask[D+1][tcell]
       dofs = getindex!(dofs_cache,scell_dof_ids,scell)
       for dof in dofs
-        dof = dofs[ldof]
         if dof > 0 # Avoid dirichlet dofs
           dof_to_mask[dof] = true
         end
