@@ -236,4 +236,46 @@ test_array(jac_gridap_h,jac_forwdiff_h,≈)
 # jac_forwdiff_j = ForwardDiff.jacobian(f_,θ)
 # test_array(jac_gridap_j,jac_forwdiff_j,≈)
 
+reffex = ReferenceFE(lagrangian,VectorValue{2,Float64},1)
+Vx = FESpace(Ω,reffex)
+xh = interpolate(VectorValue(0.0,0.0),Vx)
+g(x) = uh(VectorValue(x[1],x[2]))
+f(x) = ∫(g∘(x))dΩ
+gradient(f,xh)
+
+# Edge case: FESpaces on subtriangulation, integration over skeleton of whole domain.
+#  This was an issue propogating into GridapDistributed when a partition contained only
+#  ghost cells.
+model = CartesianDiscreteModel((0,1,0,1),(3,3))
+Ω1 = Triangulation(model,[1,2,3])
+Λ = SkeletonTriangulation(model)
+
+V = FESpace(Ω1,ReferenceFE(lagrangian,Float64,1))
+uh = zero(V);
+fill!(get_free_dof_values(uh),1.0)
+dΛ = Measure(Λ,2)
+
+# Gradient
+f2(xh) = ∫(mean(xh)*mean(xh))dΛ
+dv = get_fe_basis(V);
+j2 = gradient(f2,uh)
+J = assemble_vector(j2,V)
+
+df2(dxh,xh) = ∫(2*mean(dxh)*mean(xh))dΛ
+J_analytic = assemble_vector(dv->df2(dv,uh),V)
+
+@test J ≈ J_analytic
+
+# Jacobian
+f2(xh,yh) = ∫(mean(xh)*mean(xh)*mean(yh))dΛ
+dv = get_fe_basis(V);
+j3 = jacobian(uh->f2(uh,dv),uh)
+J = assemble_matrix(j3,V,V)
+
+df2(xh,dxh,yh) = ∫(2*mean(dxh)*mean(xh)*mean(yh))dΛ
+op = FEOperator(f2,df2,V,V)
+J_analytic = jacobian(op,uh)
+
+@test J ≈ J_analytic
+
 end # module

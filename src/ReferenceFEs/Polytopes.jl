@@ -256,9 +256,9 @@ Returns `D`.
 """
 num_dims(p::Polytope) = num_dims(typeof(p))
 
-num_cell_dims(p::Polytope) = num_dims(p)
+num_cell_dims(p::Polytope) = num_cell_dims(typeof(p))
 
-num_point_dims(p::Polytope) = num_dims(p)
+num_point_dims(p::Polytope) = num_point_dims(typeof(p))
 
 """
     num_faces(p::Polytope)
@@ -657,21 +657,25 @@ function _find_indexin!(a_to_index, a_to_b, index_to_b,pred::Function=(==))
 end
 
 """
-    get_bounding_box(p::Polytope{D}) where D
+    get_bounding_box(p::Polytope)
 """
-function get_bounding_box(p::Polytope{D}) where D
+function get_bounding_box(p::Polytope)
   vertex_to_coords = get_vertex_coordinates(p)
-  P = eltype(vertex_to_coords)
+  get_bounding_box(vertex_to_coords)
+end
+
+get_bounding_box(points) = get_bounding_box(identity,points)
+
+function get_bounding_box(f,points)
+  P = typeof(f(first(points)))
   T = eltype(P)
+  D = length(P)
   pmin = Point(tfill(T(Inf),Val{D}()))
   pmax = Point(tfill(T(-Inf),Val{D}()))
-  for coord in vertex_to_coords
-    if coord < pmin
-      pmin = coord
-    end
-    if coord > pmax
-      pmax = coord
-    end
+  for p in points
+    fp = f(p)
+    pmin = min.(pmin,fp)
+    pmax = max.(pmax,fp)
   end
   (pmin,pmax)
 end
@@ -705,6 +709,28 @@ function get_face_coordinates(p::Polytope)
   D = num_cell_dims(p)
   p = [ get_face_coordinates(p,d) for d in 0:D ]
   vcat(p...)
+end
+
+# Aggregate own data into faces
+
+function face_own_data_to_face_data(
+  poly::Polytope{D},face_own_data::AbstractVector{<:AbstractVector{T}}
+) where {D,T}
+  face_data = Vector{Vector{T}}(undef,num_faces(poly))
+  for d in 0:D
+    d_offset = get_offset(poly,d)
+    for dface in 1:num_faces(poly,d)
+      data = T[]
+      for dd in 0:d
+        dd_offset = get_offset(poly,dd)
+        for ddface in get_faces(poly,d,dd)[dface]
+          append!(data, face_own_data[ddface+dd_offset])
+        end
+      end
+      face_data[dface+d_offset] = data
+    end
+  end
+  return face_data
 end
 
 # Testers

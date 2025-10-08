@@ -1,5 +1,10 @@
 struct Monomial <: Field end
 
+testvalue(::Type{Monomial}) = Monomial()
+function testvalue(::Type{<:AbstractVector{Monomial}})
+  @notimplemented
+end
+
 """
     struct MonomialBasis{D,T} <: AbstractVector{Monomial}
 
@@ -22,6 +27,10 @@ Base.size(a::MonomialBasis{D,T}) where {D,T} = (length(a.terms)*num_indep_compon
 # @santiagobadia : Not sure we want to create the monomial machinery
 Base.getindex(a::MonomialBasis,i::Integer) = Monomial()
 Base.IndexStyle(::MonomialBasis) = IndexLinear()
+
+function testvalue(::Type{MonomialBasis{D,T}}) where {D,T}
+  MonomialBasis{D}(T,tfill(0,Val{D}()),CartesianIndex{D}[])
+end
 
 """
     MonomialBasis{D}(::Type{T}, orders::Tuple [, filter::Function]) where {D,T}
@@ -190,12 +199,13 @@ end
 function _evaluate!(
   cache,
   fg::FieldGradientArray{1,MonomialBasis{D,T}},
-  x::AbstractVector{<:Point},
-  TisbitsType::Val{true}) where {D,T}
+  x::AbstractVector{Tp},
+  TisbitsType::Val{true}) where {D,T,Tp<:Point}
 
   f = fg.fa
   r, v, c, g = cache
-  z = zero(Mutable(VectorValue{D,eltype(T)}))
+  Tz = VectorValue{D,eltype(gradient_type(T,zero(Tp)))}
+  z = zero(Mutable(Tz))
   np = length(x)
   ndof = length(f)
   n = 1 + _maximum(f.orders)

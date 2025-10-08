@@ -4,9 +4,11 @@ using Test
 
 @testset "Interfaces" begin include("InterfaceTests.jl") end
 
+@testset "Maps" begin include("MapsTests.jl") end
+
 @testset "CachedArrays" begin include("CachedArraysTests.jl") end
 
-@testset "Maps" begin include("MapsTests.jl") end
+@testset "ArrayBlocks" begin include("ArrayBlockTests.jl") end
 
 @testset "AlgebraMaps" begin include("AlgebraMapsTests.jl") end
 

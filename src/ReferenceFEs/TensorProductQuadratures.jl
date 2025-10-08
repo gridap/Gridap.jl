@@ -19,16 +19,16 @@ end
 # Low level constructor
 
 function _tensor_product_legendre(degrees;T::Type{<:AbstractFloat}=Float64)
-    D = length(degrees)
-    npoints = [ ceil(Int,(degrees[i]+1.0)/2.0) for i in 1:D ]
-    quads = [ gauss(T, npoints[i]) for i in 1:D ]
-    for i in 1:D
-      quads[i][1] .+= 1;
-      quads[i][1] .*= 1.0/2.0
-      quads[i][2] .*= 1.0/2.0
-    end
-    (coords, weights) = _tensor_product(Point{D,T},quads,npoints)
-    GenericQuadrature(coords,weights,"Tensor product of 1d Gauss-Legendre quadratures of degrees $degrees")
+  D = length(degrees)
+  npoints = [ ceil(Int,(degrees[i]+1.0)/2.0) for i in 1:D ]
+  quads = [ gauss(T, npoints[i]) for i in 1:D ]
+  for i in 1:D
+    quads[i][1] .+= 1;
+    quads[i][1] .*= 1.0/2.0
+    quads[i][2] .*= 1.0/2.0
+  end
+  (coords, weights) = _tensor_product(Point{D,T},quads,npoints)
+  GenericQuadrature(coords,weights,"Tensor product of 1d Gauss-Legendre quadratures of degrees $degrees")
 end
 
 # Helpers

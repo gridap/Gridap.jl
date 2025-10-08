@@ -20,6 +20,7 @@ using PolynomialBases: jacobi, jacobi_and_derivative
 import Gridap.Fields: evaluate!
 import Gridap.Fields: return_cache
 import Gridap.Arrays: return_type
+import Gridap.Arrays: testvalue
 
 export MonomialBasis
 export QGradMonomialBasis

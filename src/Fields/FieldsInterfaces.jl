@@ -137,6 +137,12 @@ function testargs(f::Field,x::AbstractArray{<:Point})
   (y,)
 end
 
+function return_value(f::Field,x::AbstractArray{<:Point})
+  T = return_type(f,testitem(x))
+  s = size(x)
+  zeros(T,s)
+end
+
 function return_cache(f::Field,x::AbstractArray{<:Point})
   T = return_type(f,testitem(x))
   s = size(x)
@@ -205,9 +211,15 @@ struct ZeroField{F} <: Field
   field::F
 end
 
+return_value(z::ZeroField,x::Point) = zero(return_type(z.field,x))
 return_cache(z::ZeroField,x::Point) = zero(return_type(z.field,x))
 evaluate!(cache,z::ZeroField,x::Point) = cache
 testvalue(::Type{ZeroField{F}}) where F = ZeroField(testvalue(F))
+
+function return_value(z::ZeroField,x::AbstractArray{<:Point})
+  E = return_type(z.field,testitem(x))
+  zeros(E,size(x))
+end
 
 function return_cache(z::ZeroField,x::AbstractArray{<:Point})
   E = return_type(z.field,testitem(x))
@@ -311,6 +323,23 @@ A `Field` that is obtained as a given operation over a tuple of fields.
 struct OperationField{O,F} <: Field
   op::O
   fields::F
+end
+
+function testvalue(::Type{OperationField{O,F}}) where {O<:Field,F<:Tuple}
+  op = testvalue(O)
+  fields = map(testvalue,fieldtypes(F))
+  OperationField(op,fields)
+end
+
+function testvalue(::Type{OperationField{O,F}}) where {O,F<:Tuple}
+  @notimplementedif !Base.issingletontype(O) # Most maps, typeof(function), etc...
+  fields = map(testvalue,fieldtypes(F))
+  if hasproperty(O,:instance)
+    # This is because typeof(function) does not have a singleton constructor O()
+    OperationField(O.instance,fields)
+  else
+    OperationField(O(),fields)
+  end :: OperationField{O,F}
 end
 
 function return_value(c::OperationField,x::Point)
@@ -785,6 +814,7 @@ function Base.getindex(a::VoidBasis,i::Integer)
 end
 
 Arrays.testitem(a::VoidBasis) = testitem(a.basis)
+testvalue(::Type{VoidBasis{T,N,A}}) where {T,N,A} = VoidBasis(testvalue(A),true)
 
 function _zero_size(a::VoidBasis{T,1} where T)
   (0,)

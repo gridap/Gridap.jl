@@ -7,7 +7,7 @@
 
   In 2 dimensions ([`Polygon`](@ref)), the representation of the polygon is a closed polyline.
 
-  In 3 dimensions ([`Polyhedron`](@ref)), the rotation system generates the connectivities, each   facet is a closed cycle of the graph.
+  In 3 dimensions ([`Polyhedron`](@ref)), the rotation system generates the connectivities, each facet is a closed cycle of the graph.
   This construction allows complex geometrical operations, e.g., intersecting polytopes by halfspaces.
   See also,
 
@@ -70,7 +70,7 @@ function GeneralPolytope{D}(
   data) where D
 
   n = D+1
-  n_m_to_nface_to_mfaces = Matrix{Vector{Vector{Int}}}(undef,n,n )
+  n_m_to_nface_to_mfaces = Matrix{Vector{Vector{Int}}}(undef,n,n)
   dimranges = Vector{UnitRange{Int}}(undef,0)
   dface_nfaces = Vector{Vector{Int}}(undef,0)
   facedims = Vector{Int32}(undef,0)
@@ -91,7 +91,7 @@ function GeneralPolytope{D}(
   isopen::Bool,
   data) where D
 
-  GeneralPolytope{D}(collect(vertices),graph,isopen,data)
+  GeneralPolytope{D}(collect(vertices),collect(Vector{Int32},graph),isopen,data)
 end
 
 """
@@ -131,10 +131,10 @@ function Polygon(p::Polytope{2},vertices::AbstractVector{<:Point};kwargs...)
     e_v_graph = [[2,3],[3,1],[1,2]]
     perm = [1,2,3]
   elseif p == QUAD
-    e_v_graph = [[2, 3],[4, 1],[1, 4],[3, 2]]
+    e_v_graph = [[2,3],[4,1],[1,4],[3,2]]
     perm = [1,2,4,3]
   else
-    @unreachable
+    @notimplemented
   end
   vertices = map(Reindex(vertices),perm)
   e_v_graph = map(Reindex(e_v_graph),perm)
@@ -155,21 +155,21 @@ end
 
 function Polyhedron(p::Polytope{3},vertices::AbstractVector{<:Point};kwargs...)
   if p == TET
-    e_v_graph = [[2,4,3],[3,4,1],[1,4,2],[1,2,3]]
+    e_v_graph = [Int32[3,4,2],Int32[1,4,3],Int32[2,4,1],Int32[3,2,1]]
   elseif p == HEX
     e_v_graph = [
-      [5, 2, 3],
-      [6, 4, 1],
-      [7, 1, 4],
-      [8, 3, 2],
-      [1, 7, 6],
-      [2, 5, 8],
-      [3, 8, 5],
-      [4, 6, 7] ]
+      Int32[5, 2, 3],
+      Int32[6, 4, 1],
+      Int32[7, 1, 4],
+      Int32[8, 3, 2],
+      Int32[1, 7, 6],
+      Int32[2, 5, 8],
+      Int32[3, 8, 5],
+      Int32[4, 6, 7]
+    ]
   else
-    @unreachable
+    @notimplemented
   end
-  e_v_graph = map(i->Int32.(i),e_v_graph)
   data = generate_polytope_data(p;kwargs...)
   Polyhedron(vertices,e_v_graph,data)
 end
@@ -205,14 +205,12 @@ Base.getindex(a::GeneralPolytope,i::Integer) = a.vertices[i]
 """
 @inline get_graph(a::GeneralPolytope) = a.edge_vertex_graph
 
-
 """
     get_metadata(p::GeneralPolytope)
 
   It return the metadata stored in the polytope `p`.
 """
 get_metadata(a::GeneralPolytope) = a.metadata
-
 
 """
     isopen(p::GeneralPolytope) -> Bool
@@ -226,7 +224,7 @@ Base.isopen(a::GeneralPolytope) = a.isopen
 
   It returns whether a vertex is connected to any other vertex.
 """
-function isactive(p::Polyhedron,vertex::Integer)
+function isactive(p::GeneralPolytope,vertex::Integer)
   !isempty( get_graph(p)[vertex] )
 end
 
@@ -241,7 +239,7 @@ function check_polytope_graph(p::GeneralPolytope)
 end
 
 function check_polytope_graph(graph::AbstractVector{<:AbstractVector})
-  for v in 1:length(graph)
+  for v in eachindex(graph)
     !isempty(graph[v]) || continue
     for vneig in graph[v]
       vneig > 0 || continue
@@ -303,7 +301,7 @@ function num_faces(p::GeneralPolytope{D},d::Integer) where D
   elseif d == D
     1
   else
-    length( get_faces(p,d,0) )
+    length(get_faces(p,d,0))
   end
 end
 
@@ -321,25 +319,89 @@ function get_facet_normal(p::Polyhedron)
   f_to_v = get_faces(p,D-1,0)
   coords = get_vertex_coordinates(p)
   map(f_to_v) do v
-    v1 = coords[v[2]]-coords[v[1]]
-    v2 = coords[v[3]]-coords[v[1]]
-    v1 /= norm(v1)
-    v2 /= norm(v2)
+    v1, v2 = compute_tangent_space(Val(2),coords[v])
     n = v1 × v2
     n /= norm(n)
   end
 end
 
-function get_facet_normal(p::Polygon)
-  D = 2
-  f_to_v = get_faces(p,D-1,0)
+function get_facet_normal(p::Polyhedron,lfacet::Integer)
+  v = get_faces(p,2,0)[lfacet]
   coords = get_vertex_coordinates(p)
-  @notimplementedif num_components(eltype(coords)) != 2
+  v1, v2 = compute_tangent_space(Val(2),coords[v])
+  n = v1 × v2
+  n /= norm(n)
+  return n
+end
+
+function compute_tangent_space(::Val{1},coords;tol=1e-10)
+  v1 = coords[2]-coords[1]
+  v1 /= norm(v1)
+  return v1
+end
+
+function compute_tangent_space(::Val{D},coords;tol=1e-10) where D
+  np = length(coords)
+  p0 = first(coords)
+  k = 1
+  ns = 0
+  space = ()
+  while (ns < D) && (k < np)
+    v = coords[k+1]-p0
+    for vi in space
+      v -= (v⋅vi)*vi
+    end
+    w = norm(v)
+    if w > tol
+      space = (space...,v/w)
+      ns += 1
+    end
+    k += 1
+  end
+  @check ns == D "Tangent space cannot be computed! Too many colinear points"
+  return space
+end
+
+# Normal for a Polygon embedded in 3D space
+function get_cell_normal(p::Polygon{3})
+  coords = get_vertex_coordinates(p)
+  v1, v2 = compute_tangent_space(Val(2),coords)
+  n = v1 × v2
+  n /= norm(n)
+  return n
+end
+
+# Normal for edges of a Polygon embedded in 2D space
+function get_facet_normal(p::Polygon{2})
+  f_to_v = get_faces(p,1,0)
+  coords = get_vertex_coordinates(p)
   map(f_to_v) do v
     e = coords[v[2]]-coords[v[1]]
     n = VectorValue( e[2], -e[1] )
     n /= norm(n)
   end
+end
+
+function get_facet_normal(p::Polygon{2},lfacet::Integer)
+  v = get_faces(p,1,0)[lfacet]
+  coords = get_vertex_coordinates(p)
+  e = coords[v[2]]-coords[v[1]]
+  n = VectorValue(e[2],-e[1] )
+  n /= norm(n)
+  return n
+end
+
+# Normal for edges of a Polygon embedded in 3D space
+function get_facet_normal(p::Polygon{3})
+  t = get_edge_tangent(p)
+  n = get_cell_normal(p)
+  return t .× n
+end
+
+function get_facet_normal(p::Polygon{3},lfacet::Integer)
+  t = get_edge_tangent(p,lfacet)
+  n = get_cell_normal(p)
+  return t × n
 end
 
 function get_edge_tangent(p::GeneralPolytope)
@@ -349,6 +411,13 @@ function get_edge_tangent(p::GeneralPolytope)
     e = coords[v[2]]-coords[v[1]]
     e / norm(e)
   end
+end
+
+function get_edge_tangent(p::GeneralPolytope,ledge::Integer)
+  v = get_faces(p,1,0)[ledge]
+  coords = get_vertex_coordinates(p)
+  e = coords[v[2]]-coords[v[1]]
+  return e / norm(e)
 end
 
 function get_dimranges(p::GeneralPolytope)
@@ -532,7 +601,7 @@ end
 function generate_edge_to_vertices(poly::GeneralPolytope)
   graph = get_graph(poly)
   T = Vector{Int32}[]
-  for v in 1:length(graph)
+  for v in eachindex(graph)
     for vneig in graph[v]
       if vneig > v
         push!(T,[v,vneig])
@@ -544,10 +613,11 @@ end
 
 function generate_facet_to_vertices(poly::Polygon)
   graph = get_graph(poly)
+  n = length(graph)
   T = Vector{Int32}[]
-  for v in 1:length(graph)
-    vnext = v == length(graph) ? 1 : v+1
-    @assert vnext ∈ graph[v]
+  for v in eachindex(graph)
+    vnext = ifelse(v == n, 1, v+1)
+    @check vnext ∈ graph[v]
     push!(T,[v,vnext])
   end
   T
@@ -667,4 +737,255 @@ function simplexify_surface(poly::Polyhedron)
     end
   end
   get_vertex_coordinates(poly),T
+end
+
+function compute_orientation(p::GeneralPolytope{D}) where D
+  cc = mean(get_vertex_coordinates(p))
+  cf = mean(first(get_face_coordinates(p,D-1)))
+  n = get_facet_normal(p,1)
+  s = sign(dot(n,cf-cc))
+  return s
+end
+
+# Admissible permutations for Polygons are the ones that 
+# preserve the orientation of the circular graph that defines it.
+# For 2D polytopes, this will always be positive. For 3D polytopes, i.e 
+# faces of a polyhedron, the orientation can also be negative.
+function get_vertex_permutations(p::GeneralPolytope{2})
+  base = collect(1:num_vertices(p))
+  pos_perms = [circshift(base,i-1) for i in 1:num_vertices(p)]
+  base = reverse(base)
+  neg_perms = [circshift(base,i-1) for i in 1:num_vertices(p)]
+  return vcat(pos_perms,neg_perms)
+end
+
+"""
+    merge_nodes!(graph::Vector{Vector{Int32}},i::Int,j::Int)
+
+Given a polyhedron graph, i.e a planar graph with oriented closed paths representing the faces,
+merge the nodes `i` and `j` by collapsing the edge `i-j` into `i`.
+The algorithm preserves the orientation of the neighboring faces, maintaining a consistent graph.
+"""
+function merge_nodes!(graph::Vector{Vector{Int32}},i,j)
+  li::Int = findfirst(isequal(j),graph[i])
+  lj::Int = findfirst(isequal(i),graph[j])
+  merge_nodes!(graph,i,j,li,lj)
+end
+
+function merge_nodes!(graph::Vector{Vector{Int32}},i,j,li,lj)
+  ni, nj = graph[i], graph[j]
+  graph[i] = unique!(vcat(ni[1:li-1],nj[lj+1:end],nj[1:lj-1],ni[li+1:end]))
+  for k in nj
+    !isequal(k,i) && unique!(replace!(graph[k], j => i))
+  end
+  empty!(graph[j])
+  return graph
+end
+
+"""
+    renumber!(graph::Vector{Vector{Int32}},new_to_old::Vector{Int},n_old::Int)
+
+Given a polyhedron graph, renumber the nodes of the graph using the `new_to_old` mapping. 
+Removes the empty nodes.
+"""
+function renumber!(graph::Vector{Vector{Int32}},new_to_old::Vector{Int},n_old::Int)
+  old_to_new = find_inverse_index_map(new_to_old,n_old)
+  !isequal(n_old,length(new_to_old)) && keepat!(graph,new_to_old)
+  for i in eachindex(graph)
+    ni = graph[i]
+    for k in eachindex(ni)
+      ni[k] = old_to_new[ni[k]]
+    end
+  end
+  return graph
+end
+
+"""
+    merge_nodes(p::GeneralPolytope{D};atol=1e-6)
+
+Given a polytope, merge all the nodes that are closer than `atol` to each other.
+"""
+function merge_nodes(p::GeneralPolytope{D};atol=1e-6) where D
+  same_node(x,y) = norm(x-y) < atol
+
+  n = num_vertices(p)
+  vertices = get_vertex_coordinates(p)
+  graph = deepcopy(ReferenceFEs.get_graph(p))
+
+  for (i,v) in enumerate(vertices)
+    if !isempty(graph[i])
+      li = 1
+      while li <= length(graph[i])
+        j = graph[i][li]
+        w = vertices[j]
+        if same_node(v,w)
+          lj :: Int = findfirst(isequal(i),graph[j])
+          merge_nodes!(graph,i,j,li,lj)
+        else
+          li += 1
+        end
+      end
+    end
+  end
+
+  new_to_old = findall(!isempty,graph)
+  renumber!(graph,new_to_old,n)
+  new_vertices = vertices[new_to_old]
+
+  @check check_polytope_graph(graph)
+  return GeneralPolytope{D}(
+    new_vertices,
+    graph,
+    p.isopen,
+    nothing
+  )
+end
+
+"""
+    merge_polytopes(p1::GeneralPolytope{D},p2::GeneralPolytope{D},f1,f2)
+
+Merge polytopes `p1` and `p2` by gluing the faces `f1` and `f2` together.
+The faces `f1` and `f2` need to be given as list of nodes in the same order. 
+I.e we assume that `get_vertex_coordinates(p1)[f1[k]] == get_vertex_coordinates(p2)[f2[k]]` for all `k`.
+
+# Algorithm: 
+
+- Polyhedrons have planar graphs, with each face represented by an oriented closed path.
+
+- Visually, this means we can glue boths polytopes `p1` and `p2` by drawing the graph `G2` inside the 
+closed path of the face `f1` of `G1`. We can them add edges between the vertices of the closed paths 
+of `f1` and `f2`, then collapse the edges to create the final graph.
+
+- To create the edge `(i1,i2)`: 
+    + Around each node, its neighbors are oriented in a consistent way. This 
+      means that for a selected face (closed path), there will always be two consecutive neighbors that 
+      belong to the selected face.
+    + To create the new edge, we insert the new neighbor between the two consecutive neighbors of the 
+      selected face. This will consistently embed `G2` into `f1`.
+
+"""
+function merge_polytopes(p1::Polyhedron,p2::Polyhedron,f1,_f2)
+  @check isequal(length(f1),length(_f2))
+  
+  offset = num_vertices(p1)
+  f2 = _f2 .+ offset
+  graph = deepcopy(get_graph(p1))
+  for g in get_graph(p2)
+    push!(graph,collect(Int32, g .+ offset))
+  end
+
+  in_f1, in_f2 = in(f1), in(f2)
+  for k in eachindex(f1)
+    i1, i2 = f1[k], f2[k]
+
+    l1 = 1
+    while !in_f1(graph[i1][l1]); l1 += 1; end
+    while in_f1(graph[i1][l1+1]); l1 += 1; end
+    insert!(graph[i1],l1,i2)
+
+    l2 = 1
+    while !in_f2(graph[i2][l2]); l2 += 1; end
+    while in_f2(graph[i2][l2+1]); l2 += 1; end
+    insert!(graph[i2],l2,i1)
+
+    merge_nodes!(graph,i1,i2,l1,l2)
+    f2[k] = i1
+  end
+
+  n_old = num_vertices(p1) + num_vertices(p2)
+  new_to_old = findall(!isempty,graph)
+  renumber!(graph,new_to_old,n_old)
+
+  vertices = vcat(get_vertex_coordinates(p1),get_vertex_coordinates(p2))
+  new_vertices = vertices[new_to_old]
+
+  @check check_polytope_graph(graph)
+  return Polyhedron(
+    new_vertices,
+    graph,
+    p1.isopen || p2.isopen,
+    nothing
+  )
+end
+
+function merge_polytopes(p1::Polygon,p2::Polygon,f1,f2)
+  @check length(f1) == length(f2) == 2
+  if f1[1] > f1[2] # Reversed edge 
+    @assert f2[2] > f2[1]
+    return merge_polytopes(p2,p1,f2,f1)
+  end
+  v1, v2 = get_vertex_coordinates(p1), get_vertex_coordinates(p2)
+  v = vcat(v1[1:f1[1]],v2[(f2[1]+1):end],v2[1:(f2[2]-1)],v1[f1[2]:end])
+  return Polygon(v)
+end
+
+"""
+    polytope_from_faces(D::Integer,vertices::AbstractVector{<:Point},face_to_vertex::AbstractVector{<:AbstractVector{<:Integer}})
+
+Returns a polygon/polyhedron given a list of vertex coordinates and the face-to-vertex connectivity.
+The polytope is assumed to be closed, i.e there are no open edges.
+"""
+function polytope_from_faces(D::Integer,vertices,face_to_vertex)
+  if D == 2
+    return polygon_from_faces(vertices,face_to_vertex)
+  elseif D == 3
+    return polyhedron_from_faces(vertices,face_to_vertex)
+  else
+    @notimplemented
+  end
+end
+
+function polygon_from_faces(
+  vertices::AbstractVector{<:Point},
+  face_to_vertex::AbstractVector{<:AbstractVector{<:Integer}}
+)
+  @check all(length(f) == 2 for f in face_to_vertex)
+  n = length(vertices)
+  graph = [fill(zero(Int32),2) for i in 1:n]
+
+  for f in face_to_vertex
+    graph[f[1]][2] = f[2]
+    graph[f[2]][1] = f[1]
+  end
+
+  perm = collect(1:n)
+  for k in 2:n
+    perm[k] = graph[perm[k-1]][2]
+  end
+  permute!(vertices,perm)
+  
+  @check check_polytope_graph(graph)
+  return Polygon(vertices), perm
+end
+
+function polyhedron_from_faces(
+  vertices::AbstractVector{<:Point},
+  face_to_vertex::AbstractVector{<:AbstractVector{<:Integer}}
+)
+  n = length(vertices)
+  graph = [Int32[] for i in 1:n]
+
+  for f in face_to_vertex
+    nf = length(f)
+    for k in eachindex(f)
+      vprev, v, vnext = f[mod(k-2,nf)+1], f[k], f[mod(k,nf)+1]
+      kprev = findfirst(isequal(vprev),graph[v])
+      knext = findfirst(isequal(vnext),graph[v])
+      if isnothing(kprev) && isnothing(knext)
+        push!(graph[v],vprev,vnext)
+      elseif isnothing(kprev)
+        kprev = max(knext - 1, 1)
+        insert!(graph[v],kprev,vprev)
+      elseif isnothing(knext)
+        knext = kprev + 1
+        insert!(graph[v],knext,vnext)
+      else
+        nv = length(graph[v])
+        @assert isequal(knext, mod(kprev,nv) + 1)
+      end
+    end
+  end
+
+  @check check_polytope_graph(graph)
+  return Polyhedron(vertices,graph), Base.OneTo(n)
 end

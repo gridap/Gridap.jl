@@ -34,6 +34,11 @@ export CachedMatrix
 export CachedVector
 export setsize!
 
+# ArrayBlock
+
+export ArrayBlock, MatrixBlock, VectorBlock
+export ArrayBlockView, MatrixBlockView, VectorBlockView
+
 # Map
 
 export Map
@@ -47,9 +52,7 @@ export testargs
 export inverse_map
 
 export Broadcasting
-
 export Operation
-
 
 # LazyArray
 
@@ -60,22 +63,18 @@ export lazy_map
 
 export array_cache
 export getindex!
+export invalidate_cache!
 export testitem
 export testvalue
-# export uses_hash
 export test_array
 export get_array
-# # export add_to_array!
-
 
 export CompressedArray
 
 export Reindex
-#export reindex
 
 export PosNegReindex
 export PosNegPartition
-#export posneg_reindex
 
 export FilterMap
 
@@ -135,15 +134,18 @@ import Gridap.Io: from_dict
 export AddEntriesMap
 export TouchEntriesMap
 
+export LocalSolveMap
+export LocalPenaltySolveMap
+
 export ∑
 
 include("Interface.jl")
 
 include("Maps.jl")
 
-include("AlgebraMaps.jl")
-
 include("CachedArrays.jl")
+
+include("ArrayBlocks.jl")
 
 include("LazyArrays.jl")
 
@@ -167,11 +169,13 @@ include("ArrayPairs.jl")
 
 include("AppendedArrays.jl")
 
-include("Autodiff.jl")
-
 include("VectorsWithEntryRemoved.jl")
 
 include("VectorsWithEntryInserted.jl")
+
+include("AlgebraMaps.jl")
+
+include("Autodiff.jl")
 
 include("PrintOpTrees.jl")
 

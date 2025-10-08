@@ -21,6 +21,7 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.CellData
 using Gridap.TensorValues
+using Gridap.Polynomials
 
 using Gridap.Arrays: Reindex, ConfigMap, DualizeMap, AutoDiffMap, lazy_map
 
@@ -211,6 +212,9 @@ export update_coordinates!
 
 export ConstantFESpace
 
+export PatchAssembler
+export LocalOperator
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")
@@ -260,6 +264,14 @@ include("FESpacesWithLinearConstraints.jl")
 include("DiscreteModelWithFEMaps.jl")
 
 include("ConstantFESpaces.jl")
+
+include("PolytopalFESpaces.jl")
+
+include("PatchAssemblers.jl")
+
+include("LocalFEOperators.jl")
+
+include("PatchFESpaces.jl")
 
 export get_free_values
 function get_free_values(args...)

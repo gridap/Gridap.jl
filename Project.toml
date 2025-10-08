@@ -1,7 +1,7 @@
 name = "Gridap"
 uuid = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
 authors = ["Santiago Badia <santiago.badia@monash.edu>", "Francesc Verdugo <f.verdugo.rojano@vu.nl>", "Alberto F. Martin <alberto.f.martin@anu.edu.au>"]
-version = "0.18.10"
+version = "0.19.5"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
@@ -31,18 +31,24 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
+[weakdeps]
+TikzPictures = "37f6aa50-8035-52d0-81c2-5a1d08754b2d"
+
+[extensions]
+TikzPicturesExt = "TikzPictures"
+
 [compat]
 AbstractTrees = "0.3.3, 0.4"
 Aqua = "0.8"
 BSON = "0.3.4"
 BlockArrays = "1"
 Combinatorics = "1"
-DataStructures = "0.18.13"
+DataStructures = "0.18.13, 0.19"
 DocStringExtensions = "0.8.1, 0.9"
 FastGaussQuadrature = "0.4.5, 1"
 FileIO = "1.5"
 FillArrays = "1.11"
-ForwardDiff = "0.10.14"
+ForwardDiff = "0.10.14, 1"
 JLD2 = "0.5"
 JSON = "0.21"
 LineSearches = "7.0.1"
@@ -58,8 +64,9 @@ SparseMatricesCSR = "0.6.4"
 StaticArrays = "1.4"
 Statistics = "1"
 Test = "1"
+TikzPictures = "3"
 WriteVTK = "1.21.1"
-julia = "1.6"
+julia = "1.9"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"

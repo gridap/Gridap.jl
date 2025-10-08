@@ -9,6 +9,11 @@ using Gridap.ReferenceFEs
 using FillArrays
 
 for D = 1:3
+  if Sys.WORD_SIZE == 32 && D == 3
+    @info("Skipping D=3 test on 32-bit system due to memory constraints")
+    continue
+  end
+
   domain = Tuple(repeat([0,1],D))
 
   cart_model = CartesianDiscreteModel(domain,Tuple(fill(2,D)))
