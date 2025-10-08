@@ -350,12 +350,12 @@ end
 
 function get_pface_to_patch(ptopo::PatchTopology,Df::Integer)
   patch_faces = get_patch_faces(ptopo,Df)
-  return Arrays.block_identity_array(patch_faces.ptrs;T=Int32)
+  return Arrays.block_identity_array(Int32, patch_faces.ptrs)
 end
 
 function get_pface_to_lpface(ptopo::PatchTopology,Df::Integer)
   patch_faces = get_patch_faces(ptopo,Df)
-  return Arrays.local_identity_array(patch_faces.ptrs;T=Int32)
+  return Arrays.local_identity_array(Int32, patch_faces.ptrs)
 end
 
 function get_patch_to_tfaces(ptopo::PatchTopology,d::Integer,::IdentityVector)

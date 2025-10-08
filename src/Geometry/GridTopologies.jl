@@ -497,12 +497,12 @@ function compute_cell_permutations(top::GridTopology,d::Integer)
 
   D = num_cell_dims(top)
   cell_to_lface_to_face = Table(get_faces(top,D,d))
-  data = similar(cell_to_lface_to_face.data,Int8)
+  data = similar(cell_to_lface_to_face.data,GridapLocalInt)
   ptrs = cell_to_lface_to_face.ptrs
   cell_to_lface_to_pindex = Table(data,ptrs)
 
   if d == D || d == 0
-    fill!(cell_to_lface_to_pindex.data,Int8(1))
+    fill!(cell_to_lface_to_pindex.data,GridapLocalInt(1))
     return cell_to_lface_to_pindex
   end
 

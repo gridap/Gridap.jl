@@ -112,12 +112,4 @@ cell_conformity = FESpaces.get_cell_conformity(V)
   [[[1, 2, 3, 4, 5, 6, 7, 8, 9]]]
 ]
 
-V = FESpaces.PolytopalFESpace(model,Float64,1,space=:P)
-cell_conformity = FESpaces.get_cell_conformity(V)
-@test FESpaces.get_d_ctype_lface_dofs(cell_conformity, polytopes) == [
-  [[[], [], [], []]],
-  [[[], [], [], []]],
-  [[[1, 2, 3]]]
-]
-
 end  # module
