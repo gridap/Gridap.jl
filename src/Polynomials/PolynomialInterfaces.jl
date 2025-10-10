@@ -15,11 +15,10 @@ abstract type Polynomial  <: Field end
 
 Return `true` if the 1D basis of order `K` of the given [`Polynomial`](@ref)
 basis family is the union of the basis of order `K-1` and an other order `K`
-polynomial. Equivalently, if the iᵗʰ basis polynomial is of order i-1.
+polynomial. This implies that the iᵗʰ basis polynomial is of order i-1.
 
-The currently implemented families are [Monomial](@ref), [Legendre](@ref),
-[Chebyshev](@ref), [ModalC0](@ref) and [Bernstein](@ref). Only Bernstein is not
-hierarchical.
+The currently implemented hierarchical families are [Monomial](@ref),
+[Legendre](@ref) and [Chebyshev](@ref).
 """
 isHierarchical(::Type{<:Polynomial}) = @abstractmethod
 

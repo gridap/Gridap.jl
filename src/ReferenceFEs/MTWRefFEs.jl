@@ -20,7 +20,7 @@ References:
 function MardalTaiWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
   D = num_dims(p)
   @assert is_simplex(p) "MardalTaiWinther Reference FE only defined simplices"
-  @asset order == 3 "MardalTaiWinther Reference FE is by definition of order 3"
+  @assert order == 3 "MardalTaiWinther Reference FE is by definition of order 3"
   # TODO: We should just not allow this to be an argument
 
   prebasis = MonomialBasis(Val(D),VectorValue{D,T},3,Polynomials._p_filter)

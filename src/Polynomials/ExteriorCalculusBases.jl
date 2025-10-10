@@ -46,7 +46,7 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
   if k == 0
     # Scalar H1 conforming functions
     @notimplementedif r < 0
-    if     F == :P⁻ || F == :P # Lagrange, ℙr space
+    if     F == :P⁻ || F == :P # Lagrange, ℙr space, cannot be Bernstein
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),T,r,_p_filter)
     elseif F == :Q⁻            # Lagrange, ℚr space
@@ -59,16 +59,17 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
 
   elseif k == D
     # Scalar L2 conforming densities
-    if     F == :P⁻ # Lagrange, ℙr₋1 space
+    if     F == :P⁻ # Lagrange, ℙr₋1 space, cannot be Bernstein
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),T,r-1,_p_filter)
-    elseif F == :P  # Lagrange, ℙr space
+    elseif F == :P  # Lagrange, ℙr space, cannot be Bernstein
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),T,r,_p_filter)
     elseif F == :Q⁻ # Lagrange, ℚr₋1 space
       CartProdPolyBasis(PT,Val(D),T,r-1,_q_filter)
     elseif F == :S  # Serendipity Lagrange ≡ ℙr space
-      PT==ModalC0 || _ensure_hierarchical(PT)
+      PT == Bernstein && return BarycentricPΛBasis(Val(D),T,r,k)
+      _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),T,r,_p_filter)
     end
 
@@ -82,10 +83,10 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
           RaviartThomasPolyBasis{D}(PT, T, r-1)
         else         # Nedelec
           # former PGradBasis(PT,Val(D),T,r-1)
-          _ensure_hierarchical(PT)
           NedelecPolyBasisOnSimplex{D}(PT,T,r-1)
         end
-      elseif F == :P  # BDM on simplex
+      elseif F == :P  # BDM on simplex, cannot be Bernstein
+        _ensure_hierarchical(PT)
         CartProdPolyBasis(PT,Val(D),V,r,Polynomials._p_filter) # rotation not needed
       elseif F == :Q⁻
         if rotate_90 # Raviart-Thomas
@@ -102,12 +103,10 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
       end
 
     elseif D == 3
-      if     F == :P⁻ # First kind Nedelec
+      if     F == :P⁻ # First kind Nedelec, cannot be Bernstein
         # former PGradBasis(PT,Val(D),T,r-1)
-        _ensure_hierarchical(PT)
         NedelecPolyBasisOnSimplex{D}(PT,T,r-1)
-      elseif F == :P  # Second kind Nedelec
-        #@notimplemented
+      elseif F == :P  # Second kind Nedelec, cannot be Bernstein
         _ensure_hierarchical(PT)
         CartProdPolyBasis(PT,Val(D),V,r,Polynomials._p_filter) # rotation not needed
       elseif F == :Q⁻ # First kind Nedelec
@@ -127,10 +126,10 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
     @notimplementedif D > 3
     V = VectorValue{D,T}
     # D == 3
-    if     F == :P⁻ # Raviart-Thomas
+    if     F == :P⁻ # Raviart-Thomas, cannot be Bernstein
       # former PCurlGradBasis(PT,Val(D),T,r-1)
       RaviartThomasPolyBasis{D}(PT, T, r-1)
-    elseif F == :P  # "3D BDM" ?
+    elseif F == :P  # "3D BDM" ?  cannot be Bernstein
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),V,r,Polynomials._p_filter) # rotation not needed
     elseif F == :Q⁻ # Raviart-Thomas
