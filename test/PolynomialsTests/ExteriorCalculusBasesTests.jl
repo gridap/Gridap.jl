@@ -32,7 +32,7 @@ rotate_90 = true
 # cart_prod only for 0/D forms
 cart_prod = true
 rotate_90 = false
-@test_throws "`rotate_90` kwarg" FEEC_space_definition_checks(Val(2),Float64,0,1,:P,rotate_90; cart_prod)
+@test_throws "Cartesian product" FEEC_space_definition_checks(Val(2),Float64,0,1,:P,rotate_90; cart_prod)
 @test FEEC_space_definition_checks(Val(2),VectorValue{3,Float64},0,0,:P,rotate_90; cart_prod)
 
 # Source: https://www-users.cse.umn.edu/~arnold/femtable/background.html
@@ -45,8 +45,9 @@ T = Float64   # scalar type
 r = 3         # Polynomial order
 no_hessian = true
 
-@inline function _test_bases(b, b2, r,k,F,D, no_hessian=false)
-  @test length(b) == FEEC_length(r,k,D,Val(F))
+@noinline function _test_bases(b, b2, r,k,F,D, no_hessian=false; cart_prod=false)
+  ncomp = cart_prod ? num_indep_components(return_type(b)) : 1
+  @test length(b) == FEEC_length(r,k,D,Val(F))*ncomp
   @test b isa typeof(b2)
   @test evaluate(b,x) == evaluate(b2,x)
   @test evaluate(Broadcasting(∇)(b),x) == evaluate(Broadcasting(∇)(b2),x)
@@ -58,67 +59,70 @@ no_hessian = true
   end
 end
 
+
 # 1D
-V = T
 x = [Point(0.),Point(1.),Point(.4)]
 
 D, k = 1, 0
-b = FEEC_poly_basis(Val(D),T,r,k,:P⁻,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
-_test_bases(b,b2,r,k,:P⁻,D)
+function _k0D_tests(D,k,r,T)
+  VC = VectorValue{2,T}
+  m1     = k==D ? 1 : 0
+  filter = k==D ? _p_filter : _ser_filter
+  for Vi in (T, VC)
+    cart_prod = Vi <: MultiValue
 
-b = FEEC_poly_basis(Val(D),T,r,k,:P,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
-_test_bases(b,b2,r,k,:P,D)
+    # Monomial
+    b = FEEC_poly_basis(Val(D),Vi,r,k,:P⁻,Monomial; cart_prod)
+    b2 = CartProdPolyBasis(Monomial,Val(D),Vi,r-m1,_p_filter)
+    _test_bases(b,b2,r,k,:P⁻,D; cart_prod)
 
-b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_q_filter)
-_test_bases(b,b2,r,k,:Q⁻,D)
+    b = FEEC_poly_basis(Val(D),Vi,r,k,:P,Monomial; cart_prod)
+    b2 = CartProdPolyBasis(Monomial,Val(D),Vi,r,_p_filter)
+    _test_bases(b,b2,r,k,:P,D; cart_prod)
 
-b = FEEC_poly_basis(Val(D),T,r,k,:S,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_ser_filter)
-_test_bases(b,b2,r,k,:S,D)
+    b = FEEC_poly_basis(Val(D),Vi,r,k,:Q⁻,Monomial; cart_prod)
+    b2 = CartProdPolyBasis(Monomial,Val(D),Vi,r-m1,_q_filter)
+    _test_bases(b,b2,r,k,:Q⁻,D; cart_prod)
 
+    b = FEEC_poly_basis(Val(D),Vi,r,k,:S,Monomial; cart_prod)
+    b2 = CartProdPolyBasis(Monomial,Val(D),Vi,r,filter)
+    _test_bases(b,b2,r,k,:S,D; cart_prod)
+
+    # Bernstein not PmΛ
+    if cart_prod
+    b = FEEC_poly_basis(Val(D),Vi,r,k,:P⁻,Bernstein; cart_prod)
+    b2 = BernsteinBasisOnSimplex{D}(Vi,r-m1)
+    _test_bases(b,b2,r,k,:P⁻,D; cart_prod)
+
+    b = FEEC_poly_basis(Val(D),Vi,r,k,:P,Bernstein; cart_prod)
+    b2 = BernsteinBasisOnSimplex{D}(Vi,r)
+    _test_bases(b,b2,r,k,:P,D; cart_prod)
+
+    b = FEEC_poly_basis(Val(D),Vi,r,k,:Q⁻,Bernstein; cart_prod)
+    b2 = CartProdPolyBasis(Bernstein,Val(D),Vi,r-m1,_q_filter)
+    _test_bases(b,b2,r,k,:Q⁻,D; cart_prod)
+    end
+
+    if k==0
+      @test_throws "hierarchical" FEEC_poly_basis(Val(D),Vi,r,k,:S,Bernstein; cart_prod)
+    else
+      b = FEEC_poly_basis(Val(D),Vi,r,k,:S,Bernstein; cart_prod)
+      b2 = BernsteinBasisOnSimplex{D}(Vi,r)
+      _test_bases(b,b2,r,k,:S,D; cart_prod)
+    end
+  end
+end
+_k0D_tests(D,k,r,T)
 
 D, k = 1, 1
-V = T
-b = FEEC_poly_basis(Val(D),T,r,k,:P⁻,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),T,r-1,_p_filter)
-_test_bases(b,b2,r,k,:P⁻,D)
-
-b = FEEC_poly_basis(Val(D),T,r,k,:P,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),T,r,_p_filter)
-_test_bases(b,b2,r,k,:P,D)
-
-b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),T,r-1,_q_filter)
-_test_bases(b,b2,r,k,:Q⁻,D)
-
-b = FEEC_poly_basis(Val(D),T,r,k,:S,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),T,r,_ser_filter)
-_test_bases(b,b2,r,k,:S,D)
+_k0D_tests(D,k,r,T)
 
 
 # 2D
-V = T
 x = [Point(0.,0.),Point(1.,0),Point(0,.4),Point(.6,.4)]
 
 D, k = 2, 0
-b = FEEC_poly_basis(Val(D),T,r,k,:P⁻,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
-_test_bases(b,b2,r,k,:P⁻,D)
-
-b = FEEC_poly_basis(Val(D),T,r,k,:P,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
-_test_bases(b,b2,r,k,:P ,D)
-
-b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_q_filter)
-_test_bases(b,b2,r,k,:Q⁻,D)
-
-b = FEEC_poly_basis(Val(D),T,r,k,:S,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_ser_filter)
-_test_bases(b,b2,r,k,:S ,D)
+_k0D_tests(D,k,r,T)
 
 
 D, k = 2, 1
@@ -170,22 +174,7 @@ _test_bases(b,b2,r,k,:Q⁻,D)
 
 
 D, k = 2, 2
-V = T
-b = FEEC_poly_basis(Val(D),T,r,k,:P⁻,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),T,r-1,_p_filter)
-_test_bases(b,b2,r,k,:P⁻,D)
-
-b = FEEC_poly_basis(Val(D),T,r,k,:P,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),T,r,_p_filter)
-_test_bases(b,b2,r,k,:P,D)
-
-b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),T,r-1,_q_filter)
-_test_bases(b,b2,r,k,:Q⁻,D)
-
-b = FEEC_poly_basis(Val(D),T,r,k,:S,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),T,r,_p_filter)
-_test_bases(b,b2,r,k,:S,D)
+_k0D_tests(D,k,r,T)
 
 
 # 3D
@@ -193,22 +182,7 @@ V = T
 x = [Point(0.,0,0),Point(1.,0,0),Point(0,.4,.3),Point(.6,.4,.5)]
 
 D, k = 3, 0
-b = FEEC_poly_basis(Val(D),T,r,k,:P⁻,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
-_test_bases(b,b2,r,k,:P⁻,D)
-
-b = FEEC_poly_basis(Val(D),T,r,k,:P,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_p_filter)
-_test_bases(b,b2,r,k,:P,D)
-
-b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_q_filter)
-_test_bases(b,b2,r,k,:Q⁻,D)
-
-b = FEEC_poly_basis(Val(D),T,r,k,:S,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),V,r,_ser_filter)
-_test_bases(b,b2,r,k,:S,D)
-
+_k0D_tests(D,k,r,T)
 
 D, k = 3, 1
 V = VectorValue{D,T}
@@ -261,23 +235,7 @@ _test_bases(b,b2,r,k,:Q⁻,D)
 
 
 D, k = 3, 3
-V = T
-b = FEEC_poly_basis(Val(D),T,r,k,:P⁻,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),T,r-1,_p_filter)
-_test_bases(b,b2,r,k,:P⁻,D)
-
-b = FEEC_poly_basis(Val(D),T,r,k,:P,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),T,r,_p_filter)
-_test_bases(b,b2,r,k,:P,D)
-
-b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),T,r-1,_q_filter)
-_test_bases(b,b2,r,k,:Q⁻,D)
-
-b = FEEC_poly_basis(Val(D),T,r,k,:S,Monomial)
-b2 = CartProdPolyBasis(Monomial,Val(D),T,r,_p_filter)
-_test_bases(b,b2,r,k,:S,D)
-
+_k0D_tests(D,k,r,T)
 
 @test_throws ErrorException FEEC_poly_basis(Val(4),T,r,1,:P⁻,Monomial)
 @test_throws ErrorException FEEC_poly_basis(Val(4),T,r,2,:P⁻,Monomial)
