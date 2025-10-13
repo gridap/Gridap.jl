@@ -39,7 +39,7 @@ The following table summarizes the elements implemented in Gridap (legend below)
 | [Brezzi-Douglas-Marini](https://defelement.org/elements/brezzi-douglas-marini.html)     | [`bdm`](@ref BDMRefFE)                       | 𝓟ᵣΛᴰ⁻¹    | `TRI`,`TET` | ``{r=o≥1,   r}``| `:Hdiv`   |
 | [Mardal-Tai-Winther](https://defelement.org/elements/mardal-tai-winther.html)           | `TODO` `mtw`                                 |           | `TRI`,`TET` | ``{o=1, D+1}``  | `:Hdiv`   |
 |                                                                                                                                                                                                |
-| [Crouzeix-Raviart](https://defelement.org/elements/crouzeix-raviart.html)               |[`couzeix_raviart`](@ref CrouzeixRaviartRefFE)|           |  `TRI`      | ``{o=1, o}``    | `:L2`     |
+| [Crouzeix-Raviart](https://defelement.org/elements/crouzeix-raviart.html)               |[`crouzeix_raviart`](@ref CrouzeixRaviartRefFE)|          |  `TRI`      | ``{o=1, o}``    | `:L2`     |
 | [discontinuous Lagrangian](https://defelement.org/elements/discontinuous-lagrange.html) | [`lagrangian`](@ref LagrangianRefFE)         | 𝓟ᵣ⁻Λᴰ     | △           | ``{r-1=o≥0, o}``| `:L2`     |
 |                                                                                         |                                              | 𝓟ᵣΛᴰ      | △           | ``{r=o≥0, o}``  | `:L2`     |
 |                                                                                         |                                              | 𝓠ᵣ⁻Λᴰ     | ``\square`` | ``{r-1=o≥0, o}``| `:L2`     |

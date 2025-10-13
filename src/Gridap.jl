@@ -32,7 +32,8 @@ $(Helpers.public_names_in_md(@__MODULE__; change_link=Dict(
   :⋅¹ => "dot",
   :⋅² => "Gridap.TensorValues.double_contraction",
   :ReferenceDomain  => "DomainStyle",
-  :PhysicalDomain   => "DomainStyle"
+  :PhysicalDomain   => "DomainStyle",
+  :nedelec1  => "nedelec",
 )))
 """
 module Gridap
