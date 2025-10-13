@@ -364,3 +364,18 @@ function get_facet_flux_sign_flip(
 end
 
 
+# Helper
+
+function _validate_sh_is_pb(sh_is_pb, shapefuns, p, conf; dowarn=true)
+  if sh_is_pb && !has_geometric_decomposition(shapefuns, p, conf)
+    dowarn && @warn """
+      `sh_is_pb=true` was requested, but the constructed basis do not implement the
+      geometric decomposition, falling back to `sh_is_pb=false`.
+      basis: $shapefuns, p: $polytope, conformity: $conf,
+      $(sprint(Base.show_backtrace, stacktrace()))
+    """
+    return false
+  end
+  sh_is_pb
+end
+

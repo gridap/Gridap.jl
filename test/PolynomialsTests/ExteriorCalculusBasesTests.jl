@@ -12,8 +12,8 @@ using StaticArrays
 
 @test Polynomials._default_poly_type(:P⁻) == Bernstein
 @test Polynomials._default_poly_type(:P)  == Bernstein
-@test Polynomials._default_poly_type(:Q⁻) == Legendre
-@test Polynomials._default_poly_type(:S)  == Legendre
+@test Polynomials._default_poly_type(:Q⁻) == Polynomials.ModalC0
+@test Polynomials._default_poly_type(:S)  == Polynomials.ModalC0
 @test Polynomials._default_poly_type(:default) == Monomial
 
 # differential geometry / exterior calculus isn't implemented yet
@@ -28,6 +28,12 @@ D,k = 4, 2
 rotate_90 = true
 @test_warn "`rotate_90` kwarg" FEEC_space_definition_checks(Val(2),Float64,0,2,:P,rotate_90)
 @test_warn "`rotate_90` kwarg" FEEC_space_definition_checks(Val(3),Float64,0,1,:P,rotate_90)
+
+# cart_prod only for 0/D forms
+cart_prod = true
+rotate_90 = false
+@test_throws "`rotate_90` kwarg" FEEC_space_definition_checks(Val(2),Float64,0,1,:P,rotate_90; cart_prod)
+@test FEEC_space_definition_checks(Val(2),VectorValue{3,Float64},0,0,:P,rotate_90; cart_prod)
 
 # Source: https://www-users.cse.umn.edu/~arnold/femtable/background.html
 FEEC_length(r,k,D,::Val{:P⁻}) = binomial(r+D,r+k)*binomial(r+k-1,k)

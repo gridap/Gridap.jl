@@ -58,7 +58,7 @@ function RaviartThomasRefFE(
   end
 
   conf = DivConformity()
-  sh_is_pb = sh_is_pb && has_geometric_decomposition(prebasis,p,conf)
+  sh_is_pb = _validate_sh_is_pb(sh_is_pb, prebasis, p, conf)
   return MomentBasedReferenceFE(RaviartThomas(),p,prebasis,moments,conf; sh_is_pb)
 end
 

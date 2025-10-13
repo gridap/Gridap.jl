@@ -35,18 +35,18 @@ end
 
 # Constructors
 
-function _CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},order::Int,cont) where {T,D}
+function _CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},order::Int,cont,sh_is_pb=false) where {T,D}
   orders = tfill(order,Val{D}())
-  _CDLagrangianRefFE(T,p,orders,cont)
+  _CDLagrangianRefFE(T,p,orders,cont,sh_is_pb)
 end
 
-function _CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},orders,cont) where {T,D}
+function _CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},orders,cont,sh_is_pb=false) where {T,D}
   cond(c,o) = ( o > 0 || c == DISC )
   @check all((cond(cont[k],orders[k]) for k in 1:length(orders)))
-  _cd_lagrangian_ref_fe(T,p,orders,cont)
+  _cd_lagrangian_ref_fe(T,p,orders,cont,sh_is_pb)
 end
 
-function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont) where {T,D}
+function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont,sh_is_pb) where {T,D}
 
   @check isa(p,ExtrusionPolytope)
 
@@ -55,7 +55,6 @@ function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont) wh
   nodes, face_own_nodes = cd_compute_nodes(p,orders)
   dofs = LagrangianDofBasis(T,nodes)
 
-  nnodes = length(dofs.nodes)
   ndofs = length(dofs.dof_to_node)
 
   face_own_nodes = _compute_cd_face_own_nodes(p,orders,cont)
@@ -67,6 +66,8 @@ function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont) wh
   data = nothing
 
   conf = CDConformity(Tuple(cont))
+  # sh_is_pb notimplemented, trigger warning and ignore it
+  _validate_sh_is_pb(sh_is_pb, prebasis, p, conf)
 
   reffe = GenericRefFE{typeof(conf)}(
       ndofs,

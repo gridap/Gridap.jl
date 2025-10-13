@@ -70,7 +70,7 @@ The following table summarizes the elements implemented in Gridap (legend below)
 
 #### Additional information
 
-###### Anysotropic and Cartesian product elements
+###### Anisotropic and Cartesian product elements
 
 The `lagrangian`, `modalC0` and `bezier` elements support anisotropic orders on
 `QUAD` and `HEX`, leveraging the tensor product basis in each dimension.
@@ -82,16 +82,25 @@ argument `T`, for example `VectorValue{3,Float64}` or
 `SymTensorValue{2,Float64}`. The DoFs are duplicated for each independent
 component of the tensor.
 
-The `modalC0` element has the particularity that it's polytope and thus the
-shape function support can be adapted to the physical element.
+The `modalC0` element has the particularity that the support of its
+shape-function can be scaled to be adapted to the physical element.
 
-###### `poly_type` keyword argument
+###### `poly_type` and `mom_poly_type` keyword arguments
 
-The `nedelec`, `raviart_thomas` and `bdm` elements constructors support the
-`poly_type::Type{<:Polynomial}` keyword argument, which gives the choice of the
-polynomial family to use as pre-basis and moment DoFs test basis. This changes
-the choice of DoF basis, but not the (dual) polynomial space spanned by the
-shape functions.
+The `lagrangian`, `nedelec`, `raviart_thomas`, `bdm` and `serendipity` element
+constructors support the `poly_type::Type{<:Polynomial}` keyword argument,
+which gives the choice of the polynomial family to use as (pre-)basis for the
+approximation space of the element. This changes the *basis* but not the
+spanned polynomial *space* (for affine-mapped reference elements).
+
+Additionally, the `nedelec`, `raviart_thomas` and `bdm` element constructors
+support the `mom_poly_type::Type{<:Polynomial}` keyword argument, which gives
+the choice of the polynomial basis to use as "test" polynomials in the moment
+functionals defining the DoFs (``q`` in [1, eq. (2)]). `mom_poly_type` defaults
+to `poly_type`.
+
+The `mom_poly_type` and [`sh_is_pb`](@ref "Geometric decompositions") keywords
+change the choice of DoF *basis*, but not the DoF *space* (polynomial space dual).
 
 ###### Bubble reference FE
 
@@ -202,8 +211,9 @@ This API ensures that:
     `conf` in the physical space.
 
 The bases that currently support the geometric decomposition are:
-- the bases for ``P^-Λ^k`` and ``PΛ^k`` elements for `Bernstein` polynomial type (on simplices), see also Bernstein basis [Geometric decomposition](@ref "Geometric decomposition"),
-- the bases for ``Q^-Λ^k`` and ``SΛ^0`` elements for `ModalC0` and `Bernstein` polynomial types (on n-cubes).
+- those of ``P^-Λ^k`` and ``PΛ^k`` spaces for `Bernstein` polynomial type (on simplices), see also Bernstein basis [Geometric decomposition](@ref "Geometric decomposition"),
+- those of ``Q^-Λ^k`` spaces for `ModalC0` and `Bernstein` polynomial types (on n-cubes),
+- those of ``SΛ^0`` spaces for `ModalC0` polynomial types (on n-cubes).
 
 The keyword argument `sh_is_pb=true` means that, if possible, the shape
 functions are defined as the basis polynomials of the pre-basis. This is
@@ -213,9 +223,10 @@ the DoF basis. This kwarg do not alter the polynomial space and dual space
 respectively spanned by the shape-functions and the DoFs basis, but does change
 the DoF basis choice for the dual space.
 
-`sh_is_pb` is only available for BDM, Raviart-Thomas and Nédélec elements, and
-defaults to true. The kwarg is ignored if the pre-basis for the given
-`poly_type <: Polynomial` does not admit the geometric decomposition.
+The kwarg `sh_is_pb` is available for Lagrangian, BDM, Raviart-Thomas, Nédélec
+and Serendipity elements. It defaults to true except for Lagrangian and
+Serendipity. `sh_is_pb` is ignored if the pre-basis for the given `poly_type <:
+Polynomial` does not admit the geometric decomposition.
 
 ```@autodocs
 Modules = [ReferenceFEs,]

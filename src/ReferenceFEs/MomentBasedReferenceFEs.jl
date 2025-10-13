@@ -462,14 +462,13 @@ function MomentBasedReferenceFE(
       shapefuns = linear_combination(sign_flip,shapefuns)
     end
 
-    dofs = compute_dofs(predofs, shapefuns) # TODO smart inverse
+    dofs = compute_dofs(predofs, shapefuns)
     face_own_dofs = get_face_own_funs(prebasis, p, conformity)
     return GenericRefFE{typeof(name)}(
       n_dofs, p, predofs, conformity, metadata, face_own_dofs, shapefuns, dofs
     )
-  end
+  end # else, standard prebasis inversion
 
-  # else, standard prebasis inversion
   face_own_dofs = get_face_own_dofs(dof_basis)
   GenericRefFE{typeof(name)}(
     n_dofs, p, prebasis, dof_basis, conformity, metadata, face_own_dofs
@@ -479,7 +478,7 @@ end
 # Default polynomial type for moment based reference FEs
 function _mom_reffe_default_PT(p)
   is_simplex(p) && return Bernstein
-  is_n_cube(p) && return Legendre
+  is_n_cube(p) && return Polynomials.ModalC0
   Monomial
 end
 

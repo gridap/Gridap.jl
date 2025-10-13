@@ -131,7 +131,11 @@ Get the vector of unique coordinate vectors of each node of `reffe`'s DoFs.
 """
 function get_node_coordinates(reffe::LagrangianRefFE)
   dofs = get_dof_basis(reffe)
-  dofs.nodes
+  if dofs isa ReferenceFEs.LinearCombinationDofVector
+    dofs.predofs.nodes
+  else
+    dofs.nodes
+  end
 end
 
 """
@@ -148,7 +152,11 @@ Delegated to `reffe`'s DoFs, see [`LagrangianDofBasis`](@ref).
 """
 function get_node_and_comp_to_dof(reffe::LagrangianRefFE)
   dofs = get_dof_basis(reffe)
-  dofs.node_and_comp_to_dof
+  if dofs isa ReferenceFEs.LinearCombinationDofVector
+    dofs.predofs.node_and_comp_to_dof
+  else
+    dofs.node_and_comp_to_dof
+  end
 end
 
 """
@@ -242,9 +250,9 @@ function get_face_nodes(reffe::LagrangianRefFE,d::Integer)
 end
 
 function get_face_own_dofs(reffe::LagrangianRefFE,conf::Conformity)
-  dofs = get_dof_basis(reffe)
   face_own_nodes = get_face_own_nodes(reffe,conf)
-  face_own_dofs = _generate_face_own_dofs(face_own_nodes, dofs.node_and_comp_to_dof)
+  node_and_comp_to_dof = get_node_and_comp_to_dof(reffe)
+  face_own_dofs = _generate_face_own_dofs(face_own_nodes, node_and_comp_to_dof)
   face_own_dofs
 end
 
