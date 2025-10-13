@@ -371,7 +371,10 @@ function _validate_sh_is_pb(sh_is_pb, shapefuns, p, conf; dowarn=true)
     dowarn && @warn """
       `sh_is_pb=true` was requested, but the constructed basis do not implement the
       geometric decomposition, falling back to `sh_is_pb=false`.
-      basis: $shapefuns, p: $polytope, conformity: $conf,
+
+      p: $p,
+      conformity: $conf,
+      basis: $shapefuns,
       $(sprint(Base.show_backtrace, stacktrace()))
     """
     return false

@@ -36,8 +36,12 @@ p = get_polytope(reffe)
 test_polytope(p)
 @test LagrangianRefFE(p) == HEX8
 
+poly_type=Polynomials.ModalC0
+sh_is_pb=true
+
 order = 4
 reffe = SerendipityRefFE(Float64,HEX,order)
+test_lagrangian_reference_fe(reffe)
 @test reffe == ReferenceFE(HEX,:S,4,0)
 @test get_order(reffe) == order
 @test get_orders(reffe) == (order,order,order)
@@ -45,14 +49,40 @@ reffe = SerendipityRefFE(Float64,HEX,order)
 @test is_Q(reffe) == false
 @test is_S(reffe) == true
 
-reffe = LagrangianRefFE(Float64,HEX,order,space=:S)
+@test_throws "hierarchical" reffe = SerendipityRefFE(Float64,HEX,order; poly_type=Bernstein)
+
+reffe = SerendipityRefFE(Float64,HEX,order; poly_type)
+test_lagrangian_reference_fe(reffe)
+@test reffe == ReferenceFE(HEX,:S,4,0; poly_type)
+
+reffe = SerendipityRefFE(Float64,HEX,order; poly_type, sh_is_pb)
+test_lagrangian_reference_fe(reffe)
+@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, sh_is_pb)
+
+@test_warn "falling back to `sh_is_pb=false`" SerendipityRefFE(Float64,HEX,order; sh_is_pb)
+
+space=:S
+
+reffe = LagrangianRefFE(Float64,HEX,order; space)
+test_lagrangian_reference_fe(reffe)
 @test get_order(reffe) == order
 @test get_orders(reffe) == (order,order,order)
 @test is_P(reffe) == false
 @test is_Q(reffe) == false
 @test is_S(reffe) == true
 
+reffe = LagrangianRefFE(Float64,HEX,order; space, poly_type)
+test_lagrangian_reference_fe(reffe)
+@test reffe == ReferenceFE(HEX,:S,4,0; poly_type)
+
+reffe = LagrangianRefFE(Float64,HEX,order; space, poly_type, sh_is_pb)
+test_lagrangian_reference_fe(reffe)
+@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, sh_is_pb)
+
+@test_warn "falling back to `sh_is_pb=false`" SerendipityRefFE(Float64,HEX,order; sh_is_pb)
+
 reffe = SerendipityRefFE(Float64,QUAD,(3,3))
+test_lagrangian_reference_fe(reffe)
 @test reffe == ReferenceFE(QUAD,:S,3,0,Float64)
 @test reffe == from_dict(LagrangianRefFE,to_dict(reffe))
 

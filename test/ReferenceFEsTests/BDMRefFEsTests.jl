@@ -43,6 +43,7 @@ test_dof_array(dof_basis,prebasis,r)
 order = 3
 
 reffe = BDMRefFE(et,p,order)
+@test_warn "falling back to `sh_is_pb=false`" BDMRefFE(et,p,order; sh_is_pb=true, poly_type=Monomial)
 
 @test length(get_prebasis(reffe)) == 20
 @test get_order(get_prebasis(reffe)) == 3
@@ -133,6 +134,8 @@ reffe = ReferenceFE(TET,bdm,1)
 @test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 12
 @test Conformity(reffe) == DivConformity()
+
+@test_warn "falling back to `sh_is_pb=false`" ReferenceFE(TET,bdm,1; poly_type=Monomial)
 
 reffe = ReferenceFE(TET,bdm,Float64,1)
 @test reffe == ReferenceFE(TET,:P,1,2,Float64) # r=1, k=2

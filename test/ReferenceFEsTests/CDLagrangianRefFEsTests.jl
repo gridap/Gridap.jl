@@ -3,6 +3,7 @@ module CDLagrangianRefFEsTests
 using Gridap
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
+using Gridap.Polynomials
 using Test
 
 using Gridap.ReferenceFEs: _CDLagrangianRefFE
@@ -10,6 +11,9 @@ using Gridap.ReferenceFEs: _CDLagrangianRefFE
 T = Float64
 reffe = _CDLagrangianRefFE(T,SEGMENT,(2,),(DISC,))
 test_lagrangian_reference_fe(reffe)
+
+sh_is_pb=true
+@test_warn "falling back to `sh_is_pb=false`"  _CDLagrangianRefFE(T,SEGMENT,(2,),(DISC,),sh_is_pb)
 
 T = Float64
 reffe = _CDLagrangianRefFE(T,QUAD,1,(CONT,DISC))
@@ -39,6 +43,9 @@ T = VectorValue{2,Float64}
 reffe = LagrangianRefFE(T,QUAD,(2,0))
 @test Conformity(reffe) == CDConformity((CONT,DISC))
 test_lagrangian_reference_fe(reffe)
+
+@test_warn "falling back to `sh_is_pb=false`" LagrangianRefFE(T,QUAD,(2,0); sh_is_pb)
+@test_throws "Monomial"  LagrangianRefFE(T,QUAD,(2,0); sh_is_pb, poly_type=Bernstein)
 
 T = VectorValue{3,Float64}
 reffe = LagrangianRefFE(T,HEX,(0,2,0))

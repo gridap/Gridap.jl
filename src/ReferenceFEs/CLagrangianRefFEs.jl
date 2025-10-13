@@ -37,6 +37,7 @@ function get_own_nodes_permutations(reffe::GenericLagrangianRefFE{GradConformity
   p = get_polytope(reffe)
   face_own_nodes = get_face_own_nodes(reffe)
   dofs = get_dof_basis(reffe)
+  dofs = dofs isa LinearCombinationDofVector ? dofs.predofs : dofs
   interior_nodes = dofs.nodes[face_own_nodes[end]]
   compute_own_nodes_permutations(p,interior_nodes)
 end
@@ -263,9 +264,9 @@ function ReferenceFE(
   ::Lagrangian,
   ::Type{T},
   orders::Union{Integer,Tuple{Vararg{Integer}}};
-  space::Symbol=_default_space(polytope)) where T
+  kwargs...) where T
 
-  LagrangianRefFE(T,polytope,orders;space=space)
+  LagrangianRefFE(T,polytope,orders; kwargs...)
 end
 
 
@@ -289,6 +290,8 @@ function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders,sh_is_pb,poly_type) 
   else
     conf = GradConformity()
   end
+
+  sh_is_pb = _validate_sh_is_pb(sh_is_pb, basis, p, conf)
 
   reffe = if sh_is_pb
     GenericRefFE{typeof(conf)}(

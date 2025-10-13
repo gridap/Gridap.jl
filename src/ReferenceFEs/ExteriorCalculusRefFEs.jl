@@ -5,7 +5,8 @@
 function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
   rotate_90=false, DG_calc=false, kwargs...) where D
 
-  FEEC_space_definition_checks(Val(D),T,r,k,F,rotate_90,DG_calc)
+  cart_prod = k in (0,D) && T <: MultiValue
+  FEEC_space_definition_checks(Val(D),T,r,k,F,rotate_90,DG_calc; cart_prod)
   if !(k==D && F∈(:P,:S))
     @check r ≥ 1 "This exterior calculus FE starts at r=1, (F,r,k) = ($F,$r,$k)"
   end
@@ -50,7 +51,7 @@ function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
     if     k == 0
       Serendipity(), r
     elseif k == D
-      return ReferenceFE(p,Lagrangian(),T,r; space=:P) # ℙᴰᵣ space ≡ SᵣΛᴰ
+      return ReferenceFE(p,Lagrangian(),T,r; space=:P, kwargs...) # ℙᴰᵣ space ≡ SᵣΛᴰ
     else
       @notimplemented "BDM on n-cubes and Serendipity Nedelec not implemented yet"
     #elseif k == 1 && !rotate_90
