@@ -7,8 +7,8 @@ struct Nedelec{kind} <: ReferenceFEName
 end
 
 """
-    const nedelec  = Nedelec{1}()
-    const nedelec1 = Nedelec{1}()
+    const nedelec = Nedelec{1}()
+    const nedelec1 = nedelec
 
 Singleton of the first kind of [`Nedelec`](@ref) reference FE name.
 """

@@ -74,6 +74,9 @@ convert(::Type{<:VectorValue{D,T}}, arg::VectorValue{D,T}) where {D,T} = arg
 
 change_eltype(::Type{<:VectorValue{D}},::Type{T}) where {D,T} = VectorValue{D,T}
 
+# Construction from SArray or MArray
+MultiValue(a::StaticVector{D,T}) where {D,T} = convert(VectorValue{D,T}, a)
+
 ###############################################################
 # VTK export (VectorValue)
 ###############################################################
