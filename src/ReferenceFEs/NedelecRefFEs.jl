@@ -25,10 +25,14 @@ const nedelec2 = Nedelec{2}()
 Pushforward(::Type{<:Nedelec}) = CoVariantPiolaMap()
 
 """
-    NedelecRefFE(::Type{T}, p::Polytope, order::Integer; sh_is_pb=true, poly_type)
+    NedelecRefFE(::Type{T}, p::Polytope, order::Integer;  kind::Int=1, kwargs...)
 
 The `order` argument has the following meaning: the curl of the  functions in
 this basis is in the ℙ/ℚ space of degree `order`. `T` is the type of scalar components.
+
+The `kwargs` are [`sh_is_pb`](@ref "`sh_is_pb` keyword argument"),
+[`poly_type`](@ref "`poly_type` keyword argument") and
+[`mom_poly_type`](@ref "`mom_poly_type` keyword argument").
 """
 function NedelecRefFE(
   ::Type{T},p::Polytope{D},order::Integer; kind::Int=1,

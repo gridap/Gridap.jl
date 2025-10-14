@@ -16,10 +16,14 @@ const raviart_thomas = RaviartThomas()
 Pushforward(::Type{RaviartThomas}) = ContraVariantPiolaMap()
 
 """
-    RaviartThomasRefFE(::Type{T}, p::Polytope, order::Integer; sh_is_pb=true, poly_type)
+    RaviartThomasRefFE(::Type{T}, p::Polytope, order::Integer; kwargs...)
 
 The `order` argument has the following meaning: the divergence of the functions
 in this basis is in the Q space of degree `order`. `T` is the type of scalar components.
+
+The `kwargs` are [`sh_is_pb`](@ref "`sh_is_pb` keyword argument"),
+[`poly_type`](@ref "`poly_type` keyword argument") and
+[`mom_poly_type`](@ref "`mom_poly_type` keyword argument").
 """
 function RaviartThomasRefFE(
   ::Type{T},p::Polytope{D},order::Integer;

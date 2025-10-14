@@ -13,11 +13,15 @@ const bdm = BDM()
 Pushforward(::Type{BDM}) = ContraVariantPiolaMap()
 
 """
-    BDMRefFE(::Type{T}, p::Polytope, order::Integer; sh_is_pb=true, poly_type)
+    BDMRefFE(::Type{T}, p::Polytope, order::Integer; kwargs...)
 
 The `order` argument has the following meaning: the divergence of the  functions
 in this basis is in the ℙ space of degree `order`. `T` is the type of scalar
 components.
+
+The `kwargs` are [`sh_is_pb`](@ref "`sh_is_pb` keyword argument"),
+[`poly_type`](@ref "`poly_type` keyword argument") and
+[`mom_poly_type`](@ref "`mom_poly_type` keyword argument").
 """
 function BDMRefFE(
   ::Type{T},p::Polytope{D},order::Integer;
@@ -31,8 +35,8 @@ function BDMRefFE(
   k = D-1
 
   prebasis =     FEEC_poly_basis(Val(D),  T,order  ,k,:P, PT; rotate_90) # PᵣΛᴰ⁻¹, r = order
-  fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:P⁻,MPT)            # Facet basis P⁻ᵨΛ⁰(△ᴰ⁻¹), ρ = r
-  cb = order>1 ? FEEC_poly_basis(Val(D),  T,order-1,1,:P⁻,MPT) : nothing  # Cell basis  P⁻ᵨΛ¹(△ᴰ),   ρ = r-1
+  fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:P⁻,MPT)           # Facet basis P⁻ᵨΛ⁰(△ᴰ⁻¹), ρ = r
+  cb = order>1 ? FEEC_poly_basis(Val(D),  T,order-1,1,:P⁻,MPT) : nothing # Cell basis  P⁻ᵨΛ¹(△ᴰ),   ρ = r-1
 
   function cmom(φ,μ,ds) # Cell moment function: σ_K(φ,μ) = ∫(φ·μ)dK
     Broadcasting(Operation(⋅))(φ,μ)

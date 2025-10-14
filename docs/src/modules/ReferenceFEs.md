@@ -85,7 +85,7 @@ component of the tensor.
 The `modalC0` element has the particularity that the support of its
 shape-function can be scaled to be adapted to the physical element.
 
-###### `poly_type` and `mom_poly_type` keyword arguments
+###### `poly_type` keyword argument
 
 The `lagrangian`, `nedelec`, `raviart_thomas`, `bdm` and `serendipity` element
 constructors support the `poly_type::Type{<:Polynomial}` keyword argument,
@@ -93,14 +93,34 @@ which gives the choice of the polynomial family to use as (pre-)basis for the
 approximation space of the element. This changes the *basis* but not the
 spanned polynomial *space* (for affine-mapped reference elements).
 
+`poly_type` defaults to `Bernstein` on simplices and to `ModalC0` on n-cubes
+(incl. `SEGMENT`), except for `lagrangian` and `serendipity` elements for which
+it defaults to `Monomial`.
+
+###### `mom_poly_type` keyword argument
+
 Additionally, the `nedelec`, `raviart_thomas` and `bdm` element constructors
 support the `mom_poly_type::Type{<:Polynomial}` keyword argument, which gives
 the choice of the polynomial basis to use as "test" polynomials in the moment
 functionals defining the DoFs (``q`` in [1, eq. (2)]). `mom_poly_type` defaults
 to `poly_type`.
 
-The `mom_poly_type` and [`sh_is_pb`](@ref "Geometric decompositions") keywords
-change the choice of DoF *basis*, but not the DoF *space* (polynomial space dual).
+`mom_poly_type` defaults to `poly_type`.
+
+###### `sh_is_pb` keyword argument
+
+The `sh_is_pb::Bool` argument is available for reference FEs using moment based
+DoFs, to tell the constructor to use the polynomial basis directly as
+shape-functions basis, and to define the DoFs as a change of basis from the
+usual DoF (treating them as "pre-"DoFs). It is available and defaults to `true`
+for `nedelec`, `raviart_thomas` and `bdm` elements. See the [Geometric
+decompositions](@ref "Geometric decompositions") section for more detail.
+
+`sh_is_pb` defaults to `true`.
+
+The `mom_poly_type` and `poly_type` keywords change the choice of DoF *basis*
+when `sh_is_pb` is `false` and `true` respectively, but not the DoF *space*
+(polynomial space dual).
 
 ###### Bubble reference FE
 
