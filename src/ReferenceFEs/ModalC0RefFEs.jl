@@ -17,7 +17,15 @@ Returns an instance of `GenericRefFE{ModalC0}` representing a ReferenceFE with
 Modal C0-continuous shape functions (multivariate scalar-valued, vector-valued,
 or tensor-valued, iso- or aniso-tropic).
 
-For more details about the shape functions, see Section 1.1.5 in
+This is a nodal element that is a variant of the `Lagrangian` FE on n-cubes,
+with shape-functions that are scaled depending physical information.
+For more details about the shape functions, see
+
+Badia, S.; Neiva, E. & Verdugo, F.; (2022);
+Robust high-order unfitted finite elements by interpolation-based discrete extension;
+https://doi.org/10.1016/j.camwa.2022.09.027
+
+and Section 1.1.5 in
 
 Ern, A., & Guermond, J. L. (2013). Theory and practice of finite elements
 (Vol. 159). Springer Science & Business Media.

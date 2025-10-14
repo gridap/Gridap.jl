@@ -223,21 +223,22 @@ to_jld2_file(reffe,f)
 @test reffe == from_jld2_file(typeof(reffe),f)
 
 # Factory function
+nodal = true
 D = 2
 # o = 0
 reffe = ReferenceFE(TRI,lagrangian,0)
-@test reffe == ReferenceFE(TRI,:P⁻, 1,D) # r=o-1, k=1
+@test reffe == ReferenceFE(TRI,:P⁻, 1,D; nodal) # r=o-1, k=1
 reffe = ReferenceFE(QUAD,lagrangian,0)
-@test reffe == ReferenceFE(QUAD,:Q⁻,1,D) # r=o+1, k=1
+@test reffe == ReferenceFE(QUAD,:Q⁻,1,D; nodal) # r=o+1, k=1
 
 # o = 1
 reffe = ReferenceFE(TRI,lagrangian,1)
-@test reffe == ReferenceFE(TRI,:P⁻,1,0)  # r=o,   k=0
-@test reffe == ReferenceFE(TRI,:P⁻,2,D)  # r=o+1, k=D
-@test reffe == ReferenceFE(TRI,:P, 1,0)  # r=o,   k=0
-@test reffe == ReferenceFE(TRI,:P, 1,D)  # r=o,   k=D
+@test reffe == ReferenceFE(TRI,:P⁻,1,0; nodal)  # r=o,   k=0
+@test reffe == ReferenceFE(TRI,:P⁻,2,D; nodal)  # r=o+1, k=D
+@test reffe == ReferenceFE(TRI,:P, 1,0; nodal)  # r=o,   k=0
+@test reffe == ReferenceFE(TRI,:P, 1,D; nodal)  # r=o,   k=D
 reffe = ReferenceFE(QUAD,lagrangian,1)
-@test reffe == ReferenceFE(QUAD,:Q⁻, 1,0)# r=o,   k=0
-@test reffe == ReferenceFE(QUAD,:Q⁻, 2,D)# r=o+1, k=D
+@test reffe == ReferenceFE(QUAD,:Q⁻, 1,0; nodal)# r=o,   k=0
+@test reffe == ReferenceFE(QUAD,:Q⁻, 2,D; nodal)# r=o+1, k=D
 
 end # module

@@ -103,7 +103,7 @@ Signatures defining a reference finite element (but yet unspecified cell polytop
 
 Keyword arguments are element specific, except
 - `rotate_90::Bool=false`, set to true for div-conforming FEEC bases in 2D (only if k=1).
-
+- `nodal::Bool=false`, for FEEC constructor, choice between moment DOFs ([`ModalScalar`](@ref ModalScalarRefFE) FEs) or Lagrangian/node-based DOFs ([`lagrangian`](@ref)/[`serendipity`](@ref)).
 
 !!! warning
     This method only returns the tuple of its arguments, the actual Reference

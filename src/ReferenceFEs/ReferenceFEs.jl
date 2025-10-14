@@ -3,6 +3,9 @@
 $(public_names_in_md(@__MODULE__; change_link=Dict(
   :H1Conformity  => "GradConformity",
   :nedelec1  => "nedelec",
+  :modal_scalar_P  => "modal_scalar_Pm",
+  :modal_scalar_Qm  => "modal_scalar_Pm",
+  :modal_scalar_S  => "modal_scalar_Pm",
 )))
 """
 module ReferenceFEs
@@ -191,6 +194,7 @@ export BDMRefFE
 export NedelecRefFE
 export BezierRefFE
 export ModalC0RefFE
+export ModalScalarRefFE
 export CrouzeixRaviartRefFE
 export BubbleRefFE
 
@@ -200,6 +204,7 @@ export BDM
 export Nedelec
 export Bezier
 export ModalC0
+export ModalScalar
 export CrouzeixRaviart
 export Serendipity
 #export HellanHerrmannJhonson
@@ -213,6 +218,10 @@ export nedelec1
 export nedelec2
 export bezier
 export modalC0
+export modal_scalar_Pm
+export modal_scalar_P
+export modal_scalar_Qm
+export modal_scalar_S
 export crouzeix_raviart
 export serendipity
 #export hhj
@@ -282,6 +291,8 @@ include("RaviartThomasRefFEs.jl")
 include("BDMRefFEs.jl")
 
 include("NedelecRefFEs.jl")
+
+include("ModalScalarRefFEs.jl")
 
 include("CrouzeixRaviartRefFEs.jl")
 
