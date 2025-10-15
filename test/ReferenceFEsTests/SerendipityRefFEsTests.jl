@@ -39,7 +39,6 @@ test_polytope(p)
 @test LagrangianRefFE(p) == HEX8
 
 poly_type=Polynomials.ModalC0
-sh_is_pb=true
 
 order = 4
 reffe = SerendipityRefFE(Float64,HEX,order)
@@ -57,12 +56,6 @@ reffe = SerendipityRefFE(Float64,HEX,order; poly_type)
 test_lagrangian_reference_fe(reffe)
 @test reffe == ReferenceFE(HEX,:S,4,0; poly_type, nodal)
 
-reffe = SerendipityRefFE(Float64,HEX,order; poly_type, sh_is_pb)
-test_lagrangian_reference_fe(reffe)
-@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, sh_is_pb, nodal)
-
-@test_warn "falling back to `sh_is_pb=false`" SerendipityRefFE(Float64,HEX,order; sh_is_pb)
-
 space=:S
 
 reffe = LagrangianRefFE(Float64,HEX,order; space)
@@ -76,12 +69,6 @@ test_lagrangian_reference_fe(reffe)
 reffe = LagrangianRefFE(Float64,HEX,order; space, poly_type)
 test_lagrangian_reference_fe(reffe)
 @test reffe == ReferenceFE(HEX,:S,4,0; poly_type, nodal)
-
-reffe = LagrangianRefFE(Float64,HEX,order; space, poly_type, sh_is_pb)
-test_lagrangian_reference_fe(reffe)
-@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, sh_is_pb, nodal)
-
-@test_warn "falling back to `sh_is_pb=false`" SerendipityRefFE(Float64,HEX,order; sh_is_pb)
 
 reffe = SerendipityRefFE(Float64,QUAD,(3,3))
 test_lagrangian_reference_fe(reffe)

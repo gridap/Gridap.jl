@@ -129,6 +129,18 @@ d = 1
 @test get_face_own_dofs(reffe,d) == [[5, 14], [6, 15], [7, 16], [8, 17]]
 @test get_face_own_nodes(reffe,d) == [[5], [6], [7], [8]]
 
+# Same own dofs/nodes as with VectorValue, but testing othe polynomial
+V = SymTracelessTensorValue{2,Float64}
+reffe = LagrangianRefFE(V,QUAD,2; poly_type=Legendre)
+test_reference_fe(reffe)
+@test get_face_own_dofs(reffe,d) == [[5, 14], [6, 15], [7, 16], [8, 17]]
+@test get_face_own_nodes(reffe,d) == [[5], [6], [7], [8]]
+
+V = SymTracelessTensorValue{2,Float64}
+reffe = LagrangianRefFE(V,TRI,3; poly_type=Bernstein)
+test_reference_fe(reffe)
+@test get_face_own_dofs(reffe) == [[1, 11], [2, 12], [3, 13], [4, 5, 14, 15], [6, 7, 16, 17], [8, 9, 18, 19], [10, 20]]
+
 # 0-order degenerated case
 
 orders = (0,0)
@@ -230,6 +242,19 @@ reffe = ReferenceFE(TRI,lagrangian,0)
 @test reffe == ReferenceFE(TRI,:P⁻, 1,D; nodal) # r=o-1, k=1
 reffe = ReferenceFE(QUAD,lagrangian,0)
 @test reffe == ReferenceFE(QUAD,:Q⁻,1,D; nodal) # r=o+1, k=1
+
+reffe = ReferenceFE(TRI,lagrangian,0; poly_type=Bernstein)
+@test reffe == ReferenceFE(TRI,:P⁻, 1,D; nodal, poly_type=Bernstein) # r=o-1, k=1
+reffe = ReferenceFE(QUAD,lagrangian,0; poly_type=Legendre)
+@test reffe == ReferenceFE(QUAD,:Q⁻,1,D; nodal, poly_type=Legendre) # r=o+1, k=1
+
+V = SymTensorValue{2,Float64}
+reffe = ReferenceFE(TRI, lagrangian,V,0; poly_type=Bernstein)
+@test reffe == ReferenceFE(TRI,:P⁻, 1,D,V; nodal, poly_type=Bernstein) # r=o-1, k=1
+reffe = ReferenceFE(QUAD,lagrangian,V,0; poly_type=Legendre)
+@test reffe == ReferenceFE(QUAD,:Q⁻,1,D,V; nodal, poly_type=Legendre) # r=o+1, k=1
+
+@test_throws "Monomial" ReferenceFE(WEDGE,lagrangian,0; poly_type=Legendre)
 
 # o = 1
 reffe = ReferenceFE(TRI,lagrangian,1)

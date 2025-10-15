@@ -234,19 +234,19 @@ and can be overloaded.
 - [`compute_lagrangian_reffaces(::Type{T}, p::Polytope, orders) where T`](@ref)
 """
 function LagrangianRefFE(::Type{T},p::Polytope{D},orders;space::Symbol=_default_space(p),
-  sh_is_pb=false, poly_type=Monomial) where {T,D}
+  poly_type=Monomial) where {T,D}
 
   if space == :P && is_n_cube(p)
-    return _PDiscRefFE(T,p,orders,sh_is_pb,poly_type)
+    return _PDiscRefFE(T,p,orders,poly_type)
   elseif space == :S && is_n_cube(p)
-    SerendipityRefFE(T,p,orders; sh_is_pb, poly_type)
+    SerendipityRefFE(T,p,orders; poly_type)
   else
     if any(map(i->i==0,orders)) && !all(map(i->i==0,orders))
       @check poly_type == Monomial "Continuous-Discontinuous element only implemented using Monomial pre-bases, got $poly_type."
       cont = map(i -> i == 0 ? DISC : CONT,orders)
-      return _cd_lagrangian_ref_fe(T,p,orders,cont,sh_is_pb) # sh_is_pb will be ignored
+      return _cd_lagrangian_ref_fe(T,p,orders,cont)
     else
-      return _lagrangian_ref_fe(T,p,orders,sh_is_pb,poly_type)
+      return _lagrangian_ref_fe(T,p,orders,poly_type)
     end
   end
 end
@@ -270,7 +270,7 @@ function ReferenceFE(
 end
 
 
-function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders,sh_is_pb,poly_type) where {T,D}
+function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders,poly_type) where {T,D}
 
   basis = compute_poly_basis(T,p,orders,poly_type)
   nodes, face_own_nodes = compute_nodes(p,orders)
@@ -291,27 +291,14 @@ function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders,sh_is_pb,poly_type) 
     conf = GradConformity()
   end
 
-  sh_is_pb = _validate_sh_is_pb(sh_is_pb, basis, p, conf)
-
-  reffe = if sh_is_pb
-    GenericRefFE{typeof(conf)}(
-      ndofs,
-      p,
-      dofs, # pre-dofs
-      conf,
-      metadata,
-      face_dofs,
-      basis) # shape-functions
-  else
-    GenericRefFE{typeof(conf)}(
-      ndofs,
-      p,
-      basis, # pre-basis
-      dofs,
-      conf,
-      metadata,
-      face_dofs)
-  end
+  reffe = GenericRefFE{typeof(conf)}(
+    ndofs,
+    p,
+    basis, # pre-basis
+    dofs,
+    conf,
+    metadata,
+    face_dofs)
   GenericLagrangianRefFE(reffe,face_nodes)
 end
 
@@ -394,10 +381,10 @@ end
 # Constructors taking Int
 
 function LagrangianRefFE(::Type{T},p::Polytope{D},order::Int;space::Symbol=_default_space(p),
-  sh_is_pb=false, poly_type=Monomial) where {T,D}
+  poly_type=Monomial) where {T,D}
 
   orders = tfill(order,Val{D}())
-  LagrangianRefFE(T,p,orders; space, sh_is_pb, poly_type)
+  LagrangianRefFE(T,p,orders; space, poly_type)
 end
 
 function monomial_basis(::Type{T},p::Polytope{D},order::Int) where {D,T}
@@ -658,7 +645,8 @@ function compute_poly_basis(::Type{T},p::ExtrusionPolytope{D},orders,poly_type) 
   else
     @notimplemented "Non `Monomial` pre-basis only available on simplices and n-cubes"
   end
-  FEEC_poly_basis(Val(D),T,r,0,F,poly_type) # FᵣΛ⁰(□ᴰ)
+  cart_prod = T <: MultiValue
+  FEEC_poly_basis(Val(D),T,r,0,F,poly_type;cart_prod) # FᵣΛ⁰(□ᴰ)
 end
 
 

@@ -38,7 +38,7 @@ println( num_dofs(reffe) )
 ```
 """
 function SerendipityRefFE(::Type{T},p::Polytope,order::Int;
-  sh_is_pb=false, poly_type=Monomial) where T
+  poly_type=Monomial) where T
 
   @assert is_n_cube(p) "Polytope not compatible with serendipity elements"
   if order > 0
@@ -46,15 +46,15 @@ function SerendipityRefFE(::Type{T},p::Polytope,order::Int;
   else
     sp = p
   end
-  LagrangianRefFE(T,sp,order; sh_is_pb, poly_type)
+  LagrangianRefFE(T,sp,order; poly_type)
 end
 
 function SerendipityRefFE(::Type{T},p::Polytope,orders::Tuple;
-  sh_is_pb=false, poly_type=Monomial) where T
+  poly_type=Monomial) where T
 
   order = first(orders)
   @assert all( orders .== order ) "Serendipity FEs must be isotropic, got orders $orders."
-  SerendipityRefFE(T,p,order; sh_is_pb, poly_type)
+  SerendipityRefFE(T,p,order; poly_type)
 end
 
 function ReferenceFE(p::Polytope,::Serendipity,::Type{T},order;kwargs...) where T
