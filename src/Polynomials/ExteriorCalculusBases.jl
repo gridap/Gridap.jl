@@ -51,7 +51,7 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
     # Scalar H1 conforming functions
     @notimplementedif r < 0
     if     F == :P⁻ || F == :P # Lagrange, ℙr space
-      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r) # if T isa MultiValue
+      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r,vertices) # only if cart_prod
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),T,r,_p_filter)
     elseif F == :Q⁻            # Lagrange, ℚr space
@@ -65,17 +65,17 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
   elseif k == D
     # Scalar L2 conforming densities
     if     F == :P⁻ # Lagrange, ℙr₋1 space
-      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r-1) # if T isa MultiValue
+      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r-1,vertices) # only if cart_prod
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),T,r-1,_p_filter)
     elseif F == :P  # Lagrange, ℙr space
-      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r) # if T isa MultiValue
+      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r,vertices) # only if cart_prod
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),T,r,_p_filter)
     elseif F == :Q⁻ # Lagrange, ℚr₋1 space
       CartProdPolyBasis(PT,Val(D),T,r-1,_q_filter)
     elseif F == :S  # Serendipity Lagrange ≡ ℙr space
-      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r)
+      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r,vertices) # only if cart_prod
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),T,r,_p_filter)
     end

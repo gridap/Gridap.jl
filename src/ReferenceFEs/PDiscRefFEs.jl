@@ -1,11 +1,11 @@
 
-function _PDiscRefFE(::Type{V},p::Polytope,orders, sh_is_pb, poly_type) where V
+function _PDiscRefFE(::Type{V},p::Polytope,orders, poly_type) where V
     order = first(orders)
     @notimplementedif any( orders .!= order ) "Anisotropic serendipity FEs not allowed"
-    _PDiscRefFE(V,p,order, sh_is_pb, poly_type)
+    _PDiscRefFE(V,p,order, poly_type)
 end
 
-function _PDiscRefFE(::Type{V},p::Polytope,order::Integer, sh_is_pb, poly_type) where V
+function _PDiscRefFE(::Type{V},p::Polytope,order::Integer, poly_type) where V
 
   D = num_cell_dims(p)
   extrusion = tfill(TET_AXIS,Val{D}())
@@ -21,25 +21,14 @@ function _PDiscRefFE(::Type{V},p::Polytope,order::Integer, sh_is_pb, poly_type) 
 
   conf = L2Conformity()
 
-  reffe = if sh_is_pb
-    GenericRefFE{typeof(conf)}(
-      num_dofs(reffe),
-      p,
-      dofs, # pre-dofs
-      conf,
-      metadata,
-      face_dofs,
-      basis) # shape-functions
-  else
-    GenericRefFE{typeof(conf)}(
-      num_dofs(reffe),
-      p,
-      basis, # pre-basis
-      dofs,
-      conf,
-      metadata,
-      face_dofs)
-  end
+  reffe = GenericRefFE{typeof(conf)}(
+    num_dofs(reffe),
+    p,
+    basis, # pre-basis
+    dofs,
+    conf,
+    metadata,
+    face_dofs)
   GenericLagrangianRefFE(reffe,face_nodes)
 end
 
