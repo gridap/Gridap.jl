@@ -89,6 +89,15 @@ for D = 1:3
     @test !is_change_possible(it,t)
     @test !is_change_possible(it,rt)
   end
+
+  faces = collect(1:6)
+  mask = [f in faces for f in 1:num_faces(model1,D-1)]
+  @test BoundaryTriangulation(model1, faces) isa AdaptedTriangulation
+  @test BoundaryTriangulation(model1, mask) isa AdaptedTriangulation
+  @test BoundaryTriangulation(model1, mask, 1) isa AdaptedTriangulation
+  @test BoundaryTriangulation(model1, faces, 1) isa AdaptedTriangulation
+  @test BoundaryTriangulation(model1; tags = "boundary") isa AdaptedTriangulation
+
 end
 
 end
