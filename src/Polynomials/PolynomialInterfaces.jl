@@ -15,11 +15,10 @@ abstract type Polynomial  <: Field end
 
 Return `true` if the 1D basis of order `K` of the given [`Polynomial`](@ref)
 basis family is the union of the basis of order `K-1` and an other order `K`
-polynomial. Equivalently, if the iᵗʰ basis polynomial is of order i-1.
+polynomial. This implies that the iᵗʰ basis polynomial is of order i-1.
 
-The currently implemented families are [Monomial](@ref), [Legendre](@ref),
-[Chebyshev](@ref), [ModalC0](@ref) and [Bernstein](@ref). Only Bernstein is not
-hierarchical.
+The currently implemented hierarchical families are [Monomial](@ref),
+[Legendre](@ref) and [Chebyshev](@ref).
 """
 isHierarchical(::Type{<:Polynomial}) = @abstractmethod
 
@@ -71,11 +70,22 @@ abstract type PolynomialBasis{D,V,PT<:Polynomial} <: AbstractVector{PT}  end
 """
     get_order(b::PolynomialBasis)
 
-Return the maximum polynomial order in a dimension, or `0` in 0D.
+Return the maximum polynomial order in any dimension, or `0` in 0D.
+For tensor-valued bases, it is the maximum for each component.
 """
 @inline get_order(::PolynomialBasis) = @abstractmethod
 get_order(f::Fields.LinearCombinationFieldVector) = get_order(f.fields)
 get_order(f::AbstractVector{<:ConstantField}) = 0
+
+"""
+    get_orders(b::PolynomialBasis{D})
+
+Return the `D`-tuple of maximum polynomial orders in each spatial dimension,
+or `()` in 0D.
+
+For tensor-valued bases, it is the maximum order of any component, for each dimension.
+"""
+get_orders(::PolynomialBasis) = @abstractmethod
 
 testvalue(::Type{<:PolynomialBasis}) = @abstractmethod
 

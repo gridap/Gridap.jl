@@ -26,6 +26,7 @@ b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,PT; rotate_90)
 
 @test length(b) == 4
 @test get_order(b) == 1
+@test get_orders(b) == (1,1)
 @test return_type(b) == V
 @test testvalue(typeof(b)) isa typeof(b)
 
@@ -152,6 +153,7 @@ gvb = evaluate(∇b,xi)
 
 @test length(b) == 15
 @test get_order(b) == 3
+@test get_orders(b) == (3,3)
 
 xi = Point(2,3,5)
 np = 5
@@ -166,6 +168,7 @@ b = FEEC_poly_basis(Val(D),T,r,k,:P⁻,PT; rotate_90)
 
 @test length(b) == 15
 @test get_order(b) == 2
+@test get_orders(b) == (2,2,2)
 
 
 # 1D

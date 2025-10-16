@@ -5,6 +5,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Arrays
 using Gridap.Polynomials
+using Gridap.Helpers
 using ForwardDiff
 using StaticArrays
 
@@ -76,6 +77,7 @@ function _test_basis(VD::Val{D}, T, r, k, vertices) where D
     b   = PΛB(VD,T,r,k)
     @test contains(sprint(show, MIME"text/plain"(), b._indices), "PᵣΛᵏ(△ᴰ) basis indices, r=$r k=$k D=$D")
     @test_nowarn print_indices(b,IOBuffer())
+    @test get_orders(b) == tfill(r,Val(D))
 
     b2  = PΛB(VD,T,r,k; indices=b._indices) # indices recycling
     @test b == b2

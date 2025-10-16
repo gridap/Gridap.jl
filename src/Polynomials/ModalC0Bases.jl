@@ -3,10 +3,17 @@
 
 Type representing ModalC0 polynomials, c.f. [ModalC0 polynomials](@ref) section.
 
+The 1D polynomials are
+- ``φ₁(x) = 1-x``
+- ``φ₂(x) = x``
+- ``φᵢ(x) = Cᵢ(1-x)x𝑱ᵢ(s(x)), 3 ≤ i ≤ k``
+where ``Cᵢ`` is a constant, ``𝑱ᵢ`` the ``i``th (1,1)-Jacobi polynomial
+and ``s`` an affine transformation.
+
 Reference: Eq. (17) in https://doi.org/10.1016/j.camwa.2022.09.027
 
-The first 1D polynomial, 1-x, is of order 1 instead of 0, and the last one, x,
-is of order 1 istead of K. So the complete 1D basis isn't hierarchical.
+The first 1D polynomial, ``1-x``, is of order ``1`` instead of ``0``, and the last one, ``x``,
+is of order ``1`` istead of ``K``. So the complete 1D basis isn't hierarchical.
 """
 struct ModalC0 <: Polynomial end
 

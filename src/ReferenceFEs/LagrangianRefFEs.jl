@@ -131,6 +131,9 @@ Get the vector of unique coordinate vectors of each node of `reffe`'s DoFs.
 """
 function get_node_coordinates(reffe::LagrangianRefFE)
   dofs = get_dof_basis(reffe)
+  if dofs isa ReferenceFEs.LinearCombinationDofVector
+    return dofs.predofs.nodes
+  end
   dofs.nodes
 end
 
@@ -148,6 +151,10 @@ Delegated to `reffe`'s DoFs, see [`LagrangianDofBasis`](@ref).
 """
 function get_node_and_comp_to_dof(reffe::LagrangianRefFE)
   dofs = get_dof_basis(reffe)
+  # TODO makes sense for sh_is_pb=true ??
+  if dofs isa ReferenceFEs.LinearCombinationDofVector
+    return dofs.predofs.node_and_comp_to_dof
+  end
   dofs.node_and_comp_to_dof
 end
 
@@ -158,6 +165,10 @@ Delegated to `reffe`'s DoFs, see [`LagrangianDofBasis`](@ref).
 """
 function get_dof_to_node(reffe::LagrangianRefFE)
   dofs = get_dof_basis(reffe)
+  # TODO makes sense for sh_is_pb=true ??
+  if dofs isa ReferenceFEs.LinearCombinationDofVector
+    return dofs.predofs.dof_to_node
+  end
   dofs.dof_to_node
 end
 
@@ -168,6 +179,10 @@ Delegated to `reffe`'s DoFs, see [`LagrangianDofBasis`](@ref).
 """
 function get_dof_to_comp(reffe::LagrangianRefFE)
   dofs = get_dof_basis(reffe)
+  # TODO makes sense for sh_is_pb=true ??
+  if dofs isa ReferenceFEs.LinearCombinationDofVector
+    return dofs.predofs.dof_to_comp
+  end
   dofs.dof_to_comp
 end
 
@@ -242,9 +257,9 @@ function get_face_nodes(reffe::LagrangianRefFE,d::Integer)
 end
 
 function get_face_own_dofs(reffe::LagrangianRefFE,conf::Conformity)
-  dofs = get_dof_basis(reffe)
   face_own_nodes = get_face_own_nodes(reffe,conf)
-  face_own_dofs = _generate_face_own_dofs(face_own_nodes, dofs.node_and_comp_to_dof)
+  node_and_comp_to_dof = get_node_and_comp_to_dof(reffe)
+  face_own_dofs = _generate_face_own_dofs(face_own_nodes, node_and_comp_to_dof)
   face_own_dofs
 end
 
@@ -270,12 +285,12 @@ function _generate_face_own_dofs(face_own_nodes, node_and_comp_to_dof)
 end
 
 function get_face_own_dofs_permutations(reffe::LagrangianRefFE,conf::Conformity)
-  dofs = get_dof_basis(reffe)
   face_own_nodes_permutations = get_face_own_nodes_permutations(reffe,conf)
+  node_and_comp_to_dof = get_node_and_comp_to_dof(reffe)
   face_own_nodes = get_face_own_nodes(reffe,conf)
   face_own_dofs = get_face_own_dofs(reffe,conf)
   face_own_dofs_permutations = _generate_face_own_dofs_permutations(
-    face_own_nodes_permutations, dofs.node_and_comp_to_dof, face_own_nodes, face_own_dofs)
+    face_own_nodes_permutations, node_and_comp_to_dof, face_own_nodes, face_own_dofs)
   face_own_dofs_permutations
 end
 
@@ -337,9 +352,16 @@ function (==)(a::LagrangianRefFE{D}, b::LagrangianRefFE{D}) where D
   xa = get_node_coordinates(a)
   xb = get_node_coordinates(b)
   t = t && (xa ≈ xb)
-  expsa = get_exponents(get_prebasis(a))
-  expsb = get_exponents(get_prebasis(b))
-  t = t && (expsa == expsb)
+  basisa = get_prebasis(a)
+  basisb = get_prebasis(b)
+  if basisa isa MonomialBasis
+    !(basisb isa MonomialBasis) && return false
+    expsa = get_exponents(basisa)
+    expsb = get_exponents(basisb)
+    t = t && (expsa == expsb)
+  else
+    t = t && (basisa == basisb)
+  end
   facedofsa = get_face_dofs(a)
   facedofsb = get_face_dofs(b)
   t = t && (facedofsa == facedofsb)
@@ -355,8 +377,6 @@ end
 
 """
     get_order(reffe::LagrangianRefFE) = get_order(get_prebasis(reffe))
-
-The polynomial basis is a [`MonomialBasis`](@ref).
 """
 function get_order(reffe::LagrangianRefFE)
   get_order(get_prebasis(reffe))
@@ -364,8 +384,6 @@ end
 
 """
     get_orders(reffe::LagrangianRefFE) = get_orders(get_prebasis(reffe))
-
-The polynomial basis is a [`MonomialBasis`](@ref).
 """
 function get_orders(reffe::LagrangianRefFE)
   get_orders(get_prebasis(reffe))

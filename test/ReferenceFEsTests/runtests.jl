@@ -50,6 +50,8 @@ using Test
 
 @testset "BDMRefFEs" begin include("BDMRefFEsTests.jl") end
 
+@testset "ModalScalarRefFEs" begin include("ModalScalarRefFEsTests.jl") end
+
 @testset "CrouzeixRaviartFEs" begin include("CrouzeixRaviartFEsTests.jl") end
 
 @testset "BubbleRefFEs" begin include("BubbleRefFEsTests.jl") end

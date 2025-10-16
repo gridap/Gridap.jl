@@ -79,21 +79,19 @@ function has_geometric_decomposition(
     return false
   end
 
-  conf isa H1Conformity && return true
+  conf isa GradConformity && return true
 
   false
 end
 
 function get_face_own_funs(
-  b::BernsteinBasisOnSimplex{D,V}, p::Polytope, conf::Conformity) where {D,V}
+  b::BernsteinBasisOnSimplex{D,V}, p::Polytope, conf::GradConformity) where {D,V}
 
   @check has_geometric_decomposition(b,p,conf)
 
-  conf isa L2Conformity && return _l2_conforming_own_funs(b,p)
-
   faces = get_faces(p)
-  num_faces = length(faces)
-  face_own_funs = Vector{Int}[ Int[] for _ in 1:num_faces]
+  n_faces = length(faces)
+  face_own_funs = Vector{Int}[ Int[] for _ in 1:n_faces]
 
   K = get_order(b)
   ncomp = num_indep_components(V)
@@ -153,7 +151,7 @@ function has_geometric_decomposition(b::_BaryPΛBasis, p::Polytope, conf::Confor
     return false
   end
 
-  conf isa H1Conformity   && k == 0                     && return true
+  conf isa GradConformity && k == 0                     && return true
   is_rotated_90 = _is_rotated_90(b._indices)
   conf isa CurlConformity && k == 1   && !is_rotated_90 && return true
   correct_rotate = D==2 ? is_rotated_90 : true
@@ -168,8 +166,8 @@ function get_face_own_funs(b::_BaryPΛBasis, p::Polytope, conf::Conformity)
   conf isa L2Conformity && return _l2_conforming_own_funs(b,p)
 
   faces = get_faces(p)
-  num_faces = length(faces)
-  face_own_funs = Vector{Int}[ Int[] for _ in 1:num_faces]
+  n_faces = length(faces)
+  face_own_funs = Vector{Int}[ Int[] for _ in 1:n_faces]
 
   for (F, bubble_functions) in get_bubbles(b)
     face = findfirst(face -> F⊆face, faces)
@@ -202,3 +200,185 @@ function get_facet_flux_sign_flip(
 
   sign_flip = Diagonal(sign_flip)
 end
+
+
+###############################################################
+# Geometric decompositions of tensor product bases on n-cubes #
+###############################################################
+
+#Polynomial bases admitting a 1D geometric decomposition on the SEGMENT, currently `ModalC0` and `Bernstein`.
+const GD_1D_PT = Union{Polynomials.ModalC0, Bernstein}
+
+# says which poly of the Kth order 1D basis does the SEGMENT vertices own
+_SEGMENT_vertex_own_fun(::Type{Polynomials.ModalC0}, K) = (1, 2) # those are 1-x and x
+_SEGMENT_vertex_own_fun(::Type{Bernstein}, K) = (1, K+1)         # those are (1-x)ᴷ and xᴷ
+
+const _V0 = 1 # SEGMENT first vertex
+const _V1 = 2 # SEGMENT second vertex
+const _Vi = 3 # SEGMENT interior
+
+function _compute_fixed_coords_to_face(p,::Val{D}) where D
+  face_vertices = get_face_coordinates(p)
+  fixed_coords_to_face = Dict{NTuple{D,Int},Int}()
+  for (face,face_verts) in enumerate(face_vertices)
+    fixed_coords = ntuple( i ->
+        all(v->iszero(v[i]),face_verts) ? _V0 :
+        all(v->isone( v[i]),face_verts) ? _V1 :
+                                          _Vi, Val(D))
+    fixed_coords_to_face[fixed_coords] = face
+  end
+  fixed_coords_to_face
+end
+
+@inline function _is_poly_reference_D_cube(p,D)
+  !(is_n_cube(p) && D == num_dims(p)) && return false
+  if D<4
+    DCUBE = (VERTEX, SEGMENT, QUAD, HEX)[D+1]
+  else
+    DCUBE = ExtrusionPolytope(tfill(HEX_AXIS,Val(D)))
+  end
+  # Our 1D polynomial evaluations are decomposed in [0,1]ᴰ, so the vertices of
+  # p must be the same as the Reference D-cube
+  DCUBE_vertices = get_vertex_coordinates(DCUBE)
+  p_vertices = get_vertex_coordinates(p)
+  all(∈(DCUBE_vertices), p_vertices)
+end
+
+
+# CartProdPolyBasis
+
+function has_geometric_decomposition(
+  b::CartProdPolyBasis{D,V,<:GD_1D_PT}, p::Polytope, conf::Conformity) where {D,V}
+
+  conf isa L2Conformity && return true
+
+  !_is_poly_reference_D_cube(p,D) && return false
+
+  conf isa GradConformity && minimum(b.orders) > 0 && return true
+
+  # # could be generalized to Curl and Div conformity in this case, although
+  # # it is quite redundant with `CompWiseTensorPolyBasis` if terms filtering
+  # # is implemented for it
+  # V <: VectorValue{D}     && minimum(b.orders) > 0 && return true
+
+  false
+end
+
+function get_face_own_funs(
+  b::CartProdPolyBasis{D,V,PT}, p::Polytope, conf::GradConformity) where {D,V,PT<:GD_1D_PT}
+
+  @check has_geometric_decomposition(b,p,conf)
+
+  face_own_funs = Vector{Int}[ Int[] for _ in 1:num_faces(p) ]
+  fixed_coords_to_face = _compute_fixed_coords_to_face(p,Val(D))
+
+  K = get_order(b)
+  s0_owned, s1_owned = _SEGMENT_vertex_own_fun(PT,K)
+  ncomp = num_indep_components(V)
+  id = 1
+  for ci in b.terms
+    own_coords = ntuple( i -> ci[i] == s0_owned ? _V0 : ci[i] == s1_owned ? _V1 : _Vi, Val(D))
+    face = fixed_coords_to_face[own_coords]
+    append!(face_own_funs[face], id:id+ncomp-1)
+    id += ncomp
+  end
+
+  face_own_funs
+end
+
+# CompWiseTensorPolyBasis
+
+function has_geometric_decomposition(
+  b::CompWiseTensorPolyBasis{D,V,<:GD_1D_PT}, p::Polytope, conf::Conformity) where {D,V}
+
+  conf isa L2Conformity && return true
+
+  !(V <: VectorValue{D}) && return false
+  !_is_poly_reference_D_cube(p,D) && return false
+
+  orders = MMatrix{D,D}(b.orders)
+  conf isa GradConformity && minimum(orders)   > 0 && return true
+  conf isa CurlConformity && minimum(orders+I) > 0 && return true
+  conf isa DivConformity  && minimum(diag(orders)) > 0 && return true
+
+  false
+end
+
+function get_face_own_funs(
+  b::CompWiseTensorPolyBasis{D,V,PT}, p::Polytope, conf::Conformity) where {D,V,PT<:GD_1D_PT}
+
+  @check has_geometric_decomposition(b,p,conf)
+  conf isa L2Conformity && return _l2_conforming_own_funs(b,p)
+
+  face_own_funs = Vector{Int}[ Int[] for _ in 1:num_faces(p) ]
+  fixed_coords_to_face = _compute_fixed_coords_to_face(p,Val(D))
+
+  # For Curl and Div conformity, some faces cannot own any shape functions,
+  # e.g. the faces orthogonal to eₓ cannot own a Curl-conform shape function with
+  # non-zero eₓ components, so _compute_mask(Val(D), 1, CurlConformity()) returns
+  #   (true, false, ..., false)
+  # to indicate that the ownership along x-axis is ignored for the first component.
+  # This also ensures that no vertex can own a Curl-conforming function and that
+  # only facets and interior can own a Div-conforming function, as expected.
+  function _compute_mask(VD, d, conf)
+    conf isa GradConformity && return MVector(tfill(true, VD))
+    conf isa CurlConformity && return MVector(ntuple(i -> i==d, VD))
+    conf isa DivConformity  && return MVector(ntuple(i -> i!=d, VD))
+  end
+
+  K = get_order(b)
+  s0_owned, s1_owned = _SEGMENT_vertex_own_fun(PT,K)
+  id = 1
+  for (d,terms) in enumerate(Polynomials.get_comp_terms(b))
+    mask = _compute_mask(Val(D),d,conf)
+    for ci in terms
+      own_coords = ntuple(
+        i ->           mask[i] ? _Vi :
+             ci[i] == s0_owned ? _V0 :
+             ci[i] == s1_owned ? _V1 :
+                                 _Vi, Val(D))
+      face = fixed_coords_to_face[own_coords]
+
+      push!(face_own_funs[face], id)
+      id += 1
+    end
+  end
+  face_own_funs
+end
+
+function get_facet_flux_sign_flip(
+  b::CompWiseTensorPolyBasis{D,V,PT}, p::Polytope, conf::Conformity) where {D,V,PT<:GD_1D_PT}
+
+  facet_range = get_dimrange(p,D-1)
+  face_own_funs = get_face_own_funs(b,p,conf)
+  sign_flip = MVector(tfill(1, Val(length(b)))...)
+
+  for (face, own_funs) in enumerate(face_own_funs)
+    if face ∈ facet_range
+      # empirically determined, see tests
+      sign_flip[own_funs] .= iseven(face-first(facet_range)) ? -1 : 1
+    end
+  end
+
+  sign_flip = Diagonal(sign_flip)
+end
+
+
+# Helper
+
+function _validate_sh_is_pb(sh_is_pb, shapefuns, p, conf; dowarn=true)
+  if sh_is_pb && !has_geometric_decomposition(shapefuns, p, conf)
+    dowarn && @warn """
+      `sh_is_pb=true` was requested, but the constructed basis do not implement the
+      geometric decomposition, falling back to `sh_is_pb=false`.
+
+      p: $p,
+      conformity: $conf,
+      basis: $shapefuns,
+      $(sprint(Base.show_backtrace, stacktrace()))
+    """
+    return false
+  end
+  sh_is_pb
+end
+

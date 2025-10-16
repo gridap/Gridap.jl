@@ -10,7 +10,7 @@
 Type representing a basis of a (an)isotropic `D`-multivariate `V`-valued
 cartesian product polynomial space
 
-`V`(𝕊, 𝕊, ..., 𝕊)
+`V`(𝕊, ∅, ..., ∅) ⊕ `V`(∅, 𝕊, ∅, ..., ∅) ⊕ ... ⊕ `V`(∅, ..., ∅, 𝕊)
 
 where the scalar space 𝕊 is a (subspace of a) tensor product space of an
 univariate polynomial basis.
@@ -127,11 +127,6 @@ function get_exponents(b::CartProdPolyBasis)
   Tuple(Tuple(t) .- indexbase for t in b.terms)
 end
 
-"""
-    get_orders(b::CartProdPolyBasis)
-
-Return the D-tuple of polynomial orders in each spatial dimension
-"""
 function get_orders(b::CartProdPolyBasis)
   b.orders
 end

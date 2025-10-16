@@ -37,6 +37,7 @@ function get_own_nodes_permutations(reffe::GenericLagrangianRefFE{GradConformity
   p = get_polytope(reffe)
   face_own_nodes = get_face_own_nodes(reffe)
   dofs = get_dof_basis(reffe)
+  dofs = dofs isa LinearCombinationDofVector ? dofs.predofs : dofs
   interior_nodes = dofs.nodes[face_own_nodes[end]]
   compute_own_nodes_permutations(p,interior_nodes)
 end
@@ -214,6 +215,7 @@ This constructor requires `typeof(p)` to implement the following additional
 methods. They are currently implemented for `ExtrusionPolytope`.
 
 - [`compute_monomial_basis(::Type{T}, p::Polytope, orders) where T`](@ref)
+- [`compute_poly_basis(::Type{T}, p::Polytope, orders; poly_type<:Polynomial) where T`](@ref)
 - [`compute_own_nodes(p::Polytope, orders)`](@ref)
 - [`compute_face_orders(p::Polytope, face::Polytope, iface::Int, orders)`](@ref)
 
@@ -231,17 +233,20 @@ and can be overloaded.
 - [`compute_own_nodes_permutations(p::Polytope, interior_nodes)`](@ref)
 - [`compute_lagrangian_reffaces(::Type{T}, p::Polytope, orders) where T`](@ref)
 """
-function LagrangianRefFE(::Type{T},p::Polytope{D},orders;space::Symbol=_default_space(p)) where {T,D}
+function LagrangianRefFE(::Type{T},p::Polytope{D},orders;space::Symbol=_default_space(p),
+  poly_type=Monomial) where {T,D}
+
   if space == :P && is_n_cube(p)
-    return _PDiscRefFE(T,p,orders)
+    return _PDiscRefFE(T,p,orders,poly_type)
   elseif space == :S && is_n_cube(p)
-    SerendipityRefFE(T,p,orders)
+    SerendipityRefFE(T,p,orders; poly_type)
   else
     if any(map(i->i==0,orders)) && !all(map(i->i==0,orders))
+      @check poly_type == Monomial "Continuous-Discontinuous element only implemented using Monomial pre-bases, got $poly_type."
       cont = map(i -> i == 0 ? DISC : CONT,orders)
       return _cd_lagrangian_ref_fe(T,p,orders,cont)
     else
-      return _lagrangian_ref_fe(T,p,orders)
+      return _lagrangian_ref_fe(T,p,orders,poly_type)
     end
   end
 end
@@ -259,15 +264,15 @@ function ReferenceFE(
   ::Lagrangian,
   ::Type{T},
   orders::Union{Integer,Tuple{Vararg{Integer}}};
-  space::Symbol=_default_space(polytope)) where T
+  kwargs...) where T
 
-  LagrangianRefFE(T,polytope,orders;space=space)
+  LagrangianRefFE(T,polytope,orders; kwargs...)
 end
 
 
-function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders) where {T,D}
+function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders,poly_type) where {T,D}
 
-  prebasis = compute_monomial_basis(T,p,orders)
+  basis = compute_poly_basis(T,p,orders,poly_type)
   nodes, face_own_nodes = compute_nodes(p,orders)
   dofs = LagrangianDofBasis(T,nodes)
   reffaces = compute_lagrangian_reffaces(T,p,orders)
@@ -289,14 +294,12 @@ function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders) where {T,D}
   reffe = GenericRefFE{typeof(conf)}(
     ndofs,
     p,
-    prebasis,
+    basis, # pre-basis
     dofs,
     conf,
     metadata,
     face_dofs)
-
   GenericLagrangianRefFE(reffe,face_nodes)
-
 end
 
 function monomial_basis(::Type{T},p::Polytope,orders) where T
@@ -377,9 +380,11 @@ end
 
 # Constructors taking Int
 
-function LagrangianRefFE(::Type{T},p::Polytope{D},order::Int;space::Symbol=_default_space(p)) where {T,D}
+function LagrangianRefFE(::Type{T},p::Polytope{D},order::Int;space::Symbol=_default_space(p),
+  poly_type=Monomial) where {T,D}
+
   orders = tfill(order,Val{D}())
-  LagrangianRefFE(T,p,orders;space=space)
+  LagrangianRefFE(T,p,orders; space, poly_type)
 end
 
 function monomial_basis(::Type{T},p::Polytope{D},order::Int) where {D,T}
@@ -400,10 +405,30 @@ end
 
 Returns the monomial basis of value type `T` and order per direction described
 by `orders` on top of `p`.
+
+It is used to determine the nodes of the Lagrangian element.
 """
 function compute_monomial_basis(::Type{T},p::Polytope,orders) where T
   @abstractmethod
 end
+
+"""
+    compute_poly_basis(::Type{T}, p::Polytope, orders, poly_type)
+
+Returns the function-space (pre-)basis of value type `T` and order per direction described
+by `orders` on top of `p`.
+
+It is used for the default approximation space of the Lagrangian element.
+It fallsback to `compute_monomial_basis(T,p,orders)` when `poly_type==Monomial`.
+"""
+function compute_poly_basis(::Type{T},p::Polytope,orders, poly_type) where T
+  @abstractmethod
+end
+
+function compute_poly_basis(::Type{T},p::ExtrusionPolytope{D},orders,::Type{Monomial}) where {D,T}
+  compute_monomial_basis(T,p,orders)
+end
+
 
 """
     compute_own_nodes(p::Polytope{D}, orders) -> Vector{Point{D,Float64}}
@@ -609,6 +634,21 @@ function compute_monomial_basis(::Type{T},p::ExtrusionPolytope{D},orders) where 
   terms = _monomial_terms(extrusion,orders)
   MonomialBasis(Val(D),T,orders,terms)
 end
+
+function compute_poly_basis(::Type{T},p::ExtrusionPolytope{D},orders,poly_type) where {D,T}
+  @check allequal(orders) "Heterogeneous order only implemented for `Monomial` pre-basis."
+  r = iszero(D) ? 0 : first(orders)
+  F = if is_simplex(p)
+    :P
+  elseif is_n_cube(p)
+    :Q⁻
+  else
+    @notimplemented "Non `Monomial` pre-basis only available on simplices and n-cubes"
+  end
+  cart_prod = T <: MultiValue
+  FEEC_poly_basis(Val(D),T,r,0,F,poly_type;cart_prod) # FᵣΛ⁰(□ᴰ)
+end
+
 
 function compute_own_nodes(p::ExtrusionPolytope{D},orders) where D
   extrusion = Tuple(p.extrusion)

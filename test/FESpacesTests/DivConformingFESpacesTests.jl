@@ -114,6 +114,33 @@ end
 
   order = 1
 
+  reffe = ReferenceFE(HEX,raviart_thomas,order)
+
+  domain = (0,1,0,2,-1,2)
+  partition = (3,3,2)
+  model = CartesianDiscreteModel(domain,partition)
+
+  V = FESpace(model,reffe,conformity=DivConformity())
+  test_single_field_fe_space(V)
+  U = TrialFESpace(V,u)
+
+  reffe = ReferenceFE(lagrangian,Float64,order)
+  Q = TestFESpace(model,reffe,conformity=:L2)
+  P = TrialFESpace(Q)
+
+  v3(x) = VectorValue(-0.5*x[1]+1.0,-0.5*x[2],-0.5*x[3])
+  vh = interpolate(v3,V)
+  e = v3 - vh
+
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω,2*order)
+
+  el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
+  @test el2 < 1.0e-10
+
+  test_div_v_q_equiv(U,V,P,Q,Ω)
+
+
   reffe = ReferenceFE(TET,raviart_thomas,order)
 
   domain = (0,1,0,2,-1,2)

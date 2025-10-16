@@ -819,8 +819,11 @@ end
 
 function get_face_coordinates(p::Polytope)
   D = num_cell_dims(p)
-  p = [ get_face_coordinates(p,d) for d in 0:D ]
-  vcat(p...)
+  v = Vector{Point{D,Float64}}[]
+  for d in 0:D
+    append!(v, get_face_coordinates(p,d))
+  end
+  v
 end
 
 # Aggregate own data into faces

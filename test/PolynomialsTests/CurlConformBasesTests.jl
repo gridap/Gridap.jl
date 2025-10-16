@@ -26,6 +26,7 @@ b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,PT)
 
 @test length(b) == 4
 @test get_order(b) == 1
+@test get_orders(b) == (1,1)
 @test testvalue(typeof(b)) isa typeof(b)
 
 V = VectorValue{D,T}

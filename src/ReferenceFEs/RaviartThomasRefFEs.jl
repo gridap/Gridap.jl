@@ -16,29 +16,31 @@ const raviart_thomas = RaviartThomas()
 Pushforward(::Type{RaviartThomas}) = ContraVariantPiolaMap()
 
 """
-    RaviartThomasRefFE(::Type{T}, p::Polytope, order::Integer; sh_is_pb=true)
+    RaviartThomasRefFE(::Type{T}, p::Polytope, order::Integer; kwargs...)
 
 The `order` argument has the following meaning: the divergence of the functions
 in this basis is in the Q space of degree `order`. `T` is the type of scalar components.
 
-`sh_is_pb` is only used if `p` is a simplex.
+The `kwargs` are [`sh_is_pb`](@ref "`sh_is_pb` keyword argument"),
+[`poly_type`](@ref "`poly_type` keyword argument") and
+[`mom_poly_type`](@ref "`mom_poly_type` keyword argument").
 """
 function RaviartThomasRefFE(
-  ::Type{T},p::Polytope{D},order::Integer; sh_is_pb=true) where {T,D}
+  ::Type{T},p::Polytope{D},order::Integer;
+  sh_is_pb=true, poly_type=_mom_reffe_default_PT(p), mom_poly_type=poly_type) where {T,D}
 
+  PT, MPT = poly_type, mom_poly_type
   rotate_90 = D==2
   k = D-1
 
   if is_n_cube(p)
-    PT = Legendre # Could be a Kwargs, any basis works
     prebasis =     FEEC_poly_basis(Val(D),  T,order+1,k,:Q⁻,PT; rotate_90) # Q⁻ᵣΛᵏ(□ᴰ), r = order+1
-    fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:Q⁻,PT)            # Facet basis Q⁻ᵨΛ⁰(□ᴰ⁻¹), ρ = r-1
-    cb = order>0 ? FEEC_poly_basis(Val(D),  T,order  ,1,:Q⁻,PT) : nothing  # Cell basis  Q⁻ᵨΛ¹(□ᴰ),   ρ = r-1
+    fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:Q⁻,MPT)            # Facet basis Q⁻ᵨΛ⁰(□ᴰ⁻¹), ρ = r-1
+    cb = order>0 ? FEEC_poly_basis(Val(D),  T,order  ,1,:Q⁻,MPT) : nothing  # Cell basis  Q⁻ᵨΛ¹(□ᴰ),   ρ = r-1
   elseif is_simplex(p)
-    PT = Bernstein # Could be a Kwargs, any basis works
     prebasis =     FEEC_poly_basis(Val(D),  T,order+1,k,:P⁻,PT; rotate_90) # P⁻ᵣΛᵏ(△ᴰ), r = order+1
-    fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:P ,PT)            # Facet basis PᵨΛ⁰(△ᴰ⁻¹), ρ = r-1
-    cb = order>0 ? FEEC_poly_basis(Val(D),  T,order-1,1,:P ,PT) : nothing  # Cell basis  PᵨΛ¹(△ᴰ),   ρ = r-2
+    fb =           FEEC_poly_basis(Val(D-1),T,order  ,0,:P ,MPT)            # Facet basis PᵨΛ⁰(△ᴰ⁻¹), ρ = r-1
+    cb = order>0 ? FEEC_poly_basis(Val(D),  T,order-1,1,:P ,MPT) : nothing  # Cell basis  PᵨΛ¹(△ᴰ),   ρ = r-2
   else
     @notimplemented "Raviart-Thomas Reference FE only available for n-cubes and simplices"
   end
@@ -59,12 +61,13 @@ function RaviartThomasRefFE(
     push!(moments,(get_dimrange(p,D),cmom,cb)) # Cell moments
   end
 
-  sh_is_pb = sh_is_pb && is_simplex(p)
-  return MomentBasedReferenceFE(RaviartThomas(),p,prebasis,moments,DivConformity(); sh_is_pb)
+  conf = DivConformity()
+  sh_is_pb = _validate_sh_is_pb(sh_is_pb, prebasis, p, conf)
+  return MomentBasedReferenceFE(RaviartThomas(),p,prebasis,moments,conf; sh_is_pb)
 end
 
-function ReferenceFE(p::Polytope,::RaviartThomas,::Type{T},order;kwargs...) where T
-  RaviartThomasRefFE(T,p,order;kwargs...)
+function ReferenceFE(p::Polytope,::RaviartThomas,::Type{T},order; kwargs...) where T
+  RaviartThomasRefFE(T,p,order; kwargs...)
 end
 
 function Conformity(reffe::GenericRefFE{RaviartThomas},sym::Symbol)

@@ -30,6 +30,8 @@ The following table summarizes the elements implemented in Gridap (legend below)
 |                                                                                         |                                              | 𝓠ᵣ⁻Λ⁰     | ``\square`` | ``{r=o≥1, o}``  | `:H1`     |
 | [ModalC0](https://doi.org/10.48550/arXiv.2201.06632)                                    | [`modalC0`](@ref ModalC0RefFE)               | 𝓠ᵣ⁻Λ⁰     | ``\square`` | ``{r=o≥1, o}``  | `:H1`     |
 |                                                                                                                                                                                                |
+| [ModalScalar](@ref "Modal and nodal scalar reference elements")                         | [`ModalScalar{F}()`](@ref ModalC0RefFE)      | FᵣΛ⁰    | △,``\square`` | ``{r=o≥1, o}``  | `:H1`     |
+|                                                                                                                                                                                                |
 | [Nédélec (first kind)](https://defelement.org/elements/nedelec1.html)                   | [`nedelec`](@ref NedelecRefFE)               | 𝓟ᵣ⁻Λ¹     | `TRI`,`TET` | ``{r=o+1≥1, r}``| `:Hcurl`  |
 |                                                                                         |                                              | 𝓠ᵣ⁻Λ¹     | `QUAD`,`HEX`| ``{r=o+1≥1, r}``| `:Hcurl`  |
 | [Nédélec (second kind)](https://defelement.org/elements/nedelec2.html)                  | [`nedelec2`](@ref NedelecRefFE)                                       | 𝓟ᵣΛ¹      | `TRI`,`TET` | ``{r=o≥1,   r}``| `:Hcurl`  |
@@ -39,18 +41,18 @@ The following table summarizes the elements implemented in Gridap (legend below)
 | [Brezzi-Douglas-Marini](https://defelement.org/elements/brezzi-douglas-marini.html)     | [`bdm`](@ref BDMRefFE)                       | 𝓟ᵣΛᴰ⁻¹    | `TRI`,`TET` | ``{r=o≥1,   r}``| `:Hdiv`   |
 | [Mardal-Tai-Winther](https://defelement.org/elements/mardal-tai-winther.html)           | `TODO` `mtw`                                 |           | `TRI`,`TET` | ``{o=1, D+1}``  | `:Hdiv`   |
 |                                                                                                                                                                                                |
-| [Crouzeix-Raviart](https://defelement.org/elements/crouzeix-raviart.html)               |[`couzeix_raviart`](@ref CrouzeixRaviartRefFE)|           |  `TRI`      | ``{o=1, o}``    | `:L2`     |
+| [Crouzeix-Raviart](https://defelement.org/elements/crouzeix-raviart.html)               |[`crouzeix_raviart`](@ref CrouzeixRaviartRefFE)|          |  `TRI`      | ``{o=1, o}``    | `:L2`     |
 | [discontinuous Lagrangian](https://defelement.org/elements/discontinuous-lagrange.html) | [`lagrangian`](@ref LagrangianRefFE)         | 𝓟ᵣ⁻Λᴰ     | △           | ``{r-1=o≥0, o}``| `:L2`     |
 |                                                                                         |                                              | 𝓟ᵣΛᴰ      | △           | ``{r=o≥0, o}``  | `:L2`     |
 |                                                                                         |                                              | 𝓠ᵣ⁻Λᴰ     | ``\square`` | ``{r-1=o≥0, o}``| `:L2`     |
-|                                                                                         |                                              | 𝓢ᵣΛᴰ      | ``\square`` | ``{r=o≥0, o}``  | `:L2`     |
-| [MINI bubble](@ref "Bubble reference FE")                                               | [`bubble`](@ref BubbleRefFE)                 |           |△,``\square``| ``{o=1, 2}``    | `:L2`     |
+|                                                                                         | kwarg `space=:P`                             | 𝓢ᵣΛᴰ      | ``\square`` | ``{r=o≥0, o}``  | `:L2`     |
+| [MINI bubble](@ref "Bubble reference element")                                               | [`bubble`](@ref BubbleRefFE)                 |           |△,``\square``| ``{o=1, 2}``    | `:L2`     |
 | Bezier, ModalC0                                                                         | as above                                     |           |             | ``{o≥0, o}``    | `:L2`     |
 |                                                                                                                                                                                                |
 | [Arnold-Winther](https://defelement.org/elements/arnold-winther.html)                   | `TODO`  `arnoldwinther`                      |           | `TRI`       | ``{o=2, 4}``    | `:Hdiv`   |
 | [Hellan-Herrmann-Jhonson](https://defelement.org/elements/hellan-herrmann-johnson.html) | `TODO`  `hhj`                                |           | `TRI`       | ``{TODO, o}``   | `:Hdiv`   |
 
-###### Legend
+##### Legend
 
 - Name: usual name of the element and link to its
     [DefElement](https://defelement.org/) page, containing all the details
@@ -65,25 +67,76 @@ The following table summarizes the elements implemented in Gridap (legend below)
 - Order: ( _definition of ``r`` and ``o``_; _``k``_ ) where
   - ``r`` is the FEEC polynomial degree parameter (if defined).
   - ``o`` is the `order` parameter of the non FEEC `ReferenceFE` constructor (using [`name::ReferenceFEName`](@ref ReferenceFEName)),
-  - ``k`` is the maximum polynomial order of the shape functions in one direction (Lagrange superdegree), defined in function of `k` or `o`,
+  - ``k`` is the maximum polynomial order of the shape functions in one direction (Lagrange superdegree), defined in function of ``r`` or ``o``,
 - Conformity: supported [`Conformity`](@ref). All the elements also implement `:L2` conformity.
 
-##### Additional information
+#### Additional information
+
+###### Anisotropic and Cartesian product elements
 
 The `lagrangian`, `modalC0` and `bezier` elements support anisotropic orders on
 `QUAD` and `HEX`, leveraging the tensor product basis in each dimension.
 
-Also, a Cartesian product finite-element space is available for `lagrangian`,
-`serendipity` and `modalC0` elements, for all polytopes. It means that a tensor
-type ([`<:MultiValue`](@ref Gridap.TensorValues)) can be given as value type
+Also, a Cartesian product finite-element space is available for all the `:H1`
+conforming elements, for all polytopes. It means that a tensor type
+([`<:MultiValue`](@ref Gridap.TensorValues)) can be given as value type
 argument `T`, for example `VectorValue{3,Float64}` or
 `SymTensorValue{2,Float64}`. The DoFs are duplicated for each independent
 component of the tensor.
 
-The `modalC0` element has the particularity that it's polytope and thus the
-shape function support can be adapted to the physical element.
+The `modalC0` element has the particularity that the support of its
+shape-function can be scaled to be adapted to the physical element.
 
-###### Bubble reference FE
+###### `poly_type` keyword argument
+
+The `lagrangian`, `nedelec`, `raviart_thomas`, `bdm`, `serendipity`, and
+`modal_scalar` element constructors support the `poly_type::Type{<:Polynomial}`
+keyword argument, which gives the choice of the polynomial family to use as
+(pre-)basis for the approximation space of the element. This changes the
+*basis* but not the spanned polynomial *space* (for affine-mapped reference
+elements).
+
+`poly_type` defaults to `Bernstein` on simplices and to `ModalC0` on n-cubes
+(incl. `SEGMENT`), except for `lagrangian` and `serendipity` elements for which
+it defaults to `Monomial`.
+
+###### `mom_poly_type` keyword argument
+
+Additionally, the `modal_scalar`, `nedelec`, `raviart_thomas`, `bdm` element
+constructors support the `mom_poly_type::Type{<:Polynomial}` keyword argument,
+which gives the choice of the polynomial basis to use as "test" polynomials in
+the moment functionals defining the DoFs (``q`` in [1, eq. (2)]).
+
+`mom_poly_type` defaults to `poly_type`.
+
+###### `sh_is_pb` keyword argument
+
+The `sh_is_pb::Bool` argument is available for reference FEs using moment based
+DoFs, to tell the constructor to use the polynomial basis directly as
+shape-functions basis, and to define the DoFs as a change of basis from the
+usual DoF (treating them as "pre-"DoFs). It is available, and defaults to
+`true`, for `modal_scalar`, `nedelec`, `raviart_thomas` and `bdm` elements. See
+the [Geometric decompositions](@ref "Geometric decompositions") section for
+more detail.
+
+The `mom_poly_type` and `poly_type` keywords change the choice of DoF *basis*
+when `sh_is_pb` is `false` and `true` respectively, but not the DoF *space*
+(polynomial space dual).
+
+##### Modal and nodal scalar reference elements
+
+`lagrangian`, `modalC0`, `bezier` and `serendipity` are nodal elements.
+`lagrangian` and `serendipity` can be constructed via the constructor using
+FEEC notations by passing the keyword argument `nodal=true`.
+
+By default, `nodal` is `false`, so these FEEC constructors return
+`modal_scalar` ([`ModalScalar{F}()`](@ref ModalScalarRefFE)) elements whose DOFs
+are the FEEC moments described in [1].
+
+The `ModalScalar` elements support all `poly_type`, `mom_poly_type` and `sh_is_pb`
+keyword arguments, while the nodal ones only support `poly_type`.
+
+###### Bubble reference element
 
 The [`BubbleRefFE`](@ref) currently implements bubble space for MINI element,
 but the bubble can be fine-tuned. The MINI element on `TRI`angle is documented
@@ -172,17 +225,10 @@ Pages   = ["LagrangianRefFEs.jl","LagrangianDofBases.jl","SerendipityRefFEs.jl",
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["MomentBasedReferenceFEs.jl","GeometricDecompitions.jl"]
+Pages   = ["MomentBasedReferenceFEs.jl"]
 ```
 
 ##### Geometric decompositions
-
-The kwarg `sh_is_pb=true` means that the shape functions are defined as the
-basis polynomials of the pre-basis, the basis must verify a geometric
-decomposition. `sh_is_pb` is only available for BDM, Raviart-Thomas and
-Nédélec elements, and set to true by default on simplices. Otherwise, if
-`sh_is_pb=false`, the shape functions are defined as the dual basis of the DoF
-basis.
 
 The geometric decomposition API consist in the methods
 - [`has_geometric_decomposition(polybasis,p,conf)`](@ref),
@@ -190,20 +236,35 @@ The geometric decomposition API consist in the methods
 - [`get_facet_flux_sign_flip(polybasis,p,conf)`](@ref).
 where `polybasis` is a polynomial basis, `p` a polytope and `conf` a conformity.
 
-This API ensures that each polynomial `𝑝ᵢ` of the basis are all associated to a
-face of `p`, such that the `conf`-trace of `𝑝ᵢ` (scalar trace, tangential trace,
-normal trace) over another face `g` of `p` is zero whenever `g` does not
-contain `f`, and that these polynomial can be glued together with conformity
-`conf` in the physical space.
+This API ensures that:
+- each polynomial ``𝑝_i`` of the basis is associated to a face ``f`` of `p`,
+- the `conf`-trace of ``𝑝_i`` (scalar trace, tangential trace,
+    normal trace) over another face ``g`` of `p` is zero whenever ``g`` does not
+    contain ``f``, and
+- the polynomials owned by boundary faces can be glued together with conformity
+    `conf` in the physical space.
 
-Currently, only [`BernsteinBasisOnSimplex`](@ref),
-[`BarycentricPmΛBasis`](@ref) and [`BarycentricPΛBasis`](@ref) implement it,
-see also Bernstein basis [Geometric decomposition](@ref "Geometric
-decomposition"). It could be easily generalized to bases on n-cubes.
+The bases that currently support the geometric decomposition are:
+- those of ``P^-Λ^k`` and ``PΛ^k`` spaces for `Bernstein` polynomial type (on simplices), see also Bernstein basis [Geometric decomposition](@ref "Geometric decomposition"),
+- those of ``Q^-Λ^k`` spaces for `ModalC0` and `Bernstein` polynomial types (on n-cubes),
+- those of ``SΛ^0`` spaces for `ModalC0` polynomial types (on n-cubes).
+
+The keyword argument `sh_is_pb=true` means that, if possible, the shape
+functions are defined as the basis polynomials of the pre-basis. This is
+possible if the pre-basis verifies a geometric decomposition. Setting
+`sh_is_pb=false` forces the shape functions to be defined as the dual basis of
+the DoF basis. This kwarg do not alter the polynomial space and dual space
+respectively spanned by the shape-functions and the DoFs basis, but does change
+the DoF basis choice for the dual space.
+
+The kwarg `sh_is_pb` is available for Lagrangian, BDM, Raviart-Thomas, Nédélec
+and Serendipity elements. It defaults to true except for Lagrangian and
+Serendipity. `sh_is_pb` is ignored if the pre-basis for the given `poly_type <:
+Polynomial` does not admit the geometric decomposition.
 
 ```@autodocs
 Modules = [ReferenceFEs,]
-Order   = [:type, :constant, :macro, :function]
+Order   = [:type, :macro, :function, :constant]
 Pages   = ["GeometricDecompositions.jl"]
 ```
 
@@ -212,7 +273,7 @@ Pages   = ["GeometricDecompositions.jl"]
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CrouzeixRaviartRefFEs.jl"]
+Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CrouzeixRaviartRefFEs.jl","ModalScalarRefFEs.jl"]
 ```
 
 ## References

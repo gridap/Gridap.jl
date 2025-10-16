@@ -192,6 +192,11 @@ function HDiv_facet_tr_norm(φ,_,ds) # tr_F(φ) = ∫ ‖φ⋅n‖ dF
   Broadcasting(Operation(norm))(φn)
 end
 
+function HDiv_facet_flux(φ,_,ds) #  ∫ φ⋅n dF
+  n = get_facet_normal(ds)
+  Broadcasting(Operation(⋅))(φ,n)
+end
+
 
 # zero form on each face
 function get_trace_forms(p::Polytope{D}, field, ::L2Conformity) where D
@@ -232,10 +237,21 @@ function get_trace_forms(p::Polytope{D}, field, ::DivConformity) where D
   FaceIntegralFormVector(p,qorder,trace_forms)
 end
 
+function get_normal_flux_forms(p::Polytope{D}, field) where D
+  facet_range = get_dimrange(p,D-1)
+  fun_flux_form = Tuple[ (facet_range, HDiv_facet_flux)  ]
+  qorder = get_order(field)+2
+  FaceIntegralFormVector(p,qorder,fun_flux_form)
+end
+
 
 # Traces Test function
-function _test_geometric_decomposition(b,p,conf,face_own_funs=get_face_own_funs(b,p,conf))
-  @test has_geometric_decomposition(b,p,conf)
+function _test_geometric_decomposition(b,p,conf,
+  face_own_funs=get_face_own_funs(b,p,conf), skip_check=false)
+
+  if !skip_check
+    @test has_geometric_decomposition(b,p,conf)
+  end
 
   faces = get_faces(p)
   tr_forms = get_trace_forms(p,b,conf) # one form for each face in faces
@@ -261,14 +277,42 @@ function _test_geometric_decomposition(b,p,conf,face_own_funs=get_face_own_funs(
     end
   end
   @test pass
+
+  # test get_facet_flux_sign_flip
+  if conf isa DivConformity
+    normal_flux_forms = get_normal_flux_forms(p,b)
+    b_nrm_fluxes = evaluate(normal_flux_forms, b)
+
+    D = num_dims(p)
+    facet_range = get_dimrange(p,D-1)
+    facet_own_funs = face_own_funs[facet_range]
+
+    sign_flip = diag(get_facet_flux_sign_flip(b,p,conf))
+    fun_per_facet = length(first(facet_own_funs))
+    n_facets = length(facet_range)
+    own_flux_signs = Matrix{Float64}(undef, (n_facets,fun_per_facet))
+
+    for (lfacet, own_funs) in enumerate(facet_own_funs)
+      own_flux_signs[lfacet,:] = sign_flip[own_funs] .* sign.(b_nrm_fluxes[lfacet,own_funs])
+    end
+    # The (corrected) flux sign of the iᵗʰ fun of a facet must be the same as
+    # the iᵗʰ fun of all other facets, so we check that each column has allequal
+    # signs (for all columns).
+    @test mapreduce(allequal, &, eachcol(own_flux_signs))
+
+    # As it is currently written, this test is only meant to pass if all facets
+    # have the same bubble space. In case of anysotropic basis on `p`
+    # (non-uniform h-adaptivity), only facets of same degree / same bubble space
+    # could be compared
+  end
 end
 
-order = 2
-r = order+1
+r = 3
 et = Float64
 tol = 1000*eps(et)
 
 SIMPL4 = ExtrusionPolytope(tfill(TET_AXIS,Val(4)))
+NCUBE4 = ExtrusionPolytope(tfill(HEX_AXIS,Val(4)))
 
 ##################################
 # Grad conforming decompositions #
@@ -278,7 +322,6 @@ conf = GradConformity()
 
 for p in (SEGMENT,TRI,TET,SIMPL4)
   D = num_dims(p)
-  k =  0 # 0 forms
 
   b = BernsteinBasisOnSimplex(Val(D),et,r)
   _test_geometric_decomposition(b,p,conf)
@@ -293,6 +336,32 @@ for p in (SEGMENT,TRI,TET,SIMPL4)
   _test_geometric_decomposition(b,p,conf)
 end
 
+ModalC0 = Polynomials.ModalC0
+
+# non-zero trace on both x=0. and 1. sides
+b = CartProdPolyBasis(ModalC0,Val(2),et,(0,1))
+@test !has_geometric_decomposition(b,QUAD,conf)
+
+for p in (SEGMENT,QUAD,HEX,NCUBE4)
+  D = num_dims(p)
+
+  b = CartProdPolyBasis(ModalC0,  Val(D),et,r)
+  _test_geometric_decomposition(b,p,conf)
+
+  b = CartProdPolyBasis(Bernstein,Val(D),et,r)
+  _test_geometric_decomposition(b,p,conf)
+
+  b = CartProdPolyBasis(ModalC0,  Val(D),et,r, Polynomials._ser_filter)
+  _test_geometric_decomposition(b,p,conf)
+
+  b = CartProdPolyBasis(ModalC0,  Val(D), SkewSymTensorValue{3,et}, r)
+  _test_geometric_decomposition(b,p,conf)
+
+  b = CartProdPolyBasis(Bernstein,Val(D), SkewSymTensorValue{3,et}, r)
+  _test_geometric_decomposition(b,p,conf)
+end
+
+
 #########################################
 # Curl Conform Geometric decompositions #
 #########################################
@@ -303,10 +372,29 @@ for p in (SEGMENT,TRI,TET) #,SIMPL4)
   D = num_dims(p)
   k = 1
 
-  b = BarycentricPmΛBasis(Val(D),et,r,k)
+  b = BarycentricPmΛBasis(Val(D),et,r,k) # Nédélec
   _test_geometric_decomposition(b,p,conf)
 
-  b = BarycentricPΛBasis(Val(D),et,r,k)
+  b = BarycentricPΛBasis(Val(D),et,r,k)  # Nédélec 2nd kind
+  _test_geometric_decomposition(b,p,conf)
+end
+
+D=2
+V = VectorValue{D,et}
+orders = [ (i==j ? 0 : 1) for i in 1:D, j in 1:D ]
+b = CompWiseTensorPolyBasis{D}(ModalC0,V,orders)   # RT
+@test !has_geometric_decomposition(b,QUAD,GradConformity())
+@test !has_geometric_decomposition(b,QUAD,DivConformity())
+
+for p in (QUAD,HEX)
+  D = num_dims(p)
+  V = VectorValue{D,et}
+  orders = [ r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D ]
+
+  b = CompWiseTensorPolyBasis{D}(ModalC0,V,orders)   # Nédélec
+  _test_geometric_decomposition(b,p,conf)
+
+  b = CompWiseTensorPolyBasis{D}(Bernstein,V,orders) # Nédélec
   _test_geometric_decomposition(b,p,conf)
 end
 
@@ -321,10 +409,29 @@ for p in (TRI,TET,SIMPL4)
   k = D-1 # flux forms
   rotate_90 = D==2
 
-  b = BarycentricPmΛBasis(Val(D),et,r,k; rotate_90)
+  b = BarycentricPmΛBasis(Val(D),et,r,k; rotate_90) # RT
   _test_geometric_decomposition(b,p,conf)
 
-  b = BarycentricPΛBasis(Val(D),et,r,k; rotate_90)
+  b = BarycentricPΛBasis(Val(D),et,r,k; rotate_90)  # BDM
+  _test_geometric_decomposition(b,p,conf)
+end
+
+D=2
+V = VectorValue{D,et}
+orders = [ (i==j ? 1 : 0) for i in 1:D, j in 1:D ]
+b = CompWiseTensorPolyBasis{D}(ModalC0,V,orders)   # RT
+@test !has_geometric_decomposition(b,QUAD,GradConformity())
+@test !has_geometric_decomposition(b,QUAD,CurlConformity())
+
+for p in (QUAD,HEX)
+  D = num_dims(p)
+  V = VectorValue{D,et}
+  orders = [ r-1 + (i==j ? 1 : 0) for i in 1:D, j in 1:D ]
+
+  b = CompWiseTensorPolyBasis{D}(ModalC0,V,orders)   # RT
+  _test_geometric_decomposition(b,p,conf)
+
+  b = CompWiseTensorPolyBasis{D}(Bernstein,V,orders) # RT
   _test_geometric_decomposition(b,p,conf)
 end
 

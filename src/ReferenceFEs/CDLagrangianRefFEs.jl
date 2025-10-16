@@ -55,7 +55,6 @@ function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont) wh
   nodes, face_own_nodes = cd_compute_nodes(p,orders)
   dofs = LagrangianDofBasis(T,nodes)
 
-  nnodes = length(dofs.nodes)
   ndofs = length(dofs.dof_to_node)
 
   face_own_nodes = _compute_cd_face_own_nodes(p,orders,cont)

@@ -2,7 +2,7 @@
 # Bernstein bases algorithms Developper notes of the official documentation.
 
 """
-    FEEC_space_definition_checks(::Val{D}, T, r, k, F, rotate_90)
+    FEEC_space_definition_checks(::Val{D}, T, r, k, F, rotate_90; cart_prod=false)
 
 Check if the argument define a valid Finite Element Exterior Calculus (FEEC) polynomial space,
 as defined in the Periodic Table of the Finite Elements, `FᵣΛᵏ` in dimension `D`.
@@ -10,10 +10,16 @@ as defined in the Periodic Table of the Finite Elements, `FᵣΛᵏ` in dimensio
 The arguments are also described in [`FEEC_poly_basis`](@ref).
 """
 function FEEC_space_definition_checks(
-  ::Val{D},::Type{T},r::Integer,k::Integer,F::Symbol, rotate_90::Bool=false, DG_calc::Bool=false
+  ::Val{D},::Type{T},r::Integer,k::Integer,F::Symbol, rotate_90::Bool=false, DG_calc::Bool=false;
+  cart_prod=false
 ) where {D,T}
 
-  @check T<:Real "T needs to be <:Real since represents the scalar type, got $T"
+  if cart_prod
+    @check k in (0, D) "Cartesian product of polynomial basis only possible for `k` = 0 or `D`, got k=$k and D=$D"
+    @check T<:Number
+  else
+    @check T<:Real "T needs to be <:Real since represents the scalar type, got $T"
+  end
   @check F in (:P⁻,:P,:Q⁻,:S) "F must be either :P⁻,:P,:Q⁻ or :S, got $F."
   @check k in 0:D "The form order k must be in 0:D, got k=$k and D=$D."
   @check r ≥ 0    "The polynomial order r must be positive, got $r."
@@ -21,7 +27,7 @@ function FEEC_space_definition_checks(
   if DG_calc
     @notimplemented "A new MultiValue type and associated algebraic operations ∧/⋆/𝑑/δ need to be implemented to use form valued polynomials."
   elseif D>3 && ( 1 < k < D-1)
-    @unreachable "Vector calculus proxy of differential form bases are only available for `k`=0,1,`D`-1 and `D`, got k=$k and D=$D."
+    @unreachable "Vector calculus proxy of differential form bases are only available for `k`=0,1,`D`-1 or `D`, got k=$k and D=$D."
   end
 
   if rotate_90 && !(!DG_calc && isone(k) && D==2)
@@ -395,7 +401,7 @@ end
 # Common Implementation  #
 ##########################
 
-const _BaryPΛBasis = Union{BarycentricPmΛBasis, BarycentricPΛBasis}
+const _BaryPΛBasis{D} = Union{BarycentricPmΛBasis{D}, BarycentricPΛBasis{D}}
 
 """
     get_bubbles(b::BarycentricPmΛBasis)
@@ -408,6 +414,7 @@ They can be vizualized using [`print_indices(b)`](@ref print_indices).
 """
 get_bubbles(b::_BaryPΛBasis) = b._indices.bubbles
 get_order(b::_BaryPΛBasis) = b.r
+get_orders(b::_BaryPΛBasis{D}) where D = tfill(get_order(b), Val(D))
 
 """
     print_indices(b::BarycentricPmΛBasis, out=stdout)

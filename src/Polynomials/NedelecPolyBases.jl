@@ -11,7 +11,9 @@ Currently, the basis is implemented as the union of a CartProdPolyBasis{...,PT}
 for ℙᴰₙ and a monomial basis for x × (ℙᴰₙ \\ ℙᴰₙ₋₁)ᴰ.
 
 !!! warning
-    Using this basis is not recommanded, [`BarycentricPmΛBasis`](@ref) is better numerically conditioned for higher degrees, they are obtained by using `Bernstein` as argument of [`FEEC_poly_basis`](@ref) .
+    Using this basis is not recommanded, [`BarycentricPmΛBasis`](@ref) is better
+    numerically conditioned for higher degrees, they are obtained by using
+    `Bernstein` as argument of [`FEEC_poly_basis`](@ref) .
 
 # Examples
 These return instances of `NedelecPolyBasisOnSimplex`
@@ -28,14 +30,15 @@ struct NedelecPolyBasisOnSimplex{D,V,PT} <: PolynomialBasis{D,V,PT}
   function NedelecPolyBasisOnSimplex{D}(::Type{PT},::Type{T},order::Integer) where {D,PT<:Polynomial,T}
     @check T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
     @check isconcretetype(PT) "PT needs to be a concrete <:Polynomial type"
+    @check isHierarchical(PT) "The polynomial basis must be hierarchical for this space."
     @notimplementedif !(D in (2,3))
-    K = Int(order)+1
     V = VectorValue{D,T}
     new{D,V,PT}(Int(order))
   end
 end
 
 get_order(f::NedelecPolyBasisOnSimplex) = f.order + 1 # Return actual maximum poly order
+get_orders(b::NedelecPolyBasisOnSimplex{D}) where D = tfill(get_order(b), Val(D))
 
 function Base.size(f::NedelecPolyBasisOnSimplex{D}) where D
   K = get_order(f)

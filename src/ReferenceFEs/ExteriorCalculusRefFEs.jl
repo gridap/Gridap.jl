@@ -3,54 +3,62 @@
 ############################################
 
 function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
-  rotate_90=false, DG_calc=false, kwargs...) where D
+  rotate_90=false, DG_calc=false, nodal::Bool=false, kwargs...) where D
 
-  FEEC_space_definition_checks(Val(D),T,r,k,F,rotate_90,DG_calc)
+  cart_prod = k in (0,D) && T <: MultiValue
+  FEEC_space_definition_checks(Val(D),T,r,k,F,rotate_90,DG_calc; cart_prod)
   if !(k==D && F∈(:P,:S))
     @check r ≥ 1 "This exterior calculus FE starts at r=1, (F,r,k) = ($F,$r,$k)"
   end
+
+  nodal && @check k in (0,D) "Nodal DOF only available for scalar FEs, i.e. k=0 or D, got k=$k, D=$D."
+  scalar = nodal ? (F==:S ? serendipity : lagrangian) : ModalScalar{F}()
 
   # This logic should keep consistent with the Table in the ReferenceFEs documentation
   (name, order) = if F == :P⁻
     @check is_simplex(p)
     if     k == 0
-      Lagrangian(), r
+      scalar, r
     elseif k == D
-      Lagrangian(), r-1
+      scalar, r-1
     elseif k == 1 && !rotate_90
-      Nedelec{1}(), r-1
+      nedelec1, r-1
     else # must be k = D-1 && rotate_90 = true if k = 1
-      RaviartThomas(), r-1
+      raviart_thomas, r-1
     end
   elseif F == :P
     @check is_simplex(p) #&& r>0
     if     k == 0
       #@check r>0 "P⁻Λᵏ starts at r=1"
-      Lagrangian(), r
+      scalar, r
     elseif k == D
-      Lagrangian(), r
+      scalar, r
     elseif k == 1 && !rotate_90
-      Nedelec{2}(), r
+      nedelec2, r
     else # must be k = D-1 && rotate_90 = true if k = 1
-      BDM(), r
+      bdm, r
     end
   elseif F == :Q⁻
     @check is_n_cube(p) #&& r>0
     if     k == 0
-      Lagrangian(), r
+      scalar, r
     elseif k == D
-      Lagrangian(), r-1
+      scalar, r-1
     elseif k == 1 && !rotate_90
-      Nedelec{1}(), r-1
+      nedelec1, r-1
     else # must be k = D-1 && rotate_90 = true if k = 1
-      RaviartThomas(), r-1
+      raviart_thomas, r-1
     end
   elseif F == :S
     @check is_n_cube(p) #&& r>0
     if     k == 0
-      Serendipity(), r
+      scalar, r
     elseif k == D
-      return ReferenceFE(p,Lagrangian(),T,r; space=:P) # ℙᴰᵣ space ≡ SᵣΛᴰ
+      if nodal
+        return ReferenceFE(p,lagrangian,T,r; space=:P, kwargs...) # ℙᴰᵣ space ≡ SᵣΛᴰ
+      else
+        @notimplemented "Modal SrΛᴰ elements are not implemented, please use nodal ones (pass `nodal=true`)."
+      end
     else
       @notimplemented "BDM on n-cubes and Serendipity Nedelec not implemented yet"
     #elseif k == 1 && !rotate_90
@@ -62,5 +70,5 @@ function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
     @unreachable
   end
 
-  ReferenceFE(p,name,order; kwargs...)
+  ReferenceFE(p,name,T,order; kwargs...)
 end

@@ -3,6 +3,7 @@ module CDLagrangianRefFEsTests
 using Gridap
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
+using Gridap.Polynomials
 using Test
 
 using Gridap.ReferenceFEs: _CDLagrangianRefFE
