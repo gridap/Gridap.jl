@@ -97,7 +97,6 @@ for D = 1:3
   @test BoundaryTriangulation(model1, mask, 1) isa AdaptedTriangulation
   @test BoundaryTriangulation(model1, faces, 1) isa AdaptedTriangulation
   @test BoundaryTriangulation(model1; tags = "boundary") isa AdaptedTriangulation
-
 end
 
 end
