@@ -30,7 +30,7 @@ The following table summarizes the elements implemented in Gridap (legend below)
 |                                                                                         |                                              | 𝓠ᵣ⁻Λ⁰     | ``\square`` | ``{r=o≥1, o}``  | `:H1`     |
 | [ModalC0](https://doi.org/10.48550/arXiv.2201.06632)                                    | [`modalC0`](@ref ModalC0RefFE)               | 𝓠ᵣ⁻Λ⁰     | ``\square`` | ``{r=o≥1, o}``  | `:H1`     |
 |                                                                                                                                                                                                |
-| [ModalScalar](@ref "Modal and nodal scalar reference elements")                                    | [`ModalScalar{F}()`](@ref ModalC0RefFE)      | FᵣΛ⁰    | △,``\square`` | ``{r=o≥1, o}``  | `:H1`     |
+| [ModalScalar](@ref "Modal and nodal scalar reference elements")                         | [`ModalScalar{F}()`](@ref ModalC0RefFE)      | FᵣΛ⁰    | △,``\square`` | ``{r=o≥1, o}``  | `:H1`     |
 |                                                                                                                                                                                                |
 | [Nédélec (first kind)](https://defelement.org/elements/nedelec1.html)                   | [`nedelec`](@ref NedelecRefFE)               | 𝓟ᵣ⁻Λ¹     | `TRI`,`TET` | ``{r=o+1≥1, r}``| `:Hcurl`  |
 |                                                                                         |                                              | 𝓠ᵣ⁻Λ¹     | `QUAD`,`HEX`| ``{r=o+1≥1, r}``| `:Hcurl`  |
@@ -77,9 +77,9 @@ The following table summarizes the elements implemented in Gridap (legend below)
 The `lagrangian`, `modalC0` and `bezier` elements support anisotropic orders on
 `QUAD` and `HEX`, leveraging the tensor product basis in each dimension.
 
-Also, a Cartesian product finite-element space is available for `lagrangian`,
-`serendipity` and `modalC0` elements, for all polytopes. It means that a tensor
-type ([`<:MultiValue`](@ref Gridap.TensorValues)) can be given as value type
+Also, a Cartesian product finite-element space is available for all the `:H1`
+conforming elements, for all polytopes. It means that a tensor type
+([`<:MultiValue`](@ref Gridap.TensorValues)) can be given as value type
 argument `T`, for example `VectorValue{3,Float64}` or
 `SymTensorValue{2,Float64}`. The DoFs are duplicated for each independent
 component of the tensor.
@@ -89,11 +89,12 @@ shape-function can be scaled to be adapted to the physical element.
 
 ###### `poly_type` keyword argument
 
-The `lagrangian`, `nedelec`, `raviart_thomas`, `bdm` and `serendipity` element
-constructors support the `poly_type::Type{<:Polynomial}` keyword argument,
-which gives the choice of the polynomial family to use as (pre-)basis for the
-approximation space of the element. This changes the *basis* but not the
-spanned polynomial *space* (for affine-mapped reference elements).
+The `lagrangian`, `nedelec`, `raviart_thomas`, `bdm`, `serendipity`, and
+`modal_scalar` element constructors support the `poly_type::Type{<:Polynomial}`
+keyword argument, which gives the choice of the polynomial family to use as
+(pre-)basis for the approximation space of the element. This changes the
+*basis* but not the spanned polynomial *space* (for affine-mapped reference
+elements).
 
 `poly_type` defaults to `Bernstein` on simplices and to `ModalC0` on n-cubes
 (incl. `SEGMENT`), except for `lagrangian` and `serendipity` elements for which
@@ -101,11 +102,10 @@ it defaults to `Monomial`.
 
 ###### `mom_poly_type` keyword argument
 
-Additionally, the `nedelec`, `raviart_thomas` and `bdm` element constructors
-support the `mom_poly_type::Type{<:Polynomial}` keyword argument, which gives
-the choice of the polynomial basis to use as "test" polynomials in the moment
-functionals defining the DoFs (``q`` in [1, eq. (2)]). `mom_poly_type` defaults
-to `poly_type`.
+Additionally, the `modal_scalar`, `nedelec`, `raviart_thomas`, `bdm` element
+constructors support the `mom_poly_type::Type{<:Polynomial}` keyword argument,
+which gives the choice of the polynomial basis to use as "test" polynomials in
+the moment functionals defining the DoFs (``q`` in [1, eq. (2)]).
 
 `mom_poly_type` defaults to `poly_type`.
 
@@ -114,11 +114,10 @@ to `poly_type`.
 The `sh_is_pb::Bool` argument is available for reference FEs using moment based
 DoFs, to tell the constructor to use the polynomial basis directly as
 shape-functions basis, and to define the DoFs as a change of basis from the
-usual DoF (treating them as "pre-"DoFs). It is available and defaults to `true`
-for `nedelec`, `raviart_thomas` and `bdm` elements. See the [Geometric
-decompositions](@ref "Geometric decompositions") section for more detail.
-
-`sh_is_pb` defaults to `true`.
+usual DoF (treating them as "pre-"DoFs). It is available, and defaults to
+`true`, for `modal_scalar`, `nedelec`, `raviart_thomas` and `bdm` elements. See
+the [Geometric decompositions](@ref "Geometric decompositions") section for
+more detail.
 
 The `mom_poly_type` and `poly_type` keywords change the choice of DoF *basis*
 when `sh_is_pb` is `false` and `true` respectively, but not the DoF *space*
@@ -131,8 +130,8 @@ when `sh_is_pb` is `false` and `true` respectively, but not the DoF *space*
 FEEC notations by passing the keyword argument `nodal=true`.
 
 By default, `nodal` is `false`, so these FEEC constructors return
-[`ModalScalar{F}`](@ref ModalScalarRefFE) elements whose DOFs are the FEEC
-moments described in [1].
+`modal_scalar` ([`ModalScalar{F}()`](@ref ModalScalarRefFE)) elements whose DOFs
+are the FEEC moments described in [1].
 
 The `ModalScalar` elements support all `poly_type`, `mom_poly_type` and `sh_is_pb`
 keyword arguments, while the nodal ones only support `poly_type`.
