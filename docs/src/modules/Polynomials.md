@@ -276,6 +276,7 @@ ModalC0
 ```@docs
 PolynomialBasis
 get_order(::PolynomialBasis)
+get_orders(::PolynomialBasis)
 get_dimension(::PolynomialBasis)
 FEEC_poly_basis
 FEEC_space_definition_checks
@@ -310,7 +311,6 @@ BarycentricPΛBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D
 CartProdPolyBasis
 CartProdPolyBasis(::Type, ::Val{D}, ::Type, ::Int, ::Function) where D
 CartProdPolyBasis(::Type, ::Val{D}, ::Type{V}, ::NTuple{D,Int}, ::Function) where {D,V}
-get_orders(::CartProdPolyBasis)
 get_exponents
 CompWiseTensorPolyBasis
 NedelecPolyBasisOnSimplex

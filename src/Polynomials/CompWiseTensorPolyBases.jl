@@ -69,6 +69,7 @@ end
 
 Base.size(a::CompWiseTensorPolyBasis) = ( sum(prod.(eachrow(a.orders .+ 1))), )
 get_order(b::CompWiseTensorPolyBasis) = b.max_order
+get_orders(b::CompWiseTensorPolyBasis) = Tuple(maximum(b.orders; dims=1))
 
 function testvalue(::Type{<:CompWiseTensorPolyBasis{D,V,PT}}) where {D,V,PT}
   L = num_indep_components(V)

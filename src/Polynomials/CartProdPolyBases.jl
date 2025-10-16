@@ -127,11 +127,6 @@ function get_exponents(b::CartProdPolyBasis)
   Tuple(Tuple(t) .- indexbase for t in b.terms)
 end
 
-"""
-    get_orders(b::CartProdPolyBasis)
-
-Return the D-tuple of polynomial orders in each spatial dimension
-"""
 function get_orders(b::CartProdPolyBasis)
   b.orders
 end

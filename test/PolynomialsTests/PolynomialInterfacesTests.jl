@@ -53,6 +53,7 @@ mb = MockPolyBasis()
 @test return_type(mb) == T
 @test mb[1] == MockPolynomial()
 @test_throws ErrorException get_order(mb)
+@test_throws ErrorException get_orders(mb)
 @test_throws ErrorException testvalue(mb)
 
 Polynomials.get_order(b::MockPolyBasis) = 0

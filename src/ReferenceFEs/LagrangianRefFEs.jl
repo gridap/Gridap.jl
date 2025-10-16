@@ -377,8 +377,6 @@ end
 
 """
     get_order(reffe::LagrangianRefFE) = get_order(get_prebasis(reffe))
-
-The polynomial basis is a [`MonomialBasis`](@ref).
 """
 function get_order(reffe::LagrangianRefFE)
   get_order(get_prebasis(reffe))
@@ -386,8 +384,6 @@ end
 
 """
     get_orders(reffe::LagrangianRefFE) = get_orders(get_prebasis(reffe))
-
-The polynomial basis is a [`MonomialBasis`](@ref).
 """
 function get_orders(reffe::LagrangianRefFE)
   get_orders(get_prebasis(reffe))

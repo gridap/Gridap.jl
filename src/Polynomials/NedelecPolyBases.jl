@@ -38,6 +38,7 @@ struct NedelecPolyBasisOnSimplex{D,V,PT} <: PolynomialBasis{D,V,PT}
 end
 
 get_order(f::NedelecPolyBasisOnSimplex) = f.order + 1 # Return actual maximum poly order
+get_orders(b::NedelecPolyBasisOnSimplex{D}) where D = tfill(get_order(b), Val(D))
 
 function Base.size(f::NedelecPolyBasisOnSimplex{D}) where D
   K = get_order(f)

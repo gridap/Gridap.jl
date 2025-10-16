@@ -401,7 +401,7 @@ end
 # Common Implementation  #
 ##########################
 
-const _BaryPΛBasis = Union{BarycentricPmΛBasis, BarycentricPΛBasis}
+const _BaryPΛBasis{D} = Union{BarycentricPmΛBasis{D}, BarycentricPΛBasis{D}}
 
 """
     get_bubbles(b::BarycentricPmΛBasis)
@@ -414,6 +414,7 @@ They can be vizualized using [`print_indices(b)`](@ref print_indices).
 """
 get_bubbles(b::_BaryPΛBasis) = b._indices.bubbles
 get_order(b::_BaryPΛBasis) = b.r
+get_orders(b::_BaryPΛBasis{D}) where D = tfill(get_order(b), Val(D))
 
 """
     print_indices(b::BarycentricPmΛBasis, out=stdout)

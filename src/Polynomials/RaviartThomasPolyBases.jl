@@ -71,6 +71,7 @@ end
 
 Base.size(b::RaviartThomasPolyBasis{D}) where {D} = (D*length(b.pterms) + length(b.sterms), )
 get_order(b::RaviartThomasPolyBasis) = b.max_order
+get_orders(b::RaviartThomasPolyBasis{D}) where D = tfill(get_order(b), Val(D))
 
 function testvalue(::Type{RaviartThomasPolyBasis{D,V,PT}}) where {D,V,PT}
   T = eltype(V)
