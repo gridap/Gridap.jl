@@ -8,24 +8,27 @@ using Gridap.Io
 
 nodal = false
 
-reffe = ModalScalarRefFE(Float64,QUAD,2; F=:S)
-@test reffe == ReferenceFE(QUAD,:S,2,0)
-@test reffe == ReferenceFE(QUAD,:S,2,0; nodal)
-test_reference_fe(reffe)
+for (p,F) in [
+  (TRI, :P⁻), (TRI, :P), (QUAD,:Q⁻), (QUAD,:S),
+  (TET, :P⁻), (TET, :P), (HEX, :Q⁻), (HEX, :S),
+  ]
 
-reffe = ModalScalarRefFE(Float64,QUAD,4; F=:S)
-@test reffe == ReferenceFE(QUAD,:S,4,0)
-@test reffe == ReferenceFE(QUAD,:S,4,0; nodal)
-test_reference_fe(reffe)
+  reffe = ModalScalarRefFE(Float64,p,1; F)
+  @test reffe == ReferenceFE(p,F,1,0)
+  @test reffe == ReferenceFE(p,F,1,0; nodal)
+  test_reference_fe(reffe)
 
-reffe = ModalScalarRefFE(Float64,HEX,2; F=:S)
-@test reffe == ReferenceFE(HEX,:S,2,0)
-@test reffe == ReferenceFE(HEX,:S,2,0; nodal)
-test_reference_fe(reffe)
+  reffe = ModalScalarRefFE(Float64,p,4; F)
+  @test reffe == ReferenceFE(p,F,4,0)
+  @test reffe == ReferenceFE(p,F,4,0; nodal)
+  test_reference_fe(reffe)
 
-p = get_polytope(reffe)
-test_polytope(p)
-@test LagrangianRefFE(p) == HEX8
+  V = SymTensorValue{2,Float64}
+  reffe = ModalScalarRefFE(V,p,2; F)
+  @test reffe == ReferenceFE(p,F,2,0,V)
+  @test reffe == ReferenceFE(p,F,2,0,V; nodal)
+  test_reference_fe(reffe)
+end
 
 poly_type=Polynomials.ModalC0
 sh_is_pb=true
