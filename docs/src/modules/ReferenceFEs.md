@@ -30,7 +30,7 @@ The following table summarizes the elements implemented in Gridap (legend below)
 |                                                                                         |                                              | 𝓠ᵣ⁻Λ⁰     | ``\square`` | ``{r=o≥1, o}``  | `:H1`     |
 | [ModalC0](https://doi.org/10.48550/arXiv.2201.06632)                                    | [`modalC0`](@ref ModalC0RefFE)               | 𝓠ᵣ⁻Λ⁰     | ``\square`` | ``{r=o≥1, o}``  | `:H1`     |
 |                                                                                                                                                                                                |
-| [ModalScalar](@ref "Modal and nodal scalar elements")                                    | [`ModalScalar{F}()`](@ref ModalC0RefFE)      | FᵣΛ⁰    | △,``\square`` | ``{r=o≥1, o}``  | `:H1`     |
+| [ModalScalar](@ref "Modal and nodal scalar reference elements")                                    | [`ModalScalar{F}()`](@ref ModalC0RefFE)      | FᵣΛ⁰    | △,``\square`` | ``{r=o≥1, o}``  | `:H1`     |
 |                                                                                                                                                                                                |
 | [Nédélec (first kind)](https://defelement.org/elements/nedelec1.html)                   | [`nedelec`](@ref NedelecRefFE)               | 𝓟ᵣ⁻Λ¹     | `TRI`,`TET` | ``{r=o+1≥1, r}``| `:Hcurl`  |
 |                                                                                         |                                              | 𝓠ᵣ⁻Λ¹     | `QUAD`,`HEX`| ``{r=o+1≥1, r}``| `:Hcurl`  |
@@ -124,20 +124,20 @@ The `mom_poly_type` and `poly_type` keywords change the choice of DoF *basis*
 when `sh_is_pb` is `false` and `true` respectively, but not the DoF *space*
 (polynomial space dual).
 
-##### Modal and nodal scalar elements
+##### Modal and nodal scalar reference elements
 
 `lagrangian`, `modalC0`, `bezier` and `serendipity` are nodal elements.
 `lagrangian` and `serendipity` can be constructed via the constructor using
 FEEC notations by passing the keyword argument `nodal=true`.
 
 By default, `nodal` is `false`, so these FEEC constructors return
-`[ModalScalar{F}](@ref ModalScalarRefFE)` elements whose DOFs are the FEEC
+[`ModalScalar{F}`](@ref ModalScalarRefFE) elements whose DOFs are the FEEC
 moments described in [1].
 
 The `ModalScalar` elements support all `poly_type`, `mom_poly_type` and `sh_is_pb`
 keyword arguments, while the nodal ones only support `poly_type`.
 
-###### Bubble reference FE
+###### Bubble reference element
 
 The [`BubbleRefFE`](@ref) currently implements bubble space for MINI element,
 but the bubble can be fine-tuned. The MINI element on `TRI`angle is documented

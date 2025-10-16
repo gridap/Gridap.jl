@@ -70,5 +70,5 @@ function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
     @unreachable
   end
 
-  ReferenceFE(p,name,order; kwargs...)
+  ReferenceFE(p,name,T,order; kwargs...)
 end

@@ -4,6 +4,7 @@ using Test
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Polynomials
+using Gridap.TensorValues: SymTensorValue
 using Gridap.Io
 
 nodal = false
@@ -38,6 +39,8 @@ reffe = ModalScalarRefFE(Float64,HEX,order; F=:S)
 test_reference_fe(reffe)
 @test reffe == ReferenceFE(HEX,:S,4,0; nodal)
 @test get_order(reffe) == order
+@test Conformity(reffe,:H1) == GradConformity()
+@test Conformity(reffe,:L2) == L2Conformity()
 
 @test_throws "hierarchical" reffe = ModalScalarRefFE(Float64,HEX,order; F=:S, poly_type=Bernstein)
 

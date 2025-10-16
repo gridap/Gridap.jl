@@ -44,33 +44,34 @@ function ModalScalarRefFE(::Type{T}, p::Polytope{D}, r::Integer; F::Symbol,
   sh_is_pb=true, poly_type=_mom_reffe_default_PT(p), mom_poly_type=poly_type) where {T,D}
 
   PT, MPT = poly_type, mom_poly_type
+  cart_prod = T <: MultiValue
 
   # TODO fix Q⁻/S on SEGMENT
   if is_simplex(p)
     if     F==:P⁻
-      prebasis = FEEC_poly_basis(Val(D),T,r,    0,:P⁻,PT) # P⁻ᵣΛ⁰(□ᴰ)
+      prebasis = FEEC_poly_basis(Val(D),T,r,    0,:P⁻,PT; cart_prod) # P⁻ᵣΛ⁰(□ᴰ)
       mb = [ (r-d-1 >= 0 ?
-                 FEEC_poly_basis(Val(d),T,r-d-1,d,:P, MPT)
+                 FEEC_poly_basis(Val(d),T,r-d-1,d,:P, MPT; cart_prod)
                  : nothing) for d in 0:D ]                # PᵨΛᵈ(□ᵈ), ρ = r-d-1
     elseif F==:P
-      prebasis = FEEC_poly_basis(Val(D),T,r,  0,:P, PT)   # PᵣΛ⁰(□ᴰ)
+      prebasis = FEEC_poly_basis(Val(D),T,r,  0,:P, PT; cart_prod)   # PᵣΛ⁰(□ᴰ)
       mb = [ (r-d > 0 ?
-                 FEEC_poly_basis(Val(d),T,r-d,d,:P⁻,MPT)
+                 FEEC_poly_basis(Val(d),T,r-d,d,:P⁻,MPT; cart_prod)
                  : nothing) for d in 0:D ]                # P⁻ᵨΛᵈ(□ᵈ), ρ = r-d
     else
       @notimplemented "Only :P⁻ and :P elements are implemented on simplices, got F=$F."
     end
   elseif is_n_cube(p)
     if     F==:Q⁻
-      prebasis = FEEC_poly_basis(Val(D),T,r,  0,:Q⁻,PT)   # Q⁻ᵣΛ⁰(□ᴰ)
+      prebasis = FEEC_poly_basis(Val(D),T,r,  0,:Q⁻,PT; cart_prod)   # Q⁻ᵣΛ⁰(□ᴰ)
       mb = [ ((r-1 > 0 || d==0) ?
-                 FEEC_poly_basis(Val(d),T,r-1,d,:Q⁻,MPT)
+                 FEEC_poly_basis(Val(d),T,r-1,d,:Q⁻,MPT; cart_prod)
                  : nothing) for d in 0:D ]                # Q⁻ᵨΛᵈ(□ᵈ), ρ = r-1
     elseif F==:S
-      prebasis = FEEC_poly_basis(Val(D),T,r,   0,:S,PT)   # SᵣΛ⁰(□ᴰ)
+      prebasis = FEEC_poly_basis(Val(D),T,r,   0,:S,PT; cart_prod)   # SᵣΛ⁰(□ᴰ)
       MPT = MPT == Polynomials.ModalC0 ? Legendre : MPT
       mb = [ (r-2d >= 0 ?
-                 FEEC_poly_basis(Val(d),T,r-2d,d,:P,MPT)
+                 FEEC_poly_basis(Val(d),T,r-2d,d,:P,MPT; cart_prod)
                  : nothing) for d in 0:D ]                # PᵨΛᵈ(□ᵈ), ρ = r-2*d
     else
       @notimplemented "Only :Q⁻ and :S elements are implemented on n-cubes, got F=$F."
@@ -88,14 +89,14 @@ function ModalScalarRefFE(::Type{T}, p::Polytope{D}, r::Integer; F::Symbol,
       face_measure = Gridap.ReferenceFEs._get_dfaces_measure(ds.cpoly, d)
       df = Gridap.Fields.ConstantField(face_measure[ds.face])
       dμ = Broadcasting(Operation(/))(μ,df)
-      Broadcasting(Operation(*))(φ,dμ)
+      Broadcasting(Operation(⊙))(φ,dμ) # using inner in case of cartesian product space
     end
   elseif is_n_cube(p)
     # TODO assumes p is a reference n-cube (all d-faces have same d-volume),
     # otherwise face volume needed
     @assert p isa ExtrusionPolytope
     function mom_c(φ,μ,ds) # moment function: σ_K(φ,μ) = ∫(φ*μ)df
-      Broadcasting(Operation(*))(φ,μ)
+      Broadcasting(Operation(⊙))(φ,μ) # using inner in case of cartesian product space
     end
   end
 
