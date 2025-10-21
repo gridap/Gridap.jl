@@ -124,7 +124,7 @@ Tuple{Int,Int}[(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (
 """
 function get_exponents(b::CartProdPolyBasis)
   indexbase = 1
-  Tuple(Tuple(t) .- indexbase for t in b.terms)
+  [ Tuple(t) .- indexbase for t in b.terms ]
 end
 
 function get_orders(b::CartProdPolyBasis)
@@ -160,7 +160,9 @@ end
 """
     _cartprod_set_value!(r::AbstractMatrix{<:Real},i,s,k)
 
-r[i,k] = s; return k+1
+    r[i,k] = s; return k+1
+
+`s` is scalar
 """
 function _cartprod_set_value!(r::AbstractMatrix{<:Real},i,s,k)
   @inbounds r[i,k] = s
@@ -178,7 +180,7 @@ r[i,k+N-1] = V(0,    ..., 0, s)
 return k+N
 ```
 
-where `N = num_indep_components(V)`.
+where `N = num_indep_components(V)`, and `s` is scalar.
 """
 function _cartprod_set_value!(r::AbstractMatrix{V},i,s::T,k) where {V,T}
   ncomp = num_indep_components(V)
@@ -202,18 +204,16 @@ function _gradient_nd!(
   end
 
   k = 1
-  for ci in b.terms
+  @inbounds for ci in b.terms
 
-    for i in eachindex(s)
-      @inbounds s[i] = one(T)
-    end
+    s[:] .= one(T)
 
     for q in 1:D
       for d in 1:D
         if d != q
-          @inbounds s[q] *= c[d,ci[d]]
+          s[q] *= c[d,ci[d]]
         else
-          @inbounds s[q] *= g[d,ci[d]]
+          s[q] *= g[d,ci[d]]
         end
       end
     end
@@ -341,21 +341,19 @@ function _hessian_nd!(
 
   k = 1
 
-  for ci in b.terms
+  @inbounds for ci in b.terms
 
-    for i in eachindex(s)
-      @inbounds s[i] = one(T)
-    end
+    s[:] = one(T)
 
     for t in 1:D
       for q in 1:D
         for d in 1:D
           if d != q && d != t
-            @inbounds s[t,q] *= c[d,ci[d]]
+            s[t,q] *= c[d,ci[d]]
           elseif d == q && d ==t
-            @inbounds s[t,q] *= h[d,ci[d]]
+            s[t,q] *= h[d,ci[d]]
           else
-            @inbounds s[t,q] *= g[d,ci[d]]
+            s[t,q] *= g[d,ci[d]]
           end
         end
       end

@@ -6,6 +6,8 @@ using Test
 
 @testset "MonomialBases" begin include("MonomialBasesTests.jl") end
 
+@testset "CompWiseTensorPolyBases" begin include("CompWiseTensorPolyBasesTests.jl") end
+
 @testset "CurlConformBases" begin include("CurlConformBasesTests.jl") end
 
 @testset "DivConformBases" begin include("DivConformBasesTests.jl") end

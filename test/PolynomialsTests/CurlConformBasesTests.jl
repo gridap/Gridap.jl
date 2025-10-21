@@ -160,20 +160,6 @@ b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,PT)
 @test b isa CartProdPolyBasis{D,T,PT}
 @test testvalue(typeof(b)) isa typeof(b)
 
-# Misc
-
-# Derivatives not implemented for symetric tensor types
-
-V = SymTensorValue{D,T}
-G = gradient_type(V,xi)
-r = zeros(G, (1,1))
-@test_throws ErrorException Polynomials._comp_wize_set_derivative!(r,0,0,0,V)
-
-V = SymTracelessTensorValue{D,T}
-G = gradient_type(V,xi)
-r = zeros(G, (1,1))
-@test_throws ErrorException Polynomials._comp_wize_set_derivative!(r,0,0,0,V)
-
 
 ###################################################
 # Curl conform bases on simplices (non Bernstein) #

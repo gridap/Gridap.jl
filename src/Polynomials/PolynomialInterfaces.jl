@@ -60,6 +60,7 @@ abstract type PolynomialBasis{D,V,PT<:Polynomial} <: AbstractVector{PT}  end
 @inline Base.getindex(::PolynomialBasis{D,V,PT}, i::Integer) where {D,V,PT} = PT()
 @inline Base.IndexStyle(::PolynomialBasis) = IndexLinear()
 @inline return_type(::PolynomialBasis{D,V}) where {D,V} = V
+return_type(b::LinearCombinationFieldVector{W,<:PolynomialBasis}) where W = return_type(b.fields)
 
 
 """
@@ -74,7 +75,7 @@ Return the maximum polynomial order in any dimension, or `0` in 0D.
 For tensor-valued bases, it is the maximum for each component.
 """
 @inline get_order(::PolynomialBasis) = @abstractmethod
-get_order(f::Fields.LinearCombinationFieldVector) = get_order(f.fields)
+get_order(f::LinearCombinationFieldVector) = get_order(f.fields)
 get_order(f::AbstractVector{<:ConstantField}) = 0
 
 """

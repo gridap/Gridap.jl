@@ -96,6 +96,7 @@ using PolynomialBases: jacobi, jacobi_and_derivative
 using Combinatorics: multiexponents, multinomial, combinations
 using Base.Iterators: take
 using Base: @propagate_inbounds
+using Gridap.Fields: LinearCombinationFieldVector
 
 import Gridap.Fields: evaluate!
 import Gridap.Fields: return_cache
