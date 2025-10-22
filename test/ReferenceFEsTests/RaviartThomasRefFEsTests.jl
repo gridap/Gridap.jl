@@ -26,7 +26,7 @@ test_reference_fe(reffe)
 @test num_dofs(reffe) == 4
 @test Conformity(reffe) == DivConformity()
 
-@test_warn "falling back to `sh_is_pb=false`" RaviartThomasRefFE(et,p,order; sh_is_pb=true, poly_type=Monomial)
+@test_warn "falling back to `change_dof=false`" RaviartThomasRefFE(et,p,order; change_dof=true, poly_type=Monomial)
 
 p = QUAD
 D = num_dims(QUAD)
@@ -140,7 +140,7 @@ reffe = ReferenceFE(QUAD,raviart_thomas,0)
 @test num_dofs(reffe) == 4
 @test Conformity(reffe) == DivConformity()
 
-@test_warn "falling back to `sh_is_pb=false`" ReferenceFE(TET,raviart_thomas,0; poly_type=Monomial)
+@test_warn "falling back to `change_dof=false`" ReferenceFE(TET,raviart_thomas,0; poly_type=Monomial)
 
 reffe = ReferenceFE(QUAD,raviart_thomas,Float64,0)
 @test reffe == ReferenceFE(QUAD,:Q⁻,1,1, Float64; rotate_90=true) # r=1, k=1

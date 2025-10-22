@@ -421,13 +421,13 @@ end
       prebasis::AbstractVector{<:Field},
       moments::AbstractVector{<:Tuple},
       conformity::Conformity;
-      sh_is_pb=false
+      change_dof=false
     )
 
 Constructs a ReferenceFEs on `p` with a moment DoF (pre-)basis defined by
 `moments`. See [`MomentBasedDofBasis`](@ref) for the specification of `moments`.
 
-If `sh_is_pb=true`, `prebasis` is used as shape functions.
+If `change_dof=true`, `prebasis` is used as shape functions.
 This requires it to fullfill a geometric decomposition relative to the faces of
 `p` for `conformity`, see the [*Geometric decompositions*](@ref "Geometric decompositions")
 section in the docs.
@@ -442,14 +442,14 @@ function MomentBasedReferenceFE(
   prebasis::AbstractVector{<:Field},
   moments::AbstractVector{<:Tuple},
   conformity::Conformity;
-  sh_is_pb=false
+  change_dof=false
 )
 
   dof_basis = MomentBasedDofBasis(p, prebasis, moments)
   n_dofs = length(dof_basis)
   metadata = nothing
 
-  if sh_is_pb
+  if change_dof
     # Use geometric decomposition to avoid shapefuns change of basis.
     # The dofs are computed as dual to the shapefuns, using a change of basis
     # from the moment basis

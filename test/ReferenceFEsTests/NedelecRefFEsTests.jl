@@ -26,7 +26,7 @@ test_reference_fe(reffe)
 
 @test Conformity(reffe) == CurlConformity()
 
-@test_warn "falling back to `sh_is_pb=false`" NedelecRefFE(et,p,order; sh_is_pb=true, poly_type=Monomial)
+@test_warn "falling back to `change_dof=false`" NedelecRefFE(et,p,order; change_dof=true, poly_type=Monomial)
 
 p = QUAD
 D = num_dims(QUAD)
@@ -209,7 +209,7 @@ reffe = ReferenceFE(QUAD,nedelec,0)
 @test num_dofs(reffe) == 4
 @test Conformity(reffe) == CurlConformity()
 
-@test_warn "falling back to `sh_is_pb=false`" ReferenceFE(QUAD,nedelec,0; poly_type=Monomial)
+@test_warn "falling back to `change_dof=false`" ReferenceFE(QUAD,nedelec,0; poly_type=Monomial)
 
 reffe = ReferenceFE(QUAD,nedelec,Float64,0)
 @test length(get_prebasis(reffe)) == 4

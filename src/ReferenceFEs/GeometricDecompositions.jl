@@ -366,11 +366,11 @@ end
 
 # Helper
 
-function _validate_sh_is_pb(sh_is_pb, shapefuns, p, conf; dowarn=true)
-  if sh_is_pb && !has_geometric_decomposition(shapefuns, p, conf)
+function _validate_change_dof(change_dof, shapefuns, p, conf; dowarn=true)
+  if change_dof && !has_geometric_decomposition(shapefuns, p, conf)
     dowarn && @warn """
-      `sh_is_pb=true` was requested, but the constructed basis do not implement the
-      geometric decomposition, falling back to `sh_is_pb=false`.
+      `change_dof=true` was requested, but the constructed basis do not implement the
+      geometric decomposition, falling back to `change_dof=false`.
 
       p: $p,
       conformity: $conf,
@@ -379,6 +379,6 @@ function _validate_sh_is_pb(sh_is_pb, shapefuns, p, conf; dowarn=true)
     """
     return false
   end
-  sh_is_pb
+  change_dof
 end
 

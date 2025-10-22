@@ -109,9 +109,9 @@ the moment functionals defining the DoFs (``q`` in [1, eq. (2)]).
 
 `mom_poly_type` defaults to `poly_type`.
 
-###### `sh_is_pb` keyword argument
+###### `change_dof` keyword argument
 
-The `sh_is_pb::Bool` argument is available for reference FEs using moment based
+The `change_dof::Bool` argument is available for reference FEs using moment based
 DoFs, to tell the constructor to use the polynomial basis directly as
 shape-functions basis, and to define the DoFs as a change of basis from the
 usual DoF (treating them as "pre-"DoFs). It is available, and defaults to
@@ -120,7 +120,7 @@ the [Geometric decompositions](@ref "Geometric decompositions") section for
 more detail.
 
 The `mom_poly_type` and `poly_type` keywords change the choice of DoF *basis*
-when `sh_is_pb` is `false` and `true` respectively, but not the DoF *space*
+when `change_dof` is `false` and `true` respectively, but not the DoF *space*
 (polynomial space dual).
 
 ##### Modal and nodal scalar reference elements
@@ -133,7 +133,7 @@ By default, `nodal` is `false`, so these FEEC constructors return
 `modal_scalar` ([`ModalScalar{F}()`](@ref ModalScalarRefFE)) elements whose DOFs
 are the FEEC moments described in [1].
 
-The `ModalScalar` elements support all `poly_type`, `mom_poly_type` and `sh_is_pb`
+The `ModalScalar` elements support all `poly_type`, `mom_poly_type` and `change_dof`
 keyword arguments, while the nodal ones only support `poly_type`.
 
 ###### Bubble reference element
@@ -249,17 +249,17 @@ The bases that currently support the geometric decomposition are:
 - those of ``Q^-Λ^k`` spaces for `ModalC0` and `Bernstein` polynomial types (on n-cubes),
 - those of ``SΛ^0`` spaces for `ModalC0` polynomial types (on n-cubes).
 
-The keyword argument `sh_is_pb=true` means that, if possible, the shape
+The keyword argument `change_dof=true` means that, if possible, the shape
 functions are defined as the basis polynomials of the pre-basis. This is
 possible if the pre-basis verifies a geometric decomposition. Setting
-`sh_is_pb=false` forces the shape functions to be defined as the dual basis of
+`change_dof=false` forces the shape functions to be defined as the dual basis of
 the DoF basis. This kwarg do not alter the polynomial space and dual space
 respectively spanned by the shape-functions and the DoFs basis, but does change
 the DoF basis choice for the dual space.
 
-The kwarg `sh_is_pb` is available for Lagrangian, BDM, Raviart-Thomas, Nédélec
+The kwarg `change_dof` is available for Lagrangian, BDM, Raviart-Thomas, Nédélec
 and Serendipity elements. It defaults to true except for Lagrangian and
-Serendipity. `sh_is_pb` is ignored if the pre-basis for the given `poly_type <:
+Serendipity. `change_dof` is ignored if the pre-basis for the given `poly_type <:
 Polynomial` does not admit the geometric decomposition.
 
 ```@autodocs

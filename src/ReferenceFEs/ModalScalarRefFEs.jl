@@ -33,7 +33,7 @@ Scalar moment-based reference FE, for space FᵣΛ⁰ where `r=order` and `F` is
 
 This is a variant of `lagrangian`/`serendipity` elements that is more accurate for high order (≥5).
 
-The `kwargs` are [`sh_is_pb`](@ref "`sh_is_pb` keyword argument"),
+The `kwargs` are [`change_dof`](@ref "`change_dof` keyword argument"),
 [`poly_type`](@ref "`poly_type` keyword argument") and
 [`mom_poly_type`](@ref "`mom_poly_type` keyword argument").
 
@@ -41,7 +41,7 @@ For `F=:S`, `mom_poly_type` is changed for `Legendre` when `ModalC0` (the
 default) was given because the moment basis need be hierarchical.
 """
 function ModalScalarRefFE(::Type{T}, p::Polytope{D}, r::Integer; F::Symbol,
-  sh_is_pb=true, poly_type=_mom_reffe_default_PT(p), mom_poly_type=poly_type) where {T,D}
+  change_dof=true, poly_type=_mom_reffe_default_PT(p), mom_poly_type=poly_type) where {T,D}
 
   PT, MPT = poly_type, mom_poly_type
   cart_prod = T <: MultiValue
@@ -104,8 +104,8 @@ function ModalScalarRefFE(::Type{T}, p::Polytope{D}, r::Integer; F::Symbol,
 
   name = ModalScalar{F}()
   conf = GradConformity()
-  sh_is_pb = _validate_sh_is_pb(sh_is_pb,prebasis,p,conf)
-  MomentBasedReferenceFE(name,p,prebasis,moments,conf; sh_is_pb)
+  change_dof = _validate_change_dof(change_dof,prebasis,p,conf)
+  MomentBasedReferenceFE(name,p,prebasis,moments,conf; change_dof)
 end
 
 function ReferenceFE(p::Polytope,::ModalScalar{F},::Type{T}, order; kwargs...) where {F, T}
