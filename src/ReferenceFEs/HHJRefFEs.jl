@@ -49,7 +49,7 @@ function HellanHerrmannJhonsonRefFE(::Type{T},p::Polytope,order::Integer) where 
     push!(moments,(get_dimrange(p,2),cmom,cb))  # Cell moments
   end
 
-  return MomentBasedReferenceFE(HellanHerrmannJhonson(),p,prebasis,moments,DivConformity())
+  return MomentBasedReferenceFE(hhj,p,prebasis,moments,DivConformity())
 end
 
 function ReferenceFE(p::Polytope,::HellanHerrmannJhonson,::Type{T}, order) where T

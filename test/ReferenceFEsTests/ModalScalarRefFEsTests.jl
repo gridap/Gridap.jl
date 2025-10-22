@@ -32,7 +32,7 @@ for (p,F) in [
 end
 
 poly_type=Polynomials.ModalC0
-sh_is_pb=true
+change_dof=true
 
 order = 4
 reffe = ModalScalarRefFE(Float64,HEX,order; F=:S)
@@ -49,11 +49,11 @@ test_reference_fe(reffe)
 @test reffe == ReferenceFE(HEX,:S,4,0; poly_type)
 @test reffe == ReferenceFE(HEX,:S,4,0; poly_type, nodal)
 
-reffe = ModalScalarRefFE(Float64,HEX,order; F=:S, poly_type, sh_is_pb)
+reffe = ModalScalarRefFE(Float64,HEX,order; F=:S, poly_type, change_dof)
 test_reference_fe(reffe)
-@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, sh_is_pb)
-@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, sh_is_pb, nodal)
+@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, change_dof)
+@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, change_dof, nodal)
 
-@test_warn "falling back to `sh_is_pb=false`" ModalScalarRefFE(Float64,HEX,order; F=:S, poly_type=Monomial, sh_is_pb)
+@test_warn "falling back to `change_dof=false`" ModalScalarRefFE(Float64,HEX,order; F=:S, poly_type=Monomial, change_dof)
 
 end # module

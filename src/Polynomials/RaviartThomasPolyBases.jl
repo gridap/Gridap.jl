@@ -161,7 +161,7 @@ function _gradient_nd!(
           end
         end
 
-        k = _comp_wize_set_derivative!(r,i,s,k,Val(l),V)
+        k = _comp_wize_set_derivative!(r,i,s,k,l,V)
       end
     end
 

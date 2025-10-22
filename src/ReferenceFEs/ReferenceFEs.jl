@@ -3,9 +3,7 @@
 $(public_names_in_md(@__MODULE__; change_link=Dict(
   :H1Conformity  => "GradConformity",
   :nedelec1  => "nedelec",
-  :modal_scalar_P  => "modal_scalar_Pm",
-  :modal_scalar_Qm  => "modal_scalar_Pm",
-  :modal_scalar_S  => "modal_scalar_Pm",
+  :modal_serendipity  => "modal_lagrangian",
 )))
 """
 module ReferenceFEs
@@ -218,10 +216,8 @@ export nedelec1
 export nedelec2
 export bezier
 export modalC0
-export modal_scalar_Pm
-export modal_scalar_P
-export modal_scalar_Qm
-export modal_scalar_S
+export modal_lagrangian
+export modal_serendipity
 export crouzeix_raviart
 export serendipity
 #export hhj

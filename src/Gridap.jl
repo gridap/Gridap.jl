@@ -34,6 +34,7 @@ $(Helpers.public_names_in_md(@__MODULE__; change_link=Dict(
   :ReferenceDomain  => "DomainStyle",
   :PhysicalDomain   => "DomainStyle",
   :nedelec1  => "nedelec",
+  :modal_serendipity  => "modal_lagrangian",
 )))
 """
 module Gridap

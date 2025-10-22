@@ -100,6 +100,8 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs nedelec2
 @publish ReferenceFEs modalC0
 @publish ReferenceFEs bubble
+@publish ReferenceFEs modal_lagrangian
+@publish ReferenceFEs modal_serendipity
 
 @publish Geometry get_triangulation
 @publish Geometry num_cells

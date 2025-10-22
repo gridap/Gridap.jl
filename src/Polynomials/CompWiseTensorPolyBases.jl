@@ -5,20 +5,24 @@
 
 Polynomial basis for a `D`-multivariate `V`-valued polynomial space:
 
-`V`(𝕊¹, ∅, ..., ∅) ⊕ `V`(∅, 𝕊², ∅, ..., ∅) ⊕ ... ⊕ `V`(∅, ..., ∅, 𝕊ᴰ)
+`V`(𝕊₁, ∅, ..., ∅) ⊕ `V`(∅, 𝕊₂, ∅, ..., ∅) ⊕ ... ⊕ `V`(∅, ..., ∅, 𝕊ₗ)
 
-with `L`>1, where the scalar `D`-multivariate spaces 𝕊ˡ (for 1 ≤ l ≤ `L`) of each
-(independent) component of `V` is the tensor product of 1D ℙ spaces of order
-α(l,n) for 1 ≤ n ≤ `D`, that is:
+with l>1, where the scalar `D`-multivariate spaces 𝕊ⱼ (for 1 ≤ j ≤ l) of each
+(independent) component of `V` is defined by a list of terms like the component
+space of [`CartProdPolyBasis`](@ref). However, `CompWiseTensorPolyBasis` uses l
+independent terms lists for each component of `V`.
 
-𝕊¹ = ℙα(1,1) ⊗ … ⊗ ℙα(1,`D`)\\
-⋮\\
-𝕊ˡ =     ⊗ₙ  ℙα(l,n)\\
-⋮\\
-𝕊ᴸ = ℙα(`L`,1) ⊗ … ⊗ ℙα(`L`,`D`)
+Any 1D polynomial family `PT<:Polynomial` and any tensor-value type `V<:MultiValue` is usable.
 
-The `L`×`D` matrix of orders α is given in the constructor, and `K` is the
-maximum of α. Any 1D polynomial family `PT<:Polynomial` is usable.
+The 1D basis used for direction/coordinate `n` of component `j` is `orders[j,n]`
+where the `orders` matrix is given in the constructors.
+
+First and second order derivatives are supported, as long as the resulting
+tensor is of order maximum 3.
+
+!!! warning
+    If `PT` is not hierarchical, the 1D bases in a direction `n` are different
+    for different components if `orders[:,n]` are not all the same.
 
 # Examples
 These return instances of `CompWiseTensorPolyBasis`
@@ -37,23 +41,18 @@ b = FEEC_poly_basis(Val(3),Float64,4,1,:Q⁻)
 ```
 """
 struct CompWiseTensorPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
+  num_poly::Int
   max_order::Int
   orders::Matrix{Int}
-  comp_terms::Vector{CartesianIndices{D,NTuple{D,Base.OneTo{Int}}}} # of length L
+  comp_terms::Vector{Vector{CartesianIndex{D}}} # of length L
 
-  @doc"""
-    CompWiseTensorPolyBasis{D}(PT,V,orders::Matrix{Int})
-
-  `PT` is a [`Polynomial `](@ref) type, `V` a number type, and `orders` a L×D
-  matrix where L is the number of independent components of `V`.
-  """
   function CompWiseTensorPolyBasis{D}(
-    ::Type{PT}, ::Type{V}, orders::Matrix{Int}) where {D,PT<:Polynomial,V}
+    ::Type{PT}, ::Type{V}, orders::Matrix{Int}, comp_terms::Vector{Vector{CartesianIndex{D}}}) where {D,PT<:Polynomial,V}
 
     @check D > 0
     L = size(orders,1)
     msg1 = "The orders matrix rows number must match the number of independent components of V"
-    @check L == num_indep_components(V) msg1
+    @check L == num_indep_components(V) == length(comp_terms) msg1
     msg2 = "The Component Wise construction is useless for one component, use CartProdPolyBasis instead"
     @check L > 1 msg2
     msg3 = "The orders matrix column number must match the number of spatial dimensions"
@@ -61,13 +60,44 @@ struct CompWiseTensorPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
     @check isconcretetype(PT) "PT needs to be a concrete <:Polynomial type"
 
     K = maximum(orders)
-    comp_terms = _compute_comp_terms(Val(D),V,orders)
+    num_poly = mapreduce(length, +, comp_terms)
 
-    new{D,V,PT}(K,orders,comp_terms)
+    #TODO check orders in `orders` greater or equal than max index in terms
+
+    new{D,V,PT}(num_poly,K,orders,comp_terms)
   end
 end
 
-Base.size(a::CompWiseTensorPolyBasis) = ( sum(prod.(eachrow(a.orders .+ 1))), )
+"""
+    CompWiseTensorPolyBasis{D}(PT, V, orders::Matrix{Int})
+
+Define each component scalar space 𝕊ⱼ as a the full tensor product space of 1D
+spaces of orders α(j,n) for 1 ≤ n ≤ `D`, that is:
+
+𝕊₁ = ℙα₁₁(x₁) ⊗ … ⊗ ℙα₁`D`(x`D`)\\
+⋮\\
+𝕊ⱼ =     ⊗ₙ  ℙαⱼₙ(xₙ)\\
+⋮\\
+𝕊ₗ = ℙαₗ₁(x₁) ⊗ … ⊗ ℙαₗ`D`(x`D`)
+
+The l×`D` matrix α=`orders` is given in the constructor.
+`PT` is a [`Polynomial `](@ref) type, `V` a number type, L is the number of
+independent components of `V`.
+"""
+function CompWiseTensorPolyBasis{D}(::Type{PT}, ::Type{V}, orders::Matrix{Int}) where {D,PT,V}
+
+  L = size(orders,1)
+  msg1 = "The orders matrix rows number must match the number of independent components of V"
+  @check L == num_indep_components(V) msg1
+  msg3 = "The orders matrix column number must match the number of spatial dimensions"
+  @check size(orders,2) == D msg3
+
+  comp_terms = _compute_comp_terms_(Val(D),V,orders)
+
+  CompWiseTensorPolyBasis{D}(PT,V,orders,comp_terms)
+end
+
+Base.size(b::CompWiseTensorPolyBasis) = ( b.num_poly, )
 get_order(b::CompWiseTensorPolyBasis) = b.max_order
 get_orders(b::CompWiseTensorPolyBasis) = Tuple(maximum(b.orders; dims=1))
 
@@ -89,10 +119,10 @@ E.g., if `orders=[ 0 1; 1 0]`, then the `comp_terms` are
 """
 get_comp_terms(f::CompWiseTensorPolyBasis) = f.comp_terms
 
-function _compute_comp_terms(::Val{D},::Type{V},orders) where {D,V}
+function _compute_comp_terms_(::Val{D}, ::Type{V}, orders) where {D,V}
   L = num_indep_components(V)
-  _terms(l) = CartesianIndices( Tuple(orders[l,:] .+ 1)::NTuple{D,Int} )
-  [ _terms(l) for l in 1:L ]
+  _terms(l) = CartesianIndex{D}[ci for ci in CartesianIndices(Tuple(orders[l,:] .+ 1)) if true]
+  Vector{CartesianIndex{D}}[ _terms(l) for l in 1:L ]
 end
 
 
@@ -191,13 +221,13 @@ function _gradient_nd!(
         end
       end
 
-      k = _comp_wize_set_derivative!(r,i,s,k,Val(l),V)
+      k = _comp_wize_set_derivative!(r,i,s,k,l,V)
     end
   end
 end
 
 """
-    _comp_wize_set_derivative!(r::AbstractMatrix{G},i,s,k,::Val{l},::Type{V})
+    _comp_wize_set_derivative!(r::AbstractMatrix{G},i,s,k,l,::Type{V})
 
 ```
 z = zero(s)
@@ -208,30 +238,10 @@ return k+1
 where `s…` is the `l`ᵗʰ set of components. This is the gradient or hessian of
 the `k`ᵗʰ basis polynomial, whose nonzero component in `V` is the `l`ᵗʰ.
 """
-@generated function _comp_wize_set_derivative!(
-  r::AbstractMatrix{G},i,s,k,::Val{l},::Type{V}) where {G,l,V}
-
-  N_val_dims = length(size(V))
-  s_size = size(G)[1:end-N_val_dims]
-
-  body = "T = eltype(s); z = zero(T);"
-  m = Array{String}(undef, size(G))
-  m .= "z"
-
-  for ci in CartesianIndices(s_size)
-    m[ci,l] = "(@inbounds s[$ci])"
-  end
-  body *= "@inbounds r[i,k] = ($(join(tuple(m...), ", ")));"
-
-  body = Meta.parse(string("begin ",body," end"))
-  return Expr(:block, body ,:(return k+1))
-end
-
-# See _cartprod_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
-@generated function _comp_wize_set_derivative!(
-  r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
-
-  @notimplemented
+function _comp_wize_set_derivative!(
+  r::AbstractMatrix{G},i,s,k,l,::Type{V}) where {G,V}
+  @inbounds r[i,k]  = MultiValue(s) ⊗ V(ntuple( i -> Int(i==l), Val(num_indep_components(V))))
+  k+1
 end
 
 function _hessian_nd!(
@@ -256,7 +266,7 @@ function _hessian_nd!(
       for d in 1:D
         kld = b.orders[l,d]
         if isone(l) || kld ≠ b.orders[l-1,d]
-          _derivatives_1d!(PT,kld,(c,g),x,d)
+          _derivatives_1d!(PT,kld,(c,g,h),x,d)
         end
       end
     end
@@ -278,7 +288,7 @@ function _hessian_nd!(
         end
       end
 
-      k = _comp_wize_set_derivative!(r,i,s,k,Val(l),V)
+      k = _comp_wize_set_derivative!(r,i,s,k,l,V)
     end
   end
 end

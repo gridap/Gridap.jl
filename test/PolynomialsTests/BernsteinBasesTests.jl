@@ -44,7 +44,7 @@ end
 order = 0
 b = BernsteinBasis(Val(1),V,order)
 @test get_order(b) == 0
-@test get_exponents(b) == ((0,),)
+@test get_exponents(b) == [(0,),]
 @test testvalue(typeof(b)) isa typeof(b)
 
 bx =   [ 1.; 1.; 1.;; ]

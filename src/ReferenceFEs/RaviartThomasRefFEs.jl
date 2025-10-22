@@ -21,13 +21,13 @@ Pushforward(::Type{RaviartThomas}) = ContraVariantPiolaMap()
 The `order` argument has the following meaning: the divergence of the functions
 in this basis is in the Q space of degree `order`. `T` is the type of scalar components.
 
-The `kwargs` are [`sh_is_pb`](@ref "`sh_is_pb` keyword argument"),
+The `kwargs` are [`change_dof`](@ref "`change_dof` keyword argument"),
 [`poly_type`](@ref "`poly_type` keyword argument") and
 [`mom_poly_type`](@ref "`mom_poly_type` keyword argument").
 """
 function RaviartThomasRefFE(
   ::Type{T},p::Polytope{D},order::Integer;
-  sh_is_pb=true, poly_type=_mom_reffe_default_PT(p), mom_poly_type=poly_type) where {T,D}
+  change_dof=true, poly_type=_mom_reffe_default_PT(p), mom_poly_type=poly_type) where {T,D}
 
   PT, MPT = poly_type, mom_poly_type
   rotate_90 = D==2
@@ -62,8 +62,8 @@ function RaviartThomasRefFE(
   end
 
   conf = DivConformity()
-  sh_is_pb = _validate_sh_is_pb(sh_is_pb, prebasis, p, conf)
-  return MomentBasedReferenceFE(RaviartThomas(),p,prebasis,moments,conf; sh_is_pb)
+  change_dof = _validate_change_dof(change_dof, prebasis, p, conf)
+  return MomentBasedReferenceFE(raviart_thomas,p,prebasis,moments,conf; change_dof)
 end
 
 function ReferenceFE(p::Polytope,::RaviartThomas,::Type{T},order; kwargs...) where T

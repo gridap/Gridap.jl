@@ -38,7 +38,7 @@ function CrouzeixRaviartRefFE(::Type{T},p::Polytope,order::Integer) where T
     (get_dimrange(p,D-1),fmom,fb), # Face moments
   ]
 
-  return Gridap.ReferenceFEs.MomentBasedReferenceFE(CrouzeixRaviart(),p,prebasis,moments,L2Conformity())
+  return Gridap.ReferenceFEs.MomentBasedReferenceFE(crouzeix_raviart,p,prebasis,moments,L2Conformity())
 end
 
 function ReferenceFE(p::Polytope,::CrouzeixRaviart,::Type{T}, order) where T

@@ -151,10 +151,6 @@ Delegated to `reffe`'s DoFs, see [`LagrangianDofBasis`](@ref).
 """
 function get_node_and_comp_to_dof(reffe::LagrangianRefFE)
   dofs = get_dof_basis(reffe)
-  # TODO makes sense for sh_is_pb=true ??
-  if dofs isa ReferenceFEs.LinearCombinationDofVector
-    return dofs.predofs.node_and_comp_to_dof
-  end
   dofs.node_and_comp_to_dof
 end
 
@@ -165,10 +161,6 @@ Delegated to `reffe`'s DoFs, see [`LagrangianDofBasis`](@ref).
 """
 function get_dof_to_node(reffe::LagrangianRefFE)
   dofs = get_dof_basis(reffe)
-  # TODO makes sense for sh_is_pb=true ??
-  if dofs isa ReferenceFEs.LinearCombinationDofVector
-    return dofs.predofs.dof_to_node
-  end
   dofs.dof_to_node
 end
 
@@ -179,10 +171,6 @@ Delegated to `reffe`'s DoFs, see [`LagrangianDofBasis`](@ref).
 """
 function get_dof_to_comp(reffe::LagrangianRefFE)
   dofs = get_dof_basis(reffe)
-  # TODO makes sense for sh_is_pb=true ??
-  if dofs isa ReferenceFEs.LinearCombinationDofVector
-    return dofs.predofs.dof_to_comp
-  end
   dofs.dof_to_comp
 end
 
@@ -408,7 +396,7 @@ get_face_nodes(reffe::GenericLagrangianRefFE) = reffe.face_nodes
 
 # Reffe
 
-get_name(::Type{<:GenericLagrangianRefFE}) = Lagrangian()
+get_name(::Type{<:GenericLagrangianRefFE}) = lagrangian
 
 num_dofs(reffe::GenericLagrangianRefFE) = num_dofs(reffe.reffe)
 
