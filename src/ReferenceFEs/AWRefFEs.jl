@@ -1,7 +1,7 @@
 
 struct ArnoldWinther <: ReferenceFEName end
 
-const arnoldwinther = ArnoldWinther()
+const arnold_winther = ArnoldWinther()
 
 Pushforward(::Type{ArnoldWinther}) = DoubleContraVariantPiolaMap()
 
@@ -56,7 +56,7 @@ function ArnoldWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
     moments = vcat(node_moments,moments)
   end
 
-  return MomentBasedReferenceFE(ArnoldWinther(),p,prebasis,moments,DivConformity())
+  return MomentBasedReferenceFE(arnold_winther,p,prebasis,moments,DivConformity())
 end
 
 function ReferenceFE(p::Polytope,::ArnoldWinther,::Type{T}, order) where T

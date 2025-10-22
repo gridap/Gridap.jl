@@ -56,7 +56,7 @@ function BDMRefFE(
 
   conf = DivConformity()
   change_dof = _validate_change_dof(change_dof, prebasis, p, conf)
-  return MomentBasedReferenceFE(BDM(),p,prebasis,moments,conf; change_dof)
+  return MomentBasedReferenceFE(bdm,p,prebasis,moments,conf; change_dof)
 end
 
 function ReferenceFE(p::Polytope,::BDM,::Type{T}, order; kwargs...) where T

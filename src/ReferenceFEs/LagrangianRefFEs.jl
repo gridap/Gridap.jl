@@ -396,7 +396,7 @@ get_face_nodes(reffe::GenericLagrangianRefFE) = reffe.face_nodes
 
 # Reffe
 
-get_name(::Type{<:GenericLagrangianRefFE}) = Lagrangian()
+get_name(::Type{<:GenericLagrangianRefFE}) = lagrangian
 
 num_dofs(reffe::GenericLagrangianRefFE) = num_dofs(reffe.reffe)
 

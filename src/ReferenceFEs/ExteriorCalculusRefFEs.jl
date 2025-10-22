@@ -11,8 +11,9 @@ function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
     @check r ≥ 1 "This exterior calculus FE starts at r=1, (F,r,k) = ($F,$r,$k)"
   end
 
+  scalar = F==:S ? serendipity : lagrangian
   nodal && @check k in (0,D) "Nodal DOF only available for scalar FEs, i.e. k=0 or D, got k=$k, D=$D."
-  scalar = nodal ? (F==:S ? serendipity : lagrangian) : ModalScalar{F}()
+  scalar = nodal ? scalar : ModalScalar(scalar)
 
   # This logic should keep consistent with the Table in the ReferenceFEs documentation
   (name, order) = if F == :P⁻
@@ -62,9 +63,9 @@ function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
     else
       @notimplemented "BDM on n-cubes and Serendipity Nedelec not implemented yet"
     #elseif k == 1 && !rotate_90
-    #  Nedelec2(), r
+    #  nedelec2, r
     #else # must be k = D-1 && rotate_90 = true if k = 1
-    #  BDM(), r
+    #  bdm, r
     end
   else
     @unreachable

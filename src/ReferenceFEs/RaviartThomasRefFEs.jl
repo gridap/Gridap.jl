@@ -63,7 +63,7 @@ function RaviartThomasRefFE(
 
   conf = DivConformity()
   change_dof = _validate_change_dof(change_dof, prebasis, p, conf)
-  return MomentBasedReferenceFE(RaviartThomas(),p,prebasis,moments,conf; change_dof)
+  return MomentBasedReferenceFE(raviart_thomas,p,prebasis,moments,conf; change_dof)
 end
 
 function ReferenceFE(p::Polytope,::RaviartThomas,::Type{T},order; kwargs...) where T

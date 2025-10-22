@@ -43,7 +43,7 @@ function MardalTaiWintherRefFE(::Type{T},p::Polytope,order::Integer) where T
     (get_dimrange(p,D-1),fmom,fb), # Face moments
   ]
 
-  return MomentBasedReferenceFE(MardalTaiWinther(),p,prebasis,moments,DivConformity())
+  return MomentBasedReferenceFE(mtw ,p,prebasis,moments,DivConformity())
 end
 
 function ReferenceFE(p::Polytope,::MardalTaiWinther,::Type{T}, order) where T
