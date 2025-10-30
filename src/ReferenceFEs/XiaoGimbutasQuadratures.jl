@@ -13,13 +13,13 @@ function Quadrature(
   p::Polytope, ::XiaoGimbutas, degree::Integer; T::Type{<:AbstractFloat}=Float64
 )
   if p == TRI
-    wx = _xiaogimbutas_quad_tri(degree)
+    wx = _xiaogimbutas_quad_tri(degree; T)
   elseif p == TET
-    wx = _xiaogimbutas_quad_tet(degree)
+    wx = _xiaogimbutas_quad_tet(degree; T)
   elseif p == QUAD
-    wx = _xiaogimbutas_quad_quad(degree)
+    wx = _xiaogimbutas_quad_quad(degree; T)
   elseif p == HEX
-    wx = _xiaogimbutas_quad_hex(degree)
+    wx = _xiaogimbutas_quad_hex(degree; T)
   else
     msg = """\n
   `xiao_gimbutas` quadrature rule only available for triangles and tetrahedra,
@@ -49,7 +49,7 @@ end
 #######
 # TRI #
 #######
-function _xiaogimbutas_quad_tri(degree)
+function _xiaogimbutas_quad_tri(degree; T::Type{<:AbstractFloat}=Float64)
   maxdegree = 50
   if degree > maxdegree
     msg = """\n
@@ -67,12 +67,7 @@ function _xiaogimbutas_quad_tri(degree)
     wx = [
       0.21934566882541541013653648363283e+00 0.00000000000000000000000000000000e+00 0.57735026918962576450914878050196e+00
     ]
-  elseif degree == 3
-    wx = [
-      0.14699335257362380894667320570121e+00 0.00000000000000000000000000000000e+00 -.39011034927098671317419951524681e+00
-      0.72352316251791601189863277931619e-01 0.00000000000000000000000000000000e+00 0.83747122925185483484415621413487e+00
-    ]
-  elseif degree == 4
+  elseif degree <=4
     wx = [
       0.14699335257362380894667320570121e+00 0.00000000000000000000000000000000e+00 -.39011034927098671317419951524681e+00
       0.72352316251791601189863277931619e-01 0.00000000000000000000000000000000e+00 0.83747122925185483484415621413487e+00
@@ -1901,7 +1896,7 @@ end
 #######
 # TET #
 #######
-function _xiaogimbutas_quad_tet(degree)
+function _xiaogimbutas_quad_tet(degree; T::Type{<:AbstractFloat}=Float64)
   maxdegree = 15
   if degree > maxdegree
     msg = """\n
@@ -2992,10 +2987,10 @@ function _xiaogimbutas_quad_tet(degree)
   return wx
 end
 
-#######
+########
 # QUAD #
-#######
-function _xiaogimbutas_quad_quad(degree)
+########
+function _xiaogimbutas_quad_quad(degree; T::Type{<:AbstractFloat}=Float64)
   maxdegree = 30
   if degree > maxdegree
     msg = """\n
@@ -4930,7 +4925,7 @@ end
 #######
 # HEX #
 #######
-function _xiaogimbutas_quad_hex(degree)
+function _xiaogimbutas_quad_hex(degree; T::Type{<:AbstractFloat}=Float64)
   maxdegree = 15
   if degree > maxdegree
     msg = """\n

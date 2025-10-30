@@ -48,39 +48,34 @@ function _strang_quad_tri(degree; T::Type{<:AbstractFloat}=Float64)
     error(msg)
   end
 
-  # Symmetry groups
-  # 1 - (w, 1/3, 1/3)
-  # 2 - (w, a, b), (w, b, a), (w, b, b)
-  # 3 - (w, a, b), (w, a, c), (w, b, a), (w, b, c), (w, c, a), (w, c, b)
+  data1 = zero(T) # w (1/3, 1/3)
+  data2 = Tuple{T,T,T}[] # w (s, t) (t, s) (t, t)
+  data3 = Tuple{T,T,T,T}[] # w (s, t) (t, s) (s, u) (u, s) (t, u) (u, t)
 
-  data1 = zero(T)
-  data2 = Tuple{T,T,T}[]
-  data3 = Tuple{T,T,T,T}[]
-
-  if degree <= 1
+  if degree in (0, 1)
     data1 = 1 / 2
-  elseif degree <= 2
+  elseif degree == 2
     data2 = [
       (1 / 6, 2 / 3, 1 / 6)
     ]
-  elseif degree <= 3
+  elseif degree == 3
     data1 = -27 / 96
     data2 = [
       (25 / 96, 3 / 5, 1 / 5)
     ]
-  elseif degree <= 4
+  elseif degree == 4
     data2 = [
       (0.054975871827661, 0.816847572980459, 0.091576213509771),
       (0.1116907948390055, 0.108103018168070, 0.445948490915965),
     ]
-  elseif degree <= 5
+  elseif degree == 5
     s = sqrt(15)
     data1 = 0.1125
     data2 = [
       ((155 - s) / 2400, (9 + 2 * s) / 21, (6 - s) / 21),
       ((155 + s) / 2400, (9 - 2 * s) / 21, (6 + s) / 21),
     ]
-  elseif degree <= 6
+  elseif degree == 6
     data2 = [
       (0.0254224531851035, 0.873821971016996, 0.063089014491502)
       (0.0583931378631895, 0.501426509658179, 0.249286745170910)
@@ -88,7 +83,7 @@ function _strang_quad_tri(degree; T::Type{<:AbstractFloat}=Float64)
     data3 = [
       (0.041425537809187, 0.053145049844816, 0.310352451033785, 0.636502499121399)
     ]
-  elseif degree <= 7
+  elseif degree == 7
     data1 = -0.149570044467670 / 2
     data2 = [
       (0.175615257433204 / 2, 0.479308067841923, 0.260345966079038),
@@ -97,7 +92,7 @@ function _strang_quad_tri(degree; T::Type{<:AbstractFloat}=Float64)
     data3 = [
       (0.077113760890257 / 2, 0.638444188569809, 0.312865496004875, 0.048690315425316)
     ]
-  elseif degree <= 9
+  elseif degree in (8, 9)
     data1 = 0.09713579628279610 / 2
     data2 = [
       (0.03133470022713983 / 2, 0.02063496160252593, 0.4896825191987370),
@@ -108,7 +103,7 @@ function _strang_quad_tri(degree; T::Type{<:AbstractFloat}=Float64)
     data3 = [
       (0.04328353937728940 / 2, 0.7411985987844980, 0.03683841205473626, 0.22196298916076573)
     ]
-  elseif degree <= 11
+  elseif degree in (10, 11)
     data1 = 0.08797730116222190 / 2.0
     data2 = [
       (0.008744311553736190 / 2, 0.9480217181434233, 0.02598914092828833),
@@ -128,27 +123,27 @@ function _strang_quad_tri(degree; T::Type{<:AbstractFloat}=Float64)
   n = !iszero(data1) + 3 * length(data2) + 6 * length(data3)
   wx = Array{Float64,2}(undef, n, 3)
 
-  o = 1
+  r = 1
   if !iszero(data1)
-    wx[o, 1] = data1
-    wx[o, 2] = 1 / 3
-    wx[o, 3] = 1 / 3
-    o += 1
+    wx[r, 1] = data1
+    wx[r, 2] = 1 / 3
+    wx[r, 3] = 1 / 3
+    r += 1
   end
-  for (w, a, b) in data2
-    for (x, y) in ((a, b), (b, a), (b, b))
-      wx[o, 1] = w
-      wx[o, 2] = x
-      wx[o, 3] = y
-      o += 1
+  for (w, s, t) in data2
+    for (x, y) in ((s, t), (t, s), (t, t))
+      wx[r, 1] = w
+      wx[r, 2] = x
+      wx[r, 3] = y
+      r += 1
     end
   end
-  for (w, a, b, c) in data3
-    for (x, y) in ((a, b), (a, c), (b, a), (b, c), (c, a), (c, b))
-      wx[o, 1] = w
-      wx[o, 2] = x
-      wx[o, 3] = y
-      o += 1
+  for (w, s, t, u) in data3
+    for (x, y) in ((s, t), (t, s), (s, u), (u, s), (t, u), (u, t))
+      wx[r, 1] = w
+      wx[r, 2] = x
+      wx[r, 3] = y
+      r += 1
     end
   end
 
@@ -168,27 +163,22 @@ function _strang_quad_tet(degree; T::Type{<:AbstractFloat}=Float64)
     error(msg)
   end
 
-  # Symmetry groups
-  # 1 - (w, 1/4, 1/4, 1/4)
-  # 2 - (w, a, b, b), (w, b, a, b), (w, b, b, a), (w, b, b, b)
-  # 3 - (w, a, b, b), (w, b, a, b), (w, b, b, a), (w, b, a, a), (w, a, b, a), (w, a, a, b)
+  data1 = zero(T) # w (1/4, 1/4, 1/4)
+  data2 = Tuple{T,T,T}[] # w (s, t, t) (t, s, t) (t, t, s) (t, t, t)
+  data3 = Tuple{T,T,T}[] # w (s, t, t) (t, s, t) (t, t, s) (t, s, s) (s, t, s) (s, s, t)
 
-  data1 = zero(T)
-  data2 = Tuple{T,T,T}[]
-  data3 = Tuple{T,T,T}[]
-
-  if degree <= 1
+  if degree in (0, 1)
     data1 = 1 / 6
-  elseif degree <= 2
+  elseif degree == 2
     data2 = [
       (1 / 24, 0.5854101966249685, 0.1381966011250105)
     ]
-  elseif degree <= 3
+  elseif degree == 3
     data1 = -2 / 15
     data2 = [
       (3 / 40, 1 / 2, 1 / 6)
     ]
-  elseif degree <= 4
+  elseif degree == 4
     data1 = (-148 / 1875) / 6
     data2 = [
       ((343 / 7500) / 6, 11 / 14, 1 / 14)
@@ -196,7 +186,7 @@ function _strang_quad_tet(degree; T::Type{<:AbstractFloat}=Float64)
     data3 = [
       ((56 / 375) / 6, 0.3994035761667992, 0.1005964238332008)
     ]
-  elseif degree <= 5
+  elseif degree == 5
     data2 = [
       (0.1126879257180162 / 6, 0.0673422422100983, 0.3108859192633005),
       (0.0734930431163619 / 6, 0.7217942490673264, 0.0927352503108912),
@@ -211,30 +201,30 @@ function _strang_quad_tet(degree; T::Type{<:AbstractFloat}=Float64)
   n = !iszero(data1) + 4 * length(data2) + 6 * length(data3)
   wx = Array{Float64,2}(undef, n, 4)
 
-  o = 1
+  r = 1
   if !iszero(data1)
-    wx[o, 1] = data1
-    wx[o, 2] = 1 / 4
-    wx[o, 3] = 1 / 4
-    wx[o, 4] = 1 / 4
-    o += 1
+    wx[r, 1] = data1
+    wx[r, 2] = 1 / 4
+    wx[r, 3] = 1 / 4
+    wx[r, 4] = 1 / 4
+    r += 1
   end
-  for (w, a, b) in data2
-    for (x, y, z) in ((a, b, b), (b, a, b), (b, b, a), (b, b, b))
-      wx[o, 1] = w
-      wx[o, 2] = x
-      wx[o, 3] = y
-      wx[o, 4] = z
-      o += 1
+  for (w, s, t) in data2
+    for (x, y, z) in ((s, t, t), (t, s, t), (t, t, s), (t, t, t))
+      wx[r, 1] = w
+      wx[r, 2] = x
+      wx[r, 3] = y
+      wx[r, 4] = z
+      r += 1
     end
   end
-  for (w, a, b) in data3
-    for (x, y, z) in ((a, b, b), (b, a, b), (b, b, a), (b, a, a), (a, b, a), (a, a, b))
-      wx[o, 1] = w
-      wx[o, 2] = x
-      wx[o, 3] = y
-      wx[o, 4] = z
-      o += 1
+  for (w, s, t) in data3
+    for (x, y, z) in ((s, t, t), (t, s, t), (t, t, s), (t, s, s), (s, t, s), (s, s, t))
+      wx[r, 1] = w
+      wx[r, 2] = x
+      wx[r, 3] = y
+      wx[r, 4] = z
+      r += 1
     end
   end
 

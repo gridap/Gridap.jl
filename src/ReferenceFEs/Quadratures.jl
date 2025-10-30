@@ -126,17 +126,19 @@ function Quadrature(p::Polytope, degree; T::Type{<:AbstractFloat}=Float64)
   if is_n_cube(p)
     quad = Quadrature(p, tensor_product, degree; T)
   elseif is_simplex(p)
-    D = num_dims(p)
-    # For the moment strang only in 3d since
-    # there are some 2d strang quadratures that are not accurate
-    # as implemented here (to investigate why)
-    if (D == 3 && degree <= maxdegree(p, strang))
-      quad = Quadrature(p, strang, degree; T)
+    if degree <= maxdegree(p, witherden_vincent)
+      quad = Quadrature(p, witherden_vincent, degree; T)
+    elseif degree <= maxdegree(p, xiao_gimbutas)
+      quad = Quadrature(p, xiao_gimbutas, degree; T)
     else
       quad = Quadrature(p, duffy, degree; T)
     end
+  elseif p == WEDGE
+    quad = Quadrature(p, witherden_vincent, degree; T)
+  elseif p == PYRAMID
+    quad = Quadrature(p, witherden_vincent, degree; T)
   else
-    @notimplemented "Quadratures only implemented for n-cubes and simplices"
+    @notimplemented "Quadratures only implemented for n-cubes, simplices, wedge and pyramids."
   end
   quad
 end
@@ -192,18 +194,15 @@ function _weightcoords_to_coord_weights(p::Polytope, wx, T::Type{<:AbstractFloat
   VD = Val(D)
 
   n = size(wx, 1)
-  sumweights = zero(eltype(wx))
-  for i in 1:n
-    sumweights += wx[i, 1]
-  end
-  scale = get_measure(p) / sumweights
-
   weights = Array{T,1}(undef, n)
   coords = Array{VectorValue{D,T},1}(undef, n)
   for i in 1:n
-    weights[i] = wx[i, 1] * scale
+    weights[i] = wx[i, 1]
     coords[i] = VectorValue(ntuple(d -> wx[i, d+1], VD))
   end
+
+  scale = get_measure(p) / sum(weights)
+  rmul!(weights, scale)
 
   coords, weights
 end

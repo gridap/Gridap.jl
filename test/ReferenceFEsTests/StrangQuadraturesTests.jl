@@ -4,7 +4,7 @@ using Test
 using Gridap.Fields, Gridap.ReferenceFEs
 
 testcases = (
-  (TRI, 1.0e-7),
+  (TRI, 1.0e-9),
   (TET, 1.0e-13)
 )
 
