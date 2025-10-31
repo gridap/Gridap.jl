@@ -270,7 +270,7 @@ function _convert_to_collectable(object,ntags)
 end
 
 function _convert_to_collectable(object::Union{<:CellField,<:Function,<:Number},ntags)
-    _convert_to_collectable(Fill(object,ntags),ntags)
+  _convert_to_collectable(Fill(object,ntags),ntags)
 end
 
 """
