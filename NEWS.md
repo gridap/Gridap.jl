@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed issue [#1174](https://github.com/gridap/Gridap.jl/issues/1174). Since PR[#1175](https://github.com/gridap/Gridap.jl/pull/1175).
+- Fixes the issue that a single CellField could not be passed to TrialFESpace constructor in cases where more than one tag was being passed to dirichlet_tags kw-arg argument. Since PR[#1177](https://github.com/gridap/Gridap.jl/pull/1177).
 
 ## [0.19.5] - 2025-09-19
 
