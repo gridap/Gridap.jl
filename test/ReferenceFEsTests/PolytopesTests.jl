@@ -133,4 +133,18 @@ pmin, pmax = get_bounding_box(HEX)
 @test pmin == Point(0,0,0)
 @test pmax == Point(1,1,1)
 
+@test get_measure(TRI) ≈ 1/2
+@test get_measure(TET) ≈ 1/6
+@test get_measure(QUAD) ≈ 1
+@test get_measure(HEX) ≈ 1
+@test get_measure(WEDGE) ≈ 1/2
+@test get_measure(PYRAMID) ≈ 1/3
+
+@test get_diameter(TRI) ≈ sqrt(2)
+@test get_diameter(TET) ≈ sqrt(2)
+@test get_diameter(QUAD) ≈ sqrt(2)
+@test get_diameter(HEX) ≈ sqrt(3)
+@test get_diameter(WEDGE) ≈ sqrt(3)
+@test get_diameter(PYRAMID) ≈ sqrt(3)
+
 end # module
