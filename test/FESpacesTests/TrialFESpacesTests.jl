@@ -67,6 +67,14 @@ cell_dofs = get_cell_dof_ids(U,Λ)
 U0 = HomogeneousTrialFESpace(U)
 @test get_dirichlet_dof_values(U0) == zeros(6)
 
+# Interpolate a single CellField into FESpace
+f(x)=x[1]
+cf = CellField(f,get_triangulation(V))
+Ucf = TrialFESpace(V,cf)
+Uf  = TrialFESpace(V,f)
+
+@test get_dirichlet_dof_values(Ucf)≈get_dirichlet_dof_values(Uf)
+
 #trian = get_triangulation(model)
 #
 #using Gridap.Visualization
