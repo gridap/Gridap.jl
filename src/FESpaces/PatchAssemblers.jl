@@ -329,7 +329,7 @@ function _alloc_cache(b::ArrayBlockView,s::Tuple{Vararg{BlockedOneTo}})
   bs = map(blocklength,s)
   ss = map(blocklengths,s)
   array = [ zeros(ntuple(i -> ss[i][I[i]], Val(N))) for I in CartesianIndices(bs) ]
-  bmap = ifelse(N == 2, b.block_map, map(idx -> CartesianIndex(idx[1]), diag(b.block_map)))
+  bmap = ifelse(N == 2, b.block_map, map(idx -> CartesianIndex(idx[1]), b.block_map[:,1]))
   ArrayBlockView(ArrayBlock(array,fill(true,bs)),bmap)
 end
 
