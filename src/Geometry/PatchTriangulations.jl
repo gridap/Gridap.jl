@@ -394,6 +394,14 @@ function Base.view(ptopo::PatchTopology, cell_to_parent_cell::AbstractArray{<:In
   return ptopo_view
 end
 
+function patch_topology_view(ptopo::PatchTopology, ::IdentityVector)
+  D = num_cell_dims(ptopo)
+  d_to_dpface_to_parent_dpface = [
+    IdentityVector(num_faces(ptopo,d)) for d in 0:D
+  ]
+  return ptopo, d_to_dpface_to_parent_dpface
+end
+
 function patch_topology_view(ptopo::PatchTopology, cell_to_parent_cell::AbstractArray{<:Integer})
   Dc = num_cell_dims(ptopo)
   n_patches = num_patches(ptopo)
@@ -430,6 +438,14 @@ function patch_topology_view(ptopo::PatchTopology, cell_to_parent_cell::Abstract
 
   ptopo_view = PatchTopology(topo, d_to_patch_to_dfaces, ptopo.metadata)
   return ptopo_view, d_to_dpface_to_parent_dpface
+end
+
+function restrict(ptopo::PatchTopology, ::IdentityVector; kwargs...)
+  D = num_cell_dims(ptopo)
+  d_to_dpface_to_parent_dpface = [
+    IdentityVector(num_faces(ptopo,d)) for d in 0:D
+  ]
+  return ptopo, d_to_dpface_to_parent_dpface
 end
 
 function restrict(
@@ -662,7 +678,7 @@ function PatchSkeletonTriangulation(model::DiscreteModel{Dc},ptopo::PatchTopolog
   return PatchTriangulation(trian,ptopo,tface_to_pface)
 end
 
-for TT in (:PatchBoundaryTriangulation,:PatchSkeletonTriangulation)
+for TT in (:PatchTriangulation,:PatchBoundaryTriangulation,:PatchSkeletonTriangulation)
   @eval begin
     function $TT(trian::Triangulation{Dc},ptopo::PatchTopology{Dc}; kwargs...) where Dc
       # Create the Boundary/Skeleton triangulation on a restricted PatchTopology

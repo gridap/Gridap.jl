@@ -146,7 +146,7 @@ struct StaticCondensationMap{A} <: Map
   pivot :: A
 end
 
-StaticCondensationMap() = StaticCondensationMap(NoPivot())
+StaticCondensationMap() = StaticCondensationMap(RowMaximum())
 
 function Arrays.evaluate!(cache,k::StaticCondensationMap, matvec::Tuple)
   mat, vec = matvec
@@ -175,7 +175,7 @@ struct BackwardStaticCondensationMap{A} <: Map
   pivot :: A
 end
 
-BackwardStaticCondensationMap() = BackwardStaticCondensationMap(NoPivot())
+BackwardStaticCondensationMap() = BackwardStaticCondensationMap(RowMaximum())
 
 function Arrays.evaluate!(cache,k::BackwardStaticCondensationMap, matvec::Tuple, xb)
   mat, vec = matvec
