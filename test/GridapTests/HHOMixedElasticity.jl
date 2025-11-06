@@ -14,6 +14,7 @@ using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
 using Gridap.ReferenceFEs, Gridap.TensorValues
 using Gridap.Arrays
+using Gridap.Fields: skew_symmetric_gradient
 
 ν(f) = skew_symmetric_gradient(f)
 
@@ -174,7 +175,10 @@ end
 
 # Static condensation
 op = MultiField.StaticCondensationOperator(X,patch_assem,patch_weakform())
-ui, ub = solve(op)
+xh = solve(op)
+ui, ub = xh
+
+Ru = R(xh)
 
 dΩ = Measure(Ω,qdegree)
 l2_ui = sqrt(sum(∫((ui - u)⋅(ui - u))*dΩ))

@@ -24,7 +24,7 @@ u(x) = x[1] + x[2]
 q(x) = -∇(u)(x)
 f(x) = (∇ ⋅ q)(x)
 
-D = 3
+D = 2
 nc = Tuple(fill(4, D))
 domain = Tuple(repeat([0, 1], D))
 model = simplexify(CartesianDiscreteModel(domain,nc);positive=true)
@@ -49,12 +49,12 @@ order = 1
 V = FESpaces.PolytopalFESpace(Ω, VectorValue{D, Float64}, order; space=:P)
 Q = FESpaces.PolytopalFESpace(Ω, Float64, order+1; space=:P)
 
-if D == 2
-  reffeM = ReferenceFE(lagrangian, Float64, order; space=:P) 
-  M = TestFESpace(Γ, reffeM; conformity=:L2, dirichlet_tags="boundary")
-else
+# if D == 2
+#   reffeM = ReferenceFE(lagrangian, Float64, order; space=:P) 
+#   M = TestFESpace(Γ, reffeM; conformity=:L2, dirichlet_tags="boundary")
+# else
   M = FESpaces.PolytopalFESpace(Γ, Float64, order; space=:P, dirichlet_tags="boundary")
-end
+#end
 N = TrialFESpace(M, u)
 
 mfs = MultiField.BlockMultiFieldStyle(2,(2,1))
