@@ -43,6 +43,16 @@ test_array(cell_r_auto,cell_r,≈)
 test_array(cell_j_auto,cell_j,≈)
 test_array(cell_h_auto,cell_h,≈)
 
+dp = get_trial_fe_basis(U)
+ph = FEFunction(U,rand(num_free_dofs(U)))
+ener(uh,ph) = ∫( 0.5*∇(uh)⋅∇(uh)*ph )*dΩ
+res(uh,ph) = ∫( ∇(uh)⋅∇(dv)*ph )*dΩ
+jac(uh,ph) = ∫( ∇(uh)⋅∇(dv)*dp )*dΩ
+
+cell_∂2L∂u∂p_auto = get_array(jacobian(ph->gradient(uh->ener(uh,ph),uh),ph) )
+cell_∂2L∂u∂p = get_array(jac(uh,ph))
+test_array(cell_∂2L∂u∂p_auto,cell_∂2L∂u∂p,≈)
+
 Γ = BoundaryTriangulation(model)
 dΓ = Measure(Γ,2)
 
