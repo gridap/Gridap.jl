@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added support for subdividing unstructured meshes to any level, including periodic ones. Since PR[#1143](https://github.com/gridap/Gridap.jl/pull/1143).
+- Added specific tags on dual numbers to allow for nested AD without perturbation confusion. Since PR[#1181](https://github.com/gridap/Gridap.jl/pull/1181) 
 
 ### Fixed
 
