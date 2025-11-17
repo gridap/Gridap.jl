@@ -26,7 +26,6 @@ For bases for the Nélélec, Raviart-Thomas and BDM element spaces, use
 ```julia
 using Gridap
 using Gridap.Polynomials
-using Gridap.Fields: return_type
 
 # Basis of ℚ¹₂ of Float64 value type based on Bernstein polynomials:
 #   {(1-x)², 2x(1-x), x²}
@@ -35,7 +34,7 @@ b = BernsteinBasis(Val(D), Float64, n)
 
 # APIs
 length(b)        # 3
-return_type(b)   # Float64
+value_type(b)    # Float64
 get_order(b)     # 2
 
 xi =Point(0.1)
@@ -109,6 +108,7 @@ export isHierarchical
 export PolynomialBasis
 export get_order
 export get_dimension
+export value_type
 
 export CartProdPolyBasis
 export get_exponents

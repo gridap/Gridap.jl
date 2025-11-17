@@ -278,6 +278,7 @@ PolynomialBasis
 get_order(::PolynomialBasis)
 get_orders(::PolynomialBasis)
 get_dimension(::PolynomialBasis)
+value_type
 FEEC_poly_basis
 FEEC_space_definition_checks
 MonomialBasis(args...)

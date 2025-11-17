@@ -172,7 +172,7 @@ function to_dict(reffe::GenericLagrangianRefFE{GradConformity})
   else
     dict[:space] = "default"
   end
-  dict[:value] = string(return_type(b))
+  dict[:value] = string(value_type(b))
   dict
 end
 

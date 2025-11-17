@@ -27,7 +27,7 @@ b = FEEC_poly_basis(Val(D),T,r,k,:Q⁻,PT; rotate_90)
 @test length(b) == 4
 @test get_order(b) == 1
 @test get_orders(b) == (1,1)
-@test return_type(b) == V
+@test value_type(b) == V
 @test testvalue(typeof(b)) isa typeof(b)
 
 @test_throws AssertionError FEEC_poly_basis(Val(D),V,r,k,:Q⁻,PT; rotate_90)

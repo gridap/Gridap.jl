@@ -200,7 +200,8 @@ function MomentBasedDofBasis(
   face_offsets = get_offsets(p)
   reffaces, face_types = _compute_reffaces_and_face_types(p)
 
-  V = return_type(prebasis)
+  x = first(get_vertex_coordinates(p))
+  V = eltype(return_type(field, x))
   φ_vec = representatives_of_componentbasis_dual(V)
   φ = map(constant_field,φ_vec)
 
