@@ -47,6 +47,7 @@ import Gridap.Io: to_dict
 import Gridap.Io: from_dict
 
 import Base: ==
+import Base: vcat
 
 export Polytope
 export ExtrusionPolytope
