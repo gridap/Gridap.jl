@@ -81,6 +81,8 @@ function get_face_own_nodes(reffe::BezierRefFE,conf::GradConformity)
   get_face_own_nodes(reffe.reffe,conf)
 end
 
+get_face_own_dofs(reffe::BezierRefFE) = get_face_own_dofs(reffe.reffe)
+
 get_face_dofs(reffe::BezierRefFE) = get_face_dofs(reffe.reffe)
 
 num_dofs(reffe::BezierRefFE) = num_dofs(reffe.reffe)

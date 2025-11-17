@@ -252,6 +252,11 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 reffe = BezierRefFE(Float64,SEGMENT,(3,))
 test_lagrangian_reference_fe(reffe)
 
+face_own_dofs = Vector{Int}[[1],[2],[3,4]]
+face_dofs = Vector{Int}[[1],[2],[1,2,3,4]]
+@test get_face_own_dofs(reffe) == face_own_dofs
+@test get_face_dofs(reffe) == face_dofs
+
 reffe = BezierRefFE(Float64,TRI,(3,3))
 test_lagrangian_reference_fe(reffe)
 

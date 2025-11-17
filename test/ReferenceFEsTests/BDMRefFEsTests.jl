@@ -26,6 +26,11 @@ reffe = BDMRefFE(et,p,order)
 @test num_dofs(reffe) == 6
 @test Conformity(reffe) == DivConformity()
 
+face_own_dofs = Vector{Int}[[],[],[],[1,2],[3,4],[5,6],[]]
+face_dofs = Vector{Int}[[],[],[],[1,2],[3,4],[5,6],[1,2,3,4,5,6]]
+@test get_face_own_dofs(reffe) == face_own_dofs
+@test get_face_dofs(reffe) == face_dofs
+
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
 

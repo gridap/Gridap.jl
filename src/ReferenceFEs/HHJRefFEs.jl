@@ -71,33 +71,3 @@ function Conformity(reffe::GenericRefFE{HellanHerrmannJhonson},sym::Symbol)
   end
 end
 
-function get_face_own_dofs(reffe::GenericRefFE{HellanHerrmannJhonson}, conf::DivConformity)
-  reffe.face_dofs
-end
-
-# TODO this is currently exactly the function from Nedelec, should be modified or factorized
-function get_face_dofs(reffe::GenericRefFE{HellanHerrmannJhonson,Dc}) where Dc
-  face_dofs = [Int[] for i in 1:num_faces(reffe)]
-  face_own_dofs = get_face_own_dofs(reffe)
-  p = get_polytope(reffe)
-  for d = 1:Dc # Starting from edges, vertices do not own DoFs for Nedelec
-    first_face = get_offset(p,d)
-    nfaces     = num_faces(reffe,d)
-    for face = first_face+1:first_face+nfaces
-      for df = 1:d-1
-        face_faces  = get_faces(p,d,df)
-        first_cface = get_offset(p,df)
-        for cface in face_faces[face-first_face]
-          cface_own_dofs = face_own_dofs[first_cface+cface]
-          for dof in cface_own_dofs
-            push!(face_dofs[face],dof)
-          end
-        end
-      end
-      for dof in face_own_dofs[face]
-        push!(face_dofs[face],dof)
-      end
-    end
-  end
-  face_dofs
-end

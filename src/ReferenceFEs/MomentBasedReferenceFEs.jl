@@ -63,12 +63,12 @@ Return the vector of discretized moments for each face of the underlying polytop
 get_face_moments(b::MomentBasedDofBasis) = b.face_moments
 
 """
-    get_face_own_dofs(b::MomentBasedDofBasis)
+    get_face_own_moments(b::MomentBasedDofBasis)
 
 The ownership of `b`'s dofs to faces of the underlying polytope is defined as
 the face the moment was defined on.
 """
-get_face_own_dofs(b::MomentBasedDofBasis) = b.face_own_moms
+get_face_own_moments(b::MomentBasedDofBasis) = b.face_own_moms
 
 """
     get_face_nodes_dofs(b::MomentBasedDofBasis)
@@ -155,7 +155,9 @@ function evaluate!(cache, b::MomentBasedDofBasis, field::AbstractVector{<:Field}
 end
 
 """
-    MomentBasedDofBasis(p::Polytope, prebasis::AbstractVector{<:Field}, moments)
+    MomentBasedDofBasis( p::Polytope, prebasis::AbstractVector{<:Field}, moments,
+        [, face_own_dofs], operator=nothing
+    )
 
 Creates a basis of DoFs defined by moments on faces of `p`.
 
@@ -169,11 +171,27 @@ The moment DoFs are thus defined by φ -> ∫_Fₖ σ(φ,μᵢ,ds)dFₖ,  ∀ σ
 In the final basis, DoFs are ordered by moment, then by face, then by "test" polynomial.
 
 All the faces in a moment must be of the same type (have same reference face).
+
+If `face_own_dofs` is given, it defines the moment ownership to faces.
 """
 function MomentBasedDofBasis(
     p::Polytope{D},
     prebasis::AbstractVector{<:Field},
     moments::AbstractVector{<:Tuple},
+    face_own_dofs::AbstractVector,
+    operator=nothing,
+  ) where D
+
+  # replace moment ownership
+  dofs = MomentBasedDofBasis(p, prebasis, moments, operator)
+  MomentBasedDofBasis(dofs.nodes, dofs.face_moments, dofs.face_nodes, face_own_dofs, operator)
+end
+
+function MomentBasedDofBasis(
+    p::Polytope{D},
+    prebasis::AbstractVector{<:Field},
+    moments::AbstractVector{<:Tuple},
+    operator=nothing,
   ) where D
 
   n_faces = num_faces(p)
@@ -420,12 +438,16 @@ end
       p::Polytope,
       prebasis::AbstractVector{<:Field},
       moments::AbstractVector{<:Tuple},
-      conformity::Conformity;
+      conformity::Conformity,
+      face_own_dofs=nothing;
       change_dof=false
     )
 
 Constructs a ReferenceFEs on `p` with a moment DoF (pre-)basis defined by
 `moments`. See [`MomentBasedDofBasis`](@ref) for the specification of `moments`.
+
+The dofs ownership to faces can be overloaded, the default is given by
+[`get_face_own_moments`](@ref).
 
 If `change_dof=true`, `prebasis` is used as shape functions.
 This requires it to fullfill a geometric decomposition relative to the faces of
@@ -441,7 +463,8 @@ function MomentBasedReferenceFE(
   p::Polytope,
   prebasis::AbstractVector{<:Field},
   moments::AbstractVector{<:Tuple},
-  conformity::Conformity;
+  conformity::Conformity,
+  face_own_dofs=nothing;
   change_dof=false
 )
 
@@ -469,7 +492,9 @@ function MomentBasedReferenceFE(
     )
   end # else, standard prebasis inversion
 
-  face_own_dofs = get_face_own_dofs(dof_basis)
+  if isnothing(face_own_dofs)
+    face_own_dofs = get_face_own_moments(dof_basis)
+  end
   GenericRefFE{typeof(name)}(
     n_dofs, p, prebasis, dof_basis, conformity, metadata, face_own_dofs
   )

@@ -17,7 +17,7 @@ function _PDiscRefFE(::Type{V},p::Polytope,order::Integer, poly_type) where V
   # basis for ( SᵣΛᴰ(□ᴰ) )ⁿ, n=num_indep_components(V)
   basis = FEEC_poly_basis(Val(D),V,order,D,:S,poly_type; cart_prod=(V <: MultiValue))
   dofs = get_dof_basis(reffe)
-  face_dofs = _generate_face_own_dofs(face_nodes,dofs.node_and_comp_to_dof)
+  face_own_dofs = _generate_face_own_dofs(face_nodes,dofs.node_and_comp_to_dof)
 
   conf = L2Conformity()
 
@@ -28,7 +28,7 @@ function _PDiscRefFE(::Type{V},p::Polytope,order::Integer, poly_type) where V
     dofs,
     conf,
     metadata,
-    face_dofs)
+    face_own_dofs)
   GenericLagrangianRefFE(reffe,face_nodes)
 end
 

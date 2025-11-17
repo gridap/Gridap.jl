@@ -46,8 +46,8 @@ function BubbleRefFE(::Type{T}, p::Polytope{D}; type = :mini, coeffs = nothing, 
   msg =  "Wrong `terms` and/or `coeffs`, the current implementation assumes that the bubble space contains `num_indep_component(T)` shapefunctions, T=$T"
   @notimplementedif length(prebasis) != ndofs msg
 
-  face_dofs = [Int[] for _ in 1:num_faces(p)]
-  face_dofs[end] = 1:ndofs
+  face_own_dofs = [Int[] for _ in 1:num_faces(p)]
+  face_own_dofs[end] = 1:ndofs
   shapefuncs = compute_shapefuns(dofs, prebasis)
   conformity = L2Conformity()
   metadata = nothing
@@ -59,7 +59,7 @@ function BubbleRefFE(::Type{T}, p::Polytope{D}; type = :mini, coeffs = nothing, 
     dofs,
     conformity,
     metadata,
-    face_dofs,
+    face_own_dofs,
     shapefuncs,
   )
 end

@@ -256,10 +256,6 @@ function get_face_own_dofs(reffe::ReferenceFE, conf::Nothing)
   get_face_own_dofs(reffe)
 end
 
-function get_face_own_dofs(reffe::ReferenceFE, conf::L2Conformity)
-  _get_face_own_dofs_l2(reffe)
-end
-
 function _get_face_own_dofs_l2(reffe::ReferenceFE)
   p = get_polytope(reffe)
   r = [Int[] for i in 1:num_faces(p)]
@@ -598,7 +594,7 @@ instead extract the required fields before and pass them to the computationally 
   dofs::AbstractVector{<:Dof}
   conformity::Conformity
   metadata
-  face_dofs::Vector{Vector{Int}}
+  face_own_dofs::Vector{Vector{Int}}
   shapefuns::AbstractVector{<:Field}
 
   @doc """
@@ -609,7 +605,7 @@ instead extract the required fields before and pass them to the computationally 
           dofs::AbstractVector{<:Dof},
           conformity::Conformity,
           metadata,
-          face_dofs::Vector{Vector{Int}},
+          face_own_dofs::Vector{Vector{Int}},
           shapefuns::AbstractVector{<:Field}=compute_shapefuns(dofs,prebasis)
         ) where {T,D}
 
@@ -622,7 +618,7 @@ instead extract the required fields before and pass them to the computationally 
     dofs::AbstractVector{<:Dof},
     conformity::Conformity,
     metadata,
-    face_dofs::Vector{Vector{Int}},
+    face_own_dofs::Vector{Vector{Int}},
     shapefuns::AbstractVector{<:Field}=compute_shapefuns(dofs, prebasis)) where {T,D}
 
     new{T,D}(
@@ -632,7 +628,7 @@ instead extract the required fields before and pass them to the computationally 
       dofs,
       conformity,
       metadata,
-      face_dofs,
+      face_own_dofs,
       shapefuns)
   end
   @doc """
@@ -643,7 +639,7 @@ instead extract the required fields before and pass them to the computationally 
           predofs::AbstractVector{<:Dof},
           conformity::Conformity,
           metadata,
-          face_dofs::Vector{Vector{Int}},
+          face_own_dofs::Vector{Vector{Int}},
           shapefuns::AbstractVector{<:Field},
           dofs::AbstractVector{<:Dof}=compute_dofs(predofs,shapefuns)
         ) where {T,D}
@@ -656,7 +652,7 @@ instead extract the required fields before and pass them to the computationally 
     predofs::AbstractVector{<:Dof},
     conformity::Conformity,
     metadata,
-    face_dofs::Vector{Vector{Int}},
+    face_own_dofs::Vector{Vector{Int}},
     shapefuns::AbstractVector{<:Field},
     dofs::AbstractVector{<:Dof}=compute_dofs(predofs, shapefuns)) where {T,D}
 
@@ -667,7 +663,7 @@ instead extract the required fields before and pass them to the computationally 
       dofs,
       conformity,
       metadata,
-      face_dofs,
+      face_own_dofs,
       # Trick to be able to eval dofs af shapefuns in physical space
       # cf /test/FESpacesTests/PhysicalFESpacesTests.jl
       linear_combination(Eye{Int}(ndofs), shapefuns))
@@ -686,7 +682,20 @@ get_dof_basis(reffe::GenericRefFE) = reffe.dofs
 
 Conformity(reffe::GenericRefFE) = reffe.conformity
 
-get_face_dofs(reffe::GenericRefFE) = reffe.face_dofs
+get_face_own_dofs(reffe::GenericRefFE) = reffe.face_own_dofs
+function get_face_own_dofs(reffe::GenericRefFE, conf::Conformity)
+  conf == Conformity(reffe) && return reffe.face_own_dofs
+  conf isa L2Conformity && return _get_face_own_dofs_l2(reffe)
+  @unreachable """\n
+  It is not possible to use conformity $conf on this reference FE.
+  """
+end
+
+function get_face_dofs(reffe::GenericRefFE)
+  poly = get_polytope(reffe)
+  face_own_dofs = get_face_own_dofs(reffe)
+  face_own_data_to_face_data(poly, face_own_dofs)
+end
 
 get_shapefuns(reffe::GenericRefFE) = reffe.shapefuns
 

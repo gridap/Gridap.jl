@@ -85,6 +85,3 @@ function Conformity(reffe::GenericRefFE{RaviartThomas},sym::Symbol)
   end
 end
 
-function get_face_own_dofs(reffe::GenericRefFE{RaviartThomas}, conf::DivConformity)
-  get_face_dofs(reffe)
-end

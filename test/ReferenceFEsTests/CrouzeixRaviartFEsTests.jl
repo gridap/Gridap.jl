@@ -16,6 +16,14 @@ test_reference_fe(reffe)
 @test Conformity(reffe, :L2) == L2Conformity()
 @test_throws ErrorException Conformity(reffe, :H1)
 
+# Although the conformity is L2, the dof are owned by edges and are glued
+# This is actually a specific conformity, could be called CRConformity instead of L2.
+face_own_dofs = Vector{Int}[[],[],[],[1],[2],[3],[]]
+face_dofs = Vector{Int}[[],[],[],[1],[2],[3],[1,2,3]]
+@test get_face_own_dofs(reffe) == face_own_dofs
+@test get_face_own_dofs(reffe, L2Conformity()) == face_own_dofs
+@test get_face_dofs(reffe) == face_dofs
+
 reffe = ReferenceFE(TET, crouzeix_raviart, 1)
 reffec = CrouzeixRaviartRefFE(Float64, TET, 1)
 @test reffe == reffec

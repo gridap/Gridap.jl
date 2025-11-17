@@ -9,6 +9,18 @@ using Gridap.Io
 
 nodal = false
 
+p, F = (TRI, :P⁻)
+reffe = ModalScalarRefFE(Float64,p,2; F)
+@test reffe == ReferenceFE(p,F,2,0)
+@test reffe == ReferenceFE(p,F,2,0; nodal)
+
+face_own_dofs = Vector{Int}[[1],[2],[3],[4],[5],[6],[]]
+face_dofs = Vector{Int}[[1],[2],[3],[1,2,4],[1,3,5],[2,3,6],[1,2,3,4,5,6]]
+@test get_face_own_dofs(reffe) == face_own_dofs
+@test get_face_dofs(reffe) == face_dofs
+
+test_reference_fe(reffe)
+
 for (p,F) in [
   (TRI, :P⁻), (TRI, :P), (QUAD,:Q⁻), (QUAD,:S),
   (TET, :P⁻), (TET, :P), (HEX, :Q⁻), (HEX, :S),

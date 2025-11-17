@@ -122,7 +122,3 @@ function Conformity(::GenericRefFE{<:ModalScalar},sym::Symbol)
   end
 end
 
-function get_face_own_dofs(reffe::GenericRefFE{<:ModalScalar}, conf::GradConformity)
-  get_face_dofs(reffe)
-end
-#get_face_dofs(::GenericRefFE{<:ModalScalar}, ::GradConformity) = throw(ErrorException("not implemeted"))

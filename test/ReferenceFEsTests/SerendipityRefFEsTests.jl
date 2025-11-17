@@ -14,6 +14,12 @@ reffe = SerendipityRefFE(Float64,QUAD,2)
   (0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0),
   (0.5, 0.0), (0.5, 1.0), (0.0, 0.5), (1.0, 0.5)]
 @test get_face_own_nodes(reffe) == [[1], [2], [3], [4], [5], [6], [7], [8], Int[]]
+@test get_face_own_dofs(reffe) == Vector{Int}[[1], [2], [3], [4], [5], [6], [7], [8],[]]
+@test get_face_dofs(reffe) == Vector{Int}[
+  [1], [2], [3], [4],
+  [1,2,5], [3,4,6], [1,3,7], [2,4,8],
+  [1,2,3,4,5,6,7,8]
+]
 test_lagrangian_reference_fe(reffe)
 
 reffer = ReferenceFE(QUAD,serendipity,2)

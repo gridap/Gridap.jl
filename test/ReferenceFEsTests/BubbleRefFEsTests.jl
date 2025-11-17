@@ -55,6 +55,12 @@ end
 # specific tests for TRI
 p = TRI
 reffe = BubbleRefFE(Float64, p)
+
+face_own_dofs = Vector{Int}[[],[],[],[],[],[],[1]]
+face_dofs = Vector{Int}[[],[],[],[],[],[],[1]]
+@test get_face_own_dofs(reffe) == face_own_dofs
+@test get_face_dofs(reffe) == face_dofs
+
 shapefuns = get_shapefuns(reffe)
 xs = [VectorValue(x, y) for x in 0:0.1:1, y in 0:0.1:1 if x + y <= 1.0]
 foo((x, y)) = 27*x*y*(1-x-y)
