@@ -18,6 +18,8 @@ using Test
 
 @testset "GeometricDecompositions" begin include("GeometricDecompositionTests.jl") end
 
+@testset "MomentBasedReferenceFEs" begin include("MomentBasedReferenceFEsTests.jl") end
+
 @testset "LagrangianRefFEs" begin include("LagrangianRefFEsTests.jl") end
 
 @testset "CLagrangianRefFEs" begin include("CLagrangianRefFEsTests.jl") end

@@ -87,6 +87,7 @@ For tensor-valued bases, it is the maximum for each component.
 """
 @inline get_order(::PolynomialBasis) = @abstractmethod
 get_order(f::LinearCombinationFieldVector) = get_order(f.fields)
+get_order(f::FieldGradientArray) = get_order(f.fa)
 get_order(f::AbstractVector{<:ConstantField}) = 0
 
 """
