@@ -30,6 +30,7 @@ using Gridap.Polynomials: _define_terms, _sort_by_nfaces!
 using QuadGK: gauss
 using FastGaussQuadrature: gaussjacobi
 using FastGaussQuadrature: gausslegendre
+using Gridap.Fields: gradient_type
 
 using Statistics: mean
 

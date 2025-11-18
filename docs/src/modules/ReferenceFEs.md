@@ -28,6 +28,7 @@ The following table summarizes the elements implemented in Gridap (legend below)
 | [Serendipity](https://defelement.org/elements/serendipity.html)                         | [`serendipity`](@ref SerendipityRefFE)       | 𝓢ᵣΛ⁰      | ``\square`` | ``{r=o≥1, o}``  | `:H1`     |
 | [Bezier](https://defelement.org/elements/bernstein.html)                                | [`bezier`](@ref BezierRefFE)                 | 𝓟ᵣ⁻Λ⁰     | △           | ``{r=o≥1, o}``  | `:H1`     |
 |                                                                                         |                                              | 𝓠ᵣ⁻Λ⁰     | ``\square`` | ``{r=o≥1, o}``  | `:H1`     |
+| [Hermite](https://defelement.org/elements/hermite.html)                                 | [`hermite`](@ref HermiteRefFE)               |           | △           | ``{o=3}``       | `:H1`+    |
 | [ModalC0](https://doi.org/10.48550/arXiv.2201.06632)                                    | [`modalC0`](@ref ModalC0RefFE)               | 𝓠ᵣ⁻Λ⁰     | ``\square`` | ``{r=o≥1, o}``  | `:H1`     |
 |                                                                                                                                                                                                |
 | [Modal scalar](@ref "Modal and nodal scalar reference elements")                        | [`modal_lagrangian`](@ref ModalScalarRefFE)  | 𝓟/𝓠ᵣ⁻Λ⁰   |△,``\square``| ``{r=o≥1, o}``  | `:H1`     |
@@ -41,7 +42,7 @@ The following table summarizes the elements implemented in Gridap (legend below)
 |                                                                                         |                                              | 𝓠ᵣ⁻Λᴰ⁻¹   | `QUAD`,`HEX`| ``{r=o+1≥1, r}``| `:Hdiv`   |
 | [Brezzi-Douglas-Marini](https://defelement.org/elements/brezzi-douglas-marini.html)     | [`bdm`](@ref BDMRefFE)                       | 𝓟ᵣΛᴰ⁻¹    | `TRI`,`TET` | ``{r=o≥1,   r}``| `:Hdiv`   |
 |                                                                                                                                                                                                |
-| [Crouzeix-Raviart](https://defelement.org/elements/crouzeix-raviart.html)               |[`crouzeix_raviart`](@ref CrouzeixRaviartRefFE)|          |  `TRI`      | ``{o=1, o}``    | `:L2`     |
+| [Crouzeix-Raviart](https://defelement.org/elements/crouzeix-raviart.html)               |[`crouzeix_raviart`](@ref CrouzeixRaviartRefFE)|          |  `TRI`      | ``{o=1, o}``    | `:L2`+    |
 | [discontinuous Lagrangian](https://defelement.org/elements/discontinuous-lagrange.html) | [`lagrangian`](@ref LagrangianRefFE)         | 𝓟ᵣ⁻Λᴰ     | △           | ``{r-1=o≥0, o}``| `:L2`     |
 |                                                                                         |                                              | 𝓟ᵣΛᴰ      | △           | ``{r=o≥0, o}``  | `:L2`     |
 |                                                                                         |                                              | 𝓠ᵣ⁻Λᴰ     | ``\square`` | ``{r-1=o≥0, o}``| `:L2`     |
@@ -219,7 +220,7 @@ Pages   = ["ReferenceFEInterfaces.jl","Dofs.jl","LinearCombinationDofVectors.jl"
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["LagrangianRefFEs.jl","LagrangianDofBases.jl","SerendipityRefFEs.jl","BezierRefFEs.jl","ModalC0RefFEs.jl","BubbleRefFEs.jl"]
+Pages   = ["LagrangianRefFEs.jl","LagrangianDofBases.jl","SerendipityRefFEs.jl","BezierRefFEs.jl","ModalC0RefFEs.jl","BubbleRefFEs.jl","HermiteRefFEs.jl"]
 ```
 
 ### Moment-Based ReferenceFEs

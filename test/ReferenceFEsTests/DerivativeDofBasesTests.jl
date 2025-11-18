@@ -2,10 +2,18 @@ module DofsTests
 
 using Test
 using Gridap
+using Gridap.TensorValues
 using Gridap.Polynomials
 using Gridap.ReferenceFEs
 using Gridap.Fields
 using Gridap.Arrays
+using StaticArrays
+
+D = 2
+T = Float64
+#V = SymTensorValue{D+1,T}
+V = VectorValue{D,T}
+P = Point{D,T}
 
 using LinearAlgebra: I
 using Gridap.ReferenceFEs: PointDerivativeValue, PointDerivativeDofBasis
@@ -31,11 +39,6 @@ function evaluate!(c, σ::PointDerivativeValue{P}, f::AbstractArray{<:Field}) wh
   #σf = ∇fx⋅σ.direction
 end
 
-
-D, T = 2, Float64
-b = FEEC_poly_basis(Val(D),T,3,0,:P⁻,Monomial)
-f = linear_combination( collect( i==2 for i in eachindex(b)), b)
-
 P = Point{D,T}
 σ  = PointDerivativeValue{P}(P(0,0), P(1,0))
 σ2 = PointDerivativeValue{P}(P(0,0), P(0,1))
@@ -58,8 +61,5 @@ evaluate(∇f, σ.point)
 c = return_cache(σ, f)
 evaluate!(c, σ, f)
 evaluate!(c, σ2, f)
-
-prebasis = FEEC_poly_basis(Val(1), T, 3, 0,:P, Monomial) # PᵣΛᴰ⁻¹, r = order
-ReferenceFEs._hermite_dofs(T, SEGMENT, prebasis)
 
 end # module
