@@ -130,6 +130,7 @@ num_indep_components
 indep_comp_getindex
 component_basis
 representatives_of_componentbasis_dual
+representatives_of_basis_dual
 indep_components_names
 change_eltype
 

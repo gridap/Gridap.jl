@@ -272,19 +272,21 @@ end
     representatives_of_componentbasis_dual(a::V<:Number)
 
 Given a `Number` type `V` with N independent components, return a vector of
-N values ``\\{ Vᵢ \\}_i`` that define the form basis ``\\{ Lⁱ := (u -> u ⊙ Vᵢ) \\}_i`` that
-is the dual of the component basis ``\\{ V(eᵢ) \\}_i`` (where ``\\{eᵢ\\}_i`` is the
+N values ``\\{ Vⁱ \\}_i`` that define the form basis ``\\{ Lⁱ := (u -> u ⊙ Vⁱ) \\}_i`` that
+is the dual of the component basis ``\\{ Vᵢ=V(eᵢ) \\}_i`` (where ``\\{eᵢ\\}_i`` is the
 Cartesian basis of (`eltype(V)`)ᴺ).
 
-The `Lⁱ`/`Vᵢ` verify the property that for any `u::V`,
+The `Vᵢ`/`Vʲ` verify the kronecker delta property ``Vᵢ⊙Vʲ = δᵢʲ``, and for any `u::V`,
 
     u = V( [ Lⁱ(u) for i ∈ 1:N ]... )
-      = V( [ u⊙Vᵢ  for i ∈ 1:N ]... )
+      = V( [ u⊙Vⁱ  for i ∈ 1:N ]... )
 
-Rq, when `V` has dependent components, the `Vᵢ` are NOT a component basis because
-`Vᵢ ≠ V(eᵢ)` and
+Rq, when `V` has dependent components, the `Vᵢ` are *not* a component basis because
+``Vʲ ≠ Vᵢ``, ``Vᵢ⊙Vⱼ≠δᵢʲ`` and
 
     u ≠ sum( indep_comp_getindex(u,i)*Vᵢ for i ∈ 1:N )
+
+See also [`representatives_of_basis_dual`](@ref ) to compute a dual subspace basis.
 """
 representatives_of_componentbasis_dual(a::Number) = representatives_of_componentbasis_dual(typeof(a))
 representatives_of_componentbasis_dual(T::Type{<:Real}) = [ one(T) ]
@@ -301,6 +303,54 @@ function representatives_of_componentbasis_dual(V::Type{<:MultiValue})
   Minv = inv(M)
 
   return V[ Tuple(Minv[i,:]) for i in 1:N ]
+end
+
+"""
+    representatives_of_basis_dual(basis)
+
+Same as [`representatives_of_componentbasis_dual`](@ref), but takes a basis as
+arguement, i.e. a collection of basis *vectors* -- in the linear algebra sense --
+of type `V<:Number`, so `basis` spans a subpace of ``Span{ component_basis(V)...}``.
+
+Computing the dual basis to a subspace basis is usefull for e.g. value types `G`
+resulting from applying a derivative to function of value type `Vd` having
+dependent components:
+
+```jldoctest
+Vd = SymTensorValue{2,Float64} # has 3 independent components
+P = Point{2,Float64}
+G = Fields.gradient_type(Vd, zero(P)) # ThirdOrderTensorValue{2, 2, 2, Float64}
+
+# Span{ component_basis(G)... } is of dimension 8, but the gradient of a Vd
+# valued function lives in the 6-dimensional space of basis:
+grad_Vd_basis = [ pi⊗vi for pi in component_basis(P) for vi in component_basis(Vd)]
+
+# of dual basis { v -> v ⊙ Gdᵢ}ᵢ for Gdᵢ in:
+grad_Vd_dual_basis = representatives_of_basis_dual(grad_Vd_basis)
+
+# kronecker delta property
+[ gi ⊙ gdi for gi in grad_Vd_basis, gdi in grad_Vd_dual_basis] ≈ LinearAlgebra.I # true
+```
+"""
+function representatives_of_basis_dual(B)
+  isempty(B) && return B # also ensures we get a collection
+  representatives_of_basis_dual(B...)
+end
+function representatives_of_basis_dual(B::T...) where {T<:Real}
+  @assert length(B) = 1 && !iszero(B[1])
+  T[ 1/B[1] ]
+end
+function representatives_of_basis_dual(B::V...) where {V<:MultiValue}
+  N = length(B)
+  T = eltype(V)
+
+  M = MMatrix{N,N,T}(undef)
+  for ci in CartesianIndices(M)
+    M[ci] = B[ci[1]] ⊙ B[ci[2]]
+  end
+  Minv = inv(M)
+
+  return V[ sum(Minv[i,:].*B) for i in 1:N ]
 end
 
 @inline function ForwardDiff.value(x::MultiValue{S,<:ForwardDiff.Dual}) where S
