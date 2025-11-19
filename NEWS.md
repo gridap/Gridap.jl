@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `MonomialBasis` and `Q[Curl]GradMonomialBasis` have been generalized to `Legendre`, `Chebyshev` and `Bernstein` using the new `CartProdPolyBasis` and `CompWiseTensorPolyBasis` respectively.
 - `PCurlGradMonomialBasis` has been generalized to `Legendre` and `Chebyshev` using the new `RaviartThomasPolyBasis`.
 - New aliases and high level constructor for `CartProdPolyBasis` (former MonomialBasis): `MonomialBasis`, `LegendreBasis`, `ChebyshevBasis` and `BernsteinBasis`.
+- Generalized gradient and hessian of all `CartProdPolyBasis` to any tensor type (even with dependant components), as long as the derivative tensor is a tensor of at most third order. Since PR[#1184](https://github.com/gridap/Gridap.jl/pull/#1184).
 - New high level factory `FEEC_poly_basis` for the bases for the scalar Lagrange, Nedelec, Raviart-Thomas, BDM spaces, and all other spaces of the Periodic Table of the Finite Elements. (for Serendipity, only scalar is supported). For example:
   - Nedelec on simplex `FEEC_poly_basis(Val(D),Float64,order+1,  1,:P⁻)`
   - Nedelec on n-cubes `FEEC_poly_basis(Val(D),Float64,order+1,  1,:Q⁻)`
@@ -26,12 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Some refactoring of `Gridap.TensorValues` to simplify maintenance and new implementations. Since PR[#1115](https://github.com/gridap/Gridap.jl/pull/#1115).
   - Added `SkewSymTensorValue`: a new `<:MultiValue` 2nd order tensor type such that `transpose(s)==-s`.
   - `congruent_prod`: new operation for 2nd order tensors: `a,b -> bᵀ⋅a⋅b` preserving symmetry of `a`.
-  - `component_basis` and `representatives_of_componentbasis_dual`: new APIs for `::MultiValue`s yielding bases of the vector space spanned by the independent components of a tensor type (1st method) and its dual space (2nd method).
+  - `component_basis`, `representatives_of_componentbasis_dual`, `representatives_of_basis_dual`: new APIs for `::MultiValue`s yielding bases of the vector space spanned by the independent components of a tensor type (1st method) and its dual space (2nd method), or the dual to a basis (3rd method).
 
 - Refactoring of moment-based ReferenceFEs, those using face-integral linear forms for DoFs, including `RaviartThomas`, `Nedelec`, `BDM` and `CrouzeixRaviart`. Since PR[#1048](https://github.com/gridap/Gridap.jl/pull/#1048).
   - The mid-level `MomentBasedRefFE` factory function creates moment based refFEs
   - The low-level `FaceMeasure` implements the numerical integration of a bilinear integrand over the faces of a polytope.
-  - The low-level `MomentBasedDofBasis` implements a discretized basis of moment DoF
+  - The low-level `MomentBasedDofBasis` implements a discretized basis of moment DoF. It supports automatic pre-composition of the field with a differential operator. Since PR[#1184](https://github.com/gridap/Gridap.jl/pull/#1184).
 - Implemented moment-based scalar (`H1` conform) elements for scalar elements `lagrangian` and `serendipity` under the names `modal_lagrangian` and `modal_serendipity`. They are the default elements when calling for `k`=0-forms in the generic FEEC reference FE constructor (`P⁻`/`:P`/`:Q⁻` => `lagrangian`, `:S`=> `serendipity`), use the keyword `nodal=true` to opt-in nodal DOF based counterpart. Since PR[#1173](https://github.com/gridap/Gridap.jl/pull/1173).
 - Unified the high-level constructors of ReferenceFEs
 - New high level `ReferenceFE`s constructor using Arnold et al FEEC notations (Periodic Table of the Finite Elements): `ReferenceFE(F::Symbol, r, k, [, T::Type]; kwargs...)` with `F` the element family, `r` polynomial order and `k` the form order.
@@ -45,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed evaluation of `LinearCombinationDofVector` on vector of `<:Field`s (only impacts ModalC0 FEs and future moment based reffes)., since PR[#1105](https://github.com/gridap/Gridap.jl/pull/#1105).
 - Minor `MuliValue` bugfixes for `isless` and `<=` with scalars.
+- Fixed `get_face_dofs(::ReferenceFEs)` on many moment based elements, it sometimes returned `face_own_dofs`.
 
 ### Changed
 
@@ -69,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `[P/Q][Curl]GradMonomialBasis{D}(args...)` in favor of `FEEC_poly_basis`
 - `NedelecPreBasisOnSimplex{D}(order)` in favor of `NedelecPolyBasisOnSimplex(Val(D), Float64, order)`
 - `JacobiPolynomialBasis{D}(args...)` in favor of `LegendreBasis(Val(D), args...)`
+- `return_type(::PolynomialBasis)` in favor of `value_type(::PolynomialBasis)`
 
 ### Removed
 
