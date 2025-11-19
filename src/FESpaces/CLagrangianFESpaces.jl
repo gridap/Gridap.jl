@@ -116,7 +116,7 @@ function _unsafe_clagrangian(
 
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
   prebasis = get_prebasis(first(ctype_reffe))
-  T = return_type(prebasis)
+  T = value_type(prebasis)
   # Next line assumes linear grids
   node_to_tag = get_face_tag_index(labels,dirichlet_tags,0)
   _vector_type = vector_type === nothing ? Vector{Float64} : vector_type

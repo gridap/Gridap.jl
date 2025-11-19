@@ -76,6 +76,7 @@ export indep_comp_getindex
 export indep_components_names
 export component_basis
 export representatives_of_componentbasis_dual
+export representatives_of_basis_dual
 
 import Base: show
 import Base: promote_rule

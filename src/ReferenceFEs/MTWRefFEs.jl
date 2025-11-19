@@ -65,6 +65,3 @@ function Conformity(reffe::GenericRefFE{MardalTaiWinther},sym::Symbol)
   end
 end
 
-function get_face_own_dofs(reffe::GenericRefFE{MardalTaiWinther}, conf::DivConformity)
-  get_face_dofs(reffe)
-end

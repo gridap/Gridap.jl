@@ -49,7 +49,7 @@ function ModalC0RefFE(
 
   shapefuns = ModalC0Basis{D}(T,orders,a,b)
 
-  ndofs, predofs, lag_reffe, face_dofs = compute_reffe_data(T,p,orders,space=space)
+  ndofs, predofs, lag_reffe, face_own_dofs = compute_reffe_data(T,p,orders,space=space)
 
   GenericRefFE{ModalC0}(
     ndofs,
@@ -57,7 +57,7 @@ function ModalC0RefFE(
     predofs,
     GradConformity(),
     lag_reffe,
-    face_dofs,
+    face_own_dofs,
     shapefuns)
 end
 
@@ -72,7 +72,7 @@ function ModalC0RefFE(
 
   shapefuns = ModalC0Basis{D}(T,orders)
 
-  ndofs, predofs, lag_reffe, face_dofs = compute_reffe_data(T,p,orders,space=space)
+  ndofs, predofs, lag_reffe, face_own_dofs = compute_reffe_data(T,p,orders,space=space)
 
   GenericRefFE{ModalC0}(
     ndofs,
@@ -80,7 +80,7 @@ function ModalC0RefFE(
     predofs,
     GradConformity(),
     lag_reffe,
-    face_dofs,
+    face_own_dofs,
     shapefuns)
 end
 
@@ -102,7 +102,7 @@ function compute_reffe_data(::Type{T},
                             space::Symbol=_default_space(p)) where {T,D}
   lag_reffe = LagrangianRefFE(T,p,orders,space=space)
   reffe = lag_reffe.reffe
-  reffe.ndofs, reffe.dofs, lag_reffe, reffe.face_dofs
+  reffe.ndofs, reffe.dofs, lag_reffe, reffe.face_own_dofs
 end
 
 function ReferenceFE(
@@ -126,12 +126,6 @@ function Conformity(::GenericRefFE{ModalC0},sym::Symbol)
     Possible values of conformity for this reference fe are $((:L2, h1...)).
     """
   end
-end
-
-function get_face_own_dofs(
-  reffe::GenericRefFE{ModalC0},conf::GradConformity)
-  lagrangian_reffe = reffe.metadata
-  get_face_own_dofs(lagrangian_reffe,conf)
 end
 
 function get_face_own_dofs_permutations(
@@ -167,8 +161,7 @@ function compute_cell_to_modalC0_reffe(
   @notimplementedif minimum(orders) < one(eltype(orders))
   @assert ncells == length(bboxes)
 
-  ndofs, predofs, lag_reffe, face_dofs = compute_reffe_data(T,p,orders,space=space)
-  face_own_dofs = get_face_own_dofs(lag_reffe,GradConformity())
+  ndofs, predofs, lag_reffe, face_own_dofs = compute_reffe_data(T,p,orders,space=space)
 
   filter = space == :Q ? _q_filter : _ser_filter
 
@@ -184,7 +177,7 @@ function compute_cell_to_modalC0_reffe(
                                     predofs,
                                     GradConformity(),
                                     lag_reffe,
-                                    face_dofs,
+                                    face_own_dofs,
                                     sh)
 
   reffes = [ reffe(sh(bbs)) for bbs in bboxes ]
@@ -203,13 +196,13 @@ function compute_cell_to_modalC0_reffe(
 
   filter = space == :Q ? _q_filter : _ser_filter
 
-  ndofs, predofs, lag_reffe, face_dofs = compute_reffe_data(T,p,orders,space=space)
+  ndofs, predofs, lag_reffe, face_own_dofs = compute_reffe_data(T,p,orders,space=space)
   reffe = GenericRefFE{ModalC0}(ndofs,
                                 p,
                                 predofs,
                                 GradConformity(),
                                 lag_reffe,
-                                face_dofs,
+                                face_own_dofs,
                                 ModalC0Basis{D}(T,orders,filter=filter))
 
   Fill(reffe,ncells)

@@ -11,9 +11,9 @@ end
     end
 
 Type that implements a Lagrangian dof basis, that is a [`Dof`](@ref) basis where
-the DoFs are nodal evaluations. If the value type `V` is not scalar
-([`::MultiValue`](@ref MultiValue)'d), several DoFs may be associated to the same
-node, one for each independant component of `V`.
+the DoFs are nodal evaluations. If the value type `V` of the field is not scalar
+but ([`::MultiValue`](@ref MultiValue)'d), several DoFs may be associated to
+the same node, one for each independant component of `V`.
 
 Fields:
 

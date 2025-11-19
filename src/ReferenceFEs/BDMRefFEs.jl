@@ -78,6 +78,3 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
   end
 end
 
-function get_face_own_dofs(reffe::GenericRefFE{BDM}, conf::DivConformity)
-  get_face_dofs(reffe)
-end

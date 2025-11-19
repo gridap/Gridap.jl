@@ -50,7 +50,7 @@ mb = MockPolyBasis()
 
 # Implemented interfaces
 @test IndexStyle(mb) == IndexLinear()
-@test return_type(mb) == T
+@test value_type(mb) == T
 @test mb[1] == MockPolynomial()
 @test_throws ErrorException get_order(mb)
 @test_throws ErrorException get_orders(mb)

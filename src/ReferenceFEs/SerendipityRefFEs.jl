@@ -34,8 +34,12 @@ println( num_dofs(reffe) )
 
 # output
 8
-
 ```
+
+!!! warning
+    For dimension D ≥ 3 and order ≥ 5, conforming serendipity elements only work
+    on cartesian meshes (meshes with all geometrical mappings having diagonal
+    Jacobians).
 """
 function SerendipityRefFE(::Type{T},p::Polytope,order::Int;
   poly_type=Monomial) where T

@@ -61,7 +61,6 @@ function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont) wh
   face_nodes = _compute_face_nodes(p,face_own_nodes)
 
   face_own_dofs = _generate_face_own_dofs(face_own_nodes, dofs.node_and_comp_to_dof)
-  face_dofs = _compute_face_nodes(p,face_own_dofs)
 
   data = nothing
 
@@ -74,7 +73,7 @@ function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont) wh
       dofs,
       conf,
       data,
-      face_dofs)
+      face_own_dofs)
 
   GenericLagrangianRefFE(reffe,face_nodes)
 end

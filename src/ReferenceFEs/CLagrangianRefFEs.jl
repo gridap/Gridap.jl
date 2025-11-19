@@ -172,7 +172,7 @@ function to_dict(reffe::GenericLagrangianRefFE{GradConformity})
   else
     dict[:space] = "default"
   end
-  dict[:value] = string(return_type(b))
+  dict[:value] = string(value_type(b))
   dict
 end
 
@@ -283,7 +283,6 @@ function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders,poly_type) where {T,
   _reffaces = vcat(reffaces...)
   face_nodes = _generate_face_nodes(nnodes,face_own_nodes,p,_reffaces)
   face_own_dofs = _generate_face_own_dofs(face_own_nodes, dofs.node_and_comp_to_dof)
-  face_dofs = _generate_face_dofs(ndofs,face_own_dofs,p,_reffaces)
 
   if all(map(i->i==0,orders) ) && D>0
     conf = L2Conformity()
@@ -298,7 +297,7 @@ function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders,poly_type) where {T,
     dofs,
     conf,
     metadata,
-    face_dofs)
+    face_own_dofs)
   GenericLagrangianRefFE(reffe,face_nodes)
 end
 

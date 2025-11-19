@@ -26,6 +26,11 @@ test_reference_fe(reffe)
 @test num_dofs(reffe) == 4
 @test Conformity(reffe) == DivConformity()
 
+face_own_dofs = Vector{Int}[[],[],[],[],[3],[4],[1],[2],[]]
+face_dofs = Vector{Int}[[],[],[],[],[3],[4],[1],[2],[3,4,1,2]]
+@test get_face_own_dofs(reffe) == face_own_dofs
+@test get_face_dofs(reffe) == face_dofs
+
 @test_warn "falling back to `change_dof=false`" RaviartThomasRefFE(et,p,order; change_dof=true, poly_type=Monomial)
 
 p = QUAD

@@ -245,7 +245,20 @@ function get_normal_flux_forms(p::Polytope{D}, field) where D
 end
 
 
-# Traces Test function
+"""
+    _test_geometric_decomposition(basis,polytope,conformity,
+      face_own_funs=get_face_own_funs(b,p,conf), skip_check=false)
+
+This function only validates that the polynomials have null traces on the face
+they need to do so, it does not validate the full definition of a
+geometrically decomposed basis, i.e. that the shape function can be glued in a
+conforming manner (this is the result of the theoretical derivation of the basis).
+
+As a consequence, I suspect that this routine wouldn't be enough to implement
+`has_geometric_decomposition` for any given basis, this API still needs to be
+declarative (new method are added for each implemented basis that we know are
+geometrically decomposed for theoretical reason).
+"""
 function _test_geometric_decomposition(b,p,conf,
   face_own_funs=get_face_own_funs(b,p,conf), skip_check=false)
 

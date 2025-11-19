@@ -320,10 +320,6 @@ function  _generate_face_own_dofs_permutations(
   face_own_dofs_permutations
 end
 
-function get_face_own_dofs(reffe::LagrangianRefFE,conf::L2Conformity)
-  _get_face_own_dofs_l2(reffe)
-end
-
 function get_face_own_dofs_permutations(reffe::LagrangianRefFE,conf::L2Conformity)
   face_own_dofs = get_face_own_dofs(reffe,conf)
   _trivial_face_own_dofs_permutations(face_own_dofs)
@@ -407,6 +403,8 @@ get_prebasis(reffe::GenericLagrangianRefFE) = get_prebasis(reffe.reffe)
 get_dof_basis(reffe::GenericLagrangianRefFE) = get_dof_basis(reffe.reffe)
 
 Conformity(reffe::GenericLagrangianRefFE) = Conformity(reffe.reffe)
+
+get_face_own_dofs(reffe::GenericLagrangianRefFE) = get_face_own_dofs(reffe.reffe)
 
 get_face_dofs(reffe::GenericLagrangianRefFE) = get_face_dofs(reffe.reffe)
 

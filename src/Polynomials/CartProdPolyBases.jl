@@ -253,74 +253,43 @@ return k+n
 
 Note that `r[i,k]` is a `TensorValue` or `ThirdOrderTensorValue` and `s` a
 `MVector` or `MMatrix`.
+
+# Extended help
+
+When `V` has dependent components, the derivative values are not defined as
+simply as above, but this function implements what it should: seting derivatives
+with respect to each independent components of `V`.
 """
 @generated function _cartprod_set_derivative!(
-  r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V}
-  # Git blame me for readable non-generated version
-
-  w = zero(V)
-  m = Array{String}(undef, size(G))
-  N_val_dims = length(size(V))
-  s_size = size(G)[1:end-N_val_dims]
-
-  body = "T = eltype(s); z = zero(T);"
-  for ci in CartesianIndices(s_size)
-    id = join(Tuple(ci))
-    body *= "@inbounds s$id = s[$ci];"
-  end
-
-  for j in CartesianIndices(w)
-    for i in CartesianIndices(m)
-      m[i] = "z"
-    end
-    for ci in CartesianIndices(s_size)
-      id = join(Tuple(ci))
-      m[ci,j] = "s$id"
-    end
-    body *= "@inbounds r[i,k] = ($(join(tuple(m...), ", ")));"
-    body *= "k = k + 1;"
-  end
-
-  body = Meta.parse(string("begin ",body," end"))
-  return Expr(:block, body ,:(return k))
-end
-
-# Specialization for SymTensorValue and SymTracelessTensorValue,
-# necessary as long as outer(Point, V<:AbstractSymTensorValue)::G does not
-# return a tensor type G that implements the appropriate symmetries of the
-# gradient (and hessian)
-@generated function _cartprod_set_derivative!(
-  r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:AbstractSymTensorValue{D}} where D
-  # Git blame me for readable non-generated version
+  r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:MultiValue}
 
   T = eltype(s)
+  zs = zero(s)
   m = Array{String}(undef, size(G))
-  s_length = size(G)[1]
 
-  is_traceless = V <: SymTracelessTensorValue
-  skip_last_diagval = is_traceless ? 1 : 0    # Skid V_DD if traceless
+  V_deri = MultiValue(zs)
+  grad_V_basis = [ ∇i⊗vj for ∇i in component_basis(V_deri), vj in component_basis(V)]
 
   body = "z = $(zero(T));"
-  for i in 1:s_length
+  for i in 1:length(zs)
     body *= "@inbounds s$i = s[$i];"
   end
 
-  for c in 1:(D-skip_last_diagval) # Go over cols
-    for r in c:D                   # Go over lower triangle, current col
-      for i in eachindex(m)
-        m[i] = "z"
-      end
-      for i in 1:s_length # indices of the Vector s
-        m[i,r,c] = "s$i"
-        if (r!=c)
-          m[i,c,r] = "s$i"
-        elseif is_traceless # V_rr contributes negatively to V_DD (tracelessness)
-          m[i,D,D] = "-s$i"
+  for icomp in 1:num_indep_components(V)
+    m .= "z"
+    for i in 1:length(zs)
+      gVi_comps = grad_V_basis[i,icomp]
+      for j in 1:length(G)
+        gVij = gVi_comps[j]
+        if !iszero(gVij)
+          #m[j] += grad_V_basis[i,icomp][j] * s[i]
+          m[j] *= " + $gVij*s$i"
         end
       end
-      body *= "@inbounds r[i,k] = ($(join(tuple(m...), ", ")));"
-      body *= "k = k + 1;"
     end
+    # r[i,k] = sum( grad_V_basis[i,icomp] .* s[i] for i in 1:length(s) )
+    body *= "@inbounds r[i,k] = ($(join(tuple(m...), ", ")));"
+    body *= "k = k + 1;"
   end
 
   body = Meta.parse(string("begin ",body," end"))

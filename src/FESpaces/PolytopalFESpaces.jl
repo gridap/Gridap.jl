@@ -75,7 +75,7 @@ function PolytopalFESpace(
   orthonormal = false,
   local_kernel = nothing
 )
-  T = return_type(first(cell_prebasis))
+  T = value_type(first(cell_prebasis))
   Dc = num_cell_dims(model)
 
   order = maximum(Polynomials.get_order,cell_prebasis)
@@ -96,7 +96,7 @@ function PolytopalFESpace(
   end
   fe_basis = SingleFieldFEBasis(cell_shapefuns, trian, TestBasis(), domain_style)
 
-  ncomps = num_components(return_type(first(cell_prebasis)))
+  ncomps = num_components(value_type(first(cell_prebasis)))
   if !isnothing(dirichlet_masks)
     @check length(dirichlet_masks) == ncomps
     dirichlet_components = dirichlet_masks
@@ -144,7 +144,7 @@ struct MonomialDofConformity{D,V}
 end
 
 function MonomialDofConformity(basis::Polynomials.MonomialBasis)
-  T = return_type(basis)
+  T = value_type(basis)
   nterms = length(basis.terms)
   dof_to_term, dof_to_comp, term_and_comp_to_dof = ReferenceFEs._generate_dof_layout_node_major(T,nterms)
   MonomialDofConformity(

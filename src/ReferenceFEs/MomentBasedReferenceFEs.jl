@@ -4,21 +4,27 @@
 struct Moment <: Dof end
 
 """
-    struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
+    struct MomentBasedDofBasis{P,V,O,N} <: AbstractVector{Moment}
 
 Implementation of a basis of discretized moment DoFs, where `P` is the type of
 the quadrature nodes, and `V` the value type of the shape functions.
+
+`O` is the type of an operator applied to the field φ before evaluating the moment,
+e.g. `typeof(gradient)` if the moment relates to ∇φ.
 """
-struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
+struct MomentBasedDofBasis{P,V,O,N} <: AbstractVector{Moment}
   nodes::Vector{P}
-  face_moments::Vector{Array{V}}
+  face_moments::Vector{Array{V,N}}
   face_nodes::Vector{UnitRange{Int}}
   face_own_moms::Vector{Vector{Int}}
+  operator::O
 
-  function MomentBasedDofBasis(nodes,f_moments,f_nodes,f_own_moms)
+  function MomentBasedDofBasis(nodes,f_moments,f_nodes,f_own_moms,operator=nothing)
     P = eltype(nodes)
     V = eltype(eltype(f_moments))
-    new{P,V}(nodes,f_moments,f_nodes,f_own_moms)
+    N = ndims(first(f_moments))
+    O = typeof(operator)
+    new{P,V,O,N}(nodes,f_moments,f_nodes,f_own_moms,operator)
   end
 
   # Unused and untested
@@ -63,12 +69,12 @@ Return the vector of discretized moments for each face of the underlying polytop
 get_face_moments(b::MomentBasedDofBasis) = b.face_moments
 
 """
-    get_face_own_dofs(b::MomentBasedDofBasis)
+    get_face_own_moments(b::MomentBasedDofBasis)
 
 The ownership of `b`'s dofs to faces of the underlying polytope is defined as
 the face the moment was defined on.
 """
-get_face_own_dofs(b::MomentBasedDofBasis) = b.face_own_moms
+get_face_own_moments(b::MomentBasedDofBasis) = b.face_own_moms
 
 """
     get_face_nodes_dofs(b::MomentBasedDofBasis)
@@ -76,6 +82,21 @@ get_face_own_dofs(b::MomentBasedDofBasis) = b.face_own_moms
 Return the moment quadrature node indices on each face of the underlying polytope.
 """
 get_face_nodes_dofs(b::MomentBasedDofBasis) = b.face_nodes
+
+"""
+    apply_operator(b::MomentBasedDofBasis, field)
+
+Applies `b`'s operator to `f` (if any).
+"""
+apply_operator(b::MomentBasedDofBasis, field) = _apply_operator(b.operator, field)
+
+function _apply_operator(op, field)
+  if isnothing(op)
+    field
+  else
+    Broadcasting(op)(field)
+  end
+end
 
 function num_dofs(b::MomentBasedDofBasis)
   n = 0
@@ -86,6 +107,7 @@ function num_dofs(b::MomentBasedDofBasis)
 end
 
 function return_cache(b::MomentBasedDofBasis{P,V}, field) where {P,V}
+  field = apply_operator(b, field)
   cf = return_cache(field,b.nodes)
   vals = evaluate!(cf,field,b.nodes)
   Vr = eltype(vals)
@@ -98,6 +120,7 @@ end
 function evaluate!(cache, b::MomentBasedDofBasis, field::Field)
   c, cf = cache
   setsize!(c, size(b))
+  field = apply_operator(b, field)
   vals = evaluate!(cf,field,b.nodes)
   dofs = c.array
 
@@ -125,6 +148,7 @@ end
 
 function evaluate!(cache, b::MomentBasedDofBasis, field::AbstractVector{<:Field})
   c, cf = cache
+  field = apply_operator(b, field)
   setsize!(c, (size(b,1),length(field)))
   vals = evaluate!(cf,field,b.nodes)
   dofs = c.array
@@ -155,7 +179,9 @@ function evaluate!(cache, b::MomentBasedDofBasis, field::AbstractVector{<:Field}
 end
 
 """
-    MomentBasedDofBasis(p::Polytope, prebasis::AbstractVector{<:Field}, moments)
+    MomentBasedDofBasis( p::Polytope, prebasis::AbstractVector{<:Field}, moments,
+        [, face_own_dofs], operator=nothing
+    )
 
 Creates a basis of DoFs defined by moments on faces of `p`.
 
@@ -169,11 +195,31 @@ The moment DoFs are thus defined by φ -> ∫_Fₖ σ(φ,μᵢ,ds)dFₖ,  ∀ σ
 In the final basis, DoFs are ordered by moment, then by face, then by "test" polynomial.
 
 All the faces in a moment must be of the same type (have same reference face).
+
+If an `operator` function -- e.g. `∇` -- is given, it is applied to `φ` (with
+respect to `p`'s coordinates) before being passed to `σ`. The moment becomes
+`φ -> σ(∇φ,μ,ds)`.
+
+If `face_own_dofs` is given, it defines the moment ownership to faces.
 """
 function MomentBasedDofBasis(
     p::Polytope{D},
     prebasis::AbstractVector{<:Field},
     moments::AbstractVector{<:Tuple},
+    face_own_dofs::AbstractVector,
+    operator=nothing,
+  ) where D
+
+  dofs = MomentBasedDofBasis(p, prebasis, moments, operator)
+  # replace moment ownership
+  MomentBasedDofBasis(dofs.nodes, dofs.face_moments, dofs.face_nodes, face_own_dofs, operator)
+end
+
+function MomentBasedDofBasis(
+    p::Polytope{D},
+    prebasis::AbstractVector{<:Field},
+    moments::AbstractVector{<:Tuple},
+    operator=nothing,
   ) where D
 
   n_faces = num_faces(p)
@@ -182,9 +228,11 @@ function MomentBasedDofBasis(
   face_offsets = get_offsets(p)
   reffaces, face_types = _compute_reffaces_and_face_types(p)
 
-  V = return_type(prebasis)
-  φ_vec = representatives_of_componentbasis_dual(V)
-  φ = map(constant_field,φ_vec)
+  field = _apply_operator(operator, prebasis)
+  x = first(get_vertex_coordinates(p))
+  V = eltype(return_type(field, x))
+  op_φ_vec = representatives_of_componentbasis_dual(V)
+  op_φ = map(constant_field, op_φ_vec)
 
   # Create face measures for each moment
   order = get_order(prebasis)
@@ -226,7 +274,7 @@ function MomentBasedDofBasis(
   fill!(face_n_nodes,0)
   nodes = Vector{Point{D,Float64}}(undef,n_nodes)
   for ((faces,σ,μ),ds) in zip(moments,measures)
-    cache = return_cache(σ,φ,μ,ds)
+    cache = return_cache(σ,op_φ,μ,ds)
 
     for face in faces
       d = face_dims[face]
@@ -234,7 +282,7 @@ function MomentBasedDofBasis(
       set_face!(ds,lface)
 
       # vals : (nN, nμ, nφ), coords : (nN)
-      vals, coords = evaluate!(cache,σ,φ,μ,ds)
+      vals, coords = evaluate!(cache,σ,op_φ,μ,ds)
       # test_moment(σ,prebasis,μ,ds)
 
       mom_offset = face_n_moms[face]
@@ -251,14 +299,15 @@ function MomentBasedDofBasis(
     end
   end
 
-  MomentBasedDofBasis(nodes, face_moments, face_nodes, face_own_moms)
+  MomentBasedDofBasis(nodes, face_moments, face_nodes, face_own_moms, operator)
 end
 
 # Unused and untested
 #function test_moment(σ,prebasis,μ,ds)
-#  T = return_type(prebasis)
-#  φ = map(constant_field,dual_component_basis_representatives(T))
-#  vals, coords = evaluate(σ,φ,μ,ds)
+#  op_prebasis = _apply_operator(operator, prebasis)
+#  T = return_type(op_prebasis)
+#  op_φ = map(constant_field,dual_component_basis_representatives(T))
+#  vals, coords = evaluate(σ,op_φ,μ,ds)
 #
 #  φx = evaluate(prebasis, coords) # (nN, nφ)
 #  σx, _ = evaluate(σ,prebasis,μ,ds)
@@ -420,12 +469,16 @@ end
       p::Polytope,
       prebasis::AbstractVector{<:Field},
       moments::AbstractVector{<:Tuple},
-      conformity::Conformity;
+      conformity::Conformity,
+      face_own_dofs=nothing;
       change_dof=false
     )
 
 Constructs a ReferenceFEs on `p` with a moment DoF (pre-)basis defined by
 `moments`. See [`MomentBasedDofBasis`](@ref) for the specification of `moments`.
+
+The dofs ownership to faces can be overloaded, the default is given by
+[`get_face_own_moments`](@ref).
 
 If `change_dof=true`, `prebasis` is used as shape functions.
 This requires it to fullfill a geometric decomposition relative to the faces of
@@ -441,7 +494,8 @@ function MomentBasedReferenceFE(
   p::Polytope,
   prebasis::AbstractVector{<:Field},
   moments::AbstractVector{<:Tuple},
-  conformity::Conformity;
+  conformity::Conformity,
+  face_own_dofs=nothing;
   change_dof=false
 )
 
@@ -469,7 +523,9 @@ function MomentBasedReferenceFE(
     )
   end # else, standard prebasis inversion
 
-  face_own_dofs = get_face_own_dofs(dof_basis)
+  if isnothing(face_own_dofs)
+    face_own_dofs = get_face_own_moments(dof_basis)
+  end
   GenericRefFE{typeof(name)}(
     n_dofs, p, prebasis, dof_basis, conformity, metadata, face_own_dofs
   )

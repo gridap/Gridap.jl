@@ -67,6 +67,85 @@ function evaluate!(cache,b::LinearCombinationDofVector,field)
   return evaluate!(ck,k,fx,transpose(b.values))
 end
 
+
+"""
+    vcat(dofs::AbstractVector{<:Dof}...)
+
+Creates a `Dof` vector that is the concatenation of the given `Dof` vectors,
+that is
+
+    evaluate(vcat_dofs(dofs...), φ) == vcat( (evaluate(dof, φ) for dof in dofs)...)
+
+The bases must all act on field(-vector)s of same value shape (this function
+does not check it).
+"""
+Base.vcat(dofs::AbstractVector{<:Dof}...) = ConcatenatedDofVector(dofs...)
+
+"""
+    struct ConcatenatedDofVector{A} <: AbstractVector{Dof}
+      args::A
+    end
+
+Backend for [`vcat(::AbstractVector{<:Dof})`](@ref), args is a tuple of `Dof` basis.
+"""
+struct ConcatenatedDofVector{A} <: AbstractVector{Dof}
+  args::A
+
+  function ConcatenatedDofVector(dof_bases::AbstractVector{<:Dof}...)
+    A = typeof(dof_bases)
+    new{A}(dof_bases)
+  end
+end
+
+Base.size(b::ConcatenatedDofVector) = (mapreduce(length, +, b.args; init=0), )
+Base.IndexStyle(::ConcatenatedDofVector) = IndexLinear()
+function Base.getindex(b::ConcatenatedDofVector, i::Integer)
+  bases = b.args
+  lengths = length.(bases)
+  first_indices = accumulate(+, lengths)
+  basis_index = findfirst(>=(i), first_indices)
+  first(bases[basis_index]) # this is PointValue() or Moment() whatever i
+end
+
+function Arrays.return_cache(b::ConcatenatedDofVector, field)
+  args_caches = ()
+  Ts = ()
+  for dofs_i in b.args
+    ci = return_cache(dofs_i, field)
+    vals = evaluate!(ci, dofs_i, field)
+    Ti = eltype(vals)
+    Ts = (Ts..., Ti)
+    args_caches = (args_caches..., ci)
+  end
+
+  r_size = field isa AbstractVector ? (length(b),length(field)) : (length(b),)
+  T = promote_type(Ts...)
+  r = zeros(T, r_size)
+  c = CachedArray(r)
+
+  c, args_caches
+end
+
+function Arrays.evaluate!(cache, b::ConcatenatedDofVector, field)
+  c = cache[1]
+  args_caches = cache[2]
+  ndofs = length(b)
+  r_size = field isa AbstractVector ? (ndofs,length(field)) : (ndofs,)
+  setsize!(c, r_size)
+  r = c.array
+
+  pos = 1
+  @inbounds for (ci, dofs_i) in zip(args_caches, b.args)
+    ni = length(dofs_i)
+    ri = evaluate!(ci, dofs_i, field)
+    r[pos:pos+ni-1,:] .= ri
+    pos += ni
+  end
+
+  r
+end
+
+
 """
     struct MappedDofBasis{T<:Dof,MT,BT} <: AbstractVector{T}
       F :: MT

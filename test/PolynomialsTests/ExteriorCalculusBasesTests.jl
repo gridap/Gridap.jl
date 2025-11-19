@@ -46,7 +46,7 @@ r = 3         # Polynomial order
 no_hessian = true
 
 @noinline function _test_bases(b, b2, r,k,F,D, no_hessian=false; cart_prod=false)
-  ncomp = cart_prod ? num_indep_components(return_type(b)) : 1
+  ncomp = cart_prod ? num_indep_components(value_type(b)) : 1
   @test length(b) == FEEC_length(r,k,D,Val(F))*ncomp
   @test b isa typeof(b2)
   @test evaluate(b,x) == evaluate(b2,x)

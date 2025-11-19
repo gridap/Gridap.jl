@@ -247,6 +247,20 @@ end
 
 # CartProdPolyBasis
 
+"""
+    has_geometric_decomposition(::CartProdPolyBasis, p, conf)
+    has_geometric_decomposition(::CompWiseTensorPolyBasis, p, conf)
+
+# Extended help
+
+The methods for `CartProdPolyBasis` and `CompWiseTensorPolyBasis` bases only
+check that the polynomials can be associated to a face due to their trace
+vanishing properties.
+
+The equality of the trace spaces to faces, that is necessary to glue the local
+face shape-functions of a global face in a conforming manner, is not guaranteed
+and is the responsability of the constructor of the basis.
+"""
 function has_geometric_decomposition(
   b::CartProdPolyBasis{D,V,<:GD_1D_PT}, p::Polytope, conf::Conformity) where {D,V}
 
