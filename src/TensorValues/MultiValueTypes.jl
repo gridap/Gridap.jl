@@ -251,8 +251,8 @@ end
     component_basis(a::T<:Number)
 
 Given a `Number` type `V` with N independent components, return a vector of
-N values ``\\{ Vᵢ=V(eᵢ) \\}_i`` forming the component basis of ``\\{ u : u\\text{ isa }V\\}``
-(where ``\\{eᵢ\\}_i`` is the Cartesian basis of (`eltype(V)`)ᴺ).
+N values ``\\{ Vᵢ=V(eᵢ) \\}_i`` forming the component basis of ``\\{ u : u\\text{ isa }V\\}``,
+where ``\\{eᵢ\\}_i`` is the Cartesian basis of (`eltype(V)`)ᴺ.
 
 The `Vᵢ` verify the property that for any `u::V`,
 
@@ -272,7 +272,7 @@ end
     representatives_of_componentbasis_dual(a::V<:Number)
 
 Given a `Number` type `V` with N independent components, return a vector of
-N values ``\\{ Vⁱ \\}_i`` that define the form basis ``\\{ Lⁱ := (u -> u ⊙ Vⁱ) \\}_i`` that
+N tensors ``\\{ Vⁱ \\}_i`` that define the form basis ``\\{ Lⁱ := (u → u ⊙ Vⁱ) \\}_i`` that
 is the dual of the component basis ``\\{ Vᵢ=V(eᵢ) \\}_i`` (where ``\\{eᵢ\\}_i`` is the
 Cartesian basis of (`eltype(V)`)ᴺ).
 
@@ -281,10 +281,10 @@ The `Vᵢ`/`Vʲ` verify the kronecker delta property ``Vᵢ⊙Vʲ = δᵢʲ``, a
     u = V( [ Lⁱ(u) for i ∈ 1:N ]... )
       = V( [ u⊙Vⁱ  for i ∈ 1:N ]... )
 
-Rq, when `V` has dependent components, the `Vᵢ` are *not* a component basis because
-``Vʲ ≠ Vᵢ``, ``Vᵢ⊙Vⱼ≠δᵢʲ`` and
+Rq, when `V` has dependent components, the `Vⁱ` are *not* a component basis
+because ``Vʲ ≠ Vᵢ``, ``Vᵢ⊙Vⱼ≠δᵢʲ`` and
 
-    u ≠ sum( indep_comp_getindex(u,i)*Vᵢ for i ∈ 1:N )
+    u ≠ sum( indep_comp_getindex(u,i)*Vⁱ for i ∈ 1:N )
 
 See also [`representatives_of_basis_dual`](@ref ) to compute a dual subspace basis.
 """
@@ -310,7 +310,7 @@ end
 
 Same as [`representatives_of_componentbasis_dual`](@ref), but takes a basis as
 arguement, i.e. a collection of basis *vectors* -- in the linear algebra sense --
-of type `V<:Number`, so `basis` spans a subpace of ``Span{ component_basis(V)...}``.
+of type `V<:Number`, so `basis` spans a subpace of Span``\\{ component_basis(V)...\\}``.
 
 Computing the dual basis to a subspace basis is usefull for e.g. value types `G`
 resulting from applying a derivative to function of value type `Vd` having
