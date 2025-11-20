@@ -203,6 +203,7 @@ export ModalScalarRefFE
 export CrouzeixRaviartRefFE
 export BubbleRefFE
 export HermiteRefFE
+export ArgyrisRefFE
 
 export Lagrangian
 export RaviartThomas
@@ -215,6 +216,7 @@ export CrouzeixRaviart
 export Serendipity
 export Bubble
 export Hermite
+export Argyris
 
 export lagrangian
 export raviart_thomas
@@ -230,6 +232,7 @@ export crouzeix_raviart
 export serendipity
 export bubble
 export hermite
+export argyris
 
 export Quadrature
 export QuadratureName
@@ -316,5 +319,7 @@ include("ModalC0RefFEs.jl")
 include("BubbleRefFEs.jl")
 
 include("HermiteRefFEs.jl")
+
+include("ArgyrisRefFEs.jl")
 
 end # module

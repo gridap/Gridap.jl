@@ -13,7 +13,7 @@ const hermite = Hermite()
 #Pushforward(::Type{Hermite}) = ContraVariantPiolaMap()
 
 """
-    HermiteRefFE(::Type{V}, p::Polytope; poly_type)
+    HermiteRefFE(::Type{V}, p::Polytope; vertices=nothing, poly_type)
 
 The default conformity is `:H1`/`:Hgrad` because the global FE space is not C1,
 although it is C1 at element vertices.
@@ -23,17 +23,21 @@ Hermite FE is constructed.
 
 The kwarg [`poly_type`](@ref "`poly_type` keyword argument") defaults to
 `Bernstein`.
+
+If `vertices` are given, the DOF are defined on the physical triangle defined
+by them.
 """
-function HermiteRefFE(
-  ::Type{V}, p::Polytope{D}; poly_type=_mom_reffe_default_PT(p)) where {V,D}
+function HermiteRefFE(::Type{V}, p::Polytope{D};
+                      vertices=nothing, poly_type=_mom_reffe_default_PT(p)) where {V,D}
 
   @check 1 ≤ D && is_simplex(p) "Hermite Reference FE only available on simplices of dimension ≥ 1"
 
   PT = poly_type
   cart_prod = V <: MultiValue
-  prebasis = FEEC_poly_basis(Val(D), V, 3 ,0,:P, PT; cart_prod) # P₃Λᴰ⁻¹
+  prebasis = FEEC_poly_basis(Val(D), V, 3 ,0,:P, PT; cart_prod, vertices) # P₃Λ⁰(△₂)
 
-  dofs, face_own_dofs = _hermite_dofs_and_faceowndofs(V, p, prebasis)
+  phys_p = isnothing(vertices) ? p : GeneralPolytope{D}(p, vertices)
+  dofs, face_own_dofs = _hermite_dofs_and_faceowndofs(V, phys_p, prebasis)
 
   ndofs = length(dofs)
   conformity = GradConformity()
@@ -95,12 +99,13 @@ function _hermite_dofs_and_faceowndofs(::Type{V}, p::Polytope{D}, prebasis) wher
   end
   pointvalues = LagrangianDofBasis(V, nodes)
 
-  face_own_dofs = _generate_face_own_dofs(face_own_nodes, pointvalues.node_and_comp_to_dof)
-  pp_face_own_dofs = get_face_own_moments(partials_pointvalues)
+  value_fod = _generate_face_own_dofs(face_own_nodes, pointvalues.node_and_comp_to_dof)
+  partial_fod = get_face_own_moments(partials_pointvalues)
+  face_own_dofs = deepcopy(value_fod)
   # appending these two face_own_dofs
   nb_nodal_dofs = length(pointvalues)
   for i in eachindex(face_own_dofs)
-    append!(face_own_dofs[i], pp_face_own_dofs[i] .+ nb_nodal_dofs)
+    append!(face_own_dofs[i], partial_fod[i] .+ nb_nodal_dofs)
   end
 
   dofs = vcat(pointvalues, partials_pointvalues)
