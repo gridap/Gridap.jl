@@ -50,6 +50,10 @@ function get_fe_space(f::FEFunction)
   @abstractmethod
 end
 
+function get_dirichlet_dof_values(f::FEFunction)
+  get_dirichlet_dof_values(get_fe_space(f))
+end
+
 function get_cell_is_dirichlet(f::FEFunction)
   get_cell_is_dirichlet(get_fe_space(f))
 end
