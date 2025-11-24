@@ -101,7 +101,7 @@ Vc2 = FESpaceWithLinearConstraints(
 
 @test get_dof_value_type(Vc2) <: ComplexF64
 
-# Test other constructors
+# Alternative constructor
 
 fdof_to_dofs = Table([[-1,4],[2],[3],[4],[4,6],[6]])
 fdof_to_coeffs = Table([[0.5,0.5],[1.0],[1.0],[1.0],[0.5,0.5],[1.0]])

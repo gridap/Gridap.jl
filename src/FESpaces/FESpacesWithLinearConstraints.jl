@@ -121,19 +121,11 @@ function FESpaceWithLinearConstraints(
 end
 
 function _dof_to_DOF(dof,n_fdofs)
-  if dof > 0
-    DOF = dof
-  else
-    DOF = n_fdofs - dof
-  end
+  ifelse(iszero(dof), 0, ifelse(dof > 0, dof, n_fdofs - dof))
 end
 
 function _DOF_to_dof(DOF,n_fdofs)
-  if DOF > n_fdofs
-    dof = -(DOF-n_fdofs)
-  else
-    dof = DOF
-  end
+  ifelse(DOF > n_fdofs, -(DOF - n_fdofs), DOF)
 end
 
 # Implementation of FESpace interface
@@ -167,12 +159,12 @@ function get_dirichlet_dof_tag(f::FESpaceWithLinearConstraints)
 end
 
 function get_dirichlet_dof_values(f::FESpaceWithLinearConstraints)
-  ddof_to_tag = get_dirichlet_dof_values(f.space)
-  dmdof_to_tag = zeros(eltype(ddof_to_tag),num_dirichlet_dofs(f))
+  ddof_to_val = get_dirichlet_dof_values(f.space)
+  dmdof_to_val = zeros(eltype(ddof_to_val),num_dirichlet_dofs(f))
   _ddof_to_dmdof_vals!(
-    dmdof_to_tag,ddof_to_tag,f.mDOF_to_dof
+    dmdof_to_val,ddof_to_val,f.mDOF_to_dof
   ) 
-  return dmdof_to_tag
+  return dmdof_to_val
 end
 
 function scatter_free_and_dirichlet_values(f::FESpaceWithLinearConstraints,fmdof_to_val,dmdof_to_val)
@@ -334,7 +326,6 @@ function get_cell_constraints(f::FESpaceWithLinearConstraints)
   cell_to_mat = get_cell_constraints(f.space)
   return lazy_map(k,get_cell_dof_ids(f),get_cell_dof_ids(f.space),cell_to_mat)
 end
-
 struct LinearConstraintsMap{A,B} <: Map
   DOF_to_msDOF::Vector{Int}
   sDOF_to_mdofs::A
@@ -408,6 +399,7 @@ function _check_constraints(
   n_dofs = n_fdofs + num_dirichlet_dofs(space)
   DOF_is_master = fill(false,n_dofs)
   for dof in mDOF_to_dof
+    iszero(dof) && continue
     DOF = _dof_to_DOF(dof,n_fdofs)
     DOF_is_master[DOF] = true
   end
@@ -415,7 +407,7 @@ function _check_constraints(
   mDOF_is_master = fill(true,length(mDOF_to_dof))
   for (mDOF,dof) in enumerate(mDOF_to_dof)
     DOF = _dof_to_DOF(dof,n_fdofs)
-    mDOF_is_master[mDOF] = DOF_is_master[DOF]
+    mDOF_is_master[mDOF] = iszero(DOF) || DOF_is_master[DOF]
   end
 
   c = array_cache(sDOF_to_mdofs)
@@ -563,19 +555,20 @@ function _generate_cell_to_mdofs(
 end
 
 function generate_DOF_to_msDOF_map(space, mDOF_to_dof, sDOF_to_dof)
-  n_mDOFs = length(mDOF_to_dof)
+  n_mdofs = length(mDOF_to_dof)
   n_fdofs = num_free_dofs(space)
   n_dofs  = n_fdofs + num_dirichlet_dofs(space)
   DOF_to_msDOF = Vector{Int}(undef,n_dofs)
 
   for (mDOF,dof) in enumerate(mDOF_to_dof)
+    iszero(dof) && continue
     DOF = _dof_to_DOF(dof,n_fdofs)
     DOF_to_msDOF[DOF] = mDOF
   end
 
   for (sDOF,dof) in enumerate(sDOF_to_dof)
     DOF = _dof_to_DOF(dof,n_fdofs)
-    DOF_to_msDOF[DOF] = sDOF + n_mDOFs
+    DOF_to_msDOF[DOF] = sDOF + n_mdofs
   end
 
   return DOF_to_msDOF
