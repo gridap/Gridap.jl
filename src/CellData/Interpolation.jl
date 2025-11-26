@@ -32,7 +32,7 @@ function return_cache(a::Interpolable,x::Point)
 
   cell_f = get_array(f)
   cell_f_cache = array_cache(cell_f)
-  cf = testitem(cell_f)
+  cf = testitem(cell_f[findall(!isempty, cell_f)])
   f_cache = return_cache(cf,x)
   cache2 = cell_f_cache, f_cache, cell_f, f
 
