@@ -55,7 +55,7 @@ end
 Return the vector of `d`-volumes of the `d`-faces of `p`.
 """ # TODO: Generalize
 function _get_dfaces_measure(p::Polytope{D}, d::Int) where D
-  @notimplementedif (!is_simplex(p) || d>3) "Only implemented for simplices of dim up to 3."
+  #@notimplementedif (!is_simplex(p) || d>3) "Only implemented for simplices of dim up to 3."
   measures = Float64[]
   dfaces_vertices = get_face_coordinates(p,d)
   for entity in dfaces_vertices

@@ -302,6 +302,94 @@ function MomentBasedDofBasis(
   MomentBasedDofBasis(nodes, face_moments, face_nodes, face_own_moms, operator)
 end
 
+function PointValueDofBasis(
+    p::Polytope{D},
+    prebasis::AbstractVector{<:Field},
+    moments::AbstractVector{<:Tuple},
+    operator=nothing,
+  ) where D
+
+  n_faces = num_faces(p)
+  n_moments = length(moments)
+  face_dims = get_facedims(p)
+  face_offsets = get_offsets(p)
+  reffaces, face_types = _compute_reffaces_and_face_types(p)
+
+  field = _apply_operator(operator, prebasis)
+  x = first(get_vertex_coordinates(p))
+  V = eltype(return_type(field, x))
+  op_φ_vec = representatives_of_componentbasis_dual(V)
+  op_φ = map(constant_field, op_φ_vec)
+
+  # Create face measures for each moment
+  measures = Vector{FaceMeasure}(undef,n_moments)
+  for (k,(faces,σ,μ)) in enumerate(moments)
+    ftype = face_types[first(faces)]
+    fp = reffaces[ftype]
+    measures[k] = FaceMeasure(p,fp,0)
+  end
+
+  # Count number of moments and quad pts per face
+  face_n_dofs = zeros(Int,n_faces)
+  face_n_nodes = zeros(Int,n_faces)
+  for (faces,σ,μ,refface_nodes) in moments
+    face_n_dofs[faces] .+= length(μ)*length(refface_nodes)
+    face_n_nodes[faces] .+= length(refface_nodes)
+  end
+
+  # Compute face moment and node indices
+  n_moms = 0
+  n_nodes = 0
+  face_nodes = Vector{UnitRange{Int}}(undef, n_faces)
+  face_moments = Vector{Array{V}}(undef, n_faces)
+  face_own_dofs = Vector{Vector{Int}}(undef,n_faces)
+  for face in 1:n_faces
+    n_moms_i = face_n_dofs[face]
+    n_nodes_i = face_n_nodes[face]
+    face_nodes[face] = (n_nodes+1):(n_nodes+n_nodes_i)
+    face_moments[face] = zeros(V,n_nodes_i,n_moms_i)
+    face_own_dofs[face] = collect((n_moms+1):(n_moms+n_moms_i))
+    n_moms += n_moms_i
+    n_nodes += n_nodes_i
+  end
+
+  # Compute face moments and nodes
+  fill!(face_n_dofs,0)
+  fill!(face_n_nodes,0)
+  nodes = Vector{Point{D,Float64}}(undef,n_nodes)
+  for ((faces,σ,μ,refface_nodes),ds) in zip(moments,measures)
+    cache = return_cache(σ,op_φ,μ,ds)
+
+    for face in faces
+      d = face_dims[face]
+      lface = face - face_offsets[d+1]
+      set_face!(ds,lface)
+      # volume of the face, to cancel detJ in dummy integral
+      # TODO cancel face volume (detJ)
+
+      for (ii,n) in enumerate(refface_nodes)
+        # ~ set_node!(ds,n)
+        ds.quad.coordinates[1] = n
+        # vals : (1, nμ, nφ), coords : (1)
+        vals, coords = evaluate!(cache,σ,op_φ,μ,ds)
+
+        mom_offset = face_n_dofs[face]
+        node_offset = first(face_nodes[face]) + face_n_nodes[face] - 1
+        for j in axes(vals,2)
+          face_moments[face][ii,j+mom_offset] = V(vals[1,j,:]...)
+        end
+        nodes[1+node_offset] = coords[1]
+
+        face_n_nodes[face] += 1
+        face_n_dofs[face] += size(vals,2)
+      end
+
+    end
+  end
+
+  MomentBasedDofBasis(nodes, face_moments, face_nodes, face_own_dofs, operator)
+end
+
 # Unused and untested
 #function test_moment(σ,prebasis,μ,ds)
 #  op_prebasis = _apply_operator(operator, prebasis)

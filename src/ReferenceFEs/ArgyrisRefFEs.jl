@@ -16,9 +16,6 @@ const argyris = Argyris()
     ArgyrisRefFE(::Type{V}, p::Polytope, order; vertices=nothing,
                  poly_type, mom_poly_type=poly_type)
 
-The default conformity is `:H1`/`:Hgrad` because the global FE space is not C1,
-although it is C1 at element vertices.
-
 Available on simplices. If `V <: MultiValue`, a cartesian product of the scalar
 Argyris FE is constructed.
 

@@ -204,6 +204,7 @@ export CrouzeixRaviartRefFE
 export BubbleRefFE
 export HermiteRefFE
 export ArgyrisRefFE
+export MorleyRefFE
 
 export Lagrangian
 export RaviartThomas
@@ -217,6 +218,7 @@ export Serendipity
 export Bubble
 export Hermite
 export Argyris
+export Morley
 
 export lagrangian
 export raviart_thomas
@@ -233,6 +235,8 @@ export serendipity
 export bubble
 export hermite
 export argyris
+export bell
+export morley
 
 export Quadrature
 export QuadratureName
@@ -321,5 +325,7 @@ include("BubbleRefFEs.jl")
 include("HermiteRefFEs.jl")
 
 include("ArgyrisRefFEs.jl")
+
+include("MorleyRefFEs.jl")
 
 end # module
