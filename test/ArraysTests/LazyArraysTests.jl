@@ -296,6 +296,18 @@ end
 @test all(a.counter .== 2)
 @test all(b.counter .== 1)
 
+# test cache invalidation, values should be re-computed
+Arrays.resetcounter!(a)
+Arrays.resetcounter!(b)
+for i in 1:length(e)
+  ei = getindex!(cache,e,i)
+  ei = getindex!(cache,e,i)
+  invalidate_cache!(cache)
+  ei = getindex!(cache,e,i)
+end
+@test all(a.counter .== 4)
+@test all(b.counter .== 2)
+
 # using lazy_map and test_map at the same time
 
 n = 4

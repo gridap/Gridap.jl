@@ -286,6 +286,15 @@ function get_face_coordinates(g::GridTopology,d::Integer)
 end
 
 """
+    get_cell_polytopes(topo::GridTopology)
+"""
+function get_cell_polytopes(topo::GridTopology)
+  type_to_poly = get_polytopes(topo)
+  cell_to_type = get_cell_type(topo)
+  expand_cell_data(type_to_poly,cell_to_type)
+end
+
+"""
     is_simplex(p::GridTopology) -> Bool
 """
 function is_simplex(p::GridTopology)
@@ -403,30 +412,29 @@ end
 
 """
     get_isboundary_face(g::GridTopology)
+    get_isboundary_face(g::GridTopology,d::Integer)
+
+Returns a vector of booleans indicating if the face is a boundary face. Boundary faces 
+are defined in the following way: 
+- If `d = D-1`, i.e facets, a boundary facet is a facet that is adjacent to only one cell.
+- Otherwise, a face is a boundary face if it belongs to a boundary facet.
+
+If no target dimension is specified, all dimensions are returned.
 """
 function get_isboundary_face(g::GridTopology)
   compute_isboundary_face(g)
 end
 
-"""
-    get_isboundary_face(g::GridTopology,d::Integer)
-"""
 function get_isboundary_face(g::GridTopology,d::Integer)
   compute_isboundary_face(g,d)
 end
 
-"""
-    compute_isboundary_face(g::GridTopology)
-"""
 function compute_isboundary_face(g::GridTopology)
   D = num_cell_dims(g)
   d_to_dface_to_isboundary = [compute_isboundary_face(g,d) for d in 0:D]
   vcat(d_to_dface_to_isboundary...)
 end
 
-"""
-    compute_isboundary_face(g::GridTopology,d::Integer)
-"""
 function compute_isboundary_face(g::GridTopology,d::Integer)
   D = num_cell_dims(g)
   if d == D-1
@@ -464,30 +472,27 @@ end
 
 """
     get_cell_permutations(top::GridTopology)
+    get_cell_permutations(top::GridTopology,d::Integer)
+
+Returns an cell-wise array of permutations. For each cell, the entry contains the permutations
+of the local d-faces of the cell w.r.t the global d-faces of the mesh.
+
+If no target dimension is specified, all dimensions are returned.
 """
 function get_cell_permutations(top::GridTopology)
   compute_cell_permutations(top)
 end
 
-"""
-    get_cell_permutations(top::GridTopology,d::Integer)
-"""
 function get_cell_permutations(top::GridTopology,d::Integer)
   compute_cell_permutations(top,d)
 end
 
-"""
-    compute_cell_permutations(top::GridTopology)
-"""
 function compute_cell_permutations(top::GridTopology)
   D = num_cell_dims(top)
   tables = (compute_cell_permutations(top,d) for d in 0:D)
   append_tables_locally(tables...)
 end
 
-"""
-    compute_cell_permutations(top::GridTopology,d::Integer)
-"""
 function compute_cell_permutations(top::GridTopology,d::Integer)
 
   D = num_cell_dims(top)
@@ -502,13 +507,13 @@ function compute_cell_permutations(top::GridTopology,d::Integer)
   end
 
   face_to_fvertex_to_vertex = Table(get_faces(top,d,0))
-  face_to_ftype = get_face_type(top,d)
-  reffaces = get_reffaces(Polytope{d},top)
-  ftype_to_pindex_to_cfvertex_to_fvertex = map(get_vertex_permutations,reffaces)
+  ftype_to_fpoly, face_to_ftype = compute_reffaces(Polytope{d},top)
+  ftype_to_pindex_to_cfvertex_to_fvertex = map(get_vertex_permutations,ftype_to_fpoly)
+
   cell_to_cvertex_to_vertex = Table(get_faces(top,D,0))
   cell_to_ctype = get_cell_type(top)
-  polytopes = get_polytopes(top)
-  ctype_to_lface_to_cvertices = map( (p)->get_faces(p,d,0), polytopes )
+  ctype_to_cpoly = get_polytopes(top)
+  ctype_to_lface_to_cvertices = map(p -> get_faces(p,d,0), ctype_to_cpoly)
 
   _compute_cell_perm_indices!(
     cell_to_lface_to_pindex,
@@ -518,9 +523,10 @@ function compute_cell_permutations(top::GridTopology,d::Integer)
     ctype_to_lface_to_cvertices,
     face_to_fvertex_to_vertex,
     face_to_ftype,
-    ftype_to_pindex_to_cfvertex_to_fvertex)
+    ftype_to_pindex_to_cfvertex_to_fvertex
+  )
 
-  cell_to_lface_to_pindex
+  return cell_to_lface_to_pindex
 end
 
 """
@@ -535,6 +541,19 @@ end
 function GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::AbstractVector)
   _grid = UnstructuredGrid(grid)
   UnstructuredGridTopology(_grid,cell_to_vertices,vertex_to_node)
+end
+
+"""
+    restrict(topo::GridTopology, cell_to_parent_cell::AbstractVector{<:Integer})
+    restrict(topo::GridTopology, parent_cell_to_mask::AbstractVector{Bool})
+"""
+function restrict(topo::GridTopology, cell_to_parent_cell::AbstractVector{<:Integer})
+  restrict(UnstructuredGridTopology(topo), cell_to_parent_cell)
+end
+
+function restrict(topo::GridTopology,parent_cell_to_mask::AbstractVector{Bool})
+  cell_to_parent_cell = findall(parent_cell_to_mask)
+  restrict(topo, cell_to_parent_cell)
 end
 
 # Helpers
@@ -585,10 +604,10 @@ function  _compute_cell_perm_indices!(
 end
 
 function generate_cells_around(
-  cell_to_faces::Table,
-  nfaces::Integer = length(cell_to_faces.data)==0 ? 0 : maximum(cell_to_faces.data))
-
-  data, ptrs = _face_to_cells(cell_to_faces.data,cell_to_faces.ptrs,nfaces)
+  cell_to_faces::Table{T},
+  nfaces::Integer = maximum(cell_to_faces.data,init=zero(T))
+) where T
+  data, ptrs = Arrays.inverse_table(cell_to_faces.data,cell_to_faces.ptrs,nfaces)
   Table(data,ptrs)
 end
 
@@ -610,42 +629,32 @@ function generate_cell_to_faces(
 end
 
 function _generate_ftype_to_refface(::Val{d},ctype_to_lftype_to_refface,ctype_to_lface_to_lftype) where d
-
-
-  i_to_refface = vcat( ctype_to_lftype_to_refface... )
-
-  i = 1
-  ctype_to_lftype_to_i = Vector{Int}[]
-  for ctype in 1:length(ctype_to_lftype_to_refface)
-    lftype_to_i = Int[]
-    for lftype in length(ctype_to_lftype_to_refface[ctype])
-      push!(lftype_to_i, i)
-      i +=1
-    end
-    push!(ctype_to_lftype_to_i, lftype_to_i)
-  end
-
+  nctypes = length(ctype_to_lftype_to_refface)
+  i_to_refface = vcat(ctype_to_lftype_to_refface...)
   ftype_to_refface, i_to_ftype = _find_unique_with_indices(i_to_refface)
 
-  ctype_to_lftype_to_ftype = copy(ctype_to_lftype_to_i)
-  for ctype in 1:length(ctype_to_lftype_to_i)
-    for lftype in 1:length(ctype_to_lftype_to_i[ctype])
-      i = ctype_to_lftype_to_i[ctype][lftype]
+  i = 1
+  ctype_to_lftype_to_ftype = Vector{Vector{Int}}(undef,nctypes)
+  for ctype in 1:nctypes
+    nlftypes = length(ctype_to_lftype_to_refface[ctype])
+    lftype_to_ftype = Vector{Int}(undef,nlftypes)
+    for lftype in 1:nlftypes
       ftype = i_to_ftype[i]
-      ctype_to_lftype_to_ftype[ctype][lftype] = ftype
+      lftype_to_ftype[lftype] = ftype
+      i += 1
     end
+    ctype_to_lftype_to_ftype[ctype] = lftype_to_ftype
   end
 
-  ctype_to_lface_to_ftype = Vector{Int}[]
-  for ctype in 1:length(ctype_to_lftype_to_ftype)
+  ctype_to_lface_to_ftype = Vector{Vector{Int}}(undef,nctypes)
+  for ctype in 1:nctypes
     lface_to_lftype = ctype_to_lface_to_lftype[ctype]
     lftype_to_ftype = ctype_to_lftype_to_ftype[ctype]
     lface_to_ftype = lftype_to_ftype[lface_to_lftype]
-    push!(ctype_to_lface_to_ftype,lface_to_ftype)
+    ctype_to_lface_to_ftype[ctype] = lface_to_ftype
   end
 
   (ftype_to_refface, ctype_to_lface_to_ftype)
-
 end
 
 function generate_face_to_face_type(
@@ -701,6 +710,11 @@ end
 
 function generate_facet_to_isboundary(face_to_cells::Table)
   _generate_facet_to_isboundary(face_to_cells.ptrs)
+end
+
+function generate_facet_to_isboundary(face_to_cells)
+  ptrs = Arrays.generate_ptrs(face_to_cells)
+  _generate_facet_to_isboundary(ptrs)
 end
 
 function generate_face_to_isboundary(
@@ -879,57 +893,6 @@ function  _generate_object_to_isboundary_fill!(
         object_to_isboundary[object] = true
         break
       end
-    end
-  end
-
-end
-
-function _face_to_cells(
-  cell_to_faces_data::AbstractVector{L},
-  cell_to_faces_ptrs::AbstractVector{P},
-  nfaces) where {L,P}
-
-  face_to_cells_ptrs = zeros(P,nfaces+1)
-
-  _face_to_cells_count!(
-    face_to_cells_ptrs, cell_to_faces_data)
-
-  length_to_ptrs!(face_to_cells_ptrs)
-
-  ndata = face_to_cells_ptrs[end]-1
-
-  face_to_cells_data = Vector{L}(undef,ndata)
-
-  _face_to_cells_fill!(
-    face_to_cells_data, face_to_cells_ptrs,
-    cell_to_faces_data, cell_to_faces_ptrs)
-
-  rewind_ptrs!(face_to_cells_ptrs)
-
-  (face_to_cells_data, face_to_cells_ptrs)
-
-end
-
-function _face_to_cells_count!(
-    face_to_cells_ptrs, cell_to_faces_data)
-  for i=1:length(cell_to_faces_data)
-    face_to_cells_ptrs[cell_to_faces_data[i]+1]+=1
-  end
-end
-
-function _face_to_cells_fill!(
-    face_to_cells_data, face_to_cells_ptrs,
-    cell_to_faces_data, cell_to_faces_ptrs)
-
-  ncells = length(cell_to_faces_ptrs) - 1
-  for cell in 1:ncells
-    a = cell_to_faces_ptrs[cell]
-    b = cell_to_faces_ptrs[cell+1]-one(typeof(a))
-    for p in a:b
-      face = cell_to_faces_data[p]
-      q = face_to_cells_ptrs[face]
-      face_to_cells_data[q] = cell
-      face_to_cells_ptrs[face] = q + one(typeof(q))
     end
   end
 
@@ -1216,7 +1179,7 @@ function _fill_face_in_cells_around!(
   cells_around,
   lface_of_cells_around)
 
-  for icell_around in 1:length(cells_around)
+  for icell_around in eachindex(cells_around)
     cell_around = cells_around[icell_around]
     if cell_around == UNSET
       continue
@@ -1238,7 +1201,7 @@ function _find_cells_around_vertices!(
   ncells_around = UNSET
   ncells_around_scratch = UNSET
 
-  for ivertex in 1:length(vertices)
+  for ivertex in eachindex(vertices)
     vertex = vertices[ivertex]
     if vertex == UNSET
       continue
@@ -1315,7 +1278,7 @@ function _find_lface_of_cells_around_lface!(
 
   lface_of_cells_around .= UNSET
 
-  for icell_around in 1:length(cells_around)
+  for icell_around in eachindex(cells_around)
     cell_around = cells_around[icell_around]
     if cell_around == UNSET
       continue
@@ -1331,7 +1294,6 @@ function _find_lface_of_cells_around_lface!(
       ctype_to_lface_to_lvertices)
 
     lface_of_cells_around[icell_around] = lface_of_cell_around
-
   end
 
 end
@@ -1348,11 +1310,7 @@ function _find_lface_with_same_vertices(
   ctype = cell_to_ctype[cell]
   lface_to_lvertices = ctype_to_lface_to_lvertices[ctype]
 
-  nlfaces = length(lface_to_lvertices)
-  c = cell_to_vertices_ptrs[cell]-1
-
-  for lface in 1:nlfaces
-
+  for lface in eachindex(lface_to_lvertices)
     _fill_vertices_in_lface!(
       vertices_scratch,
       lface,
@@ -1364,11 +1322,9 @@ function _find_lface_with_same_vertices(
     if _set_equal(vertices,vertices_scratch)
       return lface
     end
-
   end
 
   return UNSET
-
 end
 
 function _fill_vertices_in_lface!(
@@ -1380,12 +1336,11 @@ function _fill_vertices_in_lface!(
   cell_to_vertices_ptrs)
 
   vertices .= UNSET
-  c = cell_to_vertices_ptrs[cell] - 1
+  offset = cell_to_vertices_ptrs[cell] - 1
   lvertices = lface_to_lvertices[lface]
-  nlfvertex = length(lvertices)
-  for lfvertex in 1:nlfvertex
+  for lfvertex in eachindex(lvertices)
     lvertex = lvertices[lfvertex]
-    vertex = cell_to_vertices_data[c+lvertex]
+    vertex = cell_to_vertices_data[offset+lvertex]
     vertices[lfvertex] = vertex
   end
 
@@ -1402,7 +1357,7 @@ function _set_equal(vertices,vertices_scratch)
 end
 
 function _is_subset(vertices,vertices_scratch)
-  for i in 1:length(vertices)
+  for i in eachindex(vertices)
     v = vertices[i]
     if v == UNSET
       continue
@@ -1706,5 +1661,3 @@ function  _fill_gface_to_face!(
   end
 
 end
-
-

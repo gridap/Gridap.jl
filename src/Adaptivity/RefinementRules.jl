@@ -25,7 +25,7 @@ end
 # - The reason why we are saving both the cell maps and the inverse cell maps is to avoid recomputing
 #   them when needed. This is needed for performance when the RefinementRule is used for MacroFEs.
 #   Also, in the case the ref_grid comes from a CartesianGrid, we save the cell maps as 
-#   AffineMaps, which are more efficient than the default linear_combinations.
+#   AffineFields, which are more efficient than the default linear_combinations.
 # - We cannot parametrise the RefinementRule by all it's fields, because we will have different types of
 #   RefinementRules in a single mesh. It's the same reason why we don't parametrise the ReferenceFE type.
 
@@ -36,7 +36,15 @@ function RefinementRule(
   ref_trian = Triangulation(ref_grid)
   cmaps = collect1d(cell_maps)
   icmaps = collect1d(lazy_map(Fields.inverse_map,cell_maps))
-  p2c_cache = CellData._point_to_cell_cache(CellData.KDTreeSearch(),ref_trian)
+  # If there are simplices in the mesh, then for a given point, there may exist a symmetric point of it 
+  # with respect to the nearest facet, leading to the identification of an incorrect element and resulting
+  # in an error. In ther worst case, if this point is the circumcenter, there may be as many wrong points
+  # as the number of facets. Therefore we need to find an additional point. 
+  polytopes = get_polytopes(ref_grid)
+  has_simplex = any(map(is_simplex,polytopes))
+  max_num_facets = mapreduce(num_facets,maximum,polytopes)
+  num_nearest_vertices = has_simplex ? min(max_num_facets+1,num_nodes(ref_grid)) : 1
+  p2c_cache = CellData._point_to_cell_cache(CellData.KDTreeSearch(;num_nearest_vertices),ref_trian)
   return RefinementRule(T,poly,ref_grid,cmaps,icmaps,p2c_cache)
 end
 
@@ -101,7 +109,7 @@ function get_cell_measures(rr::RefinementRule)
   return measures
 end
 
-function get_cell_polytopes(rr::Union{RefinementRule,AbstractArray{<:RefinementRule}})
+function Geometry.get_cell_polytopes(rr::Union{RefinementRule,AbstractArray{<:RefinementRule}})
   polys, cell_type = _get_cell_polytopes(rr)
   return CompressedArray(polys,cell_type)
 end
@@ -373,7 +381,7 @@ function get_face_subface_ldof_to_cell_ldof(
   
   model = get_ref_grid(rr)
   fine_face_grid = Grid(ReferenceFE{D},model)
-  fine_face_polys = CompressedArray(map(get_polytope,get_reffes(fine_face_grid)),get_cell_type(fine_face_grid))
+  fine_face_polys = CompressedArray(get_polytopes(fine_face_grid),get_cell_type(fine_face_grid))
 
   d_to_face_to_child_faces = get_d_to_face_to_child_faces(rr)
   face_to_child_faces = d_to_face_to_child_faces[D+1]
@@ -881,7 +889,7 @@ function test_refinement_rule(rr::RefinementRule; debug=false)
   end
 
   cell_measures = get_cell_measures(rr)
-  cell_polys = get_cell_polytopes(rr)
+  cell_polys = Geometry.get_cell_polytopes(rr)
 
   return nothing
 end

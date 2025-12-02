@@ -38,27 +38,18 @@ end
 JSON.lower(object::GridapType) = to_dict(object)
 
 function _decode_json_dict(json_dict::Dict{String,Any})
+  _decode_item(x) = x
+  _decode_item(x::Dict{String,Any}) = _decode_json_dict(x)
+
   dict = Dict{Symbol,Any}()
   for k in keys(json_dict)
     v = json_dict[k]
-    if isa(v,Dict{String,Any})
-      w = _decode_json_dict(v)
-    elseif isa(v,AbstractVector)
-      _w = []
-      for vi in v
-        if isa(vi,Dict{String,Any})
-          wi = _decode_json_dict(vi)
-        else
-          wi = vi
-        end
-        push!(_w,wi)
-      end
-      w = collect(_w)
+    if isa(v,AbstractVector)
+      w = collect((_decode_item(vi) for vi in v))
     else
-      w = v
+      w = _decode_item(v)
     end
     dict[Symbol(k)] = w
   end
   dict
 end
-

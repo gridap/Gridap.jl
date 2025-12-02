@@ -1,5 +1,6 @@
 module MultiFieldCellFieldsTests
 
+using Gridap.Helpers
 using FillArrays
 using Gridap.Arrays
 using Gridap.Geometry
@@ -64,6 +65,40 @@ X = MultiFieldFESpace([U,P])
 
 dv, dq = get_fe_basis(Y)
 du, dp = get_trial_fe_basis(X)
+display(dv)
+
+# sum of single spaces
+degree = 3
+dx = Measure(trian,degree)
+foo(a,b,c) = (-a)+((+b)-c)
+cell_points = get_cell_points(dx)
+for basis in [du, dv, dp, dq]
+  bases = tfill(basis, Val{3}())
+  d1 = evaluate(foo(bases...),cell_points)
+  d2 = foo((evaluate(b,cell_points) for b in bases)...)
+  @test testitem(d1) isa ArrayBlock
+  @test testitem(d2) isa ArrayBlock
+  @test d1 == d2
+end
+
+foo1((u,p),(v,q)) = ∫(∇(-u+u+u)⊙∇(v+v-v)+(u+u)⋅v-∇(p+p)⋅∇(q)+p*(-q-q))dx
+foo2((u,p),(v,q)) = ∫(∇(u)⊙∇(v)+2*u⋅v-2*∇(p)⋅∇(q)-2*p*q)dx
+mat1 = assemble_matrix(foo1,X,Y)
+mat2 = assemble_matrix(foo2,X,Y)
+@test mat1 == mat2
+
+# sum of mixed spaces
+S = TestFESpace(model,ReferenceFE(lagrangian,VectorValue{2,Float64},order);conformity=:H1)
+R = TrialFESpace(S)
+Y = MultiFieldFESpace([V,S])
+X = MultiFieldFESpace([U,R])
+
+foo1((u,r),(v,s)) = ∫(∇(-u+r)⊙∇(v+s)+(u+r)⋅(v-s))dx
+foo2((u,r),(v,s)) = ∫(-∇(u)⊙∇(v)+∇(r)⊙∇(v)-∇(u)⊙∇(s)+∇(r)⊙∇(s)+u⋅v-u⋅s+r⋅v-r⋅s)dx
+mat1 = assemble_matrix(foo1,X,Y)
+mat2 = assemble_matrix(foo2,X,Y)
+@test mat1 == mat2
+
 
 n = VectorValue(1,2)
 

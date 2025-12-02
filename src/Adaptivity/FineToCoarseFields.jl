@@ -108,7 +108,7 @@ function Arrays.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point})
     field_id = id_map[child_id]
     if field_id != 0
       fi = getindex!(fi_cache,fields,field_id)
-      mi = getindex!(mi_cache,cmaps,field_id)
+      mi = getindex!(mi_cache,cmaps,child_id)
       zi = Fields.evaluate!(zi_cache,mi,xi)
       y[i] = Fields.evaluate!(yi_cache,fi,zi)
     end

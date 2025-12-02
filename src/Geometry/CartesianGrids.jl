@@ -219,11 +219,18 @@ function get_reffes(g::CartesianGrid{D}) where D
   [reffe,]
 end
 
+function get_polytopes(g::CartesianGrid{D}) where D
+  p = Polytope(tfill(HEX_AXIS,Val{D}()))
+  [p,]
+end
+
 get_reffes(g::CartesianGrid{1}) = [SEG2,]
-
 get_reffes(g::CartesianGrid{2}) = [QUAD4,]
-
 get_reffes(g::CartesianGrid{3}) = [HEX8,]
+
+get_polytopes(g::CartesianGrid{1}) = [SEGMENT,]
+get_polytopes(g::CartesianGrid{2}) = [QUAD,]
+get_polytopes(g::CartesianGrid{3}) = [HEX,]
 
 """
     CartesianGrid(args...;kwargs...)
@@ -237,7 +244,7 @@ end
 
 # Cell map
 
-struct CartesianMap{D,T,L} <: AbstractArray{AffineMap{D,D,T,L},D}
+struct CartesianMap{D,T,L} <: AbstractArray{AffineField{D,D,T,L},D}
   data::CartesianDescriptor{D,T,typeof(identity)}
   function CartesianMap(des::CartesianDescriptor{D,T}) where {D,T}
     L = D*D
@@ -256,9 +263,9 @@ function Base.getindex(a::CartesianMap{D,T},I::Vararg{Integer,D}) where {D,T}
   @inbounds for d in 1:D
     p[d] =  x0[d] + (I[d]-1)*dx[d]
   end
-  origin =  Point(p)
+  origin = Point(p)
   grad = diagonal_tensor(VectorValue(dx))
-  AffineMap(grad,origin)
+  AffineField(grad,origin)
 end
 
 function lazy_map(::typeof(∇),a::CartesianMap)

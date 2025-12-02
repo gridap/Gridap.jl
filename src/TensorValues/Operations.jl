@@ -4,14 +4,13 @@
 
 (==)(a::MultiValue,b::MultiValue) = false
 (==)(a::MultiValue{S},b::MultiValue{S}) where {S} = a.data == b.data
-(≈)(a::MultiValue{S},b::MultiValue{S}) where {S} = isapprox(get_array(a), get_array(b))
-(≈)(a::MultiValue{S,T1,N,0} where T1,b::MultiValue{S,T2,N,0} where T2) where {S,N} = true
+(≈)(a::MultiValue,b::MultiValue;kwargs...) = ≈(get_array(a),get_array(b);kwargs...)
 
 function (≈)(
-  a::AbstractArray{<:MultiValue}, b::AbstractArray{<:MultiValue})
+  a::AbstractArray{<:MultiValue}, b::AbstractArray{<:MultiValue}; kwargs...)
   if size(a) != size(b); return false; end
   for (ai,bi) in zip(a,b)
-    if !(ai≈bi); return false; end
+    if !≈(ai,bi;kwargs...); return false; end
   end
   true
 end
@@ -188,12 +187,28 @@ function -(::SymTracelessTensorValue,::MultiValue) error("Subtraction"*_err) end
 function +(::MultiValue,::SymTracelessTensorValue) error("Addition"   *_err) end
 function -(::MultiValue,::SymTracelessTensorValue) error("Subtraction"*_err) end
 
+@inline function _eltype(op,r,a...)
+  eltype(r)
+end
+
+@inline function _eltype(op,r::Tuple{},a...)
+  typeof(reduce(op,zero.(eltype.(a))))
+end
+
 @inline function _eltype(op,r,a,b)
   eltype(r)
 end
 
 @inline function _eltype(op,r::Tuple{},a,b)
   typeof(op(zero(eltype(a)),zero(eltype(b))))
+end
+
+@inline function _eltype(op,r,a)
+  eltype(r)
+end
+
+@inline function _eltype(op,r::Tuple{},a)
+  typeof(op(zero(eltype(a))))
 end
 
 ###############################################################
@@ -206,7 +221,6 @@ function (*)(a::MultiValue, b::MultiValue)
   Depending the case, use simple contraction dot aka ⋅ (\\cdot) or full contraction inner aka ⊙ (\\odot) instead.
   """
   error(msg)
-  #dot(a,b)
 end
 
 # Resolution of silly method ambiguity
@@ -227,14 +241,13 @@ Inner product of two tensors `a` and `b`, that is the single contraction of the 
 """
 dot(a::MultiValue,b::MultiValue) = @notimplemented
 
-@generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D1}},B<:MultiValue{Tuple{D1,D2}}} where {D1,D2}
+@generated function dot(a::MultiValue{Tuple{D1},Ta},b::MultiValue{Tuple{D1,D2},Tb}) where {D1,D2,Ta,Tb}
+  iszero(length(b)) && return :( zero(VectorValue{D2,$(promote_type(Ta,Tb))}) )
   ss = String[]
   for j in 1:D2
     s = ""
     for i in 1:D1
-      ak = data_index(A,i)
-      bk = data_index(B,i,j)
-      s *= "a.data[$ak]*b.data[$bk]+"
+      s *= "a[$i]*b[$i,$j]+"
     end
     push!(ss,s[1:(end-1)]*", ")
   end
@@ -242,19 +255,13 @@ dot(a::MultiValue,b::MultiValue) = @notimplemented
   Meta.parse("VectorValue{$D2}($str)")
 end
 
-function dot(a::A,b::B) where {A<:MultiValue{Tuple{0}},B<:MultiValue{Tuple{0,D2}}} where D2
-  T = eltype(zero(eltype(a))*zero(eltype(b)))
-  zero(VectorValue{D2,T})
-end
-
-@generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D1,D2}},B<:MultiValue{Tuple{D2}}} where {D1,D2}
+@generated function dot(a::MultiValue{Tuple{D1,D2},Ta},b::MultiValue{Tuple{D2},Tb}) where {D1,D2,Ta,Tb}
+  iszero(length(a)) && return :( zero(VectorValue{D1,$(promote_type(Ta,Tb))}) )
   ss = String[]
   for i in 1:D1
     s = ""
     for j in 1:D2
-      ak = data_index(A,i,j)
-      bk = data_index(B,j)
-      s *= "a.data[$ak]*b.data[$bk]+"
+      s *= "a[$i,$j]*b[$j]+"
     end
       push!(ss,s[1:(end-1)]*", ")
   end
@@ -262,7 +269,8 @@ end
   Meta.parse("VectorValue{$D1}($str)")
 end
 
-@generated function dot(a::MultiValue{Tuple{D1,D3}}, b::MultiValue{Tuple{D3,D2}}) where {D1,D2,D3}
+@generated function dot(a::MultiValue{Tuple{D1,D3},Ta}, b::MultiValue{Tuple{D3,D2},Tb}) where {D1,D2,D3,Ta,Tb}
+  (iszero(length(a)) || iszero(length(b))) && return :( zero(TensorValue{D1,D2,$(promote_type(Ta,Tb))}) )
   ss = String[]
   for j in 1:D2
     for i in 1:D1
@@ -275,7 +283,11 @@ end
 end
 
 # a_ij = b_ijk*c_k
-@generated function dot(a::A, b::B) where {A<:MultiValue{Tuple{D1,D2,D3}},B<:MultiValue{Tuple{D3}}} where {D1,D2,D3}
+@generated function dot(a::MultiValue{Tuple{D1,D2,D3},Ta}, b::MultiValue{Tuple{D3},Tb}) where {D1,D2,D3,Ta,Tb}
+  iszero(length(a)) && return :( zero(TensorValue{D1,D2,$(promote_type(Ta,Tb))}) )
+  T = promote_type(Ta,Tb)
+  (iszero(D1) || iszero(D2)) && return :( TensorValue{D1,D2,$T}() )
+  iszero(D3) && return :( zero(TensorValue{D1,D2,$T}) )
   ss = String[]
   for j in 1:D2
     for i in 1:D1
@@ -288,7 +300,10 @@ end
 end
 
 # a_ijl = b_ijk*c_kl
-@generated function dot(a::A, b::B) where {A<:MultiValue{Tuple{D1,D2,D3}},B<:MultiValue{Tuple{D3,D4}}} where {D1,D2,D3,D4}
+@generated function dot(a::MultiValue{Tuple{D1,D2,D3},Ta}, b::MultiValue{Tuple{D3,D4},Tb}) where {D1,D2,D3,D4,Ta,Tb}
+  (iszero(length(a)) || iszero(length(b))) && return :(
+    zero(ThirdOrderTensorValue{D1,D2,D4,$(promote_type(Ta,Tb))})
+  )
   ss = String[]
   for l in 1:D4
     for j in 1:D2
@@ -303,7 +318,8 @@ end
 end
 
 # a_ij = c_k*b_kij
-@generated function dot(a::A, b::B) where {A<:MultiValue{Tuple{D1}},B<:MultiValue{Tuple{D1,D2,D3}}} where {D1,D2,D3}
+@generated function dot(a::MultiValue{Tuple{D1},Ta}, b::MultiValue{Tuple{D1,D2,D3},Tb}) where {D1,D2,D3,Ta,Tb}
+  iszero(length(b)) && return :( zero(TensorValue{D2,D3,$(promote_type(Ta,Tb))}) )
   ss = String[]
   for k in 1:D3
     for j in 1:D2
@@ -316,7 +332,10 @@ end
 end
 
 # a_ilm = b_ij*c_jlm
-@generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D1,D2}},B<:ThirdOrderTensorValue{D2,D3,D4}} where {D1,D2,D3,D4}
+@generated function dot(a::MultiValue{Tuple{D1,D2},Ta},b::MultiValue{Tuple{D2,D3,D4},Tb}) where  {D1,D2,D3,D4,Ta,Tb}
+  (iszero(length(a)) || iszero(length(b))) && return :(
+    zero(ThirdOrderTensorValue{D1,D3,D4,$(promote_type(Ta,Tb))})
+  )
   ss = String[]
   for m in 1:D4
     for l in 1:D3
@@ -348,12 +367,14 @@ function inner(a::MultiValue, b::MultiValue)
   @notimplemented "Sizes of tensors must match."
 end
 
-@generated function inner(a::MultiValue{S}, b::MultiValue{S}) where S
+@generated function inner(a::MultiValue{S,Ta}, b::MultiValue{S,Tb}) where {S,Ta,Tb}
+  iszero(length(a)) && return :( zero($(promote_type(Ta,Tb))) )
   str = join([" a[$i]*b[$i] +" for i in 1:length(a) ])
   Meta.parse(str[1:(end-1)])
 end
 
-@generated function inner(a::AbstractSymTensorValue{D}, b::AbstractSymTensorValue{D}) where D
+@generated function inner(a::AbstractSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
+  iszero(D) && return :( zero($(promote_type(Ta,Tb))) )
   str = ""
   for i in 1:D
     str *= "+ a[$i,$i]*b[$i,$i]"
@@ -368,16 +389,16 @@ end
   Meta.parse(str)
 end
 
-function inner(a::SymFourthOrderTensorValue{D}, b::AbstractSymTensorValue{D}) where D
+function inner(a::MultiValue{Tuple{D,D,D,D}}, b::MultiValue{Tuple{D,D,D,D}}) where D
   double_contraction(a,b)
 end
 
-function inner(a::AbstractSymTensorValue{D}, b::SymFourthOrderTensorValue{D}) where D
+function inner(a::MultiValue{Tuple{D,D,D,D}}, b::MultiValue{Tuple{D,D}}) where D
   double_contraction(a,b)
 end
 
-function inner(a::SymFourthOrderTensorValue{D},b::MultiValue{Tuple{D,D}}) where D
-  inner(a,symmetric_part(b))
+function inner(a::MultiValue{Tuple{D,D}}, b::MultiValue{Tuple{D,D,D,D}}) where D
+  double_contraction(a,b)
 end
 
 const ⊙ = inner
@@ -417,7 +438,8 @@ function double_contraction(a::MultiValue{S}, b::MultiValue{S}) where {S<:Tuple{
 end
 
 # c_i = a_ijk*b_jk
-@generated function double_contraction(a::A, b::B) where {A<:MultiValue{Tuple{D1,D2,D3}},B<:MultiValue{Tuple{D2,D3}}} where {D1,D2,D3}
+@generated function double_contraction(a::MultiValue{Tuple{D1,D2,D3},Ta}, b::MultiValue{Tuple{D2,D3},Tb})  where {D1,D2,D3,Ta,Tb}
+  iszero(length(a)) && return :( zero(VectorValue{D1,$(promote_type(Ta,Tb))}) )
   ss = String[]
   for i in 1:D1
     s = join([ "a[$i,$j,$k]*b[$j,$k]+" for j in 1:D2 for k in 1:D3])
@@ -428,7 +450,8 @@ end
 end
 
 # c_k = a_ij*b_ijk
-@generated function double_contraction(a::A, b::B) where {A<:MultiValue{Tuple{D1,D2}},B<:MultiValue{Tuple{D1,D2,D3}}} where {D1,D2,D3}
+@generated function double_contraction(a::MultiValue{Tuple{D1,D2},Ta}, b::MultiValue{Tuple{D1,D2,D3},Tb})  where {D1,D2,D3,Ta,Tb}
+  iszero(length(b)) && return :( zero(VectorValue{D3,$(promote_type(Ta,Tb))}) )
   ss = String[]
   for k in 1:D3
     s = join([ "a[$i,$j]*b[$i,$j,$k]+" for i in 1:D1 for j in 1:D2])
@@ -439,7 +462,7 @@ end
 end
 
 # c_ijpm = a_ijkl*b_klpm (3D)
-@generated function double_contraction(a::A, b::B) where {A<:SymFourthOrderTensorValue{3},B<:SymFourthOrderTensorValue{3}}
+@generated function double_contraction(a::SymFourthOrderTensorValue{3}, b::SymFourthOrderTensorValue{3})
 
   Sym4TensorIndexing = [1111, 1121, 1131, 1122, 1132, 1133, 2111, 2121, 2131, 2122, 2132, 2133,
                         3111, 3121, 3131, 3122, 3132, 3133, 2211, 2221, 2231, 2222, 2232, 2233,
@@ -456,7 +479,8 @@ end
 end
 
 # c_ijpm = a_ijkl*b_klpm (general case)
-@generated function double_contraction(a::SymFourthOrderTensorValue{D}, b::SymFourthOrderTensorValue{D}) where D
+@generated function double_contraction(a::SymFourthOrderTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
+  iszero(D) && return :( SymFourthOrderTensorValue{0,$(promote_type(Ta,Tb))}() )
   str = ""
   for j in 1:D
     for i in j:D
@@ -477,7 +501,8 @@ end
 end
 
 # c_ilm = a_ijk*b_jklm
-@generated function double_contraction(a::ThirdOrderTensorValue{D1,D,D},b::SymFourthOrderTensorValue{D}) where {D1,D}
+@generated function double_contraction(a::ThirdOrderTensorValue{D1,D,D,Ta},b::SymFourthOrderTensorValue{D,Tb}) where {D1,D,Ta,Tb}
+  iszero(length(a)) && return :( zero(ThirdOrderTensorValue{D1,D,D,$(promote_type(Ta,Tb))}) )
   ss = String[]
   for m in 1:D
     for l in 1:D
@@ -492,7 +517,8 @@ end
 end
 
 # c_ij = a_ijkl*b_kl
-@generated function double_contraction(a::SymFourthOrderTensorValue{D}, b::AbstractSymTensorValue{D}) where D
+@generated function double_contraction(a::SymFourthOrderTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
+  iszero(D) && return :( zero(SymTensorValue{D,$(promote_type(Ta,Tb))}) )
   str = ""
   for i in 1:D
     for j in i:D
@@ -512,7 +538,8 @@ end
 end
 
 # c_kl = a_ij*b_ijkl
-@generated function double_contraction(a::AbstractSymTensorValue{D}, b::SymFourthOrderTensorValue{D}) where D
+@generated function double_contraction(a::AbstractSymTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
+  iszero(D) && return :( zero(SymTensorValue{D,$(promote_type(Ta,Tb))}) )
   str = ""
   for k in 1:D
     for l in k:D
@@ -531,9 +558,22 @@ end
   Meta.parse("SymTensorValue{D}($str)")
 end
 
+# c_ij = a_ijkl*b_kl
+function double_contraction(a::SymFourthOrderTensorValue{D}, b::MultiValue{Tuple{D,D}}) where D
+  double_contraction(a,symmetric_part(b))
+end
+
+# c_kl = a_ij*b_ijkl
+function double_contraction(a::MultiValue{Tuple{D,D}}, b::SymFourthOrderTensorValue{D}) where D
+  double_contraction(symmetric_part(a),b)
+end
+
 
 # c_il = a_ijk*b_jkl
-@generated function double_contraction(a::ThirdOrderTensorValue{D1,D,E},b::ThirdOrderTensorValue{D,E,D2}) where {D1,D,E,D2}
+@generated function double_contraction(a::ThirdOrderTensorValue{D1,D,E,Ta},b::ThirdOrderTensorValue{D,E,D2,Tb}) where {D1,D,E,D2,Ta,Tb}
+  (iszero(length(a)) || iszero(length(b))) && return :(
+    zero(TensorValue{D1,D2,$(promote_type(Ta,Tb))})
+  )
   ss = String[]
   for l in 1:D2
     for i in 1:D1
@@ -576,27 +616,32 @@ function outer(a::MultiValue,b::MultiValue)
    @notimplemented
 end
 
-@generated function outer(a::MultiValue{Tuple{D}},b::MultiValue{Tuple{Z}}) where {D,Z}
-    str = join(["a[$i]*b[$j], " for j in 1:Z for i in 1:D])
-    Meta.parse("TensorValue{$D,$Z}($str)")
+@generated function outer(a::MultiValue{Tuple{D},Ta},b::MultiValue{Tuple{Z},Tb}) where {D,Z,Ta,Tb}
+  (iszero(D) || iszero(Z)) && return :(
+    zero(TensorValue{D,Z,$(promote_type(Ta,Tb))})
+  )
+  str = join(["a[$i]*b[$j], " for j in 1:Z for i in 1:D])
+  Meta.parse("TensorValue{$D,$Z}($str)")
 end
 
-function outer(a::VectorValue{0,Ta},b::VectorValue{D,Tb}) where {Ta,Tb,D}
-  T = promote_type(Ta,Tb)
-  TensorValue{0,D,T}()
-end
-
-function outer(a::VectorValue{0,Ta},b::Tb) where {Ta,Tb<:Number}
-  T = promote_type(Ta,Tb)
-  VectorValue{0,T}()
-end
-
-@generated function outer(a::MultiValue{Tuple{D}},b::MultiValue{Tuple{D1,D2}}) where {D,D1,D2}
+@generated function outer(a::MultiValue{Tuple{D},Ta},b::MultiValue{Tuple{D1,D2},Tb}) where {D,D1,D2,Ta,Tb}
+  (iszero(D) || iszero(length(b))) && return :(
+    zero(ThirdOrderTensorValue{D,D1,D2,$(promote_type(Ta,Tb))})
+  )
   str = join(["a[$i]*b[$j,$k], "  for k in 1:D2 for j in 1:D1 for i in 1:D])
   Meta.parse("ThirdOrderTensorValue{D,D1,D2}($str)")
 end
 
-@generated function outer(a::AbstractSymTensorValue{D},b::AbstractSymTensorValue{D}) where D
+@generated function outer(a::MultiValue{Tuple{D1,D2},Ta},b::MultiValue{Tuple{D},Tb}) where {D,D1,D2,Ta,Tb}
+  (iszero(length(a)) || iszero(D)) && return :(
+    zero(ThirdOrderTensorValue{D1,D2,D,$(promote_type(Ta,Tb))})
+  )
+  str = join(["a[$i,$j]*b[$k], "  for k in 1:D for j in 1:D2 for i in 1:D1])
+  Meta.parse("ThirdOrderTensorValue{D1,D2,D}($str)")
+end
+
+@generated function outer(a::AbstractSymTensorValue{D,Ta},b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
+  iszero(D) && return :( zero(SymFourthOrderTensorValue{D,$(promote_type(Ta,Tb))}) )
   str = ""
   for i in 1:D
     for j in i:D
@@ -701,6 +746,14 @@ function inv(a::MultiValue{Tuple{3,3}})
  TensorValue{3}(data)
 end
 
+"""
+    eigen(a::MultiValue{Tuple{D,D}})
+
+Eigenvalue decomposition of a square second order tensor.
+"""
+eigen(a::MultiValue{Tuple{D,D}}) where D = eigen(get_array(a))
+eigen(a::MultiValue) = @unreachable "eigen undefined for this tensor shape: $(size(a))"
+
 ###############################################################
 # Measure
 ###############################################################
@@ -748,8 +801,10 @@ end
 
 Euclidean (2-)norm of `u`, namely `sqrt(inner(u,u))`.
 """
-@inline norm(u::MultiValue{Tuple{D}}) where D = sqrt(inner(u,u))
-@inline norm(u::MultiValue{Tuple{D1,D2}}) where {D1,D2} = sqrt(inner(u,u))
+@inline norm(u::MultiValue{Tuple{D},<:Real}) where D = sqrt(inner(u,u))
+@inline norm(u::MultiValue{Tuple{D}}) where D = sqrt(real(inner(u,conj(u))))
+@inline norm(u::MultiValue{Tuple{D1,D2},<:Real}) where {D1,D2} = sqrt(inner(u,u))
+@inline norm(u::MultiValue{Tuple{D1,D2}}) where {D1,D2} = sqrt(real(inner(u,conj(u))))
 @inline norm(u::MultiValue{Tuple{0},T}) where T = sqrt(zero(T))
 
 ###############################################################
@@ -760,12 +815,16 @@ for op in (:conj,:real,:imag)
   @eval begin
     function ($op)(a::T) where {T<:MultiValue}
       r = map($op, a.data)
-      T(r)
+      T2 = _eltype($op,r,a)
+      M  = change_eltype(a,T2)
+      M(r)
     end
 
-    function ($op)(a::SymTracelessTensorValue)
+    function ($op)(a::T) where {T<:SymTracelessTensorValue}
       r = map($op, a.data)
-      SymTracelessTensorValue(r[1:end-1])
+      T2 = _eltype($op,r,a)
+      M  = change_eltype(a,T2)
+      M(r[1:end-1])
     end
   end
 end
@@ -775,36 +834,38 @@ end
 ###############################################################
 
 """
-    tr(v::MultiValue{Tuple{D1,D2}})
+    tr(v::MultiValue{Tuple{D,D}})
 
-Return the trace of a second order tensor, defined by `0` if `D1`≠`D2`, and `Σᵢ vᵢᵢ` else.
+Return the trace of a second order square tensor, defined by `Σᵢ vᵢᵢ` or 0 if `D`=0.
 """
-@generated function tr(v::MultiValue{Tuple{D,D}}) where D
+@generated function tr(v::MultiValue{Tuple{D,D},T}) where {D,T}
+  iszero(D) && return :(zero(T))
   str = join([" v[$i,$i] +" for i in 1:D ])
   Meta.parse(str[1:(end-1)])
 end
 tr(::SymTracelessTensorValue{D,T}) where {D,T} = zero(T)
+tr(::MultiValue{Tuple{A,B}}) where {A,B} = throw(ArgumentError("Second order tensor is not square"))
 
 """
-    tr(v::MultiValue{Tuple{D1,D1,D2}}) -> ::VectorValue{D2}
+    tr(v::MultiValue{Tuple{D,D,D2}}) -> ::VectorValue{D2}
 
 Return a vector of length `D2` of traces computed on the first two indices: `resⱼ = Σᵢ vᵢᵢⱼ`.
 """
-@generated function tr(v::MultiValue{Tuple{A,A,B}}) where {A,B}
-  lis = LinearIndices((A,A,B))
+@generated function tr(v::MultiValue{Tuple{A,A,B},T}) where {A,B,T}
+  iszero(length(v)) && return :( zero(VectorValue{B,T}) )
   str = ""
   for k in 1:B
     for i in 1:A
       if i !=1
         str *= " + "
       end
-      p = lis[i,i,k]
-      str *= " v.data[$p]"
+      str *= " v[$i,$i,$k]"
     end
     str *= ", "
   end
   Meta.parse("VectorValue($str)")
 end
+tr(::MultiValue{Tuple{A,B,C}}) where {A,B,C} = throw(ArgumentError("First two dimensions are not iddentical"))
 
 ###############################################################
 # Adjoint and transpose
@@ -813,23 +874,22 @@ end
 adjoint(a::MultiValue{Tuple{D,D}}) where D = @notimplemented
 transpose(a::MultiValue{Tuple{D,D}}) where D = @notimplemented
 
-@generated function adjoint(a::TensorValue{D1,D2}) where {D1,D2}
+@generated function adjoint(a::TensorValue{D1,D2,T}) where {D1,D2,T}
   str = ""
   for i in 1:D1
     for j in 1:D2
       k = (j-1)*D1 + i
-      str *= "conj(a.data[$k]), "
+      str *= "conj(a[$i,$j]), "
     end
   end
-  Meta.parse("TensorValue{D2,D1}($str)")
+  Meta.parse("TensorValue{D2,D1,T}($str)")
 end
 
 @generated function transpose(a::TensorValue{D1,D2,T}) where {D1,D2,T}
   str = ""
   for i in 1:D1
     for j in 1:D2
-      k = (j-1)*D1 + i
-      str *= "a.data[$k], "
+      str *= "a[$i,$j], "
     end
   end
   Meta.parse("TensorValue{D2,D1,T}($str)")
@@ -855,25 +915,44 @@ transpose(a::AbstractSymTensorValue) = a
 Return the symmetric part of second order tensor, that is `½(v + vᵀ)`.
 Return `v` if  `v isa AbstractSymTensorValue`.
 """
-@generated function symmetric_part(v::MultiValue{Tuple{D,D}}) where D
-    str = "("
-    for j in 1:D
-        for i in j:D
-            str *= "0.5*v[$i,$j] + 0.5*v[$j,$i], "
-        end
-    end
-    str *= ")"
-    Meta.parse("SymTensorValue{D}($str)")
+@generated function symmetric_part(v::MultiValue{Tuple{D,D},T}) where {D,T}
+  iszero(D) && return :( zero(SymTensorValue{0,T}) )
+  str = "("
+  for j in 1:D
+      for i in j:D
+          str *= "0.5*v[$i,$j] + 0.5*v[$j,$i], "
+      end
+  end
+  str *= ")"
+  Meta.parse("SymTensorValue{D}($str)")
 end
 
 symmetric_part(v::AbstractSymTensorValue) = v
+
+"""
+    skew_symmetric_part(v::MultiValue{Tuple{D,D}})::MultiValue{Tuple{D,D}}
+
+Return the asymmetric part of second order tensor, that is `½(v - vᵀ)`.
+Return `v` if  `v isa AbstractSymTensorValue`.
+"""
+@generated function skew_symmetric_part(v::MultiValue{Tuple{D,D},T}) where {D,T}
+  iszero(D) && return :( zero(TensorValue{0,0,T}) )
+  str = "("
+  for j in 1:D
+      for i in 1:D
+          str *= "0.5*v[$i,$j] - 0.5*v[$j,$i], "
+      end
+  end
+  str *= ")"
+  Meta.parse("TensorValue{D,D}($str)")
+end
 
 ###############################################################
 # diag
 ###############################################################
 
 function LinearAlgebra.diag(a::MultiValue{Tuple{D,D},T}) where {D,T}
-  VectorValue((a[i,i] for i in 1:D)...)
+  VectorValue{D,T}((a[i,i] for i in 1:D)...)
 end
 
 ###############################################################

@@ -5,6 +5,7 @@ using Test
 using Gridap.TensorValues
 using Gridap.Arrays
 using LinearAlgebra
+using Gridap.TensorValues: _eltype
 
 # Comparison
 
@@ -30,6 +31,10 @@ b = VectorValue(1,3,3)
 @test iszero(VectorValue(1,2,3) - VectorValue(1.0,2.0,3.0))
 @test iszero(zero(VectorValue(1,2,3)))
 @test isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0))
+@test isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0), atol=eps(1.0))
+@test isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0), rtol=eps(1.0))
+@test !isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,4.0))
+@test_throws DimensionMismatch isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0,4.0))
 
 a = VectorValue(1,2,3)
 b = VectorValue(2,1,6)
@@ -65,6 +70,8 @@ r = VectorValue(-1,1,-3)
 
 a = VectorValue{0,Float64}()
 b = VectorValue{0,Int}()
+@test a == b
+@test a ≈ b
 
 c = +a
 r = VectorValue{0,Float64}()
@@ -543,14 +550,17 @@ c = a ⊗ e
 r = TensorValue{3,2,Int}(2,4,6,5,10,15)
 @test c == r
 
+e = VectorValue(10,20,30)
+k = TensorValue{4,1}(1,2,3,4)
+c = outer(e,k)
+@test c == ThirdOrderTensorValue{3,4,1}(10, 20, 30, 20, 40, 60, 30, 60, 90, 40, 80, 120)
+c = outer(k,e)
+@test c == ThirdOrderTensorValue{4,1,3}(10, 20, 30, 40, 20, 40, 60, 80, 30, 60, 90, 120)
+@test_throws ArgumentError tr(c)
+
 e = VectorValue(10,20)
 k = TensorValue(1,2,3,4)
-c = outer(e,k)
-@test c == ThirdOrderTensorValue{2,2,2}(10, 20, 20, 40, 30, 60, 40, 80)
-
-@test_throws ErrorException outer(k,c) # @notimplemented
-
-@test tr(c) == VectorValue(50,110)
+@test tr(outer(e,k)) == VectorValue(50,110)
 
 # Cross product
 
@@ -615,6 +625,44 @@ q = SymTracelessTensorValue(1,2)
 t = TensorValue{2,3}(1:6...)
 @test_throws ErrorException det(t)
 @test_throws ErrorException inv(t)
+
+# Test eigen function
+t = TensorValue(1.0,2.0,3.0,4.0)
+result = eigen(t)
+expected = eigen(get_array(t))
+@test result.values ≈ expected.values
+@test result.vectors ≈ expected.vectors
+
+# Test different tensor types with eigen
+st = SymTensorValue(9.0,8.0,7.0,5.0,4.0,1.0)
+result_st = eigen(st)
+expected_st = eigen(get_array(st))
+@test result_st.values ≈ expected_st.values
+@test result_st.vectors ≈ expected_st.vectors
+
+qt = SymTracelessTensorValue(9.0,8.0,7.0,5.0,4.0)
+result_qt = eigen(qt)
+expected_qt = eigen(get_array(qt))
+@test result_qt.values ≈ expected_qt.values
+@test result_qt.vectors ≈ expected_qt.vectors
+
+# Test 1x1 case
+t1 = TensorValue(5.0)
+result1 = eigen(t1)
+expected1 = eigen(get_array(t1))
+@test result1.values ≈ expected1.values
+@test result1.vectors ≈ expected1.vectors
+
+# Test 3x3 case
+t3 = TensorValue(1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,10.0)
+result3 = eigen(t3)
+expected3 = eigen(get_array(t3))
+@test result3.values ≈ expected3.values
+@test result3.vectors ≈ expected3.vectors
+
+# Test error handling for non-square matrices
+t_nonsquare = TensorValue{2,3}(1:6...)
+@test_throws ErrorException eigen(t_nonsquare)
 
 # Measure
 
@@ -738,8 +786,13 @@ v = VectorValue(2.0,3.0)
 @test dot(u,v) ≈ inner(u,v)
 @test norm(u) ≈ sqrt(inner(u,u))
 
+u = VectorValue(1.0,im)
+@test norm(u) ≈ sqrt(2)
+
 a = TensorValue(1,2,3,4)
+a2 = TensorValue(1,im,1,im)
 @test norm(a) ≈ sqrt(inner(a,a))
+@test norm(a2) ≈ 2
 
 a = VectorValue(1.0,2.0)
 b = VectorValue(2.0,3.0)
@@ -764,20 +817,20 @@ I = one(SymFourthOrderTensorValue{2,Int})
 
 @test I ⊙ ε == ε
 @test ε ⊙ I == ε
+@test I ⋅² ε == ε
+@test ε ⋅² I == ε
 
 a = TensorValue(1,2,3,4)
 b = I ⊙ a
-@test b == symmetric_part(a)
-#b = I : a
-#@test b == symmetric_part(a)
+c = I ⋅² a
+@test c == b == symmetric_part(a)
 
 
 σ1 = λ*tr(ε)*one(ε) + 2*μ*ε
 C = 2*μ*one(ε⊗ε) + λ*one(ε)⊗one(ε)
 σ2 = C ⊙ ε
-@test σ1 == σ2
-#σ2 = C : ε
-#@test σ1 == σ2
+σ3 = C ⋅² ε
+@test σ1 == σ2 == σ3
 
 # third order contraction testing
 a = reshape(Vector(1:27),(3,3,3))
@@ -824,7 +877,6 @@ t2 = TensorValue(1:9...)
 s4 = SymFourthOrderTensorValue(1:9...)
 @test_throws ErrorException double_contraction(t1,v)
 @test_throws DimensionMismatch double_contraction(t1,t2)
-@test_throws ErrorException double_contraction(t1,s4) # @notimplemented
 
 Sym4TensorIndexing = [1111, 1121, 1131, 1122, 1132, 1133, 2111, 2121, 2131, 2122, 2132, 2133,
                       3111, 3121, 3131, 3122, 3132, 3133, 2211, 2221, 2231, 2222, 2232, 2233,
@@ -878,31 +930,14 @@ end
 
 # a_ilm = b_ijk*c_jklm
 vals = ones(3,3,3);
-vals[1,:,:] .= [3 1 0
-               1 4 0
-               0 0 2];
-vals[2,:,:] .= [3 0 2
-                0 2 0
-                2 0 1];
-vals[3,:,:] .= [1 0 0
-                0 2 1
-                0 1 3];
+vals[1,:,:] .= [3 1 0; 1 4 0; 0 0 2];
+vals[2,:,:] .= [3 0 2; 0 2 0; 2 0 1];
+vals[3,:,:] .= [1 0 0; 0 2 1; 0 1 3];
 t1 = ThirdOrderTensorValue(vals ...)
 t2 = SymFourthOrderTensorValue(ones(36) ...)
-v111 = sum(vals[1,j,k]*ones(3,3,3,3)[j,k,1,1] for j in 1:3 for k in 1:3);
-v112 = sum(vals[1,j,k]*ones(3,3,3,3)[j,k,2,2] for j in 1:3 for k in 1:3);
-v113 = sum(vals[1,j,k]*ones(3,3,3,3)[j,k,1,3] for j in 1:3 for k in 1:3);
-v121 = sum(vals[1,j,k]*ones(3,3,3,3)[j,k,2,1] for j in 1:3 for k in 1:3);
-v131 = sum(vals[1,j,k]*ones(3,3,3,3)[j,k,3,1] for j in 1:3 for k in 1:3);
-v211 = sum(vals[2,j,k]*ones(3,3,3,3)[j,k,1,1] for j in 1:3 for k in 1:3);
-v311 = sum(vals[3,j,k]*ones(3,3,3,3)[j,k,1,1] for j in 1:3 for k in 1:3);
-@test v111 == (t1 ⋅² t2)[1,1,1]
-@test v112 == (t1 ⋅² t2)[1,1,2]
-@test v113 == (t1 ⋅² t2)[1,1,3]
-@test v121 == (t1 ⋅² t2)[1,2,1]
-@test v131 == (t1 ⋅² t2)[1,3,1]
-@test v211 == (t1 ⋅² t2)[2,1,1]
-@test v311 == (t1 ⋅² t2)[3,1,1]
+for ci in CartesianIndices((3,3,3))
+  @test (t1 ⋅² t2)[ci] == sum(t1[ci[1],j,k]*t2[j,k,ci[2],ci[3]] for j in 1:3 for k in 1:3)
+end
 
 # a_ilm = b_ij*c_jlm
 vals = ones(3,3,3);
@@ -915,15 +950,11 @@ vals[2,:,:] .= [3 0 2
 vals[3,:,:] .= [1 0 0
                 0 2 1
                 0 1 3];
-t1 = TensorValue(ones(3,3)...)
-t2 = ThirdOrderTensorValue(vals ...)
-@test (t1 ⋅ t2)[1,1,1] == sum(ones(3,3)[1,j]*vals[j,1,1] for j in 1:3)
-@test (t1 ⋅ t2)[3,2,1] == sum(ones(3,3)[3,j]*vals[j,2,1] for j in 1:3)
-@test (t1 ⋅ t2)[1,1,2] == sum(ones(3,3)[1,j]*vals[j,1,2] for j in 1:3)
-@test (t1 ⋅ t2)[1,1,3] == sum(ones(3,3)[1,j]*vals[j,1,3] for j in 1:3)
-@test (t1 ⋅ t2)[1,2,2] == sum(ones(3,3)[1,j]*vals[j,2,2] for j in 1:3)
-@test (t1 ⋅ t2)[1,2,3] == sum(ones(3,3)[1,j]*vals[j,2,3] for j in 1:3)
-@test (t1 ⋅ t2)[1,3,3] == sum(ones(3,3)[1,j]*vals[j,3,3] for j in 1:3)
+t1 = TensorValue{3,3}(1:9...)
+t2 = ThirdOrderTensorValue{3,3,3}(1:27...)
+for ci in CartesianIndices((3,3,3))
+  @test (t1 ⋅ t2)[ci] == sum(t1[ci[1],j]*t2[j,ci[2],ci[3]] for j in 1:3)
+end
 
 # a_il = b_ijk*c_jkl
 vals = ones(3,3,3);
@@ -937,15 +968,9 @@ vals[3,:,:] .= [1 0 0
                 0 2 1
                 0 1 3];
 t1 = ThirdOrderTensorValue(vals ...)
-@test (t1 ⋅² t1)[1,1] == sum(vals[1,i,j] * vals[i,j,1] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[2,1] == sum(vals[2,i,j] * vals[i,j,1] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[3,1] == sum(vals[3,i,j] * vals[i,j,1] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[1,2] == sum(vals[1,i,j] * vals[i,j,2] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[2,2] == sum(vals[2,i,j] * vals[i,j,2] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[3,2] == sum(vals[3,i,j] * vals[i,j,2] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[1,3] == sum(vals[1,i,j] * vals[i,j,3] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[2,3] == sum(vals[2,i,j] * vals[i,j,3] for i in 1:3 for j in 1:3)
-@test (t1 ⋅² t1)[3,3] == sum(vals[3,i,j] * vals[i,j,3] for i in 1:3 for j in 1:3)
+for ci in CartesianIndices((3,3))
+  @test (t1 ⋅² t1)[ci] == sum(t1[ci[1],i,j]*t1[i,j,ci[2]] for i in 1:3 for j in 1:3)
+end
 
 # a_il = b_ijk*c_jkl
 t1 = ThirdOrderTensorValue{3,2,2}(1:12...)
@@ -959,49 +984,32 @@ t1_double_t2 = t1 ⋅² t2
 # a_kl = b_ij*c_ijkl
 t1 = SymTensorValue{3}(1:6...)
 t2 = SymFourthOrderTensorValue(1:36 ...)
-v11 = sum(t1[i,j]*t2[i,j,1,1] for i in 1:3 for j in 1:3);
-v12 = sum(t1[i,j]*t2[i,j,1,2] for i in 1:3 for j in 1:3);
-v13 = sum(t1[i,j]*t2[i,j,1,3] for i in 1:3 for j in 1:3);
-v22 = sum(t1[i,j]*t2[i,j,2,2] for i in 1:3 for j in 1:3);
-v23 = sum(t1[i,j]*t2[i,j,2,3] for i in 1:3 for j in 1:3);
-v33 = sum(t1[i,j]*t2[i,j,3,3] for i in 1:3 for j in 1:3);
 t1_double_t2 = t1 ⋅² t2
-@test v11 == (t1_double_t2)[1,1]
-@test v12 == (t1_double_t2)[1,2]
-@test v13 == (t1_double_t2)[1,3]
-@test v22 == (t1_double_t2)[2,2]
-@test v23 == (t1_double_t2)[2,3]
-@test v33 == (t1_double_t2)[3,3]
+for ci in CartesianIndices((3,3))
+  @test t1_double_t2[ci] == sum(t1[i,j]*t2[i,j,ci[1],ci[2]] for i in 1:3 for j in 1:3)
+end
 
 # a_ij = b_ijkl*c_kl
 t1 = SymFourthOrderTensorValue(1:36...)
 t2 = SymTensorValue{3}(1:6...)
-v11 = sum(t1[1,1,k,l]*t2[k,l] for k in 1:3 for l in 1:3);
-v12 = sum(t1[1,2,k,l]*t2[k,l] for k in 1:3 for l in 1:3);
-v13 = sum(t1[1,3,k,l]*t2[k,l] for k in 1:3 for l in 1:3);
-v22 = sum(t1[2,2,k,l]*t2[k,l] for k in 1:3 for l in 1:3);
-v23 = sum(t1[2,3,k,l]*t2[k,l] for k in 1:3 for l in 1:3);
-v33 = sum(t1[3,3,k,l]*t2[k,l] for k in 1:3 for l in 1:3);
 t1_double_t2 = t1 ⋅² t2
-@test v11 == (t1_double_t2)[1,1]
-@test v12 == (t1_double_t2)[1,2]
-@test v13 == (t1_double_t2)[1,3]
-@test v22 == (t1_double_t2)[2,2]
-@test v23 == (t1_double_t2)[2,3]
-@test v33 == (t1_double_t2)[3,3]
+for ci in CartesianIndices((3,3))
+  @test t1_double_t2[ci] == sum(t1[ci[1],ci[2],i,j]*t2[i,j] for i in 1:3 for j in 1:3)
+end
+
+# a_ij = b_ijkl*c_kl
+t2_double_t1 = t2 ⋅² t1
+for ci in CartesianIndices((3,3))
+  @test t2_double_t1[ci] == sum(t2[k,l]*t1[k,l,ci[1],ci[2]] for k in 1:3 for l in 1:3)
+end
 
 # a_k = b_ij*c_ijk
 t1 = TensorValue{3,2}(1:6...)
 t2 = ThirdOrderTensorValue{3,2,4}(1:24...)
-v1 = sum(t1[i,j]*t2[i,j,1] for i in 1:3 for j in 1:2);
-v2 = sum(t1[i,j]*t2[i,j,2] for i in 1:3 for j in 1:2);
-v3 = sum(t1[i,j]*t2[i,j,3] for i in 1:3 for j in 1:2);
-v4 = sum(t1[i,j]*t2[i,j,4] for i in 1:3 for j in 1:2);
 t1_double_t2 = t1 ⋅² t2
-@test v1 == (t1_double_t2)[1]
-@test v2 == (t1_double_t2)[2]
-@test v3 == (t1_double_t2)[3]
-@test v4 == (t1_double_t2)[4]
+for ci in CartesianIndices((4,))
+  @test t1_double_t2[ci] == sum(t1[i,j]*t2[i,j,ci[1]] for i in 1:3 for j in 1:2)
+end
 
 # a_il = b_ij*c_jl
 v1 = [1 2 3
@@ -1012,15 +1020,14 @@ v2 = [1 1 2
       2 5 3];
 t1 = TensorValue(v1)
 t2 = TensorValue(v2)
-@test (t1 ⋅ t2)[1,1] == sum(v1[1,j] .* v2[j,1] for j in 1:3)
-@test (t1 ⋅ t2)[2,1] == sum(v1[2,j] .* v2[j,1] for j in 1:3)
-@test (t1 ⋅ t2)[3,1] == sum(v1[3,j] .* v2[j,1] for j in 1:3)
-@test (t1 ⋅ t2)[1,2] == sum(v1[1,j] .* v2[j,2] for j in 1:3)
-@test (t1 ⋅ t2)[2,2] == sum(v1[2,j] .* v2[j,2] for j in 1:3)
-@test (t1 ⋅ t2)[3,2] == sum(v1[3,j] .* v2[j,2] for j in 1:3)
-@test (t1 ⋅ t2)[1,3] == sum(v1[1,j] .* v2[j,3] for j in 1:3)
-@test (t1 ⋅ t2)[2,3] == sum(v1[2,j] .* v2[j,3] for j in 1:3)
-@test (t1 ⋅ t2)[3,3] == sum(v1[3,j] .* v2[j,3] for j in 1:3)
+t1_dot_t2 = t1 ⋅ t2
+for ci in CartesianIndices((3,3))
+  @test t1_dot_t2[ci] == sum(t1[ci[1],i]*t2[i,ci[2]] for i in 1:3)
+end
+t2_dot_t1 = t2 ⋅ t1
+for ci in CartesianIndices((3,3))
+  @test t2_dot_t1[ci] == sum(t2[ci[1],i]*t1[i,ci[2]] for i in 1:3)
+end
 
 # Complex
 
@@ -1029,17 +1036,46 @@ b = 4.0 - 3.0*im
 @test outer(a,b) == a*b
 @test inner(a,b) == a*b
 
-@test real(VectorValue(1+1im)) == VectorValue(1)
-@test real(VectorValue(1+1im, 1+1im)) == VectorValue(1, 1)
-@test real(VectorValue(1+1im, 1+1im, 1+1im)) == VectorValue(1, 1, 1)
-@test real(TensorValue(1+1im, 1+1im, 1+1im, 1+1im)) == TensorValue(1, 1, 1, 1)
-@test real(SymTracelessTensorValue(1+1im, 1+1im)) == SymTracelessTensorValue(1, 1)
+v1 = VectorValue(1+1im)
+v2 = VectorValue(1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = VectorValue(1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
 
-@test imag(VectorValue(1+1im)) == VectorValue(1)
-@test imag(VectorValue(1+1im, 1+1im)) == VectorValue(1, 1)
-@test imag(VectorValue(1+1im, 1+1im, 1+1im)) == VectorValue(1, 1, 1)
-@test imag(TensorValue(1+1im, 1+1im, 1+1im, 1+1im)) == TensorValue(1, 1, 1, 1)
-@test imag(SymTracelessTensorValue(1+1im, 1+1im)) == SymTracelessTensorValue(1, 1)
+v1 = VectorValue(1+1im, 1+1im)
+v2 = VectorValue(1, 1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = VectorValue(1-1im, 1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
+
+v1 = VectorValue(1+1im, 1+1im, 1+1im)
+v2 = VectorValue(1, 1, 1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = VectorValue(1-1im, 1-1im, 1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
+
+v1 = TensorValue(1+1im, 1+1im, 1+1im, 1+1im)
+v2 = TensorValue(1, 1, 1, 1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = TensorValue(1-1im, 1-1im, 1-1im, 1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
+
+v1 = SymTracelessTensorValue(1+1im, 1+1im)
+v2 = SymTracelessTensorValue(1, 1)
+@test real(v1) == v2 && eltype(real(v1)) == eltype(v2)
+@test imag(v1) == v2 && eltype(imag(v1)) == eltype(v2)
+v2 = SymTracelessTensorValue(1-1im, 1-1im)
+@test conj(v1) == v2 && eltype(conj(v1)) == eltype(v2)
+
+#_eltype
+@test _eltype(real,Tuple{},VectorValue(1.0,2.0))==Union{}
+@test _eltype(real,Tuple{},VectorValue(1.0,2.0),VectorValue(2.0,3.0),VectorValue(3.0,4.0))==Union{}
+a=VectorValue(4.0,5.0)
+@test _eltype(real,a,VectorValue(1.0,2.0+im),VectorValue(2.0,3.0),VectorValue(3.0,4.0))==eltype(a)
 
 # Broadcast
 a = VectorValue(1,2,3)
@@ -1074,5 +1110,83 @@ c = a .* b
 @test c.data == map(*,a.data,b.data)
 
 @test diag(a) == VectorValue(1,-1)
+
+# Operation involving empty tensors (check type promotion)
+
+v0  = VectorValue{0,Float64}()
+v2  = VectorValue{2,Float64}(0,0)
+t00 = TensorValue{0,0,Float32}()
+t20 = TensorValue{2,0,Float32}()
+t02 = TensorValue{0,2,Float32}()
+t23 = TensorValue{2,3,Float32}(0,0,0,0,0,0)
+st0 = SymTracelessTensorValue{0,ComplexF64}()
+t210= ThirdOrderTensorValue{2,1,0,ComplexF16}()
+t012= ThirdOrderTensorValue{0,1,2,ComplexF16}()
+t123= ThirdOrderTensorValue{1,2,3,Float64}(0,0,0,0,0,0)
+f0  = SymFourthOrderTensorValue{0,ComplexF16}()
+
+@test v0  ⋅ t02   === VectorValue{2,Float64}(0,0)
+@test t20 ⋅ v0    === VectorValue{2,Float64}(0,0)
+@test v0  ⋅ st0   === VectorValue{0,ComplexF64}()
+@test st0 ⋅ v0    === VectorValue{0,ComplexF64}()
+@test t20 ⋅ t02   === TensorValue{2,2,Float32}(0,0,0,0)
+@test t02 ⋅ t20   === TensorValue{0,0,Float32}()
+@test v0   ⋅ t012 === TensorValue{1,2,ComplexF64}(0,0)
+@test t210 ⋅ v0   === TensorValue{2,1,ComplexF64}(0,0)
+@test v2   ⋅ t210 === TensorValue{1,0,ComplexF64}()
+@test t012 ⋅ v2   === TensorValue{0,1,ComplexF64}()
+@test t012 ⋅ t23  === ThirdOrderTensorValue{0,1,3,ComplexF32}()
+@test t02  ⋅ t210 === ThirdOrderTensorValue{0,1,0,ComplexF32}()
+
+@test st0 ⊙ st0   === zero(ComplexF64)
+@test st0 ⊙ t00   === zero(ComplexF64)
+@test t00 ⊙ st0   === zero(ComplexF64)
+@test t00 ⊙ t00   === zero(Float32)
+@test t00 ⊙ f0    === SymTensorValue{0,ComplexF32,0}()
+@test f0  ⊙ t00   === SymTensorValue{0,ComplexF32,0}()
+@test f0  ⊙ f0    === SymFourthOrderTensorValue{0, ComplexF16}()
+
+t12  = TensorValue{1,2,Float32}(0,0)
+t10  = TensorValue{1,0,Float32}()
+st2  = SymTracelessTensorValue{2,Float32}(0,0)
+t022 = ThirdOrderTensorValue{0,2,2,ComplexF16}()
+t220 = ThirdOrderTensorValue{2,2,0,ComplexF16}()
+t200 = ThirdOrderTensorValue{2,0,0,Float64}()
+t002 = ThirdOrderTensorValue{0,0,2,Float64}()
+
+@test t00  ⋅² t00  === zero(Float32)
+@test t00  ⋅² f0   === SymTensorValue{0,ComplexF32,0}()
+@test f0   ⋅² t00  === SymTensorValue{0,ComplexF32,0}()
+@test st0  ⋅² f0   === SymTensorValue{0,ComplexF64,0}()
+@test f0   ⋅² st0  === SymTensorValue{0,ComplexF64,0}()
+@test t012 ⋅² t12  === VectorValue{0,ComplexF32}()
+@test t210 ⋅² t10  === VectorValue{2,ComplexF32}(0,0)
+@test t200 ⋅² st0  === VectorValue{2,ComplexF64}(0,0)
+@test t022 ⋅² st2  === VectorValue{0,ComplexF32}()
+@test st0  ⋅² t002 === VectorValue{2,ComplexF64}(0,0)
+@test st2  ⋅² t220 === VectorValue{0,ComplexF32}()
+@test t022 ⋅² t220 === TensorValue{0,0,ComplexF16}()
+@test t200 ⋅² t002 === TensorValue{2,2,Float64}(0,0,0,0)
+@test f0   ⋅² f0   === SymFourthOrderTensorValue{0,ComplexF16}()
+
+@test 1im ⊗ v0  === VectorValue{0, ComplexF64}()
+@test v0  ⊗ 1im === VectorValue{0, ComplexF64}()
+@test v0  ⊗ v2  === TensorValue{0,2,Float64}()
+@test v2  ⊗ v0  === TensorValue{2,0,Float64}()
+@test v0  ⊗ t12 === ThirdOrderTensorValue{0,1,2,Float64}()
+@test t00 ⊗ v2  === ThirdOrderTensorValue{0,0,2,Float64}()
+@test st0 ⊗ st0 === SymFourthOrderTensorValue{0, ComplexF64}()
+
+t10c = TensorValue{1,0,ComplexF32}()
+t01c = TensorValue{0,1,ComplexF32}()
+
+@test conj(st0) === st0
+@test real(st0) === SymTracelessTensorValue{0,Float64}()
+@test imag(st0) === SymTracelessTensorValue{0,Float64}()
+@test tr(t00) === zero(Float32)
+@test tr(t220) === VectorValue{0,ComplexF16}()
+@test adjoint(t00) === t00
+@test adjoint(t01c) === t10c
+@test symmetric_part(t00) === SymTensorValue{0,Float32}()
 
 end # module OperationsTests

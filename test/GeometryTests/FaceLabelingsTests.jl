@@ -79,4 +79,26 @@ labels = FaceLabeling(model)
 @test num_entities(labels) == 2
 @test num_tags(labels) == 2
 
+# Creating labels from cell tags
+cell_to_tag = [1,1,2,2,3]
+tag_to_name = ["tag1","tag2","tag3"]
+labels = FaceLabeling(model,cell_to_tag,tag_to_name)
+
+# Set operations (union, intersection, complementary, setdiff)
+Geometry.add_tag_from_tags!(labels,"union",["tag1","tag2"])
+@test get_face_mask(labels,"union",2) == get_face_mask(labels,"tag1",2) .| get_face_mask(labels,"tag2",2)
+Geometry.add_tag_from_tags_intersection!(labels,"intersection",["tag1","tag2"])
+@test get_face_mask(labels,"intersection",1) == get_face_mask(labels,"tag1",1) .& get_face_mask(labels,"tag2",1)
+Geometry.add_tag_from_tags_complementary!(labels,"complement",["tag1","tag2"])
+@test get_face_mask(labels,"complement",2) == get_face_mask(labels,"tag3",2)
+Geometry.add_tag_from_tags_setdiff!(labels,"setdiff",["union"],["tag1"])
+@test get_face_mask(labels,"setdiff",2) == get_face_mask(labels,"tag2",2)
+
+# Creating labels from coordinate filters
+labels_x0 = Geometry.face_labeling_from_vertex_filter(model,"x=0",x->abs(x[1]-0.0) < 1.e-6)
+labels_y0 = Geometry.face_labeling_from_vertex_filter(model,"y=0",x->abs(x[2]-0.0) < 1.e-6)
+labels_x1 = Geometry.face_labeling_from_vertex_filter(model,"x=1",x->abs(x[1]-1.0) < 1.e-6)
+labels_y1 = Geometry.face_labeling_from_vertex_filter(model,"y=1",x->abs(x[2]-1.0) < 1.e-6)
+labels = merge!(labels_x0,labels_y0,labels_x1,labels_y1)
+
 end # module

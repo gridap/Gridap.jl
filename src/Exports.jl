@@ -91,11 +91,13 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs BDM
 @publish ReferenceFEs Nedelec
 @publish ReferenceFEs ModalC0
+@publish ReferenceFEs Bubble
 @publish ReferenceFEs lagrangian
 @publish ReferenceFEs raviart_thomas
 @publish ReferenceFEs bdm
 @publish ReferenceFEs nedelec
 @publish ReferenceFEs modalC0
+@publish ReferenceFEs bubble
 
 @publish Geometry get_triangulation
 @publish Geometry num_cells
@@ -141,6 +143,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish CellData mean
 @publish CellData update_state!
 @publish CellData get_normal_vector
+@publish CellData get_tangent_vector
 using Gridap.CellData: ∫; export ∫
 @publish CellData get_cell_measure
 @publish CellData get_physical_coordinate
@@ -217,15 +220,6 @@ export cell_measure
 function cell_measure(args...)
   Helpers.@unreachable """\n
   Function cell_measure(a,b) has been removed and replaced by get_cell_measure(a).
-  This error message will be deleted in future versions.
-  """
-end
-
-export restrict
-function restrict(args...)
-  Helpers.@unreachable """\n
-  Function restrict has been removed. The user does not need to explicitly
-  restrict to a given Triangulation any more. The code does it undere the hood.
   This error message will be deleted in future versions.
   """
 end

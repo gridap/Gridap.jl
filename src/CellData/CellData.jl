@@ -12,6 +12,7 @@ using FillArrays
 using NearestNeighbors
 using StaticArrays
 using DataStructures
+using ForwardDiff
 
 using Gridap.Helpers
 using Gridap.Algebra
@@ -61,6 +62,7 @@ export Integrand
 export ∫
 export CellDof
 export get_normal_vector
+export get_tangent_vector
 export get_cell_measure
 export Interpolable
 export KDTreeSearch
@@ -91,6 +93,8 @@ export SkeletonCellFieldPair
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
+
+include("Interpolation.jl")
 
 include("CellQuadratures.jl")
 

@@ -86,6 +86,9 @@ convert(::Type{<:NTuple{L,T1}}, arg::TensorValue) where {L,T1} = NTuple{L,T1}(Tu
 convert(::Type{<:TensorValue{D1,D2,T}}, arg::TensorValue{D1,D2}) where {D1,D2,T} = TensorValue{D1,D2,T}(Tuple(arg))
 convert(::Type{<:TensorValue{D1,D2,T}}, arg::TensorValue{D1,D2,T}) where {D1,D2,T} = arg
 
+# Construction from ::SArray
+MultiValue(a::StaticMatrix{D1,D2,T}) where {D1,D2,T} = convert(TensorValue{D1,D2,T}, a)
+
 ###############################################################
 # Other constructors and conversions (TensorValue)
 ###############################################################
@@ -94,7 +97,7 @@ zero(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T} = TensorValue{D1,D2,T}(tfil
 zero(::TensorValue{D1,D2,T}) where {D1,D2,T} = zero(TensorValue{D1,D2,T})
 
 @generated function one(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T}
-  str = join(["$i==$j ? one(T) : zero(T), " for i in 1:D1 for j in 1:D2])
+  str = join(["$i==$j ? one(T) : zero(T), " for j in 1:D2 for i in 1:D1])
   Meta.parse("TensorValue{D1,D2,T}(($str))")
 end
 one(::TensorValue{D1,D2,T}) where {D1,D2,T} = one(TensorValue{D1,D2,T})
@@ -133,8 +136,42 @@ Return a diagonal `D`×`D` tensor with diagonal containing the elements of `v`.
     s[d] = "v.data[$i],"
   end
   str = join(s)
-  Meta.parse("TensorValue(($str))")
+  Meta.parse("TensorValue{D,D,T,$(D*D)}(($str))")
 end
+
+"""
+    tensor_from_columns(cols::NTuple{D2,VectorValue{D1,T}}) -> ::TensorValue{D1,D2,T}
+
+Return a `D1`×`D2` tensor with columns given by the `D1`-dimensional vectors in `cols`.
+"""
+@generated function tensor_from_columns(cols::NTuple{D2,VectorValue{D1,T}}) where {D1,D2,T}
+  s = ""
+  for j in 1:D2
+    for i in 1:D1
+      s *= "cols[$j].data[$i],"
+    end
+  end
+  Meta.parse("TensorValue{D1,D2,T,$(D1*D2)}(($s))")
+end
+
+tensor_from_columns(cols::VectorValue...) = tensor_from_columns(cols)
+
+"""
+    tensor_from_rows(rows::NTuple{D1,VectorValue{D2,T}}) -> ::TensorValue{D1,D2,T}
+
+Return a `D1`×`D2` tensor with rows given by the `D2`-dimensional vectors in `rows`.
+"""
+@generated function tensor_from_rows(rows::NTuple{D1,VectorValue{D2,T}}) where {D1,D2,T}
+  s = ""
+  for j in 1:D2
+    for i in 1:D1
+      s *= "rows[$i].data[$j],"
+    end
+  end
+  Meta.parse("TensorValue{D1,D2,T,$(D1*D2)}(($s))")
+end
+
+tensor_from_rows(rows::VectorValue...) = tensor_from_rows(rows)
 
 ###############################################################
 # Introspection (TensorValue)
