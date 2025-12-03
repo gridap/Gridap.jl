@@ -15,6 +15,12 @@ A = reinterpret(V)
 R = [2.0 2.0 2.0 2.0 2.0; 3.5 3.5 3.5 3.5 3.5; 1.0 1.0 1.0 1.0 1.0; 4.0 4.0 4.0 4.0 4.0]
 @test A == R
 
+v = ThirdOrderTensorValue(1:8...)
+V = fill(v,2)
+A = reinterpret(V)
+R = [1 1; 2 2; 3 3; 4 4; 5 5; 6 6; 7 7; 8 8]
+@test A == R
+
 v = SymFourthOrderTensorValue(1,2,3, 4,5,6, 7,8,9)
 V = fill(v,5)
 A = reinterpret(V)
@@ -31,6 +37,12 @@ v = SymTracelessTensorValue(1,2)
 V = fill(v,5)
 A = reinterpret(V)
 R = [1 1 1 1 1; 2 2 2 2 2; -1 -1 -1 -1 -1]
+@test A == R
+
+v = SkewSymTensorValue(1,2,3)
+V = fill(v,5)
+A = reinterpret(V)
+R = [1 1 1 1 1; 2 2 2 2 2; 3 3 3 3 3]
 @test A == R
 
 end # module ReinterpretTests

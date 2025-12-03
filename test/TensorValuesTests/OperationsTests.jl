@@ -667,12 +667,12 @@ c = inner(t,s)
 @test c == 185
 
 c = inner(st,st2)
-c = st ⊙ st2
+@test c == st ⊙ st2
 @test isa(c,Int)
 @test c == inner(TensorValue(get_array(st)),TensorValue(get_array(st2)))
 
 c = inner(qt,qt2)
-c = qt ⊙ qt2
+@test c == qt ⊙ qt2
 @test isa(c,Int)
 @test c == inner(TensorValue(get_array(qt)),TensorValue(get_array(qt2)))
 
@@ -681,9 +681,15 @@ t2 = TensorValue{2,3}(10:15...)
 @test inner(t1,t1) == 91
 @test double_contraction(t1,t2) == inner(t1,t2)
 
+c = inner(t4,t4)
+@test c == t4 ⊙ t4
+@test isa(c,Int)
+@test c == inner(t4[:],t4[:])
+
 @test_throws ErrorException inner(a,t)
 @test_throws ErrorException inner(s,a)
 @test_throws ErrorException inner(a,q)
+@test_throws ErrorException inner(a,t4)
 
 # Reductions
 
@@ -734,12 +740,17 @@ c = outer(k,e)
 @test c == ThirdOrderTensorValue{4,1,3}(10, 20, 30, 40, 20, 40, 60, 80, 30, 60, 90, 120)
 @test_throws ArgumentError tr(c)
 
+e = TensorValue{1,3}(10,20,30)
+k = TensorValue{4,1}(1,2,3,4)
+c = outer(e,k)
+@test c == HighOrderTensorValue{Tuple{1,3,4,1}}(10, 20, 30, 20, 40, 60, 30, 60, 90, 40, 80, 120)
+c = outer(k,e)
+@test c == HighOrderTensorValue{Tuple{4,1,1,3}}(10, 20, 30, 40, 20, 40, 60, 80, 30, 60, 90, 120)
+@test_throws ArgumentError tr(c)
+
 e = VectorValue(10,20)
 k = TensorValue(1,2,3,4)
 @test tr(outer(e,k)) == VectorValue(50,110)
-
-a = TensorValue{0,0}()
-@test_throws ErrorException outer(a,a) # FourthOrderTensorValue isn't implemented
 
 # Cross product
 
@@ -764,6 +775,7 @@ b = VectorValue(3.0,-2.0)
 a = VectorValue(4.0,1.0)
 b = VectorValue(3.0,-2.0,1.0)
 @test_throws ErrorException cross(a, b)
+
 # Linear Algebra
 
 t = TensorValue(10,2,30,4,5,6,70,8,9)
@@ -950,9 +962,16 @@ qt = SymTracelessTensorValue(1,2,3,5,6)
 sk = SkewSymTensorValue(1,2,3)
 @test tr(sk) == tr(TensorValue(get_array(sk)))
 
+t3 = ThirdOrderTensorValue(1:8...)
+@test tr(t3) == tr(MultiValue(get_array(t3 )))
+
 t23 = TensorValue{2,3}(1:6...)
 @test_throws ArgumentError tr(t23)
 
+t4 = HighOrderTensorValue(Val(4), 1:16...)
+@test_throws ArgumentError  tr(t4)
+
+# symmetric and skew-symmetric parts
 
 @test get_array(symmetric_part(t)) == get_array(TensorValue(1.0, 3.0, 5.0, 3.0, 5.0, 7.0, 5.0, 7.0, 9.0))
 @test symmetric_part(st) == symmetric_part(TensorValue(get_array(st)))
@@ -972,6 +991,8 @@ sk = skew_symmetric_part(skt)
 skt = .5(qt - qt')
 sk = skew_symmetric_part(skt)
 @test zero(sk) == sk == SkewSymTensorValue(get_array(skt))
+
+# adjoint and transpose
 
 a = TensorValue(1,2,3,4)
 b = a'
@@ -1128,7 +1149,7 @@ v  = VectorValue(1:2...)
 t1 = TensorValue(1:4...)
 t2 = TensorValue(1:9...)
 s4 = SymFourthOrderTensorValue(1:9...)
-@test_throws ErrorException double_contraction(t1,v)
+@test_throws DimensionMismatch double_contraction(t1,v)
 @test_throws DimensionMismatch double_contraction(t1,t2)
 
 Sym4TensorIndexing = [1111, 1121, 1131, 1122, 1132, 1133, 2111, 2121, 2131, 2122, 2132, 2133,

@@ -149,11 +149,20 @@ end
   @inbounds arg.data[index]
 end
 
-@propagate_inbounds function getindex(arg::ThirdOrderTensorValue{D1,D2},i::Integer,j::Integer,k::Integer) where {D1,D2}
-  @boundscheck @check checkbounds(arg,i,j,k) === nothing
-  index = _3d_tensor_linear_index(D1,D2,i,j,k)
-  @inbounds arg.data[index]
+@propagate_inbounds function getindex(arg::HighOrderTensorValue{S,T,N}, inds::Vararg{Integer,N}) where {S,T,N}
+  @boundscheck @check checkbounds(arg, inds...) === nothing
+  @inbounds arg.data[inds...]
 end
+# The following attempt to switch to IndexLinear style failed due to the manual
+# indexing dispatches above...
+#
+#Base.IndexStyle(::HighOrderTensorValue) = IndexLinear()
+#Base.IndexStyle(::Type{<:HighOrderTensorValue}) = IndexLinear()
+#Base.checkbounds(arg::HighOrderTensorValue, i::Integer) = checkbounds(arg.data, i)
+#@propagate_inbounds function getindex(arg::HighOrderTensorValue, i::Integer)
+#  @boundscheck @check checkbounds(arg, i) === nothing
+#  @inbounds @inline getindex(arg.data, i)
+#end
 
 
 function Base.checkbounds(A::MultiValue{S}, I::Integer...) where S
@@ -211,3 +220,4 @@ function _4d_sym_tensor_linear_index(D,i,j,k,l)
   index=(block_index-1)*block_length+element_index
   index
 end
+

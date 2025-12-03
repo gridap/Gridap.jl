@@ -77,16 +77,3 @@ change_eltype(::Type{<:VectorValue{D}},::Type{T}) where {D,T} = VectorValue{D,T}
 # Construction from SArray or MArray
 MultiValue(a::StaticVector{D,T}) where {D,T} = convert(VectorValue{D,T}, a)
 
-###############################################################
-# VTK export (VectorValue)
-###############################################################
-
-function indep_components_names(::Type{<:VectorValue{A}}) where A
-  [ "$i" for i in 1:A ]
-  if A>3
-    return ["$i" for i in 1:A ]
-  else
-    c_name = ["X", "Y", "Z"]
-    return [c_name[i] for i in 1:A ]
-  end
-end

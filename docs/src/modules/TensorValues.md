@@ -14,6 +14,7 @@ tensors:
 - 2nd order, symmetric and traceless [`SymTracelessTensorValue`](@ref),
 - 3rd order [`ThirdOrderTensorValue`](@ref),
 - 4th order and symmetric [`SymFourthOrderTensorValue`](@ref).
+- ≥ 4 orders [`HighOrderTensorValue`](@ref)
 
 ## Summary
 
@@ -95,6 +96,7 @@ SkewSymTensorValue
 SymTracelessTensorValue
 ThirdOrderTensorValue
 SymFourthOrderTensorValue
+HighOrderTensorValue
 ```
 
 ### Abstract tensor types
@@ -138,6 +140,8 @@ inner
 dot(::MultiValue,::MultiValue)
 double_contraction
 outer(::MultiValue,::MultiValue)
+
+contracted_product
 ```
 
 ### Other type specific interfaces
