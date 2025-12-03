@@ -26,8 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Some refactoring of `Gridap.TensorValues` to simplify maintenance and new implementations. Since PR[#1115](https://github.com/gridap/Gridap.jl/pull/#1115).
   - Added `SkewSymTensorValue`: a new `<:MultiValue` 2nd order tensor type such that `transpose(s)==-s`.
+  - Added `HighOrderTensorValue`: a new `<:MultiValue` tensors of order >=3, with all components independent. Since PR[#1193](https://github.com/gridap/Gridap.jl/pull/#1193).
   - `congruent_prod`: new operation for 2nd order tensors: `a,b -> bᵀ⋅a⋅b` preserving symmetry of `a`.
   - `component_basis`, `representatives_of_componentbasis_dual`, `representatives_of_basis_dual`: new APIs for `::MultiValue`s yielding bases of the vector space spanned by the independent components of a tensor type (1st method) and its dual space (2nd method), or the dual to a basis (3rd method).
+  - `contracted_product` generalizes `outer`, `dot`, `double_contraction` and `inner` for tensors of arbitrary order, refactoring these operations for tensors with all components independent. Since PR[#1193](https://github.com/gridap/Gridap.jl/pull/#1193).
 
 - Refactoring of moment-based ReferenceFEs, those using face-integral linear forms for DoFs, including `RaviartThomas`, `Nedelec`, `BDM` and `CrouzeixRaviart`. Since PR[#1048](https://github.com/gridap/Gridap.jl/pull/#1048).
   - The mid-level `MomentBasedRefFE` factory function creates moment based refFEs
@@ -63,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Similarly, on n-cubes, the default polynomial bases of BDM, Nédélec and Raviart-Thomas RefFEs have changed for Legendre (tensor-product) polynomial bases instead of Monomials.
 - Changed `Base.==` for `ReferenceFE`s, and implemented it for `LinearCombinationFieldVector` and `LinearCombinationDofVector`. The implementation now uses AutoHashEquals.jl, so RefFEs are now only equal if they have the same prebasis, shapefun and dofs.
 - Monomial (pre)bases have been replaced with Bernstein / Barycentric bases for non-scalar finite elements on simplices.
+- `ThirdOrderTensorValue{D1,D2,D3,T,L}` has been redefined as alias to `HighOrderTensorValue{Tuple{D1,D2,D3},T,3,L}`.
 
 ### Deprecated
 
