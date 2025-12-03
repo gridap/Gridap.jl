@@ -1,26 +1,13 @@
 
 """
-    ThirdOrderTensorValue{D1,D2,D3,T,L} <: MultiValue{Tuple{D1,D2,D3},T,3,L}
+    ThirdOrderTensorValue{D1,D2,D3,T,L} = HighOrderTensorValue{Tuple{D1,D2,D3},T,3,L}
 
-Type representing a third-order `D1`×`D2`×`D3` tensor. It must hold `L` = `D1`\\*`D2`\\*`D3`.
+Alias representing a third-order `D1`×`D2`×`D3` tensor, providing similar
+contructors than the 1st and 2nd order counterparts. It must hold `L` = `D1`\\*`D2`\\*`D3`.
 
 If only `D1` or no dimension parameter is given to the constructor, `D1`=`D2`=`D3` is assumed.
 """
-struct ThirdOrderTensorValue{D1,D2,D3,T,L} <: MultiValue{Tuple{D1,D2,D3},T,3,L}
-    data::NTuple{L,T}
-    function ThirdOrderTensorValue{D1,D2,D3,T}(data::NTuple{L,T}) where {D1,D2,D3,T,L}
-        @check L == D1*D2*D3
-        new{D1,D2,D3,T,L}(data)
-    end
-end
-
-function promote_rule(
-  ::Type{<:ThirdOrderTensorValue{D1,D2,D3,Ta}},
-  ::Type{<:ThirdOrderTensorValue{D1,D2,D3,Tb}}) where {D1,D2,D3,Ta,Tb}
-
-  T = promote_type(Ta,Tb)
-  ThirdOrderTensorValue{D1,D2,D3,T}
-end
+const ThirdOrderTensorValue{D1,D2,D3,T,L} = HighOrderTensorValue{Tuple{D1,D2,D3},T,3,L}
 
 # Empty ThirdOrderTensorValue constructor
 
@@ -43,7 +30,7 @@ ThirdOrderTensorValue{0,0,0}(data::NTuple{0}) = ThirdOrderTensorValue{0,0,0,Int}
 end
 ThirdOrderTensorValue{D}(data::NTuple{L,T}) where {D,L,T}                         = ThirdOrderTensorValue{D,D,D,T}(data)
 ThirdOrderTensorValue{D1,D2,D3}(data::NTuple{L,T}) where {D1,D2,D3,L,T}           = ThirdOrderTensorValue{D1,D2,D3,T}(data)
-ThirdOrderTensorValue{D1,D2,D3,T1}(data::NTuple{L,T2}) where {D1,D2,D3,L,T1,T2}   = ThirdOrderTensorValue{D1,D2,D3,T1}(NTuple{L,T1}(data))
+ThirdOrderTensorValue{D1,D2,D3,T1}(data::NTuple{L,T2}) where {D1<:Int,D2,D3,L,T1,T2} = ThirdOrderTensorValue{D1,D2,D3,T1}(NTuple{L,T1}(data))
 ThirdOrderTensorValue{D1,D2,D3,T1,L}(data::NTuple{L,T2}) where {D1,D2,D3,L,T1,T2} = ThirdOrderTensorValue{D1,D2,D3,T1}(NTuple{L,T1}(data))
 
 # ThirdOrderTensorValue single Tuple argument constructor
@@ -51,7 +38,7 @@ ThirdOrderTensorValue{D1,D2,D3,T1,L}(data::NTuple{L,T2}) where {D1,D2,D3,L,T1,T2
 ThirdOrderTensorValue(data::Tuple) = ThirdOrderTensorValue(promote(data...))
 ThirdOrderTensorValue{D}(data::Tuple) where {D} = ThirdOrderTensorValue{D,D,D}(promote(data...))
 ThirdOrderTensorValue{D1,D2,D3}(data::Tuple) where {D1,D2,D3} = ThirdOrderTensorValue{D1,D2,D3}(promote(data...))
-ThirdOrderTensorValue{D1,D2,D3,T1}(data::Tuple) where {D1,D2,D3,T1}  = ThirdOrderTensorValue{D1,D2,D3,T1}(NTuple{length(data),T1}(data))
+ThirdOrderTensorValue{D1,D2,D3,T1}(data::Tuple) where {D1<:Int,D2,D3,T1} = ThirdOrderTensorValue{D1,D2,D3,T1}(NTuple{length(data),T1}(data))
 ThirdOrderTensorValue{D1,D2,D3,T1,L}(data::Tuple) where {D1,D2,D3,T1,L}  = ThirdOrderTensorValue{D1,D2,D3,T1}(NTuple{L,T1}(data))
 
 # ThirdOrderTensorValue Vararg constructor
@@ -88,17 +75,4 @@ MultiValue(a::StaticArray{Tuple{D1,D2,D3},T}) where {D1,D2,D3,T} = convert(Third
 # other
 change_eltype(::Type{<:ThirdOrderTensorValue{D1,D2,D3}},::Type{T2}) where {D1,D2,D3,T2} = ThirdOrderTensorValue{D1,D2,D3,T2}
 change_eltype(::Type{ThirdOrderTensorValue{D1,D2,D3,T1,L}},::Type{T2}) where {D1,D2,D3,T1,T2,L} = ThirdOrderTensorValue{D1,D2,D3,T2,L}
-
-###############################################################
-# VTK export (ThirdOrderTensorValue)
-###############################################################
-
-function indep_components_names(::Type{<:ThirdOrderTensorValue{D1,D2,D3}}) where {D1,D2,D3}
-  if D1>3 || D2>3 || D3>3
-    return ["$i$j$k" for i in 1:D1 for j in 1:D2 for k in 1:D3 ]
-  else
-    c_name = ["X", "Y", "Z"]
-    return [c_name[i]*c_name[j]*c_name[k] for i in 1:D1 for j in 1:D2 for k in 1:D3]
-  end
-end
 

@@ -56,6 +56,7 @@ export SkewSymTensorValue
 export QTensorValue
 export SymFourthOrderTensorValue
 export ThirdOrderTensorValue
+export HighOrderTensorValue
 
 export inner, outer, meas
 export mutable
@@ -71,6 +72,7 @@ export ⊗
 export ⋅¹
 export ⋅²
 export double_contraction
+export contracted_product
 export congruent_prod
 export indep_comp_getindex
 export indep_components_names
@@ -112,6 +114,8 @@ include("SymTracelessTensorValueTypes.jl")
 include("SkewSymTensorValueTypes.jl")
 
 include("SymFourthOrderTensorValueTypes.jl")
+
+include("HighOrderTensorValueTypes.jl")
 
 include("ThirdOrderTensorValueTypes.jl")
 

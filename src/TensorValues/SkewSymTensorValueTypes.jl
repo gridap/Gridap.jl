@@ -123,3 +123,17 @@ change_eltype(::Type{SkewSymTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} =
 
 num_indep_components(::Type{<:SkewSymTensorValue{D}}) where {D} = D*(D-1)÷2
 
+
+###############################################################
+# VTK export (SkewSymTensorValue)
+###############################################################
+
+function indep_components_names(::Type{<:SkewSymTensorValue{D}}) where D
+  if D>3
+    return ["$i$j" for i in 1:D for j in i+1:D ]
+  else
+    c_name = ["X", "Y", "Z"]
+    return [c_name[i]*c_name[j] for i in 1:D for j in i+1:D ]
+  end
+end
+

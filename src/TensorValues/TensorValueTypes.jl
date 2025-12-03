@@ -150,15 +150,3 @@ end
 
 tensor_from_rows(rows::VectorValue...) = tensor_from_rows(rows)
 
-###############################################################
-# VTK export (TensorValue)
-###############################################################
-
-function indep_components_names(::Type{<:TensorValue{D1,D2}}) where {D1,D2}
-  if D1>3 || D2>3
-    return ["$i$j" for i in 1:D1 for j in 1:D2 ]
-  else
-    c_name = ["X", "Y", "Z"]
-    return [c_name[i]*c_name[j] for i in 1:D1 for j in 1:D2 ]
-  end
-end

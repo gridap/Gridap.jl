@@ -123,8 +123,8 @@ get_array(a::MultiValue{S,T}) where {S,T} = convert(SArray{S,T},a)
 
 If possible (`a` needs to be of order 1, 2 or 3), converts `a` to a value of
 type `<:MultiValue`.
-"""
-MultiValue(::StaticArray) = @notimplemented "The given StaticArray cannot be converted to a ::MultiValue."
+""" # the S param is there to allow HighOrderTensorValue's specialization to be more specific
+MultiValue(::StaticArray{S}) where S = @abstractmethod
 
 """
     SVector(a::MultiValue)
@@ -233,17 +233,42 @@ end
 
 """
     indep_components_names(::MultiValue)
+    indep_components_names(::Type{<:MultiValue{S}})
 
 Return an array of strings containing the component labels in the order they
 are exported in VTK file.
 
-If all dimensions of the tensor shape S are smaller than 3, the components
+If all dimensions of the tensor shape `S` are smaller than 3, the components
 are named with letters "X","Y" and "Z" similarly to the automatic naming
-of Paraview. Else, if max(S)>3, they are labeled by integers starting from "1".
+of Paraview. Else, if `maximum(S)>3`, they are labeled by integers starting from "1".
 """
-function indep_components_names(::Type{MultiValue{S,T,N,L}}) where {S,T,N,L}
-  return ["$i" for i in 1:L]
+indep_components_names(a::MultiValue) = indep_components_names(typeof(a))
+function indep_components_names(::Type{V}) where V<:MultiValue{S,T,N,L} where {S,T,N,L}
+  s = size(HighOrderTensorValue{S})
+
+  # if there are dependant components, numbered linearly by default
+  if L != prod(s)
+    @warn "indep_components_names has not been implemented for a tensor type
+    with dependent components, falling back to default names [string(i) for i in 1:L]"
+    return [string(i) for i in 1:L]
+  end
+
+  indep_components_names(MultiValue{S})
 end
+
+function indep_components_names(::Type{V}) where V<:MultiValue{S} where {S}
+  s = size(HighOrderTensorValue{S})
+
+  if maximum(s; init=0) > 3
+    names = [ join(Tuple(ci)) for ci in CartesianIndices(s) ]
+  else
+    c_name = ["X", "Y", "Z"]
+    c_names(ci) = join(c_name[i] for i in Tuple(ci))
+    names =  [ c_names(ci) for ci in CartesianIndices(s) ]
+  end
+  reshape(names, length(names))
+end
+
 
 """
     component_basis(V::Type{<:MultiValue}) -> V[ Vᵢ... ]

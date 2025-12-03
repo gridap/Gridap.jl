@@ -87,13 +87,13 @@ for op in (:+,:-)
 
     function ($op)(a::T) where T<:MultiValue
       Li = num_indep_components(T)
-      r = map($op, a.data[1:Li])
+      r = map($op, Tuple(a)[1:Li])
       T(r)
     end
 
     function ($op)(a::V, b::V) where V<:MultiValue
       Li = num_indep_components(V)
-      r = map(($op), a.data[1:Li], b.data[1:Li])
+      r = map(($op), Tuple(a)[1:Li], Tuple(b)[1:Li])
       V(r)
     end
   end
@@ -135,7 +135,7 @@ for op in (:+,:-,:*)
   @eval begin
     function ($op)(a::MultiValue, b::_Scalar)
       Li = num_indep_components(a)
-      r = _bc($op, a.data[1:Li], b)
+      r = _bc($op, Tuple(a)[1:Li], b)
       T = _eltype($op, r, a, b)
       M = change_eltype(a, T)
       M(r)
@@ -143,7 +143,7 @@ for op in (:+,:-,:*)
 
     function ($op)(a::_Scalar, b::MultiValue)
       Li = num_indep_components(b)
-      r = _bc($op, a, b.data[1:Li])
+      r = _bc($op, a, Tuple(b)[1:Li])
       T = _eltype($op, r, a, b)
       M = change_eltype(b, T)
       M(r)
@@ -160,7 +160,7 @@ _err = "This operation is undefined for traceless tensors"
 
 function (/)(a::MultiValue, b::_Scalar)
   Li = num_indep_components(a)
-  r = _bc(/, a.data[1:Li], b)
+  r = _bc(/, Tuple(a)[1:Li], b)
   T = _eltype(/, r, a, b)
   P = change_eltype(a, T)
   P(r)
@@ -203,8 +203,6 @@ function (*)(a::MultiValue, b::MultiValue)
   error(msg)
 end
 
-dot(a::MultiValue{Tuple{D}}, b::MultiValue{Tuple{D}}) where D = inner(a, b)
-
 """
     dot(a::MultiValue{Tuple{...,D}}, b::MultiValue{Tuple{D,...}})
     a ⋅¹ b
@@ -215,115 +213,7 @@ the first index of `b`. The corresponding dimensions `D` must match. No symmetry
 is preserved.
 On two vectors, this is the same as the inner product.
 """
-dot(a::MultiValue, b::MultiValue) = @notimplemented
-
-@generated function dot(a::MultiValue{Tuple{D1},Ta}, b::MultiValue{Tuple{D1,D2},Tb}) where {D1,D2,Ta,Tb}
-  iszero(length(b)) && return :(zero(VectorValue{D2,$(promote_type(Ta, Tb))}))
-  ss = String[]
-  for j in 1:D2
-    s = ""
-    for i in 1:D1
-      s *= "a[$i]*b[$i,$j]+"
-    end
-    push!(ss, s[1:(end-1)] * ", ")
-  end
-  str = join(ss)
-  Meta.parse("VectorValue{$D2}($str)")
-end
-
-@generated function dot(a::MultiValue{Tuple{D1,D2},Ta}, b::MultiValue{Tuple{D2},Tb}) where {D1,D2,Ta,Tb}
-  iszero(length(a)) && return :(zero(VectorValue{D1,$(promote_type(Ta, Tb))}))
-  ss = String[]
-  for i in 1:D1
-    s = ""
-    for j in 1:D2
-      s *= "a[$i,$j]*b[$j]+"
-    end
-    push!(ss, s[1:(end-1)] * ", ")
-  end
-  str = join(ss)
-  Meta.parse("VectorValue{$D1}($str)")
-end
-
-@generated function dot(a::MultiValue{Tuple{D1,D3},Ta}, b::MultiValue{Tuple{D3,D2},Tb}) where {D1,D2,D3,Ta,Tb}
-  (iszero(length(a)) || iszero(length(b))) && return :(zero(TensorValue{D1,D2,$(promote_type(Ta, Tb))}))
-  ss = String[]
-  for j in 1:D2
-    for i in 1:D1
-      s = join(["a[$i,$k]*b[$k,$j]+" for k in 1:D3])
-      push!(ss, s[1:(end-1)] * ", ")
-    end
-  end
-  str = join(ss)
-  Meta.parse("TensorValue{$D1,$D2}(($str))")
-end
-
-# a_ij = b_ijk*c_k
-@generated function dot(a::MultiValue{Tuple{D1,D2,D3},Ta}, b::MultiValue{Tuple{D3},Tb}) where {D1,D2,D3,Ta,Tb}
-  iszero(length(a)) && return :(zero(TensorValue{D1,D2,$(promote_type(Ta, Tb))}))
-  T = promote_type(Ta, Tb)
-  (iszero(D1) || iszero(D2)) && return :(TensorValue{D1,D2,$T}())
-  iszero(D3) && return :(zero(TensorValue{D1,D2,$T}))
-  ss = String[]
-  for j in 1:D2
-    for i in 1:D1
-      s = join(["a[$i,$j,$k]*b[$k]+" for k in 1:D3])
-      push!(ss, s[1:(end-1)] * ", ")
-    end
-  end
-  str = join(ss)
-  Meta.parse("TensorValue{$D1,$D2}($str)")
-end
-
-# a_ijl = b_ijk*c_kl
-@generated function dot(a::MultiValue{Tuple{D1,D2,D3},Ta}, b::MultiValue{Tuple{D3,D4},Tb}) where {D1,D2,D3,D4,Ta,Tb}
-  (iszero(length(a)) || iszero(length(b))) && return :(
-    zero(ThirdOrderTensorValue{D1,D2,D4,$(promote_type(Ta, Tb))})
-  )
-  ss = String[]
-  for l in 1:D4
-    for j in 1:D2
-      for i in 1:D1
-        s = join(["a[$i,$j,$k]*b[$k,$l]+" for k in 1:D3])
-        push!(ss, s[1:(end-1)] * ", ")
-      end
-    end
-  end
-  str = join(ss)
-  Meta.parse("ThirdOrderTensorValue{$D1,$D2,$D4}($str)")
-end
-
-# a_ij = c_k*b_kij
-@generated function dot(a::MultiValue{Tuple{D1},Ta}, b::MultiValue{Tuple{D1,D2,D3},Tb}) where {D1,D2,D3,Ta,Tb}
-  iszero(length(b)) && return :(zero(TensorValue{D2,D3,$(promote_type(Ta, Tb))}))
-  ss = String[]
-  for k in 1:D3
-    for j in 1:D2
-      s = join(["a[$i]*b[$i,$j,$k]+" for i in 1:D1])
-      push!(ss, s[1:(end-1)] * ", ")
-    end
-  end
-  str = join(ss)
-  Meta.parse("TensorValue{$D2,$D3}($str)")
-end
-
-# a_ilm = b_ij*c_jlm
-@generated function dot(a::MultiValue{Tuple{D1,D2},Ta}, b::MultiValue{Tuple{D2,D3,D4},Tb}) where {D1,D2,D3,D4,Ta,Tb}
-  (iszero(length(a)) || iszero(length(b))) && return :(
-    zero(ThirdOrderTensorValue{D1,D3,D4,$(promote_type(Ta, Tb))})
-  )
-  ss = String[]
-  for m in 1:D4
-    for l in 1:D3
-      for i in 1:D1
-        s = join(["a[$i,$j]*b[$j,$l,$m]+" for j in 1:D2])
-        push!(ss, s[1:(end-1)] * ", ")
-      end
-    end
-  end
-  str = join(ss)
-  Meta.parse("ThirdOrderTensorValue{$D1,$D3,$D4}($str)")
-end
+dot(a::MultiValue, b::MultiValue) = contracted_product(Val(1), a, b)
 
 const ⋅¹ = dot
 
@@ -343,11 +233,7 @@ function inner(a::MultiValue, b::MultiValue)
   @notimplemented "Sizes of tensors must match."
 end
 
-@generated function inner(a::MultiValue{S,Ta}, b::MultiValue{S,Tb}) where {S,Ta,Tb}
-  iszero(length(a)) && return :(zero($(promote_type(Ta, Tb))))
-  str = join([" a[$i]*b[$i] +" for i in 1:length(a)])
-  Meta.parse(str[1:(end-1)])
-end
+inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N}) where {S,Ta,Tb,N} = contracted_product(Val(N),a,b)
 
 @generated function inner(a::AbstractSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return :(zero($(promote_type(Ta, Tb))))
@@ -376,11 +262,11 @@ end
   # for each independent component, add its product in the sum of the
   # corresponding multiplicative factor
   for (i, fi) in enumerate(component_basis(VInt))
-    factor = @invoke inner(fi::MultiValue{S,Int}, fi::MultiValue{S,Int}) # use the generic but slower method
-    strs[factor] *= "indep_comp_getindex(a,$i) * indep_comp_getindex(b,$i) +"
+    factor = @invoke inner(fi::MultiValue{S,Int,4}, fi::MultiValue{S,Int,4}) # use the generic but slower method
+    strs[factor] *= "+ indep_comp_getindex(a,$i)*indep_comp_getindex(b,$i)"
   end
 
-  str = string(strs[1][1:(end-1)], ") + ", strs[2][1:(end-1)], ") + ", strs[4][1:(end-1)], ")")
+  str = string(strs[1][:], ") + ", strs[2][:], ") + ", strs[4][:], ")")
   Meta.parse(str)
 end
 
@@ -423,47 +309,7 @@ order tensors.
 The `double_contraction` between second- and/or fourth-order symmetric tensors
 preserves the symmetry (returns a symmetric tensor type).
 """
-function double_contraction(a::MultiValue{S1}, b::MultiValue{S2}) where {S1<:Tuple,S2<:Tuple}
-  L1, L2 = length(S1.types), length(S2.types)
-  if L1<2 || L2<2
-    @unreachable "Double contraction is only define for tensors of order more than 2, got $L1 and $L2."
-  end
-
-  D1, E1, D2, E2 = S1.types[end-1], S1.types[end], S2.types[1], S2.types[2]
-  if D1 != D2 || E1 != E2
-    throw(DimensionMismatch("the last two dimensions of the first argument must match the first two of the second argument, got ($D1,$E1) ≠ ($D2,$E2)."))
-  end
-  @notimplemented
-end
-
-# c_i = a_ij*b_ij
-function double_contraction(a::MultiValue{S}, b::MultiValue{S}) where {S<:Tuple{D1,D2}} where {D1,D2}
-  inner(a,b)
-end
-
-# c_i = a_ijk*b_jk
-@generated function double_contraction(a::MultiValue{Tuple{D1,D2,D3},Ta}, b::MultiValue{Tuple{D2,D3},Tb}) where {D1,D2,D3,Ta,Tb}
-  iszero(length(a)) && return :(zero(VectorValue{D1,$(promote_type(Ta, Tb))}))
-  ss = String[]
-  for i in 1:D1
-    s = join(["a[$i,$j,$k]*b[$j,$k]+" for j in 1:D2 for k in 1:D3])
-    push!(ss, s[1:(end-1)] * ", ")
-  end
-  str = join(ss)
-  Meta.parse("VectorValue{$D1}(($str))")
-end
-
-# c_k = a_ij*b_ijk
-@generated function double_contraction(a::MultiValue{Tuple{D1,D2},Ta}, b::MultiValue{Tuple{D1,D2,D3},Tb}) where {D1,D2,D3,Ta,Tb}
-  iszero(length(b)) && return :(zero(VectorValue{D3,$(promote_type(Ta, Tb))}))
-  ss = String[]
-  for k in 1:D3
-    s = join(["a[$i,$j]*b[$i,$j,$k]+" for i in 1:D1 for j in 1:D2])
-    push!(ss, s[1:(end-1)] * ", ")
-  end
-  str = join(ss)
-  Meta.parse("VectorValue{$D3}(($str))")
-end
+double_contraction(a::MultiValue, b::MultiValue) = contracted_product(Val(2), a, b)
 
 # c_ijpm = a_ijkl*b_klpm (3D)
 @generated function double_contraction(a::SymFourthOrderTensorValue{3}, b::SymFourthOrderTensorValue{3})
@@ -574,23 +420,6 @@ function double_contraction(a::MultiValue{Tuple{D,D}}, b::SymFourthOrderTensorVa
   double_contraction(symmetric_part(a), b)
 end
 
-
-# c_il = a_ijk*b_jkl
-@generated function double_contraction(a::ThirdOrderTensorValue{D1,D,E,Ta}, b::ThirdOrderTensorValue{D,E,D2,Tb}) where {D1,D,E,D2,Ta,Tb}
-  (iszero(length(a)) || iszero(length(b))) && return :(
-    zero(TensorValue{D1,D2,$(promote_type(Ta, Tb))})
-  )
-  ss = String[]
-  for l in 1:D2
-    for i in 1:D1
-      s = join(["a[$i,$j,$k]*b[$j,$k,$l]+" for j in 1:D for k in 1:E])
-      push!(ss, s[1:(end-1)] * ", ")
-    end
-  end
-  str = join(ss)
-  Meta.parse("TensorValue{$D1,$D2}($str)")
-end
-
 const ⋅² = double_contraction
 
 ###############################################################
@@ -600,7 +429,7 @@ const ⋅² = double_contraction
 """
     congruent_prod(a, b)
 
-Given a square second order tensors `a` and a `b`, return `b`ᵀ⋅`a`⋅`b`.
+Given a square second order tensors `a` and `b`, return `b`ᵀ⋅`a`⋅`b`.
 The type of the resulting value is (skew) symmetric stable w.r.t. `typeof(a)`.
 """
 function congruent_prod(a::MultiValue{Tuple{D,D},Ta}, b::MultiValue{Tuple{D,D1},Tb}) where {D,D1,Ta,Tb}
@@ -631,7 +460,9 @@ for op in (:sum, :maximum, :minimum)
   end
 end
 
-# Outer product (aka dyadic product)
+###############################################################
+# Outer product (aka tensor product, also dyadic product)
+###############################################################
 
 outer(a::Number, b::Number) = a * b
 
@@ -646,33 +477,7 @@ Outer product (or tensor-product) of two `Number`s and/or `MultiValue`s, that is
 `(a⊗b)[i₁,...,iₙ,j₁,...,jₙ] = a[i₁,...,iₙ]*b[j₁,...,jₙ]`. This falls back to standard
 multiplication if `a` or `b` is a scalar.
 """
-function outer(a::MultiValue, b::MultiValue)
-  @notimplemented
-end
-
-@generated function outer(a::MultiValue{Tuple{D},Ta}, b::MultiValue{Tuple{Z},Tb}) where {D,Z,Ta,Tb}
-  (iszero(D) || iszero(Z)) && return :(
-    zero(TensorValue{D,Z,$(promote_type(Ta, Tb))})
-  )
-  str = join(["a[$i]*b[$j], " for j in 1:Z for i in 1:D])
-  Meta.parse("TensorValue{$D,$Z}($str)")
-end
-
-@generated function outer(a::MultiValue{Tuple{D},Ta}, b::MultiValue{Tuple{D1,D2},Tb}) where {D,D1,D2,Ta,Tb}
-  (iszero(D) || iszero(length(b))) && return :(
-    zero(ThirdOrderTensorValue{D,D1,D2,$(promote_type(Ta, Tb))})
-  )
-  str = join(["a[$i]*b[$j,$k], " for k in 1:D2 for j in 1:D1 for i in 1:D])
-  Meta.parse("ThirdOrderTensorValue{D,D1,D2}($str)")
-end
-
-@generated function outer(a::MultiValue{Tuple{D1,D2},Ta}, b::MultiValue{Tuple{D},Tb}) where {D,D1,D2,Ta,Tb}
-  (iszero(length(a)) || iszero(D)) && return :(
-    zero(ThirdOrderTensorValue{D1,D2,D,$(promote_type(Ta, Tb))})
-  )
-  str = join(["a[$i,$j]*b[$k], " for k in 1:D for j in 1:D2 for i in 1:D1])
-  Meta.parse("ThirdOrderTensorValue{D1,D2,D}($str)")
-end
+outer(a::MultiValue, b::MultiValue) = contracted_product(Val(0), a, b)
 
 @generated function outer(a::AbstractSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return :(zero(SymFourthOrderTensorValue{D,$(promote_type(Ta, Tb))}))
@@ -690,6 +495,83 @@ end
 end
 
 const ⊗ = outer
+
+###############################################################
+# Generic tensor product + contraction
+###############################################################
+
+"""
+    contracted_product(Val(n), a::MultiValue, b::MultiValue)
+
+Compute the tensor `c` that results from the tensor-product of `a` and `b`
+contracted over the `n` last indices of `a` and `n` first indices of `b`:
+
+`c[i₁,...,iₘ₋ₙ,jₙ₊₁,...,jₚ] = Σ_{l₁,...,lₙ}  a[i₁,...,iₘ₋ₙ,l₁,...,lₙ]*b[l₁,...,lₙ,jₙ₊₁,...,jₚ]`
+
+where `m` is the order `a` and `p` that of `b`. The sum runs for each cartesian
+indices `(l₁,...,lₙ)` of the last `n` dimension of `a`, which must match the
+first `n` dimensions of `b`.
+
+This operation generalizes:
+- [`outer` / `⊗`](@ref outer) for `n=0`,
+- [`dot` / `⋅`](@ref dot) for `n=1`,
+- [`double_contraction` / `⋅²`](@ref double_contraction) for `n=2`,
+- [`inner` / `⊙`](@ref inner) for `n = length(size(a)) = length(size(b))`.
+
+This function is not optimized for tensor types with dependent components (use
+the specific functions above if possible), but is used as default generic implementation.
+"""
+@generated function contracted_product(
+  ::Val{N}, a::MultiValue{Sa,Ta,Na}, b::MultiValue{Sb,Tb,Nb}) where {N,Sa,Ta,Na,Sb,Tb,Nb}
+
+  @assert ( Sa <: Tuple && Sb <: Tuple ) "Ill-defined MultiValue value"
+
+  # check that no tensor is of order 0.
+  if min(Na,Nb) == 0
+    msg =  "Generic $N-contraction only implemented if both tensors are of order ≥ 1,
+      got tensor sizes $Sa and $Sb"
+    return :( error($msg) )
+  end
+
+  last_N_Sa = last(Sa.parameters, N)
+  first_N_Sb = first(Sb.parameters, N)
+  if ( length(last_N_Sa)≠N || length(first_N_Sb)≠N || last_N_Sa != first_N_Sb )
+    msg = """$N-contraction is not possible for tensors of size $Sa and $Sb, it is required that
+      - both tensor orders (size lengths) must be greater than or equal to $N
+      - the last $N dimension of the first argument match the first $N of the second argument
+      """
+    return :( throw(DimensionMismatch($(msg) )) )
+  end
+
+  S_contract = tuple(last_N_Sa...)
+  Sa_keep, Sb_keep = tuple(Sa.parameters[1:Na-N]...), tuple(Sb.parameters[N+1:Nb]...)
+
+  Sr = tuple(Sa_keep..., Sb_keep...)
+  Nr = length(Sr)
+  Vstr = if Nr == 0
+    "promote_type(Ta,Tb)"
+  elseif Nr == 1
+    "VectorValue{$(Sr[1]),promote_type(Ta,Tb)}"
+  elseif Nr == 2
+    "TensorValue{$(Sr[1]),$(Sr[2]),promote_type(Ta,Tb)}"
+  else
+    "HighOrderTensorValue{$(Tuple{Sr...}),promote_type(Ta,Tb)}"
+  end
+
+  if (iszero(length(a)) || iszero(length(b)))
+    return Meta.parse("zero("*Vstr*")")
+  end
+
+  ss = String[Vstr*"("]
+  for cib in CartesianIndices(Sb_keep) # Julia is column major, last index enumerates first
+    for cia in CartesianIndices(Sa_keep)
+      s = join("+a[$cia, $ciC]*b[$ciC, $cib]" for ciC in CartesianIndices(S_contract))
+      push!(ss, s * ", ")
+    end
+  end
+  push!(ss, ")")
+  Meta.parse(join(ss))
+end
 
 ###############################################################
 # Cross Product
@@ -873,7 +755,7 @@ for op in (:conj,:real,:imag)
   @eval begin
     function ($op)(a::T) where T<:MultiValue
       Li = num_indep_components(a)
-      r = map($op, a.data[1:Li])
+      r = map($op, Tuple(a)[1:Li])
       T2 = _eltype($op,r,a)
       M = change_eltype(a,T2)
       M(r)
@@ -904,11 +786,26 @@ tr(::MultiValue{Tuple{A,B}}) where {A,B} = throw(ArgumentError("Second order ten
 
 Return a vector of length `D2` of traces computed on the first two indices: `resⱼ = Σᵢ vᵢᵢⱼ`.
 """
-@generated function tr(v::MultiValue{Tuple{A,A,B},T}) where {A,B,T}
-  iszero(length(v)) && return :(zero(VectorValue{B,T}))
+@generated function tr(v::HighOrderTensorValue{S,T,N}) where {S,T,N}
+  @assert S <: Tuple "Ill-defined MultiValue value"
+
+  if N > 3
+    # This may be generalizable if wanted
+    msg = "Trace is not implemented for tensors of order ≥ 4, got tensors ::$(v)"
+    return :( throw(ArgumentError($msg)) )
+  end
+
+  A12 = first(S.parameters, 2)
+  if !allequal(A12)
+    msg = "First two dimensions ($A12) are not iddentical."
+    return :( throw(ArgumentError($msg)) )
+  end
+
+  B = last(S.parameters)
+  iszero(length(v)) && return :(zero(VectorValue{$B,T}))
   str = ""
   for k in 1:B
-    for i in 1:A
+    for i in 1:A12[1]
       if i != 1
         str *= " + "
       end
@@ -918,7 +815,6 @@ Return a vector of length `D2` of traces computed on the first two indices: `res
   end
   Meta.parse("VectorValue($str)")
 end
-tr(::MultiValue{Tuple{A,B,C}}) where {A,B,C} = throw(ArgumentError("First two dimensions are not iddentical"))
 
 ###############################################################
 # Adjoint and transpose
