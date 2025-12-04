@@ -3,7 +3,7 @@
 
   The `GeneralPolytope` is defined by a set of vertices and a rotation
   system (a planar oriented graph). This polytopal representation can represent
-  any polytope of dimension 2 and 3. `Dp` is the embeding dimension and `Tp`
+  any polytope of dimension 2 and 3. `Dp` is the embedding dimension and `Tp`
   the element type of the vertices.
 
   In 2 dimensions ([`Polygon`](@ref)), the representation of the polygon is a closed polyline.

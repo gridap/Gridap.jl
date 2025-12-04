@@ -38,7 +38,7 @@ this type can be obtained with the constructors
 - [`ExtrusionPolytope(extrusion::Int...)`](@ref)
 
 `ExtrusionPolytope` are used as reference polytopes because their
-coordinate space is their embeding space (the embeding dimension is the polytope
+coordinate space is their embedding space (the embeding dimension is the polytope
 dimension). Furthermore, the coordinates are determined by the extrusions.
 """
 struct ExtrusionPolytope{D} <: Polytope{D}

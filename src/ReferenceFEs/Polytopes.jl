@@ -7,7 +7,7 @@ Abstract type representing a polytope (i.e., a polyhedron in arbitrary dimension
 `D` is the polytope's dimension, defined as the smaller dimension of a flat
 hypersurface containing the polytope, e.g. a triangle in a 3D space is a
 `Polytope{2}` because it is contained in a 2D plane.
-`D` differs from the embeding dimension, that is the number of coordinates of its vertices.
+`D` differs from the embedding dimension, that is the number of coordinates of its vertices.
 
 We adopt the [usual nomenclature](https://en.wikipedia.org/wiki/Polytope) for polytope-related objects.
 All objects in a polytope (from vertices to the polytope itself) are called *n-faces* or simply *faces*.
@@ -253,7 +253,7 @@ num_cell_dims(::Type{<:Polytope{D}}) where D = D
     num_point_dims(::Polytope)
     num_point_dims(::Type{<:Polytope})
 
-Embeding dimension of a `Polytope` (type), i.e. number of coordinates of its vertices.
+Embedding dimension of a `Polytope` (type), i.e. number of coordinates of its vertices.
 """
 num_point_dims(::Type{<:Polytope}) = @abstractmethod
 
