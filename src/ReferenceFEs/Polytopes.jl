@@ -3,9 +3,12 @@
     abstract type Polytope{D} <: GridapType
 
 Abstract type representing a polytope (i.e., a polyhedron in arbitrary dimensions).
-`D` is the environment dimension (typically, 0, 1, 2, or 3).
-This type parameter is needed since there are functions in the
-`Polytope` interface that return containers with `Point{D}` objects.
+
+`D` is the polytope's dimension, defined as the smaller dimension of a flat
+hypersurface containing the polytope, e.g. a triangle in a 3D space is a
+`Polytope{2}` because it is contained in a 2D plane.
+`D` differs from the embeding dimension, that is the number of coordinates of its vertices.
+
 We adopt the [usual nomenclature](https://en.wikipedia.org/wiki/Polytope) for polytope-related objects.
 All objects in a polytope (from vertices to the polytope itself) are called *n-faces* or simply *faces*.
 The notation *n-faces* is used only when it is needed to refer to the object dimension n. Otherwise we simply
@@ -246,13 +249,19 @@ num_dims(::Type{<:Polytope{D}}) where D = D
 
 num_cell_dims(::Type{<:Polytope{D}}) where D = D
 
-num_point_dims(::Type{<:Polytope{D}}) where D = D
+"""
+    num_point_dims(::Polytope)
+    num_point_dims(::Type{<:Polytope})
+
+Embeding dimension of a `Polytope` (type), i.e. number of coordinates of its vertices.
+"""
+num_point_dims(::Type{<:Polytope}) = @abstractmethod
 
 """
-    num_dims(::Type{<:Polytope{D}}) where D
-    num_dims(p::Polytope{D}) where D
+    num_dims(::Type{<:Polytope{D}}) = D
+    num_dims(p::Polytope{D}) = D
 
-Returns `D`.
+Dimension of the polytope.
 """
 num_dims(p::Polytope) = num_dims(typeof(p))
 
