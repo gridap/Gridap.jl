@@ -5,11 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.19.6] - 2025-xx-xx
+## [Unreleased]
 
 ### Added
 
-- Added support for subdividing unstructured meshes to any level, including periodic ones. Since PR[#1143](https://github.com/gridap/Gridap.jl/pull/1143).
 - Added the symmetric quadrature rules of Witherden and Vincent, correctness tests for all quadrature rules, and minor extensions to the interfaces of `Quadrature` and `Polytope`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
   - Added the symmetric quadrature rules of Witherden and Vincent for tri/tet, quad/hex, wedge and pyramid.
   - Added `maxdegree(p::Polytope, name::QuadratureName)` to the interface of `Quadrature`.
@@ -18,11 +17,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The default quadrature for simplices is now `witherden_vincent` until available, then `xiao_gimbuttas` until available, then `duffy`.
+- Added specific tags on dual numbers to allow for nested AD without perturbation confusion. Since PR[#1181](https://github.com/gridap/Gridap.jl/pull/1181).
+- The default quadrature for simplices is now `witherden_vincent` until available, then `xiao_gimbuttas` until available, then `duffy`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
 
 ### Fixed
 
-- Fixed `strang` quadrature of order 4 for triangles.
+- Fixed issue [#1188](https://github.com/gridap/Gridap.jl/issues/1188). Fix one() function for non-square tensors.
+- Fixed `strang` quadrature of order 4 for triangles. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+
+## [0.19.6] - 2025-10-17
+
+### Added
+
+- Added support for subdividing unstructured meshes to any level, including periodic ones. Since PR[#1143](https://github.com/gridap/Gridap.jl/pull/1143).
+
+### Fixed
+
+- Fixed issue [#1174](https://github.com/gridap/Gridap.jl/issues/1174). Since PR[#1175](https://github.com/gridap/Gridap.jl/pull/1175).
+- Fixes the issue that a single CellField could not be passed to TrialFESpace constructor in cases where more than one tag was being passed to dirichlet_tags kw-arg argument. Since PR[#1177](https://github.com/gridap/Gridap.jl/pull/1177).
 
 ## [0.19.5] - 2025-09-19
 

@@ -162,9 +162,8 @@ function BoundaryTriangulation(
 end
 
 function BoundaryTriangulation(
-  model::DiscreteModel,
-  face_to_bgface::AbstractVector{<:Integer})
-  BoundaryTriangulation(model,face_to_bgface,Fill(1,num_facets(model)))
+  model::DiscreteModel, face_to_bgface::AbstractVector{<:Integer}, lcell::Integer=1)
+  BoundaryTriangulation(model,face_to_bgface,Fill(lcell,num_facets(model)))
 end
 
 function BoundaryTriangulation(
