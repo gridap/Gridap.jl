@@ -19,7 +19,7 @@
   > S. Badia, P. A. Martorell, F. Verdugo. "Geometrical discretisations for unfitted finite elements on explicit boundary representations", J.Comput. Phys. 460 (2022): 111162. doi: [10.1016/j.jcp.2022.111162](https://doi.org/10.1016/j.jcp.2022.111162)
 
 !!! warning
-    General polytope can be flat, i.e. a 3-vertices `Polygone` might have it's vertices aligned on a line. So `D` is actually an upper bound of the polytope's actual dimension.
+    General polytope can be flat, i.e. a 3-vertices `Polygon` might have it's vertices aligned on a line. So `D` is actually an upper bound of the polytope's actual dimension.
 """
 struct GeneralPolytope{D,Dp,Tp,Td} <: Polytope{D}
   vertices::Vector{Point{Dp,Tp}}
