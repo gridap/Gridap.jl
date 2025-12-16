@@ -1,7 +1,10 @@
 """
 
-The exported names are
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__; change_link=Dict(
+  :H1Conformity  => "GradConformity",
+  :nedelec1  => "nedelec",
+  :modal_serendipity  => "modal_lagrangian",
+)))
 """
 module ReferenceFEs
 
@@ -11,6 +14,7 @@ using LinearAlgebra
 using StaticArrays
 using Combinatorics
 using FillArrays
+using AutoHashEquals: @auto_hash_equals as @ahe
 using ..Gridap
 
 using Gridap.Helpers
@@ -19,7 +23,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 
-using Gridap.Polynomials: _q_filter, _s_filter_mc0
+using Gridap.Polynomials: _q_filter, _ser_filter
 using Gridap.Polynomials: _compute_filter_mask
 using Gridap.Polynomials: _define_terms, _sort_by_nfaces!
 
@@ -33,7 +37,6 @@ import Gridap.Arrays: return_type
 import Gridap.Fields: evaluate
 import Gridap.Fields: lazy_map
 import Gridap.Fields: linear_combination
-import Gridap.Polynomials: MonomialBasis
 
 import Gridap.Polynomials: get_order
 import Gridap.Polynomials: get_orders
@@ -44,6 +47,7 @@ import Gridap.Io: to_dict
 import Gridap.Io: from_dict
 
 import Base: ==
+import Base: vcat
 
 export Polytope
 export ExtrusionPolytope
@@ -98,13 +102,16 @@ export HEX_AXIS
 export TET_AXIS
 export INVALID_PERM
 
+export Pushforward
+export Pullback
+export IdentityPiolaMap
+export CoVariantPiolaMap
 export ContraVariantPiolaMap
 
 export Dof
 export get_nodes
 export get_face_moments
 export get_face_nodes_dofs
-export get_nodes
 export evaluate!
 export return_cache
 export return_type
@@ -114,10 +121,10 @@ export test_dof_array
 export ReferenceFE
 export ReferenceFEName
 export GenericRefFE
+export get_name
 export get_polytope
 export get_prebasis
 export get_dof_basis
-export Conformity
 export get_face_own_dofs
 export get_face_own_dofs_permutations
 export get_face_dofs
@@ -153,6 +160,10 @@ export is_Q
 export is_P
 export is_S
 
+export has_geometric_decomposition
+export get_face_own_funs
+export get_facet_flux_sign_flip
+
 export MomentBasedDofBasis
 export get_face_own_nodes
 export get_face_nodes
@@ -184,23 +195,35 @@ export BDMRefFE
 export NedelecRefFE
 export BezierRefFE
 export ModalC0RefFE
+export ModalScalarRefFE
+export CrouzeixRaviartRefFE
 export BubbleRefFE
 
 export Lagrangian
-export DivConforming
 export RaviartThomas
 export BDM
 export Nedelec
 export Bezier
 export ModalC0
+export ModalScalar
+export CrouzeixRaviart
+export Serendipity
+#export HellanHerrmannJhonson
 export Bubble
 
 export lagrangian
 export raviart_thomas
 export bdm
 export nedelec
+export nedelec1
+export nedelec2
 export bezier
 export modalC0
+export modal_lagrangian
+export modal_serendipity
+export crouzeix_raviart
+export serendipity
+#export hhj
 export bubble
 
 export Quadrature
@@ -233,6 +256,12 @@ include("LagrangianDofBases.jl")
 
 include("ReferenceFEInterfaces.jl")
 
+include("GeometricDecompositions.jl")
+
+include("ExteriorCalculusRefFEs.jl")
+
+include("Pullbacks.jl")
+
 include("LagrangianRefFEs.jl")
 
 include("CLagrangianRefFEs.jl")
@@ -245,6 +274,8 @@ include("CDLagrangianRefFEs.jl")
 
 include("Quadratures.jl")
 
+include("SegmentQuadratures.jl")
+
 include("TensorProductQuadratures.jl")
 
 include("DuffyQuadratures.jl")
@@ -253,13 +284,23 @@ include("StrangQuadratures.jl")
 
 include("XiaoGimbutasQuadratures.jl")
 
+include("PolytopalQuadratures.jl")
+
 include("WitherdenVincentQuadratures.jl")
+
+include("MomentBasedReferenceFEs.jl")
 
 include("RaviartThomasRefFEs.jl")
 
 include("BDMRefFEs.jl")
 
 include("NedelecRefFEs.jl")
+
+include("ModalScalarRefFEs.jl")
+
+include("CrouzeixRaviartRefFEs.jl")
+
+#include("HHJRefFEs.jl")
 
 include("MockDofs.jl")
 
@@ -268,9 +309,5 @@ include("BezierRefFEs.jl")
 include("ModalC0RefFEs.jl")
 
 include("BubbleRefFEs.jl")
-
-include("LinearCombinationDofVectors.jl")
-
-include("PolytopalQuadratures.jl")
 
 end # module

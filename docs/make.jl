@@ -1,28 +1,37 @@
 
 using Documenter
 using Gridap
+using TikzPictures
 
 pages = [
   "Home" => "index.md",
   "Getting Started" => "getting-started.md",
-  "Gridap" => "Gridap.md",
-  "Gridap.Helpers" => "Helpers.md",
-  "Gridap.Io" => "Io.md",
-  "Gridap.Algebra" => "Algebra.md",
-  "Gridap.Arrays" => "Arrays.md",
-  "Gridap.TensorValues" => "TensorValues.md",
-  "Gridap.Fields" => "Fields.md",
-  "Gridap.Polynomials" => "Polynomials.md",
-  "Gridap.ReferenceFEs" => "ReferenceFEs.md",
-  "Gridap.Geometry" => "Geometry.md",
-  "Gridap.CellData" => "CellData.md",
-  "Gridap.Visualization" => "Visualization.md",
-  "Gridap.FESpaces" => "FESpaces.md",
-  "Gridap.MultiField" => "MultiField.md",
-  "Gridap.ODEs" => "ODEs.md",
-  "Gridap.Adaptivity" => "Adaptivity.md",
+  "Gridap at a glance" => "overview.md",
+  "Ecosystem" => "ecosystem.md",
+  "Modules" => [
+    "Helpers" => "modules/Helpers.md",
+    "Io" => "modules/Io.md",
+    "Algebra" => "modules/Algebra.md",
+    "Arrays" => "modules/Arrays.md",
+    "TensorValues" => "modules/TensorValues.md",
+    "Fields" => "modules/Fields.md",
+    "Polynomials" => "modules/Polynomials.md",
+    "ReferenceFEs" => "modules/ReferenceFEs.md",
+    "Geometry" => "modules/Geometry.md",
+    "CellData" => "modules/CellData.md",
+    "Visualization" => "modules/Visualization.md",
+    "FESpaces" => "modules/FESpaces.md",
+    "MultiField" => "modules/MultiField.md",
+    "ODEs" => "modules/ODEs.md",
+    "Adaptivity" => "modules/Adaptivity.md",
+  ],
+  "Extensions" => [
+    "TikzPictures" => "extensions/TikzPictures.md",
+  ],
   "Developper notes" => Any[
     "dev-notes/block-assemblers.md",
+    "dev-notes/pullbacks.md",
+    "dev-notes/bernstein.md",
     "dev-notes/autodiff.md",
   ],
 ]
@@ -30,12 +39,13 @@ pages = [
 makedocs(
   sitename = "Gridap.jl",
   format = Documenter.HTML(
-    size_threshold=nothing
+    size_threshold=nothing,
+    size_threshold_warn=500 * 2^10 # 300KiB
   ),
   modules = [Gridap],
   pages = pages,
   doctest = false,
-  warnonly = [:cross_references,:missing_docs],
+  warnonly = [:missing_docs,:cross_references], # ,:cross_references
   checkdocs = :exports,
 )
 

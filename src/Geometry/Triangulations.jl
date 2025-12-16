@@ -1,7 +1,7 @@
 """
     abstract type Triangulation{Dt,Dp}
 
-A discredited physical domain associated with a `DiscreteModel{Dm,Dp}`.
+A discretized physical domain associated with a `DiscreteModel{Dm,Dp}`.
 
 `Dt` and `Dm` can be different.
 
@@ -11,15 +11,28 @@ The (mandatory) `Triangulation` interface can be tested with
 """
 abstract type Triangulation{Dc,Dp} <: Grid{Dc,Dp} end
 
+"""
+    get_background_model(t::Triangulation)
+
+Return the [`DiscreteModel`](@ref) the triangulation is associated with.
+"""
 function get_background_model(t::Triangulation)
   @abstractmethod
 end
 
+"""
+    get_grid(t::Triangulation)
+
+Return the [`Grid`](@ref) the triangulation is built on.
+"""
 function get_grid(t::Triangulation)
   @abstractmethod
 end
 
 # See possible types of glue below
+"""
+    get_glue(t::Triangulation,::Val{d})
+"""
 function get_glue(t::Triangulation,::Val{d}) where d
   nothing
 end
@@ -53,6 +66,9 @@ get_cell_reffe(trian::Triangulation) = get_cell_reffe(get_grid(trian))
 is_first_order(trian::Triangulation) = is_first_order(get_grid(trian))
 
 # This is the most used glue, but others are possible, see e.g. SkeletonGlue.
+"""
+    struct FaceToFaceGlue{A,B,C}
+"""
 struct FaceToFaceGlue{A,B,C}
   tface_to_mface::A
   tface_to_mface_map::B
@@ -86,7 +102,7 @@ end
 """
     best_target(trian1::Triangulation,trian2::Triangulation)
 
-  If possible, returns a `Triangulation` to which `CellDatum` objects can be transferred 
+  If possible, returns a `Triangulation` to which `CellDatum` objects can be transferred
   from `trian1` and `trian2`. Can be `trian1`, `trian2` or a new `Triangulation`.
 """
 function best_target(trian1::Triangulation,trian2::Triangulation)
@@ -108,6 +124,9 @@ function best_target(
   Triangulation(ReferenceFE{D},model)
 end
 
+"""
+    get_active_model(t::Triangulation)
+"""
 function get_active_model(t::Triangulation)
   compute_active_model(t)
 end
@@ -126,13 +145,18 @@ function compute_active_model(t::Triangulation)
   _restrict(model,get_grid(t),glue.tface_to_mface)
 end
 
-# This is the most basic Triangulation
-# It represents a physical domain built using the faces of a DiscreteModel
 struct BodyFittedTriangulation{Dt,Dp,A,B,C} <: Triangulation{Dt,Dp}
   model::A
   grid::B
   tface_to_mface::C
   injective::Bool
+
+  @doc """
+      BodyFittedTriangulation(model::DiscreteModel, grid::Grid, tface_to_mface)
+
+  This is the most basic Triangulation, it represents a physical domain built
+  using the faces of a DiscreteModel
+  """
   function BodyFittedTriangulation(model::DiscreteModel,grid::Grid,tface_to_mface)
     Dp = num_point_dims(model)
     @assert Dp == num_point_dims(grid)
@@ -159,7 +183,7 @@ function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dt}) where Dt
     # Case 2: The triangulation spans part of the model injectively
     mface_to_tface = PosNegPartition(trian.tface_to_mface,Int32(n_mfaces))
   else
-    # Case 3: The triangulation is non-injective, so we cannot map information 
+    # Case 3: The triangulation is non-injective, so we cannot map information
     # back to the model (1-way glue model -> triangulation)
     mface_to_tface = nothing
   end
@@ -237,6 +261,11 @@ function Triangulation(trian::Triangulation,tface_filter::AbstractArray{<:Bool})
   view(trian,sface_to_tface)
 end
 
+"""
+    Interior(args...; kwargs...)
+
+Alias for [`Triangulation`](@ref)(args...; kwargs...).
+"""
 function Interior(args...;kwargs...)
   Triangulation(args...;kwargs...)
 end
@@ -247,6 +276,8 @@ function restrict(a::AbstractArray,b::AbstractArray)
   lazy_map(Reindex(a),b)
 end
 
+"""
+"""
 function extend(tface_to_val,mface_to_tface)
   @notimplemented
 end
@@ -262,8 +293,8 @@ function extend(tface_to_val,mface_to_tface::PosNegPartition)
 end
 
 # NOTE: The following is needed to properly extend FEFunctions, in cases where the FESpace
-# is defined on weird Triangulations (see e.g. issue #1085). 
-# The main purpose is to ensure we obtain operations of VoidBasis, not VoidField. I.e 
+# is defined on weird Triangulations (see e.g. issue #1085).
+# The main purpose is to ensure we obtain operations of VoidBasis, not VoidField. I.e
 # we want to dispatch down to `_pos_neg_data_basis` (see below).
 
 function extend(a::LazyArray{<:Fill{typeof(transpose)}},b::PosNegPartition)
@@ -278,13 +309,13 @@ function extend(a::LazyArray{<:Fill{typeof(linear_combination)}},b::PosNegPartit
   lazy_map(linear_combination,d1,d2)
 end
 
-function extend(a::LazyArray{<:Fill{<:Broadcasting{<:Operation}}},b::PosNegPartition) 
+function extend(a::LazyArray{<:Fill{<:Broadcasting{<:Operation}}},b::PosNegPartition)
   k = a.maps.value
   args = map(i->extend(i,b),a.args)
   lazy_map(k,args...)
 end
 
-function extend(a::LazyArray{<:Fill{<:Broadcasting{typeof(∘)}}},b::PosNegPartition) 
+function extend(a::LazyArray{<:Fill{<:Broadcasting{typeof(∘)}}},b::PosNegPartition)
   k = a.maps.value
   args = map(i->extend(i,b),a.args)
   lazy_map(k,args...)
@@ -429,6 +460,10 @@ function _compose_glues(rglue::FaceToFaceGlue,dglue::FaceToFaceGlue)
   FaceToFaceGlue(dface_to_mface,dface_to_mface_map,mface_to_dface)
 end
 
+"""
+    struct GenericTriangulation{Dc,Dp,A,B,C} <: Triangulation{Dc,Dp}
+    GenericTriangulation(grid, model=nothing, glue=(nothing,...))
+"""
 struct GenericTriangulation{Dc,Dp,A,B,C} <: Triangulation{Dc,Dp}
   grid::A
   model::B

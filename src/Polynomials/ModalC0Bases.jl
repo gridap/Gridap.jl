@@ -1,266 +1,151 @@
-struct ModalC0BasisFunction <: Field end
+"""
+    ModalC0 <: Polynomial
 
-struct ModalC0Basis{D,T,V} <: AbstractVector{ModalC0BasisFunction}
+Type representing ModalC0 polynomials, c.f. [ModalC0 polynomials](@ref) section.
+
+The 1D polynomials are
+- ``φ₁(x) = 1-x``
+- ``φ₂(x) = x``
+- ``φᵢ(x) = Cᵢ(1-x)x𝑱ᵢ(s(x)), 3 ≤ i ≤ k``
+where ``Cᵢ`` is a constant, ``𝑱ᵢ`` the ``i``th (1,1)-Jacobi polynomial
+and ``s`` an affine transformation.
+
+Reference: Eq. (17) in https://doi.org/10.1016/j.camwa.2022.09.027
+
+The first 1D polynomial, ``1-x``, is of order ``1`` instead of ``0``, and the last one, ``x``,
+is of order ``1`` istead of ``K``. So the complete 1D basis isn't hierarchical.
+"""
+struct ModalC0 <: Polynomial end
+
+isHierarchical(::Type{ModalC0}) = false
+
+"""
+    ModalC0Basis{D,V,T} <: PolynomialBasis{D,V,ModalC0}
+
+Tensor product basis of generalised modal C0 1D basis from section 5.2 in
+https://doi.org/10.1016/j.camwa.2022.09.027.
+See also [ModalC0 polynomials](@ref) section of the documentation.
+"""
+struct ModalC0Basis{D,V,T} <: PolynomialBasis{D,V,ModalC0}
+  max_order::Int
   orders::NTuple{D,Int}
   terms::Vector{CartesianIndex{D}}
-  a::Vector{Point{D,V}}
-  b::Vector{Point{D,V}}
+  a::Vector{Point{D,T}}
+  b::Vector{Point{D,T}}
+
   function ModalC0Basis{D}(
-    ::Type{T},
+    ::Type{V},
     orders::NTuple{D,Int},
     terms::Vector{CartesianIndex{D}},
-    a::Vector{Point{D,V}},
-    b::Vector{Point{D,V}}) where {D,T,V}
+    a::Vector{Point{D,T}},
+    b::Vector{Point{D,T}}) where {D,V,T}
 
-    new{D,T,V}(orders,terms,a,b)
+    _msg =  "The number of bounding box points in a and b should match the number of terms"
+    @check length(terms) == length(a) == length(b) _msg
+    @check T == eltype(V) "Point and polynomial values should have the same scalar body"
+    K = maximum(orders, init=0)
+
+    new{D,V,T}(K,orders,terms,a,b)
   end
 end
 
-@inline Base.size(a::ModalC0Basis{D,T,V}) where {D,T,V} = (length(a.terms)*num_indep_components(T),)
-@inline Base.getindex(a::ModalC0Basis,i::Integer) = ModalC0BasisFunction()
-@inline Base.IndexStyle(::ModalC0Basis) = IndexLinear()
+"""
+    ModalC0Basis{D}(::Type{V},order::Int;                        [, filter][, sort!:])
+    ModalC0Basis{D}(::Type{V},order::Int,   a::Point ,b::Point ; [, filter][, sort!:])
+    ModalC0Basis{D}(::Type{V},orders::Tuple;                     [, filter][, sort!:])
+    ModalC0Basis{D}(::Type{V},orders::Tuple,a::Point ,b::Point ; [, filter][, sort!:])
+    ModalC0Basis{D}(::Type{V},orders::Tuple,a::Vector,b::Vector; [, filter][, sort!:])
+
+where `filter` is a `Function` defaulting to `_q_filter`, and `sort!` is a
+`Function` defaulting to `_sort_by_nfaces!`.
+
+At last, all scalar basis polynomial will have its bounding box `(a[i],b[i])`,
+but they are assumed iddentical if only two points `a` and `b` are provided,
+and default to `a=Point{D}(0...)`, `b=Point{D}(1...)` if not provided.
+
+The basis is a cartesian product when multi-valued, isotropic if one `order` is
+provided, or anisotropic if a `D` tuple `orders` is provided.
+"""
+function ModalC0Basis() end
 
 function ModalC0Basis{D}(
-  ::Type{T},
+  ::Type{V},
   orders::NTuple{D,Int},
-  a::Vector{Point{D,V}},
-  b::Vector{Point{D,V}};
+  a::Vector{Point{D,T}},
+  b::Vector{Point{D,T}};
   filter::Function=_q_filter,
-  sort!::Function=_sort_by_nfaces!) where {D,T,V}
+  sort!::Function=_sort_by_nfaces!) where {D,V,T}
 
   terms = _define_terms_mc0(filter, sort!, orders)
-  ModalC0Basis{D}(T,orders,terms,a,b)
+  ModalC0Basis{D}(V,orders,terms,a,b)
 end
 
 function ModalC0Basis{D}(
-  ::Type{T},
+  ::Type{V},
   orders::NTuple{D,Int},
-  sa::Point{D,V},
-  sb::Point{D,V};
+  sa::Point{D,T},
+  sb::Point{D,T};
   filter::Function=_q_filter,
-  sort!::Function=_sort_by_nfaces!) where {D,T,V}
+  sort!::Function=_sort_by_nfaces!) where {D,V,T}
 
   terms = _define_terms_mc0(filter, sort!, orders)
   a = fill(sa,length(terms))
   b = fill(sb,length(terms))
-  ModalC0Basis{D}(T,orders,terms,a,b)
+  ModalC0Basis{D}(V,orders,terms,a,b)
 end
 
 function ModalC0Basis{D}(
-  ::Type{T},
+  ::Type{V},
   orders::NTuple{D,Int};
   filter::Function=_q_filter,
-  sort!::Function=_sort_by_nfaces!) where {D,T}
+  sort!::Function=_sort_by_nfaces!) where {D,V}
 
-  sa = Point{D,eltype(T)}(tfill(zero(eltype(T)),Val{D}()))
-  sb = Point{D,eltype(T)}(tfill(one(eltype(T)),Val{D}()))
-  ModalC0Basis{D}(T,orders,sa,sb,filter=filter,sort! = sort!)
+  T = eltype(V)
+  sa = Point{D,T}(tfill(zero(T),Val{D}()))
+  sb = Point{D,T}(tfill( one(T),Val{D}()))
+  ModalC0Basis{D}(V,orders,sa,sb; filter=filter, sort! =sort!)
 end
 
 function ModalC0Basis{D}(
-  ::Type{T},
+  ::Type{V},
   order::Int,
-  a::Vector{Point{D,V}},
-  b::Vector{Point{D,V}};
+  a::Vector{Point{D,T}},
+  b::Vector{Point{D,T}};
   filter::Function=_q_filter,
-  sort!::Function=_sort_by_nfaces!) where {D,T,V}
+  sort!::Function=_sort_by_nfaces!) where {D,V,T}
 
   orders = tfill(order,Val{D}())
-  ModalC0Basis{D}(T,orders,a,b,filter=filter,sort! = sort!)
+  ModalC0Basis{D}(V,orders,a,b; filter=filter, sort! =sort!)
 end
 
 function ModalC0Basis{D}(
-  ::Type{T},
+  ::Type{V},
   order::Int;
   filter::Function=_q_filter,
-  sort!::Function=_sort_by_nfaces!) where {D,T}
+  sort!::Function=_sort_by_nfaces!) where {D,V}
 
   orders = tfill(order,Val{D}())
-  ModalC0Basis{D}(T,orders,filter=filter,sort! = sort!)
+  ModalC0Basis{D}(V,orders; filter=filter, sort! =sort!)
 end
+
 
 # API
 
-"""
-    get_order(b::ModalC0Basis)
-"""
-function get_order(b::ModalC0Basis)
-  maximum(b.orders)
-end
+@inline Base.size(b::ModalC0Basis{D,V}) where {D,V} = (length(b.terms)*num_indep_components(V),)
+@inline get_order(b::ModalC0Basis) = b.max_order
 
-"""
-    get_orders(b::ModalC0Basis)
-"""
 function get_orders(b::ModalC0Basis)
   b.orders
 end
 
-return_type(::ModalC0Basis{D,T,V}) where {D,T,V} = T
-
-# Field implementation
-
-function return_cache(f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {D,T,V}
-  @assert D == length(eltype(x)) "Incorrect number of point components"
-  np = length(x)
-  ndof = length(f)
-  n = 1 + _maximum(f.orders)
-  r = CachedArray(zeros(T,(np,ndof)))
-  v = CachedArray(zeros(T,(ndof,)))
-  c = CachedArray(zeros(eltype(T),(D,n)))
-  (r, v, c)
-end
-
-function evaluate!(cache,f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {D,T,V}
-  r, v, c = cache
-  np = length(x)
-  ndof = length(f)
-  n = 1 + _maximum(f.orders)
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,n))
-  for i in 1:np
-    @inbounds xi = x[i]
-    _evaluate_nd_mc0!(v,xi,f.a,f.b,f.orders,f.terms,c)
-    for j in 1:ndof
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
-
-function return_cache(
-  fg::FieldGradientArray{1,ModalC0Basis{D,V,W}},
-  x::AbstractVector{<:Point}) where {D,V,W}
-
-  f = fg.fa
-  @assert D == length(eltype(x)) "Incorrect number of point components"
-  np = length(x)
-  ndof = length(f)
-  xi = testitem(x)
-  T = gradient_type(V,xi)
-  n = 1 + _maximum(f.orders)
-  r = CachedArray(zeros(T,(np,ndof)))
-  v = CachedArray(zeros(T,(ndof,)))
-  c = CachedArray(zeros(eltype(T),(D,n)))
-  g = CachedArray(zeros(eltype(T),(D,n)))
-  (r, v, c, g)
-end
-
-function evaluate!(
-  cache,
-  fg::FieldGradientArray{1,ModalC0Basis{D,T,V}},
-  x::AbstractVector{<:Point}) where {D,T,V}
-
-  f = fg.fa
-  r, v, c, g = cache
-  np = length(x)
-  ndof = length(f)
-  n = 1 + _maximum(f.orders)
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,n))
-  setsize!(g,(D,n))
-  for i in 1:np
-    @inbounds xi = x[i]
-    _gradient_nd_mc0!(v,xi,f.a,f.b,f.orders,f.terms,c,g,T)
-    for j in 1:ndof
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
-
-function return_cache(
-  fg::FieldGradientArray{2,ModalC0Basis{D,V,W}},
-  x::AbstractVector{<:Point}) where {D,V,W}
-
-  f = fg.fa
-  @assert D == length(eltype(x)) "Incorrect number of point components"
-  np = length(x)
-  ndof = length(f)
-  xi = testitem(x)
-  T = gradient_type(gradient_type(V,xi),xi)
-  n = 1 + _maximum(f.orders)
-  r = CachedArray(zeros(T,(np,ndof)))
-  v = CachedArray(zeros(T,(ndof,)))
-  c = CachedArray(zeros(eltype(T),(D,n)))
-  g = CachedArray(zeros(eltype(T),(D,n)))
-  h = CachedArray(zeros(eltype(T),(D,n)))
-  (r, v, c, g, h)
-end
-
-function evaluate!(
-  cache,
-  fg::FieldGradientArray{2,ModalC0Basis{D,T,V}},
-  x::AbstractVector{<:Point}) where {D,T,V}
-
-  f = fg.fa
-  r, v, c, g, h = cache
-  np = length(x)
-  ndof = length(f)
-  n = 1 + _maximum(f.orders)
-  setsize!(r,(np,ndof))
-  setsize!(v,(ndof,))
-  setsize!(c,(D,n))
-  setsize!(g,(D,n))
-  setsize!(h,(D,n))
-  for i in 1:np
-    @inbounds xi = x[i]
-    _hessian_nd_mc0!(v,xi,f.a,f.b,f.orders,f.terms,c,g,h,T)
-    for j in 1:ndof
-      @inbounds r[i,j] = v[j]
-    end
-  end
-  r.array
-end
-
-# Optimizing evaluation at a single point
-
-function return_cache(f::AbstractVector{ModalC0BasisFunction},x::Point)
-  xs = [x]
-  cf = return_cache(f,xs)
-  v = evaluate!(cf,f,xs)
-  r = CachedArray(zeros(eltype(v),(size(v,2),)))
-  r, cf, xs
-end
-
-function evaluate!(cache,f::AbstractVector{ModalC0BasisFunction},x::Point)
-  r, cf, xs = cache
-  xs[1] = x
-  v = evaluate!(cf,f,xs)
-  ndof = size(v,2)
-  setsize!(r,(ndof,))
-  a = r.array
-  copyto!(a,v)
-  a
-end
-
-function return_cache(
-  f::FieldGradientArray{N,<:AbstractVector{ModalC0BasisFunction}}, x::Point) where {N}
-  xs = [x]
-  cf = return_cache(f,xs)
-  v = evaluate!(cf,f,xs)
-  r = CachedArray(zeros(eltype(v),(size(v,2),)))
-  r, cf, xs
-end
-
-function evaluate!(
-  cache, f::FieldGradientArray{N,<:AbstractVector{ModalC0BasisFunction}}, x::Point) where {N}
-  r, cf, xs = cache
-  xs[1] = x
-  v = evaluate!(cf,f,xs)
-  ndof = size(v,2)
-  setsize!(r,(ndof,))
-  a = r.array
-  copyto!(a,v)
-  a
+function testvalue(::Type{ModalC0Basis{D,V,T}}) where {D,V,T}
+  orders = tfill(1,Val{D}())
+  sa = Point{D,T}(tfill(zero(T),Val(D)))
+  sb = Point{D,T}(tfill( one(T),Val(D)))
+  ModalC0Basis{D}(V,orders,sa,sb)
 end
 
 # Helpers
-
-_s_filter_mc0(e,o) = ( sum( [ i for i in e if i>1 ] ) <= o )
-
-_sort_by_tensor_prod!(terms,orders) = terms
 
 function _sort_by_nfaces!(terms::Vector{CartesianIndex{D}},orders) where D
 
@@ -296,7 +181,7 @@ end
 function _compute_filter_mask(terms,filter,orders)
   g = (0 .* orders) .+ 1
   to = CartesianIndex(g)
-  maxorder = _maximum(orders)
+  maxorder = maximum(orders)
   term_to_is_fterm = lazy_map(t->filter(Int[Tuple(t-to)...],maxorder),terms)
   findall(term_to_is_fterm)
 end
@@ -308,134 +193,83 @@ function _define_terms_mc0(filter,sort!,orders)
   collect(lazy_map(Reindex(terms),mask))
 end
 
-function _evaluate_1d_mc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
-  @assert order > 0
-  n = order + 1
-  z = one(T)
-  @inbounds v[d,1] = z - x[d]
-  @inbounds v[d,2] = x[d]
-  if n > 2
-    ξ = ( 2*x[d] - ( a[d] + b[d] ) ) / ( b[d] - a[d] )
-    for i in 3:n
-      @inbounds v[d,i] = -sqrt(2*i-3)*v[d,1]*v[d,2]*jacobi(ξ,i-3,1,1)/(i-2)
-    end
-  end
-end
 
-function _gradient_1d_mc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
-  @assert order > 0
-  n = order + 1
-  z = one(T)
-  @inbounds v[d,1] = -z
-  @inbounds v[d,2] = z
-  if n > 2
-    ξ = ( 2*x[d] - ( a[d] + b[d] ) ) / ( b[d] - a[d] )
-    v1 = z - x[d]
-    v2 = x[d]
-    for i in 3:n
-      j, dj = jacobi_and_derivative(ξ,i-3,1,1)
-      @inbounds v[d,i] = -sqrt(2*i-3)*(v[d,1]*v2*j+v1*v[d,2]*j+v1*v2*(2/(b[d]-a[d]))*dj)/(i-2)
-    end
-  end
-end
+#################################
+# nD evaluations implementation #
+#################################
 
-function _hessian_1d_mc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
-  @assert order > 0
-  n = order + 1
-  y = zero(T)
-  z = one(T)
-  @inbounds v[d,1] = y
-  @inbounds v[d,2] = y
-  if n > 2
-    ξ = ( 2*x[d] - ( a[d] + b[d] ) ) / ( b[d] - a[d] )
-    v1 = z - x[d]
-    v2 = x[d]
-    dv1 = -z
-    dv2 = z
-    for i in 3:n
-      j, dj = jacobi_and_derivative(ξ,i-3,1,1)
-      _, d2j = jacobi_and_derivative(ξ,i-4,2,2)
-      @inbounds v[d,i] = -sqrt(2*i-3)*(2*dv1*dv2*j+2*(dv1*v2+v1*dv2)*(2/(b[d]-a[d]))*dj+v1*v2*d2j*2*i*((b[d]-a[d])^2))/(i-2)
-    end
-  end
-end
+_get_parameters(::ModalC0Basis) = nothing
 
-function _evaluate_nd_mc0!(
-  v::AbstractVector{V},
-  x,
-  a::Vector{Point{D,T}},
-  b::Vector{Point{D,T}},
-  orders,
-  terms::AbstractVector{CartesianIndex{D}},
-  c::AbstractMatrix{T}) where {V,T,D}
+function _evaluate_nd!(
+  basis::ModalC0Basis{D,V}, x,
+  r::AbstractMatrix, i,
+  c::AbstractMatrix{T}, ::Nothing) where {D,V,T}
 
-  dim = D
-  o = one(T)
+  terms  = basis.terms
+  orders = basis.orders
+  a = basis.a
+  b = basis.b
+
   k = 1
   l = length(terms)
 
-  for (i,ci) in enumerate(terms)
+  for (n,ci) in enumerate(terms)
 
-    for d in 1:dim
-      _evaluate_1d_mc0!(c,x,a[i],b[i],orders[d],d)
+    for d in 1:D
+      _evaluate_1d_mc0!(c,x,a[n],b[n],orders[d],d)
     end
 
-    s = o
-    for d in 1:dim
+    s = one(T)
+    for d in 1:D
       @inbounds s *= c[d,ci[d]]
     end
 
-    k = _set_value_mc0!(v,s,k,l)
-
+    k = _set_value_mc0!(r,i,s,k,l)
   end
-
 end
 
-@inline function _set_value_mc0!(v::AbstractVector{V},s::T,k,l) where {V,T}
+@inline function _set_value_mc0!(r::AbstractMatrix{V},i,s::T,k,l) where {V,T}
   ncomp = num_indep_components(V)
   z = zero(T)
   for j in 1:ncomp
     m = k+l*(j-1)
-    @inbounds v[m] = ntuple(i -> ifelse(i == j, s, z),Val(ncomp))
+    @inbounds r[i,m] = ntuple(p -> ifelse(p == j, s, z),Val(ncomp))
   end
   k+1
 end
 
-@inline function _set_value_mc0!(v::AbstractVector{<:Real},s,k,l)
-  @inbounds v[k] = s
+@inline function _set_value_mc0!(r::AbstractMatrix{<:Real},i,s,k,l)
+  @inbounds r[i,k] = s
   k+1
 end
 
-function _gradient_nd_mc0!(
-  v::AbstractVector{G},
-  x,
-  a::Vector{Point{D,T}},
-  b::Vector{Point{D,T}},
-  orders,
-  terms::AbstractVector{CartesianIndex{D}},
+function _gradient_nd!(
+  basis::ModalC0Basis{D,V}, x,
+  r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
-  ::Type{V}) where {G,T,D,V}
+  s::MVector{D,T}, ::Nothing) where {D,V,T,G}
 
-  dim = D
-  z = zero(Mutable(VectorValue{D,T}))
-  o = one(T)
+  terms  = basis.terms
+  orders = basis.orders
+  a = basis.a
+  b = basis.b
+
   k = 1
   l = length(terms)
 
-  for (i,ci) in enumerate(terms)
+  for (n,ci) in enumerate(terms)
 
-    for d in 1:dim
-      _evaluate_1d_mc0!(c,x,a[i],b[i],orders[d],d)
-      _gradient_1d_mc0!(g,x,a[i],b[i],orders[d],d)
+    for d in 1:D
+      _evaluate_1d_mc0!(c,x,a[n],b[n],orders[d],d)
+      _gradient_1d_mc0!(g,x,a[n],b[n],orders[d],d)
     end
 
-    s = z
-    for i in eachindex(s)
-      @inbounds s[i] = o
+    for j in eachindex(s)
+      @inbounds s[j] = one(T)
     end
-    for q in 1:dim
-      for d in 1:dim
+    for q in 1:D
+      for d in 1:D
         if d != q
           @inbounds s[q] *= c[d,ci[d]]
         else
@@ -444,27 +278,25 @@ function _gradient_nd_mc0!(
       end
     end
 
-    k = _set_gradient_mc0!(v,s,k,l,V)
-
+    k = _set_derivative_mc0!(r,i,s,k,l,V)
   end
-
 end
 
-@inline function _set_gradient_mc0!(
-  v::AbstractVector{G},s,k,l,::Type{<:Real}) where G
+@inline function _set_derivative_mc0!(
+  r::AbstractMatrix{G},i,s,k,l,::Type{<:Real}) where G
 
-  @inbounds v[k] = s
+  @inbounds r[i,k] = s
   k+1
 end
 
 # Indexing and m definition should be fixed if G contains symmetries, that is
 # if the code is  optimized for symmetric tensor V valued FESpaces
 # (if gradient_type(V) returned a symmetric higher order tensor type G)
-@inline @generated function _set_gradient_mc0!(
-  v::AbstractVector{G},s,k,l,::Type{V}) where {V,G}
+@inline @generated function _set_derivative_mc0!(
+  r::AbstractMatrix{G},i1,s,k,l,::Type{V}) where {V,G}
   # Git blame me for readable non-generated version
-  @notimplementedif num_indep_components(G) != num_components(G) "Not implemented for symmetric Jacobian or Hessian"
-  
+  @notimplementedif num_indep_components(V) != num_components(V) "Not implemented for symmetric Jacobian or Hessian"
+
   m = Array{String}(undef, size(G))
   N_val_dims = length(size(V))
   s_size = size(G)[1:end-N_val_dims]
@@ -474,7 +306,7 @@ end
     id = join(Tuple(ci))
     body *= "@inbounds s$id = s[$ci];"
   end
-  
+
   V_size = size(V)
   for (ij,j) in enumerate(CartesianIndices(V_size))
     for i in CartesianIndices(m)
@@ -485,46 +317,43 @@ end
       m[ci,j] = "s$id"
     end
     body *= "i = k + l*($ij-1);"
-    body *= "@inbounds v[i] = ($(join(tuple(m...), ", ")));"
+    body *= "@inbounds r[i1,i] = ($(join(tuple(m...), ", ")));"
   end
 
   body = Meta.parse(string("begin ",body," end"))
   return Expr(:block, body ,:(return k+1))
 end
 
-function _hessian_nd_mc0!(
-  v::AbstractVector{G},
-  x,
-  a::Vector{Point{D,T}},
-  b::Vector{Point{D,T}},
-  orders,
-  terms::AbstractVector{CartesianIndex{D}},
+function _hessian_nd!(
+  basis::ModalC0Basis{D,V}, x,
+  r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   h::AbstractMatrix{T},
-  ::Type{V}) where {G,T,D,V}
+  s::MMatrix{D,D,T}, ::Nothing) where {D,V,T,G}
 
-  dim = D
-  z = zero(Mutable(TensorValue{D,D,T}))
-  o = one(T)
+  terms  = basis.terms
+  orders = basis.orders
+  a = basis.a
+  b = basis.b
+
   k = 1
   l = length(terms)
 
-  for (i,ci) in enumerate(terms)
+  for (n,ci) in enumerate(terms)
 
-    for d in 1:dim
-      _evaluate_1d_mc0!(c,x,a[i],b[i],orders[d],d)
-      _gradient_1d_mc0!(g,x,a[i],b[i],orders[d],d)
-      _hessian_1d_mc0!(h,x,a[i],b[i],orders[d],d)
+    for d in 1:D
+      _evaluate_1d_mc0!(c,x,a[n],b[n],orders[d],d)
+      _gradient_1d_mc0!(g,x,a[n],b[n],orders[d],d)
+      _hessian_1d_mc0!(h,x,a[n],b[n],orders[d],d)
     end
 
-    s = z
-    for i in eachindex(s)
-      @inbounds s[i] = o
+    for j in eachindex(s)
+      @inbounds s[j] = one(T)
     end
-    for r in 1:dim
-      for q in 1:dim
-        for d in 1:dim
+    for r in 1:D
+      for q in 1:D
+        for d in 1:D
           if d != q && d != r
             @inbounds s[r,q] *= c[d,ci[d]]
           elseif d == q && d ==r
@@ -536,8 +365,110 @@ function _hessian_nd_mc0!(
       end
     end
 
-    k = _set_gradient_mc0!(v,s,k,l,V)
+    k = _set_derivative_mc0!(r,i,s,k,l,V)
+  end
+end
 
+
+#################################
+# 1D evaluations implementation #
+#################################
+
+# Reference: equation (17) in
+#
+# Badia, S.; Neiva, E. & Verdugo, F.; (2022);
+# Robust high-order unfitted finite elements by interpolation-based discrete extension,
+# Computers & Mathematics with Applications,
+# https://doi.org/10.1016/j.camwa.2022.09.027
+function _evaluate_1d_mc0!(c::AbstractMatrix{T},x,a,b,order,d) where T
+  @check order > 0
+  n = order + 1
+  o = one(T)
+  @inbounds c[d,1] = o - x[d]
+  @inbounds c[d,2] = x[d]
+  if n > 2
+    ξ = ( 2*x[d] - ( a[d] + b[d] ) ) / ( b[d] - a[d] )
+    for i in 3:n
+      @inbounds c[d,i] = -sqrt(2*i-3)*c[d,1]*c[d,2]*jacobi(ξ,i-3,1,1)/(i-2)
+    end
+  end
+end
+
+function _gradient_1d_mc0!(g::AbstractMatrix{T},x,a,b,order,d) where T
+  @check order > 0
+  n = order + 1
+  o = one(T)
+  @inbounds g[d,1] = -o
+  @inbounds g[d,2] = o
+  if n > 2
+    ξ = ( 2*x[d] - ( a[d] + b[d] ) ) / ( b[d] - a[d] )
+    v1 = o - x[d]
+    v2 = x[d]
+    for i in 3:n
+      j, dj = jacobi_and_derivative(ξ,i-3,1,1)
+      @inbounds g[d,i] = -sqrt(2*i-3)*(g[d,1]*v2*j+v1*g[d,2]*j+v1*v2*(2/(b[d]-a[d]))*dj)/(i-2)
+    end
+  end
+end
+
+function _hessian_1d_mc0!(h::AbstractMatrix{T},x,a,b,order,d) where T
+  @check order > 0
+  n = order + 1
+  z = zero(T)
+  o = one(T)
+  @inbounds h[d,1] = z
+  @inbounds h[d,2] = z
+  if n > 2
+    ξ = ( 2*x[d] - ( a[d] + b[d] ) ) / ( b[d] - a[d] )
+    v1 = o - x[d]
+    v2 = x[d]
+    dv1 = -o
+    dv2 = o
+    for i in 3:n
+      j, dj = jacobi_and_derivative(ξ,i-3,1,1)
+      _, d2j = jacobi_and_derivative(ξ,i-4,2,2)
+      @inbounds h[d,i] = -sqrt(2*i-3)*(2*dv1*dv2*j+2*(dv1*v2+v1*dv2)*(2/(b[d]-a[d]))*dj+v1*v2*d2j*2*i*((b[d]-a[d])^2))/(i-2)
+    end
+  end
+end
+
+
+#######################################
+# Generic 1D internal polynomial APIs #
+#######################################
+
+# For possible use with CartProdPolyBasis etc.
+# Make it for x∈[0,1] like the other 1D bases.
+
+function _evaluate_1d!(::Type{ModalC0},K,c::AbstractMatrix{T},x,d) where T<:Number
+  if iszero(K)
+    @inbounds c[d,1] = one(T)
+    return
   end
 
+  a = zero(x)
+  b = zero(x) .+ one(T)
+  @inline _evaluate_1d_mc0!(c,x,a,b,K,d)
+end
+
+function _gradient_1d!(::Type{ModalC0},K,g::AbstractMatrix{T},x,d) where T<:Number
+  if iszero(K)
+    @inbounds g[d,1] = zero(T)
+    return
+  end
+
+  a = zero(x)
+  b = zero(x) .+ one(T)
+  @inline _gradient_1d_mc0!(g,x,a,b,K,d)
+end
+
+function _hessian_1d!(::Type{ModalC0},K,h::AbstractMatrix{T},x,d) where T<:Number
+  if iszero(K)
+    @inbounds h[d,1] = zero(T)
+    return
+  end
+
+  a = zero(x)
+  b = zero(x) .+ one(T)
+  @inline _hessian_1d_mc0!(h,x,a,b,K,d)
 end

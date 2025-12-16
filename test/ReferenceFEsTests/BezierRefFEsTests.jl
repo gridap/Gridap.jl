@@ -20,7 +20,7 @@ p_filter(e,o) = sum(e) ≤ o
 
 # 1D
 p = 2
-prebasis_seg = MonomialBasis{1}(Float64,p,p_filter)
+prebasis_seg = MonomialBasis(Val(1),Float64,p,p_filter)
 C = _berstein_matrix(prebasis_seg,SEGMENT)
 C12 =
 [
@@ -41,7 +41,7 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 @test Xi == [ Point(0.0,0.0), Point(0.5,0.25), Point(1.0,0.0) ]
 
 p = 3
-prebasis_seg = MonomialBasis{1}(Float64,p,p_filter)
+prebasis_seg = MonomialBasis(Val(1),Float64,p,p_filter)
 C = _berstein_matrix(prebasis_seg,SEGMENT)
 C13 =
 [
@@ -65,7 +65,7 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 # 2D
 
 p = 2
-prebasis_tri = MonomialBasis{2}(Float64,p,p_filter)
+prebasis_tri = MonomialBasis(Val(2),Float64,p,p_filter)
 C = _berstein_matrix(prebasis_tri,TRI)
 C22 =
 [
@@ -89,7 +89,7 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 @test Xi == ξ
 
 p = 3
-prebasis_tri = MonomialBasis{2}(Float64,p,p_filter)
+prebasis_tri = MonomialBasis(Val(2),Float64,p,p_filter)
 C = _berstein_matrix(prebasis_tri,TRI)
 C23 =
 [
@@ -122,6 +122,8 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 @test Xi == ξ
 
 ## BezierRefFE
+
+@test_throws ErrorException BezierRefFE(Float64,WEDGE,3) # only n-cubes & simplices
 
 tri = BezierRefFE(Float64,TRI,(3,3))
 nodes = get_node_coordinates(tri) * 5
@@ -249,6 +251,11 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 
 reffe = BezierRefFE(Float64,SEGMENT,(3,))
 test_lagrangian_reference_fe(reffe)
+
+face_own_dofs = Vector{Int}[[1],[2],[3,4]]
+face_dofs = Vector{Int}[[1],[2],[1,2,3,4]]
+@test get_face_own_dofs(reffe) == face_own_dofs
+@test get_face_dofs(reffe) == face_dofs
 
 reffe = BezierRefFE(Float64,TRI,(3,3))
 test_lagrangian_reference_fe(reffe)

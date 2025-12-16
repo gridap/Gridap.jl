@@ -27,7 +27,7 @@ mutable struct CachedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
 
   @doc """
       CachedArray(a::AbstractArray)
-  
+
   Constructs a `CachedArray` from a given array.
   """
   function CachedArray(array::A) where {T,N,A<:AbstractArray{T,N}}

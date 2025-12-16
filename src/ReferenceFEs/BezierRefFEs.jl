@@ -1,7 +1,20 @@
+"""
+    struct Bezier  <: ReferenceFEName
+"""
 struct Bezier <: ReferenceFEName end
 
+"""
+    const bezier = Bezier()
+
+Singleton of the [`Bezier`](@ref) reference FE name.
+"""
 const bezier = Bezier()
 
+"""
+    struct BezierRefFE{D} <: LagrangianRefFE{D}
+
+The dof basis does not interpolate into the shape functions basis
+"""
 struct BezierRefFE{D} <: LagrangianRefFE{D}
   reffe::ReferenceFE{D}
   node_to_own_node::Vector{Int}
@@ -9,7 +22,14 @@ struct BezierRefFE{D} <: LagrangianRefFE{D}
   metadata
 end
 
+"""
+    BezierRefFE(::Type{T}, p::Polytope{D}, orders)
+
+`T` must be scalar.
+"""
 function BezierRefFE(::Type{T},p::Polytope{D},orders) where {D,T}
+  @notimplementedif T isa MultiValue "Only scalar valued BezierRefFE are implemented, got T=$T."
+
   reffe = LagrangianRefFE(T,p,orders)
   nodes = get_node_coordinates(reffe)
   prebasis = get_prebasis(reffe)
@@ -61,6 +81,8 @@ function get_face_own_nodes(reffe::BezierRefFE,conf::GradConformity)
   get_face_own_nodes(reffe.reffe,conf)
 end
 
+get_face_own_dofs(reffe::BezierRefFE) = get_face_own_dofs(reffe.reffe)
+
 get_face_dofs(reffe::BezierRefFE) = get_face_dofs(reffe.reffe)
 
 num_dofs(reffe::BezierRefFE) = num_dofs(reffe.reffe)
@@ -94,7 +116,7 @@ end
 function compute_node_to_bezier_node(prebasis::MonomialBasis{D,T},nodes) where {D,T}
   orders = get_orders(prebasis)
   terms = _coords_to_terms(nodes,orders)
-  _prebasis = MonomialBasis{D}(T,orders,terms)
+  _prebasis = MonomialBasis(Val(D),T,orders,terms)
   _exps = get_exponents(_prebasis)
   exps = get_exponents(prebasis)
   [ findfirst( isequal(i), exps) for i in _exps ]
@@ -162,8 +184,10 @@ function _bernstein_term(
   args = (order,a...,i...)
   if is_simplex(p)
     _bernstein_term(args...)
-  else
+  elseif is_n_cube(p)
     _bernstein_term_n_cube(args...)
+  else
+    @unreachable "Bezier reference FEs only defined on simplices and n-cubes, got $p."
   end
 end
 

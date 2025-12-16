@@ -402,13 +402,13 @@ function _is_there_interior_cell_across_higher_dim_faces(
 end
 
 """
-  _find_ncube_face_neighbor_deltas(p::ExtrusionPolytope{D}) -> Vector{CartesianIndex}
+    _find_ncube_face_neighbor_deltas(p::ExtrusionPolytope{D}) -> Vector{CartesianIndex}
 
-  Given an n-cube type ExtrusionPolytope{D}, returns V=Vector{CartesianIndex} with as many
-  entries as the number of faces in the boundary of the Polytope. For an entry face_lid
-  in this vector, V[face_lid] returns what has to be added to the CartesianIndex of a
-  cell in order to obtain the CartesianIndex of the cell neighbour of K across the face F
-  with local ID face_lid.
+Given an n-cube type ExtrusionPolytope{D}, returns V=Vector{CartesianIndex} with as many
+entries as the number of faces in the boundary of the Polytope. For an entry face_lid
+in this vector, V[face_lid] returns what has to be added to the CartesianIndex of a
+cell in order to obtain the CartesianIndex of the cell neighbour of K across the face F
+with local ID face_lid.
 """
 function _find_ncube_face_neighbor_deltas(p::ExtrusionPolytope{D}) where {D}
   nfaces = num_faces(p)

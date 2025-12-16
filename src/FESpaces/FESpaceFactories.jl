@@ -108,9 +108,9 @@ function FESpace(
 end
 
 function FESpace(model::DiscreteModel,
-                 reffe::Tuple{<:ReferenceFEName,Any,Any}; kwargs...)
-  basis, reffe_args,reffe_kwargs = reffe
-  cell_reffe = ReferenceFE(model,basis,reffe_args...;reffe_kwargs...)
+                 reffe::Tuple{<:Union{ReferenceFEName,Symbol},Any,Any}; kwargs...)
+  reffe_name, reffe_args,reffe_kwargs = reffe
+  cell_reffe = ReferenceFE(model,reffe_name,reffe_args...;reffe_kwargs...)
   FESpace(model,cell_reffe;kwargs...)
 end
 
