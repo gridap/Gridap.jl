@@ -69,12 +69,12 @@ s = ∫( ∇(v)⋅∇(u) )*quad_N
 test_array(s,collect(s))
 
 s = ∫(1)*quad_N
-@test sum(s) ≈ 6
-@test ∑(s) ≈ 6
+@test sum(s) ≈ 6.0f0
+@test ∑(s) ≈ 6.0f0
 
 s = ∫( x->1 )*quad_N
-@test sum(s) ≈ 6
-@test ∑(s) ≈ 6
+@test sum(s) ≈ 6.0f0
+@test ∑(s) ≈ 6.0f0
 
 cell_measure = get_cell_measure(trian)
 cell_measure_N = get_cell_measure(trian_N,trian)
