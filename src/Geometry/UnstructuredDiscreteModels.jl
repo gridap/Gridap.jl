@@ -27,8 +27,8 @@ end
 
 """
 """
-function UnstructuredDiscreteModel(model::DiscreteModel)
-  grid = UnstructuredGrid(get_grid(model))
+function UnstructuredDiscreteModel(model::DiscreteModel;kwargs...)
+  grid = UnstructuredGrid(get_grid(model);kwargs...)
   topo = UnstructuredGridTopology(get_grid_topology(model))
   labels = get_face_labeling(model)
   UnstructuredDiscreteModel(grid,topo,labels)

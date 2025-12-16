@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added the symmetric quadrature rules of Witherden and Vincent, correctness tests for all quadrature rules, and minor extensions to the interfaces of `Quadrature` and `Polytope`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+  - Added the symmetric quadrature rules of Witherden and Vincent for tri/tet, quad/hex, wedge and pyramid.
+  - Added `maxdegree(p::Polytope, name::QuadratureName)` to the interface of `Quadrature`.
+  - Enriched the tests for quadratures by checking `tensor_product`, `duffy`, and `witherden_vincent` against exact integrals for monomials on the corresponding polytopes (tri/tet, quad/hex, wedge and pyramid, respectively). Other quadrature rules are compared against these tested ones.
+  - Added `get_measure(p::Polytope, vertex_coords)` and `get_diameter(p::Polytope, vertex_coords)` to the interface of `Polytope`.
+- The default quadrature for simplices is now `witherden_vincent` until available, then `xiao_gimbuttas` until available, then `duffy`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+
 - Documentation and refactoring of `Gridap.Polynomials`. Since PR[#1072](https://github.com/gridap/Gridap.jl/pull/#1072).
 - Two new families of polynomial bases in addition to `Monomial`, `Legendre` (former `Jacobi`) and `ModalC0`: `Chebyshev` and `Bernstein`
 - `MonomialBasis` and `Q[Curl]GradMonomialBasis` have been generalized to `Legendre`, `Chebyshev` and `Bernstein` using the new `CartProdPolyBasis` and `CompWiseTensorPolyBasis` respectively.
@@ -44,14 +51,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API for Geometric decomposition of polynomial bases, implemented for simplices and n-cubes. Since PR[#1144](https://github.com/gridap/Gridap.jl/pull/1144).
   The geometric decomposition API consist in the methods `has_geometric_decomposition`, `get_face_own_funs` and `get_facet_flux_sign_flip`.
 
+- Added specific tags on dual numbers to allow for nested AD without perturbation confusion. Since PR[#1181](https://github.com/gridap/Gridap.jl/pull/1181).
+
+- Updated the documentation of `Polytope{D}`'s type parameters `D`, it is correctly described as the polytope's dimension (instead of embedding dimension). Since PR[#1194](https://github.com/gridap/Gridap.jl/pull/1194).
+
 ### Fixed
 
+- Fixed issue [#1188](https://github.com/gridap/Gridap.jl/issues/1188). Fix one() function for non-square tensors.
+- Fixed `strang` quadrature of order 4 for triangles. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
 - Fixed evaluation of `LinearCombinationDofVector` on vector of `<:Field`s (only impacts ModalC0 FEs and future moment based reffes)., since PR[#1105](https://github.com/gridap/Gridap.jl/pull/#1105).
 - Minor `MuliValue` bugfixes for `isless` and `<=` with scalars.
 - Fixed `get_face_dofs(::ReferenceFEs)` on many moment based elements, it sometimes returned `face_own_dofs`.
 
 ### Changed
 
+- Added specific tags on dual numbers to allow for nested AD without perturbation confusion. Since PR[#1181](https://github.com/gridap/Gridap.jl/pull/1181).
+- The default quadrature for simplices is now `witherden_vincent` until available, then `xiao_gimbuttas` until available, then `duffy`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
 - Existing Jacobi polynomial bases/spaces were renamed to Legendre (which they were).
 - `Monomial` is now subtype of the new abstract type`Polynomial <: Field`
 - `MonomialBasis` is now an alias for `CartProdPolyBasis{...,Monomial}`
@@ -76,7 +91,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `JacobiPolynomialBasis{D}(args...)` in favor of `LegendreBasis(Val(D), args...)`
 - `return_type(::PolynomialBasis)` in favor of `value_type(::PolynomialBasis)`
 
-### Removed
+## [0.19.6] - 2025-10-17
+
+### Added
+
+- Added support for subdividing unstructured meshes to any level, including periodic ones. Since PR[#1143](https://github.com/gridap/Gridap.jl/pull/1143).
+
+### Fixed
+
+- Fixed issue [#1174](https://github.com/gridap/Gridap.jl/issues/1174). Since PR[#1175](https://github.com/gridap/Gridap.jl/pull/1175).
+- Fixes the issue that a single CellField could not be passed to TrialFESpace constructor in cases where more than one tag was being passed to dirichlet_tags kw-arg argument. Since PR[#1177](https://github.com/gridap/Gridap.jl/pull/1177).
 
 ## [0.19.5] - 2025-09-19
 

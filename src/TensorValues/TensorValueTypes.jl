@@ -94,7 +94,7 @@ MultiValue(a::StaticMatrix{D1,D2,T}) where {D1,D2,T} = convert(TensorValue{D1,D2
 ###############################################################
 
 @generated function one(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T}
-  str = join(["$i==$j ? one(T) : zero(T), " for i in 1:D1 for j in 1:D2])
+  str = join(["$i==$j ? one(T) : zero(T), " for j in 1:D2 for i in 1:D1])
   Meta.parse("TensorValue{D1,D2,T}(($str))")
 end
 

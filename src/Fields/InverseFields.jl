@@ -23,7 +23,9 @@ function evaluate!(caches,a::InverseField,x::Point)
   y₀ .= Tuple(zero(x))
   # Function and its derivative
   f!(F,y) = F .= SVector{D}(Tuple(evaluate!(cache,a.original,P(y)) - x))
-  j!(J,y) = J .= SMatrix{D,D}(Tuple(evaluate!(∇cache,∇(a.original),P(y))))
+  # For a given field `h(x)` here, its expansion at point x₀ is given by
+  # h(x) = h(x₀) + ∇h(x)ᵀ⋅(x-x₀) + O(|x-x₀|^2), where ∇h denotes `∇(h)`.
+  j!(J,y) = J .= SMatrix{D,D}(Tuple(transpose(evaluate!(∇cache,∇(a.original),P(y)))))
   df = OnceDifferentiable(f!,j!,y₀,F₀)
   # Solve
   res = nlsolve(df,y₀,method=:newton,linesearch=BackTracking())

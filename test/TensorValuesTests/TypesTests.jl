@@ -520,6 +520,10 @@ z = one(TensorValue{3,3,Int,9})
 s = one(z)
 @test convert(SMatrix{3,3,Int},s) == [1 0 0; 0 1 0; 0 0 1]
 
+z = one(TensorValue{2,3,Int,6})
+@test isa(z,TensorValue{2,3,Int,6})
+@test convert(SMatrix{2,3,Int},z) == [1 0 0; 0 1 0]
+
 z = one(SymFourthOrderTensorValue{2,Int})
 @test isa(z,SymFourthOrderTensorValue{2})
 @test Tuple(z) == (1.,0.,0., 0.,0.5,0., 0.,0.,1.)

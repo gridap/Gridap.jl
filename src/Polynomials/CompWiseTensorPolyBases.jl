@@ -133,7 +133,7 @@ end
 function _evaluate_nd!(
   b::CompWiseTensorPolyBasis{D,V,PT}, x,
   r::AbstractMatrix, i,
-  c::AbstractMatrix{T}, ::Val{K}) where {D,V,PT,T,K}
+  c::AbstractMatrix{T}, K) where {D,V,PT,T}
 
   # optimization if PT is hierarchical: lower order polynomials do not depend on the maximum order
   if isHierarchical(PT)
@@ -188,7 +188,7 @@ function _gradient_nd!(
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
-  s::MVector{D,T}, ::Val{K}) where {D,V,PT,G,T,K}
+  s::MVector{D,T}, K) where {D,V,PT,G,T}
 
   if isHierarchical(PT)
     for d in 1:D
@@ -250,7 +250,7 @@ function _hessian_nd!(
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   h::AbstractMatrix{T},
-  s::MMatrix{D,D,T}, ::Val{K}) where {D,V,PT,H,T,K}
+  s::MMatrix{D,D,T}, K) where {D,V,PT,H,T}
 
   if isHierarchical(PT)
     for d in 1:D

@@ -198,7 +198,7 @@ end
 # nD evaluations implementation #
 #################################
 
-_get_static_parameters(::ModalC0Basis) = nothing
+_get_parameters(::ModalC0Basis) = nothing
 
 function _evaluate_nd!(
   basis::ModalC0Basis{D,V}, x,
