@@ -40,7 +40,7 @@ makedocs(
   sitename = "Gridap.jl",
   format = Documenter.HTML(
     size_threshold=nothing,
-    size_threshold_warn=300 * 2^10 # 300KiB
+    size_threshold_warn=500 * 2^10 # 300KiB
   ),
   modules = [Gridap],
   pages = pages,
