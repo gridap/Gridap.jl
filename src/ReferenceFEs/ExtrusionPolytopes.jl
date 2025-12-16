@@ -30,13 +30,16 @@ end
       # + private fields
     end
 
-Concrete type for polytopes that can be
-represented with an "extrusion" tuple. The underlying extrusion is available
-in the field `extrusion`. Instances of this type can be obtained with the constructors
+Concrete type for polytopes that can be represented with an "extrusion" tuple.
+The underlying extrusion is available in the field `extrusion`. Instances of
+this type can be obtained with the constructors
 
 - [`Polytope(extrusion::Int...)`](@ref)
 - [`ExtrusionPolytope(extrusion::Int...)`](@ref)
 
+`ExtrusionPolytope` are used as reference polytopes because their
+coordinate space is their embedding space (the embeding dimension is the polytope
+dimension). Furthermore, the coordinates are determined by the extrusions.
 """
 struct ExtrusionPolytope{D} <: Polytope{D}
   extrusion::Point{D,Int}
@@ -119,6 +122,8 @@ function ExtrusionPolytope(extrusion::Point{N,Int}) where N
 end
 
 # Implementation of the interface
+
+num_point_dims(::Type{<:ExtrusionPolytope{D}}) where D = D
 
 get_faces(p::ExtrusionPolytope) = p.dface.nf_nfs
 

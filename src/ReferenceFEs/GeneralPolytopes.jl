@@ -1,9 +1,10 @@
 """
     struct GeneralPolytope{D,Dp,Tp} <: Polytope{D}
 
-  The `GeneralPolytope` is definded defined by a set of vertices and a rototation
+  The `GeneralPolytope` is defined by a set of vertices and a rotation
   system (a planar oriented graph). This polytopal representation can represent
-  any polytope in 2 and 3 dimensions.
+  any polytope of dimension 2 and 3. `Dp` is the embedding dimension and `Tp`
+  the element type of the vertices.
 
   In 2 dimensions ([`Polygon`](@ref)), the representation of the polygon is a closed polyline.
 
@@ -16,6 +17,9 @@
   > D. Powell, T. Abel, "An exact general remeshing scheme applied to physically conservative voxelization", J. Comput. Phys. 297 (Sept. 2015) 340–356, doi: [10.1016/j.jcp.2015.05.022](https://doi.org/10.1016/j.jcp.2015.05.022.
 
   > S. Badia, P. A. Martorell, F. Verdugo. "Geometrical discretisations for unfitted finite elements on explicit boundary representations", J.Comput. Phys. 460 (2022): 111162. doi: [10.1016/j.jcp.2022.111162](https://doi.org/10.1016/j.jcp.2022.111162)
+
+!!! warning
+    General polytope can be flat, i.e. a 3-vertices `Polygon` might have it's vertices aligned on a line. So `D` is actually an upper bound of the polytope's actual dimension.
 """
 struct GeneralPolytope{D,Dp,Tp,Td} <: Polytope{D}
   vertices::Vector{Point{Dp,Tp}}
@@ -50,14 +54,14 @@ end
 """
     Polygon = GeneralPolytope{2}
 
-  A polygon is a [`GeneralPolytope`](@ref) in 2 dimensions.
+A polygon is a 2-dimensional [`GeneralPolytope`](@ref).
 """
 const Polygon = GeneralPolytope{2}
 
 """
     Polyhedron = GeneralPolytope{3}
 
-  A polyhedron is a [`GeneralPolytope`](@ref) in 3 dimensions.
+A polyhedron is a 3-dimensional [`GeneralPolytope`](@ref).
 """
 const Polyhedron = GeneralPolytope{3}
 
@@ -747,9 +751,9 @@ function compute_orientation(p::GeneralPolytope{D}) where D
   return s
 end
 
-# Admissible permutations for Polygons are the ones that 
+# Admissible permutations for Polygons are the ones that
 # preserve the orientation of the circular graph that defines it.
-# For 2D polytopes, this will always be positive. For 3D polytopes, i.e 
+# For 2D polytopes, this will always be positive. For 3D polytopes, i.e
 # faces of a polyhedron, the orientation can also be negative.
 function get_vertex_permutations(p::GeneralPolytope{2})
   base = collect(1:num_vertices(p))
