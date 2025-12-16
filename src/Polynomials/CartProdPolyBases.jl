@@ -138,7 +138,7 @@ end
 function _evaluate_nd!(
   b::CartProdPolyBasis{D,V,PT}, x,
   r::AbstractMatrix, i,
-  c::AbstractMatrix{T}, ::Val) where {D,V,PT,T}
+  c::AbstractMatrix{T}, K) where {D,V,PT,T}
 
   for d in 1:D
     Kd = b.orders[d]
@@ -197,7 +197,7 @@ function _gradient_nd!(
   r::AbstractMatrix{G}, i,
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
-  s::MVector{D,T}, ::Val{K}) where {D,V,PT,G,T,K}
+  s::MVector{D,T}, K) where {D,V,PT,G,T}
 
   for d in 1:D
     _derivatives_1d!(PT,K,(c,g),x,d)
@@ -302,7 +302,7 @@ function _hessian_nd!(
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   h::AbstractMatrix{T},
-  s::MMatrix{D,D,T}, ::Val{K}) where {D,V,PT,G,T,K}
+  s::MMatrix{D,D,T}, K) where {D,V,PT,G,T}
 
   for d in 1:D
     _derivatives_1d!(PT,K,(c,g,h),x,d)

@@ -238,17 +238,16 @@ The index of `B_α` in the basis is [`bernstein_term_id(α)`](@ref bernstein_ter
 `SMatrix{D+1,D+1}` if some simplex (triangle, tetrahedra, ...) vertices
 coordinates are given.
 """
-struct BernsteinBasisOnSimplex{D,V,M} <: PolynomialBasis{D,V,Bernstein}
-  max_order::Int
+struct BernsteinBasisOnSimplex{D,V,M,K} <: PolynomialBasis{D,V,Bernstein}
   cart_to_bary_matrix::M #  Nothing or SMatrix{D+1,D+1}
 
   function BernsteinBasisOnSimplex{D}(::Type{V},order::Int,vertices=nothing) where {D,V}
     _simplex_vertices_checks(Val(D), vertices)
 
-    K = Int(order)
     cart_to_bary_matrix = _compute_cart_to_bary_matrix(vertices, Val(D+1))
     M = typeof(cart_to_bary_matrix) # Nothing or SMatrix
-    new{D,V,M}(K,cart_to_bary_matrix)
+    K = order
+    new{D,V,M,K}(cart_to_bary_matrix)
   end
 end
 
@@ -274,17 +273,19 @@ function BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int,vertices=nothing)
 end
 
 Base.size(b::BernsteinBasisOnSimplex{D,V}) where {D,V} = (num_indep_components(V)*binomial(D+get_order(b),D),)
-get_order(b::BernsteinBasisOnSimplex) = b.max_order
+get_order(::BernsteinBasisOnSimplex{D,V,M,K}) where {D,V,M,K} = K
 get_orders(b::BernsteinBasisOnSimplex{D}) where D = tfill(get_order(b), Val(D))
 
-function testvalue(::Type{BernsteinBasisOnSimplex{D,V,M}}) where {D,V,M}
+_get_parameters(::BernsteinBasisOnSimplex{D,V,M,K}) where {D,V,M,K} = Val(K)
+
+function testvalue(::Type{BernsteinBasisOnSimplex{D,V,M,K}}) where {D,V,M,K}
   if M == Nothing
     vertices = nothing
   else
     Pt = Point{D,eltype(M)}
     vertices = ntuple( j -> Pt( ntuple( i -> j==i+1, Val(D)) ), Val(D+1))
   end
-  BernsteinBasisOnSimplex{D}(V,0,vertices)
+  BernsteinBasisOnSimplex{D}(V,K,vertices)
 end
 
 

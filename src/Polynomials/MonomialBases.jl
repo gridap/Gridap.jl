@@ -49,10 +49,6 @@ function _gradient_1d!(::Type{Monomial},K,g::AbstractMatrix{T},x,d) where T<:Num
   end
 end
 
-
-function _hessian_1d!(::Type{Monomial},::Val{0},h::AbstractMatrix{T},x,d) where {T<:Number}
-end
-
 function _hessian_1d!(::Type{Monomial},K,h::AbstractMatrix{T},x,d) where T<:Number
   if iszero(K)
     @inbounds h[d,1] = zero(T)

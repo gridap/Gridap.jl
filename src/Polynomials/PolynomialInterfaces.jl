@@ -183,12 +183,15 @@ function _setsize!(f::PolynomialBasis{D}, np, r, t...) where D
 end
 
 """
-    _get_static_parameters(::PolynomialBasis)
+    _get_parameters(::PolynomialBasis)
 
-Return a (tuple of) static parameter(s) appended to low level `[...]_nd!` evaluation
-calls, default is `Val(get_order(b))`.
+Return a (tuple of) parameter(s) appended to low level `[...]_nd!` evaluation
+calls, default is `get_order(b)`.
+
+This method can be type unstable to dispatch on compile-time optimized code,
+without trigering more than one dynamic dispatch during evaluation of a basis.
 """
-_get_static_parameters(b::PolynomialBasis) = Val(get_order(b))
+_get_parameters(b::PolynomialBasis) = get_order(b)
 
 function evaluate!(cache,
   f::PolynomialBasis,
@@ -197,7 +200,7 @@ function evaluate!(cache,
   r, _, c = cache
   np = length(x)
   _setsize!(f,np,r,c)
-  params = _get_static_parameters(f)
+  params = _get_parameters(f)
   _loop_point_evals!(np,x,f,r,c,params)
   r.array
 end
@@ -221,7 +224,7 @@ function evaluate!(cache,
   r, s, c, g = cache
   np = length(x)
   _setsize!(f,np,r,c,g)
-  params = _get_static_parameters(f)
+  params = _get_parameters(f)
   _loop_point_grads!(np,x,f,r,c,g,s,params)
   r.array
 end
@@ -242,7 +245,7 @@ function evaluate!(cache,
   r, s, c, g, h = cache
   np = length(x)
   _setsize!(f,np,r,c,g,h)
-  params = _get_static_parameters(f)
+  params = _get_parameters(f)
   _loop_point_hess!(np,x,f,r,c,g,h,s,params)
   r.array
 end
@@ -317,7 +320,7 @@ the basis polynomials at a single point `xi` and sets the result in the `i`th
 row of `r`.
 
 - `c` is an implementation specific cache for temporary computation of `b`(`xi`).
-- `params` is an optional (tuple of) parameter(s) returned by [`_get_static_parameters(b)`](@ref _get_static_parameters)
+- `params` is an optional (tuple of) parameter(s) returned by [`_get_parameters(b)`](@ref _get_parameters)
 """
 function _evaluate_nd!(b::PolynomialBasis, xi, r::AbstractMatrix, i, c, params)
   @abstractmethod
