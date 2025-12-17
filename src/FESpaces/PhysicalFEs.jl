@@ -47,22 +47,14 @@ function FiniteElements(
   cell_shapefuns = lazy_map(linear_combination,cell_change,cell_prebasis)
 
   # Build the CellFE
-  ctype_num_dofs = map(num_dofs,ctype_reffe)
-  ctype_ldof_comp = map(reffe->get_dof_to_comp(reffe),ctype_reffe)
   conf = Conformity(testitem(cell_reffe),conformity)
   cell_conformity = CellConformity(cell_reffe,conf)
   cell_shapefuns_domain = PhysicalDomain()
   cell_dof_basis_domain = cell_shapefuns_domain
   max_order = maximum(map(get_order,ctype_reffe))
 
-  CellFE(
-    cell_ctype,
-    ctype_num_dofs,
-    ctype_ldof_comp,
-    cell_conformity,
-    cell_shapefuns,
-    cell_dof_basis,
-    cell_shapefuns_domain,
-    cell_dof_basis_domain,
-    max_order)
+  return CellFE(
+    cell_conformity, cell_shapefuns, cell_dof_basis,
+    cell_shapefuns_domain, cell_dof_basis_domain, max_order
+  )
 end
