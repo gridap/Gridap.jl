@@ -1,71 +1,47 @@
 
 struct TensorProduct <: QuadratureName end
-
 const tensor_product = TensorProduct()
 
-function Quadrature(p::Polytope,::TensorProduct,degrees;T::Type{<:AbstractFloat}=Float64)
-  @assert is_n_cube(p) """\n
-  Tensor product quadrature rule only for n-cubes.
+function Quadrature(
+  p::Polytope, ::TensorProduct, degrees; T::Type{<:AbstractFloat}=Float64
+)
+  msg = """\n
+  `tensor_product` quadrature rule only for n-cubes.
   """
-  @assert length(degrees) == num_dims(p)
-  _tensor_product_legendre(degrees;T=T)
+  @assert is_n_cube(p) msg
+
+  msg = """\n
+  Incompatible degrees. Please specify one degree per dimension.
+  """
+  @assert (length(degrees) == num_dims(p))
+
+  coords, weights = _tensor_product_legendre(degrees; T)
+  name = "Tensor product of 1d Gauss-Legendre quadratures of degrees $degrees"
+  GenericQuadrature(coords, weights, name)
 end
 
-function Quadrature(p::Polytope,name::TensorProduct,degree::Integer;T::Type{<:AbstractFloat}=Float64)
-  degrees = ntuple(i->degree,Val(num_dims(p)))
-  Quadrature(p,name,degrees,T=T)
+function Quadrature(
+  p::Polytope, name::TensorProduct, degree::Integer; T::Type{<:AbstractFloat}=Float64
+)
+  degrees = ntuple(i -> degree, Val(num_dims(p)))
+  Quadrature(p, name, degrees; T)
+end
+
+function maxdegree(p::Polytope, ::TensorProduct)
+  is_n_cube(p) ? Inf : 0
 end
 
 # Low level constructor
 
-function _tensor_product_legendre(degrees;T::Type{<:AbstractFloat}=Float64)
-  D = length(degrees)
-  npoints = [ ceil(Int,(degrees[i]+1.0)/2.0) for i in 1:D ]
-  quads = [ gauss(T, npoints[i]) for i in 1:D ]
-  for i in 1:D
-    quads[i][1] .+= 1;
-    quads[i][1] .*= 1.0/2.0
-    quads[i][2] .*= 1.0/2.0
+function _tensor_product_legendre(degrees; T::Type{<:AbstractFloat}=Float64)
+  npoints = [_npoints_from_degree(degree) for degree in degrees]
+  quads = [gauss(T, npoint) for npoint in npoints]
+  # Geometrical map from (-1, +1) to (0, 1)
+  for quad in quads
+    quad[1] .+= 1
+    quad[1] ./= 2
+    quad[2] ./= 2
   end
-  (coords, weights) = _tensor_product(Point{D,T},quads,npoints)
-  GenericQuadrature(coords,weights,"Tensor product of 1d Gauss-Legendre quadratures of degrees $degrees")
-end
-
-# Helpers
-
-function _tensor_product(::Type{Point{D,T}},quads,npoints) where {D,T}
-  @assert length(quads) == D
-  @assert length(npoints) == D
-  cis = CartesianIndices(tuple(npoints...))
-  n = prod(npoints)
-  coords = Vector{Point{D,T}}(undef,n)
-  weights = Vector{T}(undef,n)
-  _tensor_product!(quads,coords,weights,cis)
-  (coords, weights)
-end
-
-function _tensor_product(::Type{Point{0,T}},quads,npoints) where T
-  coords = [zero(Point{0,T})]
-  weights = [one(T)]
+  coords, weights = _tensor_product(quads, T)
   coords, weights
-end
-
-function _tensor_product!(quads,coords,weights,cis)
-  p = zero(Mutable(eltype(coords)))
-  T = eltype(weights)
-  D = length(p)
-  lis = LinearIndices(cis)
-  for ci in cis
-    p[:] = 0.0
-    w = one(T)
-    for d in 1:D
-      xi = quads[d][1][ci[d]]
-      wi = quads[d][2][ci[d]]
-      p[d] = xi
-      w *= wi
-    end
-    li = lis[ci]
-    coords[li] = p
-    weights[li] = w
-  end
 end

@@ -1,7 +1,7 @@
 
 function autodiff_array_gradient(a,i_to_x)
-  dummy_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_tag),i_to_x)
+  tag = x->ForwardDiff.gradient(a, x)
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
   i_to_result = lazy_map(AutoDiffMap(),i_to_cfg,i_to_ydual)
@@ -9,8 +9,8 @@ function autodiff_array_gradient(a,i_to_x)
 end
 
 function autodiff_array_jacobian(a,i_to_x)
-  dummy_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_tag),i_to_x)
+  tag = x->Forwarddiff.jacobian(a, x)
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
   i_to_result = lazy_map(AutoDiffMap(),i_to_cfg,i_to_ydual)
@@ -23,8 +23,8 @@ function autodiff_array_hessian(a,i_to_x)
 end
 
 function autodiff_array_gradient(a,i_to_x,j_to_i)
-  dummy_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_tag),i_to_x)
+  tag = x->ForwardDiff.gradient(a, x)
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
   j_to_cfg = autodiff_array_reindex(i_to_cfg,j_to_i)
@@ -33,8 +33,8 @@ function autodiff_array_gradient(a,i_to_x,j_to_i)
 end
 
 function autodiff_array_jacobian(a,i_to_x,j_to_i)
-  dummy_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_tag),i_to_x)
+  tag = x->Forwarddiff.jacobian(a, x)
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
   j_to_cfg = autodiff_array_reindex(i_to_cfg,j_to_i)

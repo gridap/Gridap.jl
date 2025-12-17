@@ -99,9 +99,22 @@ function Geometry.Triangulation(trian::AdaptedTriangulation,args...;kwargs...)
   return AdaptedTriangulation(Triangulation(trian.trian,args...;kwargs...),trian.adapted_model)
 end
 
-function Geometry.BoundaryTriangulation(model::AdaptedDiscreteModel,args...;kwargs...)
-  trian = BoundaryTriangulation(get_model(model),args...;kwargs...)
+# function Geometry.BoundaryTriangulation(model::AdaptedDiscreteModel,args...;kwargs...)
+#   trian = BoundaryTriangulation(get_model(model),args...;kwargs...)
+#   return AdaptedTriangulation(trian,model)
+# end
+
+function Geometry.BoundaryTriangulation(
+  model::AdaptedDiscreteModel, face_to_bgface::AbstractVector{<:Integer}, bgface_to_lcell::AbstractVector{<:Integer}
+)
+  trian = BoundaryTriangulation(get_model(model),face_to_bgface,bgface_to_lcell)
   return AdaptedTriangulation(trian,model)
+end
+
+# Needed to avoid ambiguity
+function Geometry.BoundaryTriangulation(model::AdaptedDiscreteModel, bgface_to_mask::AbstractVector{Bool}, bgface_to_lcell::AbstractVector{<:Integer})
+  face_to_bgface = findall(bgface_to_mask)
+  BoundaryTriangulation(model,face_to_bgface,bgface_to_lcell)
 end
 
 function Geometry.SkeletonTriangulation(model::AdaptedDiscreteModel,face_to_mask::AbstractVector{Bool})
