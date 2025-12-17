@@ -15,14 +15,13 @@ jobs:
       fail-fast: false
       matrix: # Main tests for linux
         version:
-          - '1.9'
           - '1.10'
           - '1.11'
         os:
           - ubuntu-latest
         arch:
           - x64
-        include: # Test macos/windows on latest LTS + x86 on ubuntu
+        include: # Test macos/windows/x86 on latest LTS
           - version: '1.10'
             os: macos-latest
             arch: aarch64

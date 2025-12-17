@@ -753,6 +753,16 @@ function generate_dof_mask(
   return dof_to_mask
 end
 
+"""
+    generate_dof_mask(
+      space::FESpace, labels::FaceLabeling, tags; 
+      cell_conformity = get_cell_conformity(space), reverse::Bool=false
+    )
+
+Generate a mask for the dofs in the FESpace `space`, based on the face labeling `labels`
+and the `tags` provided. If `reverse` is `false`, the dofs are masked (`true`) if they 
+belong to a tagged face. If `reverse` is `true`, the mask is reversed.
+"""
 function generate_dof_mask(
   space::FESpace, labels::FaceLabeling, tags; 
   cell_conformity = get_cell_conformity(space), reverse::Bool=false
@@ -767,12 +777,11 @@ function generate_dof_mask(
   d_to_dface_to_mask = [get_face_mask(labels,tags,d) for d in 0:Df]
   d_to_face_to_dface = [Geometry.get_faces(topo,Df,d) for d in 0:Df]
 
-  dof_to_mask = generate_dof_mask(
+  return generate_dof_mask(
     cell_conformity, cell_dof_ids, mface_to_tface,
     d_to_face_to_dface, d_to_dface_to_mask, num_free_dofs(space);
     reverse
   )
-  return dof_to_mask
 end
 
 struct CellDofsNonOriented <:AbstractVector{Vector{Int32}}
