@@ -743,27 +743,6 @@ function get_diameter(vertex_coords)
 end
 
 """
-    get_diameter(p::Polytope)
-
-Returns the diameter of the polytope `p`, defined as the maximum distance
-between any two vertices of the polytope.
-"""
-function get_diameter(p::Polytope)
-  vertex_to_coords = get_vertex_coordinates(p)
-  get_diameter(vertex_to_coords)
-end
-
-function get_diameter(points)
-  h = 0.0
-  for p in points
-    for q in points
-      h = max(h,norm(p-q))
-    end
-  end
-  h
-end
-
-"""
     get_face_vertex_permutations(p::Polytope)
     get_face_vertex_permutations(p::Polytope,d::Integer)
 """
