@@ -1,7 +1,7 @@
 name = "Gridap"
 uuid = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
 authors = ["Santiago Badia <santiago.badia@monash.edu>", "Francesc Verdugo <f.verdugo.rojano@vu.nl>", "Alberto F. Martin <alberto.f.martin@anu.edu.au>"]
-version = "0.19.6"
+version = "0.19.7"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
@@ -51,8 +51,8 @@ FileIO = "1.5"
 FillArrays = "1.11"
 ForwardDiff = "0.10.14, 1"
 Graphs = "1"
-JLD2 = "0.5"
-JSON = "0.21"
+JLD2 = "0.5, 0.6"
+JSON = "0.21, 1"
 LineSearches = "7.0.1"
 LinearAlgebra = "1"
 NLsolve = "4.5.1"
