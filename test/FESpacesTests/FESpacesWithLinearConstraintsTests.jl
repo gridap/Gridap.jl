@@ -1,18 +1,18 @@
 module FESpacesWithLinearConstraintsTests
 
+using Test
+using LinearAlgebra
+using Gridap
+
 using Gridap.Algebra
 using Gridap.Arrays
 using Gridap.Fields
 using Gridap.Geometry
 using Gridap.FESpaces
-using Test
-using LinearAlgebra
 using Gridap.CellData
 using Gridap.ReferenceFEs
 
-domain = (0,1,0,1)
-partition = (2,2)
-model = CartesianDiscreteModel(domain,partition)
+model = CartesianDiscreteModel((0,1,0,1),(2,2))
 
 labels = get_face_labeling(model)
 add_tag_from_tags!(labels,"dirichlet",[1,2,5])
@@ -26,7 +26,9 @@ dΓ = Measure(Γ,2)
 dΛ = Measure(Λ,2)
 
 V = FESpace(
-  model,ReferenceFE(lagrangian,Float64,1), conformity=:H1, dirichlet_tags="dirichlet")
+  model,ReferenceFE(lagrangian,Float64,1);
+  conformity=:H1, dirichlet_tags="dirichlet"
+)
 test_single_field_fe_space(V)
 
 fdof_to_val = collect(Float64,1:num_free_dofs(V))
@@ -38,18 +40,14 @@ sDOF_to_dofs = Table([[-1,4],[4,6],[-1,-3]])
 sDOF_to_coeffs = Table([[0.5,0.5],[0.5,0.5],[0.5,0.5]])
 
 Vc = FESpaceWithLinearConstraints(
-  sDOF_to_dof,
-  sDOF_to_dofs,
-  sDOF_to_coeffs,
-  V)
+  sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, V
+)
 
 test_single_field_fe_space(Vc)
 @test has_constraints(Vc)
 
 @test isa(get_cell_constraints(Vc,Λ)[1],ArrayBlock)
-
-@test Vc.n_fdofs == 6
-@test Vc.n_fmdofs == 4
+@test num_free_dofs(Vc) == 4
 
 fmdof_to_val = collect(Float64,1:num_free_dofs(Vc))
 dmdof_to_val = -collect(Float64,1:num_dirichlet_dofs(Vc))
@@ -59,7 +57,6 @@ r = [[-1.0, -1.5, 1.0, 1.0], [-1.5, -2.0, 1.0, 2.0], [1.0, 1.0, 3.0, 3.5], [1.0,
 
 v(x) = sin(4*x[1]+0.4)*cos(5*x[2]+0.7)
 vch = interpolate(v,Vc)
-
 
 #using Gridap.Visualization
 #writevtk(Ω,"trian",nsubcells=10,cellfields=["vh"=>vh,"vch"=>vch])
@@ -71,7 +68,6 @@ Uc = TrialFESpace(Vc,u)
 uch = interpolate(u,Uc)
 
 n_Γ = get_normal_vector(Γ)
-
 a(u,v) = ∫( ∇(v)⋅∇(u) )*dΩ + ∫( jump(u)*jump(v) )*dΛ
 l(v) = ∫( v*f )*dΩ + ∫( v*(n_Γ⋅∇(u)) )*dΓ
 
@@ -82,7 +78,6 @@ uch = solve(op)
 #writevtk(trian,"trian",nsubcells=10,cellfields=["uch"=>uch])
 
 e = u - uch
-
 e_l2 = sqrt(sum(∫( e*e )*dΩ))
 e_h1 = sqrt(sum(∫( e*e + ∇(e)⋅∇(e) )*dΩ))
 
@@ -90,15 +85,38 @@ tol = 1.e-9
 @test e_l2 < tol
 @test e_h1 < tol
 
+# Test with complex values
+
 V2 = FESpace(
-  model,ReferenceFE(lagrangian,Float64,1), conformity=:H1, dirichlet_tags="dirichlet", vector_type=ComplexF64)
+  model,ReferenceFE(lagrangian,Float64,1);
+  conformity=:H1, dirichlet_tags="dirichlet", vector_type=ComplexF64
+)
 
 Vc2 = FESpaceWithLinearConstraints(
   sDOF_to_dof,
   sDOF_to_dofs,
   sDOF_to_coeffs,
-  V2)
+  V2
+)
 
 @test get_dof_value_type(Vc2) <: ComplexF64
+
+# Alternative constructor
+
+fdof_to_dofs = Table([[-1,4],[2],[3],[4],[4,6],[6]])
+fdof_to_coeffs = Table([[0.5,0.5],[1.0],[1.0],[1.0],[0.5,0.5],[1.0]])
+ddof_to_dofs = Table([[-1],[-1,-3],[-3]])
+ddof_to_coeffs = Table([[1.0],[0.5,0.5],[1.0]])
+
+Vc3 = FESpaceWithLinearConstraints(
+  fdof_to_dofs, fdof_to_coeffs, ddof_to_dofs, ddof_to_coeffs, V
+)
+
+test_single_field_fe_space(Vc3)
+
+@test Vc3.mDOF_to_dof == Vc.mDOF_to_dof
+@test Vc3.sDOF_to_dof == Vc.sDOF_to_dof
+@test Vc3.sDOF_to_mdofs == Vc.sDOF_to_mdofs
+@test Vc3.sDOF_to_coeffs == Vc.sDOF_to_coeffs
 
 end # module
