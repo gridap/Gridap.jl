@@ -257,6 +257,36 @@ is_simplex(::GeneralPolytope) = false
 
 is_n_cube(::GeneralPolytope) = false
 
+function is_convex(p::Polygon)
+  tol = 10*eps(Float64)
+  coords = get_vertex_coordinates(p)
+  G = get_graph(p)
+  for (v,(vprev,vnext)) in enumerate(G)
+    ein  = coords[v] - coords[vprev]
+    eout = coords[vnext] - coords[v]
+    (dot(ein,eout) > tol) && return false
+  end
+  return true
+end
+
+# We want to check that each face creates a half-space that 
+# contains all other vertices.
+function is_convex(p::Polyhedron)
+  tol = 10*eps(Float64)
+  coords = get_vertex_coordinates(p)
+  f_to_v = get_faces(p,2,0)
+  normals = get_facet_normal(p)
+  for (f, v) in enumerate(f_to_v)
+    xc = mean(coords[v])
+    nf = normals[f]
+    for x in coords
+      # nf is outward, so we want <= 0
+      (dot(nf,x-xc) > tol) && return false
+    end
+  end
+  return true
+end
+
 function simplexify(p::GeneralPolytope{D}) where D
   @assert !isopen(p)
   X,T = simplexify_interior(p)
@@ -786,7 +816,7 @@ end
 Given a polyhedron graph, renumber the nodes of the graph using the `new_to_old` mapping. 
 Removes the empty nodes.
 """
-function renumber!(graph::Vector{Vector{Int32}},new_to_old::Vector{Int},n_old::Int)
+function renumber!(graph::Vector{Vector{Int32}},new_to_old::Vector{<:Integer},n_old::Int)
   old_to_new = find_inverse_index_map(new_to_old,n_old)
   !isequal(n_old,length(new_to_old)) && keepat!(graph,new_to_old)
   for i in eachindex(graph)
