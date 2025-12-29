@@ -1244,6 +1244,10 @@ function _fill_face_in_cells_around!(
       continue
     end
     lface = lface_of_cells_around[icell_around]
+    if lface == UNSET
+      # JORDI: This can happen for 3D polyhedrons that are not convex.
+      continue
+    end
     f = cell_to_faces_ptrs[cell_around]-1
     cell_to_faces_data[f+lface] = face
   end
