@@ -991,29 +991,73 @@ function polyhedron_from_faces(
   face_to_vertex::AbstractVector{<:AbstractVector{<:Integer}}
 )
   n = length(vertices)
-  graph = [Int32[] for i in 1:n]
 
+  paths = [Dict{Int32,Int32}() for i in 1:n]
   for f in face_to_vertex
     nf = length(f)
     for k in eachindex(f)
       vprev, v, vnext = f[mod(k-2,nf)+1], f[k], f[mod(k,nf)+1]
-      kprev = findfirst(isequal(vprev),graph[v])
-      knext = findfirst(isequal(vnext),graph[v])
-      if isnothing(kprev) && isnothing(knext)
-        push!(graph[v],vprev,vnext)
-      elseif isnothing(kprev)
-        kprev = max(knext - 1, 1)
-        insert!(graph[v],kprev,vprev)
-      elseif isnothing(knext)
-        knext = kprev + 1
-        insert!(graph[v],knext,vnext)
-      else
-        nv = length(graph[v])
-        @assert isequal(knext, mod(kprev,nv) + 1)
-      end
+      # println("v: $v, vprev: $vprev, vnext: $vnext")
+      # if haskey(paths[v],vprev)
+      #   println(paths[v])
+      #   println("v: $v, vprev: $vprev, vnext: $vnext")
+      # end
+      @check !haskey(paths[v],vprev)
+      paths[v][vprev] = vnext
     end
+  end
+
+  graph = Vector{Vector{Int32}}(undef,n)
+  for v in 1:n
+    graph[v] = Vector{Int32}(undef, length(paths[v]))
+    #println("paths[$v]: ", paths[v])
+    vstart = first(keys(paths[v]))
+
+    k = 1
+    vcurrent = paths[v][vstart]
+    graph[v][1] = vstart
+    while vcurrent != vstart
+      k += 1
+      graph[v][k] = vcurrent
+      vcurrent = paths[v][vcurrent]
+    end
+    @assert k == length(graph[v])
   end
 
   @check check_polytope_graph(graph)
   return Polyhedron(vertices,graph), Base.OneTo(n)
 end
+
+# JORDI: 
+# The below implementation fails depending on the order 
+# of the inputed faces, when more than 3 faces meet at a vertex.
+#
+# function polyhedron_from_faces(
+#   vertices::AbstractVector{<:Point},
+#   face_to_vertex::AbstractVector{<:AbstractVector{<:Integer}}
+# )
+#   n = length(vertices)
+#   graph = [Int32[] for i in 1:n]
+# 
+#   for f in face_to_vertex
+#     nf = length(f)
+#     for k in eachindex(f)
+#       vprev, v, vnext = f[mod(k-2,nf)+1], f[k], f[mod(k,nf)+1]
+#       kprev = findfirst(isequal(vprev),graph[v])
+#       knext = findfirst(isequal(vnext),graph[v])
+#       if isnothing(kprev) && isnothing(knext)
+#         push!(graph[v],vprev,vnext)
+#       elseif isnothing(kprev)
+#         insert!(graph[v],knext,vprev) # Moves vnext to knext+1
+#       elseif isnothing(knext)
+#         insert!(graph[v],kprev+1,vnext)
+#       else
+#         nv = length(graph[v])
+#         @assert isequal(knext, mod(kprev,nv) + 1)
+#       end
+#     end
+#   end
+# 
+#   @check check_polytope_graph(graph)
+#   return Polyhedron(vertices,graph), Base.OneTo(n)
+# end
