@@ -1061,3 +1061,24 @@ end
 #   @check check_polytope_graph(graph)
 #   return Polyhedron(vertices,graph), Base.OneTo(n)
 # end
+
+# Extrude a 2D polygon into a 3D polyhedron
+function extrude(p::Polygon; zmin = 0.0, zmax = 1.0)
+  # Vertex coordinates
+  f(x,z) = Point(x[1], x[2], z)
+  coords_2D = get_vertex_coordinates(p)  
+  coords_3D = vcat(
+    map(Base.Fix2(f, zmin), coords_2D)...,
+    map(Base.Fix2(f, zmax), coords_2D)...,
+  )
+  # Graph
+  nv = num_vertices(p)
+  graph_2D = get_graph(p)
+  graph_3D = Vector{Vector{Int32}}(undef, 2*nv)
+  for v in 1:nv
+    vprev, vnext = graph_2D[v]
+    graph_3D[v] = Int32[vprev, vnext, v+nv]
+    graph_3D[v+nv] = Int32[vprev+nv, v, vnext+nv]
+  end
+  return Polyhedron(coords_3D, graph_3D)
+end
