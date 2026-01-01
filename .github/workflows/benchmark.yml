@@ -55,7 +55,7 @@ jobs:
         env:
           BM_BASE: ${{ github.event.inputs.base }}
           BM_TARGET: ${{ github.event.inputs.target }}
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: benchmarks
           path: benchmark/benchmark_results.md
