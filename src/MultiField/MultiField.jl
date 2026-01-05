@@ -41,6 +41,8 @@ export MultiFieldStyle
 export ConsecutiveMultiFieldStyle
 export BlockMultiFieldStyle
 
+export StaticCondensationOperator
+
 include("MultiFieldCellFields.jl")
 
 include("MultiFieldFESpaces.jl")
