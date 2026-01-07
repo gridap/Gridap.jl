@@ -130,6 +130,8 @@ function generate_polytope_data(p::Polytope,::Nothing)
   nothing
 end
 
+# Constructors from standard polytopes
+
 function Polygon(p::Polytope{2},vertices::AbstractVector{<:Point};kwargs...)
   if p == TRI
     e_v_graph = [[2,3],[3,1],[1,2]]

@@ -286,6 +286,13 @@ function get_face_coordinates(g::GridTopology,d::Integer)
 end
 
 """
+    get_cell_coordinates(g::GridTopology)
+"""
+function get_cell_coordinates(g::GridTopology)
+  get_face_coordinates(g,num_cell_dims(g))
+end
+
+"""
     get_cell_polytopes(topo::GridTopology)
 """
 function get_cell_polytopes(topo::GridTopology)
