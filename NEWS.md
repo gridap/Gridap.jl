@@ -7,16 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.7] - 2025-12-18
+
+### Added
+
+- Added the symmetric quadrature rules of Witherden and Vincent, correctness tests for all quadrature rules, and minor extensions to the interfaces of `Quadrature` and `Polytope`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+  - Added the symmetric quadrature rules of Witherden and Vincent for tri/tet, quad/hex, wedge and pyramid.
+  - Added `maxdegree(p::Polytope, name::QuadratureName)` to the interface of `Quadrature`.
+  - Enriched the tests for quadratures by checking `tensor_product`, `duffy`, and `witherden_vincent` against exact integrals for monomials on the corresponding polytopes (tri/tet, quad/hex, wedge and pyramid, respectively). Other quadrature rules are compared against these tested ones.
+  - Added `get_measure(p::Polytope, vertex_coords)` and `get_diameter(p::Polytope, vertex_coords)` to the interface of `Polytope`.
+
+### Changed
+
+- Added specific tags on dual numbers to allow for nested AD without perturbation confusion. Since PR[#1181](https://github.com/gridap/Gridap.jl/pull/1181).
+- The default quadrature for simplices is now `witherden_vincent` until available, then `xiao_gimbuttas` until available, then `duffy`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+- Updated the documentation of `Polytope{D}`'s type parameters `D`, it is correctly described as the polytope's dimension (instead of embedding dimension). Since PR[#1194](https://github.com/gridap/Gridap.jl/pull/1194).
+- Added compatibilty for `JSON.jl` v1+ and `JDL2.jl` v0.6+. Since PR[1198](https://github.com/gridap/Gridap.jl/pull/1198).
+
 ### Fixed
 
 - Fixed issue [#1188](https://github.com/gridap/Gridap.jl/issues/1188). Fix one() function for non-square tensors.
+- Fixed `strang` quadrature of order 4 for triangles. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
 
 ## [0.19.6] - 2025-10-17
 
 ### Added
 
 - Added support for subdividing unstructured meshes to any level, including periodic ones. Since PR[#1143](https://github.com/gridap/Gridap.jl/pull/1143).
-- Added specific tags on dual numbers to allow for nested AD without perturbation confusion. Since PR[#1181](https://github.com/gridap/Gridap.jl/pull/1181) 
 
 ### Fixed
 

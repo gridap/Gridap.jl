@@ -23,10 +23,9 @@ order = 2
 Γ = BoundaryTriangulation(model)
 Λ = SkeletonTriangulation(model)
 
-degree = order
-dΩ = Measure(Ω,degree)
-dΓ = Measure(Γ,degree)
-dΛ = Measure(Λ,degree)
+dΩ = Measure(Ω,2*(order - 1))
+dΓ = Measure(Γ,2*order)
+dΛ = Measure(Λ,2*order)
 
 n_Γ = get_normal_vector(Γ)
 n_Λ = get_normal_vector(Λ)
