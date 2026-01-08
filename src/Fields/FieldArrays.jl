@@ -594,12 +594,13 @@ function evaluate!(
   a::AbstractMatrix,
   b::AbstractArray{S,3} where S)
 
-  @check size(a,1) == size(b,1)
-  @check size(b,2) == 1 || size(b,1) == 0
   np, ni = size(a)
   nj = size(b,3)
   setsize!(cache,(np,ni,nj))
   r = cache.array
+  (size(a,1)*size(b,1)) == 0 && return r
+  @check size(a,1) == size(b,1)
+  @check size(b,2) == 1 || size(b,1) == 0
   for j in 1:nj
     for p in 1:np
       bpj = b[p,1,j]
@@ -617,13 +618,13 @@ function evaluate!(
   b::AbstractArray{S,3} where S,
   a::AbstractMatrix)
 
-  @check size(a,1) == size(b,1)
-  @check size(b,2) == 1 || size(b,1) == 0
   np, ni = size(a)
   nj = size(b,3)
   setsize!(cache,(np,ni,nj))
   r = cache.array
-  size(b,1) == 0 && return r
+  (size(a,1)*size(b,1)) == 0 && return r
+  @check size(a,1) == size(b,1)
+  @check size(b,2) == 1 || size(b,1) == 0
   for p in 1:np
     for j in 1:nj
       bpj = b[p,1,j]
