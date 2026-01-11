@@ -600,27 +600,28 @@ end
 
 function generate_facet_to_vertices(poly::Polyhedron)
   D = 3
-  istouch = map( i -> falses(length(i)), get_graph(poly) )
   T = Vector{Int32}[]
+  G = get_graph(poly)
+  istouch = map( i -> falses(length(i)), G )
   for v in 1:num_vertices(poly)
     isactive(poly,v) || continue
-    for i in 1:length(get_graph(poly)[v])
+    for i in 1:length(G[v])
       !istouch[v][i] || continue
       istouch[v][i] = true
       vcurrent = v
-      vnext = get_graph(poly)[v][i]
+      vnext = G[v][i]
       vnext > 0 || continue
       k = [v]
       while vnext != v
-        inext = findfirst( isequal(vcurrent), get_graph(poly)[vnext] )
-        inext = ( inext % length( get_graph(poly)[vnext] ) ) + 1
+        inext = findfirst( isequal(vcurrent), G[vnext] )
+        inext = ( inext % length( G[vnext] ) ) + 1
         istouch[vnext][inext] = true
         vcurrent = vnext
-        vnext = get_graph(poly)[vnext][inext]
+        vnext = G[vnext][inext]
         vnext > 0 || break
         push!(k,vcurrent)
       end
-      if length(k) >=D
+      if length(k) >= D
         push!(T,k)
       end
     end
@@ -790,7 +791,7 @@ function get_vertex_permutations(p::GeneralPolytope{2})
 end
 
 """
-    merge_nodes!(graph::Vector{Vector{Int32}},i::Int,j::Int)
+    merge_nodes!(graph::Vector{Vector{Int32}},i::Integer,j::Integer)
 
 Given a polyhedron graph, i.e a planar graph with oriented closed paths representing the faces,
 merge the nodes `i` and `j` by collapsing the edge `i-j` into `i`.
@@ -806,9 +807,40 @@ function merge_nodes!(graph::Vector{Vector{Int32}},i,j,li,lj)
   ni, nj = graph[i], graph[j]
   graph[i] = unique!(vcat(ni[1:li-1],nj[lj+1:end],nj[1:lj-1],ni[li+1:end]))
   for k in nj
-    !isequal(k,i) && unique!(replace!(graph[k], j => i))
+    if (k > 0) && !isequal(k,i)
+      unique!(replace!(graph[k], j => i))
+    end
   end
   empty!(graph[j])
+  return graph
+end
+
+# Insert a new node in the edge (vprev,vnext)
+function split_edge!(graph::Vector{Vector{Int32}},i,j)
+  li::Int = findfirst(isequal(j),graph[i])
+  lj::Int = findfirst(isequal(i),graph[j])
+  k = Int32(length(graph)+1)
+  graph[i][li] = k
+  graph[j][lj] = k
+  push!(graph,Int32[i,j])
+  return graph
+end
+
+function remove_edge!(graph::Vector{Vector{Int32}},i,j)
+  li::Int = findfirst(isequal(j),graph[i])
+  lj::Int = findfirst(isequal(i),graph[j])
+  deleteat!(graph[i],li)
+  deleteat!(graph[j],lj)
+  return graph
+end
+
+function remove_node!(graph::Vector{Vector{Int32}},i)
+  for j in graph[i]
+    (j > 0) || continue
+    lj::Int = findfirst(isequal(i),graph[j])
+    deleteat!(graph[j],lj)
+  end
+  empty!(graph[i])
   return graph
 end
 
@@ -824,6 +856,7 @@ function renumber!(graph::Vector{Vector{Int32}},new_to_old::Vector{<:Integer},n_
   for i in eachindex(graph)
     ni = graph[i]
     for k in eachindex(ni)
+      (ni[k] > 0) || continue
       ni[k] = old_to_new[ni[k]]
     end
   end
