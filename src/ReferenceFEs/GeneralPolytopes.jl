@@ -273,17 +273,16 @@ end
 
 # We want to check that each face creates a half-space that 
 # contains all other vertices.
-function is_convex(p::Polyhedron)
-  tol = 10*eps(Float64)
+function is_convex(p::Polyhedron,tol=1e3*eps(Float64))
   coords = get_vertex_coordinates(p)
   f_to_v = get_faces(p,2,0)
-  normals = get_facet_normal(p)
   for (f, v) in enumerate(f_to_v)
     xc = mean(coords[v])
-    nf = normals[f]
-    for x in coords
+    nf = get_facet_normal(p,f)
+    for (i,x) in enumerate(coords)
       # nf is outward, so we want <= 0
-      (dot(nf,x-xc) > tol) && return false
+      dist = dot(nf,x-xc)
+      (dist > tol) && return false
     end
   end
   return true
@@ -344,9 +343,46 @@ function get_facet_orientations(p::GeneralPolytope)
   ones(Int,num_facets(p))
 end
 
+# Implements Newell's method to compute the normal of a facet. 
+# It is supposed to be more robust w.r.t numerical errors.
+function _newell_normal(
+  verts::AbstractVector{<:Integer},
+  coords::AbstractVector{<:Point{3}}
+)
+  nv = length(verts)
+  nx, ny, nz = 0.0, 0.0, 0.0
+  for i1 in 1:nv
+    i2 = i1 % nv + 1
+    x1, y1, z1 = coords[verts[i1]]
+    x2, y2, z2 = coords[verts[i2]]
+    nx += (y1 - y2)*(z1 + z2)
+    ny += (z1 - z2)*(x1 + x2)
+    nz += (x1 - x2)*(y1 + y2)
+  end
+  n = VectorValue(nx,ny,nz)
+  n /= norm(n)
+  return n
+end
+
 function get_facet_normal(p::Polyhedron)
-  D = 3
-  f_to_v = get_faces(p,D-1,0)
+  f_to_v = get_faces(p,2,0)
+  coords = get_vertex_coordinates(p)
+  n = map(f_to_v) do v
+    _newell_normal(v,coords)
+  end
+  return n
+end
+
+function get_facet_normal(p::Polyhedron,lfacet::Integer)
+  v = get_faces(p,2,0)[lfacet]
+  coords = get_vertex_coordinates(p)
+  n = _newell_normal(v,coords)
+  return n
+end
+
+#=
+function get_facet_normal(p::Polyhedron)
+  f_to_v = get_faces(p,2,0)
   coords = get_vertex_coordinates(p)
   map(f_to_v) do v
     v1, v2 = compute_tangent_space(Val(2),coords[v])
@@ -354,7 +390,6 @@ function get_facet_normal(p::Polyhedron)
     n /= norm(n)
   end
 end
-
 function get_facet_normal(p::Polyhedron,lfacet::Integer)
   v = get_faces(p,2,0)[lfacet]
   coords = get_vertex_coordinates(p)
@@ -363,6 +398,7 @@ function get_facet_normal(p::Polyhedron,lfacet::Integer)
   n /= norm(n)
   return n
 end
+=#
 
 function compute_tangent_space(::Val{1},coords;tol=1e-10)
   v1 = coords[2]-coords[1]
