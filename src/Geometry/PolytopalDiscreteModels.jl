@@ -45,9 +45,8 @@ function PolytopalGridTopology(
   polytopes::Vector{<:GeneralPolytope{Dc}}
 ) where {Dc,Dp,T}
 
-  n = Dc+1
   n_vertices = length(vertex_coordinates)
-  n_m_to_nface_to_mfaces = Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,n,n)
+  n_m_to_nface_to_mfaces = Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,Dc+1,Dc+1)
   for d in 0:Dc
     dface_to_vertices = d_to_dface_vertices[d+1]
     n_m_to_nface_to_mfaces[d+1,0+1] = dface_to_vertices
@@ -289,7 +288,7 @@ function restrict(topo::PolytopalGridTopology, cell_to_parent_cell::AbstractVect
     ) for d in 0:D
   ]
   vertex_coordinates = get_vertex_coordinates(topo)[d_to_dface_to_parent_dface[0+1]]
-  polytopes = get_polytopes(topo)[cell_to_parent_cell]
+  polytopes = get_polytopes(topo)[d_to_dface_to_parent_dface[D+1]]
   subtopo = PolytopalGridTopology(vertex_coordinates,d_to_dface_to_vertices,polytopes)
   return subtopo, d_to_dface_to_parent_dface
 end

@@ -888,7 +888,9 @@ Removes the empty nodes.
 """
 function renumber!(graph::Vector{Vector{Int32}},new_to_old::Vector{<:Integer},n_old::Int)
   old_to_new = find_inverse_index_map(new_to_old,n_old)
-  !isequal(n_old,length(new_to_old)) && keepat!(graph,new_to_old)
+  if !isequal(n_old,length(new_to_old)) && isequal(n_old,length(graph))
+    keepat!(graph,new_to_old)
+  end
   for i in eachindex(graph)
     ni = graph[i]
     for k in eachindex(ni)
