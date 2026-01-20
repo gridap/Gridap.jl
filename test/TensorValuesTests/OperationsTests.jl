@@ -795,7 +795,7 @@ a2 = TensorValue(1,im,1,im)
 @test norm(a2) ≈ 2
 
 u = VectorValue(3.0,4.0)
-@test noralize(u) ≈ VectorValue(0.6,0.8)
+@test normalize(u) ≈ VectorValue(0.6,0.8)
 
 a = VectorValue(1.0,2.0)
 b = VectorValue(2.0,3.0)
