@@ -16,6 +16,10 @@ using Test
 
 @testset "ReferenceFEInterfaces" begin include("ReferenceFEInterfacesTests.jl") end
 
+@testset "GeometricDecompositions" begin include("GeometricDecompositionTests.jl") end
+
+@testset "MomentBasedReferenceFEs" begin include("MomentBasedReferenceFEsTests.jl") end
+
 @testset "LagrangianRefFEs" begin include("LagrangianRefFEsTests.jl") end
 
 @testset "CLagrangianRefFEs" begin include("CLagrangianRefFEsTests.jl") end
@@ -45,6 +49,14 @@ using Test
 @testset "BezierRefFEs" begin include("BezierRefFEsTests.jl") end
 
 @testset "ModalC0RefFEs" begin include("ModalC0RefFEsTests.jl") end
+
+#@testset "HHJRefFEs" begin include("HHJRefFEsTests.jl") end
+
+@testset "BDMRefFEs" begin include("BDMRefFEsTests.jl") end
+
+@testset "ModalScalarRefFEs" begin include("ModalScalarRefFEsTests.jl") end
+
+@testset "CrouzeixRaviartFEs" begin include("CrouzeixRaviartFEsTests.jl") end
 
 @testset "BubbleRefFEs" begin include("BubbleRefFEsTests.jl") end
 

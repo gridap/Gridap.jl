@@ -13,7 +13,7 @@ using Gridap.Polynomials
 
 D = 2
 order = 1
-f = MonomialBasis{D}(Float64,order)
+f = MonomialBasis(Val(D),Float64,order)
 
 nodes = Point{2,Int}[(0,0),(1,0),(0,1),(1,1)]
 change = inv(evaluate(f,nodes))
@@ -67,6 +67,7 @@ function evaluate!(cache,b::BasisFromChangeOfBasis,x)
   c.array
 end
 
+# Aren't next 4 functions out of date and removable ?
 function return_gradient_cache(b::BasisFromChangeOfBasis,x)
   cb = return_gradient_cache(b.basis,x)
   bx = evaluate_gradient!(cb,b.basis,x)

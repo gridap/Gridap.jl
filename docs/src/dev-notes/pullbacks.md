@@ -1,0 +1,84 @@
+
+# FE basis transformations
+
+## Notation
+
+Consider a reference polytope ``\hat{K}``, mapped to the physical space by a **geometrical map** ``F``, i.e. ``K = F(\hat{K})``. Consider also a linear function space on the reference polytope ``\hat{V}``, and a set of unisolvent degrees of freedom represented by moments in the dual space ``\hat{V}_*``.
+
+Throughout this document, we will use the following notation:
+
+- ``\varphi \in V`` is a **physical field** ``\varphi : K \rightarrow \mathbb{R}^k``. A basis of ``V`` is denoted by ``\Phi = \{\varphi\}``.
+- ``\hat{\varphi} \in \hat{V}`` is a **reference field** ``\hat{\varphi} : \hat{K} \rightarrow \mathbb{R}^k``. A basis of ``\hat{V}`` is denoted by ``\hat{\Phi} = \{\hat{\varphi}\}``.
+- ``\sigma \in V^*`` is a **physical moment** ``\sigma : V \rightarrow \mathbb{R}``. A basis of ``V^*`` is denoted by ``\Sigma = \{\sigma\}``.
+- ``\hat{\sigma} \in \hat{V}_*`` is a **reference moment** ``\hat{\sigma} : \hat{V} \rightarrow \mathbb{R}``. A basis of ``\hat{V}_*`` is denoted by ``\hat{\Sigma} = \{\hat{\sigma}\}``.
+
+## Pullbacks and Pushforwards
+
+We define a **pushforward** map as ``F_* : \hat{V} \rightarrow V``, mapping reference fields to physical fields. Given a pushforward ``F_*``, we define:
+
+- The **pullback** ``F^* : V^* \rightarrow \hat{V}^*``, mapping physical moments to reference moments. Its action on physical dofs is defined in terms of the pushforward map ``F_*`` as ``\hat{\sigma} = F^*(\sigma) := \sigma \circ F_*``.
+- The **inverse pushforward** ``(F_*)^{-1} : V \rightarrow \hat{V}``, mapping physical fields to reference fields.
+- The **inverse pullback** ``(F^*)^{-1} : \hat{V}^* \rightarrow V^*``, mapping reference moments to physical moments. Its action on reference dofs is defined in terms of the inverse pushforward map ``(F_*)^{-1}`` as ``\sigma = (F^*)^{-1}(\hat{\sigma}) := \hat{\sigma} \circ (F_*)^{-1}``.
+
+## Change of basis
+
+In many occasions, we will have that (as a basis)
+
+```math
+\hat{\Sigma} \neq F^*(\Sigma), \quad \text{and} \quad \Phi \neq F_*(\hat{\Phi})
+```
+
+To maintain conformity and proper scaling in these cases, we define cell-dependent invertible changes of basis ``P`` and ``M``, such that
+
+```math
+\hat{\Sigma} = P F^*(\Sigma), \quad \text{and} \quad \Phi = M F_*(\hat{\Phi})
+```
+
+An important result from [1, Theorem 3.1] is that ``P = M^T``.
+
+!!! details
+    [1, Lemma 2.6]: A key ingredient is that given ``M`` a matrix we have ``\Sigma (M \Phi) = \Sigma (\Phi) M^T`` since
+    ```math
+      [\Sigma (M \Phi)]_{ij} = \sigma_i (M_{jk} \varphi_k) = M_{jk} \sigma_i (\varphi_k) = [\Sigma (\Phi) M^T]_{ij}
+    ```
+    where we have used that moments are linear. Then, the result is obtained by
+    imposing that the duality of the DoF and shape-function bases is correctly
+    preserved by the mappings.
+
+We then have the following diagram:
+
+```math
+\hat{V}^* \xleftarrow{P} \hat{V}^* \xleftarrow{F^*} V^* \\
+\hat{V} \xrightarrow{F_*} V \xrightarrow{P^T} V
+```
+
+!!! details
+    The above diagram is well defined, since we have
+    ```math
+    \hat{\Sigma}(\hat{\Phi}) = P F^* (\Sigma)({F_*}^{-1} (P^{-T} \Phi)) = P \Sigma (F_* {F_*}^{-1} P^{-T} \Phi)) = P \Sigma (P^{-T} \Phi) = P \Sigma (\Phi) P^{-1} = Id \\
+    \Sigma(\Phi) = F^{-*}(P^{-1}\hat{\Sigma})(P^T F_*(\hat{\Phi})) = P^{-1} \hat{\Sigma} (F_*^{-1}(P^T F_*(\hat{\Phi}))) = P^{-1} \hat{\Sigma} (P^T \hat{\Phi}) = P^{-1} \hat{\Sigma}(\hat{\Phi}) P = Id
+    ```
+
+From an implementation point of view, it is more natural to build ``P^{-1}``  and then retrieve all other matrices by transposition/inversion.
+
+## Interpolation
+
+In each cell ``K`` and for ``C_b^k(K)`` the space of functions defined on ``K`` with at least ``k`` bounded derivatives, we define the interpolation operator ``I_K : C_b^k(K) \rightarrow V`` as
+
+```math
+I_K(g) = \Sigma(g) \Phi \quad, \quad \Sigma(g) = P^{-1} \hat{\Sigma}(F^{-*}(g))
+```
+
+## Implementation notes
+
+!!! note
+    In [2], Covariant and Contravariant Piola maps preserve exactly (without any sign change) the normal and tangential components of a vector field.
+    I am quite sure that the discrepancy is coming from the fact that the geometrical information in the reference polytope is globally oriented.
+    For instance, the normals ``n`` and ``\hat{n}`` both have the same orientation, i.e ``n = (||\hat{e}||/||e||) (det J) J^{-T} \hat{n}``. Therefore ``\hat{n}`` is not fully local. See [2, Equation 2.11].
+    In our case, we will be including the sign change in the transformation matrices, which will include all cell-and-dof-dependent information.
+
+## References
+
+[1] [Kirby 2017, A general approach to transforming finite elements.](https://arxiv.org/abs/1706.09017)
+
+[2] [Aznaran et al. 2021, Transformations for Piola-mapped elements.](https://arxiv.org/abs/2110.13224)

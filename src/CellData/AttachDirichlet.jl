@@ -1,4 +1,7 @@
 
+"""
+    attach_dirichlet(cellmatvec, cellvals, cellmask=(true,...))
+"""
 function attach_dirichlet(cellmatvec,cellvals,cellmask=Fill(true,length(cellvals)))
   k = AttachDirichletMap()
   lazy_map(k,cellmatvec,cellvals,cellmask)

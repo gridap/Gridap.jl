@@ -151,6 +151,12 @@ end
 struct AppendedTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
   a::A
   b::B
+
+  @doc """
+      AppendedTriangulation(a::Triangulation{Dc,Dp}, b::Triangulation{Dc,Dp})
+
+  Union of two triangulations built on the same [`DiscreteModel`](@ref).
+  """
   function AppendedTriangulation(
     a::Triangulation{Dc,Dp}, b::Triangulation{Dc,Dp}) where {Dc,Dp}
     @assert get_background_model(a) === get_background_model(b)

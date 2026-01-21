@@ -10,48 +10,57 @@ using Gridap.Arrays: evaluate
 
 # mini bubble tests
 et = Float64
+max_order = 2
+
 for p in [SEGMENT, TRI, QUAD, TET, HEX]
-	for T in [et, VectorValue{2, et}, VectorValue{3, et}]
-		reffe = BubbleRefFE(T, p)
-		test_reference_fe(reffe)
+  for T in [et, VectorValue{2, et}, VectorValue{3, et}]
+    reffe = BubbleRefFE(T, p)
+    test_reference_fe(reffe)
 
-		N = num_components(T)
-		@test num_dofs(reffe) == N
-		@test Conformity(reffe) == L2Conformity()
-		@test get_polytope(reffe) == p
+    N = num_components(T)
+    @test num_dofs(reffe) == N
+    @test Conformity(reffe) == L2Conformity()
+    @test get_polytope(reffe) == p
+    @test get_order(reffe) == max_order
 
-		face_dofs = fill(Int[], num_faces(p))
-		face_dofs[end] = 1:N
-		@test get_face_dofs(reffe) == face_dofs
+    face_dofs = fill(Int[], num_faces(p))
+    face_dofs[end] = 1:N
+    @test get_face_dofs(reffe) == face_dofs
 
-		prebasis = get_prebasis(reffe)
-		@test length(prebasis) == N
-		@test prebasis isa LinearCombinationFieldVector
+    prebasis = get_prebasis(reffe)
+    @test length(prebasis) == N
+    @test prebasis isa LinearCombinationFieldVector
 
-		shapefuns = get_shapefuns(reffe)
-		@test length(shapefuns) == N
+    shapefuns = get_shapefuns(reffe)
+    @test length(shapefuns) == N
 
-		dofs = get_dof_basis(reffe)
-		xs = get_face_coordinates(p)
-		bxs = map(mean, xs)
-		bx0 = bxs[end]
-		# dof is at the barycenter of the polytope
-		for dof in dofs
-			@test bx0 == dof.point
-		end
-		# equal to 1 at the barycenter
-		val = evaluate(dofs, shapefuns)
-		@test val == one(val)
+    dofs = get_dof_basis(reffe)
+    xs = get_face_coordinates(p)
+    bxs = map(mean, xs)
+    bx0 = bxs[end]
+    # dof is at the barycenter of the polytope
+    for dof in dofs
+      @test bx0 == dof.point
+    end
+    # equal to 1 at the barycenter
+    val = evaluate(dofs, shapefuns)
+    @test val == one(val)
 
-		# equal to 0 at the barycenters of each d < D faces
-		vals = evaluate(shapefuns, bxs[1:(end-1)])
-		@test all(vals .== zero(T))
-	end
+    # equal to 0 at the barycenters of each d < D faces
+    vals = evaluate(shapefuns, bxs[1:(end-1)])
+    @test all(vals .== zero(T))
+  end
 end
 
 # specific tests for TRI
 p = TRI
 reffe = BubbleRefFE(Float64, p)
+
+face_own_dofs = Vector{Int}[[],[],[],[],[],[],[1]]
+face_dofs = Vector{Int}[[],[],[],[],[],[],[1]]
+@test get_face_own_dofs(reffe) == face_own_dofs
+@test get_face_dofs(reffe) == face_dofs
+
 shapefuns = get_shapefuns(reffe)
 xs = [VectorValue(x, y) for x in 0:0.1:1, y in 0:0.1:1 if x + y <= 1.0]
 foo((x, y)) = 27*x*y*(1-x-y)
@@ -67,5 +76,37 @@ xs = vec([VectorValue(x, y) for x in 0:0.1:1, y in 0:0.1:1])
 foo((x, y)) = 16*x*(1-x)*y*(1-y)
 
 @test all(map(_is_approx, evaluate(shapefuns, xs), foo.(xs)))
+
+# Test API boundaries
+
+# MINI bubble
+
+order = 1
+@test ReferenceFE(SEGMENT, bubble, order) isa GenericRefFE{Bubble}
+@test ReferenceFE(SEGMENT, bubble, Float64, order) isa GenericRefFE{Bubble}
+@test_throws ErrorException ReferenceFE(SEGMENT, bubble, 2)
+
+# Custom terms
+
+coeffs = [ 1.;; ]
+terms = [ CartesianIndex(6,2) ]
+poly_order = 5 # maximum(6-1, 2-1)
+reffe = BubbleRefFE(Float64, p; terms, coeffs)
+@test get_order(reffe) == poly_order
+
+# wrong order with respect to terms
+@test_throws AssertionError ReferenceFE(SEGMENT, bubble, 3; coeffs, terms)
+
+# dimension >0
+@test_throws ErrorException BubbleRefFE(Float64, VERTEX)
+
+# both terms and coeffs needed
+@test_throws ErrorException BubbleRefFE(Float64, p; terms)
+@test_throws ErrorException BubbleRefFE(Float64, p; coeffs)
+
+# wrong number of shapefuns
+coeffs = [ 1. 1.; ]
+terms =  [ CartesianIndex(6,2) ]
+@test_throws ErrorException BubbleRefFE(Float64, p; terms, coeffs)
 
 end

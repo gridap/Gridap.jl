@@ -15,7 +15,7 @@ v = VectorValue(1.0,1.0)
 f = MockField(v)
 fp = v
 ∇fp = zero(TensorValue{2,2,Float64})
-∇∇fp = zero(ThirdOrderTensorValue{2,2,2,Float64,6})
+∇∇fp = zero(ThirdOrderTensorValue{2,2,2,Float64,8})
 test_field(f,p,fp)
 test_field(f,p,fp,grad=∇fp)
 test_field(f,p,fp,grad=∇fp,gradgrad=∇∇fp)
@@ -181,7 +181,7 @@ f = ConstantField(v)
 
 fp = v
 ∇fp = zero(TensorValue{2,2,Float64})
-∇∇fp = zero(ThirdOrderTensorValue{2,2,2,Float64,6})
+∇∇fp = zero(ThirdOrderTensorValue{2,2,2,Float64,8})
 test_field(f,p,fp)
 test_field(f,p,fp,grad=∇fp)
 test_field(f,p,fp,grad=∇fp,gradgrad=∇∇fp)

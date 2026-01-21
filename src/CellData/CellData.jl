@@ -1,7 +1,16 @@
 """
-
-The exported names are
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__; change_link=Dict(
+  :∇  => "gradient",
+  :∫  => "Integrand",
+  :⊗  => "Gridap.TensorValues.outer",
+  :⊙  => "Gridap.TensorValues.inner",
+  :×  => "cross",
+  :⋅  => "dot",
+  :⋅¹ => "dot",
+  :⋅² => "Gridap.TensorValues.double_contraction",
+  :ReferenceDomain  => "DomainStyle",
+  :PhysicalDomain   => "DomainStyle"
+)))
 """
 module CellData
 
@@ -88,7 +97,7 @@ export update_state!
 
 export DiracDelta
 
-export SkeletonCellFieldPair 
+export SkeletonCellFieldPair
 
 include("CellDataInterface.jl")
 

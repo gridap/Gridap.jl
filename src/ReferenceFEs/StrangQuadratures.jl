@@ -1,4 +1,18 @@
+
+"""
+    struct Strang <: QuadratureName
+
+Strang quadrature rule for simplices.
+
+# Constructor:
+
+    Quadrature(p::Polytope,strang,degree::Integer;T::Type{<:AbstractFloat}=Float64)
+"""
 struct Strang <: QuadratureName end
+
+"""
+    const strang = Strang()
+"""
 const strang = Strang()
 
 # Partially adapted from

@@ -1,5 +1,20 @@
 
+"""
+    struct TensorProduct <: QuadratureName
+
+Tensor product quadrature rule for n-cubes, obtained as the
+tensor product of 1d Gauss-Legendre quadratures.
+
+# Constructor:
+
+    Quadrature(p::Polytope{D}, tensor_product, degrees::Integer; T::Type=Float64)
+    Quadrature(p::Polytope{D}, tensor_product, degrees::NTuple{D,Integer}; T::Type=Float64)
+"""
 struct TensorProduct <: QuadratureName end
+
+"""
+    const tensor_product = TensorProduct()
+"""
 const tensor_product = TensorProduct()
 
 function Quadrature(
@@ -27,6 +42,23 @@ function Quadrature(
   Quadrature(p, name, degrees; T)
 end
 
+function Quadrature(
+  p::Polytope,::TensorProduct,quadratures::Vector{<:Quadrature{1}}; T::Type{<:AbstractFloat}=Float64
+)
+  @assert is_n_cube(p) "Tensor product quadrature rule only for n-cubes."
+  D = num_dims(p)
+  @assert length(quadratures) == D
+
+  quads = map(
+    q -> (map(xi -> xi[1], get_coordinates(q)), get_weights(q)),
+    quadratures
+  )
+  coords, weights = _tensor_product(quads, T)
+
+  names_1d = join(map(get_name, quadratures)," \n - ")
+  GenericQuadrature(coords,weights,"Tensor product of 1d quadratures given by: \n "*names_1d)
+end
+
 function maxdegree(p::Polytope, ::TensorProduct)
   is_n_cube(p) ? Inf : 0
 end
@@ -45,3 +77,4 @@ function _tensor_product_legendre(degrees; T::Type{<:AbstractFloat}=Float64)
   coords, weights = _tensor_product(quads, T)
   coords, weights
 end
+

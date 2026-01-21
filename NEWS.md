@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## Moment-based changes
 
 ### Added
 
@@ -20,11 +20,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `maxdegree(p::Polytope, name::QuadratureName)` to the interface of `Quadrature`.
   - Enriched the tests for quadratures by checking `tensor_product`, `duffy`, and `witherden_vincent` against exact integrals for monomials on the corresponding polytopes (tri/tet, quad/hex, wedge and pyramid, respectively). Other quadrature rules are compared against these tested ones.
   - Added `get_measure(p::Polytope, vertex_coords)` and `get_diameter(p::Polytope, vertex_coords)` to the interface of `Polytope`.
+- The default quadrature for simplices is now `witherden_vincent` until available, then `xiao_gimbuttas` until available, then `duffy`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
 
-### Changed
+- Documentation and refactoring of `Gridap.Polynomials`. Since PR[#1072](https://github.com/gridap/Gridap.jl/pull/#1072).
+- Two new families of polynomial bases in addition to `Monomial`, `Legendre` (former `Jacobi`) and `ModalC0`: `Chebyshev` and `Bernstein`
+- `MonomialBasis` and `Q[Curl]GradMonomialBasis` have been generalized to `Legendre`, `Chebyshev` and `Bernstein` using the new `CartProdPolyBasis` and `CompWiseTensorPolyBasis` respectively.
+- `PCurlGradMonomialBasis` has been generalized to `Legendre` and `Chebyshev` using the new `RaviartThomasPolyBasis`.
+- New aliases and high level constructor for `CartProdPolyBasis` (former MonomialBasis): `MonomialBasis`, `LegendreBasis`, `ChebyshevBasis` and `BernsteinBasis`.
+- Generalized gradient and hessian of all `CartProdPolyBasis` to any tensor type (even with dependant components), as long as the derivative tensor is a tensor of at most third order. Since PR[#1184](https://github.com/gridap/Gridap.jl/pull/#1184).
+- New high level factory `FEEC_poly_basis` for the bases for the scalar Lagrange, Nedelec, Raviart-Thomas, BDM spaces, and all other spaces of the Periodic Table of the Finite Elements. (for Serendipity, only scalar is supported). For example:
+  - Nedelec on simplex `FEEC_poly_basis(Val(D),Float64,order+1,  1,:P⁻)`
+  - Nedelec on n-cubes `FEEC_poly_basis(Val(D),Float64,order+1,  1,:Q⁻)`
+  - Raviart on simplex `FEEC_poly_basis(Val(D),Float64,order+1,D-1,:P⁻; rotate_90=(D==2))`
+  - Raviart on n-cubes `FEEC_poly_basis(Val(D),Float64,order+1,D-1,:Q⁻; rotate_90=(D==2))`
+  - BDM     on simplex `FEEC_poly_basis(Val(D),Float64,order+1,D-1,:P ; rotate_90=(D==2))`
+- Added `BernsteinBasisOnSimplex` that implements Bernstein polynomials in barycentric coordinates, since PR[#1104](https://github.com/gridap/Gridap.jl/pull/#1104).
+- More documentation of `Gridap.ReferenceFEs`. Since PR[#1109](https://github.com/gridap/Gridap.jl/pull/#1109).
+
+- Some refactoring of `Gridap.TensorValues` to simplify maintenance and new implementations. Since PR[#1115](https://github.com/gridap/Gridap.jl/pull/#1115).
+  - Added `SkewSymTensorValue`: a new `<:MultiValue` 2nd order tensor type such that `transpose(s)==-s`.
+  - Added `HighOrderTensorValue`: a new `<:MultiValue` tensors of order >=3, with all components independent. Since PR[#1193](https://github.com/gridap/Gridap.jl/pull/#1193).
+  - `congruent_prod`: new operation for 2nd order tensors: `a,b -> bᵀ⋅a⋅b` preserving symmetry of `a`.
+  - `component_basis`, `representatives_of_componentbasis_dual`, `representatives_of_basis_dual`: new APIs for `::MultiValue`s yielding bases of the vector space spanned by the independent components of a tensor type (1st method) and its dual space (2nd method), or the dual to a basis (3rd method).
+  - `contracted_product` generalizes `outer`, `dot`, `double_contraction` and `inner` for tensors of arbitrary order, refactoring these operations for tensors with all components independent. Since PR[#1193](https://github.com/gridap/Gridap.jl/pull/#1193).
+
+- Refactoring of moment-based ReferenceFEs, those using face-integral linear forms for DoFs, including `RaviartThomas`, `Nedelec`, `BDM` and `CrouzeixRaviart`. Since PR[#1048](https://github.com/gridap/Gridap.jl/pull/#1048).
+  - The mid-level `MomentBasedRefFE` factory function creates moment based refFEs
+  - The low-level `FaceMeasure` implements the numerical integration of a bilinear integrand over the faces of a polytope.
+  - The low-level `MomentBasedDofBasis` implements a discretized basis of moment DoF. It supports automatic pre-composition of the field with a differential operator. Since PR[#1184](https://github.com/gridap/Gridap.jl/pull/#1184).
+- Implemented moment-based scalar (`H1` conform) elements for scalar elements `lagrangian` and `serendipity` under the names `modal_lagrangian` and `modal_serendipity`. They are the default elements when calling for `k`=0-forms in the generic FEEC reference FE constructor (`P⁻`/`:P`/`:Q⁻` => `lagrangian`, `:S`=> `serendipity`), use the keyword `nodal=true` to opt-in nodal DOF based counterpart. Since PR[#1173](https://github.com/gridap/Gridap.jl/pull/1173).
+- Unified the high-level constructors of ReferenceFEs
+- New high level `ReferenceFE`s constructor using Arnold et al FEEC notations (Periodic Table of the Finite Elements): `ReferenceFE(F::Symbol, r, k, [, T::Type]; kwargs...)` with `F` the element family, `r` polynomial order and `k` the form order.
+- Added `poly_type`, `mom_poly_type` and `change_dof` keyword arguments to many low and high-level reference FE constructors, they enable to control the polynomial (pre-)bases choice for the approximation space and moment test-spaces of the reference elements (See `ReferenceFEs` doc. page). Since PR[#1173](https://github.com/gridap/Gridap.jl/pull/1173).
+- Documented the implemented ReferenceFEs with available order and other information in the `ReferenceFEs` section of the doc.
+- Implemented the Nedelec reference elements of the second kind `nedelec2`.
+- API for Geometric decomposition of polynomial bases, implemented for simplices and n-cubes. Since PR[#1144](https://github.com/gridap/Gridap.jl/pull/1144).
+  The geometric decomposition API consist in the methods `has_geometric_decomposition`, `get_face_own_funs` and `get_facet_flux_sign_flip`.
 
 - Added specific tags on dual numbers to allow for nested AD without perturbation confusion. Since PR[#1181](https://github.com/gridap/Gridap.jl/pull/1181).
-- The default quadrature for simplices is now `witherden_vincent` until available, then `xiao_gimbuttas` until available, then `duffy`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+
 - Updated the documentation of `Polytope{D}`'s type parameters `D`, it is correctly described as the polytope's dimension (instead of embedding dimension). Since PR[#1194](https://github.com/gridap/Gridap.jl/pull/1194).
 - Added compatibilty for `JSON.jl` v1+ and `JDL2.jl` v0.6+. Since PR[1198](https://github.com/gridap/Gridap.jl/pull/1198).
 
@@ -32,6 +66,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed issue [#1188](https://github.com/gridap/Gridap.jl/issues/1188). Fix one() function for non-square tensors.
 - Fixed `strang` quadrature of order 4 for triangles. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+- Fixed evaluation of `LinearCombinationDofVector` on vector of `<:Field`s (only impacts ModalC0 FEs and future moment based reffes)., since PR[#1105](https://github.com/gridap/Gridap.jl/pull/#1105).
+- Minor `MuliValue` bugfixes for `isless` and `<=` with scalars.
+- Fixed `get_face_dofs(::ReferenceFEs)` on many moment based elements, it sometimes returned `face_own_dofs`.
+
+### Changed
+
+- Added specific tags on dual numbers to allow for nested AD without perturbation confusion. Since PR[#1181](https://github.com/gridap/Gridap.jl/pull/1181).
+- The default quadrature for simplices is now `witherden_vincent` until available, then `xiao_gimbuttas` until available, then `duffy`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+- Existing Jacobi polynomial bases/spaces were renamed to Legendre (which they were).
+- `Monomial` is now subtype of the new abstract type`Polynomial <: Field`
+- `MonomialBasis` is now an alias for `CartProdPolyBasis{...,Monomial}`
+- All polynomial bases are now subtypes of the new abstract type `PolynomialBasis <: AbstractVector{<:Polynomial}`
+- `get_order`, now always returns the maximum order of the basis, the correspondence with `ReferenceFEs` constructors is summarized in the documentation of the module.
+- `NedelecPreBasisOnSimplex` is renamed `NedelecPolyBasisOnSimplex`
+- `JacobiPolynomial` is renamed `Legendre` and subtypes `Polynomial`
+- `JacobiPolynomialBasis` is renamed `LegendreBasis`
+- `ModalC0BasisFunction` is renamed `ModalC0` and subtypes `Polynomial`
+- On simplices, the default polynomial bases of BDM, Nédélec and Raviart-Thomas RefFEs have changed for barycentric polynomial bases which lead to better conditioned systems for higher order.
+- Similarly, on n-cubes, the default polynomial bases of BDM, Nédélec and Raviart-Thomas RefFEs have changed for Legendre (tensor-product) polynomial bases instead of Monomials.
+- Changed `Base.==` for `ReferenceFE`s, and implemented it for `LinearCombinationFieldVector` and `LinearCombinationDofVector`. The implementation now uses AutoHashEquals.jl, so RefFEs are now only equal if they have the same prebasis, shapefun and dofs.
+- Monomial (pre)bases have been replaced with Bernstein / Barycentric bases for non-scalar finite elements on simplices.
+- `ThirdOrderTensorValue{D1,D2,D3,T,L}` has been redefined as alias to `HighOrderTensorValue{Tuple{D1,D2,D3},T,3,L}`.
+
+### Deprecated
+
+- `num_terms(f::AbstractVector{<:Field})` in favor of `length(f::PolynomialBasis)`
+- `MonomialBasis{D}(args...)` in favor of `MonomialBasis(Val(D), args...)`
+- `[P/Q][Curl]GradMonomialBasis{D}(args...)` in favor of `FEEC_poly_basis`
+- `NedelecPreBasisOnSimplex{D}(order)` in favor of `NedelecPolyBasisOnSimplex(Val(D), Float64, order)`
+- `JacobiPolynomialBasis{D}(args...)` in favor of `LegendreBasis(Val(D), args...)`
+- `return_type(::PolynomialBasis)` in favor of `value_type(::PolynomialBasis)`
 
 ## [0.19.6] - 2025-10-17
 

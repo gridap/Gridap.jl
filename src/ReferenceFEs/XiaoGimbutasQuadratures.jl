@@ -1,14 +1,29 @@
 
-struct XiaoGimbutas <: QuadratureName end
-const xiao_gimbutas = XiaoGimbutas()
+"""
+    struct XiaoGimbutas <: QuadratureName
+
+Xiao-Gimbutas symmetric quadrature rule for simplices.
+
+# Constructor:
+
+    Quadrature(p::Polytope, xiao_gimbutas, degree::Integer; T::Type{<:AbstractFloat}=Float64)
 
 # Reference:
-#  `A numerical algorithm for the construction of efficient quadrature rules in two and higher dimensions`,
-#   Hong Xiao, Zydrunas Gimbutas, Computers & Mathematics with Applications, (2010)
-#   DOI : https://doi.org/10.1016/j.camwa.2009.10.027
-# Adapted from:
-#    https://github.com/FEniCS/basix/blob/main/cpp/basix/quadrature.cpp
-#    https://www.cims.nyu.edu/cmcl/quadratures/quadratures.html (appendix to the original paper, access via web archive)
+
+  `A numerical algorithm for the construction of efficient quadrature rules in two and higher dimensions`,
+   Hong Xiao, Zydrunas Gimbutas, Computers & Mathematics with Applications, (2010),
+   DOI : https://doi.org/10.1016/j.camwa.2009.10.027
+
+Adapted from: https://github.com/FEniCS/basix/blob/main/cpp/basix/quadrature.cpp,
+              https://www.cims.nyu.edu/cmcl/quadratures/quadratures.html (appendix to the original paper, access via web archive)
+"""
+struct XiaoGimbutas <: QuadratureName end
+
+"""
+    const xiao_gimbutas = XiaoGimbutas()
+"""
+const xiao_gimbutas = XiaoGimbutas()
+
 function Quadrature(
   p::Polytope, ::XiaoGimbutas, degree::Integer; T::Type{<:AbstractFloat}=Float64
 )
@@ -22,11 +37,11 @@ function Quadrature(
     wx = _xiaogimbutas_quad_hex(degree; T)
   else
     msg = """\n
-  `xiao_gimbutas` quadrature rule only available for triangles and tetrahedra,
-  squares and cubes.
-  Use `duffy` for other simplices and `tensor_product` for other n-cubes.
-  """
-    error(msg)
+    `xiao_gimbutas` quadrature rule only available for triangles and tetrahedra,
+    squares and cubes.
+    Use `duffy` for other simplices and `tensor_product` for other n-cubes.
+    """
+    @unreachable msg
   end
   coord, weights = _weightcoords_to_coord_weights(p, wx, T)
   GenericQuadrature(coord, weights, "Xiao-Gimbutas - $(string(p)) - degree $(degree)")

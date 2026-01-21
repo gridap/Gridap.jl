@@ -237,10 +237,18 @@ function Polynomials.get_order(tableau::IMEXTableau)
   tableau.imex_order
 end
 
+"""
+    get_imex_tableaus(tableau::IMEXTableau)
+
+Return the pair of implicit and explicit tableaus of the given IMEX tableau.
+"""
 function get_imex_tableaus(tableau::IMEXTableau)
   (tableau.im_tableau, tableau.ex_tableau)
 end
 
+"""
+    is_padded(tableau::IMEXTableau) -> Bool
+"""
 function is_padded(tableau::IMEXTableau)
   tableau.is_padded
 end
@@ -284,6 +292,9 @@ include("TableausDIM.jl")
 
 include("TableausIMEX.jl")
 
+"""
+List of available Butcher tableaus.
+"""
 const available_tableaus = [
   :EXRK_Euler_1_1,
   :EXRK_Midpoint_2_2,
@@ -324,6 +335,9 @@ const available_tableaus = [
   :SDIRK_4_3,
 ]
 
+"""
+List of available tableaus for IMEX schemes.
+"""
 const available_imex_tableaus = [
   :IMEXRK_1_1_1,
   :IMEXRK_1_2_1,

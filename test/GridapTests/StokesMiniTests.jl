@@ -27,7 +27,7 @@ add_tag_from_tags!(labels, "dirichlet", [1, 2, 5])
 add_tag_from_tags!(labels, "neumann", [3, 4, 6, 7, 8])
 
 reffe_u = ReferenceFE(lagrangian, VectorValue{2, Float64}, 1)
-reffe_b = ReferenceFE(bubble, VectorValue{2, Float64})
+reffe_b = ReferenceFE(bubble, VectorValue{2, Float64}, 1)
 reffe_p = ReferenceFE(lagrangian, Float64, 1)
 
 V = TestFESpace(model, reffe_u, labels = labels, dirichlet_tags = "dirichlet", conformity = :H1)

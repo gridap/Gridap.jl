@@ -8,7 +8,7 @@ using Test
 
 # Testing the default interface for field arrays
 
-function result(f,x) 
+function result(f,x)
   T = return_type(testitem(f),testitem(x))
   r = zeros(T,size(x)...,size(f)...)
   for j in CartesianIndices(f)
@@ -29,7 +29,7 @@ f = MockField.(v)
 
 fp = v
 ∇fp = fill(zero(TensorValue{2,2,Float64}),length(v))
-∇∇fp = fill(zero(ThirdOrderTensorValue{2,2,2,Float64,6}),length(v))
+∇∇fp = fill(zero(ThirdOrderTensorValue{2,2,2,Float64}),length(v))
 test_field_array(f,p,fp)
 test_field_array(f,p,fp,grad=∇fp)
 test_field_array(f,p,fp,grad=∇fp,gradgrad=∇∇fp)
@@ -90,7 +90,7 @@ f = MockField.(v)
 
 fp = v
 ∇fp = fill(zero(TensorValue{2,2,Float64}),length(v))
-∇∇fp = fill(zero(ThirdOrderTensorValue{2,2,2,Float64,6}),length(v))
+∇∇fp = fill(zero(ThirdOrderTensorValue{2,2,2,Float64}),length(v))
 test_field_array(f,p,fp)
 test_field_array(f,p,fp,grad=∇fp)
 test_field_array(f,p,fp,grad=∇fp,gradgrad=∇∇fp)
@@ -110,7 +110,7 @@ f = MockFieldArray(v)
 
 fp = v
 ∇fp = fill(zero(TensorValue{2,2,Float64}),length(v))
-∇∇fp = fill(zero(ThirdOrderTensorValue{2,2,2,Float64,6}),length(v))
+∇∇fp = fill(zero(ThirdOrderTensorValue{2,2,2,Float64}),length(v))
 test_field_array(f,p,fp)
 test_field_array(f,p,fp,grad=∇fp)
 

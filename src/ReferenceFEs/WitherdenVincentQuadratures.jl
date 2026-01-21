@@ -1,10 +1,26 @@
-struct WitherdenVincent <: QuadratureName end
-const witherden_vincent = WitherdenVincent()
+
+"""
+    struct WitherdenVincent <: QuadratureName
+
+The Witherden-Vincent symmetric quadrature rule. Available for triangles,
+tetrahedra, squares, cubes, wedges and pyramids.
+
+# Constructor:
+
+    Quadrature(p::Polytope, witherden_vincent , degree::Integer; T::Type{<:AbstractFloat}=Float64)
 
 # Reference:
-# `On the identification of symmetric quadrature rules for finite element methods`
-# F.D. Witherden, P.E. Vincent, Computers & Mathematics with Applications (2015)
-# DOI: https://doi.org/10.1016/j.camwa.2015.03.017
+
+  `On the identification of symmetric quadrature rules for finite element methods`
+  F.D. Witherden, P.E. Vincent, Computers & Mathematics with Applications (2015)
+  DOI: https://doi.org/10.1016/j.camwa.2015.03.017
+"""
+struct WitherdenVincent <: QuadratureName end
+
+"""
+    const witherden_vincent = WitherdenVincent()
+"""
+const witherden_vincent = WitherdenVincent()
 
 function Quadrature(
   p::Polytope, ::WitherdenVincent, degree::Integer; T::Type{<:AbstractFloat}=Float64

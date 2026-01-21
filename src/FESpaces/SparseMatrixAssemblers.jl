@@ -1,4 +1,5 @@
 """
+    abstract type SparseMatrixAssembler <: Assembler
 """
 abstract type SparseMatrixAssembler <: Assembler end
 
@@ -14,6 +15,8 @@ function get_vector_builder(a::SparseMatrixAssembler)
   @abstractmethod
 end
 
+"""
+"""
 get_matrix_type(a::SparseMatrixAssembler) = get_array_type(get_matrix_builder(a))
 get_vector_type(a::SparseMatrixAssembler) = get_array_type(get_vector_builder(a))
 
@@ -102,12 +105,17 @@ function assemble_matrix_and_vector(a::SparseMatrixAssembler, data)
   create_from_nz(m2,v2)
 end
 
+"""
+"""
 function test_sparse_matrix_assembler(a::SparseMatrixAssembler,matdata,vecdata,data)
   test_assembler(a,matdata,vecdata,data)
   _ = get_matrix_builder(a)
   _ = get_vector_builder(a)
 end
 
+"""
+    struct GenericSparseMatrixAssembler <: SparseMatrixAssembler
+"""
 struct GenericSparseMatrixAssembler <: SparseMatrixAssembler
   matrix_builder
   vector_builder
@@ -140,6 +148,9 @@ function SparseMatrixAssembler(mat,trial::FESpace,test::FESpace)
 end
 
 """
+    SparseMatrixAssembler(trial::FESpace,test::FESpace)
+
+Returns a [`GenericSparseMatrixAssembler`](@ref).
 """
 function SparseMatrixAssembler(trial::FESpace,test::FESpace)
   T = get_dof_value_type(trial)
@@ -158,6 +169,8 @@ get_vector_builder(a::GenericSparseMatrixAssembler) = a.vector_builder
 
 get_assembly_strategy(a::GenericSparseMatrixAssembler) = a.strategy
 
+"""
+"""
 function symbolic_loop_matrix!(A,a::SparseMatrixAssembler,matdata)
   get_mat(a::Tuple) = a[1]
   get_mat(a) = a
@@ -196,6 +209,8 @@ end
   end
 end
 
+"""
+"""
 function numeric_loop_matrix!(A,a::SparseMatrixAssembler,matdata)
   strategy = get_assembly_strategy(a)
   for (cellmat,_cellidsrows,_cellidscols) in zip(matdata...)
@@ -232,6 +247,8 @@ end
   end
 end
 
+"""
+"""
 function symbolic_loop_vector!(b,a::SparseMatrixAssembler,vecdata)
   get_vec(a::Tuple) = a[1]
   get_vec(a) = a
@@ -265,6 +282,8 @@ end
   end
 end
 
+"""
+"""
 function numeric_loop_vector!(b,a::SparseMatrixAssembler,vecdata)
   strategy = get_assembly_strategy(a)
   for (cellvec, _cellids) in zip(vecdata...)
@@ -296,6 +315,8 @@ end
   end
 end
 
+"""
+"""
 function symbolic_loop_matrix_and_vector!(A,b,a::SparseMatrixAssembler,data)
   if LoopStyle(A) == DoNotLoop()
     return A, b
@@ -324,7 +345,7 @@ function symbolic_loop_matrix_and_vector!(A,b,a::SparseMatrixAssembler,data)
   symbolic_loop_matrix!(A,a,matdata)
   symbolic_loop_vector!(b,a,vecdata)
   A, b
-end 
+end
 
 @noinline function _symbolic_loop_matvec!(
   A, b, caches, cell_rows, cell_cols, mat1, vec1, cells = eachindex(cell_rows)
@@ -339,6 +360,8 @@ end
   end
 end
 
+"""
+"""
 function numeric_loop_matrix_and_vector!(A,b,a::SparseMatrixAssembler,data)
   strategy = get_assembly_strategy(a)
   matvecdata, matdata, vecdata = data

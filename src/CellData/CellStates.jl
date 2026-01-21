@@ -78,6 +78,9 @@ function CellState(v::Number,a)
   CellState(v,points)
 end
 
+"""
+    update_state!(updater::Function, f::CellField...)
+"""
 function update_state!(updater::Function,f::CellField...)
   ids = findall(map(i->isa(i,CellState),f))
   @assert length(ids) > 0 """\n

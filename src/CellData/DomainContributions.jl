@@ -1,5 +1,8 @@
 
 """
+    struct DomainContribution <: GridapType
+
+Struct to gather contributions from one or several domain(s) ([`Triangulation`](@ref)s).
 """
 struct DomainContribution <: GridapType
   dict::OrderedDict{Triangulation,AbstractArray} # ordered so that iteration is deterministic (#1002)
@@ -7,12 +10,23 @@ end
 
 DomainContribution() = DomainContribution(OrderedDict{Triangulation,AbstractArray}())
 
+"""
+    num_domains(a::DomainContribution)
+"""
 num_domains(a::DomainContribution) = length(a.dict)
 
+"""
+    get_domains(a::DomainContribution)
+"""
 get_domains(a::DomainContribution) = keys(a.dict)
 
 Base.isempty(a::DomainContribution) = iszero(length(a.dict))
 
+"""
+    get_contribution(a::DomainContribution, trian::Triangulation)
+
+Returns the array of contributions on `trian` in `a`.
+"""
 function get_contribution(a::DomainContribution,trian::Triangulation)
   if haskey(a.dict,trian)
      return a.dict[trian]
@@ -25,6 +39,9 @@ end
 
 Base.getindex(a::DomainContribution,trian::Triangulation) = get_contribution(a,trian)
 
+"""
+    add_contribution!(a::DomainContribution, trian::Triangulation, b::AbstractArray, op=+)
+"""
 function add_contribution!(a::DomainContribution,trian::Triangulation,b::AbstractArray,op=+)
 
   S = eltype(b)
@@ -129,6 +146,11 @@ function get_array(a::DomainContribution)
   a.dict[first(keys(a.dict))]
 end
 
+"""
+    abstract type Measure <: GridapType
+
+For measures to integrate against, see [`integrate`](@ref).
+"""
 abstract type Measure <: GridapType end
 
 function integrate(f,b::Measure)
@@ -174,7 +196,7 @@ end
       quad   :: CellQuadrature
     end
 
-  Measure such that the integration and target triangulations are different. 
+  Measure such that the integration and target triangulations are different.
 
   - ttrian: Target triangulation, where the domain contribution lives.
   - itrian: Integration triangulation, where the integration takes place.

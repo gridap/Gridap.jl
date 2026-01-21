@@ -115,11 +115,17 @@ function CellField(f,trian::Triangulation)
   CellField(f,trian,ReferenceDomain())
 end
 
+"""
+    get_normal_vector(trian::Triangulation)
+"""
 function get_normal_vector(trian::Triangulation)
   cell_normal = get_facet_normal(trian)
   get_normal_vector(trian, cell_normal)
 end
 
+"""
+    get_tangent_vector(trian::Triangulation)
+"""
 function get_tangent_vector(trian::Triangulation)
   cell_tangent = get_edge_tangent(trian)
   get_tangent_vector(trian, cell_tangent)
@@ -624,9 +630,24 @@ function evaluate!(cache,k::Operation,a::SkeletonPair{<:CellField},b::SkeletonPa
   SkeletonPair(plus,minus)
 end
 
+"""
+    jump(a::CellField)
+    jump(a::SkeletonPair{<:CellField})
+
+Jump operator at interior facets of the supporting `Triangulation`, defined by
+`jump`(`a` n) = ⟦`a` n⟧ = `a`⁺n⁺ + `a`⁻n⁻, where n is an oriented normal field
+to the interior facets, n⁺ = -n⁻ are the normal pointing into the element on the +
+and - side of the facets, and `a`⁺/`a`⁻ are the restrictions of `a` to each
+element respectively.
+"""
 jump(a::CellField) = a.⁺ - a.⁻
 jump(a::SkeletonPair{<:CellField}) = a.⁺ + a.⁻ # a.⁻ results from multiplying by n.⁻. Thus we need to sum.
 
+"""
+    mean(a::CellField)
+
+Similar to [`jump`](@ref), but for the mean operator `a` ⟶ (`a`⁺ + `a`⁻)/2.
+"""
 mean(a::CellField) = Operation(_mean)(a.⁺,a.⁻)
 _mean(x,y) = 0.5*x + 0.5*y
 

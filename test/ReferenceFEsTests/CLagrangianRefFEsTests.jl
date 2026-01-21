@@ -8,23 +8,25 @@ using Gridap.Polynomials
 using Gridap.ReferenceFEs
 using JSON
 
+using Gridap.ReferenceFEs: monomial_basis
+
 orders = (2,3)
-b = MonomialBasis(Float64,QUAD,orders)
+b = monomial_basis(Float64,QUAD,orders)
 r = [(0,0), (1,0), (2,0), (0,1), (1,1), (2,1), (0,2), (1,2), (2,2), (0,3), (1,3), (2,3)]
 @test get_exponents(b) == r
 
 orders = (1,1,2)
-b = MonomialBasis(Float64,WEDGE,orders)
+b = monomial_basis(Float64,WEDGE,orders)
 r = [(0,0,0), (1,0,0), (0,1,0), (0,0,1), (1,0,1), (0,1,1), (0,0,2), (1,0,2), (0,1,2)]
 @test get_exponents(b) == r
 
 orders = (1,1,1)
-b = MonomialBasis(Float64,PYRAMID,orders)
+b = monomial_basis(Float64,PYRAMID,orders)
 r = [(0,0,0), (1,0,0), (0,1,0), (1,1, 0), (0,0,1)]
 @test get_exponents(b) == r
 
 orders = (1,1,1)
-b = MonomialBasis(Float64,TET,orders)
+b = monomial_basis(Float64,TET,orders)
 r = [(0,0,0), (1,0,0), (0,1,0), (0,0,1)]
 @test get_exponents(b) == r
 
@@ -71,7 +73,7 @@ dofs = LagrangianDofBasis(SymTensorValue{2,Int},VERTEX,())
 dofs = LagrangianDofBasis(SymTracelessTensorValue{2,Int},VERTEX,())
 @test dofs.node_and_comp_to_dof == SymTracelessTensorValue{2,Int}[(1,2)]
 
-b = MonomialBasis(VectorValue{2,Int},VERTEX,())
+b = monomial_basis(VectorValue{2,Int},VERTEX,())
 @test length(b) == 2
 @test evaluate(b,Point{0,Int}[(),()]) == VectorValue{2,Int}[(1, 0) (0, 1); (1, 0) (0, 1)]
 
@@ -84,6 +86,7 @@ test_lagrangian_reference_fe(reffe)
 
 reffe = LagrangianRefFE(VectorValue{2,Float64},SEGMENT,(2,))
 @test get_face_own_dofs(reffe) == [[1, 4], [2, 5], [3, 6]]
+@test get_face_dofs(reffe) == [[1, 4], [2, 5], [1, 4, 2, 5, 3, 6]]
 test_lagrangian_reference_fe(reffe)
 
 reffe = LagrangianRefFE(VectorValue{2,Float64},TRI,3)
@@ -126,6 +129,18 @@ reffe = LagrangianRefFE(VectorValue{2,Float64},QUAD,2)
 d = 1
 @test get_face_own_dofs(reffe,d) == [[5, 14], [6, 15], [7, 16], [8, 17]]
 @test get_face_own_nodes(reffe,d) == [[5], [6], [7], [8]]
+
+# Same own dofs/nodes as with VectorValue, but testing othe polynomial
+V = SymTracelessTensorValue{2,Float64}
+reffe = LagrangianRefFE(V,QUAD,2; poly_type=Legendre)
+test_reference_fe(reffe)
+@test get_face_own_dofs(reffe,d) == [[5, 14], [6, 15], [7, 16], [8, 17]]
+@test get_face_own_nodes(reffe,d) == [[5], [6], [7], [8]]
+
+V = SymTracelessTensorValue{2,Float64}
+reffe = LagrangianRefFE(V,TRI,3; poly_type=Bernstein)
+test_reference_fe(reffe)
+@test get_face_own_dofs(reffe) == [[1, 11], [2, 12], [3, 13], [4, 5, 14, 15], [6, 7, 16, 17], [8, 9, 18, 19], [10, 20]]
 
 # 0-order degenerated case
 
@@ -219,5 +234,37 @@ f = joinpath(d,"reffe.jld2")
 
 to_jld2_file(reffe,f)
 @test reffe == from_jld2_file(typeof(reffe),f)
+
+# Factory function
+nodal = true
+D = 2
+# o = 0
+reffe = ReferenceFE(TRI,lagrangian,0)
+@test reffe == ReferenceFE(TRI,:P⁻, 1,D; nodal) # r=o-1, k=1
+reffe = ReferenceFE(QUAD,lagrangian,0)
+@test reffe == ReferenceFE(QUAD,:Q⁻,1,D; nodal) # r=o+1, k=1
+
+reffe = ReferenceFE(TRI,lagrangian,0; poly_type=Bernstein)
+@test reffe == ReferenceFE(TRI,:P⁻, 1,D; nodal, poly_type=Bernstein) # r=o-1, k=1
+reffe = ReferenceFE(QUAD,lagrangian,0; poly_type=Legendre)
+@test reffe == ReferenceFE(QUAD,:Q⁻,1,D; nodal, poly_type=Legendre) # r=o+1, k=1
+
+V = SymTensorValue{2,Float64}
+reffe = ReferenceFE(TRI, lagrangian,V,0; poly_type=Bernstein)
+@test reffe == ReferenceFE(TRI,:P⁻, 1,D,V; nodal, poly_type=Bernstein) # r=o-1, k=1
+reffe = ReferenceFE(QUAD,lagrangian,V,0; poly_type=Legendre)
+@test reffe == ReferenceFE(QUAD,:Q⁻,1,D,V; nodal, poly_type=Legendre) # r=o+1, k=1
+
+@test_throws "Monomial" ReferenceFE(WEDGE,lagrangian,0; poly_type=Legendre)
+
+# o = 1
+reffe = ReferenceFE(TRI,lagrangian,1)
+@test reffe == ReferenceFE(TRI,:P⁻,1,0; nodal)  # r=o,   k=0
+@test reffe == ReferenceFE(TRI,:P⁻,2,D; nodal)  # r=o+1, k=D
+@test reffe == ReferenceFE(TRI,:P, 1,0; nodal)  # r=o,   k=0
+@test reffe == ReferenceFE(TRI,:P, 1,D; nodal)  # r=o,   k=D
+reffe = ReferenceFE(QUAD,lagrangian,1)
+@test reffe == ReferenceFE(QUAD,:Q⁻, 1,0; nodal)# r=o,   k=0
+@test reffe == ReferenceFE(QUAD,:Q⁻, 2,D; nodal)# r=o+1, k=D
 
 end # module

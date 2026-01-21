@@ -1,7 +1,6 @@
 """
-The exported names in this module are:
 
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__))
 """
 module Io
 

@@ -8,14 +8,14 @@ using Gridap.Fields
 using Gridap.Polynomials
 
 dualise(x::Number,N) = ForwardDiff.Dual(x,ForwardDiff.Partials(ntuple(i -> 0.0, N)))
-dualise(x::Point,N) = Point(dualise.(x.data,N))  
+dualise(x::Point,N) = Point(dualise.(x.data,N))
 
 x = [Point(0.,0.),Point(1.,0.)]
 xd = dualise.(x,2)
 
 order = 1
 V = Float64
-b = MonomialBasis{2}(V,order)
+b = MonomialBasis(Val(2),V,order)
 evaluate(b,xd)
 
 g = Broadcasting(∇)(b)

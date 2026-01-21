@@ -294,3 +294,8 @@ function test_array(
   end
   true
 end
+
+"""
+Alias for `Base.sum`.
+"""
+const ∑ = sum

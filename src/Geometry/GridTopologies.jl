@@ -412,10 +412,10 @@ end
 
 """
     get_isboundary_face(g::GridTopology)
-    get_isboundary_face(g::GridTopology,d::Integer)
+    get_isboundary_face(g::GridTopology, d::Integer)
 
-Returns a vector of booleans indicating if the face is a boundary face. Boundary faces 
-are defined in the following way: 
+Returns a vector of booleans indicating if the face is a boundary face. Boundary faces
+are defined in the following way:
 - If `d = D-1`, i.e facets, a boundary facet is a facet that is adjacent to only one cell.
 - Otherwise, a face is a boundary face if it belongs to a boundary facet.
 
@@ -429,6 +429,12 @@ function get_isboundary_face(g::GridTopology,d::Integer)
   compute_isboundary_face(g,d)
 end
 
+"""
+    compute_isboundary_face(top::GridTopology)
+    compute_isboundary_face(top::GridTopology, d::Integer)
+
+Compute and return the result of [`get_isboundary_face`](@ref).
+"""
 function compute_isboundary_face(g::GridTopology)
   D = num_cell_dims(g)
   d_to_dface_to_isboundary = [compute_isboundary_face(g,d) for d in 0:D]
@@ -472,7 +478,7 @@ end
 
 """
     get_cell_permutations(top::GridTopology)
-    get_cell_permutations(top::GridTopology,d::Integer)
+    get_cell_permutations(top::GridTopology, d::Integer)
 
 Returns an cell-wise array of permutations. For each cell, the entry contains the permutations
 of the local d-faces of the cell w.r.t the global d-faces of the mesh.
@@ -487,6 +493,12 @@ function get_cell_permutations(top::GridTopology,d::Integer)
   compute_cell_permutations(top,d)
 end
 
+"""
+    compute_cell_permutations(top::GridTopology)
+    compute_cell_permutations(top::GridTopology, d::Integer)
+
+Compute and return the result of [`get_cell_permutations`](@ref).
+"""
 function compute_cell_permutations(top::GridTopology)
   D = num_cell_dims(top)
   tables = (compute_cell_permutations(top,d) for d in 0:D)
