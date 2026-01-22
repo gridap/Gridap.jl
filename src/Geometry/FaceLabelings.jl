@@ -554,7 +554,7 @@ function face_labeling_from_cell_tags(
 
   # Face entities:
   n_entities = n_tags
-  to_key(e) = sort!(unique!(collect(Int32,e)))
+  to_key(e) = sort!(unique!(filter!(!isequal(UNSET), collect(Int32,e))))
   entities = Dict{UInt64,Int32}([hash(to_key([i])) => i for i in 1:n_tags])
   for d in D-1:-1:0
     if split_dimensions
@@ -563,8 +563,8 @@ function face_labeling_from_cell_tags(
     dface_to_cells = get_faces(topo,d,D)
     dface_to_entity = d_to_dface_to_entity[d+1]
     for (dface,cells) in enumerate(dface_to_cells)
-      isempty(cells) && continue
       dface_tags = to_key(cell_to_tag[cells])
+      isempty(dface_tags) && continue
       dface_entity = get!(entities,hash(dface_tags),n_entities+1)
       if dface_entity == n_entities+1 # New entity
         n_entities += 1
