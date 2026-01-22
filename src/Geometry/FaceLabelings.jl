@@ -504,7 +504,6 @@ function Base.merge!(a::FaceLabeling,b::FaceLabeling)
       elseif !a_unset && !b_unset
         # If both are set, we consider the combined entity
         dface_entities = (a_dface_to_entity[dface],b_dface_to_entity[dface]+offset)
-
         if !haskey(entities,dface_entities)
           # If the combined entity is new, we add it
           n_entities += 1
@@ -555,7 +554,8 @@ function face_labeling_from_cell_tags(
 
   # Face entities:
   n_entities = n_tags
-  entities = Dict{UInt64,Int32}([hash(Set{Int}(i)) => i for i in 1:n_tags])
+  to_key(e) = sort!(unique!(collect(Int32,e)))
+  entities = Dict{UInt64,Int32}([hash(to_key([i])) => i for i in 1:n_tags])
   for d in D-1:-1:0
     if split_dimensions
       empty!(entities) # Reset entities
@@ -563,7 +563,8 @@ function face_labeling_from_cell_tags(
     dface_to_cells = get_faces(topo,d,D)
     dface_to_entity = d_to_dface_to_entity[d+1]
     for (dface,cells) in enumerate(dface_to_cells)
-      dface_tags = Set(cell_to_tag[cells])
+      isempty(cells) && continue
+      dface_tags = to_key(cell_to_tag[cells])
       dface_entity = get!(entities,hash(dface_tags),n_entities+1)
       if dface_entity == n_entities+1 # New entity
         n_entities += 1
