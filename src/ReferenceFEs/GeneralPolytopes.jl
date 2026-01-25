@@ -717,9 +717,8 @@ end
 """
     simplexify_interior(p::Polyhedron)
 
-  `simplex_interior` computes a simplex partition of the volume inside
-  the Polyhedron `p`.
-  It returns a vector of coordinates and an array of connectivitties.
+Compute a simplex partition of the volume inside the Polyhedron `p`.
+It returns a vector of coordinates and an array of connectivitties.
 """
 function simplexify_interior(poly::Polyhedron)
   !isopen(poly) || return simplexify_surface(poly)
@@ -774,9 +773,8 @@ end
 """
     simplexify_surface(p::Polyhedron)
 
-  `simplex_surface` computes a simplex partition of the surface bounding
-  the Polyhedron `p`.
-  It returns a vector of coordinates and an array of connectivitties.
+Compute a simplex partition of the surface bounding the Polyhedron `p`.
+It returns a vector of coordinates and an array of connectivitties.
 """
 function simplexify_surface(poly::Polyhedron)
   istouch = map( i -> falses(length(i)), get_graph(poly) )
@@ -806,13 +804,60 @@ function simplexify_surface(poly::Polyhedron)
   get_vertex_coordinates(poly),T
 end
 
-function compute_orientation(p::GeneralPolytope{D}) where D
-  cc = mean(get_vertex_coordinates(p))
-  cf = mean(first(get_face_coordinates(p,D-1)))
-  n = get_facet_normal(p,1)
-  s = sign(dot(n,cf-cc))
-  return s
+"""
+    signed_area(poly)
+    signed_area(coords, indices)
+
+Compute the signed area of a polygon defined by indices into coords, using 
+the shoelace formula. In 3D, it returns the signed area vector.
+"""
+signed_area(p::Polygon) = signed_area( get_vertex_coordinates(p) )
+
+function signed_area(coords::Vector{<:Point{2}}, indices=eachindex(coords))
+  n = length(indices)
+  area = zero(eltype(eltype(coords)))
+  for i in 1:n
+    vi = coords[indices[i]]
+    vj = coords[indices[mod1(i + 1, n)]]
+    area += vi[1] * vj[2] - vj[1] * vi[2]
+  end
+  return area / 2
 end
+
+function signed_area(coords::Vector{<:Point{3}}, indices=eachindex(coords))
+  n = length(indices)
+  area = zero(eltype(coords))
+  for i in 1:n
+    vi = coords[indices[i]]
+    vj = coords[indices[mod1(i + 1, n)]]
+    area += cross(vi,vj)
+  end
+  return area / 2
+end
+
+"""
+    signed_volume(poly)
+    signed_volume(coords, faces)
+
+Compute the signed volume of a polyhedron using the divergence theorem. 
+"""
+function signed_volume(p::Polyhedron)
+  X, T = simplexify_surface(p)
+  signed_volume(X, T)
+end
+
+function signed_volume(coords::Vector{<:Point{3}}, faces)
+  vol = zero(eltype(eltype(coords)))
+  for f in faces
+    @check length(f) == 3 "Faces must be triangles to compute the signed volume"
+    v2, v2, v3 = coords[f[1]], coords[f[2]], coords[f[3]]
+    vol += dot(v1, cross(v2, v3))
+  end
+  return vol / 6
+end
+
+compute_orientation(p::Polygon) = signed_area(p) > 0
+compute_orientation(p::Polyhedron) = signed_volume(p) > 0
 
 # Admissible permutations for Polygons are the ones that
 # preserve the orientation of the circular graph that defines it.
