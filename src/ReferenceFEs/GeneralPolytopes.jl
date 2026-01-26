@@ -1200,3 +1200,232 @@ function extrude(p::Polygon; zmin = 0.0, zmax = 1.0)
   end
   return Polyhedron(coords_3D, graph_3D)
 end
+
+# Convexification 
+
+"""
+    is_convex(p::GeneralPolytope) -> Bool
+
+Check if the polytope `p` is convex.
+"""
+is_convex(p::GeneralPolytope) = isempty(get_reflex_faces(p))
+
+"""
+    get_reflex_faces(p::GeneralPolytope) -> Vector{Int}
+
+Return local indices of reflex faces, i.e (D-2)-faces (vertices in 2D, edges in 3D) 
+where the internal angle is greater than π.
+"""
+get_reflex_faces(p::Polygon) = get_reflex_faces(get_vertex_coordinates(p))
+
+function get_reflex_faces(coords::Vector{<:Point{2}}, indices::Vector{Int} = eachindex(coords); tol=1e-10)
+  n = length(indices)
+  function is_reflex(i)
+    v = coords[indices[i]]
+    vprev = coords[indices[mod1(i - 1, n)]]
+    vnext = coords[indices[mod1(i + 1, n)]]
+    return cross(v - vprev, vnext - v) < -tol
+  end
+  return filter(is_reflex, 1:n)
+end
+
+"""
+    convexify(p::Polygon) -> Vector{Polygon}
+
+Decompose a possibly non-convex 2D polygon into a set of convex polygons.
+If the polygon is embedded in 3D, we run the algorithm after projecting to 2D.
+"""
+function convexify(p::Polygon{2})
+  coords = copy(get_vertex_coordinates(p))
+  indices = collect(1:length(coords))
+  @check signed_area(coords, indices) > 0 "Polygon must have CCW orientation"
+
+  result_indices = Vector{Int}[]
+  _convexify!(result_indices, coords, indices)
+
+  return [Polygon(coords[idx]) for idx in result_indices]
+end
+
+function convexify(p::Polygon{3})
+  coords3d = copy(get_vertex_coordinates(p))
+
+  # Project to 2D
+  origin = coords3d[1]
+  u, v = compute_tangent_space(Val(2), coords3d)
+  coords2d = map(coords3d) do p
+    d = p - origin
+    Point(dot(d, u), dot(d, v))
+  end
+
+  # Convexify in 2D
+  n = length(coords3d)
+  indices = collect(1:n)
+  @check signed_area(coords2d, indices) > 0 "Polygon must have CCW orientation"
+
+  result_indices = Vector{Int}[]
+  _convexify!(result_indices, coords2d, indices)
+
+  # If Steiner points were added, project them back to 3D
+  for i in (n+1):length(coords2d)
+    p2d = coords2d[i]
+    push!(coords3d, origin + p2d[1] * u + p2d[2] * v)
+  end
+
+  return [Polygon(coords3d[idx]) for idx in result_indices]
+end
+
+function _convexify!(
+  result::Vector{<:Vector{<:Integer}}, coords::Vector{<:Point{2}}, indices::Vector{<:Integer}
+)
+  n = length(indices)
+  reflex = get_reflex_faces(coords, indices)
+
+  # Already convex
+  if (n ==3) || isempty(reflex)
+    push!(result, copy(indices))
+    return
+  end
+
+  # Try to find a valid diagonal from a reflex vertex
+  for r in reflex
+    for v in 1:n
+      if _diagonal_is_valid(coords, indices, r, v)
+        i, j = minmax(r, v)
+        _convexify!(result, coords, indices[i:j])
+        _convexify!(result, coords, vcat(indices[j:n], indices[1:i]))
+        return
+      end
+    end
+  end
+
+  # No valid diagonal found, use Steiner point approach:
+  # Find first edge intersection along bisector ray
+  r = first(reflex)
+  bisector = _compute_bisector(coords, indices, r)
+  origin = coords[indices[r]]
+
+  best_u, edge, t_edge = Inf, (-1, -1) , 0.0
+  for k in 1:n
+    knext = mod1(k + 1, n)
+    (k == r || knext == r) && continue
+    t, u = _segment_intersection(coords[indices[k]], coords[indices[knext]], origin, origin + bisector)
+    if u > 0 && 0 < t < 1 && u < best_u
+      best_u, edge, t_edge = u, (k, knext), t
+    end
+  end
+  @check edge != (-1, -1) "Failed to find edge intersection for reflex vertex"
+
+  # Split polygon at reflex vertex r and Steiner point on edge (k, knext)
+  k, knext = edge
+  push!(coords, coords[indices[k]] + t_edge * (coords[indices[knext]] - coords[indices[k]]))
+  m = length(coords)
+  if r <= k
+    p1 = vcat(indices[r:k], [m])
+    p2 = vcat([m], indices[knext:n], indices[1:r])
+  else
+    p1 = vcat(indices[r:n], indices[1:k], [m])
+    p2 = vcat([m], indices[knext:r])
+  end
+  _convexify!(result, coords, p1)
+  _convexify!(result, coords, p2)
+  return
+end
+
+# Compute inward bisector direction at a vertex.
+function _compute_bisector(
+  coords::Vector{<:Point{2}}, indices::Vector{Int}, r::Integer
+)
+  n = length(indices)
+  v = coords[indices[r]]
+  vprev = coords[indices[mod1(r - 1, n)]]
+  vnext = coords[indices[mod1(r + 1, n)]]
+
+  d_prev = vprev - v
+  d_next = vnext - v
+  d_prev = d_prev / norm(d_prev)
+  d_next = d_next / norm(d_next)
+
+  bisector = d_prev + d_next
+  bisector_norm = norm(bisector)
+  return (bisector_norm < 1e-14) ? Point(-d_prev[2], d_prev[1]) : bisector / bisector_norm
+end
+
+# Compute the intersection of segments p1-p2 and q1-q2.
+function _segment_intersection(p1::Point{2}, p2::Point{2}, q1::Point{2}, q2::Point{2}; tol=1e-10)
+  d1 = p2 - p1
+  d2 = q2 - q1
+
+  denom = cross(d1, d2)
+  (abs(denom) < tol) && return Inf, Inf  # Parallel segments
+
+  d = q1 - p1
+  t = cross(d, d2) / denom
+  u = cross(d, d1) / denom
+  return t, u
+end
+
+# Check if diagonal from vertex i to vertex j is locally inside at i.
+# 
+# At vertex i, there are two edges (incoming and outgoing). This function checks
+# if the direction toward j points into the polygon's interior:
+# 
+# - Convex vertex: interior is the wedge between the two edges, so edge_ij must
+#   be "to the left" of both edges (both cross products positive).
+# - Reflex vertex: interior is everything except the exterior wedge, so edge_ij
+#   must not be in the forbidden exterior wedge (at least one cross product positive).
+# 
+# ```
+#     Convex vertex i:          Reflex vertex i:
+#          vinext                    vinext
+#            /                         \\
+#           / ✓ inside                  \\ ✗ outside
+#          /                             \\
+#       vi -------- vj?               vi -------- vj?
+#          \\                             /
+#           \\ ✗ outside                 / ✓ inside
+#            \\                         /
+#          viprev                    viprev
+# ```
+function _is_locally_inside(
+  coords::Vector{<:Point{2}}, indices::Vector{Int}, i::Integer, j::Integer
+)
+  n = length(indices)
+  vi = coords[indices[i]]
+  viprev = coords[indices[mod1(i - 1, n)]]
+  vinext = coords[indices[mod1(i + 1, n)]]
+  vj = coords[indices[j]]
+
+  edge_in = vi - viprev
+  edge_out = vinext - vi
+  edge_ij = vj - vi
+
+  if cross(edge_in, edge_out) >= 0
+    # Convex vertex
+    return cross(edge_in, edge_ij) > 0 && cross(edge_out, edge_ij) > 0
+  else
+    # Reflex vertex
+    return cross(edge_out, edge_ij) > 0 || cross(edge_in, edge_ij) > 0
+  end
+end
+
+# Check if diagonal from local vertex i to local vertex j is valid.
+function _diagonal_is_valid(
+  coords::Vector{<:Point{2}}, indices::Vector{Int}, i::Integer, j::Integer; tol = 1e-10
+)
+  # Adjacent or same vertices
+  n = length(indices)
+  ((i == j) || (mod1(i + 1, n) == j) || (mod1(i - 1, n) == j)) && return false
+
+  # Check intersection with all edges
+  xi, xj = coords[indices[i]], coords[indices[j]]
+  for k in 1:n
+    knext = mod1(k + 1, n)
+    (k == i || k == j || knext == i || knext == j) && continue
+    t, u = _segment_intersection(xi, xj, coords[indices[k]], coords[indices[knext]]; tol)
+    if (tol < t < 1 - tol) && (tol < u < 1 - tol)
+      return false
+    end
+  end
+
+  return _is_locally_inside(coords, indices, i, j) && _is_locally_inside(coords, indices, j, i)
+end
