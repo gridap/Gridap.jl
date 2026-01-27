@@ -382,8 +382,7 @@ function _newell_normal(
     ny += (z1 - z2)*(x1 + x2)
     nz += (x1 - x2)*(y1 + y2)
   end
-  n = VectorValue(nx,ny,nz)
-  n /= norm(n)
+  n = normalize(VectorValue(nx,ny,nz))
   return n
 end
 
@@ -1271,14 +1270,11 @@ function convexify_interior(p::Polygon{3})
 end
 
 function _project_to_plane(p::Polygon{3})
-  n = get_cell_normal(p)
-  n /= norm(n)
+  n = get_cell_normal(p) |> normalize
   imax = argmax(map(abs, n.data))
   t = Point(ntuple(i -> i == imax ? 1.0 : 0.0, 3))
-  u = corss(t, n)
-  u /= norm(u)
-  v = cross(n, u)
-  v /= norm(v)
+  u = cross(t, n) |> normalize
+  v = cross(n, u) |> normalize
 
   coords = get_vertex_coordinates(p)
   coords_2d = map(coords) do p
@@ -1315,10 +1311,8 @@ end
 function _find_best_diagonal(coords,indices,r;tol=1.e-10)
   n = length(indices)
   r_prev, r_next = mod1(r - 1, n), mod1(r + 1, n)
-  e_in = coords[indices[r]] - coords[indices[r_prev]]
-  e_out = coords[indices[r_next]] - coords[indices[r]]
-  e_in /= norm(e_in)
-  e_out /= norm(e_out)
+  e_in = normalize(coords[indices[r]] - coords[indices[r_prev]])
+  e_out = normalize(coords[indices[r_next]] - coords[indices[r]])
 
   v, α = 0, -Inf 
   for k in eachindex(indices)
@@ -1332,7 +1326,8 @@ function _find_best_diagonal(coords,indices,r;tol=1.e-10)
       if !(m == r || m_next == r || m == k || m_next == k)
         t, u = _segment_intersection(
           coords[indices[r]], coords[indices[k]],
-          coords[indices[m]], coords[indices[m_next]]; tol)
+          coords[indices[m]], coords[indices[m_next]]; tol
+        )
         intersection = (tol < t < 1 - tol) && (tol < u < 1 - tol)
       end
       m += 1
@@ -1340,8 +1335,7 @@ function _find_best_diagonal(coords,indices,r;tol=1.e-10)
     intersection && continue
 
     # Get interior angles
-    e_rk = coords[indices[k]] - coords[indices[r]]
-    e_rk /= norm(e_rk)
+    e_rk = normalize(coords[indices[k]] - coords[indices[r]])
     α_in, α_out = cross(e_in, e_rk), cross(e_out, e_rk)
 
     # Check if k is inside the reflex angle at r
