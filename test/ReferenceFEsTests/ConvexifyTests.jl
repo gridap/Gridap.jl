@@ -6,10 +6,10 @@ using Gridap.ReferenceFEs
 using Gridap.ReferenceFEs: signed_area, get_reflex_faces, compute_tangent_space, convexify
 
 # Helper for testing reflex vertices on 3D polygons (projects to 2D first)
-function get_reflex_features(p::Polygon)
+function get_reflex_features(p::Polygon{D}) where D
   coords = collect(get_vertex_coordinates(p))
   indices = collect(1:length(coords))
-  if eltype(coords) <: Point{2}
+  if D == 2
     return get_reflex_faces(coords, indices)
   else
     u, v = compute_tangent_space(Val(2), coords)
@@ -86,6 +86,7 @@ original_area = abs(signed_area(vertices))
 total_area = sum(poly -> abs(signed_area(collect(get_vertex_coordinates(poly)))), result)
 @test total_area ≈ original_area atol=1e-10
 
+
 # Star-shaped polygon
 vertices = [Point(0.0, 0.0), Point(2.0, 0.0), Point(2.0, 1.0), Point(1.5, 0.5), Point(1.0, 1.0), Point(0.5, 0.5), Point(0.0, 1.0)]
 p = Polygon(vertices)
@@ -133,6 +134,10 @@ end
 original_area = abs(signed_area(vertices))
 total_area = sum(poly -> abs(signed_area(collect(get_vertex_coordinates(poly)))), result)
 @test total_area ≈ original_area atol=1e-10
+writevtk(p,"tmp/p")
+for (k,p) in enumerate(result)
+  writevtk(p,"tmp/p_$(k)")
+end
 
 # CW-oriented polygon (should throw error)
 p = Polygon([Point(0.0, 0.0), Point(0.0, 2.0), Point(1.0, 2.0), Point(1.0, 1.0), Point(2.0, 1.0), Point(2.0, 0.0)])
