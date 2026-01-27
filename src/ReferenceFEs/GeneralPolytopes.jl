@@ -1261,9 +1261,9 @@ function convexify_interior(p::Polygon{2})
 end
 
 function convexify_interior(p::Polygon{3})
-  @check dot(signed_area(p)) > 0 "Polygon must have positive orientation"
   coords = get_vertex_coordinates(p)
   coords_2d = _project_to_plane(p)
+  @check signed_area(Polygon(coords_2d)) > 0 "Polygon must have positive orientation"
   indices = collect(1:length(coords))
   T = _convexify_interior!(Vector{Int}[], coords_2d, indices)
   return coords, T
@@ -1271,7 +1271,7 @@ end
 
 function _project_to_plane(p::Polygon{3})
   n = get_cell_normal(p) |> normalize
-  imax = argmax(map(abs, n.data))
+  imax = argmin(map(abs, n.data))
   t = Point(ntuple(i -> i == imax ? 1.0 : 0.0, 3))
   u = cross(t, n) |> normalize
   v = cross(n, u) |> normalize
