@@ -369,8 +369,8 @@ end
 # Implements Newell's method to compute the normal of a facet. 
 # It is supposed to be more robust w.r.t numerical errors.
 function _newell_normal(
-  verts::AbstractVector{<:Integer},
-  coords::AbstractVector{<:Point{3}}
+  coords::AbstractVector{<:Point{3}},
+  verts::AbstractVector{<:Integer} = eachindex(coords)
 )
   nv = length(verts)
   nx, ny, nz = 0.0, 0.0, 0.0
@@ -390,7 +390,7 @@ function get_facet_normal(p::Polyhedron)
   f_to_v = get_faces(p,2,0)
   coords = get_vertex_coordinates(p)
   n = map(f_to_v) do v
-    _newell_normal(v,coords)
+    _newell_normal(coords,v)
   end
   return n
 end
@@ -398,65 +398,14 @@ end
 function get_facet_normal(p::Polyhedron,lfacet::Integer)
   v = get_faces(p,2,0)[lfacet]
   coords = get_vertex_coordinates(p)
-  n = _newell_normal(v,coords)
+  n = _newell_normal(coords,v)
   return n
-end
-
-#=
-function get_facet_normal(p::Polyhedron)
-  f_to_v = get_faces(p,2,0)
-  coords = get_vertex_coordinates(p)
-  map(f_to_v) do v
-    v1, v2 = compute_tangent_space(Val(2),coords[v])
-    n = v1 × v2
-    n /= norm(n)
-  end
-end
-function get_facet_normal(p::Polyhedron,lfacet::Integer)
-  v = get_faces(p,2,0)[lfacet]
-  coords = get_vertex_coordinates(p)
-  v1, v2 = compute_tangent_space(Val(2),coords[v])
-  n = v1 × v2
-  n /= norm(n)
-  return n
-end
-=#
-
-function compute_tangent_space(::Val{1},coords;tol=1e-10)
-  v1 = coords[2]-coords[1]
-  v1 /= norm(v1)
-  return v1
-end
-
-function compute_tangent_space(::Val{D},coords;tol=1e-10) where D
-  np = length(coords)
-  p0 = first(coords)
-  k = 1
-  ns = 0
-  space = ()
-  while (ns < D) && (k < np)
-    v = coords[k+1]-p0
-    for vi in space
-      v -= (v⋅vi)*vi
-    end
-    w = norm(v)
-    if w > tol
-      space = (space...,v/w)
-      ns += 1
-    end
-    k += 1
-  end
-  @check ns == D "Tangent space cannot be computed! Too many colinear points"
-  return space
 end
 
 # Normal for a Polygon embedded in 3D space
 function get_cell_normal(p::Polygon{3})
   coords = get_vertex_coordinates(p)
-  v1, v2 = compute_tangent_space(Val(2),coords)
-  n = v1 × v2
-  n /= norm(n)
-  return n
+  return _newell_normal(coords)
 end
 
 # Normal for edges of a Polygon embedded in 2D space
@@ -506,6 +455,34 @@ function get_edge_tangent(p::GeneralPolytope,ledge::Integer)
   coords = get_vertex_coordinates(p)
   e = coords[v[2]]-coords[v[1]]
   return e / norm(e)
+end
+
+function compute_tangent_space(::Val{1},coords;tol=1e-10)
+  v1 = coords[2]-coords[1]
+  v1 /= norm(v1)
+  return v1
+end
+
+function compute_tangent_space(::Val{D},coords;tol=1e-10) where D
+  np = length(coords)
+  p0 = first(coords)
+  k = 1
+  ns = 0
+  space = ()
+  while (ns < D) && (k < np)
+    v = coords[k+1]-p0
+    for vi in space
+      v -= (v⋅vi)*vi
+    end
+    w = norm(v)
+    if w > tol
+      space = (space...,v/w)
+      ns += 1
+    end
+    k += 1
+  end
+  @check ns == D "Tangent space cannot be computed! Too many colinear points"
+  return space
 end
 
 function get_dimranges(p::GeneralPolytope)

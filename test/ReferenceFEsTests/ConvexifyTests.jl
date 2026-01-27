@@ -134,10 +134,6 @@ end
 original_area = abs(signed_area(vertices))
 total_area = sum(poly -> abs(signed_area(collect(get_vertex_coordinates(poly)))), result)
 @test total_area ≈ original_area atol=1e-10
-writevtk(p,"tmp/p")
-for (k,p) in enumerate(result)
-  writevtk(p,"tmp/p_$(k)")
-end
 
 # CW-oriented polygon (should throw error)
 p = Polygon([Point(0.0, 0.0), Point(0.0, 2.0), Point(1.0, 2.0), Point(1.0, 1.0), Point(2.0, 1.0), Point(2.0, 0.0)])
