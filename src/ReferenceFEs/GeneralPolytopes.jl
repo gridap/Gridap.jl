@@ -1254,7 +1254,7 @@ function convexify(p::Polygon)
 end
 
 function convexify_interior(p::Polygon{2})
-  is_convex(p) && return [p]
+  @check signed_area(p) > 0 "Polygon must have positive orientation"
   coords = get_vertex_coordinates(p)
   indices = collect(1:length(coords))
   T = _convexify_interior!(Vector{Int}[], coords, indices)
@@ -1262,17 +1262,30 @@ function convexify_interior(p::Polygon{2})
 end
 
 function convexify_interior(p::Polygon{3})
-  is_convex(p) && return [p]
+  @check dot(signed_area(p)) > 0 "Polygon must have positive orientation"
+  coords = get_vertex_coordinates(p)
+  coords_2d = _project_to_plane(p)
+  indices = collect(1:length(coords))
+  T = _convexify_interior!(Vector{Int}[], coords_2d, indices)
+  return coords, T
+end
+
+function _project_to_plane(p::Polygon{3})
+  n = get_cell_normal(p)
+  n /= norm(n)
+  imax = argmax(map(abs, n.data))
+  t = Point(ntuple(i -> i == imax ? 1.0 : 0.0, 3))
+  u = corss(t, n)
+  u /= norm(u)
+  v = cross(n, u)
+  v /= norm(v)
 
   coords = get_vertex_coordinates(p)
-  u, v = compute_tangent_space(Val(2), coords)
   coords_2d = map(coords) do p
     d = p - coords[1]
     Point(dot(d, u), dot(d, v))
   end
-  indices = collect(1:length(coords))
-  T = _convexify_interior!(Vector{Int}[], coords_2d, indices)
-  return coords, T
+  return coords_2d
 end
 
 function _convexify_interior!(
@@ -1289,37 +1302,58 @@ function _convexify_interior!(
 
   # Try to find a valid diagonal from a reflex vertex
   for r in reflex
-    for v in 1:n
-      if _diagonal_is_valid(coords, indices, r, v)
-        i, j = minmax(r, v)
-        _convexify_interior!(T, coords, indices[i:j])
-        _convexify_interior!(T, coords, vcat(indices[j:n], indices[1:i]))
-        return T
-      end
-    end
+    v = _find_best_diagonal(coords, indices, r)
+    i, j = minmax(r, v)
+    _convexify_interior!(T, coords, indices[i:j])
+    _convexify_interior!(T, coords, vcat(indices[j:n], indices[1:i]))
+    return T
   end
 
-  @error "Failed to convexify polygon"
+  @assert false "Failed to convexify polygon"
 end
 
-# Check if diagonal from local vertex i to local vertex j is valid.
-function _diagonal_is_valid(
-  coords::Vector{<:Point{2}}, indices::Vector{Int}, i::Integer, j::Integer; tol = 1e-10
-)
-  # Adjacent or same vertices
+function _find_best_diagonal(coords,indices,r;tol=1.e-10)
   n = length(indices)
-  ((i == j) || (mod1(i + 1, n) == j) || (mod1(i - 1, n) == j)) && return false
+  r_prev, r_next = mod1(r - 1, n), mod1(r + 1, n)
+  e_in = coords[indices[r]] - coords[indices[r_prev]]
+  e_out = coords[indices[r_next]] - coords[indices[r]]
+  e_in /= norm(e_in)
+  e_out /= norm(e_out)
 
-  # Check intersection with all edges
-  xi, xj = coords[indices[i]], coords[indices[j]]
-  for k in 1:n
-    knext = mod1(k + 1, n)
-    (k == i || k == j || knext == i || knext == j) && continue
-    t, u = _segment_intersection(xi, xj, coords[indices[k]], coords[indices[knext]]; tol)
-    (tol < t < 1 - tol) && (tol < u < 1 - tol) && (return false)
+  v, α = 0, -Inf 
+  for k in eachindex(indices)
+    (k == r || k == r_prev || k == r_next) && continue
+
+    # Check if diagonal intersects any edge
+    m = 1
+    intersection = false
+    while !intersection && (m <= n)
+      m_next = mod1(m + 1, n)
+      if !(m == r || m_next == r || m == k || m_next == k)
+        t, u = _segment_intersection(
+          coords[indices[r]], coords[indices[k]],
+          coords[indices[m]], coords[indices[m_next]]; tol)
+        intersection = (tol < t < 1 - tol) && (tol < u < 1 - tol)
+      end
+      m += 1
+    end
+    intersection && continue
+
+    # Get interior angles
+    e_rk = coords[indices[k]] - coords[indices[r]]
+    e_rk /= norm(e_rk)
+    α_in, α_out = cross(e_in, e_rk), cross(e_out, e_rk)
+
+    # Check if k is inside the reflex angle at r
+    !(α_in > tol || α_out > tol) && continue
+
+    if α_in + α_out > α
+      v, α = k, α_in + α_out
+    end
   end
+  @assert !iszero(v)
 
-  return _is_locally_inside(coords, indices, i, j) && _is_locally_inside(coords, indices, j, i)
+  return v
 end
 
 # Compute the intersection of segments p1-p2 and q1-q2.
@@ -1337,48 +1371,4 @@ function _segment_intersection(p1::Point{2}, p2::Point{2}, q1::Point{2}, q2::Poi
   t = cross(d, d2) / denom
   u = cross(d, d1) / denom
   return t, u
-end
-
-# Check if diagonal from vertex i to vertex j is locally inside at i.
-# 
-# At vertex i, there are two edges (incoming and outgoing). This function checks
-# if the direction toward j points into the polygon's interior:
-# 
-# - Convex vertex: interior is the wedge between the two edges, so edge_ij must
-#   be "to the left" of both edges (both cross products positive).
-# - Reflex vertex: interior is everything except the exterior wedge, so edge_ij
-#   must not be in the forbidden exterior wedge (at least one cross product positive).
-# 
-# ```
-#     Convex vertex i:          Reflex vertex i:
-#          vinext                    vinext
-#            /                         \\
-#           / ✓ inside                  \\ ✗ outside
-#          /                             \\
-#       vi -------- vj?               vi -------- vj?
-#          \\                             /
-#           \\ ✗ outside                 / ✓ inside
-#            \\                         /
-#          viprev                    viprev
-# ```
-function _is_locally_inside(
-  coords::Vector{<:Point{2}}, indices::Vector{Int}, i::Integer, j::Integer
-)
-  n = length(indices)
-  vi = coords[indices[i]]
-  viprev = coords[indices[mod1(i - 1, n)]]
-  vinext = coords[indices[mod1(i + 1, n)]]
-  vj = coords[indices[j]]
-
-  edge_in = vi - viprev
-  edge_out = vinext - vi
-  edge_ij = vj - vi
-
-  if cross(edge_in, edge_out) >= 0
-    # Convex vertex
-    return cross(edge_in, edge_ij) > 0 && cross(edge_out, edge_ij) > 0
-  else
-    # Reflex vertex
-    return cross(edge_out, edge_ij) > 0 || cross(edge_in, edge_ij) > 0
-  end
 end
