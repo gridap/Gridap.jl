@@ -761,6 +761,8 @@ Normalization of a tensor value.
 """
 normalize(a::MultiValue) = a / norm(a)
 
+sqrt(a::TensorValue{D}) where D = TensorValue{D}(sqrt(get_array(a)))
+
 ###############################################################
 # Measure
 ###############################################################
