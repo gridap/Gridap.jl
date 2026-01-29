@@ -203,7 +203,7 @@ end
 function from_dict(::Type{UnstructuredGrid},dict::Dict{Symbol,Any})
   x = dict[:node_coordinates]
   T = eltype(x)
-  Dp = dict[:Dp]
+  Dp::Int = dict[:Dp]
   node_coordinates::Vector{Point{Dp,T}} = reinterpret(Point{Dp,T},x)
   cell_node_ids = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[:cell_node_ids])
   reffes = [ from_dict(LagrangianRefFE,reffe) for reffe in dict[:reffes]]
