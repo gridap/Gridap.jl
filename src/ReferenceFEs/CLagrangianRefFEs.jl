@@ -170,8 +170,8 @@ function to_dict(reffe::GenericLagrangianRefFE{GradConformity})
 end
 
 function from_dict(::Type{<:LagrangianRefFE},dict::Dict{Symbol,Any})
-  orders = Tuple(dict[:orders])
-  extrusion = Tuple(dict[:extrusion])
+  orders = map(Int,Tuple(dict[:orders]))
+  extrusion = map(Int,Tuple(dict[:extrusion]))
   if dict[:value] == "Float64"
     value = Float64
   else

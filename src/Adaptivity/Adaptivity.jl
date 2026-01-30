@@ -55,5 +55,6 @@ include("EdgeBasedRefinement.jl")
 include("SimplexifyRefinement.jl")
 include("AdaptiveMeshRefinement.jl")
 include("PolytopalRefinement.jl")
+include("UniformRefinement.jl")
 
 end # module

@@ -81,16 +81,16 @@ function _compute_cell_map(node_coords,cell_node_ids,ctype_reffe,cell_ctype, has
 end
 
 """
-    UnstructuredGrid(grid::Grid)
+    UnstructuredGrid(grid::Grid;kwargs...)
 """
-function UnstructuredGrid(grid::Grid)
+function UnstructuredGrid(grid::Grid;kwargs...)
   @assert is_regular(grid) "UnstructuredGrid constructor only for regular grids"
   node_coordinates = collect1d(get_node_coordinates(grid))
   cell_node_ids = Table(get_cell_node_ids(grid))
   reffes = get_reffes(grid)
   cell_types = collect1d(get_cell_type(grid))
   orien = OrientationStyle(grid)
-  UnstructuredGrid(node_coordinates,cell_node_ids,reffes,cell_types,orien)
+  UnstructuredGrid(node_coordinates,cell_node_ids,reffes,cell_types,orien;kwargs...)
 end
 
 function UnstructuredGrid(grid::UnstructuredGrid)
@@ -191,7 +191,7 @@ end
 function from_dict(::Type{UnstructuredGrid},dict::Dict{Symbol,Any})
   x = dict[:node_coordinates]
   T = eltype(x)
-  Dp = dict[:Dp]
+  Dp::Int = dict[:Dp]
   node_coordinates::Vector{Point{Dp,T}} = reinterpret(Point{Dp,T},x)
   cell_node_ids = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[:cell_node_ids])
   reffes = [ from_dict(LagrangianRefFE,reffe) for reffe in dict[:reffes]]

@@ -203,8 +203,8 @@ function testvalue(::Type{T}) where T<:Fill{E,N,A} where {E,N,A}
   Fill(zero(E),testvalue(A))
 end
 
-function testvalue(::Type{<:Tuple})
-  @notimplemented "testvalue on Tuple type only implemented up to 8 tuple elements"
+function testvalue(::Type{T}) where T<:Tuple
+  Tuple(map(testvalue,fieldtypes(T)))
 end
 
 #@fverdugo: use meta-programming here

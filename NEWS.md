@@ -9,8 +9,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `testvalue(::Type{<:Tuple})` for tuples with an arbitrary number of items. Since PR[#1210](https://github.com/gridap/Gridap.jl/pull/1210).
+- Added `normalize` function support for `MultiValue` objects. Since PR[#1211](https://github.com/gridap/Gridap.jl/pull/1211).
+
+
+## [0.19.7] - 2025-12-18
+
+### Added
+
+- Added the symmetric quadrature rules of Witherden and Vincent, correctness tests for all quadrature rules, and minor extensions to the interfaces of `Quadrature` and `Polytope`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+  - Added the symmetric quadrature rules of Witherden and Vincent for tri/tet, quad/hex, wedge and pyramid.
+  - Added `maxdegree(p::Polytope, name::QuadratureName)` to the interface of `Quadrature`.
+  - Enriched the tests for quadratures by checking `tensor_product`, `duffy`, and `witherden_vincent` against exact integrals for monomials on the corresponding polytopes (tri/tet, quad/hex, wedge and pyramid, respectively). Other quadrature rules are compared against these tested ones.
+  - Added `get_measure(p::Polytope, vertex_coords)` and `get_diameter(p::Polytope, vertex_coords)` to the interface of `Polytope`.
+
+### Changed
+
+- Added specific tags on dual numbers to allow for nested AD without perturbation confusion. Since PR[#1181](https://github.com/gridap/Gridap.jl/pull/1181).
+- The default quadrature for simplices is now `witherden_vincent` until available, then `xiao_gimbuttas` until available, then `duffy`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+- Updated the documentation of `Polytope{D}`'s type parameters `D`, it is correctly described as the polytope's dimension (instead of embedding dimension). Since PR[#1194](https://github.com/gridap/Gridap.jl/pull/1194).
+- Added compatibilty for `JSON.jl` v1+ and `JDL2.jl` v0.6+. Since PR[1198](https://github.com/gridap/Gridap.jl/pull/1198).
+
+### Fixed
+
+- Fixed issue [#1188](https://github.com/gridap/Gridap.jl/issues/1188). Fix one() function for non-square tensors.
+- Fixed `strang` quadrature of order 4 for triangles. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+
+## [0.19.6] - 2025-10-17
+
+### Added
+
+- Added support for subdividing unstructured meshes to any level, including periodic ones. Since PR[#1143](https://github.com/gridap/Gridap.jl/pull/1143).
+
+### Fixed
+
+- Fixed issue [#1174](https://github.com/gridap/Gridap.jl/issues/1174). Since PR[#1175](https://github.com/gridap/Gridap.jl/pull/1175).
+- Fixes the issue that a single CellField could not be passed to TrialFESpace constructor in cases where more than one tag was being passed to dirichlet_tags kw-arg argument. Since PR[#1177](https://github.com/gridap/Gridap.jl/pull/1177).
+
+## [0.19.5] - 2025-09-19
+
+### Added
+
 - Added extension for `TikzPictures.jl`. Since PR[#1150](https://github.com/gridap/Gridap.jl/pull/1150).
 - Added `eigen` function support for `TensorValue` objects. Fixes issue [#1156](https://github.com/gridap/Gridap.jl/issues/1156). Since PR[#1157](https://github.com/gridap/Gridap.jl/pull/1157).
+- Added kwargs support for `isapprox` function on `MultiValue` objects. Since PR[1158](https://github.com/gridap/Gridap.jl/pull/1158)
+- Misc improvements of `TensorValues` APIs and indexing methods. Since PR[#1162](https://github.com/gridap/Gridap.jl/pull/1162).
+  - Indexing tensors using slices (`:`/`Colon()`), (static)vectors or arrays, ranges (`OneTo`, `SOneTo`), or mix of them.
+  - Implemented `Base.keys` that relates to the array shape of the `MultiValue`
+  - Constructors `MV(::[S/M]Array)` and `SA(::MultiValue)` for any types `MV<:MultiValue` and `SA<:[S/M]Array` for arguments for which the conversion via `convert` is possible.
+- Added new way of doing AD for MultiField, where partials are computed separately for each field then merged together. Since PR[#1136](https://github.com/gridap/Gridap.jl/pull/1136).
 
 ## [0.19.4] - 2025-08-09
 
@@ -47,7 +94,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update `norm` function to be compatible with complex vectors and tensors. Since PR[#1118](https://github.com/gridap/Gridap.jl/pull/1118).
 - `AdaptivityGlue` can now deal with non-surjective n2o maps. Since PR[#1126](https://github.com/gridap/Gridap.jl/pull/1126).
-
 
 ## [0.19.1] - 2025-06-11
 

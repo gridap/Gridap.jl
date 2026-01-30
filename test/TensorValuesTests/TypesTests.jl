@@ -11,11 +11,15 @@ a = SMatrix{2,2}(1,2,3,4)
 t = TensorValue(a)
 @test isa(t,TensorValue{2,2,Int})
 @test convert(SMatrix{2,2,Int},t) == [1 3;2 4]
+@test convert(SMatrix{2,2,Int},t) === SArray(t)
+@test convert(MMatrix{2,2,Int},t) == MArray(t)
+@test t === MultiValue(a)
 
 a = MMatrix{2,2}(1,2,3,4)
 t = TensorValue(a)
 @test isa(t,TensorValue{2,2,Int})
 @test convert(SMatrix{2,2,Int},t) == [1 3;2 4]
+@test t === MultiValue(a)
 
 t = TensorValue{2}((1,2,3,4))
 @test isa(t,TensorValue{2,2,Int})
@@ -44,6 +48,8 @@ t = TensorValue{1}((10,))
 t = TensorValue(1,2.0,3,4)
 @test isa(t,TensorValue{2,2,Float64})
 @test convert(SMatrix{2,2,Float64},t) == [1 3;2 4]
+@test convert(SMatrix{2,2,Float64},t) ===SMatrix(t)
+@test convert(MMatrix{2,2,Float64},t) == MMatrix(t)
 
 t = TensorValue{2}(1,2.0,3,4)
 @test isa(t,TensorValue{2,2,Float64})
@@ -268,6 +274,9 @@ a = SVector(1)
 g = VectorValue(a)
 @test isa(g,VectorValue{1,Int})
 @test convert(SVector{1,Int},g) == [1,]
+@test convert(SVector{1,Int},g) === SArray(g)
+@test convert(MVector{1,Int},g) ==  MArray(g)
+@test g === MultiValue(a)
 
 a = SVector(1,2,3,4)
 g = VectorValue(a)
@@ -278,6 +287,7 @@ a = MVector(1,2,3,4)
 g = VectorValue(a)
 @test isa(g,VectorValue{4,Int})
 @test convert(MVector{4,Int},g) == [1,2,3,4]
+@test g === MultiValue(a)
 
 g = VectorValue{4}((1,2,3,4))
 @test isa(g,VectorValue{4,Int})
@@ -396,6 +406,10 @@ z = one(TensorValue{3,3,Int,9})
 s = one(z)
 @test convert(SMatrix{3,3,Int},s) == [1 0 0; 0 1 0; 0 0 1]
 
+z = one(TensorValue{2,3,Int,6})
+@test isa(z,TensorValue{2,3,Int,6})
+@test convert(SMatrix{2,3,Int},z) == [1 0 0; 0 1 0]
+
 z = one(SymFourthOrderTensorValue{2,Int})
 @test isa(z,SymFourthOrderTensorValue{2})
 @test Tuple(z) == (1.,0.,0., 0.,0.5,0., 0.,0.,1.)
@@ -434,6 +448,13 @@ a = ones(Int,3)
 b = convert(VectorValue{3,Int},a)
 @test isa(b,VectorValue{3,Int})
 
+ab = Vector(b)
+@test ab isa Vector{Int}
+@test ab == a
+ab = Vector{Float64}(b)
+@test ab isa Vector{Float64}
+@test ab == a
+
 a = ones(Int,1)
 b = convert(VectorValue{1,Int},a)
 @test isa(b,VectorValue{1,Int})
@@ -444,6 +465,17 @@ b = convert(V,a)
 @test isa(b,V)
 b = V[a,a,a,]
 @test isa(b,Vector{V})
+
+a = ones(Int,(2,3))
+b = convert(TensorValue{2,3,Int},a)
+@test isa(b,TensorValue{2,3,Int})
+
+ab = Matrix(b)
+@test ab isa Matrix{Int}
+@test ab == a
+ab = Matrix{Float64}(b)
+@test ab isa Matrix{Float64}
+@test ab == a
 
 a = (11,21,22)
 V = SymTensorValue{2,Int,3}
@@ -458,6 +490,17 @@ b = convert(V,a)
 @test isa(b,V)
 b = V[a,a,a]
 @test isa(b,Vector{V})
+
+a = ones(Int,(2,3,1))
+b = convert(ThirdOrderTensorValue{2,3,1,Int},a)
+@test isa(b,ThirdOrderTensorValue{2,3,1,Int})
+
+ab = Array(b)
+@test ab isa Array{Int}
+@test ab == a
+ab = Array{Float64}(b)
+@test ab isa Array{Float64}
+@test ab == a
 
 a = (1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
 V = SymFourthOrderTensorValue{2,Int,9}
@@ -499,6 +542,9 @@ s = "(1111, 1121, 1122, 2111, 2121, 2122, 2211, 2221, 2222)"
 a = SArray{Tuple{2,2,2}}(1,2,3,4,5,6,7,8)
 t = ThirdOrderTensorValue(a)
 @test isa(t,ThirdOrderTensorValue{2,2,2,Int})
+@test convert(SArray{Tuple{2,2,2},Int},t) === SArray(t)
+@test convert(MArray{Tuple{2,2,2},Int},t) == MArray(t)
+@test t === MultiValue(a)
 
 t = ThirdOrderTensorValue(1,2,3,4,5,6,7,8)
 @test isa(t,ThirdOrderTensorValue{2,2,2,Int})
@@ -524,31 +570,36 @@ t = ThirdOrderTensorValue{2,2,2}(1,2.0,3,4,5,6,7,8)
 t = ThirdOrderTensorValue{2,2,2,Int}(1,2.0,3,4,5,6,7,8)
 @test isa(t,ThirdOrderTensorValue{2,2,2,Int})
 
+# Fourth order tensor not implemented
+
+a = SArray{Tuple{2,2,2,2}}(1:16...)
+@test_throws "cannot be converted" MultiValue(a)
+
 # Misc
 
 v = VectorValue(3,2,1)
 m = mutable(v)
-@test m == get_array(v)
+@test m == get_array(v) == SArray(v)
 @test isa(m,MVector)
 
 v = TensorValue{2,3}(1,2,3,4,5,6)
 m = mutable(v)
-@test m == get_array(v)
+@test m == get_array(v) == SArray(v)
 @test isa(m,MMatrix)
 
 v = SymTensorValue{2}(1,2,3)
 m = mutable(v)
-@test m == get_array(v)
+@test m == get_array(v) == SArray(v)
 @test isa(m,MMatrix)
 
 v = SymTracelessTensorValue{2}(1,2)
 m = mutable(v)
-@test m == get_array(v)
+@test m == get_array(v) == SArray(v)
 @test isa(m,MMatrix)
 
 v = ThirdOrderTensorValue{2,1,3}(1:6...)
 m = mutable(v)
-@test m == get_array(v)
+@test m == get_array(v) == SArray(v)
 @test isa(m,MArray)
 
 v = SymFourthOrderTensorValue{2}(1:9...)

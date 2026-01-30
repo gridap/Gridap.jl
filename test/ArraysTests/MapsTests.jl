@@ -61,6 +61,8 @@ b = VectorValue(1,2,3)
 c = zeros(VectorValue{3,Int},2)
 broadcast!(⋅,c,a,b)
 test_map(c,f,a,b)
+# broadcast(⋅,a,b) to be fixed ?
+@test_throws "no method matching Int" broadcast(⋅,a,b)
 
 cache = return_cache(f,a,b)
 # @btime evaluate!($cache,$f,$a,$b)

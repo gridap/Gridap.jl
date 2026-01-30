@@ -32,6 +32,18 @@ end
 # Other constructors and conversions implemented for more generic types
 ###############################################################
 
+function size(a::MultiValue{S,T,N}, d::Integer) where {S,T,N}
+    d < 1 && error("arraysize: dimension out of range")
+    return d > N ? 1 :  @inbounds size(a)[d] # @inbounds
+end
+
+## ATM it is not possible to implement array like axes because lazy_mapping
+## operations / broadcast rely on axes(::MultiValue) adopting the Number convention to return ().
+#axes(::Type{<:MultiValue{S}}) where S = map(SOneTo, tuple(S.parameters...))
+#axes(a::MultiValue) = axes(typeof(a))
+#axes(::Type{<:MultiValue{S,T,N}},d) where {S,T,N} = d::Integer <= N ? axes(MultiValue{S})[d] : SOneTo(1)
+#axes(a::MultiValue,d::Integer) = axes(typeof(a),d)
+
 """
     change_eltype(m::Number,::Type{T2})
     change_eltype(M::Type{<:Number},::Type{T2})
@@ -43,6 +55,39 @@ For scalars (or any non MultiValue number), `change_eltype` returns T2.
 change_eltype(::Type{<:Number},::Type{T}) where {T} = T
 change_eltype(::Number,::Type{T2}) where {T2} = change_eltype(Number,T2)
 
+"""
+    MultiValue(a::SArray)
+    MultiValue(a::MArray)
+
+If possible (`a` needs to be of order 1, 2 or 3), converts `a` to a value of
+type `<:MultiValue`.
+"""
+MultiValue(::StaticArray) = @notimplemented "The given StaticArray cannot be converted to a ::MultiValue."
+
+"""
+    SVector(a::MultiValue)
+    SMatrix(a::MultiValue)
+    SArray( a::MultiValue)
+    (::Type{SA})( a::MultiValue) where SA<:StaticArray
+
+If possible, converts `a` to a value of specified `SArray` type.
+
+Size and element type can be specified and must match that of `a`,
+e.g. `SVector{2,Int}(VectorValue(1,2))`.
+"""
+(::Type{SA})(a::MultiValue) where SA<:StaticArray = SA(get_array(a))
+
+"""
+    Vector(a::MultiValue)
+    Matrix(a::MultiValue)
+    Array( a::MultiValue)
+    (::Type{A})( a::MultiValue) where A<:Array
+
+If possible, converts `a` to a value of specified `Array` type.
+The element type and number of dimension can be specified, but must be
+compatible (component conversion is OK).
+"""
+(::Type{A})(a::MultiValue) where A<:Array = A(get_array(a))
 
 """
     Mutable(T::Type{<:MultiValue}) -> ::Type{<:MArray}

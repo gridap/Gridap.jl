@@ -43,6 +43,16 @@ test_array(cell_r_auto,cell_r,≈)
 test_array(cell_j_auto,cell_j,≈)
 test_array(cell_h_auto,cell_h,≈)
 
+dp = get_trial_fe_basis(U)
+ph = FEFunction(U,rand(num_free_dofs(U)))
+ener(uh,ph) = ∫( 0.5*∇(uh)⋅∇(uh)*ph )*dΩ
+res(uh,ph) = ∫( ∇(uh)⋅∇(dv)*ph )*dΩ
+jac(uh,ph) = ∫( ∇(uh)⋅∇(dv)*dp )*dΩ
+
+cell_∂2L∂u∂p_auto = get_array(jacobian(ph->gradient(uh->ener(uh,ph),uh),ph) )
+cell_∂2L∂u∂p = get_array(jac(uh,ph))
+test_array(cell_∂2L∂u∂p_auto,cell_∂2L∂u∂p,≈)
+
 Γ = BoundaryTriangulation(model)
 dΓ = Measure(Γ,2)
 
@@ -242,5 +252,40 @@ xh = interpolate(VectorValue(0.0,0.0),Vx)
 g(x) = uh(VectorValue(x[1],x[2]))
 f(x) = ∫(g∘(x))dΩ
 gradient(f,xh)
+
+# Edge case: FESpaces on subtriangulation, integration over skeleton of whole domain.
+#  This was an issue propogating into GridapDistributed when a partition contained only
+#  ghost cells.
+model = CartesianDiscreteModel((0,1,0,1),(3,3))
+Ω1 = Triangulation(model,[1,2,3])
+Λ = SkeletonTriangulation(model)
+
+V = FESpace(Ω1,ReferenceFE(lagrangian,Float64,1))
+uh = zero(V);
+fill!(get_free_dof_values(uh),1.0)
+dΛ = Measure(Λ,2)
+
+# Gradient
+f2(xh) = ∫(mean(xh)*mean(xh))dΛ
+dv = get_fe_basis(V);
+j2 = gradient(f2,uh)
+J = assemble_vector(j2,V)
+
+df2(dxh,xh) = ∫(2*mean(dxh)*mean(xh))dΛ
+J_analytic = assemble_vector(dv->df2(dv,uh),V)
+
+@test J ≈ J_analytic
+
+# Jacobian
+f2(xh,yh) = ∫(mean(xh)*mean(xh)*mean(yh))dΛ
+dv = get_fe_basis(V);
+j3 = jacobian(uh->f2(uh,dv),uh)
+J = assemble_matrix(j3,V,V)
+
+df2(xh,dxh,yh) = ∫(2*mean(dxh)*mean(xh)*mean(yh))dΛ
+op = FEOperator(f2,df2,V,V)
+J_analytic = jacobian(op,uh)
+
+@test J ≈ J_analytic
 
 end # module

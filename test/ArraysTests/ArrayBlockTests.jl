@@ -31,4 +31,23 @@ cache = return_cache(k,A,B,C)
 D = evaluate!(cache,k,A,B,C)
 @test D == D - D + D
 
+k = Arrays.MatchingBlockMap(A)
+e = zeros(3,4)
+cache = return_cache(k,e);
+E = evaluate!(cache,k,e)
+@test E.touched == A.touched
+for i in eachindex(E.touched)
+  if E.touched[i]
+    @test E[i] == e
+  end
+end
+
+k = Arrays.BlockMap(2,[1,2])
+F = evaluate(k,e,e)
+
+G = evaluate(k,E,e)
+H = evaluate(k,e,E)
+J = evaluate(k,E,E)
+@test G == H == J
+
 end

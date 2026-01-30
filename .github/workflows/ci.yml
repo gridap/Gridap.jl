@@ -15,9 +15,9 @@ jobs:
       fail-fast: false
       matrix: # Main tests for linux
         version:
-          - '1.9'
           - '1.10'
           - '1.11'
+          - '1.12'
         os:
           - ubuntu-latest
         arch:
@@ -33,7 +33,7 @@ jobs:
             os: ubuntu-latest
             arch: x86
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
@@ -61,7 +61,7 @@ jobs:
         arch:
           - x64
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
@@ -70,7 +70,6 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
       - run: |
           julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.instantiate()'
-      - run: |
           julia --color=yes --project=. --depwarn=yes -e 'include("test/GridapTests/runtests.jl")'
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v5
@@ -78,3 +77,33 @@ jobs:
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: drivers
+  extensions:
+    name: Extensions ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - '1.10'
+        os:
+          - ubuntu-latest
+        arch:
+          - x64
+    steps:
+      - uses: actions/checkout@v6
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - run: |
+          julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.instantiate()'
+          julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.add(["Test", "TikzPictures"])'
+          julia --color=yes --project=. --depwarn=yes -e 'include("test/ExtensionTests/runtests.jl")'
+      - uses: julia-actions/julia-processcoverage@v1
+      - uses: codecov/codecov-action@v5
+        with:
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: extensions

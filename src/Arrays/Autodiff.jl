@@ -1,7 +1,7 @@
 
 function autodiff_array_gradient(a,i_to_x)
-  dummy_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_tag),i_to_x)
+  tag = x->ForwardDiff.gradient(a, x)
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
   i_to_result = lazy_map(AutoDiffMap(),i_to_cfg,i_to_ydual)
@@ -9,8 +9,8 @@ function autodiff_array_gradient(a,i_to_x)
 end
 
 function autodiff_array_jacobian(a,i_to_x)
-  dummy_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_tag),i_to_x)
+  tag = x->Forwarddiff.jacobian(a, x)
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
   i_to_result = lazy_map(AutoDiffMap(),i_to_cfg,i_to_ydual)
@@ -23,8 +23,8 @@ function autodiff_array_hessian(a,i_to_x)
 end
 
 function autodiff_array_gradient(a,i_to_x,j_to_i)
-  dummy_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_tag),i_to_x)
+  tag = x->ForwardDiff.gradient(a, x)
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
   j_to_cfg = autodiff_array_reindex(i_to_cfg,j_to_i)
@@ -33,8 +33,8 @@ function autodiff_array_gradient(a,i_to_x,j_to_i)
 end
 
 function autodiff_array_jacobian(a,i_to_x,j_to_i)
-  dummy_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_tag),i_to_x)
+  tag = x->Forwarddiff.jacobian(a, x)
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
   j_to_cfg = autodiff_array_reindex(i_to_cfg,j_to_i)
@@ -95,26 +95,31 @@ struct AutoDiffMap <: Map end
 
 function return_cache(::AutoDiffMap,cfg::ForwardDiff.GradientConfig,ydual)
   ydual isa Real || throw(ForwardDiff.GRAD_ERROR)
-  result = similar(cfg.duals, ForwardDiff.valtype(ydual))
+  result = CachedArray(similar(cfg.duals, ForwardDiff.valtype(ydual)))
   return result
 end
 
 function evaluate!(result,::AutoDiffMap,cfg::ForwardDiff.GradientConfig{T},ydual) where T
   @check ForwardDiff.chunksize(cfg) == length(result)
+  setsize!(result, (ForwardDiff.chunksize(cfg),))
   result = ForwardDiff.extract_gradient!(T, result, ydual)
   return result
 end
 
 function return_cache(::AutoDiffMap,cfg::ForwardDiff.JacobianConfig{T,V,N},ydual) where {T,V,N}
   ydual isa AbstractArray || throw(ForwardDiff.JACOBIAN_ERROR)
-  result = similar(ydual, ForwardDiff.valtype(eltype(ydual)), length(ydual), N)
+  result = CachedArray(similar(ydual, ForwardDiff.valtype(eltype(ydual)), length(ydual), N))
   return result
 end
 
 function evaluate!(result,::AutoDiffMap,cfg::ForwardDiff.JacobianConfig{T,V,N},ydual) where {T,V,N}
   @check ForwardDiff.chunksize(cfg) == size(result,2)
-  ForwardDiff.extract_jacobian!(T, result, ydual, N)
-  ForwardDiff.extract_value!(T, result, ydual)
+  if !isempty(ydual)  # TODO: Temporary fix, sometimes ydual.touched is incorrectly true for the
+                      #       case of SkeletonTriangulation + MultiField on different triangulations.
+    setsize!(result, (length(ydual),N))
+    ForwardDiff.extract_jacobian!(T, result, ydual, N)
+    ForwardDiff.extract_value!(T, result, ydual)
+  end
   return result
 end
 
@@ -197,13 +202,23 @@ end
 
 function return_cache(::AutoDiffMap,cfg::BlockConfig{typeof(ForwardDiff.gradient),T},ydual) where T
   ydual isa Real || throw(ForwardDiff.GRAD_ERROR)
-  result = similar(cfg.duals, ForwardDiff.valtype(ydual))
+  result = CachedArray(similar(cfg.duals, ForwardDiff.valtype(ydual)))
   return result
 end
 
 function evaluate!(result,::AutoDiffMap,cfg::BlockConfig{typeof(ForwardDiff.gradient),T},ydual) where T
+  _setsize!(result, cfg.duals)
   extract_gradient_block!(T, result, ydual, cfg.offsets)
   return result
+end
+
+function _setsize!(result::VectorBlock,duals::VectorBlock{<:Vector})
+  ni = size(result.array,1)
+  for i in 1:ni
+    if result.touched[i]
+      setsize!(result[i], (length(duals[i]),))
+    end
+  end
 end
 
 function return_cache(::AutoDiffMap,cfg::BlockConfig{typeof(ForwardDiff.jacobian),T},ydual) where T
@@ -213,17 +228,29 @@ function return_cache(::AutoDiffMap,cfg::BlockConfig{typeof(ForwardDiff.jacobian
 end
 
 function evaluate!(result,::AutoDiffMap,cfg::BlockConfig{typeof(ForwardDiff.jacobian),T},ydual) where T
+  _setsize!(result,ydual)
   extract_jacobian_block!(T, result, ydual, cfg.offsets)
   return result
 end
 
-function _alloc_jacobian(ydual::Vector,xdual::Vector)
+function _alloc_jacobian(ydual::AbstractVector,xdual::AbstractVector)
   T = ForwardDiff.valtype(eltype(ydual))
-  zeros(T,length(ydual),length(xdual))
+  CachedArray(zeros(T,length(ydual),length(xdual)))
+end
+
+function _setsize!(result::MatrixBlock,ydual::VectorBlock{<:AbstractVector})
+  ni,nj = size(result)
+  for i in 1:ni
+    for j in 1:nj
+      if result.touched[i,j]
+        setsize!(result[i,j], (length(ydual[i]),length(ydual[j])))
+      end
+    end
+  end
 end
 
 # Skeleton + Multifield: The VectorBlock corresponds to +/-
-function _alloc_jacobian(ydual::VectorBlock,xdual::Vector)
+function _alloc_jacobian(ydual::VectorBlock,xdual::AbstractVector)
   i = findfirst(ydual.touched)
   ai = _alloc_jacobian(ydual.array[i],xdual)
   ni = size(ydual.array,1)
@@ -253,6 +280,18 @@ function _alloc_jacobian(ydual::VectorBlock,xdual::VectorBlock)
     end
   end
   ArrayBlock(array,touched)
+end
+
+function _setsize!(result::MatrixBlock{<:VectorBlock},ydual::VectorBlock{<:VectorBlock})
+  ni,nj = size(result)
+  for i in 1:ni
+    for j in 1:nj
+      if result.touched[i,j]
+        setsize!(result[i,j][1], (length(ydual[i][1]),length(ydual[j][1])))
+        setsize!(result[i,j][2], (length(ydual[i][2]),length(ydual[j][2])))
+      end
+    end
+  end
 end
 
 function seed_block!(
