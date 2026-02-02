@@ -358,7 +358,7 @@ function _compute_linear_grid_coords_from_simplex(p::Polytope{2},n::Integer)
   n_cells = tri_num(n)+tri_num(n-1)
   n_verts_x_cell = num_vertices(p)
   X = zeros(Tp,n_verts)
-  T = [ zeros(Int,n_verts_x_cell) for i in 1:n_cells ]
+  T = [ zeros(Int32,n_verts_x_cell) for i in 1:n_cells ]
   for i in 1:n+1
     for j in 1:n+1-i+1
       vert = v(n+1,i,j)
@@ -394,7 +394,7 @@ function _compute_linear_grid_coords_from_simplex(p::Polytope{3},n::Integer)
   n_cells = tet_num(n)+n_core_tets*tet_num(n-1)+tet_num(n-2)
   n_verts_x_cell = num_vertices(p)
   X = zeros(Tp,n_verts)
-  T = [ zeros(Int,n_verts_x_cell) for i in 1:n_cells ]
+  T = [ zeros(Int32,n_verts_x_cell) for i in 1:n_cells ]
   for i in 1:n+1
     for j in 1:n+1-(i-1)
       for k in 1:n+1-(i-1)-(j-1)

@@ -7,22 +7,14 @@
       cell_types::Vector{Int8}
     end
 """
-struct UnstructuredGrid{Dc,Dp,Tp,O,Tn} <: Grid{Dc,Dp}
+struct UnstructuredGrid{Dc,Dp,Tp,O,Tn,Tm} <: Grid{Dc,Dp}
   node_coordinates::Vector{Point{Dp,Tp}}
   cell_node_ids::Table{Int32,Vector{Int32},Vector{Int32}}
   reffes::Vector{LagrangianRefFE{Dc}}
   cell_types::Vector{Int8}
   orientation_style::O
   facet_normal::Tn
-  cell_map
-  @doc """
-      function UnstructuredGrid(
-        node_coordinates::Vector{Point{Dp,Tp}},
-        cell_node_ids::Table{Ti},
-        reffes::Vector{<:LagrangianRefFE{Dc}},
-        cell_types::Vector,
-        orientation_style::OrientationStyle=NonOriented()) where {Dc,Dp,Tp,Ti}
-      end
+  cell_map::Tm
 
   Low-level inner constructor.
   """
@@ -31,34 +23,56 @@ struct UnstructuredGrid{Dc,Dp,Tp,O,Tn} <: Grid{Dc,Dp}
     cell_node_ids::Table{Ti},
     reffes::Vector{<:LagrangianRefFE{Dc}},
     cell_types::Vector,
-    orientation_style::OrientationStyle=NonOriented(),
-    facet_normal=nothing;
-    has_affine_map=nothing) where {Dc,Dp,Tp,Ti}
-
-    if has_affine_map === nothing
-      _has_affine_map = get_has_affine_map(reffes)
-    else
-      _has_affine_map = has_affine_map
-    end
-    cell_map = _compute_cell_map(node_coordinates,cell_node_ids,reffes,cell_types,_has_affine_map)
-    B = typeof(orientation_style)
-    Tn = typeof(facet_normal)
-    new{Dc,Dp,Tp,B,Tn}(
+    orientation_style::O,
+    facet_normal::Tn,
+    cell_map::Tm
+  ) where {Dc,Dp,Tp,Ti,O,Tn,Tm}
+    new{Dc,Dp,Tp,O,Tn,Tm}(
       node_coordinates,
       cell_node_ids,
       reffes,
       cell_types,
       orientation_style,
       facet_normal,
-      cell_map)
+      cell_map
+    )
   end
 end
 
-function get_has_affine_map(ctype_reffe)
-  ctype_poly = map(get_polytope,ctype_reffe)
-  has_affine_map =
-    all(map(is_first_order,ctype_reffe)) &&
-    ( all(map(is_simplex,ctype_poly)) || all(map(p->num_dims(p)==1,ctype_poly)) )
+"""
+    function UnstructuredGrid(
+      node_coordinates::Vector{Point{Dp,Tp}},
+      cell_node_ids::Table{Ti},
+      reffes::Vector{<:LagrangianRefFE{Dc}},
+      cell_types::Vector,
+      orientation_style::OrientationStyle=NonOriented()
+    ) where {Dc,Dp,Tp,Ti}
+
+Low-level constructor.
+"""
+function UnstructuredGrid(
+  node_coordinates::Vector{<:Point},
+  cell_node_ids::Table,
+  reffes::Vector{<:LagrangianRefFE},
+  cell_types::Vector,
+  orientation_style::OrientationStyle=NonOriented(),
+  facet_normal=nothing;
+  has_affine_map=get_has_affine_map(reffes)
+)
+  cell_map = _compute_cell_map(node_coordinates,cell_node_ids,reffes,cell_types,has_affine_map)
+  UnstructuredGrid(
+    node_coordinates,
+    cell_node_ids,
+    reffes,
+    cell_types,
+    orientation_style,
+    facet_normal,
+    cell_map)
+end
+
+function get_has_affine_map(reffes)
+  polys = map(get_polytope,reffes)
+  all(is_first_order,reffes) && (all(is_simplex,polys) || all(map(p->isone(num_dims(p)),polys)))
 end
 
 function _compute_cell_map(node_coords,cell_node_ids,ctype_reffe,cell_ctype, has_affine_map)
