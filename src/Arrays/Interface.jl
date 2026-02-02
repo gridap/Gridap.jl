@@ -1,18 +1,22 @@
 """
-    getindex!(cache,a::AbstractArray,i...)
+    getindex!(cache, a::AbstractArray, i...)
 
 Returns the item of the array `a` associated with index `i`
-by (possibly) using the scratch data passed in the `cache` object.
+by (possibly) using the scratch data passed in the `cache` object. The cache in
+only used for single element access (`i::Union{Integer,CartesianIndex,end,begin}`),
+otherwise `getindex` is used.
 
-It defaults to
+`getindex!` defaults to
 
-    getindex!(cache,a::AbstractArray,i...) = a[i...]
+    getindex!(cache, a::AbstractArray, i...) = a[i...]
 
 As for standard Julia arrays, the user needs to implement only one of the following signatures
 depending on the `IndexStyle` of the array.
 
     getindex!(cache,a::AbstractArray,i::Integer)
     getindex!(cache,a::AbstractArray{T,N},i::Vararg{Integer,N}) where {T,N}
+
+See also [`array_cache`](@ref), [`uses_hash!`](@ref), [`invalidate_cache!`](@ref).
 
 # Examples
 

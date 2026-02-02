@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `testvalue(::Type{<:Tuple})` for tuples with an arbitrary number of items. Since PR[#1210](https://github.com/gridap/Gridap.jl/pull/1210).
 - Added `normalize` function support for `MultiValue` objects. Since PR[#1211](https://github.com/gridap/Gridap.jl/pull/1211).
 
+### Fixed
+
+- Fixed `getindex!` when the given indexes need to be converted the indexstyle of the array (cache isn't skipped anymore). Since [#1213](https://github.com/gridap/Gridap.jl/pull/1213).
 
 ## [0.19.7] - 2025-12-18
 
