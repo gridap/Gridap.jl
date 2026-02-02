@@ -2,8 +2,8 @@
     getindex!(cache, a::AbstractArray, i...)
 
 Returns the item of the array `a` associated with index `i`
-by (possibly) using the scratch data passed in the `cache` object. The cache in
-only used for single element access (`i::Union{Integer,CartesianIndex,end,begin}`),
+by (possibly) using the scratch data passed in the `cache` object. The cache is
+only used for single element access (`i::Union{Integer,CartesianIndex,end,begin}...`),
 otherwise `getindex` is used.
 
 `getindex!` defaults to
