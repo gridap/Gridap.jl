@@ -39,16 +39,32 @@ end
 ```
 
 """
-getindex!(cache,a::AbstractArray,i...) = a[i...]
-getindex!(cache,a::AbstractArray,i::CartesianIndex) = getindex!(cache,a,Tuple(i)...)
-getindex!(cache,a::AbstractArray,i::Integer) = _getindex_1d!(IndexStyle(a),cache,a,i)
-function getindex!(cache,a::AbstractArray{T,N},i::Vararg{Integer,N}) where {T,N}
-  _getindex_nd!(IndexStyle(a),cache,a,CartesianIndex(i))
+@propagate_inbounds function getindex!(cache, a::AbstractArray, inds...)
+  _getindex!(IndexStyle(a), cache, a, inds...)
 end
-_getindex_1d!(s::IndexLinear,cache,a,i) = a[i]
-_getindex_1d!(s::IndexCartesian,cache,a,i) = _getindex_nd!(s,cache,a,CartesianIndices(a)[i])
-_getindex_nd!(s::IndexLinear,cache,a,i) = _getindex_1d!(s,cache,a,LinearIndices(a)[i])
-_getindex_nd!(s::IndexCartesian,cache,a,i) = a[i]
+
+# if the expected overload of getindex! has not been dispatched, fallback to uncached getindex
+@propagate_inbounds _getindex!(::IndexLinear, cache, a, i::Integer) = a[i]
+@propagate_inbounds function _getindex!(::IndexCartesian, cache, a::AbstractArray{T,N},
+  inds::Vararg{Integer,N}) where {T,N}
+
+  a[inds...]
+end
+
+# otherwise, convert indices to a single element in `a` to the correct style and try again
+@propagate_inbounds function _getindex!(::IndexLinear, cache, a, inds::Union{Integer, CartesianIndex}...)
+  i = try LinearIndices(a)[inds...] catch _ rethrow(BoundsError(a,inds)) end
+  getindex!(cache, a, i)
+end
+@propagate_inbounds function _getindex!(::IndexCartesian, cache, a, inds::Union{Integer, CartesianIndex}...)
+  # this catch prevents infinite loop on top of aesthetic
+  ci = try CartesianIndices(a)[inds...] catch _ rethrow(BoundsError(a,inds)) end
+  getindex!(cache, a, Tuple(ci)...)
+end
+
+# else, unsuported in place indexing
+@propagate_inbounds _getindex!(::IndexStyle, cache, a, inds...) = a[inds...]
+
 
 """
     invalidate_cache!(cache) -> nothing
