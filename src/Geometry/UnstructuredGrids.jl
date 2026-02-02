@@ -15,7 +15,7 @@ struct UnstructuredGrid{Dc,Dp,Tp,O,Tn,Tm} <: Grid{Dc,Dp}
   orientation_style::O
   facet_normal::Tn
   cell_map::Tm
-
+  """
   Low-level inner constructor.
   """
   function UnstructuredGrid(
