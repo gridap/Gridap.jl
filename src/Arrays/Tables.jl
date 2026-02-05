@@ -13,6 +13,7 @@ struct Table{T,Vd<:AbstractVector{T},Vp<:AbstractVector} <: AbstractVector{Vecto
   data::Vd
   ptrs::Vp
   function Table(data::AbstractVector,ptrs::AbstractVector)
+    @check axes(ptrs) == (Base.OneTo(length(ptrs)),) "`Table` assumes 1-based indexing for pointer array"
     new{eltype(data),typeof(data),typeof(ptrs)}(data,ptrs)
   end
 end
@@ -103,21 +104,25 @@ function array_cache(a::Table)
   CachedArray(r)
 end
 
-function getindex!(c,a::Table,i::Integer)
-  pini = a.ptrs[i]
-  l = a.ptrs[i+1] - pini
-  setsize!(c,(l,))
-  pini -= 1
-  r = c.array
-  for j in 1:l
-    @inbounds r[j] = a.data[pini+j]
+@propagate_inbounds function getindex!(c, a::Table, i::Integer)
+  @boundscheck checkbounds(a,i)
+  @inbounds begin
+    pini = a.ptrs[i]
+    l = a.ptrs[i+1] - pini
+    setsize!(c,(l,))
+    pini -= 1
+    r = c.array
+    for j in 1:l
+      r[j] = a.data[pini+j]
+    end
   end
   r
 end
 
-function Base.getindex(a::Table,i::Integer)
+@propagate_inbounds function Base.getindex(a::Table,i::Integer)
+  @boundscheck checkbounds(a,i)
   cache = array_cache(a)
-  getindex!(cache,a,i)
+  @inbounds getindex!(cache,a,i)
 end
 
 function Base.getindex(a::Table,i::UnitRange)
@@ -177,7 +182,7 @@ function _generate_data_and_ptrs_fill_ptrs!(ptrs,vv)
   c = array_cache(vv)
   k = 1
   for i in eachindex(vv)
-    v = getindex!(c,vv,i)
+    @inbounds v = getindex!(c,vv,i)
     ptrs[k+1] = length(v)
     k += 1
   end
@@ -187,7 +192,7 @@ function _generate_data_and_ptrs_fill_data!(data,vv)
   c = array_cache(vv)
   k = 1
   for i in eachindex(vv)
-    v = getindex!(c,vv,i)
+    @inbounds v = getindex!(c,vv,i)
     for vi in v
       data[k] = vi
       k += 1
@@ -390,7 +395,7 @@ Given a `Table`, remove the entries that are empty by modifying its `ptrs` in-pl
 """
 function remove_empty_entries!(table::Table)
   ptrs = table.ptrs
-  
+
   i = 1
   n = length(table)
   while i <= n
@@ -499,9 +504,10 @@ function find_local_index(
   c2 = array_cache(b_to_la_to_a)
   ptrs = generate_ptrs(c_to_la_to_a)
   data = fill(T(-1),ptrs[end]-1)
+  @check axes(c_to_la_to_a) == axes(c_to_b)
   for c in eachindex(c_to_la_to_a)
-    b = c_to_b[c]
-    lin_to_a = getindex!(c1,c_to_la_to_a,c)
+    @inbounds b = c_to_b[c]
+    @inbounds lin_to_a = getindex!(c1,c_to_la_to_a,c)
     lout_to_a = getindex!(c2,b_to_la_to_a,b)
 
     pin, pout = sortperm(lin_to_a), sortperm(lout_to_a)
@@ -587,19 +593,19 @@ end
 """
     merge_entries(a_to_lb_to_b, c_to_la_to_a) -> c_to_lb_to_b
 
-Merge the entries of `a_to_lb_to_b`, grouping them by `c_to_la_to_a`. Returns 
+Merge the entries of `a_to_lb_to_b`, grouping them by `c_to_la_to_a`. Returns
 the merged table `c_to_lb_to_b`.
 
 Accepts the following keyword arguments:
 
-- `acc`: Accumulator for the entries of `a_to_lb_to_b`. Default to a `Set`, ensuring 
+- `acc`: Accumulator for the entries of `a_to_lb_to_b`. Default to a `Set`, ensuring
          that the resulting entries are unique.
 - `post`: Postprocessing function to apply to the accumulator before storing the resulting entries.
           Defaults to the identity, but can be used to perform local sorts or filters, for example.
 """
 function merge_entries(
   a_to_lb_to_b::AbstractVector{<:AbstractVector{T}},
-  c_to_la_to_a::AbstractVector{<:AbstractVector{Ti}}; 
+  c_to_la_to_a::AbstractVector{<:AbstractVector{Ti}};
   acc  = Set{T}(),
   post = identity
 ) where {T,Ti<:Integer}
@@ -608,19 +614,20 @@ function merge_entries(
 
   n_c = length(c_to_la_to_a)
   ptrs = zeros(Int32,n_c+1)
+  @check axes(c_to_la_to_a) == (Base.OneTo(n_c),)
   for c in 1:n_c
-    as = getindex!(c2,c_to_la_to_a,c)
+    @inbounds as = getindex!(c2,c_to_la_to_a,c)
     for a in as
       bs = getindex!(c1,a_to_lb_to_b,a)
       !isempty(bs) && push!(acc, bs...)
     end
-    ptrs[c+1] += length(post(acc))
+    @inbounds ptrs[c+1] += length(post(acc))
     empty!(acc)
   end
   length_to_ptrs!(ptrs)
 
   data = zeros(T,ptrs[end]-1)
-  for c in 1:n_c
+  @inbounds for c in 1:n_c
     as = getindex!(c2,c_to_la_to_a,c)
     for a in as
       bs = getindex!(c1,a_to_lb_to_b,a)
@@ -637,7 +644,7 @@ end
 """
     block_identity_array(ptrs;T=Int)
 
-Given a vector of pointers of length `n+1`, returns a vector of length `ptrs[end]-1` 
+Given a vector of pointers of length `n+1`, returns a vector of length `ptrs[end]-1`
 where the entries are the index of the block to which each entry belongs.
 
 # Example
@@ -658,7 +665,8 @@ julia> block_identity_array([1,3,7])
 function block_identity_array(ptrs;T=Int)
   n = length(ptrs)-1
   a = Vector{T}(undef,ptrs[end]-1)
-  for i in 1:n
+  @check axes(ptrs) == (Base.OneTo(n+1),)
+  @inbounds for i in 1:n
     a[ptrs[i]:ptrs[i+1]-1] .= i
   end
   return a
@@ -688,7 +696,8 @@ julia> local_identity_array([1,3,7])
 function local_identity_array(ptrs;T=Int)
   n = length(ptrs)-1
   a = Vector{T}(undef,ptrs[end]-1)
-  for i in 1:n
+  @check axes(ptrs) == (Base.OneTo(n+1),)
+  @inbounds for i in 1:n
     ni = ptrs[i+1]-ptrs[i]
     a[ptrs[i]:ptrs[i+1]-1] .= 1:ni
   end

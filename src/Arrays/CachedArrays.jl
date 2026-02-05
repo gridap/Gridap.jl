@@ -26,8 +26,8 @@ mutable struct CachedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
   buffer::Dict{NTuple{N,Int},A}
 
   @doc """
-      CachedArray(a::AbstractArray)
-  
+  CachedArray(a::AbstractArray)
+
   Constructs a `CachedArray` from a given array.
   """
   function CachedArray(array::A) where {T,N,A<:AbstractArray{T,N}}
@@ -38,12 +38,12 @@ mutable struct CachedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
 end
 
 """
-    const CachedMatrix{T,A} = CachedArray{T,2,A}
+const CachedMatrix{T,A} = CachedArray{T,2,A}
 """
 const CachedMatrix{T,A} = CachedArray{T,2,A}
 
 """
-    const CachedVector{T,A} = CachedArray{T,1,A}
+const CachedVector{T,A} = CachedArray{T,1,A}
 """
 const CachedVector{T,A} = CachedArray{T,1,A}
 
@@ -59,7 +59,7 @@ $(SIGNATURES)
 CachedMatrix(a::AbstractMatrix) = CachedArray(a)
 
 """
-    CachedArray(T,N)
+CachedArray(T,N)
 
 Constructs an empty `CachedArray` of element type `T` and `N` dimensions.
 """
@@ -139,9 +139,9 @@ function Base.convert(::Type{CachedArray{T,N,A}},a::CachedArray) where {T,N,A}
 end
 
 """
-    $(SIGNATURES)
+$(SIGNATURES)
 
-Sets the size of the `CachedArray` to accomodate the result of the operation given 
+Sets the size of the `CachedArray` to accomodate the result of the operation given
 by `op(args...)`.
 """
 function setsize_op!(op,c::CachedArray,args...)

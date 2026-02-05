@@ -20,7 +20,7 @@ function evaluate!(cache,k::FilterMap,f,a)
   for (val,filter) in zip(vals,filters)
     if filter
       i += 1
-      r[i] = val
+      @inbounds r[i] = val
     end
   end
   r
