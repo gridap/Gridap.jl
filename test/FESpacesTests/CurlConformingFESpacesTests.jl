@@ -195,13 +195,15 @@ function setup_model()
     m  
 end
 
-model = setup_model() 
+model = setup_model()
 order = 1 # Smallest nedelec FE order for which we have DoFs on the cell facets
 R = TestFESpace(model, ReferenceFE(nedelec,Float64,order);conformity=:Hcurl)
-fh = interpolate(VectorValue(1.0,0.0,0.0),R)
+
+f(x) = VectorValue(x[2]*x[3],x[1]*x[3],x[1]*x[2])
+fh = interpolate(f,R)
 Ω = Triangulation(model)
 dΩ = Measure(Ω,2*order+1)
-eh = fh - VectorValue(1.0,0.0,0.0)
+eh = fh - f
 @test_broken sum(∫(eh⋅eh)dΩ) < 1.0e-12
 
 #using Gridap.Visualization
