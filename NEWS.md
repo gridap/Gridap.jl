@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fixed lack of more general tests for Nedelec ReferenceFEs. Added a test which is currently broken. Since PR[#](https://github.com/gridap/Gridap.jl/pull/1210).
+- Fixed lack of more general tests for Nedelec ReferenceFEs. Added a test which is currently broken. Since PR[#1216](https://github.com/gridap/Gridap.jl/pull/1216).
 
 ### Added
 
