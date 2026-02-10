@@ -26,7 +26,7 @@ of arbitrary observation points within the computational domain.
 struct SequentialFEObservationOperator{T} <: FEObservationOperator
   obs_points::AbstractVector{<:Point}
   fe_space::SingleFieldFESpace
-  cell_to_points::Gridap.Arrays.Table
+  cell_to_points::Table
   cells_w_points
   cell_to_weights::AbstractVector{Matrix{T}}
   filtered_indices::Vector{Int32}
@@ -187,12 +187,12 @@ end
 
 function _evaluate_obs_values!(
   obs_vals,
-  cell_to_points::Gridap.Arrays.Table,
+  cell_to_points::Table,
   cells_w_points,
   cell_to_weights,
   cell_to_dof_values)
   cell_evals = lazy_map(*, cell_to_weights, cell_to_dof_values)
-  Gridap.FESpaces._free_and_dirichlet_values_fill!(
+  _free_and_dirichlet_values_fill!(
     obs_vals,
     nothing, # No Dirichlet values in the present scenario
     array_cache(cell_evals),
