@@ -128,8 +128,6 @@ corresponding FE function at the observation points.
 """
 function (op::SequentialFEObservationOperator)(free_vals, diri_vals)
   obs_vals, uh, _ = op.cache
-  @show free_vals
-  @show length(uh.free_values)
   _update_free_dof_values!(uh, free_vals)
   uh.dirichlet_values .= diri_vals
   _evaluate_obs_values!(
