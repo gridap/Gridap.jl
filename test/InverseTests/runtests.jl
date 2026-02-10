@@ -3,7 +3,7 @@ module InverseTests
 using Test
 
 @testset "InverseTests" begin
-  include("InverseTests.jl")
+  include("FEObservationOperatorsTests.jl")
 end
 
 end  

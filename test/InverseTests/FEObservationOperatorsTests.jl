@@ -1,4 +1,4 @@
-module InverseTests  
+module FEObservationOperatorsTests 
 
 using Gridap, Test, ChainRulesCore
 
