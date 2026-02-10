@@ -48,7 +48,6 @@ export norm1, norm2, norm_sqr
 
 include("FEObservationOperators.jl")
 export FEObservationOperator
-export MultiFieldDataMisfitCalculator
 export filter_observation_values
 
 end
