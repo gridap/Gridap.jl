@@ -1,27 +1,17 @@
 module Inverse
 
-import Gridap, ChainRulesCore, ForwardDiff
-# import GridapDistributed, PartitionedArrays, MPI, 
+using Gridap, ChainRulesCore, ForwardDiff
 import LinearAlgebra
 
 import Gridap.FESpaces: FEFunction, FESpace, TrialFESpace
 import Gridap.FESpaces: assemble_vector, assemble_matrix
 import Gridap.FESpaces: num_free_dofs, num_dirichlet_dofs
 import Gridap.FESpaces: get_cell_dof_ids, get_cell_dof_values
-
 import Gridap.Arrays: lazy_map, get_array, ∑
-
 import Gridap.Algebra: solve!
-
 import Gridap.TensorValues: VectorValue
-
 import Gridap.Fields: Point
-
 import Gridap.CellData: ∫, ∇, ⋅, ⊙, ×
-
-
-
-
 import Gridap.Algebra: numerical_setup, numerical_setup!, symbolic_setup
 import Gridap.Algebra: SymbolicSetup, NumericalSetup, LinearSolver, LUSolver
 import Gridap.Arrays: return_cache, array_cache, getindex!, evaluate, evaluate!
@@ -43,34 +33,16 @@ import Gridap.ReferenceFEs: LagrangianDofBasis, MomentBasedDofBasis
 import Gridap.MultiField: MultiFieldFESpace, MultiFieldStyle
 import Gridap.MultiField: StridedMultiFieldStyle, ConsecutiveMultiFieldStyle
 import Gridap.MultiField: num_fields
-# import GridapDistributed: DistributedCellField, DistributedMultiFieldFEFunction
-# import GridapDistributed: DistributedFESpace, DistributedDiscreteModel
-# import GridapDistributed: DistributedMeasure
-# import GridapDistributed: DistributedSingleFieldFESpace, DistributedMultiFieldFESpace
-# import GridapDistributed: fetch_vector_ghost_values!, generate_gids, get_cell_gids
-# import GridapDistributed: local_views
-# import PartitionedArrays: PVector, MPIArray, DebugArray, LocalIndices
-# import PartitionedArrays: own_to_local, local_to_owner, own_to_owner, ghost_to_local
-# import PartitionedArrays: local_to_global, own_to_global, ghost_to_global
-# import PartitionedArrays: partition, i_am_main, own_values
 
 import ChainRulesCore: Tangent, NoTangent, unthunk
 
 import FillArrays: Fill
-
-# import Optimisers: Restructure
 
 import SparseArrays: AbstractSparseMatrix, SparseMatrixCSC, sparse, spzeros, droptol!
 
 import LinearAlgebra: Diagonal, mul!, norm1, norm2, norm_sqr
 
 import Random: rand!
-
-abstract type FEINNType end
-
-function Base.show(io::IO, iv::FEINNType)
-  print(io, typeof(iv).name.name, "()")
-end
 
 export norm1, norm2, norm_sqr
 
