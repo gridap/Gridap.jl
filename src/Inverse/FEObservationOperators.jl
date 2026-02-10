@@ -1,5 +1,4 @@
 abstract type FEObservationOperator end 
-abstract type DataMisfitCalculator end
 
 function filter_observation_values(::FEObservationOperator, ::AbstractVector)
   @abstractmethod
@@ -267,37 +266,4 @@ function _compute_obs_data_indices(model, obs_ops, npoint)
     end
     LocalIndices(npoint, first(own_to_owner(cgid)), Int.(op.filtered_indices), owners)
   end
-end
-
-function _validate_multi_field_data_misfit_cal_inputs(
-  fe_space::MultiFieldFESpace,
-  obs_operators,
-  obs_values,
-  loss_functions,
-  weights)
-  @assert length(fe_space.spaces) ==
-          length(obs_operators) ==
-          length(obs_values) ==
-          length(loss_functions) ==
-          length(weights) """Number of single-field FE spaces, number of
-          observation operators and values, number of weights,
-          number of loss functions must be the same!"""
-  @assert all([fe_space.spaces[i] === obs_operators[i].fe_space
-               for i in eachindex(obs_operators)]) """The FE spaces in the
-               multi-field FE space must match those in the observation operators"""
-end
-
-function _init_multi_field_data_misfit_cal_cache(fe_space::MultiFieldFESpace, obs_values)
-  PT, nspaces = eltype(get_vector_type(fe_space)), length(fe_space.spaces)
-  ustart_idx, upartitions = Vector{Int32}(undef, nspaces), Vector{Vector{PT}}(undef, nspaces)
-  uidx = 1
-  for i in 1:nspaces
-    ustart_idx[i] = uidx
-    nu = num_free_dofs(fe_space.spaces[i])
-    upartitions[i] = Vector{PT}(undef, nu)
-    uidx += nu
-  end
-  ūall = vcat(upartitions...)
-  errs = map(ov -> similar(ov), obs_values)
-  (upartitions, ustart_idx, ūall, errs)
 end

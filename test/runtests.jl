@@ -36,4 +36,6 @@ using Test
 
 @time @testset "Aqua" begin include("Aqua.jl") end
 
+@time @testset "Inverse" begin include("InverseTests/runtests.jl") end
+
 end # module
