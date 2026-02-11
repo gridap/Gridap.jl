@@ -39,52 +39,52 @@
  # return cache1, cache2
 #end
 
-function evaluate!(cache,f::CellField,x::Point)
-  cache1,cache2 = cache
-  cell_f_cache, f_cache, cell_f, f₀ = cache2
-  @check f === f₀ "Wrong cache"
+#function evaluate!(cache,f::CellField,x::Point)
+#  cache1,cache2 = cache
+#  cell_f_cache, f_cache, cell_f, f₀ = cache2
+#  @check f === f₀ "Wrong cache"
 
-  cell = _point_to_cell!(cache1, x)
-  cf = getindex!(cell_f_cache, cell_f, cell)
-  fx = evaluate!(f_cache, cf, x)
-  return fx
-end
+  #cell = _point_to_cell!(cache1, x)
+  #cf = getindex!(cell_f_cache, cell_f, cell)
+  #fx = evaluate!(f_cache, cf, x)
+  #return fx
+#end
 
-return_cache(f::CellField,xs::AbstractVector{<:Point}) = return_cache(f,testitem(xs))
+#return_cache(f::CellField,xs::AbstractVector{<:Point}) = return_cache(f,testitem(xs))
 
-function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
-  cache1, cache2 = cache
-  searchmethod, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map = cache1
-  cell_f_cache, f_cache, cell_f, f₀ = cache2
-  @check f === f₀ "Wrong cache"
+# evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
+#  cache1, cache2 = cache
+#  searchmethod, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map = cache1
+#  cell_f_cache, f_cache, cell_f, f₀ = cache2
+#  @check f === f₀ "Wrong cache"
 
-  ncells = length(cell_map)
-  x_to_cell(x) = _point_to_cell!(cache1,x)
-  point_to_cell = map(x_to_cell,point_to_x)
-  cell_to_points, point_to_lpoint = make_inverse_table(point_to_cell,ncells)
-  cell_to_xs = lazy_map(Broadcasting(Reindex(point_to_x)),cell_to_points)
-  cell_to_f = get_array(f)
-  cell_to_fxs = lazy_map(evaluate,cell_to_f,cell_to_xs)
-  point_to_fxs = lazy_map(Reindex(cell_to_fxs),point_to_cell)
-  point_to_fx = lazy_map(getindex,point_to_fxs,point_to_lpoint)
-  return collect(point_to_fx) # Collect into a plain array
-end
+  #ncells = length(cell_map)
+  #x_to_cell(x) = _point_to_cell!(cache1,x)
+  #point_to_cell = map(x_to_cell,point_to_x)
+  #cell_to_points, point_to_lpoint = make_inverse_table(point_to_cell,ncells)
+  #cell_to_xs = lazy_map(Broadcasting(Reindex(point_to_x)),cell_to_points)
+  #cell_to_f = get_array(f)
+  #cell_to_fxs = lazy_map(evaluate,cell_to_f,cell_to_xs)
+  #point_to_fxs = lazy_map(Reindex(cell_to_fxs),point_to_cell)
+  #point_to_fx = lazy_map(getindex,point_to_fxs,point_to_lpoint)
+  #return collect(point_to_fx) # Collect into a plain array
+#end
 
-function compute_cell_points_from_vector_of_points(
-  xs::AbstractVector{<:Point}, trian::Triangulation, domain_style::PhysicalDomain
-)
-  searchmethod = KDTreeSearch()
-  cache = _point_to_cell_cache(searchmethod,trian)
-  x_to_cell(x) = _point_to_cell!(cache, x)
-  point_to_cell = map(x_to_cell, xs)
-  ncells = num_cells(trian)
-  cell_to_points, point_to_lpoint = make_inverse_table(point_to_cell, ncells)
-  cell_to_xs = lazy_map(Broadcasting(Reindex(xs)), cell_to_points)
-  return CellPoint(cell_to_xs, trian, PhysicalDomain())
-end
+#function compute_cell_points_from_vector_of_points(
+#  xs::AbstractVector{<:Point}, trian::Triangulation, domain_style::PhysicalDomain
+#)
+#  searchmethod = KDTreeSearch()
+#  cache = _point_to_cell_cache(searchmethod,trian)
+#  x_to_cell(x) = _point_to_cell!(cache, x)
+#  point_to_cell = map(x_to_cell, xs)
+#  ncells = num_cells(trian)
+#  cell_to_points, point_to_lpoint = make_inverse_table(point_to_cell, ncells)
+#  cell_to_xs = lazy_map(Broadcasting(Reindex(xs)), cell_to_points)
+#  return CellPoint(cell_to_xs, trian, PhysicalDomain())
+#end
 
 # Helpers
-
+"""
 function _point_to_cell_cache(searchmethod::KDTreeSearch,trian::Triangulation)
   model = get_active_model(trian)
   topo = get_grid_topology(model)
@@ -151,8 +151,9 @@ function _point_to_cell!(cache, x::Point)
   end
 
   # Output error message if cell not found
-  @check false "Point $x is not inside any active cell"
+  @check false "Point x is not inside any active cell"
 end
+"""
 
 """
    dist = distance(polytope::ExtrusionPolytope,inv_cmap::Field,x::Point)
@@ -166,6 +167,7 @@ inside the polytope.
 
 The distance is measured in an unspecified norm, currently the L∞
 norm.
+"""
 """
 function distance(polytope::ExtrusionPolytope, inv_cmap::Field, x::Point)
   extrusion = polytope.extrusion
@@ -209,3 +211,4 @@ function make_inverse_table(i2j::AbstractVector{<:Integer},nj::Int)
 
   return j2is,i2lis
 end
+"""
