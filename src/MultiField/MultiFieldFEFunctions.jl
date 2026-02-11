@@ -67,3 +67,19 @@ num_fields(m::MultiFieldFEFunction) = length(m.single_fe_functions)
 Base.iterate(m::MultiFieldFEFunction) = iterate(m.single_fe_functions)
 Base.iterate(m::MultiFieldFEFunction,state) = iterate(m.single_fe_functions,state)
 Base.getindex(m::MultiFieldFEFunction,field_id::Integer) = m.single_fe_functions[field_id]
+Base.length(m::MultiFieldFEFunction) = num_fields(m)
+
+function LinearAlgebra.dot(a::MultiFieldFEFunction,b::MultiFieldFEFunction)
+  @check num_fields(a) == num_fields(b)
+  return sum(map(dot,a,b))
+end
+
+function LinearAlgebra.dot(a::MultiFieldCellField,b::MultiFieldFEFunction)
+  @check num_fields(a) == num_fields(b)
+  return sum(map(dot,a,b))
+end
+
+function LinearAlgebra.dot(a::MultiFieldFEFunction,b::MultiFieldCellField)
+  @check num_fields(a) == num_fields(b)
+  return sum(map(dot,a,b))
+end

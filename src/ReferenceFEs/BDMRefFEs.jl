@@ -6,7 +6,7 @@ const bdm = BDM()
 BDMRefFE(::Type{et},p::Polytope,order::Integer) where et
 
 The `order` argument has the following meaning: the divergence of the  functions in this basis
-is in the Q space of degree `order`.
+is in the P space of degree `order-1`.
 
 """
 function BDMRefFE(::Type{et},p::Polytope,order::Integer) where et
@@ -122,7 +122,7 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
   function _BDM_face_values(p,et,order,phi)
 
     # Reference facet
-    @assert is_simplex(p) "We are assuming that all n-faces of the same n-dim are the same."
+    @check is_simplex(p) "We are assuming that all n-faces of the same n-dim are the same."
     fp = Polytope{num_dims(p)-1}(p,1)
 
     # geomap from ref face to polytope faces

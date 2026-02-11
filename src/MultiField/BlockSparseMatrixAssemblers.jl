@@ -36,17 +36,20 @@ function FESpaces.get_vector_builder(a::BlockSparseMatrixAssembler{NB,NV}) where
   return expand_blocks(a,builders)
 end
 
-expand_blocks(::BlockSparseMatrixAssembler{NB,NB},blocks::MatrixBlock) where NB = blocks
-expand_blocks(::BlockSparseMatrixAssembler{NB,NB},blocks::VectorBlock) where NB = blocks
-
-function expand_blocks(a::BlockSparseMatrixAssembler{NB,NV},blocks::MatrixBlock) where {NB,NV}
+function expand_blocks(a::BlockSparseMatrixAssembler{NB,NV,SB,P},blocks::MatrixBlock) where {NB,NV,SB,P}
+  if (NB == NV) && all(x -> x[1] == x[2], enumerate(P))
+    return blocks
+  end
   block_map = get_block_map(a)
-  ArrayBlockView(blocks,block_map)
+  return ArrayBlockView(blocks,block_map)
 end
 
-function expand_blocks(a::BlockSparseMatrixAssembler{NB,NV},blocks::VectorBlock) where {NB,NV}
+function expand_blocks(a::BlockSparseMatrixAssembler{NB,NV,SB,P},blocks::VectorBlock) where {NB,NV,SB,P}
+  if (NB == NV) && all(x -> x[1] == x[2], enumerate(P))
+    return blocks
+  end
   block_map = map(idx -> CartesianIndex(idx[1]), diag(get_block_map(a)))
-  ArrayBlockView(blocks,block_map)
+  return ArrayBlockView(blocks,block_map)
 end
 
 function get_block_ranges(NB::Integer,SB,P)
@@ -80,8 +83,9 @@ function BlockSparseMatrixAssembler(trial::MultiFieldFESpace,
   @notimplemented msg
 end
 
-function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:BlockMultiFieldStyle{NB,SB,P}},
-                                    test::MultiFieldFESpace{<:BlockMultiFieldStyle{NB,SB,P}},
+function BlockSparseMatrixAssembler(::BlockMultiFieldStyle{NB,SB,P},
+                                    trial,
+                                    test,
                                     matrix_builder,
                                     vector_builder,
                                     strategy=FESpaces.DefaultAssemblyStrategy()) where {NB,SB,P}
@@ -103,12 +107,13 @@ function BlockSparseMatrixAssembler(trial::MultiFieldFESpace{<:BlockMultiFieldSt
   return BlockSparseMatrixAssembler{NB,NV,SB,P}(block_assemblers)
 end
 
-function FESpaces.SparseMatrixAssembler(mat,
-                                        vec,
-                                        trial::MultiFieldFESpace{<:BlockMultiFieldStyle},
-                                        test ::MultiFieldFESpace{<:BlockMultiFieldStyle},
-                                        strategy::AssemblyStrategy=DefaultAssemblyStrategy())
-  return BlockSparseMatrixAssembler(trial,test,SparseMatrixBuilder(mat),ArrayBuilder(vec),strategy)
+function FESpaces.SparseMatrixAssembler(mat,vec,
+                                        trial::MultiFieldFESpace{MS},
+                                        test ::MultiFieldFESpace{MS},
+                                        strategy::AssemblyStrategy=DefaultAssemblyStrategy()
+                                       ) where MS <: BlockMultiFieldStyle
+  mfs = MultiFieldStyle(test)
+  return BlockSparseMatrixAssembler(mfs,trial,test,SparseMatrixBuilder(mat),ArrayBuilder(vec),strategy)
 end
 
 # BlockArrays extensions
@@ -224,7 +229,7 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
         cache
       end
 
-      function Fields.evaluate!(cache, k::$T,A::$MT,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
+      function Fields.evaluate!(cache,k::$T,A::$MT,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
         ni,nj = size(v.touched)
         for j in 1:nj
           for i in 1:ni

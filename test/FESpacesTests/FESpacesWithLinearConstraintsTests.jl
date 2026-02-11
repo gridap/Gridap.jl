@@ -90,4 +90,15 @@ tol = 1.e-9
 @test e_l2 < tol
 @test e_h1 < tol
 
+V2 = FESpace(
+  model,ReferenceFE(lagrangian,Float64,1), conformity=:H1, dirichlet_tags="dirichlet", vector_type=ComplexF64)
+
+Vc2 = FESpaceWithLinearConstraints(
+  sDOF_to_dof,
+  sDOF_to_dofs,
+  sDOF_to_coeffs,
+  V2)
+
+@test get_dof_value_type(Vc2) <: ComplexF64
+
 end # module

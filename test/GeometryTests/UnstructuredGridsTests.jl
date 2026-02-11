@@ -122,6 +122,4 @@ grid2 = from_jld2_file(typeof(grid),f)
 @test grid.node_coordinates == grid2.node_coordinates
 @test grid.reffes == grid2.reffes
 
-rm(d,recursive=true)
-
 end # module

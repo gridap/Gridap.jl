@@ -8,6 +8,7 @@ import Gridap.Arrays: testitem
 
 using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable, @check
+using Gridap.Helpers: tfill
 
 using Gridap.Algebra: mul!
 
@@ -55,7 +56,7 @@ export MockFieldArray
 export Point
 export inverse_map
 
-export AffineMap
+export AffineField
 export affine_map
 
 export gradient

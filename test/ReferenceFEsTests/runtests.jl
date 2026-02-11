@@ -6,6 +6,8 @@ using Test
 
 @testset "ExtrusionPolytopes" begin include("ExtrusionPolytopesTests.jl") end
 
+@testset "GeneralPolytopes" begin include("GeneralPolytopesTests.jl") end
+
 @testset "Dofs" begin include("DofsTests.jl") end
 
 @testset "MockDofs" begin include("MockDofsTests.jl") end
@@ -29,6 +31,8 @@ using Test
 @testset "DuffyQuadratures" begin include("DuffyQuadraturesTests.jl") end
 
 @testset "StrangQuadratures" begin include("StrangQuadraturesTests.jl") end
+
+@testset "XiaoGimbutasQuadratures" begin include("XiaoGimbutasQuadraturesTests.jl") end
 
 @testset "RaviartThomasRefFEs" begin include("RaviartThomasRefFEsTests.jl") end
 

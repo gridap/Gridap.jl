@@ -18,7 +18,7 @@ end
 function OldToNewField(old_fields::AbstractArray{<:Fields.Field},
                        rrule::RefinementRule,
                        child_ids::AbstractVector{<:Integer})
-  @assert length(old_fields)==length(child_ids)                   
+  @check length(old_fields)==length(child_ids)                   
   if length(old_fields) == 1
     cell_map  = get_cell_map(rrule)[child_ids[1]]
     old_field = old_fields[1]
@@ -29,7 +29,7 @@ function OldToNewField(old_fields::AbstractArray{<:Fields.Field},
     refined_or_untouched_field = old_field∘cell_map
     return OldToNewField(RefinedOrUntouchedNewFieldType(),fine_to_coarse_field,refined_or_untouched_field)
   else 
-    @assert length(old_fields) <= num_subcells(rrule)
+    @check length(old_fields) <= num_subcells(rrule)
     fine_to_coarse_field = FineToCoarseField(old_fields,rrule,child_ids)
     cell_map = get_cell_map(rrule)[1]
     refined_or_untouched_field = old_fields[1]∘cell_map 

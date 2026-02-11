@@ -288,6 +288,16 @@ function lazy_map(::Operation{typeof(inv)},a::LazyArray{<:Fill{typeof(constant_f
   lazy_map(constant_field,vinv)
 end
 
+struct ConstantMap <: Map end
+
+return_cache(::ConstantMap,v::Number,x::Point) = nothing
+evaluate!(cache,::ConstantMap,v::Number,x::Point) = v
+
+function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{typeof(constant_field)}},x::AbstractArray)
+  values = a.args[1]
+  lazy_map(Broadcasting(ConstantMap()),values,x)
+end
+
 ## Make Function behave like Field
 
 return_cache(f::FieldGradient{N,<:Function},x::Point) where N = gradient(f.object,Val(N))
@@ -319,6 +329,11 @@ function evaluate!(cache,c::OperationField,x::Point)
   ck, cf = cache
   lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
   evaluate!(ck,c.op,lx...)
+end
+
+function return_value(c::OperationField,x::AbstractArray{<:Point})
+  fx = map(f -> return_value(f,x),c.fields)
+  c.op.(fx...)
 end
 
 function return_cache(c::OperationField,x::AbstractArray{<:Point})

@@ -52,8 +52,10 @@ end
 get_triangulation(f::CellState) = get_triangulation(f.points)
 DomainStyle(::Type{CellState{T,P}}) where {T,P} = DomainStyle(P)
 
+_get_cell_points(a::CellState) = a.points
+
 function evaluate!(cache,f::CellState,x::CellPoint)
-  if f.points === x
+  if f.points == x
     f.values
   else
     @unreachable """\n

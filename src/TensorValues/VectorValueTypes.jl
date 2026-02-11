@@ -3,7 +3,9 @@
 ###############################################################
 
 """
-Type representing a first-order tensor
+    VectorValue{D,T} <: MultiValue{Tuple{D},T,1,D}
+
+Type representing a first-order tensor, that is a vector, of length `D`.
 """
 struct VectorValue{D,T} <: MultiValue{Tuple{D},T,1,D}
     data::NTuple{D,T}
@@ -105,5 +107,20 @@ size(::VectorValue{D}) where {D}  = size(VectorValue{D})
 length(::Type{<:VectorValue{D}}) where {D} = D
 length(::VectorValue{D}) where {D} = length(VectorValue{D})
 
+num_components(::Type{<:VectorValue}) = @unreachable "The dimension is needed to count components"
 num_components(::Type{<:VectorValue{D}}) where {D} = length(VectorValue{D})
 num_components(::VectorValue{D}) where {D} = num_components(VectorValue{D})
+
+###############################################################
+# VTK export (VectorValue)
+###############################################################
+
+function indep_components_names(::Type{<:VectorValue{A}}) where A
+  [ "$i" for i in 1:A ]
+  if A>3
+    return ["$i" for i in 1:A ]
+  else
+    c_name = ["X", "Y", "Z"]
+    return [c_name[i] for i in 1:A ]
+  end
+end

@@ -25,16 +25,28 @@ mean(x) = sum(x)/length(x)
 
 cell_center = lazy_map(mean, get_cell_coordinates(trian) )
 
-write_vtk_file(
-  trian,f,
-  nodaldata=["nodeid"=>node_ids],
-  celldata=["cellid"=>cell_ids,"centers"=>cell_center])
+for compress in [true,false]
+  for append in [true,false]
+    for ascii in [true,false]
+      for vtkversion in [:default,:latest]
+        write_vtk_file(
+          trian,f,
+          nodaldata=["nodeid"=>node_ids],
+          celldata=["cellid"=>cell_ids,"centers"=>cell_center],
+          compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
+        )
 
-pvtk = Visualization.create_pvtk_file(
-  trian,f; part=1, nparts=1,
-  nodaldata=["nodeid"=>node_ids],
-  celldata=["cellid"=>cell_ids,"centers"=>cell_center])
-vtk_save(pvtk)
+        pvtk = Visualization.create_pvtk_file(
+          trian,f; part=1, nparts=1,
+          nodaldata=["nodeid"=>node_ids],
+          celldata=["cellid"=>cell_ids,"centers"=>cell_center],
+          compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
+        )
+        vtk_save(pvtk)
+      end
+    end
+  end
+end
 
 reffe = LagrangianRefFE(VectorValue{3,Float64},WEDGE,(3,3,4))
 f = joinpath(d,"reffe")
@@ -84,6 +96,7 @@ writevtk(trian,f,nsubcells=10, cellfields=[
   "v2"=>x->VectorValue(1,2),
   "v"=>x->VectorValue(1,2,3),
   "s"=>x->SymTensorValue(1.0,2.0,3.0),
+  "q"=>x->SymTracelessTensorValue(1.0,2.0),
   "c"=>x->SymFourthOrderTensorValue(1,2,3, 1,2,3, 1,2,3),
   "t"=>x->TensorValue(1,2,3,4),])
 
@@ -188,8 +201,5 @@ pvtk = create_pvtk_file(Ω1,f; part=1, nparts=2,celldata=["u"=>rand(num_cells(Ω
 vtk_save(pvtk)
 pvtk = create_pvtk_file(Ω2,f; part=2, nparts=2,celldata=["u"=>rand(num_cells(Ω2))])
 vtk_save(pvtk)
-
-
-rm(d,recursive=true)
 
 end # module

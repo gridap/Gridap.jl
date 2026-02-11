@@ -16,6 +16,4 @@ model = CartesianDiscreteModel(domain,cells,isperiodic=(true,false))
 model = simplexify(model)
 writevtk(model,joinpath(d,"tmp_model_2"))
 
-rm(d,recursive=true)
-
 end # module

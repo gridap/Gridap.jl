@@ -53,10 +53,6 @@ function get_children(n::TreeNode, a::LazyArray)
   (similar_tree_node(n,a.maps),map(i->similar_tree_node(n,i),a.args)...)
 end
 
-function get_children(n::TreeNode, a::SubVector)
-  (similar_tree_node(n,a.vector),)
-end
-
 function get_children(n::TreeNode, a::Reindex)
   (similar_tree_node(n,a.values),)
 end

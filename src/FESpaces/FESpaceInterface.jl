@@ -23,7 +23,7 @@ function get_cell_fe_data(fun,f,ttrian)
   if strian === ttrian
     return sface_to_data
   end
-  @assert is_change_possible(strian,ttrian)
+  @check is_change_possible(strian,ttrian)
   D = num_cell_dims(strian)
   sglue = get_glue(strian,Val(D))
   tglue = get_glue(ttrian,Val(D))
@@ -87,7 +87,9 @@ num_free_dofs(f::FESpace) = length(get_free_dof_ids(f))
 """
 function zero_free_values(f::FESpace)
   V = get_vector_type(f)
-  allocate_vector(V,num_free_dofs(f))
+  free_values = allocate_vector(V,get_free_dof_ids(f))
+  fill!(free_values,zero(eltype(V)))
+  return free_values
 end
 
 function get_vector_type(fs::FESpace)

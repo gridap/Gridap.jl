@@ -11,12 +11,14 @@ using SparseArrays
 using LinearAlgebra
 using Test
 using SparseMatricesCSR
+using BlockArrays
 
 using Gridap.Helpers
 
 import Base: convert, size, getindex, show, count, *
 import LinearAlgebra: mul!
 import SparseArrays: nnz, nonzeros, nzrange, findnz, rowvals
+import BlockArrays: AbstractBlockedUnitRange
 
 export length_to_ptrs!
 export rewind_ptrs!
@@ -27,6 +29,7 @@ export allocate_in_domain
 export allocate_in_range
 export add_entries!
 export muladd!
+export axpy_entries!
 export nz_counter
 export nz_allocation
 export create_from_nz
