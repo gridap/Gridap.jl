@@ -21,23 +21,23 @@
   #end
 #end
 
-(a::Interpolable)(x) = evaluate(a,x)
-evaluate!(cache,a::Interpolable,x::Point) = evaluate!(cache,a.uh,x)
-return_cache(f::CellField,x::Point) = return_cache(Interpolable(f),x)
+#(a::Interpolable)(x) = evaluate(a,x)
+#evaluate!(cache,a::Interpolable,x::Point) = evaluate!(cache,a.uh,x)
+#return_cache(f::CellField,x::Point) = return_cache(Interpolable(f),x)
 
-function return_cache(a::Interpolable,x::Point)
-  f = a.uh
-  trian = get_triangulation(f)
-  cache1 = _point_to_cell_cache(a.searchmethod,trian)
+#function return_cache(a::Interpolable,x::Point)
+  #f = a.uh
+  #trian = get_triangulation(f)
+  #cache1 = _point_to_cell_cache(a.searchmethod,trian)
 
-  cell_f = get_array(f)
-  cell_f_cache = array_cache(cell_f)
-  cf = testitem(cell_f)
-  f_cache = return_cache(cf,x)
-  cache2 = cell_f_cache, f_cache, cell_f, f
+  #cell_f = get_array(f)
+  #cell_f_cache = array_cache(cell_f)
+  #cf = testitem(cell_f)
+  #f_cache = return_cache(cf,x)
+  #cache2 = cell_f_cache, f_cache, cell_f, f
 
-  return cache1, cache2
-end
+ # return cache1, cache2
+#end
 
 function evaluate!(cache,f::CellField,x::Point)
   cache1,cache2 = cache
