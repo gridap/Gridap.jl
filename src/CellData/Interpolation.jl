@@ -12,14 +12,14 @@
 #  end
 #end
 
-struct Interpolable{M,A} <: Function
-  uh::A
-  tol::Float64
-  searchmethod::M
-  function Interpolable(uh; tol=1e-10, searchmethod=KDTreeSearch(; tol=tol))
-    new{typeof(searchmethod),typeof(uh)}(uh, tol,searchmethod)
-  end
-end
+#struct Interpolable{M,A} <: Function
+ # uh::A
+  #tol::Float64
+  #searchmethod::M
+  #function Interpolable(uh; tol=1e-10, searchmethod=KDTreeSearch(; tol=tol))
+   # new{typeof(searchmethod),typeof(uh)}(uh, tol,searchmethod)
+  #end
+#end
 
 (a::Interpolable)(x) = evaluate(a,x)
 evaluate!(cache,a::Interpolable,x::Point) = evaluate!(cache,a.uh,x)
