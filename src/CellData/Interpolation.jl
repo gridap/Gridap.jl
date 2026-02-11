@@ -3,12 +3,19 @@
 # on tree searches.
 
 # Interpolable struct
-struct KDTreeSearch{T}
+#struct KDTreeSearch{T}
+#  num_nearest_vertices::Int
+#  tol::T
+#  function KDTreeSearch(; num_nearest_vertices=1, tol=1.e-10)
+#    T = typeof(tol)
+#    new{T}(num_nearest_vertices, tol)
+#  end
+#end
+struct KDTreeSearch
   num_nearest_vertices::Int
-  tol::T
-  function KDTreeSearch(; num_nearest_vertices=1, tol=1.e-10)
-    T = typeof(tol)
-    new{T}(num_nearest_vertices, tol)
+  accept_points_outside::Bool
+  function KDTreeSearch(;num_nearest_vertices=1, accept_points_outside=false )
+    new(num_nearest_vertices, accept_points_outside)
   end
 end
 
