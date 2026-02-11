@@ -277,7 +277,7 @@ function distance(polytope::ExtrusionPolytope, inv_cmap::Field, x::Point)
     @notimplemented "Only hypercubes and simplices are implemented so far"
   end
 end
-
+"""
 function _point_to_cell!(cache, x::Point)
   searchmethod, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache = cache
 
@@ -324,7 +324,7 @@ function _point_to_cell!(cache, x::Point)
   # Output error message if cell not found
   @check false "Point $x is not inside any active cell"
 end
-
+"""
 function evaluate!(cache,f::CellField,x::Point)
   cache1,cache2 = cache
   cell_f_cache, f_cache, cell_f, f₀ = cache2
@@ -850,6 +850,7 @@ function (a::SkeletonPair{<:CellField})(x)
 end
 
 # Interpolable struct
+"""
 struct KDTreeSearch
   num_nearest_vertices::Int
   accept_points_outside::Bool
@@ -899,3 +900,4 @@ function _point_to_cell_cache(searchmethod::KDTreeSearch,trian::Triangulation)
   table_cache = array_cache(vertex_to_cells)
   cache1 = searchmethod, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache
 end
+"""
