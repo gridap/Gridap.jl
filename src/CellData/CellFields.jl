@@ -262,6 +262,7 @@ inside the polytope.
 The distance is measured in an unspecified norm, currently the L∞
 norm.
 """
+"""
 function distance(polytope::ExtrusionPolytope, inv_cmap::Field, x::Point)
   extrusion = polytope.extrusion
   isempty(extrusion) && return zero(eltype(x))
@@ -277,7 +278,7 @@ function distance(polytope::ExtrusionPolytope, inv_cmap::Field, x::Point)
     @notimplemented "Only hypercubes and simplices are implemented so far"
   end
 end
-"""
+
 function _point_to_cell!(cache, x::Point)
   searchmethod, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache = cache
 
@@ -322,9 +323,10 @@ function _point_to_cell!(cache, x::Point)
     return nothing
   end
   # Output error message if cell not found
-  @check false "Point $x is not inside any active cell"
+  @check false "Point x is not inside any active cell"
 end
-"""
+
+
 function evaluate!(cache,f::CellField,x::Point)
   cache1,cache2 = cache
   cell_f_cache, f_cache, cell_f, f₀ = cache2
@@ -411,7 +413,7 @@ function evaluate!(cache,f::CellField,x::CellPoint)
   cell_point = get_data(_x)
   lazy_map(evaluate,cell_field,cell_point)
 end
-
+"""
 function _to_common_domain(f::CellField,x::CellPoint)
   trian_f = get_triangulation(f)
   trian_x = get_triangulation(x)
