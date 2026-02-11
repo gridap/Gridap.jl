@@ -80,15 +80,22 @@ function lazy_map(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray..
 end
 
 """
+    struct LazyArray{G,T,N,F} <: AbstractArray{T,N}
+
 Subtype of `AbstractArray` which is the result of `lazy_map`. It represents the
-result of lazy_mapping a `Map` to a set of arrays that
+result of lazy_mapping an (array of) `Map` to a set of arrays that
 contain the mapping arguments. This struct makes use of the cache provided
 by the mapping in order to compute its indices (thus allowing to prevent
 allocation). The array is lazy, i.e., the values are only computed on
-demand. It extends the `AbstractArray` API with two methods:
+demand. It extends the `AbstractArray` API with three methods:
 
-   `array_cache(a::AbstractArray)`
-   `getindex!(cache,a::AbstractArray,i...)`
+- [`array_cache(a::AbstractArray)`](@ref)
+- [`getindex!(cache,a::AbstractArray,i...)`](@ref)
+- [`invalidate_cache!(cache)`](@ref)
+
+`G` is the type of the array of map (a `Fill` array if a single map is given to
+lazy_array), `F` that of the collection of argument arrays.
+The `size` of the `LazyArray` is `size(G)`.
 """
 struct LazyArray{G,T,N,F} <: AbstractArray{T,N}
   maps::G
@@ -170,17 +177,24 @@ function array_cache(dict::Dict,a::LazyArray)
   _cache
 end
 
+# to memoize last access of a lazy array
 mutable struct IndexItemPair{T,V}
   index::T
   item::V
 end
 
+function invalidate_cache!(cache::IndexItemPair)
+  cache.index = -1
+  nothing
+end
+
 function _array_cache!(dict::Dict,a::LazyArray)
-  @boundscheck begin
+  @check begin
     @notimplementedif ! all(map(isconcretetype, map(eltype, a.args)))
-    if ! (eltype(a.maps) <: Function)
-      @notimplementedif ! isconcretetype(eltype(a.maps))
+    if !(eltype(a.maps) <: Function)
+      @notimplementedif !isconcretetype(eltype(a.maps))
     end
+    true
   end
   gi = testitem(a.maps)
   fi = map(testitem,a.args)
@@ -241,14 +255,26 @@ Base.size(a::LazyArray{G,T,1} where {G,T}) = (length(a.maps),)
 
 function Base.sum(a::LazyArray)
   cache = array_cache(a)
-  _sum_lazy_array(cache,a)
+  lazy_sum(cache,a)
 end
 
-function _sum_lazy_array(cache,a)
+function lazy_sum(cache,a)
   r = zero(testitem(a))
   for i in eachindex(a)
     ai = getindex!(cache,a,i)
     r += ai
+  end
+  r
+end
+
+lazy_collect(a::AbstractArray) = a
+
+function lazy_collect(a::LazyArray{A,T} where A) where T
+  cache = array_cache(a)
+  r = Array{T}(undef,size(a))
+  for i in eachindex(a)
+    ai = getindex!(cache,a,i)
+    r[i] = deepcopy(ai)
   end
   r
 end
@@ -281,7 +307,7 @@ end
 
 function _common_size(a::AbstractArray...)
   a1, = a
-  #@check all(map(ai->length(a1) == length(ai),a)) "Array sizes $(map(size,a)) are not compatible."
+  @check all(map(ai->length(a1) == length(ai),a)) "Array sizes $(map(size,a)) are not compatible."
   if all( map(ai->size(a1) == size(ai),a) )
     size(a1)
   else

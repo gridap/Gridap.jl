@@ -184,8 +184,8 @@ struct TrialBasis <: BasisStyle end
 struct TestBasis <: BasisStyle end
 
 abstract type FEBasis <: CellField end
+BasisStyle(::Type{<:FEBasis}) = @abstractmethod
 BasisStyle(::T) where T <: FEBasis = BasisStyle(T)
-DomainStyle(::T) where T <: FEBasis = DomainStyle(T)
 
 struct SingleFieldFEBasis{BS<:BasisStyle,DS<:DomainStyle} <: FEBasis
   cell_basis::AbstractArray

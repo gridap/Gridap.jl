@@ -72,6 +72,10 @@ function similar_cell_field(f::CellField,cell_data,trian,ds)
   GenericCellField(cell_data,trian,ds)
 end
 
+@inline function similar_cell_field(f,cell_data)
+  similar_cell_field(f,cell_data,get_triangulation(f),DomainStyle(f))
+end
+
 function Base.show(io::IO,::MIME"text/plain",f::CellField)
   show(io,f)
   print(io,":")
@@ -475,8 +479,8 @@ end
 #  _operate_cellfields(k,b...)
 #end
 
-struct OperationCellField{DS} <: CellField
-  op::Operation
+struct OperationCellField{DS,O} <: CellField
+  op::Operation{O}
   args::Tuple
   trian::Triangulation
   domain_style::DS
@@ -490,21 +494,22 @@ struct OperationCellField{DS} <: CellField
 
     # This is only to catch errors in user code
     # as soon as possible.
-    if num_cells(trian) > 0
-      @check begin
-        pts = _get_cell_points(args...)
-        #x = testitem(get_data(pts))
-        #f = map(ak -> testitem(get_data(ak)), args)
-        #fx = map(fk -> return_value(fk,x), f)
-        #r = Fields.BroadcastingFieldOpMap(op.op)(fx...)
-        ax = map(i->i(pts),args)
-        axi = map(first,ax)
-        r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
-        true
-      end
-    end
+    # if num_cells(trian) > 0
+    #   @check begin
+    #     pts = _get_cell_points(args...)
+    #     #x = testitem(get_data(pts))
+    #     #f = map(ak -> testitem(get_data(ak)), args)
+    #     #fx = map(fk -> return_value(fk,x), f)
+    #     #r = Fields.BroadcastingFieldOpMap(op.op)(fx...)
+    #     ax = map(i->i(pts),args)
+    #     axi = map(first,ax)
+    #     r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
+    #     true
+    #   end
+    # end
 
-    new{typeof(domain_style)}(op,args,trian,domain_style,Dict())
+    DS, O = typeof(domain_style), typeof(op.op)
+    new{DS,O}(op,args,trian,domain_style,Dict())
   end
 end
 
@@ -546,11 +551,25 @@ function get_data(f::OperationCellField)
   lazy_map(Broadcasting(f.op),a...)
 end
 get_triangulation(f::OperationCellField) = f.trian
-DomainStyle(::Type{OperationCellField{DS}}) where DS = DS()
+DomainStyle(::Type{OperationCellField{DS,O}}) where {DS,O} = DS()
 
 function evaluate!(cache,f::OperationCellField,x::CellPoint)
   ax = map(i->i(x),f.args)
   lazy_map(Fields.BroadcastingFieldOpMap(f.op.op),ax...)
+end
+
+for diffop in (:gradient,:divergence,:curl,:∇∇)
+  for op in (:+,:-)
+    # Sometimes we cannot call `get_data` from the `OperatorCellField`. We dispatch
+    # sooner so that we can evaluate the gradient in specific cases.
+    # This is necessary to take the gradient of the sum of two FEBasis, for instance.
+    @eval begin
+      function Fields.$diffop(f::OperationCellField{DS,typeof($op)}) where {DS}
+        args = map($diffop,f.args)
+        OperationCellField(Operation($op),args...)
+      end
+    end
+  end
 end
 
 function change_domain(f::OperationCellField,target_trian::Triangulation,target_domain::DomainStyle)
@@ -732,11 +751,18 @@ function get_tangent_vector(trian::Triangulation,cell_tangent::SkeletonPair)
   SkeletonPair(plus,minus)
 end
 
-for op in (:outer,:*,:dot)
+for op in (:outer,:*,:dot,:inner,:/)
   @eval begin
     ($op)(a::CellField,b::SkeletonPair{<:CellField}) = Operation($op)(a,b)
     ($op)(a::SkeletonPair{<:CellField},b::CellField) = Operation($op)(a,b)
+    ($op)(a::SkeletonPair{<:CellField},b::SkeletonPair{<:CellField}) = Operation($op)(a,b)
   end
+end
+
+function evaluate!(cache,k::Operation,a::SkeletonPair{<:CellField})
+  plus = k(a.plus)
+  minus = k(a.minus)
+  SkeletonPair(plus,minus)
 end
 
 function evaluate!(cache,k::Operation,a::CellField,b::SkeletonPair{<:CellField})
@@ -746,6 +772,12 @@ function evaluate!(cache,k::Operation,a::CellField,b::SkeletonPair{<:CellField})
 end
 
 function evaluate!(cache,k::Operation,a::SkeletonPair{<:CellField},b::CellField)
+  plus = k(a.plus,b.plus)
+  minus = k(a.minus,b.minus)
+  SkeletonPair(plus,minus)
+end
+
+function evaluate!(cache,k::Operation,a::SkeletonPair{<:CellField},b::SkeletonPair{<:CellField})
   plus = k(a.plus,b.plus)
   minus = k(a.minus,b.minus)
   SkeletonPair(plus,minus)
@@ -794,6 +826,12 @@ for fun in (:change_domain_ref_ref,:change_domain_phys_phys)
     end
 
   end
+end
+
+function change_domain(a::SkeletonPair, ::ReferenceDomain, ::PhysicalDomain)
+  plus = change_domain(a.plus,ReferenceDomain(),PhysicalDomain())
+  minus = change_domain(a.minus,ReferenceDomain(),PhysicalDomain())
+  return SkeletonPair(plus,minus)
 end
 
 # Just to provide more meaningful error messages

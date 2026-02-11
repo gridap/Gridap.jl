@@ -212,7 +212,7 @@ function ode_march!(
       ws = (0, 1)
       jacobian!(J, im_odeop, tx, usx, ws, im_odeopcache)
     end
-    ex_stageop = LinearStageOperator(J, r, reuse)
+    ex_stageop = LinearStageOperator(J, r, tx, ws, usx, reuse)
 
     x = ex_slopes[i]
     sysslvrcache_l = solve!(x, sysslvr_l, ex_stageop, sysslvrcache_l)
@@ -375,7 +375,7 @@ function ode_march!(
       ws = (0, 1)
       jacobian!(J, im_odeop, tx, usx, ws, im_odeopcache)
     end
-    ex_stageop = LinearStageOperator(J, r, reuse)
+    ex_stageop = LinearStageOperator(J, r, tx, ws, usx, reuse)
 
     x = ex_slopes[i]
     sysslvrcache = solve!(x, sysslvr, ex_stageop, sysslvrcache)

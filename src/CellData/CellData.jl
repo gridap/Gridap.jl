@@ -12,6 +12,7 @@ using FillArrays
 using NearestNeighbors
 using StaticArrays
 using DataStructures
+using ForwardDiff
 
 using Gridap.Helpers
 using Gridap.Algebra
@@ -92,6 +93,8 @@ export SkeletonCellFieldPair
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
+
+include("Interpolation.jl")
 
 include("CellQuadratures.jl")
 

@@ -95,6 +95,11 @@ function get_facet_normal(trian::Grid)
   end
 end
 
+# Polytopes might be repeated, but it's OK
+function get_polytopes(trian::Grid)
+  map(get_polytope,get_reffes(trian))
+end
+
 """
     test_grid(trian::Grid)
 """
@@ -105,8 +110,12 @@ function test_grid(trian::Grid{Dc,Dp}) where {Dc,Dp}
   @test num_point_dims(typeof(trian)) == Dp
   cell_coords = get_cell_coordinates(trian)
   @test isa(cell_coords,AbstractArray{<:AbstractVector{<:Point}})
-  reffes = get_reffes(trian)
-  @test isa(reffes,AbstractVector{<:LagrangianRefFE{Dc}})
+  polys = get_polytopes(trian)
+  @test isa(polys,AbstractVector{<:Polytope{Dc}})
+  if !any(p->isa(p,GeneralPolytope),polys)
+    reffes = get_reffes(trian)
+    @test isa(reffes,AbstractVector{<:LagrangianRefFE{Dc}})
+  end
   cell_types = get_cell_type(trian)
   @test isa(cell_types,AbstractArray{<:Integer})
   ncells = num_cells(trian)
@@ -182,6 +191,15 @@ function get_cell_reffe(trian::Grid)
 end
 
 """
+    get_cell_polytopes(trian::Grid) -> Vector{<:Polytope}
+"""
+function get_cell_polytopes(trian::Grid)
+  type_to_poly = get_polytopes(trian)
+  cell_to_type = get_cell_type(trian)
+  expand_cell_data(type_to_poly,cell_to_type)
+end
+
+"""
 """
 function get_cell_ref_coordinates(trian::Grid)
   type_to_reffe = get_reffes(trian)
@@ -217,7 +235,7 @@ end
 
 function Quadrature(trian::Grid,args...;kwargs...)
   cell_ctype = get_cell_type(trian)
-  ctype_polytope = map(get_polytope,get_reffes(trian))
+  ctype_polytope = get_polytopes(trian)
   ctype_quad = map(p->Quadrature(p,args...;kwargs...),ctype_polytope)
   cell_quad = expand_cell_data(ctype_quad,cell_ctype)
 end
@@ -404,7 +422,6 @@ function _compute_linear_grid_coords_from_simplex(p::Polytope{3},n::Integer)
   X,T
 end
 
-
 """
     Grid(::Type{ReferenceFE{d}},p::Polytope) where d
 """
@@ -416,5 +433,74 @@ end
     simplexify(grid::Grid;kwargs...)
 """
 function simplexify(grid::Grid;kwargs...)
-  simplexify(UnstructuredGrid(grid);kwargs...)
+  @notimplementedif !is_first_order(grid) "simplexify only implemented for first order grids"
+  cell_to_polytope = get_cell_polytopes(grid)
+  cell_to_points   = Table(get_cell_node_ids(grid))
+  tcell_to_points, simplex = simplexify_connectivity(cell_to_points, cell_to_polytope; kwargs...)
+
+  ctype_to_reffe = [LagrangianRefFE(Float64,simplex,1),]
+  tcell_to_ctype = fill(Int8(1),length(tcell_to_points))
+  point_to_coords = collect1d(get_node_coordinates(grid))
+  UnstructuredGrid(
+    point_to_coords,
+    tcell_to_points,
+    ctype_to_reffe,
+    tcell_to_ctype,
+    Oriented()
+  )
+end
+
+function simplexify_connectivity(
+  cell_to_points::Table, cell_to_polytope::AbstractVector{<:Polytope}; kwargs...
+)
+  ctype_to_polytope, cell_to_ctype = compress_cell_data(cell_to_polytope)
+
+  ltcell_to_lpoints, simplex = simplexify(first(ctype_to_polytope))
+  ctype_to_ltcell_to_lpoints = Vector{typeof(ltcell_to_lpoints)}(undef,length(ctype_to_polytope))
+  for (ctype,polytope) in enumerate(ctype_to_polytope)
+    ltcell_to_lpoints, s = simplexify(polytope; kwargs...)
+    @notimplementedif s != simplex
+    ctype_to_ltcell_to_lpoints[ctype] = ltcell_to_lpoints
+  end
+  cell_to_ltcell_to_lpoints = expand_cell_data(ctype_to_ltcell_to_lpoints,cell_to_ctype)
+
+  tcell_to_points = simplexify_connectivity(cell_to_points,cell_to_ltcell_to_lpoints)
+  return tcell_to_points, simplex
+end
+
+function simplexify_connectivity(
+  cell_to_points::Table, cell_to_ltcell_to_lpoints
+)
+  cell_to_points_data = cell_to_points.data
+  cell_to_points_ptrs = cell_to_points.ptrs
+
+  ntcells = sum(length,cell_to_ltcell_to_lpoints)
+
+  P = eltype(cell_to_points_ptrs)
+  tcell_to_points_ptrs = zeros(P,ntcells+1)
+  tcell = 1
+  for ltcell_to_lpoints in cell_to_ltcell_to_lpoints
+    for lpoints in ltcell_to_lpoints
+      tcell_to_points_ptrs[tcell+1] = length(lpoints)
+      tcell +=1
+    end
+  end
+  length_to_ptrs!(tcell_to_points_ptrs)
+
+  T = eltype(cell_to_points_data)
+  tcell_to_points_data = zeros(T,tcell_to_points_ptrs[end]-1)
+  k = 1
+  for (cell,ltcell_to_lpoints) in enumerate(cell_to_ltcell_to_lpoints)
+    a = cell_to_points_ptrs[cell]-1
+    for lpoints in ltcell_to_lpoints
+      for lpoint in lpoints
+        point = cell_to_points_data[a+lpoint]
+        tcell_to_points_data[k] = point
+        k += 1
+      end
+    end
+  end
+
+  tcell_to_points = Table(tcell_to_points_data, tcell_to_points_ptrs)
+  return tcell_to_points
 end

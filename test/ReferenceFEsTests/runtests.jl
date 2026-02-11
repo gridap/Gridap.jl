@@ -34,6 +34,8 @@ using Test
 
 @testset "XiaoGimbutasQuadratures" begin include("XiaoGimbutasQuadraturesTests.jl") end
 
+@testset "WitherdenVincentQuadratures" begin include("WitherdenVincentQuadraturesTests.jl") end
+
 @testset "RaviartThomasRefFEs" begin include("RaviartThomasRefFEsTests.jl") end
 
 @testset "NedelecRefFEs" begin include("NedelecRefFEsTests.jl") end
@@ -43,5 +45,7 @@ using Test
 @testset "BezierRefFEs" begin include("BezierRefFEsTests.jl") end
 
 @testset "ModalC0RefFEs" begin include("ModalC0RefFEsTests.jl") end
+
+@testset "BubbleRefFEs" begin include("BubbleRefFEsTests.jl") end
 
 end # module

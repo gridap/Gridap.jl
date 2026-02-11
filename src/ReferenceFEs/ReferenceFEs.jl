@@ -80,6 +80,8 @@ export get_face_vertices
 export get_reffaces
 export get_face_type
 export get_bounding_box
+export get_measure
+export get_diameter
 export get_face_vertex_permutations
 export get_order
 export get_orders
@@ -182,6 +184,7 @@ export BDMRefFE
 export NedelecRefFE
 export BezierRefFE
 export ModalC0RefFE
+export BubbleRefFE
 
 export Lagrangian
 export DivConforming
@@ -190,6 +193,7 @@ export BDM
 export Nedelec
 export Bezier
 export ModalC0
+export Bubble
 
 export lagrangian
 export raviart_thomas
@@ -197,6 +201,7 @@ export bdm
 export nedelec
 export bezier
 export modalC0
+export bubble
 
 export Quadrature
 export QuadratureName
@@ -208,10 +213,13 @@ export get_name
 export num_dims
 export num_point_dims
 export test_quadrature
+export maxdegree
+
 export tensor_product
 export duffy
 export strang
 export xiao_gimbutas
+export witherden_vincent
 
 include("Polytopes.jl")
 
@@ -245,6 +253,8 @@ include("StrangQuadratures.jl")
 
 include("XiaoGimbutasQuadratures.jl")
 
+include("WitherdenVincentQuadratures.jl")
+
 include("RaviartThomasRefFEs.jl")
 
 include("BDMRefFEs.jl")
@@ -257,6 +267,10 @@ include("BezierRefFEs.jl")
 
 include("ModalC0RefFEs.jl")
 
+include("BubbleRefFEs.jl")
+
 include("LinearCombinationDofVectors.jl")
+
+include("PolytopalQuadratures.jl")
 
 end # module

@@ -5,22 +5,178 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.18.10] - 2025-01-13
+## [Unreleased]
+
+### Fixed
+
+- Fixed lack of more general tests for Nedelec ReferenceFEs. Added a test which is currently broken. Since PR[#1216](https://github.com/gridap/Gridap.jl/pull/1216).
+
+### Added
+
+- Added `testvalue(::Type{<:Tuple})` for tuples with an arbitrary number of items. Since PR[#1210](https://github.com/gridap/Gridap.jl/pull/1210).
+- Added `normalize` function support for `MultiValue` objects. Since PR[#1211](https://github.com/gridap/Gridap.jl/pull/1211).
+
+
+## [0.19.7] - 2025-12-18
+
+### Added
+
+- Added the symmetric quadrature rules of Witherden and Vincent, correctness tests for all quadrature rules, and minor extensions to the interfaces of `Quadrature` and `Polytope`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+  - Added the symmetric quadrature rules of Witherden and Vincent for tri/tet, quad/hex, wedge and pyramid.
+  - Added `maxdegree(p::Polytope, name::QuadratureName)` to the interface of `Quadrature`.
+  - Enriched the tests for quadratures by checking `tensor_product`, `duffy`, and `witherden_vincent` against exact integrals for monomials on the corresponding polytopes (tri/tet, quad/hex, wedge and pyramid, respectively). Other quadrature rules are compared against these tested ones.
+  - Added `get_measure(p::Polytope, vertex_coords)` and `get_diameter(p::Polytope, vertex_coords)` to the interface of `Polytope`.
+
+### Changed
+
+- Added specific tags on dual numbers to allow for nested AD without perturbation confusion. Since PR[#1181](https://github.com/gridap/Gridap.jl/pull/1181).
+- The default quadrature for simplices is now `witherden_vincent` until available, then `xiao_gimbuttas` until available, then `duffy`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+- Updated the documentation of `Polytope{D}`'s type parameters `D`, it is correctly described as the polytope's dimension (instead of embedding dimension). Since PR[#1194](https://github.com/gridap/Gridap.jl/pull/1194).
+- Added compatibilty for `JSON.jl` v1+ and `JDL2.jl` v0.6+. Since PR[1198](https://github.com/gridap/Gridap.jl/pull/1198).
+
+### Fixed
+
+- Fixed issue [#1188](https://github.com/gridap/Gridap.jl/issues/1188). Fix one() function for non-square tensors.
+- Fixed `strang` quadrature of order 4 for triangles. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+
+## [0.19.6] - 2025-10-17
+
+### Added
+
+- Added support for subdividing unstructured meshes to any level, including periodic ones. Since PR[#1143](https://github.com/gridap/Gridap.jl/pull/1143).
+
+### Fixed
+
+- Fixed issue [#1174](https://github.com/gridap/Gridap.jl/issues/1174). Since PR[#1175](https://github.com/gridap/Gridap.jl/pull/1175).
+- Fixes the issue that a single CellField could not be passed to TrialFESpace constructor in cases where more than one tag was being passed to dirichlet_tags kw-arg argument. Since PR[#1177](https://github.com/gridap/Gridap.jl/pull/1177).
+
+## [0.19.5] - 2025-09-19
+
+### Added
+
+- Added extension for `TikzPictures.jl`. Since PR[#1150](https://github.com/gridap/Gridap.jl/pull/1150).
+- Added `eigen` function support for `TensorValue` objects. Fixes issue [#1156](https://github.com/gridap/Gridap.jl/issues/1156). Since PR[#1157](https://github.com/gridap/Gridap.jl/pull/1157).
+- Added kwargs support for `isapprox` function on `MultiValue` objects. Since PR[1158](https://github.com/gridap/Gridap.jl/pull/1158)
+- Misc improvements of `TensorValues` APIs and indexing methods. Since PR[#1162](https://github.com/gridap/Gridap.jl/pull/1162).
+  - Indexing tensors using slices (`:`/`Colon()`), (static)vectors or arrays, ranges (`OneTo`, `SOneTo`), or mix of them.
+  - Implemented `Base.keys` that relates to the array shape of the `MultiValue`
+  - Constructors `MV(::[S/M]Array)` and `SA(::MultiValue)` for any types `MV<:MultiValue` and `SA<:[S/M]Array` for arguments for which the conversion via `convert` is possible.
+- Added new way of doing AD for MultiField, where partials are computed separately for each field then merged together. Since PR[#1136](https://github.com/gridap/Gridap.jl/pull/1136).
+
+## [0.19.4] - 2025-08-09
+
+### Added
+
+- Added low-level API `Arrays.invalidate_cache!(cache)` that forces the re-computation of values in `LazyArray` caches. Since PR[#1137](https://github.com/gridap/Gridap.jl/pull/1137).
+- Added support for star-patch integration, i.e patch integration with masked patch boundaries. Since PR[#1138](https://github.com/gridap/Gridap.jl/pull/1138).
+- Added compatibility for `DataStructures.jl` v0.19.0. Since PR[#1149](https://github.com/gridap/Gridap.jl/pull/1149).
+
+### Changed
+
+- Small modifications to `PolytopalQuadrature` to make it more flexible. Since PR[#1149](https://github.com/gridap/Gridap.jl/pull/1149).
+
+### Fixed
+
+- Fixes issue [#1119](https://github.com/gridap/Gridap.jl/issues/1119), allowing evaluation of `CellFields` on arbitrary points on periodic meshes. Since PR[#1139](https://github.com/gridap/Gridap.jl/pull/1139).
+
+## [0.19.3] - 2025-07-15
+
+### Fixed
+
+- `MultiFieldFEBasisComponent` now supports addition and subtraction. Since PR[#1130](https://github.com/gridap/Gridap.jl/pull/1130).
+- Fixed issues introduced in PR [#1130](https://github.com/gridap/Gridap.jl/pull/1130). Closes issue [#1131](https://github.com/gridap/Gridap.jl/issues/1131). Since PR [#1132](https://github.com/gridap/Gridap.jl/pull/1132).
+- Removed method ambiguity in `Adaptivity.setup_edge_based_rrules`. Fixes issue [#1133](https://github.com/gridap/Gridap.jl/issues/1133). Since PR[#1135](https://github.com/gridap/Gridap.jl/pull/1135).
+
+## [0.19.2] - 2025-07-08
+
+### Added
+
+- Added missing operations between `SkeletonPairs`. Since PR[#1122](https://github.com/gridap/Gridap.jl/pull/1122).
+- Added bubble elements for simplex and cube-like polytopes. Since PR[#1124](https://github.com/gridap/Gridap.jl/pull/1124)
+
+### Fixed
+
+- Update `norm` function to be compatible with complex vectors and tensors. Since PR[#1118](https://github.com/gridap/Gridap.jl/pull/1118).
+- `AdaptivityGlue` can now deal with non-surjective n2o maps. Since PR[#1126](https://github.com/gridap/Gridap.jl/pull/1126).
+
+## [0.19.1] - 2025-06-11
+
+### Fixed
+
+- Minor bugfixes from v0.19. Since PR[#1111](https://github.com/gridap/Gridap.jl/pull/1111).
+
+## [0.19.0] - 2025-06-10
+
+### Added
+
+- Support for polytopal meshes in 2D and 3D. New structures `PolytopalGridTopology`, `PolytopalGrid` and `PolytopalDiscreteModel`. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- Support for non-overlapping triangulations. Both `BodyFittedTriangulation` and `BoundaryTriangulation` have been extended to support repeated face ids. In particular, the `FaceToCellGlue` has a new constructor. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- Support for patch-wise integration and local solves. New structures `PatchTopology`, `PatchTriangulation` and `PatchAssembler` have been added. These structures allow for the integration, assembly and solution of local problems on (potentially overlapping) patches of the mesh. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- Support for polynomial spaces on polytopal meshes. New structure `PolytopalFESpace` has been added. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+- With all of the above, we have support for hybrid non-conforming methods on polytopal meshes. Examples have been added for HDG and HHO in 2D and 3D. Since PR[#1110](https://github.com/gridap/Gridap.jl/pull/1110).
+
+### Fixed
+
+- The `tol` kwarg for `Interpolable` was unused. It is now used for the point-to-cell search, which was breaking for very small cell sizes. Since PR[#1106](https://github.com/gridap/Gridap.jl/pull/1106).
+
+## [0.18.12] - 2025-04-19
+
+### Added
+
+- Added functionality to allow automatic differentiation of integrals with respect to evaluation positions xh where xh is a FEFunction. Since PR[#1095](https://github.com/gridap/Gridap.jl/pull/1095)
+
+### Fixed
+
+- Fix bug for issue [#927](https://github.com/gridap/Gridap.jl/issues/927), where Nedelec FE would not work on faces (Dc < Dp). Since PR[#1094](https://github.com/gridap/Gridap.jl/pull/1094).
+- Added support to evaluate polynomial bases on dualized points. Since PR[#1100](https://github.com/gridap/Gridap.jl/pull/1100).
+
+## [0.18.11] - 2025-04-01
+
+### Added
+
+- Added definition for `DiracDelta` with `Triangulation` argument. Since
+  PR[#1087](https://github.com/gridap/Gridap.jl/pull/1087).
+
+### Fixed
+
+- Fixed the failure of hessian over sum/product two `Field`s or `CellField`s as
+  reported in issue [#875](https://github.com/gridap/Gridap.jl/issues/875) by
+  adding the relevant manual chain rules. Since
+  PR[#1053](https://github.com/gridap/Gridap.jl/pull/1053).
+
+### Changed
+
+- Modified the `LinearStageOperator` struct to align it with the `NonlinearStageOperator`. Added `usx`, `ws` and `tx` as new fields in the struct. Since PR[#1089](https://github.com/gridap/Gridap.jl/pull/1089).
+- Misc `TensorValues` improvements since PR [#1092](https://github.com/gridap/Gridap.jl/pull/1092).
+    - `MultiValue`s can now be indexed by tuples of mixed `Integer` and `CartesianIndex`
+    - Indexing in `MultiValue`s now performs bound checks, that can be disabled using `@inbounds` or Gridap's performance execution mode.
+    - Make sure that the result of all operation (empty/zero tensor) of correctly promoted (element) type when applied to tensor(s) of length zero
+    - An argument error is now thrown when calling `tr(::ThirdOrderTensorValue{A,B})` with `A!=B`
+
+## [0.18.10] - 2025-03-04
 
 ### Added
 
 - Added corresponding function `get_tangent_vector` to `get_normal_vector`. This method calculates the (unique up to sign) tangential unit vector to edges in 2D meshes, by rotating the normal (nx, ny) -> (ny, -nx). Since PR[#1071](https://github.com/gridap/Gridap.jl/pull/1071).
 
-## [0.18.9] - 2025-01-13
-
-
 ### Fixed
 
-- BUG in `FineToCoarseFields.jl`. Since PR[#1074](https://github.com/gridap/Gridap.jl/pull/1074)
+- Fixed autodiff-related issues [#661](https://github.com/gridap/Gridap.jl/issues/661), [#1052](https://github.com/gridap/Gridap.jl/issues/1052) and [#1085](https://github.com/gridap/Gridap.jl/issues/1085). Since PR[#1070](https://github.com/gridap/Gridap.jl/pull/1070).
+
+### Changed
+
+- `real` and `imag` functions now return a real TensorValue. Since PR[#1080](https://github.com/gridap/Gridap.jl/pull/1080).
+- Refactor of automatic differentiation for multi-field spaces. Now there is a more consistent implementation covering all cases. Since PR[#1070](https://github.com/gridap/Gridap.jl/pull/1070).
+
+## [0.18.9] - 2025-01-13
 
 ### Added
 
 - Added AMR-related methods `mark` and `estimate` to `Adaptivity` module. Implemented Dorfler marking strategy. Since PR[#1063](https://github.com/gridap/Gridap.jl/pull/1063).
+
+### Fixed
+
+- BUG in `FineToCoarseFields.jl`. Since PR[#1074](https://github.com/gridap/Gridap.jl/pull/1074).
 
 ### Changed
 

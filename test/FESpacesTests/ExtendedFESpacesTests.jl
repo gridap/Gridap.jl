@@ -154,8 +154,77 @@ end
 vh_in = interpolate(vh_in, V_in)
 vh = interpolate(vh_in, V)
 
-#using Gridap.Visualization
-#writevtk(Ω,"Ω",cellfields=["vh"=>vh,"vh_in"=>vh_in])
+#############################################
+# Test extensions to empty FESpaces (issue #1085)
 
+Ω_in = Triangulation(model,Int[])
+
+V = TestFESpace(Ω_in,ReferenceFE(lagrangian,Float64,order),conformity=:H1)
+test_single_field_fe_space(V)
+U = TrialFESpace(V)
+test_single_field_fe_space(U)
+
+dv = get_fe_basis(V)
+du = get_trial_fe_basis(U)
+uh = interpolate(u,U)
+
+x = get_cell_points(Ω)
+x_in = get_cell_points(Ω_in)
+x_out = get_cell_points(Ω_out)
+x_Γ = get_cell_points(Γ)
+
+r = dv(x)
+test_array(r,collect(r))
+r = dv(x_in)
+test_array(r,collect(r))
+r = dv(x_out)
+test_array(r,collect(r))
+r = dv.⁺(x_Γ)
+test_array(r,collect(r))
+
+r = ∇(dv)(x)
+test_array(r,collect(r))
+r = ∇(dv)(x_in)
+test_array(r,collect(r))
+r = ∇(dv)(x_out)
+test_array(r,collect(r))
+r = ∇(dv).⁺(x_Γ)
+test_array(r,collect(r))
+
+r = du(x)
+test_array(r,collect(r))
+r = du(x_in)
+test_array(r,collect(r))
+r = du(x_out)
+test_array(r,collect(r))
+r = du.⁺(x_Γ)
+test_array(r,collect(r))
+
+r = ∇(du)(x)
+test_array(r,collect(r))
+r = ∇(du)(x_in)
+test_array(r,collect(r))
+r = ∇(du)(x_out)
+test_array(r,collect(r))
+r = ∇(du).⁺(x_Γ)
+test_array(r,collect(r))
+
+r = uh(x)
+test_array(r,collect(r))
+r = uh(x_in)
+test_array(r,collect(r))
+r = uh(x_out)
+test_array(r,collect(r))
+r = uh.⁺(x_Γ)
+test_array(r,collect(r))
+
+r = ∇(uh)(x)
+test_array(r,collect(r))
+r = ∇(uh)(x_in)
+test_array(r,collect(r))
+r = ∇(uh)(x_out)
+test_array(r,collect(r))
+r = ∇(uh).⁺(x_Γ)
+test_array(r,collect(r))
 
 end # module

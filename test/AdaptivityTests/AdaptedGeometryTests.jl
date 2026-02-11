@@ -9,6 +9,11 @@ using Gridap.ReferenceFEs
 using FillArrays
 
 for D = 1:3
+  if Sys.WORD_SIZE == 32 && D == 3
+    @info("Skipping D=3 test on 32-bit system due to memory constraints")
+    continue
+  end
+
   domain = Tuple(repeat([0,1],D))
 
   cart_model = CartesianDiscreteModel(domain,Tuple(fill(2,D)))
@@ -84,6 +89,14 @@ for D = 1:3
     @test !is_change_possible(it,t)
     @test !is_change_possible(it,rt)
   end
+
+  faces = collect(1:6)
+  mask = [f in faces for f in 1:num_faces(model1,D-1)]
+  @test BoundaryTriangulation(model1, faces) isa AdaptedTriangulation
+  @test BoundaryTriangulation(model1, mask) isa AdaptedTriangulation
+  @test BoundaryTriangulation(model1, mask, 1) isa AdaptedTriangulation
+  @test BoundaryTriangulation(model1, faces, 1) isa AdaptedTriangulation
+  @test BoundaryTriangulation(model1; tags = "boundary") isa AdaptedTriangulation
 end
 
 end

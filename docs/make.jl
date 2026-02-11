@@ -23,6 +23,7 @@ pages = [
   "Gridap.Adaptivity" => "Adaptivity.md",
   "Developper notes" => Any[
     "dev-notes/block-assemblers.md",
+    "dev-notes/autodiff.md",
   ],
 ]
 

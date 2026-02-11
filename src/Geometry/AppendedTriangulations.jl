@@ -11,6 +11,10 @@ struct AppendedGrid{Dc,Dp,A,B} <: Grid{Dc,Dp}
   end
 end
 
+function num_cells(t::AppendedGrid)
+  return num_cells(t.a) + num_cells(t.b)
+end
+
 function get_node_coordinates(t::AppendedGrid)
   xa = get_node_coordinates(t.a)
   xb = get_node_coordinates(t.b)
@@ -38,6 +42,16 @@ end
 function get_reffes(t::AppendedGrid)
   ra = get_reffes(t.a)
   rb = get_reffes(t.b)
+  if ra === rb
+    ra
+  else
+    vcat(ra,rb)
+  end
+end
+
+function get_polytopes(t::AppendedGrid)
+  ra = get_polytopes(t.a)
+  rb = get_polytopes(t.b)
   if ra === rb
     ra
   else
@@ -100,6 +114,38 @@ end
 
 function lazy_append(a::Triangulation,b::Triangulation)
   AppendedTriangulation(a,b)
+end
+
+function Base.view(grid::AppendedGrid,cell_to_parent_cell::AbstractArray)
+  _restrict_appended_grid(view,grid,cell_to_parent_cell)
+end
+
+function restrict(grid::AppendedGrid,cell_to_parent_cell::AbstractArray)
+  _restrict_appended_grid(restrict,grid,cell_to_parent_cell)
+end
+
+function _restrict_appended_grid(f,grid::AppendedGrid,filter::AbstractVector{Bool})
+  cell_to_parent_cell = findall(filter)
+  _restrict_appended_grid(f,grid,cell_to_parent_cell)
+end
+
+function _restrict_appended_grid(f,grid::AppendedGrid,cell_to_parent_cell::AbstractVector{<:Integer})
+  na = num_cells(grid.a)
+  nb = num_cells(grid.b)
+  k = findfirst(c -> c > na, cell_to_parent_cell)
+
+  isnothing(k) && return f(grid.a,cell_to_parent_cell) # All cells are in a
+  isone(k) && return f(grid.b,cell_to_parent_cell .- na) # All cells are in b
+
+  a_cells = cell_to_parent_cell[1:k-1]
+  b_cells = cell_to_parent_cell[k:end] .- na
+
+  is_split = all(c -> 1 <= c <= na, a_cells) && all(c -> 1 <= c <= nb, b_cells)
+  @notimplementedif !is_split "Cells cannot be cleanly split between grids"
+
+  a = f(grid.a,a_cells)
+  b = f(grid.b,b_cells)
+  return lazy_append(a,b)
 end
 
 struct AppendedTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
