@@ -805,6 +805,20 @@ function meas(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
 end
 
 """
+    scaled_meas(J::MultiValue{Tuple{D1,D2}})
+
+Returns a rescaled version of the `D1`-dimensional volume of the parallelepiped
+formed by the rows of `J`, that is `sqrt(det(J⋅Jᵀ))^(1/D1)`, or `abs(det(J))^(1/D1)` if `D1`=`D2`.
+This is used to compute the scaled contribution of the Jacobian matrix `J` of a changes of variables in integrals, e.g. used in the ScaledContraVariantPiolaMap.
+"""
+scaled_meas(a::MultiValue{Tuple{D,D}}) where D = abs(det(a))^(1/D)
+
+function scaled_meas(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+  J = transpose(Jt)
+  sqrt(det(Jt⋅J))^(1/D1)
+end
+
+"""
     norm(u::MultiValue{Tuple{D}})
     norm(u::MultiValue{Tuple{D1,D2}})
 

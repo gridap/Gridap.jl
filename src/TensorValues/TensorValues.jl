@@ -57,7 +57,7 @@ export QTensorValue
 export SymFourthOrderTensorValue
 export ThirdOrderTensorValue
 
-export inner, outer, meas
+export inner, outer, meas, scaled_meas
 export mutable
 export Mutable
 export symmetric_part
