@@ -101,34 +101,35 @@ function CellConformity(cell_reffe::AbstractArray{<:ReferenceFE{D}},conf::Confor
   )
 end
 
-function CellConformity(
-  cell_polys::AbstractArray{<:Polytope{D}},cell_basis::AbstractArray{<:AbstractArray{<:Field}},conf::Conformity
-) where D
-  @check conf isa L2Conformity "Only L2 conformity is supported"
-  ctype_basis, cell_ctype = compress_cell_data(cell_basis)
-  ctype_poly, cell_ctype_poly = compress_cell_data(cell_polys)
-  @check isequal(cell_ctype,cell_ctype_poly) || isone(length(ctype_poly)) """
-    Inconsistent cell types between `cell_polys` and `cell_basis`
-  """
-  if isone(length(ctype_poly))
-    ctype_poly = fill(first(ctype_poly),length(ctype_basis))
-  end
-
-  ctype_lface_own_ldofs = map(ctype_poly) do p
-    nfaces = num_faces(p)
-    [ifelse(isequal(face,nfaces),collect(1:ndofs),Int[]) for face in 1:nfaces]
-  end
-  ctype_lface_pindex_pdofs = map(ReferenceFEs._trivial_face_own_dofs_permutations, ctype_lface_own_ldofs)
-  d_ctype_num_faces = [
-    map(p -> num_faces(p,d), ctype_poly) for d in 0:D
-  ]
-  ctype_num_dofs  = map(length, ctype_basis)
-  ctype_ldof_comp = [fill(0,n) for n in ctype_num_dofs]
-
-  return CellConformity(
-    cell_ctype,ctype_lface_own_ldofs,ctype_lface_pindex_pdofs,d_ctype_num_faces,ctype_num_dofs,ctype_ldof_comp
-  )
-end
+# function CellConformity(
+#   cell_polys::AbstractArray{<:Polytope{D}},cell_basis::AbstractArray{<:AbstractArray{<:Field}},conf::Conformity
+# ) where D
+#   @check conf isa L2Conformity "Only L2 conformity is supported"
+#   ctype_basis, cell_ctype = compress_cell_data(cell_basis)
+#   ctype_poly, cell_ctype_poly = compress_cell_data(cell_polys)
+#   @check isequal(cell_ctype,cell_ctype_poly) || isone(length(ctype_poly)) """
+#     Inconsistent cell types between `cell_polys` and `cell_basis`
+#   """
+#   if isone(length(ctype_poly))
+#     ctype_poly = fill(first(ctype_poly),length(ctype_basis))
+#   end
+# 
+#   ctype_lface_own_ldofs = map(ctype_poly,ctype_basis) do p, b
+#     nfaces = num_faces(p)
+#     ndofs = length(b)
+#     [ifelse(isequal(face,nfaces),collect(1:ndofs),Int[]) for face in 1:nfaces]
+#   end
+#   ctype_lface_pindex_pdofs = map(ReferenceFEs._trivial_face_own_dofs_permutations, ctype_lface_own_ldofs)
+#   d_ctype_num_faces = [
+#     map(p -> num_faces(p,d), ctype_poly) for d in 0:D
+#   ]
+#   ctype_num_dofs  = map(length, ctype_basis)
+#   ctype_ldof_comp = [fill(0,n) for n in ctype_num_dofs]
+# 
+#   return CellConformity(
+#     cell_ctype,ctype_lface_own_ldofs,ctype_lface_pindex_pdofs,d_ctype_num_faces,ctype_num_dofs,ctype_ldof_comp
+#   )
+# end
 
 function Base.getproperty(a::CompressedCellConformity, sym::Symbol)
   if sym == :d_ctype_offset
@@ -141,7 +142,7 @@ function Base.getproperty(a::CompressedCellConformity, sym::Symbol)
 end
 
 function Base.propertynames(x::CompressedCellConformity, private::Bool=false)
-  (fieldnames(typeof(x))...,:d_ctype_offset,:d_ctype_ldface_own_ldofs,:ctype_ndofs)
+  (fieldnames(typeof(x))...,:d_ctype_offset,:d_ctype_ldface_own_ldofs)
 end
 
 function _d_ctype_offset(a::CompressedCellConformity)

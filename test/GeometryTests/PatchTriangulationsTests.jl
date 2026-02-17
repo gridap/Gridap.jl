@@ -31,6 +31,14 @@ patch_facets = Geometry.get_patch_facets(ptopo)
 patch_nodes = Geometry.get_patch_faces(ptopo,0)
 @test all(x -> length(x) == 4, patch_nodes)
 
+@test Geometry.is_partition(ptopo)
+@test Geometry.is_disjoint(ptopo)
+@test Geometry.is_cover(ptopo)
+
+ptopo_view = view(ptopo,IdentityVector(num_cells(model)))
+ptopo_rest, _ = Geometry.restrict(ptopo,IdentityVector(num_cells(model)))
+@test Geometry.get_patch_cells(ptopo_view) == Geometry.get_patch_cells(ptopo_rest) == Geometry.get_patch_cells(ptopo)
+
 Ωp = PatchTriangulation(model,ptopo)
 Geometry.test_triangulation(Ωp)
 

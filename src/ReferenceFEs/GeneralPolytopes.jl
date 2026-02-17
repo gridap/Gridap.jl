@@ -262,10 +262,17 @@ is_n_cube(::GeneralPolytope) = false
 function is_convex(p::Polygon{2},tol=1.e3*eps(Float64))
   G = get_graph(p)
   coords = get_vertex_coordinates(p)
+  orientation = 0
   for (v,(vprev,vnext)) in enumerate(G)
     ein  = coords[v] - coords[vprev]
     eout = coords[vnext] - coords[v]
-    (cross(ein,eout) > tol) && return false
+    cp = cross(ein,eout)
+    abs(cp) < tol && continue
+    if iszero(orientation)
+      orientation = sign(cp)
+    elseif sign(cp) != orientation
+      return false
+    end
   end
   return true
 end
@@ -274,10 +281,17 @@ function is_convex(p::Polygon{3},tol=1.e3*eps(Float64))
   G = get_graph(p)
   coords = get_vertex_coordinates(p)
   n = get_cell_normal(p)
+  orientation = 0
   for (v,(vprev,vnext)) in enumerate(G)
     ein  = coords[v] - coords[vprev]
     eout = coords[vnext] - coords[v]
-    (dot(cross(ein,eout),n) < -tol) && return false
+    cp = dot(cross(ein,eout),n)
+    abs(cp) < tol && continue
+    if iszero(orientation)
+      orientation = sign(cp)
+    elseif sign(cp) != orientation
+      return false
+    end
   end
   return true
 end
@@ -845,7 +859,7 @@ function signed_volume(coords::Vector{<:Point{3}}, faces)
   vol = zero(eltype(eltype(coords)))
   for f in faces
     @check length(f) == 3 "Faces must be triangles to compute the signed volume"
-    v2, v2, v3 = coords[f[1]], coords[f[2]], coords[f[3]]
+    v1, v2, v3 = coords[f[1]], coords[f[2]], coords[f[3]]
     vol += dot(v1, cross(v2, v3))
   end
   return vol / 6

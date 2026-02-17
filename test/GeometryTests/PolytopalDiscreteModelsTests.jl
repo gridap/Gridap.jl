@@ -33,6 +33,7 @@ end
 model = CartesianDiscreteModel((0,1,0,1),(2,2))
 
 pmodel = Geometry.PolytopalDiscreteModel(model)
+pgrid = Geometry.PolytopalGrid(get_polytopes(pmodel))
 test_model(pmodel)
 
 vmodel = Geometry.voronoi(Geometry.simplexify(model))
@@ -41,5 +42,6 @@ test_model(vmodel)
 model = CartesianDiscreteModel((0,1,0,1,0,1),(2,2,2))
 pmodel = Geometry.PolytopalDiscreteModel(model)
 test_model(pmodel)
+
 
 end

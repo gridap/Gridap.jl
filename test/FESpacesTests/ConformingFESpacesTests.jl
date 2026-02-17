@@ -8,6 +8,7 @@ using Gridap.Geometry
 using Gridap.FESpaces
 using Gridap.CellData
 using Gridap.Fields
+using FillArrays
 
 # testing compute_conforming_cell_dofs
 
@@ -28,6 +29,7 @@ trian = Triangulation(model)
 cell_map = get_cell_map(trian)
 conf = Conformity(testitem(cell_reffe))
 cell_fe = CellFE(model,cell_reffe,conf)
+@test get_cell_type(cell_fe) == get_cell_type(grid_topology)
 
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
   CellConformity(cell_fe),grid_topology, face_labeling, dirichlet_tags)
@@ -80,7 +82,6 @@ reffe = ReferenceFE(lagrangian,VectorValue{2,Float64},3)
 
 V = FESpace(model,reffe,dirichlet_tags=dirichlet_tags)
 @test get_cell_is_dirichlet(V) === V.cell_is_dirichlet
-
 test_single_field_fe_space(V)
 
 matvecdata = []
@@ -111,5 +112,34 @@ cell_conformity = FESpaces.get_cell_conformity(V)
   [[[1, 2, 5], [3, 4, 6], [1, 3, 7], [2, 4, 8]]],
   [[[1, 2, 3, 4, 5, 6, 7, 8, 9]]]
 ]
+
+##################
+
+model = CartesianDiscreteModel((0,1,0,1),(3,3))
+reffe = ReferenceFE(QUAD,lagrangian,Float64,1)
+
+V = FESpace(model,reffe)
+cell_conformity = FESpaces.get_cell_conformity(V)
+@test isa(cell_conformity, FESpaces.CompressedCellConformity)
+bmask = FESpaces.generate_dof_mask(V,get_face_labeling(model),"boundary")
+@test sum(bmask) == num_free_dofs(V) - 4
+bmask_rev = FESpaces.generate_dof_mask(V,get_face_labeling(model),"boundary",reverse=true)
+@test sum(bmask_rev) == 4
+@test all(bmask .== .!bmask_rev)
+
+cell_lface_own_ldofs = collect(expand_cell_data(cell_conformity.ctype_lface_own_ldofs,cell_conformity.cell_ctype))
+cell_d_num_dfaces = [[cell_conformity.d_ctype_num_dfaces[d+1][ctype] for d in 0:2] for ctype in cell_conformity.cell_ctype]
+cell_conformity_gen = FESpaces.GenericCellConformity(cell_lface_own_ldofs, cell_d_num_dfaces)
+@test num_cells(cell_conformity_gen) == 9
+@test get_cell_type(cell_conformity_gen) == Base.OneTo(9)
+
+V = FESpaces.PolytopalFESpace(model,Float64, 1)
+cell_conformity = FESpaces.get_cell_conformity(V)
+@test isa(cell_conformity_disc, FESpaces.DiscontinuousCellConformity)
+bmask = FESpaces.generate_dof_mask(V,get_face_labeling(model),"boundary")
+@test sum(bmask) == 0
+bmask_rev = FESpaces.generate_dof_mask(V,get_face_labeling(model),"boundary",reverse=true)
+@test sum(bmask_rev) == num_free_dofs(V)
+@test all(bmask .== .!bmask_rev)
 
 end  # module
