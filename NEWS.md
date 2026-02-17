@@ -7,10 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed lack of more general tests for Nedelec ReferenceFEs. Added a test which is currently broken. Since PR[#1216](https://github.com/gridap/Gridap.jl/pull/1216).
+
 ### Added
 
 - Added `testvalue(::Type{<:Tuple})` for tuples with an arbitrary number of items. Since PR[#1210](https://github.com/gridap/Gridap.jl/pull/1210).
 - Added `normalize` function support for `MultiValue` objects. Since PR[#1211](https://github.com/gridap/Gridap.jl/pull/1211).
+- Added `sqrt` function support for `TensorValue` objects. Since PR[#1212](https://github.com/gridap/Gridap.jl/pull/1212).
 
 
 ## [0.19.7] - 2025-12-18
