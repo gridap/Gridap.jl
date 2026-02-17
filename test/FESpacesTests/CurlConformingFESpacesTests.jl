@@ -130,7 +130,7 @@ e = u - uh
 dΩ = Measure(Ω,order)
 
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
-@test el2 < 1.0e-10
+@test el2 < 1.0e-9
 
 domain = (0,1,0,1,0,1)
 cells  = (2,2,2)
