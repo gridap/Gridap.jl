@@ -50,7 +50,13 @@ See the complete code [here](https://github.com/gridap/Gridap.jl/blob/master/tes
 
 ## Tutorials
 
-A hands-on user-guide to the library is available as a set of [tutorials](https://github.com/gridap/Tutorials). They are available as Jupyter notebooks and html pages.
+A hands-on user guide to the library is available as a set of [tutorials](https://github.com/gridap/Tutorials).  
+Each tutorial demonstrates how to solve a specific type of partial differential equation (PDE) using Gridap.jl.  
+Topics include problems such as the [Poisson equation](https://gridap.github.io/Tutorials/dev/pages/t001_poisson/), [linear elasticity](https://gridap.github.io/Tutorials/dev/pages/t003_elasticity/), and [incompressible Navier–Stokes flow](https://gridap.github.io/Tutorials/dev/pages/t008_inc_navier_stokes/).  
+
+The tutorials can be viewed as HTML pages online or run interactively as Jupyter notebooks.  
+They provide a step-by-step introduction for new users and serve as practical examples of how to set up, solve, and visualize PDEs using Gridap.jl.
+
 
 ## Installation
 
