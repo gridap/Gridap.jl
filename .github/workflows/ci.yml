@@ -1,6 +1,28 @@
 name: CI
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'CONTRIBUTING.md'
+      - 'CODE_OF_CONDUCT.md'
+      - 'LICENSE.md'
+      - 'README.md'
+      - 'NEWS.md'
+      - 'ADMINISTRATORS'
+      - 'benchmark/**'
+      - 'docs/**'
+  pull_request:
+    paths-ignore:
+      - 'CONTRIBUTING.md'
+      - 'CODE_OF_CONDUCT.md'
+      - 'LICENSE.md'
+      - 'README.md'
+      - 'NEWS.md'
+      - 'ADMINISTRATORS'
+      - 'benchmark/**'
+      - 'docs/**'
+  workflow_dispatch: # Allow manual triggering of the workflow from the Actions tab
 
 # Cancel redundant CI tests automatically
 concurrency:
@@ -11,6 +33,8 @@ jobs:
   test: # Main CI tests
     name: Tests ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
+    env:
+      DO_COVERAGE: ${{ matrix.version == '1.10' && matrix.os == 'ubuntu-latest' && matrix.arch == 'x64' }}
     strategy:
       fail-fast: false
       matrix: # Main tests for linux
@@ -41,8 +65,13 @@ jobs:
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+        with: # Only collect coverage for a single configuration
+          coverage: ${{ env.DO_COVERAGE }}
+
       - uses: julia-actions/julia-processcoverage@v1
+        if: ${{ env.DO_COVERAGE }}
       - uses: codecov/codecov-action@v5
+        if: ${{ env.DO_COVERAGE }}
         with:
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -70,7 +99,7 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
       - run: |
           julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.instantiate()'
-          julia --color=yes --project=. --depwarn=yes -e 'include("test/GridapTests/runtests.jl")'
+          julia --color=yes --project=. --code-coverage=user --depwarn=yes -e 'include("test/GridapTests/runtests.jl")'
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v5
         with:
@@ -100,7 +129,7 @@ jobs:
       - run: |
           julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.instantiate()'
           julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.add(["Test", "TikzPictures"])'
-          julia --color=yes --project=. --depwarn=yes -e 'include("test/ExtensionTests/runtests.jl")'
+          julia --color=yes --project=. --code-coverage=user --depwarn=yes -e 'include("test/ExtensionTests/runtests.jl")'
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v5
         with:
