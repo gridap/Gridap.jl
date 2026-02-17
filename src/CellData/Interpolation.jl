@@ -5,10 +5,11 @@
 # Interpolable struct
 struct KDTreeSearch{T}
   num_nearest_vertices::Int
+  accept_points_outside::Bool
   tol::T
-  function KDTreeSearch(; num_nearest_vertices=1, tol=1.e-10)
+  function KDTreeSearch(; num_nearest_vertices=1,accept_points_outside=false, tol=1.e-10)
     T = typeof(tol)
-    new{T}(num_nearest_vertices, tol)
+    new{T}(num_nearest_vertices,accept_points_outside, tol)
   end
 end
 
@@ -150,6 +151,10 @@ function _point_to_cell!(cache, x::Point)
     (dist < tol) && return cell
   end
 
+  if searchmethod.accept_points_outside == true
+    return nothing
+  end
+  
   # Output error message if cell not found
   @check false "Point $x is not inside any active cell"
 end

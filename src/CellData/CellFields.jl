@@ -243,14 +243,8 @@ end
 get_data(f::GenericCellField) = f.cell_field
 get_triangulation(f::GenericCellField) = f.trian
 DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
-
-(a::CellField)(x) = evaluate(a,x)
-
-function evaluate!(cache,f::CellField,x::CellPoint)
-  _f, _x = _to_common_domain(f,x)
-  cell_field = get_data(_f)
-  cell_point = get_data(_x)
-  lazy_map(evaluate,cell_field,cell_point)
+function similar_cell_field(f::GenericCellField,cell_data,trian,ds)
+  GenericCellField(cell_data,trian,ds)
 end
 
 function _to_common_domain(f::CellField,x::CellPoint)
@@ -689,3 +683,5 @@ function (a::SkeletonPair{<:CellField})(x)
   Evaluating `n(x)` is not allowed. You need to call either `n.⁺(x)` or `n.⁻(x)`.
   """
 end
+
+# Interpolable struct
