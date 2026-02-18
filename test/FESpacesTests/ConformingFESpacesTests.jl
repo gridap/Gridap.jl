@@ -135,7 +135,7 @@ cell_conformity_gen = FESpaces.GenericCellConformity(cell_lface_own_ldofs, cell_
 
 V = FESpaces.PolytopalFESpace(model,Float64, 1)
 cell_conformity = FESpaces.get_cell_conformity(V)
-@test isa(cell_conformity_disc, FESpaces.DiscontinuousCellConformity)
+@test isa(cell_conformity, FESpaces.DiscontinuousCellConformity)
 bmask = FESpaces.generate_dof_mask(V,get_face_labeling(model),"boundary")
 @test sum(bmask) == 0
 bmask_rev = FESpaces.generate_dof_mask(V,get_face_labeling(model),"boundary",reverse=true)
