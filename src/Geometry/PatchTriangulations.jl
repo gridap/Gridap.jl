@@ -732,3 +732,28 @@ function is_change_possible(strian::PatchTriangulation,ttrian::PatchTriangulatio
   tglue = get_patch_glue(ttrian)
   return is_change_possible(sglue,tglue)
 end
+
+############################################################################################
+# IO
+
+function to_dict(ptopo::PatchTopology{Dc}) where Dc
+  dict = Dict{Symbol,Any}()
+  topo = ptopo.topo
+  dict[:topo_type] = string(nameof(typeof(topo)))
+  dict[:topo] = to_dict(topo)
+  dict[:patch_cells] = to_dict(get_patch_cells(ptopo))
+  dict
+end
+
+function from_dict(::Type{<:PatchTopology},dict::Dict{Symbol,Any})
+  topo_type = dict[:topo_type]
+  if topo_type == "PolytopalGridTopology"
+    topo = from_dict(PolytopalGridTopology,dict[:topo])
+  elseif topo_type == "UnstructuredGridTopology"
+    topo = from_dict(UnstructuredGridTopology,dict[:topo])
+  else
+    error("Unsupported topology type: $topo_type")
+  end
+  patch_cells = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[:patch_cells])
+  PatchTopology(topo,patch_cells)
+end

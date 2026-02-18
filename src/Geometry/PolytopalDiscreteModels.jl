@@ -593,3 +593,66 @@ function voronoi(topo::GridTopology{Dc}) where Dc
 
   return PolytopalGridTopology(new_node_coords,new_c2n,polytopes)
 end
+
+############################################################################################
+# IO
+
+function to_dict(topo::PolytopalGridTopology{Dc}) where Dc
+  dict = Dict{Symbol,Any}()
+  x = get_vertex_coordinates(topo)
+  dict[:vertex_coordinates] = reinterpret(eltype(eltype(x)),x)
+  dict[:Dp] = num_point_dims(topo)
+  dict[:Dc] = Dc
+  cell_vertices = get_faces(topo,Dc,0)
+  dict[:cell_vertices] = to_dict(cell_vertices)
+  dict[:polytopes] = map(to_dict, get_polytopes(topo))
+  dict
+end
+
+function from_dict(::Type{<:PolytopalGridTopology},dict::Dict{Symbol,Any})
+  Dp::Int = dict[:Dp]
+  Dc::Int = dict[:Dc]
+  x = dict[:vertex_coordinates]
+  T = eltype(x)
+  vertex_coordinates::Vector{Point{Dp,T}} = reinterpret(Point{Dp,T},x)
+  cell_vertices = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[:cell_vertices])
+  polytopes = [from_dict(GeneralPolytope,p) for p in dict[:polytopes]]
+  PolytopalGridTopology(vertex_coordinates,cell_vertices,polytopes)
+end
+
+function to_dict(grid::PolytopalGrid{Dc}) where Dc
+  dict = Dict{Symbol,Any}()
+  x = get_node_coordinates(grid)
+  dict[:node_coordinates] = reinterpret(eltype(eltype(x)),x)
+  dict[:Dp] = num_point_dims(grid)
+  dict[:Dc] = Dc
+  dict[:cell_node_ids] = to_dict(get_cell_node_ids(grid))
+  dict[:polytopes] = map(to_dict, get_polytopes(grid))
+  dict
+end
+
+function from_dict(::Type{<:PolytopalGrid},dict::Dict{Symbol,Any})
+  Dp::Int = dict[:Dp]
+  Dc::Int = dict[:Dc]
+  x = dict[:node_coordinates]
+  T = eltype(x)
+  node_coordinates::Vector{Point{Dp,T}} = reinterpret(Point{Dp,T},x)
+  cell_node_ids = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[:cell_node_ids])
+  polytopes = [from_dict(GeneralPolytope,p) for p in dict[:polytopes]]
+  PolytopalGrid(node_coordinates,cell_node_ids,polytopes)
+end
+
+function to_dict(model::PolytopalDiscreteModel)
+  dict = Dict{Symbol,Any}()
+  dict[:grid] = to_dict(get_grid(model))
+  dict[:topology] = to_dict(get_grid_topology(model))
+  dict[:labeling] = to_dict(get_face_labeling(model))
+  dict
+end
+
+function from_dict(::Type{<:PolytopalDiscreteModel},dict::Dict{Symbol,Any})
+  grid = from_dict(PolytopalGrid,dict[:grid])
+  topo = from_dict(PolytopalGridTopology,dict[:topology])
+  labeling = from_dict(FaceLabeling,dict[:labeling])
+  PolytopalDiscreteModel(grid,topo,labeling)
+end

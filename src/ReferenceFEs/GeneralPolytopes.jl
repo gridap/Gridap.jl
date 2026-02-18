@@ -1357,3 +1357,27 @@ function _segment_intersection(p1::Point{2}, p2::Point{2}, q1::Point{2}, q2::Poi
   u = cross(d, d1) / denom
   return t, u
 end
+
+# IO
+
+function to_dict(p::GeneralPolytope{D}) where D
+  dict = Dict{Symbol,Any}()
+  x = get_vertex_coordinates(p)
+  dict[:D] = D
+  dict[:Dp] = num_point_dims(p)
+  dict[:vertices] = reinterpret(eltype(eltype(x)),x)
+  dict[:edge_vertex_graph] = [collect(g) for g in get_graph(p)]
+  dict[:isopen] = isopen(p)
+  dict
+end
+
+function from_dict(::Type{<:GeneralPolytope},dict::Dict{Symbol,Any})
+  D::Int = dict[:D]
+  Dp::Int = dict[:Dp]
+  x = dict[:vertices]
+  T = eltype(x)
+  vertices::Vector{Point{Dp,T}} = reinterpret(Point{Dp,T},x)
+  graph = [Int32.(g) for g in dict[:edge_vertex_graph]]
+  is_open::Bool = dict[:isopen]
+  GeneralPolytope{D}(vertices,graph;isopen=is_open)
+end

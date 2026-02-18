@@ -7,6 +7,7 @@ using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Geometry: GridTopologyMock
+using Gridap.Io
 
 m = GridTopologyMock()
 
@@ -102,5 +103,25 @@ tri10 = BezierRefFE(Float64,TRI,3)
 grid = Grid(tri10)
 topo = GridTopology(grid)
 test_grid_topology(topo)
+
+# IO
+
+model_io = CartesianDiscreteModel((0,1,0,1),(2,2))
+topo_io = get_grid_topology(model_io)
+
+dict = to_dict(topo_io)
+@test dict[:Dc] == 2
+@test dict[:Dp] == 2
+@test haskey(dict,:vertex_coordinates)
+@test haskey(dict,:cell_type)
+@test haskey(dict,:polytopes)
+@test haskey(dict,:face_vertices_1)
+@test haskey(dict,:face_vertices_2)
+
+topo_r = from_dict(UnstructuredGridTopology,dict)
+@test num_faces(topo_r,0) == num_faces(topo_io,0)
+@test num_faces(topo_r,1) == num_faces(topo_io,1)
+@test num_faces(topo_r,2) == num_faces(topo_io,2)
+@test get_vertex_coordinates(topo_r) ≈ get_vertex_coordinates(topo_io)
 
 end # module

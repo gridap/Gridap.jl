@@ -7,6 +7,7 @@ using Gridap.ReferenceFEs
 using Gridap.ReferenceFEs: check_polytope_graph
 using Gridap.ReferenceFEs: simplexify_surface
 using Gridap.ReferenceFEs: simplexify_interior
+using Gridap.Io
 
 p = Polygon(TRI)
 test_polytope(p,optional=true)
@@ -154,5 +155,50 @@ polys = ReferenceFEs.convexify(p)
 @test all(ReferenceFEs.is_convex.(polys))
 @test sum((norm∘ReferenceFEs.signed_area).(polys)) == 5.0
 @test norm(ReferenceFEs.signed_area(p)) == 5.0
+
+# IO
+
+poly_2d = Polygon([Point(0.0,0.0), Point(1.0,0.0), Point(1.0,1.0), Point(0.0,1.0)])
+dict = to_dict(poly_2d)
+@test dict[:D] == 2
+@test dict[:Dp] == 2
+@test dict[:isopen] == false
+poly_2d_r = from_dict(GeneralPolytope,dict)
+@test get_vertex_coordinates(poly_2d_r) == get_vertex_coordinates(poly_2d)
+@test ReferenceFEs.get_graph(poly_2d_r) == ReferenceFEs.get_graph(poly_2d)
+@test isopen(poly_2d_r) == isopen(poly_2d)
+@test num_dims(poly_2d_r) == num_dims(poly_2d)
+@test num_point_dims(poly_2d_r) == num_point_dims(poly_2d)
+
+tri_io = Polygon([Point(0.0,0.0), Point(1.0,0.0), Point(0.5,1.0)])
+dict_tri = to_dict(tri_io)
+tri_r = from_dict(GeneralPolytope,dict_tri)
+@test get_vertex_coordinates(tri_r) == get_vertex_coordinates(tri_io)
+@test ReferenceFEs.get_graph(tri_r) == ReferenceFEs.get_graph(tri_io)
+
+poly_3d = Polyhedron(TET)
+dict_3d = to_dict(poly_3d)
+@test dict_3d[:D] == 3
+@test dict_3d[:Dp] == 3
+poly_3d_r = from_dict(GeneralPolytope,dict_3d)
+@test get_vertex_coordinates(poly_3d_r) == get_vertex_coordinates(poly_3d)
+@test ReferenceFEs.get_graph(poly_3d_r) == ReferenceFEs.get_graph(poly_3d)
+
+poly_hex = Polyhedron(HEX)
+dict_hex = to_dict(poly_hex)
+poly_hex_r = from_dict(GeneralPolytope,dict_hex)
+@test get_vertex_coordinates(poly_hex_r) == get_vertex_coordinates(poly_hex)
+@test ReferenceFEs.get_graph(poly_hex_r) == ReferenceFEs.get_graph(poly_hex)
+
+penta = Polygon([Point(cos(2π*i/5), sin(2π*i/5)) for i in 0:4])
+dict_p = to_dict(penta)
+penta_r = from_dict(GeneralPolytope,dict_p)
+@test get_vertex_coordinates(penta_r) ≈ get_vertex_coordinates(penta)
+@test ReferenceFEs.get_graph(penta_r) == ReferenceFEs.get_graph(penta)
+
+json_str = to_json(poly_2d)
+poly_2d_rj = from_json(GeneralPolytope,json_str)
+@test get_vertex_coordinates(poly_2d_rj) == get_vertex_coordinates(poly_2d)
+@test ReferenceFEs.get_graph(poly_2d_rj) == ReferenceFEs.get_graph(poly_2d)
 
 end # module
