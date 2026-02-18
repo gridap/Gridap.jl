@@ -138,7 +138,9 @@ export TransientCellField
 export TransientSingleFieldCellField
 export TransientMultiFieldCellField
 export TransientFEBasis
-export get_cellfield, get_derivative
+export get_cellfield
+export get_derivative
+export get_derivatives
 
 include("TransientFEOperators.jl")
 

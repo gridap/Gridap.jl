@@ -276,21 +276,23 @@ function TransientFEOperator(
 )
   function jac_0(t, u, du, v)
     function res_0(y)
-      u0 = TransientCellField(y, u.derivatives)
+      u0 = TransientCellField(y, get_derivatives(u))
       res(t, u0, v)
     end
-    jacobian(res_0, u.cellfield)
+    jacobian(res_0, get_cellfield(u))
   end
   jacs = (jac_0,)
 
   for k in 1:order
     function jac_k(t, u, duk, v)
       function res_k(y)
-        derivatives = (u.derivatives[1:k-1]..., y, u.derivatives[k+1:end]...)
-        uk = TransientCellField(u.cellfield, derivatives)
+        derivatives_1_km1 = [get_derivative(u, i) for i in 1:k-1]
+        derivatives_kp1_end = [get_derivative(u, i) for i in k+1:order]
+        derivatives = (derivatives_1_km1..., y, derivatives_kp1_end...)
+        uk = TransientCellField(get_cellfield(u), derivatives)
         res(t, uk, v)
       end
-      jacobian(res_k, u.derivatives[k])
+      jacobian(res_k, get_derivative(u, k))
     end
     jacs = (jacs..., jac_k)
   end
@@ -420,11 +422,11 @@ function TransientQuasilinearFEOperator(
   if order > 0
     function jac_0(t, u, du, v)
       function res_0(y)
-        u0 = TransientCellField(y, u.derivatives)
+        u0 = TransientCellField(y, get_derivatives(u))
         ∂tNu0 = ∂t(u0, Val(order))
         mass(t, u0, ∂tNu0, v) + res(t, u0, v)
       end
-      jacobian(res_0, u.cellfield)
+      jacobian(res_0, get_cellfield(u))
     end
     jacs = (jacs..., jac_0)
   end
@@ -432,12 +434,14 @@ function TransientQuasilinearFEOperator(
   for k in 1:order-1
     function jac_k(t, u, duk, v)
       function res_k(y)
-        derivatives = (u.derivatives[1:k-1]..., y, u.derivatives[k+1:end]...)
-        u0 = TransientCellField(u.cellfield, derivatives)
+        derivatives_1_km1 = [get_derivative(u, i) for i in 1:k-1]
+        derivatives_kp1_end = [get_derivative(u, i) for i in k+1:order]
+        derivatives = (derivatives_1_km1..., y, derivatives_kp1_end...)
+        u0 = TransientCellField(get_cellfield(u), derivatives)
         ∂tNu0 = ∂t(u0, Val(order))
         mass(t, u0, ∂tNu0, v) + res(t, u0, v)
       end
-      jacobian(res_k, u.derivatives[k])
+      jacobian(res_k, get_derivative(u, k))
     end
     jacs = (jacs..., jac_k)
   end
@@ -585,10 +589,10 @@ function TransientSemilinearFEOperator(
   if order > 0
     function jac_0(t, u, du, v)
       function res_0(y)
-        u0 = TransientCellField(y, u.derivatives)
+        u0 = TransientCellField(y, get_derivatives(u))
         res(t, u0, v)
       end
-      jacobian(res_0, u.cellfield)
+      jacobian(res_0, get_cellfield(u))
     end
     jacs = (jacs..., jac_0)
   end
@@ -596,11 +600,13 @@ function TransientSemilinearFEOperator(
   for k in 1:order-1
     function jac_k(t, u, duk, v)
       function res_k(y)
-        derivatives = (u.derivatives[1:k-1]..., y, u.derivatives[k+1:end]...)
-        uk = TransientCellField(u.cellfield, derivatives)
+        derivatives_1_km1 = [get_derivative(u, i) for i in 1:k-1]
+        derivatives_kp1_end = [get_derivative(u, i) for i in k+1:order]
+        derivatives = (derivatives_1_km1..., y, derivatives_kp1_end...)
+        uk = TransientCellField(get_cellfield(u), derivatives)
         res(t, uk, v)
       end
-      jacobian(res_k, u.derivatives[k])
+      jacobian(res_k, get_derivative(u, k))
     end
     jacs = (jacs..., jac_k)
   end
@@ -901,8 +907,8 @@ function test_tfe_operator(
   odeop = get_algebraic_operator(tfeop)
   @test odeop isa ODEOperator
 
-  us = (get_free_dof_values(uh.cellfield),)
-  for derivative in uh.derivatives
+  us = (get_free_dof_values(get_cellfield(uh)),)
+  for derivative in get_derivatives(uh)
     us = (us..., get_free_dof_values(derivative))
   end
 

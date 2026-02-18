@@ -36,7 +36,7 @@ end
 # Functions required in Distributed context
 get_cellfield(f::TransientCellField) = @abstractmethod
 get_derivative(f::TransientCellField,k::Int) = @abstractmethod
-
+get_derivatives(f::TransientCellField) = @abstractmethod
 
 #################################
 # TransientSingleFieldCellField #
@@ -110,6 +110,7 @@ end
 # Functions required in Distributed context
 get_cellfield(f::TransientSingleFieldCellField) = f.cellfield
 get_derivative(f::TransientSingleFieldCellField, k::Int) = f.derivatives[k]
+get_derivatives(f::TransientSingleFieldCellField) = f.derivatives
 
 ################################
 # TransientMultiFieldCellField #
@@ -235,6 +236,7 @@ end
 # Functions required in Distributed context
 get_cellfield(f::TransientMultiFieldCellField) = f.cellfield
 get_derivative(f::TransientMultiFieldCellField, k::Int) = f.derivatives[k]
+get_derivatives(f::TransientMultiFieldCellField) = f.derivatives
 
 ####################
 # TransientFEBasis #
@@ -279,6 +281,7 @@ end
 # Functions required in Distributed context
 get_cellfield(f::TransientFEBasis) = f.febasis
 get_derivative(f::TransientFEBasis, k::Int) = f.derivatives[k]
+get_derivatives(f::TransientFEBasis) = f.derivatives
 
 #########
 # Utils #

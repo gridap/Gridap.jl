@@ -45,6 +45,7 @@ uₜ = TransientCellField(u, (u,))
 v = get_fe_basis(V)
 @test get_cellfield(uₜ) === u
 @test get_derivative(uₜ, 1) === u
+@test get_derivatives(uₜ) === (u,)
 
 dc = DomainContribution()
 dc = dc + jac(t0, uₜ, u, v)
@@ -86,6 +87,7 @@ function test_multifield(n, mfs, m, b, l, U, V)
   v = get_fe_basis(Y)
   @test get_cellfield(uₜ) === u
   @test get_derivative(uₜ, 1) === u
+  @test get_derivatives(uₜ) === (u,)
 
   dc = DomainContribution()
   dc = dc + jac(t0, uₜ, u, v)
@@ -109,7 +111,8 @@ function test_multifield(n, mfs, m, b, l, U, V)
   v_blocks = get_fe_basis(Y_blocks)
   @test get_cellfield(uₜ_blocks) === u_blocks
   @test get_derivative(uₜ_blocks, 1) === u_blocks
-
+  @test get_derivatives(uₜ_blocks) === (u_blocks,)
+  
   dc = DomainContribution()
   dc = dc + jac(t0, uₜ_blocks, u_blocks, v_blocks)
   dc = dc + jac_t(t0, uₜ_blocks, u_blocks, v_blocks)
