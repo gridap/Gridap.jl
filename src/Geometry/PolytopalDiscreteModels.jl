@@ -26,7 +26,6 @@ function PolytopalGridTopology(
   polytopes::Vector{<:GeneralPolytope{Dc}}
 ) where {Dc,Dp,T}
   @check length(cell_vertices) == length(polytopes)
-  @check all(p -> isone(ReferenceFEs.compute_orientation(p)),polytopes)
 
   n = Dc+1
   n_vertices = length(vertex_coordinates)
@@ -45,11 +44,9 @@ function PolytopalGridTopology(
   d_to_dface_vertices::Vector{<:Table},
   polytopes::Vector{<:GeneralPolytope{Dc}}
 ) where {Dc,Dp,T}
-  @check all(p -> isone(ReferenceFEs.compute_orientation(p)),polytopes)
 
-  n = Dc+1
   n_vertices = length(vertex_coordinates)
-  n_m_to_nface_to_mfaces = Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,n,n)
+  n_m_to_nface_to_mfaces = Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,Dc+1,Dc+1)
   for d in 0:Dc
     dface_to_vertices = d_to_dface_vertices[d+1]
     n_m_to_nface_to_mfaces[d+1,0+1] = dface_to_vertices
@@ -72,23 +69,130 @@ function PolytopalGridTopology(topo::UnstructuredGridTopology{Dc}) where Dc
   PolytopalGridTopology(vertex_coords,cell_nodes,polytopes)
 end
 
+#= NOTE: Unstructured -> Polytopal topology conversion
+
+The main idea is that there is a permutation of the local vertex/face numbering 
+between ExtrusionPolytopes and GeneralPolytopes. 
+
+In 3D, this is not too bad: Vertex numbering is kept the same, so we can deduce 
+the face numbering permutation from the vertex numbering permutation.
+
+In 2D, things are quite more involved... Vertices can potentially undergo two separate 
+permutations: First, a permutation that makes them a cyclic graph. Second, a possible 
+reversal of the cyclic ordering to ensure positive (counter-clockwise) orientation.
+
+The machinery below hopefully deals with all these issues.
+=#
+
 function oriented_cell_nodes(
-  node_coordinates::AbstractVector{<:Point{2}},cell_nodes::Table{T}
+  cell_nodes::Table{T}, node_coordinates::AbstractVector{<:Point{2}}
 ) where T
   ptrs = cell_nodes.ptrs
   data = zeros(T, length(cell_nodes.data))
   for cell in 1:length(cell_nodes)
-    nodes = view(cell_nodes,cell)
-    perm  = orient_nodes(view(node_coordinates,nodes))
+    nodes = dataview(cell_nodes,cell)
+    perm  = orient_nodes_positive(view(node_coordinates,nodes); keepfirst=true)
     data[ptrs[cell]:ptrs[cell+1]-1] .= nodes[perm]
   end
   return Table(data,ptrs)
 end
 
+function oriented_cell_nodes(
+  cell_polys::AbstractArray{<:Polytope{2}}, cell_nodes::Table{T}, node_coordinates::AbstractVector{<:Point{2}}
+) where T
+  ptrs = cell_nodes.ptrs
+  data = zeros(T, length(cell_nodes.data))
+  for cell in 1:length(cell_nodes)
+    poly  = cell_polys[cell]
+    nodes = dataview(cell_nodes,cell)
+    pos   = _polytope_is_positive(poly, view(node_coordinates,nodes))
+    perm  = _polytope_node_reindex(poly, pos)
+    data[ptrs[cell]:ptrs[cell+1]-1] .= nodes[perm]
+  end
+  return Table(data,ptrs)
+end
+
+# Face reindexing between standard and general polytopes
+function _polytope_node_reindex(p::Polytope{D}, positive::Bool) where D
+  (D == 3) && return collect(1:num_vertices(p))
+  if p == TRI
+    perm = collect(1:num_vertices(p))
+  elseif p == QUAD
+    perm = [1,2,4,3]
+  else
+    @notimplemented
+  end
+  if !positive
+    reverse!(perm)
+  end
+  return perm
+end
+
+function _polytope_is_positive(p::Polytope, coords)
+  perm = _polytope_node_reindex(p, true)
+  return is_positive_node_orientation(view(coords, perm))
+end
+
+function _polytope_face_reindex(p::Polytope{D}, d::Integer, positive::Bool) where D
+  n2o_node = _polytope_node_reindex(p, positive)
+  iszero(d) && return n2o_node
+
+  q = GeneralPolytope{D}(p)
+  old_f2n = get_faces(p,d,0)
+  new_f2n = get_faces(q,d,0)
+
+  same_face(f,g) = all(n -> n ∈ g, f)
+  n2o_face = zeros(Int,num_faces(p,d))
+  for (new, new_face) in enumerate(new_f2n)
+    old = findfirst(Base.Fix1(same_face,n2o_node[new_face]), old_f2n)
+    @assert !isnothing(old)
+    n2o_face[new] = old
+  end
+
+  return n2o_face
+end
+
+function _get_face_reindex(
+  new_topo::PolytopalGridTopology, old_topo::UnstructuredGridTopology, d::Integer
+)
+  D = num_cell_dims(old_topo)
+  cell_to_ctype = get_cell_type(old_topo)
+  ctype_to_poly = get_polytopes(old_topo)
+  ctype_to_faceperm = map(ctype_to_poly) do poly
+    pos = _polytope_face_reindex(poly, d, true)
+    neg = _polytope_face_reindex(poly, d, false)
+    return [neg, pos]
+  end
+
+  cell_to_coords = get_cell_coordinates(old_topo)
+  cell_polys = expand_cell_data(ctype_to_poly, cell_to_ctype)
+  cell_to_pos = lazy_map(_polytope_is_positive, cell_polys, cell_to_coords)
+
+  old_c2f = get_faces(old_topo, D, d)
+  new_c2f = get_faces(new_topo, D, d)
+
+  new_to_old_face = zeros(Int32, num_faces(new_topo, d))
+  for (cell, ctype) in enumerate(cell_to_ctype)
+    pos = cell_to_pos[cell]
+    facemap = ctype_to_faceperm[ctype][pos+1]
+    new_faces = dataview(new_c2f, cell)
+    old_faces = dataview(old_c2f, cell)
+    for (inew, iold) in enumerate(facemap)
+      new = new_faces[inew]
+      old = old_faces[iold]
+      @check iszero(new_to_old_face[new]) || isequal(new_to_old_face[new], old)
+      new_to_old_face[new] = old
+    end
+  end
+  @check !any(iszero, new_to_old_face)
+
+  return new_to_old_face
+end
+
 function generate_polytopes(
   cell_polys::AbstractArray{<:Polytope{2}},cell_nodes,node_coordinates
 )
-  o_cell_nodes = oriented_cell_nodes(node_coordinates,cell_nodes)
+  o_cell_nodes = oriented_cell_nodes(cell_polys,cell_nodes,node_coordinates)
   cell_coordinates = lazy_map(Broadcasting(Reindex(node_coordinates)),o_cell_nodes)
   polytopes = map(Polygon,cell_coordinates)
   return polytopes, o_cell_nodes
@@ -184,7 +288,7 @@ function restrict(topo::PolytopalGridTopology, cell_to_parent_cell::AbstractVect
     ) for d in 0:D
   ]
   vertex_coordinates = get_vertex_coordinates(topo)[d_to_dface_to_parent_dface[0+1]]
-  polytopes = get_polytopes(topo)[cell_to_parent_cell]
+  polytopes = get_polytopes(topo)[d_to_dface_to_parent_dface[D+1]]
   subtopo = PolytopalGridTopology(vertex_coordinates,d_to_dface_to_vertices,polytopes)
   return subtopo, d_to_dface_to_parent_dface
 end
@@ -206,6 +310,7 @@ Constructors:
     PolytopalGrid(grid::Grid)
     PolytopalGrid(topo::PolytopalGridTopology)
     PolytopalGrid(node_coordinates,cell_node_ids,polytopes[,facet_normal=nothing])
+    PolytopalGrid(polytopes::AbstractVector{<:GeneralPolytope})
 
 """
 struct PolytopalGrid{Dc,Dp,Tp,Tn} <: Grid{Dc,Dp}
@@ -238,6 +343,13 @@ end
 
 function PolytopalGrid(topo::PolytopalGridTopology{Dc}) where Dc
   PolytopalGrid(get_vertex_coordinates(topo), get_faces(topo,Dc,0), get_polytopes(topo))
+end
+
+function PolytopalGrid(polytopes::AbstractVector{<:GeneralPolytope})
+  node_coords = vcat((get_vertex_coordinates(q) for q in polytopes)...)
+  offsets = [1,(cumsum(map(num_vertices,polytopes)).+1)...]
+  cell_to_nodes = Table([ offsets[i]:offsets[i+1]-1 for i in 1:length(polytopes) ])
+  return PolytopalGrid(node_coords, cell_to_nodes, polytopes)
 end
 
 is_first_order(::PolytopalGrid) = true
@@ -316,9 +428,13 @@ struct PolytopalDiscreteModel{Dc,Dp,Tp,Tn} <: DiscreteModel{Dc,Dp}
 end
 
 function PolytopalDiscreteModel(model::DiscreteModel)
+  D = num_cell_dims(model)
   grid = PolytopalGrid(get_grid(model))
   topo = PolytopalGridTopology(get_grid_topology(model))
-  labels = FaceLabeling(topo)
+  d_to_dface_to_parent_dface = [
+    _get_face_reindex(topo,get_grid_topology(model),d) for d in 0:D
+  ]
+  labels = restrict(get_face_labeling(model),d_to_dface_to_parent_dface)
   return PolytopalDiscreteModel(grid,topo,labels)
 end
 
@@ -327,6 +443,8 @@ PolytopalDiscreteModel(model::PolytopalDiscreteModel) = model
 get_grid(model::PolytopalDiscreteModel) = model.grid
 get_grid_topology(model::PolytopalDiscreteModel) = model.grid_topology
 get_face_labeling(model::PolytopalDiscreteModel) = model.labels
+
+get_cell_map(model::PolytopalDiscreteModel) = get_cell_map(get_grid(model))
 
 function compute_face_nodes(model::PolytopalDiscreteModel,d::Integer)
   topo = get_grid_topology(model)
@@ -373,10 +491,27 @@ end
 ############################################################################################
 # Voronoi meshes
 
-function orient_nodes(v)
+function orient_nodes_positive(v::AbstractVector{<:Point};keepfirst=false)
   _angle(c,v) = atan(v[1]-c[1],v[2]-c[2])
+  perm = sortperm(v, by = Base.Fix1(_angle, mean(v)), rev = true)
+  if keepfirst
+    k = findfirst(==(1),perm)
+    circshift!(perm,1 - k)
+  end
+  return perm
+end
+
+function is_positive_node_orientation(v::AbstractVector{<:Point})
+  nv = length(v)
   c = mean(v)
-  sortperm(v, by = x -> _angle(c,x), rev = true)
+  _angle(a,b) = atan(a[1]*b[2] - a[2]*b[1], dot(a,b))
+  for i in eachindex(v)
+    v1, v2 = v[i], v[mod(i,nv) + 1]
+    if _angle(v1 - c, v2 - c) < 0
+      return false
+    end
+  end
+  return true
 end
 
 """
@@ -440,7 +575,7 @@ function voronoi(topo::GridTopology{Dc}) where Dc
     end
     # Orient the vertices counter-clockwise
     new_coords = view(new_node_coords,connectivity)
-    perm = orient_nodes(new_coords)
+    perm = orient_nodes_positive(new_coords)
     # Store the connectivity
     ptrs[n+1] = ptrs[n] + length(connectivity)
     data[ptrs[n]:ptrs[n+1]-1] .= connectivity[perm]
@@ -457,4 +592,67 @@ function voronoi(topo::GridTopology{Dc}) where Dc
   end
 
   return PolytopalGridTopology(new_node_coords,new_c2n,polytopes)
+end
+
+############################################################################################
+# IO
+
+function to_dict(topo::PolytopalGridTopology{Dc}) where Dc
+  dict = Dict{Symbol,Any}()
+  x = get_vertex_coordinates(topo)
+  dict[:vertex_coordinates] = reinterpret(eltype(eltype(x)),x)
+  dict[:Dp] = num_point_dims(topo)
+  dict[:Dc] = Dc
+  cell_vertices = get_faces(topo,Dc,0)
+  dict[:cell_vertices] = to_dict(cell_vertices)
+  dict[:polytopes] = map(to_dict, get_polytopes(topo))
+  dict
+end
+
+function from_dict(::Type{<:PolytopalGridTopology},dict::Dict{Symbol,Any})
+  Dp::Int = dict[:Dp]
+  Dc::Int = dict[:Dc]
+  x = dict[:vertex_coordinates]
+  T = eltype(x)
+  vertex_coordinates::Vector{Point{Dp,T}} = reinterpret(Point{Dp,T},x)
+  cell_vertices = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[:cell_vertices])
+  polytopes = [from_dict(GeneralPolytope,p) for p in dict[:polytopes]]
+  PolytopalGridTopology(vertex_coordinates,cell_vertices,polytopes)
+end
+
+function to_dict(grid::PolytopalGrid{Dc}) where Dc
+  dict = Dict{Symbol,Any}()
+  x = get_node_coordinates(grid)
+  dict[:node_coordinates] = reinterpret(eltype(eltype(x)),x)
+  dict[:Dp] = num_point_dims(grid)
+  dict[:Dc] = Dc
+  dict[:cell_node_ids] = to_dict(get_cell_node_ids(grid))
+  dict[:polytopes] = map(to_dict, get_polytopes(grid))
+  dict
+end
+
+function from_dict(::Type{<:PolytopalGrid},dict::Dict{Symbol,Any})
+  Dp::Int = dict[:Dp]
+  Dc::Int = dict[:Dc]
+  x = dict[:node_coordinates]
+  T = eltype(x)
+  node_coordinates::Vector{Point{Dp,T}} = reinterpret(Point{Dp,T},x)
+  cell_node_ids = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[:cell_node_ids])
+  polytopes = [from_dict(GeneralPolytope,p) for p in dict[:polytopes]]
+  PolytopalGrid(node_coordinates,cell_node_ids,polytopes)
+end
+
+function to_dict(model::PolytopalDiscreteModel)
+  dict = Dict{Symbol,Any}()
+  dict[:grid] = to_dict(get_grid(model))
+  dict[:topology] = to_dict(get_grid_topology(model))
+  dict[:labeling] = to_dict(get_face_labeling(model))
+  dict
+end
+
+function from_dict(::Type{<:PolytopalDiscreteModel},dict::Dict{Symbol,Any})
+  grid = from_dict(PolytopalGrid,dict[:grid])
+  topo = from_dict(PolytopalGridTopology,dict[:topology])
+  labeling = from_dict(FaceLabeling,dict[:labeling])
+  PolytopalDiscreteModel(grid,topo,labeling)
 end

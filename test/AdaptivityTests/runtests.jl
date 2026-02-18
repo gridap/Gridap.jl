@@ -4,6 +4,7 @@ using Test
 
 @testset "Refinement" begin
   include("RefinementRulesTests.jl")
+  include("AdaptivityGluesTests.jl")
   include("AdaptedGeometryTests.jl")
   include("FaceLabelingTests.jl")
   include("CartesianRefinementTests.jl")

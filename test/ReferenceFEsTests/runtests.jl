@@ -8,6 +8,8 @@ using Test
 
 @testset "GeneralPolytopes" begin include("GeneralPolytopesTests.jl") end
 
+@testset "Convexify" begin include("ConvexifyTests.jl") end
+
 @testset "Dofs" begin include("DofsTests.jl") end
 
 @testset "MockDofs" begin include("MockDofsTests.jl") end

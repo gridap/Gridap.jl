@@ -25,8 +25,8 @@ export tfill
 export get_val_parameter
 export first_and_tail
 export GridapType
+export GridapLocalInt, set_local_integer_type
 export set_debug_mode, set_performance_mode
-#export operate
 
 include("Preferences.jl")
 

@@ -667,6 +667,9 @@ end
 
 """
     get_bounding_box(p::Polytope)
+
+Returns a tuple `(pmin,pmax)` with the minimum and maximum points of 
+the axis-aligned bounding box containing the polytope `p`.
 """
 function get_bounding_box(p::Polytope)
   vertex_to_coords = get_vertex_coordinates(p)

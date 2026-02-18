@@ -1,5 +1,5 @@
 
-const version = "v0.15"
+const version = "v0.16"
 
 """
     struct UnstructuredDiscreteModel{Dc,Dp,Tp,B} <: DiscreteModel{Dc,Dp}
@@ -50,19 +50,10 @@ get_face_labeling(model::UnstructuredDiscreteModel) = model.face_labeling
 
 function to_dict(model::UnstructuredDiscreteModel)
   dict = Dict{Symbol,Any}()
-  grid = get_grid(model)
-  labels = get_face_labeling(model)
-  dict[:grid] = to_dict(grid)
-  dict[:labeling] = to_dict(labels)
-  dict[:vertex_node] = get_vertex_node(model)
+  dict[:grid] = to_dict(get_grid(model))
+  dict[:topology] = to_dict(get_grid_topology(model))
+  dict[:labeling] = to_dict(get_face_labeling(model))
   dict[:version] = version
-  D = num_cell_dims(model)
-  dict[:D] = D
-  topo = get_grid_topology(model)
-  for d in 1:D
-    k = Symbol("face_vertices_$d")
-    dict[k] = to_dict(get_faces(topo,d,0))
-  end
   dict
 end
 
@@ -84,34 +75,10 @@ function check_dict(::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
 end
 
 function from_dict(T::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
-
   check_dict(T,dict)
-
   grid = from_dict(UnstructuredGrid,dict[:grid])
+  topo = from_dict(UnstructuredGridTopology,dict[:topology])
   labeling = from_dict(FaceLabeling,dict[:labeling])
-  D::Int = dict[:D]
-  vertex_to_node::Vector{Int32} = dict[:vertex_node]
-  orientation = OrientationStyle(grid)
-  polytopes = get_polytopes(grid)
-  cell_type = get_cell_type(grid)
-  vertex_coordinates = get_node_coordinates(grid)[vertex_to_node]
-
-  nvertices = length(vertex_to_node)
-  d_dface_to_vertices = Vector{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,D+1)
-  d_dface_to_vertices[0+1] = identity_table(Int32,Int32,nvertices)
-  for d in 1:D
-    k = Symbol("face_vertices_$d")
-    dface_to_vertices = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[k])
-    d_dface_to_vertices[d+1] = dface_to_vertices
-  end
-
-  topo = UnstructuredGridTopology(
-    vertex_coordinates,
-    d_dface_to_vertices,
-    cell_type,
-    polytopes,
-    orientation)
-
   UnstructuredDiscreteModel(grid,topo,labeling)
 end
 

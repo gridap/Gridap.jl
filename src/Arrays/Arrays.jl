@@ -101,6 +101,9 @@ export collect1d
 export UNSET
 export get_local_item
 export find_local_index
+export datarange
+export dataiterator
+export dataview
 
 export IdentityVector
 
@@ -174,6 +177,8 @@ include("VectorsWithEntryRemoved.jl")
 include("VectorsWithEntryInserted.jl")
 
 include("AlgebraMaps.jl")
+
+include("AccumulationMaps.jl")
 
 include("Autodiff.jl")
 
