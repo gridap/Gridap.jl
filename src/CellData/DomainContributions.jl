@@ -7,6 +7,10 @@ end
 
 DomainContribution() = DomainContribution(OrderedDict{Triangulation,AbstractArray}())
 
+function DomainContribution(trian::Triangulation,b::AbstractArray)
+  add_contribution!(DomainContribution(),trian,b)
+end
+
 num_domains(a::DomainContribution) = length(a.dict)
 
 get_domains(a::DomainContribution) = keys(a.dict)

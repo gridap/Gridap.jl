@@ -179,6 +179,16 @@ x = Arrays.local_identity_array(ptrs)
 y = Arrays.block_identity_array(ptrs)
 @test y == [1,1,1,2,2,2,2]
 
+vv = [[1,2,3],[2,3],[5,8],Int[],[1,2,4]]
+a = Table(vv)
+@test datarange(a,1) == 1:3
+@test datarange(a,1:3) == 1:7
+@test dataview(a,1) == [1,2,3]
+@test dataview(a,1:3) == [1,2,3,2,3,5,8]
+@test collect(dataiterator(a)) == [
+  (1,1,1), (1,2,2), (1,3,3), (2,1,2), (2,2,3), (3,1,5), (3,2,8), (5,1,1), (5,2,2), (5,3,4)
+]
+
 dict = to_dict(a)
 b = from_dict(Table{Float64,Vector{Float64},Vector{Int32}},dict)
 @test a == b

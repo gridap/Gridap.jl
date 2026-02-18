@@ -7,16 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- Fixed lack of more general tests for Nedelec ReferenceFEs. Added a test which is currently broken. Since PR[#1216](https://github.com/gridap/Gridap.jl/pull/1216).
-
 ### Added
 
 - Added `testvalue(::Type{<:Tuple})` for tuples with an arbitrary number of items. Since PR[#1210](https://github.com/gridap/Gridap.jl/pull/1210).
 - Added `normalize` function support for `MultiValue` objects. Since PR[#1211](https://github.com/gridap/Gridap.jl/pull/1211).
 - Added `sqrt` function support for `TensorValue` objects. Since PR[#1212](https://github.com/gridap/Gridap.jl/pull/1212).
+- Added better ways to iterate over `Table`, following the `SparseArrays` model. Mainly, we introduce `datarange`, `dataview` and `dataiterator` functions. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
+- Added a new preference to control the integer type used for indexing local quantities (e.g. faces within a cell). A new function `set_local_integer_type` is introduced, which sets a new type `GridapLocalInt` (default `Int8`) that is set at compile time. This allows for `GeneralPolytopes` with an arbitrary number of faces. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
+- Added new function `compute_graph` returning the face-connectivity of meshes and submeshes. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
+- Added a new API to change the block structure of multi-field cellfields. The `MultiFieldFEBasisComponent` and `MultiFieldBasis` have now new constructors that easily allow to recast a multi-field space with a different block structure. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
+- Various improvements to the polytopal API. For `GeneralPolytopes`, added `is_convex`, `signed_area`, `signed_volume`, `convexify`(2D), `extrude`, as well as several low-level functions to manipulate polytopes. We now compute normals using Newel's algorithm, which is more stable. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
 
+### Changed
+
+- Reworked the `CellConformity` API to be more flexible and extensible, while optimizing certain parts. `CellConformity` is now abstract, with new concrete types `GenericCellConformity` (stores generic arrays), `CompressedCellConformity` (stores compressed data optimized for low number of reffe types, old `CellConformity`), and `DiscontinuousCellConformity` (DG-type conformity, much faster for discontinuous spaces). For all new conformities, I have introduced a new API to query dof masks based on the faces dofs belong to, mainly `generate_cell_dof_mask` and `generate_dof_mask`. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
+
+### Fixed
+
+- Fixed lack of more general tests for Nedelec ReferenceFEs. Added a test which is currently broken. Since PR[#1216](https://github.com/gridap/Gridap.jl/pull/1216).
+- Small bugfix in `face_labeling_from_cell_tags`. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
 
 ## [0.19.7] - 2025-12-18
 

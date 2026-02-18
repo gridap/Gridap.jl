@@ -129,11 +129,19 @@ function SkeletonTriangulation(model::DiscreteModel,face_to_mask::AbstractVector
   SkeletonTriangulation(plus,minus)
 end
 
-function SkeletonTriangulation(model::DiscreteModel)
-  topo = get_grid_topology(model)
+function SkeletonTriangulation(model::DiscreteModel,labeling::FaceLabeling;tags=nothing)
   D = num_cell_dims(model)
+  topo = get_grid_topology(model)
   face_to_mask = collect(Bool, .!get_isboundary_face(topo,D-1))
+  if !isnothing(tags)
+    face_to_mask .= face_to_mask .& get_face_mask(labeling,tags,D-1)
+  end
   SkeletonTriangulation(model,face_to_mask)
+end
+
+function SkeletonTriangulation(model::DiscreteModel;tags=nothing)
+  labeling = get_face_labeling(model)
+  SkeletonTriangulation(model,labeling;tags=tags)
 end
 
 function SkeletonTriangulation(rtrian::Triangulation,args...;kwargs...)
