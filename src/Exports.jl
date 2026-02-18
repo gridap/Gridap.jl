@@ -206,6 +206,8 @@ using Gridap.CellData: ∫; export ∫
 @publish ODEs TransientQuasilinearFEOperator
 @publish ODEs TransientLinearFEOperator
 
+@publish Inverse FEObservationOperator
+
 # Deprecated / removed
 
 export apply
