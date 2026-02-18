@@ -33,6 +33,11 @@ function time_derivative(f::TransientCellField)
   @abstractmethod
 end
 
+# Functions required in Distributed context
+get_cellfield(f::TransientCellField) = @abstractmethod
+get_derivative(f::TransientCellField,k::Int) = @abstractmethod
+
+
 #################################
 # TransientSingleFieldCellField #
 #################################
@@ -101,6 +106,10 @@ function time_derivative(f::Vector{<:TransientCellField})
     time_derivative(f)
   end
 end
+
+# Functions required in Distributed context
+get_cellfield(f::TransientSingleFieldCellField) = f.cellfield
+get_derivative(f::TransientSingleFieldCellField, k::Int) = f.derivatives[k]
 
 ################################
 # TransientMultiFieldCellField #
@@ -223,6 +232,10 @@ function time_derivative(f::TransientMultiFieldCellField)
   )
 end
 
+# Functions required in Distributed context
+get_cellfield(f::TransientMultiFieldCellField) = f.cellfield
+get_derivative(f::TransientMultiFieldCellField, k::Int) = f.derivatives[k]
+
 ####################
 # TransientFEBasis #
 ####################
@@ -262,6 +275,10 @@ function time_derivative(f::TransientFEBasis)
   cellfield, derivatives = first_and_tail(f.derivatives)
   TransientCellField(cellfield, derivatives)
 end
+
+# Functions required in Distributed context
+get_cellfield(f::TransientFEBasis) = f.febasis
+get_derivative(f::TransientFEBasis, k::Int) = f.derivatives[k]
 
 #########
 # Utils #
