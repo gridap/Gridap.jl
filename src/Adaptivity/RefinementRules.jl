@@ -862,7 +862,30 @@ function _compute_cface_to_fface_permutations(
   return cface_to_cpindex_to_ffaces,cface_to_cpindex_to_fpindex
 end
 
-# Tests 
+# IO
+
+function to_dict(rr::RefinementRule)
+  dict = Dict{Symbol,Any}()
+  dict[:T] = string(nameof(typeof(RefinementRuleType(rr))))
+  dict[:poly] = Array(TensorValues.get_array(get_extrusion(rr.poly)))
+  dict[:ref_grid] = to_dict(rr.ref_grid)
+  dict
+end
+
+function from_dict(::Type{RefinementRule}, dict::Dict{Symbol,Any})
+  T_str = dict[:T]
+  T = if T_str == "GenericRefinement"
+    GenericRefinement()
+  else
+    WithoutRefinement()
+  end
+  ext = dict[:poly]
+  poly = Polytope(map(Int, Tuple(ext))...)
+  ref_grid = from_dict(UnstructuredDiscreteModel, dict[:ref_grid])
+  RefinementRule(T, poly, ref_grid)
+end
+
+# Tests
 
 function test_refinement_rule(rr::RefinementRule; debug=false)
   poly = get_polytope(rr)

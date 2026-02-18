@@ -295,3 +295,68 @@ function blocked_refinement_glue(
   f2c_faces_map = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
   return AdaptivityGlue(f2c_faces_map,fcell_to_child_id,rrules)
 end
+
+# IO
+
+function to_dict(glue::AdaptivityGlue{GT,Dc}) where {GT,Dc}
+  dict = Dict{Symbol,Any}()
+  dict[:GT] = string(nameof(GT))
+  dict[:Dc] = Dc
+  for d in 0:Dc
+    k = Symbol("n2o_faces_map_$d")
+    if isassigned(glue.n2o_faces_map, d+1)
+      m = glue.n2o_faces_map[d+1]
+      dict[k] = (GT <: RefinementGlue) ? Vector{Int32}(m) : to_dict(m)
+    else
+      dict[k] = (GT <: RefinementGlue) ? Int32[] : to_dict(Table(Int32[],Int32[1]))
+    end
+  end
+  if GT <: RefinementGlue
+    dict[:n2o_cell_to_child_id] = Vector{Int32}(glue.n2o_cell_to_child_id)
+  else
+    dict[:n2o_cell_to_child_id] = to_dict(glue.n2o_cell_to_child_id)
+  end
+  rrules = glue.refinement_rules
+  if isa(rrules, Fill)
+    dict[:rrules_is_fill] = true
+    dict[:rrules_length]  = length(rrules)
+    dict[:rrules]         = to_dict(first(rrules))
+  else
+    dict[:rrules_is_fill] = false
+    dict[:rrules]         = map(to_dict, rrules)
+  end
+  dict
+end
+
+function from_dict(::Type{AdaptivityGlue}, dict::Dict{Symbol,Any})
+  GT_str = dict[:GT]
+  GT = if GT_str == "RefinementGlue"
+    RefinementGlue()
+  else
+    MixedGlue()
+  end
+  Dc = Int(dict[:Dc])
+  if isa(GT, RefinementGlue)
+    n2o_faces_map = Vector{Vector{Int32}}(undef, Dc+1)
+    for d in 0:Dc
+      k = Symbol("n2o_faces_map_$d")
+      n2o_faces_map[d+1] = Vector{Int32}(dict[k])
+    end
+    n2o_cell_to_child_id = Vector{Int32}(dict[:n2o_cell_to_child_id])
+  else
+    n2o_faces_map = Vector{Table{Int32,Vector{Int32},Vector{Int32}}}(undef, Dc+1)
+    for d in 0:Dc
+      k = Symbol("n2o_faces_map_$d")
+      n2o_faces_map[d+1] = from_dict(Table{Int32,Vector{Int32},Vector{Int32}}, dict[k])
+    end
+    n2o_cell_to_child_id = from_dict(Table{Int32,Vector{Int32},Vector{Int32}}, dict[:n2o_cell_to_child_id])
+  end
+  if dict[:rrules_is_fill]
+    rr     = from_dict(RefinementRule, dict[:rrules])
+    n      = Int(dict[:rrules_length])
+    rrules = Fill(rr, n)
+  else
+    rrules = RefinementRule[from_dict(RefinementRule, d) for d in dict[:rrules]]
+  end
+  AdaptivityGlue(GT, n2o_faces_map, n2o_cell_to_child_id, rrules)
+end
