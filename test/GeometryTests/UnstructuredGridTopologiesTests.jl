@@ -39,6 +39,7 @@ test_grid_topology(g)
 @test get_vertex_coordinates(g) == get_vertex_coordinates(m)           
 @test is_oriented(g) == false
 @test Geometry.compute_graph(g,2,1) == Geometry.compute_graph(m,2,1)
+@test Geometry.get_cell_polytopes(g) == Geometry.get_cell_polytopes(m)
 
 g = UnstructuredGridTopology(
   get_vertex_coordinates(m),

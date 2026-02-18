@@ -86,6 +86,7 @@ x,t = simplexify_surface(p)
 x,t = simplexify_interior(p)
 @test t == [[1,2,3,4]]
 @test ReferenceFEs.signed_volume(p) == 1/6
+@test ReferenceFEs.is_convex(p)
 quad = Quadrature(p,2)
 test_quadrature(quad)
 
@@ -128,7 +129,7 @@ x,t = simplexify_surface(p)
 x,t = simplexify_interior(p)
 @test t == [[1,2,4,8],[1,2,8,6],[1,3,7,8],[1,3,8,4],[1,5,6,8],[1,5,8,7]]
 @test ReferenceFEs.signed_volume(p) == 1.0
-
+@test ReferenceFEs.is_convex(p)
 quad = Quadrature(p,2)
 test_quadrature(quad)
 
@@ -138,19 +139,16 @@ p = Polygon([
 ])
 X = get_vertex_coordinates(p)
 T, simp = simplexify(p)
-
 polys = ReferenceFEs.convexify(p)
 @test length(polys) == 3
 @test all(ReferenceFEs.is_convex.(polys))
 @test sum(ReferenceFEs.signed_area.(polys)) == 5.0
 @test ReferenceFEs.signed_area(p) == 5.0
-
 q = ReferenceFEs.extrude(p)
 
 p = Polygon(map(x -> Point(x[1],x[2],0.0), get_vertex_coordinates(p)))
 X = get_vertex_coordinates(p)
 T, simp = simplexify(p)
-
 polys = ReferenceFEs.convexify(p)
 @test length(polys) == 3
 @test all(ReferenceFEs.is_convex.(polys))
