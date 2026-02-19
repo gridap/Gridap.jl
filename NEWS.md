@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed lack of more general tests for Nedelec ReferenceFEs. Added a test which is currently broken. Since PR[#1216](https://github.com/gridap/Gridap.jl/pull/1216).
 - Small bugfix in `face_labeling_from_cell_tags`. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
+- Fixed `getindex!` when the given indexes need to be converted the indexstyle of the array (cache isn't skipped anymore). Implemented the bound check elusion API in most `Arrays` arraysSince [#1213](https://github.com/gridap/Gridap.jl/pull/1213).
 
 ## [0.19.7] - 2025-12-18
 

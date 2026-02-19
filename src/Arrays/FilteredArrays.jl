@@ -14,7 +14,7 @@ function evaluate!(cache,::FilterMap,f,a)
   for (fi,ai) in zip(f,a)
     if fi
       i += 1
-      r[i] = ai
+      @inbounds r[i] = ai
     end
   end
   r

@@ -132,7 +132,7 @@ function return_cache(k::AutoDiffMap,cfg::ForwardDiff.JacobianConfig,ydual::Vect
   ri = evaluate!(ci,k,cfg,yi)
   cache = Vector{typeof(ci)}(undef,length(ydual.array))
   array = Vector{typeof(ri)}(undef,length(ydual.array))
-  for i in eachindex(ydual.array)
+  @inbounds for i in eachindex(ydual.array)
     if ydual.touched[i]
       cache[i] = return_cache(k,cfg,ydual.array[i])
     end
@@ -143,7 +143,8 @@ end
 
 function evaluate!(cache,k::AutoDiffMap,cfg::ForwardDiff.JacobianConfig,ydual::VectorBlock)
   r, c = cache
-  for i in eachindex(ydual.array)
+  @check length(r) >= length(c) >= length(ydual)
+  @inbounds for i in eachindex(ydual.array)
     if ydual.touched[i]
       r.array[i] = evaluate!(c[i],k,cfg,ydual.array[i])
     end
@@ -175,9 +176,9 @@ end
 
 function block_offsets(x::VectorBlock, offset)
   offsets = ()
-  for i in eachindex(x.touched)
+  @inbounds for i in eachindex(x.touched)
     if x.touched[i]
-      @inbounds offsets_i, offset = block_offsets(x.array[i], offset)
+      offsets_i, offset = block_offsets(x.array[i], offset)
     else
       offsets_i = -1
     end
@@ -297,10 +298,11 @@ end
 function seed_block!(
   duals::VectorBlock, x::VectorBlock, seeds::NTuple{N,ForwardDiff.Partials{N}}, offsets
 ) where N
-  for i in eachindex(duals.touched)
+  @check length(x) == length(duals) == length(offsets)
+  @inbounds for i in eachindex(duals.touched)
     if duals.touched[i]
       @check x.touched[i]
-      @inbounds seed_block!(duals.array[i], x.array[i], seeds, offsets[i])
+      seed_block!(duals.array[i], x.array[i], seeds, offsets[i])
     end
   end
   return duals
@@ -316,9 +318,9 @@ function seed_block!(
 end
 
 function extract_gradient_block!(::Type{T}, result::VectorBlock, dual, offsets) where T
-  for i in eachindex(result.touched)
+  @inbounds for i in eachindex(result.touched)
     if result.touched[i]
-      @inbounds extract_gradient_block!(T, result.array[i], dual, offsets[i])
+      extract_gradient_block!(T, result.array[i], dual, offsets[i])
     end
   end
   return result
@@ -339,8 +341,8 @@ end
 function extract_jacobian_block!(::Type{T}, result::MatrixBlock, dual::VectorBlock, offsets) where T
   for i in axes(result.touched,1)
     for j in axes(result.touched,2)
-      if result.touched[i,j]
-        @inbounds extract_jacobian_block!(T, result.array[i,j], dual.array[i], offsets[j])
+      @inbounds if result.touched[i,j]
+        extract_jacobian_block!(T, result.array[i,j], dual.array[i], offsets[j])
       end
     end
   end
@@ -350,9 +352,9 @@ end
 # Skeleton + Multifield: The VectorBlocks correspond to +/-
 function extract_jacobian_block!(::Type{T}, result::VectorBlock, dual::VectorBlock, offset) where T
   for i in axes(result.touched,1)
-    if result.touched[i]
+    @inbounds if result.touched[i]
       @check dual.touched[i]
-      @inbounds extract_jacobian_block!(T, result.array[i], dual.array[i], offset)
+      extract_jacobian_block!(T, result.array[i], dual.array[i], offset)
     end
   end
   return result
