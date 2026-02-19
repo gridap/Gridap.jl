@@ -129,3 +129,38 @@ function generate_patch_polytopes(
 
   return new_polys, Table(new_connectivity)
 end
+
+function compose_glues(
+  glue12::AdaptivityGlue{RefinementGlue,Dc},
+  glue23::AdaptivityGlue{RefinementGlue,Dc}
+) where Dc
+  
+  # n2o_faces_map: for each dimension, maps mesh1 faces to mesh3 faces (0 if no match)
+  n2o_faces_map = Vector{Vector{Int32}}(undef, Dc+1)
+  for d in 0:Dc
+    f1_to_f2 = glue12.n2o_faces_map[d+1]
+    f2_to_f3 = glue23.n2o_faces_map[d+1]
+    f1_to_f3 = zeros(Int32, length(f1_to_f2))
+    for (f1, f2) in enumerate(f1_to_f2)
+      if !iszero(f2)
+        f1_to_f3[f1] = f2_to_f3[f2]
+      end
+    end
+    n2o_faces_map[d+1] = f1_to_f3
+  end
+
+  # Child ids: local index of each mesh1 cell within its mesh3 parent
+  n3 = length(glue23.o2n_faces_map)
+  n2o_cells = n2o_faces_map[Dc+1]
+  o2n_faces_map = Arrays.inverse_table(n2o_cells, n3)
+  n2o_cell_to_child_id = Arrays.find_local_index(n2o_cells, o2n_faces_map)
+
+  # Placeholder refinement rules (to be replaced later)
+  refinement_rules = Fill(WhiteRefinementRule(TRI), n3)
+  is_refined = select_refined_cells(n2o_faces_map[end])
+
+  return AdaptivityGlue(
+    RefinementGlue(), n2o_faces_map, n2o_cell_to_child_id, 
+    refinement_rules, is_refined, o2n_faces_map
+  )
+end

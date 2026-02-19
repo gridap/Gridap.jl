@@ -83,4 +83,37 @@ for (i,p) in enumerate(get_polytopes(cmodel))
   writevtk(p,joinpath(outdir,"p_$i");append=false)
 end
 
+############################################################################################
+# Glue composition
+
+model1 = Geometry.voronoi(Geometry.simplexify(CartesianDiscreteModel((0,1,0,1), (3,3))))
+
+pcells1 = Table([
+  LinearIndices((4,4))[1:2,1:2],
+  LinearIndices((4,4))[3:4,1:2],
+  LinearIndices((4,4))[1:2,3:4],
+  LinearIndices((4,4))[3:4,3:4],
+])
+ptopo1 = Geometry.PatchTopology(get_grid_topology(model1), pcells1)
+model2, glue12 = Adaptivity.coarsen(model1, ptopo1; return_glue=true)
+
+pcells2 = Table([[1,2],[3,4]])
+ptopo2 = Geometry.PatchTopology(get_grid_topology(model2), pcells2)
+model3, glue23 = Adaptivity.coarsen(model2, ptopo2; return_glue=true)
+
+glue13 = Adaptivity.compose_glues(glue12, glue23)
+
+Dc = 2
+topo1 = get_grid_topology(model1)
+topo3 = get_grid_topology(model3)
+for d in 0:Dc
+  n2o_dfaces = glue13.n2o_faces_map[d+1]
+  @test length(n2o_dfaces) == num_faces(topo1, d)
+  if d == Dc
+    @test count(iszero, n2o_dfaces) == 0
+  else
+    @test count(!iszero, n2o_dfaces) == num_faces(topo3, d)
+  end
+end
+
 end
