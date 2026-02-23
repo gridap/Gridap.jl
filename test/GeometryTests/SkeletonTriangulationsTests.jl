@@ -150,5 +150,7 @@ model = CartesianDiscreteModel(domain,partition)
 Γ12 = Interface(Ω1,Ω2)
 @test num_cells(Γ12) == 1
 
+Λ = SkeletonTriangulation(model;tags="interior")
+test_triangulation(Λ)
 
 end # module

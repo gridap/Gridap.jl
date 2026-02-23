@@ -161,7 +161,7 @@ Delegated to `reffe`'s DoFs, see [`LagrangianDofBasis`](@ref).
 """
 function get_dof_to_node(reffe::LagrangianRefFE)
   dofs = get_dof_basis(reffe)
-  dofs.dof_to_node
+  return get_dof_to_node(dofs)
 end
 
 """
@@ -171,7 +171,7 @@ Delegated to `reffe`'s DoFs, see [`LagrangianDofBasis`](@ref).
 """
 function get_dof_to_comp(reffe::LagrangianRefFE)
   dofs = get_dof_basis(reffe)
-  dofs.dof_to_comp
+  return get_dof_to_comp(dofs)
 end
 
 """

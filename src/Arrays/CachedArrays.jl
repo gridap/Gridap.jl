@@ -141,7 +141,7 @@ end
 """
     $(SIGNATURES)
 
-Sets the size of the `CachedArray` to accomodate the result of the operation given 
+Sets the size of the `CachedArray` to accomodate the result of the operation given
 by `op(args...)`.
 """
 function setsize_op!(op,c::CachedArray,args...)

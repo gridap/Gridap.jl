@@ -38,11 +38,11 @@ function RefinementRule(
   icmaps = collect1d(lazy_map(Fields.inverse_map,cell_maps))
   # If there are simplices in the mesh, then for a given point, there may exist a symmetric point of it 
   # with respect to the nearest facet, leading to the identification of an incorrect element and resulting
-  # in an error. In ther worst case, if this point is the circumcenter, there may be as many wrong points
+  # in an error. In the worst case, if this point is the circumcenter, there may be as many wrong points
   # as the number of facets. Therefore we need to find an additional point. 
   polytopes = get_polytopes(ref_grid)
-  has_simplex = any(map(is_simplex,polytopes))
-  max_num_facets = mapreduce(num_facets,maximum,polytopes)
+  has_simplex = any(is_simplex,polytopes)
+  max_num_facets = mapreduce(num_facets,max,polytopes)
   num_nearest_vertices = has_simplex ? min(max_num_facets+1,num_nodes(ref_grid)) : 1
   p2c_cache = CellData._point_to_cell_cache(CellData.KDTreeSearch(;num_nearest_vertices),ref_trian)
   return RefinementRule(T,poly,ref_grid,cmaps,icmaps,p2c_cache)
@@ -862,7 +862,30 @@ function _compute_cface_to_fface_permutations(
   return cface_to_cpindex_to_ffaces,cface_to_cpindex_to_fpindex
 end
 
-# Tests 
+# IO
+
+function to_dict(rr::RefinementRule)
+  dict = Dict{Symbol,Any}()
+  dict[:T] = string(nameof(typeof(RefinementRuleType(rr))))
+  dict[:poly] = Array(TensorValues.get_array(get_extrusion(rr.poly)))
+  dict[:ref_grid] = to_dict(rr.ref_grid)
+  dict
+end
+
+function from_dict(::Type{RefinementRule}, dict::Dict{Symbol,Any})
+  T_str = dict[:T]
+  T = if T_str == "GenericRefinement"
+    GenericRefinement()
+  else
+    WithoutRefinement()
+  end
+  ext = dict[:poly]
+  poly = Polytope(map(Int, Tuple(ext))...)
+  ref_grid = from_dict(UnstructuredDiscreteModel, dict[:ref_grid])
+  RefinementRule(T, poly, ref_grid)
+end
+
+# Tests
 
 function test_refinement_rule(rr::RefinementRule; debug=false)
   poly = get_polytope(rr)
