@@ -166,10 +166,10 @@ function _point_to_cell!(cache, x::Point)
 end
 
 """
-   dist = distance(polytope::ExtrusionPolytope,inv_cmap::Field,x::Point)
+    distance(poly::ExtrusionPolytope, inv_cmap::Field, x::Point)
 
-Calculate distance from point `x` to the polytope. The polytope is
-given by its type and by the inverse cell map, i.e. by the map from
+Calculate distance from point `x` to a polytope. The polytope is
+given by its type `poly` and by the inverse cell map, i.e. by the map from
 the physical to the reference space.
 
 Positive distances are outside the polytope, negative distances are

@@ -123,8 +123,8 @@ end
 # Constructors
 
 """
-    SkeletonTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
     SkeletonTriangulation(model::DiscreteModel)
+    SkeletonTriangulation(model::DiscreteModel, face_to_mask::AbstractVector{Bool})
 """
 function SkeletonTriangulation(model::DiscreteModel,face_to_mask::AbstractVector{Bool})
   left_cell_around = 1

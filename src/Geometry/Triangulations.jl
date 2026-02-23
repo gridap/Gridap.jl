@@ -199,6 +199,20 @@ end
 
 get_triangulation(model) = Triangulation(model)
 
+"""
+    Triangulation(model::DiscreteModel, args...; kwargs...)
+    Triangulation(trian::Triangulation, args...; kwargs...)
+
+The keyword argument [`tags`](@ref "`tag` and `tags` arguments") can be used to
+restrict the triangulation to the given tags.
+
+Internal constructors:
+    Triangulation(::Type{ReferenceFE{D}}, model::DiscreteModel; kwargs...)
+    Triangulation(::Type{ReferenceFE{D}}, model::DiscreteModel, tface_to_mface::AbstractVector{<:Integer})
+    Triangulation(::Type{ReferenceFE{D}}, model::DiscreteModel, mface_filter::AbstractArray{Bool})
+    Triangulation(::Type{ReferenceFE{D}}, model::DiscreteModel, mface_filter::AbstractVector{Bool})
+    Triangulation(::Type{ReferenceFE{D}}, model::DiscreteModel, labels::FaceLabeling; tags=nothing)
+"""
 function Triangulation(
   ::Type{ReferenceFE{d}}, model::DiscreteModel, tface_to_mface::AbstractVector{<:Integer}
 ) where d
