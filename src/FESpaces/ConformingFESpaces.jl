@@ -211,15 +211,15 @@ Generate a CellFE from a vector of reference fes
 function CellFE(
   model::DiscreteModel,
   cell_reffe::AbstractArray{<:ReferenceFE},
-  conformity::Conformity,
-  args...
+  conformity::Conformity;
+  kwargs...
  )
   cell_conformity = CellConformity(cell_reffe,conformity)
-  ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
-  cell_shapefuns = get_cell_shapefuns(model,cell_reffe,conformity,args...)
-  cell_dof_basis = get_cell_dof_basis(model,cell_reffe,conformity,args...)
+  ctype_reffe, _ = compress_cell_data(cell_reffe)
+  shapefuns_and_dofs = get_cell_shapefuns_and_dof_basis(model,cell_reffe,conformity;kwargs...)
+  cell_shapefuns, cell_dof_basis = shapefuns_and_dofs
   cell_shapefuns_domain = ReferenceDomain()
-  cell_dof_basis_domain = cell_shapefuns_domain
+  cell_dof_basis_domain = ReferenceDomain()
   max_order = maximum(map(get_order,ctype_reffe))
   CellFE(
     cell_conformity,
@@ -231,19 +231,27 @@ function CellFE(
   )
 end
 
-function get_cell_dof_basis(model::DiscreteModel,
-                            cell_reffe::AbstractArray,
-                            ::Conformity)
+"""
+    get_cell_shapefuns_and_dof_basis(
+        model::DiscreteModel, cell_reffe::AbstractArray, ::Conformity; kwargs...)
+
+Return `(shapefuns, dof_basis)`, the physical cell arrays of shape-function and DOF.
+
+These arrays are computed by mapping the reference shape-function and DOF bases
+to the physical elements cell-wise, taking into account possible non-trivial Piola
+maps, DOF change of basis, sign change and rescaling to build `conf`-conforming
+physical FEs.
+
+For performances, `cell_reffe` should efficiently be compressed by [`compress_cell_data`].
+"""
+function get_cell_shapefuns_and_dof_basis(
+  model::DiscreteModel, cell_reffe::AbstractArray, ::Conformity; kwargs...)
+
   @abstractmethod
-  #lazy_map(get_dof_basis,cell_reffe)
 end
 
-function get_cell_shapefuns(model::DiscreteModel,
-                            cell_reffe::AbstractArray,
-                            ::Conformity)
-  @abstractmethod
-  #lazy_map(get_shapefuns,cell_reffe)
-end
+@deprecate get_cell_shapefuns(model, cell_reffe, conf::Conformity) getindex(get_cell_shapefuns_and_dof_basis(model, cell_reffe, conf), 1)
+@deprecate get_cell_dof_basis(model, cell_reffe, conf::Conformity) getindex(get_cell_shapefuns_and_dof_basis(model, cell_reffe, conf), 2)
 
 # Low level conforming FE Space constructor
 # The user is not expected to call this function. Use the factory function instead
