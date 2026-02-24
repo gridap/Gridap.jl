@@ -299,8 +299,3 @@ dof_scaling_function(::DoubleContraVariantPiolaMap, D::Int) = let D=D
   h_inv -> h_inv^(2D-2)
 end
 
-"""
-"""
-function compute_physical_cell_changes(::ReferenceFE, fmap, Jt)
-  @abstractmethod
-end
