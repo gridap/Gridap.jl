@@ -230,7 +230,7 @@ end
 """
     add_tag_from_tags!(lab::FaceLabeling, name::String, tags)
 
-Adds a new tag `name`, given by the union of the tag(s) [`tags`](@ref "`tags` keyword argument").
+Adds a new tag `name`, given by the union of the tag(s) [`tags`](@ref "`tag` and `tags` arguments").
 """
 function add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{Int})
   entities = Int32[]

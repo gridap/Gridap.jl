@@ -564,6 +564,8 @@ end
 
 # Merging contributions in matrix/vector format
 
+"""
+"""
 function collect_and_merge_cell_matrix(contributions...)
   data = ()
   for c in contributions
@@ -572,6 +574,8 @@ function collect_and_merge_cell_matrix(contributions...)
   merge_assembly_data(data...)
 end
 
+"""
+"""
 function collect_and_merge_cell_vector(contributions...)
   data = ()
   for c in contributions
@@ -580,6 +584,8 @@ function collect_and_merge_cell_vector(contributions...)
   merge_assembly_data(data...)
 end
 
+"""
+"""
 function collect_and_merge_cell_matrix_and_vector(contributions...)
   data = ()
   for c in contributions
