@@ -154,13 +154,13 @@ Quadrature(name::QuadratureName, args...; kwargs...) = (name, args, kwargs)
 """
     Quadrature(polytope::Polytope{D}, degree)
 """
-function Quadrature(p::Polytope, degree; T::Type{<:AbstractFloat}=Float64)
+function Quadrature(p::Polytope{D}, degree; T::Type{<:AbstractFloat}=Float64) where D
   if is_n_cube(p)
     quad = Quadrature(p, tensor_product, degree; T)
   elseif is_simplex(p)
-    if degree <= maxdegree(p, witherden_vincent)
+    if degree <= maxdegree(p, witherden_vincent) && D in (2,3)
       quad = Quadrature(p, witherden_vincent, degree; T)
-    elseif degree <= maxdegree(p, xiao_gimbutas)
+    elseif degree <= maxdegree(p, xiao_gimbutas) && D in (2,3)
       quad = Quadrature(p, xiao_gimbutas, degree; T)
     else
       quad = Quadrature(p, duffy, degree; T)
