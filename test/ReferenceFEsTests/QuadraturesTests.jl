@@ -1,6 +1,7 @@
 module QuadraturesTests
 
 using Test
+using Gridap.Helpers
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using FillArrays
