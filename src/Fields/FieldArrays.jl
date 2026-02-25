@@ -156,7 +156,7 @@ Base.IndexStyle(::Type{<:FieldGradientArray{Ng,A}}) where {Ng,A} = IndexStyle(A)
 
 function linear_combination(a::AbstractVector{<:Number},b::AbstractVector{<:Field})
   column = 1
-  LinearCombinationField(a,b,column)
+  LinearCombinationField(reshape(a, length(a), 1),b,column)
 end
 
 struct LinearCombinationField{V,F} <: Field
