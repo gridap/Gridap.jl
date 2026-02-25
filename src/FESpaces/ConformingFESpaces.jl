@@ -113,7 +113,7 @@ end
 #   if isone(length(ctype_poly))
 #     ctype_poly = fill(first(ctype_poly),length(ctype_basis))
 #   end
-# 
+#
 #   ctype_lface_own_ldofs = map(ctype_poly,ctype_basis) do p, b
 #     nfaces = num_faces(p)
 #     ndofs = length(b)
@@ -125,7 +125,7 @@ end
 #   ]
 #   ctype_num_dofs  = map(length, ctype_basis)
 #   ctype_ldof_comp = [fill(0,n) for n in ctype_num_dofs]
-# 
+#
 #   return CellConformity(
 #     cell_ctype,ctype_lface_own_ldofs,ctype_lface_pindex_pdofs,d_ctype_num_faces,ctype_num_dofs,ctype_ldof_comp
 #   )
@@ -211,15 +211,15 @@ Generate a CellFE from a vector of reference fes
 function CellFE(
   model::DiscreteModel,
   cell_reffe::AbstractArray{<:ReferenceFE},
-  conformity::Conformity,
-  args...
+  conformity::Conformity;
+  kwargs...
  )
   cell_conformity = CellConformity(cell_reffe,conformity)
-  ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
-  cell_shapefuns = get_cell_shapefuns(model,cell_reffe,conformity,args...)
-  cell_dof_basis = get_cell_dof_basis(model,cell_reffe,conformity,args...)
+  ctype_reffe, _ = compress_cell_data(cell_reffe)
+  shapefuns_and_dofs = get_cell_shapefuns_and_dof_basis(model,cell_reffe,conformity;kwargs...)
+  cell_shapefuns, cell_dof_basis = shapefuns_and_dofs
   cell_shapefuns_domain = ReferenceDomain()
-  cell_dof_basis_domain = cell_shapefuns_domain
+  cell_dof_basis_domain = ReferenceDomain()
   max_order = maximum(map(get_order,ctype_reffe))
   CellFE(
     cell_conformity,
@@ -231,19 +231,27 @@ function CellFE(
   )
 end
 
-function get_cell_dof_basis(model::DiscreteModel,
-                            cell_reffe::AbstractArray,
-                            ::Conformity)
+"""
+    get_cell_shapefuns_and_dof_basis(
+        model::DiscreteModel, cell_reffe::AbstractArray, ::Conformity; kwargs...)
+
+Return `(shapefuns, dof_basis)`, the physical cell arrays of shape-function and DOF.
+
+These arrays are computed by mapping the reference shape-function and DOF bases
+to the physical elements cell-wise, taking into account possible non-trivial Piola
+maps, DOF change of basis, sign change and rescaling to build `conf`-conforming
+physical FEs.
+
+For performances, `cell_reffe` should efficiently be compressed by [`compress_cell_data`].
+"""
+function get_cell_shapefuns_and_dof_basis(
+  model::DiscreteModel, cell_reffe::AbstractArray, ::Conformity; kwargs...)
+
   @abstractmethod
-  #lazy_map(get_dof_basis,cell_reffe)
 end
 
-function get_cell_shapefuns(model::DiscreteModel,
-                            cell_reffe::AbstractArray,
-                            ::Conformity)
-  @abstractmethod
-  #lazy_map(get_shapefuns,cell_reffe)
-end
+@deprecate get_cell_shapefuns(model, cell_reffe, conf::Conformity) getindex(get_cell_shapefuns_and_dof_basis(model, cell_reffe, conf), 1)
+@deprecate get_cell_dof_basis(model, cell_reffe, conf::Conformity) getindex(get_cell_shapefuns_and_dof_basis(model, cell_reffe, conf), 2) false
 
 # Low level conforming FE Space constructor
 # The user is not expected to call this function. Use the factory function instead
@@ -648,9 +656,9 @@ end
       reverse::Bool=false
     )
 
-Given a `CellConformity` object, defined on a set of source cells (`scell`), and given 
+Given a `CellConformity` object, defined on a set of source cells (`scell`), and given
 a cell/face/edge/node masks on a set of target cells (`tcell`), this function generates a mask
-for the degrees of freedom (dofs) on the target cells. 
+for the degrees of freedom (dofs) on the target cells.
 
 Parameters:
 
@@ -668,7 +676,7 @@ Modes of operation:
 
 - If `reverse = false`, the function generates a mask where the dofs are
   `true` if the corresponding d-face is masked (`true`).
-- If `reverse = true`, the mask is reversed, meaning that the dofs are `true` if 
+- If `reverse = true`, the mask is reversed, meaning that the dofs are `true` if
   the corresponding d-face is not masked (`false`).
 """
 function generate_cell_dof_mask(
@@ -760,16 +768,16 @@ end
 
 """
     generate_dof_mask(
-      space::FESpace, labels::FaceLabeling, tags; 
+      space::FESpace, labels::FaceLabeling, tags;
       cell_conformity = get_cell_conformity(space), reverse::Bool=false
     )
 
 Generate a mask for the dofs in the FESpace `space`, based on the face labeling `labels`
-and the `tags` provided. If `reverse` is `false`, the dofs are masked (`true`) if they 
+and the `tags` provided. If `reverse` is `false`, the dofs are masked (`true`) if they
 belong to a tagged face. If `reverse` is `true`, the mask is reversed.
 """
 function generate_dof_mask(
-  space::FESpace, labels::FaceLabeling, tags; 
+  space::FESpace, labels::FaceLabeling, tags;
   cell_conformity = get_cell_conformity(space), reverse::Bool=false
 )
   trian = get_triangulation(space)

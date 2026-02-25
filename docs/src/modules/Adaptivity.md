@@ -18,6 +18,10 @@ Pages = ["Adaptivity.md"]
 Depth = 2:3
 ```
 
+```@docs
+Adaptivity
+```
+
 ## Interface
 
 The following types are defined in the module:
@@ -35,6 +39,21 @@ The high-level interface is provided by the following methods:
 refine
 coarsen
 adapt
+```
+
+Other APIs
+
+```@docs
+Geometry.get_cell_map(::RefinementRule)
+get_inverse_cell_map(::RefinementRule)
+
+is_child
+is_related
+get_model(::AdaptedDiscreteModel)
+get_parent
+get_adaptivity_glue
+
+get_adapted_model
 ```
 
 ## Edge-Based refinement

@@ -4,6 +4,10 @@
 CurrentModule = Gridap.Arrays
 ```
 
+```@docs
+Arrays
+```
+
 #### Contents
 
 ```@contents

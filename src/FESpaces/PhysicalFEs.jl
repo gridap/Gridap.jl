@@ -11,11 +11,13 @@ function FiniteElements(
   basis::ReferenceFEName,
   args...;
   conformity=nothing,
+  scale_dof=false,
+  global_meshsize=nothing,
   kwargs...)
 
   cell_reffe = ReferenceFE(model,basis,args...;kwargs...)
   conf = Conformity(testitem(cell_reffe),conformity)
-  CellFE(model,cell_reffe,conf)
+  CellFE(model, cell_reffe, conf; scale_dof, global_meshsize)
 end
 
 function FiniteElements(

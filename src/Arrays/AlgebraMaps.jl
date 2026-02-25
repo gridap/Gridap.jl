@@ -33,6 +33,17 @@ function evaluate!(cache,::typeof(*),a::AbstractArray{<:Number},b::AbstractArray
   return c
 end
 
+function return_cache(::typeof(*), a::Diagonal{<:Number}, b::Diagonal{<:Number})
+  T = typeof(testitem(a)*testitem(b))
+  Diagonal{T}(undef,0)
+end
+
+function evaluate!(cache,::typeof(*), a::Diagonal{<:Number}, b::Diagonal{<:Number})
+  setsize_op!(*,cache,a,b)
+  mul!(cache,a,b)
+  return cache
+end
+
 function return_value(::typeof(*),a::ArrayBlock{A,2},b::ArrayBlock{B,1}) where {A,B}
   ri = return_value(*,testvalue(A),testvalue(B))
   array = Vector{typeof(ri)}(undef,size(a.array,1))

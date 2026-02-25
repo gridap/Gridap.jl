@@ -16,9 +16,17 @@ In Gridap, a `DiscreteModel` is the main object representing a discretized domai
 
 - A `GridTopology`, which defines the topology of the mesh. That is the polytopes that make up the mesh as well as their connectivity. This object also provides the connectivity between all d-dimensional entities of the mesh, such as vertices, edges, faces, and cells.
 - A `Grid`, which defines the geometric properties of the mesh. That is, the coordinates of the vertices and the geometric map between the reference space of each polytope and the physical space.
-- A `FaceLabeling`, which classifies all the d-dimensional entities of the mesh into (non-overlapping) physical entities. These entities are then associated one or multiple tags which can be used to impose boundary conditions or define physical regions on the mesh.
+- A `FaceLabeling`, which classifies all the d-dimensional entities of the mesh into (non-overlapping) physical entities. These entities are then assigned one or multiple tags which can be used to impose boundary conditions or define physical regions on the mesh.
 
 To get a deeper understanding of these three components, we encourage the reader to check the low-level [tutorial on geometry](https://gridap.github.io/Tutorials/stable/). The API for each of these components is documented in the following sections.
+
+#### `tag` and `tags` arguments
+
+In the documentation, a `tag` of type `Int` or `String`, and a set of `tag`s,
+referred to as `tags`, is a homogeneous vector of tags (either a `Vector{Int}`
+or `Vector{String}`). Only up to `256` different tags can be defined.
+
+They keyword argument `tags` accepts both a single `tag` or multiple `tags`
 
 ### GridTopology API
 
@@ -134,4 +142,10 @@ Pages   = ["/PatchTriangulations.jl"]
 Modules = [Geometry,]
 Order   = [:type, :constant, :macro, :function]
 Pages   = ["/AppendedTriangulations.jl"]
+```
+
+### Exported names
+
+```@docs
+Geometry
 ```

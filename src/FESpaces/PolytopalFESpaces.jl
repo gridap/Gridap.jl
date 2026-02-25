@@ -1,4 +1,7 @@
 
+"""
+    struct PolytopalFESpace{V,M} <: SingleFieldFESpace
+"""
 struct PolytopalFESpace{V,M} <: SingleFieldFESpace
   vector_type::Type{V}
   nfree::Int

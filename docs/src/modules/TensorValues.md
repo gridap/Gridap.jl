@@ -140,6 +140,7 @@ inner
 dot(::MultiValue,::MultiValue)
 double_contraction
 outer(::MultiValue,::MultiValue)
+normalize
 
 contracted_product
 ```

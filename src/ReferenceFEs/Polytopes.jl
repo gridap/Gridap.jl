@@ -791,9 +791,10 @@ function get_measure(p::Polytope)
   get_measure(p, vertex_coords)
 end
 
+#TODO optimize for Extrusion polytopes, it should be non-allocating for them
 function get_measure(p::Polytope, vertex_coords)
   conn, simplex = simplexify(p)
-  m = eltype(eltype(coords))
+  m = zero(eltype(eltype(vertex_coords)))
   D = num_dims(p)
   VD = Val(D + 1)
   for ids in conn

@@ -22,6 +22,8 @@ struct BezierRefFE{D} <: LagrangianRefFE{D}
   metadata
 end
 
+get_name(::Type{<:BezierRefFE}) = bezier
+
 """
     BezierRefFE(::Type{T}, p::Polytope{D}, orders)
 

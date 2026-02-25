@@ -16,7 +16,7 @@ depending on the `IndexStyle` of the array.
     getindex!(cache,a::AbstractArray,i::Integer)
     getindex!(cache,a::AbstractArray{T,N},i::Vararg{Integer,N}) where {T,N}
 
-See also [`array_cache`](@ref), [`uses_hash!`](@ref), [`invalidate_cache!`](@ref).
+See also [`array_cache`](@ref), [`uses_hash`](@ref), [`invalidate_cache!`](@ref).
 
 # Examples
 

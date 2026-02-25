@@ -269,5 +269,33 @@ end
 function evaluate!( # φ -> φ̂ = Jᵀ φ∘F J
   cache, ::InversePushforward{DoubleCoVariantPiolaMap}, v_phys::Number, Jt::Number
 )
-  return congruent_prod(v_ref, transpose(Jt)) # symmetry stable Jt ⋅ v_phys ⋅ Jtᵀ
+  return congruent_prod(v_phys, transpose(Jt)) # symmetry stable Jt ⋅ v_phys ⋅ Jtᵀ
 end
+
+
+###################
+# DOF scaling API #
+###################
+
+"""
+    dof_scaling_function(::Pushforward, D::Int)
+
+Return a function `h_inv -> scale` that takes the inverse of a local meshsize
+estimate h, and return how to scale a DOF pushed via the `Pushforward` such that
+it's scale is independent of h. `D` is the parametric dimension.
+
+For example, the contravariant Piola map applies `J -> |det(J)|⁻¹ J` that scales
+like `h^D * (1/h) = (1/h)^(1-D)`, so the scaling function is `h_inv -> (h_inv)^(D-1)`.
+"""
+dof_scaling_function(::Pushforward, D::Int) = @abstractmethod
+
+dof_scaling_function(::IdentityPiolaMap, D::Int)  = h_inv -> 1
+dof_scaling_function(::CoVariantPiolaMap, D::Int) = h_inv -> h_inv
+dof_scaling_function(::DoubleCoVariantPiolaMap, D::Int) = h_inv -> h_inv^2
+dof_scaling_function(::ContraVariantPiolaMap, D::Int) = let D=D
+  h_inv -> h_inv^(D-1)
+end
+dof_scaling_function(::DoubleContraVariantPiolaMap, D::Int) = let D=D
+  h_inv -> h_inv^(2D-2)
+end
+

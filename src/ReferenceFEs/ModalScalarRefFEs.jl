@@ -6,7 +6,9 @@
 where `Name` is either `Lagrangian` or `Serendipity`.
 """
 struct ModalScalar{F} <: ReferenceFEName
+  ModalScalar{Lagrangian}() = new{Lagrangian}()
   ModalScalar(::Lagrangian) = new{Lagrangian}()
+  ModalScalar{Serendipity}() = new{Serendipity}()
   ModalScalar(::Serendipity) = new{Serendipity}()
 end
 
@@ -42,7 +44,7 @@ function ModalScalarRefFE(::Type{T}, p::Polytope{D}, r::Integer; F::Symbol,
 
   # TODO fix Q⁻/S on SEGMENT
   if is_simplex(p)
-    if     F in (:P⁻,:P) # same for 0 forms
+    if     F in (:P⁻,:P) || isone(D) # same for 0 forms
       prebasis = FEEC_poly_basis(Val(D),T,r,    0,:P⁻,PT; cart_prod) # P⁻ᵣΛ⁰(□ᴰ)
       mb = [ (r-d-1 >= 0 ?
                  FEEC_poly_basis(Val(d),T,r-d-1,d,:P, MPT; cart_prod)

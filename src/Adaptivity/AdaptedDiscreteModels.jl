@@ -1,12 +1,14 @@
 
 """
+    struct AdaptedDiscreteModel{Dc,Dp,A,B,C} <: DiscreteModel{Dc,Dp}
+where
+    A<:DiscreteModel{Dc,Dp}, B<:DiscreteModel{Dc,Dp}, C<:AdaptivityGlue
 
-  `DiscreteModel` created by refining/coarsening another `DiscreteModel`.
+`DiscreteModel` created by refining/coarsening another `DiscreteModel`.
 
-  The refinement/coarsening hierarchy can be traced backwards by following the
-  `parent` pointer chain. This allows the transfer of dofs
-  between `FESpaces` defined on this model and its ancestors.
-
+The refinement/coarsening hierarchy can be traced backwards by following the
+`parent` pointer chain. This allows the transfer of dofs
+between `FESpaces` defined on this model and its ancestors.
 """
 struct AdaptedDiscreteModel{Dc,Dp,A<:DiscreteModel{Dc,Dp},B<:DiscreteModel{Dc,Dp},C<:AdaptivityGlue} <: DiscreteModel{Dc,Dp}
   model  ::A
@@ -28,14 +30,22 @@ Geometry.get_grid_topology(model::AdaptedDiscreteModel) = get_grid_topology(mode
 Geometry.get_face_labeling(model::AdaptedDiscreteModel) = get_face_labeling(model.model)
 
 # Other getters
-get_model(model::AdaptedDiscreteModel)  = model.model
+"""
+    get_model(model::AdaptedDiscreteModel)
+"""
+get_model(model::AdaptedDiscreteModel) = model.model
+"""
+    get_parent(model::AdaptedDiscreteModel)
+"""
 get_parent(model::AdaptedDiscreteModel{Dc,Dp,A,<:AdaptedDiscreteModel}) where {Dc,Dp,A} = get_model(model.parent)
 get_parent(model::AdaptedDiscreteModel{Dc,Dp,A,B}) where {Dc,Dp,A,B} = model.parent
 get_adaptivity_glue(model::AdaptedDiscreteModel) = model.glue
 
 # Relationships
 """
-Returns true if m1 is a "child" model of m2, i.e., if m1 is the result of adapting m2
+    is_child(m1::AdaptedDiscreteModel,m2::DiscreteModel)
+
+Returns true if `m1` is a "child" model of `m2`, i.e., if `m1` is the result of adapting `m2`
 """
 function is_child(m1::AdaptedDiscreteModel,m2::DiscreteModel)
   return get_parent(m1) === m2 # m1 = refine(m2)
@@ -47,14 +57,19 @@ end
 
 is_child(m1::DiscreteModel,m2::AdaptedDiscreteModel) = false
 
+"""
+    is_related(m1::DiscreteModel, m2::DiscreteModel) = is_child(m1,m2) || is_child(m2,m1)
+
+See also [`is_child`](@ref).
+"""
 is_related(m1::DiscreteModel,m2::DiscreteModel) = is_child(m1,m2) || is_child(m2,m1)
 
 # Model Adaptation
 
 """
-  function refine(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
+    refine(model::DiscreteModel, args...; kwargs...) -> AdaptedDiscreteModel
 
-  Returns an `AdaptedDiscreteModel` that is the result of refining the given `DiscreteModel`.
+Returns an `AdaptedDiscreteModel` that is the result of refining the given `DiscreteModel`.
 """
 function refine(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
@@ -66,19 +81,19 @@ function refine(model::AdaptedDiscreteModel,args...;kwargs...)
 end
 
 """
-  function coarsen(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
+    function coarsen(model::DiscreteModel, args...; kwargs...) -> AdaptedDiscreteModel
 
-  Returns an `AdaptedDiscreteModel` that is the result of coarsening the given `DiscreteModel`.
+Returns an `AdaptedDiscreteModel` that is the result of coarsening the given `DiscreteModel`.
 """
 function coarsen(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
 end
 
 """
-  function adapt(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
+    function adapt(model::DiscreteModel, args...; kwargs...) -> AdaptedDiscreteModel
 
-  Returns an `AdaptedDiscreteModel` that is the result of adapting (mixed coarsening and refining)
-  the given `DiscreteModel`.
+Returns an `AdaptedDiscreteModel` that is the result of adapting (mixed coarsening and refining)
+the given `DiscreteModel`.
 """
 function adapt(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
