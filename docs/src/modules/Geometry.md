@@ -143,3 +143,9 @@ Modules = [Geometry,]
 Order   = [:type, :constant, :macro, :function]
 Pages   = ["/AppendedTriangulations.jl"]
 ```
+
+### Exported names
+
+```@docs
+Geometry
+```
