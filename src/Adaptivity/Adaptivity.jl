@@ -1,6 +1,4 @@
 """
-  Mesh Adaptivity for Gridap
-
 $(public_names_in_md(@__MODULE__))
 """
 module Adaptivity

@@ -97,7 +97,13 @@ num_subcells(rr::RefinementRule) = num_cells(rr.ref_grid)
 num_ref_faces(rr::RefinementRule,d::Int) = num_faces(rr.ref_grid,d)
 RefinementRuleType(rr::RefinementRule) :: RefinementRuleType = rr.T
 
+"""
+    get_cell_map(rr::RefinementRule)
+"""
 Geometry.get_cell_map(rr::RefinementRule) = rr.cmaps
+"""
+    get_inverse_cell_map(rr::RefinementRule)
+"""
 get_inverse_cell_map(rr::RefinementRule) = rr.icmaps
 
 function get_cell_measures(rr::RefinementRule)
