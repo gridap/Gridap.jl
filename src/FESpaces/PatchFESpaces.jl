@@ -12,7 +12,7 @@ end
 FESpaceWithoutBCs(space::ConstantFESpace) = space
 FESpaceWithoutBCs(space::TrialFESpace) = FESpaceWithoutBCs(space.space)
 
-function PatchFESpace(space::SingleFieldFESpace,ptopo::PatchTopology)
+function PatchFESpace(space::SingleFieldFESpace, ptopo::PatchTopology)
   vector_type = get_vector_type(space)
 
   nfree = num_free_dofs(space)
@@ -60,7 +60,7 @@ function PatchFESpace(space::TrialFESpace,ptopo::PatchTopology)
 end
 
 function generate_patch_dof_ids(
-  space::SingleFieldFESpace,ptopo::PatchTopology
+  space::SingleFieldFESpace, ptopo::PatchTopology
 )
   trian = get_triangulation(space)
   Df = num_cell_dims(trian)
@@ -77,12 +77,22 @@ function generate_patch_dof_ids(
 end
 
 function generate_pface_to_pdofs(
-  space::SingleFieldFESpace,ptopo::PatchTopology,ptrian::Geometry.PatchTriangulation,
-  patch_to_dofs = generate_patch_dof_ids(space,ptopo)
+  space::SingleFieldFESpace, ptopo::PatchTopology
 )
-  Df = num_cell_dims(ptrian)
-  pface_to_dofs = get_cell_dof_ids(space,ptrian)
+  Df = num_cell_dims(get_triangulation(space))
+  pface_to_dofs = get_cell_dof_ids(space)
+  patch_to_dofs = generate_patch_dof_ids(space,ptopo)
   pface_to_patch = Geometry.get_pface_to_patch(ptopo,Df)
+  pface_to_pdofs = find_local_index(pface_to_dofs,pface_to_patch,patch_to_dofs)
+  return pface_to_pdofs
+end
+
+function generate_pface_to_pdofs(
+  space::SingleFieldFESpace, ptrian::Geometry.PatchTriangulation,
+)
+  pface_to_dofs = get_cell_dof_ids(space,ptrian)
+  patch_to_dofs = generate_patch_dof_ids(space,ptrian.ptopo)
+  pface_to_patch = ptrian.glue.tface_to_patch
   pface_to_pdofs = find_local_index(pface_to_dofs,pface_to_patch,patch_to_dofs)
   return pface_to_pdofs
 end

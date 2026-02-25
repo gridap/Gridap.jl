@@ -57,6 +57,50 @@ function PatchTopology(model::DiscreteModel;kwargs...)
   PatchTopology(ReferenceFE{D},model;kwargs...)
 end
 
+function InterfacePatchTopology(model::DiscreteModel; kwargs...)
+  ptopo = PatchTopology(model; kwargs...)
+  InterfacePatchTopology(ptopo)
+end
+
+function InterfacePatchTopology(ptopo::PatchTopology; patch_ids = 1:num_patches(ptopo))
+  topo = ptopo.topo
+  D = num_cell_dims(ptopo)
+  face_to_cells = get_faces(topo,D-1,D)
+
+  patch_faces = get_patch_faces(ptopo,D-1)
+  pface_to_isboundary, pface_to_lcell = get_patch_boundary_info(ptopo)
+  face_to_patches = Arrays.inverse_table(patch_faces,num_faces(topo,D-1))
+  pface_to_face = patch_faces.data
+
+  ni = 0
+  id_to_iface = Dict{UInt,Int32}()
+  pface_to_iface = zeros(Int32, num_faces(ptopo,D-1))
+  pface_to_cell = zeros(Int32, num_faces(ptopo,D-1))
+  for patch in patch_ids
+    for pface in datarange(patch_faces,patch)
+      if !pface_to_isboundary[pface]
+        continue
+      end
+      face = pface_to_face[pface]
+      patches = view(face_to_patches,face)
+      cells = view(face_to_cells,face)
+      key = hash(Set(patches))
+      iface = get!(id_to_iface, key, ni+1)
+      pface_to_iface[pface] = iface
+      pface_to_cell[pface] = cells[pface_to_lcell[pface]]
+      ni += isequal(iface,ni+1)
+    end
+    empty!(id_to_iface)
+  end
+  iface_to_pfaces = Arrays.inverse_table(pface_to_iface,ni)
+
+  d_to_iface_to_dfaces = Vector{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,D+1)
+  d_to_iface_to_dfaces[D+1] = Table(lazy_map(unique,lazy_map(Broadcasting(Reindex(pface_to_cell)), iface_to_pfaces)))
+  d_to_iface_to_dfaces[D] = Table(lazy_map(Broadcasting(Reindex(pface_to_face)), iface_to_pfaces))
+  
+  return PatchTopology(topo,d_to_iface_to_dfaces,nothing)
+end
+
 function num_patches(ptopo::PatchTopology)
   length(get_patch_cells(ptopo))
 end
@@ -99,6 +143,104 @@ function patch_extend(ptopo::PatchTopology{Dc},patch_to_data,Df=Dc) where Dc
   pface_to_patch = Arrays.block_identity_array(get_patch_faces(ptopo,Df).ptrs)
   pface_to_data = lazy_map(Reindex(patch_to_data),pface_to_patch)
   return pface_to_data
+end
+
+"""
+    is_cover(ptopo::PatchTopology)
+    is_cover(topo::GridTopology, patch_cells::Table)
+
+Returns `true` if the given patch topology is a cover of the underlying topology, i.e 
+if every cell in the topology is contained in at least one patch.
+"""
+function is_cover(ptopo::PatchTopology)
+  patch_cells = Geometry.get_patch_cells(ptopo)
+  is_cover(ptopo.topo, patch_cells)
+end
+
+function is_cover(topo::GridTopology, patch_cells)
+  cache = array_cache(patch_cells)
+  cell_is_covered = fill(false, num_cells(topo))
+  for patch in eachindex(patch_cells)
+    cells = getindex!(cache, patch_cells, patch)
+    cell_is_covered[cells] .= true
+  end
+  return all(cell_is_covered)
+end
+
+"""
+    is_disjoint(ptopo::PatchTopology)
+    is_disjoint(topo::GridTopology, patch_cells::Table)
+
+Check if the given patch topology is disjoint, i.e if no cell in the topology
+is contained in more than one patch.
+"""
+function is_disjoint(ptopo::PatchTopology)
+  patch_cells = Geometry.get_patch_cells(ptopo)
+  is_disjoint(ptopo.topo, patch_cells)
+end
+
+function is_disjoint(topo::GridTopology, patch_cells)
+  cache = array_cache(patch_cells)
+  cell_is_covered = fill(false, num_cells(topo))
+  for patch in eachindex(patch_cells)
+    cells = getindex!(cache, patch_cells, patch)
+    if any(view(cell_is_covered,cells))
+      return false
+    end
+    cell_is_covered[cells] .= true
+  end
+  return true
+end
+
+"""
+  is_partition(ptopo::PatchTopology; kwargs...)
+  is_partition(topo::GridTopology, patch_cells::Table; fail_fast = true)
+
+Check if the given patch topology is a valid partition of the underlying topology.
+
+To be a valid partition, the patches
+
+  - must cover the whole topology
+  - must be disjoint (i.e non-overlapping)
+  - must be connected (a patch cannot be split)
+
+If `fail_fast` is `true`, the function will exit as soon as it finds a patch that is not connected.
+Otherwise, it will check all patches and print a warning with the indices of the bad patches.
+
+"""
+function is_partition(ptopo::PatchTopology; kwargs...)
+  patch_cells = Geometry.get_patch_cells(ptopo)
+  is_partition(ptopo.topo, patch_cells; kwargs...)
+end
+
+function is_partition(topo::GridTopology, patch_cells; fail_fast = true, require_cover = true)
+  if (require_cover && !is_cover(topo, patch_cells)) || !is_disjoint(topo, patch_cells)
+    return false # Not disjoint
+  end
+
+  # Check patch connectivity
+  # We could return false at the first bad patch, but I'd rather get 
+  # all bad patch indices for debugging purposes.
+  D = num_cell_dims(topo)
+  cell_to_facets = get_faces(topo,D,D-1)
+  facet_to_cells = get_faces(topo,D-1,D)
+
+  cache = array_cache(patch_cells)
+  bad_patches = Int[]
+  for patch in eachindex(patch_cells)
+    cells = getindex!(cache, patch_cells, patch)
+    G = Graph(compute_graph(Set(cells), cell_to_facets, facet_to_cells))
+    if !is_connected(G)
+      push!(bad_patches, patch)
+      fail_fast && return false # Stop at the first bad patch
+    end
+  end
+
+  if !isempty(bad_patches)
+    @warn "The following patches are not connected: $(bad_patches)"
+    return false
+  end
+  return true
 end
 
 function generate_patch_faces(ptopo::PatchTopology{Dc},Df) where Dc
@@ -156,24 +298,27 @@ function generate_patch_faces(ptopo::PatchTopology,dimfrom::Integer,dimto::Integ
 end
 
 function compute_isboundary_face(ptopo::PatchTopology{Dc},d::Integer) where Dc
-  if d == Dc # Cells are never boundary
+  # Cells
+  if d == Dc 
     return fill(false,num_faces(ptopo,Dc))
-  else
-    isboundary_facet, _ = get_patch_boundary_info(ptopo)
-    if d == Dc-1 # Facets
-      return isboundary_facet
-    else # Faces: Boundary if belongs to a boundary facet
-      facet_to_faces = generate_patch_faces(ptopo,Dc-1,d)
-      face_mask = fill(false,num_faces(ptopo,d))
-      for (facet,mask) in enumerate(isboundary_facet)
-        if mask
-          faces = view(facet_to_faces,facet)
-          face_mask[faces] .= true
-        end
-      end
-      return face_mask
+  end
+
+  # Facets
+  isboundary_facet, _ = get_patch_boundary_info(ptopo)
+  if d == Dc-1 
+    return isboundary_facet
+  end
+  
+  # Faces: Boundary if belongs to a boundary facet
+  facet_to_faces = generate_patch_faces(ptopo,Dc-1,d)
+  face_mask = fill(false,num_faces(ptopo,d))
+  for (facet,mask) in enumerate(isboundary_facet)
+    if mask
+      faces = view(facet_to_faces,facet)
+      face_mask[faces] .= true
     end
   end
+  return face_mask
 end
 
 function get_patch_boundary_info(ptopo::PatchTopology{Dc}) where Dc
@@ -205,12 +350,12 @@ end
 
 function get_pface_to_patch(ptopo::PatchTopology,Df::Integer)
   patch_faces = get_patch_faces(ptopo,Df)
-  return Arrays.block_identity_array(patch_faces.ptrs;T=Int32)
+  return Arrays.block_identity_array(Int32, patch_faces.ptrs)
 end
 
 function get_pface_to_lpface(ptopo::PatchTopology,Df::Integer)
   patch_faces = get_patch_faces(ptopo,Df)
-  return Arrays.local_identity_array(patch_faces.ptrs;T=Int32)
+  return Arrays.local_identity_array(Int32, patch_faces.ptrs)
 end
 
 function get_patch_to_tfaces(ptopo::PatchTopology,d::Integer,::IdentityVector)
@@ -249,6 +394,14 @@ function Base.view(ptopo::PatchTopology, cell_to_parent_cell::AbstractArray{<:In
   return ptopo_view
 end
 
+function patch_topology_view(ptopo::PatchTopology, ::IdentityVector)
+  D = num_cell_dims(ptopo)
+  d_to_dpface_to_parent_dpface = [
+    IdentityVector(num_faces(ptopo,d)) for d in 0:D
+  ]
+  return ptopo, d_to_dpface_to_parent_dpface
+end
+
 function patch_topology_view(ptopo::PatchTopology, cell_to_parent_cell::AbstractArray{<:Integer})
   Dc = num_cell_dims(ptopo)
   n_patches = num_patches(ptopo)
@@ -285,6 +438,14 @@ function patch_topology_view(ptopo::PatchTopology, cell_to_parent_cell::Abstract
 
   ptopo_view = PatchTopology(topo, d_to_patch_to_dfaces, ptopo.metadata)
   return ptopo_view, d_to_dpface_to_parent_dpface
+end
+
+function restrict(ptopo::PatchTopology, ::IdentityVector; kwargs...)
+  D = num_cell_dims(ptopo)
+  d_to_dpface_to_parent_dpface = [
+    IdentityVector(num_faces(ptopo,d)) for d in 0:D
+  ]
+  return ptopo, d_to_dpface_to_parent_dpface
 end
 
 function restrict(
@@ -517,7 +678,7 @@ function PatchSkeletonTriangulation(model::DiscreteModel{Dc},ptopo::PatchTopolog
   return PatchTriangulation(trian,ptopo,tface_to_pface)
 end
 
-for TT in (:PatchBoundaryTriangulation,:PatchSkeletonTriangulation)
+for TT in (:PatchTriangulation,:PatchBoundaryTriangulation,:PatchSkeletonTriangulation)
   @eval begin
     function $TT(trian::Triangulation{Dc},ptopo::PatchTopology{Dc}; kwargs...) where Dc
       # Create the Boundary/Skeleton triangulation on a restricted PatchTopology
@@ -570,4 +731,29 @@ function is_change_possible(strian::PatchTriangulation,ttrian::PatchTriangulatio
   sglue = get_patch_glue(strian)
   tglue = get_patch_glue(ttrian)
   return is_change_possible(sglue,tglue)
+end
+
+############################################################################################
+# IO
+
+function to_dict(ptopo::PatchTopology{Dc}) where Dc
+  dict = Dict{Symbol,Any}()
+  topo = ptopo.topo
+  dict[:topo_type] = string(nameof(typeof(topo)))
+  dict[:topo] = to_dict(topo)
+  dict[:patch_cells] = to_dict(get_patch_cells(ptopo))
+  dict
+end
+
+function from_dict(::Type{<:PatchTopology},dict::Dict{Symbol,Any})
+  topo_type = dict[:topo_type]
+  if topo_type == "PolytopalGridTopology"
+    topo = from_dict(PolytopalGridTopology,dict[:topo])
+  elseif topo_type == "UnstructuredGridTopology"
+    topo = from_dict(UnstructuredGridTopology,dict[:topo])
+  else
+    error("Unsupported topology type: $topo_type")
+  end
+  patch_cells = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[:patch_cells])
+  PatchTopology(topo,patch_cells)
 end

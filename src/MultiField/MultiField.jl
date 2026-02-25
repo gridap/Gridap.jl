@@ -36,9 +36,12 @@ export restrict_to_field
 export MultiFieldCellField
 export MultiFieldFESpace
 export MultiFieldFEFunction
+export MultiFieldFEBasis
 export MultiFieldStyle
 export ConsecutiveMultiFieldStyle
 export BlockMultiFieldStyle
+
+export StaticCondensationOperator
 
 include("MultiFieldCellFields.jl")
 

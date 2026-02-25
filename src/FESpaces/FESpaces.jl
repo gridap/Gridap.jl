@@ -172,6 +172,9 @@ export test_assembler
 export collect_cell_matrix
 export collect_cell_vector
 export collect_cell_matrix_and_vector
+export collect_and_merge_cell_matrix
+export collect_and_merge_cell_vector
+export collect_and_merge_cell_matrix_and_vector
 export get_matrix_builder
 export get_vector_builder
 export get_matrix_type
@@ -184,6 +187,7 @@ export symbolic_loop_matrix_and_vector!
 export numeric_loop_matrix!
 export numeric_loop_vector!
 export numeric_loop_matrix_and_vector!
+
 export test_sparse_matrix_assembler
 
 export FEOperator
@@ -211,6 +215,7 @@ export update_coordinates!
 
 export ConstantFESpace
 
+export PolytopalFESpace
 export PatchAssembler
 export LocalOperator
 

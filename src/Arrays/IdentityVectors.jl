@@ -6,8 +6,8 @@ struct IdentityVector{T<:Integer} <: AbstractVector{T}
 end
 
 @propagate_inbounds function getindex(c::IdentityVector{T},i::Integer) where T
-  @boundscheck @check 0 < i <= c.length
-  return T(i)
+  @boundscheck @check checkbounds(c,i) === nothing
+  T(i)
 end
 
 size(c::IdentityVector) = (c.length,)

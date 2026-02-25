@@ -1,45 +1,55 @@
 
 """
-    from_json(::Type{T},s::AbstractString) where T
+    from_json(::Type{T},s::AbstractString;kwargs...) where T
+
+Accepts keyword arguments passed to `JSON.parse`.
 """
-function from_json(::Type{T},s::AbstractString) where T
-  json_dict = JSON.parse(s;inttype=Int)
+function from_json(::Type{T},s::AbstractString;kwargs...) where T
+  json_dict = JSON.parse(s;kwargs...)
   dict = _decode_json_dict(json_dict)
   from_dict(T,dict)
 end
 
 """
-    from_json_file(::Type{T},s::AbstractString) where T
+    from_json_file(::Type{T},s::AbstractString;kwargs...) where T
+
+Accepts keyword arguments passed to `JSON.parsefile`.
 """
-function from_json_file(::Type{T},s::AbstractString) where T
-  json_dict = JSON.parsefile(s;inttype=Int)
+function from_json_file(::Type{T},s::AbstractString;kwargs...) where T
+  json_dict = JSON.parsefile(s;kwargs...)
   dict = _decode_json_dict(json_dict)
   from_dict(T,dict)
 end
 
 """
-    to_json(object)
+    to_json(object;kwargs...)
+
+Accepts keyword arguments passed to `JSON.json`.
 """
-function to_json(object)
+function to_json(object;kwargs...)
   dict = to_dict(object)
-  JSON.json(dict)
+  JSON.json(dict;kwargs...)
 end
 
 """
-    to_json_file(object,filename)
+    to_json_file(object,filename;kwargs...)
+
+Accepts keyword arguments passed to `JSON.json`.
 """
-function to_json_file(object,filename)
+function to_json_file(object,filename;kwargs...)
   dict = to_dict(object)
   open(filename,"w") do f
-    JSON.print(f,dict)
+    JSON.json(f,dict;kwargs...)
   end
 end
 
 JSON.lower(object::GridapType) = to_dict(object)
 
-function _decode_json_dict(json_dict::Dict{String,Any})
+const JSONObject = Union{Dict{String,Any},JSON.Object}
+
+function _decode_json_dict(json_dict::JSONObject)
   _decode_item(x) = x
-  _decode_item(x::Dict{String,Any}) = _decode_json_dict(x)
+  _decode_item(x::JSONObject) = _decode_json_dict(x)
 
   dict = Dict{Symbol,Any}()
   for k in keys(json_dict)

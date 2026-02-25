@@ -754,11 +754,10 @@ function _find_indexin!(a_to_index, a_to_b, index_to_b, pred::Function=(==))
 end
 
 """
-    get_bounding_box(p::Polytope{D})
+    get_bounding_box(p::Polytope)
 
-Return a couple of `Point{D}`s defining a bounding box containing `p`. The box
-is the `D`-cuboid with all edges parallel to the Cartesian axes, and whose
-diametraly opposed vertices are the two returned vertices.
+Returns a tuple `(pmin,pmax)` with the minimum and maximum points of
+the axis-aligned bounding box containing the polytope `p`.
 """
 function get_bounding_box(p::Polytope)
   vertex_to_coords = get_vertex_coordinates(p)

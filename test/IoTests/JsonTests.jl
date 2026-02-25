@@ -36,7 +36,3 @@ to_json_file(foo,f)
 @test foo == from_json(Foo,JSON.json(foo))
 
 end # module
-
-
-
-

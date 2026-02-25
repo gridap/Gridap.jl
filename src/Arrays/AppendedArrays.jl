@@ -81,7 +81,7 @@ end
 
 Base.IndexStyle(::Type{<:AppendedArray}) = IndexLinear()
 
-function Base.getindex(v::AppendedArray,i::Integer)
+@propagate_inbounds function Base.getindex(v::AppendedArray, i::Integer)
   l = length(v.a)
   if i > l
     v.b[i-l]
@@ -98,7 +98,7 @@ function array_cache(v::AppendedArray)
   (ca,cb)
 end
 
-function getindex!(cache,v::AppendedArray,i::Integer)
+@propagate_inbounds function getindex!(cache, v::AppendedArray, i::Integer)
   ca, cb = cache
   l = length(v.a)
   if i > l

@@ -73,11 +73,11 @@ V = CLagrangianFESpace(VectorValue{2,Float64},grid,Vector{Float64},node_to_tag,m
 
 reffe = ReferenceFE(lagrangian,Float64,2)
 V = FESpace(model,reffe)
-@test isa(V.metadata, FESpaces.CellConformity)
+@test isa(V.metadata, FESpaces.CompressedCellConformity)
 
 reffe = ReferenceFE(lagrangian,Float64,1)
 V = FESpace(model,reffe,conformity=:L2)
-@test isa(V.metadata, FESpaces.CellConformity)
+@test isa(V.metadata, FESpaces.CompressedCellConformity)
 
 # Check that the factory uses clagrangian when possible
 
