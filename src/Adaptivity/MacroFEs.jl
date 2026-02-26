@@ -32,7 +32,7 @@ end
 # We use FineToCoarseArray to represent many data-structures, from quadrature points to
 # finite-element basis. For performance reasons, we sometimes want to keep a copy of the
 # coarse data (but not always!). For instance:
-#  - for quad points, we want to keep the coarse points. Otherwise, we woudl have to
+#  - for quad points, we want to keep the coarse points. Otherwise, we would have to
 #    recompute them for every cell when the CompositeQuadrature is used with other
 #    gridap basis.
 #  - for finite-element basis, we do NOT want to generate the coarse basis, otherwise
@@ -322,23 +322,37 @@ function Arrays.evaluate!(cache,k::Broadcasting{typeof(Fields.∇∇)},a::MacroF
   return FineToCoarseArray(a.rrule,fields,a.ids)
 end
 
-############################################################################################
-# MacroReferenceFE
+####################
+# MacroReferenceFE #
+####################
 
-struct MacroRefFE <: ReferenceFEName end
+abstract type MacroRefFEName <: ReferenceFEName end
 
 """
-    MacroReferenceFE(rrule::RefinementRule,reffes::AbstractVector{<:ReferenceFE})
+    struct MacroRefFE <: MacroRefFEName end
 
-Constructs a ReferenceFE for a macro-element, given a RefinementRule and a set of
-ReferenceFEs for the subcells.
+Default name for a macro reference FE, that has trivial pushforward (`IdentityPiolaMap`).
+"""
+struct MacroRefFE <: MacroRefFEName end
 
-For performance, these should be paired with CompositeQuadratures.
+"""
+    MacroReferenceFE(
+      rrule::RefinementRule,
+      reffes::AbstractVector{<:ReferenceFE},
+      Name::Type{<:MacroRefFEName} = MacroRefFE;
+      conformity = Conformity(first(reffes)),
+    )
+
+Constructs a `ReferenceFE` for a macro-element, given a `RefinementRule` and a
+set of `ReferenceFE`s for the subcells.
+
+For performance, these should be paired with `CompositeQuadratures`.
 """
 function MacroReferenceFE(
   rrule::RefinementRule,
-  reffes::AbstractVector{<:ReferenceFE};
-  conformity = Conformity(first(reffes))
+  reffes::AbstractVector{<:ReferenceFE},
+  Name::Type{<:MacroRefFEName} = MacroRefFE;
+  conformity = Conformity(first(reffes)),
 )
   @check length(reffes) == num_subcells(rrule)
 
@@ -356,39 +370,44 @@ function MacroReferenceFE(
   poly = get_polytope(rrule)
   # This is a hack to be able to compute the orders
   prebasis = FineToCoarseArray(rrule,collect(map(get_prebasis,reffes)))
-  metadata = (rrule,conn,face_own_dofs,face_own_perms)
+  metadata = (rrule,conn,face_dofs,face_own_perms)
 
-  return GenericRefFE{MacroRefFE}(
-    ndofs,poly,prebasis,dofs,conformity,metadata,face_dofs,basis
+  return GenericRefFE{Name}(
+    ndofs,poly,prebasis,dofs,conformity,metadata,face_own_dofs,basis
   )
 end
 
-ReferenceFEs.get_order(reffe::GenericRefFE{MacroRefFE}) = maximum(get_orders(reffe))
+ReferenceFEs.get_order(reffe::GenericRefFE{<:MacroRefFEName}) = maximum(get_orders(reffe))
 
-function ReferenceFEs.get_orders(reffe::GenericRefFE{MacroRefFE})
+function ReferenceFEs.get_orders(reffe::GenericRefFE{<:MacroRefFEName})
   prebasis = get_prebasis(reffe)
   subcell_prebasis = prebasis.fine_data
   subcell_orders = map(get_orders,subcell_prebasis)
   return map(maximum,subcell_orders)
 end
 
-function ReferenceFEs.get_face_own_dofs(reffe::GenericRefFE{MacroRefFE}, conf::Conformity)
+function ReferenceFEs.get_face_dofs(reffe::GenericRefFE{<:MacroRefFEName}, conf::Conformity)
   @check conf == Conformity(reffe)
-  rrule,conn,face_own_dofs,face_own_perms = ReferenceFEs.get_metadata(reffe)
-  return face_own_dofs
+  rrule,conn,face_dofs,face_own_perms = ReferenceFEs.get_metadata(reffe)
+  return face_dofs
 end
 
-function ReferenceFEs.get_face_own_dofs_permutations(reffe::GenericRefFE{MacroRefFE}, conf::Conformity)
+function ReferenceFEs.get_face_own_dofs(reffe::GenericRefFE{<:MacroRefFEName}, conf::Conformity)
   @check conf == Conformity(reffe)
-  rrule,conn,face_own_dofs,face_own_perms = ReferenceFEs.get_metadata(reffe)
+  return reffe.face_own_dofs
+end
+
+function ReferenceFEs.get_face_own_dofs_permutations(reffe::GenericRefFE{<:MacroRefFEName}, conf::Conformity)
+  @check conf == Conformity(reffe)
+  rrule,conn,face_dofs,face_own_perms = ReferenceFEs.get_metadata(reffe)
   return face_own_perms
 end
 
-function ReferenceFEs.get_face_own_dofs(reffe::GenericRefFE{MacroRefFE}, ::L2Conformity)
+function ReferenceFEs.get_face_own_dofs(reffe::GenericRefFE{<:MacroRefFEName}, ::L2Conformity)
   return ReferenceFEs._get_face_own_dofs_l2(reffe)
 end
 
-function ReferenceFEs.get_face_own_dofs_permutations(reffe::GenericRefFE{MacroRefFE}, ::L2Conformity)
+function ReferenceFEs.get_face_own_dofs_permutations(reffe::GenericRefFE{<:MacroRefFEName}, ::L2Conformity)
   face_own_dofs = ReferenceFEs.get_face_own_dofs(reffe,L2Conformity())
   return ReferenceFEs._trivial_face_own_dofs_permutations(face_own_dofs)
 end
