@@ -63,18 +63,3 @@ function ReferenceFE(p::Polytope,::BDM,::Type{T}, order; kwargs...) where T
   BDMRefFE(T,p,order; kwargs...)
 end
 
-function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
-  hdiv = (:Hdiv,:HDiv)
-  if sym == :L2
-    L2Conformity()
-  elseif sym in hdiv
-    DivConformity()
-  else
-    @unreachable """\n
-    It is not possible to use conformity = $sym on a BDM reference FE.
-
-    Possible values of conformity for this reference fe are $((:L2, hdiv...)).
-      """
-  end
-end
-

@@ -114,20 +114,6 @@ function ReferenceFE(
   ModalC0RefFE(T,polytope,orders;kwargs...)
 end
 
-function Conformity(::GenericRefFE{ModalC0},sym::Symbol)
-  h1 = (:H1,:C0,:Hgrad)
-  if sym == :L2
-    L2Conformity()
-  elseif sym in h1
-    H1Conformity()
-  else
-    @unreachable """\n
-    It is not possible to use conformity = $sym on a ModalC0RefFE with H1 conformity.
-    Possible values of conformity for this reference fe are $((:L2, h1...)).
-    """
-  end
-end
-
 function get_face_own_dofs_permutations(
   reffe::GenericRefFE{ModalC0},conf::GradConformity)
   lagrangian_reffe = reffe.metadata

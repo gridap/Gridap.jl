@@ -106,18 +106,3 @@ function ReferenceFE(p::Polytope,::Nedelec{K},::Type{T}, order; kwargs...) where
   NedelecRefFE(T,p,order; kind=K, kwargs...)
 end
 
-function Conformity(reffe::GenericRefFE{<:Nedelec},sym::Symbol)
-  hcurl = (:Hcurl,:HCurl)
-  if sym == :L2
-    L2Conformity()
-  elseif sym in hcurl
-    CurlConformity()
-  else
-    @unreachable """\n
-    It is not possible to use conformity = $sym on a Nedelec reference FE.
-
-    Possible values of conformity for this reference fe are $((:L2, hcurl...)).
-    """
-  end
-end
-

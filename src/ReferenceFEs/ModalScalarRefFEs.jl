@@ -109,18 +109,3 @@ function ReferenceFE(p::Polytope,::ModalScalar{Name},::Type{T}, order; kwargs...
   ModalScalarRefFE(T,p,order; F, kwargs...)
 end
 
-function Conformity(::GenericRefFE{<:ModalScalar},sym::Symbol)
-  hgrad = (:H1,:C0,:Hgrad,:HGrad)
-  if sym == :L2
-    L2Conformity()
-  elseif sym in hgrad
-    GradConformity()
-  else
-    @unreachable """\n
-    It is not possible to use conformity = $sym on a Nedelec reference FE.
-
-    Possible values of conformity for this reference fe are $((:L2, hcurl...)).
-    """
-  end
-end
-

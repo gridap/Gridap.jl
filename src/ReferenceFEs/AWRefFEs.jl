@@ -63,21 +63,6 @@ function ReferenceFE(p::Polytope,::ArnoldWinther,::Type{T}, order) where T
   ArnoldWintherRefFE(T,p,order)
 end
 
-function Conformity(reffe::GenericRefFE{ArnoldWinther},sym::Symbol)
-  hdiv = (:Hdiv,:HDiv)
-  if sym == :L2
-    L2Conformity()
-  elseif sym in hdiv
-    DivConformity()
-  else
-    @unreachable """\n
-    It is not possible to use conformity = $sym on a ArnoldWinther reference FE.
-
-    Possible values of conformity for this reference fe are $((:L2, hdiv...)).
-      """
-  end
-end
-
 function get_face_own_dofs(reffe::GenericRefFE{ArnoldWinther}, conf::DivConformity)
   get_face_dofs(reffe)
 end

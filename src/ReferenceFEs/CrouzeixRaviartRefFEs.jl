@@ -45,19 +45,6 @@ function ReferenceFE(p::Polytope,::CrouzeixRaviart,::Type{T}, order) where T
   CrouzeixRaviartRefFE(T,p,order)
 end
 
-
-function Conformity(reffe::GenericRefFE{CrouzeixRaviart},sym::Symbol)
-  if sym == :L2
-    L2Conformity()
-  else
-    @unreachable """\n
-    It is not possible to use conformity = $sym on a CrouzeixRaviart reference FE.
-
-    Possible values of conformity for this reference fe are $((:L2, )).
-      """
-  end
-end
-
 function get_face_own_dofs(reffe::GenericRefFE{CrouzeixRaviart}, conf::L2Conformity)
   get_face_own_dofs(reffe)
 end

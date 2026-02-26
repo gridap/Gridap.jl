@@ -393,14 +393,6 @@ function ReferenceFEs.get_face_own_dofs_permutations(reffe::GenericRefFE{MacroRe
   return ReferenceFEs._trivial_face_own_dofs_permutations(face_own_dofs)
 end
 
-function ReferenceFEs.Conformity(reffe::GenericRefFE{MacroRefFE},sym::Symbol)
-  if sym == :L2
-    L2Conformity()
-  else
-    Conformity(reffe)
-  end
-end
-
 """
     get_cface_to_own_dofs(
       rrule::RefinementRule,
