@@ -462,7 +462,7 @@ function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,
   active_block_data = Any[]
   for i in active_block_ids
     cell_dofs_i = get_cell_dof_ids(f.spaces[i],trian)
-    if i == 1
+    if offsets[i] == 0
       push!(active_block_data,cell_dofs_i)
     else
       offset = Int32(offsets[i])
