@@ -116,4 +116,32 @@ dv = zero_dirichlet_values(X)
 interpolate_everywhere!([f,f],x,dv,X)
 @test x == get_free_dof_values(fh)
 
+@testset "BlockMultiFieldStyle with non-identity permutation" begin
+  model2 = CartesianDiscreteModel((0,1,0,1),(2,2))
+  V1 = TestFESpace(model2,ReferenceFE(lagrangian,Float64,2);conformity=:H1)
+  V2 = TestFESpace(model2,ReferenceFE(lagrangian,Float64,1);conformity=:L2)
+  V3 = TestFESpace(model2,ReferenceFE(lagrangian,Float64,1);conformity=:L2)
+
+  # Self-inverse permutation P=(2,1): both fields alone in their blocks → offsets all zero.
+  # This case was unaffected by either bug.
+  mfs1 = BlockMultiFieldStyle(2,(1,1),(2,1))
+  Y1 = MultiFieldFESpace([V1,V2]; style=mfs1)
+  off1 = MultiField.compute_field_offsets(Y1)
+  @test off1[1] == 0
+  @test off1[2] == 0
+
+  # Non-self-inverse permutation P=(3,1,2), SB=(2,1):
+  #   block 1 = [field3, field1],  block 2 = [field2]
+  # Correct offsets (after fix):
+  #   field3 leads block1  → offset 0
+  #   field1 follows field3 in block1 → offset = num_free_dofs(V3)
+  #   field2 alone in block2 → offset 0
+  mfs2 = BlockMultiFieldStyle(2,(2,1),(3,1,2))
+  Y2 = MultiFieldFESpace([V1,V2,V3]; style=mfs2)
+  off2 = MultiField.compute_field_offsets(Y2)
+  @test off2[3] == 0
+  @test off2[1] == num_free_dofs(V3)
+  @test off2[2] == 0
+end
+
 end # module
