@@ -56,7 +56,7 @@ function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
       scalar, r
     elseif k == D
       if nodal
-        return ReferenceFE(p,lagrangian,T,r; space=:P, kwargs...) # ℙᴰᵣ space ≡ SᵣΛᴰ
+        return ReferenceFE(p,lagrangian,T,r; space=:P, kwargs...) # 𝓟ᴰᵣ space ≡ SᵣΛᴰ
       else
         @notimplemented "Modal SrΛᴰ elements are not implemented, please use nodal ones (pass `nodal=true`)."
       end

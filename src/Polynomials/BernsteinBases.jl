@@ -347,7 +347,7 @@ end
 Return the vector of multi-indices for the `D`-dimensional Bernstein basis of
 order `K`, that is
 
-``Iₖᴰ = { α ∈ {0:K}ᴰ⁺¹ | |α| = K }``
+``Iₖᴰ = \\{ α ∈ {0:K}ᴰ⁺¹ | |α| = K \\}``
 
 ordered in decreasing lexicographic order, e.g. {200, 110, 101, 020, 011, 002}
 for K=2, D=2.

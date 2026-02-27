@@ -195,8 +195,8 @@ methods. They are currently implemented for `ExtrusionPolytope`.
 # Extended help
 
 The keyword argument `space::Symbol` can be specified to change the default
-polynomial space. The default space of the element depends on `p`, it is :P (ℙ)
-for simplices and :Q (ℚ)for n-cubes. Additionally, :P and :S (serendipity)
+polynomial space. The default space of the element depends on `p`, it is :P (𝓟)
+for simplices and :Q (𝓠)for n-cubes. Additionally, :P and :S (serendipity)
 are also available for n-cubes.
 
 The following methods are also used in the construction of the `LagrangianRefFE`s

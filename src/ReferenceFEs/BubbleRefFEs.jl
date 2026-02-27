@@ -16,7 +16,7 @@ const bubble = Bubble()
 A Lagrangian bubble space used to enrich another element.
 It contains `num_independent_components(T)` shape functions.
 
-By default -- `type == :mini` -- this is the bubble for (ℙ1ᴰb–ℙ1) MINI element (with shape
+By default -- `type == :mini` -- this is the bubble for (𝓟₁ᴰ+b–𝓟₁) MINI element (with shape
 functions of degree 3), it is available for simplices and n-cubes.
 
 If `coeffs` and `terms` are given, the bubble shape functions are defined by the
@@ -68,7 +68,7 @@ function ReferenceFE(p::Polytope, ::Bubble, ::Type{T}, order::Int;
                      type = :mini, coeffs = nothing, terms = nothing) where {T}
   if  isnothing(terms)
     if type == :mini
-      @notimplementedif order ≠ 1 "The MINI bubble is only implemented for order 1 (ℙ1ᴰ+b–ℙ1) element."
+      @notimplementedif order ≠ 1 "The MINI bubble is only implemented for order 1 (𝓟₁ᴰ+b–𝓟₁) element."
     end
   else
     max_orders = Tuple(maximum(Tuple(term), init=1) - 1 for term in terms)

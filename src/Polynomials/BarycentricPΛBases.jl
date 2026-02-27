@@ -5,7 +5,7 @@
     FEEC_space_definition_checks(::Val{D}, T, r, k, F, rotate_90; cart_prod=false)
 
 Check if the argument define a valid Finite Element Exterior Calculus (FEEC) polynomial space,
-as defined in the Periodic Table of the Finite Elements, `FᵣΛᵏ` in dimension `D`.
+as defined in the Periodic Table of the Finite Elements, ``\\mathrm{F}ᵣΛᵏ`` in dimension `D`.
 
 The arguments are also described in [`FEEC_poly_basis`](@ref).
 """

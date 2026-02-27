@@ -5,9 +5,9 @@
 
 Polynomial basis for a `D`-multivariate `V`-valued polynomial space:
 
-`V`(𝕊₁, ∅, ..., ∅) ⊕ `V`(∅, 𝕊₂, ∅, ..., ∅) ⊕ ... ⊕ `V`(∅, ..., ∅, 𝕊ₗ)
+`V`(𝓢₁, ∅, ..., ∅) ⊕ `V`(∅, 𝓢₂, ∅, ..., ∅) ⊕ ... ⊕ `V`(∅, ..., ∅, 𝓢ₗ)
 
-with l>1, where the scalar `D`-multivariate spaces 𝕊ⱼ (for 1 ≤ j ≤ l) of each
+with l>1, where the scalar `D`-multivariate spaces 𝓢ⱼ (for 1 ≤ j ≤ l) of each
 (independent) component of `V` is defined by a list of terms like the component
 space of [`CartProdPolyBasis`](@ref). However, `CompWiseTensorPolyBasis` uses l
 independent terms lists for each component of `V`.
@@ -27,16 +27,16 @@ tensor is of order maximum 3.
 # Examples
 These return instances of `CompWiseTensorPolyBasis`
 ```jldoctest
-# a basis for Raviart-Thomas on quadrilateral with divergence in ℚ₃
+# a basis for Raviart-Thomas on quadrilateral with divergence in 𝓠₃
 b = FEEC_poly_basis(Val(2),Float64,4,1,:Q⁻; rotate_90)
 
-# a basis for Raviart-Thomas on hexahedra with divergence in ℚ₃
+# a basis for Raviart-Thomas on hexahedra with divergence in 𝓠₃
 b = FEEC_poly_basis(Val(3),Float64,4,2,:Q⁻)
 
-# a basis for Nedelec on triangle with curl in ℚ₃
+# a basis for Nedelec on triangle with curl in 𝓠₃
 b = FEEC_poly_basis(Val(2),Float64,4,1,:Q⁻)
 
-# a basis for Nedelec on hexahedra with curl in ℚ₃
+# a basis for Nedelec on hexahedra with curl in 𝓠₃
 b = FEEC_poly_basis(Val(3),Float64,4,1,:Q⁻)
 ```
 """
@@ -71,14 +71,14 @@ end
 """
     CompWiseTensorPolyBasis{D}(PT, V, orders::Matrix{Int})
 
-Define each component scalar space 𝕊ⱼ as a the full tensor-product space of 1D
+Define each component scalar space 𝓢ⱼ as a the full tensor-product space of 1D
 spaces of orders α(j,n) for 1 ≤ n ≤ `D`, that is:
 
-𝕊₁ = ℙα₁₁(x₁) ⊗ … ⊗ ℙα₁`D`(x`D`)\\
+𝓢₁ = 𝓟α₁₁(x₁) ⊗ … ⊗ 𝓟α₁`D`(x`D`)\\
 ⋮\\
-𝕊ⱼ =     ⊗ₙ  ℙαⱼₙ(xₙ)\\
+𝓢ⱼ =     ⊗ₙ  𝓟αⱼₙ(xₙ)\\
 ⋮\\
-𝕊ₗ = ℙαₗ₁(x₁) ⊗ … ⊗ ℙαₗ`D`(x`D`)
+𝓢ₗ = 𝓟αₗ₁(x₁) ⊗ … ⊗ 𝓟αₗ`D`(x`D`)
 
 The l×`D` matrix α=`orders` is given in the constructor.
 `PT` is a [`Polynomial `](@ref) type, `V` a number type, L is the number of
@@ -111,7 +111,7 @@ end
     get_comp_terms(f::CompWiseTensorPolyBasis{D,V})
 
 Return a tuple (terms\\_1, ..., terms\\_l, ..., terms\\_L) containing, for each
-component of V, the Cartesian indices iterator over the terms that define 𝕊ˡ,
+component of V, the Cartesian indices iterator over the terms that define 𝓢ˡ,
 that is all elements of {1 : `o`(l,1)+1} × {1 : `o`(l,2)+1} × … × {1 : `o`(l,D)+1}.
 
 E.g., if `orders=[ 0 1; 1 0]`, then the `comp_terms` are

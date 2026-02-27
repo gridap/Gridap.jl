@@ -11,12 +11,12 @@ Type representing a basis of a (an)isotropic `D`-multivariate `V`-valued
 cartesian product polynomial space. The basis is obtained by direct sum of
 copies of the scalar basis, scattered over each independant component of `V`, as in
 
-`V`(𝕊, ∅, ..., ∅) ⊕ `V`(∅, 𝕊, ∅, ..., ∅) ⊕ ... ⊕ `V`(∅, ..., ∅, 𝕊)
+`V`(𝓢, ∅, ..., ∅) ⊕ `V`(∅, 𝓢, ∅, ..., ∅) ⊕ ... ⊕ `V`(∅, ..., ∅, 𝓢)
 
-where the scalar space 𝕊 is a (subspace of a) tensor product space of an
+where the scalar space 𝓢 is a (subspace of a) tensor product space of an
 univariate polynomial basis.
 
-The scalar polynomial basis spanning 𝕊 is defined as
+The scalar polynomial basis spanning 𝓢 is defined as
 
   { x ⟶ bα`ᴷ`(x) = bα₁`ᴷ`(x₁) × bα₂`ᴷ`(x₂) × ... × bα`Dᴷ`(x`D`) |  α ∈ `terms` }
 
@@ -70,7 +70,7 @@ end
 
 This constructor allows to pass a tuple `orders` containing the maximal
 polynomial order to be used in each of the `D` spatial dimensions in order to
-construct a tensorial anisotropic `D`-multivariate space 𝕊.
+construct a tensorial anisotropic `D`-multivariate space 𝓢.
 
 If a filter is provided, it is applied on the cartesian product terms
 CartesianIndices(`orders`), with maximum(`orders`) as order argument.
@@ -86,7 +86,7 @@ end
 """
     CartProdPolyBasis(::Type{PT}, ::Type{V}, ::Val{D}, order::Int [, filter=_q_filter])
 
-Return a `CartProdPolyBasis{D,V,order,PT}` where 𝕊 is defined by the terms
+Return a `CartProdPolyBasis{D,V,order,PT}` where 𝓢 is defined by the terms
 filtered by
 
     term -> filter(term, order).
@@ -105,7 +105,7 @@ end
 """
     get_exponents(b::CartProdPolyBasis)
 
-Get a vector of tuples with the exponents of all the terms in the basis of 𝕊,
+Get a vector of tuples with the exponents of all the terms in the basis of 𝓢,
 the components scalar space of `b`.
 
 # Example

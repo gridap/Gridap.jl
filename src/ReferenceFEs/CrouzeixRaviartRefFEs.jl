@@ -14,7 +14,7 @@ const crouzeix_raviart = CrouzeixRaviart()
     CrouzeixRaviartRefFE(::Type{T}, p::Polytope, order::Integer)
 
 The `order` argument has the following meaning: the divergence of the  functions in this basis
-is in the ℙ space of degree `order-1`. `T` is the type of scalar components.
+is in the 𝓟 space of degree `order-1`. `T` is the type of scalar components.
 """
 function CrouzeixRaviartRefFE(::Type{T},p::Polytope,order::Integer) where T
   D = num_dims(p)

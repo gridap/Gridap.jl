@@ -16,7 +16,7 @@ const serendipity = Serendipity()
     SerendipityRefFE(::Type{T}, p::Polytope, orders::Tuple)
 
 Return a Lagrangian reference FE whose underlying approximation space is the
-serendipity polynomial space 𝕊r of order `order`. Implemented on n-cubes with
+serendipity polynomial space 𝓢r of order `order`. Implemented on n-cubes with
 homogneous order.
 
 The type of the polytope `p` has to implement all the queries detailed in the

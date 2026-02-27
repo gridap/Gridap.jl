@@ -1,14 +1,14 @@
 """
     NedelecPolyBasisOnSimplex{D,V,PT} <: PolynomialBasis{D,V,PT}
 
-Basis of the vector valued (`V<:VectorValue{D}`) space ℕ𝔻ᴰₙ(△) for `D`=2,3.
+Basis of the vector valued (`V<:VectorValue{D}`) space 𝓝𝓓ᴰₙ(△) for `D`=2,3.
 This space is the polynomial space for Nedelec elements on simplices with
-curl in (ℙᴰₙ)ᴰ. Its maximum degree is n+1 = `K`. `get_order` on it returns `K`.
+curl in (𝓟ᴰₙ)ᴰ. Its maximum degree is n+1 = `K`. `get_order` on it returns `K`.
 
-   ℕ𝔻ᴰₙ(△) = (ℙᴰₙ)ᴰ ⊕ x × (ℙᴰₙ \\ ℙᴰₙ₋₁)ᴰ
+   𝓝𝓓ᴰₙ(△) = (𝓟ᴰₙ)ᴰ ⊕ x × (𝓟ᴰₙ \\ 𝓟ᴰₙ₋₁)ᴰ
 
 Currently, the basis is implemented as the union of a CartProdPolyBasis{...,PT}
-for ℙᴰₙ and a monomial basis for x × (ℙᴰₙ \\ ℙᴰₙ₋₁)ᴰ.
+for 𝓟ᴰₙ and a monomial basis for x × (𝓟ᴰₙ \\ 𝓟ᴰₙ₋₁)ᴰ.
 
 !!! warning
     Using this basis is not recommanded, [`BarycentricPmΛBasis`](@ref) is better
@@ -18,10 +18,10 @@ for ℙᴰₙ and a monomial basis for x × (ℙᴰₙ \\ ℙᴰₙ₋₁)ᴰ.
 # Examples
 These return instances of `NedelecPolyBasisOnSimplex`
 ```jldoctest
-# a basis for Nedelec on triangles with curl in ℙ²₁
+# a basis for Nedelec on triangles with curl in 𝓟²₁
 b = FEEC_poly_basis(Val(2),Float64,2,1,:P⁻,Monomial)
 
-# a basis for Nedelec on tetrahedra with curl in ℙ³₁
+# a basis for Nedelec on tetrahedra with curl in 𝓟³₁
 b = FEEC_poly_basis(Val(3),Float64,2,1,:P⁻,Monomial)
 ```
 """
@@ -77,11 +77,11 @@ function evaluate!(
   T = eltype(V)
   z = zero(T)
   for (i,xi) in enumerate(x)
-    # terms for (ℙₖ)³
+    # terms for (𝓟ₖ)³
     for j in 1:ndofsP
       a[i,j] = Px[i,j]
     end
-    # terms for x × (ℙₖ\ℙₖ₋₁)³
+    # terms for x × (𝓟ₖ\𝓟ₖ₋₁)³
     j = ndofsP
     x1,x2,x3 = x[i]
     for β in 1:K
@@ -122,11 +122,11 @@ function evaluate!(
   z = zero(T)
   Px = evaluate!(cP,P,x)
   for (i,xi) in enumerate(x)
-    # terms for (ℙₖ)²
+    # terms for (𝓟ₖ)²
     for j in 1:ndofsP
       a[i,j] = Px[i,j]
     end
-    # terms for x × (ℙₖ\ℙₖ₋₁)²
+    # terms for x × (𝓟ₖ\𝓟ₖ₋₁)²
     j = ndofsP
     x1,x2 = xi
     for α in 1:K
@@ -175,11 +175,11 @@ function evaluate!(
   T = eltype(V)
   z = zero(T)
   for (i,xi) in enumerate(x)
-    # terms for ∇((ℙₖ)³)
+    # terms for ∇((𝓟ₖ)³)
     for j in 1:ndofsP
       a[i,j] = Px[i,j]
     end
-    # terms for  ∇(x × (ℙₖ\ℙₖ₋₁)³)
+    # terms for  ∇(x × (𝓟ₖ\𝓟ₖ₋₁)³)
     j = ndofsP
     x1,x2,x3 = x[i]
     for β in 1:K
@@ -248,11 +248,11 @@ function evaluate!(
   ndofsP = length(P)
   Px = evaluate!(cP,P,x)
   for (i,xi) in enumerate(x)
-    # terms for  ∇((ℙₖ)²)
+    # terms for  ∇((𝓟ₖ)²)
     for j in 1:ndofsP
       a[i,j] = Px[i,j]
     end
-    # terms for  ∇(x × (ℙₖ\ℙₖ₋₁)²)
+    # terms for  ∇(x × (𝓟ₖ\𝓟ₖ₋₁)²)
     j = ndofsP
     x1,x2 = x[i]
     for α in 1:K

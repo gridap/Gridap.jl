@@ -24,8 +24,8 @@ const modal_serendipity  = ModalScalar(serendipity)
 """
     ModalScalarRefFE(::Type{T}, p::Polytope{D}, order::Integer; F::Symbol, kwargs...)
 
-Scalar moment-based reference FE, for space FᵣΛ⁰ where `r=order` and `F` is either
-`:P⁻`, `:P`, `:Q⁻` or `:S`. `T` is the type of scalar components.
+Scalar moment-based reference FE, for space ``\\mathrm{F}ᵣΛ⁰`` where `r=order`
+and F is either `:P⁻`, `:P`, `:Q⁻` or `:S`. `T` is the type of scalar components.
 
 This is a variant of `lagrangian`/`serendipity` elements that is more accurate for high order (≥5).
 

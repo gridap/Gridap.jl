@@ -58,7 +58,7 @@ the matrix ``M`` is not stored because
 
 ## Bernstein polynomials definition
 
-The univariate [`Bernstein`](@ref) polynomials forming a basis of ``ℙ_K``
+The univariate [`Bernstein`](@ref) polynomials forming a basis of ``\mathcal{P}_K``
 are defined by
 ```math
 B^K_{n}(x) = \binom{K}{n} x^n (1-x)^{K-n}\qquad\text{ for } 0≤ n≤ K.
@@ -77,7 +77,7 @@ where
 
 The superscript ``D`` and ``K`` in ``B^{D,K}_α(x)`` can be omitted because they
 are always determined by ``α`` using ``{D=\#(α)-1}`` and ``K=|α|``. The set
-``\{B_α\}_{α∈\mathcal{I}_K^D}`` is a basis of ``ℙ^D_K``, implemented by
+``\{B_α\}_{α∈\mathcal{I}_K^D}`` is a basis of ``\mathcal{P}^D_K``, implemented by
 [`BernsteinBasisOnSimplex`](@ref).
 
 ### Bernstein indices and indexing
@@ -98,7 +98,7 @@ zero (to simplify the definition of algorithms where ``α=β-e_i`` appears).
 
 ### The de Casteljau algorithms
 
-A polynomial ``p ∈ ℙ^D_K`` in Bernstein form ``p = ∑_{α∈\mathcal{I}^D_K}\, p_α
+A polynomial ``p ∈ \mathcal{P}^D_K`` in Bernstein form ``p = ∑_{α∈\mathcal{I}^D_K}\, p_α
 B_α`` can be evaluated at ``\bm{x}`` using the de Casteljau algorithms
 [1, Algo. 2.9] by iteratively computing
 ```math
@@ -143,11 +143,11 @@ access each relevant ``B_β`` once per ``(∇/H)B_α`` computed. Also, on the
 reference simplex, the barycentric coordinates derivatives are computed at
 compile time using ``∂_qλ_i = δ_{i q}-δ_{i N}``.
 
-## Bernstein basis generalization for ``ℙΛ`` spaces
+## Bernstein basis generalization for ``\mathcal{P}Λ`` spaces
 
 The [`BarycentricPmΛBasis`](@ref) and [`BarycentricPΛBasis`](@ref) bases respectively
-implement the polynomial bases for the spaces ``ℙ_r^-Λ^k(T^D)`` and
-``ℙ_rΛ^k(T^D)`` (we write ``ℙ_r^{(-)}Λ^k`` for either one of them) derived in
+implement the polynomial bases for the spaces ``\mathcal{P}_r^-Λ^k(T^D)`` and
+``\mathcal{P}_rΛ^k(T^D)`` (we write ``\mathcal{P}_r^{(-)}Λ^k`` for either one of them) derived in
 [2] on simplices of any dimension, for any form degree ``k`` and polynomial
 degree ``r``. These spaces include and generalize several standard FE
 polynomial spaces, see the Periodic Table of the Finite Elements [3].
@@ -226,20 +226,20 @@ F\not⊆ G\ \rightarrow\ \text{tr}_G\, ω^{α,J} = 0, \quad\forall F,G ⊆ T,\ \
 including any face ``G\neq F`` of dimension less or equal that of ``F``.
 
 These basis polynomials ``ω^{α,J}`` are called bubble functions associated to
-``F``, the space they span is called ``\mathring{ℙ}_r^{(-)}Λ^k(T,F)``. There
+``F``, the space they span is called ``\mathring{\mathcal{P}}_r^{(-)}Λ^k(T,F)``. There
 are no bubble functions of degree ``k`` on faces of dimension ``<k``, so the
-spaces ``ℙ_r^{(-)}Λ^k(T)`` admit the geometric decomposition:
+spaces ``\mathcal{P}_r^{(-)}Λ^k(T)`` admit the geometric decomposition:
 ```math
-ℙ_r^{(-)}Λ^k(T) = \underset{F⊆ T}{\oplus}\ \mathring{ℙ}_r^{(-)}Λ^k(F)
-= \underset{k≤d≤D}{\oplus}\underset{\quad F=1≤ F_1 < ... < F_{d+1} ≤ N}{\oplus}\ \mathring{ℙ}_r^{(-)}Λ^k(T,F).
+\mathcal{P}_r^{(-)}Λ^k(T) = \underset{F⊆ T}{\oplus}\ \mathring{\mathcal{P}}_r^{(-)}Λ^k(F)
+= \underset{k≤d≤D}{\oplus}\underset{\quad F=1≤ F_1 < ... < F_{d+1} ≤ N}{\oplus}\ \mathring{\mathcal{P}}_r^{(-)}Λ^k(T,F).
 ```
 
-#### Bubble functions ``\mathring{ℙ}_r^-Λ^k``
+#### Bubble functions ``\mathring{\mathcal{P}}_r^-Λ^k``
 
-The ``ℙ^-`` type bubble basis polynomials associated to a face ``F⊆T``
+The ``\mathcal{P}^-Λ`` type bubble basis polynomials associated to a face ``F⊆T``
 defined by [2, Th. 6.1-4] are
 ```math
-\mathring{ℙ}_r^-Λ^k(T,F) = \text{span}\big\{ ω̄^{α,J} =
+\mathring{\mathcal{P}}_r^-Λ^k(T,F) = \text{span}\big\{ ω̄^{α,J} =
 B_α φ^J \ \big| \ α∈\mathcal{I}_{r-1}^D,\ \#J=k\!+\!1,\ ⟦α⟧∪J=F,\ α_i=0 \text{ if } i< \text{min}(J) \big\}
 ```
 where ``B_α`` are the scalar Bernstein polynomials implemented by
@@ -303,7 +303,7 @@ constant in ``T`` and are pre-computed from ``M`` in
 `_compute_PmΛ_basis_coefficients!` at the creation of `BarycentricPmΛBasis`
 and stored in its field `m`.
 
-Finally, the pseudocode to evaluate our basis ``ω̄`` of ``ℙ_r^-Λ^k(T)`` at
+Finally, the pseudocode to evaluate our basis ``ω̄`` of ``\mathcal{P}_r^-Λ^k(T)`` at
 ``\boldsymbol{x}`` is
 ```julia
 compute λ(x)
@@ -325,12 +325,12 @@ for (F, bubble_functions) in get_bubbles(b)
 end
 ```
 
-#### Bubble functions ``\mathring{ℙ}_rΛ^k``
+#### Bubble functions ``\mathring{\mathcal{P}}_rΛ^k``
 
-The ``ℙ`` type bubble basis polynomials associated to a face ``F⊆T`` defined by
+The ``\mathcal{P}Λ`` type bubble basis polynomials associated to a face ``F⊆T`` defined by
 [2, Th. 6.1-2] -- where the basis function Eq. (8.3) replace Eq. (8.1) -- are
 ```math
-\mathring{ℙ}_rΛ^k(T,F) = \text{span}\big\{ ω^{α,J}=B_α Ψ^{α,J} \quad\big|\quad
+\mathring{\mathcal{P}}_rΛ^k(T,F) = \text{span}\big\{ ω^{α,J}=B_α Ψ^{α,J} \quad\big|\quad
 \ α∈\mathcal{I}_{r}^D,\ \#J=k,\ ⟦α⟧∪J=F,\ α_i=0 \text{ if } i< \text{min}(F
 \backslash J) \big\},
 ```
@@ -370,12 +370,12 @@ basis ``\mathrm{d}x^I`` are
 ω_{I}^{α,J} = B_α\, ψ_I^{α,J},
 ```
 where the ``\binom{D+r}{k+r}\binom{r+k}{k}\binom{D}{k}
-=\mathrm{dim}(ℙ_rΛ^k(T^D))\times\# (\{\mathrm{d}x^I\}_I)`` coefficients
+=\mathrm{dim}(\mathcal{P}_rΛ^k(T^D))\times\# (\{\mathrm{d}x^I\}_I)`` coefficients
 ``ψ_I^{α,J}`` depend only on ``T`` and are pre-computed in
 `_compute_PΛ_basis_form_coefficient!` at the construction of `BarycentricPΛBasis` and
 stored in its field `Ψ`.
 
-The pseudocode to evaluate our basis ``ω`` of ``ℙ_rΛ^k(T)`` at
+The pseudocode to evaluate our basis ``ω`` of ``\mathcal{P}_rΛ^k(T)`` at
 ``\boldsymbol{x}`` is
 ```julia
 compute λ(x)

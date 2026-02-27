@@ -3,11 +3,11 @@
 
 Basis of the vector valued (`V<:VectorValue{D}`) space
 
-ℝ𝕋ᴰₙ = (𝕊ₙ)ᴰ ⊕ x (𝕊ₙ\\𝕊₍ₙ₋₁₎)
+𝓡𝓣ᴰₙ = (𝓢ₙ)ᴰ ⊕ x (𝓢ₙ\\𝓢₍ₙ₋₁₎)
 
-where 𝕊ₙ is a `D`-multivariate scalar polynomial space of maximum degree n = `K`-1.
+where 𝓢ₙ is a `D`-multivariate scalar polynomial space of maximum degree n = `K`-1.
 
-This ℝ𝕋ᴰₙ is the polynomial space for Raviart-Thomas elements with divergence in 𝕊ₙ.
+This 𝓡𝓣ᴰₙ is the polynomial space for Raviart-Thomas elements with divergence in 𝓢ₙ.
 Its maximum degree, that `get_order` returns, is n+1 = `K`.
 
 !!! warning
@@ -16,19 +16,19 @@ Its maximum degree, that `get_order` returns, is n+1 = `K`.
 # Example:
 
 ```@example
-# a basis for Raviart-Thomas on tetrahedra with divergence in ℙ₂
+# a basis for Raviart-Thomas on tetrahedra with divergence in 𝓟₂
 b = RaviartThomasPolyBasis{3}(Monomial, Float64, 2)
 
-# a basis for Raviart-Thomas on quadrilateral with divergence in ℙ₃
+# a basis for Raviart-Thomas on quadrilateral with divergence in 𝓟₃
 b = RaviartThomasPolyBasis{2}(Monomial, Float64, 3, _q_filter)
 ```
 
-The space 𝕊ₙ, typically ℙᴰₙ or ℚᴰₙ, does not need to have a tensor product
-structure of 1D scalar spaces. Thus, the ℝ𝕋ᴰₙ component's scalar spaces are not
+The space 𝓢ₙ, typically 𝓟ᴰₙ or 𝓠ᴰₙ, does not need to have a tensor product
+structure of 1D scalar spaces. Thus, the 𝓡𝓣ᴰₙ component's scalar spaces are not
 tensor products either.
 
-𝕊ₙ is defined like a scalar valued [`CartProdPolyBasis`](@ref) via the `_filter`
-argument of the constructor, by default `_p_filter` for ℙᴰₙ.
+𝓢ₙ is defined like a scalar valued [`CartProdPolyBasis`](@ref) via the `_filter`
+argument of the constructor, by default `_p_filter` for 𝓟ᴰₙ.
 As a consequence, `PT` must be hierarchical, see [`isHierarchical`](@ref).
 """
 struct RaviartThomasPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
@@ -39,7 +39,7 @@ struct RaviartThomasPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
   @doc"""
       RaviartThomasPolyBasis{D}(::Type{PT}, ::Type{T}, order::Int, _filter::Function=_p_filter)
 
-  Where `_filter` defines 𝕊ₙ and `order` = n = K-1 (cf. struct docstring).
+  Where `_filter` defines 𝓢ₙ and `order` = n = K-1 (cf. struct docstring).
   """
   function RaviartThomasPolyBasis{D}(
     ::Type{PT}, ::Type{T}, order::Int,
@@ -54,14 +54,14 @@ struct RaviartThomasPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
     V = VectorValue{D,T}
     indexbase = 1
 
-    # terms defining 𝕊ₙ
+    # terms defining 𝓢ₙ
     P_k = MonomialBasis(Val(D), T, order, _filter)
     pterms = P_k.terms
-    msg =  "Some term defining `𝕊ₙ` contain a higher index than the maximum,
+    msg =  "Some term defining `𝓢ₙ` contain a higher index than the maximum,
       `order`+1, please fix the `_filter` argument"
     @check all( pterm -> (maximum(Tuple(pterm) .- indexbase, init=0) <= order), pterms) msg
 
-    # terms defining 𝕊ₙ\𝕊ₙ₋₁
+    # terms defining 𝓢ₙ\𝓢ₙ₋₁
     _minus_one_order_filter = term -> _filter(Tuple(term) .- indexbase, order-1)
     sterms = filter(!_minus_one_order_filter, pterms)
 
