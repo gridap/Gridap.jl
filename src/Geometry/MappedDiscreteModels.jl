@@ -60,10 +60,9 @@ get_reffes(grid::MappedGrid) = get_reffes(grid.grid)
 get_cell_type(grid::MappedGrid) = get_cell_type(grid.grid)
 
 """
-  struct MappedDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
+    struct MappedDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
 
-Represent a model with a `MappedGrid` grid.
-See also [`MappedGrid`](@ref).
+Represent a model with a [`MappedGrid`](@ref) grid.
 """
 struct MappedDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
   model::DiscreteModel{Dc,Dp}

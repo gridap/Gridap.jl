@@ -14,7 +14,9 @@ struct VisualizationData
 end
 
 """
-This function returns an iterable collection (e.g. a Vector) of VisualizationData objects
+    visualization_data(args...;kwargs...)
+
+This function returns an iterable collection (e.g. a `Vector`) of `VisualizationData` objects
 """
 function visualization_data(args...;kwargs...)
   @abstractmethod

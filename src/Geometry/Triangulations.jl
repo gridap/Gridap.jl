@@ -207,6 +207,7 @@ The keyword argument [`tags`](@ref "`tag` and `tags` arguments") can be used to
 restrict the triangulation to the given tags.
 
 Internal constructors:
+
     Triangulation(::Type{ReferenceFE{D}}, model::DiscreteModel; kwargs...)
     Triangulation(::Type{ReferenceFE{D}}, model::DiscreteModel, tface_to_mface::AbstractVector{<:Integer})
     Triangulation(::Type{ReferenceFE{D}}, model::DiscreteModel, mface_filter::AbstractArray{Bool})

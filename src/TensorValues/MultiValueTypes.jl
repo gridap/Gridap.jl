@@ -239,8 +239,8 @@ Return an array of strings containing the component labels in the order they
 are exported in VTK file.
 
 If all dimensions of the tensor shape `S` are smaller than 3, the components
-are named with letters "X","Y" and "Z" similarly to the automatic naming
-of Paraview. Else, if `maximum(S)>3`, they are labeled by integers starting from "1".
+are named with letters `"X"`,`"Y"` and `"Z"` similarly to the automatic naming
+of Paraview. Else, if `maximum(S)>3`, they are labeled by integers starting from `"1"`.
 """
 indep_components_names(a::MultiValue) = indep_components_names(typeof(a))
 function indep_components_names(::Type{V}) where V<:MultiValue{S,T,N,L} where {S,T,N,L}
@@ -335,7 +335,7 @@ end
 
 Same as [`representatives_of_componentbasis_dual`](@ref), but takes a basis as
 arguement, i.e. a collection of basis *vectors* -- in the linear algebra sense --
-of type `V<:Number`, so `basis` spans a subpace of Span``\\{ component_basis(V)...\\}``.
+of type `V<:Number`, so `basis` spans a subpace of Span{`component_basis(V)...`}.
 
 Computing the dual basis to a subspace basis is usefull for e.g. value types `G`
 resulting from applying a derivative to function of value type `Vd` having

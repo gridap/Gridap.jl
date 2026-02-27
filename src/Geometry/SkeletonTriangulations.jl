@@ -241,6 +241,9 @@ const IN = -1
 const OUT = 1
 
 """
+    InterfaceTriangulation(trian_in::Triangulation, trian_out::Triangulation)
+    InterfaceTriangulation(model::DiscreteModel, cells_in::Vector{Bool})
+    InterfaceTriangulation(model::DiscreteModel, cells_in::Vector{Bool}, cells_out::Vector{Bool})
 """
 function InterfaceTriangulation(model::DiscreteModel,cell_to_is_in::Vector{Bool})
   cell_to_inout = fill(Int8(OUT),length(cell_to_is_in))

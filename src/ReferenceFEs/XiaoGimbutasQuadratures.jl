@@ -12,7 +12,7 @@ Xiao-Gimbutas symmetric quadrature rule for simplices.
 
   `A numerical algorithm for the construction of efficient quadrature rules in two and higher dimensions`,
    Hong Xiao, Zydrunas Gimbutas, Computers & Mathematics with Applications, (2010),
-   DOI : https://doi.org/10.1016/j.camwa.2009.10.027
+   DOI : [10.1016/j.camwa.2009.10.027](https://doi.org/10.1016/j.camwa.2009.10.027)
 
 Adapted from: https://github.com/FEniCS/basix/blob/main/cpp/basix/quadrature.cpp,
               https://www.cims.nyu.edu/cmcl/quadratures/quadratures.html (appendix to the original paper, access via web archive)

@@ -109,7 +109,7 @@ end
     add_entry!(combine::Function,A,v,i...)
     add_entry!(A,v,i...)
 
-Add an entry. Returns A.
+Add an entry. Returns `A`.
 """
 @inline function add_entry!(combine::Function,args...)
   @abstractmethod
@@ -153,7 +153,7 @@ end
 """
     add_entries!(combine::Function,A,vs,is,js)
 
-Add several entries only for positive input indices. Returns A.
+Add several entries only for positive input indices. Returns `A`.
 """
 @inline function add_entries!(combine::Function,A,vs,is,js)
   _add_entries!(combine,A,vs,is,js)
@@ -221,14 +221,14 @@ end
 """
     muladd!(c,a,b)
 
-Matrix multiply a*b and add to result to c. Returns c.
+Matrix multiply `a*b` and add to result to `c`. Returns `c`.
 """
 muladd!(b,A,x) = mul!(b,A,x,one(eltype(b)),one(eltype(b)))
 
 """
     axpy_entries!(α::Number, A::T, B::T) where {T<: AbstractMatrix} -> T
 
-Efficient implementation of axpy! for sparse matrices.
+Efficient implementation of `LinearAlgebra.axpy!` for sparse matrices.
 """
 function axpy_entries!(α::Number, A::T, B::T) where {T<:AbstractMatrix}
   iszero(α) && return B

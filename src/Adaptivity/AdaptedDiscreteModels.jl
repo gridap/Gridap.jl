@@ -1,10 +1,12 @@
 
 """
     struct AdaptedDiscreteModel{Dc,Dp,A,B,C} <: DiscreteModel{Dc,Dp}
-where
-    A<:DiscreteModel{Dc,Dp}, B<:DiscreteModel{Dc,Dp}, C<:AdaptivityGlue
+      model  ::A <: DiscreteModel{Dc,Dp}
+      parent ::B <: DiscreteModel{Dc,Dp}
+      glue   ::C <: AdaptivityGlue
+    end
 
-`DiscreteModel` created by refining/coarsening another `DiscreteModel`.
+A `DiscreteModel` created by refining/coarsening another `DiscreteModel`.
 
 The refinement/coarsening hierarchy can be traced backwards by following the
 `parent` pointer chain. This allows the transfer of dofs

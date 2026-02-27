@@ -13,7 +13,7 @@ tetrahedra, squares, cubes, wedges and pyramids.
 
   `On the identification of symmetric quadrature rules for finite element methods`
   F.D. Witherden, P.E. Vincent, Computers & Mathematics with Applications (2015)
-  DOI: https://doi.org/10.1016/j.camwa.2015.03.017
+  DOI: [10.1016/j.camwa.2015.03.017](https://doi.org/10.1016/j.camwa.2015.03.017)
 """
 struct WitherdenVincent <: QuadratureName end
 

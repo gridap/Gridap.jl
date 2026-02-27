@@ -71,14 +71,14 @@ evaluate!(c,f::Field,x::Point) = @abstractmethod
 """
     function gradient end
 
-Abstract gradient, see [`Field`](@ref).
+Abstract gradient operator, see [`Field`](@ref).
 """
 function gradient end
 const ∇ = gradient
 """
     ∇∇(f) = gradient(gradient(f))
 
-hessian of f
+Abstract hessian operator.
 """
 ∇∇(f) = gradient(gradient(f))
 
@@ -124,18 +124,22 @@ function push_∇∇(∇∇a::Field,ϕ::Field)
 end
 
 """
-    gradient_type(::Type{T},x::Point) where T
+    gradient_type(::Type{T}, x::Point) where T
+
+Tensor type of the gradient of a `T` valued function.
 """
 function gradient_type(::Type{T},x::Point) where T
   typeof(outer(zero(x),zero(T)))
 end
 
 """
-Type that represents the gradient of a field. The wrapped field must
+    struct FieldGradient{N,F} <: Field
+
+Type that represents the gradient of a field `F`. The wrapped field must
 implement `evaluate_gradient!` and `return_gradient_cache` for this gradient
 to work.
 
-N is how many times the gradient is applied
+`N` is how many times the gradient is applied.
 """
 struct FieldGradient{N,F} <: Field
   object::F
@@ -188,6 +192,8 @@ end
 # GenericField
 
 """
+    struct GenericField{T} <: Field
+
 A wrapper for objects that can act as fields, e.g., functions which implement the `Field` API.
 """
 struct GenericField{T} <: Field
@@ -227,7 +233,9 @@ testitem(a::Field) = a
 Base.zero(a::Field) = ZeroField(a)
 
 """
-It represents `0.0*f` for a field `f`.
+    struct ZeroField{F} <: Field
+
+It represents `0.0*f` for a field `f::F`.
 """
 struct ZeroField{F} <: Field
   field::F
@@ -350,7 +358,9 @@ evaluate!(c,f::FieldGradient{N,<:Function},x::Point) where N = c(x)
 # Operations
 
 """
-A `Field` that is obtained as a given operation over a tuple of fields.
+    struct OperationField{O,F} <: Field
+
+A `Field` that is obtained as a given operation `op::O` over a tuple of fields `fields::F`.
 """
 struct OperationField{O,F} <: Field
   op::O

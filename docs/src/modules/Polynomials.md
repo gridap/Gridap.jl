@@ -178,7 +178,7 @@ and homogeneous P spaces
 The Kᵗʰ Nédélec polynomial spaces on respectively rectangles and
 triangles are defined by
 ```math
-\mathcal{ND}^2_K(\square^2) = \left(\mathcal{Q}^2_K\right)^2 ⊕
+\mathcal{ND}^2_K(\square) = \left(\mathcal{Q}^2_K\right)^2 ⊕
     \left(\begin{array}{c} y^{K+1}\,\mathcal{P}_K(x)\\ x^{K+1}\,\mathcal{P}_K(y) \end{array}\right)
 ,\qquad
 \mathcal{ND}^2_K(\bigtriangleup) =\left(\mathcal{P}^2_K\right)^2 ⊕\bm{x}\times(\tilde{\mathcal{P}}^2_K)^2,

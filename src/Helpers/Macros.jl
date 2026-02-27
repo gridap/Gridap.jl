@@ -49,8 +49,8 @@ macro unreachable(message="This line of code cannot be reached")
 end
 
 """
-  @check condition
-  @check condition "Error message"
+    @check condition
+    @check condition "Error message"
 
 Macro used to make sure that condition is fulfilled, like `@assert`
 but the check gets deactivated when running Gridap in performance mode.

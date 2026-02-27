@@ -1,5 +1,5 @@
 """
-Given a Discrete Model and a reffe, builds a new grid in which the geometrical
+Given a discrete model and a reffe, builds a new grid in which the geometrical
 map is a `FEFunction`. This is useful when considering geometrical maps that are
 the result of a FE problem (mesh displacement).
 """
