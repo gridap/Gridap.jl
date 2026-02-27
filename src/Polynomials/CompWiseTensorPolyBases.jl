@@ -1,7 +1,7 @@
 """
     CompWiseTensorPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
 
-"Polynomial basis of component wise tensor product polynomial spaces"
+"Polynomial basis of component-wise tensor-product scalar spaces"
 
 Polynomial basis for a `D`-multivariate `V`-valued polynomial space:
 
@@ -71,7 +71,7 @@ end
 """
     CompWiseTensorPolyBasis{D}(PT, V, orders::Matrix{Int})
 
-Define each component scalar space 𝕊ⱼ as a the full tensor product space of 1D
+Define each component scalar space 𝕊ⱼ as a the full tensor-product space of 1D
 spaces of orders α(j,n) for 1 ≤ n ≤ `D`, that is:
 
 𝕊₁ = ℙα₁₁(x₁) ⊗ … ⊗ ℙα₁`D`(x`D`)\\

@@ -30,7 +30,7 @@ The default `PT` is `Bernstein` on simplices and `ModalC0` on D-cubes.
 ### kwargs
 - `rotate_90::Bool`: only if `D`=2 and `k`=1, tells to use the vector proxy corresponding to div conform function instead of curl conform ones.
 - `vertices=nothing`: for `PT=Bernstein` bases on simplices (`F = :P` or `:P⁻`), the basis is defined on the simplex defined by `vertices` instead of the reference one.
-- `cart_prod=false`: for `k`=0 or `k=D`, authorise `T` to be a tensor type for Cartesian product of the scalar polynomial space.
+- `cart_prod=false`: for `k`=0 or `k=D`, authorise `T` to be a tensor type for Cartesian product space of the scalar space.
 """ # document DG_calc once it's implemented
 function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(F);
     DG_calc=false, rotate_90=false, vertices=nothing, cart_prod=false) where {D,T}

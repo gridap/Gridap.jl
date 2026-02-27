@@ -5,10 +5,11 @@
 """
     struct CartProdPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
 
-"Cartesian product of a scalar tensor polynomial basis"
+"Basis for the Cartesian product of the span of scalar polynomial basis"
 
 Type representing a basis of a (an)isotropic `D`-multivariate `V`-valued
-cartesian product polynomial space
+cartesian product polynomial space. The basis is obtained by direct sum of
+copies of the scalar basis, scattered over each independant component of `V`, as in
 
 `V`(𝕊, ∅, ..., ∅) ⊕ `V`(∅, 𝕊, ∅, ..., ∅) ⊕ ... ⊕ `V`(∅, ..., ∅, 𝕊)
 

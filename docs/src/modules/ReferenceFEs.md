@@ -82,8 +82,15 @@ Also, a Cartesian product finite-element space is available for all the `:H1`
 conforming elements, for all polytopes. It means that a tensor type
 ([`<:MultiValue`](@ref Gridap.TensorValues)) can be given as value type
 argument `T`, for example `VectorValue{3,Float64}` or
-`SymTensorValue{2,Float64}`. The DoFs are duplicated for each independent
-component of the tensor.
+`SymTensorValue{2,Float64}`.
+
+The function space is the Cartesian product of the scalar space, where a copy
+of the scalar space is assigned to each independent component of the tensor,
+and same for the DOF. For example, the function space of `ReferenceFE(SEGMENT,
+lagrangian, VectorValue{2,Float64}, 1)` is `{ VectorValue(x₁,x₂) | x₁ ∈ 𝓟¹,  x₂
+∈ 𝓟¹ }`. Its basis is a direct sum basis of the scalar basis duplicated over
+each component: `{VectorValue{1,0}, VectorValue{x,0}, VectorValue{0,1},
+VectorValue{0,x} }`
 
 The `modalC0` element has the particularity that the support of its
 shape-function can be scaled to be adapted to the physical element.
