@@ -209,5 +209,25 @@ eh = fh - f
 #using Gridap.Visualization
 #writevtk(trian,"trian",nsubcells=10,cellfields=["uh"=>uh])
 
+# Regression test for PR #1222: TransformNedelecDofBasis.evaluate! used
+# Jtx[p] instead of Jtx[face_point_ids[p]], causing wrong Jacobian indexing.
+@testset "Regression #1222: TransformNedelecDofBasis Jacobian indexing" begin
+  domain    = (0,1,0,1)
+  partition = (3,3)
+  model     = CartesianDiscreteModel(domain,partition) |> simplexify
+  u((x,y)) = VectorValue(x + y, x - y)
+  order = 1
+  reffe = ReferenceFE(nedelec,order)
+  V = TestFESpace(model,reffe,dirichlet_tags="boundary")
+  U = TrialFESpace(V,u)
+  uh = interpolate(u,U)
+  # DOF values must be finite (wrong Jacobian indexing can produce NaN/Inf)
+  @test all(isfinite, get_free_dof_values(uh))
+  # Interpolation must be exact for a field representable in this Nedelec space
+  Ω  = Triangulation(model)
+  dΩ = Measure(Ω,order+1)
+  e  = u - uh
+  @test sqrt(sum(∫(e⋅e)*dΩ)) < 1.0e-10
+end
 
 end # module
