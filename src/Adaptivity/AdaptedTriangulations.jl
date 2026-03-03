@@ -22,10 +22,17 @@ struct AdaptedTriangulation{Dc,Dp,A<:Triangulation{Dc,Dp},B<:AdaptedDiscreteMode
   end
 end
 
+"""
+    get_adapted_model(trian::AdaptedTriangulation)
+"""
 function get_adapted_model(t::AdaptedTriangulation)
   return t.adapted_model
 end
 
+"""
+    get_adaptivity_glue(model::AdaptedDiscreteModel)
+    get_adaptivity_glue(trian::AdaptedTriangulation)
+"""
 function get_adaptivity_glue(t::AdaptedTriangulation)
   return get_adaptivity_glue(get_adapted_model(t))
 end

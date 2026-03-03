@@ -304,7 +304,7 @@ end
 """
     append_ptrs(pa,pb)
 
-Append two vectors of pointers.
+Concatenate two vectors of pointers in a new vector.
 """
 function append_ptrs(pa::AbstractVector{T},pb::AbstractVector{T}) where T
   p = copy(pa)
@@ -312,6 +312,10 @@ function append_ptrs(pa::AbstractVector{T},pb::AbstractVector{T}) where T
 end
 
 """
+    append_ptrs!(pa,pb)
+
+Similar to [`append_ptrs`](@ref), but appends `pb` at the end of `pa`, in place
+in `pa`.
 """
 function append_ptrs!(pa::AbstractVector{T},pb::AbstractVector{T}) where T
   na = length(pa)-1
@@ -339,12 +343,12 @@ function _append_count!(pa,pb,na,nb)
 end
 
 """
+    const UNSET = 0
 """
 const UNSET = 0
 
 """
-    find_inverse_index_map(a_to_b[, nb=maximum(a_to_b)])
-    find_inverse_index_map!(b_to_a, a_to_b)
+    find_inverse_index_map(a_to_b, nb=maximum(a_to_b))
 
 Given a vector of indices `a_to_b`, returns the inverse index map `b_to_a`.
 """
@@ -355,6 +359,11 @@ function find_inverse_index_map(a_to_b, nb=maximum(a_to_b))
   b_to_a
 end
 
+"""
+    find_inverse_index_map!(b_to_a, a_to_b)
+
+In place [`find_inverse_index_map`](@ref).
+"""
 function find_inverse_index_map!(b_to_a, a_to_b)
   for (a,b) in enumerate(a_to_b)
     if b != UNSET
@@ -422,6 +431,7 @@ function inverse_table(
 end
 
 """
+    append_tables_globally(tables::Table...)
 """
 function append_tables_globally(
   first_table::Table{T,Vd,Vp}, tables::Table{T,Vd,Vp}...
@@ -444,8 +454,6 @@ function append_tables_locally(tables::Table...)
   append_tables_locally(offsets,tables)
 end
 
-"""
-"""
 function append_tables_locally(offsets::NTuple, tables::NTuple)
   @check length(offsets) == length(tables) !== 0 "Offsets and tables must have the same length"
   first_table, = tables
@@ -527,6 +535,11 @@ function lazy_map(::typeof(getindex),a::Table,b::AbstractArray{<:Integer})
   LocalItemFromTable(a,b)
 end
 
+"""
+    get_local_item(a::Table,li::Integer)
+
+View in the `li`ᵗʰ column of `a` (the `li`ᵗʰ items in each list/row of `a`).
+"""
 function get_local_item(a::Table,li::Integer)
   LocalItemFromTable(a,Fill(li,length(a)))
 end

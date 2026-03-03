@@ -44,6 +44,11 @@ struct SkeletonTriangulation{Dc,Dp,B,C} <: Triangulation{Dc,Dp}
   end
 end
 
+"""
+    Skeleton(args...; kwargs...)
+
+Alias for [`SkeletonTriangulation`](@ref)(args..., kwargs...).
+"""
 function Skeleton(args...;kwargs...)
   SkeletonTriangulation(args...;kwargs...)
 end
@@ -118,8 +123,8 @@ end
 # Constructors
 
 """
-    SkeletonTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
     SkeletonTriangulation(model::DiscreteModel)
+    SkeletonTriangulation(model::DiscreteModel, face_to_mask::AbstractVector{Bool})
 """
 function SkeletonTriangulation(model::DiscreteModel,face_to_mask::AbstractVector{Bool})
   left_cell_around = 1
@@ -243,6 +248,11 @@ function InterfaceTriangulation(model::DiscreteModel,cell_to_is_in::Vector{Bool}
   InterfaceTriangulation(model,cell_to_inout)
 end
 
+"""
+    Interface(args...; kwargs...)
+
+Alias for [`InterfaceTriangulation`](@ref)(args...; kwargs...).
+"""
 function Interface(args...;kwargs...)
   InterfaceTriangulation(args...;kwargs...)
 end

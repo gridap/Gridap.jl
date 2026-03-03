@@ -70,6 +70,10 @@ end
 
 """
     get_reffes(trian::Grid) -> Vector{LagrangianRefFE}
+
+The geometric reference FE of each cell type of `trian`. That is, the reference
+FE whose shape functions define the geometric map from the reference element
+to any cell of this type. See also [`get_cell_type(trian)`](@ref).
 """
 function get_reffes(trian::Grid)
   @abstractmethod
@@ -77,6 +81,10 @@ end
 
 """
     get_cell_type(trian::Grid) -> AbstractVector{<:Integer}
+
+Index of each cell type, which identifies
+  - the cell polytopes if indexing into [`get_polytopes(trian)`](@ref), or
+  - the cell geometric reference FEs if indexing into [`get_reffes(trian)`](@ref).
 """
 function get_cell_type(trian::Grid)
   @abstractmethod
@@ -96,6 +104,11 @@ function get_facet_normal(trian::Grid)
 end
 
 # Polytopes might be repeated, but it's OK
+"""
+    get_polytopes(trian::Grid) -> Vector{<:Polytope}
+
+The reference polytope of each cell type of `trian`. See also [`get_cell_type(trian)`](@ref).
+"""
 function get_polytopes(trian::Grid)
   map(get_polytope,get_reffes(trian))
 end
@@ -227,6 +240,9 @@ function get_cell_map(trian::Grid)
   lazy_map(linear_combination,cell_to_coords,cell_to_shapefuns)
 end
 
+"""
+    get_cell_coordinates(grid::Grid)
+"""
 function get_cell_coordinates(trian::Grid)
   node_to_coords = get_node_coordinates(trian)
   cell_to_nodes = get_cell_node_ids(trian)

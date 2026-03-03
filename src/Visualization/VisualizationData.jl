@@ -1,9 +1,13 @@
-
+"""
+    struct VisualizationData
+    VisualizationData(grid::Grid, filebase::AbstractString; celldata=Dict(), nodaldata=Dict())
+"""
 struct VisualizationData
   grid::Grid
   filebase::AbstractString
   celldata
   nodaldata
+
   function VisualizationData(grid::Grid,filebase::AbstractString;celldata=Dict(),nodaldata=Dict())
     new(grid,filebase,celldata,nodaldata)
   end

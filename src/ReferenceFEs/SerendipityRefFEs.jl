@@ -1,12 +1,26 @@
 
 """
-    SerendipityRefFE(::Type{T},p::Polytope,order::Int) where T
-    SerendipityRefFE(::Type{T},p::Polytope,orders::Tuple) where T
+    struct Serendipity  <: ReferenceFEName
+"""
+struct Serendipity <: ReferenceFEName end
 
-Returns an instance of `LagrangianRefFE`, whose underlying approximation space
-is the serendipity space of order `order`. Implemented for order from 1 to 4.
+"""
+    const serendipity = Serendipity()
+
+Singleton of the [`Serendipity`](@ref) reference FE name.
+"""
+const serendipity = Serendipity()
+
+"""
+    SerendipityRefFE(::Type{T}, p::Polytope, order::Int)
+    SerendipityRefFE(::Type{T}, p::Polytope, orders::Tuple)
+
+Return a Lagrangian reference FE whose underlying approximation space is the
+serendipity polynomial space 𝕊r of order `order`. Implemented on n-cubes with
+homogneous order.
+
 The type of the polytope `p` has to implement all the queries detailed in the
-constructor [`LagrangianRefFE(::Type{T},p::Polytope{D},orders) where {T,D}`](@ref).
+constructor [`LagrangianRefFE(::Type{T}, p::Polytope{D}, orders) where {T,D}`](@ref).
 
 # Examples
 
@@ -20,24 +34,37 @@ println( num_dofs(reffe) )
 
 # output
 8
-
 ```
+
+!!! warning
+    For dimension D ≥ 3 and order ≥ 5, conforming serendipity elements only work
+    on cartesian meshes (meshes with all geometrical mappings having diagonal
+    Jacobians).
 """
-function SerendipityRefFE(::Type{T},p::Polytope,order::Int) where T
+function SerendipityRefFE(::Type{T},p::Polytope,order::Int;
+  poly_type=Monomial) where T
+
   @assert is_n_cube(p) "Polytope not compatible with serendipity elements"
   if order > 0
-    sp = SerendipityPolytope(p) 
+    sp = SerendipityPolytope(p)
   else
     sp = p
   end
-  LagrangianRefFE(T,sp,order)
+  LagrangianRefFE(T,sp,order; poly_type)
 end
 
-function SerendipityRefFE(::Type{T},p::Polytope,orders::Tuple) where T
+function SerendipityRefFE(::Type{T},p::Polytope,orders::Tuple;
+  poly_type=Monomial) where T
+
   order = first(orders)
-  @assert all( orders .== order ) "Anisotropic serentopity FEs not allowed"
-  SerendipityRefFE(T,p,order)
+  @assert all( orders .== order ) "Serendipity FEs must be isotropic, got orders $orders."
+  SerendipityRefFE(T,p,order; poly_type)
 end
+
+function ReferenceFE(p::Polytope,::Serendipity,::Type{T},order;kwargs...) where T
+  SerendipityRefFE(T,p,order;kwargs...)
+end
+
 
 # Helper private type
 struct SerendipityPolytope{D,P} <: Polytope{D}
@@ -87,12 +114,14 @@ get_extrusion(p::SerendipityPolytope{D}) where D = Point(tfill(HEX_AXIS,Val{D}()
 
 # Implemented polytope interface for LagrangianRefFEs
 
-function _s_filter(e,order)
-  sum( [ i for i in e if i>1 ] ) <= order
+function compute_monomial_basis(::Type{T},p::SerendipityPolytope{D},orders) where {T,D}
+  MonomialBasis(Val(D),T,orders,_ser_filter)
 end
 
-function compute_monomial_basis(::Type{T},p::SerendipityPolytope{D},orders) where {T,D}
-  MonomialBasis{D}(T,orders,_s_filter)
+function compute_poly_basis(::Type{T},p::SerendipityPolytope{D},orders,poly_type) where {T,D}
+  FEEC_poly_basis
+  r = iszero(D) ? 0 : first(orders)
+  FEEC_poly_basis(Val(D),T,r,0,:S,poly_type) # SᵣΛ⁰(□ᴰ)
 end
 
 function compute_own_nodes(p::SerendipityPolytope{0},orders)

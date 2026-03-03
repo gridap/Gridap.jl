@@ -26,6 +26,35 @@ reffe = BDMRefFE(et,p,order)
 @test num_dofs(reffe) == 6
 @test Conformity(reffe) == DivConformity()
 
+face_own_dofs = Vector{Int}[[],[],[],[1,2],[3,4],[5,6],[]]
+face_dofs = Vector{Int}[[],[],[],[1,2],[3,4],[5,6],[1,2,3,4,5,6]]
+@test get_face_own_dofs(reffe) == face_own_dofs
+@test get_face_dofs(reffe) == face_dofs
+
+prebasis = get_prebasis(reffe)
+dof_basis = get_dof_basis(reffe)
+
+v = VectorValue(3.0,0.0)
+field = GenericField(x->v*x[1])
+
+cache = return_cache(dof_basis,field)
+r = evaluate!(cache, dof_basis, field)
+test_dof_array(dof_basis,field,r)
+
+cache = return_cache(dof_basis,prebasis)
+r = evaluate!(cache, dof_basis, prebasis)
+test_dof_array(dof_basis,prebasis,r)
+
+order = 3
+
+reffe = BDMRefFE(et,p,order)
+@test_warn "falling back to `change_dof=false`" BDMRefFE(et,p,order; change_dof=true, poly_type=Monomial)
+
+@test length(get_prebasis(reffe)) == 20
+@test get_order(get_prebasis(reffe)) == 3
+@test num_dofs(reffe) == 20
+@test Conformity(reffe) == DivConformity()
+
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
 
@@ -79,18 +108,53 @@ cache = return_cache(dof_basis,prebasis)
 r = evaluate!(cache, dof_basis, prebasis)
 test_dof_array(dof_basis,prebasis,r)
 
+order = 3
+
+reffe = BDMRefFE(et,p,order)
+test_reference_fe(reffe)
+@test length(get_prebasis(reffe)) == 60
+@test num_dofs(reffe) == 60
+@test get_order(get_prebasis(reffe)) == 3
+@test Conformity(reffe) == DivConformity()
+
+prebasis = get_prebasis(reffe)
+dof_basis = get_dof_basis(reffe)
+
+v = VectorValue(0.0,3.0,0.0)
+field = GenericField(x->v)
+
+cache = return_cache(dof_basis,field)
+r = evaluate!(cache, dof_basis, field)
+test_dof_array(dof_basis,field,r)
+
+cache = return_cache(dof_basis,prebasis)
+r = evaluate!(cache, dof_basis, prebasis)
+test_dof_array(dof_basis,prebasis,r)
+
+
 # Factory function
 reffe = ReferenceFE(TET,bdm,1)
+@test reffe == ReferenceFE(TET,:P,1,2) # r=1, k=2
 @test length(get_prebasis(reffe)) == 12
 @test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 12
 @test Conformity(reffe) == DivConformity()
 
+@test_warn "falling back to `change_dof=false`" ReferenceFE(TET,bdm,1; poly_type=Monomial)
+
 reffe = ReferenceFE(TET,bdm,Float64,1)
+@test reffe == ReferenceFE(TET,:P,1,2,Float64) # r=1, k=2
 @test length(get_prebasis(reffe)) == 12
 @test get_order(get_prebasis(reffe)) == 1
 @test num_dofs(reffe) == 12
 @test Conformity(reffe) == DivConformity()
+
+reffe = ReferenceFE(TRI,bdm,1)
+@test reffe == ReferenceFE(TRI,:P,1,1; rotate_90=true) # r=1, k=2
+
+# Serendipity BDM not implemented
+@test_throws ErrorException ReferenceFE(QUAD,:S,1,1; rotate_90=true)
+@test_throws ErrorException ReferenceFE(HEX, :S,1,2)
 
 @test Conformity(reffe,:L2) == L2Conformity()
 @test Conformity(reffe,:Hdiv) == DivConformity()

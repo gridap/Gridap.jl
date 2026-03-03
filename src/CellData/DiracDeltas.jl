@@ -7,8 +7,23 @@ struct GenericDiracDelta{D,Dt,S<:DiracDeltaSupportType} <: GridapType
   dΓ::Measure
 end
 
+"""
+    const DiracDelta{D} = GenericDiracDelta{D,D,IsGridEntity}
+"""
 const DiracDelta{D} = GenericDiracDelta{D,D,IsGridEntity}
 
+"""
+    DiracDelta{D}(model::DiscreteModel, degree; tags)
+    DiracDelta{0}(model::DiscreteModel; tags)
+    DiracDelta{D}(model::DiscreteModel, labeling::FaceLabeling, degree; tags)
+    DiracDelta{0}(model::DiscreteModel, labeling::FaceLabeling; tags)
+    DiracDelta{D}(model::DiscreteModel, face_to_bgface::AbstractVector{<:Integer}, degree)
+    DiracDelta{D}(model::DiscreteModel, bgface_to_mask::AbstractVector{Bool}, degree)
+    DiracDelta(   model::DiscreteModel{D}, p::Point{D,T})
+    DiracDelta(   model::DiscreteModel{D}, pvec::Vector{Point{D,T}})
+
+where `degree` isa `Integer`.
+"""
 function DiracDelta{D}(
   model::DiscreteModel,
   face_to_bgface::AbstractVector{<:Integer},

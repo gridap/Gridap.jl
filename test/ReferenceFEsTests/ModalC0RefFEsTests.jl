@@ -20,6 +20,7 @@ test_reference_fe(m)
 
 @test num_dofs(m) == num_dofs(l)
 @test Conformity(m) === Conformity(l)
+@test get_face_own_dofs(m) == get_face_own_dofs(l)
 @test get_face_own_dofs(m,Conformity(m)) == get_face_own_dofs(l,Conformity(l))
 @test get_face_own_dofs_permutations(m,Conformity(m)) == get_face_own_dofs_permutations(l,Conformity(l))
 

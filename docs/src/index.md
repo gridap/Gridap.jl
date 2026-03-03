@@ -2,21 +2,19 @@
 
 Documentation of the Gridap library.
 
-!!! note
-
-     These documentation pages are under construction.
-
 ## Introduction
 
-Gridap provides a set of tools for the grid-based approximation of
-partial differential equations (PDEs) written in the
-[Julia programming language](https://julialang.org/).
+Gridap provides a set of tools for the grid-based approximation of partial differential equations (PDEs) written in the [Julia programming language](https://julialang.org/).
 The main motivation behind the development of this library is to provide an easy-to-use framework for the development of complex PDE solvers in a dynamically typed style without sacrificing the performance of statically typed languages.
 The library currently supports linear and nonlinear PDE systems for scalar and vector fields, single and multi-field problems, conforming and nonconforming finite element discretizations, on structured and unstructured meshes of simplices and hexahedra.
 
 ## How to use this documentation
 
 * The first step for new users is to visit the [Getting Started](@ref) page.
+
+* For a high-level overview of Gridap's capabilities, see [Gridap at a glance](@ref).
+
+* To explore the extended capabilities available through companion packages, check out the [Gridap ecosystem](@ref).
 
 * A set of tutorials written as Jupyter notebooks and html pages are available [here](https://github.com/gridap/Tutorials).
 
@@ -37,22 +35,23 @@ Here, one can find a list of resources to get started with this programming lang
 
 ```@contents
 Pages = [
-  "Gridap.md",
-  "Helpers.md",
-  "Io.md",
-  "Algebra.md",
-  "Arrays.md",
-  "TensorValues.md",
-  "Fields.md",
-  "Polynomials.md",
+  "overview.md",
+  "ecosystem.md",
+  "modules/Helpers.md",
+  "modules/Io.md",
+  "modules/Algebra.md",
+  "modules/Arrays.md",
+  "modules/TensorValues.md",
+  "modules/Fields.md",
+  "modules/Polynomials.md",
   "Integration.md",
-  "ReferenceFEs.md",
-  "Geometry.md",
-  "CellData.md",
-  "Visualization.md",
-  "FESpaces.md",
-  "MultiField.md",
-  "ODEs.md",
-  "Adaptivity.md",
+  "modules/ReferenceFEs.md",
+  "modules/Geometry.md",
+  "modules/CellData.md",
+  "modules/Visualization.md",
+  "modules/FESpaces.md",
+  "modules/MultiField.md",
+  "modules/ODEs.md",
+  "modules/Adaptivity.md",
   ]
 ```

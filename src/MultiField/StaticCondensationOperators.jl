@@ -10,6 +10,10 @@ struct StaticCondensationOperator <: FEOperator
   sc_op
 end
 
+"""
+    function StaticCondensationOperator(full_space::FESpace, args...; kwargs...)
+    function StaticCondensationOperator(ptopo, full_space::FESpace, args...; kwargs...)
+"""
 function StaticCondensationOperator(
   full_space :: FESpace,
   eliminated_space :: FESpace,

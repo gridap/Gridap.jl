@@ -11,12 +11,12 @@ using Gridap.CellData
 using Gridap.Fields
 using Gridap.ReferenceFEs
 
-domain =(0,1,0,1)
+domain = (0,1,0,1)
 partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)
-order = 1
+order = 2
 u((x,y)) = 2*VectorValue(2,3)
-reffe = ReferenceFE(nedelec,order)
+reffe = ReferenceFE(QUAD,nedelec,order)
 V = TestFESpace(model,reffe,dirichlet_tags = "boundary")
 test_single_field_fe_space(V)
 U = TrialFESpace(V,u)
@@ -29,12 +29,12 @@ el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
 #using Gridap.Visualization
 #writevtk(Ω,"nedel",nsubcells=10,cellfields=["err"=>e,"u"=>u,"uh"=>uh])
 
-domain =(0,1,0,1)
+domain = (0,1,0,1)
 partition = (3,3)
 model = CartesianDiscreteModel(domain,partition) |> simplexify
 order = 0
 u((x,y)) = 2*VectorValue(-y,x)
-reffe = ReferenceFE(nedelec,order)
+reffe = ReferenceFE(TRI,nedelec,order)
 V = TestFESpace(model,reffe,dirichlet_tags = "boundary")
 test_single_field_fe_space(V)
 U = TrialFESpace(V,u)
@@ -76,7 +76,7 @@ model = CartesianDiscreteModel(domain,partition) |> simplexify
 dΩ = Measure(Ω,order)
 u((x,y,z)) = 2*VectorValue(-y,x,0.) - VectorValue(0.,-z,y)
 order = 0
-reffe = ReferenceFE(nedelec,order)
+reffe = ReferenceFE(TET,nedelec,order)
 V = TestFESpace(model,reffe,dirichlet_tags = "boundary")
 test_single_field_fe_space(V)
 U = TrialFESpace(V,u)
@@ -103,7 +103,7 @@ e = u - uh
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
 @test el2 < 1.0e-10
 
-domain =(0,1,0,1,0,1)
+domain = (0,1,0,1,0,1)
 partition = (3,3,3)
 model = CartesianDiscreteModel(domain,partition)
 
@@ -113,8 +113,7 @@ u(x) = VectorValue(x[1]*x[1],x[1]*x[1]*x[1],0.0)
 #u(x) = VectorValue(2,3,5)
 # u(x) = x
 
-reffe = ReferenceFE(nedelec,order)
-
+reffe = ReferenceFE(HEX,nedelec,order)
 
 V = TestFESpace(model,reffe,dirichlet_tags = [21,22])
 # dirichlet_tags = "boundary")
@@ -143,7 +142,6 @@ bgface_to_mask = get_face_mask(labels,"boundary",2)
 Dc2Dp3model = DiscreteModelPortion(DiscreteModel(Polytope{2},model),Γface_to_bgface)
 
 order  = 0
-degree = 1
 
 reffe_nd = ReferenceFE(nedelec,Float64,order)
 V  = TestFESpace(Dc2Dp3model, reffe_nd ; conformity=:HCurl)
@@ -159,13 +157,13 @@ dΩ = Measure(Ω,2*order)
 e=sqrt(sum(∫((uh-vh)⋅(uh-vh))dΩ))
 @test e < 1.0e-12
 
-# Test a case for an oriented mesh for which the unit normals on a 
+# Test a case for an oriented mesh for which the unit normals on a
 # shared facet among two cells point in opposite directions from
 # the perspective of either cell. Properly handling this case requires
 # an implementation of Nedelec Reference FEs which incorporates global
 # mesh information when evaluating the DoFs on each cell.
 
-function setup_model() 
+function setup_model()
     ptr  = [ 1, 9, 17 ]
     data = [ 5, 1, 7, 3, 6, 2, 8, 4, 11, 9, 12, 10, 7, 3, 8, 4 ]
     cell_vertex_lids = Gridap.Arrays.Table(data,ptr)
@@ -192,12 +190,14 @@ function setup_model()
                                             cell_types,
                                             Gridap.Geometry.NonOriented())
     m=Gridap.Geometry.UnstructuredDiscreteModel(grid)
-    m  
+    m
 end
 
 model = setup_model()
-order = 1 # Smallest nedelec FE order for which we have DoFs on the cell facets
-R = TestFESpace(model, ReferenceFE(nedelec,Float64,order);conformity=:Hcurl)
+order = 1 # Smallest nedelec FE order for which we have DoFs on the cell facetypes
+# Due to symmetry of Bernstein polynomials, switching to Monomial is necessary to see the issue
+nedelec_reffe = ReferenceFE(nedelec,Float64,order; poly_type=Gridap.Polynomials.Monomial, change_dof=false)
+R = TestFESpace(model, nedelec_reffe;conformity=:Hcurl)
 
 f(x) = VectorValue(x[2]*x[3],x[1]*x[3],x[1]*x[2])
 fh = interpolate(f,R)
