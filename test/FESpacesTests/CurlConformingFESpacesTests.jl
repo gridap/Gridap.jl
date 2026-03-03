@@ -209,23 +209,28 @@ eh = fh - f
 #using Gridap.Visualization
 #writevtk(trian,"trian",nsubcells=10,cellfields=["uh"=>uh])
 
-# Regression test for PR #1222: TransformNedelecDofBasis.evaluate! used
-# Jtx[p] instead of Jtx[face_point_ids[p]], causing wrong Jacobian indexing.
-@testset "Regression #1222: TransformNedelecDofBasis Jacobian indexing" begin
+# Regression test for PR #1222: TransformNedelecDofBasis.evaluate! must use
+# Jtx[face_point_ids[p]], not Jtx[p].  Affine cells (rectangular quads or
+# simplices) have a constant Jacobian, so both indices coincide and the bug is
+# latent.  A bilinear (non-affine) quad mesh makes the Jacobian vary across
+# DOF nodes of different edges, exposing the wrong-index path.  The constant
+# field (2,3) is exactly representable in the physical Nedelec space for any
+# bilinear quad (its co-variant pullback J·u lies in QGrad_1), so the correct
+# code gives machine-precision L2 error while the buggy code gives O(0.04).
+@testset "Regression #1222: non-affine Jacobian indexing in TransformNedelecDofBasis" begin
   domain    = (0,1,0,1)
-  partition = (3,3)
-  model     = CartesianDiscreteModel(domain,partition) |> simplexify
-  u((x,y)) = VectorValue(x + y, x - y)
-  order = 1
-  reffe = ReferenceFE(nedelec,order)
-  V = TestFESpace(model,reffe,dirichlet_tags="boundary")
-  U = TrialFESpace(V,u)
-  uh = interpolate(u,U)
-  # DOF values must be finite (wrong Jacobian indexing can produce NaN/Inf)
-  @test all(isfinite, get_free_dof_values(uh))
-  # Interpolation must be exact for a field representable in this Nedelec space
+  partition = (2,2)
+  model0    = CartesianDiscreteModel(domain, partition)
+  phi(x)   = VectorValue(x[1] + 0.1*x[1]*x[2], x[2])
+  model    = MappedDiscreteModel(model0, phi)
+  order    = 1
+  u(x)     = VectorValue(2.0, 3.0)
+  reffe    = ReferenceFE(nedelec, order)
+  V  = TestFESpace(model, reffe, dirichlet_tags="boundary")
+  U  = TrialFESpace(V, u)
+  uh = interpolate(u, U)
   Ω  = Triangulation(model)
-  dΩ = Measure(Ω,order+1)
+  dΩ = Measure(Ω, 2*order)
   e  = u - uh
   @test sqrt(sum(∫(e⋅e)*dΩ)) < 1.0e-10
 end
