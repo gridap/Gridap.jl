@@ -1,12 +1,11 @@
 
 """
+    struct AdaptedTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
 
-  Triangulation produced from an AdaptedDiscreteModel.
-  
-  Contains: 
+Triangulation produced from an AdaptedDiscreteModel. Contains:
 
-  - adapted_model :: `AdaptedDiscreteModel` for the triangulation.
-  - trian :: `Triangulation` extracted from the background model, i.e `get_model(adapted_model)`.
+- `trian :: A<:Triangulation{Dc,Dp}` extracted from the background model, i.e `get_model(adapted_model)`.
+- `adapted_model :: B<:AdaptedDiscreteModel` for the triangulation.
 """
 struct AdaptedTriangulation{Dc,Dp,A<:Triangulation{Dc,Dp},B<:AdaptedDiscreteModel} <: Triangulation{Dc,Dp}
   trian::A

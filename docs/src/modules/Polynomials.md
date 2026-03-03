@@ -82,10 +82,10 @@ The analog second kind shifted Chebyshev polynomials can be implemented by
 
 #### Bernstein polynomials
 
-The univariate [`Bernstein`](@ref) polynomials forming a basis of ``ℙ_K``
+The univariate [`Bernstein`](@ref) polynomials forming a basis of ``\mathcal{P}_K``
 are defined by
 ```math
-B^K_{n}(x) = \binom{K}{n} x^n (1-x)^{K-n}\qquad\text{ for } 0 ≤ n ≤ K.
+B^K_n(x) = \binom{K}{n} x^n (1-x)^{K-n}\qquad\text{ for } 0 ≤ n ≤ K.
 ```
 
 The ``D``-multivariate Bernstein polynomials of degree ``K`` are defined by
@@ -100,7 +100,7 @@ see the developer notes on the [Bernstein bases algorithms](@ref).
 
 The superscript ``D`` and ``K`` in ``B^{D,K}_α(x)`` can be omitted because they
 are always determined by ``α`` using ``{D=\#(α)-1}`` and ``K=|α|``. The set
-``\{B_α\}_{α∈\mathcal{I}_K^D}`` is a basis of ``ℙ^D_K``, implemented by
+``\{B_α\}_{α∈\mathcal{I}_K^D}`` is a basis of ``\mathcal{P}^D_K``, implemented by
 [`BernsteinBasisOnSimplex`](@ref).
 
 The Bernstein polynomials sum to ``1``, and are positive in the simplex.
@@ -120,51 +120,54 @@ coincides with the usual definition of the ModalC0 bases.
 
 ### Polynomial spaces in FEM
 
-#### P and Q spaces
+See also the excellent [DefElements.org](https://defelement.org/) website for more
+detailed definitions and examples.
 
-Let us denote ``ℙ_K(x)`` the space of univariate polynomials of order up to ``K`` in the varible ``x``
+#### ``\mathcal{P}`` and ``\mathcal{Q}`` spaces
+
+Let us denote ``\mathcal{P}_K(x)`` the space of univariate polynomials of order up to ``K`` in the varible ``x``
 ```math
-ℙ_K(x) = \text{Span}\big\{\quad x\rightarrow x^i \quad\big|\quad 0 ≤ i ≤ K \quad\big\}.
+\mathcal{P}_K(x) = \text{Span}\big\{\quad x\rightarrow x^i \quad\big|\quad 0 ≤ i ≤ K \quad\big\}.
 ```
 
-Then, ``ℚ^D`` and ``ℙ^D`` are the spaces for Lagrange elements
+Then, ``\mathcal{Q}^D`` and ``\mathcal{P}^D`` are the spaces for Lagrange elements
 on D-cubes and D-simplices respectively, defined by
 ```math
-ℚ^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^α \quad\big|\quad 0 ≤
+\mathcal{Q}^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^α \quad\big|\quad 0 ≤
     α_1, α_2, \dots, α_D  ≤ K \quad\big\},
 ```
 and
 ```math
-ℙ^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^α \quad\big|\quad 0 ≤
+\mathcal{P}^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^α \quad\big|\quad 0 ≤
     α_1, α_2, \dots, α_D  ≤ K;\quad ∑_{d=1}^D α_d  ≤
     K \quad\big\}.
 ```
 
-To note, there is ``ℙ_K = ℙ^1_K = ℚ^1_K``.
+To note, there is ``\mathcal{P}_K = \mathcal{P}^1_K = \mathcal{Q}^1_K``.
 
-#### Serendipity space Sr
+#### Serendipity space ``\mathcal{S}``r
 
 The serendipity space, commonly used for serendipity finite elements on n-cubes,
 are defined by
 ```math
-𝕊r^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^α \quad\big|\quad 0 ≤
+\mathcal{S}r^D_K = \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^α \quad\big|\quad 0 ≤
     α_1, α_2, \dots, α_D  ≤ K;\quad
     ∑_{d=1}^D α_d\;\mathbb{1}_{[2,K]}(α_d)  ≤ K \quad\big\}
 ```
 where ``\mathbb{1}_{[2,K]}(α_d)`` is ``1`` if ``α_d ≥ 2`` or else
 ``0``.
 
-#### Homogeneous P and Q spaces
+#### Homogeneous ``\mathcal{P}`` and ``\mathcal{Q}`` spaces
 
 It will later be useful to define the homogeneous Q spaces
 ```math
-\tilde{ℚ}^D_K = ℚ^D_K\backslashℚ^D_{K-1} =
+\tilde{\mathcal{Q}}^D_K = \mathcal{Q}^D_K\backslash\mathcal{Q}^D_{K-1} =
     \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^α \quad\big|\quad 0 ≤ α_1,
     α_2, \dots, α_D  ≤ K; \quad \text{max}(α) = K \quad\big\},
 ```
 and homogeneous P spaces
 ```math
-\tilde{ℙ}^D_K = ℙ^D_K\backslash ℙ^D_{K-1} =
+\tilde{\mathcal{P}}^D_K = \mathcal{P}^D_K\backslash \mathcal{P}^D_{K-1} =
     \text{Span}\big\{\quad \bm{x}\rightarrow\bm{x}^α \quad\big|\quad 0 ≤ α_1,
     α_2, \dots, α_D  ≤ K;\quad ∑_{d=1}^D α_d = K \quad\big\}.
 ```
@@ -175,10 +178,10 @@ and homogeneous P spaces
 The Kᵗʰ Nédélec polynomial spaces on respectively rectangles and
 triangles are defined by
 ```math
-ℕ𝔻^2_K(\square) = \left(ℚ^2_K\right)^2 ⊕
-    \left(\begin{array}{c} y^{K+1}\,ℙ_K(x)\\ x^{K+1}\,ℙ_K(y) \end{array}\right)
+\mathcal{ND}^2_K(\square) = \left(\mathcal{Q}^2_K\right)^2 ⊕
+    \left(\begin{array}{c} y^{K+1}\,\mathcal{P}_K(x)\\ x^{K+1}\,\mathcal{P}_K(y) \end{array}\right)
 ,\qquad
-ℕ𝔻^2_K(\bigtriangleup) =\left(ℙ^2_K\right)^2 ⊕\bm{x}\times(\tilde{ℙ}^2_K)^2,
+\mathcal{ND}^2_K(\bigtriangleup) =\left(\mathcal{P}^2_K\right)^2 ⊕\bm{x}\times(\tilde{\mathcal{P}}^2_K)^2,
 ```
 where ``\times`` here means ``\left(\begin{array}{c} x\\ y
 \end{array}\right)\times\left(\begin{array}{c} p(\bm{x})\\ q(\bm{x})
@@ -188,32 +191,32 @@ where ``\times`` here means ``\left(\begin{array}{c} x\\ y
 Then, the Kᵗʰ Nédélec polynomial spaces on respectively hexahedra and
 tetrahedra are defined by
 ```math
-ℕ𝔻^3_K(\square) = \left(ℚ^3_K\right)^3 ⊕ \bm{x}\times(\tilde{ℚ}^3_K)^3,\qquad
-ℕ𝔻^3_K(\bigtriangleup) =\left(ℙ^3_K\right)^3 ⊕ \bm{x}\times(\tilde{ℙ}^3_K)^3.
+\mathcal{ND}^3_K(\square) = \left(\mathcal{Q}^3_K\right)^3 ⊕ \bm{x}\times(\tilde{\mathcal{Q}}^3_K)^3,\qquad
+\mathcal{ND}^3_K(\bigtriangleup) =\left(\mathcal{P}^3_K\right)^3 ⊕ \bm{x}\times(\tilde{\mathcal{P}}^3_K)^3.
 ```
 
-``ℕ𝔻^D_K(\square)`` and ``ℕ𝔻^D_K(\bigtriangleup)`` are of
-order K+1 and the curl of their elements are in ``(ℚ^D_K)^D``
-and ``(ℙ^D_K)^D`` respectively.
+``\mathcal{ND}^D_K(\square)`` and ``\mathcal{ND}^D_K(\bigtriangleup)`` are of
+order K+1 and the curl of their elements are in ``(\mathcal{Q}^D_K)^D``
+and ``(\mathcal{P}^D_K)^D`` respectively.
 
 #### Raviart-Thomas and Nédélec ``div``-conforming Spaces
 
 The Kᵗʰ Raviart-Thomas polynomial spaces on respectively D-cubes and
 D-simplices are defined by
 ```math
-ℕ𝔻^D_K(\square) = \left(ℚ^D_K\right)^D ⊕ \bm{x}\;\tilde{ℚ}^D_K, \qquad
-ℕ𝔻^D_K(\bigtriangleup) = \left(ℙ^D_K\right)^D ⊕ \bm{x}\;\tilde{ℙ}^D_K,
+\mathcal{RT}^D_K(\square) = \left(\mathcal{Q}^D_K\right)^D ⊕ \bm{x}\;\tilde{\mathcal{Q}}^D_K, \qquad
+\mathcal{RT}^D_K(\bigtriangleup) = \left(\mathcal{P}^D_K\right)^D ⊕ \bm{x}\;\tilde{\mathcal{P}}^D_K,
 ```
-these bases are of dimension K+1 and the divergence of their elements are in
-``ℚ^D_K`` and ``ℙ^D_K`` respectively.
+these bases are of maximum degree K+1 and the divergence of their elements are in
+``\mathcal{Q}^D_K`` and ``\mathcal{P}^D_K`` respectively.
 
-#### ``ℙ_r^{-}Λ^k`` and ``ℙ_rΛ^k`` bases
+#### ``\mathcal{P}_r^{-}Λ^k`` and ``\mathcal{P}_rΛ^k`` bases
 
 Those bases are a generalization of the scalar Bernstein bases to the spaces for
 the two principal finite element families forming a de Rham complex on simplices.
 They are respectively implemented by [`BarycentricPmΛBasis`](@ref) and
 [`BarycentricPmΛBasis`](@ref). Their definition with references, and implementation
-details are provided in [this](@ref "Bernstein-basis-generalization-for-ℙΛ-spaces")
+details are provided in [this](@ref "Bernstein-basis-generalization-for-``\mathcal{P}Λ``-spaces")
 developer note.
 
 
@@ -222,7 +225,7 @@ developer note.
 Some `filter` functions are used to select which terms of a `D`-dimensional
 tensor product space of 1D polynomial bases are to be used to create a
 `D`-multivariate basis. When a filter can be chosen, the default filter is
-always the trivial filter for space of type ℚ, yielding the full tensor-product
+always the trivial filter for space of type 𝓠, yielding the full tensor-product
 space.
 
 The signature of the filter functions should be
@@ -237,11 +240,11 @@ The following example filters can be used to define associated polynomial spaces
 
 | space | filter                                                       | possible family                       |
 | :-----| :------------------------------------------------------------| :------------------------------------ |
-| ℚᴰ    | `_q_filter(e,order) = maximum(e) <= order`                   | All                                   |
-| ℚ̃ᴰₙ   | `_qh_filter(e,order) = maximum(e) == order`                  | [`Monomial`](@ref)                    |
-| ℙᴰ    | `_p_filter(e,order) = sum(e) <= order`                       | [`hierarchical`](@ref isHierarchical) |
-| ℙ̃ᴰₙ   | `_ph_filter(e,order) = sum(e) == order`                      | [`Monomial`](@ref)                    |
-| 𝕊rᴰₙ  | `_ser_filter(e,order) = sum( i for i in e if i>1 ) <= order` | [`hierarchical`](@ref isHierarchical) |
+| 𝓠ᴰ    | `_q_filter(e,order) = maximum(e) <= order`                   | All                                   |
+| 𝓠̃ᴰₙ   | `_qh_filter(e,order) = maximum(e) == order`                  | [`Monomial`](@ref)                    |
+| 𝓟ᴰ    | `_p_filter(e,order) = sum(e) <= order`                       | [`hierarchical`](@ref isHierarchical) |
+| 𝓟̃ᴰₙ   | `_ph_filter(e,order) = sum(e) == order`                      | [`Monomial`](@ref)                    |
+| 𝓢rᴰₙ  | `_ser_filter(e,order) = sum( i for i in e if i>1 ) <= order` | [`hierarchical`](@ref isHierarchical) |
 
 ## Types for polynomial families
 
@@ -291,7 +294,7 @@ BernsteinBasis(args...)
 ```
 !!! warning
     Calling `BernsteinBasis` with the filters (e.g. a `_p_filter`) rarely
-    yields a basis for the associated space (e.g. ``ℙ``).  Indeed, the
+    yields a basis for the associated space (e.g. ``\mathcal{P}``).  Indeed, the
     term numbers do not correspond to the degree of the polynomial, because the
     basis is not [`hierarchical`](@ref isHierarchical).
 

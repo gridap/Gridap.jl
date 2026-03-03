@@ -17,7 +17,7 @@ get_cell_conformity(f::UnconstrainedFESpace{V,<:CellConformity}) where V = f.met
 """
     struct GenericCellConformity <: CellConformity
 
-A generic CellConformity implementation that stores cell-wise data.
+A generic [`CellConformity`](@ref) implementation that stores cell-wise data.
 """
 struct GenericCellConformity{A,B,C,D,E} <: CellConformity
   cell_lface_own_ldofs::A
@@ -334,6 +334,11 @@ function _compute_cell_space(
 end
 
 """
+    compute_conforming_cell_dofs(
+      cell_conformity::CompressedCellConformity,
+      grid_topology, face_labeling, dirichlet_tags, dirichlet_components=nothing
+    )
+
 The result is the tuple
 
     (cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells)

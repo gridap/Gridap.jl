@@ -273,26 +273,19 @@ include("LocalFEOperators.jl")
 
 include("PatchFESpaces.jl")
 
-export get_free_values
 """
-    get_free_values(args...)
+deprecated
+!!! warning
+    deprecated in favor of [`get_free_dof_values`](@ref).
+"""
+function get_free_values end
+@deprecate get_free_values(args...) get_free_dof_values(args...)
 
-!!! danger
-    get_free_values has been removed. Use get_free_dof_values instead.
 """
-function get_free_values(args...)
-  @unreachable "get_free_values has been removed. Use get_free_dof_values instead."
-end
-
-export get_dirichlet_values
+!!! warning
+    deprecated in favor of [`get_dirichlet_dof_values`](@ref).
 """
-    get_dirichlet_values(args...)
-
-!!! danger
-    get_dirichlet_values has been removed. Use get_dirichlet_dof_values instead.
-"""
-function get_dirichlet_values(args...)
-  @unreachable "get_dirichlet_values has been removed. Use get_dirichlet_dof_values instead."
-end
+function get_dirichlet_values end
+@deprecate get_dirichlet_values(args...) get_dirichlet_dof_values(args...)
 
 end # module

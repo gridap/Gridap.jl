@@ -56,18 +56,3 @@ function ReferenceFE(p::Polytope,::HellanHerrmannJhonson,::Type{T}, order) where
   HellanHerrmannJhonsonRefFE(T,p,order)
 end
 
-function Conformity(reffe::GenericRefFE{HellanHerrmannJhonson},sym::Symbol)
-  hdiv = (:Hdiv,:HDiv)
-  if sym == :L2
-    L2Conformity()
-  elseif sym in hdiv
-    DivConformity()
-  else
-    @unreachable """\n
-    It is not possible to use conformity = $sym on a HellanHerrmannJhonson reference FE.
-
-    Possible values of conformity for this reference fe are $((:L2, hdiv...)).
-      """
-  end
-end
-

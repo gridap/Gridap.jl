@@ -10,7 +10,11 @@ isHierarchical(::Type{Legendre}) = true
 """
     LegendreBasis{D,V} = CartProdPolyBasis{D,V,Legendre}
 
-Alias for cartesian product Legendre basis, scalar valued or multi-valued.
+Alias for tensor-product basis of the 1D scalar Legendre  basis, scalar valued
+or multivalued.
+
+If multivalued, this is a direct sum basis spaning the Cartesian product
+polynomial space, see also [`CartProdPolyBasis`](@ref).
 """
 const LegendreBasis{D,V} = CartProdPolyBasis{D,V,Legendre}
 

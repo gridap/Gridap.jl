@@ -10,7 +10,11 @@ isHierarchical(::Type{Monomial}) = true
 """
     MonomialBasis{D,V} = CartProdPolyBasis{D,V,Monomial}
 
-Alias for cartesian product monomial basis, scalar valued or multi-valued.
+Alias for tensor-product basis of the 1D scalar monomial basis, scalar valued
+or multivalued.
+
+If multivalued, this is a direct sum basis spaning the Cartesian product
+polynomial space, see also [`CartProdPolyBasis`](@ref).
 """
 const MonomialBasis{D,V} = CartProdPolyBasis{D,V,Monomial}
 

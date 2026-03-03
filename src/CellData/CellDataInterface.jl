@@ -2,7 +2,7 @@
 """
     abstract type DomainStyle
 
-Trait that signals if a CellDatum type is implemented in the physical or the
+Trait that signals if a `<:CellDatum` type is implemented in the physical or the
 reference domain, the possible values are `ReferenceDomain()` and
 `PhysicalDomain()`.
 """

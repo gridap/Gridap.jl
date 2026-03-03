@@ -50,18 +50,3 @@ function ReferenceFE(p::Polytope,::MardalTaiWinther,::Type{T}, order) where T
   MardalTaiWintherRefFE(T,p,order)
 end
 
-function Conformity(reffe::GenericRefFE{MardalTaiWinther},sym::Symbol)
-  hdiv = (:Hdiv,:HDiv)
-  if sym == :L2
-    L2Conformity()
-  elseif sym in hdiv
-    DivConformity()
-  else
-    @unreachable """\n
-    It is not possible to use conformity = $sym on a MardalTaiWinther reference FE.
-
-    Possible values of conformity for this reference fe are $((:L2, hdiv...)).
-      """
-  end
-end
-

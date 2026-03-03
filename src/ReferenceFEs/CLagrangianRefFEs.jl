@@ -1,31 +1,4 @@
 
-function Conformity(reffe::GenericLagrangianRefFE{GradConformity},sym::Symbol)
-  h1 = (:H1,:C0,:Hgrad)
-  if sym == :L2
-    L2Conformity()
-  elseif sym in h1
-    H1Conformity()
-  else
-    @unreachable """\n
-    It is not possible to use conformity = $sym on a LagrangianRefFE with H1 conformity.
-
-    Possible values of conformity for this reference fe are $((:L2, h1...)).
-    """
-  end
-end
-
-function Conformity(reffe::GenericLagrangianRefFE{L2Conformity},sym::Symbol)
-  if sym == :L2
-    L2Conformity()
-  else
-    @unreachable """\n
-    It is not possible to use conformity = $sym on a LagrangianRefFE with L2 conformity.
-
-    Only conformity = :L2 allowed for this reference fe.
-    """
-  end
-end
-
 function get_face_own_nodes(reffe::GenericLagrangianRefFE{GradConformity},conf::GradConformity)
   p = get_polytope(reffe)
   orders = get_orders(reffe)
@@ -222,8 +195,8 @@ methods. They are currently implemented for `ExtrusionPolytope`.
 # Extended help
 
 The keyword argument `space::Symbol` can be specified to change the default
-polynomial space. The default space of the element depends on `p`, it is :P (ℙ)
-for simplices and :Q (ℚ)for n-cubes. Additionally, :P and :S (serendipity)
+polynomial space. The default space of the element depends on `p`, it is :P (𝓟)
+for simplices and :Q (𝓠)for n-cubes. Additionally, :P and :S (serendipity)
 are also available for n-cubes.
 
 The following methods are also used in the construction of the `LagrangianRefFE`s

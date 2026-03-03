@@ -200,11 +200,11 @@ end
       quad   :: CellQuadrature
     end
 
-  Measure such that the integration and target triangulations are different.
+Measure such that the integration and target triangulations are different.
 
-  - ttrian: Target triangulation, where the domain contribution lives.
-  - itrian: Integration triangulation, where the integration takes place.
-  - quad  : CellQuadrature, defined in itrian
+- `ttrian`: Target triangulation, where the domain contribution lives.
+- `itrian`: Integration triangulation, where the integration takes place.
+- `quad`  : `::CellQuadrature`, defined in `itrian`
 """
 struct CompositeMeasure{A<:Triangulation,B<:Triangulation,C<:CellQuadrature} <: Measure
   ttrian :: A

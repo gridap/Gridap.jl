@@ -69,8 +69,11 @@ end
 
 """
     struct MulAddMap{T} <: Map
+      α::T
+      β::T
+    end
 
-Map for operation a,b,c -> LinearAlgepra.mul!(copy(c),a,b,`α`,`β`)
+Map for the operation `a,b,c -> LinearAlgepra.mul!(copy(c),a,b,α,β)`
 """
 struct MulAddMap{T} <: Map
   α::T

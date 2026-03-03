@@ -70,18 +70,3 @@ function ReferenceFE(p::Polytope,::RaviartThomas,::Type{T},order; kwargs...) whe
   RaviartThomasRefFE(T,p,order; kwargs...)
 end
 
-function Conformity(reffe::GenericRefFE{RaviartThomas},sym::Symbol)
-  hdiv = (:Hdiv,:HDiv)
-  if sym == :L2
-    L2Conformity()
-  elseif sym in hdiv
-    DivConformity()
-  else
-    @unreachable """\n
-    It is not possible to use conformity = $sym on a Raviart Thomas reference FE.
-
-    Possible values of conformity for this reference fe are $((:L2, hdiv...)).
-    """
-  end
-end
-
