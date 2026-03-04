@@ -1,6 +1,28 @@
 name: Documentation
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'CONTRIBUTING.md'
+      - 'CODE_OF_CONDUCT.md'
+      - 'LICENSE.md'
+      - 'README.md'
+      - 'NEWS.md'
+      - 'ADMINISTRATORS'
+      - 'benchmark/**'
+      - 'src/**'
+  pull_request:
+    paths-ignore:
+      - 'CONTRIBUTING.md'
+      - 'CODE_OF_CONDUCT.md'
+      - 'LICENSE.md'
+      - 'README.md'
+      - 'NEWS.md'
+      - 'ADMINISTRATORS'
+      - 'benchmark/**'
+      - 'src/**'
+  workflow_dispatch: # Allow manual triggering of the workflow from the Actions tab
 
 # Cancel redundant CI tests automatically
 concurrency:
@@ -11,7 +33,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1.10'

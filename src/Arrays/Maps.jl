@@ -166,6 +166,7 @@ end
 function evaluate!(cache,f::Broadcasting,x::AbstractArray{<:Number})
   setsize!(cache,size(x))
   a = cache.array
+  @check axes(a) == axes(x)
   @inbounds for i in eachindex(x)
     a[i] = f.f(x[i])
   end

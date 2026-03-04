@@ -30,13 +30,16 @@ end
       # + private fields
     end
 
-Concrete type for polytopes that can be
-represented with an "extrusion" tuple. The underlying extrusion is available
-in the field `extrusion`. Instances of this type can be obtained with the constructors
+Concrete type for polytopes that can be represented with an "extrusion" tuple.
+The underlying extrusion is available in the field `extrusion`. Instances of
+this type can be obtained with the constructors
 
 - [`Polytope(extrusion::Int...)`](@ref)
 - [`ExtrusionPolytope(extrusion::Int...)`](@ref)
 
+`ExtrusionPolytope` are used as reference polytopes because their
+coordinate space is their embedding space (the embeding dimension is the polytope
+dimension). Furthermore, the coordinates are determined by the extrusions.
 """
 struct ExtrusionPolytope{D} <: Polytope{D}
   extrusion::Point{D,Int}
@@ -48,14 +51,14 @@ struct ExtrusionPolytope{D} <: Polytope{D}
   face_vertex_perms::Vector{Vector{Vector{Int}}}
   m_n_to_mface_to_nface::Matrix{Vector{Vector{Int}}}
   function ExtrusionPolytope(dface::DFace{D}) where D
-    vertex_coords = _vertices_coordinates(Float64,dface)
-    face_normals, face_orientations = _face_normals(Float64,dface)
+    vertex_coords = _vertices_coordinates(Float64, dface)
+    face_normals, face_orientations = _face_normals(Float64, dface)
     vertex_perms = _precompute_vertex_perms_if_possible(dface)
     face_vertex_perms = _admissible_face_vertex_permutations(dface)
     m_n_to_mface_to_nface = _precompute_m_n_to_mface_to_nface(dface)
     new{D}(
-      dface.extrusion,dface,vertex_coords,face_normals,
-      face_orientations,vertex_perms,face_vertex_perms,
+      dface.extrusion, dface, vertex_coords, face_normals,
+      face_orientations, vertex_perms, face_vertex_perms,
       m_n_to_mface_to_nface)
   end
 end
@@ -120,10 +123,12 @@ end
 
 # Implementation of the interface
 
+num_point_dims(::Type{<:ExtrusionPolytope{D}}) where D = D
+
 get_faces(p::ExtrusionPolytope) = p.dface.nf_nfs
 
-function get_faces(p::ExtrusionPolytope,dimfrom::Integer,dimto::Integer)
-  p.m_n_to_mface_to_nface[dimfrom+1,dimto+1]
+function get_faces(p::ExtrusionPolytope, dimfrom::Integer, dimto::Integer)
+  p.m_n_to_mface_to_nface[dimfrom+1, dimto+1]
 end
 
 get_dimranges(p::ExtrusionPolytope) = p.dface.dimranges
@@ -134,40 +139,40 @@ function get_face_dimranges(p::ExtrusionPolytope)
   p.dface.nf_dimranges
 end
 
-function get_face_dimranges(p::ExtrusionPolytope,d::Integer)
-  r = get_dimrange(p,d)
+function get_face_dimranges(p::ExtrusionPolytope, d::Integer)
+  r = get_dimrange(p, d)
   p.dface.nf_dimranges[r]
 end
 
-function Polytope{D}(p::ExtrusionPolytope,Dfaceid::Integer) where D
-  offset = get_offset(p,D)
+function Polytope{D}(p::ExtrusionPolytope, Dfaceid::Integer) where D
+  offset = get_offset(p, D)
   id = Dfaceid + offset
-  dface = DFace{D}(p.dface,id)
+  dface = DFace{D}(p.dface, id)
   ExtrusionPolytope(dface)
 end
 
-function Polytope{0}(p::ExtrusionPolytope,Dfaceid::Integer)
+function Polytope{0}(p::ExtrusionPolytope, Dfaceid::Integer)
   @assert Dfaceid in 1:num_vertices(p)
   VERTEX
 end
 
-function Polytope{D}(p::ExtrusionPolytope{D},Dfaceid::Integer) where D
+function Polytope{D}(p::ExtrusionPolytope{D}, Dfaceid::Integer) where D
   @assert Dfaceid == 1
   p
 end
 
-function (==)(a::ExtrusionPolytope{D},b::ExtrusionPolytope{D}) where D
+function (==)(a::ExtrusionPolytope{D}, b::ExtrusionPolytope{D}) where D
   #The first axis is irrelevant here
   ea = Point(Tuple(a.extrusion)[2:end])
   eb = Point(Tuple(b.extrusion)[2:end])
   ea == eb
 end
 
-function (==)(a::ExtrusionPolytope{1},b::ExtrusionPolytope{1})
+function (==)(a::ExtrusionPolytope{1}, b::ExtrusionPolytope{1})
   true
 end
 
-function (==)(a::ExtrusionPolytope{0},b::ExtrusionPolytope{0})
+function (==)(a::ExtrusionPolytope{0}, b::ExtrusionPolytope{0})
   true
 end
 
@@ -176,7 +181,7 @@ function get_vertex_coordinates(p::ExtrusionPolytope)
 end
 
 function get_edge_tangent(p::ExtrusionPolytope)
-  _edge_tangents(Float64,p.dface)
+  _edge_tangents(Float64, p.dface)
 end
 
 function get_facet_normal(p::ExtrusionPolytope)
@@ -191,8 +196,8 @@ function get_vertex_permutations(p::ExtrusionPolytope)
   p.vertex_perms
 end
 
-function get_face_vertex_permutations(p::ExtrusionPolytope,d::Integer)
-  r = get_dimrange(p,d)
+function get_face_vertex_permutations(p::ExtrusionPolytope, d::Integer)
+  r = get_dimrange(p, d)
   perms = get_face_vertex_permutations(p)
   perms[r]
 end
@@ -225,44 +230,44 @@ function is_n_cube(p::ExtrusionPolytope{1})
   true
 end
 
-function simplexify(p::ExtrusionPolytope{0};kwargs...)
+function simplexify(p::ExtrusionPolytope{0}; kwargs...)
   [[1,],], VERTEX
 end
 
-function simplexify(p::ExtrusionPolytope{1};kwargs...)
-  [[1,2],], Polytope(TET_AXIS)
+function simplexify(p::ExtrusionPolytope{1}; kwargs...)
+  [[1, 2],], Polytope(TET_AXIS)
 end
 
-function simplexify(p::ExtrusionPolytope{2};positive=false)
+function simplexify(p::ExtrusionPolytope{2}; positive=false)
   if p == QUAD
-    simplices = simplexify_hypercube(2,positive)
+    simplices = simplexify_hypercube(2, positive)
     (simplices, TRI)
   elseif p == TRI
-    ([[1,2,3],], TRI)
+    ([[1, 2, 3],], TRI)
   else
-     @notimplemented
+    @notimplemented
   end
 end
 
-function simplexify(p::ExtrusionPolytope{3};positive=false)
+function simplexify(p::ExtrusionPolytope{3}; positive=false)
   if p == HEX
-    simplices = simplexify_hypercube(3,positive)
+    simplices = simplexify_hypercube(3, positive)
     (simplices, TET)
   elseif p == TET
-    simplices = [[1,2,3,4],]
+    simplices = [[1, 2, 3, 4],]
     (simplices, TET)
   else
-     @notimplemented
+    @notimplemented
   end
 end
 
-function simplexify(p::ExtrusionPolytope{D};positive=false) where {D}
+function simplexify(p::ExtrusionPolytope{D}; positive=false) where {D}
   # This function works for all dimensions. It could replace the
   # special cases above, but this might change the shape and order of
   # simplices.
   @notimplementedif positive
-  SD = Polytope(ntuple(d->TET_AXIS, Val{D}() ))
-  QD = Polytope(ntuple(d->HEX_AXIS, Val{D}() ))
+  SD = Polytope(ntuple(d -> TET_AXIS, Val{D}()))
+  QD = Polytope(ntuple(d -> HEX_AXIS, Val{D}()))
   if p == QD
     simplices = simplexify_hypercube(D)
     (simplices, SD)
@@ -270,11 +275,11 @@ function simplexify(p::ExtrusionPolytope{D};positive=false) where {D}
     simplices = [collect(1:D+1)]
     (simplices, SD)
   else
-     @notimplemented
+    @notimplemented
   end
 end
 
-function simplexify_hypercube(dim::Integer,positive::Bool)
+function simplexify_hypercube(dim::Integer, positive::Bool)
   if positive
     positive_simplexify_hypercube(dim)
   else
@@ -284,10 +289,10 @@ end
 
 function oriented_simplexify_hypercube(dim::Integer)
   if dim == 2
-    [[1,2,3],[2,3,4]]
+    [[1, 2, 3], [2, 3, 4]]
   elseif dim == 3
-    [[1,2,3,7], [1,2,5,7], [2,3,4,7],
-    [2,4,7,8], [2,5,6,7], [2,6,7,8]]
+    [[1, 2, 3, 7], [1, 2, 5, 7], [2, 3, 4, 7],
+      [2, 4, 7, 8], [2, 5, 6, 7], [2, 6, 7, 8]]
   else
     @notimplemented
   end
@@ -295,10 +300,10 @@ end
 
 function positive_simplexify_hypercube(dim::Integer)
   if dim == 2
-    [[1,2,3],[2,4,3]]
+    [[1, 2, 3], [2, 4, 3]]
   elseif dim == 3
-    [[1,2,3,7], [1,5,2,7], [2,4,3,7],
-    [2,4,7,8], [2,5,6,7], [2,7,6,8]]
+    [[1, 2, 3, 7], [1, 5, 2, 7], [2, 4, 3, 7],
+      [2, 4, 7, 8], [2, 5, 6, 7], [2, 7, 6, 8]]
   else
     @notimplemented
   end
@@ -318,7 +323,7 @@ function simplexify_hypercube(dim::Int)
   # Check output
   @assert length(simplices) == factorial(dim)
   for s in simplices
-    @assert length(s) == dim+1
+    @assert length(s) == dim + 1
     for v in s
       @assert 1 ≤ v ≤ 2^dim
     end
@@ -345,7 +350,7 @@ the top. The algorithm below finds all possible paths.
 - `corner` is the current corner.
 """
 function next_corner!(simplices::Vector{Vector{Int}}, dim::Int,
-                      vertices::Vector{Int}, corner::Int)
+  vertices::Vector{Int}, corner::Int)
   @assert count_ones(corner) == length(vertices) - 1
   if length(vertices) == dim + 1
     # We have all vertices; save the simplex
@@ -354,7 +359,7 @@ function next_corner!(simplices::Vector{Vector{Int}}, dim::Int,
   end
   # Loop over all neighbouring corners
   for d in 1:dim
-    bit = 1 << (d-1)
+    bit = 1 << (d - 1)
     if (corner & bit) == 0
       new_corner = corner | bit
       new_vertices = [vertices; new_corner]
@@ -364,27 +369,27 @@ function next_corner!(simplices::Vector{Vector{Int}}, dim::Int,
   return
 end
 
-function Base.show(io::IO,p::ExtrusionPolytope)
+function Base.show(io::IO, p::ExtrusionPolytope)
   if p == VERTEX
     s = "VERTEX"
-  elseif p==SEGMENT
+  elseif p == SEGMENT
     s = "SEGMENT"
-  elseif p==QUAD
+  elseif p == QUAD
     s = "QUAD"
-  elseif p==TRI
+  elseif p == TRI
     s = "TRI"
-  elseif p==TET
+  elseif p == TET
     s = "TET"
-  elseif p== HEX
+  elseif p == HEX
     s = "HEX"
-  elseif p==WEDGE
+  elseif p == WEDGE
     s = "WEDGE"
-  elseif p==PYRAMID
+  elseif p == PYRAMID
     s = "PYRAMID"
   else
     s = nameof(typeof(p))
   end
-  print(io,s)
+  print(io, s)
 end
 
 """
@@ -394,7 +399,15 @@ Equivalent to `p.extrusion`.
 """
 get_extrusion(p::ExtrusionPolytope) = p.extrusion
 
-
+function get_measure(p::ExtrusionPolytope)
+  m = one(eltype(eltype(get_vertex_coordinates(p))))
+  for (d, t) in enumerate(get_extrusion(p))
+    if t == 2
+      m /= d
+    end
+  end
+  m
+end
 
 # Helpers for the construction of a DFace
 
@@ -404,7 +417,7 @@ function DFace(extrusion::Point{D,Int}) where D
   nfs_id = Dict{NFace{D},Int}(nf => i for (i, nf) in enumerate(pol_nfs))
   nf_nfs, nf_dimranges = _polytopemesh(pol_nfs, nfs_id)
   dims = _nface_to_nfacedim(length(pol_nfs), pol_dim)
-  nf_dims = _nf_dims(nf_nfs,nf_dimranges)
+  nf_dims = _nf_dims(nf_nfs, nf_dimranges)
   DFace{D}(extrusion, pol_nfs, pol_dim, dims, nf_nfs, nf_dimranges, nf_dims)
 end
 
@@ -417,28 +430,28 @@ function _polytopemesh(nfaces::Vector{NFace{D}}, nfaceid::Dict{NFace{D},Int}) wh
   nfnfs_dim = Vector{Vector{UnitRange{Int}}}(undef, num_nfs)
   for (inf, nf) in enumerate(nfaces)
     nf_nfs, dimnfs = _polytopenfaces(nf.anchor, nf.extrusion)
-    nfnfs[inf] = [ nfaceid[nf] for nf in nf_nfs]
+    nfnfs[inf] = [nfaceid[nf] for nf in nf_nfs]
     nfnfs_dim[inf] = dimnfs
   end
 
   return (nfnfs, nfnfs_dim)
 end
 
-function _nface_to_nfacedim(nnfaces::Int,dimranges::Vector{UnitRange{Int}})
-  v = zeros(Int,nnfaces)
-  for (d,r) in enumerate(dimranges)
-    v[r] .= d-1
+function _nface_to_nfacedim(nnfaces::Int, dimranges::Vector{UnitRange{Int}})
+  v = zeros(Int, nnfaces)
+  for (d, r) in enumerate(dimranges)
+    v[r] .= d - 1
   end
   v
 end
 
-function _nf_dims(nf_nfs,nf_dimranges)
+function _nf_dims(nf_nfs, nf_dimranges)
   nf_dims = Vector{Int}[]
   for i in 1:length(nf_nfs)
     nfs = nf_nfs[i]
     dimranges = nf_dimranges[i]
-    dims = _nface_to_nfacedim(length(nfs),dimranges)
-    push!(nf_dims,dims)
+    dims = _nface_to_nfacedim(length(nfs), dimranges)
+    push!(nf_dims, dims)
   end
   nf_dims
 end
@@ -448,16 +461,16 @@ function _polytopenfaces(anchor, extrusion)
 
   D = num_components(extrusion)
   zerop = zero(Point{D,Int})
-  nf_nfs = Vector{NFace{D}}(undef,0)
+  nf_nfs = Vector{NFace{D}}(undef, 0)
   _nfaceboundary!(anchor, zerop, extrusion, true, nf_nfs)
 
   for i in 1:D
-    sort!(nf_nfs, by = x -> x.anchor[i])
+    sort!(nf_nfs, by=x -> x.anchor[i])
   end
   for i in 1:D
-    sort!(nf_nfs, by = x -> x.extrusion[i])
+    sort!(nf_nfs, by=x -> x.extrusion[i])
   end
-  sort!(nf_nfs, by = x -> count(p->p!=0,x.extrusion))
+  sort!(nf_nfs, by=x -> count(p -> p != 0, x.extrusion))
 
   numnfs = length(nf_nfs)
   nfsdim = [_nfdim(nf_nfs[i].extrusion) for i = 1:numnfs]
@@ -482,7 +495,7 @@ function _nfdim(extrusion)
   z = zero(eltype(extrusion))
   for e in extrusion
     if e > 0
-      z +=1
+      z += 1
     end
   end
   z
@@ -494,22 +507,22 @@ function _nfaceboundary!(anchor, extrusion, extend, isanchor, list)
 
   D = num_components(extrusion)
   newext = extend
-  push!(list,NFace(anchor,extrusion))
+  push!(list, NFace(anchor, extrusion))
 
   for i = 1:D
     curex = newext[i]
     if (curex > 0) # Perform extension
 
-      newext = _newext(newext,i)
-      edim = _edim(newext,i)
-      tetp = _tetp(anchor,i)
+      newext = _newext(newext, i)
+      edim = _edim(newext, i)
+      tetp = _tetp(anchor, i)
 
       if (curex == HEX_AXIS) # Quad extension
         list = _nfaceboundary!(anchor + edim, extrusion, newext, false, list)
       elseif isanchor
         list = _nfaceboundary!(tetp + edim, extrusion, newext, false, list)
       end
-      list = _nfaceboundary!( anchor, extrusion + edim * curex, newext, false, list)
+      list = _nfaceboundary!(anchor, extrusion + edim * curex, newext, false, list)
 
     end
   end
@@ -517,7 +530,7 @@ function _nfaceboundary!(anchor, extrusion, extend, isanchor, list)
   list
 end
 
-function _newext(newext,i)
+function _newext(newext, i)
   m = zero(Mutable(newext))
   D = num_components(newext)
   for j in 1:D
@@ -526,7 +539,7 @@ function _newext(newext,i)
   Point(m)
 end
 
-function _edim(newext,i)
+function _edim(newext, i)
   m = zero(Mutable(newext))
   D = num_components(newext)
   for j in 1:D
@@ -535,7 +548,7 @@ function _edim(newext,i)
   Point(m)
 end
 
-function _tetp(anchor,i)
+function _tetp(anchor, i)
   m = zero(Mutable(anchor))
   D = num_components(anchor)
   for j in 1:D
@@ -549,7 +562,7 @@ end
 function _dimfrom_fs_dimto_fs(p::DFace{D}, dim_from::Int, dim_to::Int) where D
   @assert dim_from <= D
   if dim_to == dim_from
-    return [ [i,] for i in 1:_num_nfaces(p,dim_from)]
+    return [[i,] for i in 1:_num_nfaces(p, dim_from)]
   end
   @assert dim_to < dim_from
   dim_from += 1
@@ -567,16 +580,16 @@ function _dimfrom_fs_dimto_fs(p::DFace{D}, dim_from::Int, dim_to::Int) where D
 end
 
 function _precompute_m_n_to_mface_to_nface(p::DFace{D}) where D
-  m_n_to_mface_to_nface = Matrix{Vector{Vector{Int}}}(undef,D+1,D+1)
+  m_n_to_mface_to_nface = Matrix{Vector{Vector{Int}}}(undef, D + 1, D + 1)
 
   for m in 0:D
     for n in 0:D
       if n <= m
-       mface_to_nface = _dimfrom_fs_dimto_fs(p,m,n)
+        mface_to_nface = _dimfrom_fs_dimto_fs(p, m, n)
       else
-       mface_to_nface = _dimfrom_fs_dimto_fs_dual(p,m,n)
+        mface_to_nface = _dimfrom_fs_dimto_fs_dual(p, m, n)
       end
-      m_n_to_mface_to_nface[m+1,n+1] = mface_to_nface
+      m_n_to_mface_to_nface[m+1, n+1] = mface_to_nface
     end
   end
 
@@ -584,33 +597,33 @@ function _precompute_m_n_to_mface_to_nface(p::DFace{D}) where D
 
 end
 
-function _dimfrom_fs_dimto_fs_dual(p::DFace,dimfrom,dimto)
+function _dimfrom_fs_dimto_fs_dual(p::DFace, dimfrom, dimto)
   @assert dimfrom < dimto
-  tface_to_ffaces = _dimfrom_fs_dimto_fs(p,dimto,dimfrom)
-  nffaces = _num_nfaces(p,dimfrom)
+  tface_to_ffaces = _dimfrom_fs_dimto_fs(p, dimto, dimfrom)
+  nffaces = _num_nfaces(p, dimfrom)
   fface_to_tfaces = [Int[] for in in 1:nffaces]
-  for (tface,ffaces) in enumerate(tface_to_ffaces)
+  for (tface, ffaces) in enumerate(tface_to_ffaces)
     for fface in ffaces
-      push!(fface_to_tfaces[fface],tface)
+      push!(fface_to_tfaces[fface], tface)
     end
   end
   fface_to_tfaces
 end
 
 # iface in global numeration
-function DFace{d}(p::DFace{D},iface::Int) where {d,D}
+function DFace{d}(p::DFace{D}, iface::Int) where {d,D}
   @assert d == p.dims[iface]
   nf = p.nfaces[iface]
-  r_ext = _eliminate_zeros(Val{d}(),nf.extrusion)
+  r_ext = _eliminate_zeros(Val{d}(), nf.extrusion)
   DFace(r_ext)
 end
 
-function DFace{D}(p::DFace{D},iface::Int) where D
+function DFace{D}(p::DFace{D}, iface::Int) where D
   @assert D == p.dims[iface]
   p
 end
 
-function _eliminate_zeros(::Val{d},a) where d
+function _eliminate_zeros(::Val{d}, a) where d
   b = zero(Mutable(Point{d,Int}))
   D = num_components(a)
   k = 1
@@ -626,9 +639,9 @@ end
 
 # It generates the list of coordinates of all vertices in the polytope. It is
 # assumed that the polytope has the bounding box [0,1]**dim
-function _vertices_coordinates(::Type{T},p::DFace{D}) where {D,T}
+function _vertices_coordinates(::Type{T}, p::DFace{D}) where {D,T}
   vs = first(_dimfrom_fs_dimto_fs(p, D, 0))
-  vcs = zeros(Point{D,T},length(vs))
+  vcs = zeros(Point{D,T}, length(vs))
   for i = 1:length(vs)
     vx = p.nfaces[vs[i]]
     vc = Tuple(vx.anchor)
@@ -651,47 +664,47 @@ function _num_nfaces(polytope::DFace, dim::Integer)
 end
 
 
-function _nfaces_vertices(::Type{T},p::DFace,d::Integer) where T
-  nc = _num_nfaces(p,d)
-  verts = _vertices_coordinates(T,p)
-  faces_vs = _dimfrom_fs_dimto_fs(p,d,0)
-  cfvs = collect(lazy_map(Broadcasting(Reindex(verts)),faces_vs))
+function _nfaces_vertices(::Type{T}, p::DFace, d::Integer) where T
+  nc = _num_nfaces(p, d)
+  verts = _vertices_coordinates(T, p)
+  faces_vs = _dimfrom_fs_dimto_fs(p, d, 0)
+  cfvs = collect(lazy_map(Broadcasting(Reindex(verts)), faces_vs))
 end
 
 # Return the n-faces vertices coordinates array for a given n-face dimension
-function _nfaces_vertices(::Type{T},p::ExtrusionPolytope,d::Integer) where T
-  _nfaces_vertices(T,p.dface,d)
+function _nfaces_vertices(::Type{T}, p::ExtrusionPolytope, d::Integer) where T
+  _nfaces_vertices(T, p.dface, d)
 end
 
 # It generates the outwards normals of the facets of a polytope. It returns two
 # arrays, the first one being the outward normal and the second one the orientation.
-function _face_normals(::Type{T},p::DFace{D}) where {D,T}
+function _face_normals(::Type{T}, p::DFace{D}) where {D,T}
   nf_vs = _dimfrom_fs_dimto_fs(p, D - 1, 0)
-  vs = _vertices_coordinates(T,p)
+  vs = _vertices_coordinates(T, p)
   n = length(p.nf_dimranges[end][end-1])
-  f_ns = zeros(Point{D,T},n)
-  f_os = zeros(Int,n)
+  f_ns = zeros(Point{D,T}, n)
+  f_os = zeros(Int, n)
   for i_f = 1:n
-    f_n, f_o = _facet_normal(T,p, nf_vs, vs, i_f)
+    f_n, f_o = _facet_normal(T, p, nf_vs, vs, i_f)
     f_ns[i_f] = f_n
     f_os[i_f] = f_o
   end
   f_ns, f_os
 end
 
-function _face_normals(::Type{T},p::DFace{0}) where T
+function _face_normals(::Type{T}, p::DFace{0}) where T
   (VectorValue{0,T}[], Int[])
 end
 
-function _facet_normal(::Type{T},p::DFace{D}, nf_vs, vs, i_f) where {D,T}
+function _facet_normal(::Type{T}, p::DFace{D}, nf_vs, vs, i_f) where {D,T}
   if length(p.extrusion) > 1
-    n1 = length(nf_vs[i_f])-1
+    n1 = length(nf_vs[i_f]) - 1
     n2 = D
-    v = zeros(T,n1,n2)
+    v = zeros(T, n1, n2)
     for i in 2:length(nf_vs[i_f])
       vi = vs[nf_vs[i_f][i]] - vs[nf_vs[i_f][1]]
       for d in 1:num_components(vi)
-        v[i-1,d] = vi[d]
+        v[i-1, d] = vi[d]
       end
     end
     _n = _nullspace(v)
@@ -716,15 +729,15 @@ function _facet_normal(::Type{T},p::DFace{D}, nf_vs, vs, i_f) where {D,T}
 end
 
 function _nullspace(v)
-  if size(v,1) == 1
-    return [-v[2],v[1]]
+  if size(v, 1) == 1
+    return [-v[2], v[1]]
   else
     return nullspace(v)
   end
 end
 
 # Returns the first vertex not belonging to the facet i_f, or -1 if all vertices
-# belong to the facet. 
+# belong to the facet.
 # nf_vs is the array of arrays of vertices of the facets of the polytope.
 function _vertex_not_in_facet(p::DFace, i_f, nf_vs)
   for i in p.nf_dimranges[end][1]
@@ -744,41 +757,41 @@ function _vertex_not_in_facet(p::DFace, i_f, nf_vs)
 end
 
 # It generates the tangent vectors for polytope edges.
-function _edge_tangents(::Type{T},p::DFace{D}) where {D,T}
-  ed_vs = _nfaces_vertices(T,p,1)
-  ts = [(t = vs[2]-vs[1])/norm(t) for vs in ed_vs ]
+function _edge_tangents(::Type{T}, p::DFace{D}) where {D,T}
+  ed_vs = _nfaces_vertices(T, p, 1)
+  ts = [(t = vs[2] - vs[1]) / norm(t) for vs in ed_vs]
   ts
 end
 
-function _edge_tangents(::Type{T},p::DFace{0}) where T
+function _edge_tangents(::Type{T}, p::DFace{0}) where T
   VectorValue{0,T}[]
 end
 
 function _admissible_face_vertex_permutations(p::DFace{D}) where D
   perms = Vector{Vector{Int}}[]
-  _admissible_face_vertex_permutations_fill!(perms,p,Val{0}())
+  _admissible_face_vertex_permutations_fill!(perms, p, Val{0}())
   perms
 end
 
-function  _admissible_face_vertex_permutations_fill!(perms,p::DFace{D},::Val{d}) where {D,d}
+function _admissible_face_vertex_permutations_fill!(perms, p::DFace{D}, ::Val{d}) where {D,d}
   faceids = p.dimranges[d+1]
   for faceid in faceids
-    f = DFace{d}(p,faceid)
+    f = DFace{d}(p, faceid)
     f_perms = _precompute_vertex_perms_if_possible(f)
-    push!(perms,f_perms)
+    push!(perms, f_perms)
   end
-  _admissible_face_vertex_permutations_fill!(perms,p,Val{d+1}())
+  _admissible_face_vertex_permutations_fill!(perms, p, Val{d + 1}())
   nothing
 end
 
-function  _admissible_face_vertex_permutations_fill!(perms,p::DFace{D},::Val{D}) where D
+function _admissible_face_vertex_permutations_fill!(perms, p::DFace{D}, ::Val{D}) where D
   f_perms = _precompute_vertex_perms_if_possible(p)
-  push!(perms,f_perms)
+  push!(perms, f_perms)
   nothing
 end
 
 function _precompute_vertex_perms_if_possible(p::DFace{D}) where D
-  if D in (0,1)
+  if D in (0, 1)
     perms = _admissible_permutations_simplex(p)
   elseif D == 2
     perms = _admissible_permutations(p)
@@ -794,9 +807,9 @@ function _admissible_permutations(p::DFace{D}) where D
   if D > 3
     @warn "Computing permutations for a polytope of dim > 3 is overkill"
   end
-  if D in (0,1) || all( map(i->i==TET_AXIS,Tuple(p.extrusion)[2:end]) )
+  if D in (0, 1) || all(map(i -> i == TET_AXIS, Tuple(p.extrusion)[2:end]))
     perms = _admissible_permutations_simplex(p)
-  elseif all( map(i->i==HEX_AXIS,Tuple(p.extrusion)[2:end]))
+  elseif all(map(i -> i == HEX_AXIS, Tuple(p.extrusion)[2:end]))
     perms = _admissible_permutations_n_cube(p)
   else
     @notimplemented "admissible vertex permutations only implemented for simplices and n-cubes"
@@ -831,25 +844,25 @@ function _admissible_permutations_n_cube(p::DFace{D}) where D
   grads = _setup_aux_grads(vertices)
   vol = -1
   for perm in perms
-    for (j,cj) in enumerate(perm)
+    for (j, cj) in enumerate(perm)
       permuted_vertices[j] = vertices[cj]
     end
-    jac = _setup_aux_jacobian(grads,permuted_vertices)
-    vol_i = convert(Int,abs(det(jac)))
+    jac = _setup_aux_jacobian(grads, permuted_vertices)
+    vol_i = convert(Int, abs(det(jac)))
     if vol < 0
       vol = vol_i
     end
     if vol_i == vol
-      push!(admissible_perms,perm)
+      push!(admissible_perms, perm)
     end
   end
   admissible_perms
 end
 
 function _setup_aux_grads(vertices::Vector{NFace{D}}) where D
-  grads = zeros(Point{D,Int},length(vertices))
+  grads = zeros(Point{D,Int}, length(vertices))
   m = zero(Mutable(Point{D,Int}))
-  for (i,vertex) in enumerate(vertices)
+  for (i, vertex) in enumerate(vertices)
     x = vertex.anchor
     for di in 1:D
       v = 1
@@ -865,16 +878,16 @@ function _setup_aux_grads(vertices::Vector{NFace{D}}) where D
   grads
 end
 
-function _setup_aux_jacobian(grads,permuted_vertices::Vector{NFace{D}}) where D
+function _setup_aux_jacobian(grads, permuted_vertices::Vector{NFace{D}}) where D
   p0 = zero(Point{D,Int})
-  m = zero(Mutable(outer(p0,p0)))
-  for (i,pvertex) in enumerate(permuted_vertices)
+  m = zero(Mutable(outer(p0, p0)))
+  for (i, pvertex) in enumerate(permuted_vertices)
     x = pvertex.anchor
     g = grads[i]
     for di in 1:D
       v = g[di]
       for dj in 1:D
-        m[di,dj] += x[dj]*v
+        m[di, dj] += x[dj] * v
       end
     end
   end
@@ -897,29 +910,29 @@ const SEGMENT = Polytope(HEX_AXIS)
 """
     const TRI = Polytope(TET_AXIS,TET_AXIS)
 """
-const TRI = Polytope(TET_AXIS,TET_AXIS)
+const TRI = Polytope(TET_AXIS, TET_AXIS)
 
 """
     const QUAD = Polytope(HEX_AXIS,HEX_AXIS)
 """
-const QUAD = Polytope(HEX_AXIS,HEX_AXIS)
+const QUAD = Polytope(HEX_AXIS, HEX_AXIS)
 
 """
     const TET = Polytope(TET_AXIS,TET_AXIS,TET_AXIS)
 """
-const TET = Polytope(TET_AXIS,TET_AXIS,TET_AXIS)
+const TET = Polytope(TET_AXIS, TET_AXIS, TET_AXIS)
 
 """
     const HEX = Polytope(HEX_AXIS,HEX_AXIS,HEX_AXIS)
 """
-const HEX = Polytope(HEX_AXIS,HEX_AXIS,HEX_AXIS)
+const HEX = Polytope(HEX_AXIS, HEX_AXIS, HEX_AXIS)
 
 """
     const WEDGE = Polytope(TET_AXIS,TET_AXIS,HEX_AXIS)
 """
-const WEDGE = Polytope(TET_AXIS,TET_AXIS,HEX_AXIS)
+const WEDGE = Polytope(TET_AXIS, TET_AXIS, HEX_AXIS)
 
 """
     const PYRAMID = Polytope(HEX_AXIS,HEX_AXIS,TET_AXIS)
 """
-const PYRAMID = Polytope(HEX_AXIS,HEX_AXIS,TET_AXIS)
+const PYRAMID = Polytope(HEX_AXIS, HEX_AXIS, TET_AXIS)

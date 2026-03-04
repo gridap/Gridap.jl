@@ -244,7 +244,7 @@ end # end for T
 # Local solver maps
 
 """
-    LocalSolveMap(; factorize! = lu!, pivot = NoPivot())
+    LocalSolveMap(; factorize! = lu!, pivot = RowMaximum())
 
 A map for solving local linear systems, relying on a factorization method.
 
@@ -260,7 +260,7 @@ struct LocalSolveMap{A,B} <: Map
   pivot :: B
 end
 
-LocalSolveMap(; factorize! = lu!, pivot = NoPivot()) = LocalSolveMap(factorize!, pivot)
+LocalSolveMap(; factorize! = lu!, pivot = RowMaximum()) = LocalSolveMap(factorize!, pivot)
 
 Arrays.return_value(k::LocalSolveMap, matvec::Tuple) = return_value(k,matvec[1],matvec[2])
 Arrays.return_cache(k::LocalSolveMap, matvec::Tuple) = return_cache(k,matvec[1],matvec[2])
@@ -317,7 +317,7 @@ end
 ###########################################################################################
 
 """
-    LocalPenaltySolveMap(; factorize! = lu!, pivot = NoPivot())
+    LocalPenaltySolveMap(; factorize! = lu!, pivot = RowMaximum())
 
 A map for solving local constrained linear systems, relying on a factorization method.
 
@@ -336,7 +336,7 @@ struct LocalPenaltySolveMap{A,B} <: Map
   pivot :: B
 end
 
-LocalPenaltySolveMap(; factorize! = lu!, pivot = NoPivot()) = LocalPenaltySolveMap(factorize!, pivot)
+LocalPenaltySolveMap(; factorize! = lu!, pivot = RowMaximum()) = LocalPenaltySolveMap(factorize!, pivot)
 
 function Arrays.evaluate!(cache::Nothing, k::LocalPenaltySolveMap, mats::Tuple)
   lhs, rhs = mats

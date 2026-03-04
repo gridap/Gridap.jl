@@ -1,32 +1,30 @@
 module XiaoGimbutasQuadraturesTests
 
 using Test
-using Gridap.ReferenceFEs, Gridap.Fields
+using Gridap.Fields, Gridap.Polynomials, Gridap.ReferenceFEs
 
-for degree in 1:30
-  quad = Quadrature(TRI,xiao_gimbutas,degree)
-  @test sum(get_weights(quad)) ≈ 0.5
+testcases = (
+  (TRI, duffy),
+  (TET, duffy),
+  (QUAD, tensor_product),
+  (HEX, tensor_product)
+)
 
-  ref_quad = Quadrature(TRI,duffy,degree)
-  f = get_shapefuns(ReferenceFE(TRI,lagrangian,Float64,degree))
-  f1 = integrate(f,get_coordinates(quad),get_weights(quad))
-  f2 = integrate(f,get_coordinates(ref_quad),get_weights(ref_quad))
-  err = maximum(abs.(f1 .- f2))/maximum(abs.(f1))
-  # println("degree = ",degree," err = ",maximum(abs.(f1 .- f2)))
-  @test err < 1.0e-7
-end
+# Xiao-Gimbutas quadratures are exact on Pk
+# So check integration against monomials in Pk
+filter = (e, o) -> (sum(e) <= o)
 
-for degree in 1:15
-  quad = Quadrature(TET,xiao_gimbutas,degree)
-  @test sum(get_weights(quad)) ≈ 0.5*1/3
-
-  ref_quad = Quadrature(TET,duffy,degree)
-  f = get_shapefuns(ReferenceFE(TET,lagrangian,Float64,degree))
-  f1 = integrate(f,get_coordinates(quad),get_weights(quad))
-  f2 = integrate(f,get_coordinates(ref_quad),get_weights(ref_quad))
-  err = maximum(abs.(f1 .- f2))/maximum(abs.(f1))
-  println("degree = ",degree," err = ",maximum(abs.(f1 .- f2)))
-  @test err < 1.0e-7
+for (p, refquad) in testcases
+  for degree in 1:maxdegree(p, xiao_gimbutas)
+    quad = Quadrature(p, xiao_gimbutas, degree)
+    ref_quad = Quadrature(p, refquad, degree)
+    f = MonomialBasis{num_dims(p)}(Float64, degree, filter)
+    Qf = integrate(f, get_coordinates(quad), get_weights(quad))
+    Ef = integrate(f, get_coordinates(ref_quad), get_weights(ref_quad))
+    err = maximum(abs.(Qf .- Ef)) / maximum(abs.(Ef))
+    # println((degree, err))
+    @test err < 1.0e-14
+  end
 end
 
 end # module

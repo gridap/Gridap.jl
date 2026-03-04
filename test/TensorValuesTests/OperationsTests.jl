@@ -664,6 +664,16 @@ expected3 = eigen(get_array(t3))
 t_nonsquare = TensorValue{2,3}(1:6...)
 @test_throws ErrorException eigen(t_nonsquare)
 
+# Test sqrt function
+t = TensorValue(4.0,0.0,0.0,4.0)
+@test sqrt(t) == TensorValue(2.0,0.0,0.0,2.0)
+t = SymTensorValue{2}(1,0,0)
+@test sqrt(t) == TensorValue(1.0,0.0,0.0,0.0)
+t = SymTracelessTensorValue{2,ComplexF64}(1,0)
+@test sqrt(t) == TensorValue(1.0, 0.0, 0.0, -im)
+t = SymTensorValue{2}(-1,0,0)
+@test_throws DomainError sqrt(t)
+
 # Measure
 
 a = VectorValue(1,2,3)
@@ -793,6 +803,9 @@ a = TensorValue(1,2,3,4)
 a2 = TensorValue(1,im,1,im)
 @test norm(a) ≈ sqrt(inner(a,a))
 @test norm(a2) ≈ 2
+
+u = VectorValue(3.0,4.0)
+@test normalize(u) ≈ VectorValue(0.6,0.8)
 
 a = VectorValue(1.0,2.0)
 b = VectorValue(2.0,3.0)

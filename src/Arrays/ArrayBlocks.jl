@@ -59,19 +59,22 @@ Base.ndims(::Type{ArrayBlock{A,N}}) where {A,N} = N
 
 # Base.iterate(a::VectorBlock) = iterate(a.array)
 
-function Base.getindex(b::ArrayBlock,i...)
+@propagate_inbounds function Base.getindex(b::ArrayBlock, i...)
   if !b.touched[i...]
     return nothing
   end
   b.array[i...]
 end
-function Base.setindex!(b::ArrayBlock,v,i...)
+
+@propagate_inbounds function Base.setindex!(b::ArrayBlock,v,i...)
  @check b.touched[i...] "Only touched entries can be set"
  b.array[i...] = v
 end
+
 function Base.show(io::IO,o::ArrayBlock)
   print(io,"ArrayBlock($(o.array), $(o.touched))")
 end
+
 function Base.show(io::IO,k::MIME"text/plain",o::ArrayBlock)
   function _sub_block_str(a)
     function _nice_typeof(v)
@@ -114,7 +117,7 @@ function Base.similar(x::ArrayBlock{A,N}, T) where {A,N}
   touched = copy(x.touched)
   B = typeof(similar(testvalue(A),T))
   array = Array{B,N}(undef, size(touched))
-  for I in eachindex(touched)
+  @inbounds for I in eachindex(touched)
     if touched[I]
       array[I] = similar(x.array[I],T)
     end
@@ -133,7 +136,7 @@ function Base.:≈(a::ArrayBlock,b::ArrayBlock)
   if a.touched != b.touched
     return false
   end
-  for i in eachindex(a.array)
+  @inbounds for i in eachindex(a.array)
     if a.touched[i]
       if !(a.array[i] ≈ b.array[i])
         return false
@@ -147,7 +150,7 @@ function Base.:(==)(a::ArrayBlock,b::ArrayBlock)
   if size(a) != size(b)
     return false
   end
-  for i in eachindex(a.array)
+  @inbounds for i in eachindex(a.array)
     if a.touched[i] && b.touched[i]
       if a.array[i] != b.array[i]
         return false
@@ -168,7 +171,7 @@ entry_type(::Type{ArrayBlock{A,N}}) where {A,N} = entry_type(A)
 
 fill_entries!(a,value) = fill!(a,value)
 function fill_entries!(a::ArrayBlock,value)
-  for i in eachindex(a.array)
+  @inbounds for i in eachindex(a)
     if a.touched[i]
       fill_entries!(a.array[i],value)
     end
@@ -178,7 +181,8 @@ end
 
 function Base.copyto!(d::ArrayBlock,c::ArrayBlock)
   z = zero(entry_type(d))
-  for i in eachindex(c.array)
+  @check length(d) >= length(c)
+  @inbounds for i in eachindex(c.array)
     if c.touched[i]
       copyto!(d.array[i],c.array[i])
     elseif d.touched[i]
@@ -192,7 +196,7 @@ function testitem(f::ArrayBlock{A}) where A
   @notimplementedif !isconcretetype(A)
   i = findall(f.touched)
   if length(i) != 0
-    f.array[i[1]]
+    @inbounds f.array[i[1]]
   else
     testvalue(A)
   end
@@ -211,7 +215,7 @@ function CachedArray(a::ArrayBlock)
   ai = testitem(a)
   ci = CachedArray(ai)
   array = Array{typeof(ci),ndims(a)}(undef,size(a))
-  for i in eachindex(a.array)
+  @inbounds for i in eachindex(a.array)
     if a.touched[i]
       array[i] = CachedArray(a.array[i])
     end
@@ -221,7 +225,7 @@ end
 
 function setsize_op!(::typeof(copy),a::ArrayBlock,b::ArrayBlock)
   @check size(a) == size(b)
-  for i in eachindex(b.array)
+  @inbounds for i in eachindex(b.array)
     if b.touched[i]
       setsize_op!(copy,a.array[i],b.array[i])
     end
@@ -233,7 +237,7 @@ function setsize_op!(::typeof(*),c::VectorBlock,a::MatrixBlock,b::VectorBlock)
   ni, nj = size(a)
   @check length(b) == nj
   @check length(c) == ni
-  for i in 1:ni
+  @inbounds for i in 1:ni
     for j in 1:nj
       if a.touched[i,j] && b.touched[j]
         setsize_op!(*,c.array[i],a.array[i,j],b.array[j])
@@ -248,7 +252,7 @@ function setsize_op!(::typeof(*),c::MatrixBlock,a::MatrixBlock,b::MatrixBlock)
   nk2,nj = size(b)
   @check nk == nk2
   @check size(c) == (ni,nj)
-  for i in 1:ni
+  @inbounds for i in 1:ni
     for j in 1:nj
       for k in 1:nk
         if a.touched[i,k] && b.touched[k,j]
@@ -275,7 +279,7 @@ function return_cache(::typeof(unwrap_cached_array),a::ArrayBlock)
   ri = evaluate!(ci,unwrap_cached_array,ai)
   c = Array{typeof(ci),ndims(a)}(undef,size(a))
   array = Array{typeof(ri),ndims(a)}(undef,size(a))
-  for i in eachindex(a.array)
+  @inbounds for i in eachindex(a.array)
     if a.touched[i]
       c[i] = return_cache(unwrap_cached_array,a.array[i])
     end
@@ -285,7 +289,8 @@ end
 
 function evaluate!(cache,::typeof(unwrap_cached_array),a::ArrayBlock)
   r,c = cache
-  for i in eachindex(a.array)
+  @check size(r) == size(a)
+  @inbounds for i in eachindex(a.array)
     if a.touched[i]
       r.array[i] = evaluate!(c[i],unwrap_cached_array,a.array[i])
     end
@@ -432,7 +437,8 @@ function return_cache(k::MatchingBlockMap{N},a) where N
 end
 
 function evaluate!(cache,k::MatchingBlockMap{N},a) where N
-  for i in eachindex(k.touched)
+  @check size(cache) == size(k.touched)
+  @inbounds for i in eachindex(k.touched)
     if k.touched[i]
       cache.array[i] = a
     end
@@ -498,14 +504,14 @@ struct BlockBroadcasting{F} <: Map
 end
 
 function return_value(k::BlockBroadcasting,a::ArrayBlock{A,N},b::ArrayBlock...) where {A,N}
-  @check all(a.touched == bi.touched for bi in b)
+  @check all(a.touched == bi.touched for bi in b) # this also checks all sizes are equal
 
   i = findfirst(a.touched)
-  ai = (a.array[i],(bi.array[i] for bi in b)...)
+  @inbounds ai = (a.array[i],(bi.array[i] for bi in b)...)
   ri = return_value(k.f,ai...)
 
   array = Array{typeof(ri),N}(undef,size(a))
-  for i in eachindex(a.array)
+  @inbounds for i in eachindex(a.array)
     if a.touched[i]
       ai = (a.array[i],(bi.array[i] for bi in b)...)
       array[i] = return_value(k.f,ai...)
@@ -519,13 +525,13 @@ function return_cache(k::BlockBroadcasting,a::ArrayBlock{A,N},b::ArrayBlock...) 
   @check all(a.touched == bi.touched for bi in b)
 
   i = findfirst(a.touched)
-  ai = (a.array[i],(bi.array[i] for bi in b)...)
+  @inbounds ai = (a.array[i],(bi.array[i] for bi in b)...)
   ci = return_cache(k.f,ai...)
   ri = evaluate!(ci,k.f,ai...)
 
   array = Array{typeof(ri),N}(undef,size(a))
   caches = Array{typeof(ci),N}(undef,size(a))
-  for i in eachindex(a.array)
+  @inbounds for i in eachindex(a.array)
     if a.touched[i]
       ai = (a.array[i],(bi.array[i] for bi in b)...)
       caches[i] = return_cache(k.f,ai...)
@@ -539,8 +545,9 @@ function evaluate!(cache,k::BlockBroadcasting,a::ArrayBlock{A,N},b::ArrayBlock..
   r, c = cache
   @check r.touched == a.touched
   @check all(a.touched == bi.touched for bi in b)
+  @check length(a) >= length(c)
 
-  for i in eachindex(a.array)
+  @inbounds for i in eachindex(a.array)
     if a.touched[i]
       ai = (a.array[i],(bi.array[i] for bi in b)...)
       r.array[i] = evaluate!(c[i],k.f,ai...)
@@ -556,7 +563,7 @@ function Base.:*(a::Number,b::ArrayBlock)
   bi = testitem(b)
   ci = a*bi
   array = Array{typeof(ci),ndims(b)}(undef,size(b))
-  for i in eachindex(b.array)
+  @inbounds for i in eachindex(b.array)
     if b.touched[i]
       array[i] = a*b.array[i]
     end
@@ -568,11 +575,11 @@ Base.:*(a::ArrayBlock,b::Number) = b*a
 
 function Base.:*(a::ArrayBlock{A,2},b::ArrayBlock{B,1}) where {A,B}
   @check size(a.array,2) == size(b.array,1)
-  C = typeof(testvalue(A)*testvalue(B))
-  array = Vector{C}(undef,size(a.array,1))
-  touched = fill(false,size(a.array,1))
   ni,nj = size(a.array)
-  for i in 1:ni
+  C = typeof(testvalue(A)*testvalue(B))
+  array = Vector{C}(undef,ni)
+  touched = fill(false,ni)
+  @inbounds for i in 1:ni
     for j in 1:nj
       if a.touched[i,j] && b.touched[j]
         if !touched[i]
@@ -597,7 +604,7 @@ function Base.:*(a::ArrayBlock{A,1},b::ArrayBlock{B,2}) where {A,B}
   ni, nj = size(a.array,1), size(b.array,2)
   array = Matrix{typeof(ri)}(undef,ni,nj)
   touched = fill(false,ni,nj)
-  for i in 1:ni
+  @inbounds for i in 1:ni
     for j in 1:nj
       if a.touched[i] && b.touched[1,j]
         array[i,j]   = a.array[i]*b.array[1,j]
@@ -617,7 +624,7 @@ function Base.:*(a::ArrayBlock{A,2},b::ArrayBlock{B,2}) where {A,B}
   array = Matrix{C}(undef,(ni,nj))
   touched = fill(false,(ni,nj))
   ni,nj = size(a.array)
-  for i in 1:ni
+  @inbounds for i in 1:ni
     for j in 1:nj
       for k in 1:nk
         if a.touched[i,k] && b.touched[k,j]
@@ -639,7 +646,7 @@ end
 # LinearAlgebra-related methods
 
 function LinearAlgebra.rmul!(a::ArrayBlock,β)
-  for i in eachindex(a.touched)
+  @inbounds for i in eachindex(a.touched)
     if a.touched[i]
       rmul!(a.array[i],β)
     end
@@ -654,7 +661,7 @@ function LinearAlgebra.mul!(
 
   ni, nj = size(a)
   @check nj == size(b.array,1)
-  for i in 1:ni
+  @inbounds for i in 1:ni
     if β!=1 && c.touched[i]
       rmul!(c.array[i],β)
     end
@@ -681,7 +688,7 @@ function LinearAlgebra.mul!(
   @check nk == size(b.array,1)
   @check (ni,nj) == size(c.array)
 
-  for i in 1:ni
+  @inbounds for i in 1:ni
     for j in 1:nj
       if β!=1 && c.touched[i,j]
         rmul!(c.array[i,j],β)
@@ -705,7 +712,7 @@ function return_value(k::Broadcasting,f::ArrayBlock{A,N}) where {A,N}
   fi = testitem(f)
   fix = return_value(k,fi)
   g = Array{typeof(fix),N}(undef,size(f.array))
-  for i in eachindex(f.array)
+  @inbounds for i in eachindex(f.array)
     if f.touched[i]
       g[i] = return_value(k,f.array[i])
     end
@@ -719,7 +726,7 @@ function return_cache(k::Broadcasting,f::ArrayBlock{A,N}) where {A,N}
   fix = evaluate!(li,k,fi)
   l = Array{typeof(li),N}(undef,size(f.array))
   g = Array{typeof(fix),N}(undef,size(f.array))
-  for i in eachindex(f.array)
+  @inbounds for i in eachindex(f.array)
     if f.touched[i]
       l[i] = return_cache(k,f.array[i])
     end
@@ -730,7 +737,8 @@ end
 function evaluate!(cache,k::Broadcasting,f::ArrayBlock)
   g,l = cache
   @check g.touched == f.touched
-  for i in eachindex(f.array)
+  @check length(g) >= length(l)
+  @inbounds for i in eachindex(f.array)
     if f.touched[i]
       g.array[i] = evaluate!(l[i],k,f.array[i])
     end
@@ -742,7 +750,7 @@ function return_value(k::Broadcasting{typeof(*)},f::Number,g::ArrayBlock)
   gi = testitem(g)
   hi = return_value(k,f,gi)
   array = Array{typeof(hi),ndims(g.array)}(undef,size(g.array))
-  for i in eachindex(g.array)
+  @inbounds for i in eachindex(g.array)
     if g.touched[i]
       array[i] = return_value(k,f,g.array[i])
     end
@@ -756,7 +764,7 @@ function return_cache(k::Broadcasting{typeof(*)},f::Number,g::ArrayBlock)
   hi = evaluate!(ci,k,f,gi)
   array = Array{typeof(hi),ndims(g.array)}(undef,size(g.array))
   c = Array{typeof(ci),ndims(g.array)}(undef,size(g.array))
-  for i in eachindex(g.array)
+  @inbounds for i in eachindex(g.array)
     if g.touched[i]
       c[i] = return_cache(k,f,g.array[i])
     end
@@ -766,7 +774,8 @@ end
 
 function evaluate!(cache,k::Broadcasting{typeof(*)},f::Number,g::ArrayBlock)
   r, c = cache
-  for i in eachindex(g.array)
+  @check length(r) >= length(g)
+  @inbounds for i in eachindex(g.array)
     if g.touched[i]
       r.array[i] = evaluate!(c[i],k,f,g.array[i])
     end
@@ -804,8 +813,8 @@ Base.eltype(::Type{<:ArrayBlockView{A}}) where A = A
 Base.eltype(::ArrayBlockView{A}) where A = A
 Base.ndims(::ArrayBlockView{A,N}) where {A,N} = N
 Base.ndims(::Type{ArrayBlockView{A,N}}) where {A,N} = N
-Base.getindex(b::ArrayBlockView,i...) = getindex(b.array,b.block_map[i...])
-Base.setindex!(b::ArrayBlockView,v,i...) = setindex!(b.array,v,b.block_map[i...])
+@propagate_inbounds Base.getindex(b::ArrayBlockView, i...) = getindex(b.array, b.block_map[i...])
+@propagate_inbounds Base.setindex!(b::ArrayBlockView, v, i...) = setindex!(b.array, v, b.block_map[i...])
 
 Base.copy(a::ArrayBlockView) = ArrayBlockView(copy(a.array),copy(a.block_map))
 Base.eachindex(a::ArrayBlockView) = eachindex(a.block_map)

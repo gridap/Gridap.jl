@@ -207,43 +207,44 @@ function _array_cache!(dict::Dict,a::LazyArray)
   (cg, cgi, cf), IndexItemPair(index, item)
 end
 
-function getindex!(cache, a::LazyArray, i::Integer)
+@propagate_inbounds function getindex!(cache, a::LazyArray{G,T,1}, index::Integer) where {G,T}
   _cache, index_and_item = cache
-  index = LinearIndices(a)[i]
+  @boundscheck checkbounds(a,index)
   if index_and_item.index != index
     cg, cgi, cf = _cache
-    gi = getindex!(cg, a.maps, i)
-    index_and_item.item = _getindex_and_call!(cgi,gi,cf,a.args,i)
+    @inbounds gi = getindex!(cg, a.maps, index)
+    index_and_item.item = _getindex_and_call!(cgi,gi,cf,a.args,index)
     index_and_item.index = index
   end
   index_and_item.item
 end
 
-function getindex!(cache, a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
+@propagate_inbounds function getindex!(cache, a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
   _cache, index_and_item = cache
   index = LinearIndices(a)[i...]
   if index_and_item.index != index
     cg, cgi, cf = _cache
-    gi = getindex!(cg, a.maps, i...)
+    @inbounds gi = getindex!(cg, a.maps, i...)
     index_and_item.item = _getindex_and_call!(cgi,gi,cf,a.args,i...)
     index_and_item.index = index
   end
   index_and_item.item
 end
 
+# this is not @propagate_inbounds, cause we don't want to inline the whole recursive getindex! callstacks
 function _getindex_and_call!(cgi,gi,cf,args,i...)
   fi = map((cj,fj) -> getindex!(cj,fj,i...),cf,args)
   evaluate!(cgi, gi, fi...)
 end
 
-function Base.getindex(a::LazyArray, i::Integer)
+@propagate_inbounds function Base.getindex(a::LazyArray, i::Integer)
   gi = a.maps[i]
   fi = map(fj -> fj[i],a.args)
   vi = evaluate(gi, fi...)
   vi
 end
 
-function Base.getindex(a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
+@propagate_inbounds function Base.getindex(a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
   gi = a.maps[i...]
   fi = map(fj -> fj[i...],a.args)
   vi = evaluate(gi, fi...)
@@ -260,7 +261,7 @@ end
 
 function lazy_sum(cache,a)
   r = zero(testitem(a))
-  for i in eachindex(a)
+  @inbounds for i in eachindex(a)
     ai = getindex!(cache,a,i)
     r += ai
   end
@@ -272,7 +273,8 @@ lazy_collect(a::AbstractArray) = a
 function lazy_collect(a::LazyArray{A,T} where A) where T
   cache = array_cache(a)
   r = Array{T}(undef,size(a))
-  for i in eachindex(a)
+  @check axes(a) == axes(r)
+  @inbounds for i in eachindex(a)
     ai = getindex!(cache,a,i)
     r[i] = deepcopy(ai)
   end
@@ -327,12 +329,12 @@ end
 
 Base.size(a::ArrayWithCounter) = size(a.array)
 
-function Base.getindex(a::ArrayWithCounter,i::Integer)
+@propagate_inbounds function Base.getindex(a::ArrayWithCounter, i::Integer)
   a.counter[i] += 1
   a.array[i]
 end
 
-function Base.getindex(a::ArrayWithCounter{T,N},i::Vararg{Integer,N}) where {T,N}
+@propagate_inbounds function Base.getindex(a::ArrayWithCounter{T,N}, i::Vararg{Integer,N}) where {T,N}
   a.counter[i...] += 1
   a.array[i...]
 end

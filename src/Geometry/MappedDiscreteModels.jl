@@ -55,6 +55,7 @@ get_node_coordinates(grid::MappedGrid) = grid.node_coords
 get_cell_node_ids(grid::MappedGrid) = get_cell_node_ids(grid.grid)
 get_reffes(grid::MappedGrid) = get_reffes(grid.grid)
 get_cell_type(grid::MappedGrid) = get_cell_type(grid.grid)
+get_cell_map(grid::MappedGrid) = grid.geo_map
 
 """
 MappedDiscreteModel

@@ -12,9 +12,10 @@ end
 
 Base.IndexStyle(::Type{<:VectorWithEntryInserted}) = IndexLinear()
 
-function Base.getindex(v::VectorWithEntryInserted,i::Integer)
-  i < v.index ? v.a[i] :
-                (i==v.index ? v.value : v.a[i-1])
+@propagate_inbounds function Base.getindex(v::VectorWithEntryInserted, i::Integer)
+  @boundscheck checkbounds(v,i)
+  @inbounds i < v.index ? v.a[i] :
+          ( i ==v.index ? v.value : v.a[i-1])
 end
 
 Base.size(v::VectorWithEntryInserted) = (length(v.a)+1,)
@@ -23,16 +24,18 @@ function array_cache(v::VectorWithEntryInserted)
   array_cache(v.a)
 end
 
-function getindex!(cache,v::VectorWithEntryInserted,i::Integer)
-  i < v.index ? getindex!(cache,v.a,i) :
-                (i==v.index ? v.value : getindex!(cache,v.a,i-1))
+@propagate_inbounds function getindex!(cache,v::VectorWithEntryInserted, i::Integer)
+  @boundscheck checkbounds(v,i)
+  @inbounds i < v.index ? getindex!(cache,v.a,i) :
+           (i ==v.index ? v.value : getindex!(cache,v.a,i-1))
 end
 
 function Base.sum(a::VectorWithEntryInserted)
   sum(a.a) + a.value
 end
 
-function Base.setindex!(a::VectorWithEntryInserted,v,i::Integer)
-  i < a.index ? (a.a[i] = v) :
-                 (i==a.index ? a.value = v : a.a[i-1]=v)
+@propagate_inbounds function Base.setindex!(a::VectorWithEntryInserted, v, i::Integer)
+  @boundscheck checkbounds(a,i)
+  @inbounds i < a.index ? (a.a[i] = v) :
+           (i ==a.index ? a.value = v : a.a[i-1]=v)
 end

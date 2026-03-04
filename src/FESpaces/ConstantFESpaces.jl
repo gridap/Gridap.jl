@@ -213,35 +213,35 @@ end
 
 # SingleFieldFESpace API
 
-FESpaces.get_free_dof_ids(::MultiConstantFESpace{N,T}) where {N,T} = Base.OneTo(Int32(N*num_components(T)))
-FESpaces.get_vector_type(::MultiConstantFESpace{N,T,V}) where {N,T,V} = V
+get_free_dof_ids(::MultiConstantFESpace{N,T}) where {N,T} = Base.OneTo(Int32(N*num_components(T)))
+get_vector_type(::MultiConstantFESpace{N,T,V}) where {N,T,V} = V
 
-FESpaces.ConstraintStyle(::Type{<:MultiConstantFESpace}) = UnConstrained()
-FESpaces.get_dirichlet_dof_values(::MultiConstantFESpace{N,T}) where {N,T} = T[]
-FESpaces.get_dirichlet_dof_ids(f::MultiConstantFESpace) = Base.OneTo(zero(Int32))
-FESpaces.num_dirichlet_tags(f::MultiConstantFESpace) = 0
-FESpaces.get_dirichlet_dof_tag(f::MultiConstantFESpace) = Int8[]
+ConstraintStyle(::Type{<:MultiConstantFESpace}) = UnConstrained()
+get_dirichlet_dof_values(::MultiConstantFESpace{N,T}) where {N,T} = T[]
+get_dirichlet_dof_ids(f::MultiConstantFESpace) = Base.OneTo(zero(Int32))
+num_dirichlet_tags(f::MultiConstantFESpace) = 0
+get_dirichlet_dof_tag(f::MultiConstantFESpace) = Int8[]
 
-FESpaces.get_fe_basis(f::MultiConstantFESpace) = get_fe_basis(f.space)
-FESpaces.get_fe_dof_basis(f::MultiConstantFESpace) = get_fe_dof_basis(f.space)
+get_fe_basis(f::MultiConstantFESpace) = get_fe_basis(f.space)
+get_fe_dof_basis(f::MultiConstantFESpace) = get_fe_dof_basis(f.space)
 
 Base.zero(f::MultiConstantFESpace) = zero(f.space)
 
 Geometry.get_triangulation(f::MultiConstantFESpace) = f.trian
-FESpaces.get_cell_dof_ids(f::MultiConstantFESpace) = f.face_dofs
+get_cell_dof_ids(f::MultiConstantFESpace) = f.face_dofs
 
-function FESpaces.scatter_free_and_dirichlet_values(f::MultiConstantFESpace,fv,dv)
+function scatter_free_and_dirichlet_values(f::MultiConstantFESpace,fv,dv)
   cell_dof_ids = get_cell_dof_ids(f)
   lazy_map(Broadcasting(PosNegReindex(fv,dv)),cell_dof_ids)
 end
 
-function FESpaces.gather_free_and_dirichlet_values!(free_values, dirichlet_values,f::MultiConstantFESpace,cell_vals)
+function gather_free_and_dirichlet_values!(free_values, dirichlet_values,f::MultiConstantFESpace,cell_vals)
   cell_dofs = get_cell_dof_ids(f)
   cache_vals = array_cache(cell_vals)
   cache_dofs = array_cache(cell_dofs)
   cells = 1:length(cell_vals)
 
-  FESpaces._free_and_dirichlet_values_fill!(
+  _free_and_dirichlet_values_fill!(
     free_values,
     dirichlet_values,
     cache_vals,

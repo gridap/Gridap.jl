@@ -8,6 +8,8 @@ using Test
 
 @testset "GeneralPolytopes" begin include("GeneralPolytopesTests.jl") end
 
+@testset "Convexify" begin include("ConvexifyTests.jl") end
+
 @testset "Dofs" begin include("DofsTests.jl") end
 
 @testset "MockDofs" begin include("MockDofsTests.jl") end
@@ -33,6 +35,8 @@ using Test
 @testset "StrangQuadratures" begin include("StrangQuadraturesTests.jl") end
 
 @testset "XiaoGimbutasQuadratures" begin include("XiaoGimbutasQuadraturesTests.jl") end
+
+@testset "WitherdenVincentQuadratures" begin include("WitherdenVincentQuadraturesTests.jl") end
 
 @testset "RaviartThomasRefFEs" begin include("RaviartThomasRefFEsTests.jl") end
 

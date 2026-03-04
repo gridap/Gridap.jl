@@ -14,6 +14,7 @@ using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
 using Gridap.ReferenceFEs, Gridap.TensorValues
 using Gridap.Arrays
+using Gridap.Fields: skew_symmetric_gradient
 
 ν(f) = skew_symmetric_gradient(f)
 
@@ -29,16 +30,20 @@ end
 
 function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
   reffe_Λ1 = ReferenceFE(lagrangian, VectorValue{2,Float64}, 0)
-  reffe_Λ2 = ReferenceFE(lagrangian, Float64, 0) # In 3D, should be type VectorValue{3,Float64}
+  reffe_Λ2 = ReferenceFE(lagrangian, VectorValue{3,Float64}, 0)
   Λ1 = FESpace(Ω, reffe_Λ1; conformity=:L2)
   Λ2 = FESpace(Ω, reffe_Λ2; conformity=:L2)
 
   nrel = get_normal_vector(Γp)
-  σ(ν_u,λ) = ν_u[1,2]*λ # Constraint on the off-diagonal term
-  Πn(v) = nrel⋅∇(v)
+  
+  Πn(v) = nrel⋅ε(v)
   Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
+
+  σ(ν_u,λ) = ν_u[1,1]*λ[1] + ν_u[1,2]*λ[2] + ν_u[2,2]*λ[3] 
+  β(a,b) = -0.5*(a⊗b - b⊗a)
+
   lhs((u,λ1,λ2),(v,μ1,μ2)) = ∫((ε(u)⊙ε(v)) + (μ1⋅u) + (λ1⋅v) + σ∘(ν(u),μ2) + σ∘(ν(v),λ2))dΩp
-  rhs((uT,uF),(v,μ1,μ2)) = ∫((ε(uT)⊙ε(v)) + (uT⋅μ1))dΩp + ∫((uF - Π(uT,Γp))⋅(Πn(v)) + σ∘(outer(uF,Π(uT,Γp)),μ2))dΓp
+  rhs((uT,uF),(v,μ1,μ2)) = ∫((ε(uT)⊙ε(v)) + (uT⋅μ1))dΩp + ∫((uF - Π(uT,Γp))⋅(Πn(v)) + σ∘(β∘(uF,nrel),μ2))dΓp
   
   Y = FESpaces.FESpaceWithoutBCs(X)
   mfs = MultiField.BlockMultiFieldStyle(2,(1,2))
@@ -174,7 +179,12 @@ end
 
 # Static condensation
 op = MultiField.StaticCondensationOperator(X,patch_assem,patch_weakform())
-ui, ub = solve(op)
+xh = solve(op)
+ui, ub = xh
 
 dΩ = Measure(Ω,qdegree)
 l2_ui = sqrt(sum(∫((ui - u)⋅(ui - u))*dΩ))
+
+Ru = R(xh)
+dΩ = Measure(Ω,qdegree)
+l2_ui = sqrt(sum(∫((Ru - u)⋅(Ru - u))*dΩ))

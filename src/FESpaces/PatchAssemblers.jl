@@ -64,16 +64,16 @@ function PatchAssembler(ptopo::PatchTopology,trial::FESpace,test::FESpace;kwargs
 end
 
 function get_patch_assembly_ids(space::FESpace,ptopo::PatchTopology;assembly=:all)
-  if assembly == :all
-    _patch_assembly_ids_all(space,ptopo)
-  elseif assembly == :star
-    _patch_assembly_ids_star(space,ptopo)
-  else
-    @notimplemented
-  end :: Table{Int32,Vector{Int32},Vector{Int32}}
+  get_patch_assembly_ids(Val(assembly),space,ptopo) :: Table{Int32,Vector{Int32},Vector{Int32}}
 end
 
-function _patch_assembly_ids_all(space::FESpace,ptopo::PatchTopology)
+function get_patch_assembly_ids(::Val,space::FESpace,ptopo::PatchTopology)
+  @notimplemented """
+    Patch assembly type not recognized. Options are (:all, :star, :interior, :boundary).
+  """
+end
+
+function get_patch_assembly_ids(::Val{:all},space::FESpace,ptopo::PatchTopology)
   trian = get_triangulation(space)
   Df = num_cell_dims(trian)
   face_to_tface = get_glue(trian,Val(Df)).mface_to_tface
@@ -90,9 +90,9 @@ function _patch_assembly_ids_all(space::FESpace,ptopo::PatchTopology)
   return patch_rows
 end
 
-function _patch_assembly_ids_star(
-  space::FESpace, ptopo::PatchTopology
-)
+# Takes all dofs owned by a face that is connected to the root of the patch.
+# This is different than :interior for patches whose root is on the domain boundary.
+function get_patch_assembly_ids(::Val{:star},space::FESpace, ptopo::PatchTopology)
   @check ptopo.metadata isa Geometry.StarPatchMetadata """
     PatchTopology does not have StarPatchMetadata metadata.
   """
@@ -103,7 +103,7 @@ function _patch_assembly_ids_star(
   # A dpface is masked (removed) iff
   #  - It is a boundary of the patch, AND
   #  - It is not connected to the root of the patch
-  d_to_dpface_to_mask = map(0:D-1) do d
+  d_to_dpface_to_mask = map(0:D) do d
 
     dpface_to_dface = Geometry.get_patch_faces(ptopo,d).data
     dpface_to_patch = Geometry.get_pface_to_patch(ptopo,d)
@@ -123,6 +123,21 @@ function _patch_assembly_ids_star(
   return _patch_assembly_ids_masked(space,ptopo,d_to_dpface_to_mask)
 end
 
+# Takes all dofs owned by a face that is not boundary of the patch
+function get_patch_assembly_ids(::Val{:boundary},space::FESpace, ptopo::PatchTopology;reverse=false)
+  # A dpface is masked (removed) iff it is NOT boundary of the patch
+  D = num_cell_dims(ptopo)
+  d_to_dpface_to_mask = map(0:D) do d
+    Geometry.compute_isboundary_face(ptopo,d)
+  end
+  return _patch_assembly_ids_masked(space,ptopo,d_to_dpface_to_mask;reverse)
+end
+
+# Takes all dofs owned by a face that is boundary of the patch
+function get_patch_assembly_ids(::Val{:interior}, space::FESpace, ptopo::PatchTopology)
+  get_patch_assembly_ids(Val(:boundary),space,ptopo;reverse=true)
+end
+
 function _patch_assembly_ids_masked(
   space::FESpace, ptopo::PatchTopology, d_to_dpface_to_mask;
   reverse = true
@@ -138,7 +153,7 @@ function _patch_assembly_ids_masked(
   tface_to_sface = mface_to_sface[tface_to_mface]
 
   cell_conformity = get_cell_conformity(space)
-  d_to_tcell_to_tdface = [ Geometry.generate_patch_faces(ptopo,D,d) for d in 0:D-1 ]
+  d_to_tcell_to_tdface = [ Geometry.generate_patch_faces(ptopo,D,d) for d in 0:D ]
   tcell_to_ldof_mask = generate_cell_dof_mask(
     cell_conformity,tface_to_sface,d_to_tcell_to_tdface,d_to_dpface_to_mask;reverse
   )
@@ -314,7 +329,7 @@ function _alloc_cache(b::ArrayBlockView,s::Tuple{Vararg{BlockedOneTo}})
   bs = map(blocklength,s)
   ss = map(blocklengths,s)
   array = [ zeros(ntuple(i -> ss[i][I[i]], Val(N))) for I in CartesianIndices(bs) ]
-  bmap = ifelse(N == 2, b.block_map, map(idx -> CartesianIndex(idx[1]), diag(b.block_map)))
+  bmap = ifelse(N == 2, b.block_map, map(idx -> CartesianIndex(idx[1]), b.block_map[:,1]))
   ArrayBlockView(ArrayBlock(array,fill(true,bs)),bmap)
 end
 

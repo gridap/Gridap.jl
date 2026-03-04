@@ -29,8 +29,8 @@ end
 
 # Quadrature API
 
-function get_name(q::PolytopalQuadrature{D,T,Q}) where {D,T,Q}
-  "PolytopalQuadrature{$(D),$(T),$(Q)}"
+function get_name(q::PolytopalQuadrature{D,Dp,T,Q}) where {D,Dp,T,Q}
+  "PolytopalQuadrature{$(D),$(Dp),$(T),$(Q)}"
 end
 
 get_coordinates(q::PolytopalQuadrature) = evaluate(PQuadCoordsMap(),q)

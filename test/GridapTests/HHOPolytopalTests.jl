@@ -97,6 +97,7 @@ Xp = FESpaces.PatchFESpace(X,ptopo)
 
 R  = reconstruction_operator(ptopo,L,Y,Ωp,Γp,dΩp,dΓp)
 PΓ = projection_operator(M, Γp, dΓp)
+PΩ = projection_operator(V, Ωp, dΩp)
 PΓ_mf = mf_projection_operator(M, Γp, dΓp)
 PΩ_mf = patch_projection_operator(ptopo,V,Xp,Ωp,dΩp)
 
@@ -120,6 +121,11 @@ function SΓb(Ru)
   PΓPΩRu_Ω, PΓPΩRu_Γ = PΓ_mf(PΩ_mf(Ru))
   return (PΓRu_Ω - PΓPΩRu_Ω) + (PΓRu_Γ - PΓPΩRu_Γ)
 end
+function SΓc((RuT,RuF))
+  PΓRuT, PΓRuF = PΓ(RuT), PΓ(RuF)
+  PΩRuT, PΩRuF = PΩ(RuT), PΩ(RuF)
+  return (PΓRuT - PΩRuT) + (PΓRuF - PΩRuF)
+end
 
 patch_assem = FESpaces.PatchAssembler(ptopo,X,Y)
 
@@ -129,7 +135,7 @@ function patch_weakform()
   mass_Γ(u,v) = ∫(hFinv*(u*v))dΓp
   Ru, Rv = R(u), R(v)
   SΓa_u, SΓa_v = SΓa(u), SΓa(v)
-  SΓb_u, SΓb_v = SΓb(Ru), SΓb(Rv)
+  SΓb_u, SΓb_v = SΓc(Ru), SΓc(Rv)
 
   data = FESpaces.collect_and_merge_cell_matrix_and_vector(patch_assem,
     (Xp, Xp, a(Ru,Rv) + mass_Γ(SΓb_u,SΓb_v), DomainContribution(), zero(Xp)),

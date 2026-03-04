@@ -95,60 +95,29 @@ function PolytopalFESpace(
     cell_shapefuns = orthogonalise_basis(cell_shapefuns, trian, order)
   end
   fe_basis = SingleFieldFEBasis(cell_shapefuns, trian, TestBasis(), domain_style)
-  
-  ncomps = num_components(return_type(first(cell_prebasis)))
-  if !isnothing(dirichlet_masks)
-    @check length(dirichlet_masks) == ncomps
-    dirichlet_components = dirichlet_masks
-  else
-    dirichlet_components = fill(true,ncomps)
-  end
-
-  ctype_to_prebasis, cell_to_ctype = compress_cell_data(cell_prebasis)
-  ctype_to_conformity = map(MonomialDofConformity,ctype_to_prebasis)
-  metadata = ctype_to_conformity
+  cell_conformity = DiscontinuousCellConformity(cell_shapefuns)
 
   ntags = length(dirichlet_tags)
   if ntags != 0
     @notimplementedif !isnothing(local_kernel)
     cell_to_tag = get_face_tag_index(labels,dirichlet_tags,Dc)
     cell_is_dirichlet = map(!isequal(UNSET),cell_to_tag)
-    ctype_to_ldof_to_comp = map(c -> c.dof_to_comp, ctype_to_conformity)
     cell_dof_ids, nfree, ndir, dirichlet_dof_tag, dirichlet_cells = compute_discontinuous_cell_dofs(
-      cell_to_ctype, ctype_to_ldof_to_comp, cell_to_tag, dirichlet_components
+      cell_conformity, cell_to_tag, dirichlet_masks
     )
   else
     ndir = 0
     dirichlet_dof_tag = Int8[]
     dirichlet_cells = Int32[]
     cell_is_dirichlet = fill(false,num_cells(trian))
-
-    ctype_to_shapefuns = Base.OneTo(length(cell_shapefuns))
-    ctype_to_ndofs = lazy_map(length,cell_shapefuns)
-    cell_dof_ids, nfree = compute_discontinuous_cell_dofs(ctype_to_shapefuns,ctype_to_ndofs)
+    cell_dof_ids, nfree = compute_discontinuous_cell_dofs(cell_conformity)
   end
 
+  metadata = cell_conformity
   return PolytopalFESpace(
     vector_type,nfree,ndir,cell_dof_ids,fe_basis,
     cell_is_dirichlet,dirichlet_dof_tag,dirichlet_cells,ntags,
     order,metadata
-  )
-end
-
-struct MonomialDofConformity{D,V}
-  orders::NTuple{D,Int}
-  terms::Vector{CartesianIndex{D}}
-  dof_to_term::Vector{Int}
-  dof_to_comp::Vector{Int}
-  term_and_comp_to_dof::Vector{V}
-end
-
-function MonomialDofConformity(basis::Polynomials.MonomialBasis)
-  T = return_type(basis)
-  nterms = length(basis.terms)
-  dof_to_term, dof_to_comp, term_and_comp_to_dof = ReferenceFEs._generate_dof_layout_node_major(T,nterms)
-  MonomialDofConformity(
-    basis.orders, basis.terms, dof_to_term, dof_to_comp, term_and_comp_to_dof
   )
 end
 
@@ -163,6 +132,7 @@ get_triangulation(f::PolytopalFESpace) = get_triangulation(f.fe_basis)
 get_dof_value_type(f::PolytopalFESpace{V}) where V = eltype(V)
 get_vector_type(f::PolytopalFESpace{V}) where V = V
 get_cell_is_dirichlet(f::PolytopalFESpace) = f.cell_is_dirichlet
+get_cell_conformity(f::PolytopalFESpace{V,<:CellConformity}) where V = f.metadata
 
 # SingleFieldFESpace interface
 
@@ -275,6 +245,7 @@ end
 
 # Orthogonalise a basis against itself, with respect 
 # of the inner product defined by M
+# An alternative would be N = inv(cholesky(M).U)
 function gram_shmidt!(N,M)
   n = size(M,1)
   fill!(N,0.0)
@@ -402,75 +373,6 @@ function shoelace(face_ents)
   return area
 end
 
-# function get_facet_measure(p::Polytope{D}, face::Int) where D
-#   measures = Float64[]
-#   if D == 3
-#     @notimplemented
-#   elseif isa(p, ExtrusionPolytope{2})
-#     if p == QUAD 
-#       perm = [1,2,4,3]
-#     elseif p == TRI
-#       perm = [1,2,3]
-#     end
-#   elseif isa(p, Polygon)   
-#     perm = collect(1:length(p.edge_vertex_graph))
-#   end
-# 
-#   dim = get_dimranges(p)[face+1]
-#   face_ents = get_face_coordinates(p)[dim]
-#   if face == 0
-#     for entity in face_ents
-#       push!(measures, 0.0)
-#     end
-#   elseif face == 1
-#     for entity in face_ents
-#       p1, p2 = entity
-#       push!(measures, norm(p2-p1))
-#     end
-#   elseif face == 2
-#     face_ents = map(Reindex(face_ents...),perm)
-#     area = shoelace(face_ents)
-#     push!(measures, area)
-#   end
-#   return measures
-# end
-
-# function get_facet_centroid(p::Polytope{D}, face::Int) where D
-# 
-#   if D == 3
-#     @notimplemented
-#   end
-# 
-#   dim = get_dimranges(p)[face+1]
-#   face_coords = get_face_coordinates(p)[dim]
-#   if isa(p, ExtrusionPolytope{2}) || isa(p, ExtrusionPolytope{1})
-#     if face == 1 || face == 2
-#       centroid = mean.(face_coords)
-#     end
-#   elseif isa(p, Polygon)
-#     perm = collect(1:length(p.edge_vertex_graph))
-#     if face == 1
-#       centroid = mean.(face_coords)
-#     elseif face == 2
-#       ents = map(Reindex(face_coords...),perm)
-#       shift = circshift(ents, -1)
-# 
-#       components_x = map(ents, shift) do x1, x2
-#         ( x1[1] + x2[1] ) * ( x1[1] * x2[2] - x2[1] * x1[2] )
-#       end
-#       components_y = map(ents, shift) do x1, x2
-#         ( x1[2] + x2[2] ) * ( x1[1] * x2[2] - x2[1] * x1[2] )
-#       end
-#       
-#       area = get_facet_measure(p, face)
-#       centroid_x = (1 ./ (6*area)) * sum(components_x)
-#       centroid_y = (1 ./ (6*area)) * sum(components_y)        
-#       centroid = VectorValue{2, Float64}(centroid_x..., centroid_y...)
-#     end
-#   end
-#   return centroid
-# end
-
 function get_facet_diameter(p::Polytope{D}, face::Int) where D
   if D == 3
     @notimplemented
@@ -523,29 +425,5 @@ function FESpaces.renumber_free_and_dirichlet_dof_ids(
     space.ntags,
     space.order,
     space.metadata
-  )
-end
-
-function get_cell_conformity(space::PolytopalFESpace)
-  trian = get_triangulation(space)
-  
-  monomial_conformity = only(space.metadata)
-  ndofs = length(monomial_conformity.dof_to_term)
-  D = length(monomial_conformity.orders)
-
-  cell_ctype = get_cell_type(trian)
-  ctype_poly = get_polytopes(trian)
-
-  ctype_lface_own_ldofs = map(ctype_poly) do p
-    nfaces = num_faces(p)
-    [ifelse(isequal(face,nfaces),collect(1:ndofs),Int[]) for face in 1:nfaces]
-  end
-  ctype_lface_pindex_pdofs = map(ReferenceFEs._trivial_face_own_dofs_permutations, ctype_lface_own_ldofs)
-  d_ctype_num_faces = [
-    map(p -> num_faces(p,d), ctype_poly) for d in 0:D
-  ]
-
-  return CellConformity(
-    cell_ctype, ctype_lface_own_ldofs, ctype_lface_pindex_pdofs, d_ctype_num_faces
   )
 end

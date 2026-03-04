@@ -89,10 +89,11 @@ import Base: IndexStyle, CartesianIndices, LinearIndices
 import Base: adjoint
 import Base: transpose
 import Base: rand
+import Base: sqrt
 
-import LinearAlgebra: det, inv, tr, cross, dot, norm, eigen
+import LinearAlgebra: det, inv, tr, cross, dot, norm, normalize, eigen
 # Reexport from LinearAlgebra (just for convenience)
-export det, inv, tr, cross, dot, norm, eigen, ×, ⋅
+export det, inv, tr, cross, dot, norm, normalize, eigen, ×, ⋅
 
 import Gridap.Arrays: get_array
 

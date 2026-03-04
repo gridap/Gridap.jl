@@ -286,6 +286,13 @@ function get_face_coordinates(g::GridTopology,d::Integer)
 end
 
 """
+    get_cell_coordinates(g::GridTopology)
+"""
+function get_cell_coordinates(g::GridTopology)
+  get_face_coordinates(g,num_cell_dims(g))
+end
+
+"""
     get_cell_polytopes(topo::GridTopology)
 """
 function get_cell_polytopes(topo::GridTopology)
@@ -497,12 +504,12 @@ function compute_cell_permutations(top::GridTopology,d::Integer)
 
   D = num_cell_dims(top)
   cell_to_lface_to_face = Table(get_faces(top,D,d))
-  data = similar(cell_to_lface_to_face.data,Int8)
+  data = similar(cell_to_lface_to_face.data,GridapLocalInt)
   ptrs = cell_to_lface_to_face.ptrs
   cell_to_lface_to_pindex = Table(data,ptrs)
 
   if d == D || d == 0
-    fill!(cell_to_lface_to_pindex.data,Int8(1))
+    fill!(cell_to_lface_to_pindex.data,GridapLocalInt(1))
     return cell_to_lface_to_pindex
   end
 
@@ -554,6 +561,75 @@ end
 function restrict(topo::GridTopology,parent_cell_to_mask::AbstractVector{Bool})
   cell_to_parent_cell = findall(parent_cell_to_mask)
   restrict(topo, cell_to_parent_cell)
+end
+
+"""
+    compute_graph(topo::GridTopology, d_node::Integer, d_edge::Integer; self_loops=true, Tv=Int8)
+
+Computes the adjacency graph between the `d_node` entities w.r.t the `d_edge` entities. The 
+graph is returned as a sparse matrix, where nonzero entries indicate an adjacency between the nodes.
+
+For instance for a D-dimensional topology and pairs `(d_node,d_edge)` we have: 
+
+- `(1,0)`: graph of edge-to-edge adjacencies where two edges (dim 1) are connected if they share a node (dim 0).
+- `(D,D-1)`: graph of cell-to-cell adjacencies where two cells (dim D) are connected if they share a facet (dim D-1).
+
+Weights are defaulted to `one(Tv)`. If `self_loops` is `true`, self-loops (diagonal entries) are included in the graph.
+
+"""
+function compute_graph(topo::GridTopology, d_node::Integer, d_edge::Integer; self_loops=true, Tv=Int8)
+  edge_to_nodes = Geometry.get_faces(topo, d_edge, d_node)
+  node_to_edges = Geometry.get_faces(topo, d_node, d_edge)
+  compute_graph(node_to_edges, edge_to_nodes; self_loops, Tv)
+end
+
+function compute_graph(
+  node_to_edges::Table,edge_to_nodes::Table;Tv=Int8,self_loops=false
+)
+  nodes = eachindex(node_to_edges)
+  node_to_lnode = eachindex(node_to_edges)
+  return compute_graph(
+    nodes,node_to_edges,edge_to_nodes;node_to_lnode,Tv,self_loops
+  )
+end
+
+function compute_graph(
+  nodes,node_to_edges::Table,edge_to_nodes::Table;
+  node_to_lnode = Dict{Int32,Int32}(n => i for (i,n) in enumerate(nodes)),
+  self_loops=true,
+  Tv = Int8,
+)
+  ndata = 0
+  for node in nodes
+    ndata += self_loops
+    for edge in view(node_to_edges,node)
+      for nbor in view(edge_to_nodes,edge)
+        ndata += (nbor != node) && (nbor in nodes)
+      end
+    end
+  end
+  I = zeros(eltype(nodes),ndata)
+  J = zeros(eltype(nodes),ndata)
+  p = 0
+  for (lnode,node) in enumerate(nodes)
+    if self_loops
+      p += 1
+      I[p] = lnode
+      J[p] = lnode
+    end
+    for edge in view(node_to_edges,node)
+      for nbor in view(edge_to_nodes,edge)
+        if (nbor != node) && (nbor in nodes)
+          p += 1
+          I[p] = lnode
+          J[p] = node_to_lnode[nbor]
+        end
+      end
+    end
+  end
+  V = ones(Tv,ndata)
+  n = length(nodes)
+  return sparse(I,J,V,n,n)
 end
 
 # Helpers
@@ -1020,16 +1096,12 @@ function _cell_to_faces_fill!(
   faces_around,
   faces_around_scratch)
 
-  ncells = length(cell_to_ctype)
+  for (cell,ctype) in enumerate(cell_to_ctype)
 
-  for cell in 1:ncells
-
-    ctype = cell_to_ctype[cell]
     lface_to_lvertices = ctype_to_lface_to_lvertices[ctype]
-    nlfaces = length(lface_to_lvertices)
-    a = cell_to_faces_ptrs[cell]-1
+    offset = cell_to_faces_ptrs[cell]-1
 
-    for lface in 1:nlfaces
+    for lface in eachindex(lface_to_lvertices)
 
       _fill_vertices_in_lface!(
         vertices,
@@ -1048,7 +1120,7 @@ function _cell_to_faces_fill!(
 
       for face in faces_around
         if face != UNSET
-          cell_to_faces_data[a+lface] = face
+          cell_to_faces_data[offset+lface] = face
           break
         end
       end
@@ -1090,9 +1162,7 @@ function _cell_to_faces_count!(
     type_to_nlfaces,
     cell_to_ctype)
 
-  ncells = length(cell_to_ctype)
-  for cell in 1:ncells
-    ctype = cell_to_ctype[cell]
+  for (cell,ctype) in enumerate(cell_to_ctype)
     nlfaces = type_to_nlfaces[ctype]
     cell_to_faces_ptrs[cell+1] = nlfaces
   end
@@ -1116,18 +1186,14 @@ function  _cell_to_faces_fill!(
 
   face = 1
 
-  ncells = length(cell_to_ctype)
+  for (cell,ctype) in enumerate(cell_to_ctype)
 
-  for cell in 1:ncells
-
-    ctype = cell_to_ctype[cell]
     lface_to_lvertices = ctype_to_lface_to_lvertices[ctype]
-    nlfaces = length(lface_to_lvertices)
-    a = cell_to_faces_ptrs[cell]-1
+    offset = cell_to_faces_ptrs[cell]-1
 
-    for lface in 1:nlfaces
+    for lface in eachindex(lface_to_lvertices)
 
-      if cell_to_faces_data[a+lface] != UNSET
+      if cell_to_faces_data[offset+lface] != UNSET
         continue
       end
 
@@ -1185,6 +1251,10 @@ function _fill_face_in_cells_around!(
       continue
     end
     lface = lface_of_cells_around[icell_around]
+    if lface == UNSET
+      # JORDI: This can happen for 3D polyhedrons that are not convex.
+      continue
+    end
     f = cell_to_faces_ptrs[cell_around]-1
     cell_to_faces_data[f+lface] = face
   end
