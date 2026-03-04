@@ -326,6 +326,7 @@ function get_cell_constraints(f::FESpaceWithLinearConstraints)
   cell_to_mat = get_cell_constraints(f.space)
   return lazy_map(k,get_cell_dof_ids(f),get_cell_dof_ids(f.space),cell_to_mat)
 end
+
 struct LinearConstraintsMap{A,B} <: Map
   DOF_to_msDOF::Vector{Int}
   sDOF_to_mdofs::A
@@ -333,6 +334,22 @@ struct LinearConstraintsMap{A,B} <: Map
   n_mdofs::Int
   n_fmdofs::Int
   n_fdofs::Int
+end
+
+function LinearConstraintsMap(
+  sDOF_to_dof::AbstractVector{<:Integer},
+  sDOF_to_dofs::Table,
+  sDOF_to_coeffs::Table,
+  space::SingleFieldFESpace
+)
+  mDOF_to_dof, sDOF_to_mdofs, n_fmdofs = _find_master_dofs(
+    sDOF_to_dof, sDOF_to_dofs, space
+  )
+  DOF_to_msDOF = generate_DOF_to_msDOF_map(space,mDOF_to_dof,sDOF_to_dof)
+  return LinearConstraintsMap(
+    DOF_to_msDOF, sDOF_to_mdofs, sDOF_to_coeffs,
+    length(mDOF_to_dof), n_fmdofs, num_free_dofs(space)
+  )
 end
 
 function return_cache(k::LinearConstraintsMap,mdofs,dofs,mat)
