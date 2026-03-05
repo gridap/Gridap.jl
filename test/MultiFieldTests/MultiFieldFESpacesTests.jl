@@ -8,6 +8,7 @@ using Gridap.FESpaces
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.CellData
+using Gridap.Algebra
 using Test
 
 using Gridap.MultiField
@@ -115,5 +116,56 @@ interpolate!([f,f],x,X)
 dv = zero_dirichlet_values(X)
 interpolate_everywhere!([f,f],x,dv,X)
 @test x == get_free_dof_values(fh)
+
+@testset "BlockMultiFieldStyle with non-identity permutation" begin
+  model2 = CartesianDiscreteModel((0,1,0,1),(2,2))
+  V2 = TestFESpace(model2,ReferenceFE(lagrangian,Float64,2);conformity=:H1)
+  Q2 = TestFESpace(model2,ReferenceFE(lagrangian,Float64,1);conformity=:L2)
+  U2 = TrialFESpace(V2)
+  P2 = TrialFESpace(Q2)
+  dΩ2 = Measure(Triangulation(model2),2)
+
+  a2((u,p),(v,q)) = ∫( ∇(v)⋅∇(u) + p*q )dΩ2
+  l2((v,q)) = ∫( v + q )dΩ2
+
+  mfs_ref = ConsecutiveMultiFieldStyle()
+  X_ref = MultiFieldFESpace([U2,P2];style=mfs_ref)
+  Y_ref = MultiFieldFESpace([V2,Q2];style=mfs_ref)
+  xh_ref = solve(AffineFEOperator(a2,l2,X_ref,Y_ref))
+
+  mfs_perm = BlockMultiFieldStyle(2,(1,1),(2,1))
+  X_perm = MultiFieldFESpace([U2,P2];style=mfs_perm)
+  Y_perm = MultiFieldFESpace([V2,Q2];style=mfs_perm)
+  xh_perm = solve(AffineFEOperator(a2,l2,X_perm,Y_perm))
+
+  uh_ref, ph_ref = xh_ref
+  uh_perm, ph_perm = xh_perm
+  @test sum(∫((uh_ref - uh_perm)*(uh_ref - uh_perm))dΩ2) < 1e-24
+  @test sum(∫((ph_ref - ph_perm)*(ph_ref - ph_perm))dΩ2) < 1e-24
+  V1 = TestFESpace(model2,ReferenceFE(lagrangian,Float64,2);conformity=:H1)
+  V2 = TestFESpace(model2,ReferenceFE(lagrangian,Float64,1);conformity=:L2)
+  V3 = TestFESpace(model2,ReferenceFE(lagrangian,Float64,1);conformity=:L2)
+
+  # Self-inverse permutation P=(2,1): both fields alone in their blocks → offsets all zero.
+  # This case was unaffected by either bug.
+  mfs1 = BlockMultiFieldStyle(2,(1,1),(2,1))
+  Y1 = MultiFieldFESpace([V1,V2]; style=mfs1)
+  off1 = MultiField.compute_field_offsets(Y1)
+  @test off1[1] == 0
+  @test off1[2] == 0
+
+  # Non-self-inverse permutation P=(3,1,2), SB=(2,1):
+  #   block 1 = [field3, field1],  block 2 = [field2]
+  # Correct offsets (after fix):
+  #   field3 leads block1  → offset 0
+  #   field1 follows field3 in block1 → offset = num_free_dofs(V3)
+  #   field2 alone in block2 → offset 0
+  mfs2 = BlockMultiFieldStyle(2,(2,1),(3,1,2))
+  Y2 = MultiFieldFESpace([V1,V2,V3]; style=mfs2)
+  off2 = MultiField.compute_field_offsets(Y2)
+  @test off2[3] == 0
+  @test off2[1] == num_free_dofs(V3)
+  @test off2[2] == 0
+end
 
 end # module
