@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `MappedGrid` now returns its internal geometric map. Since PR[#1226](https://github.com/gridap/Gridap.jl/pull/1226).
 - Fixed bug in skeleton transient fields. Since PR[1229](https://github.com/gridap/Gridap.jl/pull/1229).
 - Fixed bug in `FineToCoarseField` internal indexing. Since PR[1224](https://github.com/gridap/Gridap.jl/pull/1224).
+- Fixed `outer(f, s::ShiftedNabla)` silently ignoring the shift contribution.
 
 ## [0.19.8] - 2026-02-19
 
