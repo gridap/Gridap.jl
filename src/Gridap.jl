@@ -59,6 +59,8 @@ include("ODEs/ODEs.jl")
 
 include("Adaptivity/Adaptivity.jl")
 
+include("Inverse/Inverse.jl")
+
 include("Exports.jl")
 
 end # module
