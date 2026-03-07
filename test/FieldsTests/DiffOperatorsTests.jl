@@ -54,6 +54,9 @@ g(x) = 2*x[2]
 @test (∇+p)⊗f != nothing
 @test f⊗(∇+p) != nothing
 
+s = ∇ - v
+@test evaluate(outer(f,s),x) == transpose.(evaluate(outer(s,f),x))
+
 l = 10
 f = Fill(f,l)
 
