@@ -219,6 +219,22 @@ ref_model = refine(model3, refinement_method = "barycentric")
 visualize && writevtk(Triangulation(ref_model.model),joinpath(path,"barycentric6"))
 test_grid_transfers(model3, ref_model, 1)
 
+## E) Regression: elseif p == HEX branch produces correct faces_list
+#    For HEX barycentric refinement, 2-face barycenters must be included as new vertices.
+#    For TET, 2-face list must be empty.
+let
+  topo3_hex = get_grid_topology(model3)
+  topo3_tet = get_grid_topology(model4)
+  _, faces_list_hex = Adaptivity.setup_edge_based_rrules(
+    Adaptivity.BarycentricRefinement(), topo3_hex, nothing)
+  _, faces_list_tet = Adaptivity.setup_edge_based_rrules(
+    Adaptivity.BarycentricRefinement(), topo3_tet, nothing)
+  @test length(faces_list_hex) == 4
+  @test length(faces_list_tet) == 4
+  @test !isempty(faces_list_hex[3])  # HEX includes 2-face barycenters
+  @test  isempty(faces_list_tet[3])  # TET does not
+end
+
 ############################################################################################
 ### Simplexify refinement
 

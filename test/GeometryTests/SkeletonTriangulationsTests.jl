@@ -118,7 +118,16 @@ tr = get_tangent_vector(rtrian)
 
 @test ti isa SkeletonPair
 @test tl isa Gridap.CellData.GenericCellField
-@test tr isa Gridap.CellData.GenericCellField 
+@test tr isa Gridap.CellData.GenericCellField
+
+# Regression: get_tangent_vector on skeleton must return tangent vectors,
+# not normal vectors. Verify orthogonality of tangent and normal.
+ni = get_normal_vector(itrian)
+dΓi = Measure(itrian, 2)
+ndott_plus = ni.plus ⋅ ti.plus
+ndott_minus = ni.minus ⋅ ti.minus
+@test sum(∫(ndott_plus * ndott_plus)*dΓi) < 1e-15
+@test sum(∫(ndott_minus * ndott_minus)*dΓi) < 1e-15
 
 reffe = LagrangianRefFE(Float64,QUAD,(2,2))
 conf = CDConformity((CONT,DISC))
