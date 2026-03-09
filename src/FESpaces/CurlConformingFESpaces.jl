@@ -38,7 +38,7 @@ function evaluate!(cache,::TransformNedelecDofBasis,dofs,Jtx,ownids)
     face_moments_out = basis.face_moments[face]
     face_moments_in = dofs.face_moments[face]
     for p in 1:length(face_point_ids)
-      F = transpose(Jtx[p])
+      F = transpose(Jtx[face_point_ids[p]])
       for i in 1:length(face_dofs_ids)
         face_moments_out[p,i] = F⋅face_moments_in[p,i]
       end
