@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed bug in skeleton transient fields. Since PR[1229](https://github.com/gridap/Gridap.jl/pull/1229).
 - Fixed bug in `FineToCoarseField` internal indexing. Since PR[1224](https://github.com/gridap/Gridap.jl/pull/1224).
 - Fixed `outer(f, s::ShiftedNabla)` silently ignoring the shift contribution.
+- Fixed incorrect `else p == HEX` control flow in `EdgeBasedRefinement.jl`. Since PR[1246] (https://github.com/gridap/Gridap.jl/pull/1246).
+- Fixed copy-paste bug where `get_tangent_vector` called `get_normal_vector` in `CellFields.jl`. Since PR[1246] (https://github.com/gridap/Gridap.jl/pull/1246).
 
 ## [0.19.8] - 2026-02-19
 
