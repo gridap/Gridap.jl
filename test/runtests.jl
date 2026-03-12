@@ -20,7 +20,7 @@ const ALLOWED_TESTCASES = Set([
 ])
 
 if !(TESTCASE in ALLOWED_TESTCASES)
-  error("Unrecognized TESTCASE: \"$TESTCASE\". Allowed values are: $(collect(ALLOWED_TESTCASES))")
+  error("Unrecognized TESTCASE: \"$TESTCASE\". Allowed values are: $(sort(collect(ALLOWED_TESTCASES)))")
 end
 if TESTCASE ∈ ("all", "unit-basics")
   @time @testset "Helpers"      begin include("HelpersTests/runtests.jl") end
