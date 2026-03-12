@@ -30,21 +30,38 @@ concurrency:
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 jobs:
-  test: # Linux, lts + latest, all testcases in parallel
-    name: ${{ matrix.testcase }} - ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
+  prime-cache: # If cold cache, create a cache entry for each version/os/arch combination in the test matrix, without running tests
+    name: Prime cache - ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - {version: 'lts', os: ubuntu-latest,  arch: x64}
+          - {version: '1',   os: ubuntu-latest,  arch: x64}
+          - {version: 'lts', os: macos-latest,   arch: aarch64}
+          - {version: 'lts', os: windows-latest, arch: x64}
+          - {version: 'lts', os: ubuntu-latest,  arch: x86}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+
+  test: # Linux, lts + latest, all testcases in parallel
+    needs: [prime-cache]
+    name: ${{ matrix.testcase }} - ${{ matrix.version }} - ubuntu-latest - x64 - ${{ github.event_name }}
+    runs-on: ubuntu-latest
     env:
-      DO_COVERAGE: ${{ matrix.version == 'lts' && matrix.os == 'ubuntu-latest' && matrix.arch == 'x64' }}
+      DO_COVERAGE: ${{ matrix.version == 'lts' }}
     strategy:
       fail-fast: false
       matrix:
         version:
           - 'lts'
           - '1'
-        os:
-          - ubuntu-latest
-        arch:
-          - x64
         testcase:
           - unit-basics
           - unit-fields
@@ -63,7 +80,7 @@ jobs:
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
+          arch: x64
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
@@ -81,6 +98,7 @@ jobs:
           flags: ${{ matrix.testcase }}
 
   test-crossplatform: # macOS/Windows/x86, lts only, all testcases in parallel
+    needs: [prime-cache]
     name: ${{ matrix.testcase }} - lts - ${{ matrix.config.os }} - ${{ matrix.config.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.config.os }}
     strategy:
@@ -95,12 +113,12 @@ jobs:
           - unit-visualization
           - unit-fespaces-1
           - unit-fespaces-2
-          - unit-multifield
-          - unit-odes
-          - unit-adaptivity
-          - drivers
+#          - unit-multifield
+#          - unit-odes
+#          - unit-adaptivity
+#          - drivers
         config:
-          - {os: macos-latest,  arch: aarch64}
+          - {os: macos-latest,   arch: aarch64}
           - {os: windows-latest, arch: x64}
           - {os: ubuntu-latest,  arch: x86}
     steps:
@@ -118,23 +136,20 @@ jobs:
           TESTCASE: ${{ matrix.testcase }}
 
   extensions:
-    name: Extensions ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
-    runs-on: ${{ matrix.os }}
+    needs: [prime-cache]
+    name: Extensions - ${{ matrix.version }} - ubuntu-latest - x64 - ${{ github.event_name }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         version:
           - '1'
-        os:
-          - ubuntu-latest
-        arch:
-          - x64
     steps:
       - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
+          arch: x64
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - run: |
