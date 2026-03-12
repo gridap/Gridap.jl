@@ -152,7 +152,7 @@ function get_model2(model1)
     ref_rule_1, ref_rule_2 = get_ref_rules()
 
     ptrs=[1,2]
-    values=Vector{Gridap.Adaptivity.RefinementRule}(undef, 2)
+    values=Vector{typeof(ref_rule_1)}(undef, 2)
     values[1]=ref_rule_1
     values[2]=ref_rule_2
     refinement_rules=Gridap.Arrays.CompressedArray(values, ptrs)
@@ -198,9 +198,9 @@ function get_model3(model2)
     n2o_cell_to_child_id = Gridap.Arrays.Table(Vector{Int64}[[1], [1, 2, 3, 4]])
 
 
-    ptrs=[1, 2, 2, 2, 2]
-    values=Vector{Gridap.Adaptivity.RefinementRule}(undef, 2)
     ref_rule_1, ref_rule_2 = get_ref_rules()
+    ptrs=[1, 2, 2, 2, 2]
+    values=Vector{typeof(ref_rule_1)}(undef, 2)
     values[1]=ref_rule_1
     values[2]=ref_rule_2
     refinement_rules=Gridap.Arrays.CompressedArray(values, ptrs)
