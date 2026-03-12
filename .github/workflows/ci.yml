@@ -24,36 +24,48 @@ on:
       - 'docs/**'
   workflow_dispatch: # Allow manual triggering of the workflow from the Actions tab
 
-# Cancel redundant CI tests automatically
+# Cancel redundant CI runs: always for PRs, never for pushes to master
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 jobs:
   test: # Main CI tests
-    name: Tests ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
+    name: ${{ matrix.testcase || 'all' }} - ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
     env:
-      DO_COVERAGE: ${{ matrix.version == '1.10' && matrix.os == 'ubuntu-latest' && matrix.arch == 'x64' }}
+      DO_COVERAGE: ${{ matrix.version == 'lts' && matrix.os == 'ubuntu-latest' && matrix.arch == 'x64' }}
     strategy:
       fail-fast: false
-      matrix: # Main tests for linux
+      matrix: # Split testcases run in parallel on linux
         version:
-          - '1.10'
-          - '1.11'
-          - '1.12'
+          - 'lts'
+          - '1'
         os:
           - ubuntu-latest
         arch:
           - x64
-        include: # Test macos/windows/x86 on latest LTS
-          - version: '1.10'
+        testcase:
+          - unit-basics
+          - unit-fields
+          - unit-referencefes
+          - unit-geometry
+          - unit-celldata
+          - unit-visualization
+          - unit-fespaces-1
+          - unit-fespaces-2
+          - unit-multifield
+          - unit-odes
+          - unit-adaptivity
+          - drivers
+        include: # LTS-only on macos/windows/x86
+          - version: 'lts'
             os: macos-latest
             arch: aarch64
-          - version: '1.10'
+          - version: 'lts'
             os: windows-latest
             arch: x64
-          - version: '1.10'
+          - version: 'lts'
             os: ubuntu-latest
             arch: x86
     steps:
@@ -67,6 +79,8 @@ jobs:
       - uses: julia-actions/julia-runtest@v1
         with:
           coverage: ${{ env.DO_COVERAGE }}
+        env:
+          TESTCASE: ${{ matrix.testcase || 'all' }}
 
       - uses: julia-actions/julia-processcoverage@v1
         if: ${{ env.DO_COVERAGE }}
@@ -75,37 +89,8 @@ jobs:
         with:
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
-          flags: tests
+          flags: ${{ matrix.testcase || 'tests' }}
 
-  drivers:
-    name: Drivers ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        version:
-          - '1.10'
-        os:
-          - ubuntu-latest
-        arch:
-          - x64
-    steps:
-      - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@v2
-        with:
-          version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
-      - uses: julia-actions/cache@v2
-      - uses: julia-actions/julia-buildpkg@v1
-      - run: |
-          julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.instantiate()'
-          julia --color=yes --project=. --code-coverage=user --depwarn=yes -e 'include("test/GridapTests/runtests.jl")'
-      - uses: julia-actions/julia-processcoverage@v1
-      - uses: codecov/codecov-action@v5
-        with:
-          verbose: true
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: drivers
   extensions:
     name: Extensions ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
@@ -113,7 +98,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.10'
+          - '1'
         os:
           - ubuntu-latest
         arch:
