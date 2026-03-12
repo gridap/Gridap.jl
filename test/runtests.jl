@@ -3,7 +3,25 @@ module GridapRunTests
 using Test
 
 TESTCASE = get(ENV, "TESTCASE", "all")
+const ALLOWED_TESTCASES = Set([
+  "all",
+  "unit-basics",
+  "unit-fields",
+  "unit-referencefes",
+  "unit-geometry",
+  "unit-celldata",
+  "unit-visualization",
+  "unit-fespaces-1",
+  "unit-fespaces-2",
+  "unit-multifield",
+  "unit-odes",
+  "unit-adaptivity",
+  "drivers",
+])
 
+if !(TESTCASE in ALLOWED_TESTCASES)
+  error("Unrecognized TESTCASE: \"$TESTCASE\". Allowed values are: $(collect(ALLOWED_TESTCASES))")
+end
 if TESTCASE ∈ ("all", "unit-basics")
   @time @testset "Helpers"      begin include("HelpersTests/runtests.jl") end
   @time @testset "Io"           begin include("IoTests/runtests.jl") end
