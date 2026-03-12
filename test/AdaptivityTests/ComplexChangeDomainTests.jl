@@ -104,29 +104,29 @@ end
 # structures.
 
 function get_model1()
-    m1s_grid_node_coordinates = 
-        VectorValue{2, Float64}[(0.0, 0.0), (0.5, 0.0), (0.0, 1.0), (0.5, 1.0), (1.0, 0.0), (1.0, 1.0)]
-    m1s_grid_cell_node_ids = 
-        Gridap.Arrays.Table(Vector{Int32}[[1, 2, 3, 4], [2, 5, 4, 6]])
+  m1s_grid_node_coordinates = 
+    VectorValue{2, Float64}[(0.0, 0.0), (0.5, 0.0), (0.0, 1.0), (0.5, 1.0), (1.0, 0.0), (1.0, 1.0)]
+  m1s_grid_cell_node_ids = 
+    Gridap.Arrays.Table(Vector{Int32}[[1, 2, 3, 4], [2, 5, 4, 6]])
 
-    Gridap.Geometry.UnstructuredDiscreteModel(Gridap.Geometry.UnstructuredGrid(
-        m1s_grid_node_coordinates,
-        m1s_grid_cell_node_ids,
-        [Gridap.ReferenceFEs.LagrangianRefFE(Float64,QUAD,1)],
-        collect(Fill(Int8(1),2)),
-        Gridap.Geometry.Oriented(),
-        has_affine_map=true))
+  Gridap.Geometry.UnstructuredDiscreteModel(Gridap.Geometry.UnstructuredGrid(
+    m1s_grid_node_coordinates,
+    m1s_grid_cell_node_ids,
+    [Gridap.ReferenceFEs.LagrangianRefFE(Float64,QUAD,1)],
+    collect(Fill(Int8(1),2)),
+    Gridap.Geometry.Oriented(),
+    has_affine_map=true))
 end
 
 function get_ref_rules()
-    ref_rule_1=Gridap.Adaptivity.RefinementRule(Gridap.Adaptivity.WithoutRefinement(), 
-                                        QUAD, 
-                                     Gridap.Adaptivity.compute_reference_grid(QUAD,1))
+  ref_rule_1=Gridap.Adaptivity.RefinementRule(Gridap.Adaptivity.WithoutRefinement(), 
+                                    QUAD, 
+                                 Gridap.Adaptivity.compute_reference_grid(QUAD,1))
 
-    ref_rule_2=Gridap.Adaptivity.RefinementRule(Gridap.Adaptivity.GenericRefinement(), 
-                                                QUAD, 
-                                                Gridap.Adaptivity.compute_reference_grid(QUAD,2))
-    ref_rule_1, ref_rule_2
+  ref_rule_2=Gridap.Adaptivity.RefinementRule(Gridap.Adaptivity.GenericRefinement(), 
+                                              QUAD, 
+                                              Gridap.Adaptivity.compute_reference_grid(QUAD,2))
+  ref_rule_1, ref_rule_2
 end
 
 function get_model2(model1)
