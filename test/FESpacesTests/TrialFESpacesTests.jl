@@ -53,6 +53,8 @@ e = u - uh
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order)
 
+@test get_dirichlet_dof_values(uh) ≈ [0.0, 1/3, 2/3, 1/6, 0.5, 5/6]
+
 el2 = sqrt(sum(integrate(inner(e,e),quad)))
 @test el2 < 1.0e-10
 
