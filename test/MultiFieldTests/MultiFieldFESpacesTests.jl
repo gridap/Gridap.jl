@@ -133,9 +133,9 @@ X3 = MultiFieldFESpace([V1,V2,V3];style=BlockMultiFieldStyle(2,(1,2),(1,3,2)))
 
 ndofs = map(num_free_dofs,(V1,V2,V3))
 
-@test MultiField.compute_field_offsets(X1) == [0, ndofs[1], 0]
-@test MultiField.compute_field_offsets(X2) == [ndofs[3], 0, 0]
-@test MultiField.compute_field_offsets(X3) == [0, ndofs[3], 0]
+@test MultiField.compute_field_offsets(X1) == (0, ndofs[1], 0)
+@test MultiField.compute_field_offsets(X2) == (ndofs[3], 0, 0)
+@test MultiField.compute_field_offsets(X3) == (0, ndofs[3], 0)
 
 A1 = assemble_matrix(a,X1,X1)
 A2 = assemble_matrix(a,X2,X2)
