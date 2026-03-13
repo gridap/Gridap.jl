@@ -98,8 +98,7 @@ function Arrays.evaluate!(
   block_fields(fields,::TrialBasis) = lazy_map(BlockMap((1,nfields),fieldid),fields)
 
   sf = evaluate!(nothing,k,u.single_field)
-  data = block_fields(CellData.get_data(sf),BasisStyle(u.single_field))
-  return CellData.similar_cell_field(sf,data)
+  return MultiFieldFEBasisComponent(sf,fieldid,nfields)
 end
 
 @inline function Arrays.evaluate!(

@@ -13,6 +13,7 @@ struct Table{T,Vd<:AbstractVector{T},Vp<:AbstractVector} <: AbstractVector{Vecto
   data::Vd
   ptrs::Vp
   function Table(data::AbstractVector,ptrs::AbstractVector)
+    @check axes(ptrs) == (Base.OneTo(length(ptrs)),) "`Table` assumes 1-based indexing for pointer array"
     new{eltype(data),typeof(data),typeof(ptrs)}(data,ptrs)
   end
 end
@@ -84,7 +85,6 @@ end
 
 empty_table(l::Integer) = empty_table(Int,Int32,l)
 
-
 size(a::Table) = (length(a.ptrs)-1,)
 
 IndexStyle(::Type{<:Table}) = IndexLinear()
@@ -103,21 +103,25 @@ function array_cache(a::Table)
   CachedArray(r)
 end
 
-function getindex!(c,a::Table,i::Integer)
-  pini = a.ptrs[i]
-  l = a.ptrs[i+1] - pini
-  setsize!(c,(l,))
-  pini -= 1
-  r = c.array
-  for j in 1:l
-    @inbounds r[j] = a.data[pini+j]
+@propagate_inbounds function getindex!(c, a::Table, i::Integer)
+  @boundscheck checkbounds(a,i)
+  @inbounds begin
+    pini = a.ptrs[i]
+    l = a.ptrs[i+1] - pini
+    setsize!(c,(l,))
+    pini -= 1
+    r = c.array
+    for j in 1:l
+      r[j] = a.data[pini+j]
+    end
   end
   r
 end
 
-function Base.getindex(a::Table,i::Integer)
+@propagate_inbounds function Base.getindex(a::Table,i::Integer)
+  @boundscheck checkbounds(a,i)
   cache = array_cache(a)
-  getindex!(cache,a,i)
+  @inbounds getindex!(cache,a,i)
 end
 
 function Base.getindex(a::Table,i::UnitRange)
@@ -149,6 +153,108 @@ function Base.getindex(a::Table,ids::AbstractVector{<:Integer})
   Table(data,ptrs)
 end
 
+"""
+    datarange(a::Table,i::Integer)
+    datarange(a::Table,ids::UnitRange{<:Integer})
+
+Given a `Table` and an index or a range of indices, return the
+corresponding range of indices in the underlying data array.
+Similar to `nzrange` for sparse matrices, it allows for convenient 
+iteration over a table:
+
+```julia
+t = Table([[4,7],[8],[9,20,1]])
+for i in eachindex(t)
+  for k in datarange(t,i)
+    val = t.data[k]
+    # stuff ... 
+  end
+end
+```
+
+"""
+@inline function datarange(a::Table,i::Integer)
+  pini = a.ptrs[i]
+  pend = a.ptrs[i+1]-1
+  return pini:pend
+end
+
+@inline function datarange(a::Table,ids::UnitRange{<:Integer})
+  pini = a.ptrs[ids.start]
+  pend = a.ptrs[ids.stop+1]-1
+  return pini:pend
+end
+
+"""
+    dataview(a::Table, i::Integer)
+    dataview(a::Table, ids::UnitRange{<:Integer})
+
+Given a `Table` and an index or a range of indices, return a view
+of the corresponding entries in the underlying data array.
+
+Equivalent to `view(a.data, datarange(a,i))`.
+"""
+dataview(a::Table, ids) = view(a.data, datarange(a,ids))
+
+"""
+    dataiterator(a::Table)
+
+Iterate over the entries of `a` returning the triplets `(i,j,v)` where 
+
+- `i` is the outer index, 
+- `j` is the local inner index, and
+- `v` is the value `a[i][j]`.
+
+## Example
+
+```jldoctest
+julia> t = Table([[4.,7.],[8.],[9.,2.,1.]])
+
+julia> x = collect(dataiterator(t))
+
+julia> x
+6-element Vector{Tuple{Int64, Int64, Float64}}:
+ (1, 1, 4.)
+ (1, 2, 7.)
+ (2, 1, 8.)
+ (3, 1, 9.)
+ (3, 2, 2.)
+ (3, 3, 1.)
+```
+"""
+dataiterator(a::Table) = TableDataIterator(a)
+
+struct TableDataIterator{T,Vd,Vp}
+  t::Table{T,Vd,Vp}
+end
+
+Base.length(a::TableDataIterator) = length(a.t.data)
+Base.size(a::TableDataIterator) = (length(a.t.data),)
+Base.eltype(::Type{<:TableDataIterator{T}}) where T = Tuple{Int,Int,T}
+Base.IteratorSize(::Type{<:TableDataIterator}) = Base.HasLength()
+Base.IteratorEltype(::Type{<:TableDataIterator}) = Base.HasEltype()
+
+function Base.iterate(a::TableDataIterator)
+  isempty(a.t) && (return nothing)
+  i, j, v = 1, 1 , a.t.data[1]
+  return (i,j,v), (i,j)
+end
+
+function Base.iterate(a::TableDataIterator, state)
+  i, j = state
+  data = a.t.data
+  ptrs = a.t.ptrs
+  n = length(ptrs)
+  while (i < n) && (j+1 > ptrs[i+1] - ptrs[i])
+    i += 1
+    j = 0
+  end
+  (i == n) && (return nothing)
+  v = data[ptrs[i] + j]
+  j += 1
+  return (i,j,v), (i,j)
+end
+
 # Helper functions related with Tables
 
 """
@@ -177,7 +283,7 @@ function _generate_data_and_ptrs_fill_ptrs!(ptrs,vv)
   c = array_cache(vv)
   k = 1
   for i in eachindex(vv)
-    v = getindex!(c,vv,i)
+    @inbounds v = getindex!(c,vv,i)
     ptrs[k+1] = length(v)
     k += 1
   end
@@ -187,7 +293,7 @@ function _generate_data_and_ptrs_fill_data!(data,vv)
   c = array_cache(vv)
   k = 1
   for i in eachindex(vv)
-    v = getindex!(c,vv,i)
+    @inbounds v = getindex!(c,vv,i)
     for vi in v
       data[k] = vi
       k += 1
@@ -304,8 +410,10 @@ function inverse_table(
     e = a_to_lb_to_b_ptrs[a+1] - o
     @inbounds for p in s:e
       b = a_to_lb_to_b_data[p]
-      data[ptrs[b]] = a
-      ptrs[b] += o
+      if b != UNSET
+        data[ptrs[b]] = a
+        ptrs[b] += o
+      end
     end
   end
   rewind_ptrs!(ptrs)
@@ -316,7 +424,7 @@ end
 """
 """
 function append_tables_globally(
-  first_table::Table{T,Vd,Vp},tables::Table{T,Vd,Vp}...
+  first_table::Table{T,Vd,Vp}, tables::Table{T,Vd,Vp}...
 ) where {T,Vd,Vp}
   data = copy(first_table.data)
   ptrs = copy(first_table.ptrs)
@@ -390,7 +498,7 @@ Given a `Table`, remove the entries that are empty by modifying its `ptrs` in-pl
 """
 function remove_empty_entries!(table::Table)
   ptrs = table.ptrs
-  
+
   i = 1
   n = length(table)
   while i <= n
@@ -439,20 +547,30 @@ end
 
 """
     find_local_index(a_to_b, b_to_la_to_a) -> a_to_la
+    find_local_index(c_to_a, c_to_b, b_to_la_to_a) -> c_to_lc
 """
-function find_local_index(a_to_b, b_to_la_to_a)
-  @notimplemented "find_local_index only implemented for Table"
+@inline function find_local_index(args...) 
+  find_local_index(GridapLocalInt, args...)
 end
 
-function find_local_index(a_to_b, b_to_la_to_a::Table)
-  a_to_la = LocalIndexFromTable(a_to_b, b_to_la_to_a)
+function find_local_index(::Type{T}, a_to_b, b_to_la_to_a::Table) where T
+  a_to_la = LocalIndexFromTable(T, a_to_b, b_to_la_to_a)
   a_to_la
 end
 
-struct LocalIndexFromTable{T,Vd,Vp,V<:AbstractVector} <: AbstractVector{T}
+struct LocalIndexFromTable{T,TT,Vd,Vp,V<:AbstractVector} <: AbstractVector{T}
   a_to_b::V
-  b_to_la_to_a::Table{T,Vd,Vp}
+  b_to_la_to_a::Table{TT,Vd,Vp}
+
+  function LocalIndexFromTable(
+    ::Type{T}, a_to_b::AbstractVector, b_to_la_to_a::Table{TT,Vd,Vp}
+  ) where {T,TT,Vd,Vp}
+    V = typeof(a_to_b)
+    new{T,TT,Vd,Vp,V}(a_to_b,b_to_la_to_a)
+  end
 end
+
+LocalIndexFromTable(a_to_b, b_to_la_to_a) = LocalIndexFromTable(GridapLocalInt, a_to_b, b_to_la_to_a)
 
 Base.size(m::LocalIndexFromTable) = size(m.a_to_b)
 
@@ -460,10 +578,7 @@ Base.IndexStyle(::Type{<:LocalIndexFromTable}) = IndexStyle(Table)
 
 @propagate_inbounds function Base.getindex(m::LocalIndexFromTable{T}, a::Integer) where T
   b = m.a_to_b[a]
-  pini = m.b_to_la_to_a.ptrs[b]
-  pend = m.b_to_la_to_a.ptrs[b+1]-1
-  la = zero(T)
-  for (la,p) in enumerate(pini:pend)
+  for (la,p) in enumerate(datarange(m.b_to_la_to_a,b))
     if a == m.b_to_la_to_a.data[p]
       return T(la)
     end
@@ -471,18 +586,13 @@ Base.IndexStyle(::Type{<:LocalIndexFromTable}) = IndexStyle(Table)
   return T(UNSET)
 end
 
-"""
-    find_local_index(c_to_a, c_to_b, b_to_la_to_a) -> c_to_lc
-"""
 function find_local_index(
-  c_to_a :: AbstractVector, c_to_b :: AbstractVector, b_to_la_to_a :: Table; T = Int8
-)
+  ::Type{T}, c_to_a :: AbstractVector, c_to_b :: AbstractVector, b_to_la_to_a :: Table
+) where T
   c_to_lc = fill(T(-1),length(c_to_a))
   for (c,a) in enumerate(c_to_a)
     b = c_to_b[c]
-    pini = b_to_la_to_a.ptrs[b]
-    pend = b_to_la_to_a.ptrs[b+1]-1
-    for (lc,p) in enumerate(pini:pend)
+    for (lc,p) in enumerate(datarange(b_to_la_to_a,b))
       if a == b_to_la_to_a.data[p]
         c_to_lc[c] = T(lc)
         break
@@ -493,15 +603,16 @@ function find_local_index(
 end
 
 function find_local_index(
-  c_to_la_to_a :: AbstractVector{<:AbstractVector}, c_to_b :: AbstractVector, b_to_la_to_a :: Table; T = Int8
-)
+  ::Type{T}, c_to_la_to_a :: AbstractVector{<:AbstractVector}, c_to_b :: AbstractVector, b_to_la_to_a :: Table
+) where T
   c1 = array_cache(c_to_la_to_a)
   c2 = array_cache(b_to_la_to_a)
   ptrs = generate_ptrs(c_to_la_to_a)
   data = fill(T(-1),ptrs[end]-1)
+  @check axes(c_to_la_to_a) == axes(c_to_b)
   for c in eachindex(c_to_la_to_a)
-    b = c_to_b[c]
-    lin_to_a = getindex!(c1,c_to_la_to_a,c)
+    @inbounds b = c_to_b[c]
+    @inbounds lin_to_a = getindex!(c1,c_to_la_to_a,c)
     lout_to_a = getindex!(c2,b_to_la_to_a,b)
 
     pin, pout = sortperm(lin_to_a), sortperm(lout_to_a)
@@ -536,11 +647,9 @@ function flatten_partition(a_to_bs::Table,nb::Integer=maximum(a_to_bs.data))
   b_to_a
 end
 
-function  flatten_partition!(b_to_a,a_to_bs::Table)
-  for a in 1:length(a_to_bs)
-    pini = a_to_bs.ptrs[a]
-    pend = a_to_bs.ptrs[a+1]-1
-    for p in pini:pend
+function flatten_partition!(b_to_a,a_to_bs::Table)
+  for a in eachindex(a_to_bs)
+    for p in datarange(a_to_bs,a)
       b = a_to_bs.data[p]
       b_to_a[b] = a
     end
@@ -551,13 +660,11 @@ end
     find_local_nbor_index(a_to_b, a_to_lb_to_b) -> a_to_lb
 """
 function find_local_nbor_index(a_to_b, a_to_lb_to_b::Table)
-  a_to_lb = Vector{Int8}(undef,length(a_to_b))
+  a_to_lb = Vector{GridapLocalInt}(undef,length(a_to_b))
   for (a,b) in enumerate(a_to_b)
-    pini = a_to_lb_to_b.ptrs[a]
-    pend = a_to_lb_to_b.ptrs[a+1]-1
-    for (lb,p) in enumerate(pini:pend)
+    for (lb,p) in enumerate(datarange(a_to_lb_to_b,a))
       if b == a_to_lb_to_b.data[p]
-        a_to_lb[a] = Int8(lb)
+        a_to_lb[a] = GridapLocalInt(lb)
         break
       end
     end
@@ -569,14 +676,12 @@ end
     find_local_nbor_index(a_to_b, a_to_c, c_to_lb_to_b) -> a_to_lb
 """
 function find_local_nbor_index(a_to_b, a_to_c, c_to_lb_to_b::Table)
-  a_to_lb = Vector{Int8}(undef,length(a_to_b))
+  a_to_lb = Vector{GridapLocalInt}(undef,length(a_to_b))
   for (a,b) in enumerate(a_to_b)
     c = a_to_c[a]
-    pini = c_to_lb_to_b.ptrs[c]
-    pend = c_to_lb_to_b.ptrs[c+1]-1
-    for (lb,p) in enumerate(pini:pend)
+    for (lb,p) in enumerate(datarange(c_to_lb_to_b,c))
       if b == c_to_lb_to_b.data[p]
-        a_to_lb[a] = Int8(lb)
+        a_to_lb[a] = GridapLocalInt(lb)
         break
       end
     end
@@ -587,19 +692,19 @@ end
 """
     merge_entries(a_to_lb_to_b, c_to_la_to_a) -> c_to_lb_to_b
 
-Merge the entries of `a_to_lb_to_b`, grouping them by `c_to_la_to_a`. Returns 
+Merge the entries of `a_to_lb_to_b`, grouping them by `c_to_la_to_a`. Returns
 the merged table `c_to_lb_to_b`.
 
 Accepts the following keyword arguments:
 
-- `acc`: Accumulator for the entries of `a_to_lb_to_b`. Default to a `Set`, ensuring 
+- `acc`: Accumulator for the entries of `a_to_lb_to_b`. Default to a `Set`, ensuring
          that the resulting entries are unique.
 - `post`: Postprocessing function to apply to the accumulator before storing the resulting entries.
           Defaults to the identity, but can be used to perform local sorts or filters, for example.
 """
 function merge_entries(
   a_to_lb_to_b::AbstractVector{<:AbstractVector{T}},
-  c_to_la_to_a::AbstractVector{<:AbstractVector{Ti}}; 
+  c_to_la_to_a::AbstractVector{<:AbstractVector{Ti}};
   acc  = Set{T}(),
   post = identity
 ) where {T,Ti<:Integer}
@@ -608,19 +713,20 @@ function merge_entries(
 
   n_c = length(c_to_la_to_a)
   ptrs = zeros(Int32,n_c+1)
+  @check axes(c_to_la_to_a) == (Base.OneTo(n_c),)
   for c in 1:n_c
-    as = getindex!(c2,c_to_la_to_a,c)
+    @inbounds as = getindex!(c2,c_to_la_to_a,c)
     for a in as
       bs = getindex!(c1,a_to_lb_to_b,a)
       !isempty(bs) && push!(acc, bs...)
     end
-    ptrs[c+1] += length(post(acc))
+    @inbounds ptrs[c+1] += length(post(acc))
     empty!(acc)
   end
   length_to_ptrs!(ptrs)
 
   data = zeros(T,ptrs[end]-1)
-  for c in 1:n_c
+  @inbounds for c in 1:n_c
     as = getindex!(c2,c_to_la_to_a,c)
     for a in as
       bs = getindex!(c1,a_to_lb_to_b,a)
@@ -635,9 +741,9 @@ function merge_entries(
 end
 
 """
-    block_identity_array(ptrs;T=Int)
+    block_identity_array(::Type{T},ptrs) where T
 
-Given a vector of pointers of length `n+1`, returns a vector of length `ptrs[end]-1` 
+Given a vector of pointers of length `n+1`, returns a vector of length `ptrs[end]-1`
 where the entries are the index of the block to which each entry belongs.
 
 # Example
@@ -655,17 +761,20 @@ julia> block_identity_array([1,3,7])
  2
 ```
 """
-function block_identity_array(ptrs;T=Int)
+function block_identity_array(::Type{T},ptrs) where T
   n = length(ptrs)-1
   a = Vector{T}(undef,ptrs[end]-1)
-  for i in 1:n
+  @check axes(ptrs) == (Base.OneTo(n+1),)
+  @inbounds for i in 1:n
     a[ptrs[i]:ptrs[i+1]-1] .= i
   end
   return a
 end
 
+block_identity_array(ptrs) = block_identity_array(Int,ptrs)
+
 """
-    local_identity_array(ptrs;T=Int)
+    local_identity_array(::Type{T}, ptrs) where T
 
 Given a vector of pointers of length `n+1`, returns a vector of length `ptrs[end]-1`
 where the entries are the local index of the entry within the block it belongs to.
@@ -685,15 +794,18 @@ julia> local_identity_array([1,3,7])
  4
 ```
 """
-function local_identity_array(ptrs;T=Int)
+function local_identity_array(::Type{T}, ptrs) where T
   n = length(ptrs)-1
   a = Vector{T}(undef,ptrs[end]-1)
-  for i in 1:n
+  @check axes(ptrs) == (Base.OneTo(n+1),)
+  @inbounds for i in 1:n
     ni = ptrs[i+1]-ptrs[i]
     a[ptrs[i]:ptrs[i+1]-1] .= 1:ni
   end
   return a
 end
+
+local_identity_array(ptrs) = local_identity_array(Int,ptrs)
 
 function to_dict(table::Table)
   dict = Dict{Symbol,Any}()

@@ -513,7 +513,7 @@ function setup_edge_based_rrules(
     faces_list = (ref_nodes,Int32[],cells_to_refine)
   elseif p == TET
     faces_list = (ref_nodes,Int32[],Int32[],cells_to_refine)
-  else p == HEX
+  elseif p == HEX
     faces_to_refine = 1:num_faces(topo,2)
     faces_list = (ref_nodes,Int32[],faces_to_refine,cells_to_refine)
   end

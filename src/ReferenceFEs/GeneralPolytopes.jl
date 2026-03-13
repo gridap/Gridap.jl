@@ -130,6 +130,8 @@ function generate_polytope_data(p::Polytope,::Nothing)
   nothing
 end
 
+# Constructors from standard polytopes
+
 function Polygon(p::Polytope{2},vertices::AbstractVector{<:Point};kwargs...)
   if p == TRI
     e_v_graph = [[2,3],[3,1],[1,2]]
@@ -257,11 +259,77 @@ is_simplex(::GeneralPolytope) = false
 
 is_n_cube(::GeneralPolytope) = false
 
-function simplexify(p::GeneralPolytope{D}) where D
+function is_convex(p::Polygon{2},tol=1.e3*eps(Float64))
+  G = get_graph(p)
+  coords = get_vertex_coordinates(p)
+  orientation = 0
+  for (v,(vprev,vnext)) in enumerate(G)
+    ein  = coords[v] - coords[vprev]
+    eout = coords[vnext] - coords[v]
+    cp = cross(ein,eout)
+    abs(cp) < tol && continue
+    if iszero(orientation)
+      orientation = sign(cp)
+    elseif sign(cp) != orientation
+      return false
+    end
+  end
+  return true
+end
+
+function is_convex(p::Polygon{3},tol=1.e3*eps(Float64))
+  G = get_graph(p)
+  coords = get_vertex_coordinates(p)
+  n = get_cell_normal(p)
+  orientation = 0
+  for (v,(vprev,vnext)) in enumerate(G)
+    ein  = coords[v] - coords[vprev]
+    eout = coords[vnext] - coords[v]
+    cp = dot(cross(ein,eout),n)
+    abs(cp) < tol && continue
+    if iszero(orientation)
+      orientation = sign(cp)
+    elseif sign(cp) != orientation
+      return false
+    end
+  end
+  return true
+end
+
+# We want to check that each face creates a half-space that 
+# contains all other vertices.
+function is_convex(p::Polyhedron,tol=1e3*eps(Float64))
+  coords = get_vertex_coordinates(p)
+  f_to_v = get_faces(p,2,0)
+  for (f, v) in enumerate(f_to_v)
+    xc = mean(coords[v])
+    nf = get_facet_normal(p,f)
+    for (i,x) in enumerate(coords)
+      # nf is outward, so we want <= 0
+      dist = dot(nf,x-xc)
+      (dist > tol) && return false
+    end
+  end
+  return true
+end
+
+function simplexify(p::Polyhedron)
   @assert !isopen(p)
   X,T = simplexify_interior(p)
   @check X == get_vertex_coordinates(p)
-  T, simplex_polytope(Val{D}())
+  T, simplex_polytope(Val{3}())
+end
+
+function simplexify(p::Polygon)
+  @assert !isopen(p)
+  X, C = convexify_interior(p)
+  @check X == get_vertex_coordinates(p)
+  T = Vector{Int32}[]
+  for Ci in C
+    Ti = _simplexify_cycle(Ci)
+    append!(T,Ti)
+  end
+  T, simplex_polytope(Val{2}())
 end
 
 simplex_polytope(::Val{0}) = VERTEX
@@ -272,17 +340,11 @@ simplex_polytope(::Val{2}) = TRI
 
 simplex_polytope(::Val{3}) = TET
 
-function Polytope{0}(p::GeneralPolytope,faceid::Integer)
-  VERTEX
-end
+Polytope{0}(p::GeneralPolytope,faceid::Integer) = VERTEX
 
-function Polytope{1}(p::GeneralPolytope,faceid::Integer)
-  SEGMENT
-end
+Polytope{1}(p::GeneralPolytope,faceid::Integer) = SEGMENT
 
-function Polytope{D}(p::GeneralPolytope{D},faceid::Integer) where D
-  p
-end
+Polytope{D}(p::GeneralPolytope{D},faceid::Integer) where D = p
 
 function Polytope{2}(p::Polyhedron,faceid::Integer)
   f_to_v = get_faces(p,2,0)
@@ -318,61 +380,46 @@ function get_facet_orientations(p::GeneralPolytope)
   ones(Int,num_facets(p))
 end
 
-function get_facet_normal(p::Polyhedron)
-  D = 3
-  f_to_v = get_faces(p,D-1,0)
-  coords = get_vertex_coordinates(p)
-  map(f_to_v) do v
-    v1, v2 = compute_tangent_space(Val(2),coords[v])
-    n = v1 × v2
-    n /= norm(n)
+# Implements Newell's method to compute the normal of a facet. 
+# It is supposed to be more robust w.r.t numerical errors.
+function _newell_normal(
+  coords::AbstractVector{<:Point{3}},
+  verts::AbstractVector{<:Integer} = eachindex(coords)
+)
+  nv = length(verts)
+  nx, ny, nz = 0.0, 0.0, 0.0
+  for i1 in 1:nv
+    i2 = i1 % nv + 1
+    x1, y1, z1 = coords[verts[i1]]
+    x2, y2, z2 = coords[verts[i2]]
+    nx += (y1 - y2)*(z1 + z2)
+    ny += (z1 - z2)*(x1 + x2)
+    nz += (x1 - x2)*(y1 + y2)
   end
+  n = normalize(VectorValue(nx,ny,nz))
+  return n
+end
+
+function get_facet_normal(p::Polyhedron)
+  f_to_v = get_faces(p,2,0)
+  coords = get_vertex_coordinates(p)
+  n = map(f_to_v) do v
+    _newell_normal(coords,v)
+  end
+  return n
 end
 
 function get_facet_normal(p::Polyhedron,lfacet::Integer)
   v = get_faces(p,2,0)[lfacet]
   coords = get_vertex_coordinates(p)
-  v1, v2 = compute_tangent_space(Val(2),coords[v])
-  n = v1 × v2
-  n /= norm(n)
+  n = _newell_normal(coords,v)
   return n
-end
-
-function compute_tangent_space(::Val{1},coords;tol=1e-10)
-  v1 = coords[2]-coords[1]
-  v1 /= norm(v1)
-  return v1
-end
-
-function compute_tangent_space(::Val{D},coords;tol=1e-10) where D
-  np = length(coords)
-  p0 = first(coords)
-  k = 1
-  ns = 0
-  space = ()
-  while (ns < D) && (k < np)
-    v = coords[k+1]-p0
-    for vi in space
-      v -= (v⋅vi)*vi
-    end
-    w = norm(v)
-    if w > tol
-      space = (space...,v/w)
-      ns += 1
-    end
-    k += 1
-  end
-  @check ns == D "Tangent space cannot be computed! Too many colinear points"
-  return space
 end
 
 # Normal for a Polygon embedded in 3D space
 function get_cell_normal(p::Polygon{3})
   coords = get_vertex_coordinates(p)
-  v1, v2 = compute_tangent_space(Val(2),coords)
-  n = v1 × v2
-  n /= norm(n)
-  return n
+  return _newell_normal(coords)
 end
 
 # Normal for edges of a Polygon embedded in 2D space
@@ -422,6 +469,34 @@ function get_edge_tangent(p::GeneralPolytope,ledge::Integer)
   coords = get_vertex_coordinates(p)
   e = coords[v[2]]-coords[v[1]]
   return e / norm(e)
+end
+
+function compute_tangent_space(::Val{1},coords;tol=1e-10)
+  v1 = coords[2]-coords[1]
+  v1 /= norm(v1)
+  return v1
+end
+
+function compute_tangent_space(::Val{D},coords;tol=1e-10) where D
+  np = length(coords)
+  p0 = first(coords)
+  k = 1
+  ns = 0
+  space = ()
+  while (ns < D) && (k < np)
+    v = coords[k+1]-p0
+    for vi in space
+      v -= (v⋅vi)*vi
+    end
+    w = norm(v)
+    if w > tol
+      space = (space...,v/w)
+      ns += 1
+    end
+    k += 1
+  end
+  @check ns == D "Tangent space cannot be computed! Too many colinear points"
+  return space
 end
 
 function get_dimranges(p::GeneralPolytope)
@@ -574,27 +649,28 @@ end
 
 function generate_facet_to_vertices(poly::Polyhedron)
   D = 3
-  istouch = map( i -> falses(length(i)), get_graph(poly) )
   T = Vector{Int32}[]
+  G = get_graph(poly)
+  istouch = map( i -> falses(length(i)), G )
   for v in 1:num_vertices(poly)
     isactive(poly,v) || continue
-    for i in 1:length(get_graph(poly)[v])
+    for i in 1:length(G[v])
       !istouch[v][i] || continue
       istouch[v][i] = true
       vcurrent = v
-      vnext = get_graph(poly)[v][i]
+      vnext = G[v][i]
       vnext > 0 || continue
       k = [v]
       while vnext != v
-        inext = findfirst( isequal(vcurrent), get_graph(poly)[vnext] )
-        inext = ( inext % length( get_graph(poly)[vnext] ) ) + 1
+        inext = findfirst( isequal(vcurrent), G[vnext] )
+        inext = ( inext % length( G[vnext] ) ) + 1
         istouch[vnext][inext] = true
         vcurrent = vnext
-        vnext = get_graph(poly)[vnext][inext]
+        vnext = G[vnext][inext]
         vnext > 0 || break
         push!(k,vcurrent)
       end
-      if length(k) >=D
+      if length(k) >= D
         push!(T,k)
       end
     end
@@ -638,25 +714,19 @@ end
 
 function simplexify_interior(p::Polygon)
   @assert !isopen(p)
-  e_to_v = generate_facet_to_vertices(p)
-  T = Vector{Int32}[]
-  if length(e_to_v) > 0
-    v0 = e_to_v[1][1]
-    for verts in e_to_v
-      if v0 ∉ verts
-        push!(T,[v0,verts[1],verts[2]])
-      end
-    end
-  end
-  get_vertex_coordinates(p),T
+  T = _simplexify_cycle(1:num_vertices(p))
+  get_vertex_coordinates(p), T
+end
+
+function _simplexify_cycle(v::AbstractVector{<:Integer})
+  return [Int32[v[1],v[i],v[i+1]] for i in 2:(length(v)-1)]
 end
 
 """
     simplexify_interior(p::Polyhedron)
 
-  `simplex_interior` computes a simplex partition of the volume inside
-  the Polyhedron `p`.
-  It returns a vector of coordinates and an array of connectivitties.
+Compute a simplex partition of the volume inside the Polyhedron `p`.
+It returns a vector of coordinates and an array of connectivitties.
 """
 function simplexify_interior(poly::Polyhedron)
   !isopen(poly) || return simplexify_surface(poly)
@@ -711,27 +781,27 @@ end
 """
     simplexify_surface(p::Polyhedron)
 
-  `simplex_surface` computes a simplex partition of the surface bounding
-  the Polyhedron `p`.
-  It returns a vector of coordinates and an array of connectivitties.
+Compute a simplex partition of the surface bounding the Polyhedron `p`.
+It returns a vector of coordinates and an array of connectivitties.
 """
 function simplexify_surface(poly::Polyhedron)
-  istouch = map( i -> falses(length(i)), get_graph(poly) )
+  G = get_graph(poly)
+  istouch = map( i -> falses(length(i)), G )
   T = Vector{Int32}[]
   for v in 1:num_vertices(poly)
     isactive(poly,v) || continue
-    for i in 1:length(get_graph(poly)[v])
+    for i in eachindex(G[v])
       !istouch[v][i] || continue
       istouch[v][i] = true
       vcurrent = v
-      vnext = get_graph(poly)[v][i]
+      vnext = G[v][i]
       vnext > 0 || continue
       while vnext != v
-        inext = findfirst( isequal(vcurrent), get_graph(poly)[vnext] )
-        inext = ( inext % length( get_graph(poly)[vnext] ) ) + 1
+        inext = findfirst( isequal(vcurrent), G[vnext] )
+        inext = ( inext % length( G[vnext] ) ) + 1
         istouch[vnext][inext] = true
         vcurrent = vnext
-        vnext = get_graph(poly)[vnext][inext]
+        vnext = G[vnext][inext]
         vnext > 0 || break
         if v ∉ (vcurrent,vnext)
           k = [v,vcurrent,vnext]
@@ -743,13 +813,60 @@ function simplexify_surface(poly::Polyhedron)
   get_vertex_coordinates(poly),T
 end
 
-function compute_orientation(p::GeneralPolytope{D}) where D
-  cc = mean(get_vertex_coordinates(p))
-  cf = mean(first(get_face_coordinates(p,D-1)))
-  n = get_facet_normal(p,1)
-  s = sign(dot(n,cf-cc))
-  return s
+"""
+    signed_area(poly)
+    signed_area(coords, indices)
+
+Compute the signed area of a polygon defined by indices into coords, using 
+the shoelace formula. In 3D, it returns the signed area vector.
+"""
+signed_area(p::Polygon) = signed_area( get_vertex_coordinates(p) )
+
+function signed_area(coords::Vector{<:Point{2}}, indices=eachindex(coords))
+  n = length(indices)
+  area = zero(eltype(eltype(coords)))
+  for i in 1:n
+    vi = coords[indices[i]]
+    vj = coords[indices[mod1(i + 1, n)]]
+    area += vi[1] * vj[2] - vj[1] * vi[2]
+  end
+  return area / 2
 end
+
+function signed_area(coords::Vector{<:Point{3}}, indices=eachindex(coords))
+  n = length(indices)
+  area = zero(eltype(coords))
+  for i in 1:n
+    vi = coords[indices[i]]
+    vj = coords[indices[mod1(i + 1, n)]]
+    area += cross(vi,vj)
+  end
+  return area / 2
+end
+
+"""
+    signed_volume(poly)
+    signed_volume(coords, faces)
+
+Compute the signed volume of a polyhedron using the divergence theorem. 
+"""
+function signed_volume(p::Polyhedron)
+  X, T = simplexify_surface(p)
+  signed_volume(X, T)
+end
+
+function signed_volume(coords::Vector{<:Point{3}}, faces)
+  vol = zero(eltype(eltype(coords)))
+  for f in faces
+    @check length(f) == 3 "Faces must be triangles to compute the signed volume"
+    v1, v2, v3 = coords[f[1]], coords[f[2]], coords[f[3]]
+    vol += dot(v1, cross(v2, v3))
+  end
+  return vol / 6
+end
+
+compute_orientation(p::Polygon) = signed_area(p) > 0
+compute_orientation(p::Polyhedron) = signed_volume(p) > 0
 
 # Admissible permutations for Polygons are the ones that
 # preserve the orientation of the circular graph that defines it.
@@ -764,7 +881,7 @@ function get_vertex_permutations(p::GeneralPolytope{2})
 end
 
 """
-    merge_nodes!(graph::Vector{Vector{Int32}},i::Int,j::Int)
+    merge_nodes!(graph::Vector{Vector{Int32}},i::Integer,j::Integer)
 
 Given a polyhedron graph, i.e a planar graph with oriented closed paths representing the faces,
 merge the nodes `i` and `j` by collapsing the edge `i-j` into `i`.
@@ -780,9 +897,40 @@ function merge_nodes!(graph::Vector{Vector{Int32}},i,j,li,lj)
   ni, nj = graph[i], graph[j]
   graph[i] = unique!(vcat(ni[1:li-1],nj[lj+1:end],nj[1:lj-1],ni[li+1:end]))
   for k in nj
-    !isequal(k,i) && unique!(replace!(graph[k], j => i))
+    if (k > 0) && !isequal(k,i)
+      unique!(replace!(graph[k], j => i))
+    end
   end
   empty!(graph[j])
+  return graph
+end
+
+# Insert a new node in the edge (vprev,vnext)
+function split_edge!(graph::Vector{Vector{Int32}},i,j)
+  li::Int = findfirst(isequal(j),graph[i])
+  lj::Int = findfirst(isequal(i),graph[j])
+  k = Int32(length(graph)+1)
+  graph[i][li] = k
+  graph[j][lj] = k
+  push!(graph,Int32[i,j])
+  return graph
+end
+
+function remove_edge!(graph::Vector{Vector{Int32}},i,j)
+  li::Int = findfirst(isequal(j),graph[i])
+  lj::Int = findfirst(isequal(i),graph[j])
+  deleteat!(graph[i],li)
+  deleteat!(graph[j],lj)
+  return graph
+end
+
+function remove_node!(graph::Vector{Vector{Int32}},i)
+  for j in graph[i]
+    (j > 0) || continue
+    lj::Int = findfirst(isequal(i),graph[j])
+    deleteat!(graph[j],lj)
+  end
+  empty!(graph[i])
   return graph
 end
 
@@ -792,12 +940,15 @@ end
 Given a polyhedron graph, renumber the nodes of the graph using the `new_to_old` mapping. 
 Removes the empty nodes.
 """
-function renumber!(graph::Vector{Vector{Int32}},new_to_old::Vector{Int},n_old::Int)
+function renumber!(graph::Vector{Vector{Int32}},new_to_old::Vector{<:Integer},n_old::Int)
   old_to_new = find_inverse_index_map(new_to_old,n_old)
-  !isequal(n_old,length(new_to_old)) && keepat!(graph,new_to_old)
+  if !isequal(n_old,length(new_to_old)) && isequal(n_old,length(graph))
+    keepat!(graph,new_to_old)
+  end
   for i in eachindex(graph)
     ni = graph[i]
     for k in eachindex(ni)
+      (ni[k] > 0) || continue
       ni[k] = old_to_new[ni[k]]
     end
   end
@@ -967,29 +1118,266 @@ function polyhedron_from_faces(
   face_to_vertex::AbstractVector{<:AbstractVector{<:Integer}}
 )
   n = length(vertices)
-  graph = [Int32[] for i in 1:n]
 
+  paths = [Dict{Int32,Int32}() for i in 1:n]
   for f in face_to_vertex
     nf = length(f)
     for k in eachindex(f)
       vprev, v, vnext = f[mod(k-2,nf)+1], f[k], f[mod(k,nf)+1]
-      kprev = findfirst(isequal(vprev),graph[v])
-      knext = findfirst(isequal(vnext),graph[v])
-      if isnothing(kprev) && isnothing(knext)
-        push!(graph[v],vprev,vnext)
-      elseif isnothing(kprev)
-        kprev = max(knext - 1, 1)
-        insert!(graph[v],kprev,vprev)
-      elseif isnothing(knext)
-        knext = kprev + 1
-        insert!(graph[v],knext,vnext)
-      else
-        nv = length(graph[v])
-        @assert isequal(knext, mod(kprev,nv) + 1)
-      end
+      # println("v: $v, vprev: $vprev, vnext: $vnext")
+      # if haskey(paths[v],vprev)
+      #   println(paths[v])
+      #   println("v: $v, vprev: $vprev, vnext: $vnext")
+      # end
+      @check !haskey(paths[v],vprev)
+      paths[v][vprev] = vnext
     end
+  end
+
+  graph = Vector{Vector{Int32}}(undef,n)
+  for v in 1:n
+    graph[v] = Vector{Int32}(undef, length(paths[v]))
+    #println("paths[$v]: ", paths[v])
+    vstart = first(keys(paths[v]))
+
+    k = 1
+    vcurrent = paths[v][vstart]
+    graph[v][1] = vstart
+    while vcurrent != vstart
+      k += 1
+      graph[v][k] = vcurrent
+      vcurrent = paths[v][vcurrent]
+    end
+    @assert k == length(graph[v])
   end
 
   @check check_polytope_graph(graph)
   return Polyhedron(vertices,graph), Base.OneTo(n)
+end
+
+# JORDI: 
+# The below implementation fails depending on the order 
+# of the inputed faces, when more than 3 faces meet at a vertex.
+#
+# function polyhedron_from_faces(
+#   vertices::AbstractVector{<:Point},
+#   face_to_vertex::AbstractVector{<:AbstractVector{<:Integer}}
+# )
+#   n = length(vertices)
+#   graph = [Int32[] for i in 1:n]
+# 
+#   for f in face_to_vertex
+#     nf = length(f)
+#     for k in eachindex(f)
+#       vprev, v, vnext = f[mod(k-2,nf)+1], f[k], f[mod(k,nf)+1]
+#       kprev = findfirst(isequal(vprev),graph[v])
+#       knext = findfirst(isequal(vnext),graph[v])
+#       if isnothing(kprev) && isnothing(knext)
+#         push!(graph[v],vprev,vnext)
+#       elseif isnothing(kprev)
+#         insert!(graph[v],knext,vprev) # Moves vnext to knext+1
+#       elseif isnothing(knext)
+#         insert!(graph[v],kprev+1,vnext)
+#       else
+#         nv = length(graph[v])
+#         @assert isequal(knext, mod(kprev,nv) + 1)
+#       end
+#     end
+#   end
+# 
+#   @check check_polytope_graph(graph)
+#   return Polyhedron(vertices,graph), Base.OneTo(n)
+# end
+
+# Extrude a 2D polygon into a 3D polyhedron
+function extrude(p::Polygon; zmin = 0.0, zmax = 1.0)
+  # Vertex coordinates
+  f(x,z) = Point(x[1], x[2], z)
+  coords_2D = get_vertex_coordinates(p)  
+  coords_3D = vcat(
+    map(Base.Fix2(f, zmin), coords_2D)...,
+    map(Base.Fix2(f, zmax), coords_2D)...,
+  )
+  # Graph
+  nv = num_vertices(p)
+  graph_2D = get_graph(p)
+  graph_3D = Vector{Vector{Int32}}(undef, 2*nv)
+  for v in 1:nv
+    vprev, vnext = graph_2D[v]
+    graph_3D[v] = Int32[vprev, vnext, v+nv]
+    graph_3D[v+nv] = Int32[vprev+nv, v, vnext+nv]
+  end
+  return Polyhedron(coords_3D, graph_3D)
+end
+
+# Convexification 
+
+"""
+    get_reflex_faces(p::GeneralPolytope) -> Vector{Int}
+
+Return local indices of reflex faces, i.e (D-2)-faces (vertices in 2D, edges in 3D) 
+where the internal angle is greater than π.
+"""
+get_reflex_faces(p::Polygon) = get_reflex_faces(get_vertex_coordinates(p))
+
+function get_reflex_faces(coords::Vector{<:Point{2}}, indices = eachindex(coords); tol=1e-10)
+  n = length(indices)
+  function is_reflex(i)
+    v = coords[indices[i]]
+    vprev = coords[indices[mod1(i - 1, n)]]
+    vnext = coords[indices[mod1(i + 1, n)]]
+    return cross(v - vprev, vnext - v) < -tol
+  end
+  return filter(is_reflex, 1:n)
+end
+
+"""
+    convexify(p::Polygon) -> Vector{Polygon}
+
+Decompose a possibly non-convex 2D polygon into a set of convex polygons.
+If the polygon is embedded in 3D, we run the algorithm after projecting to 2D.
+"""
+function convexify(p::Polygon)
+  is_convex(p) && return [p]
+  X, T = convexify_interior(p)
+  return [Polygon(X[v]) for v in T]
+end
+
+function convexify_interior(p::Polygon{2})
+  @check signed_area(p) > 0 "Polygon must have positive orientation"
+  coords = get_vertex_coordinates(p)
+  indices = collect(1:length(coords))
+  T = _convexify_interior!(Vector{Int}[], coords, indices)
+  return coords, T
+end
+
+function convexify_interior(p::Polygon{3})
+  coords = get_vertex_coordinates(p)
+  coords_2d = _project_to_plane(p)
+  @check signed_area(Polygon(coords_2d)) > 0 "Polygon must have positive orientation"
+  indices = collect(1:length(coords))
+  T = _convexify_interior!(Vector{Int}[], coords_2d, indices)
+  return coords, T
+end
+
+function _project_to_plane(p::Polygon{3})
+  n = get_cell_normal(p) |> normalize
+  imax = argmin(map(abs, n.data))
+  t = Point(ntuple(i -> i == imax ? 1.0 : 0.0, 3))
+  u = cross(t, n) |> normalize
+  v = cross(n, u) |> normalize
+
+  coords = get_vertex_coordinates(p)
+  coords_2d = map(coords) do p
+    d = p - coords[1]
+    Point(dot(d, u), dot(d, v))
+  end
+  return coords_2d
+end
+
+function _convexify_interior!(
+  T::Vector{<:Vector{<:Integer}}, coords::Vector{<:Point{2}}, indices::Vector{<:Integer}
+)
+  n = length(indices)
+  reflex = get_reflex_faces(coords, indices)
+
+  # Already convex
+  if (n == 3) || isempty(reflex)
+    push!(T, indices)
+    return T
+  end
+
+  # Try to find a valid diagonal from a reflex vertex
+  for r in reflex
+    v = _find_best_diagonal(coords, indices, r)
+    i, j = minmax(r, v)
+    _convexify_interior!(T, coords, indices[i:j])
+    _convexify_interior!(T, coords, vcat(indices[j:n], indices[1:i]))
+    return T
+  end
+
+  @assert false "Failed to convexify polygon"
+end
+
+function _find_best_diagonal(coords,indices,r;tol=1.e-10)
+  n = length(indices)
+  r_prev, r_next = mod1(r - 1, n), mod1(r + 1, n)
+  e_in = normalize(coords[indices[r]] - coords[indices[r_prev]])
+  e_out = normalize(coords[indices[r_next]] - coords[indices[r]])
+
+  v, α = 0, -Inf 
+  for k in eachindex(indices)
+    (k == r || k == r_prev || k == r_next) && continue
+
+    # Check if diagonal intersects any edge
+    m = 1
+    intersection = false
+    while !intersection && (m <= n)
+      m_next = mod1(m + 1, n)
+      if !(m == r || m_next == r || m == k || m_next == k)
+        t, u = _segment_intersection(
+          coords[indices[r]], coords[indices[k]],
+          coords[indices[m]], coords[indices[m_next]]; tol
+        )
+        intersection = (tol < t < 1 - tol) && (tol < u < 1 - tol)
+      end
+      m += 1
+    end
+    intersection && continue
+
+    # Get interior angles
+    e_rk = normalize(coords[indices[k]] - coords[indices[r]])
+    α_in, α_out = cross(e_in, e_rk), cross(e_out, e_rk)
+
+    # Check if k is inside the reflex angle at r
+    !(α_in > tol || α_out > tol) && continue
+
+    if α_in + α_out > α
+      v, α = k, α_in + α_out
+    end
+  end
+  @assert !iszero(v)
+
+  return v
+end
+
+# Compute the intersection of segments p1-p2 and q1-q2.
+# Returns parametric coordinates t and u such that:
+#   intersection = p1 + t * (p2 - p1) = q1 + u * (q2 - q1)
+# If segments are parallel, returns (Inf, Inf).
+function _segment_intersection(p1::Point{2}, p2::Point{2}, q1::Point{2}, q2::Point{2}; tol=1e-10)
+  d1 = p2 - p1
+  d2 = q2 - q1
+
+  denom = cross(d1, d2)
+  (abs(denom) < tol) && return Inf, Inf  # Parallel segments
+
+  d = q1 - p1
+  t = cross(d, d2) / denom
+  u = cross(d, d1) / denom
+  return t, u
+end
+
+# IO
+
+function to_dict(p::GeneralPolytope{D}) where D
+  dict = Dict{Symbol,Any}()
+  x = get_vertex_coordinates(p)
+  dict[:D] = D
+  dict[:Dp] = num_point_dims(p)
+  dict[:vertices] = reinterpret(eltype(eltype(x)),x)
+  dict[:edge_vertex_graph] = [collect(g) for g in get_graph(p)]
+  dict[:isopen] = isopen(p)
+  dict
+end
+
+function from_dict(::Type{<:GeneralPolytope},dict::Dict{Symbol,Any})
+  D::Int = dict[:D]
+  Dp::Int = dict[:Dp]
+  x = dict[:vertices]
+  T = eltype(x)
+  vertices::Vector{Point{Dp,T}} = reinterpret(Point{Dp,T},x)
+  graph = [Int32.(g) for g in dict[:edge_vertex_graph]]
+  is_open::Bool = dict[:isopen]
+  GeneralPolytope{D}(vertices,graph;isopen=is_open)
 end

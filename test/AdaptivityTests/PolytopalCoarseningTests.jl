@@ -59,7 +59,7 @@ patch_cells = Table([
 topo = get_grid_topology(model)
 ptopo = Geometry.PatchTopology(topo,patch_cells)
 
-cmodel = Adaptivity.coarsen(model,ptopo)
+cmodel, glue = Adaptivity.coarsen(model,ptopo;return_glue=true)
 writevtk(Triangulation(cmodel),joinpath(outdir,"cmodel");append=false)
 
 ############################################################################################
@@ -76,7 +76,7 @@ patch_cells = Table([
 topo = get_grid_topology(model)
 ptopo = Geometry.PatchTopology(topo,patch_cells)
 
-cmodel = Adaptivity.coarsen(model,ptopo)
+cmodel, glue = Adaptivity.coarsen(model,ptopo;return_glue=true)
 writevtk(Triangulation(ReferenceFE{1},cmodel),joinpath(outdir,"cmodel");append=false)
 
 for (i,p) in enumerate(get_polytopes(cmodel))

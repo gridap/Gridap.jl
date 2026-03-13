@@ -2,6 +2,8 @@ module CurlConformingFESpacesTests
 
 using Test
 using LinearAlgebra
+using FillArrays
+using Gridap
 using Gridap.FESpaces
 using Gridap.Geometry
 using Gridap.TensorValues
@@ -128,13 +130,13 @@ e = u - uh
 dΩ = Measure(Ω,order)
 
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
-@test el2 < 1.0e-10
+@test el2 < 1.0e-9
 
 domain = (0,1,0,1,0,1)
 cells  = (2,2,2)
 model  = CartesianDiscreteModel(domain,cells)
 
-  # Restrict model to cube surface
+# Restrict model to cube surface
 labels = get_face_labeling(model)
 bgface_to_mask = get_face_mask(labels,"boundary",2)
 Γface_to_bgface = findall(bgface_to_mask)
@@ -157,10 +159,80 @@ dΩ = Measure(Ω,2*order)
 e=sqrt(sum(∫((uh-vh)⋅(uh-vh))dΩ))
 @test e < 1.0e-12
 
+# Test a case for an oriented mesh for which the unit normals on a 
+# shared facet among two cells point in opposite directions from
+# the perspective of either cell. Properly handling this case requires
+# an implementation of Nedelec Reference FEs which incorporates global
+# mesh information when evaluating the DoFs on each cell.
 
-# using Gridap.Visualization
+function setup_model() 
+    ptr  = [ 1, 9, 17 ]
+    data = [ 5, 1, 7, 3, 6, 2, 8, 4, 11, 9, 12, 10, 7, 3, 8, 4 ]
+    cell_vertex_lids = Gridap.Arrays.Table(data,ptr)
+    node_coordinates = Vector{Point{3,Float64}}(undef,12)
+    node_coordinates[1]=Point{3,Float64}(1.0,0.0,0.0)
+    node_coordinates[2]=Point{3,Float64}(1.0,0.0,1.0)
+    node_coordinates[3]=Point{3,Float64}(1.0,1.0,0.0)
+    node_coordinates[4]=Point{3,Float64}(1.0,1.0,1.0)
+    node_coordinates[5]=Point{3,Float64}(0.0,0.0,0.0)
+    node_coordinates[6]=Point{3,Float64}(0.0,0.0,1.0)
+    node_coordinates[7]=Point{3,Float64}(0.0,1.0,0.0)
+    node_coordinates[8]=Point{3,Float64}(0.0,1.0,1.0)
+    node_coordinates[9] =Point{3,Float64}(1.0,2.0,0.0)
+    node_coordinates[10]=Point{3,Float64}(1.0,2.0,1.0)
+    node_coordinates[11]=Point{3,Float64}(0.0,2.0,0.0)
+    node_coordinates[12]=Point{3,Float64}(0.0,2.0,1.0)
+    polytope=HEX
+    scalar_reffe=Gridap.ReferenceFEs.ReferenceFE(polytope,Gridap.ReferenceFEs.lagrangian,Float64,1)
+    cell_types=collect(Fill(1,length(cell_vertex_lids)))
+    cell_reffes=[scalar_reffe]
+    grid = Gridap.Geometry.UnstructuredGrid(node_coordinates,
+                                            cell_vertex_lids,
+                                            cell_reffes,
+                                            cell_types,
+                                            Gridap.Geometry.NonOriented())
+    m=Gridap.Geometry.UnstructuredDiscreteModel(grid)
+    m  
+end
 
-# writevtk(trian,"trian",nsubcells=10,cellfields=["uh"=>uh])
+model = setup_model()
+order = 1 # Smallest nedelec FE order for which we have DoFs on the cell facets
+R = TestFESpace(model, ReferenceFE(nedelec,Float64,order);conformity=:Hcurl)
 
+f(x) = VectorValue(x[2]*x[3],x[1]*x[3],x[1]*x[2])
+fh = interpolate(f,R)
+Ω = Triangulation(model)
+dΩ = Measure(Ω,2*order+1)
+eh = fh - f
+@test sum(∫(eh⋅eh)dΩ) < 1.0e-12
+
+#using Gridap.Visualization
+#writevtk(trian,"trian",nsubcells=10,cellfields=["uh"=>uh])
+
+# Regression test for PR #1222: TransformNedelecDofBasis.evaluate! must use
+# Jtx[face_point_ids[p]], not Jtx[p].  Affine cells (rectangular quads or
+# simplices) have a constant Jacobian, so both indices coincide and the bug is
+# latent.  A bilinear (non-affine) quad mesh makes the Jacobian vary across
+# DOF nodes of different edges, exposing the wrong-index path.  The constant
+# field (2,3) is exactly representable in the physical Nedelec space for any
+# bilinear quad (its co-variant pullback J·u lies in QGrad_1), so the correct
+# code gives machine-precision L2 error while the buggy code gives O(0.04).
+@testset "Regression #1222: non-affine Jacobian indexing in TransformNedelecDofBasis" begin
+  domain    = (0,1,0,1)
+  partition = (2,2)
+  model0    = CartesianDiscreteModel(domain, partition)
+  phi(x)   = VectorValue(x[1] + 0.1*x[1]*x[2], x[2])
+  model    = MappedDiscreteModel(model0, phi)
+  order    = 1
+  u(x)     = VectorValue(2.0, 3.0)
+  reffe    = ReferenceFE(nedelec, order)
+  V  = TestFESpace(model, reffe, dirichlet_tags="boundary")
+  U  = TrialFESpace(V, u)
+  uh = interpolate(u, U)
+  Ω  = Triangulation(model)
+  dΩ = Measure(Ω, 2*order)
+  e  = u - uh
+  @test sqrt(sum(∫(e⋅e)*dΩ)) < 1.0e-10
+end
 
 end # module

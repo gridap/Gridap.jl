@@ -20,6 +20,7 @@ using Gridap.TensorValues
 using Gridap.Visualization
 
 import Base: view, *
+import Gridap.Io: to_dict, from_dict
 import Gridap.Geometry: get_grid, get_grid_topology, get_face_labeling
 import Gridap.Geometry: Triangulation, is_change_possible, best_target, get_background_model
 import Gridap.Geometry: move_contributions
