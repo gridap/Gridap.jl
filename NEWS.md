@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Split CI into separate jobs to keep test time down. Since PR[#1251](https://github.com/gridap/Gridap.jl/pull/1251).
+
 ### Fixed
 
 - `MappedGrid` now returns its internal geometric map. Since PR[#1226](https://github.com/gridap/Gridap.jl/pull/1226).
