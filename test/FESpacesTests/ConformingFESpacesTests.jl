@@ -153,7 +153,7 @@ function _freedof_value_absmax(
   domain = ntuple( i-> isodd(i) ? 0 : L, 2D)
   model = CartesianDiscreteModel(domain, partition, map=stretching(L))
   trian = simplex ? Triangulation(simplexify(model)) : Triangulation(model)
-  global_meshsize = use_global_meshsize ? L : nothing
+  global_meshsize = use_global_meshsize ? L/first(partition) : nothing
   fe_space = FESpace(trian, reffe; scale_dof, global_meshsize)
   one_fef = interpolate(one_function, fe_space)
   maxdof = maximum(abs.(get_free_dof_values(one_fef)))

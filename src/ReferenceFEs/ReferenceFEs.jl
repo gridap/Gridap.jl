@@ -107,7 +107,7 @@ export Pullback
 export IdentityPiolaMap
 export CoVariantPiolaMap
 export ContraVariantPiolaMap
-export dof_scaling_function
+export get_dofscale_setter_function
 
 export Dof
 export get_nodes
