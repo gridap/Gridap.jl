@@ -7,39 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Moment-based changes
 
-## [0.19.8] - 2026-02-19
+Main PR is PR[#1048](https://github.com/gridap/Gridap.jl/pull/#1048).
 
 ### Added
-
-- Added `testvalue(::Type{<:Tuple})` for tuples with an arbitrary number of items. Since PR[#1210](https://github.com/gridap/Gridap.jl/pull/1210).
-- Added `normalize` function support for `MultiValue` objects. Since PR[#1211](https://github.com/gridap/Gridap.jl/pull/1211).
-- Added `sqrt` function support for `TensorValue` objects. Since PR[#1212](https://github.com/gridap/Gridap.jl/pull/1212).
-- Added better ways to iterate over `Table`, following the `SparseArrays` model. Mainly, we introduce `datarange`, `dataview` and `dataiterator` functions. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
-- Added a new preference to control the integer type used for indexing local quantities (e.g. faces within a cell). A new function `set_local_integer_type` is introduced, which sets a new type `GridapLocalInt` (default `Int8`) that is set at compile time. This allows for `GeneralPolytopes` with an arbitrary number of faces. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
-- Added new function `compute_graph` returning the face-connectivity of meshes and submeshes. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
-- Added a new API to change the block structure of multi-field cellfields. The `MultiFieldFEBasisComponent` and `MultiFieldBasis` have now new constructors that easily allow to recast a multi-field space with a different block structure. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
-- Various improvements to the polytopal API. For `GeneralPolytopes`, added `is_convex`, `signed_area`, `signed_volume`, `convexify`(2D), `extrude`, as well as several low-level functions to manipulate polytopes. We now compute normals using Newel's algorithm, which is more stable. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
-
-### Changed
-
-- Reworked the `CellConformity` API to be more flexible and extensible, while optimizing certain parts. `CellConformity` is now abstract, with new concrete types `GenericCellConformity` (stores generic arrays), `CompressedCellConformity` (stores compressed data optimized for low number of reffe types, old `CellConformity`), and `DiscontinuousCellConformity` (DG-type conformity, much faster for discontinuous spaces). For all new conformities, I have introduced a new API to query dof masks based on the faces dofs belong to, mainly `generate_cell_dof_mask` and `generate_dof_mask`. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
-
-### Fixed
-
-- Fixed lack of more general tests for Nedelec ReferenceFEs. Added a test which is currently broken. Since PR[#1216](https://github.com/gridap/Gridap.jl/pull/1216).
-- Small bugfix in `face_labeling_from_cell_tags`. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
-- Fixed `getindex!` when the given indexes need to be converted the indexstyle of the array (cache isn't skipped anymore). Implemented the bound check elusion API in most `Arrays` arraysSince [#1213](https://github.com/gridap/Gridap.jl/pull/1213).
-
-## [0.19.7] - 2025-12-18
-
-### Added
-
-- Added the symmetric quadrature rules of Witherden and Vincent, correctness tests for all quadrature rules, and minor extensions to the interfaces of `Quadrature` and `Polytope`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
-  - Added the symmetric quadrature rules of Witherden and Vincent for tri/tet, quad/hex, wedge and pyramid.
-  - Added `maxdegree(p::Polytope, name::QuadratureName)` to the interface of `Quadrature`.
-  - Enriched the tests for quadratures by checking `tensor_product`, `duffy`, and `witherden_vincent` against exact integrals for monomials on the corresponding polytopes (tri/tet, quad/hex, wedge and pyramid, respectively). Other quadrature rules are compared against these tested ones.
-  - Added `get_measure(p::Polytope, vertex_coords)` and `get_diameter(p::Polytope, vertex_coords)` to the interface of `Polytope`.
-- The default quadrature for simplices is now `witherden_vincent` until available, then `xiao_gimbuttas` until available, then `duffy`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
 
 - Documentation and refactoring of `Gridap.Polynomials`. Since PR[#1072](https://github.com/gridap/Gridap.jl/pull/#1072).
 - Two new families of polynomial bases in addition to `Monomial`, `Legendre` (former `Jacobi`) and `ModalC0`: `Chebyshev` and `Bernstein`
@@ -63,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `component_basis`, `representatives_of_componentbasis_dual`, `representatives_of_basis_dual`: new APIs for `::MultiValue`s yielding bases of the vector space spanned by the independent components of a tensor type (1st method) and its dual space (2nd method), or the dual to a basis (3rd method).
   - `contracted_product` generalizes `outer`, `dot`, `double_contraction` and `inner` for tensors of arbitrary order, refactoring these operations for tensors with all components independent. Since PR[#1193](https://github.com/gridap/Gridap.jl/pull/#1193).
 
-- Refactoring of moment-based ReferenceFEs, those using face-integral linear forms for DoFs, including `RaviartThomas`, `Nedelec`, `BDM` and `CrouzeixRaviart`. Since PR[#1048](https://github.com/gridap/Gridap.jl/pull/#1048).
+- Refactoring of moment-based ReferenceFEs, those using face-integral linear forms for DoFs, including `RaviartThomas`, `Nedelec`, `BDM` and `CrouzeixRaviart`.
   - The mid-level `MomentBasedRefFE` factory function creates moment based refFEs
   - The low-level `FaceMeasure` implements the numerical integration of a bilinear integrand over the faces of a polytope.
   - The low-level `MomentBasedDofBasis` implements a discretized basis of moment DoF. It supports automatic pre-composition of the field with a differential operator. Since PR[#1184](https://github.com/gridap/Gridap.jl/pull/#1184).
@@ -76,23 +46,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API for Geometric decomposition of polynomial bases, implemented for simplices and n-cubes. Since PR[#1144](https://github.com/gridap/Gridap.jl/pull/1144).
   The geometric decomposition API consist in the methods `has_geometric_decomposition`, `get_face_own_funs` and `get_facet_flux_sign_flip`.
 
-- Added specific tags on dual numbers to allow for nested AD without perturbation confusion. Since PR[#1181](https://github.com/gridap/Gridap.jl/pull/1181).
-
-- Updated the documentation of `Polytope{D}`'s type parameters `D`, it is correctly described as the polytope's dimension (instead of embedding dimension). Since PR[#1194](https://github.com/gridap/Gridap.jl/pull/1194).
-- Added compatibilty for `JSON.jl` v1+ and `JDL2.jl` v0.6+. Since PR[1198](https://github.com/gridap/Gridap.jl/pull/1198).
-
 ### Fixed
 
-- Fixed issue [#1188](https://github.com/gridap/Gridap.jl/issues/1188). Fix one() function for non-square tensors.
-- Fixed `strang` quadrature of order 4 for triangles. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
 - Fixed evaluation of `LinearCombinationDofVector` on vector of `<:Field`s (only impacts ModalC0 FEs and future moment based reffes)., since PR[#1105](https://github.com/gridap/Gridap.jl/pull/#1105).
-- Minor `MuliValue` bugfixes for `isless` and `<=` with scalars.
 - Fixed `get_face_dofs(::ReferenceFEs)` on many moment based elements, it sometimes returned `face_own_dofs`.
+
+### Deprecated
+
+- `num_terms(f::AbstractVector{<:Field})` in favor of `length(f::PolynomialBasis)`
+- `MonomialBasis{D}(args...)` in favor of `MonomialBasis(Val(D), args...)`
+- `[P/Q][Curl]GradMonomialBasis{D}(args...)` in favor of `FEEC_poly_basis`
+- `NedelecPreBasisOnSimplex{D}(order)` in favor of `NedelecPolyBasisOnSimplex(Val(D), Float64, order)`
+- `JacobiPolynomialBasis{D}(args...)` in favor of `LegendreBasis(Val(D), args...)`
+- `return_type(::PolynomialBasis)` in favor of `value_type(::PolynomialBasis)`
+
+## [0.19.8] - 2026-02-19
+
+### Added
+
+- Added `testvalue(::Type{<:Tuple})` for tuples with an arbitrary number of items. Since PR[#1210](https://github.com/gridap/Gridap.jl/pull/1210).
+- Added `normalize` function support for `MultiValue` objects. Since PR[#1211](https://github.com/gridap/Gridap.jl/pull/1211).
+- Added `sqrt` function support for `TensorValue` objects. Since PR[#1212](https://github.com/gridap/Gridap.jl/pull/1212).
+- Added better ways to iterate over `Table`, following the `SparseArrays` model. Mainly, we introduce `datarange`, `dataview` and `dataiterator` functions. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
+- Added a new preference to control the integer type used for indexing local quantities (e.g. faces within a cell). A new function `set_local_integer_type` is introduced, which sets a new type `GridapLocalInt` (default `Int8`) that is set at compile time. This allows for `GeneralPolytopes` with an arbitrary number of faces. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
+- Added new function `compute_graph` returning the face-connectivity of meshes and submeshes. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
+- Added a new API to change the block structure of multi-field cellfields. The `MultiFieldFEBasisComponent` and `MultiFieldBasis` have now new constructors that easily allow to recast a multi-field space with a different block structure. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
+- Various improvements to the polytopal API. For `GeneralPolytopes`, added `is_convex`, `signed_area`, `signed_volume`, `convexify`(2D), `extrude`, as well as several low-level functions to manipulate polytopes. We now compute normals using Newel's algorithm, which is more stable. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
 
 ### Changed
 
-- Added specific tags on dual numbers to allow for nested AD without perturbation confusion. Since PR[#1181](https://github.com/gridap/Gridap.jl/pull/1181).
-- The default quadrature for simplices is now `witherden_vincent` until available, then `xiao_gimbuttas` until available, then `duffy`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+- Reworked the `CellConformity` API to be more flexible and extensible, while optimizing certain parts. `CellConformity` is now abstract, with new concrete types `GenericCellConformity` (stores generic arrays), `CompressedCellConformity` (stores compressed data optimized for low number of reffe types, old `CellConformity`), and `DiscontinuousCellConformity` (DG-type conformity, much faster for discontinuous spaces). For all new conformities, I have introduced a new API to query dof masks based on the faces dofs belong to, mainly `generate_cell_dof_mask` and `generate_dof_mask`. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
+
+### Fixed
+
+- Fixed lack of more general tests for Nedelec ReferenceFEs. Added a test which is currently broken. Since PR[#1216](https://github.com/gridap/Gridap.jl/pull/1216).
+- Small bugfix in `face_labeling_from_cell_tags`. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
+- Fixed `getindex!` when the given indexes need to be converted the indexstyle of the array (cache isn't skipped anymore). Implemented the bound check elusion API in most `Arrays` arraysSince [#1213](https://github.com/gridap/Gridap.jl/pull/1213).
+
+### Changed
+
 - Existing Jacobi polynomial bases/spaces were renamed to Legendre (which they were).
 - `Monomial` is now subtype of the new abstract type`Polynomial <: Field`
 - `MonomialBasis` is now an alias for `CartProdPolyBasis{...,Monomial}`
@@ -108,14 +100,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Monomial (pre)bases have been replaced with Bernstein / Barycentric bases for non-scalar finite elements on simplices.
 - `ThirdOrderTensorValue{D1,D2,D3,T,L}` has been redefined as alias to `HighOrderTensorValue{Tuple{D1,D2,D3},T,3,L}`.
 
-### Deprecated
+## [0.19.7] - 2025-12-18
 
-- `num_terms(f::AbstractVector{<:Field})` in favor of `length(f::PolynomialBasis)`
-- `MonomialBasis{D}(args...)` in favor of `MonomialBasis(Val(D), args...)`
-- `[P/Q][Curl]GradMonomialBasis{D}(args...)` in favor of `FEEC_poly_basis`
-- `NedelecPreBasisOnSimplex{D}(order)` in favor of `NedelecPolyBasisOnSimplex(Val(D), Float64, order)`
-- `JacobiPolynomialBasis{D}(args...)` in favor of `LegendreBasis(Val(D), args...)`
-- `return_type(::PolynomialBasis)` in favor of `value_type(::PolynomialBasis)`
+### Added
+
+- Added the symmetric quadrature rules of Witherden and Vincent, correctness tests for all quadrature rules, and minor extensions to the interfaces of `Quadrature` and `Polytope`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+  - Added the symmetric quadrature rules of Witherden and Vincent for tri/tet, quad/hex, wedge and pyramid.
+  - Added `maxdegree(p::Polytope, name::QuadratureName)` to the interface of `Quadrature`.
+  - Enriched the tests for quadratures by checking `tensor_product`, `duffy`, and `witherden_vincent` against exact integrals for monomials on the corresponding polytopes (tri/tet, quad/hex, wedge and pyramid, respectively). Other quadrature rules are compared against these tested ones.
+  - Added `get_measure(p::Polytope, vertex_coords)` and `get_diameter(p::Polytope, vertex_coords)` to the interface of `Polytope`.
+- The default quadrature for simplices is now `witherden_vincent` until available, then `xiao_gimbuttas` until available, then `duffy`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+
+- Added specific tags on dual numbers to allow for nested AD without perturbation confusion. Since PR[#1181](https://github.com/gridap/Gridap.jl/pull/1181).
+
+- Updated the documentation of `Polytope{D}`'s type parameters `D`, it is correctly described as the polytope's dimension (instead of embedding dimension). Since PR[#1194](https://github.com/gridap/Gridap.jl/pull/1194).
+- Added compatibilty for `JSON.jl` v1+ and `JDL2.jl` v0.6+. Since PR[1198](https://github.com/gridap/Gridap.jl/pull/1198).
+
+### Fixed
+
+- Fixed issue [#1188](https://github.com/gridap/Gridap.jl/issues/1188). Fix one() function for non-square tensors.
+- Fixed `strang` quadrature of order 4 for triangles. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
+- Minor `MuliValue` bugfixes for `isless` and `<=` with scalars.
+
+### Changed
+
+- Added specific tags on dual numbers to allow for nested AD without perturbation confusion. Since PR[#1181](https://github.com/gridap/Gridap.jl/pull/1181).
+- The default quadrature for simplices is now `witherden_vincent` until available, then `xiao_gimbuttas` until available, then `duffy`. Since PR[#1169](https://github.com/gridap/Gridap.jl/pull/1169).
 
 ## [0.19.6] - 2025-10-17
 
