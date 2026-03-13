@@ -11,7 +11,7 @@ end
 
 # No sign flip to be applied in 2D for Nedelec facet DoFs
 function get_sign_flip(model::DiscreteModel{2,Dp},
-                       cell_reffe::AbstractArray{<:GenericRefFE{Nedelec}}) where {Dc,Dp}
+                       cell_reffe::AbstractArray{<:GenericRefFE{Nedelec}}) where Dp
     _no_sign_flip(model, cell_reffe)
 end
 
