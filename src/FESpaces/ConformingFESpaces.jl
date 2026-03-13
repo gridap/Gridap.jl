@@ -233,7 +233,7 @@ end
 
 """
     get_cell_shapefuns_and_dof_basis(
-        model::DiscreteModel, cell_reffe::AbstractArray, ::Conformity; kwargs...)
+        model::DiscreteModel, cell_reffe::AbstractArray, conf::Conformity; kwargs...)
 
 Return `(shapefuns, dof_basis)`, the physical cell arrays of shape-function and DOF.
 
@@ -241,6 +241,11 @@ These arrays are computed by mapping the reference shape-function and DOF bases
 to the physical elements cell-wise, taking into account possible non-trivial Piola
 maps, DOF change of basis, sign change and rescaling to build `conf`-conforming
 physical FEs.
+
+`cell_reffe` is an array of reference FE per cell of `model`, all reffes must
+share the same `ReferenceFEName` and pushforward `p` when used with the given conformity.
+
+The kwargs are `scale_dof` and `global_meshsize`, c.f. [`FESpace`](@ref).
 
 For performances, `cell_reffe` should efficiently be compressed by [`compress_cell_data`].
 """

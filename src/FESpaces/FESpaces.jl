@@ -134,6 +134,7 @@ export CellConformity
 export CellFE
 export compute_conforming_cell_dofs
 export compute_cell_space
+export compute_cell_bases_changes
 
 export TestFESpace
 export TrialFESpace
