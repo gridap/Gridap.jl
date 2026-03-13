@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed incorrect `else p == HEX` control flow in `EdgeBasedRefinement.jl`. Since PR[1246] (https://github.com/gridap/Gridap.jl/pull/1246).
 - Fixed copy-paste bug where `get_tangent_vector` called `get_normal_vector` in `CellFields.jl`. Since PR[1246] (https://github.com/gridap/Gridap.jl/pull/1246).
 - Generalized `change_domain_o2n` so that it can now deal with triangulation portions. Since PR[1249](https://github.com/gridap/Gridap.jl/pull/1249).
+- Generalized Nedelec Hexahedral elements for meshes beyond Cartesian Meshes. Since PR[1250](https://github.com/gridap/Gridap.jl/pull/1250).
 
 ## [0.19.8] - 2026-02-19
 
