@@ -30,7 +30,7 @@ get_name(::Type{<:BezierRefFE}) = bezier
 `T` must be scalar.
 """
 function BezierRefFE(::Type{T},p::Polytope{D},orders) where {D,T}
-  @notimplementedif T isa MultiValue "Only scalar valued BezierRefFE are implemented, got T=$T."
+  @notimplementedif T <: MultiValue "Only scalar valued BezierRefFE are implemented, got T=$T."
 
   reffe = LagrangianRefFE(T,p,orders)
   nodes = get_node_coordinates(reffe)
