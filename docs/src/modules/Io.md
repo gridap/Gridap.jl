@@ -8,10 +8,22 @@ CurrentModule = Gridap.Io
 The `Gridap.Io` module provides a unified interface for the serialization and de-serialization of Gridap objects (such as models, fields, and finite element spaces) into various formats, including JSON, BSON, and JLD2.
 
 Most serialization processes in Gridap follow a two-step approach:
-1.  Converting the object into a plain Julia `Dict{Symbol,Any}` using `to_dict`.
-2.  Serializing this dictionary into the target format (e.g., JSON or BSON).
+
+1. Converting the object into a plain Julia `Dict{Symbol,Any}` using `to_dict`.
+2. Serializing this dictionary into the target format (e.g., JSON or BSON).
 
 De-serialization follows the reverse process.
+
+```@docs
+Io
+```
+
+#### Contents
+
+```@contents
+Pages = ["Io.md"]
+Depth = 2:3
+```
 
 ## Dictionary Interface
 

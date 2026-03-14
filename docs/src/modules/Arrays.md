@@ -1,3 +1,8 @@
+
+```@meta
+CurrentModule = Gridap.Arrays
+```
+
 # Gridap.Arrays
 
 The `Gridap.Arrays` module provides a high-performance array and mapping infrastructure designed to minimize allocations through lazy evaluation and mutable caches. This module is the engine behind many of Gridap's efficient operations.
@@ -31,15 +36,17 @@ evaluate!
 evaluate
 test_map
 return_type
+return_value
+testargs
 ```
 
-### Operations and broadcasting
-
-The following types represent common higher-level operations on maps.
+Some common operations (like broadcasting) are implemented as maps, and Gridap provides utilities to work with them.
 
 ```@docs
 Broadcasting
 Operation
+InverseMap
+inverse_map
 ```
 
 ### Reindex maps
@@ -74,8 +81,12 @@ Gridap extends the `AbstractArray` interface to support efficient iteration thro
 array_cache
 getindex!
 testitem
+testvalue
 test_array
+get_array
+uses_hash
 invalidate_cache!
+∑
 ```
 
 ### LazyArrays

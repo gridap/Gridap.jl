@@ -7,12 +7,24 @@ CurrentModule = Gridap.Visualization
 
 The `Gridap.Visualization` module provides tools to export Gridap grids (such as `Triangulation`, `DiscreteModel`) and objects defined on those grids (such as `Function` and `CellField`) into VTK format. These files can then be opened and visualized in external software like [ParaView](https://www.paraview.org/).
 
+```@docs
+Visualization
+```
+
+#### Contents
+
+```@contents
+Pages = ["Visualization.md"]
+Depth = 2:3
+```
+
 ## High-level API
 
-The primary entry point for visualization is `writevtk`.
+The primary entry points for visualization are `writevtk` and `createvtk`.
 
 ```@docs
 writevtk
+createvtk
 ```
 
 For simulations that change over time, Gridap provides the PVD (ParaView Data) format to group multiple VTK files into a single time series.
@@ -34,4 +46,3 @@ visualization_data
 VisualizationGrid
 visualization_grid
 ```
-
