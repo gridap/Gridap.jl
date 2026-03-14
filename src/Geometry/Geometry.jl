@@ -2,8 +2,8 @@
 $(public_names_in_md(@__MODULE__; change_link=Dict(
   :Irregular   => "RegularityStyle",
   :Regular     => "RegularityStyle",
-  :Oriented    => "OrientationStyle ",
-  :NonOriented => "OrientationStyle "
+  :Oriented    => "OrientationStyle",
+  :NonOriented => "OrientationStyle"
 )))
 """
 module Geometry
