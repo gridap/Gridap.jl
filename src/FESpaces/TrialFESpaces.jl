@@ -56,7 +56,7 @@ end
 """
     HomogeneousTrialFESpace(U::SingleFieldFESpace)
 
-Return a ﷕SingleFieldFESpace` that is `U` but with Dirichlet values set to zero.
+Return a `SingleFieldFESpace` that is `U` but with Dirichlet values set to zero.
 """
 function HomogeneousTrialFESpace(U::SingleFieldFESpace)
   dirichlet_values = zero_dirichlet_values(U)
@@ -66,7 +66,7 @@ end
 """
     HomogeneousTrialFESpace!(dirichlet_values::AbstractVector,U::SingleFieldFESpace)
 
-Return a ﷕SingleFieldFESpace` that is `U` but with Dirichlet values set to zero.
+Return a `SingleFieldFESpace` that is `U` but with Dirichlet values set to zero.
 Uses `dirichlet_values` with zeros set in place for the container of the
 Dirichlet values of the returned space.
 """
