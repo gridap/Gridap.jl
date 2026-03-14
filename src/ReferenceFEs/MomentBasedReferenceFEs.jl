@@ -511,7 +511,10 @@ function MomentBasedReferenceFE(
     @assert has_geometric_decomposition(prebasis, p, conformity)
     shapefuns, predofs = prebasis, dof_basis
 
-    if conformity isa DivConformity
+    # TODO: This is very ugly.... do we really need to be adding stuff here every time 
+    # we implement new stuff? 
+    D = num_cell_dims(p)
+    if conformity isa DivConformity || (conformity isa CurlConformity && is_n_cube(p) && D==3)
       sign_flip = get_facet_flux_sign_flip(shapefuns, p, conformity)
       shapefuns = linear_combination(sign_flip,shapefuns)
     end

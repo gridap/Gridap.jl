@@ -30,7 +30,7 @@ function get_cell_shapefuns_and_dof_basis(
   cell_change, cell_change_invt = cell_changes
   cell_shapefuns = lazy_map(linear_combination, cell_change,      cell_phy_fields)
   cell_dof_basis = lazy_map(linear_combination, cell_change_invt, cell_phy_dofs)
-  cell_shapefuns, cell_dof_basis
+  return cell_shapefuns, cell_dof_basis
 end
 
 """
@@ -70,7 +70,15 @@ end
 function compute_cell_bases_changes(
   ::ReferenceFEName, ::CoVariantPiolaMap, model, cell_reffe
 )
-  change = lazy_map(r -> Diagonal(ones(num_dofs(r))), cell_reffe) # TODO: Replace by edge-signs for non-oriented meshes?
+  D = num_cell_dims(model)
+  poly = only(get_polytopes(model))
+  if (D==2) || is_simplex(poly)
+    # For these cases, we do not need to aply a sign flip
+    return nothing
+  end
+  # TODO: Edge-signs for non-oriented meshes?
+  @check (D==3) && is_n_cube(poly)
+  change = get_sign_flip(model, cell_reffe)
   return (change,change)
 end
 
@@ -82,7 +90,6 @@ function compute_cell_bases_changes(
   #change  = get_sign_flip(model, cell_reffe) # equal to its transposed inverse
   return (change,change)
 end
-
 
 #################
 # NormalSignMap #

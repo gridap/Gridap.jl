@@ -68,14 +68,13 @@ function NedelecRefFE(
     Broadcasting(Operation(⋅))(φ,μ)
   end
   function fmom_HEX(φ,μ,ds) # Face moment function: σ_F(φ,μ) = ∫((φ×n)⋅μ)dF
-    o = get_facet_orientations(ds.cpoly)[ds.face] # This is a hack to avoid a sign map
-    n = o*get_facet_normal(ds)
+    n = get_facet_normal(ds)
     E = get_extension(ds)
     Eμ = Broadcasting(Operation(⋅))(E,μ) # We have to extend the basis to 3D
     φn = Broadcasting(Operation(×))(n,φ)
     Broadcasting(Operation(⋅))(φn,Eμ)
   end
-  function fmom_TET(φ,μ,ds) # Face moment function: σ_F(φ,μ) = ∫((φ×n)⋅μ)dF
+  function fmom_TET(φ,μ,ds) # Face moment function: σ_F(φ,μ) = ∫(φ⋅μ)dF
     E = get_extension(ds)
     Eμ = Broadcasting(Operation(⋅))(E,μ) # We have to extend the basis to 3D
     Broadcasting(Operation(⋅))(φ,Eμ)
