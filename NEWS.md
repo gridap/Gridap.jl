@@ -60,6 +60,24 @@ Main PR is PR[#1048](https://github.com/gridap/Gridap.jl/pull/#1048).
 - `JacobiPolynomialBasis{D}(args...)` in favor of `LegendreBasis(Val(D), args...)`
 - `return_type(::PolynomialBasis)` in favor of `value_type(::PolynomialBasis)`
 
+## [0.19.9] - 2026-03-14
+
+### Changed
+
+- Split CI into separate jobs to keep test time down. Since PR[#1251](https://github.com/gridap/Gridap.jl/pull/1251).
+
+### Fixed
+
+- Fix incorrect permutation handling in `compute_field_offsets` for `BlockMultiFieldStyle`. Since PR[1247](https://github.com/gridap/Gridap.jl/pull/1247).
+- `MappedGrid` now returns its internal geometric map. Since PR[#1226](https://github.com/gridap/Gridap.jl/pull/1226).
+- Fixed bug in skeleton transient fields. Since PR[1229](https://github.com/gridap/Gridap.jl/pull/1229).
+- Fixed bug in `FineToCoarseField` internal indexing. Since PR[1224](https://github.com/gridap/Gridap.jl/pull/1224).
+- Fixed `outer(f, s::ShiftedNabla)` silently ignoring the shift contribution.
+- Fixed incorrect `else p == HEX` control flow in `EdgeBasedRefinement.jl`. Since PR[1246] (https://github.com/gridap/Gridap.jl/pull/1246).
+- Fixed copy-paste bug where `get_tangent_vector` called `get_normal_vector` in `CellFields.jl`. Since PR[1246] (https://github.com/gridap/Gridap.jl/pull/1246).
+- Generalized `change_domain_o2n` so that it can now deal with triangulation portions. Since PR[1249](https://github.com/gridap/Gridap.jl/pull/1249).
+- Generalized Nedelec Hexahedral elements for meshes beyond Cartesian Meshes. Since PR[1250](https://github.com/gridap/Gridap.jl/pull/1250).
+
 ## [0.19.8] - 2026-02-19
 
 ### Added
@@ -82,6 +100,7 @@ Main PR is PR[#1048](https://github.com/gridap/Gridap.jl/pull/#1048).
 - Fixed lack of more general tests for Nedelec ReferenceFEs. Added a test which is currently broken. Since PR[#1216](https://github.com/gridap/Gridap.jl/pull/1216).
 - Small bugfix in `face_labeling_from_cell_tags`. Since PR[#1218](https://github.com/gridap/Gridap.jl/pull/1218).
 - Fixed `getindex!` when the given indexes need to be converted the indexstyle of the array (cache isn't skipped anymore). Implemented the bound check elusion API in most `Arrays` arraysSince [#1213](https://github.com/gridap/Gridap.jl/pull/1213).
+- Fixed `TransientCellField` skeleton evaluation for `:minus` side.  Since PR[#1229](https://github.com/gridap/Gridap.jl/pull/1229).
 
 ### Changed
 

@@ -105,4 +105,3 @@ end
 function ReferenceFE(p::Polytope,::Nedelec{K},::Type{T}, order; kwargs...) where {K, T}
   NedelecRefFE(T,p,order; kind=K, kwargs...)
 end
-

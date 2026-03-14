@@ -593,8 +593,8 @@ function get_normal_vector(trian::Triangulation,cell_normal::SkeletonPair)
 end
 
 function get_tangent_vector(trian::Triangulation,cell_tangent::SkeletonPair)
-  plus = get_normal_vector(trian,cell_tangent.plus)
-  minus = get_normal_vector(trian,cell_tangent.minus)
+  plus = get_tangent_vector(trian,cell_tangent.plus)
+  minus = get_tangent_vector(trian,cell_tangent.minus)
   SkeletonPair(plus,minus)
 end
 

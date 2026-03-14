@@ -180,7 +180,7 @@ end
 
 dot(s::ShiftedNabla,f) = Operation(tr)(s(f))
 outer(s::ShiftedNabla,f) = s(f)
-outer(f,s::ShiftedNabla) = transpose(gradient(f))
+outer(f,s::ShiftedNabla) = transpose(s(f))
 cross(s::ShiftedNabla,f) = Operation(grad2curl)(s(f))
 
 dot(s::ShiftedNabla,f::Function) = dot(s,GenericField(f))

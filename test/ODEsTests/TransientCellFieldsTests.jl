@@ -7,6 +7,7 @@ using BlockArrays
 
 using Gridap
 using Gridap.CellData
+using Gridap.CellData: CellFieldAt
 using Gridap.FESpaces
 using Gridap.MultiField
 using Gridap.ODEs
@@ -53,6 +54,13 @@ vecdata = collect_cell_vector(V, l(t0, v))
 assembler = SparseMatrixAssembler(U, V)
 mat = assemble_matrix(assembler, matdata)
 vec = assemble_vector(assembler, vecdata)
+
+# skeleton operations
+uₜ_and_dtuₜ = TransientCellField(uₜ, (∂t(uₜ),) )
+@test uₜ_and_dtuₜ.plus.cellfield isa CellFieldAt{:plus}
+@test first(uₜ_and_dtuₜ.plus.derivatives) isa CellFieldAt{:plus}
+@test uₜ_and_dtuₜ.minus.cellfield isa CellFieldAt{:minus}
+@test first(uₜ_and_dtuₜ.minus.derivatives) isa CellFieldAt{:minus}
 
 ##############
 # MultiField #
