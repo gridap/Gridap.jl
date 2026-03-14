@@ -208,7 +208,7 @@ const ∫ = Integrand
     get_cell_measure(strian, ttrian)
 
 where all arguments are [`Triangulation`](@ref)s, returns a vector containing
-the volume of each cell of [`t`]`trian`.
+the volume of each cell of `[t]trian`.
 """
 function get_cell_measure(trian::Triangulation)
   quad = CellQuadrature(trian,0)

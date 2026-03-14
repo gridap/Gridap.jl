@@ -15,8 +15,11 @@ isHierarchical(::Type{Bernstein}) = false
 """
     BernsteinBasis{D,V} = CartProdPolyBasis{D,V,Bernstein}
 
-Alias for cartesian product of a scalar tensor 1D-Bernstein basis, scalar valued
+Alias for tensor-product basis of the 1D scalar Bernstein basis, scalar valued
 or multivalued.
+
+If multivalued, this is a direct sum basis spaning the Cartesian product
+polynomial space, see also [`CartProdPolyBasis`](@ref).
 """
 const BernsteinBasis{D,V} = CartProdPolyBasis{D,V,Bernstein}
 
@@ -229,8 +232,8 @@ end
 
 Type for the multivariate Bernstein basis in barycentric coordinates,
 c.f. [Bernstein polynomials](@ref) section of the documentation. If `V` is not
-scalar, a Cartesian product of the Bernstein scalar basis is made for each
-independent component of `V`.
+scalar, a duplication and direct sum of the scalar Bernstein basis is made for each
+independent component of `V`, yielding a basis of the Cartesian product space.
 
 The index of `B_α` in the basis is [`bernstein_term_id(α)`](@ref bernstein_term_id).
 
@@ -344,7 +347,7 @@ end
 Return the vector of multi-indices for the `D`-dimensional Bernstein basis of
 order `K`, that is
 
-``Iₖᴰ = { α ∈ {0:K}ᴰ⁺¹ | |α| = K }``
+``Iₖᴰ = \\{ α ∈ {0:K}ᴰ⁺¹ | |α| = K \\}``
 
 ordered in decreasing lexicographic order, e.g. {200, 110, 101, 020, 011, 002}
 for K=2, D=2.

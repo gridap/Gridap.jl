@@ -146,10 +146,10 @@ On top of these two basic mappings, a whole plethora of additional topological m
 These first set of routines extend the ReferenceFEs API to provide information on the face-to-node mappings and permutations:
 
 ```@docs
-ReferenceFEs.get_face_vertices
-ReferenceFEs.get_face_coordinates
-ReferenceFEs.get_vertex_permutations
-ReferenceFEs.get_face_vertex_permutations
+ReferenceFEs.get_face_vertices(::RefinementRule)
+ReferenceFEs.get_face_coordinates(::RefinementRule)
+ReferenceFEs.get_vertex_permutations(::RefinementRule)
+ReferenceFEs.get_face_vertex_permutations(::RefinementRule)
 ```
 
 We also provide face-to-face maps:

@@ -24,8 +24,8 @@ const modal_serendipity  = ModalScalar(serendipity)
 """
     ModalScalarRefFE(::Type{T}, p::Polytope{D}, order::Integer; F::Symbol, kwargs...)
 
-Scalar moment-based reference FE, for space FᵣΛ⁰ where `r=order` and `F` is either
-`:P⁻`, `:P`, `:Q⁻` or `:S`. `T` is the type of scalar components.
+Scalar moment-based reference FE, for space ``\\mathrm{F}ᵣΛ⁰`` where `r=order`
+and F is either `:P⁻`, `:P`, `:Q⁻` or `:S`. `T` is the type of scalar components.
 
 This is a variant of `lagrangian`/`serendipity` elements that is more accurate for high order (≥5).
 
@@ -107,20 +107,5 @@ end
 function ReferenceFE(p::Polytope,::ModalScalar{Name},::Type{T}, order; kwargs...) where {Name, T}
   F = Name == Serendipity ? :S : (is_n_cube(p) ? :Q⁻ : :P)
   ModalScalarRefFE(T,p,order; F, kwargs...)
-end
-
-function Conformity(::GenericRefFE{<:ModalScalar},sym::Symbol)
-  hgrad = (:H1,:C0,:Hgrad,:HGrad)
-  if sym == :L2
-    L2Conformity()
-  elseif sym in hgrad
-    GradConformity()
-  else
-    @unreachable """\n
-    It is not possible to use conformity = $sym on a Nedelec reference FE.
-
-    Possible values of conformity for this reference fe are $((:L2, hcurl...)).
-    """
-  end
 end
 

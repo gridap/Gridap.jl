@@ -107,10 +107,10 @@ testvalue(::Type{<:PolynomialBasis}) = @abstractmethod
 # Helpers #
 ###########
 
-_q_filter( e,order)  = (maximum(e,init=0) <= order) # ℚₙ
-_qh_filter(e,order)  = (maximum(e,init=0) == order) # ℚ̃ₙ = ℚₙ\ℚ₍ₙ₋₁₎
-_p_filter( e,order)  = (sum(e) <= order)            # ℙₙ
-_ph_filter(e,order)  = (sum(e) == order)            # ℙ̃ₙ = ℙₙ\ℙ₍ₙ₋₁₎
+_q_filter( e,order)  = (maximum(e,init=0) <= order) # 𝓠ₙ
+_qh_filter(e,order)  = (maximum(e,init=0) == order) # 𝓠̃ₙ = 𝓠ₙ\𝓠₍ₙ₋₁₎
+_p_filter( e,order)  = (sum(e) <= order)            # 𝓟ₙ
+_ph_filter(e,order)  = (sum(e) == order)            # 𝓟̃ₙ = 𝓟ₙ\𝓟₍ₙ₋₁₎
 _ser_filter(e,order) = (sum( [ i for i in e if i>1 ] ) <= order) # Serendipity
 
 function _define_terms(filter,orders)

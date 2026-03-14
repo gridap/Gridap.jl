@@ -40,7 +40,6 @@ The following table summarizes the elements implemented in Gridap (legend below)
 | [Raviart-Thomas](https://defelement.org/elements/raviart-thomas.html)                   | [`raviart_thomas`](@ref LagrangianRefFE)     | 𝓟ᵣ⁻Λᴰ⁻¹   | `TRI`,`TET` | ``{r=o+1≥1, r}``| `:Hdiv`   |
 |                                                                                         |                                              | 𝓠ᵣ⁻Λᴰ⁻¹   | `QUAD`,`HEX`| ``{r=o+1≥1, r}``| `:Hdiv`   |
 | [Brezzi-Douglas-Marini](https://defelement.org/elements/brezzi-douglas-marini.html)     | [`bdm`](@ref BDMRefFE)                       | 𝓟ᵣΛᴰ⁻¹    | `TRI`,`TET` | ``{r=o≥1,   r}``| `:Hdiv`   |
-| [Mardal-Tai-Winther](https://defelement.org/elements/mardal-tai-winther.html)           | `TODO` `mtw`                                 |           | `TRI`,`TET` | ``{o=1, D+1}``  | `:Hdiv`   |
 |                                                                                                                                                                                                |
 | [Crouzeix-Raviart](https://defelement.org/elements/crouzeix-raviart.html)               |[`crouzeix_raviart`](@ref CrouzeixRaviartRefFE)|          |  `TRI`      | ``{o=1, o}``    | `:L2`     |
 | [discontinuous Lagrangian](https://defelement.org/elements/discontinuous-lagrange.html) | [`lagrangian`](@ref LagrangianRefFE)         | 𝓟ᵣ⁻Λᴰ     | △           | ``{r-1=o≥0, o}``| `:L2`     |
@@ -49,9 +48,6 @@ The following table summarizes the elements implemented in Gridap (legend below)
 |                                                                                         | kwarg `space=:P`                             | 𝓢ᵣΛᴰ      | ``\square`` | ``{r=o≥0, o}``  | `:L2`     |
 | [MINI bubble](@ref "Bubble reference element")                                               | [`bubble`](@ref BubbleRefFE)                 |           |△,``\square``| ``{o=1, 2}``    | `:L2`     |
 | Bezier, ModalC0                                                                         | as above                                     |           |             | ``{o≥0, o}``    | `:L2`     |
-|                                                                                                                                                                                                |
-| [Arnold-Winther](https://defelement.org/elements/arnold-winther.html)                   | `TODO`  `arnoldwinther`                      |           | `TRI`       | ``{o=2, 4}``    | `:Hdiv`   |
-| [Hellan-Herrmann-Jhonson](https://defelement.org/elements/hellan-herrmann-johnson.html) | `TODO`  `hhj`                                |           | `TRI`       | ``{TODO, o}``   | `:Hdiv`   |
 
 ##### Legend
 
@@ -82,8 +78,15 @@ Also, a Cartesian product finite-element space is available for all the `:H1`
 conforming elements, for all polytopes. It means that a tensor type
 ([`<:MultiValue`](@ref Gridap.TensorValues)) can be given as value type
 argument `T`, for example `VectorValue{3,Float64}` or
-`SymTensorValue{2,Float64}`. The DoFs are duplicated for each independent
-component of the tensor.
+`SymTensorValue{2,Float64}`.
+
+The function space is the Cartesian product of the scalar space, where a copy
+of the scalar space is assigned to each independent component of the tensor,
+and same for the DOF. For example, the function space of `ReferenceFE(SEGMENT,
+lagrangian, VectorValue{2,Float64}, 1)` is `{ VectorValue(x₁,x₂) | x₁ ∈ 𝓟¹,  x₂
+∈ 𝓟¹ }`. Its basis is a direct sum basis of the scalar basis duplicated over
+each component: `{VectorValue{1,0}, VectorValue{x,0}, VectorValue{0,1},
+VectorValue{0,x} }`
 
 The `modalC0` element has the particularity that the support of its
 shape-function can be scaled to be adapted to the physical element.

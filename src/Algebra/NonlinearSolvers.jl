@@ -12,11 +12,11 @@ abstract type NonlinearSolver <: GridapType end
 
 Usage:
 
-   cache = solve!(x,nls,op)
+    cache = solve!(x,nls,op)
 
 The returned `cache` object can be used in subsequent solves:
 
-   cache = solve!(x,nls,op,cache)
+    cache = solve!(x,nls,op,cache)
 """
 function solve!(x::AbstractVector,nls::NonlinearSolver,op::NonlinearOperator)
   solve!(x,nls,op,nothing)

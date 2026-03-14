@@ -28,7 +28,7 @@ Pushforward(::Type{<:Nedelec}) = CoVariantPiolaMap()
     NedelecRefFE(::Type{T}, p::Polytope, order::Integer;  kind::Int=1, kwargs...)
 
 The `order` argument has the following meaning: the curl of the  functions in
-this basis is in the ℙ/ℚ space of degree `order`. `T` is the type of scalar components.
+this basis is in the 𝓟/𝓠 space of degree `order`. `T` is the type of scalar components.
 
 The `kwargs` are [`change_dof`](@ref "`change_dof` keyword argument"),
 [`poly_type`](@ref "`poly_type` keyword argument") and
@@ -104,20 +104,5 @@ end
 
 function ReferenceFE(p::Polytope,::Nedelec{K},::Type{T}, order; kwargs...) where {K, T}
   NedelecRefFE(T,p,order; kind=K, kwargs...)
-end
-
-function Conformity(reffe::GenericRefFE{<:Nedelec},sym::Symbol)
-  hcurl = (:Hcurl,:HCurl)
-  if sym == :L2
-    L2Conformity()
-  elseif sym in hcurl
-    CurlConformity()
-  else
-    @unreachable """\n
-    It is not possible to use conformity = $sym on a Nedelec reference FE.
-
-    Possible values of conformity for this reference fe are $((:L2, hcurl...)).
-    """
-  end
 end
 

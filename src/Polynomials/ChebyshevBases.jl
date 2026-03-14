@@ -16,7 +16,11 @@ isHierarchical(::Type{<:Chebyshev}) = true
 """
     ChebyshevBasis{D,V,kind} = CartProdPolyBasis{D,V,Chebyshev{kind}}
 
-Alias for cartesian product Chebyshev basis, scalar valued or multivalued.
+Alias for tensor-product basis of the 1D scalar Chebyshev  basis, scalar valued
+or multivalued.
+
+If multivalued, this is a direct sum basis spaning the Cartesian product
+polynomial space, see also [`CartProdPolyBasis`](@ref).
 """
 const ChebyshevBasis{D,V,kind} = CartProdPolyBasis{D,V,Chebyshev{kind}}
 

@@ -14,7 +14,7 @@ const crouzeix_raviart = CrouzeixRaviart()
     CrouzeixRaviartRefFE(::Type{T}, p::Polytope, order::Integer)
 
 The `order` argument has the following meaning: the divergence of the  functions in this basis
-is in the ℙ space of degree `order-1`. `T` is the type of scalar components.
+is in the 𝓟 space of degree `order-1`. `T` is the type of scalar components.
 """
 function CrouzeixRaviartRefFE(::Type{T},p::Polytope,order::Integer) where T
   D = num_dims(p)
@@ -43,19 +43,6 @@ end
 
 function ReferenceFE(p::Polytope,::CrouzeixRaviart,::Type{T}, order) where T
   CrouzeixRaviartRefFE(T,p,order)
-end
-
-
-function Conformity(reffe::GenericRefFE{CrouzeixRaviart},sym::Symbol)
-  if sym == :L2
-    L2Conformity()
-  else
-    @unreachable """\n
-    It is not possible to use conformity = $sym on a CrouzeixRaviart reference FE.
-
-    Possible values of conformity for this reference fe are $((:L2, )).
-      """
-  end
 end
 
 function get_face_own_dofs(reffe::GenericRefFE{CrouzeixRaviart}, conf::L2Conformity)

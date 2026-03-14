@@ -8,34 +8,38 @@ a Sobolev space that the global finite element space is a subset of.
 The available conformities, along with the `Symbol`s that some high level
 constructors accept, are:
 - [`L2Conformity`](@ref); `:L2`
-- [`GradConformity`](@ref) (alias `H1Conformity`); `:H1`, `:Hgrad`, `:C0`
+- [`GradConformity`](@ref) (alias `H1Conformity`); `:H1`, `:Hgrad`, `:HGrad`, `:C0`
 - [`CurlConformity`](@ref); `:Hcurl`, `:HCurl`
 - [`DivConformity`](@ref); `:Hdiv`, `:HDiv`
 - [`CDConformity`](@ref)
 """
 abstract type Conformity end
+valid_conformity_symbols(::Conformity) = @abstractmethod
 
 """
     struct L2Conformity <: Conformity
 """
 struct L2Conformity <: Conformity end
+valid_conformity_symbols(::L2Conformity) = (:L2,)
 
 """
     struct GradConformity <: Conformity
 """
 struct GradConformity <: Conformity end
 const H1Conformity = GradConformity
+valid_conformity_symbols(::GradConformity) = (:L2, :H1, :Hgrad, :HGrad, :C0)
 
 """
     struct CurlConformity <: Conformity
 """
 struct CurlConformity <: Conformity end
+valid_conformity_symbols(::CurlConformity) = (:L2, :Hcurl, :HCurl)
 
 """
     struct DivConformity <: Conformity
 """
 struct DivConformity <: Conformity end
-
+valid_conformity_symbols(::DivConformity) = (:L2, :Hdiv, :HDiv)
 
 """
     abstract type ReferenceFE{D} <: GridapType
@@ -83,6 +87,19 @@ Supertype for the reference finite element name singleton types, e.g. [`lagrangi
 Instances are used to select a reference FE in the [`ReferenceFE`](@ref ReferenceFE(n::ReferenceFEName,a...;k...)) constructor.
 """
 abstract type ReferenceFEName end
+
+# ReferenceFEName argument added to enable easy extension from outside Gridap
+function symbol_conformity(symb::Symbol, ::ReferenceFEName)
+  symb == :L2    && return L2Conformity()
+  symb == :H1    && return GradConformity()
+  symb == :C0    && return GradConformity()
+  symb == :Hgrad && return GradConformity()
+  symb == :HGrad && return GradConformity()
+  symb == :Hcurl && return CurlConformity()
+  symb == :HCurl && return CurlConformity()
+  symb == :Hdiv  && return DivConformity()
+  symb == :HDiv  && return DivConformity()
+end
 
 # Extensible factory function
 
@@ -204,6 +221,31 @@ function Conformity(reffe::ReferenceFE)
 end
 
 """
+    Conformity(reffe::ReferenceFE, conf::Symbol)
+
+Return the [`Conformity`](@ref) that `conf` represents if `reffe` implements it,
+or throws an `ErrorException` otherwise.
+
+For example, if `reffe` is a Lagrangian refference FE with `H1Conformity`,
+the function would return `L2Conformity()` and `H1Conformity()` for
+respectively `conf=:L2` and `:H1` (because H¹ is in L²), but would error on
+`conf=:Hcurl`.
+"""
+function Conformity(reffe::ReferenceFE, sym::Symbol)
+  name = get_name(reffe)
+  reffe_conf = Conformity(reffe)
+  comformity_symbols = valid_conformity_symbols(reffe_conf)
+  if !( sym in comformity_symbols )
+    @unreachable """\n
+    It is not possible to use conformity $sym on this $(name) reference FE of conformity $reffe_conf.
+
+    Possible values for this reference FE are $((comformity_symbols...)).
+    """
+  end
+  symbol_conformity(sym, name)
+end
+
+"""
     get_face_own_dofs(reffe::ReferenceFE[, conf::Conformity][, d::Int]) -> Vector{Vector{Int}}
 
 Return a vector containing, for each face of `reffe`'s polytope, the indices of
@@ -230,21 +272,6 @@ end
 
 function Conformity(reffe::ReferenceFE, conf::Nothing)
   Conformity(reffe)
-end
-
-"""
-    Conformity(reffe::ReferenceFE, conf::Symbol)
-
-Return the [`Conformity`](@ref) that `conf` represents if `reffe` implements it,
-or throws an `ErrorException` otherwise.
-
-For example, if `reffe` is a Lagrangian refference FE with `H1Conformity`,
-the function would return `L2Conformity()` and `H1Conformity()` for
-respectively `conf=:L2` and `:H1` (because H¹ is in L²), but would error on
-`conf=:Hcurl`.
-"""
-function Conformity(reffe::ReferenceFE, sym::Symbol)
-  @abstractmethod
 end
 
 function get_face_own_dofs(reffe::ReferenceFE)

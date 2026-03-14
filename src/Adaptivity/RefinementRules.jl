@@ -4,13 +4,15 @@ struct GenericRefinement <: RefinementRuleType end
 struct WithoutRefinement <: RefinementRuleType end
 
 """
-  Structure representing the map between a single parent cell and its children.
+    struct RefinementRule{P}
 
-  Contains: 
+Structure representing the map between a single parent cell and its children.
 
-  - T :: `RefinementRuleType`, indicating the refinement method.
-  - poly :: `Polytope`, representing the geometry of the parent cell.
-  - ref_grid :: `DiscreteModel` defined on `poly`, giving the parent-to-children cell map. 
+Contains:
+
+- `T::RefinementRuleType`, indicating the refinement method.
+- `poly::P <: Polytope`, representing the geometry of the parent cell.
+- `ref_grid::DiscreteModel` defined on `poly`, giving the parent-to-children cell map.
 """
 struct RefinementRule{P}
   T         :: RefinementRuleType
@@ -366,12 +368,18 @@ function _get_local_dof_ranges(p::Polytope{Dc},orders) where Dc
 end
 
 """
-Given a `RefinementRule` of dimension Dc and a Dc-Tuple `fine_orders` of approximation orders, 
-returns a map between the fine nodal dofs of order `fine_orders` in the reference grid and the 
-coarse nodal dofs of order `2⋅fine_orders` in the coarse parent cell. 
+    function get_face_subface_ldof_to_cell_ldof(
+      rr::RefinementRule{<:ExtrusionPolytope{Dc}},
+      fine_orders::NTuple{Dc,<:Integer},
+      D::Int
+    ) where Dc
 
-The result is given for each coarse/parent face of dimension `D` as a list of the corresponding 
-fine dof lids, i.e 
+Given a `RefinementRule` of dimension `Dc` and a `Dc`-`Tuple` `fine_orders` of approximation orders,
+returns a map between the fine nodal dofs of order `fine_orders` in the reference grid and the
+coarse nodal dofs of order `2⋅fine_orders` in the coarse parent cell.
+
+The result is given for each coarse/parent face of dimension `D` as a list of the corresponding
+fine dof lids, i.e
 - [coarse face][coarse dof lid] -> fine dof lid
 """
 function get_face_subface_ldof_to_cell_ldof(

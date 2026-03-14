@@ -107,7 +107,7 @@ export Pullback
 export IdentityPiolaMap
 export CoVariantPiolaMap
 export ContraVariantPiolaMap
-export dof_scaling_function
+export get_dofscale_setter_function
 
 export Dof
 export get_nodes
@@ -209,7 +209,6 @@ export ModalC0
 export ModalScalar
 export CrouzeixRaviart
 export Serendipity
-#export HellanHerrmannJhonson
 export Bubble
 
 export lagrangian
@@ -224,7 +223,6 @@ export modal_lagrangian
 export modal_serendipity
 export crouzeix_raviart
 export serendipity
-#export hhj
 export bubble
 
 export Quadrature
@@ -300,8 +298,6 @@ include("NedelecRefFEs.jl")
 include("ModalScalarRefFEs.jl")
 
 include("CrouzeixRaviartRefFEs.jl")
-
-#include("HHJRefFEs.jl")
 
 include("MockDofs.jl")
 

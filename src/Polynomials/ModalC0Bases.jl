@@ -10,7 +10,7 @@ The 1D polynomials are
 where ``Cᵢ`` is a constant, ``𝑱ᵢ`` the ``i``th (1,1)-Jacobi polynomial
 and ``s`` an affine transformation.
 
-Reference: Eq. (17) in https://doi.org/10.1016/j.camwa.2022.09.027
+Reference: Eq. (17) in [10.1016/j.camwa.2022.09.027](https://doi.org/10.1016/j.camwa.2022.09.027).
 
 The first 1D polynomial, ``1-x``, is of order ``1`` instead of ``0``, and the last one, ``x``,
 is of order ``1`` istead of ``K``. So the complete 1D basis isn't hierarchical.
@@ -22,8 +22,8 @@ isHierarchical(::Type{ModalC0}) = false
 """
     ModalC0Basis{D,V,T} <: PolynomialBasis{D,V,ModalC0}
 
-Tensor product basis of generalised modal C0 1D basis from section 5.2 in
-https://doi.org/10.1016/j.camwa.2022.09.027.
+Tensor-product basis of generalised modal C0 1D basis from section 5.2 in
+[10.1016/j.camwa.2022.09.027](https://doi.org/10.1016/j.camwa.2022.09.027).
 See also [ModalC0 polynomials](@ref) section of the documentation.
 """
 struct ModalC0Basis{D,V,T} <: PolynomialBasis{D,V,ModalC0}
@@ -63,7 +63,8 @@ At last, all scalar basis polynomial will have its bounding box `(a[i],b[i])`,
 but they are assumed iddentical if only two points `a` and `b` are provided,
 and default to `a=Point{D}(0...)`, `b=Point{D}(1...)` if not provided.
 
-The basis is a cartesian product when multi-valued, isotropic if one `order` is
+The basis spans the cartesian product of the scalar basis space when multi-valued
+(basis is a direct sum basis for each component), isotropic if one `order` is
 provided, or anisotropic if a `D` tuple `orders` is provided.
 """
 function ModalC0Basis() end

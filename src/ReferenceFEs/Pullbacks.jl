@@ -278,24 +278,59 @@ end
 ###################
 
 """
-    dof_scaling_function(::Pushforward, D::Int)
+    get_dofscale_setter_function(reffe::ReferenceFE, pushforward::Pushforward)
 
-Return a function `h_inv -> scale` that takes the inverse of a local meshsize
-estimate h, and return how to scale a DOF pushed via the `Pushforward` such that
-it's scale is independent of h. `D` is the parametric dimension.
+Return a function `(dofscale, face_own_dofs, face_meshsize) -> _` that
+sets in place in `dofscale` the scaling with `h` that the DOF `dof` of `reffe`
+undergoes when mapped to the physical space, where `h` is a local meshsize
+estimate of the face owning `dof`.
 
-For example, the contravariant Piola map applies `J -> |det(J)|⁻¹ J` that scales
-like `h^D * (1/h) = (1/h)^(1-D)`, so the scaling function is `h_inv -> (h_inv)^(D-1)`.
+Returned function arguments:
+- `dofscale`: vector of floats of length `num_dofs(reffe)`,
+- `face_own_dofs`: result of [`get_face_own_dofs(reffe)`](@ref get_face_own_dofs),
+- `face_meshsize`: vector of floats of length `num_faces(reffe)`, its `i`th entry is the local meshize estimate for the DOFs in `face_own_dofs[i]` (if non-empty).
+
+By default, the scaling function is deduced from the `reffe`'s `Pushforward` (Piola map).
+
+For example, the standard div-conforming FEs (Raviart-Thomas, BDM) map all their
+DOFs with the contravariant Piola map which applies `J -> |det(J)|⁻¹ J`, that
+scales like `h^D * (1/h) = h^(D-1)`. So `get_dofscale_setter_function` returns
+something equivalent to
+
+    @inline function scale_setter!(dofscale, face_own_dofs, face_meshsize)
+      for (face_dofs, h) in zip(face_own_dofs, face_meshsize)
+        @inbounds dofscale[face_dofs] .= h^(D-1)
+      end
+    end
+
+This function is responsible for the correct DOF scaling if using the `scale_dof`
+kwarg of the [`FESpace`](@ref) constructor.
 """
-dof_scaling_function(::Pushforward, D::Int) = @abstractmethod
+function get_dofscale_setter_function(::ReferenceFE{D}, pushforward::Pushforward) where D
+  scaler = _scaling_function(pushforward, D)
 
-dof_scaling_function(::IdentityPiolaMap, D::Int)  = h_inv -> 1
-dof_scaling_function(::CoVariantPiolaMap, D::Int) = h_inv -> h_inv
-dof_scaling_function(::DoubleCoVariantPiolaMap, D::Int) = h_inv -> h_inv^2
-dof_scaling_function(::ContraVariantPiolaMap, D::Int) = let D=D
-  h_inv -> h_inv^(D-1)
+  # avoid boxing scaler in the closure by making it constant
+  # https://docs.julialang.org/en/v1/manual/performance-tips/#man-performance-captured
+  let scaler=scaler
+
+    # The returned "scale_setter!" anonymous funtion:
+    @inline function(dofscale, face_own_dofs, face_meshsize)
+      for (face_dofs, h) in zip(face_own_dofs, face_meshsize)
+        @inbounds dofscale[face_dofs] .= scaler(h)
+      end
+    end
+
+  end
 end
-dof_scaling_function(::DoubleContraVariantPiolaMap, D::Int) = let D=D
-  h_inv -> h_inv^(2D-2)
+
+_scaling_function(::Pushforward, D::Int) = @abstractmethod
+_scaling_function(::IdentityPiolaMap, D::Int)  = h -> 1
+_scaling_function(::CoVariantPiolaMap, D::Int) = h -> h
+_scaling_function(::DoubleCoVariantPiolaMap, D::Int) = h -> h^2
+_scaling_function(::ContraVariantPiolaMap, D::Int) = let D=D
+  h -> h^(D-1)
+end
+_scaling_function(::DoubleContraVariantPiolaMap, D::Int) = let D=D
+  h -> h^(2D-2)
 end
 

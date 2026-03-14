@@ -5,7 +5,7 @@
     FEEC_space_definition_checks(::Val{D}, T, r, k, F, rotate_90; cart_prod=false)
 
 Check if the argument define a valid Finite Element Exterior Calculus (FEEC) polynomial space,
-as defined in the Periodic Table of the Finite Elements, `FᵣΛᵏ` in dimension `D`.
+as defined in the Periodic Table of the Finite Elements, ``\\mathrm{F}ᵣΛᵏ`` in dimension `D`.
 
 The arguments are also described in [`FEEC_poly_basis`](@ref).
 """
@@ -15,7 +15,7 @@ function FEEC_space_definition_checks(
 ) where {D,T}
 
   if cart_prod
-    @check k in (0, D) "Cartesian product of polynomial basis only possible for `k` = 0 or `D`, got k=$k and D=$D"
+    @check k in (0, D) "Basis for Cartesian product of polynomial space only possible for `k` = 0 or `D`, got k=$k and D=$D"
     @check T<:Number
   else
     @check T<:Real "T needs to be <:Real since represents the scalar type, got $T"

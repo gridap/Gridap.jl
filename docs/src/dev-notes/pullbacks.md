@@ -17,8 +17,8 @@ Throughout this document, we will use the following notation:
 We define a **pushforward** map as ``F_* : \hat{V} \rightarrow V``, mapping reference fields to physical fields. Given a pushforward ``F_*``, we define:
 
 - The **pullback** ``F^* : V^* \rightarrow \hat{V}^*``, mapping physical moments to reference moments. Its action on physical dofs is defined in terms of the pushforward map ``F_*`` as ``\hat{\sigma} = F^*(\sigma) := \sigma \circ F_*``.
-- The **inverse pushforward** ``(F_*)^{-1} : V \rightarrow \hat{V}``, mapping physical fields to reference fields.
-- The **inverse pullback** ``(F^*)^{-1} : \hat{V}^* \rightarrow V^*``, mapping reference moments to physical moments. Its action on reference dofs is defined in terms of the inverse pushforward map ``(F_*)^{-1}`` as ``\sigma = (F^*)^{-1}(\hat{\sigma}) := \hat{\sigma} \circ (F_*)^{-1}``.
+- The **inverse pushforward** ``(F_*)^{-1} = F_{-*} : V \rightarrow \hat{V}``, mapping physical fields to reference fields.
+- The **inverse pullback** ``(F^*)^{-1} = F^{-*} : \hat{V}^* \rightarrow V^*``, mapping reference moments to physical moments. Its action on reference dofs is defined in terms of the inverse pushforward map ``F_{-*}`` as ``\sigma = F^{-*}(\hat{\sigma}) := \hat{\sigma} \circ F_{-*}``.
 
 ## Change of basis
 
@@ -55,18 +55,46 @@ We then have the following diagram:
 !!! details
     The above diagram is well defined, since we have
     ```math
-    \hat{\Sigma}(\hat{\Phi}) = P F^* (\Sigma)({F_*}^{-1} (P^{-T} \Phi)) = P \Sigma (F_* {F_*}^{-1} P^{-T} \Phi)) = P \Sigma (P^{-T} \Phi) = P \Sigma (\Phi) P^{-1} = Id \\
-    \Sigma(\Phi) = F^{-*}(P^{-1}\hat{\Sigma})(P^T F_*(\hat{\Phi})) = P^{-1} \hat{\Sigma} (F_*^{-1}(P^T F_*(\hat{\Phi}))) = P^{-1} \hat{\Sigma} (P^T \hat{\Phi}) = P^{-1} \hat{\Sigma}(\hat{\Phi}) P = Id
+    \hat{\Sigma}(\hat{\Phi}) = P F^* (\Sigma)(F_{-*} (P^{-T} \Phi)) = P \Sigma (F_* F_{-*} P^{-T} \Phi)) = P \Sigma (P^{-T} \Phi) = P \Sigma (\Phi) P^{-1} = Id \\
+    \Sigma(\Phi) = F^{-*}(P^{-1}\hat{\Sigma})(P^T F_*(\hat{\Phi})) = P^{-1} \hat{\Sigma} (F_{-*}(P^T F_*(\hat{\Phi}))) = P^{-1} \hat{\Sigma} (P^T \hat{\Phi}) = P^{-1} \hat{\Sigma}(\hat{\Phi}) P = Id
     ```
 
-From an implementation point of view, it is more natural to build ``P^{-1}``  and then retrieve all other matrices by transposition/inversion.
+In order to map a reference FE to a physical FE, ``\Sigma`` and ``\Phi`` are
+obtained by mapping ``\hat\Sigma`` and ``\hat\Phi`` using
+```math
+\Phi = M F_*(\hat{\Phi}), \quad \text{and} \quad \Sigma = M^{-T} F^{-*}(\hat\Sigma).
+```
+!!! details
+    Take the formula for ``\hat\Sigma`` above, replace ``P`` with ``M^T``,
+    multiply by ``M^{-T}`` from the left on both sides, and apply the inverse
+    pullback ``F^{-*}`` to get ``F^{-*}(M^{-T}\hat\Sigma) =
+    F^{-*}(M^{-T}M^TF^*(\Sigma))``. What's on ``\Sigma`` cancels, and finally the
+    multiplication with ``M^{-T}`` commutes with ``F^{-*}`` by linearity.
+
+In the implementation, ``M`` is replaced with ``M'=DM`` (and ``M^{-T}`` by
+``D^{-T}M^{-T}``). ``D`` is an optional diagonal matrix used to rescale the
+DOFs that would otherwise scale with the local mesh-size ``h``. ``M`` takes
+into account sign changes due to orientation change (see e.g.
+[`NormalSignMap`](@ref Gridap.FESpaces.NormalSignMap)) and non-trivial relation
+between the physical and reference FE (see non affine-equivalent FEs in
+[1]-[2]).
+
+``M`` and its transposed inverse are computed cell wise by
+[`compute_cell_bases_changes`](@ref
+Gridap.FESpaces.compute_cell_bases_changes). From an implementation point of
+view, it is more natural to build ``M^{-T}`` and then retrieve ``M`` by
+transposition and inversion. ``D``'s entries are computed using the scaling
+function defined by [`get_dofscale_setter_function`](@ref
+Gridap.ReferenceFEs.get_dofscale_setter_function). ``\Sigma`` and ``\Phi`` are
+finally put together in [`get_cell_shapefuns_and_dof_basis`](@ref
+Gridap.FESpaces.get_cell_shapefuns_and_dof_basis).
 
 ## Interpolation
 
 In each cell ``K`` and for ``C_b^k(K)`` the space of functions defined on ``K`` with at least ``k`` bounded derivatives, we define the interpolation operator ``I_K : C_b^k(K) \rightarrow V`` as
 
 ```math
-I_K(g) = \Sigma(g) \Phi \quad, \quad \Sigma(g) = P^{-1} \hat{\Sigma}(F^{-*}(g))
+I_K(g) = \Sigma(g) \Phi \quad, \quad \Sigma(g) = M^{-T} \hat{\Sigma}(F_{-*}(g))
 ```
 
 ## Implementation notes
