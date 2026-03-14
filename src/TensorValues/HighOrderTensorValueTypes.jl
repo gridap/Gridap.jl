@@ -35,7 +35,6 @@ end
 
 # Empty HighOrderTensorValue constructor
 
-HighOrderTensorValue()                       = HighOrderTensorValue{4,Tuple{0,0,0,0},Int}(NTuple{0,Int}())
 HighOrderTensorValue(::Val{N}) where N       = HighOrderTensorValue{Tuple{ntuple(_->0,Val(N))...},Int,N}(NTuple{0,Int}())
 HighOrderTensorValue(::Val{N}, data::NTuple{0}) where N = HighOrderTensorValue(Val(N))
 HighOrderTensorValue{S}(data::NTuple{0}) where S = HighOrderTensorValue{S,Int}(data)
