@@ -101,8 +101,8 @@ reffe = BubbleRefFE(Float64, p; terms, coeffs)
 @test_throws ErrorException BubbleRefFE(Float64, VERTEX)
 
 # both terms and coeffs needed
-@test_throws ErrorException BubbleRefFE(Float64, p; terms)
-@test_throws ErrorException BubbleRefFE(Float64, p; coeffs)
+@test_throws ArgumentError BubbleRefFE(Float64, p; terms)
+@test_throws ArgumentError BubbleRefFE(Float64, p; coeffs)
 
 # wrong number of shapefuns
 coeffs = [ 1. 1.; ]
