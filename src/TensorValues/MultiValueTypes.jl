@@ -362,7 +362,7 @@ function representatives_of_basis_dual(B)
   representatives_of_basis_dual(B...)
 end
 function representatives_of_basis_dual(B::T...) where {T<:Real}
-  @assert length(B) = 1 && !iszero(B[1])
+  @assert isone(length(B)) && !iszero(B[1])
   T[ 1/B[1] ]
 end
 function representatives_of_basis_dual(B::V...) where {V<:MultiValue}
