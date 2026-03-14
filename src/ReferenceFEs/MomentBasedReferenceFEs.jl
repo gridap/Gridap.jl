@@ -396,7 +396,7 @@ end
 # Dc-dimensional one that lives in the tangent space of the Dc-embedded Df-dimensional
 # manifold `m.face`.
 function get_extension(m::FaceMeasure{Df,Dc}) where {Df,Dc}
-  @assert Df == Dc - 1
+  @check Df == Dc - 1
   vs = ReferenceFEs._nfaces_vertices(Float64,m.cpoly,Df)[m.face]
   J = TensorValue(hcat([vs[2]-vs[1]...],[vs[3]-vs[1]...]))
   return ConstantField(J/meas(transpose(J)))

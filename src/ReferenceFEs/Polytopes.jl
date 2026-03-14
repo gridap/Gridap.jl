@@ -518,7 +518,7 @@ function _get_faces_primal(p, dimfrom, dimto)
     rto = facefrom_dimranges[i][dimto+1]
     faces_dimfrom_dimto[i] = faces_dimfrom[i][rto] .- offset
   end
-  faces_dimfrom_dimto
+  return faces_dimfrom_dimto
 end
 
 function _get_faces_dual(p, dimfrom, dimto)
@@ -530,7 +530,7 @@ function _get_faces_dual(p, dimfrom, dimto)
       push!(fface_to_tfaces[fface], tface)
     end
   end
-  fface_to_tfaces
+  return fface_to_tfaces
 end
 
 """
@@ -567,16 +567,16 @@ function get_face_dimranges(p::Polytope, d::Integer)
     r = get_dimranges(f)
     push!(rs, r)
   end
-  rs
+  return rs
 end
 
 function get_face_dimranges(p::Polytope)
   rs = Vector{UnitRange{Int}}[]
   D = num_dims(p)
-  for b in 0:D
+  for d in 0:D
     rs = vcat(rs, get_face_dimranges(p, d))
   end
-  rs
+  return rs
 end
 
 """
@@ -601,7 +601,7 @@ function get_face_vertices(p::Polytope)
       push!(face_vertices, vertices)
     end
   end
-  face_vertices
+  return face_vertices
 end
 
 """
@@ -644,12 +644,12 @@ ExtrusionPolytope{2}[TRI, QUAD]
 """
 function get_reffaces(::Type{Polytope{d}}, p::Polytope) where d
   ftype_to_refface, = _compute_reffaces_and_face_types(p, Val{d}())
-  collect(ftype_to_refface)
+  return collect(ftype_to_refface)
 end
 
 function get_reffaces(p::Polytope)
   ftype_to_refface, = _compute_reffaces_and_face_types(p)
-  collect(ftype_to_refface)
+  return collect(ftype_to_refface)
 end
 
 """
@@ -687,12 +687,12 @@ The three first facets are of type `1`, i.e, `QUAD`, and the last ones of type `
 """
 function get_face_type(p::Polytope, d::Integer)
   _, iface_to_ftype = _compute_reffaces_and_face_types(p, Val{d}())
-  iface_to_ftype
+  return iface_to_ftype
 end
 
 function get_face_type(p::Polytope)
   _, iface_to_ftype = _compute_reffaces_and_face_types(p)
-  iface_to_ftype
+  return iface_to_ftype
 end
 
 function _compute_reffaces_and_face_types(p::Polytope, ::Val{d}) where d
@@ -714,7 +714,7 @@ function _compute_reffaces_and_face_types(p::Polytope)
     d_to_offset[d+1] = d_to_offset[d] + length(d_to_refdfaces[d])
     d_to_dface_to_ftype[d+1] .+= d_to_offset[d+1]
   end
-  (collect(vcat(d_to_refdfaces...)), vcat(d_to_dface_to_ftype...), d_to_offset)
+  return (collect(vcat(d_to_refdfaces...)), vcat(d_to_dface_to_ftype...), d_to_offset)
 end
 
 function _find_unique_with_indices(a_to_b)
@@ -723,7 +723,7 @@ function _find_unique_with_indices(a_to_b)
   _find_unique!(u_to_b, a_to_b)
   a_to_u = zeros(Int, length(a_to_b))
   _find_indexin!(a_to_u, a_to_b, u_to_b)
-  (u_to_b, a_to_u)
+  return (u_to_b, a_to_u)
 end
 
 function _find_unique!(f::Vector, itr, pred::Function=(==))
@@ -738,7 +738,7 @@ function _find_unique!(f::Vector, itr, pred::Function=(==))
       push!(f, i)
     end
   end
-  f
+  return f
 end
 
 function _find_indexin!(a_to_index, a_to_b, index_to_b, pred::Function=(==))
@@ -750,7 +750,7 @@ function _find_indexin!(a_to_index, a_to_b, index_to_b, pred::Function=(==))
       end
     end
   end
-  a_to_index
+  return a_to_index
 end
 
 """

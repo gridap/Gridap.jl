@@ -70,7 +70,7 @@ function has_geometric_decomposition(
 
   conf isa L2Conformity && return true
 
-  !is_simplex(p) || D != num_dims(p) && return false
+  (!is_simplex(p) || D != num_dims(p)) && return false
   if !_are_barycoords_relative_to_simplex(b, p)
     @warn """
       The barycentric coordinates of the given basis is not defined relative to the given simplex vertices.
@@ -142,7 +142,7 @@ function has_geometric_decomposition(b::_BaryPΛBasis, p::Polytope, conf::Confor
 
   conf isa L2Conformity && return true
 
-  !is_simplex(p) || D != num_dims(p) && return false
+  (!is_simplex(p) || D != num_dims(p)) && return false
   if !_are_barycoords_relative_to_simplex(b.scalar_bernstein_basis, p)
     @warn """
       The barycentric coordinates of the given basis is not defined relative to the given simplex vertices.

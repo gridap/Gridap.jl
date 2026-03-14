@@ -93,13 +93,13 @@ function (==)(a::BezierRefFE{D},b::BezierRefFE{D}) where D
   t = true
   a.reffe == b.reffe
   na = get_node_to_own_node(a)
-  nb = get_node_to_own_node(a)
+  nb = get_node_to_own_node(b)
   t = t && (na == nb)
-  t
+  return t
 end
 
 function (==)(a::BezierRefFE,b::BezierRefFE)
-  false
+  return false
 end
 
 function _convert_reffaces(::Type{T},reffaces) where T
