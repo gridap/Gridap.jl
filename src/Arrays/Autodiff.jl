@@ -13,7 +13,7 @@ end
 """
 """
 function autodiff_array_jacobian(a,i_to_x)
-  tag = x->Forwarddiff.jacobian(a, x)
+  tag = x->ForwardDiff.jacobian(a, x)
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
@@ -39,7 +39,7 @@ function autodiff_array_gradient(a,i_to_x,j_to_i)
 end
 
 function autodiff_array_jacobian(a,i_to_x,j_to_i)
-  tag = x->Forwarddiff.jacobian(a, x)
+  tag = x->ForwardDiff.jacobian(a, x)
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
