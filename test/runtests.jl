@@ -76,4 +76,6 @@ if TESTCASE ∈ ("all", "drivers")
   @time @testset "Drivers" begin include("GridapTests/runtests.jl") end
 end
 
+@time @testset "Inverse" begin include("InverseTests/runtests.jl") end
+
 end # module
