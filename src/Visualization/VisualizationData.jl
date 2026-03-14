@@ -1,6 +1,14 @@
 """
     struct VisualizationData
-    VisualizationData(grid::Grid, filebase::AbstractString; celldata=Dict(), nodaldata=Dict())
+
+A structured representation of visualization data for a `Grid`.
+See also [`visualization_data`](@ref).
+
+# Fields
+- `grid::Grid`: The grid to visualize.
+- `filebase::AbstractString`: The name of the output file.
+- `celldata`: Dictionary of cell-wise data.
+- `nodaldata`: Dictionary of node-wise data.
 """
 struct VisualizationData
   grid::Grid
@@ -14,14 +22,34 @@ struct VisualizationData
 end
 
 """
-    visualization_data(args...;kwargs...)
+    visualization_data(object, filebase; kwargs...) -> Vector{VisualizationData}
 
-This function returns an iterable collection (e.g. a `Vector`) of `VisualizationData` objects
+Internal function that converts a Gridap object into a standardized representation
+for visualization.
+
+# Available Constructors
+- `visualization_data(grid::Grid, filebase; celldata=Dict(), nodaldata=Dict())`
+- `visualization_data(trian::Triangulation, filebase; order=-1, nsubcells=-1, celldata=Dict(), cellfields=Dict())`
+- `visualization_data(model::DiscreteModel, filebase; labels=get_face_labeling(model))`
+- `visualization_data(polytope::Polytope, filebase)`
+- `visualization_data(reffe::LagrangianRefFE, filebase)`
+- `visualization_data(cell_point::CellPoint, filebase; cellfields=Dict())`
+
+# Keyword Arguments
+- `order::Int=-1`: Interpolates the object into high-order Lagrangian nodes.
+- `nsubcells::Int=-1`: Interpolates the object into a piecewise-order space within each cell (using `nsubcells` per direction).
 """
 function visualization_data(args...;kwargs...)
   @abstractmethod
 end
 
+"""
+    struct VisualizationGrid{Dc,Dp} <: Grid{Dc,Dp}
+
+A grid specialized for visualization purposes, often representing a refined 
+version of a physical grid.
+See also [`visualization_grid`](@ref).
+"""
 struct VisualizationGrid{Dc,Dp} <: Grid{Dc,Dp}
   sub_grid::Grid{Dc,Dp}
   sub_cell_to_cell::AbstractVector{<:Integer}
@@ -33,6 +61,13 @@ Geometry.get_cell_type(g::VisualizationGrid) = get_cell_type(g.sub_grid)
 Geometry.get_node_coordinates(g::VisualizationGrid) = get_node_coordinates(g.sub_grid)
 Geometry.get_cell_node_ids(g::VisualizationGrid) = get_cell_node_ids(g.sub_grid)
 
+"""
+    visualization_grid(args...; kwargs...) -> VisualizationGrid
+
+Constructs a [`VisualizationGrid`](@ref). This is an internal function used to 
+generate the underlying grid structure for VTK export, handling sub-cell 
+refinement and point evaluation.
+"""
 function visualization_grid(args...;kwargs...)
   @abstractmethod
 end
