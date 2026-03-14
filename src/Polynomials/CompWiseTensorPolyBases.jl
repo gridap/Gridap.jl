@@ -274,15 +274,15 @@ function _hessian_nd!(
     for ci in terms
       s .= one(T)
 
-      for r in 1:D
+      for p in 1:D
         for q in 1:D
           for d in 1:D
-            if d != q && d != r
-              s[r,q] *= c[d,ci[d]]
-            elseif d == q && d ==r
-              s[r,q] *= h[d,ci[d]]
+            if d != q && d != p
+              s[p,q] *= c[d,ci[d]]
+            elseif d == q && d == p
+              s[p,q] *= h[d,ci[d]]
             else
-              s[r,q] *= g[d,ci[d]]
+              s[p,q] *= g[d,ci[d]]
             end
           end
         end

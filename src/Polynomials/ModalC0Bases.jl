@@ -352,15 +352,15 @@ function _hessian_nd!(
     for j in eachindex(s)
       @inbounds s[j] = one(T)
     end
-    for r in 1:D
+    for p in 1:D
       for q in 1:D
         for d in 1:D
-          if d != q && d != r
-            @inbounds s[r,q] *= c[d,ci[d]]
-          elseif d == q && d ==r
-            @inbounds s[r,q] *= h[d,ci[d]]
+          if d != q && d != p
+            @inbounds s[p,q] *= c[d,ci[d]]
+          elseif d == q && d ==p
+            @inbounds s[p,q] *= h[d,ci[d]]
           else
-            @inbounds s[r,q] *= g[d,ci[d]]
+            @inbounds s[p,q] *= g[d,ci[d]]
           end
         end
       end
@@ -369,7 +369,6 @@ function _hessian_nd!(
     k = _set_derivative_mc0!(r,i,s,k,l,V)
   end
 end
-
 
 #################################
 # 1D evaluations implementation #
