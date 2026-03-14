@@ -4,7 +4,7 @@
 struct CrouzeixRaviart <: ReferenceFEName end
 
 """
-    const couzeix_raviart = CrouzeixRaviart()
+    const crouzeix_raviart = CrouzeixRaviart()
 
 Singleton of the [`CrouzeixRaviart`](@ref) reference FE name.
 """
@@ -23,7 +23,7 @@ function CrouzeixRaviartRefFE(::Type{T},p::Polytope,order::Integer) where T
     prebasis = MonomialBasis(Val(D),T,order,Polynomials._p_filter)
     fb = MonomialBasis(Val(D-1),T,0,Polynomials._p_filter)
   else
-    @notimplemented "Crouzet-Raviart Reference FE only available for simplices and lowest order"
+    @notimplemented "Crouzeix-Raviart Reference FE only available for simplices and lowest order"
   end
 
   function fmom(φ,μ,ds) # Face moment function : σ_F(φ,μ) = 1/|F| ( ∫((φ)*μ)dF )
