@@ -216,7 +216,7 @@ when the components of `a` are interdependent, see [`num_indep_components`](@ref
 `i` should be in `1:num_indep_components(a)`.
 """
 @propagate_inbounds function indep_comp_getindex(a::Number,i)
-  @boundscheck @check 1 <= i <= num_indep_components(Number)
+  @boundscheck @check 1 <= i <= num_indep_components(typeof(a))
   @inbounds a[i]
 end
 
