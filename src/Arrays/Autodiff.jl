@@ -1,22 +1,28 @@
 
+"""
+"""
 function autodiff_array_gradient(a,i_to_x)
   tag = x->ForwardDiff.gradient(a, x)
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
   i_to_result = lazy_map(AutoDiffMap(),i_to_cfg,i_to_ydual)
-  i_to_result
+  return i_to_result
 end
 
+"""
+"""
 function autodiff_array_jacobian(a,i_to_x)
-  tag = x->Forwarddiff.jacobian(a, x)
+  tag = x->ForwardDiff.jacobian(a, x)
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
   i_to_result = lazy_map(AutoDiffMap(),i_to_cfg,i_to_ydual)
-  i_to_result
+  return i_to_result
 end
 
+"""
+"""
 function autodiff_array_hessian(a,i_to_x)
   agrad = i_to_y -> autodiff_array_gradient(a,i_to_y)
   autodiff_array_jacobian(agrad,i_to_x)
@@ -29,17 +35,17 @@ function autodiff_array_gradient(a,i_to_x,j_to_i)
   j_to_ydual = a(i_to_xdual)
   j_to_cfg = autodiff_array_reindex(i_to_cfg,j_to_i)
   j_to_result = lazy_map(AutoDiffMap(),j_to_cfg,j_to_ydual)
-  j_to_result
+  return j_to_result
 end
 
 function autodiff_array_jacobian(a,i_to_x,j_to_i)
-  tag = x->Forwarddiff.jacobian(a, x)
+  tag = x->ForwardDiff.jacobian(a, x)
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
   j_to_cfg = autodiff_array_reindex(i_to_cfg,j_to_i)
   j_to_result = lazy_map(AutoDiffMap(),j_to_cfg,j_to_ydual)
-  j_to_result
+  return j_to_result
 end
 
 function autodiff_array_hessian(a,i_to_x,j_to_i)
@@ -58,6 +64,12 @@ function autodiff_array_reindex(i_to_val, j_to_i)
   return j_to_val
 end
 
+"""
+    struct ConfigMap{F,T} <: Map
+
+Map for ForwardDiff.[`F`]Config(`T`,...) where `T` is tag function and `F` is
+either gradient or jacobian.
+"""
 struct ConfigMap{
   F <: Union{typeof(ForwardDiff.gradient),typeof(ForwardDiff.jacobian)},
   T <: Union{<:Function,Nothing}} <: Map
@@ -71,26 +83,32 @@ ConfigMap(f) = ConfigMap(f,nothing)
 # TODO Prescribing long chunk size can lead to slow compilation times!
 function return_cache(k::ConfigMap{typeof(ForwardDiff.gradient)},x)
   cfg = ForwardDiff.GradientConfig(k.tag,x,ForwardDiff.Chunk{length(x)}())
-  cfg
+  return cfg
 end
 
 function return_cache(k::ConfigMap{typeof(ForwardDiff.jacobian)},x)
   cfg = ForwardDiff.JacobianConfig(k.tag,x,ForwardDiff.Chunk{length(x)}())
-  cfg
+  return cfg
 end
 
 function evaluate!(cfg,k::ConfigMap,x)
-  cfg
+  return cfg
 end
 
+"""
+    struct DualizeMap <: Map
+"""
 struct DualizeMap <: Map end
 
 function evaluate!(cache,::DualizeMap,cfg,x)
   xdual, seeds = cfg.duals, cfg.seeds
   ForwardDiff.seed!(xdual, x, seeds)
-  xdual
+  return xdual
 end
 
+"""
+    struct AutoDiffMap <: Map
+"""
 struct AutoDiffMap <: Map end
 
 function return_cache(::AutoDiffMap,cfg::ForwardDiff.GradientConfig,ydual)

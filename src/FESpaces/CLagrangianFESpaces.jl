@@ -97,13 +97,12 @@ function _use_clagrangian(trian::Triangulation,cell_reffe,conf::H1Conformity)
   end
   reffe1 = first(ctype_reffe1)
   reffe2 = first(ctype_reffe2)
-  if get_orders(reffe1) != get_orders(reffe2)
-    return false
-  end
-  if get_order(reffe1) != 1 # This can be relaxed in the future
-    return false
-  end
-  return true
+  !(reffe1 isa GenericLagrangianRefFE && reffe2 isa GenericLagrangianRefFE) && return false
+  get_orders(reffe1) != get_orders(reffe2) && return false
+  # This can be relaxed in the future
+  get_order(reffe1) != 1 && return false
+
+  true
 end
 
 function _unsafe_clagrangian(
@@ -117,7 +116,7 @@ function _unsafe_clagrangian(
 
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
   prebasis = get_prebasis(first(ctype_reffe))
-  T = return_type(prebasis)
+  T = value_type(prebasis)
   # Next line assumes linear grids
   node_to_tag = get_face_tag_index(labels,dirichlet_tags,0)
   _vector_type = vector_type === nothing ? Vector{Float64} : vector_type

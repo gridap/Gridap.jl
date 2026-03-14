@@ -1,5 +1,6 @@
 
 """
+    abstract type FESolver <: GridapType
 """
 abstract type FESolver <: GridapType end
 
@@ -42,8 +43,9 @@ function solve!(uh,solver::LinearSolver,op::FEOperator,cache)
 end
 
 """
-Solve that allocates, and sets initial guess to zero
-and returns the solution
+    solve(nls::FESolver, op::FEOperator)
+
+Solve that allocates, and sets initial guess to zero and returns the solution.
 """
 function solve(nls::FESolver,op::FEOperator)
   U = get_trial(op)
@@ -65,8 +67,6 @@ function solve(op::AffineFEOperator)
   solve(solver,op)
 end
 
-"""
-"""
 function solve(op::FEOperator)
   solver = NonlinearFESolver()
   solve(solver,op)

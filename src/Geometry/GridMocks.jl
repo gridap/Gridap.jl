@@ -23,6 +23,11 @@
 #  1 ---1--- 2 ---5--- 3
 #
 
+"""
+    struct GridMock <: Grid{2,2}
+
+For tests.
+"""
 struct GridMock <: Grid{2,2} end
 
 function get_node_coordinates(::GridMock)

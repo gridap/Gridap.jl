@@ -137,6 +137,9 @@ function CellField(fs::SingleFieldFESpace,cell_vals)
   GenericCellField(cell_field,get_triangulation(v),DomainStyle(v))
 end
 
+"""
+    struct SingleFieldFEFunction{T<:CellField} <: FEFunction
+"""
 struct SingleFieldFEFunction{T<:CellField} <: FEFunction
   cell_field::T
   cell_dof_values::AbstractArray{<:AbstractVector{<:Number}}
@@ -159,6 +162,7 @@ get_fe_space(f::SingleFieldFEFunction) = f.fe_space
 
 The resulting FEFunction will be in the space if and only if `dirichlet_values`
 are the ones provided by `get_dirichlet_dof_values(fs)`
+Return a [`SingleFieldFEFunction`](@ref).
 """
 function FEFunction(
   fs::SingleFieldFESpace, free_values::AbstractVector, dirichlet_values::AbstractVector)
@@ -239,6 +243,8 @@ function compute_dirichlet_values_for_tags(f::SingleFieldFESpace,tag_to_object)
   compute_dirichlet_values_for_tags!(dirichlet_values,dirichlet_values_scratch,f,tag_to_object)
 end
 
+"""
+"""
 function compute_dirichlet_values_for_tags!(
   dirichlet_values,
   dirichlet_values_scratch,

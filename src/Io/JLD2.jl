@@ -1,20 +1,22 @@
 
 """
-    function from_jld2_file(filename::AbstractString,dataset::AbstractString="data")
+    from_jld2_file(path::AbstractString, dataset::AbstractString="data")
 
-Loads an object from a JLD2 file given its filename and, optionally, the dataset name.
-The dataset specifies the name and the root location of the data inside the generated JLD2 file.
+Loads an object from a JLD2 file.
+
+The `dataset` parameter specifies the name/root location of the data
+inside the file.
 """
 function from_jld2_file(filename::AbstractString,dataset::AbstractString="data")
     load(filename)[dataset]
 end
 
 """
-    function from_jld2_file(::Type{T},filename::AbstractString,dataset::AbstractString="data") where T
+    from_jld2_file(::Type{T}, path::AbstractString, dataset::AbstractString="data") where T
 
-Loads an object from a JLD2 file given its filename and, optionally, the dataset name.
-The dataset specifies the name and the root location of the data inside the generated JLD2 file.
-Checks if the returned object is of the expected `Type{T}`, if not return error.
+Loads an object of type `T` from a JLD2 file.
+
+Throws an error if the loaded object is not of the expected type.
 """
 function from_jld2_file(::Type{T},filename::AbstractString,dataset::AbstractString="data") where T
     obj = from_jld2_file(filename,dataset)
@@ -26,10 +28,12 @@ function from_jld2_file(::Type{T},filename::AbstractString,dataset::AbstractStri
 end
 
 """
-    function to_jld2_file(object,filename::AbstractString,dataset::AbstractString="data")
+    to_jld2_file(object, path::AbstractString, dataset::AbstractString="data")
 
-Stores an object to a JLD2 file given its filename and, optionally, the dataset name.
-The dataset specifies the name and the root location of the data inside the JLD2 file.
+Serializes `object` into a JLD2 file.
+
+The `dataset` parameter specifies the name/root location of the data
+inside the file.
 """
 function to_jld2_file(object,filename::AbstractString,dataset::AbstractString="data")
     save(DataFormat{:JLD2}, filename, dataset, object)

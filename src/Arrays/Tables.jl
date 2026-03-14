@@ -1,13 +1,24 @@
 
 
 """
-     struct Table{T,Vd<:AbstractVector{T},Vp<:AbstractVector} <: AbstractVector{Vector{T}}
-        data::Vd
-        ptrs::Vp
-     end
+    struct Table{T,Vd<:AbstractVector{T},Vp<:AbstractVector} <: AbstractVector{Vector{T}}
+      data::Vd
+      ptrs::Vp
+    end
 
-Type representing a list of lists (i.e., a table) in
-compressed format.
+Type representing a list of lists (i.e., a table) in compressed format.
+This is particularly efficient for representing connectivity in meshes.
+
+# Example
+
+```julia
+using Gridap.Arrays
+vv = [[1,2,3], [10,20], [5]]
+table = Table(vv)
+table[1] # returns [1, 2, 3]
+table.data # returns [1, 2, 3, 10, 20, 5]
+table.ptrs # returns [1, 4, 6, 7]
+```
 """
 struct Table{T,Vd<:AbstractVector{T},Vp<:AbstractVector} <: AbstractVector{Vector{T}}
   data::Vd
@@ -304,7 +315,7 @@ end
 """
     append_ptrs(pa,pb)
 
-Append two vectors of pointers.
+Concatenate two vectors of pointers in a new vector.
 """
 function append_ptrs(pa::AbstractVector{T},pb::AbstractVector{T}) where T
   p = copy(pa)
@@ -312,6 +323,10 @@ function append_ptrs(pa::AbstractVector{T},pb::AbstractVector{T}) where T
 end
 
 """
+    append_ptrs!(pa,pb)
+
+Similar to [`append_ptrs`](@ref), but appends `pb` at the end of `pa`, in place
+in `pa`.
 """
 function append_ptrs!(pa::AbstractVector{T},pb::AbstractVector{T}) where T
   na = length(pa)-1
@@ -339,12 +354,12 @@ function _append_count!(pa,pb,na,nb)
 end
 
 """
+    const UNSET = 0
 """
 const UNSET = 0
 
 """
-    find_inverse_index_map(a_to_b[, nb=maximum(a_to_b)])
-    find_inverse_index_map!(b_to_a, a_to_b)
+    find_inverse_index_map(a_to_b, nb=maximum(a_to_b))
 
 Given a vector of indices `a_to_b`, returns the inverse index map `b_to_a`.
 """
@@ -355,6 +370,11 @@ function find_inverse_index_map(a_to_b, nb=maximum(a_to_b))
   b_to_a
 end
 
+"""
+    find_inverse_index_map!(b_to_a, a_to_b)
+
+In place [`find_inverse_index_map`](@ref).
+"""
 function find_inverse_index_map!(b_to_a, a_to_b)
   for (a,b) in enumerate(a_to_b)
     if b != UNSET
@@ -422,6 +442,17 @@ function inverse_table(
 end
 
 """
+    append_tables_globally(tables::Table...)
+
+Concatenate multiple tables by appending their rows.
+
+# Example
+```julia
+t1 = Table([[1,2], [3]])
+t2 = Table([[10], [20,30]])
+t3 = append_tables_globally(t1, t2)
+# returns Table([[1,2], [3], [10], [20,30]])
+```
 """
 function append_tables_globally(
   first_table::Table{T,Vd,Vp}, tables::Table{T,Vd,Vp}...
@@ -437,6 +468,21 @@ end
 
 """
     append_tables_locally(tables::Table...)
+    append_tables_locally(offsets, tables)
+
+Concatenate tables of the same length by merging their rows. 
+The optional `offsets` can be used to shift the data values.
+
+# Example
+```julia
+t1 = Table([[1,2], [3]])
+t2 = Table([[10], [20]])
+t3 = append_tables_locally(t1, t2)
+# returns Table([[1,2,10], [3,20]])
+
+t4 = append_tables_locally((0,10), (t1, t2))
+# returns Table([[1,2,20], [3,30]])
+```
 """
 function append_tables_locally(tables::Table...)
   n = length(tables)
@@ -444,8 +490,6 @@ function append_tables_locally(tables::Table...)
   append_tables_locally(offsets,tables)
 end
 
-"""
-"""
 function append_tables_locally(offsets::NTuple, tables::NTuple)
   @check length(offsets) == length(tables) !== 0 "Offsets and tables must have the same length"
   first_table, = tables
@@ -527,6 +571,11 @@ function lazy_map(::typeof(getindex),a::Table,b::AbstractArray{<:Integer})
   LocalItemFromTable(a,b)
 end
 
+"""
+    get_local_item(a::Table,li::Integer)
+
+View in the `li`ᵗʰ column of `a` (the `li`ᵗʰ items in each list/row of `a`).
+"""
 function get_local_item(a::Table,li::Integer)
   LocalItemFromTable(a,Fill(li,length(a)))
 end
@@ -637,8 +686,18 @@ function find_local_index(
 end
 
 """
-    flatten_partition(a_to_bs::Table,nb::Integer)
-    flatten_partition(a_to_bs::Table)
+    flatten_partition(a_to_bs::Table [, nb=maximum(a_to_bs.data)])
+
+Flattens a partition `a_to_bs` (map from `a` to multiple `b`s) into an array
+`b_to_a` (map from `b` to its unique `a`).
+
+# Example
+
+```julia
+a_to_bs = Table([[1,2,3],[7,8],[4,5,6]])
+b_to_a = flatten_partition(a_to_bs)
+# b_to_a == [1, 1, 1, 3, 3, 3, 2, 2]
+```
 """
 function flatten_partition(a_to_bs::Table,nb::Integer=maximum(a_to_bs.data))
   T = eltype(eltype(a_to_bs))
@@ -658,6 +717,7 @@ end
 
 """
     find_local_nbor_index(a_to_b, a_to_lb_to_b) -> a_to_lb
+    find_local_nbor_index(a_to_b, a_to_c, c_to_lb_to_b) -> a_to_lb
 """
 function find_local_nbor_index(a_to_b, a_to_lb_to_b::Table)
   a_to_lb = Vector{GridapLocalInt}(undef,length(a_to_b))
@@ -672,9 +732,6 @@ function find_local_nbor_index(a_to_b, a_to_lb_to_b::Table)
   return a_to_lb
 end
 
-"""
-    find_local_nbor_index(a_to_b, a_to_c, c_to_lb_to_b) -> a_to_lb
-"""
 function find_local_nbor_index(a_to_b, a_to_c, c_to_lb_to_b::Table)
   a_to_lb = Vector{GridapLocalInt}(undef,length(a_to_b))
   for (a,b) in enumerate(a_to_b)

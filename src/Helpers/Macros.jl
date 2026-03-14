@@ -4,7 +4,7 @@
 
 Macro used in generic functions that must be overloaded by derived types.
 """
-macro abstractmethod(message="This function belongs to an interface definition and cannot be used.")
+macro abstractmethod(message="This method belongs to an abstract interface definition and cannot be used.")
   quote
     error($(esc(message)))
   end
@@ -16,7 +16,7 @@ end
 
 Macro used to raise an error, when something is not implemented.
 """
-macro notimplemented(message="This function is not yet implemented")
+macro notimplemented(message="This method is not yet implemented.")
   quote
     error($(esc(message)))
   end
@@ -28,7 +28,7 @@ end
 
 Macro used to raise an error if the `condition` is true
 """
-macro notimplementedif(condition,message="This function is not yet implemented")
+macro notimplementedif(condition,message="This method is not yet implemented.")
   quote
     if $(esc(condition))
       @notimplemented $(esc(message))
@@ -49,8 +49,8 @@ macro unreachable(message="This line of code cannot be reached")
 end
 
 """
-  @check condition
-  @check condition "Error message"
+    @check condition
+    @check condition "Error message"
 
 Macro used to make sure that condition is fulfilled, like `@assert`
 but the check gets deactivated when running Gridap in performance mode.

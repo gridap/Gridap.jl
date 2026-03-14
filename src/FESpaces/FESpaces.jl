@@ -1,7 +1,6 @@
 """
 
-The exported names are
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__))
 """
 module FESpaces
 
@@ -135,6 +134,7 @@ export CellConformity
 export CellFE
 export compute_conforming_cell_dofs
 export compute_cell_space
+export compute_cell_bases_changes
 
 export TestFESpace
 export TrialFESpace
@@ -228,9 +228,7 @@ include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
 
-include("DivConformingFESpaces.jl")
-
-include("CurlConformingFESpaces.jl")
+include("Pullbacks.jl")
 
 include("FESpaceFactories.jl")
 
@@ -262,8 +260,6 @@ include("CLagrangianFESpaces.jl")
 
 include("DirichletFESpaces.jl")
 
-#include("ExtendedFESpaces.jl")
-
 include("FESpacesWithLinearConstraints.jl")
 
 include("DiscreteModelWithFEMaps.jl")
@@ -278,14 +274,19 @@ include("LocalFEOperators.jl")
 
 include("PatchFESpaces.jl")
 
-export get_free_values
-function get_free_values(args...)
-  @unreachable "get_free_values has been removed. Use get_free_dof_values instead."
-end
+"""
+deprecated
+!!! warning
+    deprecated in favor of [`get_free_dof_values`](@ref).
+"""
+function get_free_values end
+@deprecate get_free_values(args...) get_free_dof_values(args...)
 
-export get_dirichlet_values
-function get_dirichlet_values(args...)
-  @unreachable "get_dirichlet_values has been removed. Use get_dirichlet_dof_values instead."
-end
+"""
+!!! warning
+    deprecated in favor of [`get_dirichlet_dof_values`](@ref).
+"""
+function get_dirichlet_values end
+@deprecate get_dirichlet_values(args...) get_dirichlet_dof_values(args...)
 
 end # module

@@ -1,10 +1,47 @@
 
 function FESpace(t::Triangulation,reffes;trian=nothing, kwargs...)
-  @assert trian === nothing
+  @assert trian === nothing || trian === t "The `trian` keyword must be consistant with the given tiangulation $t."
   model = get_active_model(t)
-  FESpace(model,reffes;trian=t,kwargs...)
+  FESpace(model, reffes; trian=t, kwargs...)
 end
 
+"""
+    FESpace(model::DiscreteModel, reffe; kwargs...)
+    FESpace(trian::Triangulation, reffe; kwargs...)
+
+High level finite element space constructors. The `reffe` can be anything returned by a
+[`ReferenceFE`](@ref) constructor, but using one without the `Polytope` argument
+is safer, because the polytope(s) is(are) then chosen consistently with `model` or `trian`.
+
+# Keyword Arguments
+
+- `conformity=nothing`: prescribes the space [`Conformity`](@ref), or use `reffe`'s default if `nothing`.
+
+- `dirichlet_tags=Int[]`: tags of entities where Dirichlet boundary conditions are prescribed.
+
+- `dirichlet_masks=nothing`: for Cartesian product finite elements of value type `V::MultiValue`, specifies to which components of `V` do the Dirichlet BC apply, for each tag in `dirichlet_tags`. The type of `dirichlet_masks` is `Nothing` or `Vector{NTuple{N,Bool}}` where [`N = num_indep_components(V)`](@ref num_indep_components).
+
+- `vector_type=nothing`: sets the type of the vector storing the DOF values, e.g. `Vector{Float64}`. Useful to create complex valued function space from a real finite element basis.
+
+- `constraint=nothing`: if set to `:zeromean`, adds a constraint to the space to ensure its functions have zero mean-value.
+
+- `scale_dof=false`: if `true`, rescales the DOF to make them independent from the mesh size. Usefull for mixed-elements using different Piola/physical mappings, that would introduce heterogeneous scaling with meshsize in the systems. By default, the local mesh size is estimated on each physical d-faces/cell using its d-volume.
+
+- `global_meshsize=nothing`: if `scale_dof`, can be used to prescribe a constant homogeneous mesh size estimate, to avoid computing the volume of each physical face owning DOF. This should only be used on very shape-regular and quasi-uniform meshes (e.g. unstretched `CartesianDiscreteModel`).
+
+- `labels=get_face_labeling(model)`: `FaceLabeling` on top of `model` that `dirichlet_tags` refer to.
+
+- `trian=Triangulation(model)`.
+
+# Extended help
+
+Internal constructors:
+
+    FESpace(model::DiscreteModel, cell_reffe::AbstractArray{<:ReferenceFE}; kwargs...)
+
+    FESpace(model::DiscreteModel, cell_fe::CellFE;
+      trian, labels, dirichlet_tags, dirichlet_masks, constraint, vector_type)
+"""
 function FESpace(
   model::DiscreteModel,
   cell_fe::CellFE;
@@ -71,7 +108,9 @@ function FESpace(
   dirichlet_tags=Int[],
   dirichlet_masks=nothing,
   constraint=nothing,
-  vector_type=nothing)
+  vector_type=nothing,
+  scale_dof=false,
+  global_meshsize=nothing)
 
   conf = Conformity(testitem(cell_reffe),conformity)
 
@@ -90,27 +129,21 @@ function FESpace(
     return V
   end
 
-  cell_fe = CellFE(model,cell_reffe,conf)
-  _vector_type = _get_vector_type(vector_type,cell_fe,trian)
+  cell_fe = CellFE(model, cell_reffe, conf; scale_dof, global_meshsize)
+  vector_type = _get_vector_type(vector_type,cell_fe,trian)
   if conformity in (L2Conformity(),:L2) && dirichlet_tags == Int[]
-    F = _DiscontinuousFESpace(_vector_type,trian,cell_fe)
+    F = _DiscontinuousFESpace(vector_type,trian,cell_fe)
     V = _add_constraint(F,cell_fe.max_order,constraint)
   else
-    V = FESpace(model,cell_fe;
-      trian=trian,
-      labels=labels,
-      dirichlet_tags=dirichlet_tags,
-      dirichlet_masks=dirichlet_masks,
-      constraint=constraint,
-      vector_type=_vector_type)
+    V = FESpace(model,cell_fe; trian, labels, dirichlet_tags, dirichlet_masks, constraint, vector_type)
   end
   return V
 end
 
 function FESpace(model::DiscreteModel,
-                 reffe::Tuple{<:ReferenceFEName,Any,Any}; kwargs...)
-  basis, reffe_args,reffe_kwargs = reffe
-  cell_reffe = ReferenceFE(model,basis,reffe_args...;reffe_kwargs...)
+                 reffe::Tuple{<:Union{ReferenceFEName,Symbol},Any,Any}; kwargs...)
+  reffe_name, reffe_args,reffe_kwargs = reffe
+  cell_reffe = ReferenceFE(model,reffe_name,reffe_args...;reffe_kwargs...)
   FESpace(model,cell_reffe;kwargs...)
 end
 
