@@ -41,8 +41,6 @@ HighOrderTensorValue{S}(data::NTuple{0}) where S = HighOrderTensorValue{S,Int}(d
 
 # HighOrderTensorValue single NTuple argument constructor
 
-#HighOrderTensorValue(::Val{N}, data::NTuple{L,T}) where {N,L,T} = HighOrderTensorValue{N}(data)
-#@generated function HighOrderTensorValue{N}(data::NTuple{L,T}) where {N,L,T}
 @generated function HighOrderTensorValue(::Val{N}, data::NTuple{L,T}) where {N,L,T}
   msg = "Invalid number of scalar arguments in HighOrderTensorValue{$N} constructor, expecting a $(N)th power number, got L=$L"
   V = L^(1/N)

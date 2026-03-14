@@ -3,31 +3,34 @@
     to_dict(object) -> Dict
 
 Serialize `object` into a dictionary of type `Dict{Symbol,Any}`.
-Values stored into this dictionary must be of any native 
-Julia data type (Real, Integer, String, etc.)
-Dictionary keys are `Symbols`.
+
+Values stored in this dictionary must be native Julia data types
+(e.g., `Real`, `Integer`, `String`, `Vector`, `Dict`).
+Dictionary keys are `Symbols`. This is typically the first step
+in serializing an object to formats like JSON or BSON.
 """
 function to_dict(object)
   @abstractmethod
 end
 
 """
-    check_dict(::Type{T},dict::Dict) where T
+    check_dict(::Type{T}, dict::Dict) where T
 
-Check validity of a dictionary `dict` for an object of type `T`.
-It runs successfully if the dictionary is valid for a particular 
-type or throws an error in any other case.
+Check if the dictionary `dict` is valid for an object of type `T`.
+
+Returns successfully if the dictionary is compatible with the type `T`,
+otherwise throws an error.
 """
 function check_dict(::Type{T},dict::Dict) where T
   @abstractmethod
 end
 
 """
-    from_dict(::Type{T},dict::Dict) where T
+    from_dict(::Type{T}, dict::Dict) where T
 
 De-serialize an object of type `T` from the dictionary `dict`.
-Values stored into this dictionary must be of any native 
-Julia data type (Real, Integer, String, etc.)
+
+Values in the dictionary should be native Julia data types.
 Dictionary keys are `Symbols`.
 """
 function from_dict(::Type{T},dict::Dict) where T

@@ -39,10 +39,6 @@ Order   = [:type, :constant, :macro, :function]
 Pages   = ["/AlgebraMaps.jl"]
 ```
 
-### Fields
-
-See the fields module...
-
 ### Other maps
 
 ```@autodocs
