@@ -34,7 +34,7 @@ function BubbleRefFE(::Type{T}, p::Polytope{D}; type = :mini, coeffs = nothing, 
       @notimplemented "Only `:mini` type is supported now; however, you may also specify `terms` and `coeffs` manually."
     end
   elseif isnothing(terms) || isnothing(coeffs)
-    @unreachable "You must specify both `terms` and `coeffs` or neither."
+    throw(ArgumentError("You must specify both `terms` and `coeffs` or neither."))
   end
 
   orders = Tuple(maximum(terms) - oneunit(eltype(terms)))
