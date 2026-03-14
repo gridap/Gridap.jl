@@ -311,7 +311,7 @@ end
 function return_cache(s::DOFScalingMap, cell)
   cell_type = s.cell_ctype[cell]
   @inbounds ndofs = s.ctype_ndofs[cell_type]
-  @inbounds face_own_dofs = s.ctype_faceowndofs[cell]
+  @inbounds face_own_dofs = s.ctype_faceowndofs[cell_type]
 
   dof_scale_cache = CachedVector(Float64)
   setsize!(dof_scale_cache , (ndofs,))
