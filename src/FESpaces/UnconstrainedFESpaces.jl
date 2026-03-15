@@ -93,16 +93,32 @@ function gather_free_and_dirichlet_values!(free_vals,dirichlet_vals,f::Unconstra
   (free_vals,dirichlet_vals)
 end
 
+function gather_free_values!(free_vals,f::UnconstrainedFESpace,cell_vals)
+
+  cell_dofs = get_cell_dof_ids(f)
+  cache_vals = array_cache(cell_vals)
+  cache_dofs = array_cache(cell_dofs)
+  cells = 1:length(cell_vals)
+
+  _gather_only_free_values_fill!(
+    free_vals,
+    cache_vals,
+    cache_dofs,
+    cell_vals,
+    cell_dofs,
+    cells)
+
+  free_vals
+end
+
 function gather_dirichlet_values!(dirichlet_vals,f::UnconstrainedFESpace,cell_vals)
 
   cell_dofs = get_cell_dof_ids(f)
   cache_vals = array_cache(cell_vals)
   cache_dofs = array_cache(cell_dofs)
-  free_vals = zero_free_values(f)
   cells = f.dirichlet_cells
 
-  _free_and_dirichlet_values_fill!(
-    free_vals,
+  _gather_only_dirichlet_values_fill!(
     dirichlet_vals,
     cache_vals,
     cache_dofs,
@@ -111,6 +127,46 @@ function gather_dirichlet_values!(dirichlet_vals,f::UnconstrainedFESpace,cell_va
     cells)
 
   dirichlet_vals
+end
+
+function  _gather_only_free_values_fill!(
+  free_vals,
+  cache_vals,
+  cache_dofs,
+  cell_vals,
+  cell_dofs,
+  cells)
+
+  for cell in cells
+    vals = getindex!(cache_vals,cell_vals,cell)
+    dofs = getindex!(cache_dofs,cell_dofs,cell)
+    for (i,dof) in enumerate(dofs)
+      if dof > 0
+        free_vals[dof] = vals[i]
+      end
+    end
+  end
+
+end
+
+function  _gather_only_dirichlet_values_fill!(
+  dirichlet_vals,
+  cache_vals,
+  cache_dofs,
+  cell_vals,
+  cell_dofs,
+  cells)
+
+  for cell in cells
+    vals = getindex!(cache_vals,cell_vals,cell)
+    dofs = getindex!(cache_dofs,cell_dofs,cell)
+    for (i,dof) in enumerate(dofs)
+      if dof < 0
+        dirichlet_vals[-dof] = vals[i]
+      end
+    end
+  end
+
 end
 
 function  _free_and_dirichlet_values_fill!(

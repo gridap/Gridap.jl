@@ -32,4 +32,6 @@ using Test
 
 @testset "PolytopalFESpacesTests" begin include("PolytopalFESpacesTests.jl") end
 
+@testset "GatherAllocationRegression" begin include("GatherAllocationRegressionTests.jl") end
+
 end # module
