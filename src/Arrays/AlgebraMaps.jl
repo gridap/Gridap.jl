@@ -408,7 +408,7 @@ function Arrays.evaluate!(cache::Nothing, k::LocalPenaltySolveMap, lhs, rhs)
   BpΩ, BλΩ, BpΓ, _ = get_array(rhs)
 
   # μT = norm(App)/norm(Apλ*Aλp) is a heuristic choice for the penalty parameter
-  if isone(size(Apλ,1))
+  if isone(size(Apλ,2))
     μT = tr(App)/norm(Apλ)^2 # Single constraint
   else
     μT = tr(App)/norm(Apλ*Aλp) # Multiple constraints

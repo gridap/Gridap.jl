@@ -50,9 +50,9 @@ end
 
 function lazy_map(::typeof(evaluate),::Type{T},a::LazyArray{<:Fill{<:PosNegReindex}}...) where T
   i_to_iposneg = a[1].args[1]
-  if all(map( ai-> is_exhaustive(a[1].args[1]),a)) && all( map( ai-> i_to_iposneg==a[1].args[1],a) )
-    bpos = map(ai->ai.maps.value.values_pos,a)
-    bneg = map(ai->ai.maps.value.values_neg,a)
+  if all(ai-> is_exhaustive(ai.args[1]), a) && all(ai-> i_to_iposneg==ai.args[1], a)
+    bpos = map(ai -> ai.maps.value.values_pos, a)
+    bneg = map(ai -> ai.maps.value.values_neg, a)
     cpos = lazy_map(evaluate,T,bpos...)
     cneg = lazy_map(evaluate,T,bneg...)
     lazy_map(PosNegReindex(cpos,cneg),T,i_to_iposneg)
