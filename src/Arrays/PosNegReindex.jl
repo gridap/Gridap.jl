@@ -50,7 +50,7 @@ end
 
 function lazy_map(::typeof(evaluate),::Type{T},a::LazyArray{<:Fill{<:PosNegReindex}}...) where T
   i_to_iposneg = a[1].args[1]
-  if all(ai-> is_exhaustive(ai.args[1]), a) && all(ai-> i_to_iposneg==ai.args[1], a)
+  if is_exhaustive(i_to_iposneg) && all(ai-> i_to_iposneg==ai.args[1], a)
     bpos = map(ai -> ai.maps.value.values_pos, a)
     bneg = map(ai -> ai.maps.value.values_neg, a)
     cpos = lazy_map(evaluate,T,bpos...)
@@ -83,7 +83,7 @@ end
 
 function lazy_map(::typeof(evaluate),::Type{T},b::Fill,a::LazyArray{<:Fill{<:PosNegReindex}}...) where T
   i_to_iposneg = a[1].args[1]
-  if all(map( ai-> is_exhaustive(ai.args[1]),a)) && all( map( ai-> i_to_iposneg==ai.args[1],a) )
+  if is_exhaustive(i_to_iposneg) && all(ai-> i_to_iposneg==ai.args[1], a)
     k = b.value
     bpos = map(ai->ai.maps.value.values_pos,a)
     bneg = map(ai->ai.maps.value.values_neg,a)
@@ -109,12 +109,13 @@ function is_exhaustive(i_to_iposneg)
   if length(i_to_iposneg) != Npos+Nneg
     return false
   end
-  ipos_to_touched = fill(false,Npos)
-  ineg_to_touched = fill(false,Nneg)
+  iposneg_to_touched = fill(false,Npos+Nneg)
   for iposneg in i_to_iposneg
-    iposneg>0 ? ipos_to_touched[iposneg] = true : ineg_to_touched[-iposneg] = true
+    @check !iszero(iposneg)
+    k = abs(iposneg) + (iposneg<0)*Npos
+    @inbounds iposneg_to_touched[k] = true
   end
-  all(ipos_to_touched) && all(ineg_to_touched)
+  return all(iposneg_to_touched)
 end
 
 function pos_and_neg_indices(i_to_iposneg)
@@ -123,33 +124,33 @@ function pos_and_neg_indices(i_to_iposneg)
   ipos_to_i = zeros(Int,Npos)
   ineg_to_i = zeros(Int,Nneg)
   @inbounds for (i,iposneg) in enumerate(i_to_iposneg)
-    iposneg>0 ? ipos_to_i[iposneg] = i : ineg_to_i[-iposneg] = i
+    (iposneg>0) ? (ipos_to_i[iposneg] = i) : (ineg_to_i[-iposneg] = i)
   end
-  ipos_to_i, ineg_to_i
+  return ipos_to_i, ineg_to_i
 end
 
 function aligned_with_pos(i_to_iposneg,j_to_i,npos)
   j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
-  j_to_iposneg == 1:npos
+  return j_to_iposneg == 1:npos
 end
 
 function aligned_with_neg(i_to_iposneg,j_to_i,nneg)
   j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
-  j_to_iposneg == -(1:nneg)
+  return j_to_iposneg == -(1:nneg)
 end
 
 function all_in_pos(i_to_iposneg,j_to_i)
   j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
-  all_pos(j_to_iposneg)
+  return all_pos(j_to_iposneg)
 end
 
 function all_in_neg(i_to_iposneg,j_to_i)
   j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
-  all_neg(j_to_iposneg)
+  return all_neg(j_to_iposneg)
 end
 
-all_pos(i_to_iposneg) = all( lazy_map(iposneg->iposneg>0, i_to_iposneg))
-all_neg(i_to_iposneg) = all( lazy_map(iposneg->iposneg<0, i_to_iposneg))
+all_pos(i_to_iposneg) = all(>(0), i_to_iposneg)
+all_neg(i_to_iposneg) = all(<(0), i_to_iposneg)
 
 # This is important to do optimizations associated with ExtendedFESpace
 """
@@ -180,7 +181,7 @@ end
 function PosNegPartition(ipos_to_i::AbstractArray,Ni::Integer)
   i_to_iposneg = zeros(typeof(Ni),Ni)
   i_to_iposneg[ipos_to_i] .= 1:length(ipos_to_i)
-  Nneg = count(k->k==0,i_to_iposneg)
+  Nneg = count(iszero,i_to_iposneg)
   ineg_to_i = similar(ipos_to_i,eltype(ipos_to_i),(Nneg,))
   ineg = 1
   for (i,iposneg) in enumerate(i_to_iposneg)
@@ -211,12 +212,3 @@ function aligned_with_neg(a::PosNegPartition,j_to_i,nneg)
 end
 all_pos(a::PosNegPartition) = length(a.ineg_to_i)==0
 all_neg(a::PosNegPartition) = length(a.ipos_to_i)==0
-
-# @propagate_inbounds function Base.setindex!(a::LazyArray{<:Fill{<:PosNegReindex}},v,j::Integer)
-#   k = a.map.value
-#   i_to_v = k.values
-#   j_to_i, = a.f
-#   i = j_to_i[j]
-#   i_to_v[i]=v
-# end
-
