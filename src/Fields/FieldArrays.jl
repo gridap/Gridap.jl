@@ -490,6 +490,22 @@ function evaluate!(cache,k::Broadcasting{<:Operation},args::Union{Field,Abstract
   BroadcastOpFieldArray(k.f.op,args...)
 end
 
+function return_value(::Broadcasting{typeof(∘)},a::AbstractArray{<:Field},b::Field)
+  BroadcastOpFieldArray(a,b)
+end
+
+function evaluate!(cache,::Broadcasting{typeof(∘)},a::AbstractArray{<:Field},b::Field)
+  BroadcastOpFieldArray(a,b)
+end
+
+function return_value(::Broadcasting{typeof(∘)},a::Field,b::AbstractArray{<:Field})
+  BroadcastOpFieldArray(a,b)
+end
+
+function evaluate!(cache,::Broadcasting{typeof(∘)},a::Field,b::AbstractArray{<:Field})
+  BroadcastOpFieldArray(a,b)
+end
+
 """
 Type that represents a broadcast operation over a set of `AbstractArray{<:Field}`.
 The result is a sub-type of `AbstractArray{<:Field}`
@@ -500,26 +516,49 @@ struct BroadcastOpFieldArray{O,T,N,A} <: AbstractArray{T,N}
   function BroadcastOpFieldArray(op,args::Union{Field,AbstractArray{<:Field}}...)
     fs = map(testitem,args)
     T = return_type(Operation(op),fs...)
-    s = map(size,args)
-    bs = Base.Broadcast.broadcast_shape(s...)
-    N = length(bs)
-    A = typeof(args)
-    O = typeof(op)
+    bs = Base.Broadcast.broadcast_shape(map(size,args)...)
+    N, A, O = length(bs), typeof(args), typeof(op)
+    new{O,T,N,A}(op,args)
+  end
+  function BroadcastOpFieldArray(op::Union{Field,AbstractArray{<:Field}},args::Union{Field,AbstractArray{<:Field}}...)
+    fs = map(testitem,args)
+    T = return_type(∘,testitem(op),fs...)
+    bs = Base.Broadcast.broadcast_shape(size(op),map(size,args)...)
+    N, A, O = length(bs), typeof(args), typeof(op)
     new{O,T,N,A}(op,args)
   end
 end
 
+Base.IndexStyle(::Type{<:BroadcastOpFieldArray}) = IndexLinear()
+
 Base.size(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(size,a.args)...)
 Base.axes(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(axes,a.args)...)
-Base.IndexStyle(::Type{<:BroadcastOpFieldArray}) = IndexLinear()
 Base.getindex(a::BroadcastOpFieldArray,i::Integer) = broadcast(Operation(a.op),a.args...)[i]
 
-function testitem(a::BroadcastOpFieldArray)
+function Base.size(a::BroadcastOpFieldArray{O}) where O<:Union{Field,AbstractArray{<:Field}}
+  @check length(a.args) == 1
+  Base.Broadcast.broadcast_shape(size(a.op),size(a.args[1]))
+end
+function Base.axes(a::BroadcastOpFieldArray{O}) where O<:Union{Field,AbstractArray{<:Field}}
+  @check length(a.args) == 1
+  Base.Broadcast.broadcast_shape(axes(a.op),axes(a.args[1]))
+end
+function Base.getindex(a::BroadcastOpFieldArray{O},i::Integer) where O<:Union{Field,AbstractArray{<:Field}}
+  @check length(a.args) == 1
+  broadcast(∘,a.op,a.args[1])[i]
+end
+
+function testitem(a::BroadcastOpFieldArray{O}) where O
   fs = map(testitem,a.args)
   return_value(Operation(a.op),fs...)
 end
 
-function testvalue(::Type{BroadcastOpFieldArray{O,T,N,A}}) where {O<:Field,T,N,A<:Tuple}
+function testitem(a::BroadcastOpFieldArray{O}) where O <: Union{Field,AbstractArray{<:Field}}
+  fs = map(testitem,a.args)
+  return_value(∘,testitem(a.op),fs...)
+end
+
+function testvalue(::Type{BroadcastOpFieldArray{O,T,N,A}}) where {O<:Union{Field,AbstractArray{<:Field}},T,N,A<:Tuple}
   fs = map(testvalue,fieldtypes(A))
   BroadcastOpFieldArray(testvalue(O),fs...)
 end
@@ -538,12 +577,18 @@ end
 for T in (:(Point),:(AbstractArray{<:Point}))
   @eval begin
 
+    function return_value(f::BroadcastOpFieldArray,x::$T)
+      rs = map(fi -> return_value(fi,x),f.args)
+      bm = BroadcastingFieldOpMap(f.op)
+      return return_value(bm,rs...)
+    end
+
     function return_cache(f::BroadcastOpFieldArray,x::$T)
       cfs = map(fi -> return_cache(fi,x),f.args)
       rs = map(fi -> return_value(fi,x),f.args)
       bm = BroadcastingFieldOpMap(f.op)
       r = return_cache(bm,rs...)
-      r, cfs
+      return r, cfs
     end
 
     function evaluate!(c,f::BroadcastOpFieldArray,x::$T)
@@ -551,6 +596,27 @@ for T in (:(Point),:(AbstractArray{<:Point}))
       rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
       bm = BroadcastingFieldOpMap(f.op)
       evaluate!(r,bm,rs...)
+    end
+
+    function return_value(f::BroadcastOpFieldArray{O},x::$T) where O<:Union{Field,AbstractArray{<:Field}}
+      @check length(f.args) == 1
+      rs = return_value(f.args[1],x)
+      return return_value(f.op,rs)
+    end
+
+    function return_cache(f::BroadcastOpFieldArray{O},x::$T) where O<:Union{Field,AbstractArray{<:Field}}
+      @check length(f.args) == 1
+      cfs = return_cache(f.args[1],x)
+      rs = return_value(f.args[1],x)
+      r = return_cache(f.op,rs)
+      return r, cfs
+    end
+
+    function evaluate!(c,f::BroadcastOpFieldArray{O},x::$T) where O<:Union{Field,AbstractArray{<:Field}}
+      @check length(f.args) == 1
+      r, cfs = c
+      rs = evaluate!(cfs,f.args[1],x)
+      evaluate!(r,f.op,rs)
     end
 
   end
