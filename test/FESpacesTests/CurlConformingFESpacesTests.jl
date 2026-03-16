@@ -204,7 +204,7 @@ fh = interpolate(f,R)
 Ω = Triangulation(model)
 dΩ = Measure(Ω,2*order+1)
 eh = fh - f
-@test_broken sum(∫(eh⋅eh)dΩ) < 1.0e-12
+@test sum(∫(eh⋅eh)dΩ) < 1.0e-12
 
 #using Gridap.Visualization
 #writevtk(trian,"trian",nsubcells=10,cellfields=["uh"=>uh])

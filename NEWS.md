@@ -7,12 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.9] - 2026-03-14
+
+### Changed
+
+- Split CI into separate jobs to keep test time down. Since PR[#1251](https://github.com/gridap/Gridap.jl/pull/1251).
+
 ### Fixed
 
+- Fix incorrect permutation handling in `compute_field_offsets` for `BlockMultiFieldStyle`. Since PR[1247](https://github.com/gridap/Gridap.jl/pull/1247).
 - `MappedGrid` now returns its internal geometric map. Since PR[#1226](https://github.com/gridap/Gridap.jl/pull/1226).
 - Fixed bug in skeleton transient fields. Since PR[1229](https://github.com/gridap/Gridap.jl/pull/1229).
 - Fixed bug in `FineToCoarseField` internal indexing. Since PR[1224](https://github.com/gridap/Gridap.jl/pull/1224).
 - Fixed `outer(f, s::ShiftedNabla)` silently ignoring the shift contribution.
+- Fixed incorrect `else p == HEX` control flow in `EdgeBasedRefinement.jl`. Since PR[1246] (https://github.com/gridap/Gridap.jl/pull/1246).
+- Fixed copy-paste bug where `get_tangent_vector` called `get_normal_vector` in `CellFields.jl`. Since PR[1246] (https://github.com/gridap/Gridap.jl/pull/1246).
+- Generalized `change_domain_o2n` so that it can now deal with triangulation portions. Since PR[1249](https://github.com/gridap/Gridap.jl/pull/1249).
+- Generalized Nedelec Hexahedral elements for meshes beyond Cartesian Meshes. Since PR[1250](https://github.com/gridap/Gridap.jl/pull/1250).
 
 ## [0.19.8] - 2026-02-19
 
