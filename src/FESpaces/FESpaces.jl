@@ -12,6 +12,7 @@ using SparseArrays
 using LinearAlgebra
 using StaticArrays
 using ForwardDiff
+using DataStructures
 
 using Gridap.Helpers
 using Gridap.Algebra
