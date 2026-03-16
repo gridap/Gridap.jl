@@ -34,6 +34,7 @@ pages = [
     "dev-notes/bernstein.md",
     "dev-notes/autodiff.md",
   ],
+  "Changelog" => "changelog.md",
 ]
 
 makedocs(
