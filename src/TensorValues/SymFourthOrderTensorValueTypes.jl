@@ -38,9 +38,8 @@ SymFourthOrderTensorValue{0}(data::NTuple{0}) = SymFourthOrderTensorValue{0,Int}
 
 @generated function SymFourthOrderTensorValue(data::NTuple{L,T}) where {L,T}
   msg = "Invalid number of scalar arguments in SymFourthOrderTensorValue constructor"
-  V = (sqrt(1+8*sqrt(L))-1)/2
-  @assert floor(Int,V) == ceil(Int,V) msg
-  D = Int(V)
+  D = (isqrt(1+8*isqrt(L))-1)÷2
+  @assert L == (D*(D+1)÷2)^2 msg
   quote
     SymFourthOrderTensorValue{$D,T}(data)
   end

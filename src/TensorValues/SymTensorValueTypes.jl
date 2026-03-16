@@ -49,9 +49,8 @@ SymTensorValue{0}(data::NTuple{0}) = SymTensorValue{0,Int}(data)
 
 @generated function SymTensorValue(data::NTuple{L,T}) where {L,T}
   msg = "Invalid number of scalar arguments in SymTensorValue constructor"
-  V = (sqrt(1+8*L)-1)/2
-  @check floor(Int,V) == ceil(Int,V) msg
-  D = Int(V)
+  D = (isqrt(1+8*L)-1)÷2
+  @assert L == D*(D+1)÷2 msg
   quote
     SymTensorValue{$D,T}(data)
   end

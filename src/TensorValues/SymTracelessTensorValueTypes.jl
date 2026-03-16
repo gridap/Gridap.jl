@@ -65,9 +65,8 @@ SymTracelessTensorValue{1}(data::NTuple{0}) = SymTracelessTensorValue{1,Int}(dat
 
 @generated function SymTracelessTensorValue(data::NTuple{L,T}) where {L,T}
   msg = "Invalid number of scalar arguments in SymTracelessTensorValue constructor"
-  V = (sqrt(9+8*L)-1)/2
-  @check floor(Int,V) == ceil(Int,V) msg
-  D = Int(V)
+  D = (isqrt(9+8*L)-1)÷2
+  @check L == D*(D+1)÷2-1 msg
   quote
     SymTracelessTensorValue{$D,T}(data)
   end
