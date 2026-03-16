@@ -8,6 +8,8 @@ function get_cell_shapefuns_and_dof_basis(
 
   cell_ref_fields = lazy_map(get_shapefuns, cell_reffe)
   cell_ref_dofs = lazy_map(get_dof_basis, cell_reffe)
+  cell_map  = get_cell_map(get_grid(model))
+  cell_Jt = lazy_map(Broadcasting(∇), cell_map)
 
   # Apply the pushforward "individually" to each shape-function, and the inverse pullback to each DOF
   if pushforward isa IdentityPiolaMap
@@ -15,15 +17,13 @@ function get_cell_shapefuns_and_dof_basis(
     cell_phy_fields = cell_ref_fields
     cell_phy_dofs = cell_ref_dofs
   else
-    cell_map  = get_cell_map(get_grid(model))
-    cell_Jt = lazy_map(Broadcasting(∇), cell_map)
     cell_phy_fields = lazy_map(pushforward, cell_ref_fields, cell_Jt)
     dof_pf = inverse_map(Pullback(pushforward))
     cell_phy_dofs = lazy_map(dof_pf, cell_ref_dofs, cell_Jt)
   end
 
   # If nontrivial, apply the appropriate change of basis to the DOF and shape-function bases
-  cell_changes = compute_cell_bases_changes(reffe_name, pushforward, model, cell_reffe)
+  cell_changes = compute_cell_bases_changes(reffe_name, pushforward, model, cell_reffe, cell_Jt)
   cell_changes = apply_dof_scaling(cell_changes, model, cell_reffe, pushforward, scale_dof, global_meshsize)
   isnothing(cell_changes) && return (cell_phy_fields, cell_phy_dofs)
 
@@ -34,12 +34,15 @@ function get_cell_shapefuns_and_dof_basis(
 end
 
 """
-    compute_cell_bases_changes(name::ReferenceFEName, push::Pushforward, model, cell_reffe)
+    compute_cell_bases_changes(name::ReferenceFEName, push::Pushforward, model, cell_reffe, cell_Jt)
 
 Computes, in each cell, the change of basis ``M`` between the pushforwarded
 reference shape-function basis and the expected physical shape-functions, as
 well as it transposed inverse ``M⁻ᵀ``, the change of basis between the inverse
 pullback of the reference cell DOF and the expected physical cell DOF.
+
+For that, the `model` is provided. As well as the reference FE + lazy gradient
+(transposed Jacobian) of the geometrical map, in each cell.
 
 See also the manual page on ["FE basis transformations"](@ref "FE basis transformations").
 Return either `nothing` (no change required) or a couple of cell arrays `(cell_M, cell_M⁻ᵀ)`
@@ -49,26 +52,26 @@ For them to work properly, it might be necessary to also overload
 [`get_dofscale_setter_function`](@ref).
 """
 function compute_cell_bases_changes(
-  name::ReferenceFEName, push::Pushforward, model, cell_reffe
+  name::ReferenceFEName, push::Pushforward, model, cell_reffe, cell_Jt
 )
   @abstractmethod
 end
 
 function compute_cell_bases_changes(
-  ::ReferenceFEName, ::IdentityPiolaMap, model, cell_reffe
+  ::ReferenceFEName, ::IdentityPiolaMap, model, cell_reffe, cell_Jt
 )
   nothing
 end
 
 function compute_cell_bases_changes(
-  ::ReferenceFEName, ::ContraVariantPiolaMap, model, cell_reffe
+  ::ReferenceFEName, ::ContraVariantPiolaMap, model, cell_reffe, cell_Jt
 )
   change = get_sign_flip(model, cell_reffe) # equal to its transposed inverse
   return (change,change)
 end
 
 function compute_cell_bases_changes(
-  ::ReferenceFEName, ::CoVariantPiolaMap, model, cell_reffe
+  ::ReferenceFEName, ::CoVariantPiolaMap, model, cell_reffe, cell_Jt
 )
   D = num_cell_dims(model)
   poly = only(get_polytopes(model))
@@ -84,7 +87,7 @@ end
 
 using Gridap.ReferenceFEs: DoubleContraVariantPiolaMap
 function compute_cell_bases_changes(
-  ::ReferenceFEName, ::DoubleContraVariantPiolaMap, model, cell_reffe
+  ::ReferenceFEName, ::DoubleContraVariantPiolaMap, model, cell_reffe, cell_Jt
 )
   change = lazy_map(r -> Diagonal(fill(one(Float64), num_dofs(r))), cell_reffe) # TODO: Replace by sign flip
   #change  = get_sign_flip(model, cell_reffe) # equal to its transposed inverse
