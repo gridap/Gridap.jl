@@ -67,7 +67,7 @@ function _hessian_1d!(::Type{Legendre},K::Int,h::AbstractMatrix{T},x,d) where T<
     @inbounds h[d,2] = z
     ξ = ( 2*x[d] - 1 )
     for i in 3:n
-      @inbounds h[d,i] = sqrt(2*i-1)*(i*(i+1)/2)*jacobi(ξ,i-3,2,2)
+      @inbounds h[d,i] = sqrt(2*i-1)*(i*(i+1))*jacobi(ξ,i-3,2,2)
     end
   end
 end

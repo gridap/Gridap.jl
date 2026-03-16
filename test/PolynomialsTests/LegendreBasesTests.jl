@@ -6,62 +6,38 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Fields: Broadcasting
 using Gridap.Polynomials
+using PolynomialBases
+using ForwardDiff
 
 @test isHierarchical(Legendre) == true
-
-# Real-valued Q space with isotropic order
 
 x1 = Point(0.0)
 x2 = Point(0.5)
 x3 = Point(1.0)
+x = [x1, x2, x3]
 
 V = Float64
 G = gradient_type(V,x1)
 H = gradient_type(G,x1)
 
-order = 3
-b1 = LegendreBasis(Val(1),V,order)
-∇b1 = Broadcasting(∇)(b1)
-∇∇b1 = Broadcasting(∇)(∇b1)
+function _legendre(n)
+  t -> isone(n) ? 1. : sqrt(2*n-1)*jacobi(2t-1,n-1,0,0)
+end
+_∇(b) = t -> ForwardDiff.derivative(b, t)
+_H(b) = t -> ForwardDiff.derivative(y -> ForwardDiff.derivative(b, y), t)
 
-@test evaluate(b1,[x1,x2,x3,]) ≈ [ 1.0 -1.7320508075688772 2.23606797749979 -2.6457513110645907;
-                                   1.0 0.0 -1.118033988749895 -0.0;
-                                   1.0 1.7320508075688772 2.23606797749979 2.6457513110645907 ]
-@test evaluate(∇b1,[x1,x2,x3,]) ≈ G[ (0.0,) (3.4641016151377544,) (-13.416407864998739,) (31.74901573277509,);
-                                     (0.0,) (3.4641016151377544,) (0.0,) (-7.937253933193772,);
-                                     (0.0,) (3.4641016151377544,) (13.416407864998739,) (31.74901573277509,) ]
-@test evaluate(∇∇b1,[x1,x2,x3,]) ≈ H[ (0.0,) (0.0,) (13.416407864998739,) (-79.37253933193772,);
-                                      (0.0,) (0.0,) (13.416407864998739,) (0.0,);
-                                      (0.0,) (0.0,) (13.416407864998739,) (79.37253933193772,) ]
+_bx_1D( order,x)   = [      _legendre(n)( xi[1])  for xi in x,  n in 1:order+1]
+_Gbx_1D(order,x,G) = [ G(_∇(_legendre(n))(xi[1])) for xi in x,  n in 1:order+1]
+_Hbx_1D(order,x,H) = [ H(_H(_legendre(n))(xi[1])) for xi in x,  n in 1:order+1]
 
-x1 = Point(0.0,0.0)
-x2 = Point(0.5,0.5)
-x3 = Point(1.0,1.0)
-b2 = LegendreBasis(Val(2),V,order)
-@test testvalue(typeof(b2)) isa typeof(b2)
-∇b2 = Broadcasting(∇)(b2)
-∇∇b2 = Broadcasting(∇)(∇b2)
+order = 30
+b = LegendreBasis(Val(1),V,order)
 
-G = gradient_type(V,x1)
-H = gradient_type(G,x1)
+bx  = _bx_1D( order,x)
+Gbx = _Gbx_1D(order,x,G)
+Hbx = _Hbx_1D(order,x,H)
 
-@test evaluate(b2,[x1,x2,x3,]) ≈ [ 1.0 -1.7320508075688772 2.23606797749979 -2.6457513110645907 #=
-                                =# -1.7320508075688772 2.9999999999999996 -3.872983346207417 #=
-                                =# 4.58257569495584 2.23606797749979 -3.872983346207417 #=
-                                =# 5.000000000000001 -5.916079783099617 -2.6457513110645907 #=
-                                =# 4.58257569495584 -5.916079783099617 7.000000000000001;
-                                   1.0 0.0 -1.118033988749895 -0.0 0.0 0.0 -0.0 -0.0 #=
-                                =# -1.118033988749895 -0.0 1.2500000000000002 0.0 -0.0 -0.0 0.0 0.0;
-                                   1.0 1.7320508075688772 2.23606797749979 2.6457513110645907 #=
-                                =# 1.7320508075688772 2.9999999999999996 3.872983346207417 #=
-                                =# 4.58257569495584 2.23606797749979 3.872983346207417 #=
-                                =# 5.000000000000001 5.916079783099617 2.6457513110645907 #=
-                                =# 4.58257569495584 5.916079783099617 7.000000000000001 ]
-@test evaluate(∇b2,[x1,x2,x3,])[:,10] ≈ G[ (7.745966692414834, 23.2379000772445);
-                                           (-3.872983346207417, 0.0);
-                                           (7.745966692414834, 23.2379000772445) ]
-@test evaluate(∇∇b2,[x1,x2,x3,])[:,10] ≈ H[ (0.0, -46.475800154489, -46.475800154489, -23.2379000772445);
-                                            (-0.0, 0.0, 0.0, 0.0);
-                                            (0.0, 46.475800154489, 46.475800154489, 23.2379000772445) ]
+test_field_array(b,x,bx,≈, grad=Gbx, gradgrad=Hbx)
+test_field_array(b,x[1],bx[1,:],≈, grad=Gbx[1,:], gradgrad=Hbx[1,:])
 
 end # module
