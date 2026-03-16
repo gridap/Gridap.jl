@@ -78,11 +78,11 @@ function compute_cell_bases_changes(
   if (D==2) || is_simplex(poly)
     # For these cases, we do not need to aply a sign flip
     return nothing
+  elseif (D==3) && is_n_cube(poly)
+    change = get_sign_flip(model, cell_reffe)
+    return (change,change)
   end
-  # TODO: Edge-signs for non-oriented meshes?
-  @check (D==3) && is_n_cube(poly)
-  change = get_sign_flip(model, cell_reffe)
-  return (change,change)
+  @notimplemented
 end
 
 using Gridap.ReferenceFEs: DoubleContraVariantPiolaMap
