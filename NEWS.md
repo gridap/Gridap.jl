@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Moment-based changes
+## [0.20.0] - 2026-03-18
+
+This is a major release with breaking changes, mainly in the `Polynomials` and `ReferenceFEs` modules. The main goal of this release is to provide a more flexible and extensible framework for polynomial bases and reference finite elements based on moments, as a stepping stone for the implementation of more complicated elements (e.g. MTW, etc...).
 
 Main PR is PR[#1048](https://github.com/gridap/Gridap.jl/pull/#1048).
 
@@ -25,14 +27,12 @@ Main PR is PR[#1048](https://github.com/gridap/Gridap.jl/pull/#1048).
   - BDM     on simplex `FEEC_poly_basis(Val(D),Float64,order+1,D-1,:P ; rotate_90=(D==2))`
 - Added `BernsteinBasisOnSimplex` that implements Bernstein polynomials in barycentric coordinates, since PR[#1104](https://github.com/gridap/Gridap.jl/pull/#1104).
 - More documentation of `Gridap.ReferenceFEs`. Since PR[#1109](https://github.com/gridap/Gridap.jl/pull/#1109).
-
 - Some refactoring of `Gridap.TensorValues` to simplify maintenance and new implementations. Since PR[#1115](https://github.com/gridap/Gridap.jl/pull/#1115).
   - Added `SkewSymTensorValue`: a new `<:MultiValue` 2nd order tensor type such that `transpose(s)==-s`.
   - Added `HighOrderTensorValue`: a new `<:MultiValue` tensors of order >=3, with all components independent. Since PR[#1193](https://github.com/gridap/Gridap.jl/pull/#1193).
   - `congruent_prod`: new operation for 2nd order tensors: `a,b -> bᵀ⋅a⋅b` preserving symmetry of `a`.
   - `component_basis`, `representatives_of_componentbasis_dual`, `representatives_of_basis_dual`: new APIs for `::MultiValue`s yielding bases of the vector space spanned by the independent components of a tensor type (1st method) and its dual space (2nd method), or the dual to a basis (3rd method).
   - `contracted_product` generalizes `outer`, `dot`, `double_contraction` and `inner` for tensors of arbitrary order, refactoring these operations for tensors with all components independent. Since PR[#1193](https://github.com/gridap/Gridap.jl/pull/#1193).
-
 - Refactoring of moment-based ReferenceFEs, those using face-integral linear forms for DoFs, including `RaviartThomas`, `Nedelec`, `BDM` and `CrouzeixRaviart`.
   - The mid-level `MomentBasedRefFE` factory function creates moment based refFEs
   - The low-level `FaceMeasure` implements the numerical integration of a bilinear integrand over the faces of a polytope.
@@ -48,7 +48,7 @@ Main PR is PR[#1048](https://github.com/gridap/Gridap.jl/pull/#1048).
 
 ### Fixed
 
-- Fixed evaluation of `LinearCombinationDofVector` on vector of `<:Field`s (only impacts ModalC0 FEs and future moment based reffes)., since PR[#1105](https://github.com/gridap/Gridap.jl/pull/#1105).
+- Fixed evaluation of `LinearCombinationDofVector` on vector of `<:Field`s (only impacts ModalC0 FEs and future moment based reffes). Since PR[#1105](https://github.com/gridap/Gridap.jl/pull/#1105).
 - Fixed `get_face_dofs(::ReferenceFEs)` on many moment based elements, it sometimes returned `face_own_dofs`.
 
 ### Deprecated
