@@ -8,6 +8,7 @@ using Gridap.ReferenceFEs
 using Gridap.Fields
 using Gridap.TensorValues
 using Gridap.Fields: MockField
+using Gridap.Fields: LinearCombinationField, LinearCombinationFieldVector
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.CellData
@@ -291,8 +292,8 @@ function _test_geometric_decomposition(b,p,conf,
   end
   @test pass
 
-  # test get_facet_flux_sign_flip
-  if conf isa DivConformity
+  # test apply_face_signflip
+  if conf isa DivConformity || (conf isa CurlConformity && p == HEX)
     normal_flux_forms = get_normal_flux_forms(p,b)
     b_nrm_fluxes = evaluate(normal_flux_forms, b)
 
@@ -300,7 +301,16 @@ function _test_geometric_decomposition(b,p,conf,
     facet_range = get_dimrange(p,D-1)
     facet_own_funs = face_own_funs[facet_range]
 
-    sign_flip = diag(get_facet_flux_sign_flip(b,p,conf))
+    b_with_sign_flip = apply_face_signflip(b,p,conf)
+    if b_with_sign_flip isa Union{LinearCombinationField, LinearCombinationFieldVector}
+      sign_flip = diag(b_with_sign_flip.values)
+    else
+      sign_flip = nothing
+    end
+    @test !isnothing(sign_flip)
+
+    conf isa CurlConformity && return # didn't implement circulation orientation test
+
     fun_per_facet = length(first(facet_own_funs))
     n_facets = length(facet_range)
     own_flux_signs = Matrix{Float64}(undef, (n_facets,fun_per_facet))
