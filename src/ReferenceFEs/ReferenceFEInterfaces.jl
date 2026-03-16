@@ -11,6 +11,7 @@ constructors accept, are:
 - [`GradConformity`](@ref) (alias `H1Conformity`); `:H1`, `:Hgrad`, `:HGrad`, `:C0`
 - [`CurlConformity`](@ref); `:Hcurl`, `:HCurl`
 - [`DivConformity`](@ref); `:Hdiv`, `:HDiv`
+- [`C1Conformity`](@ref); `:C1`, `:H2`
 - [`CDConformity`](@ref)
 """
 abstract type Conformity end
@@ -40,6 +41,13 @@ valid_conformity_symbols(::CurlConformity) = (:L2, :Hcurl, :HCurl)
 """
 struct DivConformity <: Conformity end
 valid_conformity_symbols(::DivConformity) = (:L2, :Hdiv, :HDiv)
+
+"""
+    struct C1Conformity <: Conformity
+"""
+struct C1Conformity <: Conformity end
+valid_conformity_symbols(::C1Conformity) = (:L2, :H1, :H2, :Hgrad, :HGrad, :C0, :C1)
+
 
 """
     abstract type ReferenceFE{D} <: GridapType
