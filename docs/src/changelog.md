@@ -5,14 +5,15 @@ This file contains the most significant changes to the library as well as upgrad
 
 ## Upgrading to v0.20
 
-This is a major release with breaking changes, mainly in the `Polynomials` and `ReferenceFEs` modules. The main goal of this release is to provide a more flexible and extensible framework for polynomial bases and reference finite elements based on moments, as a stepping stone for the implementation of more complicated elements (e.g. MTW, etc...).
+This is a major release with breaking changes, mainly in the `Polynomials` and `ReferenceFEs` modules. The main goal of this release is to provide a more flexible and extensible framework for polynomial bases and reference finite elements based on moments, as a stepping stone for the implementation of more complicated elements (e.g. MTW, etc...). The documentation of the affected modules has greatly improved.
 
 ### New features
 
-- **Polynomials**: new `Chebyshev` and `Bernstein` polynomial types; new `CartProdPolyBasis` and `CompWiseTensorPolyBasis` generalising the old monomial bases; new high-level factory `FEEC_poly_basis` covering all spaces in the Periodic Table of the Finite Elements.
-- **ReferenceFEs**: new `ReferenceFE(F, r, k[, T]; kwargs...)` constructor using FEEC notation; new `MomentBasedReferenceFE` factory unifying moment-based element construction; new elements `modal_lagrangian`, `modal_serendipity`, `CrouzeixRaviart`, and `nedelec2`; unified Piola map hierarchy (`Pullbacks.jl`) and geometric decomposition API.
-- **TensorValues**: new `SkewSymTensorValue` and `HighOrderTensorValue` types; new operations `congruent_prod`, `contracted_product`, and `component_basis`.
-- **Default bases and quadratures**: simplex elements (RT, BDM, Nédélec) now use Bernstein bases by default; n-cube elements use Legendre.
+- **Polynomials**: new `Chebyshev` and `Bernstein` polynomial types; new `CartProdPolyBasis` and `CompWiseTensorPolyBasis` generalising the old monomial bases to other 1D basis families; new high-level factory `FEEC_poly_basis` covering most spaces in the Periodic Table of the Finite Elements.
+- **ReferenceFEs**: new `ReferenceFE(F, r, k[, T]; kwargs...)` constructor using FEEC notation; new `MomentBasedReferenceFE` factory unifying moment-based element construction; new elements `modal_lagrangian`, `modal_serendipity`, `CrouzeixRaviart`, and `nedelec2`; unified Piola map hierarchy (`Pullbacks.jl`) and [geometric decomposition API](@ref "Geometric decompositions").
+- **Default bases**: simplex elements (RT, BDM, Nédélec) now use Bernstein bases by default; n-cube elements use Legendre.
+- **TensorValues**: new `SkewSymTensorValue` and `HighOrderTensorValue` types; new operations `congruent_prod`, `contracted_product`, `component_basis`, and `representatives_of_basis_dual`. Easier conversion to and between `Base.Array` and `StaticArrays.jl` array types.
+- **FESpaces**: new `scale_dof` and `global_meshsize` keyword arguments for the `FESpace` constructor to enable automatic DOF rescaling with mesh size (equivalent to a diagonal preconditioning).
 
 ### Breaking changes
 
@@ -20,7 +21,6 @@ This is a major release with breaking changes, mainly in the `Polynomials` and `
 - **`DivConforming` abstract type removed**: `RaviartThomas` and `BDM` now directly subtype `ReferenceFEName`.
 - **`CellFE` constructor**: trailing positional args are now keyword args.
 - **`SignFlipMap`, `TransformRTDofBasis`, `TransformNedelecDofBasis` removed**: handled internally by the new `Pullbacks.jl` pipeline.
-- **`ReferenceFE(name, args...; kwargs...)`** now returns a tuple `(name, args, kwargs)` instead of directly constructing a RefFE.
 - **Default polynomial bases changed**: internal representations differ from v0.19 — affects serialised data and exact numerical values.
 - **`ThirdOrderTensorValue`** is now a type alias for `HighOrderTensorValue`. Code relying on type identity may break.
 - **`MacroReferenceFE` constructor** gains a 3rd positional argument `Name`.
