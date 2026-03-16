@@ -121,8 +121,7 @@ get_array(a::MultiValue{S,T}) where {S,T} = convert(SArray{S,T},a)
     MultiValue(a::SArray)
     MultiValue(a::MArray)
 
-If possible (`a` needs to be of order 1, 2 or 3), converts `a` to a value of
-type `<:MultiValue`.
+Converts `a` to a tensor of type `<:MultiValue`.
 """ # the S param is there to allow HighOrderTensorValue's specialization to be more specific
 MultiValue(::StaticArray{S}) where S = @abstractmethod
 
@@ -136,6 +135,9 @@ If possible, converts `a` to a value of specified `SArray` type.
 
 Size and element type can be specified and must match that of `a`,
 e.g. `SVector{2,Int}(VectorValue(1,2))`.
+
+For `MultiValue` types with dependent component, the conversion works but the
+dependency information is lost.
 """
 (::Type{SA})(a::MultiValue) where SA<:StaticArray = SA(get_array(a))
 

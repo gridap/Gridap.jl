@@ -38,12 +38,18 @@ function _l2_conforming_own_funs(shapefuns,p)
 end
 
 """
-    get_facet_flux_sign_flip(shapefun, p::Polytope, ::DivConformity)
+    apply_face_signflip(shapefun, p::Polytope, conf::Conformity)
 
-Return the (diagonal) change of basis matrix to make the flux of facet-owned
-polynomials of `b` be oriented outwards the facet.
+Applies, if necessary, a diagonal change of basis matrix to make the sign of the
+trace of `face`-owned polynomials of `b` be consistent with the orientation of the `face`.
 
-`shapefun` must implement the geometric decomposition on `p` for `DivConformity()`,
+For example, some facet owned div-conforming polynomials might need a minus sign
+for their outward flux through facets to be positive (normals to reference
+polytopes are outward oriented).
+
+If not overloaded, `shapefun` is returned by default.
+
+`shapefun` must implement the geometric decomposition on `p` for `conf`,
 this can be checked using [`has_geometric_decomposition`](@ref).
 
 # Extended help
@@ -55,8 +61,12 @@ outwards flux), see also [`NormalSignMap`](@ref Gridap.FESpaces.NormalSignMap).
 
 This is not the case for the `BarycentricP(m)ΛBases` by default, their flux is
 oriented like the sign of the permutation of the facet node indices.
+
+Similarly, div-conforming tensor-product bases on QUAD and HEX as well as the
+curl-conforming ones on HEX need the same sign change. That is, sign change is
+needed whenever the facet normal vector appears in a moment.
 """
-get_facet_flux_sign_flip(shapefuns, ::Polytope, ::L2Conformity) = @abstractmethod
+apply_face_signflip(shapefuns, ::Polytope, ::Conformity) = shapefuns
 
 
 ##############################################################
@@ -182,7 +192,7 @@ function get_face_own_funs(b::_BaryPΛBasis, p::Polytope, conf::Conformity)
   face_own_funs
 end
 
-function get_facet_flux_sign_flip(
+function apply_face_signflip(
   b::_BaryPΛBasis, p::Polytope{D}, conf::DivConformity) where D
 
   facet_range = get_dimrange(p,D-1)
@@ -199,6 +209,7 @@ function get_facet_flux_sign_flip(
   end
 
   sign_flip = Diagonal(sign_flip)
+  linear_combination(sign_flip, b)
 end
 
 
@@ -360,8 +371,28 @@ function get_face_own_funs(
   face_own_funs
 end
 
-function get_facet_flux_sign_flip(
-  b::CompWiseTensorPolyBasis{D,V,PT}, p::Polytope, conf::Conformity) where {D,V,PT<:GD_1D_PT}
+function apply_face_signflip(
+  b::CompWiseTensorPolyBasis{D}, p::Polytope, conf::DivConformity) where D
+
+  sign_flip = _CompWiseTensorPolyBasis_facet_signflip(b, p, conf)
+  linear_combination(sign_flip, b)
+end
+
+function apply_face_signflip(
+  b::CompWiseTensorPolyBasis{D}, p::Polytope, conf::CurlConformity) where D
+
+  D > 3 && @notimplemented
+
+  if is_n_cube(p) && D ==3
+    sign_flip = _CompWiseTensorPolyBasis_facet_signflip(b, p, conf)
+    return linear_combination(sign_flip, b)
+  else
+    return b
+  end
+end
+
+function _CompWiseTensorPolyBasis_facet_signflip(
+  b::CompWiseTensorPolyBasis{D}, p, conf) where D
 
   facet_range = get_dimrange(p,D-1)
   face_own_funs = get_face_own_funs(b,p,conf)
@@ -373,8 +404,7 @@ function get_facet_flux_sign_flip(
       sign_flip[own_funs] .= iseven(face-first(facet_range)) ? -1 : 1
     end
   end
-
-  sign_flip = Diagonal(sign_flip)
+  return Diagonal(sign_flip)
 end
 
 

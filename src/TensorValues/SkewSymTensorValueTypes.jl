@@ -44,9 +44,8 @@ SkewSymTensorValue{1}(data::NTuple{0}) = SkewSymTensorValue{1,Int}(data)
 
 @generated function SkewSymTensorValue(data::NTuple{L,T}) where {L,T}
   msg = "Invalid number of scalar arguments in SkewSymTensorValue constructor"
-  V = (sqrt(1+8*L)+1)/2
-  @check floor(Int,V) == ceil(Int,V) msg
-  D = Int(V)
+  D = (isqrt(1+8*L)+1)÷2
+  @assert L == D*(D-1)÷2 msg
   quote
     SkewSymTensorValue{$D,T}(data)
   end

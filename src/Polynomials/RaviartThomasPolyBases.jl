@@ -108,9 +108,7 @@ function _evaluate_nd!(
     end
 
     for ci in b.sterms
-      for i in 1:D
-        m[i] = zero(T)
-      end
+      m .= zero(T)
 
       for l in 1:D
 
@@ -147,9 +145,7 @@ function _gradient_nd!(
     for l in 1:D
       for ci in b.pterms
 
-        for i in eachindex(s)
-          s[i] = one(T)
-        end
+        s .= one(T)
 
         for q in 1:D
           for d in 1:D
@@ -166,16 +162,10 @@ function _gradient_nd!(
     end
 
     for ci in b.sterms
-
-      for i in eachindex(m)
-        m[i] = zero(T)
-      end
+      m .= zero(T)
 
       for l in 1:D
-
-        for i in eachindex(s)
-          s[i] = x[l]
-        end
+        s .= x[l]
 
         aux = one(T)
         for q in 1:D
@@ -190,9 +180,7 @@ function _gradient_nd!(
         end
         s[l] += aux
 
-        for i in 1:D
-           m[i,l] = s[i]
-        end
+        m[:,l] .= s
       end
       r[i,k] = m
       k += 1

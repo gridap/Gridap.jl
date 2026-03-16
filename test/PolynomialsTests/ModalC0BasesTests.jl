@@ -6,6 +6,8 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 using StaticArrays
+using ForwardDiff
+using PolynomialBases
 # using BenchmarkTools
 
 import Gridap.Fields: Broadcasting
@@ -15,30 +17,42 @@ import Gridap.Fields: Broadcasting
 x1 = Point(0.0)
 x2 = Point(0.5)
 x3 = Point(1.0)
+x = [x1, x2, x3]
 
 V = Float64
 G = gradient_type(V,x1)
 H = gradient_type(G,x1)
 
-order = 3
+function _modalC0(a,b,n)
+    function(t)
+      isone(n) && return  1. -t
+      n==2     && return  t
+
+      ξ = ( 2*t - ( a + b ) ) / ( b - a )
+      return -sqrt(2*n-3)*t*(1-t)*jacobi(ξ,n-3,1,1)/(n-2)
+    end
+end
+_∇(b) = t -> ForwardDiff.derivative(b, t)
+_H(b) = t -> ForwardDiff.derivative(y -> ForwardDiff.derivative(b, y), t)
+
+
+order = 30
 a = fill(Point(-0.5),order+1)
 b = fill(Point(2.5),order+1)
-b1 = ModalC0Basis{1}(V,order,a,b)
+bm = ModalC0Basis{1}(V,order,a,b)
 
-@test IndexStyle(b1) == IndexLinear()
+_bx_1D( order,x)   = [      _modalC0(a[1][1],b[1][1],n)( xi[1])  for xi in x,  n in 1:order+1]
+_Gbx_1D(order,x,G) = [ G(_∇(_modalC0(a[1][1],b[1][1],n))(xi[1])) for xi in x,  n in 1:order+1]
+_Hbx_1D(order,x,H) = [ H(_H(_modalC0(a[1][1],b[1][1],n))(xi[1])) for xi in x,  n in 1:order+1]
 
-∇b1 = Broadcasting(∇)(b1)
-∇∇b1 = Broadcasting(∇)(∇b1)
+bx  = _bx_1D( order,x)
+Gbx = _Gbx_1D(order,x,G)
+Hbx = _Hbx_1D(order,x,H)
 
-@test evaluate(b1,[x1,x2,x3,]) ≈ [1.0 0.0 -0.0 0.0;
-                                  0.5 0.5 -0.4330127018922193 0.18633899812498247;
-                                  0.0 1.0 -0.0 -0.0]
-@test evaluate(∇b1,[x1,x2,x3,]) ≈ G[(-1.0,) (1.0,) (-1.7320508075688772,) (1.4907119849998598,);
-                                    (-1.0,) (1.0,) (-0.0,) (-0.37267799624996495,);
-                                    (-1.0,) (1.0,) (1.7320508075688772,) (-0.0,)]
-@test evaluate(∇∇b1,[x1,x2,x3,]) ≈ H[(0.0,) (0.0,) (3.4641016151377544,) (-5.962847939999439,);
-                                     (0.0,) (0.0,) (3.4641016151377544,) (-1.4907119849998598,);
-                                     (0.0,) (0.0,) (3.4641016151377544,) (2.9814239699997196,)]
+test_field_array(bm,x,bx,≈, grad=Gbx, gradgrad=Hbx)
+test_field_array(bm,x[1],bx[1,:],≈, grad=Gbx[1,:], gradgrad=Hbx[1,:])
+
+@test IndexStyle(bm) == IndexLinear()
 
 # Validate generic 1D implem using CartProdPolyBasis
 
