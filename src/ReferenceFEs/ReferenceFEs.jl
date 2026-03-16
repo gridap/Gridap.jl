@@ -163,7 +163,7 @@ export is_S
 
 export has_geometric_decomposition
 export get_face_own_funs
-export get_facet_flux_sign_flip
+export apply_face_signflip
 
 export MomentBasedDofBasis
 export get_face_own_nodes

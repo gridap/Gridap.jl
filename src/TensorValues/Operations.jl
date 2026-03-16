@@ -311,7 +311,7 @@ preserves the symmetry (returns a symmetric tensor type).
 """
 double_contraction(a::MultiValue, b::MultiValue) = contracted_product(Val(2), a, b)
 
-# c_ijpm = a_ijkl*b_klpm (3D)
+# c_ijkl = a_ijmn*b_mnkl (3D)
 @generated function double_contraction(a::SymFourthOrderTensorValue{3}, b::SymFourthOrderTensorValue{3})
 
   Sym4TensorIndexing = [1111, 1121, 1131, 1122, 1132, 1133, 2111, 2121, 2131, 2122, 2132, 2133,
@@ -321,30 +321,54 @@ double_contraction(a::MultiValue, b::MultiValue) = contracted_product(Val(2), a,
   for off_index in Sym4TensorIndexing
     i = parse(Int, string(off_index)[1])
     j = parse(Int, string(off_index)[2])
-    m = parse(Int, string(off_index)[3])
-    p = parse(Int, string(off_index)[4])
-    s = join(["a[$i,$j,$k,$l]*b[$k,$l,$m,$p]+" for k in 1:3 for l in 1:3])
+    k = parse(Int, string(off_index)[3])
+    l = parse(Int, string(off_index)[4])
+    s = join(["a[$j,$i,$m,$n]*b[$m,$n,$l,$k]+" for m in 1:3 for n in 1:3])
     push!(ss, s[1:(end-1)] * ", ")
   end
   str = join(ss)
   Meta.parse("SymFourthOrderTensorValue{3}($str)")
 end
 
-# c_ijpm = a_ijkl*b_klpm (general case)
+function _comp_prod_double_symfourth4(::Val{D},a,b,i,j,k,l) where D
+  s = zero(promote_type(eltype(a), eltype(b)))
+  @inbounds for m in 1:D
+    for n in 1:D
+      s += a[i,j,m,n]*b[m,n,k,l]
+    end
+  end
+  s
+end
+
+# c_ijkl = a_ijmn*b_mnkl (general case)
 @generated function double_contraction(a::SymFourthOrderTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return :(SymFourthOrderTensorValue{0,$(promote_type(Ta, Tb))}())
+
   str = ""
   for j in 1:D
     for i in j:D
-      for m in 1:D
-        for p in m:D
-          s = ""
-          for k in 1:D
-            for l in 1:D
-              s *= " a[$i,$j,$k,$l]*b[$k,$l,$p,$m] +"
+      for l in 1:D
+        for k in l:D
+          if D < 4
+            s = ""
+            for m in 1:D
+              for n in 1:D
+                s *= " a[$i,$j,$m,$n]*b[$m,$n,$k,$l] +"
+              end
             end
+            str *= s[1:(end-1)] * ", "
+          else
+            # for D=4, this compiles in <0.05 s, while the other takes 200 s (Julia 1.12).
+            # But runtime is 5 times slower 1.6 μs, vs 300 ns
+            #
+            # I tried passing i,j,k,l by Val() instead of value, compilation
+            # takes 1s, the runtime isn't improved
+            #
+            # This means that the acceleration we get by removing the function
+            # likely comes from llvm optimization that recycle partial results
+            # of the products for different i,j,k,l
+            str *= "_comp_prod_double_symfourth4(Val(D),a,b,$i,$j,$k,$l), "
           end
-          str *= s[1:(end-1)] * ", "
         end
       end
     end
@@ -352,14 +376,14 @@ end
   Meta.parse("SymFourthOrderTensorValue{D}($str)")
 end
 
-# c_ilm = a_ijk*b_jklm
+# c_ijk = a_ilm*b_lmjk
 @generated function double_contraction(a::ThirdOrderTensorValue{D1,D,D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D1,D,Ta,Tb}
   iszero(length(a)) && return :(zero(ThirdOrderTensorValue{D1,D,D,$(promote_type(Ta, Tb))}))
   ss = String[]
-  for m in 1:D
-    for l in 1:D
+  for k in 1:D
+    for j in 1:D
       for i in 1:D1
-        s = join(["a[$i,$j,$k]*b[$j,$k,$l,$m]+" for j in 1:D for k in 1:D])
+        s = join(["a[$i,$l,$m]*b[$l,$m,$j,$k]+" for l in 1:D for m in 1:D])
         push!(ss, s[1:(end-1)] * ", ")
       end
     end
@@ -389,19 +413,19 @@ end
   Meta.parse("SymTensorValue{D}($str)")
 end
 
-# c_kl = a_ij*b_ijkl
+# c_ij = a_kl*b_klij
 @generated function double_contraction(a::AbstractSymTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return :(zero(SymTensorValue{D,$(promote_type(Ta, Tb))}))
   str = ""
-  for k in 1:D
-    for l in k:D
-      for i in 1:D
-        str *= "+ a[$i,$i]*b[$i,$i,$k,$l]"
+  for i in 1:D
+    for j in i:D
+      for k in 1:D
+        str *= "+ a[$k,$k]*b[$k,$k,$i,$j]"
       end
       str *= " + 2*("
-      for i in 1:D
-        for j in i+1:D
-          str *= "+ a[$i,$j]*b[$i,$j,$k,$l]"
+      for k in 1:D
+        for l in k+1:D
+          str *= "+ a[$k,$l]*b[$k,$l,$i,$j]"
         end
       end
       str *= "), "
@@ -415,7 +439,7 @@ function double_contraction(a::SymFourthOrderTensorValue{D}, b::MultiValue{Tuple
   double_contraction(a, symmetric_part(b))
 end
 
-# c_kl = a_ij*b_ijkl
+# c_ij = a_kl*b_klij
 function double_contraction(a::MultiValue{Tuple{D,D}}, b::SymFourthOrderTensorValue{D}) where {D}
   double_contraction(symmetric_part(a), b)
 end
@@ -479,6 +503,7 @@ multiplication if `a` or `b` is a scalar.
 """
 outer(a::MultiValue, b::MultiValue) = contracted_product(Val(0), a, b)
 
+# c_ijkl = a_ij*b_kl
 @generated function outer(a::AbstractSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return :(zero(SymFourthOrderTensorValue{D,$(promote_type(Ta, Tb))}))
   str = ""
@@ -562,6 +587,10 @@ the specific functions above if possible), but is used as default generic implem
     return Meta.parse("zero("*Vstr*")")
   end
 
+  # TODO, if the length of the resulting tensor exceeds some threshold, switch
+  # to runtime looping over the indices, or even using BLAS. Also, we might need
+  # to change HighOrderTensorValue to store into Memory or simply some fixed sized array.
+  # Context: compiling double_contaction of 4th order 4D tensors takes 5-10 min, runtime 15μs.
   ss = String[Vstr*"("]
   for cib in CartesianIndices(Sb_keep) # Julia is column major, last index enumerates first
     for cia in CartesianIndices(Sa_keep)

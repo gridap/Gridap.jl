@@ -44,12 +44,13 @@ Main PR is PR[#1048](https://github.com/gridap/Gridap.jl/pull/#1048).
 - Documented the implemented ReferenceFEs with available order and other information in the `ReferenceFEs` section of the doc.
 - Implemented the Nedelec reference elements of the second kind `nedelec2`.
 - API for Geometric decomposition of polynomial bases, implemented for simplices and n-cubes. Since PR[#1144](https://github.com/gridap/Gridap.jl/pull/1144).
-  The geometric decomposition API consist in the methods `has_geometric_decomposition`, `get_face_own_funs` and `get_facet_flux_sign_flip`.
+  The geometric decomposition API consist in the methods `has_geometric_decomposition`, `get_face_own_funs` and `apply_face_signflip`.
 
 ### Fixed
 
 - Fixed evaluation of `LinearCombinationDofVector` on vector of `<:Field`s (only impacts ModalC0 FEs and future moment based reffes)., since PR[#1105](https://github.com/gridap/Gridap.jl/pull/#1105).
 - Fixed `get_face_dofs(::ReferenceFEs)` on many moment based elements, it sometimes returned `face_own_dofs`.
+- Fixed hessian of `Legendre` (former `Jacobi`) and ModalC0 bases, since PR[#1255](https://github.com/gridap/Gridap.jl/pull/#1255).
 
 ### Deprecated
 

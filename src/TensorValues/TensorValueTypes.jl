@@ -38,9 +38,8 @@ TensorValue{0,0}(data::NTuple{0}) = TensorValue{0,0,Int}(data)
 
 @generated function TensorValue(data::NTuple{L,T}) where {L,T}
   msg = "The number of scalar arguments in TensorValue has to be a perfect square (e.g., 1, 4, 9, 16, ...)"
-  V = sqrt(L)
-  @assert floor(Int,V) == ceil(Int,V) msg
-  D = Int(V)
+  D = isqrt(L)
+  @assert L == D^2 msg
   quote
     TensorValue{$D,$D,T}(data)
   end

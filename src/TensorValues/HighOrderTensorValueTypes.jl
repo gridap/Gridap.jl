@@ -43,9 +43,8 @@ HighOrderTensorValue{S}(data::NTuple{0}) where S = HighOrderTensorValue{S,Int}(d
 
 @generated function HighOrderTensorValue(::Val{N}, data::NTuple{L,T}) where {N,L,T}
   msg = "Invalid number of scalar arguments in HighOrderTensorValue{$N} constructor, expecting a $(N)th power number, got L=$L"
-  V = L^(1/N)
-  @assert floor(Int,V) == ceil(Int,V) msg
-  D=Int(V)
+  D = round(Int, L^(1/N))
+  @assert L == D^N msg
   S = Tuple{ntuple(_->D, Val(N))...}
   quote
     HighOrderTensorValue{$S,T,N}(data)

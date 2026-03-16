@@ -237,7 +237,7 @@ Pages   = ["MomentBasedReferenceFEs.jl"]
 The geometric decomposition API consist in the methods
 - [`has_geometric_decomposition(polybasis,p,conf)`](@ref),
 - [`get_face_own_funs(polybasis,p,conf)`](@ref),
-- [`get_facet_flux_sign_flip(polybasis,p,conf)`](@ref).
+- [`apply_face_signflip(polybasis,p,conf)`](@ref).
 where `polybasis` is a polynomial basis, `p` a polytope and `conf` a conformity.
 
 This API ensures that:
