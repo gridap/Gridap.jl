@@ -386,10 +386,10 @@ function _evaluate_1d_mc0!(c::AbstractMatrix{T},x,a,b,order,d) where T
   o = one(T)
   @inbounds c[d,1] = o - x[d]
   @inbounds c[d,2] = x[d]
-  if n > 2
+  @inbounds if n > 2
     ξ = ( 2*x[d] - ( a[d] + b[d] ) ) / ( b[d] - a[d] )
     for i in 3:n
-      @inbounds c[d,i] = -sqrt(2*i-3)*c[d,1]*c[d,2]*jacobi(ξ,i-3,1,1)/(i-2)
+      c[d,i] = -sqrt(2*i-3)*c[d,1]*c[d,2]*jacobi(ξ,i-3,1,1)/(i-2)
     end
   end
 end
@@ -400,13 +400,13 @@ function _gradient_1d_mc0!(g::AbstractMatrix{T},x,a,b,order,d) where T
   o = one(T)
   @inbounds g[d,1] = -o
   @inbounds g[d,2] = o
-  if n > 2
+  @inbounds if n > 2
     ξ = ( 2*x[d] - ( a[d] + b[d] ) ) / ( b[d] - a[d] )
     v1 = o - x[d]
     v2 = x[d]
     for i in 3:n
       j, dj = jacobi_and_derivative(ξ,i-3,1,1)
-      @inbounds g[d,i] = -sqrt(2*i-3)*(g[d,1]*v2*j+v1*g[d,2]*j+v1*v2*(2/(b[d]-a[d]))*dj)/(i-2)
+      g[d,i] = -sqrt(2*i-3)*(g[d,1]*v2*j+v1*g[d,2]*j+v1*v2*(2/(b[d]-a[d]))*dj)/(i-2)
     end
   end
 end
@@ -418,7 +418,7 @@ function _hessian_1d_mc0!(h::AbstractMatrix{T},x,a,b,order,d) where T
   o = one(T)
   @inbounds h[d,1] = z
   @inbounds h[d,2] = z
-  if n > 2
+  @inbounds if n > 2
     ξ = ( 2*x[d] - ( a[d] + b[d] ) ) / ( b[d] - a[d] )
     v1 = o - x[d]
     v2 = x[d]
@@ -427,7 +427,7 @@ function _hessian_1d_mc0!(h::AbstractMatrix{T},x,a,b,order,d) where T
     for i in 3:n
       j, dj = jacobi_and_derivative(ξ,i-3,1,1)
       _, d2j = jacobi_and_derivative(ξ,i-4,2,2)
-      @inbounds h[d,i] = -sqrt(2*i-3)*(2*dv1*dv2*j+2*(dv1*v2+v1*dv2)*(2/(b[d]-a[d]))*dj+v1*v2*d2j*2*i*((b[d]-a[d])^2))/(i-2)
+      h[d,i] = -sqrt(2*i-3)*(2*dv1*dv2*j+2*(dv1*v2+v1*dv2)*(2/(b[d]-a[d]))*dj+v1*v2*d2j*2*i*((b[d]-a[d])^(-2)))/(i-2)
     end
   end
 end
