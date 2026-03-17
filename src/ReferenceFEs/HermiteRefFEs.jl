@@ -116,19 +116,3 @@ function ReferenceFE(p::Polytope,::Hermite,::Type{V}, order; kwargs...) where V
   @check order == 3 "Hermite Reference FE only available for `order`=3, got order=$order"
   HermiteRefFE(V,p; kwargs...)
 end
-
-function Conformity(::GenericRefFE{Hermite}, sym::Symbol)
-  hgrad = (:H1, :C0)
-  if sym == :L2
-    L2Conformity()
-  elseif sym in hgrad
-    GradConformity()
-  else
-    @unreachable """\n
-    It is not possible to use conformity = $sym on a Hermite reference FE.
-
-    Possible values of conformity for this reference fe are $((:L2, hgrad...)).
-      """
-  end
-end
-
