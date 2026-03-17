@@ -116,3 +116,4 @@ function ReferenceFE(p::Polytope,::Hermite,::Type{V}, order; kwargs...) where V
   @check order == 3 "Hermite Reference FE only available for `order`=3, got order=$order"
   HermiteRefFE(V,p; kwargs...)
 end
+

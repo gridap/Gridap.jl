@@ -34,8 +34,6 @@ using Gridap.Fields: gradient_type
 
 using Statistics: mean
 
-using Statistics: mean
-
 import Gridap.Arrays: return_cache
 import Gridap.Arrays: evaluate!
 import Gridap.Arrays: return_type
