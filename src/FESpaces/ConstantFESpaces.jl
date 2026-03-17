@@ -7,7 +7,7 @@
     ConstantFESpace(model::DiscreteModel; vector_type=Vector{Float64}, field_type=Float64)
     ConstantFESpace(trian::Triangulation; vector_type=Vector{Float64}, field_type=Float64)
 
-FESpace that is constant over the provided model/triangulation. Typically used as  
+FESpace that is constant over the provided model/triangulation. Typically used as
 lagrange multipliers. The kwargs `vector_type` and `field_type` are used to specify the
 types of the dof-vector and dof-value respectively.
 """
@@ -62,7 +62,7 @@ function ConstantFESpace(
   @assert num_cells(model) == num_cells(trian)
 
   ncells = num_cells(trian)
-  prebasis = Polynomials.MonomialBasis{Dc}(T, 0)
+  prebasis = Polynomials.MonomialBasis(Val(Dc), T, 0)
   cell_basis = SingleFieldFEBasis(
     Fill(prebasis, ncells), trian, TestBasis(), ReferenceDomain()
   )
@@ -142,7 +142,7 @@ end
     MultiConstantFESpace(model::DiscreteModel,tags::Vector,D::Integer)
     MultiConstantFESpace(trians::Vector{<:BoundaryTriangulation{Df}})
 
-Extension of `ConstantFESpace`, representing a FESpace which is constant on each 
+Extension of `ConstantFESpace`, representing a FESpace which is constant on each
 of it's N triangulations.
 """
 struct MultiConstantFESpace{N,T,V} <: SingleFieldFESpace

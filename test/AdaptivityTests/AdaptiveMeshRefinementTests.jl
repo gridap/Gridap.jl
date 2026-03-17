@@ -14,8 +14,8 @@ function test_dorfler_marking()
         m = DorflerMarking(θ;strategy)
         I = Adaptivity.mark(m,η)
         @test sum(η[I]) > θ * sum(η)
-        println("Strategy: $strategy, θ: $θ, n: $n")
-        println("  > N marked = $(length(I)), val marked = $(sum(η[I]) / sum(η))")
+        #println("Strategy: $strategy, θ: $θ, n: $n")
+        #println("  > N marked = $(length(I)), val marked = $(sum(η[I]) / sum(η))")
       end
     end
   end
@@ -38,15 +38,15 @@ function amr_step(model,u_exact;order=1)
   reffe = ReferenceFE(lagrangian,Float64,order)
   V = TestFESpace(model,reffe;dirichlet_tags=["boundary"])
   U = TrialFESpace(V,u_exact)
-  
+
   Ω = Triangulation(model)
   Γ = Boundary(model)
   Λ = Skeleton(model)
-  
+
   dΩ = Measure(Ω,4*order)
   dΓ = Measure(Γ,2*order)
   dΛ = Measure(Λ,2*order)
-  
+
   hK = CellField(sqrt.(collect(get_array(∫(1)dΩ))),Ω)
 
   nΓ = get_normal_vector(Γ)
@@ -57,14 +57,14 @@ function amr_step(model,u_exact;order=1)
   a(u,v) = ∫(∇(u)⋅∇(v))dΩ
   l(v)   = ∫(f*v)dΩ
   ηh(u)  = l2_norm(hK*(f + Δ(u)),dΩ) + l2_norm(hK*(∇(u) - ∇u)⋅nΓ,dΓ) + l2_norm(jump(hK*∇(u)⋅nΛ),dΛ)
-  
+
   op = AffineFEOperator(a,l,U,V)
   uh = solve(op)
   η = estimate(ηh,uh)
-  
+
   m = DorflerMarking(0.8)
   I = Adaptivity.mark(m,η)
-  
+
   method = Adaptivity.NVBRefinement(model)
   fmodel = Adaptivity.get_model(refine(method,model;cells_to_refine=I))
 
@@ -97,7 +97,7 @@ function test_amr(nsteps,order)
       )
     end
 
-    println("Error: $error, Error η: $(sum(η))")
+    #println("Error: $error, Error η: $(sum(η))")
     @test (i < 3) || (error < last_error)
     last_error = error
     model = fmodel

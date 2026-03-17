@@ -2,13 +2,13 @@
 """
     set_execution_mode(new_mode::String)
 
-Sets the execution mode to either "debug" or "performance", which controls 
-the behavior of the @check macro within the Gridap package.
+Sets the execution mode to either "debug" or "performance", which controls
+the behavior of the [`@check`](@ref) macro within the Gridap package.
 
-- Debug mode (default): The @check macro will be active, which activates consistency checks 
+- Debug mode (default): The `@check` macro will be active, which activates consistency checks
   within the library. This mode is recommended for development and debugging purposes.
 
-- Performance mode: The @check macro will be deactivated. This mode is recommended for 
+- Performance mode: The `@check` macro will be deactivated. This mode is recommended for
   production runs, where no errors are expected.
 
 Pre-defined functions [`set_debug_mode`](@ref) and [`set_performance_mode`](@ref) are also available.

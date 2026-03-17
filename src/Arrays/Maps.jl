@@ -20,6 +20,38 @@ existing types into this framework without the need to implement a wrapper type
 that inherits from `Map`. For instance, a default implementation is available
 for `Function` objects.  However, we recommend that new types inherit from `Map`.
 
+# Example
+
+```julia
+using Gridap.Arrays
+using LinearAlgebra
+
+# Define a custom Map for k(a,b,c) = α*a*b + β*c
+struct MyMulAdd{T} <: Map
+  α::T
+  β::T
+end
+
+# Optional: provide a cache to avoid allocations in evaluate!
+function Gridap.Arrays.return_cache(k::MyMulAdd, a, b, c)
+  d = a*b + c # Initial allocation
+  CachedArray(d)
+end
+
+# Mandatory: in-place evaluation
+function Gridap.Arrays.evaluate!(cache, k::MyMulAdd, a, b, c)
+  setsize!(cache, size(c))
+  d = cache.array
+  copyto!(d, c)
+  mul!(d, a, b, k.α, k.β)
+  d
+end
+
+k = MyMulAdd(2.0, 1.0)
+a = rand(3,3); b = rand(3,3); c = rand(3,3)
+res = evaluate(k, a, b, c)
+```
+
 """
 abstract type Map <: GridapType end
 
@@ -61,6 +93,11 @@ arguments of the types of the objects `x`.
 """
 return_type(f,x...) = typeof(return_value(f,x...))
 
+"""
+    return_value(f,x...)
+
+Return a variable of the type of the image fx=`f`(`x`...) (possibly fx itself).
+"""
 return_value(f,x...) = evaluate(f,testargs(f,x...)...)
 
 """
@@ -297,3 +334,21 @@ function inverse_map(f)
   Function inverse_map is not implemented yet for objects of type $(typeof(f))
   """
 end
+
+"""
+    struct InverseMap{F} <: Map
+
+Map for the inverse of the `Function` or [`Map`](@ref) `F`.
+"""
+struct InverseMap{F} <: Map
+  original::F
+end
+
+function evaluate!(cache,k::InverseMap,args...)
+  @notimplemented """\n
+  The inverse evaluation is not implemented yet for maps of type $(typeof(k.original))
+  """
+end
+
+inverse_map(k::Map) = InverseMap(k)
+inverse_map(k::InverseMap) = k.original

@@ -193,16 +193,16 @@ function is_disjoint(topo::GridTopology, patch_cells)
 end
 
 """
-  is_partition(ptopo::PatchTopology; kwargs...)
-  is_partition(topo::GridTopology, patch_cells::Table; fail_fast = true)
+    is_partition(ptopo::PatchTopology; kwargs...)
+    is_partition(topo::GridTopology, patch_cells::Table; fail_fast = true)
 
 Check if the given patch topology is a valid partition of the underlying topology.
 
 To be a valid partition, the patches
 
-  - must cover the whole topology
-  - must be disjoint (i.e non-overlapping)
-  - must be connected (a patch cannot be split)
+- must cover the whole topology
+- must be disjoint (i.e non-overlapping)
+- must be connected (a patch cannot be split)
 
 If `fail_fast` is `true`, the function will exit as soon as it finds a patch that is not connected.
 Otherwise, it will check all patches and print a warning with the indices of the bad patches.
