@@ -235,10 +235,7 @@ export serendipity
 export bubble
 export hermite
 export argyris
-<<<<<<< HEAD
 export morley
-=======
->>>>>>> 09462b6e4 (wip ArgyrisRefFE)
 
 export Quadrature
 export QuadratureName
