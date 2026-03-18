@@ -188,6 +188,7 @@ At this moment, the some cell-wise info is compressed on cell types.
 This can be relaxed in the future, and have an arbitrary cell-wise data.
 """
 struct CellFE <: GridapType
+  conformity::Conformity
   cell_conformity::CellConformity
   cell_shapefuns::AbstractArray{<:AbstractVector{<:Field}}
   cell_dof_basis::AbstractArray{<:AbstractVector{<:Dof}}
@@ -199,6 +200,7 @@ end
 # reasonable quadrature rule to integrate the shape functions. Only used by FESpace
 # constructors that need to integrate the shape functions (e.g., ZeroMeanFESpace).
 
+Conformity(cell_fe::CellFE) = cell_fe.conformity
 CellConformity(cell_fe::CellFE) = cell_fe.cell_conformity
 Geometry.num_cells(cell_fe::CellFE) = num_cells(CellConformity(cell_fe))
 Geometry.get_cell_type(cell_fe::CellFE) = get_cell_type(CellConformity(cell_fe))
@@ -209,11 +211,8 @@ Geometry.get_cell_type(cell_fe::CellFE) = get_cell_type(CellConformity(cell_fe))
 Generate a CellFE from a vector of reference fes
 """
 function CellFE(
-  model::DiscreteModel,
-  cell_reffe::AbstractArray{<:ReferenceFE},
-  conformity::Conformity;
-  kwargs...
- )
+  model::DiscreteModel, cell_reffe::AbstractArray{<:ReferenceFE}, conformity::Conformity; kwargs...
+)
   cell_conformity = CellConformity(cell_reffe,conformity)
   ctype_reffe, _ = compress_cell_data(cell_reffe)
   shapefuns_and_dofs = get_cell_shapefuns_and_dof_basis(model,cell_reffe,conformity;kwargs...)
@@ -222,13 +221,16 @@ function CellFE(
   cell_dof_basis_domain = ReferenceDomain()
   max_order = maximum(map(get_order,ctype_reffe))
   CellFE(
-    cell_conformity,
-    cell_shapefuns,
-    cell_dof_basis,
-    cell_shapefuns_domain,
-    cell_dof_basis_domain,
-    max_order
+    conformity, cell_conformity, cell_shapefuns, cell_dof_basis,
+    cell_shapefuns_domain, cell_dof_basis_domain, max_order
   )
+end
+
+function CellFE(
+  model::DiscreteModel, cell_reffe::AbstractArray{<:ReferenceFE}, conformity; kwargs...
+)
+  conf = Conformity(testitem(cell_reffe),conformity)
+  return CellFE(model,cell_reffe,conf;kwargs...)
 end
 
 """
