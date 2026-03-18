@@ -1,6 +1,7 @@
 function get_cell_shapefuns_and_dof_basis(
   model::DiscreteModel, cell_reffe::AbstractArray{T}, conf::Conformity;
-  scale_dof=false, global_meshsize=nothing
+  scale_dof=false, global_meshsize=nothing,
+  cell_changes=nothing # Allows pre-computed cell change (GridapDistributed)
 ) where T <: ReferenceFE
 
   reffe_name = get_name(T)
@@ -23,9 +24,13 @@ function get_cell_shapefuns_and_dof_basis(
   end
 
   # If nontrivial, apply the appropriate change of basis to the DOF and shape-function bases
-  cell_changes = compute_cell_bases_changes(reffe_name, pushforward, model, cell_reffe, cell_Jt)
+  if isnothing(cell_changes)
+    cell_changes = compute_cell_bases_changes(reffe_name, pushforward, model, cell_reffe, cell_Jt)
+  end
   cell_changes = apply_dof_scaling(cell_changes, model, cell_reffe, pushforward, scale_dof, global_meshsize)
-  isnothing(cell_changes) && return (cell_phy_fields, cell_phy_dofs)
+  if isnothing(cell_changes)
+    return (cell_phy_fields, cell_phy_dofs)
+  end
 
   cell_change, cell_change_invt = cell_changes
   cell_shapefuns = lazy_map(linear_combination, cell_change,      cell_phy_fields)
