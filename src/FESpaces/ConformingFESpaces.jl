@@ -186,6 +186,11 @@ end
 Minimum data required to build a conforming FE space.
 At this moment, the some cell-wise info is compressed on cell types.
 This can be relaxed in the future, and have an arbitrary cell-wise data.
+
+# Constructors
+
+    CellFE(model::DiscreteModel, cell_reffe::AbstractArray{<:ReferenceFE}, conformity::Conformity; kwargs...)
+
 """
 struct CellFE <: GridapType
   conformity::Conformity
@@ -205,18 +210,15 @@ CellConformity(cell_fe::CellFE) = cell_fe.cell_conformity
 Geometry.num_cells(cell_fe::CellFE) = num_cells(CellConformity(cell_fe))
 Geometry.get_cell_type(cell_fe::CellFE) = get_cell_type(CellConformity(cell_fe))
 
-"""
-    CellFE(model::DiscreteModel,cell_reffe::AbstractArray{<:ReferenceFE},conformity::Conformity, args...)
-
-Generate a CellFE from a vector of reference fes
-"""
+# This constructor allows for provided shapefuns and dofs, which 
+# is necessary for GridapDistributed
 function CellFE(
-  model::DiscreteModel, cell_reffe::AbstractArray{<:ReferenceFE}, conformity::Conformity; kwargs...
+  model::DiscreteModel, cell_reffe::AbstractArray{<:ReferenceFE}, 
+  cell_shapefuns::AbstractArray, cell_dof_basis::AbstractArray,
+  conformity::Conformity
 )
   cell_conformity = CellConformity(cell_reffe,conformity)
   ctype_reffe, _ = compress_cell_data(cell_reffe)
-  shapefuns_and_dofs = get_cell_shapefuns_and_dof_basis(model,cell_reffe,conformity;kwargs...)
-  cell_shapefuns, cell_dof_basis = shapefuns_and_dofs
   cell_shapefuns_domain = ReferenceDomain()
   cell_dof_basis_domain = ReferenceDomain()
   max_order = maximum(map(get_order,ctype_reffe))
@@ -224,6 +226,15 @@ function CellFE(
     conformity, cell_conformity, cell_shapefuns, cell_dof_basis,
     cell_shapefuns_domain, cell_dof_basis_domain, max_order
   )
+end
+
+function CellFE(
+  model::DiscreteModel, cell_reffe::AbstractArray{<:ReferenceFE}, conformity::Conformity; kwargs...
+)
+  cell_shapefuns, cell_dof_basis = get_cell_shapefuns_and_dof_basis(
+    model, cell_reffe, conformity; kwargs...
+  )
+  return CellFE(model, cell_reffe, cell_shapefuns, cell_dof_basis, conformity)
 end
 
 function CellFE(

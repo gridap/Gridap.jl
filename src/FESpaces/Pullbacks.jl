@@ -1,16 +1,28 @@
+
 function get_cell_shapefuns_and_dof_basis(
-  model::DiscreteModel, cell_reffe::AbstractArray{T}, conf::Conformity;
-  scale_dof=false, global_meshsize=nothing,
-  cell_changes=nothing # Allows pre-computed cell change (GridapDistributed)
+  model::DiscreteModel, cell_reffe::AbstractArray{T}, conf::Conformity; kwargs...
 ) where T <: ReferenceFE
+
+  cell_map  = get_cell_map(get_grid(model))
+  cell_Jt = lazy_map(Broadcasting(∇), cell_map)
 
   reffe_name = get_name(T)
   pushforward = Pushforward(reffe_name, conf)
+  cell_changes = compute_cell_bases_changes(reffe_name, pushforward, model, cell_reffe, cell_Jt)
 
+  return get_cell_shapefuns_and_dof_basis(
+    pushforward, model, cell_reffe, cell_changes, cell_Jt; kwargs...
+  )
+end
+
+# This constructor allows fo provided cell changes and jacobians, 
+# which is necessary for GridapDistributed
+function get_cell_shapefuns_and_dof_basis(
+  pushforward::Pushforward, model, cell_reffe, cell_changes, cell_Jt;
+  scale_dof=false, global_meshsize=nothing
+)
   cell_ref_fields = lazy_map(get_shapefuns, cell_reffe)
   cell_ref_dofs = lazy_map(get_dof_basis, cell_reffe)
-  cell_map  = get_cell_map(get_grid(model))
-  cell_Jt = lazy_map(Broadcasting(∇), cell_map)
 
   # Apply the pushforward "individually" to each shape-function, and the inverse pullback to each DOF
   if pushforward isa IdentityPiolaMap
@@ -24,10 +36,9 @@ function get_cell_shapefuns_and_dof_basis(
   end
 
   # If nontrivial, apply the appropriate change of basis to the DOF and shape-function bases
-  if isnothing(cell_changes)
-    cell_changes = compute_cell_bases_changes(reffe_name, pushforward, model, cell_reffe, cell_Jt)
-  end
-  cell_changes = apply_dof_scaling(cell_changes, model, cell_reffe, pushforward, scale_dof, global_meshsize)
+  cell_changes = apply_dof_scaling(
+    cell_changes, model, cell_reffe, pushforward, scale_dof, global_meshsize
+  )
   if isnothing(cell_changes)
     return (cell_phy_fields, cell_phy_dofs)
   end
@@ -103,12 +114,13 @@ end
 # NormalSignMap #
 #################
 
-function get_sign_flip(model::DiscreteModel{Dc}, cell_reffe) where Dc
+function get_sign_flip(model::DiscreteModel, cell_reffe, sign_map = NormalSignMap(model))
   # Comment: lazy_maps on cell_reffes are very optimised, since they are CompressedArray/FillArray
+  Dc = num_cell_dims(model)
   get_facet_own_dofs(reffe) = view(get_face_own_dofs(reffe),get_dimrange(get_polytope(reffe),Dc-1))
   cell_facet_own_dofs = lazy_map(get_facet_own_dofs, cell_reffe)
   cell_ids = IdentityVector(Int32(num_cells(model)))
-  return lazy_map(NormalSignMap(model), cell_reffe, cell_facet_own_dofs, cell_ids)
+  return lazy_map(sign_map, cell_reffe, cell_facet_own_dofs, cell_ids)
 end
 
 """
