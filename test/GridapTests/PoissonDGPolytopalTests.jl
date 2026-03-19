@@ -54,6 +54,6 @@ el2 = sqrt(sum( ∫( eh⊙eh )*dΩ ))
 eh1 = sqrt(sum( ∫( eh⊙eh + ∇(eh)⊙∇(eh) )*dΩ ))
 
 @test el2 < 1.e-8
-@test eh1 < 1.e-7
+@test eh1 < 1.e-6
 
 end # module

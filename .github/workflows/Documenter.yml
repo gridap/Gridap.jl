@@ -3,6 +3,7 @@ name: Documentation
 on:
   push:
     branches: [master]
+    tags: ['*']
     paths-ignore:
       - 'CONTRIBUTING.md'
       - 'CODE_OF_CONDUCT.md'
