@@ -182,15 +182,13 @@ end
 
 
 """
-    get_face_own_nodes(g::DiscreteModel,d::Integer)
+    get_face_own_nodes(g::DiscreteModel)
+    get_face_own_nodes(g::DiscreteModel, d::Integer)
 """
 function get_face_own_nodes(g::DiscreteModel,d::Integer)
   compute_face_own_nodes(g,d)
 end
 
-"""
-    get_face_own_nodes(g::DiscreteModel)
-"""
 function get_face_own_nodes(g::DiscreteModel)
   compute_face_own_nodes(g)
 end
@@ -373,25 +371,11 @@ function Grid(::Type{ReferenceFE{d}},model::DiscreteModel{d}) where d
 end
 
 """
-    simplexify(model::DiscreteModel)
+    simplexify(model::DiscreteModel; kwargs...)
 """
-function simplexify(model::DiscreteModel;kwargs...)
+function simplexify(model::DiscreteModel; kwargs...)
   umodel = UnstructuredDiscreteModel(model)
   simplexify(umodel;kwargs...)
-end
-
-function ReferenceFE(model::DiscreteModel,args...;kwargs...)
-  ctype_to_polytope = get_polytopes(model)
-  cell_to_ctype = get_cell_type(model)
-  ctype_to_reffe = map(p->ReferenceFE(p,args...;kwargs...),ctype_to_polytope)
-  cell_to_reffe = expand_cell_data(ctype_to_reffe,cell_to_ctype)
-  cell_to_reffe
-end
-
-function ReferenceFE(model::DiscreteModel,basis::ModalC0,args...;kwargs...)
-  ctype_to_polytope = get_polytopes(model)
-  @assert length(ctype_to_polytope) == 1 "Only one polytope expected"
-  compute_cell_to_modalC0_reffe(ctype_to_polytope[1],num_cells(model),args...;kwargs...)
 end
 
 # IO

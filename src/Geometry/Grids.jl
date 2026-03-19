@@ -70,6 +70,10 @@ end
 
 """
     get_reffes(trian::Grid) -> Vector{LagrangianRefFE}
+
+The geometric reference FE of each cell type of `trian`. That is, the reference
+FE whose shape functions define the geometric map from the reference element
+to any cell of this type. See also [`get_cell_type(trian)`](@ref).
 """
 function get_reffes(trian::Grid)
   @abstractmethod
@@ -77,6 +81,10 @@ end
 
 """
     get_cell_type(trian::Grid) -> AbstractVector{<:Integer}
+
+Index of each cell type, which identifies
+  - the cell polytopes if indexing into [`get_polytopes(trian)`](@ref), or
+  - the cell geometric reference FEs if indexing into [`get_reffes(trian)`](@ref).
 """
 function get_cell_type(trian::Grid)
   @abstractmethod
@@ -96,6 +104,11 @@ function get_facet_normal(trian::Grid)
 end
 
 # Polytopes might be repeated, but it's OK
+"""
+    get_polytopes(trian::Grid) -> Vector{<:Polytope}
+
+The reference polytope of each cell type of `trian`. See also [`get_cell_type(trian)`](@ref).
+"""
 function get_polytopes(trian::Grid)
   map(get_polytope,get_reffes(trian))
 end
@@ -227,6 +240,9 @@ function get_cell_map(trian::Grid)
   lazy_map(linear_combination,cell_to_coords,cell_to_shapefuns)
 end
 
+"""
+    get_cell_coordinates(grid::Grid)
+"""
 function get_cell_coordinates(trian::Grid)
   node_to_coords = get_node_coordinates(trian)
   cell_to_nodes = get_cell_node_ids(trian)
@@ -238,6 +254,42 @@ function Quadrature(trian::Grid,args...;kwargs...)
   ctype_polytope = get_polytopes(trian)
   ctype_quad = map(p->Quadrature(p,args...;kwargs...),ctype_polytope)
   cell_quad = expand_cell_data(ctype_quad,cell_ctype)
+end
+
+"""
+    ReferenceFE(trian::Grid, args...; kwargs...) -> cell_to_reffe
+
+Return a vector containing the [`ReferenceFE`](@ref) specified by `args` and
+`kwargs` for each type of cell of `trian` (given by [`get_cell_type(trian)`](@ref)).
+
+The `args` and `kwargs` are all arguments accepted by
+[`ReferenceFE(::ReferenceFEName, ...; ...)`](@ref
+ReferenceFE(::ReferenceFEName,a...;k...)) or [`ReferenceFE(F::Symbol, ...; ...)`](@ref
+ReferenceFE(::Symbol,a...;k...)), first argument included.
+"""
+function ReferenceFE(trian::Grid,args...;kwargs...)
+  ctype_to_polytope = get_polytopes(trian)
+  cell_to_ctype = get_cell_type(trian)
+  ctype_to_reffe = map(p->ReferenceFE(p,args...;kwargs...),ctype_to_polytope)
+  cell_to_reffe = expand_cell_data(ctype_to_reffe,cell_to_ctype)
+  return cell_to_reffe
+end
+
+function ReferenceFE(trian::Grid,basis::ModalC0,args...;kwargs...)
+  ctype_to_polytope = get_polytopes(trian)
+  @assert length(ctype_to_polytope) == 1 "Only one polytope expected"
+  compute_cell_to_modalC0_reffe(ctype_to_polytope[1],num_cells(trian),args...;kwargs...)
+end
+
+function ReferenceFE(
+  trian::Grid, reffe::Tuple{<:Union{ReferenceFEName,Symbol},Any,Any}
+)
+  reffe_name, reffe_args,reffe_kwargs = reffe
+  ReferenceFE(trian,reffe_name,reffe_args...;reffe_kwargs...)
+end
+
+function ReferenceFE(trian::Grid, reffe::ReferenceFE)
+  Fill(reffe,num_cells(trian))
 end
 
 """

@@ -8,6 +8,8 @@ using Test
 
 @testset "GeneralPolytopes" begin include("GeneralPolytopesTests.jl") end
 
+@testset "Convexify" begin include("ConvexifyTests.jl") end
+
 @testset "Dofs" begin include("DofsTests.jl") end
 
 @testset "MockDofs" begin include("MockDofsTests.jl") end
@@ -15,6 +17,10 @@ using Test
 @testset "LagrangianDofBases" begin include("LagrangianDofBasesTests.jl") end
 
 @testset "ReferenceFEInterfaces" begin include("ReferenceFEInterfacesTests.jl") end
+
+@testset "GeometricDecompositions" begin include("GeometricDecompositionTests.jl") end
+
+@testset "MomentBasedReferenceFEs" begin include("MomentBasedReferenceFEsTests.jl") end
 
 @testset "LagrangianRefFEs" begin include("LagrangianRefFEsTests.jl") end
 
@@ -34,6 +40,8 @@ using Test
 
 @testset "XiaoGimbutasQuadratures" begin include("XiaoGimbutasQuadraturesTests.jl") end
 
+@testset "WitherdenVincentQuadratures" begin include("WitherdenVincentQuadraturesTests.jl") end
+
 @testset "RaviartThomasRefFEs" begin include("RaviartThomasRefFEsTests.jl") end
 
 @testset "NedelecRefFEs" begin include("NedelecRefFEsTests.jl") end
@@ -43,6 +51,14 @@ using Test
 @testset "BezierRefFEs" begin include("BezierRefFEsTests.jl") end
 
 @testset "ModalC0RefFEs" begin include("ModalC0RefFEsTests.jl") end
+
+#@testset "HHJRefFEs" begin include("HHJRefFEsTests.jl") end
+
+@testset "BDMRefFEs" begin include("BDMRefFEsTests.jl") end
+
+@testset "ModalScalarRefFEs" begin include("ModalScalarRefFEsTests.jl") end
+
+@testset "CrouzeixRaviartFEs" begin include("CrouzeixRaviartFEsTests.jl") end
 
 @testset "BubbleRefFEs" begin include("BubbleRefFEsTests.jl") end
 

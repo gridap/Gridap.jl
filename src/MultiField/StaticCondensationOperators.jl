@@ -10,6 +10,10 @@ struct StaticCondensationOperator <: FEOperator
   sc_op
 end
 
+"""
+    function StaticCondensationOperator(full_space::FESpace, args...; kwargs...)
+    function StaticCondensationOperator(ptopo, full_space::FESpace, args...; kwargs...)
+"""
 function StaticCondensationOperator(
   full_space :: FESpace,
   eliminated_space :: FESpace,
@@ -146,7 +150,7 @@ struct StaticCondensationMap{A} <: Map
   pivot :: A
 end
 
-StaticCondensationMap() = StaticCondensationMap(NoPivot())
+StaticCondensationMap() = StaticCondensationMap(RowMaximum())
 
 function Arrays.evaluate!(cache,k::StaticCondensationMap, matvec::Tuple)
   mat, vec = matvec
@@ -175,7 +179,7 @@ struct BackwardStaticCondensationMap{A} <: Map
   pivot :: A
 end
 
-BackwardStaticCondensationMap() = BackwardStaticCondensationMap(NoPivot())
+BackwardStaticCondensationMap() = BackwardStaticCondensationMap(RowMaximum())
 
 function Arrays.evaluate!(cache,k::BackwardStaticCondensationMap, matvec::Tuple, xb)
   mat, vec = matvec

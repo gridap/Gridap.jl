@@ -1,7 +1,10 @@
 """
-
-Exported names are
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__; change_link=Dict(
+  :Irregular   => "RegularityStyle",
+  :Regular     => "RegularityStyle",
+  :Oriented    => "OrientationStyle",
+  :NonOriented => "OrientationStyle"
+)))
 """
 module Geometry
 
@@ -12,6 +15,8 @@ using FillArrays
 using LinearAlgebra: ⋅
 using Statistics: mean
 using DataStructures: SortedSet
+using SparseArrays: sparse
+using Graphs: Graph, is_connected
 
 using Gridap.Helpers
 using Gridap.Arrays

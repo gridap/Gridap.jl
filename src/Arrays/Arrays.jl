@@ -6,7 +6,7 @@ This module provides:
 
 The exported names in this module are:
 
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__))
 """
 module Arrays
 
@@ -53,6 +53,7 @@ export inverse_map
 
 export Broadcasting
 export Operation
+export InverseMap
 
 # LazyArray
 
@@ -101,6 +102,9 @@ export collect1d
 export UNSET
 export get_local_item
 export find_local_index
+export datarange
+export dataiterator
+export dataview
 
 export IdentityVector
 
@@ -175,10 +179,10 @@ include("VectorsWithEntryInserted.jl")
 
 include("AlgebraMaps.jl")
 
+include("AccumulationMaps.jl")
+
 include("Autodiff.jl")
 
 include("PrintOpTrees.jl")
-
-const ∑ = sum
 
 end # module

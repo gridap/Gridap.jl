@@ -1,7 +1,6 @@
 """
 
-The exported names are
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__))
 """
 module MultiField
 
@@ -37,9 +36,12 @@ export restrict_to_field
 export MultiFieldCellField
 export MultiFieldFESpace
 export MultiFieldFEFunction
+export MultiFieldFEBasis
 export MultiFieldStyle
 export ConsecutiveMultiFieldStyle
 export BlockMultiFieldStyle
+
+export StaticCondensationOperator
 
 include("MultiFieldCellFields.jl")
 

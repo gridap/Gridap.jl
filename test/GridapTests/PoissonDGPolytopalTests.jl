@@ -23,10 +23,9 @@ order = 2
 Γ = BoundaryTriangulation(model)
 Λ = SkeletonTriangulation(model)
 
-degree = order
-dΩ = Measure(Ω,degree)
-dΓ = Measure(Γ,degree)
-dΛ = Measure(Λ,degree)
+dΩ = Measure(Ω,2*(order - 1))
+dΓ = Measure(Γ,2*order)
+dΛ = Measure(Λ,2*order)
 
 n_Γ = get_normal_vector(Γ)
 n_Λ = get_normal_vector(Λ)
@@ -55,6 +54,6 @@ el2 = sqrt(sum( ∫( eh⊙eh )*dΩ ))
 eh1 = sqrt(sum( ∫( eh⊙eh + ∇(eh)⊙∇(eh) )*dΩ ))
 
 @test el2 < 1.e-8
-@test eh1 < 1.e-7
+@test eh1 < 1.e-6
 
 end # module

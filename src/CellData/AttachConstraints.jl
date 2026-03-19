@@ -1,8 +1,14 @@
 
+"""
+    attach_constraints_rows(cellvec, cellconstr, cellmask=(true,...))
+"""
 function attach_constraints_rows(cellvec,cellconstr,cellmask=Fill(true,length(cellconstr)))
   lazy_map(ConstrainRowsMap(),cellvec,cellconstr,cellmask)
 end
 
+"""
+    attach_constraints_cols(cellmat, cellconstr, cellmask=Fill(true,...))
+"""
 function attach_constraints_cols(cellmat,cellconstr,cellmask=Fill(true,length(cellconstr)))
   cellconstr_t = lazy_map(transpose,cellconstr)
   lazy_map(ConstrainColsMap(),cellmat,cellconstr_t,cellmask)
@@ -70,6 +76,11 @@ function Arrays.evaluate!(cache,k::ConstrainColsMap,matvec::Tuple,constr_t,mask)
   end
 end
 
+"""
+    identity_constraints(cell_axes)
+
+Dummy constraints for Unconstrained spaces.
+"""
 function identity_constraints(cell_axes)
   lazy_map(IdentityConstraintMap(),cell_axes)
 end

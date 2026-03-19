@@ -1,106 +1,161 @@
 name: CI
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - 'CONTRIBUTING.md'
+      - 'CODE_OF_CONDUCT.md'
+      - 'LICENSE.md'
+      - 'README.md'
+      - 'NEWS.md'
+      - 'ADMINISTRATORS'
+      - 'benchmark/**'
+      - 'docs/**'
+  pull_request:
+    paths-ignore:
+      - 'CONTRIBUTING.md'
+      - 'CODE_OF_CONDUCT.md'
+      - 'LICENSE.md'
+      - 'README.md'
+      - 'NEWS.md'
+      - 'ADMINISTRATORS'
+      - 'benchmark/**'
+      - 'docs/**'
+  workflow_dispatch: # Allow manual triggering of the workflow from the Actions tab
 
-# Cancel redundant CI tests automatically
+# Cancel redundant CI runs: always for PRs, never for pushes to master
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 jobs:
-  test: # Main CI tests
-    name: Tests ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
+  prime-cache: # If cold cache, create a cache entry for each version/os/arch combination in the test matrix, without running tests
+    name: Prime cache - ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
-      matrix: # Main tests for linux
-        version:
-          - '1.9'
-          - '1.10'
-          - '1.11'
-        os:
-          - ubuntu-latest
-        arch:
-          - x64
-        include: # Test macos/windows on latest LTS + x86 on ubuntu
-          - version: '1.10'
-            os: macos-latest
-            arch: aarch64
-          - version: '1.10'
-            os: windows-latest
-            arch: x64
-          - version: '1.10'
-            os: ubuntu-latest
-            arch: x86
+      matrix:
+        include:
+          - {version: 'lts', os: ubuntu-latest,  arch: x64}
+          - {version: '1',   os: ubuntu-latest,  arch: x64}
+          - {version: 'lts', os: macos-latest,   arch: aarch64}
+          - {version: 'lts', os: windows-latest, arch: x64}
+          - {version: 'lts', os: ubuntu-latest,  arch: x86}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+
+  test: # Linux, lts + latest, all testcases in parallel
+    needs: [prime-cache]
+    name: ${{ matrix.testcase }} - ${{ matrix.version }} - ubuntu-latest - x64 - ${{ github.event_name }}
+    runs-on: ubuntu-latest
+    env:
+      DO_COVERAGE: ${{ matrix.version == 'lts' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - 'lts'
+          - '1'
+        testcase:
+          - unit-basics
+          - unit-fields
+          - unit-referencefes
+          - unit-geometry
+          - unit-celldata
+          - unit-visualization
+          - unit-fespaces-1
+          - unit-fespaces-2
+          - unit-multifield
+          - unit-odes
+          - unit-adaptivity
+          - drivers
+    steps:
+      - uses: actions/checkout@v6
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+          arch: x64
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+        with:
+          coverage: ${{ env.DO_COVERAGE }}
+        env:
+          TESTCASE: ${{ matrix.testcase }}
       - uses: julia-actions/julia-processcoverage@v1
+        if: ${{ env.DO_COVERAGE }}
       - uses: codecov/codecov-action@v5
+        if: ${{ env.DO_COVERAGE }}
         with:
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
-          flags: tests
+          flags: ${{ matrix.testcase }}
 
-  drivers:
-    name: Drivers ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
-    runs-on: ${{ matrix.os }}
+  test-crossplatform: # macOS/Windows/x86, lts only, all testcases in parallel
+    needs: [prime-cache]
+    name: ${{ matrix.testcase }} - lts - ${{ matrix.config.os }} - ${{ matrix.config.arch }} - ${{ github.event_name }}
+    runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - '1.10'
-        os:
-          - ubuntu-latest
-        arch:
-          - x64
+        testcase:
+          - unit-basics
+          - unit-fields
+          - unit-referencefes
+          - unit-geometry
+          - unit-celldata
+          - unit-visualization
+          - unit-fespaces-1
+          - unit-fespaces-2
+#          - unit-multifield
+#          - unit-odes
+#          - unit-adaptivity
+#          - drivers
+        config:
+          - {os: macos-latest,   arch: aarch64}
+          - {os: windows-latest, arch: x64}
+          - {os: ubuntu-latest,  arch: x86}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v2
         with:
-          version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
+          version: 'lts'
+          arch: ${{ matrix.config.arch }}
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
-      - run: |
-          julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.instantiate()'
-          julia --color=yes --project=. --depwarn=yes -e 'include("test/GridapTests/runtests.jl")'
-      - uses: julia-actions/julia-processcoverage@v1
-      - uses: codecov/codecov-action@v5
+      - uses: julia-actions/julia-runtest@v1
         with:
-          verbose: true
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: drivers
+          coverage: false
+        env:
+          TESTCASE: ${{ matrix.testcase }}
+
   extensions:
-    name: Extensions ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
-    runs-on: ${{ matrix.os }}
+    needs: [prime-cache]
+    name: Extensions - ${{ matrix.version }} - ubuntu-latest - x64 - ${{ github.event_name }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         version:
-          - '1.10'
-        os:
-          - ubuntu-latest
-        arch:
-          - x64
+          - '1'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
+          arch: x64
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - run: |
           julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.instantiate()'
           julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.add(["Test", "TikzPictures"])'
-          julia --color=yes --project=. --depwarn=yes -e 'include("test/ExtensionTests/runtests.jl")'
+          julia --color=yes --project=. --code-coverage=user --depwarn=yes -e 'include("test/ExtensionTests/runtests.jl")'
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v5
         with:

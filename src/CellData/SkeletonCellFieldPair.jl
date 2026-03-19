@@ -1,25 +1,27 @@
 """
-  SkeletonCellFieldPair is a special construct for allowing uh.plus
-  and uh.minus to be two different CellFields. In particular, it is
-  useful when we need one of the CellFields to be the dualized
-  version of the other for performing ForwardDiff AD of a Skeleton
-  integration DomainContribution wrt to the degrees of freedom
-  of the CellField, plus and minus sensitivities done separately,
-  so as to restrict the interaction between the dual numbers.
+    struct SkeletonCellFieldPair{...}
 
-  It takes in two CellFields and stores plus version of CellFieldAt
-  of the first CellField and minus version of CellFieldAt of the
-  second the CellField. SkeletonCellFieldPair is associated with
-  same triangulation as that of the CellFields (we check if the
-  triangulations of both CellFields match)
+`SkeletonCellFieldPair` is a special construct for allowing `uh.plus`
+and `uh.minus` to be two different `CellField`s. In particular, it is
+useful when we need one of the `CellField`s to be the dualized
+version of the other for performing ForwardDiff AD of a skeleton
+integration `DomainContribution` wrt to the degrees of freedom
+of the `CellField`, plus and minus sensitivities done separately,
+so as to restrict the interaction between the dual numbers.
 
-  SkeletonCellFieldPair is an internal convenience artifact/construct
-  to aid in dualizing plus and minus side around a Skeleton face separately
-  to perform the sensitivity of degrees of freedom of cells sharing the
-  Skeleton face, without the interaction dual numbers of the two cells.
-  The user doesn't have to deal with this construct anywhere when
-  performing AD of functionals involving integration over Skeleton faces
-  using the public API.
+It takes in two `CellField`s and stores plus version of `CellFieldAt`
+of the first `CellField` and minus version of `CellFieldAt` of the
+second the `CellField`. `SkeletonCellFieldPair` is associated with
+same triangulation as that of the `CellField`s (we check if the
+triangulations of both `CellField`s match)
+
+`SkeletonCellFieldPair` is an internal convenience artifact/construct
+to aid in dualizing plus and minus side around a skeleton face separately
+to perform the sensitivity of degrees of freedom of cells sharing the
+skeleton face, without the interaction dual numbers of the two cells.
+The user doesn't have to deal with this construct anywhere when
+performing AD of functionals involving integration over skeleton faces
+using the public API.
 """
 struct SkeletonCellFieldPair{
   P<:CellFieldAt, M<:CellFieldAt, T<:Triangulation} <: CellField

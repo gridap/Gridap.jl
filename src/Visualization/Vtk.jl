@@ -1,4 +1,31 @@
 """
+    writevtk(object, filebase; kwargs...)
+
+Exports a `Triangulation`, `DiscreteModel`, or other Gridap objects to a VTK file.
+
+# Available Constructors
+- `writevtk(grid::Grid, filebase; celldata=Dict(), nodaldata=Dict())`
+- `writevtk(trian::Triangulation, filebase; order=-1, nsubcells=-1, celldata=Dict(), cellfields=Dict())`
+- `writevtk(model::DiscreteModel, filebase; labels=get_face_labeling(model))`
+- `writevtk(polytope::Polytope, filebase)`
+- `writevtk(reffe::LagrangianRefFE, filebase)`
+- `writevtk(cell_point::CellPoint, filebase; cellfields=Dict())`
+
+# Keyword Arguments
+- `celldata::Dict` or `nodaldata::Dict`: Dictionaries of arrays/fields to export as cell-wise or node-wise data.
+- `cellfields::Dict`: Dictionary of `CellField` objects to export.
+- `order::Int=-1`: Interpolates the object into high-order Lagrangian nodes.
+- `nsubcells::Int=-1`: Interpolates the object into a piecewise-order space within each cell (using `nsubcells` per direction).
+- `kwargs...`: Additional keyword arguments (e.g., `compress`, `append`, `ascii`, `vtkversion`) are passed to the underlying `vtk_grid` function from `WriteVTK.jl`.
+
+# Examples
+```julia
+# Visualize a triangulation with cell data
+writevtk(trian, "results", celldata=["err" => e], nodaldata=["uh" => uh])
+
+# Visualize a high-order field using sub-cells
+writevtk(trian, "results", nsubcells=10, cellfields=["uh" => uh])
+```
 """
 function writevtk(args...;compress=false,append=true,ascii=false,vtkversion=:default,kwargs...)
   map(visualization_data(args...;kwargs...)) do visdata
@@ -10,6 +37,14 @@ function writevtk(args...;compress=false,append=true,ascii=false,vtkversion=:def
 end
 
 """
+    createvtk(args...; kwargs...) -> vtkFile
+
+Prepares a VTK object without immediately writing it to disk.
+
+This is useful for advanced customization before calling `vtk_save`. The arguments
+are the same as for `writevtk`. Keyword arguments (e.g., `compress`, `append`, 
+`ascii`, `vtkversion`) are passed to the underlying `vtk_grid` function 
+from `WriteVTK.jl`.
 """
 function createvtk(args...;compress=false,append=true,ascii=false,vtkversion=:default,kwargs...)
   v = visualization_data(args...;kwargs...)
@@ -22,6 +57,24 @@ function createvtk(args...;compress=false,append=true,ascii=false,vtkversion=:de
 end
 
 """
+    createpvd(filebase) do pvd
+      pvd[time] = vtk_file
+    end
+    createpvd(filebase) -> pvd
+
+Creates a ParaView Data (PVD) collection for time-dependent visualization.
+
+Can be used as a context manager (with `do` block) to automatically save the
+collection, or manually by calling `savepvd`.
+
+# Examples
+```julia
+createpvd("timeseries") do pvd
+  for (t, uh) in simulation_steps
+    pvd[t] = createvtk(trian, "results_\$t", cellfields=["uh" => uh])
+  end
+end
+```
 """
 function createpvd(args...;kwargs...)
   paraview_collection(args...;kwargs...)
@@ -36,6 +89,9 @@ function createpvd(f,parts::Nothing,args...;kwargs...)
 end
 
 """
+    savepvd(pvd)
+
+Manually saves a ParaView Data (PVD) collection to disk.
 """
 function savepvd(pvd::WriteVTK.CollectionFile)
   vtk_save(pvd)
