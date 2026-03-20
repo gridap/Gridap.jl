@@ -205,7 +205,7 @@ end
 # reasonable quadrature rule to integrate the shape functions. Only used by FESpace
 # constructors that need to integrate the shape functions (e.g., ZeroMeanFESpace).
 
-Conformity(cell_fe::CellFE) = cell_fe.conformity
+ReferenceFEs.Conformity(cell_fe::CellFE) = cell_fe.conformity
 CellConformity(cell_fe::CellFE) = cell_fe.cell_conformity
 Geometry.num_cells(cell_fe::CellFE) = num_cells(CellConformity(cell_fe))
 Geometry.get_cell_type(cell_fe::CellFE) = get_cell_type(CellConformity(cell_fe))
