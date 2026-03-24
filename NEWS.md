@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.3] - 2026-03-23
+
+### Fixed
+
+- Fixed FEEC basis constructor for serendipity reffes. since PR[#1260](https://github.com/gridap/Gridap.jl/pull/1260).
+
 ## [0.20.2] - 2026-03-20
 
 ### Fixed

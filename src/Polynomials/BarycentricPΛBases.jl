@@ -18,7 +18,7 @@ function FEEC_space_definition_checks(
     @check k in (0, D) "Basis for Cartesian product of polynomial space only possible for `k` = 0 or `D`, got k=$k and D=$D"
     @check T<:Number
   else
-    @check T<:Real "T needs to be <:Real since represents the scalar type, got $T"
+    @check T<:Real "T needs to be <:Real since represents the scalar type, got $T. If you want to define a Cartesian product FEEC basis, use `cart_prod=true`"
   end
   @check F in (:P⁻,:P,:Q⁻,:S) "F must be either :P⁻,:P,:Q⁻ or :S, got $F."
   @check k in 0:D "The form order k must be in 0:D, got k=$k and D=$D."
