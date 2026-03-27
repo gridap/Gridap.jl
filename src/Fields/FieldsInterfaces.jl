@@ -100,6 +100,10 @@ push_∇(∇a::Field,ϕ::Field) = pinvJt(∇(ϕ))⋅∇a
 """
     function pinvJt(Jt::MultiValue{Tuple{D,D}}) = inv(Jt)
     function pinvJt(Jt::MultiValue{Tuple{D1,D2}}) = transpose(inv(Jt⋅transpose(J))⋅Jt)
+
+(right pseudo-)inverse of `Jt`, the matrix such that `Jt*pinvJt(Jt) = I`.
+
+Requires `D1` < `D2` for non-square matrices.
 """
 function pinvJt(Jt::MultiValue{Tuple{D,D}}) where D
   inv(Jt)
