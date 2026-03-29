@@ -119,4 +119,15 @@ test_single_field_fe_space(Vc3)
 @test Vc3.sDOF_to_mdofs == Vc.sDOF_to_mdofs
 @test Vc3.sDOF_to_coeffs == Vc.sDOF_to_coeffs
 
+# ConstraintHandler constructor
+n_dofs = num_free_dofs(V) + num_dirichlet_dofs(V)
+ch = ConstraintHandler(n_dofs)
+add_constraint!(ch, 1, [4], [0.5], 0.0)   # x1 = 0.5*x4  (free slave, free master)
+add_constraint!(ch, 5, [4, 6], [0.5, 0.5]) # x5 = 0.5*(x4+x6)
+close!(ch)
+
+Vc4 = FESpaceWithLinearConstraints(V, ch)
+test_single_field_fe_space(Vc4)
+@test num_free_dofs(Vc4) == num_free_dofs(V) - 2
+
 end # module

@@ -120,13 +120,8 @@ function FESpaceWithLinearConstraints(
   return FESpaceWithLinearConstraints(DOF_to_dofs,DOF_to_coeffs,space)
 end
 
-function _dof_to_DOF(dof,n_fdofs)
-  ifelse(iszero(dof), 0, ifelse(dof > 0, dof, n_fdofs - dof))
-end
-
-function _DOF_to_dof(DOF,n_fdofs)
-  ifelse(DOF > n_fdofs, -(DOF - n_fdofs), DOF)
-end
+_dof_to_DOF(dof, n_fdofs) = ifelse(iszero(dof), 0, ifelse(dof > 0, dof, n_fdofs - dof))
+_DOF_to_dof(DOF, n_fdofs) = ifelse(DOF > n_fdofs, -(DOF - n_fdofs), DOF)
 
 # Implementation of FESpace interface
 
