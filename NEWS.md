@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The element type of a `LinearCombinationDofVector` is now `LinearCombinationDof`, since PR[#1266](https://github.com/gridap/Gridap.jl/pull/1266).
+
 ## [0.20.3] - 2026-03-23
 
 ### Fixed
