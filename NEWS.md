@@ -5,7 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.19.10] - 2026-04-02
+
+### Added 
+- Changed inner constructor signature of UnstructuredDiscreteModel with flexibility in mind (as per required by GridapGeosciences.jl). Added a new outer constructor as the old inner contructor with backward compatibility in mind. Since PR[#1264](https://github.com/gridap/Gridap.jl/pull/1264)
 
 ## [0.19.9] - 2026-03-14
 
