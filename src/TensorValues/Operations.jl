@@ -550,7 +550,7 @@ the specific functions above if possible), but is used as default generic implem
   ::Val{N}, a::MultiValue{Sa,Ta,Na}, b::MultiValue{Sb,Tb,Nb}) where {N,Sa,Ta,Na,Sb,Tb,Nb}
 
   @assert ( Sa <: Tuple && Sb <: Tuple ) "Ill-defined MultiValue value"
-
+  
   # check that no tensor is of order 0.
   if min(Na,Nb) == 0
     msg =  "Generic $N-contraction only implemented if both tensors are of order ≥ 1,
@@ -574,13 +574,13 @@ the specific functions above if possible), but is used as default generic implem
   Sr = tuple(Sa_keep..., Sb_keep...)
   Nr = length(Sr)
   Vstr = if Nr == 0
-    "promote_type(Ta,Tb)"
+    "typeof(zero(Ta)*zero(Tb))"
   elseif Nr == 1
-    "VectorValue{$(Sr[1]),promote_type(Ta,Tb)}"
+    "VectorValue{$(Sr[1]),typeof(zero(Ta)*zero(Tb))}"
   elseif Nr == 2
-    "TensorValue{$(Sr[1]),$(Sr[2]),promote_type(Ta,Tb)}"
+    "TensorValue{$(Sr[1]),$(Sr[2]),typeof(zero(Ta)*zero(Tb))}"
   else
-    "HighOrderTensorValue{$(Tuple{Sr...}),promote_type(Ta,Tb)}"
+    "HighOrderTensorValue{$(Tuple{Sr...}),typeof(zero(Ta)*zero(Tb))}"
   end
 
   if (iszero(length(a)) || iszero(length(b)))
