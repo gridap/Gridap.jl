@@ -236,7 +236,7 @@ end
 inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N}) where {S,Ta,Tb,N} = contracted_product(Val(N),a,b)
 
 @generated function inner(a::AbstractSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
-  iszero(D) && return :(zero($(promote_type(Ta, Tb))))
+  iszero(D) && return :(zero($(Base.promote_op(*,Ta,Tb))))
   str = ""
   for i in 1:D
     str *= "+ a[$i,$i]*b[$i,$i]"
@@ -252,7 +252,7 @@ inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N}) where {S,Ta,Tb,N} = contract
 end
 
 @generated function inner(a::SymFourthOrderTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
-  iszero(D) && return :(zero($(promote_type(Ta, Tb))))
+  iszero(D) && return :(zero($(Base.promote_op(*,Ta,Tb))))
 
   S = Tuple{D,D,D,D}
   VInt = change_eltype(a, Int)
@@ -271,15 +271,15 @@ end
 end
 
 function inner(a::SkewSymTensorValue{D,Ta}, b::SkewSymTensorValue{D,Tb}) where {D,Ta,Tb}
-  iszero(D) && return zero(promote_type(Ta, Tb))
+  iszero(D) && return zero(Base.promote_op(*,Ta,Tb))
   2 * inner(VectorValue(a.data), VectorValue(b.data))
 end
 
 function inner(a::SkewSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
-  zero(promote_type(Ta,Tb))
+  zero(Base.promote_op(*,Ta,Tb))
 end
 function inner(a::AbstractSymTensorValue{D,Tb}, b::SkewSymTensorValue{D,Ta}) where {D,Ta,Tb}
-  zero(promote_type(Ta,Tb))
+  zero(Base.promote_op(*,Ta,Tb))
 end
 
 # TODO These two methods make no sense and shold be removed
@@ -342,7 +342,7 @@ end
 
 # c_ijkl = a_ijmn*b_mnkl (general case)
 @generated function double_contraction(a::SymFourthOrderTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
-  iszero(D) && return :(SymFourthOrderTensorValue{0,$(promote_type(Ta, Tb))}())
+  iszero(D) && return :(SymFourthOrderTensorValue{0,$(Base.promote_op(*,Ta,Tb))}())
 
   str = ""
   for j in 1:D
@@ -394,7 +394,7 @@ end
 
 # c_ij = a_ijkl*b_kl
 @generated function double_contraction(a::SymFourthOrderTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
-  iszero(D) && return :(zero(SymTensorValue{D,$(promote_type(Ta, Tb))}))
+  iszero(D) && return :(zero(SymTensorValue{D,$(Base.promote_op(*,Ta,Tb))}))
   str = ""
   for i in 1:D
     for j in i:D
@@ -415,7 +415,7 @@ end
 
 # c_ij = a_kl*b_klij
 @generated function double_contraction(a::AbstractSymTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
-  iszero(D) && return :(zero(SymTensorValue{D,$(promote_type(Ta, Tb))}))
+  iszero(D) && return :(zero(SymTensorValue{D,$(Base.promote_op(*,Ta,Tb))}))
   str = ""
   for i in 1:D
     for j in i:D
@@ -457,7 +457,7 @@ Given a square second order tensors `a` and `b`, return `b`ᵀ⋅`a`⋅`b`.
 The type of the resulting value is (skew) symmetric stable w.r.t. `typeof(a)`.
 """
 function congruent_prod(a::MultiValue{Tuple{D,D},Ta}, b::MultiValue{Tuple{D,D1},Tb}) where {D,D1,Ta,Tb}
-  T = promote_type(Ta, Tb)
+  T = Base.promote_op(*,Ta,Tb)
   V = _congruent_ret_type(a, D1)
   (iszero(D) || iszero(D1)) && return zero(V{T})
   V{T}(get_array(transpose(b) ⋅ a ⋅ b))
@@ -505,7 +505,7 @@ outer(a::MultiValue, b::MultiValue) = contracted_product(Val(0), a, b)
 
 # c_ijkl = a_ij*b_kl
 @generated function outer(a::AbstractSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
-  iszero(D) && return :(zero(SymFourthOrderTensorValue{D,$(promote_type(Ta, Tb))}))
+  iszero(D) && return :(zero(SymFourthOrderTensorValue{D,$(Base.promote_op(*,Ta,Tb))}))
   str = ""
   for i in 1:D
     for j in i:D
@@ -574,13 +574,13 @@ the specific functions above if possible), but is used as default generic implem
   Sr = tuple(Sa_keep..., Sb_keep...)
   Nr = length(Sr)
   Vstr = if Nr == 0
-    "promote_type(Ta,Tb)"
+    "Base.promote_op(*,Ta,Tb)"
   elseif Nr == 1
-    "VectorValue{$(Sr[1]),promote_type(Ta,Tb)}"
+    "VectorValue{$(Sr[1]),Base.promote_op(*,Ta,Tb)}"
   elseif Nr == 2
-    "TensorValue{$(Sr[1]),$(Sr[2]),promote_type(Ta,Tb)}"
+    "TensorValue{$(Sr[1]),$(Sr[2]),Base.promote_op(*,Ta,Tb)}"
   else
-    "HighOrderTensorValue{$(Tuple{Sr...}),promote_type(Ta,Tb)}"
+    "HighOrderTensorValue{$(Tuple{Sr...}),Base.promote_op(*,Ta,Tb)}"
   end
 
   if (iszero(length(a)) || iszero(length(b)))
