@@ -119,6 +119,48 @@ test_single_field_fe_space(Vc3)
 @test Vc3.sDOF_to_mdofs == Vc.sDOF_to_mdofs
 @test Vc3.sDOF_to_coeffs == Vc.sDOF_to_coeffs
 
+###################################################################################
+# Affine constraints — nonzero offsets
+
+# All-zero offsets: no fictitious masters should be added, result identical to Vc
+Vca0 = FESpaceWithLinearConstraints(
+  sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, V; sDOF_to_offsets=zeros(3)
+)
+@test num_free_dofs(Vca0) == num_free_dofs(Vc)
+@test num_dirichlet_dofs(Vca0) == num_dirichlet_dofs(Vc)
+@test isempty(Vca0.dmdof_to_offsets)
+
+# Two nonzero offsets: slaves 1 and 3 get shifts of +2 and -1 respectively
+sDOF_to_offsets_affine = [2.0, 0.0, -1.0]
+Vca = FESpaceWithLinearConstraints(
+  sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, V; sDOF_to_offsets=sDOF_to_offsets_affine
+)
+
+test_single_field_fe_space(Vca)
+@test has_constraints(Vca)
+@test num_free_dofs(Vca) == 4
+@test num_dirichlet_dofs(Vca) == 4       # 2 real Dirichlet masters + 2 fictitious
+@test Vca.dmdof_to_offsets ≈ [2.0, -1.0] # nonzero offsets, in slave order
+
+dvals_ca = get_dirichlet_dof_values(Vca) # get_dirichlet_dof_values injects offsets into the last entries
+@test length(dvals_ca) == 4
+@test dvals_ca[end-1:end] ≈ [2.0, -1.0]
+
+# Scatter test: same master values as the homogeneous case, plus offset values for the fictitious masters.
+# dmdof layout: [Dir master 1, Dir master 2, fictitious for slave-1 offset, fictitious for slave-3 offset]
+fmdof_to_val_a = collect(Float64, 1:num_free_dofs(Vca))     # [1, 2, 3, 4]
+dmdof_to_val_a = vcat(-collect(Float64, 1:2), [2.0, -1.0])  # [-1, -2, 2.0, -1.0]
+vca = FEFunction(Vca, fmdof_to_val_a, dmdof_to_val_a)
+
+# Expected slave values:
+#   free DOF 1:  0.5*(-1.0) + 0.5*3.0 + 1.0*2.0  =  3.0  (homogeneous was 1.0)
+#   free DOF 5:  0.5*3.0   + 0.5*4.0              =  3.5  (offset 0 → unchanged)
+#   Dir  DOF 2:  0.5*(-1.0) + 0.5*(-2.0) + 1.0*(-1.0) = -2.5  (homogeneous was -1.5)
+r_affine = [[-1.0, -2.5, 3.0, 1.0], [-2.5, -2.0, 1.0, 2.0],
+            [3.0, 1.0, 3.0, 3.5], [1.0, 2.0, 3.5, 4.0]]
+@test get_cell_dof_values(vca) ≈ r_affine
+
+###################################################################################
 # ConstraintHandler constructor
 n_dofs = num_free_dofs(V) + num_dirichlet_dofs(V)
 ch = ConstraintHandler(n_dofs)
