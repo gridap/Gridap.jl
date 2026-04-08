@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed type inference for operations between MultiValue types. Since PR[1270](https://github.com/gridap/Gridap.jl/pull/1270).
+- Allow autodifferentiation of functions that require a VectorValue input. Since PR[1271](https://github.com/gridap/Gridap.jl/pull/1271).
 
 ## [0.20.3] - 2026-03-23
 
