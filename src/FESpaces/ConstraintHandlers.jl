@@ -81,41 +81,81 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    add_constraint!(ch, line::ConstraintLine)
+    add_constraint!(ch, line; on_conflict=nothing)
 
 Register a pre-built `ConstraintLine`. The other `add_constraint!` methods
 delegate to this one.
+
+When `on_conflict` is `nothing` (default), constraining an already-constrained
+DoF raises an error. Otherwise `on_conflict(existing, incoming) → ConstraintLine`
+is called and its return value replaces the stored line.
 """
-function add_constraint!(ch::ConstraintHandler{T}, line::ConstraintLine{T}) where T
+function add_constraint!(
+  ch::ConstraintHandler{T}, line::ConstraintLine{T};
+  on_conflict = nothing
+) where T
   @check !ch.closed "Cannot add constraints after close!()"
   @check 1 <= line.dof <= ch.n_dofs "DoF $(line.dof) out of range [1, $(ch.n_dofs)]"
-  @check !is_constrained(ch, line.dof) "DoF $(line.dof) is already constrained"
   @check length(line.masters) == length(line.coeffs) "masters and coeffs must have the same length"
   for master in line.masters
     @check 1 <= master <= ch.n_dofs "Master DoF $master out of range [1, $(ch.n_dofs)]"
     @check master != line.dof "Self-referential constraint on DoF $(line.dof)"
   end
-  push!(ch.constraints, line)
-  ch.dof_to_constraint[line.dof] = length(ch.constraints)
+  dof = line.dof
+  if !is_constrained(ch, dof)
+    push!(ch.constraints, line)
+    ch.dof_to_constraint[dof] = length(ch.constraints)
+  elseif isnothing(on_conflict)
+    error("Constraint conflict on DoF $dof:\n" *
+          "  existing: $(ch.constraints[ch.dof_to_constraint[dof]])\n" *
+          "  incoming: $line")
+  else
+    idx = ch.dof_to_constraint[dof]
+    ch.constraints[idx] = on_conflict(ch.constraints[idx], line)
+  end
   return ch
 end
 
 """
-    add_constraint!(ch, dof, masters, coeffs, offset=zero(T))
+    add_constraint!(ch, dof, masters, coeffs, offset=zero(T); on_conflict=nothing)
 
 Register the linear constraint  x[dof] = Σ coeffs[i] * x[masters[i]] + offset.
 
-Both `masters` and `coeffs` are copied internally, so the caller can safely reuse 
+Both `masters` and `coeffs` are copied internally, so the caller can safely reuse
 or modify them after the call.
 """
 function add_constraint!(
   ch::ConstraintHandler{T}, dof::Int,
-  masters::AbstractVector{<:Integer}, 
-  coeffs::AbstractVector{<:Number}, 
-  offset::Number=zero(T)
+  masters::AbstractVector{<:Integer},
+  coeffs::AbstractVector{<:Number},
+  offset::Number = zero(T);
+  kwargs...
 ) where T
-  # collect ensures ConstraintLine owns its data regardless of what the caller passes in
-  add_constraint!(ch, ConstraintLine{T}(dof, collect(Int, masters), collect(T, coeffs), T(offset)))
+  @check !ch.closed "Cannot add constraints to a closed handler"
+  @check length(masters) == length(coeffs)
+  line = ConstraintLine{T}(dof, collect(Int, masters), collect(T, coeffs), T(offset))
+  add_constraint!(ch, line; kwargs...)
+  return ch
+end
+
+function add_constraint!(
+  ch::ConstraintHandler{T},
+  dofs::AbstractVector{<:Integer},
+  masters::AbstractVector{<:Integer},
+  coeffs::AbstractMatrix{<:Number},
+  offsets::AbstractVector{<:Number} = zeros(T, size(coeffs, 1));
+  kwargs...
+) where T
+  n_s, n_m = length(dofs), length(masters)
+  @check size(coeffs, 1) == n_s "coeffs has $(size(coeffs,1)) rows but dofs has $n_s entries"
+  @check size(coeffs, 2) == n_m "coeffs has $(size(coeffs,2)) cols but masters has $(length(masters)) entries"
+  @check length(offsets) == n_s "offsets has $(length(offsets)) entries but dofs has $n_s entries"
+  @inbounds for j in 1:n_s
+    add_constraint!(
+      ch, dofs[j], masters, view(coeffs, j, :), offsets[j]; kwargs...
+    )
+  end
+  return ch
 end
 
 """
@@ -123,8 +163,8 @@ end
 
 Register a Dirichlet constraint  x[dof] = offset  (no master DoFs).
 """
-function add_constraint!(ch::ConstraintHandler{T}, dof::Int, offset::Number) where T
-  add_constraint!(ch, ConstraintLine{T}(dof, Int[], T[], T(offset)))
+function add_constraint!(ch::ConstraintHandler{T}, dof::Int, offset::Number; kwargs...) where T
+  add_constraint!(ch, ConstraintLine{T}(dof, Int[], T[], T(offset)); kwargs...)
 end
 
 """
@@ -162,18 +202,7 @@ function Base.merge!(a::ConstraintHandler{T}, b::ConstraintHandler{T}; on_confli
   @check !a.closed && !b.closed "Both handlers must be open to merge"
   @check a.n_dofs == b.n_dofs "Handlers have incompatible sizes: $(a.n_dofs) vs $(b.n_dofs)"
   for line in b.constraints
-    dof = line.dof
-    cid = a.dof_to_constraint[dof]
-    if !is_constrained(a, dof)
-      push!(a.constraints, line)
-      a.dof_to_constraint[dof] = length(a.constraints)
-    elseif isnothing(on_conflict)
-      existing = a.constraints[cid]
-      error("Constraint conflict on DoF $(dof):\n  existing: $existing\n  incoming: $line")
-    else
-      existing = a.constraints[cid]
-      a.constraints[cid] = on_conflict(existing, line)
-    end
+    add_constraint!(a, line; on_conflict)
   end
   return a
 end
