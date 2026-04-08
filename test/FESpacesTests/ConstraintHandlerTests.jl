@@ -314,7 +314,7 @@ close!(ch)
 
 ch = ConstraintHandler(5)
 add_constraint!(ch, 2, [1], [1.0])
-@test_throws AssertionError add_constraint!(ch, 2, [3], [1.0])
+@test_throws ErrorException add_constraint!(ch, 2, [3], [1.0])
 
 ch = ConstraintHandler(5)
 @test_throws AssertionError add_constraint!(ch, 0, 0.0)

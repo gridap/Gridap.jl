@@ -59,6 +59,7 @@ struct FESpaceWithLinearConstraints{S<:SingleFieldFESpace} <: SingleFieldFESpace
   sDOF_to_mdofs::Table
   sDOF_to_coeffs::Table
   cell_to_mdofs::Table
+  dmdof_to_offsets::Vector
   n_free::Int
 end
 
@@ -70,7 +71,8 @@ function FESpaceWithLinearConstraints(
   sDOF_to_dof::AbstractVector{<:Integer},
   sDOF_to_mdofs::Table,
   sDOF_to_coeffs::Table,
-  n_fmdofs::Int = _count_free_mdofs(mDOF_to_dof,sDOF_to_mdofs)
+  n_fmdofs::Int = _count_free_mdofs(mDOF_to_dof,sDOF_to_mdofs),
+  dmdof_to_offsets::AbstractVector = zeros(Float64, length(mDOF_to_dof) - n_fmdofs)
 )
   cell_to_mdofs = _generate_cell_to_mdofs(
     space, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs, n_fmdofs
@@ -78,7 +80,7 @@ function FESpaceWithLinearConstraints(
   @check _check_constraints(space, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs, n_fmdofs)
   return FESpaceWithLinearConstraints(
     space, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs,
-    sDOF_to_coeffs, cell_to_mdofs, n_fmdofs
+    sDOF_to_coeffs, cell_to_mdofs, dmdof_to_offsets, n_fmdofs
   )
 end
 
@@ -86,24 +88,31 @@ function FESpaceWithLinearConstraints(
   sDOF_to_dof::AbstractVector{<:Integer},
   sDOF_to_dofs::Table,
   sDOF_to_coeffs::Table,
-  space::SingleFieldFESpace
+  space::SingleFieldFESpace;
+  sDOF_to_offsets=nothing
 )
-  mDOF_to_dof, sDOF_to_mdofs, nfmdofs = _find_master_dofs(
-    sDOF_to_dof, sDOF_to_dofs, space
-  )
+  mDOF_to_dof, sDOF_to_mdofs, n_fmdofs, n_dmdofs =
+    _find_master_dofs(sDOF_to_dof, sDOF_to_dofs, space)
+  if !isnothing(sDOF_to_offsets)
+    mDOF_to_dof, sDOF_to_mdofs, sDOF_to_coeffs, dmdof_to_offsets =
+      _attach_offsets(mDOF_to_dof, sDOF_to_mdofs, sDOF_to_coeffs, sDOF_to_offsets, n_dmdofs)
+  else
+    dmdof_to_offsets = eltype(sDOF_to_coeffs.data)[]
+  end
   return FESpaceWithLinearConstraints(
-    space, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs, sDOF_to_coeffs, nfmdofs 
+    space, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs, sDOF_to_coeffs, n_fmdofs, dmdof_to_offsets
   )
 end
 
 function FESpaceWithLinearConstraints(
-  DOF_to_dofs::Table, DOF_to_coeffs::Table, space::SingleFieldFESpace
+  DOF_to_dofs::Table, DOF_to_coeffs::Table, space::SingleFieldFESpace,
+  DOF_to_offsets=nothing
 )
-  sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs = _filter_constraints(
-    DOF_to_dofs, DOF_to_coeffs, space
+  sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, sDOF_to_offsets = _filter_constraints(
+    DOF_to_dofs, DOF_to_coeffs, DOF_to_offsets, space
   )
   return FESpaceWithLinearConstraints(
-    sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, space
+    sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, space; sDOF_to_offsets
   )
 end
 
@@ -112,12 +121,12 @@ function FESpaceWithLinearConstraints(
   fdof_to_coeffs::Table,
   ddof_to_dofs::Table,
   ddof_to_coeffs::Table,
-  space::SingleFieldFESpace)
-
+  space::SingleFieldFESpace
+)
   DOF_to_dofs, DOF_to_coeffs = _merge_free_and_diri_constraints(
     fdof_to_dofs, fdof_to_coeffs, ddof_to_dofs, ddof_to_coeffs
   )
-  return FESpaceWithLinearConstraints(DOF_to_dofs,DOF_to_coeffs,space)
+  return FESpaceWithLinearConstraints(DOF_to_dofs, DOF_to_coeffs, space)
 end
 
 _dof_to_DOF(dof, n_fdofs) = ifelse(iszero(dof), 0, ifelse(dof > 0, dof, n_fdofs - dof))
@@ -155,10 +164,10 @@ end
 
 function get_dirichlet_dof_values(f::FESpaceWithLinearConstraints)
   ddof_to_val = get_dirichlet_dof_values(f.space)
-  dmdof_to_val = zeros(eltype(ddof_to_val),num_dirichlet_dofs(f))
-  _ddof_to_dmdof_vals!(
-    dmdof_to_val,ddof_to_val,f.mDOF_to_dof
-  ) 
+  dmdof_to_val = zeros(eltype(ddof_to_val), num_dirichlet_dofs(f))
+  _ddof_to_dmdof_vals!(dmdof_to_val, ddof_to_val, f.mDOF_to_dof)
+  n_offsets = length(f.dmdof_to_offsets)
+  dmdof_to_val[end-n_offsets+1:end] .= f.dmdof_to_offsets
   return dmdof_to_val
 end
 
@@ -337,9 +346,8 @@ function LinearConstraintsMap(
   sDOF_to_coeffs::Table,
   space::SingleFieldFESpace
 )
-  mDOF_to_dof, sDOF_to_mdofs, n_fmdofs = _find_master_dofs(
-    sDOF_to_dof, sDOF_to_dofs, space
-  )
+  mDOF_to_dof, sDOF_to_mdofs, n_fmdofs, _ =
+    _find_master_dofs(sDOF_to_dof, sDOF_to_dofs, space)
   DOF_to_msDOF = generate_DOF_to_msDOF_map(space,mDOF_to_dof,sDOF_to_dof)
   return LinearConstraintsMap(
     DOF_to_msDOF, sDOF_to_mdofs, sDOF_to_coeffs,
@@ -437,17 +445,20 @@ function _check_constraints(
   return true
 end
 
-function _filter_constraints(DOF_to_dofs, DOF_to_coeffs, space)
+function _filter_constraints(DOF_to_dofs, DOF_to_coeffs, DOF_to_offsets, space)
   n_fdofs = num_free_dofs(space)
-  isslave(DOF,dofs) = (dofs != [_DOF_to_dof(DOF,n_fdofs)])  
+  isslave(DOF,dofs) = (dofs != [_DOF_to_dof(DOF,n_fdofs)])
   sDOF_to_DOF = findall(map(isslave,eachindex(DOF_to_dofs),DOF_to_dofs))
   sDOF_to_dof = map(Base.Fix2(_DOF_to_dof,n_fdofs),sDOF_to_DOF)
-  sDOF_to_dofs = DOF_to_dofs[sDOF_to_DOF]
-  sDOF_to_coeffs = DOF_to_coeffs[sDOF_to_DOF]
-  return sDOF_to_dof, sDOF_to_dofs, Table(sDOF_to_coeffs.data,sDOF_to_dofs.ptrs)
+  sDOF_to_dofs    = DOF_to_dofs[sDOF_to_DOF]
+  sDOF_to_coeffs  = DOF_to_coeffs[sDOF_to_DOF]
+  sDOF_to_offsets = isnothing(DOF_to_offsets) ? nothing : DOF_to_offsets[sDOF_to_DOF]
+  return sDOF_to_dof, sDOF_to_dofs, Table(sDOF_to_coeffs.data,sDOF_to_dofs.ptrs), sDOF_to_offsets
 end
 
-function _merge_free_and_diri_constraints(fdof_to_dofs, fdof_to_coeffs, ddof_to_dofs, ddof_to_coeffs)
+function _merge_free_and_diri_constraints(
+  fdof_to_dofs, fdof_to_coeffs, ddof_to_dofs, ddof_to_coeffs
+)
   DOF_to_dofs = append_tables_globally(fdof_to_dofs,ddof_to_dofs)
   DOF_to_coeffs = Table(
     vcat(fdof_to_coeffs.data,ddof_to_coeffs.data), DOF_to_dofs.ptrs
@@ -461,31 +472,25 @@ function _count_free_mdofs(mDOF_to_dof,sDOF_to_mdofs)
   return max(a, b)
 end
 
-function _find_master_dofs(
-  sDOF_to_dof, sDOF_to_dofs, space
-)
+function _find_master_dofs(sDOF_to_dof, sDOF_to_dofs, space)
   n_fdofs = num_free_dofs(space)
-  n_dofs = n_fdofs + num_dirichlet_dofs(space)
+  n_dofs  = n_fdofs + num_dirichlet_dofs(space)
 
-  # Flag master dofs 
-  DOF_ismaster = fill(true,n_dofs)
+  DOF_ismaster = fill(true, n_dofs)
   for dof in sDOF_to_dof
-    DOF = _dof_to_DOF(dof,n_fdofs)
+    DOF = _dof_to_DOF(dof, n_fdofs)
     DOF_ismaster[DOF] = false
   end
 
-  # Counting mdofs
-  n_fmdofs = count(view(DOF_ismaster,1:n_fdofs))
-  n_dmdofs = count(view(DOF_ismaster,(n_fdofs+1):n_dofs))
-  n_mdofs = n_fmdofs + n_dmdofs
+  n_fmdofs = count(view(DOF_ismaster, 1:n_fdofs))
+  n_dmdofs = count(view(DOF_ismaster, (n_fdofs+1):n_dofs))
 
-  # DOF to mdof mapping
   kf, kd = 1, 1
-  mDOF_to_dof = Vector{Int32}(undef,n_mdofs)
-  DOF_to_mdof = Vector{Int32}(undef,n_dofs)
+  mDOF_to_dof = Vector{Int32}(undef, n_fmdofs + n_dmdofs)
+  DOF_to_mdof = Vector{Int32}(undef, n_dofs)
   for DOF in 1:n_dofs
     if DOF_ismaster[DOF]
-      dof = _DOF_to_dof(DOF,n_fdofs)
+      dof = _DOF_to_dof(DOF, n_fdofs)
       if dof > 0
         mDOF_to_dof[kf] = dof
         DOF_to_mdof[DOF] = kf
@@ -498,15 +503,48 @@ function _find_master_dofs(
     end
   end
 
-  # Map constraints
-  data = zeros(Int32,length(sDOF_to_dofs.data))
-  for (i,dof) in enumerate(sDOF_to_dofs.data)
-    DOF = _dof_to_DOF(dof,n_fdofs)
-    data[i] = DOF_to_mdof[DOF]
+  data = zeros(Int32, length(sDOF_to_dofs.data))
+  for (i, dof) in enumerate(sDOF_to_dofs.data)
+    data[i] = DOF_to_mdof[_dof_to_DOF(dof, n_fdofs)]
   end
-  sDOF_to_mdofs = Table(data,sDOF_to_dofs.ptrs)
 
-  return mDOF_to_dof, sDOF_to_mdofs, n_fmdofs
+  return mDOF_to_dof, Table(data, sDOF_to_dofs.ptrs), n_fmdofs, n_dmdofs
+end
+
+# Extends mDOF_to_dof, sDOF_to_mdofs, and sDOF_to_coeffs with fictitious Dirichlet
+# masters encoding affine inhomogeneities. One fictitious master per nonzero offset,
+# appended with coefficient 1. Returns (mDOF_to_dof, sDOF_to_mdofs, sDOF_to_coeffs, dmdof_to_offsets).
+function _attach_offsets(mDOF_to_dof, sDOF_to_mdofs, sDOF_to_coeffs, sDOF_to_offsets, n_dmdofs)
+  n_slaves  = length(sDOF_to_mdofs)
+  n_offsets = count(!iszero, sDOF_to_offsets)
+  OT = eltype(sDOF_to_offsets)
+  CT = eltype(sDOF_to_coeffs.data)
+  iszero(n_offsets) && return mDOF_to_dof, sDOF_to_mdofs, sDOF_to_coeffs, OT[]
+
+  dmdof_to_offsets = Vector{OT}(undef, n_offsets)
+  mdofs_data  = Vector{Int32}(undef, n_offsets)
+  coeffs_data = Vector{CT}(undef, n_offsets)
+  ptrs = zeros(eltype(sDOF_to_mdofs.ptrs), n_slaves + 1)
+  ptrs[1] = 1
+  kf = 0
+  for s in 1:n_slaves
+    b = sDOF_to_offsets[s]
+    ptrs[s+1] = ptrs[s]
+    if !iszero(b)
+      kf += 1
+      dmdof_to_offsets[kf] = OT(b)
+      mdofs_data[kf]  = Int32(-(n_dmdofs + kf))
+      coeffs_data[kf] = one(CT)
+      ptrs[s+1] += 1
+    end
+  end
+
+  return (
+    vcat(mDOF_to_dof, zeros(Int32, n_offsets)),
+    append_tables_locally(sDOF_to_mdofs,  Table(mdofs_data,  ptrs)),
+    append_tables_locally(sDOF_to_coeffs, Table(coeffs_data, ptrs)),
+    dmdof_to_offsets
+  )
 end
 
 function _generate_cell_to_mdofs(

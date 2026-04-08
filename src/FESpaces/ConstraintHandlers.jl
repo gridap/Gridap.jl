@@ -432,11 +432,12 @@ function constraint_tables(V::SingleFieldFESpace, ch::ConstraintHandler{T}) wher
     end
   end
 
-  sDOF_to_dof    = [_DOF_to_dof(line.dof, n_fdofs) for line in ch.constraints]
-  sDOF_to_dofs   = Table(master_dofs, ptrs)
-  sDOF_to_coeffs = Table(coefficients, copy(ptrs))
+  sDOF_to_dof     = [_DOF_to_dof(line.dof, n_fdofs) for line in ch.constraints]
+  sDOF_to_dofs    = Table(master_dofs, ptrs)
+  sDOF_to_coeffs  = Table(coefficients, copy(ptrs))
+  sDOF_to_offsets = T[line.offset for line in ch.constraints]
 
-  return sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs
+  return sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, sDOF_to_offsets
 end
 
 """
@@ -445,6 +446,6 @@ end
 Build a `FESpaceWithLinearConstraints` from `V` and a closed `ConstraintHandler`.
 """
 function FESpaceWithLinearConstraints(V::SingleFieldFESpace, ch::ConstraintHandler)
-  sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs = constraint_tables(V, ch)
-  return FESpaceWithLinearConstraints(sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, V)
+  sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, sDOF_to_offsets = constraint_tables(V, ch)
+  return FESpaceWithLinearConstraints(sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, V; sDOF_to_offsets)
 end
