@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.4] - 2026-03-23
+
+### Added
+
+- Added `get_free_dof_coordinates`. Since PR[#1262](https://github.com/gridap/Gridap.jl/pull/1262).
+
+### Fixed
+
+- Fixed type inference for operations between MultiValue types. Since PR[1270](https://github.com/gridap/Gridap.jl/pull/1270).
+
 ## [0.20.3] - 2026-03-23
 
 ### Fixed
