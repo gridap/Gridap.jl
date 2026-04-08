@@ -278,3 +278,46 @@ end
 function _convert_to_collectable(object::Union{<:CellField,<:Function,<:Number},ntags)
   _convert_to_collectable(Fill(object,ntags),ntags)
 end
+
+"""
+    get_free_dof_coordinates(fs::SingleFieldFESpace) -> Vector{<:Point}
+
+Return the physical coordinates of all free degrees of freedom in `fs`.
+Only implemented for spaces whose DOF basis is a `LagrangianDofBasis`
+(i.e., spaces with `PointValue`-type DOFs).
+"""
+function get_free_dof_coordinates(fs::SingleFieldFESpace)
+  free_coords, _ = get_free_and_dirichlet_dof_coordinates(fs)
+  free_coords
+end
+
+"""
+    get_free_and_dirichlet_dof_coordinates(fs::SingleFieldFESpace) -> (Vector{<:Point}, Vector{<:Point})
+
+Return the physical coordinates of all free and Dirichlet degrees of freedom in `fs`
+as a `(free_coords, dirichlet_coords)` tuple.
+Only implemented for spaces whose DOF basis is a `LagrangianDofBasis`
+(i.e., spaces with `PointValue`-type DOFs).
+"""
+function get_free_and_dirichlet_dof_coordinates(fs::SingleFieldFESpace)
+  cell_dof_basis = get_fe_dof_basis(fs)
+  cell_dof_bases = get_data(cell_dof_basis)
+  @notimplementedif !(testitem(cell_dof_bases) isa LagrangianDofBasis)
+
+  # Map reference DOF nodes to physical space via the cell geometric map.
+  # change_domain handles both ReferenceDomain and PhysicalDomain dof bases.
+  cell_points     = change_domain(get_cell_points(cell_dof_basis), PhysicalDomain())
+  cell_phys_nodes = get_data(cell_points)  # lazy array of Vector{Point}, node-indexed per cell
+
+  # Reindex from node-indexed to dof-indexed (required for multi-component spaces
+  # where several dofs share the same node).
+  cell_dof_to_node = lazy_map(get_dof_to_node, cell_dof_bases)
+  cell_dof_coords  = lazy_map((nodes, d2n) -> nodes[d2n], cell_phys_nodes, cell_dof_to_node)
+
+  P           = eltype(testitem(cell_phys_nodes))
+  free_coords = Vector{P}(undef, num_free_dofs(fs))
+  dir_coords  = Vector{P}(undef, num_dirichlet_dofs(fs))
+  gather_free_and_dirichlet_values!(free_coords, dir_coords, fs, cell_dof_coords)
+
+  return free_coords, dir_coords
+end
