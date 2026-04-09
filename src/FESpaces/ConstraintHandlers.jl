@@ -24,30 +24,48 @@ end
 
 mutable struct ConstraintHandler{T<:Number}
   n_dofs::Int
+  n_fdofs::Int                    # = n_dofs in generic mode; = num_free_dofs(V) in Gridap mode
   constraints::Vector{ConstraintLine{T}}
   dof_to_constraint::Vector{Int} # 0 if unconstrained
   closed::Bool
 end
 
-is_constrained(ch::ConstraintHandler, dof::Int) = !iszero(ch.dof_to_constraint[dof])
+is_constrained(ch::ConstraintHandler, dof::Int) =
+  !iszero(ch.dof_to_constraint[_dof_to_DOF(dof, ch.n_fdofs)])
 
 num_constrained_dofs(ch::ConstraintHandler) = length(ch.constraints)
 num_free_dofs(ch::ConstraintHandler)        = ch.n_dofs - num_constrained_dofs(ch)
 
 function Base.show(io::IO, ch::ConstraintHandler{T}) where T
   status = ch.closed ? "closed" : "open"
-  print(io, "ConstraintHandler{$T}($(ch.n_dofs) dofs, " *
+  fdof_str = ch.n_fdofs < ch.n_dofs ? ", $(ch.n_fdofs) free" : ""
+  print(io, "ConstraintHandler{$T}($(ch.n_dofs) dofs$fdof_str, " *
         "$(num_constrained_dofs(ch)) constrained, $status)")
 end
 
 """
-  ConstraintHandler(n_dofs, T=Float64)
+    ConstraintHandler(n_dofs, T=Float64)
 
 Create an empty constraint handler for a space with `n_dofs` degrees of freedom.
+All DOFs are treated as free (unsigned indices, no sign conversion).
 `T` is the coefficient type.
 """
 ConstraintHandler(n_dofs::Int, ::Type{T}=Float64) where T =
-  ConstraintHandler{T}(n_dofs, ConstraintLine{T}[], zeros(Int, n_dofs), false)
+  ConstraintHandler{T}(n_dofs, n_dofs, ConstraintLine{T}[], zeros(Int, n_dofs), false)
+
+"""
+    ConstraintHandler(V::SingleFieldFESpace, T=Float64)
+
+Create an empty constraint handler for the FE space `V`. DOF indices passed to
+`add_constraint!` may use Gridap's signed convention (positive = free, negative =
+Dirichlet); they are converted to unsigned indices internally.
+`T` is the coefficient type.
+"""
+function ConstraintHandler(V::SingleFieldFESpace, ::Type{T}=Float64) where T
+  n_fdofs = num_free_dofs(V)
+  n_dofs  = n_fdofs + num_dirichlet_dofs(V)
+  ConstraintHandler{T}(n_dofs, n_fdofs, ConstraintLine{T}[], zeros(Int, n_dofs), false)
+end
 
 """
     ConstraintHandler(sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, V::FESpace, T=Float64)
@@ -62,16 +80,9 @@ function ConstraintHandler(
   sDOF_to_dof, sDOF_to_dofs::Table, sDOF_to_coeffs::Table,
   V::SingleFieldFESpace, ::Type{T}=Float64
 ) where T
-  n_fdofs = num_free_dofs(V)
-  n_dofs  = n_fdofs + num_dirichlet_dofs(V)
-  ch      = ConstraintHandler(n_dofs, T)
+  ch = ConstraintHandler(V, T)
   for (i, dof) in enumerate(sDOF_to_dof)
-    slave_DOF = _dof_to_DOF(dof, n_fdofs)
-    rd = dataview(sDOF_to_dofs, i)
-    rc = dataview(sDOF_to_coeffs, i)
-    masters = [_dof_to_DOF(d, n_fdofs) for d in rd]
-    coeffs  = collect(T, rc)
-    add_constraint!(ch, slave_DOF, masters, coeffs)
+    add_constraint!(ch, dof, collect(Int, dataview(sDOF_to_dofs, i)), collect(T, dataview(sDOF_to_coeffs, i)))
   end
   return ch
 end
@@ -133,7 +144,9 @@ function add_constraint!(
 ) where T
   @check !ch.closed "Cannot add constraints to a closed handler"
   @check length(masters) == length(coeffs)
-  line = ConstraintLine{T}(dof, collect(Int, masters), collect(T, coeffs), T(offset))
+  DOF = _dof_to_DOF(dof, ch.n_fdofs)
+  _masters = _dof_to_DOF!(collect(Int, masters), ch.n_fdofs)
+  line = ConstraintLine{T}(DOF, _masters, collect(T, coeffs), T(offset))
   add_constraint!(ch, line; kwargs...)
   return ch
 end
@@ -164,7 +177,8 @@ end
 Register a Dirichlet constraint  x[dof] = offset  (no master DoFs).
 """
 function add_constraint!(ch::ConstraintHandler{T}, dof::Int, offset::Number; kwargs...) where T
-  add_constraint!(ch, ConstraintLine{T}(dof, Int[], T[], T(offset)); kwargs...)
+  DOF = _dof_to_DOF(dof, ch.n_fdofs)
+  add_constraint!(ch, ConstraintLine{T}(DOF, Int[], T[], T(offset)); kwargs...)
 end
 
 """
@@ -175,7 +189,7 @@ Update the offset of an already-registered constraint on `dof`.
 function set_offset!(ch::ConstraintHandler{T}, dof::Int, value::Number) where T
   @check !ch.closed "Cannot modify constraints after close!()"
   @check is_constrained(ch, dof) "DoF $dof has no constraint to update"
-  idx = ch.dof_to_constraint[dof]
+  idx = ch.dof_to_constraint[_dof_to_DOF(dof, ch.n_fdofs)]
   line = ch.constraints[idx]
   ch.constraints[idx] = ConstraintLine{T}(line.dof, line.masters, line.coeffs, T(value))
   return ch

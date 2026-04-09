@@ -132,6 +132,13 @@ end
 _dof_to_DOF(dof, n_fdofs) = ifelse(iszero(dof), 0, ifelse(dof > 0, dof, n_fdofs - dof))
 _DOF_to_dof(DOF, n_fdofs) = ifelse(DOF > n_fdofs, -(DOF - n_fdofs), DOF)
 
+function _dof_to_DOF!(dofs::Vector{Int}, n_fdofs::Int)
+  @inbounds for i in eachindex(dofs)
+    dofs[i] = _dof_to_DOF(dofs[i], n_fdofs)
+  end
+  return dofs
+end
+
 # Implementation of FESpace interface
 
 get_triangulation(f::FESpaceWithLinearConstraints) = get_triangulation(f.space)
