@@ -55,8 +55,14 @@ function UnstructuredGrid(
   orientation_style::OrientationStyle=NonOriented(),
   facet_normal=nothing;
   has_affine_map=get_has_affine_map(reffes)
-)
-  cell_map = _compute_cell_map(node_coordinates,cell_node_ids,reffes,cell_types,has_affine_map)
+)   
+  if has_affine_map === nothing
+    _has_affine_map = get_has_affine_map(reffes)
+  else
+    _has_affine_map = has_affine_map
+  end
+
+  cell_map = _compute_cell_map(node_coordinates,cell_node_ids,reffes,cell_types,_has_affine_map)
   UnstructuredGrid(
     node_coordinates,
     cell_node_ids,
