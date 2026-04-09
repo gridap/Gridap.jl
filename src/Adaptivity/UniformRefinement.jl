@@ -125,8 +125,7 @@ function _permuted_simplex_rrule(::Val{Dc}, rr::RefinementRule, node_rank) where
     get_cell_type(ref_grid),
     OrientationStyle(ref_grid),
   )
-  new_model = UnstructuredDiscreteModel(new_grid)
-  RefinementRule(RefinementRuleType(rr), get_polytope(rr), new_model)
+  RefinementRule(RefinementRuleType(rr), get_polytope(rr), new_grid)
 end
 
 # Build the simplex template key from coarse-cell face orderings and permutations.
