@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.19.11] - 2026-04-09
 
 ### Fixed 
-- Fixed a bug in the outer constructor of UnstructuredGrid for the particular case in which the value of the kw-arg has_affine_map is nothing. Since PR[#XXX](https://github.com/gridap/Gridap.jl/pull/XXX)
+- Fixed a bug in the outer constructor of UnstructuredGrid for the particular case in which the value of the kw-arg has_affine_map is nothing. Since PR[#1273](https://github.com/gridap/Gridap.jl/pull/1273)
 
 ## [0.19.10] - 2026-04-02
 
