@@ -35,7 +35,7 @@ function refine(model::UnstructuredDiscreteModel,cell_partition::Int)
   if cell_partition == 1
     model
   else
-    cell_refine_masks = Fill(true,num_cells(model))
+    cell_refine_masks = trues(num_cells(model))
     uniformly_refine(model,cell_partition,cell_refine_masks)
   end
 end
@@ -45,7 +45,7 @@ function refine(model::Geometry.DiscreteModelMock,cell_partition::Int)
   if cell_partition == 1
     model
   else
-    cell_refine_masks = Fill(true,num_cells(model))
+    cell_refine_masks = trues(num_cells(model))
     uniformly_refine(model,cell_partition,cell_refine_masks)
   end
 end
@@ -54,18 +54,18 @@ end
   uniformly_refine(
     cm::DiscreteModel,
     n::Integer,
-    cell_refine_masks::AbstractVector{T};
+    cell_is_refined::BitVector;
     has_affine_map::Union{Nothing, Bool} = nothing
-  ) where T <: Union{Bool, Int}
+  )
 
-Uniformly refine the cells of the discrete model `cm` marked by `cell_refine_masks` `n` times.
+Uniformly refine the cells of the discrete model `cm` marked by `cell_is_refined` `n` times.
 If `has_affine_map` is not provided, it is automatically determined.
 """
 function uniformly_refine(
-  cm::DiscreteModel,
+  cm::DiscreteModel{Dc},
   n::Integer,
-  cell_refine_masks::AbstractVector{T};
-  has_affine_map::Union{Nothing, Bool} = nothing) where T <: Union{Bool, Int}
+  cell_is_refined::BitVector;
+  has_affine_map::Union{Nothing, Bool} = nothing) where {Dc}
 
   @check n >= 1 "The number of uniform refinements must be at least one."
   if n == 1
@@ -74,17 +74,13 @@ function uniformly_refine(
   ctopo = get_grid_topology(cm)
   cgrid = get_grid(cm)
   cell_map = get_cell_map(cgrid)
-  polytopes = get_polytopes(ctopo)
-  cmparr_ptrs = collect(get_cell_type(cm))
-  cmparr_ptrs[cell_refine_masks] .+= length(polytopes)
+  cell_type = collect(get_cell_type(cm))
+  n_cells = num_cells(cm)
+  @check length(cell_is_refined) == n_cells
 
-  without_rr = map(polytopes) do p
-    RefinementRule(WithoutRefinement(), p, compute_reference_grid(p, 1))
-  end
-  generic_rr = map(polytopes) do p
-    RefinementRule(GenericRefinement(), p, compute_reference_grid(p, n))
-  end
-  cell_rr = CompressedArray(vcat(without_rr, generic_rr), cmparr_ptrs)
+  cell_rr, cell_face_own_vertex_permutations =
+    _uniform_cell_rr_and_face_perms(Val{Dc}(), ctopo, cell_type, cell_is_refined, n)
+
   _is_affine(fs) = isconcretetype(typeof(fs)) && fs isa AbstractArray{<:AffineField}
   glue = blocked_refinement_glue(cell_rr)
 
@@ -99,6 +95,7 @@ function uniformly_refine(
     cgrid,
     cell_map,
     has_affine_map,
+    cell_face_own_vertex_permutations,
   )
   clabeling = get_face_labeling(cm)
   labeling = refine_face_labeling(clabeling, glue, ctopo, topo)
@@ -107,6 +104,157 @@ function uniformly_refine(
 end
 
 # Implementation details
+
+# Reorder simplex child connectivities according to the given local node ranks.
+function _permuted_simplex_rrule(::Val{Dc}, rr::RefinementRule, node_rank) where Dc
+  @notimplementedif Dc != 2 && Dc != 3
+  n_vertices = Dc + 1
+  ref_model = get_ref_grid(rr)
+  ref_grid = get_grid(ref_model)
+  conn = Table(get_cell_node_ids(ref_grid))
+  new_data = copy(conn.data)
+  @inbounds for i in eachindex(conn)
+    pini = conn.ptrs[i]
+    @views sort!(new_data[pini:(pini+n_vertices-1)]; by = lni -> node_rank[lni])
+  end
+  new_conn = Table(new_data, copy(conn.ptrs))
+  new_grid = UnstructuredGrid(
+    get_node_coordinates(ref_grid),
+    new_conn,
+    get_reffes(ref_grid),
+    get_cell_type(ref_grid),
+    OrientationStyle(ref_grid),
+  )
+  new_model = UnstructuredDiscreteModel(new_grid)
+  RefinementRule(RefinementRuleType(rr), get_polytope(rr), new_model)
+end
+
+# Build the simplex template key from coarse-cell face orderings and permutations.
+function _simplex_template_key(::Val{Dc}, ci, d_c2df, d_df_perm_table) where Dc
+  @notimplementedif Dc != 2 && Dc != 3
+
+  @inline function _sort_perm(table, index, ::Val{N}) where N
+    p = table.ptrs[index]
+    perm = MVector{N,UInt8}(ntuple(i -> UInt8(i), Val(N)))
+    sort!(perm; by = i -> @inbounds(table.data[p + i - 1]), alg = Base.Sort.InsertionSort)
+    SVector{N,UInt8}(perm)
+  end
+
+  @inline function _get_perms(ptable, index, ::Val{N}) where N
+    q = ptable.ptrs[index]
+    @inbounds SVector{N,UInt8}(ntuple(i -> UInt8(ptable.data[q + i - 1]), Val(N)))
+  end
+
+  counts = Dc == 2 ? (Val(3), Val(3)) : (Val(4), Val(6), Val(4))
+  v_order = _sort_perm(d_c2df[1], ci, counts[1])
+  sub_entities = ntuple(Val(Dc-1)) do d
+    n = counts[d+1]
+    (_sort_perm(d_c2df[d+1], ci, n), _get_perms(d_df_perm_table[d], ci, n))
+  end
+  (v_order, sub_entities)
+end
+
+# Compute the refined-reference node ranks induced by a simplex template key.
+function _simplex_node_ranks(::Val{Dc}, rr::RefinementRule, face_own_vertex_perm, tkey) where Dc
+  @notimplementedif Dc != 2 && Dc != 3
+
+  node_rank = Vector{Int}(undef, num_nodes(get_ref_grid(rr)))
+  dim_ranges = get_dimranges(get_polytope(rr))
+  vertex_order, dface_info = tkey
+  @inline function _fill_dim!(offset, rng, order, perms)
+    isempty(rng) && return offset
+    nodes_per_face = length(face_own_vertex_perm[first(rng)][first(perms)])
+    @inbounds for (rank, lfi) in enumerate(order)
+      face_nodes = face_own_vertex_perm[rng[lfi]][perms[lfi]]
+      for (lo, lni) in enumerate(face_nodes)
+        node_rank[lni] = offset + (rank-1)*nodes_per_face + lo
+      end
+    end
+    offset + length(rng) * nodes_per_face
+  end
+
+  offset = _fill_dim!(0, dim_ranges[1], vertex_order, ntuple(_ -> UInt8(1), Val(Dc+1)))
+  @inbounds for d in 1:(Dc-1)
+    order, perms = dface_info[d]
+    offset = _fill_dim!(offset, dim_ranges[d+1], order, perms)
+  end
+  _fill_dim!(offset, dim_ranges[Dc+1], (UInt8(1),), (UInt8(1),))
+
+  node_rank
+end
+
+# Create the cache used to map simplex template keys to refinement-rule ids.
+function _simplex_key_to_rrid(::Val{Dc}) where Dc
+  @notimplementedif Dc != 2 && Dc != 3
+
+  @inline _svec_uint8_type(::Val{N}) where N = SVector{N,UInt8}
+
+  counts = Dc == 2 ? (Val(3), Val(3)) : (Val(4), Val(6), Val(4))
+  vertex_type = _svec_uint8_type(counts[1])
+  entity_pair_types = ntuple(Val(Dc-1)) do d
+    T = _svec_uint8_type(counts[d+1])
+    Tuple{T,T}
+  end
+  key_type = Tuple{vertex_type,Tuple{entity_pair_types...}}
+  Dict{Tuple{Int,key_type},Int}()
+end
+
+# Build the per-cell refinement rules and matching face-own-vertex permutations.
+function _uniform_cell_rr_and_face_perms(::Val{Dc}, ctopo, cell_type, cell_is_refined, n) where Dc
+  polytopes = get_polytopes(ctopo)
+  n_cells = length(cell_is_refined)
+
+  without_rr = map(polytopes) do p
+    RefinementRule(WithoutRefinement(), p, compute_reference_grid(p, 1))
+  end
+  generic_rr = map(polytopes) do p
+    RefinementRule(GenericRefinement(), p, compute_reference_grid(p, n))
+  end
+
+  rr_vals_temp = vcat(without_rr, generic_rr)
+  base_rr_ids = [cell_type[ci] + (cell_is_refined[ci] ? length(polytopes) : 0) for ci in 1:n_cells]
+  cell_rr_ids = copy(base_rr_ids)
+  face_perm_vals_temp = map(_uniform_cell_face_own_vertex_permutations, rr_vals_temp)
+  cell_rr_temp = CompressedArray(rr_vals_temp, cell_rr_ids)
+  d_c2df = ntuple(d -> Table(get_faces(ctopo, Dc, d-1)), Val(Dc+1))
+  d_df_perm_table = ntuple(d -> Table(get_cell_permutations(ctopo, d)), Val{Dc}())
+
+  # For simplex cells, the child-cell local ordering depends on the coarse-cell l2g map.
+  if any(cell_is_refined)
+    rrid_cache = _simplex_key_to_rrid(Val{Dc}())
+    @inbounds for ci in 1:n_cells
+      rr = cell_rr_temp[ci]
+      if (rr.T isa GenericRefinement) && is_simplex(get_polytope(rr))
+        tkey = _simplex_template_key(Val{Dc}(), ci, d_c2df, d_df_perm_table)
+        key = (base_rr_ids[ci], tkey)
+        if haskey(rrid_cache, key)
+          cell_rr_ids[ci] = rrid_cache[key]
+        else
+          fperm = face_perm_vals_temp[base_rr_ids[ci]]
+          node_rank = _simplex_node_ranks(Val{Dc}(), rr, fperm, tkey)
+          push!(rr_vals_temp, _permuted_simplex_rrule(Val{Dc}(), rr, node_rank))
+          push!(face_perm_vals_temp, fperm)
+          rrid = length(rr_vals_temp)
+          rrid_cache[key] = rrid
+          cell_rr_ids[ci] = rrid
+        end
+      end
+    end
+  end
+
+  used_rr_ids = unique(cell_rr_ids)
+  old_to_new = Dict{Int,Int}()
+  for (i, oldid) in enumerate(used_rr_ids)
+    old_to_new[oldid] = i
+  end
+  rr_vals = rr_vals_temp[used_rr_ids]
+  face_perm_vals = face_perm_vals_temp[used_rr_ids]
+  cell_rr_ids_compact = map(i -> old_to_new[i], cell_rr_ids)
+  cell_rr = CompressedArray(rr_vals, cell_rr_ids_compact)
+  cell_face_own_vertex_permutations = CompressedArray(face_perm_vals, cell_rr_ids_compact)
+
+  cell_rr, cell_face_own_vertex_permutations
+end
 
 function _get_cartesian_domain(desc::CartesianDescriptor{D}) where D
   origin = desc.origin
@@ -324,33 +472,35 @@ function _uniform_connectivity(cell_ref_conns, cell_l2g, n_cells)
   Table(conn_data, conn_ptrs)
 end
 
+# Compute the face-own-vertex permutations associated with a refinement rule.
+function _uniform_cell_face_own_vertex_permutations(rr::RefinementRule)
+  face_vertices = get_face_vertices(rr)
+  lids = _uniform_d_dface_own_lid(rr)
+  vertex_perm = get_face_vertex_permutations(rr)
+  own_vertex_perm = similar(vertex_perm)
+  @inbounds for i ∈ eachindex(vertex_perm)
+    perms = vertex_perm[i]
+    lid = lids[i]
+    vertices = face_vertices[i]
+    own_vertex_perm[i] = map(p -> vertices[p[lid]], perms)
+  end
+  own_vertex_perm
+end
+
 # Construct the grid and topology for the uniformly refined grid.
 function _uniformly_refine_grid_topology(
   cell_rr,
   ctopo,
   cgrid,
   cell_map,
-  has_affine_map)
+  has_affine_map,
+  cell_face_own_vertex_permutations)
 
   cell_ref_grid = lazy_map(get_ref_grid, cell_rr)
   cell_lncells = lazy_map(num_cells, cell_ref_grid)
   cell_ref_coords = lazy_map(get_node_coordinates, cell_ref_grid)
   cell_ref_conns = lazy_map(get_cell_node_ids, cell_ref_grid)
   cell_type = get_cell_type(ctopo)
-  cell_face_own_vertex_permutations = lazy_map(cell_rr) do rr
-    face_vertices = get_face_vertices(rr)
-    lids = _uniform_d_dface_own_lid(rr)
-    vertex_perm = get_face_vertex_permutations(rr)
-    own_vertex_perm = similar(vertex_perm)
-    @inbounds for i ∈ eachindex(vertex_perm)
-      perms = vertex_perm[i]
-      lid = lids[i]
-      vertices = face_vertices[i]
-      own_vertex_perm[i] = map(p -> vertices[p[lid]], perms)
-    end
-    own_vertex_perm
-  end
-
   cell_l2g, n_nodes = _uniform_cell_l2gmap_and_nnodes(
     ctopo,
     cell_rr,
