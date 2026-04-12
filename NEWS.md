@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed model orientation preservation in `UniformRefinement`. Since PR[#1274](https://github.com/gridap/Gridap.jl/pull/1274).
+
 ## [0.20.4] - 2026-04-09
 
 ### Added
