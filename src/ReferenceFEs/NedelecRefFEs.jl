@@ -224,11 +224,10 @@ function _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
   cvals = [fwips[i].*cvals[i] for i in 1:nc]
 
   fns = get_facet_normal(p)
-  os = get_facet_orientations(p)
-  # @santiagobadia : Temporary hack for making it work for structured hex meshes
+
   ft = eltype(fns)
   cvals = [ _broadcast_extend(ft,Tm,b) for (Tm,b) in zip(fts,cvals)]
-  cvals = [ _broadcast_cross(ft,n*o,b) for (n,o,b) in zip(fns,os,cvals)]
+  cvals = [ _broadcast_cross(ft,n,b) for (n,b) in zip(fns,cvals)]
   return cvals
 end
 
@@ -331,36 +330,44 @@ function evaluate!(
   cache,
   ::Broadcasting{typeof(∇)},
   a::Fields.BroadcastOpFieldArray{CoVariantPiolaMap})
-  v, Jt = a.args
+  v, Jt, sign_flip = a.args
   # Assuming J comes from an affine map
   ∇v = Broadcasting(∇)(v)
   k = CoVariantPiolaMap()
-  Broadcasting(Operation(k))(∇v,Jt)
+  Broadcasting(Operation(k))(∇v,Jt,sign_flip)
 end
 
 function lazy_map(
   ::Broadcasting{typeof(gradient)},
   a::LazyArray{<:Fill{Broadcasting{Operation{CoVariantPiolaMap}}}})
-  v, Jt = a.args
+  v, Jt, sign_flip = a.args
   ∇v = lazy_map(Broadcasting(∇),v)
   k = CoVariantPiolaMap()
-  lazy_map(Broadcasting(Operation(k)),∇v,Jt)
+  lazy_map(Broadcasting(Operation(k)),∇v,Jt,sign_flip)
 end
 
-function evaluate!(cache,::CoVariantPiolaMap,v::Number,Jt::Number)
-   v⋅ transpose(pinvJt(Jt))# we multiply by the right side to compute the gradient correctly
+function evaluate!(cache,::CoVariantPiolaMap,
+                   v::Number,
+                   Jt::Number,
+                   sign_flip::Bool)
+   (((-1)^sign_flip)*v)⋅(transpose(pinvJt(Jt)))# we multiply by the right side to compute the gradient correctly
 end
 
-function evaluate!(cache,k::CoVariantPiolaMap,v::AbstractVector{<:Field},phi::Field)
+function evaluate!(cache,
+                   k::CoVariantPiolaMap,
+                   v::AbstractVector{<:Field},
+                   phi::Field,
+                   sign_flip::AbstractVector{<:Field})
   Jt = ∇(phi)
-  Broadcasting(Operation(k))(v,Jt)
+  Broadcasting(Operation(k))(v,Jt,sign_flip)
 end
 
 function lazy_map(
   k::CoVariantPiolaMap,
   cell_ref_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
-  cell_map::AbstractArray{<:Field})
+  cell_map::AbstractArray{<:Field},
+  sign_flip::AbstractArray{<:AbstractArray{<:Field}})
 
   cell_Jt = lazy_map(∇,cell_map)
-  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt)
+  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt,sign_flip)
 end

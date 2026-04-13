@@ -332,11 +332,25 @@ function change_domain_o2n(
   @notimplementedif isa(nglue,Nothing)
 
   if (num_cells(old_trian) != 0)
-    # If mixed refinement/coarsening, then f_c2f is a Table
-    f_old_data  = CellData.get_data(f_old)
-    f_c2f       = o2n_reindex(f_old_data,glue)
-    new_rrules  = get_new_cell_refinement_rules(glue)
-    field_array = lazy_map(OldToNewField, f_c2f, new_rrules, glue.n2o_cell_to_child_id)
+    # If mixed refinement/coarsening, then f_data_old_model is a Table
+    # Old Triangulation -> Old Model
+    f_data_old_trian  = CellData.get_data(f_old)
+    f_data_old_trian_new_model  = extend(f_data_old_trian,oglue.mface_to_tface)
+
+    # Old Model -> New Model
+    f_data_old_model_to_new_model = o2n_reindex(f_data_old_trian_new_model,glue)
+
+    # New model -> New Triangulation
+    f_data_old_model_to_new_model_to_new_trian = lazy_map(Reindex(f_data_old_model_to_new_model),nglue.tface_to_mface)
+    new_rrules = get_new_cell_refinement_rules(glue)
+    new_rrules_new_trian = lazy_map(Reindex(new_rrules),nglue.tface_to_mface)
+    n2o_cell_to_child_id_new_trian = lazy_map(Reindex(glue.n2o_cell_to_child_id),nglue.tface_to_mface)
+
+    field_array = lazy_map(OldToNewField,
+                           f_data_old_model_to_new_model_to_new_trian,
+                           new_rrules_new_trian,
+                           n2o_cell_to_child_id_new_trian)
+
     return CellData.similar_cell_field(f_old,field_array,new_trian,ReferenceDomain())
   else
     f_new = Fill(Fields.ConstantField(0.0),num_cells(new_trian))
