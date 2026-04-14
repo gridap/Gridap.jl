@@ -22,9 +22,15 @@ end
 # ConstraintHandler
 # ---------------------------------------------------------------------------
 
+# DoF numbering: Like FESpaceWithLinearConstraints, we use unsigned DoF indices
+# in ConstraintHandler. The function `add_constraint!` accepts signed DoF indices for
+# user convenience, which get mapped into DOFs (unsigned).
+# Then: 
+# - `n_dofs`: Total number of DOFs in the space (free + dirichlet)
+# - `n_fdofs`: Number of free DOFs (n_dofs >= n_fdofs)
 mutable struct ConstraintHandler{T<:Number}
   n_dofs::Int
-  n_fdofs::Int                    # = n_dofs in generic mode; = num_free_dofs(V) in Gridap mode
+  n_fdofs::Int
   constraints::Vector{ConstraintLine{T}}
   dof_to_constraint::Vector{Int} # 0 if unconstrained
   closed::Bool
@@ -82,7 +88,7 @@ function ConstraintHandler(
 ) where T
   ch = ConstraintHandler(V, T)
   for (i, dof) in enumerate(sDOF_to_dof)
-    add_constraint!(ch, dof, collect(Int, dataview(sDOF_to_dofs, i)), collect(T, dataview(sDOF_to_coeffs, i)))
+    add_constraint!(ch, dof, dataview(sDOF_to_dofs, i), dataview(sDOF_to_coeffs, i))
   end
   return ch
 end
@@ -112,17 +118,21 @@ function add_constraint!(
     @check 1 <= master <= ch.n_dofs "Master DoF $master out of range [1, $(ch.n_dofs)]"
     @check master != line.dof "Self-referential constraint on DoF $(line.dof)"
   end
+
   dof = line.dof
   if !is_constrained(ch, dof)
     push!(ch.constraints, line)
     ch.dof_to_constraint[dof] = length(ch.constraints)
-  elseif isnothing(on_conflict)
-    error("Constraint conflict on DoF $dof:\n" *
-          "  existing: $(ch.constraints[ch.dof_to_constraint[dof]])\n" *
-          "  incoming: $line")
-  else
+  elseif !isnothing(on_conflict)
     idx = ch.dof_to_constraint[dof]
     ch.constraints[idx] = on_conflict(ch.constraints[idx], line)
+  else
+    @notimplemented """ 
+      Constraint conflict on DoF $dof:
+        - existing: $(ch.constraints[ch.dof_to_constraint[dof]])
+        - incoming: $line
+      To resolve conflicts, provide an `on_conflict` function to `add_constraint!`
+    """
   end
   return ch
 end
@@ -322,11 +332,11 @@ function _detect_cycles(ch::ConstraintHandler)
     processed += 1
     for t in get(adj, s, Int[])
       in_degree[t] -= 1
-      in_degree[t] == 0 && push!(queue, t)
+      iszero(in_degree[t]) && push!(queue, t)
     end
   end
 
-  if processed < length(ch.constraints)
+  if processed < num_constrained_dofs(ch)
     cycle_dofs = sort!([line.dof for line in ch.constraints if in_degree[line.dof] > 0])
     error("Constraint cycle detected among DoFs: $cycle_dofs\n" *
         "Cycles are not resolvable by substitution. Check your constraint sources.")
