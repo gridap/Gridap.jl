@@ -54,11 +54,7 @@ function get_cell_is_dirichlet(f::FEFunction)
   get_cell_is_dirichlet(get_fe_space(f))
 end
 
-# Convenience method: query Dirichlet DOFs from an FEFunction
-# Returns values associated with the underlying FESpace
-function get_dirichlet_dof_values(xh::FEFunction)
-  get_dirichlet_dof_values(get_fe_space(xh))
-end
+
 
 function get_cell_is_dirichlet(f::FEFunction,ttrian::Triangulation)
   get_cell_is_dirichlet(get_fe_space(f),ttrian)
@@ -394,6 +390,10 @@ end
 
 """
 """
+function get_dirichlet_dof_values(f::FEFunction)
+  @abstractmethod
+end
+
 function get_cell_is_dirichlet(f::FESpace)
   trian = get_triangulation(f)
   Fill(true,num_cells(trian))
