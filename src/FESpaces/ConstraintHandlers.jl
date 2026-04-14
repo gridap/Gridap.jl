@@ -244,7 +244,7 @@ function close!(ch::ConstraintHandler{T}; tol::Float64=1e-13) where T
   ch.closed && return ch
 
   # Step 1: sort, rebuild dof_to_constraint.
-  sort!(ch.constraints, by=l -> l.dof)
+  sort!(ch.constraints, by=l->l.dof)
   fill!(ch.dof_to_constraint, 0)
   for (i, line) in enumerate(ch.constraints)
     ch.dof_to_constraint[line.dof] = i
@@ -256,17 +256,18 @@ function close!(ch::ConstraintHandler{T}; tol::Float64=1e-13) where T
   # Step 3: chain resolution (multi-pass substitution).
   # After cycle detection we know the dependency graph is a DAG, so this
   # terminates in at most n_slaves passes.
-  masters, coeffs = Int[], T[]
-  isconst = Base.Fix1(is_constrained, ch)
+  masters, coeffs = Int[], T[] # reusable buffers
+  constrained = Base.Fix1(is_constrained, ch)
   for _ in 1:length(ch.constraints)
     changed = false
     for i in eachindex(ch.constraints)
+      any(constrained, ch.constraints[i].masters) || continue
+      
       line = ch.constraints[i]
-      any(isconst, line.masters) || continue
       empty!(masters); empty!(coeffs)
       new_offset = line.offset
       for (master, coeff) in zip(line.masters, line.coeffs)
-        if isconst(master)
+        if constrained(master)
           sub = ch.constraints[ch.dof_to_constraint[master]]
           append!(masters, sub.masters)
           append!(coeffs, coeff .* sub.coeffs)
@@ -277,9 +278,7 @@ function close!(ch::ConstraintHandler{T}; tol::Float64=1e-13) where T
       end
       resize!(line.masters, length(masters)); copyto!(line.masters, masters)
       resize!(line.coeffs,  length(coeffs)); copyto!(line.coeffs,  coeffs)
-      # ConstraintLine is immutable so we must rebuild only when offset changes.
-      new_offset != line.offset &&
-        (ch.constraints[i] = ConstraintLine{T}(line.dof, line.masters, line.coeffs, new_offset))
+      ch.constraints[i] = ConstraintLine{T}(line.dof, line.masters, line.coeffs, new_offset)
       changed = true
     end
     !changed && break
@@ -287,22 +286,20 @@ function close!(ch::ConstraintHandler{T}; tol::Float64=1e-13) where T
 
   # Step 4: merge duplicate masters, strip near-zeros.
   # Masters and coeffs are modified in-place — no new ConstraintLine needed.
-  acc       = Dict{Int,T}()
-  buf_pairs = Tuple{Int,T}[]
+  z = zero(T)
+  m_to_c = OrderedDict{Int,T}()
   for line in ch.constraints
-    empty!(acc)
+    empty!(m_to_c)
     for (master, coeff) in zip(line.masters, line.coeffs)
-      acc[master] = get(acc, master, zero(T)) + coeff
+      abs(coeff) < tol && continue
+      m_to_c[master] = get(m_to_c, master, z) + coeff
     end
-    empty!(buf_pairs)
-    for (k, v) in acc
-      abs(v) > tol && push!(buf_pairs, (k, v))
-    end
-    sort!(buf_pairs, by=first)
-    resize!(line.masters, length(buf_pairs))
-    resize!(line.coeffs,  length(buf_pairs))
-    for (j, (k, v)) in enumerate(buf_pairs)
-      line.masters[j] = k; line.coeffs[j] = v
+    n_new = length(m_to_c)
+    resize!(line.masters, n_new)
+    resize!(line.coeffs,  n_new)
+    for (i, (master, coeff)) in enumerate(m_to_c)
+      line.masters[i] = master
+      line.coeffs[i] = coeff
     end
   end
 
@@ -325,14 +322,18 @@ function _detect_cycles(ch::ConstraintHandler)
     end
   end
 
-  queue     = [line.dof for line in ch.constraints if iszero(in_degree[line.dof])]
+  q = Queue{Int}()
+  for line in ch.constraints
+    iszero(in_degree[line.dof]) && enqueue!(q, line.dof)
+  end
+
   processed = 0
-  while !isempty(queue)
-    s = pop!(queue)
+  while !isempty(q)
+    dof = dequeue!(q)
     processed += 1
-    for t in get(adj, s, Int[])
+    for t in get(adj, dof, Int[])
       in_degree[t] -= 1
-      iszero(in_degree[t]) && push!(queue, t)
+      iszero(in_degree[t]) && enqueue!(q, t)
     end
   end
 
@@ -360,29 +361,39 @@ function Algebra.get_matrix(ch::ConstraintHandler{T}) where T
 
   # Map each free DoF to its column index in C.
   col = 0
+  n_entries = 0
   dof_to_col = zeros(Int, n)
   for i in 1:n
     if !is_constrained(ch, i)
       col += 1
       dof_to_col[i] = col
+      n_entries += 1
+    else
+      line = ch.constraints[ch.dof_to_constraint[i]]
+      n_entries += length(line.masters)
     end
   end
 
-  I, J, V = Int[], Int[], T[]
+  I = Vector{Int}(undef,n_entries)
+  J = Vector{Int}(undef,n_entries)
+  V = Vector{T}(undef,n_entries)
   g = zeros(T, n)
 
+  k = 1
   for i in 1:n
     if !is_constrained(ch, i)
-      push!(I, i)
-      push!(J, dof_to_col[i])
-      push!(V, one(T))
+      I[k] = i
+      J[k] = dof_to_col[i]
+      V[k] = one(T)
+      k += 1
     else
       line = ch.constraints[ch.dof_to_constraint[i]]
       g[i] = line.offset
       for (master, coeff) in zip(line.masters, line.coeffs)
-        push!(I, i)
-        push!(J, dof_to_col[master])
-        push!(V, coeff)
+        I[k] = i
+        J[k] = dof_to_col[master]
+        V[k] = coeff
+        k += 1
       end
     end
   end

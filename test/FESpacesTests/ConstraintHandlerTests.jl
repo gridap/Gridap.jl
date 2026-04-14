@@ -1,3 +1,5 @@
+module ConstraintHandlerTests
+
 using Test
 using LinearAlgebra
 using SparseArrays
@@ -345,12 +347,12 @@ ch2 = ConstraintHandler(5)
 # ConstraintHandler DoF convention: 1..6 free, 7..9 Dirichlet.
 # Gridap signed-dof convention:     1..6 free, -1..-3 Dirichlet.
 
-const _model  = CartesianDiscreteModel((0,1,0,1), (2,2))
-const _reffe  = ReferenceFE(lagrangian, Float64, 1)
+_model  = CartesianDiscreteModel((0,1,0,1), (2,2))
+_reffe  = ReferenceFE(lagrangian, Float64, 1)
 let labels = get_face_labeling(_model)
   add_tag_from_tags!(labels, "left", ["tag_7", "tag_1", "tag_3"])
 end
-const _space  = FESpace(_model, _reffe; dirichlet_tags="left")
+_space  = FESpace(_model, _reffe; dirichlet_tags="left")
 
 # Free master
 ch = ConstraintHandler(num_free_dofs(_space) + num_dirichlet_dofs(_space))
@@ -398,3 +400,5 @@ close!(ch_rt)
 @test num_constrained_dofs(ch_rt) == num_constrained_dofs(ch_orig)
 @test is_constrained(ch_rt, 3)
 @test is_constrained(ch_rt, 5)
+
+end # module
