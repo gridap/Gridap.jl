@@ -398,7 +398,7 @@ end
 function get_extension(m::FaceMeasure{Df,Dc}) where {Df,Dc}
   @check Df == Dc - 1
   vs = ReferenceFEs._nfaces_vertices(Float64,m.cpoly,Df)[m.face]
-  J = TensorValue(hcat([vs[2]-vs[1]...],[vs[3]-vs[1]...]))
+  J = TensorValue(hcat( [[vs[i]-vs[1]...] for i in 2:Dc]... ))
   return ConstantField(J/meas(transpose(J)))
 end
 # function get_extension(m::FaceMeasure{Df,Dc}) where {Df,Dc}
