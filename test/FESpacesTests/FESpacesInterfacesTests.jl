@@ -24,6 +24,11 @@ vh = FEFunction(V,rand(num_free_dofs(V)))
 @test isa(vh,FEFunction)
 test_fe_function(vh)
 
+@testset "get_dirichlet_dof_values FEFunction" begin
+  dv = get_dirichlet_dof_values(vh)
+  @test length(dv) > 0
+end
+
 
 dv = get_fe_basis(V)
 du = get_trial_fe_basis(V)
