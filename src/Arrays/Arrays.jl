@@ -105,6 +105,12 @@ export find_local_index
 export datarange
 export dataiterator
 export dataview
+export gather_table_values
+export gather_table_values!
+export scatter_table_values
+export gather_posneg_table_values
+export gather_posneg_table_values!
+export scatter_posneg_table_values
 
 export IdentityVector
 

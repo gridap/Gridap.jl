@@ -864,6 +864,160 @@ end
 
 local_identity_array(ptrs) = local_identity_array(Int,ptrs)
 
+"""
+    gather_table_values(cell_ids::Table, cell_values[, n])
+
+Gather cell-wise values into a flat `Vector` of length `n`, using
+the positive integer IDs in `cell_ids` as destination indices.
+
+- `cell_ids`: a `Table` mapping each cell to its global IDs.
+- `cell_values`: a cell-wise array (accessible via `array_cache`/`getindex!`).
+- `n`: the total number of global entries (defaults to the max ID).
+
+Values at repeated IDs are silently overwritten (last-write-wins).
+"""
+function gather_table_values(
+  cell_ids::Table, cell_values, n = maximum(cell_ids.data; init=0)
+)
+  cache_vals = array_cache(cell_values)
+  first_vals = getindex!(cache_vals, cell_values, 1)
+  T = eltype(first_vals)
+  values = Vector{T}(undef, n)
+  gather_table_values!(values, cell_ids, cell_values)
+  return values
+end
+
+"""
+    gather_table_values!(values, cell_ids::Table, cell_values)
+
+In-place version of [`gather_table_values`](@ref). Fills `values[id] = v`
+for every `(id, v)` pair across all cells.
+"""
+function gather_table_values!(
+  values, cell_ids::Table, cell_values
+)
+  cache_ids  = array_cache(cell_ids)
+  cache_vals = array_cache(cell_values)
+  for cell in 1:length(cell_ids)
+    ids  = getindex!(cache_ids,  cell_ids,    cell)
+    vals = getindex!(cache_vals, cell_values, cell)
+    for (i, id) in enumerate(ids)
+      if id > 0
+        values[id] = vals[i]
+      end
+    end
+  end
+  return values
+end
+
+"""
+    scatter_table_values(cell_ids::Table, values)
+
+Scatter a flat global `values` array back to cell-wise layout, returning
+a `Table` whose data contains `values[id]` for each positive ID in `cell_ids`.
+Non-positive IDs are left as zero-initialized.
+"""
+function scatter_table_values(cell_ids::Table, values)
+  T = eltype(values)
+  data = Vector{T}(undef, length(cell_ids.data))
+  cell_values = Table(data, copy(cell_ids.ptrs))
+  scatter_table_values!(cell_values, cell_ids, values)
+  return cell_values
+end
+
+"""
+    scatter_table_values(cell_values::Table, cell_ids::Table, values)
+
+In-place version of [`scatter_table_values`](@ref).
+"""
+function scatter_table_values!(cell_values::Table, cell_ids::Table, values)
+  z = zero(get_data_eltype(cell_values))
+  for (k, id) in enumerate(cell_ids.data)
+    cell_values.data[k] = id > 0 ? values[id] : z
+  end
+  return cell_values
+end
+
+"""
+    gather_posneg_table_values(cell_ids::Table, cell_values)
+
+Gather cell-wise values into two flat vectors `(pos_values, neg_values)`
+using the positive/negative ID convention:
+- `id > 0` → `pos_values[id]  = v`
+- `id < 0` → `neg_values[-id] = v`
+
+The maximum positive and (absolute) negative IDs are deduced from
+`cell_ids.data`.
+"""
+function gather_posneg_table_values(cell_ids::Table, cell_values)
+  npos = maximum( id for id in cell_ids.data if id > 0; init=0)
+  nneg = maximum(-id for id in cell_ids.data if id < 0; init=0)
+  cache_vals = array_cache(cell_values)
+  first_vals = getindex!(cache_vals, cell_values, 1)
+  T = eltype(first_vals)
+  pos_values = zeros(T, npos)
+  neg_values = zeros(T, nneg)
+  gather_posneg_table_values!(pos_values, neg_values, cell_ids, cell_values)
+  return pos_values, neg_values
+end
+
+"""
+    gather_posneg_table_values!(pos_values, neg_values, cell_ids::Table, cell_values)
+
+In-place version of [`gather_posneg_table_values`](@ref).
+"""
+function gather_posneg_table_values!(pos_values, neg_values, cell_ids::Table, cell_values)
+  cache_ids  = array_cache(cell_ids)
+  cache_vals = array_cache(cell_values)
+  for cell in 1:length(cell_ids)
+    ids  = getindex!(cache_ids,  cell_ids,    cell)
+    vals = getindex!(cache_vals, cell_values, cell)
+    for (i, id) in enumerate(ids)
+      val = vals[i]
+      if id > 0
+        pos_values[id] = val
+      elseif id < 0
+        neg_values[-id] = val
+      end
+    end
+  end
+  return pos_values, neg_values
+end
+
+"""
+    scatter_posneg_table_values(cell_ids::Table, pos_values, neg_values)
+
+Scatter two global vectors back to cell-wise layout using the
+positive/negative ID convention (equivalent to a lazy
+`PosNegReindex` but materialized into a `Table`).
+"""
+function scatter_posneg_table_values(cell_ids::Table, pos_values, neg_values)
+  T = promote_type(eltype(pos_values), eltype(neg_values))
+  data = Vector{T}(undef, length(cell_ids.data))
+  cell_values = Table(data, copy(cell_ids.ptrs))
+  scatter_posneg_table_values!(cell_values, cell_ids, pos_values, neg_values)
+  return cell_values
+end
+
+"""
+    scatter_posneg_table_values!(cell_values::Table, cell_ids::Table, pos_values, neg_values)
+
+In-place version of [`scatter_posneg_table_values`](@ref).
+"""
+function scatter_posneg_table_values!(cell_values::Table, cell_ids::Table, pos_values, neg_values)
+  z = zero(get_data_eltype(cell_values))
+  for (k, id) in enumerate(cell_ids.data)
+    if id > 0
+      cell_values.data[k] = pos_values[id]
+    elseif id < 0
+      cell_values.data[k] = neg_values[-id]
+    else
+      cell_values.data[k] = z
+    end
+  end
+  return cell_values
+end
+
 function to_dict(table::Table)
   dict = Dict{Symbol,Any}()
   dict[:data] = table.data
