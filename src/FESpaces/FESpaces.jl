@@ -222,6 +222,8 @@ export PolytopalFESpace
 export PatchAssembler
 export LocalOperator
 
+export high_order_grid
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")
@@ -275,6 +277,8 @@ include("PatchAssemblers.jl")
 include("LocalFEOperators.jl")
 
 include("PatchFESpaces.jl")
+
+include("HighOrderGrids.jl")
 
 """
 deprecated
