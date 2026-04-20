@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added constructor for high-order grids. Since PR[#1276](https://github.com/gridap/Gridap.jl/pull/1276).
+
 ### Fixed
 
 - Fixed model orientation preservation in `UniformRefinement`. Since PR[#1274](https://github.com/gridap/Gridap.jl/pull/1274).

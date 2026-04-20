@@ -203,4 +203,59 @@ f = joinpath(d,"a.jld2")
 to_jld2_file(a,f)
 @test a == from_jld2_file(typeof(a),f)
 
+# gather_table_values / gather_table_values!
+
+cell_ids = Table([[1,3,5],[2,4,6],[5,6,7]])
+cell_vals = [[10.0,30.0,50.0],[20.0,40.0,60.0],[55.0,66.0,70.0]]
+vals = gather_table_values(cell_ids, cell_vals, 7)
+@test vals[1] == 10.0
+@test vals[2] == 20.0
+@test vals[3] == 30.0
+@test vals[4] == 40.0
+@test vals[5] == 55.0  # last-write-wins from cell 3
+@test vals[6] == 66.0
+@test vals[7] == 70.0
+
+vals2 = zeros(7)
+gather_table_values!(vals2, cell_ids, cell_vals)
+@test vals2 == vals
+
+# n inferred from data
+vals3 = gather_table_values(cell_ids, cell_vals)
+@test vals3 == vals
+
+# scatter_table_values (roundtrip)
+
+global_vals = collect(Float64, 100:100:700)
+scattered = scatter_table_values(cell_ids, global_vals)
+@test scattered[1] == [100.0, 300.0, 500.0]
+@test scattered[2] == [200.0, 400.0, 600.0]
+@test scattered[3] == [500.0, 600.0, 700.0]
+
+# gather_posneg_table_values / gather_posneg_table_values!
+
+pn_ids = Table([[1,-1,3],[2,-2,4]])
+pn_vals = [[10.0,20.0,30.0],[40.0,50.0,60.0]]
+(pos, neg) = gather_posneg_table_values(pn_ids, pn_vals)
+@test pos == [10.0, 40.0, 30.0, 60.0]
+@test neg == [20.0, 50.0]
+
+pos2 = zeros(4); neg2 = zeros(2)
+gather_posneg_table_values!(pos2, neg2, pn_ids, pn_vals)
+@test pos2 == pos
+@test neg2 == neg
+
+# scatter_posneg_table_values (roundtrip)
+
+scattered_pn = scatter_posneg_table_values(pn_ids, pos, neg)
+@test scattered_pn[1] == [10.0, 20.0, 30.0]
+@test scattered_pn[2] == [40.0, 50.0, 60.0]
+
+# Edge case: empty table
+
+empty_ids = Table(Int[], Int32[1])
+empty_vals = [Int[]]
+vals_empty = gather_table_values(empty_ids, empty_vals)
+@test isempty(vals_empty)
+
 end # module
