@@ -378,7 +378,7 @@ end
 
 # c_ijk = a_ilm*b_lmjk
 @generated function double_contraction(a::ThirdOrderTensorValue{D1,D,D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D1,D,Ta,Tb}
-  iszero(length(a)) && return :(zero(ThirdOrderTensorValue{D1,D,D,$(promote_type(Ta, Tb))}))
+  iszero(length(a)) && return :(zero(ThirdOrderTensorValue{D1,D,D,$(Base.promote_op(*,Ta,Tb))}))
   ss = String[]
   for k in 1:D
     for j in 1:D
