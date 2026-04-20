@@ -460,7 +460,7 @@ function congruent_prod(a::MultiValue{Tuple{D,D},Ta}, b::MultiValue{Tuple{D,D1},
   T = Base.promote_op(*,Ta,Tb)
   V = _congruent_ret_type(a, D1)
   (iszero(D) || iszero(D1)) && return zero(V{T})
-  V{T}(get_array(transpose(b) ⋅ a ⋅ b))
+  V(get_array(transpose(b) ⋅ a ⋅ b))
 end
 _congruent_ret_type(a, D1) = TensorValue{D1,D1}
 _congruent_ret_type(a::AbstractSymTensorValue, D1) = SymTensorValue{D1}
@@ -574,30 +574,35 @@ the specific functions above if possible), but is used as default generic implem
   Sr = tuple(Sa_keep..., Sb_keep...)
   Nr = length(Sr)
   Vstr = if Nr == 0
-    "Base.promote_op(*,Ta,Tb)"
+    ""
   elseif Nr == 1
-    "VectorValue{$(Sr[1]),Base.promote_op(*,Ta,Tb)}"
+    "VectorValue{$(Sr[1])}"
   elseif Nr == 2
-    "TensorValue{$(Sr[1]),$(Sr[2]),Base.promote_op(*,Ta,Tb)}"
+    "TensorValue{$(Sr[1]),$(Sr[2])}"
   else
-    "HighOrderTensorValue{$(Tuple{Sr...}),Base.promote_op(*,Ta,Tb)}"
+    "HighOrderTensorValue{$(Tuple{Sr...})}"
   end
 
   if (iszero(length(a)) || iszero(length(b)))
-    return Meta.parse("zero("*Vstr*")")
+    if iszero(Nr)
+      return Meta.parse("zero(Base.promote_op(*,Ta,Tb))")
+    else
+      return Meta.parse("zero("*Vstr*"{Base.promote_op(*,Ta,Tb)})")
+    end
   end
 
   # TODO, if the length of the resulting tensor exceeds some threshold, switch
   # to runtime looping over the indices, or even using BLAS. Also, we might need
   # to change HighOrderTensorValue to store into Memory or simply some fixed sized array.
   # Context: compiling double_contaction of 4th order 4D tensors takes 5-10 min, runtime 15μs.
-  ss = String[Vstr*"("]
+  ss = String[Vstr, "("]
   for cib in CartesianIndices(Sb_keep) # Julia is column major, last index enumerates first
     for cia in CartesianIndices(Sa_keep)
-      s = join("+a[$cia, $ciC]*b[$ciC, $cib]" for ciC in CartesianIndices(S_contract))
-      push!(ss, s * ", ")
+      push!(ss, join("+a[$cia, $ciC]*b[$ciC, $cib]" for ciC in CartesianIndices(S_contract)))
+      push!(ss, ", ")
     end
   end
+  pop!(ss) #rm last comma in case of scalar output
   push!(ss, ")")
   Meta.parse(join(ss))
 end
