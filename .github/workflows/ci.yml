@@ -47,7 +47,7 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: julia-actions/cache@v2
+      - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
 
   test: # Linux, lts + latest, all testcases in parallel
@@ -81,7 +81,7 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: x64
-      - uses: julia-actions/cache@v2
+      - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         with:
@@ -90,7 +90,7 @@ jobs:
           TESTCASE: ${{ matrix.testcase }}
       - uses: julia-actions/julia-processcoverage@v1
         if: ${{ env.DO_COVERAGE }}
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v6
         if: ${{ env.DO_COVERAGE }}
         with:
           verbose: true
@@ -127,7 +127,7 @@ jobs:
         with:
           version: 'lts'
           arch: ${{ matrix.config.arch }}
-      - uses: julia-actions/cache@v2
+      - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         with:
@@ -150,14 +150,14 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: x64
-      - uses: julia-actions/cache@v2
+      - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
       - run: |
           julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.instantiate()'
           julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.add(["Test", "TikzPictures"])'
           julia --color=yes --project=. --code-coverage=user --depwarn=yes -e 'include("test/ExtensionTests/runtests.jl")'
       - uses: julia-actions/julia-processcoverage@v1
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v6
         with:
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}

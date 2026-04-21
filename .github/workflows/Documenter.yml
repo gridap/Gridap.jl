@@ -3,6 +3,7 @@ name: Documentation
 on:
   push:
     branches: [master]
+    tags: ['*']
     paths-ignore:
       - 'CONTRIBUTING.md'
       - 'CODE_OF_CONDUCT.md'
@@ -37,7 +38,7 @@ jobs:
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1'
-      - uses: julia-actions/cache@v2
+      - uses: julia-actions/cache@v3
       - name: Install dependencies
         run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
       - name: Build and deploy

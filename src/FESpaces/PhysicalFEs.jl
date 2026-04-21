@@ -58,7 +58,7 @@ function FiniteElements(
   max_order = maximum(map(get_order,ctype_reffe))
 
   return CellFE(
-    cell_conformity, cell_shapefuns, cell_dof_basis,
+    conf, cell_conformity, cell_shapefuns, cell_dof_basis,
     cell_shapefuns_domain, cell_dof_basis_domain, max_order
   )
 end

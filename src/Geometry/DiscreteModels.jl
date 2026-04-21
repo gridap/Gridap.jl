@@ -378,31 +378,6 @@ function simplexify(model::DiscreteModel; kwargs...)
   simplexify(umodel;kwargs...)
 end
 
-"""
-    ReferenceFE(model::DiscreteModel, args...; kwargs...) -> cell_to_reffe
-
-Return a vector containing the [`ReferenceFE`](@ref) specified by `args` and
-`kwargs` for each type of cell of `model` (given by [`get_cell_type(model)`](@ref)).
-
-The `args` and `kwargs` are all arguments accepted by
-[`ReferenceFE(::ReferenceFEName, ...; ...)`](@ref
-ReferenceFE(::ReferenceFEName,a...;k...)) or [`ReferenceFE(F::Symbol, ...; ...)`](@ref
-ReferenceFE(::Symbol,a...;k...)), first argument included.
-"""
-function ReferenceFE(model::DiscreteModel,args...;kwargs...)
-  ctype_to_polytope = get_polytopes(model)
-  cell_to_ctype = get_cell_type(model)
-  ctype_to_reffe = map(p->ReferenceFE(p,args...;kwargs...),ctype_to_polytope)
-  cell_to_reffe = expand_cell_data(ctype_to_reffe,cell_to_ctype)
-  cell_to_reffe
-end
-
-function ReferenceFE(model::DiscreteModel,basis::ModalC0,args...;kwargs...)
-  ctype_to_polytope = get_polytopes(model)
-  @assert length(ctype_to_polytope) == 1 "Only one polytope expected"
-  compute_cell_to_modalC0_reffe(ctype_to_polytope[1],num_cells(model),args...;kwargs...)
-end
-
 # IO
 
 function to_dict(model::DiscreteModel)

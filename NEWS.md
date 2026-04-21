@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fixed model orientation preservation in `UniformRefinement`. Since PR[#1274](https://github.com/gridap/Gridap.jl/pull/1274).
+
+## [0.20.4] - 2026-04-09
+
+### Added
+
+- Added `get_free_dof_coordinates`. Since PR[#1262](https://github.com/gridap/Gridap.jl/pull/1262).
+- The element type of a `LinearCombinationDofVector` is now `LinearCombinationDof`, since PR[#1266](https://github.com/gridap/Gridap.jl/pull/1266).
+
+### Fixed
+
+- Fixed type inference for operations between MultiValue types. Since PR[1270](https://github.com/gridap/Gridap.jl/pull/1270).
+- Allow autodifferentiation of functions that require a VectorValue input. Since PR[1271](https://github.com/gridap/Gridap.jl/pull/1271).
+
+## [0.20.3] - 2026-03-23
+
+### Fixed
+
+- Fixed FEEC basis constructor for serendipity reffes. since PR[#1260](https://github.com/gridap/Gridap.jl/pull/1260).
+
+## [0.20.2] - 2026-03-20
+
+### Fixed
+
+- Fixed precompilation error when extending `Conformity` from the `FESpaces` module. Since PR[#1259](https://github.com/gridap/Gridap.jl/pull/1259).
+
+## [0.20.1] - 2026-03-19
+
+### Changed
+
+- Minor changesto incorporate the changes in Gridap 0.20, specifically the pullback machinery, into GridapDistributed. Since PR[#1258](https://github.com/gridap/Gridap.jl/pull/1258).
+
 ## [0.20.0] - 2026-03-18
 
 This is a major release with breaking changes, mainly in the `Polynomials` and `ReferenceFEs` modules. The main goal of this release is to provide a more flexible and extensible framework for polynomial bases and reference finite elements based on moments, as a stepping stone for the implementation of more complicated elements (e.g. MTW, etc...).
