@@ -73,6 +73,7 @@ export ⋅¹
 export ⋅²
 export double_contraction
 export contracted_product
+export tensor_contraction
 export congruent_prod
 export indep_comp_getindex
 export indep_components_names

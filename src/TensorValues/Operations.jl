@@ -603,6 +603,127 @@ the specific functions above if possible), but is used as default generic implem
 end
 
 ###############################################################
+# General tensor contraction (arbitrary index pairs)
+###############################################################
+
+"""
+    tensor_contraction(a::MultiValue, b::MultiValue, ia::NTuple{N,Int}, ib::NTuple{N,Int})
+
+Contract `N` index pairs between tensors `a` and `b`: the `ia[k]`-th index of `a`
+is summed against the `ib[k]`-th index of `b`, for `k = 1, …, N`.
+The contracted dimensions must match pairwise.
+
+The output tensor has the remaining (non-contracted) indices of `a` in their
+original order, followed by those of `b` in their original order.
+
+Generalises [`contracted_product`](@ref): `contracted_product(Val(N), a, b)` is
+equivalent to `tensor_contraction(a, b, (Na-N+1, …, Na), (1, …, N))`.
+"""
+function tensor_contraction(
+  a::MultiValue{Sa,Ta,Na},
+  b::MultiValue{Sb,Tb,Nb},
+  ia::NTuple{Nc,Int},
+  ib::NTuple{Nc,Int}) where {Sa,Ta,Na,Sb,Tb,Nb,Nc}
+  _tensor_contraction(a, b, Val(ia), Val(ib))
+end
+
+@generated function _tensor_contraction(
+  a::MultiValue{Sa,Ta,Na},
+  b::MultiValue{Sb,Tb,Nb},
+  ::Val{Ia},
+  ::Val{Ib}) where {Sa,Ta,Na,Sb,Tb,Nb,Ia,Ib}
+
+  @assert (Sa <: Tuple && Sb <: Tuple) "Ill-defined MultiValue"
+  Nc = length(Ia)
+  @assert length(Ib) == Nc
+
+  if min(Na, Nb) == 0
+    msg = "tensor_contraction requires tensors of order ≥ 1, got orders $Na and $Nb"
+    return :(error($msg))
+  end
+
+  for i in Ia
+    (1 <= i <= Na) || begin
+      msg = "ia index $i out of range [1, $Na]"
+      return :(throw(ArgumentError($msg)))
+    end
+  end
+  for i in Ib
+    (1 <= i <= Nb) || begin
+      msg = "ib index $i out of range [1, $Nb]"
+      return :(throw(ArgumentError($msg)))
+    end
+  end
+  length(unique(Ia)) == Nc || return :(throw(ArgumentError("ia contains duplicate indices")))
+  length(unique(Ib)) == Nc || return :(throw(ArgumentError("ib contains duplicate indices")))
+
+  for k in 1:Nc
+    da, db = Sa.parameters[Ia[k]], Sb.parameters[Ib[k]]
+    if da != db
+      msg = "Dimension mismatch at contracted pair $k: a[$(Ia[k])]=$da, b[$(Ib[k])]=$db"
+      return :(throw(DimensionMismatch($msg)))
+    end
+  end
+
+  Ia_set = Set(Ia)
+  Ib_set = Set(Ib)
+  ka = tuple(filter(i -> !(i in Ia_set), 1:Na)...)
+  kb = tuple(filter(i -> !(i in Ib_set), 1:Nb)...)
+
+  S_a_kept   = ntuple(j -> Sa.parameters[ka[j]], length(ka))
+  S_b_kept   = ntuple(j -> Sb.parameters[kb[j]], length(kb))
+  S_contract = ntuple(k -> Sa.parameters[Ia[k]], Nc)
+
+  Sr = (S_a_kept..., S_b_kept...)
+  Nr = length(Sr)
+
+  Vstr = if Nr == 0
+    "Base.promote_op(*,Ta,Tb)"
+  elseif Nr == 1
+    "VectorValue{$(Sr[1]),Base.promote_op(*,Ta,Tb)}"
+  elseif Nr == 2
+    "TensorValue{$(Sr[1]),$(Sr[2]),Base.promote_op(*,Ta,Tb)}"
+  else
+    "HighOrderTensorValue{$(Tuple{Sr...}),Base.promote_op(*,Ta,Tb)}"
+  end
+
+  if iszero(length(a)) || iszero(length(b))
+    return Meta.parse("zero($Vstr)")
+  end
+
+  s_a_ranges = ntuple(j -> 1:S_a_kept[j], length(ka))
+  s_b_ranges = ntuple(j -> 1:S_b_kept[j], length(kb))
+  s_c_ranges = ntuple(k -> 1:S_contract[k], Nc)
+
+  ss = String[Vstr * "("]
+  for cib in Iterators.product(s_b_ranges...)
+    for cia in Iterators.product(s_a_ranges...)
+      terms = String[]
+      for ciC in Iterators.product(s_c_ranges...)
+        a_idx = Vector{Int}(undef, Na)
+        for (j, pos) in enumerate(ka)
+          a_idx[pos] = cia[j]
+        end
+        for (k, pos) in enumerate(Ia)
+          a_idx[pos] = ciC[k]
+        end
+        b_idx = Vector{Int}(undef, Nb)
+        for (j, pos) in enumerate(kb)
+          b_idx[pos] = cib[j]
+        end
+        for (k, pos) in enumerate(Ib)
+          b_idx[pos] = ciC[k]
+        end
+        push!(terms, "+a[$(join(a_idx,","))]*b[$(join(b_idx,","))]")
+      end
+      push!(ss, join(terms) * ", ")
+    end
+  end
+  push!(ss, ")")
+  Meta.parse(join(ss))
+end
+
+###############################################################
 # Cross Product
 ###############################################################
 
