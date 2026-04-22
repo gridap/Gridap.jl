@@ -237,6 +237,12 @@ end
 
 """
 """
+function get_dirichlet_dof_values(f::SingleFieldFEFunction)
+  f.dirichlet_values
+end
+
+"""
+"""
 function compute_dirichlet_values_for_tags(f::SingleFieldFESpace,tag_to_object)
   dirichlet_values = zero_dirichlet_values(f)
   dirichlet_values_scratch = zero_dirichlet_values(f)
