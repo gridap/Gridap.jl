@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added constructor for high-order grids. Since PR[#1276](https://github.com/gridap/Gridap.jl/pull/1276).
+- Added `get_dirichlet_dof_values` for `FEFunctions`. Since PR[#1275](https://github.com/gridap/Gridap.jl/pull/1275).
 
 ### Fixed
 
