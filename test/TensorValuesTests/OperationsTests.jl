@@ -1497,7 +1497,43 @@ r2 = tensor_contraction(P213, VectorValue(1,2,3), (1,), (1,))
 @test_throws ArgumentError permutedims(A, (1,3))
 @test_throws ArgumentError permutedims(A, (1,1))
 
-# tensor_contraction
+# tensor_contraction (self-contraction)
+
+# trace as special case
+A2 = TensorValue{3,3}(1:9...)
+@test tensor_contraction(A2, (1,), (2,)) == tr(A2)
+@test isa(tensor_contraction(A2, (1,), (2,)), Int)
+
+# non-square matrix: contract unique index pair → scalar
+A23 = TensorValue{2,2}(1,2,3,4)
+@test tensor_contraction(A23, (1,), (2,)) == tr(A23)
+
+# partial trace of a 4th-order tensor: C[j,l] = Σ_i A[i,j,i,l]
+A4 = HighOrderTensorValue{Tuple{3,2,3,4}}(reshape(1:72, 3,2,3,4))
+C  = tensor_contraction(A4, (1,), (3,))
+@test isa(C, TensorValue{2,4,Int})
+@test all(C[j,l] == sum(A4[i,j,i,l] for i in 1:3) for j in 1:2, l in 1:4)
+
+# double self-contraction: scalar
+A4b = HighOrderTensorValue{Tuple{2,3,2,3}}(reshape(1:36, 2,3,2,3))
+s   = tensor_contraction(A4b, (1,2), (3,4))
+@test isa(s, Int)
+@test s == sum(A4b[i,j,i,j] for i in 1:2, j in 1:3)
+
+# consistency: tr(a) == tensor_contraction(a, (1,), (2,))
+st = SymTensorValue{3}(1,2,3,4,5,6)
+@test tensor_contraction(st, (1,), (2,)) == tr(st)
+
+# integer signatures
+@test tensor_contraction(A2, 1, 2) == tr(A2)
+@test tensor_contraction(A2, VectorValue(1,2,3), 2, 1) == tensor_contraction(A2, VectorValue(1,2,3), (2,), (1,))
+
+# error cases
+@test_throws ArgumentError tensor_contraction(A2, (1,), (1,))          # i∩j ≠ ∅
+@test_throws ArgumentError tensor_contraction(A2, (3,), (1,))          # out of range
+@test_throws DimensionMismatch tensor_contraction(TensorValue{2,3}(1:6...), (1,), (2,))
+
+# tensor_contraction (two tensors)
 
 A = TensorValue{2,3}(1,2,3,4,5,6)
 x = VectorValue(1,2,3)
