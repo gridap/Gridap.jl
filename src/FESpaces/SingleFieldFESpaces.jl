@@ -92,8 +92,6 @@ end
 
 """
 """
-
-
 function gather_free_and_dirichlet_values(f::SingleFieldFESpace,cell_vals)
   free_values = zero_free_values(f)
   dirichlet_values = zero_dirichlet_values(f)
@@ -237,6 +235,8 @@ function interpolate_dirichlet!(object, free_values,dirichlet_values,fs::SingleF
   FEFunction(fs,free_values, dirichlet_values)
 end
 
+"""
+"""
 function get_dirichlet_dof_values(f::SingleFieldFEFunction)
   f.dirichlet_values
 end
