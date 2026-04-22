@@ -94,6 +94,7 @@ import Base: convert
 import Base: IndexStyle, CartesianIndices, LinearIndices
 import Base: adjoint
 import Base: transpose
+import Base: permutedims
 import Base: rand
 import Base: sqrt
 

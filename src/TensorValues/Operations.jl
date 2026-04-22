@@ -1012,6 +1012,63 @@ transpose(a::AbstractSymTensorValue) = a
 transpose(a::SkewSymTensorValue) = -a
 
 ###############################################################
+# permutedims
+###############################################################
+
+"""
+    permutedims(a::MultiValue{Sa,Ta,Na}, perm::NTuple{Na,Int})
+
+Return a tensor whose indices are those of `a` reordered by `perm`:
+`result[i₁,…,iₙ] = a[i_{σ⁻¹(1)},…,i_{σ⁻¹(n)}]`, where `σ = perm`.
+
+The output shape is `(size(a, perm[1]), …, size(a, perm[N]))`.
+For second-order tensors this is equivalent to `transpose` (with `perm = (2,1)`).
+Symmetry of the input tensor is not preserved in the output type.
+"""
+function Base.permutedims(
+  a::MultiValue{Sa,Ta,Na},
+  perm::NTuple{Na,Int}) where {Sa,Ta,Na}
+  _permutedims(a, Val(perm))
+end
+
+@generated function _permutedims(
+  a::MultiValue{Sa,Ta,Na}, ::Val{P}) where {Sa,Ta,Na,P}
+
+  @assert Sa <: Tuple "Ill-defined MultiValue"
+
+  sort([P...]) == collect(1:Na) || begin
+    msg = "$P is not a valid permutation of 1:$Na"
+    return :(throw(ArgumentError($msg)))
+  end
+
+  Sa_params = tuple(Sa.parameters...)
+  Sr = ntuple(k -> Sa_params[P[k]], Na)
+
+  Vstr = if Na == 1
+    "VectorValue{$(Sr[1]),Ta}"
+  elseif Na == 2
+    "TensorValue{$(Sr[1]),$(Sr[2]),Ta}"
+  else
+    "HighOrderTensorValue{$(Tuple{Sr...}),Ta}"
+  end
+
+  iszero(length(a)) && return Meta.parse("zero($Vstr)")
+
+  inv_perm = zeros(Int, Na)
+  for k in 1:Na
+    inv_perm[P[k]] = k
+  end
+
+  ss = String[Vstr * "("]
+  for ci in CartesianIndices(Sr)
+    a_idx = ntuple(k -> ci[inv_perm[k]], Na)
+    push!(ss, "a[$(join(a_idx, ","))], ")
+  end
+  push!(ss, ")")
+  Meta.parse(join(ss))
+end
+
+###############################################################
 # Symmetric and Skew symmetric parts
 ###############################################################
 
