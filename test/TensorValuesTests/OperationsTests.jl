@@ -1461,4 +1461,128 @@ t01c = TensorValue{0,1,ComplexF32}()
 @test adjoint(t01c) === t10c
 @test symmetric_part(t00) === SymTensorValue{0,Float32}()
 
+# permutedims
+
+# permutedims
+
+v = VectorValue(1,2,3)
+@test permutedims(v, (1,)) == v
+@test isa(permutedims(v, (1,)), VectorValue{3,Int})
+
+A = TensorValue{2,3}(1,2,3,4,5,6)
+@test permutedims(A, (1,2)) == A
+@test isa(permutedims(A, (1,2)), TensorValue{2,3,Int})
+At = permutedims(A, (2,1))
+@test isa(At, TensorValue{3,2,Int})
+@test At == transpose(A)
+
+S = SymTensorValue{3}(1,2,3,4,5,6)
+@test permutedims(S, (2,1)) == TensorValue{3,3,Int}(get_array(S)')
+
+T3 = ThirdOrderTensorValue{2,3,4}(1:24...)
+@test permutedims(T3, (1,2,3)) == HighOrderTensorValue{Tuple{2,3,4},Int,3}(Tuple(get_array(T3)))
+
+P213 = permutedims(T3, (2,1,3))
+@test isa(P213, HighOrderTensorValue{Tuple{3,2,4},Int,3})
+@test all(P213[j,i,k] == T3[i,j,k] for i in 1:2, j in 1:3, k in 1:4)
+
+P312 = permutedims(T3, (3,1,2))
+@test isa(P312, HighOrderTensorValue{Tuple{4,2,3},Int,3})
+@test all(P312[k,i,j] == T3[i,j,k] for i in 1:2, j in 1:3, k in 1:4)
+
+r1 = tensor_contraction(T3, VectorValue(1,2,3), (2,), (1,))
+r2 = tensor_contraction(P213, VectorValue(1,2,3), (1,), (1,))
+@test r1 == r2
+
+@test_throws ArgumentError permutedims(A, (1,3))
+@test_throws ArgumentError permutedims(A, (1,1))
+
+# tensor_contraction (self-contraction)
+
+# trace as special case
+A2 = TensorValue{3,3}(1:9...)
+@test tensor_contraction(A2, (1,), (2,)) == tr(A2)
+@test isa(tensor_contraction(A2, (1,), (2,)), Int)
+
+# non-square matrix: contract unique index pair → scalar
+A23 = TensorValue{2,2}(1,2,3,4)
+@test tensor_contraction(A23, (1,), (2,)) == tr(A23)
+
+# partial trace of a 4th-order tensor: C[j,l] = Σ_i A[i,j,i,l]
+A4 = HighOrderTensorValue{Tuple{3,2,3,4}}(reshape(1:72, 3,2,3,4))
+C  = tensor_contraction(A4, (1,), (3,))
+@test isa(C, TensorValue{2,4,Int})
+@test all(C[j,l] == sum(A4[i,j,i,l] for i in 1:3) for j in 1:2, l in 1:4)
+
+# double self-contraction: scalar
+A4b = HighOrderTensorValue{Tuple{2,3,2,3}}(reshape(1:36, 2,3,2,3))
+s   = tensor_contraction(A4b, (1,2), (3,4))
+@test isa(s, Int)
+@test s == sum(A4b[i,j,i,j] for i in 1:2, j in 1:3)
+
+# consistency: tr(a) == tensor_contraction(a, (1,), (2,))
+st = SymTensorValue{3}(1,2,3,4,5,6)
+@test tensor_contraction(st, (1,), (2,)) == tr(st)
+
+# integer signatures
+@test tensor_contraction(A2, 1, 2) == tr(A2)
+@test tensor_contraction(A2, VectorValue(1,2,3), 2, 1) == tensor_contraction(A2, VectorValue(1,2,3), (2,), (1,))
+
+# error cases
+@test_throws ArgumentError tensor_contraction(A2, (1,), (1,))          # i∩j ≠ ∅
+@test_throws ArgumentError tensor_contraction(A2, (3,), (1,))          # out of range
+@test_throws DimensionMismatch tensor_contraction(TensorValue{2,3}(1:6...), (1,), (2,))
+
+# tensor_contraction (two tensors)
+
+A = TensorValue{2,3}(1,2,3,4,5,6)
+x = VectorValue(1,2,3)
+r = tensor_contraction(A, x, (2,), (1,))
+@test isa(r, VectorValue{2,Int})
+@test r == A⋅x
+
+y = VectorValue(1,2)
+r2 = tensor_contraction(A, y, (1,), (1,))
+@test isa(r2, VectorValue{3,Int})
+ref = VectorValue(A[1,1]*y[1]+A[2,1]*y[2], A[1,2]*y[1]+A[2,2]*y[2], A[1,3]*y[1]+A[2,3]*y[2])
+@test r2 == ref
+
+u = VectorValue(1,2,3)
+v = VectorValue(4,5,6)
+@test tensor_contraction(u, v, (1,), (1,)) == u⋅v
+
+M = TensorValue{2,3}(1,2,3,4,5,6)
+N = TensorValue{2,3}(6,5,4,3,2,1)
+@test tensor_contraction(M, N, (1,2), (1,2)) == contracted_product(Val(2), M, N)
+
+t1 = TensorValue{2,3}(1,2,3,4,5,6)
+t2 = TensorValue{2,3}(2,3,4,5,6,7)
+@test tensor_contraction(t1, t2, (1,2), (1,2)) == inner(t1,t2)
+
+M2 = TensorValue{2,3}(1,2,3,4,5,6)
+N2 = TensorValue{3,2}(6,5,4,3,2,1)
+@test tensor_contraction(M2, N2, (1,2), (2,1)) == sum(M2[i,j]*N2[j,i] for i in 1:2, j in 1:3)
+
+a2 = VectorValue(1,2)
+b3 = VectorValue(3,4,5)
+@test tensor_contraction(a2, b3, (), ()) == outer(a2, b3)
+
+T3 = ThirdOrderTensorValue{2,3,4}(1:24...)
+w  = VectorValue(1,2,3)
+r3 = tensor_contraction(T3, w, (2,), (1,))
+@test isa(r3, TensorValue{2,4,Int})
+ref3 = [sum(T3[i,k,j]*w[k] for k in 1:3) for i in 1:2, j in 1:4]
+@test get_array(r3) == ref3
+
+T3b = ThirdOrderTensorValue{3,2,3}(1:18...)
+B   = TensorValue{3,3}(1:9...)
+r4  = tensor_contraction(T3b, B, (1,3), (1,2))
+@test isa(r4, VectorValue{2,Int})
+ref4 = [sum(T3b[i,j,k]*B[i,k] for i in 1:3, k in 1:3) for j in 1:2]
+@test r4 == VectorValue(ref4...)
+
+@test_throws DimensionMismatch tensor_contraction(VectorValue(1,2), VectorValue(1,2,3), (1,), (1,))
+@test_throws ArgumentError tensor_contraction(VectorValue(1,2), VectorValue(1,2), (3,), (1,))
+@test_throws ArgumentError tensor_contraction(TensorValue{2,2}(1:4...), VectorValue(1,2), (1,1), (1,1))
+
 end # module OperationsTests

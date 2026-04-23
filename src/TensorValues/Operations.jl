@@ -608,6 +608,227 @@ the specific functions above if possible), but is used as default generic implem
 end
 
 ###############################################################
+# General tensor contraction (arbitrary index pairs)
+###############################################################
+
+"""
+    tensor_contraction(a::MultiValue, b::MultiValue, ia::NTuple{N,Int}, ib::NTuple{N,Int})
+
+Contract `N` index pairs between tensors `a` and `b`: the `ia[k]`-th index of `a`
+is summed against the `ib[k]`-th index of `b`, for `k = 1, …, N`.
+The contracted dimensions must match pairwise.
+
+The output tensor has the remaining (non-contracted) indices of `a` in their
+original order, followed by those of `b` in their original order.
+
+Generalises [`contracted_product`](@ref): `contracted_product(Val(N), a, b)` is
+equivalent to `tensor_contraction(a, b, (Na-N+1, …, Na), (1, …, N))`.
+"""
+function tensor_contraction(
+  a::MultiValue{Sa,Ta,Na},
+  b::MultiValue{Sb,Tb,Nb},
+  ia::NTuple{Nc,Int},
+  ib::NTuple{Nc,Int}) where {Sa,Ta,Na,Sb,Tb,Nb,Nc}
+  _tensor_contraction(a, b, Val(ia), Val(ib))
+end
+
+tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
+  tensor_contraction(a, b, (ia,), (ib,))
+
+@generated function _tensor_contraction(
+  a::MultiValue{Sa,Ta,Na},
+  b::MultiValue{Sb,Tb,Nb},
+  ::Val{Ia},
+  ::Val{Ib}) where {Sa,Ta,Na,Sb,Tb,Nb,Ia,Ib}
+
+  @assert (Sa <: Tuple && Sb <: Tuple) "Ill-defined MultiValue"
+  Nc = length(Ia)
+  @assert length(Ib) == Nc
+
+  if min(Na, Nb) == 0
+    msg = "tensor_contraction requires tensors of order ≥ 1, got orders $Na and $Nb"
+    return :(error($msg))
+  end
+
+  for i in Ia
+    (1 <= i <= Na) || begin
+      msg = "ia index $i out of range [1, $Na]"
+      return :(throw(ArgumentError($msg)))
+    end
+  end
+  for i in Ib
+    (1 <= i <= Nb) || begin
+      msg = "ib index $i out of range [1, $Nb]"
+      return :(throw(ArgumentError($msg)))
+    end
+  end
+  length(unique(Ia)) == Nc || return :(throw(ArgumentError("ia contains duplicate indices")))
+  length(unique(Ib)) == Nc || return :(throw(ArgumentError("ib contains duplicate indices")))
+
+  for k in 1:Nc
+    da, db = Sa.parameters[Ia[k]], Sb.parameters[Ib[k]]
+    if da != db
+      msg = "Dimension mismatch at contracted pair $k: a[$(Ia[k])]=$da, b[$(Ib[k])]=$db"
+      return :(throw(DimensionMismatch($msg)))
+    end
+  end
+
+  Ia_set = Set(Ia)
+  Ib_set = Set(Ib)
+  ka = tuple(filter(i -> !(i in Ia_set), 1:Na)...)
+  kb = tuple(filter(i -> !(i in Ib_set), 1:Nb)...)
+
+  S_a_kept   = ntuple(j -> Sa.parameters[ka[j]], length(ka))
+  S_b_kept   = ntuple(j -> Sb.parameters[kb[j]], length(kb))
+  S_contract = ntuple(k -> Sa.parameters[Ia[k]], Nc)
+
+  Sr = (S_a_kept..., S_b_kept...)
+  Nr = length(Sr)
+
+  Vstr = if Nr == 0
+    "Base.promote_op(*,Ta,Tb)"
+  elseif Nr == 1
+    "VectorValue{$(Sr[1]),Base.promote_op(*,Ta,Tb)}"
+  elseif Nr == 2
+    "TensorValue{$(Sr[1]),$(Sr[2]),Base.promote_op(*,Ta,Tb)}"
+  else
+    "HighOrderTensorValue{$(Tuple{Sr...}),Base.promote_op(*,Ta,Tb)}"
+  end
+
+  if iszero(length(a)) || iszero(length(b))
+    return Meta.parse("zero($Vstr)")
+  end
+
+  s_a_ranges = ntuple(j -> 1:S_a_kept[j], length(ka))
+  s_b_ranges = ntuple(j -> 1:S_b_kept[j], length(kb))
+  s_c_ranges = ntuple(k -> 1:S_contract[k], Nc)
+
+  ss = String[Vstr * "("]
+  for cib in Iterators.product(s_b_ranges...)
+    for cia in Iterators.product(s_a_ranges...)
+      terms = String[]
+      for ciC in Iterators.product(s_c_ranges...)
+        a_idx = Vector{Int}(undef, Na)
+        for (j, pos) in enumerate(ka)
+          a_idx[pos] = cia[j]
+        end
+        for (k, pos) in enumerate(Ia)
+          a_idx[pos] = ciC[k]
+        end
+        b_idx = Vector{Int}(undef, Nb)
+        for (j, pos) in enumerate(kb)
+          b_idx[pos] = cib[j]
+        end
+        for (k, pos) in enumerate(Ib)
+          b_idx[pos] = ciC[k]
+        end
+        push!(terms, "+a[$(join(a_idx,","))]*b[$(join(b_idx,","))]")
+      end
+      push!(ss, join(terms) * ", ")
+    end
+  end
+  push!(ss, ")")
+  Meta.parse(join(ss))
+end
+
+"""
+    tensor_contraction(a::MultiValue, i::NTuple{N,Int}, j::NTuple{N,Int})
+
+Self-contraction of `a`: for each pair `k`, index `i[k]` and index `j[k]` of `a`
+are set equal and summed over. `i` and `j` must be disjoint and the paired
+dimensions must match.
+
+The output has the remaining indices of `a` (those not in `i` or `j`) in their
+original order. `tr(a)` is the special case `tensor_contraction(a, (1,), (2,))`.
+"""
+function tensor_contraction(
+  a::MultiValue{Sa,Ta,Na},
+  i::NTuple{Nc,Int},
+  j::NTuple{Nc,Int}) where {Sa,Ta,Na,Nc}
+  _tensor_contraction(a, Val(i), Val(j))
+end
+
+tensor_contraction(a::MultiValue, i::Int, j::Int) =
+  tensor_contraction(a, (i,), (j,))
+
+@generated function _tensor_contraction(
+  a::MultiValue{Sa,Ta,Na},
+  ::Val{I},
+  ::Val{J}) where {Sa,Ta,Na,I,J}
+
+  @assert Sa <: Tuple "Ill-defined MultiValue"
+  Nc = length(I)
+  @assert length(J) == Nc
+
+  Na == 0 && return :(error("tensor_contraction requires a tensor of order ≥ 1"))
+
+  for idx in I
+    (1 <= idx <= Na) || begin
+      msg = "i index $idx out of range [1, $Na]"
+      return :(throw(ArgumentError($msg)))
+    end
+  end
+  for idx in J
+    (1 <= idx <= Na) || begin
+      msg = "j index $idx out of range [1, $Na]"
+      return :(throw(ArgumentError($msg)))
+    end
+  end
+  length(unique([I..., J...])) == 2Nc ||
+    return :(throw(ArgumentError("i and j must be disjoint with no internal duplicates")))
+
+  for k in 1:Nc
+    di, dj = Sa.parameters[I[k]], Sa.parameters[J[k]]
+    di == dj || begin
+      msg = "Dimension mismatch at pair $k: a[$(I[k])]=$di ≠ a[$(J[k])]=$dj"
+      return :(throw(DimensionMismatch($msg)))
+    end
+  end
+
+  contracted = Set([I..., J...])
+  ka         = tuple(filter(idx -> !(idx in contracted), 1:Na)...)
+  S_keep     = ntuple(m -> Sa.parameters[ka[m]], length(ka))
+  S_contract = ntuple(k -> Sa.parameters[I[k]], Nc)
+  Nr         = length(S_keep)
+
+  Vstr = if Nr == 0
+    "Ta"
+  elseif Nr == 1
+    "VectorValue{$(S_keep[1]),Ta}"
+  elseif Nr == 2
+    "TensorValue{$(S_keep[1]),$(S_keep[2]),Ta}"
+  else
+    "HighOrderTensorValue{$(Tuple{S_keep...}),Ta}"
+  end
+
+  iszero(length(a)) && return Meta.parse("zero($Vstr)")
+
+  s_keep_ranges     = ntuple(m -> 1:S_keep[m],     length(ka))
+  s_contract_ranges = ntuple(k -> 1:S_contract[k], Nc)
+
+  ss = String[Vstr * "("]
+  for cia in Iterators.product(s_keep_ranges...)
+    terms = String[]
+    for ciC in Iterators.product(s_contract_ranges...)
+      a_idx = Vector{Int}(undef, Na)
+      for (m, pos) in enumerate(ka)
+        a_idx[pos] = cia[m]
+      end
+      for (k, pos) in enumerate(I)
+        a_idx[pos] = ciC[k]
+      end
+      for (k, pos) in enumerate(J)
+        a_idx[pos] = ciC[k]
+      end
+      push!(terms, "+a[$(join(a_idx, ","))]")
+    end
+    push!(ss, join(terms) * ", ")
+  end
+  push!(ss, ")")
+  Meta.parse(join(ss))
+end
+
+###############################################################
 # Cross Product
 ###############################################################
 
@@ -894,6 +1115,63 @@ adjoint(a::SkewSymTensorValue) = -conj(a)
 
 transpose(a::AbstractSymTensorValue) = a
 transpose(a::SkewSymTensorValue) = -a
+
+###############################################################
+# permutedims
+###############################################################
+
+"""
+    permutedims(a::MultiValue{Sa,Ta,Na}, perm::NTuple{Na,Int})
+
+Return a tensor whose indices are those of `a` reordered by `perm`:
+`result[i₁,…,iₙ] = a[i_{σ⁻¹(1)},…,i_{σ⁻¹(n)}]`, where `σ = perm`.
+
+The output shape is `(size(a, perm[1]), …, size(a, perm[N]))`.
+For second-order tensors this is equivalent to `transpose` (with `perm = (2,1)`).
+Symmetry of the input tensor is not preserved in the output type.
+"""
+function Base.permutedims(
+  a::MultiValue{Sa,Ta,Na},
+  perm::NTuple{Na,Int}) where {Sa,Ta,Na}
+  _permutedims(a, Val(perm))
+end
+
+@generated function _permutedims(
+  a::MultiValue{Sa,Ta,Na}, ::Val{P}) where {Sa,Ta,Na,P}
+
+  @assert Sa <: Tuple "Ill-defined MultiValue"
+
+  sort([P...]) == collect(1:Na) || begin
+    msg = "$P is not a valid permutation of 1:$Na"
+    return :(throw(ArgumentError($msg)))
+  end
+
+  Sa_params = tuple(Sa.parameters...)
+  Sr = ntuple(k -> Sa_params[P[k]], Na)
+
+  Vstr = if Na == 1
+    "VectorValue{$(Sr[1]),Ta}"
+  elseif Na == 2
+    "TensorValue{$(Sr[1]),$(Sr[2]),Ta}"
+  else
+    "HighOrderTensorValue{$(Tuple{Sr...}),Ta}"
+  end
+
+  iszero(length(a)) && return Meta.parse("zero($Vstr)")
+
+  inv_perm = zeros(Int, Na)
+  for k in 1:Na
+    inv_perm[P[k]] = k
+  end
+
+  ss = String[Vstr * "("]
+  for ci in CartesianIndices(Sr)
+    a_idx = ntuple(k -> ci[inv_perm[k]], Na)
+    push!(ss, "a[$(join(a_idx, ","))], ")
+  end
+  push!(ss, ")")
+  Meta.parse(join(ss))
+end
 
 ###############################################################
 # Symmetric and Skew symmetric parts

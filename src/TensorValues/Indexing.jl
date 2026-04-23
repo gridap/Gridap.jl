@@ -221,3 +221,178 @@ function _4d_sym_tensor_linear_index(D,i,j,k,l)
   index
 end
 
+###############################################################
+# Voigt and Mandel notation
+###############################################################
+
+# Compile-time helpers (called only inside @generated function bodies)
+function _voigt_pairs(D)
+  pairs = NTuple{2,Int}[]
+  for i in 1:D; push!(pairs, (i,i)); end
+  for i in 1:D, j in i+1:D; push!(pairs, (i,j)); end
+  pairs
+end
+
+function _voigt_inv(D)
+  pairs = _voigt_pairs(D)
+  inv_map = zeros(Int, D, D)
+  for (k, (i,j)) in enumerate(pairs)
+    inv_map[i,j] = k; inv_map[j,i] = k
+  end
+  inv_map
+end
+
+# Promoted eltype for Mandel (off-diagonal entries multiplied by √2)
+_mandel_eltype(::Type{T}) where {T} =
+  Base.promote_op(*, typeof(sqrt(2*one(T))), T)
+
+"""
+    to_voigt(a::SymTensorValue{D,T,L}) -> VectorValue{L,T}
+
+Encode a symmetric second-order tensor in Voigt notation. Components are
+ordered with diagonals first — (1,1),(2,2),…,(D,D) — followed by
+upper-triangular off-diagonal pairs (i,j) with i<j in lexicographic order.
+"""
+@generated function to_voigt(a::SymTensorValue{D,T,L}) where {D,T,L}
+  pairs = _voigt_pairs(D)
+  str = join(["a[$(p[1]),$(p[2])], " for p in pairs])
+  Meta.parse("VectorValue{$L,T}(($str))")
+end
+
+"""
+    from_voigt(v::VectorValue{L,T}) -> SymTensorValue
+
+Decode a Voigt-encoded vector to a symmetric second-order tensor.
+`L` must be a triangular number, i.e. L = D(D+1)/2 for some integer D.
+"""
+@generated function from_voigt(v::VectorValue{L,T}) where {L,T}
+  D = (isqrt(1+8*L)-1) ÷ 2
+  @assert L == D*(D+1)÷2 "from_voigt: VectorValue length $L is not a valid Voigt vector length"
+  inv_map = _voigt_inv(D)
+  str = join(["v[$(inv_map[i,j])], " for i in 1:D for j in i:D])
+  Meta.parse("SymTensorValue{$D,T}(($str))")
+end
+
+"""
+    to_mandel(a::SymTensorValue{D,T,L}) -> VectorValue{L,S}
+
+Encode a symmetric second-order tensor in Mandel notation. The ordering
+follows Voigt convention, but off-diagonal components are scaled by √2 so
+that `to_mandel(a) ⋅ to_mandel(b) == inner(a, b)` for any `a`, `b`.
+The output eltype `S` is `promote_op(*, typeof(√2), T)`.
+"""
+@generated function to_mandel(a::SymTensorValue{D,T,L}) where {D,T,L}
+  S = _mandel_eltype(T)
+  pairs = _voigt_pairs(D)
+  terms = [i==j ? "convert($S, a[$i,$j])" : "sqrt($S(2)) * a[$i,$j]" for (i,j) in pairs]
+  str = join(terms, ", ")
+  Meta.parse("VectorValue{$L,$S}(($str,))")
+end
+
+"""
+    from_mandel(v::VectorValue{L,T}) -> SymTensorValue
+
+Decode a Mandel-encoded vector to a symmetric second-order tensor.
+`L` must be a triangular number, i.e. L = D(D+1)/2 for some integer D.
+"""
+@generated function from_mandel(v::VectorValue{L,T}) where {L,T}
+  D = (isqrt(1+8*L)-1) ÷ 2
+  @assert L == D*(D+1)÷2 "from_mandel: VectorValue length $L is not a valid Mandel vector length"
+  S = _mandel_eltype(T)
+  inv_map = _voigt_inv(D)
+  terms = [i==j ? "convert($S, v[$(inv_map[i,j])])" : "v[$(inv_map[i,j])] / sqrt($S(2))" for i in 1:D for j in i:D]
+  str = join(terms, ", ")
+  Meta.parse("SymTensorValue{$D,$S}(($str,))")
+end
+
+"""
+    to_voigt(a::SymFourthOrderTensorValue{D,T,L}) -> TensorValue{M,M,T}
+
+Encode a symmetric fourth-order tensor in Voigt notation as an M×M matrix,
+where M = D(D+1)/2. Entry [I,J] of the result equals `a[i,j,k,l]`, where
+(i,j) and (k,l) are the index pairs corresponding to Voigt indices I and J.
+"""
+@generated function to_voigt(a::SymFourthOrderTensorValue{D,T,L}) where {D,T,L}
+  M = D*(D+1)÷2
+  pairs = _voigt_pairs(D)
+  terms = String[]
+  for J in 1:M, I in 1:M
+    i, j = pairs[I]; k, l = pairs[J]
+    push!(terms, "a[$i,$j,$k,$l]")
+  end
+  str = join(terms, ", ")
+  Meta.parse("TensorValue{$M,$M,T}(($str,))")
+end
+
+"""
+    from_voigt(m::TensorValue{N,N,T,L}) -> SymFourthOrderTensorValue
+
+Decode a Voigt matrix to a symmetric fourth-order tensor.
+`N` must satisfy N = D(D+1)/2 for some integer D.
+"""
+@generated function from_voigt(m::TensorValue{N,N,T,L}) where {N,T,L}
+  D = (isqrt(1+8*N)-1) ÷ 2
+  @assert N == D*(D+1)÷2 "from_voigt: TensorValue size $N×$N is not a valid Voigt matrix size"
+  inv_map = _voigt_inv(D)
+  terms = String[]
+  for i in 1:D, j in i:D, k in 1:D, l in k:D
+    I = inv_map[i,j]; J = inv_map[k,l]
+    push!(terms, "m[$I,$J]")
+  end
+  str = join(terms, ", ")
+  Meta.parse("SymFourthOrderTensorValue{$D,T}(($str,))")
+end
+
+"""
+    to_mandel(a::SymFourthOrderTensorValue{D,T,L}) -> TensorValue{M,M,S}
+
+Encode a symmetric fourth-order tensor in Mandel notation as an M×M matrix,
+where M = D(D+1)/2. Off-diagonal Voigt indices are scaled by √2 on each
+axis, so double off-diagonal entries are scaled by 2 (exact).
+The output eltype `S` is `promote_op(*, typeof(√2), T)`.
+"""
+@generated function to_mandel(a::SymFourthOrderTensorValue{D,T,L}) where {D,T,L}
+  M = D*(D+1)÷2
+  S = _mandel_eltype(T)
+  pairs = _voigt_pairs(D)
+  terms = String[]
+  for J in 1:M, I in 1:M
+    i, j = pairs[I]; k, l = pairs[J]
+    if i==j && k==l
+      push!(terms, "convert($S, a[$i,$j,$k,$l])")
+    elseif i==j || k==l
+      push!(terms, "sqrt($S(2)) * a[$i,$j,$k,$l]")
+    else
+      push!(terms, "$S(2) * a[$i,$j,$k,$l]")
+    end
+  end
+  str = join(terms, ", ")
+  Meta.parse("TensorValue{$M,$M,$S}(($str,))")
+end
+
+"""
+    from_mandel(m::TensorValue{N,N,T,L}) -> SymFourthOrderTensorValue
+
+Decode a Mandel matrix to a symmetric fourth-order tensor.
+`N` must satisfy N = D(D+1)/2 for some integer D.
+"""
+@generated function from_mandel(m::TensorValue{N,N,T,L}) where {N,T,L}
+  D = (isqrt(1+8*N)-1) ÷ 2
+  @assert N == D*(D+1)÷2 "from_mandel: TensorValue size $N×$N is not a valid Mandel matrix size"
+  S = _mandel_eltype(T)
+  inv_map = _voigt_inv(D)
+  terms = String[]
+  for i in 1:D, j in i:D, k in 1:D, l in k:D
+    I = inv_map[i,j]; J = inv_map[k,l]
+    if i==j && k==l
+      push!(terms, "convert($S, m[$I,$J])")
+    elseif i==j || k==l
+      push!(terms, "m[$I,$J] / sqrt($S(2))")
+    else
+      push!(terms, "m[$I,$J] / $S(2)")
+    end
+  end
+  str = join(terms, ", ")
+  Meta.parse("SymFourthOrderTensorValue{$D,$S}(($str,))")
+end
+
