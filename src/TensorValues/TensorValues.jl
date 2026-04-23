@@ -80,6 +80,10 @@ export indep_components_names
 export component_basis
 export representatives_of_componentbasis_dual
 export representatives_of_basis_dual
+export to_voigt
+export from_voigt
+export to_mandel
+export from_mandel
 
 import Base: show
 import Base: promote_rule

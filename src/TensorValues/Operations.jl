@@ -740,13 +740,13 @@ function tensor_contraction(
   a::MultiValue{Sa,Ta,Na},
   i::NTuple{Nc,Int},
   j::NTuple{Nc,Int}) where {Sa,Ta,Na,Nc}
-  _tensor_self_contraction(a, Val(i), Val(j))
+  _tensor_contraction(a, Val(i), Val(j))
 end
 
 tensor_contraction(a::MultiValue, i::Int, j::Int) =
   tensor_contraction(a, (i,), (j,))
 
-@generated function _tensor_self_contraction(
+@generated function _tensor_contraction(
   a::MultiValue{Sa,Ta,Na},
   ::Val{I},
   ::Val{J}) where {Sa,Ta,Na,I,J}
