@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.4] - 2026-04-23
+
 ### Added
 
+- Added `get_free_dof_coordinates`. Since PR[#1262](https://github.com/gridap/Gridap.jl/pull/1262).
+- The element type of a `LinearCombinationDofVector` is now `LinearCombinationDof`, since PR[#1266](https://github.com/gridap/Gridap.jl/pull/1266).
 - Added constructor for high-order grids. Since PR[#1276](https://github.com/gridap/Gridap.jl/pull/1276).
 - Added `get_dirichlet_dof_values` for `FEFunctions`. Since PR[#1275](https://github.com/gridap/Gridap.jl/pull/1275).
 - Added `tensor_contraction` function for generic tensor contraction. Since PR[#1280](https://github.com/gridap/Gridap.jl/pull/1280).
@@ -20,16 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed model orientation preservation in `UniformRefinement`. Since PR[#1274](https://github.com/gridap/Gridap.jl/pull/1274).
 - Fixed Issue[#1279](https://github.com/gridap/Gridap.jl/issues/1279) related to zero-length facet triangulations with multifield. Since PR[#1277](https://github.com/gridap/Gridap.jl/pull/1277).
 - Fixed type promotion in tensor operations. Since PR[#1278](https://github.com/gridap/Gridap.jl/pull/1278).
-
-## [0.20.4] - 2026-04-09
-
-### Added
-
-- Added `get_free_dof_coordinates`. Since PR[#1262](https://github.com/gridap/Gridap.jl/pull/1262).
-- The element type of a `LinearCombinationDofVector` is now `LinearCombinationDof`, since PR[#1266](https://github.com/gridap/Gridap.jl/pull/1266).
-
-### Fixed
-
 - Fixed type inference for operations between MultiValue types. Since PR[1270](https://github.com/gridap/Gridap.jl/pull/1270).
 - Allow autodifferentiation of functions that require a VectorValue input. Since PR[1271](https://github.com/gridap/Gridap.jl/pull/1271).
 
