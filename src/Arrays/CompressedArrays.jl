@@ -39,12 +39,21 @@ struct CompressedArray{T,N,A,P} <: AbstractArray{T,N}
   end
 end
 
-function testitem(a::CompressedArray)
+function testitem(a::CompressedArray{T}) where T
   if length(a.ptrs) == 0
     testitem(a.values)
   else
     a.values[first(a.ptrs)]
-  end
+  end::T
+end
+
+# This is needed for zero-sized arrays of evaluated quantities.
+function testitem(a::CompressedArray{T}) where T <: Union{AbstractArray{<:Number}, ArrayBlock{<:Number}, ArrayBlock{<:AbstractArray{<:Number}}}
+  if length(a.ptrs) == 0
+    testvalue(T)
+  else
+    a.values[first(a.ptrs)]
+  end::T
 end
 
 size(a::CompressedArray) = size(a.ptrs)

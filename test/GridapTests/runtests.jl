@@ -49,6 +49,7 @@ end
   @time @testset "Issue869"  begin include("issues/issue_869.jl")  end
   @time @testset "Issue974"  begin include("issues/issue_974.jl")  end
   @time @testset "Issue1117" begin include("issues/issue_1117.jl") end
+  @time @testset "Issue1279" begin include("issues/issue_1279.jl") end
 end
 
 @time @testset "EmptyDomains" begin include("EmptyDomainsTests.jl") end
