@@ -112,6 +112,17 @@ AbstractSymTensorValue
 getindex(::MultiValue, ::Integer)
 ```
 
+### Voigt and Mandel notation
+
+For symmetric second and fourth order tensors, we support the conversion to Voigt and Mandel notations. The following functions are provided for this purpose:
+
+```@docs
+to_voigt
+from_voigt
+to_mandel
+from_mandel
+```
+
 ## Interface and operations
 
 The tensor types implement methods for the following `Base` functions:
@@ -143,6 +154,8 @@ outer(::MultiValue,::MultiValue)
 normalize
 
 contracted_product
+tensor_contraction
+Base.permutedims
 ```
 
 ### Other type specific interfaces
