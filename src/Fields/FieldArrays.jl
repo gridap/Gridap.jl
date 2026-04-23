@@ -202,7 +202,7 @@ end
 
 function testvalue(::Type{LinearCombinationField{V,F}}) where {V,F}
   fields = testvalue(F)
-  values = zeros(eltype(V), length(fields), 1)
+  values = testvalue(V)
   LinearCombinationField(values,fields,1)
 end
 
@@ -309,6 +309,20 @@ struct LinearCombinationMap{T} <: Map
   LinearCombinationMap(column::Colon)  = new{typeof(column)}(column)
 end
 
+@inline function linear_combination_eltype(v,fx)
+  T = Base.promote_op(⊗, eltype(fx), eltype(v))
+  return Base.promote_op(+,T,T)
+end
+
+function return_value(k::LinearCombinationMap{<:Integer},v::AbstractVector,fx::AbstractVector)
+  T = linear_combination_eltype(v,fx)
+  return zero(T)
+end
+
+function return_cache(k::LinearCombinationMap{<:Integer},v::AbstractVector,fx::AbstractVector)
+  return nothing
+end
+
 function evaluate!(cache,k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractVector)
   z = zero(return_type(outer,testitem(fx),testitem(v)))
   @check length(fx) == size(v,1)
@@ -327,14 +341,6 @@ function return_value(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::Ab
     c = return_cache(k,v,fx)
     c.array
   end
-end
-
-function return_value(k::LinearCombinationMap{<:Integer},v::AbstractVector,fx::AbstractVector)
-  Ta = eltype(v)
-  Tb = eltype(fx)
-  za = zero(Ta)
-  zb = zero(Tb)
-  zero( zb⊗za + zb⊗za )
 end
 
 function return_cache(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractMatrix)
@@ -574,6 +580,12 @@ end
 for T in (:(Point),:(AbstractArray{<:Point}))
   @eval begin
 
+    function return_value(f::BroadcastOpFieldArray,x::$T)
+      rs = map(fi -> return_value(fi,x),f.args)
+      bm = BroadcastingFieldOpMap(f.op)
+      return return_value(bm,rs...)
+    end
+
     function return_cache(f::BroadcastOpFieldArray,x::$T)
       cfs = map(fi -> return_cache(fi,x),f.args)
       rs = map(fi -> return_value(fi,x),f.args)
@@ -587,6 +599,12 @@ for T in (:(Point),:(AbstractArray{<:Point}))
       rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
       bm = BroadcastingFieldOpMap(f.op)
       evaluate!(r,bm,rs...)
+    end
+
+    function return_value(k::BroadcastOpFieldArray{typeof(∘)},x::$T)
+      f, g = k.args
+      gx = return_value(g,x)
+      return return_value(f,gx)
     end
 
     function return_cache(k::BroadcastOpFieldArray{typeof(∘)},x::$T)

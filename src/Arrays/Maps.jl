@@ -194,7 +194,7 @@ function return_value(f::Broadcasting,x...)
 end
 
 function evaluate!(cache,f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
-  r = _prepare_cache!(cache,x...)
+  r = _bcast_setsize!(cache,x...)
   a = r.array
   broadcast!(f.f,a,x...)
   a
@@ -223,36 +223,25 @@ function return_cache(f::Broadcasting,x::Number...)
 end
 
 function return_value(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
-  s = map(_size_zero,x)
+  s = map(_bcast_size,x)
   bs = Base.Broadcast.broadcast_shape(s...)
   T = return_type(f.f,map(testitem,x)...)
   r = fill(testvalue(T),bs)
   r
 end
 
-function _size_zero(a)
-  s = size(a)
-  if length(a) == 0
-    r = map(i-> (i==0 ? 1 : i) ,s)
-  else
-    r = s
-  end
-  r
-end
-_size_zero(a::Number) = (1,)
-
 function return_cache(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
-  s = map(_size,x)
+  s = map(_bcast_size,x)
   bs = Base.Broadcast.broadcast_shape(s...)
   T = return_type(f.f,map(testitem,x)...)
   r = fill(testvalue(T),bs)
   cache = CachedArray(r)
-  _prepare_cache!(cache,x...)
+  _bcast_setsize!(cache,x...)
   cache
 end
 
-function _prepare_cache!(c,x...)
-  s = map(_size,x)
+function _bcast_setsize!(c,x...)
+  s = map(_bcast_size,x)
   bs = Base.Broadcast.broadcast_shape(s...)
   if bs != size(c)
     setsize!(c,bs)
@@ -260,8 +249,25 @@ function _prepare_cache!(c,x...)
   c
 end
 
-_size(a) = size(a)
-_size(a::Number) = (1,)
+# `_bcast_size` would be `size` if our TensorValues would return size(x) = (), which they do not...
+_bcast_size(x) = size(x)
+_bcast_size(::Number) = ()
+
+# These two have been replaced by size
+#
+# _size(a) = size(a)
+# _size(a::Number) = (1,)
+# 
+# function _size_zero(a)
+#   s = size(a)
+#   if length(a) == 0
+#     r = map(i-> (i==0 ? 1 : i) ,s)
+#   else
+#     r = s
+#   end
+#   r
+# end
+# _size_zero(a::Number) = (1,)
 
 """
     OperationMap(f,args)
