@@ -86,6 +86,10 @@ using DocStringExtensions
 using LinearAlgebra: mul!
 using LinearAlgebra: I
 using StaticArrays
+
+using ForwardDiff
+using ForwardDiff: Dual
+
 using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.TensorValues
