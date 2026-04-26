@@ -54,6 +54,9 @@ function autodiff_array_hessian(a,i_to_x,j_to_i)
 end
 
 function autodiff_array_reindex(i_to_val, j_to_i)
+  if isempty(j_to_i)
+    return Fill(testitem(i_to_val),0)
+  end
   n_neg = count(j -> j < 0, j_to_i)
   if iszero(n_neg)
     j_to_val = lazy_map(Reindex(i_to_val),j_to_i)
@@ -62,6 +65,12 @@ function autodiff_array_reindex(i_to_val, j_to_i)
     j_to_val = lazy_map(PosNegReindex(i_to_val,neg_to_val),j_to_i)
   end
   return j_to_val
+end
+
+function autodiff_array_reindex(i_to_val, j_to_i::AppendedArray)
+  a = autodiff_array_reindex(i_to_val, j_to_i.a)
+  b = autodiff_array_reindex(i_to_val, j_to_i.b)
+  return lazy_append(a,b)
 end
 
 """
