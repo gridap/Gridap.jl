@@ -488,7 +488,9 @@ function _sum_if_first_positive(a,b)
 end
 
 function Arrays.return_value(k::Broadcasting{typeof(_sum_if_first_positive)},dofs::VectorBlock,o)
-  evaluate(k,dofs,o)
+  T = return_type(k,testitem(dofs.array),o)
+  array = Vector{T}(undef,length(dofs.array))
+  ArrayBlock(array,dofs.touched)
 end
 
 function Arrays.return_cache(k::Broadcasting{typeof(_sum_if_first_positive)},dofs::VectorBlock,o)
