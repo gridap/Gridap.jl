@@ -104,6 +104,31 @@ function evaluate!(cfg,k::ConfigMap,x)
   return cfg
 end
 
+# For a zero-length LazyArray of GradientConfig/JacobianConfig, the generic testitem
+# computes return_value(ConfigMap, testitem(x_slice)) where testitem(x_slice) is a
+# zero-length vector (because x_slice is also zero-length). This yields a config with
+# chunk size 0, which does not match the declared type T whose chunk size N > 0.
+# Fix: extract N from T and call return_cache with a vector of length N, using the
+# actual tag closure recovered from testitem(a.maps). The cache is never used for
+# zero-length arrays, so the constructed config is only needed for type correctness.
+function testitem(a::LazyArray{A,T} where A) where {Tag,V,N,D,T<:ForwardDiff.GradientConfig{Tag,V,N,D}}
+  if length(a) > 0
+    first(a)::T
+  else
+    gi = testitem(a.maps)
+    return_cache(gi, zeros(V, N))
+  end::T
+end
+
+function testitem(a::LazyArray{A,T} where A) where {Tag,V,N,D,T<:ForwardDiff.JacobianConfig{Tag,V,N,D}}
+  if length(a) > 0
+    first(a)::T
+  else
+    gi = testitem(a.maps)
+    return_cache(gi, zeros(V, N))
+  end::T
+end
+
 """
     struct DualizeMap <: Map
 """
@@ -113,6 +138,16 @@ function evaluate!(cache,::DualizeMap,cfg,x)
   xdual, seeds = cfg.duals, cfg.seeds
   ForwardDiff.seed!(xdual, x, seeds)
   return xdual
+end
+
+# When testitem of a zero-length ConfigMap LazyArray is called, it returns a
+# GradientConfig/JacobianConfig with the correct chunk size N (recovered from
+# the type parameter), while the companion x test item has length 0. Calling
+# evaluate! with a length-N config and a length-0 x would crash in seed!.
+# return_value only needs to produce a type-correct placeholder; its value is
+# irrelevant since zero-length arrays are never iterated.
+function return_value(::DualizeMap, cfg::Union{ForwardDiff.GradientConfig, ForwardDiff.JacobianConfig}, x::AbstractVector)
+  similar(cfg.duals, length(x))
 end
 
 """
