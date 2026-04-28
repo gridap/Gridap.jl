@@ -401,4 +401,87 @@ close!(ch_rt)
 @test is_constrained(ch_rt, 3)
 @test is_constrained(ch_rt, 5)
 
+
+# -----------------------------------------------------------------------
+# merge_slave_constraint_tables / close_slave_constraint_tables
+# -----------------------------------------------------------------------
+
+using Gridap.FESpaces: merge_slave_constraint_tables, close_slave_constraint_tables
+
+# Helper: slave_dof → Dict(master_dof → coeff), order-independent comparison.
+_cdict(dofs, dtable, ctable) = Dict(
+  dofs[i] => Dict(zip(collect(dtable[i]), collect(ctable[i])))
+  for i in eachindex(dofs))
+
+_n_dofs = num_free_dofs(_space) + num_dirichlet_dofs(_space)
+
+# Merge: disjoint sets → fast path, all slaves present in output.
+let
+  ch1 = ConstraintHandler(_n_dofs); add_constraint!(ch1, 3, [1,2], [0.5,0.5]); close!(ch1)
+  ch2 = ConstraintHandler(_n_dofs); add_constraint!(ch2, 5, [4],   [1.0]);     close!(ch2)
+  d1,t1,c1,o1 = constraint_tables(_space, ch1)
+  d2,t2,c2,o2 = constraint_tables(_space, ch2)
+  out_dof, out_dofs, out_coeffs, _ = merge_slave_constraint_tables(
+    _space, d1,t1,c1, d2,t2,c2, o1,o2)
+  @test Set(out_dof) == Set([3, 5])
+  @test _cdict(out_dof, out_dofs, out_coeffs)[3] == Dict(1 => 0.5, 2 => 0.5)
+  @test _cdict(out_dof, out_dofs, out_coeffs)[5] == Dict(4 => 1.0)
+end
+
+# Merge: conflict → on_conflict (first-wins keeps s1 row).
+let
+  ch1 = ConstraintHandler(_n_dofs); add_constraint!(ch1, 3, [1], [1.0]); close!(ch1)
+  ch2 = ConstraintHandler(_n_dofs); add_constraint!(ch2, 3, [2], [1.0]); close!(ch2)
+  d1,t1,c1,o1 = constraint_tables(_space, ch1)
+  d2,t2,c2,o2 = constraint_tables(_space, ch2)
+  first_wins = (dof,md1,mc1,mo1,md2,mc2,mo2) -> (collect(md1), collect(mc1), mo1)
+  out_dof, out_dofs, out_coeffs, _ = merge_slave_constraint_tables(
+    _space, d1,t1,c1, d2,t2,c2, o1,o2; on_conflict=first_wins)
+  @test _cdict(out_dof, out_dofs, out_coeffs)[3] == Dict(1 => 1.0)
+end
+
+# Hard test: path A (merge ConstraintHandlers → close → tables) must equal
+# path B (tables per handler → merge_slave → close_slave).
+#
+# ch1: dof3=dof2, dof5=0.5*dof1+0.5*dof4
+# ch2: dof2=dof1, dof5=dof4  (conflict on dof5; ch1/s1 wins)
+#
+# After merge+close: dof2=dof1, dof3=dof1 (chain dof3→dof2→dof1), dof5=0.5*dof1+0.5*dof4.
+# Path B exercises close_slave_constraint_tables on the cross-handler chain dof3→dof2.
+let
+  first_wins_ch  = (existing, _) -> existing
+  first_wins_tbl = (dof,md1,mc1,mo1,md2,mc2,mo2) -> (collect(md1), collect(mc1), mo1)
+
+  # Path A
+  ch_a1 = ConstraintHandler(_n_dofs)
+  add_constraint!(ch_a1, 3, [2],   [1.0])
+  add_constraint!(ch_a1, 5, [1,4], [0.5, 0.5])
+  ch_a2 = ConstraintHandler(_n_dofs)
+  add_constraint!(ch_a2, 2, [1], [1.0])
+  add_constraint!(ch_a2, 5, [4], [1.0])
+  merge!(ch_a1, ch_a2; on_conflict=first_wins_ch)
+  close!(ch_a1)
+  dof_A, dofs_A, coeffs_A, _ = constraint_tables(_space, ch_a1)
+
+  # Path B
+  ch_b1 = ConstraintHandler(_n_dofs)
+  add_constraint!(ch_b1, 3, [2],   [1.0])
+  add_constraint!(ch_b1, 5, [1,4], [0.5, 0.5])
+  close!(ch_b1)
+  d1,t1,c1,o1 = constraint_tables(_space, ch_b1)
+
+  ch_b2 = ConstraintHandler(_n_dofs)
+  add_constraint!(ch_b2, 2, [1], [1.0])
+  add_constraint!(ch_b2, 5, [4], [1.0])
+  close!(ch_b2)
+  d2,t2,c2,o2 = constraint_tables(_space, ch_b2)
+
+  dof_B, dofs_B, coeffs_B, offs_B = merge_slave_constraint_tables(
+    _space, d1,t1,c1, d2,t2,c2, o1,o2; on_conflict=first_wins_tbl)
+  dof_B, dofs_B, coeffs_B, _ = close_slave_constraint_tables(
+    _space, dof_B, dofs_B, coeffs_B, offs_B)
+
+  @test _cdict(dof_A, dofs_A, coeffs_A) == _cdict(dof_B, dofs_B, coeffs_B)
+end
+
 end # module

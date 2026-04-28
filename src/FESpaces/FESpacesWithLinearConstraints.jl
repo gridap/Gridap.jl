@@ -630,3 +630,260 @@ function generate_DOF_to_msDOF_map(space, mDOF_to_dof, sDOF_to_dof)
 
   return DOF_to_msDOF
 end
+
+# ---------------------------------------------------------------------------
+# Table-level merge and chain-resolution for constraint tables
+# ---------------------------------------------------------------------------
+
+"""
+    merge_slave_constraint_tables(
+        space, s1_dof, s1_dofs, s1_coeffs, s2_dof, s2_dofs, s2_coeffs,
+        s1_offsets, s2_offsets; on_conflict)
+        → (sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, sDOF_to_offsets)
+
+Merge two Constructor-2 constraint table triples defined on the same `space`.
+Each triple lists only slave DOFs: `s_dof[i]` is the signed dof of slave `i`,
+`s_dofs[i]` its master signed dofs, `s_coeffs[i]` the corresponding coefficients.
+`s1_offsets` / `s2_offsets` are optional per-slave inhomogeneity vectors (default zero).
+
+A conflict arises when the same slave dof appears in both sets:
+  - `on_conflict=nothing` (default): raise an error.
+  - otherwise: `on_conflict(dof, dofs1, coeffs1, offset1, dofs2, coeffs2, offset2) → (dofs, coeffs, offset)`
+    is called and its return value replaces the stored row.
+"""
+function merge_slave_constraint_tables(
+  space::SingleFieldFESpace,
+  s1_dof, s1_dofs::Table, s1_coeffs::Table{T},
+  s2_dof, s2_dofs::Table, s2_coeffs::Table{T},
+  s1_offsets::AbstractVector = zeros(T, length(s1_dof)),
+  s2_offsets::AbstractVector = zeros(T, length(s2_dof));
+  on_conflict=nothing
+) where T
+  n_fdofs = num_free_dofs(space)
+  n_dofs  = n_fdofs + num_dirichlet_dofs(space)
+  n_s1    = length(s1_dof)
+  n_s2    = length(s2_dof)
+
+  s1_DOF    = [_dof_to_DOF(dof, n_fdofs) for dof in s1_dof]
+  DOF_to_s1 = find_inverse_index_map(s1_DOF, n_dofs)
+
+  # conflicted_s1[i1] = i2 (s2 index of the conflicting entry) or 0 (no conflict).
+  conflicted_s1  = zeros(Int, n_s1)
+  new_s2_indices = Int[]
+  sizehint!(new_s2_indices, n_s2)
+
+  for i2 in 1:n_s2
+    i1 = DOF_to_s1[_dof_to_DOF(s2_dof[i2], n_fdofs)]
+    if iszero(i1)
+      push!(new_s2_indices, i2)
+    elseif isnothing(on_conflict)
+      error("Constraint conflict on dof $(s2_dof[i2]):\n" *
+            "  existing: $(collect(dataview(s1_dofs, i1)))\n" *
+            "  incoming: $(collect(dataview(s2_dofs, i2)))")
+    else
+      conflicted_s1[i1] = i2
+    end
+  end
+
+  # Fast path: no conflicts.
+  if all(iszero, conflicted_s1)
+    return vcat(s1_dof, s2_dof),
+           append_tables_globally(s1_dofs,   s2_dofs),
+           append_tables_globally(s1_coeffs, s2_coeffs),
+           vcat(s1_offsets, s2_offsets)
+  end
+
+  n_new_s2 = length(new_s2_indices)
+  n_out    = n_s1 + n_new_s2
+
+  # Pessimistic data size: conflicts get len(s1_row) + len(s2_row) as upper bound.
+  n_data = 0
+  for i in 1:n_s1
+    i2 = conflicted_s1[i]
+    n_data += s1_dofs.ptrs[i+1] - s1_dofs.ptrs[i]
+    !iszero(i2) && (n_data += s2_dofs.ptrs[i2+1] - s2_dofs.ptrs[i2])
+  end
+  for i2 in new_s2_indices
+    n_data += s2_dofs.ptrs[i2+1] - s2_dofs.ptrs[i2]
+  end
+
+  out_dof     = Vector{Int}(undef, n_out)
+  out_offsets = Vector{T}(undef, n_out)
+  out_data_d  = Vector{Int}(undef, n_data)
+  out_data_c  = Vector{T}(undef, n_data)
+  ptrs        = zeros(Int32, n_out + 1)
+  copyto!(out_dof, 1, s1_dof, 1, n_s1)
+
+  k = 0
+  for i1 in 1:n_s1
+    i2 = conflicted_s1[i1]
+    if iszero(i2)
+      rin = datarange(s1_dofs, i1)
+      nl  = length(rin)
+      out_data_d[k+1:k+nl] = view(s1_dofs.data,   rin)
+      out_data_c[k+1:k+nl] = view(s1_coeffs.data, rin)
+      out_offsets[i1] = s1_offsets[i1]
+    else
+      r1 = datarange(s1_dofs, i1);  r2 = datarange(s2_dofs, i2)
+      od, oc, oo = on_conflict(s1_dof[i1],
+        view(s1_dofs.data, r1), view(s1_coeffs.data, r1), s1_offsets[i1],
+        view(s2_dofs.data, r2), view(s2_coeffs.data, r2), s2_offsets[i2])
+      nl = length(od)
+      out_data_d[k+1:k+nl] = od
+      out_data_c[k+1:k+nl] = oc
+      out_offsets[i1] = oo
+    end
+    ptrs[i1+1] = nl
+    k += nl
+  end
+  for (j, i2) in enumerate(new_s2_indices)
+    ii2 = n_s1 + j
+    rin = datarange(s2_dofs, i2)
+    nl  = length(rin)
+    out_dof[ii2]          = s2_dof[i2]
+    out_offsets[ii2]      = s2_offsets[i2]
+    out_data_d[k+1:k+nl]  = view(s2_dofs.data,   rin)
+    out_data_c[k+1:k+nl]  = view(s2_coeffs.data, rin)
+    ptrs[ii2+1] = nl
+    k += nl
+  end
+
+  Arrays.length_to_ptrs!(ptrs)
+  resize!(out_data_d, k)
+  resize!(out_data_c, k)
+  return out_dof, Table(out_data_d, ptrs), Table(out_data_c, ptrs), out_offsets
+end
+
+"""
+    close_slave_constraint_tables(
+        space, sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, sDOF_to_offsets; tol)
+        → (sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, sDOF_to_offsets)
+
+Chain-resolve a Constructor-2 constraint table triple: substitute any slave master
+with its own constraint row until all masters are free. Errors on cycles.
+Merges duplicate masters and strips near-zero coefficients (threshold `tol`).
+The slave set is invariant under resolution; output rows are in topological order.
+
+`sDOF_to_offsets` (optional, default zero) carries inhomogeneities: if slave i
+depends on slave j the offset accumulates as `offset_i += coeff_ij * offset_j`.
+"""
+function close_slave_constraint_tables(
+  space::SingleFieldFESpace,
+  sDOF_to_dof, sDOF_to_dofs::Table, sDOF_to_coeffs::Table{T},
+  sDOF_to_offsets::AbstractVector = zeros(T, length(sDOF_to_dof));
+  tol::T = 1000*eps(T)
+) where T
+  n_fdofs  = num_free_dofs(space)
+  n_dofs   = n_fdofs + num_dirichlet_dofs(space)
+  n_slaves = length(sDOF_to_dof)
+
+  s_DOF       = [_dof_to_DOF(dof, n_fdofs) for dof in sDOF_to_dof]
+  dof_to_sDOF = find_inverse_index_map(s_DOF, n_dofs)
+
+  # Build dependency graph (CSR): edge t → s means slave s depends on slave t.
+  dep_ptrs  = zeros(Int32, n_slaves + 1)
+  in_degree = zeros(Int, n_slaves)
+  for s in 1:n_slaves
+    for d in dataview(sDOF_to_dofs, s)
+      t = dof_to_sDOF[_dof_to_DOF(d, n_fdofs)]
+      if t != 0
+        dep_ptrs[t+1] += Int32(1)
+        in_degree[s]  += 1
+      end
+    end
+  end
+  all(iszero, in_degree) && return sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, copy(sDOF_to_offsets)
+
+  Arrays.length_to_ptrs!(dep_ptrs)
+  dep_data = Vector{Int}(undef, dep_ptrs[end] - 1)
+  fill_pos = copy(dep_ptrs)
+  for s in 1:n_slaves
+    for d in dataview(sDOF_to_dofs, s)
+      t = dof_to_sDOF[_dof_to_DOF(d, n_fdofs)]
+      if t != 0
+        dep_data[fill_pos[t]] = s
+        fill_pos[t] += 1
+      end
+    end
+  end
+  dependents = Table(dep_data, dep_ptrs)
+
+  # Kahn's topological sort; cycle detection implicit (processed < n_slaves ⟹ cycle).
+  head      = 0
+  queue     = findall(iszero, in_degree)
+  order     = Vector{Int}(undef, n_slaves)
+  order_rev = Vector{Int}(undef, n_slaves)
+  while !isempty(queue)
+    t = pop!(queue)
+    head += 1
+    order[head]     = t
+    order_rev[t]    = head
+    for s in dataview(dependents, t)
+      in_degree[s] -= 1
+      iszero(in_degree[s]) && push!(queue, s)
+    end
+  end
+  if head < n_slaves
+    cycle_dofs = sort!([sDOF_to_dof[s] for s in 1:n_slaves if in_degree[s] > 0])
+    error("Constraint cycle detected among dofs: $cycle_dofs.\n" *
+          "Cycles are not resolvable by substitution.")
+  end
+
+  # Exact pre-dedup/strip output size: single forward pass in topo order.
+  n_data = 0
+  ub     = zeros(Int, n_slaves)
+  for i in 1:n_slaves
+    s = order[i]
+    for d in dataview(sDOF_to_dofs, s)
+      t = dof_to_sDOF[_dof_to_DOF(d, n_fdofs)]
+      ub[i] += (t != 0) ? ub[order_rev[t]] : 1
+    end
+    n_data += ub[i]
+  end
+
+  out_offsets = copy(sDOF_to_offsets)
+  out_data_d  = Vector{Int}(undef, n_data)
+  out_data_c  = Vector{T}(undef, n_data)
+  ptrs        = zeros(Int32, n_slaves + 1)
+  ptrs[1]     = Int32(1)
+  acc         = Dict{Int, T}()
+  k           = 0
+
+  for i in 1:n_slaves
+    s  = order[i]
+    rd = dataview(sDOF_to_dofs, s)
+    rc = dataview(sDOF_to_coeffs, s)
+
+    any_sub = any(dof_to_sDOF[_dof_to_DOF(d, n_fdofs)] != 0 for d in rd)
+
+    if any_sub
+      empty!(acc)
+      for kk in eachindex(rd)
+        d = rd[kk];  c = rc[kk]
+        t = dof_to_sDOF[_dof_to_DOF(d, n_fdofs)]
+        if t != 0
+          j = order_rev[t]
+          for m in ptrs[j]:ptrs[j+1]-1
+            dd = out_data_d[m]
+            acc[dd] = get(acc, dd, zero(T)) + c * out_data_c[m]
+          end
+          out_offsets[s] += c * out_offsets[t]
+        else
+          acc[d] = get(acc, d, zero(T)) + c
+        end
+      end
+    end
+
+    for (d, c) in (any_sub ? acc : zip(rd, rc))
+      abs(c) > tol || continue
+      k += 1;  out_data_d[k] = d;  out_data_c[k] = c
+    end
+    ptrs[i+1] = Int32(k + 1)
+  end
+
+  resize!(out_data_d, k)
+  resize!(out_data_c, k)
+  out_dof = [sDOF_to_dof[order[i]]    for i in 1:n_slaves]
+  out_off = [out_offsets[order[i]] for i in 1:n_slaves]
+  return out_dof, Table(out_data_d, ptrs), Table(out_data_c, ptrs), out_off
+end
