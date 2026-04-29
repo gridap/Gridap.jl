@@ -200,13 +200,21 @@ struct GenericField{T} <: Field
   object::T
 end
 
-#Field(f) = GenericField(f)
 GenericField(f::Field) = f
 
 testargs(a::GenericField,x::Point) = testargs(a.object,x)
 return_value(a::GenericField,x::Point) = return_value(a.object,x)
 return_cache(a::GenericField,x::Point) = return_cache(a.object,x)
 evaluate!(cache,a::GenericField,x::Point) = evaluate!(cache,a.object,x)
+
+function testvalue(::Type{GenericField{T}}) where T
+  if hasproperty(T,:instance)
+    # This is because typeof(function) does not have a singleton constructor O()
+    GenericField(T.instance)
+  else
+    GenericField(T())
+  end :: GenericField{T}
+end
 
 function return_cache(f::FieldGradient{N,<:GenericField},x::Point) where N
   return_cache(FieldGradient{N}(f.object.object),x)

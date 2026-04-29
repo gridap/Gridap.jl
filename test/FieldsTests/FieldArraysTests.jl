@@ -1,9 +1,12 @@
 module FieldArraysTests
 
+using Gridap
 using Gridap.Fields
 using Gridap.Arrays
 using Gridap.TensorValues
+using Gridap.Polynomials
 
+using LinearAlgebra
 using Test
 
 # Testing the default interface for field arrays
@@ -214,7 +217,6 @@ v = VectorValue{2,Float64}[(1,1),(4,2),(3,5)]
 b = MockField.(v)
 
 f = Broadcasting(Operation(*))(a,b)
-
 fp = Broadcasting(*)(a(p),v)
 ∇fp = Broadcasting(⊗)(∇(a)(p),v)
 
@@ -356,6 +358,15 @@ avals = rand(4)
 a = ConstantField.(avals)
 b = zeros(VectorValue{2,Float64},4,3)
 f = linear_combination(b,a)
+fp = transpose(b)*avals
+∇fp = zeros(TensorValue{2,2,Float64,4},3)
+
+test_field_array(f,p,fp)
+test_field_array(f,p,fp,grad=∇fp)
+test_field_array(f,x,result(f,x))
+test_field_array(f,x,result(f,x),grad=result(∇.(f),x))
+test_field_array(f,z,result(f,z))
+test_field_array(f,z,result(f,z),grad=result(∇.(f),z))
 
 ff = Broadcasting(Operation(meas))(f)
 evaluate(ff,p)
@@ -365,6 +376,13 @@ g = GenericField(identity)
 ff = evaluate(Broadcasting(∘),f,g)
 evaluate(ff,p)
 @test isa(testvalue(ff),typeof(ff))
+
+avals = rand(4)
+a = MockFieldArray(avals)
+b = Diagonal(ones(4))
+f = linear_combination(b,a)
+fp = transpose(b)*evaluate(a,p)
+test_field_array(f,p,fp) # BUG!!!
 
 ## Test MockField
 #

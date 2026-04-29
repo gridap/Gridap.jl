@@ -166,4 +166,18 @@ reffe = ReferenceFE(TET,raviart_thomas,0)
 
 @test RaviartThomas() == raviart_thomas
 
+# Pullback
+x = Point{2,Float64}[(0.0,0.0), (1.0,0.0), (0.0,1.0), (1.0,1.0)]
+J = ConstantField(TensorValue{2,2,Float64}((1.0,0.0,0.0,1.0)))
+
+reffe = ReferenceFE(QUAD,raviart_thomas,Float64,1)
+basis = get_shapefuns(reffe)
+test_field_array(basis,x,evaluate(basis,x))
+
+pb_basis = evaluate(Broadcasting(Operation(ContraVariantPiolaMap())),basis,J)
+test_field_array(pb_basis,x,evaluate(pb_basis,x))
+
+lcpb_basis = linear_combination(Diagonal(ones(num_dofs(reffe))),pb_basis)
+test_field_array(lcpb_basis,x,evaluate(lcpb_basis,x))
+
 end # module

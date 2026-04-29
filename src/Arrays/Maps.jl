@@ -146,7 +146,9 @@ macro.
 function test_map(y,f,x...;cmp=(==))
   z = evaluate(f,x...)
   @test cmp(z,y)
-  @test typeof(z) == return_type(f,x...)
+  T = return_type(f,x...)
+  @test typeof(z) == T
+  @test typeof(return_value(f,x...)) == T
   cache = return_cache(f,x...)
   z = evaluate!(cache,f,x...)
   @test cmp(z,y)

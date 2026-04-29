@@ -88,6 +88,8 @@ function test_field_array(f::AbstractArray{<:Field}, x, v, cmp=(==); grad=nothin
   if gradgrad != nothing
     test_map(gradgrad,Broadcasting(∇∇)(f),x;cmp=cmp)
   end
+  @test typeof(testvalue(typeof(f))) == typeof(f)
+  @test typeof(testitem(f)) == eltype(f)
   true
 end
 
