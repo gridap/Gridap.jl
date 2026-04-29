@@ -226,6 +226,11 @@ function testvalue(::Type{T}) where T<:Transpose{E,A} where {E,A}
   Transpose(a)
 end
 
+function testvalue(::Type{T}) where T<:Diagonal{E,A} where {E,A}
+  a = testvalue(A)
+  Diagonal(a)
+end
+
 testvalue(::Type{Base.OneTo{T}}) where T = Base.OneTo(zero(T))
 
 testvalue(::Type{Base.UnitRange{T}}) where T = UnitRange(one(T),zero(T))
