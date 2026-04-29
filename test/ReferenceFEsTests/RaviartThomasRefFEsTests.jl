@@ -14,6 +14,9 @@ using Gridap.Visualization
 using Gridap
 using Gridap.FESpaces
 
+using LinearAlgebra
+using FillArrays
+
 p = QUAD
 D = num_dims(QUAD)
 et = Float64
@@ -179,5 +182,9 @@ test_field_array(pb_basis,x,evaluate(pb_basis,x))
 
 lcpb_basis = linear_combination(Diagonal(ones(num_dofs(reffe))),pb_basis)
 test_field_array(lcpb_basis,x,evaluate(lcpb_basis,x))
+
+ncells = 0
+arr = lazy_map(linear_combination, Fill(Diagonal(ones(num_dofs(reffe))), ncells), Fill(basis, ncells))
+arr = lazy_map(linear_combination, Fill(zeros(num_dofs(reffe),2), ncells), Fill(basis, ncells))
 
 end # module
