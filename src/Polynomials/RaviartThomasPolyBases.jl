@@ -75,7 +75,7 @@ get_orders(b::RaviartThomasPolyBasis{D}) where D = tfill(get_order(b), Val(D))
 
 function testvalue(::Type{RaviartThomasPolyBasis{D,V,PT}}) where {D,V,PT}
   T = eltype(V)
-  RaviartThomasPolyBasis{D}(PT, T, 0)
+  RaviartThomasPolyBasis{D}(PT, T, 0, (t,o)->false)
 end
 
 #################################

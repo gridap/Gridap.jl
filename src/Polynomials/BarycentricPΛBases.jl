@@ -245,6 +245,7 @@ struct BarycentricPmΛBasis{D,V,LN,B} <: PolynomialBasis{D,V,Bernstein}
   function BarycentricPmΛBasis{D,V,LN,B}() where {D,V,LN,B} # just for testvalue
     r = get_order(testvalue(B))
     indices = _generate_or_check_PmΛ_indices(r,0,0,false,nothing,false)
+    empty!(indices.bubbles)
     new{D,V,LN,B}(0,testvalue(B),zero(SVector{LN,V}),indices)
   end
 end
@@ -368,6 +369,7 @@ struct BarycentricPΛBasis{D,V,C,B} <: PolynomialBasis{D,V,Bernstein}
   function BarycentricPΛBasis{D,V,C,B}() where {D,V,C,B} # Just for testvalue
     r = get_order(testvalue(B))
     indices = _generate_or_check_PΛ_indices(r,0,0,false,nothing,false)
+    empty!(indices.bubbles)
     new{D,V,C,B}(0,testvalue(B),zero(SVector{C,V}),indices)
   end
 end

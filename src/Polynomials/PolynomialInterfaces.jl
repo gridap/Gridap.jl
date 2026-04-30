@@ -119,7 +119,7 @@ function _define_terms(filter,orders)
   cis = CartesianIndices(t)
   co = CartesianIndex(g)
   maxorder = maximum(orders, init=0)
-  [ ci for ci in cis if filter(Int[Tuple(ci-co)...],maxorder) ]
+  typeof(co)[ ci for ci in cis if filter(Int[Tuple(ci-co)...],maxorder) ]
 end
 
 

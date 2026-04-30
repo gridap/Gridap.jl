@@ -104,7 +104,8 @@ get_orders(b::CompWiseTensorPolyBasis) = Tuple(maximum(b.orders; dims=1))
 function testvalue(::Type{<:CompWiseTensorPolyBasis{D,V,PT}}) where {D,V,PT}
   L = num_indep_components(V)
   orders = zero(Matrix{Int}(undef, (L,D)))
-  CompWiseTensorPolyBasis{D}(PT,V,orders)
+  @show V,orders
+  CompWiseTensorPolyBasis{D}(PT,V,orders,[CartesianIndex{D}[] for _ in 1:L])
 end
 
 """
