@@ -236,7 +236,12 @@ testvalue(::Type{Base.OneTo{T}}) where T = Base.OneTo(zero(T))
 testvalue(::Type{Base.UnitRange{T}}) where T = UnitRange(one(T),zero(T))
 
 function testvalue(::Type{T}) where T<:Fill{E,N,A} where {E,N,A}
-  Fill(zero(E),testvalue(A))
+  Fill(testvalue(E),testvalue(A))
+  #Fill(zero(E),testvalue(A))
+end
+
+function testvalue(::Type{T}) where T<:FillArrays.AbstractFill{E,N,A} where {E,N,A}
+  @notimplemented
 end
 
 function testvalue(::Type{T}) where T<:Tuple
