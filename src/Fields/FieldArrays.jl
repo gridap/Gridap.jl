@@ -248,7 +248,11 @@ Base.IndexStyle(::Type{<:LinearCombinationField}) = IndexLinear()
 
 function testvalue(::Type{LinearCombinationFieldVector{V,F}}) where {V,F}
   fields = testvalue(F)
-  values = zeros(eltype(V), length(fields), 0)
+  if V <: Diagonal
+    values = Diagonal(zeros(eltype(V), length(fields)))
+  else
+    values = zeros(eltype(V), length(fields), 0)
+  end::V
   LinearCombinationFieldVector(values,fields)
 end
 
