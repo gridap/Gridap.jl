@@ -188,7 +188,7 @@ function evaluate!(cache,k::NormalSignMap,reffe,facet_own_dofs,cell)
   return Diagonal(dof_sign)
 end
 
-function compute_facet_owners(model::DiscreteModel{Dc}) where {Dc}
+function compute_facet_owners(model::DiscreteModel{Dc}, select_nbor=maximum) where {Dc}
   topo = get_grid_topology(model)
   facet_to_cell = get_faces(topo, Dc-1, Dc)
 
@@ -196,12 +196,16 @@ function compute_facet_owners(model::DiscreteModel{Dc}) where {Dc}
   owners = Vector{Int32}(undef, nfacets)
   for facet in 1:nfacets
     facet_cells = view(facet_to_cell, facet)
-    owners[facet] = first(facet_cells)
+    @check !isempty(facet_cells) "Facet $facet has no adjacent cells"
+    selected_owner = select_nbor(facet_cells)
+    @check selected_owner isa Integer "select_nbor must return an integer owner for facet $facet, got $(typeof(selected_owner))"
+    owner = Int(selected_owner)
+    @check owner != 0 "select_nbor returned invalid owner 0 for facet $facet; expected one of $(collect(facet_cells))"
+    @check owner in facet_cells "select_nbor returned invalid owner $owner for facet $facet; expected one of $(collect(facet_cells))"
+    owners[facet] = Int32(owner)
   end
-
   return owners
 end
-
 
 #################
 # DOFScalingMap #

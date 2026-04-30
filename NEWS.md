@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Make `compute_facet_owners(...)` more flexible, allowing the user to provide a function to select the owner from neighboring cells. Since PR[#1291](https://github.com/gridap/Gridap.jl/pull/1291).
+
 ### Fixed
 
-- Fixed `testvalue` for `Diagonal` matrices. Since PR[#1290](https://github.com/gridap/Gridap.jl/pull/1290).
+- Reverted most changes from PR[#1277](https://github.com/gridap/Gridap.jl/pull/1277), which were having unnexpected consequences, in favour of simpler changes. Since PR[#1290](https://github.com/gridap/Gridap.jl/pull/1290).
 
 ## [0.20.5] - 2026-04-28
 
