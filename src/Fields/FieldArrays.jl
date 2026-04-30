@@ -204,7 +204,7 @@ end
 
 function testvalue(::Type{LinearCombinationField{V,F}}) where {V,F}
   fields = testvalue(F)
-  values = testvalue(V)
+  values = zeros(eltype(V), length(fields), 0)
   LinearCombinationField(values,fields,1)
 end
 
@@ -326,31 +326,24 @@ function return_cache(k::LinearCombinationMap{<:Integer},v::AbstractVector,fx::A
 end
 
 function evaluate!(cache,k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractVector)
-  z = zero(return_type(outer,testitem(fx),testitem(v)))
+  z = zero(linear_combination_eltype(v,fx))
   @check length(fx) == size(v,1)
   @inbounds for i in eachindex(fx)
     # We need to do the product in this way
     # so that the gradient also works
     z += outer(fx[i],v[i,k.column])
   end
-  z
+  return z
 end
 
 function return_value(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractMatrix)
-  if size(fx,2) == size(v,1)
-    evaluate(k,v,fx)
-  else
-    c = return_cache(k,v,fx)
-    c.array
-  end
+  T = linear_combination_eltype(v,fx)
+  return zeros(T,0)
 end
 
 function return_cache(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractMatrix)
-  vf = testitem(fx)
-  vv = testitem(v)
-  T = typeof( vf⊗vv + vf⊗vv )
-  r = zeros(T,size(fx,1))
-  CachedArray(r)
+  T = linear_combination_eltype(v,fx)
+  return CachedArray(zeros(T,size(fx,1)))
 end
 
 function evaluate!(cache,k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractMatrix)
@@ -365,7 +358,7 @@ function evaluate!(cache,k::LinearCombinationMap{<:Integer},v::AbstractArray,fx:
     end
     r[p] = rp
   end
-  r
+  return r
 end
 
 function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractVector,fx::AbstractVector)
@@ -388,12 +381,14 @@ function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractVector,fx::Ab
   evaluate!(cache,LinearCombinationMap(1),v,fx)
 end
 
+function return_value(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractVector)
+  T = linear_combination_eltype(v,fx)
+  return zeros(T,0)
+end
+
 function return_cache(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractVector)
-  vf = testitem(fx)
-  vv = testitem(v)
-  T = typeof( vf⊗vv + vf⊗vv )
-  r = zeros(T,size(v,2))
-  CachedArray(r)
+  T = linear_combination_eltype(v,fx)
+  return CachedArray(zeros(T,size(v,2)))
 end
 
 function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractVector)
@@ -407,7 +402,7 @@ function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::Ab
     end
     r[j] = rj
   end
-  r
+  return r
 end
 
 function evaluate!(cache,k::LinearCombinationMap{Colon},v::LinearAlgebra.Diagonal,fx::AbstractVector)
@@ -417,15 +412,18 @@ function evaluate!(cache,k::LinearCombinationMap{Colon},v::LinearAlgebra.Diagona
   @inbounds for j in eachindex(fx)
     r[j] = outer(fx[j],v.diag[j])
   end
-  r
+  return r
+end
+
+function return_value(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractMatrix)
+  T = linear_combination_eltype(v,fx)
+  return zeros(T,0,0)
 end
 
 function return_cache(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractMatrix)
-  vf = testitem(fx)
-  vv = testitem(v)
-  T = typeof( vf⊗vv + vf⊗vv )
+  T = linear_combination_eltype(v,fx)
   r = zeros(T,size(fx,1),size(v,2))
-  CachedArray(r)
+  return CachedArray(r)
 end
 
 #  r = fx * v   i.e.  r[p,j] = Σᵢ fx[p,i]*v[i,j]
@@ -442,7 +440,7 @@ function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::Ab
       r[p,j] = rj
     end
   end
-  r
+  return r
 end
 
 function evaluate!(cache,k::LinearCombinationMap{Colon},v::LinearAlgebra.Diagonal,fx::AbstractMatrix)
@@ -454,7 +452,7 @@ function evaluate!(cache,k::LinearCombinationMap{Colon},v::LinearAlgebra.Diagona
       r[p,j] = outer(fx[p,j],v.diag[j])
     end
   end
-  r
+  return r
 end
 
 # Optimizing transpose
@@ -590,7 +588,7 @@ for T in (:(Point),:(AbstractArray{<:Point}))
 
     function return_cache(f::BroadcastOpFieldArray,x::$T)
       cfs = map(fi -> return_cache(fi,x),f.args)
-      rs = map(fi -> return_value(fi,x),f.args)
+      rs = map((ci, fi) -> evaluate!(ci,fi,x), cfs, f.args)
       bm = BroadcastingFieldOpMap(f.op)
       r = return_cache(bm,rs...)
       r, cfs
@@ -643,7 +641,7 @@ return_value(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_value(Br
 return_cache(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_cache(Broadcasting(a.op),args...)
 evaluate!(cache,a::BroadcastingFieldOpMap,args::AbstractArray...) = evaluate!(cache,Broadcasting(a.op),args...)
 
-# Follow optimizations are very important to achieve performance
+# The following optimizations are very important to achieve performance
 
 function evaluate!(
   cache,

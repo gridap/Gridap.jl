@@ -113,7 +113,6 @@ test_reference_fe(reffe)
 @test get_order(get_prebasis(reffe)) == 1
 @test Conformity(reffe) == DivConformity()
 
-
 p = TET
 D = num_dims(p)
 et = Float64

@@ -181,14 +181,14 @@ function testitem(a::Fill)
   a.value
 end
 
-# This is needed for zero-sized arrays of evaluated quantities.
-function testitem(a::Fill{T}) where T <: AbstractArray{<:Number}
-  if length(a) > 0
-    a.value
-  else
-    testvalue(T)
-  end::T
-end
+# # This is needed for zero-sized arrays of evaluated quantities.
+# function testitem(a::Fill{T}) where T <: AbstractArray{<:Number}
+#   if length(a) > 0
+#     a.value
+#   else
+#     testvalue(T)
+#   end::T
+# end
 
 function testitem(a::Number)
   a

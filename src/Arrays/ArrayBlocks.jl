@@ -219,13 +219,13 @@ function testvalue(::Type{ArrayBlock{A,N}}) where {A,N}
   ArrayBlock(array,touched)
 end
 
-function testitem(a::Fill{T}) where T <: ArrayBlock{<:AbstractArray{<:Number}}
-  if length(a) > 0
-    a.value
-  else
-    testvalue(T)
-  end::T
-end
+# function testitem(a::Fill{T}) where T <: ArrayBlock{<:AbstractArray{<:Number}}
+#   if length(a) > 0
+#     a.value
+#   else
+#     testvalue(T)
+#   end::T
+# end
 
 # CachedArray methods
 
