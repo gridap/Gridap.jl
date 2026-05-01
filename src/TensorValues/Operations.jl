@@ -681,17 +681,21 @@ tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
   Nr = length(Sr)
 
   Vstr = if Nr == 0
-    "Base.promote_op(*,Ta,Tb)"
+    ""
   elseif Nr == 1
-    "VectorValue{$(Sr[1]),Base.promote_op(*,Ta,Tb)}"
+    "VectorValue{$(Sr[1])}"
   elseif Nr == 2
-    "TensorValue{$(Sr[1]),$(Sr[2]),Base.promote_op(*,Ta,Tb)}"
+    "TensorValue{$(Sr[1]),$(Sr[2])}"
   else
-    "HighOrderTensorValue{$(Tuple{Sr...}),Base.promote_op(*,Ta,Tb)}"
+    "HighOrderTensorValue{$(Tuple{Sr...})}"
   end
 
   if iszero(length(a)) || iszero(length(b))
-    return Meta.parse("zero($Vstr)")
+    if iszero(Nr)
+      return Meta.parse("zero(Base.promote_op(*,Ta,Tb))")
+    else
+      return Meta.parse("zero("*Vstr*"{Base.promote_op(*,Ta,Tb)})")
+    end
   end
 
   s_a_ranges = ntuple(j -> 1:S_a_kept[j], length(ka))
@@ -719,9 +723,11 @@ tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
         end
         push!(terms, "+a[$(join(a_idx,","))]*b[$(join(b_idx,","))]")
       end
-      push!(ss, join(terms) * ", ")
+      push!(ss, join(terms))
+      push!(ss, ", ")
     end
   end
+  pop!(ss) #rm last comma in case of scalar output
   push!(ss, ")")
   Meta.parse(join(ss))
 end
