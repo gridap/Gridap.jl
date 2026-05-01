@@ -316,8 +316,10 @@ struct LinearCombinationMap{T} <: Map
 end
 
 @inline function linear_combination_eltype(v,fx)
-  T = Base.promote_op(⊗, eltype(fx), eltype(v))
-  return Base.promote_op(+,T,T)
+  T = Base.promote_op(outer, eltype(fx), eltype(v))
+  TT = Base.promote_op(+,T,T)
+  @check isconcretetype(TT) "linear_combination_eltype($(eltype(v)), $(eltype(fx))) is not concrete."
+  return TT
 end
 
 function return_value(k::LinearCombinationMap{<:Integer},v::AbstractVector,fx::AbstractVector)

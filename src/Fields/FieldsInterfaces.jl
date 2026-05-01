@@ -636,13 +636,17 @@ struct IntegrationMap <: Map end
 
 @inline function integrate_eltype(aq,w)
   T = Base.promote_op(*,eltype(aq),eltype(w))
-  return Base.promote_op(+,T,T)
+  TT = Base.promote_op(+,T,T)
+  @check isconcretetype(TT) "integrate_eltype($(eltype(aq)), $(eltype(w))) is not concrete."
+  return TT
 end
 @inline function integrate_eltype(aq,w,jq)
   T1 = Base.promote_op(*,eltype(aq),eltype(w))
   Tj = Base.promote_op(meas,eltype(jq))
   T2 = Base.promote_op(*,T1,Tj)
-  return Base.promote_op(+,T2,T2)
+  TT = Base.promote_op(+,T2,T2)
+  @check isconcretetype(TT) "integrate_eltype($(eltype(aq)), $(eltype(w)), $(eltype(jq))) is not concrete."
+  return TT
 end
 
 return_value(::IntegrationMap,aq::AbstractVector,w) = zero(integrate_eltype(aq,w))
