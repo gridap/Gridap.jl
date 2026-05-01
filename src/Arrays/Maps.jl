@@ -235,12 +235,8 @@ function return_value(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}..
   return r
 end
 function return_cache(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
-  s = map(_bcast_size,x)
-  bs = Base.Broadcast.broadcast_shape(s...)
-  T = return_type(f.f,map(testitem,x)...)
-  r = fill(testvalue(T),bs)
-  cache = CachedArray(r)
-  return cache
+  r = return_value(f,x...)
+  return CachedArray(r)
 end
 function evaluate!(cache,f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
   _bcast_setsize!(cache,x...)
