@@ -97,6 +97,11 @@ function rand(rng::AbstractRNG,::Random.SamplerType{V}) where V<:MultiValue{D,T}
   V(Tuple(vrand))
 end
 
+function make_concretetype(::Type{T}) where T <: Number
+  TT = ifelse(isconcretetype(T),T,typeof(zero(T)))
+  @check isconcretetype(TT) "Type $(T) cannot be made concrete."
+  return TT
+end
 
 ## ATM it is not possible to implement array like axes because lazy_mapping
 ## operations / broadcast rely on axes(::MultiValue) adopting the Number convention to return ().

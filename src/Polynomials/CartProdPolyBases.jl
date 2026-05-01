@@ -39,8 +39,7 @@ struct CartProdPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
     orders::NTuple{D,Int},
     terms::Vector{CartesianIndex{D}}) where {D,V,PT<:Polynomial}
 
-    VV = ifelse(isconcretetype(V),V,typeof(zero(V)))
-    @check isconcretetype(VV) "Trying to build CartProdPolyBasis with non-concrete output type $(VV)"
+    VV = make_concretetype(V)
     @check isconcretetype(PT) "PT needs to be a concrete <:Polynomial type"
 
     K = maximum(orders; init=0)

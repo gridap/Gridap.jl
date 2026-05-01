@@ -66,6 +66,7 @@ export skew_symmetric_part
 export num_components
 export num_indep_components
 export change_eltype
+export make_concretetype
 export diagonal_tensor
 export ⊙
 export ⊗

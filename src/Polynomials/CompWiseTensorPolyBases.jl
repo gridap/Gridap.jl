@@ -59,9 +59,7 @@ struct CompWiseTensorPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
     @check size(orders,2) == D msg3
     @check isconcretetype(PT) "PT needs to be a concrete <:Polynomial type"
 
-    VV = ifelse(isconcretetype(V),V,typeof(zero(V)))
-    @check isconcretetype(VV) "Trying to build CompWiseTensorPolyBasis with non-concrete output type $(VV)"
-
+    VV = make_concretetype(V)
     K = maximum(orders)
     num_poly = mapreduce(length, +, comp_terms)
 

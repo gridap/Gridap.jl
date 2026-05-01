@@ -43,8 +43,7 @@ struct ModalC0Basis{D,V,T} <: PolynomialBasis{D,V,ModalC0}
     _msg =  "The number of bounding box points in a and b should match the number of terms"
     @check length(terms) == length(a) == length(b) _msg
     @check T == eltype(V) "Point and polynomial values should have the same scalar body"
-    VV = ifelse(isconcretetype(V),V,typeof(zero(V)))
-    @check isconcretetype(VV) "Trying to build CompWiseTensorPolyBasis with non-concrete output type $(VV)"
+    VV = make_concretetype(V)
     K = maximum(orders, init=0)
 
     new{D,VV,T}(K,orders,terms,a,b)
