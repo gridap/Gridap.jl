@@ -86,14 +86,12 @@ for op in (:+,:-)
   @eval begin
 
     function ($op)(a::T) where T<:MultiValue
-      Li = num_indep_components(T)
-      r = map($op, Tuple(a)[1:Li])
+      r = map($op, get_indep_components(a))
       T(r)
     end
 
     function ($op)(a::V, b::V) where V<:MultiValue
-      Li = num_indep_components(V)
-      r = map(($op), Tuple(a)[1:Li], Tuple(b)[1:Li])
+      r = map(($op), get_indep_components(a), get_indep_components(b))
       V(r)
     end
   end
@@ -134,16 +132,14 @@ end
 for op in (:+,:-,:*)
   @eval begin
     function ($op)(a::MultiValue, b::_Scalar)
-      Li = num_indep_components(a)
-      r = _bc($op, Tuple(a)[1:Li], b)
+      r = _bc($op, get_indep_components(a), b)
       T = _eltype($op, r, a, b)
       M = change_eltype(a, T)
       M(r)
     end
 
     function ($op)(a::_Scalar, b::MultiValue)
-      Li = num_indep_components(b)
-      r = _bc($op, a, Tuple(b)[1:Li])
+      r = _bc($op, a, get_indep_components(b))
       T = _eltype($op, r, a, b)
       M = change_eltype(b, T)
       M(r)
@@ -159,8 +155,7 @@ _err = "This operation is undefined for traceless tensors"
 (-)(::_Scalar, ::_AbstractTracelessTensor) = error(_err)
 
 function (/)(a::MultiValue, b::_Scalar)
-  Li = num_indep_components(a)
-  r = _bc(/, Tuple(a)[1:Li], b)
+  r = _bc(/, get_indep_components(a), b)
   T = _eltype(/, r, a, b)
   P = change_eltype(a, T)
   P(r)

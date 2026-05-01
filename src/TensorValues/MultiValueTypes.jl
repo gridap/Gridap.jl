@@ -71,6 +71,8 @@ has 6 and a `SymTracelessTensorValue{3}` has 5. But they all have 9 (non indepen
 num_indep_components(::Type{T}) where T<:Number = num_components(T)
 num_indep_components(::T) where T<:Number = num_indep_components(T)
 
+get_indep_components(a::MultiValue) = Tuple(a)
+
 """
 !!! warning
     Deprecated in favor on [`num_components`](@ref).

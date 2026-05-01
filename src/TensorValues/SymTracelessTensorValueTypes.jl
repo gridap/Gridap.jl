@@ -141,3 +141,5 @@ change_eltype(::Type{SymTracelessTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2
 num_indep_components(::Type{<:SymTracelessTensorValue{0}}) = 0
 num_indep_components(::Type{<:SymTracelessTensorValue{D}}) where {D} = D*(D+1)÷2-1
 
+get_indep_components(a::SymTracelessTensorValue) = Base.front(Tuple(a))
+

@@ -1585,4 +1585,51 @@ ref4 = [sum(T3b[i,j,k]*B[i,k] for i in 1:3, k in 1:3) for j in 1:2]
 @test_throws ArgumentError tensor_contraction(VectorValue(1,2), VectorValue(1,2), (3,), (1,))
 @test_throws ArgumentError tensor_contraction(TensorValue{2,2}(1:4...), VectorValue(1,2), (1,1), (1,1))
 
+
+# promote_op
+
+function test_op_promote(T, op, args...)
+  @test Base.promote_op(op, map(typeof, args)...) == T
+end
+
+v  = VectorValue(1, 2, 3)
+t  = TensorValue(1, 2, 3, 4, 5, 6, 7, 8, 9)
+st = SymTensorValue(1, 2, 3, 5, 6, 9)
+qt = SymTracelessTensorValue(1, 2, 3, 5, 6)
+sk = SkewSymTensorValue(1, 2, 3)
+fo = one(SymFourthOrderTensorValue{2, Int})
+
+test_op_promote(typeof(v  * 2),   *, v,  2)
+test_op_promote(typeof(v  * 2.0), *, v,  2.0)
+test_op_promote(typeof(2  * v),   *, 2,  v)
+test_op_promote(typeof(2.0 * v),  *, 2.0, v)
+test_op_promote(typeof(t  * 2),   *, t,  2)
+test_op_promote(typeof(t  * 2.0), *, t,  2.0)
+test_op_promote(typeof(st * 2),   *, st, 2)
+test_op_promote(typeof(st * 2.0), *, st, 2.0)
+test_op_promote(typeof(qt * 2),   *, qt, 2)
+test_op_promote(typeof(qt * 2.0), *, qt, 2.0)
+test_op_promote(typeof(sk * 2),   *, sk, 2)
+test_op_promote(typeof(sk * 2.0), *, sk, 2.0)
+test_op_promote(typeof(fo * 2),   *, fo, 2)
+test_op_promote(typeof(fo * 2.0), *, fo, 2.0)
+
+test_op_promote(typeof(v  / 2.0), /, v,  2.0)
+test_op_promote(typeof(t  / 2.0), /, t,  2.0)
+test_op_promote(typeof(st / 2.0), /, st, 2.0)
+test_op_promote(typeof(qt / 2.0), /, qt, 2.0)
+test_op_promote(typeof(sk / 2.0), /, sk, 2.0)
+test_op_promote(typeof(fo / 2.0), /, fo, 2.0)
+
+test_op_promote(typeof(v  ⊗ 2),   ⊗, v,  2)
+test_op_promote(typeof(v  ⊗ 2.0), ⊗, v,  2.0)
+test_op_promote(typeof(st ⊗ 2.0), ⊗, st, 2.0)
+test_op_promote(typeof(qt ⊗ 2.0), ⊗, qt, 2.0)
+test_op_promote(typeof(sk ⊗ 2.0), ⊗, sk, 2.0)
+
+test_op_promote(typeof(v  ⊗ v),  ⊗, v,  v)
+test_op_promote(typeof(v  ⊗ st), ⊗, v,  st)
+test_op_promote(typeof(st ⊗ st), ⊗, st, st)
+test_op_promote(typeof(qt ⊗ qt), ⊗, qt, qt)
+
 end # module OperationsTests
