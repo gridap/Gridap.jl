@@ -316,7 +316,7 @@ function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)
   else
     r = return_value(f.value, ai...)
   end
-  Fill(r, s)
+  return Fill(r, s)
 end
 
 function lazy_map(::typeof(evaluate),::Type{T}, f::Fill, a::Fill...) where T
@@ -327,7 +327,7 @@ function lazy_map(::typeof(evaluate),::Type{T}, f::Fill, a::Fill...) where T
   else
     r = return_value(f.value, ai...)
   end :: T
-  Fill(r, s)
+  return Fill(r, s)
 end
 
 function _common_size(a::AbstractArray...)
