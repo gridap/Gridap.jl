@@ -247,10 +247,12 @@ struct BernsteinBasisOnSimplex{D,V,M,K} <: PolynomialBasis{D,V,Bernstein}
   function BernsteinBasisOnSimplex{D}(::Type{V},order::Int,vertices=nothing) where {D,V}
     _simplex_vertices_checks(Val(D), vertices)
 
+    VV = ifelse(isconcretetype(V),V,typeof(zero(V)))
+    @check isconcretetype(VV) "Trying to build BernsteinBasisOnSimplex with non-concrete output type $(VV)"
     cart_to_bary_matrix = _compute_cart_to_bary_matrix(vertices, Val(D+1))
     M = typeof(cart_to_bary_matrix) # Nothing or SMatrix
     K = order
-    new{D,V,M,K}(cart_to_bary_matrix)
+    new{D,VV,M,K}(cart_to_bary_matrix)
   end
 end
 

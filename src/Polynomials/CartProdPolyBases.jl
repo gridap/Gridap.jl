@@ -39,12 +39,14 @@ struct CartProdPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
     orders::NTuple{D,Int},
     terms::Vector{CartesianIndex{D}}) where {D,V,PT<:Polynomial}
 
+    VV = ifelse(isconcretetype(V),V,typeof(zero(V)))
+    @check isconcretetype(VV) "Trying to build CartProdPolyBasis with non-concrete output type $(VV)"
     @check isconcretetype(PT) "PT needs to be a concrete <:Polynomial type"
 
     K = maximum(orders; init=0)
     msg =  "Some term contain a higher index than the maximum degree + 1."
     @check all( term -> (maximum(Tuple(term), init=0) <= K+1), terms) msg
-    new{D,V,PT}(K,orders,terms)
+    new{D,VV,PT}(K,orders,terms)
   end
 end
 

@@ -141,5 +141,10 @@ G = gradient_type(V,x1)
 r = zeros(G, (1,1))
 @test_throws ErrorException Polynomials._set_derivative_mc0!(r,1,s,0,0,V)
 
+# value_type must be concrete even when user passes a non-concrete tensor type
+for V in (TensorValue{2,2,Float64}, SymTensorValue{2,Float64},
+          SkewSymTensorValue{2,Float64}, SymFourthOrderTensorValue{2,Float64})
+  @test isconcretetype(value_type(ModalC0Basis{2}(V, 1)))
+end
 
 end # module

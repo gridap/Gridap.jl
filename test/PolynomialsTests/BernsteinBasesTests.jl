@@ -345,4 +345,11 @@ Hbx = _Hbx(D,order,x,H,x2λ)
 test_field_array(b,x,bx,≈, grad=Gbx, gradgrad=Hbx)
 test_field_array(b,x1,bx[1,:],≈,grad=Gbx[1,:],gradgrad=Hbx[1,:])
 
+# value_type must be concrete even when user passes a non-concrete tensor type
+for V in (TensorValue{2,2,Float64}, SymTensorValue{2,Float64},
+          SkewSymTensorValue{2,Float64}, SymFourthOrderTensorValue{2,Float64})
+  @test isconcretetype(value_type(BernsteinBasis(Val(2), V, 1)))
+  @test isconcretetype(value_type(BernsteinBasisOnSimplex{2}(V, 1)))
+end
+
 end # module

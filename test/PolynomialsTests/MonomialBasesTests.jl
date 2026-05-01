@@ -278,4 +278,10 @@ order = 2
 @test _ph_filter( (1,1) ,order) == true
 @test _ph_filter( (3,1) ,order) == false
 
+# value_type must be concrete even when user passes a non-concrete tensor type
+for V in (TensorValue{2,2,Float64}, SymTensorValue{2,Float64},
+          SkewSymTensorValue{2,Float64}, SymFourthOrderTensorValue{2,Float64})
+  @test isconcretetype(value_type(MonomialBasis{2}(V, (1,1))))
+end
+
 end # module
