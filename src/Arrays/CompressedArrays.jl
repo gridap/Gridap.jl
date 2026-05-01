@@ -47,15 +47,6 @@ function testitem(a::CompressedArray{T}) where T
   end::T
 end
 
-# # This is needed for zero-sized arrays of evaluated quantities.
-# function testitem(a::CompressedArray{T}) where T <: Union{AbstractArray{<:Number}, ArrayBlock{<:Number}, ArrayBlock{<:AbstractArray{<:Number}}}
-#   if length(a.ptrs) == 0
-#     testvalue(T)
-#   else
-#     a.values[first(a.ptrs)]
-#   end::T
-# end
-
 size(a::CompressedArray) = size(a.ptrs)
 
 @propagate_inbounds function getindex(a::CompressedArray,i::Integer)
