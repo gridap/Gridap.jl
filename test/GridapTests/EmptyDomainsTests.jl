@@ -2,7 +2,7 @@ module EmptyDomainsTests
 
 using Gridap
 import Gridap: ∇
-using Gridap.Geometry
+using Gridap.Geometry, Gridap.CellData
 using Test
 
 # Analytical functions
@@ -18,9 +18,7 @@ g(x) = tr(∇u(x))
 ∇(::typeof(p)) = ∇p
 
 # Mesh
-cells = (10,10)
-domain = (0,1,0,1)
-model = CartesianDiscreteModel(domain,cells)
+model = CartesianDiscreteModel((0,1,0,1),(10,10))
 labels = get_face_labeling(model)
 add_tag_from_tags!(labels,"dirichlet",[1,2,5])
 add_tag_from_tags!(labels,"neumann",[6,7,8])
@@ -92,6 +90,28 @@ dΛ = Measure(Λ,2)
 
 a((u,p),(v,q)) = ∫(jump(∇(u)) ⊙ jump(∇(v)))dΛ
 assemble_matrix(a,W,W)
+
+###############################################
+# Multidomain
+
+Ωa = Triangulation(model,collect(Int32,1:50))
+Ωb = Triangulation(model,collect(Int32,51:100))
+Ωc = Triangulation(model,Int32[])
+Γ = Interface(Ωa,Ωb)
+
+Va = TestFESpace(Ωa, ReferenceFE(lagrangian, Float64, 1))
+Vb = TestFESpace(Ωb, ReferenceFE(lagrangian, Float64, 1))
+X = MultiFieldFESpace([Va,Vb])
+
+Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
+dΩa = Measure(Ωa,2)
+dΩb = Measure(Ωb,2)
+dΩc = Measure(Ωc,2)
+dΓ = Measure(Γ,2)
+a1((ua,ub),(va,vb)) = ∫( ∇(va)⊙∇(ub) + vb*ub )*dΩa + ∫( ∇(vb)⊙∇(ua) + va*(ua+ub))*dΩb + ∫( mean(va*ub) + mean(vb*ua) )*dΓ
+assemble_matrix(a1,X,X)
+a2((ua,ub),(va,vb)) = ∫(Π(ua,Ωb)*Π(vb,Ωa))dΩc
+assemble_matrix(a2,X,X)
 
 ###############################################
 # Autodiff when the target domain is empty
