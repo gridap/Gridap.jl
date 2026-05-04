@@ -4,12 +4,22 @@
       values::A
       ptrs::P
     end
+
 Type representing an array with a reduced set of values.
 The array is represented by a short array of values, namely
 the field `values`, and a large array of indices, namely the
 field `ptrs`. The `i`-th component of the resulting array is
-defined as `values[ptrs[i]]`. The type parameters `A`, and `P`
-are restricted to be array types by the inner constructor of this `struct`.
+defined as `values[ptrs[i]]`. 
+
+# Example
+
+```julia
+using Gridap.Arrays
+values = [10, 20]
+ptrs = [1, 2, 1, 1]
+a = CompressedArray(values, ptrs)
+# a == [10, 20, 10, 10]
+```
 """
 struct CompressedArray{T,N,A,P} <: AbstractArray{T,N}
   values::A
@@ -29,12 +39,21 @@ struct CompressedArray{T,N,A,P} <: AbstractArray{T,N}
   end
 end
 
-function testitem(a::CompressedArray)
+function testitem(a::CompressedArray{T}) where T
   if length(a.ptrs) == 0
     testitem(a.values)
   else
     a.values[first(a.ptrs)]
-  end
+  end::T
+end
+
+# This is needed for zero-sized arrays of evaluated quantities.
+function testitem(a::CompressedArray{T}) where T <: Union{AbstractArray{<:Number}, ArrayBlock{<:Number}, ArrayBlock{<:AbstractArray{<:Number}}}
+  if length(a.ptrs) == 0
+    testvalue(T)
+  else
+    a.values[first(a.ptrs)]
+  end::T
 end
 
 size(a::CompressedArray) = size(a.ptrs)

@@ -8,3 +8,6 @@ LocalPreferences.toml
 Manifest.toml
 tmp/
 .vscode/
+
+CLAUDE.md
+GEMINI.md

@@ -54,7 +54,7 @@ Gridap Style Guides
 * CamelCasesTests for CamelCase type test file
 * Use lowercase for methods, with underscores only when necessary
 * Use whitespace for readability
-* 80 characterl line length limit
+* 80 character line length limit
 * Use method! for muting methods
 * Wrap multiline expressions in parentheses to avoid errors
 

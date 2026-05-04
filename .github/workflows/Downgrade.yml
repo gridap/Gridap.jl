@@ -22,12 +22,12 @@ jobs:
           - x64
     steps:
       - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@v3
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
-      - uses: julia-actions/cache@v2
+      - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-downgrade-compat@v2
         with: # As per documentation, we exclude packages within the Julia standard library
           skip: LinearAlgebra,SparseArrays,Random,Statistics,Test

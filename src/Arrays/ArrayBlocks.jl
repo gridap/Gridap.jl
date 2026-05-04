@@ -45,7 +45,17 @@ end
 
 get_array(b::ArrayBlock) = b.array
 
+"""
+    const VectorBlock = ArrayBlock{A,1}
+
+Alias, see also [`ArrayBlock`](@ref).
+"""
 const VectorBlock = ArrayBlock{A,1} where A
+"""
+    const MatrixBlock = ArrayBlock{A,2}
+
+Alias, see also [`ArrayBlock`](@ref).
+"""
 const MatrixBlock = ArrayBlock{A,2} where A
 
 Base.axes(b::ArrayBlock,i) = axes(b.array,i)
@@ -207,6 +217,14 @@ function testvalue(::Type{ArrayBlock{A,N}}) where {A,N}
   array = Array{A,N}(undef,s)
   touched = Array{Bool,N}(undef,s)
   ArrayBlock(array,touched)
+end
+
+function testitem(a::Fill{T}) where T <: ArrayBlock{<:AbstractArray{<:Number}}
+  if length(a) > 0
+    a.value
+  else
+    testvalue(T)
+  end::T
 end
 
 # CachedArray methods
@@ -797,15 +815,30 @@ end
 
 # ArrayBlock views
 
+"""
+    struct ArrayBlockView{A,N,M}
+
+Low level container implementing view on [`ArrayBlock`](@ref).
+"""
 struct ArrayBlockView{A,N,M}
   array::ArrayBlock{A,M}
   block_map::Array{CartesianIndex{M},N}
 end
 
-Base.view(a::ArrayBlock{A,M},b::Array{CartesianIndex{M},N}) where {A,M,N} = ArrayBlockView(a,b)
+"""
+    const MatrixBlockView{A} = ArrayBlockView{A,2,2}
+
+Alias, see also [`ArrayBlockView`](@ref).
+"""
 const MatrixBlockView{A} = ArrayBlockView{A,2,2} where A
+"""
+    const VectorBlockView{A} = ArrayBlockView{A,1,1}
+
+Alias, see also [`ArrayBlockView`](@ref).
+"""
 const VectorBlockView{A} = ArrayBlockView{A,1,1} where A
 
+Base.view(a::ArrayBlock{A,M},b::Array{CartesianIndex{M},N}) where {A,M,N} = ArrayBlockView(a,b)
 Base.axes(a::ArrayBlockView,i) = axes(a.block_map,i)
 Base.size(a::ArrayBlockView) = size(a.block_map)
 Base.length(b::ArrayBlockView) = length(b.block_map)

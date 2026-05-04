@@ -16,7 +16,7 @@ depending on the `IndexStyle` of the array.
     getindex!(cache,a::AbstractArray,i::Integer)
     getindex!(cache,a::AbstractArray{T,N},i::Vararg{Integer,N}) where {T,N}
 
-See also [`array_cache`](@ref), [`uses_hash!`](@ref), [`invalidate_cache!`](@ref).
+See also [`array_cache`](@ref), [`uses_hash`](@ref), [`invalidate_cache!`](@ref).
 
 # Examples
 
@@ -181,6 +181,15 @@ function testitem(a::Fill)
   a.value
 end
 
+# This is needed for zero-sized arrays of evaluated quantities.
+function testitem(a::Fill{T}) where T <: AbstractArray{<:Number}
+  if length(a) > 0
+    a.value
+  else
+    testvalue(T)
+  end::T
+end
+
 function testitem(a::Number)
   a
 end
@@ -316,3 +325,8 @@ function test_array(
   end
   true
 end
+
+"""
+Alias for `Base.sum`.
+"""
+const ∑ = sum

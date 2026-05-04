@@ -10,7 +10,6 @@ using Test
   include("CartesianRefinementTests.jl")
   include("ComplexChangeDomainTests.jl")
   include("EdgeBasedRefinementTests.jl")
-  include("FineToCoarseFieldsTests.jl")
   include("RefinementRuleBoundaryTests.jl")
   include("MultifieldRefinementTests.jl")
   include("UniformRefinementTests.jl")

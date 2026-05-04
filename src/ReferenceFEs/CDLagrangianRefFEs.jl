@@ -1,6 +1,14 @@
+# These shouln't be exported from ReferenceFEs
+""" """
 const CONT = 0
+""" """
 const DISC = 1
 
+"""
+    struct CDConformity{D} <: Conformity
+      cont::NTuple{D,Int}
+    end
+"""
 struct CDConformity{D} <: Conformity
   cont::NTuple{D,Int}
 end
@@ -47,14 +55,12 @@ function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont) wh
   nodes, face_own_nodes = cd_compute_nodes(p,orders)
   dofs = LagrangianDofBasis(T,nodes)
 
-  nnodes = length(dofs.nodes)
   ndofs = length(dofs.dof_to_node)
 
   face_own_nodes = _compute_cd_face_own_nodes(p,orders,cont)
   face_nodes = _compute_face_nodes(p,face_own_nodes)
 
   face_own_dofs = _generate_face_own_dofs(face_own_nodes, dofs.node_and_comp_to_dof)
-  face_dofs = _compute_face_nodes(p,face_own_dofs)
 
   data = nothing
 
@@ -67,7 +73,7 @@ function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont) wh
       dofs,
       conf,
       data,
-      face_dofs)
+      face_own_dofs)
 
   GenericLagrangianRefFE(reffe,face_nodes)
 end
@@ -136,7 +142,7 @@ end
     if active_faces[offset+iface]
       face = Polytope{d}(p,iface)
       face_ref_x = get_vertex_coordinates(face)
-      face_prebasis = MonomialBasis(Float64,face,1)
+      face_prebasis = monomial_basis(Float64,face,1)
       change = inv(evaluate(face_prebasis,face_ref_x))
       face_shapefuns = linear_combination(change,face_prebasis)
       face_vertex_ids = get_faces(p,d,0)[iface]

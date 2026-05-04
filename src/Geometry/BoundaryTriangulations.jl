@@ -125,7 +125,7 @@ struct BoundaryTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
   function BoundaryTriangulation(
     trian::BodyFittedTriangulation,
     glue)
-  
+
     Dc = num_cell_dims(trian)
     Dp = num_point_dims(trian)
     A = typeof(trian)
@@ -134,6 +134,11 @@ struct BoundaryTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
   end
 end
 
+"""
+    Boundary(args...; kwargs...)
+
+Alias for [`BoundaryTriangulation`](@ref)(args...; kwargs...).
+"""
 function Boundary(args...;kwargs...)
   BoundaryTriangulation(args...;kwargs...)
 end
@@ -141,7 +146,7 @@ end
 # Constructors
 
 """
-    BoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
+    BoundaryTriangulation(model::DiscreteModel, face_to_mask::Vector{Bool})
     BoundaryTriangulation(model::DiscreteModel)
 """
 function BoundaryTriangulation(
@@ -181,10 +186,10 @@ function BoundaryTriangulation(
 end
 
 """
-    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tags::Vector{Int})
-    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tags::Vector{String})
-    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tag::Int)
-    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tag::String)
+    BoundaryTriangulation(model::DiscreteModel; tags)
+    BoundaryTriangulation(model::DiscreteModel, labeling::FaceLabeling; tags)
+
+where `tags` are either an `Int`, `String`, `Vector{Int}` or `Vector{String}`.
 """
 function BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tags=nothing)
   D = num_cell_dims(model)
@@ -197,12 +202,6 @@ function BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tags=
   BoundaryTriangulation(model,face_to_mask)
 end
 
-"""
-    BoundaryTriangulation(model::DiscreteModel,tags::Vector{Int})
-    BoundaryTriangulation(model::DiscreteModel,tags::Vector{String})
-    BoundaryTriangulation(model::DiscreteModel,tag::Int)
-    BoundaryTriangulation(model::DiscreteModel,tag::String)
-"""
 function BoundaryTriangulation(model::DiscreteModel;tags=nothing)
   labeling = get_face_labeling(model)
   BoundaryTriangulation(model,labeling,tags=tags)

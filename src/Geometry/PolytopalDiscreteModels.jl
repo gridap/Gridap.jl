@@ -2,16 +2,16 @@
 """
     struct PolytopalGridTopology{Dc,Dp,Tp} <: GridTopology{Dc,Dp}
       vertex_coordinates::Vector{Point{Dp,Tp}}
-      n_m_to_nface_to_mfaces::Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}
+      n_m_to_nface_to_mfaces::Matrix{Table{Int32, Vector{Int32}, Vector{Int32}}}
       polytopes::Vector{GeneralPolytope{Dc,Dp,Tp,Nothing}}
     end
 
 Grid topology for polytopal grids.
 
-Constructors: 
+Constructors:
 
     PolytopalGridTopology(topo::UnstructuredGridTopology)
-    PolytopalGridTopology(vertex_coordinates,cell_vertices,polytopes)
+    PolytopalGridTopology(vertex_coordinates, cell_vertices, polytopes)
 
 """
 struct PolytopalGridTopology{Dc,Dp,Tp} <: GridTopology{Dc,Dp}
@@ -305,11 +305,11 @@ end
 
 Grid for polytopal meshes.
 
-Constructors: 
+Constructors:
 
     PolytopalGrid(grid::Grid)
     PolytopalGrid(topo::PolytopalGridTopology)
-    PolytopalGrid(node_coordinates,cell_node_ids,polytopes[,facet_normal=nothing])
+    PolytopalGrid(node_coordinates, cell_node_ids, polytopes[, facet_normal=nothing])
     PolytopalGrid(polytopes::AbstractVector{<:GeneralPolytope})
 
 """
@@ -416,10 +416,14 @@ end
 
 Discrete model for polytopal grids.
 
-Constructors: 
+Constructors:
 
     PolytopalDiscreteModel(model::DiscreteModel)
-    PolytopalDiscreteModel(grid::PolytopalGrid,grid_topology::PolytopalGridTopology,labels::FaceLabeling)
+    PolytopalDiscreteModel(
+      grid::PolytopalGrid,
+      grid_topology::PolytopalGridTopology,
+      labels::FaceLabeling
+    )
 """
 struct PolytopalDiscreteModel{Dc,Dp,Tp,Tn} <: DiscreteModel{Dc,Dp}
   grid::PolytopalGrid{Dc,Dp,Tp,Tn}

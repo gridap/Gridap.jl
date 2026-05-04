@@ -291,6 +291,15 @@ function testitem(a::LazyArray{A,T} where A) where T
   end::T
 end
 
+# This is needed for zero-sized arrays of evaluated quantities.
+function testitem(a::LazyArray{A,T} where A) where T <: Union{AbstractArray{<:Number},ArrayBlock{<:Number},ArrayBlock{<:AbstractArray{<:Number}}}
+  if length(a) > 0
+    first(a)
+  else
+    testvalue(T)
+  end::T
+end
+
 # Particular implementations for Fill
 
 function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)

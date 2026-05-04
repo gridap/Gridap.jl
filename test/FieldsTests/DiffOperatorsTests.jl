@@ -167,6 +167,29 @@ for x in xs
   @test (∇⋅εu)(x) == VectorValue(4.,0.)
 end
 
+x0 = VectorValue(-0.3, 0.5)
+A = TensorValue(0.0, -1.0, 1.0, 0.0)
+u(x) = (x - x0) ⋅ A
+∇u(x) = A
+Δu(x) = VectorValue(0.0, 0.0)
+
+for x in xs
+  @test ∇(u)(x) == ∇u(x)
+  @test Δ(u)(x) == Δu(x)
+  @test Δ(u)(x) == (∇⋅∇u)(x)
+end
+
+x0 = VectorValue(1.0, 0.5)
+u(x) = exp(-(x - x0) ⋅ (x - x0))
+∇u(x) = -2(x - x0) * u(x)
+Δu(x) = 4u(x) * ((x - x0) ⋅ (x - x0) - 1)
+
+for x in xs
+  @test ∇(u)(x) == ∇u(x)
+  @test Δ(u)(x) == Δu(x)
+  @test Δ(u)(x) == (∇⋅∇u)(x)
+end
+
 u(x) = VectorValue( x[1]^2 + 2*x[3]^2, -x[1]^2, -x[2]^2 + x[3]^2 )
 ∇u(x) = TensorValue( 2*x[1],0,4*x[3],  -2*x[1],0,0,  0,-2*x[2],2*x[3] )
 Δu(x) = VectorValue( 6, -2, 0 )
@@ -183,6 +206,28 @@ for x in xs
   @test Fields.skew_symmetric_gradient(u)(x) == νu(x)
   @test Δ(u)(x) == (∇⋅∇u)(x)
   @test (∇⋅εu)(x) == VectorValue(4.,-1.,1.)
+end
+
+v = VectorValue(0.5, -1.0, 2.0)
+x0 = VectorValue(0.3, 1.0, -0.2)
+u(x) = (x - x0) × v + v ⋅ (x ⊗ x)
+∇u(x) = (
+  TensorValue([0.0 -v[3] v[2]; v[3] 0.0 -v[1]; -v[2] v[1] 0.0])
+  + v ⊗ x + v ⋅ x * TensorValue(Matrix(I,3,3))
+)
+Δu(x) = 2v
+εu(x) = symmetric_part(∇u(x))
+νu(x) = TensorValues.skew_symmetric_part(∇u(x))
+
+xs = [ Point(1.,1.,2.0), Point(2.,0.,1.), Point(0.,3.,0.), Point(-1.,3.,2.)]
+for x in xs
+  @test ∇(u)(x) == ∇u(x)
+  @test (∇⋅u)(x) == tr(∇u(x))
+  @test (∇×u)(x) == grad2curl(∇u(x))
+  @test Δ(u)(x) == Δu(x)
+  @test ε(u)(x) == εu(x)
+  @test Fields.skew_symmetric_gradient(u)(x) == νu(x)
+  @test Δ(u)(x) == (∇⋅∇u)(x)
 end
 
 end # module

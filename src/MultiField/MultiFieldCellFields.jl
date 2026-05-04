@@ -1,8 +1,13 @@
-
+"""
+    struct MultiFieldCellField{DS<:DomainStyle} <: CellField
+"""
 struct MultiFieldCellField{DS<:DomainStyle} <: CellField
   single_fields::Vector{<:CellField}
   domain_style::DS
 
+  """
+      MultiFieldCellField(single_fields::Vector{<:CellField})
+  """
   function MultiFieldCellField(single_fields::Vector{<:CellField})
     @assert !isempty(single_fields)
     is_ref = any(sf -> isa(DomainStyle(sf), ReferenceDomain), single_fields)
@@ -16,8 +21,9 @@ function CellData.get_data(f::MultiFieldCellField)
   Function get_data is not implemented for MultiFieldCellField at this moment.
   You need to extract the individual fields and then evaluate them separately.
 
-  If ever implemented, evaluating a `MultiFieldCellField` directly would provide,
-  at each evaluation point, a tuple with the value of the different fields.
+  If ever implemented, evaluating a [`MultiFieldCellField`](@ref) directly would
+  provide, at each evaluation point, a tuple with the value of the different
+  fields.
   """
   @notimplemented s
 end
@@ -106,6 +112,8 @@ function MultiFieldFEBasisComponent(
   CellFieldAt{S}(mf)
 end
 
+"""
+"""
 function MultiFieldFEBasis(
   single_fields::Vector{<:CellField},
   field_ids = 1:length(single_fields),
@@ -134,7 +142,7 @@ function MultiFieldFEBasisComponent(
   MultiFieldFEBasisComponent(single_field.single_field,fieldid,nfields)
 end
 
-# CellField API 
+# CellField API
 
 CellData.get_data(f::MultiFieldFEBasisComponent) = f.cell_basis
 CellData.get_triangulation(f::MultiFieldFEBasisComponent) = get_triangulation(f.single_field)

@@ -20,6 +20,38 @@ existing types into this framework without the need to implement a wrapper type
 that inherits from `Map`. For instance, a default implementation is available
 for `Function` objects.  However, we recommend that new types inherit from `Map`.
 
+# Example
+
+```julia
+using Gridap.Arrays
+using LinearAlgebra
+
+# Define a custom Map for k(a,b,c) = α*a*b + β*c
+struct MyMulAdd{T} <: Map
+  α::T
+  β::T
+end
+
+# Optional: provide a cache to avoid allocations in evaluate!
+function Gridap.Arrays.return_cache(k::MyMulAdd, a, b, c)
+  d = a*b + c # Initial allocation
+  CachedArray(d)
+end
+
+# Mandatory: in-place evaluation
+function Gridap.Arrays.evaluate!(cache, k::MyMulAdd, a, b, c)
+  setsize!(cache, size(c))
+  d = cache.array
+  copyto!(d, c)
+  mul!(d, a, b, k.α, k.β)
+  d
+end
+
+k = MyMulAdd(2.0, 1.0)
+a = rand(3,3); b = rand(3,3); c = rand(3,3)
+res = evaluate(k, a, b, c)
+```
+
 """
 abstract type Map <: GridapType end
 
@@ -61,6 +93,11 @@ arguments of the types of the objects `x`.
 """
 return_type(f,x...) = typeof(return_value(f,x...))
 
+"""
+    return_value(f,x...)
+
+Return a variable of the type of the image fx=`f`(`x`...) (possibly fx itself).
+"""
 return_value(f,x...) = evaluate(f,testargs(f,x...)...)
 
 """
@@ -157,7 +194,7 @@ function return_value(f::Broadcasting,x...)
 end
 
 function evaluate!(cache,f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
-  r = _prepare_cache!(cache,x...)
+  r = _bcast_setsize!(cache,x...)
   a = r.array
   broadcast!(f.f,a,x...)
   a
@@ -186,36 +223,25 @@ function return_cache(f::Broadcasting,x::Number...)
 end
 
 function return_value(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
-  s = map(_size_zero,x)
+  s = map(_bcast_size,x)
   bs = Base.Broadcast.broadcast_shape(s...)
   T = return_type(f.f,map(testitem,x)...)
   r = fill(testvalue(T),bs)
   r
 end
 
-function _size_zero(a)
-  s = size(a)
-  if length(a) == 0
-    r = map(i-> (i==0 ? 1 : i) ,s)
-  else
-    r = s
-  end
-  r
-end
-_size_zero(a::Number) = (1,)
-
 function return_cache(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
-  s = map(_size,x)
+  s = map(_bcast_size,x)
   bs = Base.Broadcast.broadcast_shape(s...)
   T = return_type(f.f,map(testitem,x)...)
   r = fill(testvalue(T),bs)
   cache = CachedArray(r)
-  _prepare_cache!(cache,x...)
+  _bcast_setsize!(cache,x...)
   cache
 end
 
-function _prepare_cache!(c,x...)
-  s = map(_size,x)
+function _bcast_setsize!(c,x...)
+  s = map(_bcast_size,x)
   bs = Base.Broadcast.broadcast_shape(s...)
   if bs != size(c)
     setsize!(c,bs)
@@ -223,8 +249,25 @@ function _prepare_cache!(c,x...)
   c
 end
 
-_size(a) = size(a)
-_size(a::Number) = (1,)
+# `_bcast_size` would be `size` if our TensorValues would return size(x) = (), which they do not...
+_bcast_size(x) = size(x)
+_bcast_size(::Number) = ()
+
+# These two have been replaced by size
+#
+# _size(a) = size(a)
+# _size(a::Number) = (1,)
+# 
+# function _size_zero(a)
+#   s = size(a)
+#   if length(a) == 0
+#     r = map(i-> (i==0 ? 1 : i) ,s)
+#   else
+#     r = s
+#   end
+#   r
+# end
+# _size_zero(a::Number) = (1,)
 
 """
     OperationMap(f,args)
@@ -297,3 +340,21 @@ function inverse_map(f)
   Function inverse_map is not implemented yet for objects of type $(typeof(f))
   """
 end
+
+"""
+    struct InverseMap{F} <: Map
+
+Map for the inverse of the `Function` or [`Map`](@ref) `F`.
+"""
+struct InverseMap{F} <: Map
+  original::F
+end
+
+function evaluate!(cache,k::InverseMap,args...)
+  @notimplemented """\n
+  The inverse evaluation is not implemented yet for maps of type $(typeof(k.original))
+  """
+end
+
+inverse_map(k::Map) = InverseMap(k)
+inverse_map(k::InverseMap) = k.original

@@ -54,6 +54,9 @@
 
 # TODO we can optimize memory by only storing info about slave DOFs
 # The fields of this struct are private
+"""
+    struct FESpaceWithLinearConstraints{S<:SingleFieldFESpace} <: SingleFieldFESpace
+"""
 struct FESpaceWithLinearConstraints{S<:SingleFieldFESpace} <: SingleFieldFESpace
   space::S
   n_fdofs::Int
@@ -68,6 +71,13 @@ end
 # Constructors
 
 # This is the public constructor
+"""
+    FESpaceWithLinearConstraints(
+        sDOF_to_dof::AbstractVector{<:Integer},
+        sDOF_to_dofs::Table,
+        sDOF_to_coeffs::Table,
+        space::SingleFieldFESpace)
+"""
 function FESpaceWithLinearConstraints(
   sDOF_to_dof::AbstractVector{<:Integer},
   sDOF_to_dofs::Table,

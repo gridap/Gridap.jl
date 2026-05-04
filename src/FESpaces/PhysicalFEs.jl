@@ -1,4 +1,6 @@
 
+"""
+"""
 function FiniteElements(::DomainStyle,model::DiscreteModel,basis::ReferenceFEName,args...;kwargs...)
   @abstractmethod "The factory function FiniteElements has not been defined for the given arguments"
 end
@@ -9,11 +11,13 @@ function FiniteElements(
   basis::ReferenceFEName,
   args...;
   conformity=nothing,
+  scale_dof=false,
+  global_meshsize=nothing,
   kwargs...)
 
   cell_reffe = ReferenceFE(model,basis,args...;kwargs...)
   conf = Conformity(testitem(cell_reffe),conformity)
-  CellFE(model,cell_reffe,conf)
+  CellFE(model, cell_reffe, conf; scale_dof, global_meshsize)
 end
 
 function FiniteElements(
@@ -54,7 +58,7 @@ function FiniteElements(
   max_order = maximum(map(get_order,ctype_reffe))
 
   return CellFE(
-    cell_conformity, cell_shapefuns, cell_dof_basis,
+    conf, cell_conformity, cell_shapefuns, cell_dof_basis,
     cell_shapefuns_domain, cell_dof_basis_domain, max_order
   )
 end
