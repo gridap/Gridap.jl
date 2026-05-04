@@ -646,7 +646,6 @@ for T in (:(Point),:(AbstractArray{<:Point}))
       evaluate!(r,bm,rs...)
     end
 
-<<<<<<< HEAD
     function return_value(f::BroadcastOpFieldArray{O},x::$T) where O<:Union{Field,AbstractArray{<:Field}}
       @check length(f.args) == 1
       rs = return_value(f.args[1],x)
@@ -666,7 +665,8 @@ for T in (:(Point),:(AbstractArray{<:Point}))
       r, cfs = c
       rs = evaluate!(cfs,f.args[1],x)
       evaluate!(r,f.op,rs)
-=======
+    end 
+    
     function return_value(k::BroadcastOpFieldArray{typeof(∘)},x::$T)
       f, g = k.args
       gx = return_value(g,x)
@@ -687,7 +687,6 @@ for T in (:(Point),:(AbstractArray{<:Point}))
       gx = evaluate!(cg,g,x)
       fgx = evaluate!(cf,f,gx)
       return fgx
->>>>>>> 14110e5719256ec981c23a88e9e68f02cdc6d639
     end
 
   end
