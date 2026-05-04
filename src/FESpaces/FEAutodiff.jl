@@ -104,8 +104,8 @@ function _compute_cell_ids(uh,ttrian)
   tglue = get_glue(ttrian,Val(D))
   @notimplementedif !isa(sglue,FaceToFaceGlue)
   @notimplementedif !isa(tglue,FaceToFaceGlue)
-  
-  # Note: In the case where `strian` does not fully cover `ttrian`, 
+
+  # Note: In the case where `strian` does not fully cover `ttrian`,
   # tface_to_sface will have negative indices.
   # The negative indices will be dealt with within `autodiff_array_reindex`
   k = 1
@@ -146,13 +146,17 @@ function _compute_cell_ids(uh,ttrian::SkeletonTriangulation)
   SkeletonPair(plus,minus)
 end
 
-# We collect the derivatives for the plus and minus sides separately, 
+# We collect the derivatives for the plus and minus sides separately,
 # which returns ydual_θ = df/duᶿ for θ ∈ {+, -}
 # We them merge them into a 2-block BlockVector, so that we obtain
 #   result = [df/du⁺, df/du⁻]
 function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair)
-  dummy_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_tag),i_to_x)
+  tag = x->ForwardDiff.gradient(a, x)
+  Arrays.autodiff_array_gradient(a, i_to_x, j_to_i, tag)
+end
+
+function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair, tag::Function)
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
 
   # dual output of both sides at once
@@ -174,14 +178,18 @@ function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair)
   lazy_map(k,j_to_result_plus,j_to_result_minus)
 end
 
-# We collect the derivatives for the plus and minus sides separately, 
+# We collect the derivatives for the plus and minus sides separately,
 # which returns ydual_θ = [dr⁺/duᶿ, dr⁻/duᶿ] for θ ∈ {+, -}
-# We them merge them as columns into a 2x2 block matrix, so that we obtain 
+# We them merge them as columns into a 2x2 block matrix, so that we obtain
 # ydual = [dr⁺/du⁺ dr⁺/du⁻] = [ydual_plus, ydual_minus]
 #         [dr⁻/du⁺ dr⁻/du⁻]
 function Arrays.autodiff_array_jacobian(a, i_to_x, j_to_i::SkeletonPair)
-  dummy_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_tag),i_to_x)
+  tag = x->ForwardDiff.jacobian(a, x)
+  Arrays.autodiff_array_jacobian(a, i_to_x, j_to_i, tag)
+end
+
+function Arrays.autodiff_array_jacobian(a, i_to_x, j_to_i::SkeletonPair, tag::Function)
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
 
   # dual output of both sides at once
