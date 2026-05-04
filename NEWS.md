@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed type instability for tensor operations between `MultiValue` and scalars. Since PR[#1293](https://github.com/gridap/Gridap.jl/pull/1293).
 - Fixed type instability in basis construction when user gives a non-concrete output type. Since PR[#1294](https://github.com/gridap/Gridap.jl/pull/1294).
 - Fixed tagging for tested derivatives involving more than one triangulation. Since PR[#1296
-](https://github.com/gridap/Gridap.jl/pull/1296).
+](https://github.com/gridap/Gridap.jl/pull/1297).
 
 ## [0.20.5] - 2026-04-28
 
