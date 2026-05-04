@@ -77,6 +77,9 @@ end
 
   test_div_v_q_equiv(U,V,P,Q,Ω)
 
+  v = get_fe_basis(V)
+  dv = DIV(v)
+  
   #using Gridap.Visualization
   #
   #writevtk(Ω,"trian",nsubcells=10,cellfields=["uh"=>uh])

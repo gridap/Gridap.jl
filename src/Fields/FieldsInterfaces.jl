@@ -200,13 +200,21 @@ struct GenericField{T} <: Field
   object::T
 end
 
-#Field(f) = GenericField(f)
 GenericField(f::Field) = f
 
 testargs(a::GenericField,x::Point) = testargs(a.object,x)
 return_value(a::GenericField,x::Point) = return_value(a.object,x)
 return_cache(a::GenericField,x::Point) = return_cache(a.object,x)
 evaluate!(cache,a::GenericField,x::Point) = evaluate!(cache,a.object,x)
+
+function testvalue(::Type{GenericField{T}}) where T
+  if hasproperty(T,:instance)
+    # This is because typeof(function) does not have a singleton constructor O()
+    GenericField(T.instance)
+  else
+    GenericField(T())
+  end :: GenericField{T}
+end
 
 function return_cache(f::FieldGradient{N,<:GenericField},x::Point) where N
   return_cache(FieldGradient{N}(f.object.object),x)
@@ -386,46 +394,38 @@ end
 
 function return_value(c::OperationField,x::Point)
   fx = map(f -> return_value(f,x),c.fields)
-  return_value(c.op,fx...)
+  return return_value(c.op,fx...)
 end
 
 function return_cache(c::OperationField,x::Point)
   cl = map(fi -> return_cache(fi,x),c.fields)
   lx = map(fi -> return_value(fi,x),c.fields)
   ck = return_cache(c.op,lx...)
-  ck, cl
+  return ck, cl
 end
 
 function evaluate!(cache,c::OperationField,x::Point)
   ck, cf = cache
   lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
-  evaluate!(ck,c.op,lx...)
+  return evaluate!(ck,c.op,lx...)
 end
 
 function return_value(c::OperationField,x::AbstractArray{<:Point})
   fx = map(f -> return_value(f,x),c.fields)
-  c.op.(fx...)
+  return return_value(Broadcasting(c.op),fx...)
 end
 
 function return_cache(c::OperationField,x::AbstractArray{<:Point})
   cf = map(fi -> return_cache(fi,x),c.fields)
   lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
-  ck = return_cache(c.op,map(testitem,lx)...)
-  r = c.op.(lx...)
-  ca = CachedArray(r)
-  ca, ck, cf
+  ck = return_cache(Broadcasting(c.op),lx...)
+  return cf, ck
 end
 
 function evaluate!(cache,c::OperationField,x::AbstractArray{<:Point})
-  ca, ck, cf = cache
-  sx = size(x)
-  setsize!(ca,sx)
+  cf, ck = cache
   lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
-  r = ca.array
-  for i in eachindex(x)
-    @inbounds r[i] = evaluate!(ck,c.op,map(lxi -> lxi[i], lx)...)
-  end
-  r
+  return evaluate!(ck,Broadcasting(c.op),lx...)
 end
 
 evaluate!(cache,op::Operation,x::Field...) = OperationField(op.op,x)
@@ -628,13 +628,17 @@ struct IntegrationMap <: Map end
 
 @inline function integrate_eltype(aq,w)
   T = Base.promote_op(*,eltype(aq),eltype(w))
-  return Base.promote_op(+,T,T)
+  TT = Base.promote_op(+,T,T)
+  @check isconcretetype(TT) "integrate_eltype($(eltype(aq)), $(eltype(w))) is not concrete."
+  return TT
 end
 @inline function integrate_eltype(aq,w,jq)
   T1 = Base.promote_op(*,eltype(aq),eltype(w))
   Tj = Base.promote_op(meas,eltype(jq))
   T2 = Base.promote_op(*,T1,Tj)
-  return Base.promote_op(+,T2,T2)
+  TT = Base.promote_op(+,T2,T2)
+  @check isconcretetype(TT) "integrate_eltype($(eltype(aq)), $(eltype(w)), $(eltype(jq))) is not concrete."
+  return TT
 end
 
 return_value(::IntegrationMap,aq::AbstractVector,w) = zero(integrate_eltype(aq,w))

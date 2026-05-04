@@ -197,7 +197,7 @@ function apply_face_signflip(
 
   facet_range = get_dimrange(p,D-1)
   face_own_funs = get_face_own_funs(b,p,conf)
-  sign_flip = MVector(tfill(1, Val(length(b)))...)
+  sign_flip = fill(1, length(b))
 
   for (face, own_funs) in enumerate(face_own_funs)
     if face ∈ facet_range
@@ -396,7 +396,7 @@ function _CompWiseTensorPolyBasis_facet_signflip(
 
   facet_range = get_dimrange(p,D-1)
   face_own_funs = get_face_own_funs(b,p,conf)
-  sign_flip = MVector(tfill(1, Val(length(b)))...)
+  sign_flip = fill(1, length(b))
 
   for (face, own_funs) in enumerate(face_own_funs)
     if face ∈ facet_range
