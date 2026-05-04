@@ -146,7 +146,9 @@ macro.
 function test_map(y,f,x...;cmp=(==))
   z = evaluate(f,x...)
   @test cmp(z,y)
-  @test typeof(z) == return_type(f,x...)
+  T = return_type(f,x...)
+  @test typeof(z) == T
+  @test typeof(return_value(f,x...)) == T
   cache = return_cache(f,x...)
   z = evaluate!(cache,f,x...)
   @test cmp(z,y)
@@ -185,89 +187,63 @@ struct Broadcasting{F} <: Map
   f::F
 end
 
-return_cache(f::Broadcasting,x...) = nothing
-
-evaluate!(cache,f::Broadcasting,x...) = broadcast(f.f,x...)
-
 function return_value(f::Broadcasting,x...)
   broadcast( (y...) -> f.f(testargs(f.f,y...)...), x... )
 end
+return_cache(f::Broadcasting,x...) = nothing
+evaluate!(cache,f::Broadcasting,x...) = broadcast(f.f,x...)
 
-function evaluate!(cache,f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
-  r = _bcast_setsize!(cache,x...)
-  a = r.array
-  broadcast!(f.f,a,x...)
-  a
-end
-
-function evaluate!(cache,f::Broadcasting,x::AbstractArray{<:Number})
-  setsize!(cache,size(x))
-  a = cache.array
-  @check axes(a) == axes(x)
-  @inbounds for i in eachindex(x)
-    a[i] = f.f(x[i])
-  end
-  a
-end
-
-function evaluate!(cache,f::Broadcasting,args::Number...)
-  f.f(args...)
-end
-
-function return_value(f::Broadcasting,x::Number...)
-  return_value(f.f,x...)
-end
-
-function return_cache(f::Broadcasting,x::Number...)
-  nothing
-end
-
-function return_value(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
-  s = map(_bcast_size,x)
-  bs = Base.Broadcast.broadcast_shape(s...)
-  T = return_type(f.f,map(testitem,x)...)
-  r = fill(testvalue(T),bs)
-  r
-end
-
-function return_cache(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
-  s = map(_bcast_size,x)
-  bs = Base.Broadcast.broadcast_shape(s...)
-  T = return_type(f.f,map(testitem,x)...)
-  r = fill(testvalue(T),bs)
-  cache = CachedArray(r)
-  _bcast_setsize!(cache,x...)
-  cache
-end
-
-function _bcast_setsize!(c,x...)
-  s = map(_bcast_size,x)
-  bs = Base.Broadcast.broadcast_shape(s...)
-  if bs != size(c)
-    setsize!(c,bs)
-  end
-  c
-end
+return_value(f::Broadcasting,x::Number...) = return_value(f.f,x...)
+return_cache(f::Broadcasting,x::Number...) = nothing
+evaluate!(cache,f::Broadcasting,args::Number...) = f.f(args...)
 
 # `_bcast_size` would be `size` if our TensorValues would return size(x) = (), which they do not...
 _bcast_size(x) = size(x)
 _bcast_size(::Number) = ()
 
-# These two have been replaced by size
-#
-# _size(a) = size(a)
-# _size(a::Number) = (1,)
-# 
-# function _size_zero(a)
-#   s = size(a)
-#   if length(a) == 0
-#     r = map(i-> (i==0 ? 1 : i) ,s)
-#   else
-#     r = s
-#   end
-#   r
-# end
-# _size_zero(a::Number) = (1,)
+_bcast_size_zero(x) = map(i -> ifelse(isone(i),i,0), size(x))
+_bcast_size_zero(::Number) = ()
+
+function _bcast_setsize!(cache,x...)
+  s = map(_bcast_size,x)
+  bs = Base.Broadcast.broadcast_shape(s...)
+  setsize!(cache,bs)
+  return cache
+end
+
+function return_value(f::Broadcasting,x::AbstractArray{<:Number})
+  T = return_type(f.f,testitem(x))
+  return fill(testvalue(T),_bcast_size_zero(x))
+end
+function return_cache(f::Broadcasting,x::AbstractArray{<:Number})
+  T = return_type(f.f,testitem(x))
+  r = fill(testvalue(T),size(x))
+  return CachedArray(r)
+end
+function evaluate!(cache,f::Broadcasting,x::AbstractArray{<:Number})
+  setsize!(cache,size(x))
+  r = cache.array
+  broadcast!(f.f,r,x)
+  return r
+end
+
+function return_value(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
+  s = map(_bcast_size_zero,x)
+  bs = Base.Broadcast.broadcast_shape(s...)
+  T = return_type(f.f,map(testitem,x)...)
+  r = fill(testvalue(T),bs)
+  return r
+end
+function return_cache(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
+  r = return_value(f,x...)
+  return CachedArray(r)
+end
+function evaluate!(cache,f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
+  _bcast_setsize!(cache,x...)
+  r = cache.array
+  broadcast!(f.f,r,x...)
+  return r
+end
 
 """
     OperationMap(f,args)

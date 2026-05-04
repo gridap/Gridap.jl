@@ -490,6 +490,11 @@ end
 function Arrays.return_value(k::Broadcasting{typeof(_sum_if_first_positive)},dofs::VectorBlock,o)
   T = return_type(k,testitem(dofs.array),o)
   array = Vector{T}(undef,length(dofs.array))
+  for i in 1:length(dofs.array)
+    if dofs.touched[i]
+      array[i] = testvalue(T)
+    end
+  end
   ArrayBlock(array,dofs.touched)
 end
 
