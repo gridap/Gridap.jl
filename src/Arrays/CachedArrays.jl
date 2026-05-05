@@ -161,3 +161,8 @@ function setsize_op!(::typeof(*),c::CachedArray,a::AbstractMatrix,b::AbstractMat
   @check size(a,2) == size(b,1)
   setsize!(c,(size(a,1),size(b,2)))
 end
+
+function setsize_op!(::typeof(*), c::Diagonal, a::Diagonal, b::Diagonal)
+  @check size(a,2) == size(b,1)
+  resize!(c.diag, size(a,2))
+end

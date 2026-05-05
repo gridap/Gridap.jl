@@ -1,8 +1,11 @@
 
+# This seems to be unused.
+"""
+"""
 struct FilterMap <: Map end
 
 function return_cache(::FilterMap,f,a)
-  T = eltype(eltype(a))
+  T = eltype(a)
   CachedArray(zeros(T,length(a)))
 end
 

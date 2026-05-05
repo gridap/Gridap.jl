@@ -196,7 +196,7 @@ OrientationStyle(::Type{<:CartesianGrid}) = Oriented()
 """
     get_cartesian_descriptor(grid::CartesianGrid)
 
-Get the descriptor of the Cartesian grid
+Get the [`CartesianDescriptor`](@ref) of `grid`.
 """
 function get_cartesian_descriptor(a::CartesianGrid)
   a.node_coords.data
@@ -235,7 +235,7 @@ get_polytopes(g::CartesianGrid{3}) = [HEX,]
 """
     CartesianGrid(args...;kwargs...)
 
-Same args needed to construct a `CartesianDescriptor`
+Same args needed to construct a [`CartesianDescriptor`](@ref).
 """
 function CartesianGrid(args...;kwargs...)
   desc = CartesianDescriptor(args...;kwargs...)

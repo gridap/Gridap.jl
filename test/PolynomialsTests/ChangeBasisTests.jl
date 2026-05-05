@@ -13,7 +13,7 @@ order = 1
 V = Float64
 G = gradient_type(V,xi)
 H = gradient_type(G,xi)
-f = MonomialBasis{2}(V,order)
+f = MonomialBasis(Val(2),V,order)
 
 change = inv(evaluate(f,nodes))
 

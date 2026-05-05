@@ -52,6 +52,9 @@
 #
 #  - coeff: A coefficient in a linear constraint
 
+"""
+    struct FESpaceWithLinearConstraints{S<:SingleFieldFESpace} <: SingleFieldFESpace
+"""
 struct FESpaceWithLinearConstraints{S<:SingleFieldFESpace} <: SingleFieldFESpace
   space::S
   mDOF_to_dof::Vector
@@ -84,6 +87,14 @@ function FESpaceWithLinearConstraints(
   )
 end
 
+"""
+    FESpaceWithLinearConstraints(
+        sDOF_to_dof::AbstractVector{<:Integer},
+        sDOF_to_dofs::Table,
+        sDOF_to_coeffs::Table,
+        space::SingleFieldFESpace
+    )
+"""
 function FESpaceWithLinearConstraints(
   sDOF_to_dof::AbstractVector{<:Integer},
   sDOF_to_dofs::Table,

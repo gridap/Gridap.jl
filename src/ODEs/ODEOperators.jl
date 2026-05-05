@@ -7,6 +7,9 @@
 Trait that indicates the linearity type of an ODE operator.
 """
 abstract type ODEOperatorType <: GridapType end
+"""
+    struct NonlinearODE <: ODEOperatorType end
+"""
 struct NonlinearODE <: ODEOperatorType end
 
 """
@@ -22,6 +25,9 @@ where `N` is the order of the ODE operator, `∂t^k[u]` is the `k`-th-order time
 derivative of `u`, and both `mass` and `res` have order `N-1`.
 """
 abstract type AbstractQuasilinearODE <: ODEOperatorType end
+"""
+    struct QuasilinearODE <: AbstractQuasilinearODE end
+"""
 struct QuasilinearODE <: AbstractQuasilinearODE end
 
 """
@@ -37,6 +43,9 @@ where `N` is the order of the ODE operator, `∂t^k[u]` is the `k`-th-order time
 derivative of `u`, `mass` is independent of `u` and `res` has order `N-1`.
 """
 abstract type AbstractSemilinearODE <: AbstractQuasilinearODE end
+"""
+    struct SemilinearODE <: AbstractSemilinearODE end
+"""
 struct SemilinearODE <: AbstractSemilinearODE end
 
 """
@@ -50,6 +59,9 @@ where `N` is the order of the ODE operator, and `∂t^k[u]` is the `k`-th-order
 time derivative of `u`.
 """
 abstract type AbstractLinearODE <: AbstractSemilinearODE end
+"""
+    struct LinearODE <: AbstractLinearODE end
+"""
 struct LinearODE <: AbstractLinearODE end
 
 ################

@@ -8,7 +8,7 @@ using Gridap.Fields
 D = 2
 T = Float64
 order = 1
-prebasis = MonomialBasis{D}(T,order)
+prebasis = MonomialBasis(Val(D),T,order)
 
 polytope = QUAD
 x = get_vertex_coordinates(polytope)

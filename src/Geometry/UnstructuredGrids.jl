@@ -21,8 +21,10 @@ struct UnstructuredGrid{Dc,Dp,Tp,O,Tn} <: Grid{Dc,Dp}
         cell_node_ids::Table{Ti},
         reffes::Vector{<:LagrangianRefFE{Dc}},
         cell_types::Vector,
-        orientation_style::OrientationStyle=NonOriented()) where {Dc,Dp,Tp,Ti}
-      end
+        orientation_style::O,
+        facet_normal::Tn,
+        cell_map
+      ) where {Dc,Dp,Tp,Ti,O,Tn}
 
   Low-level inner constructor.
   """
@@ -55,7 +57,7 @@ function UnstructuredGrid(
   orientation_style::OrientationStyle=NonOriented(),
   facet_normal=nothing;
   has_affine_map=get_has_affine_map(reffes)
-)   
+)
   if has_affine_map === nothing
     _has_affine_map = get_has_affine_map(reffes)
   else

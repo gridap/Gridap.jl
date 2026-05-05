@@ -1,8 +1,10 @@
 
 """
-    from_json(::Type{T},s::AbstractString;kwargs...) where T
+    from_json(::Type{T}, s::AbstractString; kwargs...) where T
 
-Accepts keyword arguments passed to `JSON.parse`.
+De-serializes a JSON string `s` into an object of type `T`.
+
+Keyword arguments are passed to `JSON.parse`.
 """
 function from_json(::Type{T},s::AbstractString;kwargs...) where T
   json_dict = JSON.parse(s;kwargs...)
@@ -11,9 +13,11 @@ function from_json(::Type{T},s::AbstractString;kwargs...) where T
 end
 
 """
-    from_json_file(::Type{T},s::AbstractString;kwargs...) where T
+    from_json_file(::Type{T}, path::AbstractString; kwargs...) where T
 
-Accepts keyword arguments passed to `JSON.parsefile`.
+De-serializes a JSON file into an object of type `T`.
+
+Keyword arguments are passed to `JSON.parsefile`.
 """
 function from_json_file(::Type{T},s::AbstractString;kwargs...) where T
   json_dict = JSON.parsefile(s;kwargs...)
@@ -22,9 +26,11 @@ function from_json_file(::Type{T},s::AbstractString;kwargs...) where T
 end
 
 """
-    to_json(object;kwargs...)
+    to_json(object; kwargs...) -> String
 
-Accepts keyword arguments passed to `JSON.json`.
+Serializes `object` into a JSON-formatted string.
+
+Keyword arguments are passed to `JSON.json`.
 """
 function to_json(object;kwargs...)
   dict = to_dict(object)
@@ -32,9 +38,11 @@ function to_json(object;kwargs...)
 end
 
 """
-    to_json_file(object,filename;kwargs...)
+    to_json_file(object, path::AbstractString; kwargs...)
 
-Accepts keyword arguments passed to `JSON.json`.
+Serializes `object` into a JSON file.
+
+Keyword arguments are passed to `JSON.json`.
 """
 function to_json_file(object,filename;kwargs...)
   dict = to_dict(object)

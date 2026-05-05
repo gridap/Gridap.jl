@@ -190,6 +190,9 @@ function Algebra._nlsolve_with_updated_cache!(
 
   result = nlsolve(cache.df, x; linsolve=linsolve!, nls.kwargs...)
   cache.result = result
+  if !converged(result)
+    error("Newton solver did not converge after $(result.iterations) iterations. Final residual norm: $(result.residual_norm)")
+  end
   copy_entries!(x, result.zero)
 end
 

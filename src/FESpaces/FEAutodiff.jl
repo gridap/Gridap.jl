@@ -52,6 +52,9 @@ function _jacobian(f,uh,fuh::DomainContribution)
   terms
 end
 
+"""
+    hessian(f::Function, uh::FEFunction)
+"""
 function hessian(f::Function,uh::FEFunction)
   fuh = f(uh)
   _hessian(f,uh,fuh)

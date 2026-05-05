@@ -64,7 +64,7 @@ function _solve_nr!(x,A,b,dx,ns,nls,op)
     if isconv; return; end
 
     if nliter == nls.max_nliters
-      @unreachable
+      error("NewtonRaphsonSolver failed to converge in $(nls.max_nliters) iterations. Final residual: $(maximum(abs,b))")
     end
 
     # Assemble jacobian (fast in-place version)
@@ -78,7 +78,7 @@ end
 
 function _check_convergence(nls,b)
   m0 = maximum(abs,b)
-  return (false, m0)
+  return (m0 < nls.tol, m0)
 end
 
 function _check_convergence(nls,b,m0)
@@ -149,6 +149,9 @@ function _nlsolve_with_updated_cache!(x,nls,op,cache)
   end
   r = nlsolve(df,x;linsolve=linsolve!,kwargs...)
   cache.result = r
+  if !converged(r)
+    error("Newton solver did not converge after $(r.iterations) iterations. Final residual norm: $(r.residual_norm)")
+  end
   copy_entries!(x,r.zero)
 end
 

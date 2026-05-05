@@ -14,6 +14,10 @@ struct VectorValue{D,T} <: MultiValue{Tuple{D},T,1,D}
     end
 end
 
+function promote_rule(::Type{VectorValue{D,Ta}}, ::Type{VectorValue{D,Tb}}) where {D,Ta,Tb}
+  VectorValue{D,promote_type(Ta,Tb)}
+end
+
 ###############################################################
 # Constructors (VectorValue)
 ###############################################################
@@ -60,70 +64,16 @@ VectorValue{D,T1}(data::AbstractArray{T2}) where {D,T1,T2} = VectorValue{D,T1}(N
 # Conversions (VectorValue)
 ###############################################################
 
-# Direct conversion
-convert(::Type{<:VectorValue{D,T}}, arg:: AbstractArray) where {D,T} = VectorValue{D,T}(NTuple{D,T}(arg))
-convert(::Type{<:VectorValue{D,T}}, arg:: Tuple) where {D,T} = VectorValue{D,T}(arg)
-
 # Inverse conversion
-convert(::Type{<:SVector{D,T}}, arg::VectorValue{D}) where {D,T} = SVector{D,T}(Tuple(arg))
-convert(::Type{<:MVector{D,T}}, arg::VectorValue{D}) where {D,T} = MVector{D,T}(Tuple(arg))
-convert(::Type{<:NTuple{D,T}},  arg::VectorValue{D}) where {D,T} = NTuple{D,T}(Tuple(arg))
+convert(::Type{<:SArray{Tuple{D},T}}, arg::VectorValue{D}) where {D,T} = SVector{D,T}(Tuple(arg))
+convert(::Type{<:MArray{Tuple{D},T}}, arg::VectorValue{D}) where {D,T} = MVector{D,T}(Tuple(arg))
 
 # Internal conversion
 convert(::Type{<:VectorValue{D,T}}, arg::VectorValue{D}) where {D,T} = VectorValue{D,T}(Tuple(arg))
 convert(::Type{<:VectorValue{D,T}}, arg::VectorValue{D,T}) where {D,T} = arg
 
+change_eltype(::Type{<:VectorValue{D}},::Type{T}) where {D,T} = VectorValue{D,T}
+
 # Construction from SArray or MArray
 MultiValue(a::StaticVector{D,T}) where {D,T} = convert(VectorValue{D,T}, a)
 
-###############################################################
-# Other constructors and conversions (VectorValue)
-###############################################################
-
-zero(::Type{<:VectorValue{D,T}}) where {D,T} = VectorValue{D,T}(tfill(zero(T),Val{D}()))
-zero(::VectorValue{D,T}) where {D,T} = zero(VectorValue{D,T})
-
-function rand(rng::AbstractRNG, ::Random.SamplerType{VectorValue{D,T}}) where {D,T}
-  return VectorValue{D,T}(Tuple(rand(rng, SVector{D,T})))
-end
-
-Mutable(::Type{VectorValue{D,T}}) where {D,T} = MVector{D,T}
-Mutable(::VectorValue{D,T}) where {D,T} = Mutable(VectorValue{D,T})
-mutable(a::VectorValue) = MVector(a.data)
-
-change_eltype(::Type{VectorValue{D}},::Type{T}) where {D,T} = VectorValue{D,T}
-change_eltype(::Type{VectorValue{D,T1}},::Type{T2}) where {D,T1,T2} = VectorValue{D,T2}
-change_eltype(::VectorValue{D,T1},::Type{T2}) where {D,T1,T2} = change_eltype(VectorValue{D,T1},T2)
-
-get_array(arg::VectorValue{D,T}) where {D,T} = convert(SVector{D,T}, arg)
-
-###############################################################
-# Introspection (VectorValue)
-###############################################################
-
-eltype(::Type{<:VectorValue{D,T}}) where {D,T} = T
-eltype(arg::VectorValue{D,T}) where {D,T} = eltype(VectorValue{D,T})
-
-size(::Type{<:VectorValue{D}}) where {D} = (D,)
-size(::VectorValue{D}) where {D}  = size(VectorValue{D})
-
-length(::Type{<:VectorValue{D}}) where {D} = D
-length(::VectorValue{D}) where {D} = length(VectorValue{D})
-
-num_components(::Type{<:VectorValue}) = @unreachable "The dimension is needed to count components"
-num_components(::Type{<:VectorValue{D}}) where {D} = length(VectorValue{D})
-num_components(::VectorValue{D}) where {D} = num_components(VectorValue{D})
-
-###############################################################
-# VTK export (VectorValue)
-###############################################################
-
-function indep_components_names(::Type{<:VectorValue{A}}) where A
-  [ "$i" for i in 1:A ]
-  if A>3
-    return ["$i" for i in 1:A ]
-  else
-    c_name = ["X", "Y", "Z"]
-    return [c_name[i] for i in 1:A ]
-  end
-end

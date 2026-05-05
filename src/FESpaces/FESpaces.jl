@@ -1,7 +1,6 @@
 """
 
-The exported names are
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__))
 """
 module FESpaces
 
@@ -122,6 +121,8 @@ export gather_free_values
 export gather_free_values!
 export test_single_field_fe_space
 export get_dirichlet_dof_values
+export get_free_dof_coordinates
+export get_free_and_dirichlet_dof_coordinates
 export interpolate
 export interpolate!
 export interpolate_everywhere
@@ -136,6 +137,7 @@ export CellConformity
 export CellFE
 export compute_conforming_cell_dofs
 export compute_cell_space
+export compute_cell_bases_changes
 
 export TestFESpace
 export TrialFESpace
@@ -233,6 +235,8 @@ export PolytopalFESpace
 export PatchAssembler
 export LocalOperator
 
+export high_order_grid
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")
@@ -241,9 +245,7 @@ include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
 
-include("DivConformingFESpaces.jl")
-
-include("CurlConformingFESpaces.jl")
+include("Pullbacks.jl")
 
 include("FESpaceFactories.jl")
 
@@ -275,8 +277,6 @@ include("CLagrangianFESpaces.jl")
 
 include("DirichletFESpaces.jl")
 
-#include("ExtendedFESpaces.jl")
-
 include("FESpacesWithLinearConstraints.jl")
 
 include("ConstraintHandlers.jl")
@@ -293,14 +293,21 @@ include("LocalFEOperators.jl")
 
 include("PatchFESpaces.jl")
 
-export get_free_values
-function get_free_values(args...)
-  @unreachable "get_free_values has been removed. Use get_free_dof_values instead."
-end
+include("HighOrderGrids.jl")
 
-export get_dirichlet_values
-function get_dirichlet_values(args...)
-  @unreachable "get_dirichlet_values has been removed. Use get_dirichlet_dof_values instead."
-end
+"""
+deprecated
+!!! warning
+    deprecated in favor of [`get_free_dof_values`](@ref).
+"""
+function get_free_values end
+@deprecate get_free_values(args...) get_free_dof_values(args...)
+
+"""
+!!! warning
+    deprecated in favor of [`get_dirichlet_dof_values`](@ref).
+"""
+function get_dirichlet_values end
+@deprecate get_dirichlet_values(args...) get_dirichlet_dof_values(args...)
 
 end # module

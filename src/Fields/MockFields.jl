@@ -1,4 +1,9 @@
 
+"""
+    struct MockField{T<:Number} <: Field
+
+For tests.
+"""
 struct MockField{T<:Number} <: Field
   v::T
 end
@@ -18,6 +23,11 @@ end
 testvalue(::Type{MockField{T}}) where T = MockField(zero(T))
 
 # This is to emulate MonomialBasis that only implements at the level of array of fields.
+"""
+    struct MockFieldArray{N,A} <: AbstractArray{GenericField{Nothing},N}
+
+For tests.
+"""
 struct MockFieldArray{N,A} <: AbstractArray{GenericField{Nothing},N}
   values::A
   function MockFieldArray(values::AbstractArray{<:Number})
@@ -30,6 +40,10 @@ end
 Base.size(a::MockFieldArray) = size(a.values)
 Base.IndexStyle(::Type{<:MockFieldArray}) = IndexLinear()
 Base.getindex(a::MockFieldArray,i::Integer) = GenericField(nothing)
+
+function testvalue(::Type{MockFieldArray{N,A}}) where {N,A}
+  MockFieldArray(testvalue(A))
+end
 
 function return_cache(f::MockFieldArray,x::Point)
   nothing

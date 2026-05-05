@@ -16,7 +16,7 @@ depending on the `IndexStyle` of the array.
     getindex!(cache,a::AbstractArray,i::Integer)
     getindex!(cache,a::AbstractArray{T,N},i::Vararg{Integer,N}) where {T,N}
 
-See also [`array_cache`](@ref), [`uses_hash!`](@ref), [`invalidate_cache!`](@ref).
+See also [`array_cache`](@ref), [`uses_hash`](@ref), [`invalidate_cache!`](@ref).
 
 # Examples
 
@@ -217,12 +217,22 @@ function testvalue(::Type{T}) where T<:Transpose{E,A} where {E,A}
   Transpose(a)
 end
 
+function testvalue(::Type{T}) where T<:Diagonal{E,A} where {E,A}
+  a = testvalue(A)
+  Diagonal(a)
+end
+
 testvalue(::Type{Base.OneTo{T}}) where T = Base.OneTo(zero(T))
 
 testvalue(::Type{Base.UnitRange{T}}) where T = UnitRange(one(T),zero(T))
 
 function testvalue(::Type{T}) where T<:Fill{E,N,A} where {E,N,A}
-  Fill(zero(E),testvalue(A))
+  Fill(testvalue(E),testvalue(A))
+  #Fill(zero(E),testvalue(A))
+end
+
+function testvalue(::Type{T}) where T<:FillArrays.AbstractFill{E,N,A} where {E,N,A}
+  @notimplemented
 end
 
 function testvalue(::Type{T}) where T<:Tuple
@@ -316,3 +326,8 @@ function test_array(
   end
   true
 end
+
+"""
+Alias for `Base.sum`.
+"""
+const ∑ = sum

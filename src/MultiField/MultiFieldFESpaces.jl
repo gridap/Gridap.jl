@@ -1,3 +1,5 @@
+"""
+"""
 abstract type MultiFieldStyle end
 
 """
@@ -11,14 +13,14 @@ struct ConsecutiveMultiFieldStyle <: MultiFieldStyle end
 """
     struct BlockMultiFieldStyle{NB,SB,P} <: MultiFieldStyle end
 
-Similar to ConsecutiveMultiFieldStyle, but we keep the original DoF ids of the
-individual spaces for better block assembly (see BlockSparseMatrixAssembler).
+Similar to [`ConsecutiveMultiFieldStyle`](@ref), but we keep the original DoF ids of the
+individual spaces for better block assembly (see [`BlockSparseMatrixAssembler`](@ref)).
 
 Takes three parameters:
 
-  - NB: Number of assembly blocks
-  - SB: Size of each assembly block, as a Tuple.
-  - P : Permutation of the variables of the multifield space when assembling, as a Tuple.
+ - `NB`: Number of assembly blocks
+ - `SB`: Size of each assembly block, as a `Tuple`.
+ - `P` : Permutation of the variables of the multifield space when assembling, as a `Tuple`.
 """
 struct BlockMultiFieldStyle{NB,SB,P} <: MultiFieldStyle end
 
@@ -125,7 +127,10 @@ struct MultiFieldFESpace{MS<:MultiFieldStyle,CS<:ConstraintStyle,V} <: FESpace
 end
 
 """
-    MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
+    MultiFieldFESpace(::Type{V}, spaces::Vector{<:SingleFieldFESpace})
+    MultiFieldFESpace(           spaces::Vector{<:SingleFieldFESpace};
+      style = ConsecutiveMultiFieldStyle()
+    )
 """
 function MultiFieldFESpace(
   spaces::Vector{<:SingleFieldFESpace}; style = ConsecutiveMultiFieldStyle()
@@ -483,7 +488,14 @@ function _sum_if_first_positive(a,b)
 end
 
 function Arrays.return_value(k::Broadcasting{typeof(_sum_if_first_positive)},dofs::VectorBlock,o)
-  evaluate(k,dofs,o)
+  T = return_type(k,testitem(dofs.array),o)
+  array = Vector{T}(undef,length(dofs.array))
+  for i in 1:length(dofs.array)
+    if dofs.touched[i]
+      array[i] = testvalue(T)
+    end
+  end
+  ArrayBlock(array,dofs.touched)
 end
 
 function Arrays.return_cache(k::Broadcasting{typeof(_sum_if_first_positive)},dofs::VectorBlock,o)
@@ -512,7 +524,7 @@ function Arrays.evaluate!(cache,k::Broadcasting{typeof(_sum_if_first_positive)},
 end
 
 """
-The resulting MultiFieldFEFunction is in the space (in particular it fulfills Dirichlet BCs
+The resulting `MultiFieldFEFunction` is in the space (in particular it fulfills Dirichlet BCs
 even in the case that the given cell field does not fulfill them)
 """
 function FESpaces.interpolate(objects, fe::MultiFieldFESpace)
@@ -532,7 +544,7 @@ end
 
 """
 like interpolate, but also compute new degrees of freedom for the dirichlet component.
-The resulting MultiFieldFEFunction does not necessary belongs to the underlying space
+The resulting `MultiFieldFEFunction` does not necessary belongs to the underlying space
 """
 function FESpaces.interpolate_everywhere(objects, fe::MultiFieldFESpace)
   free_values = zero_free_values(fe)

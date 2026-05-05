@@ -1,22 +1,22 @@
 """
     struct GeneralPolytope{D,Dp,Tp} <: Polytope{D}
 
-  The `GeneralPolytope` is defined by a set of vertices and a rotation
-  system (a planar oriented graph). This polytopal representation can represent
-  any polytope of dimension 2 and 3. `Dp` is the embedding dimension and `Tp`
-  the element type of the vertices.
+The `GeneralPolytope` is defined by a set of vertices and a rotation
+system (a planar oriented graph). This polytopal representation can represent
+any polytope of dimension 2 and 3. `Dp` is the embedding dimension and `Tp`
+the element type of the vertices.
 
-  In 2 dimensions ([`Polygon`](@ref)), the representation of the polygon is a closed polyline.
+In 2 dimensions ([`Polygon`](@ref)), the representation of the polygon is a closed polyline.
 
-  In 3 dimensions ([`Polyhedron`](@ref)), the rotation system generates the connectivities, each facet is a closed cycle of the graph.
-  This construction allows complex geometrical operations, e.g., intersecting polytopes by halfspaces.
-  See also,
+In 3 dimensions ([`Polyhedron`](@ref)), the rotation system generates the connectivities, each facet is a closed cycle of the graph.
+This construction allows complex geometrical operations, e.g., intersecting polytopes by halfspaces.
+See also,
 
-  > K. Sugihara, "A robust and consistent algorithm for intersecting convex polyhedra", Comput. Graph. Forum 13 (3) (1994) 45–54, doi: [10.1111/1467-8659.1330045](https://doi.org/10.1111/1467-8659.1330045)
+> K. Sugihara, "A robust and consistent algorithm for intersecting convex polyhedra", Comput. Graph. Forum 13 (3) (1994) 45–54, doi: [10.1111/1467-8659.1330045](https://doi.org/10.1111/1467-8659.1330045)
 
-  > D. Powell, T. Abel, "An exact general remeshing scheme applied to physically conservative voxelization", J. Comput. Phys. 297 (Sept. 2015) 340–356, doi: [10.1016/j.jcp.2015.05.022](https://doi.org/10.1016/j.jcp.2015.05.022.
+> D. Powell, T. Abel, "An exact general remeshing scheme applied to physically conservative voxelization", J. Comput. Phys. 297 (Sept. 2015) 340–356, doi: [10.1016/j.jcp.2015.05.022](https://doi.org/10.1016/j.jcp.2015.05.022.
 
-  > S. Badia, P. A. Martorell, F. Verdugo. "Geometrical discretisations for unfitted finite elements on explicit boundary representations", J.Comput. Phys. 460 (2022): 111162. doi: [10.1016/j.jcp.2022.111162](https://doi.org/10.1016/j.jcp.2022.111162)
+> S. Badia, P. A. Martorell, F. Verdugo. "Geometrical discretisations for unfitted finite elements on explicit boundary representations", J.Comput. Phys. 460 (2022): 111162. doi: [10.1016/j.jcp.2022.111162](https://doi.org/10.1016/j.jcp.2022.111162)
 
 !!! warning
     General polytope can be flat, i.e. a 3-vertices `Polygon` might have it's vertices aligned on a line. So `D` is actually an upper bound of the polytope's actual dimension.
@@ -54,14 +54,14 @@ end
 """
     Polygon = GeneralPolytope{2}
 
-A polygon is a 2-dimensional [`GeneralPolytope`](@ref).
+A polygon is a [`GeneralPolytope`](@ref) in 2 dimensions.
 """
 const Polygon = GeneralPolytope{2}
 
 """
     Polyhedron = GeneralPolytope{3}
 
-A polyhedron is a 3-dimensional [`GeneralPolytope`](@ref).
+A polyhedron is a [`GeneralPolytope`](@ref) in 3 dimensions.
 """
 const Polyhedron = GeneralPolytope{3}
 
@@ -99,10 +99,10 @@ function GeneralPolytope{D}(
 end
 
 """
-    GeneralPolytope{D}(vertices,graph;kwargs...)
+    GeneralPolytope{D}(vertices, graph; kwargs...)
 
-  Constructor of a [`GeneralPolytope`](@ref) that generates a polytope of
-  D dimensions with the given `vertices` and `graph` of connectivities.
+Constructor of a [`GeneralPolytope`](@ref) that generates a polytope of
+D dimensions with the given `vertices` and `graph` of connectivities.
 """
 function GeneralPolytope{D}(
   vertices::AbstractVector{<:Point},
@@ -207,28 +207,28 @@ Base.getindex(a::GeneralPolytope,i::Integer) = a.vertices[i]
 """
     get_graph(p::GeneralPolytope) -> Vector{Vector{Int32}}
 
-  It returns the edge-vertex graph of the polytope `p`.
+Returns the edge-vertex graph of `p`.
 """
 @inline get_graph(a::GeneralPolytope) = a.edge_vertex_graph
 
 """
     get_metadata(p::GeneralPolytope)
 
-  It return the metadata stored in the polytope `p`.
+Return the metadata stored in `p`.
 """
 get_metadata(a::GeneralPolytope) = a.metadata
 
 """
     isopen(p::GeneralPolytope) -> Bool
 
-  In return whether the polytope is watter tight or not.
+Return whether `p` is watertight or not.
 """
 Base.isopen(a::GeneralPolytope) = a.isopen
 
 """
-    isactive(p::GeneralPolytope,vertex::Integer) -> Bool
+    isactive(p::GeneralPolytope, vertex::Integer) -> Bool
 
-  It returns whether a vertex is connected to any other vertex.
+Returns whether `p`'s vertex of index `vertex` is connected to any other vertex of `p`.
 """
 function isactive(p::GeneralPolytope,vertex::Integer)
   !isempty( get_graph(p)[vertex] )
@@ -237,8 +237,7 @@ end
 """
     check_polytope_graph(p::GeneralPolytope) -> Bool
 
-  It checks whether the graph is well-constructed. The graph must be oriented
-  and planar.
+It checks whether `p`'s graph is well-constructed, i.e. if it is oriented and planar.
 """
 function check_polytope_graph(p::GeneralPolytope)
   check_polytope_graph(get_graph(p))
@@ -296,7 +295,7 @@ function is_convex(p::Polygon{3},tol=1.e3*eps(Float64))
   return true
 end
 
-# We want to check that each face creates a half-space that 
+# We want to check that each face creates a half-space that
 # contains all other vertices.
 function is_convex(p::Polyhedron,tol=1e3*eps(Float64))
   coords = get_vertex_coordinates(p)
@@ -380,7 +379,7 @@ function get_facet_orientations(p::GeneralPolytope)
   ones(Int,num_facets(p))
 end
 
-# Implements Newell's method to compute the normal of a facet. 
+# Implements Newell's method to compute the normal of a facet.
 # It is supposed to be more robust w.r.t numerical errors.
 function _newell_normal(
   coords::AbstractVector{<:Point{3}},
@@ -723,10 +722,12 @@ function _simplexify_cycle(v::AbstractVector{<:Integer})
 end
 
 """
-    simplexify_interior(p::Polyhedron)
+    simplexify_interior(p::Polyhedron) -> (coords, triangles)
 
 Compute a simplex partition of the volume inside the Polyhedron `p`.
-It returns a vector of coordinates and an array of connectivitties.
+
+It returns a vector of coordinates `coords` and a vector `triangles` containing
+the connectivity vectors defining each triangle of the partition.
 """
 function simplexify_interior(poly::Polyhedron)
   !isopen(poly) || return simplexify_surface(poly)
@@ -779,10 +780,12 @@ function simplexify_interior(poly::Polyhedron)
 end
 
 """
-    simplexify_surface(p::Polyhedron)
+    simplexify_surface(p::Polyhedron) -> (coords, triangles)
 
 Compute a simplex partition of the surface bounding the Polyhedron `p`.
-It returns a vector of coordinates and an array of connectivitties.
+
+It returns a vector of coordinates `coords` and a vector `triangles` containing
+the connectivity vectors defining each triangle of the partition.
 """
 function simplexify_surface(poly::Polyhedron)
   G = get_graph(poly)
@@ -817,7 +820,7 @@ end
     signed_area(poly)
     signed_area(coords, indices)
 
-Compute the signed area of a polygon defined by indices into coords, using 
+Compute the signed area of a polygon defined by indices into coords, using
 the shoelace formula. In 3D, it returns the signed area vector.
 """
 signed_area(p::Polygon) = signed_area( get_vertex_coordinates(p) )
@@ -848,7 +851,7 @@ end
     signed_volume(poly)
     signed_volume(coords, faces)
 
-Compute the signed volume of a polyhedron using the divergence theorem. 
+Compute the signed volume of a polyhedron using the divergence theorem.
 """
 function signed_volume(p::Polyhedron)
   X, T = simplexify_surface(p)
@@ -937,7 +940,7 @@ end
 """
     renumber!(graph::Vector{Vector{Int32}},new_to_old::Vector{Int},n_old::Int)
 
-Given a polyhedron graph, renumber the nodes of the graph using the `new_to_old` mapping. 
+Given a polyhedron graph, renumber the nodes of the graph using the `new_to_old` mapping.
 Removes the empty nodes.
 """
 function renumber!(graph::Vector{Vector{Int32}},new_to_old::Vector{<:Integer},n_old::Int)
@@ -1000,28 +1003,28 @@ end
     merge_polytopes(p1::GeneralPolytope{D},p2::GeneralPolytope{D},f1,f2)
 
 Merge polytopes `p1` and `p2` by gluing the faces `f1` and `f2` together.
-The faces `f1` and `f2` need to be given as list of nodes in the same order. 
+The faces `f1` and `f2` need to be given as list of nodes in the same order.
 I.e we assume that `get_vertex_coordinates(p1)[f1[k]] == get_vertex_coordinates(p2)[f2[k]]` for all `k`.
 
-# Algorithm: 
+# Algorithm:
 
 - Polyhedrons have planar graphs, with each face represented by an oriented closed path.
 
-- Visually, this means we can glue boths polytopes `p1` and `p2` by drawing the graph `G2` inside the 
-closed path of the face `f1` of `G1`. We can them add edges between the vertices of the closed paths 
+- Visually, this means we can glue boths polytopes `p1` and `p2` by drawing the graph `G2` inside the
+closed path of the face `f1` of `G1`. We can them add edges between the vertices of the closed paths
 of `f1` and `f2`, then collapse the edges to create the final graph.
 
-- To create the edge `(i1,i2)`: 
-    + Around each node, its neighbors are oriented in a consistent way. This 
-      means that for a selected face (closed path), there will always be two consecutive neighbors that 
+- To create the edge `(i1,i2)`:
+    + Around each node, its neighbors are oriented in a consistent way. This
+      means that for a selected face (closed path), there will always be two consecutive neighbors that
       belong to the selected face.
-    + To create the new edge, we insert the new neighbor between the two consecutive neighbors of the 
+    + To create the new edge, we insert the new neighbor between the two consecutive neighbors of the
       selected face. This will consistently embed `G2` into `f1`.
 
 """
 function merge_polytopes(p1::Polyhedron,p2::Polyhedron,f1,_f2)
   @check isequal(length(f1),length(_f2))
-  
+
   offset = num_vertices(p1)
   f2 = _f2 .+ offset
   graph = deepcopy(get_graph(p1))
@@ -1065,7 +1068,7 @@ end
 
 function merge_polytopes(p1::Polygon,p2::Polygon,f1,f2)
   @check length(f1) == length(f2) == 2
-  if f1[1] > f1[2] # Reversed edge 
+  if f1[1] > f1[2] # Reversed edge
     @assert f2[2] > f2[1]
     return merge_polytopes(p2,p1,f2,f1)
   end
@@ -1108,7 +1111,7 @@ function polygon_from_faces(
     perm[k] = graph[perm[k-1]][2]
   end
   permute!(vertices,perm)
-  
+
   @check check_polytope_graph(graph)
   return Polygon(vertices), perm
 end
@@ -1155,8 +1158,8 @@ function polyhedron_from_faces(
   return Polyhedron(vertices,graph), Base.OneTo(n)
 end
 
-# JORDI: 
-# The below implementation fails depending on the order 
+# JORDI:
+# The below implementation fails depending on the order
 # of the inputed faces, when more than 3 faces meet at a vertex.
 #
 # function polyhedron_from_faces(
@@ -1165,7 +1168,7 @@ end
 # )
 #   n = length(vertices)
 #   graph = [Int32[] for i in 1:n]
-# 
+#
 #   for f in face_to_vertex
 #     nf = length(f)
 #     for k in eachindex(f)
@@ -1184,7 +1187,7 @@ end
 #       end
 #     end
 #   end
-# 
+#
 #   @check check_polytope_graph(graph)
 #   return Polyhedron(vertices,graph), Base.OneTo(n)
 # end
@@ -1193,7 +1196,7 @@ end
 function extrude(p::Polygon; zmin = 0.0, zmax = 1.0)
   # Vertex coordinates
   f(x,z) = Point(x[1], x[2], z)
-  coords_2D = get_vertex_coordinates(p)  
+  coords_2D = get_vertex_coordinates(p)
   coords_3D = vcat(
     map(Base.Fix2(f, zmin), coords_2D)...,
     map(Base.Fix2(f, zmax), coords_2D)...,
@@ -1210,12 +1213,12 @@ function extrude(p::Polygon; zmin = 0.0, zmax = 1.0)
   return Polyhedron(coords_3D, graph_3D)
 end
 
-# Convexification 
+# Convexification
 
 """
     get_reflex_faces(p::GeneralPolytope) -> Vector{Int}
 
-Return local indices of reflex faces, i.e (D-2)-faces (vertices in 2D, edges in 3D) 
+Return local indices of reflex faces, i.e (D-2)-faces (vertices in 2D, edges in 3D)
 where the internal angle is greater than π.
 """
 get_reflex_faces(p::Polygon) = get_reflex_faces(get_vertex_coordinates(p))
@@ -1305,7 +1308,7 @@ function _find_best_diagonal(coords,indices,r;tol=1.e-10)
   e_in = normalize(coords[indices[r]] - coords[indices[r_prev]])
   e_out = normalize(coords[indices[r_next]] - coords[indices[r]])
 
-  v, α = 0, -Inf 
+  v, α = 0, -Inf
   for k in eachindex(indices)
     (k == r || k == r_prev || k == r_next) && continue
 
