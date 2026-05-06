@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Minor generalisation of `return_value` for `LinearCombinationMap`. Since PR[#1298](https://github.com/gridap/Gridap.jl/pull/1298).
+
 ## [0.20.6] - 2026-05-05
 
 ### Added
