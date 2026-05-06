@@ -78,6 +78,10 @@ end
 
 function get_patch_assembly_ids(::Val{:all},space::FESpace,ptopo::PatchTopology)
   trian = get_triangulation(space)
+  return _patch_assembly_ids_all(space,trian,ptopo)
+end
+
+function _patch_assembly_ids_all(space::FESpace,trian::Triangulation,ptopo::PatchTopology)
   Df = num_cell_dims(trian)
   face_to_tface = get_glue(trian,Val(Df)).mface_to_tface
   @notimplementedif isnothing(face_to_tface)
@@ -87,6 +91,21 @@ function get_patch_assembly_ids(::Val{:all},space::FESpace,ptopo::PatchTopology)
 
   patch_rows = Arrays.merge_entries(
     face_dof_ids, patch_to_faces ; 
+    acc  = SortedSet{Int32}(), 
+    post = dofs->filter(x -> x > 0, dofs)
+  )
+  return patch_rows
+end
+
+function _patch_assembly_ids_all(space::FESpace,trian::PatchTriangulation,ptopo::PatchTopology)
+  if trian.ptopo !== ptopo
+    # Fallback to the non-patch triangulation version
+    return _patch_assembly_ids_all(space,trian.trian,ptopo)
+  end
+  tface_dof_ids = get_cell_dof_ids(space)
+  patch_to_tfaces = trian.glue.patch_to_tfaces
+  patch_rows = Arrays.merge_entries(
+    tface_dof_ids, patch_to_tfaces ; 
     acc  = SortedSet{Int32}(), 
     post = dofs->filter(x -> x > 0, dofs)
   )
