@@ -322,7 +322,7 @@ end
   return TT
 end
 
-function return_value(k::LinearCombinationMap{<:Integer},v::AbstractVector,fx::AbstractVector)
+function return_value(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractVector)
   T = linear_combination_eltype(v,fx)
   return zero(T)
 end
