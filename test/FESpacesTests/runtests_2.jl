@@ -34,4 +34,6 @@ using Test
 
 @testset "HighOrderGrids" begin include("HighOrderGridsTests.jl") end
 
+@testset "FESpaceReindexing" begin include("FESpaceReindexingTests.jl") end
+
 end # module

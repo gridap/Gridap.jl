@@ -6,7 +6,7 @@ function FESpaceWithoutBCs(space::SingleFieldFESpace)
   ndir = num_dirichlet_dofs(space)
   free_ids = Int32(ndir+1):Int32(nfree+ndir)
   dir_ids = Int32(ndir):Int32(-1):Int32(1) # Reverse order
-  return renumber_free_and_dirichlet_dof_ids(space,free_ids,dir_ids)
+  return reindex_free_and_dirichlet_dof_ids(space,free_ids,dir_ids)
 end
 
 FESpaceWithoutBCs(space::ConstantFESpace) = space

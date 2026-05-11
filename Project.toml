@@ -1,7 +1,7 @@
 name = "Gridap"
 uuid = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
-authors = ["Santiago Badia <santiago.badia@monash.edu>", "Francesc Verdugo <f.verdugo.rojano@vu.nl>", "Alberto F. Martin <alberto.f.martin@anu.edu.au>"]
 version = "0.20.6"
+authors = ["Santiago Badia <santiago.badia@monash.edu>", "Francesc Verdugo <f.verdugo.rojano@vu.nl>", "Alberto F. Martin <alberto.f.martin@anu.edu.au>"]
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
@@ -40,6 +40,7 @@ TikzPictures = "37f6aa50-8035-52d0-81c2-5a1d08754b2d"
 TikzPicturesExt = "TikzPictures"
 
 [compat]
+AMD = "0.5"
 AbstractTrees = "0.3.3, 0.4"
 Aqua = "0.8"
 AutoHashEquals = "2.2.0"
@@ -73,8 +74,9 @@ WriteVTK = "1.21.1"
 julia = "1.10"
 
 [extras]
+AMD = "14f7f29c-3bd6-536c-9a0b-7339e30b5a3e"
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Aqua", "Test"]
+test = ["AMD", "Aqua", "Test"]
