@@ -277,7 +277,7 @@ end
 # ===================================================================
 function _coordinates_perm(space::FESpace; by=Tuple, lt=isless)
   coords = get_free_dof_coordinates(space)
-  invperm(sortperm(collect(coords); by=by, lt=lt))
+  invperm(sortperm(coords; by=by, lt=lt))
 end
 
 # ===================================================================
