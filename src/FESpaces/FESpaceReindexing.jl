@@ -281,25 +281,13 @@ function _coordinates_perm(space::FESpace; by=Tuple, lt=isless)
 end
 
 # ===================================================================
-# Adjacency-based permutation (graph algorithms).
-# algorithm ∈ {:rcm, :sloan}
-# kwargs are forwarded to the algorithm (e.g. w1, w2 for :sloan).
-# ===================================================================
-function compute_dof_permutation(adj::Table, algorithm::Symbol=:rcm; kwargs...)
-  algorithm == :rcm   && return _rcm_perm(adj)
-  algorithm == :sloan && return _sloan_perm(adj; kwargs...)
-  error("Unknown algorithm :$algorithm. Supported: :rcm, :sloan")
-end
-
-# ===================================================================
 # Main public API
 # ===================================================================
 
 """
-    reindex_free_dof_ids(space::FESpace, algorithm::Symbol=:rcm; adj, by, lt, kwargs...)
+    compute_dof_permutation(space::FESpace, algorithm::Symbol=:rcm; adj, by, lt, kwargs...)
 
-Return a new `FESpace` with free DOF IDs reordered using `algorithm` to
-reduce the bandwidth, profile, or fill-in of the assembled stiffness matrix.
+Compute a free-DOF permutation `iperm` where `iperm[old_dof] = new_dof`.
 
 `algorithm` selects the reordering strategy:
 - `:rcm` — Reverse Cuthill-McKee with George-Liu pseudo-peripheral node
@@ -318,7 +306,26 @@ For `:rcm` and `:sloan`, the optional keyword argument `adj` is the DOF
 adjacency `Table` returned by `compute_adjacency`. It defaults to the graph
 built from the cell-DOF connectivity of `space`. Pass a pre-built table to
 avoid redundant work when calling multiple algorithms on the same space.
+Passing `adj` when `algorithm == :coordinates` has no effect.
+"""
+function compute_dof_permutation(space::FESpace, algorithm::Symbol=:rcm; adj=nothing, by=Tuple, lt=isless, kwargs...)
+  if algorithm == :coordinates
+    return _coordinates_perm(space; by=by, lt=lt)
+  end
+  if isnothing(adj)
+    adj = compute_adjacency(get_cell_dof_ids(space), num_free_dofs(space))
+  end
+  @check length(adj) == num_free_dofs(space)
+  algorithm == :rcm   && return _rcm_perm(adj)
+  algorithm == :sloan && return _sloan_perm(adj; kwargs...)
+  error("Unknown algorithm :$algorithm. Supported: :rcm, :sloan, :coordinates")
+end
 
+"""
+    reindex_free_dof_ids(space::FESpace, algorithm::Symbol=:rcm; kwargs...)
+
+Return a new `FESpace` with free DOF IDs reordered using `algorithm`.
+See [`compute_dof_permutation`](@ref) for supported algorithms and keyword arguments.
 Dirichlet DOF IDs are left unchanged.
 
 # Examples
@@ -326,23 +333,11 @@ Dirichlet DOF IDs are left unchanged.
 model = CartesianDiscreteModel((0,1,0,1), (8,8))
 V = FESpace(model, ReferenceFE(lagrangian, Float64, 2); dirichlet_tags="boundary")
 
-V_rcm  = reindex_free_dof_ids(V, :rcm)
+V_rcm    = reindex_free_dof_ids(V, :rcm)
 V_coords = reindex_free_dof_ids(V, :coordinates)
 V_xonly  = reindex_free_dof_ids(V, :coordinates; by=x->x[1])
 ```
 """
-function reindex_free_dof_ids(
-  space::FESpace,
-  algorithm::Symbol = :rcm;
-  adj::Table = compute_adjacency(get_cell_dof_ids(space), num_free_dofs(space)),
-  by = Tuple,
-  lt = isless,
-  kwargs...
-)
-  if algorithm == :coordinates
-    return reindex_free_dof_ids(space, _coordinates_perm(space; by=by, lt=lt))
-  end
-  @assert length(adj) == num_free_dofs(space)
-  iperm = compute_dof_permutation(adj, algorithm; kwargs...)
-  reindex_free_dof_ids(space, iperm)
+function reindex_free_dof_ids(space::FESpace, algorithm::Symbol=:rcm; kwargs...)
+  reindex_free_dof_ids(space, compute_dof_permutation(space, algorithm; kwargs...))
 end
