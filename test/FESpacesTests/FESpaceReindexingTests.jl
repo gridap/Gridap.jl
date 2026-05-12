@@ -30,7 +30,7 @@ Vx = reindex_free_dof_ids(V, :coordinates; by=x->x[1])
 
 # reindex_free_dof_ids (direct permutation) preserves DOF counts
 adj = compute_adjacency(get_cell_dof_ids(V), nf)
-Vd  = reindex_free_dof_ids(V, compute_dof_permutation(adj, :rcm))
+Vd  = reindex_free_dof_ids(V, compute_dof_permutation(V, :rcm; adj=adj))
 @test num_free_dofs(Vd)      == nf
 @test num_dirichlet_dofs(Vd) == ndir
 
