@@ -279,8 +279,6 @@ include("DirichletFESpaces.jl")
 
 include("FESpacesWithLinearConstraints.jl")
 
-include("ConstraintHandlers.jl")
-
 include("DiscreteModelWithFEMaps.jl")
 
 include("ConstantFESpaces.jl")
@@ -288,6 +286,8 @@ include("ConstantFESpaces.jl")
 include("PolytopalFESpaces.jl")
 
 include("PatchAssemblers.jl")
+
+include("ConstraintHandlers.jl")
 
 include("LocalFEOperators.jl")
 

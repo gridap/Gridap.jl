@@ -733,6 +733,16 @@ function is_change_possible(strian::PatchTriangulation,ttrian::PatchTriangulatio
   return is_change_possible(sglue,tglue)
 end
 
+function move_contributions(
+  scell_to_val::AbstractArray, strian::PatchTriangulation, ptopo::PatchTopology
+)
+  @check strian.ptopo === ptopo "Triangulation and PatchTopology must match"
+  patch_to_scells = strian.glue.patch_to_tfaces
+  k = CombineContributionsMap(scell_to_val)
+  patch_to_val = lazy_map(k, patch_to_scells)
+  return patch_to_val
+end
+
 ############################################################################################
 # IO
 

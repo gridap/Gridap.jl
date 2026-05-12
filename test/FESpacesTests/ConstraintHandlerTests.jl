@@ -4,7 +4,9 @@ using Test
 using LinearAlgebra
 using SparseArrays
 using Gridap
+import Gridap.Geometry
 using Gridap.FESpaces
+using Gridap.FESpaces: select_constraint_slaves
 using Gridap.Arrays: Table, datarange
 
 # -----------------------------------------------------------------------
@@ -482,6 +484,336 @@ let
     _space, dof_B, dofs_B, coeffs_B, offs_B)
 
   @test _cdict(dof_A, dofs_A, coeffs_A) == _cdict(dof_B, dofs_B, coeffs_B)
+end
+
+# ===========================================================================
+# ConstraintHandler — cell-array constructor
+# ===========================================================================
+
+# Single constraint per cell (vector form)
+let
+  n_dofs = 8
+  cell_slave_ids  = [3, 5, 7]
+  cell_master_ids = [[1, 2], [4, 6], [2, 4, 6]]
+  cell_coeffs     = [[0.5, 0.5], [1.0, 0.0], [0.0, 0.5, 0.5]]
+  cell_offsets    = [0.0, 1.0, -0.5]
+
+  ch = ConstraintHandler(n_dofs, cell_slave_ids, cell_master_ids, cell_coeffs, cell_offsets)
+
+  @test num_constrained_dofs(ch) == 3
+  for dof in [3, 5, 7]; @test is_constrained(ch, dof); end
+  line5 = ch.constraints[ch.dof_to_constraint[5]]
+  @test line5.coeffs ≈ [1.0, 0.0]
+  @test line5.offset ≈  1.0
+end
+
+# Multiple constraints per cell (matrix form)
+let
+  n_dofs = 6
+  cell_slave_ids2  = [[3, 4]]
+  cell_master_ids2 = [[1, 2]]
+  cell_coeffs2     = [[ 0.5  0.5; 0.0  1.0]]
+  cell_offsets2    = [[1.0, -1.0]]
+
+  ch2 = ConstraintHandler(n_dofs, cell_slave_ids2, cell_master_ids2, cell_coeffs2, cell_offsets2)
+  @test num_constrained_dofs(ch2) == 2
+  @test ch2.constraints[ch2.dof_to_constraint[3]].coeffs ≈ [0.5, 0.5]
+  @test ch2.constraints[ch2.dof_to_constraint[4]].offset ≈ -1.0
+  close!(ch2)
+  @test ch2.closed
+end
+
+# on_conflict: error by default
+@test_throws ErrorException ConstraintHandler(4, [2, 2], [[1], [3]], [[1.0], [2.0]], [0.0, 0.0])
+
+# on_conflict: user resolver (last wins)
+let
+  ch_last = ConstraintHandler(4, [2, 2], [[1], [3]], [[1.0], [2.0]], [0.0, 0.0];
+                               on_conflict = (e, i) -> i)
+  @test ch_last.constraints[ch_last.dof_to_constraint[2]].masters == [3]
+end
+
+# ===========================================================================
+# select_constraint_slaves
+# ===========================================================================
+
+# Basic: 3 constraints, trivial selection
+let
+  dof_ids = [[1, 2], [3], [4, 5]]
+  coeffs  = [[1.0, 2.0], [3.0], [1.0, 1.0]]
+  offsets = [4.0, 6.0, 0.0]
+
+  slave_ids, masters, coeffs_t, offs = select_constraint_slaves(5, dof_ids, coeffs, offsets)
+
+  @test slave_ids[1] == 2
+  @test collect(masters[1]) == [1]
+  @test collect(coeffs_t[1]) ≈ [-0.5]
+  @test offs[1] ≈ 2.0
+
+  @test slave_ids[2] == 3
+  @test collect(masters[2]) == []
+  @test offs[2] ≈ 2.0
+
+  s3 = slave_ids[3]
+  m3 = s3 == 4 ? 5 : 4
+  @test s3 ∈ (4, 5)
+  @test collect(masters[3]) == [m3]
+  @test collect(coeffs_t[3]) ≈ [-1.0]
+  @test offs[3] ≈ 0.0
+end
+
+# Shared DOF: distinct slaves guaranteed
+let
+  dof_ids = [[1, 2], [2, 3]]
+  coeffs  = [[1.0, 1.0], [1.0, 1.0]]
+  offsets = [0.0, 0.0]
+
+  slave_ids, masters, coeffs_t, offs = select_constraint_slaves(3, dof_ids, coeffs, offsets)
+
+  @test length(slave_ids) == 2
+  @test slave_ids[1] != slave_ids[2]
+  for i in 1:2
+    @test collect(coeffs_t[i]) ≈ [-1.0]
+    @test offs[i] ≈ 0.0
+  end
+end
+
+# Connectivity tiebreaker
+let
+  dof_ids = [[1, 2], [2, 3], [2, 4], [2, 5]]
+  coeffs  = [[1.0, 1.0], [1.0, 1.0], [1.0, 1.0], [1.0, 1.0]]
+  offsets = [0.0, 0.0, 0.0, 0.0]
+
+  slave_ids, _, _, _ = select_constraint_slaves(5, dof_ids, coeffs, offsets)
+  @test slave_ids[1] == 1
+  @test 2 ∈ slave_ids
+end
+
+# Zero coefficients are ignored
+let
+  dof_ids = [[1, 2, 3]]
+  coeffs  = [[1.0, 0.0, 2.0]]
+  offsets = [6.0]
+
+  slave_ids, masters, coeffs_t, offs = select_constraint_slaves(3, dof_ids, coeffs, offsets)
+
+  @test slave_ids[1] == 3
+  @test collect(masters[1]) == [1]
+  @test collect(coeffs_t[1]) ≈ [-0.5]
+  @test offs[1] ≈ 3.0
+end
+
+# Infeasible: no slave candidate → error
+let
+  dof_ids = [[1], [2], [1, 2]]
+  coeffs  = [[1.0], [1.0], [1.0, 1.0]]
+  offsets = [0.0, 0.0, 0.0]
+  @test_throws Exception select_constraint_slaves(2, dof_ids, coeffs, offsets)
+end
+
+# Multiple constraints per cell (matrix form)
+let
+  cell_dof_ids = [[1, 2, 3]]
+  cell_coeffs  = [[1.0  1.0  0.0;
+                   0.0  1.0  2.0]]
+  cell_offsets = [[0.0, 6.0]]
+
+  slave_ids, masters, coeffs_t, offs =
+    select_constraint_slaves(3, cell_dof_ids, cell_coeffs, cell_offsets)
+
+  @test length(slave_ids) == 2
+  @test slave_ids[1] != slave_ids[2]
+  @test slave_ids[1] == 1
+  @test collect(masters[1]) == [2]
+  @test collect(coeffs_t[1]) ≈ [-1.0]
+  @test offs[1] ≈ 0.0
+  @test slave_ids[2] == 3
+  @test collect(masters[2]) == [2]
+  @test collect(coeffs_t[2]) ≈ [-0.5]
+  @test offs[2] ≈ 3.0
+end
+
+# ===========================================================================
+# Constructor 1 — cell, bilinear: DG P2 \ P1
+# ===========================================================================
+
+let
+  model = CartesianDiscreteModel((0,1), (1,))
+  V = FESpace(model, ReferenceFE(lagrangian, Float64, 2); conformity=:L2)
+  W = FESpace(model, ReferenceFE(lagrangian, Float64, 1); conformity=:L2)
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω, 4)
+
+  lhs(u, v) = ∫(u * v) * dΩ
+  rhs(v)    = ∫(v) * dΩ
+
+  ch = ConstraintHandler(V, W, lhs, rhs)
+  close!(ch)
+
+  @test num_constrained_dofs(ch) == 2
+  @test num_free_dofs(ch)        == 1
+
+  x = zeros(ch.n_dofs)
+  x[only(filter(i -> !is_constrained(ch, i), 1:ch.n_dofs))] = 2.0
+  apply_constraints!(x, ch)
+  uh = FEFunction(V, x)
+  xf = CellField(p -> p[1], Ω)
+  @test sum(∫(uh) * dΩ)       ≈ 1.0  atol=1e-12
+  @test sum(∫(uh * xf) * dΩ) ≈ 0.5  atol=1e-12
+end
+
+let
+  model = CartesianDiscreteModel((0,1), (3,))
+  V = FESpace(model, ReferenceFE(lagrangian, Float64, 2); conformity=:L2)
+  W = FESpace(model, ReferenceFE(lagrangian, Float64, 1); conformity=:L2)
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω, 4)
+  lhs(u, v) = ∫(u * v) * dΩ
+  rhs(v)    = ∫(v) * dΩ
+  ch = ConstraintHandler(V, W, lhs, rhs)
+  close!(ch)
+  @test num_constrained_dofs(ch) == 6
+  @test num_free_dofs(ch)        == 3
+end
+
+# ===========================================================================
+# Constructor 2 — cell, linear: cell-mean repair, f(x)=2x
+# ===========================================================================
+
+let
+  model = CartesianDiscreteModel((0,1), (3,))
+  V  = FESpace(model, ReferenceFE(lagrangian, Float64, 1); conformity=:L2)
+  W0 = FESpace(model, ReferenceFE(lagrangian, Float64, 0); conformity=:L2)
+  Ω  = Triangulation(model)
+  dΩ = Measure(Ω, 4)
+
+  f      = CellField(x -> 2 * x[1], Ω)
+  lhs(v) = ∫(v) * dΩ
+  rhs()  = ∫(f) * dΩ
+
+  ch = ConstraintHandler(V, lhs, rhs)
+  close!(ch)
+
+  n_cells = num_cells(model)   # 3
+  n_dofs  = ch.n_dofs          # 6
+
+  @test num_constrained_dofs(ch) == n_cells
+  @test num_free_dofs(ch)        == n_cells
+
+  x = zeros(n_dofs)
+  for (k, i) in enumerate(filter(i -> !is_constrained(ch, i), 1:n_dofs))
+    x[i] = Float64(k)
+  end
+  apply_constraints!(x, ch)
+  uh = FEFunction(V, x)
+
+  for cell in 1:n_cells
+    ind_vec = zeros(n_cells); ind_vec[cell] = 1.0
+    ind = FEFunction(W0, ind_vec)
+    @test sum(∫(uh * ind) * dΩ) ≈ sum(∫(f * ind) * dΩ)  atol=1e-12
+  end
+end
+
+# ===========================================================================
+# Constructor 3 — patch, bilinear: zero-mean per patch, 4×2 mesh
+# ===========================================================================
+
+let
+  model = CartesianDiscreteModel((0,1,0,1), (4,2))
+  V = FESpace(model, ReferenceFE(lagrangian, Float64, 1))
+
+  topo       = Geometry.get_grid_topology(model)
+  patch_data = Int32[1,2,5,6,  3,4,7,8]
+  patch_ptrs = Int32[1,5,9]
+  ptopo = Geometry.PatchTopology(topo, Table(patch_data, patch_ptrs))
+
+  Ωp  = Geometry.PatchTriangulation(model, ptopo)
+  dΩp = Measure(Ωp, 4)
+
+  W_const   = ConstantFESpace(model)
+  g         = CellField(x -> 0.0, Ωp)
+  lhs(u, v) = ∫(u * v) * dΩp
+  rhs(v)    = ∫(g * v) * dΩp
+
+  ch = ConstraintHandler(ptopo, V, W_const, lhs, rhs)
+  close!(ch)
+
+  n_fdofs   = num_free_dofs(V)
+  n_dofs    = n_fdofs + num_dirichlet_dofs(V)
+  n_patches = Geometry.num_patches(ptopo)
+
+  @test num_constrained_dofs(ch) == n_patches
+  @test num_free_dofs(ch)        == n_fdofs - n_patches
+
+  x = zeros(n_dofs)
+  for i in 1:n_dofs
+    !is_constrained(ch, i) && (x[i] = Float64(i))
+  end
+  apply_constraints!(x, ch)
+
+  uh = FEFunction(V, x[1:n_fdofs])
+  Ω  = Triangulation(model)
+  dΩ = Measure(Ω, 4)
+  W0 = FESpace(model, ReferenceFE(lagrangian, Float64, 0); conformity=:L2)
+  patch_cells_tbl = Geometry.get_patch_cells(ptopo)
+  for p in 1:n_patches
+    cells_p       = collect(Int, patch_cells_tbl[p])
+    indicator_vec = zeros(num_cells(model))
+    indicator_vec[cells_p] .= 1.0
+    indicator = FEFunction(W0, indicator_vec)
+    @test sum(∫(uh * indicator) * dΩ) ≈ 0.0  atol=1e-10
+  end
+end
+
+# ===========================================================================
+# Constructor 4 — patch, linear: patch-mean = f(x,y)=x+y, 4×2 mesh
+# ===========================================================================
+
+let
+  model = CartesianDiscreteModel((0,1,0,1), (4,2))
+  V = FESpace(model, ReferenceFE(lagrangian, Float64, 1))
+
+  topo       = Geometry.get_grid_topology(model)
+  patch_data = Int32[1,2,5,6,  3,4,7,8]
+  patch_ptrs = Int32[1,5,9]
+  ptopo = Geometry.PatchTopology(topo, Table(patch_data, patch_ptrs))
+
+  Ωp  = Geometry.PatchTriangulation(model, ptopo)
+  dΩp = Measure(Ωp, 4)
+
+  f      = CellField(x -> x[1] + x[2], Ωp)
+  lhs(v) = ∫(v) * dΩp
+  rhs()  = ∫(f) * dΩp
+
+  ch = ConstraintHandler(ptopo, V, lhs, rhs)
+  close!(ch)
+
+  n_patches = Geometry.num_patches(ptopo)
+  n_fdofs   = num_free_dofs(V)
+
+  @test num_constrained_dofs(ch) == n_patches
+  @test num_free_dofs(ch)        == n_fdofs - n_patches
+
+  n_dofs = ch.n_dofs
+  x = zeros(n_dofs)
+  for i in 1:n_dofs
+    !is_constrained(ch, i) && (x[i] = Float64(i))
+  end
+  apply_constraints!(x, ch)
+  uh = FEFunction(V, x[1:n_fdofs])
+
+  Ω  = Triangulation(model)
+  dΩ = Measure(Ω, 4)
+  W0 = FESpace(model, ReferenceFE(lagrangian, Float64, 0); conformity=:L2)
+  g  = CellField(x -> x[1] + x[2], Ω)
+  patch_cells_tbl = Geometry.get_patch_cells(ptopo)
+  for p in 1:n_patches
+    cells_p       = collect(Int, patch_cells_tbl[p])
+    indicator_vec = zeros(num_cells(model))
+    indicator_vec[cells_p] .= 1.0
+    indicator = FEFunction(W0, indicator_vec)
+    @test sum(∫(uh * indicator) * dΩ) ≈ sum(∫(g * indicator) * dΩ)  atol=1e-10
+  end
 end
 
 end # module
