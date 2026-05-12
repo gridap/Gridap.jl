@@ -111,6 +111,7 @@ export scatter_table_values
 export gather_posneg_table_values
 export gather_posneg_table_values!
 export scatter_posneg_table_values
+export inverse_table
 
 export IdentityVector
 

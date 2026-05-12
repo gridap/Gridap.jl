@@ -15,6 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added 
 - Changed inner constructor signature of UnstructuredDiscreteModel with flexibility in mind (as per required by GridapGeosciences.jl). Added a new outer constructor as the old inner contructor with backward compatibility in mind. Since PR[#1264](https://github.com/gridap/Gridap.jl/pull/1264)
 
+## [0.20.7] - 2026-05-12
+
+### Added
+
+- Added `reindex_free_dof_ids(space, algorithm)` to reorder the free DOFs of a `FESpace` for bandwidth/profile/fill-in reduction. Supported algorithms: `:rcm` (Reverse Cuthill-McKee), `:sloan` (wavefront minimisation), and `:coordinates` (sort by spatial coordinates, for Lagrangian spaces). An externally computed permutation vector can also be applied directly via `reindex_free_dof_ids(space, free_dof_ids)`. Since PR[#1299](https://github.com/gridap/Gridap.jl/pull/1299).
+
+### Changed
+
+- Minor generalisation of `return_value` for `LinearCombinationMap`. Since PR[#1298](https://github.com/gridap/Gridap.jl/pull/1298).
+
 ## [0.20.6] - 2026-05-05
 
 ### Added

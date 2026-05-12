@@ -23,7 +23,7 @@ using Gridap.CellData
 using Gridap.TensorValues
 using Gridap.Polynomials
 
-using Gridap.Arrays: Reindex, ConfigMap, DualizeMap, AutoDiffMap, lazy_map
+using Gridap.Arrays: Reindex, ConfigMap, DualizeMap, AutoDiffMap, lazy_map, compute_adjacency
 
 using Gridap.Fields: ArrayBlock, BlockMap
 
@@ -237,6 +237,9 @@ export LocalOperator
 
 export high_order_grid
 
+export reindex_free_and_dirichlet_dof_ids
+export reindex_free_dof_ids
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")
@@ -294,6 +297,8 @@ include("LocalFEOperators.jl")
 include("PatchFESpaces.jl")
 
 include("HighOrderGrids.jl")
+
+include("FESpaceReindexing.jl")
 
 """
 deprecated
