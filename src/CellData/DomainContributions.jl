@@ -6,13 +6,13 @@ Struct to gather contributions from one or several domain(s) ([`Triangulation`](
 """
 struct DomainContribution <: GridapType
   dict::OrderedDict{Triangulation,AbstractArray} # ordered so that iteration is deterministic (#1002)
-  ad_level::GridapADTag{Val{N}} where N # for ad tagging
+  ad_level::GridapADTag{<:Val} # for ad tagging
 end
 
-DomainContribution(;ad_level::GridapADTag{Val{N}}=GridapADTag(0)) where N =
+DomainContribution(;ad_level::GridapADTag{<:Val}=GridapADTag(0)) =
   DomainContribution(OrderedDict{Triangulation,AbstractArray}(), ad_level)
 
-function DomainContribution(trian::Triangulation,b::AbstractArray;ad_level::GridapADTag{Val{N}}=GridapADTag(0)) where N
+function DomainContribution(trian::Triangulation,b::AbstractArray;ad_level::GridapADTag{<:Val}=GridapADTag(0))
   add_contribution!(DomainContribution(;ad_level),trian,b)
 end
 
@@ -114,7 +114,7 @@ end
 
 Base.sum(a::DomainContribution)= sum(map(sum,values(a.dict)))
 
-Base.copy(a::DomainContribution;ad_level::GridapADTag{Val{N}}=a.ad_level) where N = DomainContribution(copy(a.dict),ad_level)
+Base.copy(a::DomainContribution;ad_level::GridapADTag{<:Val}=a.ad_level) = DomainContribution(copy(a.dict),ad_level)
 
 function (+)(a::DomainContribution,b::DomainContribution)
   c = copy(a; ad_level = max(a.ad_level,b.ad_level))
