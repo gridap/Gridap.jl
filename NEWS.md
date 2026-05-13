@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Changed how tagging works to improve compilation times and allow for nested derivatives involving more than one triangulation. Since PR[#1296](https://github.com/gridap/Gridap.jl/pull/1297).
+
+## [0.20.7] - 2026-05-12
+
+### Added
+
+- Added `reindex_free_dof_ids(space, algorithm)` to reorder the free DOFs of a `FESpace` for bandwidth/profile/fill-in reduction. Supported algorithms: `:rcm` (Reverse Cuthill-McKee), `:sloan` (wavefront minimisation), and `:coordinates` (sort by spatial coordinates, for Lagrangian spaces). An externally computed permutation vector can also be applied directly via `reindex_free_dof_ids(space, free_dof_ids)`. Since PR[#1299](https://github.com/gridap/Gridap.jl/pull/1299).
+
+### Changed
+
+- Minor generalisation of `return_value` for `LinearCombinationMap`. Since PR[#1298](https://github.com/gridap/Gridap.jl/pull/1298).
+
+## [0.20.6] - 2026-05-05
+
 ### Added
 
 - Make `compute_facet_owners(...)` more flexible, allowing the user to provide a function to select the owner from neighboring cells. Since PR[#1291](https://github.com/gridap/Gridap.jl/pull/1291).
@@ -15,8 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed type instability for tensor operations between `MultiValue` and scalars. Since PR[#1293](https://github.com/gridap/Gridap.jl/pull/1293).
 - Fixed type instability in basis construction when user gives a non-concrete output type. Since PR[#1294](https://github.com/gridap/Gridap.jl/pull/1294).
-- Fixed tagging for tested derivatives involving more than one triangulation. Since PR[#1296
-](https://github.com/gridap/Gridap.jl/pull/1297).
+- Reverted most changes from PR[#1277](https://github.com/gridap/Gridap.jl/pull/1277), which were having unnexpected consequences, in favour of simpler changes. Since PR[#1290](https://github.com/gridap/Gridap.jl/pull/1290).
 
 ## [0.20.5] - 2026-04-28
 

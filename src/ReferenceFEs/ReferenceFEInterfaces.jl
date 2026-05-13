@@ -693,7 +693,9 @@ instead extract the required fields before and pass them to the computationally 
       face_own_dofs,
       # Trick to be able to eval dofs af shapefuns in physical space
       # cf /test/FESpacesTests/PhysicalFESpacesTests.jl
-      linear_combination(Eye{Int}(ndofs), shapefuns))
+      #linear_combination(Eye{Int}(ndofs), shapefuns)
+      linear_combination(Diagonal(ones(ndofs)), shapefuns)
+    )
   end
 end
 

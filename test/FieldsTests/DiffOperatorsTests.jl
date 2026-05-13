@@ -4,7 +4,9 @@ using Test
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
-using Gridap.Fields: MockField
+using Gridap.Fields: MockField, MockFieldArray
+using Gridap.Fields: skew_symmetric_gradient, ShiftedNabla
+
 using LinearAlgebra
 using FillArrays
 
@@ -229,5 +231,19 @@ for x in xs
   @test Fields.skew_symmetric_gradient(u)(x) == νu(x)
   @test Δ(u)(x) == (∇⋅∇u)(x)
 end
+
+# FieldArray diff ops
+
+same_type(x,y) = typeof(x) == typeof(y)
+
+x = [ Point(0.,0.), Point(1.,0.), Point(0.,1.), Point(1.,1.) ]
+f = MockFieldArray( [ VectorValue(1.0,2.0), VectorValue(3.0,4.0), VectorValue(5.0,6.0) ] )
+
+@test same_type(evaluate(Broadcasting(gradient),f), return_value(Broadcasting(gradient),f))
+@test same_type(evaluate(Broadcasting(divergence),f), return_value(Broadcasting(divergence),f))
+@test same_type(evaluate(Broadcasting(curl),f), return_value(Broadcasting(curl),f))
+@test same_type(evaluate(Broadcasting(symmetric_gradient),f), return_value(Broadcasting(symmetric_gradient),f))
+@test same_type(evaluate(Broadcasting(laplacian),f), return_value(Broadcasting(laplacian),f))
+@test same_type(evaluate(Broadcasting(skew_symmetric_gradient),f), return_value(Broadcasting(skew_symmetric_gradient),f))
 
 end # module
