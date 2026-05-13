@@ -126,6 +126,7 @@ export Reindex
 export ConfigMap
 export DualizeMap
 export AutoDiffMap
+export GridapADTag
 export autodiff_array_gradient
 export autodiff_array_jacobian
 export autodiff_array_hessian
