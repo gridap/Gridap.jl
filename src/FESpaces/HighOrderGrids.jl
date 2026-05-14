@@ -1,20 +1,23 @@
 
 """
     high_order_grid(
-      grid::UnstructuredGrid, topo::GridTopology, orders; 
-      cell_maps=get_cell_map(grid)
+      grid::UnstructuredGrid, topo::GridTopology, orders;
+      cell_maps=get_cell_map(grid), force_lagrangian_cell_map=true
     )
 
-Create a new `UnstructuredGrid` whose geometry is represented at a higher
+Create a new `UnstructuredGrid` whose nodes approximate the geometry at a higher
 polynomial order. The node positions are obtained by evaluating `cell_maps`
-(defaulting to the grid's own cell map) at the reference-space nodes of the
-high-order Lagrangian reference FEs. 
+at the reference-space nodes of the high-order Lagrangian reference FEs.
 
-`cell_maps` should be a cell-wise array of fields mapping reference space to physical
-space. Defaults to `get_cell_map(grid)`, which will generally be low-order. 
-Supply a custom map to produce truly curved high-order geometry. Note that the arbitrarily 
-smooth maps can be provided, but the resulting geometry will only have the polynomial
-order of the reference FE nodes. 
+`cell_maps` should be a cell-wise array of fields mapping reference space to
+physical space, it defaults to `get_cell_map(grid)`. If `grid` was created
+without given `cell_map`, it is probably first order, so suppling a custom
+map is needed to produce truly curved high-order geometry.
+
+By default, the resulting geometry is C0 and has polynomial geometric map
+of the given `orders`, since a new `cell_map` is computed from the Lagrangian
+reffes that define the nodes. If one wishes to keep the `cell_map` given in
+argument, set `force_lagrangian_cell_map=false`.
 
 Conforming node numbering is computed via the `ConformingFESpaces.jl` machinery
 so that nodes on shared faces (vertices, edges, faces) are not duplicated.
@@ -23,8 +26,11 @@ function high_order_grid(
   grid::UnstructuredGrid{Dc,Dp},
   topo::GridTopology,
   orders;
-  cell_maps=get_cell_map(grid)
+  cell_maps=get_cell_map(grid),
+  force_lagrangian_cell_map=true
 ) where {Dc,Dp}
+
+  @check OrientationStyle(grid) == OrientationStyle(topo)
 
   old_reffes = get_reffes(grid)
   cell_types  = get_cell_type(grid)
@@ -44,7 +50,14 @@ function high_order_grid(
   cell_phys_nodes = lazy_map(evaluate, cell_maps, cell_ref_nodes)
   node_coordinates = gather_table_values(cell_node_ids, cell_phys_nodes, num_nodes)
 
-  UnstructuredGrid(
-    node_coordinates, cell_node_ids, new_reffes, cell_types, OrientationStyle(grid)
-  )
+  if force_lagrangian_cell_map
+    UnstructuredGrid(
+      node_coordinates, cell_node_ids, new_reffes, cell_types, OrientationStyle(grid)
+    )
+  else
+    UnstructuredGrid(
+      node_coordinates, cell_node_ids, new_reffes, cell_types, OrientationStyle(grid),
+      cell_maps
+    )
+  end
 end

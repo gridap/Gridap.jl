@@ -14,7 +14,9 @@ struct UnstructuredGrid{Dc,Dp,Tp,O,Tn} <: Grid{Dc,Dp}
   cell_types::Vector{Int8}
   orientation_style::O
   facet_normal::Tn
+#  is_geomap_reffe_based::Bool
   cell_map
+
   @doc """
       function UnstructuredGrid(
         node_coordinates::Vector{Point{Dp,Tp}},
@@ -35,8 +37,10 @@ struct UnstructuredGrid{Dc,Dp,Tp,O,Tn} <: Grid{Dc,Dp}
     cell_types::Vector,
     orientation_style::O,
     facet_normal::Tn,
+#    is_geomap_reffe_based::Bool,
     cell_map
   ) where {Dc,Dp,Tp,Ti,O,Tn}
+
     new{Dc,Dp,Tp,O,Tn}(
       node_coordinates,
       cell_node_ids,
@@ -44,6 +48,7 @@ struct UnstructuredGrid{Dc,Dp,Tp,O,Tn} <: Grid{Dc,Dp}
       cell_types,
       orientation_style,
       facet_normal,
+#      is_geomap_reffe_based,
       cell_map
     )
   end
@@ -72,6 +77,7 @@ function UnstructuredGrid(
     cell_types,
     orientation_style,
     facet_normal,
+#    true,
     cell_map)
 end
 
@@ -99,17 +105,53 @@ function _compute_cell_map(node_coords,cell_node_ids,ctype_reffe,cell_ctype, has
   Fields.MemoArray(cell_map)
 end
 
+@doc """
+    function UnstructuredGrid(
+      topo::GridTopology,
+      cell_map,
+      facet_normal=nothing,
+    )
+
+Builds a grid from the topological information from `topo` and the geometry
+defined by `cell_map`, a cell-wise array of fields mapping reference space to
+physical space.
 """
-    UnstructuredGrid(grid::Grid;kwargs...)
+function UnstructuredGrid(
+  topo::GridTopology,
+  cell_map,
+  facet_normal=nothing
+)
+
+  node_coordinates = get_vertex_coordinates(topo)
+  cell_node_ids = get_cell_vertices(topo)
+  reffes = [ LagrangianRefFE(Float64,p,1) for p in get_polytopes(topo) ]
+  cell_types = get_cell_type(topo)
+  orientation_style = OrientationStyle(topo)
+
+  return UnstructuredGrid(
+    node_coordinates,
+    cell_node_ids,
+    reffes,
+    cell_types,
+    orientation_style,
+    facet_normal,
+#    false,
+    cell_map
+  )
+end
+
+
 """
-function UnstructuredGrid(grid::Grid;kwargs...)
+    UnstructuredGrid(grid::Grid; kwargs...)
+"""
+function UnstructuredGrid(grid::Grid; kwargs...)
   @assert is_regular(grid) "UnstructuredGrid constructor only for regular grids"
   node_coordinates = collect1d(get_node_coordinates(grid))
   cell_node_ids = Table(get_cell_node_ids(grid))
   reffes = get_reffes(grid)
   cell_types = collect1d(get_cell_type(grid))
   orien = OrientationStyle(grid)
-  UnstructuredGrid(node_coordinates,cell_node_ids,reffes,cell_types,orien;kwargs...)
+  UnstructuredGrid(node_coordinates,cell_node_ids,reffes,cell_types,orien; kwargs...)
 end
 
 function UnstructuredGrid(grid::UnstructuredGrid)
@@ -158,9 +200,9 @@ function UnstructuredGrid(::Type{ReferenceFE{D}},p::Polytope{D}) where D
 end
 
 """
-    UnstructuredGrid(::Type{ReferenceFE{d}},p::Polytope) where d
+    UnstructuredGrid(::Type{ReferenceFE{d}}, p::Polytope) where d
 """
-function UnstructuredGrid(::Type{ReferenceFE{d}},p::Polytope) where d
+function UnstructuredGrid(::Type{ReferenceFE{d}}, p::Polytope) where d
   node_coordinates = get_vertex_coordinates(p)
   cell_node_ids = Table(get_faces(p,d,0))
   reffaces = get_reffaces(Polytope{d},p)
@@ -223,3 +265,4 @@ function from_dict(::Type{UnstructuredGrid},dict::Dict{Symbol,Any})
     cell_type,
     O ? Oriented() : NonOriented())
 end
+

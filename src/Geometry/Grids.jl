@@ -71,9 +71,18 @@ end
 """
     get_reffes(trian::Grid) -> Vector{LagrangianRefFE}
 
-The geometric reference FE of each cell type of `trian`. That is, the reference
-FE whose shape functions define the geometric map from the reference element
-to any cell of this type. See also [`get_cell_type(trian)`](@ref).
+The geometric reference FE of each cell type of `trian`. This reference
+FE always define the nodes of the grid, obtained by mapping the reference node
+in the physical space using the geometrical map.
+
+Usually, these reference FE of cell type defines the geometric map by the linear
+compunation of their shape functions with the grid nodes.
+
+!!! warning
+  A grid may be constructed with other prescribed geometric map unrelated to
+  these reference FEs.
+
+See also [`get_cell_type(trian)`](@ref).
 """
 function get_reffes(trian::Grid)
   @abstractmethod
