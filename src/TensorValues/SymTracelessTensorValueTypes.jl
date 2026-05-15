@@ -26,12 +26,12 @@ struct SymTracelessTensorValue{D,T,L} <: AbstractSymTensorValue{D,T,L}
 end
 
 @generated function _minus_trace(data::NTuple{L,T},::Val{D}) where {D,T,L}
-  str = ""
+  trace_expr = Expr(:call, :+)
   for i in 1:D-1
     k = _2d_sym_tensor_linear_index(D,i,i)
-    str *= "- data[$k]"
+    push!(trace_expr.args, :(- data[$k]) )
   end
-  Meta.parse("($str)")
+  return trace_expr
 end
 
 const QTensorValue = SymTracelessTensorValue
@@ -93,15 +93,17 @@ SymTracelessTensorValue{D,T1,L}(data::Number...) where {D,T1,L} = SymTracelessTe
 
 #From Square Matrices
 @generated function _flatten_upper_triangle_traceless(data::AbstractArray,::Val{D}) where D
-  check_e = :( @check ($D,$D) == size(data) )
-  str = ""
+  comps = Expr[]
   for i in 1:D-1
     for j in i:D
-      str *= "data[$i,$j], "
+      push!(comps, :( data[$i,$j]))
     end
   end
-  ret_e = Meta.parse(" return ($str)")
-  Expr(:block, check_e, ret_e)
+
+  quote
+    @check ($D,$D) == size(data)
+    return tuple($(comps...))
+  end
 end
 
 SymTracelessTensorValue(data::AbstractMatrix{T}) where {T} = ((D1,D2)=size(data); SymTracelessTensorValue{D1}(data))
@@ -114,13 +116,13 @@ SymTracelessTensorValue{D,T1,L}(data::AbstractMatrix{T2}) where {D,T1,T2,L} = Sy
 ###############################################################
 
 @generated function _SymTracelessTensorValue_to_array(arg::SymTracelessTensorValue{D,T,L}) where {D,T,L}
-  str = ""
+  comps = Expr[]
   for j in 1:D
     for i in 1:D
-      str *= "arg[$i,$j], "
+      push!(comps, :( arg[$i,$j]))
     end
   end
-  Meta.parse("SMatrix{D,D,T}(($str))")
+  :( SMatrix{$D,$D,T}($(comps...)) )
 end
 
 # Inverse conversion

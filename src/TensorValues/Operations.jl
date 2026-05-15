@@ -597,7 +597,9 @@ end
 ###############################################################
 
 """
+    tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int)
     tensor_contraction(a::MultiValue, b::MultiValue, ia::NTuple{N,Int}, ib::NTuple{N,Int})
+    tensor_contraction(a::MultiValue, b::MultiValue, ::Val{ia}, ::Val{ib})
 
 Contract `N` index pairs between tensors `a` and `b`: the `ia[k]`-th index of `a`
 is summed against the `ib[k]`-th index of `b`, for `k = 1, …, N`.
@@ -605,6 +607,10 @@ The contracted dimensions must match pairwise.
 
 The output tensor has the remaining (non-contracted) indices of `a` in their
 original order, followed by those of `b` in their original order.
+
+!!! warning
+    The methods accepting `Int`/`Tuple` are not type inferable and they allocate,
+    pass the arguments by `Val` if they are known at compile time.
 
 Generalises [`contracted_product`](@ref): `contracted_product(Val(N), a, b)` is
 equivalent to `tensor_contraction(a, b, (Na-N+1, …, Na), (1, …, N))`.
@@ -614,18 +620,20 @@ function tensor_contraction(
   b::MultiValue{Sb,Tb,Nb},
   ia::NTuple{Nc,Int},
   ib::NTuple{Nc,Int}) where {Sa,Ta,Na,Sb,Tb,Nb,Nc}
-  _tensor_contraction(a, b, Val(ia), Val(ib))
+  tensor_contraction(a, b, Val(ia), Val(ib))
 end
 
 tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
   tensor_contraction(a, b, (ia,), (ib,))
 
-@generated function _tensor_contraction(
+@generated function tensor_contraction(
   a::MultiValue{Sa,Ta,Na},
   b::MultiValue{Sb,Tb,Nb},
   ::Val{Ia},
   ::Val{Ib}) where {Sa,Ta,Na,Sb,Tb,Nb,Ia,Ib}
 
+  @assert (Ia isa NTuple || Ia isa Int)
+  @assert (Ib isa NTuple || Ib isa Int)
   @assert (Sa <: Tuple && Sb <: Tuple) "Ill-defined MultiValue"
   Nc = length(Ia)
   @assert length(Ib) == Nc
@@ -670,21 +678,21 @@ tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
   Sr = (S_a_kept..., S_b_kept...)
   Nr = length(Sr)
 
-  Vstr = if Nr == 0
-    ""
+  V = if Nr == 0
+    :()
   elseif Nr == 1
-    "VectorValue{$(Sr[1])}"
+    :( VectorValue{$(Sr[1])} )
   elseif Nr == 2
-    "TensorValue{$(Sr[1]),$(Sr[2])}"
+    :( TensorValue{$(Sr[1]),$(Sr[2])} )
   else
-    "HighOrderTensorValue{$(Tuple{Sr...})}"
+    :( HighOrderTensorValue{$(Tuple{Sr...})} )
   end
 
-  if iszero(length(a)) || iszero(length(b))
+  if (iszero(length(a)) || iszero(length(b)))
     if iszero(Nr)
-      return Meta.parse("zero(Base.promote_op(*,Ta,Tb))")
+      return :( zero(Base.promote_op(*,Ta,Tb)) )
     else
-      return Meta.parse("zero("*Vstr*"{Base.promote_op(*,Ta,Tb)})")
+      return :( zero($V{Base.promote_op(*,Ta,Tb)}) )
     end
   end
 
@@ -692,38 +700,37 @@ tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
   s_b_ranges = ntuple(j -> 1:S_b_kept[j], length(kb))
   s_c_ranges = ntuple(k -> 1:S_contract[k], Nc)
 
-  ss = String[Vstr * "("]
+  comps = Expr[]
   for cib in Iterators.product(s_b_ranges...)
     for cia in Iterators.product(s_a_ranges...)
-      terms = String[]
+      summands = Expr[]
       for ciC in Iterators.product(s_c_ranges...)
-        a_idx = Vector{Int}(undef, Na)
+        a_idx = zero(MVector{Na,Int})
         for (j, pos) in enumerate(ka)
           a_idx[pos] = cia[j]
         end
         for (k, pos) in enumerate(Ia)
           a_idx[pos] = ciC[k]
         end
-        b_idx = Vector{Int}(undef, Nb)
+        b_idx = zero(MVector{Nb,Int})
         for (j, pos) in enumerate(kb)
           b_idx[pos] = cib[j]
         end
         for (k, pos) in enumerate(Ib)
           b_idx[pos] = ciC[k]
         end
-        push!(terms, "+a[$(join(a_idx,","))]*b[$(join(b_idx,","))]")
+        push!(summands, :(a[$a_idx...]*b[$b_idx...]) )
       end
-      push!(ss, join(terms))
-      push!(ss, ", ")
+      push!(comps, Expr(:call, :+, summands...))
     end
   end
-  pop!(ss) #rm last comma in case of scalar output
-  push!(ss, ")")
-  Meta.parse(join(ss))
+  iszero(Nr) ? :( $(comps[1]) ) : :( $V($(comps...)) )
 end
 
 """
+    tensor_contraction(a::MultiValue, i::Int, j::Int)
     tensor_contraction(a::MultiValue, i::NTuple{N,Int}, j::NTuple{N,Int})
+    tensor_contraction(a::MultiValue, ::Val{i}, ::Val{j})
 
 Self-contraction of `a`: for each pair `k`, index `i[k]` and index `j[k]` of `a`
 are set equal and summed over. `i` and `j` must be disjoint and the paired
@@ -731,22 +738,28 @@ dimensions must match.
 
 The output has the remaining indices of `a` (those not in `i` or `j`) in their
 original order. `tr(a)` is the special case `tensor_contraction(a, (1,), (2,))`.
+
+!!! warning
+    The methods accepting `Int`/`Tuple` are not type inferable and they allocate,
+    pass the arguments by `Val` if they are known at compile time.
 """
 function tensor_contraction(
   a::MultiValue{Sa,Ta,Na},
   i::NTuple{Nc,Int},
   j::NTuple{Nc,Int}) where {Sa,Ta,Na,Nc}
-  _tensor_contraction(a, Val(i), Val(j))
+  tensor_contraction(a, Val(i), Val(j))
 end
 
 tensor_contraction(a::MultiValue, i::Int, j::Int) =
   tensor_contraction(a, (i,), (j,))
 
-@generated function _tensor_contraction(
+@generated function tensor_contraction(
   a::MultiValue{Sa,Ta,Na},
   ::Val{I},
   ::Val{J}) where {Sa,Ta,Na,I,J}
 
+  @assert (I isa NTuple || I isa Int)
+  @assert (J isa NTuple || J isa Int)
   @assert Sa <: Tuple "Ill-defined MultiValue"
   Nc = length(I)
   @assert length(J) == Nc
@@ -778,30 +791,36 @@ tensor_contraction(a::MultiValue, i::Int, j::Int) =
 
   contracted = Set([I..., J...])
   ka         = tuple(filter(idx -> !(idx in contracted), 1:Na)...)
-  S_keep     = ntuple(m -> Sa.parameters[ka[m]], length(ka))
+  Sr     = ntuple(m -> Sa.parameters[ka[m]], length(ka))
   S_contract = ntuple(k -> Sa.parameters[I[k]], Nc)
-  Nr         = length(S_keep)
+  Nr         = length(Sr)
 
-  Vstr = if Nr == 0
-    "Ta"
+  V = if Nr == 0
+    :()
   elseif Nr == 1
-    "VectorValue{$(S_keep[1]),Ta}"
+    :( VectorValue{$(Sr[1])} )
   elseif Nr == 2
-    "TensorValue{$(S_keep[1]),$(S_keep[2]),Ta}"
+    :( TensorValue{$(Sr[1]),$(Sr[2])} )
   else
-    "HighOrderTensorValue{$(Tuple{S_keep...}),Ta}"
+    :( HighOrderTensorValue{$(Tuple{Sr...})} )
   end
 
-  iszero(length(a)) && return Meta.parse("zero($Vstr)")
+  if iszero(length(a))
+    if iszero(Nr)
+      return :( zero(Base.promote_op(*,Ta,Ta)) )
+    else
+      return :( zero($V{Base.promote_op(*,Ta,Ta)}) )
+    end
+  end
 
-  s_keep_ranges     = ntuple(m -> 1:S_keep[m],     length(ka))
+  s_keep_ranges     = ntuple(m -> 1:Sr[m],     length(ka))
   s_contract_ranges = ntuple(k -> 1:S_contract[k], Nc)
 
-  ss = String[Vstr * "("]
+  comps = Expr[]
   for cia in Iterators.product(s_keep_ranges...)
-    terms = String[]
+    summands = Expr[]
     for ciC in Iterators.product(s_contract_ranges...)
-      a_idx = Vector{Int}(undef, Na)
+      a_idx = zero(MVector{Na,Int})
       for (m, pos) in enumerate(ka)
         a_idx[pos] = cia[m]
       end
@@ -811,12 +830,11 @@ tensor_contraction(a::MultiValue, i::Int, j::Int) =
       for (k, pos) in enumerate(J)
         a_idx[pos] = ciC[k]
       end
-      push!(terms, "+a[$(join(a_idx, ","))]")
+      push!(summands, :(a[$a_idx...]))
     end
-    push!(ss, join(terms) * ", ")
+    push!(comps, Expr(:call, :+, summands...))
   end
-  push!(ss, ")")
-  Meta.parse(join(ss))
+  iszero(Nr) ? :( $(comps[1]) ) : :( $V($(comps...)) )
 end
 
 ###############################################################
@@ -1109,23 +1127,36 @@ transpose(a::SkewSymTensorValue) = -a
 
 """
     permutedims(a::MultiValue{Sa,Ta,Na}, perm::NTuple{Na,Int})
+    permutedims(a::MultiValue{Sa,Ta,Na},     ::Val{perm})
 
 Return a tensor whose indices are those of `a` reordered by `perm`:
 `result[i₁,…,iₙ] = a[i_{σ⁻¹(1)},…,i_{σ⁻¹(n)}]`, where `σ = perm`.
 
+!!! warning
+    The method accepting a `Tuple` is not type inferable and it allocates, pass
+    the `perm` by `Val` if it is known at compile time.
+
 The output shape is `(size(a, perm[1]), …, size(a, perm[N]))`.
 For second-order tensors this is equivalent to `transpose` (with `perm = (2,1)`).
 Symmetry of the input tensor is not preserved in the output type.
+
+```@example
+t = TensorValue{2,3}(1:6...)
+permutedims(t, Val((2,1)) ) # 2.123 ns  (0 allocations: 0 bytes)
+permutedims(t, (2,1))       # 82.367 ns (3 allocations: 160 bytes)
+# -> TensorValue{3, 2, Int64, 6}(1, 3, 5, 2, 4, 6)
+```
 """
 function Base.permutedims(
   a::MultiValue{Sa,Ta,Na},
   perm::NTuple{Na,Int}) where {Sa,Ta,Na}
-  _permutedims(a, Val(perm))
+  permutedims(a, Val(perm))
 end
 
-@generated function _permutedims(
+@generated function Base.permutedims(
   a::MultiValue{Sa,Ta,Na}, ::Val{P}) where {Sa,Ta,Na,P}
 
+  @assert P isa Tuple || P isa Int
   @assert Sa <: Tuple "Ill-defined MultiValue"
 
   sort([P...]) == collect(1:Na) || begin
@@ -1136,28 +1167,27 @@ end
   Sa_params = tuple(Sa.parameters...)
   Sr = ntuple(k -> Sa_params[P[k]], Na)
 
-  Vstr = if Na == 1
-    "VectorValue{$(Sr[1]),Ta}"
+  V = if Na == 1
+    :( VectorValue{$(Sr[1]),Ta} )
   elseif Na == 2
-    "TensorValue{$(Sr[1]),$(Sr[2]),Ta}"
+    :( TensorValue{$(Sr[1]),$(Sr[2]),Ta} )
   else
-    "HighOrderTensorValue{$(Tuple{Sr...}),Ta}"
+    :( HighOrderTensorValue{$(Tuple{Sr...}),Ta} )
   end
 
-  iszero(length(a)) && return Meta.parse("zero($Vstr)")
+  iszero(length(a)) && return :( zero($V) )
 
   inv_perm = zeros(Int, Na)
   for k in 1:Na
     inv_perm[P[k]] = k
   end
 
-  ss = String[Vstr * "("]
+  comps = Expr[]
   for ci in CartesianIndices(Sr)
     a_idx = ntuple(k -> ci[inv_perm[k]], Na)
-    push!(ss, "a[$(join(a_idx, ","))], ")
+    push!(comps, :( a[$a_idx...] ) )
   end
-  push!(ss, ")")
-  Meta.parse(join(ss))
+  :( $V($(comps...)) )
 end
 
 ###############################################################
