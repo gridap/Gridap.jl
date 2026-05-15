@@ -391,7 +391,7 @@ end
 
 ##################
 
-function FESpaces.renumber_free_and_dirichlet_dof_ids(
+function FESpaces.reindex_free_and_dirichlet_dof_ids(
   space::FESpaces.PolytopalFESpace,free_dof_ids,dir_dof_ids
 )
   @assert num_free_dofs(space) == length(free_dof_ids)

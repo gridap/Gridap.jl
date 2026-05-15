@@ -7,10 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+<<<<<<< HEAD
 
 ### Added
 
 - Added type-stable methods to `tensor_contraction` and `Base.permutedims(::MultiValue, perm)`: pass the arguments by `Val`. Since PR[#1301](https://github.com/gridap/Gridap.jl/pull/1301).
+=======
+## [0.20.7] - 2026-05-12
+
+### Added
+
+- Added `reindex_free_dof_ids(space, algorithm)` to reorder the free DOFs of a `FESpace` for bandwidth/profile/fill-in reduction. Supported algorithms: `:rcm` (Reverse Cuthill-McKee), `:sloan` (wavefront minimisation), and `:coordinates` (sort by spatial coordinates, for Lagrangian spaces). An externally computed permutation vector can also be applied directly via `reindex_free_dof_ids(space, free_dof_ids)`. Since PR[#1299](https://github.com/gridap/Gridap.jl/pull/1299).
+
+### Changed
+
+- Minor generalisation of `return_value` for `LinearCombinationMap`. Since PR[#1298](https://github.com/gridap/Gridap.jl/pull/1298).
+>>>>>>> 6bafc0b717bcf83aca1ba876e816a7e8a17b6e0d
 
 ## [0.20.6] - 2026-05-05
 
