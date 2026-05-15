@@ -898,6 +898,6 @@ end
 # @generated function multinoms(::Val{K},::Val{D}) where {K,D}
 #   terms = bernstein_terms(K,D)
 #   multinomials = tuple( (multinomial(α...) for α in terms)... )
-#   Meta.parse("return $multinomials")
+#   :( return $multinomials )
 # end
 #

@@ -89,17 +89,17 @@ SymFourthOrderTensorValue{D,T1,L}(data::AbstractArray{T2}) where {D,T1,T2,L} = S
 ###############################################################
 
 @generated function _SymFourthOrder_to_array(arg::SymFourthOrderTensorValue{D,T,L}) where {D,T,L}
-  str = ""
+  comps = Expr[]
   for l in 1:D
     for k in 1:D
       for j in 1:D
         for i in 1:D
-          str *= "arg[$i,$j,$k,$l], "
+          push!(comps, :(arg[$i,$j,$k,$l]))
         end
       end
     end
   end
-  Meta.parse("SArray{Tuple{D,D,D,D},T}(($str))")
+  :( return SArray{Tuple{D,D,D,D},T}( $(Expr(:tuple, comps...))) )
 end
 
 # Inverse conversion
