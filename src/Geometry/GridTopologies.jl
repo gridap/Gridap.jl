@@ -549,33 +549,6 @@ function compute_cell_permutations(top::GridTopology,d::Integer)
 end
 
 """
-    GridTopology(grid::Grid)
-    GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::Vector)
-"""
-function GridTopology(grid::Grid)
-  _grid = UnstructuredGrid(grid)
-  UnstructuredGridTopology(_grid)
-end
-
-function GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::AbstractVector)
-  _grid = UnstructuredGrid(grid)
-  UnstructuredGridTopology(_grid,cell_to_vertices,vertex_to_node)
-end
-
-"""
-    restrict(topo::GridTopology, cell_to_parent_cell::AbstractVector{<:Integer})
-    restrict(topo::GridTopology, parent_cell_to_mask::AbstractVector{Bool})
-"""
-function restrict(topo::GridTopology, cell_to_parent_cell::AbstractVector{<:Integer})
-  restrict(UnstructuredGridTopology(topo), cell_to_parent_cell)
-end
-
-function restrict(topo::GridTopology,parent_cell_to_mask::AbstractVector{Bool})
-  cell_to_parent_cell = findall(parent_cell_to_mask)
-  restrict(topo, cell_to_parent_cell)
-end
-
-"""
     compute_graph(topo::GridTopology, d_node::Integer, d_edge::Integer; self_loops=true, Tv=Int8)
 
 Computes the adjacency graph between the `d_node` entities w.r.t the `d_edge` entities. The 

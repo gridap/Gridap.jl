@@ -71,6 +71,27 @@ get_cell_type(g::DiscreteModel) = get_cell_type(get_grid(g))
 
 get_reffes(g::DiscreteModel) = get_reffes(get_grid(g))
 
+# Generic constructors
+
+function DiscreteModel(::Type{<:Polytope{D}}, model::DiscreteModel{D}) where D
+  model
+end
+
+"""
+"""
+function DiscreteModel(::Type{<:Polytope{D}}, model::DiscreteModel) where D
+  grid = Grid(ReferenceFE{D},model)
+  topo = GridTopology(Polytope{D},model)
+  labeling = FaceLabeling(get_face_labeling(model),D)
+  DiscreteModel(grid,topo,labeling)
+end
+
+"""
+"""
+function GridTopology(::Type{<:Polytope{D}}, model::DiscreteModel) where D
+  GridTopology(Polytope{D},get_grid_topology(model))
+end
+
 # Default API
 
 """
@@ -355,39 +376,7 @@ function compute_reffaces(g::DiscreteModel)
   (vcat(d_to_refdfaces...), vcat(d_to_dface_to_ftype...), d_to_offset)
 end
 
-"""
-    Grid(::Type{ReferenceFE{d}},model::DiscreteModel) where d
-"""
-function Grid(::Type{ReferenceFE{d}},model::DiscreteModel) where d
-  node_coordinates = collect1d(get_node_coordinates(model))
-  cell_to_nodes = Table(get_face_nodes(model,d))
-  cell_to_type = collect1d(get_face_type(model,d))
-  reffes = get_reffaces(ReferenceFE{d},model)
-  UnstructuredGrid(node_coordinates, cell_to_nodes, reffes, cell_to_type)
-end
-
-function Grid(::Type{ReferenceFE{d}},model::DiscreteModel{d}) where d
-  get_grid(model)
-end
-
-"""
-    simplexify(model::DiscreteModel; kwargs...)
-"""
-function simplexify(model::DiscreteModel; kwargs...)
-  umodel = UnstructuredDiscreteModel(model)
-  simplexify(umodel;kwargs...)
-end
-
 # IO
-
-function to_dict(model::DiscreteModel)
-  umodel = UnstructuredDiscreteModel(model)
-  to_dict(umodel)
-end
-
-function from_dict(::Type{DiscreteModel},dict::Dict{Symbol,Any})
-  from_dict(UnstructuredDiscreteModel,dict)
-end
 
 """
     DiscreteModelFromFile(filename::AbstractString)
@@ -429,21 +418,3 @@ get_grid_topology(model::GenericDiscreteModel) = model.grid_topology
 
 get_face_labeling(model::GenericDiscreteModel) = model.labels
 
-function DiscreteModel(::Type{<:Polytope{D}},model::DiscreteModel{D}) where D
-  model
-end
-
-"""
-"""
-function DiscreteModel(::Type{<:Polytope{D}},model::DiscreteModel) where D
-  grid = Grid(ReferenceFE{D},model)
-  topo = GridTopology(Polytope{D},model)
-  labeling = FaceLabeling(get_face_labeling(model),D)
-  DiscreteModel(grid,topo,labeling)
-end
-
-"""
-"""
-function GridTopology(::Type{<:Polytope{D}},model::DiscreteModel) where D
-  GridTopology(Polytope{D},get_grid_topology(model))
-end

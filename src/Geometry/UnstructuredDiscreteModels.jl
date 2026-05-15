@@ -38,6 +38,30 @@ function UnstructuredDiscreteModel(model::UnstructuredDiscreteModel)
   model
 end
 
+"""
+    Grid(::Type{ReferenceFE{d}}, model::DiscreteModel) where d
+"""
+function Grid(::Type{ReferenceFE{d}}, model::DiscreteModel) where d
+  node_coordinates = collect1d(get_node_coordinates(model))
+  cell_to_nodes = Table(get_face_nodes(model,d))
+  cell_to_type = collect1d(get_face_type(model,d))
+  reffes = get_reffaces(ReferenceFE{d},model)
+  UnstructuredGrid(node_coordinates, cell_to_nodes, reffes, cell_to_type)
+end
+
+function Grid(::Type{ReferenceFE{d}}, model::DiscreteModel{d}) where d
+  get_grid(model)
+end
+
+"""
+    simplexify(model::DiscreteModel; kwargs...)
+"""
+function simplexify(model::DiscreteModel; kwargs...)
+  umodel = UnstructuredDiscreteModel(model)
+  simplexify(umodel;kwargs...)
+end
+
+
 # Implementation of the interface
 
 get_grid(model::UnstructuredDiscreteModel) = model.grid
@@ -46,7 +70,17 @@ get_grid_topology(model::UnstructuredDiscreteModel) = model.grid_topology
 
 get_face_labeling(model::UnstructuredDiscreteModel) = model.face_labeling
 
-# Io
+
+# IO
+
+function to_dict(model::DiscreteModel)
+  umodel = UnstructuredDiscreteModel(model)
+  to_dict(umodel)
+end
+
+function from_dict(::Type{DiscreteModel},dict::Dict{Symbol,Any})
+  from_dict(UnstructuredDiscreteModel,dict)
+end
 
 function to_dict(model::UnstructuredDiscreteModel)
   dict = Dict{Symbol,Any}()

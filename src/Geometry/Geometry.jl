@@ -204,25 +204,25 @@ export PatchTopology
 export PatchTriangulation
 export PatchBoundaryTriangulation
 
+# Abstract interfaces
+
 include("Grids.jl")
-
-include("GridMocks.jl")
-
-include("UnstructuredGrids.jl")
-
-include("CartesianGrids.jl")
 
 include("GridTopologies.jl")
 
-include("GridTopologyMocks.jl")
-
-include("UnstructuredGridTopologies.jl")
+include("UnstructuredGrids.jl")
 
 include("FaceLabelings.jl")
 
 include("DiscreteModels.jl")
 
-include("DiscreteModelMocks.jl")
+# Concrete implementations
+
+include("GeometryMocks.jl")
+
+include("CartesianGrids.jl")
+
+include("UnstructuredGridTopologies.jl")
 
 include("UnstructuredDiscreteModels.jl")
 
