@@ -43,7 +43,7 @@ jobs:
           - {version: 'lts', os: ubuntu-latest,  arch: x86}
     steps:
       - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@v3
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
@@ -77,7 +77,7 @@ jobs:
           - drivers
     steps:
       - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@v3
         with:
           version: ${{ matrix.version }}
           arch: x64
@@ -123,7 +123,7 @@ jobs:
           - {os: ubuntu-latest,  arch: x86}
     steps:
       - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@v3
         with:
           version: 'lts'
           arch: ${{ matrix.config.arch }}
@@ -146,7 +146,7 @@ jobs:
           - '1'
     steps:
       - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@v3
         with:
           version: ${{ matrix.version }}
           arch: x64

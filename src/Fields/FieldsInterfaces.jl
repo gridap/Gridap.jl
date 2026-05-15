@@ -394,46 +394,38 @@ end
 
 function return_value(c::OperationField,x::Point)
   fx = map(f -> return_value(f,x),c.fields)
-  return_value(c.op,fx...)
+  return return_value(c.op,fx...)
 end
 
 function return_cache(c::OperationField,x::Point)
   cl = map(fi -> return_cache(fi,x),c.fields)
   lx = map(fi -> return_value(fi,x),c.fields)
   ck = return_cache(c.op,lx...)
-  ck, cl
+  return ck, cl
 end
 
 function evaluate!(cache,c::OperationField,x::Point)
   ck, cf = cache
   lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
-  evaluate!(ck,c.op,lx...)
+  return evaluate!(ck,c.op,lx...)
 end
 
 function return_value(c::OperationField,x::AbstractArray{<:Point})
   fx = map(f -> return_value(f,x),c.fields)
-  c.op.(fx...)
+  return return_value(Broadcasting(c.op),fx...)
 end
 
 function return_cache(c::OperationField,x::AbstractArray{<:Point})
   cf = map(fi -> return_cache(fi,x),c.fields)
   lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
-  ck = return_cache(c.op,map(testitem,lx)...)
-  r = c.op.(lx...)
-  ca = CachedArray(r)
-  ca, ck, cf
+  ck = return_cache(Broadcasting(c.op),lx...)
+  return cf, ck
 end
 
 function evaluate!(cache,c::OperationField,x::AbstractArray{<:Point})
-  ca, ck, cf = cache
-  sx = size(x)
-  setsize!(ca,sx)
+  cf, ck = cache
   lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
-  r = ca.array
-  for i in eachindex(x)
-    @inbounds r[i] = evaluate!(ck,c.op,map(lxi -> lxi[i], lx)...)
-  end
-  r
+  return evaluate!(ck,Broadcasting(c.op),lx...)
 end
 
 evaluate!(cache,op::Operation,x::Field...) = OperationField(op.op,x)

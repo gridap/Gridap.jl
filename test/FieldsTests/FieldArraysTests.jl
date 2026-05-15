@@ -382,7 +382,7 @@ a = MockFieldArray(avals)
 b = Diagonal(ones(4))
 f = linear_combination(b,a)
 fp = transpose(b)*evaluate(a,p)
-test_field_array(f,p,fp) # BUG!!!
+test_field_array(f,p,fp)
 
 ## Test MockField
 #
