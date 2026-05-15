@@ -112,21 +112,19 @@ end
 ###############################################################
 
 @generated function _bc(f, a::NTuple{N}, b::Number) where N
-  s = "("
+  res = Expr(:tuple)
   for i in 1:N
-    s *= "f(a[$i],b), "
+    push!(res.args, :(f(a[$i],b)) )
   end
-  s *= ")"
-  Meta.parse(s)
+  res
 end
 
 @generated function _bc(f, b::Number, a::NTuple{N}) where N
-  s = "("
+  res = Expr(:tuple)
   for i in 1:N
-    s *= "f(b,a[$i]), "
+    push!(res.args, :(f(b,a[$i])) )
   end
-  s *= ")"
-  Meta.parse(s)
+  res
 end
 
 for op in (:+,:-,:*)
@@ -232,18 +230,18 @@ inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N}) where {S,Ta,Tb,N} = contract
 
 @generated function inner(a::AbstractSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return :(zero($(Base.promote_op(*,Ta,Tb))))
-  str = ""
+  terms = Expr(:call, :+)
   for i in 1:D
-    str *= "+ a[$i,$i]*b[$i,$i]"
+    push!(terms.args, :(a[$i,$i]*b[$i,$i]))
   end
-  str *= " + 2*("
+  terms2 = Expr(:call, :+)
   for i in 1:D
     for j in i+1:D
-      str *= "+ a[$i,$j]*b[$i,$j]"
+      push!(terms2.args, :(a[$i,$j]*b[$i,$j]))
     end
   end
-  str *= ")"
-  Meta.parse(str)
+  push!(terms.args, :(2*( $terms2 )))
+  terms
 end
 
 @generated function inner(a::SymFourthOrderTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
@@ -251,18 +249,18 @@ end
 
   S = Tuple{D,D,D,D}
   VInt = change_eltype(a, Int)
-  # each independent component appear either 1,2 of 4 times in inputs
-  strs = Dict(1 => "(", 2 => "2*(", 4 => "4*(")
+  # each independent component appear either 1,2 of 4 times in inputs, we gather
+  # sums for all cases in different expr.
+  sums = [ Expr(:call, :+) for _ in 1:4 ] # the third is unused...
 
   # for each independent component, add its product in the sum of the
   # corresponding multiplicative factor
   for (i, fi) in enumerate(component_basis(VInt))
     factor = @invoke inner(fi::MultiValue{S,Int,4}, fi::MultiValue{S,Int,4}) # use the generic but slower method
-    strs[factor] *= "+ indep_comp_getindex(a,$i)*indep_comp_getindex(b,$i)"
+    push!(sums[factor].args, :(indep_comp_getindex(a,$i)*indep_comp_getindex(b,$i)))
   end
 
-  str = string(strs[1][:], ") + ", strs[2][:], ") + ", strs[4][:], ")")
-  Meta.parse(str)
+  :( $(sums[1]) + 2*$(sums[2]) + 4*$(sums[4]) )
 end
 
 function inner(a::SkewSymTensorValue{D,Ta}, b::SkewSymTensorValue{D,Tb}) where {D,Ta,Tb}
@@ -312,17 +310,17 @@ double_contraction(a::MultiValue, b::MultiValue) = contracted_product(Val(2), a,
   Sym4TensorIndexing = [1111, 1121, 1131, 1122, 1132, 1133, 2111, 2121, 2131, 2122, 2132, 2133,
     3111, 3121, 3131, 3122, 3132, 3133, 2211, 2221, 2231, 2222, 2232, 2233,
     2311, 2321, 2331, 2322, 2332, 2333, 3311, 3321, 3331, 3322, 3332, 3333]
-  ss = String[]
+  comps = Expr[]
   for off_index in Sym4TensorIndexing
     i = parse(Int, string(off_index)[1])
     j = parse(Int, string(off_index)[2])
     k = parse(Int, string(off_index)[3])
     l = parse(Int, string(off_index)[4])
-    s = join(["a[$j,$i,$m,$n]*b[$m,$n,$l,$k]+" for m in 1:3 for n in 1:3])
-    push!(ss, s[1:(end-1)] * ", ")
+    summands = [:( a[$j,$i,$m,$n]*b[$m,$n,$l,$k] ) for m in 1:3 for n in 1:3]
+    comp = Expr(:call, :+, summands...)
+    push!(comps, comp)
   end
-  str = join(ss)
-  Meta.parse("SymFourthOrderTensorValue{3}($str)")
+  :( SymFourthOrderTensorValue{3}($(comps...)) )
 end
 
 function _comp_prod_double_symfourth4(::Val{D},a,b,i,j,k,l) where D
@@ -339,19 +337,19 @@ end
 @generated function double_contraction(a::SymFourthOrderTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return :(SymFourthOrderTensorValue{0,$(Base.promote_op(*,Ta,Tb))}())
 
-  str = ""
+  comps = Expr[]
   for j in 1:D
     for i in j:D
       for l in 1:D
         for k in l:D
           if D < 4
-            s = ""
+            comp = Expr(:call, :+)
             for m in 1:D
               for n in 1:D
-                s *= " a[$i,$j,$m,$n]*b[$m,$n,$k,$l] +"
+                push!(comp.args, :(a[$i,$j,$m,$n]*b[$m,$n,$k,$l]) )
               end
             end
-            str *= s[1:(end-1)] * ", "
+            push!(comps, comp)
           else
             # for D=4, this compiles in <0.05 s, while the other takes 200 s (Julia 1.12).
             # But runtime is 5 times slower 1.6 μs, vs 300 ns
@@ -362,71 +360,65 @@ end
             # This means that the acceleration we get by removing the function
             # likely comes from llvm optimization that recycle partial results
             # of the products for different i,j,k,l
-            str *= "_comp_prod_double_symfourth4(Val(D),a,b,$i,$j,$k,$l), "
+            push!(comps, :(_comp_prod_double_symfourth4(Val(D),a,b,$i,$j,$k,$l)) )
           end
         end
       end
     end
   end
-  Meta.parse("SymFourthOrderTensorValue{D}($str)")
+  :( SymFourthOrderTensorValue{D}($(comps...)) )
 end
 
 # c_ijk = a_ilm*b_lmjk
 @generated function double_contraction(a::ThirdOrderTensorValue{D1,D,D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D1,D,Ta,Tb}
   iszero(length(a)) && return :(zero(ThirdOrderTensorValue{D1,D,D,$(Base.promote_op(*,Ta,Tb))}))
-  ss = String[]
+  comps = Expr[]
   for k in 1:D
     for j in 1:D
       for i in 1:D1
-        s = join(["a[$i,$l,$m]*b[$l,$m,$j,$k]+" for l in 1:D for m in 1:D])
-        push!(ss, s[1:(end-1)] * ", ")
+        summands = [:(a[$i,$l,$m]*b[$l,$m,$j,$k]) for l in 1:D for m in 1:D]
+        push!(comps, Expr(:call, :+, summands...))
       end
     end
   end
-  str = join(ss)
-  Meta.parse("ThirdOrderTensorValue{$D1,$D,$D}($str)")
+  :( ThirdOrderTensorValue{D1,D,D}($(comps...)) )
 end
 
 # c_ij = a_ijkl*b_kl
 @generated function double_contraction(a::SymFourthOrderTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return :(zero(SymTensorValue{D,$(Base.promote_op(*,Ta,Tb))}))
-  str = ""
+  comps = Expr[]
   for i in 1:D
     for j in i:D
-      for k in 1:D
-        str *= "+ a[$i,$j,$k,$k]*b[$k,$k]"
-      end
-      str *= " + 2*("
-      for k in 1:D
-        for l in k+1:D
-          str *= "+ a[$i,$j,$k,$l]*b[$k,$l]"
-        end
-      end
-      str *= "), "
+      summands = [:(a[$i,$j,$k,$k]*b[$k,$k]) for k in 1:D]
+      diag_sum = Expr(:call, :+, summands...)
+
+      summands = [:(a[$i,$j,$k,$l]*b[$k,$l]) for k in 1:D for l in k+1:D]
+      offdiag_sum = Expr(:call, :+, summands...)
+
+      push!(comps, :( $diag_sum + 2*$offdiag_sum) )
     end
   end
-  Meta.parse("SymTensorValue{D}($str)")
+  :( SymTensorValue{D}($(comps...)) )
 end
 
 # c_ij = a_kl*b_klij
 @generated function double_contraction(a::AbstractSymTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return :(zero(SymTensorValue{D,$(Base.promote_op(*,Ta,Tb))}))
-  str = ""
+  comps = Expr[]
   for i in 1:D
     for j in i:D
-      for k in 1:D
-        str *= "+ a[$k,$k]*b[$k,$k,$i,$j]"
-      end
-      str *= " + 2*("
-      for k in 1:D
-        for l in k+1:D
-          str *= "+ a[$k,$l]*b[$k,$l,$i,$j]"
-        end
-      end
-      str *= "), "
+      summands = [:(a[$k,$k]*b[$k,$k,$i,$j]) for k in 1:D]
+      diag_sum = Expr(:call, :+, summands...)
+
+      summands = [:(a[$k,$l]*b[$k,$l,$i,$j]) for k in 1:D for l in k+1:D]
+      offdiag_sum = Expr(:call, :+, summands...)
+
+      push!(comps, :( $diag_sum + 2*$offdiag_sum) )
     end
   end
-  Meta.parse("SymTensorValue{D}($str)")
+
+  :( SymTensorValue{D}($(comps...)) )
 end
 
 # c_ij = a_ijkl*b_kl
@@ -501,17 +493,17 @@ outer(a::MultiValue, b::MultiValue) = contracted_product(Val(0), a, b)
 # c_ijkl = a_ij*b_kl
 @generated function outer(a::AbstractSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return :(zero(SymFourthOrderTensorValue{D,$(Base.promote_op(*,Ta,Tb))}))
-  str = ""
+  comps = Expr[]
   for i in 1:D
     for j in i:D
       for k in 1:D
         for l in k:D
-          str *= "a[$i,$j]*b[$k,$l], "
+          push!(comps, :(a[$i,$j]*b[$k,$l]) )
         end
       end
     end
   end
-  Meta.parse("SymFourthOrderTensorValue{D}($str)")
+  :( SymFourthOrderTensorValue{D}($(comps...)) )
 end
 
 const ⊗ = outer
@@ -568,21 +560,21 @@ the specific functions above if possible), but is used as default generic implem
 
   Sr = tuple(Sa_keep..., Sb_keep...)
   Nr = length(Sr)
-  Vstr = if Nr == 0
-    ""
+  V = if Nr == 0
+    :()
   elseif Nr == 1
-    "VectorValue{$(Sr[1])}"
+    :( VectorValue{$(Sr[1])} )
   elseif Nr == 2
-    "TensorValue{$(Sr[1]),$(Sr[2])}"
+    :( TensorValue{$(Sr[1]),$(Sr[2])} )
   else
-    "HighOrderTensorValue{$(Tuple{Sr...})}"
+    :( HighOrderTensorValue{$(Tuple{Sr...})} )
   end
 
   if (iszero(length(a)) || iszero(length(b)))
     if iszero(Nr)
-      return Meta.parse("zero(Base.promote_op(*,Ta,Tb))")
+      return :( zero(Base.promote_op(*,Ta,Tb)) )
     else
-      return Meta.parse("zero("*Vstr*"{Base.promote_op(*,Ta,Tb)})")
+      return :( zero($V{Base.promote_op(*,Ta,Tb)}) )
     end
   end
 
@@ -590,16 +582,14 @@ the specific functions above if possible), but is used as default generic implem
   # to runtime looping over the indices, or even using BLAS. Also, we might need
   # to change HighOrderTensorValue to store into Memory or simply some fixed sized array.
   # Context: compiling double_contaction of 4th order 4D tensors takes 5-10 min, runtime 15μs.
-  ss = String[Vstr, "("]
+  comps = Expr[]
   for cib in CartesianIndices(Sb_keep) # Julia is column major, last index enumerates first
     for cia in CartesianIndices(Sa_keep)
-      push!(ss, join("+a[$cia, $ciC]*b[$ciC, $cib]" for ciC in CartesianIndices(S_contract)))
-      push!(ss, ", ")
+      summands = [:(a[$cia, $ciC]*b[$ciC, $cib]) for ciC in CartesianIndices(S_contract)]
+      push!(comps, Expr(:call, :+, summands...))
     end
   end
-  pop!(ss) #rm last comma in case of scalar output
-  push!(ss, ")")
-  Meta.parse(join(ss))
+  iszero(Nr) ? :( $(comps[1]) ) : :( $V($(comps...)) )
 end
 
 ###############################################################
@@ -1038,8 +1028,8 @@ Return the trace of a second order square tensor, defined by `Σᵢ vᵢᵢ` or 
 """
 @generated function tr(v::MultiValue{Tuple{D,D},T}) where {D,T}
   iszero(D) && return :(zero(T))
-  str = join([" v[$i,$i] +" for i in 1:D])
-  Meta.parse(str[1:(end-1)])
+  summands = [:(v[$i,$i]) for i in 1:D]
+  Expr(:call, :+, summands...)
 end
 tr(::SymTracelessTensorValue{D,T}) where {D,T} = zero(T)
 tr(::SkewSymTensorValue{D,T}) where {D,T} = zero(T)
@@ -1067,17 +1057,13 @@ Return a vector of length `D2` of traces computed on the first two indices: `res
 
   B = last(S.parameters)
   iszero(length(v)) && return :(zero(VectorValue{$B,T}))
-  str = ""
+
+  comps = Expr[]
   for k in 1:B
-    for i in 1:A12[1]
-      if i != 1
-        str *= " + "
-      end
-      str *= " v[$i,$i,$k]"
-    end
-    str *= ", "
+    summands = [:( v[$i,$i,$k] ) for i in 1:A12[1]]
+    push!(comps, Expr(:call, :+, summands...))
   end
-  Meta.parse("VectorValue($str)")
+  :( VectorValue($(comps...)) )
 end
 
 ###############################################################
@@ -1088,23 +1074,23 @@ adjoint(a::MultiValue{Tuple{D,D}}) where D = @notimplemented
 transpose(a::MultiValue{Tuple{D,D}}) where D = @notimplemented
 
 @generated function adjoint(a::TensorValue{D1,D2,T}) where {D1,D2,T}
-  str = ""
+  comps = Expr[]
   for i in 1:D1
     for j in 1:D2
-      str *= "conj(a[$i,$j]), "
+      push!(comps, :(conj(a[$i,$j])) )
     end
   end
-  Meta.parse("TensorValue{D2,D1,T}($str)")
+  :( TensorValue{D2,D1,T}($(comps...)) )
 end
 
 @generated function transpose(a::TensorValue{D1,D2,T}) where {D1,D2,T}
-  str = ""
+  comps = Expr[]
   for i in 1:D1
     for j in 1:D2
-      str *= "a[$i,$j], "
+      push!(comps, :(a[$i,$j]) )
     end
   end
-  Meta.parse("TensorValue{D2,D1,T}($str)")
+  :( TensorValue{D2,D1,T}($(comps...)) )
 end
 
 @inline function adjoint(a::TensorValue{D1,D2,T}) where {D1,D2,T<:Real}
@@ -1187,14 +1173,13 @@ Return `v` if  `v isa AbstractSymTensorValue`, and the zero symmetric tensor if
 """
 @generated function symmetric_part(v::MultiValue{Tuple{D,D},T}) where {D,T}
   iszero(D) && return :(zero(SymTensorValue{0,T}))
-  str = "("
+  comps = Expr[]
   for j in 1:D
     for i in j:D
-      str *= "(v[$i,$j] + v[$j,$i])/2, "
+      push!(comps, :((v[$i,$j] + v[$j,$i])/2) )
     end
   end
-  str *= ")"
-  Meta.parse("SymTensorValue{D}($str)")
+  :( SymTensorValue{D}($(comps...)) )
 end
 
 symmetric_part(v::AbstractSymTensorValue) = v
@@ -1209,14 +1194,13 @@ Return the zero skew symmetric tensor if `v  isa AbstractSymTensorValue`, and
 """
 @generated function skew_symmetric_part(v::MultiValue{Tuple{D,D},T}) where {D,T}
   iszero(D) && return :(zero(SkewSymTensorValue{0,T}))
-  str = "("
+  comps = Expr[]
   for i in 1:D
     for j in i+1:D
-      str *= "(v[$i,$j] - v[$j,$i])/2, "
+      push!(comps, :((v[$i,$j] - v[$j,$i])/2) )
     end
   end
-  str *= ")"
-  Meta.parse("SkewSymTensorValue{D}($str)")
+  :( SkewSymTensorValue{D}($(comps...)) )
 end
 
 skew_symmetric_part(::AbstractSymTensorValue{D,T}) where {D,T} = zero(SkewSymTensorValue{D,T})

@@ -279,23 +279,23 @@ end
 end
 
 @generated function _create_cartesian_f2c_maps(nC::NTuple{N,T},ref::NTuple{N,T}) where {N,T}
-  J_f2c   = Meta.parse(prod(["(",["1+(I[$k]-1)÷ref[$k]," for k in 1:N]...,")"]))
-  J_child = Meta.parse(prod(["(",["1+(I[$k]-1)%ref[$k]," for k in 1:N]...,")"]))
+  J_f2c   = [:( 1+(I[$k]-1)÷ref[$k] ) for k in 1:N]
+  J_child = [:( 1+(I[$k]-1)%ref[$k] ) for k in 1:N]
 
-  return :(begin
+  quote
     nF = nC .* ref
     f2c_map   = Vector{Int}(undef,prod(nF))
     child_map = Vector{Int}(undef,prod(nF))
 
     for (i,I) in enumerate(CartesianIndices(nF))
-      J_f2c   = $J_f2c
-      J_child = $J_child
+      J_f2c   = tuple($(J_f2c...))
+      J_child = tuple($(J_child...))
       f2c_map[i] = _c2v(J_f2c,nC)
       child_map[i] = _c2v(J_child,ref)
     end
 
     return f2c_map, child_map
-  end)
+  end
 end
 
 # Return the local indices of the fine points within each face.

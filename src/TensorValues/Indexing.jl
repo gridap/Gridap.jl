@@ -256,7 +256,7 @@ upper-triangular off-diagonal pairs (i,j) with i<j in lexicographic order.
 @generated function to_voigt(a::SymTensorValue{D,T,L}) where {D,T,L}
   pairs = _voigt_pairs(D)
   comps = [ :( a[$(p[1]),$(p[2])] ) for p in pairs ]
-  :( return VectorValue{L,T}($(Expr(:tuple, comps...))) )
+  :( return VectorValue{L,T}($(comps...)) )
 end
 
 """
@@ -270,7 +270,7 @@ Decode a Voigt-encoded vector to a symmetric second-order tensor.
   @assert L == D*(D+1)÷2 "from_voigt: VectorValue length $L is not a valid Voigt vector length"
   inv_map = _voigt_inv(D)
   comps = [ :( v[$(inv_map[i,j])] )  for i in 1:D for j in i:D ]
-  :( return SymTensorValue{$D,T}($(Expr(:tuple, comps...))) )
+  :( return SymTensorValue{$D,T}($(comps...)) )
 end
 
 """
@@ -285,7 +285,7 @@ The output eltype `S` is `promote_op(*, typeof(√2), T)`.
   S = _mandel_eltype(T)
   pairs = _voigt_pairs(D)
   comps = [ i==j ? :(convert($S, a[$i,$j])) : :(sqrt($S(2)) * a[$i,$j]) for (i,j) in pairs]
-  :( return VectorValue{L,$S}($(Expr(:tuple, comps...))) )
+  :( return VectorValue{L,$S}($(comps...)) )
 end
 
 """
@@ -300,7 +300,7 @@ Decode a Mandel-encoded vector to a symmetric second-order tensor.
   S = _mandel_eltype(T)
   inv_map = _voigt_inv(D)
   comps = [ i==j ? :(convert($S, v[$(inv_map[i,j])])) : :(v[$(inv_map[i,j])] / sqrt($S(2)))  for i in 1:D for j in i:D ]
-  :( return SymTensorValue{$D,$S}($(Expr(:tuple, comps...))) )
+  :( return SymTensorValue{$D,$S}($(comps...)) )
 end
 
 """
@@ -318,7 +318,7 @@ where M = D(D+1)/2. Entry [I,J] of the result equals `a[i,j,k,l]`, where
     i, j = pairs[I]; k, l = pairs[J]
     push!(comps, :(a[$i,$j,$k,$l]))
   end
-  :( return TensorValue{$M,$M,T}($(Expr(:tuple, comps...))) )
+  :( return TensorValue{$M,$M,T}($(comps...)) )
 end
 
 """
@@ -336,7 +336,7 @@ Decode a Voigt matrix to a symmetric fourth-order tensor.
     I = inv_map[i,j]; J = inv_map[k,l]
     push!(comps, :(m[$I,$J]))
   end
-  :( return SymFourthOrderTensorValue{$D,T}($(Expr(:tuple, comps...))) )
+  :( return SymFourthOrderTensorValue{$D,T}($(comps...)) )
 end
 
 """
@@ -362,7 +362,7 @@ The output eltype `S` is `promote_op(*, typeof(√2), T)`.
       push!(comps, :($S(2) * a[$i,$j,$k,$l]))
     end
   end
-  :( return TensorValue{$M,$M,$S}($(Expr(:tuple, comps...))) )
+  :( return TensorValue{$M,$M,$S}($(comps...)) )
 end
 
 """
@@ -387,6 +387,6 @@ Decode a Mandel matrix to a symmetric fourth-order tensor.
       push!(comps, :(m[$I,$J] / $S(2)))
     end
   end
-  :( return SymFourthOrderTensorValue{$D,$S}($(Expr(:tuple, comps...))) )
+  :( return SymFourthOrderTensorValue{$D,$S}($(comps...)) )
 end
 
