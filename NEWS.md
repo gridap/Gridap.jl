@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added type-stable methods to `tensor_contraction` and `Base.permutedims(::MultiValue, perm)`: pass the arguments by `Val`. Since PR[#1301](https://github.com/gridap/Gridap.jl/pull/1301).
+
 ## [0.20.7] - 2026-05-12
 
 ### Added
@@ -74,7 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Minor changesto incorporate the changes in Gridap 0.20, specifically the pullback machinery, into GridapDistributed. Since PR[#1258](https://github.com/gridap/Gridap.jl/pull/1258).
+- Minor changes to incorporate the changes in Gridap 0.20, specifically the pullback machinery, into GridapDistributed. Since PR[#1258](https://github.com/gridap/Gridap.jl/pull/1258).
 
 ## [0.20.0] - 2026-03-18
 
