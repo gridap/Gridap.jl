@@ -167,3 +167,94 @@ function get_cell_fe_data(fun,f,strian::Geometry.PatchTriangulation,ttrian::Geom
   @check is_change_possible(sglue,tglue)
   return get_cell_fe_data(fun,sface_to_data,sglue,tglue)
 end
+
+############################################################################################
+
+function PatchFESpace(model::DiscreteModel, ptopo::PatchTopology, args...; kwargs...)
+  PatchFESpace(
+    model, Geometry.PatchTriangulation(model,ptopo), args...; kwargs...
+  )
+end
+
+function PatchFESpace(trian::Geometry.PatchTriangulation, args...; kwargs...)
+  PatchFESpace(
+    get_active_model(trian), trian, args...; kwargs...
+  )
+end
+
+function PatchFESpace(
+  model::DiscreteModel,trian::PatchTriangulation,::Type{T},order::Integer;
+  space = :P, 
+  vector_type = nothing,
+  hierarchical = false, 
+  orthonormal = false,
+  local_kernel = nothing,
+  kwargs...
+) where T
+  patch_grid = Geometry.bounding_box_grid(model, trian; δmin=0.1)
+  patch_shapefuns, domain_style = get_polytopal_cell_shapefuns(
+    patch_grid, T, order; space, hierarchical, orthonormal, local_kernel, domain_style = PhysicalDomain()
+  )
+  @check isa(domain_style, PhysicalDomain)
+  vtype = ifelse(!isnothing(vector_type),vector_type,Vector{_dof_type(T)})
+  return PatchFESpace(
+    vtype, model, trian, patch_grid, patch_shapefuns, order, domain_style; kwargs...
+  )
+end
+
+function PatchFESpace(
+  vector_type::Type,
+  model::DiscreteModel,
+  trian::PatchTriangulation,
+  patch_grid::Grid,
+  patch_shapefuns::AbstractArray,
+  order::Integer,
+  domain_style::DomainStyle;
+  labels = get_face_labeling(model),
+  dirichlet_tags = Int[],
+  dirichlet_masks = nothing,
+)
+  patch_to_faces = trian.glue.patch_to_tfaces
+  face_to_patch = trian.glue.tface_to_patch
+
+  npatches = num_cells(patch_grid)
+  patch_to_ctype = Base.OneTo(npatches)
+  ctype_to_ndofs = map(length, patch_shapefuns)
+
+  ntags = length(dirichlet_tags)
+  if ntags != 0
+    face_to_tag = get_face_tag_index(labels,dirichlet_tags,Df)
+    patch_to_tag = zeros(Int32, npatches)
+    patch_is_dirichlet = zeros(Bool, npatches)
+    for (patch,faces) in enumerate(patch_to_faces)
+      tag = only(unique(face_to_tag[faces]))
+      patch_to_tag[patch] = tag
+      patch_is_dirichlet[patch] = !iszero(tag)
+    end
+    
+    ctype_to_ldof_to_comp = lazy_map(n -> ones(Int16,n), ctype_to_ndofs)
+    patch_dof_ids, nfree, ndir, dirichlet_dof_tag, dirichlet_patches = FESpaces.compute_discontinuous_cell_dofs(
+      patch_to_ctype, ctype_to_ndofs, ctype_to_ldof_to_comp, patch_to_tag, dirichlet_masks
+    )
+  else
+    ndir = 0
+    dirichlet_dof_tag = Int8[]
+    dirichlet_patches = Int32[]
+    patch_is_dirichlet = fill(false,npatches)
+    patch_dof_ids, nfree = FESpaces.compute_discontinuous_cell_dofs(patch_to_ctype,ctype_to_ndofs)
+  end
+
+  cell_shapefuns = lazy_map(Reindex(patch_shapefuns), face_to_patch)
+  fe_basis = SingleFieldFEBasis(cell_shapefuns, trian, TestBasis(), domain_style)
+
+  cell_dof_ids = Table(lazy_map(Broadcasting(Reindex(patch_dof_ids)), face_to_patch))
+  cell_is_dirichlet = patch_is_dirichlet[face_to_patch]
+  dirichlet_cells = reduce(vcat, (patch_to_faces[patch] for patch in dirichlet_patches); init = Int32[])
+
+  metadata = nothing
+  return PolytopalFESpace(
+    vector_type,nfree,ndir,cell_dof_ids,fe_basis,
+    cell_is_dirichlet,dirichlet_dof_tag,dirichlet_cells,ntags,
+    order,metadata
+  )
+end
