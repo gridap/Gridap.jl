@@ -16,19 +16,20 @@ function PatchFESpace(space::SingleFieldFESpace, ptopo::PatchTopology)
   vector_type = get_vector_type(space)
 
   nfree = num_free_dofs(space)
-  cell_dof_ids = generate_patch_dof_ids(space,ptopo)
+  patch_dof_ids = generate_patch_dof_ids(space,ptopo)
 
   model = get_background_model(get_triangulation(space))
-  ptrian = Geometry.PatchTriangulation(model,ptopo)
-  Dc = num_cell_dims(model)
+  ptrian = PatchTriangulation(model,ptopo)
+  cell_dof_ids = Table(lazy_map(Broadcasting(Reindex(patch_dof_ids)), ptrian.glue.tface_to_patch))
 
-  patch_to_ndofs = collect(lazy_map(length,cell_dof_ids))
-  type_to_ndofs = unique(patch_to_ndofs)
-  patch_to_type = collect(Int8,indexin(patch_to_ndofs,type_to_ndofs))
+  Dc = num_cell_dims(model)
+  cell_to_ndofs = collect(lazy_map(length,cell_dof_ids))
+  type_to_ndofs = unique(cell_to_ndofs)
+  cell_to_type = collect(Int8,indexin(cell_to_ndofs,type_to_ndofs))
   type_to_basis = [MockFieldArray(zeros(Float64,ndofs)) for ndofs in type_to_ndofs]
   type_to_dofs = [ReferenceFEs.MockDofBasis(zeros(VectorValue{Dc,Float64},ndofs)) for ndofs in type_to_ndofs] 
-  cell_shapefuns = expand_cell_data(type_to_basis,patch_to_type)
-  cell_dof_basis = expand_cell_data(type_to_dofs,patch_to_type)
+  cell_shapefuns = expand_cell_data(type_to_basis,cell_to_type)
+  cell_dof_basis = expand_cell_data(type_to_dofs,cell_to_type)
   fe_basis = GenericCellField(cell_shapefuns,ptrian,ReferenceDomain())
   fe_dof_basis = CellDof(cell_dof_basis,ptrian,ReferenceDomain())
 
