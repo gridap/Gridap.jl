@@ -90,16 +90,15 @@ function _permdims_for_∇∇(a::MultiValue{Tuple{D1,D2}}) where {D1,D2}
   a
 end
 @generated function _permdims_for_∇∇(a::MultiValue{Tuple{D1,D2,D3}}) where {D1,D2,D3}
-  ss = String[]
+  comps = Expr[]
   for k in 1:D2
     for j in 1:D3
       for i in 1:D1
-        push!(ss,"a[$i,$k,$j],")
+        push!(comps, :(a[$i,$k,$j]))
       end
     end
   end
-  str =  join(ss)
-  Meta.parse("ThirdOrderTensorValue{$D1,$D3,$D2}($str)")
+  :(return ThirdOrderTensorValue{$D1,$D3,$D2}($(Expr(:tuple, comps...))))
 end
 
 function lazy_map(
