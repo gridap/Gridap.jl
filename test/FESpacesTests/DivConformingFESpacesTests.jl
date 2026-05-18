@@ -334,4 +334,30 @@ end
   @test evaluate(data_uh1[2],[Point(0.5,0.5)])[1] ≈ evaluate(data_uh2[2],[Point(0.5,0.5)])[1]
 end
 
+# Regression test for three bugs triggered when a div-conforming FE space
+# (whose NormalSignMap yields Diagonal coefficient matrices) is defined on a
+# strict cell subset of a background model and assembled over an
+# AppendedTriangulation.  The void cells (background cells not in the FE space)
+# expose a type mismatch in the pos/neg extension machinery used by change_domain.
+@testset "RT on AppendedTriangulation with void cells" begin
+
+  model    = CartesianDiscreteModel((0,1,0,1),(4,4))   # 16 cells
+  Ω        = Triangulation(model)
+
+  # FE space on cells 1–12; cells 13–16 are the void part of the PosNegPartition
+  Ω_active = view(Ω, collect(Int32, 1:12))
+  V        = TestFESpace(Ω_active, ReferenceFE(raviart_thomas, Float64, 1))
+
+  # AppendedTriangulation covering the same 12 cells in two disjoint parts
+  Ω_app = lazy_append(view(Ω, collect(Int32, 1:4)), view(Ω, collect(Int32, 5:12)))
+  dΩ    = Measure(Ω_app, 2)
+
+  f = VectorValue(1.0, 0.0)
+  a(u,v) = ∫( u⋅v + (∇⋅u)*(∇⋅v) )dΩ
+  l(v)   = ∫( v⋅f )dΩ
+  op     = AffineFEOperator(a, l, V, V)
+  @test op isa AffineFEOperator
+
+end
+
 end # module

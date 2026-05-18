@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed bug for Raviart-Thomas on AppendedTriangulations. Since PR[#1302](https://github.com/gridap/Gridap.jl/pull/1302).
+
 ## [0.20.7] - 2026-05-12
 
 ### Added
