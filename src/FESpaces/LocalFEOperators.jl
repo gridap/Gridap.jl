@@ -126,6 +126,7 @@ function _compute_local_solves(
   k::LocalOperator,u::CellField
 )
   cell_coeffs = lazy_map(k.local_map,k.weakform(u))
+  cell_coeffs = _move_patch_coeffs(k.trian_out,cell_coeffs)
   if k.collect_coefficients
     cell_coeffs = Arrays.lazy_collect(cell_coeffs)
   end
@@ -146,4 +147,13 @@ function _compute_local_solves(
   end
 
   return cell_fields
+end
+
+function _move_patch_coeffs(trian, patch_to_coeffs)
+  return patch_to_coeffs
+end
+
+function _move_patch_coeffs(trian::PatchTriangulation, patch_to_coeffs)
+  tface_to_patch = trian.glue.tface_to_patch
+  return lazy_map(Reindex(patch_to_coeffs), tface_to_patch)
 end

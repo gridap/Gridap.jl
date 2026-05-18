@@ -172,13 +172,13 @@ end
 
 function PatchFESpace(model::DiscreteModel, ptopo::PatchTopology, args...; kwargs...)
   PatchFESpace(
-    model, Geometry.PatchTriangulation(model,ptopo), args...; kwargs...
+    model, PatchTriangulation(model,ptopo), args...; kwargs...
   )
 end
 
-function PatchFESpace(trian::Geometry.PatchTriangulation, args...; kwargs...)
+function PatchFESpace(trian::PatchTriangulation, args...; kwargs...)
   PatchFESpace(
-    get_active_model(trian), trian, args...; kwargs...
+    get_background_model(trian), trian, args...; kwargs...
   )
 end
 
