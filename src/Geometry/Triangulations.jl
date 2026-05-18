@@ -359,8 +359,7 @@ function pos_neg_data(
   ipos_to_val::AbstractArray{<:AbstractArray{<:Number}},i_to_iposneg::PosNegPartition)
   nineg = length(i_to_iposneg.ineg_to_i)
   val = testitem(ipos_to_val)
-  zs = 0 .* size(val)
-  void = similar(val,eltype(val),zs)
+  void = _similar_empty(val)
   ineg_to_val = Fill(void,nineg)
   ipos_to_val, ineg_to_val
 end
@@ -430,6 +429,9 @@ function _similar_empty(val::Tuple)
   (a1,b1)
 end
 
+function _similar_empty(val::Diagonal)
+  Diagonal(similar(val.diag, eltype(val.diag), 0))
+end
 
 # "Compose" triangulations
 
