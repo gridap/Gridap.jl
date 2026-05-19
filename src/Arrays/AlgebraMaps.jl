@@ -1,12 +1,11 @@
 
 # Make Base.:* behave like a Map
 
-return_value(::typeof(*),a::Number,b::AbstractArray{<:Number}) = a*b
+return_cache(::typeof(*),a,b) = CachedArray(a*b)
 
-function return_cache(::typeof(*),a::Number,b::AbstractArray{<:Number})
+function return_value(::typeof(*),a::Number,b::AbstractArray{<:Number})
   T = typeof(a*testitem(b))
-  N = ndims(b)
-  CachedArray(T,N)
+  return zeros(T,0)
 end
 
 function evaluate!(cache,::typeof(*),a::Number,b::AbstractArray{<:Number})
@@ -16,14 +15,17 @@ function evaluate!(cache,::typeof(*),a::Number,b::AbstractArray{<:Number})
   return c
 end
 
-return_value(::typeof(*),a::AbstractArray{<:Number},b::Number) = a*b
-return_cache(::typeof(*),a::AbstractArray{<:Number},b::Number) = return_cache(*,b,a)
+return_value(::typeof(*),a::AbstractArray{<:Number},b::Number) = return_value(*,b,a)
 evaluate!(cache,::typeof(*),a::AbstractArray{<:Number},b::Number) = evaluate!(cache,*,b,a)
 
-function return_cache(::typeof(*),a::AbstractArray{<:Number},b::AbstractArray{<:Number})
+function return_value(::typeof(*),a::AbstractMatrix{<:Number},b::AbstractVector{<:Number})
   T = typeof(testitem(a)*testitem(b))
-  N = ifelse(isa(b,AbstractVector),1,2)
-  CachedArray(T,N)
+  return zeros(T,0)
+end
+
+function return_value(::typeof(*),a::AbstractMatrix{<:Number},b::AbstractMatrix{<:Number})
+  T = typeof(testitem(a)*testitem(b))
+  return zeros(T,0,0)
 end
 
 function evaluate!(cache,::typeof(*),a::AbstractArray{<:Number},b::AbstractArray{<:Number})
@@ -33,9 +35,9 @@ function evaluate!(cache,::typeof(*),a::AbstractArray{<:Number},b::AbstractArray
   return c
 end
 
-function return_cache(::typeof(*), a::Diagonal{<:Number}, b::Diagonal{<:Number})
+function return_value(::typeof(*), a::Diagonal{<:Number}, b::Diagonal{<:Number})
   T = typeof(testitem(a)*testitem(b))
-  Diagonal{T}(undef,0)
+  return Diagonal{T}(undef,0)
 end
 
 function evaluate!(cache,::typeof(*), a::Diagonal{<:Number}, b::Diagonal{<:Number})
@@ -48,7 +50,7 @@ function return_value(::typeof(*),a::ArrayBlock{A,2},b::ArrayBlock{B,1}) where {
   ri = return_value(*,testvalue(A),testvalue(B))
   array = Vector{typeof(ri)}(undef,size(a.array,1))
   touched = fill(false,size(a.array,1))
-  ArrayBlock(array,touched)
+  return ArrayBlock(array,touched)
 end
 
 function return_cache(::typeof(*),a::ArrayBlock,b::ArrayBlock)
@@ -62,7 +64,7 @@ function evaluate!(cache,::typeof(*),a::ArrayBlock,b::ArrayBlock)
   setsize_op!(*,c1,a,b)
   c = evaluate!(c2,unwrap_cached_array,c1)
   mul!(c,a,b)
-  c
+  return c
 end
 
 # MulAddMap: Cached version of `mul!(d,a,b,α,β)`
