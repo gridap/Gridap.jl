@@ -5,7 +5,7 @@ return_cache(::typeof(*),a,b) = CachedArray(a*b)
 
 function return_value(::typeof(*),a::Number,b::AbstractArray{<:Number})
   T = typeof(a*testitem(b))
-  return zeros(T,0)
+  return similar(b,T,0)
 end
 
 function evaluate!(cache,::typeof(*),a::Number,b::AbstractArray{<:Number})
@@ -20,12 +20,12 @@ evaluate!(cache,::typeof(*),a::AbstractArray{<:Number},b::Number) = evaluate!(ca
 
 function return_value(::typeof(*),a::AbstractMatrix{<:Number},b::AbstractVector{<:Number})
   T = typeof(testitem(a)*testitem(b))
-  return zeros(T,0)
+  return similar(b,T,0)
 end
 
 function return_value(::typeof(*),a::AbstractMatrix{<:Number},b::AbstractMatrix{<:Number})
   T = typeof(testitem(a)*testitem(b))
-  return zeros(T,0,0)
+  return similar(b,T,0,0)
 end
 
 function evaluate!(cache,::typeof(*),a::AbstractArray{<:Number},b::AbstractArray{<:Number})
