@@ -122,6 +122,16 @@ function UnstructuredGrid(
   facet_normal=nothing
 )
 
+  # TODO: check nodes are correct ?
+  # Create UnstructuredDiscreteModel constructor taking
+  #
+  # - cell_vertices::Table,
+  # - cell_type::Vector{<:Integer},
+  # - polytopes::Vector{<:Polytope},
+  # - orientation_style::OrientationStyle=NonOriented())
+  # - cell_maps
+  #
+  # and building both consistant UnstructuredGridTopology and UnstructuredGrid ?
   node_coordinates = get_vertex_coordinates(topo)
   cell_node_ids = get_cell_vertices(topo)
   reffes = [ LagrangianRefFE(Float64,p,1) for p in get_polytopes(topo) ]
