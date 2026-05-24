@@ -12,8 +12,8 @@ end
 DomainContribution(;ad_level::GridapADTag{<:Val}=GridapADTag(0)) =
   DomainContribution(OrderedDict{Triangulation,AbstractArray}(), ad_level)
 
-function DomainContribution(trian::Triangulation,b::AbstractArray;ad_level::GridapADTag{<:Val}=GridapADTag(0))
-  add_contribution!(DomainContribution(;ad_level),trian,b)
+function DomainContribution(trian::Triangulation,b::AbstractArray;kwargs...)
+  add_contribution!(DomainContribution(;kwargs...),trian,b)
 end
 
 """
@@ -114,7 +114,9 @@ end
 
 Base.sum(a::DomainContribution)= sum(map(sum,values(a.dict)))
 
-Base.copy(a::DomainContribution;ad_level::GridapADTag{<:Val}=a.ad_level) = DomainContribution(copy(a.dict),ad_level)
+function Base.copy(a::DomainContribution;ad_level::GridapADTag{<:Val}=a.ad_level) 
+  DomainContribution(copy(a.dict),ad_level)
+end
 
 function (+)(a::DomainContribution,b::DomainContribution)
   c = copy(a; ad_level = max(a.ad_level,b.ad_level))

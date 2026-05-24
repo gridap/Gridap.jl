@@ -1,9 +1,8 @@
 
 
-function gradient(f::Function,uh::FEFunction;tag=nothing)
+function gradient(f::Function,uh::FEFunction;kwargs...)
   fuh = f(uh)
-  _tag = isnothing(tag) ? fuh.ad_level + 1 : tag
-  _gradient(f,uh,fuh;tag=_tag)
+  _gradient(f,uh,fuh;kwargs...)
 end
 
 function _gradient(f,uh,fuh::AbstractArray;kwargs...)
@@ -15,7 +14,7 @@ function _gradient(f,uh,fuh::AbstractArray;kwargs...)
   """
 end
 
-function _gradient(f,uh,fuh::DomainContribution;tag=fuh.ad_level+1)
+function _gradient(f,uh,fuh::DomainContribution;tag::GridapADTag=fuh.ad_level+1)
   terms = DomainContribution(;ad_level = tag)
   for trian in get_domains(fuh)
     g = _change_argument(gradient,f,trian,uh)
@@ -27,10 +26,9 @@ function _gradient(f,uh,fuh::DomainContribution;tag=fuh.ad_level+1)
   terms
 end
 
-function jacobian(f::Function,uh::FEFunction;tag=nothing)
+function jacobian(f::Function,uh::FEFunction;kwargs...)
   fuh = f(uh)
-  _tag = isnothing(tag) ? fuh.ad_level + 1 : tag
-  _jacobian(f,uh,fuh;tag=_tag)
+  _jacobian(f,uh,fuh;kwargs...)
 end
 
 function _jacobian(f,uh,fuh::AbstractArray;kwargs...)
@@ -42,8 +40,8 @@ function _jacobian(f,uh,fuh::AbstractArray;kwargs...)
   """
 end
 
-function _jacobian(f,uh,fuh::DomainContribution;tag=fuh.ad_level+1)
-  terms = DomainContribution(;ad_level = tag)
+function _jacobian(f,uh,fuh::DomainContribution;tag::GridapADTag=fuh.ad_level+1)
+  terms = DomainContribution(;ad_level=tag)
   for trian in get_domains(fuh)
     g = _change_argument(jacobian,f,trian,uh)
     cell_u = get_cell_dof_values(uh)
@@ -57,10 +55,9 @@ end
 """
     hessian(f::Function, uh::FEFunction)
 """
-function hessian(f::Function,uh::FEFunction;tag=nothing)
+function hessian(f::Function,uh::FEFunction;kwargs...)
   fuh = f(uh)
-  _tag = isnothing(tag) ? fuh.ad_level + 1 : tag
-  _hessian(f,uh,fuh;tag=_tag)
+  _hessian(f,uh,fuh;kwargs...)
 end
 
 function _hessian(f,uh,fuh::AbstractArray;kwargs...)
@@ -72,8 +69,8 @@ function _hessian(f,uh,fuh::AbstractArray;kwargs...)
   """
 end
 
-function _hessian(f,uh,fuh::DomainContribution;tag=fuh.ad_level+1)
-  terms = DomainContribution(;ad_level = tag)
+function _hessian(f,uh,fuh::DomainContribution;tag::GridapADTag=fuh.ad_level+1)
+  terms = DomainContribution(;ad_level = tag+1) # Two levels consumed
   for trian in get_domains(fuh)
     g = _change_argument(hessian,f,trian,uh)
     cell_u = get_cell_dof_values(uh)
@@ -151,7 +148,7 @@ end
 # which returns ydual_θ = df/duᶿ for θ ∈ {+, -}
 # We them merge them into a 2-block BlockVector, so that we obtain
 #   result = [df/du⁺, df/du⁻]
-function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair; tag=GridapADTag(0))
+function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair; tag=default_tag(ForwardDiff.gradient,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
 
@@ -179,7 +176,7 @@ end
 # We them merge them as columns into a 2x2 block matrix, so that we obtain
 # ydual = [dr⁺/du⁺ dr⁺/du⁻] = [ydual_plus, ydual_minus]
 #         [dr⁻/du⁺ dr⁻/du⁻]
-function Arrays.autodiff_array_jacobian(a, i_to_x, j_to_i::SkeletonPair; tag=GridapADTag(0))
+function Arrays.autodiff_array_jacobian(a, i_to_x, j_to_i::SkeletonPair; tag=default_tag(ForwardDiff.jacobian,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
 
