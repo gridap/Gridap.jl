@@ -5,7 +5,7 @@
 
 where `Name` is either `Lagrangian` or `Serendipity`.
 """
-struct ModalScalar{F} <: ReferenceFEName
+struct ModalScalar{F} <: MomentBasedRefFEName
   ModalScalar{Lagrangian}() = new{Lagrangian}()
   ModalScalar(::Lagrangian) = new{Lagrangian}()
   ModalScalar{Serendipity}() = new{Serendipity}()

@@ -121,6 +121,7 @@ export test_dof_array
 
 export ReferenceFE
 export ReferenceFEName
+export MomentBasedRefFEName
 export GenericRefFE
 export get_name
 export get_polytope
