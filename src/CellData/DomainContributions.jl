@@ -6,12 +6,14 @@ Struct to gather contributions from one or several domain(s) ([`Triangulation`](
 """
 struct DomainContribution <: GridapType
   dict::OrderedDict{Triangulation,AbstractArray} # ordered so that iteration is deterministic (#1002)
+  ad_level::GridapADTag{<:Val} # for ad tagging
 end
 
-DomainContribution() = DomainContribution(OrderedDict{Triangulation,AbstractArray}())
+DomainContribution(;ad_level::GridapADTag{<:Val}=GridapADTag(0)) =
+  DomainContribution(OrderedDict{Triangulation,AbstractArray}(), ad_level)
 
-function DomainContribution(trian::Triangulation,b::AbstractArray)
-  add_contribution!(DomainContribution(),trian,b)
+function DomainContribution(trian::Triangulation,b::AbstractArray;ad_level::GridapADTag{<:Val}=GridapADTag(0))
+  add_contribution!(DomainContribution(;ad_level),trian,b)
 end
 
 """
@@ -112,10 +114,10 @@ end
 
 Base.sum(a::DomainContribution)= sum(map(sum,values(a.dict)))
 
-Base.copy(a::DomainContribution) = DomainContribution(copy(a.dict))
+Base.copy(a::DomainContribution;ad_level::GridapADTag{<:Val}=a.ad_level) = DomainContribution(copy(a.dict),ad_level)
 
 function (+)(a::DomainContribution,b::DomainContribution)
-  c = copy(a)
+  c = copy(a; ad_level = max(a.ad_level,b.ad_level))
   for (trian,array) in b.dict
     add_contribution!(c,trian,array)
   end
@@ -123,7 +125,7 @@ function (+)(a::DomainContribution,b::DomainContribution)
 end
 
 function (-)(a::DomainContribution,b::DomainContribution)
-  c = copy(a)
+  c = copy(a; ad_level = max(a.ad_level,b.ad_level))
   for (trian,array) in b.dict
     add_contribution!(c,trian,array,-)
   end
@@ -131,7 +133,7 @@ function (-)(a::DomainContribution,b::DomainContribution)
 end
 
 function (*)(a::Number,b::DomainContribution)
-  c = DomainContribution()
+  c = DomainContribution(;ad_level = b.ad_level)
   for (trian,array_old) in b.dict
     s = size(get_cell_map(trian))
     array_new = lazy_map(Broadcasting(*),Fill(a,s),array_old)

@@ -1,8 +1,17 @@
+struct GridapADTag{L} end
+GridapADTag(level::Integer) = GridapADTag{Val{level}}()
+Base.max(::GridapADTag{Val{N}}, ::GridapADTag{Val{M}}) where {N,M} = GridapADTag(max(N,M))
+Base.:+(i::GridapADTag{Val{N}}, j::Int) where {N} = GridapADTag(N+j)
+
+# Define dual ordering: a tag with a higher level was applied first and therefore
+# wraps an inner dual. ForwardDiff's ≺(a,b)=true means a appears inside b.
+ForwardDiff.:(≺)(
+  ::Type{ForwardDiff.Tag{GridapADTag{Val{L1}},V}},
+  ::Type{ForwardDiff.Tag{GridapADTag{Val{L2}},V}}) where {L1,L2,V} = L1 > L2
 
 """
 """
-function autodiff_array_gradient(a,i_to_x)
-  tag = x->ForwardDiff.gradient(a, x)
+function autodiff_array_gradient(a,i_to_x;tag=GridapADTag(0))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
@@ -12,8 +21,7 @@ end
 
 """
 """
-function autodiff_array_jacobian(a,i_to_x)
-  tag = x->ForwardDiff.jacobian(a, x)
+function autodiff_array_jacobian(a,i_to_x;tag=GridapADTag(0))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
@@ -23,13 +31,12 @@ end
 
 """
 """
-function autodiff_array_hessian(a,i_to_x)
-  agrad = i_to_y -> autodiff_array_gradient(a,i_to_y)
-  autodiff_array_jacobian(agrad,i_to_x)
+function autodiff_array_hessian(a,i_to_x;tag=GridapADTag(0))
+  agrad = i_to_y -> autodiff_array_gradient(a,i_to_y;tag)
+  autodiff_array_jacobian(agrad,i_to_x;tag)
 end
 
-function autodiff_array_gradient(a,i_to_x,j_to_i)
-  tag = x->ForwardDiff.gradient(a, x)
+function autodiff_array_gradient(a,i_to_x,j_to_i;tag=GridapADTag(0))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
@@ -38,8 +45,7 @@ function autodiff_array_gradient(a,i_to_x,j_to_i)
   return j_to_result
 end
 
-function autodiff_array_jacobian(a,i_to_x,j_to_i)
-  tag = x->ForwardDiff.jacobian(a, x)
+function autodiff_array_jacobian(a,i_to_x,j_to_i;tag=GridapADTag(0))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
@@ -48,9 +54,9 @@ function autodiff_array_jacobian(a,i_to_x,j_to_i)
   return j_to_result
 end
 
-function autodiff_array_hessian(a,i_to_x,j_to_i)
-  agrad = i_to_y -> autodiff_array_gradient(a,i_to_y,j_to_i)
-  autodiff_array_jacobian(agrad,i_to_x,j_to_i)
+function autodiff_array_hessian(a,i_to_x,j_to_i;tag=GridapADTag(0))
+  agrad = i_to_y -> autodiff_array_gradient(a,i_to_y,j_to_i;tag)
+  autodiff_array_jacobian(agrad,i_to_x,j_to_i;tag)
 end
 
 function autodiff_array_reindex(i_to_val, j_to_i)
@@ -76,7 +82,7 @@ either gradient or jacobian.
 """
 struct ConfigMap{
   F <: Union{typeof(ForwardDiff.gradient),typeof(ForwardDiff.jacobian)},
-  T <: Union{<:Function,Nothing}} <: Map
+  T <: Union{GridapADTag,<:Function,Nothing}} <: Map
 
   f::F # ForwardDiff operation
   tag::T # function for config tag name
