@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Changed how tagging works to improve compilation times and allow for nested derivatives involving more than one triangulation. Since PR[#1296](https://github.com/gridap/Gridap.jl/pull/1297).
+- Changed how tagging works to improve compilation times and allow for nested derivatives involving more than one triangulation. Since PR[#1297](https://github.com/gridap/Gridap.jl/pull/1297).
 
 ## [0.20.7] - 2026-05-12
 
