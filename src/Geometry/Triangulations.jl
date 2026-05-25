@@ -407,10 +407,7 @@ function pos_neg_data(
   ipos_to_val, ineg_to_val
 end
 
-function _similar_empty(val::AbstractArray)
-  zs = 0 .* size(val)
-  void = similar(val,eltype(val),zs)
-end
+_similar_empty(val) = testvalue(val)
 
 function _similar_empty(val::ArrayBlock)
   a = deepcopy(val)
@@ -420,17 +417,6 @@ function _similar_empty(val::ArrayBlock)
     end
   end
   a
-end
-
-function _similar_empty(val::Tuple)
-  a, b = val
-  a1 = _similar_empty(a)
-  b1 = _similar_empty(b)
-  (a1,b1)
-end
-
-function _similar_empty(val::Diagonal)
-  Diagonal(similar(val.diag, eltype(val.diag), 0))
 end
 
 # "Compose" triangulations
