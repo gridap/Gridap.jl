@@ -3,11 +3,12 @@
     struct LocalOperator end
 """
 struct LocalOperator
-  local_map :: Map
-  trian_out :: Triangulation
-  space_out :: FESpace
-  weakform  :: Function
-  collect_coefficients :: Bool
+  local_map    :: Map           # coeffs = evaluate(local_map, lhs, rhs)
+  trian_coeffs :: Triangulation # Where the coefficients are defined
+  trian_out    :: Triangulation # Where the output field is defined
+  space_out    :: FESpace
+  weakform     :: Function
+  collect_coefficients :: Bool # Collect local coefficients / keep them as lazy maps
 end
 
 function LocalOperator(
@@ -49,7 +50,10 @@ function LocalOperator(
     pair_arrays(lhs_mats,rhs_mats)
   end
 
-  return LocalOperator(local_map,trian_out,space_out,weakform,collect_coefficients)
+  trian_coeffs = PatchTriangulation(get_background_model(trian_out),ptopo)
+  return LocalOperator(
+    local_map, trian_coeffs, trian_out, space_out, weakform, collect_coefficients
+  )
 end
 
 function LocalOperator(
@@ -77,7 +81,9 @@ function LocalOperator(
     pair_arrays(lhs_mats,rhs_mats)
   end
 
-  return LocalOperator(local_map,trian_out,space_out,weakform,collect_coefficients)
+  return LocalOperator(
+    local_map, trian_out, trian_out, space_out, weakform, collect_coefficients
+  )
 end
 
 (P::LocalOperator)(u) = evaluate(P,u)
@@ -126,7 +132,7 @@ function _compute_local_solves(
   k::LocalOperator,u::CellField
 )
   cell_coeffs = lazy_map(k.local_map,k.weakform(u))
-  cell_coeffs = _move_patch_coeffs(k.trian_out,cell_coeffs)
+  cell_coeffs = _move_patch_coeffs(k.trian_out,k.trian_coeffs,cell_coeffs)
   if k.collect_coefficients
     cell_coeffs = Arrays.lazy_collect(cell_coeffs)
   end
@@ -149,11 +155,21 @@ function _compute_local_solves(
   return cell_fields
 end
 
-function _move_patch_coeffs(trian, patch_to_coeffs)
+function _move_patch_coeffs(trian_out, trian_coeffs, patch_to_coeffs)
+  @check trian_out === trian_coeffs
   return patch_to_coeffs
 end
 
-function _move_patch_coeffs(trian::PatchTriangulation, patch_to_coeffs)
-  tface_to_patch = trian.glue.tface_to_patch
+function _move_patch_coeffs(trian_out, trian_coeffs::PatchTriangulation, patch_to_coeffs)
+  move_contributions(patch_to_coeffs, trian_coeffs, trian_out)
+end
+
+function _move_patch_coeffs(
+  trian_out::PatchTriangulation, trian_coeffs::PatchTriangulation, patch_to_coeffs
+)
+  if trian_out === trian_coeffs
+    return patch_to_coeffs
+  end
+  tface_to_patch = trian_out.glue.tface_to_patch
   return lazy_map(Reindex(patch_to_coeffs), tface_to_patch)
 end

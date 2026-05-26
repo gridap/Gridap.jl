@@ -86,8 +86,7 @@ function PolytopalFESpace(
   cell_conformity = DiscontinuousCellConformity(cell_shapefuns)
 
   ntags = length(dirichlet_tags)
-  if ntags != 0
-    @notimplementedif !isnothing(local_kernel)
+  if !iszero(ntags)
     cell_to_tag = get_face_tag_index(labels,dirichlet_tags,Dc)
     cell_is_dirichlet = map(!isequal(UNSET),cell_to_tag)
     cell_dof_ids, nfree, ndir, dirichlet_dof_tag, dirichlet_cells = compute_discontinuous_cell_dofs(

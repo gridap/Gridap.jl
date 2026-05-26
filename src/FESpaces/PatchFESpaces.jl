@@ -89,7 +89,7 @@ function generate_pface_to_pdofs(
 end
 
 function generate_pface_to_pdofs(
-  space::SingleFieldFESpace, ptrian::Geometry.PatchTriangulation,
+  space::SingleFieldFESpace, ptrian::PatchTriangulation,
 )
   pface_to_dofs = get_cell_dof_ids(space,ptrian)
   patch_to_dofs = generate_patch_dof_ids(space,ptrian.ptopo)
@@ -101,7 +101,7 @@ end
 # Changes of domain
 
 function CellData.change_domain(
-  a::CellField,strian::Geometry.PatchTriangulation,::ReferenceDomain,ttrian::Geometry.PatchTriangulation,::ReferenceDomain
+  a::CellField,strian::PatchTriangulation,::ReferenceDomain,ttrian::PatchTriangulation,::ReferenceDomain
 )
   if strian === ttrian
     return a
@@ -118,7 +118,7 @@ function CellData.change_domain(
 end
 
 function CellData.change_domain(
-  a::CellField,strian::Geometry.PatchTriangulation,::PhysicalDomain,ttrian::Geometry.PatchTriangulation,::PhysicalDomain
+  a::CellField,strian::PatchTriangulation,::PhysicalDomain,ttrian::PatchTriangulation,::PhysicalDomain
 )
   if strian === ttrian
     return a
@@ -134,12 +134,12 @@ function CellData.change_domain(
   return CellData.change_domain_phys_phys(a,ttrian,sglue,tglue)
 end
 
-function get_cell_fe_data(fun,f::SingleFieldFESpace,ttrian::Geometry.PatchTriangulation)
+function get_cell_fe_data(fun,f::SingleFieldFESpace,ttrian::PatchTriangulation)
   strian = get_triangulation(f)
   get_cell_fe_data(fun,f,strian,ttrian)
 end
 
-function get_cell_fe_data(fun,f,strian::Triangulation,ttrian::Geometry.PatchTriangulation)
+function get_cell_fe_data(fun,f,strian::Triangulation,ttrian::PatchTriangulation)
   sface_to_data = fun(f)
   if strian === ttrian
     return sface_to_data
@@ -151,7 +151,7 @@ function get_cell_fe_data(fun,f,strian::Triangulation,ttrian::Geometry.PatchTria
   get_cell_fe_data(fun,sface_to_data,sglue,tglue)
 end
 
-function get_cell_fe_data(fun,f,strian::Geometry.PatchTriangulation,ttrian::Geometry.PatchTriangulation)
+function get_cell_fe_data(fun,f,strian::PatchTriangulation,ttrian::PatchTriangulation)
   sface_to_data = fun(f)
   if strian === ttrian
     return sface_to_data
