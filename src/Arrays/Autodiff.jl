@@ -85,13 +85,15 @@ end
 ConfigMap(f) = ConfigMap(f,nothing)
 
 # TODO Prescribing long chunk size can lead to slow compilation times!
-function return_cache(k::ConfigMap{typeof(ForwardDiff.gradient)},x)
-  cfg = ForwardDiff.GradientConfig(k.tag,x,ForwardDiff.Chunk{length(x)}())
+function return_cache(k::ConfigMap{typeof(ForwardDiff.gradient)}, x)
+  chunk_x = ForwardDiff.Chunk{length(x)}() # TODO fix type instability
+  cfg = ForwardDiff.GradientConfig(k.tag, x, chunk_x)
   return cfg
 end
 
-function return_cache(k::ConfigMap{typeof(ForwardDiff.jacobian)},x)
-  cfg = ForwardDiff.JacobianConfig(k.tag,x,ForwardDiff.Chunk{length(x)}())
+function return_cache(k::ConfigMap{typeof(ForwardDiff.jacobian)}, x)
+  chunk_x = ForwardDiff.Chunk{length(x)}() # TODO fix type instability
+  cfg = ForwardDiff.JacobianConfig(k.tag, x, chunk_x)
   return cfg
 end
 

@@ -202,9 +202,9 @@ end
 
 GenericField(f::Field) = f
 
-testargs(a::GenericField,x::Point) = testargs(a.object,x)
-return_value(a::GenericField,x::Point) = return_value(a.object,x)
-return_cache(a::GenericField,x::Point) = return_cache(a.object,x)
+testargs(a::GenericField,x::Point) = @check_inferred testargs(a.object,x)
+return_value(a::GenericField,x::Point) = @check_inferred return_value(a.object,x)
+return_cache(a::GenericField,x::Point) = @check_inferred return_cache(a.object,x)
 evaluate!(cache,a::GenericField,x::Point) = evaluate!(cache,a.object,x)
 
 function testvalue(::Type{GenericField{T}}) where T
@@ -217,7 +217,7 @@ function testvalue(::Type{GenericField{T}}) where T
 end
 
 function return_cache(f::FieldGradient{N,<:GenericField},x::Point) where N
-  return_cache(FieldGradient{N}(f.object.object),x)
+  @check_inferred return_cache(FieldGradient{N}(f.object.object),x)
 end
 
 function evaluate!(c,f::FieldGradient{N,<:GenericField},x::Point) where N
@@ -360,8 +360,12 @@ end
 
 ## Make Function behave like Field
 
-return_cache(f::FieldGradient{N,<:Function},x::Point) where N = gradient(f.object,Val(N))
-evaluate!(c,f::FieldGradient{N,<:Function},x::Point) where N = c(x)
+function return_cache(f::FieldGradient{N,<:Function},x::Point) where N
+  cache = gradient(f.object,Val(N))
+  @check_inferred cache(x)
+  cache
+end
+evaluate!(cache, f::FieldGradient{N,<:Function}, x::Point) where N = cache(x)
 
 # Operations
 

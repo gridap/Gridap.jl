@@ -14,7 +14,7 @@ import Gridap.Arrays: testitem
 
 using Gridap.Helpers
 using Gridap.Helpers: @abstractmethod, @notimplemented
-using Gridap.Helpers: @notimplementedif, @unreachable, @check
+using Gridap.Helpers: @notimplementedif, @unreachable, @check, @check_inferred
 using Gridap.Helpers: tfill, first_and_tail
 
 using Gridap.Algebra: mul!

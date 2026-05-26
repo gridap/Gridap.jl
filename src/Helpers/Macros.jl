@@ -66,3 +66,28 @@ macro check(test,msg="A check failed")
     end
   end
 end
+
+"""
+    @check_inferred expression
+
+Macro used unsure that `expression` is inferrable (passes [`Test.@inferred`](@ref)).
+The check gets deactivated when running Gridap in performance mode.
+"""
+macro check_inferred(ex)
+  ex_str = string(ex)
+  @static if execution_mode == "debug"
+    quote
+      try
+        $(esc( :(Helpers.Test.@inferred $(ex)) ))
+      catch e
+        print("""
+        @check_inferred failed, the following call needs to be inferrable:
+          $($ex_str)
+        """)
+        rethrow(e)
+      end
+    end
+  else
+    esc(ex)
+  end
+end
