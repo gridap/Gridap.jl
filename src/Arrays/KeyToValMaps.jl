@@ -13,12 +13,8 @@ function return_cache(m::KeyToValMap,key)
   d = Dict{K,V}()
 end
 
-function evaluate!(cache,m::KeyToValMap,key)
-  if haskey(cache,key)
-    return get(cache,key,nothing)
-  else
-    val = m.key_to_val(key)
-    cache[key] = val
-    return val
-  end
+function evaluate!(cache::Dict{K,V},m::KeyToValMap,key) where {K,V}
+  get!(cache, key) do
+    m.key_to_val(key)
+  end::V
 end
