@@ -202,20 +202,33 @@ end
 # - (0/D)-form mapped: ~h⁰ (D-form same as 1-form because we don't use the broken Piola map in Gridap)
 # - 1-form mapped: ~h¹
 # - (D-1)-form mapped: ~hᴰ⁻¹
-vec_value(D) = (D > 1 ? x->VectorValue{D}(tfill(1.0,Val(D))) : x->1.0)
+function one_function(D)
+  if     D == 1
+    return x -> 1.
+  elseif D == 2
+    return x->VectorValue(1.,1.)
+  elseif D == 3
+    return x->VectorValue(1.,1.,1.)
+  elseif D == 4
+    return x->VectorValue(1.,1.,1.,1.)
+  else
+    @unreachable
+  end
+end
 
 reffe = ReferenceFE(nedelec, Float64, 3)
-_test_FESpace_dof_scaling(reffe, vec_value)
+_test_FESpace_dof_scaling(reffe, one_function)
+
 
 reffe = ReferenceFE(nedelec2, Float64, 3)
-_test_FESpace_dof_scaling(reffe, vec_value; n_cube=false)
+_test_FESpace_dof_scaling(reffe, one_function; n_cube=false)
 
 reffe = ReferenceFE(raviart_thomas, Float64, 3)
-_test_FESpace_dof_scaling(reffe, vec_value)
-_test_FESpace_dof_scaling(reffe, vec_value, dims=4:4, n_cube=false)
+_test_FESpace_dof_scaling(reffe, one_function)
+_test_FESpace_dof_scaling(reffe, one_function, dims=4:4, n_cube=false)
 
 reffe = ReferenceFE(bdm, Float64, 3)
-_test_FESpace_dof_scaling(reffe, vec_value; n_cube=false)
+_test_FESpace_dof_scaling(reffe, one_function; n_cube=false)
 
 # All trivial elements
 #
