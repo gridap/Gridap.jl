@@ -124,13 +124,24 @@ function push_∇∇(∇∇a::Field,ϕ::Field)
 end
 
 """
-    gradient_type(::Type{T}, x::Point) where T
+    gradient_type(::Type{T}, x::Point)
+    gradient_type(::Type{T}, x::Point, ::Val{N})
 
-Tensor type of the gradient of a `T` valued function.
+Tensor type of the gradient (repeated `N` times) of a `T` valued function.
 """
-function gradient_type(::Type{T},x::Point) where T
-  typeof(outer(zero(x),zero(T)))
+gradient_type(::Type{T}, x::Point)           where T = gradient_type(T,x,Val(1))
+gradient_type(::Type{T}, x::Point, ::Val{1}) where T  = typeof(outer(zero(x),zero(T)))
+function gradient_type(::Type{T}, x::Point, ::Val{2}) where T
+  G = typeof(outer(zero(x),zero(T)))
+  typeof(outer(zero(x),zero(G)))
 end
+function gradient_type(::Type{T}, x::Point, ::Val{3}) where T
+  G = typeof(outer(zero(x),zero(T)))
+  H = typeof(outer(zero(x),zero(G)))
+  typeof(outer(zero(x),zero(H)))
+end
+# I tried a recurive implementation, but that wasn't popely inferrable, so I removed it
+gradient_type(::Type{T}, x::Point, ::Val) where T = @notimplemented
 
 """
     struct FieldGradient{N,F} <: Field
