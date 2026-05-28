@@ -419,7 +419,9 @@ function inverse_table(
   o = one(P)
   ptrs = zeros(P,nb+1)
   @inbounds for b in a_to_lb_to_b_data
-    ptrs[b+1] += o
+    if b > 0 
+      ptrs[b+1] += o
+    end
   end
   length_to_ptrs!(ptrs)
 
@@ -430,7 +432,7 @@ function inverse_table(
     e = a_to_lb_to_b_ptrs[a+1] - o
     @inbounds for p in s:e
       b = a_to_lb_to_b_data[p]
-      if b != UNSET
+      if b > 0
         data[ptrs[b]] = a
         ptrs[b] += o
       end
@@ -1033,4 +1035,72 @@ end
 
 function Base.copy(a::Table)
   Table(copy(a.data),copy(a.ptrs))
+end
+
+"""
+    compute_adjacency(t::Table[, nfree]) -> Table
+
+Build the symmetric node adjacency graph from a hyper-edge table `t`
+(e.g. a cell-to-DOF table).  Two nodes are adjacent iff they appear
+in the same row.  Entries ≤ 0 are treated as inactive (e.g. Dirichlet
+DOF IDs encoded as negative values) and skipped.
+
+`nfree` defaults to the maximum positive entry in `t`.
+
+Returns `adj` where `adj[i]` lists the neighbours of node `i` in sorted
+order.  Node degrees are available cheaply as `diff(adj.ptrs)`.
+"""
+function compute_adjacency(
+  t::Table{T}, nfree::Int = Int(maximum(t.data; init=zero(T)))
+) where T
+  d2c = inverse_table(t, nfree)
+
+  # Upper-bound pointer array: degree(i) ≤ Σ |row(c)| for cells c containing i
+  ub_ptrs = Vector{Int}(undef, nfree + 1)
+  ub_ptrs[1] = 1
+  for i in 1:nfree
+    s = 0
+    for k in datarange(d2c, i)
+      s += length(datarange(t, d2c.data[k]))
+    end
+    ub_ptrs[i+1] = ub_ptrs[i] + s
+  end
+
+  # Collect positive, non-self neighbours (may contain duplicates)
+  ub_data  = Vector{Int32}(undef, ub_ptrs[nfree+1] - 1)
+  fill_end = copy(ub_ptrs)
+  for i in 1:nfree
+    for k in datarange(d2c, i)
+      c = d2c.data[k]
+      for k2 in datarange(t, c)
+        j = t.data[k2]
+        if j > 0 && j != i
+          ub_data[fill_end[i]] = j
+          fill_end[i] += 1
+        end
+      end
+    end
+  end
+
+  # Sort each row slice, then count and copy unique neighbours
+  ptrs = Vector{Int}(undef, nfree + 1)
+  ptrs[1] = 1
+  for i in 1:nfree
+    sort!(view(ub_data, ub_ptrs[i]:fill_end[i]-1))
+    n = 0; prev = zero(Int32)
+    for k in ub_ptrs[i]:fill_end[i]-1
+      v = ub_data[k]; v != prev && (n += 1; prev = v)
+    end
+    ptrs[i+1] = ptrs[i] + n
+  end
+
+  data = Vector{Int32}(undef, ptrs[nfree+1] - 1)
+  for i in 1:nfree
+    p = ptrs[i]; prev = zero(Int32)
+    for k in ub_ptrs[i]:fill_end[i]-1
+      v = ub_data[k]; v != prev && (data[p] = v; p += 1; prev = v)
+    end
+  end
+
+  return Table(data, ptrs)
 end

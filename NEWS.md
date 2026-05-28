@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added type-stable methods to `tensor_contraction` and `Base.permutedims(::MultiValue, perm)`: pass the arguments by `Val`. Since PR[#1301](https://github.com/gridap/Gridap.jl/pull/1301).
+
+### Fixed
+
+- Fixed bug for Raviart-Thomas on AppendedTriangulations. Since PR[#1302](https://github.com/gridap/Gridap.jl/pull/1302).
+- Fixed type instability in Cartesian mesh constructor. Since PR[#1304](https://github.com/gridap/Gridap.jl/pull/1304).
+
+## [0.20.7] - 2026-05-12
+
+### Added
+
+- Added `reindex_free_dof_ids(space, algorithm)` to reorder the free DOFs of a `FESpace` for bandwidth/profile/fill-in reduction. Supported algorithms: `:rcm` (Reverse Cuthill-McKee), `:sloan` (wavefront minimisation), and `:coordinates` (sort by spatial coordinates, for Lagrangian spaces). An externally computed permutation vector can also be applied directly via `reindex_free_dof_ids(space, free_dof_ids)`. Since PR[#1299](https://github.com/gridap/Gridap.jl/pull/1299).
+
+### Changed
+
+- Minor generalisation of `return_value` for `LinearCombinationMap`. Since PR[#1298](https://github.com/gridap/Gridap.jl/pull/1298).
+
+## [0.20.6] - 2026-05-05
+
+### Added
+
 - Make `compute_facet_owners(...)` more flexible, allowing the user to provide a function to select the owner from neighboring cells. Since PR[#1291](https://github.com/gridap/Gridap.jl/pull/1291).
 
 ### Fixed
@@ -62,7 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Minor changesto incorporate the changes in Gridap 0.20, specifically the pullback machinery, into GridapDistributed. Since PR[#1258](https://github.com/gridap/Gridap.jl/pull/1258).
+- Minor changes to incorporate the changes in Gridap 0.20, specifically the pullback machinery, into GridapDistributed. Since PR[#1258](https://github.com/gridap/Gridap.jl/pull/1258).
 
 ## [0.20.0] - 2026-03-18
 

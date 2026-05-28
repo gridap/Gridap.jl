@@ -12,7 +12,7 @@ using Test
 using DocStringExtensions
 using FillArrays
 
-using LinearAlgebra: ⋅
+using LinearAlgebra: ⋅, Diagonal
 using Statistics: mean
 using DataStructures: SortedSet
 using SparseArrays: sparse
@@ -93,6 +93,7 @@ export compute_face_vertices
 export compute_isboundary_face
 export get_cell_permutations
 export compute_cell_permutations
+export compute_graph
 export test_grid_topology
 export get_cell_faces
 export get_isboundary_face

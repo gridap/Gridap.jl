@@ -53,56 +53,40 @@ end
 
 function PolytopalFESpace(
   model::DiscreteModel,::Type{T},order::Integer;
-  space=:P,vector_type=nothing,hierarchical=false,
+  trian = Triangulation(model),
+  space = :P, 
+  vector_type = nothing,
+  hierarchical = false, 
+  orthonormal = false,
+  local_kernel = nothing,
   kwargs...
 ) where {T}
-  D = num_cell_dims(model)
-  prebasis = _prebasis_from_space(D,T,order,space)
-  if hierarchical
-    lt(t1,t2) = (maximum(Tuple(t1)) < maximum(Tuple(t2))) || isless(t1,t2)
-    sort!(prebasis.terms;lt)
-  end
-  cell_prebasis = Fill(prebasis, num_cells(model))
+  cell_shapefuns, domain_style = get_polytopal_cell_shapefuns(
+    trian, T, order; space, hierarchical, orthonormal, local_kernel
+  )
   vtype = ifelse(!isnothing(vector_type),vector_type,Vector{_dof_type(T)})
-  PolytopalFESpace(vtype,model,cell_prebasis;kwargs...)
+  return PolytopalFESpace(
+    vtype, model, cell_shapefuns, order, domain_style; trian, kwargs...
+  )
 end
 
 function PolytopalFESpace(
   vector_type::Type,
   model::DiscreteModel,
-  cell_prebasis::AbstractArray;
+  cell_shapefuns::AbstractArray,
+  order::Integer,
+  domain_style::DomainStyle;
   trian = Triangulation(model),
   labels = get_face_labeling(model),
   dirichlet_tags = Int[],
   dirichlet_masks = nothing,
-  orthonormal = false,
-  local_kernel = nothing
 )
-  T = value_type(first(cell_prebasis))
-  Dc = num_cell_dims(model)
-
-  order = maximum(Polynomials.get_order,cell_prebasis)
-  cell_polytopes = Geometry.get_cell_polytopes(model)
-  if eltype(cell_polytopes) <: ReferenceFEs.GeneralPolytope
-    cell_change = lazy_map(centroid_map, cell_polytopes)
-    cell_shapefuns = lazy_map(Broadcasting(∘), cell_prebasis, cell_change)
-    domain_style = PhysicalDomain()
-  else
-    cell_shapefuns = cell_prebasis
-    domain_style = ReferenceDomain()
-  end
-  if !isnothing(local_kernel)
-    cell_shapefuns = remove_local_kernel(cell_shapefuns, trian, T, order, local_kernel)
-  end
-  if orthonormal
-    cell_shapefuns = orthogonalise_basis(cell_shapefuns, trian, order)
-  end
+  Dc = num_cell_dims(trian)
   fe_basis = SingleFieldFEBasis(cell_shapefuns, trian, TestBasis(), domain_style)
   cell_conformity = DiscontinuousCellConformity(cell_shapefuns)
 
   ntags = length(dirichlet_tags)
-  if ntags != 0
-    @notimplementedif !isnothing(local_kernel)
+  if !iszero(ntags)
     cell_to_tag = get_face_tag_index(labels,dirichlet_tags,Dc)
     cell_is_dirichlet = map(!isequal(UNSET),cell_to_tag)
     cell_dof_ids, nfree, ndir, dirichlet_dof_tag, dirichlet_cells = compute_discontinuous_cell_dofs(
@@ -122,6 +106,48 @@ function PolytopalFESpace(
     cell_is_dirichlet,dirichlet_dof_tag,dirichlet_cells,ntags,
     order,metadata
   )
+end
+
+function get_polytopal_cell_shapefuns(
+  trian::Grid, ::Type{T}, order::Integer; 
+  space=:P, hierarchical=false, orthonormal=false, 
+  local_kernel=nothing, domain_style=nothing
+) where T
+  D = num_cell_dims(trian)
+  prebasis = _prebasis_from_space(D,T,order,space)
+  if hierarchical
+    lt(t1,t2) = (maximum(Tuple(t1)) < maximum(Tuple(t2))) || isless(t1,t2)
+    sort!(prebasis.terms;lt)
+  end
+  cell_prebasis = Fill(prebasis, num_cells(trian))
+  return get_polytopal_cell_shapefuns(
+    trian, cell_prebasis; orthonormal, local_kernel, domain_style, order
+  )
+end
+
+function get_polytopal_cell_shapefuns(
+  trian::Grid, cell_prebasis::AbstractArray; 
+  orthonormal=false, local_kernel=nothing, domain_style=nothing,
+  order = maximum(Polynomials.get_order,cell_prebasis),
+)
+  T = value_type(first(cell_prebasis))
+  polytopal = isa(trian, Geometry.PolytopalGrid) || 
+                (isa(trian, Triangulation) && isa(get_grid(trian), Geometry.PolytopalGrid))
+  default_domain_style = ifelse(polytopal, PhysicalDomain(), ReferenceDomain())
+  domain_style = ifelse(isnothing(domain_style), default_domain_style, domain_style)
+  @check !polytopal || isa(domain_style, PhysicalDomain)
+  if isa(domain_style, PhysicalDomain)
+    cell_shapefuns = lazy_map(Broadcasting(∘), cell_prebasis, get_centroid_map(trian))
+  else
+    cell_shapefuns = cell_prebasis
+  end
+  if !isnothing(local_kernel)
+    cell_shapefuns = remove_local_kernel(cell_shapefuns, trian, T, order, local_kernel)
+  end
+  if orthonormal
+    cell_shapefuns = orthogonalise_basis(cell_shapefuns, trian, order)
+  end
+  return cell_shapefuns, domain_style
 end
 
 # FESpace interface
@@ -195,6 +221,13 @@ function gather_dirichlet_values!(dirichlet_vals,f::PolytopalFESpace,cell_vals)
 end
 
 # Change of coordinate map
+
+function get_centroid_map(trian::Grid)
+  D, Dp = num_cell_dims(trian), num_point_dims(trian)
+  cell_coords = get_cell_coordinates(trian)
+  cmap(v) = centroid_map(Val(D),Val(Dp),v)
+  return lazy_map(cmap, cell_coords)
+end
 
 function centroid_map(poly::Polytope)
   D, Dp = num_dims(poly), num_point_dims(poly)
@@ -391,7 +424,7 @@ end
 
 ##################
 
-function FESpaces.renumber_free_and_dirichlet_dof_ids(
+function FESpaces.reindex_free_and_dirichlet_dof_ids(
   space::FESpaces.PolytopalFESpace,free_dof_ids,dir_dof_ids
 )
   @assert num_free_dofs(space) == length(free_dof_ids)

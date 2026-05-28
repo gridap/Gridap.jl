@@ -259,6 +259,8 @@ end
 function Arrays.testitem(f::LinearCombinationFieldVector{V}) where V
   if !iszero(size(f.values,2))
     values = f.values
+  elseif V <: Diagonal
+    values = Diagonal(zeros(eltype(V), 1))
   else
     values = zeros(eltype(f.values),size(f.values,1),1)
   end::V
@@ -322,7 +324,7 @@ end
   return TT
 end
 
-function return_value(k::LinearCombinationMap{<:Integer},v::AbstractVector,fx::AbstractVector)
+function return_value(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractVector)
   T = linear_combination_eltype(v,fx)
   return zero(T)
 end
