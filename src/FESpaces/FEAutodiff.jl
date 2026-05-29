@@ -14,7 +14,7 @@ function _gradient(f,uh,fuh::AbstractArray;kwargs...)
   """
 end
 
-function _gradient(f,uh,fuh::DomainContribution;tag::GridapADTag=fuh.ad_level+1)
+function _gradient(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fuh)+1)
   terms = DomainContribution(;ad_level = tag)
   for trian in get_domains(fuh)
     g = _change_argument(gradient,f,trian,uh)
@@ -40,7 +40,7 @@ function _jacobian(f,uh,fuh::AbstractArray;kwargs...)
   """
 end
 
-function _jacobian(f,uh,fuh::DomainContribution;tag::GridapADTag=fuh.ad_level+1)
+function _jacobian(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fuh)+1)
   terms = DomainContribution(;ad_level=tag)
   for trian in get_domains(fuh)
     g = _change_argument(jacobian,f,trian,uh)
@@ -69,7 +69,7 @@ function _hessian(f,uh,fuh::AbstractArray;kwargs...)
   """
 end
 
-function _hessian(f,uh,fuh::DomainContribution;tag::GridapADTag=fuh.ad_level+1)
+function _hessian(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fuh)+1)
   terms = DomainContribution(;ad_level = tag+1) # Two levels consumed
   for trian in get_domains(fuh)
     g = _change_argument(hessian,f,trian,uh)

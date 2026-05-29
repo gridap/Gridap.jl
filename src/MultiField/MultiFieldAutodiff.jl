@@ -54,7 +54,7 @@ end
 for (op,_op) in ((:gradient,:_gradient),(:jacobian,:_jacobian))
   @eval begin
 
-    function multifield_autodiff_split(::typeof($op),f,uh,fuh;tag::GridapADTag=fuh.ad_level+1)
+    function multifield_autodiff_split(::typeof($op),f,uh,fuh;tag::GridapADTag=get_ad_level(fuh)+1)
       nfields = num_fields(uh)
       terms = map(Base.OneTo(nfields)) do k
         # Although technically wrong, we can reuse fuh for each field since

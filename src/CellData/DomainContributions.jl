@@ -26,6 +26,11 @@ num_domains(a::DomainContribution) = length(a.dict)
 """
 get_domains(a::DomainContribution) = keys(a.dict)
 
+"""
+    get_ad_level(a::DomainContribution)
+"""
+get_ad_level(a::DomainContribution) = a.ad_level
+
 Base.isempty(a::DomainContribution) = iszero(length(a.dict))
 
 """
@@ -114,12 +119,12 @@ end
 
 Base.sum(a::DomainContribution)= sum(map(sum,values(a.dict)))
 
-function Base.copy(a::DomainContribution;ad_level::GridapADTag{<:Val}=a.ad_level) 
+function Base.copy(a::DomainContribution;ad_level::GridapADTag{<:Val}=get_ad_level(a))
   DomainContribution(copy(a.dict),ad_level)
 end
 
 function (+)(a::DomainContribution,b::DomainContribution)
-  c = copy(a; ad_level = max(a.ad_level,b.ad_level))
+  c = copy(a; ad_level = max(get_ad_level(a), get_ad_level(b)))
   for (trian,array) in b.dict
     add_contribution!(c,trian,array)
   end
@@ -127,7 +132,7 @@ function (+)(a::DomainContribution,b::DomainContribution)
 end
 
 function (-)(a::DomainContribution,b::DomainContribution)
-  c = copy(a; ad_level = max(a.ad_level,b.ad_level))
+  c = copy(a; ad_level = max(get_ad_level(a), get_ad_level(b)))
   for (trian,array) in b.dict
     add_contribution!(c,trian,array,-)
   end
@@ -135,7 +140,7 @@ function (-)(a::DomainContribution,b::DomainContribution)
 end
 
 function (*)(a::Number,b::DomainContribution)
-  c = DomainContribution(;ad_level = b.ad_level)
+  c = DomainContribution(;ad_level = get_ad_level(b))
   for (trian,array_old) in b.dict
     s = size(get_cell_map(trian))
     array_new = lazy_map(Broadcasting(*),Fill(a,s),array_old)
