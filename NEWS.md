@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added type-stable methods to `tensor_contraction` and `Base.permutedims(::MultiValue, perm)`: pass the arguments by `Val`. Since PR[#1301](https://github.com/gridap/Gridap.jl/pull/1301).
+- Added `compose_glues` and `compress_adaptivity`, which are tools that can be used to compress a mesh hierarchy (several levels of refinement) into a single adapted model. Since PR[#1309](https://github.com/gridap/Gridap.jl/pull/1309).
 
 ### Fixed
 

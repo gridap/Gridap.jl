@@ -133,3 +133,17 @@ function get_d_to_fface_to_cface(model::AdaptedDiscreteModel)
   glue  = get_adaptivity_glue(model)
   return get_d_to_fface_to_cface(glue,ctopo,ftopo)
 end
+
+# Compressing multiple levels of adaptivity into one
+
+function compress_adaptivity(model::AdaptedDiscreteModel)
+  compress_adaptivity(typeof(model.parent), model)
+end
+
+compress_adaptivity(::Type{<:DiscreteModel}, model) = model
+
+function compress_adaptivity(::Type{<:AdaptedDiscreteModel}, model)
+  parent = compress_adaptivity(model.parent)
+  glue = compose_glues(model.glue, parent.glue)
+  AdaptedDiscreteModel(model.model, parent.parent, glue)
+end
