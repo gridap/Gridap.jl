@@ -81,6 +81,59 @@ function _hessian(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fuh
   terms
 end
 
+function _change_argument(::typeof(hessian),f,trian::SkeletonTriangulation,uh)
+  U = get_fe_space(uh)
+  function g(cell_u_plus, cell_u_minus)
+    uh_plus  = CellField(U, cell_u_plus)
+    uh_minus = CellField(U, cell_u_minus)
+    cf = SkeletonCellFieldPair(uh_plus, uh_minus)
+    cg = f(cf)
+    get_contribution(cg, trian)
+  end
+  g
+end
+
+# Tagging
+function _skeleton_hessian_integrand(a, i_to_x, n_cells, n_p, p_j, m_j, j)
+  x -> begin
+    D = eltype(x)
+    cell_u_p = [i == p_j ? collect(x[1:n_p])     : D.(collect(i_to_x[i])) for i in 1:n_cells]
+    cell_u_m = [i == m_j ? collect(x[n_p+1:end]) : D.(collect(i_to_x[i])) for i in 1:n_cells]
+    a(cell_u_p, cell_u_m)[j]
+  end
+end
+
+# Map that evaluates ForwardDiff.hessian for a single skeleton facet j on the
+# joint [x_p; x_m] vector.  Pre-allocates the HessianConfig in return_cache,
+# mirroring ConfigMap/DualizeMap/AutoDiffMap for the non-skeleton case.
+struct SkeletonFacetHessianMap{A,X} <: Map
+  a::A        # _change_argument(hessian, ...) result
+  i_to_x::X  # primal cell dof values (inactive cells need zero-partial duals)
+end
+
+function Arrays.return_cache(k::SkeletonFacetHessianMap, x_p, x_m, p_j, m_j, j)
+  n_p, n_m = length(x_p), length(x_m)
+  n_cells = length(k.i_to_x)
+  x_pm = zeros(n_p + n_m)
+  f_proto = _skeleton_hessian_integrand(k.a, k.i_to_x, n_cells, n_p, p_j, m_j, j)
+  cfg = ForwardDiff.HessianConfig(f_proto, x_pm, ForwardDiff.Chunk{n_p+n_m}())
+  (cfg, x_pm, n_p, n_m)
+end
+
+function Arrays.evaluate!(cache, k::SkeletonFacetHessianMap, x_p, x_m, p_j, m_j, j)
+  cfg, x_pm, n_p, n_m = cache
+  n_cells = length(k.i_to_x)
+  copyto!(x_pm, 1,      x_p, 1, n_p)
+  copyto!(x_pm, n_p+1,  x_m, 1, n_m)
+  f = _skeleton_hessian_integrand(k.a, k.i_to_x, n_cells, n_p, p_j, m_j, j)
+  H_j = ForwardDiff.hessian(f, x_pm, cfg)
+  H_pp = H_j[1:n_p, 1:n_p];     H_pm = H_j[1:n_p, n_p+1:end]
+  H_mp = H_j[n_p+1:end, 1:n_p]; H_mm = H_j[n_p+1:end, n_p+1:end]
+  blocks = Matrix{typeof(H_pp)}(undef, 2, 2)
+  blocks[1,1] = H_pp; blocks[1,2] = H_pm; blocks[2,1] = H_mp; blocks[2,2] = H_mm
+  ArrayBlock(blocks, fill(true, 2, 2))
+end
+
 function _change_argument(op,f,trian,uh)
   U = get_fe_space(uh)
   function g(cell_u)
@@ -144,12 +197,10 @@ function _compute_cell_ids(uh,ttrian::SkeletonTriangulation)
   SkeletonPair(plus,minus)
 end
 
-# We collect the derivatives for the plus and minus sides separately,
-# which returns ydual_θ = df/duᶿ for θ ∈ {+, -}
-# We them merge them into a 2-block BlockVector, so that we obtain
-#   result = [df/du⁺, df/du⁻]
-function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair; tag=default_tag(ForwardDiff.gradient,a))
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
+function _skeleton_autodiff_array_work( # Past attempt
+  f, a, i_to_x, j_to_i::SkeletonPair, tag
+)
+  i_to_cfg = lazy_map(ConfigMap(f,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
 
   # dual output of both sides at once
@@ -163,6 +214,17 @@ function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair; tag=def
   j_to_cfg_minus = Arrays.autodiff_array_reindex(i_to_cfg,j_to_i.minus)
   j_to_result_minus = lazy_map(AutoDiffMap(),j_to_cfg_minus,j_to_ydual_minus)
 
+  return j_to_result_plus, j_to_result_minus
+end
+
+# We collect the derivatives for the plus and minus sides separately,
+# which returns ydual_θ = df/duᶿ for θ ∈ {+, -}
+# We them merge them into a 2-block BlockVector, so that we obtain
+#   result = [df/du⁺, df/du⁻]
+function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair; tag=default_tag(ForwardDiff.gradient,a))
+  j_to_result_plus,j_to_result_minus = _skeleton_autodiff_array_work(
+    ForwardDiff.gradient, a, i_to_x, j_to_i, tag
+  )
   # Assemble on SkeletonTriangulation expects an array of interior of facets
   # where each entry is a 2-block BlockVector with the first block being the
   # contribution of the plus side and the second, the one of the minus side
@@ -177,20 +239,9 @@ end
 # ydual = [dr⁺/du⁺ dr⁺/du⁻] = [ydual_plus, ydual_minus]
 #         [dr⁻/du⁺ dr⁻/du⁻]
 function Arrays.autodiff_array_jacobian(a, i_to_x, j_to_i::SkeletonPair; tag=default_tag(ForwardDiff.jacobian,a))
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
-  i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
-
-  # dual output of both sides at once
-  j_to_ydual_plus, j_to_ydual_minus = a(i_to_xdual)
-
-  # Work for plus side
-  j_to_cfg_plus = Arrays.autodiff_array_reindex(i_to_cfg,j_to_i.plus)
-  j_to_result_plus = lazy_map(AutoDiffMap(),j_to_cfg_plus,j_to_ydual_plus)
-
-  # Work for minus side
-  j_to_cfg_minus = Arrays.autodiff_array_reindex(i_to_cfg,j_to_i.minus)
-  j_to_result_minus = lazy_map(AutoDiffMap(),j_to_cfg_minus,j_to_ydual_minus)
-
+  j_to_result_plus,j_to_result_minus = _skeleton_autodiff_array_work(
+    ForwardDiff.jacobian, a, i_to_x, j_to_i, tag
+  )
   # Merge the columns into a 2x2 block matrix
   # I = [[(CartesianIndex(i,),CartesianIndex(i,j)) for i in 1:2] for j in 1:2]
   I = [
@@ -200,4 +251,11 @@ function Arrays.autodiff_array_jacobian(a, i_to_x, j_to_i::SkeletonPair; tag=def
   is_single_field = eltype(eltype(j_to_result_plus)) <: AbstractArray
   k = is_single_field ? Arrays.MergeBlockMap((2,2),I) : Arrays.BlockBroadcasting(Arrays.MergeBlockMap((2,2),I))
   lazy_map(k,j_to_result_plus,j_to_result_minus)
+end
+
+function Arrays.autodiff_array_hessian(a, i_to_x, j_to_i::SkeletonPair; tag=default_tag(ForwardDiff.gradient,a))
+  j_to_xp = Arrays.autodiff_array_reindex(i_to_x, j_to_i.plus)
+  j_to_xm = Arrays.autodiff_array_reindex(i_to_x, j_to_i.minus)
+  j_to_j  = IdentityVector(length(j_to_i.plus))
+  lazy_map(SkeletonFacetHessianMap(a, i_to_x), j_to_xp, j_to_xm, j_to_i.plus, j_to_i.minus, j_to_j)
 end
