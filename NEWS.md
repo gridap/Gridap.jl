@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.8] - 2026-06-01
+
 ### Added
 
 - Added type-stable methods to `tensor_contraction` and `Base.permutedims(::MultiValue, perm)`: pass the arguments by `Val`. Since PR[#1301](https://github.com/gridap/Gridap.jl/pull/1301).
