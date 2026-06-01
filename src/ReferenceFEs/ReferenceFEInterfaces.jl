@@ -182,6 +182,7 @@ Returns the underlying [`Polytope`](@ref) object.
 function get_polytope(reffe::ReferenceFE)
   @abstractmethod
 end
+Arrays.is_Map_inferrable(::typeof(get_polytope)) = false
 
 """
     get_prebasis(reffe::ReferenceFE)
@@ -210,6 +211,7 @@ Returns the underlying dof basis, which is a vector of `Dof`s, typically
 function get_dof_basis(reffe::ReferenceFE)
   @abstractmethod
 end
+is_Map_inferrable(::typeof(get_dof_basis)) = false
 
 """
     Conformity(reffe::ReferenceFE) -> Conformity
@@ -565,6 +567,7 @@ function get_shapefuns(reffe::ReferenceFE)
   prebasis = get_prebasis(reffe)
   compute_shapefuns(dofs, prebasis)
 end
+is_Map_inferrable(::typeof(get_shapefuns)) = false
 
 """
     compute_shapefuns(dofs,prebasis)

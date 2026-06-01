@@ -147,6 +147,7 @@ struct SingleFieldFEFunction{T<:CellField} <: FEFunction
   dirichlet_values::AbstractVector{<:Number}
   fe_space::SingleFieldFESpace
 end
+Arrays.is_Map_inferrable(::SingleFieldFEFunction) = false
 
 get_data(f::SingleFieldFEFunction) = get_data(f.cell_field)
 get_triangulation(f::SingleFieldFEFunction) = get_triangulation(f.cell_field)

@@ -99,6 +99,8 @@ end
 
 (a::CellDof)(f) = evaluate(a,f)
 
+is_Map_inferrable(::CellDof) = false
+
 function evaluate!(cache,s::CellDof,f::CellField)
 
   trian_f = get_triangulation(f)
@@ -122,3 +124,4 @@ function evaluate!(cache, ::CellField, ::CellDof)
   f(s) instead of s(f)?
   """
 end
+

@@ -31,6 +31,7 @@ end
 (a::Interpolable)(x) = evaluate(a,x)
 evaluate!(cache,a::Interpolable,x::Point) = evaluate!(cache,a.uh,x)
 return_cache(f::CellField,x::Point) = return_cache(Interpolable(f),x)
+Arrays.is_Map_inferrable(::Interpolable) = false
 
 function return_cache(a::Interpolable,x::Point)
   f = a.uh

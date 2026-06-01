@@ -231,6 +231,7 @@ struct SingleFieldFEBasis{BS<:BasisStyle,DS<:DomainStyle} <: FEBasis
     new{BS,DS}(Fields.MemoArray(cell_basis),trian,basis_style,domain_style)
   end
 end
+Arrays.is_Map_inferrable(::SingleFieldFEBasis) = false
 
 get_data(f::SingleFieldFEBasis) = f.cell_basis
 get_triangulation(f::SingleFieldFEBasis) = f.trian

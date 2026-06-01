@@ -34,6 +34,7 @@ using FastGaussQuadrature: gausslegendre
 import Gridap.Arrays: return_cache
 import Gridap.Arrays: evaluate!
 import Gridap.Arrays: return_type
+import Gridap.Arrays: is_Map_inferrable
 import Gridap.Fields: evaluate
 import Gridap.Fields: lazy_map
 import Gridap.Fields: linear_combination

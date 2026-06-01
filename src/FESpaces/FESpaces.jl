@@ -38,6 +38,7 @@ import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
 import Gridap.Arrays: return_cache
 import Gridap.Arrays: evaluate!
+import Gridap.Arrays: is_Map_inferrable
 import Gridap.Arrays: autodiff_array_gradient # overloaded for Skeleton terms
 import Gridap.Arrays: autodiff_array_jacobian
 import Gridap.Arrays: autodiff_array_hessian

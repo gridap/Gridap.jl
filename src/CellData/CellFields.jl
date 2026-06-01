@@ -139,6 +139,7 @@ function get_tangent_vector(trian::Triangulation,cell_vectors::AbstractArray)
   GenericCellField(cell_vectors,trian,ReferenceDomain())
 end
 
+Arrays.evaluate(f::Function,x::CellPoint) = evaluate!(return_cache(f,x),f,x)
 evaluate!(cache,f::Function,x::CellPoint) = CellField(f,get_triangulation(x))(x)
 
 function change_domain(a::CellField,::ReferenceDomain,::PhysicalDomain)
@@ -251,6 +252,7 @@ get_triangulation(f::GenericCellField) = f.trian
 DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
 
 (a::CellField)(x) = evaluate(a,x)
+is_Map_inferrable(::GenericCellField) = false
 
 function evaluate!(cache,f::CellField,x::CellPoint)
   _f, _x = _to_common_domain(f,x)
@@ -399,6 +401,8 @@ function get_data(f::OperationCellField)
 end
 get_triangulation(f::OperationCellField) = f.trian
 DomainStyle(::Type{OperationCellField{DS,O}}) where {DS,O} = DS()
+
+is_Map_inferrable(::OperationCellField) = false
 
 function evaluate!(cache,f::OperationCellField,x::CellPoint)
   ax = map(i->i(x),f.args)
@@ -570,6 +574,8 @@ struct CellFieldAt{T,F} <: CellField
   parent::F
   CellFieldAt{T}(parent::CellField) where T = new{T,typeof(parent)}(parent)
 end
+
+is_Map_inferrable(::CellFieldAt) = false
 
 get_data(f::CellFieldAt) = get_data(f.parent)
 get_triangulation(f::CellFieldAt) = get_triangulation(f.parent)

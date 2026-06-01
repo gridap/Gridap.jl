@@ -214,6 +214,7 @@ end
 
 GenericField(f::Field) = f
 
+Arrays.is_Map_inferrable(f::GenericField) = Arrays.is_Map_inferrable(f.object)
 testargs(a::GenericField,x::Point) = testargs(a.object,x)
 return_value(a::GenericField,x::Point) = return_value(a.object,x)
 return_cache(a::GenericField,x::Point) = return_cache(a.object,x)
@@ -390,6 +391,7 @@ struct OperationField{O,F} <: Field
   op::O
   fields::F
 end
+Arrays.is_Map_inferrable(c::OperationField) = is_Map_inferrable(c.op)
 
 function testvalue(::Type{OperationField{O,F}}) where {O<:Field,F<:Tuple}
   op = testvalue(O)

@@ -1,15 +1,18 @@
 """
+    abstract type Map <: GridapType
+
 Abstract type representing a function (mapping) that provides a cache and an in-place
 evaluation for performance. This is the type to be used in the [`lazy_map`](@ref) function.
 
 Derived types must implement the following method:
 
-- [`evaluate!(cache,k,x...)`](@ref)
+- [`evaluate!(cache,f,x...)`](@ref)
 
 and optionally these ones:
 
-- [`return_cache(k,x...)`](@ref)
-- [`return_type(k,x...)`](@ref)
+- [`return_cache(f,x...)`](@ref)
+- [`return_type(f,x...)`](@ref)
+- [`is_Map_inferable(f)`](@ref)
 
 The mapping interface can be tested with the [`test_map`](@ref) function.
 
@@ -26,37 +29,37 @@ for `Function` objects.  However, we recommend that new types inherit from `Map`
 using Gridap.Arrays
 using LinearAlgebra
 
-# Define a custom Map for k(a,b,c) = α*a*b + β*c
+# Define a custom Map for f(a,b,c) = α*a*b + β*c
 struct MyMulAdd{T} <: Map
   α::T
   β::T
 end
 
 # Optional: provide a cache to avoid allocations in evaluate!
-function Gridap.Arrays.return_cache(k::MyMulAdd, a, b, c)
+function Gridap.Arrays.return_cache(f::MyMulAdd, a, b, c)
   d = a*b + c # Initial allocation
   CachedArray(d)
 end
 
 # Mandatory: in-place evaluation
-function Gridap.Arrays.evaluate!(cache, k::MyMulAdd, a, b, c)
+function Gridap.Arrays.evaluate!(cache, f::MyMulAdd, a, b, c)
   setsize!(cache, size(c))
   d = cache.array
   copyto!(d, c)
-  mul!(d, a, b, k.α, k.β)
+  mul!(d, a, b, f.α, f.β)
   d
 end
 
-k = MyMulAdd(2.0, 1.0)
+f = MyMulAdd(2.0, 1.0)
 a = rand(3,3); b = rand(3,3); c = rand(3,3)
-res = evaluate(k, a, b, c)
+res = evaluate(f, a, b, c)
 ```
 
 """
 abstract type Map <: GridapType end
 
 """
-    return_cache(f,x...)
+    return_cache(f, x...)
 
 Returns the `cache` needed to lazy_map mapping `f` with arguments
 of the same type as the objects in `x`.
@@ -65,7 +68,7 @@ This function returns `nothing` by default, i.e., no cache.
 return_cache(f,x...) = nothing
 
 """
-    evaluate!(cache,f,x...)
+    evaluate!(cache, f, x...)
 
 Applies the mapping `f` at the arguments `x...` using
 the scratch data provided in the given `cache` object. The `cache` object
@@ -75,62 +78,85 @@ If the result of two or more calls to this function need to be accessed simultan
 (e.g., in multi-threading), create and use several `cache` objects (e.g., one cache
 per thread).
 """
-@noinline function evaluate!(cache,f,x...)
+@noinline function evaluate!(cache, f, x...)
   @abstractmethod """
   Method
 
-      Gridap.Arrays.evaluate!(cache,f,x...)
+      Gridap.Arrays.evaluate!(cache, f, x...)
 
   has not been defined for the requested types (see stack trace).
   """
 end
 
 """
-    return_type(f,x...)
+    return_type(f, x...)
 
 Returns the type of the result of calling mapping `f` with
 arguments of the types of the objects `x`.
 """
-return_type(f,x...) = typeof(return_value(f,x...))
+function return_type(f, x...)
+  if is_Map_inferrable(f) && all(is_Map_inferrable.(x))
+    @check_inferred typeof(return_value(f, x...))
+  else
+    typeof(return_value(f, x...))
+  end
+end
 
 """
-    return_value(f,x...)
+    return_value(f, x...)
 
 Return a variable of the type of the image fx=`f`(`x`...) (possibly fx itself).
 """
-return_value(f,x...) = evaluate(f,testargs(f,x...)...)
+function return_value(f, x...)
+  args = testargs(f, x...)
+  evaluate(f, args...)
+end
 
 """
-    testargs(f,x...)
+    testargs(f, x...)
 
-The default implementation of this function is `testargs(f,x...) = x`.
+The default implementation of this function is `testargs(f, x...) = x`.
 One can overload it in order to use `lazy_map` with 0-length array
 and maps with non-trivial domains.
 """
-testargs(f,x...) = x
+testargs(f, x...) = x
 
 """
-    evaluate(f,x...)
+    evaluate(f, x...)
 
 evaluates the mapping `f` at the arguments in `x` by creating a temporary cache
 internally. This functions is equivalent to
 ```jl
-cache = return_cache(f,x...)
-evaluate!(cache,f,x...)
+cache = return_cache(f, x...)
+evaluate!(cache, f, x...)
 ```
 """
-function evaluate(f,x...)
-  c = return_cache(f,x...)
-  y = evaluate!(c,f,x...)
+function evaluate(f, x...)
+  if is_Map_inferrable(f) && all(is_Map_inferrable.(x))
+    c = @check_inferred return_cache(f, x...)
+    @check_inferred evaluate!(c, f, x...)
+  else
+    c = return_cache(f, x...)
+    evaluate!(c, f, x...)
+  end
 end
 
-(m::Map)(x...) = evaluate(m,x...)
+(m::Map)(x...) = evaluate(m, x...)
 
 # Default implementation for Function
-evaluate!(cache,f::Function,x...) = f(x...)
+evaluate!(cache, f::Function, x...) = f(x...)
 
 # Default implementation for constructors
-evaluate!(cache,::Type{f},x...) where f = f(x...)
+evaluate!(cache, ::Type{f}, x...) where f = f(x...)
+
+"""
+    is_Map_inferrable(f) = true
+
+Duck typed trait of the [`Map`](@ref) API to indicate if the `Map` API are type
+inferrable or not. Most `Map`s should be. It is possible to opt-out if
+`evaluate!` is not called in intensive loops.
+"""
+is_Map_inferrable(::F) where F = true
 
 
 # Testing the interface
@@ -154,6 +180,13 @@ function test_map(y,f,x...;cmp=(==))
   @test cmp(z,y)
   z = evaluate!(cache,f,x...)
   @test cmp(z,y)
+  if is_Map_inferrable(f)
+    @inferred return_cache(f,x...)
+    @inferred return_value(f,x...)
+    @inferred return_type(f,x...)
+    @inferred evaluate!(cache,f,x...)
+    @inferred evaluate(f,x...)
+  end
   true
 end
 
@@ -306,6 +339,7 @@ struct Operation{T} <: Map
   op::T
 end
 
+is_Map_inferrable(::Operation) = false
 evaluate!(cache,op::Operation,args::Map...) = OperationMap(op.op,args)
 evaluate!(cache,op::Operation,args::Function...) = OperationMap(op.op,args)
 

@@ -76,6 +76,7 @@ struct MultiFieldFEBasisComponent{B} <: FEBasis
   fieldid::Int
   nfields::Int
 end
+Arrays.is_Map_inferrable(::MultiFieldFEBasisComponent) = false
 
 function block_fields(cell_fields,::TestBasis,fieldid::Integer,nfields::Integer)
   lazy_map(BlockMap(nfields,fieldid),cell_fields)

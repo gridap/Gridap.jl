@@ -25,6 +25,7 @@ using Gridap.ReferenceFEs: FaceMeasure, set_face!
 
 import Gridap.Arrays: return_cache
 import Gridap.Arrays: evaluate!
+import Gridap.Arrays: is_Map_inferrable
 
 ##########################
 # FaceIntegralFormVector #
@@ -138,6 +139,8 @@ Base.axes(a::FaceIntegralFormVector) = (Base.OneTo(num_forms(a)),)
 Base.getindex(::FaceIntegralFormVector,::Integer) = FaceIntegralForm()
 Base.IndexStyle(::FaceIntegralFormVector) = IndexLinear()
 num_forms(b::FaceIntegralFormVector) = mapreduce(length, +, b.face_own_forms)
+
+is_Map_inferrable(::FaceIntegralFormVector) = false
 
 function return_cache(b::FaceIntegralFormVector{T,N,FI,DS}, f) where {T,N,FI,DS}
   cms = map(b.form_faces, b.form_integrands, b.form_measures) do faces, σ, ds

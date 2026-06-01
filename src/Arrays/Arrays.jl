@@ -50,6 +50,7 @@ export return_type
 export return_value
 export testargs
 export inverse_map
+export is_Map_inferrable
 
 export Broadcasting
 export Operation
