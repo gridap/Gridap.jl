@@ -1,23 +1,27 @@
 
 """
+    CellState{T,P<:CellPoint,V<:AbstractArray} <: CellField
+
 This can be used as a CellField as long as one evaluates it
 on the stored CellPoint.
 """
-struct CellState{T,P<:CellPoint} <: CellField
+struct CellState{T,P<:CellPoint,V<:AbstractArray} <: CellField
   points::P
-  values::AbstractArray
+  values::V
 
   function CellState{T}(::UndefInitializer,points::CellPoint) where T
     values = _init_values(T,get_data(points))
     P = typeof(points)
-    new{T,P}(points,values)
+    V = typeof(values)
+    new{T,P,V}(points,values)
   end
 
   function CellState(v::Number,points::CellPoint)
     values = _init_values(v,get_data(points))
     T = typeof(v)
     P = typeof(points)
-    new{T,P}(points,values)
+    V = typeof(values)
+    new{T,P,V}(points,values)
   end
 end
 
@@ -50,7 +54,7 @@ function get_data(f::CellState)
 end
 
 get_triangulation(f::CellState) = get_triangulation(f.points)
-DomainStyle(::Type{CellState{T,P}}) where {T,P} = DomainStyle(P)
+DomainStyle(::Type{<:CellState{T,P}}) where {T,P} = DomainStyle(P)
 
 _get_cell_points(a::CellState) = a.points
 
