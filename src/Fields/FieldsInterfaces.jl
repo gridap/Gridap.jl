@@ -130,6 +130,7 @@ end
 Tensor type of the gradient (repeated `N` times) of a `T` valued function.
 """
 gradient_type(::Type{T}, x::Point)           where T = gradient_type(T,x,Val(1))
+gradient_type(::Type{T}, x::Point, ::Val{0}) where T  = typeof(zero(T)*zero(eltype(x)))
 gradient_type(::Type{T}, x::Point, ::Val{1}) where T  = typeof(outer(zero(x),zero(T)))
 function gradient_type(::Type{T}, x::Point, ::Val{2}) where T
   G = typeof(outer(zero(x),zero(T)))
@@ -408,13 +409,13 @@ function testvalue(::Type{OperationField{O,F}}) where {O,F<:Tuple}
 end
 
 function return_value(c::OperationField,x::Point)
-  fx = map(f -> return_value(f,x),c.fields)
+  fx = map(Fix2(return_value,x), c.fields)
   return return_value(c.op,fx...)
 end
 
 function return_cache(c::OperationField,x::Point)
-  cl = map(fi -> return_cache(fi,x),c.fields)
-  lx = map(fi -> return_value(fi,x),c.fields)
+  cl = map(Fix2(return_cache,x), c.fields)
+  lx = map(Fix2(return_value,x), c.fields)
   ck = return_cache(c.op,lx...)
   return ck, cl
 end
@@ -426,12 +427,12 @@ function evaluate!(cache,c::OperationField,x::Point)
 end
 
 function return_value(c::OperationField,x::AbstractArray{<:Point})
-  fx = map(f -> return_value(f,x),c.fields)
+  fx = map(Fix2(return_value,x), c.fields)
   return return_value(Broadcasting(c.op),fx...)
 end
 
 function return_cache(c::OperationField,x::AbstractArray{<:Point})
-  cf = map(fi -> return_cache(fi,x),c.fields)
+  cf = map(Fix2(return_cache,x), c.fields)
   lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
   ck = return_cache(Broadcasting(c.op),lx...)
   return cf, ck
@@ -808,12 +809,12 @@ argument `grad` can be used. It should contain the result of evaluating `gradien
 Idem for `gradgrad`. The checks are performed with the `@test` macro.
 """
 function test_field(f::Field, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
-  test_map(v,f,x;cmp=cmp)
+  test_map(v,f,x;cmp)
   if grad != nothing
-    test_map(grad,∇(f),x;cmp=cmp)
+    test_map(grad,∇(f),x;cmp)
   end
   if gradgrad != nothing
-    test_map(gradgrad,∇∇(f),x;cmp=cmp)
+    test_map(gradgrad,∇∇(f),x;cmp)
   end
   true
 end

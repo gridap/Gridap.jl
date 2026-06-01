@@ -1,69 +1,48 @@
 # Number differentiation
 
-function gradient(f::Number)
+function gradient(::V) where V<:Number
   function grad_f(x::Point)
-    zero(return_type(outer,x,f))
+    zero(gradient_type(V,x))
   end
 end
 
-function ∇∇(f::Number)
+function ∇∇(::V) where V<:Number
   function hess_f(x::Point)
-    g = gradient(f)(x)
-    gradient(g)(x)
+    zero(gradient_type(V,x,Val(2)))
   end
 end
 
 # Automatic differentiation of functions
 
-function gradient(f::Function)
-  function _gradient(x)
-    gradient(f,x)
-  end
+# gradient(f) = x -> gradient(f,x)
+gradient(f::Function) = Base.Fix1(gradient,f)
+symmetric_gradient(f::Function) = Base.Fix1(symmetric_gradient,f)
+divergence(f::Function) = Base.Fix1(divergence,f)
+curl(f::Function) = Base.Fix1(curl,f)
+laplacian(f::Function) = Base.Fix1(laplacian,f)
+
+function gradient(f::Function, x::Point)
+  fx = return_value(f, x)
+  gradient(f, x, fx)
 end
 
-function symmetric_gradient(f::Function)
-  function _symmetric_gradient(x)
-    symmetric_gradient(f,x)
-  end
+function gradient(f::Function, x::Point{A}, fx::Number) where {A}
+  a = ForwardDiff.gradient(f∘Point, get_array(x))
+  VectorValue{A}(a)
 end
 
-function divergence(f::Function)
-  function _divergence(x)
-    divergence(f,x)
-  end
-end
-
-function curl(f::Function)
-  function _curl(x)
-    curl(f,x)
-  end
-end
-
-function laplacian(f::Function)
-  function _laplacian(x)
-    laplacian(f,x)
-  end
-end
-
-# Specialization when x::Point
-
-function gradient(f::Function,x::Point)
-  gradient(f,x,return_value(f,x))
-end
-
-function gradient(f::Function,x::Point,fx::Number)
-  VectorValue(ForwardDiff.gradient(f∘Point,get_array(x)))
-end
-
-function gradient(f::Function,x::Point,fx::VectorValue)
-  TensorValue(transpose(ForwardDiff.jacobian(get_array∘f∘Point,get_array(x))))
+function gradient(f::Function, x::Point{A}, fx::VectorValue{B,T}) where {A,B,T}
+  a = transpose(ForwardDiff.jacobian(get_array∘f∘Point, get_array(x)))
+  # This type assert is necessary because of type inferrability issue in the forwardDiff call, for composed gradients
+  TensorValue{A,B}(a)::TensorValue{A,B,T,A*B}
 end
 
 # Implementation for all second order tensor values
 # Does not exploit possible symmetries
-function gradient(f::Function,x::Point{A},fx::S) where S<:MultiValue{Tuple{B,C}} where {A,B,C}
-  a = transpose(ForwardDiff.jacobian(get_array∘f∘Point,get_array(x)))
-  ThirdOrderTensorValue(reshape(a, (A,B,C)))
+function gradient(f::Function, x::Point{A}, fx::S) where S<:MultiValue{Tuple{B,C}} where {A,B,C}
+  a = transpose(ForwardDiff.jacobian(get_array∘f∘Point, get_array(x)))
+  a = reshape(a, (A,B,C))
+  ThirdOrderTensorValue{A,B,C}(a)
 end
 
 function gradient(f::Function,x::Point,fx::MultiValue)
@@ -108,7 +87,7 @@ function divergence(f::Function,x::Point,fx::TensorValue{3,3})
     a[1,1]+a[2,2]+a[3,3],
     a[4,1]+a[5,2]+a[6,3],
     a[7,1]+a[8,2]+a[9,3],
-   )
+  )
 end
 
 function divergence(f::Function,x::Point{2},fx::AbstractSymTensorValue{2})
@@ -127,7 +106,7 @@ function divergence(f::Function,x::Point{3},fx::AbstractSymTensorValue{3})
     a[1,1]+a[2,2]+a[3,3],
     a[2,1]+a[4,2]+a[5,3],
     a[3,1]+a[5,2]+a[6,3],
-   )
+  )
 end
 
 function divergence(f::Function,x::Point,fx::MultiValue)
@@ -149,7 +128,7 @@ end
 function laplacian(f::Function,x::Point{A},fx::VectorValue{B,T}) where {A,B,T}
   a = MMatrix{A*B,A,T}(undef)
   ForwardDiff.jacobian!(a, y->ForwardDiff.jacobian(get_array∘f∘Point,y), get_array(x))
-  VectorValue{B,T}( ntuple(k -> sum(i-> a[(i-1)*B+k,i], 1:A),B) )
+  VectorValue{B,T}( ntuple(k -> sum(i-> a[(i-1)*B+k,i], 1:A), B) )
 end
 
 function laplacian(f::Function,x::Point{A},fx::S) where S<:MultiValue{Tuple{B,C},T} where {A,B,C,T}

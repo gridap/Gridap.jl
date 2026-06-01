@@ -31,6 +31,7 @@ using Test
 using StaticArrays
 using LinearAlgebra
 using AutoHashEquals: @auto_hash_equals as @ahe
+using Base: Fix1, Fix2
 
 import LinearAlgebra: det, inv, transpose, tr, cross
 import LinearAlgebra: ⋅, dot
