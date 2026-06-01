@@ -49,10 +49,10 @@ end
 
 struct PQuadCoordsMap <: Map end
 
-function Arrays.return_cache(::PQuadCoordsMap, q::PolytopalQuadrature)
+function Arrays.return_cache(::PQuadCoordsMap, q::PolytopalQuadrature{D}) where D
   conn, coords = q.conn, q.coords
-  cmap = affine_map(Tuple(coords[first(conn)]))
-  
+  cmap = affine_map(NTuple{D+1}(coords[first(conn)]))
+
   x = get_coordinates(q.quad)
   cmap_cache = return_cache(cmap,x)
   y = evaluate!(cmap_cache,cmap,x)
@@ -61,7 +61,7 @@ function Arrays.return_cache(::PQuadCoordsMap, q::PolytopalQuadrature)
   return y_cache, cmap_cache
 end
 
-function Arrays.evaluate!(cache,::PQuadCoordsMap, q::PolytopalQuadrature)
+function Arrays.evaluate!(cache,::PQuadCoordsMap, q::PolytopalQuadrature{D}) where D
   y_cache, cmap_cache = cache
   conn, coords = q.conn, q.coords
 
@@ -71,7 +71,7 @@ function Arrays.evaluate!(cache,::PQuadCoordsMap, q::PolytopalQuadrature)
 
   nx = length(x)
   for (k,verts) in enumerate(conn)
-    cmap = affine_map(Tuple(coords[verts]))
+    cmap = affine_map(NTuple{D+1}(coords[verts]))
     y[(k-1)*nx+1:k*nx] .= evaluate!(cmap_cache, cmap, x)
   end
   return y
@@ -85,7 +85,7 @@ function Arrays.return_cache(::PQuadWeightsMap, q::PolytopalQuadrature)
   return CachedArray(similar(w,(length(w)*length(conn))))
 end
 
-function Arrays.evaluate!(cache,::PQuadWeightsMap, q::PolytopalQuadrature)
+function Arrays.evaluate!(cache,::PQuadWeightsMap, q::PolytopalQuadrature{D}) where D
   conn, coords = q.conn, q.coords
 
   w = get_weights(q.quad)
@@ -94,7 +94,7 @@ function Arrays.evaluate!(cache,::PQuadWeightsMap, q::PolytopalQuadrature)
 
   nw = length(w)
   for (k,verts) in enumerate(conn)
-    dV = meas(affine_map(Tuple(coords[verts])).gradient)
+    dV = meas(affine_map(NTuple{D+1}(coords[verts])).gradient)
     z[(k-1)*nw+1:k*nw] .= w .* dV
   end
   return z
