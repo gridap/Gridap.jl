@@ -50,8 +50,7 @@ test_reference_fe(reffe)
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
 
-v = VectorValue(3.0,0.0)
-field = GenericField(x->v*x[1])
+field = GenericField(x->VectorValue(3.0,0.0)*x[1])
 
 cache = return_cache(dof_basis,field)
 r = evaluate!(cache, dof_basis, field)
@@ -85,8 +84,7 @@ reffe = RaviartThomasRefFE(et,p,order)
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
 
-v = VectorValue(3.0,0.0)
-field = GenericField(x->v*x[1])
+field = GenericField(x->VectorValue(3.0,0.0)*x[1])
 
 predofs = get_dof_basis(reffe).predofs
 nodes, nf_nodes, nf_moments =  get_nodes(predofs), get_face_nodes_dofs(predofs), get_face_moments(predofs)
@@ -128,8 +126,7 @@ test_reference_fe(reffe)
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
 
-v = VectorValue(0.0,3.0,0.0)
-field = GenericField(x->v)
+field = GenericField(x->VectorValue(0.0,3.0,0.0))
 
 cache = return_cache(dof_basis,field)
 r = evaluate!(cache, dof_basis, field)

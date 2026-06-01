@@ -144,7 +144,6 @@ end
 
 
 partition = (0,1,0,1)
- Stokes
 u_exact(x) = VectorValue( sin(pi*x[1])^2*sin(pi*x[2])*cos(pi*x[2]), -sin(pi*x[2])^2*sin(pi*x[1])*cos(pi*x[1]) )
 p_exact(x) = sin(2*pi*x[1])*sin(2*pi*x[2])
 

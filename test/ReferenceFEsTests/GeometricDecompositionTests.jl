@@ -46,6 +46,8 @@ If put in src, this should be a supertype of `Dof`, the latter being a *linear* 
 """
 abstract type Form <: Map end
 
+struct FaceIntegralForm <: Form end
+
 """
     FaceIntegralFormVector(
       p::Polytope{D},
@@ -66,22 +68,23 @@ In the final basis, the forms are ordered by moment descriptor, then by face.
 
 We are assuming that all the faces in a moment are of the same type.
 """
-struct FaceIntegralFormVector{T,FI,DS} <: AbstractVector{Form}
-  form_faces::Vector{Vector{NTuple{2,Int}}} # f -> faces over which f is integrated computed
+struct FaceIntegralFormVector{T,N,FI,DS} <: AbstractVector{FaceIntegralForm}
+  form_faces::NTuple{N,Vector{NTuple{2,Int}}} # f -> faces over which f is integrated computed
   form_integrands::FI # i -> σᵢ
   form_measures::DS # tuple of `FaceMeasure`s
   face_own_forms::Vector{Vector{Int}} # "inverse" of form_faces
 
   function FaceIntegralFormVector(faces,integrands,measures,f_own_forms)
+    N = length(faces)
+    @check N == length(integrands) == length(measures)
     T = Float64 # TODO
     FI = typeof(integrands)
     DS = typeof(measures)
-    new{T,FI,DS}(faces,integrands,measures,f_own_forms)
+    new{T,N,FI,DS}(faces,integrands,measures,f_own_forms)
   end
 
   function FaceIntegralFormVector(p::Polytope,order::Int,forms)
     n_faces = num_faces(p)
-    n_form = length(forms)
     face_dims = get_facedims(p)
     face_offsets = get_offsets(p)
     reffaces, face_types = ReferenceFEs._compute_reffaces_and_face_types(p)
@@ -89,28 +92,32 @@ struct FaceIntegralFormVector{T,FI,DS} <: AbstractVector{Form}
     # Create facemeasures and integrand for each integral form
     # Count number of forms per face
     # compute local to global form index
+    face_form_ids = ()
     integrands = ()
     measures = ()
     face_n_forms = zeros(Int,n_faces)
-    face_form_ids = Vector{Vector{NTuple{2,Int}}}(undef,n_form)
-    form_I = 0
-    for (k,(faces,σ)) in enumerate(forms)
+    form_I = [0]
+
+    face_form_ids = map(forms) do (faces, σ)
       face_ids = Vector{NTuple{2,Int}}(undef, length(faces))
       for (i,face) in enumerate(faces)
         d = face_dims[face]
         lface = face - face_offsets[d+1]
-        face_ids[i] = (form_I + i, lface)
+        face_ids[i] = (form_I[1] + i, lface)
       end
-      face_form_ids[k] = face_ids
-      form_I += length(faces)
-
+      form_I[1] += length(faces)
       face_n_forms[faces] .+= 1
-      integrands = (integrands..., σ)
+      face_ids
+    end
+    integrands = map(forms) do (faces, σ)
+      σ
+    end
 
+    measures = map(forms) do (faces, σ)
       ftype = face_types[first(faces)]
       @check all(isequal(ftype), face_types[faces])
       fp = reffaces[ftype]
-      measures = (measures..., FaceMeasure(p,fp,order) )
+      FaceMeasure(p,fp,order)
     end
 
     # Compute face forms and nodes indices
@@ -122,20 +129,19 @@ struct FaceIntegralFormVector{T,FI,DS} <: AbstractVector{Form}
       n_forms += n_forms_i
     end
 
-    FaceIntegralFormVector(face_form_ids,integrands,measures,face_own_forms)
+    FaceIntegralFormVector(Tuple(face_form_ids),integrands,measures,face_own_forms)
   end
 end
 
 Base.size(a::FaceIntegralFormVector) = (num_forms(a),)
 Base.axes(a::FaceIntegralFormVector) = (Base.OneTo(num_forms(a)),)
-Base.getindex(::FaceIntegralFormVector,::Integer) = Form()
+Base.getindex(::FaceIntegralFormVector,::Integer) = FaceIntegralForm()
 Base.IndexStyle(::FaceIntegralFormVector) = IndexLinear()
 num_forms(b::FaceIntegralFormVector) = mapreduce(length, +, b.face_own_forms)
 
-function return_cache(b::FaceIntegralFormVector{T}, f) where {T}
-  cms = ()
-  for (_,σ,ds) in zip(b.form_faces, b.form_integrands, b.form_measures)
-    cms = ( cms..., return_cache(σ,f,_μ,ds))
+function return_cache(b::FaceIntegralFormVector{T,N,FI,DS}, f) where {T,N,FI,DS}
+  cms = map(b.form_faces, b.form_integrands, b.form_measures) do faces, σ, ds
+    return_cache(σ,f,_μ,ds)
   end
 
   r = Array{T}(undef, (num_forms(b), size(f)...))
@@ -159,7 +165,6 @@ function evaluate!(cache, b::FaceIntegralFormVector, f::AbstractVector{<:Field})
   end
   forms_vals
 end
-
 
 ###########################################################################################
 # Traces L2-norm descriptors and geometric decompositions trace-forms for each conformity #
@@ -210,8 +215,10 @@ end
 # norm form on each boundary face, zero inside
 function get_trace_forms(p::Polytope{D}, field, ::GradConformity) where D
   face_ranges = get_dimranges(p)
-  trace_forms = Tuple[ (face_ranges[d], HGrad_face_tr_norm) for d in 1:D ]
-  push!(trace_forms, (last(face_ranges), zero_moment))
+  trace_forms = ntuple(Val(D)) do d
+    (face_ranges[d], HGrad_face_tr_norm)
+  end
+  trace_forms = (trace_forms..., (last(face_ranges), zero_moment))
   qorder = 2*get_order(field)+1
   FaceIntegralFormVector(p,qorder,trace_forms)
 end
@@ -223,7 +230,7 @@ function get_trace_forms(p::Polytope{D}, field, ::CurlConformity) where D
   trace_forms = Tuple[ (first(face_ranges), zero_moment) ]
   D≥2 && push!(trace_forms, (face_ranges[2], HCurl_edge_tr_norm))
   D≥3 && push!(trace_forms, (face_ranges[D], HCurl_facet_tr_norm))
-  push!(  trace_forms, (last( face_ranges), zero_moment))
+  trace_forms = (trace_forms..., (last(face_ranges), zero_moment))
   qorder = 2*get_order(field)+1
   FaceIntegralFormVector(p,qorder,trace_forms)
 end
@@ -232,15 +239,15 @@ end
 function get_trace_forms(p::Polytope{D}, field, ::DivConformity) where D
   face_ranges = get_dimranges(p)
   trace_forms = Tuple[ (face_ranges[d], zero_moment) for d in 1:D-1 ]
-  push!(trace_forms, (face_ranges[D], HDiv_facet_tr_norm))
-  push!(trace_forms, (last( face_ranges), zero_moment))
+  trace_forms = (trace_forms..., (face_ranges[D], HDiv_facet_tr_norm))
+  trace_forms = (trace_forms..., (last( face_ranges), zero_moment))
   qorder = 2*get_order(field)+1
   FaceIntegralFormVector(p,qorder,trace_forms)
 end
 
 function get_normal_flux_forms(p::Polytope{D}, field) where D
   facet_range = get_dimrange(p,D-1)
-  fun_flux_form = Tuple[ (facet_range, HDiv_facet_flux)  ]
+  fun_flux_form = Tuple[ (facet_range, HDiv_facet_flux) ]
   qorder = get_order(field)+2
   FaceIntegralFormVector(p,qorder,fun_flux_form)
 end

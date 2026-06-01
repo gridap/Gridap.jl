@@ -47,8 +47,7 @@ test_reference_fe(reffe)
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
 
-v = VectorValue(3.0,0.0)
-field = GenericField(x->v*x[1])
+field = GenericField(x->VectorValue(3.0,0.0)*x[1])
 
 cache = return_cache(dof_basis,field)
 r = evaluate!(cache, dof_basis, field)
@@ -76,8 +75,7 @@ test_reference_fe(reffe)
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
 
-v = VectorValue(3.0,1.0,-2.)
-field = GenericField(x->v*x[1]*x[2]*x[3])
+field = GenericField(x->VectorValue(3.0,1.0,-2.)*x[1]*x[2]*x[3])
 
 cache = return_cache(dof_basis,field)
 r = evaluate!(cache, dof_basis, field)

@@ -34,8 +34,7 @@ face_dofs = Vector{Int}[[],[],[],[1,2],[3,4],[5,6],[1,2,3,4,5,6]]
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
 
-v = VectorValue(3.0,0.0)
-field = GenericField(x->v*x[1])
+field = GenericField(x->VectorValue(3.0,0.0)*x[1])
 
 cache = return_cache(dof_basis,field)
 r = evaluate!(cache, dof_basis, field)
@@ -58,8 +57,7 @@ reffe = BDMRefFE(et,p,order)
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
 
-v = VectorValue(3.0,0.0)
-field = GenericField(x->v*x[1])
+field = GenericField(x->VectorValue(3.0,0.0)*x[1])
 
 cache = return_cache(dof_basis,field)
 r = evaluate!(cache, dof_basis, field)
@@ -97,8 +95,7 @@ test_reference_fe(reffe)
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
 
-v = VectorValue(0.0,3.0,0.0)
-field = GenericField(x->v)
+field = GenericField(x->VectorValue(0.0,3.0,0.0))
 
 cache = return_cache(dof_basis,field)
 r = evaluate!(cache, dof_basis, field)
@@ -120,8 +117,7 @@ test_reference_fe(reffe)
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
 
-v = VectorValue(0.0,3.0,0.0)
-field = GenericField(x->v)
+field = GenericField(x->VectorValue(0.0,3.0,0.0))
 
 cache = return_cache(dof_basis,field)
 r = evaluate!(cache, dof_basis, field)
