@@ -503,7 +503,7 @@ function get_dimranges(p::GeneralPolytope)
   p.dimranges
 end
 
-function get_dimrange(p::GeneralPolytope,d::Integer)
+function get_dimrange(p::GeneralPolytope,d::Integer)::UnitRange{Int64}
   setup_dimranges!(p)
   p.dimranges[d+1]
 end
