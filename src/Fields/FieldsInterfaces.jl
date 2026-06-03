@@ -214,9 +214,9 @@ end
 
 GenericField(f::Field) = f
 
-testargs(a::GenericField,x::Point) = @check_inferred testargs(a.object,x)
-return_value(a::GenericField,x::Point) = @check_inferred return_value(a.object,x)
-return_cache(a::GenericField,x::Point) = @check_inferred return_cache(a.object,x)
+testargs(a::GenericField,x::Point) = testargs(a.object,x)
+return_value(a::GenericField,x::Point) = return_value(a.object,x)
+return_cache(a::GenericField,x::Point) = return_cache(a.object,x)
 evaluate!(cache,a::GenericField,x::Point) = evaluate!(cache,a.object,x)
 
 function testvalue(::Type{GenericField{T}}) where T
