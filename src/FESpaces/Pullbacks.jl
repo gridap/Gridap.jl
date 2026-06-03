@@ -159,7 +159,8 @@ function return_cache(k::NormalSignMap,reffe,facet_own_dofs,cell)
   Dc = num_cell_dims(model)
   topo = get_grid_topology(model)
 
-  cell_facets = get_faces(topo, Dc, Dc-1)
+  # Type anotation needed when get_grid_topology isn't inferrable on model (eg DiscreteModelPortion).
+  cell_facets = get_faces(topo, Dc, Dc-1)::Table{Int32, Vector{Int32}, Vector{Int32}}
   cell_facets_cache = array_cache(cell_facets)
 
   return cell_facets, cell_facets_cache, CachedVector(Float64)
