@@ -1,5 +1,5 @@
 """
-    abstract type DiscreteModel{Dc,Dp} <: Grid
+    abstract type DiscreteModel{Dc,Dp} <: Grid{Dc,Dp}
 
 Abstract type holding information about a physical grid,
 the underlying grid topology, and a labeling of
@@ -72,21 +72,6 @@ get_cell_type(g::DiscreteModel) = get_cell_type(get_grid(g))
 get_reffes(g::DiscreteModel) = get_reffes(get_grid(g))
 
 # Default API
-
-"""
-    num_dims(model::DiscreteModel)
-"""
-num_dims(model::DiscreteModel) = num_dims(get_grid_topology(model))
-
-"""
-    num_cell_dims(model::DiscreteModel)
-"""
-num_cell_dims(model::DiscreteModel) = num_cell_dims(get_grid_topology(model))
-
-"""
-    num_point_dims(model::DiscreteModel)
-"""
-num_point_dims(model::DiscreteModel) = num_point_dims(get_grid_topology(model))
 
 """
     num_faces(g::DiscreteModel,d::Integer)
