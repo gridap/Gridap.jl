@@ -59,15 +59,15 @@ function test_nonlinear_solver(
   pred::Function=isapprox)
 
   x1 = copy(x0)
-  cache = solve!(x1,nls,op)
+  cache = @inferred solve!(x1,nls,op)
   @test pred(x1,x)
 
   x1 = copy(x0)
-  cache = solve!(x1,nls,op,cache)
+  cache = @inferred solve!(x1,nls,op,cache)
   @test pred(x1,x)
 
   x1 = copy(x0)
-  cache = solve!(x1,nls,op,cache)
+  cache = @inferred solve!(x1,nls,op,cache)
   @test pred(x1,x)
 
 end
