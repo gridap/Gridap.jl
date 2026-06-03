@@ -437,11 +437,8 @@ function _return_cache(b::_BaryPΛBasis,x,::Type{G},::Val{N_deriv}) where {G,N_d
   cB = CachedVector(zeros(T,ndof_bernstein))
   # Cache for derivatives of Bα (∇Bα or HBα)
   if N_deriv > 0
-    DB = T
     xi = testitem(x)
-    for _ in 1:N_deriv
-      DB = gradient_type(DB,xi)
-    end
+    DB = gradient_type(T,xi,Val(N_deriv))
     # Cache for N_deriv's derivatives all of scalar nD-Bernstein polynomials
     t = (( nothing for _ in 2:N_deriv)..., CachedArray(zeros(DB,(1,ndof_bernstein))))
     s = MArray{Tuple{size(DB)...},T}(undef)
