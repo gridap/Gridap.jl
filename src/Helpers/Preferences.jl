@@ -43,3 +43,31 @@ set_performance_mode() = set_execution_mode("performance")
 else
   const execution_mode = "debug"
 end
+
+"""
+    const default_num_nearest_vertices
+
+Default value of `num_nearest_vertices` used by [`KDTreeSearch`](@ref). Loaded from
+`Preferences.jl` at package load time. Change with [`set_num_nearest_vertices`](@ref)
+and restart Julia for the new value to take effect.
+"""
+@static if VERSION >= v"1.6"
+  const default_num_nearest_vertices = load_preference(Helpers, "num_nearest_vertices", 1)
+else
+  const default_num_nearest_vertices = 1
+end
+
+"""
+    set_num_nearest_vertices(n::Int)
+
+Persists a new default for `num_nearest_vertices` used by [`KDTreeSearch`](@ref).
+Restart Julia for the change to take effect.
+
+A value of 1 (the default) is fast but can fail for points near cell boundaries or mesh
+vertices. Increase to 3–5 if you encounter "Point not found" errors.
+"""
+function set_num_nearest_vertices(n::Int)
+  n > 0 || throw(ArgumentError("num_nearest_vertices must be a positive integer, got $n"))
+  @set_preferences!("num_nearest_vertices" => n)
+  @info("New default_num_nearest_vertices set; restart your Julia session for this change to take effect!")
+end
