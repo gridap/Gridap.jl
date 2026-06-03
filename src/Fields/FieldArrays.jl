@@ -262,10 +262,10 @@ end
 
 function Arrays.testitem(f::LinearCombinationFieldVector{V}) where V
   if !iszero(size(f.values,2))
-    values = f.values
+    values = f.values::V
   else
-    values = zeros(eltype(f.values),size(f.values,1),1)
-  end::V
+    values = zeros(eltype(f.values),size(f.values,1),1)::V
+  end
   LinearCombinationField(values,f.fields,1)
 end
 
@@ -858,3 +858,4 @@ function evaluate!(c,f::ConstantFieldArray{T},x::AbstractArray{<:Point}) where T
   end
   return r
 end
+
