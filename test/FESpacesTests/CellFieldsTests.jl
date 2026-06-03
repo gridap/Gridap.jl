@@ -34,7 +34,9 @@ Random.seed!(0)
 
     coeff0 = rand(Float64)
     coeffs = rand(SVector{D,Float64})
-    f(x) = coeffs ⋅ SVector(Tuple(x)) + coeff0
+    f(x) = let coeffs=coeffs, coeff0=coeff0
+      coeffs ⋅ SVector(Tuple(x)) + coeff0
+    end
     # TODO: use this mechanism instead to project
     # Francesc Verdugo @fverdugo 13:11
     # a(u,v) = ∫( u*v )dΩ
@@ -124,7 +126,7 @@ source_model = CartesianDiscreteModel((0,1,0,1),(2,2))
   end
 
   # VectorValued Lagrangian
-  fᵥ(x) = VectorValue([x[1], x[1]+x[2]])
+  fᵥ(x) = VectorValue(x[1], x[1]+x[2])
   reffe = ReferenceFE(lagrangian, VectorValue{2,et}, 1)
   V₁ = FESpace(source_model, reffe, conformity=:H1)
   fh = interpolate_everywhere(fᵥ, V₁)
@@ -160,7 +162,7 @@ end
 
 @testset "Test interpolation RT" begin
   # RT Space -> RT Space
-  f(x) = VectorValue([x[1], x[2]])
+  f(x) = VectorValue(x[1], x[2])
   reffe = RaviartThomasRefFE(et, p, 0)
   V₁ = FESpace(source_model, reffe, conformity=:HDiv)
   fh = interpolate_everywhere(f, V₁);
@@ -186,7 +188,7 @@ source_model = CartesianDiscreteModel((0,1,0,1),(2,2)) |> simplexify
 @testset "Test interpolation BDM" begin
   # BDM Space -> BDM Space
 
-  f(x) = VectorValue([x[1], x[2]])
+  f(x) = VectorValue(x[1], x[2])
   reffe = BDMRefFE(et, p, 1)
   V₁ = FESpace(source_model, reffe, conformity=:HDiv)
   fh = interpolate_everywhere(f, V₁);

@@ -51,9 +51,9 @@ function test_dg_lap(model,V,order,u_exact)
   βΛ = CellField(β ./ get_array(∫(1)dΛ),Λ)
   nΓ = get_normal_vector(Γ)
   βΓ = CellField(β ./ get_array(∫(1)dΓ),Γ)
-  
-  lap_lhs(u,v) = ∫(∇(u)⋅∇(v))dΩ + 
-                 ∫(βΛ*jump(u*nΛ)⋅jump(v*nΛ) - mean(∇(u))⋅jump(v*nΛ) - mean(∇(v))⋅jump(u*nΛ))dΛ + 
+
+  lap_lhs(u,v) = ∫(∇(u)⋅∇(v))dΩ +
+                 ∫(βΛ*jump(u*nΛ)⋅jump(v*nΛ) - mean(∇(u))⋅jump(v*nΛ) - mean(∇(v))⋅jump(u*nΛ))dΛ +
                  ∫(βΓ*u*v - (∇(u)⋅nΓ)*v - (∇(v)⋅nΓ)*u)dΓ
   lap_rhs(v) = ∫(v*f)dΩ + ∫(βΓ*u_exact*v - (∇(v)⋅nΓ)*u_exact)dΓ
   
@@ -64,7 +64,7 @@ function test_dg_lap(model,V,order,u_exact)
   @test sum(∫(eh⋅eh)dΩ) < 1e-10
 end
 
-order = 2
+let order = 2
 
 # 2D bulk
 u_exact_2d(x) = x[1]^order + x[2]^order
@@ -123,5 +123,6 @@ test_l2_proj(pmodel,VΓ,order,u_exact_3d_vec)
 # VΓ = FESpaces.PolytopalFESpace(Γ,VectorValue{3,Float64},order,space=:P,dirichlet_tags=["boundary"],dirichlet_masks=[true,false,true])
 # @test any(get_cell_dof_ids(VΓ).data .< 0)
 # test_l2_proj(pmodel,VΓ,order,u_exact_3d_vec)
+end # let order
 
 end

@@ -11,7 +11,8 @@ model = CartesianDiscreteModel(domain,partition)
 Gridap.FESpaces.test_fe_space(Λ)
 M = TrialFESpace(Λ)
 
-order = 2
+let order = 2
+
 u((x,y)) = (x+y)^order
 f(x) = -Δ(u,x)
 reffe = ReferenceFE(lagrangian,Float64,order)
@@ -29,6 +30,8 @@ uh = solve(op)
 
 @assert sum(∫((uh[1]-u)*(uh[1]-u))dΩ) < 1.0e-14
 abs(sum(∫(uh[2])dΩ)) < 1.0e-12
+
+end # let order
 
 Λ2 = ConstantFESpace(model,field_type=VectorValue{2,Float64})
 Gridap.FESpaces.test_fe_space(Λ2)
