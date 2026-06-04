@@ -14,30 +14,44 @@ struct KDTreeSearch{T}
 end
 
 """
-    struct Interpolable{M,A} <: Function
+    struct Interpolable{A,T,M} <: Function
+      uh::A           # function to interpolate
+      cell_uh::LA     # get_array(uh)
+      trian::T        # it's triangulation
+      tol::Float64
+      searchmethod::M
+    end
 """
-struct Interpolable{M,A} <: Function
+struct Interpolable{A,LA,T,M} <: Function
   uh::A
+  cell_uh::LA
+  trian::T
   tol::Float64
   searchmethod::M
+
   @doc """
       Interpolable(uh; tol=1e-6, searchmethod=KDTreeSearch(; tol=tol))
   """
-  function Interpolable(uh; tol=1e-10, searchmethod=KDTreeSearch(; tol=tol))
-    new{typeof(searchmethod),typeof(uh)}(uh, tol, searchmethod)
+  function Interpolable(uh::CellField; tol=1e-10, searchmethod=KDTreeSearch(; tol=tol))
+    trian = get_triangulation(uh)
+    cell_uh = get_array(uh)
+    LA = typeof(cell_uh)
+    T = typeof(trian)
+    M = typeof(searchmethod)
+    new{typeof(uh),LA,T,M}(uh, cell_uh, trian, tol, searchmethod)
   end
 end
 
-(a::Interpolable)(x) = evaluate(a,x)
-evaluate!(cache,a::Interpolable,x::Point) = evaluate!(cache,a.uh,x)
-return_cache(f::CellField,x::Point) = return_cache(Interpolable(f),x)
+(a::Interpolable)(x) = evaluate(a, x)
+evaluate!(cache, a::Interpolable, x::Point) = evaluate!(cache, a.uh, x)
+return_cache(f::CellField, x::Point) = return_cache(Interpolable(f), x)
 
 function return_cache(a::Interpolable,x::Point)
-  f = a.uh
-  trian = get_triangulation(f)
-  cache1 = _point_to_cell_cache(a.searchmethod,trian)
+  cache1 = _point_to_cell_cache(a.searchmethod, a.trian)
 
-  cell_f = get_array(f)
+  f = a.uh
+  cell_f = a.cell_uh
+
   cell_f_cache = array_cache(cell_f)
   cf = testitem(cell_f)
   f_cache = return_cache(cf,x)
@@ -47,7 +61,7 @@ function return_cache(a::Interpolable,x::Point)
 end
 
 function evaluate!(cache,f::CellField,x::Point)
-  cache1,cache2 = cache
+  cache1, cache2 = cache
   cell_f_cache, f_cache, cell_f, f₀ = cache2
   @check f === f₀ "Wrong cache"
 
@@ -172,7 +186,7 @@ function _point_to_cell!(cache, x::Point)
     DiracDelta(model, p; searchmethod=KDTreeSearch(num_nearest_vertices=3))
     Interpolable(uh; searchmethod=KDTreeSearch(num_nearest_vertices=3))
 
-  A global default for num_nearest_vertices can be set 
+  A global default for num_nearest_vertices can be set
   with `Helpers.set_num_nearest_vertices(n)`.
   """
 end
