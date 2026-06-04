@@ -632,10 +632,12 @@ end
 
 Test the interface of `ODEOperator` specializations.
 """
-function test_ode_operator(
+Base.@nospecializeinfer function test_ode_operator(
   odeop::ODEOperator,
   t::Real, us::Tuple{Vararg{AbstractVector}}, args...
 )
+  @nospecialize
+
   num_forms = get_num_forms(odeop)
   for k in 0:num_forms-1
     @test is_form_constant(odeop, k) isa Bool

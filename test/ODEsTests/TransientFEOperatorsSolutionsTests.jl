@@ -57,9 +57,11 @@ maxiter = 100
 sysslvr = NonlinearSolverMock(rtol, atol, maxiter)
 odeslvr = ODESolverMock(sysslvr, dt)
 
-function test_transient_operator(
+Base.@nospecializeinfer function test_transient_operator(
   tfeop, uhs0_fe, uhs0_cf, uhs0_dof, constant_forms
 )
+  @nospecialize
+
   odeop = get_algebraic_operator(tfeop)
   odeopcache = allocate_odeopcache(odeop, t0, uhs0_dof)
   update_odeopcache!(odeopcache, odeop, t0)

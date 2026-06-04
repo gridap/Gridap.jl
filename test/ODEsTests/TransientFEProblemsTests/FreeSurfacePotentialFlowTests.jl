@@ -85,7 +85,9 @@ uhΓ0 = interpolate_everywhere(ηₑ(t0), UΓ0)
 xh0 = interpolate_everywhere([uh0, uhΓ0], X0)
 xhs0 = (xh0,)
 
-function test_flow_operator(op)
+Base.@nospecializeinfer function test_flow_operator(op)
+  @nospecialize
+
   fesltn = solve(odeslvr, op, t0, tF, xhs0)
 
   # Post-process

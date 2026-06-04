@@ -143,7 +143,9 @@ end
 
 Test the interface of `TransientFESolution` specializations.
 """
-function test_tfe_solution(tfesltn::TransientFESolution)
+Base.@nospecializeinfer function test_tfe_solution(tfesltn::TransientFESolution)
+  @nospecialize
+
   for (t_n, uh_n) in tfesltn
     @test t_n isa Real
     @test uh_n isa FEFunction
@@ -160,10 +162,11 @@ end
 
 Test the interface of `ODESolver` specializations on `TransientFEOperator`s.
 """
-function test_tfe_solver(
+Base.@nospecializeinfer function test_tfe_solver(
   odeslvr::ODESolver, tfeop::TransientFEOperator,
   t0::Real, tF::Real, uhs0::Tuple{Vararg{AbstractVector}}
 )
+  @nospecialize
   tfesltn = solve(odeslvr, tfeop, t0, tF, uhs0)
   test_tfe_solution(tfesltn)
 end

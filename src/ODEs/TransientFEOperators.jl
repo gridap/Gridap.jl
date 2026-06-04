@@ -925,10 +925,12 @@ end
 
 Test the interface of `TransientFEOperator` specializations.
 """
-function test_tfe_operator(
+Base.@nospecializeinfer function test_tfe_operator(
   tfeop::TransientFEOperator,
   t::Real, uh::TransientCellField
 )
+  @nospecialize
+
   U = get_trial(tfeop)
   Ut = U(t)
   @test Ut isa FESpace
