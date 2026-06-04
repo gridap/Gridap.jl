@@ -263,6 +263,8 @@ end
 function Arrays.testitem(f::LinearCombinationFieldVector{V}) where V
   if !iszero(size(f.values,2))
     values = f.values::V
+  elseif V <: Diagonal
+    values = Diagonal(zeros(eltype(V), 1))
   else
     values = zeros(eltype(f.values),size(f.values,1),1)::V
   end

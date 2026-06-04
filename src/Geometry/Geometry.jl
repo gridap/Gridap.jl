@@ -12,7 +12,7 @@ using Test
 using DocStringExtensions
 using FillArrays
 
-using LinearAlgebra: ⋅
+using LinearAlgebra: ⋅, Diagonal
 using Statistics: mean
 using DataStructures: SortedSet
 using SparseArrays: sparse

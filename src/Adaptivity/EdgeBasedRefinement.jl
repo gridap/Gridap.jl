@@ -567,6 +567,15 @@ function RedRefinementRule(p::Polytope)
   return RefinementRule(RedRefinement(),p,ref_grid)
 end
 
+function compose_refinement_rules(::RedRefinement, ::WithoutRefinement, rr1, rr2)
+  return rr1
+end
+
+function compose_refinement_rules(::RedRefinement, ::RefinementRuleType, rr1, rr2)
+  amodel = refine(RedGreenRefinement(), get_ref_grid(rr2))
+  return RefinementRule(GenericRefinement(), get_polytope(rr2), get_model(amodel))
+end
+
 function _get_red_refined_faces_list(p::Polytope)
   if p == TRI
     return (Int32[1,2,3],Int32[1,2,3],Int32[])

@@ -64,19 +64,21 @@ SymFourthOrderTensorValue{D,T1}(data::Number...) where {D,T1} = SymFourthOrderTe
 
 #From square 4-dim Array
 @generated function _flatten_sym_fourth_order_tensor(data::AbstractArray,::Val{D}) where D
-  check_e = :( @check ($D,$D,$D,$D) == size(data) )
-  str = ""
+  comps = Expr[]
   for i in 1:D
     for j in i:D
       for k in 1:D
         for l in k:D
-          str *= "data[$i,$j,$k,$l],"
+          push!(comps, :(data[$i,$j,$k,$l]) )
         end
       end
     end
   end
-  ret_e = Meta.parse("return ($str)")
-  Expr(:block, check_e, ret_e)
+
+  quote
+    @check ($D,$D,$D,$D) == size(data)
+    return tuple($(comps...))
+  end
 end
 
 SymFourthOrderTensorValue(data::AbstractArray{T}) where {T} = ((D,)=size(data); SymFourthOrderTensorValue{D}(data))
@@ -89,17 +91,17 @@ SymFourthOrderTensorValue{D,T1,L}(data::AbstractArray{T2}) where {D,T1,T2,L} = S
 ###############################################################
 
 @generated function _SymFourthOrder_to_array(arg::SymFourthOrderTensorValue{D,T,L}) where {D,T,L}
-  str = ""
+  comps = Expr[]
   for l in 1:D
     for k in 1:D
       for j in 1:D
         for i in 1:D
-          str *= "arg[$i,$j,$k,$l], "
+          push!(comps, :(arg[$i,$j,$k,$l]))
         end
       end
     end
   end
-  Meta.parse("SArray{Tuple{D,D,D,D},T}(($str))")
+  :( return SArray{Tuple{D,D,D,D},T}( $(Expr(:tuple, comps...))) )
 end
 
 # Inverse conversion
@@ -124,8 +126,11 @@ The scalar type `T2` of the result is `typeof(one(T)/2)`.
 """
 @generated function one(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T}
   S = typeof(one(T)/2)
-  str = join(["($i==$k && $j==$l) ?  ( $i==$j ? one($S) :  one($S)/2) : zero($S), " for i in 1:D for j in i:D for k in 1:D for l in k:D])
-  Meta.parse("SymFourthOrderTensorValue{D,$S}(($str))")
+  comps = [
+    :( (($i==$k && $j==$l) ?  ( $i==$j ? one($S) :  one($S)/2) : zero($S)) )
+    for i in 1:D for j in i:D for k in 1:D for l in k:D
+  ]
+  :( SymFourthOrderTensorValue{D,$S}($(comps...)) )
 end
 
 change_eltype(::Type{<:SymFourthOrderTensorValue{D}},::Type{T2}) where {D,T2} = SymFourthOrderTensorValue{D,T2}

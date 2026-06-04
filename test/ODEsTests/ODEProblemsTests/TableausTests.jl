@@ -34,7 +34,7 @@ matrix = [
 
 for tableauname in available_tableaus
   ButcherTableau(tableauname)
-  tableau = eval(Meta.parse("ODEs." * string(tableauname) * "()"))
+  tableau = eval(:(ODEs.$tableauname()))
   ButcherTableau(tableau, Float64)
 end
 
