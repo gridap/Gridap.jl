@@ -104,7 +104,7 @@ end
 # First-order #
 ###############
 order = 1
-ft(t) = x -> ∂t(u)(t, x) - Δ(u)(t, x)
+ft(t) = let u=u; x -> ∂t(u)(t, x) - Δ(u)(t, x) end
 f = TimeSpaceFunction(ft)
 
 mass(t, ∂ₜu, v) = ∫(∂ₜu ⋅ v) * dΩ
@@ -200,7 +200,7 @@ end
 # Second-order #
 ################
 order = 2
-ft(t) = x -> ∂tt(u)(t, x) + ∂t(u)(t, x) - Δ(u)(t, x)
+ft(t) = let u=u; x -> ∂tt(u)(t, x) + ∂t(u)(t, x) - Δ(u)(t, x) end
 f = TimeSpaceFunction(ft)
 
 mass(t, ∂ₜₜu, v) = ∫(∂ₜₜu ⋅ v) * dΩ

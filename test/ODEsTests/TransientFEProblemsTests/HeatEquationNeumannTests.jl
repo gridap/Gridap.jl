@@ -36,7 +36,7 @@ dΓ = Measure(Γ, degree)
 nΓ = get_normal_vector(Γ)
 
 # FE operator
-ft(t) = x -> ∂t(u)(t, x) - Δ(u)(t, x)
+ft(t) = let u=u; x -> ∂t(u)(t, x) - Δ(u)(t, x) end
 f = TimeSpaceFunction(ft)
 mass(t, ∂ₜu, v) = ∫(∂ₜu ⋅ v) * dΩ
 mass(t, u, ∂ₜu, v) = mass(t, ∂ₜu, v)

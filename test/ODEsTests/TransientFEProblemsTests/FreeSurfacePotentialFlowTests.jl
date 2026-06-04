@@ -6,21 +6,21 @@ using Gridap
 using Gridap.Geometry
 
 # Parameters
-L = 2 * π
-H = 1.0
-n = 8
-order = 2
-g = 9.81
-ξ = 0.1
-λ = L / 2
-k = 2 * π / L
-h = L / n
-ω = √(g * k * tanh(k * H))
-t0 = 0.0
-dt = h / (2 * λ * ω)
-tF = 10 * dt # 2 * π
-α = 2 / dt
-tol = 1.0e-2
+const L = 2 * π
+const H = 1.0
+const n = 8
+const order = 2
+const g = 9.81
+const ξ = 0.1
+const λ = L / 2
+const k = 2 * π / L
+const h = L / n
+const ω = √(g * k * tanh(k * H))
+const t0 = 0.0
+const dt = h / (2 * λ * ω)
+const tF = 10 * dt # 2 * π
+const α = 2 / dt
+const tol = 1.0e-2
 
 # Exact solution
 ϕₑ(t) = x -> ω / k * ξ * (cosh(k * (x[2]))) / sinh(k * H) * sin(k * x[1] - ω * t)
