@@ -166,15 +166,89 @@ function _get_cache(dict,a)
   return nothing
 end
 
-function array_cache(dict::Dict,a::LazyArray)
-  cache = _get_cache(dict,a)
-  if cache === nothing
-    _cache = _array_cache!(dict,a)
-    dict[objectid(a)] = (a,_cache)
-  else
-    _cache = cache
+#function array_cache(dict::IdDict, a::LazyArray)
+#  cacheT = _array_cache!(dict, a)
+#  T = typeof(cacheT)
+#  cache = get!(dict, a) do
+#    cacheT
+#  end
+#  return cache::T
+#end
+
+function array_cache(dict::IdDict, a::LazyArray)
+  cache = get!(dict, a) do
+    _array_cache!(dict, a)
   end
-  _cache
+
+  # We want to error before calling _array_cache_type when _array_cache! isn't inferrable
+  @check try
+    @inferred _array_cache!(dict, a)
+    true
+  catch
+    # try to recursively iddentify the first innermost type unstable sub-branch
+    _search_uninferrable_leaf_of_array_cache!(dict, a)
+    false
+  end _type_inferrability_error
+
+  T = _array_cache_type(a)
+  return cache::T
+end
+
+const _type_inferrability_error = """
+  `Arrays._array_cache!(dict, a)` is not type-inferrable.
+
+  To fix this, make sure that:
+  - all `return_cache` methods of all nested `Map`s of `a` are type stable,
+  - all `array_cache` methods of all nested `LazyArray`s in `a` are type inferrable.
+  See hint above, use @code_warntype and @inferred.
+
+  If this warning appeared after updating Gridap, you can open an issue.
+  However, the appearance of this error might just mean that there was a performance critical issue in the code.
+"""
+
+# The effects used are quite restrictive, they include:
+#  •  :consistent           for === inputs, same manner of termination and return value
+#  •  :effect_free          no mutation of global variable, the heap, the method table, no I/O, no task switching
+#  •  :terminates_globally  the method terminates and in reasonable time (so the compiler should try to infer it's return value)
+#  •  :noub                 no undefined behavior
+#  •  :nortcall             no Core.Compiler.return_type calls
+#  •  :nothrow              does not throw errors
+#
+# We take the risk of abusing these flags since
+# - The return value is a concrete type, so it is a compile time known value.
+# - As long as constant folding is achieved and the correct type is returned,
+#     we don't care about any side effects calling the function could have
+# - We validate that the return value is correctly inferred in a @check in the
+#     caller, so the constant folding should happen if _array_cache_type is used
+"""
+    Base.@assume_effects :foldable :nothrow _array_cache_type(a::LazyArray)
+
+Returns the type of the cache for `a`.
+Should only be called if `_array_cache!(dict,a)` is guaranteed type-inferrable.
+
+This is because this function NEEDS TO BE CONSTANT FOLDED (it over abuses Base.@assume_effects).
+"""
+Base.@assume_effects :foldable :nothrow function _array_cache_type(a::LazyArray)
+  @error """
+    /!\\ DO NOT IGNORE /!\\
+
+    THIS FUNCTION SHOULD NOT RUN, IT NEEDS TO BE CONSTANT FOLDED.
+    That is, the return value (cache type) needs to be determined at compile time.
+
+    This is because this function over abuses `Base.@assume_effects` in order to force
+    constant folding, so running the function may lead to undefined behavior
+    (including crashes, incorrect answers, or other hard to track bugs).
+
+    Switch Gridap to debug mode (`set_debug_mode()`). If you encounter this
+    warning *in debug mode*, *open an issue*.
+
+    The likely cause is:
+    $_type_inferrability_error
+
+    $(sprint(Base.show_backtrace, stacktrace()))
+  """  # this @error already violates :effect_free in :foldable and :nothrow ...
+  cache = _array_cache!(IdDict(), a)
+  return typeof(cache)
 end
 
 # to memoize last access of a lazy array
@@ -188,7 +262,12 @@ function invalidate_cache!(cache::IndexItemPair)
   nothing
 end
 
-function _array_cache!(dict::Dict,a::LazyArray)
+"""
+    _array_cache!(dict::IdDict, a::LazyArray)
+
+Allocates a cache for `a`, storing/getting the caches for `a`'s maps and arguments in `dict`.
+"""
+function _array_cache!(dict::IdDict, a::LazyArray)
   @check begin
     @notimplementedif ! all(map(isconcretetype, map(eltype, a.args)))
     if !(eltype(a.maps) <: Function)
@@ -196,13 +275,14 @@ function _array_cache!(dict::Dict,a::LazyArray)
     end
     true
   end
+  cg = array_cache(dict,a.maps)
+
   gi = testitem(a.maps)
   fi = map(testitem,a.args)
-  cg = array_cache(dict,a.maps)
-  cf = map(fi->array_cache(dict,fi),a.args)
   cgi = return_cache(gi, fi...)
+  cf = map(fi->array_cache(dict,fi),a.args)
+
   index = -1
-  #item = evaluate!(cgi,gi,testargs(gi,fi...)...)
   item = return_value(gi,fi...)
   (cg, cgi, cf), IndexItemPair(index, item)
 end
@@ -261,7 +341,8 @@ function Base.sum(a::LazyArray)
 end
 
 function lazy_sum(cache,a)
-  r = zero(testitem(a))
+  @check !isempty(a)
+  r = zero(getindex!(cache,a,firstindex(a)))
   @inbounds for i in eachindex(a)
     ai = getindex!(cache,a,i)
     r += ai
@@ -444,3 +525,50 @@ function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any,A
   f9 = getindex!(cf[9],args[9],i...)
   evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6,f7,f8,f9)
 end
+
+# Debugging
+
+"""
+    _search_uninferrable_leaf_of_array_cache!(dict, a::LazyArray)
+"""
+function _search_uninferrable_leaf_of_array_cache!(dict::IdDict, a::LazyArray)
+  array_cache(dict, a.maps)
+  for fi in a.args
+    array_cache(dict, fi)
+  end
+
+  gi = testitem(a.maps)
+  fi = map(testitem, a.args)
+  _err = """
+      gi = testitem(a.maps) = $gi
+      fi = map(testitem, a.args) = $fi
+
+      typeof(gi) = $(typeof(gi))
+      typeof(fi) = $(typeof(fi))
+
+      typeof(a):
+      $(typeof(a)))
+
+    """
+
+  try
+    @inferred return_cache(gi, fi...)
+  catch
+    println("""
+      return_cache(gi, fi...) was not inferred
+    """*_err)
+    return
+  end
+
+  try
+    @inferred return_value(gi, fi...)
+  catch
+    println("""
+      return_value(gi, fi...) was not inferred
+    """*_err)
+    return
+  end
+
+  nothing
+end
+

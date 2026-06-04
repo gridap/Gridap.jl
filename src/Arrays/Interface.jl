@@ -95,14 +95,14 @@ It defaults to
 for types `T` such that `uses_hash(T) == Val(false)`, and
 
     function array_cache(a::T) where T
-      hash = Dict{UInt,Any}()
+      hash = IdDict{UInt,Any}()
       array_cache(hash,a)
     end
 
 for types `T` such that `uses_hash(T) == Val(true)`, see the [`uses_hash`](@ref) function. In the later case, the
 type `T` should implement the following signature:
 
-    array_cache(hash::Dict,a::AbstractArray)
+    array_cache(hash::IdDict,a::AbstractArray)
 
 where we pass a dictionary (i.e., a hash table) in the first argument. This hash table can be used to test
 if the object `a` has already built a cache and re-use it as follows
@@ -120,11 +120,11 @@ In multi-threading computations, a different hash table per thread has to be use
 to avoid race conditions.
 """
 array_cache(a::AbstractArray) = _default_array_cache(a,uses_hash(a))
-array_cache(hash::Dict,a::AbstractArray) = _default_array_cache(hash,a,uses_hash(a))
-_default_array_cache(a,s::Val{true}) = array_cache(Dict{UInt,Any}(),a)
+array_cache(hash::IdDict,a::AbstractArray) = _default_array_cache(hash,a,uses_hash(a))
+_default_array_cache(a,s::Val{true}) = array_cache(IdDict(),a)
 _default_array_cache(a,s::Val{false}) = nothing
-_default_array_cache(hash::Dict,a,s::Val{false}) = array_cache(a)
-_default_array_cache(hash::Dict,a,s::Val{true}) = @abstractmethod
+_default_array_cache(hash::IdDict,a,s::Val{false}) = array_cache(a)
+_default_array_cache(hash::IdDict,a,s::Val{true}) = @abstractmethod
 
 """
     uses_hash(::Type{<:AbstractArray})
