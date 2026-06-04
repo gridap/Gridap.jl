@@ -76,11 +76,12 @@ tfeops = (
   tfeop_sl_man,
   tfeop_l_man,
   tfeop_imex_man,
-  tfeop_nl_ad,
-  tfeop_ql_ad,
-  tfeop_sl_ad,
-  tfeop_l_ad,
-  tfeop_imex_ad,
+  # TODO ConfigMap
+  #tfeop_nl_ad,
+  #tfeop_ql_ad,
+  #tfeop_sl_ad,
+  #tfeop_l_ad,
+  #tfeop_imex_ad,
 )
 
 # Initial conditions

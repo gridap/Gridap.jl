@@ -66,6 +66,7 @@ tfeop_nl_ad = TransientFEOperator(res, U, V)
 
 tfeops = (
   tfeop_nl_man,
+  # TODO ConfigMap
   # tfeop_nl_ad
 )
 

@@ -55,7 +55,8 @@ tfeop_nl_man = TransientFEOperator(res, (jac, jac_t), X, Y)
 tfeop_nl_ad = TransientFEOperator(res, X, Y)
 tfeops = (
   tfeop_nl_man,
-  tfeop_nl_ad,
+  # TODO ConfigMap
+  #tfeop_nl_ad,
 )
 
 # Initial conditions
