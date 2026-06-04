@@ -24,6 +24,7 @@ export first_and_tail
 export GridapType
 export GridapLocalInt, set_local_integer_type
 export set_debug_mode, set_performance_mode
+export default_num_nearest_vertices, set_num_nearest_vertices
 export public_names_in_md
 
 include("Preferences.jl")

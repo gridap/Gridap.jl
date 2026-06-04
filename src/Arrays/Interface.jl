@@ -228,7 +228,6 @@ testvalue(::Type{Base.UnitRange{T}}) where T = UnitRange(one(T),zero(T))
 
 function testvalue(::Type{T}) where T<:Fill{E,N,A} where {E,N,A}
   Fill(testvalue(E),testvalue(A))
-  #Fill(zero(E),testvalue(A))
 end
 
 function testvalue(::Type{T}) where T<:FillArrays.AbstractFill{E,N,A} where {E,N,A}

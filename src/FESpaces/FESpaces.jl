@@ -22,7 +22,8 @@ using Gridap.CellData
 using Gridap.TensorValues
 using Gridap.Polynomials
 
-using Gridap.Arrays: Reindex, ConfigMap, DualizeMap, AutoDiffMap, lazy_map, compute_adjacency
+using Gridap.Arrays: Reindex, ConfigMap, DualizeMap, AutoDiffMap, GridapADTag, default_tag
+using Gridap.Arrays: lazy_map, compute_adjacency
 
 using Gridap.Fields: ArrayBlock, BlockMap
 
