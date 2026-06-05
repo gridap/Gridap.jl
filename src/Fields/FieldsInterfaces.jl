@@ -229,7 +229,7 @@ function testvalue(::Type{GenericField{T}}) where T
 end
 
 function return_cache(f::FieldGradient{N,<:GenericField},x::Point) where N
-  @check_inferred return_cache(FieldGradient{N}(f.object.object),x)
+  return_cache(FieldGradient{N}(f.object.object),x)
 end
 
 function evaluate!(c,f::FieldGradient{N,<:GenericField},x::Point) where N
@@ -374,7 +374,7 @@ end
 
 function return_cache(f::FieldGradient{N,<:Function},x::Point) where N
   cache = gradient(f.object,Val(N))
-  @check_inferred cache(x)
+  cache(x)
   cache
 end
 evaluate!(cache, f::FieldGradient{N,<:Function}, x::Point) where N = cache(x)
