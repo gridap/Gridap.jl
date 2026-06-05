@@ -130,6 +130,9 @@ function _time_derivative(T::Type{<:MultiValue}, f, t, x)
   T(ForwardDiff.derivative(partial, t))
 end
 
+#Temporary for Julia 1.10 and 1.11 (Base.Fix1 did support 3 arg functions)
+(dfdt::Base.Fix1{typeof(_time_derivative), <:Function})(t, x) = _time_derivative(dfdt.x, t, x)
+
 ##########################################
 # Specialisation for `TimeSpaceFunction` #
 ##########################################
