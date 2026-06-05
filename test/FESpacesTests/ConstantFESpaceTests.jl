@@ -31,8 +31,6 @@ uh = solve(op)
 @assert sum(∫((uh[1]-u)*(uh[1]-u))dΩ) < 1.0e-14
 abs(sum(∫(uh[2])dΩ)) < 1.0e-12
 
-end # let order
-
 Λ2 = ConstantFESpace(model,field_type=VectorValue{2,Float64})
 Gridap.FESpaces.test_fe_space(Λ2)
 M2 = TrialFESpace(Λ2)
@@ -41,6 +39,8 @@ l2(λ) = ∫(VectorValue(0.0,0.0)⋅λ)dΩ
 op2 = AffineFEOperator(a2,l2,M2,Λ2)
 μ2h = solve(op2)
 @assert sum(∫(μ2h⋅μ2h)dΩ) < 1.0e-12
+
+end # let order
 
 trian = Triangulation(model,[1,2,3,4])
 Λ3 = ConstantFESpace(trian,field_type=VectorValue{2,Float64})
