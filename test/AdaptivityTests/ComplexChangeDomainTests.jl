@@ -193,9 +193,9 @@ function get_model3(model2)
         Gridap.Geometry.Oriented(),
         has_affine_map=true))
 
-    n2o_faces_map = Vector{Gridap.Arrays.Table{Int64, Vector{Int64}, Vector{Int64}}}(undef, 3)
-    n2o_faces_map[3] = Gridap.Arrays.Table(Vector{Int64}[[1], [2, 3, 4, 5]])
-    n2o_cell_to_child_id = Gridap.Arrays.Table(Vector{Int64}[[1], [1, 2, 3, 4]])
+    n2o_faces_map = Vector{Gridap.Arrays.Table{Int, Vector{Int}, Vector{Int}}}(undef, 3)
+    n2o_faces_map[3] = Gridap.Arrays.Table(Vector{Int}[[1], [2, 3, 4, 5]])
+    n2o_cell_to_child_id = Gridap.Arrays.Table(Vector{Int}[[1], [1, 2, 3, 4]])
 
 
     ref_rule_1, ref_rule_2 = get_ref_rules()

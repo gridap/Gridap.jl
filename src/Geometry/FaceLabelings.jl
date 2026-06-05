@@ -545,7 +545,7 @@ function face_labeling_from_cell_tags(
   # Face entities:
   n_entities = n_tags
   to_key(e) = sort!(unique!(filter!(!isequal(UNSET), collect(Int32,e))))
-  entities = Dict{UInt64,Int32}([hash(to_key([i])) => i for i in 1:n_tags])
+  entities = Dict{UInt,Int32}([hash(to_key([i])) => i for i in 1:n_tags])
   for d in D-1:-1:0
     if split_dimensions
       empty!(entities) # Reset entities

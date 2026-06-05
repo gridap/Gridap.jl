@@ -167,7 +167,7 @@ function _sort_by_nfaces!(terms::Vector{CartesianIndex{D}},orders) where D
   rang_nfaces = map(f,bin_ids_nfaces)
   rang_own_dofs = map(g,bin_ids_nfaces)
 
-  P = Int64[]
+  P = Int[]
   for i = 1:length(bin_ids_nfaces)
     cis_nfaces = CartesianIndices(rang_nfaces[i])
     cis_own_dofs = CartesianIndices(rang_own_dofs[i])

@@ -123,7 +123,7 @@ end
 Indices range of the `d`-dimensional faces of `p`. Equivalent to
 [`get_dimranges(p)[d+1]`](@ref get_dimrange).
 """
-function get_dimrange(p::Polytope, d::Integer)::UnitRange{Int64}
+function get_dimrange(p::Polytope, d::Integer)::UnitRange{Int}
   get_dimranges(p)[d+1]
 end
 

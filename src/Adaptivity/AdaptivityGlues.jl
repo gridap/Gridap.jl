@@ -235,6 +235,7 @@ function get_d_to_fface_to_cface(glue::AdaptivityGlue{<:RefinementGlue},
   # Local data for each coarse cell, at the RefinementRule level
   rrules = get_old_cell_refinement_rules(glue)
   ccell_to_d_to_faces = lazy_map(rr->map(d->Geometry.get_faces(get_grid_topology(rr.ref_grid),Dc,d),0:Dc),rrules)
+  #ccell_to_d_to_faces = lazy_map(rr->map(d->Geometry.get_faces(get_grid_topology(rr.ref_grid),Dc,d)::Table{Int32, Vector{Int32}, Vector{Int32}},0:Dc),rrules)
   ccell_to_d_to_fface_to_parent_face = lazy_map(get_d_to_face_to_parent_face,rrules)
   fcell_to_child_id = glue.n2o_cell_to_child_id
 
