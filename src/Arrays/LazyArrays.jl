@@ -532,13 +532,13 @@ end
     _search_uninferrable_leaf_of_array_cache!(dict, a::LazyArray)
 """
 function _search_uninferrable_leaf_of_array_cache!(dict::IdDict, a::LazyArray)
-  array_cache(dict, a.maps)
+  @check_inferred array_cache(dict, a.maps)
   for fi in a.args
-    array_cache(dict, fi)
+    @check_inferred array_cache(dict, fi)
   end
 
-  gi = testitem(a.maps)
-  fi = map(testitem, a.args)
+  gi = @check_inferred testitem(a.maps)
+  fi = @check_inferred map(testitem, a.args)
   _err = """
       gi = testitem(a.maps) = $gi
       fi = map(testitem, a.args) = $fi
