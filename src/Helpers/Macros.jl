@@ -100,10 +100,14 @@ macro check_inferred(ex)
           args_str = map(ids, args_symbs, args_types, args_vals) do i, symb, T, val
             "    $symb::$T = $val\n"
           end
+          ret_type = typeof($(esc(ex)))
 
           msg = """
           InferrabilityException: The following call is not type-inferrable:
               $($ex_str)
+
+          Returned value:
+          $ret_type
 
           Call arguments:
           $(join(args_str, "\n"))
