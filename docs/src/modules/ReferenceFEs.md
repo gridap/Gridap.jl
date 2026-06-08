@@ -257,13 +257,13 @@ The keyword argument `change_dof=true` means that, if possible, the shape
 functions are defined as the basis polynomials of the pre-basis. This is
 possible if the pre-basis verifies a geometric decomposition. Setting
 `change_dof=false` forces the shape functions to be defined as the dual basis of
-the DoF basis. This kwarg do not alter the polynomial space and dual space
+the DoF basis. This kwarg does not alter the polynomial space and dual space
 respectively spanned by the shape-functions and the DoFs basis, but does change
-the DoF basis choice for the dual space.
+the DoF basis choice for the dual space (and usually the DoF ownership to faces).
 
-The kwarg `change_dof` is available for Lagrangian, BDM, Raviart-Thomas, Nédélec
-and Serendipity elements. It defaults to true except for Lagrangian and
-Serendipity. `change_dof` is ignored if the pre-basis for the given `poly_type <:
+The kwarg `change_dof` is implemented for `bdm`, `raviart_thomas`, `nedelec[1,2]`,
+`modal_serendipity` and `modal_lagrangian` elements. It defaults to `true` for
+these elements. `change_dof` is ignored if the pre-basis for the given `poly_type <:
 Polynomial` does not admit the geometric decomposition.
 
 ```@autodocs

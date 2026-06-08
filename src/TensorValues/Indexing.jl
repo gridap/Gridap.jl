@@ -255,8 +255,8 @@ upper-triangular off-diagonal pairs (i,j) with i<j in lexicographic order.
 """
 @generated function to_voigt(a::SymTensorValue{D,T,L}) where {D,T,L}
   pairs = _voigt_pairs(D)
-  str = join(["a[$(p[1]),$(p[2])], " for p in pairs])
-  Meta.parse("VectorValue{$L,T}(($str))")
+  comps = [ :( a[$(p[1]),$(p[2])] ) for p in pairs ]
+  :( return VectorValue{L,T}($(comps...)) )
 end
 
 """
@@ -269,8 +269,8 @@ Decode a Voigt-encoded vector to a symmetric second-order tensor.
   D = (isqrt(1+8*L)-1) ÷ 2
   @assert L == D*(D+1)÷2 "from_voigt: VectorValue length $L is not a valid Voigt vector length"
   inv_map = _voigt_inv(D)
-  str = join(["v[$(inv_map[i,j])], " for i in 1:D for j in i:D])
-  Meta.parse("SymTensorValue{$D,T}(($str))")
+  comps = [ :( v[$(inv_map[i,j])] )  for i in 1:D for j in i:D ]
+  :( return SymTensorValue{$D,T}($(comps...)) )
 end
 
 """
@@ -284,9 +284,8 @@ The output eltype `S` is `promote_op(*, typeof(√2), T)`.
 @generated function to_mandel(a::SymTensorValue{D,T,L}) where {D,T,L}
   S = _mandel_eltype(T)
   pairs = _voigt_pairs(D)
-  terms = [i==j ? "convert($S, a[$i,$j])" : "sqrt($S(2)) * a[$i,$j]" for (i,j) in pairs]
-  str = join(terms, ", ")
-  Meta.parse("VectorValue{$L,$S}(($str,))")
+  comps = [ i==j ? :(convert($S, a[$i,$j])) : :(sqrt($S(2)) * a[$i,$j]) for (i,j) in pairs]
+  :( return VectorValue{L,$S}($(comps...)) )
 end
 
 """
@@ -300,9 +299,8 @@ Decode a Mandel-encoded vector to a symmetric second-order tensor.
   @assert L == D*(D+1)÷2 "from_mandel: VectorValue length $L is not a valid Mandel vector length"
   S = _mandel_eltype(T)
   inv_map = _voigt_inv(D)
-  terms = [i==j ? "convert($S, v[$(inv_map[i,j])])" : "v[$(inv_map[i,j])] / sqrt($S(2))" for i in 1:D for j in i:D]
-  str = join(terms, ", ")
-  Meta.parse("SymTensorValue{$D,$S}(($str,))")
+  comps = [ i==j ? :(convert($S, v[$(inv_map[i,j])])) : :(v[$(inv_map[i,j])] / sqrt($S(2)))  for i in 1:D for j in i:D ]
+  :( return SymTensorValue{$D,$S}($(comps...)) )
 end
 
 """
@@ -315,13 +313,12 @@ where M = D(D+1)/2. Entry [I,J] of the result equals `a[i,j,k,l]`, where
 @generated function to_voigt(a::SymFourthOrderTensorValue{D,T,L}) where {D,T,L}
   M = D*(D+1)÷2
   pairs = _voigt_pairs(D)
-  terms = String[]
+  comps = Expr[]
   for J in 1:M, I in 1:M
     i, j = pairs[I]; k, l = pairs[J]
-    push!(terms, "a[$i,$j,$k,$l]")
+    push!(comps, :(a[$i,$j,$k,$l]))
   end
-  str = join(terms, ", ")
-  Meta.parse("TensorValue{$M,$M,T}(($str,))")
+  :( return TensorValue{$M,$M,T}($(comps...)) )
 end
 
 """
@@ -334,13 +331,12 @@ Decode a Voigt matrix to a symmetric fourth-order tensor.
   D = (isqrt(1+8*N)-1) ÷ 2
   @assert N == D*(D+1)÷2 "from_voigt: TensorValue size $N×$N is not a valid Voigt matrix size"
   inv_map = _voigt_inv(D)
-  terms = String[]
+  comps = Expr[]
   for i in 1:D, j in i:D, k in 1:D, l in k:D
     I = inv_map[i,j]; J = inv_map[k,l]
-    push!(terms, "m[$I,$J]")
+    push!(comps, :(m[$I,$J]))
   end
-  str = join(terms, ", ")
-  Meta.parse("SymFourthOrderTensorValue{$D,T}(($str,))")
+  :( return SymFourthOrderTensorValue{$D,T}($(comps...)) )
 end
 
 """
@@ -355,19 +351,18 @@ The output eltype `S` is `promote_op(*, typeof(√2), T)`.
   M = D*(D+1)÷2
   S = _mandel_eltype(T)
   pairs = _voigt_pairs(D)
-  terms = String[]
+  comps = Expr[]
   for J in 1:M, I in 1:M
     i, j = pairs[I]; k, l = pairs[J]
     if i==j && k==l
-      push!(terms, "convert($S, a[$i,$j,$k,$l])")
+      push!(comps, :(convert($S, a[$i,$j,$k,$l])))
     elseif i==j || k==l
-      push!(terms, "sqrt($S(2)) * a[$i,$j,$k,$l]")
+      push!(comps, :(sqrt($S(2)) * a[$i,$j,$k,$l]))
     else
-      push!(terms, "$S(2) * a[$i,$j,$k,$l]")
+      push!(comps, :($S(2) * a[$i,$j,$k,$l]))
     end
   end
-  str = join(terms, ", ")
-  Meta.parse("TensorValue{$M,$M,$S}(($str,))")
+  :( return TensorValue{$M,$M,$S}($(comps...)) )
 end
 
 """
@@ -381,18 +376,17 @@ Decode a Mandel matrix to a symmetric fourth-order tensor.
   @assert N == D*(D+1)÷2 "from_mandel: TensorValue size $N×$N is not a valid Mandel matrix size"
   S = _mandel_eltype(T)
   inv_map = _voigt_inv(D)
-  terms = String[]
+  comps = Expr[]
   for i in 1:D, j in i:D, k in 1:D, l in k:D
     I = inv_map[i,j]; J = inv_map[k,l]
     if i==j && k==l
-      push!(terms, "convert($S, m[$I,$J])")
+      push!(comps, :(convert($S, m[$I,$J])))
     elseif i==j || k==l
-      push!(terms, "m[$I,$J] / sqrt($S(2))")
+      push!(comps, :(m[$I,$J] / sqrt($S(2))))
     else
-      push!(terms, "m[$I,$J] / $S(2)")
+      push!(comps, :(m[$I,$J] / $S(2)))
     end
   end
-  str = join(terms, ", ")
-  Meta.parse("SymFourthOrderTensorValue{$D,$S}(($str,))")
+  :( return SymFourthOrderTensorValue{$D,$S}($(comps...)) )
 end
 

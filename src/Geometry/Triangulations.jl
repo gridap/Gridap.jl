@@ -344,74 +344,45 @@ end
 
 """
 """
-function pos_neg_data(ipos_to_val::AbstractArray,i_to_iposneg::PosNegPartition)
-  @abstractmethod
+function pos_neg_data(ipos_to_val::AbstractArray, i_to_iposneg::PosNegPartition)
+  n_pos, n_neg = Arrays.pos_and_neg_length(i_to_iposneg)
+  @check length(ipos_to_val) == n_pos
+  ineg_to_val = Fill(testvalue(eltype(ipos_to_val)),n_neg)
+  return ipos_to_val, ineg_to_val
 end
 
 function pos_neg_data(
-  ipos_to_val::AbstractArray{<:Number},i_to_iposneg::PosNegPartition)
-  nineg = length(i_to_iposneg.ineg_to_i)
-  ineg_to_val = Fill(zero(eltype(ipos_to_val)),nineg)
-  ipos_to_val, ineg_to_val
-end
-
-function pos_neg_data(
-  ipos_to_val::AbstractArray{<:AbstractArray{<:Number}},i_to_iposneg::PosNegPartition)
-  nineg = length(i_to_iposneg.ineg_to_i)
-  val = testitem(ipos_to_val)
-  zs = 0 .* size(val)
-  void = similar(val,eltype(val),zs)
-  ineg_to_val = Fill(void,nineg)
-  ipos_to_val, ineg_to_val
-end
-
-function pos_neg_data(
-  ipos_to_val::AbstractArray{<:Field},i_to_iposneg::PosNegPartition)
-  nineg = length(i_to_iposneg.ineg_to_i)
+  ipos_to_val::AbstractArray{T}, i_to_iposneg::PosNegPartition
+) where T <: Union{Field,Dof}
+  n_pos, n_neg = Arrays.pos_and_neg_length(i_to_iposneg)
+  @check length(ipos_to_val) == n_pos
   ipos_to_v = lazy_map(VoidFieldMap(false),ipos_to_val)
-  ineg_to_v = Fill(VoidField(testitem(ipos_to_val),true),nineg)
-  ipos_to_v, ineg_to_v
+  ineg_to_v = Fill(VoidField(testitem(ipos_to_val),true),n_neg)
+  return ipos_to_v, ineg_to_v
 end
 
 function pos_neg_data(
-  ipos_to_val::AbstractArray{<:AbstractArray{<:Field}},i_to_iposneg::PosNegPartition)
-  _pos_neg_data_basis(ipos_to_val,i_to_iposneg)
-end
-
-function pos_neg_data(
-  ipos_to_val::AbstractArray{<:AbstractArray{<:Dof}},i_to_iposneg::PosNegPartition)
-  _pos_neg_data_basis(ipos_to_val,i_to_iposneg)
-end
-
-function _pos_neg_data_basis(ipos_to_val,i_to_iposneg)
-  nineg = length(i_to_iposneg.ineg_to_i)
+  ipos_to_val::AbstractArray{<:AbstractArray{T}}, i_to_iposneg::PosNegPartition
+) where T <: Union{Field,Dof}
+  n_pos, n_neg = Arrays.pos_and_neg_length(i_to_iposneg)
+  @check length(ipos_to_val) == n_pos
   ipos_to_v = lazy_map(VoidBasisMap(false),ipos_to_val)
-  ineg_to_v = Fill(VoidBasis(testitem(ipos_to_val),true),nineg)
-  ipos_to_v, ineg_to_v
+  ineg_to_v = Fill(VoidBasis(testitem(ipos_to_val),true),n_neg)
+  return ipos_to_v, ineg_to_v
 end
 
+# Here we use _similar_empty instead of testvalue to ensure the block structure 
+# is preserved
 function pos_neg_data(
-  ipos_to_val::AbstractArray{<:ArrayBlock},i_to_iposneg::PosNegPartition)
-  nineg = length(i_to_iposneg.ineg_to_i)
-  val = testitem(ipos_to_val)
-  void = _similar_empty(val)
-  ineg_to_val = Fill(void,nineg)
-  ipos_to_val, ineg_to_val
+  ipos_to_val::AbstractArray{<:ArrayBlock}, i_to_iposneg::PosNegPartition
+)
+  n_pos, n_neg = Arrays.pos_and_neg_length(i_to_iposneg)
+  @check length(ipos_to_val) == n_pos
+  ineg_to_val = Fill(_similar_empty(testitem(ipos_to_val)),n_neg)
+  return ipos_to_val, ineg_to_val
 end
 
-function pos_neg_data(
-  ipos_to_val::AbstractArray{<:Tuple{<:Any,<:Any}},i_to_iposneg::PosNegPartition)
-  nineg = length(i_to_iposneg.ineg_to_i)
-  val = testitem(ipos_to_val)
-  void = _similar_empty(val)
-  ineg_to_val = Fill(void,nineg)
-  ipos_to_val, ineg_to_val
-end
-
-function _similar_empty(val::AbstractArray)
-  zs = 0 .* size(val)
-  void = similar(val,eltype(val),zs)
-end
+_similar_empty(val) = testvalue(val)
 
 function _similar_empty(val::ArrayBlock)
   a = deepcopy(val)
@@ -420,16 +391,8 @@ function _similar_empty(val::ArrayBlock)
       a.array[i] = _similar_empty(a.array[i])
     end
   end
-  a
+  return a
 end
-
-function _similar_empty(val::Tuple)
-  a, b = val
-  a1 = _similar_empty(a)
-  b1 = _similar_empty(b)
-  (a1,b1)
-end
-
 
 # "Compose" triangulations
 

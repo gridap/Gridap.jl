@@ -744,6 +744,62 @@ function move_contributions(
 end
 
 ############################################################################################
+# Bounding box grids
+
+"""
+    bounding_box_grid(model::DiscreteModel, ptopo::PatchTopology, d::Integer; δmin=0.0, kwargs...)
+    bounding_box_grid(model::DiscreteModel, trian::PatchTriangulation; δmin=0.0)
+
+Construct a grid of d-cuboids covering the patches of the given patch topology. 
+The parameter `δmin` is a minimum size for the bounding boxes, 
+to avoid degenerate polytopes in case of flat patches.
+"""
+function bounding_box_grid(
+  model::DiscreteModel, ptopo::PatchTopology, d::Integer; δmin=0.0, kwargs...
+)
+  trian = PatchTriangulation(ReferenceFE{d}, model, ptopo; kwargs...)
+  return bounding_box_grid(model, trian; δmin)
+end
+
+function bounding_box_grid(
+  model::DiscreteModel, trian::PatchTriangulation; δmin=0.0
+)
+  D = num_point_dims(model)
+  topo = get_grid_topology(model)
+
+  Df = num_cell_dims(trian)
+  face_to_nodes = Geometry.get_faces(topo,Df,0)
+  vertex_coords = Geometry.get_vertex_coordinates(topo)
+
+  function bbox_coords(faces)
+    nodes = reduce(vcat, [face_to_nodes[face] for face in faces])
+    pmin, pmax = ReferenceFEs.get_bounding_box(vertex_coords[nodes])
+
+    # Add a small offset to avoid degenerate polytopes (flat patches)
+    offset = Point(ntuple(d -> ifelse(pmax[d] - pmin[d] < δmin, δmin/2, 0.0), Val(D)))
+    pmin, pmax = pmin - offset, pmax + offset
+
+    corners = map(CartesianIndices(Tuple(fill(2,D)))) do I
+      Point(ntuple(d -> ifelse(isone(I[d]),pmin[d],pmax[d]), Val(D)))
+    end
+
+    return reshape(corners, 2^D)
+  end
+
+  patch_to_faces = get_patch_faces(trian)
+  cell_coords = Table(lazy_map(bbox_coords, patch_to_faces))
+  node_coordinates = cell_coords.data
+  cell_node_ids = Table(Base.OneTo(length(cell_coords.data)), cell_coords.ptrs)
+  
+  return UnstructuredGrid(
+    node_coordinates, cell_node_ids,
+    [LagrangianRefFE(Float64,ifelse(D==2,QUAD,HEX),1)],
+    fill(Int8(1), length(patch_to_faces));
+    has_affine_map = true
+  )
+end
+
+############################################################################################
 # IO
 
 function to_dict(ptopo::PatchTopology{Dc}) where Dc

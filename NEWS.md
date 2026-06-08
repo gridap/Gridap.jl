@@ -15,6 +15,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added 
 - Changed inner constructor signature of UnstructuredDiscreteModel with flexibility in mind (as per required by GridapGeosciences.jl). Added a new outer constructor as the old inner contructor with backward compatibility in mind. Since PR[#1264](https://github.com/gridap/Gridap.jl/pull/1264)
 
+### Added
+
+- Better control of `num_nearest_vertices` for `KDTreeSearch`. Added a new preference `set_num_nearest_vertices` to set a global default for the library. Since PR[#1312](https://github.com/gridap/Gridap.jl/pull/1312).
+
+## [0.20.8] - 2026-06-01
+
+### Added
+
+- Added type-stable methods to `tensor_contraction` and `Base.permutedims(::MultiValue, perm)`: pass the arguments by `Val`. Since PR[#1301](https://github.com/gridap/Gridap.jl/pull/1301).
+- Added `compose_glues` and `compress_adaptivity`, which are tools that can be used to compress a mesh hierarchy (several levels of refinement) into a single adapted model. Since PR[#1309](https://github.com/gridap/Gridap.jl/pull/1309).
+
+### Fixed
+
+- Fixed bug for Raviart-Thomas on AppendedTriangulations. Since PR[#1302](https://github.com/gridap/Gridap.jl/pull/1302).
+- Fixed type instability in Cartesian mesh constructor. Since PR[#1304](https://github.com/gridap/Gridap.jl/pull/1304).
+
+### Changed
+
+- Changed how tagging works to improve compilation times and allow for nested derivatives involving more than one triangulation. Since PR[#1297](https://github.com/gridap/Gridap.jl/pull/1297).
+
 ## [0.20.7] - 2026-05-12
 
 ### Added
@@ -82,7 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Minor changesto incorporate the changes in Gridap 0.20, specifically the pullback machinery, into GridapDistributed. Since PR[#1258](https://github.com/gridap/Gridap.jl/pull/1258).
+- Minor changes to incorporate the changes in Gridap 0.20, specifically the pullback machinery, into GridapDistributed. Since PR[#1258](https://github.com/gridap/Gridap.jl/pull/1258).
 
 ## [0.20.0] - 2026-03-18
 
