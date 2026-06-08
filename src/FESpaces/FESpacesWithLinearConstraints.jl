@@ -325,7 +325,7 @@ function get_cell_isconstrained(f::FESpaceWithLinearConstraints)
 
     i = 1
     mask = (length(dofs) != length(mdofs))
-    while !mask && (i < length(mdofs))
+    while !mask && (i <= length(mdofs))
       mdof = mdofs[i]
       mDOF = _dof_to_DOF(mdof,n_mfdofs)
       dof  = mDOF_to_dof[mDOF]
