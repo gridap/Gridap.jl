@@ -25,8 +25,8 @@ function get_basis_permutations(poly::Polytope, basis)
 end
 
 function get_basis_permutations(
-    poly::Polytope{D}, b::BernsteinBasisOnSimplex{D}
-  ) where D
+  poly::Polytope{D}, b::BernsteinBasisOnSimplex{D}
+) where D
   @assert is_simplex(poly) && num_dims(poly) == D
   K     = get_order(b)
   verts = get_vertex_coordinates(poly)
@@ -37,8 +37,8 @@ function get_basis_permutations(
 end
 
 function get_basis_permutations(
-    poly::Polytope{D}, b::CartProdPolyBasis{D,V,Bernstein}
-  ) where {D,V}
+  poly::Polytope{D}, b::CartProdPolyBasis{D,V,Bernstein}
+) where {D,V}
   @assert is_n_cube(poly) && num_dims(poly) == D
   K     = get_order(b)
   ncomp = num_indep_components(V)
@@ -58,8 +58,8 @@ function get_basis_permutations(
 end
 
 function get_basis_permutations(
-    poly::Polytope{D}, b::BarycentricPΛBasis{D}
-  ) where D
+  poly::Polytope{D}, b::BarycentricPΛBasis{D}
+) where D
   @assert is_simplex(poly) && num_dims(poly) == D
   b.k == 0 || return nothing
   K     = get_order(b)
@@ -660,14 +660,19 @@ end
 # Default polynomial type for moment based reference FEs
 function _mom_reffe_default_PT(p)
   is_simplex(p) && return Bernstein
-  is_n_cube(p) && return Polynomials.ModalC0
+  is_n_cube(p) && return Bernstein
   Monomial
 end
 
 function get_face_own_dofs_permutations(reffe::GenericRefFE{<:MomentBasedRefFEName}, ::L2Conformity)
-  return _trivial_face_own_dofs_permutations(get_face_own_dofs(reffe, conf))
+  return _trivial_face_own_dofs_permutations(get_face_own_dofs(reffe, L2Conformity()))
 end
 
 function get_face_own_dofs_permutations(reffe::GenericRefFE{<:MomentBasedRefFEName}, conf::Conformity)
-  return dofs.face_own_dofs_permutations
+  dof_basis = get_dof_basis(reffe)
+  if isa(dof_basis, MomentBasedDofBasis) # change_dof=false
+    return dof_basis.face_own_dofs_permutations
+  else # change_dof=true is NOT supported right now
+    return _trivial_face_own_dofs_permutations(get_face_own_dofs(reffe, conf))
+  end
 end
