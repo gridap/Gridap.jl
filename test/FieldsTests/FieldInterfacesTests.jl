@@ -404,4 +404,19 @@ test_field(∇f, p, ∇cp, grad=∇∇cp)
 test_field(∇f, x, ∇(f).(x), grad=∇∇(f).(x))
 test_field(∇f, z, ∇(f).(z), grad=∇∇(f).(z))
 
+p = Point(1., 1.)
+V = VectorValue{3,Float32}
+@test gradient_type(V,p) == TensorValue{2,3,Float64,6}
+@test gradient_type(V,p,Val(0)) == VectorValue{3,Float64}
+@test gradient_type(V,p,Val(1)) == TensorValue{2,3,Float64,6}
+@test gradient_type(V,p,Val(2)) == ThirdOrderTensorValue{2,2,3,Float64,12}
+@test gradient_type(V,p,Val(3)) == HighOrderTensorValue{Tuple{2,2,2,3},Float64,4,24}
+@test_throws "not yet implemented" gradient_type(V,p,Val(4))
+
+G = gradient_type(V,p)
+H = gradient_type(G,p)
+@test H == ThirdOrderTensorValue{2,2,3,Float64,12}
+J = gradient_type(H,p)
+@test J  == HighOrderTensorValue{Tuple{2,2,2,3},Float64,4,24}
+
 end # module
