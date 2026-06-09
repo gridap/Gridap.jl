@@ -374,7 +374,6 @@ end
 
 function return_cache(f::FieldGradient{N,<:Function},x::Point) where N
   cache = gradient(f.object,Val(N))
-  cache(x)
   cache
 end
 evaluate!(cache, f::FieldGradient{N,<:Function}, x::Point) where N = cache(x)
