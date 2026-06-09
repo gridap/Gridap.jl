@@ -374,26 +374,6 @@ end
 function apply_face_signflip(
   b::CompWiseTensorPolyBasis{D}, p::Polytope, conf::DivConformity) where D
 
-  sign_flip = _CompWiseTensorPolyBasis_facet_signflip(b, p, conf)
-  linear_combination(sign_flip, b)
-end
-
-function apply_face_signflip(
-  b::CompWiseTensorPolyBasis{D}, p::Polytope, conf::CurlConformity) where D
-
-  D > 3 && @notimplemented
-
-  if is_n_cube(p) && D ==3
-    sign_flip = _CompWiseTensorPolyBasis_facet_signflip(b, p, conf)
-    return linear_combination(sign_flip, b)
-  else
-    return b
-  end
-end
-
-function _CompWiseTensorPolyBasis_facet_signflip(
-  b::CompWiseTensorPolyBasis{D}, p, conf) where D
-
   facet_range = get_dimrange(p,D-1)
   face_own_funs = get_face_own_funs(b,p,conf)
   sign_flip = fill(1, length(b))
@@ -404,7 +384,52 @@ function _CompWiseTensorPolyBasis_facet_signflip(
       sign_flip[own_funs] .= iseven(face-first(facet_range)) ? -1 : 1
     end
   end
-  return Diagonal(sign_flip)
+
+  linear_combination(Diagonal(sign_flip), b)
+end
+
+function apply_face_signflip(
+  b::CompWiseTensorPolyBasis{D}, p::Polytope, conf::CurlConformity) where D
+
+  D > 3 && @notimplemented
+
+  if is_n_cube(p) && D ==3
+    facet_range = get_dimrange(p,2)
+    face_own_funs = get_face_own_funs(b,p,conf)
+    sign_flip = fill(1, length(b))
+
+    for (face, own_funs) in enumerate(face_own_funs)
+      if face ∈ facet_range
+        # Summary: for consistency with the moments φ -> ∫((φ×n)⋅μ)dF defined in NedelecRefFEs.jl,
+        # the tangential traces
+        #     (bᵢ×n ⋅ E e₁|Fⱼ)
+        # and
+        #     (bᵢ×n ⋅ E e₂|Fⱼ)
+        # need to be equal for all j (Fⱼ is the j'th facet), where
+        #  - i ∈ own_funs is local to the facet
+        #  - bᵢ is the ith facet owned polynomial
+        #  - e₁/e₂ are tangent vectors to QUAD ( VectorValue(1,0), VectorValue(0,1) )
+
+        # it happens that the first half of the face owned shapefuns are
+        # along n⋅E e₂, and the second half are along n⋅E e₁, there's always an
+        # even number of facet owned shapefuns for Q spaces
+        n_own_funs = length(own_funs)
+        tan_1_own_funs = own_funs[begin:(n_own_funs÷2)]
+        tan_2_own_funs = own_funs[(n_own_funs÷2+1):end]
+
+        lfacet = face-21+1 # There's 21 vertex+edges in an HEX
+        # empirically determined, see GeometricDecompositionsTests
+        facet_sign = [1 -1 -1 1 1 -1][lfacet]
+
+        sign_flip[tan_1_own_funs] .= flipsign(-1, facet_sign)
+        sign_flip[tan_2_own_funs] .= flipsign( 1, facet_sign)
+      end
+    end
+
+    return linear_combination(Diagonal(sign_flip), b)
+  else
+    return b
+  end
 end
 
 
