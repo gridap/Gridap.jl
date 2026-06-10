@@ -205,6 +205,8 @@ export PatchTopology
 export PatchTriangulation
 export PatchBoundaryTriangulation
 
+export loop_surface_model
+
 include("Grids.jl")
 
 include("GridMocks.jl")
@@ -248,5 +250,7 @@ include("AppendedTriangulations.jl")
 include("CompressedCellArrays.jl")
 
 include("PatchTriangulations.jl")
+
+include("SubdivisionSurfaceModels.jl")
 
 end # module

@@ -245,7 +245,7 @@ end
 
 function generate_patch_faces(ptopo::PatchTopology{Dc},Df) where Dc
   cell_to_faces = get_faces(ptopo.topo,Dc,Df)
-  patch_cells = get_patch_cells(ptopo)
+  patch_cells = get_patch_cells(ptopo) # already filled at ptopo creation
   return Arrays.merge_entries(cell_to_faces, patch_cells; acc = SortedSet{Int32}())
 end
 
@@ -323,29 +323,29 @@ end
 
 function get_patch_boundary_info(ptopo::PatchTopology{Dc}) where Dc
   patch_cells = get_patch_cells(ptopo)
-  patch_faces = get_patch_faces(ptopo,Dc-1)
-  face_to_cells = get_faces(ptopo.topo,Dc-1,Dc)
+  patch_facets = get_patch_faces(ptopo, Dc-1)
+  facet_to_cells = get_faces(ptopo.topo, Dc-1, Dc)
 
-  n_pfaces = num_faces(ptopo,Dc-1)
-  pface_to_isboundary = fill(false,n_pfaces)
-  pface_to_lcell = fill(Int8(1),n_pfaces)
+  n_pfacets = num_faces(ptopo,Dc-1)
+  pfacet_to_isboundary = fill(false, n_pfacets)
+  pfacet_to_lcell = fill(Int8(1), n_pfacets)
 
   k = 1
   for patch in 1:num_patches(ptopo)
-    pcells = view(patch_cells,patch)
-    pfaces = view(patch_faces,patch)
-    for pface in pfaces
-      pface_cells = view(face_to_cells,pface)
+    pcells = view(patch_cells, patch)
+    pfacets = view(patch_facets, patch)
+    for pfacet in pfacets
+      pface_cells = view(facet_to_cells, pfacet)
       lcells = findall(c -> c in pcells, pface_cells)
       if isone(length(lcells))
-        pface_to_isboundary[k] = true
-        pface_to_lcell[k] = Int8(lcells[1])
+        pfacet_to_isboundary[k] = true
+        pfacet_to_lcell[k] = Int8(lcells[1])
       end
       k += 1
     end
   end
 
-  return pface_to_isboundary, pface_to_lcell
+  return pfacet_to_isboundary, pfacet_to_lcell
 end
 
 function get_pface_to_patch(ptopo::PatchTopology,Df::Integer)

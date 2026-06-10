@@ -307,4 +307,6 @@ include("ModalC0RefFEs.jl")
 
 include("BubbleRefFEs.jl")
 
+include("LoopRefFEs.jl")
+
 end # module
