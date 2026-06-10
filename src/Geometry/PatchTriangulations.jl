@@ -5,7 +5,7 @@
       d_to_patch_to_dfaces :: Vector{Table{Int32,Vector{Int32},Vector{Int32}}}
     end
 
-# Fields: 
+# Fields:
 
 - `topo`: Underlying grid topology
 - `d_to_patch_to_dfaces`: For each dimension `d`, a table mapping each patch to it's d-faces.
@@ -97,7 +97,7 @@ function InterfacePatchTopology(ptopo::PatchTopology; patch_ids = 1:num_patches(
   d_to_iface_to_dfaces = Vector{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,D+1)
   d_to_iface_to_dfaces[D+1] = Table(lazy_map(unique,lazy_map(Broadcasting(Reindex(pface_to_cell)), iface_to_pfaces)))
   d_to_iface_to_dfaces[D] = Table(lazy_map(Broadcasting(Reindex(pface_to_face)), iface_to_pfaces))
-  
+
   return PatchTopology(topo,d_to_iface_to_dfaces,nothing)
 end
 
@@ -149,7 +149,7 @@ end
     is_cover(ptopo::PatchTopology)
     is_cover(topo::GridTopology, patch_cells::Table)
 
-Returns `true` if the given patch topology is a cover of the underlying topology, i.e 
+Returns `true` if the given patch topology is a cover of the underlying topology, i.e
 if every cell in the topology is contained in at least one patch.
 """
 function is_cover(ptopo::PatchTopology)
@@ -219,7 +219,7 @@ function is_partition(topo::GridTopology, patch_cells; fail_fast = true, require
   end
 
   # Check patch connectivity
-  # We could return false at the first bad patch, but I'd rather get 
+  # We could return false at the first bad patch, but I'd rather get
   # all bad patch indices for debugging purposes.
   D = num_cell_dims(topo)
   cell_to_facets = get_faces(topo,D,D-1)
@@ -299,16 +299,16 @@ end
 
 function compute_isboundary_face(ptopo::PatchTopology{Dc},d::Integer) where Dc
   # Cells
-  if d == Dc 
+  if d == Dc
     return fill(false,num_faces(ptopo,Dc))
   end
 
   # Facets
   isboundary_facet, _ = get_patch_boundary_info(ptopo)
-  if d == Dc-1 
+  if d == Dc-1
     return isboundary_facet
   end
-  
+
   # Faces: Boundary if belongs to a boundary facet
   facet_to_faces = generate_patch_faces(ptopo,Dc-1,d)
   face_mask = fill(false,num_faces(ptopo,d))
@@ -449,7 +449,7 @@ function restrict(ptopo::PatchTopology, ::IdentityVector; kwargs...)
 end
 
 function restrict(
-  ptopo::PatchTopology, cell_to_parent_cell::AbstractArray{<:Integer}; 
+  ptopo::PatchTopology, cell_to_parent_cell::AbstractArray{<:Integer};
   remove_empty_patches = false
 )
   Dc = num_cell_dims(ptopo)
@@ -465,7 +465,7 @@ function restrict(
       dface_to_parent_dface, num_faces(topo,d)
     )
     patch_to_parent_dfaces = get_patch_faces(ptopo,d)
-    
+
     ptrs = zeros(Int32, n_patches+1)
     for patch in 1:n_patches
       parent_dfaces = view(patch_to_parent_dfaces,patch)
@@ -514,8 +514,8 @@ function extend_patches_by_single_layer(ptopo::PatchTopology{Dc}) where Dc
   patch_to_nodes = get_patch_faces(ptopo,0)
 
   patch_cells = Arrays.merge_entries(
-    nodes_to_cells, patch_to_nodes; 
-    acc  = SortedSet{Int32}(), 
+    nodes_to_cells, patch_to_nodes;
+    acc  = SortedSet{Int32}(),
     post = dofs -> filter(x -> x > 0, dofs)
   )
   return PatchTopology(topo, patch_cells, nothing)
@@ -704,10 +704,10 @@ function get_patch_faces(trian::PatchTriangulation)
   return Table(lazy_map(Reindex(tface_to_face),patch_to_tfaces.data),patch_to_tfaces.ptrs)
 end
 
-# Domain changes between PatchTriangulations: 
+# Domain changes between PatchTriangulations:
 #
 # The idea here is that we cannot go from a PatchTriangulation to a Triangulation because
-# the PatchTriangulation, in general, IS NOT injective. 
+# the PatchTriangulation, in general, IS NOT injective.
 # I.e the tface_to_face map is not injective.
 # However, two PatchTriangulations from the same PatchTopology can be mapped to each other
 # since the map tface_to_pface IS injective.
@@ -740,8 +740,8 @@ end
     bounding_box_grid(model::DiscreteModel, ptopo::PatchTopology, d::Integer; δmin=0.0, kwargs...)
     bounding_box_grid(model::DiscreteModel, trian::PatchTriangulation; δmin=0.0)
 
-Construct a grid of d-cuboids covering the patches of the given patch topology. 
-The parameter `δmin` is a minimum size for the bounding boxes, 
+Construct a grid of d-cuboids covering the patches of the given patch topology.
+The parameter `δmin` is a minimum size for the bounding boxes,
 to avoid degenerate polytopes in case of flat patches.
 """
 function bounding_box_grid(
@@ -780,7 +780,7 @@ function bounding_box_grid(
   cell_coords = Table(lazy_map(bbox_coords, patch_to_faces))
   node_coordinates = cell_coords.data
   cell_node_ids = Table(Base.OneTo(length(cell_coords.data)), cell_coords.ptrs)
-  
+
   return UnstructuredGrid(
     node_coordinates, cell_node_ids,
     [LagrangianRefFE(Float64,ifelse(D==2,QUAD,HEX),1)],
