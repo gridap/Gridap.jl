@@ -5,7 +5,7 @@
 
 where `Name` is either `Lagrangian` or `Serendipity`.
 """
-struct ModalScalar{F} <: ReferenceFEName
+struct ModalScalar{F} <: MomentBasedRefFEName
   ModalScalar{Lagrangian}() = new{Lagrangian}()
   ModalScalar(::Lagrangian) = new{Lagrangian}()
   ModalScalar{Serendipity}() = new{Serendipity}()
@@ -64,8 +64,9 @@ function ModalScalarRefFE(::Type{T}, p::Polytope{D}, r::Integer; F::Symbol,
                  FEEC_poly_basis(Val(d),T,r-1,d,:Q⁻,MPT; cart_prod)
                  : nothing) for d in 0:D ]                # Q⁻ᵨΛᵈ(□ᵈ), ρ = r-1
     elseif F==:S
+      PT  = PT  == Bernstein ? Polynomials.ModalC0 : PT
       prebasis = FEEC_poly_basis(Val(D),T,r,   0,:S,PT; cart_prod)   # SᵣΛ⁰(□ᴰ)
-      MPT = MPT == Polynomials.ModalC0 ? Legendre : MPT
+      MPT = MPT in (Polynomials.ModalC0, Bernstein) ? Legendre : MPT
       mb = [ (r-2d >= 0 ?
                  FEEC_poly_basis(Val(d),T,r-2d,d,:P,MPT; cart_prod)
                  : nothing) for d in 0:D ]                # PᵨΛᵈ(□ᵈ), ρ = r-2*d

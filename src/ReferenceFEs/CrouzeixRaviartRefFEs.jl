@@ -1,7 +1,7 @@
 """
     struct CrouzeixRaviart  <: ReferenceFEName
 """
-struct CrouzeixRaviart <: ReferenceFEName end
+struct CrouzeixRaviart <: MomentBasedRefFEName end
 
 """
     const crouzeix_raviart = CrouzeixRaviart()

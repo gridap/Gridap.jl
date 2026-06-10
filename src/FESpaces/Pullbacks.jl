@@ -91,14 +91,14 @@ function compute_cell_bases_changes(
 )
   D = num_cell_dims(model)
   poly = only(get_polytopes(model))
-  if (D==2) || is_simplex(poly)
-    # For these cases, we do not need to aply a sign flip
-    return nothing
-  elseif (D==3) && is_n_cube(poly)
-    change = get_sign_flip(model, cell_reffe)
-    return (change,change)
+  change = get_edge_flip(model, cell_reffe)
+  if (D==3) && is_n_cube(poly)
+    facet_change = get_sign_flip(model, cell_reffe)
+    change = lazy_map(*, facet_change, change)
+  elseif !((D==2) || is_simplex(poly))
+    @notimplemented
   end
-  @notimplemented
+  return (change,change)
 end
 
 using Gridap.ReferenceFEs: DoubleContraVariantPiolaMap
@@ -205,6 +205,72 @@ function compute_facet_owners(model::DiscreteModel{Dc}, select_nbor=maximum) whe
     owners[facet] = Int32(owner)
   end
   return owners
+end
+
+###############
+# EdgeSignMap #
+###############
+
+function get_edge_flip(model::DiscreteModel, cell_reffe, sign_map = EdgeSignMap(model))
+  get_edge_own_dofs(reffe) = view(get_face_own_dofs(reffe),get_dimrange(get_polytope(reffe),1))
+  cell_edge_own_dofs = lazy_map(get_edge_own_dofs, cell_reffe)
+  cell_ids = IdentityVector(Int32(num_cells(model)))
+  return lazy_map(sign_map, cell_reffe, cell_edge_own_dofs, cell_ids)
+end
+
+"""
+    struct EdgeSignMap <: Map
+      ...
+    end
+
+The `EdgeSignMap` computes the signs to apply to the mapped reference edge
+tangents, for each edge of a physical cell.
+
+`get_edge_tangent` returns a fixed reference-polytope tangent direction
+(`v2-v1` in the cell's local edge-vertex order) for each local edge. When a
+cell's local edge-vertex order is reversed relative to the canonical order
+used to build `face_own_dofs_permutations` (`pindex == 2`), the physical
+tangent direction is reversed too. This contributes a uniform `-1` factor on
+all dofs of that edge, on top of the index permutation already accounted for
+by `face_own_dofs_permutations`.
+"""
+struct EdgeSignMap{T} <: Map
+  model::T
+end
+
+function return_value(k::EdgeSignMap,reffe,edge_own_dofs,cell)
+  Diagonal(fill(one(Float64), num_dofs(reffe)))
+end
+
+function return_cache(k::EdgeSignMap,reffe,edge_own_dofs,cell)
+  model = k.model
+  topo = get_grid_topology(model)
+
+  cell_edge_pindex = get_cell_permutations(topo, 1)
+  cell_edge_pindex_cache = array_cache(cell_edge_pindex)
+
+  return cell_edge_pindex, cell_edge_pindex_cache, CachedVector(Float64)
+end
+
+function evaluate!(cache,k::EdgeSignMap,reffe,edge_own_dofs,cell)
+  cell_edge_pindex,cell_edge_pindex_cache,dof_sign_cache = cache
+
+  setsize!(dof_sign_cache, (num_dofs(reffe),))
+  dof_sign = dof_sign_cache.array
+
+  o = one(eltype(dof_sign))
+  fill!(dof_sign, o)
+
+  pindices = getindex!(cell_edge_pindex_cache,cell_edge_pindex,cell)
+  for (ledge,pindex) in enumerate(pindices)
+    if pindex == 2
+      for dof in edge_own_dofs[ledge]
+        dof_sign[dof] = -o
+      end
+    end
+  end
+
+  return Diagonal(dof_sign)
 end
 
 #################
