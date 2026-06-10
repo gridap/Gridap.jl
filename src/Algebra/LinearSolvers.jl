@@ -147,11 +147,11 @@ function test_linear_solver(
   ss = symbolic_setup(ls,A)
   ns = numerical_setup(ss,A)
   numerical_setup!(ns,A)
-  solve!(y,ns,b)
+  @inferred solve!(y,ns,b)
   @test x ≈ y
 
   y .= zero(eltype(y))
-  solve!(y,ls,A,b)
+  @inferred solve!(y,ls,A,b)
   @test x ≈ y
 
   op = AffineOperator(A,b)

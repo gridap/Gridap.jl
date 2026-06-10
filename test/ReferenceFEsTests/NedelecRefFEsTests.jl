@@ -47,8 +47,7 @@ test_reference_fe(reffe)
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
 
-v = VectorValue(3.0,0.0)
-field = GenericField(x->v*x[1])
+field = GenericField(x->VectorValue(3.0,0.0)*x[1])
 
 cache = return_cache(dof_basis,field)
 r = evaluate!(cache, dof_basis, field)
@@ -76,8 +75,7 @@ test_reference_fe(reffe)
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
 
-v = VectorValue(3.0,1.0,-2.)
-field = GenericField(x->v*x[1]*x[2]*x[3])
+field = GenericField(x->VectorValue(3.0,1.0,-2.)*x[1]*x[2]*x[3])
 
 cache = return_cache(dof_basis,field)
 r = evaluate!(cache, dof_basis, field)
@@ -241,18 +239,18 @@ dof_basis = get_dof_basis(reffe)
 
 face_odofs_L2 = get_face_own_dofs(reffe,L2Conformity())
 
-@test face_odofs_L2 == [Int64[], Int64[], Int64[], Int64[],
-                     Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[],
+@test face_odofs_L2 == [Int[], Int[], Int[], Int[],
+                     Int[], Int[], Int[], Int[], Int[], Int[], Int[], Int[], Int[], Int[],
                     collect(1:20)]
 
 face_odofs    = get_face_own_dofs(reffe)
 face_cdofs    = get_face_dofs(reffe)
 
-@test face_odofs == [Int64[], Int64[], Int64[], Int64[],
+@test face_odofs == [Int[], Int[], Int[], Int[],
                     [1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16], [17, 18], [19, 20],
-                    Int64[]]
+                    Int[]]
 
-@test face_cdofs == [Int64[], Int64[], Int64[], Int64[],
+@test face_cdofs == [Int[], Int[], Int[], Int[],
                      [1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12],
                      [1, 2, 3, 4, 5, 6, 13, 14], [1, 2, 7, 8, 9, 10, 15, 16], [3, 4, 7, 8, 11, 12, 17, 18], [5, 6, 9, 10, 11, 12, 19, 20],
                      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]]
@@ -271,14 +269,14 @@ dof_basis = get_dof_basis(reffe)
 
 face_odofs_L2 = get_face_own_dofs(reffe,L2Conformity())
 
-@test face_odofs_L2 == [Int64[], Int64[], Int64[], Int64[],
-                     Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[], Int64[],
+@test face_odofs_L2 == [Int[], Int[], Int[], Int[],
+                     Int[], Int[], Int[], Int[], Int[], Int[], Int[], Int[], Int[], Int[],
                     collect(1:84)]
 
 face_odofs    = get_face_own_dofs(reffe)
 face_cdofs    = get_face_dofs(reffe)
 
-@test face_odofs == [Int64[], Int64[], Int64[], Int64[],
+@test face_odofs == [Int[], Int[], Int[], Int[],
   [1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16], [17, 18, 19, 20], [21, 22, 23, 24],
   [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36],  # facet 123
   [37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48],  # facet 124

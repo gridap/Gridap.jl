@@ -165,10 +165,8 @@ function return_cache(
   @assert D == length(eltype(x)) "Incorrect number of point components"
   f = fg.fa
   xi = testitem(x)
-  G = _return_val_eltype(f,x)
-  for _ in 1:N
-    G = gradient_type(G,xi)
-  end
+  VV = _return_val_eltype(f,x)
+  G = gradient_type(VV,xi,Val(N))
   _return_cache(f,x,G,Val(N))
 end
 

@@ -115,14 +115,10 @@ function Base.getindex(b::ConcatenatedDofVector, i::Integer)
 end
 
 function Arrays.return_cache(b::ConcatenatedDofVector, field)
-  args_caches = ()
-  Ts = ()
-  for dofs_i in b.args
-    ci = return_cache(dofs_i, field)
+  args_caches = map(dofs_i -> return_cache(dofs_i, field), b.args)
+  Ts = map(b.args, args_caches) do dofs_i, ci
     vals = evaluate!(ci, dofs_i, field)
-    Ti = eltype(vals)
-    Ts = (Ts..., Ti)
-    args_caches = (args_caches..., ci)
+    eltype(vals)
   end
 
   r_size = field isa AbstractVector ? (length(b),length(field)) : (length(b),)

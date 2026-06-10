@@ -105,26 +105,33 @@ end
 # Specialisation for `Function` #
 #################################
 function time_derivative(f::Function)
+  # dfdt = t ->  ( x -> _time_derivative(f, t, x) )
+  #dfdt(t) = Fix1(Fix1(_time_derivative, f), t)
   function dfdt(t)
-    ft = f(t)
-    function dfdt_t(x)
-      T = return_type(ft, x)
-      _time_derivative(T, f, t, x)
-    end
+    # dfdt_t(x) = _time_derivative(f, t, x)
+    dfdt_t(x) = Fix1(Fix1(_time_derivative, f), t)(x)
     dfdt_t
   end
   dfdt
 end
 
+function _time_derivative(f, t, x)
+  T = return_type(f(t), x)
+  _time_derivative(T, f, t, x)
+end
+
 function _time_derivative(T::Type{<:Real}, f, t, x)
   partial(t) = f(t)(x)
-  ForwardDiff.derivative(partial, t)
+  T(ForwardDiff.derivative(partial, t))::T
 end
 
 function _time_derivative(T::Type{<:MultiValue}, f, t, x)
   partial(t) = get_array(f(t)(x))
   T(ForwardDiff.derivative(partial, t))
 end
+
+#Temporary for Julia 1.10 and 1.11 (Base.Fix1 did support 3 arg functions)
+(dfdt::Base.Fix1{typeof(_time_derivative), <:Function})(t, x) = _time_derivative(dfdt.x, t, x)
 
 ##########################################
 # Specialisation for `TimeSpaceFunction` #

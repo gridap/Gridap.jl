@@ -48,14 +48,12 @@ p = Point(0.2,0.3)
 δ = DiracDelta(model,p)
 @test sum(δ(v)) ≈ v(p)
 
-@show δ = DiracDelta(Ω,p)
 @test sum(δ(v)) ≈ v(p)
 
 pvec = [p,π*p]
 δ = DiracDelta(model,pvec)
 @test sum(δ(v)) ≈ sum(v(pvec))
 
-@show δ = DiracDelta(Ω,pvec)
 @test sum(δ(v)) ≈ sum(v(pvec))
 
 p = Point(0.2,0.3)

@@ -33,7 +33,7 @@ degree = 2 * order
 dΩ = Measure(Ω, degree)
 
 # FE operator
-ft(t) = x -> ∂t(u)(t, x) - Δ(u)(t, x)
+ft(t) = let u=u; x -> ∂t(u)(t, x) - Δ(u)(t, x) end
 f = TimeSpaceFunction(ft)
 _mass(t, ∂ₜu, v) = ∫(∂ₜu ⋅ v) * dΩ
 _mass(t, u, ∂ₜu, v) = _mass(t, ∂ₜu, v)

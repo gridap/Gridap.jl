@@ -20,7 +20,7 @@ _r = key_to_val.(keys)
 @test all(_r .== collect(r))
 
 
-key_to_val(i) = LagrangianRefFE(Float64,HEX,i)
+key_to_val(i) = LagrangianRefFE(Float64,HEX,i)::GenericLagrangianRefFE{GradConformity, 3}
 
 m = KeyToValMap(key_to_val)
 keys = [1,2,3,4,5,4,3,2,1]

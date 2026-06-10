@@ -11,7 +11,8 @@ model = CartesianDiscreteModel(domain,partition)
 Gridap.FESpaces.test_fe_space(Λ)
 M = TrialFESpace(Λ)
 
-order = 2
+let order = 2
+
 u((x,y)) = (x+y)^order
 f(x) = -Δ(u,x)
 reffe = ReferenceFE(lagrangian,Float64,order)
@@ -38,6 +39,8 @@ l2(λ) = ∫(VectorValue(0.0,0.0)⋅λ)dΩ
 op2 = AffineFEOperator(a2,l2,M2,Λ2)
 μ2h = solve(op2)
 @assert sum(∫(μ2h⋅μ2h)dΩ) < 1.0e-12
+
+end # let order
 
 trian = Triangulation(model,[1,2,3,4])
 Λ3 = ConstantFESpace(trian,field_type=VectorValue{2,Float64})

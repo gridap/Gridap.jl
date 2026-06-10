@@ -38,7 +38,7 @@ dΛ = Measure(Λ, degree)
 nΛ = get_normal_vector(Λ)
 
 # FE operator
-ft(t) = x -> ∂t(u)(t, x) - Δ(u)(t, x)
+ft(t) = let u=u; x -> ∂t(u)(t, x) - Δ(u)(t, x) end
 f = TimeSpaceFunction(ft)
 h = 1 / 5
 γ = order * (order + 1)

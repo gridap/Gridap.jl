@@ -33,12 +33,10 @@ function GridWithFEMap(model,orders::AbstractArray; kwargs...)
   ct = get_cell_type(model)
   ps = lazy_map(Reindex(_ps), ct)
 
-  f(a,b) = LagrangianRefFE(T,a,b)
-  reffes = lazy_map(f,ps,os)
+  reffes = map( (a,b) -> LagrangianRefFE(T,a,b), ps,os)
   Vₕ = FESpace(model,reffes;conformity=:H1,kwargs...)
 
-  fs(a,b) = LagrangianRefFE(Ts,a,b)
-  s_reffes = lazy_map(f,ps,os)
+  s_reffes  = map( (a,b) -> LagrangianRefFE(Ts,a,b), ps,os)
   Vₕ_scal = FESpace(model,s_reffes;conformity=:H1)
 
   grid = get_grid(model)

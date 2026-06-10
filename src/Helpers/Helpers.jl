@@ -5,6 +5,7 @@ $(public_names_in_md(@__MODULE__))
 """
 module Helpers
 using DocStringExtensions
+using Test
 
 @static if VERSION >= v"1.6"
   using Preferences
@@ -18,6 +19,7 @@ export @notimplemented
 export @notimplementedif
 export @unreachable
 export @check
+export @check_inferred
 export tfill
 export get_val_parameter
 export first_and_tail

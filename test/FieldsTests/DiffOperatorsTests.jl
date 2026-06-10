@@ -9,6 +9,7 @@ using Gridap.Fields: skew_symmetric_gradient, ShiftedNabla
 
 using LinearAlgebra
 using FillArrays
+using StaticArrays: @MMatrix
 
 np = 4
 p = Point(1,2)
@@ -66,7 +67,10 @@ f = Fill(f,l)
 @test Broadcasting(curl)(f) == Broadcasting(Operation(grad2curl))(Broadcasting(∇)(f))
 @test Broadcasting(ε)(f) == Broadcasting(Operation(symmetric_part))(Broadcasting(∇)(f))
 
-@test evaluate(Broadcasting(∇+p)(f),x) == evaluate( Broadcasting(Operation((g,f)->g+p⊗f))(Broadcasting(∇)(f),f)  ,x)
+let p=p
+  g_plus_pf = (g,f)->g+p⊗f
+  @test evaluate(Broadcasting(∇+p)(f),x) == evaluate( Broadcasting(Operation(g_plus_pf))(Broadcasting(∇)(f),f)  ,x)
+end
 
 # Test automatic differentiation
 
@@ -106,7 +110,7 @@ u_qten(x)  = SymTracelessTensorValue( x[1]^3 + 2x[2]^3, 5*x[1]^3 - 7x[2]^3)
 u_ten3(x)  = ThirdOrderTensorValue{2,1,2}( x[1]^2 + x[2], 4*x[1] - x[2]^2, -x[1]^2 - x[2], -4*x[1] + x[2]^2 )
 Δu_ten3(x) = ThirdOrderTensorValue{2,1,2}( 2, -2, -2, 2 )
 
-xs = [ Point(1.,1.), Point(2.,0.), Point(0.,3.), Point(-1.,3.)]
+xs = [ Point(1.,2.), Point(1.,1.), Point(2.,0.), Point(0.,3.), Point(-1.,3.)]
 for x in xs
   @test  ∇(u_scal)(x) == ∇u_scal(x)
   @test  Δ(u_scal)(x) == Δu_scal(x)
@@ -169,27 +173,28 @@ for x in xs
   @test (∇⋅εu)(x) == VectorValue(4.,0.)
 end
 
-x0 = VectorValue(-0.3, 0.5)
-A = TensorValue(0.0, -1.0, 1.0, 0.0)
-u(x) = (x - x0) ⋅ A
-∇u(x) = A
-Δu(x) = VectorValue(0.0, 0.0)
+let x0=VectorValue(-0.3, 0.5), A=TensorValue(0.0, -1.0, 1.0, 0.0)
+  u(x) = (x - x0) ⋅ A
+  ∇u(x) = A
+  Δu(x) = VectorValue(0.0, 0.0)
 
-for x in xs
-  @test ∇(u)(x) == ∇u(x)
-  @test Δ(u)(x) == Δu(x)
-  @test Δ(u)(x) == (∇⋅∇u)(x)
+  for x in xs
+    @test ∇(u)(x) == ∇u(x)
+    @test Δ(u)(x) == Δu(x)
+    @test Δ(u)(x) == (∇⋅∇u)(x)
+  end
 end
 
-x0 = VectorValue(1.0, 0.5)
-u(x) = exp(-(x - x0) ⋅ (x - x0))
-∇u(x) = -2(x - x0) * u(x)
-Δu(x) = 4u(x) * ((x - x0) ⋅ (x - x0) - 1)
+let x0=VectorValue(1.0, 0.5)
+  u(x) = exp(-(x - x0) ⋅ (x - x0))
+  ∇u(x) = -2(x - x0) * u(x)
+  Δu(x) = 4u(x) * ((x - x0) ⋅ (x - x0) - 1)
 
-for x in xs
-  @test ∇(u)(x) == ∇u(x)
-  @test Δ(u)(x) == Δu(x)
-  @test Δ(u)(x) == (∇⋅∇u)(x)
+  for x in xs
+    @test ∇(u)(x) == ∇u(x)
+    @test Δ(u)(x) == Δu(x)
+    @test Δ(u)(x) == (∇⋅∇u)(x)
+  end
 end
 
 u(x) = VectorValue( x[1]^2 + 2*x[3]^2, -x[1]^2, -x[2]^2 + x[3]^2 )
@@ -210,26 +215,28 @@ for x in xs
   @test (∇⋅εu)(x) == VectorValue(4.,-1.,1.)
 end
 
-v = VectorValue(0.5, -1.0, 2.0)
-x0 = VectorValue(0.3, 1.0, -0.2)
-u(x) = (x - x0) × v + v ⋅ (x ⊗ x)
-∇u(x) = (
-  TensorValue([0.0 -v[3] v[2]; v[3] 0.0 -v[1]; -v[2] v[1] 0.0])
-  + v ⊗ x + v ⋅ x * TensorValue(Matrix(I,3,3))
-)
-Δu(x) = 2v
-εu(x) = symmetric_part(∇u(x))
-νu(x) = TensorValues.skew_symmetric_part(∇u(x))
+let v=VectorValue(0.5, -1.0, 2.0), x0=VectorValue(0.3, 1.0, -0.2)
+  u(x) = (x - x0) × v + v ⋅ (x ⊗ x)
+  function ∇u(x)
+      a = TensorValue(@MMatrix [0.0 -v[3] v[2]; v[3] 0.0 -v[1]; -v[2] v[1] 0.0] )
+      b =  v ⊗ x + v ⋅ x * one(TensorValue{3,3,Float64})
+      a+b
+  end
+  Δu(x) = 2v
+  εu(x) = symmetric_part(∇u(x))
+  νu(x) = TensorValues.skew_symmetric_part(∇u(x))
 
-xs = [ Point(1.,1.,2.0), Point(2.,0.,1.), Point(0.,3.,0.), Point(-1.,3.,2.)]
-for x in xs
-  @test ∇(u)(x) == ∇u(x)
-  @test (∇⋅u)(x) == tr(∇u(x))
-  @test (∇×u)(x) == grad2curl(∇u(x))
-  @test Δ(u)(x) == Δu(x)
-  @test ε(u)(x) == εu(x)
-  @test Fields.skew_symmetric_gradient(u)(x) == νu(x)
-  @test Δ(u)(x) == (∇⋅∇u)(x)
+  xs = [ Point(1.,1.,2.0), Point(2.,0.,1.), Point(0.,3.,0.), Point(-1.,3.,2.)]
+  x = first(xs)
+  for x in xs
+    @test ∇(u)(x) == ∇u(x)
+    @test (∇⋅u)(x) == tr(∇u(x))
+    @test (∇×u)(x) == grad2curl(∇u(x))
+    @test Δ(u)(x) == Δu(x)
+    @test ε(u)(x) == εu(x)
+    @test Fields.skew_symmetric_gradient(u)(x) == νu(x)
+    @test Δ(u)(x) == (∇⋅∇u)(x)
+  end
 end
 
 # FieldArray diff ops

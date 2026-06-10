@@ -86,7 +86,7 @@ function CLagrangianFESpace(
 end
 
 # Allowed configurations of CLagrangianFESpace constructors
-# We need: 
+# We need:
 #  - H1 conformity
 #  - Both the geometric and FE reffes have to be the same (and linear - this can be relaxed in the future)
 #  - nvertices == nnodes (no periodicity, etc...)
@@ -277,13 +277,13 @@ end
 function _generate_cell_reffe_clagrangian(z,grid)
   ctype_to_reffe = get_reffes(grid)
   cell_to_ctype = get_cell_type(grid)
-  function fun(reffe)
+  function fun(@nospecialize reffe)
     p = get_polytope(reffe)
     orders = get_orders(reffe)
     LagrangianRefFE(typeof(z),p,orders)
   end
-  # using map instead of lazy_map seems to kill the compiler.
-  ctype_to_reffe = collect(lazy_map(fun,ctype_to_reffe))
+
+  ctype_to_reffe = collect(map(fun,ctype_to_reffe))
   cell_to_reffe = expand_cell_data(ctype_to_reffe,cell_to_ctype)
 end
 

@@ -204,7 +204,11 @@ end
 
 function testvalue(::Type{LinearCombinationField{V,F}}) where {V,F}
   fields = testvalue(F)
-  values = zeros(eltype(V), length(fields), 0)
+  # This method breaks the contract of testvalue for V not subtype of Array
+  #
+  # Ideally, we would extend the API of testvalue with a kwarg that enables
+  # selecting the size of the array when the argument is an array.
+  values = zeros(eltype(V), length(fields), tfill(0,Val(ndims(V)-1))...)
   LinearCombinationField(values,fields,1)
 end
 
@@ -258,12 +262,12 @@ end
 
 function Arrays.testitem(f::LinearCombinationFieldVector{V}) where V
   if !iszero(size(f.values,2))
-    values = f.values
+    values = f.values::V
   elseif V <: Diagonal
     values = Diagonal(zeros(eltype(V), 1))
   else
-    values = zeros(eltype(f.values),size(f.values,1),1)
-  end::V
+    values = zeros(eltype(f.values),size(f.values,1),1)::V
+  end
   LinearCombinationField(values,f.fields,1)
 end
 
@@ -856,3 +860,4 @@ function evaluate!(c,f::ConstantFieldArray{T},x::AbstractArray{<:Point}) where T
   end
   return r
 end
+

@@ -30,7 +30,7 @@ dΩ = Measure(Ω, degree)
 
 # FE operator
 order = 2
-ft(t) = x -> ∂tt(u)(t, x) + ∂t(u)(t, x) - Δ(u)(t, x)
+ft(t) = let u=u; x -> ∂tt(u)(t, x) + ∂t(u)(t, x) - Δ(u)(t, x) end
 f = TimeSpaceFunction(ft)
 mass(t, ∂ₜₜu, v) = ∫(∂ₜₜu ⋅ v) * dΩ
 mass(t, u, ∂ₜₜu, v) = mass(t, ∂ₜₜu, v)

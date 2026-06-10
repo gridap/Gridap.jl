@@ -38,13 +38,13 @@ uh = interpolate(f, U)
 @test abs(sum(∫(uh)*dΩ)) < 1.0e-10
 
 # Interpolate a function with zero mean
-ĝ(x) = x[1]^2 + x[2]
-g_mean = sum(∫(ĝ)*dΩ)/sum(∫(1)*dΩ)
-g(x) = ĝ(x) - g_mean
-vh = interpolate(g, U)
-eh = vh - g
-@test abs(sum(∫(vh)*dΩ)) < 1.0e-10
-@test sum(∫(eh*eh)*dΩ) < 1.0e-10
+let ĝ(x) = x[1]^2 + x[2], g_mean = sum(∫(ĝ)*dΩ)/sum(∫(1)*dΩ)
+  g(x) = ĝ(x) - g_mean
+  vh = interpolate(g, U)
+  eh = vh - g
+  @test abs(sum(∫(vh)*dΩ)) < 1.0e-10
+  @test sum(∫(eh*eh)*dΩ) < 1.0e-10
+end
 
 # Check Stokes/Navier-Stokes problem properties
 

@@ -16,10 +16,10 @@ function test_l2_proj(model,V,order,u_exact)
 
   mass_lhs(u,v) = ∫(u⋅v)dΩ
   mass_rhs(v) = ∫(v⋅u_exact)dΩ
-  
+
   op = AffineFEOperator(mass_lhs,mass_rhs,U,V)
   uh = solve(op)
-  
+
   eh = uh - u_exact
   @test sum(∫(eh⋅eh)dΩ) < 1e-10
 
@@ -41,31 +41,31 @@ function test_dg_lap(model,V,order,u_exact)
   Ω = Triangulation(model)
   Γ = Boundary(model)
   Λ = Skeleton(model)
-  
+
   dΩ = Measure(Ω,2*order)
   dΓ = Measure(Γ,2*order)
   dΛ = Measure(Λ,2*order)
-  
+
   β = 100.0
   f(x) = -Δ(u_exact)(x)
   nΛ = get_normal_vector(Λ)
   βΛ = CellField(β ./ get_array(∫(1)dΛ),Λ)
   nΓ = get_normal_vector(Γ)
   βΓ = CellField(β ./ get_array(∫(1)dΓ),Γ)
-  
-  lap_lhs(u,v) = ∫(∇(u)⋅∇(v))dΩ + 
-                 ∫(βΛ*jump(u*nΛ)⋅jump(v*nΛ) - mean(∇(u))⋅jump(v*nΛ) - mean(∇(v))⋅jump(u*nΛ))dΛ + 
+
+  lap_lhs(u,v) = ∫(∇(u)⋅∇(v))dΩ +
+                 ∫(βΛ*jump(u*nΛ)⋅jump(v*nΛ) - mean(∇(u))⋅jump(v*nΛ) - mean(∇(v))⋅jump(u*nΛ))dΛ +
                  ∫(βΓ*u*v - (∇(u)⋅nΓ)*v - (∇(v)⋅nΓ)*u)dΓ
   lap_rhs(v) = ∫(v*f)dΩ + ∫(βΓ*u_exact*v - (∇(v)⋅nΓ)*u_exact)dΓ
-  
+
   op = AffineFEOperator(lap_lhs,lap_rhs,U,V)
   uh = solve(op)
-  
+
   eh = uh - u_exact
   @test sum(∫(eh⋅eh)dΩ) < 1e-10
 end
 
-order = 2
+let order = 2
 
 # 2D bulk
 u_exact_2d(x) = x[1]^order + x[2]^order
@@ -94,7 +94,7 @@ VΓ = FESpaces.PolytopalFESpace(Γ,VectorValue{2,Float64},order,space=:P,dirichl
 @test any(get_cell_dof_ids(VΓ).data .< 0)
 test_l2_proj(pmodel,VΓ,order,u_exact_2d_vec)
 
-# TODO: Does this make sense? 
+# TODO: Does this make sense?
 # VΓ = FESpaces.PolytopalFESpace(Γ,VectorValue{2,Float64},order,space=:P,dirichlet_tags=["boundary"],dirichlet_masks=[true,false])
 # @test any(get_cell_dof_ids(VΓ).data .< 0)
 # test_l2_proj(pmodel,VΓ,order,u_exact_2d_vec)
@@ -131,5 +131,7 @@ model = CartesianDiscreteModel((0,1,0,1),(2,2))
 ptopo = Geometry.PatchTopology(get_grid_topology(model), Table([[1,2],[3,4]]))
 
 pspace = FESpaces.PatchFESpace(model,ptopo,Float64,order,space=:P)
+
+end # let order
 
 end

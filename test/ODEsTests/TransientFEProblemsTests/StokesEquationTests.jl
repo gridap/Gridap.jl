@@ -40,7 +40,7 @@ degree = 2 * order
 dΩ = Measure(Ω, degree)
 
 # FE operator
-ft(t) = x -> ∂t(u)(t, x) - Δ(u)(t, x) + ∇(p)(t, x)
+ft(t) = let u=u, p=p; x -> ∂t(u)(t, x) - Δ(u)(t, x) + ∇(p)(t, x) end
 f = TimeSpaceFunction(ft)
 g = ∇ ⋅ u
 mass(t, ∂ₜu, v) = ∫(∂ₜu ⋅ v) * dΩ

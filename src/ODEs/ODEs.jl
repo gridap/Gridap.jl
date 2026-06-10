@@ -13,6 +13,7 @@ using SparseArrays
 using BlockArrays
 using NLsolve
 using ForwardDiff
+using Base: Fix1
 
 using Gridap.Helpers
 using Gridap.Algebra
