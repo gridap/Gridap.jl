@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Better control of `num_nearest_vertices` for `KDTreeSearch`. Added a new preference `set_num_nearest_vertices` to set a global default for the library. Since PR[#1312](https://github.com/gridap/Gridap.jl/pull/1312).
 
+### Fixed
+
+- Fixed evaluation of weak forms on empty trians with inverse maps. Since PR[#1316](https://github.com/gridap/Gridap.jl/pull/1316).
+
 ## [0.20.8] - 2026-06-01
 
 ### Added
