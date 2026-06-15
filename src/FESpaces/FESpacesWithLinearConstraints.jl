@@ -766,6 +766,122 @@ function merge_slave_constraint_tables(
 end
 
 """
+    compute_topological_ordering(dag::Table{Int}, in_degree::Vector{Int}; keys=1:length(dag))
+        → (order::Vector{Int}, order_rev::Vector{Int}, has_chains::Bool)
+
+Core of the topological sort shared by `close_slave_constraint_tables` and
+`ConstraintHandler`'s `close!`.
+
+- `dag` is the "dependents" graph in CSR (`Table`) form: `dag[t]` contains the 
+nodes that depend on node `t`. 
+In the context of constraint resolution, an edge `t → s` means
+that slave `s` depends on slave `t`.
+- `in_degree[s]` is the number of (as yet unresolved) dependencies of `s`; it is mutated in place.
+
+Kahn's algorithm: entities with `in_degree == 0` are processed in ascending
+order of `keys[s]`, via a priority queue. This makes the resulting order
+deterministic and independent of array/insertion order — `keys` defaults to
+`1:n` (slave-array order) but can be set to e.g. global DoF ids.
+
+`order[i]` is the slave (in `1:n`) at topological position `i`; `order_rev`
+is its inverse (`order_rev[order[i]] == i`). `has_chains` is `false` iff `dag`
+has no edges at all, i.e. no slave's master is itself a slave — in that case
+`order`/`order_rev` carry no useful information beyond `keys`-sorting, and
+callers can fast-path (resolution is a no-op).
+
+Errors, listing the offending `keys`, if a cycle remains (i.e. not all `n`
+entities could be ordered).
+"""
+function compute_topological_ordering(
+  dag::Table{Int}, in_degree::Vector{Int};
+  keys = 1:length(dag)
+)
+  n = length(dag)
+  has_chains = !isempty(dag.data)
+
+  order     = Vector{Int}(undef, n)
+  order_rev = Vector{Int}(undef, n)
+
+  pq = PriorityQueue{Int,eltype(keys)}()
+  for s in 1:n
+    iszero(in_degree[s]) && enqueue!(pq, s, keys[s])
+  end
+
+  head = 0
+  while !isempty(pq)
+    s = dequeue!(pq)
+    head += 1
+    order[head]  = s
+    order_rev[s] = head
+    for t in dataview(dag, s)
+      in_degree[t] -= 1
+      iszero(in_degree[t]) && enqueue!(pq, t, keys[t])
+    end
+  end
+
+  if head < n
+    cycle = sort!([keys[s] for s in 1:n if in_degree[s] > 0])
+    error("Constraint cycle detected among DoFs: $cycle\n" *
+          "Cycles are not resolvable by substitution. Check your constraint sources.")
+  end
+
+  return order, order_rev, has_chains
+end
+
+"""
+    compute_topological_ordering(args...; kwargs...)
+        → (order, order_rev, has_chains)
+
+Ingests either a Constructor-2 constraint table
+(`sDOF_to_dofs, n_fdofs, dof_to_sDOF`) or a `ConstraintHandler`, via
+[`compute_constraint_dag`](@ref), and topologically sorts the resulting
+slave→slave dependency graph. See the core method for details.
+"""
+function compute_topological_ordering(args...; kwargs...)
+  dag, in_degree = compute_constraint_dag(args...)
+  return compute_topological_ordering(dag, in_degree; kwargs...)
+end
+
+"""
+    compute_constraint_dag(sDOF_to_dofs, n_fdofs, dof_to_sDOF)
+        → (dag::Table{Int}, in_degree::Vector{Int})
+
+Build the slave→slave dependency graph for a Constructor-2 constraint table:
+slave `s` depends on slave `t` if `t`'s DoF appears as a master of `s`.
+"""
+function compute_constraint_dag(sDOF_to_dofs::Table, n_fdofs::Int, dof_to_sDOF::AbstractVector)
+  n_slaves = length(sDOF_to_dofs)
+
+  dep_ptrs  = zeros(Int32, n_slaves + 1)
+  in_degree = zeros(Int, n_slaves)
+  for s in 1:n_slaves
+    for d in dataview(sDOF_to_dofs, s)
+      t = dof_to_sDOF[_dof_to_DOF(d, n_fdofs)]
+      if t != 0
+        dep_ptrs[t+1] += Int32(1)
+        in_degree[s]  += 1
+      end
+    end
+  end
+
+  Arrays.length_to_ptrs!(dep_ptrs)
+  dep_data = Vector{Int}(undef, dep_ptrs[end] - 1)
+  fill_pos = copy(dep_ptrs)
+  for s in 1:n_slaves
+    for d in dataview(sDOF_to_dofs, s)
+      t = dof_to_sDOF[_dof_to_DOF(d, n_fdofs)]
+      if t != 0
+        dep_data[fill_pos[t]] = s
+        fill_pos[t] += 1
+      end
+    end
+  end
+
+  dag = Table(dep_data, dep_ptrs)
+  return dag, in_degree
+end
+
+"""
     close_slave_constraint_tables(
         space, sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, sDOF_to_offsets; tol)
         → (sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, sDOF_to_offsets)
@@ -791,54 +907,8 @@ function close_slave_constraint_tables(
   s_DOF       = [_dof_to_DOF(dof, n_fdofs) for dof in sDOF_to_dof]
   dof_to_sDOF = find_inverse_index_map(s_DOF, n_dofs)
 
-  # Build dependency graph (CSR): edge t → s means slave s depends on slave t.
-  dep_ptrs  = zeros(Int32, n_slaves + 1)
-  in_degree = zeros(Int, n_slaves)
-  for s in 1:n_slaves
-    for d in dataview(sDOF_to_dofs, s)
-      t = dof_to_sDOF[_dof_to_DOF(d, n_fdofs)]
-      if t != 0
-        dep_ptrs[t+1] += Int32(1)
-        in_degree[s]  += 1
-      end
-    end
-  end
-  all(iszero, in_degree) && return sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, copy(sDOF_to_offsets)
-
-  Arrays.length_to_ptrs!(dep_ptrs)
-  dep_data = Vector{Int}(undef, dep_ptrs[end] - 1)
-  fill_pos = copy(dep_ptrs)
-  for s in 1:n_slaves
-    for d in dataview(sDOF_to_dofs, s)
-      t = dof_to_sDOF[_dof_to_DOF(d, n_fdofs)]
-      if t != 0
-        dep_data[fill_pos[t]] = s
-        fill_pos[t] += 1
-      end
-    end
-  end
-  dependents = Table(dep_data, dep_ptrs)
-
-  # Kahn's topological sort; cycle detection implicit (processed < n_slaves ⟹ cycle).
-  head      = 0
-  queue     = findall(iszero, in_degree)
-  order     = Vector{Int}(undef, n_slaves)
-  order_rev = Vector{Int}(undef, n_slaves)
-  while !isempty(queue)
-    t = pop!(queue)
-    head += 1
-    order[head]     = t
-    order_rev[t]    = head
-    for s in dataview(dependents, t)
-      in_degree[s] -= 1
-      iszero(in_degree[s]) && push!(queue, s)
-    end
-  end
-  if head < n_slaves
-    cycle_dofs = sort!([sDOF_to_dof[s] for s in 1:n_slaves if in_degree[s] > 0])
-    error("Constraint cycle detected among dofs: $cycle_dofs.\n" *
-          "Cycles are not resolvable by substitution.")
-  end
+  order, order_rev, has_chains = compute_topological_ordering(sDOF_to_dofs, n_fdofs, dof_to_sDOF)
+  has_chains || return sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, copy(sDOF_to_offsets)
 
   # Exact pre-dedup/strip output size: single forward pass in topo order.
   n_data = 0

@@ -236,8 +236,9 @@ end
 
 Finalize the constraint handler:
 1. Sort constraints by DoF index; rebuild dof_to_constraint.
-2. Detect dependency cycles via topological sort (Kahn's algorithm).
-3. Resolve constraint chains by iterative substitution.
+2. Compute a topological ordering of the slave→slave dependency graph,
+   erroring on cycles.
+3. Resolve constraint chains by single-pass substitution in topological order.
 4. Merge duplicate master entries, strip near-zero coefficients.
 """
 function close!(ch::ConstraintHandler{T}; tol::Float64=1e-13) where T
@@ -250,25 +251,23 @@ function close!(ch::ConstraintHandler{T}; tol::Float64=1e-13) where T
     ch.dof_to_constraint[line.dof] = i
   end
 
-  # Step 2: cycle detection.
-  _detect_cycles(ch)
+  # Step 2+3: topological ordering, then single-pass chain resolution.
+  # By the time slave `s` is processed, every slave `t` it depends on has
+  # already been processed and fully resolved (no slave masters remain).
+  order, _, has_chains = compute_topological_ordering(ch)
+  dof_to_sDOF = ch.dof_to_constraint
+  if has_chains
+    masters, coeffs = Int[], T[] # reusable buffers
+    for s in order
+      line = ch.constraints[s]
+      any(m -> dof_to_sDOF[m] != 0, line.masters) || continue
 
-  # Step 3: chain resolution (multi-pass substitution).
-  # After cycle detection we know the dependency graph is a DAG, so this
-  # terminates in at most n_slaves passes.
-  masters, coeffs = Int[], T[] # reusable buffers
-  constrained = Base.Fix1(is_constrained, ch)
-  for _ in 1:length(ch.constraints)
-    changed = false
-    for i in eachindex(ch.constraints)
-      any(constrained, ch.constraints[i].masters) || continue
-      
-      line = ch.constraints[i]
       empty!(masters); empty!(coeffs)
       new_offset = line.offset
       for (master, coeff) in zip(line.masters, line.coeffs)
-        if constrained(master)
-          sub = ch.constraints[ch.dof_to_constraint[master]]
+        t = dof_to_sDOF[master]
+        if t != 0
+          sub = ch.constraints[t]
           append!(masters, sub.masters)
           append!(coeffs, coeff .* sub.coeffs)
           new_offset += coeff * sub.offset
@@ -278,10 +277,8 @@ function close!(ch::ConstraintHandler{T}; tol::Float64=1e-13) where T
       end
       resize!(line.masters, length(masters)); copyto!(line.masters, masters)
       resize!(line.coeffs,  length(coeffs)); copyto!(line.coeffs,  coeffs)
-      ch.constraints[i] = ConstraintLine{T}(line.dof, line.masters, line.coeffs, new_offset)
-      changed = true
+      ch.constraints[s] = ConstraintLine{T}(line.dof, line.masters, line.coeffs, new_offset)
     end
-    !changed && break
   end
 
   # Step 4: merge duplicate masters, strip near-zeros.
@@ -307,41 +304,50 @@ function close!(ch::ConstraintHandler{T}; tol::Float64=1e-13) where T
   return ch
 end
 
-# Cycle detection via Kahn's topological sort on the slave→slave subgraph.
-# Edge direction: t → s means "t must be resolved before s" (s depends on t).
-function _detect_cycles(ch::ConstraintHandler)
-  in_degree = zeros(Int, ch.n_dofs)
-  adj       = Dict{Int,Vector{Int}}()  # only populated for slave→slave edges
+"""
+    compute_constraint_dag(ch::ConstraintHandler)
+        → (dag::Table{Int}, in_degree::Vector{Int})
 
-  for line in ch.constraints
-    for master in line.masters
-      if is_constrained(ch, master)
-        push!(get!(adj, master, Int[]), line.dof)  # master must precede line.dof
-        in_degree[line.dof] += 1
+Build the slave→slave dependency graph of `ch`: slave `s` depends on slave
+`t` if `t`'s DoF appears as a master of `s`. `dag[t]` lists `t`'s dependents
+(CSR `Table`), for use by [`compute_topological_ordering`](@ref).
+See the core method (in `FESpacesWithLinearConstraints.jl`) for details.
+
+Requires `ch.constraints` to already be sorted by DoF (i.e. `ch.dof_to_constraint`
+up to date), as is the case after step 1 of `close!`.
+"""
+function compute_constraint_dag(ch::ConstraintHandler)
+  n_slaves    = length(ch.constraints)
+  dof_to_sDOF = ch.dof_to_constraint
+
+  # Build dependency graph (CSR): edge t → s means slave s depends on slave t.
+  dep_ptrs  = zeros(Int32, n_slaves + 1)
+  in_degree = zeros(Int, n_slaves)
+  for s in 1:n_slaves
+    for master in ch.constraints[s].masters
+      t = dof_to_sDOF[master]
+      if t != 0
+        dep_ptrs[t+1] += Int32(1)
+        in_degree[s]  += 1
       end
     end
   end
 
-  q = Queue{Int}()
-  for line in ch.constraints
-    iszero(in_degree[line.dof]) && enqueue!(q, line.dof)
-  end
-
-  processed = 0
-  while !isempty(q)
-    dof = dequeue!(q)
-    processed += 1
-    for t in get(adj, dof, Int[])
-      in_degree[t] -= 1
-      iszero(in_degree[t]) && enqueue!(q, t)
+  Arrays.length_to_ptrs!(dep_ptrs)
+  dep_data = Vector{Int}(undef, dep_ptrs[end] - 1)
+  fill_pos = copy(dep_ptrs)
+  for s in 1:n_slaves
+    for master in ch.constraints[s].masters
+      t = dof_to_sDOF[master]
+      if t != 0
+        dep_data[fill_pos[t]] = s
+        fill_pos[t] += 1
+      end
     end
   end
 
-  if processed < num_constrained_dofs(ch)
-    cycle_dofs = sort!([line.dof for line in ch.constraints if in_degree[line.dof] > 0])
-    error("Constraint cycle detected among DoFs: $cycle_dofs\n" *
-        "Cycles are not resolvable by substitution. Check your constraint sources.")
-  end
+  dag = Table(dep_data, dep_ptrs)
+  return dag, in_degree
 end
 
 """
