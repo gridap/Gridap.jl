@@ -898,7 +898,7 @@ function close_slave_constraint_tables(
   space::SingleFieldFESpace,
   sDOF_to_dof, sDOF_to_dofs::Table, sDOF_to_coeffs::Table{T},
   sDOF_to_offsets::AbstractVector = zeros(T, length(sDOF_to_dof));
-  tol::T = 1000*eps(T)
+  tol::T = 1000*eps(T), keys = sDOF_to_dof
 ) where T
   n_fdofs  = num_free_dofs(space)
   n_dofs   = n_fdofs + num_dirichlet_dofs(space)
@@ -907,7 +907,7 @@ function close_slave_constraint_tables(
   s_DOF       = [_dof_to_DOF(dof, n_fdofs) for dof in sDOF_to_dof]
   dof_to_sDOF = find_inverse_index_map(s_DOF, n_dofs)
 
-  order, order_rev, has_chains = compute_topological_ordering(sDOF_to_dofs, n_fdofs, dof_to_sDOF)
+  order, order_rev, has_chains = compute_topological_ordering(sDOF_to_dofs, n_fdofs, dof_to_sDOF; keys)
   has_chains || return sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, copy(sDOF_to_offsets)
 
   # Exact pre-dedup/strip output size: single forward pass in topo order.
