@@ -3,11 +3,17 @@ module HelperFunctionsTests
 using Test
 using Gridap.Helpers
 
+# tfill
+
 for D = 0:5
   @test tfill(2,Val(D)) == tuple(fill(2,D)...)
 end
 
+# get_val_parameter
+
 @test 1 == get_val_parameter(Val{1}())
+
+# public_names_in_md
 
 module MockModule
   const C1 = nothing

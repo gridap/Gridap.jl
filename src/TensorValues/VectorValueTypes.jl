@@ -36,8 +36,8 @@ VectorValue(data::NTuple{D,T})        where {D,T}     = VectorValue{D,T}(data)
 VectorValue{D}(data::NTuple{D,T})     where {D,T}     = VectorValue{D,T}(data)
 VectorValue{D,T1}(data::NTuple{D,T2}) where {D,T1,T2} = VectorValue{D,T1}(NTuple{D,T1}(data))
 
-VectorValue{D}(data::NTuple{D2,T2}) where {D,D2,T2} = @unreachable
-VectorValue{D1,T1}(data::NTuple{D2,T2}) where {D1,T1,D2,T2} = @unreachable
+VectorValue{D}(data::NTuple{D2,T2}) where {D,D2,T2} = throw(DimensionMismatch("Expected $D components, got $D2"))
+VectorValue{D1,T1}(data::NTuple{D2,T2}) where {D1,T1,D2,T2} = throw(DimensionMismatch("Expected $D1 components, got $D2"))
 
 # VectorValue single Tuple argument constructor
 
