@@ -251,6 +251,4 @@ include("CompressedCellArrays.jl")
 
 include("PatchTriangulations.jl")
 
-include("SubdivisionSurfaceModels.jl")
-
 end # module

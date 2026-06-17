@@ -189,7 +189,6 @@ export GradConformity
 export CurlConformity
 export DivConformity
 export CDConformity
-export LoopConformity
 
 export SerendipityRefFE
 export RaviartThomasRefFE
@@ -200,7 +199,6 @@ export ModalC0RefFE
 export ModalScalarRefFE
 export CrouzeixRaviartRefFE
 export BubbleRefFE
-export LoopRefFE
 
 export Lagrangian
 export RaviartThomas
@@ -212,7 +210,6 @@ export ModalScalar
 export CrouzeixRaviart
 export Serendipity
 export Bubble
-export Loop
 
 export lagrangian
 export raviart_thomas
@@ -227,7 +224,6 @@ export modal_serendipity
 export crouzeix_raviart
 export serendipity
 export bubble
-export loop
 
 export Quadrature
 export QuadratureName
@@ -310,7 +306,5 @@ include("BezierRefFEs.jl")
 include("ModalC0RefFEs.jl")
 
 include("BubbleRefFEs.jl")
-
-include("LoopRefFEs.jl")
 
 end # module

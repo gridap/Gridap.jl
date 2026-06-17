@@ -30,7 +30,6 @@ function LoopRefFE(::Type{V}, p::Polytope) where V
   shapefuns = _box_splines_222(V, vertices)
 
   dofs, face_own_dofs = _loop_dof_basis(V, vertices)
-  @show face_own_dofs
   conformity = LoopConformity()
   metadata = nothing
 
