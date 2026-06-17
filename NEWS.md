@@ -81,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Better control of `num_nearest_vertices` for `KDTreeSearch`. Added a new preference `set_num_nearest_vertices` to set a global default for the library. Since PR[#1312](https://github.com/gridap/Gridap.jl/pull/1312).
 - Add AD support for complex-valued DOFs. Since PR[#1325](https://github.com/gridap/Gridap.jl/pull/1325).
 - Added `Base.adjoint` method for `ArrayBlock`. Since PR[#1325](https://github.com/gridap/Gridap.jl/pull/1325).
+- `node_major` kwarg to `LagrangianDofBasis` to choose between node and component major DoF ordering of Cartesian product DoF bases.
 
 ### Fixed
 
