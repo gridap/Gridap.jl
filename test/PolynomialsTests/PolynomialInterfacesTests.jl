@@ -76,5 +76,12 @@ Hmb = FieldGradientArray{2}(mb)
 r, s, c, g, h = return_cache(Hmb,x)
 @test_throws ErrorException Polynomials._hessian_nd!(mb, xi, r, 1, c, g, h, s, nothing)
 
+# value_type
+
+@test value_type(mb) == T
+
+values = Point{3,Float32}[ (1,0,0,) (0,1,0) (0,0,1)]
+mb_lc = linear_combination(values, mb)
+@test value_type(mb_lc) == Point{3,T}
 
 end
