@@ -578,10 +578,10 @@ end
 """
     compute_graph(topo::GridTopology, d_node::Integer, d_edge::Integer; self_loops=true, Tv=Int8)
 
-Computes the adjacency graph between the `d_node` entities w.r.t the `d_edge` entities. The 
+Computes the adjacency graph between the `d_node` entities w.r.t the `d_edge` entities. The
 graph is returned as a sparse matrix, where nonzero entries indicate an adjacency between the nodes.
 
-For instance for a D-dimensional topology and pairs `(d_node,d_edge)` we have: 
+For instance for a D-dimensional topology and pairs `(d_node,d_edge)` we have:
 
 - `(1,0)`: graph of edge-to-edge adjacencies where two edges (dim 1) are connected if they share a node (dim 0).
 - `(D,D-1)`: graph of cell-to-cell adjacencies where two cells (dim D) are connected if they share a facet (dim D-1).
@@ -596,17 +596,18 @@ function compute_graph(topo::GridTopology, d_node::Integer, d_edge::Integer; sel
 end
 
 function compute_graph(
-  node_to_edges::Table,edge_to_nodes::Table;Tv=Int8,self_loops=false
+  node_to_edges::Table, edge_to_nodes::Table; Tv=Int8, self_loops=false
 )
-  nodes = eachindex(node_to_edges)
+  T = get_data_eltype(edge_to_nodes)
+  nodes = Base.OneTo(T(length(node_to_edges)))
   node_to_lnode = eachindex(node_to_edges)
   return compute_graph(
-    nodes,node_to_edges,edge_to_nodes;node_to_lnode,Tv,self_loops
+    nodes, node_to_edges, edge_to_nodes; node_to_lnode, Tv, self_loops
   )
 end
 
 function compute_graph(
-  nodes,node_to_edges::Table,edge_to_nodes::Table;
+  nodes,node_to_edges::Table, edge_to_nodes::Table;
   node_to_lnode = Dict{Int32,Int32}(n => i for (i,n) in enumerate(nodes)),
   self_loops=true,
   Tv = Int8,
