@@ -196,7 +196,7 @@ convert(::Type{V}, arg::Tuple) where V<:MultiValue{S,T} where {S,T} = V(arg)
 convert(::Type{<:NTuple{L,T}}, arg::MultiValue) where {L,T} = NTuple{L,T}(Tuple(arg))
 
 ###############################################################
-# Indexing independant components
+# Indexing independent components
 ###############################################################
 
 # This should probably not be exported, as (accessing) the data field of
@@ -255,7 +255,7 @@ indep_components_names(a::MultiValue) = indep_components_names(typeof(a))
 function indep_components_names(::Type{V}) where V<:MultiValue{S,T,N,L} where {S,T,N,L}
   s = size(HighOrderTensorValue{S})
 
-  # if there are dependant components, numbered linearly by default
+  # if there are dependent components, numbered linearly by default
   if L != prod(s)
     @warn "indep_components_names has not been implemented for a tensor type
     with dependent components, falling back to default names [string(i) for i in 1:L]"

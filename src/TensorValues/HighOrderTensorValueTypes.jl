@@ -2,7 +2,7 @@
 """
     struct HighOrderTensorValue{S,T,N,L} <: MultiValue{S,T,N,L}
 
-Type representing a `N`th tensor of size `S` with no dependant components.
+Type representing a `N`th tensor of size `S` with no dependent components.
 Thus, it always hold `L` = `prod(S)` components.
 
 If `Val(N)` is given as first argument of the constructor, `allequal(S)` is assumed.

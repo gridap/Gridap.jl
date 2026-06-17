@@ -9,7 +9,7 @@
 
 Type representing a basis of a (an)isotropic `D`-multivariate `V`-valued
 cartesian product polynomial space. The basis is obtained by direct sum of
-copies of the scalar basis, scattered over each independant component of `V`, as in
+copies of the scalar basis, scattered over each independent component of `V`, as in
 
 `V`(𝓢, ∅, ..., ∅) ⊕ `V`(∅, 𝓢, ∅, ..., ∅) ⊕ ... ⊕ `V`(∅, ..., ∅, 𝓢)
 
