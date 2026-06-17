@@ -2,6 +2,7 @@ module HelperFunctionsTests
 
 using Test
 using Gridap.Helpers
+using Gridap.Helpers: findfirstvalue
 
 # tfill
 

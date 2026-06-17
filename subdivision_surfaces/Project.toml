@@ -1,0 +1,14 @@
+name = "GridapSubdivisionSurfaces"
+uuid = "41008494-e927-4dea-b6dd-eb5dba875196"
+version = "0.1.0"
+authors = ["Antoine Marteau <antoine.marteau@protonmail.com>"]
+
+[deps]
+DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
+Gridap = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
+GridapGeosciences = "77ae386e-bde6-49b0-bd6e-9c07e8aee685"
+
+[compat]
+DocStringExtensions = "0.9.5"
+FillArrays = "1.16.0"
