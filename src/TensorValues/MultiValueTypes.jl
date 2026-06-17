@@ -55,7 +55,7 @@ and the product of the size dimensions for a `MultiValue`. This is the same as `
 """
 num_components(a::Number) = num_components(typeof(a))
 num_components(::Type{<:Number}) = 1
-num_components(T::Type{<:MultiValue}) = @unreachable "$T type is too abstract to count its components, the shape (firt parametric argument) is neede."
+num_components(T::Type{<:MultiValue}) = @unreachable "$T type is too abstract to count its components, the shape (firt parametric argument) is needed."
 num_components(::Type{<:MultiValue{S}}) where S = length(MultiValue{S})
 
 """
