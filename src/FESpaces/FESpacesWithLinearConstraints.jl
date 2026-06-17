@@ -893,6 +893,10 @@ The slave set is invariant under resolution; output rows are in topological orde
 
 `sDOF_to_offsets` (optional, default zero) carries inhomogeneities: if slave i
 depends on slave j the offset accumulates as `offset_i += coeff_ij * offset_j`.
+
+A second dispatch accepts explicit `n_fdofs` and `n_dofs` integers instead of a
+space, for callers (e.g. the distributed constraint pipeline) that operate on an
+extended DOF space that is wider than what the underlying `FESpace` reports.
 """
 function close_slave_constraint_tables(
   space::SingleFieldFESpace,
@@ -900,8 +904,21 @@ function close_slave_constraint_tables(
   sDOF_to_offsets::AbstractVector = zeros(T, length(sDOF_to_dof));
   tol::T = 1000*eps(T), keys = sDOF_to_dof
 ) where T
-  n_fdofs  = num_free_dofs(space)
-  n_dofs   = n_fdofs + num_dirichlet_dofs(space)
+  n_fdofs = num_free_dofs(space)
+  n_dofs  = n_fdofs + num_dirichlet_dofs(space)
+  close_slave_constraint_tables(
+    n_fdofs, n_dofs,
+    sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, sDOF_to_offsets;
+    tol, keys
+  )
+end
+
+function close_slave_constraint_tables(
+  n_fdofs::Int, n_dofs::Int,
+  sDOF_to_dof, sDOF_to_dofs::Table, sDOF_to_coeffs::Table{T},
+  sDOF_to_offsets::AbstractVector = zeros(T, length(sDOF_to_dof));
+  tol::T = 1000*eps(T), keys = sDOF_to_dof
+) where T
   n_slaves = length(sDOF_to_dof)
 
   s_DOF       = [_dof_to_DOF(dof, n_fdofs) for dof in sDOF_to_dof]
@@ -964,7 +981,7 @@ function close_slave_constraint_tables(
 
   resize!(out_data_d, k)
   resize!(out_data_c, k)
-  out_dof = [sDOF_to_dof[order[i]]    for i in 1:n_slaves]
+  out_dof = [sDOF_to_dof[order[i]] for i in 1:n_slaves]
   out_off = [out_offsets[order[i]] for i in 1:n_slaves]
   return out_dof, Table(out_data_d, ptrs), Table(out_data_c, ptrs), out_off
 end
