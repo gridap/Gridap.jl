@@ -39,6 +39,17 @@ function first_and_tail(a::Tuple)
 end
 
 """
+    findfirstvalue(predicate::Function, A)
+
+Same as `Base.findfirst`, but return the value instead of its index.
+"""
+function findfirstvalue(testf::Function, A)
+  i = findfirst(testf, A)
+  isnothing(i) && return nothing
+  @inbounds A[i]
+end
+
+"""
     public_names_in_md(m::Module[; change_link=Dict())
 
 Return a string displaying exported and other public names of the module for
