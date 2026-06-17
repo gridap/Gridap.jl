@@ -68,10 +68,14 @@ type is promoted with that of the points at which `b` is evaluated, so it might
 differ from `eltype(V)`.
 """
 value_type(::PolynomialBasis{D,V}) where {D,V} = V
-value_type(b::LinearCombinationFieldVector{W,<:PolynomialBasis}) where W = value_type(b.fields)
+function value_type(b::LinearCombinationFieldVector{W,<:PolynomialBasis}) where W
+  test_val = testitem(b.values)
+  test_field = zero(value_type(b.fields))
+  typeof(test_val*test_field + test_val*test_field)
+end
 
 @deprecate return_type(b::PolynomialBasis) value_type(b)
-return_type(b::LinearCombinationFieldVector{W,<:PolynomialBasis}) where W = return_type(b.fields)
+@deprecate return_type(b::LinearCombinationFieldVector{W,<:PolynomialBasis}) where W  value_type(b)
 
 
 """
