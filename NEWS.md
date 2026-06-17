@@ -114,7 +114,7 @@ Main PR is PR[#1048](https://github.com/gridap/Gridap.jl/pull/#1048).
 - `MonomialBasis` and `Q[Curl]GradMonomialBasis` have been generalized to `Legendre`, `Chebyshev` and `Bernstein` using the new `CartProdPolyBasis` and `CompWiseTensorPolyBasis` respectively.
 - `PCurlGradMonomialBasis` has been generalized to `Legendre` and `Chebyshev` using the new `RaviartThomasPolyBasis`.
 - New aliases and high level constructor for `CartProdPolyBasis` (former MonomialBasis): `MonomialBasis`, `LegendreBasis`, `ChebyshevBasis` and `BernsteinBasis`.
-- Generalized gradient and hessian of all `CartProdPolyBasis` to any tensor type (even with dependant components), as long as the derivative tensor is a tensor of at most third order. Since PR[#1184](https://github.com/gridap/Gridap.jl/pull/#1184).
+- Generalized gradient and hessian of all `CartProdPolyBasis` to any tensor type (even with dependent components), as long as the derivative tensor is a tensor of at most third order. Since PR[#1184](https://github.com/gridap/Gridap.jl/pull/#1184).
 - New high level factory `FEEC_poly_basis` for the bases for the scalar Lagrange, Nedelec, Raviart-Thomas, BDM spaces, and all other spaces of the Periodic Table of the Finite Elements. (for Serendipity, only scalar is supported). For example:
   - Nedelec on simplex `FEEC_poly_basis(Val(D),Float64,order+1,  1,:P⁻)`
   - Nedelec on n-cubes `FEEC_poly_basis(Val(D),Float64,order+1,  1,:Q⁻)`
