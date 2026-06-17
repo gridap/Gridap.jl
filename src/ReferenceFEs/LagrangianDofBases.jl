@@ -46,20 +46,30 @@ function LagrangianDofBasis(dofs::LagrangianDofBasis{P},nodes::Vector{P}) where 
 end
 
 """
-    LagrangianDofBasis(::Type{V}, nodes::Vector{<:Point})
+    LagrangianDofBasis(::Type{V}, nodes::Vector{<:Point}; node_major=true)
 
 Creates a `LagrangianDofBasis` for fields of value type `V` associated
 with the vector of nodal coordinates `nodes`.
+
+When `V <: MultiValue`, by default, the dof order is node major, so DoFs owned
+by the same (independent) component of `V` have consecutive indices.
+
+Alternatively, the order is component major if `node_major=false`, such that DoFs
+belonging to the same node have consecutive indices.
 """
-function LagrangianDofBasis(::Type{V},nodes::Vector{<:Point}) where V
-  r = _generate_dof_layout_node_major(V,length(nodes))
+function LagrangianDofBasis(::Type{V}, nodes::Vector{<:Point}; node_major=true) where V
+  r = if node_major
+    _generate_dof_layout_node_major(V, length(nodes))
+  else
+    _generate_dof_layout_comp_major(V, length(nodes))
+  end
   LagrangianDofBasis(nodes,r...)
 end
 
 """
     get_nodes(b::LagrangianDofBasis)
 
-Get the vector of DoF nodes of `b`.
+Get the vector of DoF node coordinates of `b`.
 """
 get_nodes(b::LagrangianDofBasis) = b.nodes
 get_dof_to_node(b::LagrangianDofBasis) = b.dof_to_node
@@ -86,6 +96,32 @@ function _generate_dof_layout_node_major(::Type{V},nnodes::Integer) where V<:Mul
     for comp in 1:ncomps
       o = nnodes*(comp-1)
       dof = node+o
+      dof_to_comp[dof] = comp
+      dof_to_node[dof] = node
+      m[comp] = dof
+    end
+    node_and_comp_to_dof[node] = Tuple(m)
+  end
+  (dof_to_node, dof_to_comp, node_and_comp_to_dof)
+end
+
+# Comp major implementation
+function _generate_dof_layout_comp_major(::Type{<:Real},nnodes::Integer)
+  _generate_dof_layout_node_major(Real, nnodes)
+end
+
+function _generate_dof_layout_comp_major(::Type{V},nnodes::Integer) where V<:MultiValue
+  Vi = change_eltype(V,Int)
+  ncomps = num_indep_components(Vi)
+  ndofs = ncomps*nnodes
+  dof_to_comp = zeros(Int,ndofs)
+  dof_to_node = zeros(Int,ndofs)
+  node_and_comp_to_dof = Vector{Vi}(undef,nnodes)
+  m = zero(MVector{ncomps,Int})
+  for node in 1:nnodes
+    for comp in 1:ncomps
+      o = ncomps*(node-1)
+      dof = comp+o
       dof_to_comp[dof] = comp
       dof_to_node[dof] = node
       m[comp] = dof
