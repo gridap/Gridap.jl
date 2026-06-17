@@ -1,4 +1,8 @@
 """
+    struct CellPoint <: CellDatum
+
+Concrete cell array of points.
+
 A single point or an array of points on the cells of a Triangulation
 CellField objects can be evaluated efficiently at CellPoint instances.
 """
@@ -9,6 +13,10 @@ struct CellPoint{DS,A,B,C} <: CellDatum
   domain_style::DS
 end
 
+"""
+    CellPoint(cell_ref_point::AbstractArray, trian::Triangulation, ::ReferenceDomain)
+    CellPoint(cell_phy_point::AbstractArray, trian::Triangulation, ::PhysicalDomain)
+"""
 function CellPoint(
   cell_ref_point::AbstractArray,
   trian::Triangulation,
