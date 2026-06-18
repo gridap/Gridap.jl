@@ -665,9 +665,9 @@ function _mom_reffe_default_PT(p)
 end
 
 function get_face_own_dofs_permutations(reffe::GenericRefFE{<:MomentBasedRefFEName}, ::L2Conformity)
-  return _trivial_face_own_dofs_permutations(get_face_own_dofs(reffe, conf))
+  return _trivial_face_own_dofs_permutations(get_face_own_dofs(reffe, L2Conformity()))
 end
 
 function get_face_own_dofs_permutations(reffe::GenericRefFE{<:MomentBasedRefFEName}, conf::Conformity)
-  return dofs.face_own_dofs_permutations
+  return reffe.dofs.face_own_dofs_permutations
 end

@@ -29,22 +29,33 @@ Returns:
 If a basis function is equivariant, then column `i` of `E_perms[k]` equals
 column `π(i)` of `E_ref` (up to a scalar for signed/scaled cases).
 """
-function evaluate_at_permutations(poly::Polytope, basis; quad_degree=nothing)
+function evaluate_at_permutations(poly::Polytope, basis, conf=GradConformity(); quad_degree=nothing)
   deg = isnothing(quad_degree) ? 2*get_order(basis) + 2 : quad_degree
   quad = Quadrature(poly, deg)
   xq   = get_coordinates(quad)
 
   E_ref = evaluate(basis, xq)
-
-  lin_sf = get_shapefuns(LagrangianRefFE(Float64, poly, 1))
   verts  = get_vertex_coordinates(poly)
-
   vertex_perms = get_vertex_permutations(poly)
+
+  Push = conf isa GradConformity ? nothing :
+         conf isa CurlConformity ? CoVariantPiolaMap :
+         conf isa DivConformity ? ContraVariantPiolaMap : nothing
+
+  geomap_basis = get_shapefuns(LagrangianRefFE(Float64,poly,1))
 
   E_perms = map(vertex_perms) do σ
     pverts = verts[invperm(σ)]
-    xq_σ   = evaluate(linear_combination(pverts, lin_sf), xq)
-    evaluate(basis, xq_σ)
+    geo_map = linear_combination(pverts, geomap_basis)
+    pushed_basis = if isnothing(Push)
+      basis
+    else
+      basis
+      Jt = Broadcasting(∇)(geo_map)
+      lazy_map(Push(), Fill(basis,1), Fill(Jt,1))[1]
+    end
+    pushed_xq = evaluate(inverse_map(geo_map), xq)
+    evaluate(pushed_basis, pushed_xq)
   end
 
   vertex_perms, E_ref, E_perms
@@ -164,14 +175,15 @@ If `show_matrices=true`, also prints the full `E_ref` and each `E_σ` matrix
 (rows = quadrature points, columns = basis functions) so you can inspect the
 raw evaluations directly.
 """
-function print_permutation_analysis(poly::Polytope, basis, label="";
+function print_permutation_analysis(poly::Polytope, basis, label="", conf=GradConformity();
                                     tol=1e-8, show_matrices=false)
-  vertex_perms, E_ref, E_perms = evaluate_at_permutations(poly, basis)
+
+  vertex_perms, E_ref, E_perms = evaluate_at_permutations(poly, basis, conf)
   n = size(E_ref, 2)
 
   lbl = isempty(label) ? "" : " [$label]"
   println("━"^72)
-  println("  Polytope: $poly on $(typeof(basis).name.name)")
+  println("  Polytope: $poly on $(typeof(basis).name.name) with $conf")
   println("  n_basis=$(n), n_perms=$(length(vertex_perms))$lbl")
   println("━"^72)
 
@@ -290,7 +302,7 @@ print_permutation_analysis(TRI,
 # ── 7. BarycentricPΛBasis k=1 on TRI (ND1 TET triangular face moments) ───
 print_permutation_analysis(TRI,
   BarycentricPΛBasis{2}(Float64, 1, 1),
-  "BarycentricPΛBasis{2} k=1 order 1  [expect: signed]")
+  "BarycentricPΛBasis{2} k=1 order 1  [expect: signed]", CurlConformity())
 
 # ── 8. CartProdPolyBasis{1,ModalC0} order 2 on SEGMENT (RT/ND QUAD edge) ──
 print_permutation_analysis(SEGMENT,
@@ -306,3 +318,7 @@ print_permutation_analysis(SEGMENT,
 print_permutation_analysis(QUAD,
   CartProdPolyBasis(Bernstein, Val(2), Float64, 2),
   "CartProdPolyBasis{2,Bernstein} Q₂ on QUAD  [expect: pure]")
+
+print_permutation_analysis(QUAD,
+  FEEC_poly_basis(Val(2), Float64, 2, 1, :Q⁻, Bernstein),
+  "FEEC_poly_basis(Val(2), Float64, 2, 1, :Q⁻, Bernstein) Q₂ on QUAD  [expect: signed perm]", CurlConformity())
