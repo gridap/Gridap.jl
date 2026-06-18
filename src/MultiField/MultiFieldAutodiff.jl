@@ -17,14 +17,21 @@ end
 #
 # TODO: Currently, this is only implemented for the gradient and jacobian.
 #  The Hessian is proplematic because the off-diagonal blocks are missed.
+
+UNKNOWN_AD_TYPE(ad_type) = """Unknown ad_type = $ad_type
+  Options:
+  - :split      -- compute the gradient for each field separately, then merge
+  - :monolithic -- compute the gradient for all fields together
+"""
+
 for (op,_op) in ((:gradient,:_gradient),(:jacobian,:_jacobian))
   @eval begin
-    function FESpaces.$(op)(f::Function,uh::MultiFieldFEFunction;ad_type=:split)
+    function FESpaces.$(op)(f::Function,uh::MultiFieldFEFunction;ad_type=:split,kwargs...)
       fuh = f(uh)
       if ad_type == :split
-        multifield_autodiff_split($op,f,uh,fuh)
+        multifield_autodiff_split($op,f,uh,fuh;kwargs...)
       elseif ad_type == :monolithic
-        FESpaces.$(_op)(f,uh,fuh)
+        FESpaces.$(_op)(f,uh,fuh;kwargs...)
       else
         @notimplemented UNKNOWN_AD_TYPE(ad_type)
       end
@@ -33,12 +40,12 @@ for (op,_op) in ((:gradient,:_gradient),(:jacobian,:_jacobian))
 end
 
 # Defaults to monolithic for the Hessian
-function FESpaces.hessian(f::Function,uh::MultiFieldFEFunction;ad_type=:monolithic)
+function FESpaces.hessian(f::Function,uh::MultiFieldFEFunction;ad_type=:monolithic,kwargs...)
   fuh = f(uh)
   if ad_type == :split
     @notimplemented "Hessian AD with ad_type = :split is not currently implemented. Use ad_type = :monolithic instead."
   elseif ad_type == :monolithic
-    FESpaces._hessian(f,uh,fuh)
+    FESpaces._hessian(f,uh,fuh;kwargs...)
   else
     @notimplemented UNKNOWN_AD_TYPE(ad_type)
   end
@@ -47,22 +54,22 @@ end
 for (op,_op) in ((:gradient,:_gradient),(:jacobian,:_jacobian))
   @eval begin
 
-    function multifield_autodiff_split(::typeof($op),f,uh,fuh)
+    function multifield_autodiff_split(::typeof($op),f,uh,fuh;tag::GridapADTag=get_ad_level(fuh)+1)
       nfields = num_fields(uh)
       terms = map(Base.OneTo(nfields)) do k
         # Although technically wrong, we can reuse fuh for each field since
         # we only use it to extract the triangulations
         f_k = uk -> f((uh[1:k-1]...,uk,uh[k+1:end]...))
-        FESpaces.$(_op)(f_k,uh[k],fuh)
+        FESpaces.$(_op)(f_k,uh[k],fuh;tag)
       end
-      return _combine_contributions($op,terms,fuh)
+      return _combine_contributions($op,terms,fuh,tag)
     end
 
   end
 end
 
-function _combine_contributions(::typeof(gradient),terms,fuh::DomainContribution)
-  contribs = DomainContribution()
+function _combine_contributions(::typeof(gradient),terms,fuh::DomainContribution,tag)
+  contribs = DomainContribution(;ad_level = tag)
   nfields = length(terms)
   block_map = BlockMap(nfields,collect(Base.OneTo(nfields)))
   for trian in get_domains(fuh)
@@ -73,8 +80,8 @@ function _combine_contributions(::typeof(gradient),terms,fuh::DomainContribution
   contribs
 end
 
-function _combine_contributions(::typeof(jacobian),terms,fuh::DomainContribution)
-  contribs = DomainContribution()
+function _combine_contributions(::typeof(jacobian),terms,fuh::DomainContribution,tag)
+  contribs = DomainContribution(;ad_level = tag)
   nfields = length(terms)
   I = [[(CartesianIndex(j),CartesianIndex(j,i)) for j in 1:nfields] for i in 1:nfields]
   block_map = Arrays.MergeBlockMap((nfields,nfields),I)
@@ -85,9 +92,3 @@ function _combine_contributions(::typeof(jacobian),terms,fuh::DomainContribution
   end
   contribs
 end
-
-UNKNOWN_AD_TYPE(ad_type) = """Unknown ad_type = $ad_type
-  Options:
-  - :split      -- compute the gradient for each field separately, then merge
-  - :monolithic -- compute the gradient for all fields together
-"""
