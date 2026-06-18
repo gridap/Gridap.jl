@@ -1,6 +1,6 @@
 module FESpaces
 
-using Gridap.Helpers
+using Gridap.Helpers: @check, findfirstvalue
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Polynomials
@@ -9,10 +9,10 @@ using Gridap.Geometry
 using Gridap.FESpaces: CellFE
 
 using GridapSubdivisionSurfaces.ReferenceFEs: Loop
-using GridapSubdivisionSurfaces.Geometry: LoopPatchVerticesMap
 
 import Gridap.FESpaces: FESpace
-
+import Gridap.Arrays: return_cache
+import Gridap.Arrays: evaluate!
 
 include("LoopFESpaces.jl")
 

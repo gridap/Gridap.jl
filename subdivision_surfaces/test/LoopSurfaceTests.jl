@@ -37,14 +37,14 @@ function Loop_torus_chart_and_map(n1=10, n2=2*n1)
 
   torus_chart, torus_map
 end
-torus_chart, torus_map = Loop_torus_chart_and_map(6)
-#writevtk(torus_chart , "torus_chart")
+
+torus_chart, torus_map = Loop_torus_chart_and_map(5)
 
 loop_torus_model = loop_surface_model(torus_chart, torus_map)
 loop_torus_trian = Triangulation(loop_torus_model)
 writevtk(loop_torus_trian, "loop_torus"; nsubcells=20)
 
-control_vertices = get_vertex_coordinates(get_grid_topology(loop_torus_model ))
+control_vertices = get_vertex_coordinates(get_grid_topology(loop_torus_model ));
 writevtk(control_vertices, "control_vertices")
 
 #T = Float64
@@ -71,6 +71,7 @@ writevtk(control_vertices, "control_vertices")
 
 
 # Chart IG fespace
+
 Ω_chart = Triangulation(torus_chart)
 
 T, D = Float64, 3
@@ -79,15 +80,11 @@ P = Point{D,Float64}
 loop_reffe = LoopRefFE(P,TRI)
 fe = FESpace(Ω_chart, loop_reffe)
 
-alldofs = vcat(fe.cell_dofs_ids...)
+alldofs = vcat(fe.cell_dofs_ids...);
 @test all( i -> count(==(i), alldofs)==24, alldofs)
 @test sort(unique(alldofs)) == 1:(num_vertices(torus_chart)*D)
 
-#Φ = FEFunction(fe, control_vertices)
-#err = norm∘(torus_map-Φ)
-#writevtk(Ω_chart, "err32", cellfields=["err"=>err]; nsubcells=20)
-
-dΩ = Measure(Ω_chart, 12)
+dΩ = Measure(Ω_chart, 8)
 a(Φ_Loop, Ψ_Loop) = ∫(Φ_Loop ⋅ Ψ_Loop)dΩ
 l(Ψ_Loop) = ∫(torus_map ⋅ Ψ_Loop)dΩ
 
@@ -97,27 +94,16 @@ op = AffineFEOperator(a, l, fe, fe)
 e = Φh-torus_map
 sqrt(sum(a(e,e)))
 
-chart_vertices = get_vertex_coordinates(get_grid_topology(torus_chart))
-fitted_control_vertices = evaluate(Φh, chart_vertices )
+#chart_vertices = get_vertex_coordinates(get_grid_topology(torus_chart));
+#fitted_torus_vertices = evaluate(Φh, chart_vertices);
+#writevtk(fitted_torus_vertices, "fitted_torus_vertices")
+
+M = reshape(Φh.free_values, (D, num_vertices(torus_chart)));
+fitted_control_vertices = collect( P(r...) for r in eachcol(M));
 writevtk(fitted_control_vertices, "fitted_control_vertices")
 
-#freevals = reshape(reinterpret(Float64, hcat(torus_map.(chart_vertices)...)), (600,))
-#Φi = FEFunction(fe, freevals)
-#recovered_points = evaluate(Φi, chart_vertices) ≠ freevals at all
-
-M = reshape(Φh.free_values, (D, num_vertices(torus_chart)))
-fitted_control_vertices = collect( P(r...) for r in eachcol(M))
-writevtk(fitted_control_vertices, "fitted_control_vertices")
-
-fitted_loop_torus_model = loop_surface_model(torus_chart, fitted_control_vertices)
+topo = get_grid_topology(torus_chart)
+fitted_loop_torus_model = loop_surface_model(topo , fitted_control_vertices)
 writevtk(Triangulation(fitted_loop_torus_model), "fitted_loop_torus"; nsubcells=20)
-
-
-l2(Ψ_Loop) = ∫(Φh ⋅ Ψ_Loop)dΩ
-op2 = AffineFEOperator(a, l2, fe, fe)
-
-Φh2 = solve(op2)
-e = Φh-Φh2
-@test sqrt(sum(a(e,e))) < 1e-13
 
 end

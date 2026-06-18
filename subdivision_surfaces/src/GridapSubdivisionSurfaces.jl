@@ -5,9 +5,10 @@ using DocStringExtensions
 
 include("ReferenceFEs/ReferenceFEs.jl")
 
-include("Geometry/Geometry.jl")
-
 include("FESpaces/FESpaces.jl")
+
+include("SubdivisionSurfaces/SubdivisionSurfaces.jl")
+
 
 macro publish(mod,name)
   quote
@@ -15,6 +16,6 @@ macro publish(mod,name)
   end
 end
 
-@publish Geometry loop_surface_model
+@publish SubdivisionSurfaces loop_surface_model
 
 end
