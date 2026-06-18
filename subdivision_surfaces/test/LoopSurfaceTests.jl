@@ -6,6 +6,7 @@ using GridapSubdivisionSurfaces
 using GridapSubdivisionSurfaces.ReferenceFEs
 
 using Gridap.ReferenceFEs
+using Gridap.Fields
 
 using Gridap.Geometry
 using Gridap.Geometry: get_patch_faces
@@ -92,7 +93,7 @@ op = AffineFEOperator(a, l, fe, fe)
 
 Φh = solve(op)
 e = Φh-torus_map
-sqrt(sum(a(e,e)))
+err = sqrt(sum(a(e,e)))
 
 #chart_vertices = get_vertex_coordinates(get_grid_topology(torus_chart));
 #fitted_torus_vertices = evaluate(Φh, chart_vertices);
@@ -105,5 +106,59 @@ writevtk(fitted_control_vertices, "fitted_control_vertices")
 topo = get_grid_topology(torus_chart)
 fitted_loop_torus_model = loop_surface_model(topo , fitted_control_vertices)
 writevtk(Triangulation(fitted_loop_torus_model), "fitted_loop_torus"; nsubcells=20)
+
+# H1 projection
+chart_model = torus_chart
+geo_map = torus_map
+# get (loosely) approximate control vertex coordinates by interpolating the geo_map
+geo_map_field = GenericField(geo_map)
+chart_vertex_coordinates = get_vertex_coordinates(get_grid_topology(chart_model))
+geo_map_cache = return_cache(geo_map_field, chart_vertex_coordinates)
+vertex_coordinates = evaluate!(geo_map_cache, geo_map_field, chart_vertex_coordinates)
+
+# Definition of a Loop FE space
+P = eltype(vertex_coordinates)
+loop_reffe = LoopRefFE(P,TRI)
+Ω_chart = Triangulation(chart_model)
+dΩ = Measure(Ω_chart, 8)
+dΩf = Measure(Ω_chart, 16)
+l2(e) = sqrt(sum( ∫( e⋅e)dΩf ))
+h1(e) = sqrt(sum( ∫(∇(e)⊙∇(e) + e⋅e)dΩf ))
+# this dispatches to hacky subdivision_surfaces/src/FESpaces/LoopFESpaces.jl
+U = FESpace(Ω_chart, loop_reffe)
+
+# L2 projection
+a_l2(Φ, Ψ) = ∫(Ψ⋅Φ)dΩ
+l(Ψ) = ∫(Ψ⋅geo_map)dΩ
+op_l2 = AffineFEOperator(a_l2, l, U, U)
+Φh_l2 = solve(op_l2)
+e_l2 = Φh_l2-geo_map
+
+l2P_errl2 = l2(e_l2)
+l2P_errh1 = h1(e_l2)
+
+
+# H1 projection
+ε = 1.e-0
+#ε = 1.e-6
+a_h1(Φ, Ψ) = ∫(∇(Ψ)⊙∇(Φ) + ε*Ψ⋅Φ)dΩ
+l(   Ψ) = ∫(∇(Ψ)⊙∇(geo_map) + ε*Ψ⋅geo_map)dΩ
+op_h1 = AffineFEOperator(a_h1, l, U, U)
+Φh_h1 = solve(op_h1)
+e_h1 = Φh_h1-geo_map
+
+h1P_errl2 = l2(e_h1)
+h1P_errh1 = h1(e_h1)
+
+@info "L2 Loop surface projection error: l2 error: $l2P_errl2, h1 error: $l2P_errh1 "
+@info "H1 Loop surface projection error: l2 error: $h1P_errl2, h1 error: $h1P_errh1"
+
+# Retrieving the control vertices coordinates from the DoF vector
+D = length(P)
+n_vertices = length(vertex_coordinates)
+M = reshape(Φh.free_values, (D, n_vertices));
+fitted_control_vertices = collect( P(r...) for r in eachcol(M));
+
+loop_surface_model(get_grid_topology(chart_model), fitted_control_vertices)
 
 end

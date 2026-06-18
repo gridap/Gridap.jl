@@ -3,7 +3,7 @@ module SubdivisionSurfaces
 using FillArrays: Fill
 using Gridap
 using Gridap.Helpers: findfirstvalue, @check
-using Gridap.Arrays: evaluate!, return_cache
+using Gridap.Arrays: evaluate!, return_cache, Table
 using Gridap.Fields: Field, GenericField, linear_combination
 using Gridap.ReferenceFEs: TRI, LagrangianRefFE
 using Gridap.CellData: Measure
