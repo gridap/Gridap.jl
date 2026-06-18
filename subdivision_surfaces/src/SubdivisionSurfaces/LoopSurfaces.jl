@@ -91,7 +91,7 @@ function loop_surface_model(
   cell_map = lazy_map(linear_combination, p_coords, p_gen_splines)
 
   # grid with trivial reffes topology and labeling with new cell_map and vertex/nodes coordinates
-  reffes = [ LagrangianRefFE(Point{Dp,T}, TRI, 1) ]
+  reffes = [ LagrangianRefFE(Point{Dp,T}, TRI, 4) ] # degree 4 like Loop splines
   orien = OrientationStyle(topo)
   cell_types = collect(Fill(Int8(1), num_cells(topo)))
   loop_grid = UnstructuredGrid(
