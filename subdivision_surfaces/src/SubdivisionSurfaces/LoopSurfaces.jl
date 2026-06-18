@@ -41,7 +41,7 @@ function loop_surface_model(chart_model::DiscreteModel{2}, geo_map::Union{Functi
   e = Φh-geo_map
   errl2 = sqrt(sum(a(e,e)))
 
-  @info "L2 Loop surface projection error: $errl2"
+  @info "Loop surface L²-projection L²-error: $errl2"
 
   # Retrieving the control vertices coordinates from the DoF vector
   D = length(P)

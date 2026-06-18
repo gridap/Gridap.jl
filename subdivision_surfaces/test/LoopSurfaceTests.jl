@@ -18,14 +18,14 @@ using Gridap.Geometry: num_patches
 using Gridap.Geometry: extend_patches_by_single_layer
 
 """
-    simplex_torus_chart(n=4)
+    loop_torus_chart_and_map(n1=5, n2=2*n1)
 
-Torus chart grid ([0,1]²) meshed with 2*n² triangles)
+Torus chart grid ([0,1]²) meshed with 2*n1*n2 triangles.
 """
-function Loop_torus_chart_and_map(n1=10, n2=2*n1)
+function loop_torus_chart_and_map(n1=5, n2=2*n1)
   model = CartesianDiscreteModel((0,1,0,1), (n1,n2), isperiodic=(true,true))
   model = simplexify(model)
-  torus_chart = UnstructuredDiscreteModel(model)
+  torus_chart = Gridap.Geometry.UnstructuredDiscreteModel(model)
 
   function torus_map(p)
     x,y = p
@@ -39,8 +39,7 @@ function Loop_torus_chart_and_map(n1=10, n2=2*n1)
   torus_chart, torus_map
 end
 
-torus_chart, torus_map = Loop_torus_chart_and_map(5)
-
+torus_chart, torus_map = loop_torus_chart_and_map(5)
 loop_torus_model = loop_surface_model(torus_chart, torus_map)
 loop_torus_trian = Triangulation(loop_torus_model)
 writevtk(loop_torus_trian, "loop_torus"; nsubcells=20)
@@ -150,8 +149,8 @@ e_h1 = Φh_h1-geo_map
 h1P_errl2 = l2(e_h1)
 h1P_errh1 = h1(e_h1)
 
-@info "L2 Loop surface projection error: l2 error: $l2P_errl2, h1 error: $l2P_errh1 "
-@info "H1 Loop surface projection error: l2 error: $h1P_errl2, h1 error: $h1P_errh1"
+@info "Loop surface L²-projection error: L² error: $l2P_errl2, H¹ error: $l2P_errh1 "
+@info "Loop surface H¹-projection error: L² error: $h1P_errl2, H¹ error: $h1P_errh1"
 
 # Retrieving the control vertices coordinates from the DoF vector
 D = length(P)
