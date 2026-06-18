@@ -17,7 +17,7 @@ function indices, so that `basis[π[i]] ∘ Mσ = basis[i]` where `Mσ` is the
 affine self-map defined by `σ`.
 """
 function get_basis_permutations(poly::Polytope, basis)
-  # TODO: This is wrong but will not throw an error, which is bad. 
+  # TODO: This is wrong but will not throw an error, which is bad.
   # We should decide what to do with these.
   nfpids = length(get_vertex_permutations(poly))
   ndofs  = length(basis)
@@ -25,8 +25,8 @@ function get_basis_permutations(poly::Polytope, basis)
 end
 
 function get_basis_permutations(
-    poly::Polytope{D}, b::BernsteinBasisOnSimplex{D}
-  ) where D
+  poly::Polytope{D}, b::BernsteinBasisOnSimplex{D}
+) where D
   @assert is_simplex(poly) && num_dims(poly) == D
   K     = get_order(b)
   verts = get_vertex_coordinates(poly)
@@ -37,8 +37,8 @@ function get_basis_permutations(
 end
 
 function get_basis_permutations(
-    poly::Polytope{D}, b::CartProdPolyBasis{D,V,Bernstein}
-  ) where {D,V}
+  poly::Polytope{D}, b::CartProdPolyBasis{D,V,Bernstein}
+) where {D,V}
   @assert is_n_cube(poly) && num_dims(poly) == D
   K     = get_order(b)
   ncomp = num_indep_components(V)
@@ -58,8 +58,8 @@ function get_basis_permutations(
 end
 
 function get_basis_permutations(
-    poly::Polytope{D}, b::BarycentricPΛBasis{D}
-  ) where D
+  poly::Polytope{D}, b::BarycentricPΛBasis{D}
+) where D
   @assert is_simplex(poly) && num_dims(poly) == D
   b.k == 0 || return nothing
   K     = get_order(b)
@@ -308,24 +308,24 @@ end
 #     MomentBasedDofBasis( p::Polytope, prebasis::AbstractVector{<:Field}, moments,
 #         [, face_own_dofs], operator=nothing
 #     )
-# 
+#
 # Creates a basis of DoFs defined by moments on faces of `p`.
-# 
+#
 # `moments` is a vector of moment descriptors, each one is given by a triplet
 # (f,σ,μ) where
 #   - f is collection of ids of faces Fₖ of `p`, that index `get_faces(p)`,
 #   - σ is a function σ(φ,μ,ds) **linear** in φ and μ that takes two Field-vectors φ and μ and a `FaceMeasure` ds and returns a Field-like object to be integrated over each face Fₖ,
 #   - μ is a polynomials basis on Fₖ.
-# 
+#
 # The moment DoFs are thus defined by φ -> ∫_Fₖ σ(φ,μᵢ,ds)dFₖ,  ∀ σ,k,i.
 # In the final basis, DoFs are ordered by moment, then by face, then by "test" polynomial.
-# 
+#
 # All the faces in a moment must be of the same type (have same reference face).
-# 
+#
 # If an `operator` function -- e.g. `∇` -- is given, it is applied to `φ` (with
 # respect to `p`'s coordinates) before being passed to `σ`. The moment becomes
 # `φ -> σ(∇φ,μ,ds)`.
-# 
+#
 # If `face_own_dofs` is given, it defines the moment ownership to faces.
 # """
 # function MomentBasedDofBasis(
@@ -660,7 +660,7 @@ end
 # Default polynomial type for moment based reference FEs
 function _mom_reffe_default_PT(p)
   is_simplex(p) && return Bernstein
-  is_n_cube(p) && return Polynomials.ModalC0
+  is_n_cube(p) && return Bernstein
   Monomial
 end
 
@@ -669,5 +669,10 @@ function get_face_own_dofs_permutations(reffe::GenericRefFE{<:MomentBasedRefFENa
 end
 
 function get_face_own_dofs_permutations(reffe::GenericRefFE{<:MomentBasedRefFEName}, conf::Conformity)
-  return reffe.dofs.face_own_dofs_permutations
+  dof_basis = get_dof_basis(reffe)
+  if isa(dof_basis, MomentBasedDofBasis) # change_dof=false
+    return dof_basis.face_own_dofs_permutations
+  else # change_dof=true is NOT supported right now
+    return _trivial_face_own_dofs_permutations(get_face_own_dofs(reffe, conf))
+  end
 end
