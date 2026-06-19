@@ -319,6 +319,43 @@ print_permutation_analysis(QUAD,
   CartProdPolyBasis(Bernstein, Val(2), Float64, 2),
   "CartProdPolyBasis{2,Bernstein} Q₂ on QUAD  [expect: pure]")
 
+bQ2Λ1_Q2 = get_shapefuns(ReferenceFE(QUAD, nedelec, 1; change_dof=false))
 print_permutation_analysis(QUAD,
-  FEEC_poly_basis(Val(2), Float64, 2, 1, :Q⁻, Bernstein),
+  bQ2Λ1_Q2,
   "FEEC_poly_basis(Val(2), Float64, 2, 1, :Q⁻, Bernstein) Q₂ on QUAD  [expect: signed perm]", CurlConformity())
+print_permutation_analysis(QUAD,
+  bQ2Λ1_Q2,
+  "FEEC_poly_basis(Val(2), Float64, 2, 1, :Q⁻, Bernstein) Q₂ on QUAD  [expect: signed perm]", DivConformity())
+
+bQ2Λ1_Q2 = get_shapefuns(ReferenceFE(QUAD, nedelec, 0; change_dof=true))
+print_permutation_analysis(QUAD,
+  bQ2Λ1_Q2,
+  "FEEC_poly_basis(Val(2), Float64, 2, 1, :Q⁻, Bernstein) Q₂ on QUAD  [expect: signed perm]", CurlConformity())
+
+
+# Nédélec 1 TRI
+r = 4 # first non permutables are r = 2, 4, 5, ...  (I believe that changing the TRI bubble function could lead to permutable exept r = 3k-1)
+bPm2Λ1_T2 = get_shapefuns(ReferenceFE(TRI, nedelec, r-1; change_dof=false))
+print_permutation_analysis(TRI,
+  bPm2Λ1_T2,
+  "nedelec1 order $(r-1) Bernstein TRI  [expect: signed perm]", CurlConformity())
+
+r = 1 # non permutable if  r >= 2
+bPm2Λ1_T2 = FEEC_poly_basis(Val(2), Float64, r, 1, :P⁻, Bernstein)
+print_permutation_analysis(TRI,
+  bPm2Λ1_T2,
+  "FEEC_poly_basis(Val(2), Float64, $r, 1, :P⁻, Bernstein) Q₂ on TRI  [expect: signed perm]", CurlConformity())
+
+# Nédélec 2 TRI
+r = 2 # first non permutables are r = 3, 4, ...
+bP2Λ1_T2 = get_shapefuns(ReferenceFE(TRI, nedelec2, r; change_dof=false))
+print_permutation_analysis(TRI,
+  bP2Λ1_T2,
+  "nedelec2 order $(r) Bernstein TRI  [expect: signed perm]", CurlConformity())
+
+r = 2 # non permutable if  r = 0, 3, 4, ...
+bP2Λ1_T2 = FEEC_poly_basis(Val(2), Float64, r, 1, :P, Bernstein)
+print_permutation_analysis(TRI,
+  bP2Λ1_T2,
+  "FEEC_poly_basis(Val(2), Float64, $r, 1, :P, Bernstein) Q₂ on TRI  [expect: signed perm]", CurlConformity())
+

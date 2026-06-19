@@ -19,6 +19,10 @@ affine self-map defined by `σ`.
 function get_basis_permutations(poly::Polytope, basis)
   # TODO: This is wrong but will not throw an error, which is bad.
   # We should decide what to do with these.
+  _trivial_basis_permutation(poly, basis)
+end
+
+function _trivial_basis_permutation(poly::Polytope, basis)
   nfpids = length(get_vertex_permutations(poly))
   ndofs  = length(basis)
   [collect(1:ndofs) for _ in 1:nfpids]
@@ -61,7 +65,7 @@ function get_basis_permutations(
   poly::Polytope{D}, b::BarycentricPΛBasis{D}
 ) where D
   @assert is_simplex(poly) && num_dims(poly) == D
-  b.k == 0 || return nothing
+  b.k == 0 || return _trivial_basis_permutation(poly, b)
   K     = get_order(b)
   verts = get_vertex_coordinates(poly)
   nodes = Vector{eltype(verts)}(undef, length(b))
