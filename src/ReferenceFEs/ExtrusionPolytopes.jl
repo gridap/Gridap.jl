@@ -22,6 +22,27 @@ struct DFace{D} <: GridapType
   nf_nfs::Vector{Vector{Int}}
   nf_dimranges::Vector{Vector{UnitRange{Int}}}
   nf_dims::Vector{Vector{Int}}
+
+  function DFace{D}(
+    extrusion::Point{D,Int},
+    nfaces::Vector{NFace{D}},
+    dimranges::Vector{UnitRange{Int}},
+    dims::Vector{Int},
+    nf_nfs::Vector{Vector{Int}},
+    nf_dimranges::Vector{Vector{UnitRange{Int}}},
+    nf_dims::Vector{Vector{Int}}
+  ) where D
+
+    extrusion = if isone(D)
+      Point{D}(HEX_AXIS)
+    elseif D>1 && extrusion[1] != extrusion[2]
+      Point{D}(extrusion[2], extrusion[2:end]...)
+    else
+      extrusion
+    end
+
+    new{D}(extrusion, nfaces, dimranges, dims, nf_nfs, nf_dimranges, nf_dims)
+  end
 end
 
 """
@@ -30,9 +51,15 @@ end
       # + private fields
     end
 
-Concrete type for polytopes that can be represented with an "extrusion" tuple.
-The underlying extrusion is available in the field `extrusion`. Instances of
-this type can be obtained with the constructors
+Concrete type for polytopes that can be represented with an "extrusion" tuple,
+containing [`HEX_AXIS`](@ref) and [`TET_AXIS`](@ref) constants.  See e.g.
+[`QUAD`](@ref), [`TRI`](@ref), [`PYRAMID`](@ref).
+
+The underlying extrusion is available via [`get_extrusion`](@ref). Since the
+first extrusion has no meaning, it overwritten to `HEX_AXIS` for 1D `ExtrusionPolytope`
+or to the second one for D≥2.
+
+Instances of this type can be obtained with the constructors
 
 - [`Polytope(extrusion::Int...)`](@ref)
 - [`ExtrusionPolytope(extrusion::Int...)`](@ref)
@@ -162,18 +189,7 @@ function Polytope{D}(p::ExtrusionPolytope{D}, Dfaceid::Integer) where D
 end
 
 function (==)(a::ExtrusionPolytope{D}, b::ExtrusionPolytope{D}) where D
-  #The first axis is irrelevant here
-  ea = Point(Tuple(a.extrusion)[2:end])
-  eb = Point(Tuple(b.extrusion)[2:end])
-  ea == eb
-end
-
-function (==)(a::ExtrusionPolytope{1}, b::ExtrusionPolytope{1})
-  true
-end
-
-function (==)(a::ExtrusionPolytope{0}, b::ExtrusionPolytope{0})
-  true
+  a.extrusion == b.extrusion
 end
 
 function get_vertex_coordinates(p::ExtrusionPolytope)
@@ -206,28 +222,12 @@ function get_face_vertex_permutations(p::ExtrusionPolytope)
   p.face_vertex_perms
 end
 
-function is_simplex(p::ExtrusionPolytope)
-  all(Tuple(p.extrusion) .== TET_AXIS)
+function is_simplex(p::ExtrusionPolytope{D}) where D
+   D<2 || all(Tuple(p.extrusion) .== TET_AXIS)
 end
 
-function is_n_cube(p::ExtrusionPolytope)
-  all(Tuple(p.extrusion) .== HEX_AXIS)
-end
-
-function is_simplex(p::ExtrusionPolytope{0})
-  true
-end
-
-function is_n_cube(p::ExtrusionPolytope{0})
-  true
-end
-
-function is_simplex(p::ExtrusionPolytope{1})
-  true
-end
-
-function is_n_cube(p::ExtrusionPolytope{1})
-  true
+function is_n_cube(p::ExtrusionPolytope{D}) where D
+  D<2 || all(Tuple(p.extrusion) .== HEX_AXIS)
 end
 
 function simplexify(p::ExtrusionPolytope{0}; kwargs...)
@@ -828,8 +828,8 @@ end
 function _admissible_permutations_simplex(p::DFace{D}) where D
   vs = first(_dimfrom_fs_dimto_fs(p, D, 0))
   num_vs = length(vs)
-  l = [i for i = 1:num_vs]
-  perms = Combinatorics.permutations(l)
+  l = collect(1:num_vs)
+  perms = permutations(l)
   collect(perms)
 end
 
@@ -837,7 +837,7 @@ function _admissible_permutations_n_cube(p::DFace{D}) where D
   vs = first(_dimfrom_fs_dimto_fs(p, D, 0))
   num_vs = length(vs)
   l = [i for i = 1:num_vs]
-  perms = Combinatorics.permutations(l)
+  perms = permutations(l)
   vertices = p.nfaces[first(p.dimranges)]
   permuted_vertices = similar(vertices)
   admissible_perms = Vector{Int}[]

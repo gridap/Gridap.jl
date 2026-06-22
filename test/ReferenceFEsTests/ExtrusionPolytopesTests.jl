@@ -179,21 +179,13 @@ for dim in 0:5
     @test is_simplex(p)
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@test SEGMENT == ExtrusionPolytope(HEX_AXIS) == ExtrusionPolytope(TET_AXIS)
+@test TRI == ExtrusionPolytope(HEX_AXIS, TET_AXIS)
+@test QUAD == ExtrusionPolytope(TET_AXIS, HEX_AXIS)
+@test TET == ExtrusionPolytope(HEX_AXIS, TET_AXIS, TET_AXIS)
+@test HEX == ExtrusionPolytope(TET_AXIS, HEX_AXIS, HEX_AXIS)
+@test PYRAMID == ExtrusionPolytope(TET_AXIS, HEX_AXIS, TET_AXIS)
+@test WEDGE == ExtrusionPolytope(HEX_AXIS, TET_AXIS, HEX_AXIS)
 
 #using Gridap.Fields
 #

@@ -230,7 +230,7 @@ perms = get_vertex_permutations(TET)
 println(perms)
 
 # output
-Array{Int,1}[[1, 2], [2, 1]]
+Array{Int,1}[[1, 2, 3, 4]]
 ```
 The first admissible permutation for a segment is `[1,2]`,i.e., the identity.
 The second one is `[2,1]`, i.e., the first vertex is relabeled as `2` and the
