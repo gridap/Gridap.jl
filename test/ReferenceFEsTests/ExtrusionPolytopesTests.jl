@@ -191,6 +191,14 @@ for D in 1:5
   @test norm(b1.x_to_λ - b2.x_to_λ) < 1e-14
 end
 
+@test SEGMENT == ExtrusionPolytope(HEX_AXIS) == ExtrusionPolytope(TET_AXIS)
+@test TRI == ExtrusionPolytope(HEX_AXIS, TET_AXIS)
+@test QUAD == ExtrusionPolytope(TET_AXIS, HEX_AXIS)
+@test TET == ExtrusionPolytope(HEX_AXIS, TET_AXIS, TET_AXIS)
+@test HEX == ExtrusionPolytope(TET_AXIS, HEX_AXIS, HEX_AXIS)
+@test PYRAMID == ExtrusionPolytope(TET_AXIS, HEX_AXIS, TET_AXIS)
+@test WEDGE == ExtrusionPolytope(HEX_AXIS, TET_AXIS, HEX_AXIS)
+
 #using Gridap.Fields
 #
 #using .ReferenceFEs: _polytopenfaces
