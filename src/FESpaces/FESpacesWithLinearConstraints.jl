@@ -502,6 +502,11 @@ function get_cell_isconstrained(f::FESpaceWithLinearConstraints)
   Fill(true,n)
 end
 
+function get_cell_isconstrained(f::FESpaceWithLinearConstraints,t::Triangulation)
+  num_cells(t) == 0 && return Fill(false,0)
+  get_cell_fe_data(get_cell_isconstrained,f,t)
+end
+
 function get_cell_constraints(f::FESpaceWithLinearConstraints)
 
   k = LinearConstraintsMap(
