@@ -13,7 +13,7 @@ using Test
 using DocStringExtensions
 using LinearAlgebra
 using StaticArrays
-using Combinatorics: permutations
+using Combinatorics: permutations, combinations
 using FillArrays
 using AutoHashEquals: @auto_hash_equals as @ahe
 using ..Gridap
