@@ -59,7 +59,7 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
     elseif F == :Q⁻            # Lagrange, 𝓠r space
       CartProdPolyBasis(PT,Val(D),T,r,_q_filter)
     elseif F == :S || F == :S⁻ # Lagrange, 𝓢r space, 𝓢⁻ᵣΛ⁰ = 𝓢ᵣΛ⁰
-      PT==ModalC0 || _ensure_hierarchical(PT)
+      PT==ModalC0 || _ensure_hierarchical(PT) # because ModalC0 is hierarchical from order 1, which we need
       CartProdPolyBasis(PT,Val(D),T,r,_ser_filter)
     end
 
