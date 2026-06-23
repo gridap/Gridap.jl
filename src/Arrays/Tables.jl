@@ -881,9 +881,7 @@ Values at repeated IDs are silently overwritten (last-write-wins).
 function gather_table_values(
   cell_ids::Table, cell_values, n = maximum(cell_ids.data; init=0)
 )
-  cache_vals = array_cache(cell_values)
-  first_vals = getindex!(cache_vals, cell_values, 1)
-  T = eltype(first_vals)
+  T = eltype(eltype((cell_values)))
   values = Vector{T}(undef, n)
   gather_table_values!(values, cell_ids, cell_values)
   return values
