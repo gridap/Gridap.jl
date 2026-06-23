@@ -361,13 +361,13 @@ function return_cache(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::Ab
 end
 
 function evaluate!(cache,k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractMatrix)
-  @check size(fx,2) == size(v,1)
+  @check ( size(fx,2) == size(v,1) ) || ( size(v,1) == 0 ) 
   setsize!(cache,(size(fx,1),))
   r = cache.array
   z = zero(eltype(r))
   @inbounds for p in 1:size(fx,1)
     rp = z
-    for i in 1:size(fx,2)
+    for i in 1:size(v,1)
       rp += outer(fx[p,i],v[i,k.column])
     end
     r[p] = rp
