@@ -143,7 +143,7 @@ struct MomentBasedDofBasis{P,V,O,N} <: AbstractVector{Moment}
   face_moments::Vector{Array{V,N}}
   face_nodes::Vector{UnitRange{Int}}
   face_own_moms::Vector{Vector{Int}}
-  face_own_dofs_permutations::Vector{Vector{Vector{Int}}}
+  face_own_moms_permutations::Vector{Vector{Vector{Int}}}
   operator::O
 
   function MomentBasedDofBasis(
@@ -204,6 +204,8 @@ The ownership of `b`'s dofs to faces of the underlying polytope is defined as
 the face the moment was defined on.
 """
 get_face_own_moments(b::MomentBasedDofBasis) = b.face_own_moms
+
+get_face_own_moments_permutations(b::MomentBasedDofBasis) = b.face_own_moms_permutations
 
 """
     get_face_nodes_dofs(b::MomentBasedDofBasis)
@@ -429,11 +431,11 @@ function MomentBasedDofBasis(
     end
   end
 
-  face_own_dofs_permutations = moment_face_own_dofs_permutations(
+  face_own_moms_permutations = moment_face_own_dofs_permutations(
     p, moments, reffaces, face_types
   )
 
-  MomentBasedDofBasis(nodes, face_moments, face_nodes, face_own_moms, face_own_dofs_permutations, operator)
+  MomentBasedDofBasis(nodes, face_moments, face_nodes, face_own_moms, face_own_moms_permutations, operator)
 end
 
 # Unused and untested
@@ -647,17 +649,18 @@ function MomentBasedReferenceFE(
     shapefuns = apply_face_signflip(shapefuns, p, conformity)
     dofs = compute_dofs(predofs, shapefuns)
     face_own_dofs = get_face_own_funs(prebasis, p, conformity)
+    face_own_dofs_permutations = get_face_own_funs_permutations(prebasis, p, conformity)
 
     return GenericRefFE{typeof(name)}(
-      n_dofs, p, predofs, conformity, metadata, face_own_dofs, shapefuns, dofs
+      n_dofs, p, predofs, conformity, metadata, face_own_dofs, shapefuns, dofs, face_own_dofs_permutations
     )
   end # else, standard prebasis inversion
 
-  if isnothing(face_own_dofs)
-    face_own_dofs = get_face_own_moments(dof_basis)
-  end
+  @check isnothing(face_own_dofs) # TODO document this is forbiden for change_dof=false
+  face_own_dofs = get_face_own_moments(dof_basis)
+  face_own_dofs_permutations = get_face_own_moments_permutations(dof_basis)
   GenericRefFE{typeof(name)}(
-    n_dofs, p, prebasis, dof_basis, conformity, metadata, face_own_dofs
+    n_dofs, p, prebasis, dof_basis, conformity, metadata, face_own_dofs, face_own_dofs_permutations
   )
 end
 
@@ -668,15 +671,3 @@ function _mom_reffe_default_PT(p)
   Monomial
 end
 
-function get_face_own_dofs_permutations(reffe::GenericRefFE{<:MomentBasedRefFEName}, ::L2Conformity)
-  return _trivial_face_own_dofs_permutations(get_face_own_dofs(reffe, L2Conformity()))
-end
-
-function get_face_own_dofs_permutations(reffe::GenericRefFE{<:MomentBasedRefFEName}, conf::Conformity)
-  dof_basis = get_dof_basis(reffe)
-  if isa(dof_basis, MomentBasedDofBasis) # change_dof=false
-    return dof_basis.face_own_dofs_permutations
-  else # change_dof=true is NOT supported right now
-    return _trivial_face_own_dofs_permutations(get_face_own_dofs(reffe, conf))
-  end
-end

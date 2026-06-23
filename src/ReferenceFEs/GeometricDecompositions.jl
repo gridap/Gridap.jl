@@ -37,6 +37,17 @@ function _l2_conforming_own_funs(shapefuns,p)
   r
 end
 
+function get_face_own_funs_permutations(shapefuns, p::Polytope, conf::Conformity)
+  # TODO This WIP method is not correctly implemented `get_face_own_funs_permutations(b,p, $conf)`
+  face_own_fun = get_face_own_funs(shapefuns, p, conf)
+  empty_face_own_dofs_permutations(face_own_fun)
+end
+
+function get_face_own_funs_permutations(shapefuns, p::Polytope, ::L2Conformity)
+  l2_face_own_fun = _l2_conforming_own_funs(shapefuns,p)
+  l2_face_own_dofs_permutations(l2_face_own_fun )
+end
+
 """
     apply_face_signflip(shapefun, p::Polytope, conf::Conformity)
 

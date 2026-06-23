@@ -283,7 +283,7 @@ function get_face_own_dofs(reffe::ReferenceFE, conf::Nothing)
   get_face_own_dofs(reffe)
 end
 
-function _get_face_own_dofs_l2(reffe::ReferenceFE)
+function l2_face_own_dofs(reffe::ReferenceFE)
   p = get_polytope(reffe)
   r = [Int[] for i in 1:num_faces(p)]
   r[end] = collect(1:num_dofs(reffe))
@@ -311,11 +311,19 @@ anisotropic order). For these permutations the corresponding vector in
 """
 function get_face_own_dofs_permutations(reffe::ReferenceFE, conf::Conformity)
   face_own_dofs = get_face_own_dofs(reffe, conf)
-  _trivial_face_own_dofs_permutations(face_own_dofs)
+  l2_face_own_dofs_permutations(face_own_dofs)
+  #empty_face_own_dofs_permutations(face_own_dofs)
 end
 
-function _trivial_face_own_dofs_permutations(face_own_dofs)
+function l2_face_own_dofs_permutations(face_own_dofs)
   [[collect(Int, 1:length(dofs)),] for dofs in face_own_dofs]
+end
+
+"""
+    empty_face_own_dofs_permutations(face_own_dofs) = [Vector{Int}[] for _ in face_own_dofs]
+"""
+function empty_face_own_dofs_permutations(face_own_dofs)
+  [Vector{Int}[] for _ in face_own_dofs]
 end
 
 function get_face_own_dofs_permutations(reffe::ReferenceFE)
@@ -610,9 +618,8 @@ This type is a *materialization* of the `ReferenceFE` interface. That is, it is 
 This type is useful to build reference FEs from the underlying ingredients without
 the need to create a new type.
 
-Note that some fields in this `struct` are type unstable deliberately in order to simplify the
-type signature. Don't access them in computationally expensive functions,
-instead extract the required fields before and pass them to the computationally expensive function.
+Note that some fields in this `struct` are abstractly typed deliberately in
+order to simplify the type signature.
 """
 @ahe struct GenericRefFE{T,D} <: ReferenceFE{D}
   ndofs::Int
@@ -622,6 +629,7 @@ instead extract the required fields before and pass them to the computationally 
   conformity::Conformity
   metadata
   face_own_dofs::Vector{Vector{Int}}
+  face_own_dofs_permutations::Vector{Vector{Vector{Int}}}
   shapefuns::AbstractVector{<:Field}
 
   @doc """
@@ -633,10 +641,13 @@ instead extract the required fields before and pass them to the computationally 
           conformity::Conformity,
           metadata,
           face_own_dofs::Vector{Vector{Int}},
-          shapefuns::AbstractVector{<:Field}=compute_shapefuns(dofs,prebasis)
-        ) where {T,D}
+         [shapefuns::AbstractVector{<:Field} = compute_shapefuns(dofs,prebasis), ]
+         [face_own_dofs_permutations::Vector{Vector{Vector{Int}}} = default, ]
+        )
 
   Constructor using a DoF basis and function space pre-basis.
+
+  The default `face_own_dofs_permutations` is [`l2_face_own_dofs_permutations(face_own_dofs)`](@ref).
   """
   function GenericRefFE{T}(
     ndofs::Int,
@@ -646,7 +657,9 @@ instead extract the required fields before and pass them to the computationally 
     conformity::Conformity,
     metadata,
     face_own_dofs::Vector{Vector{Int}},
-    shapefuns::AbstractVector{<:Field}=compute_shapefuns(dofs, prebasis)) where {T,D}
+    shapefuns::AbstractVector{<:Field}=compute_shapefuns(dofs, prebasis),
+    face_own_dofs_permutations::Vector{Vector{Vector{Int}}}=l2_face_own_dofs_permutations(face_own_dofs),
+  ) where {T,D}
 
     new{T,D}(
       ndofs,
@@ -656,8 +669,11 @@ instead extract the required fields before and pass them to the computationally 
       conformity,
       metadata,
       face_own_dofs,
-      shapefuns)
+      face_own_dofs_permutations,
+      shapefuns,
+    )
   end
+
   @doc """
         GenericRefFE{T}(
           ndofs::Int,
@@ -668,10 +684,13 @@ instead extract the required fields before and pass them to the computationally 
           metadata,
           face_own_dofs::Vector{Vector{Int}},
           shapefuns::AbstractVector{<:Field},
-          dofs::AbstractVector{<:Dof}=compute_dofs(predofs,shapefuns)
-        ) where {T,D}
+         [dofs::AbstractVector{<:Dof}=compute_dofs(predofs,shapefuns), ]
+         [face_own_dofs_permutations::Vector{Vector{Vector{Int}}} = default, ]
+        )
 
   Constructor using shape function basis and a DoF pre-basis.
+
+  The default `face_own_dofs_permutations` is [`l2_face_own_dofs_permutations(face_own_dofs)`](@ref).
   """
   function GenericRefFE{T}(
     ndofs::Int,
@@ -681,7 +700,9 @@ instead extract the required fields before and pass them to the computationally 
     metadata,
     face_own_dofs::Vector{Vector{Int}},
     shapefuns::AbstractVector{<:Field},
-    dofs::AbstractVector{<:Dof}=compute_dofs(predofs, shapefuns)) where {T,D}
+    dofs::AbstractVector{<:Dof}=compute_dofs(predofs, shapefuns),
+    face_own_dofs_permutations::Vector{Vector{Vector{Int}}}=l2_face_own_dofs_permutations(face_own_dofs),
+  ) where {T,D}
 
     new{T,D}(
       ndofs,
@@ -691,13 +712,39 @@ instead extract the required fields before and pass them to the computationally 
       conformity,
       metadata,
       face_own_dofs,
+      face_own_dofs_permutations,
       # Trick to be able to eval dofs af shapefuns in physical space
       # cf /test/FESpacesTests/PhysicalFESpacesTests.jl
       #linear_combination(Eye{Int}(ndofs), shapefuns)
-      linear_combination(Diagonal(ones(ndofs)), shapefuns)
+      linear_combination(Diagonal(ones(ndofs)), shapefuns),
     )
   end
 end
+
+function GenericRefFE{T}(
+  ndofs, polytope, prebasis, dofs, conformity::Conformity, metadata, face_own_dofs,
+  face_own_dofs_permutations::Vector{Vector{Vector{Int}}},
+) where T
+
+  shapefuns = compute_shapefuns(dofs, prebasis)
+  GenericRefFE{T}(
+    ndofs, polytope, prebasis, dofs, conformity, metadata, face_own_dofs,
+    shapefuns, face_own_dofs_permutations,
+  )
+end
+
+function GenericRefFE{T}(
+  ndofs, polytope, predofs, conformity::Conformity, metadata, face_own_dofs, shapefuns,
+  face_own_dofs_permutations::Vector{Vector{Vector{Int}}},
+) where T
+
+  dofs = compute_dofs(predofs, shapefuns)
+  GenericRefFE{T}(
+    ndofs, polytope, predofs, conformity, metadata, face_own_dofs, shapefuns,
+    dofs, face_own_dofs_permutations,
+  )
+end
+
 
 get_name(::Type{<:GenericRefFE{Name}}) where Name = Name()
 
@@ -714,7 +761,7 @@ Conformity(reffe::GenericRefFE) = reffe.conformity
 get_face_own_dofs(reffe::GenericRefFE) = reffe.face_own_dofs
 function get_face_own_dofs(reffe::GenericRefFE, conf::Conformity)
   conf == Conformity(reffe) && return reffe.face_own_dofs
-  conf isa L2Conformity && return _get_face_own_dofs_l2(reffe)
+  conf isa L2Conformity && return l2_face_own_dofs(reffe)
   @unreachable """\n
   It is not possible to use conformity $conf on this reference FE.
   """
@@ -724,6 +771,15 @@ function get_face_dofs(reffe::GenericRefFE)
   poly = get_polytope(reffe)
   face_own_dofs = get_face_own_dofs(reffe)
   face_own_data_to_face_data(poly, face_own_dofs)
+end
+
+get_face_own_dofs_permutations(reffe::GenericRefFE) = reffe.face_own_dofs_permutations
+function get_face_own_dofs_permutations(reffe::GenericRefFE, conf::Conformity)
+  conf == Conformity(reffe) && return reffe.face_own_dofs_permutations
+  conf isa L2Conformity && return l2_face_own_dofs_permutations(get_face_own_dofs(reffe, conf))
+  @unreachable """\n
+  It is not possible to use conformity $conf on this reference FE.
+  """
 end
 
 get_shapefuns(reffe::GenericRefFE) = reffe.shapefuns

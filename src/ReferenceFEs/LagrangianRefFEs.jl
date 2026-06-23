@@ -64,19 +64,21 @@ end
 """
     get_face_own_nodes_permutations(reffe::LagrangianRefFE[, conf::Conformity][, d::Integer])
 
-Like [`get_face_own_nodes_permutations`](@ref), but the indices are that of the
+Like [`get_face_own_dofs_permutations`](@ref), but the indices are that of the
 nodes instead of that of the DoFs. They are different for vector/tensor-valued
 elements, for which several DoFs are placed at the same node (one per
-inpedendent component).
+independent component).
 """
-function get_face_own_nodes_permutations(reffe::LagrangianRefFE,conf::Conformity)
-  face_own_nodes = get_face_own_nodes(reffe,conf)
-  _trivial_face_own_dofs_permutations(face_own_nodes)
+function get_face_own_nodes_permutations(reffe::LagrangianRefFE, conf::Conformity)
+  # TODO this is invalid for CDConformity, this method should in theory be
+  # restricted to L2Conformity, and another implemented for CDConformity.
+  face_own_nodes = get_face_own_nodes(reffe, conf)
+  l2_face_own_dofs_permutations(face_own_nodes)
 end
 
 function get_face_own_nodes_permutations(reffe::LagrangianRefFE)
   conf = Conformity(reffe)
-  get_face_own_nodes_permutations(reffe,conf)
+  get_face_own_nodes_permutations(reffe, conf)
 end
 
 """
@@ -320,9 +322,9 @@ function  _generate_face_own_dofs_permutations(
   face_own_dofs_permutations
 end
 
-function get_face_own_dofs_permutations(reffe::LagrangianRefFE,conf::L2Conformity)
+function get_face_own_dofs_permutations(reffe::LagrangianRefFE, conf::L2Conformity)
   face_own_dofs = get_face_own_dofs(reffe,conf)
-  _trivial_face_own_dofs_permutations(face_own_dofs)
+  l2_face_own_dofs_permutations(face_own_dofs)
 end
 
 """

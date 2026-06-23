@@ -404,12 +404,12 @@ function ReferenceFEs.get_face_own_dofs_permutations(reffe::GenericRefFE{<:Macro
 end
 
 function ReferenceFEs.get_face_own_dofs(reffe::GenericRefFE{<:MacroRefFEName}, ::L2Conformity)
-  return ReferenceFEs._get_face_own_dofs_l2(reffe)
+  return ReferenceFEs.l2_face_own_dofs(reffe)
 end
 
 function ReferenceFEs.get_face_own_dofs_permutations(reffe::GenericRefFE{<:MacroRefFEName}, ::L2Conformity)
-  face_own_dofs = ReferenceFEs.get_face_own_dofs(reffe,L2Conformity())
-  return ReferenceFEs._trivial_face_own_dofs_permutations(face_own_dofs)
+  face_own_dofs = ReferenceFEs.get_face_own_dofs(reffe, L2Conformity())
+  return ReferenceFEs.l2_face_own_dofs_permutations(face_own_dofs)
 end
 
 """
