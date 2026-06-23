@@ -6,8 +6,8 @@ macro publish(mod,name)
 end
 
 # Reexport from LinearAlgebra (just for convenience)
-using LinearAlgebra:  det, inv, tr, cross, dot, norm, ×, ⋅
-export det, inv, tr, cross, dot, norm, ×, ⋅
+using LinearAlgebra:  det, inv, tr, cross, dot, norm, normalize, eigen, ×, ⋅
+export det, inv, tr, cross, dot, norm, normalize, eigen, ×, ⋅
 
 @publish Helpers GridapType
 
