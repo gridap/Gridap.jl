@@ -40,7 +40,7 @@ end
 function get_face_own_funs_permutations(shapefuns, p::Polytope, conf::Conformity)
   # TODO This WIP method is not correctly implemented `get_face_own_funs_permutations(b,p, $conf)`
   face_own_fun = get_face_own_funs(shapefuns, p, conf)
-  empty_face_own_dofs_permutations(face_own_fun)
+  l2_face_own_dofs_permutations(face_own_fun)
 end
 
 function get_face_own_funs_permutations(shapefuns, p::Polytope, ::L2Conformity)
