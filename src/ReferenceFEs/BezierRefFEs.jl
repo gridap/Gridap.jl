@@ -85,6 +85,9 @@ end
 
 get_face_own_dofs(reffe::BezierRefFE) = get_face_own_dofs(reffe.reffe)
 
+get_face_own_dofs_permutations(reffe::BezierRefFE) =
+  get_face_own_dofs_permutations(reffe.reffe)
+
 get_face_dofs(reffe::BezierRefFE) = get_face_dofs(reffe.reffe)
 
 num_dofs(reffe::BezierRefFE) = num_dofs(reffe.reffe)

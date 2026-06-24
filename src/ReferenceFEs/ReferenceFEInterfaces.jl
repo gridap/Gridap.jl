@@ -261,34 +261,35 @@ none are glued (e.g. for discontinuous Galerkin methods).
 If `conf` is given, the ownership is computed for `conf` and not for `reffe`'s
 conformity. If `d` is given, the returned vector only contains the data for the
 `d`-dimensional faces of  `reffe`'s polytope.
+
+To implement a new ReferenceFE type, overloading `get_face_own_dofs(reffe)` is
+necessary, and `get_face_own_dofs(reffe, conf)` is optional.
 """
-function get_face_own_dofs(reffe::ReferenceFE, conf::Conformity)
+function get_face_own_dofs(::ReferenceFE)
   @abstractmethod
 end
 
-function Conformity(reffe::ReferenceFE, conf::Conformity)
-  conf
-end
-
-function Conformity(reffe::ReferenceFE, conf::Nothing)
-  Conformity(reffe)
-end
-
-function get_face_own_dofs(reffe::ReferenceFE)
-  conf = Conformity(reffe)
-  get_face_own_dofs(reffe, conf)
-end
-
-function get_face_own_dofs(reffe::ReferenceFE, conf::Nothing)
+function get_face_own_dofs(reffe::ReferenceFE, conf::Conformity)
+  conf != Conformity(reffe) && @unreachable """\n
+  It is not possible to use conformity $conf on this reference FE, $reffe.
+  """
   get_face_own_dofs(reffe)
 end
+function get_face_own_dofs(reffe::ReferenceFE, conf::L2Conformity)
+  l2_face_own_dofs(reffe)
+end
+
+get_face_own_dofs(reffe::ReferenceFE, conf::Nothing) = get_face_own_dofs(reffe)
 
 function l2_face_own_dofs(reffe::ReferenceFE)
   p = get_polytope(reffe)
-  r = [Int[] for i in 1:num_faces(p)]
+  r = fill(Int[], num_faces(p))
   r[end] = collect(1:num_dofs(reffe))
   r
 end
+
+Conformity(reffe::ReferenceFE, conf::Conformity) = conf
+Conformity(reffe::ReferenceFE, conf::Nothing) = Conformity(reffe)
 
 """
     get_face_own_dofs_permutations(
@@ -308,13 +309,29 @@ relabeling of the vertices does not exist (i.e., lagrangian FEs on `QUAD` with
 anisotropic order). For these permutations the corresponding vector in
 `get_face_own_dofs_permutations(reffe)` has to be filled with the constant value
 [`INVALID_PERM`](@ref).
+
+To implement a new ReferenceFE type, overloading `get_face_own_dofs_permutations(reffe)`
+is necessary, and `get_face_own_dofs_permutations(reffe, conf)` is optional.
 """
-function get_face_own_dofs_permutations(reffe::ReferenceFE, conf::Conformity)
-  face_own_dofs = get_face_own_dofs(reffe, conf)
-  l2_face_own_dofs_permutations(face_own_dofs)
-  #empty_face_own_dofs_permutations(face_own_dofs)
+function get_face_own_dofs_permutations(::ReferenceFE)
+  @abstractmethod
 end
 
+function get_face_own_dofs_permutations(reffe::ReferenceFE, conf::Conformity)
+  conf != Conformity(reffe) && @unreachable """\n
+  It is not possible to use conformity $conf on this reference FE, $reffe.
+  """
+  get_face_own_dofs_permutations(reffe)
+end
+
+function get_face_own_dofs_permutations(reffe::ReferenceFE, conf::L2Conformity)
+  conf == Conformity(reffe) && return get_face_own_dofs_permutations(reffe)
+  l2_face_own_dofs_permutations(get_face_own_dofs(reffe, conf))
+end
+
+"""
+    l2_face_own_dofs_permutations(face_own_dofs) = [[collect(Int, 1:length(dofs)),] for dofs in face_own_dofs]
+"""
 function l2_face_own_dofs_permutations(face_own_dofs)
   [[collect(Int, 1:length(dofs)),] for dofs in face_own_dofs]
 end
@@ -324,11 +341,6 @@ end
 """
 function empty_face_own_dofs_permutations(face_own_dofs)
   [Vector{Int}[] for _ in face_own_dofs]
-end
-
-function get_face_own_dofs_permutations(reffe::ReferenceFE)
-  conf = Conformity(reffe)
-  get_face_own_dofs_permutations(reffe, conf)
 end
 
 function get_face_own_dofs_permutations(reffe::ReferenceFE, conf::Nothing)
@@ -347,7 +359,9 @@ If `d` is given, the returned vector only contains the data for the
 `d`-dimensional faces of `reffe`'s polytope.
 """
 function get_face_dofs(reffe::ReferenceFE)
-  @abstractmethod
+  poly = get_polytope(reffe)
+  face_own_dofs = get_face_own_dofs(reffe)
+  face_own_data_to_face_data(poly, face_own_dofs)
 end
 
 function get_dof_to_comp(reffe::ReferenceFE)
@@ -618,6 +632,10 @@ This type is a *materialization* of the `ReferenceFE` interface. That is, it is 
 This type is useful to build reference FEs from the underlying ingredients without
 the need to create a new type.
 
+`reffe::GenericRefFE` is meant to store the `face_own_dofs` and
+`face_own_dofs_permutations` for its conformity. No overload of their getters
+are needed for `reffe`'s conformity nor for `L2Conformity()`.
+
 Note that some fields in this `struct` are abstractly typed deliberately in
 order to simplify the type signature.
 """
@@ -647,7 +665,7 @@ order to simplify the type signature.
 
   Constructor using a DoF basis and function space pre-basis.
 
-  The default `face_own_dofs_permutations` is [`l2_face_own_dofs_permutations(face_own_dofs)`](@ref).
+  The default `face_own_dofs_permutations` is [`empty_face_own_dofs_permutations(face_own_dofs)`](@ref).
   """
   function GenericRefFE{T}(
     ndofs::Int,
@@ -658,7 +676,7 @@ order to simplify the type signature.
     metadata,
     face_own_dofs::Vector{Vector{Int}},
     shapefuns::AbstractVector{<:Field}=compute_shapefuns(dofs, prebasis),
-    face_own_dofs_permutations::Vector{Vector{Vector{Int}}}=l2_face_own_dofs_permutations(face_own_dofs),
+    face_own_dofs_permutations::Vector{Vector{Vector{Int}}}=empty_face_own_dofs_permutations(face_own_dofs),
   ) where {T,D}
 
     new{T,D}(
@@ -690,7 +708,7 @@ order to simplify the type signature.
 
   Constructor using shape function basis and a DoF pre-basis.
 
-  The default `face_own_dofs_permutations` is [`l2_face_own_dofs_permutations(face_own_dofs)`](@ref).
+  The default `face_own_dofs_permutations` is [`empty_face_own_dofs_permutations(face_own_dofs)`](@ref).
   """
   function GenericRefFE{T}(
     ndofs::Int,
@@ -701,7 +719,7 @@ order to simplify the type signature.
     face_own_dofs::Vector{Vector{Int}},
     shapefuns::AbstractVector{<:Field},
     dofs::AbstractVector{<:Dof}=compute_dofs(predofs, shapefuns),
-    face_own_dofs_permutations::Vector{Vector{Vector{Int}}}=l2_face_own_dofs_permutations(face_own_dofs),
+    face_own_dofs_permutations::Vector{Vector{Vector{Int}}}=empty_face_own_dofs_permutations(face_own_dofs),
   ) where {T,D}
 
     new{T,D}(
@@ -759,28 +777,8 @@ get_dof_basis(reffe::GenericRefFE) = reffe.dofs
 Conformity(reffe::GenericRefFE) = reffe.conformity
 
 get_face_own_dofs(reffe::GenericRefFE) = reffe.face_own_dofs
-function get_face_own_dofs(reffe::GenericRefFE, conf::Conformity)
-  conf == Conformity(reffe) && return reffe.face_own_dofs
-  conf isa L2Conformity && return l2_face_own_dofs(reffe)
-  @unreachable """\n
-  It is not possible to use conformity $conf on this reference FE.
-  """
-end
-
-function get_face_dofs(reffe::GenericRefFE)
-  poly = get_polytope(reffe)
-  face_own_dofs = get_face_own_dofs(reffe)
-  face_own_data_to_face_data(poly, face_own_dofs)
-end
 
 get_face_own_dofs_permutations(reffe::GenericRefFE) = reffe.face_own_dofs_permutations
-function get_face_own_dofs_permutations(reffe::GenericRefFE, conf::Conformity)
-  conf == Conformity(reffe) && return reffe.face_own_dofs_permutations
-  conf isa L2Conformity && return l2_face_own_dofs_permutations(get_face_own_dofs(reffe, conf))
-  @unreachable """\n
-  It is not possible to use conformity $conf on this reference FE.
-  """
-end
 
 get_shapefuns(reffe::GenericRefFE) = reffe.shapefuns
 

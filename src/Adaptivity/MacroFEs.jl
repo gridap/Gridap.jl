@@ -370,10 +370,10 @@ function MacroReferenceFE(
   poly = get_polytope(rrule)
   # This is a hack to be able to compute the orders
   prebasis = FineToCoarseArray(rrule,collect(map(get_prebasis,reffes)))
-  metadata = (rrule,conn,face_dofs,face_own_perms)
+  metadata = (rrule,conn,face_dofs)
 
   return GenericRefFE{Name}(
-    ndofs,poly,prebasis,dofs,conformity,metadata,face_own_dofs,basis
+    ndofs,poly,prebasis,dofs,conformity,metadata,face_own_dofs,basis,face_own_perms
   )
 end
 
@@ -388,7 +388,7 @@ end
 
 function ReferenceFEs.get_face_dofs(reffe::GenericRefFE{<:MacroRefFEName}, conf::Conformity)
   @check conf == Conformity(reffe)
-  rrule,conn,face_dofs,face_own_perms = ReferenceFEs.get_metadata(reffe)
+  rrule,conn,face_dofs = ReferenceFEs.get_metadata(reffe)
   return face_dofs
 end
 
@@ -397,19 +397,8 @@ function ReferenceFEs.get_face_own_dofs(reffe::GenericRefFE{<:MacroRefFEName}, c
   return reffe.face_own_dofs
 end
 
-function ReferenceFEs.get_face_own_dofs_permutations(reffe::GenericRefFE{<:MacroRefFEName}, conf::Conformity)
-  @check conf == Conformity(reffe)
-  rrule,conn,face_dofs,face_own_perms = ReferenceFEs.get_metadata(reffe)
-  return face_own_perms
-end
-
 function ReferenceFEs.get_face_own_dofs(reffe::GenericRefFE{<:MacroRefFEName}, ::L2Conformity)
   return ReferenceFEs.l2_face_own_dofs(reffe)
-end
-
-function ReferenceFEs.get_face_own_dofs_permutations(reffe::GenericRefFE{<:MacroRefFEName}, ::L2Conformity)
-  face_own_dofs = ReferenceFEs.get_face_own_dofs(reffe, L2Conformity())
-  return ReferenceFEs.l2_face_own_dofs_permutations(face_own_dofs)
 end
 
 """

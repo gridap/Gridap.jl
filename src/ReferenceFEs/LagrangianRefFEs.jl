@@ -246,13 +246,6 @@ function get_face_nodes(reffe::LagrangianRefFE,d::Integer)
   get_face_nodes(reffe)[range]
 end
 
-function get_face_own_dofs(reffe::LagrangianRefFE,conf::Conformity)
-  face_own_nodes = get_face_own_nodes(reffe,conf)
-  node_and_comp_to_dof = get_node_and_comp_to_dof(reffe)
-  face_own_dofs = _generate_face_own_dofs(face_own_nodes, node_and_comp_to_dof)
-  face_own_dofs
-end
-
 function _generate_face_own_dofs(face_own_nodes, node_and_comp_to_dof)
   faces = 1:length(face_own_nodes)
   T = eltype(node_and_comp_to_dof)
@@ -272,16 +265,6 @@ function _generate_face_own_dofs(face_own_nodes, node_and_comp_to_dof)
 
   face_own_dofs
 
-end
-
-function get_face_own_dofs_permutations(reffe::LagrangianRefFE,conf::Conformity)
-  face_own_nodes_permutations = get_face_own_nodes_permutations(reffe,conf)
-  node_and_comp_to_dof = get_node_and_comp_to_dof(reffe)
-  face_own_nodes = get_face_own_nodes(reffe,conf)
-  face_own_dofs = get_face_own_dofs(reffe,conf)
-  face_own_dofs_permutations = _generate_face_own_dofs_permutations(
-    face_own_nodes_permutations, node_and_comp_to_dof, face_own_nodes, face_own_dofs)
-  face_own_dofs_permutations
 end
 
 function  _generate_face_own_dofs_permutations(
@@ -320,11 +303,6 @@ function  _generate_face_own_dofs_permutations(
     push!(face_own_dofs_permutations,pindex_to_idof_to_pidof)
   end
   face_own_dofs_permutations
-end
-
-function get_face_own_dofs_permutations(reffe::LagrangianRefFE, conf::L2Conformity)
-  face_own_dofs = get_face_own_dofs(reffe,conf)
-  l2_face_own_dofs_permutations(face_own_dofs)
 end
 
 """
@@ -407,6 +385,9 @@ get_dof_basis(reffe::GenericLagrangianRefFE) = get_dof_basis(reffe.reffe)
 Conformity(reffe::GenericLagrangianRefFE) = Conformity(reffe.reffe)
 
 get_face_own_dofs(reffe::GenericLagrangianRefFE) = get_face_own_dofs(reffe.reffe)
+
+get_face_own_dofs_permutations(reffe::GenericLagrangianRefFE) =
+  get_face_own_dofs_permutations(reffe.reffe)
 
 get_face_dofs(reffe::GenericLagrangianRefFE) = get_face_dofs(reffe.reffe)
 

@@ -245,7 +245,7 @@ end
 
 function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders,poly_type) where {T,D}
 
-  basis = compute_poly_basis(T,p,orders,poly_type)
+  prebasis = compute_poly_basis(T,p,orders,poly_type)
   nodes, face_own_nodes = compute_nodes(p,orders)
   dofs = LagrangianDofBasis(T,nodes)
   reffaces = compute_lagrangian_reffaces(T,p,orders)
@@ -257,21 +257,22 @@ function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders,poly_type) where {T,
   face_nodes = _generate_face_nodes(nnodes,face_own_nodes,p,_reffaces)
   face_own_dofs = _generate_face_own_dofs(face_own_nodes, dofs.node_and_comp_to_dof)
 
-  if all(map(i->i==0,orders) ) && D>0
-    conf = L2Conformity()
-  else
-    conf = GradConformity()
-  end
+  conf = (all(map(i->i==0,orders) ) && D>0) ? L2Conformity() : GradConformity()
 
-  reffe = GenericRefFE{typeof(conf)}(
-    ndofs,
-    p,
-    basis, # pre-basis
-    dofs,
-    conf,
-    metadata,
-    face_own_dofs)
-  GenericLagrangianRefFE(reffe,face_nodes)
+  reffe = GenericRefFE{typeof(conf)}(ndofs, p, prebasis, dofs, conf, metadata, face_own_dofs)
+  lag_reffe = GenericLagrangianRefFE(reffe,face_nodes)
+
+  # compute and fill face_own_dofs_permutations
+  face_own_dofs_permutations = if conf isa L2Conformity
+     l2_face_own_dofs_permutations(face_own_dofs)
+  else # GradConformity
+    face_own_nodes_permutations = get_face_own_nodes_permutations(lag_reffe)
+    face_own_dofs_permutations = _generate_face_own_dofs_permutations(
+      face_own_nodes_permutations, dofs.node_and_comp_to_dof, face_own_nodes, face_own_dofs)
+  end
+  append!.(reffe.face_own_dofs_permutations, face_own_dofs_permutations)
+
+  lag_reffe
 end
 
 function monomial_basis(::Type{T},p::Polytope,orders) where T
