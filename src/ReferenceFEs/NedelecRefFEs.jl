@@ -1,7 +1,7 @@
 """
-    struct Nedelec{kind} <: ReferenceFEName
+    struct Nedelec{kind} <: MomentBasedRefFEName
 """
-struct Nedelec{kind} <: ReferenceFEName
+struct Nedelec{kind} <: MomentBasedRefFEName
   Nedelec{1}() = new{1}()
   Nedelec{2}() = new{2}()
 end

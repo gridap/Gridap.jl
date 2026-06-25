@@ -22,6 +22,27 @@ struct DFace{D} <: GridapType
   nf_nfs::Vector{Vector{Int}}
   nf_dimranges::Vector{Vector{UnitRange{Int}}}
   nf_dims::Vector{Vector{Int}}
+
+  function DFace{D}(
+    extrusion::Point{D,Int},
+    nfaces::Vector{NFace{D}},
+    dimranges::Vector{UnitRange{Int}},
+    dims::Vector{Int},
+    nf_nfs::Vector{Vector{Int}},
+    nf_dimranges::Vector{Vector{UnitRange{Int}}},
+    nf_dims::Vector{Vector{Int}}
+  ) where D
+
+    extrusion = if isone(D)
+      Point{D}(HEX_AXIS)
+    elseif D>1 && extrusion[1] != extrusion[2]
+      Point{D}(extrusion[2], extrusion[2:end]...)
+    else
+      extrusion
+    end
+
+    new{D}(extrusion, nfaces, dimranges, dims, nf_nfs, nf_dimranges, nf_dims)
+  end
 end
 
 """
@@ -30,9 +51,15 @@ end
       # + private fields
     end
 
-Concrete type for polytopes that can be represented with an "extrusion" tuple.
-The underlying extrusion is available in the field `extrusion`. Instances of
-this type can be obtained with the constructors
+Concrete type for polytopes that can be represented with an "extrusion" tuple,
+containing [`HEX_AXIS`](@ref) and [`TET_AXIS`](@ref) constants.  See e.g.
+[`QUAD`](@ref), [`TRI`](@ref), [`PYRAMID`](@ref).
+
+The underlying extrusion is available via [`get_extrusion`](@ref). Since the
+first extrusion has no meaning, it overwritten to `HEX_AXIS` for 1D `ExtrusionPolytope`
+or to the second one for D≥2.
+
+Instances of this type can be obtained with the constructors
 
 - [`Polytope(extrusion::Int...)`](@ref)
 - [`ExtrusionPolytope(extrusion::Int...)`](@ref)
@@ -50,10 +77,11 @@ struct ExtrusionPolytope{D} <: Polytope{D}
   vertex_perms::Vector{Vector{Int}}
   face_vertex_perms::Vector{Vector{Vector{Int}}}
   m_n_to_mface_to_nface::Matrix{Vector{Vector{Int}}}
+
   function ExtrusionPolytope(dface::DFace{D}) where D
     vertex_coords = _vertices_coordinates(Float64, dface)
     face_normals, face_orientations = _face_normals(Float64, dface)
-    vertex_perms = _precompute_vertex_perms_if_possible(dface)
+    vertex_perms = _compute_vertex_perms(dface)
     face_vertex_perms = _admissible_face_vertex_permutations(dface)
     m_n_to_mface_to_nface = _precompute_m_n_to_mface_to_nface(dface)
     new{D}(
@@ -162,18 +190,7 @@ function Polytope{D}(p::ExtrusionPolytope{D}, Dfaceid::Integer) where D
 end
 
 function (==)(a::ExtrusionPolytope{D}, b::ExtrusionPolytope{D}) where D
-  #The first axis is irrelevant here
-  ea = Point(Tuple(a.extrusion)[2:end])
-  eb = Point(Tuple(b.extrusion)[2:end])
-  ea == eb
-end
-
-function (==)(a::ExtrusionPolytope{1}, b::ExtrusionPolytope{1})
-  true
-end
-
-function (==)(a::ExtrusionPolytope{0}, b::ExtrusionPolytope{0})
-  true
+  a.extrusion == b.extrusion
 end
 
 function get_vertex_coordinates(p::ExtrusionPolytope)
@@ -206,28 +223,12 @@ function get_face_vertex_permutations(p::ExtrusionPolytope)
   p.face_vertex_perms
 end
 
-function is_simplex(p::ExtrusionPolytope)
-  all(Tuple(p.extrusion) .== TET_AXIS)
+function is_simplex(p::ExtrusionPolytope{D}) where D
+   D<2 || all(Tuple(p.extrusion) .== TET_AXIS)
 end
 
-function is_n_cube(p::ExtrusionPolytope)
-  all(Tuple(p.extrusion) .== HEX_AXIS)
-end
-
-function is_simplex(p::ExtrusionPolytope{0})
-  true
-end
-
-function is_n_cube(p::ExtrusionPolytope{0})
-  true
-end
-
-function is_simplex(p::ExtrusionPolytope{1})
-  true
-end
-
-function is_n_cube(p::ExtrusionPolytope{1})
-  true
+function is_n_cube(p::ExtrusionPolytope{D}) where D
+  D<2 || all(Tuple(p.extrusion) .== HEX_AXIS)
 end
 
 function simplexify(p::ExtrusionPolytope{0}; kwargs...)
@@ -777,7 +778,7 @@ function _admissible_face_vertex_permutations_fill!(perms, p::DFace{D}, ::Val{d}
   faceids = p.dimranges[d+1]
   for faceid in faceids
     f = DFace{d}(p, faceid)
-    f_perms = _precompute_vertex_perms_if_possible(f)
+    f_perms = _compute_vertex_perms(f)
     push!(perms, f_perms)
   end
   _admissible_face_vertex_permutations_fill!(perms, p, Val{d + 1}())
@@ -785,113 +786,71 @@ function _admissible_face_vertex_permutations_fill!(perms, p::DFace{D}, ::Val{d}
 end
 
 function _admissible_face_vertex_permutations_fill!(perms, p::DFace{D}, ::Val{D}) where D
-  f_perms = _precompute_vertex_perms_if_possible(p)
+  f_perms = _compute_vertex_perms(p)
   push!(perms, f_perms)
   nothing
 end
 
-function _precompute_vertex_perms_if_possible(p::DFace{D}) where D
-  if D in (0, 1)
-    perms = _admissible_permutations_simplex(p)
-  elseif D == 2
-    perms = _admissible_permutations(p)
-  else
-    perms = _admissible_permutations_identity(p)
-  end
-  perms
-end
-
 # It generates all the admissible permutations of nodes that lead to an
 # admissible polytope
-function _admissible_permutations(p::DFace{D}) where D
-  if D > 3
-    @warn "Computing permutations for a polytope of dim > 3 is overkill"
-  end
-  if D in (0, 1) || all(map(i -> i == TET_AXIS, Tuple(p.extrusion)[2:end]))
-    perms = _admissible_permutations_simplex(p)
-  elseif all(map(i -> i == HEX_AXIS, Tuple(p.extrusion)[2:end]))
-    perms = _admissible_permutations_n_cube(p)
-  else
-    @notimplemented "admissible vertex permutations only implemented for simplices and n-cubes"
-  end
-  perms
-end
+function _compute_vertex_perms(p::DFace{D}) where D
+  perms = if D<2 || all(==(TET_AXIS), p.extrusion)
+    _admissible_permutations_simplex(p)
+  elseif all(==(HEX_AXIS), p.extrusion)
+    _admissible_permutations_n_cube(p)
 
-function _admissible_permutations_identity(p::DFace{D}) where D
-  vs = first(_dimfrom_fs_dimto_fs(p, D, 0))
-  num_vs = length(vs)
-  l = [i for i = 1:num_vs]
-  perms = [l,]
+  elseif Tuple(p.extrusion) == (HEX_AXIS, HEX_AXIS, TET_AXIS) # PYRAMID
+    [[1, 2, 3, 4, 5], [1, 3, 2, 4, 5], [2, 1, 4, 3, 5], [2, 4, 1, 3, 5],
+     [3, 1, 4, 2, 5], [3, 4, 1, 2, 5], [4, 2, 3, 1, 5], [4, 3, 2, 1, 5]]
+
+  elseif Tuple(p.extrusion) == (TET_AXIS, TET_AXIS, HEX_AXIS) # WEDGE
+    [[1, 2, 3, 4, 5, 6], [4, 5, 6, 1, 2, 3],
+     [1, 3, 2, 4, 6, 5], [4, 6, 5, 1, 3, 2],
+     [2, 1, 3, 5, 4, 6], [5, 4, 6, 2, 1, 3],
+     [2, 3, 1, 5, 6, 4], [5, 6, 4, 2, 3, 1],
+     [3, 1, 2, 6, 4, 5], [6, 4, 5, 3, 1, 2],
+     [3, 2, 1, 6, 5, 4], [6, 5, 4, 3, 2, 1]]
+
+  else
+    @warn "Vertex permutations for polytpe with extrusion $(p.extrusion) is not implemented, returning empty vector."
+    Vector{Vector{Int}}()
+  end
+
   perms
 end
 
 function _admissible_permutations_simplex(p::DFace{D}) where D
   vs = first(_dimfrom_fs_dimto_fs(p, D, 0))
   num_vs = length(vs)
-  l = [i for i = 1:num_vs]
-  perms = Combinatorics.permutations(l)
+  l = collect(1:num_vs)
+  perms = permutations(l)
   collect(perms)
 end
 
 function _admissible_permutations_n_cube(p::DFace{D}) where D
-  vs = first(_dimfrom_fs_dimto_fs(p, D, 0))
-  num_vs = length(vs)
-  l = [i for i = 1:num_vs]
-  perms = Combinatorics.permutations(l)
-  vertices = p.nfaces[first(p.dimranges)]
-  permuted_vertices = similar(vertices)
-  admissible_perms = Vector{Int}[]
-  grads = _setup_aux_grads(vertices)
-  vol = -1
-  for perm in perms
-    for (j, cj) in enumerate(perm)
-      permuted_vertices[j] = vertices[cj]
-    end
-    jac = _setup_aux_jacobian(grads, permuted_vertices)
-    vol_i = convert(Int, abs(det(jac)))
-    if vol < 0
-      vol = vol_i
-    end
-    if vol_i == vol
-      push!(admissible_perms, perm)
-    end
-  end
-  admissible_perms
-end
+  isometry_perms = Vector{Vector{Int}}(undef,  factorial(D)*2^D )
 
-function _setup_aux_grads(vertices::Vector{NFace{D}}) where D
-  grads = zeros(Point{D,Int}, length(vertices))
-  m = zero(Mutable(Point{D,Int}))
-  for (i, vertex) in enumerate(vertices)
-    x = vertex.anchor
-    for di in 1:D
-      v = 1
-      for k in 1:D
-        if k == di && x[k] == 0
-          v *= -1
-        end
-      end
-      m[di] = v
-    end
-    grads[i] = m
-  end
-  grads
-end
+  n_vertices = 2^D
+  size_li = tfill(2, Val(D))
 
-function _setup_aux_jacobian(grads, permuted_vertices::Vector{NFace{D}}) where D
-  p0 = zero(Point{D,Int})
-  m = zero(Mutable(outer(p0, p0)))
-  for (i, pvertex) in enumerate(permuted_vertices)
-    x = pvertex.anchor
-    g = grads[i]
-    for di in 1:D
-      v = g[di]
-      for dj in 1:D
-        m[di, dj] += x[dj] * v
-      end
+  li_ref = collect(LinearIndices(size_li))
+  li = copy(li_ref)
+  noflip, flip = 1:2, 2:-1:1
+
+  p_id = 1
+  # Iterate through all 2^D possible compination of plane symmetries
+  for flips in Iterators.product(tfill((noflip,flip), Val(D))...)
+    # Iterate through all D! rotations of the frame (x, y, z,...)
+    @inbounds for axes_perm in permutations(1:D)
+      permutedims!(li, li_ref, axes_perm)
+      perm = copy(li[flips...])
+      perm = reshape(perm, (n_vertices,))
+      isometry_perms[p_id] = perm
+      p_id += 1
     end
   end
-  TensorValue(m)
+
+  isometry_perms
 end
 
 # Some particular cases

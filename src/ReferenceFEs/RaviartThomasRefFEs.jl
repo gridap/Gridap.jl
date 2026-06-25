@@ -4,7 +4,7 @@
 """
     struct RaviartThomas <: ReferenceFEName
 """
-struct RaviartThomas <: ReferenceFEName end
+struct RaviartThomas <: MomentBasedRefFEName end
 
 """
     const raviart_thomas = RaviartThomas()

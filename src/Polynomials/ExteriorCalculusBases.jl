@@ -38,9 +38,9 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
   @assert PT <: Polynomial
 
   # these call FEEC_space_definition_checks internally
-  if !cart_prod
-    F == :P⁻ && PT == Bernstein && return BarycentricPmΛBasis(Val(D),T,r,k,vertices; rotate_90, DG_calc)
-    F == :P  && PT == Bernstein && return BarycentricPΛBasis( Val(D),T,r,k,vertices; rotate_90, DG_calc)
+  if !cart_prod && k ∉ (0,D) && PT == Bernstein
+    F == :P⁻ && return BarycentricPmΛBasis(Val(D),T,r,k,vertices; rotate_90, DG_calc)
+    F == :P  && return BarycentricPΛBasis( Val(D),T,r,k,vertices; rotate_90, DG_calc)
   end
 
 
@@ -51,13 +51,13 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
     # Scalar H1 conforming functions
     @notimplementedif r < 0
     if     F == :P⁻ || F == :P # Lagrange, 𝓟r space
-      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r,vertices) # only if cart_prod
+      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r,vertices)
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),T,r,_p_filter)
     elseif F == :Q⁻            # Lagrange, 𝓠r space
       CartProdPolyBasis(PT,Val(D),T,r,_q_filter)
     elseif F == :S             # Lagrange, 𝓢r space
-      PT==ModalC0 || _ensure_hierarchical(PT)
+      PT==ModalC0 || _ensure_hierarchical(PT) # because ModalC0 is hierarchical from order 1, which we need
       CartProdPolyBasis(PT,Val(D),T,r,_ser_filter)
     end
 
@@ -65,11 +65,11 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
   elseif k == D
     # Scalar L2 conforming densities
     if     F == :P⁻ # Lagrange, 𝓟r₋1 space
-      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r-1,vertices) # only if cart_prod
+      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r-1,vertices)
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),T,r-1,_p_filter)
     elseif F == :P  # Lagrange, 𝓟r space
-      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r,vertices) # only if cart_prod
+      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r,vertices)
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),T,r,_p_filter)
     elseif F == :Q⁻ # Lagrange, 𝓠r₋1 space

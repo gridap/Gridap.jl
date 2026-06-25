@@ -14,8 +14,9 @@ reffe = ModalScalarRefFE(Float64,p,2; F)
 @test reffe == ReferenceFE(p,F,2,0)
 @test reffe == ReferenceFE(p,F,2,0; nodal)
 
-face_own_dofs = Vector{Int}[[1],[2],[3],[4],[5],[6],[]]
-face_dofs = Vector{Int}[[1],[2],[3],[1,2,4],[1,3,5],[2,3,6],[1,2,3,4,5,6]]
+# corresponds to ownership of BernsteinBasisOnSimplex
+face_own_dofs = Vector{Int}[[1], [4], [6], [2], [3], [5], []]
+face_dofs = Vector{Int}[[1], [4], [6], [1, 4, 2], [1, 6, 3], [4, 6, 5], [1, 4, 6, 2, 3, 5]]
 @test get_face_own_dofs(reffe) == face_own_dofs
 @test get_face_dofs(reffe) == face_dofs
 
@@ -54,7 +55,7 @@ test_reference_fe(reffe)
 @test Conformity(reffe,:H1) == GradConformity()
 @test Conformity(reffe,:L2) == L2Conformity()
 
-@test_throws "hierarchical" reffe = ModalScalarRefFE(Float64,HEX,order; F=:S, poly_type=Bernstein)
+@test_throws "hierarchical" ModalScalarRefFE(Float64,HEX,order; F=:S, poly_type=Bernstein)
 
 reffe = ModalScalarRefFE(Float64,HEX,order; F=:S, poly_type)
 test_reference_fe(reffe)
