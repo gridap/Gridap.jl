@@ -44,6 +44,11 @@ struct SkeletonTriangulation{Dc,Dp,B,C} <: Triangulation{Dc,Dp}
   end
 end
 
+"""
+    Skeleton(args...; kwargs...)
+
+Alias for [`SkeletonTriangulation`](@ref)(args..., kwargs...).
+"""
 function Skeleton(args...;kwargs...)
   SkeletonTriangulation(args...;kwargs...)
 end
@@ -118,8 +123,8 @@ end
 # Constructors
 
 """
-    SkeletonTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
     SkeletonTriangulation(model::DiscreteModel)
+    SkeletonTriangulation(model::DiscreteModel, face_to_mask::AbstractVector{Bool})
 """
 function SkeletonTriangulation(model::DiscreteModel,face_to_mask::AbstractVector{Bool})
   left_cell_around = 1
@@ -129,11 +134,19 @@ function SkeletonTriangulation(model::DiscreteModel,face_to_mask::AbstractVector
   SkeletonTriangulation(plus,minus)
 end
 
-function SkeletonTriangulation(model::DiscreteModel)
-  topo = get_grid_topology(model)
+function SkeletonTriangulation(model::DiscreteModel,labeling::FaceLabeling;tags=nothing)
   D = num_cell_dims(model)
+  topo = get_grid_topology(model)
   face_to_mask = collect(Bool, .!get_isboundary_face(topo,D-1))
+  if !isnothing(tags)
+    face_to_mask .= face_to_mask .& get_face_mask(labeling,tags,D-1)
+  end
   SkeletonTriangulation(model,face_to_mask)
+end
+
+function SkeletonTriangulation(model::DiscreteModel;tags=nothing)
+  labeling = get_face_labeling(model)
+  SkeletonTriangulation(model,labeling;tags=tags)
 end
 
 function SkeletonTriangulation(rtrian::Triangulation,args...;kwargs...)
@@ -228,6 +241,9 @@ const IN = -1
 const OUT = 1
 
 """
+    InterfaceTriangulation(trian_in::Triangulation, trian_out::Triangulation)
+    InterfaceTriangulation(model::DiscreteModel, cells_in::Vector{Bool})
+    InterfaceTriangulation(model::DiscreteModel, cells_in::Vector{Bool}, cells_out::Vector{Bool})
 """
 function InterfaceTriangulation(model::DiscreteModel,cell_to_is_in::Vector{Bool})
   cell_to_inout = fill(Int8(OUT),length(cell_to_is_in))
@@ -235,6 +251,11 @@ function InterfaceTriangulation(model::DiscreteModel,cell_to_is_in::Vector{Bool}
   InterfaceTriangulation(model,cell_to_inout)
 end
 
+"""
+    Interface(args...; kwargs...)
+
+Alias for [`InterfaceTriangulation`](@ref)(args...; kwargs...).
+"""
 function Interface(args...;kwargs...)
   InterfaceTriangulation(args...;kwargs...)
 end

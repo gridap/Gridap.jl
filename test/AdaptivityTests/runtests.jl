@@ -4,12 +4,12 @@ using Test
 
 @testset "Refinement" begin
   include("RefinementRulesTests.jl")
+  include("AdaptivityGluesTests.jl")
   include("AdaptedGeometryTests.jl")
   include("FaceLabelingTests.jl")
   include("CartesianRefinementTests.jl")
   include("ComplexChangeDomainTests.jl")
   include("EdgeBasedRefinementTests.jl")
-  include("FineToCoarseFieldsTests.jl")
   include("RefinementRuleBoundaryTests.jl")
   include("MultifieldRefinementTests.jl")
   include("UniformRefinementTests.jl")
@@ -30,6 +30,10 @@ end
 
 @testset "PolytopalCoarsening" begin
   include("PolytopalCoarseningTests.jl")
+end
+
+@testset "AdaptivityComposition" begin
+  include("AdaptivityCompositionTests.jl")
 end
 
 end # module

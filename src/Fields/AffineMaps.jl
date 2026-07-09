@@ -1,4 +1,7 @@
 
+"""
+    struct AffineMap <: Map
+"""
 struct AffineMap <: Map end
 
 function evaluate!(cache,::AffineMap,G::TensorValue{D1,D2},y0::Point{D2},x::Point{D1}) where {D1,D2}
@@ -6,8 +9,13 @@ function evaluate!(cache,::AffineMap,G::TensorValue{D1,D2},y0::Point{D2},x::Poin
 end
 
 """
-A Field with this form
-y = x⋅G + y0
+    struct AffineField{D1,D2,T,L} <: Field
+
+A Field with the form:
+
+    y = x⋅G + y0
+
+with `G`::TensorValue{`D1`,`D2`,`T`,`L`} and `y0`::Point{`D2`,`T`}.
 """
 struct AffineField{D1,D2,T,L} <: Field
   gradient::TensorValue{D1,D2,T,L}
@@ -20,7 +28,18 @@ struct AffineField{D1,D2,T,L} <: Field
   end
 end
 
+"""
+    affine_map(gradient, origin) = AffineField(gradient, origin)
+
+See [`AffineField`](@ref).
+"""
 affine_map(gradient,origin) = AffineField(gradient,origin)
+
+function Base.zero(::Type{<:AffineField{D1,D2,T}}) where {D1,D2,T}
+  gradient = TensorValue{D1,D2}(tfill(zero(T),Val{D1*D2}()))
+  origin = Point{D2,T}(tfill(zero(T),Val{D2}()))
+  AffineField(gradient,origin)
+end
 
 function evaluate!(cache,f::AffineField,x::Point)
   G = f.gradient
@@ -71,16 +90,15 @@ function _permdims_for_∇∇(a::MultiValue{Tuple{D1,D2}}) where {D1,D2}
   a
 end
 @generated function _permdims_for_∇∇(a::MultiValue{Tuple{D1,D2,D3}}) where {D1,D2,D3}
-  ss = String[]
+  comps = Expr[]
   for k in 1:D2
     for j in 1:D3
       for i in 1:D1
-        push!(ss,"a[$i,$k,$j],")
+        push!(comps, :(a[$i,$k,$j]))
       end
     end
   end
-  str =  join(ss)
-  Meta.parse("ThirdOrderTensorValue{$D1,$D3,$D2}($str)")
+  :(return ThirdOrderTensorValue{$D1,$D3,$D2}($(Expr(:tuple, comps...))))
 end
 
 function lazy_map(
@@ -121,12 +139,6 @@ function lazy_map(
   gradients = a.args[1]
   origins = a.args[2]
   lazy_map(Broadcasting(AffineMap()),gradients,origins,x)
-end
-
-function Base.zero(::Type{<:AffineField{D1,D2,T}}) where {D1,D2,T}
-  gradient = TensorValue{D1,D2}(tfill(zero(T),Val{D1*D2}()))
-  origin = Point{D2,T}(tfill(zero(T),Val{D2}()))
-  AffineField(gradient,origin)
 end
 
 # Constructor from a simplex given by D1+1 points

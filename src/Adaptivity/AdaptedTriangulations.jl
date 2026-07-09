@@ -1,36 +1,43 @@
 
 """
+    struct AdaptedTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
 
-  Triangulation produced from an AdaptedDiscreteModel.
-  
-  Contains: 
+Triangulation produced from an AdaptedDiscreteModel. Contains:
 
-  - adapted_model :: `AdaptedDiscreteModel` for the triangulation.
-  - trian :: `Triangulation` extracted from the background model, i.e `get_model(adapted_model)`.
+- `trian :: A<:Triangulation{Dc,Dp}` extracted from the background model, i.e `get_model(adapted_model)`.
+- `adapted_model :: B<:AdaptedDiscreteModel` for the triangulation.
 """
 struct AdaptedTriangulation{Dc,Dp,A<:Triangulation{Dc,Dp},B<:AdaptedDiscreteModel} <: Triangulation{Dc,Dp}
   trian::A
   adapted_model::B
 
-  function AdaptedTriangulation(trian::Triangulation{Dc,Dp},model::AdaptedDiscreteModel{Dc2,Dp}) where {Dc,Dc2,Dp}
+  function AdaptedTriangulation(trian::Triangulation{Df,Dp},model::AdaptedDiscreteModel{Dc,Dp}) where {Df,Dc,Dp}
     @check !isa(trian,AdaptedTriangulation)
     @check get_background_model(trian) === get_model(model)
-    @check Dc <= Dc2
+    @check Df <= Dc
     A = typeof(trian)
     B = typeof(model)
-    return new{Dc,Dp,A,B}(trian,model)
+    return new{Df,Dp,A,B}(trian,model)
   end
 end
 
+"""
+    get_adapted_model(trian::AdaptedTriangulation)
+"""
 function get_adapted_model(t::AdaptedTriangulation)
   return t.adapted_model
 end
 
+"""
+    get_adaptivity_glue(model::AdaptedDiscreteModel)
+    get_adaptivity_glue(trian::AdaptedTriangulation)
+"""
 function get_adaptivity_glue(t::AdaptedTriangulation)
   return get_adaptivity_glue(get_adapted_model(t))
 end
 
 # Relationships
+
 function is_child(t1::AdaptedTriangulation,t2::Triangulation)
   return is_child(get_adapted_model(t1),get_background_model(t2))
 end
@@ -331,11 +338,25 @@ function change_domain_o2n(
   @notimplementedif isa(nglue,Nothing)
 
   if (num_cells(old_trian) != 0)
-    # If mixed refinement/coarsening, then f_c2f is a Table
-    f_old_data  = CellData.get_data(f_old)
-    f_c2f       = o2n_reindex(f_old_data,glue)
-    new_rrules  = get_new_cell_refinement_rules(glue)
-    field_array = lazy_map(OldToNewField, f_c2f, new_rrules, glue.n2o_cell_to_child_id)
+    # If mixed refinement/coarsening, then f_data_old_model is a Table
+    # Old Triangulation -> Old Model
+    f_data_old_trian  = CellData.get_data(f_old)
+    f_data_old_trian_new_model  = extend(f_data_old_trian,oglue.mface_to_tface)
+
+    # Old Model -> New Model
+    f_data_old_model_to_new_model = o2n_reindex(f_data_old_trian_new_model,glue)
+
+    # New model -> New Triangulation
+    f_data_old_model_to_new_model_to_new_trian = lazy_map(Reindex(f_data_old_model_to_new_model),nglue.tface_to_mface)
+    new_rrules = get_new_cell_refinement_rules(glue)
+    new_rrules_new_trian = lazy_map(Reindex(new_rrules),nglue.tface_to_mface)
+    n2o_cell_to_child_id_new_trian = lazy_map(Reindex(glue.n2o_cell_to_child_id),nglue.tface_to_mface)
+
+    field_array = lazy_map(OldToNewField,
+                           f_data_old_model_to_new_model_to_new_trian,
+                           new_rrules_new_trian,
+                           n2o_cell_to_child_id_new_trian)
+
     return CellData.similar_cell_field(f_old,field_array,new_trian,ReferenceDomain())
   else
     f_new = Fill(Fields.ConstantField(0.0),num_cells(new_trian))
@@ -382,7 +403,6 @@ function change_domain_n2o(f_fine,ftrian::AdaptedTriangulation{Dc},ctrian::Trian
   end
 end
 
-
 # Specialisation for Skeleton Pairs
 
 function change_domain_o2n(f_old,old_trian::Triangulation,new_trian::AdaptedTriangulation{Dc,Dp,<:SkeletonTriangulation}) where {Dc,Dp}
@@ -417,5 +437,3 @@ function change_domain_n2o(f_new::CellData.CellFieldAt,new_trian::AdaptedTriangu
   end
   return change_domain_n2o(f_new,new_trian,_old_trian)
 end
-
-

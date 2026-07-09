@@ -14,19 +14,17 @@ using Gridap.CellData, Gridap.Fields, Gridap.Helpers
 using Gridap.ReferenceFEs
 using Gridap.Arrays
 
+using Gridap.MultiField: MultiFieldFEBasis
+
 function l2_error(uh,u,dΩ)
   eh = uh - u
   return sqrt(sum(∫(eh⋅eh)*dΩ))
 end
 
-function swap_field_ids(u, ids, nfields)
-  @assert length(ids) == length(u)
-  fields = map((ui,id) -> swap_field_ids(ui,id,nfields), u, ids)
-  return MultiField.MultiFieldCellField(fields)
-end
-
-function swap_field_ids(u::MultiField.MultiFieldFEBasisComponent, id, nfields)
-  return MultiField.MultiFieldFEBasisComponent(u.single_field, id, nfields)
+function swap_field_ids(op)
+  function f(u)
+    MultiFieldFEBasis(op(MultiFieldFEBasis(u,[1,2],2)),[1,3],5)
+  end
 end
 
 function projection_operator(V, Ω, dΩ)
@@ -56,8 +54,7 @@ function reconstruction_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
   R = LocalOperator(
     LocalPenaltySolveMap(), ptopo, W, Y, lhs, rhs; space_out = L
   )
-  _R(u) = swap_field_ids(R(swap_field_ids(u,[1,2],2)),[1,3],5)
-  return _R
+  return swap_field_ids(R)
 end
 
 function divergence_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
@@ -72,8 +69,7 @@ function divergence_operator(ptopo,L,X,Ω,Γp,dΩp,dΓp)
   D = LocalOperator(
     LocalSolveMap(), ptopo, W, Y, lhs, rhs; space_out = L
   )
-  _D(u) = swap_field_ids(D(swap_field_ids(u,[1,2],2)),[1,3],5)
-  return _D
+  return swap_field_ids(D)
 end
 
 ##############################################################

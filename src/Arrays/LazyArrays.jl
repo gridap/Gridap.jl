@@ -207,43 +207,44 @@ function _array_cache!(dict::Dict,a::LazyArray)
   (cg, cgi, cf), IndexItemPair(index, item)
 end
 
-function getindex!(cache, a::LazyArray, i::Integer)
+@propagate_inbounds function getindex!(cache, a::LazyArray{G,T,1}, index::Integer) where {G,T}
   _cache, index_and_item = cache
-  index = LinearIndices(a)[i]
+  @boundscheck checkbounds(a,index)
   if index_and_item.index != index
     cg, cgi, cf = _cache
-    gi = getindex!(cg, a.maps, i)
-    index_and_item.item = _getindex_and_call!(cgi,gi,cf,a.args,i)
+    @inbounds gi = getindex!(cg, a.maps, index)
+    index_and_item.item = _getindex_and_call!(cgi,gi,cf,a.args,index)
     index_and_item.index = index
   end
   index_and_item.item
 end
 
-function getindex!(cache, a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
+@propagate_inbounds function getindex!(cache, a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
   _cache, index_and_item = cache
   index = LinearIndices(a)[i...]
   if index_and_item.index != index
     cg, cgi, cf = _cache
-    gi = getindex!(cg, a.maps, i...)
+    @inbounds gi = getindex!(cg, a.maps, i...)
     index_and_item.item = _getindex_and_call!(cgi,gi,cf,a.args,i...)
     index_and_item.index = index
   end
   index_and_item.item
 end
 
+# this is not @propagate_inbounds, cause we don't want to inline the whole recursive getindex! callstacks
 function _getindex_and_call!(cgi,gi,cf,args,i...)
   fi = map((cj,fj) -> getindex!(cj,fj,i...),cf,args)
   evaluate!(cgi, gi, fi...)
 end
 
-function Base.getindex(a::LazyArray, i::Integer)
+@propagate_inbounds function Base.getindex(a::LazyArray, i::Integer)
   gi = a.maps[i]
   fi = map(fj -> fj[i],a.args)
   vi = evaluate(gi, fi...)
   vi
 end
 
-function Base.getindex(a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
+@propagate_inbounds function Base.getindex(a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
   gi = a.maps[i...]
   fi = map(fj -> fj[i...],a.args)
   vi = evaluate(gi, fi...)
@@ -254,13 +255,14 @@ Base.size(a::LazyArray) = size(a.maps)
 Base.size(a::LazyArray{G,T,1} where {G,T}) = (length(a.maps),)
 
 function Base.sum(a::LazyArray)
+  isempty(a) && return zero(testitem(a))
   cache = array_cache(a)
   lazy_sum(cache,a)
 end
 
 function lazy_sum(cache,a)
   r = zero(testitem(a))
-  for i in eachindex(a)
+  @inbounds for i in eachindex(a)
     ai = getindex!(cache,a,i)
     r += ai
   end
@@ -269,10 +271,16 @@ end
 
 lazy_collect(a::AbstractArray) = a
 
-function lazy_collect(a::LazyArray{A,T} where A) where T
+function lazy_collect(a::LazyArray)
+  isempty(a) && return fill(testitem(a),size(a))
   cache = array_cache(a)
+  lazy_collect(cache,a)
+end
+
+function lazy_collect(cache, a::LazyArray{A,T} where A) where T
   r = Array{T}(undef,size(a))
-  for i in eachindex(a)
+  @check axes(a) == axes(r)
+  @inbounds for i in eachindex(a)
     ai = getindex!(cache,a,i)
     r[i] = deepcopy(ai)
   end
@@ -293,22 +301,30 @@ end
 
 function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)
   ai = map(ai->ai.value,a)
-  r = evaluate(f.value, ai...)
   s = _common_size(f, a...)
-  Fill(r, s)
+  if prod(s) > 0
+    r = evaluate(f.value, ai...)
+  else
+    r = return_value(f.value, ai...)
+  end
+  return Fill(r, s)
 end
 
 function lazy_map(::typeof(evaluate),::Type{T}, f::Fill, a::Fill...) where T
   ai = map(ai->ai.value,a)
-  r = evaluate(f.value, ai...)
   s = _common_size(f, a...)
-  Fill(r, s)
+  if prod(s) > 0
+    r = evaluate(f.value, ai...)
+  else
+    r = return_value(f.value, ai...)
+  end :: T
+  return Fill(r, s)
 end
 
 function _common_size(a::AbstractArray...)
   a1, = a
-  @check all(map(ai->length(a1) == length(ai),a)) "Array sizes $(map(size,a)) are not compatible."
-  if all( map(ai->size(a1) == size(ai),a) )
+  @check all(ai -> length(a1) == length(ai), a) "Array sizes $(map(size,a)) are not compatible."
+  if all(ai -> size(a1) == size(ai), a)
     size(a1)
   else
     (length(a1),)
@@ -327,12 +343,12 @@ end
 
 Base.size(a::ArrayWithCounter) = size(a.array)
 
-function Base.getindex(a::ArrayWithCounter,i::Integer)
+@propagate_inbounds function Base.getindex(a::ArrayWithCounter, i::Integer)
   a.counter[i] += 1
   a.array[i]
 end
 
-function Base.getindex(a::ArrayWithCounter{T,N},i::Vararg{Integer,N}) where {T,N}
+@propagate_inbounds function Base.getindex(a::ArrayWithCounter{T,N}, i::Vararg{Integer,N}) where {T,N}
   a.counter[i...] += 1
   a.array[i...]
 end

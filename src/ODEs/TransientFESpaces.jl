@@ -161,6 +161,12 @@ end
 # MultiFieldFESpace #
 #####################
 # This is only for backward compatibility, we could remove it
+"""
+    const TransientMultiFieldFESpace = MultiFieldFESpace
+
+!!! warning
+    Deprecated (use MultiFieldFESpace)
+"""
 const TransientMultiFieldFESpace = MultiFieldFESpace
 
 function has_transient(U::MultiFieldFESpace)

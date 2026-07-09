@@ -1,8 +1,14 @@
 
 """
     divergence(f)
+
+Abstract divergence operator, formally equivalent to `f -> ∇⋅f`.
 """
 divergence(f) = Operation(tr)(∇(f))
+
+function return_value(::Broadcasting{typeof(divergence)},f)
+  Broadcasting(Operation(tr))(Broadcasting(∇)(f))
+end
 
 function evaluate!(cache,::Broadcasting{typeof(divergence)},f)
   Broadcasting(Operation(tr))(Broadcasting(∇)(f))
@@ -10,7 +16,8 @@ end
 
 """
     DIV(f)
-    Reference space divergence
+
+Reference space divergence.
 """
 function DIV(f)
   @notimplemented "DIV operator is only defined for certain type of operands"
@@ -20,8 +27,14 @@ function symmetric_gradient end
 
 """
     symmetric_gradient(f)
+
+Abstract symmetric gradient operator, formally equivalent to `f -> ½(∇f + (∇f)ᵀ)`.
 """
 symmetric_gradient(f) = Operation(symmetric_part)(gradient(f))
+
+function return_value(::Broadcasting{typeof(symmetric_gradient)},f)
+  Broadcasting(Operation(symmetric_part))(Broadcasting(∇)(f))
+end
 
 function evaluate!(cache,::Broadcasting{typeof(symmetric_gradient)},f)
   Broadcasting(Operation(symmetric_part))(Broadcasting(∇)(f))
@@ -30,14 +43,20 @@ end
 """
     const ε = symmetric_gradient
 
-Alias for the symmetric gradient
+Alias for the [`symmetric_gradient`](@ref).
 """
 const ε = symmetric_gradient
 
 """
     skew_symmetric_gradient(f)
+
+Abstract skew symmetric gradient operator, formally equivalent to `f -> ½(∇f - (∇f)ᵀ)`.
 """
 skew_symmetric_gradient(f) = Operation(skew_symmetric_part)(gradient(f))
+
+function return_value(::Broadcasting{typeof(skew_symmetric_gradient)},f)
+  Broadcasting(Operation(skew_symmetric_part))(Broadcasting(∇)(f))
+end
 
 function evaluate!(cache,::Broadcasting{typeof(skew_symmetric_gradient)},f)
   Broadcasting(Operation(skew_symmetric_part))(Broadcasting(∇)(f))
@@ -45,8 +64,16 @@ end
 
 """
     curl(f)
+
+Abstract curl operator, formally equivalent to
+- `f -> ∂₁f₂ - ∂₂f₁` for 2D vector functions, or
+- `f -> ∇×f` for 3D vector functions.
 """
 curl(f) = Operation(grad2curl)(∇(f))
+
+function return_value(::Broadcasting{typeof(curl)},f)
+  Broadcasting(Operation(grad2curl))(Broadcasting(∇)(f))
+end
 
 function evaluate!(cache,::Broadcasting{typeof(curl)},f)
   Broadcasting(Operation(grad2curl))(Broadcasting(∇)(f))
@@ -54,6 +81,10 @@ end
 
 """
     grad2curl(∇f)
+
+Return
+- `∇f[1,2] - ∇f[2,1]` for 2×2 input tensor, or
+- `VectorValue(∇f[2,3] - ∇f[3,2], ∇f[3,1] - ∇f[1,3], ∇f[1,2] - ∇f[2,1])` for 3×3 input tensor.
 """
 function grad2curl(∇u::TensorValue{2})
   ∇u[1,2] - ∇u[2,1]
@@ -71,12 +102,14 @@ function laplacian end
 """
     const Δ = laplacian
 
-Alias for the `laplacian` function
+Alias for `laplacian`.
 """
 const Δ = laplacian
 
 """
     laplacian(f)
+
+Abstract laplacian operator, equivalent to `tr(∇∇(f))`.
 """
 function laplacian(f)
   # g = gradient(f)
@@ -87,9 +120,7 @@ end
 """
     ∇⋅f
 
-Equivalent to
-
-    divergence(f)
+Equivalent to `divergence(f)`.
 """
 dot(::typeof(∇),f::Field) = divergence(f)
 dot(::typeof(∇),f::Function) = divergence(f)
@@ -106,30 +137,27 @@ end
 
 """
     outer(∇,f)
+    ∇⊗f
 
-Equivalent to
-
-    gradient(f)
+Equivalent to `gradient(f)`.
 """
 outer(::typeof(∇),f::Field) = gradient(f)
 outer(::typeof(∇),f::Function) = gradient(f)
 
 """
     outer(f,∇)
+    f⊗∇
 
-Equivalent to
-
-    transpose(gradient(f))
+Equivalent to `transpose(gradient(f))`.
 """
 outer(f::Field,::typeof(∇)) = transpose(gradient(f))
 outer(f::Function,::typeof(∇)) = transpose(gradient(f))
 
 """
     cross(∇,f)
+    ∇×f
 
-Equivalent to
-
-    curl(f)
+Equivalent to `curl(f)`.
 """
 cross(::typeof(∇),f::Field) = curl(f)
 cross(::typeof(∇),f::Function) = curl(f)
@@ -160,6 +188,12 @@ end
 
 (s::ShiftedNabla)(f::Function) = s(GenericField(f))
 
+function return_value(k::Broadcasting{<:ShiftedNabla},f)
+  s = k.f
+  g = Broadcasting(∇)(f)
+  Broadcasting(Operation((a,b)->a+s.v⊗b))(g,f)
+end
+
 function evaluate!(cache,k::Broadcasting{<:ShiftedNabla},f)
   s = k.f
   g = Broadcasting(∇)(f)
@@ -168,7 +202,7 @@ end
 
 dot(s::ShiftedNabla,f) = Operation(tr)(s(f))
 outer(s::ShiftedNabla,f) = s(f)
-outer(f,s::ShiftedNabla) = transpose(gradient(f))
+outer(f,s::ShiftedNabla) = transpose(s(f))
 cross(s::ShiftedNabla,f) = Operation(grad2curl)(s(f))
 
 dot(s::ShiftedNabla,f::Function) = dot(s,GenericField(f))

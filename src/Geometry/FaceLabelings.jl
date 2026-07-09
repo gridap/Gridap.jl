@@ -228,12 +228,9 @@ function add_tag!(lab::FaceLabeling,name::String,entities::Vector{<:Integer})
 end
 
 """
-    add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{Int})
-    add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{String})
-    add_tag_from_tags!(lab::FaceLabeling, name::String, tag::Int)
-    add_tag_from_tags!(lab::FaceLabeling, name::String, tag::String)
+    add_tag_from_tags!(lab::FaceLabeling, name::String, tags)
 
-Adds a new tag `name`, given by the union of the tags `tags`.
+Adds a new tag `name`, given by the union of the tag(s) [`tags`](@ref "`tag` and `tags` arguments").
 """
 function add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{Int})
   entities = Int32[]
@@ -279,12 +276,9 @@ function add_tag_from_tags_intersection!(labels::FaceLabeling, name::String, nam
 end
 
 """
-    add_tag_from_tags_complementary!(lab::FaceLabeling, name::String, tags::Vector{Int})
-    add_tag_from_tags_complementary!(lab::FaceLabeling, name::String, tags::Vector{String})
-    add_tag_from_tags_complementary!(lab::FaceLabeling, name::String, tag::Int)
-    add_tag_from_tags_complementary!(lab::FaceLabeling, name::String, tag::String)
+    add_tag_from_tags_complementary!(lab::FaceLabeling, name::String, tags)
 
-Adds a new tag `name`, given by the complementary of the tags `tags`.
+Adds a new tag `name`, given by the complementary of the given [`tags`](@ref "`tag` and `tags` arguments").
 """
 function add_tag_from_tags_complementary!(labels::FaceLabeling, name::String, tags::Vector{Int})
   f(entity_tags) = isdisjoint(tags,entity_tags)
@@ -354,10 +348,9 @@ function add_tag_from_tag_filter!(
 end
 
 """
-    get_face_mask(labeling::FaceLabeling,tags::Vector{Int},d::Integer)
-    get_face_mask(labeling::FaceLabeling,tags::Vector{String},d::Integer)
-    get_face_mask(labeling::FaceLabeling,tag::Int,d::Integer)
-    get_face_mask(labeling::FaceLabeling,tag::String,d::Integer)
+    get_face_mask(labeling::FaceLabeling, tags, d::Integer)
+
+where the tags are one or several [`tags`](@ref "`tag` and `tags` arguments").
 """
 function get_face_mask(labeling::FaceLabeling,tags,d::Integer)
   _tags = _prepare_tags(labeling,tags)
@@ -377,15 +370,15 @@ function get_face_mask(labeling::FaceLabeling,tags,d::Integer)
 end
 
 """
-    get_face_tag(labeling::FaceLabeling,tags::Vector{Int},d::Integer)
-    get_face_tag(labeling::FaceLabeling,tags::Vector{String},d::Integer)
-    get_face_tag(labeling::FaceLabeling,tag::Int,d::Integer)
-    get_face_tag(labeling::FaceLabeling,tag::String,d::Integer)
-    get_face_tag(labeling::FaceLabeling,d::Integer)
+    get_face_tag(labeling::FaceLabeling, tags, d::Integer)
+    get_face_tag(labeling::FaceLabeling, d::Integer)
 
-The first of the given tags appearing in the face is taken.
+Return the tag for each `d`-face in `labeling`.
+
+The first of the given [`tags`](@ref "`tag` and `tags` arguments"). appearing in the face is taken.
 If there is no tag on a face, this face will have a value equal to `UNSET`.
-If not tag or tags are provided, all the tags in the model are considered
+
+If `tags` is not provided, all the tags in the model are considered.
 """
 function get_face_tag(labeling::FaceLabeling,tags,d::Integer)
   _tags = _prepare_tags(labeling,tags)
@@ -411,12 +404,9 @@ function get_face_tag(labeling::FaceLabeling,d::Integer)
 end
 
 """
-    get_face_tag_index(labeling::FaceLabeling,tags::Vector{Int},d::Integer)
-    get_face_tag_index(labeling::FaceLabeling,tags::Vector{String},d::Integer)
-    get_face_tag_index(labeling::FaceLabeling,tag::Int,d::Integer)
-    get_face_tag_index(labeling::FaceLabeling,tag::String,d::Integer)
+    get_face_tag_index(labeling::FaceLabeling, tags, d::Integer)
 
-Like `get_face_tag` by provides the index into the array `tags` instead of the tag stored in `tags`.
+Like `get_face_tag`, but provides the *index* the tag in [`tags`](@ref "`tag` and `tags` arguments") instead of the tag itself.
 """
 function get_face_tag_index(labeling::FaceLabeling,tags,d::Integer)
   _tags = _prepare_tags(labeling,tags)
@@ -504,7 +494,6 @@ function Base.merge!(a::FaceLabeling,b::FaceLabeling)
       elseif !a_unset && !b_unset
         # If both are set, we consider the combined entity
         dface_entities = (a_dface_to_entity[dface],b_dface_to_entity[dface]+offset)
-
         if !haskey(entities,dface_entities)
           # If the combined entity is new, we add it
           n_entities += 1
@@ -538,7 +527,10 @@ calling `merge!` on the two FaceLabeling objects, i.e
 ```
 
 """
-function face_labeling_from_cell_tags(topo::GridTopology, cell_to_tag, tag_to_name)
+function face_labeling_from_cell_tags(
+  topo::GridTopology, cell_to_tag, tag_to_name; 
+  split_dimensions = false
+)
   D = num_cell_dims(topo)
   n_tags = length(tag_to_name)
   tag_to_entities = [Int32[] for tag in 1:n_tags]
@@ -552,18 +544,20 @@ function face_labeling_from_cell_tags(topo::GridTopology, cell_to_tag, tag_to_na
 
   # Face entities:
   n_entities = n_tags
-  entities = Dict{Set{Int},Int32}([Set{Int}(i) => i for i in 1:n_tags])
+  to_key(e) = sort!(unique!(filter!(!isequal(UNSET), collect(Int32,e))))
+  entities = Dict{UInt64,Int32}([hash(to_key([i])) => i for i in 1:n_tags])
   for d in D-1:-1:0
+    if split_dimensions
+      empty!(entities) # Reset entities
+    end
     dface_to_cells = get_faces(topo,d,D)
     dface_to_entity = d_to_dface_to_entity[d+1]
     for (dface,cells) in enumerate(dface_to_cells)
-      dface_tags = Set(cell_to_tag[cells])
-      if haskey(entities,dface_tags)
-        dface_entity = entities[dface_tags]
-      else
+      dface_tags = to_key(cell_to_tag[cells])
+      isempty(dface_tags) && continue
+      dface_entity = get!(entities,hash(dface_tags),n_entities+1)
+      if dface_entity == n_entities+1 # New entity
         n_entities += 1
-        dface_entity = n_entities
-        entities[dface_tags] = dface_entity
         for tag in dface_tags
           push!(tag_to_entities[tag],dface_entity)
         end

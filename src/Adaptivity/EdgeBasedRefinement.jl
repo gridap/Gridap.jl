@@ -513,7 +513,7 @@ function setup_edge_based_rrules(
     faces_list = (ref_nodes,Int32[],cells_to_refine)
   elseif p == TET
     faces_list = (ref_nodes,Int32[],Int32[],cells_to_refine)
-  else p == HEX
+  elseif p == HEX
     faces_to_refine = 1:num_faces(topo,2)
     faces_list = (ref_nodes,Int32[],faces_to_refine,cells_to_refine)
   end
@@ -565,6 +565,15 @@ function RedRefinementRule(p::Polytope)
 
   ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types;has_affine_map=true)
   return RefinementRule(RedRefinement(),p,ref_grid)
+end
+
+function compose_refinement_rules(::RedRefinement, ::WithoutRefinement, rr1, rr2)
+  return rr1
+end
+
+function compose_refinement_rules(::RedRefinement, ::RefinementRuleType, rr1, rr2)
+  amodel = refine(RedGreenRefinement(), get_ref_grid(rr2))
+  return RefinementRule(GenericRefinement(), get_polytope(rr2), get_model(amodel))
 end
 
 function _get_red_refined_faces_list(p::Polytope)

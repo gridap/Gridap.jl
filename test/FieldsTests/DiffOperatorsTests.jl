@@ -4,7 +4,9 @@ using Test
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
-using Gridap.Fields: MockField
+using Gridap.Fields: MockField, MockFieldArray
+using Gridap.Fields: skew_symmetric_gradient, ShiftedNabla
+
 using LinearAlgebra
 using FillArrays
 
@@ -53,6 +55,9 @@ g(x) = 2*x[2]
 @test (∇+p)×f != nothing
 @test (∇+p)⊗f != nothing
 @test f⊗(∇+p) != nothing
+
+s = ∇ - v
+@test evaluate(outer(f,s),x) == transpose.(evaluate(outer(s,f),x))
 
 l = 10
 f = Fill(f,l)
@@ -164,6 +169,29 @@ for x in xs
   @test (∇⋅εu)(x) == VectorValue(4.,0.)
 end
 
+x0 = VectorValue(-0.3, 0.5)
+A = TensorValue(0.0, -1.0, 1.0, 0.0)
+u(x) = (x - x0) ⋅ A
+∇u(x) = A
+Δu(x) = VectorValue(0.0, 0.0)
+
+for x in xs
+  @test ∇(u)(x) == ∇u(x)
+  @test Δ(u)(x) == Δu(x)
+  @test Δ(u)(x) == (∇⋅∇u)(x)
+end
+
+x0 = VectorValue(1.0, 0.5)
+u(x) = exp(-(x - x0) ⋅ (x - x0))
+∇u(x) = -2(x - x0) * u(x)
+Δu(x) = 4u(x) * ((x - x0) ⋅ (x - x0) - 1)
+
+for x in xs
+  @test ∇(u)(x) == ∇u(x)
+  @test Δ(u)(x) == Δu(x)
+  @test Δ(u)(x) == (∇⋅∇u)(x)
+end
+
 u(x) = VectorValue( x[1]^2 + 2*x[3]^2, -x[1]^2, -x[2]^2 + x[3]^2 )
 ∇u(x) = TensorValue( 2*x[1],0,4*x[3],  -2*x[1],0,0,  0,-2*x[2],2*x[3] )
 Δu(x) = VectorValue( 6, -2, 0 )
@@ -181,5 +209,41 @@ for x in xs
   @test Δ(u)(x) == (∇⋅∇u)(x)
   @test (∇⋅εu)(x) == VectorValue(4.,-1.,1.)
 end
+
+v = VectorValue(0.5, -1.0, 2.0)
+x0 = VectorValue(0.3, 1.0, -0.2)
+u(x) = (x - x0) × v + v ⋅ (x ⊗ x)
+∇u(x) = (
+  TensorValue([0.0 -v[3] v[2]; v[3] 0.0 -v[1]; -v[2] v[1] 0.0])
+  + v ⊗ x + v ⋅ x * TensorValue(Matrix(I,3,3))
+)
+Δu(x) = 2v
+εu(x) = symmetric_part(∇u(x))
+νu(x) = TensorValues.skew_symmetric_part(∇u(x))
+
+xs = [ Point(1.,1.,2.0), Point(2.,0.,1.), Point(0.,3.,0.), Point(-1.,3.,2.)]
+for x in xs
+  @test ∇(u)(x) == ∇u(x)
+  @test (∇⋅u)(x) == tr(∇u(x))
+  @test (∇×u)(x) == grad2curl(∇u(x))
+  @test Δ(u)(x) == Δu(x)
+  @test ε(u)(x) == εu(x)
+  @test Fields.skew_symmetric_gradient(u)(x) == νu(x)
+  @test Δ(u)(x) == (∇⋅∇u)(x)
+end
+
+# FieldArray diff ops
+
+same_type(x,y) = typeof(x) == typeof(y)
+
+x = [ Point(0.,0.), Point(1.,0.), Point(0.,1.), Point(1.,1.) ]
+f = MockFieldArray( [ VectorValue(1.0,2.0), VectorValue(3.0,4.0), VectorValue(5.0,6.0) ] )
+
+@test same_type(evaluate(Broadcasting(gradient),f), return_value(Broadcasting(gradient),f))
+@test same_type(evaluate(Broadcasting(divergence),f), return_value(Broadcasting(divergence),f))
+@test same_type(evaluate(Broadcasting(curl),f), return_value(Broadcasting(curl),f))
+@test same_type(evaluate(Broadcasting(symmetric_gradient),f), return_value(Broadcasting(symmetric_gradient),f))
+@test same_type(evaluate(Broadcasting(laplacian),f), return_value(Broadcasting(laplacian),f))
+@test same_type(evaluate(Broadcasting(skew_symmetric_gradient),f), return_value(Broadcasting(skew_symmetric_gradient),f))
 
 end # module

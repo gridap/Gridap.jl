@@ -116,4 +116,33 @@ dv = zero_dirichlet_values(X)
 interpolate_everywhere!([f,f],x,dv,X)
 @test x == get_free_dof_values(fh)
 
+# BlockMultiFieldStyle with permutations (regression test for #1231/#1232)
+
+model2 = CartesianDiscreteModel((0,1,0,1),(2,2))
+V1 = TestFESpace(model2,ReferenceFE(lagrangian,Float64,1))
+V2 = TestFESpace(model2,ReferenceFE(lagrangian,Float64,2))
+V3 = TestFESpace(model2,ReferenceFE(lagrangian,Float64,3))
+
+dΩ = Measure(Triangulation(model2),2)
+
+a((u1,u2,u3),(v1,v2,v3)) = ∫((u1+u2+u3)*(v1-v2+2*v3))dΩ
+
+X1 = MultiFieldFESpace([V1,V2,V3];style=BlockMultiFieldStyle(2,(2,1),(1,2,3)))
+X2 = MultiFieldFESpace([V1,V2,V3];style=BlockMultiFieldStyle(2,(2,1),(3,1,2)))
+X3 = MultiFieldFESpace([V1,V2,V3];style=BlockMultiFieldStyle(2,(1,2),(1,3,2)))
+
+ndofs = map(num_free_dofs,(V1,V2,V3))
+
+@test MultiField.compute_field_offsets(X1) == (0, ndofs[1], 0)
+@test MultiField.compute_field_offsets(X2) == (ndofs[3], 0, 0)
+@test MultiField.compute_field_offsets(X3) == (0, ndofs[3], 0)
+
+A1 = assemble_matrix(a,X1,X1)
+A2 = assemble_matrix(a,X2,X2)
+A3 = assemble_matrix(a,X3,X3)
+
+@test blocksizes(A1,1) == blocksizes(A1,2) == [ndofs[1]+ndofs[2], ndofs[3]]
+@test blocksizes(A2,1) == blocksizes(A2,2) == [ndofs[3]+ndofs[1], ndofs[2]]
+@test blocksizes(A3,1) == blocksizes(A3,2) == [ndofs[1], ndofs[3]+ndofs[2]]
+
 end # module

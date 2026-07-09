@@ -37,11 +37,14 @@ struct AdaptivityGlue{GT,Dc,A,B,C,D,E} <: GridapType
   refinement_rules     :: C
   o2n_faces_map        :: D
   is_refined           :: E
-  function AdaptivityGlue(GT::AdaptivityGlueType,
+  function AdaptivityGlue(
+    GT::AdaptivityGlueType,
     n2o_faces_map::Vector{<:Union{AbstractVector{<:Integer},Table{<:Integer}}},
     n2o_cell_to_child_id::Union{AbstractVector{<:Integer},Table{<:Integer}},
-    refinement_rules::AbstractVector{<:RefinementRule})
-
+    refinement_rules::AbstractVector{<:RefinementRule},
+    is_refined = select_refined_cells(n2o_faces_map[end]),
+    o2n_faces_map = Arrays.inverse_table(n2o_faces_map[end], length(refinement_rules))
+  )
     if (isa(GT,MixedGlue))
       @assert isa(n2o_faces_map,Vector{<:Table{<:Integer}})
       @assert isa(n2o_cell_to_child_id,Table{<:Integer})
@@ -50,33 +53,26 @@ struct AdaptivityGlue{GT,Dc,A,B,C,D,E} <: GridapType
       @assert isa(n2o_cell_to_child_id,AbstractVector{<:Integer})
     end
     Dc = length(n2o_faces_map)-1
-    is_refined    = select_refined_cells(n2o_faces_map[Dc+1])
-    o2n_faces_map = Arrays.inverse_table(n2o_faces_map[Dc+1], length(refinement_rules))
-    A = typeof(n2o_faces_map)
-    B = typeof(n2o_cell_to_child_id)
-    C = typeof(refinement_rules)
-    D = typeof(o2n_faces_map)
-    E = typeof(is_refined)
+    A, B = typeof(n2o_faces_map), typeof(n2o_cell_to_child_id)
+    C, D, E = typeof(refinement_rules), typeof(o2n_faces_map), typeof(is_refined)
     new{typeof(GT),Dc,A,B,C,D,E}(n2o_faces_map,n2o_cell_to_child_id,refinement_rules,o2n_faces_map,is_refined)
   end
 end
 
-function AdaptivityGlue(n2o_faces_map::Vector{<:Union{AbstractVector{<:Integer},Table{<:Integer}}},
-                        n2o_cell_to_child_id::Union{AbstractVector{<:Integer},Table{<:Integer}},
-                        refinement_rules::AbstractVector{<:RefinementRule})
+function AdaptivityGlue(n2o_faces_map, n2o_cell_to_child_id, refinement_rules::AbstractVector{<:RefinementRule})
   is_refined = select_refined_cells(n2o_faces_map[end])
-  GT = all(is_refined) ? RefinementGlue : MixedGlue
-  AdaptivityGlue(GT(),n2o_faces_map,n2o_cell_to_child_id,refinement_rules)
+  GT = all(is_refined) ? RefinementGlue() : MixedGlue()
+  return AdaptivityGlue(GT,n2o_faces_map,n2o_cell_to_child_id,refinement_rules,is_refined)
 end
 
-function AdaptivityGlue(n2o_faces_map,n2o_cell_to_child_id,refinement_rule::RefinementRule)
+function AdaptivityGlue(n2o_faces_map, n2o_cell_to_child_id, refinement_rule::RefinementRule)
   n_old  = maximum(n2o_faces_map[end])
   rrules = Fill(refinement_rule,n_old)
   return AdaptivityGlue(n2o_faces_map,n2o_cell_to_child_id,rrules)
 end
 
 select_refined_cells(n2o_cell_map::Vector) = Fill(true,length(n2o_cell_map))
-select_refined_cells(n2o_cell_map::Table) = map(x -> length(x) == 1, n2o_cell_map)
+select_refined_cells(n2o_cell_map::Table) = map(x -> isone(length(x)), n2o_cell_map)
 
 """
     get_n2o_reference_coordinate_map(g::AdaptivityGlue)
@@ -122,6 +118,65 @@ function get_old_cell_refinement_rules(g::AdaptivityGlue)
   return g.refinement_rules
 end
 
+"""
+    compose_glues(glue12::AdaptivityGlue, glue23::AdaptivityGlue)
+
+Given two `AdaptivityGlue`s `glue12` and `glue23`, returns a `RefinementGlue` that corresponds to the composition of the two, i.e., `glue12 ∘ glue23`.
+"""
+function compose_glues(glue12::AdaptivityGlue,glue23::AdaptivityGlue)
+  # TODO: Actually, I think that conceptualy there is no issue? 
+  @notimplemented "compose_glues not implemented for mixed refinement/coarsening glues"
+end
+
+function compose_glues(
+  glue12::AdaptivityGlue{RefinementGlue,Dc},
+  glue23::AdaptivityGlue{RefinementGlue,Dc}
+) where Dc
+
+  n2o_faces_map = Vector{Vector{Int32}}(undef, Dc+1)
+  for d in 0:Dc
+    f1_to_f2 = glue12.n2o_faces_map[d+1]
+    f2_to_f3 = glue23.n2o_faces_map[d+1]
+    f1_to_f3 = zeros(Int32, length(f1_to_f2))
+    for (f1, f2) in enumerate(f1_to_f2)
+      if !iszero(f2)
+        f1_to_f3[f1] = f2_to_f3[f2]
+      end
+    end
+    n2o_faces_map[d+1] = f1_to_f3
+  end
+
+  n3                   = length(glue23.o2n_faces_map)
+  n2o_cells            = n2o_faces_map[Dc+1]
+  o2n_faces_map        = inverse_table(n2o_cells, n3)
+  n2o_cell_to_child_id = find_local_index(n2o_cells, o2n_faces_map)
+
+  rr12s_per_c2    = get_old_cell_refinement_rules(glue12)
+  rr23s_per_c2    = get_new_cell_refinement_rules(glue23)
+  composed_per_c2 = compose_refinement_rules(rr12s_per_c2, rr23s_per_c2)
+
+  c2_to_c3(data::Fill{<:RefinementRule}) = Fill(first(data), n3)
+  function c2_to_c3(data::CompressedArray{<:RefinementRule})
+    first_ptrs = Vector{Int32}(undef, n3)
+    for c3 in 1:n3
+      children = glue23.o2n_faces_map[c3]
+      ptr_ref  = data.ptrs[first(children)]
+      @check(all(c2 -> data.ptrs[c2] == ptr_ref, children),
+        "compose_glues: mesh2 children of mesh3 cell $c3 have different refinement rules")
+      first_ptrs[c3] = ptr_ref
+    end
+    CompressedArray(data.values, first_ptrs)
+  end
+
+  refinement_rules = c2_to_c3(composed_per_c2)
+  is_refined       = select_refined_cells(n2o_faces_map[end])
+
+  return AdaptivityGlue(
+    RefinementGlue(), n2o_faces_map, n2o_cell_to_child_id,
+    refinement_rules, is_refined, o2n_faces_map
+  )
+end
+
 # Data re-indexing
 
 """
@@ -156,7 +211,6 @@ function _reindex(data,idx::Vector)
   m = Reindex(data)
   return lazy_map(m,idx)
 end
-
 
 # New to old face glues 
 
@@ -299,4 +353,69 @@ function blocked_refinement_glue(
 
   f2c_faces_map = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
   return AdaptivityGlue(f2c_faces_map,fcell_to_child_id,rrules)
+end
+
+# IO
+
+function to_dict(glue::AdaptivityGlue{GT,Dc}) where {GT,Dc}
+  dict = Dict{Symbol,Any}()
+  dict[:GT] = string(nameof(GT))
+  dict[:Dc] = Dc
+  for d in 0:Dc
+    k = Symbol("n2o_faces_map_$d")
+    if isassigned(glue.n2o_faces_map, d+1)
+      m = glue.n2o_faces_map[d+1]
+      dict[k] = (GT <: RefinementGlue) ? Vector{Int32}(m) : to_dict(m)
+    else
+      dict[k] = (GT <: RefinementGlue) ? Int32[] : to_dict(Table(Int32[],Int32[1]))
+    end
+  end
+  if GT <: RefinementGlue
+    dict[:n2o_cell_to_child_id] = Vector{Int32}(glue.n2o_cell_to_child_id)
+  else
+    dict[:n2o_cell_to_child_id] = to_dict(glue.n2o_cell_to_child_id)
+  end
+  rrules = glue.refinement_rules
+  if isa(rrules, Fill)
+    dict[:rrules_is_fill] = true
+    dict[:rrules_length]  = length(rrules)
+    dict[:rrules]         = to_dict(first(rrules))
+  else
+    dict[:rrules_is_fill] = false
+    dict[:rrules]         = map(to_dict, rrules)
+  end
+  dict
+end
+
+function from_dict(::Type{AdaptivityGlue}, dict::Dict{Symbol,Any})
+  GT_str = dict[:GT]
+  GT = if GT_str == "RefinementGlue"
+    RefinementGlue()
+  else
+    MixedGlue()
+  end
+  Dc = Int(dict[:Dc])
+  if isa(GT, RefinementGlue)
+    n2o_faces_map = Vector{Vector{Int32}}(undef, Dc+1)
+    for d in 0:Dc
+      k = Symbol("n2o_faces_map_$d")
+      n2o_faces_map[d+1] = Vector{Int32}(dict[k])
+    end
+    n2o_cell_to_child_id = Vector{Int32}(dict[:n2o_cell_to_child_id])
+  else
+    n2o_faces_map = Vector{Table{Int32,Vector{Int32},Vector{Int32}}}(undef, Dc+1)
+    for d in 0:Dc
+      k = Symbol("n2o_faces_map_$d")
+      n2o_faces_map[d+1] = from_dict(Table{Int32,Vector{Int32},Vector{Int32}}, dict[k])
+    end
+    n2o_cell_to_child_id = from_dict(Table{Int32,Vector{Int32},Vector{Int32}}, dict[:n2o_cell_to_child_id])
+  end
+  if dict[:rrules_is_fill]
+    rr     = from_dict(RefinementRule, dict[:rrules])
+    n      = Int(dict[:rrules_length])
+    rrules = Fill(rr, n)
+  else
+    rrules = RefinementRule[from_dict(RefinementRule, d) for d in dict[:rrules]]
+  end
+  AdaptivityGlue(GT, n2o_faces_map, n2o_cell_to_child_id, rrules)
 end

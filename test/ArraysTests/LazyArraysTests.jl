@@ -4,6 +4,7 @@ using Test
 using Gridap.Arrays
 using FillArrays
 using Gridap.Helpers
+using LinearAlgebra
 
 a = rand(3,2,4)
 test_array(a,a)
@@ -101,6 +102,13 @@ aop = lazy_map(Operation(+),aa,bb)
 lazy_map(evaluate,aa,x)+lazy_map(evaluate,bb,x)
 lazy_map(evaluate,aop,x)
 @test lazy_map(evaluate,aop,x) == lazy_map(evaluate,aa,x)+lazy_map(evaluate,bb,x)
+
+a = Fill(Diagonal([2,2]),5)
+b = Fill(Diagonal([3,3]),5)
+c = b.*a
+arr = lazy_map(*,a,b)
+@test return_cache(*,a[1],b[1]) isa Diagonal
+test_array(arr, c)
 
 # Broadcasting
 

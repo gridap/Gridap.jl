@@ -2,6 +2,7 @@ module EmptyDomainsTests
 
 using Gridap
 import Gridap: ∇
+using Gridap.Geometry, Gridap.CellData
 using Test
 
 # Analytical functions
@@ -17,9 +18,7 @@ g(x) = tr(∇u(x))
 ∇(::typeof(p)) = ∇p
 
 # Mesh
-cells = (10,10)
-domain = (0,1,0,1)
-model = CartesianDiscreteModel(domain,cells)
+model = CartesianDiscreteModel((0,1,0,1),(10,10))
 labels = get_face_labeling(model)
 add_tag_from_tags!(labels,"dirichlet",[1,2,5])
 add_tag_from_tags!(labels,"neumann",[6,7,8])
@@ -79,5 +78,69 @@ tol = 1.0e-9
 @test eu_l2 < tol
 @test eu_h1 < tol
 @test ep_l2 < tol
+
+###############################################
+# Multifield jumps
+
+V = TestFESpace(model, ReferenceFE(lagrangian, Float64, 1))
+W = MultiFieldFESpace([V,V])
+
+Λ = Skeleton(model,falses(num_cells(model)))
+dΛ = Measure(Λ,2)
+
+a((u,p),(v,q)) = ∫(jump(∇(u)) ⊙ jump(∇(v)))dΛ
+assemble_matrix(a,W,W)
+
+###############################################
+# Multidomain
+
+Ωa = Triangulation(model,collect(Int32,1:50))
+Ωb = Triangulation(model,collect(Int32,51:100))
+Ωc = Triangulation(model,Int32[])
+Γ = Interface(Ωa,Ωb)
+
+Va = TestFESpace(Ωa, ReferenceFE(lagrangian, Float64, 1))
+Vb = TestFESpace(Ωb, ReferenceFE(lagrangian, Float64, 1))
+X = MultiFieldFESpace([Va,Vb])
+
+Π(u,Ω) = change_domain(u,Ω,DomainStyle(u))
+dΩa = Measure(Ωa,2)
+dΩb = Measure(Ωb,2)
+dΩc = Measure(Ωc,2)
+dΓ = Measure(Γ,2)
+a1((ua,ub),(va,vb)) = ∫( ∇(va)⊙∇(ub) + vb*ub )*dΩa + ∫( ∇(vb)⊙∇(ua) + va*(ua+ub))*dΩb + ∫( mean(va*ub) + mean(vb*ua) )*dΓ
+assemble_matrix(a1,X,X)
+a2((ua,ub),(va,vb)) = ∫(Π(ua,Ωb)*Π(vb,Ωa))dΩc
+assemble_matrix(a2,X,X)
+
+###############################################
+# Autodiff when the target domain is empty
+
+V = TestFESpace(model, ReferenceFE(lagrangian, Float64, 1))
+uh = zero(V)
+vh = get_fe_basis(V)
+
+# Case 1
+Ω_empty = Triangulation(model, Int32[])
+dΩ = Measure(Ω_empty, 2)
+j1(u) = ∫(u * u)dΩ
+dj1 = gradient(j1, uh)
+dj1_vec = assemble_vector(dj1,V)
+j2(u) = ∫(u*vh)dΩ
+dj2 = jacobian(j2, uh)
+dj2_mat = assemble_matrix(dj2,V,V)
+
+# Case 2
+Ωa = Triangulation(model,Int32[])
+Ωb = Triangulation(model,Int32[1])
+Ω = AppendedTriangulation(Ωa,Ωb)
+dΩ = Measure(Ω,2)
+j3(u) = ∫(u)dΩ
+dj3 = gradient(j3,uh)
+dj3_vec = assemble_vector(dj3,V)
+
+j4(u) = ∫(u*vh)dΩ
+dj4 = jacobian(j4,uh)
+dj4_mat = assemble_matrix(dj4,V,V)
 
 end # module

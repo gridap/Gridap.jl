@@ -2,11 +2,11 @@
 struct FaceToCellGlue{A,B,C,D} <: GridapType
   face_to_bgface::A
   face_to_cell::Vector{Int32}
-  face_to_lface::Vector{Int8}
+  face_to_lface::Vector{GridapLocalInt}
   face_to_lcell::Vector{Int8}
   face_to_ftype::B
   cell_to_ctype::C
-  cell_to_lface_to_pindex::Table{Int8,Vector{Int8},Vector{Int32}}
+  cell_to_lface_to_pindex::Table{GridapLocalInt,Vector{GridapLocalInt},Vector{Int32}}
   ctype_to_lface_to_ftype::D
 end
 
@@ -27,7 +27,7 @@ function FaceToCellGlue(
   bgface_to_lface = find_local_index(bgface_to_cell, cell_to_bgfaces)
 
   face_to_cell = collect(Int32,lazy_map(Reindex(bgface_to_cell), face_to_bgface))
-  face_to_lface = collect(Int8,lazy_map(Reindex(bgface_to_lface), face_to_bgface))
+  face_to_lface = collect(GridapLocalInt,lazy_map(Reindex(bgface_to_lface), face_to_bgface))
   face_to_lcell = collect(Int8,lazy_map(Reindex(bgface_to_lcell), face_to_bgface))
 
   face_to_ftype = get_cell_type(face_grid)
@@ -88,7 +88,7 @@ function generate_ctype_to_lface_to_ftype(
   cell_grid::Grid, face_grid::Grid, face_to_cell, face_to_lface, face_to_ftype, cell_to_ctype
 )
   Df = num_cell_dims(face_grid)
-  f(p) = fill(Int8(UNSET),num_faces(p,Df))
+  f(p) = fill(GridapLocalInt(UNSET),num_faces(p,Df))
   ctype_to_lface_to_ftype = map(f, get_polytopes(cell_grid))
   for (face, cell) in enumerate(face_to_cell)
     ctype = cell_to_ctype[cell]
@@ -125,7 +125,7 @@ struct BoundaryTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
   function BoundaryTriangulation(
     trian::BodyFittedTriangulation,
     glue)
-  
+
     Dc = num_cell_dims(trian)
     Dp = num_point_dims(trian)
     A = typeof(trian)
@@ -134,6 +134,11 @@ struct BoundaryTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
   end
 end
 
+"""
+    Boundary(args...; kwargs...)
+
+Alias for [`BoundaryTriangulation`](@ref)(args...; kwargs...).
+"""
 function Boundary(args...;kwargs...)
   BoundaryTriangulation(args...;kwargs...)
 end
@@ -141,7 +146,7 @@ end
 # Constructors
 
 """
-    BoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
+    BoundaryTriangulation(model::DiscreteModel, face_to_mask::Vector{Bool})
     BoundaryTriangulation(model::DiscreteModel)
 """
 function BoundaryTriangulation(
@@ -181,10 +186,10 @@ function BoundaryTriangulation(
 end
 
 """
-    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tags::Vector{Int})
-    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tags::Vector{String})
-    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tag::Int)
-    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tag::String)
+    BoundaryTriangulation(model::DiscreteModel; tags)
+    BoundaryTriangulation(model::DiscreteModel, labeling::FaceLabeling; tags)
+
+where `tags` are either an `Int`, `String`, `Vector{Int}` or `Vector{String}`.
 """
 function BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tags=nothing)
   D = num_cell_dims(model)
@@ -197,12 +202,6 @@ function BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tags=
   BoundaryTriangulation(model,face_to_mask)
 end
 
-"""
-    BoundaryTriangulation(model::DiscreteModel,tags::Vector{Int})
-    BoundaryTriangulation(model::DiscreteModel,tags::Vector{String})
-    BoundaryTriangulation(model::DiscreteModel,tag::Int)
-    BoundaryTriangulation(model::DiscreteModel,tag::String)
-"""
 function BoundaryTriangulation(model::DiscreteModel;tags=nothing)
   labeling = get_face_labeling(model)
   BoundaryTriangulation(model,labeling,tags=tags)

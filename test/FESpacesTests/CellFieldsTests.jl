@@ -234,7 +234,7 @@ end
   @test cf4(p) ≈ ∇∇(uh)(p) + ∇∇(qh)(p)
 
   cf5 = ∇∇(uh*qh)
-  @test get_array(cf5(p)) ≈ get_array(qh(p) * ∇∇(uh)(p) + uh(p) * ∇∇(qh)(p) + ∇(qh)(p) ⊗ ∇(uh)(p) + ∇(uh)(p) ⊗ ∇(qh)(p))   
+  @test get_array(cf5(p)) ≈ get_array(qh(p) * ∇∇(uh)(p) + uh(p) * ∇∇(qh)(p) + ∇(qh)(p) ⊗ ∇(uh)(p) + ∇(uh)(p) ⊗ ∇(qh)(p))
 
   cf6 = Δ(uh*qh)
   @test cf6(p) ≈ tr(get_array(qh(p) * ∇∇(uh)(p) + uh(p) * ∇∇(qh)(p) + ∇(qh)(p) ⊗ ∇(uh)(p) + ∇(uh)(p) ⊗ ∇(qh)(p)))
@@ -252,7 +252,7 @@ end
 
   @test prod(cf4(cp) .≈ ∇∇(uh)(cp) + ∇∇(qh)(cp))
 
-  @test prod(cf5(cp) .≈ (qh * ∇∇(uh))(cp) + (uh * ∇∇(qh))(cp) + (∇(qh) ⊗ ∇(uh))(cp) + (∇(uh) ⊗ ∇(qh))(cp)) 
+  @test prod(cf5(cp) .≈ (qh * ∇∇(uh))(cp) + (uh * ∇∇(qh))(cp) + (∇(qh) ⊗ ∇(uh))(cp) + (∇(uh) ⊗ ∇(qh))(cp))
 
   @test prod(cf6(cp) .≈ map(i -> tr.(i), cf5(cp)))
 end

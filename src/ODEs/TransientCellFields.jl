@@ -81,7 +81,7 @@ function Base.getproperty(f::TransientSingleFieldCellField, sym::Symbol)
     elseif sym in (:⁻, :minus)
       cellfield = CellFieldAt{:minus}(f.cellfield)
       for iderivative in f.derivatives
-        derivatives = (derivatives..., CellFieldAt{:plus}(iderivative))
+        derivatives = (derivatives..., CellFieldAt{:minus}(iderivative))
       end
     end
     return TransientSingleFieldCellField(cellfield, derivatives)

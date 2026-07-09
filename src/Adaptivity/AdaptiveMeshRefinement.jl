@@ -53,7 +53,7 @@ struct DorflerMarking
     strategy::Symbol = :quickmark
   )
     @assert 0 < θ < 1
-    @assert strategy ∈ (:sort,:binsort,:quickmark) "Strategy not recognized. Available values are (:sort)"
+    @assert strategy ∈ (:sort,:binsort,:quickmark) "Strategy not recognized. Available values are (:sort,:binsort,:quickmark)"
     new(θ,ν,strategy)
   end
 end

@@ -1,23 +1,30 @@
 
-# This file implements code to evaluate CellFields on arbitrary points, based 
+# This file implements code to evaluate CellFields on arbitrary points, based
 # on tree searches.
 
-# Interpolable struct
+"""
+"""
 struct KDTreeSearch{T}
   num_nearest_vertices::Int
   tol::T
-  function KDTreeSearch(; num_nearest_vertices=1, tol=1.e-10)
+  function KDTreeSearch(; num_nearest_vertices=Helpers.default_num_nearest_vertices, tol=1.e-10)
     T = typeof(tol)
     new{T}(num_nearest_vertices, tol)
   end
 end
 
+"""
+    struct Interpolable{M,A} <: Function
+"""
 struct Interpolable{M,A} <: Function
   uh::A
   tol::Float64
   searchmethod::M
+  @doc """
+      Interpolable(uh; tol=1e-6, searchmethod=KDTreeSearch(; tol=tol))
+  """
   function Interpolable(uh; tol=1e-10, searchmethod=KDTreeSearch(; tol=tol))
-    new{typeof(searchmethod),typeof(uh)}(uh, tol,searchmethod)
+    new{typeof(searchmethod),typeof(uh)}(uh, tol, searchmethod)
   end
 end
 
@@ -70,6 +77,10 @@ function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
   return collect(point_to_fx) # Collect into a plain array
 end
 
+"""
+    compute_cell_points_from_vector_of_points(xs::AbstractVector{<:Point},
+        trian::Triangulation, domain_style::PhysicalDomain)
+"""
 function compute_cell_points_from_vector_of_points(
   xs::AbstractVector{<:Point}, trian::Triangulation, domain_style::PhysicalDomain
 )
@@ -151,14 +162,26 @@ function _point_to_cell!(cache, x::Point)
   end
 
   # Output error message if cell not found
-  @check false "Point $x is not inside any active cell"
+  @check false """\n
+  Point $x was not found in any active cell of the triangulation.
+
+  The KDTreeSearch used num_nearest_vertices=$(searchmethod.num_nearest_vertices). Points near
+  cell boundaries or mesh vertices may require a larger neighbourhood to be located correctly.
+  Try increasing num_nearest_vertices, e.g.:
+
+    DiracDelta(model, p; searchmethod=KDTreeSearch(num_nearest_vertices=3))
+    Interpolable(uh; searchmethod=KDTreeSearch(num_nearest_vertices=3))
+
+  A global default for num_nearest_vertices can be set 
+  with `Helpers.set_num_nearest_vertices(n)`.
+  """
 end
 
 """
-   dist = distance(polytope::ExtrusionPolytope,inv_cmap::Field,x::Point)
+    distance(poly::ExtrusionPolytope, inv_cmap::Field, x::Point)
 
-Calculate distance from point `x` to the polytope. The polytope is
-given by its type and by the inverse cell map, i.e. by the map from
+Calculate distance from point `x` to a polytope. The polytope is
+given by its type `poly` and by the inverse cell map, i.e. by the map from
 the physical to the reference space.
 
 Positive distances are outside the polytope, negative distances are
@@ -183,6 +206,9 @@ function distance(polytope::ExtrusionPolytope, inv_cmap::Field, x::Point)
   end
 end
 
+"""
+    make_inverse_table(i2j::AbstractVector{<:Integer}, nj::Int)
+"""
 function make_inverse_table(i2j::AbstractVector{<:Integer},nj::Int)
   ni = length(i2j)
   @assert nj≥0

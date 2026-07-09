@@ -1,18 +1,43 @@
 
 """
+    struct DomainContribution <: GridapType
+
+Struct to gather contributions from one or several domain(s) ([`Triangulation`](@ref)s).
 """
 struct DomainContribution <: GridapType
   dict::OrderedDict{Triangulation,AbstractArray} # ordered so that iteration is deterministic (#1002)
+  ad_level::GridapADTag{<:Val} # for ad tagging
 end
 
-DomainContribution() = DomainContribution(OrderedDict{Triangulation,AbstractArray}())
+DomainContribution(;ad_level::GridapADTag{<:Val}=GridapADTag(0)) =
+  DomainContribution(OrderedDict{Triangulation,AbstractArray}(), ad_level)
 
+function DomainContribution(trian::Triangulation,b::AbstractArray;kwargs...)
+  add_contribution!(DomainContribution(;kwargs...),trian,b)
+end
+
+"""
+    num_domains(a::DomainContribution)
+"""
 num_domains(a::DomainContribution) = length(a.dict)
 
+"""
+    get_domains(a::DomainContribution)
+"""
 get_domains(a::DomainContribution) = keys(a.dict)
+
+"""
+    get_ad_level(a::DomainContribution)
+"""
+get_ad_level(a::DomainContribution) = a.ad_level
 
 Base.isempty(a::DomainContribution) = iszero(length(a.dict))
 
+"""
+    get_contribution(a::DomainContribution, trian::Triangulation)
+
+Returns the array of contributions on `trian` in `a`.
+"""
 function get_contribution(a::DomainContribution,trian::Triangulation)
   if haskey(a.dict,trian)
      return a.dict[trian]
@@ -25,6 +50,9 @@ end
 
 Base.getindex(a::DomainContribution,trian::Triangulation) = get_contribution(a,trian)
 
+"""
+    add_contribution!(a::DomainContribution, trian::Triangulation, b::AbstractArray, op=+)
+"""
 function add_contribution!(a::DomainContribution,trian::Triangulation,b::AbstractArray,op=+)
 
   S = eltype(b)
@@ -91,10 +119,12 @@ end
 
 Base.sum(a::DomainContribution)= sum(map(sum,values(a.dict)))
 
-Base.copy(a::DomainContribution) = DomainContribution(copy(a.dict))
+function Base.copy(a::DomainContribution;ad_level::GridapADTag{<:Val}=get_ad_level(a))
+  DomainContribution(copy(a.dict),ad_level)
+end
 
 function (+)(a::DomainContribution,b::DomainContribution)
-  c = copy(a)
+  c = copy(a; ad_level = max(get_ad_level(a), get_ad_level(b)))
   for (trian,array) in b.dict
     add_contribution!(c,trian,array)
   end
@@ -102,7 +132,7 @@ function (+)(a::DomainContribution,b::DomainContribution)
 end
 
 function (-)(a::DomainContribution,b::DomainContribution)
-  c = copy(a)
+  c = copy(a; ad_level = max(get_ad_level(a), get_ad_level(b)))
   for (trian,array) in b.dict
     add_contribution!(c,trian,array,-)
   end
@@ -110,7 +140,7 @@ function (-)(a::DomainContribution,b::DomainContribution)
 end
 
 function (*)(a::Number,b::DomainContribution)
-  c = DomainContribution()
+  c = DomainContribution(;ad_level = get_ad_level(b))
   for (trian,array_old) in b.dict
     s = size(get_cell_map(trian))
     array_new = lazy_map(Broadcasting(*),Fill(a,s),array_old)
@@ -129,6 +159,11 @@ function get_array(a::DomainContribution)
   a.dict[first(keys(a.dict))]
 end
 
+"""
+    abstract type Measure <: GridapType
+
+For measures to integrate against, see [`integrate`](@ref).
+"""
 abstract type Measure <: GridapType end
 
 function integrate(f,b::Measure)
@@ -174,11 +209,11 @@ end
       quad   :: CellQuadrature
     end
 
-  Measure such that the integration and target triangulations are different. 
+Measure such that the integration and target triangulations are different.
 
-  - ttrian: Target triangulation, where the domain contribution lives.
-  - itrian: Integration triangulation, where the integration takes place.
-  - quad  : CellQuadrature, defined in itrian
+- `ttrian`: Target triangulation, where the domain contribution lives.
+- `itrian`: Integration triangulation, where the integration takes place.
+- `quad`  : `::CellQuadrature`, defined in `itrian`
 """
 struct CompositeMeasure{A<:Triangulation,B<:Triangulation,C<:CellQuadrature} <: Measure
   ttrian :: A

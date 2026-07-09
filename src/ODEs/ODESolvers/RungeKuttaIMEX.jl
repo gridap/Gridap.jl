@@ -353,7 +353,7 @@ function ode_march!(
         tx, usx, ws,
         J, r, reuse, sysslvrcache
       )
-
+      
       sysslvrcache = solve!(x, sysslvr, im_stageop, sysslvrcache)
       sysslvrcaches = _setindex_all!(sysslvrcaches, sysslvrcache, i)
     end
@@ -379,7 +379,7 @@ function ode_march!(
 
     x = ex_slopes[i]
     sysslvrcache = solve!(x, sysslvr, ex_stageop, sysslvrcache)
-    sysslvrcaches = _setindex_all!(sysslvrcaches, sysslvrcache, i)
+    sysslvrcaches = _setindex_all!(sysslvrcaches, sysslvrcache, 1)
   end
 
   # Update state

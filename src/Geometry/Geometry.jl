@@ -1,7 +1,10 @@
 """
-
-Exported names are
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__; change_link=Dict(
+  :Irregular   => "RegularityStyle",
+  :Regular     => "RegularityStyle",
+  :Oriented    => "OrientationStyle",
+  :NonOriented => "OrientationStyle"
+)))
 """
 module Geometry
 
@@ -9,9 +12,11 @@ using Test
 using DocStringExtensions
 using FillArrays
 
-using LinearAlgebra: ⋅
+using LinearAlgebra: ⋅, Diagonal
 using Statistics: mean
 using DataStructures: SortedSet
+using SparseArrays: sparse
+using Graphs: Graph, is_connected
 
 using Gridap.Helpers
 using Gridap.Arrays
@@ -88,6 +93,7 @@ export compute_face_vertices
 export compute_isboundary_face
 export get_cell_permutations
 export compute_cell_permutations
+export compute_graph
 export test_grid_topology
 export get_cell_faces
 export get_isboundary_face

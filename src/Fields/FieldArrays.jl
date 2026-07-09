@@ -75,6 +75,11 @@ function testargs(f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Field
   testargs(testitem(f),x)
 end
 
+"""
+    test_field_array(f::AbstractArray{<:Field}, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
+
+For tests.
+"""
 function test_field_array(f::AbstractArray{<:Field}, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
   test_map(v,f,x;cmp=cmp)
   if grad != nothing
@@ -83,6 +88,8 @@ function test_field_array(f::AbstractArray{<:Field}, x, v, cmp=(==); grad=nothin
   if gradgrad != nothing
     test_map(gradgrad,Broadcasting(∇∇)(f),x;cmp=cmp)
   end
+  @test typeof(testvalue(typeof(f))) == typeof(f)
+  @test typeof(testitem(f)) == eltype(f)
   true
 end
 
@@ -197,7 +204,13 @@ end
 
 function testvalue(::Type{LinearCombinationField{V,F}}) where {V,F}
   fields = testvalue(F)
-  values = zeros(eltype(V), length(fields), 1)
+  values = if V <: Diagonal
+    Diagonal(zeros(eltype(V), length(fields)))
+  elseif V <: AbstractVector
+    zeros(eltype(V), length(fields))
+  else
+    zeros(eltype(V), length(fields), 0)
+  end::V
   LinearCombinationField(values,fields,1)
 end
 
@@ -210,11 +223,15 @@ for op in (:∇,:∇∇)
   end
 end
 
+"""
+    linear_combination(a::AbstractVector{<:Number}, b::AbstractVector{<:Field})
+    linear_combination(a::AbstractMatrix{<:Number}, b::AbstractVector{<:Field})
+"""
 function linear_combination(a::AbstractMatrix{<:Number},b::AbstractVector{<:Field})
   LinearCombinationFieldVector(a,b)
 end
 
-struct LinearCombinationFieldVector{V,F} <: AbstractVector{LinearCombinationField{V,F}}
+@ahe struct LinearCombinationFieldVector{V,F} <: AbstractVector{LinearCombinationField{V,F}}
   values::V
   fields::F
   function LinearCombinationFieldVector(values::AbstractMatrix{<:Number},fields::AbstractVector{<:Field})
@@ -237,13 +254,19 @@ Base.IndexStyle(::Type{<:LinearCombinationField}) = IndexLinear()
 
 function testvalue(::Type{LinearCombinationFieldVector{V,F}}) where {V,F}
   fields = testvalue(F)
-  values = zeros(eltype(V), length(fields), 0)
+  if V <: Diagonal
+    values = Diagonal(zeros(eltype(V), length(fields)))
+  else
+    values = zeros(eltype(V), length(fields), 0)
+  end::V
   LinearCombinationFieldVector(values,fields)
 end
 
 function Arrays.testitem(f::LinearCombinationFieldVector{V}) where V
   if !iszero(size(f.values,2))
     values = f.values
+  elseif V <: Diagonal
+    values = Diagonal(zeros(eltype(V), 1))
   else
     values = zeros(eltype(f.values),size(f.values,1),1)
   end::V
@@ -300,40 +323,41 @@ struct LinearCombinationMap{T} <: Map
   LinearCombinationMap(column::Colon)  = new{typeof(column)}(column)
 end
 
+@inline function linear_combination_eltype(v,fx)
+  T = Base.promote_op(outer, eltype(fx), eltype(v))
+  TT = Base.promote_op(+,T,T)
+  @check isconcretetype(TT) "linear_combination_eltype($(eltype(v)), $(eltype(fx))) is not concrete."
+  return TT
+end
+
+function return_value(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractVector)
+  T = linear_combination_eltype(v,fx)
+  return zero(T)
+end
+
+function return_cache(k::LinearCombinationMap{<:Integer},v::AbstractVector,fx::AbstractVector)
+  return nothing
+end
+
 function evaluate!(cache,k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractVector)
-  z = zero(return_type(outer,testitem(fx),testitem(v)))
+  z = zero(linear_combination_eltype(v,fx))
   @check length(fx) == size(v,1)
   @inbounds for i in eachindex(fx)
     # We need to do the product in this way
     # so that the gradient also works
     z += outer(fx[i],v[i,k.column])
   end
-  z
+  return z
 end
 
 function return_value(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractMatrix)
-  if size(fx,2) == size(v,1)
-    evaluate(k,v,fx)
-  else
-    c = return_cache(k,v,fx)
-    c.array
-  end
-end
-
-function return_value(k::LinearCombinationMap{<:Integer},v::AbstractVector,fx::AbstractVector)
-  Ta = eltype(v)
-  Tb = eltype(fx)
-  za = zero(Ta)
-  zb = zero(Tb)
-  zero( zb⊗za + zb⊗za )
+  T = linear_combination_eltype(v,fx)
+  return zeros(T,0)
 end
 
 function return_cache(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractMatrix)
-  vf = testitem(fx)
-  vv = testitem(v)
-  T = typeof( vf⊗vv + vf⊗vv )
-  r = zeros(T,size(fx,1))
-  CachedArray(r)
+  T = linear_combination_eltype(v,fx)
+  return CachedArray(zeros(T,size(fx,1)))
 end
 
 function evaluate!(cache,k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractMatrix)
@@ -348,7 +372,7 @@ function evaluate!(cache,k::LinearCombinationMap{<:Integer},v::AbstractArray,fx:
     end
     r[p] = rp
   end
-  r
+  return r
 end
 
 function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractVector,fx::AbstractVector)
@@ -371,12 +395,14 @@ function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractVector,fx::Ab
   evaluate!(cache,LinearCombinationMap(1),v,fx)
 end
 
+function return_value(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractVector)
+  T = linear_combination_eltype(v,fx)
+  return zeros(T,0)
+end
+
 function return_cache(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractVector)
-  vf = testitem(fx)
-  vv = testitem(v)
-  T = typeof( vf⊗vv + vf⊗vv )
-  r = zeros(T,size(v,2))
-  CachedArray(r)
+  T = linear_combination_eltype(v,fx)
+  return CachedArray(zeros(T,size(v,2)))
 end
 
 function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractVector)
@@ -390,17 +416,31 @@ function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::Ab
     end
     r[j] = rj
   end
-  r
+  return r
+end
+
+function evaluate!(cache,k::LinearCombinationMap{Colon},v::LinearAlgebra.Diagonal,fx::AbstractVector)
+  @check length(fx) == size(v,1)
+  setsize!(cache,(size(v,2),))
+  r = cache.array
+  @inbounds for j in eachindex(fx)
+    r[j] = outer(fx[j],v.diag[j])
+  end
+  return r
+end
+
+function return_value(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractMatrix)
+  T = linear_combination_eltype(v,fx)
+  return zeros(T,0,0)
 end
 
 function return_cache(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractMatrix)
-  vf = testitem(fx)
-  vv = testitem(v)
-  T = typeof( vf⊗vv + vf⊗vv )
+  T = linear_combination_eltype(v,fx)
   r = zeros(T,size(fx,1),size(v,2))
-  CachedArray(r)
+  return CachedArray(r)
 end
 
+#  r = fx * v   i.e.  r[p,j] = Σᵢ fx[p,i]*v[i,j]
 function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractMatrix)
   @check size(fx,2) == size(v,1)
   setsize!(cache,(size(fx,1),size(v,2)))
@@ -414,7 +454,19 @@ function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::Ab
       r[p,j] = rj
     end
   end
-  r
+  return r
+end
+
+function evaluate!(cache,k::LinearCombinationMap{Colon},v::LinearAlgebra.Diagonal,fx::AbstractMatrix)
+  @check size(fx,2) == size(v,1)
+  setsize!(cache,(size(fx,1),size(v,2)))
+  r = cache.array
+  @inbounds for p in 1:size(fx,1)
+    for j in 1:size(fx,2)
+      r[p,j] = outer(fx[p,j],v.diag[j])
+    end
+  end
+  return r
 end
 
 # Optimizing transpose
@@ -465,6 +517,8 @@ Base.setindex!(a::TransposeFieldIndices,v,i::Integer) = (a.matrix[i] = v)
 # Integration
 
 """
+    integrate(a::AbstractArray{<:Field},x::AbstractVector{<:Point},w::AbstractVector{<:Real})
+
 Integration of a given array of fields in the "physical" space
 """
 function integrate(a::AbstractArray{<:Field},x::AbstractVector{<:Point},w::AbstractVector{<:Real})
@@ -473,6 +527,8 @@ function integrate(a::AbstractArray{<:Field},x::AbstractVector{<:Point},w::Abstr
 end
 
 """
+    integrate(a::AbstractArray{<:Field},q::AbstractVector{<:Point},w::AbstractVector{<:Real},j::Field)
+
 Integration of a given array of fields in the "reference" space
 """
 function integrate(a::AbstractArray{<:Field},q::AbstractVector{<:Point},w::AbstractVector{<:Real},j::Field)
@@ -538,9 +594,15 @@ end
 for T in (:(Point),:(AbstractArray{<:Point}))
   @eval begin
 
+    function return_value(f::BroadcastOpFieldArray,x::$T)
+      rs = map(fi -> return_value(fi,x),f.args)
+      bm = BroadcastingFieldOpMap(f.op)
+      return return_value(bm,rs...)
+    end
+
     function return_cache(f::BroadcastOpFieldArray,x::$T)
       cfs = map(fi -> return_cache(fi,x),f.args)
-      rs = map(fi -> return_value(fi,x),f.args)
+      rs = map((ci, fi) -> evaluate!(ci,fi,x), cfs, f.args)
       bm = BroadcastingFieldOpMap(f.op)
       r = return_cache(bm,rs...)
       r, cfs
@@ -551,6 +613,28 @@ for T in (:(Point),:(AbstractArray{<:Point}))
       rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
       bm = BroadcastingFieldOpMap(f.op)
       evaluate!(r,bm,rs...)
+    end
+
+    function return_value(k::BroadcastOpFieldArray{typeof(∘)},x::$T)
+      f, g = k.args
+      gx = return_value(g,x)
+      return return_value(f,gx)
+    end
+
+    function return_cache(k::BroadcastOpFieldArray{typeof(∘)},x::$T)
+      f, g = k.args
+      cg = return_cache(g,x)
+      gx = evaluate!(cg,g,x)
+      cf = return_cache(f,gx)
+      return cg, cf
+    end
+
+    function evaluate!(cache, k::BroadcastOpFieldArray{typeof(∘)},x::$T)
+      cg, cf = cache
+      f, g = k.args
+      gx = evaluate!(cg,g,x)
+      fgx = evaluate!(cf,f,gx)
+      return fgx
     end
 
   end
@@ -571,7 +655,7 @@ return_value(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_value(Br
 return_cache(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_cache(Broadcasting(a.op),args...)
 evaluate!(cache,a::BroadcastingFieldOpMap,args::AbstractArray...) = evaluate!(cache,Broadcasting(a.op),args...)
 
-# Follow optimizations are very important to achieve performance
+# The following optimizations are very important to achieve performance
 
 function evaluate!(
   cache,
@@ -737,4 +821,44 @@ for op in (:*,:⋅,:⊙,:⊗)
       Broadcasting(Operation(k))(f1,f2,g1,g2)
     end
   end
+end
+
+# Optimisations to
+# lazy_map(Broadcasting(constant_field),a::AbstractArray{<:AbstractArray{<:Number}})
+
+struct ConstantFieldArray{T,N,A} <: AbstractArray{ConstantField{T},N}
+  values::A
+  function ConstantFieldArray(values::AbstractArray{T,N}) where {T,N}
+    A = typeof(values)
+    new{T,N,A}(values)
+  end
+end
+
+Base.size(a::ConstantFieldArray) = size(a.values)
+Base.axes(a::ConstantFieldArray) = axes(a.values)
+Base.getindex(a::ConstantFieldArray,i::Integer) = ConstantField(a.values[i])
+
+function return_value(::Broadcasting{typeof(constant_field)},values::AbstractArray{<:Number})
+  ConstantFieldArray(values)
+end
+
+function evaluate!(cache,::Broadcasting{typeof(constant_field)},values::AbstractArray{<:Number})
+  ConstantFieldArray(values)
+end
+
+function evaluate!(c,f::ConstantFieldArray,x::Point)
+  return f.values
+end
+
+function return_cache(f::ConstantFieldArray{T},x::AbstractArray{<:Point}) where T
+  return CachedArray(zeros(T,(size(x)...,size(f)...)))
+end
+
+function evaluate!(c,f::ConstantFieldArray{T},x::AbstractArray{<:Point}) where T
+  setsize!(c,(size(x)...,size(f)...))
+  r = c.array
+  for i in eachindex(x)
+    r[i,:] .= f.values
+  end
+  return r
 end

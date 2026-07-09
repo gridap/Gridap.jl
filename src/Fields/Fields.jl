@@ -1,3 +1,9 @@
+"""
+
+$(public_names_in_md(@__MODULE__; change_link=Dict(
+  :∇  => "gradient",
+)))
+"""
 module Fields
 
 using Gridap.Arrays
@@ -6,6 +12,7 @@ import Gridap.Arrays: inverse_map
 import Gridap.Arrays: get_children
 import Gridap.Arrays: testitem
 
+using Gridap.Helpers
 using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable, @check
 using Gridap.Helpers: tfill, first_and_tail
@@ -23,6 +30,7 @@ using NLsolve
 using Test
 using StaticArrays
 using LinearAlgebra
+using AutoHashEquals: @auto_hash_equals as @ahe
 
 import LinearAlgebra: det, inv, transpose, tr, cross
 import LinearAlgebra: ⋅, dot

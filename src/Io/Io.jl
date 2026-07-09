@@ -1,7 +1,8 @@
 """
-The exported names in this module are:
+This module provides a set of utilities to read and write data in various formats, 
+including JSON, BSON, JLD2, and more.
 
-$(EXPORTS)
+$(public_names_in_md(@__MODULE__))
 """
 module Io
 

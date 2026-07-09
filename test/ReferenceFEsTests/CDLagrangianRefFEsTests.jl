@@ -3,6 +3,7 @@ module CDLagrangianRefFEsTests
 using Gridap
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
+using Gridap.Polynomials
 using Test
 
 using Gridap.ReferenceFEs: _CDLagrangianRefFE
@@ -14,6 +15,11 @@ test_lagrangian_reference_fe(reffe)
 T = Float64
 reffe = _CDLagrangianRefFE(T,QUAD,1,(CONT,DISC))
 test_lagrangian_reference_fe(reffe)
+
+face_own_dofs = Vector{Int}[[],[],[],[],[],[],[1,3],[2,4],[]]
+face_dofs = Vector{Int}[[],[],[],[],[],[],[1,3],[2,4],[1,3,2,4]]
+@test get_face_own_dofs(reffe) == face_own_dofs
+@test get_face_dofs(reffe) == face_dofs
 
 conf = CDConformity( (CONT,DISC) )
 @test conf == Conformity(reffe)

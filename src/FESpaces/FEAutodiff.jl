@@ -1,11 +1,11 @@
 
 
-function gradient(f::Function,uh::FEFunction)
+function gradient(f::Function,uh::FEFunction;kwargs...)
   fuh = f(uh)
-  _gradient(f,uh,fuh)
+  _gradient(f,uh,fuh;kwargs...)
 end
 
-function _gradient(f,uh,fuh::AbstractArray)
+function _gradient(f,uh,fuh::AbstractArray;kwargs...)
   @unreachable """\n
   In order to perform AD on a Function taking a FEFunction as argument, such Function
   has to return a DomainContribution.
@@ -14,24 +14,24 @@ function _gradient(f,uh,fuh::AbstractArray)
   """
 end
 
-function _gradient(f,uh,fuh::DomainContribution)
-  terms = DomainContribution()
+function _gradient(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fuh)+1)
+  terms = DomainContribution(;ad_level = tag)
   for trian in get_domains(fuh)
     g = _change_argument(gradient,f,trian,uh)
     cell_u = get_cell_dof_values(uh)
     cell_id = _compute_cell_ids(uh,trian)
-    cell_grad = autodiff_array_gradient(g,cell_u,cell_id)
+    cell_grad = autodiff_array_gradient(g,cell_u,cell_id;tag)
     add_contribution!(terms,trian,cell_grad)
   end
   terms
 end
 
-function jacobian(f::Function,uh::FEFunction)
+function jacobian(f::Function,uh::FEFunction;kwargs...)
   fuh = f(uh)
-  _jacobian(f,uh,fuh)
+  _jacobian(f,uh,fuh;kwargs...)
 end
 
-function _jacobian(f,uh,fuh::AbstractArray)
+function _jacobian(f,uh,fuh::AbstractArray;kwargs...)
   @unreachable """\n
   In order to perform AD on a Function taking a FEFunction as argument, such Function
   has to return a DomainContribution.
@@ -40,24 +40,27 @@ function _jacobian(f,uh,fuh::AbstractArray)
   """
 end
 
-function _jacobian(f,uh,fuh::DomainContribution)
-  terms = DomainContribution()
+function _jacobian(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fuh)+1)
+  terms = DomainContribution(;ad_level=tag)
   for trian in get_domains(fuh)
     g = _change_argument(jacobian,f,trian,uh)
     cell_u = get_cell_dof_values(uh)
     cell_id = _compute_cell_ids(uh,trian)
-    cell_grad = autodiff_array_jacobian(g,cell_u,cell_id)
+    cell_grad = autodiff_array_jacobian(g,cell_u,cell_id;tag)
     add_contribution!(terms,trian,cell_grad)
   end
   terms
 end
 
-function hessian(f::Function,uh::FEFunction)
+"""
+    hessian(f::Function, uh::FEFunction)
+"""
+function hessian(f::Function,uh::FEFunction;kwargs...)
   fuh = f(uh)
-  _hessian(f,uh,fuh)
+  _hessian(f,uh,fuh;kwargs...)
 end
 
-function _hessian(f,uh,fuh::AbstractArray)
+function _hessian(f,uh,fuh::AbstractArray;kwargs...)
   @unreachable """\n
   In order to perform AD on a Function taking a FEFunction as argument, such Function
   has to return a DomainContribution.
@@ -66,13 +69,13 @@ function _hessian(f,uh,fuh::AbstractArray)
   """
 end
 
-function _hessian(f,uh,fuh::DomainContribution)
-  terms = DomainContribution()
+function _hessian(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fuh)+1)
+  terms = DomainContribution(;ad_level = tag+1) # Two levels consumed
   for trian in get_domains(fuh)
     g = _change_argument(hessian,f,trian,uh)
     cell_u = get_cell_dof_values(uh)
     cell_id = _compute_cell_ids(uh,trian)
-    cell_grad = autodiff_array_hessian(g,cell_u,cell_id)
+    cell_grad = autodiff_array_hessian(g,cell_u,cell_id;tag)
     add_contribution!(terms,trian,cell_grad)
   end
   terms
@@ -99,8 +102,8 @@ function _compute_cell_ids(uh,ttrian)
   tglue = get_glue(ttrian,Val(D))
   @notimplementedif !isa(sglue,FaceToFaceGlue)
   @notimplementedif !isa(tglue,FaceToFaceGlue)
-  
-  # Note: In the case where `strian` does not fully cover `ttrian`, 
+
+  # Note: In the case where `strian` does not fully cover `ttrian`,
   # tface_to_sface will have negative indices.
   # The negative indices will be dealt with within `autodiff_array_reindex`
   k = 1
@@ -141,13 +144,12 @@ function _compute_cell_ids(uh,ttrian::SkeletonTriangulation)
   SkeletonPair(plus,minus)
 end
 
-# We collect the derivatives for the plus and minus sides separately, 
+# We collect the derivatives for the plus and minus sides separately,
 # which returns ydual_θ = df/duᶿ for θ ∈ {+, -}
 # We them merge them into a 2-block BlockVector, so that we obtain
 #   result = [df/du⁺, df/du⁻]
-function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair)
-  dummy_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_tag),i_to_x)
+function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair; tag=default_tag(ForwardDiff.gradient,a))
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
 
   # dual output of both sides at once
@@ -169,14 +171,13 @@ function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair)
   lazy_map(k,j_to_result_plus,j_to_result_minus)
 end
 
-# We collect the derivatives for the plus and minus sides separately, 
+# We collect the derivatives for the plus and minus sides separately,
 # which returns ydual_θ = [dr⁺/duᶿ, dr⁻/duᶿ] for θ ∈ {+, -}
-# We them merge them as columns into a 2x2 block matrix, so that we obtain 
+# We them merge them as columns into a 2x2 block matrix, so that we obtain
 # ydual = [dr⁺/du⁺ dr⁺/du⁻] = [ydual_plus, ydual_minus]
 #         [dr⁻/du⁺ dr⁻/du⁻]
-function Arrays.autodiff_array_jacobian(a, i_to_x, j_to_i::SkeletonPair)
-  dummy_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_tag),i_to_x)
+function Arrays.autodiff_array_jacobian(a, i_to_x, j_to_i::SkeletonPair; tag=default_tag(ForwardDiff.jacobian,a))
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
 
   # dual output of both sides at once

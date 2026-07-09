@@ -1,4 +1,7 @@
 
+"""
+    struct PolytopalFESpace{V,M} <: SingleFieldFESpace
+"""
 struct PolytopalFESpace{V,M} <: SingleFieldFESpace
   vector_type::Type{V}
   nfree::Int
@@ -13,7 +16,7 @@ struct PolytopalFESpace{V,M} <: SingleFieldFESpace
   metadata::M
 end
 
-# Constructors 
+# Constructors
 
 function _filter_from_space(space::Symbol)
   if space == :P
@@ -21,7 +24,7 @@ function _filter_from_space(space::Symbol)
   elseif space == :Q
     return Polynomials._q_filter
   elseif space == :S
-    return Polynomials._s_filter
+    return Polynomials._ser_filter
   else
     @notimplemented
   end
@@ -30,12 +33,12 @@ end
 function _prebasis_from_space(D,T,order,space)
   if space == :RT
     @assert D >= 2
-    prebasis = Polynomials.PCurlGradMonomialBasis{D}(T, order)
+    prebasis = Polynomials.FEEC_poly_basis(Val(D),T,order+1,D-1,:Q⁻,Monomial; rotate_90=(D==2))
   elseif space == :ND
     @assert D >= 2
-    prebasis = Polynomials.NedelecPrebasisOnSimplex{D}(order)
+    prebasis = Polynomials.NedelecPolyBasisOnSimplex{D}(Monomial, T, order)
   else
-    prebasis = Polynomials.MonomialBasis{D}(T, order, _filter_from_space(space))
+    prebasis = Polynomials.MonomialBasis(Val(D), T, order, _filter_from_space(space))
   end
   return prebasis
 end
@@ -50,84 +53,54 @@ end
 
 function PolytopalFESpace(
   model::DiscreteModel,::Type{T},order::Integer;
-  space=:P,vector_type=nothing,hierarchical=false,
+  trian = Triangulation(model),
+  space = :P, 
+  vector_type = nothing,
+  hierarchical = false, 
+  orthonormal = false,
+  local_kernel = nothing,
   kwargs...
 ) where {T}
-  D = num_cell_dims(model)
-  prebasis = _prebasis_from_space(D,T,order,space)
-  if hierarchical
-    lt(t1,t2) = (maximum(Tuple(t1)) < maximum(Tuple(t2))) || isless(t1,t2)
-    sort!(prebasis.terms;lt)
-  end
-  cell_prebasis = Fill(prebasis, num_cells(model))
+  cell_shapefuns, domain_style = get_polytopal_cell_shapefuns(
+    trian, T, order; space, hierarchical, orthonormal, local_kernel
+  )
   vtype = ifelse(!isnothing(vector_type),vector_type,Vector{_dof_type(T)})
-  PolytopalFESpace(vtype,model,cell_prebasis;kwargs...)
+  return PolytopalFESpace(
+    vtype, model, cell_shapefuns, order, domain_style; trian, kwargs...
+  )
 end
 
 function PolytopalFESpace(
   vector_type::Type,
   model::DiscreteModel,
-  cell_prebasis::AbstractArray; 
+  cell_shapefuns::AbstractArray,
+  order::Integer,
+  domain_style::DomainStyle;
   trian = Triangulation(model),
   labels = get_face_labeling(model),
   dirichlet_tags = Int[],
   dirichlet_masks = nothing,
-  orthonormal = false,
-  local_kernel = nothing
 )
-  T = return_type(first(cell_prebasis))
-  Dc = num_cell_dims(model)
-
-  order = maximum(Polynomials.get_order,cell_prebasis)
-  cell_polytopes = Geometry.get_cell_polytopes(model)
-  if eltype(cell_polytopes) <: ReferenceFEs.GeneralPolytope
-    cell_change = lazy_map(centroid_map, cell_polytopes)
-    cell_shapefuns = lazy_map(Broadcasting(∘), cell_prebasis, cell_change)
-    domain_style = PhysicalDomain()
-  else
-    cell_shapefuns = cell_prebasis
-    domain_style = ReferenceDomain()
-  end
-  if !isnothing(local_kernel)
-    cell_shapefuns = remove_local_kernel(cell_shapefuns, trian, T, order, local_kernel)
-  end
-  if orthonormal
-    cell_shapefuns = orthogonalise_basis(cell_shapefuns, trian, order)
-  end
+  Dc = num_cell_dims(trian)
   fe_basis = SingleFieldFEBasis(cell_shapefuns, trian, TestBasis(), domain_style)
-  
-  ncomps = num_components(return_type(first(cell_prebasis)))
-  if !isnothing(dirichlet_masks)
-    @check length(dirichlet_masks) == ncomps
-    dirichlet_components = dirichlet_masks
-  else
-    dirichlet_components = fill(true,ncomps)
-  end
-
-  ctype_to_prebasis, cell_to_ctype = compress_cell_data(cell_prebasis)
-  ctype_to_conformity = map(MonomialDofConformity,ctype_to_prebasis)
-  metadata = ctype_to_conformity
+  cell_conformity = DiscontinuousCellConformity(cell_shapefuns)
 
   ntags = length(dirichlet_tags)
-  if ntags != 0
-    @notimplementedif !isnothing(local_kernel)
+  if !iszero(ntags)
     cell_to_tag = get_face_tag_index(labels,dirichlet_tags,Dc)
     cell_is_dirichlet = map(!isequal(UNSET),cell_to_tag)
-    ctype_to_ldof_to_comp = map(c -> c.dof_to_comp, ctype_to_conformity)
     cell_dof_ids, nfree, ndir, dirichlet_dof_tag, dirichlet_cells = compute_discontinuous_cell_dofs(
-      cell_to_ctype, ctype_to_ldof_to_comp, cell_to_tag, dirichlet_components
+      cell_conformity, cell_to_tag, dirichlet_masks
     )
   else
     ndir = 0
     dirichlet_dof_tag = Int8[]
     dirichlet_cells = Int32[]
     cell_is_dirichlet = fill(false,num_cells(trian))
-
-    ctype_to_shapefuns = Base.OneTo(length(cell_shapefuns))
-    ctype_to_ndofs = lazy_map(length,cell_shapefuns)
-    cell_dof_ids, nfree = compute_discontinuous_cell_dofs(ctype_to_shapefuns,ctype_to_ndofs)
+    cell_dof_ids, nfree = compute_discontinuous_cell_dofs(cell_conformity)
   end
 
+  metadata = cell_conformity
   return PolytopalFESpace(
     vector_type,nfree,ndir,cell_dof_ids,fe_basis,
     cell_is_dirichlet,dirichlet_dof_tag,dirichlet_cells,ntags,
@@ -135,21 +108,46 @@ function PolytopalFESpace(
   )
 end
 
-struct MonomialDofConformity{D,V}
-  orders::NTuple{D,Int}
-  terms::Vector{CartesianIndex{D}}
-  dof_to_term::Vector{Int}
-  dof_to_comp::Vector{Int}
-  term_and_comp_to_dof::Vector{V}
+function get_polytopal_cell_shapefuns(
+  trian::Grid, ::Type{T}, order::Integer; 
+  space=:P, hierarchical=false, orthonormal=false, 
+  local_kernel=nothing, domain_style=nothing
+) where T
+  D = num_cell_dims(trian)
+  prebasis = _prebasis_from_space(D,T,order,space)
+  if hierarchical
+    lt(t1,t2) = (maximum(Tuple(t1)) < maximum(Tuple(t2))) || isless(t1,t2)
+    sort!(prebasis.terms;lt)
+  end
+  cell_prebasis = Fill(prebasis, num_cells(trian))
+  return get_polytopal_cell_shapefuns(
+    trian, cell_prebasis; orthonormal, local_kernel, domain_style, order
+  )
 end
 
-function MonomialDofConformity(basis::Polynomials.MonomialBasis)
-  T = return_type(basis)
-  nterms = length(basis.terms)
-  dof_to_term, dof_to_comp, term_and_comp_to_dof = ReferenceFEs._generate_dof_layout_node_major(T,nterms)
-  MonomialDofConformity(
-    basis.orders, basis.terms, dof_to_term, dof_to_comp, term_and_comp_to_dof
-  )
+function get_polytopal_cell_shapefuns(
+  trian::Grid, cell_prebasis::AbstractArray; 
+  orthonormal=false, local_kernel=nothing, domain_style=nothing,
+  order = maximum(Polynomials.get_order,cell_prebasis),
+)
+  T = value_type(first(cell_prebasis))
+  polytopal = isa(trian, Geometry.PolytopalGrid) || 
+                (isa(trian, Triangulation) && isa(get_grid(trian), Geometry.PolytopalGrid))
+  default_domain_style = ifelse(polytopal, PhysicalDomain(), ReferenceDomain())
+  domain_style = ifelse(isnothing(domain_style), default_domain_style, domain_style)
+  @check !polytopal || isa(domain_style, PhysicalDomain)
+  if isa(domain_style, PhysicalDomain)
+    cell_shapefuns = lazy_map(Broadcasting(∘), cell_prebasis, get_centroid_map(trian))
+  else
+    cell_shapefuns = cell_prebasis
+  end
+  if !isnothing(local_kernel)
+    cell_shapefuns = remove_local_kernel(cell_shapefuns, trian, T, order, local_kernel)
+  end
+  if orthonormal
+    cell_shapefuns = orthogonalise_basis(cell_shapefuns, trian, order)
+  end
+  return cell_shapefuns, domain_style
 end
 
 # FESpace interface
@@ -163,6 +161,7 @@ get_triangulation(f::PolytopalFESpace) = get_triangulation(f.fe_basis)
 get_dof_value_type(f::PolytopalFESpace{V}) where V = eltype(V)
 get_vector_type(f::PolytopalFESpace{V}) where V = V
 get_cell_is_dirichlet(f::PolytopalFESpace) = f.cell_is_dirichlet
+get_cell_conformity(f::PolytopalFESpace{V,<:CellConformity}) where V = f.metadata
 
 # SingleFieldFESpace interface
 
@@ -223,6 +222,13 @@ end
 
 # Change of coordinate map
 
+function get_centroid_map(trian::Grid)
+  D, Dp = num_cell_dims(trian), num_point_dims(trian)
+  cell_coords = get_cell_coordinates(trian)
+  cmap(v) = centroid_map(Val(D),Val(Dp),v)
+  return lazy_map(cmap, cell_coords)
+end
+
 function centroid_map(poly::Polytope)
   D, Dp = num_dims(poly), num_point_dims(poly)
   centroid_map(Val(D),Val(Dp),get_vertex_coordinates(poly))
@@ -273,8 +279,9 @@ function Arrays.evaluate!(cache,::OrthogonaliseBasisMap,M::Matrix)
   return N
 end
 
-# Orthogonalise a basis against itself, with respect 
+# Orthogonalise a basis against itself, with respect
 # of the inner product defined by M
+# An alternative would be N = inv(cholesky(M).U)
 function gram_shmidt!(N,M)
   n = size(M,1)
   fill!(N,0.0)
@@ -297,30 +304,21 @@ function gram_shmidt!(N,M)
   return N
 end
 
-# Local kernel removal 
+# Local kernel removal
 
 function remove_local_kernel(cell_basis,trian,T,order,local_kernel)
-  if isa(local_kernel,Function) 
+  if isa(local_kernel,Function)
     local_kernel_func = local_kernel
-  else 
+  else
     local_kernel_func = _kernel_from_symbol(local_kernel,T,cell_basis)
   end
-  
+
   cell_quads = Quadrature(trian,2*order)
   cell_integ = local_kernel_func(lazy_map(transpose,cell_basis))
   cell_vals = lazy_map(evaluate,cell_integ,lazy_map(get_coordinates,cell_quads))
   cell_kernel = lazy_map(IntegrationMap(),cell_vals,lazy_map(get_weights,cell_quads))
   cell_coeffs = lazy_map(NullspaceMap(),cell_kernel)
   return lazy_map(linear_combination,cell_coeffs,cell_basis)
-end
-
-# Stolen from the MomentBased branch
-component_basis(T::Type{<:Real}) = [one(T)]
-function component_basis(V::Type{<:MultiValue})
-  T = eltype(V)
-  n = num_components(V)
-  z, o = zero(T), one(T)
-  return [V(ntuple(i -> ifelse(i == j, o, z),Val(n))) for j in 1:n]
 end
 
 function _kernel_from_symbol(k::Symbol,T,cell_basis)
@@ -346,7 +344,7 @@ end
 
 function Arrays.evaluate!(cache,k::NullspaceMap,K::Matrix)
   f = svd(K;full=true) # If K is not square, there svd! doesn't really use cache
-  
+
   n = size(K, 2)
   m = sum(s -> s > k.tol, f.S)
   setsize!(cache, (n, n - m))
@@ -362,23 +360,23 @@ function Arrays.evaluate!(cache,k::NullspaceMap,K::Matrix)
 end
 
 # struct CentroidCoordinateChangeMap <: Map end
-# 
+#
 # function Arrays.lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{typeof(centroid_map)}},x::AbstractVector)
 #   polys = a.args[1]
 #   lazy_map(CentroidCoordinateChangeMap(),polys,x)
 # end
-# 
+#
 # function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope,x::Point)
 #   pmin, pmax = get_bounding_box(poly)
 #   xc = 0.5 * (pmin + pmax)
 #   h = 0.5 * (pmax - pmin)
 #   return (x - xc) ./ h
 # end
-# 
+#
 # function Arrays.return_cache(::CentroidCoordinateChangeMap,poly::Polytope,x::AbstractVector{<:Point})
 #   return CachedArray(similar(x))
 # end
-# 
+#
 # function Arrays.evaluate!(cache,::CentroidCoordinateChangeMap,poly::Polytope,x::AbstractVector{<:Point})
 #   setsize!(cache,size(x))
 #   y = cache.array
@@ -396,80 +394,11 @@ end
 function shoelace(face_ents)
   shift = circshift(face_ents, -1)
   area_components = map(face_ents, shift) do x1, x2
-    x1[1] * x2[2] - x2[1] * x1[2] 
+    x1[1] * x2[2] - x2[1] * x1[2]
   end
   area = 0.5 * abs(sum(area_components))
   return area
 end
-
-# function get_facet_measure(p::Polytope{D}, face::Int) where D
-#   measures = Float64[]
-#   if D == 3
-#     @notimplemented
-#   elseif isa(p, ExtrusionPolytope{2})
-#     if p == QUAD 
-#       perm = [1,2,4,3]
-#     elseif p == TRI
-#       perm = [1,2,3]
-#     end
-#   elseif isa(p, Polygon)   
-#     perm = collect(1:length(p.edge_vertex_graph))
-#   end
-# 
-#   dim = get_dimranges(p)[face+1]
-#   face_ents = get_face_coordinates(p)[dim]
-#   if face == 0
-#     for entity in face_ents
-#       push!(measures, 0.0)
-#     end
-#   elseif face == 1
-#     for entity in face_ents
-#       p1, p2 = entity
-#       push!(measures, norm(p2-p1))
-#     end
-#   elseif face == 2
-#     face_ents = map(Reindex(face_ents...),perm)
-#     area = shoelace(face_ents)
-#     push!(measures, area)
-#   end
-#   return measures
-# end
-
-# function get_facet_centroid(p::Polytope{D}, face::Int) where D
-# 
-#   if D == 3
-#     @notimplemented
-#   end
-# 
-#   dim = get_dimranges(p)[face+1]
-#   face_coords = get_face_coordinates(p)[dim]
-#   if isa(p, ExtrusionPolytope{2}) || isa(p, ExtrusionPolytope{1})
-#     if face == 1 || face == 2
-#       centroid = mean.(face_coords)
-#     end
-#   elseif isa(p, Polygon)
-#     perm = collect(1:length(p.edge_vertex_graph))
-#     if face == 1
-#       centroid = mean.(face_coords)
-#     elseif face == 2
-#       ents = map(Reindex(face_coords...),perm)
-#       shift = circshift(ents, -1)
-# 
-#       components_x = map(ents, shift) do x1, x2
-#         ( x1[1] + x2[1] ) * ( x1[1] * x2[2] - x2[1] * x1[2] )
-#       end
-#       components_y = map(ents, shift) do x1, x2
-#         ( x1[2] + x2[2] ) * ( x1[1] * x2[2] - x2[1] * x1[2] )
-#       end
-#       
-#       area = get_facet_measure(p, face)
-#       centroid_x = (1 ./ (6*area)) * sum(components_x)
-#       centroid_y = (1 ./ (6*area)) * sum(components_y)        
-#       centroid = VectorValue{2, Float64}(centroid_x..., centroid_y...)
-#     end
-#   end
-#   return centroid
-# end
 
 function get_facet_diameter(p::Polytope{D}, face::Int) where D
   if D == 3
@@ -482,7 +411,7 @@ function get_facet_diameter(p::Polytope{D}, face::Int) where D
       norm(x[1]-x[2])
     end
   elseif face == 2
-    h = 0.0  
+    h = 0.0
     n_sides = length(X...)
     for i in 1:(n_sides-1)
       for j in (i+1):n_sides
@@ -493,9 +422,9 @@ function get_facet_diameter(p::Polytope{D}, face::Int) where D
   return h
 end
 
-################## 
+##################
 
-function FESpaces.renumber_free_and_dirichlet_dof_ids(
+function FESpaces.reindex_free_and_dirichlet_dof_ids(
   space::FESpaces.PolytopalFESpace,free_dof_ids,dir_dof_ids
 )
   @assert num_free_dofs(space) == length(free_dof_ids)
@@ -523,29 +452,5 @@ function FESpaces.renumber_free_and_dirichlet_dof_ids(
     space.ntags,
     space.order,
     space.metadata
-  )
-end
-
-function get_cell_conformity(space::PolytopalFESpace)
-  trian = get_triangulation(space)
-  
-  monomial_conformity = only(space.metadata)
-  ndofs = length(monomial_conformity.dof_to_term)
-  D = length(monomial_conformity.orders)
-
-  cell_ctype = get_cell_type(trian)
-  ctype_poly = get_polytopes(trian)
-
-  ctype_lface_own_ldofs = map(ctype_poly) do p
-    nfaces = num_faces(p)
-    [ifelse(isequal(face,nfaces),collect(1:ndofs),Int[]) for face in 1:nfaces]
-  end
-  ctype_lface_pindex_pdofs = map(ReferenceFEs._trivial_face_own_dofs_permutations, ctype_lface_own_ldofs)
-  d_ctype_num_faces = [
-    map(p -> num_faces(p,d), ctype_poly) for d in 0:D
-  ]
-
-  return CellConformity(
-    cell_ctype, ctype_lface_own_ldofs, ctype_lface_pindex_pdofs, d_ctype_num_faces
   )
 end

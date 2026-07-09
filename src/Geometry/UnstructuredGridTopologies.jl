@@ -569,3 +569,42 @@ function _setup_connectivities_d(
   end
   nface_to_mface
 end
+
+############################################################################################
+# IO
+
+function to_dict(topo::UnstructuredGridTopology{Dc}) where Dc
+  dict = Dict{Symbol,Any}()
+  x = get_vertex_coordinates(topo)
+  dict[:vertex_coordinates] = reinterpret(eltype(eltype(x)),x)
+  dict[:Dp] = num_point_dims(topo)
+  dict[:Dc] = Dc
+  dict[:cell_type] = get_cell_type(topo)
+  dict[:polytopes] = [Array(TensorValues.get_array(get_extrusion(p))) for p in get_polytopes(topo)]
+  for d in 1:Dc
+    k = Symbol("face_vertices_$d")
+    dict[k] = to_dict(get_faces(topo,d,0))
+  end
+  dict[:orientation] = is_oriented(topo)
+  dict
+end
+
+function from_dict(::Type{UnstructuredGridTopology},dict::Dict{Symbol,Any})
+  Dp::Int = dict[:Dp]
+  Dc::Int = dict[:Dc]
+  x = dict[:vertex_coordinates]
+  T = eltype(x)
+  vertex_coordinates::Vector{Point{Dp,T}} = reinterpret(Point{Dp,T},x)
+  cell_type::Vector{Int8} = dict[:cell_type]
+  polytopes = [Polytope(map(Int,Tuple(ext))...) for ext in dict[:polytopes]]
+  nvertices = length(vertex_coordinates)
+  d_dface_to_vertices = Vector{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,Dc+1)
+  d_dface_to_vertices[0+1] = identity_table(Int32,Int32,nvertices)
+  for d in 1:Dc
+    k = Symbol("face_vertices_$d")
+    d_dface_to_vertices[d+1] = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[k])
+  end
+  O::Bool = dict[:orientation]
+  orientation = O ? Oriented() : NonOriented()
+  UnstructuredGridTopology(vertex_coordinates,d_dface_to_vertices,cell_type,polytopes,orientation)
+end

@@ -27,7 +27,7 @@ mutable struct CachedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
 
   @doc """
       CachedArray(a::AbstractArray)
-  
+
   Constructs a `CachedArray` from a given array.
   """
   function CachedArray(array::A) where {T,N,A<:AbstractArray{T,N}}
@@ -141,7 +141,7 @@ end
 """
     $(SIGNATURES)
 
-Sets the size of the `CachedArray` to accomodate the result of the operation given 
+Sets the size of the `CachedArray` to accomodate the result of the operation given
 by `op(args...)`.
 """
 function setsize_op!(op,c::CachedArray,args...)
@@ -160,4 +160,9 @@ end
 function setsize_op!(::typeof(*),c::CachedArray,a::AbstractMatrix,b::AbstractMatrix)
   @check size(a,2) == size(b,1)
   setsize!(c,(size(a,1),size(b,2)))
+end
+
+function setsize_op!(::typeof(*), c::Diagonal, a::Diagonal, b::Diagonal)
+  @check size(a,2) == size(b,1)
+  resize!(c.diag, size(a,2))
 end

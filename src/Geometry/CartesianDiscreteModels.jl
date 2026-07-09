@@ -11,7 +11,7 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
 end
 
 """
-  CartesianDiscreteModel(desc::CartesianDescriptor)
+    CartesianDiscreteModel(desc::CartesianDescriptor)
 """
 function CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F}) where {D,T,F}
   grid = CartesianGrid(desc)
@@ -28,14 +28,14 @@ function CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F}) where {D,T,F}
 end
 
 """
-  CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F},
-                          cmin::CartesianIndex,
-                          cmax::CartesianIndex)
+    CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F},
+                            cmin::CartesianIndex,
+                            cmax::CartesianIndex)
 
-  Builds a CartesianDiscreteModel object which represents a subgrid of
-  a (larger) grid represented by desc. This subgrid is described by its
-  D-dimensional minimum (cmin) and maximum (cmax) CartesianIndex
-  identifiers.
+Builds a `CartesianDiscreteModel` which represents a subgrid of
+a (larger) grid represented by desc. This subgrid is described by its
+`D`-dimensional minimum (cmin) and maximum (cmax) `CartesianIndex`
+identifiers.
 """
 function CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F},
                                 cmin::CartesianIndex,
@@ -69,7 +69,7 @@ end
 """
     CartesianDiscreteModel(args...)
 
-Same args needed to construct a `CartesianDescriptor`
+Same `args` needed to construct a `CartesianDescriptor`.
 """
 function CartesianDiscreteModel(args...; kwargs...)
   desc = CartesianDescriptor(args...; kwargs...)
@@ -402,13 +402,13 @@ function _is_there_interior_cell_across_higher_dim_faces(
 end
 
 """
-  _find_ncube_face_neighbor_deltas(p::ExtrusionPolytope{D}) -> Vector{CartesianIndex}
+    _find_ncube_face_neighbor_deltas(p::ExtrusionPolytope{D}) -> Vector{CartesianIndex}
 
-  Given an n-cube type ExtrusionPolytope{D}, returns V=Vector{CartesianIndex} with as many
-  entries as the number of faces in the boundary of the Polytope. For an entry face_lid
-  in this vector, V[face_lid] returns what has to be added to the CartesianIndex of a
-  cell in order to obtain the CartesianIndex of the cell neighbour of K across the face F
-  with local ID face_lid.
+Given an n-cube type `ExtrusionPolytope{D}`, returns `V=Vector{CartesianIndex}` with as many
+entries as the number of faces in the boundary of the `p`. For an entry `face_lid`
+in this vector, `V[face_lid]` returns what has to be added to the `CartesianIndex` of a
+cell in order to obtain the `CartesianIndex` of the cell neighbour of K across the face F
+with local ID `face_lid`.
 """
 function _find_ncube_face_neighbor_deltas(p::ExtrusionPolytope{D}) where {D}
   nfaces = num_faces(p)
@@ -449,7 +449,7 @@ function _generate_cell_to_vertices_from_grid(
 
   nodes = get_cell_node_ids(grid)
   nnodes = num_nodes(grid)
-  num_nodes_x_dir = [p+1 for p in partition]
+  num_nodes_x_dir = map(p -> p+1, partition)
   point_to_isperiodic, slave_point_to_point, slave_point_to_master_point =
     _generate_slave_to_master_point(num_nodes_x_dir,isperiodic, nnodes)
 
@@ -466,15 +466,15 @@ function _generate_cell_to_vertices_from_grid(
   (cell_to_vertices, vertex_to_node, node_to_vertex)
 end
 
-function _generate_slave_to_master_point(num_nodes_x_dir::Vector{Int},
-  isperiodic::NTuple, num_nodes::Int)
-
+function _generate_slave_to_master_point(
+  num_nodes_x_dir::NTuple{N,Int}, isperiodic::NTuple{N,Bool}, num_nodes::Int
+) where N
   periodic_dirs = findall(x->x==true, isperiodic)
-  linear_indices = LinearIndices(Tuple(num_nodes_x_dir))
-  cartesian_indices = CartesianIndices(Tuple(num_nodes_x_dir))
+  linear_indices = LinearIndices(num_nodes_x_dir)
+  cartesian_indices = CartesianIndices(num_nodes_x_dir)
 
   point_to_isperiodic = fill(false,num_nodes)
-  for point in 1:length(point_to_isperiodic)
+  for point in eachindex(point_to_isperiodic)
     ci = Tuple(cartesian_indices[point])
     for dir in periodic_dirs
       if ci[dir] == num_nodes_x_dir[dir]
@@ -486,16 +486,10 @@ function _generate_slave_to_master_point(num_nodes_x_dir::Vector{Int},
   slave_point_to_point = findall(point_to_isperiodic)
   slave_point_to_master_point = Array{Int32,1}(undef,length(slave_point_to_point))
 
-  ijk = zeros(Int,length(isperiodic))
   for (i,point) in enumerate(slave_point_to_point)
-    ijk .= Tuple(cartesian_indices[point])
-    for i in periodic_dirs
-      if ijk[i] == num_nodes_x_dir[i]
-        ijk[i] = 1
-      end
-    end
-    master_point_ijk = CartesianIndex(Tuple(ijk))
-    slave_point_to_master_point[i] = linear_indices[master_point_ijk]
+    ci = Tuple(cartesian_indices[point])
+    ijk = ntuple(d -> (d in periodic_dirs && ci[d] == num_nodes_x_dir[d]) ? 1 : ci[d], Val(N))
+    slave_point_to_master_point[i] = linear_indices[CartesianIndex(ijk)]
   end
 
   point_to_isperiodic, slave_point_to_point, slave_point_to_master_point

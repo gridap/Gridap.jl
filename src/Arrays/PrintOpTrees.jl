@@ -1,9 +1,14 @@
 
+"""
+"""
 struct TreeNode{T}
   node::T
   showid::Bool
 end
 
+"""
+    similar_tree_node(n::TreeNode,node)
+"""
 similar_tree_node(n::TreeNode,node) = TreeNode(node,n.showid)
 
 AbstractTrees.children(a::TreeNode) = get_children(a,a.node)
@@ -30,6 +35,12 @@ function print_node(io,n::TreeNode,a)
   end
 end
 
+"""
+    print_op_tree(a,args...;kwargs...)
+    print_op_tree(io::IO,a,args...;showid=false,kwargs...)
+
+Print the operation tree of a lazy operation/array, in `stdout` if `io` is not given.
+"""
 function print_op_tree(a,args...;kwargs...)
   print_op_tree(stdout,a,args...;kwargs...)
 end
