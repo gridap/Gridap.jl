@@ -17,7 +17,7 @@ end
 
 """
 """
-function autodiff_array_gradient(::Real,a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
+function autodiff_array_gradient(::Type{<:Real},a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
@@ -27,7 +27,7 @@ end
 
 """
 """
-function autodiff_array_jacobian(::Real,a,i_to_x;tag=default_tag(ForwardDiff.jacobian,a))
+function autodiff_array_jacobian(::Type{<:Real},a,i_to_x;tag=default_tag(ForwardDiff.jacobian,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
@@ -37,13 +37,13 @@ end
 
 """
 """
-function autodiff_array_hessian(V::Real,a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
+function autodiff_array_hessian(V::Type{<:Real},a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
   agrad = i_to_y -> autodiff_array_gradient(V,a,i_to_y;tag)
   agrad_tag = isa(tag,GridapADTag) ? (tag + 1) : default_tag(ForwardDiff.jacobian,agrad)
   autodiff_array_jacobian(V,agrad,i_to_x;tag=agrad_tag)
 end
 
-function autodiff_array_gradient(::Real,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
+function autodiff_array_gradient(::Type{<:Real},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
@@ -52,7 +52,7 @@ function autodiff_array_gradient(::Real,a,i_to_x,j_to_i;tag=default_tag(ForwardD
   return j_to_result
 end
 
-function autodiff_array_jacobian(::Real,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.jacobian,a))
+function autodiff_array_jacobian(::Type{<:Real},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.jacobian,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
@@ -61,7 +61,7 @@ function autodiff_array_jacobian(::Real,a,i_to_x,j_to_i;tag=default_tag(ForwardD
   return j_to_result
 end
 
-function autodiff_array_hessian(V::Real,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
+function autodiff_array_hessian(V::Type{<:Real},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
   agrad = i_to_y -> autodiff_array_gradient(V,a,i_to_y,j_to_i;tag)
   agrad_tag = isa(tag,GridapADTag) ? (tag + 1) : default_tag(ForwardDiff.jacobian,agrad)
   autodiff_array_jacobian(V,agrad,i_to_x,j_to_i;tag=agrad_tag)
@@ -80,7 +80,7 @@ end
 
 """
 """
-function autodiff_array_gradient(::Complex,a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
+function autodiff_array_gradient(::Type{<:Complex},a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
   f₁,f₂ = _change_argument_real(a,i_to_x)
   r = lazy_map(real,i_to_x)
   ∂ᵣf₁ = autodiff_array_gradient(Real,f₁,r;tag)
@@ -90,7 +90,7 @@ end
 
 """
 """
-function autodiff_array_jacobian(::Complex,a,i_to_x;tag=default_tag(ForwardDiff.jacobian,a))
+function autodiff_array_jacobian(::Type{<:Complex},a,i_to_x;tag=default_tag(ForwardDiff.jacobian,a))
   f₁,f₂ = _change_argument_real(a,i_to_x)
   r = lazy_map(real,i_to_x)
   ∂ᵣf₁ = autodiff_array_jacobian(Real,f₁,r;tag)
@@ -100,7 +100,7 @@ end
 
 """
 """
-function autodiff_array_gradient(::Complex,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
+function autodiff_array_gradient(::Type{<:Complex},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
   f₁,f₂ = _change_argument_real(a,i_to_x)
   r = lazy_map(real,i_to_x)
   ∂ᵣf₁ = autodiff_array_gradient(Real,f₁,r,j_to_i;tag)
@@ -108,7 +108,7 @@ function autodiff_array_gradient(::Complex,a,i_to_x,j_to_i;tag=default_tag(Forwa
   return lazy_map((u,v)-> u + im*v,∂ᵣf₁,∂ᵣf₂)
 end
 
-function autodiff_array_jacobian(::Complex,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.jacobian,a))
+function autodiff_array_jacobian(::Type{<:Complex},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.jacobian,a))
   f₁,f₂ = _change_argument_real(a,i_to_x)
   r = lazy_map(real,i_to_x)
   ∂ᵣf₁ = autodiff_array_jacobian(Real,f₁,r,j_to_i;tag)

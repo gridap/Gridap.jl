@@ -1,82 +1,97 @@
 using Gridap, Gridap.MultiField
-using FiniteDiff
 using Test
 
 
 model = CartesianDiscreteModel((0,1,0,1),(8,8))
-order = 2
+order = 1
+reffe = ReferenceFE(lagrangian,Float64,order)
 reffe = ReferenceFE(lagrangian,Float64,order)
 Ω = Triangulation(model)
-dΩ = Measure(Ω,2*order)
+dΩ = Measure(Ω,2order)
+Γ = Boundary(model)
+dΓ = Measure(Γ,2order)
+Λ = SkeletonTriangulation(model)
+dΛ = Measure(Λ,2order)
 
-V = FESpace(model,reffe;dirichlet_tags="boundary",vector_type=Vector{ComplexF64})
+V1 = FESpace(model,ReferenceFE(lagrangian,Float64,order);
+  vector_type=Vector{ComplexF64})
+V2 = FESpace(model, ReferenceFE(lagrangian,Float64,order);
+  vector_type=Vector{ComplexF64},conformity=:L2) 
 
-xh = interpolate(x -> x[1]*x[2],V)
+xh1 = interpolate(x -> x[1]*x[2],V1)
+xh2 = interpolate(x -> im*x[1]*x[2],V1)
+xh3 = interpolate(x -> x[1]+im*x[1]*x[2],V1)
+xh3_L2 = interpolate(x -> x[1]+im*x[1]*x[2],V2)
 
-using Gridap.FESpaces, Gridap.CellData
-using Gridap.FESpaces: _change_argument, _compute_cell_ids, GridapADTag, autodiff_array_gradient, get_cell_dof_values, get_domains, lazy_map, add_contribution!, get_free_dof_values
-using Gridap.CellData: get_ad_level
+j(u) = ∫(u + im*u*conj(u))dΩ + ∫(im*u*u + 1)dΓ + ∫(mean(u) + im*mean(u*u))dΛ
+dj(v,u) = ∫(v + im*v*conj(u) + im*u*conj(v))dΩ + ∫(2im*v*u)dΓ + ∫(mean(v) + 2im*mean(v*u))dΛ
 
-function _change_argument_real(f,cell_u)
-  y = lazy_map(imag,cell_u)
-  g_at_complex = x -> f(lazy_map((xi,yi) -> xi + im * yi, x, y))
-  f₁ = real ∘ g_at_complex
-  f₂ = imag ∘ g_at_complex
-  f₁,f₂
-end
-
-function Gridap.FESpaces._gradient(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fuh)+1)
-  terms = DomainContribution(;ad_level = tag)
-  for trian in get_domains(fuh)
-    g = _change_argument(gradient,f,trian,uh)
-    cell_id = _compute_cell_ids(uh,trian)
-    cell_u = get_cell_dof_values(uh)
-    # We compute the derivative of f as f'(u) = ∂ᵣf₁ + i*∂ᵣf₂ via Cauchy-Riemann equations
-    # where f(u) = f₁(r,s) + i*f₂(r,s) and u = r + i*s. I.e., in this case we perturb only the
-    # real part and keep the imaginary part fixed.
-    r = lazy_map(real,cell_u)
-    f₁,f₂ = _change_argument_real(g,cell_u)
-    ∂ᵣf₁ = autodiff_array_gradient(f₁,r,cell_id;tag)
-    ∂ᵣf₂ = autodiff_array_gradient(f₂,r,cell_id;tag)
-    add_contribution!(terms,trian, lazy_map((u,v)-> u + im*v,∂ᵣf₁,∂ᵣf₂))
-  end
-  terms
-end
-
-_dj = gradient(u->∫(u)dΩ,xh)
-_dj_vec = assemble_vector(_dj,V)
-_dj_vec_analytic = assemble_vector(v-> ∫(v)dΩ,V)
+_dj = gradient(j,xh1)
+_dj_vec = assemble_vector(_dj,V1)
+_dj_vec_analytic = assemble_vector(v -> dj(v,xh1),V1)
 _dj_vec≈_dj_vec_analytic
 
-_dj = gradient(u->∫(u*u)dΩ,xh)
-_dj_vec = assemble_vector(_dj,V)
-_dj_vec_analytic = assemble_vector(v-> ∫(2*xh*v)dΩ,V)
+##
+
+_dj = gradient(u->∫(u)dΩ,xh1)
+_dj_vec = assemble_vector(_dj,V1)
+_dj_vec_analytic = assemble_vector(v -> ∫(v)dΩ,V1)
 _dj_vec≈_dj_vec_analytic
 
-_dj = gradient(u->∫(im*u*u)dΩ,xh)
-_dj_vec = assemble_vector(_dj,V)
-_dj_vec_analytic = assemble_vector(v-> ∫(2im*xh*v)dΩ,V)
+_dj = gradient(u->∫(u)dΩ,xh1)
+_dj_vec = assemble_vector(_dj,V1)
+_dj_vec_analytic = assemble_vector(v-> ∫(v)dΩ,V1)
 _dj_vec≈_dj_vec_analytic
 
-_dj = gradient(u->∫(u + im*u*u)dΩ,xh)
-_dj_vec = assemble_vector(_dj,V)
-_dj_vec_analytic = assemble_vector(v-> ∫(v + 2im*xh*v)dΩ,V)
+_dj = gradient(u->∫(u*u)dΩ,xh1)
+_dj_vec = assemble_vector(_dj,V1)
+_dj_vec_analytic = assemble_vector(v-> ∫(2*xh1*v)dΩ,V1)
 _dj_vec≈_dj_vec_analytic
 
-xh2 = interpolate(x -> im*x[1]*x[2],V)
+_dj = gradient(u->∫(im*u*u)dΩ,xh1)
+_dj_vec = assemble_vector(_dj,V1)
+_dj_vec_analytic = assemble_vector(v-> ∫(2im*xh1*v)dΩ,V1)
+_dj_vec≈_dj_vec_analytic
+
+_dj = gradient(u->∫(u + im*u*u)dΩ,xh1)
+_dj_vec = assemble_vector(_dj,V1)
+_dj_vec_analytic = assemble_vector(v-> ∫(v + 2im*xh1*v)dΩ,V1)
+_dj_vec≈_dj_vec_analytic
+
 _dj = gradient(u->∫(u)dΩ,xh2)
-_dj_vec = assemble_vector(_dj,V)
-_dj_vec_analytic = assemble_vector(v-> ∫(v)dΩ,V)
+_dj_vec = assemble_vector(_dj,V1)
+_dj_vec_analytic = assemble_vector(v-> ∫(v)dΩ,V1)
 _dj_vec≈_dj_vec_analytic
 
-xh2 = interpolate(x -> im*x[1]*x[2],V)
 _dj = gradient(u->∫(im*u)dΩ,xh2)
-_dj_vec = assemble_vector(_dj,V)
-_dj_vec_analytic = assemble_vector(v-> ∫(im*v)dΩ,V)
+_dj_vec = assemble_vector(_dj,V1)
+_dj_vec_analytic = assemble_vector(v-> ∫(im*v)dΩ,V1)
 _dj_vec≈_dj_vec_analytic
 
-xh2 = interpolate(x -> x[1] + im*x[1]*x[2],V)
-_dj = gradient(u->∫(u + im*u*u)dΩ,xh2)
-_dj_vec = assemble_vector(_dj,V)
-_dj_vec_analytic = assemble_vector(v-> ∫(v + 2im*xh2*v)dΩ,V)
+_dj = gradient(u->∫(u + im*u*u)dΩ,xh3)
+_dj_vec = assemble_vector(_dj,V1)
+_dj_vec_analytic = assemble_vector(v-> ∫(v + 2im*xh3*v)dΩ,V1)
+_dj_vec≈_dj_vec_analytic
+
+_dj = gradient(u->∫(mean(u))dΛ,xh3_L2)
+_dj_vec = assemble_vector(_dj,V2)
+_dj_vec_analytic = assemble_vector(v -> ∫(mean(v))dΛ,V2)
+_dj_vec≈_dj_vec_analytic
+
+dv = get_fe_basis(V)
+_dj = jacobian(u->∫(mean(u)*mean(dv))dΛ,xh3_L2)
+_dj_vec = assemble_matrix(_dj,V2,V2)
+_dj_vec_analytic = assemble_matrix((u,v) -> ∫(mean(u)*mean(v))dΛ,V2,V2)
+_dj_vec≈_dj_vec_analytic
+
+# FAILS
+_dj = gradient(u->∫(mean(u*u))dΛ,xh3_L2)
+_dj_vec = assemble_vector(_dj,V2)
+_dj_vec_analytic = assemble_vector(v -> ∫(mean(2*xh3_L2*v))dΛ,V2)
+_dj_vec≈_dj_vec_analytic
+
+dv = get_fe_basis(V)
+_dj = jacobian(u->∫(mean(u*u)*jump(dv))dΛ,xh3_L2)
+_dj_vec = assemble_matrix(_dj,V2,V2)
+_dj_vec_analytic = assemble_matrix((u,v) -> ∫(mean(2*xh3_L2*u)*jump(v))dΛ,V2,V2)
 _dj_vec≈_dj_vec_analytic
