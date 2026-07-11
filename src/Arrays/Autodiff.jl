@@ -17,7 +17,7 @@ end
 
 """
 """
-function autodiff_array_gradient(::Type{<:Real},a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
+function autodiff_array_gradient(V,a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
@@ -27,7 +27,7 @@ end
 
 """
 """
-function autodiff_array_jacobian(::Type{<:Real},a,i_to_x;tag=default_tag(ForwardDiff.jacobian,a))
+function autodiff_array_jacobian(V,a,i_to_x;tag=default_tag(ForwardDiff.jacobian,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
@@ -37,13 +37,13 @@ end
 
 """
 """
-function autodiff_array_hessian(V::Type{<:Real},a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
+function autodiff_array_hessian(V,a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
   agrad = i_to_y -> autodiff_array_gradient(V,a,i_to_y;tag)
   agrad_tag = isa(tag,GridapADTag) ? (tag + 1) : default_tag(ForwardDiff.jacobian,agrad)
   autodiff_array_jacobian(V,agrad,i_to_x;tag=agrad_tag)
 end
 
-function autodiff_array_gradient(::Type{<:Real},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
+function autodiff_array_gradient(V,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
@@ -52,7 +52,7 @@ function autodiff_array_gradient(::Type{<:Real},a,i_to_x,j_to_i;tag=default_tag(
   return j_to_result
 end
 
-function autodiff_array_jacobian(::Type{<:Real},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.jacobian,a))
+function autodiff_array_jacobian(V,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.jacobian,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
@@ -61,7 +61,7 @@ function autodiff_array_jacobian(::Type{<:Real},a,i_to_x,j_to_i;tag=default_tag(
   return j_to_result
 end
 
-function autodiff_array_hessian(V::Type{<:Real},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
+function autodiff_array_hessian(V,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
   agrad = i_to_y -> autodiff_array_gradient(V,a,i_to_y,j_to_i;tag)
   agrad_tag = isa(tag,GridapADTag) ? (tag + 1) : default_tag(ForwardDiff.jacobian,agrad)
   autodiff_array_jacobian(V,agrad,i_to_x,j_to_i;tag=agrad_tag)
@@ -71,7 +71,7 @@ end
 # equations where f(x) = f₁(r,s) + i*f₂(r,s) and x = r + i*s. I.e., in this case we perturb
 # only the real part and keep the imaginary part fixed.
 function _change_argument_real(f,i_to_x)
-  s = lazy_map(imag,i_to_x)
+  s = lazy_map(Broadcasting(imag),i_to_x)
   g = r -> f(lazy_map((r,s) -> r + im * s, r, s))
   f₁ = r -> lazy_map(Broadcasting(real),g(r))
   f₂ = r -> lazy_map(Broadcasting(imag),g(r))
@@ -82,7 +82,7 @@ end
 """
 function autodiff_array_gradient(::Type{<:Complex},a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
   f₁,f₂ = _change_argument_real(a,i_to_x)
-  r = lazy_map(real,i_to_x)
+  r = lazy_map(Broadcasting(real),i_to_x)
   ∂ᵣf₁ = autodiff_array_gradient(Real,f₁,r;tag)
   ∂ᵣf₂ = autodiff_array_gradient(Real,f₂,r;tag)
   return lazy_map((u,v)-> u + im*v,∂ᵣf₁,∂ᵣf₂)
@@ -92,7 +92,7 @@ end
 """
 function autodiff_array_jacobian(::Type{<:Complex},a,i_to_x;tag=default_tag(ForwardDiff.jacobian,a))
   f₁,f₂ = _change_argument_real(a,i_to_x)
-  r = lazy_map(real,i_to_x)
+  r = lazy_map(Broadcasting(real),i_to_x)
   ∂ᵣf₁ = autodiff_array_jacobian(Real,f₁,r;tag)
   ∂ᵣf₂ = autodiff_array_jacobian(Real,f₂,r;tag)
   return lazy_map((u,v)-> u + im*v,∂ᵣf₁,∂ᵣf₂)
@@ -102,7 +102,7 @@ end
 """
 function autodiff_array_gradient(::Type{<:Complex},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
   f₁,f₂ = _change_argument_real(a,i_to_x)
-  r = lazy_map(real,i_to_x)
+  r = lazy_map(Broadcasting(real),i_to_x)
   ∂ᵣf₁ = autodiff_array_gradient(Real,f₁,r,j_to_i;tag)
   ∂ᵣf₂ = autodiff_array_gradient(Real,f₂,r,j_to_i;tag)
   return lazy_map((u,v)-> u + im*v,∂ᵣf₁,∂ᵣf₂)
@@ -110,7 +110,7 @@ end
 
 function autodiff_array_jacobian(::Type{<:Complex},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.jacobian,a))
   f₁,f₂ = _change_argument_real(a,i_to_x)
-  r = lazy_map(real,i_to_x)
+  r = lazy_map(Broadcasting(real),i_to_x)
   ∂ᵣf₁ = autodiff_array_jacobian(Real,f₁,r,j_to_i;tag)
   ∂ᵣf₂ = autodiff_array_jacobian(Real,f₂,r,j_to_i;tag)
   return lazy_map((u,v)-> u + im*v,∂ᵣf₁,∂ᵣf₂)

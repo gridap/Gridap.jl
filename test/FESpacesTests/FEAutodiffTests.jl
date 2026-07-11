@@ -310,4 +310,47 @@ J_analytic = jacobian(op,uh)
 
 @test J ≈ J_analytic
 
+# Complex-valued AD
+model = CartesianDiscreteModel((0,1,0,1),(8,8))
+order = 1
+Ω = Triangulation(model)
+dΩ = Measure(Ω,2order)
+Γ = Boundary(model)
+dΓ = Measure(Γ,2order)
+Λ = SkeletonTriangulation(model)
+dΛ = Measure(Λ,2order)
+
+V1 = FESpace(model,ReferenceFE(lagrangian,Float64,order);
+  vector_type=Vector{ComplexF64})
+V2 = FESpace(model, ReferenceFE(lagrangian,Float64,order);
+  vector_type=Vector{ComplexF64},conformity=:L2)
+
+j(u) = ∫(u + im*u*conj(u))dΩ + ∫(im*u*u + 1)dΓ + ∫(mean(u) + im*mean(u*u))dΛ
+dj(v,u) = ∫(v + im*v*conj(u) + im*u*conj(v))dΩ + ∫(2im*v*u)dΓ + ∫(mean(v) + 2im*mean(v*u))dΛ
+
+fi = [x-> x[1]*x[2], x->im*x[1]*x[2], x->x[1]+im*x[1]*x[2]]
+for f in fi
+  for V in [V1,V2]
+    xh = interpolate(f,V)
+    dj_ad = gradient(j,xh)
+    dj_vec = assemble_vector(dj_ad,V)
+    dj_vec_analytic = assemble_vector(v -> dj(v,xh),V)
+    @test dj_vec≈dj_vec_analytic
+  end
+end
+
+r(u,v) = ∫(u*v + im*u*conj(u)*v)dΩ + ∫(im*u*u*v + 1*v)dΓ + ∫(mean(u)*mean(v) + im*mean(u*u)*mean(v))dΛ
+dr(du,u,v) = ∫(du*v + im*du*conj(u)*v + im*u*conj(du)*v)dΩ + ∫(2im*du*u*v)dΓ + ∫(mean(du)*mean(v) + 2im*mean(du*u)*mean(v))dΛ
+
+for f in fi
+  for V in [V1,V2]
+    xh = interpolate(f,V)
+    dv = get_fe_basis(V)
+    dr_ad = jacobian(x->r(x,dv),xh)
+    dr_vec = assemble_matrix(dr_ad,V,V)
+    dr_vec_analytic = assemble_matrix((u,v) -> dr(u,xh,v),V,V)
+    @test dr_vec≈dr_vec_analytic
+  end
+end
+
 end # module

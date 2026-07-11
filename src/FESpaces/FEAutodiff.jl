@@ -16,7 +16,7 @@ end
 
 function _gradient(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fuh)+1)
   terms = DomainContribution(;ad_level = tag)
-  V = get_fe_space(uh) 
+  V = get_fe_space(uh)
   T = eltype(get_vector_type(V))
   for trian in get_domains(fuh)
     g = _change_argument(gradient,f,trian,uh)
@@ -44,7 +44,7 @@ end
 
 function _jacobian(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fuh)+1)
   terms = DomainContribution(;ad_level=tag)
-  V = get_fe_space(uh) 
+  V = get_fe_space(uh)
   T = eltype(get_vector_type(V))
   for trian in get_domains(fuh)
     g = _change_argument(jacobian,f,trian,uh)
@@ -75,7 +75,7 @@ end
 
 function _hessian(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fuh)+1)
   terms = DomainContribution(;ad_level = tag+1) # Two levels consumed
-  V = get_fe_space(uh) 
+  V = get_fe_space(uh)
   T = eltype(get_vector_type(V))
   for trian in get_domains(fuh)
     g = _change_argument(hessian,f,trian,uh)
@@ -154,7 +154,7 @@ end
 # which returns ydual_θ = df/duᶿ for θ ∈ {+, -}
 # We them merge them into a 2-block BlockVector, so that we obtain
 #   result = [df/du⁺, df/du⁻]
-function Arrays.autodiff_array_gradient(::Type{<:Real},a, i_to_x, j_to_i::SkeletonPair; tag=default_tag(ForwardDiff.gradient,a))
+function Arrays.autodiff_array_gradient(V, a, i_to_x, j_to_i::SkeletonPair; tag=default_tag(ForwardDiff.gradient,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
 
@@ -182,7 +182,7 @@ end
 # We them merge them as columns into a 2x2 block matrix, so that we obtain
 # ydual = [dr⁺/du⁺ dr⁺/du⁻] = [ydual_plus, ydual_minus]
 #         [dr⁻/du⁺ dr⁻/du⁻]
-function Arrays.autodiff_array_jacobian(::Type{<:Real},a, i_to_x, j_to_i::SkeletonPair; tag=default_tag(ForwardDiff.jacobian,a))
+function Arrays.autodiff_array_jacobian(V, a, i_to_x, j_to_i::SkeletonPair; tag=default_tag(ForwardDiff.jacobian,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
 
@@ -211,8 +211,8 @@ end
 # Skeleton + Complex
 # Evaluate r_dual + im*s, then extract the complex gradient/jacobian
 function Arrays.autodiff_array_gradient(::Type{<:Complex},a,i_to_x,j_to_i::SkeletonPair;tag=default_tag(ForwardDiff.gradient,a))
-  s = lazy_map(imag,i_to_x)
-  r = lazy_map(real,i_to_x)
+  s = lazy_map(Broadcasting(imag),i_to_x)
+  r = lazy_map(Broadcasting(real),i_to_x)
   i_to_cfg   = lazy_map(ConfigMap(ForwardDiff.gradient,tag),r)
   i_to_rdual = lazy_map(DualizeMap(),i_to_cfg,r)
   j_to_ycdual_plus, j_to_ycdual_minus = a(lazy_map((r,s) -> r + im*s, i_to_rdual, s))
@@ -230,8 +230,8 @@ function Arrays.autodiff_array_gradient(::Type{<:Complex},a,i_to_x,j_to_i::Skele
 end
 
 function Arrays.autodiff_array_jacobian(::Type{<:Complex},a,i_to_x,j_to_i::SkeletonPair;tag=default_tag(ForwardDiff.jacobian,a))
-  s = lazy_map(imag,i_to_x)
-  r = lazy_map(real,i_to_x)
+  s = lazy_map(Broadcasting(imag),i_to_x)
+  r = lazy_map(Broadcasting(real),i_to_x)
   i_to_cfg   = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),r)
   i_to_rdual = lazy_map(DualizeMap(),i_to_cfg,r)
   j_to_ycdual_plus, j_to_ycdual_minus = a(lazy_map((r,s) -> r + im*s, i_to_rdual, s))
