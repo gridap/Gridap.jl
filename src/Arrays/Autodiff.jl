@@ -73,8 +73,8 @@ end
 function _change_argument_real(f,i_to_x)
   s = lazy_map(imag,i_to_x)
   g = r -> f(lazy_map((r,s) -> r + im * s, r, s))
-  f₁ = real ∘ g
-  f₂ = imag ∘ g
+  f₁ = r -> lazy_map(Broadcasting(real),g(r))
+  f₂ = r -> lazy_map(Broadcasting(imag),g(r))
   f₁,f₂
 end
 
