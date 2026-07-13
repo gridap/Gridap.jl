@@ -320,7 +320,7 @@ function change_domain_o2n(f_coarse,ctrian::Triangulation{Dc},ftrian::AdaptedTri
 
     return CellData.similar_cell_field(f_coarse,f_fine,ftrian,ReferenceDomain())
   else
-    f_fine = Fill(Fields.ConstantField(0.0),num_cells(ftrian))
+    f_fine = Fill(zero(testitem(CellData.get_data(f_coarse))),num_cells(ftrian))
     return CellData.similar_cell_field(f_coarse,f_fine,ftrian,ReferenceDomain())
   end
 end
@@ -359,7 +359,7 @@ function change_domain_o2n(
 
     return CellData.similar_cell_field(f_old,field_array,new_trian,ReferenceDomain())
   else
-    f_new = Fill(Fields.ConstantField(0.0),num_cells(new_trian))
+    f_new = Fill(zero(testitem(CellData.get_data(f_old))),num_cells(new_trian))
     return CellData.similar_cell_field(f_old,f_new,new_trian,ReferenceDomain())
   end 
 end
@@ -398,7 +398,7 @@ function change_domain_n2o(f_fine,ftrian::AdaptedTriangulation{Dc},ctrian::Trian
 
     return CellData.similar_cell_field(f_fine,f_coarse,ctrian,ReferenceDomain())
   else
-    f_coarse = Fill(Fields.ConstantField(0.0),num_cells(fcoarse))
+    f_coarse = Fill(zero(testitem(CellData.get_data(f_fine))),num_cells(ctrian))
     return CellData.similar_cell_field(f_fine,f_coarse,ctrian,ReferenceDomain())
   end
 end
