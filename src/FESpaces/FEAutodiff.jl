@@ -169,6 +169,10 @@ function Arrays.autodiff_array_gradient(V, a, i_to_x, j_to_i::SkeletonPair; tag=
   j_to_cfg_minus = Arrays.autodiff_array_reindex(i_to_cfg,j_to_i.minus)
   j_to_result_minus = lazy_map(AutoDiffMap(),j_to_cfg_minus,j_to_ydual_minus)
 
+  return _skeleton_autodiff_merge_gradient(j_to_result_plus,j_to_result_minus)
+end
+
+function _skeleton_autodiff_merge_gradient(j_to_result_plus,j_to_result_minus)
   # Assemble on SkeletonTriangulation expects an array of interior of facets
   # where each entry is a 2-block BlockVector with the first block being the
   # contribution of the plus side and the second, the one of the minus side
@@ -197,8 +201,11 @@ function Arrays.autodiff_array_jacobian(V, a, i_to_x, j_to_i::SkeletonPair; tag=
   j_to_cfg_minus = Arrays.autodiff_array_reindex(i_to_cfg,j_to_i.minus)
   j_to_result_minus = lazy_map(AutoDiffMap(),j_to_cfg_minus,j_to_ydual_minus)
 
+  return _skeleton_autodiff_merge_jacobian(j_to_result_plus,j_to_result_minus)
+end
+
+function _skeleton_autodiff_merge_jacobian(j_to_result_plus,j_to_result_minus)
   # Merge the columns into a 2x2 block matrix
-  # I = [[(CartesianIndex(i,),CartesianIndex(i,j)) for i in 1:2] for j in 1:2]
   I = [
     [(CartesianIndex(1,), CartesianIndex(1, 1)), (CartesianIndex(2,), CartesianIndex(2, 1))], # Plus  -> First column
     [(CartesianIndex(1,), CartesianIndex(1, 2)), (CartesianIndex(2,), CartesianIndex(2, 2))]  # Minus -> Second column
@@ -240,8 +247,8 @@ function Arrays.autodiff_array_jacobian(::Type{<:Complex},a,i_to_x,j_to_i::Skele
   j_to_result_plus,j_to_result_minus = _skeleton_autodiff_array_complex_work(ForwardDiff.jacobian,a,i_to_x,j_to_i,tag)
   # Merge contributions
   I = [
-    [(CartesianIndex(1,), CartesianIndex(1, 1)), (CartesianIndex(2,), CartesianIndex(2, 1))],
-    [(CartesianIndex(1,), CartesianIndex(1, 2)), (CartesianIndex(2,), CartesianIndex(2, 2))]
+    [(CartesianIndex(1,), CartesianIndex(1, 1)), (CartesianIndex(2,), CartesianIndex(2, 1))], # Plus  -> First column
+    [(CartesianIndex(1,), CartesianIndex(1, 2)), (CartesianIndex(2,), CartesianIndex(2, 2))]  # Minus -> Second column
   ]
   is_single_field = eltype(eltype(j_to_result_plus)) <: AbstractArray
   k = is_single_field ? Arrays.MergeBlockMap((2,2),I) : Arrays.BlockBroadcasting(Arrays.MergeBlockMap((2,2),I))
