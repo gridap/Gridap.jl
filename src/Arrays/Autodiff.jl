@@ -72,48 +72,40 @@ end
 # only the real part and keep the imaginary part fixed.
 function _change_argument_real(f,i_to_x)
   s = lazy_map(Broadcasting(imag),i_to_x)
-  g = r -> f(lazy_map((r,s) -> r + im * s, r, s))
-  f₁ = r -> lazy_map(Broadcasting(real),g(r))
-  f₂ = r -> lazy_map(Broadcasting(imag),g(r))
+  g(r) = f(lazy_map((r,s) -> r + im * s, r, s))
+  f₁(r) = lazy_map(Broadcasting(real),g(r))
+  f₂(r) = lazy_map(Broadcasting(imag),g(r))
   f₁,f₂
+end
+
+function autodiff_array_complex_work(f_ad,a,i_to_x,j_to_i...;tag)
+  f₁,f₂ = _change_argument_real(a,i_to_x)
+  r = lazy_map(Broadcasting(real),i_to_x)
+  ∂ᵣf₁ = f_ad(Real,f₁,r,j_to_i...;tag)
+  ∂ᵣf₂ = f_ad(Real,f₂,r,j_to_i...;tag)
+  return lazy_map((u,v)-> u + im*v,∂ᵣf₁,∂ᵣf₂)
 end
 
 """
 """
 function autodiff_array_gradient(::Type{<:Complex},a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
-  f₁,f₂ = _change_argument_real(a,i_to_x)
-  r = lazy_map(Broadcasting(real),i_to_x)
-  ∂ᵣf₁ = autodiff_array_gradient(Real,f₁,r;tag)
-  ∂ᵣf₂ = autodiff_array_gradient(Real,f₂,r;tag)
-  return lazy_map((u,v)-> u + im*v,∂ᵣf₁,∂ᵣf₂)
+  return autodiff_array_complex_work(autodiff_array_gradient,a,i_to_x;tag)
 end
 
 """
 """
 function autodiff_array_jacobian(::Type{<:Complex},a,i_to_x;tag=default_tag(ForwardDiff.jacobian,a))
-  f₁,f₂ = _change_argument_real(a,i_to_x)
-  r = lazy_map(Broadcasting(real),i_to_x)
-  ∂ᵣf₁ = autodiff_array_jacobian(Real,f₁,r;tag)
-  ∂ᵣf₂ = autodiff_array_jacobian(Real,f₂,r;tag)
-  return lazy_map((u,v)-> u + im*v,∂ᵣf₁,∂ᵣf₂)
+  return autodiff_array_complex_work(autodiff_array_jacobian,a,i_to_x;tag)
 end
 
 """
 """
 function autodiff_array_gradient(::Type{<:Complex},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
-  f₁,f₂ = _change_argument_real(a,i_to_x)
-  r = lazy_map(Broadcasting(real),i_to_x)
-  ∂ᵣf₁ = autodiff_array_gradient(Real,f₁,r,j_to_i;tag)
-  ∂ᵣf₂ = autodiff_array_gradient(Real,f₂,r,j_to_i;tag)
-  return lazy_map((u,v)-> u + im*v,∂ᵣf₁,∂ᵣf₂)
+  return autodiff_array_complex_work(autodiff_array_gradient,a,i_to_x,j_to_i;tag)
 end
 
 function autodiff_array_jacobian(::Type{<:Complex},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.jacobian,a))
-  f₁,f₂ = _change_argument_real(a,i_to_x)
-  r = lazy_map(Broadcasting(real),i_to_x)
-  ∂ᵣf₁ = autodiff_array_jacobian(Real,f₁,r,j_to_i;tag)
-  ∂ᵣf₂ = autodiff_array_jacobian(Real,f₂,r,j_to_i;tag)
-  return lazy_map((u,v)-> u + im*v,∂ᵣf₁,∂ᵣf₂)
+  return autodiff_array_complex_work(autodiff_array_jacobian,a,i_to_x,j_to_i;tag)
 end
 
 function autodiff_array_reindex(i_to_val, j_to_i)
