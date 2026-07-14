@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed evaluation of weak forms on empty trians with inverse maps. Since PR[#1316](https://github.com/gridap/Gridap.jl/pull/1316).
+- Fixed getting field type when changing domain on empty adapted triangulations. Since PR [#1326](https://github.com/gridap/Gridap.jl/pull/1326).
 
 ## [0.20.8] - 2026-06-01
 
