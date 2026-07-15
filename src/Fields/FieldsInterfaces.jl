@@ -471,17 +471,17 @@ function product_rule(fun,f1,f2,∇f1,∇f2)
   @notimplemented msg
 end
 
-function product_rule(::typeof(*),f1::Real,f2::Real,∇f1,∇f2)
+function product_rule(::typeof(*),f1::Union{Real,Complex},f2::Union{Real,Complex},∇f1,∇f2)
   ∇f1*f2 + f1*∇f2
 end
 
 for op in (:*,:⋅)
   @eval begin
-     function product_rule(::typeof($op),f1::Real,f2::VectorValue,∇f1,∇f2)
+     function product_rule(::typeof($op),f1::Union{Real,Complex},f2::VectorValue,∇f1,∇f2)
        ∇f1⊗f2 + ∇f2*f1
      end
 
-     function product_rule(::typeof($op),f1::VectorValue,f2::Real,∇f1,∇f2)
+     function product_rule(::typeof($op),f1::VectorValue,f2::Union{Real,Complex},∇f1,∇f2)
        product_rule(*,f2,f1,∇f2,∇f1)
      end
   end
@@ -527,7 +527,7 @@ function product_rule_hessian(fun,f1,f2,∇f1,∇f2,∇∇f1,∇∇f2)
   @notimplemented msg
 end
 
-function product_rule_hessian(::typeof(*),f1::Real,f2::Real,∇f1,∇f2,∇∇f1,∇∇f2)
+function product_rule_hessian(::typeof(*),f1::Union{Real,Complex},f2::Union{Real,Complex},∇f1,∇f2,∇∇f1,∇∇f2)
   ∇∇f1*f2 + ∇∇f2*f1 + ∇f1⊗∇f2 + ∇f2⊗∇f1
 end
 
