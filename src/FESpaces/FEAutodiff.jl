@@ -235,10 +235,10 @@ function _skeleton_autodiff_array_complex_work(f, a, i_to_x, j_to_i::SkeletonPai
 end
 
 function Arrays.autodiff_array_gradient(::Type{<:Complex},a,i_to_x,j_to_i::SkeletonPair;tag=default_tag(ForwardDiff.gradient,a))
-  Arrays.autodiff_array_riesz_gradient(Complex,a,i_to_x,j_to_i;tag)
+  Arrays.autodiff_array_gradient_WIP(Complex,a,i_to_x,j_to_i;tag)
 end
 
-function Arrays.autodiff_array_riesz_gradient(::Type{<:Complex},a,i_to_x,j_to_i::SkeletonPair;tag=default_tag(ForwardDiff.gradient,a))
+function Arrays.autodiff_array_gradient_WIP(::Type{<:Complex},a,i_to_x,j_to_i::SkeletonPair;tag=default_tag(ForwardDiff.gradient,a))
   s = lazy_map(Broadcasting(imag),i_to_x)
   r = lazy_map(Broadcasting(real),i_to_x)
   i_to_cfg_r = lazy_map(ConfigMap(ForwardDiff.gradient,tag),r)
