@@ -216,7 +216,6 @@ function _skeleton_autodiff_merge_jacobian(j_to_result_plus,j_to_result_minus)
 end
 
 # Skeleton + Complex
-# Evaluate r_dual + im*s, then extract the complex gradient/jacobian
 function _skeleton_autodiff_array_complex_work(f, a, i_to_x, j_to_i::SkeletonPair, tag)
   s = lazy_map(Broadcasting(imag),i_to_x)
   r = lazy_map(Broadcasting(real),i_to_x)
@@ -236,8 +235,28 @@ function _skeleton_autodiff_array_complex_work(f, a, i_to_x, j_to_i::SkeletonPai
 end
 
 function Arrays.autodiff_array_gradient(::Type{<:Complex},a,i_to_x,j_to_i::SkeletonPair;tag=default_tag(ForwardDiff.gradient,a))
-  j_to_result_plus,j_to_result_minus = _skeleton_autodiff_array_complex_work(ForwardDiff.gradient,a,i_to_x,j_to_i,tag)
-  # Merge contributions
+  Arrays.autodiff_array_riesz_gradient(Complex,a,i_to_x,j_to_i;tag)
+end
+
+function Arrays.autodiff_array_riesz_gradient(::Type{<:Complex},a,i_to_x,j_to_i::SkeletonPair;tag=default_tag(ForwardDiff.gradient,a))
+  s = lazy_map(Broadcasting(imag),i_to_x)
+  r = lazy_map(Broadcasting(real),i_to_x)
+  i_to_cfg_r = lazy_map(ConfigMap(ForwardDiff.gradient,tag),r)
+  i_to_rdual = lazy_map(DualizeMap(),i_to_cfg_r,r)
+  j_to_yrdual_plus,j_to_yrdual_minus = a(lazy_map((r,s) -> r + im*s,i_to_rdual,s))
+  i_to_cfg_s = lazy_map(ConfigMap(ForwardDiff.gradient,tag),s)
+  i_to_sdual = lazy_map(DualizeMap(),i_to_cfg_s,s)
+  j_to_ysdual_plus,j_to_ysdual_minus = a(lazy_map((r,s) -> r + im*s,r,i_to_sdual))
+  j_to_cfg_r_plus = Arrays.autodiff_array_reindex(i_to_cfg_r,j_to_i.plus)
+  j_to_cfg_r_minus = Arrays.autodiff_array_reindex(i_to_cfg_r,j_to_i.minus)
+  j_to_cfg_s_plus = Arrays.autodiff_array_reindex(i_to_cfg_s,j_to_i.plus)
+  j_to_cfg_s_minus = Arrays.autodiff_array_reindex(i_to_cfg_s,j_to_i.minus)
+  j_to_result_plus = lazy_map((r,s) -> r + im*s,
+    lazy_map(AutoDiffMap(),j_to_cfg_r_plus,lazy_map(Broadcasting(real),j_to_yrdual_plus)),
+    lazy_map(AutoDiffMap(),j_to_cfg_s_plus,lazy_map(Broadcasting(real),j_to_ysdual_plus)))
+  j_to_result_minus = lazy_map((r,s) -> r + im*s,
+    lazy_map(AutoDiffMap(),j_to_cfg_r_minus,lazy_map(Broadcasting(real),j_to_yrdual_minus)),
+    lazy_map(AutoDiffMap(),j_to_cfg_s_minus,lazy_map(Broadcasting(real),j_to_ysdual_minus)))
   is_single_field = eltype(eltype(j_to_result_plus)) <: Number
   k = is_single_field ? BlockMap(2,[1,2]) : Arrays.BlockBroadcasting(BlockMap(2,[1,2]))
   lazy_map(k,j_to_result_plus,j_to_result_minus)

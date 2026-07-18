@@ -67,12 +67,21 @@ function autodiff_array_hessian(V,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gr
   autodiff_array_jacobian(V,agrad,i_to_x,j_to_i;tag=agrad_tag)
 end
 
-# For complex case we compute the derivative of f as f'(x) = ∂ᵣf₁ + i*∂ᵣf₂ via Cauchy-Riemann
-# equations where f(x) = f₁(r,s) + i*f₂(r,s) and x = r + i*s. I.e., in this case we perturb
-# only the real part and keep the imaginary part fixed.
+# For complex inputs, gradients are the complex extension of the real
+# directional derivative: g = ∂ᵣ real(f) + im*∂ₛ real(f). More docs ...
+function autodiff_array_gradient_WIP(a,i_to_x,j_to_i...;tag)
+  s = lazy_map(Broadcasting(imag),i_to_x)
+  r = lazy_map(Broadcasting(real),i_to_x)
+  f₁r(r) = lazy_map(Broadcasting(real),a(lazy_map((r,s) -> r + im*s,r,s)))
+  f₁s(s) = lazy_map(Broadcasting(real),a(lazy_map((r,s) -> r + im*s,r,s)))
+  ∂ᵣf₁ = autodiff_array_gradient(Real,f₁r,r,j_to_i...;tag)
+  ∂ₛf₁ = autodiff_array_gradient(Real,f₁s,s,j_to_i...;tag)
+  return lazy_map((r,s) -> r + im*s,∂ᵣf₁,∂ₛf₁)
+end
+
 function _change_argument_real(f,i_to_x)
   s = lazy_map(Broadcasting(imag),i_to_x)
-  g(r) = f(lazy_map((r,s) -> r + im * s, r, s))
+  g(r) = f(lazy_map((r,s) -> r + im*s,r,s))
   f₁(r) = lazy_map(Broadcasting(real),g(r))
   f₂(r) = lazy_map(Broadcasting(imag),g(r))
   f₁,f₂
@@ -89,7 +98,7 @@ end
 """
 """
 function autodiff_array_gradient(::Type{<:Complex},a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
-  return autodiff_array_complex_work(autodiff_array_gradient,a,i_to_x;tag)
+  return autodiff_array_gradient_WIP(a,i_to_x;tag)
 end
 
 """
@@ -101,7 +110,15 @@ end
 """
 """
 function autodiff_array_gradient(::Type{<:Complex},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
-  return autodiff_array_complex_work(autodiff_array_gradient,a,i_to_x,j_to_i;tag)
+  return autodiff_array_gradient_WIP(a,i_to_x,j_to_i;tag)
+end
+
+function autodiff_array_gradient_WIP(::Type{<:Complex},a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
+  autodiff_array_gradient_WIP(a,i_to_x;tag)
+end
+
+function autodiff_array_gradient_WIP(::Type{<:Complex},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
+  autodiff_array_gradient_WIP(a,i_to_x,j_to_i;tag)
 end
 
 function autodiff_array_jacobian(::Type{<:Complex},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.jacobian,a))
