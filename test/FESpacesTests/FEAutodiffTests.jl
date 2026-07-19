@@ -324,9 +324,9 @@ V1 = FESpace(model,ReferenceFE(lagrangian,Float64,order);
   vector_type=Vector{ComplexF64})
 V2 = FESpace(model,ReferenceFE(lagrangian,Float64,order);
   conformity=:L2,vector_type=Vector{ComplexF64})
-h = 1.0e-6
+_h = 1.0e-6
 
-fd_gradient(f,u,du) = real((f(u + h*du) - f(u - h*du))/(2h))
+fd_gradient(f,u,du) = real((f(u + _h*du) - f(u - _h*du))/(2*_h))
 functional_value(f,V,u) = sum(f(FEFunction(V,u)))
 
 F_holo(u) = ∫(u*u)dΩ + ∫(u*u)dΓ + ∫(mean(u)*mean(u))dΛ
