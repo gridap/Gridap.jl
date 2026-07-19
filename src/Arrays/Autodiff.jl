@@ -67,63 +67,39 @@ function autodiff_array_hessian(V,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gr
   autodiff_array_jacobian(V,agrad,i_to_x,j_to_i;tag=agrad_tag)
 end
 
-# For complex inputs, gradients are the complex extension of the real
-# directional derivative: g = ∂ᵣ real(f) + im*∂ₛ real(f). More docs ...
-function autodiff_array_gradient_WIP(a,i_to_x,j_to_i...;tag)
+# Gradient AD for computing complex-valued functionals
+# This is slightly more intricate than what we usually deal with
+# for real-valued functionals. There are three cases:
+# 1. Holomorphic maps from ℂ → ℂ: As standard in AD systems, we compute 
+#    the conjugate gradient f'(z)ᴴ = ∂ᵣu + i ∂ₛu so that dF(z)(v) = <f'(z)ᴴ, v> = f'(z)v.
+# 2. Non-holomorphic maps from ℂ → ℝ: We use CR-Calculus, i.e., it can be shown
+#    that the gradient is given by ∇z(f) = 2∂f/∂z* =  ∂ᵣu + i ∂ₛu and the directional derivative
+#    is given by dF(z)(v)=Re{∇z(f),v}.
+# 3. (NOT IMPLEMENTED) General non-holomorphic maps from ℂ → ℂ: requires splitting into
+#    derivative in z and derivative in z*. This is not implemented yet.
+# Because (1) and (2) are in the same form, we reuse the code below for both cases.
+function autodiff_array_gradient_complex(a,i_to_x,j_to_i...;tag)
   s = lazy_map(Broadcasting(imag),i_to_x)
   r = lazy_map(Broadcasting(real),i_to_x)
-  f₁r(r) = lazy_map(Broadcasting(real),a(lazy_map((r,s) -> r + im*s,r,s)))
-  f₁s(s) = lazy_map(Broadcasting(real),a(lazy_map((r,s) -> r + im*s,r,s)))
-  ∂ᵣf₁ = autodiff_array_gradient(Real,f₁r,r,j_to_i...;tag)
-  ∂ₛf₁ = autodiff_array_gradient(Real,f₁s,s,j_to_i...;tag)
-  return lazy_map((r,s) -> r + im*s,∂ᵣf₁,∂ₛf₁)
-end
-
-function _change_argument_real(f,i_to_x)
-  s = lazy_map(Broadcasting(imag),i_to_x)
-  g(r) = f(lazy_map((r,s) -> r + im*s,r,s))
-  f₁(r) = lazy_map(Broadcasting(real),g(r))
-  f₂(r) = lazy_map(Broadcasting(imag),g(r))
-  f₁,f₂
-end
-
-function autodiff_array_complex_work(f_ad,a,i_to_x,j_to_i...;tag)
-  f₁,f₂ = _change_argument_real(a,i_to_x)
-  r = lazy_map(Broadcasting(real),i_to_x)
-  ∂ᵣf₁ = f_ad(Real,f₁,r,j_to_i...;tag)
-  ∂ᵣf₂ = f_ad(Real,f₂,r,j_to_i...;tag)
-  return lazy_map((u,v)-> u + im*v,∂ᵣf₁,∂ᵣf₂)
+  u_r(r) = lazy_map(Broadcasting(real),a(lazy_map((r,s) -> r + im*s,r,s)))
+  u_s(s) = lazy_map(Broadcasting(real),a(lazy_map((r,s) -> r + im*s,r,s)))
+  ∂ᵣu = autodiff_array_gradient(Real,u_r,r,j_to_i...;tag)
+  ∂ₛu = autodiff_array_gradient(Real,u_s,s,j_to_i...;tag)
+  return lazy_map((r,s) -> r + im*s,∂ᵣu,∂ₛu)
 end
 
 """
 """
 function autodiff_array_gradient(::Type{<:Complex},a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
-  return autodiff_array_gradient_WIP(a,i_to_x;tag)
-end
-
-"""
-"""
-function autodiff_array_jacobian(::Type{<:Complex},a,i_to_x;tag=default_tag(ForwardDiff.jacobian,a))
-  return autodiff_array_complex_work(autodiff_array_jacobian,a,i_to_x;tag)
+  return autodiff_array_gradient_complex(a,i_to_x;tag)
 end
 
 """
 """
 function autodiff_array_gradient(::Type{<:Complex},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
-  return autodiff_array_gradient_WIP(a,i_to_x,j_to_i;tag)
+  return autodiff_array_gradient_complex(a,i_to_x,j_to_i;tag)
 end
 
-function autodiff_array_gradient_WIP(::Type{<:Complex},a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
-  autodiff_array_gradient_WIP(a,i_to_x;tag)
-end
-
-function autodiff_array_gradient_WIP(::Type{<:Complex},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
-  autodiff_array_gradient_WIP(a,i_to_x,j_to_i;tag)
-end
-
-function autodiff_array_jacobian(::Type{<:Complex},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.jacobian,a))
-  return autodiff_array_complex_work(autodiff_array_jacobian,a,i_to_x,j_to_i;tag)
-end
 
 function autodiff_array_reindex(i_to_val, j_to_i)
   if isempty(j_to_i)

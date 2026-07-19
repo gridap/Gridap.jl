@@ -389,33 +389,26 @@ function complex_valued_ad_tests()
   dΛ = Measure(Λ,2order)
 
   for style in (ConsecutiveMultiFieldStyle(),BlockMultiFieldStyle())
-    V1 = FESpace(model,ReferenceFE(lagrangian,Float64,order),vector_type=Vector{ComplexF64})
-    V2 = FESpace(model, ReferenceFE(lagrangian,Float64,order);vector_type=Vector{ComplexF64},conformity=:L2)
     V = MultiFieldFESpace([V1,V2];style)
+    uh = interpolate((x -> x[1] + im*x[2],x -> x[1] - im*x[2]),V)
+    u = get_free_dof_values(uh)
+    du = randn(ComplexF64,length(u))
 
-    j((u1,u2)) = ∫(u1*u2 + im*u1*conj(u1))dΩ + ∫(im*u1*u1*u2 + 1)dΓ + ∫(mean(u1) + im*mean(u1*u1*u2))dΛ
-    dj((v1,v2),(u1,u2)) = ∫(v1*u2 + v2*u1 + im*v1*conj(u1) + im*u1*conj(v1))dΩ + ∫(2im*v1*u1*u2 + im*u1*u1*v2)dΓ + ∫(mean(v1) + 2im*mean(v1*u1*u2) + im*mean(u1*u1*v2))dΛ
+    F_holo((u1,u2)) = ∫(u1*u2)dΩ + ∫(u1*u2)dΓ + ∫(mean(u1)*mean(u2))dΛ
+    dreal_F_holo((q1,q2),(u1,u2)) = ∫(q1*conj(u2) + q2*conj(u1))dΩ + ∫(q1*conj(u2) + q2*conj(u1))dΓ + ∫(mean(q1)*conj(mean(u2)) + mean(q2)*conj(mean(u1)))dΛ
+    J_nonholo((u1,u2)) = ∫(conj(u1)*u1 + conj(u2)*u2)dΩ + ∫(conj(u1)*u1 + conj(u2)*u2)dΓ + ∫(mean(conj(u1))*mean(u1) + mean(conj(u2))*mean(u2))dΛ
+    dJ_nonholo((q1,q2),(u1,u2)) = ∫(2*q1'*u1 + 2*q2'*u2)dΩ + ∫(2*q1'*u1 + 2*q2'*u2)dΓ + ∫(2*mean(q1)'*mean(u1) + 2*mean(q2)'*mean(u2))dΛ
 
-    xh = interpolate((x->x[1]*x[2], x->x[1]+im*x[1]*x[2]),V)
-    for ad_type ∈ [:monolithic, :split]
-      dj_ad = gradient(j,xh;ad_type)
-      dj_vec = assemble_vector(dj_ad,V)
-      dj_vec_analytic = assemble_vector(v -> dj(v,xh),V)
-      @test dj_vec≈dj_vec_analytic
-    end
+    for ad_type in (:monolithic,:split)
+      ad_holo = assemble_vector(gradient(F_holo,uh;ad_type),V)
+      analytic_holo = assemble_vector(q -> dreal_F_holo(q,uh),V)
+      @test ad_holo ≈ analytic_holo
+      @test real(dot(ad_holo,du)) ≈ fd_gradient(u -> real(functional_value(F_holo,V,u)),u,du) rtol=1.0e-6
 
-    r((u1,u2),(v1,v2)) = ∫(u1*v1 + u2*v2 + im*u1*conj(u1)*v1*u2 + im*u2*conj(u2)*v2*u1)dΩ +
-      ∫(im*u1*u1*v1 + im*u2*u2*v2 + 1*v1 + 1*v2)dΓ + ∫(mean(u1)*mean(v1) + mean(u2)*mean(v2) + im*mean(u1*u1)*mean(v1) + im*mean(u2*u2)*mean(v2))dΛ
-    dr((du1,du2),(u1,u2),(v1,v2)) = ∫(du1*v1 + du2*v2 + im*u1*conj(u1)*v1*du2 + im*u2*conj(u2)*v2*du1 +
-      im*du1*conj(u1)*v1*u2 + im*du2*conj(u2)*v2*u1 + im*u1*conj(du1)*v1*u2 + im*u2*conj(du2)*v2*u1)dΩ +
-      ∫(2im*du1*u1*v1 + 2im*du2*u2*v2)dΓ + ∫(mean(du1)*mean(v1) + mean(du2)*mean(v2) + 2im*mean(du1*u1)*mean(v1) + 2im*mean(du2*u2)*mean(v2))dΛ
-
-    dv = get_fe_basis(V)
-    for ad_type ∈ [:monolithic, :split]
-      dr_ad = jacobian(x->r(x,dv),xh;ad_type)
-      dr_vec = assemble_matrix(dr_ad,V,V)
-      dr_vec_analytic = assemble_matrix((u,v) -> dr(u,xh,v),V,V)
-      @test dr_vec≈dr_vec_analytic
+      ad_nonholo = assemble_vector(gradient(J_nonholo,uh;ad_type),V)
+      analytic_nonholo = assemble_vector(q -> dJ_nonholo(q,uh),V)
+      @test ad_nonholo ≈ analytic_nonholo
+      @test real(dot(ad_nonholo,du)) ≈ fd_gradient(u -> real(functional_value(J_nonholo,V,u)),u,du) rtol=1.0e-6
     end
   end
 end

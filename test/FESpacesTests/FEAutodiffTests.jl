@@ -322,35 +322,32 @@ dΛ = Measure(Λ,2order)
 
 V1 = FESpace(model,ReferenceFE(lagrangian,Float64,order);
   vector_type=Vector{ComplexF64})
-V2 = FESpace(model, ReferenceFE(lagrangian,Float64,order);
-  vector_type=Vector{ComplexF64},conformity=:L2)
+V2 = FESpace(model,ReferenceFE(lagrangian,Float64,order);
+  conformity=:L2,vector_type=Vector{ComplexF64})
+h = 1.0e-6
 
-j(u) = ∫(u + im*u*conj(u))dΩ + ∫(im*u*u + 1)dΓ + ∫(mean(u) + im*mean(u*u))dΛ
-dj(v,u) = ∫(v + im*v*conj(u) + im*u*conj(v))dΩ + ∫(2im*v*u)dΓ + ∫(mean(v) + 2im*mean(v*u))dΛ
+fd_gradient(f,u,du) = real((f(u + h*du) - f(u - h*du))/(2h))
+functional_value(f,V,u) = sum(f(FEFunction(V,u)))
 
-fi = [x-> x[1]*x[2], x->im*x[1]*x[2], x->x[1]+im*x[1]*x[2]]
-for f in fi
-  for V in [V1,V2]
-    xh = interpolate(f,V)
-    dj_ad = gradient(j,xh)
-    dj_vec = assemble_vector(dj_ad,V)
-    dj_vec_analytic = assemble_vector(v -> dj(v,xh),V)
-    @test dj_vec≈dj_vec_analytic
-  end
-end
+F_holo(u) = ∫(u*u)dΩ + ∫(u*u)dΓ + ∫(mean(u)*mean(u))dΛ
+dreal_F_holo(q,u) = ∫(2*q*conj(u))dΩ + ∫(2*q*conj(u))dΓ + ∫(2*mean(q)*conj(mean(u)))dΛ
+J_nonholo(u) = ∫(conj(u)*u)dΩ + ∫(conj(u)*u)dΓ + ∫(mean(conj(u))*mean(u))dΛ
+dJ_nonholo(q,u) = ∫(2*q'*u)dΩ + ∫(2*q'*u)dΓ + ∫(2*mean(q)'*mean(u))dΛ
 
-r(u,v) = ∫(u*v + im*u*conj(u)*v)dΩ + ∫(im*u*u*v + 1*v)dΓ + ∫(mean(u)*mean(v) + im*mean(u*u)*mean(v))dΛ
-dr(du,u,v) = ∫(du*v + im*du*conj(u)*v + im*u*conj(du)*v)dΩ + ∫(2im*du*u*v)dΓ + ∫(mean(du)*mean(v) + 2im*mean(du*u)*mean(v))dΛ
+for (index,V) in enumerate((V1,V2))
+  uh = interpolate(x -> x[1] + im*x[2],V)
+  u = get_free_dof_values(uh)
+  du = randn(ComplexF64,length(u))
 
-for f in fi
-  for V in [V1,V2]
-    xh = interpolate(f,V)
-    dv = get_fe_basis(V)
-    dr_ad = jacobian(x->r(x,dv),xh)
-    dr_vec = assemble_matrix(dr_ad,V,V)
-    dr_vec_analytic = assemble_matrix((u,v) -> dr(u,xh,v),V,V)
-    @test dr_vec≈dr_vec_analytic
-  end
+  ad_holo = assemble_vector(gradient(F_holo,uh),V)
+  analytic_holo = assemble_vector(q -> dreal_F_holo(q,uh),V)
+  @test ad_holo ≈ analytic_holo
+  @test real(dot(ad_holo,du)) ≈ fd_gradient(u -> real(functional_value(F_holo,V,u)),u,du) rtol=1.0e-6
+
+  ad_nonholo = assemble_vector(gradient(J_nonholo,uh),V)
+  analytic_nonholo = assemble_vector(q -> dJ_nonholo(q,uh),V)
+  @test ad_nonholo ≈ analytic_nonholo
+  @test real(dot(ad_nonholo,du)) ≈ fd_gradient(u -> real(functional_value(J_nonholo,V,u)),u,du) rtol=1.0e-6
 end
 
 end # module

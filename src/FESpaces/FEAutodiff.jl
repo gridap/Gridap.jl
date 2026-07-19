@@ -46,6 +46,10 @@ function _jacobian(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fu
   terms = DomainContribution(;ad_level=tag)
   V = get_fe_space(uh)
   T = eltype(get_vector_type(V))
+  # For now, taking the Jacobian of a complex-valued functional is not implemented.
+  # To implement this, we need to consider the case of f being either holomorphic or
+  # non-holomorphic
+  T<:Complex && @notimplemented "Jacobian's of complex-valued functionals are not yet implemented"
   for trian in get_domains(fuh)
     g = _change_argument(jacobian,f,trian,uh)
     cell_u = get_cell_dof_values(uh)
@@ -77,6 +81,7 @@ function _hessian(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fuh
   terms = DomainContribution(;ad_level = tag+1) # Two levels consumed
   V = get_fe_space(uh)
   T = eltype(get_vector_type(V))
+  T<:Complex && @notimplemented "Hessian's of complex-valued functionals are not yet implemented"
   for trian in get_domains(fuh)
     g = _change_argument(hessian,f,trian,uh)
     cell_u = get_cell_dof_values(uh)
@@ -215,30 +220,9 @@ function _skeleton_autodiff_merge_jacobian(j_to_result_plus,j_to_result_minus)
   lazy_map(k,j_to_result_plus,j_to_result_minus)
 end
 
-# Skeleton + Complex
-function _skeleton_autodiff_array_complex_work(f, a, i_to_x, j_to_i::SkeletonPair, tag)
-  s = lazy_map(Broadcasting(imag),i_to_x)
-  r = lazy_map(Broadcasting(real),i_to_x)
-  i_to_cfg   = lazy_map(ConfigMap(f,tag),r)
-  i_to_rdual = lazy_map(DualizeMap(),i_to_cfg,r)
-  j_to_ycdual_plus, j_to_ycdual_minus = a(lazy_map((r,s) -> r + im*s, i_to_rdual, s))
-  j_to_cfg_plus  = Arrays.autodiff_array_reindex(i_to_cfg,j_to_i.plus)
-  j_to_cfg_minus = Arrays.autodiff_array_reindex(i_to_cfg,j_to_i.minus)
-  j_to_result_plus  = lazy_map((u,v) -> u + im*v,
-    lazy_map(AutoDiffMap(),j_to_cfg_plus,  lazy_map(Broadcasting(real),j_to_ycdual_plus)),
-    lazy_map(AutoDiffMap(),j_to_cfg_plus,  lazy_map(Broadcasting(imag),j_to_ycdual_plus)))
-  j_to_result_minus = lazy_map((u,v) -> u + im*v,
-    lazy_map(AutoDiffMap(),j_to_cfg_minus, lazy_map(Broadcasting(real),j_to_ycdual_minus)),
-    lazy_map(AutoDiffMap(),j_to_cfg_minus, lazy_map(Broadcasting(imag),j_to_ycdual_minus)))
-
-  return j_to_result_plus,j_to_result_minus
-end
-
+# Skeleton + Complex (gradient)
+# Split a into real and imaginary components and take gradients sperately.
 function Arrays.autodiff_array_gradient(::Type{<:Complex},a,i_to_x,j_to_i::SkeletonPair;tag=default_tag(ForwardDiff.gradient,a))
-  Arrays.autodiff_array_gradient_WIP(Complex,a,i_to_x,j_to_i;tag)
-end
-
-function Arrays.autodiff_array_gradient_WIP(::Type{<:Complex},a,i_to_x,j_to_i::SkeletonPair;tag=default_tag(ForwardDiff.gradient,a))
   s = lazy_map(Broadcasting(imag),i_to_x)
   r = lazy_map(Broadcasting(real),i_to_x)
   i_to_cfg_r = lazy_map(ConfigMap(ForwardDiff.gradient,tag),r)
@@ -257,19 +241,6 @@ function Arrays.autodiff_array_gradient_WIP(::Type{<:Complex},a,i_to_x,j_to_i::S
   j_to_result_minus = lazy_map((r,s) -> r + im*s,
     lazy_map(AutoDiffMap(),j_to_cfg_r_minus,lazy_map(Broadcasting(real),j_to_yrdual_minus)),
     lazy_map(AutoDiffMap(),j_to_cfg_s_minus,lazy_map(Broadcasting(real),j_to_ysdual_minus)))
-  is_single_field = eltype(eltype(j_to_result_plus)) <: Number
-  k = is_single_field ? BlockMap(2,[1,2]) : Arrays.BlockBroadcasting(BlockMap(2,[1,2]))
-  lazy_map(k,j_to_result_plus,j_to_result_minus)
-end
-
-function Arrays.autodiff_array_jacobian(::Type{<:Complex},a,i_to_x,j_to_i::SkeletonPair;tag=default_tag(ForwardDiff.jacobian,a))
-  j_to_result_plus,j_to_result_minus = _skeleton_autodiff_array_complex_work(ForwardDiff.jacobian,a,i_to_x,j_to_i,tag)
-  # Merge contributions
-  I = [
-    [(CartesianIndex(1,), CartesianIndex(1, 1)), (CartesianIndex(2,), CartesianIndex(2, 1))], # Plus  -> First column
-    [(CartesianIndex(1,), CartesianIndex(1, 2)), (CartesianIndex(2,), CartesianIndex(2, 2))]  # Minus -> Second column
-  ]
-  is_single_field = eltype(eltype(j_to_result_plus)) <: AbstractArray
-  k = is_single_field ? Arrays.MergeBlockMap((2,2),I) : Arrays.BlockBroadcasting(Arrays.MergeBlockMap((2,2),I))
-  lazy_map(k,j_to_result_plus,j_to_result_minus)
+    
+  return _skeleton_autodiff_merge_gradient(j_to_result_plus,j_to_result_minus)
 end
