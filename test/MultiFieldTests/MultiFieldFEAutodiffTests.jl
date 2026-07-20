@@ -388,6 +388,15 @@ function complex_valued_ad_tests()
   Λ = SkeletonTriangulation(model)
   dΛ = Measure(Λ,2order)
 
+  V1 = FESpace(model,ReferenceFE(lagrangian,Float64,order);
+    vector_type=Vector{ComplexF64})
+  V2 = FESpace(model,ReferenceFE(lagrangian,Float64,order);
+    conformity=:L2,vector_type=Vector{ComplexF64})
+
+  _h = 1.0e-6
+  fd_gradient(f,u,du) = real((f(u + _h*du) - f(u - _h*du))/(2*_h))
+  functional_value(f,V,u) = sum(f(FEFunction(V,u)))
+
   for style in (ConsecutiveMultiFieldStyle(),BlockMultiFieldStyle())
     V = MultiFieldFESpace([V1,V2];style)
     uh = interpolate((x -> x[1] + im*x[2],x -> x[1] - im*x[2]),V)
