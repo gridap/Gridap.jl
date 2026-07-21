@@ -37,7 +37,7 @@ function GenericCellConformity(
   cell_lface_own_ldofs :: AbstractVector{<:AbstractVector{<:AbstractVector{<:Integer}}},
   cell_d_num_dfaces :: AbstractVector{<:AbstractVector{<:Integer}},
 )
-  cell_lface_pindex_pdofs = lazy_map(ReferenceFEs._trivial_face_own_dofs_permutations, cell_lface_own_ldofs)
+  cell_lface_pindex_pdofs = lazy_map(ReferenceFEs.l2_face_own_dofs_permutations, cell_lface_own_ldofs)
   cell_num_dofs = lazy_map(x -> sum(length, x), cell_lface_own_ldofs)
   cell_ldof_comp = lazy_map(n -> fill(0,n), cell_num_dofs)
   GenericCellConformity(
@@ -210,10 +210,10 @@ CellConformity(cell_fe::CellFE) = cell_fe.cell_conformity
 Geometry.num_cells(cell_fe::CellFE) = num_cells(CellConformity(cell_fe))
 Geometry.get_cell_type(cell_fe::CellFE) = get_cell_type(CellConformity(cell_fe))
 
-# This constructor allows for provided shapefuns and dofs, which 
+# This constructor allows for provided shapefuns and dofs, which
 # is necessary for GridapDistributed
 function CellFE(
-  model::DiscreteModel, cell_reffe::AbstractArray{<:ReferenceFE}, 
+  model::DiscreteModel, cell_reffe::AbstractArray{<:ReferenceFE},
   cell_shapefuns::AbstractArray, cell_dof_basis::AbstractArray,
   conformity::Conformity
 )

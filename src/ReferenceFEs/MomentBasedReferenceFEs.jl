@@ -1,4 +1,130 @@
 
+"""
+    abstract type MomentBasedRefFEName <: ReferenceFEName end
+
+Supertype for all reference FE names whose DoF basis is a [`MomentBasedDofBasis`](@ref).
+"""
+abstract type MomentBasedRefFEName <: ReferenceFEName end
+
+# get_basis_permutations
+
+"""
+    get_basis_permutations(poly::Polytope, basis) -> Vector{Vector{Int}}
+
+For each admissible vertex permutation `σ` of `poly` — in the same order as
+`get_vertex_permutations(poly)` — return the induced permutation of basis
+function indices, so that `basis[π[i]] ∘ Mσ = basis[i]` where `Mσ` is the
+affine self-map defined by `σ`.
+"""
+function get_basis_permutations(poly::Polytope, basis)
+  # TODO: This is wrong but will not throw an error, which is bad.
+  # We should decide what to do with these.
+  _trivial_basis_permutation(poly, basis)
+end
+
+function _trivial_basis_permutation(poly::Polytope, basis)
+  nfpids = length(get_vertex_permutations(poly))
+  ndofs  = length(basis)
+  [collect(1:ndofs) for _ in 1:nfpids]
+end
+
+function get_basis_permutations(
+  poly::Polytope{D}, b::BernsteinBasisOnSimplex{D}
+) where D
+  @assert is_simplex(poly) && num_dims(poly) == D
+  K     = get_order(b)
+  verts = get_vertex_coordinates(poly)
+  nodes = map(bernstein_terms(K, D)) do α
+    sum(α[i]/K * verts[i] for i in eachindex(α))
+  end
+  compute_own_nodes_permutations(poly, nodes)
+end
+
+function get_basis_permutations(
+  poly::Polytope{D}, b::CartProdPolyBasis{D,V,Bernstein}
+) where {D,V}
+  @assert is_n_cube(poly) && num_dims(poly) == D
+  K     = get_order(b)
+  ncomp = num_indep_components(V)
+  nodes = map(ci -> Point(ntuple(d -> (ci[d]-1)/K, D)), b.terms)
+  scalar_perms = compute_own_nodes_permutations(poly, nodes)
+  isone(ncomp) && return scalar_perms
+  n_terms = length(b.terms)
+  map(scalar_perms) do term_perm
+    dof_perm = Vector{Int}(undef, n_terms * ncomp)
+    for (i, j) in enumerate(term_perm)
+      for c in 1:ncomp
+        dof_perm[(i-1)*ncomp + c] = (j-1)*ncomp + c
+      end
+    end
+    dof_perm
+  end
+end
+
+function get_basis_permutations(
+  poly::Polytope{D}, b::BarycentricPΛBasis{D}
+) where D
+  @assert is_simplex(poly) && num_dims(poly) == D
+  b.k == 0 || return _trivial_basis_permutation(poly, b)
+  K     = get_order(b)
+  verts = get_vertex_coordinates(poly)
+  nodes = Vector{eltype(verts)}(undef, length(b))
+  for (_, funs) in get_bubbles(b)
+    for (w, α, rest...) in funs
+      nodes[w] = sum(α[i]/K * verts[i] for i in eachindex(α))
+    end
+  end
+  compute_own_nodes_permutations(poly, nodes)
+end
+
+# Compute get_face_own_dofs_permutations data for a moment-based element.
+# result[f][fpid] is the permutation of face-local DOF indices for face f
+# under face-permutation id fpid. Face-local DOFs are ordered by moment index.
+function moment_face_own_dofs_permutations(
+  face_to_nfpids,
+  face_to_moments,
+  moment_to_fpid_to_perm
+)
+  map(1:length(face_to_nfpids)) do f
+    nfpids     = face_to_nfpids[f]
+    moments_on = face_to_moments[f]
+    isempty(moments_on) && return [Int[] for _ in 1:nfpids]
+    block_sizes = [length(first(moment_to_fpid_to_perm[m])) for m in moments_on]
+    n_own_dofs  = sum(block_sizes)
+    map(1:nfpids) do fpid
+      perm   = Vector{Int}(undef, n_own_dofs)
+      offset = 0
+      for (k, m) in enumerate(moments_on)
+        bs    = block_sizes[k]
+        lperm = moment_to_fpid_to_perm[m][fpid]
+        for j in 1:bs
+          perm[offset + j] = offset + lperm[j]
+        end
+        offset += bs
+      end
+      perm
+    end
+  end
+end
+
+# Build face_own_dofs_permutations from the raw moments triplets and the
+# precomputed reffaces/face_types tables (already available in the constructor).
+function moment_face_own_dofs_permutations(p::Polytope, moments, reffaces, face_types)
+  nfaces    = num_faces(p)
+  n_moments = length(moments)
+  face_to_nfpids         = map(length, get_face_vertex_permutations(p))
+  face_to_moments        = [Int[] for _ in 1:nfaces]
+  moment_to_fpid_to_perm = Vector{Vector{Vector{Int}}}(undef, n_moments)
+  for (m, (faces, σ, μ)) in enumerate(moments)
+    for f in faces
+      push!(face_to_moments[f], m)
+    end
+    fp = reffaces[face_types[first(faces)]]
+    moment_to_fpid_to_perm[m] = get_basis_permutations(fp, μ)
+  end
+  moment_face_own_dofs_permutations(face_to_nfpids, face_to_moments, moment_to_fpid_to_perm)
+end
+
 # MomentBasedDofBasis
 
 struct Moment <: Dof end
@@ -17,14 +143,17 @@ struct MomentBasedDofBasis{P,V,O,N} <: AbstractVector{Moment}
   face_moments::Vector{Array{V,N}}
   face_nodes::Vector{UnitRange{Int}}
   face_own_moms::Vector{Vector{Int}}
+  face_own_moms_permutations::Vector{Vector{Vector{Int}}}
   operator::O
 
-  function MomentBasedDofBasis(nodes,f_moments,f_nodes,f_own_moms,operator=nothing)
+  function MomentBasedDofBasis(
+    nodes, f_moments, f_nodes, f_own_moms, f_own_dofs_permutations, operator = nothing
+  )
     P = eltype(nodes)
     V = eltype(eltype(f_moments))
     N = ndims(first(f_moments))
     O = typeof(operator)
-    new{P,V,O,N}(nodes,f_moments,f_nodes,f_own_moms,operator)
+    new{P,V,O,N}(nodes, f_moments, f_nodes, f_own_moms, f_own_dofs_permutations, operator)
   end
 
   # Unused and untested
@@ -75,6 +204,8 @@ The ownership of `b`'s dofs to faces of the underlying polytope is defined as
 the face the moment was defined on.
 """
 get_face_own_moments(b::MomentBasedDofBasis) = b.face_own_moms
+
+get_face_own_moments_permutations(b::MomentBasedDofBasis) = b.face_own_moms_permutations
 
 """
     get_face_nodes_dofs(b::MomentBasedDofBasis)
@@ -178,42 +309,44 @@ function evaluate!(cache, b::MomentBasedDofBasis, field::AbstractVector{<:Field}
   return dofs
 end
 
-"""
-    MomentBasedDofBasis( p::Polytope, prebasis::AbstractVector{<:Field}, moments,
-        [, face_own_dofs], operator=nothing
-    )
-
-Creates a basis of DoFs defined by moments on faces of `p`.
-
-`moments` is a vector of moment descriptors, each one is given by a triplet
-(f,σ,μ) where
-  - f is collection of ids of faces Fₖ of `p`, that index `get_faces(p)`,
-  - σ is a function σ(φ,μ,ds) **linear** in φ and μ that takes two Field-vectors φ and μ and a `FaceMeasure` ds and returns a Field-like object to be integrated over each face Fₖ,
-  - μ is a polynomials basis on Fₖ.
-
-The moment DoFs are thus defined by φ -> ∫_Fₖ σ(φ,μᵢ,ds)dFₖ,  ∀ σ,k,i.
-In the final basis, DoFs are ordered by moment, then by face, then by "test" polynomial.
-
-All the faces in a moment must be of the same type (have same reference face).
-
-If an `operator` function -- e.g. `∇` -- is given, it is applied to `φ` (with
-respect to `p`'s coordinates) before being passed to `σ`. The moment becomes
-`φ -> σ(∇φ,μ,ds)`.
-
-If `face_own_dofs` is given, it defines the moment ownership to faces.
-"""
-function MomentBasedDofBasis(
-    p::Polytope{D},
-    prebasis::AbstractVector{<:Field},
-    moments::AbstractVector{<:Tuple},
-    face_own_dofs::AbstractVector,
-    operator=nothing,
-  ) where D
-
-  dofs = MomentBasedDofBasis(p, prebasis, moments, operator)
-  # replace moment ownership
-  MomentBasedDofBasis(dofs.nodes, dofs.face_moments, dofs.face_nodes, face_own_dofs, operator)
-end
+# TODO: Is this ever used or needed?
+# """
+#     MomentBasedDofBasis( p::Polytope, prebasis::AbstractVector{<:Field}, moments,
+#         [, face_own_dofs], operator=nothing
+#     )
+#
+# Creates a basis of DoFs defined by moments on faces of `p`.
+#
+# `moments` is a vector of moment descriptors, each one is given by a triplet
+# (f,σ,μ) where
+#   - f is collection of ids of faces Fₖ of `p`, that index `get_faces(p)`,
+#   - σ is a function σ(φ,μ,ds) **linear** in φ and μ that takes two Field-vectors φ and μ and a `FaceMeasure` ds and returns a Field-like object to be integrated over each face Fₖ,
+#   - μ is a polynomials basis on Fₖ.
+#
+# The moment DoFs are thus defined by φ -> ∫_Fₖ σ(φ,μᵢ,ds)dFₖ,  ∀ σ,k,i.
+# In the final basis, DoFs are ordered by moment, then by face, then by "test" polynomial.
+#
+# All the faces in a moment must be of the same type (have same reference face).
+#
+# If an `operator` function -- e.g. `∇` -- is given, it is applied to `φ` (with
+# respect to `p`'s coordinates) before being passed to `σ`. The moment becomes
+# `φ -> σ(∇φ,μ,ds)`.
+#
+# If `face_own_dofs` is given, it defines the moment ownership to faces.
+# """
+# function MomentBasedDofBasis(
+#     p::Polytope{D},
+#     prebasis::AbstractVector{<:Field},
+#     moments::AbstractVector{<:Tuple},
+#     face_own_dofs::AbstractVector,
+#     operator=nothing,
+#   ) where D
+#   dofs = MomentBasedDofBasis(p, prebasis, moments, operator)
+#   MomentBasedDofBasis(
+#     dofs.nodes, dofs.face_moments, dofs.face_nodes, face_own_dofs,
+#     dofs.face_own_dofs_permutations, operator
+#   )
+# end
 
 function MomentBasedDofBasis(
     p::Polytope{D},
@@ -298,7 +431,11 @@ function MomentBasedDofBasis(
     end
   end
 
-  MomentBasedDofBasis(nodes, face_moments, face_nodes, face_own_moms, operator)
+  face_own_moms_permutations = moment_face_own_dofs_permutations(
+    p, moments, reffaces, face_types
+  )
+
+  MomentBasedDofBasis(nodes, face_moments, face_nodes, face_own_moms, face_own_moms_permutations, operator)
 end
 
 # Unused and untested
@@ -512,24 +649,25 @@ function MomentBasedReferenceFE(
     shapefuns = apply_face_signflip(shapefuns, p, conformity)
     dofs = compute_dofs(predofs, shapefuns)
     face_own_dofs = get_face_own_funs(prebasis, p, conformity)
+    face_own_dofs_permutations = get_face_own_funs_permutations(prebasis, p, conformity)
 
     return GenericRefFE{typeof(name)}(
-      n_dofs, p, predofs, conformity, metadata, face_own_dofs, shapefuns, dofs
+      n_dofs, p, predofs, conformity, metadata, face_own_dofs, shapefuns, dofs, face_own_dofs_permutations
     )
   end # else, standard prebasis inversion
 
-  if isnothing(face_own_dofs)
-    face_own_dofs = get_face_own_moments(dof_basis)
-  end
+  @check isnothing(face_own_dofs) # TODO document this is forbiden for change_dof=false
+  face_own_dofs = get_face_own_moments(dof_basis)
+  face_own_dofs_permutations = get_face_own_moments_permutations(dof_basis)
   GenericRefFE{typeof(name)}(
-    n_dofs, p, prebasis, dof_basis, conformity, metadata, face_own_dofs
+    n_dofs, p, prebasis, dof_basis, conformity, metadata, face_own_dofs, face_own_dofs_permutations
   )
 end
 
 # Default polynomial type for moment based reference FEs
 function _mom_reffe_default_PT(p)
   is_simplex(p) && return Bernstein
-  is_n_cube(p) && return Polynomials.ModalC0
+  is_n_cube(p) && return Bernstein
   Monomial
 end
 

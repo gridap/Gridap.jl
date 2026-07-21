@@ -1,7 +1,7 @@
 """
     struct BDM <: ReferenceFEName
 """
-struct BDM <: ReferenceFEName end
+struct BDM <: MomentBasedRefFEName end
 
 """
     const bdm = BDM()
