@@ -1,4 +1,4 @@
-module LoopSurfaceTests
+module TorusLoopSurfaceTests
 
 using Test
 using Gridap

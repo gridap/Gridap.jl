@@ -12,44 +12,54 @@ and return a model approximating S using a Loop surface such that:
 - the control mesh topology and labels matches that of `chart_model`,
 - the control vertices coordinates are found using a L2 projection of `geo_map` onto the Loop spline space.
 """
-function loop_surface_model(chart_model::DiscreteModel{2}, geo_map::Union{Function, Field})
+function loop_surface_model(chart_model::DiscreteModel{2}, geo_map, chart_trian=Triangulation(chart_model))
+  chart_topo = get_grid_topology(chart_model)
   @check all(==(TRI), get_polytopes(chart_model)) "Loop surface require surface mesh of triangles."
-  @check all(get_faces(get_grid_topology(chart_model),0,1) .|> length .|> ==(6) ) """
+  @check all(get_faces(chart_topo,0,1) .|> length .|> ==(6) ) """
     Loop surface is only implemented on boundary-less meshes with regular vertices (valence 6).
   """
-  @check isa(get_grid_topology(chart_model), UnstructuredGridTopology)
+  @check isa(chart_topo, UnstructuredGridTopology)
+
+  # Convert geo_map to CellField
+  if geo_map isa CellField
+    geomap_cf = geo_map
+  else
+    if !(geo_map isa Field)
+      geo_map = GenericField(geo_map)
+    end
+    n_cells = num_cells(chart_topo)
+    cell_funcs = Fill(geo_map, n_cells)
+    geomap_cf = GenericCellField(cell_funcs, chart_trian, PhysicalDomain())
+  end
 
   # get (loosely) approximate control vertex coordinates by interpolating the geo_map
-  geo_map_field = GenericField(geo_map)
-  chart_vertex_coordinates = get_vertex_coordinates(get_grid_topology(chart_model))
-  geo_map_cache = return_cache(geo_map_field, chart_vertex_coordinates)
-  vertex_coordinates = evaluate!(geo_map_cache, geo_map_field, chart_vertex_coordinates)
+  chart_vertex_coordinates = get_vertex_coordinates(chart_topo)
+  p_chart = testitem(chart_vertex_coordinates)
+  P = return_type(testitem(get_data(geomap_cf)), p_chart)
 
   # Definition of a Loop FE space
-  P = eltype(vertex_coordinates)
   loop_reffe = LoopRefFE(P,TRI)
-  Ω_chart = Triangulation(chart_model)
-  dΩ = Measure(Ω_chart, 8)
+  dΩ = Measure(chart_trian, 8)
   # this dispatches to hacky subdivision_surfaces/src/FESpaces/LoopFESpaces.jl
-  U = FESpace(Ω_chart, loop_reffe)
+  U = FESpace(chart_trian, loop_reffe)
 
   # L2 projection
   a(Φ, Ψ) = ∫(Ψ ⋅ Φ)dΩ
-  l(   Ψ) = ∫(Ψ ⋅ geo_map)dΩ
+  l(   Ψ) = ∫(Ψ ⋅ geomap_cf)dΩ
   op = AffineFEOperator(a, l, U, U)
   Φh = solve(op)
-  e = Φh-geo_map
+  e = Φh-geomap_cf
   errl2 = sqrt(sum(a(e,e)))
 
   @info "Loop surface L²-projection L²-error: $errl2"
 
   # Retrieving the control vertices coordinates from the DoF vector
   D = length(P)
-  n_vertices = length(vertex_coordinates)
+  n_vertices = num_vertices(chart_topo)
   M = reshape(Φh.free_values, (D, n_vertices));
   fitted_control_vertices = collect( P(r...) for r in eachcol(M));
 
-  loop_surface_model(get_grid_topology(chart_model), fitted_control_vertices)
+  loop_surface_model(chart_topo, fitted_control_vertices)
 end
 
 """

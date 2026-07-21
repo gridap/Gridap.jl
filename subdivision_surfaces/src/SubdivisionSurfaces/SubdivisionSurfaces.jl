@@ -3,13 +3,13 @@ module SubdivisionSurfaces
 using FillArrays: Fill
 using Gridap
 using Gridap.Helpers: findfirstvalue, @check
-using Gridap.Arrays: evaluate!, return_cache, Table
+using Gridap.Arrays: evaluate!, return_cache, return_type, Table
 using Gridap.Fields: Field, GenericField, linear_combination
 using Gridap.ReferenceFEs: TRI, LagrangianRefFE
-using Gridap.CellData: Measure
+using Gridap.CellData: Measure, PhysicalDomain, GenericCellField, get_data, testitem
 using Gridap.Geometry: UnstructuredDiscreteModel, DiscreteModel, GridTopology,
   get_polytopes, get_faces, get_vertex_coordinates, get_grid_topology,
-  UnstructuredGridTopology, FaceLabeling, OrientationStyle, UnstructuredGrid
+  UnstructuredGridTopology, FaceLabeling, OrientationStyle, UnstructuredGrid, Triangulation
 using Gridap.FESpaces: FESpace
 
 using GridapSubdivisionSurfaces.ReferenceFEs
