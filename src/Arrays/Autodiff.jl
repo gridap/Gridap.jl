@@ -17,7 +17,7 @@ end
 
 """
 """
-function autodiff_array_gradient(a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
+function autodiff_array_gradient(V,a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
@@ -27,7 +27,7 @@ end
 
 """
 """
-function autodiff_array_jacobian(a,i_to_x;tag=default_tag(ForwardDiff.jacobian,a))
+function autodiff_array_jacobian(V,a,i_to_x;tag=default_tag(ForwardDiff.jacobian,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
@@ -37,13 +37,13 @@ end
 
 """
 """
-function autodiff_array_hessian(a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
-  agrad = i_to_y -> autodiff_array_gradient(a,i_to_y;tag)
+function autodiff_array_hessian(V,a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
+  agrad = i_to_y -> autodiff_array_gradient(V,a,i_to_y;tag)
   agrad_tag = isa(tag,GridapADTag) ? (tag + 1) : default_tag(ForwardDiff.jacobian,agrad)
-  autodiff_array_jacobian(agrad,i_to_x;tag=agrad_tag)
+  autodiff_array_jacobian(V,agrad,i_to_x;tag=agrad_tag)
 end
 
-function autodiff_array_gradient(a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
+function autodiff_array_gradient(V,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
@@ -52,7 +52,7 @@ function autodiff_array_gradient(a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gra
   return j_to_result
 end
 
-function autodiff_array_jacobian(a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.jacobian,a))
+function autodiff_array_jacobian(V,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.jacobian,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
@@ -61,11 +61,45 @@ function autodiff_array_jacobian(a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.jac
   return j_to_result
 end
 
-function autodiff_array_hessian(a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
-  agrad = i_to_y -> autodiff_array_gradient(a,i_to_y,j_to_i;tag)
+function autodiff_array_hessian(V,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
+  agrad = i_to_y -> autodiff_array_gradient(V,a,i_to_y,j_to_i;tag)
   agrad_tag = isa(tag,GridapADTag) ? (tag + 1) : default_tag(ForwardDiff.jacobian,agrad)
-  autodiff_array_jacobian(agrad,i_to_x,j_to_i;tag=agrad_tag)
+  autodiff_array_jacobian(V,agrad,i_to_x,j_to_i;tag=agrad_tag)
 end
+
+# Gradient AD for computing complex-valued functionals
+# This is slightly more intricate than what we usually deal with
+# for real-valued functionals. There are three cases:
+# 1. Holomorphic maps from ℂ → ℂ: As standard in AD systems, we compute 
+#    the conjugate gradient f'(z)ᴴ = ∂ᵣu + i ∂ₛu so that dF(z)(v) = <f'(z)ᴴ, v> = f'(z)v.
+# 2. Non-holomorphic maps from ℂ → ℝ: We use CR-Calculus, i.e., it can be shown
+#    that the gradient is given by ∇z(f) = 2∂f/∂z* =  ∂ᵣu + i ∂ₛu and the directional derivative
+#    is given by dF(z)(v)=Re{∇z(f),v}.
+# 3. (NOT IMPLEMENTED) General non-holomorphic maps from ℂ → ℂ: requires splitting into
+#    derivative in z and derivative in z*. This is not implemented yet.
+# Because (1) and (2) are in the same form, we reuse the code below for both cases.
+function autodiff_array_gradient_complex(a,i_to_x,j_to_i...;tag)
+  s = lazy_map(Broadcasting(imag),i_to_x)
+  r = lazy_map(Broadcasting(real),i_to_x)
+  u_r(r) = lazy_map(Broadcasting(real),a(lazy_map((r,s) -> r + im*s,r,s)))
+  u_s(s) = lazy_map(Broadcasting(real),a(lazy_map((r,s) -> r + im*s,r,s)))
+  ∂ᵣu = autodiff_array_gradient(Real,u_r,r,j_to_i...;tag)
+  ∂ₛu = autodiff_array_gradient(Real,u_s,s,j_to_i...;tag)
+  return lazy_map((r,s) -> r + im*s,∂ᵣu,∂ₛu)
+end
+
+"""
+"""
+function autodiff_array_gradient(::Type{<:Complex},a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
+  return autodiff_array_gradient_complex(a,i_to_x;tag)
+end
+
+"""
+"""
+function autodiff_array_gradient(::Type{<:Complex},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
+  return autodiff_array_gradient_complex(a,i_to_x,j_to_i;tag)
+end
+
 
 function autodiff_array_reindex(i_to_val, j_to_i)
   if isempty(j_to_i)

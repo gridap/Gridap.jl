@@ -310,4 +310,44 @@ J_analytic = jacobian(op,uh)
 
 @test J ≈ J_analytic
 
+# Complex-valued AD
+model = CartesianDiscreteModel((0,1,0,1),(8,8))
+order = 1
+Ω = Triangulation(model)
+dΩ = Measure(Ω,2order)
+Γ = Boundary(model)
+dΓ = Measure(Γ,2order)
+Λ = SkeletonTriangulation(model)
+dΛ = Measure(Λ,2order)
+
+V1 = FESpace(model,ReferenceFE(lagrangian,Float64,order);
+  vector_type=Vector{ComplexF64})
+V2 = FESpace(model,ReferenceFE(lagrangian,Float64,order);
+  conformity=:L2,vector_type=Vector{ComplexF64})
+_h = 1.0e-6
+
+fd_gradient(f,u,du) = real((f(u + _h*du) - f(u - _h*du))/(2*_h))
+functional_value(f,V,u) = sum(f(FEFunction(V,u)))
+
+F_holo(u) = ∫(u*u)dΩ + ∫(u*u)dΓ + ∫(mean(u)*mean(u))dΛ
+dreal_F_holo(q,u) = ∫(2*q*conj(u))dΩ + ∫(2*q*conj(u))dΓ + ∫(2*mean(q)*conj(mean(u)))dΛ
+J_nonholo(u) = ∫(conj(u)*u)dΩ + ∫(conj(u)*u)dΓ + ∫(mean(conj(u))*mean(u))dΛ
+dJ_nonholo(q,u) = ∫(2*q'*u)dΩ + ∫(2*q'*u)dΓ + ∫(2*mean(q)'*mean(u))dΛ
+
+for (index,V) in enumerate((V1,V2))
+  uh = interpolate(x -> x[1] + im*x[2],V)
+  u = get_free_dof_values(uh)
+  du = randn(ComplexF64,length(u))
+
+  ad_holo = assemble_vector(gradient(F_holo,uh),V)
+  analytic_holo = assemble_vector(q -> dreal_F_holo(q,uh),V)
+  @test ad_holo ≈ analytic_holo
+  @test real(dot(ad_holo,du)) ≈ fd_gradient(u -> real(functional_value(F_holo,V,u)),u,du) rtol=1.0e-6
+
+  ad_nonholo = assemble_vector(gradient(J_nonholo,uh),V)
+  analytic_nonholo = assemble_vector(q -> dJ_nonholo(q,uh),V)
+  @test ad_nonholo ≈ analytic_nonholo
+  @test real(dot(ad_nonholo,du)) ≈ fd_gradient(u -> real(functional_value(J_nonholo,V,u)),u,du) rtol=1.0e-6
+end
+
 end # module
