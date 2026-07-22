@@ -54,25 +54,12 @@ end
 """
     LoopPatchVerticesMap(topo::GridTopology)
 
-`topo` is the topology of the control grid. It must only have isolated irregular
-vertices, that is, if a vertex has valence ≠6, all it's neighboors at topological
-distance up to 2 are of valence 6.
+`topo` is the topology of the control grid. It must only have isolated extraordinary
+vertices (EVs), that is, if a vertex has valence ≠6, all it's neighboors at
+topological distance up to 2 are of valence 6.
 
-The map is evaluated at the vertex vector of a triangle, and return the vertices
-of it's Loop patch in the following expected order:
-
-```plain
-       (1)-------(2)
-      /   \\     /  \\
-     /     \\   /    \\
-    (3)-----(4)------(5)
-   /   \\   /   \\   /   \\
-  /     \\ /     \\ /     \\
-(6)-----(7)-----(8)-----(9)
-  \\    /  \\    /  \\    /
-   \\  /    \\  /    \\  /
-   (10)----(11)----(12)
-```
+The map is evaluated at the vertex vector of a triangle, and returns the
+vertices of it's Loop patch. See [`compute_loop_patch_vertices!`](@ref) for the orderings.
 """
 struct LoopPatchVerticesMap <: Map
   vertex_to_adj_vertices::Table{Int32,Vector{Int32},Vector{Int32}}
@@ -94,35 +81,59 @@ function return_cache(k::LoopPatchVerticesMap, element_vertices)
 end
 
 function evaluate!(cache, k::LoopPatchVerticesMap, element_vertices)
-  loop_vertices, v_to_av_caches = cache
+  loop_vertices, (v_to_av_cache1, v_to_av_cache2) = cache
 
-  setsize!(loop_vertices, (12,))
+  Base.@propagate_inbounds adjascent_vertices(vi) = getindex!(v_to_av_cache2, k.vertex_to_adj_vertices, vi)
+  # Finds a vertex adjacent to v1 and to v2, other than v3, and, if given,
+  # not adjacent to v4 either.
+  Base.@propagate_inbounds function find_adjto_adjto_butnot(v1, v2, v3, v4=nothing)
+    v1_adj = getindex!(v_to_av_cache1, k.vertex_to_adj_vertices, v1)
+    findfirstvalue(v1_adj) do vi
+      vi ≠ v3  &&
+      vi ∈ adjascent_vertices(v2) &&
+      (isnothing(v4) || vi ∉ adjascent_vertices(v4))
+    end
+  end
+
+  # local id (1, 2 or 3) of the extraordinary vertex (EV) within
+  # element_vertices, if any; defaulted to 1 (unused) for a regular triangle
+  l_EV_id = findfirst(v -> length(adjascent_vertices(v)) ≠ 6, element_vertices)
+  N = isnothing(l_EV_id) ? 6 : length(adjascent_vertices(element_vertices[l_EV_id]))
+
+  setsize!(loop_vertices, (N+6,))
   compute_loop_patch_vertices!(
-    loop_vertices,  element_vertices, k.vertex_to_adj_vertices, v_to_av_caches
+    loop_vertices, element_vertices, something(l_EV_id, 1), Val(N),
+    adjascent_vertices, find_adjto_adjto_butnot
   )
 
   loop_vertices
 end
 
+"""
+    compute_loop_patch_vertices!(patch_vertices, q_vertices, l_EV_id, ::Val{6}, ...)
+
+Fills `patch_vertices` (length 12) with the global vertices corresponding to the
+following regular Loop patch local vertex ids. 4-7-8 correspond to the vertices
+`q_vertices` (`l_EV_id` unused)
+
+```plain
+       (1)-------(2)
+      /   \\     /  \\
+     /     \\   /    \\
+    (3)-----(4)------(5)
+   /   \\   /   \\   /   \\
+  /     \\ /     \\ /     \\
+(6)-----(7)-----(8)-----(9)
+  \\    /  \\    /  \\    /
+   \\  /    \\  /    \\  /
+   (10)----(11)----(12)
+```
+"""
 function compute_loop_patch_vertices!(
-  patch_vertices, q_vertices, vertex_to_vertices, v_to_av_caches
+  patch_vertices, q_vertices, l_EV_id, ::Val{6},
+  adjascent_vertices, find_adjto_adjto_butnot
 )
 
-  v_to_av_cache1, v_to_av_cache2 = v_to_av_caches
-  Base.@propagate_inbounds adjascent_vertices(vi) = getindex!(v_to_av_cache2, vertex_to_vertices, vi)
-  Base.@propagate_inbounds function find_adjto_adjto_butnot(v1, v2, v3)
-    v1_adj = getindex!(v_to_av_cache1, vertex_to_vertices, v1)
-    findfirstvalue(v1_adj) do vi
-      vi ≠ v3  &&
-      vi ∈ adjascent_vertices(v2)
-    end
-  end
-
-  # element vertices
-  #v4, v4iq = findmin(q_vertices)
-  #v8, v8iq = findmax(q_vertices)
-  #v7iq = findfirst(!in((v4iq,v8iq)), 1:3)
-  #v7 = q_vertices[v7iq]
   v4, v7, v8 = q_vertices
   msg =  "only regular patch are implemented (vertices have valence 6), no boundary"
   @check 6 == length(adjascent_vertices(v4)) msg
@@ -155,3 +166,84 @@ function compute_loop_patch_vertices!(
   patch_vertices
 end
 
+"""
+    compute_loop_patch_vertices!(patch_vertices, q_vertices, l_EV_id, ::Val{N}, ...) where N
+
+Fills `patch_vertices` (length `N+6`) with the vertices of the irregular Loop
+patch of triangle `q_vertices`, whose `l_EV_id`-th vertex is the extraordinary
+vertex (EV) of valence `N`, in the numbering of Stam (1998), Fig. 2:
+- `1` is the EV, `2` and `N+1` are the two other vertices of `q`
+- `2,…,N+1` are its `N` neighbors (`7,…,N-1` are elided since they depend on `N`)
+- `N+2,…,N+6` complete the 1-neighborhood patch.
+
+Example of patches:
+```plain
+N > 6:                           N = 3:
+
+5------6 ···· N------N+6                          N
+|\\     |     /|     /|                         / /|\\ \\
+| \\    |   /  |   /  |                      /    /|\\    \\
+|   \\  |  /   |  /   |                   /      / | \\      \\
+|     \\|/     |/     |                /        /  |  \\        \\
+4------1------N+1----N+5           N+4        /   1   \\          N+6
+|     /|     /|     /             /  \\        /  / \\  \\        /  \\
+|   /  |   /  |   /               /   \\      / /     \\ \\      /   \\
+|  /   |  /   |  /                /     \\   / /       \\ \\   /     \\
+|/     |/     |/                 /       \\  /           \\  /       \\
+3------2------N+2               /          2-------------N+1        \\
+|     /|     /                  /       /   \\           /   \\       \\
+|   /  |   /                    /     /       \\       /       \\     \\
+|  /   |  /                    /   /           \\     /           \\   \\
+|/     |/                     /  /               \\ /               \\  \\
+N+4----N+3                    N+3-----------------N+2-----------------N+5
+```
+"""
+function compute_loop_patch_vertices!(
+  patch_vertices, q_vertices, l_EV_id, ::Val{N},
+  adjascent_vertices, find_adjto_adjto_butnot
+) where N
+
+  @inbounds begin
+    ev = q_vertices[l_EV_id]
+    v2 = q_vertices[mod1(l_EV_id+1, 3)]
+    vN1 = q_vertices[mod1(l_EV_id+2, 3)]
+
+    patch_vertices[1]   = ev
+    patch_vertices[2]   = v2
+    patch_vertices[N+1] = vN1
+
+    msg = """
+      irregular Loop patch requires an isolated extraordinary vertex: the two
+      other triangle vertices, and the whole ring around the extraordinary one,
+      must be regular (v2lence 6), no boundary.
+    """
+    @check N == length(adjascent_vertices(ev)) msg
+    @check N ≠ 6 msg
+    @check 6 == length(adjascent_vertices(v2)) msg
+    @check 6 == length(adjascent_vertices(vN1)) msg
+
+    # walk the ring from 2 to N+1 to fill them
+    prev2, prev1 = vN1, v2
+    for i in 3:N
+      vi = find_adjto_adjto_butnot(ev, prev1, prev2)
+      patch_vertices[i] = vi
+      prev2, prev1 = prev1, vi
+    end
+
+    v3 = patch_vertices[3]
+    vN = patch_vertices[N]
+    vN2 = find_adjto_adjto_butnot(v2, vN1, ev, ev)
+
+    patch_vertices[N+2] = vN2
+    patch_vertices[N+3] = find_adjto_adjto_butnot(v2,  vN2, vN1, ev)
+    patch_vertices[N+4] = find_adjto_adjto_butnot(v3,  v2,  ev,  ev)
+    patch_vertices[N+5] = find_adjto_adjto_butnot(vN2, vN1, v2,  ev)
+    patch_vertices[N+6] = find_adjto_adjto_butnot(vN,  vN1, ev,  ev)
+
+    for i in 3:N+6
+      @check 6 == length(adjascent_vertices(patch_vertices[i])) msg
+    end
+  end
+
+  patch_vertices
+end

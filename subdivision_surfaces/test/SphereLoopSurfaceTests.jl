@@ -10,6 +10,10 @@ using Gridap.Geometry
 using Gridap.CellData
 using GridapGeosciences
 
+const tmp_dir = joinpath(@__DIR__, "..", "tmp")
+mkpath(tmp_dir)
+tmp_path(name) = joinpath(tmp_dir, name)
+
 function coarse_parametric_model(radius::Float64=1.0)
   sphere_mesh = CubedSphereMesh(radius)
   atlas_model = AtlasDiscreteModel(sphere_mesh, 0)
@@ -42,7 +46,7 @@ end
 
 sphere_chart_tri, cell_ambient_maps = loop_sphere_chart_and_map(1.0)
 
-writevtk(sphere_chart_tri, "sphere_chart_tri")
+writevtk(sphere_chart_tri, tmp_path("sphere_chart_tri"))
 
 @test isa(sphere_chart_tri, DiscreteModel)
 
@@ -59,7 +63,7 @@ try
   @test isa(loop_sphere_model, DiscreteModel)
 
   loop_sphere_trian = Triangulation(loop_sphere_model)
-  writevtk(loop_sphere_trian, "loop_sphere_fitted"; nsubcells=20)
+  writevtk(loop_sphere_trian, tmp_path("loop_sphere_fitted"); nsubcells=20)
 
 catch e
   @warn "Loop surface fitting failed: $e"

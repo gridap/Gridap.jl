@@ -17,6 +17,10 @@ using Gridap.Geometry: get_pface_to_patch
 using Gridap.Geometry: num_patches
 using Gridap.Geometry: extend_patches_by_single_layer
 
+const tmp_dir = joinpath(@__DIR__, "..", "tmp")
+mkpath(tmp_dir)
+tmp_path(name) = joinpath(tmp_dir, name)
+
 """
     loop_torus_chart_and_map(n1=5, n2=2*n1)
 
@@ -42,10 +46,10 @@ end
 torus_chart, torus_map = loop_torus_chart_and_map(5)
 loop_torus_model = loop_surface_model(torus_chart, torus_map)
 loop_torus_trian = Triangulation(loop_torus_model)
-writevtk(loop_torus_trian, "loop_torus"; nsubcells=20)
+writevtk(loop_torus_trian, tmp_path("loop_torus"); nsubcells=20)
 
 control_vertices = get_vertex_coordinates(get_grid_topology(loop_torus_model ));
-writevtk(control_vertices, "control_vertices")
+writevtk(control_vertices, tmp_path("control_vertices"))
 
 #T = Float64
 #chart_model = torus_chart
@@ -100,11 +104,11 @@ err = sqrt(sum(a(e,e)))
 
 M = reshape(Φh.free_values, (D, num_vertices(torus_chart)));
 fitted_control_vertices = collect( P(r...) for r in eachcol(M));
-writevtk(fitted_control_vertices, "fitted_control_vertices")
+writevtk(fitted_control_vertices, tmp_path("fitted_control_vertices"))
 
 topo = get_grid_topology(torus_chart)
 fitted_loop_torus_model = loop_surface_model(topo , fitted_control_vertices)
-writevtk(Triangulation(fitted_loop_torus_model), "fitted_loop_torus"; nsubcells=20)
+writevtk(Triangulation(fitted_loop_torus_model), tmp_path("fitted_loop_torus"); nsubcells=20)
 
 # H1 projection
 chart_model = torus_chart
