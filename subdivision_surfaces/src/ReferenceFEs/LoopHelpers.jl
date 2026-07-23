@@ -390,6 +390,26 @@ function Λ(N)
 end
 
 """
+    L(i, N)
+
+`L(i, V_inv(N))`.
+"""
+L(i, N::Integer) = L(i, V_inv(N))
+
+"""
+    L(i, V_inv)
+
+`Lᵢ = V_inv[ordᵢ, :]`, `ord = sortperm(eigenvalues, rev=true)`: `i=1` is the
+limit position mask, `i=2,3` are the tangent-plane masks.
+"""
+function L(i, Vi::AbstractMatrix)
+  N = size(Vi, 1) - 6
+  λ = vcat(Σ(N).diag, Δ().diag)
+  ord = sortperm(λ, rev=true)
+  Vi[ord[i], :]
+end
+
+"""
     Λn(N, n) --> Λ(N)^n
 """
 function Λn(N, n)
@@ -408,6 +428,6 @@ end
 
 
 export α, f, S, S_hat, Σ, U0, S11, S12, S21, S22, Δ, W1, U1, A, A_bar, P, V,
-       V_inv, Λ, Λn, A_tilde, Φ
+       V_inv, Λ, Λn, A_tilde, Φ, L
 
 end # module LoopHelpers
