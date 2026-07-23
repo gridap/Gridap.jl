@@ -17,6 +17,7 @@ export LoopRefFE
 export LoopConformity
 export loop
 
+include("LoopHelpers.jl")
 include("LoopRefFEs.jl")
 
 end
