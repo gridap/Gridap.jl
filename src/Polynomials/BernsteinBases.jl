@@ -253,6 +253,14 @@ struct BernsteinBasisOnSimplex{D,V,M,K} <: PolynomialBasis{D,V,Bernstein}
     K = order
     new{D,VV,M,K}(cart_to_bary_matrix)
   end
+
+  function BernsteinBasisOnSimplex{D,V,M,K}(new_cart_to_bary_matrix::M) where {D,V,M,K}
+
+    @check norm(SVector(1., 0., 0.) - sum.(eachcol(new_cart_to_bary_matrix))) < eps(eltype(new_cart_to_bary_matrix))*D^2 """
+      Invalid change of coordinate matrix, see [`_compute_cart_to_bary_matrix`](@ref).
+    """
+    new{D,V,M,K}(new_cart_to_bary_matrix)
+  end
 end
 
 function _simplex_vertices_checks(::Val{D}, vertices) where D
@@ -263,17 +271,31 @@ function _simplex_vertices_checks(::Val{D}, vertices) where D
 end
 
 """
-    BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int)
-    BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int,vertices)
+    BernsteinBasisOnSimplex(::Val{D}, ::Type{V}, order::Int)
+    BernsteinBasisOnSimplex(::Val{D}, ::Type{V}, order::Int, vertices)
 
 Constructors for [`BernsteinBasisOnSimplex`](@ref).
 
 If specified, `vertices` is a collection of `D+1` `Point{D}` defining a simplex
 used to compute the barycentric coordinates from, it must be non-degenerated
 (have nonzero volume).
+
+# Extended help
+
+    BernsteinBasisOnSimplex(b::BernsteinBasisOnSimplex, cart_to_bary_matrix::SMatrix)
+
+A zero-cost change of barycentric coordinates can be performed with this
+constructor. It creates a new basis of same type as `b` (existing caches can be re-used),
+replacing the cartesian-to-barycentric coordinate change matrix
+of `b` (see [`_compute_cart_to_bary_matrix`](@ref)). The given matrix must have
+the same type as `b`'s field.
 """
 function BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int,vertices=nothing) where {D,V}
   BernsteinBasisOnSimplex{D}(V,order,vertices)
+end
+
+function BernsteinBasisOnSimplex(::BernsteinBasisOnSimplex{D,V,M,K}, new_cart_to_bary_matrix::M) where {D,V,M,K}
+  BernsteinBasisOnSimplex{D,V,M,K}(new_cart_to_bary_matrix)
 end
 
 Base.size(b::BernsteinBasisOnSimplex{D,V}) where {D,V} = (num_indep_components(V)*binomial(D+get_order(b),D),)

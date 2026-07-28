@@ -307,6 +307,14 @@ for xi in x
   @test xi ≈ sum(λi .* vertices)
 end
 
+new_cart_to_bary_matrix = b.cart_to_bary_matrix
+bnew = BernsteinBasisOnSimplex(b, new_cart_to_bary_matrix)
+@test iszero(@allocations BernsteinBasisOnSimplex(b, new_cart_to_bary_matrix))
+@test typeof(bnew) === typeof(b)
+cb = return_cache(b,x)
+@test evaluate!(cb, b, x) ≈ evaluate!(cb, bnew, x)
+wrong_change = transpose(new_cart_to_bary_matrix)
+@test_throws "Invalid change of coordinate" BernsteinBasisOnSimplex(b, wrong_change)
 
 # Scalar value in 2D
 D = 2
