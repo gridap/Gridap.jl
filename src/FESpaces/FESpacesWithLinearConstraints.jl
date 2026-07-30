@@ -391,8 +391,8 @@ function evaluate!(cache,k::LinearConstraintsMap,mdofs,dofs,mat)
   n_ldofs = length(dofs)
   setsize!(m1,(n_lmdofs,n_ldofs))
   setsize!(m2,(n_lmdofs,size(mat,2)))
-  a1 = get_array(m1)
-  a2 = get_array(m2)
+  a1 = m1.array
+  a2 = m2.array
   fill!(a1,zero(eltype(a1)))
 
   # Precompute mdof to lmdof map
