@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Better control of `num_nearest_vertices` for `KDTreeSearch`. Added a new preference `set_num_nearest_vertices` to set a global default for the library. Since PR[#1312](https://github.com/gridap/Gridap.jl/pull/1312).
+- Added optional `vertex_to_cells` override to `KDTreeSearch`, allowing custom point-location connectivity for non-conforming meshes.
 
 ### Fixed
 
