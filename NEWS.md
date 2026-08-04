@@ -10,10 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Better control of `num_nearest_vertices` for `KDTreeSearch`. Added a new preference `set_num_nearest_vertices` to set a global default for the library. Since PR[#1312](https://github.com/gridap/Gridap.jl/pull/1312).
+- Added optional `vertex_to_cells` override to `KDTreeSearch`, allowing custom point-location connectivity (for non-conforming meshes). Since PR[#1329](https://github.com/gridap/Gridap.jl/pull/1329).
 
 ### Fixed
 
+- Fixed the dof signs flips for Curl conform reference FE bases for elements with `change_dof=true`. The signs are now tested for consistency with the `change_dof=false` version. Since PR [#1315](https://github.com/gridap/Gridap.jl/pull/1315).
 - Fixed evaluation of weak forms on empty trians with inverse maps. Since PR[#1316](https://github.com/gridap/Gridap.jl/pull/1316).
+- Fixed getting field type when changing domain on empty adapted triangulations. Since PR [#1326](https://github.com/gridap/Gridap.jl/pull/1326).
 
 ## [0.20.8] - 2026-06-01
 

@@ -156,6 +156,16 @@ source_model = CartesianDiscreteModel((0,1,0,1),(2,2))
   sm=KDTreeSearch(num_nearest_vertices=2)
   ux = Interpolable(u;searchmethod=sm)(x)
   @test ux == 0.9
+
+  trian = Triangulation(model)
+  topo = get_grid_topology(model)
+  v2c = get_faces(topo, 0, num_cell_dims(trian))
+  sm_custom = KDTreeSearch(num_nearest_vertices=2, vertex_to_cells=v2c)
+  ux_custom = Interpolable(u;searchmethod=sm_custom)(x)
+  @test ux_custom == ux
+
+  sm_bad = KDTreeSearch(vertex_to_cells=[Int32[]])
+  @test_throws Exception CellData._point_to_cell_cache(sm_bad, trian)
 end
 
 @testset "Test interpolation RT" begin
