@@ -3,13 +3,25 @@
 # on tree searches.
 
 """
+    KDTreeSearch(; num_nearest_vertices=Helpers.default_num_nearest_vertices, tol=1.e-10, vertex_to_cells=nothing)
+
+Search method used by [`Interpolable`](@ref) to locate the active cell containing a physical point.
+
+Keyword arguments:
+
+- `num_nearest_vertices`: number of nearest vertices queried in the KD-tree.
+- `tol`: tolerance used when selecting the closest candidate cell.
+- `vertex_to_cells`: optional custom vertex-to-cells connectivity. When provided,
+  it overrides the internally computed connectivity map used by point location.
 """
-struct KDTreeSearch{T}
+struct KDTreeSearch{T,A}
   num_nearest_vertices::Int
   tol::T
-  function KDTreeSearch(; num_nearest_vertices=Helpers.default_num_nearest_vertices, tol=1.e-10)
+  vertex_to_cells::A
+  function KDTreeSearch(; num_nearest_vertices=Helpers.default_num_nearest_vertices, tol=1.e-10, vertex_to_cells=nothing)
     T = typeof(tol)
-    new{T}(num_nearest_vertices, tol)
+    A = typeof(vertex_to_cells)
+    new{T,A}(num_nearest_vertices, tol, vertex_to_cells)
   end
 end
 
@@ -99,16 +111,34 @@ end
 function _point_to_cell_cache(searchmethod::KDTreeSearch,trian::Triangulation)
   model = get_active_model(trian)
   topo = get_grid_topology(model)
+
   if num_nodes(model) == num_vertices(model)
     # Non-periodic case
     vertex_coordinates = Geometry.get_vertex_coordinates(topo)
-    vertex_to_cells = get_faces(topo, 0, num_cell_dims(trian))
   else
     # Periodic case
     vertex_coordinates = collect1d(Geometry.get_node_coordinates(model))
-    cell_to_vertices = Table(get_cell_node_ids(model))
-    vertex_to_cells = Arrays.inverse_table(cell_to_vertices, num_nodes(model))
   end
+
+  if searchmethod.vertex_to_cells === nothing
+    if num_nodes(model) == num_vertices(model)
+      # Non-periodic case
+      vertex_to_cells = get_faces(topo, 0, num_cell_dims(trian))
+    else
+      # Periodic case
+      cell_to_vertices = Table(get_cell_node_ids(model))
+      vertex_to_cells = Arrays.inverse_table(cell_to_vertices, num_nodes(model))
+    end
+  else
+    vertex_to_cells = searchmethod.vertex_to_cells
+    @check length(vertex_to_cells) == length(vertex_coordinates) """\n
+    Invalid custom `vertex_to_cells` in KDTreeSearch.
+
+    Expected length $(length(vertex_coordinates)) (one entry per KDTree vertex),
+    but got $(length(vertex_to_cells)).
+    """
+  end
+
   kdtree = KDTree(map(nc -> SVector(Tuple(nc)), vertex_coordinates))
   cell_to_ctype = get_cell_type(trian)
   ctype_to_polytope = get_polytopes(trian)
@@ -164,6 +194,8 @@ function _point_to_cell!(cache, x::Point)
   # Output error message if cell not found
   @check false """\n
   Point $x was not found in any active cell of the triangulation.
+
+  Custom vertex_to_cells override active: $(searchmethod.vertex_to_cells !== nothing)
 
   The KDTreeSearch used num_nearest_vertices=$(searchmethod.num_nearest_vertices). Points near
   cell boundaries or mesh vertices may require a larger neighbourhood to be located correctly.
