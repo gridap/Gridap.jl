@@ -799,6 +799,28 @@ function merge_entries(
   return c_to_lb_to_b
 end
 
+function merge_entries(
+  k_to_table::AbstractVector, k_to_lid::AbstractVector, t1::Table, tn::Table...
+)
+  tables = (t1, tn...)
+  @check maximum(k_to_table; init = 0) <= length(tables)
+
+  ptrs = zeros(Int32,length(k_to_table)+1)
+  for k in eachindex(k_to_table)
+    ptrs[k+1] += length(datarange(tables[k_to_table[k]], k_to_lid[k]))
+  end
+  length_to_ptrs!(ptrs)
+
+  T = promote_type(map(get_data_eltype, tables)...)
+  data = zeros(T,ptrs[end]-1)
+  for k in eachindex(k_to_table)
+    r = ptrs[k]:ptrs[k+1]-1
+    data[r] .= dataview(tables[k_to_table[k]], k_to_lid[k])
+  end
+
+  return Table(data,ptrs)
+end
+
 """
     block_identity_array(::Type{T},ptrs) where T
 
