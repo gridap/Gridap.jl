@@ -1347,6 +1347,21 @@ c = a .* b
 
 @test diag(a) == VectorValue(1,4)
 
+a = TensorValue([1. 1. 1.; 2. 2. 2.])
+b = a .* a
+@test b == TensorValue([1. 1. 1.; 4. 4. 4.])
+@test typeof(b) == TensorValue{2,3,Float64,6}
+
+b = TensorValue{2,3,Int}(1,2,3,4,5,6)
+@test typeof(a .* b) == TensorValue{2,3,Float64,6}
+
+c = TensorValue{3,2,Int}(1,2,3,4,5,6)
+try
+  a .* c
+catch e
+  @test typeof(e) == ErrorException
+end
+
 
 a = SymTensorValue(1,2,4)
 b = SymTensorValue(1.,2.,4.)

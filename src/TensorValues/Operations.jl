@@ -1256,8 +1256,8 @@ function Base.broadcasted(f, a::VectorValue, b::VectorValue)
   VectorValue(map(f, a.data, b.data))
 end
 
-function Base.broadcasted(f, a::TensorValue, b::TensorValue)
-  TensorValue(map(f, a.data, b.data))
+function Base.broadcasted(f, a::TensorValue{D1,D2}, b::TensorValue{D1,D2}) where {D1,D2}
+  TensorValue{D1,D2}(map(f, a.data, b.data))
 end
 
 function Base.broadcasted(f, a::AbstractSymTensorValue, b::AbstractSymTensorValue)
