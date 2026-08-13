@@ -1356,12 +1356,7 @@ b = TensorValue{2,3,Int}(1,2,3,4,5,6)
 @test typeof(a .* b) == TensorValue{2,3,Float64,6}
 
 c = TensorValue{3,2,Int}(1,2,3,4,5,6)
-try
-  a .* c
-catch e
-  @test typeof(e) == ErrorException
-end
-
+@test_throws ErrorException a .* c
 
 a = SymTensorValue(1,2,4)
 b = SymTensorValue(1.,2.,4.)
@@ -1381,6 +1376,18 @@ c = a .* b
 
 a = SkewSymTensorValue(1,2,3)
 @test diag(a) == zero(VectorValue(1:3...))
+
+
+# Componant wise operations on tensor value of order > 2
+a = ThirdOrderTensorValue{1,3,2}(1,2,1,4,2,2)
+b = a .* a
+@test b == ThirdOrderTensorValue{1,3,2}(1,4,1,16,4,4)
+
+b = TensorValue{1,3,2,Float64}(1,2,3,4,5,6)
+@test typeof(a .* b) == TensorValue{2,3,Float64,6}
+
+c = TensorValue{3,2,Int}(1,2,3,4,5,6)
+@test_throws ErrorException a .* c
 
 # Operation involving empty tensors (check type promotion)
 

@@ -1263,3 +1263,7 @@ end
 function Base.broadcasted(f, a::AbstractSymTensorValue, b::AbstractSymTensorValue)
   SymTensorValue(map(f, a.data, b.data))
 end
+
+function Base.broadcasted(f, a::HighOrderTensorValue{S}, b::HighOrderTensorValue{S}) where S
+  HighOrderTensorValue{S}(map(f, a.data, b.data))
+end
