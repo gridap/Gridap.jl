@@ -86,6 +86,36 @@ export from_voigt
 export to_mandel
 export from_mandel
 
+export DifferentialFormValue
+export FormDomain
+export Cartesian
+export Barycentric
+export physical_dim
+export ambient_dim
+export ∧
+export interior_product
+export ι
+export hodge_star
+export ⋆
+export flat
+export sharp
+export apply_form
+export pullback
+export pushforward
+export exterior_derivative
+export codifferential
+export lie_derivative
+export symbolic_coordinates
+export koszul
+export vol_coeff
+export to_1form
+export from_1form
+export to_Kform
+export from_Kform
+export to_0form
+export to_Dform
+export jac_to_2form
+
 import Base: show
 import Base: promote_rule
 import Base: zero, one
@@ -132,5 +162,7 @@ include("Indexing.jl")
 include("Operations.jl")
 
 include("Reinterpret.jl")
+
+include("DifferentialForms/DifferentialFormValues.jl")
 
 end # module
