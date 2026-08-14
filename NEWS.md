@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed the dof signs flips for Curl conform reference FE bases for elements with `change_dof=true`. The signs are now tested for consistency with the `change_dof=false` version. Since PR [#1315](https://github.com/gridap/Gridap.jl/pull/1315).
 - Fixed evaluation of weak forms on empty trians with inverse maps. Since PR[#1316](https://github.com/gridap/Gridap.jl/pull/1316).
 - Fixed getting field type when changing domain on empty adapted triangulations. Since PR [#1326](https://github.com/gridap/Gridap.jl/pull/1326).
+- Fixed broadcasting of operation on `TensorValue{A,B}` components, and added broadcasting to `Third/HighOrderTensorValue`. Since PR [#1331](https://github.com/gridap/Gridap.jl/pull/1331).
 
 ### Changed
 - Changed `product_rule` to allow for numbers of `Complex` type. Since PR[#1325](https://github.com/gridap/Gridap.jl/pull/1325).
