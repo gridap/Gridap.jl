@@ -34,9 +34,11 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
 [weakdeps]
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 TikzPictures = "37f6aa50-8035-52d0-81c2-5a1d08754b2d"
 
 [extensions]
+GridapSymbolicsExt = "Symbolics"
 TikzPicturesExt = "TikzPictures"
 
 [compat]
@@ -68,6 +70,7 @@ SparseArrays = "1"
 SparseMatricesCSR = "0.6.8"
 StaticArrays = "1.9.8"
 Statistics = "1"
+Symbolics = "5, 6, 7"
 Test = "1"
 TikzPictures = "3"
 WriteVTK = "1.21.1"
