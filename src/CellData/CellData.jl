@@ -100,6 +100,10 @@ export DiracDelta
 
 export SkeletonCellFieldPair
 
+export DifferentialFormCellField
+export d_0form
+export d_1form
+
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
@@ -121,5 +125,7 @@ include("AttachDirichlet.jl")
 include("AttachConstraints.jl")
 
 include("SkeletonCellFieldPair.jl")
+
+include("DifferentialForms/DifferentialFormCellFields.jl")
 
 end # module
