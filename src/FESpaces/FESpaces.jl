@@ -238,6 +238,8 @@ include("ConformingFESpaces.jl")
 
 include("Pullbacks.jl")
 
+include("RotatingPLambda/PΛCellBasesChanges.jl")
+
 include("FESpaceFactories.jl")
 
 include("PhysicalFEs.jl")
