@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `DifferentialFormValue`, a `MultiValue` representing alternating K-forms, with pointwise exterior calculus (wedge, interior product, Hodge star, musical isomorphisms, Koszul operator, pullback/pushforward), lazy `Field` and `CellField` counterparts, the rotating full and trimmed polynomial bases of PΛ (`RotatingPΛBasis`, `TrimmedPΛBasis`) with closed-form vertex-permutation rotation maps, the associated reference FEs (`rotating_pλ`, `trimmed_pλ`) and per-cell change of basis making H(curl)-conforming FE spaces independent of cell vertex orderings. New code lives in `DifferentialForms`/`RotatingPLambda` subfolders of the touched modules. Symbolic exterior calculus (exterior derivative, codifferential, Lie derivative) is provided by the new package extension `GridapSymbolicsExt` when Symbolics is loaded. Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX) (number to be filled when the PR is opened).
 - Better control of `num_nearest_vertices` for `KDTreeSearch`. Added a new preference `set_num_nearest_vertices` to set a global default for the library. Since PR[#1312](https://github.com/gridap/Gridap.jl/pull/1312).
 - Add AD support for complex-valued DOFs. Since PR[#1325](https://github.com/gridap/Gridap.jl/pull/1325).
 - Added `Base.adjoint` method for `ArrayBlock`. Since PR[#1325](https://github.com/gridap/Gridap.jl/pull/1325).
