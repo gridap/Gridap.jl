@@ -101,6 +101,13 @@ export VoidBasisMap
 
 export DensifyInnerMostBlockLevelMap
 
+export DifferentialForm
+export ExteriorDerivativeForm
+export CodifferentialForm
+export KoszulForm
+export PullbackForm
+export hodge_star_form
+
 # Re-export from Gridap.Arrays
 export ArrayBlock
 export VectorBlock
@@ -130,5 +137,7 @@ include("FieldArrayBlocks.jl")
 include("InverseFields.jl")
 
 include("DensifyInnerMostBlockLevelMaps.jl")
+
+include("DifferentialForms/DifferentialForms.jl")
 
 end
