@@ -211,6 +211,14 @@ export CrouzeixRaviart
 export Serendipity
 export Bubble
 
+export RotatingPΛName
+export TrimmedPΛName
+export rotating_pλ
+export trimmed_pλ
+export PΛRefFE
+export RotatingPΛRefFE
+export TrimmedPΛRefFE
+
 export lagrangian
 export raviart_thomas
 export bdm
@@ -306,5 +314,7 @@ include("BezierRefFEs.jl")
 include("ModalC0RefFEs.jl")
 
 include("BubbleRefFEs.jl")
+
+include("RotatingPLambda/PΛRefFEs.jl")
 
 end # module
