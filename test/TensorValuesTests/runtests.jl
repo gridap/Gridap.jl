@@ -18,6 +18,10 @@ end
   include("ReinterpretTests.jl")
 end
 
+@testset "VariancedDimensionTests" begin
+  include("VariancedDimensionTests.jl")
+end
+
 @testset "DifferentialFormsTests" begin
   include("DifferentialFormsTests/runtests.jl")
 end

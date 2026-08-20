@@ -71,7 +71,7 @@ dx2 = ExteriorFormValue{1,2}((0.0, 1.0))
 star_dx1 = hodge_star(dx1, g_inv_diag, sdg_diag)
 star_dx2 = hodge_star(dx2, g_inv_diag, sdg_diag)
 
-@test typeof(star_dx1) <: ExteriorFormValue{1,2}
+@test typeof(star_dx1) <: ExteriorFormValue{1,cov2}
 @test collect(star_dx1.data) ≈ [0.0, sqrt(q/p)]    atol=1e-12   # √(q/p) dx²
 @test collect(star_dx2.data) ≈ [-sqrt(p/q), 0.0]   atol=1e-12   # -√(p/q) dx¹
 
@@ -82,13 +82,13 @@ star_dx2 = hodge_star(dx2, g_inv_diag, sdg_diag)
 # 0-form: ⋆_g f = f √det(g) vol_coord
 f0    = ExteriorFormValue{0,2}((5.0,))
 sf0_d = hodge_star(f0, g_inv_diag, sdg_diag)
-@test typeof(sf0_d) <: ExteriorFormValue{2,2}
+@test typeof(sf0_d) <: ExteriorFormValue{2,cov2}
 @test collect(sf0_d.data) ≈ [5.0 * sdg_diag]   atol=1e-12
 
 # 2-form: ⋆_g vol_coord = 1/√det(g)
 vol_coord = ExteriorFormValue{2,2}((1.0,))
 svol_d    = hodge_star(vol_coord, g_inv_diag, sdg_diag)
-@test typeof(svol_d) <: ExteriorFormValue{0,2}
+@test typeof(svol_d) <: ExteriorFormValue{0,cov2}
 @test collect(svol_d.data) ≈ [1.0/sdg_diag]   atol=1e-12
 
 # ── Part 2: CubedSphere metric at a generic point ─────────────────────────────
@@ -109,7 +109,7 @@ s2 = hodge_star(s1,        g_inv, sdg)
 # 0-form ⋆_g: result is a 2-form with coefficient f·√det(g)
 f0_cs  = ExteriorFormValue{0,2}((3.0,))
 sf0_cs = hodge_star(f0_cs, g_inv, sdg)
-@test typeof(sf0_cs) <: ExteriorFormValue{2,2}
+@test typeof(sf0_cs) <: ExteriorFormValue{2,cov2}
 @test collect(sf0_cs.data) ≈ [3.0 * sdg]   atol=1e-10
 
 # ── Part 3: Musical operators ─────────────────────────────────────────────────

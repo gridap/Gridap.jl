@@ -30,15 +30,16 @@ Base.:*(ω::ExteriorFormValue, s::Symbolics.Num) = s * ω
 @variables x¹ x² x³ x⁴ x⁵ x⁶ x⁷ x⁸ x⁹
 const coords = [x¹, x², x³, x⁴, x⁵, x⁶, x⁷, x⁸, x⁹]
 
-symbolic_coordinates(D::Integer) = Tuple(coords[1:D])
+symbolic_coordinates(D::Integer) = Tuple(coords[1:Int(D)])
 
 # ============================================================
 # Symbolic exterior derivative
 # Dispatches when T = Symbolics.Num (symbolic coefficients).
 # ============================================================
 
-function _sym_exterior_derivative(ω::ExteriorFormValue{K,D,Symbolics.Num,L0},
-                                   diff_vars::AbstractVector) where {K,D,L0}
+function _sym_exterior_derivative(ω::ExteriorFormValue{K,Dw,Symbolics.Num,L0},
+                                   diff_vars::AbstractVector) where {K,Dw,L0}
+  D   = Int(Dw)
   L   = binomial(D, K)
   ds  = [Symbolics.jacobian([ω.data[i]], diff_vars) for i in 1:L]
   dfs = [ExteriorFormValue{1,D}(Tuple(ds[i])) for i in 1:L]
@@ -50,21 +51,24 @@ function _sym_exterior_derivative(ω::ExteriorFormValue{K,D,Symbolics.Num,L0},
 end
 
 # Differentiates w.r.t. global Cartesian coords x¹,...,x^D
-exterior_derivative(ω::ExteriorFormValue{K,D,Symbolics.Num,L0}) where {K,D,L0} =
-  _sym_exterior_derivative(ω, coords[1:D])
+exterior_derivative(ω::ExteriorFormValue{K,Dw,Symbolics.Num,L0}) where {K,Dw,L0} =
+  _sym_exterior_derivative(ω, coords[1:Int(Dw)])
 
 # Differentiates w.r.t. explicit variables — works for barycentric λs or any symbols
-exterior_derivative(ω::ExteriorFormValue{K,D,Symbolics.Num,L0},
-                    vars::NTuple{D,Symbolics.Num}) where {K,D,L0} =
+function exterior_derivative(ω::ExteriorFormValue{K,Dw,Symbolics.Num,L0},
+                             vars::NTuple{D,Symbolics.Num}) where {K,Dw,D,L0}
+  D==Dw || throw(DimensionMismatch())
   _sym_exterior_derivative(ω, collect(vars))
+end
 
 # ============================================================
 # Symbolic codifferential  δ : Ωᴷ(D) → Ωᴷ⁻¹(D)
 #   δ = (-1)^{D(K-1)+1} ⋆ d ⋆   (flat Euclidean metric, symbolic coefficients)
 # ============================================================
 
-function codifferential(ω::ExteriorFormValue{K,D,Symbolics.Num}) where {K,D}
+function codifferential(ω::ExteriorFormValue{K,Dw,Symbolics.Num}) where {K,Dw}
   @assert K >= 1 "codifferential requires K ≥ 1"
+  D   = Int(Dw)
   sgn = iseven(D*(K-1) + 1) ? 1 : -1
   sgn * exterior_derivative(hodge_star(ω))  |> hodge_star
 end
@@ -76,13 +80,15 @@ end
 # ============================================================
 
 function lie_derivative(v::VectorValue{D,Symbolics.Num},
-                        ω::ExteriorFormValue{0,D,Symbolics.Num}) where D
+                        ω::ExteriorFormValue{0,Dw,Symbolics.Num}) where {D,Dw}
+  D==Dw || throw(DimensionMismatch())
   # L_v f = ι_v(df)  (directional derivative of a scalar)
   interior_product(v, exterior_derivative(ω))
 end
 
 function lie_derivative(v::VectorValue{D,Symbolics.Num},
-                        ω::ExteriorFormValue{K,D,Symbolics.Num}) where {K,D}
+                        ω::ExteriorFormValue{K,Dw,Symbolics.Num}) where {K,D,Dw}
+  D==Dw || throw(DimensionMismatch())
   dω      = exterior_derivative(ω)               # (K+1)-form
   ι_v_ω   = interior_product(v, ω)               # (K-1)-form
   exterior_derivative(ι_v_ω) + interior_product(v, dω)

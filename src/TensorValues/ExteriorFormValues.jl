@@ -8,6 +8,11 @@ Value of a differential K-form in D dimensions storing the `L = binomial(D,K)`
 independent components on the orientation-ordered basis `{dx^I}` (lexicographic
 K-combinations `I` of `1:D`), with scalar type `T`.
 
+A form takes covariant indices, so `D` is stored as a [`Covariant`](@ref)
+dimension: `ExteriorFormValue{1,3}` and `ExteriorFormValue{1,cov3}` name the same
+type, and `size` returns `(cov3,)`. Use `Int(D)` wherever the dimension is needed
+as a number.
+
 `show` labels the components `dxⁱ`, or `dλⁱ` when the `IOContext` property
 `:coordinates` is `:barycentric`.
 """
@@ -15,8 +20,8 @@ struct ExteriorFormValue{K,D,T,L} <: MultiValue{NTuple{K,D},T,K,L}
   data::NTuple{L,T}
 
   function ExteriorFormValue{K,D,T}(data::NTuple{L,T}) where {K,D,T,L}
-    @assert L == binomial(D,K) "wrong number of values: got $L, expected $(binomial(D,K))"
-    new{K,D,T,L}(data)
+    @assert L == binomial(Int(D),K) "wrong number of values: got $L, expected $(binomial(Int(D),K))"
+    new{K,Covariant(D),T,L}(data)
   end
 end
 
@@ -53,6 +58,7 @@ ExteriorFormValue{K,D,T1,L}(data::Number...) where {K,D,T1,L} = ExteriorFormValu
 # - `A[I] = 0` when `I` repeats an index, else
 # - `A[I] = levicivita(σ) * ω_{sort(I)}`, where `σ` sorts `I`
 @generated function _FormValue_to_array(arg::ExteriorFormValue{K,D,T,L}) where {K,D,T,L}
+  D = Int(D)
   comps = Expr[]
   for idx in CartesianIndices(ntuple(_ -> D, Val(K)))
     I = Tuple(idx)
@@ -85,7 +91,7 @@ one(::Type{<:ExteriorFormValue{K}}) where K = @unreachable "Differential k-form 
 change_eltype(::Type{<:ExteriorFormValue{K,D,T1,L}}, ::Type{T2}) where {K,D,T1,T2,L} =
   ExteriorFormValue{K,D,T2,L}
 
-num_indep_components(::Type{<:ExteriorFormValue{K,D}}) where {K,D} = binomial(D,K)
+num_indep_components(::Type{<:ExteriorFormValue{K,D}}) where {K,D} = binomial(Int(D),K)
 
 # ============================================================
 # Display
@@ -95,13 +101,13 @@ const _sbs_cart = ["dx¹","dx²","dx³","dx⁴","dx⁵","dx⁶","dx⁷","dx⁸",
 const _sbs_bary = ["dλ¹","dλ²","dλ³","dλ⁴","dλ⁵","dλ⁶","dλ⁷","dλ⁸","dλ⁹"]
 
 function indep_components_names(::Type{<:ExteriorFormValue{K,D}}) where {K,D}
-  [join(_sbs_cart[I], " ∧ ") for I in sorted_combinations(D, K)]
+  [join(_sbs_cart[I], " ∧ ") for I in sorted_combinations(Int(D), K)]
 end
 
 function _show_dfv(io::IO, a::ExteriorFormValue{K,D}, basis_strs) where {K,D}
   L = length(a.data)
   L == 0 && return print(io, "0")
-  cs = sorted_combinations(D, K)
+  cs = sorted_combinations(Int(D), K)
   parts = [join(basis_strs[I], " ∧ ") for I in cs]
   result = [string(ai, " ", bi) for (ai, bi) in zip(a.data, parts)]
   print(io, join(result, " + "))

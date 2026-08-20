@@ -52,6 +52,16 @@ using Random
 using ForwardDiff
 using Combinatorics: combinations, permutations, levicivita
 
+export Covariant
+#export Contravariant
+export cov0
+export cov1
+export cov2
+export cov3
+#export con1
+#export con2
+#export con3
+
 export MultiValue
 export VectorValue
 export TensorValue

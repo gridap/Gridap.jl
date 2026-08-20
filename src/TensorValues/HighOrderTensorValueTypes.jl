@@ -10,11 +10,11 @@ If `Val(N)` is given as first argument of the constructor, `allequal(S)` is assu
 `HighOrderTensorValue` is a `MultiValue` wrapper for `SArray{S,T,N,L}` with `N` ≥ 3.
 """
 struct HighOrderTensorValue{S,T,N,L} <: MultiValue{S,T,N,L} #<:NTuple{N}
-  data::SArray{S,T,N,L}
+  data::NTuple{L,T}
 
   function HighOrderTensorValue(data::SArray{S,T,N,L}) where {S,T,N,L}
     @check N > 2 "HighOrderTensorValue starts from 3th order, use VectorValue or TensorValue instead"
-    new{S,T,N,L}(data)
+    new{S,T,N,L}(NTuple{L,T}(data))
   end
 
   function HighOrderTensorValue{S,T,N}(data::NTuple{L,T}) where {S,T,N,L}

@@ -23,7 +23,7 @@ v2 = VectorValue(x¹, x²)
 
 ωs = ExteriorFormValue{1,2}((1.0, 2.0))
 sω = x¹ * ωs
-@test typeof(sω) <: ExteriorFormValue{1,2,Symbolics.Num}
+@test typeof(sω) <: ExteriorFormValue{1,cov2,Symbolics.Num}
 @test isequal(Symbolics.simplify(sω.data[2] - 2x¹), Symbolics.simplify(Symbolics.Num(0)))
 @test isequal((ωs * x¹).data[1], sω.data[1])
 
@@ -31,7 +31,7 @@ sω = x¹ * ωs
 
 ω0 = ExteriorFormValue{0,2}((x¹*x²,))
 dω0 = exterior_derivative(ω0)
-@test typeof(dω0) <: ExteriorFormValue{1,2}
+@test typeof(dω0) <: ExteriorFormValue{1,cov2}
 @test isequal(Symbolics.simplify(dω0.data[1] - x²), Symbolics.simplify(Symbolics.Num(0)))
 @test isequal(Symbolics.simplify(dω0.data[2] - x¹), Symbolics.simplify(Symbolics.Num(0)))
 
@@ -42,7 +42,7 @@ dω0 = exterior_derivative(ω0)
 
 ωb = ExteriorFormValue{0,3}((λ₁*λ₂,))
 dωb = exterior_derivative(ωb, λ)
-@test typeof(dωb) <: ExteriorFormValue{1,3}
+@test typeof(dωb) <: ExteriorFormValue{1,cov3}
 @test isequal(Symbolics.simplify(dωb.data[1] - λ₂), Symbolics.simplify(Symbolics.Num(0)))
 @test isequal(Symbolics.simplify(dωb.data[2] - λ₁), Symbolics.simplify(Symbolics.Num(0)))
 @test isequal(Symbolics.simplify(dωb.data[3]), Symbolics.simplify(Symbolics.Num(0)))
@@ -57,13 +57,13 @@ ddωb = exterior_derivative(exterior_derivative(ω1b, λ), λ)
 # κ on a 1-form
 ω1 = ExteriorFormValue{1,2}((x¹, x²))    # x¹ dx¹ + x² dx²
 κω1 = koszul(v2, ω1)
-@test typeof(κω1) <: ExteriorFormValue{0,2}
+@test typeof(κω1) <: ExteriorFormValue{0,cov2}
 @test isequal(Symbolics.simplify(κω1.data[1]), Symbolics.simplify(x¹^2 + x²^2))
 
 # κ on a 2-form
 ω2 = ExteriorFormValue{2,2}((x¹,))       # x¹ dx¹∧dx²
 κω2 = koszul(v2, ω2)
-@test typeof(κω2) <: ExteriorFormValue{1,2}
+@test typeof(κω2) <: ExteriorFormValue{1,cov2}
 @test isequal(Symbolics.simplify(κω2.data[1]), Symbolics.simplify(-x¹*x²))
 @test isequal(Symbolics.simplify(κω2.data[2]), Symbolics.simplify(x¹^2))
 
@@ -101,7 +101,7 @@ end
 # δω = -(∂ω₁/∂x¹ + ∂ω₂/∂x²).  For ω₁=x¹²x², ω₂=x¹x²²: δω = -4x¹x²
 f1 = ExteriorFormValue{1,2}((x¹^2 * x², x¹ * x²^2))
 δf1 = codifferential(f1)
-@test typeof(δf1) <: ExteriorFormValue{0,2}
+@test typeof(δf1) <: ExteriorFormValue{0,cov2}
 @test isequal(Symbolics.simplify(δf1.data[1]), Symbolics.simplify(-4*x¹*x²))
 
 # ── Lie derivative (Cartan formula) ──────────────────────────────────────────
@@ -110,14 +110,14 @@ f1 = ExteriorFormValue{1,2}((x¹^2 * x², x¹ * x²^2))
 f0   = ExteriorFormValue{0,2}((x¹^2 + x²,))
 v_e1 = VectorValue(Symbolics.Num(1), Symbolics.Num(0))
 Lv_f0 = lie_derivative(v_e1, f0)
-@test typeof(Lv_f0) <: ExteriorFormValue{0,2}
+@test typeof(Lv_f0) <: ExteriorFormValue{0,cov2}
 @test isequal(Symbolics.simplify(Lv_f0.data[1]), Symbolics.simplify(2*x¹))
 
 # On a 1-form: ω = x¹dx¹ + x²dx², v = e₁
 # ι_{e₁} ω = x¹, d(x¹) = dx¹; dω = 0  →  L_{e₁} ω = dx¹ = (1, 0)
 ω_1 = ExteriorFormValue{1,2}((x¹, x²))
 Lv_ω1 = lie_derivative(v_e1, ω_1)
-@test typeof(Lv_ω1) <: ExteriorFormValue{1,2}
+@test typeof(Lv_ω1) <: ExteriorFormValue{1,cov2}
 @test isequal(Symbolics.simplify(Lv_ω1.data[1]), Symbolics.simplify(Symbolics.Num(1)))
 @test isequal(Symbolics.simplify(Lv_ω1.data[2]), Symbolics.simplify(Symbolics.Num(0)))
 

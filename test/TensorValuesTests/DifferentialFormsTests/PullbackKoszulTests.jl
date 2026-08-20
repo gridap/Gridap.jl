@@ -31,7 +31,7 @@ J_sc = TensorValue{2,2,Float64,4}(a,0.0,0.0,b)
 J_emb = TensorValue{3,2,Float64,6}(1.0,0.0,0.0,  0.0,1.0,0.0)
 ω1_3d = ExteriorFormValue{1,3}((1.0, 0.0, 0.0))  # dx¹ in ℝ³
 pb    = pullback(ω1_3d, J_emb)
-@test typeof(pb) <: ExteriorFormValue{1,2}
+@test typeof(pb) <: ExteriorFormValue{1,cov2}
 @test pb.data == (1.0, 0.0)   # dx¹ pulls back to dx¹ in ℝ²
 
 ω1_3d_2 = ExteriorFormValue{1,3}((0.0, 1.0, 0.0))  # dx² in ℝ³
@@ -71,14 +71,14 @@ pf_e1 = _pushforward(e1, J_emb)
 x₀  = VectorValue(2.0, 3.0)
 ωx₀ = ExteriorFormValue{1,2}((2.0, 3.0))
 κω1 = koszul(x₀, ωx₀)
-@test typeof(κω1) <: ExteriorFormValue{0,2}
+@test typeof(κω1) <: ExteriorFormValue{0,cov2}
 @test κω1.data[1] ≈ 13.0   atol=1e-12
 
 # κ on a 2-form: ι_{(2,3)}(x¹ dx¹∧dx²) at x₀=(2,3), coefficient x¹=2:
 # d[1] = -x₀[2]·2 = -6, d[2] = x₀[1]·2 = 4
 ω2x₀ = ExteriorFormValue{2,2}((2.0,))
 κω2  = koszul(x₀, ω2x₀)
-@test typeof(κω2) <: ExteriorFormValue{1,2}
+@test typeof(κω2) <: ExteriorFormValue{1,cov2}
 @test collect(κω2.data) ≈ [-6.0, 4.0]   atol=1e-12
 
 # koszul == interior_product (numeric, ambient/barycentric indices)
@@ -89,7 +89,7 @@ v3 = VectorValue(0.5, 0.3, 0.2)
 # ι on an ambient 2-form: ι_{(0.5,0.3,0.2)}(dλ¹∧dλ²) = 0.5 dλ² − 0.3 dλ¹
 e12 = ExteriorFormValue{2,3}((1.0, 0.0, 0.0))
 k = koszul(VectorValue(0.5, 0.3, 0.2), e12)
-@test typeof(k) <: ExteriorFormValue{1,3}
+@test typeof(k) <: ExteriorFormValue{1,cov3}
 @test collect(k.data) ≈ [-0.3, 0.5, 0.0]   atol=1e-12
 
 end # module

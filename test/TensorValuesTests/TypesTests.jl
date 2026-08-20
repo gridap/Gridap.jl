@@ -11,7 +11,7 @@ a = SMatrix{2,2}(1,2,3,4)
 t = TensorValue(a)
 @test isa(t,TensorValue{2,2,Int})
 @test convert(SMatrix{2,2,Int},t) == [1 3;2 4]
-@test_throws MethodError convert(SMatrix{1,2,Int},t)
+@test_throws DimensionMismatch convert(SMatrix{1,2,Int},t)
 @test convert(SMatrix{2,2,Int},t) === SArray(t)
 @test convert(MMatrix{2,2,Int},t) == MArray(t)
 @test t === MultiValue(a)

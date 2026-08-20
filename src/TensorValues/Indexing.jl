@@ -11,7 +11,7 @@ lastindex(arg::MultiValue, d::Int)     = (@inline; size(arg, d)) # method ambigu
 # Gridap broadcast of some operation on ::MultiValue rely on Base.axes adopting
 # the Number convension (all MultiValue have axes `()` )
 # This is the AbstractArray like axes
-_axes(arg::MultiValue) = map(SOneTo, size(arg))
+_axes(arg::MultiValue) = map(SOneTo, _rm_size_variance(size(arg)))
 
 CartesianIndices(arg::MultiValue) = CartesianIndices(_axes(arg)) # Array axes
 LinearIndices(arg::MultiValue) = LinearIndices(_axes(arg))
@@ -156,7 +156,8 @@ end
 
 @propagate_inbounds function getindex(arg::HighOrderTensorValue{S,T,N}, inds::Vararg{Integer,N}) where {S,T,N}
   @boundscheck @check checkbounds(arg, inds...) === nothing
-  @inbounds arg.data[inds...]
+  li = LinearIndices(arg)
+  @inbounds arg.data[li[inds...]]
 end
 # The following attempt to switch to IndexLinear style failed due to the manual
 # indexing dispatches above...
@@ -173,7 +174,7 @@ end
   @boundscheck @check checkbounds(arg, inds...) === nothing
   s = sorting_sign(inds...)
   s == 0 && return zero(T)
-  index = combination_index(sort(SVector{N,Int}(inds)), D)
+  index = combination_index(sort(SVector{N,Int}(inds)), Int(D))
   v = @inbounds arg.data[index]
   return s > 0 ? v : -v
 end

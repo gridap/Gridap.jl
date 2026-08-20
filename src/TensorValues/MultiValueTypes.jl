@@ -1,4 +1,79 @@
 ###############################################################
+# Tensor dimensions with variance
+###############################################################
+
+abstract type VariancedDimension <: Integer end
+struct Covariant <: VariancedDimension
+  index::Int
+  Covariant(index::Int) = new(index)
+  Covariant(index::Covariant) = new(index[])
+end
+#struct Contravariant <: VariancedDimension
+#  index::Int
+#  Contravariant(index::Int) = new(index)
+#  Contravariant(index::Contravariant) = new(index[])
+#end
+
+const cov0 = Covariant(0)
+const cov1 = Covariant(1)
+const cov2 = Covariant(2)
+const cov3 = Covariant(3)
+
+#const con1 = Contravariant(1)
+#const con2 = Contravariant(2)
+#const con3 = Contravariant(3)
+
+Base.show(io::IO, ::MIME"text/plain", covi::Covariant) = print(io, "cov", covi[])
+#Base.show(io::IO, ::MIME"text/plain", covi::Contravariant) = print(io, "con", covi[])
+
+"""
+    _Dim = Union{Int, VariancedDimension}
+
+Valid type of values to use in MultiValue's size, `S=Tuple{I...}` where each `D` in `I` is a `_Dim`.
+"""
+const _Dim = Union{Int, VariancedDimension}
+
+# Int behavior for arithmetic of dimension (tensor size computations and checks)
+
+Base.getindex(covi::VariancedDimension) = covi.index
+Base.Int(covi::VariancedDimension) = covi[]
+
+Base.convert(::Type{Covariant}, i::Int) = Covariant(i)
+Base.promote_rule(::Type{Covariant}, ::Type{Int}) = Covariant
+#Base.convert(::Type{Contravariant}, i::Int) = Contravariant(i)
+#Base.promote_rule(::Type{Contravariant}, ::Type{Int}) = Contravariant
+
+Base.:(==)(x::VariancedDimension, y::Integer) = x[] == y
+Base.:(==)(x::Integer, y::VariancedDimension) = x == y[]
+Base.:(==)(x::VariancedDimension, y::VariancedDimension) = x[] == y[]
+Base.:(<)(x::VariancedDimension, y::Integer) = x[] < y
+Base.:(<)(x::Integer, y::VariancedDimension) = x < y[]
+Base.:(<)(x::VariancedDimension, y::VariancedDimension) = x[] < y[]
+Base.:(>>)(x::VariancedDimension, y::Int) = x[] >> y
+Base.trailing_zeros(x::VariancedDimension) = trailing_zeros(x[])
+
+Base.:+(a::Covariant, b::Covariant) = Covariant(a[] + b[])
+Base.:-(a::Covariant, b::Covariant) = Covariant(a[] - b[])
+Base.:*(a::Covariant, b::Covariant) = Covariant(a[] * b[])
+Base.:/(a::Covariant, b::Covariant) = Covariant(a[] / b[])
+Base.div(a::Covariant, b::Covariant, r::RoundingMode=RoundToZero) = div(a[], b[], r)
+Base.:-(x::Covariant) = Covariant(-x[])
+
+#Base.:+(a::Contravariant, b::Contravariant) = Contravariant(a[] + b[])
+#Base.:-(a::Contravariant, b::Contravariant) = Contravariant(a[] - b[])
+#Base.:*(a::Contravariant, b::Contravariant) = Contravariant(a[] * b[])
+#Base.:/(a::Contravariant, b::Contravariant) = Contravariant(a[] / b[])
+#Base.div(a::Contravariant, b::Contravariant, r::RoundingMode=RoundToZero) = div(a[], b[], r)
+#Base.:-(x::Contravariant) = Covariant(-x[])
+
+_rm_size_variance(s::Tuple) = tuple(Int.(s)...)
+@generated function _rm_size_variance(::Type{S}) where S<:Tuple
+  # @generated ensures a compile time constant and inference
+  :(Tuple{$(Int.(S.parameters)...)})
+end
+
+
+###############################################################
 # MultiValue Type
 ###############################################################
 
@@ -35,8 +110,8 @@ end
 eltype(::Type{<:MultiValue{S,T}}) where {S,T} = T
 eltype(::MultiValue{S,T}) where {S,T} = T
 
-length(::Type{<:MultiValue{S}}) where S = prod(size(MultiValue{S}))
-length(a::MultiValue)  = length(typeof(a))
+length(::Type{<:MultiValue{S}}) where S = prod(_rm_size_variance(size(MultiValue{S})))
+length(a::MultiValue) = length(typeof(a))
 
 size(::Type{<:MultiValue{S}}) where S<:Tuple = tuple(S.parameters...)
 size(a::MultiValue) = size(typeof(a))
@@ -128,7 +203,7 @@ change_eltype(::Type{<:Number}, T::Type) = T
 change_eltype(::T,::Type{T2}) where {T<:Number,T2} = change_eltype(T,T2)
 change_eltype(a::MultiValue,::Type{T2}) where T2 = change_eltype(typeof(a),T2)
 
-get_array(a::MultiValue{S,T}) where {S,T} = convert(SArray{S,T},a)
+get_array(a::MultiValue{S,T}) where {S,T} = convert(SArray{_rm_size_variance(S),T},a)
 
 """
     MultiValue(a::SArray)
@@ -178,7 +253,7 @@ See also [`mutable`](@ref).
 Mutable(::Type{<:MultiValue}) = @abstractmethod
 # typeof(zero(...)) is for the N and L type parameters to be computed, and get
 # e.g. MVector{D,T} == MMarray{Tuple{D},T,1,D} instead of MMarray{Tuple{D},T}
-Mutable(::Type{<:MultiValue{S,T}}) where {S,T} = typeof(zero(MArray{S,T}))
+Mutable(::Type{<:MultiValue{S,T}}) where {S,T} = typeof(zero(MArray{_rm_size_variance(S),T}))
 Mutable(a::MultiValue) = Mutable(typeof(a))
 
 """
@@ -188,7 +263,7 @@ Converts `a` into a mutable array of type `MArray` defined by `StaticArrays.jl`.
 
 See also [`Mutable`](@ref).
 """
-mutable(a::MultiValue{S}) where S = MArray{S}(Tuple(get_array(a)))
+mutable(a::MultiValue{S}) where S = MArray{_rm_size_variance(S)}(Tuple(get_array(a)))
 
 ###############################################################
 # Conversions
