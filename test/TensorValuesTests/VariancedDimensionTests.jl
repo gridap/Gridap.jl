@@ -24,4 +24,11 @@ v_outer_t = ThirdOrderTensorValue{2, 2, cov2}(5, 7, 10, 14, 15, 21, 20, 28)
 ω23 = ExteriorFormValue{2,3}((1,2,3))
 @test size(ω23) == (cov3,cov3)
 
+@test tensor_type(1) == (0,0)
+@test tensor_type(v) == (1,0)
+@test tensor_type(t) == (1,1)
+@test tensor_type(ω13) == (0,1)
+@test tensor_type(ω23) == (0,2)
+@test tensor_type(v_outer_t) == (2,1)
+
 end # module

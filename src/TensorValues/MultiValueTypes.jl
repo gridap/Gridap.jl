@@ -122,6 +122,22 @@ end
 size(a::MultiValue, d::Integer) = size(typeof(a), d)
 
 """
+    tensor_type(a::Number)
+    tensor_type(::Type{V<:Number})
+
+The couple `(r, s)` where `s` the number of covariant dimensions (indices that
+`isa Covariant`), and `r` is the number of contravariant dimensions (all other indices).
+"""
+tensor_type(a::V)      where V<:Number     = _tensor_type(size(a))
+tensor_type(::Type{V}) where V<:MultiValue = _tensor_type(size(V))
+function _tensor_type(sizetuple::S) where S<:Tuple
+  @assert all(i -> isa(i,_Dim), sizetuple) "Invalid dimension indices in size: $sizetuple"
+  s = count(i -> isa(i,Covariant), sizetuple)
+  r = length(sizetuple) - s
+  (r,s)
+end
+
+"""
     num_components(::Type{<:Number})
     num_components(a::Number)
 

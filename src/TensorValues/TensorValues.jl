@@ -61,6 +61,7 @@ export cov3
 #export con1
 #export con2
 #export con3
+export tensor_type
 
 export MultiValue
 export VectorValue
