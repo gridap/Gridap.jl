@@ -11,8 +11,9 @@ t = TensorValue{2, cov2}(1, 2, 3, 4)
 t2 = TensorValue{2, 2}(1:4...)
 @test_throws "failed to change any argument" t + t2
 
-v = VectorValue(5,7)
-v_outer_t = ThirdOrderTensorValue{2, 2, cov2}(5, 7, 10, 14, 15, 21, 20, 28)
+v = VectorValue(1,1)
+t = TensorValue{2, cov2}(1, 1, 1, 1)
+v_outer_t = ThirdOrderTensorValue{2, 2, cov2}(1,1,1,1,)
 @test v ⊗ t == v_outer_t
 @test t ⊗ v != v_outer_t
 
