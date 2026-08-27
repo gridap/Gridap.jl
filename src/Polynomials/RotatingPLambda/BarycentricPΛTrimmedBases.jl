@@ -101,7 +101,7 @@ end
 Trimmed P_r⁻Λ¹ basis on the D-simplex: `B_{α,r-1}(λ) · ϕ(e1,e2)`, with `ϕ` the
 Whitney 1-form (see comments above).
 
-- `V = DifferentialFormValue{1,D,T,D,Cartesian{D}}`,
+- `V = DifferentialFormValue{1,D,T,D}`,
 - `C` the number of basis polynomials,
 - `K` the polynomial order of the underlying scalar Bernstein basis (= r−1).
 """
@@ -129,7 +129,7 @@ struct TrimmedPΛBasis{D,V,C,K} <: PolynomialBasis{D,V,Bernstein}
     C = isempty(bubbles) ? 0 : bubbles[end][2][end][1]
 
     L = D # binomial(D,1)
-    V = DifferentialFormValue{1,D,T,L,Cartesian{D}}
+    V = DifferentialFormValue{1,D,T,L}
 
     b = BernsteinBasisOnSimplex{D}(Float64, r-1, vertices)
     K = get_order(b)

@@ -5,7 +5,6 @@ using Gridap
 using Gridap.TensorValues
 using Gridap.Polynomials
 
-using Gridap.TensorValues: FormDomain, Cartesian, Barycentric
 using Gridap.Polynomials: RotatingPΛBasis, TrimmedPΛBasis
 using Gridap.Polynomials: _rotating_ambient_psi, _trimmed_ambient_phi
 using Gridap.Polynomials: multinomial  # Combinatorics, via Gridap.Polynomials
@@ -20,8 +19,8 @@ import Gridap.Polynomials: print_forms
 # Symbolic scalar multiplication (Symbolics.Num is not <:Real)
 # ============================================================
 
-function Base.:*(s::Symbolics.Num, ω::DifferentialFormValue{K,D,T,L,CS}) where {K,D,T,L,CS<:FormDomain}
-  DifferentialFormValue{K,D,Symbolics.Num,L,CS}(map(x -> s*x, ω.data))
+function Base.:*(s::Symbolics.Num, ω::DifferentialFormValue{K,D,T,L}) where {K,D,T,L}
+  DifferentialFormValue{K,D,Symbolics.Num,L}(map(x -> s*x, ω.data))
 end
 Base.:*(ω::DifferentialFormValue, s::Symbolics.Num) = s * ω
 
@@ -39,25 +38,25 @@ symbolic_coordinates(D::Integer) = Tuple(coords[1:D])
 # Dispatches when T = Symbolics.Num (symbolic coefficients).
 # ============================================================
 
-function _sym_exterior_derivative(ω::DifferentialFormValue{K,D,Symbolics.Num,L0,CS},
-                                   diff_vars::AbstractVector) where {K,D,L0,CS<:FormDomain}
+function _sym_exterior_derivative(ω::DifferentialFormValue{K,D,Symbolics.Num,L0},
+                                   diff_vars::AbstractVector) where {K,D,L0}
   L   = binomial(D, K)
   ds  = [Symbolics.jacobian([ω.data[i]], diff_vars) for i in 1:L]
-  dfs = [DifferentialFormValue{1,D}(Tuple(ds[i]), CS()) for i in 1:L]
-  kbs = [DifferentialFormValue{K,D}(ntuple(i -> i == j ? 1.0 : 0.0, L), CS()) for j in 1:L]
+  dfs = [DifferentialFormValue{1,D}(Tuple(ds[i])) for i in 1:L]
+  kbs = [DifferentialFormValue{K,D}(ntuple(i -> i == j ? 1.0 : 0.0, L)) for j in 1:L]
   res = [dfs[i] ∧ kbs[i] for i in 1:L]
   dat = sum([collect(r.data) for r in res])
   Lout = binomial(D, K+1)
-  DifferentialFormValue{K+1,D,Symbolics.Num,Lout,CS}(Tuple(dat))
+  DifferentialFormValue{K+1,D,Symbolics.Num,Lout}(Tuple(dat))
 end
 
 # Differentiates w.r.t. global Cartesian coords x¹,...,x^D
-exterior_derivative(ω::DifferentialFormValue{K,D,Symbolics.Num,L0,CS}) where {K,D,L0,CS<:FormDomain} =
+exterior_derivative(ω::DifferentialFormValue{K,D,Symbolics.Num,L0}) where {K,D,L0} =
   _sym_exterior_derivative(ω, coords[1:D])
 
 # Differentiates w.r.t. explicit variables — works for barycentric λs or any symbols
-exterior_derivative(ω::DifferentialFormValue{K,D,Symbolics.Num,L0,CS},
-                    vars::NTuple{D,Symbolics.Num}) where {K,D,L0,CS<:FormDomain} =
+exterior_derivative(ω::DifferentialFormValue{K,D,Symbolics.Num,L0},
+                    vars::NTuple{D,Symbolics.Num}) where {K,D,L0} =
   _sym_exterior_derivative(ω, collect(vars))
 
 # ============================================================
@@ -95,26 +94,32 @@ end
 # as ambient barycentric differential forms (dλ₁,…,dλ_{D+1})
 # ============================================================
 
+# The basis, not the value, is what knows its components are coefficients on the
+# ambient dλ coframe, so it is the basis that asks for the dλ labelling.
+_barycentric_io(out::IO) = IOContext(out, :coordinates => :barycentric)
+
 function print_forms(b::RotatingPΛBasis{D}, out::IO=stdout) where D
-  N = D + 1
+  N  = D + 1
   λs = Symbolics.variables(:λ, 1:N)
+  io = _barycentric_io(out)
 
   println(out, "RotatingPΛBasis{D=$D, r=$(get_order(b))}: dim = $(length(b))  (as barycentric differential forms)")
   for (F, bubble_functions) in b.bubbles
     for (w, k, α, _) in bubble_functions
       mono = multinomial(α...) * prod(λs[i]^α[i] for i in 1:N)
       ψ    = _rotating_ambient_psi(F, k, α, N)  # ambient dλ₁,…,dλ_N coefficients
-      form = DifferentialFormValue{1,N}(Tuple(mono .* ψ), Barycentric{N}())
+      form = DifferentialFormValue{1,N}(Tuple(mono .* ψ))
       print(out, "[", rpad(w,3), "]  F=", rpad(join(F,","),8), " k=", rpad(k,3), " α=", rpad(string(Tuple(α)),12), "  ")
-      show(out, MIME("text/plain"), form)
+      show(io, MIME("text/plain"), form)
       println(out)
     end
   end
 end
 
 function print_forms(b::TrimmedPΛBasis{D}, out::IO=stdout) where D
-  N = D + 1
+  N  = D + 1
   λs = Symbolics.variables(:λ, 1:N)
+  io = _barycentric_io(out)
 
   println(out, "TrimmedPΛBasis{D=$D, r=$(get_order(b))}: dim = $(length(b))  (as barycentric differential forms)")
   for (F, bubble_functions) in b.bubbles
@@ -122,9 +127,9 @@ function print_forms(b::TrimmedPΛBasis{D}, out::IO=stdout) where D
       e1, e2 = e
       mono = prod(λs[i]^α[i] for i in 1:N)   # bare monomial
       ϕ    = _trimmed_ambient_phi(e1, e2, N, λs)  # ambient dλ₁,…,dλ_N coefficients (symbolic)
-      form = DifferentialFormValue{1,N}(Tuple(mono .* ϕ), Barycentric{N}())
+      form = DifferentialFormValue{1,N}(Tuple(mono .* ϕ))
       print(out, "[", rpad(w,3), "]  F=", rpad(join(F,","),8), " e=", rpad(string(e),7), " α=", rpad(string(Tuple(α)),12), "  ")
-      show(out, MIME("text/plain"), form)
+      show(io, MIME("text/plain"), form)
       println(out)
     end
   end

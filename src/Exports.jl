@@ -44,11 +44,6 @@ using Gridap.Arrays: ∑; export ∑
 @publish TensorValues num_indep_components
 
 @publish TensorValues DifferentialFormValue
-@publish TensorValues FormDomain
-@publish TensorValues Cartesian
-@publish TensorValues Barycentric
-@publish TensorValues physical_dim
-@publish TensorValues ambient_dim
 using Gridap.TensorValues: ∧, ⋆; export ∧, ⋆
 @publish TensorValues interior_product
 @publish TensorValues ι
@@ -143,7 +138,6 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Polynomials rotating_PΛ_bubbles
 @publish Polynomials TrimmedPΛBasis
 @publish Polynomials trimmed_PΛ_bubbles
-@publish Polynomials print_forms
 @publish Polynomials rotate_basis_function
 @publish Polynomials rotation_change_of_basis
 @publish Polynomials RotationCache

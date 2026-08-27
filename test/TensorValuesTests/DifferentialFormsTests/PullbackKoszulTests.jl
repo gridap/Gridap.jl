@@ -1,20 +1,9 @@
 module PullbackKoszulTests
 # Value-level pullback/pushforward under a linear map (Jacobian), the Koszul
-# operator κ_x(ω) = ι_x(ω), and the FormDomain (Cartesian/Barycentric) trait.
+# operator κ_x(ω) = ι_x(ω).
 
 using Gridap.TensorValues
 using Test
-
-# ── FormDomain trait ─────────────────────────────────────────────────────────
-
-@test physical_dim(Cartesian{2}()) == 2
-@test physical_dim(Cartesian{3}()) == 3
-@test physical_dim(Barycentric{3}()) == 2   # triangle: N=3 → D=2
-@test physical_dim(Barycentric{4}()) == 3   # tet: N=4 → D=3
-@test ambient_dim(Cartesian{2}()) == 2
-@test ambient_dim(Barycentric{3}()) == 3
-@test Cartesian{2}() isa FormDomain
-@test Barycentric{3}() isa FormDomain
 
 # ── Pullback (value level) ───────────────────────────────────────────────────
 

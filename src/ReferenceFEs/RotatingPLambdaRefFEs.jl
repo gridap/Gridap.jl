@@ -77,14 +77,14 @@ Pushforward(::Type{TrimmedPΛName},  ::CurlConformity) = CoVariantPiolaMap()
 
 # Pushforward: ω_phys = J⁻ᵀ ω_ref
 @inline function evaluate!(cache, ::CoVariantPiolaMap,
-  v::DifferentialFormValue{1,D,T,D,Cartesian{D}}, Jt::Number) where {D,T}
+  v::DifferentialFormValue{1,D,T,D}, Jt::Number) where {D,T}
   vv = VectorValue{D,T}(v.data)
   DifferentialFormValue{1,D}(Tuple((pinvJt(Jt) ⋅ vv).data))
 end
 
 # Inverse pushforward: ω_ref = Jᵀ ω_phys
 @inline function evaluate!(cache, ::InversePushforward{CoVariantPiolaMap},
-  v::DifferentialFormValue{1,D,T,D,Cartesian{D}}, Jt::Number) where {D,T}
+  v::DifferentialFormValue{1,D,T,D}, Jt::Number) where {D,T}
   vv = VectorValue{D,T}(v.data)
   DifferentialFormValue{1,D}(Tuple((Jt ⋅ vv).data))
 end

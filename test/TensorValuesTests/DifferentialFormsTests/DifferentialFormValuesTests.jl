@@ -186,4 +186,24 @@ for ω in [dx1_2d, dx2_2d]
   @test hodge_star(hodge_star(ω)).data == (-1.0 * ω).data
 end
 
+# ── Display: coframe labelling ───────────────────────────────────────────────
+
+_str(io_props, ω) = sprint((io, x) -> show(io, MIME("text/plain"), x), ω;
+                           context = io_props)
+
+ω_show = DifferentialFormValue{1,D3}((1.0, 2.0, 3.0))
+@test _str(:coordinates => :cartesian,   ω_show) == "1.0 dx¹ + 2.0 dx² + 3.0 dx³"
+@test _str(:coordinates => :barycentric, ω_show) == "1.0 dλ₁ + 2.0 dλ₂ + 3.0 dλ₃"
+# Cartesian labelling is the default when the property is absent
+@test sprint((io, x) -> show(io, MIME("text/plain"), x), ω_show) ==
+      _str(:coordinates => :cartesian, ω_show)
+# An unrecognised coframe is an error, not a silent fallback
+@test_throws ArgumentError _str(:coordinates => :something_else, ω_show)
+@test_throws ArgumentError _str(:coordinates => true, ω_show)
+
+# Wedge basis elements are labelled on both coframes
+ω2_show = DifferentialFormValue{2,D3}((1.0, 0.0, 0.0))
+@test occursin("dx¹ ∧ dx²", _str(:coordinates => :cartesian,   ω2_show))
+@test occursin("dλ₁ ∧ dλ₂", _str(:coordinates => :barycentric, ω2_show))
+
 end # module

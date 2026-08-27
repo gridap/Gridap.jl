@@ -1,7 +1,7 @@
 # DifferentialFormValues.jl
 #
-# Defines the FormDomain coordinate-system trait and DifferentialFormValue,
-# together with its pointwise algebra (∧, ι, ⋆, ♭/♯, koszul, …).
+# Defines DifferentialFormValue together with its pointwise algebra
+# (∧, ι, ⋆, ♭/♯, koszul, …).
 #
 # Symbolic operations (exterior_derivative, codifferential, lie_derivative on
 # Symbolics.Num-valued forms) are provided by the GridapSymbolicsExt package
@@ -10,67 +10,35 @@
 
 using Combinatorics: combinations, levicivita
 
-# ── Coordinate-system trait ───────────────────────────────────────────────────
-
 """
-    abstract type FormDomain end
-
-Trait tagging a differential form's coordinate system.
-Subtypes: [`Cartesian{D}`](@ref), [`Barycentric{N}`](@ref).
-"""
-abstract type FormDomain end
-
-"""
-    Cartesian{D} <: FormDomain
-
-Tag: form lives in D-dimensional Cartesian space with coordinates x₁,…,x_D.
-"""
-struct Cartesian{D} <: FormDomain end
-
-"""
-    Barycentric{N} <: FormDomain
-
-Tag: form lives in the N-dimensional ambient barycentric space of a (N-1)-simplex.
-"""
-struct Barycentric{N} <: FormDomain end
-
-physical_dim(::Cartesian{D}) where D = D
-physical_dim(::Barycentric{N}) where N = N - 1
-ambient_dim(::Cartesian{D}) where D = D
-ambient_dim(::Barycentric{N}) where N = N
-
-"""
-    DifferentialFormValue{K,D,T,L,CS<:FormDomain} <: MultiValue{NTuple{K,D},T,K,L}
+    DifferentialFormValue{K,D,T,L} <: MultiValue{NTuple{K,D},T,K,L}
 
 Value of a differential K-form in D dimensions: the `L = binomial(D,K)`
 components on the orientation-ordered basis `{dx^I}` (lexicographic
-K-combinations `I` of `1:D`), with scalar type `T` and coordinate-system tag
-`CS` (see [`FormDomain`](@ref)).
+K-combinations `I` of `1:D`), with scalar type `T`.
+
+The components are coefficients on a coframe; which coframe they refer to is a
+property of the space the value came from, not of the value. `show` labels them
+`dxⁱ`, or `dλᵢ` when the `IOContext` property `:coordinates` is `:barycentric`.
 """
-struct DifferentialFormValue{K,D,T,L,CS<:FormDomain} <: MultiValue{NTuple{K,D},T,K,L}
+struct DifferentialFormValue{K,D,T,L} <: MultiValue{NTuple{K,D},T,K,L}
   data::NTuple{L,T}
 
-  # All-params inner constructor: no validation (used by CS-preserving ops).
-  function DifferentialFormValue{K,D,T,L,CS}(data::NTuple{L,T}) where {K,D,T,L,CS<:FormDomain}
-    new{K,D,T,L,CS}(data)
+  # All-params inner constructor: no validation.
+  function DifferentialFormValue{K,D,T,L}(data::NTuple{L,T}) where {K,D,T,L}
+    new{K,D,T,L}(data)
   end
 
-  # 2-param shorthand → Cartesian{D} (validates component count).
+  # 2-param shorthand (validates component count).
   function DifferentialFormValue{K,D}(data::NTuple{L,T}) where {K,D,T,L}
     @assert L == binomial(D,K) "wrong number of values: got $L, expected $(binomial(D,K))"
-    new{K,D,T,L,Cartesian{D}}(data)
+    new{K,D,T,L}(data)
   end
 
-  # 2-param + FormDomain instance → explicit coordinate system.
-  function DifferentialFormValue{K,D}(data::NTuple{L,T}, ::CS) where {K,D,T,L,CS<:FormDomain}
-    @assert L == binomial(D,K) "wrong number of values: got $L, expected $(binomial(D,K))"
-    new{K,D,T,L,CS}(data)
-  end
-
-  # Empty tuple (K > D): no component, default to Cartesian{D}.
+  # Empty tuple (K > D): no component.
   function DifferentialFormValue{K,D}(data::Tuple{}) where {K,D}
     @assert binomial(D,K) == 0 "Empty tuple requires K > D"
-    new{K,D,Float64,0,Cartesian{D}}(data)
+    new{K,D,Float64,0}(data)
   end
 end
 
@@ -90,22 +58,36 @@ function _show_dfv(io::IO, a::DifferentialFormValue{K,D}, basis_strs) where {K,D
   print(io, join(result, " + "))
 end
 
-function Base.show(io::IO, ::MIME"text/plain", a::DifferentialFormValue{K,D,T,L,Cartesian{D}}) where {K,D,T,L}
-  @assert D <= 9 "show not implemented for D > 9"
-  _show_dfv(io, a, _sbs_cart)
+function _coframe_labels(io::IO)
+  c = get(io, :coordinates, :cartesian)
+  c === :cartesian   && return _sbs_cart
+  c === :barycentric && return _sbs_bary
+  throw(ArgumentError(
+    "unknown :coordinates value $(repr(c)); expected :cartesian or :barycentric"))
 end
 
-function Base.show(io::IO, ::MIME"text/plain", a::DifferentialFormValue{K,D,T,L,Barycentric{D}}) where {K,D,T,L}
+"""
+    show(io::IO, ::MIME"text/plain", ω::DifferentialFormValue)
+
+Print `ω` as a linear combination of coframe elements, labelled `dx¹,…,dx^D`.
+
+Set the `:coordinates` `IOContext` property to `:barycentric` to label them
+`dλ₁,…,dλ_D` instead, for a form whose components are coefficients on the
+ambient barycentric coframe of a (D−1)-simplex:
+
+    show(IOContext(stdout, :coordinates => :barycentric), MIME("text/plain"), ω)
+"""
+function Base.show(io::IO, ::MIME"text/plain", a::DifferentialFormValue{K,D}) where {K,D}
   @assert D <= 9 "show not implemented for D > 9"
-  _show_dfv(io, a, _sbs_bary)
+  _show_dfv(io, a, _coframe_labels(io))
 end
 
 # ============================================================
 # Basic algebra: zero, +, -, scalar *
 # ============================================================
 
-function Base.zero(::Type{DifferentialFormValue{K,D,T,L,CS}}) where {K,D,T,L,CS<:FormDomain}
-  DifferentialFormValue{K,D,T,L,CS}(ntuple(_ -> zero(T), L))
+function Base.zero(::Type{DifferentialFormValue{K,D,T,L}}) where {K,D,T,L}
+  DifferentialFormValue{K,D,T,L}(ntuple(_ -> zero(T), L))
 end
 
 # change_eltype's generic <:Number fallback (Operations.jl) would otherwise
@@ -113,32 +95,27 @@ end
 # <: Number. PolynomialBasis's generic return_cache (_return_val_eltype)
 # relies on change_eltype to reconstruct the value type, so this is needed
 # for any DifferentialFormValue-valued PolynomialBasis to evaluate correctly.
-change_eltype(::Type{<:DifferentialFormValue{K,D,T1,L,CS}}, ::Type{T2}) where {K,D,T1,T2,L,CS<:FormDomain} =
-  DifferentialFormValue{K,D,T2,L,CS}
-
-# Fallback for 4-param (UnionAll CS) — defaults to Cartesian.
-function Base.zero(::Type{DifferentialFormValue{K,D,T,L}}) where {K,D,T,L}
-  DifferentialFormValue{K,D,T,L,Cartesian{D}}(ntuple(_ -> zero(T), L))
-end
+change_eltype(::Type{<:DifferentialFormValue{K,D,T1,L}}, ::Type{T2}) where {K,D,T1,T2,L} =
+  DifferentialFormValue{K,D,T2,L}
 
 Base.zero(ω::DifferentialFormValue) = zero(typeof(ω))
 
-function Base.:+(a::DifferentialFormValue{K,D,T1,L,CS}, b::DifferentialFormValue{K,D,T2,L,CS}) where {K,D,T1,T2,L,CS<:FormDomain}
+function Base.:+(a::DifferentialFormValue{K,D,T1,L}, b::DifferentialFormValue{K,D,T2,L}) where {K,D,T1,T2,L}
   d = map(+, a.data, b.data)
-  DifferentialFormValue{K,D,eltype(d),L,CS}(d)
+  DifferentialFormValue{K,D,eltype(d),L}(d)
 end
 
-function Base.:-(a::DifferentialFormValue{K,D,T1,L,CS}, b::DifferentialFormValue{K,D,T2,L,CS}) where {K,D,T1,T2,L,CS<:FormDomain}
+function Base.:-(a::DifferentialFormValue{K,D,T1,L}, b::DifferentialFormValue{K,D,T2,L}) where {K,D,T1,T2,L}
   d = map(-, a.data, b.data)
-  DifferentialFormValue{K,D,eltype(d),L,CS}(d)
+  DifferentialFormValue{K,D,eltype(d),L}(d)
 end
 
-Base.:-(a::DifferentialFormValue{K,D,T,L,CS}) where {K,D,T,L,CS<:FormDomain} =
-  DifferentialFormValue{K,D,T,L,CS}(map(-, a.data))
+Base.:-(a::DifferentialFormValue{K,D,T,L}) where {K,D,T,L} =
+  DifferentialFormValue{K,D,T,L}(map(-, a.data))
 
-function Base.:*(s::Union{Real,Complex}, ω::DifferentialFormValue{K,D,T,L,CS}) where {K,D,T,L,CS<:FormDomain}
+function Base.:*(s::Union{Real,Complex}, ω::DifferentialFormValue{K,D,T,L}) where {K,D,T,L}
   d = map(x -> s*x, ω.data)
-  DifferentialFormValue{K,D,eltype(d),L,CS}(d)
+  DifferentialFormValue{K,D,eltype(d),L}(d)
 end
 
 Base.:*(ω::DifferentialFormValue, s::Union{Real,Complex}) = s * ω
@@ -171,7 +148,7 @@ end
 
 Pointwise exterior (wedge) product, a `DifferentialFormValue{K1+K2,D}`.
 """
-function ∧(a::DifferentialFormValue{K1,D,T1,L1,CS}, b::DifferentialFormValue{K2,D,T2,L2,CS}) where {K1,K2,D,T1,T2,L1,L2,CS<:FormDomain}
+function ∧(a::DifferentialFormValue{K1,D,T1,L1}, b::DifferentialFormValue{K2,D,T2,L2}) where {K1,K2,D,T1,T2,L1,L2}
   K  = K1 + K2
   T  = typeof(zero(T1) * zero(T2))
   L  = binomial(D, K)   # = 0 when K > D
@@ -195,7 +172,7 @@ function ∧(a::DifferentialFormValue{K1,D,T1,L1,CS}, b::DifferentialFormValue{K
     end
   end
 
-  DifferentialFormValue{K,D,T,L,CS}(Tuple(d[1:L]))
+  DifferentialFormValue{K,D,T,L}(Tuple(d[1:L]))
 end
 
 # ============================================================
@@ -209,7 +186,7 @@ end
 Interior product (contraction) `ι_v ω`, a `DifferentialFormValue{K-1,D}`:
 `(ι_v ω)(w₂,…,wₖ) = ω(v, w₂,…,wₖ)`. Also available as [`ι`](@ref).
 """
-function interior_product(v::VectorValue{D,Tv}, ω::DifferentialFormValue{K,D,Tw,Lw,CS}) where {K,D,Tv,Tw,Lw,CS<:FormDomain}
+function interior_product(v::VectorValue{D,Tv}, ω::DifferentialFormValue{K,D,Tw,Lw}) where {K,D,Tv,Tw,Lw}
   @assert K >= 1 "interior product requires K ≥ 1"
   T    = typeof(zero(Tv) * zero(Tw))
   Km1  = K - 1
@@ -232,7 +209,7 @@ function interior_product(v::VectorValue{D,Tv}, ω::DifferentialFormValue{K,D,Tw
     end
   end
 
-  DifferentialFormValue{Km1,D,T,L,CS}(Tuple(d[1:L]))
+  DifferentialFormValue{Km1,D,T,L}(Tuple(d[1:L]))
 end
 
 """
@@ -250,7 +227,7 @@ const ι = interior_product
 # for the vector proxy of the 1-form.
 # ============================================================
 
-function outer(a::VectorValue{D,Ta}, b::DifferentialFormValue{1,D,Tb,L,CS}) where {D,Ta,Tb,L,CS<:FormDomain}
+function outer(a::VectorValue{D,Ta}, b::DifferentialFormValue{1,D,Tb,L}) where {D,Ta,Tb,L}
   T = promote_type(Ta, Tb)
   TensorValue{D,D,T}(ntuple(k -> a[(k-1)%D+1] * b.data[(k-1)÷D+1], Val(D*D)))
 end
@@ -292,12 +269,12 @@ Hodge star `⋆ω`, a `DifferentialFormValue{D-K,D}`. The one-argument form uses
 the flat Euclidean metric; the three-argument form takes a pointwise inverse
 metric tensor and `√det(g)`. Also available as [`⋆`](@ref).
 """
-function hodge_star(ω::DifferentialFormValue{K,D,T,L,CS}) where {K,D,T,L,CS<:FormDomain}
+function hodge_star(ω::DifferentialFormValue{K,D,T,L}) where {K,D,T,L}
   Kc = D - K
   Lc = binomial(D, Kc)
   M  = _hodge_star_matrix(K, D)
   d  = ntuple(m -> sum(M[m, n] * ω.data[n] for n in 1:L), Lc)
-  DifferentialFormValue{Kc,D,T,Lc,CS}(d)
+  DifferentialFormValue{Kc,D,T,Lc}(d)
 end
 
 """

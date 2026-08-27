@@ -87,11 +87,6 @@ export to_mandel
 export from_mandel
 
 export DifferentialFormValue
-export FormDomain
-export Cartesian
-export Barycentric
-export physical_dim
-export ambient_dim
 export ∧
 export interior_product
 export ι

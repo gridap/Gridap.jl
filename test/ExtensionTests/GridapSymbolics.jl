@@ -39,14 +39,14 @@ dω0 = exterior_derivative(ω0)
 λ₁, λ₂, λ₃ = Symbolics.variables(:λ, 1:3)
 λ = (λ₁, λ₂, λ₃)
 
-ωb = DifferentialFormValue{0,3}((λ₁*λ₂,), Barycentric{3}())
+ωb = DifferentialFormValue{0,3}((λ₁*λ₂,))
 dωb = exterior_derivative(ωb, λ)
 @test typeof(dωb) <: DifferentialFormValue{1,3}
 @test isequal(Symbolics.simplify(dωb.data[1] - λ₂), Symbolics.simplify(Symbolics.Num(0)))
 @test isequal(Symbolics.simplify(dωb.data[2] - λ₁), Symbolics.simplify(Symbolics.Num(0)))
 @test isequal(Symbolics.simplify(dωb.data[3]), Symbolics.simplify(Symbolics.Num(0)))
 
-ω1b = DifferentialFormValue{1,3}((λ₁*λ₂, λ₁*λ₃, λ₂*λ₃), Barycentric{3}())
+ω1b = DifferentialFormValue{1,3}((λ₁*λ₂, λ₁*λ₃, λ₂*λ₃))
 ddωb = exterior_derivative(exterior_derivative(ω1b, λ), λ)
 @test all(isequal(Symbolics.simplify(c), Symbolics.simplify(Symbolics.Num(0)))
           for c in ddωb.data)
@@ -130,6 +130,8 @@ for (make, header) in ((RotatingPΛBasis, "RotatingPΛBasis"),
   out = String(take!(buf))
   @test occursin(header, out)
   @test occursin("dim = $(length(b))", out)
+  # forms are printed on the ambient barycentric coframe, not the Cartesian one
+  @test occursin("dλ", out)
   # one line per basis function
   @test count(==('['), out) >= length(b)
 end

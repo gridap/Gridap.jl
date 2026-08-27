@@ -119,7 +119,7 @@ end
 Rotating P_rΛ¹ basis on the D-simplex: `B_{α,r}(λ) · ψ(F,k,α)`, with `ψ` the
 directional 1-form (see comments above).
 
-- `V = DifferentialFormValue{1,D,T,D,Cartesian{D}}`,
+- `V = DifferentialFormValue{1,D,T,D}`,
 - `C` the number of basis polynomials,
 - `K` the polynomial order of the underlying scalar Bernstein basis (= r).
 """
@@ -138,7 +138,7 @@ struct RotatingPΛBasis{D,V,C,K} <: PolynomialBasis{D,V,Bernstein}
     C = isempty(bubbles) ? 0 : bubbles[end][2][end][1]
 
     L = D # binomial(D,1)
-    V = DifferentialFormValue{1,D,T,L,Cartesian{D}}
+    V = DifferentialFormValue{1,D,T,L}
 
     b = BernsteinBasisOnSimplex{D}(Float64, r, vertices)
     K = get_order(b)
@@ -292,9 +292,9 @@ Base.show(io::IO, b::RotatingPΛBasis) = print_indices(b, io)
     print_forms(b::RotatingPΛBasis, out::IO=stdout)
     print_forms(b::TrimmedPΛBasis,  out::IO=stdout)
 
-Print each basis function of `b` as a genuine ambient barycentric
-`DifferentialFormValue` (in terms of dλ₁,…,dλ_{D+1}, the frame the ψ and ϕ
-formulas are stated in), with symbolic polynomial coefficients.
+Print each basis function of `b` as an ambient barycentric differential form,
+in terms of dλ₁,…,dλ_{D+1} — the frame the ψ and ϕ formulas are stated in —
+with symbolic polynomial coefficients.
 
 Requires the Symbolics package to be loaded: the methods are provided by the
 GridapSymbolicsExt package extension.
