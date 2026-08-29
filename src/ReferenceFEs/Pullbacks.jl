@@ -165,8 +165,9 @@ end
 ##############
 
 # In what follows,
-# - F is the geometrical map F:K̂->K
-# - Jt = ∇F = (Jac(F))ᵀ
+# - F is the geometrical map F : K̂ ⟶ K, with dim(K̂) ≤ dim(K)
+# - Jt = Jᵀ = Jac(F)ᵀ = ∇F
+# - |J| = sqrt(det(J Jt)), which is abs(det(J)) for square J
 
 """
     struct IdentityPiolaMap <: Pushforward
@@ -180,14 +181,14 @@ struct IdentityPiolaMap <: Pushforward end # φ̂ -> φ = φ̂∘F⁻¹
 """
 struct ContraVariantPiolaMap <: Pushforward end
 
-function evaluate!( # φ̂ -> φ = (|det(J)|⁻¹J φ̂)∘F⁻¹
+function evaluate!( # φ̂ -> φ = (|J|⁻¹J φ̂)∘F⁻¹
   cache, ::ContraVariantPiolaMap, v_ref::Number, Jt::Number
 )
   idetJ = 1. / meas(Jt)
   return v_ref ⋅ (idetJ * Jt)
 end
 
-function evaluate!( # φ -> φ̂ = |det(J)| J⁻¹ φ∘F
+function evaluate!( # φ -> φ̂ = |J| J⁻¹ φ∘F  or φ̂ = |J| (Jt J)⁻ᵀ Jt φ∘F
   cache, ::InversePushforward{ContraVariantPiolaMap}, v_phys::Number, Jt::Number
 )
   detJ = meas(Jt)
@@ -225,7 +226,7 @@ end
 """
 struct CoVariantPiolaMap <: Pushforward end
 
-function evaluate!( # φ̂ -> φ = (J⁻ᵀ φ̂)∘F⁻¹
+function evaluate!( # φ̂ -> φ = (J⁻ᵀ φ̂)∘F⁻¹ or φ = (J (Jt J)⁻ᵀ φ̂)∘F⁻¹
   cache, ::CoVariantPiolaMap, v_ref::Number, Jt::Number
 )
   return v_ref ⋅ transpose(pinvJt(Jt))
@@ -241,14 +242,14 @@ end
 
 struct DoubleContraVariantPiolaMap <: Pushforward end
 
-function evaluate!( # φ̂ -> φ = (det(J)⁻² J φ̂ Jᵀ)∘F⁻¹
+function evaluate!( # φ̂ -> φ = (|J|⁻² J φ̂ Jᵀ)∘F⁻¹
   cache, ::DoubleContraVariantPiolaMap, v_ref::Number, Jt::Number
 )
   _Jt = (1. / det(Jt)) * Jt
   return congruent_prod(v_ref, _Jt) # symmetry stable _Jtᵀ ⋅ v_ref ⋅ _Jt
 end
 
-function evaluate!( # φ -> φ̂ = det(J)² J⁻¹ φ∘F J⁻ᵀ
+function evaluate!( # φ -> φ̂ = |J|² J⁻¹ φ∘F J⁻ᵀ
   cache, ::InversePushforward{DoubleContraVariantPiolaMap}, v_phys::Number, Jt::Number
 )
   iJt = det(Jt) * pinvJt(Jt)
