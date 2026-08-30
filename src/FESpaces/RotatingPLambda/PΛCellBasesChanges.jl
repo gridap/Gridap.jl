@@ -1,7 +1,7 @@
 # RotatingPLambda/PΛCellBasesChanges.jl
 #
 # Mesh-level conformity layer for the rotating P_rΛ¹ and trimmed P_r⁻Λ¹
-# reference FEs (see src/ReferenceFEs/RotatingPLambda/PΛRefFEs.jl): the
+# reference FEs (see src/ReferenceFEs/RotatingPLambdaRefFEs.jl): the
 # compute_cell_bases_changes methods providing the per-cell change of basis
 # given by the closed-form vertex-relabelling calculus of Gridap.Polynomials.
 #

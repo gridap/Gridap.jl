@@ -26,6 +26,7 @@ using Gridap.Polynomials
 using Gridap.Polynomials: _q_filter, _ser_filter
 using Gridap.Polynomials: _compute_filter_mask
 using Gridap.Polynomials: _define_terms, _sort_by_nfaces!
+using Gridap.Polynomials: RotatingPΛBasis, TrimmedPΛBasis, _PΛBases
 
 using QuadGK: gauss
 using FastGaussQuadrature: gaussjacobi
@@ -215,7 +216,6 @@ export RotatingPΛName
 export TrimmedPΛName
 export rotating_pλ
 export trimmed_pλ
-export PΛRefFE
 export RotatingPΛRefFE
 export TrimmedPΛRefFE
 
@@ -315,6 +315,6 @@ include("ModalC0RefFEs.jl")
 
 include("BubbleRefFEs.jl")
 
-include("RotatingPLambda/PΛRefFEs.jl")
+include("RotatingPLambdaRefFEs.jl")
 
 end # module

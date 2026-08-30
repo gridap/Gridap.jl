@@ -15,10 +15,11 @@ make_reffe(name, D, r) = name == :rotating ? RotatingPΛRefFE(D, r) : TrimmedPΛ
 
 # ─── Construction, duality, identity dof perms ───────────────────────────────
 
-@testset "PΛRefFE construction, duality, identity dof perms" begin
+@testset "PΛ reffe construction, duality, identity dof perms" begin
   for name in (:rotating, :trimmed), (D, r) in ((2,1), (2,2), (2,3), (3,1), (3,2))
     rf = make_reffe(name, D, r)
-    @test rf isa PΛRefFE
+    @test rf isa GenericRefFE
+    @test get_name(rf) isa (name == :rotating ? RotatingPΛName : TrimmedPΛName)
     @test Conformity(rf) == CurlConformity()
     b = get_prebasis(rf)
     @test num_dofs(rf) == length(b)
@@ -37,8 +38,8 @@ make_reffe(name, D, r) = name == :rotating ? RotatingPΛRefFE(D, r) : TrimmedPΛ
     end
   end
   # factories
-  @test ReferenceFE(TRI, rotating_pλ, 2) isa PΛRefFE{RotatingPΛName,2}
-  @test ReferenceFE(TET, trimmed_pλ, 1)  isa PΛRefFE{TrimmedPΛName,3}
+  @test ReferenceFE(TRI, rotating_pλ, 2) isa GenericRefFE{RotatingPΛName,2}
+  @test ReferenceFE(TET, trimmed_pλ, 1)  isa GenericRefFE{TrimmedPΛName,3}
   @test num_dofs(ReferenceFE(TRI, rotating_pλ, 2)) == num_dofs(RotatingPΛRefFE(2, 2))
 end
 

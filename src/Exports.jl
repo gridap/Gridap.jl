@@ -153,7 +153,6 @@ using Gridap.TensorValues: ⊗; export ⊗
 
 @publish ReferenceFEs rotating_pλ
 @publish ReferenceFEs trimmed_pλ
-@publish ReferenceFEs PΛRefFE
 @publish ReferenceFEs RotatingPΛRefFE
 @publish ReferenceFEs TrimmedPΛRefFE
 

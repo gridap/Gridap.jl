@@ -1,4 +1,4 @@
-# RotatingPLambda/PΛRefFEs.jl
+# RotatingPLambdaRefFEs.jl
 #
 # Reference FEs for the rotating P_rΛ¹ and trimmed P_r⁻Λ¹ bases: thin Gridap
 # ReferenceFEs whose cross-cell H(curl) conformity is obtained through a
@@ -40,7 +40,6 @@
 # predofs-constructor (dofs = compute_dofs(predofs, shapefuns)). This keeps
 # shapefuns == prebasis == b, so the rotation calculus applies verbatim.
 
-using Gridap.Polynomials: RotatingPΛBasis, TrimmedPΛBasis, _PΛBases
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Names and singletons
@@ -91,175 +90,109 @@ end
 end
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Reference-simplex helpers
+# Predofs: pointwise moments at BB lattice nodes, grouped per face
 # ─────────────────────────────────────────────────────────────────────────────
 
-_pλ_polytope(::Val{2}) = TRI
-_pλ_polytope(::Val{3}) = TET
-
-# V_1 = origin, V_{j+1} = e_j (barycentric λ = (1−Σx, x…)).
-_pλ_reference_vertices(::Val{D}) where D =
-  ntuple(i -> Point(ntuple(j -> i == j+1 ? 1.0 : 0.0, D)), D+1)
-
-# Sorted vertex ids of every Gridap face of the polytope, indexed by gf.
-function _pλ_face_vertices(polytope, ::Val{D}) where D
-  dimranges = get_dimranges(polytope)
-  fv = Vector{Vector{Int}}(undef, num_faces(polytope))
-  for d in 0:D
-    for (li, verts) in enumerate(get_faces(polytope, d, 0))
-      fv[dimranges[d+1][li]] = sort(collect(Int, verts))
-    end
-  end
-  fv
-end
-
-_pλ_value_type(b::RotatingPΛBasis) = eltype(b.Ψ)
-_pλ_value_type(b::TrimmedPΛBasis)  = eltype(b.Je1)
-
-# Exponent β (|β| = r) of the BB lattice node x_β = Σᵢ βᵢ/r · Vᵢ carrying the
-# predof of a bubble entry.
-_pλ_node_multiindex(::RotatingPΛBasis, k::Int, α) = copy(α)
-function _pλ_node_multiindex(::TrimmedPΛBasis, e::Tuple{Int,Int}, α)
-  β = copy(α)
-  β[e[1]] += 1
-  β
-end
-
-# Predof covector at x_β: the entry's own (physical, Cartesian) form direction
-# evaluated at the node. λ_i(x_β) = β_i/r for the trimmed Whitney form.
-_pλ_node_covector(b::RotatingPΛBasis, w::Int, β, r) = b.Ψ[w]
-function _pλ_node_covector(b::TrimmedPΛBasis, w::Int, β, r)
-  e1, e2 = b.e1s[w], b.e2s[w]
-  (β[e1]/r) * b.Je2[w] - (β[e2]/r) * b.Je1[w]
-end
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Predof data (MomentBasedDofBasis arrays), driven by the bubble tables
-# ─────────────────────────────────────────────────────────────────────────────
-
-function _pλ_predof_data(b::_PΛBases, polytope, ::Val{D}) where D
+# One pointwise moment per basis function, at the lattice node carrying it,
+# contracted with the entry's own physical form direction.
+function _pλ_predofs(b::_PΛBases, polytope, ::Val{D}) where D
   r      = get_order(b)
-  V      = _pλ_value_type(b)
+  V      = value_type(b)
   n_gf   = num_faces(polytope)
-  fverts = _pλ_face_vertices(polytope, Val(D))
-  verts  = _pλ_reference_vertices(Val(D))
+  verts  = get_vertex_coordinates(polytope)
+  # bubble tables are keyed by sorted vertex sets, hence the sort
+  fverts = map(v -> sort(collect(Int, v)), get_face_vertices(polytope))
   face_to_bfs = Dict(F => bfs for (F, bfs) in b.bubbles)
+
+  # Exponent β (|β| = r) of the lattice node x_β = Σᵢ βᵢ/r · Vᵢ carrying the
+  # predof of a bubble entry.
+  node_multiindex(::RotatingPΛBasis, k::Int, α) = copy(α)
+  function node_multiindex(::TrimmedPΛBasis, e::Tuple{Int,Int}, α)
+    β = copy(α); β[e[1]] += 1; return β
+  end
+
+  # Predof covector at x_β: the entry's own (physical, Cartesian) form
+  # direction evaluated at the node.  λ_i(x_β) = β_i/r for the Whitney form.
+  node_covector(b::RotatingPΛBasis, w::Int, β) = b.Ψ[w]
+  function node_covector(b::TrimmedPΛBasis, w::Int, β)
+    e1, e2 = b.e1s[w], b.e2s[w]
+    return (β[e1]/r) * b.Je2[w] - (β[e2]/r) * b.Je1[w]
+  end
+
+  lattice_point(β) = sum(β[i] * verts[i] for i in 1:D+1) / r
 
   all_nodes  = Point{D,Float64}[]
-  f_moments  = [zeros(V, 0, 0) for _ in 1:n_gf]
-  f_nodes    = [1:0 for _ in 1:n_gf]
-  f_own_moms = [Int[] for _ in 1:n_gf]
-  node_count = 0
-  dof_count  = 0
-
+  f_moments  = Vector{Matrix{V}}(undef, n_gf)
+  f_nodes    = Vector{UnitRange{Int}}(undef, n_gf)
+  f_own_moms = Vector{Vector{Int}}(undef, n_gf)
+  
+  n_nodes, n_dofs  = 0, 0
+  βs    = Vector{Vector{Int}}()
+  β_row = Dict{Vector{Int},Int}()
+  rows  = Int[]
   for gf in 1:n_gf
     bfs = get(face_to_bfs, fverts[gf], nothing)
-    bfs === nothing && continue
-    nw    = length(bfs)
-    βs    = Vector{Vector{Int}}()
-    β_row = Dict{Vector{Int},Int}()
-    rows  = Vector{Int}(undef, nw)
+    if isnothing(bfs) # face owns no bubble
+      f_moments[gf]  = zeros(V, 0, 0)
+      f_nodes[gf]    = 1:0
+      f_own_moms[gf] = Int[]
+      continue
+    end
+    n_bubble = length(bfs)
+    resize!(βs, n_bubble)
+    resize!(rows, n_bubble)
+    empty!(β_row)
     for (j, (w, k, α, _)) in enumerate(bfs)
-      β = _pλ_node_multiindex(b, k, α)
+      β = node_multiindex(b, k, α)
       rows[j] = get!(β_row, β) do
-        push!(βs, β)
-        length(βs)
+        push!(all_nodes, lattice_point(β))
+        n = length(β_row) + 1; βs[n] = β; return n
       end
     end
-    moms = zeros(V, length(βs), nw)
+    n_βs = length(β_row)
+    moms = zeros(V, (n_βs, n_bubble))
     for (j, (w, k, α, _)) in enumerate(bfs)
-      moms[rows[j], j] = _pλ_node_covector(b, w, βs[rows[j]], r)
-    end
-    for β in βs
-      push!(all_nodes,
-        Point(ntuple(a -> sum(β[i] * verts[i][a] for i in 1:D+1) / r, D)))
+      moms[rows[j], j] = node_covector(b, w, βs[rows[j]])
     end
     f_moments[gf]  = moms
-    f_nodes[gf]    = node_count+1 : node_count+length(βs)
-    f_own_moms[gf] = collect(dof_count+1 : dof_count+nw)
-    node_count += length(βs)
-    dof_count  += nw
+    f_nodes[gf]    = (n_nodes+1) : (n_nodes+n_βs)
+    f_own_moms[gf] = collect((n_dofs+1) : (n_dofs+n_bubble))
+    n_nodes += n_βs
+    n_dofs  += n_bubble
   end
-  @assert dof_count == length(b)
+  @assert n_dofs == length(b)
 
-  all_nodes, f_moments, f_nodes, f_own_moms
+  return MomentBasedDofBasis(all_nodes, f_moments, f_nodes, f_own_moms)
 end
 
-# face_own_dofs, indexed by basis function id w (contiguous per face).
-function _pλ_face_own_dofs(b::_PΛBases, polytope, ::Val{D}) where D
-  fverts = _pλ_face_vertices(polytope, Val(D))
-  face_to_bfs = Dict(F => bfs for (F, bfs) in b.bubbles)
-  map(1:num_faces(polytope)) do gf
-    bfs = get(face_to_bfs, fverts[gf], nothing)
-    bfs === nothing && return Int[]
-    ws = Int[bf[1] for bf in bfs]
-    @assert ws == collect(first(ws):last(ws)) "bubble ids not contiguous on face"
-    ws
-  end
-end
+# ─────────────────────────────────────────────────────────────────────────────
+# Reference FE construction and the identity face-own-dof permutations
+# ─────────────────────────────────────────────────────────────────────────────
 
-# Identity face-own-dof permutation for EVERY vertex permutation of every face:
-# the rotation change of basis absorbs all orientation effects, so the
-# pindex machinery must not reorder anything.
-function _pλ_identity_dof_perms(polytope, face_own_dofs)
-  vtx_perms = get_face_vertex_permutations(polytope)
+function get_face_own_dofs_permutations(
+    reffe::GenericRefFE{<:Union{RotatingPΛName,TrimmedPΛName}}, conf::Conformity)
+  polytope      = get_polytope(reffe)
+  face_own_dofs = get_face_own_dofs(reffe, conf)
+  vtx_perms     = get_face_vertex_permutations(polytope)
   [[collect(1:length(own)) for _ in vtx_perms[gf]]
    for (gf, own) in enumerate(face_own_dofs)]
 end
-
-# ─────────────────────────────────────────────────────────────────────────────
-# PΛRefFE: GenericRefFE wrapper carrying the identity permutation table
-# ─────────────────────────────────────────────────────────────────────────────
-
-"""
-    PΛRefFE{Name,D} <: ReferenceFE{D}
-
-Reference FE for the rotating P_rΛ¹ (`Name = RotatingPΛName`) or trimmed
-P_r⁻Λ¹ (`Name = TrimmedPΛName`) basis on the reference D-simplex. H(curl)
-conforming; shape functions ARE the basis (prebasis == shapefuns), the dof
-basis is its dual (computed from pointwise BB-lattice moments). Wraps a
-`GenericRefFE` to provide identity face-own-dof permutations for every
-pindex — cross-cell conformity is delegated entirely to
-`compute_cell_bases_changes` (see `Gridap.FESpaces`), i.e. to the rotation
-calculus.
-"""
-struct PΛRefFE{Name,D} <: ReferenceFE{D}
-  reffe     :: GenericRefFE{Name,D}
-  dof_perms :: Vector{Vector{Vector{Int}}}
-end
-
-get_name(::Type{<:PΛRefFE{Name}}) where Name                  = Name()
-Conformity(rf::PΛRefFE)                                       = Conformity(rf.reffe)
-get_polytope(rf::PΛRefFE)                                     = get_polytope(rf.reffe)
-get_prebasis(rf::PΛRefFE)                                     = get_prebasis(rf.reffe)
-get_dof_basis(rf::PΛRefFE)                                    = get_dof_basis(rf.reffe)
-num_dofs(rf::PΛRefFE)                                         = num_dofs(rf.reffe)
-get_face_own_dofs(rf::PΛRefFE, c::Conformity)                 = get_face_own_dofs(rf.reffe, c)
-get_face_dofs(rf::PΛRefFE)                                    = get_face_dofs(rf.reffe)
-get_shapefuns(rf::PΛRefFE)                                    = get_shapefuns(rf.reffe)
-get_metadata(rf::PΛRefFE)                                     = get_metadata(rf.reffe)
-get_face_own_dofs_permutations(rf::PΛRefFE, ::Conformity)     = rf.dof_perms
 
 function _pλ_reffe(name::ReferenceFEName, ::Val{D}, r::Int) where D
   @assert D in (2, 3) "only D = 2, 3 supported, got D = $D"
   @assert r ≥ 1 "r must be ≥ 1, got $r"
   basis     = _pλ_basis(name, Val(D), r)
-  polytope  = _pλ_polytope(Val(D))
-  n         = length(basis)
-  nodes, f_moments, f_nodes, f_own_moms = _pλ_predof_data(basis, polytope, Val(D))
-  predofs   = MomentBasedDofBasis(nodes, f_moments, f_nodes, f_own_moms)
-  face_dofs = _pλ_face_own_dofs(basis, polytope, Val(D))
-  Name      = typeof(name)
-  # predofs-constructor: shapefuns = basis, dofs = compute_dofs(predofs, basis)
-  # (the dual basis of the shape functions; exact duality is what makes
-  # interpolation reproduce fields of the space).
-  reffe = GenericRefFE{Name}(n, polytope, predofs, CurlConformity(),
-                             nothing, face_dofs, basis)
-  PΛRefFE{Name,D}(reffe, _pλ_identity_dof_perms(polytope, face_dofs))
+  polytope  = simplex_polytope(Val(D))
+  n_dofs    = length(basis)
+  predofs   = _pλ_predofs(basis, polytope, Val(D))
+  face_dofs = get_face_own_funs(basis, polytope, CurlConformity())
+  GenericRefFE{typeof(name)}(
+    n_dofs, polytope, predofs, CurlConformity(), nothing, face_dofs, basis
+  )
 end
 
 """
-    RotatingPΛRefFE(D, r) → PΛRefFE{RotatingPΛName,D}
+    RotatingPΛRefFE(D, r) → GenericRefFE{RotatingPΛName,D}
 
 H(curl)-conforming reference FE for the full rotating P_rΛ¹ basis on the
 reference D-simplex (D = 2, 3; r ≥ 1).
@@ -267,7 +200,7 @@ reference D-simplex (D = 2, 3; r ≥ 1).
 RotatingPΛRefFE(D::Int, r::Int) = _pλ_reffe(rotating_pλ, Val(D), r)
 
 """
-    TrimmedPΛRefFE(D, r) → PΛRefFE{TrimmedPΛName,D}
+    TrimmedPΛRefFE(D, r) → GenericRefFE{TrimmedPΛName,D}
 
 H(curl)-conforming reference FE for the trimmed P_r⁻Λ¹ basis on the
 reference D-simplex (D = 2, 3; r ≥ 1).
@@ -275,10 +208,8 @@ reference D-simplex (D = 2, 3; r ≥ 1).
 TrimmedPΛRefFE(D::Int, r::Int) = _pλ_reffe(trimmed_pλ, Val(D), r)
 
 # Standard factories: ReferenceFE(TRI, rotating_pλ, r), etc.
-ReferenceFE(p::Polytope, ::RotatingPΛName, r::Int) =
-  RotatingPΛRefFE(num_dims(p), r)
-ReferenceFE(p::Polytope, ::TrimmedPΛName, r::Int) =
-  TrimmedPΛRefFE(num_dims(p), r)
+ReferenceFE(p::Polytope, ::RotatingPΛName, r::Int) = RotatingPΛRefFE(num_dims(p), r)
+ReferenceFE(p::Polytope, ::TrimmedPΛName, r::Int) = TrimmedPΛRefFE(num_dims(p), r)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Geometric decomposition API (GeometricDecompositions.jl)
