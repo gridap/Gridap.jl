@@ -1,5 +1,5 @@
 module DifferentialFormCellFieldsTests
-# DifferentialFormCellField: construction, evaluation, form-level and
+# Form-valued CellFields: construction, evaluation, form-level and
 # value-level operators, the vol_coeff/to_1form/from_1form bridges, and
 # near-zero-allocation cell traversal.
 #
@@ -19,6 +19,16 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Fields: GenericField
 using Test
+using Gridap.CellData: GenericCellField
+
+# Evaluated form degree: reads (K,D) off the values the cell field actually
+# produces, rather than off a declared type parameter.
+function form_kd(cf)
+  Ωc = get_triangulation(cf)
+  a  = cf(get_cell_points(Ωc)); c = array_cache(a)
+  T  = eltype(getindex!(c, a, 1))
+  (T.parameters[1], T.parameters[2])
+end
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 
@@ -30,11 +40,11 @@ model = CartesianDiscreteModel((0.0,1.0,0.0,1.0), (4,4))
   GenericField(x -> 3*x[1]*x[2]),   # ω₁ = 3xy
   GenericField(x -> x[1]^2)          # ω₂ = x²
 ))
-ω = DifferentialFormCellField{1,2}(ω_form, Ω, PhysicalDomain())
+ω = form_cell_field(ω_form, Ω, PhysicalDomain())
 
 @test get_triangulation(ω) === Ω
 @test DomainStyle(ω) == PhysicalDomain()
-@test typeof(ω) <: DifferentialFormCellField{1,2}
+@test form_kd(ω) == (1,2)
 
 # ── Evaluation at cell points ─────────────────────────────────────────────────
 
@@ -48,7 +58,7 @@ val0  = getindex!(cω, ωx, 1)         # first cell: DifferentialFormValue per q
 # ── exterior_derivative ───────────────────────────────────────────────────────
 
 dω = exterior_derivative(ω)
-@test typeof(dω) <: DifferentialFormCellField{2,2}
+@test form_kd(dω) == (2,2)
 
 dωx   = dω(pts)
 cdω   = array_cache(dωx)
@@ -65,7 +75,7 @@ dv = evaluate!(cache_d, dω_fld, x_c)
 # ── codifferential ────────────────────────────────────────────────────────────
 
 δω = codifferential(ω)
-@test typeof(δω) <: DifferentialFormCellField{0,2}
+@test form_kd(δω) == (0,2)
 
 δωx   = δω(pts)
 cδω   = array_cache(δωx)
@@ -81,11 +91,11 @@ cache_δ = return_cache(δω_fld, x_c)
 # ── hodge_star_form ───────────────────────────────────────────────────────────
 
 star_ω = hodge_star_form(ω)
-@test typeof(star_ω) <: DifferentialFormCellField{1,2}
+@test form_kd(star_ω) == (1,2)
 
 # Chaining: d(⋆ω) should give back a 2-form CellField
 d_star_ω = exterior_derivative(star_ω)
-@test typeof(d_star_ω) <: DifferentialFormCellField{2,2}
+@test form_kd(d_star_ω) == (2,2)
 
 # ── hodge_star (value level via Operation) ────────────────────────────────────
 
@@ -102,7 +112,7 @@ sv0         = getindex!(csv, star_valx, 1)
   GenericField(x -> 0.0),
   GenericField(x -> 1.0)
 ))
-η = DifferentialFormCellField{1,2}(η_form, Ω, PhysicalDomain())
+η = form_cell_field(η_form, Ω, PhysicalDomain())
 
 wedge_cf = ω ∧ η
 # ω ∧ η = (3xy dx¹ + x² dx²) ∧ dx² = 3xy dx¹∧dx²  (since dx²∧dx²=0)
@@ -148,9 +158,9 @@ ipv0  = getindex!(cip, ipx, 1)
 # ── koszul ────────────────────────────────────────────────────────────────────
 
 ω_id_form = DifferentialForm{1,2}((GenericField(x -> x[1]), GenericField(x -> x[2])))
-ω_id_cf   = DifferentialFormCellField{1,2}(ω_id_form, Ω, PhysicalDomain())
+ω_id_cf   = form_cell_field(ω_id_form, Ω, PhysicalDomain())
 κω_cf = koszul(ω_id_cf)
-@test typeof(κω_cf) <: DifferentialFormCellField{0,2}
+@test form_kd(κω_cf) == (0,2)
 
 κωx   = κω_cf(pts)
 cκ    = array_cache(κωx)
@@ -160,7 +170,7 @@ cκ    = array_cache(κωx)
 # ── vol_coeff (CellField level) ───────────────────────────────────────────────
 
 ω2_form = DifferentialForm{2,2}((GenericField(x -> 7.0),))
-ω2_cf   = DifferentialFormCellField{2,2}(ω2_form, Ω, PhysicalDomain())
+ω2_cf   = form_cell_field(ω2_form, Ω, PhysicalDomain())
 scalar_cf = vol_coeff(ω2_cf)
 @test scalar_cf isa CellField
 
@@ -195,11 +205,11 @@ norm2 = sum(∫(vol_coeff(ω_id_cf ∧ hodge_star(ω_id_cf))) * dΩ)
 @test norm2 ≈ 2/3   atol=1e-4
 
 # ── Near-zero-allocation cell traversal ──────────────────────────────────────
-# Build a ReferenceDomain DifferentialFormCellField directly to avoid the
+# Build a ReferenceDomain form cell field directly to avoid the
 # change_domain(Physical→Reference) step; this checks that the lazy
 # ExteriorDerivativeForm evaluation itself is (nearly) allocation-free.
 
-dω_ref = DifferentialFormCellField{2,2}(
+dω_ref = GenericCellField(
   lazy_map(Broadcasting(exterior_derivative), Gridap.CellData.get_data(ω)),
   Ω, ReferenceDomain())
 

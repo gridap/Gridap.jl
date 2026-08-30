@@ -207,7 +207,7 @@ using Gridap.CellData: ∫; export ∫
 @publish CellData get_physical_coordinate
 @publish CellData DiracDelta
 
-@publish CellData DifferentialFormCellField
+@publish CellData form_cell_field
 @publish CellData d_0form
 @publish CellData d_1form
 

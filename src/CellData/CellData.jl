@@ -100,7 +100,7 @@ export DiracDelta
 
 export SkeletonCellFieldPair
 
-export DifferentialFormCellField
+export form_cell_field
 export d_0form
 export d_1form
 

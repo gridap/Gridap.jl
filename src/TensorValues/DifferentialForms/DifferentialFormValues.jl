@@ -319,7 +319,7 @@ const ⋆ = hodge_star
 Exterior derivative `dω` of a differential form.
 
 Methods are provided for `DifferentialForm` fields (see `Gridap.Fields`),
-for `DifferentialFormCellField` (see `Gridap.CellData`), and — when the
+for form-valued `CellField`s (see `Gridap.CellData`), and — when the
 Symbolics package is loaded (GridapSymbolicsExt extension) — for
 `DifferentialFormValue`s with symbolic (`Symbolics.Num`) coefficients.
 """
@@ -331,7 +331,7 @@ function exterior_derivative end
 Codifferential `δω = (-1)^{D(K-1)+1} ⋆ d ⋆ ω` of a K-form (flat Euclidean metric).
 
 Methods are provided for `DifferentialForm` fields (see `Gridap.Fields`),
-for `DifferentialFormCellField` (see `Gridap.CellData`), and — when the
+for form-valued `CellField`s (see `Gridap.CellData`), and — when the
 Symbolics package is loaded (GridapSymbolicsExt extension) — for
 `DifferentialFormValue`s with symbolic (`Symbolics.Num`) coefficients.
 """
