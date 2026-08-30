@@ -20,6 +20,21 @@ using Gridap.Fields
 using Gridap.Fields: GenericField
 using Test
 using Gridap.CellData: GenericCellField
+using FillArrays: Fill
+
+# Test fixture: a cell field in which EVERY cell shares the same
+# `DifferentialForm`.  Deliberately local to the tests — Gridap has no
+# `CellField(::Field, ...)` constructor because the normal case is a different
+# field per cell, so replicating one form over the whole mesh is a test-only
+# convenience, not library API.
+#
+# Note: there is intentionally no `Function` variant.  `exterior_derivative`
+# (and `codifferential`, etc.) need the component fields of a `DifferentialForm`
+# to be accessible individually for gradient computation; a `GenericField`
+# black-box function does not expose those components.
+function form_cell_field(form::DifferentialForm, trian::Triangulation, ds::DomainStyle)
+  GenericCellField(Fill(form, num_cells(trian)), trian, ds)
+end
 
 # Evaluated form degree: reads (K,D) off the values the cell field actually
 # produces, rather than off a declared type parameter.
