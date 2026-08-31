@@ -22,8 +22,11 @@ using Gridap.CellData
 using Gridap.TensorValues
 using Gridap.Polynomials
 
+using Gridap.Polynomials: RotationCache, rotation_map
+
 using Gridap.Arrays: Reindex, ConfigMap, DualizeMap, AutoDiffMap, GridapADTag, default_tag
 using Gridap.Arrays: lazy_map, compute_adjacency
+using Gridap.Arrays: IdentityVector
 
 using Gridap.Fields: ArrayBlock, BlockMap
 
@@ -238,7 +241,6 @@ include("ConformingFESpaces.jl")
 
 include("Pullbacks.jl")
 
-include("RotatingPLambda/PΛCellBasesChanges.jl")
 
 include("FESpaceFactories.jl")
 

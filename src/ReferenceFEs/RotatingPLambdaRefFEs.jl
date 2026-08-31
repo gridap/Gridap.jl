@@ -6,7 +6,7 @@
 # calculus of Gridap.Polynomials (RotatingPLambda/PΛRotations.jl and
 # RotatingPLambda/PΛTrimmedRotations.jl). The per-cell change of basis itself
 # (the compute_cell_bases_changes methods) lives in
-# src/FESpaces/RotatingPLambda/PΛCellBasesChanges.jl.
+# src/FESpaces/Pullbacks.jl.
 #
 # ─────────────────────────────────────────────────────────────────────────────
 # DESIGN: virtually sorted cells
