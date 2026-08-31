@@ -22,7 +22,7 @@ using Gridap.CellData
 using Gridap.TensorValues
 using Gridap.Polynomials
 
-using Gridap.Polynomials: RotationCache, rotation_map
+using Gridap.Polynomials: RotationCache, rotation_map, compute_pλ_change
 
 using Gridap.Arrays: Reindex, ConfigMap, DualizeMap, AutoDiffMap, GridapADTag, default_tag
 using Gridap.Arrays: lazy_map, compute_adjacency

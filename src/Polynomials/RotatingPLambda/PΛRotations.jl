@@ -174,3 +174,66 @@ function rotation_change_of_basis(b::_PΛBases, π::Vector{Int})
   end
   C
 end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Change of basis of the "virtually sorted" cell at a vertex permutation π
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# CONVENTION (pinned empirically over all relative vertex orderings of two-
+# triangle and two-tet meshes — the competing candidates C(π)ᵀ, C(invperm(π))
+# and every un-relabelled variant fail the tangential jump / interpolation
+# round-trip tests at O(1)):
+#
+# π maps sorted position → local index.  The virtually sorted geometric map is
+# F̃ = F ∘ A⁻¹ with A = A_{invperm(π)} (reference automorphism
+# V_j ↦ V_{invperm(π)[j]}), hence the conforming basis is
+#
+#   φ̃_μ = (F̃⁻¹)^* ŵ_μ = Σ_ν C(π)[μ,ν] · (F⁻¹)^* ŵ_ν,
+#
+# with C = rotation_change_of_basis(b, π).
+#
+# RELABELLING: φ̃_μ is supported on the LOCAL face π(F(μ)), while the conformity
+# machinery glues local index μ by the local face F(μ).  The shape function
+# stored at μ must therefore be φ̃_{s(μ)}, with s the face-wise order-preserving
+# reindexing sending the i-th bubble of face F to the i-th bubble of
+# sort(invperm(π)(F)).  Every cell adjacent to a face then enumerates that
+# face's functions in the bubble order of its sorted global vertex ids — which
+# is what makes the identity face-own-dof permutations correct for every pindex.
+#
+# In the linear_combination convention (out[j] = Σ_i values[i,j]·in[i]):
+#
+#   M[i,j]    = C(π)[s(j), i]           (basis side)
+#   Minv[i,j] = C(invperm(π))[i, s(j)]  (dof side, restores duality)
+#
+# using C(π)·C(invperm(π)) = I.  Both are read off the memoised sparse
+# rotation_map rows — no matrix inversion.
+function compute_pλ_change(rc, π)
+  invπ = invperm(π)
+  n    = length(rc.entries)
+
+  # s(μ): face-wise order-preserving reindexing local entry → virtual entry,
+  # mapping the i-th bubble of face F to the i-th bubble of sort(invperm(π)(F)).
+  face_to_ws = Dict(F => [bf[1] for bf in bfs] for (F, bfs) in rc.basis.bubbles)
+  s = Vector{Int}(undef, n)
+  for (F, ws) in face_to_ws
+    wsG = face_to_ws[sort(invπ[F])]
+    for i in eachindex(ws)
+      s[ws[i]] = wsG[i]
+    end
+  end
+  sinv = invperm(s)
+
+  M = zeros(Float64, n, n)
+  rows = rotation_map(rc, π)
+  for μ in 1:n, (c, w′) in rows[s[μ]]
+    M[w′, μ] += c
+  end
+
+  Minv = zeros(Float64, n, n)
+  rows_inv = rotation_map(rc, invπ)
+  for w in 1:n, (c, w′) in rows_inv[w]
+    Minv[w, sinv[w′]] += c
+  end
+
+  return M, Minv
+end
