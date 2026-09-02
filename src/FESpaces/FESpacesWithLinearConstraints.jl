@@ -235,12 +235,15 @@ function _mdof_to_dof_vals!(
   n_mdofs = length(mDOF_to_dof)
   n_fmdofs = length(fmdof_to_val)
 
+  n_lfdofs = length(fdof_to_val)
+  n_lddofs = length(ddof_to_val)
+
   # Map free master dofs
   for (mdof,mDOF) in enumerate(1:n_fmdofs)
     dof = mDOF_to_dof[mDOF]
-    if dof > 0
+    if 0 < dof <= n_lfdofs
       fdof_to_val[dof] = fmdof_to_val[mdof]
-    elseif dof < 0
+    elseif 0 < -dof <= n_lddofs
       ddof_to_val[-dof] = fmdof_to_val[mdof]
     end
   end
@@ -248,7 +251,7 @@ function _mdof_to_dof_vals!(
   # Map dirichlet master dofs
   for (mdof,mDOF) in enumerate((n_fmdofs+1):n_mdofs)
     dof = mDOF_to_dof[mDOF]
-    if dof < 0
+    if 0 < -dof <= n_lddofs
       ddof_to_val[-dof] = dmdof_to_val[mdof]
     end
   end
@@ -282,12 +285,15 @@ function _dof_to_mdof_vals!(
   n_mdofs = length(mDOF_to_dof)
   n_fmdofs = n_mdofs - length(dmdof_to_val)
 
+  n_lfdofs = length(fdof_to_val)
+  n_lddofs = length(ddof_to_val)
+
   # Map free master dofs
   for (mdof,mDOF) in enumerate(1:n_fmdofs)
     dof = mDOF_to_dof[mDOF]
-    if dof > 0
+    if 0 < dof <= n_lfdofs
       fmdof_to_val[mdof] = fdof_to_val[dof]
-    elseif dof < 0
+    elseif 0 < -dof <= n_lddofs
       fmdof_to_val[mdof] = ddof_to_val[-dof]
     end
   end
@@ -295,7 +301,7 @@ function _dof_to_mdof_vals!(
   # Map dirichlet master dofs
   for (mdof,mDOF) in enumerate((n_fmdofs+1):n_mdofs)
     dof = mDOF_to_dof[mDOF]
-    if dof < 0
+    if 0 < -dof <= n_lddofs
       dmdof_to_val[mdof] = ddof_to_val[-dof]
     end
   end
@@ -308,9 +314,10 @@ function _ddof_to_dmdof_vals!(
 )
   n_mdofs = length(mDOF_to_dof)
   n_fmdofs = n_mdofs - length(dmdof_to_val)
+  n_lddofs = length(ddof_to_val)
   for (mdof, mDOF) in enumerate((n_fmdofs+1):n_mdofs)
     dof = mDOF_to_dof[mDOF]
-    if dof < 0
+    if 0 < -dof <= n_lddofs
       dmdof_to_val[mdof] = ddof_to_val[-dof]
     end
   end
