@@ -84,12 +84,12 @@ function _test_reference_basis(b,D,r,k)
 
   if b isa BarycentricPmΛBasis
     LN = binomial(D+1,k)
-    m = zero(MVector{LN,V})
+    m = zeros(V, LN)
     _compute_PmΛ_basis_reference_coefficients!(m,k,D,b._indices)
     @test all(@. norm(b.m - m) < 1.e-15)
 
   else       #BarycentricPΛBasis
-    Ψ = zero(MVector{length(b),V})
+    Ψ = zeros(V, length(b))
     _compute_PΛ_basis_reference_form_coefficient!(Ψ,r,k,b._indices)
     @test all(@. norm(b.Ψ - Ψ) < 1.e-15)
   end

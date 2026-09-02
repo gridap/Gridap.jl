@@ -323,8 +323,8 @@ ModalC0Basis
 ModalC0Basis()
 BarycentricPmΛBasis
 BarycentricPΛBasis
-BarycentricPmΛBasis(::BarycentricPmΛBasis{D,V,LN,B}, ::Vector{Int}...) where {D,V,LN,B}
-BarycentricPΛBasis(::BarycentricPΛBasis{D,V,LN,B}, ::Vector{Int}...) where {D,V,LN,B}
+BarycentricPmΛBasis(::BarycentricPmΛBasis{D,V,B}, ::Vector{Int}...) where {D,V,B}
+BarycentricPΛBasis(::BarycentricPΛBasis{D,V,B}, ::Vector{Int}...) where {D,V,B}
 print_indices
 get_bubbles
 PΛ_bubbles

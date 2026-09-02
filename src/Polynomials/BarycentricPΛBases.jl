@@ -166,7 +166,7 @@ end
 ###########################################
 
 """
-    BarycentricPmΛBasis{D,V,LN,K} <: PolynomialBasis{D,V,Bernstein}
+    BarycentricPmΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
 
 Finite Element Exterior Calculus polynomial basis for the spaces P⁻`ᵣ`Λ`ᵏ` on
 `D`-dimensional simplices, but with polynomial forms explicitely transformed
@@ -181,10 +181,12 @@ The number of basis polynomials is binomial(`r`+`k`-1,`k`)*binomial(`D`+`r`,`D`-
 
 Reference: D.N. Arnold, R.S. Falk & R. Winther, Geometric decompositions and local bases for spaces of finite element differential forms, CMAME, 2009
 """
-struct BarycentricPmΛBasis{D,V,LN,K} <: PolynomialBasis{D,V,Bernstein}
+struct BarycentricPmΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
   k::Int
   scalar_bernstein_basis::BernsteinBasisOnSimplex{D,Float64,K}
-  m::SVector{LN,V}
+  # Family of exterior-k-products of barycentric differential dλʲ,
+  # indexed by the k-faces J of the D-simplex, in the order of _sorted_combinations(D+1,k)
+  m::Vector{V}
   _indices::BarycentricPΛIndices
 
   function BarycentricPmΛBasis{D}(::Type{T}, r, k, vertices;
@@ -201,24 +203,25 @@ struct BarycentricPmΛBasis{D,V,LN,K} <: PolynomialBasis{D,V,Bernstein}
     b = BernsteinBasisOnSimplex{D}(Float64, r, vertices)
     K = get_order(b)
     LN = binomial(D+1,k) # Number of k-faces J of a D-dimensional tetrahedron
-    m = zero(MVector{LN,V})
+    m = Vector{V}(undef, LN)
     _compute_PmΛ_basis_coefficients!(m,Val(k),D,b,vertices,indices)
 
     if isone(L) && !DG_calc
       V = T
-      m = reinterpret(T, m)
+      m = collect(reinterpret(T, m))
     end
 
-    new{D,V,LN,K}(k,b,m,indices)
+    new{D,V,K}(k,b,m,indices)
   end
 
   @doc """
       BarycentricPmΛBasis(b::BarycentricPmΛBasis, faces::Vector{Int}...)
 
   Create a new basis which is `b` restricted to the bubble spaces for F ∈ `faces`.
+  The new basis shares internal fields data with `b`.
   """
-  function BarycentricPmΛBasis(_b::BarycentricPmΛBasis{D,V,LN,K}, faces::Vector{Int}...) where {D,V,LN,K}
-    # Notation: _old, new
+  function BarycentricPmΛBasis(_b::BarycentricPmΛBasis{D,V,K}, faces::Vector{Int}...) where {D,V,K}
+    # Notation: _old, new
     _indices = _b._indices
     _bubbles = _indices.bubbles
     bubbles = similar(_bubbles, length(faces))
@@ -239,14 +242,15 @@ struct BarycentricPmΛBasis{D,V,LN,K} <: PolynomialBasis{D,V,Bernstein}
     end
 
     indices = BarycentricPΛIndices(_indices.identity, bubbles, _indices.components)
-    new{D,V,LN,K}(_b.k, _b.scalar_bernstein_basis, _b.m, indices)
+    # re-use m too
+    new{D,V,K}(_b.k, _b.scalar_bernstein_basis, _b.m, indices)
   end
 
-  function BarycentricPmΛBasis{D,V,LN,K}() where {D,V,LN,K} # just for testvalue
+  function BarycentricPmΛBasis{D,V,K}() where {D,V,K} # just for testvalue
     r = K
     indices = _generate_or_check_PmΛ_indices(r,0,0,false,nothing,false)
     B = BernsteinBasisOnSimplex{D,Float64,K}
-    new{D,V,LN,K}(0,testvalue(B),zero(SVector{LN,V}),indices)
+    new{D,V,K}(0,testvalue(B),zeros(V,1),indices)
   end
 end
 
@@ -285,8 +289,8 @@ end
 
 Base.size(b::BarycentricPmΛBasis) = (_last_bubble_function_index(b._indices), )
 
-function testvalue(::Type{BarycentricPmΛBasis{D,V,LN,K}}) where {D,V,LN,K}
-  BarycentricPmΛBasis{D,V,LN,K}()
+function testvalue(::Type{BarycentricPmΛBasis{D,V,K}}) where {D,V,K}
+  BarycentricPmΛBasis{D,V,K}()
 end
 
 ##########################################
@@ -294,7 +298,7 @@ end
 ##########################################
 
 """
-    BarycentricPΛBasis{D,V,C,K} <: PolynomialBasis{D,V,Bernstein}
+    BarycentricPΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
 
 Finite Element Exterior Calculus polynomial basis for the spaces P`ᵣ`Λ`ᵏ` on
 `D`-dimensional simplices, but with polynomial forms explicitely transformed
@@ -303,17 +307,17 @@ in terms of the hodge star operator ⋆ and the sharp map ♯, see
 [`_basis_forms_components`](@ref) (the simplex is assumed Euclidean).
 
 - `V` is `VectorValue{L,T}` where `L=binomial(D,k)`,
-- `C` is the number of basis polynomials,
 - `K` is the polynomial order of the underlying scalar bernstein polynomial basis
 
-`C` = binomial(`r`+`k`,`k`)*binomial(`D`+`r`,`D`-`k`) if no custom bubble indices are given.
+The number of basis polynomials is binomial(`r`+`k`,`k`)*binomial(`D`+`r`,`D`-`k`) if no custom bubble indices are given.
 
 Reference: D.N. Arnold, R.S. Falk & R. Winther, Geometric decompositions and local bases for spaces of finite element differential forms, CMAME, 2009
 """
-struct BarycentricPΛBasis{D,V,C,K} <: PolynomialBasis{D,V,Bernstein}
+struct BarycentricPΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
   k::Int
   scalar_bernstein_basis::BernsteinBasisOnSimplex{D,Float64,K}
-  Ψ::SVector{C,V}
+  # Direction k-form of each basis polynomial
+  Ψ::Vector{V}
   _indices::BarycentricPΛIndices
 
   function BarycentricPΛBasis{D}(::Type{T}, r, k, vertices;
@@ -330,15 +334,15 @@ struct BarycentricPΛBasis{D,V,C,K} <: PolynomialBasis{D,V,Bernstein}
 
     b = BernsteinBasisOnSimplex{D}(Float64, r, vertices)
     K = get_order(b)
-    Ψ = zero(MVector{C,V})
+    Ψ = Vector{V}(undef, C)
     _compute_PΛ_basis_form_coefficient!(Ψ,r,k,Val(D),b,vertices,indices)
 
     if isone(L) && !DG_calc
       V = T
-      Ψ = reinterpret(T, Ψ)
+      Ψ = collect(reinterpret(T, Ψ))
     end
 
-    new{D,V,C,K}(k,b,Ψ,indices)
+    new{D,V,K}(k,b,Ψ,indices)
   end
 
   @doc """
@@ -348,14 +352,14 @@ struct BarycentricPΛBasis{D,V,C,K} <: PolynomialBasis{D,V,Bernstein}
   The faces are represented by some `Vector{Int}` of their vertices ids, like in
   [`BarycentricPΛIndices`](@ref).
   """
-  function BarycentricPΛBasis(_b::BarycentricPΛBasis{D,V,_C,K}, faces::Vector{Int}...) where {D,V,_C,K}
+  function BarycentricPΛBasis(_b::BarycentricPΛBasis{D,V,K}, faces::Vector{Int}...) where {D,V,K}
     # Notation: _old, new
     _indices = _b._indices
     _bubbles = _indices.bubbles
     _Ψ = _b.Ψ
 
     bubbles = similar(_bubbles, length(faces))
-    Ψ = zero(MVector{_C,V}) # cache of maximum possible size
+    Ψ = similar(_Ψ) # of maximum possible size, trimmed below
     w = 1
 
     for (Fid, F) in enumerate(faces)
@@ -374,16 +378,16 @@ struct BarycentricPΛBasis{D,V,C,K} <: PolynomialBasis{D,V,Bernstein}
       bubbles[Fid] = (F, F_bubfuns)
     end
 
-    C = w-1
-    Ψ = SVector{C,V}( Ψ[1:C] )
+    resize!(Ψ, w-1)
     indices = BarycentricPΛIndices(_indices.identity, bubbles, _indices.components)
-    new{D,V,C,K}(_b.k, _b.scalar_bernstein_basis, Ψ, indices)
+    new{D,V,K}(_b.k, _b.scalar_bernstein_basis, Ψ, indices)
   end
 
-  function BarycentricPΛBasis{D,V,C,K}() where {D,V,C,K} # Just for testvalue
+  function BarycentricPΛBasis{D,V,K}() where {D,V,K} # Just for testvalue
     indices = _generate_or_check_PΛ_indices(K,0,0,false,nothing,false)
     B = BernsteinBasisOnSimplex{D,Float64,K}
-    new{D,V,C,K}(0,testvalue(B),zero(SVector{C,V}),indices)
+    C = _last_bubble_function_index(indices)
+    new{D,V,K}(0,testvalue(B),zeros(V,C),indices)
   end
 end
 
@@ -419,10 +423,10 @@ BarycentricPΛBasis{D}(::Type{T},r,k,::Nothing; kwargs...) where {D,T} = Barycen
 #get_FEEC_form_degree(b::BarycentricPΛBasis) = b.k
 #get_FEEC_family(::BarycentricPΛBasis) = :P
 
-Base.size(::BarycentricPΛBasis{D,V,C}) where {D,V,C} = (C, )
+Base.size(b::BarycentricPΛBasis) = (_last_bubble_function_index(b._indices), )
 
-function testvalue(::Type{BarycentricPΛBasis{D,V,C,K}}) where {D,V,C,K}
-  BarycentricPΛBasis{D,V,C,K}()
+function testvalue(::Type{BarycentricPΛBasis{D,V,K}}) where {D,V,K}
+  BarycentricPΛBasis{D,V,K}()
 end
 
 ##########################
