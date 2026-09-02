@@ -64,6 +64,8 @@ struct FESpaceWithLinearConstraints{S<:SingleFieldFESpace} <: SingleFieldFESpace
   cell_to_mdofs::Table
   dmdof_to_offsets::Vector
   n_free::Int
+  n_free_unconstrained::Int
+  n_dofs_unconstrained::Int
 end
 
 # Constructors
@@ -73,17 +75,23 @@ function FESpaceWithLinearConstraints(
   mDOF_to_dof::AbstractVector{<:Integer},
   sDOF_to_dof::AbstractVector{<:Integer},
   sDOF_to_mdofs::Table,
-  sDOF_to_coeffs::Table,
+  sDOF_to_coeffs::Table;
+  n_fdofs::Int = num_free_dofs(space),
+  n_dofs::Int = n_fdofs + num_dirichlet_dofs(space),
   n_fmdofs::Int = _count_free_mdofs(mDOF_to_dof,sDOF_to_mdofs),
   dmdof_to_offsets::AbstractVector = zeros(Float64, length(mDOF_to_dof) - n_fmdofs)
 )
+  cell_dofs = get_cell_dof_ids(space)
   cell_to_mdofs = _generate_cell_to_mdofs(
-    space, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs, n_fmdofs
+    n_fdofs, n_dofs, cell_dofs, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs, n_fmdofs
   )
-  @check _check_constraints(space, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs, n_fmdofs)
+  @check _check_constraints(
+    n_fdofs, n_dofs, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs, n_fmdofs
+  )
   return FESpaceWithLinearConstraints(
     space, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs,
-    sDOF_to_coeffs, cell_to_mdofs, dmdof_to_offsets, n_fmdofs
+    sDOF_to_coeffs, cell_to_mdofs, dmdof_to_offsets, n_fmdofs,
+    n_fdofs, n_dofs
   )
 end
 
@@ -100,10 +108,12 @@ function FESpaceWithLinearConstraints(
   sDOF_to_dofs::Table,
   sDOF_to_coeffs::Table,
   space::SingleFieldFESpace;
+  n_fdofs::Int = num_free_dofs(space),
+  n_dofs::Int = n_fdofs + num_dirichlet_dofs(space),
   sDOF_to_offsets=nothing
 )
   mDOF_to_dof, sDOF_to_mdofs, n_fmdofs, n_dmdofs =
-    _find_master_dofs(sDOF_to_dof, sDOF_to_dofs, space)
+    _find_master_dofs(sDOF_to_dof, sDOF_to_dofs, n_fdofs, n_dofs)
   if !isnothing(sDOF_to_offsets)
     mDOF_to_dof, sDOF_to_mdofs, sDOF_to_coeffs, dmdof_to_offsets =
       _attach_offsets(mDOF_to_dof, sDOF_to_mdofs, sDOF_to_coeffs, sDOF_to_offsets, n_dmdofs)
@@ -111,7 +121,7 @@ function FESpaceWithLinearConstraints(
     dmdof_to_offsets = eltype(sDOF_to_coeffs.data)[]
   end
   return FESpaceWithLinearConstraints(
-    space, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs, sDOF_to_coeffs, n_fmdofs, dmdof_to_offsets
+    space, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs, sDOF_to_coeffs, n_fdofs = n_fdofs, n_dofs = n_dofs, n_fmdofs = n_fmdofs, dmdof_to_offsets = dmdof_to_offsets
   )
 end
 
@@ -340,7 +350,9 @@ function get_cell_isconstrained(f::FESpaceWithLinearConstraints)
 end
 
 function get_cell_constraints(f::FESpaceWithLinearConstraints)
-  DOF_to_msDOF = generate_DOF_to_msDOF_map(f.space,f.mDOF_to_dof,f.sDOF_to_dof)
+  DOF_to_msDOF = generate_DOF_to_msDOF_map(
+    f.n_free_unconstrained,f.n_dofs_unconstrained,f.mDOF_to_dof,f.sDOF_to_dof
+  )
   k = LinearConstraintsMap(
     DOF_to_msDOF, f.sDOF_to_mdofs, f.sDOF_to_coeffs,
     length(f.mDOF_to_dof), num_free_dofs(f), num_free_dofs(f.space)
@@ -366,7 +378,9 @@ function LinearConstraintsMap(
 )
   mDOF_to_dof, sDOF_to_mdofs, n_fmdofs, _ =
     _find_master_dofs(sDOF_to_dof, sDOF_to_dofs, space)
-  DOF_to_msDOF = generate_DOF_to_msDOF_map(space,mDOF_to_dof,sDOF_to_dof)
+  DOF_to_msDOF = generate_DOF_to_msDOF_map(
+    space.n_free_unconstrained, space.n_dofs_unconstrained, mDOF_to_dof, sDOF_to_dof
+  )
   return LinearConstraintsMap(
     DOF_to_msDOF, sDOF_to_mdofs, sDOF_to_coeffs,
     length(mDOF_to_dof), n_fmdofs, num_free_dofs(space)
@@ -435,6 +449,15 @@ function _check_constraints(
 )
   n_fdofs = num_free_dofs(space)
   n_dofs = n_fdofs + num_dirichlet_dofs(space)
+
+  return _check_constraints(
+    n_fdofs, n_dofs, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs, n_fmdofs
+  )
+end
+
+function _check_constraints(
+  n_fdofs, n_dofs, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs, n_fmdofs
+)
   DOF_is_master = fill(false,n_dofs)
   for dof in mDOF_to_dof
     iszero(dof) && continue
@@ -494,6 +517,10 @@ function _find_master_dofs(sDOF_to_dof, sDOF_to_dofs, space)
   n_fdofs = num_free_dofs(space)
   n_dofs  = n_fdofs + num_dirichlet_dofs(space)
 
+  return _find_master_dofs(sDOF_to_dof, sDOF_to_dofs, n_fdofs, n_dofs)
+end
+
+function _find_master_dofs(sDOF_to_dof, sDOF_to_dofs, n_fdofs, n_dofs)
   DOF_ismaster = fill(true, n_dofs)
   for dof in sDOF_to_dof
     DOF = _dof_to_DOF(dof, n_fdofs)
@@ -568,15 +595,25 @@ end
 function _generate_cell_to_mdofs(
   space, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs, n_fmdofs
 )
-  DOF_to_msDOF = generate_DOF_to_msDOF_map(
-    space,mDOF_to_dof,sDOF_to_dof
-  )
+  n_fdofs   = num_free_dofs(space)
+  n_dofs    = n_fdofs + num_dirichlet_dofs(space)
   cell_dofs = get_cell_dof_ids(space)
+
+  return _generate_cell_to_mdofs(
+    n_fdofs, n_dofs, cell_dofs, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs, n_fmdofs
+  )
+end
+
+function _generate_cell_to_mdofs(
+  n_fdofs, n_dofs, cell_dofs, mDOF_to_dof, sDOF_to_dof, sDOF_to_mdofs, n_fmdofs
+)
+  DOF_to_msDOF = generate_DOF_to_msDOF_map(
+    n_fdofs, n_dofs, mDOF_to_dof, sDOF_to_dof
+  )
   c1 = array_cache(cell_dofs)
   c2 = array_cache(sDOF_to_mdofs)
 
   n_cells = length(cell_dofs)
-  n_fdofs = num_free_dofs(space)
   n_mDOFs = length(mDOF_to_dof)
 
   acc = OrderedSet{Int32}()
@@ -623,9 +660,13 @@ function _generate_cell_to_mdofs(
 end
 
 function generate_DOF_to_msDOF_map(space, mDOF_to_dof, sDOF_to_dof)
-  n_mdofs = length(mDOF_to_dof)
   n_fdofs = num_free_dofs(space)
   n_dofs  = n_fdofs + num_dirichlet_dofs(space)
+  return generate_DOF_to_msDOF_map(n_fdofs, n_dofs, mDOF_to_dof, sDOF_to_dof)
+end
+
+function generate_DOF_to_msDOF_map(n_fdofs, n_dofs, mDOF_to_dof, sDOF_to_dof)
+  n_mdofs = length(mDOF_to_dof)
   DOF_to_msDOF = Vector{Int}(undef,n_dofs)
 
   for (mDOF,dof) in enumerate(mDOF_to_dof)
@@ -672,6 +713,22 @@ function merge_slave_constraint_tables(
 ) where T
   n_fdofs = num_free_dofs(space)
   n_dofs  = n_fdofs + num_dirichlet_dofs(space)
+  return merge_slave_constraint_tables(
+    n_fdofs, n_dofs,
+    s1_dof, s1_dofs, s1_coeffs, s1_offsets,
+    s2_dof, s2_dofs, s2_coeffs, s2_offsets;
+    on_conflict=on_conflict
+  )
+end
+
+function merge_slave_constraint_tables(
+  n_fdofs::Int, n_dofs::Int,
+  s1_dof, s1_dofs::Table, s1_coeffs::Table{T},
+  s2_dof, s2_dofs::Table, s2_coeffs::Table{T},
+  s1_offsets::AbstractVector = zeros(T, length(s1_dof)),
+  s2_offsets::AbstractVector = zeros(T, length(s2_dof));
+  on_conflict=nothing
+) where T
   n_s1    = length(s1_dof)
   n_s2    = length(s2_dof)
 
