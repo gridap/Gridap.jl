@@ -16,6 +16,7 @@ function FEEC_space_definition_checks(
 
   if cart_prod
     @check k in (0, D) "Basis for Cartesian product of polynomial space only possible for `k` = 0 or `D`, got k=$k and D=$D"
+    @check iszero(k) || !DG_calc "Basis for Cartesian product of form-valued polynomial space require `k=0`, got k=$k"
     @check T<:Number
   else
     @check T<:Real "T needs to be <:Real since represents the scalar type, got $T. If you want to define a Cartesian product FEEC basis, use `cart_prod=true`"
@@ -24,9 +25,7 @@ function FEEC_space_definition_checks(
   @check k in 0:D "The form order k must be in 0:D, got k=$k and D=$D."
   @check r ≥ 0    "The polynomial order r must be positive, got $r."
 
-  if DG_calc
-    @notimplemented "A new MultiValue type and associated algebraic operations ∧/⋆/𝑑/δ need to be implemented to use form valued polynomials."
-  elseif D>3 && ( 1 < k < D-1)
+  if !DG_calc &&  1 < k < D-1
     @unreachable "Vector calculus proxy of differential form bases are only available for `k`=0,1,`D`-1 or `D`, got k=$k and D=$D."
   end
 
@@ -37,6 +36,12 @@ function FEEC_space_definition_checks(
           """
   end
   true
+end
+
+function FEEC_tensor_type(T, D, k, DG_calc; cart_prod=false)
+  (iszero(k) || cart_prod) && return T
+  !DG_calc && return k∈(0,D) ? T : VectorValue{D,T} # vector proxy of 1, D-1 and D forms
+  make_concretetype(ExteriorFormValue{k,D,T})
 end
 
 #############################
@@ -370,21 +375,16 @@ struct BarycentricPΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
 
     indices = _generate_or_check_PΛ_indices(r,k,D,DG_calc,indices,rotate_90)
 
-    L = binomial(D,k) # Number of components of a basis form
-    V = VectorValue{L,T} # To update once DG_calc is implemented
-    C = _last_bubble_function_index(indices) # Cardinal of the basis
-
+    V = FEEC_tensor_type(T, D, k, DG_calc)
     b = BernsteinBasisOnSimplex{D}(Float64, r, vertices)
-    K = get_order(b)
-    Ψ = Vector{V}(undef, C)
+
+    L = binomial(D,k) # Number of components of a basis form
+    C = _last_bubble_function_index(indices) # Cardinal of the basis
+    Ψ = Vector{VectorValue{L,T}}(undef, C)
     _compute_PΛ_basis_form_coefficient!(Ψ,r,k,Val(D),b,vertices,indices,flavor)
+    Ψ = collect(reinterpret(V, Ψ))
 
-    if isone(L) && !DG_calc
-      V = T
-      Ψ = collect(reinterpret(T, Ψ))
-    end
-
-    new{D,V,K}(k,b,Ψ,indices,flavor)
+    new{D,V,r}(k,b,Ψ,indices,flavor)
   end
 
   @doc """
