@@ -8,10 +8,10 @@ Value of a differential K-form in D dimensions storing the `L = binomial(D,K)`
 independent components on the orientation-ordered basis `{dx^I}` (lexicographic
 K-combinations `I` of `1:D`), with scalar type `T`.
 
-A form takes covariant indices, so `D` is stored as a [`Covariant`](@ref)
-dimension: `ExteriorFormValue{1,3}` and `ExteriorFormValue{1,cov3}` name the same
-type, and `size` returns `(cov3,)`. Use `Int(D)` wherever the dimension is needed
-as a number.
+A form takes covariant indices, so `D` is stored as a [`Cov`](@ref) dimension:
+`ExteriorFormValue{1,3}` and `ExteriorFormValue{1,cov3}` name the same type, and
+`size` returns `(cov3,)`. Use `Int(D)` wherever the dimension is needed as a
+number.
 
 `show` labels the components `dxⁱ`, or `dλⁱ` when the `IOContext` property
 `:coordinates` is `:barycentric`.
@@ -21,7 +21,7 @@ struct ExteriorFormValue{K,D,T,L} <: MultiValue{NTuple{K,D},T,K,L}
 
   function ExteriorFormValue{K,D,T}(data::NTuple{L,T}) where {K,D,T,L}
     @assert L == binomial(Int(D),K) "wrong number of values: got $L, expected $(binomial(Int(D),K))"
-    new{K,Covariant(D),T,L}(data)
+    new{K,Cov(D),T,L}(data)
   end
 end
 

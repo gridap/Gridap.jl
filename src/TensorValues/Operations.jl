@@ -583,9 +583,9 @@ the specific functions above if possible), but is used as default generic implem
   # to change HighOrderTensorValue to store into Memory or simply some fixed sized array.
   # Context: compiling double_contaction of 4th order 4D tensors takes 5-10 min, runtime 15μs.
   comps = Expr[]
-  for cib in CartesianIndices(Sb_keep) # Julia is column major, last index enumerates first
-    for cia in CartesianIndices(Sa_keep)
-      summands = [:(a[$cia, $ciC]*b[$ciC, $cib]) for ciC in CartesianIndices(S_contract)]
+  for cib in CartesianIndices(Int.(Sb_keep)) # Julia is column major, last index enumerates first
+    for cia in CartesianIndices(Int.(Sa_keep))
+      summands = [:(a[$cia, $ciC]*b[$ciC, $cib]) for ciC in CartesianIndices(Int.(S_contract))]
       push!(comps, Expr(:call, :+, summands...))
     end
   end
@@ -632,8 +632,8 @@ tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
   ::Val{Ia},
   ::Val{Ib}) where {Sa,Ta,Na,Sb,Tb,Nb,Ia,Ib}
 
-  @assert (Ia isa NTuple || Ia isa Int)
-  @assert (Ib isa NTuple || Ib isa Int)
+  @assert (Ia isa NTuple || Ia isa Dim)
+  @assert (Ib isa NTuple || Ib isa Dim)
   @assert (Sa <: Tuple && Sb <: Tuple) "Ill-defined MultiValue"
   Nc = length(Ia)
   @assert length(Ib) == Nc
@@ -696,9 +696,9 @@ tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
     end
   end
 
-  s_a_ranges = ntuple(j -> 1:S_a_kept[j], length(ka))
-  s_b_ranges = ntuple(j -> 1:S_b_kept[j], length(kb))
-  s_c_ranges = ntuple(k -> 1:S_contract[k], Nc)
+  s_a_ranges = ntuple(j -> 1:Int(S_a_kept[j]), length(ka))
+  s_b_ranges = ntuple(j -> 1:Int(S_b_kept[j]), length(kb))
+  s_c_ranges = ntuple(k -> 1:Int(S_contract[k]), Nc)
 
   comps = Expr[]
   for cib in Iterators.product(s_b_ranges...)
@@ -813,8 +813,8 @@ tensor_contraction(a::MultiValue, i::Int, j::Int) =
     end
   end
 
-  s_keep_ranges     = ntuple(m -> 1:Sr[m],     length(ka))
-  s_contract_ranges = ntuple(k -> 1:S_contract[k], Nc)
+  s_keep_ranges     = ntuple(m -> 1:Int(Sr[m]), length(ka))
+  s_contract_ranges = ntuple(k -> 1:Int(S_contract[k]), Nc)
 
   comps = Expr[]
   for cia in Iterators.product(s_keep_ranges...)

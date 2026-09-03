@@ -378,7 +378,7 @@ The single scalar coefficient of a top-degree D-form in D dimensions.
 Enables using Gridap's standard measure for integration of differential forms:
     ∫(vol_coeff(ω ∧ ⋆η)) * dΩ
 """
-# The degree K is a plain Int and the dimension D a Covariant, so top-degree
+# The degree K is a plain Int and the dimension D a Cov, so top-degree
 # cannot be expressed by unifying the two parameters; it is checked instead.
 function vol_coeff(ω::ExteriorFormValue{K,D}) where {K,D}
   K == D || @unreachable "vol_coeff requires a top-degree form, got K = $K and D = $(Int(D))"

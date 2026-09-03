@@ -52,16 +52,13 @@ using Random
 using ForwardDiff
 using Combinatorics: combinations, permutations, levicivita
 
-export Covariant
-#export Contravariant
-export cov0
-export cov1
-export cov2
-export cov3
-#export con1
-#export con2
-#export con3
+export Cov, Con, Dim
+for i in 0:9 @eval begin
+    export $(Symbol(:cov, i))
+    export $(Symbol(:con, i))
+end end
 export tensor_type
+export can_contract
 
 export MultiValue
 export VectorValue

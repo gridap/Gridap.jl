@@ -3,45 +3,35 @@
 ###############################################################
 
 abstract type VariancedDimension <: Integer end
-struct Covariant <: VariancedDimension
+struct Cov <: VariancedDimension
   index::Int
-  Covariant(index::Int) = new(index)
-  Covariant(index::Covariant) = new(index[])
+  Cov(index::Int) = new(index)
+  Cov(index::Cov) = new(index[])
 end
-#struct Contravariant <: VariancedDimension
-#  index::Int
-#  Contravariant(index::Int) = new(index)
-#  Contravariant(index::Contravariant) = new(index[])
-#end
+struct Con <: VariancedDimension
+  index::Int
+  Con(index::Int) = new(index)
+  Con(index::Con) = new(index[])
+end
 
-const cov0 = Covariant(0)
-const cov1 = Covariant(1)
-const cov2 = Covariant(2)
-const cov3 = Covariant(3)
+for i in 0:9 @eval begin
+    const $(Symbol(:cov, i)) = Cov($i)
+    const $(Symbol(:con, i)) = Con($i)
+end end
 
-#const con1 = Contravariant(1)
-#const con2 = Contravariant(2)
-#const con3 = Contravariant(3)
-
-Base.show(io::IO, ::MIME"text/plain", covi::Covariant) = print(io, "cov", covi[])
-#Base.show(io::IO, ::MIME"text/plain", covi::Contravariant) = print(io, "con", covi[])
-
-"""
-    _Dim = Union{Int, VariancedDimension}
-
-Valid type of values to use in MultiValue's size, `S=Tuple{I...}` where each `D` in `I` is a `_Dim`.
-"""
-const _Dim = Union{Int, VariancedDimension}
+Base.show(io::IO, ::MIME"text/plain", covi::Cov) = print(io, "cov", covi[])
+Base.show(io::IO, ::MIME"text/plain", covi::Con) = print(io, "con", covi[])
 
 # Int behavior for arithmetic of dimension (tensor size computations and checks)
 
 Base.getindex(covi::VariancedDimension) = covi.index
 Base.Int(covi::VariancedDimension) = covi[]
 
-Base.convert(::Type{Covariant}, i::Int) = Covariant(i)
-Base.promote_rule(::Type{Covariant}, ::Type{Int}) = Covariant
-#Base.convert(::Type{Contravariant}, i::Int) = Contravariant(i)
-#Base.promote_rule(::Type{Contravariant}, ::Type{Int}) = Contravariant
+Base.convert(::Type{Cov}, i::Int) = Cov(i)
+Base.promote_rule(::Type{Cov}, ::Type{Int}) = Int#Cov
+Base.convert(::Type{Con}, i::Int) = Con(i)
+Base.promote_rule(::Type{Con}, ::Type{Int}) = Int#Con
+Base.promote_rule(::Type{Con}, ::Type{Cov}) = Int#Con
 
 Base.:(==)(x::VariancedDimension, y::Integer) = x[] == y
 Base.:(==)(x::Integer, y::VariancedDimension) = x == y[]
@@ -52,25 +42,43 @@ Base.:(<)(x::VariancedDimension, y::VariancedDimension) = x[] < y[]
 Base.:(>>)(x::VariancedDimension, y::Int) = x[] >> y
 Base.trailing_zeros(x::VariancedDimension) = trailing_zeros(x[])
 
-Base.:+(a::Covariant, b::Covariant) = Covariant(a[] + b[])
-Base.:-(a::Covariant, b::Covariant) = Covariant(a[] - b[])
-Base.:*(a::Covariant, b::Covariant) = Covariant(a[] * b[])
-Base.:/(a::Covariant, b::Covariant) = Covariant(a[] / b[])
-Base.div(a::Covariant, b::Covariant, r::RoundingMode=RoundToZero) = div(a[], b[], r)
-Base.:-(x::Covariant) = Covariant(-x[])
+Base.:+(a::Cov, b::Cov) = Cov(a[] + b[])
+Base.:-(a::Cov, b::Cov) = Cov(a[] - b[])
+Base.:*(a::Cov, b::Cov) = Cov(a[] * b[])
+Base.:/(a::Cov, b::Cov) = Cov(a[] / b[])
+Base.div(a::Cov, b::Cov, r::RoundingMode=RoundToZero) = div(a[], b[], r)
+Base.:-(x::Cov) = Cov(-x[])
 
-#Base.:+(a::Contravariant, b::Contravariant) = Contravariant(a[] + b[])
-#Base.:-(a::Contravariant, b::Contravariant) = Contravariant(a[] - b[])
-#Base.:*(a::Contravariant, b::Contravariant) = Contravariant(a[] * b[])
-#Base.:/(a::Contravariant, b::Contravariant) = Contravariant(a[] / b[])
-#Base.div(a::Contravariant, b::Contravariant, r::RoundingMode=RoundToZero) = div(a[], b[], r)
-#Base.:-(x::Contravariant) = Covariant(-x[])
+Base.:+(a::Con, b::Con) = Con(a[] + b[])
+Base.:-(a::Con, b::Con) = Con(a[] - b[])
+Base.:*(a::Con, b::Con) = Con(a[] * b[])
+Base.:/(a::Con, b::Con) = Con(a[] / b[])
+Base.div(a::Con, b::Con, r::RoundingMode=RoundToZero) = div(a[], b[], r)
+Base.:-(x::Con) = Cov(-x[])
 
 _rm_size_variance(s::Tuple) = tuple(Int.(s)...)
 @generated function _rm_size_variance(::Type{S}) where S<:Tuple
   # @generated ensures a compile time constant and inference
   :(Tuple{$(Int.(S.parameters)...)})
 end
+
+"""
+    Dim = Union{Int, VariancedDimension}
+
+Valid type of values to use in MultiValue's size, `S=Tuple{I...}` where each `D` in `I` is a `Dim`.
+"""
+const Dim = Union{Int, VariancedDimension}
+
+"""
+    can_contract(i::Dim, j::Dim)
+
+Wether dimensions `i` and `j` can be contracted. They must be equal, and either
+be un-varianced (both `Int`), or of oposite variance (one `Cov`, one `Con`).
+"""
+can_contract(i::Int, j::Int) = i == j
+can_contract(i::Con, j::Cov) = i == j
+can_contract(i::Cov, j::Con) = i == j
+can_contract(i::Dim, j::Dim) = false
 
 
 ###############################################################
@@ -125,16 +133,19 @@ size(a::MultiValue, d::Integer) = size(typeof(a), d)
     tensor_type(a::Number)
     tensor_type(::Type{V<:Number})
 
-The couple `(r, s)` where `s` the number of covariant dimensions (indices that
-`isa Covariant`), and `r` is the number of contravariant dimensions (all other indices).
+The triple `(r, s, u)` where
+- `s` the number of covariant dimensions, i.e. indices that `isa Cov`,
+- `r` the number of contravariant dimensions, i.e. indices that `isa Con`,
+- `u` the number of un-varianced dimensions, i.e. indices that `isa Int`.
 """
 tensor_type(a::V)      where V<:Number     = _tensor_type(size(a))
 tensor_type(::Type{V}) where V<:MultiValue = _tensor_type(size(V))
 function _tensor_type(sizetuple::S) where S<:Tuple
-  @assert all(i -> isa(i,_Dim), sizetuple) "Invalid dimension indices in size: $sizetuple"
-  s = count(i -> isa(i,Covariant), sizetuple)
-  r = length(sizetuple) - s
-  (r,s)
+  @assert all(i -> isa(i,Dim), sizetuple) "Invalid dimension indices in size: $sizetuple"
+  r = count(i -> isa(i,Con), sizetuple)
+  s = count(i -> isa(i,Cov), sizetuple)
+  u = length(sizetuple) - s - r
+  (r,s,u)
 end
 
 """
