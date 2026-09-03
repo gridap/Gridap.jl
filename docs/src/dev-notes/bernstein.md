@@ -361,6 +361,11 @@ and
 ψ_I^{α,J} = \text{det}\big( (ψ_{i}^{α,F,j})_{i∈I,\,j∈J} \big).
 ```
 
+For ``k \leq 1``, `BarycentricPΛBasis` also offers the `flavor=:BMM` direction
+forms, which substitute the support indicator ``s(α)_j = 1_{α_j>0}`` for ``α_j``
+and ``|\mathrm{supp}(α)|`` for ``|α|`` in the formula above. All the ``α`` of a
+given support then share their direction forms.
+
 Finally, the ``\binom{D}{k}`` components of ``ω^{α,J}=B_α Ψ^{α,J}`` in the
 basis ``\mathrm{d}x^I`` are
 ```math
@@ -576,6 +581,7 @@ _downwards_de_Casteljau_nD!
 _combination_index
 _sorted_combinations
 _basis_forms_components
+_update_φ_αF!
 _combination_sign
 _complement
 ```

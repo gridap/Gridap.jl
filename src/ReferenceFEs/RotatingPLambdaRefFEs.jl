@@ -92,10 +92,11 @@ end
 # ─────────────────────────────────────────────────────────────────────────────
 # Predofs: pointwise moments at BB lattice nodes, grouped per face
 # ─────────────────────────────────────────────────────────────────────────────
+const _RotPΛBases = Union{RotatingPΛBasis,TrimmedPΛBasis}
 
 # One pointwise moment per basis function, at the lattice node carrying it,
 # contracted with the entry's own physical form direction.
-function _pλ_predofs(b::_PΛBases, polytope, ::Val{D}) where D
+function _pλ_predofs(b::_RotPΛBases, polytope, ::Val{D}) where D
   r      = get_order(b)
   V      = value_type(b)
   n_gf   = num_faces(polytope)
@@ -125,7 +126,7 @@ function _pλ_predofs(b::_PΛBases, polytope, ::Val{D}) where D
   f_moments  = Vector{Matrix{V}}(undef, n_gf)
   f_nodes    = Vector{UnitRange{Int}}(undef, n_gf)
   f_own_moms = Vector{Vector{Int}}(undef, n_gf)
-  
+
   n_nodes, n_dofs  = 0, 0
   βs    = Vector{Vector{Int}}()
   β_row = Dict{Vector{Int},Int}()
@@ -220,10 +221,6 @@ has_geometric_decomposition(b::RotatingPΛBasis{D}, p::Polytope, conf::Conformit
 has_geometric_decomposition(b::TrimmedPΛBasis{D}, p::Polytope, conf::Conformity) where D =
   _pλ_geo_decomposition(b, Val(D), p, conf)
 
-# Disambiguate against the generic (shapefuns, p, ::L2Conformity) method.
-has_geometric_decomposition(::RotatingPΛBasis, ::Polytope, ::L2Conformity) = true
-has_geometric_decomposition(::TrimmedPΛBasis,  ::Polytope, ::L2Conformity) = true
-
 function _pλ_geo_decomposition(b, ::Val{D}, p, conf) where D
   conf isa L2Conformity && return true
   (!is_simplex(p) || D != num_dims(p)) && return false
@@ -232,11 +229,11 @@ function _pλ_geo_decomposition(b, ::Val{D}, p, conf) where D
   conf isa CurlConformity
 end
 
-function get_face_own_funs(b::_PΛBases, p::Polytope, conf::CurlConformity)
-  @assert has_geometric_decomposition(b, p, conf)
+function get_face_own_funs(b::_RotPΛBases, p::Polytope, conf::CurlConformity)
+  @check has_geometric_decomposition(b, p, conf)
   faces = get_faces(p)
   face_own_funs = [Int[] for _ in 1:length(faces)]
-  for (F, bubble_functions) in b.bubbles
+  for (F, bubble_functions) in get_bubbles(b)
     face = findfirst(face -> F ⊆ face, faces)
     w_first = first(bubble_functions)[1]
     w_last  = last(bubble_functions)[1]

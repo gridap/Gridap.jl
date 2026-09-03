@@ -167,6 +167,7 @@ Constructor for [`TrimmedPΛBasis`](@ref).
 TrimmedPΛBasis(::Val{D},::Type{T},r,vertices=nothing) where {D,T} =
   TrimmedPΛBasis{D}(T,r,vertices)
 
+get_bubbles(b::TrimmedPΛBasis) = b.bubbles
 get_order(b::TrimmedPΛBasis) = get_order(b.scalar_bernstein_basis) + 1
 get_orders(b::TrimmedPΛBasis{D}) where D = ntuple(_ -> get_order(b), D)
 
@@ -270,7 +271,7 @@ function print_indices(b::TrimmedPΛBasis{D}, out::IO=stdout) where D
     rpad("B_α(λ)",18), "Je1, Je2 (dx¹,…,dx^$D)")
   for (F, bubble_functions) in b.bubbles
     for (w, e, α, _) in bubble_functions
-      mono = _pλ_monomial_string(α)   # bare monomial
+      mono = _monomial_string(α)   # bare monomial
       println(out,
         rpad("$w",4), rpad(join(F,","),10), rpad("$e",7), rpad("$(Tuple(α))",12),
         rpad(mono,18), "$(b.Je1[w]), $(b.Je2[w])")

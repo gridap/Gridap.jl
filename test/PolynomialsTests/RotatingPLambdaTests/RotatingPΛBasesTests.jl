@@ -1,11 +1,12 @@
 module RotatingPΛBasesTests
-# The rotating P_rΛ¹ basis (RotatingPΛBasis), built from the directional 1-form
+# The rotating P_rΛ¹ basis, i.e. BarycentricPΛBasis 1-forms with flavor=:BMM,
+# built from the directional 1-form
 #
 #   ψ(f,k,s(α)) = dλ_k − (𝟙[k∈supp(α)]/|supp(α)|) Σ_{i∈f} dλ_i
 #
 # A self-contained, hand-rolled oracle (spanning set + filter + numeric
 # evaluation, independent of the package internals) is implemented below and
-# cross-checked against the real RotatingPΛBasis.
+# cross-checked against BarycentricPΛBasis built with flavor=:BMM.
 
 using Gridap.TensorValues
 using Gridap.Polynomials
@@ -77,8 +78,10 @@ function rotating_eval(f::Vector{Int}, k::Int, α::NTuple{N,Int}, x) where N
     val * reduce_ambient(ω)
 end
 
-# ── Driver: D=2, K=1, r=2 ──────────────────────────────────────────────────────
-D, K, r = 2, 1, 2
+# ── Driver: D=2, K=1, r=3 ──────────────────────────────────────────────────────
+# r must be ≥ 3 for ψ to differ from the AFW direction form: below that, α_j/|α|
+# and s(α)_j/|s(α)| agree on every basis function.
+D, K, r = 2, 1, 3
 spanning = rotating_spanning_set(Val(D), Val(K), r)
 basis    = rotating_basis(spanning)
 
@@ -105,18 +108,30 @@ end
 
 # ── Cross-check against the package implementation ────────────────────────────
 #
-# RotatingPΛBasis{D} is a genuine Gridap PolynomialBasis subtype generating the
-# same (f,k,α) triples (via rotating_PΛ_bubbles) and the same ψ formula, but
-# contracted against the simplex's actual ∂λ/∂x Jacobian instead of going
-# through reduce_ambient. This test checks the two implementations agree exactly.
-@testset "RotatingPΛBasis (package) == hand-rolled oracle coefficients" begin
-    pkg_basis = RotatingPΛBasis(Val(D), Float64, r)
+# BarycentricPΛBasis{D} with flavor=:BMM generates the same (f,k,α) triples (the
+# vertex k of the oracle is the single index J[1] of a bubble function) and the
+# same ψ formula, but contracted against the simplex's actual ∂λ/∂x Jacobian
+# instead of going through reduce_ambient. On the default (unit) simplex the two
+# contractions coincide, so the coefficients must agree exactly.
+#
+# The basis is vector proxied: for k=1 the proxy is the identity, so its Ψ holds
+# the same dx components as the oracle's reduced 1-form.
+bmm_basis(r) = BarycentricPΛBasis(Val(D), Float64, r, K; flavor=:BMM)
+
+# (f,k,α) → w, the oracle's key onto the package's basis function index
+function bmm_index(b)
+    index = Dict{Tuple{Vector{Int},Int,Vector{Int}},Int}()
+    for (F, bfs) in get_bubbles(b), (w, α, _, J) in bfs
+        index[(F, J[1], α)] = w
+    end
+    index
+end
+
+@testset "BarycentricPΛBasis(:BMM) == hand-rolled oracle coefficients" begin
+    pkg_basis = bmm_basis(r)
     @test length(pkg_basis) == length(basis)
 
-    pkg_index = Dict{Tuple{Vector{Int},Int,Vector{Int}},Int}()
-    for (F, bfs) in pkg_basis.bubbles, (w, k, α, _) in bfs
-        pkg_index[(F, k, α)] = w
-    end
+    pkg_index = bmm_index(pkg_basis)
 
     @testset "(f,k,α) triples present and ψ values match" for (f, k, α) in basis
         key = (f, k, collect(α))
@@ -132,12 +147,9 @@ end
 # The coefficient cross-check above never exercises the Gridap evaluation
 # machinery (_return_cache/_setsize!/_evaluate_nd!). Evaluate the package basis
 # pointwise and compare against the oracle.
-@testset "RotatingPΛBasis evaluate! == oracle, pointwise" begin
-    pkg_basis = RotatingPΛBasis(Val(D), Float64, r)
-    pkg_index = Dict{Tuple{Vector{Int},Int,Vector{Int}},Int}()
-    for (F, bfs) in pkg_basis.bubbles, (w, k, α, _) in bfs
-        pkg_index[(F, k, α)] = w
-    end
+@testset "BarycentricPΛBasis(:BMM) evaluate! == oracle, pointwise" begin
+    pkg_basis = bmm_basis(r)
+    pkg_index = bmm_index(pkg_basis)
     cache    = return_cache(pkg_basis, pts)
     pkg_vals = evaluate!(cache, pkg_basis, pts)   # (np, ndof) matrix
     for (f, k, α) in basis, (i, p) in enumerate(pts)

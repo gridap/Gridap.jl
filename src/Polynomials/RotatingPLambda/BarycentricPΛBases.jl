@@ -168,6 +168,7 @@ Constructor for [`RotatingPΛBasis`](@ref).
 RotatingPΛBasis(::Val{D},::Type{T},r,vertices=nothing) where {D,T} =
   RotatingPΛBasis{D}(T,r,vertices)
 
+get_bubbles(b::RotatingPΛBasis) = b.bubbles
 get_order(b::RotatingPΛBasis) = get_order(b.scalar_bernstein_basis)
 get_orders(b::RotatingPΛBasis{D}) where D = ntuple(_ -> get_order(b), D)
 
@@ -245,23 +246,6 @@ end
 
 # ── Pretty table ─────────────────────────────────────────────────────────
 
-const _pλ_sub_digits = ("₀","₁","₂","₃","₄","₅","₆","₇","₈","₉")
-const _pλ_sup_digits = ("⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹")
-_pλ_sub_str(i::Int) = join(_pλ_sub_digits[d+1] for d in reverse(digits(i)))
-_pλ_sup_str(i::Int) = join(_pλ_sup_digits[d+1] for d in reverse(digits(i)))
-
-# Plain-string monomial coeff·λ₁^α₁⋯λ_N^α_N, e.g. "3λ₁²λ₂" (drops zero
-# exponents and unit coefficient/exponents).
-function _pλ_monomial_string(α; coeff=1)
-  s = isone(coeff) ? "" : string(coeff)
-  for (i, αi) in enumerate(α)
-    αi == 0 && continue
-    s *= "λ" * _pλ_sub_str(i)
-    αi > 1 && (s *= _pλ_sup_str(αi))
-  end
-  isempty(s) ? "1" : s
-end
-
 """
     print_indices(b::RotatingPΛBasis, out::IO=stdout)
 
@@ -278,7 +262,7 @@ function print_indices(b::RotatingPΛBasis{D}, out::IO=stdout) where D
     rpad("B_α(λ)",18), "ψ (dx¹,…,dx^$D)")
   for (F, bubble_functions) in b.bubbles
     for (w, k, α, _) in bubble_functions
-      mono = _pλ_monomial_string(α; coeff=multinomial(α...))
+      mono = _monomial_string(α; coeff=multinomial(α...))
       println(out,
         rpad("$w",4), rpad(join(F,","),10), rpad("$k",4), rpad("$(Tuple(α))",12),
         rpad(mono,18), b.Ψ[w])
@@ -289,12 +273,17 @@ end
 Base.show(io::IO, b::RotatingPΛBasis) = print_indices(b, io)
 
 """
-    print_forms(b::RotatingPΛBasis, out::IO=stdout)
-    print_forms(b::TrimmedPΛBasis,  out::IO=stdout)
+    print_forms(b::BarycentricPΛBasis, out::IO=stdout)
+    print_forms(b::RotatingPΛBasis,    out::IO=stdout)
+    print_forms(b::TrimmedPΛBasis,     out::IO=stdout)
 
 Print each basis function of `b` as an ambient barycentric differential form,
-in terms of dλ₁,…,dλ_{D+1} — the frame the ψ and ϕ formulas are stated in —
+in terms of dλ₁,…,dλ_{D+1} — the frame the φ, ψ and ϕ formulas are stated in —
 with symbolic polynomial coefficients.
+
+For a `BarycentricPΛBasis` the form is `Bα(λ)` times the wedge of the direction
+1-forms [`_update_φ_αF!`](@ref) indexed by `J`, and the polynomial degree must be
+at least 1.
 
 Requires the Symbolics package to be loaded: the methods are provided by the
 GridapSymbolicsExt package extension.

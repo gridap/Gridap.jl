@@ -9,9 +9,21 @@ using Gridap.Helpers
 using ForwardDiff
 using StaticArrays
 
-using Gridap.Polynomials: _combination_index, bernstein_term_id
+using Gridap.Polynomials: _sorted_combinations, _combination_index, bernstein_term_id
 
 r = 3 # all possible bubble spaces are non empty
+
+# Combination ordering validation
+for D in 1:6
+  for k in 0:D
+    acc = true
+    for (I_ind, I) in enumerate(_sorted_combinations(D,k))
+      acc &= _combination_index(I) == I_ind
+    end
+    @test acc || "A combination order was wrong for $D, $k"
+  end
+end
+
 
 # Bubble indices validation
 

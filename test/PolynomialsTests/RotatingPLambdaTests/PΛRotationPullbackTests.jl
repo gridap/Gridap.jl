@@ -1,6 +1,7 @@
 module PΛRotationPullbackTests
 # End-to-end validation of the rotation change of basis against a NUMERIC
-# pullback, for both RotatingPΛBasis (untrimmed) and TrimmedPΛBasis.
+# pullback, for the untrimmed BarycentricPΛBasis 1-forms (both flavors) and
+# TrimmedPΛBasis.
 #
 # The self-consistency tests in PΛRotationsTests.jl / PΛTrimmedRotationsTests.jl
 # check the closed-form index calculus against itself; this file closes the
@@ -56,6 +57,22 @@ function oracle_eval(f::Vector{Int}, k::Int, α::Vector{Int}, x)   # untrimmed
     val * reduce_ambient(ω)
 end
 
+# :AFW direction form: α itself weights the correction, instead of its support.
+function afw_phi(f::Vector{Int}, k::Int, α::Vector{Int}, N::Int)
+    c = zeros(N)
+    c[k] += 1.0
+    r = sum(α)
+    for i in f; c[i] -= α[k]/r; end
+    c
+end
+
+function oracle_eval_afw(f::Vector{Int}, k::Int, α::Vector{Int}, x)
+    λ = to_barycentric(x); N = length(λ)
+    val = multinomial(α...) * prod(λ[i]^α[i] for i in 1:N)
+    ω = DifferentialFormValue{1,N}(Tuple(afw_phi(f, k, α, N)))
+    val * reduce_ambient(ω)
+end
+
 function oracle_eval(f::Vector{Int}, e::Tuple{Int,Int}, α::Vector{Int}, x)   # trimmed
     λ = to_barycentric(x); N = length(λ)
     e1, e2 = e
@@ -93,19 +110,19 @@ end
 
 # max |lhs − rhs| over all basis functions and points, for map permutation a:
 #   lhs = (A_a^* w_μ)(x) = J_a' · w_μ(A_a x),   rhs = Σ_ν C[μ,ν] w_ν(x)
-function pullback_error(b, π, a, pts, D)
+function pullback_error(b, π, a, pts, D, ev=oracle_eval)
     entries = bubble_entries(b)
     C = rotation_change_of_basis(b, π)
     A, J = affine_map(a, D)
     err = 0.0
     for (μ, t) in enumerate(entries)
         for x in pts
-            lhs = transpose(J) * collect(oracle_eval(t..., A(x)).data)
+            lhs = transpose(J) * collect(ev(t..., A(x)).data)
             rhs = zeros(D)
             for (ν, s) in enumerate(entries)
                 c = C[μ, ν]
                 c == 0.0 && continue
-                rhs .+= c .* collect(oracle_eval(s..., x).data)
+                rhs .+= c .* collect(ev(s..., x).data)
             end
             err = max(err, maximum(abs.(lhs .- rhs)))
         end
@@ -123,30 +140,38 @@ test_points(D) = D == 2 ?
     end
 end
 
+# The untrimmed rotation API is exercised through BarycentricPΛBasis 1-forms in
+# both flavors; each flavor needs the oracle for its own direction form.
+const UNTRIMMED = (
+  ((V,T,r) -> BarycentricPΛBasis(V,T,r,1; flavor=:AFW), "barycentric :AFW", oracle_eval_afw),
+  ((V,T,r) -> BarycentricPΛBasis(V,T,r,1; flavor=:BMM), "barycentric :BMM", oracle_eval),
+)
+const ALL_BASES = (UNTRIMMED..., (TrimmedPΛBasis, "trimmed", oracle_eval))
+
 @testset "direction: A_{π⁻¹} matches, A_π fails (3-cycle, D=2, r=2)" begin
     π = [2, 3, 1]
-    for make in (RotatingPΛBasis, TrimmedPΛBasis)
+    for (make, name, ev) in ALL_BASES
         b = make(Val(2), Float64, 2)
         pts = test_points(2)
-        @test pullback_error(b, π, invperm(π), pts, 2) < 1e-10
-        @test pullback_error(b, π, π, pts, 2) > 1e-3
+        @test pullback_error(b, π, invperm(π), pts, 2, ev) < 1e-10
+        @test pullback_error(b, π, π, pts, 2, ev) > 1e-3
     end
 end
 
 @testset "C(π) == numeric pullback along A_{π⁻¹}, all π" begin
-    for (make, name) in ((RotatingPΛBasis, "untrimmed"), (TrimmedPΛBasis, "trimmed"))
+    for (make, name, ev) in ALL_BASES
         @testset "$name D=$D r=$r" for (D, rs) in ((2, (1, 2, 3)), (3, (1, 2))), r in rs
             b = make(Val(D), Float64, r)
             pts = test_points(D)
             for π in permutations(1:D+1)
-                @test pullback_error(b, collect(π), invperm(collect(π)), pts, D) < 1e-10
+                @test pullback_error(b, collect(π), invperm(collect(π)), pts, D, ev) < 1e-10
             end
         end
     end
 end
 
 @testset "RotationCache memoises and matches rotate_basis_function" begin
-    for make in (RotatingPΛBasis, TrimmedPΛBasis)
+    for (make, name, ev) in ALL_BASES
         b  = make(Val(2), Float64, 2)
         rc = RotationCache(b)
         for π in permutations(1:3)

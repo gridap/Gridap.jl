@@ -123,7 +123,10 @@ Lv_ω1 = lie_derivative(v_e1, ω_1)
 # ── print_forms: symbolic display of the PΛ bases ────────────────────────────
 
 for (make, header) in ((RotatingPΛBasis, "RotatingPΛBasis"),
-                       (TrimmedPΛBasis,  "TrimmedPΛBasis"))
+                       (TrimmedPΛBasis,  "TrimmedPΛBasis"),
+                       ((V,T,r) -> BarycentricPΛBasis(V,T,r,1), "BarycentricPΛBasis"),
+                       ((V,T,r) -> BarycentricPΛBasis(V,T,r,1; flavor=:BMM), "BarycentricPΛBasis"),
+                       ((V,T,r) -> BarycentricPΛBasis(V,T,r,2), "BarycentricPΛBasis"))
   b   = make(Val(2), Float64, 2)
   buf = IOBuffer()
   print_forms(b, buf)
@@ -134,6 +137,24 @@ for (make, header) in ((RotatingPΛBasis, "RotatingPΛBasis"),
   @test occursin("dλ", out)
   # one line per basis function
   @test count(==('['), out) >= length(b)
+end
+
+# The :BMM direction forms are the ψ of RotatingPΛBasis, so the two bases print
+# the same ambient forms in the same order. r must be ≥ 3 for ψ to differ from
+# the AFW direction form at all.
+function form_lines(b)
+  buf = IOBuffer()
+  print_forms(b, buf)
+  [ m.captures[1] for m in eachmatch(r"α=\(.*?\)\s+(.*)", String(take!(buf))) ]
+end
+
+let r = 3
+  bmm = form_lines(BarycentricPΛBasis(Val(2), Float64, r, 1; flavor=:BMM))
+  afw = form_lines(BarycentricPΛBasis(Val(2), Float64, r, 1))
+  rot = form_lines(RotatingPΛBasis(Val(2), Float64, r))
+  @test length(bmm) == length(rot) > 0
+  @test bmm == rot
+  @test afw != rot
 end
 
 end # module

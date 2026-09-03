@@ -116,6 +116,45 @@ function print_forms(b::RotatingPΛBasis{D}, out::IO=stdout) where D
   end
 end
 
+function print_forms(b::BarycentricPΛBasis{D}, out::IO=stdout) where D
+  N  = D + 1
+  r  = get_order(b)
+  k  = b.k
+  r ≥ 1 || throw(ArgumentError(
+    "print_forms needs r ≥ 1: the PᵣΛᵏ basis forms of order 0 are the constant dxᴵ, use print_indices"))
+  λs = Symbolics.variables(:λ, 1:N)
+  io = _barycentric_io(out)
+
+  # The direction 1-forms the basis builds in the physical dx¹,…,dxᴰ frame,
+  # here on the ambient dλ¹,…,dλᴺ coframe instead: column j holds
+  # φ^{α,F,j} = dλʲ - (αⱼ/r) Σ_{l∈F} dλˡ, with α weighted as the flavor asks.
+  function ambient_φ(F, α, r, flavor)
+    s, ρ = flavor === :BMM ? (map(αj -> Int(αj > 0), α), count(>(0), α)) : (α, r)
+    φ = zeros(Float64, N, N)
+    for j in 1:N
+      φ[j,j] += 1
+      for i in F
+        φ[i,j] -= s[j]/ρ
+      end
+    end
+    φ
+  end
+
+  println(out, "BarycentricPΛBasis{D=$D, r=$r, k=$k, $(b.flavor)}: dim = $(length(b))  (as barycentric differential forms)")
+  for (F, bubble_functions) in get_bubbles(b)
+    for (w, α, _, J) in bubble_functions
+      mono = multinomial(α...) * prod(λs[i]^α[i] for i in 1:N)
+      φ    = ambient_φ(F, α, r, b.flavor)  # ambient dλ₁,…,dλ_N coefficients
+      # The direction k-form is the wedge of the columns J of φ
+      Ψ = foldl((ω, j) -> ω ∧ DifferentialFormValue{1,N}(Tuple(φ[:,j])),
+                J; init=DifferentialFormValue{0,N}((1.0,)))
+      print(out, "[", rpad(w,3), "]  F=", rpad(join(F,","),8), " J=", rpad(join(J,","),7), " α=", rpad(string(Tuple(α)),12), "  ")
+      show(io, MIME("text/plain"), mono * Ψ)
+      println(out)
+    end
+  end
+end
+
 function print_forms(b::TrimmedPΛBasis{D}, out::IO=stdout) where D
   N  = D + 1
   λs = Symbolics.variables(:λ, 1:N)

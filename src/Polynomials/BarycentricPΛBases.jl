@@ -319,10 +319,12 @@ struct BarycentricPΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
   # Direction k-form of each basis polynomial
   Ψ::Vector{V}
   _indices::BarycentricPΛIndices
+  flavor::Symbol
 
   function BarycentricPΛBasis{D}(::Type{T}, r, k, vertices;
-        DG_calc=false, indices=nothing, rotate_90=false) where {D,T}
+        DG_calc=false, indices=nothing, rotate_90=false, flavor=:AFW) where {D,T}
 
+    @check flavor==:AFW || flavor==:BMM && k≤1
     FEEC_space_definition_checks(Val(D), T, r, k, :P⁻, rotate_90, DG_calc)
     _simplex_vertices_checks(Val(D), vertices)
 
@@ -335,14 +337,14 @@ struct BarycentricPΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
     b = BernsteinBasisOnSimplex{D}(Float64, r, vertices)
     K = get_order(b)
     Ψ = Vector{V}(undef, C)
-    _compute_PΛ_basis_form_coefficient!(Ψ,r,k,Val(D),b,vertices,indices)
+    _compute_PΛ_basis_form_coefficient!(Ψ,r,k,Val(D),b,vertices,indices,flavor)
 
     if isone(L) && !DG_calc
       V = T
       Ψ = collect(reinterpret(T, Ψ))
     end
 
-    new{D,V,K}(k,b,Ψ,indices)
+    new{D,V,K}(k,b,Ψ,indices,flavor)
   end
 
   @doc """
@@ -380,14 +382,14 @@ struct BarycentricPΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
 
     resize!(Ψ, w-1)
     indices = BarycentricPΛIndices(_indices.identity, bubbles, _indices.components)
-    new{D,V,K}(_b.k, _b.scalar_bernstein_basis, Ψ, indices)
+    new{D,V,K}(_b.k, _b.scalar_bernstein_basis, Ψ, indices, _b.flavor)
   end
 
   function BarycentricPΛBasis{D,V,K}() where {D,V,K} # Just for testvalue
     indices = _generate_or_check_PΛ_indices(K,0,0,false,nothing,false)
     B = BernsteinBasisOnSimplex{D,Float64,K}
     C = _last_bubble_function_index(indices)
-    new{D,V,K}(0,testvalue(B),zeros(V,C),indices)
+    new{D,V,K}(0,testvalue(B),zeros(V,C),indices,:AFW)
   end
 end
 
@@ -402,6 +404,7 @@ The kwargs are the following:
 - `indices::BarycentricPΛIndices = nothing`: may be provided to avoid allocations of new indices, or to select specific bubbles spaces,
 - `DG_calc = false`: set to `true` to choose `k`-form valued polynomials instead of vector valued polynomials (not implemented yet),
 - `rotate_90 = false`: In 2`D` for `k`=1, `true` to apply a 90° rotation of the vector proxied polynomials ((x,y) -> (-y,x)), needed for Raviart-Thomas/BDM.
+- `flavor = :AFW`: `:BMM` selects the alternative direction forms of [`_update_φ_αF!`](@ref), only defined for `k` ≤ 1.
 """
 function BarycentricPΛBasis(::Val{D},::Type{T},r,k; kwargs...) where {D,T}
   BarycentricPΛBasis{D}(T,r,k; kwargs...)
@@ -453,8 +456,45 @@ get_orders(b::_BaryPΛBasis{D}) where D = tfill(get_order(b), Val(D))
     print_indices(b::BarycentricPΛBasis,  out=stdout)
 
 Prints the indices of `b` in a user friendly format into `out`.
+
+For `PΛ` with `flavor=:BMM` and `k`=1, `J` holds a single vertex and is titled `k`.
 """
 print_indices(b::_BaryPΛBasis, out=stdout) = show(out, MIME"text/plain"(), b._indices)
+
+function print_indices(b::BarycentricPΛBasis{D}, out::IO=stdout) where D
+  # :BMM builds its direction forms from a single vertex J[1], which the
+  # rotating-basis literature calls k.
+  single_vertex = b.flavor === :BMM && isone(b.k)
+  println(out, "BarycentricPΛBasis{D=$D, r=$(get_order(b)), k=$(b.k), $(b.flavor)}: dim = $(length(b))")
+  println(out,
+    rpad("w",4), rpad("F",10), rpad(single_vertex ? "k" : "J",6), rpad("α",12),
+    rpad("Bα(λ)",18), "Ψ")
+  for (F, bubble_functions) in get_bubbles(b)
+    for (w, α, _, J) in bubble_functions
+      mono = _monomial_string(α; coeff=multinomial(α...))
+      println(out,
+        rpad("$w",4), rpad(join(F,","),10), rpad(single_vertex ? "$(J[1])" : join(J,","),6),
+        rpad("$(Tuple(α))",12), rpad(mono,18), b.Ψ[w])
+    end
+  end
+end
+
+const _sub_digits = ("₀","₁","₂","₃","₄","₅","₆","₇","₈","₉")
+const _sup_digits = ("⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹")
+_sub_str(i::Int) = join(_sub_digits[d+1] for d in reverse(digits(i)))
+_sup_str(i::Int) = join(_sup_digits[d+1] for d in reverse(digits(i)))
+
+# Plain-string monomial coeff·λ₁^α₁⋯λ_N^α_N, e.g. "3λ₁²λ₂" (drops zero
+# exponents and unit coefficient/exponents).
+function _monomial_string(α; coeff=1)
+  s = isone(coeff) ? "" : string(coeff)
+  for (i, αi) in enumerate(α)
+    αi == 0 && continue
+    s *= "λ" * _sub_str(i)
+    αi > 1 && (s *= _sup_str(αi))
+  end
+  isempty(s) ? "1" : s
+end
 
 _get_x_to_λ(b::_BaryPΛBasis) = b.scalar_bernstein_basis.x_to_λ
 
@@ -782,7 +822,7 @@ function PΛ_bubbles(r,k,D)
   bubbles
 end
 
-function _compute_PΛ_basis_form_coefficient!(Ψ,r,k,::Val{D},b,vertices,indices) where D
+function _compute_PΛ_basis_form_coefficient!(Ψ,r,k,::Val{D},b,vertices,indices,flavor=:AFW) where D
   N = D+1
   Vk = Val(k)
   V = eltype(Ψ)
@@ -796,7 +836,7 @@ function _compute_PΛ_basis_form_coefficient!(Ψ,r,k,::Val{D},b,vertices,indices
   @inbounds for (F, bubble_functions) in indices.bubbles
     for (w, α, _, J) in bubble_functions
       if α ≠ α_prec
-        _update_φ_αF!(φ_αF,b,α,F,r)
+        _update_φ_αF!(φ_αF,b,α,F,r,flavor)
         α_prec = α
       end
 
@@ -809,12 +849,29 @@ function _compute_PΛ_basis_form_coefficient!(Ψ,r,k,::Val{D},b,vertices,indices
   nothing
 end
 
-@inline function _update_φ_αF!(φ_αF,b,α,F,r)
+"""
+    _update_φ_αF!(φ_αF, b, α, F, r, flavor)
+
+Set in place the `D`×`N` matrix `φ_αF` the direction 1-forms `φ_αF[:,j] =
+φ^{α,F,j}` where
+
+    φ^{α,F,j} = dλʲ - (sⱼ/|s|) Σ_{l∈F} dλˡ,     1 ≤ j ≤ N.
+
+`flavor` selects which multi-index weights the correction term:
+- `:AFW` uses `s=α` and `r` = |`α`|,
+- `:BMM` uses the support indicator of `α` and its cardinal.
+"""
+@inline function _update_φ_αF!(φ_αF,b::BernsteinBasisOnSimplex{D},α,F,r,flavor=:AFW) where D
   M = b.x_to_λ
+  s = ntuple(j -> α[j], Val(D+1))
+  if flavor === :BMM
+    s = map(αj -> Int(αj > 0), s) #  s  in paper
+    r = sum(s)                    # |s| in paper
+  end
   @inbounds for ci in CartesianIndices(φ_αF)
     i, j = ci[1], ci[2]
     mF = sum(M[Fl,i+1] for Fl in F; init=0)
-    φ_αF[ci] = M[j,i+1] - α[j]*mF/r
+    φ_αF[ci] = M[j,i+1] - s[j]*mF/r
   end
 end
 
