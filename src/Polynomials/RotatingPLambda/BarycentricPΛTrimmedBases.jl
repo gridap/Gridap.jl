@@ -4,7 +4,7 @@
 # RotatingPLambda/BarycentricPΛBases.jl, but built from the Whitney
 # (directional) 1-forms
 #
-#   ϕ(ξ;e1,e2) = ξ_e1 dξ_e2 − ξ_e2 dξ_e1
+#   ϕ(ξ;e1,e2) = ξ^{e1} dξ^{e2} − ξ^{e2} dξ^{e1}
 #
 # instead of the rotating ψ. Spanning set/basis: f a face of dim(f)≥1,
 # e=(e1,e2) a pair of distinct vertices of f, |α|=r-1, [s(α)]∪e=f, basis
@@ -12,7 +12,7 @@
 #
 # Unlike ψ, ϕ is NOT a constant-coefficient directional form: ϕ(ξ;e1,e2) is
 # itself linear in ξ. So the basis function
-#   w(ξ;F,e,α) = BB(ξ;α)·ϕ(ξ;e1,e2) = BB(ξ;α)·ξ_e1·dξ_e2 − BB(ξ;α)·ξ_e2·dξ_e1
+#   w(ξ;F,e,α) = BB(ξ;α)·ϕ(ξ;e1,e2) = BB(ξ;α)·ξ^{e1}·dξ^{e2} − BB(ξ;α)·ξ^{e2}·dξ^{e1}
 # is evaluated as (scalar Bernstein value)·(barycentric coordinate)·(constant
 # physical dx-form), combining two such terms, rather than a single constant
 # direction times a scalar Bernstein value as in the untrimmed case.
@@ -78,9 +78,9 @@ end
 """
     _trimmed_ambient_phi(e1, e2, N, λ)
 
-ϕ(ξ;e1,e2) = λ_e1 dλ_e2 − λ_e2 dλ_e1, evaluated at the ambient barycentric
+ϕ(ξ;e1,e2) = λ^{e1} dλ^{e2} − λ^{e2} dλ^{e1}, evaluated at the ambient barycentric
 point/symbol vector `λ` (length `N`), as a coefficient vector in the ambient
-frame dλ₁,…,dλ_N. Unlike [`_rotating_ambient_psi`](@ref), this genuinely
+frame dλ¹,…,dλᴺ. Unlike [`_rotating_ambient_psi`](@ref), this genuinely
 depends on the evaluation point — `λ` here may be numeric (for evaluation) or
 symbolic (for [`print_forms`](@ref)).
 """
@@ -109,10 +109,10 @@ struct TrimmedPΛBasis{D,V,C,K} <: PolynomialBasis{D,V,Bernstein}
   scalar_bernstein_basis :: BernsteinBasisOnSimplex{D,Float64,K}  # degree r-1
   e1s     :: Vector{Int}             # e1, indexed by w
   e2s     :: Vector{Int}             # e2, indexed by w
-  Je1     :: Vector{V}               # physical dx-form for unit dλ_e1, indexed by w
-  Je2     :: Vector{V}               # physical dx-form for unit dλ_e2, indexed by w
+  Je1     :: Vector{V}               # physical dx-form for unit dλ^{e1}, indexed by w
+  Je2     :: Vector{V}               # physical dx-form for unit dλ^{e2}, indexed by w
   α_ids   :: Vector{Int}             # bernstein_term_id(α), indexed by w
-  ∇λ      :: Vector{VectorValue{D,Float64}}  # ∂λ_i/∂x (constant), indexed by vertex i
+  ∇λ      :: Vector{VectorValue{D,Float64}}  # ∂λⁱ/∂x (constant), indexed by vertex i
   nrm     :: Vector{Float64}         # 1/multinomial(α): BARE monomial λ^α, not B_α.
                                      # The ±1 two-term rotation law (shift ρ changes
                                      # the multiset of α) holds for bare monomials
@@ -227,8 +227,8 @@ function _evaluate_nd!(
   end
 end
 
-# Product rule for w = nrm·B_α·(λ_{e1}·Je2 − λ_{e2}·Je1) with constant Je:
-#   ∇w = nrm·[ (λ_{e1}∇B_α + B_α∇λ_{e1}) ⊗ Je2 − (λ_{e2}∇B_α + B_α∇λ_{e2}) ⊗ Je1 ]
+# Product rule for w = nrm·B_α·(λ^{e1}·Je2 − λ^{e2}·Je1) with constant Je:
+#   ∇w = nrm·[ (λ^{e1}∇B_α + B_α∇λ^{e1}) ⊗ Je2 − (λ^{e2}∇B_α + B_α∇λ^{e2}) ⊗ Je1 ]
 function _gradient_nd!(
   b::TrimmedPΛBasis{D}, x,
   ∇ω::AbstractMatrix{G}, i, cB,
@@ -262,7 +262,7 @@ end
 Pretty table of the trimmed P_r⁻Λ¹ basis, one row per basis function `w`:
 face `F`, vertex pair `e=(e1,e2)`, multi-index `α`, the bare Bernstein
 monomial `λ^α`, and the physical Jacobian columns `Je1,Je2` (the Cartesian
-`dx`-form for unit `dλ_e1`/`dλ_e2`). Mirrors [`print_indices`](@ref).
+`dx`-form for unit `dλ^{e1}`/`dλ^{e2}`). Mirrors [`print_indices`](@ref).
 """
 function print_indices(b::TrimmedPΛBasis{D}, out::IO=stdout) where D
   println(out, "TrimmedPΛBasis{D=$D, r=$(get_order(b))}: dim = $(length(b))")

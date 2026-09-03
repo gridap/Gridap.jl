@@ -80,7 +80,7 @@ x₀  = VectorValue(2.0, 3.0)
 v3 = VectorValue(0.5, 0.3, 0.2)
 @test koszul(v3, ω3).data[1] ≈ interior_product(v3, ω3).data[1] ≈ 0.38
 
-# ι on an ambient 2-form: ι_{(0.5,0.3,0.2)}(dλ₁∧dλ₂) = 0.5 dλ₂ − 0.3 dλ₁
+# ι on an ambient 2-form: ι_{(0.5,0.3,0.2)}(dλ¹∧dλ²) = 0.5 dλ² − 0.3 dλ¹
 e12 = DifferentialFormValue{2,3}((1.0, 0.0, 0.0))
 k = koszul(VectorValue(0.5, 0.3, 0.2), e12)
 @test typeof(k) <: DifferentialFormValue{1,3}

@@ -21,7 +21,7 @@ Random.seed!(1)
         π  = randperm(N)
         β  = rand(0:3, N)
         ξ  = rand(N)
-        λ  = ξ[invperm(π)]   # λ_i = ξ_{π⁻¹(i)}
+        λ  = ξ[invperm(π)]   # λⁱ = ξ^{π⁻¹(i)}
         ξβ  = prod(ξ[i]^β[i] for i in 1:N)
         πβ  = rotate_multiindex(β, π)
         λπβ = prod(λ[i]^πβ[i] for i in 1:N)

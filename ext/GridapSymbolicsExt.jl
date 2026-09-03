@@ -8,6 +8,7 @@ using Gridap.Polynomials
 using Gridap.Polynomials: RotatingPΛBasis, TrimmedPΛBasis
 using Gridap.Polynomials: _rotating_ambient_psi, _trimmed_ambient_phi
 using Gridap.Polynomials: multinomial  # Combinatorics, via Gridap.Polynomials
+using Gridap.Polynomials: _sup_str
 
 import Gridap.TensorValues: exterior_derivative
 import Gridap.TensorValues: codifferential
@@ -94,23 +95,41 @@ end
 # differential forms (dλ¹,…,dλ^{D+1})
 # ============================================================
 
+# A barycentric coordinate carries an upper index, so the symbols are λ¹,…,λᴺ
+# rather than Symbolics.variables(:λ, 1:N), which names them λ₁,…,λ_N.
+_barycentric_symbols(N) = [Symbolics.variable(Symbol("λ", _sup_str(i))) for i in 1:N]
+
+const _λ_pow_parens = r"\((λ[⁰¹²³⁴⁵⁶⁷⁸⁹]+)\^(\d+)\)"
+const _λ_pow_bare   = r"(λ[⁰¹²³⁴⁵⁶⁷⁸⁹]+)\^(\d+)"
+
 # The basis, not the value, is what knows its components are coefficients on the
 # ambient dλ coframe, so it is the basis that asks for the dλ labelling.
-_barycentric_io(out::IO) = IOContext(out, :coordinates => :barycentric)
+#
+# Replaces λ¹^2 with (λ¹)²
+function _show_barycentric(out::IO, ω)
+  s = sprint((io, x) -> show(io, MIME("text/plain"), x), ω;
+             context = (:coordinates => :barycentric,))
+  for pat in (_λ_pow_parens, _λ_pow_bare)
+    s = replace(s, pat => function (matched)
+                            c = match(pat, matched)
+                            "(" * c[1] * ")" * _sup_str(parse(Int, c[2]))
+                          end)
+  end
+  print(out, s)
+end
 
 function print_forms(b::RotatingPΛBasis{D}, out::IO=stdout) where D
   N  = D + 1
-  λs = Symbolics.variables(:λ, 1:N)
-  io = _barycentric_io(out)
+  λs = _barycentric_symbols(N)
 
   println(out, "RotatingPΛBasis{D=$D, r=$(get_order(b))}: dim = $(length(b))  (as barycentric differential forms)")
   for (F, bubble_functions) in b.bubbles
     for (w, k, α, _) in bubble_functions
       mono = multinomial(α...) * prod(λs[i]^α[i] for i in 1:N)
-      ψ    = _rotating_ambient_psi(F, k, α, N)  # ambient dλ₁,…,dλ_N coefficients
+      ψ    = _rotating_ambient_psi(F, k, α, N)  # ambient dλ¹,…,dλᴺ coefficients
       form = DifferentialFormValue{1,N}(Tuple(mono .* ψ))
       print(out, "[", rpad(w,3), "]  F=", rpad(join(F,","),8), " k=", rpad(k,3), " α=", rpad(string(Tuple(α)),12), "  ")
-      show(io, MIME("text/plain"), form)
+      _show_barycentric(out, form)
       println(out)
     end
   end
@@ -122,8 +141,7 @@ function print_forms(b::BarycentricPΛBasis{D}, out::IO=stdout) where D
   k  = b.k
   r ≥ 1 || throw(ArgumentError(
     "print_forms needs r ≥ 1: the PᵣΛᵏ basis forms of order 0 are the constant dxᴵ, use print_indices"))
-  λs = Symbolics.variables(:λ, 1:N)
-  io = _barycentric_io(out)
+  λs = _barycentric_symbols(N)
 
   # The direction 1-forms the basis builds in the physical dx¹,…,dxᴰ frame,
   # here on the ambient dλ¹,…,dλᴺ coframe instead: column j holds
@@ -144,12 +162,12 @@ function print_forms(b::BarycentricPΛBasis{D}, out::IO=stdout) where D
   for (F, bubble_functions) in get_bubbles(b)
     for (w, α, _, J) in bubble_functions
       mono = multinomial(α...) * prod(λs[i]^α[i] for i in 1:N)
-      φ    = ambient_φ(F, α, r, b.flavor)  # ambient dλ₁,…,dλ_N coefficients
+      φ    = ambient_φ(F, α, r, b.flavor)  # ambient dλ¹,…,dλᴺ coefficients
       # The direction k-form is the wedge of the columns J of φ
       Ψ = foldl((ω, j) -> ω ∧ DifferentialFormValue{1,N}(Tuple(φ[:,j])),
                 J; init=DifferentialFormValue{0,N}((1.0,)))
       print(out, "[", rpad(w,3), "]  F=", rpad(join(F,","),8), " J=", rpad(join(J,","),7), " α=", rpad(string(Tuple(α)),12), "  ")
-      show(io, MIME("text/plain"), mono * Ψ)
+      _show_barycentric(out, mono * Ψ)
       println(out)
     end
   end
@@ -159,14 +177,13 @@ function print_forms(b::BarycentricPmΛBasis{D}, out::IO=stdout) where D
   N  = D + 1
   r  = get_order(b)
   k  = b.k
-  λs = Symbolics.variables(:λ, 1:N)
-  io = _barycentric_io(out)
+  λs = _barycentric_symbols(N)
 
   dλ(j) = DifferentialFormValue{1,N}(ntuple(i -> i == j ? 1.0 : 0.0, N))
 
   # The Whitney k-form of a bubble, on the ambient dλ¹,…,dλᴺ coframe rather than
   # the physical dx¹,…,dxᴰ one the basis stores in its `m`:
-  #   φ^J = Σ_l (-1)^{l+1} λ_{J(l)} dλ^{J∖J(l)}
+  #   φ^J = Σ_l (-1)^{l+1} λ^{J(l)} dλ^{J∖J(l)}
   function ambient_φ(J)
     sum(enumerate(J)) do (l, Jl)
       dλ_JsubJl = foldl((ω, j) -> ω ∧ dλ(j), (j for j in J if j != Jl);
@@ -182,7 +199,7 @@ function print_forms(b::BarycentricPmΛBasis{D}, out::IO=stdout) where D
       coeff = b.flavor === :BMM ? 1 : multinomial(α...)
       mono  = coeff * prod(λs[i]^α[i] for i in 1:N)
       print(out, "[", rpad(w,3), "]  F=", rpad(join(F,","),8), " J=", rpad(join(J,","),7), " α=", rpad(string(Tuple(α)),12), "  ")
-      show(io, MIME("text/plain"), mono * ambient_φ(J))
+      _show_barycentric(out, mono * ambient_φ(J))
       println(out)
     end
   end
@@ -190,18 +207,17 @@ end
 
 function print_forms(b::TrimmedPΛBasis{D}, out::IO=stdout) where D
   N  = D + 1
-  λs = Symbolics.variables(:λ, 1:N)
-  io = _barycentric_io(out)
+  λs = _barycentric_symbols(N)
 
   println(out, "TrimmedPΛBasis{D=$D, r=$(get_order(b))}: dim = $(length(b))  (as barycentric differential forms)")
   for (F, bubble_functions) in b.bubbles
     for (w, e, α, _) in bubble_functions
       e1, e2 = e
       mono = prod(λs[i]^α[i] for i in 1:N)   # bare monomial
-      ϕ    = _trimmed_ambient_phi(e1, e2, N, λs)  # ambient dλ₁,…,dλ_N coefficients (symbolic)
+      ϕ    = _trimmed_ambient_phi(e1, e2, N, λs)  # ambient dλ¹,…,dλᴺ coefficients (symbolic)
       form = DifferentialFormValue{1,N}(Tuple(mono .* ϕ))
       print(out, "[", rpad(w,3), "]  F=", rpad(join(F,","),8), " e=", rpad(string(e),7), " α=", rpad(string(Tuple(α)),12), "  ")
-      show(io, MIME("text/plain"), form)
+      _show_barycentric(out, form)
       println(out)
     end
   end

@@ -4,7 +4,7 @@
 # (Bernstein-Bézier scalar basis + precomputed per-basis-function coefficient
 # table), but built from the directional 1-form
 #
-#   ψ(f,k,α) = dλ_k − (𝟙[k∈supp(α)]/|supp(α)|) · Σ_{i∈f} dλ_i
+#   ψ(f,k,α) = dλᵏ − (𝟙[k∈supp(α)]/|supp(α)|) · Σ_{i∈f} dλⁱ
 #
 # instead of the AFW geometric decomposition. Its basis functions evaluate to
 # genuine `DifferentialFormValue{1,D}` 1-forms, and its behaviour under vertex
@@ -80,8 +80,8 @@ end
 """
     _rotating_ambient_psi(F, k, α, N)
 
-ψ(F,k,α) = dλ_k − (𝟙[k∈supp(α)]/|supp(α)|) · Σ_{i∈F} dλ_i, as a coefficient
-vector in the ambient N-dim barycentric frame (dλ₁,…,dλ_N).
+ψ(F,k,α) = dλᵏ − (𝟙[k∈supp(α)]/|supp(α)|) · Σ_{i∈F} dλⁱ, as a coefficient
+vector in the ambient N-dim barycentric frame (dλ¹,…,dλᴺ).
 """
 function _rotating_ambient_psi(F::Vector{Int}, k::Int, α::Vector{Int}, N::Int)
   c = zeros(Float64, N)
@@ -96,7 +96,7 @@ function _rotating_ambient_psi(F::Vector{Int}, k::Int, α::Vector{Int}, N::Int)
   c
 end
 
-# Jacobian J[a,i] = ∂λᵢ/∂xₐ (D×N), used to contract the ambient ψ coefficients
+# Jacobian J[a,i] = ∂λⁱ/∂xₐ (D×N), used to contract the ambient ψ coefficients
 # down to genuine physical Cartesian dx-form coefficients. It comes from
 # BernsteinBasisOnSimplex's own `x_to_λ` (λ = M*[1;x]), exactly like
 # _update_φ_αF! does for BarycentricPΛBasis.
@@ -273,17 +273,19 @@ end
 Base.show(io::IO, b::RotatingPΛBasis) = print_indices(b, io)
 
 """
-    print_forms(b::BarycentricPΛBasis, out::IO=stdout)
-    print_forms(b::RotatingPΛBasis,    out::IO=stdout)
-    print_forms(b::TrimmedPΛBasis,     out::IO=stdout)
+    print_forms(b::BarycentricPΛBasis,  out::IO=stdout)
+    print_forms(b::BarycentricPmΛBasis, out::IO=stdout)
+    print_forms(b::RotatingPΛBasis,     out::IO=stdout)
+    print_forms(b::TrimmedPΛBasis,      out::IO=stdout)
 
 Print each basis function of `b` as an ambient barycentric differential form,
-in terms of dλ₁,…,dλ_{D+1} — the frame the φ, ψ and ϕ formulas are stated in —
+in terms of dλ¹,…,dλ^{D+1} — the frame the φ, ψ and ϕ formulas are stated in —
 with symbolic polynomial coefficients.
 
 For a `BarycentricPΛBasis` the form is `Bα(λ)` times the wedge of the direction
 1-forms [`_update_φ_αF!`](@ref) indexed by `J`, and the polynomial degree must be
-at least 1.
+at least 1. For a `BarycentricPmΛBasis` it is the Whitney form `φ^J` scaled by
+`Bα(λ)` for `flavor=:AFW`, by the bare monomial `λ^α` for `flavor=:BMM`.
 
 Requires the Symbolics package to be loaded: the methods are provided by the
 GridapSymbolicsExt package extension.

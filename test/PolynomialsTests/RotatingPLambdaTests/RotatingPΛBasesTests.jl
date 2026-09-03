@@ -2,7 +2,7 @@ module RotatingPΛBasesTests
 # The rotating P_rΛ¹ basis, i.e. BarycentricPΛBasis 1-forms with flavor=:BMM,
 # built from the directional 1-form
 #
-#   ψ(f,k,s(α)) = dλ_k − (𝟙[k∈supp(α)]/|supp(α)|) Σ_{i∈f} dλ_i
+#   ψ(f,k,s(α)) = dλᵏ − (𝟙[k∈supp(α)]/|supp(α)|) Σ_{i∈f} dλⁱ
 #
 # A self-contained, hand-rolled oracle (spanning set + filter + numeric
 # evaluation, independent of the package internals) is implemented below and
@@ -20,14 +20,14 @@ using Test
 # Gridap convention: λ = (1−Σx, x…)
 to_barycentric(x::Point{D,T}) where {D,T} = (one(T) - sum(x.data), x.data...)
 
-# Project an ambient barycentric 1-form (dλ₁,…,dλ_N) to the physical D = N−1
-# frame by imposing dλ₁ = −dλ₂ − … − dλ_N: phys[j] = c[j+1] − c[1].
+# Project an ambient barycentric 1-form (dλ¹,…,dλᴺ) to the physical D = N−1
+# frame by imposing dλ¹ = −dλ² − … − dλᴺ: phys[j] = c[j+1] − c[1].
 reduce_ambient(ω::DifferentialFormValue{1,N}) where N =
     DifferentialFormValue{1,N-1}(ntuple(j -> ω.data[j+1] - ω.data[1], N-1))
 
-# ψ(f,k,α) = dλ_k − (𝟙[k∈supp(α)] / |supp(α)|) · Σ_{i∈f} dλ_i
+# ψ(f,k,α) = dλᵏ − (𝟙[k∈supp(α)] / |supp(α)|) · Σ_{i∈f} dλⁱ
 # returned as a coefficient vector in the AMBIENT (D+1)-dim barycentric frame
-# dλ_1,…,dλ_{D+1}  (reduce_ambient later projects this to the D physical dλ's).
+# dλ¹,…,dλ^{D+1}  (reduce_ambient later projects this to the D physical dλ's).
 function rotating_psi(f::Vector{Int}, k::Int, α::NTuple{N,Int}) where N
     c = zeros(N)
     c[k] += 1.0
@@ -41,7 +41,7 @@ end
 
 # Spanning set:  λ^α · ψ(f,k,α)
 #   |α| = r EXACTLY (homogeneous barycentric degree — represents all Cartesian
-#   degree-≤r polynomials via Σλᵢ=1),  f a face of Δ_D with dim(f) ≥ K,  k ∈ f,
+#   degree-≤r polynomials via Σλⁱ=1),  f a face of Δ_D with dim(f) ≥ K,  k ∈ f,
 #   supp(α) ∪ {k} = f
 function rotating_spanning_set(::Val{D}, ::Val{K}, r::Int) where {D,K}
     Dp1    = D + 1

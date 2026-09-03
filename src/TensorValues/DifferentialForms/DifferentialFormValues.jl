@@ -19,7 +19,7 @@ K-combinations `I` of `1:D`), with scalar type `T`.
 
 The components are coefficients on a coframe; which coframe they refer to is a
 property of the space the value came from, not of the value. `show` labels them
-`dxⁱ`, or `dλᵢ` when the `IOContext` property `:coordinates` is `:barycentric`.
+`dxⁱ`, or `dλⁱ` when the `IOContext` property `:coordinates` is `:barycentric`.
 """
 struct DifferentialFormValue{K,D,T,L} <: MultiValue{NTuple{K,D},T,K,L}
   data::NTuple{L,T}
@@ -47,7 +47,7 @@ end
 # ============================================================
 
 const _sbs_cart = ["dx¹","dx²","dx³","dx⁴","dx⁵","dx⁶","dx⁷","dx⁸","dx⁹"]
-const _sbs_bary = ["dλ₁","dλ₂","dλ₃","dλ₄","dλ₅","dλ₆","dλ₇","dλ₈","dλ₉"]
+const _sbs_bary = ["dλ¹","dλ²","dλ³","dλ⁴","dλ⁵","dλ⁶","dλ⁷","dλ⁸","dλ⁹"]
 
 function _show_dfv(io::IO, a::DifferentialFormValue{K,D}, basis_strs) where {K,D}
   L = length(a.data)
@@ -72,7 +72,7 @@ end
 Print `ω` as a linear combination of coframe elements, labelled `dx¹,…,dx^D`.
 
 Set the `:coordinates` `IOContext` property to `:barycentric` to label them
-`dλ₁,…,dλ_D` instead, for a form whose components are coefficients on the
+`dλ¹,…,dλ^D` instead, for a form whose components are coefficients on the
 ambient barycentric coframe of a (D−1)-simplex:
 
     show(IOContext(stdout, :coordinates => :barycentric), MIME("text/plain"), ω)

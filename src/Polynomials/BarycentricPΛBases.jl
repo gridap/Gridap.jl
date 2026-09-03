@@ -178,9 +178,14 @@ function _print_bubble_table(out::IO, indices::BarycentricPΛIndices, flavor::Sy
   # :BMM scales a P⁻ basis function by the bare monomial λ^α instead of Bα.
   bare = is_Pm && flavor === :BMM
 
+  form_title = is_Pm ? "sub_J_ids" : "Ψ"
+  form(w, sub_J_ids) = is_Pm ? join(sub_J_ids,",") : (isnothing(Ψ) ? "" : "$(Ψ[w])")
+  form_width = max(length(form_title),
+                   maximum(length(form(bf[1], bf[5])) for (_, bfs) in indices.bubbles for bf in bfs)) + 2
+
   println(out,
     rpad("w",4), rpad("F",10), rpad(J_title,8), rpad("α",14),
-    rpad(bare ? "λ^α" : "Bα(λ)",18), rpad(is_Pm ? "sub_J_ids" : "Ψ",20), "α_id")
+    rpad(bare ? "λ^α" : "Bα(λ)",18), rpad(form_title,form_width), "α_id")
 
   for (F, bubble_functions) in indices.bubbles
     for (w, α, α_id, J, sub_J_ids) in bubble_functions
@@ -188,7 +193,7 @@ function _print_bubble_table(out::IO, indices::BarycentricPΛIndices, flavor::Sy
       println(out,
         rpad("$w",4), rpad(join(F,","),10), rpad(join(J,","),8),
         rpad("$(Tuple(α))",14), rpad(mono,18),
-        rpad(is_Pm ? join(sub_J_ids,",") : (isnothing(Ψ) ? "" : "$(Ψ[w])"),20), α_id)
+        rpad(form(w, sub_J_ids),form_width), α_id)
     end
   end
 end
@@ -511,19 +516,15 @@ end
 
 Base.show(io::IO, b::_BaryPΛBasis) = print_indices(b, io)
 
-const _sub_digits = ("₀","₁","₂","₃","₄","₅","₆","₇","₈","₉")
 const _sup_digits = ("⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹")
-_sub_str(i::Int) = join(_sub_digits[d+1] for d in reverse(digits(i)))
 _sup_str(i::Int) = join(_sup_digits[d+1] for d in reverse(digits(i)))
 
-# Plain-string monomial coeff·λ₁^α₁⋯λ_N^α_N, e.g. "3λ₁²λ₂" (drops zero
-# exponents and unit coefficient/exponents).
+# Plain-string monomial coeff·(λ¹)^α₁⋯(λᴺ)^α_N, e.g. "3(λ¹)²λ²".
 function _monomial_string(α; coeff=1)
   s = isone(coeff) ? "" : string(coeff)
   for (i, αi) in enumerate(α)
     αi == 0 && continue
-    s *= "λ" * _sub_str(i)
-    αi > 1 && (s *= _sup_str(αi))
+    s *= αi > 1 ? "(λ" * _sup_str(i) * ")" * _sup_str(αi) : "λ" * _sup_str(i)
   end
   isempty(s) ? "1" : s
 end

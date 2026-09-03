@@ -9,9 +9,9 @@ using Test
 
 Random.seed!(1)
 
-# The direction 1-form φ(F,k,α) of the basis, on the ambient dλ₁,…,dλ_N coframe:
-#   dλ_k - (αₖ/|α|) Σ_{i∈F} dλ_i        for :AFW
-#   dλ_k - (s(α)ₖ/|s(α)|) Σ_{i∈F} dλ_i  for :BMM, s(α) the support indicator
+# The direction 1-form φ(F,k,α) of the basis, on the ambient dλ¹,…,dλᴺ coframe:
+#   dλᵏ - (αₖ/|α|) Σ_{i∈F} dλⁱ        for :AFW
+#   dλᵏ - (s(α)ₖ/|s(α)|) Σ_{i∈F} dλⁱ  for :BMM, s(α) the support indicator
 # Written out here rather than taken from the package, so the identities below
 # check the rotation code against the formulas instead of against themselves.
 function ambient_phi(F::Vector{Int}, k::Int, α::Vector{Int}, N::Int, flavor::Symbol)
@@ -36,7 +36,7 @@ const FLAVORS = (:AFW, :BMM)
         π  = randperm(N)
         β  = rand(0:3, N)
         ξ  = rand(N)
-        λ  = ξ[invperm(π)]   # λ_i = ξ_{π⁻¹(i)}
+        λ  = ξ[invperm(π)]   # λⁱ = ξ^{π⁻¹(i)}
         ξβ  = prod(ξ[i]^β[i] for i in 1:N)
         πβ  = rotate_multiindex(β, π)
         λπβ = prod(λ[i]^πβ[i] for i in 1:N)

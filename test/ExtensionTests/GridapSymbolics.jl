@@ -172,4 +172,15 @@ let r = 3
   @test sort(afw) != sort(trm)
 end
 
+# A power of a barycentric coordinate is parenthesised and its exponent raised,
+# so that the upper index and the exponent stay apart. r=5 is the first order
+# whose monomials carry two powers at once, the case where the parentheses
+# Symbolics itself writes cannot simply be reused.
+let lines = join(form_lines(BarycentricPmΛBasis(Val(2), Float64, 5, 1; flavor=:BMM)), "\n")
+  @test occursin("(λ¹)²", lines)
+  @test occursin("(λ²)³*(λ¹)²", lines)
+  @test !occursin("^", lines)
+  @test !occursin("))", lines)
+end
+
 end # module

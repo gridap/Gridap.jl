@@ -32,8 +32,8 @@ using Test
 # Gridap convention: λ = (1−Σx, x…)
 to_barycentric(x::Point{D,T}) where {D,T} = (one(T) - sum(x.data), x.data...)
 
-# Project an ambient barycentric 1-form (dλ₁,…,dλ_N) to the physical D = N−1
-# frame by imposing dλ₁ = −dλ₂ − … − dλ_N: phys[j] = c[j+1] − c[1].
+# Project an ambient barycentric 1-form (dλ¹,…,dλᴺ) to the physical D = N−1
+# frame by imposing dλ¹ = −dλ² − … − dλᴺ: phys[j] = c[j+1] − c[1].
 reduce_ambient(ω::DifferentialFormValue{1,N}) where N =
     DifferentialFormValue{1,N-1}(ntuple(j -> ω.data[j+1] - ω.data[1], N-1))
 
@@ -85,7 +85,7 @@ end
 
 # ── Affine vertex-permutation map of the reference simplex ────────────────────
 
-# Vertex V_i = the point with barycentric λ_i = 1 (Gridap convention:
+# Vertex V_i = the point with barycentric λⁱ = 1 (Gridap convention:
 # λ = (1−Σx, x…), so V_1 = 0, V_{j+1} = e_j). Guarded by an assertion below.
 ref_vertices(D) = [ [i == j+1 ? 1.0 : 0.0 for j in 1:D] for i in 1:D+1 ]
 

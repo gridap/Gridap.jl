@@ -1,7 +1,7 @@
 module TrimmedPΛBasesTests
 # The trimmed P_r⁻Λ¹ basis, built from the Whitney (directional) 1-form
 #
-#   ϕ(ξ;e1,e2) = ξ_e1 dξ_e2 − ξ_e2 dξ_e1
+#   ϕ(ξ;e1,e2) = ξ^{e1} dξ^{e2} − ξ^{e2} dξ^{e1}
 #
 # A self-contained, hand-rolled oracle (spanning set + filter + numeric
 # evaluation, independent of the package internals) is implemented below and
@@ -22,13 +22,13 @@ using Test
 # Gridap convention: λ = (1−Σx, x…)
 to_barycentric(x::Point{D,T}) where {D,T} = (one(T) - sum(x.data), x.data...)
 
-# Project an ambient barycentric 1-form (dλ₁,…,dλ_N) to the physical D = N−1
-# frame by imposing dλ₁ = −dλ₂ − … − dλ_N: phys[j] = c[j+1] − c[1].
+# Project an ambient barycentric 1-form (dλ¹,…,dλᴺ) to the physical D = N−1
+# frame by imposing dλ¹ = −dλ² − … − dλᴺ: phys[j] = c[j+1] − c[1].
 reduce_ambient(ω::DifferentialFormValue{1,N}) where N =
     DifferentialFormValue{1,N-1}(ntuple(j -> ω.data[j+1] - ω.data[1], N-1))
 
-# ϕ(e1,e2;λ) = λ_e1 dλ_e2 − λ_e2 dλ_e1, returned as a coefficient vector in
-# the AMBIENT (D+1)-dim barycentric frame dλ_1,…,dλ_{D+1} at the barycentric
+# ϕ(e1,e2;λ) = λ^{e1} dλ^{e2} − λ^{e2} dλ^{e1}, returned as a coefficient vector in
+# the AMBIENT (D+1)-dim barycentric frame dλ¹,…,dλ^{D+1} at the barycentric
 # point λ (length N). Position-dependent, unlike rotating_psi.
 function trimmed_phi(e1::Int, e2::Int, N::Int, λ)
     c = zeros(eltype(λ), N)
