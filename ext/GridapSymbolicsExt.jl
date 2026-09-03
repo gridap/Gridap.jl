@@ -90,8 +90,8 @@ function lie_derivative(v::VectorValue{D,Symbolics.Num},
 end
 
 # ============================================================
-# print_forms: symbolic display of the rotating/trimmed PΛ bases
-# as ambient barycentric differential forms (dλ₁,…,dλ_{D+1})
+# print_forms: symbolic display of the PΛ and P⁻Λ bases as ambient barycentric
+# differential forms (dλ¹,…,dλ^{D+1})
 # ============================================================
 
 # The basis, not the value, is what knows its components are coefficients on the
@@ -150,6 +150,39 @@ function print_forms(b::BarycentricPΛBasis{D}, out::IO=stdout) where D
                 J; init=DifferentialFormValue{0,N}((1.0,)))
       print(out, "[", rpad(w,3), "]  F=", rpad(join(F,","),8), " J=", rpad(join(J,","),7), " α=", rpad(string(Tuple(α)),12), "  ")
       show(io, MIME("text/plain"), mono * Ψ)
+      println(out)
+    end
+  end
+end
+
+function print_forms(b::BarycentricPmΛBasis{D}, out::IO=stdout) where D
+  N  = D + 1
+  r  = get_order(b)
+  k  = b.k
+  λs = Symbolics.variables(:λ, 1:N)
+  io = _barycentric_io(out)
+
+  dλ(j) = DifferentialFormValue{1,N}(ntuple(i -> i == j ? 1.0 : 0.0, N))
+
+  # The Whitney k-form of a bubble, on the ambient dλ¹,…,dλᴺ coframe rather than
+  # the physical dx¹,…,dxᴰ one the basis stores in its `m`:
+  #   φ^J = Σ_l (-1)^{l+1} λ_{J(l)} dλ^{J∖J(l)}
+  function ambient_φ(J)
+    sum(enumerate(J)) do (l, Jl)
+      dλ_JsubJl = foldl((ω, j) -> ω ∧ dλ(j), (j for j in J if j != Jl);
+                        init=DifferentialFormValue{0,N}((1.0,)))
+      (iseven(l) ? -λs[Jl] : λs[Jl]) * dλ_JsubJl
+    end
+  end
+
+  println(out, "BarycentricPmΛBasis{D=$D, r=$r, k=$k, $(b.flavor)}: dim = $(length(b))  (as barycentric differential forms)")
+  for (F, bubble_functions) in get_bubbles(b)
+    for (w, α, _, J) in bubble_functions
+      # :BMM scales the Whitney form by the bare monomial λ^α, :AFW by Bα
+      coeff = b.flavor === :BMM ? 1 : multinomial(α...)
+      mono  = coeff * prod(λs[i]^α[i] for i in 1:N)
+      print(out, "[", rpad(w,3), "]  F=", rpad(join(F,","),8), " J=", rpad(join(J,","),7), " α=", rpad(string(Tuple(α)),12), "  ")
+      show(io, MIME("text/plain"), mono * ambient_φ(J))
       println(out)
     end
   end

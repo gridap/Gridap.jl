@@ -126,7 +126,10 @@ for (make, header) in ((RotatingPΛBasis, "RotatingPΛBasis"),
                        (TrimmedPΛBasis,  "TrimmedPΛBasis"),
                        ((V,T,r) -> BarycentricPΛBasis(V,T,r,1), "BarycentricPΛBasis"),
                        ((V,T,r) -> BarycentricPΛBasis(V,T,r,1; flavor=:BMM), "BarycentricPΛBasis"),
-                       ((V,T,r) -> BarycentricPΛBasis(V,T,r,2), "BarycentricPΛBasis"))
+                       ((V,T,r) -> BarycentricPΛBasis(V,T,r,2), "BarycentricPΛBasis"),
+                       ((V,T,r) -> BarycentricPmΛBasis(V,T,r,1), "BarycentricPmΛBasis"),
+                       ((V,T,r) -> BarycentricPmΛBasis(V,T,r,1; flavor=:BMM), "BarycentricPmΛBasis"),
+                       ((V,T,r) -> BarycentricPmΛBasis(V,T,r,2), "BarycentricPmΛBasis"))
   b   = make(Val(2), Float64, 2)
   buf = IOBuffer()
   print_forms(b, buf)
@@ -155,6 +158,18 @@ let r = 3
   @test length(bmm) == length(rot) > 0
   @test bmm == rot
   @test afw != rot
+end
+
+# Likewise the :BMM P⁻ forms are the ϕ of TrimmedPΛBasis, scaled by the same
+# bare monomial. Here the two bases enumerate their bubbles in a different order
+# from r ≥ 2, so the printed lines match as sets rather than in sequence.
+let r = 3
+  bmm = form_lines(BarycentricPmΛBasis(Val(2), Float64, r, 1; flavor=:BMM))
+  afw = form_lines(BarycentricPmΛBasis(Val(2), Float64, r, 1))
+  trm = form_lines(TrimmedPΛBasis(Val(2), Float64, r))
+  @test length(bmm) == length(trm) > 0
+  @test sort(bmm) == sort(trm)
+  @test sort(afw) != sort(trm)
 end
 
 end # module

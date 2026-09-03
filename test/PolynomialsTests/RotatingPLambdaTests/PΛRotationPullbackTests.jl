@@ -1,7 +1,7 @@
 module PΛRotationPullbackTests
 # End-to-end validation of the rotation change of basis against a NUMERIC
-# pullback, for the untrimmed BarycentricPΛBasis 1-forms (both flavors) and
-# TrimmedPΛBasis.
+# pullback, for the untrimmed BarycentricPΛBasis 1-forms (both flavors) and the
+# trimmed BarycentricPmΛBasis ones.
 #
 # The self-consistency tests in PΛRotationsTests.jl / PΛTrimmedRotationsTests.jl
 # check the closed-form index calculus against itself; this file closes the
@@ -146,7 +146,8 @@ const UNTRIMMED = (
   ((V,T,r) -> BarycentricPΛBasis(V,T,r,1; flavor=:AFW), "barycentric :AFW", oracle_eval_afw),
   ((V,T,r) -> BarycentricPΛBasis(V,T,r,1; flavor=:BMM), "barycentric :BMM", oracle_eval),
 )
-const ALL_BASES = (UNTRIMMED..., (TrimmedPΛBasis, "trimmed", oracle_eval))
+const ALL_BASES = (UNTRIMMED...,
+  ((V,T,r) -> BarycentricPmΛBasis(V,T,r,1; flavor=:BMM), "trimmed :BMM", oracle_eval))
 
 @testset "direction: A_{π⁻¹} matches, A_π fails (3-cycle, D=2, r=2)" begin
     π = [2, 3, 1]

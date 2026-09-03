@@ -224,7 +224,7 @@ end
 function _test_basis(VD::Val{D}, T, r, k, vertices) where D
   for PΛB in (BarycentricPmΛBasis, BarycentricPΛBasis)
     b   = PΛB(VD,T,r,k)
-    @test contains(sprint(show, MIME"text/plain"(), b._indices), "PᵣΛᵏ(△ᴰ) basis indices, r=$r k=$k D=$D")
+    @test contains(sprint(show, MIME"text/plain"(), b._indices), "Λᵏ(△ᴰ) basis indices, r=$r k=$k D=$D")
     @test_nowarn print_indices(b,IOBuffer())
     @test get_orders(b) == tfill(r,Val(D))
 

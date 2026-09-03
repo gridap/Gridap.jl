@@ -295,6 +295,9 @@ and we obtain the components of ``ω̄^{α,J}=B_α φ^J`` in the basis
 ```math
 ω̄_{I}^{α,J} = B_α \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \, m_I^{J\backslash l}.
 ```
+For ``k \leq 1``, `BarycentricPmΛBasis` also offers the `flavor=:BMM` variant,
+which substitutes the bare monomial ``λ^α = \binom{|α|}{α}^{-1}B_α`` for ``B_α``.
+
 The ``\binom{D}{k}\binom{N}{k}`` coefficients ``\{m_I^{J}\}_{I,J}`` are
 constant in ``T`` and are pre-computed from ``M`` in
 `_compute_PmΛ_basis_coefficients!` at the creation of `BarycentricPmΛBasis`

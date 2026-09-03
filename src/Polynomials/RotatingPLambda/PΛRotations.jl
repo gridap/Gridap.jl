@@ -11,12 +11,13 @@
 #
 # The generic API (`bubble_entries`, `bubble_index`, `rotate_basis_function`,
 # `rotation_change_of_basis`) is shared by the untrimmed bases (`RotatingPΛBasis`
-# and `BarycentricPΛBasis` restricted to 1-forms, this file) and `TrimmedPΛBasis`
-# (RotatingPLambda/PΛTrimmedRotations.jl); only the per-entry closed form
-# `_rotate_basis_function` differs, dispatched on the entry tuple type (`k::Int`
-# untrimmed, `e::Tuple{Int,Int}` trimmed).
+# and `BarycentricPΛBasis` restricted to 1-forms, this file) and the trimmed ones
+# (`TrimmedPΛBasis` and `BarycentricPmΛBasis`, RotatingPLambda/PΛTrimmedRotations.jl);
+# only the per-entry closed form `_rotate_basis_function` differs, dispatched on
+# the entry tuple type (`k::Int` untrimmed, `e::Tuple{Int,Int}` trimmed).
 
-const _RotPΛBases = Union{RotatingPΛBasis,TrimmedPΛBasis,BarycentricPΛBasis}
+const _RotPΛBases = Union{RotatingPΛBasis,TrimmedPΛBasis,
+                          BarycentricPΛBasis,BarycentricPmΛBasis}
 
 ##########################
 # Vertex/multi-index maps #
@@ -46,15 +47,26 @@ rotate_multiindex(α::AbstractVector{Int}, π::Vector{Int}) = α[invperm(π)]
 # Bubble (F,k,α) ↔ index lookup #
 #################################
 
-_bubble_entry_type(::RotatingPΛBasis)    = Tuple{Vector{Int},Int,Vector{Int}}
-_bubble_entry_type(::BarycentricPΛBasis) = Tuple{Vector{Int},Int,Vector{Int}}
-_bubble_entry_type(::TrimmedPΛBasis)     = Tuple{Vector{Int},Tuple{Int,Int},Vector{Int}}
+_bubble_entry_type(::Union{RotatingPΛBasis,BarycentricPΛBasis})  = Tuple{Vector{Int},Int,Vector{Int}}
+_bubble_entry_type(::Union{TrimmedPΛBasis,BarycentricPmΛBasis}) = Tuple{Vector{Int},Tuple{Int,Int},Vector{Int}}
+
+# A Barycentric bubble function stores its direction form as the index set J.
+# For 1-forms that is the single vertex the untrimmed closed form calls k, resp.
+# the pair (e1,e2) spanning the Whitney form of the trimmed one.
+_bubble_key(::BarycentricPΛBasis,  J) = J[1]
+_bubble_key(::BarycentricPmΛBasis, J) = (J[1], J[2])
+
+# The untrimmed law holds for either flavor. The trimmed one expands a hit into
+# two terms whose multi-indices differ from α, so the multinomial coefficient of
+# Bα does not cancel between them: it holds for the bare monomials λ^α only.
+_rotation_flavors(::BarycentricPΛBasis)  = (:AFW, :BMM)
+_rotation_flavors(::BarycentricPmΛBasis) = (:BMM,)
 
 """
     bubble_entries(b) -> Vector{Tuple{Vector{Int},kT,Vector{Int}}}
 
 `(F,k,α)` for each basis function `w`, indexed by `w`. `k` is a single vertex
-for the untrimmed bases and a pair `(e1,e2)` for `TrimmedPΛBasis`.
+for the untrimmed bases and a pair `(e1,e2)` for the trimmed ones.
 """
 function bubble_entries(b::Union{RotatingPΛBasis,TrimmedPΛBasis})
   entries = Vector{_bubble_entry_type(b)}(undef, length(b))
@@ -64,13 +76,14 @@ function bubble_entries(b::Union{RotatingPΛBasis,TrimmedPΛBasis})
   entries
 end
 
-# A BarycentricPΛBasis bubble function stores the direction form indices J; for
-# 1-forms J holds the single vertex the untrimmed closed form calls k.
-function bubble_entries(b::BarycentricPΛBasis)
+function bubble_entries(b::_BaryPΛBasis)
   @check isone(b.k) "The rotation API is only defined for 1-forms, got k=$(b.k)"
+  @check b.flavor in _rotation_flavors(b) """
+    The rotation API of $(nameof(typeof(b))) is only defined for flavor in \
+    $(_rotation_flavors(b)), got $(b.flavor)"""
   entries = Vector{_bubble_entry_type(b)}(undef, length(b))
   for (F, bubble_functions) in get_bubbles(b), (w, α, _, J) in bubble_functions
-    entries[w] = (F, J[1], α)
+    entries[w] = (F, _bubble_key(b, J), α)
   end
   entries
 end

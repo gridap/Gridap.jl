@@ -1,6 +1,7 @@
 module PΛTrimmedRotationsTests
-# Change of basis on TrimmedPΛBasis induced by a vertex relabeling (rotation)
-# π : ξ → λ, λ = π(ξ)  (src/Polynomials/RotatingPLambda/PΛTrimmedRotations.jl).
+# Change of basis on the trimmed P_r⁻Λ¹ basis induced by a vertex relabeling
+# (rotation) π : ξ → λ, λ = π(ξ)
+# (src/Polynomials/RotatingPLambda/PΛTrimmedRotations.jl).
 
 using Gridap.Polynomials
 using Gridap.Polynomials: _trimmed_ambient_phi
@@ -71,13 +72,23 @@ end
 
 # ── Basis-level ───────────────────────────────────────────────────────────────
 
-@testset "TrimmedPΛBasis dimension sanity (D=2)" begin
-    @test length(TrimmedPΛBasis(Val(2), Float64, 1)) == 3  # lowest-order Whitney edges
-    @test length(TrimmedPΛBasis(Val(2), Float64, 2)) == 8
+trimmed_basis(D, r) = BarycentricPmΛBasis(Val(D), Float64, r, 1; flavor=:BMM)
+
+@testset "trimmed basis dimension sanity (D=2)" begin
+    @test length(trimmed_basis(2, 1)) == 3  # lowest-order Whitney edges
+    @test length(trimmed_basis(2, 2)) == 8
+end
+
+# The ±1 closed form is exact for the bare monomials of :BMM only, so the API
+# refuses the Bernstein-scaled flavor rather than returning a wrong matrix.
+@testset "rotation API rejects flavor=:AFW" begin
+    afw = BarycentricPmΛBasis(Val(2), Float64, 3, 1; flavor=:AFW)
+    @test_throws Exception bubble_entries(afw)
+    @test_throws Exception rotation_change_of_basis(afw, [2,3,1])
 end
 
 D, r = 2, 2
-b = TrimmedPΛBasis(Val(D), Float64, r)
+b = trimmed_basis(D, r)
 n = length(b)
 
 @testset "rotation_change_of_basis: identity permutation gives I" begin

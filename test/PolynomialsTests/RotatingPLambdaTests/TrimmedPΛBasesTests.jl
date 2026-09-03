@@ -1,20 +1,19 @@
 module TrimmedPΛBasesTests
-# The trimmed P_r⁻Λ¹ basis (TrimmedPΛBasis), built from the Whitney
-# (directional) 1-form
+# The trimmed P_r⁻Λ¹ basis, built from the Whitney (directional) 1-form
 #
 #   ϕ(ξ;e1,e2) = ξ_e1 dξ_e2 − ξ_e2 dξ_e1
 #
 # A self-contained, hand-rolled oracle (spanning set + filter + numeric
 # evaluation, independent of the package internals) is implemented below and
-# cross-checked against the real TrimmedPΛBasis. Unlike ψ in the untrimmed
-# case (RotatingPΛBasesTests.jl), ϕ is NOT constant-coefficient — it is
-# linear in λ — so the cross-check compares pointwise numeric evaluations
+# cross-checked against BarycentricPmΛBasis with flavor=:BMM. Unlike ψ in the
+# untrimmed case (RotatingPΛBasesTests.jl), ϕ is NOT constant-coefficient — it
+# is linear in λ — so the cross-check compares pointwise numeric evaluations
 # rather than constant coefficient vectors.
 
 using Gridap.TensorValues
 using Gridap.Polynomials
 using Gridap.Fields: Point, return_cache, evaluate!
-using Combinatorics: combinations, multiexponents
+using Combinatorics: combinations, multiexponents, multinomial
 using LinearAlgebra
 using Test
 
@@ -72,13 +71,15 @@ end
 function trimmed_eval(f::Vector{Int}, e::Tuple{Int,Int}, α::NTuple{N,Int}, x) where N
     λ      = to_barycentric(x)
     e1, e2 = e
-    val    = prod(λ[i]^α[i] for i in 1:N)   # bare monomial (see TrimmedPΛBasis.nrm)
+    val    = prod(λ[i]^α[i] for i in 1:N)   # bare monomial, i.e. flavor=:BMM
     ω      = DifferentialFormValue{1,N}(Tuple(trimmed_phi(e1, e2, N, λ)))
     val * reduce_ambient(ω)
 end
 
-# ── Driver: D=2, K=1, r=2 ──────────────────────────────────────────────────────
-D, K, r = 2, 1, 2
+# ── Driver: D=2, K=1, r=3 ──────────────────────────────────────────────────────
+# r must be ≥ 3 for the bare monomial λ^α of flavor=:BMM to differ from the
+# Bernstein B_α of :AFW: below that |α| = r-1 ≤ 1 and multinomial(α) is 1.
+D, K, r = 2, 1, 3
 spanning = trimmed_spanning_set(Val(D), Val(K), r)
 basis    = trimmed_basis(spanning)
 
@@ -105,33 +106,54 @@ end
 
 # ── Cross-check against the package implementation ────────────────────────────
 #
-# TrimmedPΛBasis{D} is a genuine Gridap PolynomialBasis subtype generating the
-# same (f,e,α) triples (via trimmed_PΛ_bubbles) and the same ϕ formula, but
-# contracted against the simplex's actual ∂λ/∂x Jacobian instead of going
+# BarycentricPmΛBasis{D} generates the same (f,e,α) triples — its bubble
+# functions carry the pair as J, and its filter α_i = 0 for i < min(J) forces
+# min(J) = min(f), which is the oracle's e1 = min(f) — and the same ϕ formula,
+# but contracted against the simplex's actual ∂λ/∂x Jacobian instead of going
 # through reduce_ambient. Since ϕ is position-dependent (unlike ψ), the two
 # implementations are compared pointwise at several sample Cartesian points.
-@testset "TrimmedPΛBasis (package) == hand-rolled oracle, pointwise" begin
-    pkg_basis = TrimmedPΛBasis(Val(D), Float64, r)
+#
+# flavor=:BMM is what scales by the bare monomial λ^α of the oracle; :AFW
+# scales by B_α instead, and the last testset pins that difference down.
+pkg_index(b) = Dict((F, (J[1], J[2]), α) => w
+                    for (F, bfs) in get_bubbles(b) for (w, α, _, J) in bfs)
+
+@testset "BarycentricPmΛBasis(:BMM) == hand-rolled oracle, pointwise" begin
+    pkg_basis = BarycentricPmΛBasis(Val(D), Float64, r, K; flavor=:BMM)
     @test length(pkg_basis) == length(basis)
 
-    pkg_index = Dict{Tuple{Vector{Int},Tuple{Int,Int},Vector{Int}},Int}()
-    for (F, bfs) in pkg_basis.bubbles, (w, e, α, _) in bfs
-        pkg_index[(F, e, α)] = w
-    end
-
+    index    = pkg_index(pkg_basis)
     cache    = return_cache(pkg_basis, pts)
-    pkg_vals = evaluate!(cache, pkg_basis, pts)   # (np, ndof) matrix of DifferentialFormValue{1,D}
+    pkg_vals = evaluate!(cache, pkg_basis, pts)   # (np, ndof) matrix of VectorValue{D}
 
     @testset "(f,e,α) triples present and ϕ values match pointwise" for (f, e, α) in basis
         key = (f, e, collect(α))
-        @test haskey(pkg_index, key)
-        w = pkg_index[key]
+        @test haskey(index, key)
+        w = index[key]
         for (i, p) in enumerate(pts)
             pkg_v    = collect(pkg_vals[i,w].data)
             oracle_v = collect(trimmed_eval(f, e, α, p).data)
             @test pkg_v ≈ oracle_v atol=1e-12
         end
     end
+end
+
+@testset "flavor=:AFW scales the same ϕ by B_α instead of λ^α" begin
+    afw = BarycentricPmΛBasis(Val(D), Float64, r, K; flavor=:AFW)
+    index = pkg_index(afw)
+    afw_vals = evaluate!(return_cache(afw, pts), afw, pts)
+
+    hits = 0
+    for (f, e, α) in basis
+        w = index[(f, e, collect(α))]
+        c = multinomial(α...)
+        c == 1 && continue
+        hits += 1
+        for (i, p) in enumerate(pts)
+            @test collect(afw_vals[i,w].data) ≈ c .* collect(trimmed_eval(f, e, α, p).data) atol=1e-12
+        end
+    end
+    @test hits > 0   # otherwise the two flavors coincide and this proves nothing
 end
 
 end # module

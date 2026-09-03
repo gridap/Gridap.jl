@@ -1,6 +1,6 @@
 module PΛBasisGradientTests
-# Gradient path of the BarycentricPΛBasis 1-forms and of TrimmedPΛBasis (∇ via
-# Gridap's FieldGradientArray machinery) validated against central finite
+# Gradient path of the BarycentricPΛBasis and BarycentricPmΛBasis 1-forms (∇
+# via Gridap's FieldGradientArray machinery) validated against central finite
 # differences of the value path.
 # Convention: ∇u[a,j] = ∂u_j/∂x_a (TensorValue{D,D}).
 
@@ -17,9 +17,10 @@ perturb(x, a, h, D) = Point(ntuple(j -> x[j] + (j == a ? h : 0.0), D)...)
 
 @testset "∇(basis) == finite differences" begin
     h = 1e-5
-    for (make, name) in (((V,T,r) -> BarycentricPΛBasis(V,T,r,1; flavor=:AFW), "untrimmed :AFW"),
-                         ((V,T,r) -> BarycentricPΛBasis(V,T,r,1; flavor=:BMM), "untrimmed :BMM"),
-                         (TrimmedPΛBasis, "trimmed"))
+    for (make, name) in (((V,T,r) -> BarycentricPΛBasis(V,T,r,1;  flavor=:AFW), "untrimmed :AFW"),
+                         ((V,T,r) -> BarycentricPΛBasis(V,T,r,1;  flavor=:BMM), "untrimmed :BMM"),
+                         ((V,T,r) -> BarycentricPmΛBasis(V,T,r,1; flavor=:AFW), "trimmed :AFW"),
+                         ((V,T,r) -> BarycentricPmΛBasis(V,T,r,1; flavor=:BMM), "trimmed :BMM"))
         @testset "$name D=$D r=$r" for (D, rs) in ((2, (1, 2, 3)), (3, (1, 2))), r in rs
             b   = make(Val(D), Float64, r)
             pts = test_points(D)

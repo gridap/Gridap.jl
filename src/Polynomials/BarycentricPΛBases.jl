@@ -137,7 +137,8 @@ function Base.show(io::IO, ::MIME"text/plain", indices::BarycentricPΛIndices)
   k = length(I)
   D = length(α)-1
   is_Pm = r != sum(α)
-  println(io,"PᵣΛᵏ(△ᴰ) basis indices, r=$r k=$k D=$D")
+  basis_str = "Pᵣ"* (is_Pm ? "⁻" : "") * "Λᵏ(△ᴰ) "
+  println(io, basis_str, "basis indices, r=$r k=$k D=$D")
 
   println(io)
   println(io,"Basis polynomial components")
@@ -147,17 +148,49 @@ function Base.show(io::IO, ::MIME"text/plain", indices::BarycentricPΛIndices)
   end
 
   println(io)
-  println(io,"\tw \tα \tα_id \tJ",  is_Pm ? "\tsub_J_ids \tsup_α_ids" : "")
-  for (F, F_bubble) in indices.bubbles
-    isempty(F_bubble) && continue
+  _print_bubble_table(io, indices, :AFW, nothing)
+  println(io)
+  println(io, basis_str, "basis indices, r=$r k=$k D=$D")
+end
 
-    println(io,"Bubble of face F=$(join(F))")
-    for (w, α, α_id, J, sub_J_ids, sup_α_ids) in F_bubble
-      println(io,"\t$w \t$(join(α)) \t$α_id \t$(join(J)) \t$(join(sub_J_ids,",")) \t\t$(join(sup_α_ids,","))")
+"""
+    _print_bubble_table(out, indices, flavor, Ψ)
+
+Print the column header and one row per bubble function of `indices`, the
+common body of [`print_indices`](@ref) and of the `BarycentricPΛIndices`
+`show` method.
+
+`P⁻` index sets wedge `k`+1 barycentric differentials where `P` ones wedge
+`k`, which is what tells the two apart here.
+
+`Ψ` holds the direction form of each bubble function and is known only to a
+`BarycentricPΛBasis`; pass `nothing` to leave that column empty.
+"""
+function _print_bubble_table(out::IO, indices::BarycentricPΛIndices, flavor::Symbol, Ψ)
+  isempty(indices.bubbles) && return
+
+  k = length(indices.components[1][2])
+  is_Pm = length(indices.bubbles[1][2][1][4]) != k
+
+  # :BMM indexes its direction form by a single vertex, which the rotating-basis
+  # literature calls k, and its Whitney form by the pair the trimmed one calls e.
+  J_title = flavor === :BMM && isone(k) ? (is_Pm ? "e" : "k") : "J"
+  # :BMM scales a P⁻ basis function by the bare monomial λ^α instead of Bα.
+  bare = is_Pm && flavor === :BMM
+
+  println(out,
+    rpad("w",4), rpad("F",10), rpad(J_title,8), rpad("α",14),
+    rpad(bare ? "λ^α" : "Bα(λ)",18), rpad(is_Pm ? "sub_J_ids" : "Ψ",20), "α_id")
+
+  for (F, bubble_functions) in indices.bubbles
+    for (w, α, α_id, J, sub_J_ids) in bubble_functions
+      mono = _monomial_string(α; coeff = bare ? 1 : multinomial(α...))
+      println(out,
+        rpad("$w",4), rpad(join(F,","),10), rpad(join(J,","),8),
+        rpad("$(Tuple(α))",14), rpad(mono,18),
+        rpad(is_Pm ? join(sub_J_ids,",") : (isnothing(Ψ) ? "" : "$(Ψ[w])"),20), α_id)
     end
   end
-  println(io)
-  println(io,"PᵣΛᵏ(△ᴰ) basis indices, r=$r k=$k D=$D")
 end
 
 
@@ -188,10 +221,12 @@ struct BarycentricPmΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
   # indexed by the k-faces J of the D-simplex, in the order of _sorted_combinations(D+1,k)
   m::Vector{V}
   _indices::BarycentricPΛIndices
+  flavor::Symbol
 
   function BarycentricPmΛBasis{D}(::Type{T}, r, k, vertices;
-        DG_calc=false, indices=nothing, rotate_90=false) where {D,T}
+        DG_calc=false, indices=nothing, rotate_90=false, flavor=:AFW) where {D,T}
 
+    @check flavor==:AFW || flavor==:BMM && k≤1
     FEEC_space_definition_checks(Val(D), T, r, k, :P⁻, rotate_90, DG_calc)
     _simplex_vertices_checks(Val(D), vertices)
 
@@ -211,7 +246,7 @@ struct BarycentricPmΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
       m = collect(reinterpret(T, m))
     end
 
-    new{D,V,K}(k,b,m,indices)
+    new{D,V,K}(k,b,m,indices,flavor)
   end
 
   @doc """
@@ -243,14 +278,14 @@ struct BarycentricPmΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
 
     indices = BarycentricPΛIndices(_indices.identity, bubbles, _indices.components)
     # re-use m too
-    new{D,V,K}(_b.k, _b.scalar_bernstein_basis, _b.m, indices)
+    new{D,V,K}(_b.k, _b.scalar_bernstein_basis, _b.m, indices, _b.flavor)
   end
 
   function BarycentricPmΛBasis{D,V,K}() where {D,V,K} # just for testvalue
     r = K
     indices = _generate_or_check_PmΛ_indices(r,0,0,false,nothing,false)
     B = BernsteinBasisOnSimplex{D,Float64,K}
-    new{D,V,K}(0,testvalue(B),zeros(V,1),indices)
+    new{D,V,K}(0,testvalue(B),zeros(V,1),indices,:AFW)
   end
 end
 
@@ -279,8 +314,8 @@ function BarycentricPmΛBasis{D}(::Type{T},r,k; kwargs...) where {D,T}
   BarycentricPmΛBasis{D}(T,r,k,vertices; kwargs...)
 end
 
-@deprecate BarycentricPmΛBasis(::Val{D},::Type{T},r,k,::Nothing; kwargs...) where {D,T} BarycentricPmΛBasis(Val(D),T,r,k; kwargs...)
-@deprecate BarycentricPmΛBasis{D}(::Type{T},r,k,::Nothing; kwargs...) where {D,T} BarycentricPmΛBasis{D}(T,r,k; kwargs...)
+BarycentricPmΛBasis(::Val{D},::Type{T},r,k,::Nothing; kwargs...) where {D,T} = BarycentricPmΛBasis(Val(D),T,r,k; kwargs...)
+BarycentricPmΛBasis{D}(::Type{T},r,k,::Nothing; kwargs...) where {D,T} = BarycentricPmΛBasis{D}(T,r,k; kwargs...)
 
 
 #get_FEEC_poly_degree(b::BarycentricPmΛBasis) = b.r
@@ -455,29 +490,26 @@ get_orders(b::_BaryPΛBasis{D}) where D = tfill(get_order(b), Val(D))
     print_indices(b::BarycentricPmΛBasis, out=stdout)
     print_indices(b::BarycentricPΛBasis,  out=stdout)
 
-Prints the indices of `b` in a user friendly format into `out`.
+Prints the indices of `b` in a user friendly format into `out`, one row per
+basis polynomial. It is also what `show` displays.
 
-For `PΛ` with `flavor=:BMM` and `k`=1, `J` holds a single vertex and is titled `k`.
+The scalar factor column is `Bα(λ)`, except for `PmΛ` with `flavor=:BMM` where
+it is the bare monomial `λ^α`.
+
+With `flavor=:BMM` and `k`=1, `J` holds a single vertex for `PΛ` and is titled
+`k`, and a vertex pair for `PmΛ` and is titled `e`.
 """
-print_indices(b::_BaryPΛBasis, out=stdout) = show(out, MIME"text/plain"(), b._indices)
+function print_indices(b::BarycentricPmΛBasis{D}, out::IO=stdout) where D
+  println(out, "BarycentricPmΛBasis{D=$D, r=$(get_order(b)), k=$(b.k), $(b.flavor)}: dim = $(length(b))")
+  _print_bubble_table(out, b._indices, b.flavor, nothing)
+end
 
 function print_indices(b::BarycentricPΛBasis{D}, out::IO=stdout) where D
-  # :BMM builds its direction forms from a single vertex J[1], which the
-  # rotating-basis literature calls k.
-  single_vertex = b.flavor === :BMM && isone(b.k)
   println(out, "BarycentricPΛBasis{D=$D, r=$(get_order(b)), k=$(b.k), $(b.flavor)}: dim = $(length(b))")
-  println(out,
-    rpad("w",4), rpad("F",10), rpad(single_vertex ? "k" : "J",6), rpad("α",12),
-    rpad("Bα(λ)",18), "Ψ")
-  for (F, bubble_functions) in get_bubbles(b)
-    for (w, α, _, J) in bubble_functions
-      mono = _monomial_string(α; coeff=multinomial(α...))
-      println(out,
-        rpad("$w",4), rpad(join(F,","),10), rpad(single_vertex ? "$(J[1])" : join(J,","),6),
-        rpad("$(Tuple(α))",12), rpad(mono,18), b.Ψ[w])
-    end
-  end
+  _print_bubble_table(out, b._indices, b.flavor, b.Ψ)
 end
+
+Base.show(io::IO, b::_BaryPΛBasis) = print_indices(b, io)
 
 const _sub_digits = ("₀","₁","₂","₃","₄","₅","₆","₇","₈","₉")
 const _sup_digits = ("⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹")
@@ -643,6 +675,12 @@ function PmΛ_bubbles(r,k,D)
   bubbles
 end
 
+"""
+    _compute_PmΛ_basis_coefficients!(m, Val(k), D, b, vertices, indices)
+
+Set the `binomial(D+1, k)` exterior-`k`-products of the barycentric
+differentials dλʲ is place in `m`.
+"""
 function _compute_PmΛ_basis_coefficients!(m,::Val{k},D,b,vertices,indices) where k
   V = eltype(m)
   M = transpose(b.x_to_λ[:,2:end])
@@ -671,16 +709,20 @@ function _evaluate_nd!(
   _downwards_de_Casteljau_nD!(cB,λ,Val(r-1),Val(D))
 
   @inbounds for (_, bubble_functions) in get_bubbles(b)
-    for (w, _, α_id, J, sub_J_ids) in bubble_functions
-      Bα = cB[α_id]
+    for (w, α, α_id, J, sub_J_ids) in bubble_functions
       ω_w = zero(V)
-
       for (l, J_sub_Jl_id) in enumerate(sub_J_ids)
         sgnl = _minusone_if_even_else_one(l)
         λ_j = λ[J[l]]
         m_J_l = b.m[J_sub_Jl_id]
 
         ω_w += flipsign(λ_j,sgnl) * m_J_l
+      end
+
+      Bα = cB[α_id]
+      if b.flavor === :BMM
+        # slow, but since the basis is not well contitioned, using :BMM is discouraged
+        Bα /= multinomial(α...)
       end
 
       ω[i,w] = Bα * ω_w
@@ -713,6 +755,10 @@ function _gradient_nd!(
         ∇ω_w += (c_α_Jl * ∇Bα_pJl) ⊗ m_J_l
       end
 
+      if b.flavor === :BMM
+        ∇ω_w /= multinomial(α...)
+      end
+
       ∇ω[i,w] = ∇ω_w
     end
   end
@@ -742,6 +788,10 @@ function _hessian_nd!(
         m_Jl = b.m[J_sub_Jl_id]
 
         Hω_w += (c_αJl * HB_αJl) ⊗ m_Jl
+      end
+
+      if b.flavor === :BMM
+        Hω_w /= multinomial(α...)
       end
 
       Hω[i,w] = Hω_w

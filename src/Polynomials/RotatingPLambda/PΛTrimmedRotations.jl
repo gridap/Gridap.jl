@@ -2,8 +2,13 @@
 #
 # Trimmed (P_r⁻Λ¹) closed form for the generic rotation API of
 # RotatingPLambda/PΛRotations.jl: the per-entry `_rotate_basis_function`
-# method for `TrimmedPΛBasis` entries `(F, (e1,e2), α)`, plus the pair
-# sign/sort helpers (triangle identity, shift operators ρ, anchored pairs).
+# method for the `(F, (e1,e2), α)` entries of `TrimmedPΛBasis` and of
+# `BarycentricPmΛBasis`, plus the pair sign/sort helpers (triangle identity,
+# shift operators ρ, anchored pairs).
+#
+# The shift ρ moves a unit of α between vertices, so the two terms of a hit
+# carry different multi-indices: the ±1 coefficients below are exact for the
+# bare monomials λ^α only, not for Bernstein Bα.
 
 """
     trimmed_pair_sign(e1, e2) -> Float64
