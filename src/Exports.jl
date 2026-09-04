@@ -43,29 +43,29 @@ using Gridap.Arrays: ∑; export ∑
 @publish TensorValues num_components
 @publish TensorValues num_indep_components
 
-@publish TensorValues DifferentialFormValue
-using Gridap.TensorValues: ∧, ⋆; export ∧, ⋆
-@publish TensorValues interior_product
-@publish TensorValues ι
-@publish TensorValues hodge_star
-@publish TensorValues flat
-@publish TensorValues sharp
-@publish TensorValues apply_form
-@publish TensorValues pullback
-@publish TensorValues pushforward
-@publish TensorValues exterior_derivative
-@publish TensorValues codifferential
-@publish TensorValues lie_derivative
-@publish TensorValues symbolic_coordinates
-@publish TensorValues koszul
-@publish TensorValues vol_coeff
-@publish TensorValues to_1form
-@publish TensorValues from_1form
-@publish TensorValues to_Kform
-@publish TensorValues from_Kform
-@publish TensorValues to_0form
-@publish TensorValues to_Dform
-@publish TensorValues jac_to_2form
+#@publish TensorValues DifferentialFormValue
+#using Gridap.TensorValues: ∧, ⋆; export ∧, ⋆
+#@publish TensorValues interior_product
+#@publish TensorValues ι
+#@publish TensorValues hodge_star
+#@publish TensorValues flat
+#@publish TensorValues sharp
+#@publish TensorValues apply_form
+#@publish TensorValues pullback
+#@publish TensorValues pushforward
+#@publish TensorValues exterior_derivative
+#@publish TensorValues codifferential
+#@publish TensorValues lie_derivative
+#@publish TensorValues symbolic_coordinates
+#@publish TensorValues koszul
+#@publish TensorValues vol_coeff
+#@publish TensorValues to_1form
+#@publish TensorValues from_1form
+#@publish TensorValues to_Kform
+#@publish TensorValues from_Kform
+#@publish TensorValues to_0form
+#@publish TensorValues to_Dform
+#@publish TensorValues grad_to_2form
 using Gridap.TensorValues: ⊙; export ⊙
 using Gridap.TensorValues: ⊗; export ⊗
 
@@ -84,12 +84,12 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Fields ε
 @publish Fields symmetric_gradient
 
-@publish Fields DifferentialForm
-@publish Fields ExteriorDerivativeForm
-@publish Fields CodifferentialForm
-@publish Fields KoszulForm
-@publish Fields PullbackForm
-@publish Fields hodge_star_form
+#@publish Fields DifferentialForm
+#@publish Fields ExteriorDerivativeForm
+#@publish Fields CodifferentialForm
+#@publish Fields KoszulForm
+#@publish Fields PullbackForm
+#@publish Fields hodge_star_form
 
 @publish ReferenceFEs is_simplex
 @publish ReferenceFEs is_n_cube
@@ -186,8 +186,8 @@ using Gridap.CellData: ∫; export ∫
 @publish CellData get_physical_coordinate
 @publish CellData DiracDelta
 
-@publish CellData d_0form
-@publish CellData d_1form
+#@publish CellData d_0form
+#@publish CellData d_1form
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace
