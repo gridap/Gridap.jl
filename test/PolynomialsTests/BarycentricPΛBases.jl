@@ -9,7 +9,7 @@ using Gridap.Helpers
 using ForwardDiff
 using StaticArrays
 
-using Gridap.Polynomials: _sorted_combinations, _combination_index, bernstein_term_id
+using Gridap.Polynomials: bernstein_term_id
 
 r = 3 # all possible bubble spaces are non empty
 
@@ -18,15 +18,15 @@ for D in 1:6
   for k in 0:D
     # standard lexicographic order (left-to-right)
     acc = true
-    for (I_ind, I) in enumerate(_sorted_combinations(D, k))
-      acc &= _combination_index(I, D) == I_ind
+    for (I_ind, I) in enumerate(sorted_combinations(D, k))
+      acc &= combination_index(I, D) == I_ind
     end
     @test acc || "A combination index was wrong for $D, $k"
     # right-to-left lexicographic order
     right_to_left = true
     acc = true
-    for (I_ind, I) in enumerate(_sorted_combinations(D, k; right_to_left))
-      acc &= _combination_index(I, D; right_to_left) == I_ind
+    for (I_ind, I) in enumerate(sorted_combinations(D, k; right_to_left))
+      acc &= combination_index(I, D; right_to_left) == I_ind
     end
     @test acc || "A combination index was wrong for $D, $k, right-to-left order"
   end
@@ -53,7 +53,7 @@ for k in 0:D
                 for (i,αpi_id) in enumerate(sup_α_ids) )
 
       passed = passed && issorted(J) && length(J)==k+1 && (J ⊆ 1:N) &&
-            all( _combination_index(J[J .≠ J[i]], N) == Jsi_id for (i,Jsi_id) in enumerate(sub_J_ids) )
+            all( combination_index(J[J .≠ J[i]], N) == Jsi_id for (i,Jsi_id) in enumerate(sub_J_ids) )
     end
     @test passed || (r, k, D, F, bubble_functions)
   end
@@ -124,7 +124,7 @@ function _compute_PmΛ_basis_reference_coefficients!(m,k,D,indices)
 
   V = eltype(m)
   m_J = Mutable(V)(undef)
-  @inbounds for (J_id, J) in enumerate(Polynomials._sorted_combinations(D+1,k))
+  @inbounds for (J_id, J) in enumerate(sorted_combinations(D+1,k))
     s = Int(isone(J[1]))
     for (I_id, I, I_sgn) in indices.components
       n = count(i-> (J[i]-1)∉I, (1+s):k)

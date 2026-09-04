@@ -92,7 +92,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 
 using PolynomialBases: jacobi, jacobi_and_derivative
-using Combinatorics: multiexponents, multinomial, combinations
+using Combinatorics: multiexponents, multinomial
 using Base.Iterators: take
 using Base: @propagate_inbounds
 using Gridap.Fields: LinearCombinationFieldVector

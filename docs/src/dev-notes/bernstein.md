@@ -185,13 +185,13 @@ and ``\{\text{d}x^i\}_{1≤ i≤ D}`` is the canonical covector basis (basis
 of ``\text{T}_x T``) such that ``\text{d}x^i(∂_{x^j})=δ^i_j``.
 
 These sets of indices ``I,J,F`` are ``k``-combinations of ``{1:D/N}``, stored
-in `Vector{Int}`. A generator [`_sorted_combinations`](@ref) returns a vector
+in `Vector{Int}`. A generator [`sorted_combinations`](@ref) returns a vector
 containing all the ``D``-dimensional ``k``-combinations in lexicographic order,
 e.g. for ``D=4``, ``k=2``
 ```math
 \{1,2\},\ \{1,3\},\ \{1,4\},\ \{2,3\},\ \{2,4\},\ \{3,4\},
 ```
-and [`_combination_index`](@ref) computes the index of a combination in this
+and [`combination_index`](@ref) computes the index of a combination in this
 vector.
 
 This order define the linear indices of basis `k`-forms such as ``I`` and
@@ -199,7 +199,7 @@ This order define the linear indices of basis `k`-forms such as ``I`` and
 combination for ``D=3`` but the fourth for ``D=4``.
 
 The faces indices ``F`` are ordered with right-to-left lexicographic, obtain with kwarg
-`right_to_left=true` of `_sorted_combinations` and `_combination_index`. The combination indices are compared from last
+`right_to_left=true` of `sorted_combinations` and `combination_index`. The combination indices are compared from last
 to first, so above ``\{2,3\}`` would swaps with ``\{1,4\}``. This order is
 consistent with the vertices ordering of simplices faces, e.g.
 `get_faces(TET,k,0)`
@@ -276,7 +276,7 @@ where
 - `α` is a `Vector{Int}`,
 - `α_id` is [`bernstein_term_id(α)`](@ref bernstein_term_id), the index of `Bα` in the scalar [`BernsteinBasisOnSimplex`](@ref),
 - `J` is a `Vector{Int}`,
-- `sub_J_ids` is a `::Vector{Int}` are the [`_combination_index`](@ref) of each ``J\backslash \{J(l)\}`` for ``1\leq l\leq \#J``, taken among the combinations of ``1\!:\!N``,
+- `sub_J_ids` is a `::Vector{Int}` are the [`combination_index`](@ref) of each ``J\backslash \{J(l)\}`` for ``1\leq l\leq \#J``, taken among the combinations of ``1\!:\!N``,
 - `sup_α_ids` is a `::Vector{Int}` are the [`bernstein_term_id`](@ref) of each ``α+e_i`` for ``1\leq i\leq \#α``.
 
 The implementation is flexible enough to select a subset of the bubble spaces,
@@ -595,8 +595,8 @@ _compute_cart_to_bary_matrix
 _cart_to_bary
 _de_Casteljau_nD!
 _downwards_de_Casteljau_nD!
-_combination_index
-_sorted_combinations
+Gridap.TensorValues.combination_index
+Gridap.TensorValues.sorted_combinations
 _basis_forms_components
 _update_φ_αF!
 _combination_sign

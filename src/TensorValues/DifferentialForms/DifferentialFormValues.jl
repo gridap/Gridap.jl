@@ -8,7 +8,7 @@
 # extension, which loads when Symbolics is present; only their generic
 # functions are declared here.
 
-using Combinatorics: combinations, levicivita
+using Combinatorics: levicivita
 
 """
     DifferentialFormValue{K,D,T,L} <: MultiValue{NTuple{K,D},T,K,L}
@@ -52,7 +52,7 @@ const _sbs_bary = ["dλ¹","dλ²","dλ³","dλ⁴","dλ⁵","dλ⁶","dλ⁷","
 function _show_dfv(io::IO, a::DifferentialFormValue{K,D}, basis_strs) where {K,D}
   L = length(a.data)
   L == 0 && return print(io, "0")
-  cs = collect(combinations(1:D, K))
+  cs = sorted_combinations(D, K)
   parts = [join(basis_strs[I], " ∧ ") for I in cs]
   result = [string(ai, " ", bi) for (ai, bi) in zip(a.data, parts)]
   print(io, join(result, " + "))
@@ -130,7 +130,7 @@ Base.:*(ω::DifferentialFormValue, s::Union{Real,Complex}) = s * ω
 # ============================================================
 
 function _ijk_l(K::Int, D::Int)
-  cm  = collect(combinations(1:D, K))
+  cm  = sorted_combinations(D, K)
   _d  = ntuple(_ -> D, K)
   arr = zeros(Int, _d)
   for (c, idx) in enumerate(cm)
@@ -154,8 +154,8 @@ function ∧(a::DifferentialFormValue{K1,D,T1,L1}, b::DifferentialFormValue{K2,D
   L  = binomial(D, K)   # = 0 when K > D
 
   d  = zeros(T, max(L, 1))   # avoid zero-length zeros() for accumulation
-  c1 = collect(combinations(1:D, K1))
-  c2 = collect(combinations(1:D, K2))
+  c1 = sorted_combinations(D, K1)
+  c2 = sorted_combinations(D, K2)
 
   if L > 0
     ijk_l1  = _ijk_l(K1, D)
@@ -193,7 +193,7 @@ function interior_product(v::VectorValue{D,Tv}, ω::DifferentialFormValue{K,D,Tw
   L    = binomial(D, Km1)
   d    = zeros(T, max(L, 1))
 
-  c_in      = collect(combinations(1:D, K))
+  c_in      = sorted_combinations(D, K)
   ijk_l_out = _ijk_l(Km1, D)
 
   for (n, c) in enumerate(c_in)
@@ -250,8 +250,8 @@ for `I_n` the n-th K-combination and `J_m` the m-th (D−K)-combination of
 """
 function _hodge_star_matrix(K::Int, D::Int)
   Kc = D - K
-  c_in  = collect(combinations(1:D, K))
-  c_out = collect(combinations(1:D, Kc))
+  c_in  = sorted_combinations(D, K)
+  c_out = sorted_combinations(D, Kc)
   M = zeros(Int, length(c_out), length(c_in))
   for (m, J) in enumerate(c_out), (n, I) in enumerate(c_in)
     perm = [I..., J...]
@@ -363,8 +363,8 @@ function hodge_star(ω::DifferentialFormValue{K,D,T}, g_inv::SymTensorValue{D}, 
   Lc = binomial(D, Kc)
   Tout = promote_type(T, typeof(sqrt_det_g), eltype(g_inv.data))
 
-  c_K  = collect(combinations(1:D, K))
-  c_Kc = collect(combinations(1:D, Kc))
+  c_K  = sorted_combinations(D, K)
+  c_Kc = sorted_combinations(D, Kc)
 
   # Step 1: raise K indices of ω
   omega_raised = zeros(Tout, max(L, 1))
@@ -435,7 +435,7 @@ For K=0: no vectors needed; returns `ω.data[1]`.
 function apply_form(ω::DifferentialFormValue{K,D,T}, vs...) where {K,D,T}
   @assert length(vs) == K "K=$K form requires K vectors, got $(length(vs))"
   K == 0 && return ω.data[1]
-  cs = collect(combinations(1:D, K))
+  cs = sorted_combinations(D, K)
   result = zero(promote_type(T, Float64))
   for (idx, I) in enumerate(cs)
     M = [vs[a][I[b]] for a in 1:K, b in 1:K]
@@ -468,8 +468,8 @@ function pullback(ω::DifferentialFormValue{K,Dn,T}, J::TensorValue{Dn,Dm,T2}) w
   L    = binomial(Dm, K)
   d    = zeros(Tout, max(L, 1))
 
-  c_I  = collect(combinations(1:Dn, K))   # K-combos in ambient space
-  c_J  = collect(combinations(1:Dm, K))   # K-combos in chart space
+  c_I  = sorted_combinations(Dn, K)   # K-combos in ambient space
+  c_J  = sorted_combinations(Dm, K)   # K-combos in chart space
 
   for (m, Jidx) in enumerate(c_J)
     for (n, I) in enumerate(c_I)
@@ -604,7 +604,7 @@ as `Operation(jac_to_2form)(∇(u))` without component-wise access, see
 `d_1form` in `Gridap.CellData`.
 """
 function jac_to_2form(J::TensorValue{D,D,T,L}) where {D,T,L}
-  cs = collect(combinations(1:D, 2))
+  cs = sorted_combinations(D, 2)
   DifferentialFormValue{2,D}(
     ntuple(n -> J[cs[n][1], cs[n][2]] - J[cs[n][2], cs[n][1]], binomial(D, 2)))
 end

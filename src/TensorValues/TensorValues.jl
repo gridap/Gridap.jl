@@ -45,6 +45,7 @@ using Gridap.Arrays
 using LinearAlgebra
 using Random
 using ForwardDiff
+using Combinatorics: combinations
 
 export MultiValue
 export VectorValue
@@ -81,6 +82,8 @@ export indep_components_names
 export component_basis
 export representatives_of_componentbasis_dual
 export representatives_of_basis_dual
+export sorted_combinations
+export combination_index
 export to_voigt
 export from_voigt
 export to_mandel

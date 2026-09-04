@@ -13,7 +13,7 @@
 #   s * f                 → Operation(*)(ConstantField(s), f)
 #   Operation(+)(f,g)     — gradient defined
 
-using Combinatorics: combinations, levicivita
+using Combinatorics: levicivita
 
 import Gridap.TensorValues: ∧
 import Gridap.TensorValues: exterior_derivative
@@ -151,8 +151,8 @@ function hodge_star_form(ω::DifferentialForm{K,D}) where {K,D}
   L  = binomial(D, K)
   Lc = binomial(D, Kc)
 
-  c_in  = collect(combinations(1:D, K))
-  c_out = collect(combinations(1:D, Kc))
+  c_in  = sorted_combinations(D, K)
+  c_out = sorted_combinations(D, Kc)
 
   component_fields = ntuple(Lc) do m
     J = c_out[m]
