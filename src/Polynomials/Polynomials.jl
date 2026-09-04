@@ -144,21 +144,7 @@ export print_indices
 export FEEC_space_definition_checks
 export FEEC_poly_basis
 
-export RotatingPΛBasis
-export rotating_PΛ_bubbles
-export TrimmedPΛBasis
-export trimmed_PΛ_bubbles
 export print_forms
-export rotate_face_set
-export rotate_multiindex
-export bubble_entries
-export bubble_index
-export rotate_basis_function
-export rotation_change_of_basis
-export RotationCache
-export rotation_map
-export trimmed_pair_sign
-export trimmed_pair_sort
 
 
 include("PolynomialInterfaces.jl")
@@ -182,10 +168,6 @@ include("BernsteinBases.jl")
 include("ModalC0Bases.jl")
 
 include("BarycentricPΛBases.jl")
-
-include("RotatingPLambda/BarycentricPΛBases.jl")
-
-include("RotatingPLambda/BarycentricPΛTrimmedBases.jl")
 
 include("RotatingPLambda/PΛRotations.jl")
 

@@ -26,7 +26,6 @@ using Gridap.Polynomials
 using Gridap.Polynomials: _q_filter, _ser_filter
 using Gridap.Polynomials: _compute_filter_mask
 using Gridap.Polynomials: _define_terms, _sort_by_nfaces!
-using Gridap.Polynomials: RotatingPΛBasis, TrimmedPΛBasis
 
 using QuadGK: gauss
 using FastGaussQuadrature: gaussjacobi

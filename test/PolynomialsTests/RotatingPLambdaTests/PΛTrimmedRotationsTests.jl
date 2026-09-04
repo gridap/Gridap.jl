@@ -4,7 +4,8 @@ module PΛTrimmedRotationsTests
 # (src/Polynomials/RotatingPLambda/PΛTrimmedRotations.jl).
 
 using Gridap.Polynomials
-using Gridap.Polynomials: _trimmed_ambient_phi
+using Gridap.Polynomials: rotate_multiindex, bubble_entries, rotate_basis_function
+using Gridap.Polynomials: rotation_change_of_basis, trimmed_pair_sign, trimmed_pair_sort
 using LinearAlgebra
 using Random
 using Test
@@ -12,8 +13,17 @@ using Test
 Random.seed!(1)
 
 # ── Building-block identities ─────────────────────────────────────────────────
-# Implemented directly against the formulas (ξ^β, _trimmed_ambient_phi), not
-# against the rotation code itself.
+# Implemented directly against the formulas (ξ^β, ϕ), not against the rotation
+# code itself.
+
+# ϕ(λ;e1,e2) = λ^{e1} dλ^{e2} − λ^{e2} dλ^{e1}, as a coefficient vector in the
+# ambient frame dλ¹,…,dλᴺ.
+function ϕ(e1::Int, e2::Int, N::Int, λ)
+  c = zeros(eltype(λ), N)
+  c[e2] += λ[e1]
+  c[e1] -= λ[e2]
+  c
+end
 
 @testset "BB pullback: π⁻¹*(ξ^β) = λ^π(β)" begin
     N = 3
@@ -36,8 +46,8 @@ end
         π   = randperm(N)
         ξ   = rand(N)
         λ   = ξ[invperm(π)]
-        c_pb   = _trimmed_ambient_phi(e1, e2, N, ξ)[invperm(π)]
-        c_dir  = _trimmed_ambient_phi(π[e1], π[e2], N, λ)
+        c_pb   = ϕ(e1, e2, N, ξ)[invperm(π)]
+        c_dir  = ϕ(π[e1], π[e2], N, λ)
         @test c_pb ≈ c_dir
     end
 end
@@ -49,11 +59,11 @@ end
         π   = randperm(N)
         ξ   = rand(N)
         λ   = ξ[invperm(π)]
-        c_pb = _trimmed_ambient_phi(e1, e2, N, ξ)[invperm(π)]
+        c_pb = ϕ(e1, e2, N, ξ)[invperm(π)]
         πe1,πe2 = π[e1], π[e2]
         ε = trimmed_pair_sign(πe1,πe2)
         eπ1,eπ2 = trimmed_pair_sort(πe1,πe2)
-        c_split = ε .* _trimmed_ambient_phi(eπ1, eπ2, N, λ)
+        c_split = ε .* ϕ(eπ1, eπ2, N, λ)
         @test c_pb ≈ c_split
     end
 end
@@ -63,9 +73,9 @@ end
     triples = [(1,2,3),(2,1,3),(1,3,4),(4,2,1),(2,3,4)]
     for trial in 1:10, (v0,v1,v2) in triples
         ξ = rand(N)
-        lhs = ξ[v0] .* _trimmed_ambient_phi(v1,v2,N,ξ)
-        rhs = ξ[v1] .* _trimmed_ambient_phi(v0,v2,N,ξ) .-
-              ξ[v2] .* _trimmed_ambient_phi(v0,v1,N,ξ)
+        lhs = ξ[v0] .* ϕ(v1,v2,N,ξ)
+        rhs = ξ[v1] .* ϕ(v0,v2,N,ξ) .-
+              ξ[v2] .* ϕ(v0,v1,N,ξ)
         @test lhs ≈ rhs
     end
 end

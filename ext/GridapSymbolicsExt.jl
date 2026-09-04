@@ -5,8 +5,6 @@ using Gridap
 using Gridap.TensorValues
 using Gridap.Polynomials
 
-using Gridap.Polynomials: RotatingPΛBasis, TrimmedPΛBasis
-using Gridap.Polynomials: _rotating_ambient_psi, _trimmed_ambient_phi
 using Gridap.Polynomials: multinomial  # Combinatorics, via Gridap.Polynomials
 using Gridap.Polynomials: _sup_str
 
@@ -118,23 +116,6 @@ function _show_barycentric(out::IO, ω)
   print(out, s)
 end
 
-function print_forms(b::RotatingPΛBasis{D}, out::IO=stdout) where D
-  N  = D + 1
-  λs = _barycentric_symbols(N)
-
-  println(out, "RotatingPΛBasis{D=$D, r=$(get_order(b))}: dim = $(length(b))  (as barycentric differential forms)")
-  for (F, bubble_functions) in b.bubbles
-    for (w, k, α, _) in bubble_functions
-      mono = multinomial(α...) * prod(λs[i]^α[i] for i in 1:N)
-      ψ    = _rotating_ambient_psi(F, k, α, N)  # ambient dλ¹,…,dλᴺ coefficients
-      form = DifferentialFormValue{1,N}(Tuple(mono .* ψ))
-      print(out, "[", rpad(w,3), "]  F=", rpad(join(F,","),8), " k=", rpad(k,3), " α=", rpad(string(Tuple(α)),12), "  ")
-      _show_barycentric(out, form)
-      println(out)
-    end
-  end
-end
-
 function print_forms(b::BarycentricPΛBasis{D}, out::IO=stdout) where D
   N  = D + 1
   r  = get_order(b)
@@ -200,24 +181,6 @@ function print_forms(b::BarycentricPmΛBasis{D}, out::IO=stdout) where D
       mono  = coeff * prod(λs[i]^α[i] for i in 1:N)
       print(out, "[", rpad(w,3), "]  F=", rpad(join(F,","),8), " J=", rpad(join(J,","),7), " α=", rpad(string(Tuple(α)),12), "  ")
       _show_barycentric(out, mono * ambient_φ(J))
-      println(out)
-    end
-  end
-end
-
-function print_forms(b::TrimmedPΛBasis{D}, out::IO=stdout) where D
-  N  = D + 1
-  λs = _barycentric_symbols(N)
-
-  println(out, "TrimmedPΛBasis{D=$D, r=$(get_order(b))}: dim = $(length(b))  (as barycentric differential forms)")
-  for (F, bubble_functions) in b.bubbles
-    for (w, e, α, _) in bubble_functions
-      e1, e2 = e
-      mono = prod(λs[i]^α[i] for i in 1:N)   # bare monomial
-      ϕ    = _trimmed_ambient_phi(e1, e2, N, λs)  # ambient dλ¹,…,dλᴺ coefficients (symbolic)
-      form = DifferentialFormValue{1,N}(Tuple(mono .* ϕ))
-      print(out, "[", rpad(w,3), "]  F=", rpad(join(F,","),8), " e=", rpad(string(e),7), " α=", rpad(string(Tuple(α)),12), "  ")
-      _show_barycentric(out, form)
       println(out)
     end
   end

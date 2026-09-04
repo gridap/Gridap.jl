@@ -133,22 +133,8 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs bubble
 @publish ReferenceFEs modal_lagrangian
 @publish ReferenceFEs modal_serendipity
-
-@publish Polynomials RotatingPΛBasis
-@publish Polynomials rotating_PΛ_bubbles
-@publish Polynomials TrimmedPΛBasis
-@publish Polynomials trimmed_PΛ_bubbles
-@publish Polynomials rotate_basis_function
-@publish Polynomials rotation_change_of_basis
-@publish Polynomials RotationCache
-@publish Polynomials rotation_map
-@publish Polynomials trimmed_pair_sign
-@publish Polynomials trimmed_pair_sort
-
 @publish ReferenceFEs rotating_pλ
 @publish ReferenceFEs trimmed_pλ
-@publish ReferenceFEs RotatingPΛRefFE
-@publish ReferenceFEs TrimmedPΛRefFE
 
 @publish Geometry get_triangulation
 @publish Geometry num_cells

@@ -11,8 +11,8 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # DESIGN: virtually sorted cells
 # ─────────────────────────────────────────────────────────────────────────────
-# Every cell evaluates the SAME reference basis b (RotatingPΛBasis or
-# TrimmedPΛBasis). H(curl) gluing across cells with ARBITRARY local vertex
+# Every cell evaluates the SAME reference basis b (BarycentricPΛBasis or
+# BarycentricPmΛBasis). H(curl) gluing across cells with ARBITRARY local vertex
 # orderings is obtained by re-expressing each cell's covariant-Piola-pushed
 # basis in the frame of the "virtually sorted" cell — the cell whose local
 # vertices are relisted in increasing global-id order — via the rotation
@@ -30,11 +30,11 @@
 # DOF BASIS
 # ─────────────────────────────────────────────────────────────────────────────
 # The predofs are pointwise moments at BB lattice nodes, grouped per face:
-# for a bubble entry of face F,
-#   • untrimmed (F, k, α), |α| = r: node x_β with β = α, covector ψ(F,k,α);
-#   • trimmed (F, (e1,e2), α), |α| = r−1: node x_β with β = α + e_{e1} (so
-#     the Whitney covector is nonzero there), covector = the Whitney form
-#     ϕ(e1,e2) evaluated at x_β.
+# for a bubble entry (F, α, J) of face F,
+#   • untrimmed, |α| = r: node x_β with β = α, covector Ψ_w;
+#   • trimmed, |α| = r−1: node x_β with β = α + e_{J₁} (so the Whitney
+#     covector is nonzero there), covector = the Whitney form ϕ^J evaluated
+#     at x_β.
 # The actual dof basis is the DUAL basis of the shape functions (= the basis
 # itself), computed once on the reference element by the GenericRefFE
 # predofs-constructor (dofs = compute_dofs(predofs, shapefuns)). This keeps
@@ -48,77 +48,60 @@
 """
     struct RotatingPΛName <: ReferenceFEName end
 
-Reference FE name for the H(curl)-conforming rotating P_rΛ¹ element, see
-[`RotatingPΛRefFE`](@ref). Its singleton instance is `rotating_pλ`.
+Reference FE name for the H(curl)-conforming vector proxied P_rΛ¹ element, supporting non-oriented meshes.
+See [`RotatingPΛRefFE`](@ref). Its singleton instance is `rotating_pλ`.
 """
 struct RotatingPΛName <: ReferenceFEName end
 
 """
     struct TrimmedPΛName <: ReferenceFEName end
 
-Reference FE name for the H(curl)-conforming trimmed P_r⁻Λ¹ element, see
-[`TrimmedPΛRefFE`](@ref). Its singleton instance is `trimmed_pλ`.
+Reference FE name for the H(curl)-conforming vector proxied P_r⁻Λ¹ element, supporting non-oriented meshes.
+see [`TrimmedPΛRefFE`](@ref). Its singleton instance is `trimmed_pλ`.
 """
 struct TrimmedPΛName  <: ReferenceFEName end
 
 const rotating_pλ = RotatingPΛName()
 const trimmed_pλ  = TrimmedPΛName()
 
-_pλ_basis(::RotatingPΛName, ::Val{D}, r) where D = RotatingPΛBasis(Val(D), Float64, r)
-_pλ_basis(::TrimmedPΛName,  ::Val{D}, r) where D = TrimmedPΛBasis(Val(D), Float64, r)
+_pλ_basis(::RotatingPΛName, ::Type{T}, ::Val{D}, r, vertices) where {T,D} =
+  BarycentricPΛBasis(Val(D), T, r, 1, vertices; flavor=:BMM)
+_pλ_basis(::TrimmedPΛName,  ::Type{T}, ::Val{D}, r, vertices) where {T,D} =
+  BarycentricPmΛBasis(Val(D), T, r, 1, vertices; flavor=:BMM)
 
-# Both bases are H(curl) conforming 1-form spaces: covariant Piola map.
 Pushforward(::Type{RotatingPΛName}, ::CurlConformity) = CoVariantPiolaMap()
 Pushforward(::Type{TrimmedPΛName},  ::CurlConformity) = CoVariantPiolaMap()
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Covariant Piola map on DifferentialFormValue 1-forms
-# ─────────────────────────────────────────────────────────────────────────────
-
-# Pushforward: ω_phys = J⁻ᵀ ω_ref
-@inline function evaluate!(cache, ::CoVariantPiolaMap,
-  v::DifferentialFormValue{1,D,T,D}, Jt::Number) where {D,T}
-  vv = VectorValue{D,T}(v.data)
-  DifferentialFormValue{1,D}(Tuple((pinvJt(Jt) ⋅ vv).data))
-end
-
-# Inverse pushforward: ω_ref = Jᵀ ω_phys
-@inline function evaluate!(cache, ::InversePushforward{CoVariantPiolaMap},
-  v::DifferentialFormValue{1,D,T,D}, Jt::Number) where {D,T}
-  vv = VectorValue{D,T}(v.data)
-  DifferentialFormValue{1,D}(Tuple((Jt ⋅ vv).data))
-end
-
-# ─────────────────────────────────────────────────────────────────────────────
 # Predofs: pointwise moments at BB lattice nodes, grouped per face
 # ─────────────────────────────────────────────────────────────────────────────
-const _RotPΛBases = Union{RotatingPΛBasis,TrimmedPΛBasis}
+const _PΛBases = Union{BarycentricPΛBasis,BarycentricPmΛBasis}
 
 # One pointwise moment per basis function, at the lattice node carrying it,
 # contracted with the entry's own physical form direction.
-function _pλ_predofs(b::_RotPΛBases, polytope, ::Val{D}) where D
+function _pλ_predofs(b::_PΛBases, polytope, ::Val{D}) where D
   r      = get_order(b)
   V      = value_type(b)
   n_gf   = num_faces(polytope)
   verts  = get_vertex_coordinates(polytope)
   # bubble tables are keyed by sorted vertex sets, hence the sort
   fverts = map(v -> sort(collect(Int, v)), get_face_vertices(polytope))
-  face_to_bfs = Dict(F => bfs for (F, bfs) in b.bubbles)
+  face_to_bfs = Dict(F => bfs for (F, bfs) in get_bubbles(b))
 
   # Exponent β (|β| = r) of the lattice node x_β = Σᵢ βᵢ/r · Vᵢ carrying the
-  # predof of a bubble entry.
-  node_multiindex(::RotatingPΛBasis, k::Int, α) = copy(α)
-  function node_multiindex(::TrimmedPΛBasis, e::Tuple{Int,Int}, α)
-    β = copy(α); β[e[1]] += 1; return β
+  # predof of a bubble entry. The trimmed α has |α| = r−1, and is shifted onto
+  # the first vertex of J so that the Whitney covector does not vanish at x_β.
+  node_multiindex(::BarycentricPΛBasis, α, J) = copy(α)
+  function node_multiindex(::BarycentricPmΛBasis, α, J)
+    β = copy(α); β[J[1]] += 1; return β
   end
 
   # Predof covector at x_β: the entry's own (physical, Cartesian) form
-  # direction evaluated at the node.  λ_i(x_β) = β_i/r for the Whitney form.
-  node_covector(b::RotatingPΛBasis, w::Int, β) = b.Ψ[w]
-  function node_covector(b::TrimmedPΛBasis, w::Int, β)
-    e1, e2 = b.e1s[w], b.e2s[w]
-    return (β[e1]/r) * b.Je2[w] - (β[e2]/r) * b.Je1[w]
-  end
+  # direction evaluated at the node.  λ_i(x_β) = β_i/r for the Whitney form
+  # ϕ^J = λ^{J₁} dλ^{J₂} − λ^{J₂} dλ^{J₁}, whose dλ^{J∖J(l)} are `b.m`.
+  node_covector(b::BarycentricPΛBasis, w, β, J, sub_J_ids) = b.Ψ[w]
+  node_covector(b::BarycentricPmΛBasis, w, β, J, sub_J_ids) =
+    (β[J[1]]/r) * b.m[sub_J_ids[1]] - (β[J[2]]/r) * b.m[sub_J_ids[2]]
 
   lattice_point(β) = sum(β[i] * verts[i] for i in 1:D+1) / r
 
@@ -143,8 +126,8 @@ function _pλ_predofs(b::_RotPΛBases, polytope, ::Val{D}) where D
     resize!(βs, n_bubble)
     resize!(rows, n_bubble)
     empty!(β_row)
-    for (j, (w, k, α, _)) in enumerate(bfs)
-      β = node_multiindex(b, k, α)
+    for (j, (w, α, _, J)) in enumerate(bfs)
+      β = node_multiindex(b, α, J)
       rows[j] = get!(β_row, β) do
         push!(all_nodes, lattice_point(β))
         n = length(β_row) + 1; βs[n] = β; return n
@@ -152,12 +135,15 @@ function _pλ_predofs(b::_RotPΛBases, polytope, ::Val{D}) where D
     end
     n_βs = length(β_row)
     moms = zeros(V, (n_βs, n_bubble))
-    for (j, (w, k, α, _)) in enumerate(bfs)
-      moms[rows[j], j] = node_covector(b, w, βs[rows[j]])
+    for (j, (w, α, _, J, sub_J_ids)) in enumerate(bfs)
+      moms[rows[j], j] = node_covector(b, w, βs[rows[j]], J, sub_J_ids)
     end
     f_moments[gf]  = moms
     f_nodes[gf]    = (n_nodes+1) : (n_nodes+n_βs)
-    f_own_moms[gf] = collect((n_dofs+1) : (n_dofs+n_bubble))
+    # The moment of a bubble entry is the dof dual to that entry, so the face
+    # owns the entries' own indices w — which follow the bubble enumeration,
+    # not the polytope face order this loop runs in.
+    f_own_moms[gf] = collect(first(bfs)[1] : last(bfs)[1])
     n_nodes += n_βs
     n_dofs  += n_bubble
   end
@@ -179,65 +165,37 @@ function get_face_own_dofs_permutations(
    for (gf, own) in enumerate(face_own_dofs)]
 end
 
-function _pλ_reffe(name::ReferenceFEName, ::Val{D}, r::Int) where D
+function _pλ_reffe(name::ReferenceFEName, ::Type{T}, p::Polytope{D}, r::Integer) where {T,D}
   @assert D in (2, 3) "only D = 2, 3 supported, got D = $D"
+  @assert is_simplex(p) "only defined on simplices, got $p"
   @assert r ≥ 1 "r must be ≥ 1, got $r"
-  basis     = _pλ_basis(name, Val(D), r)
-  polytope  = simplex_polytope(Val(D))
+  basis     = _pλ_basis(name, T, Val(D), r, get_vertex_coordinates(p))
   n_dofs    = length(basis)
-  predofs   = _pλ_predofs(basis, polytope, Val(D))
-  face_dofs = get_face_own_funs(basis, polytope, CurlConformity())
+  predofs   = _pλ_predofs(basis, p, Val(D))
+  face_dofs = get_face_own_funs(basis, p, CurlConformity())
   GenericRefFE{typeof(name)}(
-    n_dofs, polytope, predofs, CurlConformity(), nothing, face_dofs, basis
+    n_dofs, p, predofs, CurlConformity(), nothing, face_dofs, basis
   )
 end
 
 """
-    RotatingPΛRefFE(D, r) → GenericRefFE{RotatingPΛName,D}
+    RotatingPΛRefFE(::Type{T}, p::Polytope{D}, r::Integer)
 
-H(curl)-conforming reference FE for the full rotating P_rΛ¹ basis on the
-reference D-simplex (D = 2, 3; r ≥ 1).
+H(curl)-conforming reference FE for the full P_rΛ¹ basis on the simplex `p`
+(D = 2, 3; r ≥ 1). `T` is the type of scalar components of the vector proxied
+shape function values.
 """
-RotatingPΛRefFE(D::Int, r::Int) = _pλ_reffe(rotating_pλ, Val(D), r)
+RotatingPΛRefFE(::Type{T}, p::Polytope, r) where T = _pλ_reffe(rotating_pλ, T, p, r)
 
 """
-    TrimmedPΛRefFE(D, r) → GenericRefFE{TrimmedPΛName,D}
+    TrimmedPΛRefFE(::Type{T}, p::Polytope{D}, r::Integer)
 
-H(curl)-conforming reference FE for the trimmed P_r⁻Λ¹ basis on the
-reference D-simplex (D = 2, 3; r ≥ 1).
+H(curl)-conforming reference FE for the trimmed P_r⁻Λ¹ basis on the simplex `p`
+(D = 2, 3; r ≥ 1). `T` is the type of scalar components of the vector proxied
+shape function values.
 """
-TrimmedPΛRefFE(D::Int, r::Int) = _pλ_reffe(trimmed_pλ, Val(D), r)
+TrimmedPΛRefFE(::Type{T}, p::Polytope, r) where T = _pλ_reffe(trimmed_pλ, T, p, r)
 
-# Standard factories: ReferenceFE(TRI, rotating_pλ, r), etc.
-ReferenceFE(p::Polytope, ::RotatingPΛName, r::Int) = RotatingPΛRefFE(num_dims(p), r)
-ReferenceFE(p::Polytope, ::TrimmedPΛName, r::Int) = TrimmedPΛRefFE(num_dims(p), r)
+ReferenceFE(p::Polytope, ::RotatingPΛName, ::Type{T}, r) where T = RotatingPΛRefFE(T, p, r)
+ReferenceFE(p::Polytope, ::TrimmedPΛName,  ::Type{T}, r) where T = TrimmedPΛRefFE(T, p, r)
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Geometric decomposition API (GeometricDecompositions.jl)
-# ─────────────────────────────────────────────────────────────────────────────
-
-has_geometric_decomposition(b::RotatingPΛBasis{D}, p::Polytope, conf::Conformity) where D =
-  _pλ_geo_decomposition(b, Val(D), p, conf)
-has_geometric_decomposition(b::TrimmedPΛBasis{D}, p::Polytope, conf::Conformity) where D =
-  _pλ_geo_decomposition(b, Val(D), p, conf)
-
-function _pλ_geo_decomposition(b, ::Val{D}, p, conf) where D
-  conf isa L2Conformity && return true
-  (!is_simplex(p) || D != num_dims(p)) && return false
-  _are_barycoords_relative_to_simplex(b.scalar_bernstein_basis, p) ||
-    return false
-  conf isa CurlConformity
-end
-
-function get_face_own_funs(b::_RotPΛBases, p::Polytope, conf::CurlConformity)
-  @check has_geometric_decomposition(b, p, conf)
-  faces = get_faces(p)
-  face_own_funs = [Int[] for _ in 1:length(faces)]
-  for (F, bubble_functions) in get_bubbles(b)
-    face = findfirst(face -> F ⊆ face, faces)
-    w_first = first(bubble_functions)[1]
-    w_last  = last(bubble_functions)[1]
-    face_own_funs[face] = collect(w_first:w_last)
-  end
-  face_own_funs
-end

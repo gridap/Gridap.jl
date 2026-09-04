@@ -5,7 +5,7 @@ module PΛFESpaceTests
 # calculus at π_K = sortperm(cell global vertex ids); no per-face data, no
 # sign flips, identity face-own-dof permutations for every pindex.
 #
-# These tests PIN the convention implemented by _PΛRotationCoBMap
+# These tests PIN the convention implemented by compute_pλ_change
 # (cell_change[i,j] = C(π_K)[s(j),i], cell_change_invt[i,j] =
 # C(invperm(π_K))[i,s(j)], s the face-wise sorted relabelling): during
 # development the competing candidates (transposes, inverse permutation,
@@ -119,24 +119,38 @@ function interpolation_error(model, V, u, D)
   err
 end
 
-# Interpolable fields per space: constants always; full linear fields for the
-# untrimmed space (any r) and the trimmed space with r ≥ 2; for trimmed r = 1
-# (Whitney) the Koszul part κ(dx¹∧dx²) = x¹dx² − x²dx¹ is the nontrivial
-# non-constant member.
-u_const(D) = D == 2 ? (x -> DifferentialFormValue{1,2}((0.7, -1.3))) :
-                      (x -> DifferentialFormValue{1,3}((0.7, -1.3, 0.4)))
+# Interpolable fields per space
+# constants: all r (full & trimmed)
+u_const(D) = D == 2 ? (x -> VectorValue(0.7, -1.3)) :
+                      (x -> VectorValue(0.7, -1.3, 0.4))
+# affine:  any r (full),  r ≥ 2 (trimmed)
 u_lin(D) = D == 2 ?
-  (x -> DifferentialFormValue{1,2}((1.0 + 2x[1] - x[2], -0.5 + x[1] + 3x[2]))) :
-  (x -> DifferentialFormValue{1,3}((1.0 + 2x[1] - x[2] + x[3],
-                                    -0.5 + x[1] + 3x[2] - 2x[3],
-                                    0.25 - x[1] + x[2] + x[3])))
-u_koszul(D) = D == 2 ? (x -> DifferentialFormValue{1,2}((-x[2], x[1]))) :
-                       (x -> DifferentialFormValue{1,3}((-x[2], x[1], 0.0)))
+  (x -> VectorValue(1.0 + 2x[1] - x[2], -0.5 + x[1] + 3x[2])) :
+  (x -> VectorValue(1.0 + 2x[1] - x[2] + x[3],
+                    -0.5 + x[1] + 3x[2] - 2x[3],
+                    0.25 - x[1] + x[2] + x[3]))
+# (Whitney) the Koszul part κ(dx¹∧dx²) = x¹dx² − x²dx¹  for trimmed r = 1
+u_koszul(D) = D == 2 ? (x -> VectorValue(-x[2], x[1])) :
+                       (x -> VectorValue(-x[2], x[1], 0.0))
+
+# Exterior calculus form of the same fields
+#
+# u_const(D) = D == 2 ? (x -> DifferentialFormValue{1,2}((0.7, -1.3))) :
+#                       (x -> DifferentialFormValue{1,3}((0.7, -1.3, 0.4)))
+# u_lin(D) = D == 2 ?
+#   (x -> DifferentialFormValue{1,2}((1.0 + 2x[1] - x[2], -0.5 + x[1] + 3x[2]))) :
+#   (x -> DifferentialFormValue{1,3}((1.0 + 2x[1] - x[2] + x[3],
+#                                     -0.5 + x[1] + 3x[2] - 2x[3],
+#                                     0.25 - x[1] + x[2] + x[3])))
+# u_koszul(D) = D == 2 ? (x -> DifferentialFormValue{1,2}((-x[2], x[1]))) :
+#                        (x -> DifferentialFormValue{1,3}((-x[2], x[1], 0.0)))
 
 test_fields(name, r, D) =
   name == :trimmed && r == 1 ? [u_const(D), u_koszul(D)] : [u_const(D), u_lin(D)]
 
-make_reffe(name, D, r) = name == :rotating ? RotatingPΛRefFE(D, r) : TrimmedPΛRefFE(D, r)
+simplex(D) = D == 2 ? TRI : TET
+make_reffe(name, D, r) = name == :rotating ? RotatingPΛRefFE(Float64, simplex(D), r) :
+                                             TrimmedPΛRefFE(Float64, simplex(D), r)
 
 # ─── Two-triangle conformity: all relative orderings, both bases, r = 1,2,3 ──
 
@@ -193,7 +207,7 @@ end
 
 @testset "sorted mesh takes the nothing fast path" begin
   model = two_cell_model(2, [1,2,3], [2,3,4])
-  rf = RotatingPΛRefFE(2, 1)
+  rf = RotatingPΛRefFE(Float64, TRI, 1)
   cell_reffe = Fill(rf, 2)
   name = ReferenceFEs.get_name(eltype(cell_reffe))
   ch = FESpaces.compute_cell_bases_changes(
@@ -230,9 +244,13 @@ function assembly_checks(model, rf; deg=6)
   V     = FESpace(model, rf, conformity=:HCurl)
   U     = TrialFESpace(V)
   n     = num_free_dofs(V)
-  a_mass(u, v)  = ∫(vol_coeff(u ∧ hodge_star(v))) * dΩ
+  # ⟨u,v⟩ and ⟨du,dv⟩ of the 1-forms, as the vector proxy identities
+  # vol_coeff(u ∧ ⋆v) = u⋅v and vol_coeff(du ∧ ⋆dv) = (∇×u)⋅(∇×v).
+  a_mass(u, v)  = ∫(u ⋅ v) * dΩ
+  a_stiff(u, v) = ∫((∇×u) ⋅ (∇×v)) * dΩ
+  # a_mass(u, v)  = ∫(vol_coeff(u ∧ hodge_star(v))) * dΩ
+  # a_stiff(u, v) = ∫(vol_coeff(d_1form(u) ∧ hodge_star(d_1form(v)))) * dΩ
   M = assemble_matrix(a_mass, U, V)
-  a_stiff(u, v) = ∫(vol_coeff(d_1form(u) ∧ hodge_star(d_1form(v)))) * dΩ
   A = assemble_matrix(a_stiff, U, V)
   n, Matrix(M), Matrix(A)
 end
@@ -263,7 +281,8 @@ end
     dΩ    = Measure(trian, 4)
     V     = FESpace(model, make_reffe(name, 2, 1), conformity=:HCurl)
     U     = TrialFESpace(V)
-    a_mass(u, v) = ∫(vol_coeff(u ∧ hodge_star(v))) * dΩ
+    a_mass(u, v) = ∫(u ⋅ v) * dΩ
+    # a_mass(u, v) = ∫(vol_coeff(u ∧ hodge_star(v))) * dΩ
     M = Matrix(assemble_matrix(a_mass, U, V))
     @test issymmetric(M)
     @test isposdef(M)

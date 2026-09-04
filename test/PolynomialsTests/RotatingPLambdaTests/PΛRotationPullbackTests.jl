@@ -22,6 +22,8 @@ module PΛRotationPullbackTests
 
 using Gridap.TensorValues
 using Gridap.Polynomials
+using Gridap.Polynomials: bubble_entries, rotate_basis_function, rotation_change_of_basis
+using Gridap.Polynomials: RotationCache, rotation_map
 using Gridap.Fields: Point
 using Combinatorics: permutations, multinomial
 using LinearAlgebra

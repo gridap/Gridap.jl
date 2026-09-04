@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added `DifferentialFormValue`, a `MultiValue` representing alternating K-forms, with pointwise exterior calculus (wedge, interior product, Hodge star, musical isomorphisms, Koszul operator, pullback/pushforward), lazy `Field` and `CellField` counterparts, the rotating full and trimmed polynomial bases of PΛ (`RotatingPΛBasis`, `TrimmedPΛBasis`) with closed-form vertex-permutation rotation maps, the associated reference FEs (`rotating_pλ`, `trimmed_pλ`) and per-cell change of basis making H(curl)-conforming FE spaces independent of cell vertex orderings. New code lives in `DifferentialForms`/`RotatingPLambda` subfolders of the touched modules. Symbolic exterior calculus (exterior derivative, codifferential, Lie derivative) is provided by the new package extension `GridapSymbolicsExt` when Symbolics is loaded. Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX) (number to be filled when the PR is opened).
+- Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX) (number to be filled when the PR is opened).
+  - New variants (accessible via kwarg `flavor=:BMM`) of the `BarycentricPΛBasis` and `BarycentricPmΛBasis` bases of the full and trimmed polynomial PΛ¹ spaces, that admit closed-form change-of-basis with respect to relabelling/permutation of the simplex vertices.
+  - Added the associated reference FEs (named `rotating_pλ`, `trimmed_pλ`) which provide H(curl)-conforming FE spaces on meshes with arbitrary simplex ordering (`NonOriented`).
 
 ## [0.20.9] - 2026-08-17
 

@@ -10,14 +10,13 @@
 # relabeled vertices λ = π(ξ).
 #
 # The generic API (`bubble_entries`, `bubble_index`, `rotate_basis_function`,
-# `rotation_change_of_basis`) is shared by the untrimmed bases (`RotatingPΛBasis`
-# and `BarycentricPΛBasis` restricted to 1-forms, this file) and the trimmed ones
-# (`TrimmedPΛBasis` and `BarycentricPmΛBasis`, RotatingPLambda/PΛTrimmedRotations.jl);
-# only the per-entry closed form `_rotate_basis_function` differs, dispatched on
-# the entry tuple type (`k::Int` untrimmed, `e::Tuple{Int,Int}` trimmed).
+# `rotation_change_of_basis`) is shared by the untrimmed `BarycentricPΛBasis`
+# restricted to 1-forms (this file) and the trimmed `BarycentricPmΛBasis`
+# (RotatingPLambda/PΛTrimmedRotations.jl); only the per-entry closed form
+# `_rotate_basis_function` differs, dispatched on the entry tuple type
+# (`k::Int` untrimmed, `e::Tuple{Int,Int}` trimmed).
 
-const _RotPΛBases = Union{RotatingPΛBasis,TrimmedPΛBasis,
-                          BarycentricPΛBasis,BarycentricPmΛBasis}
+const _PΛBases = Union{BarycentricPΛBasis,BarycentricPmΛBasis}
 
 ##########################
 # Vertex/multi-index maps #
@@ -47,8 +46,8 @@ rotate_multiindex(α::AbstractVector{Int}, π::Vector{Int}) = α[invperm(π)]
 # Bubble (F,k,α) ↔ index lookup #
 #################################
 
-_bubble_entry_type(::Union{RotatingPΛBasis,BarycentricPΛBasis})  = Tuple{Vector{Int},Int,Vector{Int}}
-_bubble_entry_type(::Union{TrimmedPΛBasis,BarycentricPmΛBasis}) = Tuple{Vector{Int},Tuple{Int,Int},Vector{Int}}
+_bubble_entry_type(::BarycentricPΛBasis)  = Tuple{Vector{Int},Int,Vector{Int}}
+_bubble_entry_type(::BarycentricPmΛBasis) = Tuple{Vector{Int},Tuple{Int,Int},Vector{Int}}
 
 # A Barycentric bubble function stores its direction form as the index set J.
 # For 1-forms that is the single vertex the untrimmed closed form calls k, resp.
@@ -66,16 +65,8 @@ _rotation_flavors(::BarycentricPmΛBasis) = (:BMM,)
     bubble_entries(b) -> Vector{Tuple{Vector{Int},kT,Vector{Int}}}
 
 `(F,k,α)` for each basis function `w`, indexed by `w`. `k` is a single vertex
-for the untrimmed bases and a pair `(e1,e2)` for the trimmed ones.
+for the untrimmed basis and a pair `(e1,e2)` for the trimmed one.
 """
-function bubble_entries(b::Union{RotatingPΛBasis,TrimmedPΛBasis})
-  entries = Vector{_bubble_entry_type(b)}(undef, length(b))
-  for (F, bubble_functions) in get_bubbles(b), (w, k, α, _) in bubble_functions
-    entries[w] = (F, k, α)
-  end
-  entries
-end
-
 function bubble_entries(b::_BaryPΛBasis)
   @check isone(b.k) "The rotation API is only defined for 1-forms, got k=$(b.k)"
   @check b.flavor in _rotation_flavors(b) """
@@ -93,7 +84,7 @@ end
 
 Inverse of [`bubble_entries`](@ref): `(F,k,α) → w`.
 """
-bubble_index(b::_RotPΛBases) = Dict(e => w for (w, e) in enumerate(bubble_entries(b)))
+bubble_index(b::_PΛBases) = Dict(e => w for (w, e) in enumerate(bubble_entries(b)))
 
 #####################
 # Basis-level rotate #
@@ -112,7 +103,7 @@ For repeated calls (e.g. assembling [`rotation_change_of_basis`](@ref)),
 precompute `entries = bubble_entries(b)` and `idx = bubble_index(b)` once and
 call the internal `Gridap.Polynomials._rotate_basis_function(entries, idx, w, π)`.
 """
-function rotate_basis_function(b::_RotPΛBases, w::Int, π::Vector{Int})
+function rotate_basis_function(b::_PΛBases, w::Int, π::Vector{Int})
   entries = bubble_entries(b)
   idx     = bubble_index(b)
   _rotate_basis_function(entries, idx, w, π)
@@ -151,14 +142,14 @@ shared thereafter, and the transformation matrix is never assembled (only the
 one-or-few-entry rows are stored). This is the object mesh-level code should
 hold, keyed by the per-cell permutation.
 """
-struct RotationCache{B<:_RotPΛBases,E}
+struct RotationCache{B<:_PΛBases,E}
   basis   :: B
   entries :: Vector{E}
   idx     :: Dict{E,Int}
   maps    :: Dict{Vector{Int},Vector{Vector{Tuple{Float64,Int}}}}
 end
 
-function RotationCache(b::_RotPΛBases)
+function RotationCache(b::_PΛBases)
   entries = bubble_entries(b)
   idx     = Dict(e => w for (w, e) in enumerate(entries))
   RotationCache(b, entries, idx,
@@ -188,7 +179,7 @@ with λ = π(ξ))`. Built entirely from [`rotate_basis_function`](@ref); never
 calls `inv` on a matrix. To pull back by π⁻¹ instead, call this with
 `invperm(π)`.
 """
-function rotation_change_of_basis(b::_RotPΛBases, π::Vector{Int})
+function rotation_change_of_basis(b::_PΛBases, π::Vector{Int})
   n = length(b)
   entries = bubble_entries(b)
   idx     = bubble_index(b)

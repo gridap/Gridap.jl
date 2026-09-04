@@ -2,8 +2,8 @@
 #
 # Trimmed (P_r⁻Λ¹) closed form for the generic rotation API of
 # RotatingPLambda/PΛRotations.jl: the per-entry `_rotate_basis_function`
-# method for the `(F, (e1,e2), α)` entries of `TrimmedPΛBasis` and of
-# `BarycentricPmΛBasis`, plus the pair sign/sort helpers (triangle identity,
+# method for the `(F, (e1,e2), α)` entries of `BarycentricPmΛBasis`, plus the
+# pair sign/sort helpers (triangle identity,
 # shift operators ρ, anchored pairs).
 #
 # The shift ρ moves a unit of α between vertices, so the two terms of a hit

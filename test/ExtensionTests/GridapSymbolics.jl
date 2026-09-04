@@ -2,7 +2,7 @@ module GridapSymbolicsTests
 # Tests for the GridapSymbolicsExt extension: symbolic coordinates, symbolic
 # exterior derivative/codifferential/Lie derivative on Symbolics.Num-valued
 # DifferentialFormValues, the Koszul homotopy identity, and the print_forms
-# symbolic display of the rotating/trimmed PΛ bases.
+# symbolic display of the barycentric PΛ and P⁻Λ bases.
 
 using Symbolics
 using Gridap
@@ -122,9 +122,7 @@ Lv_ω1 = lie_derivative(v_e1, ω_1)
 
 # ── print_forms: symbolic display of the PΛ bases ────────────────────────────
 
-for (make, header) in ((RotatingPΛBasis, "RotatingPΛBasis"),
-                       (TrimmedPΛBasis,  "TrimmedPΛBasis"),
-                       ((V,T,r) -> BarycentricPΛBasis(V,T,r,1), "BarycentricPΛBasis"),
+for (make, header) in (((V,T,r) -> BarycentricPΛBasis(V,T,r,1), "BarycentricPΛBasis"),
                        ((V,T,r) -> BarycentricPΛBasis(V,T,r,1; flavor=:BMM), "BarycentricPΛBasis"),
                        ((V,T,r) -> BarycentricPΛBasis(V,T,r,2), "BarycentricPΛBasis"),
                        ((V,T,r) -> BarycentricPmΛBasis(V,T,r,1), "BarycentricPmΛBasis"),
@@ -142,9 +140,8 @@ for (make, header) in ((RotatingPΛBasis, "RotatingPΛBasis"),
   @test count(==('['), out) >= length(b)
 end
 
-# The :BMM direction forms are the ψ of RotatingPΛBasis, so the two bases print
-# the same ambient forms in the same order. r must be ≥ 3 for ψ to differ from
-# the AFW direction form at all.
+# The two flavors print genuinely different ambient forms. r must be ≥ 3 for the
+# :BMM direction form ψ to differ from the AFW one at all.
 function form_lines(b)
   buf = IOBuffer()
   print_forms(b, buf)
@@ -154,22 +151,17 @@ end
 let r = 3
   bmm = form_lines(BarycentricPΛBasis(Val(2), Float64, r, 1; flavor=:BMM))
   afw = form_lines(BarycentricPΛBasis(Val(2), Float64, r, 1))
-  rot = form_lines(RotatingPΛBasis(Val(2), Float64, r))
-  @test length(bmm) == length(rot) > 0
-  @test bmm == rot
-  @test afw != rot
+  @test length(bmm) == length(afw) > 0
+  @test bmm != afw
 end
 
-# Likewise the :BMM P⁻ forms are the ϕ of TrimmedPΛBasis, scaled by the same
-# bare monomial. Here the two bases enumerate their bubbles in a different order
-# from r ≥ 2, so the printed lines match as sets rather than in sequence.
+# The trimmed families enumerate their bubbles in a different order from r ≥ 2,
+# so their printed lines are compared as sets rather than in sequence.
 let r = 3
   bmm = form_lines(BarycentricPmΛBasis(Val(2), Float64, r, 1; flavor=:BMM))
   afw = form_lines(BarycentricPmΛBasis(Val(2), Float64, r, 1))
-  trm = form_lines(TrimmedPΛBasis(Val(2), Float64, r))
-  @test length(bmm) == length(trm) > 0
-  @test sort(bmm) == sort(trm)
-  @test sort(afw) != sort(trm)
+  @test length(bmm) == length(afw) > 0
+  @test sort(bmm) != sort(afw)
 end
 
 # A power of a barycentric coordinate is parenthesised and its exponent raised,

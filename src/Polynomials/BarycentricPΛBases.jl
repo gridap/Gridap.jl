@@ -516,6 +516,24 @@ end
 
 Base.show(io::IO, b::_BaryPΛBasis) = print_indices(b, io)
 
+"""
+    print_forms(b::BarycentricPΛBasis,  out::IO=stdout)
+    print_forms(b::BarycentricPmΛBasis, out::IO=stdout)
+
+Print each basis function of `b` as an ambient barycentric differential form,
+in terms of dλ¹,…,dλ^{D+1} — the frame the φ and ϕ formulas are stated in —
+with symbolic polynomial coefficients.
+
+For a `BarycentricPΛBasis` the form is `Bα(λ)` times the wedge of the direction
+1-forms [`_update_φ_αF!`](@ref) indexed by `J`, and the polynomial degree must be
+at least 1. For a `BarycentricPmΛBasis` it is the Whitney form `φ^J` scaled by
+`Bα(λ)` for `flavor=:AFW`, by the bare monomial `λ^α` for `flavor=:BMM`.
+
+Requires the Symbolics package to be loaded: the methods are provided by the
+GridapSymbolicsExt package extension.
+"""
+function print_forms end
+
 const _sup_digits = ("⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹")
 _sup_str(i::Int) = join(_sup_digits[d+1] for d in reverse(digits(i)))
 

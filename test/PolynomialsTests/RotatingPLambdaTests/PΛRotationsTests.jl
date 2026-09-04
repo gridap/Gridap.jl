@@ -3,6 +3,8 @@ module PΛRotationsTests
 # (rotation) π : ξ → λ, λ = π(ξ)  (src/Polynomials/RotatingPLambda/PΛRotations.jl).
 
 using Gridap.Polynomials
+using Gridap.Polynomials: rotate_multiindex, rotate_face_set, bubble_entries
+using Gridap.Polynomials: rotate_basis_function, rotation_change_of_basis
 using LinearAlgebra
 using Random
 using Test
