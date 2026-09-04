@@ -623,7 +623,7 @@ function _basis_forms_components(D,k,DG_style,rot_90)
       components[I_id] = (I_id, I, 1)
     else # if k == D, I = [1:D] and this is just (1, [], 1) (but that works)
       Icomp = _complement(I, D)
-      Istar_id = _combination_index(Icomp)
+      Istar_id = _combination_index(Icomp, D)
       Istar_sgn = _combination_sign(I)
       components[I_id] = (Istar_id, I, Istar_sgn)
     end
@@ -654,7 +654,7 @@ function _PmΛ_F_bubble_functions(r,k,D,F,w)
   for α in bernstein_terms(r-1,D)
     sup_α_ids = _sup_multi_indices(α)
     for J in _sorted_combinations(N,k+1)
-      sub_J_ids = _sub_combinations_ids(J)
+      sub_J_ids = _sub_combinations_ids(J, N)
       j = _minimum_or_one(J)-1
       if issetequal(_support(α) ∪ J, F) && all(α[1:j] .== 0)
         w += 1
@@ -683,7 +683,7 @@ function PmΛ_bubbles(r,k,D)
   w=0
   bubbles = Bubble[]
   for d in k:D
-    for F in _sorted_combinations(D+1, d+1)
+    for F in _sorted_combinations(D+1, d+1; right_to_left=true)
       bubble_functions = _PmΛ_F_bubble_functions(r,k,D,F,w)
       isempty(bubble_functions) && continue
       push!(bubbles, (F, bubble_functions))
@@ -880,7 +880,7 @@ function PΛ_bubbles(r,k,D)
   # r > 0
   w=0
   for d in k:D
-    for F in _sorted_combinations(D+1, d+1)
+    for F in _sorted_combinations(D+1, d+1; right_to_left=true)
       bubble_functions = _PΛ_F_bubble_functions(r,k,D,F,w)
       isempty(bubble_functions) && continue
       push!(bubbles, (F, bubble_functions))
@@ -1025,42 +1025,57 @@ end
 # vertices of the face) or a component of a k-form as in (1,3) ~ dx¹∧dx³ .
 
 """
-    _sorted_combinations(D,k)
+    _sorted_combinations(D,k; right_to_left=false)
 
 Return a vector of all the combinations I_i of {1:`D`} of length `k`:
 
-1 ≤ I\\_1 < ... < I\\_k ≤ `D`
+    1 ≤ I\\_1 < ... < I\\_k ≤ `D`
 
-sorted in right-digit to left-digit lexicographic order, e.g.
+sorted in (left-to-right, i.e. standard) lexicographic order, e.g.
 
 ```julia
 [ [1,2], [1,3], [2,3] ]  # for D=3, k=2\\
+[ [1,2], [1,3], [1,4], [2,3], [2,4], [3,4] ]  # for D=4, k=2
+```
+
+If `right_to_left` is `true`, the combinations are compared from their last
+index to their first instead, e.g.
+
+```julia
 [ [1,2], [1,3], [2,3], [1,4], [2,4], [3,4] ]  # for D=4, k=2
 ```
 
-This example shows that this order of sorted combinations of same length `k` is
-independent of the dimension `D`, unlike with the usual (left-digit to right-digit)
-lexicographic order where 14 would be smaller than 23.
+This is the order in which `get_faces` numbers the sub-faces of a simplex.
 
-So with the chosen order, 23 is always the third length-2 combination, not the `D`ᵗʰ.
+See also [`_combination_index`](@ref).
 """
-function _sorted_combinations(D::Int,k::Int)
-  iszero(k) &&  return Vector{Int}[ Int[] ]
-  comp_rev_perm(tup) =  Int[D-tup[k-i+1]+1 for i in 1:k]
-  inc_perms = combinations(1:D,k) .|> (tup -> comp_rev_perm(tup)) |> reverse
-  return inc_perms
+function _sorted_combinations(D::Int,k::Int; right_to_left=false)
+  combis = combinations(1:D,k)
+  isempty(combis) &&  return Vector{Int}[ Int[] ]
+  right_to_left && return sort!(collect(combis), by=reverse)
+  return collect(combis)
 end
 
 """
-    _combination_index(I)
+    _combination_index(I, D; right_to_left=false)
 
-Linear index of `I` amongst combinations of the same size `k`,
-sorted in right-to-left lexicographic order. It depends on `k` but not on the
-space dimension, see [`_sorted_combinations`](@ref).
+Linear index of `I` amongst the combinations of 1:`D` of the same size `k`,
+sorted like in [`_sorted_combinations`](@ref), that is
+
+    (_combination_index(I, D; right_to_left), I) ∈ enumerate(_sorted_combinations(D,k; right_to_left))
+
+The right-to-left index does not depend on `D`, unlike the default left-to-right one.
 """
-@inline function _combination_index(combi)
+@inline function _combination_index(combi, D; right_to_left=false)
+  @check issorted(combi)
+  @check isempty(combi) || last(combi) ≤ D
   k = length(combi)
-  return sum( binomial(combi[i]-1, i) for i in 1:k; init=0) + 1
+  # Counting the combinations that come before `combi`: those first differing
+  # from it at position i, read from the right, number binomial(combi[i]-1, i).
+  right_to_left && return sum(binomial(combi[i]-1, i) for i in 1:k; init=0) + 1
+  # Counting the combinations that come after `combi`: those first exceeding it
+  # at position i number binomial(D-combi[i], k-i+1).
+  return binomial(D,k) - sum(binomial(D-combi[i], k-i+1) for i in 1:k; init=0)
 end
 
 """
@@ -1088,9 +1103,10 @@ end
     _combination_sign(I)
 
 Given a combination `I`, returns the sign of the permutation resulting from
-the concatenation of `I` and its complement [`_complement(I)`](@ref _complement).
+the concatenation of `I` and its complement [`_complement(I,D)`](@ref _complement).
 """
 function _combination_sign(combi)
+  @check issorted(combi)
   i, k, acc, delta = 1, 1, 0, 0
   while k <= length(combi)
     if combi[k] == i
@@ -1105,18 +1121,21 @@ function _combination_sign(combi)
 end
 
 """
-    _sub_combinations_ids(J)
+    _sub_combinations_ids(J, D)
 
-Return a vector containing the `k-1` combinations `J\\J[i]` for 1 ≤ i ≤ `k`,
-where `k=length(J)`.
+Return a vector containing the `_combination_index` of the `k` different
+combinations `J\\J[i]` of 1:`D` for 1 ≤ i ≤ `k`, where `k=length(J)`.
+
+`D` is the ambient dimension the indices are taken in, that is the one `J`
+itself is a combination of — not the dimension of the space the forms live in.
 """
-function _sub_combinations_ids(combi)
+function _sub_combinations_ids(combi, D)
   k = length(combi)
   sub_combi = MVector{k-1,Int}(undef)
   sub_combi_ids = Vector{Int}(undef, k)
   for i in 1:k
     sub_combi .= ntuple(j -> combi[j + Int(j≥i)],k-1)
-    sub_combi_id = _combination_index(sub_combi)
+    sub_combi_id = _combination_index(sub_combi, D)
     sub_combi_ids[i] = sub_combi_id
   end
   sub_combi_ids

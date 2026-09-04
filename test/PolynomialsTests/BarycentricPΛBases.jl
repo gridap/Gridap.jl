@@ -16,11 +16,19 @@ r = 3 # all possible bubble spaces are non empty
 # Combination ordering validation
 for D in 1:6
   for k in 0:D
+    # standard lexicographic order (left-to-right)
     acc = true
-    for (I_ind, I) in enumerate(_sorted_combinations(D,k))
-      acc &= _combination_index(I) == I_ind
+    for (I_ind, I) in enumerate(_sorted_combinations(D, k))
+      acc &= _combination_index(I, D) == I_ind
     end
-    @test acc || "A combination order was wrong for $D, $k"
+    @test acc || "A combination index was wrong for $D, $k"
+    # right-to-left lexicographic order
+    right_to_left = true
+    acc = true
+    for (I_ind, I) in enumerate(_sorted_combinations(D, k; right_to_left))
+      acc &= _combination_index(I, D; right_to_left) == I_ind
+    end
+    @test acc || "A combination index was wrong for $D, $k, right-to-left order"
   end
 end
 
@@ -45,7 +53,7 @@ for k in 0:D
                 for (i,αpi_id) in enumerate(sup_α_ids) )
 
       passed = passed && issorted(J) && length(J)==k+1 && (J ⊆ 1:N) &&
-            all( _combination_index(J[J .≠ J[i]]) == Jsi_id for (i,Jsi_id) in enumerate(sub_J_ids) )
+            all( _combination_index(J[J .≠ J[i]], N) == Jsi_id for (i,Jsi_id) in enumerate(sub_J_ids) )
     end
     @test passed || (r, k, D, F, bubble_functions)
   end

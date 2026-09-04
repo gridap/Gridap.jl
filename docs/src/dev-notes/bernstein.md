@@ -194,6 +194,15 @@ e.g. for ``D=4``, ``k=2``
 and [`_combination_index`](@ref) computes the index of a combination in this
 vector.
 
+This order define the linear indices of basis `k`-forms such as ``I`` and
+``J``. The order depends on the dimension `D`.: ``\{2,3\}`` is the third length-``2``
+combination for ``D=3`` but the fourth for ``D=4``.
+
+The faces indices ``F`` are ordered with right-to-left lexicographic, obtain with kwarg
+`right_to_left=true` of `_sorted_combinations` and `_combination_index`. The combination indices are compared from last
+to first, so above ``\{2,3\}`` would swaps with ``\{1,4\}``. This order is
+consistent with the vertices ordering of simplices faces, e.g.
+`get_faces(TET,k,0)`
 
 #### Translation between forms and vectors
 
