@@ -2,7 +2,7 @@ module FormBridgeTests
 # Value-level bridges between the form algebra and Gridap's FE machinery:
 #   vol_coeff       — scalar content of a top D-form (makes ∫(ω ∧ ⋆η) integrable)
 #   to_1form/from_1form, to_Kform/from_Kform, to_0form/to_Dform — VectorValue proxies
-#   jac_to_2form    — exterior derivative of a 1-form from its (transposed) Jacobian
+#   grad_to_2form   — exterior derivative of a 1-form from its gradient (transposed Jacobian)
 
 using Gridap.TensorValues
 using Test
@@ -66,30 +66,29 @@ v_2form = VectorValue(1.0, -2.0, 3.0)
 @test to_Dform(5.0, Val(2)).data == (5.0,)
 @test to_Dform(7.0, Val(3)) isa DifferentialFormValue{3,3}
 
-# ── jac_to_2form ─────────────────────────────────────────────────────────────
-# Gridap's ∇(u) uses the TRANSPOSED Jacobian: J[i,j] = ∂u_j/∂x_i
-# (dω)_{a<b} = ∂ω_b/∂x^a − ∂ω_a/∂x^b = J[a,b] − J[b,a]
+# ── grad_to_2form ─────────────────────────────────────────────────────────────
+# Gridap's ∇(u) is
+#   Jt[i,j] = ∂u_j/∂x_i (dω)_{a<b} = ∂ω_b/∂x^a − ∂ω_a/∂x^b = Jt[a,b] − Jt[b,a]
 # TensorValue{2,2,T,4}(a,b,c,d) stores in column-major:
 #   T[1,1]=a, T[2,1]=b, T[1,2]=c, T[2,2]=d
 
-# Identity Jacobian: ω = x¹dx¹+x²dx² has dω = 0 (J = I, symmetric)
-J_id = TensorValue{2,2,Float64,4}(1.0, 0.0, 0.0, 1.0)
-@test vol_coeff(jac_to_2form(J_id)) == 0.0
+# Identity Jacobian: ω = x¹dx¹+x²dx² has dω = 0 (Jt = I, symmetric)
+Jt_id = TensorValue{2,2,Float64,4}(1.0, 0.0, 0.0, 1.0)
+@test vol_coeff(grad_to_2form(Jt_id)) == 0.0
 
-# Rotation u = (−x², x¹): Gridap's ∇ gives J[i,j]=∂u_j/∂x_i
-# J[2,1]=∂u₁/∂x₂=−1,  J[1,2]=∂u₂/∂x₁=1  → TensorValue(0,−1,1,0)
-# (dω)₁₂ = J[1,2]−J[2,1] = 1−(−1) = 2
-J_rot = TensorValue{2,2,Float64,4}(0.0, -1.0, 1.0, 0.0)
-@test vol_coeff(jac_to_2form(J_rot)) ≈ 2.0
+# Rotation u = (−x², x¹): → Jt(u) = TensorValue(0,−1,1,0)
+# (dω)₁₂ = Jt[1,2]−Jt[2,1] = 1−(−1) = 2
+Jt_rot = TensorValue{2,2,Float64,4}(0.0, -1.0, 1.0, 0.0)
+@test vol_coeff(grad_to_2form(Jt_rot)) ≈ 2.0
 
-# Shear u = (x², 0): J[2,1]=∂u₁/∂x₂=1, others 0 → TensorValue(0,1,0,0)
-# (dω)₁₂ = J[1,2]−J[2,1] = 0−1 = −1
-J_sh = TensorValue{2,2,Float64,4}(0.0, 1.0, 0.0, 0.0)
-@test vol_coeff(jac_to_2form(J_sh)) ≈ -1.0
+# Shear u = (x², 0): Jt[2,1]=∂u₁/∂x₂=1, others 0 → TensorValue(0,1,0,0)
+# (dω)₁₂ = Jt[1,2]−Jt[2,1] = 0−1 = −1
+Jt_sh = TensorValue{2,2,Float64,4}(0.0, 1.0, 0.0, 0.0)
+@test vol_coeff(grad_to_2form(Jt_sh)) ≈ -1.0
 
-# 3D: ω = (x¹, x², x³), J = I₃ → dω = 0 (symmetric, convention-independent)
-J3 = TensorValue{3,3,Float64,9}(1.0,0.0,0.0, 0.0,1.0,0.0, 0.0,0.0,1.0)
-dω3 = jac_to_2form(J3)
+# 3D: ω = (x¹, x², x³), Jt = I₃ → dω = 0 (symmetric, convention-independent)
+Jt3 = TensorValue{3,3,Float64,9}(1.0,0.0,0.0, 0.0,1.0,0.0, 0.0,0.0,1.0)
+dω3 = grad_to_2form(Jt3)
 @test typeof(dω3) <: DifferentialFormValue{2,3}
 @test all(iszero, dω3.data)
 

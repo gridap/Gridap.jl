@@ -8,6 +8,7 @@ using Symbolics
 using Gridap
 using Gridap.TensorValues
 using Gridap.Polynomials
+using Gridap.Fields
 using Test
 
 # ── Symbolic coordinates ─────────────────────────────────────────────────────

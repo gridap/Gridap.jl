@@ -112,7 +112,7 @@ export to_Kform
 export from_Kform
 export to_0form
 export to_Dform
-export jac_to_2form
+export grad_to_2form
 
 import Base: show
 import Base: promote_rule

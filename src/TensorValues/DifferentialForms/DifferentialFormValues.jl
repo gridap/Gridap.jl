@@ -291,30 +291,6 @@ const ⋆ = hodge_star
 # ============================================================
 
 """
-    exterior_derivative(ω)
-
-Exterior derivative `dω` of a differential form.
-
-Methods are provided for `DifferentialForm` fields (see `Gridap.Fields`),
-for form-valued `CellField`s (see `Gridap.CellData`), and — when the
-Symbolics package is loaded (GridapSymbolicsExt extension) — for
-`DifferentialFormValue`s with symbolic (`Symbolics.Num`) coefficients.
-"""
-function exterior_derivative end
-
-"""
-    codifferential(ω)
-
-Codifferential `δω = (-1)^{D(K-1)+1} ⋆ d ⋆ ω` of a K-form (flat Euclidean metric).
-
-Methods are provided for `DifferentialForm` fields (see `Gridap.Fields`),
-for form-valued `CellField`s (see `Gridap.CellData`), and — when the
-Symbolics package is loaded (GridapSymbolicsExt extension) — for
-`DifferentialFormValue`s with symbolic (`Symbolics.Num`) coefficients.
-"""
-function codifferential end
-
-"""
     lie_derivative(v, ω)
 
 Lie derivative `L_v ω = d(ι_v ω) + ι_v(dω)` (Cartan's magic formula).
@@ -528,8 +504,10 @@ koszul(x::VectorValue{D}, ω::DifferentialFormValue{K,D}) where {K,D} =
     vol_coeff(ω::DifferentialFormValue{D,D})
 
 The single scalar coefficient of a top-degree D-form in D dimensions.
+Enables using Gridap's standard measure for integration of differential forms:
+    ∫(vol_coeff(ω ∧ ⋆η)) * dΩ
 """
-vol_coeff(ω::DifferentialFormValue{D,D,T}) where {D,T} = ω.data[1]
+vol_coeff(ω::DifferentialFormValue{D,D,T}) where {D,T} = ω[1]
 
 # ============================================================
 # Isomorphism: VectorValue{D} ↔ DifferentialFormValue{1,D}
@@ -541,14 +519,25 @@ vol_coeff(ω::DifferentialFormValue{D,D,T}) where {D,T} = ω.data[1]
 # operations (d, ⋆, ∧, …).
 # ============================================================
 
-to_1form(v::VectorValue{D,T})              where {D,T} = DifferentialFormValue{1,D}(v.data)
-from_1form(ω::DifferentialFormValue{1,D,T}) where {D,T} = VectorValue{D,T}(ω.data)
+"""
+    to_1form(v::VectorValue{D})
+
+Conversion of `v` to a 1-form, a `DifferentialFormValue{1,D}`, assuming flat space
+(the metric tensor is the iddentity matrix).
+"""
+to_1form(v::VectorValue{D,T}) where {D,T} = DifferentialFormValue{1,D}(Tuple(v))
+
+"""
+    from_1form(ω::DifferentialFormValue{1,D,T})
+
+Conversion of the 1-form value `ω` to a `VectorValue{D}`, assuming flat space
+(the metric tensor is the iddentity matrix).
+"""
+from_1form(ω::DifferentialFormValue{1,D,T}) where {D,T} = VectorValue{D,T}(Tuple(ω))
 
 # General K-form ↔ VectorValue{binomial(D,K)} (component-wise isomorphism)
-to_Kform(v::VectorValue{L,T}, ::Val{K}, ::Val{D}) where {L,T,K,D} =
-  DifferentialFormValue{K,D}(v.data)
-from_Kform(ω::DifferentialFormValue{K,D,T}) where {K,D,T} =
-  VectorValue{binomial(D,K),T}(ω.data)
+to_Kform(v::VectorValue{L,T}, ::Val{K}, ::Val{D}) where {L,T,K,D} = DifferentialFormValue{K,D}(Tuple(v))
+from_Kform(ω::DifferentialFormValue{K,D,T}) where {K,D,T} = VectorValue{binomial(D,K),T}(Tuple(ω))
 
 # ============================================================
 # Scalar ↔ 0-form and D-form
@@ -558,8 +547,8 @@ from_Kform(ω::DifferentialFormValue{K,D,T}) where {K,D,T} =
 # a scalar carries no topological information.
 # ============================================================
 
-to_0form(u::T, ::Val{D}) where {T,D} = DifferentialFormValue{0,D}((u,))
-to_Dform(u::T, ::Val{D}) where {T,D} = DifferentialFormValue{D,D}((u,))
+to_0form(u::_Scalar, ::Val{D}) where D = DifferentialFormValue{0,D}((u,))
+to_Dform(u::_Scalar, ::Val{D}) where D = DifferentialFormValue{D,D}((u,))
 
 # ============================================================
 # L2 inner product of K-forms (flat Euclidean metric)
@@ -593,18 +582,17 @@ inner(a::DifferentialFormValue{K,D,T,L},
 @inline Base.getindex(v::DifferentialFormValue, i::Integer) = @inbounds v.data[i]
 
 """
-    jac_to_2form(J::TensorValue{D,D})
+    grad_to_2form(Jt::TensorValue{D,D})
 
-Exterior derivative of a 1-form from its (Gridap-convention, transposed)
-Jacobian `J = ∇ω`, `J[i,j] = ∂ω_j/∂x_i`:
-`(dω)_{a<b} = ∂ω_b/∂x^a − ∂ω_a/∂x^b = J[a,b] − J[b,a]`.
+Exterior derivative of a 1-form from its gradient `Jt = ∇ω`, `Jt[i,j] =
+∂ω_j/∂x_i`: `(dω)_{a<b} = ∂ω_b/∂x^a − ∂ω_a/∂x^b = Jt[a,b] − Jt[b,a]`.
 
 This computes the exterior derivative of a 1-form FEFunction (e.g. Nédélec)
-as `Operation(jac_to_2form)(∇(u))` without component-wise access, see
+as `Operation(grad_to_2form)(∇(u))` without component-wise access, see
 `d_1form` in `Gridap.CellData`.
 """
-function jac_to_2form(J::TensorValue{D,D,T,L}) where {D,T,L}
+function grad_to_2form(Jt::TensorValue{D,D,T,L}) where {D,T,L}
   cs = sorted_combinations(D, 2)
   DifferentialFormValue{2,D}(
-    ntuple(n -> J[cs[n][1], cs[n][2]] - J[cs[n][2], cs[n][1]], binomial(D, 2)))
+    ntuple(n -> Jt[cs[n][1], cs[n][2]] - Jt[cs[n][2], cs[n][1]], binomial(D, 2)))
 end

@@ -11,6 +11,7 @@ using Gridap.TensorValues
 using Gridap.Geometry: CartesianDiscreteModel, Triangulation
 using Gridap.CellData
 using Gridap.Arrays: array_cache, getindex!
+using Gridap.Fields
 using Test
 
 # ── 1. CellField level: d_0form, d_1form ─────────────────────────────────────

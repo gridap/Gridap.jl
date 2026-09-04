@@ -496,7 +496,9 @@ Base.:(∘)(f::Function,g::Tuple{Vararg{Union{Function,CellField}}}) = Operation
 
 # Unary ops
 
-for op in (:symmetric_part,:inv,:det,:abs,:abs2,:+,:-,:tr,:transpose,:adjoint,:grad2curl,:real,:imag,:conj)
+for op in (:symmetric_part,:inv,:det,:abs,:abs2,:+,:-,:tr,:transpose,:adjoint,
+  :grad2curl,:real,:imag,:conj,:hodge_star,:vol_coeff,:to_1form,:from_1form
+)
   @eval begin
     ($op)(a::CellField) = Operation($op)(a)
   end
@@ -504,7 +506,9 @@ end
 
 # Binary ops
 
-for op in (:inner,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/)
+for op in (:inner,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/,
+  :interior_product, :sharp, :flat, :∧
+)
   @eval begin
     ($op)(a::CellField,b::CellField) = Operation($op)(a,b)
     ($op)(a::CellField,b::Number) = Operation($op)(a,b)
@@ -712,7 +716,7 @@ function (a::SkeletonPair{<:CellField})(x)
 end
 
 ############################################################################################
-# Differential Forms
+# Differential geometry operators
 
 """
     exterior_derivative(a::CellField)
@@ -750,88 +754,3 @@ allocation in the inner loop.  Asserts K ≥ 1.
 """
 koszul(a::CellField) = similar_cell_field(a, lazy_map(Broadcasting(koszul), get_data(a)))
 
-"""
-    (∧)(a::CellField, b::CellField)
-
-Pointwise exterior product.  Returns an `OperationCellField`.
-"""
-∧(a::CellField, b::CellField) = Operation(∧)(a, b)
-
-"""
-    hodge_star(a::CellField)
-
-Pointwise flat Hodge star (g = I_D).  Returns an `OperationCellField`.
-"""
-hodge_star(a::CellField) = Operation(hodge_star)(a)
-
-"""
-    flat(v::CellField, g::CellField)
-
-Lower a vector field `v` using metric `g` (a `SymTensorValue`-valued CellField).
-"""
-flat(v::CellField, g::CellField) = Operation(flat)(v, g)
-
-"""
-    sharp(ω::CellField, g_inv::CellField)
-
-Raise a 1-form `ω` using inverse metric `g_inv`.
-"""
-sharp(ω::CellField, g_inv::CellField) = Operation(sharp)(ω, g_inv)
-
-"""
-    interior_product(v::CellField, ω::CellField)
-"""
-interior_product(v::CellField, ω::CellField) = Operation(interior_product)(v, ω)
-
-"""
-    d_0form(u::CellField)
-
-Discrete exterior derivative of a scalar (0-form) CellField.
-Returns a `DifferentialFormValue{1,D}`-valued `OperationCellField`.
-
-Equivalent to `to_1form(∇(u))`.
-"""
-d_0form(u::CellField) = to_1form(∇(u))
-
-"""
-    d_1form(u::CellField)
-
-Discrete exterior derivative of a VectorValue (1-form) CellField
-(e.g., from a Nédélec FESpace).
-Returns a `DifferentialFormValue{2,D}`-valued `OperationCellField`.
-
-Computed as `Operation(jac_to_2form)(∇(u))`.
-"""
-d_1form(u::CellField) = Operation(jac_to_2form)(∇(u))
-
-# ============================================================
-# Volume form scalar extraction and VectorValue ↔ 1-form bridge
-# ============================================================
-
-"""
-    vol_coeff(a::CellField)
-
-Extracts the single scalar coefficient of a top-degree D-form CellField.
-Returns an `OperationCellField` (scalar-valued) suitable for use in
-`∫(vol_coeff(ω ∧ ⋆η)) * dΩ` with Gridap's standard measure.
-"""
-vol_coeff(a::CellField) = Operation(vol_coeff)(a)
-
-"""
-    to_1form(v::CellField)
-
-Pointwise conversion of a VectorValue{D}-valued CellField (e.g., a Nédélec
-FEFunction) to a DifferentialFormValue{1,D}-valued OperationCellField.
-The result can be used with the value-level operators (∧, ⋆, ι).
-Note: for `exterior_derivative`, build the cell field from `DifferentialForm`
-objects with accessible component fields instead.
-"""
-to_1form(v::CellField) = Operation(to_1form)(v)
-
-"""
-    from_1form(ω::CellField)
-
-Pointwise conversion of a DifferentialFormValue{1,D}-valued CellField to a
-VectorValue{D}-valued OperationCellField.
-"""
-from_1form(ω::CellField) = Operation(from_1form)(ω)

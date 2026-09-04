@@ -8,8 +8,8 @@ using Gridap.Polynomials
 using Gridap.Polynomials: multinomial  # Combinatorics, via Gridap.Polynomials
 using Gridap.Polynomials: _sup_str
 
-import Gridap.TensorValues: exterior_derivative
-import Gridap.TensorValues: codifferential
+import Gridap.Fields: exterior_derivative
+import Gridap.Fields: codifferential
 import Gridap.TensorValues: lie_derivative
 import Gridap.TensorValues: symbolic_coordinates
 import Gridap.Polynomials: print_forms

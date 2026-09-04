@@ -6,14 +6,6 @@ Abstract divergence operator, formally equivalent to `f -> ∇⋅f`.
 """
 divergence(f) = Operation(tr)(∇(f))
 
-function return_value(::Broadcasting{typeof(divergence)},f)
-  Broadcasting(Operation(tr))(Broadcasting(∇)(f))
-end
-
-function evaluate!(cache,::Broadcasting{typeof(divergence)},f)
-  Broadcasting(Operation(tr))(Broadcasting(∇)(f))
-end
-
 """
     DIV(f)
 
@@ -32,14 +24,6 @@ Abstract symmetric gradient operator, formally equivalent to `f -> ½(∇f + (�
 """
 symmetric_gradient(f) = Operation(symmetric_part)(gradient(f))
 
-function return_value(::Broadcasting{typeof(symmetric_gradient)},f)
-  Broadcasting(Operation(symmetric_part))(Broadcasting(∇)(f))
-end
-
-function evaluate!(cache,::Broadcasting{typeof(symmetric_gradient)},f)
-  Broadcasting(Operation(symmetric_part))(Broadcasting(∇)(f))
-end
-
 """
     const ε = symmetric_gradient
 
@@ -54,14 +38,6 @@ Abstract skew symmetric gradient operator, formally equivalent to `f -> ½(∇f 
 """
 skew_symmetric_gradient(f) = Operation(skew_symmetric_part)(gradient(f))
 
-function return_value(::Broadcasting{typeof(skew_symmetric_gradient)},f)
-  Broadcasting(Operation(skew_symmetric_part))(Broadcasting(∇)(f))
-end
-
-function evaluate!(cache,::Broadcasting{typeof(skew_symmetric_gradient)},f)
-  Broadcasting(Operation(skew_symmetric_part))(Broadcasting(∇)(f))
-end
-
 """
     curl(f)
 
@@ -71,14 +47,6 @@ Abstract curl operator, formally equivalent to
 """
 curl(f) = Operation(grad2curl)(∇(f))
 
-function return_value(::Broadcasting{typeof(curl)},f)
-  Broadcasting(Operation(grad2curl))(Broadcasting(∇)(f))
-end
-
-function evaluate!(cache,::Broadcasting{typeof(curl)},f)
-  Broadcasting(Operation(grad2curl))(Broadcasting(∇)(f))
-end
-
 """
     grad2curl(∇f)
 
@@ -86,11 +54,11 @@ Return
 - `∇f[1,2] - ∇f[2,1]` for 2×2 input tensor, or
 - `VectorValue(∇f[2,3] - ∇f[3,2], ∇f[3,1] - ∇f[1,3], ∇f[1,2] - ∇f[2,1])` for 3×3 input tensor.
 """
-function grad2curl(∇u::TensorValue{2})
+function grad2curl(∇u::TensorValue{2,2})
   ∇u[1,2] - ∇u[2,1]
 end
 
-function grad2curl(∇u::TensorValue{3})
+function grad2curl(∇u::TensorValue{3,3})
   c1 = ∇u[2,3] - ∇u[3,2]
   c2 = ∇u[3,1] - ∇u[1,3]
   c3 = ∇u[1,2] - ∇u[2,1]
@@ -174,6 +142,8 @@ function Base.broadcasted(::typeof(*),::typeof(∇),f::Function)
   Base.broadcasted(*,∇,GenericField(f))
 end
 
+# Shifted ∇
+
 struct ShiftedNabla{N,T}
   v::VectorValue{N,T}
 end
@@ -218,3 +188,55 @@ end
 function Base.broadcasted(::typeof(*),s::ShiftedNabla,f::Function)
   Base.broadcasted(*,s,GenericField(f))
 end
+
+# Differential geometry operators
+
+"""
+    exterior_derivative(ω)
+
+Exterior derivative `dω` of a differential form.
+"""
+function exterior_derivative end
+
+"""
+    codifferential(ω)
+
+Codifferential of a K-form `ω`. In flat Euclidean space, `δω = (-1)^{D(K-1)+1} ⋆ d ⋆ ω`.
+"""
+function codifferential end
+
+
+"""
+    d_0form(f) = to_1form(∇(f))
+
+Discrete exterior derivative of a scalar (0-form) CellField.
+Returns a `DifferentialFormValue{1,D}`-valued `OperationCellField`.
+"""
+d_0form(f) = to_1form(∇(f))
+
+"""
+    d_1form(f) = Operation(grad_to_2form)(∇(f))
+
+Discrete exterior derivative of a `VectorValue`'d (1-form) CellField
+(e.g., from a Nédélec FESpace).
+Returns a `DifferentialFormValue{2,D}`-valued `OperationCellField`.
+"""
+d_1form(f) = Operation(grad_to_2form)(∇(f))
+
+# Broadcasting of differential operators
+
+for (diff_op, op) in (
+  (:divergence, :tr), (:symmetric_gradient,:symmetric_part),
+  (:skew_symmetric_gradient,:skew_symmetric_part),
+  (:curl,:grad2curl), (:d_0form,:to_1form), (:d_1form,:grad_to_2form),
+)
+  @eval begin
+    function return_value(::Broadcasting{typeof($diff_op)},f)
+      Broadcasting(Operation($op))(Broadcasting(∇)(f))
+    end
+    function evaluate!(cache,::Broadcasting{typeof($diff_op)},f)
+      Broadcasting(Operation($op))(Broadcasting(∇)(f))
+    end
+  end
+end
+

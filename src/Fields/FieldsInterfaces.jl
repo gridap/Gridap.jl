@@ -445,14 +445,6 @@ for op in (:+,:-,:*,:/,:⋅,:⊙,:⊗)
   @eval ($op)(a::Number,b::Field) = Operation($op)(ConstantField(a),b)
 end
 
-#*(A::Number, B::Field) = ConstantField(A)*B
-#*(A::Field, B::Number) = A*ConstantField(B)
-#⋅(A::Number, B::Field) = ConstantField(A)⋅B
-#⋅(A::Field, B::Number) = A⋅ConstantField(B)
-
-#*(A::Function, B::Field) = GenericField(A)*B
-#*(A::Field, B::Function) = GenericField(B)*A
-
 # Gradient of the sum
 for op in (:+,:-)
   @eval begin

@@ -86,6 +86,8 @@ export DIV
 export Δ
 export ε
 export symmetric_gradient
+export d_0form
+export d_1form
 
 export test_field
 export test_field_array
@@ -101,6 +103,8 @@ export VoidBasisMap
 
 export DensifyInnerMostBlockLevelMap
 
+export exterior_derivative
+export codifferential
 export DifferentialForm
 export ExteriorDerivativeForm
 export CodifferentialForm
