@@ -1,7 +1,7 @@
 module PΛRotationPullbackTests
 # End-to-end validation of the rotation change of basis against a NUMERIC
-# pullback, for the untrimmed BarycentricPΛBasis 1-forms (both flavors) and the
-# trimmed BarycentricPmΛBasis ones.
+# pullback, for the untrimmed BarycentricPΛBasis 1-forms and the trimmed
+# BarycentricPmΛBasis ones, in both flavors each.
 #
 # The self-consistency tests in PΛRotationsTests.jl / PΛTrimmedRotationsTests.jl
 # check the closed-form index calculus against itself; this file closes the
@@ -79,11 +79,13 @@ function oracle_eval(f::Vector{Int}, e::Tuple{Int,Int}, α::Vector{Int}, x)   # 
     λ = to_barycentric(x); N = length(λ)
     e1, e2 = e
     c = zeros(eltype(λ), N); c[e2] += λ[e1]; c[e1] -= λ[e2]
-    # BARE monomial: the trimmed ±1 law needs λ^α, not B_α (shift ρ changes the
-    # multiset of α, so the multinomial does not cancel across the hit terms).
-    val = prod(λ[i]^α[i] for i in 1:N)
+    val = prod(λ[i]^α[i] for i in 1:N)   # BARE monomial λ^α, the :BMM scaling
     val * reduce_ambient(DifferentialFormValue{1,N}(Tuple(c)))
 end
+
+# Trimmed :AFW are trimmed :BMM times |α|/α!
+oracle_eval_afw(f::Vector{Int}, e::Tuple{Int,Int}, α::Vector{Int}, x) =
+    multinomial(α...) * oracle_eval(f, e, α, x)
 
 # ── Affine vertex-permutation map of the reference simplex ────────────────────
 
@@ -144,12 +146,11 @@ end
 
 # The untrimmed rotation API is exercised through BarycentricPΛBasis 1-forms in
 # both flavors; each flavor needs the oracle for its own direction form.
-const UNTRIMMED = (
-  ((V,T,r) -> BarycentricPΛBasis(V,T,r,1; flavor=:AFW), "barycentric :AFW", oracle_eval_afw),
-  ((V,T,r) -> BarycentricPΛBasis(V,T,r,1; flavor=:BMM), "barycentric :BMM", oracle_eval),
-)
-const ALL_BASES = (UNTRIMMED...,
-  ((V,T,r) -> BarycentricPmΛBasis(V,T,r,1; flavor=:BMM), "trimmed :BMM", oracle_eval))
+const ALL_BASES = (
+  ((V,T,r) -> BarycentricPΛBasis(V, T,r,1; flavor=:AFW), "barycentric :AFW", oracle_eval_afw),
+  ((V,T,r) -> BarycentricPΛBasis(V, T,r,1; flavor=:BMM), "barycentric :BMM", oracle_eval),
+  ((V,T,r) -> BarycentricPmΛBasis(V,T,r,1; flavor=:AFW), "trimmed :AFW",     oracle_eval_afw),
+  ((V,T,r) -> BarycentricPmΛBasis(V,T,r,1; flavor=:BMM), "trimmed :BMM",     oracle_eval))
 
 @testset "direction: A_{π⁻¹} matches, A_π fails (3-cycle, D=2, r=2)" begin
     π = [2, 3, 1]

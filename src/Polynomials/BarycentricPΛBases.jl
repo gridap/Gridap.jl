@@ -1197,23 +1197,17 @@ _bubble_entry_type(::BarycentricPmΛBasis) = Tuple{Vector{Int},Tuple{Int,Int},Ve
 _bubble_key(::BarycentricPΛBasis,  J) = J[1]
 _bubble_key(::BarycentricPmΛBasis, J) = (J[1], J[2])
 
-# The untrimmed law holds for either flavor. The trimmed one expands a hit into
-# two terms whose multi-indices differ from α, so the multinomial coefficient of
-# Bα does not cancel between them: it holds for the bare monomials λ^α only.
-_rotation_flavors(::BarycentricPΛBasis)  = (:AFW, :BMM)
-_rotation_flavors(::BarycentricPmΛBasis) = (:BMM,)
-
 """
     bubble_entries(b) -> Vector{Tuple{Vector{Int},kT,Vector{Int}}}
 
 `(F,k,α)` for each basis function `w`, indexed by `w`. `k` is a single vertex
 for the untrimmed basis and a pair `(e1,e2)` for the trimmed one.
+
+The entries depend on the bubble index set alone, hence are the same for both
+flavors of a given `(r,k,D)`.
 """
 function bubble_entries(b::_BaryPΛBasis)
   @check isone(b.k) "The rotation API is only defined for 1-forms, got k=$(b.k)"
-  @check b.flavor in _rotation_flavors(b) """
-    The rotation API of $(nameof(typeof(b))) is only defined for flavor in \
-    $(_rotation_flavors(b)), got $(b.flavor)"""
   entries = Vector{_bubble_entry_type(b)}(undef, length(b))
   for (F, bubble_functions) in get_bubbles(b), (w, α, _, J) in bubble_functions
     entries[w] = (F, _bubble_key(b, J), α)
@@ -1237,26 +1231,31 @@ bubble_index(b::_BaryPΛBasis) = Dict(e => w for (w, e) in enumerate(bubble_entr
 
 Pullback under π⁻¹ of the `w`-th basis function of `b`, expressed as a list of
 `(coefficient, target index)` pairs in the same basis `b`, now read with the
-relabeled vertices λ = π(ξ). Implements the two cases of the pullback theorems
-(single term with coefficient +1, resp. ±ε trimmed; and the filter-hit
-expansion with coefficients −1, resp. ±ε trimmed).
+relabeled vertices λ = π(ξ). Implements the two cases of the pullback theorems:
+a single term, of coefficient +1 untrimmed and ±ε trimmed; or the filter-hit
+expansion, of |F|−1 terms of coefficient −1 untrimmed and two terms of
+coefficient ±ε weighted by [`_trimmed_hit_weight`](@ref) trimmed.
 
 For repeated calls (e.g. assembling [`rotation_change_of_basis`](@ref)),
 precompute `entries = bubble_entries(b)` and `idx = bubble_index(b)` once and
-call the internal `Gridap.Polynomials._rotate_basis_function(entries, idx, w, π)`.
+call the internal
+`Gridap.Polynomials._rotate_basis_function(entries, idx, w, π, b.flavor)`.
 """
 function rotate_basis_function(b::_BaryPΛBasis, w::Int, π::Vector{Int})
   entries = bubble_entries(b)
   idx     = bubble_index(b)
-  _rotate_basis_function(entries, idx, w, π)
+  _rotate_basis_function(entries, idx, w, π, b.flavor)
 end
 
 # Full basis
 
 # Untrimmed closed form: single term (+1) unless supp(α) = F and
 # π(k) = min(π(F)), in which case the resummation identity gives |F|−1 terms
-# with coefficient −1.
-function _rotate_basis_function(entries::Vector{Tuple{Vector{Int},Int,Vector{Int}}}, idx, w::Int, π::Vector{Int})
+# with coefficient −1. Every term carries the same multi-index π(α), so the
+# scalar normalisation of the flavor factors out and the law is the same for
+# both, whence the ignored flavor argument.
+function _rotate_basis_function(
+  entries::Vector{Tuple{Vector{Int},Int,Vector{Int}}}, idx, w::Int, π::Vector{Int}, ::Symbol)
   F, k, α = entries[w]
   πF = rotate_face_set(F, π)
   πk = π[k]
@@ -1285,13 +1284,32 @@ e↑ := (min(e1,e2), max(e1,e2)).
 """
 trimmed_pair_sort(e1::Int, e2::Int) = minmax(e1, e2)
 
+"""
+    _trimmed_hit_weight(flavor, β, m, j) -> Float64
+
+Weight of the hit term whose multi-index is the shift ρ(`m`,`j`)∘`β`.
+
+The two hit terms are shifts of `β`, so the scalar normalisation of the flavor
+does not factor out of the expansion: it survives as the ratio of the
+normalisations of `β` and of ρ(`m`,`j`)∘`β`. For the Bernstein polynomials
+Bᵦ = multinomial(β) λ^β of `:AFW` that ratio is (βⱼ+1)/βₘ; the bare monomials
+λ^β of `:BMM` are unnormalised and give 1.
+
+`β`ₘ is positive on every hit, so the weight is well defined.
+"""
+function _trimmed_hit_weight(flavor::Symbol, β::Vector{Int}, m::Int, j::Int)
+  flavor === :AFW || return 1.0
+  (β[j] + 1) / β[m]
+end
+
 # Trimmed closed form: single signed term (ε) when the rotated sorted pair is
-# anchored (min(π(e)) = min(π(F))); otherwise — uniformly in α, since ϕ does
-# not depend on α — the two-term shift expansion
-#   ε · ( w(λ;π(F),(m,eπ2),ρ(m,eπ1)∘π(α)) − w(λ;π(F),(m,eπ1),ρ(m,eπ2)∘π(α)) ).
-# where ρ(m,eπ1)∘π(α) = α - 𝟙_m + 𝟙_eπ1
+# anchored (min(π(e)) = min(π(F))); otherwise the two-term shift expansion
+#   ε · ( c₁ w(λ;π(F),(m,eπ2),ρ(m,eπ1)∘π(α)) − c₂ w(λ;π(F),(m,eπ1),ρ(m,eπ2)∘π(α)) )
+# where ρ(m,eπ1)∘π(α) = π(α) - 𝟙_m + 𝟙_eπ1. Which of the two cases applies does
+# not depend on α, since ϕ does not; the weights cᵢ do, unless they are trivial.
 function _rotate_basis_function(
-  entries::Vector{Tuple{Vector{Int},Tuple{Int,Int},Vector{Int}}}, idx, w::Int, π::Vector{Int})
+  entries::Vector{Tuple{Vector{Int},Tuple{Int,Int},Vector{Int}}}, idx, w::Int, π::Vector{Int},
+  flavor::Symbol)
 
   F, e, α  = entries[w]
   e1, e2   = e
@@ -1307,7 +1325,9 @@ function _rotate_basis_function(
     @assert πα[m] > 0 "invalid trimmed entry: hit at α with α[min π(F)] = 0"
     α1 = copy(πα); α1[m] -= 1; α1[eπ1] += 1   # ρ(m,eπ1)∘π(α)
     α2 = copy(πα); α2[m] -= 1; α2[eπ2] += 1   # ρ(m,eπ2)∘π(α)
-    [(ε, idx[(πF, (m,eπ2), α1)]), (-ε, idx[(πF, (m,eπ1), α2)])]
+    c1 = ε * _trimmed_hit_weight(flavor, πα, m, eπ1)
+    c2 = ε * _trimmed_hit_weight(flavor, πα, m, eπ2)
+    [(c1, idx[(πF, (m,eπ2), α1)]), (-c2, idx[(πF, (m,eπ1), α2)])]
   else
     [(ε, idx[(πF, (eπ1,eπ2), πα)])]
   end
@@ -1348,7 +1368,8 @@ on first request and memoised in `rc`. Rows alias the cache; do not mutate.
 function rotation_map(rc::RotationCache, π::Vector{Int})
   m = get(rc.maps, π, nothing)
   m === nothing || return m
-  m = [_rotate_basis_function(rc.entries, rc.idx, w, π) for w in 1:length(rc.entries)]
+  m = [_rotate_basis_function(rc.entries, rc.idx, w, π, rc.basis.flavor)
+       for w in 1:length(rc.entries)]
   rc.maps[copy(π)] = m
   m
 end
@@ -1367,7 +1388,7 @@ function rotation_change_of_basis(b::_BaryPΛBasis, π::Vector{Int})
   idx     = bubble_index(b)
   C = zeros(Float64, n, n)
   for w in 1:n
-    for (c, w′) in _rotate_basis_function(entries, idx, w, π)
+    for (c, w′) in _rotate_basis_function(entries, idx, w, π, b.flavor)
       C[w, w′] += c
     end
   end

@@ -6,6 +6,7 @@ module PΛTrimmedRotationsTests
 using Gridap.Polynomials
 using Gridap.Polynomials: rotate_multiindex, bubble_entries, rotate_basis_function
 using Gridap.Polynomials: rotation_change_of_basis, trimmed_pair_sign, trimmed_pair_sort
+using Combinatorics: multinomial
 using LinearAlgebra
 using Random
 using Test
@@ -82,49 +83,62 @@ end
 
 # ── Basis-level ───────────────────────────────────────────────────────────────
 
-trimmed_basis(D, r) = BarycentricPmΛBasis(Val(D), Float64, r, 1; flavor=:BMM)
+trimmed_basis(D, r; flavor=:BMM) = BarycentricPmΛBasis(Val(D), Float64, r, 1; flavor)
 
 @testset "trimmed basis dimension sanity (D=2)" begin
     @test length(trimmed_basis(2, 1)) == 3  # lowest-order Whitney edges
     @test length(trimmed_basis(2, 2)) == 8
 end
 
-# The ±1 closed form is exact for the bare monomials of :BMM only, so the API
-# refuses the Bernstein-scaled flavor rather than returning a wrong matrix.
-@testset "rotation API rejects flavor=:AFW" begin
-    afw = BarycentricPmΛBasis(Val(2), Float64, 3, 1; flavor=:AFW)
-    @test_throws Exception bubble_entries(afw)
-    @test_throws Exception rotation_change_of_basis(afw, [2,3,1])
-end
-
 D, r = 2, 2
-b = trimmed_basis(D, r)
-n = length(b)
+n = length(trimmed_basis(D, r))
 
-@testset "rotation_change_of_basis: identity permutation gives I" begin
-    C = rotation_change_of_basis(b, collect(1:D+1))
-    @test C ≈ Matrix(1.0I, n, n)
-end
+@testset "flavor=$flavor" for flavor in (:BMM, :AFW)
+    b = trimmed_basis(D, r; flavor)
 
-@testset "rotation_change_of_basis: round trip via invperm(π), no matrix inverse" begin
-    perms = [[2,1,3], [1,3,2], [3,2,1], [2,3,1], [3,1,2]]
-    for π in perms
-        C    = rotation_change_of_basis(b, π)
-        Cinv = rotation_change_of_basis(b, invperm(π))
-        @test C * Cinv ≈ Matrix(1.0I, n, n)
-        @test Cinv * C ≈ Matrix(1.0I, n, n)
+    @testset "rotation_change_of_basis: identity permutation gives I" begin
+        C = rotation_change_of_basis(b, collect(1:D+1))
+        @test C ≈ Matrix(1.0I, n, n)
+    end
+
+    @testset "rotation_change_of_basis: round trip via invperm(π), no matrix inverse" begin
+        perms = [[2,1,3], [1,3,2], [3,2,1], [2,3,1], [3,1,2]]
+        for π in perms
+            C    = rotation_change_of_basis(b, π)
+            Cinv = rotation_change_of_basis(b, invperm(π))
+            @test C * Cinv ≈ Matrix(1.0I, n, n)
+            @test Cinv * C ≈ Matrix(1.0I, n, n)
+        end
+    end
+
+    @testset "rotation_change_of_basis rows agree with rotate_basis_function" begin
+        π = [2,3,1]
+        C = rotation_change_of_basis(b, π)
+        for w in 1:n
+            row = zeros(n)
+            for (c, w′) in rotate_basis_function(b, w, π)
+                row[w′] += c
+            end
+            @test row ≈ C[w, :]
+        end
     end
 end
 
-@testset "rotation_change_of_basis rows agree with rotate_basis_function" begin
-    π = [2,3,1]
-    C = rotation_change_of_basis(b, π)
-    for w in 1:n
-        row = zeros(n)
-        for (c, w′) in rotate_basis_function(b, w, π)
-            row[w′] += c
+# The two flavors scale basis function w by multinomial(α_w), so their change-of-
+# basis matrices are conjugate by that diagonal. This pins the hit weights: a
+# round trip alone cannot, since S·C·S⁻¹ round trips for ANY diagonal S.
+@testset "flavors are diagonally conjugate: C_AFW = S C_BMM S⁻¹" begin
+    for (D, r) in ((2,2), (2,3), (3,2), (3,3))
+        bmm = trimmed_basis(D, r; flavor=:BMM)
+        afw = trimmed_basis(D, r; flavor=:AFW)
+        @test bubble_entries(afw) == bubble_entries(bmm)
+
+        S = Diagonal([float(multinomial(α...)) for (_, _, α) in bubble_entries(bmm)])
+        swap, rev, cycle = [2, 1, 3:D+1...], collect(D+1:-1:1), [2:D+1..., 1]
+        for π in (swap, rev, cycle)
+            @test rotation_change_of_basis(afw, π) ≈
+                  S * rotation_change_of_basis(bmm, π) * inv(S)
         end
-        @test row ≈ C[w, :]
     end
 end
 
