@@ -231,7 +231,7 @@ struct BarycentricPmΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
   function BarycentricPmΛBasis{D}(::Type{T}, r, k, vertices;
         DG_calc=false, indices=nothing, rotate_90=false, flavor=:AFW) where {D,T}
 
-    @check flavor==:AFW || flavor==:BMM && k≤1
+    @check flavor in (:AFW, :BMM)
     FEEC_space_definition_checks(Val(D), T, r, k, :P⁻, rotate_90, DG_calc)
     _simplex_vertices_checks(Val(D), vertices)
 
@@ -364,7 +364,7 @@ struct BarycentricPΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
   function BarycentricPΛBasis{D}(::Type{T}, r, k, vertices;
         DG_calc=false, indices=nothing, rotate_90=false, flavor=:AFW) where {D,T}
 
-    @check flavor==:AFW || flavor==:BMM && k≤1
+    @check flavor in (:AFW, :BMM)
     FEEC_space_definition_checks(Val(D), T, r, k, :P⁻, rotate_90, DG_calc)
     _simplex_vertices_checks(Val(D), vertices)
 

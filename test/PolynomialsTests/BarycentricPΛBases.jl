@@ -98,7 +98,8 @@ end
 # Former logic with analytical computation of the basis in the Reference FE #
 #############################################################################
 
-function _test_reference_basis(b,D,r,k)
+function _test_reference_basis(b,D,r,k,flavor)
+  flavor != :AFW && return
   V = value_type(b)
   V <: Real && (V = VectorValue{1,V})
 
@@ -231,31 +232,33 @@ end
 
 function _test_basis(VD::Val{D}, T, r, k, vertices) where D
   for PΛB in (BarycentricPmΛBasis, BarycentricPΛBasis)
-    b   = PΛB(VD,T,r,k)
-    @test contains(sprint(show, MIME"text/plain"(), b._indices), "Λᵏ(△ᴰ) basis indices, r=$r k=$k D=$D")
-    @test_nowarn print_indices(b,IOBuffer())
-    @test get_orders(b) == tfill(r,Val(D))
+    for flavor in (:AFW, :BMM)
+      b   = PΛB(VD,T,r,k;flavor)
+      @test contains(sprint(show, MIME"text/plain"(), b._indices), "Λᵏ(△ᴰ) basis indices, r=$r k=$k D=$D")
+      @test_nowarn print_indices(b,IOBuffer())
+      @test get_orders(b) == tfill(r,Val(D))
 
-    b2  = PΛB(VD,T,r,k; indices=b._indices) # indices recycling
-    @test b == b2
-    @test b2._indices == b._indices
+      b2  = PΛB(VD,T,r,k; indices=b._indices, flavor) # indices recycling
+      @test b == b2
+      @test b2._indices == b._indices
 
-    faces = [bubble[1] for bubble in get_bubbles(b)] # bubble space selection
-    b2  = PΛB(b, faces...)
-    @test b == b2
+      faces = [bubble[1] for bubble in get_bubbles(b)] # bubble space selection
+      b2  = PΛB(b, faces...)
+      @test b == b2
 
-    _test_reference_basis(b,D,r,k)
+      _test_reference_basis(b,D,r,k,flavor)
 
-    Bx = evaluate(b,x)
-    Gx = evaluate(Broadcasting(∇)(b),x)
-    Hx = evaluate(Broadcasting(∇∇)(b),x)
-    _test_testvalue(b, Bx, Gx, Hx)
+      Bx = evaluate(b,x)
+      Gx = evaluate(Broadcasting(∇)(b),x)
+      Hx = evaluate(Broadcasting(∇∇)(b),x)
+      _test_testvalue(b, Bx, Gx, Hx)
 
-    bv  = PΛB(VD,T,r,k,vertices)
-    Bx = evaluate(bv,x)
-    Gx = evaluate(Broadcasting(∇)(bv),x)
-    Hx = evaluate(Broadcasting(∇∇)(bv),x)
-    _test_testvalue(bv, Bx, Gx, Hx)
+      bv  = PΛB(VD,T,r,k,vertices; flavor)
+      Bx = evaluate(bv,x)
+      Gx = evaluate(Broadcasting(∇)(bv),x)
+      Hx = evaluate(Broadcasting(∇∇)(bv),x)
+      _test_testvalue(bv, Bx, Gx, Hx)
+    end
   end
 end
 
