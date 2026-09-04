@@ -169,10 +169,6 @@ include("ModalC0Bases.jl")
 
 include("BarycentricPΛBases.jl")
 
-include("RotatingPLambda/PΛRotations.jl")
-
-include("RotatingPLambda/PΛTrimmedRotations.jl")
-
 include("ExteriorCalculusBases.jl")
 
 include("Deprecated.jl")
