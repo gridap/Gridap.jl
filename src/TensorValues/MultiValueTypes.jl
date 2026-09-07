@@ -201,6 +201,13 @@ convert(::Type{V}, arg::Tuple) where V<:MultiValue{S,T} where {S,T} = V(arg)
 # Inverse conversion
 convert(::Type{<:NTuple{L,T}}, arg::MultiValue) where {L,T} = NTuple{L,T}(Tuple(arg))
 
+function reinterpret(a::Array{V}) where V<:MultiValue{S,T,N,L} where {S,T,N,L}
+  b = reinterpret(T,a)
+  sa = size(a)
+  s = (L,sa...)
+  reshape(b,s)
+end
+
 ###############################################################
 # Indexing independant components
 ###############################################################

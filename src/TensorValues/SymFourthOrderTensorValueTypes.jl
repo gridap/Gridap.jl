@@ -106,7 +106,7 @@ end
 
 # Inverse conversion
 convert(::Type{<:MArray{Tuple{D,D,D,D},T}}, arg::SymFourthOrderTensorValue) where {D,T} = MArray{Tuple{D,D,D,D},T}(_SymFourthOrder_to_array(arg))
-convert(::Type{<:SArray{Tuple{D,D,D,D},T}}, arg::SymFourthOrderTensorValue) where {D,T} = _SymFourthOrder_to_array(arg)
+convert(::Type{<:SArray{Tuple{D,D,D,D},T}}, arg::SymFourthOrderTensorValue) where {D,T} = SArray{Tuple{D,D,D,D},T}(_SymFourthOrder_to_array(arg))
 
 # Internal conversion
 convert(::Type{<:SymFourthOrderTensorValue{D,T}}, arg::SymFourthOrderTensorValue{D}) where {D,T} = SymFourthOrderTensorValue{D,T}(Tuple(arg))

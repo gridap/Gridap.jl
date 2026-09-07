@@ -127,7 +127,7 @@ end
 
 # Inverse conversion
 convert(::Type{<:MArray{Tuple{D,D},T}}, arg::SymTracelessTensorValue) where {D,T} = MMatrix{D,D,T}(_SymTracelessTensorValue_to_array(arg))
-convert(::Type{<:SArray{Tuple{D,D},T}}, arg::SymTracelessTensorValue) where {D,T} = _SymTracelessTensorValue_to_array(arg)
+convert(::Type{<:SArray{Tuple{D,D},T}}, arg::SymTracelessTensorValue) where {D,T} = SMatrix{D,D,T}(_SymTracelessTensorValue_to_array(arg))
 
 # Internal conversion
 convert(::Type{<:SymTracelessTensorValue{D}}, arg::SymTracelessTensorValue{D}) where {D} = SymTracelessTensorValue{D}(Tuple(arg)[1:end-1])
