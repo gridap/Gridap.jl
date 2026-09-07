@@ -75,10 +75,10 @@ Singleton of the [`TrimmedPΛName`](@ref) reference FE name.
 """
 const trimmed_pλ  = TrimmedPΛName()
 
-_pλ_basis(::RotatingPΛName, ::Type{T}, ::Val{D}, r, vertices) where {T,D} =
-  BarycentricPΛBasis(Val(D), T, r, 1, vertices; flavor=:BMM)
-_pλ_basis(::TrimmedPΛName,  ::Type{T}, ::Val{D}, r, vertices) where {T,D} =
-  BarycentricPmΛBasis(Val(D), T, r, 1, vertices; flavor=:BMM)
+_pλ_basis(::RotatingPΛName, ::Type{T}, ::Val{D}, r, vertices; flavor) where {T,D} =
+  BarycentricPΛBasis(Val(D), T, r, 1, vertices; flavor)
+_pλ_basis(::TrimmedPΛName,  ::Type{T}, ::Val{D}, r, vertices; flavor) where {T,D} =
+  BarycentricPmΛBasis(Val(D), T, r, 1, vertices; flavor)
 
 Pushforward(::Type{RotatingPΛName}, ::CurlConformity) = CoVariantPiolaMap()
 Pushforward(::Type{TrimmedPΛName},  ::CurlConformity) = CoVariantPiolaMap()
@@ -176,11 +176,12 @@ function get_face_own_dofs_permutations(
    for (gf, own) in enumerate(face_own_dofs)]
 end
 
-function _pλ_reffe(name::ReferenceFEName, ::Type{T}, p::Polytope{D}, r::Integer) where {T,D}
+function _pλ_reffe(name::ReferenceFEName, ::Type{T}, p::Polytope{D}, r::Integer;
+                   flavor=:BMM) where {T,D}
   @assert D in (2, 3) "only D = 2, 3 supported, got D = $D"
   @assert is_simplex(p) "only defined on simplices, got $p"
   @assert r ≥ 1 "r must be ≥ 1, got $r"
-  basis     = _pλ_basis(name, T, Val(D), r, get_vertex_coordinates(p))
+  basis     = _pλ_basis(name, T, Val(D), r, get_vertex_coordinates(p); flavor)
   n_dofs    = length(basis)
   predofs   = _pλ_predofs(basis, p, Val(D))
   face_dofs = get_face_own_funs(basis, p, CurlConformity())
@@ -190,23 +191,30 @@ function _pλ_reffe(name::ReferenceFEName, ::Type{T}, p::Polytope{D}, r::Integer
 end
 
 """
-    RotatingPΛRefFE(::Type{T}, p::Polytope{D}, r::Integer)
+    RotatingPΛRefFE(::Type{T}, p::Polytope{D}, r::Integer; flavor=:BMM)
 
 H(curl)-conforming reference FE for the full P_rΛ¹ basis on the simplex `p`
 (D = 2, 3; r ≥ 1). `T` is the type of scalar components of the vector proxied
-shape function values.
+shape function values. `flavor` selects the direction forms of the prebasis,
+see [`BarycentricPΛBasis`](@ref).
 """
-RotatingPΛRefFE(::Type{T}, p::Polytope, r) where T = _pλ_reffe(rotating_pλ, T, p, r)
+RotatingPΛRefFE(::Type{T}, p::Polytope, r; kwargs...) where T =
+  _pλ_reffe(rotating_pλ, T, p, r; kwargs...)
 
 """
-    TrimmedPΛRefFE(::Type{T}, p::Polytope{D}, r::Integer)
+    TrimmedPΛRefFE(::Type{T}, p::Polytope{D}, r::Integer; flavor=:BMM)
 
 H(curl)-conforming reference FE for the trimmed P_r⁻Λ¹ basis on the simplex `p`
 (D = 2, 3; r ≥ 1). `T` is the type of scalar components of the vector proxied
-shape function values.
+shape function values. `flavor` selects the direction forms of the prebasis and,
+for `:AFW`, makes its scalar factors Bernstein polynomials rather than bare
+barycentric monomials, see [`BarycentricPmΛBasis`](@ref).
 """
-TrimmedPΛRefFE(::Type{T}, p::Polytope, r) where T = _pλ_reffe(trimmed_pλ, T, p, r)
+TrimmedPΛRefFE(::Type{T}, p::Polytope, r; kwargs...) where T =
+  _pλ_reffe(trimmed_pλ, T, p, r; kwargs...)
 
-ReferenceFE(p::Polytope, ::RotatingPΛName, ::Type{T}, r) where T = RotatingPΛRefFE(T, p, r)
-ReferenceFE(p::Polytope, ::TrimmedPΛName,  ::Type{T}, r) where T = TrimmedPΛRefFE(T, p, r)
+ReferenceFE(p::Polytope, ::RotatingPΛName, ::Type{T}, r; kwargs...) where T =
+  RotatingPΛRefFE(T, p, r; kwargs...)
+ReferenceFE(p::Polytope, ::TrimmedPΛName,  ::Type{T}, r; kwargs...) where T =
+  TrimmedPΛRefFE(T, p, r; kwargs...)
 
