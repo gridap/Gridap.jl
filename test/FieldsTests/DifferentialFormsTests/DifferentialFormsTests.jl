@@ -5,6 +5,7 @@ module DifferentialFormsTests
 # through return_cache/evaluate!.
 
 using Gridap.TensorValues
+using Gridap.Arrays
 using Gridap.Fields
 using Test
 
@@ -167,8 +168,13 @@ pb_val = evaluate!(cpb, pb_fld, ξ0)
 
 # ── Field-level pushforward ───────────────────────────────────────────────────
 
+
+function _pushforward(φ::Field, v::Field)
+  Operation((J, u) -> J ⋅ u)(∇(φ), v)
+end
+
 v_fld = GenericField(ξ -> VectorValue(ξ[1], ξ[2]))   # v = ξ (identity vector field)
-pf_fld = pushforward(φ_fld, v_fld)
+pf_fld = _pushforward(φ_fld, v_fld)
 cpf    = return_cache(pf_fld, ξ0)
 pf_val = evaluate!(cpf, pf_fld, ξ0)
 @test typeof(pf_val) <: VectorValue{2}

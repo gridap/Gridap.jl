@@ -54,21 +54,6 @@ function evaluate!(cache, a::DifferentialForm{K,D}, x::Point) where {K,D}
   DifferentialFormValue{K,D}(map((c,f) -> evaluate!(c,f,x), cache, a.data))
 end
 
-# Lift ∧ to Field level via Operation
-for op in (:∧,)
-  @eval ($op)(a::Field...) = Operation($op)(a...)
-end
-
-# ============================================================
-# Scalar multiplication of a DifferentialForm
-# (uses Gridap Field arithmetic — -(f) and s*f are differentiable)
-# ============================================================
-
-function Base.:*(s::Union{Real,Complex}, ω::DifferentialForm{K,D}) where {K,D}
-  DifferentialForm{K,D}(map(f -> s * f, ω.data))   # Operation(*)(ConstantField(s), f)
-end
-
-Base.:*(ω::DifferentialForm, s::Union{Real,Complex}) = s * ω
 
 # ============================================================
 # ExteriorDerivativeForm{K,D,F} — lazy exterior derivative
@@ -139,9 +124,10 @@ end
 """
     hodge_star_form(ω::DifferentialForm{K,D})
 
-Field-level flat Hodge star: a `DifferentialForm{D-K,D}` whose component
-fields are ±1 linear combinations of the components of `ω` (differentiable,
-unlike the pointwise `Operation(hodge_star)` route).
+Flat (Euclidean) Hodge star: a `DifferentialForm{D-K,D}` whose component fields
+are ±1 linear combinations of the components of `ω`.
+
+It is differentiable, unlike the pointwise `Operation(hodge_star)`.
 """
 function hodge_star_form(ω::DifferentialForm{K,D}) where {K,D}
   Kc = D - K
@@ -207,46 +193,6 @@ end
 
 codifferential(ω::DifferentialForm{K,D}) where {K,D} = CodifferentialForm(ω)
 
-# ============================================================
-# KoszulForm{K,D,F} — lazy Koszul contraction  κ_x(ω)
-#
-# (κω)(x) = ι_x(ω(x))  — interior product with the evaluation point.
-# Since Point{D,T} = VectorValue{D,T}, x can be passed
-# directly to interior_product.
-#
-# Homotopy identity:  dκ + κd = (r+K) id  on Pᵣ Λᴷ.
-# This is the algebraic kernel of trimmed polynomial form spaces.
-# ============================================================
-
-"""
-    KoszulForm{K,D,F} <: Field
-
-Lazy Koszul contraction of a `DifferentialForm{K,D,...}`.
-Stores only `form::F`; evaluates `ι_x(form(x))` at each point x.
-"""
-struct KoszulForm{K,D,F} <: Field
-  form :: F
-  function KoszulForm(form::DifferentialForm{K,D}) where {K,D}
-    @assert K >= 1 "Koszul operator requires K ≥ 1"
-    new{K,D,typeof(form)}(form)
-  end
-end
-
-koszul(form::DifferentialForm) = KoszulForm(form)
-
-function return_cache(κω::KoszulForm{K,D,F}, x::Point) where {K,D,F}
-  return_cache(κω.form, x)
-end
-
-function return_value(κω::KoszulForm{K,D,F}, x::Point) where {K,D,F}
-  evaluate(κω, x)
-end
-
-function evaluate!(cache, κω::KoszulForm{K,D,F}, x::Point) where {K,D,F}
-  ω_x = evaluate!(cache, κω.form, x)
-  interior_product(x, ω_x)   # Point{D,T} = VectorValue{D,T}
-end
-
 function return_cache(δω::CodifferentialForm{K,D,F}, x::Point) where {K,D,F}
   L   = binomial(D, K)
   Lc  = binomial(D, D-K)
@@ -296,6 +242,52 @@ function evaluate!(cache, δω::CodifferentialForm{K,D,F}, x::Point) where {K,D,
   sgn * hodge_star(acc)   # DifferentialFormValue{K-1,D}
 end
 
+
+# ============================================================
+# KoszulForm{K,D,F} — lazy Koszul contraction  κ_x(ω)
+#
+# (κω)(x) = ι_x(ω(x))  — interior product with the evaluation point.
+# Since Point{D,T} = VectorValue{D,T}, x can be passed
+# directly to interior_product.
+#
+# Homotopy identity:  dκ + κd = (r+K) id  on Pᵣ Λᴷ.
+# This is the algebraic kernel of trimmed polynomial form spaces.
+# ============================================================
+
+"""
+    KoszulForm{K,D,F} <: Field
+
+Lazy Koszul contraction of a `DifferentialForm{K,D,...}`.
+Stores only `form::F`; evaluates `ι_x(form(x))` at each point x.
+"""
+struct KoszulForm{K,D,F} <: Field
+  form :: F
+  function KoszulForm(form::DifferentialForm{K,D}) where {K,D}
+    @assert K >= 1 "Koszul operator requires K ≥ 1"
+    new{K,D,typeof(form)}(form)
+  end
+end
+
+"""
+    koszul(ω::DifferentialForm)
+
+Koszul differential of `ω`, giving a (K-1)-form valued `KoszulForm`.
+"""
+koszul(form::DifferentialForm) = KoszulForm(form)
+
+function return_cache(κω::KoszulForm{K,D,F}, x::Point) where {K,D,F}
+  return_cache(κω.form, x)
+end
+
+function return_value(κω::KoszulForm{K,D,F}, x::Point) where {K,D,F}
+  evaluate(κω, x)
+end
+
+function evaluate!(cache, κω::KoszulForm{K,D,F}, x::Point) where {K,D,F}
+  ω_x = evaluate!(cache, κω.form, x)
+  interior_product(x, ω_x)   # Point{D,T} = VectorValue{D,T}
+end
+
 # ============================================================
 # PullbackForm{K,Dm,Dn} — Field-level pullback  φ*ω
 # ============================================================
@@ -334,14 +326,6 @@ function evaluate!(cache, f::PullbackForm{K,Dm,Dn}, x::Point{Dm}) where {K,Dm,Dn
   J   = evaluate!(jc, f.jac_field, x)
   ω_y = evaluate!(fc, f.form, y)
   pullback(ω_y, J)
-end
-
-# ============================================================
-# Pushforward: Field-level  φ_*(v)
-# ============================================================
-
-function pushforward(φ::Field, v::Field)
-  Operation((J, u) -> J ⋅ u)(∇(φ), v)
 end
 
 # ============================================================

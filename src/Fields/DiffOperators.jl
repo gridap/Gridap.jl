@@ -194,14 +194,15 @@ end
 """
     exterior_derivative(ω)
 
-Exterior derivative `dω` of a differential form.
+Exterior derivative of a differential K-form `dω`, is a (K+1)-form.
 """
 function exterior_derivative end
 
 """
     codifferential(ω)
 
-Codifferential of a K-form `ω`. In flat Euclidean space, `δω = (-1)^{D(K-1)+1} ⋆ d ⋆ ω`.
+Codifferential of a differential K-form `ω`, is a (K-1)-form. In flat Euclidean
+space, `δω = (-1)^{D(K-1)+1} ⋆ d ⋆ ω`.
 """
 function codifferential end
 

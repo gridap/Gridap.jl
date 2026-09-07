@@ -183,7 +183,7 @@ end
 
 """
     interior_product(v::VectorValue{D}, ω::DifferentialFormValue{K,D})
-    ι(v::VectorValue{D}, ω::DifferentialFormValue{K,D})
+    ι(v, ω)
 
 Interior product (contraction) `ι_v ω`, a `DifferentialFormValue{K-1,D}`:
 `(ι_v ω)(w₂,…,wₖ) = ω(v, w₂,…,wₖ)`.
@@ -291,7 +291,7 @@ const ⋆ = hodge_star
     lie_derivative(v, ω)
     𝓛(v,ω)
 
-Lie derivative `L_v ω = d(ι_v ω) + ι_v(dω)` (Cartan's magic formula).
+Lie derivative ``𝓛_v ω = d(ι_v ω) + ι_v(dω)`` (Cartan's magic formula).
 
 Requires symbolic (`Symbolics.Num`) coefficients: methods are provided by the
 GridapSymbolicsExt package extension when Symbolics is loaded.
@@ -474,7 +474,7 @@ end
 """
     koszul(x::VectorValue{D}, ω::DifferentialFormValue{K,D})
 
-Koszul operator `κ_x(ω) = ι_x(ω)`, the interior product with the position
+Koszul differential ``κ_x(ω) = ι_x(ω)``, the interior product with the position
 vector `x`. A Field-level method is provided in `Gridap.Fields`.
 """
 koszul(x::VectorValue{D}, ω::DifferentialFormValue{K,D}) where {K,D} =
@@ -597,7 +597,7 @@ inner(a::DifferentialFormValue{K,D,T,L},
 Exterior derivative of a proxied 1-form `ω::VectorValue` from its gradient `Jt
 = ∇ω`:
 
-    (dω)_{a<b} = ∂ω_b/∂x^a − ∂ω_a/∂x^b = Jt[a,b] − Jt[b,a].
+``(dω)_{a<b} = ∂ω_b/∂x^a − ∂ω_a/∂x^b = Jt[a,b] − Jt[b,a].``
 
 Used to compute the exterior derivative of a vector proxied 1-form,, see `d_1form` in `Gridap.CellData`.
 """

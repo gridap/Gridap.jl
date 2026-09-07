@@ -715,42 +715,12 @@ function (a::SkeletonPair{<:CellField})(x)
   """
 end
 
-############################################################################################
-# Differential geometry operators
+################################################################################
+# Differential geometry operators needing derivatives or evaluation point
 
-"""
-    exterior_derivative(a::CellField)
-
-Exterior derivative of a K-form cell field, giving a (K+1)-form cell field whose
-cell data are `ExteriorDerivativeForm` objects (gradient fields pre-allocated at
-construction — `evaluate!` is allocation-free).
-"""
-exterior_derivative(a::CellField) = similar_cell_field(a, lazy_map(Broadcasting(exterior_derivative), get_data(a)))
-
-"""
-    codifferential(a::CellField)
-
-Codifferential of a K-form cell field, giving a (K-1)-form cell field.  Each
-cell's `CodifferentialForm` precomputes the Hodge star matrix and gradient
-caches at construction; `evaluate!` is allocation-free.  Asserts K ≥ 1.
-"""
-codifferential(a::CellField) = similar_cell_field(a, lazy_map(Broadcasting(codifferential), get_data(a)))
-
-"""
-    hodge_star_form(a::CellField)
-
-Flat Euclidean Hodge star applied to each component field of a K-form cell
-field, giving a (D-K)-form cell field (constant ±1 linear combinations — no
-spatial dependence in the coefficients).
-"""
-hodge_star_form(a::CellField) = similar_cell_field(a, lazy_map(Broadcasting(hodge_star_form), get_data(a)))
-
-"""
-    koszul(a::CellField)
-
-Koszul contraction of a K-form cell field, giving a (K-1)-form cell field.
-Evaluation contracts `form(x)` with the point x at each quadrature node — no
-allocation in the inner loop.  Asserts K ≥ 1.
-"""
-koszul(a::CellField) = similar_cell_field(a, lazy_map(Broadcasting(koszul), get_data(a)))
+for diff_op in (:exterior_derivative, :codifferential, :hodge_star_form, :koszul)
+  @eval begin
+    $diff_op(a::CellField) = similar_cell_field(a, lazy_map(Broadcasting($diff_op), get_data(a)))
+  end
+end
 

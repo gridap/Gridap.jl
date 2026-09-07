@@ -96,15 +96,13 @@ export from_mandel
 
 export DifferentialFormValue
 export ∧
-export interior_product
-export ι
-export hodge_star
-export ⋆
-export flat
-export sharp
+export interior_product, ι
+export hodge_star, ⋆
+export flat, ♭
+export sharp, ♯
 export apply_form
 export pullback
-export lie_derivative
+export lie_derivative, 𝓛
 export symbolic_coordinates
 export koszul
 export vol_coeff
