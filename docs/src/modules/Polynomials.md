@@ -326,6 +326,7 @@ BarycentricPΛBasis
 BarycentricPmΛBasis(::BarycentricPmΛBasis{D,V,B}, ::Vector{Int}...) where {D,V,B}
 BarycentricPΛBasis(::BarycentricPΛBasis{D,V,B}, ::Vector{Int}...) where {D,V,B}
 print_indices
+print_forms
 get_bubbles
 PΛ_bubbles
 PmΛ_bubbles

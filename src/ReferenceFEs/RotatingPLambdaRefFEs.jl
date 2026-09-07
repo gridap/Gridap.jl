@@ -61,7 +61,18 @@ see [`TrimmedPΛRefFE`](@ref). Its singleton instance is `trimmed_pλ`.
 """
 struct TrimmedPΛName  <: ReferenceFEName end
 
+"""
+    const rotating_pλ = RotatingPΛName()
+
+Singleton of the [`RotatingPΛName`](@ref) reference FE name.
+"""
 const rotating_pλ = RotatingPΛName()
+
+"""
+    const trimmed_pλ = TrimmedPΛName()
+
+Singleton of the [`TrimmedPΛName`](@ref) reference FE name.
+"""
 const trimmed_pλ  = TrimmedPΛName()
 
 _pλ_basis(::RotatingPΛName, ::Type{T}, ::Val{D}, r, vertices) where {T,D} =

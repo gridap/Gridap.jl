@@ -123,6 +123,18 @@ to_mandel
 from_mandel
 ```
 
+### Combinations
+
+Combinations, that is sorted sets of positive integers in `1:N`, index the
+components of polytope faces where the indices represent the face vertices, or
+anti-symmetric components where the indices represent Cartesian indices in the
+tensor.
+
+```@docs
+sorted_combinations
+combination_index
+```
+
 ## Interface and operations
 
 The tensor types implement methods for the following `Base` functions:
@@ -146,6 +158,7 @@ representatives_of_componentbasis_dual
 representatives_of_basis_dual
 indep_components_names
 change_eltype
+make_concretetype
 
 inner
 dot(::MultiValue,::MultiValue)
@@ -207,4 +220,70 @@ one
 ```@docs
 data_index
 n_components
+```
+
+## Tensor and exterior calculus
+
+!!! warning
+    The following APIs are experimental. They are likely to be modified in a
+    breaking manner in the future.
+
+[`DifferentialFormValue`](@ref) represents the value of a differential `K`-form
+in `D` dimensions, in the orientation-ordered basis ``\{dx^I\}`` indexed by the
+sorted `K`-combinations `I` of ``1\!:\!D``. Only the pointwise (algebraic)
+operations live here; the operations involving a derivative, such as
+[`exterior_derivative`](@ref Gridap.Fields.exterior_derivative) and
+[`codifferential`](@ref Gridap.Fields.codifferential), are defined at the
+`Field` level in [`Gridap.Fields`](@ref Gridap.Fields).
+
+```@docs
+DifferentialFormValue
+```
+
+### Pointwise algebra
+
+```@docs
+∧
+interior_product
+ι
+hodge_star
+⋆
+apply_form
+vol_coeff
+koszul(::VectorValue{D}, ::DifferentialFormValue{K,D}) where {K,D}
+```
+
+### Metric operations
+
+```@docs
+flat
+sharp
+pullback
+pushforward
+```
+
+### Conversions to and from `MultiValue`s
+
+The isomorphisms below identify forms with vectors component-wise, in the
+orientation-ordered basis. Those named after a specific degree assume a flat
+Euclidean metric.
+
+```@docs
+to_1form
+from_1form
+to_Kform
+from_Kform
+to_0form
+to_Dform
+grad_to_2form
+```
+
+### Symbolic operations
+
+These generic functions get their methods from the `GridapSymbolicsExt` package
+extension, which loads when `Symbolics` is present.
+
+```@docs
+lie_derivative
+symbolic_coordinates
 ```

@@ -183,7 +183,7 @@ data_index(::Type{<:ThirdOrderTensorValue{D1,D2}},i,j,k) where {D1,D2} = _3d_ten
 data_index(::Type{<:SymFourthOrderTensorValue{D}},i,j,k,l) where D = _4d_sym_tensor_linear_index(D,i,j,k,l)
 
 _symmetric_index_gaps(i::Integer) = i*(i-1)÷2
-_skew_symetric_index_gaps(i::Integer) = i*(i+1)÷2
+_skew_symmetric_index_gaps(i::Integer) = i*(i+1)÷2
 
 _2d_tensor_linear_index(D,i,j) = ((j-1)*D)+i
 
@@ -197,7 +197,7 @@ end
 
 function _2d_skew_sym_tensor_linear_index(D,i,j)
   _j,_i = minmax(i,j)
-  index=_2d_tensor_linear_index(D,_i,_j)-_skew_symetric_index_gaps(_j)
+  index=_2d_tensor_linear_index(D,_i,_j)-_skew_symmetric_index_gaps(_j)
   index
 end
 

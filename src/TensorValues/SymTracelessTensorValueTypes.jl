@@ -6,7 +6,7 @@
     SymTracelessTensorValue{D,T,L} <: AbstractSymTensorValue{D,T,L}
     QTensorValue{D,T,L}
 
-Type representing a symetric second-order `D`×`D` tensor with zero trace. It must hold `L` = `D`(`D`+1)/2.
+Type representing a symmetric second-order `D`×`D` tensor with zero trace. It must hold `L` = `D`(`D`+1)/2.
 This type is used to model the Q-tensor order parameter in nematic liquid cristals.
 
 The constructor determines the value of index (`D`,`D`) as minus the sum of the other diagonal values, so it value musn't be provided. The constructor thus expects the `L`-1 components of indices (i,j) for 1 ≤ i ≤ `D`-1 and  i ≤ j ≤ `D`.

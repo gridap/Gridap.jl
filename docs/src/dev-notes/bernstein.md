@@ -595,8 +595,6 @@ _compute_cart_to_bary_matrix
 _cart_to_bary
 _de_Casteljau_nD!
 _downwards_de_Casteljau_nD!
-Gridap.TensorValues.combination_index
-Gridap.TensorValues.sorted_combinations
 _basis_forms_components
 _update_φ_αF!
 _combination_sign

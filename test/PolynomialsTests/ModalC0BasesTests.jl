@@ -126,7 +126,7 @@ b2x_perm   = b2x[  sortperm(b2x)[  invperm(sortperm(b2xu))]]
 
 # Misc
 
-# Derivatives not implemented for symetric tensor types
+# Derivatives not implemented for symmetric tensor types
 
 D = 2
 T = Float64

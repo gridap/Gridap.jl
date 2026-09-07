@@ -97,6 +97,12 @@ function rand(rng::AbstractRNG,::Random.SamplerType{V}) where V<:MultiValue{D,T}
   V(Tuple(vrand))
 end
 
+"""
+    make_concretetype(::Type{T}) where T <: Number
+
+Return a concrete number type for `T`, that is `T` itself if it is already
+concrete, and `typeof(zero(T))` otherwise.
+"""
 function make_concretetype(::Type{T}) where T <: Number
   TT = ifelse(isconcretetype(T),T,typeof(zero(T)))
   @check isconcretetype(TT) "Type $(T) cannot be made concrete."

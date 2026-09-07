@@ -1,4 +1,12 @@
 
+"""
+    struct GridapADTag{L} end
+    GridapADTag(level::Integer)
+
+`ForwardDiff` tag carrying the nesting level `L` of a differentiation, so that
+nested derivatives can be ordered. A higher level was applied first, hence is
+inside the dual number of a lower level one.
+"""
 struct GridapADTag{L} end
 GridapADTag(level::Integer) = GridapADTag{Val{level}}()
 Base.max(::GridapADTag{Val{N}}, ::GridapADTag{Val{M}}) where {N,M} = GridapADTag(max(N,M))

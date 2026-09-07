@@ -536,18 +536,40 @@ Conversion of the 1-form value `ω` to a `VectorValue{D}`, assuming flat space
 from_1form(ω::DifferentialFormValue{1,D,T}) where {D,T} = VectorValue{D,T}(Tuple(ω))
 
 # General K-form ↔ VectorValue{binomial(D,K)} (component-wise isomorphism)
+
+"""
+    to_Kform(v::VectorValue{L}, ::Val{K}, ::Val{D})
+
+Reinterpret the `L = binomial(D,K)` components of `v` as the components of a
+`DifferentialFormValue{K,D}` in canonical Cartesian basis `dx^I`.
+"""
 to_Kform(v::VectorValue{L,T}, ::Val{K}, ::Val{D}) where {L,T,K,D} = DifferentialFormValue{K,D}(Tuple(v))
+
+"""
+    from_Kform(ω::DifferentialFormValue{K,D})
+
+Reinterpret the components of `ω` as a `VectorValue{binomial(D,K)}`, the inverse
+of [`to_Kform`](@ref).
+"""
 from_Kform(ω::DifferentialFormValue{K,D,T}) where {K,D,T} = VectorValue{binomial(D,K),T}(Tuple(ω))
 
 # ============================================================
 # Scalar ↔ 0-form and D-form
-#
-# Wrap a plain scalar as the sole component of a 0-form or
-# D-form.  The dimension D must be supplied as Val(D) because
-# a scalar carries no topological information.
 # ============================================================
 
+"""
+    to_0form(u::Number, ::Val{D})
+
+Convert the scalar `u` to a `DifferentialFormValue{0,D}`.
+"""
 to_0form(u::_Scalar, ::Val{D}) where D = DifferentialFormValue{0,D}((u,))
+
+"""
+    to_Dform(u::Number, ::Val{D})
+
+Convert the scalar `u` as the sole component of the top-degree
+`DifferentialFormValue{D,D}`, the inverse of [`vol_coeff`](@ref).
+"""
 to_Dform(u::_Scalar, ::Val{D}) where D = DifferentialFormValue{D,D}((u,))
 
 # ============================================================
