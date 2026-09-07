@@ -104,7 +104,6 @@ export flat
 export sharp
 export apply_form
 export pullback
-export pushforward
 export lie_derivative
 export symbolic_coordinates
 export koszul
@@ -164,6 +163,6 @@ include("Operations.jl")
 
 include("Reinterpret.jl")
 
-include("DifferentialForms/DifferentialFormValues.jl")
+include("DifferentialFormValues.jl")
 
 end # module
