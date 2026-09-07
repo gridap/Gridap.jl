@@ -3,6 +3,7 @@ module DifferentialFormValuesTests
 # zero/+/-/*, wedge product, interior product ι, flat Euclidean Hodge star.
 
 using Gridap.TensorValues
+using StaticArrays
 using Test
 
 # ── Construction for all (K,D) up to D=4 ─────────────────────────────────────
@@ -21,6 +22,95 @@ DifferentialFormValue{1,4}((1,2,3,4))
 DifferentialFormValue{2,4}((1,2,3,4,5,6))
 DifferentialFormValue{3,4}((1,2,3,4))
 DifferentialFormValue{4,4}((1,))
+
+# ── Constructor family ───────────────────────────────────────────────────────
+
+# Homogeneous NTuple, with and without an explicit component type
+@test isa(DifferentialFormValue{1,3}((1,2,3)),            DifferentialFormValue{1,3,Int,3})
+@test isa(DifferentialFormValue{1,3,Float64}((1,2,3)),    DifferentialFormValue{1,3,Float64,3})
+@test isa(DifferentialFormValue{1,3,Float64,3}((1,2,3)),  DifferentialFormValue{1,3,Float64,3})
+@test isa(DifferentialFormValue{1,3,Float64,3}((1.,2.,3.)), DifferentialFormValue{1,3,Float64,3})
+
+# Heterogeneous Tuple: promoted, or converted to the requested type
+@test isa(DifferentialFormValue{1,3}((1,2.0,3)),          DifferentialFormValue{1,3,Float64,3})
+@test isa(DifferentialFormValue{1,3,Int}((1,2.0,3)),      DifferentialFormValue{1,3,Int,3})
+@test isa(DifferentialFormValue{1,3,Int,3}((1,2.0,3)),    DifferentialFormValue{1,3,Int,3})
+
+# Vararg
+@test DifferentialFormValue{1,3}(1,2.0,3)       == DifferentialFormValue{1,3}((1.0,2.0,3.0))
+@test DifferentialFormValue{1,3,Int}(1,2.0,3)   == DifferentialFormValue{1,3}((1,2,3))
+@test DifferentialFormValue{1,3,Int,3}(1,2.0,3) == DifferentialFormValue{1,3}((1,2,3))
+
+# A single scalar is a full 0-form and a full D-form
+@test isa(DifferentialFormValue{0,3}(1),   DifferentialFormValue{0,3,Int,1})
+@test isa(DifferentialFormValue{0,0}(1),   DifferentialFormValue{0,0,Int,1})
+@test isa(DifferentialFormValue{3,3}(1.0), DifferentialFormValue{3,3,Float64,1})
+
+# K > D: the space is trivial, so the value has no component
+@test isa(DifferentialFormValue{4,3}(),          DifferentialFormValue{4,3,Int,0})
+@test isa(DifferentialFormValue{4,3}(()),        DifferentialFormValue{4,3,Int,0})
+@test isa(DifferentialFormValue{4,3,Float64}(),  DifferentialFormValue{4,3,Float64,0})
+@test isa(DifferentialFormValue{4,3,Float64}(()),DifferentialFormValue{4,3,Float64,0})
+@test isa(DifferentialFormValue{4,3,Int,0}(),    DifferentialFormValue{4,3,Int,0})
+@test isa(DifferentialFormValue{4,3,Int,0}(()),  DifferentialFormValue{4,3,Int,0})
+
+@test_throws AssertionError DifferentialFormValue{1,3}((1,2))
+@test_throws AssertionError DifferentialFormValue{1,3,Int}((1,2))
+@test_throws AssertionError DifferentialFormValue{1,3,Int,2}((1,2))
+@test_throws AssertionError DifferentialFormValue{1,3,Int,2}(1,2)
+@test_throws AssertionError DifferentialFormValue{0,3}()
+@test_throws AssertionError DifferentialFormValue{0,3,Int}()
+
+# ── Independent component count ──────────────────────────────────────────────
+
+@test num_indep_components(DifferentialFormValue{0,2}) == 1
+@test num_indep_components(DifferentialFormValue{2,2}) == 1
+@test num_indep_components(DifferentialFormValue{1,3}) == 3
+@test num_indep_components(DifferentialFormValue{2,3}) == 3
+@test num_indep_components(DifferentialFormValue{4,3}) == 0
+
+@test zero(DifferentialFormValue{2,2,Float64}) == DifferentialFormValue{2,2}((0.0,))
+@test zero(DifferentialFormValue{2,3,Float64}) == DifferentialFormValue{2,3}((0.0,0.0,0.0))
+
+# ── Conversion to a static array ─────────────────────────────────────────────
+
+# The stored components expand into the full D^K antisymmetric tensor, with the
+# sorted multi-indices carrying the components themselves
+A = convert(SArray{Tuple{3,3},Int}, DifferentialFormValue{2,3}((1,2,3)))
+@test A == [0 1 2; -1 0 3; -2 -3 0]
+@test A == -transpose(A)
+@test isa(convert(MArray{Tuple{3,3},Int}, DifferentialFormValue{2,3}((1,2,3))), MMatrix{3,3,Int,9})
+
+@test eltype(convert(SArray{Tuple{3,3},Float64}, DifferentialFormValue{2,3}((1,2,3)))) == Float64
+
+# A 1-form gives back its components, a 0-form a zero-dimensional array
+@test convert(SArray{Tuple{3},Int}, DifferentialFormValue{1,3}((1,2,3))) == [1,2,3]
+@test convert(SArray{Tuple{},Int}, DifferentialFormValue{0,3}((7,)))[] == 7
+
+# The volume form is the Levi-Civita symbol scaled by its single component
+A3 = convert(SArray{Tuple{3,3,3},Int}, DifferentialFormValue{3,3}((2,)))
+@test (A3[1,2,3], A3[2,1,3], A3[3,1,2], A3[1,1,3]) == (2, -2, 2, 0)
+
+# K > D: no stored component, but the tensor still has D^K (vanishing) entries
+A4 = convert(SArray{Tuple{3,3,3,3},Int}, DifferentialFormValue{4,3}())
+@test size(A4) == (3,3,3,3)
+@test all(iszero, A4)
+
+# The wedge of two 1-forms expands to the antisymmetric part of their outer product
+a1 = DifferentialFormValue{1,4}((1,2,3,4))
+b1 = DifferentialFormValue{1,4}((5,6,7,8))
+va = convert(SArray{Tuple{4},Int}, a1)
+vb = convert(SArray{Tuple{4},Int}, b1)
+@test convert(SArray{Tuple{4,4},Int}, a1 ∧ b1) == va*transpose(vb) - vb*transpose(va)
+
+# A shape that is not the form's own must not convert
+@test_throws DimensionMismatch convert(SArray{Tuple{2,2},Int}, DifferentialFormValue{2,3}((1,2,3)))
+
+# Internal conversion changes the component type, and is a no-op on its own type
+@test convert(DifferentialFormValue{2,3,Float64}, DifferentialFormValue{2,3}((1,2,3))) ==
+      DifferentialFormValue{2,3}((1.0,2.0,3.0))
+ω23 = DifferentialFormValue{2,3}((1.0,2.0,3.0))
+@test convert(DifferentialFormValue{2,3,Float64}, ω23) === ω23
 
 # ── zero, +, -, * ────────────────────────────────────────────────────────────
 

@@ -25,23 +25,78 @@ property of the space the value came from, not of the value. `show` labels them
 struct DifferentialFormValue{K,D,T,L} <: MultiValue{NTuple{K,D},T,K,L}
   data::NTuple{L,T}
 
-  # All-params inner constructor: no validation.
-  function DifferentialFormValue{K,D,T,L}(data::NTuple{L,T}) where {K,D,T,L}
-    new{K,D,T,L}(data)
-  end
-
-  # 2-param shorthand (validates component count).
-  function DifferentialFormValue{K,D}(data::NTuple{L,T}) where {K,D,T,L}
+  function DifferentialFormValue{K,D,T}(data::NTuple{L,T}) where {K,D,T,L}
     @assert L == binomial(D,K) "wrong number of values: got $L, expected $(binomial(D,K))"
     new{K,D,T,L}(data)
   end
+end
 
-  # Empty tuple (K > D): no component.
-  function DifferentialFormValue{K,D}(data::Tuple{}) where {K,D}
-    @assert binomial(D,K) == 0 "Empty tuple requires K > D"
-    new{K,D,Float64,0}(data)
+###############################################################
+# Constructors (DifferentialFormValue)
+###############################################################
+
+# Empty constructors
+DifferentialFormValue{K,D}()                where {K,D}   = DifferentialFormValue{K,D,Int}(NTuple{0,Int}())
+DifferentialFormValue{K,D,T}()              where {K,D,T} = DifferentialFormValue{K,D,T}(NTuple{0,T}())
+DifferentialFormValue{K,D}(data::NTuple{0}) where {K,D}   = DifferentialFormValue{K,D,Int}(data)
+
+# NTuple argument constructors
+DifferentialFormValue{K,D}(data::NTuple{L,T}) where {K,D,L,T}           = DifferentialFormValue{K,D,T}(data)
+DifferentialFormValue{K,D,T1}(data::NTuple{L,T2}) where {K,D,L,T1,T2}   = DifferentialFormValue{K,D,T1}(NTuple{L,T1}(data))
+DifferentialFormValue{K,D,T1,L}(data::NTuple{L,T2}) where {K,D,L,T1,T2} = DifferentialFormValue{K,D,T1}(NTuple{L,T1}(data))
+
+# single Tuple argument constructors
+DifferentialFormValue{K,D}(data::Tuple) where {K,D}            = DifferentialFormValue{K,D}(promote(data...))
+DifferentialFormValue{K,D,T1}(data::Tuple) where {K,D,T1}      = DifferentialFormValue{K,D,T1}(NTuple{length(data),T1}(data))
+DifferentialFormValue{K,D,T1,L}(data::Tuple) where {K,D,T1,L}  = DifferentialFormValue{K,D,T1}(NTuple{L,T1}(data))
+
+# Vararg constructors
+DifferentialFormValue{K,D}(data::Number...) where {K,D}           = DifferentialFormValue{K,D}(data)
+DifferentialFormValue{K,D,T1}(data::Number...) where {K,D,T1}     = DifferentialFormValue{K,D,T1}(data)
+DifferentialFormValue{K,D,T1,L}(data::Number...) where {K,D,T1,L} = DifferentialFormValue{K,D,T1}(data)
+
+
+######################################
+# Conversions and other constructors #
+######################################
+
+# Full tensor components:
+# - `A[I] = 0` when `I` repeats an index, else
+# - `A[I] = levicivita(σ) * ω_{sort(I)}`, where `σ` sorts `I`
+@generated function _FormValue_to_array(arg::DifferentialFormValue{K,D,T,L}) where {K,D,T,L}
+  comps = Expr[]
+  I = MVector{K,Int}(undef)
+  for idx in CartesianIndices(ntuple(_ -> D, K))
+    I .= Tuple(idx)
+    if !allunique(I)
+      push!(comps, :(zero(T)))
+    else
+      l = combination_index(sort(I), D)
+      push!(comps, levicivita(sortperm(I)) > 0 ? :(arg.data[$l]) : :(-arg.data[$l]))
+    end
+  end
+
+  S = Tuple{ntuple(_ -> D, K)...}
+  quote
+    return SArray{$S,T,K,$(D^K)}( tuple($(comps...)) )
   end
 end
+
+# Inverse conversion
+convert(::Type{<:MArray{S,T}}, arg::DifferentialFormValue) where {S,T} = MArray{S,T}(_FormValue_to_array(arg))
+convert(::Type{<:SArray{S,T}}, arg::DifferentialFormValue) where {S,T} = SArray{S,T}(_FormValue_to_array(arg))
+
+# Internal conversion
+convert(::Type{<:DifferentialFormValue{K,D,T}}, arg::DifferentialFormValue{K,D}) where {K,D,T} = DifferentialFormValue{K,D,T}(arg.data)
+convert(::Type{<:DifferentialFormValue{K,D,T}}, arg::DifferentialFormValue{K,D,T}) where {K,D,T} = arg
+
+one(::Type{<:DifferentialFormValue{0,D,T}}) where {D,T} = one(T)
+one(::Type{<:DifferentialFormValue{K}}) where K = @unreachable "Differential k-form do not have multiplicative neutral for `k` > 0."
+
+change_eltype(::Type{<:DifferentialFormValue{K,D,T1,L}}, ::Type{T2}) where {K,D,T1,T2,L} =
+  DifferentialFormValue{K,D,T2,L}
+
+num_indep_components(::Type{<:DifferentialFormValue{K,D}}) where {K,D} = binomial(D,K)
 
 # ============================================================
 # Display
@@ -49,6 +104,10 @@ end
 
 const _sbs_cart = ["dx¹","dx²","dx³","dx⁴","dx⁵","dx⁶","dx⁷","dx⁸","dx⁹"]
 const _sbs_bary = ["dλ¹","dλ²","dλ³","dλ⁴","dλ⁵","dλ⁶","dλ⁷","dλ⁸","dλ⁹"]
+
+function indep_components_names(::Type{<:DifferentialFormValue{K,D}}) where {K,D}
+  [join(_sbs_cart[I], " ∧ ") for I in sorted_combinations(D, K)]
+end
 
 function _show_dfv(io::IO, a::DifferentialFormValue{K,D}, basis_strs) where {K,D}
   L = length(a.data)
@@ -83,43 +142,6 @@ function Base.show(io::IO, ::MIME"text/plain", a::DifferentialFormValue{K,D}) wh
   _show_dfv(io, a, _coframe_labels(io))
 end
 
-# ============================================================
-# Basic algebra: zero, +, -, scalar *
-# ============================================================
-
-function Base.zero(::Type{DifferentialFormValue{K,D,T,L}}) where {K,D,T,L}
-  DifferentialFormValue{K,D,T,L}(ntuple(_ -> zero(T), L))
-end
-
-# change_eltype's generic <:Number fallback (Operations.jl) would otherwise
-# collapse DifferentialFormValue to its bare scalar type T2, since MultiValue
-# <: Number. PolynomialBasis's generic return_cache (_return_val_eltype)
-# relies on change_eltype to reconstruct the value type, so this is needed
-# for any DifferentialFormValue-valued PolynomialBasis to evaluate correctly.
-change_eltype(::Type{<:DifferentialFormValue{K,D,T1,L}}, ::Type{T2}) where {K,D,T1,T2,L} =
-  DifferentialFormValue{K,D,T2,L}
-
-Base.zero(ω::DifferentialFormValue) = zero(typeof(ω))
-
-function Base.:+(a::DifferentialFormValue{K,D,T1,L}, b::DifferentialFormValue{K,D,T2,L}) where {K,D,T1,T2,L}
-  d = map(+, a.data, b.data)
-  DifferentialFormValue{K,D,eltype(d),L}(d)
-end
-
-function Base.:-(a::DifferentialFormValue{K,D,T1,L}, b::DifferentialFormValue{K,D,T2,L}) where {K,D,T1,T2,L}
-  d = map(-, a.data, b.data)
-  DifferentialFormValue{K,D,eltype(d),L}(d)
-end
-
-Base.:-(a::DifferentialFormValue{K,D,T,L}) where {K,D,T,L} =
-  DifferentialFormValue{K,D,T,L}(map(-, a.data))
-
-function Base.:*(s::Union{Real,Complex}, ω::DifferentialFormValue{K,D,T,L}) where {K,D,T,L}
-  d = map(x -> s*x, ω.data)
-  DifferentialFormValue{K,D,eltype(d),L}(d)
-end
-
-Base.:*(ω::DifferentialFormValue, s::Union{Real,Complex}) = s * ω
 
 # ============================================================
 # Helper: multi-index ↔ linear index map
