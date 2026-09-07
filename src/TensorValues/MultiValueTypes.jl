@@ -458,3 +458,19 @@ The right-to-left index does not depend on `D`, unlike the default left-to-right
   # at position i number binomial(D-combi[i], k-i+1).
   return binomial(D,k) - sum(binomial(D-combi[i], k-i+1) for i in 1:k; init=0)
 end
+
+"""
+    sorting_sign(inds::Integer...)
+
+Signature of the permutation sorting `inds`, or `0` if `inds` repeats an index.
+
+This is `levicivita(sortperm(inds))` extended by `0` to non-injective `inds`.
+"""
+@inline function sorting_sign(inds::Vararg{Integer,N}) where N
+  ninv = 0
+  for j in 1:N, k in j+1:N
+    inds[k] == inds[j] && return 0
+    inds[k] <  inds[j] && (ninv += 1)
+  end
+  iseven(ninv) ? 1 : -1
+end

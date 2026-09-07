@@ -89,6 +89,7 @@ export representatives_of_componentbasis_dual
 export representatives_of_basis_dual
 export sorted_combinations
 export combination_index
+export sorting_sign
 export to_voigt
 export from_voigt
 export to_mandel

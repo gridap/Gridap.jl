@@ -133,6 +133,7 @@ tensor.
 ```@docs
 sorted_combinations
 combination_index
+sorting_sign
 ```
 
 ## Interface and operations

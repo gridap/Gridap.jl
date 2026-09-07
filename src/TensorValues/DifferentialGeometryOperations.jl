@@ -49,7 +49,7 @@ function ∧(a::DifferentialFormValue{K1,D,T1,L1}, b::DifferentialFormValue{K2,D
         i12 = [i1..., i2...]
         l   = ijk_l12[sort(i12)...]
         if l > 0
-          d[l] += levicivita(sortperm(i12)) * a.data[ijk_l1[i1...]] * b.data[ijk_l2[i2...]]
+          d[l] += sorting_sign(i12...) * a.data[ijk_l1[i1...]] * b.data[ijk_l2[i2...]]
         end
       end
     end
@@ -122,7 +122,7 @@ function _hodge_star_matrix(K::Int, D::Int)
   for (m, J) in enumerate(c_out), (n, I) in enumerate(c_in)
     perm = [I..., J...]
     length(unique(perm)) == D || continue
-    M[m, n] = levicivita(sortperm(perm))
+    M[m, n] = sorting_sign(perm...)
   end
   M
 end
@@ -225,7 +225,7 @@ function hodge_star(ω::DifferentialFormValue{K,D,T}, g_inv::SymTensorValue{D}, 
       perm = [I..., J...]
       length(unique(perm)) == D || continue
       idx = Kc == 0 ? 1 : ijk_l_out[J...]   # J already sorted
-      d[idx] += levicivita(sortperm(perm)) * sqrt_det_g * omega_raised[n]
+      d[idx] += sorting_sign(perm...) * sqrt_det_g * omega_raised[n]
     end
   end
 
@@ -282,7 +282,7 @@ For K=0: no vectors needed; returns `ω.data[1]`.
 """
 function apply_form(ω::DifferentialFormValue{K,D,T}, vs...) where {K,D,T}
   @assert length(vs) == K "K=$K form requires K vectors, got $(length(vs))"
-  K == 0 && return ω.data[1]
+  K == 0 && return ω[1]
   cs = sorted_combinations(D, K)
   result = zero(promote_type(T, Float64))
   for (idx, I) in enumerate(cs)
@@ -362,7 +362,7 @@ The single scalar coefficient of a top-degree D-form in D dimensions.
 Enables using Gridap's standard measure for integration of differential forms:
     ∫(vol_coeff(ω ∧ ⋆η)) * dΩ
 """
-vol_coeff(ω::DifferentialFormValue{D,D,T}) where {D,T} = ω[1]
+vol_coeff(ω::DifferentialFormValue{D,D,T}) where {D,T} = indep_comp_getindex(ω, 1)
 
 # ============================================================
 # Gradient support: outer(x, ω) for 1-forms.

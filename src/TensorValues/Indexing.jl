@@ -32,7 +32,9 @@ keys(s::IndexStyle, arg::MultiValue) = eachindex(s, arg)
 `AbstractArray`s and `StaticArray`s, including `inds` argument that is a mixed
 tuples of `Integer`, `CartesianIndex`, slices and common range and array types.
 
-The `Number` convention is used when no indices are provided: `arg[]` returns `arg`.
+The `Number` convention is used when no indices are provided and `arg`'s rank
+is positive: `arg[]` returns `arg`. If `arg` has rank `0`, then the unique
+component is returned if it exists.
 
 # Examples
 
@@ -106,6 +108,9 @@ julia> t[mask]
 # Size-inferable "scalar" indexing
 const _ScalarIndices = Union{Integer, CartesianIndex}
 @propagate_inbounds getindex(arg::MultiValue, inds::_ScalarIndices...) = getindex(arg, to_indices(arg, inds)...)
+# `Base` defines `x[CartesianIndex()]` for every `<:Number`, which is ambiguous
+# with the method above. This one only resolves that, it applies the same rule.
+@propagate_inbounds getindex(arg::MultiValue, i::CartesianIndex{0}) = getindex(arg, to_indices(arg, (i,))...)
 # Method to avoid infinite recursion in case of wrong number of scalar indices
 @propagate_inbounds getindex(arg::MultiValue, inds::Integer...) = (checkbounds(arg,inds...); @unreachable)
 # Size-inferable "array" indexing,
@@ -163,6 +168,15 @@ end
 #  @boundscheck @check checkbounds(arg, i) === nothing
 #  @inbounds @inline getindex(arg.data, i)
 #end
+
+@propagate_inbounds function getindex(arg::DifferentialFormValue{N,D,T}, inds::Vararg{Integer,N}) where {N,D,T}
+  @boundscheck @check checkbounds(arg, inds...) === nothing
+  s = sorting_sign(inds...)
+  s == 0 && return zero(T)
+  index = combination_index(sort(SVector{N,Int}(inds)), D)
+  v = @inbounds arg.data[index]
+  return s > 0 ? v : -v
+end
 
 
 function Base.checkbounds(A::MultiValue{S}, I::Integer...) where S

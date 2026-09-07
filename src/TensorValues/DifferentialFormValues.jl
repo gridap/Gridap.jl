@@ -4,13 +4,12 @@
 """
     DifferentialFormValue{K,D,T,L} <: MultiValue{NTuple{K,D},T,K,L}
 
-Value of a differential K-form in D dimensions: the `L = binomial(D,K)`
-components on the orientation-ordered basis `{dx^I}` (lexicographic
+Value of a differential K-form in D dimensions storing the `L = binomial(D,K)`
+independent components on the orientation-ordered basis `{dx^I}` (lexicographic
 K-combinations `I` of `1:D`), with scalar type `T`.
 
-The components are coefficients on a coframe; which coframe they refer to is a
-property of the space the value came from, not of the value. `show` labels them
-`dxⁱ`, or `dλⁱ` when the `IOContext` property `:coordinates` is `:barycentric`.
+`show` labels the components `dxⁱ`, or `dλⁱ` when the `IOContext` property
+`:coordinates` is `:barycentric`.
 """
 struct DifferentialFormValue{K,D,T,L} <: MultiValue{NTuple{K,D},T,K,L}
   data::NTuple{L,T}
@@ -55,14 +54,14 @@ DifferentialFormValue{K,D,T1,L}(data::Number...) where {K,D,T1,L} = Differential
 # - `A[I] = levicivita(σ) * ω_{sort(I)}`, where `σ` sorts `I`
 @generated function _FormValue_to_array(arg::DifferentialFormValue{K,D,T,L}) where {K,D,T,L}
   comps = Expr[]
-  I = MVector{K,Int}(undef)
-  for idx in CartesianIndices(ntuple(_ -> D, K))
-    I .= Tuple(idx)
-    if !allunique(I)
+  for idx in CartesianIndices(ntuple(_ -> D, Val(K)))
+    I = Tuple(idx)
+    s = sorting_sign(I...)
+    if s == 0
       push!(comps, :(zero(T)))
     else
-      l = combination_index(sort(I), D)
-      push!(comps, levicivita(sortperm(I)) > 0 ? :(arg.data[$l]) : :(-arg.data[$l]))
+      l = combination_index(sort(SVector{K,Int}(I)), D)
+      push!(comps, s > 0 ? :(arg.data[$l]) : :(-arg.data[$l]))
     end
   end
 
@@ -131,9 +130,4 @@ function Base.show(io::IO, ::MIME"text/plain", a::DifferentialFormValue{K,D}) wh
   @assert D <= 9 "show not implemented for D > 9"
   _show_dfv(io, a, _coframe_labels(io))
 end
-
-
-# Direct indexing: bypass the generic MultiValue getindex which has an infinite
-# recursion for rank-1 tensors (Int → CartesianIndex{1} → Int → ...).
-@inline Base.getindex(v::DifferentialFormValue, i::Integer) = @inbounds v.data[i]
 
