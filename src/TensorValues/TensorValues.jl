@@ -50,7 +50,7 @@ using Gridap.Arrays
 using LinearAlgebra
 using Random
 using ForwardDiff
-using Combinatorics: combinations
+using Combinatorics: combinations, levicivita
 
 export MultiValue
 export VectorValue
@@ -155,12 +155,15 @@ include("HighOrderTensorValueTypes.jl")
 
 include("ThirdOrderTensorValueTypes.jl")
 
+include("DifferentialFormValues.jl")
+
 include("Indexing.jl")
 
 include("Operations.jl")
 
+include("DifferentialGeometryOperations.jl")
+
 include("Reinterpret.jl")
 
-include("DifferentialFormValues.jl")
 
 end # module
