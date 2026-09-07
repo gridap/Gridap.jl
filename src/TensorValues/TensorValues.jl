@@ -31,6 +31,11 @@ $(public_names_in_md(@__MODULE__; change_link=Dict(
   :⋅  => "dot",
   :⋅¹ => "dot",
   :⋅² => "double_contraction",
+  :ι  => "interior_product",
+  :⋆  => "hodge_star",
+  :♭  => "flat",
+  :♯  => "sharp",
+  :𝓛 => "lie_derivative"
 )))
 """
 module TensorValues

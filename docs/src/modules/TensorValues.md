@@ -259,7 +259,6 @@ koszul(::VectorValue{D}, ::DifferentialFormValue{K,D}) where {K,D}
 flat
 sharp
 pullback
-pushforward
 ```
 
 ### Conversions to and from `MultiValue`s

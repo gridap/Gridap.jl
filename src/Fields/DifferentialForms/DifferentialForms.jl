@@ -18,7 +18,6 @@ using Combinatorics: levicivita
 import Gridap.TensorValues: ∧
 import Gridap.TensorValues: koszul
 import Gridap.TensorValues: pullback
-import Gridap.TensorValues: pushforward
 
 # ============================================================
 # DifferentialForm{K,D,L,Data}

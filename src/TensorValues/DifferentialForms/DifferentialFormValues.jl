@@ -183,9 +183,10 @@ end
 
 """
     interior_product(v::VectorValue{D}, ω::DifferentialFormValue{K,D})
+    ι(v::VectorValue{D}, ω::DifferentialFormValue{K,D})
 
 Interior product (contraction) `ι_v ω`, a `DifferentialFormValue{K-1,D}`:
-`(ι_v ω)(w₂,…,wₖ) = ω(v, w₂,…,wₖ)`. Also available as [`ι`](@ref).
+`(ι_v ω)(w₂,…,wₖ) = ω(v, w₂,…,wₖ)`.
 """
 function interior_product(v::VectorValue{D,Tv}, ω::DifferentialFormValue{K,D,Tw,Lw}) where {K,D,Tv,Tw,Lw}
   @assert K >= 1 "interior product requires K ≥ 1"
@@ -213,9 +214,6 @@ function interior_product(v::VectorValue{D,Tv}, ω::DifferentialFormValue{K,D,Tw
   DifferentialFormValue{Km1,D,T,L}(Tuple(d[1:L]))
 end
 
-"""
-    const ι = interior_product
-"""
 const ι = interior_product
 
 # ============================================================
@@ -265,10 +263,12 @@ end
 """
     hodge_star(ω::DifferentialFormValue{K,D})
     hodge_star(ω::DifferentialFormValue{K,D}, g_inv::SymTensorValue{D}, sqrt_det_g)
+    ⋆(ω)
+    ⋆(ω, g_inv, sqrt_det_g)
 
 Hodge star `⋆ω`, a `DifferentialFormValue{D-K,D}`. The one-argument form uses
 the flat Euclidean metric; the three-argument form takes a pointwise inverse
-metric tensor and `√det(g)`. Also available as [`⋆`](@ref).
+metric tensor and `√det(g)`.
 """
 function hodge_star(ω::DifferentialFormValue{K,D,T,L}) where {K,D,T,L}
   Kc = D - K
@@ -278,9 +278,6 @@ function hodge_star(ω::DifferentialFormValue{K,D,T,L}) where {K,D,T,L}
   DifferentialFormValue{Kc,D,T,Lc}(d)
 end
 
-"""
-    const ⋆ = hodge_star
-"""
 const ⋆ = hodge_star
 
 # ============================================================
@@ -292,6 +289,7 @@ const ⋆ = hodge_star
 
 """
     lie_derivative(v, ω)
+    𝓛(v,ω)
 
 Lie derivative `L_v ω = d(ι_v ω) + ι_v(dω)` (Cartan's magic formula).
 
@@ -299,6 +297,7 @@ Requires symbolic (`Symbolics.Num`) coefficients: methods are provided by the
 GridapSymbolicsExt package extension when Symbolics is loaded.
 """
 function lie_derivative end
+const 𝓛 = lie_derivative
 
 """
     symbolic_coordinates(D::Integer)
@@ -378,6 +377,7 @@ end
 
 """
     flat(v::VectorValue{D}, g::SymTensorValue{D})
+    ♭(v, g)
 
 Musical isomorphism ♭: lower the index of the vector `v` with the metric `g`,
 giving a `DifferentialFormValue{1,D}`.
@@ -388,10 +388,13 @@ function flat(v::VectorValue{D,T}, g::SymTensorValue{D}) where {D,T}
   DifferentialFormValue{1,D}(Tuple{Vararg{Tout,D}}(d))
 end
 
+const ♭ = flat
+
 """
     sharp(ω::DifferentialFormValue{1,D}, g_inv::SymTensorValue{D})
+    ♯(ω, g_inv)
 
-Musical isomorphism ♯: raise the index of the 1-form `ω` with the inverse
+Musical isomorphism `♯`: raise the index of the 1-form `ω` with the inverse
 metric `g_inv`, giving a `VectorValue{D}`.
 """
 function sharp(ω::DifferentialFormValue{1,D,T}, g_inv::SymTensorValue{D}) where {D,T}
@@ -399,6 +402,8 @@ function sharp(ω::DifferentialFormValue{1,D,T}, g_inv::SymTensorValue{D}) where
   d = ntuple(i -> sum(g_inv[i,j] * ω.data[j] for j in 1:D), D)
   VectorValue{D,Tout}(d)
 end
+
+const ♯ = sharp
 
 """
     apply_form(ω::DifferentialFormValue{K,D,T}, v₁, …, vₖ) → scalar
@@ -435,7 +440,7 @@ end
 """
     pullback(ω::DifferentialFormValue{K,Dn}, J::TensorValue{Dn,Dm})
 
-Pointwise pullback `φ*ω` of a K-form under a map with Jacobian `J = ∇φ`,
+Pointwise pullback `φ^*ω` of a K-form under a map with Jacobian `J = ∇φ`,
 giving a `DifferentialFormValue{K,Dm}`. A Field-level method for lazy
 pullbacks is provided in `Gridap.Fields`.
 """
@@ -454,23 +459,6 @@ function pullback(ω::DifferentialFormValue{K,Dn,T}, J::TensorValue{Dn,Dm,T2}) w
   end
 
   DifferentialFormValue{K,Dm}(Tuple(d[1:L]))
-end
-
-# ============================================================
-# Pushforward  φ_*(v) : T_{x}M → T_{φ(x)}N
-#
-# For a map φ : ℝᴰᵐ → ℝᴰⁿ with Jacobian J = ∇φ:
-#   φ_*(v) = J · v     (J[i,j] = ∂φⁱ/∂ξʲ)
-# ============================================================
-
-"""
-    pushforward(v::VectorValue{Dm}, J::TensorValue{Dn,Dm})
-
-Pointwise pushforward `φ_*(v) = J ⋅ v` of a tangent vector under a map with
-Jacobian `J = ∇φ`. A Field-level method is provided in `Gridap.Fields`.
-"""
-function pushforward(v::VectorValue{Dm,T}, J::TensorValue{Dn,Dm,T2}) where {Dm,Dn,T,T2}
-  J ⋅ v   # TensorValue{Dn,Dm} ⋅ VectorValue{Dm} → VectorValue{Dn}
 end
 
 # ============================================================
@@ -606,12 +594,12 @@ inner(a::DifferentialFormValue{K,D,T,L},
 """
     grad_to_2form(Jt::TensorValue{D,D})
 
-Exterior derivative of a 1-form from its gradient `Jt = ∇ω`, `Jt[i,j] =
-∂ω_j/∂x_i`: `(dω)_{a<b} = ∂ω_b/∂x^a − ∂ω_a/∂x^b = Jt[a,b] − Jt[b,a]`.
+Exterior derivative of a proxied 1-form `ω::VectorValue` from its gradient `Jt
+= ∇ω`:
 
-This computes the exterior derivative of a 1-form FEFunction (e.g. Nédélec)
-as `Operation(grad_to_2form)(∇(u))` without component-wise access, see
-`d_1form` in `Gridap.CellData`.
+    (dω)_{a<b} = ∂ω_b/∂x^a − ∂ω_a/∂x^b = Jt[a,b] − Jt[b,a].
+
+Used to compute the exterior derivative of a vector proxied 1-form,, see `d_1form` in `Gridap.CellData`.
 """
 function grad_to_2form(Jt::TensorValue{D,D,T,L}) where {D,T,L}
   cs = sorted_combinations(D, 2)

@@ -42,19 +42,25 @@ pb    = pullback(ω1_3d, J_emb)
 
 # ── Pushforward (value level) ────────────────────────────────────────────────
 
+function _pushforward(
+  v::VectorValue{Dm,T}, J::TensorValue{Dn,Dm,T2}) where {Dm,Dn,T,T2}
+
+  J ⋅ v
+end
+
 e1 = VectorValue(1.0, 0.0)
 e2 = VectorValue(0.0, 1.0)
 
 # Identity: pushforward = identity
-@test pushforward(e1, J_id) == e1
-@test pushforward(e2, J_id) == e2
+@test _pushforward(e1, J_id) == e1
+@test _pushforward(e2, J_id) == e2
 
 # Scaling map diag(a,b): pushforward scales each component
-@test collect(pushforward(e1, J_sc).data) ≈ [a, 0.0]
-@test collect(pushforward(e2, J_sc).data) ≈ [0.0, b]
+@test collect(_pushforward(e1, J_sc).data) ≈ [a, 0.0]
+@test collect(_pushforward(e2, J_sc).data) ≈ [0.0, b]
 
 # Embedding ℝ² → ℝ³: pushforward lifts into ℝ³
-pf_e1 = pushforward(e1, J_emb)
+pf_e1 = _pushforward(e1, J_emb)
 @test typeof(pf_e1) <: VectorValue{3}
 @test collect(pf_e1.data) ≈ [1.0, 0.0, 0.0]
 
