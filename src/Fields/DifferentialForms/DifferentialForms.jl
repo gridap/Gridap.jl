@@ -16,8 +16,6 @@
 using Combinatorics: levicivita
 
 import Gridap.TensorValues: ∧
-import Gridap.TensorValues: exterior_derivative
-import Gridap.TensorValues: codifferential
 import Gridap.TensorValues: koszul
 import Gridap.TensorValues: pullback
 import Gridap.TensorValues: pushforward

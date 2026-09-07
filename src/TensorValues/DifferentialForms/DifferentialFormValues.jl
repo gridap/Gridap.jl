@@ -3,10 +3,11 @@
 # Defines DifferentialFormValue together with its pointwise algebra
 # (∧, ι, ⋆, ♭/♯, koszul, …).
 #
-# Symbolic operations (exterior_derivative, codifferential, lie_derivative on
-# Symbolics.Num-valued forms) are provided by the GridapSymbolicsExt package
-# extension, which loads when Symbolics is present; only their generic
-# functions are declared here.
+# Operations needing a derivative are not part of this pointwise algebra.
+# `exterior_derivative` and `codifferential` belong to Gridap.Fields; the
+# generic functions declared here (`lie_derivative`, `symbolic_coordinates`)
+# get their methods from the GridapSymbolicsExt package extension, which loads
+# when Symbolics is present.
 
 using Combinatorics: levicivita
 
@@ -285,9 +286,8 @@ const ⋆ = hodge_star
 # ============================================================
 # Generic functions extended elsewhere
 #
-# Field-level methods live in Gridap.Fields (lazy wrappers) and Gridap.CellData
-# (CellField level); symbolic value-level methods (Symbolics.Num coefficients)
-# are provided by the GridapSymbolicsExt package extension.
+# Methods for Symbolics.Num coefficients are provided by the GridapSymbolicsExt
+# package extension.
 # ============================================================
 
 """

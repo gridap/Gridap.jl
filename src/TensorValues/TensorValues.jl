@@ -100,8 +100,6 @@ export sharp
 export apply_form
 export pullback
 export pushforward
-export exterior_derivative
-export codifferential
 export lie_derivative
 export symbolic_coordinates
 export koszul
