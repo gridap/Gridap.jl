@@ -416,7 +416,7 @@ Inner product ``(ω|η)`` of two K-forms, the scalar such that
 The two-argument form uses the flat Euclidean metric. The three-argument form
 takes the inverse metric tensor.
 
-This differs from the inner product of general tensors, `ω ⊙ η == factorial(K) (ω ⨟ μ)`.
+This differs from the inner product of general tensors, `ω ⊙ η == factorial(K) (ω ⨟ η)`.
 """
 @generated function form_inner(a::DifferentialFormValue{K,D,Ta},
                                b::DifferentialFormValue{K,D,Tb}) where {K,D,Ta,Tb}
@@ -439,6 +439,13 @@ end
 end
 
 const ⨟ = form_inner
+
+# optimization of inner
+function inner(a::DifferentialFormValue{K,D,Ta},
+               b::DifferentialFormValue{K,D,Tb}) where {K,D,Ta,Tb}
+  K > D && return zero(Base.promote_op(*,Ta,Tb))
+  factorial(K) * form_inner(a, b)
+end
 
 """
     grad_to_2form(Jt::TensorValue{D,D})

@@ -315,7 +315,9 @@ _full(ω::DifferentialFormValue) = MultiValue(SArray(ω))
 g_inv_fi = SymTensorValue{D3}(2.0, -0.5, 0.3, 1.5, 0.25, 3.0)
 sdg_fi   = 1 / sqrt(det(g_inv_fi))
 
-for (α, β) in [(DifferentialFormValue{1,D3}((1.0, 2.0, 3.0)),
+for (α, β) in [(DifferentialFormValue{0,D3}((7.0,)),
+                DifferentialFormValue{0,D3}((3.0,))),
+               (DifferentialFormValue{1,D3}((1.0, 2.0, 3.0)),
                 DifferentialFormValue{1,D3}((4.0, 5.0, 6.0))),
                (DifferentialFormValue{2,D3}((1.0, 2.0, 3.0)),
                 DifferentialFormValue{2,D3}((4.0, 5.0, 6.0))),
@@ -328,9 +330,21 @@ for (α, β) in [(DifferentialFormValue{1,D3}((1.0, 2.0, 3.0)),
   @test form_inner(α, β) ≈ form_inner(α, β, one(SymTensorValue{D3,Float64}))
   # α ∧ ⋆_g β = √det(g) (α|β) dx¹∧…∧dx^D, the property that defines (α|β)
   @test vol_coeff(α ∧ hodge_star(β, g_inv_fi, sdg_fi)) ≈ sdg_fi * form_inner(α, β, g_inv_fi)
-  # inner contracts the expanded components, dropping the 1/K! of (α|β)
-  @test inner(_full(α), _full(β)) == factorial(K) * form_inner(α, β)
+  # the full contraction of the expanded components drops the 1/K! of (α|β)
+  @test contracted_product(Val(K), α, β) ≈ factorial(K) * form_inner(α, β)
+  # summing the binomial(D,K) independent components gives the same as
+  # contracting all D^K of them
+  @test inner(α, β) ≈ contracted_product(Val(K), α, β)
+  if K > 0 # MultiValue has no constructor from the 0-dimensional array of a 0-form
+    @test contracted_product(Val(K), _full(α), _full(β)) ≈ factorial(K) * form_inner(α, β)
+  end
 end
+
+# A 0-form has no index to contract, it only enters the tensor product
+ω0_fi = DifferentialFormValue{0,D3}((2.0,))
+ω1_fi = DifferentialFormValue{1,D3}((1.0, 2.0, 3.0))
+@test outer(ω0_fi, ω1_fi) === VectorValue{D3}(2.0, 4.0, 6.0)
+@test_throws DimensionMismatch contracted_product(Val(1), ω0_fi, ω1_fi)
 
 # ── Display: coframe labelling ───────────────────────────────────────────────
 

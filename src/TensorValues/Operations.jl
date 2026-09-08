@@ -538,10 +538,10 @@ the specific functions above if possible), but is used as default generic implem
 
   @assert ( Sa <: Tuple && Sb <: Tuple ) "Ill-defined MultiValue value"
 
-  # check that no tensor is of order 0.
-  if min(Na,Nb) == 0
-    msg =  "Generic $N-contraction only implemented if both tensors are of order ≥ 1,
-      got tensor sizes $Sa and $Sb"
+  # An order-0 tensor can only be contracted if has exactly one component
+  if (iszero(Na) && length(a) != 1) || (iszero(Nb) && length(b) != 1)
+    msg = "Generic $N-contraction requires an order-0 tensor to hold exactly one
+      component, got tensor sizes $Sa and $Sb"
     return :( error($msg) )
   end
 
