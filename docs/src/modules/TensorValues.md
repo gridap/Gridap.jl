@@ -279,10 +279,9 @@ grad_to_2form
 
 ### Symbolic operations
 
-These generic functions get their methods from the `GridapSymbolicsExt` package
+This generic function gets its methods from the `GridapSymbolicsExt` package
 extension, which loads when `Symbolics` is present.
 
 ```@docs
-lie_derivative
 symbolic_coordinates
 ```

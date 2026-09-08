@@ -193,10 +193,24 @@ end
 
 """
     exterior_derivative(ω)
+    𝑑(ω)
 
 Exterior derivative of a differential K-form `dω`, is a (K+1)-form.
 """
 function exterior_derivative end
+const 𝑑 = exterior_derivative
+
+"""
+    lie_derivative(v, ω)
+    𝓛(v,ω)
+
+Lie derivative ``𝓛_v ω = d(ι_v ω) + ι_v(dω)`` (Cartan's magic formula).
+
+Requires symbolic (`Symbolics.Num`) coefficients: methods are provided by the
+GridapSymbolicsExt package extension when Symbolics is loaded.
+"""
+function lie_derivative end
+const 𝓛 = lie_derivative
 
 """
     codifferential(ω)

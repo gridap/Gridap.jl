@@ -54,8 +54,8 @@ using Gridap.Arrays: ∑; export ∑
 #@publish TensorValues pullback
 #@publish TensorValues pushforward
 #@publish Fields exterior_derivative
+#@publish Fields lie_derivative
 #@publish Fields codifferential
-#@publish TensorValues lie_derivative
 #@publish TensorValues symbolic_coordinates
 #@publish TensorValues koszul
 #@publish TensorValues vol_coeff

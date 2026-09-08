@@ -35,7 +35,6 @@ $(public_names_in_md(@__MODULE__; change_link=Dict(
   :⋆  => "hodge_star",
   :♭  => "flat",
   :♯  => "sharp",
-  :𝓛  => "lie_derivative",
   :⨟  => "form_inner"
 )))
 """
@@ -105,7 +104,6 @@ export flat, ♭
 export sharp, ♯
 export apply_form
 export pullback
-export lie_derivative, 𝓛
 export symbolic_coordinates
 export koszul
 export vol_coeff

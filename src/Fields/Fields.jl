@@ -2,6 +2,8 @@
 
 $(public_names_in_md(@__MODULE__; change_link=Dict(
   :∇  => "gradient",
+  :𝑑  => "exterior_derivative",
+  :𝓛  => "lie_derivative",
 )))
 """
 module Fields
@@ -103,7 +105,8 @@ export VoidBasisMap
 
 export DensifyInnerMostBlockLevelMap
 
-export exterior_derivative
+export exterior_derivative, 𝑑
+export lie_derivative, 𝓛
 export codifferential
 export DifferentialForm
 export ExteriorDerivativeForm
