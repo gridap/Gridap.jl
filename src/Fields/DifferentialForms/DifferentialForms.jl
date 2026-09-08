@@ -18,6 +18,7 @@ using Combinatorics: levicivita
 import Gridap.TensorValues: ∧
 import Gridap.TensorValues: koszul
 import Gridap.TensorValues: pullback
+import Gridap.TensorValues: indep_comp_getindex
 
 # ============================================================
 # DifferentialForm{K,D,L,Data}
@@ -38,6 +39,20 @@ struct DifferentialForm{K,D,L,Data} <: Field
     @assert L == binomial(D,K) "wrong number of component fields"
     new{K,D,L,typeof(data)}(data)
   end
+end
+
+# Indexing mirrors DifferentialFormValue: K indices address the antisymmetric
+# component (zero on a repeated index, signed by the sorting permutation), while
+# `indep_comp_getindex` addresses the L stored component fields linearly.
+indep_comp_getindex(a::DifferentialForm, n::Integer) = a.data[n]
+
+function Base.getindex(a::DifferentialForm{K,D,L}, inds::Vararg{Integer,K}) where {K,D,L}
+  s = sorting_sign(inds...)
+  # Λᴷ is trivial for K > D, so every index of a component-less form is zero and
+  # there is no stored field to take the value type from.
+  s == 0 && return iszero(L) ? ConstantField(0.0) : ZeroField(a.data[1])
+  f = a.data[combination_index(sort(SVector{K,Int}(inds)), D)]
+  s > 0 ? f : -f
 end
 
 testargs(a::DifferentialForm, x::Point) = testargs.(a.data, Ref(x))
@@ -86,10 +101,6 @@ function return_cache(dω::ExteriorDerivativeForm{K,D,F}, x::Point) where {K,D,F
   grad_fields = map(∇, dω.form.data)
   caches      = map(g -> return_cache(g, x), grad_fields)
   (grad_fields, caches)
-end
-
-function return_value(dω::ExteriorDerivativeForm{K,D,F}, x::Point) where {K,D,F}
-  evaluate(dω, x)
 end
 
 function evaluate!(cache, dω::ExteriorDerivativeForm{K,D,F}, x::Point) where {K,D,F}
@@ -145,7 +156,7 @@ function hodge_star_form(ω::DifferentialForm{K,D}) where {K,D}
       length(unique(perm)) == D || continue
       sgn  = levicivita(sortperm(perm))
       # KEY: use -(f) not Operation(x->-x)(f) — the former is differentiable
-      term = sgn == 1 ? ω.data[n] : -(ω.data[n])
+      term = sgn == 1 ? indep_comp_getindex(ω, n) : -(indep_comp_getindex(ω, n))
       accum = isnothing(accum) ? term : Operation(+)(accum, term)
     end
     accum
@@ -156,11 +167,11 @@ end
 
 # ExteriorDerivativeForm evaluates to DifferentialFormValue{K+1,D}.
 # hodge_star_form on it: extract component fields via _component_field.
-# NOTE: the resulting component fields use Operation(x->x.data[i]) lambdas.
+# NOTE: the resulting component fields use lambda-wrapped Operations.
 # These are NOT differentiable by FieldGradient.
 # This method is safe for evaluation only — do NOT apply exterior_derivative
 # to its result.
-_component_field(f::Field, i::Int) = Operation(x -> x.data[i])(f)
+_component_field(f::Field, i::Int) = Operation(x -> indep_comp_getindex(x, i))(f)
 
 function hodge_star_form(ω::ExteriorDerivativeForm{K,D,F}) where {K,D,F}
   Lp1   = binomial(D, K+1)
@@ -203,10 +214,6 @@ function return_cache(δω::CodifferentialForm{K,D,F}, x::Point) where {K,D,F}
   grad_caches = map(g -> return_cache(g, x), grad_fields)
 
   (sgn, hs_signs, grad_fields, grad_caches)
-end
-
-function return_value(δω::CodifferentialForm{K,D,F}, x::Point) where {K,D,F}
-  evaluate(δω, x)
 end
 
 function evaluate!(cache, δω::CodifferentialForm{K,D,F}, x::Point) where {K,D,F}
@@ -273,10 +280,6 @@ function return_cache(κω::KoszulForm{K,D,F}, x::Point) where {K,D,F}
   return_cache(κω.form, x)
 end
 
-function return_value(κω::KoszulForm{K,D,F}, x::Point) where {K,D,F}
-  evaluate(κω, x)
-end
-
 function evaluate!(cache, κω::KoszulForm{K,D,F}, x::Point) where {K,D,F}
   ω_x = evaluate!(cache, κω.form, x)
   interior_product(x, ω_x)   # Point{D,T} = VectorValue{D,T}
@@ -310,10 +313,6 @@ function return_cache(f::PullbackForm{K,Dm,Dn}, x::Point{Dm}) where {K,Dm,Dn}
   (mc, fc, jc)
 end
 
-function return_value(f::PullbackForm{K,Dm,Dn}, x::Point{Dm}) where {K,Dm,Dn}
-  evaluate(f, x)
-end
-
 function evaluate!(cache, f::PullbackForm{K,Dm,Dn}, x::Point{Dm}) where {K,Dm,Dn}
   mc, fc, jc = cache
   y   = evaluate!(mc, f.map_field, x)
@@ -322,27 +321,3 @@ function evaluate!(cache, f::PullbackForm{K,Dm,Dn}, x::Point{Dm}) where {K,Dm,Dn
   pullback(ω_y, J)
 end
 
-# ============================================================
-# Vector-of-points evaluation, shared by all lazy form Fields
-# ============================================================
-
-const _LazyFormField = Union{DifferentialForm,ExteriorDerivativeForm,
-                             CodifferentialForm,KoszulForm,PullbackForm}
-
-function return_cache(f::_LazyFormField, x::AbstractVector{<:Point})
-  xi = testitem(x)
-  cf = return_cache(f, xi)
-  vi = evaluate!(cf, f, xi)
-  r  = CachedArray(Vector{typeof(vi)}(undef, length(x)))
-  r, cf
-end
-
-function evaluate!(cache, f::_LazyFormField, x::AbstractVector{<:Point})
-  r, cf = cache
-  np = length(x)
-  setsize!(r, (np,))
-  for i in 1:np
-    @inbounds r.array[i] = evaluate!(cf, f, x[i])
-  end
-  r.array
-end
