@@ -71,6 +71,8 @@ has 6 and a `SymTracelessTensorValue{3}` has 5. But they all have 9 (non indepen
 num_indep_components(::Type{T}) where T<:Number = num_components(T)
 num_indep_components(::T) where T<:Number = num_indep_components(T)
 
+get_indep_components(a::MultiValue) = Tuple(a)
+
 """
 !!! warning
     Deprecated in favor on [`num_components`](@ref).
@@ -95,6 +97,11 @@ function rand(rng::AbstractRNG,::Random.SamplerType{V}) where V<:MultiValue{D,T}
   V(Tuple(vrand))
 end
 
+function make_concretetype(::Type{T}) where T <: Number
+  TT = ifelse(isconcretetype(T),T,typeof(zero(T)))
+  @check isconcretetype(TT) "Type $(T) cannot be made concrete."
+  return TT
+end
 
 ## ATM it is not possible to implement array like axes because lazy_mapping
 ## operations / broadcast rely on axes(::MultiValue) adopting the Number convention to return ().

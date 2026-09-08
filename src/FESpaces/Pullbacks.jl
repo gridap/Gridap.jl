@@ -1,15 +1,28 @@
+
 function get_cell_shapefuns_and_dof_basis(
-  model::DiscreteModel, cell_reffe::AbstractArray{T}, conf::Conformity;
-  scale_dof=false, global_meshsize=nothing
+  model::DiscreteModel, cell_reffe::AbstractArray{T}, conf::Conformity; kwargs...
 ) where T <: ReferenceFE
+
+  cell_map  = get_cell_map(get_grid(model))
+  cell_Jt = lazy_map(Broadcasting(∇), cell_map)
 
   reffe_name = get_name(T)
   pushforward = Pushforward(reffe_name, conf)
+  cell_changes = compute_cell_bases_changes(reffe_name, pushforward, model, cell_reffe, cell_Jt)
 
+  return get_cell_shapefuns_and_dof_basis(
+    pushforward, model, cell_reffe, cell_changes, cell_Jt; kwargs...
+  )
+end
+
+# This constructor allows fo provided cell changes and jacobians, 
+# which is necessary for GridapDistributed
+function get_cell_shapefuns_and_dof_basis(
+  pushforward::Pushforward, model, cell_reffe, cell_changes, cell_Jt;
+  scale_dof=false, global_meshsize=nothing
+)
   cell_ref_fields = lazy_map(get_shapefuns, cell_reffe)
   cell_ref_dofs = lazy_map(get_dof_basis, cell_reffe)
-  cell_map  = get_cell_map(get_grid(model))
-  cell_Jt = lazy_map(Broadcasting(∇), cell_map)
 
   # Apply the pushforward "individually" to each shape-function, and the inverse pullback to each DOF
   if pushforward isa IdentityPiolaMap
@@ -23,9 +36,12 @@ function get_cell_shapefuns_and_dof_basis(
   end
 
   # If nontrivial, apply the appropriate change of basis to the DOF and shape-function bases
-  cell_changes = compute_cell_bases_changes(reffe_name, pushforward, model, cell_reffe, cell_Jt)
-  cell_changes = apply_dof_scaling(cell_changes, model, cell_reffe, pushforward, scale_dof, global_meshsize)
-  isnothing(cell_changes) && return (cell_phy_fields, cell_phy_dofs)
+  cell_changes = apply_dof_scaling(
+    cell_changes, model, cell_reffe, pushforward, scale_dof, global_meshsize
+  )
+  if isnothing(cell_changes)
+    return (cell_phy_fields, cell_phy_dofs)
+  end
 
   cell_change, cell_change_invt = cell_changes
   cell_shapefuns = lazy_map(linear_combination, cell_change,      cell_phy_fields)
@@ -98,12 +114,13 @@ end
 # NormalSignMap #
 #################
 
-function get_sign_flip(model::DiscreteModel{Dc}, cell_reffe) where Dc
+function get_sign_flip(model::DiscreteModel, cell_reffe, sign_map = NormalSignMap(model))
   # Comment: lazy_maps on cell_reffes are very optimised, since they are CompressedArray/FillArray
+  Dc = num_cell_dims(model)
   get_facet_own_dofs(reffe) = view(get_face_own_dofs(reffe),get_dimrange(get_polytope(reffe),Dc-1))
   cell_facet_own_dofs = lazy_map(get_facet_own_dofs, cell_reffe)
   cell_ids = IdentityVector(Int32(num_cells(model)))
-  return lazy_map(NormalSignMap(model), cell_reffe, cell_facet_own_dofs, cell_ids)
+  return lazy_map(sign_map, cell_reffe, cell_facet_own_dofs, cell_ids)
 end
 
 """
@@ -171,7 +188,7 @@ function evaluate!(cache,k::NormalSignMap,reffe,facet_own_dofs,cell)
   return Diagonal(dof_sign)
 end
 
-function compute_facet_owners(model::DiscreteModel{Dc}) where {Dc}
+function compute_facet_owners(model::DiscreteModel{Dc}, select_nbor=maximum) where {Dc}
   topo = get_grid_topology(model)
   facet_to_cell = get_faces(topo, Dc-1, Dc)
 
@@ -179,12 +196,16 @@ function compute_facet_owners(model::DiscreteModel{Dc}) where {Dc}
   owners = Vector{Int32}(undef, nfacets)
   for facet in 1:nfacets
     facet_cells = view(facet_to_cell, facet)
-    owners[facet] = first(facet_cells)
+    @check !isempty(facet_cells) "Facet $facet has no adjacent cells"
+    selected_owner = select_nbor(facet_cells)
+    @check selected_owner isa Integer "select_nbor must return an integer owner for facet $facet, got $(typeof(selected_owner))"
+    owner = Int(selected_owner)
+    @check owner != 0 "select_nbor returned invalid owner 0 for facet $facet; expected one of $(collect(facet_cells))"
+    @check owner in facet_cells "select_nbor returned invalid owner $owner for facet $facet; expected one of $(collect(facet_cells))"
+    owners[facet] = Int32(owner)
   end
-
   return owners
 end
-
 
 #################
 # DOFScalingMap #

@@ -105,6 +105,13 @@ export find_local_index
 export datarange
 export dataiterator
 export dataview
+export gather_table_values
+export gather_table_values!
+export scatter_table_values
+export gather_posneg_table_values
+export gather_posneg_table_values!
+export scatter_posneg_table_values
+export inverse_table
 
 export IdentityVector
 
@@ -120,6 +127,7 @@ export Reindex
 export ConfigMap
 export DualizeMap
 export AutoDiffMap
+export GridapADTag
 export autodiff_array_gradient
 export autodiff_array_jacobian
 export autodiff_array_hessian

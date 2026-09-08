@@ -5,6 +5,109 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Better control of `num_nearest_vertices` for `KDTreeSearch`. Added a new preference `set_num_nearest_vertices` to set a global default for the library. Since PR[#1312](https://github.com/gridap/Gridap.jl/pull/1312).
+- Add AD support for complex-valued DOFs. Since PR[#1325](https://github.com/gridap/Gridap.jl/pull/1325).
+- Added `Base.adjoint` method for `ArrayBlock`. Since PR[#1325](https://github.com/gridap/Gridap.jl/pull/1325).
+
+### Fixed
+
+- Fixed the dof signs flips for Curl conform reference FE bases for elements with `change_dof=true`. The signs are now tested for consistency with the `change_dof=false` version. Since PR [#1315](https://github.com/gridap/Gridap.jl/pull/1315).
+- Fixed evaluation of weak forms on empty trians with inverse maps. Since PR[#1316](https://github.com/gridap/Gridap.jl/pull/1316).
+- Fixed getting field type when changing domain on empty adapted triangulations. Since PR [#1326](https://github.com/gridap/Gridap.jl/pull/1326).
+
+### Changed
+- Changed `product_rule` to allow for numbers of `Complex` type. Since PR[#1325](https://github.com/gridap/Gridap.jl/pull/1325).
+- Simplified the type parameters of `BernsteinBasisOnSimplex` and `BarycentricP(m)ΛBasisChanged`. The change of coordinate matrix is always stored, with `Float64` precision. Since PR[#1330](https://github.com/gridap/Gridap.jl/pull/1330).
+
+## [0.20.8] - 2026-06-01
+
+### Added
+
+- Added type-stable methods to `tensor_contraction` and `Base.permutedims(::MultiValue, perm)`: pass the arguments by `Val`. Since PR[#1301](https://github.com/gridap/Gridap.jl/pull/1301).
+- Added `compose_glues` and `compress_adaptivity`, which are tools that can be used to compress a mesh hierarchy (several levels of refinement) into a single adapted model. Since PR[#1309](https://github.com/gridap/Gridap.jl/pull/1309).
+
+### Fixed
+
+- Fixed bug for Raviart-Thomas on AppendedTriangulations. Since PR[#1302](https://github.com/gridap/Gridap.jl/pull/1302).
+- Fixed type instability in Cartesian mesh constructor. Since PR[#1304](https://github.com/gridap/Gridap.jl/pull/1304).
+
+### Changed
+
+- Changed how tagging works to improve compilation times and allow for nested derivatives involving more than one triangulation. Since PR[#1297](https://github.com/gridap/Gridap.jl/pull/1297).
+
+## [0.20.7] - 2026-05-12
+
+### Added
+
+- Added `reindex_free_dof_ids(space, algorithm)` to reorder the free DOFs of a `FESpace` for bandwidth/profile/fill-in reduction. Supported algorithms: `:rcm` (Reverse Cuthill-McKee), `:sloan` (wavefront minimisation), and `:coordinates` (sort by spatial coordinates, for Lagrangian spaces). An externally computed permutation vector can also be applied directly via `reindex_free_dof_ids(space, free_dof_ids)`. Since PR[#1299](https://github.com/gridap/Gridap.jl/pull/1299).
+
+### Changed
+
+- Minor generalisation of `return_value` for `LinearCombinationMap`. Since PR[#1298](https://github.com/gridap/Gridap.jl/pull/1298).
+
+## [0.20.6] - 2026-05-05
+
+### Added
+
+- Make `compute_facet_owners(...)` more flexible, allowing the user to provide a function to select the owner from neighboring cells. Since PR[#1291](https://github.com/gridap/Gridap.jl/pull/1291).
+
+### Fixed
+
+- Fixed type instability for tensor operations between `MultiValue` and scalars. Since PR[#1293](https://github.com/gridap/Gridap.jl/pull/1293).
+- Fixed type instability in basis construction when user gives a non-concrete output type. Since PR[#1294](https://github.com/gridap/Gridap.jl/pull/1294).
+- Reverted most changes from PR[#1277](https://github.com/gridap/Gridap.jl/pull/1277), which were having unnexpected consequences, in favour of simpler changes. Since PR[#1290](https://github.com/gridap/Gridap.jl/pull/1290).
+
+## [0.20.5] - 2026-04-28
+
+### Fixed
+
+- Fixed a bug for autodiff with empty target triangulation, see Issue[#1288](https://github.com/gridap/Gridap.jl/issues/1288) . Since PR[#1289](https://github.com/gridap/Gridap.jl/pull/1289).
+- `NewtonRaphsonSolver` now correctly handles already-converged initial states and reports non-convergence properly. Previously crashed with `@unreachable` when starting residual was ~0. Now checks initial convergence and throws informative error instead of assertion failure. Since PR[#1285](https://github.com/gridap/Gridap.jl/pull/1285).
+- `NLSolver` now checks convergence status before returning solution. Previously, when `nlsolve()` failed to converge, the unconverged last iterate was silently returned. Now throws an informative error with iteration count and residual norm. Since PR[#1283](https://github.com/gridap/Gridap.jl/pull/1283).
+- Fix a bug where external types were not correctly parsed with generated functions in Polynomials, see Issue[#1286](https://github.com/gridap/Gridap.jl/issues/1286). Since PR[#1287](https://github.com/gridap/Gridap.jl/pull/1287).
+
+## [0.20.4] - 2026-04-23
+
+### Added
+
+- Added `get_free_dof_coordinates`. Since PR[#1262](https://github.com/gridap/Gridap.jl/pull/1262).
+- The element type of a `LinearCombinationDofVector` is now `LinearCombinationDof`, since PR[#1266](https://github.com/gridap/Gridap.jl/pull/1266).
+- Added constructor for high-order grids. Since PR[#1276](https://github.com/gridap/Gridap.jl/pull/1276).
+- Added `get_dirichlet_dof_values` for `FEFunctions`. Since PR[#1275](https://github.com/gridap/Gridap.jl/pull/1275).
+- Added `tensor_contraction` function for generic tensor contraction. Since PR[#1280](https://github.com/gridap/Gridap.jl/pull/1280).
+- Added `Base.permutedims` support for tensors. Since PR[#1280](https://github.com/gridap/Gridap.jl/pull/1280).
+- Added Voigt and Mandel support for symmetric tensors. Since PR[#1280](https://github.com/gridap/Gridap.jl/pull/1280).
+
+### Fixed
+
+- Fixed model orientation preservation in `UniformRefinement`. Since PR[#1274](https://github.com/gridap/Gridap.jl/pull/1274).
+- Fixed Issue[#1279](https://github.com/gridap/Gridap.jl/issues/1279) related to zero-length facet triangulations with multifield. Since PR[#1277](https://github.com/gridap/Gridap.jl/pull/1277).
+- Fixed type promotion in tensor operations. Since PR[#1278](https://github.com/gridap/Gridap.jl/pull/1278).
+- Fixed type inference for operations between MultiValue types. Since PR[1270](https://github.com/gridap/Gridap.jl/pull/1270).
+- Allow autodifferentiation of functions that require a VectorValue input. Since PR[1271](https://github.com/gridap/Gridap.jl/pull/1271).
+
+## [0.20.3] - 2026-03-23
+
+### Fixed
+
+- Fixed FEEC basis constructor for serendipity reffes. since PR[#1260](https://github.com/gridap/Gridap.jl/pull/1260).
+
+## [0.20.2] - 2026-03-20
+
+### Fixed
+
+- Fixed precompilation error when extending `Conformity` from the `FESpaces` module. Since PR[#1259](https://github.com/gridap/Gridap.jl/pull/1259).
+
+## [0.20.1] - 2026-03-19
+
+### Changed
+
+- Minor changes to incorporate the changes in Gridap 0.20, specifically the pullback machinery, into GridapDistributed. Since PR[#1258](https://github.com/gridap/Gridap.jl/pull/1258).
+
 ## [0.20.0] - 2026-03-18
 
 This is a major release with breaking changes, mainly in the `Polynomials` and `ReferenceFEs` modules. The main goal of this release is to provide a more flexible and extensible framework for polynomial bases and reference finite elements based on moments, as a stepping stone for the implementation of more complicated elements (e.g. MTW, etc...).

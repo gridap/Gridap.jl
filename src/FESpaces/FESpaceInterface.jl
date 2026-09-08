@@ -388,6 +388,10 @@ end
 
 """
 """
+function get_dirichlet_dof_values(f::FEFunction)
+  @abstractmethod
+end
+
 function get_cell_is_dirichlet(f::FESpace)
   trian = get_triangulation(f)
   Fill(true,num_cells(trian))

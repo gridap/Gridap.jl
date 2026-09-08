@@ -1,6 +1,7 @@
 module InterfaceTests
 
 using Test
+using LinearAlgebra
 using Gridap.Arrays
 
 import Gridap.Arrays: getindex!
@@ -122,6 +123,7 @@ Arrays.getindex!(cache, cm::IndexcartMatrix, i::Integer, j::Integer) = begin @wa
 @test_nowarn Arrays.getindex!(nothing, cm, 1:2,2) # cache skipped
 test_array(m, cm)
 
+# testvalue for complex types
 
 t = (1,2.0,1im,[3,4])
 @test testvalue(t) == (0,0.0,0im,Int[])
@@ -130,5 +132,11 @@ for n in 0:10
   t = ntuple(i->rand(),n)
   @test testvalue(t) == ntuple(i->0.0,n)
 end
+
+t = transpose(rand(3,3))
+@test testvalue(t) == transpose(zeros(0,0))
+
+d = Diagonal([1,2,3])
+@test testvalue(d) == Diagonal(Int[])
 
 end # module

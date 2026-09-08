@@ -178,6 +178,7 @@ function test_patch_assembly(model,domain_tags,integration_tags;order=1)
   l4((vΩ,vΓ)) = ∫(f⋅vΩ)dΩp
   mats4 = assemble_matrix(a4,passem4,X,X)
 
+  return true
 end
 
 model = generate_model()

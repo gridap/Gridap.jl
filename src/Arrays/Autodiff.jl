@@ -1,8 +1,23 @@
 
+struct GridapADTag{L} end
+GridapADTag(level::Integer) = GridapADTag{Val{level}}()
+Base.max(::GridapADTag{Val{N}}, ::GridapADTag{Val{M}}) where {N,M} = GridapADTag(max(N,M))
+Base.:+(::GridapADTag{Val{N}}, j::Int) where {N} = GridapADTag(N+j)
+
+# Define dual ordering: a tag with a higher level was applied first and therefore
+# wraps an inner dual. ForwardDiff's ≺(a,b)=true means a appears inside b.
+ForwardDiff.:(≺)(
+  ::Type{ForwardDiff.Tag{GridapADTag{Val{L1}},V1}},
+  ::Type{ForwardDiff.Tag{GridapADTag{Val{L2}},V2}}) where {L1,L2,V1,V2} = L1 > L2
+
+# Fallback tag
+function default_tag(f,a)
+  return x -> f(a,x)
+end
+
 """
 """
-function autodiff_array_gradient(a,i_to_x)
-  tag = x->ForwardDiff.gradient(a, x)
+function autodiff_array_gradient(V,a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
@@ -12,8 +27,7 @@ end
 
 """
 """
-function autodiff_array_jacobian(a,i_to_x)
-  tag = x->ForwardDiff.jacobian(a, x)
+function autodiff_array_jacobian(V,a,i_to_x;tag=default_tag(ForwardDiff.jacobian,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   i_to_ydual = a(i_to_xdual)
@@ -23,13 +37,13 @@ end
 
 """
 """
-function autodiff_array_hessian(a,i_to_x)
-  agrad = i_to_y -> autodiff_array_gradient(a,i_to_y)
-  autodiff_array_jacobian(agrad,i_to_x)
+function autodiff_array_hessian(V,a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
+  agrad = i_to_y -> autodiff_array_gradient(V,a,i_to_y;tag)
+  agrad_tag = isa(tag,GridapADTag) ? (tag + 1) : default_tag(ForwardDiff.jacobian,agrad)
+  autodiff_array_jacobian(V,agrad,i_to_x;tag=agrad_tag)
 end
 
-function autodiff_array_gradient(a,i_to_x,j_to_i)
-  tag = x->ForwardDiff.gradient(a, x)
+function autodiff_array_gradient(V,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
@@ -38,8 +52,7 @@ function autodiff_array_gradient(a,i_to_x,j_to_i)
   return j_to_result
 end
 
-function autodiff_array_jacobian(a,i_to_x,j_to_i)
-  tag = x->ForwardDiff.jacobian(a, x)
+function autodiff_array_jacobian(V,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.jacobian,a))
   i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
   j_to_ydual = a(i_to_xdual)
@@ -48,12 +61,60 @@ function autodiff_array_jacobian(a,i_to_x,j_to_i)
   return j_to_result
 end
 
-function autodiff_array_hessian(a,i_to_x,j_to_i)
-  agrad = i_to_y -> autodiff_array_gradient(a,i_to_y,j_to_i)
-  autodiff_array_jacobian(agrad,i_to_x,j_to_i)
+function autodiff_array_hessian(V,a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
+  agrad = i_to_y -> autodiff_array_gradient(V,a,i_to_y,j_to_i;tag)
+  agrad_tag = isa(tag,GridapADTag) ? (tag + 1) : default_tag(ForwardDiff.jacobian,agrad)
+  autodiff_array_jacobian(V,agrad,i_to_x,j_to_i;tag=agrad_tag)
+end
+
+# Gradient AD for computing complex-valued functionals
+# This is slightly more intricate than what we usually deal with
+# for real-valued functionals. There are three cases:
+# 1. Holomorphic maps from ℂ → ℂ: As standard in AD systems, we compute
+#    the conjugate gradient f'(z)ᴴ = ∂ᵣu + i ∂ₛu so that dF(z)(v) = <f'(z)ᴴ, v> = f'(z)v.
+# 2. Non-holomorphic maps from ℂ → ℝ: We use CR-Calculus, i.e., it can be shown
+#    that the gradient is given by ∇z(f) = 2∂f/∂z* =  ∂ᵣu + i ∂ₛu and the directional derivative
+#    is given by dF(z)(v)=Re{∇z(f),v}.
+# 3. (NOT IMPLEMENTED) General non-holomorphic maps from ℂ → ℂ: requires splitting into
+#    derivative in z and derivative in z*. This is not implemented yet.
+# Because (1) and (2) are in the same form, we reuse the code below for both cases.
+function autodiff_array_gradient_complex(a,i_to_x,j_to_i...;tag)
+  s = lazy_map(Broadcasting(imag),i_to_x)
+  r = lazy_map(Broadcasting(real),i_to_x)
+  u_r(r) = lazy_map(Broadcasting(real),a(lazy_map((r,s) -> r + im*s,r,s)))
+  u_s(s) = lazy_map(Broadcasting(real),a(lazy_map((r,s) -> r + im*s,r,s)))
+  ∂ᵣu = autodiff_array_gradient(Real,u_r,r,j_to_i...;tag)
+  ∂ₛu = autodiff_array_gradient(Real,u_s,s,j_to_i...;tag)
+  return lazy_map((r,s) -> r + im*s,∂ᵣu,∂ₛu)
+end
+
+"""
+"""
+function autodiff_array_gradient(::Type{<:Complex},a,i_to_x;tag=default_tag(ForwardDiff.gradient,a))
+  return autodiff_array_gradient_complex(a,i_to_x;tag)
+end
+
+"""
+"""
+function autodiff_array_gradient(::Type{<:Complex},a,i_to_x,j_to_i;tag=default_tag(ForwardDiff.gradient,a))
+  return autodiff_array_gradient_complex(a,i_to_x,j_to_i;tag)
+end
+
+# For now, taking the Jacobian or Hessian of a complex-valued functional is not implemented.
+# To implement this, we need to consider the case of f being either holomorphic or non-holomorphic
+function autodiff_array_jacobian(::Type{<:Complex},a,i_to_x...;kwargs...)
+  @notimplemented
+end
+
+function autodiff_array_hessian(::Type{<:Complex},a,i_to_x...;kwargs...)
+  @notimplemented
 end
 
 function autodiff_array_reindex(i_to_val, j_to_i)
+  if isempty(j_to_i)
+    # Necessary to avoid https://github.com/gridap/Gridap.jl/issues/1288
+    return Fill(testitem(i_to_val),0)
+  end
   n_neg = count(j -> j < 0, j_to_i)
   if iszero(n_neg)
     j_to_val = lazy_map(Reindex(i_to_val),j_to_i)
@@ -72,7 +133,7 @@ either gradient or jacobian.
 """
 struct ConfigMap{
   F <: Union{typeof(ForwardDiff.gradient),typeof(ForwardDiff.jacobian)},
-  T <: Union{<:Function,Nothing}} <: Map
+  T <: Union{<:GridapADTag,<:Function,Nothing}} <: Map
 
   f::F # ForwardDiff operation
   tag::T # function for config tag name
@@ -95,6 +156,31 @@ function evaluate!(cfg,k::ConfigMap,x)
   return cfg
 end
 
+# For a zero-length LazyArray of GradientConfig/JacobianConfig, the generic testitem
+# computes return_value(ConfigMap, testitem(x_slice)) where testitem(x_slice) is a
+# zero-length vector (because x_slice is also zero-length). This yields a config with
+# chunk size 0, which does not match the declared type T whose chunk size N > 0.
+# Fix: extract N from T and call return_cache with a vector of length N, using the
+# actual tag closure recovered from testitem(a.maps). The cache is never used for
+# zero-length arrays, so the constructed config is only needed for type correctness.
+function testitem(a::LazyArray{A,T} where A) where {Tag,V,N,D,T<:ForwardDiff.GradientConfig{Tag,V,N,D}}
+  if length(a) > 0
+    first(a)::T
+  else
+    gi = testitem(a.maps)
+    return_cache(gi, zeros(V, N))
+  end::T
+end
+
+function testitem(a::LazyArray{A,T} where A) where {Tag,V,N,D,T<:ForwardDiff.JacobianConfig{Tag,V,N,D}}
+  if length(a) > 0
+    first(a)::T
+  else
+    gi = testitem(a.maps)
+    return_cache(gi, zeros(V, N))
+  end::T
+end
+
 """
     struct DualizeMap <: Map
 """
@@ -104,6 +190,16 @@ function evaluate!(cache,::DualizeMap,cfg,x)
   xdual, seeds = cfg.duals, cfg.seeds
   ForwardDiff.seed!(xdual, x, seeds)
   return xdual
+end
+
+# When testitem of a zero-length ConfigMap LazyArray is called, it returns a
+# GradientConfig/JacobianConfig with the correct chunk size N (recovered from
+# the type parameter), while the companion x test item has length 0. Calling
+# evaluate! with a length-N config and a length-0 x would crash in seed!.
+# return_value only needs to produce a type-correct placeholder; its value is
+# irrelevant since zero-length arrays are never iterated.
+function return_value(::DualizeMap, cfg::Union{ForwardDiff.GradientConfig, ForwardDiff.JacobianConfig}, x::AbstractVector)
+  similar(cfg.duals, length(x))
 end
 
 """

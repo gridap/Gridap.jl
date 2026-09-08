@@ -53,6 +53,28 @@ cell_∂2L∂u∂p_auto = get_array(jacobian(ph->gradient(uh->ener(uh,ph),uh),ph
 cell_∂2L∂u∂p = get_array(jac(uh,ph))
 test_array(cell_∂2L∂u∂p_auto,cell_∂2L∂u∂p,≈)
 
+Γ_reg = BoundaryTriangulation(model)
+Λ_reg = SkeletonTriangulation(model)
+dΓ_reg = Measure(Γ_reg, 2)
+dΛ_reg = Measure(Λ_reg, 2)
+
+reffe_l2 = ReferenceFE(lagrangian, Float64, 1)
+V_reg = TestFESpace(model, reffe_l2, conformity=:L2)
+U_reg = TrialFESpace(V_reg)
+dv_reg = get_fe_basis(V_reg)
+dp_reg = get_trial_fe_basis(U_reg)
+uh_reg = FEFunction(U_reg, rand(num_free_dofs(U_reg)))
+ph_reg = FEFunction(U_reg, rand(num_free_dofs(U_reg)))
+
+ener_reg(u, p) = ∫(0.5*u*u*p)*dΩ + ∫(0.5*u*u*p)*dΓ_reg + ∫(0.5*mean(u)*mean(u)*mean(p))*dΛ_reg
+nested_ad_contrib = jacobian(p -> gradient(u -> ener_reg(u, p), uh_reg), ph_reg)
+mat_nested_ad = assemble_matrix(nested_ad_contrib, U_reg, V_reg)
+analytic_contrib = ∫(uh_reg*dv_reg*dp_reg)*dΩ + ∫(uh_reg*dv_reg*dp_reg)*dΓ_reg +
+                    ∫(mean(uh_reg)*mean(dv_reg)*mean(dp_reg))*dΛ_reg
+mat_analytic = assemble_matrix(analytic_contrib, U_reg, V_reg)
+
+@test mat_nested_ad ≈ mat_analytic
+
 Γ = BoundaryTriangulation(model)
 dΓ = Measure(Γ,2)
 
@@ -287,5 +309,45 @@ op = FEOperator(f2,df2,V,V)
 J_analytic = jacobian(op,uh)
 
 @test J ≈ J_analytic
+
+# Complex-valued AD
+model = CartesianDiscreteModel((0,1,0,1),(8,8))
+order = 1
+Ω = Triangulation(model)
+dΩ = Measure(Ω,2order)
+Γ = Boundary(model)
+dΓ = Measure(Γ,2order)
+Λ = SkeletonTriangulation(model)
+dΛ = Measure(Λ,2order)
+
+V1 = FESpace(model,ReferenceFE(lagrangian,Float64,order);
+  vector_type=Vector{ComplexF64})
+V2 = FESpace(model,ReferenceFE(lagrangian,Float64,order);
+  conformity=:L2,vector_type=Vector{ComplexF64})
+_h = 1.0e-6
+
+fd_gradient(f,u,du) = real((f(u + _h*du) - f(u - _h*du))/(2*_h))
+functional_value(f,V,u) = sum(f(FEFunction(V,u)))
+
+F_holo(u) = ∫(u*u)dΩ + ∫(u*u)dΓ + ∫(mean(u)*mean(u))dΛ
+dreal_F_holo(q,u) = ∫(2*q*conj(u))dΩ + ∫(2*q*conj(u))dΓ + ∫(2*mean(q)*conj(mean(u)))dΛ
+J_nonholo(u) = ∫(conj(u)*u)dΩ + ∫(conj(u)*u)dΓ + ∫(mean(conj(u))*mean(u))dΛ
+dJ_nonholo(q,u) = ∫(2*q'*u)dΩ + ∫(2*q'*u)dΓ + ∫(2*mean(q)'*mean(u))dΛ
+
+for (index,V) in enumerate((V1,V2))
+  uh = interpolate(x -> x[1] + im*x[2],V)
+  u = get_free_dof_values(uh)
+  du = randn(ComplexF64,length(u))
+
+  ad_holo = assemble_vector(gradient(F_holo,uh),V)
+  analytic_holo = assemble_vector(q -> dreal_F_holo(q,uh),V)
+  @test ad_holo ≈ analytic_holo
+  @test real(dot(ad_holo,du)) ≈ fd_gradient(u -> real(functional_value(F_holo,V,u)),u,du) rtol=1.0e-6
+
+  ad_nonholo = assemble_vector(gradient(J_nonholo,uh),V)
+  analytic_nonholo = assemble_vector(q -> dJ_nonholo(q,uh),V)
+  @test ad_nonholo ≈ analytic_nonholo
+  @test real(dot(ad_nonholo,du)) ≈ fd_gradient(u -> real(functional_value(J_nonholo,V,u)),u,du) rtol=1.0e-6
+end
 
 end # module

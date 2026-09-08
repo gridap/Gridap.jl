@@ -118,6 +118,65 @@ function get_old_cell_refinement_rules(g::AdaptivityGlue)
   return g.refinement_rules
 end
 
+"""
+    compose_glues(glue12::AdaptivityGlue, glue23::AdaptivityGlue)
+
+Given two `AdaptivityGlue`s `glue12` and `glue23`, returns a `RefinementGlue` that corresponds to the composition of the two, i.e., `glue12 ∘ glue23`.
+"""
+function compose_glues(glue12::AdaptivityGlue,glue23::AdaptivityGlue)
+  # TODO: Actually, I think that conceptualy there is no issue? 
+  @notimplemented "compose_glues not implemented for mixed refinement/coarsening glues"
+end
+
+function compose_glues(
+  glue12::AdaptivityGlue{RefinementGlue,Dc},
+  glue23::AdaptivityGlue{RefinementGlue,Dc}
+) where Dc
+
+  n2o_faces_map = Vector{Vector{Int32}}(undef, Dc+1)
+  for d in 0:Dc
+    f1_to_f2 = glue12.n2o_faces_map[d+1]
+    f2_to_f3 = glue23.n2o_faces_map[d+1]
+    f1_to_f3 = zeros(Int32, length(f1_to_f2))
+    for (f1, f2) in enumerate(f1_to_f2)
+      if !iszero(f2)
+        f1_to_f3[f1] = f2_to_f3[f2]
+      end
+    end
+    n2o_faces_map[d+1] = f1_to_f3
+  end
+
+  n3                   = length(glue23.o2n_faces_map)
+  n2o_cells            = n2o_faces_map[Dc+1]
+  o2n_faces_map        = inverse_table(n2o_cells, n3)
+  n2o_cell_to_child_id = find_local_index(n2o_cells, o2n_faces_map)
+
+  rr12s_per_c2    = get_old_cell_refinement_rules(glue12)
+  rr23s_per_c2    = get_new_cell_refinement_rules(glue23)
+  composed_per_c2 = compose_refinement_rules(rr12s_per_c2, rr23s_per_c2)
+
+  c2_to_c3(data::Fill{<:RefinementRule}) = Fill(first(data), n3)
+  function c2_to_c3(data::CompressedArray{<:RefinementRule})
+    first_ptrs = Vector{Int32}(undef, n3)
+    for c3 in 1:n3
+      children = glue23.o2n_faces_map[c3]
+      ptr_ref  = data.ptrs[first(children)]
+      @check(all(c2 -> data.ptrs[c2] == ptr_ref, children),
+        "compose_glues: mesh2 children of mesh3 cell $c3 have different refinement rules")
+      first_ptrs[c3] = ptr_ref
+    end
+    CompressedArray(data.values, first_ptrs)
+  end
+
+  refinement_rules = c2_to_c3(composed_per_c2)
+  is_refined       = select_refined_cells(n2o_faces_map[end])
+
+  return AdaptivityGlue(
+    RefinementGlue(), n2o_faces_map, n2o_cell_to_child_id,
+    refinement_rules, is_refined, o2n_faces_map
+  )
+end
+
 # Data re-indexing
 
 """

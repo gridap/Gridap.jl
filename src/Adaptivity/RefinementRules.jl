@@ -729,7 +729,31 @@ function ReferenceFEs.get_face_vertex_permutations(rrule::RefinementRule)
   return cface_to_pindex_to_fnodes
 end
 
-# Implementation comment (Jordi): 
+function get_face_own_vertices(rrule::RefinementRule)
+  own_ffaces = get_cface_to_own_ffaces(rrule)
+  topo = get_grid_topology(rrule.ref_grid)
+  node_range = get_dimrange(topo, 0)
+  return [Int[f for f in ffs if f ∈ node_range] for ffs in own_ffaces]
+end
+
+function get_face_own_coordinates(rrule::RefinementRule)
+  own_vertices = get_face_own_vertices(rrule)
+  topo = get_grid_topology(rrule.ref_grid)
+  coords = get_vertex_coordinates(topo)
+  return lazy_map(Broadcasting(Reindex(coords)), own_vertices)
+end
+
+function get_face_own_vertex_permutations(rrule::RefinementRule)
+  cface_to_own_fnodes      = get_face_own_vertices(rrule)
+  cface_to_all_fnodes      = get_face_vertices(rrule)
+  cface_to_pindex_to_order = get_face_vertex_permutations(rrule)
+  return map(cface_to_own_fnodes, cface_to_all_fnodes, cface_to_pindex_to_order) do own_fnodes, all_fnodes, pindex_to_order
+    own_pos = Dict(Int(n) => i for (i, n) in enumerate(own_fnodes))
+    [[own_pos[Int(all_fnodes[pos])] for pos in perm if haskey(own_pos, Int(all_fnodes[pos]))] for perm in pindex_to_order]
+  end
+end
+
+# Implementation comment (Jordi):
 # The function below computes the permutations of the fine nodes on a face, given a permutation 
 # of the coarse nodes on the same face. This is done by comparing coordinates. In general, this is 
 # not the best idea, since we are doing float comparisons. However, I believe this should not be a problem
@@ -874,6 +898,115 @@ function _compute_cface_to_fface_permutations(
   end
 
   return cface_to_cpindex_to_ffaces,cface_to_cpindex_to_fpindex
+end
+
+# Composition of RefinementRules
+
+"""
+    compose_refinement_rules(rr1::RefinementRule, rr2::RefinementRule)
+
+Given two `RefinementRule`s `rr1` and `rr2`, returns a `RefinementRule` that 
+corresponds to the composition of the two, i.e `rr1 ∘ rr2`.
+"""
+function compose_refinement_rules(rr1::RefinementRule, rr2::RefinementRule)
+  compose_refinement_rules(RefinementRuleType(rr1), RefinementRuleType(rr2), rr1, rr2)
+end
+
+compose_refinement_rules(rr, rrs::RefinementRule...) =
+  compose_refinement_rules(rr, compose_refinement_rules(rrs...))
+
+function compose_refinement_rules(::WithoutRefinement, ::RefinementRuleType, rr1, rr2)
+  return rr2
+end
+
+function compose_refinement_rules(::RefinementRuleType, ::WithoutRefinement, rr1, rr2)
+  return rr1
+end
+
+function compose_refinement_rules(::WithoutRefinement, ::WithoutRefinement, rr1, rr2)
+  return rr1
+end
+
+# Fallback method for generic refinement rules.
+function compose_refinement_rules(::RefinementRuleType, ::RefinementRuleType, rr1, rr2)
+  ref_grid2 = get_ref_grid(rr2)
+  topo2     = get_grid_topology(ref_grid2)
+  cmaps2    = get_cell_map(rr2)
+  m2        = num_subcells(rr2)
+
+  rr1_ref_grid  = get_ref_grid(rr1)
+  rr1_coords    = get_node_coordinates(rr1_ref_grid)
+  rr1_fine_conn = get_cell_node_ids(rr1_ref_grid)
+  rr1_reffes    = get_reffes(rr1_ref_grid)
+  rr1_ctypes    = get_cell_type(rr1_ref_grid)
+  nf_cells      = num_subcells(rr1)
+
+  poly1              = get_polytope(rr1)
+  Dc                 = num_cell_dims(poly1)
+  lface_own_ldofs    = get_face_own_vertices(rr1)
+  lface_pindex_pdofs = get_face_own_vertex_permutations(rr1)
+  cell_ctype         = get_cell_type(ref_grid2)
+  @check maximum(cell_ctype) == 1 "compose_refinement_rules: all intermediate cells must share the polytope"
+  cell_conformity = CellConformity(
+    cell_ctype, [lface_own_ldofs], [lface_pindex_pdofs], [[num_faces(poly1, d)] for d in 0:Dc]
+  )
+
+  cell_node_ids, num_nodes, _, _, _ = compute_conforming_cell_dofs(
+    cell_conformity, topo2, get_face_labeling(ref_grid2), Int[]
+  )
+
+  cell_phys_nodes = lazy_map(evaluate, cmaps2, Fill(rr1_coords, m2))
+  global_coords   = gather_table_values(cell_node_ids, cell_phys_nodes, num_nodes)
+
+  block_ptrs      = Int32.(range(1, m2*nf_cells+1, step=nf_cells))
+  composed_ctypes = rr1_ctypes[Arrays.local_identity_array(Int32, block_ptrs)]
+  composed_conn   = Table([Int32.(cell_node_ids[j][rr1_fine_conn[k]]) for j in 1:m2 for k in 1:nf_cells])
+
+  composed_grid  = UnstructuredGrid(global_coords, composed_conn, rr1_reffes, composed_ctypes)
+  composed_model = UnstructuredDiscreteModel(composed_grid)
+  return RefinementRule(GenericRefinement(), get_polytope(rr2), composed_model)
+end
+
+# Array-level compose_refinement_rules
+
+function compose_refinement_rules(::AbstractArray{<:RefinementRule}, ::AbstractArray{<:RefinementRule})
+  @notimplemented
+end
+
+function compose_refinement_rules(rr1s::Fill{<:RefinementRule}, rr2s::Fill{<:RefinementRule})
+  rr = compose_refinement_rules(rr1s.value, rr2s.value)
+  Fill(rr, axes(rr1s))
+end
+
+function compose_refinement_rules(rr1s::CompressedArray{<:RefinementRule}, rr2s::CompressedArray{<:RefinementRule})
+  n = length(rr1s)
+  @assert length(rr2s) == n
+  ptrs1, vals1 = rr1s.ptrs, rr1s.values
+  ptrs2, vals2 = rr2s.ptrs, rr2s.values
+  pair_to_idx = Dict{Tuple{Int32,Int32},Int32}()
+  result_vals = RefinementRule[]
+  result_ptrs = Vector{Int32}(undef, n)
+  for i in 1:n
+    p1 = Int32(ptrs1[i])
+    p2 = Int32(ptrs2[i])
+    result_ptrs[i] = get!(pair_to_idx, (p1, p2)) do
+      push!(result_vals, compose_refinement_rules(vals1[p1], vals2[p2]))
+      Int32(length(result_vals))
+    end
+  end
+  CompressedArray(collect(result_vals), result_ptrs)
+end
+
+function compose_refinement_rules(rr1s::Fill{<:RefinementRule}, rr2s::CompressedArray{<:RefinementRule})
+  n = length(rr1s)
+  ca1 = CompressedArray(RefinementRule[first(rr1s)], fill(Int32(1), n))
+  compose_refinement_rules(ca1, rr2s)
+end
+
+function compose_refinement_rules(rr1s::CompressedArray{<:RefinementRule}, rr2s::Fill{<:RefinementRule})
+  n = length(rr1s)
+  ca2 = CompressedArray(RefinementRule[first(rr2s)], fill(Int32(1), n))
+  compose_refinement_rules(rr1s, ca2)
 end
 
 # IO

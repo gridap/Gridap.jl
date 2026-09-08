@@ -38,6 +38,9 @@ end
 function return_cache(a::InverseField,xs::AbstractVector{<:Point})
   return return_cache(a,testitem(xs))
 end
+
 function evaluate!(cache,a::InverseField,xs::AbstractVector{<:Point})
   map(x->evaluate!(cache,a,x), xs)
 end
+
+testvalue(::Type{InverseField{F}}) where F = InverseField(testvalue(F))

@@ -66,4 +66,23 @@ tol = 1e-9
 zh = zero(V0)
 @test isa(get_free_dof_values(zh),Vector{ComplexF64})
 
+# Tests for get_free_dof_coordinates / get_free_and_dirichlet_dof_coordinates
+model2d = CartesianDiscreteModel((0,1,0,1),(4,4))
+for order in (0,1,2)
+  conf = order == 0 ? :L2 : :H1
+  dtags = order == 0 ? [] : "boundary"
+  V = FESpace(model2d, ReferenceFE(lagrangian,Float64,order); conformity=conf, dirichlet_tags=dtags)
+
+  free_coords, dir_coords = get_free_and_dirichlet_dof_coordinates(V)
+
+  @test length(free_coords) == num_free_dofs(V)
+  @test length(dir_coords)  == num_dirichlet_dofs(V)
+
+  for x in Iterators.flatten((free_coords, dir_coords))
+    @test 0 ≤ x[1] ≤ 1 && 0 ≤ x[2] ≤ 1
+  end
+
+  @test get_free_dof_coordinates(V) == free_coords
+end
+
 end # module

@@ -139,7 +139,7 @@ function  _free_and_dirichlet_values_fill!(
 
 end
 
-function renumber_free_and_dirichlet_dof_ids(
+function reindex_free_and_dirichlet_dof_ids(
   space::UnconstrainedFESpace,free_dof_ids,dir_dof_ids
 )
   @assert num_free_dofs(space) == length(free_dof_ids)

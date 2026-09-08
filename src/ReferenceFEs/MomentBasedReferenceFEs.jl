@@ -283,7 +283,6 @@ function MomentBasedDofBasis(
 
       # vals : (nN, nμ, nφ), coords : (nN)
       vals, coords = evaluate!(cache,σ,op_φ,μ,ds)
-      # test_moment(σ,prebasis,μ,ds)
 
       mom_offset = face_n_moms[face]
       node_offset = first(face_nodes[face]) + face_n_nodes[face] - 1

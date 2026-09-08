@@ -85,11 +85,20 @@ function CLagrangianFESpace(
   space
 end
 
-function _use_clagrangian(trian,cell_reffe,conf)
-  false
+# Allowed configurations of CLagrangianFESpace constructors
+# We need: 
+#  - H1 conformity
+#  - Both the geometric and FE reffes have to be the same (and linear - this can be relaxed in the future)
+#  - nvertices == nnodes (no periodicity, etc...)
+#  - No constraints (this can be relaxed in the future)
+
+_use_clagrangian(args...) = false
+
+function _use_clagrangian(geo_reffe::GenericLagrangianRefFE, fe_reffe::GenericLagrangianRefFE)
+  return (get_orders(geo_reffe) == get_orders(fe_reffe)) && get_order(geo_reffe) == 1
 end
 
-function _use_clagrangian(trian::Triangulation,cell_reffe,conf::H1Conformity)
+function _use_clagrangian(trian::Triangulation, cell_reffe::AbstractArray{<:ReferenceFE}, ::H1Conformity)
   ctype_reffe1, cell_ctype1 = compress_cell_data(cell_reffe)
   ctype_reffe2 = get_reffes(trian)
   if length(ctype_reffe1) != 1 || length(ctype_reffe2) != 1
@@ -97,12 +106,12 @@ function _use_clagrangian(trian::Triangulation,cell_reffe,conf::H1Conformity)
   end
   reffe1 = first(ctype_reffe1)
   reffe2 = first(ctype_reffe2)
-  !(reffe1 isa GenericLagrangianRefFE && reffe2 isa GenericLagrangianRefFE) && return false
-  get_orders(reffe1) != get_orders(reffe2) && return false
-  # This can be relaxed in the future
-  get_order(reffe1) != 1 && return false
+  return _use_clagrangian(reffe1,reffe2)
+end
 
-  true
+function _use_clagrangian(trian::Triangulation, reffe, conf::H1Conformity)
+  cell_reffe = ReferenceFE(trian, reffe)
+  return _use_clagrangian(trian,cell_reffe,conf)
 end
 
 function _unsafe_clagrangian(
@@ -119,8 +128,8 @@ function _unsafe_clagrangian(
   T = value_type(prebasis)
   # Next line assumes linear grids
   node_to_tag = get_face_tag_index(labels,dirichlet_tags,0)
-  _vector_type = vector_type === nothing ? Vector{Float64} : vector_type
-  tag_to_mask = dirichlet_masks === nothing ? fill(_default_mask(T),length(dirichlet_tags)) : dirichlet_masks
+  _vector_type = isnothing(vector_type) ? Vector{Float64} : vector_type
+  tag_to_mask = isnothing(dirichlet_masks) ? fill(_default_mask(T),length(dirichlet_tags)) : dirichlet_masks
   CLagrangianFESpace(T,grid,_vector_type,node_to_tag,tag_to_mask,trian)
 end
 

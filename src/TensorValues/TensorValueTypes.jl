@@ -93,8 +93,8 @@ MultiValue(a::StaticMatrix{D1,D2,T}) where {D1,D2,T} = convert(TensorValue{D1,D2
 ###############################################################
 
 @generated function one(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T}
-  str = join(["$i==$j ? one(T) : zero(T), " for j in 1:D2 for i in 1:D1])
-  Meta.parse("TensorValue{D1,D2,T}(($str))")
+  m = [ (ci[1] == ci[2] ? :( one(T) ) : :(zero(T)) ) for ci in CartesianIndices((D1,D2)) ]
+  :( return TensorValue{D1,D2,T}($(Expr(:tuple, m...))) )
 end
 
 change_eltype(::Type{<:TensorValue{D1,D2}},::Type{T2}) where {D1,D2,T2} = TensorValue{D1,D2,T2}
@@ -106,13 +106,8 @@ change_eltype(::Type{TensorValue{D1,D2,T1,L}},::Type{T2}) where {D1,D2,T1,T2,L} 
 Return a diagonal `D`×`D` tensor with diagonal containing the elements of `v`.
 """
 @generated function diagonal_tensor(v::VectorValue{D,T}) where {D,T}
-  s = ["zero(T), " for i in 1:(D*D)]
-  for i in 1:D
-    d = D*(i-1)+i
-    s[d] = "v.data[$i],"
-  end
-  str = join(s)
-  Meta.parse("TensorValue{D,D,T,$(D*D)}(($str))")
+  m = [ (ci[1] == ci[2] ? :( v[$(ci[1])] ) : :(zero(T)) ) for ci in CartesianIndices((D,D)) ]
+  :( return TensorValue{D,D,T}($(Expr(:tuple, m...))) )
 end
 
 """
@@ -121,13 +116,8 @@ end
 Return a `D1`×`D2` tensor with columns given by the `D1`-dimensional vectors in `cols`.
 """
 @generated function tensor_from_columns(cols::NTuple{D2,VectorValue{D1,T}}) where {D1,D2,T}
-  s = ""
-  for j in 1:D2
-    for i in 1:D1
-      s *= "cols[$j].data[$i],"
-    end
-  end
-  Meta.parse("TensorValue{D1,D2,T,$(D1*D2)}(($s))")
+  m = [ :(cols[ $(ci[2]) ][ $(ci[1]) ]) for ci in CartesianIndices((D1,D2)) ]
+  :( return TensorValue{D1,D2,T}($(Expr(:tuple, m...))) )
 end
 
 tensor_from_columns(cols::VectorValue...) = tensor_from_columns(cols)
@@ -138,13 +128,8 @@ tensor_from_columns(cols::VectorValue...) = tensor_from_columns(cols)
 Return a `D1`×`D2` tensor with rows given by the `D2`-dimensional vectors in `rows`.
 """
 @generated function tensor_from_rows(rows::NTuple{D1,VectorValue{D2,T}}) where {D1,D2,T}
-  s = ""
-  for j in 1:D2
-    for i in 1:D1
-      s *= "rows[$i].data[$j],"
-    end
-  end
-  Meta.parse("TensorValue{D1,D2,T,$(D1*D2)}(($s))")
+  m = [ :(rows[ $(ci[1]) ][ $(ci[2]) ]) for ci in CartesianIndices((D1,D2)) ]
+  :( return TensorValue{D1,D2,T}($(Expr(:tuple, m...))) )
 end
 
 tensor_from_rows(rows::VectorValue...) = tensor_from_rows(rows)

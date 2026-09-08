@@ -57,3 +57,14 @@ end
 where `j_to_i` is a mapping from the cells of the integrand `Triangulation` to the cells of the `FESpace` `U`. We then move the configurations into the final `Triangulation`, to be able to correctly extract the partials. The remaining steps are the same as before.
 
 Analog functions are implemented for the Jacobian, where local contributions will now be matrices that hold ``(\partial r_j / \partial u_i)(u_0)`` for each local residual ``r_j`` (corresponding to the local DoFs of the test space) and each local DoF of the trial space. These contributions are then assembled into the global Jacobian.
+
+## Autodiff for complex-valued functions
+AD for complex-valued functions is more intricate than AD for real to real maps. There are three cases that we consider:
+1. Holomorphic maps from `ℂ` → `ℂ`: As standard in AD systems, we compute 
+   the conjugate gradient `f'(z)ᴴ = ∂ᵣu + i ∂ₛu` so that `dF(z)(v) = <f'(z)ᴴ, v> = f'(z)v`.
+2. Non-holomorphic maps from `ℂ → ℝ`: We use CR-Calculus, i.e., it can be shown
+   that the gradient is given by `∇z(f) = 2∂f/∂z* =  ∂ᵣu + i ∂ₛu` and the directional derivative
+   is given by `dF(z)(v)=Re{∇z(f),v}`.
+3. (NOT IMPLEMENTED) General non-holomorphic maps from `ℂ → ℂ`: requires splitting into
+   derivative in `z` and derivative in `z*`. This is not implemented yet.
+Because (1) and (2) are in the same form, we reuse the code below for both cases.

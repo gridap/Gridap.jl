@@ -6,6 +6,10 @@ Abstract divergence operator, formally equivalent to `f -> ∇⋅f`.
 """
 divergence(f) = Operation(tr)(∇(f))
 
+function return_value(::Broadcasting{typeof(divergence)},f)
+  Broadcasting(Operation(tr))(Broadcasting(∇)(f))
+end
+
 function evaluate!(cache,::Broadcasting{typeof(divergence)},f)
   Broadcasting(Operation(tr))(Broadcasting(∇)(f))
 end
@@ -28,6 +32,10 @@ Abstract symmetric gradient operator, formally equivalent to `f -> ½(∇f + (�
 """
 symmetric_gradient(f) = Operation(symmetric_part)(gradient(f))
 
+function return_value(::Broadcasting{typeof(symmetric_gradient)},f)
+  Broadcasting(Operation(symmetric_part))(Broadcasting(∇)(f))
+end
+
 function evaluate!(cache,::Broadcasting{typeof(symmetric_gradient)},f)
   Broadcasting(Operation(symmetric_part))(Broadcasting(∇)(f))
 end
@@ -46,6 +54,10 @@ Abstract skew symmetric gradient operator, formally equivalent to `f -> ½(∇f 
 """
 skew_symmetric_gradient(f) = Operation(skew_symmetric_part)(gradient(f))
 
+function return_value(::Broadcasting{typeof(skew_symmetric_gradient)},f)
+  Broadcasting(Operation(skew_symmetric_part))(Broadcasting(∇)(f))
+end
+
 function evaluate!(cache,::Broadcasting{typeof(skew_symmetric_gradient)},f)
   Broadcasting(Operation(skew_symmetric_part))(Broadcasting(∇)(f))
 end
@@ -58,6 +70,10 @@ Abstract curl operator, formally equivalent to
 - `f -> ∇×f` for 3D vector functions.
 """
 curl(f) = Operation(grad2curl)(∇(f))
+
+function return_value(::Broadcasting{typeof(curl)},f)
+  Broadcasting(Operation(grad2curl))(Broadcasting(∇)(f))
+end
 
 function evaluate!(cache,::Broadcasting{typeof(curl)},f)
   Broadcasting(Operation(grad2curl))(Broadcasting(∇)(f))
@@ -171,6 +187,12 @@ function (s::ShiftedNabla)(f)
 end
 
 (s::ShiftedNabla)(f::Function) = s(GenericField(f))
+
+function return_value(k::Broadcasting{<:ShiftedNabla},f)
+  s = k.f
+  g = Broadcasting(∇)(f)
+  Broadcasting(Operation((a,b)->a+s.v⊗b))(g,f)
+end
 
 function evaluate!(cache,k::Broadcasting{<:ShiftedNabla},f)
   s = k.f

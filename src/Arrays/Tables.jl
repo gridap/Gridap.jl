@@ -419,7 +419,9 @@ function inverse_table(
   o = one(P)
   ptrs = zeros(P,nb+1)
   @inbounds for b in a_to_lb_to_b_data
-    ptrs[b+1] += o
+    if b > 0 
+      ptrs[b+1] += o
+    end
   end
   length_to_ptrs!(ptrs)
 
@@ -430,7 +432,7 @@ function inverse_table(
     e = a_to_lb_to_b_ptrs[a+1] - o
     @inbounds for p in s:e
       b = a_to_lb_to_b_data[p]
-      if b != UNSET
+      if b > 0
         data[ptrs[b]] = a
         ptrs[b] += o
       end
@@ -864,6 +866,160 @@ end
 
 local_identity_array(ptrs) = local_identity_array(Int,ptrs)
 
+"""
+    gather_table_values(cell_ids::Table, cell_values[, n])
+
+Gather cell-wise values into a flat `Vector` of length `n`, using
+the positive integer IDs in `cell_ids` as destination indices.
+
+- `cell_ids`: a `Table` mapping each cell to its global IDs.
+- `cell_values`: a cell-wise array (accessible via `array_cache`/`getindex!`).
+- `n`: the total number of global entries (defaults to the max ID).
+
+Values at repeated IDs are silently overwritten (last-write-wins).
+"""
+function gather_table_values(
+  cell_ids::Table, cell_values, n = maximum(cell_ids.data; init=0)
+)
+  cache_vals = array_cache(cell_values)
+  first_vals = getindex!(cache_vals, cell_values, 1)
+  T = eltype(first_vals)
+  values = Vector{T}(undef, n)
+  gather_table_values!(values, cell_ids, cell_values)
+  return values
+end
+
+"""
+    gather_table_values!(values, cell_ids::Table, cell_values)
+
+In-place version of [`gather_table_values`](@ref). Fills `values[id] = v`
+for every `(id, v)` pair across all cells.
+"""
+function gather_table_values!(
+  values, cell_ids::Table, cell_values
+)
+  cache_ids  = array_cache(cell_ids)
+  cache_vals = array_cache(cell_values)
+  for cell in 1:length(cell_ids)
+    ids  = getindex!(cache_ids,  cell_ids,    cell)
+    vals = getindex!(cache_vals, cell_values, cell)
+    for (i, id) in enumerate(ids)
+      if id > 0
+        values[id] = vals[i]
+      end
+    end
+  end
+  return values
+end
+
+"""
+    scatter_table_values(cell_ids::Table, values)
+
+Scatter a flat global `values` array back to cell-wise layout, returning
+a `Table` whose data contains `values[id]` for each positive ID in `cell_ids`.
+Non-positive IDs are left as zero-initialized.
+"""
+function scatter_table_values(cell_ids::Table, values)
+  T = eltype(values)
+  data = Vector{T}(undef, length(cell_ids.data))
+  cell_values = Table(data, copy(cell_ids.ptrs))
+  scatter_table_values!(cell_values, cell_ids, values)
+  return cell_values
+end
+
+"""
+    scatter_table_values(cell_values::Table, cell_ids::Table, values)
+
+In-place version of [`scatter_table_values`](@ref).
+"""
+function scatter_table_values!(cell_values::Table, cell_ids::Table, values)
+  z = zero(get_data_eltype(cell_values))
+  for (k, id) in enumerate(cell_ids.data)
+    cell_values.data[k] = id > 0 ? values[id] : z
+  end
+  return cell_values
+end
+
+"""
+    gather_posneg_table_values(cell_ids::Table, cell_values)
+
+Gather cell-wise values into two flat vectors `(pos_values, neg_values)`
+using the positive/negative ID convention:
+- `id > 0` → `pos_values[id]  = v`
+- `id < 0` → `neg_values[-id] = v`
+
+The maximum positive and (absolute) negative IDs are deduced from
+`cell_ids.data`.
+"""
+function gather_posneg_table_values(cell_ids::Table, cell_values)
+  npos = maximum( id for id in cell_ids.data if id > 0; init=0)
+  nneg = maximum(-id for id in cell_ids.data if id < 0; init=0)
+  cache_vals = array_cache(cell_values)
+  first_vals = getindex!(cache_vals, cell_values, 1)
+  T = eltype(first_vals)
+  pos_values = zeros(T, npos)
+  neg_values = zeros(T, nneg)
+  gather_posneg_table_values!(pos_values, neg_values, cell_ids, cell_values)
+  return pos_values, neg_values
+end
+
+"""
+    gather_posneg_table_values!(pos_values, neg_values, cell_ids::Table, cell_values)
+
+In-place version of [`gather_posneg_table_values`](@ref).
+"""
+function gather_posneg_table_values!(pos_values, neg_values, cell_ids::Table, cell_values)
+  cache_ids  = array_cache(cell_ids)
+  cache_vals = array_cache(cell_values)
+  for cell in 1:length(cell_ids)
+    ids  = getindex!(cache_ids,  cell_ids,    cell)
+    vals = getindex!(cache_vals, cell_values, cell)
+    for (i, id) in enumerate(ids)
+      val = vals[i]
+      if id > 0
+        pos_values[id] = val
+      elseif id < 0
+        neg_values[-id] = val
+      end
+    end
+  end
+  return pos_values, neg_values
+end
+
+"""
+    scatter_posneg_table_values(cell_ids::Table, pos_values, neg_values)
+
+Scatter two global vectors back to cell-wise layout using the
+positive/negative ID convention (equivalent to a lazy
+`PosNegReindex` but materialized into a `Table`).
+"""
+function scatter_posneg_table_values(cell_ids::Table, pos_values, neg_values)
+  T = promote_type(eltype(pos_values), eltype(neg_values))
+  data = Vector{T}(undef, length(cell_ids.data))
+  cell_values = Table(data, copy(cell_ids.ptrs))
+  scatter_posneg_table_values!(cell_values, cell_ids, pos_values, neg_values)
+  return cell_values
+end
+
+"""
+    scatter_posneg_table_values!(cell_values::Table, cell_ids::Table, pos_values, neg_values)
+
+In-place version of [`scatter_posneg_table_values`](@ref).
+"""
+function scatter_posneg_table_values!(cell_values::Table, cell_ids::Table, pos_values, neg_values)
+  z = zero(get_data_eltype(cell_values))
+  for (k, id) in enumerate(cell_ids.data)
+    if id > 0
+      cell_values.data[k] = pos_values[id]
+    elseif id < 0
+      cell_values.data[k] = neg_values[-id]
+    else
+      cell_values.data[k] = z
+    end
+  end
+  return cell_values
+end
+
 function to_dict(table::Table)
   dict = Dict{Symbol,Any}()
   dict[:data] = table.data
@@ -879,4 +1035,72 @@ end
 
 function Base.copy(a::Table)
   Table(copy(a.data),copy(a.ptrs))
+end
+
+"""
+    compute_adjacency(t::Table[, nfree]) -> Table
+
+Build the symmetric node adjacency graph from a hyper-edge table `t`
+(e.g. a cell-to-DOF table).  Two nodes are adjacent iff they appear
+in the same row.  Entries ≤ 0 are treated as inactive (e.g. Dirichlet
+DOF IDs encoded as negative values) and skipped.
+
+`nfree` defaults to the maximum positive entry in `t`.
+
+Returns `adj` where `adj[i]` lists the neighbours of node `i` in sorted
+order.  Node degrees are available cheaply as `diff(adj.ptrs)`.
+"""
+function compute_adjacency(
+  t::Table{T}, nfree::Int = Int(maximum(t.data; init=zero(T)))
+) where T
+  d2c = inverse_table(t, nfree)
+
+  # Upper-bound pointer array: degree(i) ≤ Σ |row(c)| for cells c containing i
+  ub_ptrs = Vector{Int}(undef, nfree + 1)
+  ub_ptrs[1] = 1
+  for i in 1:nfree
+    s = 0
+    for k in datarange(d2c, i)
+      s += length(datarange(t, d2c.data[k]))
+    end
+    ub_ptrs[i+1] = ub_ptrs[i] + s
+  end
+
+  # Collect positive, non-self neighbours (may contain duplicates)
+  ub_data  = Vector{Int32}(undef, ub_ptrs[nfree+1] - 1)
+  fill_end = copy(ub_ptrs)
+  for i in 1:nfree
+    for k in datarange(d2c, i)
+      c = d2c.data[k]
+      for k2 in datarange(t, c)
+        j = t.data[k2]
+        if j > 0 && j != i
+          ub_data[fill_end[i]] = j
+          fill_end[i] += 1
+        end
+      end
+    end
+  end
+
+  # Sort each row slice, then count and copy unique neighbours
+  ptrs = Vector{Int}(undef, nfree + 1)
+  ptrs[1] = 1
+  for i in 1:nfree
+    sort!(view(ub_data, ub_ptrs[i]:fill_end[i]-1))
+    n = 0; prev = zero(Int32)
+    for k in ub_ptrs[i]:fill_end[i]-1
+      v = ub_data[k]; v != prev && (n += 1; prev = v)
+    end
+    ptrs[i+1] = ptrs[i] + n
+  end
+
+  data = Vector{Int32}(undef, ptrs[nfree+1] - 1)
+  for i in 1:nfree
+    p = ptrs[i]; prev = zero(Int32)
+    for k in ub_ptrs[i]:fill_end[i]-1
+      v = ub_data[k]; v != prev && (data[p] = v; p += 1; prev = v)
+    end
+  end
+
+  return Table(data, ptrs)
 end

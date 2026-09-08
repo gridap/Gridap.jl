@@ -59,5 +59,10 @@ Gbx = hcat( [ getindex.(bi,1) .* VectorValue(1.,0)⊗V(1.,0) for bi in evaluate(
 
 test_field_array(b,x,bx,≈, grad=Gbx)
 
+# value_type must be concrete even when user passes a non-concrete tensor type
+for V in (TensorValue{2,2,Float64}, SymTensorValue{2,Float64}, SymFourthOrderTensorValue{2,Float64})
+  L = num_indep_components(V)
+  @test isconcretetype(value_type(CompWiseTensorPolyBasis{2}(Monomial, V, ones(Int, L, 2))))
+end
 
 end # module

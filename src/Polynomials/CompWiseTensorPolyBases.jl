@@ -59,12 +59,13 @@ struct CompWiseTensorPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
     @check size(orders,2) == D msg3
     @check isconcretetype(PT) "PT needs to be a concrete <:Polynomial type"
 
+    VV = make_concretetype(V)
     K = maximum(orders)
     num_poly = mapreduce(length, +, comp_terms)
 
     #TODO check orders in `orders` greater or equal than max index in terms
 
-    new{D,V,PT}(num_poly,K,orders,comp_terms)
+    new{D,VV,PT}(num_poly,K,orders,comp_terms)
   end
 end
 

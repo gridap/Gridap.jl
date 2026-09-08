@@ -39,12 +39,13 @@ struct CartProdPolyBasis{D,V,PT} <: PolynomialBasis{D,V,PT}
     orders::NTuple{D,Int},
     terms::Vector{CartesianIndex{D}}) where {D,V,PT<:Polynomial}
 
+    VV = make_concretetype(V)
     @check isconcretetype(PT) "PT needs to be a concrete <:Polynomial type"
 
     K = maximum(orders; init=0)
     msg =  "Some term contain a higher index than the maximum degree + 1."
     @check all( term -> (maximum(Tuple(term), init=0) <= K+1), terms) msg
-    new{D,V,PT}(K,orders,terms)
+    new{D,VV,PT}(K,orders,terms)
   end
 end
 
@@ -266,35 +267,37 @@ with respect to each independent components of `V`.
 
   T = eltype(s)
   zs = zero(s)
-  m = Array{String}(undef, size(G))
+  ncomps = length(G)
 
   V_deri = MultiValue(zs)
   grad_V_basis = [ ∇i⊗vj for ∇i in component_basis(V_deri), vj in component_basis(V)]
 
-  body = "z = $(zero(T));"
+  ex = Expr[]
+  push!(ex, :(z = $(zero(T))))
+
+  s_syms = [Symbol(:s, i) for i in 1:length(zs)]
   for i in 1:length(zs)
-    body *= "@inbounds s$i = s[$i];"
+    push!(ex, :(@inbounds $(s_syms[i]) = s[$i]))
   end
 
   for icomp in 1:num_indep_components(V)
-    m .= "z"
+    comps = Vector{Any}(undef, ncomps)
+    fill!(comps, :z)
     for i in 1:length(zs)
       gVi_comps = grad_V_basis[i,icomp]
-      for j in 1:length(G)
+      for j in 1:ncomps
         gVij = gVi_comps[j]
         if !iszero(gVij)
-          #m[j] += grad_V_basis[i,icomp][j] * s[i]
-          m[j] *= " + $gVij*s$i"
+          comps[j] = :($(comps[j]) + $(gVij) * $(s_syms[i]))
         end
       end
     end
-    # r[i,k] = sum( grad_V_basis[i,icomp] .* s[i] for i in 1:length(s) )
-    body *= "@inbounds r[i,k] = ($(join(tuple(m...), ", ")));"
-    body *= "k = k + 1;"
+    push!(ex, :(@inbounds r[i,k] = $(Expr(:tuple, comps...))))
+    push!(ex, :(k = k + 1))
   end
 
-  body = Meta.parse(string("begin ",body," end"))
-  return Expr(:block, body ,:(return k))
+  push!(ex, :(return k))
+  return Expr(:block, ex...)
 end
 
 function _hessian_nd!(

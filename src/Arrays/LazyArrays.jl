@@ -255,6 +255,7 @@ Base.size(a::LazyArray) = size(a.maps)
 Base.size(a::LazyArray{G,T,1} where {G,T}) = (length(a.maps),)
 
 function Base.sum(a::LazyArray)
+  isempty(a) && return zero(testitem(a))
   cache = array_cache(a)
   lazy_sum(cache,a)
 end
@@ -270,8 +271,13 @@ end
 
 lazy_collect(a::AbstractArray) = a
 
-function lazy_collect(a::LazyArray{A,T} where A) where T
+function lazy_collect(a::LazyArray)
+  isempty(a) && return fill(testitem(a),size(a))
   cache = array_cache(a)
+  lazy_collect(cache,a)
+end
+
+function lazy_collect(cache, a::LazyArray{A,T} where A) where T
   r = Array{T}(undef,size(a))
   @check axes(a) == axes(r)
   @inbounds for i in eachindex(a)
@@ -295,22 +301,30 @@ end
 
 function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)
   ai = map(ai->ai.value,a)
-  r = evaluate(f.value, ai...)
   s = _common_size(f, a...)
-  Fill(r, s)
+  if prod(s) > 0
+    r = evaluate(f.value, ai...)
+  else
+    r = return_value(f.value, ai...)
+  end
+  return Fill(r, s)
 end
 
 function lazy_map(::typeof(evaluate),::Type{T}, f::Fill, a::Fill...) where T
   ai = map(ai->ai.value,a)
-  r = evaluate(f.value, ai...)
   s = _common_size(f, a...)
-  Fill(r, s)
+  if prod(s) > 0
+    r = evaluate(f.value, ai...)
+  else
+    r = return_value(f.value, ai...)
+  end :: T
+  return Fill(r, s)
 end
 
 function _common_size(a::AbstractArray...)
   a1, = a
-  @check all(map(ai->length(a1) == length(ai),a)) "Array sizes $(map(size,a)) are not compatible."
-  if all( map(ai->size(a1) == size(ai),a) )
+  @check all(ai -> length(a1) == length(ai), a) "Array sizes $(map(size,a)) are not compatible."
+  if all(ai -> size(a1) == size(ai), a)
     size(a1)
   else
     (length(a1),)

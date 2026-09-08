@@ -3,6 +3,7 @@ module DofsTests
 using Test
 using Gridap
 using Gridap.ReferenceFEs
+using Gridap.ReferenceFEs: LinearCombinationDof
 using Gridap.Fields
 using FillArrays
 
@@ -19,6 +20,7 @@ dofs  = get_dof_basis(reffe0)                  # length 3
 dofs_lc = linear_combination(Eye(3,6), dofs)   # length 6
 @test dofs_lc isa AbstractVector{<:Dof}
 @test length(dofs_lc) == 6
+@test dofs_lc[1] isa LinearCombinationDof
 
 basis = get_prebasis(reffe1)                   # length 4
 @test basis    isa AbstractVector{<:Field}

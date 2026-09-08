@@ -32,4 +32,8 @@ using Test
 
 @testset "PolytopalFESpacesTests" begin include("PolytopalFESpacesTests.jl") end
 
+@testset "HighOrderGrids" begin include("HighOrderGridsTests.jl") end
+
+@testset "FESpaceReindexing" begin include("FESpaceReindexingTests.jl") end
+
 end # module

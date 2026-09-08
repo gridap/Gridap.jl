@@ -257,6 +257,42 @@ function Quadrature(trian::Grid,args...;kwargs...)
 end
 
 """
+    ReferenceFE(trian::Grid, args...; kwargs...) -> cell_to_reffe
+
+Return a vector containing the [`ReferenceFE`](@ref) specified by `args` and
+`kwargs` for each type of cell of `trian` (given by [`get_cell_type(trian)`](@ref)).
+
+The `args` and `kwargs` are all arguments accepted by
+[`ReferenceFE(::ReferenceFEName, ...; ...)`](@ref
+ReferenceFE(::ReferenceFEName,a...;k...)) or [`ReferenceFE(F::Symbol, ...; ...)`](@ref
+ReferenceFE(::Symbol,a...;k...)), first argument included.
+"""
+function ReferenceFE(trian::Grid,args...;kwargs...)
+  ctype_to_polytope = get_polytopes(trian)
+  cell_to_ctype = get_cell_type(trian)
+  ctype_to_reffe = map(p->ReferenceFE(p,args...;kwargs...),ctype_to_polytope)
+  cell_to_reffe = expand_cell_data(ctype_to_reffe,cell_to_ctype)
+  return cell_to_reffe
+end
+
+function ReferenceFE(trian::Grid,basis::ModalC0,args...;kwargs...)
+  ctype_to_polytope = get_polytopes(trian)
+  @assert length(ctype_to_polytope) == 1 "Only one polytope expected"
+  compute_cell_to_modalC0_reffe(ctype_to_polytope[1],num_cells(trian),args...;kwargs...)
+end
+
+function ReferenceFE(
+  trian::Grid, reffe::Tuple{<:Union{ReferenceFEName,Symbol},Any,Any}
+)
+  reffe_name, reffe_args,reffe_kwargs = reffe
+  ReferenceFE(trian,reffe_name,reffe_args...;reffe_kwargs...)
+end
+
+function ReferenceFE(trian::Grid, reffe::ReferenceFE)
+  Fill(reffe,num_cells(trian))
+end
+
+"""
     is_oriented(::Type{<:Grid}) -> Bool
     is_oriented(a::Grid) -> Bool
 """

@@ -378,9 +378,54 @@ function run_edge_case_test()
   end
 end
 
+function complex_valued_ad_tests()
+  model = CartesianDiscreteModel((0,1,0,1),(8,8))
+  order = 1
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω,2order)
+  Γ = Boundary(model)
+  dΓ = Measure(Γ,2order)
+  Λ = SkeletonTriangulation(model)
+  dΛ = Measure(Λ,2order)
+
+  V1 = FESpace(model,ReferenceFE(lagrangian,Float64,order);
+    vector_type=Vector{ComplexF64})
+  V2 = FESpace(model,ReferenceFE(lagrangian,Float64,order);
+    conformity=:L2,vector_type=Vector{ComplexF64})
+
+  _h = 1.0e-6
+  fd_gradient(f,u,du) = real((f(u + _h*du) - f(u - _h*du))/(2*_h))
+  functional_value(f,V,u) = sum(f(FEFunction(V,u)))
+
+  for style in (ConsecutiveMultiFieldStyle(),BlockMultiFieldStyle())
+    V = MultiFieldFESpace([V1,V2];style)
+    uh = interpolate((x -> x[1] + im*x[2],x -> x[1] - im*x[2]),V)
+    u = get_free_dof_values(uh)
+    du = randn(ComplexF64,length(u))
+
+    F_holo((u1,u2)) = ∫(u1*u2)dΩ + ∫(u1*u2)dΓ + ∫(mean(u1)*mean(u2))dΛ
+    dreal_F_holo((q1,q2),(u1,u2)) = ∫(q1*conj(u2) + q2*conj(u1))dΩ + ∫(q1*conj(u2) + q2*conj(u1))dΓ + ∫(mean(q1)*conj(mean(u2)) + mean(q2)*conj(mean(u1)))dΛ
+    J_nonholo((u1,u2)) = ∫(conj(u1)*u1 + conj(u2)*u2)dΩ + ∫(conj(u1)*u1 + conj(u2)*u2)dΓ + ∫(mean(conj(u1))*mean(u1) + mean(conj(u2))*mean(u2))dΛ
+    dJ_nonholo((q1,q2),(u1,u2)) = ∫(2*q1'*u1 + 2*q2'*u2)dΩ + ∫(2*q1'*u1 + 2*q2'*u2)dΓ + ∫(2*mean(q1)'*mean(u1) + 2*mean(q2)'*mean(u2))dΛ
+
+    for ad_type in (:monolithic,:split)
+      ad_holo = assemble_vector(gradient(F_holo,uh;ad_type),V)
+      analytic_holo = assemble_vector(q -> dreal_F_holo(q,uh),V)
+      @test ad_holo ≈ analytic_holo
+      @test real(dot(ad_holo,du)) ≈ fd_gradient(u -> real(functional_value(F_holo,V,u)),u,du) rtol=1.0e-6
+
+      ad_nonholo = assemble_vector(gradient(J_nonholo,uh;ad_type),V)
+      analytic_nonholo = assemble_vector(q -> dJ_nonholo(q,uh),V)
+      @test ad_nonholo ≈ analytic_nonholo
+      @test real(dot(ad_nonholo,du)) ≈ fd_gradient(u -> real(functional_value(J_nonholo,V,u)),u,du) rtol=1.0e-6
+    end
+  end
+end
+
 run_tests(:split)
 run_tests(:monolithic)
 run_multi_trian_tests()
 run_edge_case_test()
+complex_valued_ad_tests()
 
 end # module

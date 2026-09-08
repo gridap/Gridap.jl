@@ -301,11 +301,11 @@ BernsteinBasis(args...)
 ```@docs
 BernsteinBasis
 BernsteinBasisOnSimplex
-BernsteinBasisOnSimplex(::Val,::Type,::Int,vertices=nothing)
+BernsteinBasisOnSimplex(::Val,::Type,::Int)
 bernstein_terms
 bernstein_term_id
-BarycentricPmΛBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
-BarycentricPΛBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
+BarycentricPmΛBasis(::Val{D},::Type{T},r,k; kwargs...) where {D,T}
+BarycentricPΛBasis(::Val{D},::Type{T},r,k; kwargs...) where {D,T}
 ```
 ## Low level APIs and internals
 

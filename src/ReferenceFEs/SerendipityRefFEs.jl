@@ -119,9 +119,8 @@ function compute_monomial_basis(::Type{T},p::SerendipityPolytope{D},orders) wher
 end
 
 function compute_poly_basis(::Type{T},p::SerendipityPolytope{D},orders,poly_type) where {T,D}
-  FEEC_poly_basis
   r = iszero(D) ? 0 : first(orders)
-  FEEC_poly_basis(Val(D),T,r,0,:S,poly_type) # SᵣΛ⁰(□ᴰ)
+  FEEC_poly_basis(Val(D),T,r,0,:S,poly_type; cart_prod=(T <: MultiValue)) # SᵣΛ⁰(□ᴰ)
 end
 
 function compute_own_nodes(p::SerendipityPolytope{0},orders)

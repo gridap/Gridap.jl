@@ -24,7 +24,6 @@ vh = FEFunction(V,rand(num_free_dofs(V)))
 @test isa(vh,FEFunction)
 test_fe_function(vh)
 
-
 dv = get_fe_basis(V)
 du = get_trial_fe_basis(V)
 

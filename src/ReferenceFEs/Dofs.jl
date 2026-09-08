@@ -8,6 +8,13 @@ and the range the scalar set.
 abstract type Dof <: Map end
 
 """
+    struct LinearCombinationDof <: Dof
+
+Type to represent an element of a [`LinearCombinationDofVector`](@ref).
+"""
+struct LinearCombinationDof <: Dof end
+
+"""
     struct LinearCombinationDofVector{T<:Dof,V,F} <: AbstractVector{T}
       values :: V
       predofs:: F
@@ -23,7 +30,7 @@ Fields:
 - `values::AbstractMatrix{<:Number}` the matrix of the change from dof basis (b) to (a)
 - `predofs::AbstractVector{T}` A type representing dof pre-basis (b), with `T<:Dof`
 """
-@ahe struct LinearCombinationDofVector{T,V,F} <: AbstractVector{T}
+@ahe struct LinearCombinationDofVector{T,V,F} <: AbstractVector{LinearCombinationDof}
   values::V
   predofs::F
   function LinearCombinationDofVector(
@@ -46,7 +53,7 @@ end
 
 Base.size(a::LinearCombinationDofVector) = (size(a.values,2),)
 Base.IndexStyle(::LinearCombinationDofVector) = IndexLinear()
-Base.getindex(::LinearCombinationDofVector{T},::Integer) where T = T()
+Base.getindex(::LinearCombinationDofVector,::Integer) = LinearCombinationDof()
 
 function linear_combination(a::AbstractMatrix{<:Number}, b::AbstractVector{<:Dof})
   LinearCombinationDofVector(a,b)
@@ -104,7 +111,7 @@ function Base.getindex(b::ConcatenatedDofVector, i::Integer)
   lengths = length.(bases)
   first_indices = accumulate(+, lengths)
   basis_index = findfirst(>=(i), first_indices)
-  first(bases[basis_index]) # this is PointValue() or Moment() whatever i
+  first(bases[basis_index]) # this is PointValue(..), Moment() or LinearCombinationDof() whatever i
 end
 
 function Arrays.return_cache(b::ConcatenatedDofVector, field)

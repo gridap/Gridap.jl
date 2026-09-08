@@ -7,6 +7,7 @@ using Test
 using FillArrays
 using LinearAlgebra
 using DataStructures
+using StaticArrays
 
 using Gridap.Helpers
 using Gridap.Algebra

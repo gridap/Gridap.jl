@@ -23,6 +23,12 @@ test_grid(grid)
 @test is_oriented(grid) == true
 @test get_facet_normal(grid) === facet_normal
 
+grid = UnstructuredGrid(node_coordinates,cell_node_ids,reffes,cell_types,Oriented(),facet_normal;
+                        has_affine_map=nothing)
+test_grid(grid)
+@test is_oriented(grid) == true
+@test get_facet_normal(grid) === facet_normal
+
 grid = UnstructuredGrid(node_coordinates,cell_node_ids,reffes,cell_types,Oriented())
 test_grid(grid)
 @test is_oriented(grid) == true

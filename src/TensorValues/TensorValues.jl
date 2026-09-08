@@ -66,6 +66,7 @@ export skew_symmetric_part
 export num_components
 export num_indep_components
 export change_eltype
+export make_concretetype
 export diagonal_tensor
 export ⊙
 export ⊗
@@ -73,12 +74,17 @@ export ⋅¹
 export ⋅²
 export double_contraction
 export contracted_product
+export tensor_contraction
 export congruent_prod
 export indep_comp_getindex
 export indep_components_names
 export component_basis
 export representatives_of_componentbasis_dual
 export representatives_of_basis_dual
+export to_voigt
+export from_voigt
+export to_mandel
+export from_mandel
 
 import Base: show
 import Base: promote_rule
@@ -93,6 +99,7 @@ import Base: convert
 import Base: IndexStyle, CartesianIndices, LinearIndices
 import Base: adjoint
 import Base: transpose
+import Base: permutedims
 import Base: rand
 import Base: sqrt
 

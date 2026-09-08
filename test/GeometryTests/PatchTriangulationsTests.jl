@@ -105,6 +105,23 @@ itopo = InterfacePatchTopology(
 @test Geometry.get_patch_faces(itopo,1) == [[1,3,5,7],[2,6],[2,6],[8,9,11,12]]
 Γp = Geometry.PatchBoundaryTriangulation(model,itopo)
 
+# Bounding box grids
+
+model = CartesianDiscreteModel((0,1,0,1),(2,2))
+topo = get_grid_topology(model)
+patch_cells = Table([[1,2],[3,4]])
+
+ptopo = PatchTopology(topo, patch_cells)
+cell_grid = Geometry.bounding_box_grid(model, ptopo, 2)
+@test num_cells(cell_grid) == num_patches(ptopo)
+@test get_cell_coordinates(cell_grid)[1] == Point.([(0.0, 0.0), (1.0, 0.0), (0.0, 0.5), (1.0, 0.5)])
+@test get_cell_coordinates(cell_grid)[2] == Point.([(0.0, 0.5), (1.0, 0.5), (0.0, 1.0), (1.0, 1.0)])
+
+itopo = InterfacePatchTopology(PatchTopology(topo, patch_cells))
+Γp = Geometry.PatchBoundaryTriangulation(model,itopo)
+face_grid = Geometry.bounding_box_grid(model, Γp; δmin=0.1)
+@test num_cells(face_grid) == num_patches(itopo)
+
 # IO
 
 model_io = CartesianDiscreteModel((0,1,0,1),(3,3))

@@ -78,13 +78,13 @@ SymTensorValue{D,T1,L}(data::Number...) where {D,T1,L} = SymTensorValue{D,T1}(da
 #From Square Matrices
 @generated function _flatten_upper_triangle(data::AbstractArray,::Val{D}) where D
   check_e = :( @check ($D,$D) == size(data) )
-  str = ""
+  comps = Expr[]
   for i in 1:D
     for j in i:D
-      str *= "data[$i,$j], "
+    push!(comps, :(data[$i,$j]))
     end
   end
-  ret_e = Meta.parse(" return ($str)")
+  ret_e = :(return $(Expr(:tuple, comps...)))
   Expr(:block, check_e, ret_e)
 end
 
@@ -98,14 +98,14 @@ SymTensorValue{D,T1,L}(data::AbstractMatrix{T2}) where {D,T1,T2,L} = SymTensorVa
 ###############################################################
 
 @generated function _SymTensorValue_to_array(arg::SymTensorValue{D,T,L}) where {D,T,L}
-  str = ""
+  comps = Expr[]
   for j in 1:D
     for i in 1:D
       p = _2d_sym_tensor_linear_index(D,i,j)
-      str *= "arg.data[$p], "
+      push!(comps, :(arg.data[$p]))
     end
   end
-  Meta.parse("SMatrix{D,D,T}(($str))")
+  :( return SMatrix{D,D,T}( $(Expr(:tuple, comps...))) )
 end
 
 # Inverse conversion
@@ -121,8 +121,8 @@ convert(::Type{<:SymTensorValue{D,T}}, arg::SymTensorValue{D,T}) where {D,T} = a
 ###############################################################
 
 @generated function one(::Type{<:SymTensorValue{D,T}}) where {D,T}
-  str = join(["$i==$j ? one(T) : zero(T), " for i in 1:D for j in i:D])
-  Meta.parse("SymTensorValue{D,T}(($str))")
+  comps = [ i==j ? :(one(T)) : :(zero(T))  for i in 1:D for j in i:D]
+  :( return SymTensorValue{D,T}( $(Expr(:tuple, comps...))) )
 end
 
 change_eltype(::Type{<:SymTensorValue{D}},::Type{T2}) where {D,T2} = SymTensorValue{D,T2}

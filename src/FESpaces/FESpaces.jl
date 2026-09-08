@@ -22,7 +22,8 @@ using Gridap.CellData
 using Gridap.TensorValues
 using Gridap.Polynomials
 
-using Gridap.Arrays: Reindex, ConfigMap, DualizeMap, AutoDiffMap, lazy_map
+using Gridap.Arrays: Reindex, ConfigMap, DualizeMap, AutoDiffMap, GridapADTag, default_tag
+using Gridap.Arrays: lazy_map, compute_adjacency
 
 using Gridap.Fields: ArrayBlock, BlockMap
 
@@ -120,6 +121,8 @@ export gather_free_values
 export gather_free_values!
 export test_single_field_fe_space
 export get_dirichlet_dof_values
+export get_free_dof_coordinates
+export get_free_and_dirichlet_dof_coordinates
 export interpolate
 export interpolate!
 export interpolate_everywhere
@@ -220,6 +223,11 @@ export PolytopalFESpace
 export PatchAssembler
 export LocalOperator
 
+export high_order_grid
+
+export reindex_free_and_dirichlet_dof_ids
+export reindex_free_dof_ids
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")
@@ -273,6 +281,10 @@ include("PatchAssemblers.jl")
 include("LocalFEOperators.jl")
 
 include("PatchFESpaces.jl")
+
+include("HighOrderGrids.jl")
+
+include("FESpaceReindexing.jl")
 
 """
 deprecated

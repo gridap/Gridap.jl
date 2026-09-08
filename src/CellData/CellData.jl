@@ -82,6 +82,7 @@ export compute_cell_points_from_vector_of_points
 export DomainContribution
 export num_domains
 export get_domains
+export get_ad_level
 export get_contribution
 export add_contribution!
 export Measure

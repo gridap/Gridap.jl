@@ -7,7 +7,7 @@
 struct KDTreeSearch{T}
   num_nearest_vertices::Int
   tol::T
-  function KDTreeSearch(; num_nearest_vertices=1, tol=1.e-10)
+  function KDTreeSearch(; num_nearest_vertices=Helpers.default_num_nearest_vertices, tol=1.e-10)
     T = typeof(tol)
     new{T}(num_nearest_vertices, tol)
   end
@@ -24,7 +24,7 @@ struct Interpolable{M,A} <: Function
       Interpolable(uh; tol=1e-6, searchmethod=KDTreeSearch(; tol=tol))
   """
   function Interpolable(uh; tol=1e-10, searchmethod=KDTreeSearch(; tol=tol))
-    new{typeof(searchmethod),typeof(uh)}(uh, tol,searchmethod)
+    new{typeof(searchmethod),typeof(uh)}(uh, tol, searchmethod)
   end
 end
 
@@ -162,7 +162,19 @@ function _point_to_cell!(cache, x::Point)
   end
 
   # Output error message if cell not found
-  @check false "Point $x is not inside any active cell"
+  @check false """\n
+  Point $x was not found in any active cell of the triangulation.
+
+  The KDTreeSearch used num_nearest_vertices=$(searchmethod.num_nearest_vertices). Points near
+  cell boundaries or mesh vertices may require a larger neighbourhood to be located correctly.
+  Try increasing num_nearest_vertices, e.g.:
+
+    DiracDelta(model, p; searchmethod=KDTreeSearch(num_nearest_vertices=3))
+    Interpolable(uh; searchmethod=KDTreeSearch(num_nearest_vertices=3))
+
+  A global default for num_nearest_vertices can be set 
+  with `Helpers.set_num_nearest_vertices(n)`.
+  """
 end
 
 """

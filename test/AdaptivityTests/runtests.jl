@@ -32,4 +32,8 @@ end
   include("PolytopalCoarseningTests.jl")
 end
 
+@testset "AdaptivityComposition" begin
+  include("AdaptivityCompositionTests.jl")
+end
+
 end # module

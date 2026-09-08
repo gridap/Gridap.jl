@@ -1,6 +1,7 @@
 module ExtrusionPolytopesTests
 
 using Test
+using Gridap: Gridap
 using Gridap.Helpers
 using Gridap.TensorValues
 using Gridap.Arrays
@@ -179,21 +180,16 @@ for dim in 0:5
     @test is_simplex(p)
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# Check the consistency of the reference FE polytopes' coordinates with the
+# assumption of some polynomial bases, e.g. BernsteinBasisOnSimplex
+for D in 1:5
+  VD = Val(D)
+  ref_simplex = ExtrusionPolytope(tfill(TET_AXIS, VD))
+  vertex_coords = get_vertex_coordinates(ref_simplex)
+  b1 = Gridap.Polynomials.BernsteinBasisOnSimplex(VD, Float64, 0)
+  b2 = Gridap.Polynomials.BernsteinBasisOnSimplex(VD, Float64, 0, vertex_coords)
+  @test norm(b1.x_to_λ - b2.x_to_λ) < 1e-14
+end
 
 #using Gridap.Fields
 #

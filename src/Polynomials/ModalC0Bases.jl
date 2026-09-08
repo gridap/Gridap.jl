@@ -43,9 +43,10 @@ struct ModalC0Basis{D,V,T} <: PolynomialBasis{D,V,ModalC0}
     _msg =  "The number of bounding box points in a and b should match the number of terms"
     @check length(terms) == length(a) == length(b) _msg
     @check T == eltype(V) "Point and polynomial values should have the same scalar body"
+    VV = make_concretetype(V)
     K = maximum(orders, init=0)
 
-    new{D,V,T}(K,orders,terms,a,b)
+    new{D,VV,T}(K,orders,terms,a,b)
   end
 end
 
@@ -298,31 +299,29 @@ end
   # Git blame me for readable non-generated version
   @notimplementedif num_indep_components(V) != num_components(V) "Not implemented for symmetric Jacobian or Hessian"
 
-  m = Array{String}(undef, size(G))
+  m = Array{Symbol}(undef, size(G))
   N_val_dims = length(size(V))
   s_size = size(G)[1:end-N_val_dims]
 
-  body = "T = eltype(s); z = zero(T);"
+  ex = Expr[]
+  ex = push!(ex, :(T = eltype(s); z = zero(T);) )
+
+  s_syms = [Symbol(:s, Tuple(ci)...) for ci in CartesianIndices(s_size)]
   for ci in CartesianIndices(s_size)
-    id = join(Tuple(ci))
-    body *= "@inbounds s$id = s[$ci];"
+    push!(ex, :(@inbounds $(s_syms[ci]) = s[$ci]))
   end
 
-  V_size = size(V)
-  for (ij,j) in enumerate(CartesianIndices(V_size))
-    for i in CartesianIndices(m)
-      m[i] = "z"
-    end
+  for (ij,j) in enumerate(CartesianIndices(V))
+    fill!(m, :z)
     for ci in CartesianIndices(s_size)
-      id = join(Tuple(ci))
-      m[ci,j] = "s$id"
+      m[ci,j] = s_syms[ci]
     end
-    body *= "i = k + l*($ij-1);"
-    body *= "@inbounds r[i1,i] = ($(join(tuple(m...), ", ")));"
+    push!(ex, :(i = k + l*($ij-1)))
+    push!(ex, :(@inbounds r[i1,k] = $(Expr(:tuple, m...))))
   end
 
-  body = Meta.parse(string("begin ",body," end"))
-  return Expr(:block, body ,:(return k+1))
+  push!(ex, :(return k))
+  return Expr(:block, ex...)
 end
 
 function _hessian_nd!(

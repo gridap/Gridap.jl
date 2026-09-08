@@ -72,15 +72,17 @@ SkewSymTensorValue{D,T1,L}(data::Number...) where {D,T1,L} = SkewSymTensorValue{
 
 #From Square Matrices
 @generated function _flatten_skewsym(data::AbstractArray,::Val{D}) where D
-  check_e = :( @check ($D,$D) == size(data) )
-  str = ""
+  comps = Expr[]
   for i in 1:D
     for j in i+1:D
-      str *= "data[$i,$j], "
+      push!(comps, :(data[$i,$j]))
     end
   end
-  ret_e = Meta.parse(" return ($str)")
-  Expr(:block, check_e, ret_e)
+
+  quote
+    @check ($D,$D) == size(data)
+    return tuple($(comps...))
+  end
 end
 
 SkewSymTensorValue(data::AbstractMatrix{T}) where {T} = ((D1,D2)=size(data); SkewSymTensorValue{D1}(data))
@@ -93,14 +95,16 @@ SkewSymTensorValue{D,T1,L}(data::AbstractMatrix{T2}) where {D,T1,T2,L} = SkewSym
 ###############################################################
 
 @generated function _SkewSymTensorValue_to_array(arg::SkewSymTensorValue{D,T,L}) where {D,T,L}
-  z = zero(T)
-  str = ""
+  comps = Expr[]
   for j in 1:D
     for i in 1:D
-      str *= "arg[$i,$j], "
+      push!(comps, :(arg[$i,$j]))
     end
   end
-  Meta.parse("SMatrix{D,D,T}(($str))")
+
+  quote
+    return SMatrix{D,D,T}( tuple($(comps...)) )
+  end
 end
 
 # Inverse conversion

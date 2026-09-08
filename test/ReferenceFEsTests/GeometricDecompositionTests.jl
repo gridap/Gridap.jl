@@ -198,6 +198,23 @@ function HDiv_facet_flux(φ,_,ds) #  ∫ φ⋅n dF
   Broadcasting(Operation(⋅))(φ,n)
 end
 
+function HCurl_facet_tan_tr_1(φ,_,ds) #  ∫ φ×n ⋅ e1 dF
+  n = get_facet_normal(ds)
+  E = ReferenceFEs.get_extension(ds)
+  e1 = ConstantField(VectorValue(1.,0))
+  E1 = Broadcasting(Operation(⋅))(E,e1)
+  φn = Broadcasting(Operation(×))(n,φ)
+  Broadcasting(Operation(⋅))(φn,E1)
+end
+
+function HCurl_facet_tan_tr_2(φ,_,ds) #  ∫ φ×n ⋅ e2 dF
+  n = get_facet_normal(ds)
+  E = ReferenceFEs.get_extension(ds)
+  e2 = ConstantField(VectorValue(0.,1))
+  E2 = Broadcasting(Operation(⋅))(E,e2)
+  φn = Broadcasting(Operation(×))(n,φ)
+  Broadcasting(Operation(⋅))(φn,E2)
+end
 
 # zero form on each face
 function get_trace_forms(p::Polytope{D}, field, ::L2Conformity) where D
@@ -243,6 +260,13 @@ function get_normal_flux_forms(p::Polytope{D}, field) where D
   fun_flux_form = Tuple[ (facet_range, HDiv_facet_flux)  ]
   qorder = get_order(field)+2
   FaceIntegralFormVector(p,qorder,fun_flux_form)
+end
+
+function get_tangent_trace_forms(p::Polytope{D}, field) where D
+  facet_range = get_dimrange(p,D-1)
+  fun_tan_forms = Tuple[ (facet_range, HCurl_facet_tan_tr_1), (facet_range, HCurl_facet_tan_tr_2) ]
+  qorder = get_order(field)+2
+  FaceIntegralFormVector(p,qorder,fun_tan_forms)
 end
 
 
@@ -292,8 +316,15 @@ function _test_geometric_decomposition(b,p,conf,
   end
   @test pass
 
+  ##########################
   # test apply_face_signflip
-  if conf isa DivConformity || (conf isa CurlConformity && p == HEX)
+
+  # As they are currently written, these tests are only meant to pass if all facets
+  # have the same bubble space. In case of anysotropic basis on `p`
+  # (non-uniform h-adaptivity), only facets of same degree / same bubble space
+  # could be compared
+
+  if conf isa DivConformity
     normal_flux_forms = get_normal_flux_forms(p,b)
     b_nrm_fluxes = evaluate(normal_flux_forms, b)
 
@@ -309,8 +340,7 @@ function _test_geometric_decomposition(b,p,conf,
     end
     @test !isnothing(sign_flip)
 
-    conf isa CurlConformity && return # didn't implement circulation orientation test
-
+    # flux orientation tests
     fun_per_facet = length(first(facet_own_funs))
     n_facets = length(facet_range)
     own_flux_signs = Matrix{Float64}(undef, (n_facets,fun_per_facet))
@@ -322,11 +352,48 @@ function _test_geometric_decomposition(b,p,conf,
     # the iᵗʰ fun of all other facets, so we check that each column has allequal
     # signs (for all columns).
     @test mapreduce(allequal, &, eachcol(own_flux_signs))
+  end
 
-    # As it is currently written, this test is only meant to pass if all facets
-    # have the same bubble space. In case of anysotropic basis on `p`
-    # (non-uniform h-adaptivity), only facets of same degree / same bubble space
-    # could be compared
+  if conf isa CurlConformity && p == HEX
+    tan_trace_forms = get_tangent_trace_forms(p,b)
+    b_tan_trs = evaluate(tan_trace_forms, b)
+
+    D = num_dims(p)
+    facet_range = get_dimrange(p,D-1)
+    facet_own_funs = face_own_funs[facet_range]
+    #@show facet_own_funs
+
+    b_with_sign_flip = apply_face_signflip(b,p,conf)
+    if b_with_sign_flip isa Union{LinearCombinationField, LinearCombinationFieldVector}
+      sign_flip = diag(b_with_sign_flip.values)
+    else
+      sign_flip = nothing
+    end
+    @test !isnothing(sign_flip)
+
+    # tangent trace orientation test
+    fun_per_facet = length(first(facet_own_funs))
+    n_facets = length(facet_range)
+    own_tan_signs = Matrix{Float64}(undef, (n_facets,fun_per_facet))
+
+    for (lfacet, own_funs) in enumerate(facet_own_funs)
+      nfuns = length(own_funs)
+      l_tan_1, l_tan_2 = (nfuns÷2+1):nfuns, 1:(nfuns÷2)
+      own_funs_1, own_funs_2 = own_funs[l_tan_1], own_funs[l_tan_2]
+      own_tan_signs[lfacet,l_tan_1] = sign_flip[own_funs_1] .* sign.(b_tan_trs[lfacet,own_funs_1])
+      own_tan_signs[lfacet,l_tan_2] = sign_flip[own_funs_2] .* sign.(b_tan_trs[lfacet+6,own_funs_2])
+      #@show lfacet
+      #@show sign_flip[own_funs]
+      #@show b_tan_trs[lfacet,own_funs_1]   # tr 1
+      #@show b_tan_trs[lfacet+6,own_funs_2] # tr 2
+      #println()
+    end
+
+    # The (corrected) tangent trace sign of the iᵗʰ fun on a facet must be the
+    # same as the iᵗʰ fun of all other facets, so we check that each column has
+    # allequal signs (for all columns).
+    replace!(s -> iszero(s) ? abs(s) : s, own_tan_signs)
+    @test mapreduce(allequal, &, eachcol(own_tan_signs))
   end
 end
 

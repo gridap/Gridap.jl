@@ -5,6 +5,7 @@ using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Polynomials
 using Gridap.Io
+using Gridap.TensorValues
 
 nodal = true
 
@@ -80,5 +81,8 @@ reffe = SerendipityRefFE(Float64,QUAD,(3,3))
 test_lagrangian_reference_fe(reffe)
 @test reffe == ReferenceFE(QUAD,:S,3,0,Float64; nodal)
 @test reffe == from_dict(LagrangianRefFE,to_dict(reffe))
+
+reffe = SerendipityRefFE(VectorValue{2,Float64},QUAD,1)
+test_lagrangian_reference_fe(reffe)
 
 end # module

@@ -1,11 +1,11 @@
 
 
-function gradient(f::Function,uh::FEFunction)
+function gradient(f::Function,uh::FEFunction;kwargs...)
   fuh = f(uh)
-  _gradient(f,uh,fuh)
+  _gradient(f,uh,fuh;kwargs...)
 end
 
-function _gradient(f,uh,fuh::AbstractArray)
+function _gradient(f,uh,fuh::AbstractArray;kwargs...)
   @unreachable """\n
   In order to perform AD on a Function taking a FEFunction as argument, such Function
   has to return a DomainContribution.
@@ -14,24 +14,26 @@ function _gradient(f,uh,fuh::AbstractArray)
   """
 end
 
-function _gradient(f,uh,fuh::DomainContribution)
-  terms = DomainContribution()
+function _gradient(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fuh)+1)
+  terms = DomainContribution(;ad_level = tag)
+  V = get_fe_space(uh)
+  T = eltype(get_vector_type(V))
   for trian in get_domains(fuh)
     g = _change_argument(gradient,f,trian,uh)
     cell_u = get_cell_dof_values(uh)
     cell_id = _compute_cell_ids(uh,trian)
-    cell_grad = autodiff_array_gradient(g,cell_u,cell_id)
+    cell_grad = autodiff_array_gradient(T,g,cell_u,cell_id;tag)
     add_contribution!(terms,trian,cell_grad)
   end
   terms
 end
 
-function jacobian(f::Function,uh::FEFunction)
+function jacobian(f::Function,uh::FEFunction;kwargs...)
   fuh = f(uh)
-  _jacobian(f,uh,fuh)
+  _jacobian(f,uh,fuh;kwargs...)
 end
 
-function _jacobian(f,uh,fuh::AbstractArray)
+function _jacobian(f,uh,fuh::AbstractArray;kwargs...)
   @unreachable """\n
   In order to perform AD on a Function taking a FEFunction as argument, such Function
   has to return a DomainContribution.
@@ -40,13 +42,15 @@ function _jacobian(f,uh,fuh::AbstractArray)
   """
 end
 
-function _jacobian(f,uh,fuh::DomainContribution)
-  terms = DomainContribution()
+function _jacobian(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fuh)+1)
+  terms = DomainContribution(;ad_level=tag)
+  V = get_fe_space(uh)
+  T = eltype(get_vector_type(V))
   for trian in get_domains(fuh)
     g = _change_argument(jacobian,f,trian,uh)
     cell_u = get_cell_dof_values(uh)
     cell_id = _compute_cell_ids(uh,trian)
-    cell_grad = autodiff_array_jacobian(g,cell_u,cell_id)
+    cell_grad = autodiff_array_jacobian(T,g,cell_u,cell_id;tag)
     add_contribution!(terms,trian,cell_grad)
   end
   terms
@@ -55,12 +59,12 @@ end
 """
     hessian(f::Function, uh::FEFunction)
 """
-function hessian(f::Function,uh::FEFunction)
+function hessian(f::Function,uh::FEFunction;kwargs...)
   fuh = f(uh)
-  _hessian(f,uh,fuh)
+  _hessian(f,uh,fuh;kwargs...)
 end
 
-function _hessian(f,uh,fuh::AbstractArray)
+function _hessian(f,uh,fuh::AbstractArray;kwargs...)
   @unreachable """\n
   In order to perform AD on a Function taking a FEFunction as argument, such Function
   has to return a DomainContribution.
@@ -69,13 +73,15 @@ function _hessian(f,uh,fuh::AbstractArray)
   """
 end
 
-function _hessian(f,uh,fuh::DomainContribution)
-  terms = DomainContribution()
+function _hessian(f,uh,fuh::DomainContribution;tag::GridapADTag=get_ad_level(fuh)+1)
+  terms = DomainContribution(;ad_level = tag+1) # Two levels consumed
+  V = get_fe_space(uh)
+  T = eltype(get_vector_type(V))
   for trian in get_domains(fuh)
     g = _change_argument(hessian,f,trian,uh)
     cell_u = get_cell_dof_values(uh)
     cell_id = _compute_cell_ids(uh,trian)
-    cell_grad = autodiff_array_hessian(g,cell_u,cell_id)
+    cell_grad = autodiff_array_hessian(T,g,cell_u,cell_id;tag)
     add_contribution!(terms,trian,cell_grad)
   end
   terms
@@ -102,8 +108,8 @@ function _compute_cell_ids(uh,ttrian)
   tglue = get_glue(ttrian,Val(D))
   @notimplementedif !isa(sglue,FaceToFaceGlue)
   @notimplementedif !isa(tglue,FaceToFaceGlue)
-  
-  # Note: In the case where `strian` does not fully cover `ttrian`, 
+
+  # Note: In the case where `strian` does not fully cover `ttrian`,
   # tface_to_sface will have negative indices.
   # The negative indices will be dealt with within `autodiff_array_reindex`
   k = 1
@@ -144,13 +150,12 @@ function _compute_cell_ids(uh,ttrian::SkeletonTriangulation)
   SkeletonPair(plus,minus)
 end
 
-# We collect the derivatives for the plus and minus sides separately, 
+# We collect the derivatives for the plus and minus sides separately,
 # which returns ydual_θ = df/duᶿ for θ ∈ {+, -}
 # We them merge them into a 2-block BlockVector, so that we obtain
 #   result = [df/du⁺, df/du⁻]
-function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair)
-  dummy_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_tag),i_to_x)
+function Arrays.autodiff_array_gradient(V, a, i_to_x, j_to_i::SkeletonPair; tag=default_tag(ForwardDiff.gradient,a))
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
 
   # dual output of both sides at once
@@ -164,6 +169,10 @@ function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair)
   j_to_cfg_minus = Arrays.autodiff_array_reindex(i_to_cfg,j_to_i.minus)
   j_to_result_minus = lazy_map(AutoDiffMap(),j_to_cfg_minus,j_to_ydual_minus)
 
+  return _skeleton_autodiff_merge_gradient(j_to_result_plus,j_to_result_minus)
+end
+
+function _skeleton_autodiff_merge_gradient(j_to_result_plus,j_to_result_minus)
   # Assemble on SkeletonTriangulation expects an array of interior of facets
   # where each entry is a 2-block BlockVector with the first block being the
   # contribution of the plus side and the second, the one of the minus side
@@ -172,14 +181,13 @@ function Arrays.autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair)
   lazy_map(k,j_to_result_plus,j_to_result_minus)
 end
 
-# We collect the derivatives for the plus and minus sides separately, 
+# We collect the derivatives for the plus and minus sides separately,
 # which returns ydual_θ = [dr⁺/duᶿ, dr⁻/duᶿ] for θ ∈ {+, -}
-# We them merge them as columns into a 2x2 block matrix, so that we obtain 
+# We them merge them as columns into a 2x2 block matrix, so that we obtain
 # ydual = [dr⁺/du⁺ dr⁺/du⁻] = [ydual_plus, ydual_minus]
 #         [dr⁻/du⁺ dr⁻/du⁻]
-function Arrays.autodiff_array_jacobian(a, i_to_x, j_to_i::SkeletonPair)
-  dummy_tag = ()->()
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_tag),i_to_x)
+function Arrays.autodiff_array_jacobian(V, a, i_to_x, j_to_i::SkeletonPair; tag=default_tag(ForwardDiff.jacobian,a))
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,tag),i_to_x)
   i_to_xdual = lazy_map(DualizeMap(),i_to_cfg,i_to_x)
 
   # dual output of both sides at once
@@ -193,8 +201,11 @@ function Arrays.autodiff_array_jacobian(a, i_to_x, j_to_i::SkeletonPair)
   j_to_cfg_minus = Arrays.autodiff_array_reindex(i_to_cfg,j_to_i.minus)
   j_to_result_minus = lazy_map(AutoDiffMap(),j_to_cfg_minus,j_to_ydual_minus)
 
+  return _skeleton_autodiff_merge_jacobian(j_to_result_plus,j_to_result_minus)
+end
+
+function _skeleton_autodiff_merge_jacobian(j_to_result_plus,j_to_result_minus)
   # Merge the columns into a 2x2 block matrix
-  # I = [[(CartesianIndex(i,),CartesianIndex(i,j)) for i in 1:2] for j in 1:2]
   I = [
     [(CartesianIndex(1,), CartesianIndex(1, 1)), (CartesianIndex(2,), CartesianIndex(2, 1))], # Plus  -> First column
     [(CartesianIndex(1,), CartesianIndex(1, 2)), (CartesianIndex(2,), CartesianIndex(2, 2))]  # Minus -> Second column
@@ -202,4 +213,29 @@ function Arrays.autodiff_array_jacobian(a, i_to_x, j_to_i::SkeletonPair)
   is_single_field = eltype(eltype(j_to_result_plus)) <: AbstractArray
   k = is_single_field ? Arrays.MergeBlockMap((2,2),I) : Arrays.BlockBroadcasting(Arrays.MergeBlockMap((2,2),I))
   lazy_map(k,j_to_result_plus,j_to_result_minus)
+end
+
+# Skeleton + Complex (gradient)
+# Split a into real and imaginary components and take gradients sperately.
+function Arrays.autodiff_array_gradient(::Type{<:Complex},a,i_to_x,j_to_i::SkeletonPair;tag=default_tag(ForwardDiff.gradient,a))
+  s = lazy_map(Broadcasting(imag),i_to_x)
+  r = lazy_map(Broadcasting(real),i_to_x)
+  i_to_cfg_r = lazy_map(ConfigMap(ForwardDiff.gradient,tag),r)
+  i_to_rdual = lazy_map(DualizeMap(),i_to_cfg_r,r)
+  j_to_yrdual_plus,j_to_yrdual_minus = a(lazy_map((r,s) -> r + im*s,i_to_rdual,s))
+  i_to_cfg_s = lazy_map(ConfigMap(ForwardDiff.gradient,tag),s)
+  i_to_sdual = lazy_map(DualizeMap(),i_to_cfg_s,s)
+  j_to_ysdual_plus,j_to_ysdual_minus = a(lazy_map((r,s) -> r + im*s,r,i_to_sdual))
+  j_to_cfg_r_plus = Arrays.autodiff_array_reindex(i_to_cfg_r,j_to_i.plus)
+  j_to_cfg_r_minus = Arrays.autodiff_array_reindex(i_to_cfg_r,j_to_i.minus)
+  j_to_cfg_s_plus = Arrays.autodiff_array_reindex(i_to_cfg_s,j_to_i.plus)
+  j_to_cfg_s_minus = Arrays.autodiff_array_reindex(i_to_cfg_s,j_to_i.minus)
+  j_to_result_plus = lazy_map((r,s) -> r + im*s,
+    lazy_map(AutoDiffMap(),j_to_cfg_r_plus,lazy_map(Broadcasting(real),j_to_yrdual_plus)),
+    lazy_map(AutoDiffMap(),j_to_cfg_s_plus,lazy_map(Broadcasting(real),j_to_ysdual_plus)))
+  j_to_result_minus = lazy_map((r,s) -> r + im*s,
+    lazy_map(AutoDiffMap(),j_to_cfg_r_minus,lazy_map(Broadcasting(real),j_to_yrdual_minus)),
+    lazy_map(AutoDiffMap(),j_to_cfg_s_minus,lazy_map(Broadcasting(real),j_to_ysdual_minus)))
+
+  return _skeleton_autodiff_merge_gradient(j_to_result_plus,j_to_result_minus)
 end
