@@ -67,8 +67,8 @@ pts   = get_cell_points(Ω)
 ωx    = ω(pts)                       # LazyArray — nothing computed yet
 
 cω    = array_cache(ωx)
-val0  = getindex!(cω, ωx, 1)         # first cell: DifferentialFormValue per quad pt
-@test typeof(val0) <: AbstractArray{<:DifferentialFormValue{1,2}}
+val0  = getindex!(cω, ωx, 1)         # first cell: ExteriorFormValue per quad pt
+@test typeof(val0) <: AbstractArray{<:ExteriorFormValue{1,2}}
 
 # ── exterior_derivative ───────────────────────────────────────────────────────
 
@@ -78,7 +78,7 @@ dω = exterior_derivative(ω)
 dωx   = dω(pts)
 cdω   = array_cache(dωx)
 dval0 = getindex!(cdω, dωx, 1)
-@test typeof(dval0) <: AbstractArray{<:DifferentialFormValue{2,2}}
+@test typeof(dval0) <: AbstractArray{<:ExteriorFormValue{2,2}}
 
 # Verify value: dω = -x dx¹∧dx² → at (0.125,0.125): coefficient = -0.125
 x_c = Point(0.125, 0.125)
@@ -95,7 +95,7 @@ dv = evaluate!(cache_d, dω_fld, x_c)
 δωx   = δω(pts)
 cδω   = array_cache(δωx)
 δval0 = getindex!(cδω, δωx, 1)
-@test typeof(δval0) <: AbstractArray{<:DifferentialFormValue{0,2}}
+@test typeof(δval0) <: AbstractArray{<:ExteriorFormValue{0,2}}
 
 # Verify value: δω = -3y → at (0.125,0.125): -0.375
 δω_fld = codifferential(ω_form)
@@ -118,7 +118,7 @@ star_val_cf = hodge_star(ω)
 star_valx   = star_val_cf(pts)
 csv         = array_cache(star_valx)
 sv0         = getindex!(csv, star_valx, 1)
-@test typeof(sv0) <: AbstractArray   # DifferentialFormValue{1,2} elements
+@test typeof(sv0) <: AbstractArray   # ExteriorFormValue{1,2} elements
 
 # ── wedge product ─────────────────────────────────────────────────────────────
 
@@ -134,7 +134,7 @@ wedge_cf = ω ∧ η
 wedge_x  = wedge_cf(pts)
 cw       = array_cache(wedge_x)
 wval0    = getindex!(cw, wedge_x, 1)
-@test typeof(wval0) <: AbstractArray   # DifferentialFormValue{2,2} elements
+@test typeof(wval0) <: AbstractArray   # ExteriorFormValue{2,2} elements
 
 # ── Arithmetic ────────────────────────────────────────────────────────────────
 
@@ -154,7 +154,7 @@ flat_cf  = flat(v_cf, g_cf)
 flatx    = flat_cf(pts)
 cflat    = array_cache(flatx)
 fval0    = getindex!(cflat, flatx, 1)
-@test typeof(fval0) <: AbstractArray   # DifferentialFormValue{1,2} elements
+@test typeof(fval0) <: AbstractArray   # ExteriorFormValue{1,2} elements
 
 sharp_cf = sharp(ω, g_inv_cf)
 sharpx   = sharp_cf(pts)
@@ -168,7 +168,7 @@ ip_cf = interior_product(v_cf, ω)
 ipx   = ip_cf(pts)
 cip   = array_cache(ipx)
 ipv0  = getindex!(cip, ipx, 1)
-@test typeof(ipv0) <: AbstractArray   # DifferentialFormValue{0,2} elements
+@test typeof(ipv0) <: AbstractArray   # ExteriorFormValue{0,2} elements
 
 # ── koszul ────────────────────────────────────────────────────────────────────
 
@@ -180,7 +180,7 @@ ipv0  = getindex!(cip, ipx, 1)
 κωx   = κω_cf(pts)
 cκ    = array_cache(κωx)
 κval0 = getindex!(cκ, κωx, 1)
-@test typeof(κval0) <: AbstractArray{<:DifferentialFormValue{0,2}}
+@test typeof(κval0) <: AbstractArray{<:ExteriorFormValue{0,2}}
 
 # ── vol_coeff (CellField level) ───────────────────────────────────────────────
 
@@ -202,7 +202,7 @@ sv1    = getindex!(cs, svals, 1)
 ωvx    = ω_v_cf(pts)
 cωv    = array_cache(ωvx)
 ωvval0 = getindex!(cωv, ωvx, 1)
-@test typeof(ωvval0) <: AbstractArray{<:DifferentialFormValue{1,2}}
+@test typeof(ωvval0) <: AbstractArray{<:ExteriorFormValue{1,2}}
 
 v_back = from_1form(ω_id_cf)
 @test v_back isa CellField

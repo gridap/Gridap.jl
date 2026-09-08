@@ -225,7 +225,7 @@ function codifferential end
     d_0form(f) = to_1form(∇(f))
 
 Discrete exterior derivative of a scalar (0-form) CellField.
-Returns a `DifferentialFormValue{1,D}`-valued `OperationCellField`.
+Returns a `ExteriorFormValue{1,D}`-valued `OperationCellField`.
 """
 d_0form(f) = to_1form(∇(f))
 
@@ -234,7 +234,7 @@ d_0form(f) = to_1form(∇(f))
 
 Discrete exterior derivative of a `VectorValue`'d (1-form) CellField
 (e.g., from a Nédélec FESpace).
-Returns a `DifferentialFormValue{2,D}`-valued `OperationCellField`.
+Returns a `ExteriorFormValue{2,D}`-valued `OperationCellField`.
 """
 d_1form(f) = Operation(grad_to_2form)(∇(f))
 

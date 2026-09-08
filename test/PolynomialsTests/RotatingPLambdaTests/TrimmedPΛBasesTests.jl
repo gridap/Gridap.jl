@@ -24,8 +24,8 @@ to_barycentric(x::Point{D,T}) where {D,T} = (one(T) - sum(x.data), x.data...)
 
 # Project an ambient barycentric 1-form (dλ¹,…,dλᴺ) to the physical D = N−1
 # frame by imposing dλ¹ = −dλ² − … − dλᴺ: phys[j] = c[j+1] − c[1].
-reduce_ambient(ω::DifferentialFormValue{1,N}) where N =
-    DifferentialFormValue{1,N-1}(ntuple(j -> ω.data[j+1] - ω.data[1], N-1))
+reduce_ambient(ω::ExteriorFormValue{1,N}) where N =
+    ExteriorFormValue{1,N-1}(ntuple(j -> ω.data[j+1] - ω.data[1], N-1))
 
 # ϕ(e1,e2;λ) = λ^{e1} dλ^{e2} − λ^{e2} dλ^{e1}, returned as a coefficient vector in
 # the AMBIENT (D+1)-dim barycentric frame dλ¹,…,dλ^{D+1} at the barycentric
@@ -72,7 +72,7 @@ function trimmed_eval(f::Vector{Int}, e::Tuple{Int,Int}, α::NTuple{N,Int}, x) w
     λ      = to_barycentric(x)
     e1, e2 = e
     val    = prod(λ[i]^α[i] for i in 1:N)   # bare monomial, i.e. flavor=:BMM
-    ω      = DifferentialFormValue{1,N}(Tuple(trimmed_phi(e1, e2, N, λ)))
+    ω      = ExteriorFormValue{1,N}(Tuple(trimmed_phi(e1, e2, N, λ)))
     val * reduce_ambient(ω)
 end
 

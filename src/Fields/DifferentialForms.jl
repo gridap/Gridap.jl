@@ -44,7 +44,7 @@ struct DifferentialForm{K,D,L,Data} <: Field
   end
 end
 
-# Indexing mirrors DifferentialFormValue: K indices address the antisymmetric
+# Indexing mirrors ExteriorFormValue: K indices address the antisymmetric
 # component (zero on a repeated index, signed by the sorting permutation), while
 # `indep_comp_getindex` addresses the L stored component fields linearly.
 indep_comp_getindex(a::DifferentialForm, n::Integer) = a.data[n]
@@ -61,7 +61,7 @@ end
 testargs(a::DifferentialForm, x::Point) = testargs.(a.data, Ref(x))
 
 function return_value(a::DifferentialForm{K,D}, x::Point) where {K,D}
-  DifferentialFormValue{K,D}(map(f -> return_value(f, x), a.data))
+  ExteriorFormValue{K,D}(map(f -> return_value(f, x), a.data))
 end
 
 function return_cache(a::DifferentialForm, x::Point)
@@ -69,7 +69,7 @@ function return_cache(a::DifferentialForm, x::Point)
 end
 
 function evaluate!(cache, a::DifferentialForm{K,D}, x::Point) where {K,D}
-  DifferentialFormValue{K,D}(map((c,f) -> evaluate!(c,f,x), cache, a.data))
+  ExteriorFormValue{K,D}(map((c,f) -> evaluate!(c,f,x), cache, a.data))
 end
 
 
@@ -81,7 +81,7 @@ end
 #
 # return_cache uses map(∇, form.data) which is type-stable when Data is typed.
 # evaluate! uses map over the typed tuple of (cache, grad_field) pairs
-# — zero allocation for bits-type DifferentialFormValue.
+# — zero allocation for bits-type ExteriorFormValue.
 # ============================================================
 
 """
@@ -116,13 +116,13 @@ function evaluate!(cache, dω::ExteriorDerivativeForm{K,D,F}, x::Point) where {K
   gvs = map((c,g) -> evaluate!(c, g, x), caches, grad_fields)
   # Accumulate using an explicit loop (map-reduce over tuple is type-stable)
   gv1  = gvs[1]
-  dfi1 = DifferentialFormValue{1,D}(gv1.data)
-  kbi1 = DifferentialFormValue{K,D}(ntuple(j -> j == 1 ? 1.0 : 0.0, Val(L)))
+  dfi1 = ExteriorFormValue{1,D}(gv1.data)
+  kbi1 = ExteriorFormValue{K,D}(ntuple(j -> j == 1 ? 1.0 : 0.0, Val(L)))
   acc  = dfi1 ∧ kbi1
   for i in 2:L
     gv  = gvs[i]
-    dfi = DifferentialFormValue{1,D}(gv.data)
-    kbi = DifferentialFormValue{K,D}(ntuple(j -> j == i ? 1.0 : 0.0, Val(L)))
+    dfi = ExteriorFormValue{1,D}(gv.data)
+    kbi = ExteriorFormValue{K,D}(ntuple(j -> j == i ? 1.0 : 0.0, Val(L)))
     acc = acc + (dfi ∧ kbi)
   end
   acc
@@ -174,7 +174,7 @@ function hodge_star_form(ω::DifferentialForm{K,D}) where {K,D}
   DifferentialForm{Kc,D}(component_fields)
 end
 
-# ExteriorDerivativeForm evaluates to DifferentialFormValue{K+1,D}.
+# ExteriorDerivativeForm evaluates to ExteriorFormValue{K+1,D}.
 # hodge_star_form on it: extract component fields via _component_field.
 # NOTE: the resulting component fields use lambda-wrapped Operations.
 # These are NOT differentiable by FieldGradient.
@@ -243,16 +243,16 @@ function evaluate!(cache, δω::CodifferentialForm{K,D,F}, x::Point) where {K,D,
   end
 
   # d(⋆ω): same accumulation as ExteriorDerivativeForm but using star_grads
-  dfi1 = DifferentialFormValue{1,D}(star_grads[1].data)
-  kbm1 = DifferentialFormValue{D-K,D}(ntuple(j -> j == 1 ? 1.0 : 0.0, Val(L)))
+  dfi1 = ExteriorFormValue{1,D}(star_grads[1].data)
+  kbm1 = ExteriorFormValue{D-K,D}(ntuple(j -> j == 1 ? 1.0 : 0.0, Val(L)))
   acc  = dfi1 ∧ kbm1
   for m in 2:L
-    dfi = DifferentialFormValue{1,D}(star_grads[m].data)
-    kbm = DifferentialFormValue{D-K,D}(ntuple(j -> j == m ? 1.0 : 0.0, Val(L)))
+    dfi = ExteriorFormValue{1,D}(star_grads[m].data)
+    kbm = ExteriorFormValue{D-K,D}(ntuple(j -> j == m ? 1.0 : 0.0, Val(L)))
     acc = acc + (dfi ∧ kbm)
   end
 
-  sgn * hodge_star(acc)   # DifferentialFormValue{K-1,D}
+  sgn * hodge_star(acc)   # ExteriorFormValue{K-1,D}
 end
 
 

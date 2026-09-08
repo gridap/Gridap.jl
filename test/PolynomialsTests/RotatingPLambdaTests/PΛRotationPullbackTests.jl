@@ -36,8 +36,8 @@ to_barycentric(x::Point{D,T}) where {D,T} = (one(T) - sum(x.data), x.data...)
 
 # Project an ambient barycentric 1-form (dλ¹,…,dλᴺ) to the physical D = N−1
 # frame by imposing dλ¹ = −dλ² − … − dλᴺ: phys[j] = c[j+1] − c[1].
-reduce_ambient(ω::DifferentialFormValue{1,N}) where N =
-    DifferentialFormValue{1,N-1}(ntuple(j -> ω.data[j+1] - ω.data[1], N-1))
+reduce_ambient(ω::ExteriorFormValue{1,N}) where N =
+    ExteriorFormValue{1,N-1}(ntuple(j -> ω.data[j+1] - ω.data[1], N-1))
 
 # ── Oracles (identical formulas to the basis test files) ──────────────────────
 
@@ -55,7 +55,7 @@ end
 function oracle_eval(f::Vector{Int}, k::Int, α::Vector{Int}, x)   # untrimmed
     λ = to_barycentric(x); N = length(λ)
     val = multinomial(α...) * prod(λ[i]^α[i] for i in 1:N)
-    ω = DifferentialFormValue{1,N}(Tuple(rotating_psi(f, k, α, N)))
+    ω = ExteriorFormValue{1,N}(Tuple(rotating_psi(f, k, α, N)))
     val * reduce_ambient(ω)
 end
 
@@ -71,7 +71,7 @@ end
 function oracle_eval_afw(f::Vector{Int}, k::Int, α::Vector{Int}, x)
     λ = to_barycentric(x); N = length(λ)
     val = multinomial(α...) * prod(λ[i]^α[i] for i in 1:N)
-    ω = DifferentialFormValue{1,N}(Tuple(afw_phi(f, k, α, N)))
+    ω = ExteriorFormValue{1,N}(Tuple(afw_phi(f, k, α, N)))
     val * reduce_ambient(ω)
 end
 
@@ -80,7 +80,7 @@ function oracle_eval(f::Vector{Int}, e::Tuple{Int,Int}, α::Vector{Int}, x)   # 
     e1, e2 = e
     c = zeros(eltype(λ), N); c[e2] += λ[e1]; c[e1] -= λ[e2]
     val = prod(λ[i]^α[i] for i in 1:N)   # BARE monomial λ^α, the :BMM scaling
-    val * reduce_ambient(DifferentialFormValue{1,N}(Tuple(c)))
+    val * reduce_ambient(ExteriorFormValue{1,N}(Tuple(c)))
 end
 
 # Trimmed :AFW are trimmed :BMM times |α|/α!

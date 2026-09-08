@@ -229,7 +229,7 @@ n_components
     The following APIs are experimental. They are likely to be modified in a
     breaking manner in the future.
 
-[`DifferentialFormValue`](@ref) represents the value of a differential `K`-form
+[`ExteriorFormValue`](@ref) represents the value of a differential `K`-form
 in `D` dimensions, in the orientation-ordered basis ``\{dx^I\}`` indexed by the
 sorted `K`-combinations `I` of ``1\!:\!D``. Only the pointwise (algebraic)
 operations live here; the operations involving a derivative, such as
@@ -238,7 +238,7 @@ operations live here; the operations involving a derivative, such as
 `Field` level in [`Gridap.Fields`](@ref Gridap.Fields).
 
 ```@docs
-DifferentialFormValue
+ExteriorFormValue
 ```
 
 ### Pointwise algebra
@@ -250,7 +250,7 @@ hodge_star
 form_inner
 apply_form
 vol_coeff
-koszul(::VectorValue{D}, ::DifferentialFormValue{K,D}) where {K,D}
+koszul(::VectorValue{D}, ::ExteriorFormValue{K,D}) where {K,D}
 ```
 
 ### Metric operations

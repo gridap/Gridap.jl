@@ -135,15 +135,15 @@ u_koszul(D) = D == 2 ? (x -> VectorValue(-x[2], x[1])) :
 
 # Exterior calculus form of the same fields
 #
-# u_const(D) = D == 2 ? (x -> DifferentialFormValue{1,2}((0.7, -1.3))) :
-#                       (x -> DifferentialFormValue{1,3}((0.7, -1.3, 0.4)))
+# u_const(D) = D == 2 ? (x -> ExteriorFormValue{1,2}((0.7, -1.3))) :
+#                       (x -> ExteriorFormValue{1,3}((0.7, -1.3, 0.4)))
 # u_lin(D) = D == 2 ?
-#   (x -> DifferentialFormValue{1,2}((1.0 + 2x[1] - x[2], -0.5 + x[1] + 3x[2]))) :
-#   (x -> DifferentialFormValue{1,3}((1.0 + 2x[1] - x[2] + x[3],
+#   (x -> ExteriorFormValue{1,2}((1.0 + 2x[1] - x[2], -0.5 + x[1] + 3x[2]))) :
+#   (x -> ExteriorFormValue{1,3}((1.0 + 2x[1] - x[2] + x[3],
 #                                     -0.5 + x[1] + 3x[2] - 2x[3],
 #                                     0.25 - x[1] + x[2] + x[3])))
-# u_koszul(D) = D == 2 ? (x -> DifferentialFormValue{1,2}((-x[2], x[1]))) :
-#                        (x -> DifferentialFormValue{1,3}((-x[2], x[1], 0.0)))
+# u_koszul(D) = D == 2 ? (x -> ExteriorFormValue{1,2}((-x[2], x[1]))) :
+#                        (x -> ExteriorFormValue{1,3}((-x[2], x[1], 0.0)))
 
 test_fields(name, r, D) =
   name == :trimmed && r == 1 ? [u_const(D), u_koszul(D)] : [u_const(D), u_lin(D)]

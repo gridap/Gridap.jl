@@ -43,7 +43,7 @@ using Gridap.Arrays: ∑; export ∑
 @publish TensorValues num_components
 @publish TensorValues num_indep_components
 
-#@publish TensorValues DifferentialFormValue
+#@publish TensorValues ExteriorFormValue
 #using Gridap.TensorValues: ∧, ⋆; export ∧, ⋆
 #@publish TensorValues interior_product
 #@publish TensorValues ι

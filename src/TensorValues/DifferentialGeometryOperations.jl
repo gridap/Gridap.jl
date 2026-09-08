@@ -45,16 +45,16 @@ end
 # ============================================================
 
 """
-    ∧(a::DifferentialFormValue{K1,D}, b::DifferentialFormValue{K2,D})
+    ∧(a::ExteriorFormValue{K1,D}, b::ExteriorFormValue{K2,D})
 
-Pointwise exterior (wedge) product, a `DifferentialFormValue{K1+K2,D}`.
+Pointwise exterior (wedge) product, a `ExteriorFormValue{K1+K2,D}`.
 """
-@generated function ∧(a::DifferentialFormValue{K1,D,T1}, b::DifferentialFormValue{K2,D,T2}) where {K1,K2,D,T1,T2}
+@generated function ∧(a::ExteriorFormValue{K1,D,T1}, b::ExteriorFormValue{K2,D,T2}) where {K1,K2,D,T1,T2}
   K = K1 + K2
   L = binomial(D, K)
   T = Base.promote_op(*, T1, T2)
 
-  iszero(L) && return :( zero(DifferentialFormValue{$K,$D,$T}) )
+  iszero(L) && return :( zero(ExteriorFormValue{$K,$D,$T}) )
 
   # (a ∧ b)_I = Σ ε(I₁,I₂) a_{I₁} b_{I₂}, summed over the ways of splitting the
   # sorted I into a K1-subset I₁ and a K2-subset I₂. Overlapping splits have
@@ -69,7 +69,7 @@ Pointwise exterior (wedge) product, a `DifferentialFormValue{K1+K2,D}`.
   end
   comps = [_sum_expr(t, T) for t in terms]
 
-  :( DifferentialFormValue{$K,$D}(($(comps...),)) )
+  :( ExteriorFormValue{$K,$D}(($(comps...),)) )
 end
 
 # ============================================================
@@ -78,18 +78,18 @@ end
 # ============================================================
 
 """
-    interior_product(v::VectorValue{D}, ω::DifferentialFormValue{K,D})
+    interior_product(v::VectorValue{D}, ω::ExteriorFormValue{K,D})
     ι(v, ω)
 
-Interior product (contraction) `ι_v ω`, a `DifferentialFormValue{K-1,D}`:
+Interior product (contraction) `ι_v ω`, a `ExteriorFormValue{K-1,D}`:
 `(ι_v ω)(w₂,…,wₖ) = ω(v, w₂,…,wₖ)`.
 """
-@generated function interior_product(v::VectorValue{D,Tv}, ω::DifferentialFormValue{K,D,Tw}) where {K,D,Tv,Tw}
+@generated function interior_product(v::VectorValue{D,Tv}, ω::ExteriorFormValue{K,D,Tw}) where {K,D,Tv,Tw}
   K >= 1 || return :(@unreachable "interior product requires K ≥ 1")
 
   Km1 = K - 1
   T = Base.promote_op(*, Tv, Tw)
-  iszero(binomial(D, K)) && return :( zero(DifferentialFormValue{$Km1,$D,$T}) )
+  iszero(binomial(D, K)) && return :( zero(ExteriorFormValue{$Km1,$D,$T}) )
 
   L = binomial(D, Km1)
 
@@ -103,7 +103,7 @@ Interior product (contraction) `ι_v ω`, a `DifferentialFormValue{K-1,D}`:
   end
   comps = [_sum_expr(t, T) for t in terms]
 
-  :( DifferentialFormValue{$Km1,$D}(($(comps...),)) )
+  :( ExteriorFormValue{$Km1,$D}(($(comps...),)) )
 end
 
 const ι = interior_product
@@ -161,23 +161,23 @@ function _hodge_star_signs(K::Int, D::Int)
 end
 
 """
-    hodge_star(ω::DifferentialFormValue{K,D})
-    hodge_star(ω::DifferentialFormValue{K,D}, g_inv::SymTensorValue{D}, sqrt_det_g)
+    hodge_star(ω::ExteriorFormValue{K,D})
+    hodge_star(ω::ExteriorFormValue{K,D}, g_inv::SymTensorValue{D}, sqrt_det_g)
     ⋆(ω)
     ⋆(ω, g_inv, sqrt_det_g)
 
-Hodge star `⋆ω`, a `DifferentialFormValue{D-K,D}`. The one-argument form uses
+Hodge star `⋆ω`, a `ExteriorFormValue{D-K,D}`. The one-argument form uses
 the flat Euclidean metric; the three-argument form takes a pointwise inverse
 metric tensor and `√det(g)`.
 """
-@generated function hodge_star(ω::DifferentialFormValue{K,D,T}) where {K,D,T}
+@generated function hodge_star(ω::ExteriorFormValue{K,D,T}) where {K,D,T}
   K <= D || return :(@unreachable $("hodge star requires K ≤ D, got K = $K and D = $D"))
 
   Kc = D - K
   L  = binomial(D, K)   # = binomial(D, Kc), the two are matched by complementation
   s  = _hodge_star_signs(K, D)
   comps = [_signed(s[L+1-m], :(indep_comp_getindex(ω,$(L+1-m)))) for m in 1:L]
-  :( DifferentialFormValue{$Kc,$D}(($(comps...),)) )
+  :( ExteriorFormValue{$Kc,$D}(($(comps...),)) )
 end
 
 const ⋆ = hodge_star
@@ -213,7 +213,7 @@ function symbolic_coordinates end
 # (the pointwise square root of det g) keeps this purely algebraic.
 # ============================================================
 
-@generated function hodge_star(ω::DifferentialFormValue{K,D,Tw}, g_inv::SymTensorValue{D,Tg}, sqrt_det_g::Ts) where {K,D,Tw,Tg,Ts}
+@generated function hodge_star(ω::ExteriorFormValue{K,D,Tw}, g_inv::SymTensorValue{D,Tg}, sqrt_det_g::Ts) where {K,D,Tw,Tg,Ts}
   K <= D || return :(@unreachable $("hodge star requires K ≤ D, got K = $K and D = $D"))
 
   T = Base.promote_op(*, Tw, Tg, Ts)
@@ -232,17 +232,17 @@ function symbolic_coordinates end
 
   quote
     ω_raised = ($(raised...),)
-    DifferentialFormValue{$Kc,$D}(($(comps...),))
+    ExteriorFormValue{$Kc,$D}(($(comps...),))
   end
 end
 
 # ============================================================
 # Musical isomorphisms  ♭ (flat) and ♯ (sharp)
 #
-# flat  (♭):  VectorValue{D} → DifferentialFormValue{1,D}
+# flat  (♭):  VectorValue{D} → ExteriorFormValue{1,D}
 #   (v♭)_i = Σ_j g_{ij} v^j           (lowers an index)
 #
-# sharp (♯):  DifferentialFormValue{1,D} → VectorValue{D}
+# sharp (♯):  ExteriorFormValue{1,D} → VectorValue{D}
 #   (ω♯)^i = Σ_j g^{ij} ω_j           (raises an index)
 # ============================================================
 
@@ -251,25 +251,25 @@ end
     ♭(v, g)
 
 Musical isomorphism ♭: lower the index of the vector `v` with the metric `g`,
-giving a `DifferentialFormValue{1,D}`.
+giving a `ExteriorFormValue{1,D}`.
 """
 @generated function flat(v::VectorValue{D,Tv}, g::SymTensorValue{D,Tg}) where {D,Tv,Tg}
-  iszero(D) && return :( zero(DifferentialFormValue{1,0,$(Base.promote_op(*,Tg,Tv))}) )
+  iszero(D) && return :( zero(ExteriorFormValue{1,0,$(Base.promote_op(*,Tg,Tv))}) )
 
   comps = [Expr(:call, :+, (:(g[$i,$j] * v[$j]) for j in 1:D)...) for i in 1:D]
-  :( DifferentialFormValue{1,$D}(($(comps...),)) )
+  :( ExteriorFormValue{1,$D}(($(comps...),)) )
 end
 
 const ♭ = flat
 
 """
-    sharp(ω::DifferentialFormValue{1,D}, g_inv::SymTensorValue{D})
+    sharp(ω::ExteriorFormValue{1,D}, g_inv::SymTensorValue{D})
     ♯(ω, g_inv)
 
 Musical isomorphism `♯`: raise the index of the 1-form `ω` with the inverse
 metric `g_inv`, giving a `VectorValue{D}`.
 """
-@generated function sharp(ω::DifferentialFormValue{1,D,Tw}, g_inv::SymTensorValue{D,Tg}) where {D,Tw,Tg}
+@generated function sharp(ω::ExteriorFormValue{1,D,Tw}, g_inv::SymTensorValue{D,Tg}) where {D,Tw,Tg}
   iszero(D) && return :( zero(VectorValue{0,$(Base.promote_op(*,Tg,Tw))}) )
 
   comps = [Expr(:call, :+, (:(g_inv[$i,$j] * indep_comp_getindex(ω,$j)) for j in 1:D)...) for i in 1:D]
@@ -279,14 +279,14 @@ end
 const ♯ = sharp
 
 """
-    apply_form(ω::DifferentialFormValue{K,D,T}, v₁, …, vₖ) → scalar
+    apply_form(ω::ExteriorFormValue{K,D,T}, v₁, …, vₖ) → scalar
 
 Evaluate the K-form ω on K tangent vectors v₁,…,vₖ ∈ ℝᴰ:
   ω(v₁,…,vₖ) = Σ_{|I|=K} ω_I · det([vₐ[I[b]]]_{a,b=1}^K)
 
 Each vector must be a size `(D, )` tensor. Behaves like `getindex` for scalar `K=0`.
 """
-@generated function apply_form(ω::DifferentialFormValue{K,D,T},
+@generated function apply_form(ω::ExteriorFormValue{K,D,T},
                                vs::Vararg{MultiValue{Tuple{D}},K}) where {K,D,T}
   K == 0 && return :(ω[1])
 
@@ -299,7 +299,7 @@ Each vector must be a size `(D, )` tensor. Behaves like `getindex` for scalar `K
   Expr(:call, :+, terms...)
 end
 
-apply_form(ω::DifferentialFormValue{K,D}, vs...) where {K,D} =
+apply_form(ω::ExteriorFormValue{K,D}, vs...) where {K,D} =
   @unreachable "a K-form takes K vectors (subtyping `MultiValue`) of size (D,), got $(typeof.(vs)) for K = $K and D = $D"
 
 # ============================================================
@@ -315,17 +315,17 @@ apply_form(ω::DifferentialFormValue{K,D}, vs...) where {K,D} =
 # ============================================================
 
 """
-    pullback(ω::DifferentialFormValue{K,Dn}, J::TensorValue{Dn,Dm})
+    pullback(ω::ExteriorFormValue{K,Dn}, J::TensorValue{Dn,Dm})
 
 Pointwise pullback `φ^*ω` of a K-form under a map with Jacobian `J = ∇φ`,
-giving a `DifferentialFormValue{K,Dm}`. A Field-level method for lazy
+giving a `ExteriorFormValue{K,Dm}`. A Field-level method for lazy
 pullbacks is provided in `Gridap.Fields`.
 """
-@generated function pullback(ω::DifferentialFormValue{K,Dn,Tw}, J::TensorValue{Dn,Dm,Tj}) where {K,Dn,Dm,Tw,Tj}
+@generated function pullback(ω::ExteriorFormValue{K,Dn,Tw}, J::TensorValue{Dn,Dm,Tj}) where {K,Dn,Dm,Tw,Tj}
   T = Base.promote_op(*, Tw, Tj)
 
   (iszero(binomial(Dn, K)) || iszero(binomial(Dm, K))) &&
-    return :( zero(DifferentialFormValue{$K,$Dm,$T}) )
+    return :( zero(ExteriorFormValue{$K,$Dm,$T}) )
 
   c_I = sorted_combinations(Dn, K)   # K-combins in ambient space
   c_J = sorted_combinations(Dm, K)   # K-combins in chart space
@@ -334,7 +334,7 @@ pullbacks is provided in `Gridap.Fields`.
                       for (n, I) in enumerate(c_I)], T)
            for Jidx in c_J]
 
-  :( DifferentialFormValue{$K,$Dm}(($(comps...),)) )
+  :( ExteriorFormValue{$K,$Dm}(($(comps...),)) )
 end
 
 # ============================================================
@@ -348,12 +348,12 @@ end
 # ============================================================
 
 """
-    koszul(x::VectorValue{D}, ω::DifferentialFormValue{K,D})
+    koszul(x::VectorValue{D}, ω::ExteriorFormValue{K,D})
 
 Koszul differential ``κ_x(ω) = ι_x(ω)``, the interior product with the position
 vector `x`. A Field-level method is provided in `Gridap.Fields`.
 """
-koszul(x::VectorValue{D}, ω::DifferentialFormValue{K,D}) where {K,D} =
+koszul(x::VectorValue{D}, ω::ExteriorFormValue{K,D}) where {K,D} =
   interior_product(x, ω)
 
 # ============================================================
@@ -365,13 +365,13 @@ koszul(x::VectorValue{D}, ω::DifferentialFormValue{K,D}) where {K,D} =
 # ============================================================
 
 """
-    vol_coeff(ω::DifferentialFormValue{D,D})
+    vol_coeff(ω::ExteriorFormValue{D,D})
 
 The single scalar coefficient of a top-degree D-form in D dimensions.
 Enables using Gridap's standard measure for integration of differential forms:
     ∫(vol_coeff(ω ∧ ⋆η)) * dΩ
 """
-vol_coeff(ω::DifferentialFormValue{D,D}) where D = indep_comp_getindex(ω, 1)
+vol_coeff(ω::ExteriorFormValue{D,D}) where D = indep_comp_getindex(ω, 1)
 
 # ============================================================
 # Gradient support: outer(x, ω) for 1-forms.
@@ -383,7 +383,7 @@ vol_coeff(ω::DifferentialFormValue{D,D}) where D = indep_comp_getindex(ω, 1)
 # for the vector proxy of the 1-form.
 # ============================================================
 
-@generated function outer(a::VectorValue{D,Ta}, b::DifferentialFormValue{1,D,Tb}) where {D,Ta,Tb}
+@generated function outer(a::VectorValue{D,Ta}, b::ExteriorFormValue{1,D,Tb}) where {D,Ta,Tb}
   iszero(D) && return :( zero(TensorValue{0,0,$(Base.promote_op(*,Ta,Tb))}) )
 
   comps = [:( a[$i] * indep_comp_getindex(b,$j) ) for j in 1:D for i in 1:D]
@@ -405,8 +405,8 @@ end
 # ============================================================
 
 """
-    form_inner(ω::DifferentialFormValue{K,D}, η::DifferentialFormValue{K,D})
-    form_inner(ω::DifferentialFormValue{K,D}, η::DifferentialFormValue{K,D}, g_inv::SymTensorValue{D})
+    form_inner(ω::ExteriorFormValue{K,D}, η::ExteriorFormValue{K,D})
+    form_inner(ω::ExteriorFormValue{K,D}, η::ExteriorFormValue{K,D}, g_inv::SymTensorValue{D})
     ω ⨟ η
 
 Inner product ``(ω|η)`` of two K-forms, the scalar such that
@@ -418,14 +418,14 @@ takes the inverse metric tensor.
 
 This differs from the inner product of general tensors, `ω ⊙ η == factorial(K) (ω ⨟ η)`.
 """
-@generated function form_inner(a::DifferentialFormValue{K,D,Ta},
-                               b::DifferentialFormValue{K,D,Tb}) where {K,D,Ta,Tb}
+@generated function form_inner(a::ExteriorFormValue{K,D,Ta},
+                               b::ExteriorFormValue{K,D,Tb}) where {K,D,Ta,Tb}
   T = Base.promote_op(*,Ta,Tb)
   L = num_indep_components(a)
   _sum_expr([:(indep_comp_getindex(a,$i) * indep_comp_getindex(b,$i)) for i in 1:L], T)
 end
 
-@generated function form_inner(a::DifferentialFormValue{K,D,Ta}, b::DifferentialFormValue{K,D,Tb},
+@generated function form_inner(a::ExteriorFormValue{K,D,Ta}, b::ExteriorFormValue{K,D,Tb},
                                g_inv::SymTensorValue{D,Tg}) where {K,D,Ta,Tb,Tg}
   T = Base.promote_op(*, Ta, Tb, Tg)
   c_K = sorted_combinations(D, K)
@@ -441,8 +441,8 @@ end
 const ⨟ = form_inner
 
 # optimization of inner
-function inner(a::DifferentialFormValue{K,D,Ta},
-               b::DifferentialFormValue{K,D,Tb}) where {K,D,Ta,Tb}
+function inner(a::ExteriorFormValue{K,D,Ta},
+               b::ExteriorFormValue{K,D,Tb}) where {K,D,Ta,Tb}
   K > D && return zero(Base.promote_op(*,Ta,Tb))
   factorial(K) * form_inner(a, b)
 end
@@ -458,15 +458,15 @@ Exterior derivative of a proxied 1-form `ω::VectorValue` from its gradient `Jt
 Used to compute the exterior derivative of a vector proxied 1-form,, see `d_1form` in `Gridap.CellData`.
 """
 @generated function grad_to_2form(Jt::TensorValue{D,D,T}) where {D,T}
-  iszero(binomial(D, 2)) && return :( zero(DifferentialFormValue{2,$D,$(Base.promote_op(-,T,T))}) )
+  iszero(binomial(D, 2)) && return :( zero(ExteriorFormValue{2,$D,$(Base.promote_op(-,T,T))}) )
 
   comps = [:( Jt[$a,$b] - Jt[$b,$a] ) for (a, b) in sorted_combinations(D, 2)]
-  :( DifferentialFormValue{2,$D}(($(comps...),)) )
+  :( ExteriorFormValue{2,$D}(($(comps...),)) )
 end
 
 
 # ============================================================
-# Isomorphism: VectorValue{D} ↔ DifferentialFormValue{1,D}
+# Isomorphism: VectorValue{D} ↔ ExteriorFormValue{1,D}
 #
 # In a flat Euclidean space, 1-forms and vectors are identified
 # via the standard inner product.  These conversions let you
@@ -478,18 +478,18 @@ end
 """
     to_1form(v::VectorValue{D})
 
-Conversion of `v` to a 1-form, a `DifferentialFormValue{1,D}`, assuming flat space
+Conversion of `v` to a 1-form, a `ExteriorFormValue{1,D}`, assuming flat space
 (the metric tensor is the iddentity matrix).
 """
-to_1form(v::VectorValue{D,T}) where {D,T} = DifferentialFormValue{1,D,T}(Tuple(v))
+to_1form(v::VectorValue{D,T}) where {D,T} = ExteriorFormValue{1,D,T}(Tuple(v))
 
 """
-    from_1form(ω::DifferentialFormValue{1})
+    from_1form(ω::ExteriorFormValue{1})
 
 Conversion of the 1-form value `ω` to a `VectorValue{D}`, assuming flat space
 (the metric tensor is the iddentity matrix).
 """
-from_1form(ω::DifferentialFormValue{1,D,T}) where {D,T} = VectorValue{D,T}(Tuple(ω))
+from_1form(ω::ExteriorFormValue{1,D,T}) where {D,T} = VectorValue{D,T}(Tuple(ω))
 
 # General K-form ↔ VectorValue{binomial(D,K)} (component-wise isomorphism)
 
@@ -497,17 +497,17 @@ from_1form(ω::DifferentialFormValue{1,D,T}) where {D,T} = VectorValue{D,T}(Tupl
     to_Kform(v::VectorValue{L}, ::Val{K}, ::Val{D})
 
 Reinterpret the `L = binomial(D,K)` components of `v` as the components of a
-`DifferentialFormValue{K,D}` in canonical Cartesian basis `dx^I`.
+`ExteriorFormValue{K,D}` in canonical Cartesian basis `dx^I`.
 """
-to_Kform(v::VectorValue{L,T}, ::Val{K}, ::Val{D}) where {L,T,K,D} = DifferentialFormValue{K,D,T}(Tuple(v))
+to_Kform(v::VectorValue{L,T}, ::Val{K}, ::Val{D}) where {L,T,K,D} = ExteriorFormValue{K,D,T}(Tuple(v))
 
 """
-    from_Kform(ω::DifferentialFormValue{K,D})
+    from_Kform(ω::ExteriorFormValue{K,D})
 
 Reinterpret the components of `ω` as a `VectorValue{binomial(D,K)}`, the inverse
 of [`to_Kform`](@ref).
 """
-from_Kform(ω::DifferentialFormValue{K,D,T}) where {K,D,T} = VectorValue{binomial(D,K),T}(Tuple(ω))
+from_Kform(ω::ExteriorFormValue{K,D,T}) where {K,D,T} = VectorValue{binomial(D,K),T}(Tuple(ω))
 
 # ============================================================
 # Scalar ↔ 0-form and D-form
@@ -516,15 +516,15 @@ from_Kform(ω::DifferentialFormValue{K,D,T}) where {K,D,T} = VectorValue{binomia
 """
     to_0form(u::Number, ::Val{D})
 
-Convert the scalar `u` to a `DifferentialFormValue{0,D}`.
+Convert the scalar `u` to a `ExteriorFormValue{0,D}`.
 """
-to_0form(u::_Scalar, ::Val{D}) where D = DifferentialFormValue{0,D}((u,))
+to_0form(u::_Scalar, ::Val{D}) where D = ExteriorFormValue{0,D}((u,))
 
 """
     to_Dform(u::Number, ::Val{D})
 
 Convert the scalar `u` as the sole component of the top-degree
-`DifferentialFormValue{D,D}`, the inverse of [`vol_coeff`](@ref).
+`ExteriorFormValue{D,D}`, the inverse of [`vol_coeff`](@ref).
 """
-to_Dform(u::_Scalar, ::Val{D}) where D = DifferentialFormValue{D,D}((u,))
+to_Dform(u::_Scalar, ::Val{D}) where D = ExteriorFormValue{D,D}((u,))
 

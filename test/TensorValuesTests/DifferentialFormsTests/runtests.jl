@@ -2,7 +2,7 @@ module DifferentialFormsTests
 
 using Test
 
-@testset "DifferentialFormValues" begin include("DifferentialFormValuesTests.jl") end
+@testset "ExteriorFormValues" begin include("ExteriorFormValuesTests.jl") end
 
 @testset "MetricHodge" begin include("MetricHodgeTests.jl") end
 

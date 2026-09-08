@@ -169,7 +169,7 @@ end
 #  @inbounds @inline getindex(arg.data, i)
 #end
 
-@propagate_inbounds function getindex(arg::DifferentialFormValue{N,D,T}, inds::Vararg{Integer,N}) where {N,D,T}
+@propagate_inbounds function getindex(arg::ExteriorFormValue{N,D,T}, inds::Vararg{Integer,N}) where {N,D,T}
   @boundscheck @check checkbounds(arg, inds...) === nothing
   s = sorting_sign(inds...)
   s == 0 && return zero(T)

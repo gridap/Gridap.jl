@@ -98,7 +98,7 @@ for (k,Ki) in enumerate(r)
   @test Ki == K[k]
 end
 
-ω2 = DifferentialFormValue{2,3}((1,2,3))
+ω2 = ExteriorFormValue{2,3}((1,2,3))
 f2 = TensorValue(convert(SMatrix{3,3,Int}, ω2))
 
 @test size(ω2) == (3,3)
@@ -122,24 +122,24 @@ end
 @test all(ω2[i,i] == 0 for i in 1:3)
 
 # A top-degree form is its single component times the Levi-Civita symbol
-ω3 = DifferentialFormValue{3,3}((2,))
+ω3 = ExteriorFormValue{3,3}((2,))
 @test (ω3[1,2,3], ω3[2,3,1], ω3[3,1,2]) == ( 2,  2,  2)
 @test (ω3[2,1,3], ω3[1,3,2], ω3[3,2,1]) == (-2, -2, -2)
 @test count(!iszero, [ω3[i,j,k] for i in 1:3, j in 1:3, k in 1:3]) == 6
 
-ω0 = DifferentialFormValue{0,3}((7,))
+ω0 = ExteriorFormValue{0,3}((7,))
 @test size(ω0) == ()
 @test length(ω0) == 1
 @test ω0[] == ω0[CartesianIndex()] == ω0[1] == 7
 
 # K > D: no stored component, so every entry of the D^K tensor vanishes
-ω43 = DifferentialFormValue{4,3}()
+ω43 = ExteriorFormValue{4,3}()
 @test size(ω43) == (3,3,3,3)
 @test all(iszero, (ω43[i,j,k,l] for i in 1:3, j in 1:3, k in 1:3, l in 1:3))
 
 # Higher-rank forms in a strictly larger dimension, against the dense tensor
 for (K,D,data) in ((2,4,(1,2,3,4,5,6)), (3,4,(1,2,3,4)))
-  ω = DifferentialFormValue{K,D}(data)
+  ω = ExteriorFormValue{K,D}(data)
   a = convert(SArray{Tuple{ntuple(_->D,K)...},Int}, ω)
   for i in CartesianIndices(a)
     @test ω[i] == a[i]

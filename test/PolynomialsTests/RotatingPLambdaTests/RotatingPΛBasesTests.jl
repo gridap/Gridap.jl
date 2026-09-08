@@ -22,8 +22,8 @@ to_barycentric(x::Point{D,T}) where {D,T} = (one(T) - sum(x.data), x.data...)
 
 # Project an ambient barycentric 1-form (dλ¹,…,dλᴺ) to the physical D = N−1
 # frame by imposing dλ¹ = −dλ² − … − dλᴺ: phys[j] = c[j+1] − c[1].
-reduce_ambient(ω::DifferentialFormValue{1,N}) where N =
-    DifferentialFormValue{1,N-1}(ntuple(j -> ω.data[j+1] - ω.data[1], N-1))
+reduce_ambient(ω::ExteriorFormValue{1,N}) where N =
+    ExteriorFormValue{1,N-1}(ntuple(j -> ω.data[j+1] - ω.data[1], N-1))
 
 # ψ(f,k,α) = dλᵏ − (𝟙[k∈supp(α)] / |supp(α)|) · Σ_{i∈f} dλⁱ
 # returned as a coefficient vector in the AMBIENT (D+1)-dim barycentric frame
@@ -74,7 +74,7 @@ end
 function rotating_eval(f::Vector{Int}, k::Int, α::NTuple{N,Int}, x) where N
     λ   = to_barycentric(x)
     val = multinomial(α...) * prod(λ[i]^α[i] for i in 1:N)
-    ω   = DifferentialFormValue{1,N}(Tuple(rotating_psi(f, k, α)))
+    ω   = ExteriorFormValue{1,N}(Tuple(rotating_psi(f, k, α)))
     val * reduce_ambient(ω)
 end
 
@@ -137,7 +137,7 @@ end
         key = (f, k, collect(α))
         @test haskey(pkg_index, key)
         pkg_ψ    = collect(pkg_basis.Ψ[pkg_index[key]].data)
-        oracle_ψ = collect(reduce_ambient(DifferentialFormValue{1,D+1}(Tuple(rotating_psi(f, k, α)))).data)
+        oracle_ψ = collect(reduce_ambient(ExteriorFormValue{1,D+1}(Tuple(rotating_psi(f, k, α)))).data)
         @test pkg_ψ ≈ oracle_ψ atol=1e-12
     end
 end

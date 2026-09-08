@@ -1,7 +1,7 @@
 module GridapSymbolicsTests
 # Tests for the GridapSymbolicsExt extension: symbolic coordinates, symbolic
 # exterior derivative/codifferential/Lie derivative on Symbolics.Num-valued
-# DifferentialFormValues, the Koszul homotopy identity, and the print_forms
+# ExteriorFormValues, the Koszul homotopy identity, and the print_forms
 # symbolic display of the barycentric PΛ and P⁻Λ bases.
 
 using Symbolics
@@ -21,17 +21,17 @@ v2 = VectorValue(x¹, x²)
 
 # ── Symbolic scalar multiplication ───────────────────────────────────────────
 
-ωs = DifferentialFormValue{1,2}((1.0, 2.0))
+ωs = ExteriorFormValue{1,2}((1.0, 2.0))
 sω = x¹ * ωs
-@test typeof(sω) <: DifferentialFormValue{1,2,Symbolics.Num}
+@test typeof(sω) <: ExteriorFormValue{1,2,Symbolics.Num}
 @test isequal(Symbolics.simplify(sω.data[2] - 2x¹), Symbolics.simplify(Symbolics.Num(0)))
 @test isequal((ωs * x¹).data[1], sω.data[1])
 
 # ── Symbolic exterior derivative (Cartesian) ─────────────────────────────────
 
-ω0 = DifferentialFormValue{0,2}((x¹*x²,))
+ω0 = ExteriorFormValue{0,2}((x¹*x²,))
 dω0 = exterior_derivative(ω0)
-@test typeof(dω0) <: DifferentialFormValue{1,2}
+@test typeof(dω0) <: ExteriorFormValue{1,2}
 @test isequal(Symbolics.simplify(dω0.data[1] - x²), Symbolics.simplify(Symbolics.Num(0)))
 @test isequal(Symbolics.simplify(dω0.data[2] - x¹), Symbolics.simplify(Symbolics.Num(0)))
 
@@ -40,14 +40,14 @@ dω0 = exterior_derivative(ω0)
 λ₁, λ₂, λ₃ = Symbolics.variables(:λ, 1:3)
 λ = (λ₁, λ₂, λ₃)
 
-ωb = DifferentialFormValue{0,3}((λ₁*λ₂,))
+ωb = ExteriorFormValue{0,3}((λ₁*λ₂,))
 dωb = exterior_derivative(ωb, λ)
-@test typeof(dωb) <: DifferentialFormValue{1,3}
+@test typeof(dωb) <: ExteriorFormValue{1,3}
 @test isequal(Symbolics.simplify(dωb.data[1] - λ₂), Symbolics.simplify(Symbolics.Num(0)))
 @test isequal(Symbolics.simplify(dωb.data[2] - λ₁), Symbolics.simplify(Symbolics.Num(0)))
 @test isequal(Symbolics.simplify(dωb.data[3]), Symbolics.simplify(Symbolics.Num(0)))
 
-ω1b = DifferentialFormValue{1,3}((λ₁*λ₂, λ₁*λ₃, λ₂*λ₃))
+ω1b = ExteriorFormValue{1,3}((λ₁*λ₂, λ₁*λ₃, λ₂*λ₃))
 ddωb = exterior_derivative(exterior_derivative(ω1b, λ), λ)
 @test all(isequal(Symbolics.simplify(c), Symbolics.simplify(Symbolics.Num(0)))
           for c in ddωb.data)
@@ -55,21 +55,21 @@ ddωb = exterior_derivative(exterior_derivative(ω1b, λ), λ)
 # ── Symbolic Koszul operator ─────────────────────────────────────────────────
 
 # κ on a 1-form
-ω1 = DifferentialFormValue{1,2}((x¹, x²))    # x¹ dx¹ + x² dx²
+ω1 = ExteriorFormValue{1,2}((x¹, x²))    # x¹ dx¹ + x² dx²
 κω1 = koszul(v2, ω1)
-@test typeof(κω1) <: DifferentialFormValue{0,2}
+@test typeof(κω1) <: ExteriorFormValue{0,2}
 @test isequal(Symbolics.simplify(κω1.data[1]), Symbolics.simplify(x¹^2 + x²^2))
 
 # κ on a 2-form
-ω2 = DifferentialFormValue{2,2}((x¹,))       # x¹ dx¹∧dx²
+ω2 = ExteriorFormValue{2,2}((x¹,))       # x¹ dx¹∧dx²
 κω2 = koszul(v2, ω2)
-@test typeof(κω2) <: DifferentialFormValue{1,2}
+@test typeof(κω2) <: ExteriorFormValue{1,2}
 @test isequal(Symbolics.simplify(κω2.data[1]), Symbolics.simplify(-x¹*x²))
 @test isequal(Symbolics.simplify(κω2.data[2]), Symbolics.simplify(x¹^2))
 
 # ── Homotopy identity (dκ + κd)(ω) = (r+K)ω  on P_r Λ^K ─────────────────────
 
-function check_homotopy(ω::DifferentialFormValue{K,D}, r, x) where {K,D}
+function check_homotopy(ω::ExteriorFormValue{K,D}, r, x) where {K,D}
   dω  = exterior_derivative(ω)
   κdω = K < D ? koszul(x, dω) : zero(ω)   # κd (κ on (K+1)-form, only if K < D)
   κω  = K >= 1 ? koszul(x, ω) : ω         # κω (only if K ≥ 1, else 0 by convention)
@@ -82,42 +82,42 @@ end
 
 # K=0, D=2: only κd term (κ undefined on 0-forms, convention: 0)
 # ω = x¹² (homogeneous deg 2) — κd(ω) should equal 2ω
-ω_0 = DifferentialFormValue{0,2}((x¹^2,))
+ω_0 = ExteriorFormValue{0,2}((x¹^2,))
 κdω_0 = koszul(v2, exterior_derivative(ω_0))
 @test isequal(Symbolics.simplify(κdω_0.data[1] - 2*x¹^2), Symbolics.simplify(zero(x¹)))
 
 # K=1, D=2, r=1: ω = x¹ dx¹ + x² dx²
-@test all(check_homotopy(DifferentialFormValue{1,2}((x¹, x²)), 1, v2))
+@test all(check_homotopy(ExteriorFormValue{1,2}((x¹, x²)), 1, v2))
 
 # K=1, D=2, r=1: ω = x¹ dx² (off-diagonal)
-@test all(check_homotopy(DifferentialFormValue{1,2}((Symbolics.Num(0), x¹)), 1, v2))
+@test all(check_homotopy(ExteriorFormValue{1,2}((Symbolics.Num(0), x¹)), 1, v2))
 
 # K=1, D=2, r=0: ω = dx¹ (constant 1-form)
-@test all(check_homotopy(DifferentialFormValue{1,2}((Symbolics.Num(1), Symbolics.Num(0))), 0, v2))
+@test all(check_homotopy(ExteriorFormValue{1,2}((Symbolics.Num(1), Symbolics.Num(0))), 0, v2))
 
 # ── Symbolic codifferential ──────────────────────────────────────────────────
 
 # In 2D on 1-forms with ⋆dx¹ = dx², ⋆dx² = -dx¹ and sign (-1)^{D(K-1)+1} = -1:
 # δω = -(∂ω₁/∂x¹ + ∂ω₂/∂x²).  For ω₁=x¹²x², ω₂=x¹x²²: δω = -4x¹x²
-f1 = DifferentialFormValue{1,2}((x¹^2 * x², x¹ * x²^2))
+f1 = ExteriorFormValue{1,2}((x¹^2 * x², x¹ * x²^2))
 δf1 = codifferential(f1)
-@test typeof(δf1) <: DifferentialFormValue{0,2}
+@test typeof(δf1) <: ExteriorFormValue{0,2}
 @test isequal(Symbolics.simplify(δf1.data[1]), Symbolics.simplify(-4*x¹*x²))
 
 # ── Lie derivative (Cartan formula) ──────────────────────────────────────────
 
 # On a 0-form: L_v f = ι_v df = v¹ ∂f/∂x¹ + v² ∂f/∂x²
-f0   = DifferentialFormValue{0,2}((x¹^2 + x²,))
+f0   = ExteriorFormValue{0,2}((x¹^2 + x²,))
 v_e1 = VectorValue(Symbolics.Num(1), Symbolics.Num(0))
 Lv_f0 = lie_derivative(v_e1, f0)
-@test typeof(Lv_f0) <: DifferentialFormValue{0,2}
+@test typeof(Lv_f0) <: ExteriorFormValue{0,2}
 @test isequal(Symbolics.simplify(Lv_f0.data[1]), Symbolics.simplify(2*x¹))
 
 # On a 1-form: ω = x¹dx¹ + x²dx², v = e₁
 # ι_{e₁} ω = x¹, d(x¹) = dx¹; dω = 0  →  L_{e₁} ω = dx¹ = (1, 0)
-ω_1 = DifferentialFormValue{1,2}((x¹, x²))
+ω_1 = ExteriorFormValue{1,2}((x¹, x²))
 Lv_ω1 = lie_derivative(v_e1, ω_1)
-@test typeof(Lv_ω1) <: DifferentialFormValue{1,2}
+@test typeof(Lv_ω1) <: ExteriorFormValue{1,2}
 @test isequal(Symbolics.simplify(Lv_ω1.data[1]), Symbolics.simplify(Symbolics.Num(1)))
 @test isequal(Symbolics.simplify(Lv_ω1.data[2]), Symbolics.simplify(Symbolics.Num(0)))
 

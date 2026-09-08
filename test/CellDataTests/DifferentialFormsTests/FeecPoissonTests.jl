@@ -26,7 +26,7 @@ du_cf = d_0form(u_scalar)
 dux = du_cf(pts)
 cdu = array_cache(dux)
 duv = getindex!(cdu, dux, 1)
-@test typeof(duv) <: AbstractArray{<:DifferentialFormValue{1,2}}
+@test typeof(duv) <: AbstractArray{<:ExteriorFormValue{1,2}}
 @test all(v -> collect(v.data) ≈ [1.0, 1.0], duv)
 
 # d_1form on a VectorValue CellField: d(−x₂, x₁) = 2 dx¹∧dx² everywhere
@@ -35,7 +35,7 @@ ddu_cf = d_1form(u_vec)
 ddux = ddu_cf(pts)
 cddu = array_cache(ddux)
 dduv = getindex!(cddu, ddux, 1)
-@test typeof(dduv) <: AbstractArray{<:DifferentialFormValue{2,2}}
+@test typeof(dduv) <: AbstractArray{<:ExteriorFormValue{2,2}}
 @test all(v -> vol_coeff(v) ≈ 2.0, dduv)
 
 # ── 2. Scalar Poisson: differential-form weak form vs standard Gridap ────────

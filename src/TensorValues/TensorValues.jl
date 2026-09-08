@@ -95,7 +95,7 @@ export from_voigt
 export to_mandel
 export from_mandel
 
-export DifferentialFormValue
+export ExteriorFormValue
 export ∧
 export interior_product, ι
 export hodge_star, ⋆

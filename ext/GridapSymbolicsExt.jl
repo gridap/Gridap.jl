@@ -18,10 +18,10 @@ import Gridap.Polynomials: print_forms
 # Symbolic scalar multiplication (Symbolics.Num is not <:Real)
 # ============================================================
 
-function Base.:*(s::Symbolics.Num, ω::DifferentialFormValue{K,D,T,L}) where {K,D,T,L}
-  DifferentialFormValue{K,D,Symbolics.Num,L}(map(x -> s*x, ω.data))
+function Base.:*(s::Symbolics.Num, ω::ExteriorFormValue{K,D,T,L}) where {K,D,T,L}
+  ExteriorFormValue{K,D,Symbolics.Num,L}(map(x -> s*x, ω.data))
 end
-Base.:*(ω::DifferentialFormValue, s::Symbolics.Num) = s * ω
+Base.:*(ω::ExteriorFormValue, s::Symbolics.Num) = s * ω
 
 # ============================================================
 # Symbolic coordinate variables
@@ -37,24 +37,24 @@ symbolic_coordinates(D::Integer) = Tuple(coords[1:D])
 # Dispatches when T = Symbolics.Num (symbolic coefficients).
 # ============================================================
 
-function _sym_exterior_derivative(ω::DifferentialFormValue{K,D,Symbolics.Num,L0},
+function _sym_exterior_derivative(ω::ExteriorFormValue{K,D,Symbolics.Num,L0},
                                    diff_vars::AbstractVector) where {K,D,L0}
   L   = binomial(D, K)
   ds  = [Symbolics.jacobian([ω.data[i]], diff_vars) for i in 1:L]
-  dfs = [DifferentialFormValue{1,D}(Tuple(ds[i])) for i in 1:L]
-  kbs = [DifferentialFormValue{K,D}(ntuple(i -> i == j ? 1.0 : 0.0, L)) for j in 1:L]
+  dfs = [ExteriorFormValue{1,D}(Tuple(ds[i])) for i in 1:L]
+  kbs = [ExteriorFormValue{K,D}(ntuple(i -> i == j ? 1.0 : 0.0, L)) for j in 1:L]
   res = [dfs[i] ∧ kbs[i] for i in 1:L]
   dat = sum([collect(r.data) for r in res])
   Lout = binomial(D, K+1)
-  DifferentialFormValue{K+1,D,Symbolics.Num,Lout}(Tuple(dat))
+  ExteriorFormValue{K+1,D,Symbolics.Num,Lout}(Tuple(dat))
 end
 
 # Differentiates w.r.t. global Cartesian coords x¹,...,x^D
-exterior_derivative(ω::DifferentialFormValue{K,D,Symbolics.Num,L0}) where {K,D,L0} =
+exterior_derivative(ω::ExteriorFormValue{K,D,Symbolics.Num,L0}) where {K,D,L0} =
   _sym_exterior_derivative(ω, coords[1:D])
 
 # Differentiates w.r.t. explicit variables — works for barycentric λs or any symbols
-exterior_derivative(ω::DifferentialFormValue{K,D,Symbolics.Num,L0},
+exterior_derivative(ω::ExteriorFormValue{K,D,Symbolics.Num,L0},
                     vars::NTuple{D,Symbolics.Num}) where {K,D,L0} =
   _sym_exterior_derivative(ω, collect(vars))
 
@@ -63,7 +63,7 @@ exterior_derivative(ω::DifferentialFormValue{K,D,Symbolics.Num,L0},
 #   δ = (-1)^{D(K-1)+1} ⋆ d ⋆   (flat Euclidean metric, symbolic coefficients)
 # ============================================================
 
-function codifferential(ω::DifferentialFormValue{K,D,Symbolics.Num}) where {K,D}
+function codifferential(ω::ExteriorFormValue{K,D,Symbolics.Num}) where {K,D}
   @assert K >= 1 "codifferential requires K ≥ 1"
   sgn = iseven(D*(K-1) + 1) ? 1 : -1
   sgn * exterior_derivative(hodge_star(ω))  |> hodge_star
@@ -76,13 +76,13 @@ end
 # ============================================================
 
 function lie_derivative(v::VectorValue{D,Symbolics.Num},
-                        ω::DifferentialFormValue{0,D,Symbolics.Num}) where D
+                        ω::ExteriorFormValue{0,D,Symbolics.Num}) where D
   # L_v f = ι_v(df)  (directional derivative of a scalar)
   interior_product(v, exterior_derivative(ω))
 end
 
 function lie_derivative(v::VectorValue{D,Symbolics.Num},
-                        ω::DifferentialFormValue{K,D,Symbolics.Num}) where {K,D}
+                        ω::ExteriorFormValue{K,D,Symbolics.Num}) where {K,D}
   dω      = exterior_derivative(ω)               # (K+1)-form
   ι_v_ω   = interior_product(v, ω)               # (K-1)-form
   exterior_derivative(ι_v_ω) + interior_product(v, dω)
@@ -145,8 +145,8 @@ function print_forms(b::BarycentricPΛBasis{D}, out::IO=stdout) where D
       mono = multinomial(α...) * prod(λs[i]^α[i] for i in 1:N)
       φ    = ambient_φ(F, α, r, b.flavor)  # ambient dλ¹,…,dλᴺ coefficients
       # The direction k-form is the wedge of the columns J of φ
-      Ψ = foldl((ω, j) -> ω ∧ DifferentialFormValue{1,N}(Tuple(φ[:,j])),
-                J; init=DifferentialFormValue{0,N}((1.0,)))
+      Ψ = foldl((ω, j) -> ω ∧ ExteriorFormValue{1,N}(Tuple(φ[:,j])),
+                J; init=ExteriorFormValue{0,N}((1.0,)))
       print(out, "[", rpad(w,3), "]  F=", rpad(join(F,","),8), " J=", rpad(join(J,","),7), " α=", rpad(string(Tuple(α)),12), "  ")
       _show_barycentric(out, mono * Ψ)
       println(out)
@@ -160,7 +160,7 @@ function print_forms(b::BarycentricPmΛBasis{D}, out::IO=stdout) where D
   k  = b.k
   λs = _barycentric_symbols(N)
 
-  dλ(j) = DifferentialFormValue{1,N}(ntuple(i -> i == j ? 1.0 : 0.0, N))
+  dλ(j) = ExteriorFormValue{1,N}(ntuple(i -> i == j ? 1.0 : 0.0, N))
 
   # The Whitney k-form of a bubble, on the ambient dλ¹,…,dλᴺ coframe rather than
   # the physical dx¹,…,dxᴰ one the basis stores in its `m`:
@@ -168,7 +168,7 @@ function print_forms(b::BarycentricPmΛBasis{D}, out::IO=stdout) where D
   function ambient_φ(J)
     sum(enumerate(J)) do (l, Jl)
       dλ_JsubJl = foldl((ω, j) -> ω ∧ dλ(j), (j for j in J if j != Jl);
-                        init=DifferentialFormValue{0,N}((1.0,)))
+                        init=ExteriorFormValue{0,N}((1.0,)))
       (iseven(l) ? -λs[Jl] : λs[Jl]) * dλ_JsubJl
     end
   end

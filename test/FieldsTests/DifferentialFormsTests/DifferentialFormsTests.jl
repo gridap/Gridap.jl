@@ -104,7 +104,7 @@ f2_fld = GenericField(x -> x[2])   # coefficient x²
 x0 = Point(2.0, 3.0)
 c = return_cache(κω_fld, x0)
 κval = evaluate!(c, κω_fld, x0)
-@test typeof(κval) <: DifferentialFormValue{0,2}
+@test typeof(κval) <: ExteriorFormValue{0,2}
 # κ(ω)(x₀) = x¹·x¹ + x²·x² = 4 + 9 = 13
 @test κval.data[1] ≈ 13.0   atol=1e-12
 
@@ -119,7 +119,7 @@ f_vol = GenericField(_ -> 1.0)
 κω_vol = KoszulForm(ω_vol)
 c3 = return_cache(κω_vol, x0)
 κval2 = evaluate!(c3, κω_vol, x0)
-@test typeof(κval2) <: DifferentialFormValue{1,2}
+@test typeof(κval2) <: ExteriorFormValue{1,2}
 # ι_{(2,3)}(dx¹∧dx²): d[1] = -x₀[2] = -3, d[2] = x₀[1] = 2
 @test collect(κval2.data) ≈ [-3.0, 2.0]   atol=1e-12
 
@@ -143,7 +143,7 @@ expected_val = hodge_star(evaluate(ω_fld, x1))   # value-level star
 
 cδ   = return_cache(δω_fld, x1)
 δval = evaluate!(cδ, δω_fld, x1)
-@test typeof(δval) <: DifferentialFormValue{0,2}
+@test typeof(δval) <: ExteriorFormValue{0,2}
 
 # ω₁=3xy, ω₂=5y²; ⋆ω = (-ω₂, ω₁); d⋆ω = (∂ω₁/∂x + ∂ω₂/∂y) vol = (3y+10y) vol
 # ⋆d⋆ω = 13y; δω = sign·⋆d⋆ω = -1·(13y).  At (1,2): -26
@@ -167,7 +167,7 @@ pb_fld = pullback(φ_fld, ω_target, Val(2))
 ξ0  = Point(1.0, 1.0)
 cpb = return_cache(pb_fld, ξ0)
 pb_val = evaluate!(cpb, pb_fld, ξ0)
-@test typeof(pb_val) <: DifferentialFormValue{1,2}
+@test typeof(pb_val) <: ExteriorFormValue{1,2}
 # φ*(x¹dx¹+x²dx²) = aξ¹·(adξ¹) + bξ²·(bdξ²) = a²ξ¹dξ¹ + b²ξ²dξ²
 # At ξ=(1,1): (a², b²) = (4, 9)
 @test collect(pb_val.data) ≈ [a^2, b^2]   atol=1e-8
