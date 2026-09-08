@@ -27,6 +27,9 @@ import Gridap.TensorValues: indep_comp_getindex
 """
     DifferentialForm{K,D,L,Data} <: Field
 
+!!! warning
+    This type is experimental. It might be removed in the future.
+
 Typed K-form in D dimensions.  `Data = typeof(data)` captures the full tuple
 type of the L = binomial(D,K) component Fields so that downstream wrappers
 (ExteriorDerivativeForm, CodifferentialForm) can use `map(∇, form.data)` with
@@ -84,6 +87,9 @@ end
 """
     ExteriorDerivativeForm{K,D,F} <: Field
 
+!!! warning
+    This type is experimental. It might be removed in the future.
+
 Lazy exterior derivative of a `DifferentialForm{K,D,...}`.  Stores only
 `form::F`; gradient fields are derived in `return_cache` via `map(∇, form.data)`.
 """
@@ -134,6 +140,9 @@ end
 
 """
     hodge_star_form(ω::DifferentialForm{K,D})
+
+!!! warning
+    This type is experimental. It might be removed in the future.
 
 Flat (Euclidean) Hodge star: a `DifferentialForm{D-K,D}` whose component fields
 are ±1 linear combinations of the components of `ω`.
@@ -189,6 +198,9 @@ end
 
 """
     CodifferentialForm{K,D,F} <: Field
+
+!!! warning
+    This type is experimental. It might be removed in the future.
 
 Lazy codifferential of `DifferentialForm{K,D,...}`.  Stores only `form::F`;
 all helper data (Hodge star matrix, gradient caches) are derived in
@@ -258,6 +270,9 @@ end
 """
     KoszulForm{K,D,F} <: Field
 
+!!! warning
+    This type is experimental. It might be removed in the future.
+
 Lazy Koszul contraction of a `DifferentialForm{K,D,...}`.
 Stores only `form::F`; evaluates `ι_x(form(x))` at each point x.
 """
@@ -271,6 +286,9 @@ end
 
 """
     koszul(ω::DifferentialForm)
+
+!!! warning
+    This type is experimental. It might be removed in the future.
 
 Koszul differential of `ω`, giving a (K-1)-form valued `KoszulForm`.
 """
@@ -291,6 +309,9 @@ end
 
 """
     PullbackForm{K,Dm,Dn} <: Field
+
+!!! warning
+    This type is experimental. It might be removed in the future.
 
 Lazy pullback `φ*ω` of a `DifferentialForm{K,Dn}` under a map field
 `φ : ℝᴰᵐ → ℝᴰⁿ`, see [`pullback(φ::Field, ω::DifferentialForm, ::Val)`](@ref pullback).

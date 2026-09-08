@@ -7,6 +7,12 @@ module DifferentialFormsTests
 using Gridap.TensorValues
 using Gridap.Arrays
 using Gridap.Fields
+using Gridap.Fields: DifferentialForm
+using Gridap.Fields: ExteriorDerivativeForm
+using Gridap.Fields: CodifferentialForm
+using Gridap.Fields: KoszulForm
+using Gridap.Fields: PullbackForm
+using Gridap.Fields: hodge_star_form
 using Test
 
 fun(x) = 3.0*x[1]
