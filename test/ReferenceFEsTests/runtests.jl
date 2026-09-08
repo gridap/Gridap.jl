@@ -62,6 +62,6 @@ using Test
 
 @testset "BubbleRefFEs" begin include("BubbleRefFEsTests.jl") end
 
-@testset "RotatingPLambda" begin include("RotatingPLambdaTests/runtests.jl") end
+@testset "RotatingPLambda" begin include("PΛRefFEsTests.jl") end
 
 end # module
