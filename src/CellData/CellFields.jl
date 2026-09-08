@@ -507,7 +507,7 @@ end
 # Binary ops
 
 for op in (:inner,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/,
-  :interior_product, :sharp, :flat, :∧
+  :interior_product, :sharp, :flat, :∧, :form_inner
 )
   @eval begin
     ($op)(a::CellField,b::CellField) = Operation($op)(a,b)

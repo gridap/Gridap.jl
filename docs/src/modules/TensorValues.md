@@ -247,6 +247,7 @@ DifferentialFormValue
 ∧
 interior_product
 hodge_star
+form_inner
 apply_form
 vol_coeff
 koszul(::VectorValue{D}, ::DifferentialFormValue{K,D}) where {K,D}

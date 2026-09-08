@@ -45,7 +45,7 @@ import Gridap.Geometry: num_cells
 import Gridap.Geometry: get_triangulation
 
 import Gridap.TensorValues: inner, outer, double_contraction, symmetric_part
-import Gridap.TensorValues: ∧, hodge_star, flat, sharp, interior_product
+import Gridap.TensorValues: ∧, hodge_star, flat, sharp, interior_product, form_inner
 import Gridap.TensorValues: koszul
 import Gridap.TensorValues: vol_coeff, to_1form, from_1form
 import LinearAlgebra: det, tr, cross, dot, ⋅, rmul!

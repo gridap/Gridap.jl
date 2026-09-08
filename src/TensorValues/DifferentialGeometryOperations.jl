@@ -4,22 +4,40 @@
 # (∧, ι, ⋆, ♭/♯, koszul, …).
 
 # ============================================================
-# Helper: multi-index ↔ linear index map
-#
-# Returns an array `arr` such that arr[i₁,...,iₖ] = position of
-# the sorted K-combination (i₁,...,iₖ) in the lexicographic list
-# of all K-subsets of {1,...,D}.  For K=0 returns a 0-dim array
-# containing 1 (there is exactly one empty combination).
+# Generate-time expression builders
 # ============================================================
 
-function _ijk_l(K::Int, D::Int)
-  cm  = sorted_combinations(D, K)
-  _d  = ntuple(_ -> D, K)
-  arr = zeros(Int, _d)
-  for (c, idx) in enumerate(cm)
-    arr[idx...] = c
-  end
-  arr
+# `sgn * expr`, with the sign folded in rather than emitted as a factor.
+_signed(sgn::Int, expr) = sgn > 0 ? expr : :(-$expr)
+
+# Sum of `terms`. `Expr(:call, :+)` with no term is `+()`, which errors, so an
+# empty sum is emitted as an explicit `zero(T)`.
+_sum_expr(terms, T) = isempty(terms) ? :(zero($T)) : Expr(:call, :+, terms...)
+
+# Leibniz expansion of the determinant of the `K`×`K` matrix whose `(a,b)` entry
+# is the expression `entry(a,b)`. `K ≥ 1`.
+function _det_expr(entry, K::Int)
+  terms = (_signed(levicivita(p), Expr(:call, :*, (entry(a, p[a]) for a in 1:K)...))
+           for p in permutations(1:K))
+  Expr(:call, :+, terms...)
+end
+
+# Determinant of the `K`×`K` submatrix of the second order tensor named by `A`,
+# with rows `I` and columns `J`.
+#
+# The expansion has `K!` terms per call site. Past `K = 4` that makes compilation
+# the dominant cost, so the emitted code calls `_minor_k` and loops instead.
+function _minor_expr(A::Symbol, I, J)
+  K = length(I)
+  K == 0 && return :(one(eltype($A)))
+  K > 4  && return :(_minor_k($A, $(Tuple(I)), $(Tuple(J))))
+  _det_expr((a, b) -> :($A[$(I[a]), $(J[b])]), K)
+end
+
+# Determinant of the K×K submatrix of `A` with rows `I` and columns `J`.
+function _minor_k(A, I::NTuple{K,Int}, J::NTuple{K,Int}) where K
+  K == 0 && return one(eltype(A))
+  det(SMatrix{K,K}(ntuple(n -> A[I[(n-1)%K+1], J[(n-1)÷K+1]], Val(K*K))))
 end
 
 # ============================================================
@@ -31,31 +49,27 @@ end
 
 Pointwise exterior (wedge) product, a `DifferentialFormValue{K1+K2,D}`.
 """
-function ∧(a::DifferentialFormValue{K1,D,T1,L1}, b::DifferentialFormValue{K2,D,T2,L2}) where {K1,K2,D,T1,T2,L1,L2}
-  K  = K1 + K2
-  T  = typeof(zero(T1) * zero(T2))
-  L  = binomial(D, K)   # = 0 when K > D
+@generated function ∧(a::DifferentialFormValue{K1,D,T1}, b::DifferentialFormValue{K2,D,T2}) where {K1,K2,D,T1,T2}
+  K = K1 + K2
+  L = binomial(D, K)
+  T = Base.promote_op(*, T1, T2)
 
-  d  = zeros(T, max(L, 1))   # avoid zero-length zeros() for accumulation
-  c1 = sorted_combinations(D, K1)
-  c2 = sorted_combinations(D, K2)
+  iszero(L) && return :( zero(DifferentialFormValue{$K,$D,$T}) )
 
-  if L > 0
-    ijk_l1  = _ijk_l(K1, D)
-    ijk_l2  = _ijk_l(K2, D)
-    ijk_l12 = _ijk_l(K,  D)
-    for (n1, i1) in enumerate(c1)
-      for (n2, i2) in enumerate(c2)
-        i12 = [i1..., i2...]
-        l   = ijk_l12[sort(i12)...]
-        if l > 0
-          d[l] += sorting_sign(i12...) * a.data[ijk_l1[i1...]] * b.data[ijk_l2[i2...]]
-        end
-      end
-    end
+  # (a ∧ b)_I = Σ ε(I₁,I₂) a_{I₁} b_{I₂}, summed over the ways of splitting the
+  # sorted I into a K1-subset I₁ and a K2-subset I₂. Overlapping splits have
+  # ε = 0 and contribute nothing.
+  terms = [Expr[] for _ in 1:L]
+  for (n1, I1) in enumerate(sorted_combinations(D, K1)),
+      (n2, I2) in enumerate(sorted_combinations(D, K2))
+    s = sorting_sign(I1..., I2...)
+    s == 0 && continue
+    l = combination_index(sort([I1..., I2...]), D)
+    push!(terms[l], _signed(s, :(indep_comp_getindex(a,$n1) * indep_comp_getindex(b,$n2))))
   end
+  comps = [_sum_expr(t, T) for t in terms]
 
-  DifferentialFormValue{K,D,T,L}(Tuple(d[1:L]))
+  :( DifferentialFormValue{$K,$D}(($(comps...),)) )
 end
 
 # ============================================================
@@ -70,30 +84,26 @@ end
 Interior product (contraction) `ι_v ω`, a `DifferentialFormValue{K-1,D}`:
 `(ι_v ω)(w₂,…,wₖ) = ω(v, w₂,…,wₖ)`.
 """
-function interior_product(v::VectorValue{D,Tv}, ω::DifferentialFormValue{K,D,Tw,Lw}) where {K,D,Tv,Tw,Lw}
-  @assert K >= 1 "interior product requires K ≥ 1"
-  T    = typeof(zero(Tv) * zero(Tw))
-  Km1  = K - 1
-  L    = binomial(D, Km1)
-  d    = zeros(T, max(L, 1))
+@generated function interior_product(v::VectorValue{D,Tv}, ω::DifferentialFormValue{K,D,Tw}) where {K,D,Tv,Tw}
+  K >= 1 || return :(@unreachable "interior product requires K ≥ 1")
 
-  c_in      = sorted_combinations(D, K)
-  ijk_l_out = _ijk_l(Km1, D)
+  Km1 = K - 1
+  T = Base.promote_op(*, Tv, Tw)
+  iszero(binomial(D, K)) && return :( zero(DifferentialFormValue{$Km1,$D,$T}) )
 
-  for (n, c) in enumerate(c_in)
-    for j in 1:K
-      idx = c[j]
-      rem = [c[i] for i in 1:K if i != j]
-      sort!(rem)
-      l   = Km1 == 0 ? 1 : ijk_l_out[rem...]
-      if l > 0
-        sgn = iseven(j - 1) ? 1 : -1
-        d[l] += sgn * v[idx] * ω.data[n]
-      end
-    end
+  L = binomial(D, Km1)
+
+  # (ι_v ω)_{I∖I[j]} = Σ_j (-1)^{j-1} v^{I[j]} ω_I. Dropping one entry of the
+  # sorted I leaves it sorted, so the output slot is its combination index.
+  terms = [Expr[] for _ in 1:L]
+  for (n, I) in enumerate(sorted_combinations(D, K)), j in 1:K
+    l = combination_index(deleteat!(copy(I), j), D)
+    push!(terms[l], _signed(iseven(j-1) ? 1 : -1,
+                            :(v[$(I[j])] * indep_comp_getindex(ω,$n))))
   end
+  comps = [_sum_expr(t, T) for t in terms]
 
-  DifferentialFormValue{Km1,D,T,L}(Tuple(d[1:L]))
+  :( DifferentialFormValue{$Km1,$D}(($(comps...),)) )
 end
 
 const ι = interior_product
@@ -104,27 +114,50 @@ const ι = interior_product
 # (⋆ω)_J = ∑_I  ε_{IJ}  ω_I
 # where I ranges over K-combinations, J over (D-K)-combinations,
 # and ε_{IJ} = levicivita of the permutation (I,J) → sorted (1…D).
+# Only the complementary pair J = Iᶜ contributes, since ε_{IJ} vanishes as soon
+# as I and J share an index.
 # ============================================================
 
 """
-    _hodge_star_matrix(K, D) -> Matrix{Int}
+    _hodge_star_signs(K, D) -> Vector{Int}
 
-Levi-Civita sign matrix of the flat Hodge star: entry `[m,n] = ε_{I_n J_m}`
-for `I_n` the n-th K-combination and `J_m` the m-th (D−K)-combination of
-`1:D` (zero when they overlap). Shared by `hodge_star` (here) and
-`CodifferentialForm` (Gridap.Fields).
+Levi-Civita signs of the flat Hodge star, entry `[n] = ε_{I Iᶜ}` for `I` the
+n-th `K`-combination of `1:D`, so that with `L = binomial(D,K)`
+
+    (⋆ω)_{L+1-n} = _hodge_star_signs(K,D)[n] * ω_n.
+
+Only the complementary pair contributes, and its output slot is `L+1-n` because
+complementation reverses the lexicographic order of the combinations. The sign
+is `(-1)^(ΣI - K(K+1)/2)`, since the sorted `I` followed by its sorted
+complement has `Σₐ (I[a] - a)` inversions.
 """
-function _hodge_star_matrix(K::Int, D::Int)
-  Kc = D - K
-  c_in  = sorted_combinations(D, K)
-  c_out = sorted_combinations(D, Kc)
-  M = zeros(Int, length(c_out), length(c_in))
-  for (m, J) in enumerate(c_out), (n, I) in enumerate(c_in)
-    perm = [I..., J...]
-    length(unique(perm)) == D || continue
-    M[m, n] = sorting_sign(perm...)
+function _hodge_star_signs(K::Int, D::Int)
+
+  # Helper: advance `I` to the next K-combination of 1:D in lexicographic
+  # order, leaving the last combination unchanged.
+  function _next_combination!(I::Vector{Int}, D::Int)
+    K = length(I)
+    j = K
+    while j >= 1 && I[j] == D - K + j
+      j -= 1
+    end
+    j == 0 && return I
+    I[j] += 1
+    for l in j+1:K
+      I[l] = I[l-1] + 1
+    end
+    I
   end
-  M
+
+  L = binomial(D, K)
+  signs = Vector{Int}(undef, L)
+  I = collect(1:K)              # first K-combination in lexicographic order
+  offset = (K*(K+1)) ÷ 2
+  for n in 1:L
+    signs[n] = iseven(sum(I) - offset) ? 1 : -1
+    _next_combination!(I, D)
+  end
+  signs
 end
 
 """
@@ -137,12 +170,14 @@ Hodge star `⋆ω`, a `DifferentialFormValue{D-K,D}`. The one-argument form uses
 the flat Euclidean metric; the three-argument form takes a pointwise inverse
 metric tensor and `√det(g)`.
 """
-function hodge_star(ω::DifferentialFormValue{K,D,T,L}) where {K,D,T,L}
+@generated function hodge_star(ω::DifferentialFormValue{K,D,T}) where {K,D,T}
+  K <= D || return :(@unreachable $("hodge star requires K ≤ D, got K = $K and D = $D"))
+
   Kc = D - K
-  Lc = binomial(D, Kc)
-  M  = _hodge_star_matrix(K, D)
-  d  = ntuple(m -> sum(M[m, n] * ω.data[n] for n in 1:L), Lc)
-  DifferentialFormValue{Kc,D,T,Lc}(d)
+  L  = binomial(D, K)   # = binomial(D, Kc), the two are matched by complementation
+  s  = _hodge_star_signs(K, D)
+  comps = [_signed(s[L+1-m], :(indep_comp_getindex(ω,$(L+1-m)))) for m in 1:L]
+  :( DifferentialFormValue{$Kc,$D}(($(comps...),)) )
 end
 
 const ⋆ = hodge_star
@@ -190,46 +225,27 @@ function symbolic_coordinates end
 # (the pointwise square root of det g) keeps this purely algebraic.
 # ============================================================
 
-# Determinant of the K×K submatrix of a symmetric tensor indexed by I (rows) and J (cols)
-function _minor_k(g_inv, I, J, K)
-  K == 0 && return one(eltype(g_inv.data))
-  K == 1 && return g_inv[I[1], J[1]]
-  K == 2 && return g_inv[I[1],J[1]]*g_inv[I[2],J[2]] - g_inv[I[1],J[2]]*g_inv[I[2],J[1]]
-  M = [g_inv[I[a], J[b]] for a in 1:K, b in 1:K]
-  det(M)
-end
+@generated function hodge_star(ω::DifferentialFormValue{K,D,Tw}, g_inv::SymTensorValue{D,Tg}, sqrt_det_g::Ts) where {K,D,Tw,Tg,Ts}
+  K <= D || return :(@unreachable $("hodge star requires K ≤ D, got K = $K and D = $D"))
 
-function hodge_star(ω::DifferentialFormValue{K,D,T}, g_inv::SymTensorValue{D}, sqrt_det_g) where {K,D,T}
-  Kc = D - K
-  L  = binomial(D, K)
-  Lc = binomial(D, Kc)
-  Tout = promote_type(T, typeof(sqrt_det_g), eltype(g_inv.data))
-
-  c_K  = sorted_combinations(D, K)
-  c_Kc = sorted_combinations(D, Kc)
+  T = Base.promote_op(*, Tw, Tg, Ts)
+  Kc  = D - K
+  L   = binomial(D, K)   # = binomial(D, Kc), the two are matched by complementation
+  c_K = sorted_combinations(D, K)
 
   # Step 1: raise K indices of ω
-  omega_raised = zeros(Tout, max(L, 1))
-  for (n, I) in enumerate(c_K)
-    for (m, J) in enumerate(c_K)
-      omega_raised[n] += _minor_k(g_inv, I, J, K) * ω.data[m]
-    end
+  raised = [_sum_expr([:( $(_minor_expr(:g_inv, I, J)) * indep_comp_getindex(ω,$m) )
+                       for (m, J) in enumerate(c_K)], T)
+            for I in c_K]
+
+  # Step 2: Levi-Civita contraction, which pairs each I with its complement only
+  s = _hodge_star_signs(K, D)
+  comps = [_signed(s[L+1-m], :(sqrt_det_g * ω_raised[$(L+1-m)])) for m in 1:L]
+
+  quote
+    ω_raised = ($(raised...),)
+    DifferentialFormValue{$Kc,$D}(($(comps...),))
   end
-
-  # Step 2: Levi-Civita contraction
-  d = zeros(Tout, max(Lc, 1))
-  ijk_l_out = _ijk_l(Kc, D)
-
-  for (n, I) in enumerate(c_K)
-    for J in c_Kc
-      perm = [I..., J...]
-      length(unique(perm)) == D || continue
-      idx = Kc == 0 ? 1 : ijk_l_out[J...]   # J already sorted
-      d[idx] += sorting_sign(perm...) * sqrt_det_g * omega_raised[n]
-    end
-  end
-
-  DifferentialFormValue{Kc,D}(Tuple(d[1:Lc]))
 end
 
 # ============================================================
@@ -249,10 +265,11 @@ end
 Musical isomorphism ♭: lower the index of the vector `v` with the metric `g`,
 giving a `DifferentialFormValue{1,D}`.
 """
-function flat(v::VectorValue{D,T}, g::SymTensorValue{D}) where {D,T}
-  Tout = promote_type(T, eltype(g.data))
-  d = ntuple(i -> sum(g[i,j] * v[j] for j in 1:D), D)
-  DifferentialFormValue{1,D}(Tuple{Vararg{Tout,D}}(d))
+@generated function flat(v::VectorValue{D,Tv}, g::SymTensorValue{D,Tg}) where {D,Tv,Tg}
+  iszero(D) && return :( zero(DifferentialFormValue{1,0,$(Base.promote_op(*,Tg,Tv))}) )
+
+  comps = [Expr(:call, :+, (:(g[$i,$j] * v[$j]) for j in 1:D)...) for i in 1:D]
+  :( DifferentialFormValue{1,$D}(($(comps...),)) )
 end
 
 const ♭ = flat
@@ -264,10 +281,11 @@ const ♭ = flat
 Musical isomorphism `♯`: raise the index of the 1-form `ω` with the inverse
 metric `g_inv`, giving a `VectorValue{D}`.
 """
-function sharp(ω::DifferentialFormValue{1,D,T}, g_inv::SymTensorValue{D}) where {D,T}
-  Tout = promote_type(T, eltype(g_inv.data))
-  d = ntuple(i -> sum(g_inv[i,j] * ω.data[j] for j in 1:D), D)
-  VectorValue{D,Tout}(d)
+@generated function sharp(ω::DifferentialFormValue{1,D,Tw}, g_inv::SymTensorValue{D,Tg}) where {D,Tw,Tg}
+  iszero(D) && return :( zero(VectorValue{0,$(Base.promote_op(*,Tg,Tw))}) )
+
+  comps = [Expr(:call, :+, (:(g_inv[$i,$j] * indep_comp_getindex(ω,$j)) for j in 1:D)...) for i in 1:D]
+  :( VectorValue{$D}(($(comps...),)) )
 end
 
 const ♯ = sharp
@@ -277,20 +295,24 @@ const ♯ = sharp
 
 Evaluate the K-form ω on K tangent vectors v₁,…,vₖ ∈ ℝᴰ:
   ω(v₁,…,vₖ) = Σ_{|I|=K} ω_I · det([vₐ[I[b]]]_{a,b=1}^K)
-Each vector must be indexable (Tuple, Vector, VectorValue).
-For K=0: no vectors needed; returns `ω.data[1]`.
+
+Each vector must be a size `(D, )` tensor. Behaves like `getindex` for scalar `K=0`.
 """
-function apply_form(ω::DifferentialFormValue{K,D,T}, vs...) where {K,D,T}
-  @assert length(vs) == K "K=$K form requires K vectors, got $(length(vs))"
-  K == 0 && return ω[1]
-  cs = sorted_combinations(D, K)
-  result = zero(promote_type(T, Float64))
-  for (idx, I) in enumerate(cs)
-    M = [vs[a][I[b]] for a in 1:K, b in 1:K]
-    result += ω.data[idx] * det(M)
-  end
-  result
+@generated function apply_form(ω::DifferentialFormValue{K,D,T},
+                               vs::Vararg{MultiValue{Tuple{D}},K}) where {K,D,T}
+  K == 0 && return :(ω[1])
+
+  # trivial Λᴷ for K > D
+  iszero(binomial(D, K)) &&
+    return Expr(:call, :*, :(zero($T)), (:(zero(eltype(vs[$a]))) for a in 1:K)...)
+
+  terms = [:( indep_comp_getindex(ω,$n) * $(_det_expr((a,b) -> :(vs[$a][$(I[b])]), K)) )
+           for (n, I) in enumerate(sorted_combinations(D, K))]
+  Expr(:call, :+, terms...)
 end
+
+apply_form(ω::DifferentialFormValue{K,D}, vs...) where {K,D} =
+  @unreachable "a K-form takes K vectors (subtyping `MultiValue`) of size (D,), got $(typeof.(vs)) for K = $K and D = $D"
 
 # ============================================================
 # Pullback  φ*ω : Ωᴷ(Dn) → Ωᴷ(Dm)
@@ -311,21 +333,20 @@ Pointwise pullback `φ^*ω` of a K-form under a map with Jacobian `J = ∇φ`,
 giving a `DifferentialFormValue{K,Dm}`. A Field-level method for lazy
 pullbacks is provided in `Gridap.Fields`.
 """
-function pullback(ω::DifferentialFormValue{K,Dn,T}, J::TensorValue{Dn,Dm,T2}) where {K,Dn,Dm,T,T2}
-  Tout = promote_type(T, T2)
-  L    = binomial(Dm, K)
-  d    = zeros(Tout, max(L, 1))
+@generated function pullback(ω::DifferentialFormValue{K,Dn,Tw}, J::TensorValue{Dn,Dm,Tj}) where {K,Dn,Dm,Tw,Tj}
+  T = Base.promote_op(*, Tw, Tj)
 
-  c_I  = sorted_combinations(Dn, K)   # K-combos in ambient space
-  c_J  = sorted_combinations(Dm, K)   # K-combos in chart space
+  (iszero(binomial(Dn, K)) || iszero(binomial(Dm, K))) &&
+    return :( zero(DifferentialFormValue{$K,$Dm,$T}) )
 
-  for (m, Jidx) in enumerate(c_J)
-    for (n, I) in enumerate(c_I)
-      d[m] += _minor_k(J, I, Jidx, K) * ω.data[n]
-    end
-  end
+  c_I = sorted_combinations(Dn, K)   # K-combins in ambient space
+  c_J = sorted_combinations(Dm, K)   # K-combins in chart space
 
-  DifferentialFormValue{K,Dm}(Tuple(d[1:L]))
+  comps = [_sum_expr([:( $(_minor_expr(:J, I, Jidx)) * indep_comp_getindex(ω,$n) )
+                      for (n, I) in enumerate(c_I)], T)
+           for Jidx in c_J]
+
+  :( DifferentialFormValue{$K,$Dm}(($(comps...),)) )
 end
 
 # ============================================================
@@ -362,7 +383,7 @@ The single scalar coefficient of a top-degree D-form in D dimensions.
 Enables using Gridap's standard measure for integration of differential forms:
     ∫(vol_coeff(ω ∧ ⋆η)) * dΩ
 """
-vol_coeff(ω::DifferentialFormValue{D,D,T}) where {D,T} = indep_comp_getindex(ω, 1)
+vol_coeff(ω::DifferentialFormValue{D,D}) where D = indep_comp_getindex(ω, 1)
 
 # ============================================================
 # Gradient support: outer(x, ω) for 1-forms.
@@ -374,37 +395,62 @@ vol_coeff(ω::DifferentialFormValue{D,D,T}) where {D,T} = indep_comp_getindex(ω
 # for the vector proxy of the 1-form.
 # ============================================================
 
-function outer(a::VectorValue{D,Ta}, b::DifferentialFormValue{1,D,Tb,L}) where {D,Ta,Tb,L}
-  T = promote_type(Ta, Tb)
-  TensorValue{D,D,T}(ntuple(k -> a[(k-1)%D+1] * b.data[(k-1)÷D+1], Val(D*D)))
+@generated function outer(a::VectorValue{D,Ta}, b::DifferentialFormValue{1,D,Tb}) where {D,Ta,Tb}
+  iszero(D) && return :( zero(TensorValue{0,0,$(Base.promote_op(*,Ta,Tb))}) )
+
+  comps = [:( a[$i] * indep_comp_getindex(b,$j) ) for j in 1:D for i in 1:D]
+  :( TensorValue{$D,$D}(($(comps...),)) )
 end
 
 # ============================================================
-# L2 inner product of K-forms (flat Euclidean metric)
+# Inner product of K-forms
 #
-# ⟨ω, η⟩ = Σ_{|I|=K} ω_I η_I   (sum of component products)
+# (α|β) = (1/K!) α_{i₁…i_K} g^{i₁j₁} ⋯ g^{i_Kj_K} β_{j₁…j_K}
+#       = Σ_{|I|=|J|=K} α_I β_J det([g⁻¹[I[a],J[b]]]_{a,b})
 #
-# This is the isomorphism Λᴷ ≅ ℝ^{binomial(D,K)} as inner product spaces,
-# using the standard orientation-ordered basis {dx^I}.
+# the second sum running over sorted multi-indices, which reduces to
+# Σ_I α_I β_I for a flat metric. This is the inner product the Hodge star is
+# built on,
+#   α ∧ ⋆_g β = (α|β) μ = (α|β) √det(g) dx¹ ∧ … ∧ dx^D.
 #
-# MomentBasedDofBasis uses `⋅` (= LinearAlgebra.dot) to contract moments
-# with prebasis values: moment_I ⋅ value_J → Float64 (DOF matrix entry).
+# `inner` is the tensor inner product, such that α⊙β = K!(α|β) for a flat metric.
 # ============================================================
 
-LinearAlgebra.dot(a::DifferentialFormValue{K,D,T,L},
-                  b::DifferentialFormValue{K,D,T,L}) where {K,D,T,L} =
-  sum(a.data[i] * b.data[i] for i in 1:L)
+"""
+    form_inner(ω::DifferentialFormValue{K,D}, η::DifferentialFormValue{K,D})
+    form_inner(ω::DifferentialFormValue{K,D}, η::DifferentialFormValue{K,D}, g_inv::SymTensorValue{D})
+    ω ⨟ η
 
-# Gridap uses ⊙ (inner, full tensor contraction) in MomentBasedDofBasis for DOF evaluation:
-#   T = typeof(zero(V) ⊙ zero(Vr))   and   dofs[o] += moments[i,j] ⊙ vals[nodes[i]]
-#
-# For K-forms, ⊙ must give the flat Euclidean inner product: Σ_I ω_I η_I → Float64.
-# Without this override, the generic contracted_product(Val{K}, ...) is called, which
-# fails for K≥2 because DifferentialFormValue stores only binomial(D,K)
-# antisymmetric components, not the full D^K tensor that contracted_product expects.
-inner(a::DifferentialFormValue{K,D,T,L},
-      b::DifferentialFormValue{K,D,T,L}) where {K,D,T,L} =
-  sum(a.data[i] * b.data[i] for i in 1:L)
+Inner product ``(ω|η)`` of two K-forms, the scalar such that
+
+``ω ∧ ⋆_g η = √det(g) (ω|η) dx¹∧…∧dx^D``.
+
+The two-argument form uses the flat Euclidean metric. The three-argument form
+takes the inverse metric tensor.
+
+This differs from the inner product of general tensors, `ω ⊙ η == factorial(K) (ω ⨟ μ)`.
+"""
+@generated function form_inner(a::DifferentialFormValue{K,D,Ta},
+                               b::DifferentialFormValue{K,D,Tb}) where {K,D,Ta,Tb}
+  T = Base.promote_op(*,Ta,Tb)
+  L = num_indep_components(a)
+  _sum_expr([:(indep_comp_getindex(a,$i) * indep_comp_getindex(b,$i)) for i in 1:L], T)
+end
+
+@generated function form_inner(a::DifferentialFormValue{K,D,Ta}, b::DifferentialFormValue{K,D,Tb},
+                               g_inv::SymTensorValue{D,Tg}) where {K,D,Ta,Tb,Tg}
+  T = Base.promote_op(*, Ta, Tb, Tg)
+  c_K = sorted_combinations(D, K)
+  # raising β_I to β^I as `hodge_star` does
+  terms = [:( indep_comp_getindex(a,$m) *
+              $(_sum_expr([:( $(_minor_expr(:g_inv, I, J)) * indep_comp_getindex(b,$n) )
+                           for (n, J) in enumerate(c_K)], T)) )
+           for (m, I) in enumerate(c_K)]
+  # (α|β) = Σ_I α_I β^I
+  _sum_expr(terms, T)
+end
+
+const ⨟ = form_inner
 
 """
     grad_to_2form(Jt::TensorValue{D,D})
@@ -416,10 +462,11 @@ Exterior derivative of a proxied 1-form `ω::VectorValue` from its gradient `Jt
 
 Used to compute the exterior derivative of a vector proxied 1-form,, see `d_1form` in `Gridap.CellData`.
 """
-function grad_to_2form(Jt::TensorValue{D,D,T,L}) where {D,T,L}
-  cs = sorted_combinations(D, 2)
-  DifferentialFormValue{2,D}(
-    ntuple(n -> Jt[cs[n][1], cs[n][2]] - Jt[cs[n][2], cs[n][1]], binomial(D, 2)))
+@generated function grad_to_2form(Jt::TensorValue{D,D,T}) where {D,T}
+  iszero(binomial(D, 2)) && return :( zero(DifferentialFormValue{2,$D,$(Base.promote_op(-,T,T))}) )
+
+  comps = [:( Jt[$a,$b] - Jt[$b,$a] ) for (a, b) in sorted_combinations(D, 2)]
+  :( DifferentialFormValue{2,$D}(($(comps...),)) )
 end
 
 
@@ -439,10 +486,10 @@ end
 Conversion of `v` to a 1-form, a `DifferentialFormValue{1,D}`, assuming flat space
 (the metric tensor is the iddentity matrix).
 """
-to_1form(v::VectorValue{D,T}) where {D,T} = DifferentialFormValue{1,D}(Tuple(v))
+to_1form(v::VectorValue{D,T}) where {D,T} = DifferentialFormValue{1,D,T}(Tuple(v))
 
 """
-    from_1form(ω::DifferentialFormValue{1,D,T})
+    from_1form(ω::DifferentialFormValue{1})
 
 Conversion of the 1-form value `ω` to a `VectorValue{D}`, assuming flat space
 (the metric tensor is the iddentity matrix).
@@ -457,7 +504,7 @@ from_1form(ω::DifferentialFormValue{1,D,T}) where {D,T} = VectorValue{D,T}(Tupl
 Reinterpret the `L = binomial(D,K)` components of `v` as the components of a
 `DifferentialFormValue{K,D}` in canonical Cartesian basis `dx^I`.
 """
-to_Kform(v::VectorValue{L,T}, ::Val{K}, ::Val{D}) where {L,T,K,D} = DifferentialFormValue{K,D}(Tuple(v))
+to_Kform(v::VectorValue{L,T}, ::Val{K}, ::Val{D}) where {L,T,K,D} = DifferentialFormValue{K,D,T}(Tuple(v))
 
 """
     from_Kform(ω::DifferentialFormValue{K,D})

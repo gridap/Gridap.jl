@@ -1,6 +1,7 @@
 module DifferentialFormValuesTests
 # Construction and pointwise algebra of DifferentialFormValue:
-# zero/+/-/*, wedge product, interior product ι, flat Euclidean Hodge star.
+# zero/+/-/*, wedge product, interior product ι, flat Euclidean Hodge star,
+# inner product of forms.
 
 using Gridap.TensorValues
 using StaticArrays
@@ -276,6 +277,61 @@ for ω in [dx1_2d, dx2_2d]
   @test hodge_star(hodge_star(ω)).data == (-1.0 * ω).data
 end
 
+# ── Hodge star signs against the full Levi-Civita matrix ─────────────────────
+
+# The dense sign matrix ε_{I_n J_m}, over every pair of a K-combination I_n and
+# a (D−K)-combination J_m of 1:D. `_hodge_star_signs` is the claim that this is
+# zero off the anti-diagonal, where it holds ε_{I_n I_nᶜ}.
+function reference_hodge_star_matrix(K::Int, D::Int)
+  c_in  = sorted_combinations(D, K)
+  c_out = sorted_combinations(D, D-K)
+  M = zeros(Int, length(c_out), length(c_in))
+  for (m, J) in enumerate(c_out), (n, I) in enumerate(c_in)
+    perm = [I..., J...]
+    length(unique(perm)) == D || continue
+    M[m, n] = sorting_sign(perm...)
+  end
+  M
+end
+
+for D in 1:6, K in 0:D
+  L = binomial(D, K)
+  M = reference_hodge_star_matrix(K, D)
+  s = TensorValues._hodge_star_signs(K, D)
+
+  @test length(s) == L
+  @test size(M) == (L, L)
+  for m in 1:L, n in 1:L
+    @test M[m,n] == (n == L+1-m ? s[n] : 0)
+  end
+end
+
+# ── Inner product of forms ───────────────────────────────────────────────────
+
+# The order-K tensor holding the expanded components of a form
+_full(ω::DifferentialFormValue) = MultiValue(SArray(ω))
+
+# An inverse metric with no zero minor, so every term of the raising sum counts
+g_inv_fi = SymTensorValue{D3}(2.0, -0.5, 0.3, 1.5, 0.25, 3.0)
+sdg_fi   = 1 / sqrt(det(g_inv_fi))
+
+for (α, β) in [(DifferentialFormValue{1,D3}((1.0, 2.0, 3.0)),
+                DifferentialFormValue{1,D3}((4.0, 5.0, 6.0))),
+               (DifferentialFormValue{2,D3}((1.0, 2.0, 3.0)),
+                DifferentialFormValue{2,D3}((4.0, 5.0, 6.0))),
+               (DifferentialFormValue{3,D3}((2.0,)),
+                DifferentialFormValue{3,D3}((5.0,)))]
+  K = length(size(α))
+
+  @test α ⨟ β == form_inner(α, β)
+  @test form_inner(α, β) == sum(α.data .* β.data)
+  @test form_inner(α, β) ≈ form_inner(α, β, one(SymTensorValue{D3,Float64}))
+  # α ∧ ⋆_g β = √det(g) (α|β) dx¹∧…∧dx^D, the property that defines (α|β)
+  @test vol_coeff(α ∧ hodge_star(β, g_inv_fi, sdg_fi)) ≈ sdg_fi * form_inner(α, β, g_inv_fi)
+  # inner contracts the expanded components, dropping the 1/K! of (α|β)
+  @test inner(_full(α), _full(β)) == factorial(K) * form_inner(α, β)
+end
+
 # ── Display: coframe labelling ───────────────────────────────────────────────
 
 _str(io_props, ω) = sprint((io, x) -> show(io, MIME("text/plain"), x), ω;
@@ -295,5 +351,62 @@ _str(io_props, ω) = sprint((io, x) -> show(io, MIME("text/plain"), x), ω;
 ω2_show = DifferentialFormValue{2,D3}((1.0, 0.0, 0.0))
 @test occursin("dx¹ ∧ dx²", _str(:coordinates => :cartesian,   ω2_show))
 @test occursin("dλ¹ ∧ dλ²", _str(:coordinates => :barycentric, ω2_show))
+
+# ── Scalar types: mixed arguments and degenerate shapes ──────────────────────
+
+# The eltype comes from the arithmetic on the components, so it follows the
+# usual promotion of the scalar types of the arguments.
+a_i  = DifferentialFormValue{1,D3,Int}((1,2,3))
+b_f  = DifferentialFormValue{1,D3,Float32}((1f0,2f0,3f0))
+v_i  = VectorValue{D3,Int}(1,2,3)
+g_f  = SymTensorValue{D3,Float32}(1f0,0f0,0f0,1f0,0f0,1f0)
+Jt_f = TensorValue{D3,2,Float32}(1f0,0f0,0f0,0f0,1f0,0f0)
+
+@test eltype(a_i ∧ b_f)                 === Float32
+@test eltype(ι(v_i, b_f))               === Float32
+@test eltype(hodge_star(a_i))           === Int
+@test eltype(hodge_star(a_i, g_f, 1.0)) === Float64
+@test eltype(flat(v_i, g_f))            === Float32
+@test eltype(sharp(b_f, SymTensorValue{D3,Int}(1,0,0,1,0,1))) === Float32
+@test eltype(pullback(a_i, Jt_f))       === Float32
+@test eltype(outer(v_i, b_f))           === Float32
+@test typeof(form_inner(a_i, b_f))      === Float32
+@test typeof(form_inner(a_i, b_f, g_f)) === Float32
+@test typeof(apply_form(a_i, v_i))      === Int
+@test eltype(grad_to_2form(TensorValue{D3,D3,Int}(1,2,3,4,5,6,7,8,9))) === Int
+
+# a K-form takes exactly K arguments, each a size (D,) tensor
+@test_throws ErrorException apply_form(a_i, v_i, v_i)
+@test_throws ErrorException apply_form(a_i)
+@test_throws ErrorException apply_form(a_i, (1,2,3))
+@test_throws ErrorException apply_form(a_i, [1,2,3])
+@test_throws ErrorException apply_form(a_i, VectorValue{2,Int}(1,2))
+@test_throws ErrorException apply_form(a_i, TensorValue{1,D3,Int}(1,2,3))
+
+# Λᴷ is trivial for K > D. Operations on such a form must keep the promoted
+# scalar type rather than fall back to the eltype of the empty tuple.
+triv = DifferentialFormValue{4,D3,Float32}(())
+
+# ι lands in the nontrivial Λ³: a zero form, not an empty one
+@test ι(v_i, triv) === zero(DifferentialFormValue{3,D3,Float32})
+@test a_i ∧ triv   === zero(DifferentialFormValue{5,D3,Float32})
+@test pullback(triv, Jt_f) === zero(DifferentialFormValue{4,2,Float32})
+@test apply_form(triv, v_i, v_i, v_i, v_i) === zero(Float32)
+# the vectors take part in the promotion even though no term survives
+@test (@inferred apply_form(triv, v_i, v_i, v_i, VectorValue{D3,Float64}(1,2,3))) === zero(Float64)
+@test apply_form(DifferentialFormValue{4,D3,Int}(()), v_i, v_i, v_i, v_i) === zero(Int)
+@test apply_form(DifferentialFormValue{1,0,Float32}(()), VectorValue{0,Float32}()) === zero(Float32)
+@test form_inner(triv, DifferentialFormValue{4,D3,Int}(())) === zero(Float32)
+@test form_inner(triv, DifferentialFormValue{4,D3,Int}(()), g_f) === zero(Float32)
+# the conversions name the eltype, so it survives an empty container
+@test to_Kform(VectorValue{0,Float32}(()), Val(4), Val(D3)) ===
+      zero(DifferentialFormValue{4,D3,Float32})
+@test from_Kform(triv) === zero(VectorValue{0,Float32})
+@test to_1form(VectorValue{0,Float32}()) === zero(DifferentialFormValue{1,0,Float32})
+@test from_1form(DifferentialFormValue{1,0,Float32}(())) === zero(VectorValue{0,Float32})
+
+# ⋆ of such a form would be a Λ^(D-K) with D-K < 0, which is not a type
+@test_throws ErrorException hodge_star(triv)
+@test_throws ErrorException hodge_star(triv, SymTensorValue{D3,Int}(1,0,0,1,0,1), 1.0)
 
 end # module

@@ -194,18 +194,15 @@ end
 codifferential(ω::DifferentialForm{K,D}) where {K,D} = CodifferentialForm(ω)
 
 function return_cache(δω::CodifferentialForm{K,D,F}, x::Point) where {K,D,F}
-  L   = binomial(D, K)
-  Lc  = binomial(D, D-K)
-
-  # Hodge star sign matrix (constant — computed once per cache setup)
-  hs_mat = TensorValues._hodge_star_matrix(K, D)
+  # Hodge star signs (constant — computed once per cache setup)
+  hs_signs = TensorValues._hodge_star_signs(K, D)
   sgn = iseven(D*(K-1) + 1) ? 1 : -1
 
   # Gradient fields and their caches — typed via map(∇, form.data)
   grad_fields = map(∇, δω.form.data)
   grad_caches = map(g -> return_cache(g, x), grad_fields)
 
-  (sgn, hs_mat, grad_fields, grad_caches)
+  (sgn, hs_signs, grad_fields, grad_caches)
 end
 
 function return_value(δω::CodifferentialForm{K,D,F}, x::Point) where {K,D,F}
@@ -213,29 +210,26 @@ function return_value(δω::CodifferentialForm{K,D,F}, x::Point) where {K,D,F}
 end
 
 function evaluate!(cache, δω::CodifferentialForm{K,D,F}, x::Point) where {K,D,F}
-  sgn, hs_mat, grad_fields, grad_caches = cache
-  L   = binomial(D, K)
-  Lc  = binomial(D, D-K)
+  sgn, hs_signs, grad_fields, grad_caches = cache
+  # Complementation matches the K- and (D-K)-combinations, so a single count
+  # indexes both ω and ⋆ω
+  L = binomial(D, K)
 
   # Evaluate all gradients — map over typed tuple, no Vector allocation
   gvs = map((c,g) -> evaluate!(c, g, x), grad_caches, grad_fields)
 
-  # ∇(⋆ω)_m = Σ_n hs_mat[m,n] · gvs[n]   (VectorValue{D})
-  star_grads = ntuple(Val(Lc)) do m
-    s = hs_mat[m, 1] * gvs[1]
-    for n in 2:L
-      s = s + hs_mat[m, n] * gvs[n]
-    end
-    s
+  # ∇(⋆ω)_m = hs_signs[n] · gvs[n] for the complementary n = L+1-m  (VectorValue{D})
+  star_grads = ntuple(Val(L)) do m
+    hs_signs[L+1-m] * gvs[L+1-m]
   end
 
   # d(⋆ω): same accumulation as ExteriorDerivativeForm but using star_grads
   dfi1 = DifferentialFormValue{1,D}(star_grads[1].data)
-  kbm1 = DifferentialFormValue{D-K,D}(ntuple(j -> j == 1 ? 1.0 : 0.0, Val(Lc)))
+  kbm1 = DifferentialFormValue{D-K,D}(ntuple(j -> j == 1 ? 1.0 : 0.0, Val(L)))
   acc  = dfi1 ∧ kbm1
-  for m in 2:Lc
+  for m in 2:L
     dfi = DifferentialFormValue{1,D}(star_grads[m].data)
-    kbm = DifferentialFormValue{D-K,D}(ntuple(j -> j == m ? 1.0 : 0.0, Val(Lc)))
+    kbm = DifferentialFormValue{D-K,D}(ntuple(j -> j == m ? 1.0 : 0.0, Val(L)))
     acc = acc + (dfi ∧ kbm)
   end
 

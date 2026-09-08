@@ -35,7 +35,8 @@ $(public_names_in_md(@__MODULE__; change_link=Dict(
   :⋆  => "hodge_star",
   :♭  => "flat",
   :♯  => "sharp",
-  :𝓛 => "lie_derivative"
+  :𝓛  => "lie_derivative",
+  :⨟  => "form_inner"
 )))
 """
 module TensorValues
@@ -50,7 +51,7 @@ using Gridap.Arrays
 using LinearAlgebra
 using Random
 using ForwardDiff
-using Combinatorics: combinations, levicivita
+using Combinatorics: combinations, permutations, levicivita
 
 export MultiValue
 export VectorValue
@@ -99,6 +100,7 @@ export DifferentialFormValue
 export ∧
 export interior_product, ι
 export hodge_star, ⋆
+export form_inner, ⨟
 export flat, ♭
 export sharp, ♯
 export apply_form
