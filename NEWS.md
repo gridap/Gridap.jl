@@ -9,11 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX) (number to be filled when the PR is opened).
+- Since PR[#1335](https://github.com/gridap/Gridap.jl/pull/1335).
   - New variants (accessible via kwarg `flavor=:BMM`) of the `BarycentricPΛBasis` and `BarycentricPmΛBasis` bases of the PᵣrΛᵏ and P⁻ᵣrΛᵏ spaces. For form order k=1, both flavors of both bases implement a closed-form change-of-basis with respect to relabelling/permutation of the simplex vertices.
   - Added the associated reference FEs (named `rotating_pλ`, `trimmed_pλ`) which provide H(curl)-conforming FE spaces on meshes with arbitrary simplex ordering (`NonOriented`).
   - Initial experimental support (API is still unstable) for tensor calculus and Finite Element Exterior Calulus (FEEC): added `ExteriorFormValue`, a `MultiValue` representing alternating K-forms, with pointwise exterior calculus (wedge, interior product, Hodge star, musical isomorphisms, Koszul operator, pullback/pushforward), and lazy `Field` counterparts for some of them.
   - New experimental extension for Symbolic.jl (API is still unstable): it provides support of symbolic exterior calculus (exterior derivative, codifferential, Lie derivative).
+
+### Fixed
+
+- Fixed `refine` dropping the `map` and `isperiodic` fields of the `CartesianDescriptor` when refining a `CartesianDiscreteModel`. Since PR[#1334](https://github.com/gridap/Gridap.jl/pull/1334).
 
 ## [0.20.9] - 2026-08-17
 
@@ -28,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed the dof signs flips for Curl-conforming reference FE bases for elements with `change_dof=true`. The signs are now tested for consistency with the `change_dof=false` version. Since PR [#1315](https://github.com/gridap/Gridap.jl/pull/1315).
 - Fixed evaluation of weak forms on empty trians with inverse maps. Since PR[#1316](https://github.com/gridap/Gridap.jl/pull/1316).
 - Fixed getting field type when changing domain on empty adapted triangulations. Since PR [#1326](https://github.com/gridap/Gridap.jl/pull/1326).
+- Fixed broadcasting of operation on `TensorValue{A,B}` components, and added broadcasting to `Third/HighOrderTensorValue`. Since PR [#1331](https://github.com/gridap/Gridap.jl/pull/1331).
 
 ### Changed
 - Changed `product_rule` to allow for numbers of `Complex` type. Since PR[#1325](https://github.com/gridap/Gridap.jl/pull/1325).
