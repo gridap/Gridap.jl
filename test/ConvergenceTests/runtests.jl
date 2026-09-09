@@ -14,4 +14,8 @@ using Test
   @time @testset "Elasticity - HHO (mixed order)" begin include("HHOMixedElasticity.jl") end
 end
 
+@testset "C1 elements" begin
+  @time @testset "Biharmonic - Argyris" begin include("Argyris.jl") end
+end
+
 end

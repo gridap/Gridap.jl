@@ -224,33 +224,29 @@ function _edge_signs(model::DiscreteModel, p::Polytope{2})
   return signs
 end
 
-"""
-    struct EdgeScalingChangeOfBasis <: Map
-
-The change of basis of an element whose edge DoFs are *preserved up to one
-positive scalar per edge*: diagonal, with `‖J t̂ₑ‖^{±1}` on the DoFs of edge `e`,
-times `(-1)ⁱ` when the cell traverses that edge against the global direction, and
-`1` on the interior DoFs. `transposed_inverse` selects `P⁻ᵀ` over `P`.
-
-This covers every element whose edge DoF has the form `∫ₑ (a⋅Mb) μᵢ ds` for a
-pair of directions carried dually by that element's push-forward — a normal and a
-normal under the double contravariant map, two tangents under the double
-covariant one, one of each under the co-contravariant one. In every case the
-Jacobians cancel completely,
-
-    a⋅Mb = (â⋅M̂b̂) / ‖J t̂ₑ‖²,   ds = ‖J t̂ₑ‖ dŝ   ⟹   F∗(ℓ^{e,i}) = ℓ̂^{e,i} / ‖J t̂ₑ‖.
-
-That is not a coincidence. A Piola map is *chosen* so that its element's DoF is
-invariant, so what is left over cannot depend on which pairing was picked — only
-on the fact that the DoF is an edge moment against a degree-`i` weight. The
-elements still need their own `compute_cell_bases_changes`, which dispatches on
-the reference FE name and the push-forward.
-
-Since `a⋅Mb` is quadratic in the directions, or bilinear with both of them
-flipping, none of these elements needs a normal or tangent sign convention; the
-only orientation effect is the parity of the weight, which is the `(-1)ⁱ` above.
-At order 0 even that disappears.
-"""
+# The change of basis of an element whose edge DoFs are *preserved up to one
+# positive scalar per edge*: diagonal, with `‖J t̂ₑ‖^{±1}` on the DoFs of edge `e`,
+# times `(-1)ⁱ` when the cell traverses that edge against the global direction, and
+# `1` on the interior DoFs. `transposed_inverse` selects `P⁻ᵀ` over `P`.
+#
+# This covers every element whose edge DoF has the form `∫ₑ (a⋅Mb) μᵢ ds` for a
+# pair of directions carried dually by that element's push-forward — a normal and a
+# normal under the double contravariant map, two tangents under the double
+# covariant one, one of each under the co-contravariant one. In every case the
+# Jacobians cancel completely,
+#
+#     a⋅Mb = (â⋅M̂b̂) / ‖J t̂ₑ‖²,   ds = ‖J t̂ₑ‖ dŝ   ⟹   F∗(ℓ^{e,i}) = ℓ̂^{e,i} / ‖J t̂ₑ‖.
+#
+# That is not a coincidence. A Piola map is *chosen* so that its element's DoF is
+# invariant, so what is left over cannot depend on which pairing was picked — only
+# on the fact that the DoF is an edge moment against a degree-`i` weight. The
+# elements still need their own `compute_cell_bases_changes`, which dispatches on
+# the reference FE name and the push-forward.
+#
+# Since `a⋅Mb` is quadratic in the directions, or bilinear with both of them
+# flipping, none of these elements needs a normal or tangent sign convention; the
+# only orientation effect is the parity of the weight, which is the `(-1)ⁱ` above.
+# At order 0 even that disappears.
 struct EdgeScalingChangeOfBasis <: Map
   tangents::Vector{VectorValue{2,Float64}}
   edge_dofs::Vector{Vector{Int}}
@@ -601,4 +597,127 @@ function _congruence_matrix(A)
     2*a11*a12, a11*a22 + a12*a21, 2*a21*a22,
     a12*a12, a12*a22,             a22*a22
   )
+end
+
+# Argyris is mapped by the plain pullback u = û∘F⁻¹. Writing K = J⁻ᵀ, and using
+# that F is affine on a simplex so no second derivative of F appears,
+#
+#   ∇u = K ∇û,        D²u = K D²û Kᵀ,
+#
+# the vertex value DoFs are preserved, the vertex gradient DoFs mix within a
+# vertex through K, and the vertex Hessian DoFs mix within a vertex through
+# `_congruence_matrix(K)`. The edge DoFs behave as in Morley: with G = (JᵀJ)⁻¹
+# and n = R t,
+#
+#   F∗(δₑᵏ) = Aₖ δ̂ₑᵏ + Bₖ (δ̂ᵥᵇ - δ̂ᵥᵃ),   Aₖ = det(J) n̂ᵀGn̂,  Bₖ = det(J) t̂ᵀGn̂,
+#
+# coupling each edge row to the two *value* DoFs of its endpoints. So
+#
+#         ⎡ I    0    0    0 ⎤                  ⎡ I       0     0      0   ⎤
+#   W  =  ⎢ 0    Kg   0    0 ⎥ ,      W⁻¹  =    ⎢ 0       Kg⁻¹  0      0   ⎥
+#         ⎢ 0    0    Kh   0 ⎥                  ⎢ 0       0     Kh⁻¹   0   ⎥
+#         ⎣ Bv   0    0    A ⎦                  ⎣ -A⁻¹Bv  0     0      A⁻¹ ⎦
+#
+# with Kg, Kh block diagonal over the vertices and A = diag(Aₖ) — block
+# triangular, not block diagonal. Kg⁻¹ and Kh⁻¹ are the same constructions
+# applied to K⁻¹ = Jᵀ, so no matrix is ever inverted numerically.
+#
+# Edge orientation follows `_edge_signs`, with D = diag(1,…,1,σ₁,σ₂,σ₃) folded in
+# as P = W⁻¹D and P⁻ᵀ = WᵀD. The vertex DoFs need no such treatment, being stated
+# in the global Cartesian frame and so the same functional for every cell that
+# touches the vertex.
+
+#     ArgyrisChangeOfBasis(p, transposed_inverse)
+#
+# Builds, from the (transposed) Jacobian of a cell's geometrical map and that
+# cell's edge orientation signs `σ`, either the change of basis `P`
+# (`transposed_inverse = false`) or `P⁻ᵀ` (`transposed_inverse = true`).
+struct ArgyrisChangeOfBasis <: Map
+  tangents::Vector{VectorValue{2,Float64}}
+  normals::Vector{VectorValue{2,Float64}}
+  edge_vertices::Vector{Vector{Int}}
+  transposed_inverse::Bool
+end
+
+function ArgyrisChangeOfBasis(p::Polytope{2}, transposed_inverse::Bool)
+  ts, ns = ReferenceFEs._edge_frames(p)
+  ArgyrisChangeOfBasis(ts, ns, get_faces(p, 1, 0), transposed_inverse)
+end
+
+function return_cache(k::ArgyrisChangeOfBasis, Jt, σ)
+  nv, ne = length(k.tangents), length(k.edge_vertices)
+  CachedArray(zeros(Float64, 6*nv + ne, 6*nv + ne))
+end
+
+function evaluate!(cache, k::ArgyrisChangeOfBasis, Jt, σ)
+  nv = length(k.tangents)   # a triangle: as many vertices as edges
+  ne = length(k.edge_vertices)
+  ndofs = 6*nv + ne
+  setsize!(cache, (ndofs, ndofs))
+  M = cache.array
+  fill!(M, zero(eltype(M)))
+
+  detJ = det(Jt)
+  G = inv(Jt ⋅ transpose(Jt))   # (JᵀJ)⁻¹, since Jt = Jᵀ
+
+  # W carries K = J⁻ᵀ on the gradients and `_congruence_matrix(K)` on the
+  # Hessians, so W⁻¹ carries K⁻¹ = Jᵀ = Jt and `_congruence_matrix(Jt)`, while Wᵀ
+  # carries their transposes.
+  K = inv(Jt)
+  Kg = ifelse(k.transposed_inverse, transpose(K), Jt)
+  Kh = k.transposed_inverse ? transpose(_congruence_matrix(K)) :
+       _congruence_matrix(Jt)
+
+  gof = nv           # offset of the gradient DoFs
+  hof = 3*nv         # offset of the Hessian DoFs
+  eof = 6*nv         # offset of the edge DoFs
+
+  for v in 1:nv
+    M[v, v] = 1.0
+    for i in 1:2, j in 1:2
+      M[gof+2*v-2+i, gof+2*v-2+j] = Kg[i, j]
+    end
+    for i in 1:3, j in 1:3
+      M[hof+3*v-3+i, hof+3*v-3+j] = Kh[i, j]
+    end
+  end
+
+  for e in 1:ne
+    t̂, n̂ = k.tangents[e], k.normals[e]
+    Gn̂ = G ⋅ n̂
+    A = detJ * (n̂ ⋅ Gn̂)
+    B = detJ * (t̂ ⋅ Gn̂)
+    σe = σ[e]
+    va, vb = k.edge_vertices[e]
+
+    # D = diag(1,…,1,σ…) scales the last columns of the block below.
+    if k.transposed_inverse
+      # WᵀD
+      M[eof+e, eof+e] = A * σe
+      M[va, eof+e] = -B * σe
+      M[vb, eof+e] = B * σe
+    else
+      # W⁻¹D
+      M[eof+e, eof+e] = σe / A
+      M[eof+e, va] = B / A
+      M[eof+e, vb] = -B / A
+    end
+  end
+
+  return M
+end
+
+function compute_cell_bases_changes(
+  ::Argyris, ::IdentityPiolaMap, model::DiscreteModel, cell_reffe, cell_Jt
+)
+  p = get_polytope(testitem(cell_reffe))
+  cell_σ = _edge_signs(model, p)
+
+  # The geometrical map is affine on simplices, so its Jacobian is constant.
+  x0 = Fill(first(get_vertex_coordinates(p)), length(cell_Jt))
+  cell_Jtx = lazy_map(evaluate, cell_Jt, x0)
+
+  cell_change = lazy_map(ArgyrisChangeOfBasis(p, false), cell_Jtx, cell_σ)
+  cell_change_invt = lazy_map(ArgyrisChangeOfBasis(p, true), cell_Jtx, cell_σ)
+  return (cell_change, cell_change_invt)
 end

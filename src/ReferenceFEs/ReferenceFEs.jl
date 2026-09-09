@@ -198,6 +198,7 @@ export BezierRefFE
 export ModalC0RefFE
 export ModalScalarRefFE
 export CrouzeixRaviartRefFE
+export ArgyrisRefFE
 export BubbleRefFE
 
 export Lagrangian
@@ -208,6 +209,7 @@ export Bezier
 export ModalC0
 export ModalScalar
 export CrouzeixRaviart
+export Argyris
 export Serendipity
 export Bubble
 
@@ -229,6 +231,7 @@ export modalC0
 export modal_lagrangian
 export modal_serendipity
 export crouzeix_raviart
+export argyris
 export serendipity
 export bubble
 
@@ -305,6 +308,8 @@ include("NedelecRefFEs.jl")
 include("ModalScalarRefFEs.jl")
 
 include("CrouzeixRaviartRefFEs.jl")
+
+include("ArgyrisRefFEs.jl")
 
 include("MockDofs.jl")
 

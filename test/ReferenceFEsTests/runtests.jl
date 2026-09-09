@@ -60,6 +60,8 @@ using Test
 
 @testset "CrouzeixRaviartFEs" begin include("CrouzeixRaviartFEsTests.jl") end
 
+@testset "ArgyrisRefFEs" begin include("ArgyrisRefFEsTests.jl") end
+
 @testset "BubbleRefFEs" begin include("BubbleRefFEsTests.jl") end
 
 @testset "RotatingPLambda" begin include("PΛRefFEsTests.jl") end
