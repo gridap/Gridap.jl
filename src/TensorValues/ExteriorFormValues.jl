@@ -57,8 +57,8 @@ ExteriorFormValue{K,D,T1,L}(data::Number...) where {K,D,T1,L} = ExteriorFormValu
 # Full tensor components:
 # - `A[I] = 0` when `I` repeats an index, else
 # - `A[I] = levicivita(σ) * ω_{sort(I)}`, where `σ` sorts `I`
-@generated function _FormValue_to_array(arg::ExteriorFormValue{K,D,T,L}) where {K,D,T,L}
-  D = Int(D)
+@generated function _FormValue_to_array(arg::ExteriorFormValue{K,Da,T,L}) where {K,Da,T,L}
+  D = Int(Da)
   comps = Expr[]
   for idx in CartesianIndices(ntuple(_ -> D, Val(K)))
     I = Tuple(idx)
@@ -82,11 +82,17 @@ convert(::Type{<:MArray{S,T}}, arg::ExteriorFormValue) where {S,T} = MArray{S,T}
 convert(::Type{<:SArray{S,T}}, arg::ExteriorFormValue) where {S,T} = SArray{S,T}(_FormValue_to_array(arg))
 
 # Internal conversion
-convert(::Type{<:ExteriorFormValue{K,D,T}}, arg::ExteriorFormValue{K,D}) where {K,D,T} = ExteriorFormValue{K,D,T}(arg.data)
-convert(::Type{<:ExteriorFormValue{K,D,T}}, arg::ExteriorFormValue{K,D,T}) where {K,D,T} = arg
+function convert(::Type{<:ExteriorFormValue{K,D,T}}, arg::ExteriorFormValue{K,Da}) where {K,D,Da,T}
+  D == Da || error("Cannot convert value of type $(typeof(arg)) to type ExteriorFormValue{$K,$D,$T}")
+  ExteriorFormValue{K,D,T}(arg.data)
+end
+function convert(::Type{<:ExteriorFormValue{K,D,T}}, arg::ExteriorFormValue{K,Da,T}) where {K,D,Da,T}
+  D == Da || error("Cannot convert value of type $(typeof(arg)) to type ExteriorFormValue{$K,$D,$T}")
+  ExteriorFormValue{K,D,T}(arg.data)
+end
 
 one(::Type{<:ExteriorFormValue{0,D,T}}) where {D,T} = one(T)
-one(::Type{<:ExteriorFormValue{K}}) where K = @unreachable "Differential k-form do not have multiplicative neutral for `k` > 0."
+one(::Type{<:ExteriorFormValue{K}}) where K = @unreachable "Exterior k-form do not have multiplicative neutral for k > 0."
 
 change_eltype(::Type{<:ExteriorFormValue{K,D,T1,L}}, ::Type{T2}) where {K,D,T1,T2,L} =
   ExteriorFormValue{K,D,T2,L}

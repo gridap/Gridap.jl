@@ -386,24 +386,6 @@ function vol_coeff(ω::ExteriorFormValue{K,D}) where {K,D}
 end
 
 # ============================================================
-# Gradient support: outer(x, ω) for 1-forms.
-#
-# Gridap derives the gradient value type of a V-valued basis as
-# typeof(outer(zero(x), zero(V))) (Fields.gradient_type). Defining outer of a
-# point with a 1-form value as the TensorValue{D,D} with entries
-# [i,j] = x_i·ω_j makes ∇(basis) follow Gridap's convention ∇u[i,j] = ∂u_j/∂xⁱ
-# for the vector proxy of the 1-form.
-# ============================================================
-
-@generated function outer(a::VectorValue{D,Ta}, b::ExteriorFormValue{1,Dw,Tb}) where {D,Dw,Ta,Tb}
-  D == Dw || return :(throw(DimensionMismatch()))
-  iszero(D) && return :( zero(TensorValue{0,0,$(Base.promote_op(*,Ta,Tb))}) )
-
-  comps = [:( a[$i] * indep_comp_getindex(b,$j) ) for j in 1:D for i in 1:D]
-  :( TensorValue{$D,$D}(($(comps...),)) )
-end
-
-# ============================================================
 # Inner product of K-forms
 #
 # (α|β) = (1/K!) α_{i₁…i_K} g^{i₁j₁} ⋯ g^{i_Kj_K} β_{j₁…j_K}

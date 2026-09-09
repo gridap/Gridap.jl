@@ -30,6 +30,7 @@ function isless(a::MultiValue{Tuple{L}}, b::MultiValue{Tuple{L}}) where {L}
 end
 
 isless(a::Number, b::MultiValue) = all(isless.(a, b.data))
+# TODO wrong on SkewSymTensorValue
 function <=(a::Number, b::MultiValue)
   all(a .<= b.data) # default doesen't work because a==b is always false
 end
@@ -108,10 +109,10 @@ function (\)(a::MultiValue{Tuple{D,D}} where D, b::MultiValue)
 end
 
 ###############################################################
-# Operations with other numbers
+# Operations with scalar numbers
 ###############################################################
 
-@generated function _bc(f, a::NTuple{N}, b::Number) where N
+@generated function _bc(f, a::NTuple{N}, b::_Scalar) where N
   res = Expr(:tuple)
   for i in 1:N
     push!(res.args, :(f(a[$i],b)) )
@@ -119,7 +120,7 @@ end
   res
 end
 
-@generated function _bc(f, b::Number, a::NTuple{N}) where N
+@generated function _bc(f, b::_Scalar, a::NTuple{N}) where N
   res = Expr(:tuple)
   for i in 1:N
     push!(res.args, :(f(b,a[$i])) )
@@ -512,6 +513,37 @@ const ⊗ = outer
 # Generic tensor product + contraction
 ###############################################################
 
+#Return an `Expr` containing the canonical type (with tuple dimension set) of a
+#tensor of order `Nr` and size `Tuple` `Sr`.
+function _tensor_base_type_expr(Nr,Sr)
+  if Nr == 0
+    :()
+  elseif Nr == 1
+    D = Sr[1]
+    if D isa Int
+      :( VectorValue{$(Sr[1])} )
+    elseif D isa Cov
+      :( ExteriorFormValue{1,$(Sr[1])} )
+    elseif D isa Con
+      :( @notimplemented "Gridap does not have a contravariant vector yet." )
+    else
+      :( @unreachable )
+    end
+  elseif Nr == 2
+    :( TensorValue{$(Sr[1]),$(Sr[2])} )
+  else
+    :( HighOrderTensorValue{$(Tuple{Sr...})} )
+  end
+end
+
+function _zero_tensor_expr(V,Nr,Ta,Tb)
+    if iszero(Nr)
+      :( zero(Base.promote_op(*,Ta,Tb)) )
+    else
+      :( zero($V{Base.promote_op(*,Ta,Tb)}) )
+    end
+end
+
 """
     contracted_product(Val(n), a::MultiValue, b::MultiValue)
 
@@ -547,12 +579,15 @@ the specific functions above if possible), but is used as default generic implem
 
   last_N_Sa = last(Sa.parameters, N)
   first_N_Sb = first(Sb.parameters, N)
-  if ( length(last_N_Sa)≠N || length(first_N_Sb)≠N || last_N_Sa != first_N_Sb )
-    msg = """$N-contraction is not possible for tensors of size $Sa and $Sb, it is required that
-      - both tensor orders (size lengths) must be greater than or equal to $N
-      - the last $N dimension of the first argument match the first $N of the second argument
-      """
+  if ( length(last_N_Sa)≠N || length(first_N_Sb)≠N)
+    msg = "$N-contraction is not possible for tensors of size $Sa and $Sb, one tensor does not have $N indices"
     return :( throw(DimensionMismatch($(msg) )) )
+  end
+  for (i,j) in zip(last_N_Sa, first_N_Sb)
+    if !can_contract(i, j)
+      msg = "Indices $i and $j cannot be contracted, see [`can_contract`](@ref). Argument sizes: $Sa and $Sb."
+      return :( throw(DimensionMismatch($(msg) )) )
+    end
   end
 
   S_contract = tuple(last_N_Sa...)
@@ -560,23 +595,9 @@ the specific functions above if possible), but is used as default generic implem
 
   Sr = tuple(Sa_keep..., Sb_keep...)
   Nr = length(Sr)
-  V = if Nr == 0
-    :()
-  elseif Nr == 1
-    :( VectorValue{$(Sr[1])} )
-  elseif Nr == 2
-    :( TensorValue{$(Sr[1]),$(Sr[2])} )
-  else
-    :( HighOrderTensorValue{$(Tuple{Sr...})} )
-  end
+  V = _tensor_base_type_expr(Nr,Sr)
 
-  if (iszero(length(a)) || iszero(length(b)))
-    if iszero(Nr)
-      return :( zero(Base.promote_op(*,Ta,Tb)) )
-    else
-      return :( zero($V{Base.promote_op(*,Ta,Tb)}) )
-    end
-  end
+  (iszero(length(a)) || iszero(length(b))) && return _zero_tensor_expr(V,Nr,Ta,Tb)
 
   # TODO, if the length of the resulting tensor exceeds some threshold, switch
   # to runtime looping over the indices, or even using BLAS. Also, we might need
@@ -660,8 +681,8 @@ tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
 
   for k in 1:Nc
     da, db = Sa.parameters[Ia[k]], Sb.parameters[Ib[k]]
-    if da != db
-      msg = "Dimension mismatch at contracted pair $k: a[$(Ia[k])]=$da, b[$(Ib[k])]=$db"
+    if !can_contract(da, db)
+      msg = "Index pair $k: Sa[$(Ia[k])]=$da and Sb[$(Ib[k])]=$db, cannot be contracted. See [`can_contract`](@ref)."
       return :(throw(DimensionMismatch($msg)))
     end
   end
@@ -677,24 +698,9 @@ tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
 
   Sr = (S_a_kept..., S_b_kept...)
   Nr = length(Sr)
+  V = _tensor_base_type_expr(Nr,Sr)
 
-  V = if Nr == 0
-    :()
-  elseif Nr == 1
-    :( VectorValue{$(Sr[1])} )
-  elseif Nr == 2
-    :( TensorValue{$(Sr[1]),$(Sr[2])} )
-  else
-    :( HighOrderTensorValue{$(Tuple{Sr...})} )
-  end
-
-  if (iszero(length(a)) || iszero(length(b)))
-    if iszero(Nr)
-      return :( zero(Base.promote_op(*,Ta,Tb)) )
-    else
-      return :( zero($V{Base.promote_op(*,Ta,Tb)}) )
-    end
-  end
+  (iszero(length(a)) || iszero(length(b))) && return _zero_tensor_expr(V,Nr,Ta,Tb)
 
   s_a_ranges = ntuple(j -> 1:Int(S_a_kept[j]), length(ka))
   s_b_ranges = ntuple(j -> 1:Int(S_b_kept[j]), length(kb))
@@ -783,8 +789,8 @@ tensor_contraction(a::MultiValue, i::Int, j::Int) =
 
   for k in 1:Nc
     di, dj = Sa.parameters[I[k]], Sa.parameters[J[k]]
-    di == dj || begin
-      msg = "Dimension mismatch at pair $k: a[$(I[k])]=$di ≠ a[$(J[k])]=$dj"
+    if !can_contract(di, dj)
+      msg = "Index pair $k: Sa[$(I[k])]=$di and Sb[$(J[k])]=$dj, cannot be contracted. See [`can_contract`](@ref)."
       return :(throw(DimensionMismatch($msg)))
     end
   end
@@ -794,24 +800,9 @@ tensor_contraction(a::MultiValue, i::Int, j::Int) =
   Sr     = ntuple(m -> Sa.parameters[ka[m]], length(ka))
   S_contract = ntuple(k -> Sa.parameters[I[k]], Nc)
   Nr         = length(Sr)
+  V = _tensor_base_type_expr(Nr,Sr)
 
-  V = if Nr == 0
-    :()
-  elseif Nr == 1
-    :( VectorValue{$(Sr[1])} )
-  elseif Nr == 2
-    :( TensorValue{$(Sr[1]),$(Sr[2])} )
-  else
-    :( HighOrderTensorValue{$(Tuple{Sr...})} )
-  end
-
-  if iszero(length(a))
-    if iszero(Nr)
-      return :( zero(Base.promote_op(*,Ta,Ta)) )
-    else
-      return :( zero($V{Base.promote_op(*,Ta,Ta)}) )
-    end
-  end
+  iszero(length(a)) && return _zero_tensor_expr(V,Nr,Ta,Ta)
 
   s_keep_ranges     = ntuple(m -> 1:Int(Sr[m]), length(ka))
   s_contract_ranges = ntuple(k -> 1:Int(S_contract[k]), Nc)
@@ -1166,14 +1157,7 @@ end
 
   Sa_params = tuple(Sa.parameters...)
   Sr = ntuple(k -> Sa_params[P[k]], Na)
-
-  V = if Na == 1
-    :( VectorValue{$(Sr[1]),Ta} )
-  elseif Na == 2
-    :( TensorValue{$(Sr[1]),$(Sr[2]),Ta} )
-  else
-    :( HighOrderTensorValue{$(Tuple{Sr...}),Ta} )
-  end
+  V = _tensor_base_type_expr(Na,Sr)
 
   iszero(length(a)) && return :( zero($V) )
 

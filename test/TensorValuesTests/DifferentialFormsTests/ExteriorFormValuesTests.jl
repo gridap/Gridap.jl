@@ -27,55 +27,60 @@ ExteriorFormValue{4,4}((1,))
 # ── Constructor family ───────────────────────────────────────────────────────
 
 # Homogeneous NTuple, with and without an explicit component type
-@test isa(ExteriorFormValue{1,3}((1,2,3)),            ExteriorFormValue{1,3,Int,3})
-@test isa(ExteriorFormValue{1,3,Float64}((1,2,3)),    ExteriorFormValue{1,3,Float64,3})
-@test isa(ExteriorFormValue{1,3,Float64,3}((1,2,3)),  ExteriorFormValue{1,3,Float64,3})
-@test isa(ExteriorFormValue{1,3,Float64,3}((1.,2.,3.)), ExteriorFormValue{1,3,Float64,3})
+@test isa(ExteriorFormValue{1,3}((1,2,3)),            ExteriorFormValue{1,cov3,Int,3})
+@test isa(ExteriorFormValue{1,3,Float64}((1,2,3)),    ExteriorFormValue{1,cov3,Float64,3})
+@test isa(ExteriorFormValue{1,3,Float64,3}((1,2,3)),  ExteriorFormValue{1,cov3,Float64,3})
+@test isa(ExteriorFormValue{1,3,Float64,3}((1.,2.,3.)), ExteriorFormValue{1,cov3,Float64,3})
 
 # Heterogeneous Tuple: promoted, or converted to the requested type
-@test isa(ExteriorFormValue{1,3}((1,2.0,3)),          ExteriorFormValue{1,3,Float64,3})
-@test isa(ExteriorFormValue{1,3,Int}((1,2.0,3)),      ExteriorFormValue{1,3,Int,3})
-@test isa(ExteriorFormValue{1,3,Int,3}((1,2.0,3)),    ExteriorFormValue{1,3,Int,3})
+@test isa(ExteriorFormValue{1,3}((1,2.0,3)),          ExteriorFormValue{1,cov3,Float64,3})
+@test isa(ExteriorFormValue{1,3,Int}((1,2.0,3)),      ExteriorFormValue{1,cov3,Int,3})
+@test isa(ExteriorFormValue{1,3,Int,3}((1,2.0,3)),    ExteriorFormValue{1,cov3,Int,3})
 
 # Vararg
-@test ExteriorFormValue{1,3}(1,2.0,3)       == ExteriorFormValue{1,3}((1.0,2.0,3.0))
-@test ExteriorFormValue{1,3,Int}(1,2.0,3)   == ExteriorFormValue{1,3}((1,2,3))
-@test ExteriorFormValue{1,3,Int,3}(1,2.0,3) == ExteriorFormValue{1,3}((1,2,3))
+@test ExteriorFormValue{1,3}(1,2.0,3)       == ExteriorFormValue{1,cov3}((1.0,2.0,3.0))
+@test ExteriorFormValue{1,3,Int}(1,2.0,3)   == ExteriorFormValue{1,cov3}((1,2,3))
+@test ExteriorFormValue{1,3,Int,3}(1,2.0,3) == ExteriorFormValue{1,cov3}((1,2,3))
 
 # A single scalar is a full 0-form and a full D-form
-@test isa(ExteriorFormValue{0,3}(1),   ExteriorFormValue{0,3,Int,1})
-@test isa(ExteriorFormValue{0,0}(1),   ExteriorFormValue{0,0,Int,1})
-@test isa(ExteriorFormValue{3,3}(1.0), ExteriorFormValue{3,3,Float64,1})
+@test isa(ExteriorFormValue{0,3}(1),   ExteriorFormValue{0,cov3,Int,1})
+@test isa(ExteriorFormValue{0,0}(1),   ExteriorFormValue{0,cov0,Int,1})
+@test isa(ExteriorFormValue{3,3}(1.0), ExteriorFormValue{3,cov3,Float64,1})
 
 # K > D: the space is trivial, so the value has no component
-@test isa(ExteriorFormValue{4,3}(),          ExteriorFormValue{4,3,Int,0})
-@test isa(ExteriorFormValue{4,3}(()),        ExteriorFormValue{4,3,Int,0})
-@test isa(ExteriorFormValue{4,3,Float64}(),  ExteriorFormValue{4,3,Float64,0})
-@test isa(ExteriorFormValue{4,3,Float64}(()),ExteriorFormValue{4,3,Float64,0})
-@test isa(ExteriorFormValue{4,3,Int,0}(),    ExteriorFormValue{4,3,Int,0})
-@test isa(ExteriorFormValue{4,3,Int,0}(()),  ExteriorFormValue{4,3,Int,0})
+@test isa(ExteriorFormValue{4,3}(),          ExteriorFormValue{4,cov3,Int,0})
+@test isa(ExteriorFormValue{4,3}(()),        ExteriorFormValue{4,cov3,Int,0})
+@test isa(ExteriorFormValue{4,3,Float64}(),  ExteriorFormValue{4,cov3,Float64,0})
+@test isa(ExteriorFormValue{4,3,Float64}(()),ExteriorFormValue{4,cov3,Float64,0})
+@test isa(ExteriorFormValue{4,3,Int,0}(),    ExteriorFormValue{4,cov3,Int,0})
+@test isa(ExteriorFormValue{4,3,Int,0}(()),  ExteriorFormValue{4,cov3,Int,0})
 
-@test_throws AssertionError ExteriorFormValue{1,3}((1,2))
-@test_throws AssertionError ExteriorFormValue{1,3,Int}((1,2))
-@test_throws AssertionError ExteriorFormValue{1,3,Int,2}((1,2))
-@test_throws AssertionError ExteriorFormValue{1,3,Int,2}(1,2)
-@test_throws AssertionError ExteriorFormValue{0,3}()
-@test_throws AssertionError ExteriorFormValue{0,3,Int}()
+@test_throws AssertionError ExteriorFormValue{1,cov3}((1,2))
+@test_throws AssertionError ExteriorFormValue{1,cov3,Int}((1,2))
+@test_throws AssertionError ExteriorFormValue{1,cov3,Int,2}((1,2))
+@test_throws AssertionError ExteriorFormValue{1,cov3,Int,2}(1,2)
+@test_throws AssertionError ExteriorFormValue{0,cov3}()
+@test_throws AssertionError ExteriorFormValue{0,cov3,Int}()
 
 # ── Independent component count ──────────────────────────────────────────────
 
-@test num_indep_components(ExteriorFormValue{0,2}) == 1
-@test num_indep_components(ExteriorFormValue{2,2}) == 1
-@test num_indep_components(ExteriorFormValue{1,3}) == 3
-@test num_indep_components(ExteriorFormValue{2,3}) == 3
-@test num_indep_components(ExteriorFormValue{4,3}) == 0
+@test num_indep_components(ExteriorFormValue{0,cov2}) == 1
+@test num_indep_components(ExteriorFormValue{2,cov2}) == 1
+@test num_indep_components(ExteriorFormValue{1,cov3}) == 3
+@test num_indep_components(ExteriorFormValue{2,cov3}) == 3
+@test num_indep_components(ExteriorFormValue{4,cov3}) == 0
 
 @test zero(ExteriorFormValue{2,2,Float64}) == ExteriorFormValue{2,2}((0.0,))
+@test zero(ExteriorFormValue{2,cov2,Float64}) == ExteriorFormValue{2,2}((0.0,))
 @test zero(ExteriorFormValue{2,3,Float64}) == ExteriorFormValue{2,3}((0.0,0.0,0.0))
+@test zero(ExteriorFormValue{2,cov3,Float64}) == ExteriorFormValue{2,3}((0.0,0.0,0.0))
 
 @test one(ExteriorFormValue{0,3,Float64}) === 1.0
+@test one(ExteriorFormValue{0,cov3,Float64}) === 1.0
 @test one(ExteriorFormValue{0,3,Int})     === 1
+@test one(ExteriorFormValue{0,cov3,Int})     === 1
 @test_throws ErrorException one(ExteriorFormValue{2,3,Float64})
+@test_throws ErrorException one(ExteriorFormValue{2,cov3,Float64})
 
 # ── Conversion to a static array ─────────────────────────────────────────────
 
@@ -136,7 +141,7 @@ s = 5.0
 # ── Wedge product ────────────────────────────────────────────────────────────
 
 # ∧ of 0-form and 1-forms in 2D
-D = 2
+D = cov2
 a = ExteriorFormValue{0,D}((4,))
 b = ExteriorFormValue{1,D}((1,1))
 c = a ∧ b
@@ -185,7 +190,7 @@ c = a ∧ b
 @test c.data == (4.0,)
 
 # 3D wedges
-D = 3
+D = cov3
 a = ExteriorFormValue{1,D}((0,0,1))
 b = ExteriorFormValue{1,D}((1,0,0))
 c = a ∧ b
@@ -222,14 +227,14 @@ dx1_2d = ExteriorFormValue{1,D2}((1.0, 0.0))
 dx2_2d = ExteriorFormValue{1,D2}((0.0, 1.0))
 
 # ι_eᵢ(dxʲ) = δᵢʲ  (0-form = scalar)
-r11 = ι(e1, dx1_2d);  @test typeof(r11) <: ExteriorFormValue{0,D2};  @test r11.data == (1.0,)
+r11 = ι(e1, dx1_2d);  @test typeof(r11) <: ExteriorFormValue{0,cov2};  @test r11.data == (1.0,)
 r22 = ι(e2, dx2_2d);  @test r22.data == (1.0,)
 r12 = ι(e1, dx2_2d);  @test r12.data == (0.0,)
 r21 = ι(e2, dx1_2d);  @test r21.data == (0.0,)
 
 # ι_e₁(dx¹∧dx²) = dx², ι_e₂(dx¹∧dx²) = -dx¹
 vol2 = ExteriorFormValue{2,D2}((1.0,))
-rv1  = ι(e1, vol2);  @test typeof(rv1) <: ExteriorFormValue{1,D2};  @test rv1.data == (0.0, 1.0)
+rv1  = ι(e1, vol2);  @test typeof(rv1) <: ExteriorFormValue{1,cov2};  @test rv1.data == (0.0, 1.0)
 rv2  = ι(e2, vol2);  @test rv2.data == (-1.0, 0.0)
 
 # In 3D: ι_e₁(dx¹∧dx²∧dx³) = dx²∧dx³
@@ -238,7 +243,7 @@ D3   = 3
 e13  = VectorValue(1.0, 0.0, 0.0)
 vol3 = ExteriorFormValue{3,D3}((1.0,))
 r3   = ι(e13, vol3)
-@test typeof(r3) <: ExteriorFormValue{2,D3}
+@test typeof(r3) <: ExteriorFormValue{2,cov3}
 @test r3.data == (0.0, 0.0, 1.0)   # dx²∧dx³ is the third 2-combination
 
 # ── Hodge star (flat Euclidean) ──────────────────────────────────────────────
@@ -260,19 +265,19 @@ end
 # 0-form → 3-form
 f0 = ExteriorFormValue{0,D3}((5.0,))
 sf0 = hodge_star(f0)
-@test typeof(sf0) <: ExteriorFormValue{3,D3}
+@test typeof(sf0) <: ExteriorFormValue{3,cov3}
 @test sf0.data == (5.0,)
 
 # 3-form → 0-form
 svol3 = hodge_star(vol3)
-@test typeof(svol3) <: ExteriorFormValue{0,D3}
+@test typeof(svol3) <: ExteriorFormValue{0,cov3}
 @test svol3.data == (1.0,)
 
 # 2D: ⋆ maps 1-forms to 1-forms (Kc = D-K = 2-1 = 1)
 # ⋆dx¹ = dx², ⋆dx² = -dx¹  (standard 2D orientation)
 sdx1_2d = hodge_star(dx1_2d)
 sdx2_2d = hodge_star(dx2_2d)
-@test typeof(sdx1_2d) <: ExteriorFormValue{1,D2}
+@test typeof(sdx1_2d) <: ExteriorFormValue{1,cov2}
 @test sdx1_2d.data == (0.0, 1.0)    # 0*dx¹ + 1*dx²
 @test sdx2_2d.data == (-1.0, 0.0)   # -1*dx¹ + 0*dx²
 
@@ -334,11 +339,11 @@ for (α, β) in [(ExteriorFormValue{0,D3}((7.0,)),
   @test form_inner(α, β) ≈ form_inner(α, β, one(SymTensorValue{D3,Float64}))
   # α ∧ ⋆_g β = √det(g) (α|β) dx¹∧…∧dx^D, the property that defines (α|β)
   @test vol_coeff(α ∧ hodge_star(β, g_inv_fi, sdg_fi)) ≈ sdg_fi * form_inner(α, β, g_inv_fi)
-  # the full contraction of the expanded components drops the 1/K! of (α|β)
-  @test contracted_product(Val(K), α, β) ≈ factorial(K) * form_inner(α, β)
-  # summing the binomial(D,K) independent components gives the same as
-  # contracting all D^K of them
-  @test inner(α, β) ≈ contracted_product(Val(K), α, β)
+  # the tensor inner product drops the 1/K! of (α|β)
+  @test inner(α, β) ≈ factorial(K) * form_inner(α, β)
+  # Summing the binomial(D,K) independent components gives the same as
+  # contracting all Dᴷ of them. The forms are expanded first because both carry
+  # covariant indices, which `can_contract` pairs only with contravariant ones.
   if K > 0 # MultiValue has no constructor from the 0-dimensional array of a 0-form
     @test contracted_product(Val(K), _full(α), _full(β)) ≈ factorial(K) * form_inner(α, β)
   end
@@ -355,7 +360,7 @@ d5 = VectorValue(2.0, 3.0, 5.0, 7.0, 11.0, 13.0)
 # A 0-form has no index to contract
 ω0_fi = ExteriorFormValue{0,D3}((2.0,))
 ω1_fi = ExteriorFormValue{1,D3}((1.0, 2.0, 3.0))
-@test outer(ω0_fi, ω1_fi) === VectorValue{D3}(2.0, 4.0, 6.0)
+@test outer(ω0_fi, ω1_fi) === ExteriorFormValue{1,D3}(2.0, 4.0, 6.0)
 @test_throws DimensionMismatch contracted_product(Val(1), ω0_fi, ω1_fi)
 
 # ── Display: coframe labelling ───────────────────────────────────────────────
@@ -410,7 +415,7 @@ Jt_f = TensorValue{D3,2,Float32}(1f0,0f0,0f0,0f0,1f0,0f0)
 @test_throws ErrorException apply_form(a_i)
 @test_throws ErrorException apply_form(a_i, (1,2,3))
 @test_throws ErrorException apply_form(a_i, [1,2,3])
-@test_throws ErrorException apply_form(a_i, VectorValue{2,Int}(1,2))
+@test_throws DimensionMismatch apply_form(a_i, VectorValue{2,Int}(1,2))
 @test_throws ErrorException apply_form(a_i, TensorValue{1,D3,Int}(1,2,3))
 
 # Λᴷ is trivial for K > D. Operations on such a form must keep the promoted
