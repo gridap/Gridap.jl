@@ -827,3 +827,49 @@ function compute_cell_bases_changes(
   cell_change_invt = lazy_map(MorleyChangeOfBasis(p, true), cell_Jtx, cell_σ)
   return (cell_change, cell_change_invt)
 end
+
+############################################################################################
+# HHJ, Regge and GLS
+
+# These three share `EdgeScalingChangeOfBasis` verbatim: each has an edge DoF of
+# the form ∫ₑ (a⋅Mb) μᵢ ds for a pair of directions carried dually by that
+# element's push-forward, so the Jacobians cancel and only 1/‖J t̂ₑ‖ is left. See
+# that type above for why the three coincide. The interior DoFs are left as the
+# push-forward of the reference ones -- they are cell-owned and shared with
+# nobody, so any per-cell convention gives the same space, as Gridap already does
+# for the cell moments of Raviart-Thomas and BDM.
+
+function _edge_scaling_cell_bases_changes(model::DiscreteModel, cell_reffe, cell_Jt)
+  reffe = testitem(cell_reffe)
+  p = get_polytope(reffe)
+  cell_σ = _edge_signs(model, p)
+
+  # The geometrical map is affine on simplices, so its Jacobian is constant.
+  x0 = Fill(first(get_vertex_coordinates(p)), length(cell_Jt))
+  cell_Jtx = lazy_map(evaluate, cell_Jt, x0)
+
+  cell_change = lazy_map(EdgeScalingChangeOfBasis(reffe, false), cell_Jtx, cell_σ)
+  cell_change_invt = lazy_map(EdgeScalingChangeOfBasis(reffe, true), cell_Jtx, cell_σ)
+  return (cell_change, cell_change_invt)
+end
+
+function compute_cell_bases_changes(
+  ::HellanHerrmannJohnson, ::ReferenceFEs.DoubleContraVariantPiolaMap,
+  model::DiscreteModel, cell_reffe, cell_Jt
+)
+  _edge_scaling_cell_bases_changes(model, cell_reffe, cell_Jt)
+end
+
+function compute_cell_bases_changes(
+  ::Regge, ::ReferenceFEs.DoubleCoVariantPiolaMap,
+  model::DiscreteModel, cell_reffe, cell_Jt
+)
+  _edge_scaling_cell_bases_changes(model, cell_reffe, cell_Jt)
+end
+
+function compute_cell_bases_changes(
+  ::GopalakrishnanLedererSchoberl, ::ReferenceFEs.CoContraVariantPiolaMap,
+  model::DiscreteModel, cell_reffe, cell_Jt
+)
+  _edge_scaling_cell_bases_changes(model, cell_reffe, cell_Jt)
+end

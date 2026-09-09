@@ -200,6 +200,9 @@ export ModalScalarRefFE
 export CrouzeixRaviartRefFE
 export ArgyrisRefFE
 export MorleyRefFE
+export HHJRefFE
+export ReggeRefFE
+export GLSRefFE
 export BubbleRefFE
 
 export Lagrangian
@@ -212,6 +215,9 @@ export ModalScalar
 export CrouzeixRaviart
 export Argyris
 export Morley
+export HellanHerrmannJohnson
+export Regge
+export GopalakrishnanLedererSchoberl
 export Serendipity
 export Bubble
 
@@ -235,6 +241,9 @@ export modal_serendipity
 export crouzeix_raviart
 export argyris
 export morley
+export hhj
+export regge
+export gls
 export serendipity
 export bubble
 
@@ -315,6 +324,12 @@ include("CrouzeixRaviartRefFEs.jl")
 include("ArgyrisRefFEs.jl")
 
 include("MorleyRefFEs.jl")
+
+include("HHJRefFEs.jl")
+
+include("ReggeRefFEs.jl")
+
+include("GLSRefFEs.jl")
 
 include("MockDofs.jl")
 

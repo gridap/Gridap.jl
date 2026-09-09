@@ -52,7 +52,6 @@ using Test
 
 @testset "ModalC0RefFEs" begin include("ModalC0RefFEsTests.jl") end
 
-#@testset "HHJRefFEs" begin include("HHJRefFEsTests.jl") end
 
 @testset "BDMRefFEs" begin include("BDMRefFEsTests.jl") end
 
@@ -63,6 +62,12 @@ using Test
 @testset "ArgyrisRefFEs" begin include("ArgyrisRefFEsTests.jl") end
 
 @testset "MorleyRefFEs" begin include("MorleyRefFEsTests.jl") end
+
+@testset "HHJRefFEs" begin include("HHJRefFEsTests.jl") end
+
+@testset "ReggeRefFEs" begin include("ReggeRefFEsTests.jl") end
+
+@testset "GLSRefFEs" begin include("GLSRefFEsTests.jl") end
 
 @testset "BubbleRefFEs" begin include("BubbleRefFEsTests.jl") end
 

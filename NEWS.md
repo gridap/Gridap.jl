@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `ArgyrisRefFE`, the quintic C¹-conforming Argyris triangle.
 - Added `MorleyRefFE`, the quadratic nonconforming Morley triangle.
+- Added `HHJRefFE`, `ReggeRefFE` and `GLSRefFE`: the Hellan-Herrmann-Johnson, Regge and Gopalakrishnan-Lederer-Schoberl (second kind) triangles, of any degree `r >= 0`, normal-normal, tangential-tangential and normal-tangential continuous respectively. Their edge DoFs are preserved by their push-forwards up to one positive scalar per edge, so all three share a single diagonal change of basis.
 
 ## [Unreleased]
 

@@ -17,6 +17,7 @@ end
 @testset "Fourth-order plate elements" begin
   @time @testset "Biharmonic - Argyris" begin include("Argyris.jl") end
   @time @testset "Biharmonic - Morley" begin include("Morley.jl") end
+  @time @testset "Kirchhoff plate - HHJ" begin include("HHJ.jl") end
 end
 
 end
