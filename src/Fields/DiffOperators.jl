@@ -19,16 +19,11 @@ function symmetric_gradient end
 
 """
     symmetric_gradient(f)
+    ε(f)
 
 Abstract symmetric gradient operator, formally equivalent to `f -> ½(∇f + (∇f)ᵀ)`.
 """
 symmetric_gradient(f) = Operation(symmetric_part)(gradient(f))
-
-"""
-    const ε = symmetric_gradient
-
-Alias for the [`symmetric_gradient`](@ref).
-"""
 const ε = symmetric_gradient
 
 """
@@ -66,16 +61,11 @@ function grad2curl(∇u::TensorValue{3,3})
 end
 
 function laplacian end
-
-"""
-    const Δ = laplacian
-
-Alias for `laplacian`.
-"""
 const Δ = laplacian
 
 """
     laplacian(f)
+    Δ(f)
 
 Abstract laplacian operator, equivalent to `tr(∇∇(f))`.
 """
@@ -86,6 +76,7 @@ function laplacian(f)
 end
 
 """
+    dot(∇,f)
     ∇⋅f
 
 Equivalent to `divergence(f)`.
@@ -204,7 +195,7 @@ const 𝑑 = exterior_derivative
     lie_derivative(v, ω)
     𝓛(v,ω)
 
-Lie derivative ``𝓛_v ω = d(ι_v ω) + ι_v(dω)`` (Cartan's magic formula).
+Lie derivative 𝓛_v ω = d(ι_v ω) + ι_v(dω) (Cartan's magic formula).
 
 Requires symbolic (`Symbolics.Num`) coefficients: methods are provided by the
 GridapSymbolicsExt package extension when Symbolics is loaded.
@@ -224,7 +215,7 @@ function codifferential end
 """
     d_0form(f) = to_1form(∇(f))
 
-Discrete exterior derivative of a scalar (0-form) CellField.
+Discrete exterior derivative of a scalar (0-form) cell field.
 Returns a `ExteriorFormValue{1,D}`-valued `OperationCellField`.
 """
 d_0form(f) = to_1form(∇(f))

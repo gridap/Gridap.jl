@@ -2,6 +2,8 @@
 
 $(public_names_in_md(@__MODULE__; change_link=Dict(
   :∇  => "gradient",
+  :ε  => "symmetric_gradient",
+  :Δ  => "laplacian",
   :𝑑  => "exterior_derivative",
   :𝓛  => "lie_derivative",
 )))
