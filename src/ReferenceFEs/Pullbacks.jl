@@ -237,6 +237,31 @@ function evaluate!( # φ -> φ̂ = Jᵀ φ∘F
   return v_phys ⋅ transpose(Jt)
 end
 
+# CoContraVariantPiolaMap
+
+"""
+    struct CoContraVariantPiolaMap <: Pushforward
+
+The mixed Piola map `φ̂ ↦ φ = det(J)⁻¹ J⁻ᵀ φ̂ Jᵀ`, covariant on the first index
+and contravariant on the second, for matrix-valued fields whose
+*normal-tangential* components are the continuous ones. It is the map of the
+Gopalakrishnan--Lederer--Schöberl element. 
+Does not preserve symmetry, but preserves the trace.
+"""
+struct CoContraVariantPiolaMap <: Pushforward end
+
+function evaluate!( # φ̂ -> φ = (det(J)⁻¹ J⁻ᵀ φ̂ Jᵀ)∘F⁻¹
+  cache, ::CoContraVariantPiolaMap, v_ref::Number, Jt::Number
+)
+  return ((1. / det(Jt)) * pinvJt(Jt)) ⋅ v_ref ⋅ Jt
+end
+
+function evaluate!( # φ -> φ̂ = det(J) Jᵀ φ∘F J⁻ᵀ
+  cache, ::InversePushforward{CoContraVariantPiolaMap}, v_phys::Number, Jt::Number
+)
+  return (det(Jt) * Jt) ⋅ v_phys ⋅ pinvJt(Jt)
+end
+
 # DoubleContraVariantPiolaMap
 
 struct DoubleContraVariantPiolaMap <: Pushforward end
@@ -253,6 +278,17 @@ function evaluate!( # φ -> φ̂ = det(J)² J⁻¹ φ∘F J⁻ᵀ
 )
   iJt = det(Jt) * pinvJt(Jt)
   return congruent_prod(v_phys, iJt) # symmetry stable iJtᵀ ⋅ v_ref ⋅ iJt
+end
+
+function Fields.DIV(f::LazyArray{<:Fill{Broadcasting{Operation{DoubleContraVariantPiolaMap}}}})
+  ϕrgₖ, Jt = f.args
+  return lazy_map(ContraVariantPiolaMap(), lazy_map(Broadcasting(divergence), ϕrgₖ), Jt)
+end
+
+function Fields.DIV(f::Fill{<:Fields.BroadcastOpFieldArray{DoubleContraVariantPiolaMap}})
+  ϕrgₖ, Jt = f.value.args
+  divϕ = Broadcasting(Operation(ContraVariantPiolaMap()))(Broadcasting(divergence)(ϕrgₖ), Jt)
+  return Fill(divϕ, length(f))
 end
 
 # DoubleCoVariantPiolaMap
