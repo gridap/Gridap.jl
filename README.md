@@ -61,15 +61,15 @@ pkg> add Gridap
 
 ## Plugins
 
-- [GridapDistributed](https://github.com/gridap/GridapDistributed.jl) Distributed-memory extension of Gridap.
-- [GridapSolvers](https://github.com/gridap/GridapSolvers.jl) Scalable multiphysics finite element solvers.
-- [GridapEmbedded](https://github.com/gridap/GridapEmbedded.jl) Embedded finite elements in Julia.
-- [GridapGmsh](https://github.com/gridap/GridapGmsh.jl) Generate a FE mesh with [GMSH](https://www.gmsh.info) and use it in Gridap.
-- [GridapMakie](https://github.com/gridap/GridapMakie.jl) Makie plotting recipes for Gridap.
-- [GridapPardiso](https://github.com/gridap/GridapPardiso.jl) Use the [Intel Pardiso MKL direct sparse solver](https://software.intel.com/en-us/mkl-developer-reference-fortran-intel-mkl-pardiso-parallel-direct-sparse-solver-interface) in Gridap.
-- [GridapPETSc](https://github.com/gridap/GridapPETSc.jl) Use [PETSc](https://petsc.org/) linear and nonlinear solvers in Gridap.
-- [GridapP4est](https://github.com/gridap/GridapP4est.jl) Use adaptive mesh refinement and coarsening with forests-of-trees in Gridap.
-
+- [GridapDistributed](https://github.com/gridap/GridapDistributed.jl) - Distributed-memory extension of Gridap.
+- [GridapSolvers](https://github.com/gridap/GridapSolvers.jl) - Scalable multiphysics finite element solvers.
+- [GridapEmbedded](https://github.com/gridap/GridapEmbedded.jl) - Embedded finite elements in Julia.
+- [GridapGmsh](https://github.com/gridap/GridapGmsh.jl) - Generate a FE mesh with [GMSH](https://www.gmsh.info) and use it in Gridap.
+- [GridapMakie](https://github.com/gridap/GridapMakie.jl) - Makie plotting recipes for Gridap.
+- [GridapPardiso](https://github.com/gridap/GridapPardiso.jl) - Use the [Intel Pardiso MKL direct sparse solver](https://software.intel.com/en-us/mkl-developer-reference-fortran-intel-mkl-pardiso-parallel-direct-sparse-solver-interface) in Gridap.
+- [GridapPETSc](https://github.com/gridap/GridapPETSc.jl) - Use [PETSc](https://petsc.org/) linear and nonlinear solvers in Gridap.
+- [GridapP4est](https://github.com/gridap/GridapP4est.jl) - Use adaptive mesh refinement and coarsening with forests-of-trees in Gridap.
+- [GridapTopOpt](https://github.com/zjwegert/GridapTopOpt.jl) - Topology optimisation library in Gridap.
 
 ## Examples
 
