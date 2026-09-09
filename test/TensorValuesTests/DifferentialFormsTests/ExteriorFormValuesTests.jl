@@ -73,6 +73,10 @@ ExteriorFormValue{4,4}((1,))
 @test zero(ExteriorFormValue{2,2,Float64}) == ExteriorFormValue{2,2}((0.0,))
 @test zero(ExteriorFormValue{2,3,Float64}) == ExteriorFormValue{2,3}((0.0,0.0,0.0))
 
+@test one(ExteriorFormValue{0,3,Float64}) === 1.0
+@test one(ExteriorFormValue{0,3,Int})     === 1
+@test_throws ErrorException one(ExteriorFormValue{2,3,Float64})
+
 # ── Conversion to a static array ─────────────────────────────────────────────
 
 # The stored components expand into the full D^K antisymmetric tensor, with the
@@ -340,7 +344,15 @@ for (α, β) in [(ExteriorFormValue{0,D3}((7.0,)),
   end
 end
 
-# A 0-form has no index to contract, it only enters the tensor product
+# Past K = 4 the metric minors of the raising sum are computed by a loop instead
+# of an inlined Leibniz expansion.
+d5 = VectorValue(2.0, 3.0, 5.0, 7.0, 11.0, 13.0)
+α5 = ExteriorFormValue{5,6}((1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
+β5 = ExteriorFormValue{5,6}((6.0, 5.0, 4.0, 3.0, 2.0, 1.0))
+@test form_inner(α5, β5, symmetric_part(diagonal_tensor(d5))) ≈
+      sum(α5.data[n] * β5.data[n] * prod(d5.data) / d5[7-n] for n in 1:6)
+
+# A 0-form has no index to contract
 ω0_fi = ExteriorFormValue{0,D3}((2.0,))
 ω1_fi = ExteriorFormValue{1,D3}((1.0, 2.0, 3.0))
 @test outer(ω0_fi, ω1_fi) === VectorValue{D3}(2.0, 4.0, 6.0)
@@ -365,6 +377,10 @@ _str(io_props, ω) = sprint((io, x) -> show(io, MIME("text/plain"), x), ω;
 ω2_show = ExteriorFormValue{2,D3}((1.0, 0.0, 0.0))
 @test occursin("dx¹ ∧ dx²", _str(:coordinates => :cartesian,   ω2_show))
 @test occursin("dλ¹ ∧ dλ²", _str(:coordinates => :barycentric, ω2_show))
+
+@test indep_components_names(ExteriorFormValue{1,D3}) == ["dx¹", "dx²", "dx³"]
+@test indep_components_names(ExteriorFormValue{2,D3}) ==
+      ["dx¹ ∧ dx²", "dx¹ ∧ dx³", "dx² ∧ dx³"]
 
 # ── Scalar types: mixed arguments and degenerate shapes ──────────────────────
 
