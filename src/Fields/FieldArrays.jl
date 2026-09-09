@@ -13,7 +13,9 @@ function return_cache(f::AbstractArray{T},x::Point) where T<:Field
 end
 
 """
-Implementation of `return_cache` for a array of `Field`.
+    evaluate!(c, f::AbstractArray{T}, x::Point) where T<:Field
+
+Evaluation of an array of `Field`.
 
 If the field vector has length `nf` and it is evaluated in one point, it
 returns an `nf` vector with the result. If the same array is applied to a
@@ -96,8 +98,11 @@ end
 # Opening the door to optimize arrays of field gradients
 
 """
+    struct FieldGradientArray{Ng,A,T,N} <: AbstractArray{T,N}
+
 A wrapper that represents the broadcast of `gradient` over an array of fields.
-Ng is the number of times the gradient is applied
+`Ng` is the number of times the gradient is applied, `A` the type of the field
+array to take derivatives of.
 """
 struct FieldGradientArray{Ng,A,T,N} <: AbstractArray{T,N}
   fa::A
@@ -224,8 +229,13 @@ for op in (:∇,:∇∇)
 end
 
 """
-    linear_combination(a::AbstractVector{<:Number}, b::AbstractVector{<:Field})
-    linear_combination(a::AbstractMatrix{<:Number}, b::AbstractVector{<:Field})
+    linear_combination(v::AbstractVector{<:Number}, f::AbstractVector{<:Field})
+    linear_combination(m::AbstractMatrix{<:Number}, f::AbstractVector{<:Field})
+
+Lazy linear combination
+    lc = v*f = Σ vᵢfᵢ
+, or
+    lcⱼ = (transpose(m)*f)ⱼ = Σᵢ mᵢⱼfᵢ.
 """
 function linear_combination(a::AbstractMatrix{<:Number},b::AbstractVector{<:Field})
   LinearCombinationFieldVector(a,b)

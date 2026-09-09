@@ -154,7 +154,7 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
       - run: |
           julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.instantiate()'
-          julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.add(["Test", "TikzPictures"])'
+          julia --color=yes --project=. --depwarn=yes -e 'using Pkg; Pkg.add(["Test", "TikzPictures", "Symbolics"])'
           julia --color=yes --project=. --code-coverage=user --depwarn=yes -e 'include("test/ExtensionTests/runtests.jl")'
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v7

@@ -3,6 +3,14 @@
 # on tree searches.
 
 """
+    KDTreeSearch(; num_nearest_vertices=Gridap.Helpers.default_num_nearest_vertices, tol=1.e-10)
+
+Point-to-cell search method locating a point by inspecting the cells around its
+`num_nearest_vertices` closest mesh vertices, found with a KD-tree. `tol` is the
+tolerance used to decide whether the point lies inside a cell.
+
+Increase `num_nearest_vertices` when a point that is known to lie in the mesh is
+not found, which can happen near non-convex boundaries and for stretched cells.
 """
 struct KDTreeSearch{T}
   num_nearest_vertices::Int

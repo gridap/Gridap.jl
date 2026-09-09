@@ -8,11 +8,11 @@ CurrentModule = Gridap.Polynomials
 
 A ``D``-dimensional simplex ``T`` is defined by ``N=D+1`` vertices ``\{v_1,
 v_2, …, v_N\}=\{v_i\}_{i∈1:N}``. The barycentric coordinates
-``λ(\bm{x})=\{λ_j(\bm{x})\}_{1 ≤ j ≤ N}`` are uniquely
+``λ(\bm{x})=\{λ^j(\bm{x})\}_{1 ≤ j ≤ N}`` are uniquely
 defined by:
 ```math
-\bm{x} = ∑_{1 ≤ j ≤ N} λ_j(\bm{x})v_j \quad\text{and}\quad
-∑_{1≤ j≤ N} λ_j(\bm{x}) = 1,
+\bm{x} = ∑_{1 ≤ j ≤ N} λ^j(\bm{x})v_j \quad\text{and}\quad
+∑_{1≤ j≤ N} λ^j(\bm{x}) = 1,
 ```
 as long as the simplex is non-degenerate (vertices are not all in one
 hyperplane).
@@ -20,20 +20,20 @@ hyperplane).
 Assuming the simplex polytopal (has flat faces), this change of coordinates is
 affine, and is implemented using:
 ```math
-λ(\bm{x}) = M\left(\begin{array}{c} 1\\ x_1\\ ⋮\\ x_D \end{array}\right)
+λ(\bm{x}) = M\left(\begin{array}{c} 1\\ x^1\\ ⋮\\ x^D \end{array}\right)
 \quad\text{with}\quad M =
 \left(\begin{array}{cccc}
 1 & 1 & ⋯ & 1 \\
-(v_1)_1 & (v_2)_1  & ⋯ & (v_N)_1  \\
+(v_1)^1 & (v_2)^1  & ⋯ & (v_N)^1  \\
 ⋮  & ⋮   & ⋯ & ⋮   \\
-(v_1)_D & (v_2)_D  & ⋯ & (v_N)_D  \\
+(v_1)^D & (v_2)^D  & ⋯ & (v_N)^D  \\
 \end{array}\right)^{-1}
 ```
 where the inverse exists because ``T`` is non-degenerate [1], cf. functions
 [`_cart_to_bary`](@ref) and [`_compute_cart_to_bary_matrix`](@ref). Additionally,
-we have ``∂_{x_i} λ_j(\bm{x}) = M_{j,i+1}``, so
+we have ``∂_{x^i} λ^j(\bm{x}) = M^j_{i+1}``, so
 ```math
-∇ λ_j = M_{2:N, j}.
+∇ λ^j = M^j_{2:N}.
 ```
 The matrix ``M`` is all we need that depends on ``T`` in order to compute
 Bernstein polynomials and their derivatives, it is stored in the field
@@ -43,16 +43,16 @@ On the reference simplex defined by the vertices `get_vertex_coordinates(SEGMENT
 ```math
 \begin{aligned}
 v_1     & = (0\ 0\ ⋯\ 0), \\
-v_2     & = (0\ 1\ ⋯\ 0), \\
+v_2     & = (1\ 0\ ⋯\ 0), \\
 ⋮  &         \\
 v_N     & = (0\ ⋯\ 0\ 1),
 \end{aligned}
 ```
 the matrix ``M`` reduces to
 ```math
-λ(\bm{x}) = \Big(1-∑_{1≤ i≤ D} x_i, x_1, x_2, ⋯, x_D\Big)
+λ(\bm{x}) = \Big(1-∑_{1≤ i≤ D} x^i, x^1, x^2, ⋯, x^D\Big)
 \quad\text{and}\quad
-∂_{x_i} λ_j = δ_{i+1,j} - δ_{1j} = M_{j,i+1}.
+∂_{x^i} λ^j = δ^j_{i+1} - δ^j_1 = M^j_{i+1}.
 ```
 
 ## Bernstein polynomials definition
@@ -60,13 +60,13 @@ the matrix ``M`` reduces to
 The univariate [`Bernstein`](@ref) polynomials forming a basis of ``\mathcal{P}_K``
 are defined by
 ```math
-B^K_{n}(x) = \binom{K}{n} x^n (1-x)^{K-n}\qquad\text{ for } 0≤ n≤ K.
+B_{K}^{n}(x) = \binom{K}{n} x^n (1-x)^{K-n}\qquad\text{ for } 0≤ n≤ K.
 ```
 
 The ``D``-multivariate Bernstein polynomials of degree ``K`` relative to a
 simplex ``T`` are defined by
 ```math
-B^{D,K}_α(\bm{x}) = \binom{K}{α} λ(\bm{x})^α\qquad\text{for all }α ∈\mathcal{I}_K^D
+B_{D,K}^{α}(\bm{x}) = \binom{K}{α} λ(\bm{x})^α\qquad\text{for all }α ∈\mathcal{I}_K^D
 ```
 where
 - ``\mathcal{I}_K^D = \{\ α∈(\mathbb{Z}_+)^{D+1} \quad|\quad |α|=K\ \}``
@@ -74,9 +74,10 @@ where
 - ``\binom{K}{α} = \frac{K!}{α_1 !α_2 !… α_N!}``
 - ``λ`` are the barycentric coordinates relative to ``T`` (defined above)
 
-The superscript ``D`` and ``K`` in ``B^{D,K}_α(x)`` can be omitted because they
-are always determined by ``α`` using ``{D=\#(α)-1}`` and ``K=|α|``. The set
-``\{B_α\}_{α∈\mathcal{I}_K^D}`` is a basis of ``\mathcal{P}^D_K``, implemented by
+The subscripts ``D`` and ``K`` in ``B_{D,K}^{α}(x)`` are parameters, not indices,
+and can be omitted because they are always determined by ``α`` using
+``{D=\#(α)-1}`` and ``K=|α|``. The set
+``\{B^α\}_{α∈\mathcal{I}_K^D}`` is a basis of ``\mathcal{P}^D_K``, implemented by
 [`BernsteinBasisOnSimplex`](@ref).
 
 ### Bernstein indices and indexing
@@ -98,29 +99,29 @@ zero (to simplify the definition of algorithms where ``α=β-e_i`` appears).
 ### The de Casteljau algorithms
 
 A polynomial ``p ∈ \mathcal{P}^D_K`` in Bernstein form ``p = ∑_{α∈\mathcal{I}^D_K}\, p_α
-B_α`` can be evaluated at ``\bm{x}`` using the de Casteljau algorithms
+B^α`` can be evaluated at ``\bm{x}`` using the de Casteljau algorithms
 [1, Algo. 2.9] by iteratively computing
 ```math
-\qquad p_β^{(l)} = \underset{1 ≤ i ≤ N}{∑} λ_i\, p_{β+e_i}^{(l-1)} \qquad ∀β ∈ \mathcal{I}^D_{K-l},
+\qquad p_β^{(l)} = \underset{1 ≤ i ≤ N}{∑} λ^i\, p_{β+e_i}^{(l-1)} \qquad ∀β ∈ \mathcal{I}^D_{K-l},
 ```
 for ``l=1, 2, …, K`` where ``p_α^{(0)}=p_α``, ``λ=λ(\bm{x})`` and the
 result is ``p(\bm{x})=p_𝟎^{(K)}``. This algorithm is implemented (in
 place) by [`_de_Casteljau_nD!`](@ref Polynomials._de_Casteljau_nD!).
 
 But Gridap implements the polynomial bases themselves instead of individual
-polynomials in a basis. To compute all ``B_α`` at ``\bm{x}``, one can
+polynomials in a basis. To compute all ``B^α`` at ``\bm{x}``, one can
 use the de Casteljau algorithm going "downwards" (from the tip of the pyramid
 to the base). The idea is to use the relation
 ```math
-B_α = ∑_{1 ≤ i ≤ N} λ_i B_{α-e_i}\qquad ∀α ∈ ℤ_+^N,\ |α|≥1.
+B^α = ∑_{1 ≤ i ≤ N} λ^i B^{α-e_i}\qquad ∀α ∈ ℤ_+^N,\ |α|≥1.
 ```
 
-Starting from ``b_𝟎^{(0)}=B_𝟎(\bm{x})=1``, compute iteratively
+Starting from ``b^{𝟎,(0)}=B^𝟎(\bm{x})=1``, compute iteratively
 ```math
-\qquad b_β^{(l)} = \underset{1 ≤ i ≤ N}{∑} λ_i\, b_{β-e_i}^{(l-1)} \qquad ∀β ∈ \mathcal{I}^D_{l},
+\qquad b^{β,(l)} = \underset{1 ≤ i ≤ N}{∑} λ^i\, b^{β-e_i,(l-1)} \qquad ∀β ∈ \mathcal{I}^D_{l},
 ```
 for ``l=1,2, …, K``, where again ``λ=λ(\bm{x})`` and the result is
-``B_α(\bm{x})=b_α^{(K)}`` for all ``α`` in ``\mathcal{I}^D_K``. This
+``B^α(\bm{x})=b^{α,(K)}`` for all ``α`` in ``\mathcal{I}^D_K``. This
 algorithm is implemented (in place) by [`_downwards_de_Casteljau_nD!`](@ref).
 The implementation is a bit tricky, because the iterations must be done in
 reverse order to avoid erasing coefficients needed later, and a lot of summands
@@ -129,16 +130,16 @@ disappear (when ``(β-e_i)_i < 0``).
 The gradient and hessian of the `BernsteinBasisOnSimplex` are also implemented.
 They rely on the following
 ```math
-∂_q B_α(\bm{x}) = K\!∑_{1 ≤ i ≤ N} ∂_qλ_i\, B_{α-e_i}(\bm{x}),\qquad
-∂_t ∂_q B_α(\bm{x}) = K\!∑_{1 ≤ i,j ≤ N} ∂_tλ_j\, ∂_qλ_i\, B_{α-e_i-e_j}(\bm{x}).
+∂_q B^α(\bm{x}) = K\!∑_{1 ≤ i ≤ N} ∂_qλ^i\, B^{α-e_i}(\bm{x}),\qquad
+∂_t ∂_q B^α(\bm{x}) = K\!∑_{1 ≤ i,j ≤ N} ∂_tλ^j\, ∂_qλ^i\, B^{α-e_i-e_j}(\bm{x}).
 ```
 The gradient formula comes from [1, Eq. (2.28)], and the second is derived from
 the first using the fact that ``∂_qλ`` is homogeneous. The implementation of
-the gradient and hessian compute the ``B_β`` using
+the gradient and hessian compute the ``B^β`` using
 `_downwards_de_Casteljau_nD!` up to order ``K-1`` and ``K-2`` respectively, and
 then the results are assembled by `_grad_Bα_from_Bαm!` and
 `_hess_Bα_from_Bαmm!` respectively. The implementation makes sure to only
-access each relevant ``B_β`` once per ``(∇/H)B_α`` computed.
+access each relevant ``B^β`` once per ``(∇/H)B^α`` computed.
 
 ## Bernstein basis generalization for ``\mathcal{P}Λ`` spaces
 
@@ -168,8 +169,8 @@ including ``T`` itself or its vertices. ``T`` has ``\binom{N}{d+1}``
 ``d``-dimensional faces, indexed ``\forall\,1≤ F_1 < F_2 < ... < F_{d+1} ≤ N``.
 The dimension of a face ``F`` is ``\#F\;`` (`length(F)`), and we write
 ``{"∀\,\#J=d+1"}`` for all the increasing index sets of the ``d``-dimensional
-faces of ``T``. We will sometimes write ``_{J(i)}`` instead of ``_{J_i}`` for
-readability purpose when it appears as a subscript.
+faces of ``T``. We will sometimes write ``J(i)`` instead of ``J_i`` for
+readability purpose when it appears as a sub- or superscript.
 
 Using Einstein's convention of summation on repeated indices, a degree-``k``
 dimension-``D`` form ``ω`` can be written in the canonical Cartesian basis as
@@ -181,15 +182,27 @@ I_k\} \text{ for }1≤ I_1 < ... < I_k ≤ D\big\},
 ```
 ``\{ω_I\}_I∈\mathbb{R}^\binom{D}{k}`` is the vector of coefficients of ``ω``,
 and ``\{\text{d}x^i\}_{1≤ i≤ D}`` is the canonical covector basis (basis
-of ``\text{T}_x T``) such that ``\text{d}x^i(∂_{x_j})=δ_{ij}``.
+of ``\text{T}_x T``) such that ``\text{d}x^i(∂_{x^j})=δ^i_j``.
 
 These sets of indices ``I,J,F`` are ``k``-combinations of ``{1:D/N}``, stored
-in `Vector{Int}`. A generator [`_sorted_combinations`](@ref) returns a vector
-containing all the ``D``-dimensional ``k``-combinations, and
-[`_combination_index`](@ref) can be used to compute the index of a combination
-in this vector. This `k`-combinations ordering defines the indices of form
-components ``ω_I`` in numerical collections. The order is independent of the
-dimension.
+in `Vector{Int}`. A generator [`sorted_combinations`](@ref) returns a vector
+containing all the ``D``-dimensional ``k``-combinations in lexicographic order,
+e.g. for ``D=4``, ``k=2``
+```math
+\{1,2\},\ \{1,3\},\ \{1,4\},\ \{2,3\},\ \{2,4\},\ \{3,4\},
+```
+and [`combination_index`](@ref) computes the index of a combination in this
+vector.
+
+This order define the linear indices of basis `k`-forms such as ``I`` and
+``J``. The order depends on the dimension `D`.: ``\{2,3\}`` is the third length-``2``
+combination for ``D=3`` but the fourth for ``D=4``.
+
+The faces indices ``F`` are ordered with right-to-left lexicographic, obtain with kwarg
+`right_to_left=true` of `sorted_combinations` and `combination_index`. The combination indices are compared from last
+to first, so above ``\{2,3\}`` would swaps with ``\{1,4\}``. This order is
+consistent with the vertices ordering of simplices faces, e.g.
+`get_faces(TET,k,0)`
 
 #### Translation between forms and vectors
 
@@ -237,13 +250,13 @@ The ``\mathcal{P}^-Λ`` type bubble basis polynomials associated to a face ``F�
 defined by [2, Th. 6.1-4] are
 ```math
 \mathring{\mathcal{P}}_r^-Λ^k(T,F) = \text{span}\big\{ ω̄^{α,J} =
-B_α φ^J \ \big| \ α∈\mathcal{I}_{r-1}^D,\ \#J=k\!+\!1,\ ⟦α⟧∪J=F,\ α_i=0 \text{ if } i< \text{min}(J) \big\}
+B^α φ^J \ \big| \ α∈\mathcal{I}_{r-1}^D,\ \#J=k\!+\!1,\ ⟦α⟧∪J=F,\ α_i=0 \text{ if } i< \text{min}(J) \big\}
 ```
-where ``B_α`` are the scalar Bernstein polynomials implemented by
+where ``B^α`` are the scalar Bernstein polynomials implemented by
 [`BernsteinBasisOnSimplex`](@ref), and ``φ^J`` [2, Eq. (6.3)] are the Whitney
 forms:
 ```math
-φ^J = \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \, \text{d}λ^{J\backslash l} \quad\text{where}\quad
+φ^J = \sum_{1≤l≤k+1} (-1)^{l+1} λ^{J(l)} \, \text{d}λ^{J\backslash l} \quad\text{where}\quad
 \text{d}λ^{J\backslash l} = \underset{j∈J\backslash \{J_l\} }{⋀}\text{d}λ^{j},
 ```
 ``φ^J `` is a ``k``-form of polynomial order ``1``.
@@ -263,7 +276,7 @@ where
 - `α` is a `Vector{Int}`,
 - `α_id` is [`bernstein_term_id(α)`](@ref bernstein_term_id), the index of `Bα` in the scalar [`BernsteinBasisOnSimplex`](@ref),
 - `J` is a `Vector{Int}`,
-- `sub_J_ids` is a `::Vector{Int}` are the [`_combination_index`](@ref) of each ``J\backslash \{J(l)\}`` for ``1\leq l\leq \#J``,
+- `sub_J_ids` is a `::Vector{Int}` are the [`combination_index`](@ref) of each ``J\backslash \{J(l)\}`` for ``1\leq l\leq \#J``, taken among the combinations of ``1\!:\!N``,
 - `sup_α_ids` is a `::Vector{Int}` are the [`bernstein_term_id`](@ref) of each ``α+e_i`` for ``1\leq i\leq \#α``.
 
 The implementation is flexible enough to select a subset of the bubble spaces,
@@ -272,14 +285,14 @@ get_bubbles) (do NOT modify them).
 
 We now need to express ``\text{d}λ^{J\backslash l}`` in the Cartesian basis
 ``{\text{d}x^I}``. In a polytopal simplex ``T`` (flat faces), the 1-forms
-``\text{d}λ^j:=\text{d}(λ_j)`` is homogeneous, its coefficients in the
+``\text{d}λ^j:=\text{d}(λ^j)`` is homogeneous, its coefficients in the
 canonical basis are derived by
 ```math
-\text{d}λ^j = (\nabla(λ_j))^♭ = δ_{ki}∂_{k}λ_j\,\text{d}x^i =
-∂_{i}λ_j\,\text{d}x^i = M_{j,i+1}\,\text{d}x^i
+\text{d}λ^j = (\nabla(λ^j))^♭ = δ_{ki}∂_{k}λ^j\,\text{d}x^i =
+∂_{i}λ^j\,\text{d}x^i = M^j_{i+1}\,\text{d}x^i
 ```
 where ``{}^♭`` is the flat map, the metric ``g_{ki}=δ_{ki}`` is trivial and
-``M_{j,i+1}`` are components of the barycentric change of coordinate matrix
+``M^j_{i+1}`` are components of the barycentric change of coordinate matrix
 ``M`` introduced in the Barycentric coordinates section above.
 
 So the exterior products ``\text{d}λ^{J\backslash l}`` are expressed using
@@ -287,21 +300,25 @@ the ``k``-minors ``m_I^{J\backslash l}`` of ``M^\intercal`` as follows:
 ```math
 \text{d}λ^{J\backslash l} = m_I^{J\backslash l}\text{d}x^I
 \quad\text{where}\quad m_I^J
-= \text{det}\big( (∂_{I(i)}λ_{J(j)})_{1≤ i,j≤ k} \big)
-= \text{det}\big( (M_{J(j),I(i)+1})_{1≤ i,j≤ k} \big),
+= \text{det}\big( (∂_{I(i)}λ^{J(j)})_{1≤ i,j≤ k} \big)
+= \text{det}\big( (M^{J(j)}_{I(i)+1})_{1≤ i,j≤ k} \big),
 ```
-and we obtain the components of ``ω̄^{α,J}=B_α φ^J`` in the basis
+and we obtain the components of ``ω̄^{α,J}=B^α φ^J`` in the basis
 ``\mathrm{d}x^I``
 ```math
-ω̄_{I}^{α,J} = B_α \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \, m_I^{J\backslash l}.
+ω̄_{I}^{α,J} = B^α \sum_{1≤l≤k+1} (-1)^{l+1} λ^{J(l)} \, m_I^{J\backslash l}.
 ```
+For ``k \leq 1``, `BarycentricPmΛBasis` also offers the `flavor=:BMM` variant,
+which substitutes the bare monomial ``λ^α = \binom{|α|}{α}^{-1}B^α`` for ``B^α``.
+
 The ``\binom{D}{k}\binom{N}{k}`` coefficients ``\{m_I^{J}\}_{I,J}`` are
 constant in ``T`` and are pre-computed from ``M`` in
 `_compute_PmΛ_basis_coefficients!` at the creation of `BarycentricPmΛBasis`
 and stored in its field `m`.
 
 Finally, the pseudocode to evaluate our basis ``ω̄`` of ``\mathcal{P}_r^-Λ^k(T)`` at
-``\boldsymbol{x}`` is
+``\boldsymbol{x}`` is (spelled with the implementation's names, so its indices
+are Julia identifiers rather than the notation above)
 ```julia
 compute λ(x)
 compute B(x) = { Bα(λ(x)) } for all |α|=r-1
@@ -327,7 +344,7 @@ end
 The ``\mathcal{P}Λ`` type bubble basis polynomials associated to a face ``F⊆T`` defined by
 [2, Th. 6.1-2] -- where the basis function Eq. (8.3) replace Eq. (8.1) -- are
 ```math
-\mathring{\mathcal{P}}_rΛ^k(T,F) = \text{span}\big\{ ω^{α,J}=B_α Ψ^{α,J} \quad\big|\quad
+\mathring{\mathcal{P}}_rΛ^k(T,F) = \text{span}\big\{ ω^{α,J}=B^α Ψ^{α,J} \quad\big|\quad
 \ α∈\mathcal{I}_{r}^D,\ \#J=k,\ ⟦α⟧∪J=F,\ α_i=0 \text{ if } i< \text{min}(F
 \backslash J) \big\},
 ```
@@ -344,14 +361,14 @@ them).
 Again, we need their components in the Cartesian basis
 ``\mathrm{d}x^I``:
 ```math
-Ψ^{α,F,j} = M_{j,i+1}\mathrm{d}x^i - \frac{α_j}{|α|}\sum_{l∈F}M_{l,i+1}\mathrm{d}x^i
-= \big(M_{j,i+1} - \frac{α_j}{|α|}\sum_{l∈F}M_{l,i+1}\big)\mathrm{d}x^i
+Ψ^{α,F,j} = M^j_{i+1}\mathrm{d}x^i - \frac{α_j}{|α|}\sum_{l∈F}M^l_{i+1}\mathrm{d}x^i
+= \big(M^j_{i+1} - \frac{α_j}{|α|}\sum_{l∈F}M^l_{i+1}\big)\mathrm{d}x^i
 ```
 so
 ```math
 Ψ^{α,F,j} = ψ_{i}^{α,F,j} \mathrm{d}x^i
 \quad\text{where}\quad
-ψ_{i}^{α,F,j} = M_{j,i+1} - \frac{α_j}{|α|}\sum_{l∈F}M_{l,i+1}
+ψ_{i}^{α,F,j} = M^j_{i+1} - \frac{α_j}{|α|}\sum_{l∈F}M^l_{i+1}
 ```
 and
 
@@ -361,10 +378,15 @@ and
 ψ_I^{α,J} = \text{det}\big( (ψ_{i}^{α,F,j})_{i∈I,\,j∈J} \big).
 ```
 
-Finally, the ``\binom{D}{k}`` components of ``ω^{α,J}=B_α Ψ^{α,J}`` in the
+For ``k \leq 1``, `BarycentricPΛBasis` also offers the `flavor=:BMM` direction
+forms, which substitute the support indicator ``s(α)_j = 1_{α_j>0}`` for ``α_j``
+and ``|\mathrm{supp}(α)|`` for ``|α|`` in the formula above. All the ``α`` of a
+given support then share their direction forms.
+
+Finally, the ``\binom{D}{k}`` components of ``ω^{α,J}=B^α Ψ^{α,J}`` in the
 basis ``\mathrm{d}x^I`` are
 ```math
-ω_{I}^{α,J} = B_α\, ψ_I^{α,J},
+ω_{I}^{α,J} = B^α\, ψ_I^{α,J},
 ```
 where the ``\binom{D+r}{k+r}\binom{r+k}{k}\binom{D}{k}
 =\mathrm{dim}(\mathcal{P}_rΛ^k(T^D))\times\# (\{\mathrm{d}x^I\}_I)`` coefficients
@@ -396,12 +418,12 @@ implemented by `BernsteinBasisOnSimplex`. They are only supported for scalar or
 
 ##### Coefficient vector ``\{ω_{I}^{α,J}\}_I``
 
-Recall ``ω_{I}^{α,J} = B_α\, ψ_I^{α,J}``. The derivatives are easy to
-compute because only ``B_α`` depends on ``\boldsymbol{x}``, leading to
+Recall ``ω_{I}^{α,J} = B^α\, ψ_I^{α,J}``. The derivatives are easy to
+compute because only ``B^α`` depends on ``\boldsymbol{x}``, leading to
 ```math
-∂_q\, ω_{I}^{α,J} = ψ_I^{α,J}\; ∂_q B_α,\qquad\text{or}\qquad ∇ω^{α,J} = ∇B_α ⊗ ψ^{α,J}\\
+∂_q\, ω_{I}^{α,J} = ψ_I^{α,J}\; ∂_q B^α,\qquad\text{or}\qquad ∇ω^{α,J} = ∇B^α ⊗ ψ^{α,J}\\
 
-∂_t∂_q\, ω_{I}^{α,J} = ψ_I^{α,J}\; ∂_t∂_q B_α\qquad\text{or}\qquad ∇∇ω^{α,J} = ∇∇B_α ⊗ ψ^{α,J}.
+∂_t∂_q\, ω_{I}^{α,J} = ψ_I^{α,J}\; ∂_t∂_q B^α\qquad\text{or}\qquad ∇∇ω^{α,J} = ∇∇B^α ⊗ ψ^{α,J}.
 ```
 where ``∇`` and ``∇∇`` are the standard gradient and hessian operators and
 ``ψ^{α,J}`` is seen as a length-``\binom{D}{k}`` vector with no variance
@@ -409,26 +431,26 @@ where ``∇`` and ``∇∇`` are the standard gradient and hessian operators and
 
 ##### Coefficient vector ``\{ω̄_{I}^{α,J}\}_I``
 
-Recall ``ω̄_{I}^{α,J} = B_α \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \,
+Recall ``ω̄_{I}^{α,J} = B^α \sum_{1≤l≤k+1} (-1)^{l+1} λ^{J(l)} \,
 m_I^{J\backslash l}``, the derivatives are not immediate to compute because
-both ``B_α`` and ``λ_{J(l)}`` depend on ``\boldsymbol{x}``, let us first use ``B_α
-λ_{J(l)} = \frac{α_{J(l)} + 1}{|α|+1}B_{α+e(J,l)}`` where ``e(J,l) =
+both ``B^α`` and ``λ^{J(l)}`` depend on ``\boldsymbol{x}``, let us first use ``B^α
+λ^{J(l)} = \frac{α_{J(l)} + 1}{|α|+1}B^{α+e(J,l)}`` where ``e(J,l) =
 \big(δ_i^{J_l}\big)_{1≤ i≤ N}`` to write the coefficients in Bernstein form as
 follows
 ```math
-ω̄_{I}^{α,J} = B_α \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \, m_I^{J\backslash l} =
-\frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1)\ B_{α+e(J,l)}\, m_I^{J\backslash l},
+ω̄_{I}^{α,J} = B^α \sum_{1≤l≤k+1} (-1)^{l+1} λ^{J(l)} \, m_I^{J\backslash l} =
+\frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1)\ B^{α+e(J,l)}\, m_I^{J\backslash l},
 ```
 where ``|α|+1`` was replaced with ``r``, the polynomial degree of
 ``ω̄_{I}^{α,J}``. As a consequence, for any Cartesian coordinate indices
 ``1≤ p,q≤ D``, we get
 ```math
-∂_q ω̄_{I}^{α,J} = \frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1) \ ∂_q B_{α+e(J,l)}\, m_I^{J\backslash l},\\
-∂_t∂_q ω̄_{I}^{α,J} = \frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1) \ ∂_t∂_q B_{α+e(J,l)}\, m_I^{J\backslash l}.
+∂_q ω̄_{I}^{α,J} = \frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1) \ ∂_q B^{α+e(J,l)}\, m_I^{J\backslash l},\\
+∂_t∂_q ω̄_{I}^{α,J} = \frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1) \ ∂_t∂_q B^{α+e(J,l)}\, m_I^{J\backslash l}.
 ```
 In tensor form, this is
 ```math
-\mathrm{D}ω^{α,J} = \frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1)\ \mathrm{D}\!B_{α+e(J,l)} ⊗ m^{J\backslash l}\\
+\mathrm{D}ω^{α,J} = \frac{1}{r}\sum_{1≤l≤k+1} (-1)^{l+1} (α_{J(l)} +1)\ \mathrm{D}\!B^{α+e(J,l)} ⊗ m^{J\backslash l}\\
 ```
 where ``\mathrm{D}`` is ``∇`` or ``∇∇``, the standard gradient and hessian operators,
 and ``ω̄^{α,J}`` is again seen as a length-``\binom{D}{k}`` vector with no
@@ -456,7 +478,7 @@ the exterior product is alternating, the coefficients that contribute to
 For all ``|α|=r\!-\!1``, ``\,\#J=k\!+\!1`` and ``\#I = k\!+\!1`` (with ``k\!<\!D``):
 ```math
 (\mathrm{d}\,ω̄^{α,J})_I = \frac{1}{r}\underset{1≤ l≤ k+1}{\sum} (-1)^{l+1}(α_{J(l)}+1)
-\underset{1≤ q≤ k+1}{\sum} (-1)^{q-1}\ m_{I\backslash q}^{J\backslash l}\ ∂_{I(q)} B_{α+e(J,l)}\;
+\underset{1≤ q≤ k+1}{\sum} (-1)^{q-1}\ m_{I\backslash q}^{J\backslash l}\ ∂_{I(q)} B^{α+e(J,l)}\;
 ```
 
 ##### Polynomial forms ``\mathrm{d}\,ω^{α,J}``
@@ -464,7 +486,7 @@ For all ``|α|=r\!-\!1``, ``\,\#J=k\!+\!1`` and ``\#I = k\!+\!1`` (with ``k\!<\!
 For all ``|α|=r``, ``\,\#J=k`` and ``\#I = k\!+\!1`` (with ``k\!<\!D``):
 ```math
 (\mathrm{d}\,ω^{α,J})_I =
-\underset{1≤ q≤ k+1}{\sum} (-1)^{q-1}\ ψ_{I\backslash q}^{α,J}\ ∂_{I(q)} B_α.
+\underset{1≤ q≤ k+1}{\sum} (-1)^{q-1}\ ψ_{I\backslash q}^{α,J}\ ∂_{I(q)} B^α.
 ```
 
 #### Hodge operator of the basis forms
@@ -477,7 +499,7 @@ Euclidean (Riemannian) space is
 where ``\bar{I}`` is the complement of ``I`` in ``1\!:\!D``, that is the only
 combination such that the concatenated permutation ``I\!*\!\bar{I}`` is a
 permutation of ``1\!:\!D``. ``\bar{I}`` is implemented by
-[`_complement(I)`](@ref _complement). [`_combination_sign(I)`](@ref
+[`_complement(I,D)`](@ref _complement). [`_combination_sign(I)`](@ref
 _combination_sign) computes the sign of ``I\!*\!\bar{I}``.
 
 
@@ -498,66 +520,66 @@ coefficients.
 ##### Coefficients ``\hat{m}_I^J``
 
 It was shown in the Barycentric coordinates section above that
-``M_{j,i+1} = δ_{i+1,j} - δ_{1j}``. Let ``\#I=k`` and ``\#J=k``. We need
+``M^j_{i+1} = δ^j_{i+1} - δ^j_1``. Let ``\#I=k`` and ``\#J=k``. We need
 to compute the determinant of the matrix
 ```math
-\hat{M}_{IJ}=(δ_{I(i)+1,\,J(j)}-δ_{1,J(j)})_{1≤ i,j≤ k}.
+\hat{M}^J_I=(δ^{J(j)}_{I(i)+1}-δ^{J(j)}_{1})_{1≤ i,j≤ k}.
 ```
 Let us define:
-- ``s=δ_1^{J_1}``, that indicates if ``\hat{M}_{IJ}`` contains a column of ``-1``,
-- ``p = \text{min } \{j\,|\, I_j+1 ∉J\}`` where ``\text{min}\,∅=0``, the index of the first row of ``\hat{M}_{IJ}`` containing no ``1``. ``p=0`` if and only if ``\hat{M}_{IJ}`` is the identity matrix,
-- ``n =\# \{\ i\ |\ i>s,\, J_i-1∉I\}``, the number of columns of zeros of ``\hat{M}_{IJ}``.
+- ``s=δ_1^{J_1}``, that indicates if ``\hat{M}^J_I`` contains a column of ``-1``,
+- ``p = \text{min } \{j\,|\, I_j+1 ∉J\}`` where ``\text{min}\,∅=0``, the index of the first row of ``\hat{M}^J_I`` containing no ``1``. ``p=0`` if and only if ``\hat{M}^J_I`` is the identity matrix,
+- ``n =\# \{\ i\ |\ i>s,\, J_i-1∉I\}``, the number of columns of zeros of ``\hat{M}^J_I``.
 
-Then it can be shown that ``k-n`` is the rank of ``\hat{M}_{IJ}``, and that
+Then it can be shown that ``k-n`` is the rank of ``\hat{M}^J_I``, and that
 ```math
-\hat{m}_I^J = \mathrm{det}(\hat{M}_{IJ}) = (-1)^{p(I,J)}δ_0^{n(I,J)},
+\hat{m}_I^J = \mathrm{det}(\hat{M}^J_I) = (-1)^{p(I,J)}δ_0^{n(I,J)},
 ```
 where the dependency of ``p,n`` on ``I,J`` is made explicit, so in ``\hat{T}``,
 there is
 ```math
-ω̄_{I}^{α,J} = B_α \sum_{1≤l≤k+1} (-1)^{l+1} λ_{J(l)} \, \hat{m}_I^{J\backslash l}.
+ω̄_{I}^{α,J} = B^α \sum_{1≤l≤k+1} (-1)^{l+1} λ^{J(l)} \, \hat{m}_I^{J\backslash l}.
 ```
 
 ##### Coefficients ``\hat{ψ}_I^{α,J}``
 
 The expression of ``ψ_{i}^{α,F,j}`` in ``\hat{T}`` is
 ```math
-\hat{ψ}_{i}^{α,F,j} = M_{j,i+1} - \frac{α_j}{|α|}\sum_{l∈F}δ_{i+1,l} - δ_{1l}
-= M_{j,i+1} + \big( δ_{1,F_0}-\sum_{l∈F}δ_{i+1,l} \big)\frac{α_j}{|α|}
+\hat{ψ}_{i}^{α,F,j} = M^j_{i+1} - \frac{α_j}{|α|}\sum_{l∈F}\big(δ^l_{i+1} - δ^l_1\big)
+= M^j_{i+1} + \sum_{l∈F}\big( δ^l_1-δ^l_{i+1} \big)\frac{α_j}{|α|}
 ```
 leading to
 ```math
-\hat{ψ}_I^{α,J}  = \mathrm{det}\Big(\hat{M}_{IJ} + u\,v^{\intercal}\Big)
+\hat{ψ}_I^{α,J}  = \mathrm{det}\Big(\hat{M}^J_I + u\,v^{\intercal}\Big)
 \quad\text{where}\quad
-u^i = δ_{1,F(0)}-\sum_{l∈F}δ_{I(i)+1,\,l}, \qquad v^j = \frac{α_{J(j)}}{|α|}.
+u^i = \sum_{l∈F}\big(δ^l_1-δ^l_{I(i)+1}\big), \qquad v^j = \frac{α_{J(j)}}{|α|}.
 ```
 We can use the following matrix determinant lemma:
 ```math
-\mathrm{det}(\hat{M}_{IJ} + uv^\intercal) =
-\mathrm{det}(\hat{M}_{IJ}) + v^\intercal\mathrm{adj}(\hat{M}_{IJ})u.
+\mathrm{det}(\hat{M}^J_I + uv^\intercal) =
+\mathrm{det}(\hat{M}^J_I) + v^\intercal\mathrm{adj}(\hat{M}^J_I)u.
 ```
-The determinant ``\mathrm{det}(\hat{M}_{IJ})=\hat{m}_I^{J}`` was computed
-above, but ``\mathrm{adj}(\hat{M}_{IJ})``, the transpose of the cofactor matrix
-of ``\hat{M}_{IJ}``, is also needed. Let ``s=δ_1^{J_1}``, ``n`` and ``p`` be
+The determinant ``\mathrm{det}(\hat{M}^J_I)=\hat{m}_I^{J}`` was computed
+above, but ``\mathrm{adj}(\hat{M}^J_I)``, the transpose of the cofactor matrix
+of ``\hat{M}^J_I``, is also needed. Let ``s=δ_1^{J_1}``, ``n`` and ``p`` be
 defined as above, and additionally define
-- ``q = \text{min } \{j\,|\,j>p,\ I_j+1 ∉J\}``, the index of the second row of ``\hat{M}_{IJ}`` containing no ``1`` (``q=0`` if there isn't any),
-- ``m = \text{min } \{i\,|\,i>s,\ J_i-1 ∉I\}``, the index of the first column of ``\hat{M}_{IJ}`` containing only zeros (``m=0`` if there isn't any).
+- ``q = \text{min } \{j\,|\,j>p,\ I_j+1 ∉J\}``, the index of the second row of ``\hat{M}^J_I`` containing no ``1`` (``q=0`` if there isn't any),
+- ``m = \text{min } \{i\,|\,i>s,\ J_i-1 ∉I\}``, the index of the first column of ``\hat{M}^J_I`` containing only zeros (``m=0`` if there isn't any).
 
 Then the following table gives the required information to apply the matrix
 determinant lemma and formulas for ``\hat{ψ}_I^{α,J}``
 ```math
 \begin{array}{|c|c|c|c|c|}
 \hline
-s  & n & \mathrm{rank}\hat{M}_{IJ} & \mathrm{adj}\hat{M}_{IJ} & \hat{ψ}_I^{α,J} \\
+s  & n & \mathrm{rank}\hat{M}^J_I & \mathrm{adj}\hat{M}^J_I & \hat{ψ}_I^{α,J} \\
 \hline
 \hline
-0   & 0 & k   & δ_{ij}                         & 1 + u \cdot v\\
+0   & 0 & k   & δ^i_j                          & 1 + u \cdot v\\
 \hline
-0   & 1 & k-1 & (-1)^{m+p}δ_i^m δ^p_j          & (-1)^{m+p}v^m u^p \\
+0   & 1 & k-1 & (-1)^{m+p}δ^i_m δ^p_j          & (-1)^{m+p}v^m u^p \\
 \hline
-1   & 0 & k   & (-1)^p(δ_{J(i),\,I(j)+1}-δ_{p,J(j)})& (-1)^p(1-u^p|v|+\underset{1≤ l<p}{\sum}v^{l+1}u^l + \underset{p<l≤ k}{\sum}v^{l}u^l) \\
+1   & 0 & k   & (-1)^p(δ^{J(i)}_{I(j)+1}-δ^{J(j)}_{p})& (-1)^p(1-u^p|v|+\underset{1≤ l<p}{\sum}v^{l+1}u^l + \underset{p<l≤ k}{\sum}v^{l}u^l) \\
 \hline\hspace{1mm}
-1   & 1 & k-1 & (-1)^{m+p+q}δ_i^m(δ^q_j-δ^p_j) & (-1)^{m+p+q}v^m(u^q-u^p) \\
+1   & 1 & k-1 & (-1)^{m+p+q}δ^i_m(δ^q_j-δ^p_j) & (-1)^{m+p+q}v^m(u^q-u^p) \\
 \hline
 0/1 & \geq 2 & ≤ k-2 & 0 & 0 \\
 \hline
@@ -573,9 +595,8 @@ _compute_cart_to_bary_matrix
 _cart_to_bary
 _de_Casteljau_nD!
 _downwards_de_Casteljau_nD!
-_combination_index
-_sorted_combinations
 _basis_forms_components
+_update_φ_αF!
 _combination_sign
 _complement
 ```

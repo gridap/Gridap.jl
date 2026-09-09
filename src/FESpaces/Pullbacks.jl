@@ -424,3 +424,77 @@ function unique_dim_of_faces_owning_dofs(ctype_reffe)
   dims_owning_dof
 end
 
+############################################################################################
+# Rotating PΛ: per-cell change of basis
+#
+# Mesh-level conformity layer for the rotating P_rΛ¹ and trimmed P_r⁻Λ¹ reference
+# FEs (see src/ReferenceFEs/RotatingPLambdaRefFEs.jl).  Each cell is re-expressed
+# in the frame of its "virtually sorted" copy, at the permutation
+#
+#   π_K = sortperm(cell global vertex ids)
+#
+# so that two cells sharing a face agree on that face's dof order.  The matrices
+# themselves come from `compute_pλ_change` (Gridap.Polynomials), which is pure
+# rotation calculus and knows nothing about the mesh; the derivation of the
+# convention lives there.
+#
+# Since π_K is a permutation of the D+1 cell vertices, at most (D+1)! distinct
+# changes of basis can occur on any mesh — 6 in 2D, 24 in 3D, independently of
+# the number of cells.  They are therefore built once, on demand, and shared
+# through a `CompressedArray` indexed by a per-cell permutation id.
+#
+# Fast path: when every cell already lists its vertices in increasing global-id
+# order (e.g. simplexified Cartesian models) π_K is the identity everywhere and
+# no change of basis is needed at all.
+
+function compute_cell_bases_changes(::RotatingPΛName, ::CoVariantPiolaMap,
+  model::DiscreteModel, cell_reffe, cell_Jt)
+  compute_pλ_cell_bases_changes(model, cell_reffe)
+end
+
+function compute_cell_bases_changes(::TrimmedPΛName, ::CoVariantPiolaMap,
+  model::DiscreteModel, cell_reffe, cell_Jt)
+  compute_pλ_cell_bases_changes(model, cell_reffe)
+end
+
+function compute_pλ_cell_bases_changes(model::DiscreteModel, cell_reffe)
+  D    = num_cell_dims(model)
+  topo = get_grid_topology(model)
+  cell_verts = Geometry.get_faces(topo, D, 0)
+
+  # One reference basis shared by all cells (single-reffe meshes).
+  basis = get_prebasis(testitem(cell_reffe))
+  rc    = RotationCache(basis)
+  return compute_pλ_cell_bases_changes(cell_verts, rc)
+end
+
+function compute_pλ_cell_bases_changes(cell_verts, rc::RotationCache)
+  cell_to_pid = zeros(Int8, length(cell_verts))
+  pid_to_M = Matrix{Float64}[]
+  pid_to_Minv = Matrix{Float64}[]
+
+  alltrivial = true
+  π_to_pid = Dict{Vector{Int},Int8}()
+  cache = array_cache(cell_verts)
+  for cell in eachindex(cell_verts)
+    v = getindex!(cache, cell_verts, cell)
+    π = sortperm(v)
+    pid = get!(π_to_pid, π) do
+      M, Minv = compute_pλ_change(rc, π)
+      push!(pid_to_M, M)
+      push!(pid_to_Minv, Minv)
+      return Int8(length(pid_to_M))
+    end
+    alltrivial &= issorted(v)
+    cell_to_pid[cell] = pid
+  end
+
+  # Fast path: every cell already lists its vertices in increasing global-id
+  # order (e.g. simplexified Cartesian models) — π_K = id everywhere.
+  alltrivial && return nothing
+
+  # General case
+  cell_change = CompressedArray(pid_to_M, cell_to_pid)
+  cell_change_invt = CompressedArray(pid_to_Minv, cell_to_pid)
+  return (cell_change, cell_change_invt)
+end

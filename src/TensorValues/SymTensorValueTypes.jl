@@ -110,7 +110,7 @@ end
 
 # Inverse conversion
 convert(::Type{<:MArray{Tuple{D,D},T}}, arg::SymTensorValue) where {D,T} = MMatrix{D,D,T}(_SymTensorValue_to_array(arg))
-convert(::Type{<:SArray{Tuple{D,D},T}}, arg::SymTensorValue) where {D,T} = _SymTensorValue_to_array(arg)
+convert(::Type{<:SArray{Tuple{D,D},T}}, arg::SymTensorValue) where {D,T} = SMatrix{D,D,T}(_SymTensorValue_to_array(arg))
 
 # Internal conversion
 convert(::Type{<:SymTensorValue{D,T}}, arg::SymTensorValue{D}) where {D,T} = SymTensorValue{D,T}(Tuple(arg))

@@ -13,8 +13,7 @@ Otherwise, the decomposition is defined relatively to the appropriate trace:
 - For `CurlConformity()`, the trace is the tangential trace to edges and tangential component to 2D facets,
 - For `DivConformity()`, the trace is the normal trace to facets (rotated tangents in 2D).
 """
-has_geometric_decomposition(shapefuns, p::Polytope, ::Conformity) = false
-has_geometric_decomposition(shapefuns, p::Polytope, ::L2Conformity) = true
+has_geometric_decomposition(shapefuns, p::Polytope, conf::Conformity) = conf isa L2Conformity
 
 """
     get_face_own_funs(shapefuns, p::Polytope, ::Conformity) -> Vector{Vector{Int}}

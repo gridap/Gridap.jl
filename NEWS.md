@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Since PR[#1335](https://github.com/gridap/Gridap.jl/pull/1335).
+  - New variants (accessible via kwarg `flavor=:BMM`) of the `BarycentricPΛBasis` and `BarycentricPmΛBasis` bases of the PᵣrΛᵏ and P⁻ᵣrΛᵏ spaces. For form order k=1, both flavors of both bases implement a closed-form change-of-basis with respect to relabelling/permutation of the simplex vertices.
+  - Added the associated reference FEs (named `rotating_pλ`, `trimmed_pλ`) which provide H(curl)-conforming FE spaces on meshes with arbitrary simplex ordering (`NonOriented`).
+  - Initial experimental support (API is still unstable) for tensor calculus and Finite Element Exterior Calulus (FEEC): added `ExteriorFormValue`, a `MultiValue` representing alternating K-forms, with pointwise exterior calculus (wedge, interior product, Hodge star, musical isomorphisms, Koszul operator, pullback/pushforward), and lazy `Field` counterparts for some of them.
+  - New experimental extension for Symbolic.jl (API is still unstable): it provides support of symbolic exterior calculus (exterior derivative, codifferential, Lie derivative).
+
 ### Fixed
 
 - Fixed `refine` dropping the `map` and `isperiodic` fields of the `CartesianDescriptor` when refining a `CartesianDiscreteModel`. Since PR[#1334](https://github.com/gridap/Gridap.jl/pull/1334).

@@ -137,7 +137,8 @@ function Base.show(io::IO, ::MIME"text/plain", indices::BarycentricPΛIndices)
   k = length(I)
   D = length(α)-1
   is_Pm = r != sum(α)
-  println(io,"PᵣΛᵏ(△ᴰ) basis indices, r=$r k=$k D=$D")
+  basis_str = "Pᵣ"* (is_Pm ? "⁻" : "") * "Λᵏ(△ᴰ) "
+  println(io, basis_str, "basis indices, r=$r k=$k D=$D")
 
   println(io)
   println(io,"Basis polynomial components")
@@ -147,17 +148,54 @@ function Base.show(io::IO, ::MIME"text/plain", indices::BarycentricPΛIndices)
   end
 
   println(io)
-  println(io,"\tw \tα \tα_id \tJ",  is_Pm ? "\tsub_J_ids \tsup_α_ids" : "")
-  for (F, F_bubble) in indices.bubbles
-    isempty(F_bubble) && continue
+  _print_bubble_table(io, indices, :AFW, nothing)
+  println(io)
+  println(io, basis_str, "basis indices, r=$r k=$k D=$D")
+end
 
-    println(io,"Bubble of face F=$(join(F))")
-    for (w, α, α_id, J, sub_J_ids, sup_α_ids) in F_bubble
-      println(io,"\t$w \t$(join(α)) \t$α_id \t$(join(J)) \t$(join(sub_J_ids,",")) \t\t$(join(sup_α_ids,","))")
+"""
+    _print_bubble_table(out, indices, flavor, Ψ)
+
+Print the column header and one row per bubble function of `indices`, the
+common body of [`print_indices`](@ref) and of the `BarycentricPΛIndices`
+`show` method.
+
+`P⁻` index sets wedge `k`+1 barycentric differentials where `P` ones wedge
+`k`, which is what tells the two apart here.
+
+`Ψ` holds the direction form of each bubble function and is known only to a
+`BarycentricPΛBasis`; pass `nothing` to leave that column empty.
+"""
+function _print_bubble_table(out::IO, indices::BarycentricPΛIndices, flavor::Symbol, Ψ)
+  isempty(indices.bubbles) && return
+
+  k = length(indices.components[1][2])
+  is_Pm = length(indices.bubbles[1][2][1][4]) != k
+
+  # :BMM indexes its direction form by a single vertex, which the rotating-basis
+  # literature calls k, and its Whitney form by the pair the trimmed one calls e.
+  J_title = flavor === :BMM && isone(k) ? (is_Pm ? "e" : "k") : "J"
+  # :BMM scales a P⁻ basis function by the bare monomial λ^α instead of Bα.
+  bare = is_Pm && flavor === :BMM
+
+  form_title = is_Pm ? "sub_J_ids" : "Ψ"
+  form(w, sub_J_ids) = is_Pm ? join(sub_J_ids,",") : (isnothing(Ψ) ? "" : "$(Ψ[w])")
+  form_width = max(length(form_title),
+                   maximum(length(form(bf[1], bf[5])) for (_, bfs) in indices.bubbles for bf in bfs)) + 2
+
+  println(out,
+    rpad("w",4), rpad("F",10), rpad(J_title,8), rpad("α",14),
+    rpad(bare ? "λ^α" : "Bα(λ)",18), rpad(form_title,form_width), "α_id")
+
+  for (F, bubble_functions) in indices.bubbles
+    for (w, α, α_id, J, sub_J_ids) in bubble_functions
+      mono = _monomial_string(α; coeff = bare ? 1 : multinomial(α...))
+      println(out,
+        rpad("$w",4), rpad(join(F,","),10), rpad(join(J,","),8),
+        rpad("$(Tuple(α))",14), rpad(mono,18),
+        rpad(form(w, sub_J_ids),form_width), α_id)
     end
   end
-  println(io)
-  println(io,"PᵣΛᵏ(△ᴰ) basis indices, r=$r k=$k D=$D")
 end
 
 
@@ -166,7 +204,7 @@ end
 ###########################################
 
 """
-    BarycentricPmΛBasis{D,V,LN,K} <: PolynomialBasis{D,V,Bernstein}
+    BarycentricPmΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
 
 Finite Element Exterior Calculus polynomial basis for the spaces P⁻`ᵣ`Λ`ᵏ` on
 `D`-dimensional simplices, but with polynomial forms explicitely transformed
@@ -181,15 +219,19 @@ The number of basis polynomials is binomial(`r`+`k`-1,`k`)*binomial(`D`+`r`,`D`-
 
 Reference: D.N. Arnold, R.S. Falk & R. Winther, Geometric decompositions and local bases for spaces of finite element differential forms, CMAME, 2009
 """
-struct BarycentricPmΛBasis{D,V,LN,K} <: PolynomialBasis{D,V,Bernstein}
+struct BarycentricPmΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
   k::Int
   scalar_bernstein_basis::BernsteinBasisOnSimplex{D,Float64,K}
-  m::SVector{LN,V}
+  # Family of exterior-k-products of barycentric differential dλʲ,
+  # indexed by the k-faces J of the D-simplex, in the order of sorted_combinations(D+1,k)
+  m::Vector{V}
   _indices::BarycentricPΛIndices
+  flavor::Symbol
 
   function BarycentricPmΛBasis{D}(::Type{T}, r, k, vertices;
-        DG_calc=false, indices=nothing, rotate_90=false) where {D,T}
+        DG_calc=false, indices=nothing, rotate_90=false, flavor=:AFW) where {D,T}
 
+    @check flavor in (:AFW, :BMM)
     FEEC_space_definition_checks(Val(D), T, r, k, :P⁻, rotate_90, DG_calc)
     _simplex_vertices_checks(Val(D), vertices)
 
@@ -201,24 +243,25 @@ struct BarycentricPmΛBasis{D,V,LN,K} <: PolynomialBasis{D,V,Bernstein}
     b = BernsteinBasisOnSimplex{D}(Float64, r, vertices)
     K = get_order(b)
     LN = binomial(D+1,k) # Number of k-faces J of a D-dimensional tetrahedron
-    m = zero(MVector{LN,V})
+    m = Vector{V}(undef, LN)
     _compute_PmΛ_basis_coefficients!(m,Val(k),D,b,vertices,indices)
 
     if isone(L) && !DG_calc
       V = T
-      m = reinterpret(T, m)
+      m = collect(reinterpret(T, m))
     end
 
-    new{D,V,LN,K}(k,b,m,indices)
+    new{D,V,K}(k,b,m,indices,flavor)
   end
 
   @doc """
       BarycentricPmΛBasis(b::BarycentricPmΛBasis, faces::Vector{Int}...)
 
   Create a new basis which is `b` restricted to the bubble spaces for F ∈ `faces`.
+  The new basis shares internal fields data with `b`.
   """
-  function BarycentricPmΛBasis(_b::BarycentricPmΛBasis{D,V,LN,K}, faces::Vector{Int}...) where {D,V,LN,K}
-    # Notation: _old, new
+  function BarycentricPmΛBasis(_b::BarycentricPmΛBasis{D,V,K}, faces::Vector{Int}...) where {D,V,K}
+    # Notation: _old, new
     _indices = _b._indices
     _bubbles = _indices.bubbles
     bubbles = similar(_bubbles, length(faces))
@@ -239,14 +282,15 @@ struct BarycentricPmΛBasis{D,V,LN,K} <: PolynomialBasis{D,V,Bernstein}
     end
 
     indices = BarycentricPΛIndices(_indices.identity, bubbles, _indices.components)
-    new{D,V,LN,K}(_b.k, _b.scalar_bernstein_basis, _b.m, indices)
+    # re-use m too
+    new{D,V,K}(_b.k, _b.scalar_bernstein_basis, _b.m, indices, _b.flavor)
   end
 
-  function BarycentricPmΛBasis{D,V,LN,K}() where {D,V,LN,K} # just for testvalue
+  function BarycentricPmΛBasis{D,V,K}() where {D,V,K} # just for testvalue
     r = K
     indices = _generate_or_check_PmΛ_indices(r,0,0,false,nothing,false)
     B = BernsteinBasisOnSimplex{D,Float64,K}
-    new{D,V,LN,K}(0,testvalue(B),zero(SVector{LN,V}),indices)
+    new{D,V,K}(0,testvalue(B),zeros(V,1),indices,:AFW)
   end
 end
 
@@ -275,8 +319,8 @@ function BarycentricPmΛBasis{D}(::Type{T},r,k; kwargs...) where {D,T}
   BarycentricPmΛBasis{D}(T,r,k,vertices; kwargs...)
 end
 
-@deprecate BarycentricPmΛBasis(::Val{D},::Type{T},r,k,::Nothing; kwargs...) where {D,T} BarycentricPmΛBasis(Val(D),T,r,k; kwargs...)
-@deprecate BarycentricPmΛBasis{D}(::Type{T},r,k,::Nothing; kwargs...) where {D,T} BarycentricPmΛBasis{D}(T,r,k; kwargs...)
+BarycentricPmΛBasis(::Val{D},::Type{T},r,k,::Nothing; kwargs...) where {D,T} = BarycentricPmΛBasis(Val(D),T,r,k; kwargs...)
+BarycentricPmΛBasis{D}(::Type{T},r,k,::Nothing; kwargs...) where {D,T} = BarycentricPmΛBasis{D}(T,r,k; kwargs...)
 
 
 #get_FEEC_poly_degree(b::BarycentricPmΛBasis) = b.r
@@ -285,8 +329,8 @@ end
 
 Base.size(b::BarycentricPmΛBasis) = (_last_bubble_function_index(b._indices), )
 
-function testvalue(::Type{BarycentricPmΛBasis{D,V,LN,K}}) where {D,V,LN,K}
-  BarycentricPmΛBasis{D,V,LN,K}()
+function testvalue(::Type{BarycentricPmΛBasis{D,V,K}}) where {D,V,K}
+  BarycentricPmΛBasis{D,V,K}()
 end
 
 ##########################################
@@ -294,7 +338,7 @@ end
 ##########################################
 
 """
-    BarycentricPΛBasis{D,V,C,K} <: PolynomialBasis{D,V,Bernstein}
+    BarycentricPΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
 
 Finite Element Exterior Calculus polynomial basis for the spaces P`ᵣ`Λ`ᵏ` on
 `D`-dimensional simplices, but with polynomial forms explicitely transformed
@@ -303,22 +347,24 @@ in terms of the hodge star operator ⋆ and the sharp map ♯, see
 [`_basis_forms_components`](@ref) (the simplex is assumed Euclidean).
 
 - `V` is `VectorValue{L,T}` where `L=binomial(D,k)`,
-- `C` is the number of basis polynomials,
 - `K` is the polynomial order of the underlying scalar bernstein polynomial basis
 
-`C` = binomial(`r`+`k`,`k`)*binomial(`D`+`r`,`D`-`k`) if no custom bubble indices are given.
+The number of basis polynomials is binomial(`r`+`k`,`k`)*binomial(`D`+`r`,`D`-`k`) if no custom bubble indices are given.
 
 Reference: D.N. Arnold, R.S. Falk & R. Winther, Geometric decompositions and local bases for spaces of finite element differential forms, CMAME, 2009
 """
-struct BarycentricPΛBasis{D,V,C,K} <: PolynomialBasis{D,V,Bernstein}
+struct BarycentricPΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
   k::Int
   scalar_bernstein_basis::BernsteinBasisOnSimplex{D,Float64,K}
-  Ψ::SVector{C,V}
+  # Direction k-form of each basis polynomial
+  Ψ::Vector{V}
   _indices::BarycentricPΛIndices
+  flavor::Symbol
 
   function BarycentricPΛBasis{D}(::Type{T}, r, k, vertices;
-        DG_calc=false, indices=nothing, rotate_90=false) where {D,T}
+        DG_calc=false, indices=nothing, rotate_90=false, flavor=:AFW) where {D,T}
 
+    @check flavor in (:AFW, :BMM)
     FEEC_space_definition_checks(Val(D), T, r, k, :P⁻, rotate_90, DG_calc)
     _simplex_vertices_checks(Val(D), vertices)
 
@@ -330,15 +376,15 @@ struct BarycentricPΛBasis{D,V,C,K} <: PolynomialBasis{D,V,Bernstein}
 
     b = BernsteinBasisOnSimplex{D}(Float64, r, vertices)
     K = get_order(b)
-    Ψ = zero(MVector{C,V})
-    _compute_PΛ_basis_form_coefficient!(Ψ,r,k,Val(D),b,vertices,indices)
+    Ψ = Vector{V}(undef, C)
+    _compute_PΛ_basis_form_coefficient!(Ψ,r,k,Val(D),b,vertices,indices,flavor)
 
     if isone(L) && !DG_calc
       V = T
-      Ψ = reinterpret(T, Ψ)
+      Ψ = collect(reinterpret(T, Ψ))
     end
 
-    new{D,V,C,K}(k,b,Ψ,indices)
+    new{D,V,K}(k,b,Ψ,indices,flavor)
   end
 
   @doc """
@@ -348,14 +394,14 @@ struct BarycentricPΛBasis{D,V,C,K} <: PolynomialBasis{D,V,Bernstein}
   The faces are represented by some `Vector{Int}` of their vertices ids, like in
   [`BarycentricPΛIndices`](@ref).
   """
-  function BarycentricPΛBasis(_b::BarycentricPΛBasis{D,V,_C,K}, faces::Vector{Int}...) where {D,V,_C,K}
+  function BarycentricPΛBasis(_b::BarycentricPΛBasis{D,V,K}, faces::Vector{Int}...) where {D,V,K}
     # Notation: _old, new
     _indices = _b._indices
     _bubbles = _indices.bubbles
     _Ψ = _b.Ψ
 
     bubbles = similar(_bubbles, length(faces))
-    Ψ = zero(MVector{_C,V}) # cache of maximum possible size
+    Ψ = similar(_Ψ) # of maximum possible size, trimmed below
     w = 1
 
     for (Fid, F) in enumerate(faces)
@@ -374,16 +420,16 @@ struct BarycentricPΛBasis{D,V,C,K} <: PolynomialBasis{D,V,Bernstein}
       bubbles[Fid] = (F, F_bubfuns)
     end
 
-    C = w-1
-    Ψ = SVector{C,V}( Ψ[1:C] )
+    resize!(Ψ, w-1)
     indices = BarycentricPΛIndices(_indices.identity, bubbles, _indices.components)
-    new{D,V,C,K}(_b.k, _b.scalar_bernstein_basis, Ψ, indices)
+    new{D,V,K}(_b.k, _b.scalar_bernstein_basis, Ψ, indices, _b.flavor)
   end
 
-  function BarycentricPΛBasis{D,V,C,K}() where {D,V,C,K} # Just for testvalue
+  function BarycentricPΛBasis{D,V,K}() where {D,V,K} # Just for testvalue
     indices = _generate_or_check_PΛ_indices(K,0,0,false,nothing,false)
     B = BernsteinBasisOnSimplex{D,Float64,K}
-    new{D,V,C,K}(0,testvalue(B),zero(SVector{C,V}),indices)
+    C = _last_bubble_function_index(indices)
+    new{D,V,K}(0,testvalue(B),zeros(V,C),indices,:AFW)
   end
 end
 
@@ -398,6 +444,7 @@ The kwargs are the following:
 - `indices::BarycentricPΛIndices = nothing`: may be provided to avoid allocations of new indices, or to select specific bubbles spaces,
 - `DG_calc = false`: set to `true` to choose `k`-form valued polynomials instead of vector valued polynomials (not implemented yet),
 - `rotate_90 = false`: In 2`D` for `k`=1, `true` to apply a 90° rotation of the vector proxied polynomials ((x,y) -> (-y,x)), needed for Raviart-Thomas/BDM.
+- `flavor = :AFW`: `:BMM` selects the alternative direction forms of [`_update_φ_αF!`](@ref), only defined for `k` ≤ 1.
 """
 function BarycentricPΛBasis(::Val{D},::Type{T},r,k; kwargs...) where {D,T}
   BarycentricPΛBasis{D}(T,r,k; kwargs...)
@@ -419,10 +466,10 @@ BarycentricPΛBasis{D}(::Type{T},r,k,::Nothing; kwargs...) where {D,T} = Barycen
 #get_FEEC_form_degree(b::BarycentricPΛBasis) = b.k
 #get_FEEC_family(::BarycentricPΛBasis) = :P
 
-Base.size(::BarycentricPΛBasis{D,V,C}) where {D,V,C} = (C, )
+Base.size(b::BarycentricPΛBasis) = (_last_bubble_function_index(b._indices), )
 
-function testvalue(::Type{BarycentricPΛBasis{D,V,C,K}}) where {D,V,C,K}
-  BarycentricPΛBasis{D,V,C,K}()
+function testvalue(::Type{BarycentricPΛBasis{D,V,K}}) where {D,V,K}
+  BarycentricPΛBasis{D,V,K}()
 end
 
 ##########################
@@ -448,9 +495,57 @@ get_orders(b::_BaryPΛBasis{D}) where D = tfill(get_order(b), Val(D))
     print_indices(b::BarycentricPmΛBasis, out=stdout)
     print_indices(b::BarycentricPΛBasis,  out=stdout)
 
-Prints the indices of `b` in a user friendly format into `out`.
+Prints the indices of `b` in a user friendly format into `out`, one row per
+basis polynomial. It is also what `show` displays.
+
+The scalar factor column is `Bα(λ)`, except for `PmΛ` with `flavor=:BMM` where
+it is the bare monomial `λ^α`.
+
+With `flavor=:BMM` and `k`=1, `J` holds a single vertex for `PΛ` and is titled
+`k`, and a vertex pair for `PmΛ` and is titled `e`.
 """
-print_indices(b::_BaryPΛBasis, out=stdout) = show(out, MIME"text/plain"(), b._indices)
+function print_indices(b::BarycentricPmΛBasis{D}, out::IO=stdout) where D
+  println(out, "BarycentricPmΛBasis{D=$D, r=$(get_order(b)), k=$(b.k), $(b.flavor)}: dim = $(length(b))")
+  _print_bubble_table(out, b._indices, b.flavor, nothing)
+end
+
+function print_indices(b::BarycentricPΛBasis{D}, out::IO=stdout) where D
+  println(out, "BarycentricPΛBasis{D=$D, r=$(get_order(b)), k=$(b.k), $(b.flavor)}: dim = $(length(b))")
+  _print_bubble_table(out, b._indices, b.flavor, b.Ψ)
+end
+
+Base.show(io::IO, b::_BaryPΛBasis) = print_indices(b, io)
+
+"""
+    print_forms(b::BarycentricPΛBasis,  out::IO=stdout)
+    print_forms(b::BarycentricPmΛBasis, out::IO=stdout)
+
+Print each basis function of `b` as an ambient barycentric differential form,
+in terms of dλ¹,…,dλ^{D+1} — the frame the φ and ϕ formulas are stated in —
+with symbolic polynomial coefficients.
+
+For a `BarycentricPΛBasis` the form is `Bα(λ)` times the wedge of the direction
+1-forms [`_update_φ_αF!`](@ref) indexed by `J`, and the polynomial degree must be
+at least 1. For a `BarycentricPmΛBasis` it is the Whitney form `φ^J` scaled by
+`Bα(λ)` for `flavor=:AFW`, by the bare monomial `λ^α` for `flavor=:BMM`.
+
+Requires the Symbolics package to be loaded: the methods are provided by the
+GridapSymbolicsExt package extension.
+"""
+function print_forms end
+
+const _sup_digits = ("⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹")
+_sup_str(i::Int) = join(_sup_digits[d+1] for d in reverse(digits(i)))
+
+# Plain-string monomial coeff·(λ¹)^α₁⋯(λᴺ)^α_N, e.g. "3(λ¹)²λ²".
+function _monomial_string(α; coeff=1)
+  s = isone(coeff) ? "" : string(coeff)
+  for (i, αi) in enumerate(α)
+    αi == 0 && continue
+    s *= αi > 1 ? "(λ" * _sup_str(i) * ")" * _sup_str(αi) : "λ" * _sup_str(i)
+  end
+  isempty(s) ? "1" : s
+end
 
 _get_x_to_λ(b::_BaryPΛBasis) = b.scalar_bernstein_basis.x_to_λ
 
@@ -500,8 +595,8 @@ end
 
 If `DG_style==true`, return the triples (`I_id`, `I`, 1) for each D-dimensional
 k-form components dxᴵ = dxᴵ¹ ∧ dxᴵ² ∧ ... ∧ dxᴵᵏ where `I` is a combination of
-1:`D` and `I_id = _combination_index(I)`. The triples are ordered like in
-[`_sorted_combinations`](@ref) (`I_id` increasing).
+1:`D` and `I_id = combination_index(I)`. The triples are ordered like in
+[`sorted_combinations`](@ref) (`I_id` increasing).
 
 If `DG_style`==false, the indices are changed to implement the vector proxy of
 the differential forms ω defined by:
@@ -521,14 +616,14 @@ If `rotate_90` is `true` and `k` is `1`, the (⋆ω)♯ proxy is applied instead
 """
 function _basis_forms_components(D,k,DG_style,rot_90)
   components = Vector{Tuple{ Int, Vector{Int}, Int}}(undef, binomial(D,k))
-  for (I_id, I) in enumerate(_sorted_combinations(D,k))
+  for (I_id, I) in enumerate(sorted_combinations(D,k))
     # The rotation for 2D Raviart-Thomas/BDM is actually considering k to be D-1
     # rather than 1, that is applying ⋆.
     if DG_style || iszero(k) || isone(k) && !rot_90
       components[I_id] = (I_id, I, 1)
     else # if k == D, I = [1:D] and this is just (1, [], 1) (but that works)
       Icomp = _complement(I, D)
-      Istar_id = _combination_index(Icomp)
+      Istar_id = combination_index(Icomp, D)
       Istar_sgn = _combination_sign(I)
       components[I_id] = (Istar_id, I, Istar_sgn)
     end
@@ -558,8 +653,8 @@ function _PmΛ_F_bubble_functions(r,k,D,F,w)
   ids = BubbleFunction[]
   for α in bernstein_terms(r-1,D)
     sup_α_ids = _sup_multi_indices(α)
-    for J in _sorted_combinations(N,k+1)
-      sub_J_ids = _sub_combinations_ids(J)
+    for J in sorted_combinations(N,k+1)
+      sub_J_ids = _sub_combinations_ids(J, N)
       j = _minimum_or_one(J)-1
       if issetequal(_support(α) ∪ J, F) && all(α[1:j] .== 0)
         w += 1
@@ -588,7 +683,7 @@ function PmΛ_bubbles(r,k,D)
   w=0
   bubbles = Bubble[]
   for d in k:D
-    for F in _sorted_combinations(D+1, d+1)
+    for F in sorted_combinations(D+1, d+1; right_to_left=true)
       bubble_functions = _PmΛ_F_bubble_functions(r,k,D,F,w)
       isempty(bubble_functions) && continue
       push!(bubbles, (F, bubble_functions))
@@ -599,11 +694,17 @@ function PmΛ_bubbles(r,k,D)
   bubbles
 end
 
+"""
+    _compute_PmΛ_basis_coefficients!(m, Val(k), D, b, vertices, indices)
+
+Set the `binomial(D+1, k)` exterior-`k`-products of the barycentric
+differentials dλʲ is place in `m`.
+"""
 function _compute_PmΛ_basis_coefficients!(m,::Val{k},D,b,vertices,indices) where k
   V = eltype(m)
   M = transpose(b.x_to_λ[:,2:end])
   m_J = Mutable(V)(undef)
-  @inbounds for (J_id, J) in enumerate(_sorted_combinations(D+1,k))
+  @inbounds for (J_id, J) in enumerate(sorted_combinations(D+1,k))
     for (I_id, I, I_sgn) in indices.components
       m_J[I_id] = I_sgn * _minor(M,I,J,Val(k))
     end
@@ -627,16 +728,20 @@ function _evaluate_nd!(
   _downwards_de_Casteljau_nD!(cB,λ,Val(r-1),Val(D))
 
   @inbounds for (_, bubble_functions) in get_bubbles(b)
-    for (w, _, α_id, J, sub_J_ids) in bubble_functions
-      Bα = cB[α_id]
+    for (w, α, α_id, J, sub_J_ids) in bubble_functions
       ω_w = zero(V)
-
       for (l, J_sub_Jl_id) in enumerate(sub_J_ids)
         sgnl = _minusone_if_even_else_one(l)
         λ_j = λ[J[l]]
         m_J_l = b.m[J_sub_Jl_id]
 
         ω_w += flipsign(λ_j,sgnl) * m_J_l
+      end
+
+      Bα = cB[α_id]
+      if b.flavor === :BMM
+        # slow, but since the basis is not well contitioned, using :BMM is discouraged
+        Bα /= multinomial(α...)
       end
 
       ω[i,w] = Bα * ω_w
@@ -667,6 +772,10 @@ function _gradient_nd!(
         m_J_l = b.m[J_sub_Jl_id]
 
         ∇ω_w += (c_α_Jl * ∇Bα_pJl) ⊗ m_J_l
+      end
+
+      if b.flavor === :BMM
+        ∇ω_w /= multinomial(α...)
       end
 
       ∇ω[i,w] = ∇ω_w
@@ -700,6 +809,10 @@ function _hessian_nd!(
         Hω_w += (c_αJl * HB_αJl) ⊗ m_Jl
       end
 
+      if b.flavor === :BMM
+        Hω_w /= multinomial(α...)
+      end
+
       Hω[i,w] = Hω_w
     end
   end
@@ -727,7 +840,7 @@ function _PΛ_F_bubble_functions(r,k,D,F,w)
   bubble_functions = BubbleFunction[]
   empty_vec = Int[]
   for α in bernstein_terms(r,D)
-    for J in _sorted_combinations(N,k)
+    for J in sorted_combinations(N,k)
       j = _minimum_or_one(setdiff(F,J))-1
       if issetequal(_support(α) ∪ J, F) && all(α[1:j] .== 0)
         w += 1
@@ -767,7 +880,7 @@ function PΛ_bubbles(r,k,D)
   # r > 0
   w=0
   for d in k:D
-    for F in _sorted_combinations(D+1, d+1)
+    for F in sorted_combinations(D+1, d+1; right_to_left=true)
       bubble_functions = _PΛ_F_bubble_functions(r,k,D,F,w)
       isempty(bubble_functions) && continue
       push!(bubbles, (F, bubble_functions))
@@ -778,7 +891,7 @@ function PΛ_bubbles(r,k,D)
   bubbles
 end
 
-function _compute_PΛ_basis_form_coefficient!(Ψ,r,k,::Val{D},b,vertices,indices) where D
+function _compute_PΛ_basis_form_coefficient!(Ψ,r,k,::Val{D},b,vertices,indices,flavor=:AFW) where D
   N = D+1
   Vk = Val(k)
   V = eltype(Ψ)
@@ -792,7 +905,7 @@ function _compute_PΛ_basis_form_coefficient!(Ψ,r,k,::Val{D},b,vertices,indices
   @inbounds for (F, bubble_functions) in indices.bubbles
     for (w, α, _, J) in bubble_functions
       if α ≠ α_prec
-        _update_φ_αF!(φ_αF,b,α,F,r)
+        _update_φ_αF!(φ_αF,b,α,F,r,flavor)
         α_prec = α
       end
 
@@ -805,12 +918,29 @@ function _compute_PΛ_basis_form_coefficient!(Ψ,r,k,::Val{D},b,vertices,indices
   nothing
 end
 
-@inline function _update_φ_αF!(φ_αF,b,α,F,r)
+"""
+    _update_φ_αF!(φ_αF, b, α, F, r, flavor)
+
+Set in place the `D`×`N` matrix `φ_αF` the direction 1-forms `φ_αF[:,j] =
+φ^{α,F,j}` where
+
+    φ^{α,F,j} = dλʲ - (sⱼ/|s|) Σ_{l∈F} dλˡ,     1 ≤ j ≤ N.
+
+`flavor` selects which multi-index weights the correction term:
+- `:AFW` uses `s=α` and `r` = |`α`|,
+- `:BMM` uses the support indicator of `α` and its cardinal.
+"""
+@inline function _update_φ_αF!(φ_αF,b::BernsteinBasisOnSimplex{D},α,F,r,flavor=:AFW) where D
   M = b.x_to_λ
+  s = ntuple(j -> α[j], Val(D+1))
+  if flavor === :BMM
+    s = map(αj -> Int(αj > 0), s) #  s  in paper
+    r = sum(s)                    # |s| in paper
+  end
   @inbounds for ci in CartesianIndices(φ_αF)
     i, j = ci[1], ci[2]
     mF = sum(M[Fl,i+1] for Fl in F; init=0)
-    φ_αF[ci] = M[j,i+1] - α[j]*mF/r
+    φ_αF[ci] = M[j,i+1] - s[j]*mF/r
   end
 end
 
@@ -888,51 +1018,6 @@ end
 # Combination, Bernstein term and Barycentric PΛ bases helpers #
 ################################################################
 
-# A combination is a set of positive integers sorted in increasing order
-# a.k.a an increasing collection of indices in a range 1:D
-#     F  = 1 ≤ F1 < ... < Fd ≤ D
-# It is used to represent faces of polytopes (the indices iddentifying the
-# vertices of the face) or a component of a k-form as in (1,3) ~ dx¹∧dx³ .
-
-"""
-    _sorted_combinations(D,k)
-
-Return a vector of all the combinations I_i of {1:`D`} of length `k`:
-
-1 ≤ I\\_1 < ... < I\\_k ≤ `D`
-
-sorted in right-digit to left-digit lexicographic order, e.g.
-
-```julia
-[ [1,2], [1,3], [2,3] ]  # for D=3, k=2\\
-[ [1,2], [1,3], [2,3], [1,4], [2,4], [3,4] ]  # for D=4, k=2
-```
-
-This example shows that this order of sorted combinations of same length `k` is
-independent of the dimension `D`, unlike with the usual (left-digit to right-digit)
-lexicographic order where 14 would be smaller than 23.
-
-So with the chosen order, 23 is always the third length-2 combination, not the `D`ᵗʰ.
-"""
-function _sorted_combinations(D::Int,k::Int)
-  iszero(k) &&  return Vector{Int}[ Int[] ]
-  comp_rev_perm(tup) =  Int[D-tup[k-i+1]+1 for i in 1:k]
-  inc_perms = combinations(1:D,k) .|> (tup -> comp_rev_perm(tup)) |> reverse
-  return inc_perms
-end
-
-"""
-    _combination_index(I)
-
-Linear index of `I` amongst combinations of the same size `k`,
-sorted in right-to-left lexicographic order. It depends on `k` but not on the
-space dimension, see [`_sorted_combinations`](@ref).
-"""
-@inline function _combination_index(combi)
-  k = length(combi)
-  return sum( binomial(combi[i]-1, i) for i in 1:k; init=0) + 1
-end
-
 """
     _complement(I, D)
 
@@ -958,9 +1043,10 @@ end
     _combination_sign(I)
 
 Given a combination `I`, returns the sign of the permutation resulting from
-the concatenation of `I` and its complement [`_complement(I)`](@ref _complement).
+the concatenation of `I` and its complement [`_complement(I,D)`](@ref _complement).
 """
 function _combination_sign(combi)
+  @check issorted(combi)
   i, k, acc, delta = 1, 1, 0, 0
   while k <= length(combi)
     if combi[k] == i
@@ -975,18 +1061,21 @@ function _combination_sign(combi)
 end
 
 """
-    _sub_combinations_ids(J)
+    _sub_combinations_ids(J, D)
 
-Return a vector containing the `k-1` combinations `J\\J[i]` for 1 ≤ i ≤ `k`,
-where `k=length(J)`.
+Return a vector containing the `combination_index` of the `k` different
+combinations `J\\J[i]` of 1:`D` for 1 ≤ i ≤ `k`, where `k=length(J)`.
+
+`D` is the ambient dimension the indices are taken in, that is the one `J`
+itself is a combination of — not the dimension of the space the forms live in.
 """
-function _sub_combinations_ids(combi)
+function _sub_combinations_ids(combi, D)
   k = length(combi)
   sub_combi = MVector{k-1,Int}(undef)
   sub_combi_ids = Vector{Int}(undef, k)
   for i in 1:k
     sub_combi .= ntuple(j -> combi[j + Int(j≥i)],k-1)
-    sub_combi_id = _combination_index(sub_combi)
+    sub_combi_id = combination_index(sub_combi, D)
     sub_combi_ids[i] = sub_combi_id
   end
   sub_combi_ids
@@ -1061,3 +1150,310 @@ end
   j = minimum(s, init=maxint)
   j = (j==maxint) ? 1 : j
 end
+
+
+######################################################
+# Change of basis with respect to vertex relabelling #
+######################################################
+
+# Change of basis induced on the rotating bases by a vertex relabeling
+# (rotation) π : ξ → λ, λ = π(ξ). This file implements the closed-form index
+# calculus, for form order k=1.
+
+###########################
+# Vertex/multi-index maps #
+###########################
+
+"""
+    rotate_face_set(F::Vector{Int}, π::Vector{Int}) -> Vector{Int}
+
+π(F) as a sorted vertex-set key, `sort(π[F])`. The rotating bases never track
+face orientation — their bubbles are built from `combinations`, which already
+returns canonical sorted vertex sets — so sorting the rotated image loses
+nothing this module relies on. Do not reuse this for orientation-sensitive
+code, where a face's vertex order encodes its orientation.
+"""
+rotate_face_set(F::Vector{Int}, π::Vector{Int}) = sort(π[F])
+
+"""
+    rotate_multiindex(α, π) -> Vector{Int}
+
+π(α), per `π(α)_i = α_{π⁻¹(i)}`. The only inverse used anywhere in this file:
+the exact combinatorial `invperm`, never a numerical/matrix inverse. To apply
+π⁻¹ instead, call this (or anything downstream of it) with `invperm(π)`.
+"""
+rotate_multiindex(α::AbstractVector{Int}, π::Vector{Int}) = α[invperm(π)]
+
+#################################
+# Bubble (F,k,α) ↔ index lookup #
+#################################
+
+_bubble_entry_type(::BarycentricPΛBasis)  = Tuple{Vector{Int},Int,Vector{Int}}
+_bubble_entry_type(::BarycentricPmΛBasis) = Tuple{Vector{Int},Tuple{Int,Int},Vector{Int}}
+
+# A Barycentric bubble function stores its direction form as the index set J.
+# For 1-forms that is the single vertex the untrimmed closed form calls k, resp.
+# the pair (e1,e2) spanning the Whitney form of the trimmed one.
+_bubble_key(::BarycentricPΛBasis,  J) = J[1]
+_bubble_key(::BarycentricPmΛBasis, J) = (J[1], J[2])
+
+"""
+    bubble_entries(b) -> Vector{Tuple{Vector{Int},kT,Vector{Int}}}
+
+`(F,k,α)` for each basis function `w`, indexed by `w`. `k` is a single vertex
+for the untrimmed basis and a pair `(e1,e2)` for the trimmed one.
+
+The entries depend on the bubble index set alone, hence are the same for both
+flavors of a given `(r,k,D)`.
+"""
+function bubble_entries(b::_BaryPΛBasis)
+  @check isone(b.k) "The rotation API is only defined for 1-forms, got k=$(b.k)"
+  entries = Vector{_bubble_entry_type(b)}(undef, length(b))
+  for (F, bubble_functions) in get_bubbles(b), (w, α, _, J) in bubble_functions
+    entries[w] = (F, _bubble_key(b, J), α)
+  end
+  entries
+end
+
+"""
+    bubble_index(b) -> Dict{entry,Int}
+
+Inverse of [`bubble_entries`](@ref): `(F,k,α) → w`.
+"""
+bubble_index(b::_BaryPΛBasis) = Dict(e => w for (w, e) in enumerate(bubble_entries(b)))
+
+######################
+# Basis-level rotate #
+######################
+
+"""
+    rotate_basis_function(b, w::Int, π::Vector{Int}) -> Vector{Tuple{Float64,Int}}
+
+Pullback under π⁻¹ of the `w`-th basis function of `b`, expressed as a list of
+`(coefficient, target index)` pairs in the same basis `b`, now read with the
+relabeled vertices λ = π(ξ). Implements the two cases of the pullback theorems:
+a single term, of coefficient +1 untrimmed and ±ε trimmed; or the filter-hit
+expansion, of |F|−1 terms of coefficient −1 untrimmed and two terms of
+coefficient ±ε weighted by [`_trimmed_hit_weight`](@ref) trimmed.
+
+For repeated calls (e.g. assembling [`rotation_change_of_basis`](@ref)),
+precompute `entries = bubble_entries(b)` and `idx = bubble_index(b)` once and
+call the internal
+`Gridap.Polynomials._rotate_basis_function(entries, idx, w, π, b.flavor)`.
+"""
+function rotate_basis_function(b::_BaryPΛBasis, w::Int, π::Vector{Int})
+  entries = bubble_entries(b)
+  idx     = bubble_index(b)
+  _rotate_basis_function(entries, idx, w, π, b.flavor)
+end
+
+# Full basis
+
+# Untrimmed closed form: single term (+1) unless supp(α) = F and
+# π(k) = min(π(F)), in which case the resummation identity gives |F|−1 terms
+# with coefficient −1. Every term carries the same multi-index π(α), so the
+# scalar normalisation of the flavor factors out and the law is the same for
+# both, whence the ignored flavor argument.
+function _rotate_basis_function(
+  entries::Vector{Tuple{Vector{Int},Int,Vector{Int}}}, idx, w::Int, π::Vector{Int}, ::Symbol)
+  F, k, α = entries[w]
+  πF = rotate_face_set(F, π)
+  πk = π[k]
+  πα = rotate_multiindex(α, π)
+  full_support = α[k] > 0   # [s(α)] == F  ⟺  k ∈ [s(α)]  ⟺  α[k] > 0
+  if full_support && πk == minimum(πF)
+    [(-1.0, idx[(πF, vi, πα)]) for vi in πF if vi != πk]
+  else
+    [(1.0, idx[(πF, πk, πα)])]
+  end
+end
+
+# Trimmed basis
+
+"""
+    trimmed_pair_sign(e1, e2) -> Float64
+
+ε(e1,e2) := 2·[e1<e2] − 1.
+"""
+trimmed_pair_sign(e1::Int, e2::Int) = e1 < e2 ? 1.0 : -1.0
+
+"""
+    trimmed_pair_sort(e1, e2) -> (Int,Int)
+
+e↑ := (min(e1,e2), max(e1,e2)).
+"""
+trimmed_pair_sort(e1::Int, e2::Int) = minmax(e1, e2)
+
+"""
+    _trimmed_hit_weight(flavor, β, m, j) -> Float64
+
+Weight of the hit term whose multi-index is the shift ρ(`m`,`j`)∘`β`.
+
+The two hit terms are shifts of `β`, so the scalar normalisation of the flavor
+does not factor out of the expansion: it survives as the ratio of the
+normalisations of `β` and of ρ(`m`,`j`)∘`β`. For the Bernstein polynomials
+Bᵦ = multinomial(β) λ^β of `:AFW` that ratio is (βⱼ+1)/βₘ; the bare monomials
+λ^β of `:BMM` are unnormalised and give 1.
+
+`β`ₘ is positive on every hit, so the weight is well defined.
+"""
+function _trimmed_hit_weight(flavor::Symbol, β::Vector{Int}, m::Int, j::Int)
+  flavor === :AFW || return 1.0
+  (β[j] + 1) / β[m]
+end
+
+# Trimmed closed form: single signed term (ε) when the rotated sorted pair is
+# anchored (min(π(e)) = min(π(F))); otherwise the two-term shift expansion
+#   ε · ( c₁ w(λ;π(F),(m,eπ2),ρ(m,eπ1)∘π(α)) − c₂ w(λ;π(F),(m,eπ1),ρ(m,eπ2)∘π(α)) )
+# where ρ(m,eπ1)∘π(α) = π(α) - 𝟙_m + 𝟙_eπ1. Which of the two cases applies does
+# not depend on α, since ϕ does not; the weights cᵢ do, unless they are trivial.
+function _rotate_basis_function(
+  entries::Vector{Tuple{Vector{Int},Tuple{Int,Int},Vector{Int}}}, idx, w::Int, π::Vector{Int},
+  flavor::Symbol)
+
+  F, e, α  = entries[w]
+  e1, e2   = e
+  πF       = rotate_face_set(F, π)
+  πe1,πe2  = π[e1], π[e2]
+  πα       = rotate_multiindex(α, π)
+  ε        = trimmed_pair_sign(πe1, πe2)
+  eπ1,eπ2  = trimmed_pair_sort(πe1, πe2)
+  m      = minimum(πF)
+
+  if m != eπ1   # hit: min(π(e)) ≠ min(π(F))
+    # m < eπ1 ⟹ m ∉ {eπ1,eπ2} ⟹ m ∈ supp(π(α)) by the covering condition
+    @assert πα[m] > 0 "invalid trimmed entry: hit at α with α[min π(F)] = 0"
+    α1 = copy(πα); α1[m] -= 1; α1[eπ1] += 1   # ρ(m,eπ1)∘π(α)
+    α2 = copy(πα); α2[m] -= 1; α2[eπ2] += 1   # ρ(m,eπ2)∘π(α)
+    c1 = ε * _trimmed_hit_weight(flavor, πα, m, eπ1)
+    c2 = ε * _trimmed_hit_weight(flavor, πα, m, eπ2)
+    [(c1, idx[(πF, (m,eπ2), α1)]), (-c2, idx[(πF, (m,eπ1), α2)])]
+  else
+    [(ε, idx[(πF, (eπ1,eπ2), πα)])]
+  end
+end
+
+#####################
+# Cached rotations  #
+#####################
+
+"""
+    RotationCache(b)
+
+Precomputes the bubble entry table and its index once, and memoises, per
+permutation `π`, the signed index map of the rotation:
+[`rotation_map`](@ref)`(rc, π)[w]` is the `Vector{Tuple{Float64,Int}}` of
+`(coefficient, target index)` pairs of `rotate_basis_function(b, w, π)`.
+"""
+struct RotationCache{B<:_BaryPΛBasis,E}
+  basis   :: B
+  entries :: Vector{E}
+  idx     :: Dict{E,Int}
+  maps    :: Dict{Vector{Int},Vector{Vector{Tuple{Float64,Int}}}}
+end
+
+function RotationCache(b::_BaryPΛBasis)
+  entries = bubble_entries(b)
+  idx     = Dict(e => w for (w, e) in enumerate(entries))
+  RotationCache(b, entries, idx,
+                Dict{Vector{Int},Vector{Vector{Tuple{Float64,Int}}}}())
+end
+
+"""
+    rotation_map(rc::RotationCache, π::Vector{Int}) -> Vector{Vector{Tuple{Float64,Int}}}
+
+The signed index map of the rotation `π`, one row per basis function, computed
+on first request and memoised in `rc`. Rows alias the cache; do not mutate.
+"""
+function rotation_map(rc::RotationCache, π::Vector{Int})
+  m = get(rc.maps, π, nothing)
+  m === nothing || return m
+  m = [_rotate_basis_function(rc.entries, rc.idx, w, π, rc.basis.flavor)
+       for w in 1:length(rc.entries)]
+  rc.maps[copy(π)] = m
+  m
+end
+
+"""
+    rotation_change_of_basis(b, π::Vector{Int}) -> Matrix{Float64}
+
+Dense change-of-basis matrix `C` such that the `w`-th basis function of `b`,
+pulled back under π⁻¹, equals `∑_w′ C[w,w′] · (w′-th basis function of b, read
+with λ = π(ξ))`.
+To push forward by π⁻¹ instead, call this with `invperm(π)`.
+"""
+function rotation_change_of_basis(b::_BaryPΛBasis, π::Vector{Int})
+  n = length(b)
+  entries = bubble_entries(b)
+  idx     = bubble_index(b)
+  C = zeros(Float64, n, n)
+  for w in 1:n
+    for (c, w′) in _rotate_basis_function(entries, idx, w, π, b.flavor)
+      C[w, w′] += c
+    end
+  end
+  C
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Change of basis of the "virtually sorted" cell at a vertex permutation π
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# CONVENTION (pinned empirically over all relative vertex orderings of two-
+# triangle and two-tet meshes — the competing candidates C(π)ᵀ, C(invperm(π))
+# and every un-relabelled variant fail the tangential jump / interpolation
+# round-trip tests at O(1)):
+#
+# π maps sorted position → local index.  The virtually sorted geometric map is
+# F̃ = F ∘ A⁻¹ with A = A_{invperm(π)} (reference automorphism
+# V_j ↦ V_{invperm(π)[j]}), hence the conforming basis is
+#
+#   φ̃_μ = (F̃⁻¹)^* ŵ_μ = Σ_ν C(π)[μ,ν] · (F⁻¹)^* ŵ_ν,
+#
+# with C = rotation_change_of_basis(b, π).
+#
+# RELABELLING: φ̃_μ is supported on the LOCAL face π(F(μ)), while the conformity
+# machinery glues local index μ by the local face F(μ).  The shape function
+# stored at μ must therefore be φ̃_{s(μ)}, with s the face-wise order-preserving
+# reindexing sending the i-th bubble of face F to the i-th bubble of
+# sort(invperm(π)(F)).  Every cell adjacent to a face then enumerates that
+# face's functions in the bubble order of its sorted global vertex ids — which
+# is what makes the identity face-own-dof permutations correct for every pindex.
+#
+# In the linear_combination convention (out[j] = Σ_i values[i,j]·in[i]):
+#
+#   M[i,j]    = C(π)[s(j), i]           (basis side)
+#   Minv[i,j] = C(invperm(π))[i, s(j)]  (dof side, restores duality)
+#
+# where C(π)·C(invperm(π)) = I.
+function compute_pλ_change(rc, π)
+  invπ = invperm(π)
+  n    = length(rc.entries)
+
+  # s(μ): face-wise order-preserving reindexing local entry → virtual entry,
+  # mapping the i-th bubble of face F to the i-th bubble of sort(invperm(π)(F)).
+  face_to_ws = Dict(F => [bf[1] for bf in bfs] for (F, bfs) in get_bubbles(rc.basis))
+  s = Vector{Int}(undef, n)
+  for (F, ws) in face_to_ws
+    wsG = face_to_ws[sort(invπ[F])]
+    for i in eachindex(ws)
+      s[ws[i]] = wsG[i]
+    end
+  end
+  sinv = invperm(s)
+
+  M = zeros(Float64, n, n)
+  rows = rotation_map(rc, π)
+  for μ in 1:n, (c, w′) in rows[s[μ]]
+    M[w′, μ] += c
+  end
+
+  Minv = zeros(Float64, n, n)
+  rows_inv = rotation_map(rc, invπ)
+  for w in 1:n, (c, w′) in rows_inv[w]
+    Minv[w, sinv[w′]] += c
+  end
+
+  return M, Minv
+end
+

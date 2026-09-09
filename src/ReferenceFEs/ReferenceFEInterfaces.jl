@@ -159,7 +159,7 @@ end
     get_name(::ReferenceFE)
     get_name(::Type{ReferenceFE})
 
-Returns the [ReferenceFEName](@ref) of the given reference FE.
+Returns the [`ReferenceFEName`](@ref) of the given reference FE.
 """
 get_name(::Type{<:ReferenceFE})::ReferenceFEName = @abstractmethod
 get_name(reffe::ReferenceFE) = get_name(typeof(reffe))

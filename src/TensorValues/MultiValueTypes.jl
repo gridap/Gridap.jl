@@ -97,6 +97,12 @@ function rand(rng::AbstractRNG,::Random.SamplerType{V}) where V<:MultiValue{D,T}
   V(Tuple(vrand))
 end
 
+"""
+    make_concretetype(::Type{T}) where T <: Number
+
+Return a concrete number type for `T`, that is `T` itself if it is already
+concrete, and `typeof(zero(T))` otherwise.
+"""
 function make_concretetype(::Type{T}) where T <: Number
   TT = ifelse(isconcretetype(T),T,typeof(zero(T)))
   @check isconcretetype(TT) "Type $(T) cannot be made concrete."
@@ -194,6 +200,13 @@ convert(::Type{V}, arg::Tuple) where V<:MultiValue{S,T} where {S,T} = V(arg)
 
 # Inverse conversion
 convert(::Type{<:NTuple{L,T}}, arg::MultiValue) where {L,T} = NTuple{L,T}(Tuple(arg))
+
+function reinterpret(a::Array{V}) where V<:MultiValue{S,T,N,L} where {S,T,N,L}
+  b = reinterpret(T,a)
+  sa = size(a)
+  s = (L,sa...)
+  reshape(b,s)
+end
 
 ###############################################################
 # Indexing independant components
@@ -391,4 +404,80 @@ end
   VT = change_eltype(x,ForwardDiff.valtype(eltype(x)))
   data = map(ForwardDiff.value,x.data)
   return VT(data)
+end
+
+###############################################################
+# Combinations
+###############################################################
+
+"""
+    sorted_combinations(D,k; right_to_left=false)
+
+Return a (collected) vector of all the combinations I_i of {1:`D`} of length `k`:
+
+    1 ≤ I\\_1 < ... < I\\_k ≤ `D`
+
+sorted in (left-to-right, i.e. standard) lexicographic order, e.g.
+
+```julia
+[ [1,2], [1,3], [2,3] ]  # for D=3, k=2\\
+[ [1,2], [1,3], [1,4], [2,3], [2,4], [3,4] ]  # for D=4, k=2
+```
+
+If `right_to_left` is `true`, the combinations are compared from their last
+index to their first instead, e.g.
+
+```julia
+[ [1,2], [1,3], [2,3], [1,4], [2,4], [3,4] ]  # for D=4, k=2
+```
+
+This is the order in which `get_faces` numbers the sub-faces of a simplex.
+
+`k=0` gives the single empty combination `[ Int[] ]`, while `k<0` or `k>D` give
+no combination at all.
+
+See also [`combination_index`](@ref).
+"""
+function sorted_combinations(D::Int,k::Int; right_to_left=false)
+  combis = collect(combinations(1:D,k)) # empty if k < 0 or k > D
+  right_to_left && sort!(combis, by=reverse)
+  return combis
+end
+
+"""
+    combination_index(I, D; right_to_left=false)
+
+Linear index of `I` amongst the combinations of 1:`D` of the same size `k`,
+sorted like in [`sorted_combinations`](@ref), that is
+
+    (combination_index(I, D; right_to_left), I) ∈ enumerate(sorted_combinations(D,k; right_to_left))
+
+The right-to-left index does not depend on `D`, unlike the default left-to-right one.
+"""
+@inline function combination_index(combi, D; right_to_left=false)
+  @check issorted(combi)
+  @check isempty(combi) || last(combi) ≤ D
+  k = length(combi)
+  # Counting the combinations that come before `combi`: those first differing
+  # from it at position i, read from the right, number binomial(combi[i]-1, i).
+  right_to_left && return sum(binomial(combi[i]-1, i) for i in 1:k; init=0) + 1
+  # Counting the combinations that come after `combi`: those first exceeding it
+  # at position i number binomial(D-combi[i], k-i+1).
+  return binomial(D,k) - sum(binomial(D-combi[i], k-i+1) for i in 1:k; init=0)
+end
+
+"""
+    sorting_sign(inds::Integer...)
+
+Signature of the permutation sorting `inds`, or `0` if `inds` repeats an index.
+
+This is `levicivita(sortperm(inds))` extended by `0` to non-injective `inds`.
+"""
+@inline function sorting_sign(inds::Vararg{Integer,N}) where N
+  ninv = 0
+  for j in 1:N, k in j+1:N
+    inds[k] == inds[j] && return 0
+    inds[k] <  inds[j] && (ninv += 1)
+  end
+  iseven(ninv) ? 1 : -1
 end

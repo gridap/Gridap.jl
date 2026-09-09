@@ -92,7 +92,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 
 using PolynomialBases: jacobi, jacobi_and_derivative
-using Combinatorics: multiexponents, multinomial, combinations
+using Combinatorics: multiexponents, multinomial
 using Base.Iterators: take
 using Base: @propagate_inbounds
 using Gridap.Fields: LinearCombinationFieldVector
@@ -143,6 +143,8 @@ export print_indices
 
 export FEEC_space_definition_checks
 export FEEC_poly_basis
+
+export print_forms
 
 
 include("PolynomialInterfaces.jl")

@@ -98,7 +98,7 @@ function _mini_bubble_terms_and_coeffs(::Type{T}, p::Polytope{D}) where {T, D}
     # Loop through all terms in the binomial expansion.
     @inbounds for n ∈ 0:D
       sign = (-one(et))^n
-      for idx ∈ combinations(1:D, n)
+      for idx ∈ sorted_combinations(D, n)
         terms[offset] = CartesianIndex(ntuple(i -> i in idx ? 3 : 2, Val{D}()))
         coeff[offset] = sign
         offset += 1

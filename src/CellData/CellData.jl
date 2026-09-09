@@ -39,10 +39,15 @@ import Gridap.Fields: gradient, DIV
 import Gridap.Fields: ∇∇
 import Gridap.Fields: integrate
 import Gridap.Fields: grad2curl
+import Gridap.Fields: hodge_star_form
+import Gridap.Fields: exterior_derivative, codifferential
 import Gridap.Geometry: num_cells
 import Gridap.Geometry: get_triangulation
 
 import Gridap.TensorValues: inner, outer, double_contraction, symmetric_part
+import Gridap.TensorValues: ∧, hodge_star, flat, sharp, interior_product, form_inner
+import Gridap.TensorValues: koszul
+import Gridap.TensorValues: vol_coeff, to_1form, from_1form
 import LinearAlgebra: det, tr, cross, dot, ⋅, rmul!
 import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose, real, imag, conj
 import Statistics: mean
@@ -100,6 +105,9 @@ export DiracDelta
 
 export SkeletonCellFieldPair
 
+export d_0form
+export d_1form
+
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
@@ -121,5 +129,6 @@ include("AttachDirichlet.jl")
 include("AttachConstraints.jl")
 
 include("SkeletonCellFieldPair.jl")
+
 
 end # module

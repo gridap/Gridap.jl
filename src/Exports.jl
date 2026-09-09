@@ -42,6 +42,30 @@ using Gridap.Arrays: ∑; export ∑
 @publish TensorValues diagonal_tensor
 @publish TensorValues num_components
 @publish TensorValues num_indep_components
+
+#@publish TensorValues ExteriorFormValue
+#using Gridap.TensorValues: ∧, ⋆; export ∧, ⋆
+#@publish TensorValues interior_product
+#@publish TensorValues ι
+#@publish TensorValues hodge_star
+#@publish TensorValues flat
+#@publish TensorValues sharp
+#@publish TensorValues apply_form
+#@publish TensorValues pullback
+#@publish TensorValues pushforward
+#@publish Fields exterior_derivative
+#@publish Fields lie_derivative
+#@publish Fields codifferential
+#@publish TensorValues symbolic_coordinates
+#@publish TensorValues koszul
+#@publish TensorValues vol_coeff
+#@publish TensorValues to_1form
+#@publish TensorValues from_1form
+#@publish TensorValues to_Kform
+#@publish TensorValues from_Kform
+#@publish TensorValues to_0form
+#@publish TensorValues to_Dform
+#@publish TensorValues grad_to_2form
 using Gridap.TensorValues: ⊙; export ⊙
 using Gridap.TensorValues: ⊗; export ⊗
 
@@ -59,6 +83,13 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Fields Δ
 @publish Fields ε
 @publish Fields symmetric_gradient
+
+#@publish Fields DifferentialForm
+#@publish Fields ExteriorDerivativeForm
+#@publish Fields CodifferentialForm
+#@publish Fields KoszulForm
+#@publish Fields PullbackForm
+#@publish Fields hodge_star_form
 
 @publish ReferenceFEs is_simplex
 @publish ReferenceFEs is_n_cube
@@ -102,6 +133,8 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs bubble
 @publish ReferenceFEs modal_lagrangian
 @publish ReferenceFEs modal_serendipity
+@publish ReferenceFEs rotating_pλ
+@publish ReferenceFEs trimmed_pλ
 
 @publish Geometry get_triangulation
 @publish Geometry num_cells
@@ -152,6 +185,9 @@ using Gridap.CellData: ∫; export ∫
 @publish CellData get_cell_measure
 @publish CellData get_physical_coordinate
 @publish CellData DiracDelta
+
+#@publish CellData d_0form
+#@publish CellData d_1form
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace
