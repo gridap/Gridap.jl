@@ -873,3 +873,170 @@ function compute_cell_bases_changes(
 )
   _edge_scaling_cell_bases_changes(model, cell_reffe, cell_Jt)
 end
+
+############################################################################################
+# Arnold-Winther, conforming and nonconforming
+
+# Both AW elements are mapped by the double contravariant Piola map
+# τ = det(J)⁻² J τ̂ Jᵀ, and both carry the same four edge DoFs -- the degree 0 and
+# 1 moments of n⋅τn and of n⋅τt. Those give one 4×4 block per edge, in the DoF
+# order (nn0, nn1, nt0, nt1),
+#
+#   W = [1/L  0    0  0;  0  1/L  0  0;  α  0  β  0;  0  α  0  β],
+#
+# with L = ‖J t̂ₑ‖, α = ã/(det(J) L), β = L/det(J) and ã = n̂ᵀ(JᵀJ)t̂. The interior
+# DoFs are left as the push-forward of the reference ones -- they are cell-owned
+# and shared with nobody -- which sidesteps a dense interior block entirely, as
+# Gridap already does for the cell moments of Raviart-Thomas.
+#
+# The conforming element adds a 3×3 block per vertex, det(J)⁻² times the matrix
+# of H ↦ J H Jᵀ, i.e. `_congruence_matrix` with A = J rather than the A = J⁻ᵀ the
+# Argyris Hessian block uses. Both DoF kinds are invariant under reversing an
+# edge -- n⋅τn is quadratic in n, n⋅τt bilinear with both flipping -- so only the
+# parity of the Legendre weight enters σ.
+
+function _aw_edge_blocks!(M, tangents, normals, edge_dofs, Jt, σ, transposed_inverse)
+  detJ = det(Jt)
+  JtJ = Jt ⋅ transpose(Jt)   # JᵀJ, since Jt = Jᵀ
+
+  for e in eachindex(edge_dofs)
+    t̂, n̂ = tangents[e], normals[e]
+    L = norm(t̂ ⋅ Jt)               # ‖J t̂‖
+    α = (n̂ ⋅ (JtJ ⋅ t̂)) / (detJ * L)
+    β = L / detJ
+    reversed = σ[e] < 0
+
+    # DoF order within an edge: (nn,0), (nn,1), (nt,0), (nt,1)
+    dofs = edge_dofs[e]
+    nmom = length(dofs) ÷ 2
+    for i in 1:nmom
+      s = ifelse(reversed && isodd(i - 1), -1.0, 1.0)   # parity of the Legendre weight
+      dnn, dnt = dofs[i], dofs[nmom+i]
+      if transposed_inverse
+        # WᵀD
+        M[dnn, dnn] = s / L
+        M[dnn, dnt] = s * α
+        M[dnt, dnt] = s * β
+      else
+        # W⁻¹D
+        M[dnn, dnn] = s * L
+        M[dnt, dnn] = -s * α * L / β
+        M[dnt, dnt] = s / β
+      end
+    end
+  end
+end
+
+#     AWNCChangeOfBasis(reffe, transposed_inverse)
+#
+# One 4×4 block per edge, and the identity on the interior.
+struct AWNCChangeOfBasis <: Map
+  tangents::Vector{VectorValue{2,Float64}}
+  normals::Vector{VectorValue{2,Float64}}
+  edge_dofs::Vector{Vector{Int}}
+  ndofs::Int
+  transposed_inverse::Bool
+end
+
+function AWNCChangeOfBasis(reffe::ReferenceFE, transposed_inverse::Bool)
+  p = get_polytope(reffe)
+  ts, ns = ReferenceFEs._edge_frames(p)
+  own = get_face_own_dofs(reffe)
+  nv = num_faces(p, 0)
+  edge_dofs = [own[nv+e] for e in 1:num_faces(p, 1)]
+  AWNCChangeOfBasis(ts, ns, edge_dofs, num_dofs(reffe), transposed_inverse)
+end
+
+function return_cache(k::AWNCChangeOfBasis, Jt, σ)
+  CachedArray(zeros(Float64, k.ndofs, k.ndofs))
+end
+
+function evaluate!(cache, k::AWNCChangeOfBasis, Jt, σ)
+  setsize!(cache, (k.ndofs, k.ndofs))
+  M = cache.array
+  fill!(M, zero(eltype(M)))
+  for i in 1:k.ndofs
+    M[i, i] = 1.0     # the interior DoFs are left as the push-forward
+  end
+  _aw_edge_blocks!(M, k.tangents, k.normals, k.edge_dofs, Jt, σ, k.transposed_inverse)
+  return M
+end
+
+#     AWCChangeOfBasis(reffe, transposed_inverse)
+#
+# A 3×3 block per vertex, a 4×4 block per edge, and the identity on the interior.
+struct AWCChangeOfBasis <: Map
+  tangents::Vector{VectorValue{2,Float64}}
+  normals::Vector{VectorValue{2,Float64}}
+  vertex_dofs::Vector{Vector{Int}}
+  edge_dofs::Vector{Vector{Int}}
+  ndofs::Int
+  transposed_inverse::Bool
+end
+
+function AWCChangeOfBasis(reffe::ReferenceFE, transposed_inverse::Bool)
+  p = get_polytope(reffe)
+  ts, ns = ReferenceFEs._edge_frames(p)
+  own = get_face_own_dofs(reffe)
+  nv = num_faces(p, 0)
+  vertex_dofs = [own[v] for v in 1:nv]
+  edge_dofs = [own[nv+e] for e in 1:num_faces(p, 1)]
+  AWCChangeOfBasis(ts, ns, vertex_dofs, edge_dofs, num_dofs(reffe), transposed_inverse)
+end
+
+function return_cache(k::AWCChangeOfBasis, Jt, σ)
+  CachedArray(zeros(Float64, k.ndofs, k.ndofs))
+end
+
+function evaluate!(cache, k::AWCChangeOfBasis, Jt, σ)
+  setsize!(cache, (k.ndofs, k.ndofs))
+  M = cache.array
+  fill!(M, zero(eltype(M)))
+  for i in 1:k.ndofs
+    M[i, i] = 1.0     # the interior DoFs are left as the push-forward
+  end
+
+  J = transpose(Jt)
+  detJ = det(Jt)
+
+  # W carries det(J)⁻² _congruence_matrix(J) on the vertices, so W⁻¹ carries
+  # det(J)² _congruence_matrix(J⁻¹) and Wᵀ the transpose of the former.
+  Bv = k.transposed_inverse ? transpose(_congruence_matrix(J)) / detJ^2 :
+       _congruence_matrix(inv(J)) * detJ^2
+  for dofs in k.vertex_dofs
+    for i in 1:3, j in 1:3
+      M[dofs[i], dofs[j]] = Bv[i, j]
+    end
+  end
+
+  _aw_edge_blocks!(M, k.tangents, k.normals, k.edge_dofs, Jt, σ, k.transposed_inverse)
+  return M
+end
+
+function compute_cell_bases_changes(
+  ::ArnoldWintherNC, ::ReferenceFEs.DoubleContraVariantPiolaMap,
+  model::DiscreteModel, cell_reffe, cell_Jt
+)
+  _aw_cell_bases_changes(AWNCChangeOfBasis, model, cell_reffe, cell_Jt)
+end
+
+function compute_cell_bases_changes(
+  ::ArnoldWintherC, ::ReferenceFEs.DoubleContraVariantPiolaMap,
+  model::DiscreteModel, cell_reffe, cell_Jt
+)
+  _aw_cell_bases_changes(AWCChangeOfBasis, model, cell_reffe, cell_Jt)
+end
+
+function _aw_cell_bases_changes(K, model::DiscreteModel, cell_reffe, cell_Jt)
+  reffe = testitem(cell_reffe)
+  p = get_polytope(reffe)
+  cell_σ = _edge_signs(model, p)
+
+  # The geometrical map is affine on simplices, so its Jacobian is constant.
+  x0 = Fill(first(get_vertex_coordinates(p)), length(cell_Jt))
+  cell_Jtx = lazy_map(evaluate, cell_Jt, x0)
+
+  cell_change = lazy_map(K(reffe, false), cell_Jtx, cell_σ)
+  cell_change_invt = lazy_map(K(reffe, true), cell_Jtx, cell_σ)
+  return (cell_change, cell_change_invt)
+end

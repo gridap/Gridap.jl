@@ -69,6 +69,10 @@ using Test
 
 @testset "GLSRefFEs" begin include("GLSRefFEsTests.jl") end
 
+@testset "ArnoldWintherNCRefFEs" begin include("ArnoldWintherNCRefFEsTests.jl") end
+
+@testset "ArnoldWintherCRefFEs" begin include("ArnoldWintherCRefFEsTests.jl") end
+
 @testset "BubbleRefFEs" begin include("BubbleRefFEsTests.jl") end
 
 @testset "RotatingPLambda" begin include("PΛRefFEsTests.jl") end

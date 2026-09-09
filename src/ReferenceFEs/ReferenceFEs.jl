@@ -203,6 +203,8 @@ export MorleyRefFE
 export HHJRefFE
 export ReggeRefFE
 export GLSRefFE
+export ArnoldWintherNCRefFE
+export ArnoldWintherCRefFE
 export BubbleRefFE
 
 export Lagrangian
@@ -218,6 +220,8 @@ export Morley
 export HellanHerrmannJohnson
 export Regge
 export GopalakrishnanLedererSchoberl
+export ArnoldWintherNC
+export ArnoldWintherC
 export Serendipity
 export Bubble
 
@@ -244,6 +248,8 @@ export morley
 export hhj
 export regge
 export gls
+export aw_nc
+export aw_c
 export serendipity
 export bubble
 
@@ -330,6 +336,10 @@ include("HHJRefFEs.jl")
 include("ReggeRefFEs.jl")
 
 include("GLSRefFEs.jl")
+
+include("ArnoldWintherNCRefFEs.jl")
+
+include("ArnoldWintherCRefFEs.jl")
 
 include("MockDofs.jl")
 

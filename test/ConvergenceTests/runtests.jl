@@ -20,4 +20,8 @@ end
   @time @testset "Kirchhoff plate - HHJ" begin include("HHJ.jl") end
 end
 
+@testset "Mixed elasticity" begin
+  @time @testset "Hellinger-Reissner - Arnold-Winther" begin include("ArnoldWinther.jl") end
+end
+
 end
