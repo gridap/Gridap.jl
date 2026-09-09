@@ -205,6 +205,7 @@ export ReggeRefFE
 export GLSRefFE
 export ArnoldWintherNCRefFE
 export ArnoldWintherCRefFE
+export MardalTaiWintherRefFE
 export BubbleRefFE
 
 export Lagrangian
@@ -222,6 +223,7 @@ export Regge
 export GopalakrishnanLedererSchoberl
 export ArnoldWintherNC
 export ArnoldWintherC
+export MardalTaiWinther
 export Serendipity
 export Bubble
 
@@ -250,6 +252,7 @@ export regge
 export gls
 export aw_nc
 export aw_c
+export mtw
 export serendipity
 export bubble
 
@@ -340,6 +343,8 @@ include("GLSRefFEs.jl")
 include("ArnoldWintherNCRefFEs.jl")
 
 include("ArnoldWintherCRefFEs.jl")
+
+include("MardalTaiWintherRefFEs.jl")
 
 include("MockDofs.jl")
 

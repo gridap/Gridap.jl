@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `HHJRefFE`, `ReggeRefFE` and `GLSRefFE`: the Hellan-Herrmann-Johnson, Regge and Gopalakrishnan-Lederer-Schoberl (second kind) triangles, of any degree `r >= 0`, normal-normal, tangential-tangential and normal-tangential continuous respectively.
 - Added `DubinerBasis`, the L2-orthonormal (Dubiner/Koornwinder) polynomial basis of `P_K` on the reference simplex in any dimension.
 - Added `ArnoldWintherNCRefFE` and `ArnoldWintherCRefFE`, the nonconforming (15 DoFs, P2-based) and conforming (24 DoFs, P3-based) Arnold-Winther symmetric stress triangles for mixed elasticity. Both are built as constrained subspaces of a larger prebasis, so `length(get_prebasis(reffe)) > num_dofs(reffe)` for them.
+- Added `MardalTaiWintherRefFE`, the Mardal-Tai-Winther element on triangles (9 DoFs) and tetrahedra (24 DoFs).
 
 ## [Unreleased]
 

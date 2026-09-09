@@ -24,4 +24,8 @@ end
   @time @testset "Hellinger-Reissner - Arnold-Winther" begin include("ArnoldWinther.jl") end
 end
 
+@testset "Darcy-Stokes" begin
+  @time @testset "Mardal-Tai-Winther, 2D and 3D" begin include("MardalTaiWinther.jl") end
+end
+
 end
