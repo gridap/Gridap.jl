@@ -225,7 +225,7 @@ end
 q2 = Quadrature(TRI, 10)
 xq2, wq2 = get_coordinates(q2), get_weights(q2)
 for (k, qq) in ((2, 0), (2, 1), (3, 1), (4, 2))
-  b = DubinerBasis(Val(2), Float64, k, Polynomials._pk_minus_pq_filter(k, qq))
+  b = DubinerBasis(Val(2), Float64, k, Polynomials._p_complement_filter(qq))
   @test length(b) == binomial(2 + k, 2) - binomial(2 + qq, 2)
   lower = MonomialBasis(Val(2), Float64, qq, Polynomials._p_filter)
   M = transpose(evaluate(lower, xq2)) * (wq2 .* evaluate(b, xq2))
@@ -234,7 +234,7 @@ for (k, qq) in ((2, 0), (2, 1), (3, 1), (4, 2))
 end
 
 # in 3D as well
-b3 = DubinerBasis(Val(3), Float64, 2, Polynomials._pk_minus_pq_filter(2, 0))
+b3 = DubinerBasis(Val(3), Float64, 2, Polynomials._p_complement_filter(0))
 q3 = Quadrature(TET, 8)
 means3 = vec(transpose(get_weights(q3)) * evaluate(b3, get_coordinates(q3)))
 @test length(b3) == 10 - 1
@@ -264,7 +264,7 @@ F = eigen(Symmetric(transpose(R) * (wq .* R)))
 hand1 = R * F.vectors[:, findall(λ -> λ > 1e-10*maximum(F.values), F.values)]
 
 for (qq, A) in ((0, hand0), (1, hand1))
-  B = evaluate(DubinerBasis(Val(2), Float64, 2, Polynomials._pk_minus_pq_filter(2, qq)), xq)
+  B = evaluate(DubinerBasis(Val(2), Float64, 2, Polynomials._p_complement_filter(qq)), xq)
   @test size(A, 2) == size(B, 2)
   # same span: each is an exact linear combination of the other
   @test maximum(abs, A * (A \ B) - B) < 1e-11

@@ -105,7 +105,7 @@ function ArnoldWintherCRefFE(::Type{T}, p::Polytope{D}) where {T,D}
   # P₂(K) ∩ P₁(K)^⊥: the degree-2 Dubiner polynomials, i.e. the members of an
   # L²(K)-orthonormal basis of P₂ that are orthogonal to every linear. A filtered
   # Legendre basis would not do -- it is not orthogonal on a simplex.
-  qb = DubinerBasis(Val(2), T, 2, _pk_minus_pq_filter(2, 1))
+  qb = DubinerBasis(Val(2), T, 2, _p_complement_filter(1))
   Ej = (
     ConstantField(VectorValue(one(T), zero(T))),
     ConstantField(VectorValue(zero(T), one(T)))

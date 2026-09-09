@@ -11,7 +11,7 @@
 # an orthogonal basis on the simplex they do, and a complement can be selected by
 # a filter:
 #
-#     DubinerBasis(Val(2), T, 2, _pk_minus_pq_filter(2, 0))   # P₂(K) ∩ P₀(K)^⊥
+#     DubinerBasis(Val(2), T, 2, _p_complement_filter(0))   # P₂(K) ∩ P₀(K)^⊥
 #
 # exactly as edge weights already do with `LegendreBasis` on a segment. That is
 # what the augmented (constrained-prebasis) reference FEs need for their cell

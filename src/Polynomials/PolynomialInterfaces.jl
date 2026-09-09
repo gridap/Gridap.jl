@@ -112,10 +112,7 @@ _qh_filter(e,order)  = (maximum(e,init=0) == order) # 𝓠̃ₙ = 𝓠ₙ\𝓠�
 _p_filter(e,order)   = (sum(e) <= order)            # 𝓟ₙ
 _ph_filter(e,order)  = (sum(e) == order)            # 𝓟̃ₙ = 𝓟ₙ\𝓟₍ₙ₋₁₎
 _ser_filter(e,order) = (sum( [ i for i in e if i>1 ] ) <= order) # Serendipity
-
-function _pk_minus_pq_filter(k::Integer, q::Integer) 
-  f(e, order) = (q < sum(e) <= k) # 𝓟ₖ ∩ (𝓟q)^⊥
-end
+_p_complement_filter(k::Integer) = (e, order) -> k < sum(e) <= order # 𝓟ₙ ∩ (𝓟ₖ)^⊥
 
 function _define_terms(filter,orders)
   t = orders .+ 1
