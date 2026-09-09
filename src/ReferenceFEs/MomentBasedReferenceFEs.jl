@@ -285,10 +285,11 @@ function MomentBasedDofBasis(
       vals, coords = evaluate!(cache,σ,op_φ,μ,ds)
 
       mom_offset = face_n_moms[face]
+      row_offset = face_n_nodes[face]
       node_offset = first(face_nodes[face]) + face_n_nodes[face] - 1
       for i in axes(vals,1)
         for j in axes(vals,2)
-          face_moments[face][i,j+mom_offset] = V(vals[i,j,:]...)
+          face_moments[face][i+row_offset,j+mom_offset] = V(vals[i,j,:]...)
         end
         nodes[i+node_offset] = coords[i]
       end
