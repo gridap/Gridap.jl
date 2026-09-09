@@ -18,6 +18,9 @@ using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Fields: GenericField
+using Gridap.Fields: DifferentialForm
+using Gridap.Fields: ExteriorDerivativeForm
+using Gridap.Fields: hodge_star_form
 using Test
 using Gridap.CellData: GenericCellField
 using FillArrays: Fill
