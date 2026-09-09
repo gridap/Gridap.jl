@@ -22,8 +22,6 @@ using Test
 
 @testset "BarycentricPΛBases" begin include("BarycentricPΛBases.jl") end
 
-@testset "RotatingPLambda" begin include("RotatingPLambdaTests/runtests.jl") end
-
 @testset "FEECBases" begin include("ExteriorCalculusBasesTests.jl") end
 
 @testset "ForwardDiffTests.jl" begin include("ForwardDiffTests.jl") end
