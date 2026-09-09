@@ -136,6 +136,31 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs rotating_pλ
 @publish ReferenceFEs trimmed_pλ
 
+@publish ReferenceFEs Morley
+@publish ReferenceFEs Argyris
+@publish ReferenceFEs HellanHerrmannJohnson
+@publish ReferenceFEs Regge
+@publish ReferenceFEs GopalakrishnanLedererSchoberl
+@publish ReferenceFEs ArnoldWintherNC
+@publish ReferenceFEs ArnoldWintherC
+@publish ReferenceFEs MardalTaiWinther
+@publish ReferenceFEs morley
+@publish ReferenceFEs argyris
+@publish ReferenceFEs hhj
+@publish ReferenceFEs regge
+@publish ReferenceFEs gls
+@publish ReferenceFEs aw_nc
+@publish ReferenceFEs aw_c
+@publish ReferenceFEs mtw
+@publish ReferenceFEs MorleyRefFE
+@publish ReferenceFEs ArgyrisRefFE
+@publish ReferenceFEs HHJRefFE
+@publish ReferenceFEs ReggeRefFE
+@publish ReferenceFEs GLSRefFE
+@publish ReferenceFEs ArnoldWintherNCRefFE
+@publish ReferenceFEs ArnoldWintherCRefFE
+@publish ReferenceFEs MardalTaiWintherRefFE
+
 @publish Geometry get_triangulation
 @publish Geometry num_cells
 @publish Geometry num_facets

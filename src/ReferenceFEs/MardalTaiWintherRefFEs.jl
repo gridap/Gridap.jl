@@ -185,8 +185,8 @@ function _mtw_reffe(::Type{T}, p::Polytope{2}) where T
 
   # Constraint moments. The normal-trace constraints share `nmom` and so ride on
   # the same (identity-operator) basis as the DoFs; the divergence ones need `∇`.
-  cb = LegendreBasis(Val(1), T, 3, _p_complement_filter(1))  # P₃(e) ∩ P₁(e)^⊥
-  qb = DubinerBasis(Val(2), T, 2, _p_complement_filter(0))   # P₂(K) ∩ P₀(K)^⊥
+  cb = LegendreBasis(Val(1), T, 3, Polynomials._p_complement_filter(1))  # P₃(e) ∩ P₁(e)^⊥
+  qb = DubinerBasis(Val(2), T, 2, Polynomials._p_complement_filter(0))   # P₂(K) ∩ P₀(K)^⊥
   Id = ConstantField(TensorValue(one(T), zero(T), zero(T), one(T)))
   divmom(φ, μ, ds) = Broadcasting(Operation(*))(   # ∫_K (∇Φ ⊙ I) μ dK = ∫_K (div Φ) μ dK
     Broadcasting(Operation(⊙))(φ, Id), μ
@@ -306,7 +306,7 @@ end
 # only at lowest order, so it is not a family parameter. FIAT makes the same
 # choice.
 function _mtw_dof_basis_3d(::Type{T}, p::Polytope{3}, prebasis) where T
-  fb = MonomialBasis(Val(2), T, 1, _p_filter)                    # {1, u, v}
+  fb = MonomialBasis(Val(2), T, 1, Polynomials._p_filter)                    # {1, u, v}
   fb_rt0 = FEEC_poly_basis(Val(2), T, 1, 1, :P⁻; rotate_90=true) # P⁻₁Λ¹ on the face
 
   function nmom(φ, μ, ds)                     # ∫_f (v⋅n) q dA,  q ∈ P₁(f)

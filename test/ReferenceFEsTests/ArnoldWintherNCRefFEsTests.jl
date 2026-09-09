@@ -120,7 +120,8 @@ reffe = ArnoldWintherNCRefFE(Float64, TRI)
 @test Conformity(reffe) == DivConformity()
 @test Pushforward(ArnoldWintherNC) == ReferenceFEs.DoubleContraVariantPiolaMap()
 @test reffe == ReferenceFE(TRI, aw_nc, Float64)
-test_reference_fe(reffe)
+# NB: `test_reference_fe` is not applicable here -- it asserts
+# `num_dofs == length(prebasis)`, which an augmented element breaks by design.
 
 # four DoFs per edge, three interior, none at the vertices
 @test length.(get_face_own_dofs(reffe)) == [0, 0, 0, 4, 4, 4, 3]

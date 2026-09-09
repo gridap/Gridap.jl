@@ -65,8 +65,8 @@ function ArnoldWintherNCRefFE(::Type{T}, p::Polytope{D}) where {T,D}
   fb = LegendreBasis(Val(1), T, 1)                            # μ₀, μ₁ : the DoF weights
   # μ₂ : the constraint, the degree-2 Legendre polynomial alone. It spans
   # P₂(e) ∩ P₁(e)^⊥, so the single moment against it states (n⋅τn)|ₑ ∈ P₁(e).
-  gb = LegendreBasis(Val(1), T, 2, _p_complement_filter(1))
-  cb = MonomialBasis(Val(2), T, 0, _p_filter)                 # the constant on the cell
+  gb = LegendreBasis(Val(1), T, 2, Polynomials._p_complement_filter(1))
+  cb = MonomialBasis(Val(2), T, 0, Polynomials._p_filter)                 # the constant on the cell
   Ei = (
     ConstantField(TensorValue(one(T), zero(T), zero(T), zero(T))),   # e₁⊗e₁
     ConstantField(TensorValue(zero(T), zero(T), one(T), zero(T))),   # e₁⊗e₂

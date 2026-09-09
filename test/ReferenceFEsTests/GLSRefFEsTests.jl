@@ -138,7 +138,8 @@ function test_gls_reffe(r)
   @test Conformity(reffe) == DivConformity()
   @test Pushforward(GopalakrishnanLedererSchoberl) == ReferenceFEs.CoContraVariantPiolaMap()
   @test reffe == ReferenceFE(TRI, gls, Float64, r)
-  test_reference_fe(reffe)
+# NB: `test_reference_fe` is not applicable here -- it asserts
+# `num_dofs == length(prebasis)`, which an augmented element breaks by design.
 
   # r+1 DoFs per edge, the rest owned by the cell, none on the vertices
   @test length.(get_face_own_dofs(reffe)) ==

@@ -232,7 +232,8 @@ reffe2 = MardalTaiWintherRefFE(Float64, TRI)
 @test Conformity(reffe2) == DivConformity()
 @test Pushforward(MardalTaiWinther) == ContraVariantPiolaMap()
 @test reffe2 == ReferenceFE(TRI, mtw, Float64)
-test_reference_fe(reffe2)
+# NB: `test_reference_fe` is not applicable here -- it asserts
+# `num_dofs == length(prebasis)`, which an augmented element breaks by design.
 
 # Three DoFs per edge, none on the vertices or the cell
 @test length.(get_face_own_dofs(reffe2)) == [0, 0, 0, 3, 3, 3, 0]
