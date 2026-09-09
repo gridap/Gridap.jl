@@ -48,6 +48,17 @@ The following table summarizes the elements implemented in Gridap (legend below)
 |                                                                                         | kwarg `space=:P`                             | 𝓢ᵣΛᴰ      | ``\square`` | ``{r=o≥0, o}``  | `:L2`     |
 | [MINI bubble](@ref "Bubble reference element")                                               | [`bubble`](@ref BubbleRefFE)                 |           |△,``\square``| ``{o=1, 2}``    | `:L2`     |
 | Bezier, ModalC0                                                                         | as above                                     |           |             | ``{o≥0, o}``    | `:L2`     |
+|                                                                                                                                                                                                |
+| [Morley](https://defelement.org/elements/morley.html)                                   | [`morley`](@ref MorleyRefFE)                 |           | `TRI`       | ``{o=2, o}``    | `:H1`     |
+| [Argyris](https://defelement.org/elements/argyris.html)                                 | [`argyris`](@ref ArgyrisRefFE)               |           | `TRI`       | ``{o=5, o}``    | `:H1`     |
+|                                                                                                                                                                                                |
+| [Mardal-Tai-Winther](https://defelement.org/elements/mardal-tai-winther.html)           | [`mtw`](@ref MardalTaiWintherRefFE)          |           | `TRI`,`TET` | ``{o=1, D+1}``  | `:Hdiv`   |
+| [Arnold-Winther](https://defelement.org/elements/arnold-winther.html)                    | [`aw_c`](@ref ArnoldWintherCRefFE)           |           | `TRI`       | ``{o=3, o}``    | `:Hdiv`   |
+| [Arnold-Winther (nonconforming)](https://defelement.org/elements/nonconforming-arnold-winther.html) | [`aw_nc`](@ref ArnoldWintherNCRefFE) |           | `TRI`       | ``{o=2, o}``    | `:Hdiv`   |
+|                                                                                                                                                                                                |
+| [Hellan-Herrmann-Johnson](https://defelement.org/elements/hellan-herrmann-johnson.html) | [`hhj`](@ref HHJRefFE)                       |           | `TRI`       | ``{r=o≥0, o}``  | `:Hdiv`   |
+| [Regge](https://defelement.org/elements/regge.html)                                     | [`regge`](@ref ReggeRefFE)                   |           | `TRI`       | ``{r=o≥0, o}``  | `:Hdiv`   |
+| [Gopalakrishnan-Lederer-Schoberl](https://defelement.org/elements/gopalakrishnan-lederer-schoberl-second-kind.html) | [`gls`](@ref GLSRefFE) |     | `TRI`       | ``{r=o≥0, o}``  | `:Hdiv`   |
 
 ##### Legend
 
@@ -277,7 +288,7 @@ Pages   = ["GeometricDecompositions.jl"]
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CrouzeixRaviartRefFEs.jl","ModalScalarRefFEs.jl","RotatingPLambdaRefFEs.jl"]
+Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CrouzeixRaviartRefFEs.jl","ModalScalarRefFEs.jl","RotatingPLambdaRefFEs.jl","MorleyRefFEs.jl","ArgyrisRefFEs.jl","HHJRefFEs.jl","ReggeRefFEs.jl","GLSRefFEs.jl","ArnoldWintherNCRefFEs.jl","ArnoldWintherCRefFEs.jl","MardalTaiWintherRefFEs.jl"]
 ```
 
 ## References
