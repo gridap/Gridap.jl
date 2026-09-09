@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added `ArgyrisRefFE`, the quintic C¹-conforming Argyris triangle.
+- Added `MorleyRefFE`, the quadratic nonconforming Morley triangle.
 
 ## [Unreleased]
 

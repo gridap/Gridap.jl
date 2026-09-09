@@ -62,6 +62,8 @@ using Test
 
 @testset "ArgyrisRefFEs" begin include("ArgyrisRefFEsTests.jl") end
 
+@testset "MorleyRefFEs" begin include("MorleyRefFEsTests.jl") end
+
 @testset "BubbleRefFEs" begin include("BubbleRefFEsTests.jl") end
 
 @testset "RotatingPLambda" begin include("PΛRefFEsTests.jl") end

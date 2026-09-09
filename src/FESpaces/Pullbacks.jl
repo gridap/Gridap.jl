@@ -721,3 +721,109 @@ function compute_cell_bases_changes(
   cell_change_invt = lazy_map(ArgyrisChangeOfBasis(p, true), cell_Jtx, cell_σ)
   return (cell_change, cell_change_invt)
 end
+
+############################################################################################
+# Morley
+
+# Morley is mapped by the plain pullback u = û∘F⁻¹, under which the vertex values
+# are preserved but the edge normal derivatives are not: with ∇u = J⁻ᵀ∇û,
+#
+#   ∇u⋅n = ∇û⋅(J⁻¹n) = a (∇û⋅n̂) + b (∇û⋅t̂),
+#
+# so the push-forward of an edge DoF picks up a tangential derivative, which is
+# not a Morley node. With the DoFs written as moments that tangential piece is
+# exactly a difference of vertex values,
+#
+#   ∫_{ê} ∇û⋅t̂ dŝ = û(v̂_b) - û(v̂_a),
+#
+# so span(N̂) is preserved after all and the transformation is a 6×6 matrix in
+# closed form. With n = R t and G = (JᵀJ)⁻¹, using R J Rᵀ = det(J) J⁻ᵀ,
+#
+#   J⁻¹n = (det J / ‖J t̂‖) G n̂,   ds = ‖J t̂‖ dŝ,
+#
+# the ‖J t̂‖ cancels and, for edge k with reference endpoints v̂_a, v̂_b,
+#
+#   F∗(δᵥⁱ) = δ̂ᵥⁱ,
+#   F∗(δₑᵏ) = Aₖ δ̂ₑᵏ + Bₖ (δ̂ᵥᵇ - δ̂ᵥᵃ),   Aₖ = det(J) n̂ᵀGn̂,  Bₖ = det(J) t̂ᵀGn̂.
+#
+# So W = [I 0; B A] with A = diag(Aₖ) — block *triangular*, the case Kirby notes
+# for Morley and Argyris. Aₖ ≠ 0 always (n̂ᵀGn̂ > 0 by positive definiteness), and
+# W⁻¹ = [I 0; -A⁻¹B A⁻¹] in closed form. Edge orientation follows `_edge_signs`,
+# with D = diag(1,1,1,σ₁,σ₂,σ₃) folded in as P = W⁻¹D and P⁻ᵀ = WᵀD.
+
+#     MorleyChangeOfBasis(p, transposed_inverse)
+#
+# Builds, from the (transposed) Jacobian of a cell's geometrical map and that
+# cell's edge orientation signs `σ`, either the change of basis `P`
+# (`transposed_inverse = false`) or `P⁻ᵀ` (`transposed_inverse = true`).
+struct MorleyChangeOfBasis <: Map
+  tangents::Vector{VectorValue{2,Float64}}
+  normals::Vector{VectorValue{2,Float64}}
+  edge_vertices::Vector{Vector{Int}}
+  transposed_inverse::Bool
+end
+
+function MorleyChangeOfBasis(p::Polytope{2}, transposed_inverse::Bool)
+  ts, ns = ReferenceFEs._edge_frames(p)
+  MorleyChangeOfBasis(ts, ns, get_faces(p, 1, 0), transposed_inverse)
+end
+
+function return_cache(k::MorleyChangeOfBasis, Jt, σ)
+  ndofs = length(k.tangents) + length(k.edge_vertices)
+  CachedArray(zeros(Float64, ndofs, ndofs))
+end
+
+function evaluate!(cache, k::MorleyChangeOfBasis, Jt, σ)
+  nedges = length(k.tangents)
+  nverts = nedges  # a triangle
+  ndofs = nverts + nedges
+  setsize!(cache, (ndofs, ndofs))
+  M = cache.array
+  fill!(M, zero(eltype(M)))
+
+  detJ = det(Jt)
+  G = inv(Jt ⋅ transpose(Jt))  # (JᵀJ)⁻¹, since Jt = Jᵀ
+
+  for i in 1:nverts
+    M[i, i] = 1.0
+  end
+
+  for e in 1:nedges
+    t̂, n̂ = k.tangents[e], k.normals[e]
+    Gn̂ = G ⋅ n̂
+    A = detJ * (n̂ ⋅ Gn̂)
+    B = detJ * (t̂ ⋅ Gn̂)
+    σe = σ[e]
+    va, vb = k.edge_vertices[e]
+
+    # D = diag(1,1,1,σ...) scales the last columns of the block below.
+    if k.transposed_inverse
+      # WᵀD
+      M[nverts+e, nverts+e] = A * σe
+      M[va, nverts+e] = -B * σe
+      M[vb, nverts+e] = B * σe
+    else
+      # W⁻¹D = [I 0; -A⁻¹B A⁻¹D]
+      M[nverts+e, nverts+e] = σe / A
+      M[nverts+e, va] = B / A
+      M[nverts+e, vb] = -B / A
+    end
+  end
+
+  return M
+end
+
+function compute_cell_bases_changes(
+  ::Morley, ::IdentityPiolaMap, model::DiscreteModel, cell_reffe, cell_Jt
+)
+  p = get_polytope(testitem(cell_reffe))
+  cell_σ = _edge_signs(model, p)
+
+  # The geometrical map is affine on simplices, so its Jacobian is constant.
+  x0 = Fill(first(get_vertex_coordinates(p)), length(cell_Jt))
+  cell_Jtx = lazy_map(evaluate, cell_Jt, x0)
+
+  cell_change = lazy_map(MorleyChangeOfBasis(p, false), cell_Jtx, cell_σ)
+  cell_change_invt = lazy_map(MorleyChangeOfBasis(p, true), cell_Jtx, cell_σ)
+  return (cell_change, cell_change_invt)
+end
