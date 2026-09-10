@@ -59,8 +59,6 @@ The following table summarizes the elements implemented in Gridap (legend below)
 | [Hellan-Herrmann-Johnson](https://defelement.org/elements/hellan-herrmann-johnson.html) | [`hhj`](@ref HHJRefFE)                       |           | `TRI`       | ``{r=o≥0, o}``  | `:Hdiv`   |
 | [Regge](https://defelement.org/elements/regge.html)                                     | [`regge`](@ref ReggeRefFE)                   |           | `TRI`       | ``{r=o≥0, o}``  | `:Hdiv`   |
 | [Gopalakrishnan-Lederer-Schoberl](https://defelement.org/elements/gopalakrishnan-lederer-schoberl-second-kind.html) | [`gls`](@ref GLSRefFE) |     | `TRI`       | ``{r=o≥0, o}``  | `:Hdiv`   |
-|                                                                                                                                                                                                |
-| Cartesian product                                                                       | [`CartProdRefFE`](@ref)                      |           | as the atom | as the atom     | as the atom |
 
 ##### Legend
 
@@ -100,6 +98,9 @@ lagrangian, VectorValue{2,Float64}, 1)` is `{ VectorValue(x₁,x₂) | x₁ ∈ 
 ∈ 𝓟¹ }`. Its basis is a direct sum basis of the scalar basis duplicated over
 each component: `{VectorValue{1,0}, VectorValue{x,0}, VectorValue{0,1},
 VectorValue{0,x} }`
+
+See [Cartesian product ReferenceFEs](@ref) for the same operation applied to an
+arbitrary reference element rather than to a scalar space.
 
 The `modalC0` element has the particularity that the support of its
 shape-function can be scaled to be adapted to the physical element.
@@ -290,7 +291,64 @@ Pages   = ["GeometricDecompositions.jl"]
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CrouzeixRaviartRefFEs.jl","ModalScalarRefFEs.jl","RotatingPLambdaRefFEs.jl","MorleyRefFEs.jl","ArgyrisRefFEs.jl","HHJRefFEs.jl","ReggeRefFEs.jl","GLSRefFEs.jl","ArnoldWintherNCRefFEs.jl","ArnoldWintherCRefFEs.jl","MardalTaiWintherRefFEs.jl","CartProdRefFEs.jl"]
+Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CrouzeixRaviartRefFEs.jl","ModalScalarRefFEs.jl","RotatingPLambdaRefFEs.jl","MorleyRefFEs.jl","ArgyrisRefFEs.jl","HHJRefFEs.jl","ReggeRefFEs.jl","GLSRefFEs.jl","ArnoldWintherNCRefFEs.jl","ArnoldWintherCRefFEs.jl","MardalTaiWintherRefFEs.jl"]
+```
+
+### Cartesian product ReferenceFEs
+
+[`CartProdRefFE(reffe, K)`](@ref CartProdRefFE) represents ``V^K = V × … × V`` for
+any base reference element ``V``, stacking the ``K`` copies along the **last**
+index of the value type:
+
+| value of ``V`` | value of ``V^K`` |
+|---|---|
+| `Float64` | `VectorValue{K}` |
+| `VectorValue{d}` | `TensorValue{d,K}` |
+
+so copy ``c`` is the ``c``-th *column*:
+
+```julia
+CartProdRefFE(ArgyrisRefFE(Float64, TRI), 3)                    # 3 Argyris components
+CartProdRefFE(ReferenceFE(TET, raviart_thomas, Float64, 0), 3)  # each column an RT space
+```
+
+#### Why the last index
+
+Such elements are usually stacked on the *first* index in the literature (each
+*row* a Raviart-Thomas space). Two reasons to do the opposite here.
+
+**A - It commutes with differentiation.** Gridap writes the derivative index first,
+
+```math
+(∇A)_{kij} = ∂_k A_{ij},
+```
+
+so the injection ``ι_c(v) = v ⊗ e_c`` appends the copy index, which never collides
+with the prepended derivative index:
+
+```math
+∇(ι_c v) = (k, j…, c) = ι_c(∇v),
+\qquad\text{i.e.}\qquad ∇ ∘ ι_c = ι_c ∘ ∇ .
+```
+
+A consequence, since [`divergence`](@ref)`(f) = tr(∇f)` and `tr` of a third-order
+tensor traces its first two indices: on ``V^K`` it is exactly the vector of the
+``K`` copies' divergences.
+
+On the other hand, first-index stacking would give ``(k, c, j…)`` instead 
+of ``(c, k, j…)``: the copy index would be inserted *between* the derivative 
+and the value indices, and every gradient would come out transposed 
+(invisibly when ``K = D``).
+
+**B - Each copy is contiguous.** [`MultiValue`](@ref Gridap.TensorValues)s are stored
+column major, so the *first* index runs fastest and the last one labels the
+columns. With last-index stacking, the ``d`` components of copy ``c`` occupy a
+contiguous run; first-index stacking would interleave the copies instead.
+
+```@autodocs
+Modules = [ReferenceFEs,]
+Order   = [:type, :constant, :macro, :function]
+Pages   = ["CartProdRefFEs.jl"]
 ```
 
 ## References
