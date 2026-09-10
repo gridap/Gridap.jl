@@ -59,6 +59,8 @@ The following table summarizes the elements implemented in Gridap (legend below)
 | [Hellan-Herrmann-Johnson](https://defelement.org/elements/hellan-herrmann-johnson.html) | [`hhj`](@ref HHJRefFE)                       |           | `TRI`       | ``{r=o≥0, o}``  | `:Hdiv`   |
 | [Regge](https://defelement.org/elements/regge.html)                                     | [`regge`](@ref ReggeRefFE)                   |           | `TRI`       | ``{r=o≥0, o}``  | `:Hdiv`   |
 | [Gopalakrishnan-Lederer-Schoberl](https://defelement.org/elements/gopalakrishnan-lederer-schoberl-second-kind.html) | [`gls`](@ref GLSRefFE) |     | `TRI`       | ``{r=o≥0, o}``  | `:Hdiv`   |
+|                                                                                                                                                                                                |
+| Cartesian product                                                                       | [`CartProdRefFE`](@ref)                      |           | as the atom | as the atom     | as the atom |
 
 ##### Legend
 
@@ -288,7 +290,7 @@ Pages   = ["GeometricDecompositions.jl"]
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CrouzeixRaviartRefFEs.jl","ModalScalarRefFEs.jl","RotatingPLambdaRefFEs.jl","MorleyRefFEs.jl","ArgyrisRefFEs.jl","HHJRefFEs.jl","ReggeRefFEs.jl","GLSRefFEs.jl","ArnoldWintherNCRefFEs.jl","ArnoldWintherCRefFEs.jl","MardalTaiWintherRefFEs.jl"]
+Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CrouzeixRaviartRefFEs.jl","ModalScalarRefFEs.jl","RotatingPLambdaRefFEs.jl","MorleyRefFEs.jl","ArgyrisRefFEs.jl","HHJRefFEs.jl","ReggeRefFEs.jl","GLSRefFEs.jl","ArnoldWintherNCRefFEs.jl","ArnoldWintherCRefFEs.jl","MardalTaiWintherRefFEs.jl","CartProdRefFEs.jl"]
 ```
 
 ## References

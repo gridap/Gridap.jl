@@ -75,6 +75,8 @@ using Test
 
 @testset "MardalTaiWintherRefFEs" begin include("MardalTaiWintherRefFEsTests.jl") end
 
+@testset "CartProdRefFEs" begin include("CartProdRefFEsTests.jl") end
+
 @testset "BubbleRefFEs" begin include("BubbleRefFEsTests.jl") end
 
 @testset "RotatingPLambda" begin include("PΛRefFEsTests.jl") end

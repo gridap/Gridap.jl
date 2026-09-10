@@ -206,6 +206,7 @@ export GLSRefFE
 export ArnoldWintherNCRefFE
 export ArnoldWintherCRefFE
 export MardalTaiWintherRefFE
+export CartProdRefFE
 export BubbleRefFE
 
 export Lagrangian
@@ -224,6 +225,7 @@ export GopalakrishnanLedererSchoberl
 export ArnoldWintherNC
 export ArnoldWintherC
 export MardalTaiWinther
+export CartProd
 export Serendipity
 export Bubble
 
@@ -345,6 +347,8 @@ include("ArnoldWintherNCRefFEs.jl")
 include("ArnoldWintherCRefFEs.jl")
 
 include("MardalTaiWintherRefFEs.jl")
+
+include("CartProdRefFEs.jl")
 
 include("MockDofs.jl")
 

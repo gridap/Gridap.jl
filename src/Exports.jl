@@ -160,6 +160,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs ArnoldWintherNCRefFE
 @publish ReferenceFEs ArnoldWintherCRefFE
 @publish ReferenceFEs MardalTaiWintherRefFE
+@publish ReferenceFEs CartProdRefFE
 
 @publish Geometry get_triangulation
 @publish Geometry num_cells
