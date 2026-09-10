@@ -162,6 +162,8 @@ include("VectorValueTypes.jl")
 
 include("TensorValueTypes.jl")
 
+include("SymHighOrderTensorValueTypes.jl")
+
 include("SymTensorValueTypes.jl")
 
 include("SymTracelessTensorValueTypes.jl")
