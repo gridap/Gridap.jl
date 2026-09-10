@@ -495,6 +495,45 @@ function product_rule(::typeof(⋅),f1::TensorValue,f2::VectorValue,∇f1,∇f2)
   ∇f1⋅f2 + ∇f2⋅transpose(f1)
 end
 
+# ∂_k (f1⋅f2)_j = (∂_k f1)_a f2_aj + f1_a (∂_k f2)_kaj. 
+function product_rule(::typeof(⋅),f1::VectorValue,f2::TensorValue,∇f1,∇f2)
+  ∇f1⋅f2 + tensor_contraction(∇f2,f1,Val(2),Val(1))
+end
+
+# ∂_k (f1⋅f2)_ij = (∂_k f1)_kia f2_aj + f1_ia (∂_k f2)_kaj. 
+function product_rule(::typeof(⋅),f1::TensorValue,f2::TensorValue,∇f1,∇f2)
+  ∇f1⋅f2 + permutedims(tensor_contraction(f1,∇f2,Val(2),Val(2)),Val((2,1,3)))
+end
+
+for V in (:VectorValue,:TensorValue)
+  @eval begin
+    function product_rule(::typeof(outer),f1::$V,f2::Union{Real,Complex},∇f1,∇f2)
+      outer(∇f1,f2) + outer(∇f2,f1)
+    end
+
+    function product_rule(::typeof(outer),f1::Union{Real,Complex},f2::$V,∇f1,∇f2)
+      product_rule(outer,f2,f1,∇f2,∇f1)
+    end
+  end
+end
+
+# ∂_k (f1⊗f2) = (∂_k f1)⊗f2 + f1⊗(∂_k f2).
+function product_rule(::typeof(outer),f1::VectorValue,f2::VectorValue,∇f1,∇f2)
+  outer(∇f1,f2) + permutedims(outer(f1,∇f2),Val((2,1,3)))
+end
+
+function product_rule(::typeof(outer),f1::VectorValue,f2::TensorValue,∇f1,∇f2)
+  outer(∇f1,f2) + permutedims(outer(f1,∇f2),Val((2,1,3,4)))
+end
+
+function product_rule(::typeof(outer),f1::TensorValue,f2::VectorValue,∇f1,∇f2)
+  outer(∇f1,f2) + permutedims(outer(f1,∇f2),Val((3,1,2,4)))
+end
+
+function product_rule(::typeof(outer),f1::TensorValue,f2::TensorValue,∇f1,∇f2)
+  outer(∇f1,f2) + permutedims(outer(f1,∇f2),Val((3,1,2,4,5)))
+end
+
 for op in (:*,:⋅,:⊙,:⊗)
   @eval begin
     function gradient(a::OperationField{typeof($op)})

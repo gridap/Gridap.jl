@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `DubinerBasis`, the L2-orthonormal (Dubiner/Koornwinder) polynomial basis of `P_K` on the reference simplex in any dimension.
 - Added `ArnoldWintherNCRefFE` and `ArnoldWintherCRefFE`, the nonconforming (15 DoFs, P2-based) and conforming (24 DoFs, P3-based) Arnold-Winther symmetric stress triangles for mixed elasticity. Both are built as constrained subspaces of a larger prebasis, so `length(get_prebasis(reffe)) > num_dofs(reffe)` for them.
 - Added `MardalTaiWintherRefFE`, the Mardal-Tai-Winther element on triangles (9 DoFs) and tetrahedra (24 DoFs).
+- Added the missing `product_rule` methods for `⋅` and `outer`.
 - Added `CartProdRefFE(reffe, Val(K))`, `K` independent copies of any reference FE stacked along a new last index of the value type. The copy index goes last so that the injection commutes with differentiation, which also makes `divergence` the vector of the copies' divergences.
 
 ## [Unreleased]
