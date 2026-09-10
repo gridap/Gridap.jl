@@ -5,7 +5,12 @@
 (==)(a::Number, b::MultiValue) = false
 (==)(a::MultiValue, b::MultiValue) = false
 (==)(a::MultiValue{S}, b::MultiValue{S}) where S = a.data == b.data
-(≈)(a::MultiValue,b::MultiValue;kwargs...) = ≈(get_array(a),get_array(b);kwargs...)
+
+function (≈)(a::MultiValue,b::MultiValue;kwargs...)
+  Sa, Sb = size(a), size(b)
+  Sa !== Sb && throw(DimensionMismatch("Tensors of size $(size(a)) and $(size(b)) are not comparable."))
+  ≈(get_array(a),get_array(b);kwargs...)
+end
 
 function (≈)(
   a::AbstractArray{<:MultiValue}, b::AbstractArray{<:MultiValue}; kwargs...)
@@ -29,10 +34,10 @@ function isless(a::MultiValue{Tuple{L}}, b::MultiValue{Tuple{L}}) where {L}
   false
 end
 
-isless(a::Number, b::MultiValue) = all(isless.(a, b.data))
-# TODO wrong on SkewSymTensorValue
+# Comparison uses get_array for robustness to tensors with symmetry or tracelessness
+isless(a::Number, b::MultiValue) = all(isless(a, bi) for bi in get_array(b))
 function <=(a::Number, b::MultiValue)
-  all(a .<= b.data) # default doesen't work because a==b is always false
+  all(a <= bi for bi in get_array(b)) # default doesen't work because a==b is always false
 end
 isless(a::MultiValue, b::MultiValue) = @unreachable "Comparison is not defined between tensor of order greater than 1"
 function <=(a::MultiValue, b::MultiValue)
@@ -102,11 +107,83 @@ end
 # Matrix Division
 ###############################################################
 
-function (\)(a::MultiValue{Tuple{D,D}} where D, b::MultiValue)
-  r = get_array(a) \ get_array(b)
-  T = change_eltype(b, eltype(r))
-  T(r)
+#Return an `Expr` containing the canonical type (with tuple dimension set) of a
+#tensor of order `Nr` and size `Tuple` `Sr`.
+function _tensor_base_type_expr(Nr,Sr)
+  if Nr == 0
+    :()
+  elseif Nr == 1
+    D = Sr[1]
+    if D isa Int
+      :( VectorValue{$(Sr[1])} )
+    elseif D isa Cov
+      :( ExteriorFormValue{1,$(Sr[1])} )
+    elseif D isa Con
+      # Spliced where a type name is expected, so it throws from the position
+      # the result type would have occupied.
+      :( @notimplemented "Gridap does not have a contravariant vector yet." )
+    else
+      :( @unreachable )
+    end
+  elseif Nr == 2
+    :( TensorValue{$(Sr[1]),$(Sr[2])} )
+  else
+    :( HighOrderTensorValue{$(Tuple{Sr...})} )
+  end
 end
+
+"""
+    (\\)(a::MultiValue{Tuple{D1,D2}}, b::MultiValue)
+
+Left division `inv(a)⋅b`, that is the solution `x` of `a⋅x = b`.
+
+`a` must be square, `D1` and `D2` being equal in value. The contracted pair is
+the first index of `inv(a)` -- the second index of `a` with flipped variance --
+against the first index of `b`, so the first indices of `a` and `b` must be
+identical, variance included. The result carries the indices
+`(inverse_variance(D2), size(b)[2:end]...)`.
+"""
+@generated function (\)(a::MultiValue{Tuple{D1,D2}}, b::MultiValue{Sb,Tb,Nb}) where {D1,D2,Sb,Tb,Nb}
+  if iszero(Nb)
+    msg = "Left division by an order-0 tensor is not implemented, got size $Sb"
+    return :( @notimplemented $msg )
+  end
+  if Int(D1) != Int(D2)
+    msg = "Left division requires a square left operand, got dimensions $D1 and $D2"
+    return :( throw(DimensionMismatch($msg)) )
+  end
+  B1 = first(Sb.parameters)
+  if D1 !== B1
+    msg = "Cannot left-divide a tensor of first index $B1 by a tensor of first
+      index $D1, they must be identical, variance included."
+    return :( throw(DimensionMismatch($msg)) )
+  end
+
+  # `inv(a)⋅b` is not symmetric even when `b` is, so the result type is built
+  # from the indices and never from `typeof(b)`.
+  Sr = (inverse_variance(D2), Sb.parameters[2:Nb]...)
+  V = _tensor_base_type_expr(Nb, Sr)
+  quote
+    r = get_array(a) \ get_array(b)
+    $V{eltype(r)}(Tuple(r))
+  end
+end
+
+"""
+    (/)(a::MultiValue{Tuple{Da1,Da2}}, b::MultiValue{Tuple{Db1,Db2}})
+
+Right division `a⋅inv(b)`, that is the solution `x` of `x⋅b = a`.
+
+`b` must be square, `Db1` and `Db2` being equal in value. The contracted pair is
+the second index of `a` with the second index of `inv(b)` -- which is `Db1` with
+flipped variance -- so the second indices of `a` and `b` must be identical,
+variance included. The result carries the indices `(Da1, inverse_variance(Db1))`.
+
+Those two conditions are the ones `\\` enforces on the adjoints, which is how
+this is assembled, following `LinearAlgebra`'s generic `A/B = (Bᵀ \\ Aᵀ)ᵀ`.
+"""
+(/)(a::MultiValue{Tuple{Da1,Da2}}, b::MultiValue{Tuple{Db1,Db2}}) where {Da1,Da2,Db1,Db2} =
+  adjoint(adjoint(b) \ adjoint(a))
 
 ###############################################################
 # Operations with scalar numbers
@@ -443,11 +520,15 @@ const ⋅² = double_contraction
 
 Given a square second order tensors `a` and `b`, return `b`ᵀ⋅`a`⋅`b`.
 The type of the resulting value is (skew) symmetric stable w.r.t. `typeof(a)`.
+
+`a` carries twice the same index `D`, and `b`ᵀ contracts its second index against
+it, so the first index `Db` of `b` must satisfy `can_contract(Db,D)`.
 """
-function congruent_prod(a::MultiValue{Tuple{D,D},Ta}, b::MultiValue{Tuple{D,D1},Tb}) where {D,D1,Ta,Tb}
+function congruent_prod(a::MultiValue{Tuple{D,D},Ta}, b::MultiValue{Tuple{Db,D1},Tb}) where {D,Db,D1,Ta,Tb}
+  can_contract(Db,D) || _cannot_contract(Db,D)
   T = Base.promote_op(*,Ta,Tb)
   V = _congruent_ret_type(a, D1)
-  (iszero(D) || iszero(D1)) && return zero(V{T})
+  (iszero(Int(D)) || iszero(Int(D1))) && return zero(V{T})
   V(get_array(transpose(b) ⋅ a ⋅ b))
 end
 _congruent_ret_type(a, D1) = TensorValue{D1,D1}
@@ -512,29 +593,6 @@ const ⊗ = outer
 ###############################################################
 # Generic tensor product + contraction
 ###############################################################
-
-#Return an `Expr` containing the canonical type (with tuple dimension set) of a
-#tensor of order `Nr` and size `Tuple` `Sr`.
-function _tensor_base_type_expr(Nr,Sr)
-  if Nr == 0
-    :()
-  elseif Nr == 1
-    D = Sr[1]
-    if D isa Int
-      :( VectorValue{$(Sr[1])} )
-    elseif D isa Cov
-      :( ExteriorFormValue{1,$(Sr[1])} )
-    elseif D isa Con
-      :( @notimplemented "Gridap does not have a contravariant vector yet." )
-    else
-      :( @unreachable )
-    end
-  elseif Nr == 2
-    :( TensorValue{$(Sr[1]),$(Sr[2])} )
-  else
-    :( HighOrderTensorValue{$(Tuple{Sr...})} )
-  end
-end
 
 function _zero_tensor_expr(V,Nr,Ta,Tb)
     if iszero(Nr)
@@ -858,8 +916,11 @@ cross(a::MultiValue, b::MultiValue) = error("Cross product only defined for R2 a
 
 Determinent of square second order tensors.
 """
-det(a::MultiValue{Tuple{D,D}}) where {D} = det(get_array(a))
-det(a::MultiValue) = @unreachable "det undefined for this tensor shape: $(size(a))"
+function det(a::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+  D1 == D2 || @unreachable "det only defined for square tensors, got size $(size(a))"
+  det(get_array(a))
+end
+det(a::MultiValue) = @unreachable "det only defined for square tensors, got size $(size(a))"
 
 det(a::MultiValue{Tuple{1,1}}) = a[1]
 
@@ -880,18 +941,25 @@ end
 det(::SkewSymTensorValue{3,T}) where T = zero(T)
 
 """
-    inv(a::MultiValue{Tuple{D,D}})
+    inv(a::MultiValue{Tuple{D1,D2}})
 
 Inverse of a second order tensor.
+
+Inverting raises the lower indices and lowers the upper ones, so the result
+carries the indices `(inverse_variance(D2), inverse_variance(D1))`.
 """
-inv(a::MultiValue{Tuple{D,D}}) where D = TensorValue(inv(get_array(a)))
+function inv(a::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+  Int(D1) == Int(D2) || @unreachable "inv undefined for this tensor shape: $(size(a))"
+  TensorValue{inverse_variance(D2),inverse_variance(D1)}(inv(get_array(a)))
+end
 
 const InverseStableTensorTypes{D} = Union{SymTensorValue{D},SkewSymTensorValue{D}}
 
-function inv(a::InverseStableTensorTypes{D}) where D
-  ai = inv(get_array(a))
-  T = change_eltype(a, eltype(ai))
-  T(ai)
+for V in (:SymTensorValue, :SkewSymTensorValue)
+  @eval function inv(a::$V{D}) where D
+    ai = inv(get_array(a))
+    $V{inverse_variance(D),eltype(ai)}(ai)
+  end
 end
 
 function inv(a::MultiValue{Tuple{1,1}})
@@ -942,11 +1010,18 @@ inv(a::SkewSymTensorValue{2}) = (typeof(a))(-inv(a.data[1]))
 inv(a::SkewSymTensorValue{3,T,L}) where {T,L} = SkewSymTensorValue{3,T}(tfill(inv(zero(T)), Val(L)))
 
 """
-    eigen(a::MultiValue{Tuple{D,D}})
+    eigen(a::MultiValue{Tuple{D1,D2}})
 
 Eigenvalue decomposition of a square second order tensor.
+
+Eigenvalues are coordinate-invariant only for a (1,1) tensor, so `D1` and `D2`
+must be contractible, see [`can_contract`](@ref). The decomposition is returned
+in terms of `SArray`s, which carry no variance.
 """
-eigen(a::MultiValue{Tuple{D,D}}) where D = eigen(get_array(a))
+function eigen(a::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+  can_contract(D1,D2) || @unreachable "eigen undefined for this tensor shape: $(size(a))"
+  eigen(get_array(a))
+end
 eigen(a::MultiValue) = @unreachable "eigen undefined for this tensor shape: $(size(a))"
 
 """
@@ -956,7 +1031,18 @@ Normalization of a tensor value.
 """
 normalize(a::MultiValue) = a / norm(a)
 
-sqrt(t::MultiValue{Tuple{D,D}}) where D = TensorValue{D,D}(sqrt(SArray(t)))
+"""
+    sqrt(a::MultiValue{Tuple{D1,D2}})
+
+Square root of a square second order tensor, carrying the indices of `a`.
+
+A square root is coordinate-invariant only for a (1,1) tensor, so `D1` and `D2`
+must be contractible, see [`can_contract`](@ref).
+"""
+function sqrt(t::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+  can_contract(D1,D2) || @unreachable "sqrt undefined for this tensor shape: $(size(t))"
+  TensorValue{D1,D2}(sqrt(SArray(t)))
+end
 
 ###############################################################
 # Measure
@@ -970,16 +1056,10 @@ Euclidean norm of a vector.
 """
 meas(a::MultiValue{Tuple{D}}) where D = sqrt(inner(a, a))
 
-"""
-    meas(J::MultiValue{Tuple{D1,D2}})
-
-Returns the absolute `D1`-dimensional volume of the parallelepiped
-formed by the rows of `J`, that is `sqrt(det(J⋅Jᵀ))`, or `abs(det(J))` if `D1`=`D2`.
-This is used to compute the contribution of the Jacobian matrix `J` of a changes of variables in integrals.
-"""
-meas(a::MultiValue{Tuple{D,D}}) where D = abs(det(a))
-
 function meas(v::MultiValue{Tuple{1,D}}) where D
+  # The row is read as a plain vector, which is only a length-preserving
+  # reading when `D` carries no variance.
+  D isa Int || @unreachable "meas undefined for this tensor shape: $(size(v))"
   t = VectorValue(v.data)
   meas(t)
 end
@@ -992,9 +1072,17 @@ function meas(v::MultiValue{Tuple{2,3}})
   meas(n)
 end
 
-function meas(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
-  J = transpose(Jt)
-  sqrt(det(Jt⋅J))
+"""
+    meas(J::MultiValue{Tuple{D1,D2}})
+
+Returns the absolute `D1`-dimensional volume of the parallelepiped
+formed by the rows of `J`, that is `sqrt(det(J⋅Jᵀ))`, or `abs(det(J))` if `D1`=`D2`.
+This is used to compute the contribution of the metric `G = J⋅Jᵀ` of a changes of variables in integrals.
+"""
+@generated function meas(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+  can_contract(D1,D2) || @unreachable "meas undefined for this tensor shape: $(size(Jt)), indices cannot contract"
+  D1 == D2 && return :( abs(det(Jt)) )
+  :( sqrt(det(Jt ⋅ transpose(Jt))) )
 end
 
 """
@@ -1030,19 +1118,31 @@ end
 # Trace
 ###############################################################
 
-"""
-    tr(v::MultiValue{Tuple{D,D}})
+# Rejection of a pair of indices that cannot be traced over.
+_not_traceable_msg(i, j) = "Second order tensor of indices $i and $j is not square, see `can_contract`."
+_not_traceable_expr(i, j) = :( throw(ArgumentError($(_not_traceable_msg(i,j)))) )
 
-Return the trace of a second order square tensor, defined by `Σᵢ vᵢᵢ` or 0 if `D`=0.
 """
-@generated function tr(v::MultiValue{Tuple{D,D},T}) where {D,T}
+    tr(v::MultiValue{Tuple{D1,D2}})
+
+Return the trace of a second order square tensor, defined by `Σᵢ vᵢᵢ` or 0 if `D1`=0.
+
+The traced indices must be contractible, see [`can_contract`](@ref).
+"""
+@generated function tr(v::MultiValue{Tuple{D1,D2},T}) where {D1,D2,T}
+  can_contract(D1,D2) || return _not_traceable_expr(D1,D2)
+  D = Int(D1)
   iszero(D) && return :(zero(T))
   summands = [:(v[$i,$i]) for i in 1:D]
   Expr(:call, :+, summands...)
 end
-tr(::SymTracelessTensorValue{D,T}) where {D,T} = zero(T)
-tr(::SkewSymTensorValue{D,T}) where {D,T} = zero(T)
-tr(::MultiValue{Tuple{A,B}}) where {A,B} = throw(ArgumentError("Second order tensor is not square"))
+
+for V in (:SymTracelessTensorValue, :SkewSymTensorValue)
+  @eval @generated function tr(v::$V{D,T}) where {D,T}
+    can_contract(D,D) || return _not_traceable_expr(D,D)
+    :(zero(T))
+  end
+end
 
 """
     tr(v::MultiValue{Tuple{D,D,D2}}) -> ::VectorValue{D2}
@@ -1059,20 +1159,18 @@ Return a vector of length `D2` of traces computed on the first two indices: `res
   end
 
   A12 = first(S.parameters, 2)
-  if !allequal(A12)
-    msg = "First two dimensions ($A12) are not iddentical."
-    return :( throw(ArgumentError($msg)) )
-  end
+  can_contract(A12...) || return _not_traceable_expr(A12...)
 
   B = last(S.parameters)
-  iszero(length(v)) && return :(zero(VectorValue{$B,T}))
+  V = _tensor_base_type_expr(1, (B,))
+  iszero(length(v)) && return :(zero($V{T}))
 
   comps = Expr[]
-  for k in 1:B
-    summands = [:( v[$i,$i,$k] ) for i in 1:A12[1]]
+  for k in 1:Int(B)
+    summands = [:( v[$i,$i,$k] ) for i in 1:Int(A12[1])]
     push!(comps, Expr(:call, :+, summands...))
   end
-  :( VectorValue($(comps...)) )
+  :( $V($(comps...)) )
 end
 
 ###############################################################
@@ -1084,8 +1182,8 @@ transpose(a::MultiValue{Tuple{D,D}}) where D = @notimplemented
 
 @generated function adjoint(a::TensorValue{D1,D2,T}) where {D1,D2,T}
   comps = Expr[]
-  for i in 1:D1
-    for j in 1:D2
+  for i in 1:Int(D1)
+    for j in 1:Int(D2)
       push!(comps, :(conj(a[$i,$j])) )
     end
   end
@@ -1094,8 +1192,8 @@ end
 
 @generated function transpose(a::TensorValue{D1,D2,T}) where {D1,D2,T}
   comps = Expr[]
-  for i in 1:D1
-    for j in 1:D2
+  for i in 1:Int(D1)
+    for j in 1:Int(D2)
       push!(comps, :(a[$i,$j]) )
     end
   end
@@ -1155,6 +1253,8 @@ end
     return :(throw(ArgumentError($msg)))
   end
 
+  # Reordering the slots carries each index along with its own variance, so any
+  # permutation is admissible whatever the variances are.
   Sa_params = tuple(Sa.parameters...)
   Sr = ntuple(k -> Sa_params[P[k]], Na)
   V = _tensor_base_type_expr(Na,Sr)
@@ -1167,7 +1267,7 @@ end
   end
 
   comps = Expr[]
-  for ci in CartesianIndices(Sr)
+  for ci in CartesianIndices(Int.(Sr))
     a_idx = ntuple(k -> ci[inv_perm[k]], Na)
     push!(comps, :( a[$a_idx...] ) )
   end
@@ -1185,15 +1285,18 @@ Return the symmetric part of second order tensor, that is `½(v + vᵀ)`.
 Return `v` if  `v isa AbstractSymTensorValue`, and the zero symmetric tensor if
 `v  isa SkewSymTensorValue`.
 """
-@generated function symmetric_part(v::MultiValue{Tuple{D,D},T}) where {D,T}
-  iszero(D) && return :(zero(SymTensorValue{0,T}))
+@generated function symmetric_part(v::MultiValue{Tuple{D1,D2},T}) where {D1,D2,T}
+  D1 === D2 || return :( @notimplemented $(
+    "symmetric_part requires two identical indices, got $D1 and $D2") )
+  D = Int(D1)
+  iszero(D) && return :(zero(SymTensorValue{D1,T}))
   comps = Expr[]
   for j in 1:D
     for i in j:D
       push!(comps, :((v[$i,$j] + v[$j,$i])/2) )
     end
   end
-  :( SymTensorValue{D}($(comps...)) )
+  :( SymTensorValue{D1}($(comps...)) )
 end
 
 symmetric_part(v::AbstractSymTensorValue) = v
@@ -1206,15 +1309,18 @@ Return the asymmetric part of `v`, that is `½(v - vᵀ)`.
 Return the zero skew symmetric tensor if `v  isa AbstractSymTensorValue`, and
 `v` itself if  `v  isa SkewSymTensorValue`.
 """
-@generated function skew_symmetric_part(v::MultiValue{Tuple{D,D},T}) where {D,T}
-  iszero(D) && return :(zero(SkewSymTensorValue{0,T}))
+@generated function skew_symmetric_part(v::MultiValue{Tuple{D1,D2},T}) where {D1,D2,T}
+  D1 === D2 || return :( @notimplemented $(
+    "skew_symmetric_part requires two identical indices, got $D1 and $D2") )
+  D = Int(D1)
+  iszero(D) && return :(zero(SkewSymTensorValue{D1,T}))
   comps = Expr[]
   for i in 1:D
     for j in i+1:D
       push!(comps, :((v[$i,$j] - v[$j,$i])/2) )
     end
   end
-  :( SkewSymTensorValue{D}($(comps...)) )
+  :( SkewSymTensorValue{D1}($(comps...)) )
 end
 
 skew_symmetric_part(::AbstractSymTensorValue{D,T}) where {D,T} = zero(SkewSymTensorValue{D,T})
@@ -1225,10 +1331,12 @@ skew_symmetric_part(v::SkewSymTensorValue) = v
 ###############################################################
 
 function LinearAlgebra.diag(a::MultiValue{Tuple{D,D},T}) where {D,T}
+  D isa Int || @unreachable "diag requires un-varianced indices, got $D"
   VectorValue{D,T}((a[i,i] for i in 1:D)...)
 end
 
 function LinearAlgebra.diag(a::SkewSymTensorValue{D,T}) where {D,T}
+  D isa Int || @unreachable "diag requires un-varianced indices, got $D"
   zero(VectorValue{D,T})
 end
 
@@ -1236,14 +1344,19 @@ end
 # Broadcast
 ###############################################################
 
-function Base.broadcasted(f, a::VectorValue, b::VectorValue)
+#function _broadcast_check(a::MultiValue, b::MultiValue)
+#  size(a) === size(b) || throw(DimensionMismatch(
+#    "Cannot broadcast over tensors of sizes $(size(a)) and $(size(b))"))
+#end
+
+function Base.broadcasted(f, a::VectorValue{D}, b::VectorValue{D}) where D
   VectorValue(map(f, a.data, b.data))
 end
 
-function Base.broadcasted(f, a::TensorValue, b::TensorValue)
-  TensorValue(map(f, a.data, b.data))
+function Base.broadcasted(f, a::TensorValue{D1,D2}, b::TensorValue{D1,D2})  where {D1,D2}
+  TensorValue{D1,D2}(map(f, a.data, b.data))
 end
 
-function Base.broadcasted(f, a::AbstractSymTensorValue, b::AbstractSymTensorValue)
-  SymTensorValue(map(f, a.data, b.data))
+function Base.broadcasted(f, a::AbstractSymTensorValue{D}, b::AbstractSymTensorValue{D}) where D
+  SymTensorValue{D}(map(f, a.data, b.data))
 end

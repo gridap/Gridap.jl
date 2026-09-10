@@ -20,7 +20,7 @@ eachindex(arg::MultiValue) = CartesianIndices(arg)
 eachindex(::IndexCartesian, arg::MultiValue) = eachindex(arg)
 eachindex(::IndexLinear, arg::MultiValue) = SOneTo(length(arg))
 
-keys(arg::MultiValue) = CartesianIndices(map(SOneTo, size(arg)))
+keys(arg::MultiValue) = CartesianIndices(_axes(arg))
 keys(s::IndexStyle, arg::MultiValue) = eachindex(s, arg)
 
 """
@@ -170,7 +170,7 @@ end
 #  @inbounds @inline getindex(arg.data, i)
 #end
 
-@propagate_inbounds function getindex(arg::ExteriorFormValue{N,D,T}, inds::Vararg{Integer,N}) where {N,D,T}
+@propagate_inbounds function getindex(arg::SkewSymKTensorValue{N,D,T}, inds::Vararg{Integer,N}) where {N,D,T}
   @boundscheck @check checkbounds(arg, inds...) === nothing
   s = sorting_sign(inds...)
   s == 0 && return zero(T)

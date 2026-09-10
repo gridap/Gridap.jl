@@ -117,7 +117,7 @@ d_star_ω = exterior_derivative(star_ω)
 
 # ── hodge_star (value level via Operation) ────────────────────────────────────
 
-star_val_cf = hodge_star(ω)
+star_val_cf = flat_hodge_star(ω)
 star_valx   = star_val_cf(pts)
 csv         = array_cache(star_valx)
 sv0         = getindex!(csv, star_valx, 1)
@@ -219,7 +219,7 @@ vval0 = getindex!(cv, vx, 1)
 # ω = x¹ dx¹ + x² dx² on [0,1]²
 # ‖ω‖² = x¹² + x²²; ∫₀¹∫₀¹(x²+y²) dx dy = 1/3+1/3 = 2/3
 dΩ = Measure(Ω, 4)
-norm2 = sum(∫(vol_coeff(ω_id_cf ∧ hodge_star(ω_id_cf))) * dΩ)
+norm2 = sum(∫(vol_coeff(ω_id_cf ∧ flat_hodge_star(ω_id_cf))) * dΩ)
 @test norm2 ≈ 2/3   atol=1e-4
 
 # ── Near-zero-allocation cell traversal ──────────────────────────────────────

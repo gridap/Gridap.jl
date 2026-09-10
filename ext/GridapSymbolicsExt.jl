@@ -70,7 +70,7 @@ function codifferential(ω::ExteriorFormValue{K,Dw,Symbolics.Num}) where {K,Dw}
   @assert K >= 1 "codifferential requires K ≥ 1"
   D   = Int(Dw)
   sgn = iseven(D*(K-1) + 1) ? 1 : -1
-  sgn * exterior_derivative(hodge_star(ω))  |> hodge_star
+  sgn * exterior_derivative(flat_hodge_star(ω))  |> flat_hodge_star
 end
 
 # ============================================================

@@ -21,12 +21,12 @@ using Test
 # vol_coeff extracts the scalar content of ω ∧ ⋆η
 # In 2D: ω = (a, b), ⋆ω = (-b, a); ω ∧ ⋆ω = (a²+b²) dx¹∧dx²
 ω = ExteriorFormValue{1,2}((3.0, 4.0))
-@test vol_coeff(ω ∧ hodge_star(ω)) ≈ 25.0   atol=1e-12  # 3²+4² = 25
+@test vol_coeff(ω ∧ flat_hodge_star(ω)) ≈ 25.0   atol=1e-12  # 3²+4² = 25
 
 # vol_coeff(du ∧ ⋆dv) = ∇u·∇v
 du = ExteriorFormValue{1,2}((1.0, 2.0))
 dv = ExteriorFormValue{1,2}((3.0, 4.0))
-@test vol_coeff(du ∧ hodge_star(dv)) ≈ 11.0   # 1·3 + 2·4
+@test vol_coeff(du ∧ flat_hodge_star(dv)) ≈ 11.0   # 1·3 + 2·4
 
 # ── to_1form / from_1form ────────────────────────────────────────────────────
 

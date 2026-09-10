@@ -21,7 +21,7 @@ function _csphere_metric(r, x)
   sa, sb = 1 + a^2, 1 + b^2
   ρ4     = (1 + a^2 + b^2)^2
   c      = r^2 * sa * sb / ρ4
-  SymTensorValue{2,Float64,3}(c*sa, -c*a*b, c*sb)
+  SymTensorValue{cov2,Float64}(c*sa, -c*a*b, c*sb)
 end
 
 function _csphere_inv_metric(r, x)
@@ -29,7 +29,7 @@ function _csphere_inv_metric(r, x)
   sa, sb = 1 + a^2, 1 + b^2
   ρ2     = 1 + a^2 + b^2
   c      = ρ2 / (r^2 * sa * sb)
-  SymTensorValue{2,Float64,3}(c*sb, c*a*b, c*sa)
+  SymTensorValue{con2,Float64}(c*sb, c*a*b, c*sa)
 end
 
 function _csphere_sqrt_det_g(r, x)
@@ -61,8 +61,8 @@ g_inv_full = TensorValue{2,2,Float64,4}(g_inv[1,1], g_inv[2,1], g_inv[1,2], g_in
 # ⋆_g dx¹ = √(p/q) dx²    ⋆_g dx² = −√(q/p) dx¹
 
 p, q       = 2.0, 3.0
-g_diag     = SymTensorValue{2,Float64,3}(p, 0.0, q)
-g_inv_diag = SymTensorValue{2,Float64,3}(1/p, 0.0, 1/q)
+g_diag     = SymTensorValue{cov2,Float64,3}(p, 0.0, q)
+g_inv_diag = inv(g_diag) # con2
 sdg_diag   = sqrt(p*q)
 
 dx1 = ExteriorFormValue{1,2}((1.0, 0.0))
@@ -118,8 +118,8 @@ e1 = VectorValue(1.0, 0.0)
 e2 = VectorValue(0.0, 1.0)
 
 # Flat metric: flat/sharp are identities
-g_flat     = SymTensorValue{2,Float64,3}(1.0, 0.0, 1.0)
-g_inv_flat = SymTensorValue{2,Float64,3}(1.0, 0.0, 1.0)
+g_flat     = one(SymTensorValue{cov2,Float64})
+g_inv_flat = inv(g_flat)
 
 @test flat(e1, g_flat).data == (1.0, 0.0)
 @test flat(e2, g_flat).data == (0.0, 1.0)

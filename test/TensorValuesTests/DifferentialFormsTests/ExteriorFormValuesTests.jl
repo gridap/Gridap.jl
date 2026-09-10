@@ -253,37 +253,37 @@ dx1_3d = ExteriorFormValue{1,D3}((1.0, 0.0, 0.0))
 dx2_3d = ExteriorFormValue{1,D3}((0.0, 1.0, 0.0))
 dx3_3d = ExteriorFormValue{1,D3}((0.0, 0.0, 1.0))
 
-@test hodge_star(dx1_3d).data == (0.0,  0.0,  1.0)    # dx²∧dx³
-@test hodge_star(dx2_3d).data == (0.0, -1.0,  0.0)    # -dx¹∧dx³
-@test hodge_star(dx3_3d).data == (1.0,  0.0,  0.0)    # dx¹∧dx²
+@test flat_hodge_star(dx1_3d).data == (0.0,  0.0,  1.0)    # dx²∧dx³
+@test flat_hodge_star(dx2_3d).data == (0.0, -1.0,  0.0)    # -dx¹∧dx³
+@test flat_hodge_star(dx3_3d).data == (1.0,  0.0,  0.0)    # dx¹∧dx²
 
 # ⋆∘⋆ = +1 for K=1, D=3 ((-1)^{K(D-K)} = (-1)^2 = +1)
 for ω in [dx1_3d, dx2_3d, dx3_3d]
-  @test hodge_star(hodge_star(ω)).data == ω.data
+  @test flat_hodge_star(flat_hodge_star(ω)).data == ω.data
 end
 
 # 0-form → 3-form
 f0 = ExteriorFormValue{0,D3}((5.0,))
-sf0 = hodge_star(f0)
+sf0 = flat_hodge_star(f0)
 @test typeof(sf0) <: ExteriorFormValue{3,cov3}
 @test sf0.data == (5.0,)
 
 # 3-form → 0-form
-svol3 = hodge_star(vol3)
+svol3 = flat_hodge_star(vol3)
 @test typeof(svol3) <: ExteriorFormValue{0,cov3}
 @test svol3.data == (1.0,)
 
 # 2D: ⋆ maps 1-forms to 1-forms (Kc = D-K = 2-1 = 1)
 # ⋆dx¹ = dx², ⋆dx² = -dx¹  (standard 2D orientation)
-sdx1_2d = hodge_star(dx1_2d)
-sdx2_2d = hodge_star(dx2_2d)
+sdx1_2d = flat_hodge_star(dx1_2d)
+sdx2_2d = flat_hodge_star(dx2_2d)
 @test typeof(sdx1_2d) <: ExteriorFormValue{1,cov2}
 @test sdx1_2d.data == (0.0, 1.0)    # 0*dx¹ + 1*dx²
 @test sdx2_2d.data == (-1.0, 0.0)   # -1*dx¹ + 0*dx²
 
 # ⋆∘⋆ = -1 for K=1, D=2 ((-1)^{K(D-K)} = (-1)^1 = -1)
 for ω in [dx1_2d, dx2_2d]
-  @test hodge_star(hodge_star(ω)).data == (-1.0 * ω).data
+  @test flat_hodge_star(flat_hodge_star(ω)).data == (-1.0 * ω).data
 end
 
 # ── Hodge star signs against the full Levi-Civita matrix ─────────────────────
@@ -321,7 +321,7 @@ end
 _full(ω::ExteriorFormValue) = MultiValue(SArray(ω))
 
 # An inverse metric with no zero minor, so every term of the raising sum counts
-g_inv_fi = SymTensorValue{D3}(2.0, -0.5, 0.3, 1.5, 0.25, 3.0)
+g_inv_fi = SymTensorValue{Con(D3)}(2.0, -0.5, 0.3, 1.5, 0.25, 3.0)
 sdg_fi   = 1 / sqrt(det(g_inv_fi))
 
 for (α, β) in [(ExteriorFormValue{0,D3}((7.0,)),
@@ -334,27 +334,34 @@ for (α, β) in [(ExteriorFormValue{0,D3}((7.0,)),
                 ExteriorFormValue{3,D3}((5.0,)))]
   K = length(size(α))
 
-  @test α ⨟ β == form_inner(α, β)
-  @test form_inner(α, β) == sum(α.data .* β.data)
-  @test form_inner(α, β) ≈ form_inner(α, β, one(SymTensorValue{D3,Float64}))
+  @test ⨟(α, β, g_inv_fi) == form_inner(α, β, g_inv_fi)
+  @test flat_form_inner(α, β) == sum(α.data .* β.data)
+  @test flat_form_inner(α, β) ≈ form_inner(α, β, one(g_inv_fi))
   # α ∧ ⋆_g β = √det(g) (α|β) dx¹∧…∧dx^D, the property that defines (α|β)
   @test vol_coeff(α ∧ hodge_star(β, g_inv_fi, sdg_fi)) ≈ sdg_fi * form_inner(α, β, g_inv_fi)
-  # the tensor inner product drops the 1/K! of (α|β)
-  @test inner(α, β) ≈ factorial(K) * form_inner(α, β)
+  # the flat tensor inner product drops the 1/K! of (α|β)
+  @test flat_inner(α, β) ≈ factorial(K) * flat_form_inner(α, β)
+  # the flat operators alias the non-flat symbol suffixed by ᴱ
+  @test (α ⊙ᴱ β) === flat_inner(α, β)
+  @test (α ⨟ᴱ β) === flat_form_inner(α, β)
+  @test ⋆ᴱ(α) === flat_hodge_star(α)
   # Summing the binomial(D,K) independent components gives the same as
   # contracting all Dᴷ of them. The forms are expanded first because both carry
   # covariant indices, which `can_contract` pairs only with contravariant ones.
   if K > 0 # MultiValue has no constructor from the 0-dimensional array of a 0-form
-    @test contracted_product(Val(K), _full(α), _full(β)) ≈ factorial(K) * form_inner(α, β)
+    @test contracted_product(Val(K), _full(α), _full(β)) ≈ factorial(K) * flat_form_inner(α, β)
+    # `inner` raises no index, so it refuses two covariant ones
+    @test_throws DimensionMismatch inner(α, β)
   end
 end
 
 # Past K = 4 the metric minors of the raising sum are computed by a loop instead
 # of an inlined Leibniz expansion.
 d5 = VectorValue(2.0, 3.0, 5.0, 7.0, 11.0, 13.0)
+g5_inv = SymTensorValue{con6}(symmetric_part(diagonal_tensor(d5))...)
 α5 = ExteriorFormValue{5,6}((1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
 β5 = ExteriorFormValue{5,6}((6.0, 5.0, 4.0, 3.0, 2.0, 1.0))
-@test form_inner(α5, β5, symmetric_part(diagonal_tensor(d5))) ≈
+@test form_inner(α5, β5, g5_inv) ≈
       sum(α5.data[n] * β5.data[n] * prod(d5.data) / d5[7-n] for n in 1:6)
 
 # A 0-form has no index to contract
@@ -394,20 +401,21 @@ _str(io_props, ω) = sprint((io, x) -> show(io, MIME("text/plain"), x), ω;
 a_i  = ExteriorFormValue{1,D3,Int}((1,2,3))
 b_f  = ExteriorFormValue{1,D3,Float32}((1f0,2f0,3f0))
 v_i  = VectorValue{D3,Int}(1,2,3)
-g_f  = SymTensorValue{D3,Float32}(1f0,0f0,0f0,1f0,0f0,1f0)
+g_f  = SymTensorValue{Cov(D3),Float32}(1f0,0f0,0f0,1f0,0f0,1f0)
+gif  = inv(g_f)
 Jt_f = TensorValue{D3,2,Float32}(1f0,0f0,0f0,0f0,1f0,0f0)
 
-@test eltype(a_i ∧ b_f)                 === Float32
-@test eltype(ι(v_i, b_f))               === Float32
-@test eltype(hodge_star(a_i))           === Int
-@test eltype(hodge_star(a_i, g_f, 1.0)) === Float64
-@test eltype(flat(v_i, g_f))            === Float32
-@test eltype(sharp(b_f, SymTensorValue{D3,Int}(1,0,0,1,0,1))) === Float32
-@test eltype(pullback(a_i, Jt_f))       === Float32
-@test eltype(outer(v_i, b_f))           === Float32
-@test typeof(form_inner(a_i, b_f))      === Float32
-@test typeof(form_inner(a_i, b_f, g_f)) === Float32
-@test typeof(apply_form(a_i, v_i))      === Int
+@test eltype(a_i ∧ b_f)                      === Float32
+@test eltype(ι(v_i, b_f))                    === Float32
+@test eltype(flat_hodge_star(a_i))           === Int
+@test eltype(hodge_star(a_i, gif, 1.0))      === Float64
+@test eltype(flat(v_i, g_f))                 === Float32
+@test eltype(sharp(b_f, SymTensorValue{Con(D3),Int}(1,0,0,1,0,1))) === Float32
+@test eltype(pullback(a_i, Jt_f))            === Float32
+@test eltype(outer(v_i, b_f))                === Float32
+@test typeof(flat_form_inner(a_i, b_f))      === Float32
+@test typeof(form_inner(a_i, b_f, gif))      === Float32
+@test typeof(apply_form(a_i, v_i))           === Int
 @test eltype(grad_to_2form(TensorValue{D3,D3,Int}(1,2,3,4,5,6,7,8,9))) === Int
 
 # a K-form takes exactly K arguments, each a size (D,) tensor
@@ -431,8 +439,8 @@ triv = ExteriorFormValue{4,D3,Float32}(())
 @test (@inferred apply_form(triv, v_i, v_i, v_i, VectorValue{D3,Float64}(1,2,3))) === zero(Float64)
 @test apply_form(ExteriorFormValue{4,D3,Int}(()), v_i, v_i, v_i, v_i) === zero(Int)
 @test apply_form(ExteriorFormValue{1,0,Float32}(()), VectorValue{0,Float32}()) === zero(Float32)
-@test form_inner(triv, ExteriorFormValue{4,D3,Int}(())) === zero(Float32)
-@test form_inner(triv, ExteriorFormValue{4,D3,Int}(()), g_f) === zero(Float32)
+@test flat_form_inner(triv, ExteriorFormValue{4,D3,Int}(())) === zero(Float32)
+@test form_inner(triv, ExteriorFormValue{4,D3,Int}(()), gif) === zero(Float32)
 # the conversions name the eltype, so it survives an empty container
 @test to_Kform(VectorValue{0,Float32}(()), Val(4), Val(D3)) ===
       zero(ExteriorFormValue{4,D3,Float32})
@@ -441,7 +449,7 @@ triv = ExteriorFormValue{4,D3,Float32}(())
 @test from_1form(ExteriorFormValue{1,0,Float32}(())) === zero(VectorValue{0,Float32})
 
 # ⋆ of such a form would be a Λ^(D-K) with D-K < 0, which is not a type
-@test_throws ErrorException hodge_star(triv)
-@test_throws ErrorException hodge_star(triv, SymTensorValue{D3,Int}(1,0,0,1,0,1), 1.0)
+@test_throws ErrorException flat_hodge_star(triv)
+@test_throws ErrorException hodge_star(triv, SymTensorValue{Con(D3),Int}(1,0,0,1,0,1), 1.0)
 
 end # module

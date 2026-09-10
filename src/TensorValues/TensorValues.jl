@@ -33,9 +33,12 @@ $(public_names_in_md(@__MODULE__; change_link=Dict(
   :⋅² => "double_contraction",
   :ι  => "interior_product",
   :⋆  => "hodge_star",
+  :⋆ᴱ => "flat_hodge_star",
   :♭  => "flat",
   :♯  => "sharp",
-  :⨟  => "form_inner"
+  :⨟  => "form_inner",
+  :⨟ᴱ => "flat_form_inner",
+  :⊙ᴱ => "flat_inner"
 )))
 """
 module TensorValues
@@ -59,6 +62,8 @@ for i in 0:9 @eval begin
 end end
 export tensor_type
 export can_contract
+export is_same_variance
+export inverse_variance
 
 export MultiValue
 export VectorValue
@@ -103,11 +108,16 @@ export from_voigt
 export to_mandel
 export from_mandel
 
+export SkewSymKTensorValue
 export ExteriorFormValue
+export ExteriorVectorValue
 export ∧
 export interior_product, ι
 export hodge_star, ⋆
+export flat_hodge_star, ⋆ᴱ
 export form_inner, ⨟
+export flat_form_inner, ⨟ᴱ
+export flat_inner, ⊙ᴱ
 export flat, ♭
 export sharp, ♯
 export apply_form

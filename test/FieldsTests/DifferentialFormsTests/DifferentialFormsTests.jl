@@ -133,7 +133,7 @@ star_ω = hodge_star_form(ω_fld)
 
 x1 = Point(1.0, 2.0)
 star_val     = evaluate(star_ω, x1)
-expected_val = hodge_star(evaluate(ω_fld, x1))   # value-level star
+expected_val = flat_hodge_star(evaluate(ω_fld, x1))   # value-level star
 @test collect(star_val.data) ≈ collect(expected_val.data)   atol=1e-12
 
 # ── Field-level codifferential ────────────────────────────────────────────────

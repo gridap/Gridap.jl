@@ -115,7 +115,8 @@ SymTracelessTensorValue{D,T1,L}(data::AbstractMatrix{T2}) where {D,T1,T2,L} = Sy
 # Conversions (SymTracelessTensorValue)
 ###############################################################
 
-@generated function _SymTracelessTensorValue_to_array(arg::SymTracelessTensorValue{D,T,L}) where {D,T,L}
+@generated function _SymTracelessTensorValue_to_array(arg::SymTracelessTensorValue{Da,T,L}) where {Da,T,L}
+  D = Int(Da)
   comps = Expr[]
   for j in 1:D
     for i in 1:D

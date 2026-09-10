@@ -90,7 +90,8 @@ SymFourthOrderTensorValue{D,T1,L}(data::AbstractArray{T2}) where {D,T1,T2,L} = S
 # Conversions (SymFourthOrderTensorValue)
 ###############################################################
 
-@generated function _SymFourthOrder_to_array(arg::SymFourthOrderTensorValue{D,T,L}) where {D,T,L}
+@generated function _SymFourthOrder_to_array(arg::SymFourthOrderTensorValue{Da,T,L}) where {Da,T,L}
+  D = Int(Da)
   comps = Expr[]
   for l in 1:D
     for k in 1:D
@@ -101,7 +102,7 @@ SymFourthOrderTensorValue{D,T1,L}(data::AbstractArray{T2}) where {D,T1,T2,L} = S
       end
     end
   end
-  :( return SArray{Tuple{D,D,D,D},T}( $(Expr(:tuple, comps...))) )
+  :( return SArray{Tuple{$D,$D,$D,$D},T}( $(Expr(:tuple, comps...))) )
 end
 
 # Inverse conversion

@@ -229,16 +229,31 @@ n_components
     The following APIs are experimental. They are likely to be modified in a
     breaking manner in the future.
 
-[`ExteriorFormValue`](@ref) represents the value of a differential `K`-form
-in `D` dimensions, in the orientation-ordered basis ``\{dx^I\}`` indexed by the
-sorted `K`-combinations `I` of ``1\!:\!D``. Only the pointwise (algebraic)
-operations live here; the operations involving a derivative, such as
-[`exterior_derivative`](@ref Gridap.Fields.exterior_derivative) and
-[`codifferential`](@ref Gridap.Fields.codifferential), are defined at the
-`Field` level in [`Gridap.Fields`](@ref Gridap.Fields).
+Only `VectorValue{D}` does not accept variance, the contravariant vector is `ExteriorVectorValue{1,D}`.
 
 ```@docs
+Cov
+Con
+Dim
+can_contract
+is_same_variance
+inverse_variance
+```
+
+### Tensor types
+
+[`SkewSymKTensorValue`](@ref) represents the value of a completely skew
+symmetric (or alternating) order `K` tensor in `D` dimensions. Its two aliases
+fix the variance of the `K` indices: [`ExteriorFormValue`](@ref) is a covariant
+differential (or alternating) `K`-form, and [`ExteriorVectorValue`](@ref) a
+contravariant `K`-vector. The components are expressed in basis ``\{dx^I\}``
+and ``\{\partial_I\}``, respectively, where the `K`-combinations `I` of
+``1\!:\!D`` are sorted lexicographic order.
+
+```@docs
+SkewSymKTensorValue
 ExteriorFormValue
+ExteriorVectorValue
 ```
 
 ### Pointwise algebra
@@ -246,26 +261,37 @@ ExteriorFormValue
 ```@docs
 ∧
 interior_product
-hodge_star
-form_inner
 apply_form
-vol_coeff
 koszul(::VectorValue{D}, ::ExteriorFormValue{K,D}) where {K,D}
 ```
 
 ### Metric operations
 
+Operations depending on the metric tensor `g` or its inverse `ginv`. They must
+be given explicitly with correct variance, `(0,2)` or `(2,0)`, respectively.
+
 ```@docs
+hodge_star
+form_inner
 flat
 sharp
 pullback
 ```
 
+Convenience functions assuming the metric is the identity, that is the space is
+Euclidean.
+
+```@docs
+flat_hodge_star
+flat_form_inner
+flat_inner
+```
+
 ### Conversions to and from `MultiValue`s
 
-The isomorphisms below identify forms with vectors component-wise, in the
-orientation-ordered basis. Those named after a specific degree assume a flat
-Euclidean metric.
+The isomorphisms below identify tensors with variance, such as forms or
+covariant vectors, with vectors that have no variance, component-wise. Those
+named after a specific degree assume a flat Euclidean metric.
 
 ```@docs
 to_1form
@@ -274,6 +300,7 @@ to_Kform
 from_Kform
 to_0form
 to_Dform
+vol_coeff
 grad_to_2form
 ```
 

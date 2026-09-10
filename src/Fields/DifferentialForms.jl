@@ -147,7 +147,7 @@ end
 Flat (Euclidean) Hodge star: a `DifferentialForm{D-K,D}` whose component fields
 are ±1 linear combinations of the components of `ω`.
 
-It is differentiable, unlike the pointwise `Operation(hodge_star)`.
+It is differentiable, unlike the pointwise `Operation(flat_hodge_star)`.
 """
 function hodge_star_form(ω::DifferentialForm{K,D}) where {K,D}
   Kc = D - K
@@ -252,7 +252,7 @@ function evaluate!(cache, δω::CodifferentialForm{K,D,F}, x::Point) where {K,D,
     acc = acc + (dfi ∧ kbm)
   end
 
-  sgn * hodge_star(acc)   # ExteriorFormValue{K-1,D}
+  sgn * flat_hodge_star(acc)   # ExteriorFormValue{K-1,D}
 end
 
 
@@ -339,6 +339,7 @@ function evaluate!(cache, f::PullbackForm{K,Dm,Dn}, x::Point{Dm}) where {K,Dm,Dn
   y   = evaluate!(mc, f.map_field, x)
   J   = evaluate!(jc, f.jac_field, x)
   ω_y = evaluate!(fc, f.form, y)
-  pullback(ω_y, J)
+  # variance fix until properly varianced `J` is available
+  pullback(ω_y, TensorValue{Cov(Dm),Con(Dn)}(Tuple(J)))
 end
 

@@ -248,8 +248,8 @@ function assembly_checks(model, rf; deg=6)
   # vol_coeff(u ∧ ⋆v) = u⋅v and vol_coeff(du ∧ ⋆dv) = (∇×u)⋅(∇×v).
   a_mass(u, v)  = ∫(u ⋅ v) * dΩ
   a_stiff(u, v) = ∫((∇×u) ⋅ (∇×v)) * dΩ
-  # a_mass(u, v)  = ∫(vol_coeff(u ∧ hodge_star(v))) * dΩ
-  # a_stiff(u, v) = ∫(vol_coeff(d_1form(u) ∧ hodge_star(d_1form(v)))) * dΩ
+  # a_mass(u, v)  = ∫(vol_coeff(u ∧ flat_hodge_star(v))) * dΩ
+  # a_stiff(u, v) = ∫(vol_coeff(d_1form(u) ∧ flat_hodge_star(d_1form(v)))) * dΩ
   M = assemble_matrix(a_mass, U, V)
   A = assemble_matrix(a_stiff, U, V)
   n, Matrix(M), Matrix(A)
@@ -282,7 +282,7 @@ end
     V     = FESpace(model, make_reffe(name, 2, 1), conformity=:HCurl)
     U     = TrialFESpace(V)
     a_mass(u, v) = ∫(u ⋅ v) * dΩ
-    # a_mass(u, v) = ∫(vol_coeff(u ∧ hodge_star(v))) * dΩ
+    # a_mass(u, v) = ∫(vol_coeff(u ∧ flat_hodge_star(v))) * dΩ
     M = Matrix(assemble_matrix(a_mass, U, V))
     @test issymmetric(M)
     @test isposdef(M)

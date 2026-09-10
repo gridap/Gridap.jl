@@ -2,12 +2,39 @@
 # Tensor dimensions with variance
 ###############################################################
 
+"""
+    abstract type VariancedDimension <: Integer
+
+
+"""
 abstract type VariancedDimension <: Integer end
+
+"""
+    struct Cov <: VariancedDimension
+
+`Int` wrapper representing a covariant tensor dimension. The constants `cov0 =
+Cov(0)`, ..., `cov9 = Cov(9)` are exported for convenience.
+
+```julia
+cov1 === Cov(1) # true
+1 == cov1 # true
+1 === cov1 # false
+1 === cov1[1] # true
+```
+"""
 struct Cov <: VariancedDimension
   index::Int
   Cov(index::Int) = new(index)
   Cov(index::Cov) = new(index[])
 end
+"""
+    struct Con <: VariancedDimension
+
+`Int` wrapper representing a contravariant tensor dimension. The constants
+`con0 = Con(0)`, ..., `con9 = Con(9)` are exported for convenience.
+
+See also [`Cov`](@ref).
+"""
 struct Con <: VariancedDimension
   index::Int
   Con(index::Int) = new(index)
@@ -54,7 +81,7 @@ Base.:-(a::Con, b::Con) = Con(a[] - b[])
 Base.:*(a::Con, b::Con) = Con(a[] * b[])
 Base.:/(a::Con, b::Con) = Con(a[] / b[])
 Base.div(a::Con, b::Con, r::RoundingMode=RoundToZero) = div(a[], b[], r)
-Base.:-(x::Con) = Cov(-x[])
+Base.:-(x::Con) = Con(-x[])
 
 _rm_size_variance(s::Tuple) = tuple(Int.(s)...)
 @generated function _rm_size_variance(::Type{S}) where S<:Tuple
@@ -65,9 +92,17 @@ end
 """
     Dim = Union{Int, VariancedDimension}
 
-Valid type of values to use in MultiValue's size, `S=Tuple{I...}` where each `D` in `I` is a `Dim`.
+Valid type of values to use in `MultiValue`'s size, `S=Tuple{I...}` where each `D` in `I` is a `Dim`.
 """
 const Dim = Union{Int, VariancedDimension}
+
+"""
+    is_same_variance(i::Dim, j::Dim) = typeof(i) === typeof(j)
+
+
+Wether dimensions `i` and `j` have the same variance.
+"""
+is_same_variance(i::Dim, j::Dim) = typeof(i) === typeof(j)
 
 """
     can_contract(i::Dim, j::Dim)
@@ -79,6 +114,19 @@ can_contract(i::Int, j::Int) = i == j
 can_contract(i::Con, j::Cov) = i == j
 can_contract(i::Cov, j::Con) = i == j
 can_contract(i::Dim, j::Dim) = false
+
+"""
+    inverse_variance(i::Dim)
+
+Dimension `i` with its variance flipped, `Cov`↔`Con`, an un-varianced dimension
+being its own flip. Inverting a tensor raises its lower indices and lowers its
+upper ones, so `inv(a)` has size `reverse(inverse_variance.(size(a)))`.
+
+`can_contract(i, inverse_variance(i))` holds for every `i`.
+"""
+inverse_variance(i::Int) = i
+inverse_variance(i::Cov) = Con(i[])
+inverse_variance(i::Con) = Cov(i[])
 
 
 ###############################################################

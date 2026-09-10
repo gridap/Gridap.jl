@@ -97,7 +97,8 @@ SymTensorValue{D,T1,L}(data::AbstractMatrix{T2}) where {D,T1,T2,L} = SymTensorVa
 # Conversions (SymTensorValue)
 ###############################################################
 
-@generated function _SymTensorValue_to_array(arg::SymTensorValue{D,T,L}) where {D,T,L}
+@generated function _SymTensorValue_to_array(arg::SymTensorValue{Da,T,L}) where {Da,T,L}
+  D = Int(Da)
   comps = Expr[]
   for j in 1:D
     for i in 1:D
@@ -105,7 +106,7 @@ SymTensorValue{D,T1,L}(data::AbstractMatrix{T2}) where {D,T1,T2,L} = SymTensorVa
       push!(comps, :(arg.data[$p]))
     end
   end
-  :( return SMatrix{D,D,T}( $(Expr(:tuple, comps...))) )
+  :( return SMatrix{$D,$D,T}( $(Expr(:tuple, comps...))) )
 end
 
 # Inverse conversion

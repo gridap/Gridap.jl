@@ -497,7 +497,7 @@ Base.:(∘)(f::Function,g::Tuple{Vararg{Union{Function,CellField}}}) = Operation
 # Unary ops
 
 for op in (:symmetric_part,:inv,:det,:abs,:abs2,:+,:-,:tr,:transpose,:adjoint,
-  :grad2curl,:real,:imag,:conj,:hodge_star,:vol_coeff,:to_1form,:from_1form
+  :grad2curl,:real,:imag,:conj,:flat_hodge_star,:vol_coeff,:to_1form,:from_1form
 )
   @eval begin
     ($op)(a::CellField) = Operation($op)(a)

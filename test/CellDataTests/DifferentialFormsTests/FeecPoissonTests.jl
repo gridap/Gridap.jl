@@ -54,7 +54,7 @@ f_cf = CellField(x -> 2π^2*sin(π*x[1])*sin(π*x[2]), Ω8, PhysicalDomain())
 l(v) = ∫( f_cf * v ) * dΩ8
 
 # Differential-form bilinear form: a(u,v) = ∫(d₀u ∧ ⋆d₀v)
-a_form(u,v) = ∫( vol_coeff(d_0form(u) ∧ hodge_star(d_0form(v))) ) * dΩ8
+a_form(u,v) = ∫( vol_coeff(d_0form(u) ∧ flat_hodge_star(d_0form(v))) ) * dΩ8
 
 # Standard Gridap bilinear form for comparison
 a_std(u,v) = ∫( ∇(u) ⋅ ∇(v) ) * dΩ8
