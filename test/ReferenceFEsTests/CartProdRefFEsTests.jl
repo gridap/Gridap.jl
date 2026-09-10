@@ -26,6 +26,8 @@ pts = [Point(0.3, 0.2), Point(0.1, 0.5), Point(0.25, 0.25)]
 # not, and two vector-valued ones
 morley = MorleyRefFE(Float64, TRI)
 argyris = ArgyrisRefFE(Float64, TRI)
+lag2 = ReferenceFE(TRI, lagrangian, Float64, 2)
+lagv = ReferenceFE(TRI, lagrangian, VectorValue{2,Float64}, 1)
 rt0 = ReferenceFE(TRI, raviart_thomas, Float64, 0)
 rt1 = ReferenceFE(TRI, raviart_thomas, Float64, 1)
 mtw2 = MardalTaiWintherRefFE(Float64, TRI)
@@ -69,8 +71,50 @@ test_cp_reffe(argyris, 3)
 test_cp_reffe(rt0, 3)
 test_cp_reffe(rt1, 2)
 test_cp_reffe(mtw2, 2)
+test_cp_reffe(lag2, 3)
+test_cp_reffe(lagv, 2)
 
 @test_throws ErrorException CartProdRefFE(morley, Val(0))
+
+############################################################################################
+# Stacking a nodal DoF basis
+#
+# The result is another `LagrangianDofBasis` on the same nodes. Its layout is
+# built explicitly rather than by `LagrangianDofBasis(W, nodes)`, which numbers
+# with the node fastest where everything here runs the copy fastest, so what is
+# checked is the layout: copy `c` of DoF `a` is at `K*(a-1)+c` and reads
+# component `j + d*(c-1)`, with `j` the atom's component and `d` its count.
+############################################################################################
+
+function test_cp_nodal_dofs(atom, K)
+  adb = get_dof_basis(atom)
+  db = ReferenceFEs._cp_stack_dofs(adb, Val(K))
+  d = num_indep_components(testitem(evaluate(get_shapefuns(atom), pts)))
+
+  @test db isa LagrangianDofBasis
+  @test get_nodes(db) == get_nodes(adb)
+  for a in 1:num_dofs(atom), c in 1:K
+    @test db.dof_to_node[K*(a-1)+c] == adb.dof_to_node[a]
+    @test db.dof_to_comp[K*(a-1)+c] == adb.dof_to_comp[a] + d*(c-1)
+  end
+end
+
+test_cp_nodal_dofs(lag2, 3)
+test_cp_nodal_dofs(lagv, 2)
+
+# the stacked space is Gridap's own vector-valued Lagrangian space: the two
+# number their DoFs differently, but they interpolate identically
+let K = 3, r = 2, model = unit_square(3)
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω, 2*r + 2)
+  Vs = FESpace(model, CartProdRefFE(ReferenceFE(TRI, lagrangian, Float64, r), Val(K)))
+  Vg = FESpace(model, ReferenceFE(lagrangian, VectorValue{K,Float64}, r))
+  @test num_free_dofs(Vs) == num_free_dofs(Vg)
+
+  u(x) = VectorValue(1.0 + x[1]^2, x[1]*x[2] - 2.0, 3.0 - x[2]^2)
+  e = interpolate(u, Vs) - interpolate(u, Vg)
+  @test sqrt(sum( ∫( e ⋅ e )dΩ )) < 1e-13
+end
 
 ############################################################################################
 # The stacked basis is the atom's, scattered copy-fastest

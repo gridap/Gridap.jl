@@ -190,17 +190,12 @@ evaluate!(::Nothing, ::Broadcasting{typeof(∇∇)}, a::CartProdBasis) =
   FieldGradientArray{2}(a)
 
 ############################################################################################
-# The stacked DoF basis -- constructed, not wrapped
+# The stacked DoF basis
 
 # `K` copies of the DoF basis `b`, with copy `c` of base DoF `i` at index
 # `K*(i-1) + c` and acting on slice `c`:
 #
 #   σ_{i,c}(u) = σ_i(π_c u),    π_c u = u ⋅ e_c.
-#
-# The result is an ordinary Gridap DoF basis of the same kind -- the slicing is
-# absorbed into the moment weights, which is possible because a moment DoF is
-# linear in the field. So nothing here has to differentiate, cache or be
-# evaluated field-by-field, and `interpolate` sees a plain `MomentBasedDofBasis`.
 function _cp_stack_dofs(b::MomentBasedDofBasis, ::Val{K}) where K
   fm, fom = get_face_moments(b), get_face_own_moments(b)
   E = representatives_of_componentbasis_dual(VectorValue{K,Float64})
@@ -224,6 +219,30 @@ _cp_stack_dofs(b::ConcatenatedDofVector, ::Val{K}) where K =
 
 _cp_stack_dofs(b::LinearCombinationDofVector, ::Val{K}) where K =
   linear_combination(_cp_kron(b.values, K), _cp_stack_dofs(b.predofs, Val(K)))
+
+function _cp_stack_dofs(b::LagrangianDofBasis{P,V}, ::Val{K}) where {P,V,K}
+  ndofs = length(b.dof_to_node)
+  nnodes = length(b.nodes)
+  d = num_indep_components(V)
+
+  e = zero(VectorValue{K,Float64})
+  W = change_eltype(typeof(_cp_insert(e, zero(V))), Int)
+  ncomps = num_indep_components(W)
+
+  dof_to_node = zeros(Int, K * ndofs)
+  dof_to_comp = zeros(Int, K * ndofs)
+  m = zeros(Int, nnodes, ncomps)
+  for a in 1:ndofs, c in 1:K
+    dof = K * (a - 1) + c
+    comp = b.dof_to_comp[a] + d * (c - 1)
+    dof_to_node[dof] = b.dof_to_node[a]
+    dof_to_comp[dof] = comp
+    m[b.dof_to_node[a], comp] = dof
+  end
+  node_and_comp_to_dof = [W(ntuple(l -> m[node, l], ncomps)) for node in 1:nnodes]
+
+  LagrangianDofBasis(b.nodes, dof_to_node, dof_to_comp, node_and_comp_to_dof)
+end
 
 _cp_stack_dofs(b, ::Val) = @notimplemented """\n
 Do not know how to stack a $(typeof(b)); add a `_cp_stack_dofs` method for it.
