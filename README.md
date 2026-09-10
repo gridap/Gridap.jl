@@ -70,6 +70,7 @@ pkg> add Gridap
 - [GridapPETSc](https://github.com/gridap/GridapPETSc.jl) - Use [PETSc](https://petsc.org/) linear and nonlinear solvers in Gridap.
 - [GridapP4est](https://github.com/gridap/GridapP4est.jl) - Use adaptive mesh refinement and coarsening with forests-of-trees in Gridap.
 - [GridapTopOpt](https://github.com/zjwegert/GridapTopOpt.jl) - Topology optimisation library in Gridap.
+- [ComodoGridap.jl](https://github.com/COMODO-research/ComodoGridap.jl) - Use the power of [Comodo.jl](https://github.com/COMODO-research/Comodo.jl) and Gridap for FE.
 
 ## Examples
 
