@@ -52,13 +52,30 @@ using Test
 
 @testset "ModalC0RefFEs" begin include("ModalC0RefFEsTests.jl") end
 
-#@testset "HHJRefFEs" begin include("HHJRefFEsTests.jl") end
 
 @testset "BDMRefFEs" begin include("BDMRefFEsTests.jl") end
 
 @testset "ModalScalarRefFEs" begin include("ModalScalarRefFEsTests.jl") end
 
 @testset "CrouzeixRaviartFEs" begin include("CrouzeixRaviartFEsTests.jl") end
+
+@testset "ArgyrisRefFEs" begin include("ArgyrisRefFEsTests.jl") end
+
+@testset "MorleyRefFEs" begin include("MorleyRefFEsTests.jl") end
+
+@testset "HHJRefFEs" begin include("HHJRefFEsTests.jl") end
+
+@testset "ReggeRefFEs" begin include("ReggeRefFEsTests.jl") end
+
+@testset "GLSRefFEs" begin include("GLSRefFEsTests.jl") end
+
+@testset "ArnoldWintherNCRefFEs" begin include("ArnoldWintherNCRefFEsTests.jl") end
+
+@testset "ArnoldWintherCRefFEs" begin include("ArnoldWintherCRefFEsTests.jl") end
+
+@testset "MardalTaiWintherRefFEs" begin include("MardalTaiWintherRefFEsTests.jl") end
+
+@testset "CartProdRefFEs" begin include("CartProdRefFEsTests.jl") end
 
 @testset "BubbleRefFEs" begin include("BubbleRefFEsTests.jl") end
 
