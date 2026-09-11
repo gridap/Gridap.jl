@@ -82,6 +82,7 @@ export mutable
 export Mutable
 export symmetric_part
 export skew_symmetric_part
+export adjugate
 export num_components
 export num_indep_components
 export change_eltype

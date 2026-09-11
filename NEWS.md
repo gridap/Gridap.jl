@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The new tensor calculus operation strictly require varianced tensors to be applied, `Int` is not assumed `Con`. These are `apply_form`, `flat`, `sharp`, `vol_coef`, `interior_product`, `hodge_star`, `pullback`, `koszul`, `∧`.
   - Operation depending on the metric for correctness on tensors with variance, `inner`, `form_inner`, `hodge_star`, require the metric (inverse) tensor to be given explicitly, and it must have correct variance. Now methods `flat_inner`/`⊙ᴱ`, `flat_form_inner`/`⨟ᴱ`, `flat_hodge_star`/`⋆ᴱ` assume the metric is trivial (Euclidean space).
   - `ExteriorFormValue` is now an alias of the new `SkewSymKTensorValue{K,D,T,L,V}`, a totally skew symmetric order `K` tensor whose indices all have all variance `V`. The alias `ExteriorVectorValue{K,D,T,L}` represents a K-vector.
-  - Added right division `(/)(::MultiValue, ::MultiValue)`, that is `a⋅inv(b)`.Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX) (number to be filled when the PR is opened).
+  - Added right division `(/)(::MultiValue, ::MultiValue)`, that is `a⋅inv(b)`.
+  - Added `adjugate` of second order tensors, the transpose of the co-factor tensor such that `adjugate(a)⋅a = det(a)*one(a)`.
 
 ### Changed
 

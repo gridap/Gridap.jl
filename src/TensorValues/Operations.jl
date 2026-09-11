@@ -945,8 +945,7 @@ det(::SkewSymTensorValue{3,T}) where T = zero(T)
 
 Inverse of a second order tensor.
 
-Inverting raises the lower indices and lowers the upper ones, so the result
-carries the indices `(inverse_variance(D2), inverse_variance(D1))`.
+`inv` inverse the variance of both indices.
 """
 function inv(a::MultiValue{Tuple{D1,D2}}) where {D1,D2}
   Int(D1) == Int(D2) || @unreachable "inv undefined for this tensor shape: $(size(a))"
@@ -1008,6 +1007,118 @@ end
 inv(::SkewSymTensorValue{1,T}) where T = TensorValue{1,1}(inv(zero(T)))
 inv(a::SkewSymTensorValue{2}) = (typeof(a))(-inv(a.data[1]))
 inv(a::SkewSymTensorValue{3,T,L}) where {T,L} = SkewSymTensorValue{3,T}(tfill(inv(zero(T)), Val(L)))
+
+
+# TODO: write tests for the adjugate, based on adjugate(a)⋅a = det(a)*one(a), except for SymTracelessTensorValue that has no "one", but promotes to SymTensorValue.
+"""
+    adjugate(a::MultiValue{Tuple{D1,D2}})
+
+The transpose of the co-factor tensor of `a`, such that
+
+    adjugate(a)⋅a = det(a)*one(a).
+
+It is well defined (no NaN) even if `det(a)` is zero.
+`adjugate` inverses the variance of both indices.
+"""
+function adjugate(a::MultiValue{Tuple{D1,D2},T}) where {D1,D2,T}
+  D1==D2 || throw(ArgumentError("adjugate is only defined on square tensors"))
+
+  D1_inv, D2_inv = inverse_variance.((D1,D2))
+  V = TensorValue{D1_inv,D2_inv}
+  if     D1==0
+    V{T}()
+  elseif D1==1
+    one(V{T})
+  elseif D1==2
+    V( a[2,2], -a[2,1],
+      -a[1,2],  a[1,1])
+  elseif D1==3
+    c11 =  (a[2,2]*a[3,3] - a[2,3]*a[3,2])
+    c12 = -(a[2,1]*a[3,3] - a[2,3]*a[3,1])
+    c13 =  (a[2,1]*a[3,2] - a[2,2]*a[3,1])
+    c21 = -(a[1,2]*a[3,3] - a[1,3]*a[3,2])
+    c22 =  (a[1,1]*a[3,3] - a[1,3]*a[3,1])
+    c23 = -(a[1,1]*a[3,2] - a[1,2]*a[3,1])
+    c31 =  (a[1,2]*a[2,3] - a[1,3]*a[2,2])
+    c32 = -(a[1,1]*a[2,3] - a[1,3]*a[2,1])
+    c33 =  (a[1,1]*a[2,2] - a[1,2]*a[2,1])
+    V( # this is transposed since Julia is column major
+        c11, c21, c31,
+        c12, c22, c32,
+        c13, c23, c33
+    )
+  else
+    _numerical_adjugate(V,a)
+  end
+end
+
+function adjugate(a::SymTensorValue{D,T}) where {D,T}
+  D_inv = inverse_variance(D)
+  V = SymTensorValue{D_inv}
+  if D==0
+    V{T}()
+  elseif D==1
+    one(V{T})
+  elseif D==2
+    V(a[2,2], -a[2,1],
+               a[1,1])
+  elseif D==3
+    c11 =  (a[2,2]*a[3,3] - a[2,3]^2)
+    c12 = -(a[2,1]*a[3,3] - a[2,3]*a[3,1])
+    c13 =  (a[2,1]*a[3,2] - a[2,2]*a[3,1])
+    c22 =  (a[1,1]*a[3,3] - a[1,3]^2)
+    c23 = -(a[1,1]*a[3,2] - a[1,2]*a[3,1])
+    c33 =  (a[1,1]*a[2,2] - a[1,2]^2)
+    return V(
+        c11, c12, c13,
+             c22, c23,
+                  c33
+    )
+  else
+    _numerical_adjugate(V,a)
+  end
+end
+
+function adjugate(a::SymTracelessTensorValue{D,T}) where {D,T}
+  adjugate(convert(SymTensorValue{D,T}, get_array(a)))
+end
+
+function _numerical_adjugate(::Type{V},a) where V
+    adj_a = try inv(a)*det(a) # faster than the svd version, and non-allocating
+    catch
+      _svd_adjugate(a)
+    end
+    convert(V, adj_a)
+end
+
+function _svd_adjugate(a)
+  # Credit: Steven G. Johnson (https://discourse.julialang.org/t/computing-the-adjugate-cofactors-of-a-matrix/125184)
+  # This allocates a little bit
+  function adjugate(D::Diagonal{<:Number})
+    d = D.diag
+    Base.require_one_based_indexing(d)
+    length(d) < 2 && return Diagonal(one.(d))
+    # compute diagonal of adj(D): dadj[i] = prod(d) / d[i], but avoid dividing by zero
+    dadj = similar(d)
+    prod = one(eltype(d))
+    for i = 1:length(d)
+      dadj[i] = prod
+      prod *= d[i]
+    end
+    prod = one(eltype(d))
+    for i = length(d):-1:1
+      dadj[i] *= prod
+      prod *= d[i]
+    end
+    return Diagonal(dadj)
+  end
+
+  F = svd(SMatrix(a))
+  det_VtU = det(F.Vt * F.U)
+  iszero(det_VtU) && return zero(a)
+  F.V * (adjugate(Diagonal(F.S)) * det_VtU) * F.U'
+end
+
 
 """
     eigen(a::MultiValue{Tuple{D1,D2}})
