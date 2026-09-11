@@ -1,102 +1,27 @@
-# K independent copies of a reference FE, stacked into a bigger value type.
+# The Cartesian product V₁ × … × V_K of reference elements; see `CartProdRefFE`.
 #
-# Given a reference FE whose shape functions take values in `S`, this builds the
-# one whose shape functions take values in `T`, the K-fold stack of `S` along a
-# new *last* index:
+# Two conventions, aligned: the copy index is **last** inside a value, and factor
+# `c` occupies **block `c`** of the numbering. Both follow from Gridap writing
+# derivative indices first, ∇A[k,i,j] = ∂_k A_ij. Appending then commutes with ∇,
+# so one rule, `outer(v, e)`, serves a value, a gradient and a Hessian alike;
+# prepending would need the copy index stepped over the derivative indices, which
+# no contraction of existing operations produces, and would transpose every
+# gradient invisibly whenever K == D.
 #
-#   S = Float64            ⟹  T = VectorValue{K}
-#   S = VectorValue{d}     ⟹  T = TensorValue{d,K}
+# Together they are what Gridap's own operators expect. `divergence` is `tr(∇·)`
+# and `tr` traces the first two indices, so `div(A)_j = ∂ᵢ A_ij` is the divergence
+# of the *columns*, i.e. the vector of the factors' divergences. And
+# `_generate_dof_layout_node_major` blocks by component, so a stacked scalar
+# Lagrangian element reproduces `lagrangian(VectorValue{K,T})` DoF for DoF.
 #
-# The FE space is the K-fold Cartesian product V ⊕ … ⊕ V, which is why the name
-# matches `Polynomials.CartProdPolyBasis` -- that type is this same operation one
-# module down. The atom `S` may be scalar, giving vector-valued
-# Morley/Argyris/Hermite for shells and strain-gradient elasticity; or it may be
-# vector-valued, giving the column-wise H(div) tensors of elasticity with weakly
-# imposed symmetry [Arnold, Falk & Winther]. Nothing here cares which, only that
-# T decomposes as S^K linearly.
-#
-# WHAT MAKES IT WORK, AND WHY THERE IS ONLY ONE NEW TYPE
-#
-# Everything rests on one constant linear map, the injection ι_c(s) = s ⊗ e_c,
-# and on the fact that it commutes with differentiation. Two consequences: the
-# generalized Vandermonde is `kron(V, I_K)`, since σ_{i,c}(Φ_{j,c'}) = δ_{cc'}
-# σ_i(φ_j) -- the copies never see each other -- and so is the change of basis,
-# provided the push-forward acts blockwise, which is what `CartProdPushforward`
-# is for.
-#
-# The DoFs need *no* type at all. A moment DoF is σ(u) = Σᵢ mᵢ ⊙ u(xᵢ), so
-# slicing the field is the same as stacking the weight,
-#
-#   σᵢ(π_c u) = Σ (mᵢ ⊗ e_c) ⊙ u(xᵢ),
-#
-# and the stacked DoF basis is an ordinary `MomentBasedDofBasis`. The other DoF
-# kinds recurse: a `ConcatenatedDofVector` is the `vcat` of its stacked blocks,
-# and a `LinearCombinationDofVector` carries `kron` on its coefficient matrix. So
-# the only thing that must be wrapped is the *basis*, and only because a basis
-# has to be evaluated array-wise.
-#
-# WHERE THE COPY INDEX GOES: LAST, ALWAYS
-#
-# A moment must live in the same space as the value it pairs with, and Gridap
-# writes derivative indices *first*: ∇A[k,i,j] = ∂_k A_ij. An injection that
-# appends the copy index therefore commutes with differentiation -- appending on
-# the right never collides with prepending on the left -- and one rule covers
-# every atom and every operator:
-#
-#   atom    operator   value layout          insertion
-#   scalar  --         VectorValue{K}        outer(v, e)
-#   scalar  ∇          TensorValue{D,K}      outer(v, e)
-#   scalar  ∇∇         ThirdOrder{D,D,K}     outer(v, e)
-#   vector  --         TensorValue{d,K}      outer(v, e)
-#   vector  ∇          ThirdOrder{D,d,K}     outer(v, e)
-#
-# Prepending instead would need the copy index stepped over the derivative
-# indices, a middle insertion no contraction of existing operations produces. It
-# would also transpose every gradient, invisibly whenever K == D.
-#
-# This is the convention `Polynomials.CartProdPolyBasis` already uses:
-# `_cartprod_set_derivative!` builds its gradient components as `∇i ⊗ vj`.
-#
-# It is also the one Gridap's operators expect. `divergence(f) = tr(∇f)` and `tr`
-# of a third-order tensor traces its *first two* indices, so Gridap's tensor
-# divergence is div(A)_j = ∂ᵢ A_ij, the divergence of the columns of A. Here the
-# copies are the columns and the stacked gradient is indexed (k,j,c), so `tr`
-# contracts the derivative index against the atom's own and returns one
-# divergence per copy: `divergence(σₕ)` is exactly the vector of the copies'
-# divergences. The cost is that the weak-symmetry stress space is conventionally
-# written with one H(div) row per component of the divergence, and here it is one
-# per column -- weak forms are transposed accordingly.
-#
-# Only rank ≤ 2 atoms stack: an atom valued in a 2-tensor would need a rank-4
-# stacked gradient, which `outer` does not build and says so itself.
-#
-# ORDERING CONVENTION
-#
-# Copy `c` of base DoF/basis function `i` sits at index `(c-1)*n + i`, i.e. the
-# copy index runs *slowest*: copy `c` occupies the `c`-th contiguous block. That
-# is the same invariant as the value layout above -- the copy index is last in a
-# value, hence slowest-varying in column-major storage -- so one statement covers
-# both: **copy `c` occupies block `c`, inside a value and inside the DoF vector**.
-#
-# Two consequences. The change of basis is genuinely block diagonal,
-# `blockdiag(P, …, P)`, rather than the interleaved `kron(P, I_K)` that the
-# opposite convention forces. And it agrees with Gridap's own numbering for
-# vector-valued elements: `_generate_dof_layout_node_major` (node-*fastest*,
-# despite the name) puts `dof = node + nnodes*(comp-1)`, blocked by component, so
-# a stacked scalar Lagrangian element reproduces
-# `ReferenceFE(p, lagrangian, VectorValue{K,T}, r)` DoF for DoF and not merely as
-# a space.
-#
-# Note this is a different question from the value layout above: one is the order
-# in which basis functions and DoFs are numbered, the other the arrangement of
-# indices inside a single value. They are only aligned here on purpose.
+# The price: the weak-symmetry stress space is usually written with one H(div)
+# *row* per component of the divergence; here it is one per column.
 
 # The injection ι_c(v) = v ⊗ e_c and its inverse π_c(v) = v ⋅ e_c, the two
-# constant linear maps the whole construction rests on. No case analysis is
-# needed: appending the copy index commutes with Gridap's prepending of
-# derivative indices, so one rule serves a value, a gradient and a Hessian alike.
-# Shared by the basis scatter and the moment stacking -- the same operation,
-# which is why the DoFs need no type of their own.
+# constant linear maps the whole construction rests on. Shared by the basis
+# scatter and the moment stacking -- the same operation, which is why the DoFs
+# need no type of their own. Only rank ≤ 2 factors stack: a 2-tensor-valued one
+# would need a rank-4 stacked gradient, which `outer` does not build.
 @inline _cp_insert(e, v) = outer(v, e)
 @inline _cp_extract(e, v) = v ⋅ e
 
@@ -106,99 +31,78 @@
 # same `e` both injects and reads back.
 
 ############################################################################################
-# The stacked bases
+# The stacked basis
+
+# `K` stacked bases, factor `c` in block `c`. `bases` is either one basis, of
+# which the stack is `K` copies, or a `K`-tuple of them. The two cases differ in
+# one place only -- a power evaluates once and scatters, a product evaluates each
+# factor -- so they are one struct and two aliases, not two types.
 #
-# Two, differing only in whether the factors are the same element. `V^K` needs a
-# single evaluation scattered `K` times; `V₁ × … × V_K` needs one evaluation per
-# factor. Everything downstream is shared, which is what the abstract type is
-# for.
-#
-# They must be types rather than a `lazy_map` over the elements of the factors: a
-# basis built on a `PolynomialBasis` does not support element access -- `getindex`
+# It must be a type rather than a `lazy_map` over the factors' elements: a basis
+# built on a `PolynomialBasis` does not support element access -- `getindex`
 # there returns the dummy `PT()` rather than a field -- so going through it would
 # produce garbage silently. Only array-level evaluation is safe, so that is all
-# these offer.
-
-abstract type AbstractCartProdBasis <: AbstractVector{Field} end
-
-# `K` copies of every field of `base`, copy `c` in block `c`.
-struct CartProdBasis{K,B} <: AbstractCartProdBasis
-  base::B
+# this offers.
+struct CartProdBasis{K,B} <: AbstractVector{Field}
+  bases::B
 end
 
 CartProdBasis{K}(b::B) where {K,B} = CartProdBasis{K,B}(b)
 
-# factor `i`'s fields in block `i`.
-struct CartProdTupleBasis{K,BS<:Tuple} <: AbstractCartProdBasis
-  bases::BS
-end
+const CartProdPowerBasis{K} = CartProdBasis{K,<:AbstractVector{<:Field}} # V^K
+const CartProdTupleBasis{K} = CartProdBasis{K,<:Tuple} # V_1 × … × V_K
 
-CartProdTupleBasis(bs::BS) where {BS<:Tuple} = CartProdTupleBasis{length(bs),BS}(bs)
+Base.IndexStyle(::Type{<:CartProdBasis}) = IndexLinear()
 
-Base.size(b::CartProdBasis{K}) where K = (K * length(b.base),)
+Base.size(b::CartProdPowerBasis{K}) where K = (K * length(b.bases),)
 Base.size(b::CartProdTupleBasis) = (sum(length, b.bases),)
-Base.IndexStyle(::Type{<:AbstractCartProdBasis}) = IndexLinear()
 
-# A basis is atomic here: nothing should ever *evaluate* an element. Gridap still
-# needs one to name types with -- `FieldGradientArray{N}(f)` asks for it -- so
-# these return a factor field as a type witness, exactly as `PolynomialBasis`
-# returns `PT()`. The value is nonsense; never evaluate it.
-Gridap.Arrays.testitem(b::CartProdBasis) = testitem(b.base)
-Gridap.Arrays.testitem(b::CartProdTupleBasis) = testitem(first(b.bases))
-Base.getindex(b::AbstractCartProdBasis, ::Integer) = testitem(b)
-
-get_order(b::CartProdBasis) = get_order(b.base)
+get_order(b::CartProdPowerBasis) = get_order(b.bases)
 get_order(b::CartProdTupleBasis) = maximum(get_order, b.bases)
 
+Arrays.testitem(b::CartProdPowerBasis) = testitem(b.bases)
+Arrays.testitem(b::CartProdTupleBasis) = testitem(first(b.bases))
+Base.getindex(b::CartProdBasis, ::Integer) = testitem(b)
+
 # values and derivatives share one scatter, differing only in what they evaluate
-_cp_deriv(f, ::Val{0}) = f
-_cp_deriv(f, ::Val{1}) = Broadcasting(∇)(f)
-_cp_deriv(f, ::Val{2}) = Broadcasting(∇∇)(f)
+_cp_src(f, ::Val{0}) = f
+_cp_src(f, ::Val{1}) = Broadcasting(∇)(f)
+_cp_src(f, ::Val{2}) = Broadcasting(∇∇)(f)
 
-_cp_src(b::CartProdBasis, N) = _cp_deriv(b.base, N)
-_cp_src(b::CartProdTupleBasis, N) = map(f -> _cp_deriv(f, N), b.bases)
+# The cache holds the sources and their caches -- one shared for a power, one per
+# factor for a product -- and `_cp_vals` turns them into the `K` value arrays
+# without evaluating a power `K` times.
+function _cp_prepare(b::CartProdPowerBasis, N, x)
+  src = _cp_src(b.bases, N)
+  return src, return_cache(src, x)
+end
 
-# One block per copy, each `_cp_insert`ed into its own slot. The result type is
-# taken from the first factor: they all share a value type, which is what makes
-# the stack a `MultiValue` at all.
+function _cp_prepare(b::CartProdTupleBasis, N, x)
+  srcs = map(f -> _cp_src(f, N), b.bases)
+  return srcs, map(f -> return_cache(f, x), srcs)
+end
+
+function _cp_vals(::CartProdPowerBasis{K}, cs, src, x) where K
+  v = evaluate!(cs, src, x)
+  return ntuple(i -> v, K)
+end
+
+_cp_vals(::CartProdTupleBasis, cs, srcs, x) =
+  map((c, f) -> evaluate!(c, f, x), cs, srcs)
+
 function _cp_cache(b::CartProdBasis{K}, x, N) where K
-  src = _cp_src(b, N)
-  cs = return_cache(src, x)
-  v = evaluate!(cs, src, x)
+  srcs, cs = _cp_prepare(b, N, x)
+  vs = _cp_vals(b, cs, srcs, x)
   E = representatives_of_componentbasis_dual(VectorValue{K,Float64})
-  T = typeof(_cp_insert(first(E), testitem(v)))
-  r = CachedArray(zeros(T, size(v, 1), K * size(v, 2)))
-  return r, cs, src, E
-end
-
-function _cp_eval!(cache, b::CartProdBasis{K}, x, N) where K
-  r, cs, src, E = cache
-  v = evaluate!(cs, src, x)
-  np, nb = size(v)
-  setsize!(r, (np, K * nb))
-  a = r.array
-  @inbounds for c in 1:K
-    e, off = E[c], (c - 1) * nb
-    for j in 1:nb, i in 1:np
-      a[i, off+j] = _cp_insert(e, v[i, j])
-    end
-  end
-  return a
-end
-
-function _cp_cache(b::CartProdTupleBasis{K}, x, N) where K
-  srcs = _cp_src(b, N)
-  cs = map(f -> return_cache(f, x), srcs)
-  vs = map((c, f) -> evaluate!(c, f, x), cs, srcs)
-  E = representatives_of_componentbasis_dual(VectorValue{K,Float64})
+  # every factor shares a value type, which is what makes the stack a MultiValue
   T = typeof(_cp_insert(first(E), testitem(first(vs))))
   r = CachedArray(zeros(T, size(first(vs), 1), sum(v -> size(v, 2), vs)))
   return r, cs, srcs, E
 end
 
-function _cp_eval!(cache, b::CartProdTupleBasis{K}, x, N) where K
+function _cp_eval!(cache, b::CartProdBasis{K}, x, N) where K
   r, cs, srcs, E = cache
-  vs = map((c, f) -> evaluate!(c, f, x), cs, srcs)
+  vs = _cp_vals(b, cs, srcs, x)
   np = size(first(vs), 1)
   setsize!(r, (np, sum(v -> size(v, 2), vs)))
   a = r.array
@@ -213,40 +117,39 @@ function _cp_eval!(cache, b::CartProdTupleBasis{K}, x, N) where K
   return a
 end
 
-return_cache(b::AbstractCartProdBasis, x::AbstractVector{<:Point}) =
-  _cp_cache(b, x, Val(0))
+return_cache(b::CartProdBasis, x::AbstractVector{<:Point}) = _cp_cache(b, x, Val(0))
 
-evaluate!(cache, b::AbstractCartProdBasis, x::AbstractVector{<:Point}) =
+evaluate!(cache, b::CartProdBasis, x::AbstractVector{<:Point}) =
   _cp_eval!(cache, b, x, Val(0))
 
 return_cache(
-  fg::FieldGradientArray{N,<:AbstractCartProdBasis}, x::AbstractVector{<:Point}
+  fg::FieldGradientArray{N,<:CartProdBasis}, x::AbstractVector{<:Point}
 ) where N = _cp_cache(fg.fa, x, Val(N))
 
 evaluate!(
-  cache, fg::FieldGradientArray{N,<:AbstractCartProdBasis}, x::AbstractVector{<:Point}
+  cache, fg::FieldGradientArray{N,<:CartProdBasis}, x::AbstractVector{<:Point}
 ) where N = _cp_eval!(cache, fg.fa, x, Val(N))
 
 # `return_value` must be basis-wise too. Gridap's default route to it is
 # `return_value → testargs → testitem → getindex`, i.e. it evaluates one element
 # to learn the result type; on a type witness that type is wrong and every cache
 # built from it is wrong, silently. Defining it here short-circuits the path.
-Gridap.Arrays.return_value(b::AbstractCartProdBasis, x::AbstractVector{<:Point}) =
+Gridap.Arrays.return_value(b::CartProdBasis, x::AbstractVector{<:Point}) =
   evaluate(b, x)
 
 Gridap.Arrays.return_value(
-  fg::FieldGradientArray{N,<:AbstractCartProdBasis}, x::AbstractVector{<:Point}
+  fg::FieldGradientArray{N,<:CartProdBasis}, x::AbstractVector{<:Point}
 ) where N = evaluate(fg, x)
 
 # Broadcasted differentiation, for the same reason: the generic route asks for
 # `testitem`. A basis is atomic, so its derivative is the `FieldGradientArray`.
-return_cache(::Broadcasting{typeof(gradient)}, ::AbstractCartProdBasis) = nothing
-return_cache(::Broadcasting{typeof(∇∇)}, ::AbstractCartProdBasis) = nothing
+return_cache(::Broadcasting{typeof(gradient)}, ::CartProdBasis) = nothing
+return_cache(::Broadcasting{typeof(∇∇)}, ::CartProdBasis) = nothing
 
-evaluate!(::Nothing, ::Broadcasting{typeof(gradient)}, a::AbstractCartProdBasis) =
+evaluate!(::Nothing, ::Broadcasting{typeof(gradient)}, a::CartProdBasis) =
   FieldGradientArray{1}(a)
 
-evaluate!(::Nothing, ::Broadcasting{typeof(∇∇)}, a::AbstractCartProdBasis) =
+evaluate!(::Nothing, ::Broadcasting{typeof(∇∇)}, a::CartProdBasis) =
   FieldGradientArray{2}(a)
 
 ############################################################################################
@@ -447,11 +350,20 @@ are inherited, and the factors are kept as the metadata, which is how
 """
 function CartProdRefFE(reffes::ReferenceFE...)
   K = length(reffes)
-  _cp_check(reffes)
+  @notimplementedif K < 1 "Need at least one factor."
+  @notimplementedif any(r -> get_polytope(r) != get_polytope(first(reffes)), reffes) """\n
+  All factors must share a polytope.
+  """
+  @notimplementedif any(r -> Conformity(r) != Conformity(first(reffes)), reffes) """\n
+  All factors must share a conformity, got $(map(Conformity, reffes)).
+  """
+  @notimplementedif any(r -> _cp_value_type(r) != _cp_value_type(first(reffes)), reffes) """\n
+  All factors must share a value type, got a mix. Use a `MultiFieldFESpace`.
+  """
   NS = Tuple{map(r -> typeof(get_name(r)), reffes)...}
-  bases = map(get_prebasis, reffes), map(get_shapefuns, reffes)
   _cp_reffe(CartProd{K,NS}, reffes,
-            CartProdTupleBasis(bases[1]), CartProdTupleBasis(bases[2]))
+            CartProdBasis{K}(map(get_prebasis, reffes)),
+            CartProdBasis{K}(map(get_shapefuns, reffes)))
 end
 
 function CartProdRefFE(reffe::ReferenceFE, ::Val{K}) where K
@@ -463,22 +375,6 @@ function CartProdRefFE(reffe::ReferenceFE, ::Val{K}) where K
 end
 
 CartProdRefFE(reffe::ReferenceFE, K::Integer) = CartProdRefFE(reffe, Val(K))
-
-function _cp_check(reffes)
-  @notimplementedif isempty(reffes) "Need at least one factor."
-  p = get_polytope(first(reffes))
-  conf = Conformity(first(reffes))
-  @notimplementedif any(r -> get_polytope(r) != p, reffes) """\n
-  All factors must share a polytope.
-  """
-  @notimplementedif any(r -> Conformity(r) != conf, reffes) """\n
-  All factors must share a conformity, got $(map(Conformity, reffes)).
-  """
-  V = _cp_value_type(first(reffes))
-  @notimplementedif any(r -> _cp_value_type(r) != V, reffes) """\n
-  All factors must share a value type, got a mix. Use a `MultiFieldFESpace`.
-  """
-end
 
 _cp_value_type(reffe) = typeof(testitem(
   evaluate(get_shapefuns(reffe), get_vertex_coordinates(get_polytope(reffe)))
@@ -519,10 +415,8 @@ function get_face_own_dofs_permutations(
   map(eachindex(first(perms))) do f
     offs = _cp_offsets(map(o -> length(o[f]), owns))
     map(eachindex(first(perms)[f])) do pindex
-      vcat(ntuple(c -> _cp_offset_perm(perms[c][f][pindex], offs[c]), K)...)
+      Int[q == INVALID_PERM ? INVALID_PERM : offs[c] + q
+          for c in 1:K for q in perms[c][f][pindex]]
     end
   end
 end
-
-_cp_offset_perm(p, off) =
-  Int[q == INVALID_PERM ? INVALID_PERM : off + q for q in p]

@@ -230,7 +230,7 @@ end
 let reffes = (morley, argyris, lag2), K = 3
   E = representatives_of_componentbasis_dual(VectorValue{K,Float64})
   bs = map(get_shapefuns, reffes)
-  a = evaluate(ReferenceFEs.CartProdTupleBasis(bs), pts)
+  a = evaluate(ReferenceFEs.CartProdBasis{K}(bs), pts)
   off = 0
   for c in 1:K
     v = evaluate(bs[c], pts)
