@@ -65,6 +65,10 @@ export can_contract
 export is_same_variance
 export inverse_variance
 
+export MetricData
+export compute_metric_data
+export parse_metric_data
+
 export MultiValue
 export VectorValue
 export TensorValue
@@ -182,6 +186,8 @@ include("ExteriorFormValues.jl")
 include("Indexing.jl")
 
 include("Operations.jl")
+
+include("MetricDatas.jl")
 
 include("DifferentialGeometryOperations.jl")
 
