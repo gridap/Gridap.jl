@@ -60,9 +60,8 @@ Base.size(b::CartProdTupleBasis) = (sum(length, b.bases),)
 get_order(b::CartProdPowerBasis) = get_order(b.bases)
 get_order(b::CartProdTupleBasis) = maximum(get_order, b.bases)
 
-Arrays.testitem(b::CartProdPowerBasis) = testitem(b.bases)
-Arrays.testitem(b::CartProdTupleBasis) = testitem(first(b.bases))
-Base.getindex(b::CartProdBasis, ::Integer) = testitem(b)
+Base.getindex(b::CartProdPowerBasis, ::Integer) = first(b.bases)
+Base.getindex(b::CartProdTupleBasis, ::Integer) = first(first(b.bases))
 
 # values and derivatives share one scatter, differing only in what they evaluate
 _cp_src(f, ::Val{0}) = f
@@ -129,28 +128,6 @@ return_cache(
 evaluate!(
   cache, fg::FieldGradientArray{N,<:CartProdBasis}, x::AbstractVector{<:Point}
 ) where N = _cp_eval!(cache, fg.fa, x, Val(N))
-
-# `return_value` must be basis-wise too. Gridap's default route to it is
-# `return_value → testargs → testitem → getindex`, i.e. it evaluates one element
-# to learn the result type; on a type witness that type is wrong and every cache
-# built from it is wrong, silently. Defining it here short-circuits the path.
-Gridap.Arrays.return_value(b::CartProdBasis, x::AbstractVector{<:Point}) =
-  evaluate(b, x)
-
-Gridap.Arrays.return_value(
-  fg::FieldGradientArray{N,<:CartProdBasis}, x::AbstractVector{<:Point}
-) where N = evaluate(fg, x)
-
-# Broadcasted differentiation, for the same reason: the generic route asks for
-# `testitem`. A basis is atomic, so its derivative is the `FieldGradientArray`.
-return_cache(::Broadcasting{typeof(gradient)}, ::CartProdBasis) = nothing
-return_cache(::Broadcasting{typeof(∇∇)}, ::CartProdBasis) = nothing
-
-evaluate!(::Nothing, ::Broadcasting{typeof(gradient)}, a::CartProdBasis) =
-  FieldGradientArray{1}(a)
-
-evaluate!(::Nothing, ::Broadcasting{typeof(∇∇)}, a::CartProdBasis) =
-  FieldGradientArray{2}(a)
 
 ############################################################################################
 # The stacked DoF basis
