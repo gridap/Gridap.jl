@@ -50,7 +50,7 @@ using Gridap.Arrays: ∑; export ∑
 #@publish TensorValues hodge_star
 #@publish TensorValues flat
 #@publish TensorValues sharp
-#@publish TensorValues apply_form
+#@publish TensorValues apply_tensor
 #@publish TensorValues pullback
 #@publish TensorValues pushforward
 #@publish Fields exterior_derivative

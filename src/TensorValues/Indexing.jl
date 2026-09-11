@@ -170,7 +170,7 @@ end
 #  @inbounds @inline getindex(arg.data, i)
 #end
 
-@propagate_inbounds function getindex(arg::SkewSymKTensorValue{N,D,T}, inds::Vararg{Integer,N}) where {N,D,T}
+@propagate_inbounds function getindex(arg::SkewSymKTensorValue{V,N,D,T}, inds::Vararg{Integer,N}) where {V,N,D,T}
   @boundscheck @check checkbounds(arg, inds...) === nothing
   s = sorting_sign(inds...)
   s == 0 && return zero(T)

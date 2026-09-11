@@ -51,7 +51,7 @@ struct MetricData{
     _Dcon = isnothing(g_inv) ? inverse_variance(Dcov) : Dcon
     @assert _Dcov == _Dcon "metric tensor g and inverse g_inv do not have the same dimension"
     @assert _Dcov isa Cov  "metric tensor g must be covariant"
-    @assert _Dcon isa Con  "metric tensor g must be covariant"
+    @assert _Dcon isa Con  "inverse metric tensor g_inv must be contravariant"
 
     # promote to same scalar type
     _Tg = isnothing(g)     ? Bool : Tg
@@ -90,7 +90,7 @@ function Base.getproperty(md::MetricData, name::Symbol)
     g = getfield(md, :g)
     !isnothing(g) && return sqrt(abs(det(g)))
     g_inv = getfield(md, :g_inv)
-    return inv(sqrt(abs(det(g))))
+    return inv(sqrt(abs(det(g_inv))))
 
   else
     throw(Base.FieldError(MetricData, name))

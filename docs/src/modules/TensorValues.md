@@ -261,14 +261,15 @@ ExteriorVectorValue
 ```@docs
 ∧
 interior_product
-apply_form
+apply_tensor
 koszul(::VectorValue{D}, ::ExteriorFormValue{K,D}) where {K,D}
 ```
 
 ### Metric operations
 
-Operations depending on the metric tensor `g` or its inverse `ginv`. They must
-be given explicitly with correct variance, `(0,2)` or `(2,0)`, respectively.
+Operations depending on the metric tensor `g` or its inverse `g_inv`. Either
+may be given, with the variance saying which it is, `(0,2)` or `(2,0)`
+respectively; the other one is computed on demand.
 
 ```@docs
 hodge_star
@@ -276,6 +277,14 @@ form_inner
 flat
 sharp
 pullback
+```
+
+The parsing of metric arguments is done via the following helpers.
+
+```@docs
+MetricData
+parse_metric_data
+compute_metric_data
 ```
 
 Convenience functions assuming the metric is the identity, that is the space is

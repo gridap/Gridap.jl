@@ -7,28 +7,31 @@ using Test
 
 # ── Pullback (value level) ───────────────────────────────────────────────────
 
-# Identity map on ℝ²: J = I₂, pullback should be identity
-J_id = TensorValue{2,2,Float64,4}(1.0,0.0,0.0,1.0)
+# The pullback takes the transposed Jacobian Jt[j,i] = ∂φⁱ/∂ξʲ, whose chart
+# index j is covariant and ambient index i contravariant.
+
+# Identity map on ℝ²: Jt = I₂, pullback should be identity
+Jt_id = TensorValue{cov2,con2,Float64,4}(1.0,0.0,0.0,1.0)
 ω1   = ExteriorFormValue{1,2}((3.0, 5.0))
-@test pullback(ω1, J_id).data == (3.0, 5.0)
+@test pullback(ω1, Jt_id).data == (3.0, 5.0)
 
 vol2 = ExteriorFormValue{2,2}((1.0,))
-@test pullback(vol2, J_id).data == (1.0,)
+@test pullback(vol2, Jt_id).data == (1.0,)
 
-# Scaling map ℝ² → ℝ²: φ(ξ) = (aξ¹, bξ²), J = diag(a,b)
+# Scaling map ℝ² → ℝ²: φ(ξ) = (aξ¹, bξ²), Jt = diag(a,b)
 a, b = 2.0, 3.0
-J_sc = TensorValue{2,2,Float64,4}(a,0.0,0.0,b)
+J_sc = TensorValue{cov2,con2,Float64,4}(a,0.0,0.0,b)
 
-# pullback of dx¹: (φ*dx¹)_j = J[1,j] → a dx¹  (only j=1 gives non-zero)
+# pullback of dx¹: (φ*dx¹)_j = Jt[j,1] → a dx¹  (only j=1 gives non-zero)
 @test collect(pullback(ExteriorFormValue{1,2}((1.0,0.0)), J_sc).data) ≈ [a, 0.0]
 @test collect(pullback(ExteriorFormValue{1,2}((0.0,1.0)), J_sc).data) ≈ [0.0, b]
 
-# pullback of dx¹∧dx² under J_sc = diag(a,b): (φ*vol)_12 = det(J) = a*b
+# pullback of dx¹∧dx² under J_sc = diag(a,b): (φ*vol)_12 = det(Jt) = a*b
 @test collect(pullback(vol2, J_sc).data) ≈ [a*b]   atol=1e-12
 
 # Embedding ℝ² → ℝ³: project onto (x¹,x²,0) plane
-# J = [[1,0],[0,1],[0,0]] (3 rows, 2 cols)
-J_emb = TensorValue{3,2,Float64,6}(1.0,0.0,0.0,  0.0,1.0,0.0)
+# Jt = [1 0 0; 0 1 0], 2 chart rows and 3 ambient columns
+J_emb = TensorValue{cov2,con3,Float64,6}(1.0,0.0,  0.0,1.0,  0.0,0.0)
 ω1_3d = ExteriorFormValue{1,3}((1.0, 0.0, 0.0))  # dx¹ in ℝ³
 pb    = pullback(ω1_3d, J_emb)
 @test typeof(pb) <: ExteriorFormValue{1,cov2}
@@ -40,20 +43,26 @@ pb    = pullback(ω1_3d, J_emb)
 ω1_3d_3 = ExteriorFormValue{1,3}((0.0, 0.0, 1.0))  # dx³ in ℝ³ → 0 in ℝ²
 @test collect(pullback(ω1_3d_3, J_emb).data) ≈ [0.0, 0.0]
 
+# The ambient index of Jt is the contravariant one, so it is the index that
+# contracts with the form. Swapping the two rejects the Jacobian rather than
+# silently pulling back along the transposed map.
+@test_throws ArgumentError pullback(ω1_3d, transpose(J_emb))
+@test_throws ArgumentError pullback(ω1, TensorValue{2,2,Float64,4}(1.0,0.0,0.0,1.0))
+@test_throws DimensionMismatch pullback(ω1, TensorValue{cov2,con3,Float64,6}(1.,0,0,1,0,0))
+
+# A non-square Jt is only contractible on its ambient side
+@test pullback(ω1_3d, J_emb) isa ExteriorFormValue{1,cov2}
+
 # ── Pushforward (value level) ────────────────────────────────────────────────
 
-function _pushforward(
-  v::VectorValue{Dm,T}, J::TensorValue{Dn,Dm,T2}) where {Dm,Dn,T,T2}
+_pushforward(v, Jt)  = transpose(Jt) ⋅ v
 
-  J ⋅ v
-end
-
-e1 = VectorValue(1.0, 0.0)
-e2 = VectorValue(0.0, 1.0)
+e1 = ExteriorVectorValue{1,2}(1.0, 0.0)
+e2 = ExteriorVectorValue{1,2}(0.0, 1.0)
 
 # Identity: pushforward = identity
-@test _pushforward(e1, J_id) == e1
-@test _pushforward(e2, J_id) == e2
+@test _pushforward(e1, Jt_id) == e1
+@test _pushforward(e2, Jt_id) == e2
 
 # Scaling map diag(a,b): pushforward scales each component
 @test collect(_pushforward(e1, J_sc).data) ≈ [a, 0.0]
@@ -61,7 +70,7 @@ e2 = VectorValue(0.0, 1.0)
 
 # Embedding ℝ² → ℝ³: pushforward lifts into ℝ³
 pf_e1 = _pushforward(e1, J_emb)
-@test typeof(pf_e1) <: VectorValue{3}
+@test typeof(pf_e1) <: ExteriorVectorValue{1,con3}
 @test collect(pf_e1.data) ≈ [1.0, 0.0, 0.0]
 
 # ── Koszul operator κ_x(ω) = ι_x(ω) ─────────────────────────────────────────

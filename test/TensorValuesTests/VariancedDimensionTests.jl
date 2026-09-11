@@ -205,8 +205,10 @@ r = g \ TensorValue{con2,cov2}(2,0,0,4)
 @test_throws ErrorException t_int \ ExteriorFormValue{0,2}((1,))
 
 # `inv` of a (0,2) tensor is a (2,0) tensor, so dividing a covariant vector by it
-# would give a contravariant vector, which Gridap has no type for
-@test_throws ErrorException t_cov \ ExteriorFormValue{1,cov2}((1,2))
+# gives a contravariant vector
+q = TensorValue{cov2,cov2}(2,0,0,4) \ ExteriorFormValue{1,cov2}((1,2))
+@test q isa ExteriorVectorValue{1,con2}
+@test TensorValue{cov2,cov2}(2,0,0,4) ⋅ q ≈ ExteriorFormValue{1,cov2}((1.0,2.0))
 # with a second index to carry, the result type does exist
 r = TensorValue{cov2,cov2}(2,0,0,4) \ TensorValue{cov2,cov2}(2,0,0,4)
 @test r isa TensorValue{con2,cov2}
@@ -414,42 +416,81 @@ h3i = ThirdOrderTensorValue{2,2,3}(1:12...)
 # ==================================================================
 
 # A metric lowers indices and is a (0,2) tensor; its inverse raises them and is
-# a (2,0) one. An un-varianced metric is accepted, as everywhere else.
-ω2   = ExteriorFormValue{1,cov2}((1.0, 2.0))
-v2   = VectorValue(1.0, 2.0)
-g_id = SymTensorValue{2}(1.0, 0.0, 1.0)
-g_lo = SymTensorValue{cov2}(1.0, 0.0, 1.0)
-g_up = SymTensorValue{con2}(1.0, 0.0, 1.0)
+# a (2,0) one. Its variance is what says which of the two it is, so an
+# un-varianced one is rejected.
+ω2    = ExteriorFormValue{1,cov2}((1.0, 2.0))
+v2    = ExteriorVectorValue{1,con2}((1.0, 2.0))
+v2_un = VectorValue(1.0, 2.0)
+g_id  = SymTensorValue{2}(1.0, 0.0, 1.0)
+g_lo  = SymTensorValue{cov2}(1.0, 0.0, 1.0)
+g_up  = SymTensorValue{con2}(1.0, 0.0, 1.0)
 
 @test tensor_type(g_lo) == (0,2,0)
 @test tensor_type(g_up) == (2,0,0)
 @test tensor_type(g_id) == (0,0,2)
 
-# `hodge_star`, `sharp` and `form_inner` raise indices: they take `g_inv`
+# `hodge_star`, `sharp` and `form_inner` raise indices with `g_inv`; `flat`
+# lowers one with `g`
 @test hodge_star(ω2, g_up, 1.0) ≈ flat_hodge_star(ω2)
-@test sharp(ω2, g_up) ≈ v2
-@test form_inner(ω2, ω2, g_up) ≈ flat_form_inner(ω2, ω2)
-for g_ko in (g_lo, g_id)
-  @test_throws ErrorException hodge_star(ω2, g_ko, 1.0)
-  @test_throws ErrorException sharp(ω2, g_ko)
-  @test_throws ErrorException form_inner(ω2, ω2, g_ko)
-end
+@test sharp(ω2, g_up)           ≈ v2
+@test form_inner(ω2, ω2, g_up)  ≈ flat_form_inner(ω2, ω2)
+@test flat(v2, g_lo)            ≈ ω2
 
-# `flat` lowers an index: it takes `g`
-@test flat(v2, g_lo) ≈ ω2
-@test_throws ErrorException flat(v2, g_id)
-@test_throws ErrorException flat(v2, g_up)
+# Either tensor may be given, the other one is inverted on demand
+@test hodge_star(ω2, g_lo, 1.0) ≈ hodge_star(ω2, g_up, 1.0)
+@test sharp(ω2, g_lo)           ≈ sharp(ω2, g_up)
+@test form_inner(ω2, ω2, g_lo)  ≈ form_inner(ω2, ω2, g_up)
+@test flat(v2, g_up)            ≈ flat(v2, g_lo)
+
+# √|det(g)| is computed from whichever tensor is given when it is omitted
+@test hodge_star(ω2, g_up) ≈ hodge_star(ω2, g_up, 1.0)
+@test hodge_star(ω2, g_lo) ≈ hodge_star(ω2, g_up, 1.0)
+
+# An un-varianced metric does not say whether it raises or lowers
+@test_throws ArgumentError hodge_star(ω2, g_id, 1.0)
+@test_throws ArgumentError sharp(ω2, g_id)
+@test_throws ArgumentError form_inner(ω2, ω2, g_id)
+@test_throws ArgumentError flat(v2, g_id)
+
+# A `VectorValue` is taken as contravariant, but the result still carries a variance
+@test flat(v2_un, g_lo) ≈ flat(v2, g_lo)
+@test flat(v2_un, g_lo) isa ExteriorFormValue{1,cov2}
 
 # metric errors
-@test_throws "(2, 0)" sharp(ω2, g_lo)
-@test_throws "(0, 2)" flat(v2, g_up)
+@test_throws ArgumentError sharp(v2, g_up)
+@test_throws ArgumentError flat(ω2, g_lo)
 @test_throws DimensionMismatch sharp(ω2, SymTensorValue{con3}(1.,0.,0.,1.,0.,1.))
 @test_throws DimensionMismatch flat(v2, SymTensorValue{cov3}(1.,0.,0.,1.,0.,1.))
 
-# The result of `flat` carries the covariant dimension of the metric
-@test flat(v2, g_lo) isa ExteriorFormValue{1,cov2}
+# `hodge_star` keeps the variance of `ω`: it raises the indices of a form with
+# `g_inv` and scales by √|det(g)|, and does the dual for a K-vector
+gd  = SymTensorValue{cov2,Float64,3}(2.0, 0.0, 3.0)
+gdi = inv(gd)
+sdg = sqrt(6.0)
+for v in (ExteriorVectorValue{1,con2}((1.0, 0.0)), ExteriorVectorValue{1,con2}((0.7, -0.3)))
+  star_v = hodge_star(v, gd)
+  @test star_v isa ExteriorVectorValue{1,con2}
+  # agrees with the form-side star transported by the musical isomorphisms
+  @test star_v ≈ sharp(hodge_star(flat(v, gd), gdi), gdi)
+  # ⋆⋆ = (-1)^{K(D-K)} = -1 for K = 1, D = 2
+  @test hodge_star(star_v, gd) ≈ -1.0 * v
+  # either tensor, and √|det(g)| given or not
+  @test hodge_star(v, gdi)      ≈ star_v
+  @test hodge_star(v, gd,  sdg) ≈ star_v
+  @test hodge_star(v, gdi, sdg) ≈ star_v
+end
+
+# The volume factor of a K-vector is the reciprocal of a K-form's
+@test hodge_star(ExteriorVectorValue{0,con2}((5.0,)), gd) ≈ ExteriorVectorValue{2,con2}((5.0/sdg,))
+@test hodge_star(ExteriorFormValue{0,cov2}((5.0,)),   gd) ≈ ExteriorFormValue{2,cov2}((5.0*sdg,))
+
+# An un-varianced K-tensor says neither, `flat_hodge_star` is its Euclidean star
+@test_throws ErrorException hodge_star(SkewSymKTensorValue{Int,1,2}((1.0, 2.0)), gd)
+
+# Each result carries the variance its own index ends up with
+@test flat(v2, g_lo)            isa ExteriorFormValue{1,cov2}
 @test hodge_star(ω2, g_up, 1.0) isa ExteriorFormValue{1,cov2}
-@test sharp(ω2, g_up) isa VectorValue{2}
+@test sharp(ω2, g_up)           isa ExteriorVectorValue{1,con2}
 
 # ==================================================================
 # Adjoint, transpose and permutedims
@@ -549,8 +590,9 @@ end
 # Contracting away every index of one operand leaves the other's variance
 @test (t_mix2 ⋅ ω1) isa ExteriorFormValue{1,cov2}
 @test (ω13 ⋅ TensorValue{con3,cov3}(1:9...)) isa ExteriorFormValue{1,cov3}
-# Gridap has no contravariant vector, so an order-1 contravariant result throws
-@test_throws ErrorException TensorValue{con2,con2}(1:4...) ⋅ ω1
+# An order-1 contravariant result is an `ExteriorVectorValue{1}`
+@test (TensorValue{con2,con2}(1:4...) ⋅ ω1) isa ExteriorVectorValue{1,con2}
+@test (TensorValue{con2,con2}(1:4...) ⋅ ω1) == ExteriorVectorValue{1,con2}((7,10))
 
 # Dimension zero, contracted or not
 z22 = TensorValue{cov2,con0,Int}(())
@@ -618,13 +660,13 @@ v_1 = ExteriorVectorValue{1,3}((1,2,3))
 @test typeof(v_1) === ExteriorVectorValue{1,con3,Int,3}
 @test typeof(ExteriorVectorValue{1,con3}((1,2,3))) === typeof(v_1)
 @test_throws AssertionError ExteriorVectorValue{1,cov3}((1,2,3))
-@test typeof(SkewSymKTensorValue{1,3,Int,3,Con}(1,2,3)) === typeof(v_1)
+@test typeof(SkewSymKTensorValue{Con,1,3,Int,3}(1,2,3)) === typeof(v_1)
 @test size(v_1) == (con3,)
 @test tensor_type(typeof(v_1)) == (1,0,0)
 @test tensor_type(typeof(ExteriorVectorValue{2,3}((1,2,3)))) == (2,0,0)
 
 @test_throws AssertionError ExteriorVectorValue{1,3}((1,2))
-@test_throws AssertionError SkewSymKTensorValue{1,3,Int,3,Con}(1,2)
+@test_throws AssertionError SkewSymKTensorValue{Con,1,3,Int,3}(1,2)
 
 # The whole interface follows the variance
 @test num_indep_components(ExteriorVectorValue{2,con3}) == 3
@@ -649,9 +691,6 @@ v_2 = ExteriorVectorValue{2,3}((1,2,3))
 # Values of the two variances mix in no other way
 @test_throws ErrorException v_1 + ω_1
 @test_throws ErrorException convert(ExteriorFormValue{1,3,Float64}, v_1)
-# the pointwise algebra is defined on forms only
-@test_throws MethodError v_1 ∧ v_1
-@test_throws MethodError flat_hodge_star(v_1)
 
 # A vector is displayed on the frame dual to the coframe of a form
 _str_v(io_props, a) = sprint((io, x) -> show(io, MIME("text/plain"), x), a;

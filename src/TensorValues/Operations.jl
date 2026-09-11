@@ -119,9 +119,7 @@ function _tensor_base_type_expr(Nr,Sr)
     elseif D isa Cov
       :( ExteriorFormValue{1,$(Sr[1])} )
     elseif D isa Con
-      # Spliced where a type name is expected, so it throws from the position
-      # the result type would have occupied.
-      :( @notimplemented "Gridap does not have a contravariant vector yet." )
+      :( ExteriorVectorValue{1,$(Sr[1])} )
     else
       :( @unreachable )
     end
@@ -306,6 +304,15 @@ end
 
 inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N}) where {S,Ta,Tb,N} = contracted_product(Val(N),a,b)
 
+# Rejection of an index pair that `can_contract` refuses, as a value for a plain
+# method body and as an `Expr` for a `@generated` one. The `Expr` form carries
+# the message rather than the dimensions, so that it holds only literals.
+_cannot_contract_msg(i, j) = "Indices $i and $j cannot be contracted, see `can_contract`."
+_cannot_contract(i, j) = throw(DimensionMismatch(_cannot_contract_msg(i,j)))
+_cannot_contract_expr(i, j) = :( throw(DimensionMismatch($(_cannot_contract_msg(i,j)))) )
+
+# Σᵢⱼ aᵢⱼbᵢⱼ for two symmetric `D`×`D` tensors, read off their independent
+# components only.
 @generated function inner(a::AbstractSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return :(zero($(Base.promote_op(*,Ta,Tb))))
   terms = Expr(:call, :+)

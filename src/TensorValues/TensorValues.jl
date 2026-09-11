@@ -125,7 +125,7 @@ export flat_form_inner, ⨟ᴱ
 export flat_inner, ⊙ᴱ
 export flat, ♭
 export sharp, ♯
-export apply_form
+export apply_tensor
 export pullback
 export symbolic_coordinates
 export koszul

@@ -40,13 +40,44 @@ function _minor_k(A, I::NTuple{K,Int}, J::NTuple{K,Int}) where K
   det(SMatrix{K,K}(ntuple(n -> A[I[(n-1)%K+1], J[(n-1)÷K+1]], Val(K*K))))
 end
 
-# Expression to validate that `name<:V` is a valid (inverse) metric tensor,
-# i.e. has symetric Type with `expected` tensor type. `nothing` is valid, else
-# the error expressing is returned.
-function _metric_check_expr(V, name, expected::NTuple{3,Int})
-  tensor_type(V) === expected  && V<:SymTensorValue && return nothing
-  :( @unreachable $("$name must be a type-$(expected[1:2]) SymTensorValue, got a $V with type $(tensor_type(V)).") )
+# ============================================================
+# Alternation map 𝔸
+# ============================================================
+
+"""
+    alternation(a::MultiValue{NTuple{K,D}}) -> SkewSymKTensorValue{V,K,D}
+    𝔸(a)
+
+Alternating part `𝔸(a)` of the order `K` tensor `a` whose `K` indices share
+the dimension `D` of variance `V=typeof(D)`, defined by
+
+``\bb{A}(a)_I = \\frac{1}{K!} Σ_σ sign(σ) a_{I∘σ}``.
+
+It is a skew-symmetric tensor. `𝔸` is the identity on such tensors,
+so an operation defined through `𝔸` agrees with its `SkewSymKTensorValue`
+method on the tensors both accept.
+"""
+@generated function alternation(a::MultiValue{NTuple{K,Da},T,K}) where {K,Da,T}
+  D = Int(Da)
+  L = binomial(D, K)
+  V = typeof(Da)
+  iszero(L) && return :( zero(SkewSymKTensorValue{$V,$K,$D,$T,0}) )
+
+  f = factorial(K)
+  comps = Expr[]
+  for I in sorted_combinations(D, K)
+    terms = [_signed(levicivita(p), :( a[$(I[p]...)] )) for p in permutations(1:K)]
+    s = _sum_expr(terms, T)
+    push!(comps, isone(f) ? s : :( $s / $f ))
+  end
+
+  quote
+    SkewSymKTensorValue{$V,$K,$D}($(comps...))
+  end
 end
+
+alternation(a::SkewSymKTensorValue) = a
+const 𝔸 = alternation
 
 # ============================================================
 # Exterior (wedge) product ∧
@@ -91,22 +122,26 @@ end
 # ============================================================
 
 """
+    interior_product(v::VectorValue, ω::ExteriorFormValue)
     interior_product(v, ω::SkewSymKTensorValue)
     ι(v, ω)
 
 Interior product (contraction) `ι_v ω`, of a an alternating `K`-tensor `ω` and
 (co)vector `v`. It is the `K-1`-alternating tensor:
-    `(ι_v ω)(w₂,…,wₖ) = ω(v, w₂,…,wₖ)`.
-The index of `v` should be contractable with that of `ω`.
-"""
-@generated function interior_product(v::MultiValue{Tuple{D},Tv}, ω::SkewSymKTensorValue{V,K,Dw,Tw}) where {V,K,D,Dw,Tv,Tw}
-  K >= 1 || return :(@unreachable "interior product requires K ≥ 1")
-  D == Dw || return :(throw(DimensionMismatch()))
-  can_contract(D, Dw) || return :(throw(ArgumentError("interior_product undefined for $D-vector and alternating tensor with variance $V, indices cannot contract")))
+    (ι_v ω)(w₂,…,wₖ) = ω(v, w₂,…,wₖ).
 
+If `v` is not a `VectorValue`, the index of `v` should be contractable with
+that of `ω`, else, `v` is assumed contravariant.
+"""
+@generated function interior_product(v::MultiValue{Tuple{Dv},Tv}, ω::SkewSymKTensorValue{V,K,Dw,Tw}) where {V,K,Dv,Dw,Tv,Tw}
+  K >= 1 || return :(@unreachable "interior product requires K ≥ 1")
+  Dv == Dw || return :(throw(DimensionMismatch()))
+  can_contract(Dv, Dw) || return :(throw(ArgumentError("interior_product undefined for size $(size(v)) vector and alternating tensor with variance $V, indices cannot contract")))
+
+  D = Int(Dv)
   Km1 = K - 1
   T = Base.promote_op(*, Tv, Tw)
-  iszero(binomial(D, K)) && return :( zero(SkewSymKTensorValue{V,$Km1,$D,$T}) )
+  iszero(binomial(D, K)) && return :( zero(SkewSymKTensorValue{V,$Km1,$Dw,$T}) )
 
   L = binomial(D, Km1)
 
@@ -120,12 +155,18 @@ The index of `v` should be contractable with that of `ω`.
   end
   comps = [_sum_expr(t, T) for t in terms]
 
-  :( SkewSymKTensorValue{V,$Km1,$D}(($(comps...),)) )
+  :( SkewSymKTensorValue{V,$Km1,$Dw}(($(comps...),)) )
+end
+
+# VectorValue is assumed contravariant for the interior product
+function interior_product(v::VectorValue{D}, ω::ExteriorFormValue) where D
+  contra_v = ExteriorVectorValue{1,D}(Tuple(v))
+  interior_product(contra_v, ω)
 end
 const ι = interior_product
 
 # ============================================================
-# Hodge star ⋆ (flat Euclidean metric, g = Iᴅ, so √det g = 1)
+# Hodge star ⋆ (flat Euclidean metric, g = Iᴅ, so √|det(g)| = 1)
 #
 # (⋆ω)_J = ∑_I  ε_{IJ}  ω_I
 # where I ranges over K-combinations, J over (D-K)-combinations,
@@ -176,40 +217,6 @@ function _hodge_star_signs(K::Int, D::Int)
   signs
 end
 
-"""
-    alternation(a::MultiValue{NTuple{K,D}}) -> SkewSymKTensorValue{V,K,D}
-    𝔸(a)
-
-Alternating part `𝔸(a)` of the order `K` tensor `a` whose `K` indices share
-the dimension `D` of variance `V=typeof(D)`, defined by
-
-``\bb{A}(a)_I = \\frac{1}{K!} Σ_σ sign(σ) a_{I∘σ}``.
-
-It is a skew-symmetric tensor. `𝔸` is the identity on such tensors,
-so an operation defined through `𝔸` agrees with its `SkewSymKTensorValue`
-method on the tensors both accept.
-"""
-@generated function alternation(a::MultiValue{NTuple{K,Da},T,K}) where {K,Da,T}
-  D = Int(Da)
-  L = binomial(D, K)
-  V = typeof(Da)
-  iszero(L) && return :( zero(SkewSymKTensorValue{$V,$K,$D,$T,0}) )
-
-  f = factorial(K)
-  comps = Expr[]
-  for I in sorted_combinations(D, K)
-    terms = [_signed(levicivita(p), :( a[$(I[p]...)] )) for p in permutations(1:K)]
-    s = _sum_expr(terms, T)
-    push!(comps, isone(f) ? s : :( $s / $f ))
-  end
-
-  quote
-    SkewSymKTensorValue{$V,$K,$D}($(comps...))
-  end
-end
-
-alternation(a::SkewSymKTensorValue) = a
-const 𝔸 = alternation
 
 """
     flat_hodge_star(ω::ExteriorFormValue{K,D})
@@ -257,76 +264,67 @@ function symbolic_coordinates end
 #   Step 1 — raise indices:
 #     ω^I = Σ_{J sorted K-index} det([g_inv[I[a],J[b]]]_{a,b}) ω_J
 #   Step 2 — Levi-Civita contraction:
-#     (⋆_g ω)_L = √det(g) Σ_{I sorted} ε(I,L) ω^I
+#     (⋆_g ω)_L = √|det(g)| Σ_{I sorted} ε(I,L) ω^I
 #
-# Passing g_inv (the pointwise inverse metric tensor) and sqrt_det_g
+# Passing g_inv (the pointwise inverse metric tensor) and sqrt_abs_g
 # (the pointwise square root of det g) keeps this purely algebraic.
 # ============================================================
 
-# Computes √det(g) from g or it's inverse
-function _sqrt_det_g(g_or_ginv::SymTensorValue)
-  sq_det_g_or_ginv = sqrt(det(g_or_ginv))
-  if tensor_type(g_or_ginv) == (2,0,0)
-    inv(sq_det_g_or_ginv) # it was g_inv
-  elseif tensor_type(g_or_ginv) == (0,2,0)
-    sq_det_g_or_ginv      # it was g
-  elseif tensor_type(g_or_ginv) == (0,0,2)
-    sq_det_g_or_ginv # we don't know and trust
-  else
-    @unreachable
-  end
-end
-
 """
-    hodge_star(ω::ExteriorFormValue{K,D}, g_inv::SymTensorValue[, sqrt_det_g])
-    hodge_star(ω::ExteriorVectorValue{K,D},   g::SymTensorValue[, sqrt_det_g])
-    hodge_star(ω::MultiValue{NTuple{K,D}}, g[_inv]::SymTensorValue[, sqrt_det_g])
-    ⋆(ω, g_inv[, sqrt_det_g])
+    hodge_star(ω::MultiValue{NTuple{K,D}},  g_or_ginv[, sqrt_abs_g])
+    ⋆(ω, g_or_ginv[, sqrt_abs_g])
 
-Hodge star `⋆ω` of a `K`-tensor `ω`. It is an alternating `(D-K)`-tensor of same
-variance.
+Hodge star `⋆ω` of a `K`-tensor `ω` with variance. It is an alternating
+`(D-K)`-tensor of the same variance, a form for a covariant `ω` and a
+`(D-K)`-vector for a contravariant one.
 
-It requires the the metric tensor `g` (or inverse `g_inv`)  and `√det(g)`.
-The latter is computed from the former if not prodided.
+`g_or_ginv` is either the metric tensor `g` (covariant) or its inverse `g_inv`
+(contravariant); whichever is missing is computed on demand, see
+[`parse_metric_data`](@ref). Passing `sqrt_abs_g` = `√|det(g)|` spares computing
+a determinant.
 
 A not-alternating `K`-tensor with homogeneous variance is accepted, and
 starred through its alternating part.
 
 See also [`flat_hodge_star(ω)`](@ref) for the Euclidean version.
 """
-@generated function hodge_star(ω::SkewSymKTensorValue{V,K,Dw,Tw}, g_or_ginv::SymTensorValue{Dg,Tg},
-                               sqrt_det_g::Ts=_sqrt_det_g(g_or_ginv)) where {V,K,Dg,Dw,Tw,Tg,Ts}
-  # TODO: adapt to allow all variances V
-  e = _metric_check_expr(g_inv, "g_inv", (2,0,0)); e === nothing || return e
-
-
+@generated function hodge_star(ω::SkewSymKTensorValue{V,K,Dw,Tw}, g_or_ginv::SymTensorValue{Dg},
+                               sqrt_abs_g=nothing) where {V,K,Dg,Dw,Tw}
+  V === Int && return :(@unreachable $("hodge_star requires a K-tensor with variance, got $V index"))
   Dg == Dw || return :(throw(DimensionMismatch()))
   D = Int(Dg)
   K <= D || return :(@unreachable $("hodge star requires K ≤ D, got K = $K and D = $D"))
 
-  T = Base.promote_op(*, Tw, Tg, Ts)
   Kc  = D - K
   L   = binomial(D, K)   # = binomial(D, Kc), the two are matched by complementation
   c_K = sorted_combinations(D, K)
 
-  # Step 1: raise K indices of ω
-  raised = [_sum_expr([:( $(_minor_expr(:g_inv, I, J)) * indep_comp_getindex(ω,$m) )
-                       for (m, J) in enumerate(c_K)], T)
+  # Raising the indices of a form pairs with the volume factor √|det(g)|;
+  # lowering those of a K-vector pairs with its reciprocal.
+  _g_or_ginv = V === Cov ? :g_inv : :g
+  _volume    = V === Cov ? :sqrt_abs_g : :(inv(sqrt_abs_g))
+
+  # Step 1: swap (raise or lower) K indices of ω. `K ≤ D` makes the sum non-empty.
+  swapped = [Expr(:call, :+, (:( $(_minor_expr(_g_or_ginv, I, J)) * indep_comp_getindex(ω,$m) )
+                             for (m, J) in enumerate(c_K))...)
             for I in c_K]
 
   # Step 2: Levi-Civita contraction, which pairs each I with its complement only
   s = _hodge_star_signs(K, D)
-  comps = [_signed(s[L+1-m], :(sqrt_det_g * ω_raised[$(L+1-m)])) for m in 1:L]
+  comps = [_signed(s[L+1-m], :(vol * ω_swapped[$(L+1-m)])) for m in 1:L]
 
+  # The metric data is read into locals once: `MetricData` is immutable, so a
+  # field it does not store is recomputed at every access.
   quote
-    @check sqrt_det_g ≈ _sqrt_det_g(g_or_ginv) "The provided √det(g) is wrong, expected $(_sqrt_det_g(g_or_ginv)), got $sqrt_det_g."
-    ω_raised = ($(raised...),)
-    SkewSymKTensorValue{V,$Kc,$Dw}(($(comps...),))
+    (; $_g_or_ginv, sqrt_abs_g) = parse_metric_data(g_or_ginv, sqrt_abs_g)
+    vol = $_volume
+    ω_swapped = ($(swapped...),)
+    SkewSymKTensorValue{$V,$Kc,$Dw}(($(comps...),))
   end
 end
 
-function hodge_star(a::MultiValue{NTuple{K,D}}, g_or_inv, sqrt_det_g=_sqrt_det_g(g_or_ginv)) where {K,D}
-  hodge_star(𝔸(a), g_or_inv, sqrt_det_g)
+function hodge_star(a::MultiValue{NTuple{K,D}}, g_or_ginv, sqrt_abs_g=nothing) where {K,D}
+  hodge_star(𝔸(a), g_or_ginv, sqrt_abs_g)
 end
 
 const ⋆ = hodge_star
@@ -334,111 +332,146 @@ const ⋆ = hodge_star
 # ============================================================
 # Musical isomorphisms  ♭ (flat) and ♯ (sharp)
 #
-# flat  (♭):  VectorValue{D} → ExteriorFormValue{1,D}
+# flat  (♭):  ExteriorVectorValue{1,D} → ExteriorFormValue{1,D}
 #   (v♭)_i = Σ_j g_{ij} v^j           (lowers an index)
 #
-# sharp (♯):  ExteriorFormValue{1,D} → VectorValue{D}
+# sharp (♯):  ExteriorFormValue{1,D} → ExteriorVectorValue{1,D}
 #   (ω♯)^i = Σ_j g^{ij} ω_j           (raises an index)
 # ============================================================
 
 """
-    flat(v, g::SymTensorValue{D})
-    ♭(v, g)
+    flat(v::VectorValue,          g_or_ginv::SymTensorValue)
+    flat(v::MultiValue{Tuple{D}}, g_or_ginv::SymTensorValue)
+    ♭(v, g_or_ginv)
 
 Musical isomorphism ♭: lower the index of the contravariant vector `v` with the
 metric `g`, resulting into a covector (1-form).
+
+`g_or_ginv` is either the metric tensor `g` (covariant) or its inverse `g_inv`
+(contravariant), see [`parse_metric_data`](@ref).
 """
-@generated function flat(v::MultiValue{Tuple{Dv},Tv}, g::SymTensorValue{Dg,Tg}) where {Dv,Dg,Tv,Tg}
-  e = _metric_check_expr(g, "g", (0,2,0)); e === nothing || return e
+@generated function flat(v::MultiValue{Tuple{Dv},Tv}, g_or_ginv::SymTensorValue{Dg,Tg}) where {Dv,Dg,Tv,Tg}
   Dg == Dv || return :(throw(DimensionMismatch()))
-  can_contract(Dv,Dg) || return :(throw(ArgumentError("flat undefined for 1-tensor that is not contravariant, got $Dv")))
+  Dv isa Con || return :(throw(ArgumentError("flat undefined for 1-tensor that is not contravariant, got $Dv")))
   D = Int(Dv)
-  iszero(D) && return :( zero(ExteriorFormValue{1,$Dg,$(Base.promote_op(*,Tg,Tv))}) )
+  Dcov = inverse_variance(Dv)
+  iszero(D) && return :( zero(ExteriorFormValue{1,$Dcov,$(Base.promote_op(*,Tg,Tv))}) )
 
   comps = [Expr(:call, :+, (:(g[$i,$j] * v[$j]) for j in 1:D)...) for i in 1:D]
-  :( ExteriorFormValue{1,$Dg}(($(comps...),)) )
+  quote
+    (; g) = parse_metric_data(g_or_ginv)
+    ExteriorFormValue{1,$Dcov}(($(comps...),))
+  end
+end
+function flat(v::VectorValue{D}, g_or_ginv::SymTensorValue) where D
+  contra_v = ExteriorVectorValue{1,D}(Tuple(v))
+  flat(contra_v, g_or_ginv)
 end
 
 const ♭ = flat
 
 """
-    sharp(ω, g_inv::SymTensorValue{D})
-    ♯(ω, g_inv)
+    sharp(ω, g_or_ginv::SymTensorValue{D})
+    ♯(ω, g_or_ginv)
 
 Musical isomorphism `♯`: raise the index of the covector (1-form) `ω` with the
 inverse metric `g_inv`, resulting into a contravariant vector.
+
+`g_or_ginv` is either the metric tensor `g` (covariant) or its inverse `g_inv`
+(contravariant), see [`parse_metric_data`](@ref).
 """
-@generated function sharp(ω::MultiValue{Tuple{Dw},Tw}, g_inv::SymTensorValue{Dg,Tg}) where {Dg,Dw,Tw,Tg}
-  e = _metric_check_expr(g_inv, "g_inv", (2,0,0)); e === nothing || return e
+@generated function sharp(ω::MultiValue{Tuple{Dw},Tw}, g_or_ginv::SymTensorValue{Dg,Tg}) where {Dg,Dw,Tw,Tg}
   Dg == Dw || return :(throw(DimensionMismatch()))
-  can_contract(Dw,Dg) || return :(throw(ArgumentError("sharp undefined for 1-tensor that is not covariant, got $Dv")))
-  D = Int(Dg)
-  iszero(D) && return :( zero(ExteriorVectorValue{0,$(Base.promote_op(*,Tg,Tw))}) )
+  Dw isa Cov || return :(throw(ArgumentError("sharp undefined for 1-tensor that is not covariant, got $Dw")))
+  D = Int(Dw)
+  Dcon = inverse_variance(Dw)
+  iszero(D) && return :( zero(ExteriorVectorValue{1,$Dcon,$(Base.promote_op(*,Tg,Tw))}) )
 
   comps = [Expr(:call, :+, (:(g_inv[$i,$j] * indep_comp_getindex(ω,$j)) for j in 1:D)...) for i in 1:D]
-  :( ExteriorVectorValue{$D}(($(comps...),)) )
+  quote
+    (; g_inv) = parse_metric_data(g_or_ginv)
+    ExteriorVectorValue{1,$Dcon}(($(comps...),))
+  end
 end
 
 const ♯ = sharp
 
 """
-    apply_form(ω::ExteriorFormValue{K,D,T}, v₁, …, vₖ) → scalar
+    apply_tensor(ω::ExteriorFormValue{K,D,T}, v₁, …, vₖ) → scalar
 
 Evaluate the K-form ω on K tangent contravariant vectors v₁,…,vₖ ∈ ℝᴰ:
   ω(v₁,…,vₖ) = Σ_{|I|=K} ω_I · det([vₐ[I[b]]]_{a,b=1}^K)
 
 Each vector must be a size `(D, )` tensor. Behaves like `getindex` for scalar `K=0`.
 """
-@generated function apply_form(ω::ExteriorFormValue{K,Dw,T},
-                               vs::Vararg{MultiValue{Tuple{D}},K}) where {K,D,Dw,T}
+@generated function apply_tensor(ω::SkewSymKTensorValue{V,K,Dw,T},
+                                 vs::Vararg{MultiValue{Tuple{D}},K}) where {V,K,D,Dw,T}
   K == 0 && return :(ω[1])
   D == Dw || return :(throw(DimensionMismatch()))
+  can_contract(D,Dw) || return :(throw(ArgumentError("tensor $(ω) cannot be applied to  $(vs), indices cannot contract")))
 
   # trivial Λᴷ for K > D
   iszero(binomial(D, K)) &&
     return Expr(:call, :*, :(zero($T)), (:(zero(eltype(vs[$a]))) for a in 1:K)...)
 
   terms = [:( indep_comp_getindex(ω,$n) * $(_det_expr((a,b) -> :(vs[$a][$(I[b])]), K)) )
-           for (n, I) in enumerate(sorted_combinations(D, K))]
+    for (n, I) in enumerate(sorted_combinations(Int(D), K))]
   Expr(:call, :+, terms...)
 end
-# TODO: generalize apply_form to skew symmetric vector and 1-tensors that can contract
+function apply_tensor(ω::ExteriorFormValue{K}, vs::Vararg{VectorValue{D},K}) where {K,D}
+  K == 0 && return ω[1]
+  contra_vs = map(vi -> ExteriorVectorValue{1,D}(Tuple(vi)), vs)
+  apply_tensor(ω, contra_vs...)
+end
 
-apply_form(ω::SkewSymKTensorValue{V,K,D}, vs...) where {V,K,D} =
-  @unreachable "a K-form takes K vectors (subtyping `MultiValue`) of size (D,), got $(typeof.(vs)) for K = $K and D = $D"
+# TODO: generalize apply_tensor to non skew-symmetric tensor ω
+
+apply_tensor(ω::SkewSymKTensorValue{V,K,D}, vs...) where {V,K,D} =
+  @unreachable "a K-tensor takes K arguments (subtyping `MultiValue`) of size (D,), got $(typeof.(vs)) for K = $K and D = $D"
 
 # ============================================================
 # Pullback  φ*ω : Ωᴷ(Dn) → Ωᴷ(Dm)
 #
-# Given the Jacobian J = ∇φ  (TensorValue{Dn,Dm}, J[i,j] = ∂φⁱ/∂ξʲ) of
-# a map φ : ℝᴰᵐ → ℝᴰⁿ and a K-form ω on ℝᴰⁿ:
+# Given a map φ : ℝᴰᵐ → ℝᴰⁿ from a chart to an ambient space, its transposed
+# Jacobian Jt = ∇φ, Jt[j,i] = ∂φⁱ/∂ξʲ, and a K-form ω on ℝᴰⁿ:
 #
-#   (φ*ω)_J(ξ) = Σ_I  ω_I(φ(ξ)) · det(J[I, J])
+#   (φ*ω)_J(ξ) = Σ_I  ω_I(φ(ξ)) · det(Jt[J, I])
 #
 # where I is a sorted K-multi-index into {1:Dn} (ambient) and
 # J is a sorted K-multi-index into {1:Dm} (chart).
 # ============================================================
 
 """
-    pullback(ω::ExteriorFormValue{K,Dn}, Jt::TensorValue{Dn,Dm})
+    pullback(ω::ExteriorFormValue{K,Dn}, Jt::TensorValue{Dm,Dn})
 
-Pointwise pullback `φ^*ω` of a K-form under a map with Jacobian `Jt = ∇φ`,
-giving a `ExteriorFormValue{K,Dm}`. A Field-level method for lazy
-pullbacks is provided in `Gridap.Fields`.
+Pointwise pullback `φ^*ω` of a K-form under a map `φ : ℝᴰᵐ → ℝᴰⁿ` with
+transposed Jacobian `Jt = ∇φ`, that is `Jt[j,i] = ∂φⁱ/∂ξʲ`.
+
+The chart index `j` of `Jt` is covariant and its ambient index `i`
+contravariant, so `Jt` has size `(Cov(Dm), Con(Dn))`: the ambient index is the
+one contracted with `ω`, and the result is an `ExteriorFormValue{K,Cov(Dm)}`.
+
+A Field-level method for lazy pullbacks is provided in `Gridap.Fields`.
 """
-@generated function pullback(ω::ExteriorFormValue{K,Dw,Tw}, Jt::TensorValue{Dn,Dm,Tj}) where {K,Dw,Dn,Dm,Tw,Tj}
-  Dn == Dw || return :(throw(DimensionMismatch()))
-  # TODO: validate the variance of Jt: it size must be (Dn isa Cov, Dm isa Con), update test accordingly
+@generated function pullback(ω::ExteriorFormValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
+  Dm isa Cov || return :(throw(ArgumentError(
+    "the chart index of Jt is covariant, got a transposed jacobian of size $(size(Jt))"
+  )))
+  can_contract(Dn, Dw) || return :(throw(DimensionMismatch(
+    "cannot pullback a form of dimension $Dw by a transposed jacobian of ambient dimension $Dn, indices cannot contract"
+  )))
   T = Base.promote_op(*, Tw, Tj)
 
-  (iszero(binomial(Dn, K)) || iszero(binomial(Dm, K))) &&
+  m, n = Int(Dm), Int(Dn)
+  (iszero(binomial(n, K)) || iszero(binomial(m, K))) &&
     return :( zero(ExteriorFormValue{$K,$Dm,$T}) )
 
-  c_I = sorted_combinations(Dn, K)   # K-combins in ambient (target) space
-  c_J = sorted_combinations(Dm, K)   # K-combins in chart (origin) space
+  c_I = sorted_combinations(n, K)   # K-combins in ambient (target) space
+  c_J = sorted_combinations(m, K)   # K-combins in chart (origin) space
 
-  comps = [_sum_expr([:( $(_minor_expr(:Jt, I, J)) * indep_comp_getindex(ω,$n) )
-                      for (n, I) in enumerate(c_I)], T)
+  # det([∂φ^{I[b]}/∂ξ^{J[a]}]) is the minor of Jt on rows J and columns I
+  comps = [_sum_expr([:( $(_minor_expr(:Jt, J, I)) * indep_comp_getindex(ω,$l) )
+                      for (l, I) in enumerate(c_I)], T)
            for J in c_J]
 
   :( ExteriorFormValue{$K,$Dm}(($(comps...),)) )
@@ -462,16 +495,13 @@ end
 # ============================================================
 
 """
-    koszul(x::VectorValue{D}, ω::ExteriorFormValue{K,D})
+    koszul(x::VectorValue, ω::ExteriorFormValue)
 
 Koszul differential ``κ_x(ω) = ι_x(ω)``, the interior product with the position
 vector `x`. A Field-level method is provided in `Gridap.Fields`.
 """
 function koszul(x::VectorValue{D}, ω::ExteriorFormValue{K,Dw}) where {K,D,Dw}
-  # exeption to the rule that varianced tensor only interact with other ones,
-  # because we do not want, and cannot, give a variance to Point{D,T}.
-  contra_x = ExteriorVectorValue{1,D}(Tuple(x))
-  interior_product(contra_x, ω)
+  interior_product(x, ω)
 end
 
 # ============================================================
@@ -483,28 +513,27 @@ end
 # the second sum running over sorted multi-indices, which reduces to
 # Σ_I α_I β_I for a flat metric. This is the inner product the Hodge star is
 # built on,
-#   α ∧ ⋆_g β = (α|β) μ = (α|β) √det(g) dx¹ ∧ … ∧ dx^D.
+#   α ∧ ⋆_g β = (α|β) μ = (α|β) √|det(g)| dx¹ ∧ … ∧ dx^D.
 #
 # `flat_inner` is the tensor inner product with the indices of β raised by the
 # identity metric, such that flat_inner(α,β) = K!(α|β).
 # ============================================================
 
 """
-    form_inner(ω::ExteriorFormValue{K,D},   η::ExteriorFormValue{K,D}, g_inv::SymTensorValue{D})
-    form_inner(ω::ExteriorVectorValue{K,D}, η::ExteriorVectorValue{K,D},   g::SymTensorValue{D})
+    form_inner(ω::ExteriorFormValue{K,D}, η::ExteriorFormValue{K,D}, g_or_ginv::SymTensorValue{D})
     ⨟(ω,η)
     ω ⨟ η
 
 Inner product ``(ω|η)`` of two K-forms, the scalar such that
 
-``ω ∧ ⋆_g η = √det(g) (ω|η) dx¹∧…∧dx^D``.
+``ω ∧ ⋆_g η = √|det(g)| (ω|η) dx¹∧…∧dx^D``.
 
-`g_inv` is the pointwise inverse metric tensor; see [`flat_form_inner`](@ref)
-for the identity one.
+`g_or_ginv` is either the metric tensor `g` (covariant) or its inverse `g_inv`
+(contravariant), see [`parse_metric_data`](@ref). See
+[`flat_form_inner`](@ref) for the identity metric.
 """
 @generated function form_inner(a::ExteriorFormValue{K,Dw,Ta}, b::ExteriorFormValue{K,Dw,Tb},
-                               g_inv::SymTensorValue{Dg,Tg}) where {K,Dg,Dw,Ta,Tb,Tg}
-  e = _metric_check_expr(g_inv, "g_inv", (2,0,0)); e === nothing || return e
+                               g_or_ginv::SymTensorValue{Dg,Tg}) where {K,Dg,Dw,Ta,Tb,Tg}
   Dg == Dw || return :(throw(DimensionMismatch()))
   D = Int(Dg)
   T = Base.promote_op(*, Ta, Tb, Tg)
@@ -515,7 +544,10 @@ for the identity one.
                            for (n, J) in enumerate(c_K)], T)) )
            for (m, I) in enumerate(c_K)]
   # (α|β) = Σ_I α_I β^I
-  _sum_expr(terms, T)
+  quote
+    (; g_inv) = parse_metric_data(g_or_ginv)
+    $(_sum_expr(terms, T))
+  end
 end
 # TODO: same as hodge_star, generalize to SkewSymKTensorValue,
 const ⨟ = form_inner

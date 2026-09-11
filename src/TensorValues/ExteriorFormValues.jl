@@ -8,8 +8,8 @@ dimensions. It stores `L = binomial(D,K)` independent components, indexed by
 the K-combinations `I` of `1:D`, in lexicographic order.
 
 All `K` indices share the variance `V<:Dim`, which the constructor
-automatically gives to `D`: `SkewSymKTensorValue{1,2,Int,2,Cov}(1,2)` works but
-returns a `SkewSymKTensorValue{1,cov2,Int,2,Cov}`.
+automatically gives to `D`: `SkewSymKTensorValue{Cov,1,2,Int,2}(1,2)` works but
+returns a `SkewSymKTensorValue{Cov,1,cov2,Int,2}`.
 
 Use the aliases [`ExteriorFormValue`](@ref) and [`ExteriorVectorValue`](@ref)
 rather than this type; they fix `V` and are the types the constructors,
@@ -91,11 +91,11 @@ for (Alias,V) in ((:ExteriorFormValue,:Cov), (:ExteriorVectorValue,:Con))
     # Internal conversion, which never changes the variance
     function convert(::Type{<:$Alias{K,D,T}}, arg::$Alias{K,Da}) where {K,D,Da,T}
       D == Da || error("Cannot convert value of type $(typeof(arg)) to type $($Alias){$K,$D,$T}")
-      SkewSymKTensorValue{V,K,D,T}(arg.data)
+      SkewSymKTensorValue{$V,K,D,T}(arg.data)
     end
     function convert(::Type{<:$Alias{K,D,T}}, arg::$Alias{K,Da,T}) where {K,D,Da,T}
       D == Da || error("Cannot convert value of type $(typeof(arg)) to type $($Alias){$K,$D,$T}")
-      SkewSymKTensorValue{V,K,D,T}(arg.data)
+      SkewSymKTensorValue{$V,K,D,T}(arg.data)
     end
   end
 end
@@ -127,8 +127,8 @@ end
 convert(::Type{<:MArray{S,T}}, arg::SkewSymKTensorValue) where {S,T} = MArray{S,T}(_SkewSymKTensorValue_to_array(arg))
 convert(::Type{<:SArray{S,T}}, arg::SkewSymKTensorValue) where {S,T} = SArray{S,T}(_SkewSymKTensorValue_to_array(arg))
 
-one(::Type{<:SkewSymKTensorValue{V,0,D,T}}) where {D,T} = one(T)
-one(::Type{<:SkewSymKTensorValue{V,K}}) where K = @unreachable "Skew symmetric k-tensors do not have multiplicative neutral for k > 0."
+one(::Type{<:SkewSymKTensorValue{V,0,D,T}}) where {V,D,T} = one(T)
+one(::Type{<:SkewSymKTensorValue{V,K}}) where {V,K} = @unreachable "Skew symmetric k-tensors do not have multiplicative neutral for k > 0."
 
 change_eltype(::Type{<:SkewSymKTensorValue{V,K,D,T1,L}}, ::Type{T2}) where {V,K,D,T1,T2,L} =
   SkewSymKTensorValue{V,K,D,T2,L}
@@ -192,6 +192,6 @@ function Base.show(io::IO, ::MIME"text/plain", a::SkewSymKTensorValue{V,K,D,T,L}
   _show_skewsymk(io, a, _frame_labels(io, V))
 end
 
-Base.show(io::IO, mime::MIME"text/plain", a::SkewSymKTensorValue{K,D,T,L,Int}) where {K,D,T,L} =
+Base.show(io::IO, mime::MIME"text/plain", a::SkewSymKTensorValue{Int,K,D,T,L}) where {K,D,T,L} =
   @invoke show(io::IO, mime::MIME"text/plain", a::MultiValue)
 

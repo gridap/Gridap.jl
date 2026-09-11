@@ -403,28 +403,31 @@ b_f  = ExteriorFormValue{1,D3,Float32}((1f0,2f0,3f0))
 v_i  = VectorValue{D3,Int}(1,2,3)
 g_f  = SymTensorValue{Cov(D3),Float32}(1f0,0f0,0f0,1f0,0f0,1f0)
 gif  = inv(g_f)
-Jt_f = TensorValue{D3,2,Float32}(1f0,0f0,0f0,0f0,1f0,0f0)
+Jt_f = TensorValue{cov2,con3,Float32}(1f0,0f0,  0f0,1f0,  0f0,0f0)
 
 @test eltype(a_i ∧ b_f)                      === Float32
 @test eltype(ι(v_i, b_f))                    === Float32
 @test eltype(flat_hodge_star(a_i))           === Int
 @test eltype(hodge_star(a_i, gif, 1.0))      === Float64
 @test eltype(flat(v_i, g_f))                 === Float32
-@test eltype(sharp(b_f, SymTensorValue{Con(D3),Int}(1,0,0,1,0,1))) === Float32
+@test eltype(sharp(b_f, gif))                === Float32
+# An integer metric widens to `Float64`: `MetricData` normalises its scalar type
+# to one that can hold the inverse it may have to compute.
+@test eltype(sharp(b_f, SymTensorValue{Con(D3),Int}(1,0,0,1,0,1))) === Float64
 @test eltype(pullback(a_i, Jt_f))            === Float32
 @test eltype(outer(v_i, b_f))                === Float32
 @test typeof(flat_form_inner(a_i, b_f))      === Float32
 @test typeof(form_inner(a_i, b_f, gif))      === Float32
-@test typeof(apply_form(a_i, v_i))           === Int
+@test typeof(apply_tensor(a_i, v_i))           === Int
 @test eltype(grad_to_2form(TensorValue{D3,D3,Int}(1,2,3,4,5,6,7,8,9))) === Int
 
 # a K-form takes exactly K arguments, each a size (D,) tensor
-@test_throws ErrorException apply_form(a_i, v_i, v_i)
-@test_throws ErrorException apply_form(a_i)
-@test_throws ErrorException apply_form(a_i, (1,2,3))
-@test_throws ErrorException apply_form(a_i, [1,2,3])
-@test_throws DimensionMismatch apply_form(a_i, VectorValue{2,Int}(1,2))
-@test_throws ErrorException apply_form(a_i, TensorValue{1,D3,Int}(1,2,3))
+@test_throws ErrorException apply_tensor(a_i, v_i, v_i)
+@test_throws ErrorException apply_tensor(a_i)
+@test_throws ErrorException apply_tensor(a_i, (1,2,3))
+@test_throws ErrorException apply_tensor(a_i, [1,2,3])
+@test_throws DimensionMismatch apply_tensor(a_i, VectorValue{2,Int}(1,2))
+@test_throws ErrorException apply_tensor(a_i, TensorValue{1,D3,Int}(1,2,3))
 
 # Λᴷ is trivial for K > D. Operations on such a form must keep the promoted
 # scalar type rather than fall back to the eltype of the empty tuple.
@@ -434,11 +437,11 @@ triv = ExteriorFormValue{4,D3,Float32}(())
 @test ι(v_i, triv) === zero(ExteriorFormValue{3,D3,Float32})
 @test a_i ∧ triv   === zero(ExteriorFormValue{5,D3,Float32})
 @test pullback(triv, Jt_f) === zero(ExteriorFormValue{4,2,Float32})
-@test apply_form(triv, v_i, v_i, v_i, v_i) === zero(Float32)
+@test apply_tensor(triv, v_i, v_i, v_i, v_i) === zero(Float32)
 # the vectors take part in the promotion even though no term survives
-@test (@inferred apply_form(triv, v_i, v_i, v_i, VectorValue{D3,Float64}(1,2,3))) === zero(Float64)
-@test apply_form(ExteriorFormValue{4,D3,Int}(()), v_i, v_i, v_i, v_i) === zero(Int)
-@test apply_form(ExteriorFormValue{1,0,Float32}(()), VectorValue{0,Float32}()) === zero(Float32)
+@test (@inferred apply_tensor(triv, v_i, v_i, v_i, VectorValue{D3,Float64}(1,2,3))) === zero(Float64)
+@test apply_tensor(ExteriorFormValue{4,D3,Int}(()), v_i, v_i, v_i, v_i) === zero(Int)
+@test apply_tensor(ExteriorFormValue{1,0,Float32}(()), VectorValue{0,Float32}()) === zero(Float32)
 @test flat_form_inner(triv, ExteriorFormValue{4,D3,Int}(())) === zero(Float32)
 @test form_inner(triv, ExteriorFormValue{4,D3,Int}(()), gif) === zero(Float32)
 # the conversions name the eltype, so it survives an empty container

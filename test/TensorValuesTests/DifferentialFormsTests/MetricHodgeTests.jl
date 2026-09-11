@@ -91,6 +91,15 @@ svol_d    = hodge_star(vol_coord, g_inv_diag, sdg_diag)
 @test typeof(svol_d) <: ExteriorFormValue{0,cov2}
 @test collect(svol_d.data) ≈ [1.0/sdg_diag]   atol=1e-12
 
+# Supplying `g` instead of `g_inv`, and omitting `√det g`, are equivalent: the
+# missing data is derived from whichever tensor is given.
+for ω in [dx1, dx2, f0, vol_coord]
+  ref = hodge_star(ω, g_inv_diag, sdg_diag)
+  @test collect(hodge_star(ω, g_inv_diag).data)        ≈ collect(ref.data)  atol=1e-12
+  @test collect(hodge_star(ω, g_diag, sdg_diag).data)  ≈ collect(ref.data)  atol=1e-12
+  @test collect(hodge_star(ω, g_diag).data)            ≈ collect(ref.data)  atol=1e-12
+end
+
 # ── Part 2: CubedSphere metric at a generic point ─────────────────────────────
 
 # ⋆_g ∘ ⋆_g = -1 for K=1, D=2
@@ -112,6 +121,14 @@ sf0_cs = hodge_star(f0_cs, g_inv, sdg)
 @test typeof(sf0_cs) <: ExteriorFormValue{2,cov2}
 @test collect(sf0_cs.data) ≈ [3.0 * sdg]   atol=1e-10
 
+# Same three routes on a non-diagonal metric
+for ω in [dx1, dx2, omega_gen, f0_cs]
+  ref = hodge_star(ω, g_inv, sdg)
+  @test collect(hodge_star(ω, g_inv).data)   ≈ collect(ref.data)  atol=1e-10
+  @test collect(hodge_star(ω, g, sdg).data)  ≈ collect(ref.data)  atol=1e-10
+  @test collect(hodge_star(ω, g).data)       ≈ collect(ref.data)  atol=1e-10
+end
+
 # ── Part 3: Musical operators ─────────────────────────────────────────────────
 
 e1 = VectorValue(1.0, 0.0)
@@ -123,8 +140,8 @@ g_inv_flat = inv(g_flat)
 
 @test flat(e1, g_flat).data == (1.0, 0.0)
 @test flat(e2, g_flat).data == (0.0, 1.0)
-@test sharp(dx1, g_inv_flat) == e1
-@test sharp(dx2, g_inv_flat) == e2
+@test sharp(dx1, g_inv_flat).data == (1.0, 0.0)
+@test sharp(dx2, g_inv_flat).data == (0.0, 1.0)
 
 # Diagonal metric: flat(eᵢ, g) lowers with g
 @test collect(flat(e1, g_diag).data) ≈ [p, 0.0]
