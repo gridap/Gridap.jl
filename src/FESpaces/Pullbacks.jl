@@ -1314,46 +1314,66 @@ end
 ############################################################################################
 # Cartesian products
 
-# The copies of a stacked element never mix, so its change of basis is the base
-# element's replicated: `kron(P, I_K)` in the ordering of `CartProdRefFEs.jl`,
-# where copy `c` of base DoF `i` sits at `K*(i-1)+c`. `nothing` propagates, so an
-# element that needs no change of basis still needs none when stacked.
+# The factors of a stacked element never mix, so its change of basis is the
+# factors' assembled block diagonally, in the blocked ordering of
+# `CartProdRefFEs.jl`. A factor that needs no change of basis contributes an
+# identity block; when none of them do, `nothing` propagates.
 
-struct CartProdKron{K} <: Map end
+struct CartProdBlockDiag <: Map end
 
-function return_cache(::CartProdKron{K}, P::AbstractMatrix) where K
-  n, m = size(P)
-  CachedArray(zeros(eltype(P), K * n, K * m))
+function return_cache(::CartProdBlockDiag, Ps::AbstractMatrix...)
+  T = promote_type(map(eltype, Ps)...)
+  CachedArray(zeros(T, sum(P -> size(P, 1), Ps), sum(P -> size(P, 2), Ps)))
 end
 
-function evaluate!(cache, ::CartProdKron{K}, P::AbstractMatrix) where K
-  n, m = size(P)
-  setsize!(cache, (K * n, K * m))
-  ReferenceFEs._cp_kron!(cache.array, P, K)
+function evaluate!(cache, ::CartProdBlockDiag, Ps::AbstractMatrix...)
+  setsize!(cache, (sum(P -> size(P, 1), Ps), sum(P -> size(P, 2), Ps)))
+  A = cache.array
+  fill!(A, zero(eltype(A)))
+  io = jo = 0
+  for P in Ps
+    ni, mj = size(P)
+    @inbounds A[io+1:io+ni, jo+1:jo+mj] .= P
+    io += ni
+    jo += mj
+  end
+  return A
 end
 
-function _cp_cell_bases_changes(::Val{K}, pf::Pushforward, model, cell_reffe, cell_Jt) where K
-  base = ReferenceFEs.get_metadata(testitem(cell_reffe))
-  base_changes = compute_cell_bases_changes(
-    get_name(base), pf, model, Fill(base, length(cell_reffe)), cell_Jt
-  )
-  isnothing(base_changes) && return nothing
-  cell_change, cell_change_invt = base_changes
-  return (lazy_map(CartProdKron{K}(), cell_change),
-          lazy_map(CartProdKron{K}(), cell_change_invt))
+_cp_maps(::ReferenceFEs.CartProdPushforward{K,PFS}, ::Val{K}) where {K,PFS} =
+  ReferenceFEs._cp_maps(PFS)
+
+_cp_maps(pf::IdentityPiolaMap, ::Val{K}) where K = ntuple(i -> pf, K)
+
+function _cp_cell_bases_changes(::Val{K}, pfs, model, cell_reffe, cell_Jt) where K
+  reffes = ReferenceFEs.get_metadata(testitem(cell_reffe))
+  ncells = length(cell_reffe)
+
+  changes = ntuple(K) do c
+    compute_cell_bases_changes(
+      get_name(reffes[c]), pfs[c], model, Fill(reffes[c], ncells), cell_Jt
+    )
+  end
+  all(isnothing, changes) && return nothing
+
+  eye(c) = Fill(Matrix{Float64}(I, num_dofs(reffes[c]), num_dofs(reffes[c])), ncells)
+  fwd = ntuple(c -> isnothing(changes[c]) ? eye(c) : changes[c][1], K)
+  bwd = ntuple(c -> isnothing(changes[c]) ? eye(c) : changes[c][2], K)
+  return (lazy_map(CartProdBlockDiag(), fwd...),
+          lazy_map(CartProdBlockDiag(), bwd...))
 end
 
 function compute_cell_bases_changes(
-  ::CartProd{K,N}, ::ReferenceFEs.CartProdPushforward{K,PF},
+  ::CartProd{K,NS}, pf::ReferenceFEs.CartProdPushforward{K},
   model::DiscreteModel, cell_reffe, cell_Jt
-) where {K,N,PF}
-  _cp_cell_bases_changes(Val(K), PF(), model, cell_reffe, cell_Jt)
+) where {K,NS}
+  _cp_cell_bases_changes(Val(K), _cp_maps(pf, Val(K)), model, cell_reffe, cell_Jt)
 end
 
-# The base element is identity-mapped, so the stack is too and the push-forward
-# comes back unwrapped.
+# every factor is identity-mapped, so the stack is too and the push-forward comes
+# back unwrapped
 function compute_cell_bases_changes(
-  ::CartProd{K,N}, pf::IdentityPiolaMap, model::DiscreteModel, cell_reffe, cell_Jt
-) where {K,N}
-  _cp_cell_bases_changes(Val(K), pf, model, cell_reffe, cell_Jt)
+  ::CartProd{K,NS}, pf::IdentityPiolaMap, model::DiscreteModel, cell_reffe, cell_Jt
+) where {K,NS}
+  _cp_cell_bases_changes(Val(K), _cp_maps(pf, Val(K)), model, cell_reffe, cell_Jt)
 end

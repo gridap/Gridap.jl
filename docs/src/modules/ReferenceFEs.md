@@ -296,21 +296,29 @@ Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CrouzeixR
 
 ### Cartesian product ReferenceFEs
 
-[`CartProdRefFE(reffe, K)`](@ref CartProdRefFE) represents ``V^K = V × … × V`` for
-any base reference element ``V``, stacking the ``K`` copies along the **last**
-index of the value type:
+[`CartProdRefFE`](@ref) represents the Cartesian product ``V_1 × … × V_K`` of
+reference elements sharing a polytope, a conformity and a value type, stacking
+the factors along the **last** index of the value type:
 
 | value of ``V`` | value of ``V^K`` |
 |---|---|
 | `Float64` | `VectorValue{K}` |
 | `VectorValue{d}` | `TensorValue{d,K}` |
 
-so copy ``c`` is the ``c``-th *column*:
+so factor ``c`` is the ``c``-th *column*. Passing one element and a count gives
+the power ``V^K``:
 
 ```julia
 CartProdRefFE(ArgyrisRefFE(Float64, TRI), 3)                    # 3 Argyris components
 CartProdRefFE(ReferenceFE(TET, raviart_thomas, Float64, 0), 3)  # each column an RT space
+CartProdRefFE(lag, lag, ArgyrisRefFE(Float64, TRI))             # C0, C0, C1 components
 ```
+
+DoFs, shape functions and face ownership are **blocked by factor**: factor ``c``
+occupies the ``c``-th contiguous block, matching the value layout, so the change
+of basis is `blockdiag` of the factors'. This is also Gridap's own numbering for
+vector-valued elements, so a stacked scalar Lagrangian element reproduces
+`ReferenceFE(p, lagrangian, VectorValue{K,T}, r)` DoF for DoF.
 
 #### Why the last index
 

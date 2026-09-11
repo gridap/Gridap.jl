@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `ArnoldWintherNCRefFE` and `ArnoldWintherCRefFE`, the nonconforming (15 DoFs, P2-based) and conforming (24 DoFs, P3-based) Arnold-Winther symmetric stress triangles for mixed elasticity. Both are built as constrained subspaces of a larger prebasis, so `length(get_prebasis(reffe)) > num_dofs(reffe)` for them.
 - Added `MardalTaiWintherRefFE`, the Mardal-Tai-Winther element on triangles (9 DoFs) and tetrahedra (24 DoFs).
 - Added the missing `product_rule` methods for `⋅` and `outer`.
-- Added `CartProdRefFE(reffe, Val(K))`, `K` independent copies of any reference FE stacked along a new last index of the value type. The copy index goes last so that the injection commutes with differentiation, which also makes `divergence` the vector of the copies' divergences.
+- Added `CartProdRefFE`, the Cartesian product of reference elements sharing a polytope, a conformity and a value type, stacked along a new last index: `Float64` becomes `VectorValue{K}` and `VectorValue{d}` becomes `TensorValue{d,K}`. `CartProdRefFE(reffe, K)` gives the power `V^K` and `CartProdRefFE(r1, r2, r3)` the general product `V1 x V2 x V3`. Scalar factors give vector-valued Morley, Argyris or Hermite, and displacements whose components have different regularity; vector-valued ones give the column-wise H(div) tensors of elasticity with weakly imposed symmetry. The copy index goes last so that the injection commutes with differentiation, which also makes `divergence` the vector of the factors' divergences; DoFs are blocked by factor, which makes the change of basis block diagonal and agrees with Gridap's own numbering for vector-valued Lagrangian elements.
 
 ## [Unreleased]
 

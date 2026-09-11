@@ -30,6 +30,7 @@ lag2 = ReferenceFE(TRI, lagrangian, Float64, 2)
 lagv = ReferenceFE(TRI, lagrangian, VectorValue{2,Float64}, 1)
 rt0 = ReferenceFE(TRI, raviart_thomas, Float64, 0)
 rt1 = ReferenceFE(TRI, raviart_thomas, Float64, 1)
+bdm1 = ReferenceFE(TRI, bdm, Float64, 1)
 mtw2 = MardalTaiWintherRefFE(Float64, TRI)
 
 # K = 3 on a 2D polytope everywhere it matters: an implementation that prepends
@@ -40,50 +41,64 @@ mtw2 = MardalTaiWintherRefFE(Float64, TRI)
 # The reference element
 ############################################################################################
 
-function test_cp_reffe(atom, K)
-  r = CartProdRefFE(atom, Val(K))
-  n = num_dofs(atom)
+function test_cp_reffe(r, reffes)
+  K = length(reffes)
+  ns = map(num_dofs, reffes)
+  n = sum(ns)
+  offs = (0, cumsum(collect(ns))[1:end-1]...)
 
   @test r isa GenericRefFE
-  @test num_dofs(r) == K * n
-  @test length(get_shapefuns(r)) == K * n
-  @test length(get_prebasis(r)) == K * length(get_prebasis(atom))
-  @test get_polytope(r) == get_polytope(atom)
-  @test Conformity(r) == Conformity(atom)
+  @test num_dofs(r) == n
+  @test length(get_shapefuns(r)) == n
+  @test length(get_prebasis(r)) == sum(a -> length(get_prebasis(a)), reffes)
+  @test get_polytope(r) == get_polytope(first(reffes))
+  @test Conformity(r) == Conformity(first(reffes))
 
   # duality: the whole point of the construction
   M = evaluate(get_dof_basis(r), get_shapefuns(r))
-  @test M ≈ Matrix(I, K*n, K*n)
+  @test M ≈ Matrix(I, n, n)
 
-  # ownership is the base's, expanded copy-fastest
-  own_a = get_face_own_dofs(atom)
+  # ownership is the factors', blocked
+  owns = map(get_face_own_dofs, reffes)
   own_r = get_face_own_dofs(r)
-  @test length(own_r) == length(own_a)
-  for (oa, orr) in zip(own_a, own_r)
-    @test orr == Int[K*(d-1)+c for d in oa for c in 1:K]
+  @test length(own_r) == length(first(owns))
+  for f in eachindex(own_r)
+    @test own_r[f] == Int[offs[c] + d for c in 1:K for d in owns[c][f]]
   end
-  @test sort(vcat(own_r...)) == collect(1:K*n)
+  @test sort(vcat(own_r...)) == collect(1:n)
 end
 
-test_cp_reffe(morley, 2)
-test_cp_reffe(morley, 3)
-test_cp_reffe(argyris, 3)
-test_cp_reffe(rt0, 3)
-test_cp_reffe(rt1, 2)
-test_cp_reffe(mtw2, 2)
-test_cp_reffe(lag2, 3)
-test_cp_reffe(lagv, 2)
+# the power V^K
+test_cp_reffe(CartProdRefFE(morley, 2), (morley, morley))
+test_cp_reffe(CartProdRefFE(morley, 3), ntuple(i -> morley, 3))
+test_cp_reffe(CartProdRefFE(argyris, 3), ntuple(i -> argyris, 3))
+test_cp_reffe(CartProdRefFE(rt0, 3), ntuple(i -> rt0, 3))
+test_cp_reffe(CartProdRefFE(rt1, 2), (rt1, rt1))
+test_cp_reffe(CartProdRefFE(mtw2, 2), (mtw2, mtw2))
+test_cp_reffe(CartProdRefFE(lag2, 3), ntuple(i -> lag2, 3))
+test_cp_reffe(CartProdRefFE(lagv, 2), (lagv, lagv))
+
+# ... and the general product V1 x ... x VK
+test_cp_reffe(CartProdRefFE(morley, argyris, morley), (morley, argyris, morley))
+test_cp_reffe(CartProdRefFE(rt0, bdm1), (rt0, bdm1))
+test_cp_reffe(CartProdRefFE(rt0, rt1), (rt0, rt1))
+test_cp_reffe(CartProdRefFE(lag2, lag2, argyris), (lag2, lag2, argyris))
+test_cp_reffe(CartProdRefFE(morley), (morley,))
 
 @test_throws ErrorException CartProdRefFE(morley, Val(0))
+
+# the factors have to be stackable into one MultiValue, on one polytope, with one
+# conformity
+@test_throws ErrorException CartProdRefFE(morley, rt0)
+@test_throws ErrorException CartProdRefFE(rt0, ReferenceFE(TRI, nedelec, Float64, 0))
 
 ############################################################################################
 # Stacking a nodal DoF basis
 #
-# The result is another `LagrangianDofBasis` on the same nodes. Its layout is
-# built explicitly rather than by `LagrangianDofBasis(W, nodes)`, which numbers
-# with the node fastest where everything here runs the copy fastest, so what is
-# checked is the layout: copy `c` of DoF `a` is at `K*(a-1)+c` and reads
-# component `j + d*(c-1)`, with `j` the atom's component and `d` its count.
+# The result is another `LagrangianDofBasis` on the same nodes: copy `c` of DoF
+# `a` is at `(c-1)*n+a` and reads component `j + d*(c-1)`, with `j` the atom's
+# component and `d` its count. Blocking by copy is what makes this coincide with
+# Gridap's own layout for a vector-valued Lagrangian element, checked below.
 ############################################################################################
 
 function test_cp_nodal_dofs(atom, K)
@@ -93,10 +108,21 @@ function test_cp_nodal_dofs(atom, K)
 
   @test db isa LagrangianDofBasis
   @test get_nodes(db) == get_nodes(adb)
-  for a in 1:num_dofs(atom), c in 1:K
-    @test db.dof_to_node[K*(a-1)+c] == adb.dof_to_node[a]
-    @test db.dof_to_comp[K*(a-1)+c] == adb.dof_to_comp[a] + d*(c-1)
+  n = num_dofs(atom)
+  for a in 1:n, c in 1:K
+    @test db.dof_to_node[(c-1)*n+a] == adb.dof_to_node[a]
+    @test db.dof_to_comp[(c-1)*n+a] == adb.dof_to_comp[a] + d*(c-1)
   end
+end
+
+# for an atom in Gridap's canonical layout that is exactly its own vector-valued
+# Lagrangian DoF basis, which is the point of blocking by copy
+let K = 3, atom = lag2
+  db = ReferenceFEs._cp_stack_dofs(get_dof_basis(atom), Val(K))
+  ref = LagrangianDofBasis(VectorValue{K,Float64}, get_nodes(get_dof_basis(atom)))
+  @test db.dof_to_node == ref.dof_to_node
+  @test db.dof_to_comp == ref.dof_to_comp
+  @test db.node_and_comp_to_dof == ref.node_and_comp_to_dof
 end
 
 test_cp_nodal_dofs(lag2, 3)
@@ -117,7 +143,7 @@ let K = 3, r = 2, model = unit_square(3)
 end
 
 ############################################################################################
-# The stacked basis is the atom's, scattered copy-fastest
+# The stacked basis is the atom's, blocked by copy
 #
 # This is the ordering convention, checked directly rather than through a
 # consequence of it.
@@ -131,7 +157,7 @@ function test_cp_basis_values(atom, K)
   vs = evaluate(sb, pts)
   @test size(vs) == (length(pts), K * size(va, 2))
   for i in axes(va, 1), j in axes(va, 2), c in 1:K
-    @test vs[i, K*(j-1)+c] ≈ outer(va[i, j], E[c])
+    @test vs[i, (c-1)*size(va,2)+j] ≈ outer(va[i, j], E[c])
   end
 end
 
@@ -148,7 +174,7 @@ function test_cp_basis_gradients(atom, K)
   ga = evaluate(Broadcasting(∇)(b), pts)
   gs = evaluate(Broadcasting(∇)(ReferenceFEs.CartProdBasis{K}(b)), pts)
   for i in axes(ga, 1), j in axes(ga, 2), c in 1:K
-    g = gs[i, K*(j-1)+c]
+    g = gs[i, (c-1)*size(ga,2)+j]
     @test g ≈ outer(ga[i, j], E[c])
   end
 end
@@ -162,7 +188,7 @@ let b = get_shapefuns(argyris), K = 3
   Ha = evaluate(Broadcasting(∇∇)(b), pts)
   Hs = evaluate(Broadcasting(∇∇)(ReferenceFEs.CartProdBasis{K}(b)), pts)
   for i in axes(Ha, 1), j in axes(Ha, 2), c in 1:K
-    @test Hs[i, K*(j-1)+c] ≈ outer(Ha[i, j], E[c])
+    @test Hs[i, (c-1)*size(Ha,2)+j] ≈ outer(Ha[i, j], E[c])
   end
 end
 
@@ -174,7 +200,7 @@ let b = get_shapefuns(rt1), K = 3
   ga = evaluate(Broadcasting(∇)(b), pts)
   gs = evaluate(Broadcasting(∇)(ReferenceFEs.CartProdBasis{K}(b)), pts)
   for i in axes(ga, 1), j in axes(ga, 2), c in 1:K
-    g = gs[i, K*(j-1)+c]
+    g = gs[i, (c-1)*size(ga,2)+j]
     @test g ≈ outer(ga[i, j], E[c])
     for k in 1:2, jj in 1:2, cc in 1:K
       @test g[k, jj, cc] ≈ (cc == c ? ga[i, j][k, jj] : 0.0)
@@ -196,19 +222,42 @@ let b = get_shapefuns(rt1), K = 3
   ga = evaluate(Broadcasting(∇)(b), pts)
   gs = evaluate(Broadcasting(∇)(ReferenceFEs.CartProdBasis{K}(b)), pts)
   for i in axes(ga, 1), j in axes(ga, 2), c in 1:K
-    @test tr(gs[i, K*(j-1)+c]) ≈ tr(ga[i, j]) * E[c]
+    @test tr(gs[i, (c-1)*size(ga,2)+j]) ≈ tr(ga[i, j]) * E[c]
+  end
+end
+
+# a product of different factors places each in its own block, by the same rule
+let reffes = (morley, argyris, lag2), K = 3
+  E = representatives_of_componentbasis_dual(VectorValue{K,Float64})
+  bs = map(get_shapefuns, reffes)
+  a = evaluate(ReferenceFEs.CartProdTupleBasis(bs), pts)
+  off = 0
+  for c in 1:K
+    v = evaluate(bs[c], pts)
+    for p in axes(v, 1), j in axes(v, 2)
+      @test a[p, off+j] ≈ outer(v[p, j], E[c])
+    end
+    off += size(v, 2)
   end
 end
 
 ############################################################################################
 # The stacked DoFs are ordinary Gridap DoF bases
 #
-# Nothing is wrapped: slicing the field is absorbed into the moment weights.
+# Nothing is wrapped: slicing the field is absorbed into the moment weights, so a
+# slot is a DoF basis of the same kind as the atom's, and the stack is the `vcat`
+# of the K slots.
 ############################################################################################
 
-@test ReferenceFEs._cp_stack_dofs(get_dof_basis(mtw2), Val(2)) isa MomentBasedDofBasis
-@test ReferenceFEs._cp_stack_dofs(get_dof_basis(morley), Val(2)) isa ReferenceFEs.ConcatenatedDofVector
-@test ReferenceFEs._cp_stack_dofs(get_dof_basis(rt0), Val(2)) isa ReferenceFEs.LinearCombinationDofVector
+@test ReferenceFEs._cp_slot_dofs(get_dof_basis(mtw2), 1, Val(2)) isa MomentBasedDofBasis
+@test ReferenceFEs._cp_slot_dofs(get_dof_basis(morley), 1, Val(2)) isa ReferenceFEs.ConcatenatedDofVector
+@test ReferenceFEs._cp_slot_dofs(get_dof_basis(rt0), 2, Val(2)) isa ReferenceFEs.LinearCombinationDofVector
+
+for atom in (mtw2, morley, rt0)
+  sdb = ReferenceFEs._cp_stack_dofs(get_dof_basis(atom), Val(2))
+  @test sdb isa ReferenceFEs.ConcatenatedDofVector
+  @test length(sdb) == 2*num_dofs(atom)
+end
 
 # σ_{i,c}(u) = σ_i(π_c u): applying the stacked DoFs to a field that is copy c of
 # an atom field reproduces the atom's DoFs in the rows of copy c, and zero
@@ -218,13 +267,10 @@ function test_cp_dofs_slice(atom, K)
   sdb = ReferenceFEs._cp_stack_dofs(db, Val(K))
   b = get_shapefuns(atom)
   va = evaluate(db, b)                       # (n, n), the identity
-  for c in 1:K
-    inj = ReferenceFEs.CartProdBasis{K}(b)                # all copies at once
-    vs = evaluate(sdb, inj)
-    for i in axes(va, 1), j in axes(va, 2), cc in 1:K
-      @test vs[K*(i-1)+c, K*(j-1)+cc] ≈ (cc == c ? va[i, j] : 0.0)
-    end
-    break                                    # the loop above already covers all c
+  vs = evaluate(sdb, ReferenceFEs.CartProdBasis{K}(b))
+  n = size(va, 1)
+  for i in 1:n, j in 1:n, c in 1:K, cc in 1:K
+    @test vs[(c-1)*n+i, (cc-1)*n+j] ≈ (cc == c ? va[i, j] : 0.0)
   end
 end
 
@@ -232,7 +278,7 @@ test_cp_dofs_slice(morley, 3)
 test_cp_dofs_slice(rt0, 2)
 
 ############################################################################################
-# The change of basis is kron(P, I_K)
+# The change of basis is blockdiag(P, …, P)
 ############################################################################################
 
 let K = 3, model = unit_square(3)
@@ -251,8 +297,8 @@ let K = 3, model = unit_square(3)
   P, Pit = base_ch
   Q, Qit = cp_ch
   for cell in 1:num_cells(model)
-    @test Matrix(Q[cell]) ≈ kron(Matrix(P[cell]), Matrix(1.0I, K, K))
-    @test Matrix(Qit[cell]) ≈ kron(Matrix(Pit[cell]), Matrix(1.0I, K, K))
+    @test Matrix(Q[cell]) ≈ kron(Matrix(1.0I, K, K), Matrix(P[cell]))
+    @test Matrix(Qit[cell]) ≈ kron(Matrix(1.0I, K, K), Matrix(Pit[cell]))
   end
 end
 
@@ -318,6 +364,77 @@ let K = 2, model = unit_square(4)
   dΛ = Measure(Λ, 6)
   n = get_normal_vector(Λ).⁺
 
+  @test sqrt(sum( ∫( (n ⋅ jump(wh)) ⋅ (n ⋅ jump(wh)) )dΛ )) < 1e-12
+  @test sqrt(sum( ∫( jump(wh) ⊙ jump(wh) )dΛ )) > 1e-3
+end
+
+############################################################################################
+# FE spaces: components of different regularity
+#
+# The case with no other route: `V^K` cannot mix elements, and a
+# `MultiFieldFESpace` would not give a single vector-valued field. In-plane
+# displacements P2 Lagrange, transverse displacement C1 quintic.
+############################################################################################
+
+let model = unit_square(4)
+  V = FESpace(model, CartProdRefFE(lag2, lag2, argyris))
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω, 10)
+
+  topo = get_grid_topology(model)
+  nv, ne = num_faces(topo, 0), num_faces(topo, 1)
+  @test num_free_dofs(V) == 2*(nv + ne) + (6*nv + ne)
+
+  p2(x) = 1.0 + 2*x[1] - x[2] + 3*x[1]^2 - x[1]*x[2]
+  p2b(x) = x[1]*x[2] - 2.0 + 0.5*x[2]^2
+  p5(x) = 1.0 - x[2] + x[1]^2*x[2]^3 + 2*x[1]^5
+  u(x) = VectorValue(p2(x), p2b(x), p5(x))
+
+  e = interpolate(u, V) - u
+  @test sqrt(sum( ∫( e ⋅ e )dΩ )) < 1e-11
+
+  # every component is C0, and only the Argyris one is C1. ∇w is a
+  # TensorValue{2,3} whose column c is ∇w_c, so one component's gradient jump is
+  # one column of the jump.
+  Λ = SkeletonTriangulation(model)
+  dΛ = Measure(Λ, 10)
+  w(x) = VectorValue(sin(2*x[1]), cos(3*x[2]), sin(x[1] + x[2]))
+  wh = interpolate(w, V)
+  @test sqrt(sum( ∫( jump(wh) ⋅ jump(wh) )dΛ )) < 1e-13
+
+  jg = jump(∇(wh))
+  for (c, ec) in ((1, VectorValue(1.0, 0.0, 0.0)), (2, VectorValue(0.0, 1.0, 0.0)),
+                  (3, VectorValue(0.0, 0.0, 1.0)))
+    jc = jg ⋅ ec
+    nrm = sqrt(sum( ∫( jc ⋅ jc )dΛ ))
+    c == 3 ? (@test nrm < 1e-12) : (@test nrm > 1e-3)
+  end
+end
+
+############################################################################################
+# FE spaces: H(div) columns of two different orders
+############################################################################################
+
+let model = unit_square(4)
+  V = FESpace(model, CartProdRefFE(rt0, bdm1))
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω, 8)
+
+  topo = get_grid_topology(model)
+  @test num_free_dofs(V) == 3*num_faces(topo, 1)
+
+  # column 1 in RT0 (a + b*x), column 2 in BDM1 (any linear field); TensorValue
+  # is column major, so the entries are (m11, m21, m12, m22)
+  σ(x) = TensorValue{2,2,Float64}(1.0 + x[1], 2.0 + x[2],
+                                  -1.0 + 2*x[1] - x[2], 0.5 + x[1] + 3*x[2])
+  e = interpolate(σ, V) - σ
+  @test sqrt(sum( ∫( e ⊙ e )dΩ )) < 1e-12
+
+  w(x) = TensorValue{2,2,Float64}(sin(2*x[1]), cos(3*x[2]), sin(x[1]+x[2]), x[1]^2)
+  wh = interpolate(w, V)
+  Λ = SkeletonTriangulation(model)
+  dΛ = Measure(Λ, 8)
+  n = get_normal_vector(Λ).⁺
   @test sqrt(sum( ∫( (n ⋅ jump(wh)) ⋅ (n ⋅ jump(wh)) )dΛ )) < 1e-12
   @test sqrt(sum( ∫( jump(wh) ⊙ jump(wh) )dΛ )) > 1e-3
 end
