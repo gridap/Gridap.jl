@@ -182,8 +182,8 @@ test_signs = ((1.0, 1.0, 1.0), (-1.0, 1.0, 1.0), (1.0, -1.0, -1.0),
 
 for verts in test_cells, σ in test_signs
   Jt = jacobian_t(verts)
-  P = copy(evaluate(FESpaces.MorleyChangeOfBasis(TRI, false), Jt, σ))
-  Pinvt = copy(evaluate(FESpaces.MorleyChangeOfBasis(TRI, true), Jt, σ))
+  P = copy(evaluate(ReferenceFEs.MorleyChangeOfBasis(TRI, false), Jt, σ))
+  Pinvt = copy(evaluate(ReferenceFEs.MorleyChangeOfBasis(TRI, true), Jt, σ))
 
   # The closed forms are consistent: Pinvt is the transposed inverse of P
   @test transpose(Pinvt) * P ≈ Matrix(I, 6, 6)

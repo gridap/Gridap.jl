@@ -25,12 +25,15 @@ scalar type: 24 DoFs and, writing `S` for the symmetric 2×2 matrices,
 
 of dimension 24 [Arnold & Winther, Numer. Math. 92 (2002) 401].
 
-Assembled as the augmented element of [Kirby, SMAI-JCM 4 (2018) 197, §5.5], as
-[`ArnoldWintherNCRefFE`](@ref) is — see there for what the construction does.
+Implementation follows the augmented element approach of [Kirby, SMAI-JCM 4 (2018) 197].
 
 ## Prebasis
 
-`P₃(K;S)`, of dimension 30 — the ambient space, not `AWc(K)` itself.
+The prebasis is taken as `P₃(K;S)`, of dimension 30, with constraints
+
+    ∫_K (div τ)_c q dK = 0    ∀ q ∈ P₂(K) ∩ P₁(K)^⊥,  c = 1, 2
+
+enforced using moments, yielding the 24 DoFs of the conforming Arnold--Winther element.
 
 ## Moments
 
@@ -47,20 +50,6 @@ and over the cell the same three components,
 
     ℓ^{K,c}(τ) = ∫_K τ ⊙ E_c dK.
 
-`3·3 + 4·3 + 3 = 24`.
-
-The `E_c` are full matrices, not the component basis of `S`: contracting two
-symmetric matrices sums over both off-diagonal slots, so the symmetric
-off-diagonal basis element would give `2τ₁₂`. The vertex DoFs must be exactly
-`(τ₁₁, τ₁₂, τ₂₂)`, since the vertex block of the change of basis is the matrix
-of `H ↦ J H Jᵀ` written in those components.
-
-## Constraints
-
-    ∫_K (div τ)_c q dK = 0    ∀ q ∈ P₂(K) ∩ P₁(K)^⊥,  c = 1, 2      (3 each)
-
-Six in all: each component of `div τ` lies in `P₂(K)` a priori and is pinned to
-its `P₁` part. `24 + 6 = 30`.
 """
 function ArnoldWintherCRefFE(::Type{T}, p::Polytope{D}) where {T,D}
   @notimplementedif !(D == 2 && is_simplex(p)) """\n
@@ -158,4 +147,62 @@ function get_face_own_dofs_permutations(
   reffe::GenericRefFE{ArnoldWintherC}, conf::Conformity
 )
   _identity_dof_permutations(reffe, conf)
+end
+
+################################################################################
+# Change of basis
+#
+# The cell-local map. The mesh-level `compute_cell_bases_changes`, which reads
+# the orientation data off the model and maps this over the cells, lives in
+# src/FESpaces/Pullbacks.jl.
+
+#     AWCChangeOfBasis(reffe, transposed_inverse)
+#
+# A 3×3 block per vertex, a 4×4 block per edge, and the identity on the interior.
+struct AWCChangeOfBasis <: Map
+  tangents::Vector{VectorValue{2,Float64}}
+  normals::Vector{VectorValue{2,Float64}}
+  vertex_dofs::Vector{Vector{Int}}
+  edge_dofs::Vector{Vector{Int}}
+  ndofs::Int
+  transposed_inverse::Bool
+end
+
+function AWCChangeOfBasis(reffe::ReferenceFE, transposed_inverse::Bool)
+  p = get_polytope(reffe)
+  ts, ns = _edge_frames(p)
+  own = get_face_own_dofs(reffe)
+  nv = num_faces(p, 0)
+  vertex_dofs = [own[v] for v in 1:nv]
+  edge_dofs = [own[nv+e] for e in 1:num_faces(p, 1)]
+  AWCChangeOfBasis(ts, ns, vertex_dofs, edge_dofs, num_dofs(reffe), transposed_inverse)
+end
+
+function return_cache(k::AWCChangeOfBasis, Jt, σ)
+  CachedArray(zeros(Float64, k.ndofs, k.ndofs))
+end
+
+function evaluate!(cache, k::AWCChangeOfBasis, Jt, σ)
+  setsize!(cache, (k.ndofs, k.ndofs))
+  M = cache.array
+  fill!(M, zero(eltype(M)))
+  for i in 1:k.ndofs
+    M[i, i] = 1.0     # the interior DoFs are left as the push-forward
+  end
+
+  J = transpose(Jt)
+  detJ = det(Jt)
+
+  # W carries det(J)⁻² _congruence_matrix(J) on the vertices, so W⁻¹ carries
+  # det(J)² _congruence_matrix(J⁻¹) and Wᵀ the transpose of the former.
+  Bv = k.transposed_inverse ? transpose(_congruence_matrix(J)) / detJ^2 :
+       _congruence_matrix(inv(J)) * detJ^2
+  for dofs in k.vertex_dofs
+    for i in 1:3, j in 1:3
+      M[dofs[i], dofs[j]] = Bv[i, j]
+    end
+  end
+
+  _aw_edge_blocks!(M, k.tangents, k.normals, k.edge_dofs, Jt, σ, k.transposed_inverse)
+  return M
 end

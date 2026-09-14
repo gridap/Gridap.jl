@@ -274,6 +274,28 @@ evaluate!(
 Reference FE name for `K` stacked elements. `NS` is the factors' own name type
 when they are all the same element (`V^K`), and the `Tuple` of their name types
 otherwise (`V₁ × … × V_K`). See [`CartProdRefFE`](@ref).
+
+Cartesian product of reference elements. We provide two constructors:
+
+-  `CartProdRefFE(reffe::ReferenceFE, K::Integer)` builds `V^K`, the Cartesian 
+   product of `K` copies of a single space `V`, given by `reffe`.
+
+-  `CartProdRefFE(reffes::ReferenceFE...)` builds `V_1 × … × V_K`, the Cartesian
+    product of `K` different spaces, given by the `reffes` tuple.
+
+By design, the individual spaces are stacked along the last index of the new value type. 
+This is deliberately chosen to be compatible with Gridap's conventions for derivatives, 
+and to keep DoFs of each factor in contiguous blocks.
+
+## Examples:
+
+    CartProdRefFE(MorleyRefFE(Float64, TRI), 2)        # vector-valued Morley
+    CartProdRefFE(ReferenceFE(TRI, raviart_thomas, Float64, 1), 2)
+                                                       # column-wise H(div) tensor
+    CartProdRefFE(ReferenceFE(TRI, lagrangian, Float64, 2),
+                  ReferenceFE(TRI, lagrangian, Float64, 2),
+                  ArgyrisRefFE(Float64, TRI))          # Kirchhoff--Love shell
+
 """
 struct CartProd{K,NS} <: ReferenceFEName end
 
@@ -292,38 +314,13 @@ function Pushforward(::Type{CartProd{K,NS}}) where {K,NS}
 end
 
 """
-    CartProdRefFE(reffe::ReferenceFE, K::Integer)
+
     CartProdRefFE(reffes::ReferenceFE...)
 
-`K` stacked elements, along a new last index of the value type — the reference FE
-of the Cartesian product space `V₁ × … × V_K`, or of the power `V^K` when a
-single element and a count are given. Values are
+Given `K` local spaces given by the reference finite elements `reffes`, 
+returns the Cartesian product reference finite element `V_1 × … × V_K`.
+See [`CartProd`](@ref) for details.
 
-    Float64        ⟹  VectorValue{K}
-    VectorValue{d} ⟹  TensorValue{d,K}
-
-so that factor `c` of a vector-valued atom is the `c`-th *column*. Scalar factors
-give vector-valued Morley, Argyris or Hermite, and a displacement whose
-components have different regularity; vector-valued ones give the column-wise
-H(div) tensors of elasticity with weakly imposed symmetry [Arnold, Falk &
-Winther, Numer. Math. 92 (2002) 401].
-
-All factors must share a polytope, a `Conformity` and a value type; the last is
-what makes the result a single `MultiValue` rather than a `MultiFieldFESpace`.
-
-The DoFs, shape functions, prebasis and face ownership are blocked by factor,
-with item `i` of factor `c` at index `offset(c) + i`. The conformity and polytope
-are inherited, and the factors are kept as the metadata, which is how
-`compute_cell_bases_changes` recovers them.
-
-## Examples
-
-    CartProdRefFE(MorleyRefFE(Float64, TRI), 2)        # vector-valued Morley
-    CartProdRefFE(ReferenceFE(TRI, raviart_thomas, Float64, 1), 2)
-                                                       # column-wise H(div) tensor
-    CartProdRefFE(ReferenceFE(TRI, lagrangian, Float64, 2),
-                  ReferenceFE(TRI, lagrangian, Float64, 2),
-                  ArgyrisRefFE(Float64, TRI))          # Kirchhoff--Love shell
 """
 function CartProdRefFE(reffes::ReferenceFE...)
   K = length(reffes)
@@ -351,6 +348,14 @@ function CartProdRefFE(reffe::ReferenceFE, ::Val{K}) where K
             CartProdBasis{K}(get_shapefuns(reffe)))
 end
 
+"""
+    CartProdRefFE(reffe::ReferenceFE, K::Integer)
+
+Given `V` a local space given by the reference finite element `reffe`, and `K` a positive integer,
+returns the Cartesian product reference finite element `V^K = V × … × V`.
+See [`CartProd`](@ref) for details.
+
+"""
 CartProdRefFE(reffe::ReferenceFE, K::Integer) = CartProdRefFE(reffe, Val(K))
 
 _cp_value_type(reffe) = typeof(testitem(
@@ -397,3 +402,41 @@ function get_face_own_dofs_permutations(
     end
   end
 end
+
+################################################################################
+# Change of basis
+#
+# The cell-local map. The mesh-level `compute_cell_bases_changes`, which reads
+# the orientation data off the model and maps this over the cells, lives in
+# src/FESpaces/Pullbacks.jl.
+
+# The factors of a stacked element never mix, so its change of basis is the
+# factors' assembled block diagonally, in the blocked ordering of
+# `CartProdRefFEs.jl`. A factor that needs no change of basis contributes an
+# identity block; when none of them do, `nothing` propagates.
+
+struct CartProdBlockDiag <: Map end
+
+function return_cache(::CartProdBlockDiag, Ps::AbstractMatrix...)
+  T = promote_type(map(eltype, Ps)...)
+  CachedArray(zeros(T, sum(P -> size(P, 1), Ps), sum(P -> size(P, 2), Ps)))
+end
+
+function evaluate!(cache, ::CartProdBlockDiag, Ps::AbstractMatrix...)
+  setsize!(cache, (sum(P -> size(P, 1), Ps), sum(P -> size(P, 2), Ps)))
+  A = cache.array
+  fill!(A, zero(eltype(A)))
+  io = jo = 0
+  for P in Ps
+    ni, mj = size(P)
+    @inbounds A[io+1:io+ni, jo+1:jo+mj] .= P
+    io += ni
+    jo += mj
+  end
+  return A
+end
+
+_cp_maps(::CartProdPushforward{K,PFS}, ::Val{K}) where {K,PFS} =
+  _cp_maps(PFS)
+
+_cp_maps(pf::IdentityPiolaMap, ::Val{K}) where K = ntuple(i -> pf, K)

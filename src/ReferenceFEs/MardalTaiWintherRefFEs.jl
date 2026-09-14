@@ -71,21 +71,19 @@ type, for `D = 2` and `D = 3`:
 
 of dimension 9 on a triangle [Mardal, Tai & Winther, SIAM J. Numer. Anal. 40
 (2002) 1605, Lemma 4.1] and 24 on a tetrahedron [Tai & Winther, Calcolo 43 (2006)
-287, (8) and (12)]. `curl` is the scalar rot in 2D and the vector curl in 3D, so
-the space is cubic on a triangle and quartic on a tetrahedron. It is
-H(div)-conforming and weakly H¹: the tangential jump across a facet does not
-vanish, but its moments against the rigid motions of that facet do.
+287, (8) and (12)]. 
 
 ## Prebasis
 
-In 2D, `P₃(K;R²)` of dimension 20 — the *ambient* space, not `MTW(K)` itself,
-which is cut out of it by the constraints below and assembled as the augmented
-element of [Kirby, SMAI-JCM 4 (2018) 197, §5.5]; `length(get_prebasis(reffe))` is
-therefore larger than `num_dofs(reffe)` there.
+In 2D, implementation follows the augmented element approach of [Kirby, SMAI-JCM 4 (2018) 197]
+We take `P₃(K;R²)`, of dimension 20, with constraints
 
-In 3D, `MTW(K)` itself, of dimension 24. The space is a *sum* and not the kernel
-of a constraint set, so the augmented construction does not apply and the 24
-generators are written into the Bernstein basis of `P₄(K;R³)` directly.
+    ∫_K (div Φ) q dK = 0    ∀ q ∈ P₂(K) ∩ P₀(K)^⊥
+    ∫ₑ (Φ⋅n) μ ds    = 0    ∀ μ ∈ P₃(e) ∩ P₁(e)^⊥,  ∀ e
+
+which enforce 11 constraints on the 20 prebasis functions, yielding the 9 DoFs.
+
+In 3D, we directly build the prebasis `P₁(T;R³) + curl(b P₁(T;R³))`, of dimension 24. 
 
 ## Moments
 
@@ -94,28 +92,6 @@ motions of `f`:
 
     ℓ^{f,q}(Φ) = ∫_f (Φ⋅n) q,      ℓ^{f,w}(Φ) = ∫_f Φ_t ⋅ w
 
-The rigid motions of an edge are the constants, so 2D has two normal moments and
-one tangential moment per edge, `3·3 = 9`; those of a triangle are the two
-constant tangent fields and the in-plane rotation, so 3D has three of each per
-face, `6·4 = 24`. The first group is what gives H(div) conformity, the second the
-weak continuity.
-
-In 3D the rigid motions are those of the *physical* face, taken in each face's
-own vertices in increasing global id order. An affine extension of the reference
-triangle's rigid motions does not carry its rotation to the face's own, and with
-those weights the reference and physical DoFs span different spaces of
-functionals — measurably so: the generalized Vandermonde stops being block
-diagonal.
-
-## Constraints
-
-In 2D only, the eleven that cut `MTW(K)` out of `P₃(K;R²)`:
-
-    ∫_K (div Φ) q dK = 0    ∀ q ∈ P₂(K) ∩ P₀(K)^⊥            (5)
-    ∫ₑ (Φ⋅n) μ ds    = 0    ∀ μ ∈ P₃(e) ∩ P₁(e)^⊥,  ∀ e      (2 per edge)
-
-`div Φ` lies in `P₂(K)` a priori and is pinned to its `P₀` part, and `(Φ⋅n)|ₑ`
-lies in `P₃(e)` a priori and is pinned to its `P₁` part. `9 + 11 = 20`.
 """
 function MardalTaiWintherRefFE(::Type{T}, p::Polytope{D}) where {T,D}
   # `@notimplemented`, not `@check`: the latter is compiled out in Gridap's
@@ -332,4 +308,253 @@ function _mtw_reffe(::Type{T}, p::Polytope{3}) where T
   GenericRefFE{MardalTaiWinther}(
     24, p, prebasis, dofs, DivConformity(), nothing, face_own_dofs
   )
+end
+
+################################################################################
+# Change of basis
+#
+# The cell-local map. The mesh-level `compute_cell_bases_changes`, which reads
+# the orientation data off the model and maps this over the cells, lives in
+# src/FESpaces/Pullbacks.jl.
+
+# 2D: block diagonal, one 3x3 block per edge, acting on (ℓⁿ⁰, ℓⁿ¹, ℓᵗ⁰). Normal
+# moments are preserved by the contravariant Piola map, while tangential ones
+# pick up a normal component:
+#
+#   Wᵏ = [s 0 0; 0 s 0; α 0 β],  s = sign(det J),
+#   α = (J n̂)⋅(J t̂)/|det J|,     β = ‖J t̂‖²/|det J|,
+#
+# post-multiplied by Dᵏ = diag(σᵏ,1,σᵏ). This is
+# [Aznaran, Farrell & Kirby, SMAI-JCM 8 (2022) 399, (5.21)-(5.25)]; the
+# degree-1 normal moment contributes an identity row, the parity of μ₁ being what
+# keeps ℓⁿ¹ from mixing into ℓⁿ⁰.
+struct MTWChangeOfBasis <: Map
+  tangents::Vector{VectorValue{2,Float64}}
+  normals::Vector{VectorValue{2,Float64}}
+  transposed_inverse::Bool
+end
+
+function MTWChangeOfBasis(p::Polytope{2}, transposed_inverse::Bool)
+  ts, ns = _edge_frames(p)
+  MTWChangeOfBasis(ts, ns, transposed_inverse)
+end
+
+function return_cache(k::MTWChangeOfBasis, Jt, σ)
+  ndofs = 3*length(k.tangents)
+  CachedArray(zeros(Float64, ndofs, ndofs))
+end
+
+function evaluate!(cache, k::MTWChangeOfBasis, Jt, σ)
+  nedges = length(k.tangents)
+  setsize!(cache, (3*nedges, 3*nedges))
+  M = cache.array
+  fill!(M, zero(eltype(M)))
+
+  s = sign(det(Jt))
+  adetJ = abs(det(Jt))
+
+  for e in 1:nedges
+    # Jt is the transposed Jacobian, so `v ⋅ Jt` is `J v`.
+    Jt̂ = k.tangents[e] ⋅ Jt
+    Jn̂ = k.normals[e] ⋅ Jt
+    α = (Jn̂ ⋅ Jt̂) / adetJ
+    β = (Jt̂ ⋅ Jt̂) / adetJ
+    σe = σ[e]
+
+    # Dᵏ = diag(σ,1,σ) scales the columns of the block below.
+    o = 3*(e - 1)
+    if k.transposed_inverse
+      # (Wᵏ)ᵀDᵏ
+      M[o+1, o+1] = s * σe
+      M[o+2, o+2] = s
+      M[o+1, o+3] = α * σe
+      M[o+3, o+3] = β * σe
+    else
+      # (Wᵏ)⁻¹Dᵏ
+      M[o+1, o+1] = s * σe
+      M[o+2, o+2] = s
+      M[o+3, o+1] = -s * α * σe / β
+      M[o+3, o+3] = σe / β
+    end
+  end
+
+  return M
+end
+
+# 3D: one 6x6 block per face, and nothing else.
+#
+# The block is closed form. Its DoF weights are *equivariant* -- every one is a
+# fixed reference object pushed forward by the map, `n = e₁×e₂` with `eᵢ = J êᵢ`,
+# and the tangential weights `n×e₁`, `n×e₂`, `n×(x-a)` -- so the pulled-back
+# physical weights expand in the reference weights with constant coefficients:
+#
+#   Jᵀwⱼ = [detJ·I₃  0 ;  Ã  λI₃] ŵ,   λ = |n|²/|n̂|²,  a = (Jn̂)⋅(n×e₁)/|n̂|²
+#
+# (and `b` likewise with `e₂`), whence `W = that / detJ`. The normal moments come
+# out preserved exactly -- the identity block -- and `W⁻¹` is closed form too, so
+# no quadrature, no cached shape-function moments and no matrix inversion appear
+# at run time.
+#
+# This is the 3D analogue of [AFK, (5.21)-(5.25)], which they give only in 2D;
+# FIAT/FInAT define the 3D element but transform it only on triangles. Getting it
+# needs the equivariant weight basis: with an intrinsic frame (normalised
+# tangents, unit normal) the coefficients stop being constant and the block no
+# longer closes without integrating the shape functions.
+struct TWChangeOfBasis <: Map
+  face_dofs::Vector{Vector{Int}}          # dofs owned by each face
+  # per (face, permutation), the reference edge vectors of the face taken in the
+  # mesh's own vertex order -- the only reference data the block needs
+  ref_edges::Matrix{NTuple{2,VectorValue{3,Float64}}}
+  # per (face, permutation), `inv(T)` or `transpose(T)` as needed, where `T`
+  # re-expresses the reference weights of the mesh-sorted frame in those of the
+  # polytope's own frame -- see `_tw_frame_change`
+  pre::Matrix{Matrix{Float64}}
+  ndofs::Int
+  transposed_inverse::Bool
+end
+
+function TWChangeOfBasis(reffe::ReferenceFE, transposed_inverse::Bool)
+  p = get_polytope(reffe)
+  own = get_face_own_dofs(reffe)
+  fdim = get_dimrange(p, 2)
+  face_dofs = [own[f] for f in fdim]
+  nfaces = length(face_dofs)
+
+  fverts = get_faces(p, 2, 0)
+  vcoords = get_vertex_coordinates(p)
+  vperms = get_face_vertex_permutations(p, 2)   # the list Gridap's pindex indexes
+
+  # the same P⁻₁Λ¹ (RT₀) weight basis the tangential moments are declared with
+  μb = FEEC_poly_basis(Val(2), Float64, 1, 1, :P⁻; rotate_90=true)
+  nouts = get_facet_normal(p)                   # the outward normals `σ` uses
+  nperms = length(first(vperms))
+  ref_edges = Matrix{NTuple{2,VectorValue{3,Float64}}}(undef, nfaces, nperms)
+  pre = Matrix{Matrix{Float64}}(undef, nfaces, nperms)
+  for f in 1:nfaces, (pid, perm) in enumerate(vperms[f])
+    # `pindex` maps cell-face-vertex -> global-face-vertex, so its inverse lists
+    # the cell's local vertices in the order the mesh stores the face
+    lv = fverts[f][invperm(perm)]
+    â, b̂, ĉ = vcoords[lv[1]], vcoords[lv[2]], vcoords[lv[3]]
+    ref_edges[f, pid] = (b̂ - â, ĉ - â)
+
+    loc = fverts[f]
+    T = _tw_frame_change((vcoords[loc[1]], vcoords[loc[2]], vcoords[loc[3]]),
+                         (â, b̂, ĉ), μb, perm, nouts[f])
+    pre[f, pid] = transposed_inverse ? transpose(T) : inv(T)
+  end
+
+  TWChangeOfBasis(face_dofs, ref_edges, pre, num_dofs(reffe), transposed_inverse)
+end
+
+# The 6x6 matrix `T` with `ŵˢⱼ = Σₖ Tⱼₖ ŵˡₖ`, expressing the canonical weights of
+# the mesh-sorted frame of a face in the ones the moments actually declare, in
+# the polytope's own frame. Both blocks are closed form.
+#
+# The normal block is `ε A`, with `ε = ±1` the sign the scaled normal `n̂ₛ = ê₁×ê₂`
+# picks up under the relabelling and `A` the affine change from `(1, uˢ, vˢ)` to
+# `(1, uˡ, vˡ)`, determined exactly by three points.
+#
+# The tangential block is `Mμ⁻¹ R`, where `R = rotation_change_of_basis(μb,
+# invperm(π))` is the vertex relabelling of `μ` and `Mμ` holds the `RT₀`
+# coefficients `(a, b, c)` of `μⱼ = (a + c u, b + c v)`, which is the change from
+# `{Ĵf μⱼ}` to the canonical `{ê₁, ê₂, x̂-â}`. `μ` is a trimmed FEEC space, so `R`
+# is available in closed form and, at this degree, is a signed permutation with
+# integer entries. See Badia, Manyer & Marteau, *Rotating bases for finite
+# element exterior calculus*.
+#
+# Both factors are exact, so nothing here is fitted. `Mμ` is geometry-free and
+# `R` is integer; the only reason `T` is assembled per (face, permutation) at all
+# is the normal block's dependence on the face's own vertex labelling.
+function _tw_frame_change(lverts, sverts, μb, π, nout)
+  v3(w) = Float64[w[1], w[2], w[3]]
+  T = zeros(6, 6)
+
+  a, e1, e2 = lverts[1], lverts[2] - lverts[1], lverts[3] - lverts[1]
+  as, es1, es2 = sverts[1], sverts[2] - sverts[1], sverts[3] - sverts[1]
+  ns = cross(e1, e2)
+  ε = ns ⋅ cross(es1, es2) > 0 ? 1.0 : -1.0
+  # the moments state their weights with the polytope's *outward* normal, which
+  # carries no orientation of the shared face. `sout` is the sign relating it to
+  # ê₁×ê₂, the orientation the sorted frame does carry, and `area2` undoes the
+  # extension's normalisation of the tangential weights. Both are per-face
+  # constants.
+  sout = nout ⋅ ns > 0 ? 1.0 : -1.0
+  area2 = norm(ns)
+  Es = hcat(v3(es1), v3(es2))
+
+  # (1, uˢ, vˢ) against (1, uˡ, vˡ) at three points fixes the affine relabelling
+  Vl = zeros(3, 3)
+  Vs = zeros(3, 3)
+  for (i, (u, v)) in enumerate(((0.0, 0.0), (1.0, 0.0), (0.0, 1.0)))
+    uv = Es \ v3((a + u * e1 + v * e2) - as)
+    Vl[i, :] = [1.0, u, v]
+    Vs[i, :] = [1.0, uv[1], uv[2]]
+  end
+  T[1:3, 1:3] = sout * ε * transpose(Vl \ Vs)
+
+  # μⱼ = (a + c u, b + c v), so Ĵf μⱼ = a ê₁ + b ê₂ + c (x̂ - â)
+  m00 = evaluate(μb, [Point(0.0, 0.0)])
+  m10 = evaluate(μb, [Point(1.0, 0.0)])
+  Mμ = zeros(3, 3)
+  for j in 1:3
+    Mμ[j, :] = [m00[1, j][1], m00[1, j][2], m10[1, j][1] - m00[1, j][1]]
+  end
+  T[4:6, 4:6] = sout * area2 *
+                inv(Mμ) * Polynomials.rotation_change_of_basis(μb, invperm(collect(π)))
+  T
+end
+
+function return_cache(k::TWChangeOfBasis, Jt, pids)
+  CachedArray(zeros(Float64, k.ndofs, k.ndofs)), zeros(6, 6)
+end
+
+function evaluate!(_cache, k::TWChangeOfBasis, Jt, pids)
+  cache, W = _cache
+  setsize!(cache, (k.ndofs, k.ndofs))
+  M = cache.array
+  fill!(M, zero(eltype(M)))
+  detJt = det(Jt)
+  adetJ = abs(detJt)
+  sgn = sign(detJt)
+
+  for f in eachindex(k.face_dofs)
+    ê1, ê2 = k.ref_edges[f, pids[f]]
+    n̂ = cross(ê1, ê2)
+    s2 = n̂ ⋅ n̂
+    e1 = ê1 ⋅ Jt                        # `v ⋅ Jt` is `J v`
+    e2 = ê2 ⋅ Jt
+    n = cross(e1, e2)
+    Jn̂ = n̂ ⋅ Jt
+
+    μ = (n ⋅ n) / (s2 * adetJ)
+    a = (Jn̂ ⋅ cross(n, e1)) / (s2 * adetJ)
+    b = (Jn̂ ⋅ cross(n, e2)) / (s2 * adetJ)
+
+    fill!(W, 0.0)
+    if k.transposed_inverse                       # Wᵀ
+      for i in 1:3
+        W[i, i] = sgn
+        W[3+i, 3+i] = μ
+      end
+      W[1, 4] = a; W[1, 5] = b; W[2, 6] = a; W[3, 6] = b
+    else                                          # W⁻¹
+      iμ = 1 / μ
+      for i in 1:3
+        W[i, i] = sgn
+        W[3+i, 3+i] = iμ
+      end
+      W[4, 1] = -sgn * a * iμ; W[5, 1] = -sgn * b * iμ
+      W[6, 2] = -sgn * a * iμ; W[6, 3] = -sgn * b * iμ
+    end
+
+    # the physical dofs are stated in the mesh-sorted frame, the reference ones
+    # in the polytope's own, so the frame change composes in
+    P = k.pre[f, pids[f]]
+    dofs = k.face_dofs[f]
+    for i in 1:6, j in 1:6
+      M[dofs[i], dofs[j]] = sum(P[i, m] * W[m, j] for m in 1:6)
+    end
+  end
+
+  return M
 end

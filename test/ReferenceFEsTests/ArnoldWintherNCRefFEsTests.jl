@@ -185,8 +185,8 @@ test_signs = ((1.0, 1.0, 1.0), (-1.0, 1.0, 1.0), (1.0, -1.0, -1.0),
 
 for verts in test_cells, σ in test_signs
   Jt = jacobian_t(verts)
-  P = copy(evaluate(FESpaces.AWNCChangeOfBasis(reffe, false), Jt, σ))
-  Pinvt = copy(evaluate(FESpaces.AWNCChangeOfBasis(reffe, true), Jt, σ))
+  P = copy(evaluate(ReferenceFEs.AWNCChangeOfBasis(reffe, false), Jt, σ))
+  Pinvt = copy(evaluate(ReferenceFEs.AWNCChangeOfBasis(reffe, true), Jt, σ))
 
   @test transpose(Pinvt) * P ≈ Matrix(I, 15, 15)
   @test awnc_vandermonde(reffe, verts, σ) * P ≈ Matrix(I, 15, 15)

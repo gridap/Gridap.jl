@@ -227,8 +227,8 @@ function test_gls_change_of_basis(r)
 
   for verts in test_cells, σ in test_signs
     Jt = jacobian_t(verts)
-    P = copy(evaluate(FESpaces.EdgeScalingChangeOfBasis(reffe, false), Jt, σ))
-    Pinvt = copy(evaluate(FESpaces.EdgeScalingChangeOfBasis(reffe, true), Jt, σ))
+    P = copy(evaluate(ReferenceFEs.EdgeScalingChangeOfBasis(reffe, false), Jt, σ))
+    Pinvt = copy(evaluate(ReferenceFEs.EdgeScalingChangeOfBasis(reffe, true), Jt, σ))
 
     @test transpose(Pinvt) * P ≈ Matrix(I, ndofs, ndofs)
 
@@ -243,7 +243,7 @@ function test_gls_change_of_basis(r)
   # The edge entries really are the edge length ratio ‖J t̂ₑ‖
   verts = test_cells[2]
   Jt = jacobian_t(verts)
-  P = copy(evaluate(FESpaces.EdgeScalingChangeOfBasis(reffe, false), Jt, (1.0, 1.0, 1.0)))
+  P = copy(evaluate(ReferenceFEs.EdgeScalingChangeOfBasis(reffe, false), Jt, (1.0, 1.0, 1.0)))
   own = get_face_own_dofs(reffe)
   for e in 1:3
     L = norm(get_edge_tangent(TRI)[e] ⋅ Jt)
@@ -264,8 +264,8 @@ test_gls_change_of_basis(2)
 # matter at all: the change of basis ignores σ entirely.
 reffe0 = GLSRefFE(Float64, TRI, 0)
 Jt0 = jacobian_t(test_cells[2])
-P⁺ = copy(evaluate(FESpaces.EdgeScalingChangeOfBasis(reffe0, false), Jt0, (1.0, 1.0, 1.0)))
-P⁻ = copy(evaluate(FESpaces.EdgeScalingChangeOfBasis(reffe0, false), Jt0, (-1.0, -1.0, -1.0)))
+P⁺ = copy(evaluate(ReferenceFEs.EdgeScalingChangeOfBasis(reffe0, false), Jt0, (1.0, 1.0, 1.0)))
+P⁻ = copy(evaluate(ReferenceFEs.EdgeScalingChangeOfBasis(reffe0, false), Jt0, (-1.0, -1.0, -1.0)))
 @test P⁺ ≈ P⁻
 
 ############################################################################################

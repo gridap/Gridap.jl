@@ -298,8 +298,8 @@ test_signs_2d = ((1.0, 1.0, 1.0), (-1.0, 1.0, 1.0), (1.0, -1.0, 1.0),
 
 for verts in test_cells_2d, σ in test_signs_2d
   Jt = jacobian_t(verts)
-  P = copy(evaluate(FESpaces.MTWChangeOfBasis(ts2, ns2, false), Jt, σ))
-  Pinvt = copy(evaluate(FESpaces.MTWChangeOfBasis(ts2, ns2, true), Jt, σ))
+  P = copy(evaluate(ReferenceFEs.MTWChangeOfBasis(ts2, ns2, false), Jt, σ))
+  Pinvt = copy(evaluate(ReferenceFEs.MTWChangeOfBasis(ts2, ns2, true), Jt, σ))
 
   # The closed forms are consistent: Pinvt is the transposed inverse of P
   @test transpose(Pinvt) * P ≈ Matrix(I, 9, 9)
@@ -473,8 +473,8 @@ for X in test_cells_3d, pids in test_pids_3d
   J = TensorValue(e1[1], e1[2], e1[3], e2[1], e2[2], e2[3], e3[1], e3[2], e3[3])
   Jt = transpose(J)     # columns of J are the edge vectors, so Jt is ∂Fⱼ/∂ξⁱ
 
-  P = copy(evaluate(FESpaces.TWChangeOfBasis(reffe3, false), Jt, pids))
-  Pinvt = copy(evaluate(FESpaces.TWChangeOfBasis(reffe3, true), Jt, pids))
+  P = copy(evaluate(ReferenceFEs.TWChangeOfBasis(reffe3, false), Jt, pids))
+  Pinvt = copy(evaluate(ReferenceFEs.TWChangeOfBasis(reffe3, true), Jt, pids))
   @test transpose(Pinvt) * P ≈ Matrix(I, 24, 24)
 
   Q, fdofs = tw_vandermonde(reffe3, X, pids)

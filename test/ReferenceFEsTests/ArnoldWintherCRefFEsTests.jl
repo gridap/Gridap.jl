@@ -202,8 +202,8 @@ test_signs = ((1.0, 1.0, 1.0), (-1.0, 1.0, 1.0), (1.0, -1.0, -1.0),
 
 for verts in test_cells, σ in test_signs
   Jt = jacobian_t(verts)
-  P = copy(evaluate(FESpaces.AWCChangeOfBasis(reffe, false), Jt, σ))
-  Pinvt = copy(evaluate(FESpaces.AWCChangeOfBasis(reffe, true), Jt, σ))
+  P = copy(evaluate(ReferenceFEs.AWCChangeOfBasis(reffe, false), Jt, σ))
+  Pinvt = copy(evaluate(ReferenceFEs.AWCChangeOfBasis(reffe, true), Jt, σ))
 
   @test transpose(Pinvt) * P ≈ Matrix(I, 24, 24)
   @test isapprox(awc_vandermonde(reffe, verts, σ) * P, Matrix(I, 24, 24); atol=1e-10)
@@ -217,7 +217,7 @@ end
 for verts in test_cells
   Jt = jacobian_t(verts)
   J = transpose(Jt)
-  B = FESpaces._congruence_matrix(J) / det(Jt)^2
+  B = ReferenceFEs._congruence_matrix(J) / det(Jt)^2
   for (col, Ĥ) in enumerate((TensorValue(1.0, 0.0, 0.0, 0.0),
                              TensorValue(0.0, 1.0, 1.0, 0.0),
                              TensorValue(0.0, 0.0, 0.0, 1.0)))

@@ -35,17 +35,15 @@ traceless 2×2 matrices,
 of dimension `3(r+1)(r+2)/2`, for any `r ≥ 0`
 [Gopalakrishnan, Lederer & Schoberl, SIAM J. Numer. Anal. 58 (2020) 706].
 
-Assembled as the augmented element of [Kirby, SMAI-JCM 4 (2018) 197, §5.5]: the
-DoFs *and* the constraint functionals are declared together over an ambient
-prebasis they form a dual basis for, the generalized Vandermonde is inverted, and
-the columns dual to the DoFs are kept — they lie in the constrained space,
-being annihilated by every constraint. Note `length(get_prebasis(reffe))` is
-therefore larger than `num_dofs(reffe)`.
+Implementation follows the augmented element approach of [Kirby, SMAI-JCM 4 (2018) 197].
 
 ## Prebasis
 
-`P_r(K;M)`, the *full* matrix-valued space of dimension `4(r+1)(r+2)/2` — the
-ambient space, not `GLS_r(K)` itself.
+The prebasis is taken as `P_r(K;M)`, of dimension `4(r+1)(r+2)/2`, with constraints
+
+    ∫_K tr(M) q dK = 0    ∀ q ∈ P_r(K)
+
+enforced using moments, yielding the `3(r+1)(r+2)/2` DoFs of the GLS element.
 
 ## Moments
 
@@ -57,19 +55,6 @@ normal-tangential functional of each edge's frame against a basis `{q}` of
     ℓ^{e,i}(M)   = ∫ₑ (t⋅Mn) μᵢ ds,     i = 0 … r
     ℓ^{K,e,q}(M) = ∫_K (t_e⋅Mn_e) q dK
 
-`3(r+1) + 3r(r+1)/2 = 3(r+1)(r+2)/2`. The edge DoFs are the ones that glue: they
-give the normal--tangential continuity the MCS method needs, while the full
-matrix jump stays O(1). At `r = 0` there are no interior moments.
-
-`t⋅Mn = M ⊙ (t⊗n)` is bilinear with both directions flipping under a reversal of
-the edge, so it is invariant and no orientation convention is needed.
-
-## Constraints
-
-    ∫_K tr(M) q dK = 0    ∀ q ∈ P_r(K)      ((r+1)(r+2)/2 of them)
-
-`tr M` lies in `P_r(K)` a priori, and the moment runs over a *complete* `P_r(K)`,
-so this says `tr M ≡ 0`. `3(r+1)(r+2)/2 + (r+1)(r+2)/2 = 4(r+1)(r+2)/2`.
 """
 function GLSRefFE(::Type{T}, p::Polytope{D}, order::Integer) where {T,D}
   @notimplementedif !(D == 2 && is_simplex(p)) """\n

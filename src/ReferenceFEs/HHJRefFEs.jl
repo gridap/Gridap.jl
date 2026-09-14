@@ -25,14 +25,11 @@ The Hellan--Herrmann--Johnson reference FE of degree `r = order` on the triangle
 
     HHJ_r(K) = P_r(K;S)
 
-of dimension `3(r+1)(r+2)/2`, for any `r ≥ 0`. Unconstrained, like `MorleyRefFE`
-and `ArgyrisRefFE`: what is non-standard is that the DoFs are not preserved by
-the double contravariant Piola map. They are preserved up to one positive scalar
-per edge, which makes the change of basis diagonal.
+of dimension `3(r+1)(r+2)/2`, for any `r ≥ 0`.
 
 ## Prebasis
 
-`P_r(K;S)`, of dimension `3(r+1)(r+2)/2`, the element's space itself.
+The prebasis is taken as `P_r(K;S)`, of dimension `3(r+1)(r+2)/2`.
 
 ## Moments
 
@@ -41,17 +38,8 @@ of `P_r(e)`, the normal--normal moments; over the cell, the moments against a
 basis `{τ}` of `P_{r-1}(K;S)`:
 
     ℓ^{e,i}(ϕ) = ∫ₑ (n⋅ϕn) μᵢ ds,    i = 0 … r
-    ℓ^{K,τ}(ϕ) = ∫_K ϕ ⊙ τ dK
+    ℓ^{K,τ}(ϕ) = ∫_K ϕ ⊙ τ dK.
 
-`3(r+1) + 3r(r+1)/2 = 3(r+1)(r+2)/2`. The edge DoFs are the ones that glue: they
-give the normal--normal continuity the HHJ method needs, while the full tensor
-jump stays O(1). At `r = 0` there are no interior moments.
-
-The normal here is the polytope's outward normal, not the `n = R t` of the
-elements that need an edge frame: `n⋅ϕn` is quadratic in `n`, so its sign is
-irrelevant and no orientation convention is needed at all. The one orientation
-effect left is the weight — reversing an edge sends `μᵢ` to `(-1)ⁱ μᵢ` — and the
-change of basis carries it.
 """
 function HHJRefFE(::Type{T}, p::Polytope{D}, order::Integer) where {T,D}
   @notimplementedif !(D == 2 && is_simplex(p)) """\n

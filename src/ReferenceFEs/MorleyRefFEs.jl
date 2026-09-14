@@ -42,18 +42,11 @@ end
 
 The Morley reference FE on the triangle `K`, with `T` the scalar type: the
 quadratic nonconforming plate element of [Morley, Aero. Quart. 19 (1968) 149],
-6 DoFs, with
-
-    Morley(K) = P₂(K)
-
-of dimension 6. The space needs no constraints; what is non-standard is the DoF
-set, whose push-forward mixes the edge and vertex functionals — the element
-therefore needs a cell-dependent change of basis, see `compute_cell_bases_changes`
-in `FESpaces`.
+with 6 DoFs.
 
 ## Prebasis
 
-`P₂(K)`, of dimension 6, which is the element's space itself.
+We take prebasis `P₂(K)`, of dimension 6.
 
 ## Moments
 
@@ -63,21 +56,6 @@ normal `n = R t` (`R` the clockwise quarter turn) the mean normal derivative:
     ℓ^v(u)   = u(v)
     ℓ^e(u)   = ∫ₑ (∇u⋅n) ds
 
-`3 + 3 = 6`. Writing the edge DoF as a *moment* rather than as the classical
-midpoint value `∂u/∂n(m_e)` is what keeps the transformation exact. Under the
-plain pullback `∇u⋅n` picks up a tangential derivative, which is not one of the
-reference nodes, so the node completion of [Kirby, SMAI-JCM 4 (2018) 197, §3.3]
-is called for; but in moment form that tangential part is
-`∫ₑ (∇u⋅t) ds = u(v_b) - u(v_a)` by the fundamental theorem of calculus, for any
-smooth `u` and not merely on `P₂`, so it is already a difference of two other
-DoFs and the completion collapses. The two forms of the DoF agree up to the
-factor `|e|` on `P₂` in any case, the normal derivative being linear along an
-edge.
-
-The conformity is `H1Conformity()`, which in Gridap fixes *which faces own and
-share DoFs* — here all of them. It is not a claim that the assembled space is
-C⁰: Morley is neither C⁰ nor C¹, the shape functions matching only at the
-vertices and in the mean normal derivative across each edge.
 """
 function MorleyRefFE(::Type{T}, p::Polytope{D}) where {T,D}
   @notimplementedif !(D == 2 && is_simplex(p)) """\n
@@ -112,4 +90,99 @@ end
 # the change of basis carries.
 function get_face_own_dofs_permutations(reffe::GenericRefFE{Morley}, conf::Conformity)
   _identity_dof_permutations(reffe, conf)
+end
+
+################################################################################
+# Change of basis
+#
+# The cell-local map. The mesh-level `compute_cell_bases_changes`, which reads
+# the orientation data off the model and maps this over the cells, lives in
+# src/FESpaces/Pullbacks.jl.
+
+# Morley is mapped by the plain pullback u = û∘F⁻¹, under which the vertex values
+# are preserved but the edge normal derivatives are not: with ∇u = J⁻ᵀ∇û,
+#
+#   ∇u⋅n = ∇û⋅(J⁻¹n) = a (∇û⋅n̂) + b (∇û⋅t̂),
+#
+# so the push-forward of an edge DoF picks up a tangential derivative, which is
+# not a Morley node. With the DoFs written as moments that tangential piece is
+# exactly a difference of vertex values,
+#
+#   ∫_{ê} ∇û⋅t̂ dŝ = û(v̂_b) - û(v̂_a),
+#
+# so span(N̂) is preserved after all and the transformation is a 6×6 matrix in
+# closed form. With n = R t and G = (JᵀJ)⁻¹, using R J Rᵀ = det(J) J⁻ᵀ,
+#
+#   J⁻¹n = (det J / ‖J t̂‖) G n̂,   ds = ‖J t̂‖ dŝ,
+#
+# the ‖J t̂‖ cancels and, for edge k with reference endpoints v̂_a, v̂_b,
+#
+#   F∗(δᵥⁱ) = δ̂ᵥⁱ,
+#   F∗(δₑᵏ) = Aₖ δ̂ₑᵏ + Bₖ (δ̂ᵥᵇ - δ̂ᵥᵃ),   Aₖ = det(J) n̂ᵀGn̂,  Bₖ = det(J) t̂ᵀGn̂.
+#
+# So W = [I 0; B A] with A = diag(Aₖ) — block *triangular*, the case Kirby notes
+# for Morley and Argyris. Aₖ ≠ 0 always (n̂ᵀGn̂ > 0 by positive definiteness), and
+# W⁻¹ = [I 0; -A⁻¹B A⁻¹] in closed form. Edge orientation follows `_edge_signs`,
+# with D = diag(1,1,1,σ₁,σ₂,σ₃) folded in as P = W⁻¹D and P⁻ᵀ = WᵀD.
+
+#     MorleyChangeOfBasis(p, transposed_inverse)
+#
+# Builds, from the (transposed) Jacobian of a cell's geometrical map and that
+# cell's edge orientation signs `σ`, either the change of basis `P`
+# (`transposed_inverse = false`) or `P⁻ᵀ` (`transposed_inverse = true`).
+struct MorleyChangeOfBasis <: Map
+  tangents::Vector{VectorValue{2,Float64}}
+  normals::Vector{VectorValue{2,Float64}}
+  edge_vertices::Vector{Vector{Int}}
+  transposed_inverse::Bool
+end
+
+function MorleyChangeOfBasis(p::Polytope{2}, transposed_inverse::Bool)
+  ts, ns = _edge_frames(p)
+  MorleyChangeOfBasis(ts, ns, get_faces(p, 1, 0), transposed_inverse)
+end
+
+function return_cache(k::MorleyChangeOfBasis, Jt, σ)
+  ndofs = length(k.tangents) + length(k.edge_vertices)
+  CachedArray(zeros(Float64, ndofs, ndofs))
+end
+
+function evaluate!(cache, k::MorleyChangeOfBasis, Jt, σ)
+  nedges = length(k.tangents)
+  nverts = nedges  # a triangle
+  ndofs = nverts + nedges
+  setsize!(cache, (ndofs, ndofs))
+  M = cache.array
+  fill!(M, zero(eltype(M)))
+
+  detJ = det(Jt)
+  G = inv(Jt ⋅ transpose(Jt))  # (JᵀJ)⁻¹, since Jt = Jᵀ
+
+  for i in 1:nverts
+    M[i, i] = 1.0
+  end
+
+  for e in 1:nedges
+    t̂, n̂ = k.tangents[e], k.normals[e]
+    Gn̂ = G ⋅ n̂
+    A = detJ * (n̂ ⋅ Gn̂)
+    B = detJ * (t̂ ⋅ Gn̂)
+    σe = σ[e]
+    va, vb = k.edge_vertices[e]
+
+    # D = diag(1,1,1,σ...) scales the last columns of the block below.
+    if k.transposed_inverse
+      # WᵀD
+      M[nverts+e, nverts+e] = A * σe
+      M[va, nverts+e] = -B * σe
+      M[vb, nverts+e] = B * σe
+    else
+      # W⁻¹D = [I 0; -A⁻¹B A⁻¹D]
+      M[nverts+e, nverts+e] = σe / A
+      M[nverts+e, va] = B / A
+      M[nverts+e, vb] = -B / A
+    end
+  end
+
+  return M
 end

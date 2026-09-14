@@ -206,8 +206,8 @@ test_signs = ((1.0, 1.0, 1.0), (-1.0, 1.0, 1.0), (1.0, -1.0, -1.0),
 
 for verts in test_cells, σ in test_signs
   Jt = jacobian_t(verts)
-  P = copy(evaluate(FESpaces.ArgyrisChangeOfBasis(TRI, false), Jt, σ))
-  Pinvt = copy(evaluate(FESpaces.ArgyrisChangeOfBasis(TRI, true), Jt, σ))
+  P = copy(evaluate(ReferenceFEs.ArgyrisChangeOfBasis(TRI, false), Jt, σ))
+  Pinvt = copy(evaluate(ReferenceFEs.ArgyrisChangeOfBasis(TRI, true), Jt, σ))
 
   @test transpose(Pinvt) * P ≈ Matrix(I, 21, 21)
 
@@ -223,7 +223,7 @@ end
 # The Hessian block is the matrix of H ↦ K H Kᵀ on the components (11,12,22)
 for verts in test_cells
   K = inv(jacobian_t(verts))
-  B = FESpaces._congruence_matrix(K)
+  B = ReferenceFEs._congruence_matrix(K)
   for (col, Ĥ) in enumerate((TensorValue(1.0, 0.0, 0.0, 0.0),
                              TensorValue(0.0, 1.0, 1.0, 0.0),
                              TensorValue(0.0, 0.0, 0.0, 1.0)))
