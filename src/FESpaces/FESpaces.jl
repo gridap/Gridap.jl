@@ -11,6 +11,7 @@ using SparseArrays
 using LinearAlgebra
 using StaticArrays
 using ForwardDiff
+using DataStructures
 
 using Gridap.Helpers
 using Gridap.Algebra
@@ -213,6 +214,18 @@ export CLagrangianFESpace
 export DirichletFESpace
 export FESpaceWithLinearConstraints
 
+export ConstraintLine
+export ConstraintHandler
+export add_constraint!
+export set_offset!
+export is_constrained
+export num_constrained_dofs
+export close!
+export merge!
+export apply_constraints!
+export apply_constraints
+export constraint_tables
+
 export FiniteElements
 
 export DiscreteModelWithFEMap
@@ -281,6 +294,8 @@ include("ConstantFESpaces.jl")
 include("PolytopalFESpaces.jl")
 
 include("PatchAssemblers.jl")
+
+include("ConstraintHandlers.jl")
 
 include("LocalFEOperators.jl")
 
