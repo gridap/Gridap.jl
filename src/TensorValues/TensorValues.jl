@@ -40,7 +40,8 @@ $(public_names_in_md(@__MODULE__; change_link=Dict(
   :♯ᴱ => "flat_sharp",
   :⨟  => "alt_inner",
   :⨟ᴱ => "flat_alt_inner",
-  :⊙ᴱ => "flat_inner"
+  :⊙ᴱ => "flat_inner",
+  :𝔸   => "alternation"
 )))
 """
 module TensorValues
@@ -120,6 +121,7 @@ export ExteriorFormValue
 export ExteriorVectorValue
 export CoVectorValue
 export ContraVectorValue
+export alternation, 𝔸
 export ∧
 export interior_product, ι
 export hodge_star, ⋆

@@ -355,6 +355,37 @@ for (α, β) in [(ExteriorFormValue{0,D3}((7.0,)),
   end
 end
 
+# ── Alternation 𝔸: eltype preservation ───────────────────────────────────────
+
+# 𝔸 divides the alternating sum by K!; on non-alternating input this must keep
+# the component eltype rather than promoting it (integer division for integer
+# components, ordinary division otherwise).
+Tint = TensorValue{3,3,Int}(1,2,3, 4,5,6, 7,8,9)
+@test eltype(𝔸(Tint)) === Int
+@test 𝔸(Tint).data == (1,2,1)
+
+Tf32 = TensorValue{3,3,Float32}(1f0,2f0,3f0, 4f0,5f0,6f0, 7f0,8f0,9f0)
+@test eltype(𝔸(Tf32)) === Float32
+@test 𝔸(Tf32).data == (1f0,2f0,1f0)
+
+# ── Wedge product: alternating vs full-rank arguments agree ─────────────────
+
+# The generic ∧ fallback goes through 𝔸(a)∧𝔸(b), so the wedge product of two
+# forms must agree with the wedge product of their full-rank (dense) tensor
+# expansions, for every 0 ≤ K1 ≤ K2 ≤ 3 in D = 3. A 0-form has no index to
+# expand, so its full-rank counterpart is the unvarianced 0-tensor instead.
+_full0(ω::ExteriorFormValue{0}) = SkewSymKTensorValue{Int,0,3}(ω.data)
+
+for K1 in 0:3, K2 in K1:3
+  na = num_indep_components(ExteriorFormValue{K1,D3})
+  nb = num_indep_components(ExteriorFormValue{K2,D3})
+  a  = ExteriorFormValue{K1,D3}(Tuple(10K1 + i for i in 1:na))
+  b  = ExteriorFormValue{K2,D3}(Tuple(10K2 + i for i in 1:nb))
+  fa = K1 == 0 ? _full0(a) : _full(a)
+  fb = K2 == 0 ? _full0(b) : _full(b)
+  @test (a ∧ b).data == (fa ∧ fb).data
+end
+
 # Past K = 4 the metric minors of the raising sum are computed by a loop instead
 # of an inlined Leibniz expansion.
 d5 = VectorValue(2.0, 3.0, 5.0, 7.0, 11.0, 13.0)

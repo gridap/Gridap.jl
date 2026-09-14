@@ -68,7 +68,8 @@ method on the tensors both accept.
   for I in sorted_combinations(D, K)
     terms = [_signed(levicivita(p), :( a[$(I[p]...)] )) for p in permutations(1:K)]
     s = _sum_expr(terms, T)
-    push!(comps, isone(f) ? s : :( $s / $f ))
+    div_op = T <: Integer ? div : / # preserve ints eltype
+    push!(comps, isone(f) ? s : :( $(div_op)($(s), $(f)) ))
   end
 
   quote
@@ -84,11 +85,32 @@ const 𝔸 = alternation
 # ============================================================
 
 """
-    ∧(a::ExteriorFormValue{K1,D},   b::ExteriorFormValue{K2,D})
-    ∧(a::ExteriorVectorValue{K1,D}, b::ExteriorVectorValue{K2,D})
+    ∧(a::MultiValue{NTuple{K1,D}},  b::MultiValue{NTuple{K1,D}})
+    a ∧ b
 
-Pointwise exterior (wedge) product, a `K1+K2`-form or -vector.
+Pointwise exterior (wedge) product, a `K1+K2`-form or -vector. It is formaly
+defined by
+
+    a ∧ b = (K1+K2)! / (K1!*K2!) * 𝔸(a⊗b)
+          = 𝔸(a) ∧ 𝔸(b)
+
+but is computed more efficiently if the arguments are alternating, that is are
+either K-forms or -vectors.
 """
+function ∧(a, b)
+  throw(ArgumentError(
+    "wedge product undefined for these sizes, all dimension indices \
+    should be iddentical (same number and variance), got sizes $(size(a)) and $(size(b)).
+  "))
+end
+
+∧(a::MultiValue{NTuple{K1,D}}, b::MultiValue{NTuple{K2,D}}) where {K1,K2,D} = 𝔸(a)∧𝔸(b)
+# Next method is needed if K1 or K2=0 and Ds are different, since that can
+# dispatch to the generic but not in the altinating tensor implementation
+function ∧(a::SkewSymKTensorValue{V1,K1}, b::SkewSymKTensorValue{V2,K2}) where {V1,V2,K1,K2}
+  throw(ArgumentError("wedge product undefined for tensors of different variances, got sizes $(size(a)) and $(size(b))."))
+end
+
 @generated function ∧(a::SkewSymKTensorValue{V,K1,D,T1},
                       b::SkewSymKTensorValue{V,K2,D,T2}) where {V,K1,K2,D,T1,T2}
   D = Int(D)
