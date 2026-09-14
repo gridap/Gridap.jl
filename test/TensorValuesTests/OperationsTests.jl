@@ -528,6 +528,32 @@ c = one(SymTensorValue{2,Float64}) - LinearAlgebra.I
 @test_throws "" sk  + LinearAlgebra.I
 @test_throws "" s4ot + LinearAlgebra.I
 
+# Unlike +/-, `*`, `/` and `\` with UniformScaling reduce to scaling by
+# J.λ, so they are not restricted to square order-2 tensors.
+c = t * LinearAlgebra.I
+@test isa(c, TensorValue{3})
+@test c == t
+
+c = LinearAlgebra.I * t
+@test isa(c, TensorValue{3})
+@test c == t
+
+c = t * (2*LinearAlgebra.I)
+@test c.data == 2 .* t.data
+
+c = a * (2*LinearAlgebra.I)
+@test isa(c, VectorValue{3})
+@test c.data == 2 .* a.data
+
+c = t / (2*LinearAlgebra.I)
+@test c.data == t.data ./ 2
+
+c = (2*LinearAlgebra.I) \ t
+@test c.data == t.data ./ 2
+
+@test_throws SingularException t / (0*LinearAlgebra.I)
+@test_throws SingularException (0*LinearAlgebra.I) \ t
+
 # Dot product (simple contraction)
 
 a = VectorValue(1,2,3)

@@ -103,6 +103,45 @@ for op in (:+,:-)
   end
 end
 
+
+###############################################################
+# Arithmetics with UniformScaling
+###############################################################
+
+# Dealing with LinearAlgebra.I fallbacks due to `MultiValue <: Number`
+
+const _UniformScalingMsg = "UniformScaling can only be added to or subtracted \
+  from a square order-2 tensor, got size "
+
+for op in (:+,:-)
+  @eval begin
+    function ($op)(a::MultiValue{Tuple{D1,D2}}, ::UniformScaling) where {D1,D2}
+      Int(D1) == Int(D2) || throw(DimensionMismatch(_UniformScalingMsg*"$(size(a))."))
+      ($op)(a, one(a))
+    end
+
+    function ($op)(::UniformScaling, a::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+      Int(D1) == Int(D2) || throw(DimensionMismatch(_UniformScalingMsg*"$(size(a))."))
+      ($op)(one(a), a)
+    end
+
+    function ($op)(a::MultiValue, ::UniformScaling)
+      throw(DimensionMismatch(_UniformScalingMsg*"$(size(a))."))
+    end
+
+    function ($op)(::UniformScaling, a::MultiValue)
+      throw(DimensionMismatch(_UniformScalingMsg*"$(size(a))."))
+    end
+  end
+end
+
+(*)(a::MultiValue, J::UniformScaling) = a * J.λ
+(*)(J::UniformScaling, a::MultiValue) = J.λ * a
+(/)(a::MultiValue, J::UniformScaling) =
+  iszero(J.λ) ? throw(SingularException(1)) : a / J.λ
+(\)(J::UniformScaling, a::MultiValue) =
+  iszero(J.λ) ? throw(SingularException(1)) : a / J.λ
+
 ###############################################################
 # Matrix Division
 ###############################################################
