@@ -334,22 +334,22 @@ for (α, β) in [(ExteriorFormValue{0,D3}((7.0,)),
                 ExteriorFormValue{3,D3}((5.0,)))]
   K = length(size(α))
 
-  @test ⨟(α, β, g_inv_fi) == form_inner(α, β, g_inv_fi)
-  @test flat_form_inner(α, β) == sum(α.data .* β.data)
-  @test flat_form_inner(α, β) ≈ form_inner(α, β, one(g_inv_fi))
+  @test ⨟(α, β, g_inv_fi) == alt_inner(α, β, g_inv_fi)
+  @test flat_alt_inner(α, β) == sum(α.data .* β.data)
+  @test flat_alt_inner(α, β) ≈ alt_inner(α, β, one(g_inv_fi))
   # α ∧ ⋆_g β = √det(g) (α|β) dx¹∧…∧dx^D, the property that defines (α|β)
-  @test vol_coeff(α ∧ hodge_star(β, g_inv_fi, sdg_fi)) ≈ sdg_fi * form_inner(α, β, g_inv_fi)
+  @test vol_coeff(α ∧ hodge_star(β, g_inv_fi, sdg_fi)) ≈ sdg_fi * alt_inner(α, β, g_inv_fi)
   # the flat tensor inner product drops the 1/K! of (α|β)
-  @test flat_inner(α, β) ≈ factorial(K) * flat_form_inner(α, β)
+  @test flat_inner(α, β) ≈ factorial(K) * flat_alt_inner(α, β)
   # the flat operators alias the non-flat symbol suffixed by ᴱ
   @test (α ⊙ᴱ β) === flat_inner(α, β)
-  @test (α ⨟ᴱ β) === flat_form_inner(α, β)
+  @test (α ⨟ᴱ β) === flat_alt_inner(α, β)
   @test ⋆ᴱ(α) === flat_hodge_star(α)
   # Summing the binomial(D,K) independent components gives the same as
   # contracting all Dᴷ of them. The forms are expanded first because both carry
   # covariant indices, which `can_contract` pairs only with contravariant ones.
   if K > 0 # MultiValue has no constructor from the 0-dimensional array of a 0-form
-    @test contracted_product(Val(K), _full(α), _full(β)) ≈ factorial(K) * flat_form_inner(α, β)
+    @test contracted_product(Val(K), _full(α), _full(β)) ≈ factorial(K) * flat_alt_inner(α, β)
     # `inner` raises no index, so it refuses two covariant ones
     @test_throws DimensionMismatch inner(α, β)
   end
@@ -361,7 +361,7 @@ d5 = VectorValue(2.0, 3.0, 5.0, 7.0, 11.0, 13.0)
 g5_inv = SymTensorValue{con6}(symmetric_part(diagonal_tensor(d5))...)
 α5 = ExteriorFormValue{5,6}((1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
 β5 = ExteriorFormValue{5,6}((6.0, 5.0, 4.0, 3.0, 2.0, 1.0))
-@test form_inner(α5, β5, g5_inv) ≈
+@test alt_inner(α5, β5, g5_inv) ≈
       sum(α5.data[n] * β5.data[n] * prod(d5.data) / d5[7-n] for n in 1:6)
 
 # A 0-form has no index to contract
@@ -416,8 +416,8 @@ Jt_f = TensorValue{cov2,con3,Float32}(1f0,0f0,  0f0,1f0,  0f0,0f0)
 @test eltype(sharp(b_f, SymTensorValue{Con(D3),Int}(1,0,0,1,0,1))) === Float64
 @test eltype(pullback(a_i, Jt_f))            === Float32
 @test eltype(outer(v_i, b_f))                === Float32
-@test typeof(flat_form_inner(a_i, b_f))      === Float32
-@test typeof(form_inner(a_i, b_f, gif))      === Float32
+@test typeof(flat_alt_inner(a_i, b_f))       === Float32
+@test typeof(alt_inner(a_i, b_f, gif))       === Float32
 @test typeof(apply_tensor(a_i, v_i))           === Int
 @test eltype(grad_to_2form(TensorValue{D3,D3,Int}(1,2,3,4,5,6,7,8,9))) === Int
 
@@ -442,8 +442,8 @@ triv = ExteriorFormValue{4,D3,Float32}(())
 @test (@inferred apply_tensor(triv, v_i, v_i, v_i, VectorValue{D3,Float64}(1,2,3))) === zero(Float64)
 @test apply_tensor(ExteriorFormValue{4,D3,Int}(()), v_i, v_i, v_i, v_i) === zero(Int)
 @test apply_tensor(CoVectorValue{0,Float32}(()), VectorValue{0,Float32}()) === zero(Float32)
-@test flat_form_inner(triv, ExteriorFormValue{4,D3,Int}(())) === zero(Float32)
-@test form_inner(triv, ExteriorFormValue{4,D3,Int}(()), gif) === zero(Float32)
+@test flat_alt_inner(triv, ExteriorFormValue{4,D3,Int}(())) === zero(Float32)
+@test alt_inner(triv, ExteriorFormValue{4,D3,Int}(()), gif) === zero(Float32)
 # the conversions name the eltype, so it survives an empty container
 @test to_Kform(VectorValue{0,Float32}(()), Val(4), Val(D3)) ===
       zero(ExteriorFormValue{4,D3,Float32})

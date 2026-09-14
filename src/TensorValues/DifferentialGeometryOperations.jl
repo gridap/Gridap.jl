@@ -272,6 +272,7 @@ function symbolic_coordinates end
 
 """
     hodge_star(ω::MultiValue{NTuple{K,D}},  g_or_ginv[, sqrt_abs_g])
+    hodge_star(ω, LinearAlgebra.I) = flat_hodge_star(ω)
     ⋆(ω, g_or_ginv[, sqrt_abs_g])
 
 Hodge star `⋆ω` of a `K`-tensor `ω` with variance. It is an alternating
@@ -286,7 +287,8 @@ a determinant.
 A not-alternating `K`-tensor with homogeneous variance is accepted, and
 starred through its alternating part.
 
-See also [`flat_hodge_star(ω)`](@ref) for the Euclidean version.
+See also [`flat_hodge_star(ω)`](@ref) for the Euclidean version, accessible by
+passing `LinearAlgebra.I`.
 """
 @generated function hodge_star(ω::SkewSymKTensorValue{V,K,Dw,Tw}, g_or_ginv::SymTensorValue{Dg},
                                sqrt_abs_g=nothing) where {V,K,Dg,Dw,Tw}
@@ -326,6 +328,8 @@ end
 function hodge_star(a::MultiValue{NTuple{K,D}}, g_or_ginv, sqrt_abs_g=nothing) where {K,D}
   hodge_star(𝔸(a), g_or_ginv, sqrt_abs_g)
 end
+
+hodge_star(ω::MultiValue, ::UniformScaling) = flat_hodge_star(ω)
 
 const ⋆ = hodge_star
 
@@ -444,21 +448,21 @@ apply_tensor(ω::SkewSymKTensorValue{V,K,D}, vs...) where {V,K,D} =
 """
     pullback(ω::ExteriorFormValue{K,Dn}, Jt::TensorValue{Dm,Dn})
 
-Pointwise pullback `φ^*ω` of a K-form under a map `φ : ℝᴰᵐ → ℝᴰⁿ` with
+Pointwise pullback `φ^*ω` of a K-form by a map `φ : ℝᴰᵐ → ℝᴰⁿ` with
 transposed Jacobian `Jt = ∇φ`, that is `Jt[j,i] = ∂φⁱ/∂ξʲ`.
 
-The chart index `j` of `Jt` is covariant and its ambient index `i`
-contravariant, so `Jt` has size `(Cov(Dm), Con(Dn))`: the ambient index is the
-one contracted with `ω`, and the result is an `ExteriorFormValue{K,Cov(Dm)}`.
+The domain index `1≤j≤m` of `Jt` is covariant and its image index `1≤i≤n`
+contravariant, so `Jt` has size `(Cov(Dm), Con(Dn))`, the result is an
+`ExteriorFormValue{K,Cov(Dm)}`.
 
 A Field-level method for lazy pullbacks is provided in `Gridap.Fields`.
 """
 @generated function pullback(ω::ExteriorFormValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
   Dm isa Cov || return :(throw(ArgumentError(
-    "the chart index of Jt is covariant, got a transposed jacobian of size $(size(Jt))"
+    "the domain (first) index of Jt should be covariant, got size $(size(Jt))"
   )))
   can_contract(Dn, Dw) || return :(throw(DimensionMismatch(
-    "cannot pullback a form of dimension $Dw by a transposed jacobian of ambient dimension $Dn, indices cannot contract"
+    "cannot pullback a form of dimension $Dw by a transposed jacobian of image (second) dimension $Dn, indices cannot contract"
   )))
   T = Base.promote_op(*, Tw, Tj)
 
@@ -466,8 +470,8 @@ A Field-level method for lazy pullbacks is provided in `Gridap.Fields`.
   (iszero(binomial(n, K)) || iszero(binomial(m, K))) &&
     return :( zero(ExteriorFormValue{$K,$Dm,$T}) )
 
-  c_I = sorted_combinations(n, K)   # K-combins in ambient (target) space
-  c_J = sorted_combinations(m, K)   # K-combins in chart (origin) space
+  c_I = sorted_combinations(n, K)   # K-combins in image (ambient) space
+  c_J = sorted_combinations(m, K)   # K-combins in domain (chart) space
 
   # det([∂φ^{I[b]}/∂ξ^{J[a]}]) is the minor of Jt on rows J and columns I
   comps = [_sum_expr([:( $(_minor_expr(:Jt, J, I)) * indep_comp_getindex(ω,$l) )
@@ -520,57 +524,62 @@ end
 # ============================================================
 
 """
-    form_inner(ω::ExteriorFormValue{K,D}, η::ExteriorFormValue{K,D}, g_or_ginv::SymTensorValue{D})
-    ⨟(ω,η)
-    ω ⨟ η
+    alt_inner(a::ExteriorFormValue{K,D},   b::ExteriorFormValue{K,D},   g_or_ginv::SymTensorValue{D})
+    alt_inner(a::ExteriorVectorValue{K,D}, b::ExteriorVectorValue{K,D}, g_or_ginv::SymTensorValue{D})
+    ⨟(a,b)
+    a ⨟ b
 
-Inner product ``(ω|η)`` of two K-forms, the scalar such that
+Inner product ``(a|b)`` of two `K`-forms or two `K`-vectors, the scalar such
+that, for two `K`-forms,
 
-``ω ∧ ⋆_g η = √|det(g)| (ω|η) dx¹∧…∧dx^D``.
+``a ∧ ⋆_g b = √|det(g)| (a|b) dx¹∧…∧dx^D``.
 
 `g_or_ginv` is either the metric tensor `g` (covariant) or its inverse `g_inv`
-(contravariant), see [`parse_metric_data`](@ref). See
-[`flat_form_inner`](@ref) for the identity metric.
+(contravariant), see [`parse_metric_data`](@ref). A `K`-form pair is
+contracted through `g_inv`, raising the indices of `b` as `hodge_star` does; a
+`K`-vector pair is contracted through `g`, lowering them instead. See
+[`flat_alt_inner`](@ref) for the identity metric.
 """
-@generated function form_inner(a::ExteriorFormValue{K,Dw,Ta}, b::ExteriorFormValue{K,Dw,Tb},
-                               g_or_ginv::SymTensorValue{Dg,Tg}) where {K,Dg,Dw,Ta,Tb,Tg}
+@generated function alt_inner(a::SkewSymKTensorValue{V,K,Dw,Ta}, b::SkewSymKTensorValue{V,K,Dw,Tb},
+                              g_or_ginv::SymTensorValue{Dg,Tg}) where {V,K,Dg,Dw,Ta,Tb,Tg}
+  V === Int && return :(@unreachable $("alt_inner requires a K-tensor with variance, got $V index"))
   Dg == Dw || return :(throw(DimensionMismatch()))
   D = Int(Dg)
   T = Base.promote_op(*, Ta, Tb, Tg)
   c_K = sorted_combinations(D, K)
-  # raising β_I to β^I as `hodge_star` does
+  # raising or lowering b's indices as `hodge_star` does, depending on V
+  _g_or_ginv = V === Cov ? :g_inv : :g
   terms = [:( indep_comp_getindex(a,$m) *
-              $(_sum_expr([:( $(_minor_expr(:g_inv, I, J)) * indep_comp_getindex(b,$n) )
+              $(_sum_expr([:( $(_minor_expr(_g_or_ginv, I, J)) * indep_comp_getindex(b,$n) )
                            for (n, J) in enumerate(c_K)], T)) )
            for (m, I) in enumerate(c_K)]
-  # (α|β) = Σ_I α_I β^I
+  # (a|b) = Σ_I a_I b^I
   quote
-    (; g_inv) = parse_metric_data(g_or_ginv)
+    (; $_g_or_ginv) = parse_metric_data(g_or_ginv)
     $(_sum_expr(terms, T))
   end
 end
-# TODO: same as hodge_star, generalize to SkewSymKTensorValue,
-const ⨟ = form_inner
+const ⨟ = alt_inner
 
 """
-    flat_form_inner(ω::ExteriorFormValue{K,D},   η::ExteriorFormValue{K,D})
-    flat_form_inner(ω::ExteriorVectorValue{K,D}, η::ExteriorVectorValue{K,D})
+    flat_alt_inner(ω::ExteriorFormValue{K,D},   η::ExteriorFormValue{K,D})
+    flat_alt_inner(ω::ExteriorVectorValue{K,D}, η::ExteriorVectorValue{K,D})
     ⨟ᴱ(ω,η)
     ω ⨟ᴱ η
 
 Inner product ``(ω|η)`` of two `K`-forms or -vectors in Euclidean space, that is
-[`form_inner`](@ref) with the identity (inverse) metric.
+[`alt_inner`](@ref) with the identity (inverse) metric.
 
 This differs from the tensor inner product by a factor `K!`, see [`flat_inner`](@ref).
 """
-@generated function flat_form_inner(
+@generated function flat_alt_inner(
   a::SkewSymKTensorValue{V,K,D,Ta}, b::SkewSymKTensorValue{V,K,D,Tb}) where {V,K,D,Ta,Tb}
 
   T = Base.promote_op(*,Ta,Tb)
   L = num_indep_components(a)
   _sum_expr([:(indep_comp_getindex(a,$i) * indep_comp_getindex(b,$i)) for i in 1:L], T)
 end
-const ⨟ᴱ = flat_form_inner
+const ⨟ᴱ = flat_alt_inner
 
 """
     flat_inner(ω::MultiValue{S}, η::MultiValue{S})
@@ -583,7 +592,7 @@ Tensor inner product in Euclidean space, that is `inner`/`⊙` even if `ω` and
 function flat_inner(a::SkewSymKTensorValue{V,K,D,Ta},
                     b::SkewSymKTensorValue{V,K,D,Tb}) where {V,K,D,Ta,Tb}
   K > D && return zero(Base.promote_op(*,Ta,Tb))
-  factorial(K) * flat_form_inner(a, b)
+  factorial(K) * flat_alt_inner(a, b)
 end
 const ⊙ᴱ = flat_inner
 

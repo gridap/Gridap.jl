@@ -273,7 +273,7 @@ respectively; the other one is computed on demand.
 
 ```@docs
 hodge_star
-form_inner
+alt_inner
 flat
 sharp
 pullback
@@ -292,7 +292,7 @@ Euclidean.
 
 ```@docs
 flat_hodge_star
-flat_form_inner
+flat_alt_inner
 flat_inner
 ```
 

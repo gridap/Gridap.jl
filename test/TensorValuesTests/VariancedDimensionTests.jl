@@ -429,17 +429,17 @@ g_up  = SymTensorValue{con2}(1.0, 0.0, 1.0)
 @test tensor_type(g_up) == (2,0,0)
 @test tensor_type(g_id) == (0,0,2)
 
-# `hodge_star`, `sharp` and `form_inner` raise indices with `g_inv`; `flat`
+# `hodge_star`, `sharp` and `alt_inner` raise indices with `g_inv`; `flat`
 # lowers one with `g`
 @test hodge_star(ω2, g_up, 1.0) ≈ flat_hodge_star(ω2)
 @test sharp(ω2, g_up)           ≈ v2
-@test form_inner(ω2, ω2, g_up)  ≈ flat_form_inner(ω2, ω2)
+@test alt_inner(ω2, ω2, g_up)   ≈ flat_alt_inner(ω2, ω2)
 @test flat(v2, g_lo)            ≈ ω2
 
 # Either tensor may be given, the other one is inverted on demand
 @test hodge_star(ω2, g_lo, 1.0) ≈ hodge_star(ω2, g_up, 1.0)
 @test sharp(ω2, g_lo)           ≈ sharp(ω2, g_up)
-@test form_inner(ω2, ω2, g_lo)  ≈ form_inner(ω2, ω2, g_up)
+@test alt_inner(ω2, ω2, g_lo)   ≈ alt_inner(ω2, ω2, g_up)
 @test flat(v2, g_up)            ≈ flat(v2, g_lo)
 
 # √|det(g)| is computed from whichever tensor is given when it is omitted
@@ -449,8 +449,14 @@ g_up  = SymTensorValue{con2}(1.0, 0.0, 1.0)
 # An un-varianced metric does not say whether it raises or lowers
 @test_throws ArgumentError hodge_star(ω2, g_id, 1.0)
 @test_throws ArgumentError sharp(ω2, g_id)
-@test_throws ArgumentError form_inner(ω2, ω2, g_id)
+@test_throws ArgumentError alt_inner(ω2, ω2, g_id)
 @test_throws ArgumentError flat(v2, g_id)
+
+# `alt_inner` also accepts a K-vector pair, contracting through `g` instead of
+# `g_inv`, symmetrically to how `flat`/`sharp` lower/raise a vector/form
+@test alt_inner(v2, v2, g_lo) ≈ flat_alt_inner(v2, v2)
+@test alt_inner(v2, v2, g_up) ≈ alt_inner(v2, v2, g_lo)
+@test_throws ArgumentError alt_inner(v2, v2, g_id)
 
 # A `VectorValue` is taken as contravariant, but the result still carries a variance
 @test flat(v2_un, g_lo) ≈ flat(v2, g_lo)
