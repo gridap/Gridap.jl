@@ -71,7 +71,7 @@ pts   = get_cell_points(Ω)
 
 cω    = array_cache(ωx)
 val0  = getindex!(cω, ωx, 1)         # first cell: ExteriorFormValue per quad pt
-@test typeof(val0) <: AbstractArray{<:ExteriorFormValue{1,cov2}}
+@test typeof(val0) <: AbstractArray{<:CoVectorValue{cov2}}
 
 # ── exterior_derivative ───────────────────────────────────────────────────────
 
@@ -121,7 +121,7 @@ star_val_cf = flat_hodge_star(ω)
 star_valx   = star_val_cf(pts)
 csv         = array_cache(star_valx)
 sv0         = getindex!(csv, star_valx, 1)
-@test typeof(sv0) <: AbstractArray   # ExteriorFormValue{1,2} elements
+@test typeof(sv0) <: AbstractArray   # CoVectorValue{2} elements
 
 # ── wedge product ─────────────────────────────────────────────────────────────
 
@@ -157,7 +157,7 @@ flat_cf  = flat(v_cf, g_cf)
 flatx    = flat_cf(pts)
 cflat    = array_cache(flatx)
 fval0    = getindex!(cflat, flatx, 1)
-@test typeof(fval0) <: AbstractArray   # ExteriorFormValue{1,2} elements
+@test typeof(fval0) <: AbstractArray   # CoVectorValue{2} elements
 
 sharp_cf = sharp(ω, g_inv_cf)
 sharpx   = sharp_cf(pts)
@@ -205,7 +205,7 @@ sv1    = getindex!(cs, svals, 1)
 ωvx    = ω_v_cf(pts)
 cωv    = array_cache(ωvx)
 ωvval0 = getindex!(cωv, ωvx, 1)
-@test typeof(ωvval0) <: AbstractArray{<:ExteriorFormValue{1,cov2}}
+@test typeof(ωvval0) <: AbstractArray{<:CoVectorValue{cov2}}
 
 v_back = from_1form(ω_id_cf)
 @test v_back isa CellField

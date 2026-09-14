@@ -116,6 +116,8 @@ export from_mandel
 export SkewSymKTensorValue
 export ExteriorFormValue
 export ExteriorVectorValue
+export CoVectorValue
+export ContraVectorValue
 export ∧
 export interior_product, ι
 export hodge_star, ⋆

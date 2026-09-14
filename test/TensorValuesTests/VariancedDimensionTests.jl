@@ -19,9 +19,9 @@ v_outer_t = ThirdOrderTensorValue{2, con2, cov2}(1,1,1,1,1,1,1,1)
 @test v ⊗ t == v_outer_t
 @test t ⊗ v != v_outer_t
 
-ω13 = ExteriorFormValue{1,3}((1,2,3))
+ω13 = CoVectorValue{3}((1,2,3))
 @test size(ω13) == (cov3,)
-@test ω13 isa ExteriorFormValue{1,cov3}
+@test ω13 isa CoVectorValue{cov3}
 @test ω13 ⊗ ω13 == TensorValue{cov3, cov3}(1, 2, 3, 2, 4, 6, 3, 6, 9)
 
 ω23 = ExteriorFormValue{2,3}((1,2,3))
@@ -90,7 +90,7 @@ f_int   = SymFourthOrderTensorValue{2}(1:9...)
 f_cov   = SymFourthOrderTensorValue{cov2}(1:9...)
 f_con   = SymFourthOrderTensorValue{con2}(1:9...)
 
-ω1      = ExteriorFormValue{1,cov2}((1,2))
+ω1      = CoVectorValue{cov2}((1,2))
 
 # ==================================================================
 # Comparison
@@ -198,7 +198,7 @@ r = g \ TensorValue{con2,cov2}(2,0,0,4)
 
 # first indices differ in variance
 @test_throws DimensionMismatch g \ TensorValue{cov2,cov2}(1,2,3,4)
-@test_throws DimensionMismatch g \ ExteriorFormValue{1,cov2}((1,2))
+@test_throws DimensionMismatch g \ CoVectorValue{cov2}((1,2))
 # left operand not square
 @test_throws DimensionMismatch TensorValue{2,3}(1:6...) \ VectorValue(1,2)
 # an order-0 right operand is not supported
@@ -206,9 +206,9 @@ r = g \ TensorValue{con2,cov2}(2,0,0,4)
 
 # `inv` of a (0,2) tensor is a (2,0) tensor, so dividing a covariant vector by it
 # gives a contravariant vector
-q = TensorValue{cov2,cov2}(2,0,0,4) \ ExteriorFormValue{1,cov2}((1,2))
-@test q isa ExteriorVectorValue{1,con2}
-@test TensorValue{cov2,cov2}(2,0,0,4) ⋅ q ≈ ExteriorFormValue{1,cov2}((1.0,2.0))
+q = TensorValue{cov2,cov2}(2,0,0,4) \ CoVectorValue{cov2}((1,2))
+@test q isa ContraVectorValue{con2}
+@test TensorValue{cov2,cov2}(2,0,0,4) ⋅ q ≈ CoVectorValue{cov2}((1.0,2.0))
 # with a second index to carry, the result type does exist
 r = TensorValue{cov2,cov2}(2,0,0,4) \ TensorValue{cov2,cov2}(2,0,0,4)
 @test r isa TensorValue{con2,cov2}
@@ -379,7 +379,7 @@ e_int = TensorValue{2,2}(2.,1.,1.,3.)
 h3  = ThirdOrderTensorValue{con2,cov2,cov3}(1:12...)
 h3i = ThirdOrderTensorValue{2,2,3}(1:12...)
 @test tr(h3i) isa VectorValue{3}
-@test tr(h3) isa ExteriorFormValue{1,cov3}
+@test tr(h3) isa CoVectorValue{cov3}
 @test get_array(tr(h3)) == get_array(tr(h3i))
 @test_throws ArgumentError tr(ThirdOrderTensorValue{cov2,cov2,3}(1:12...))
 
@@ -418,8 +418,8 @@ h3i = ThirdOrderTensorValue{2,2,3}(1:12...)
 # A metric lowers indices and is a (0,2) tensor; its inverse raises them and is
 # a (2,0) one. Its variance is what says which of the two it is, so an
 # un-varianced one is rejected.
-ω2    = ExteriorFormValue{1,cov2}((1.0, 2.0))
-v2    = ExteriorVectorValue{1,con2}((1.0, 2.0))
+ω2    = CoVectorValue{cov2}((1.0, 2.0))
+v2    = ContraVectorValue{con2}((1.0, 2.0))
 v2_un = VectorValue(1.0, 2.0)
 g_id  = SymTensorValue{2}(1.0, 0.0, 1.0)
 g_lo  = SymTensorValue{cov2}(1.0, 0.0, 1.0)
@@ -454,7 +454,7 @@ g_up  = SymTensorValue{con2}(1.0, 0.0, 1.0)
 
 # A `VectorValue` is taken as contravariant, but the result still carries a variance
 @test flat(v2_un, g_lo) ≈ flat(v2, g_lo)
-@test flat(v2_un, g_lo) isa ExteriorFormValue{1,cov2}
+@test flat(v2_un, g_lo) isa CoVectorValue{cov2}
 
 # metric errors
 @test_throws ArgumentError sharp(v2, g_up)
@@ -467,9 +467,9 @@ g_up  = SymTensorValue{con2}(1.0, 0.0, 1.0)
 gd  = SymTensorValue{cov2,Float64,3}(2.0, 0.0, 3.0)
 gdi = inv(gd)
 sdg = sqrt(6.0)
-for v in (ExteriorVectorValue{1,con2}((1.0, 0.0)), ExteriorVectorValue{1,con2}((0.7, -0.3)))
+for v in (ContraVectorValue{con2}((1.0, 0.0)), ContraVectorValue{con2}((0.7, -0.3)))
   star_v = hodge_star(v, gd)
-  @test star_v isa ExteriorVectorValue{1,con2}
+  @test star_v isa ContraVectorValue{con2}
   # agrees with the form-side star transported by the musical isomorphisms
   @test star_v ≈ sharp(hodge_star(flat(v, gd), gdi), gdi)
   # ⋆⋆ = (-1)^{K(D-K)} = -1 for K = 1, D = 2
@@ -488,9 +488,9 @@ end
 @test_throws ErrorException hodge_star(SkewSymKTensorValue{Int,1,2}((1.0, 2.0)), gd)
 
 # Each result carries the variance its own index ends up with
-@test flat(v2, g_lo)            isa ExteriorFormValue{1,cov2}
-@test hodge_star(ω2, g_up, 1.0) isa ExteriorFormValue{1,cov2}
-@test sharp(ω2, g_up)           isa ExteriorVectorValue{1,con2}
+@test flat(v2, g_lo)            isa CoVectorValue{cov2}
+@test hodge_star(ω2, g_up, 1.0) isa CoVectorValue{cov2}
+@test sharp(ω2, g_up)           isa ContraVectorValue{con2}
 
 # ==================================================================
 # Adjoint, transpose and permutedims
@@ -588,11 +588,11 @@ end
 @test (t_cov ⊗ t_cov) isa HighOrderTensorValue{Tuple{cov2,cov2,cov2,cov2}}
 
 # Contracting away every index of one operand leaves the other's variance
-@test (t_mix2 ⋅ ω1) isa ExteriorFormValue{1,cov2}
-@test (ω13 ⋅ TensorValue{con3,cov3}(1:9...)) isa ExteriorFormValue{1,cov3}
-# An order-1 contravariant result is an `ExteriorVectorValue{1}`
-@test (TensorValue{con2,con2}(1:4...) ⋅ ω1) isa ExteriorVectorValue{1,con2}
-@test (TensorValue{con2,con2}(1:4...) ⋅ ω1) == ExteriorVectorValue{1,con2}((7,10))
+@test (t_mix2 ⋅ ω1) isa CoVectorValue{cov2}
+@test (ω13 ⋅ TensorValue{con3,cov3}(1:9...)) isa CoVectorValue{cov3}
+# An order-1 contravariant result is an `ContraVectorValue`
+@test (TensorValue{con2,con2}(1:4...) ⋅ ω1) isa ContraVectorValue{con2}
+@test (TensorValue{con2,con2}(1:4...) ⋅ ω1) == ContraVectorValue{con2}((7,10))
 
 # Dimension zero, contracted or not
 z22 = TensorValue{cov2,con0,Int}(())
@@ -648,32 +648,32 @@ h4 = HighOrderTensorValue{Tuple{con2,cov3,cov2,con3}}(reshape(1:36,2,3,2,3))
 
 # The aliases fix the variance parameter, so they are distinct types
 @test ExteriorFormValue !== ExteriorVectorValue
-@test ExteriorFormValue{1,3,Int,3} <: SkewSymKTensorValue
-@test ExteriorVectorValue{1,3,Int,3} <: SkewSymKTensorValue
-@test !(ExteriorVectorValue{1,3,Int,3} <: ExteriorFormValue)
+@test CoVectorValue{3,Int,3} <: SkewSymKTensorValue
+@test ContraVectorValue{3,Int,3} <: SkewSymKTensorValue
+@test !(ContraVectorValue{3,Int,3} <: ExteriorFormValue)
 
 # The constructors give the dimension the variance of the alias when it is
 # given as a plain `Int`, and refuse to change an opposite one
-ω_1 = ExteriorFormValue{1,3}((1,2,3))
-v_1 = ExteriorVectorValue{1,3}((1,2,3))
-@test typeof(ω_1) === ExteriorFormValue{1,cov3,Int,3}
-@test typeof(v_1) === ExteriorVectorValue{1,con3,Int,3}
-@test typeof(ExteriorVectorValue{1,con3}((1,2,3))) === typeof(v_1)
-@test_throws AssertionError ExteriorVectorValue{1,cov3}((1,2,3))
+ω_1 = CoVectorValue{3}((1,2,3))
+v_1 = ContraVectorValue{3}((1,2,3))
+@test typeof(ω_1) === CoVectorValue{cov3,Int,3}
+@test typeof(v_1) === ContraVectorValue{con3,Int,3}
+@test typeof(ContraVectorValue{con3}((1,2,3))) === typeof(v_1)
+@test_throws AssertionError ContraVectorValue{cov3}((1,2,3))
 @test typeof(SkewSymKTensorValue{Con,1,3,Int,3}(1,2,3)) === typeof(v_1)
 @test size(v_1) == (con3,)
 @test tensor_type(typeof(v_1)) == (1,0,0)
 @test tensor_type(typeof(ExteriorVectorValue{2,3}((1,2,3)))) == (2,0,0)
 
-@test_throws AssertionError ExteriorVectorValue{1,3}((1,2))
+@test_throws AssertionError ContraVectorValue{3}((1,2))
 @test_throws AssertionError SkewSymKTensorValue{Con,1,3,Int,3}(1,2)
 
 # The whole interface follows the variance
 @test num_indep_components(ExteriorVectorValue{2,con3}) == 3
 @test zero(ExteriorVectorValue{2,3,Float64}) === ExteriorVectorValue{2,con3}((0.0,0.0,0.0))
 @test one(ExteriorVectorValue{0,3,Float64}) === 1.0
-@test change_eltype(typeof(v_1), Float64) === ExteriorVectorValue{1,con3,Float64,3}
-@test change_eltype(typeof(ω_1), Float64) === ExteriorFormValue{1,cov3,Float64,3}
+@test change_eltype(typeof(v_1), Float64) === ContraVectorValue{con3,Float64,3}
+@test change_eltype(typeof(ω_1), Float64) === CoVectorValue{cov3,Float64,3}
 
 # Indexing and expansion to the full tensor do not depend on the variance
 v_2 = ExteriorVectorValue{2,3}((1,2,3))
@@ -690,7 +690,7 @@ v_2 = ExteriorVectorValue{2,3}((1,2,3))
 
 # Values of the two variances mix in no other way
 @test_throws ErrorException v_1 + ω_1
-@test_throws ErrorException convert(ExteriorFormValue{1,3,Float64}, v_1)
+@test_throws ErrorException convert(CoVectorValue{3,Float64}, v_1)
 
 # A vector is displayed on the frame dual to the coframe of a form
 _str_v(io_props, a) = sprint((io, x) -> show(io, MIME("text/plain"), x), a;
@@ -701,7 +701,7 @@ _str_v(io_props, a) = sprint((io, x) -> show(io, MIME("text/plain"), x), a;
 @test occursin("∂₁ ∧ ∂₂", _str_v(:coordinates => :cartesian, v_2))
 @test_throws ArgumentError _str_v(:coordinates => :something_else, v_1)
 
-@test indep_components_names(ExteriorVectorValue{1,con3}) == ["∂₁", "∂₂", "∂₃"]
+@test indep_components_names(ContraVectorValue{con3}) == ["∂₁", "∂₂", "∂₃"]
 @test indep_components_names(ExteriorVectorValue{2,con3}) ==
       ["∂₁ ∧ ∂₂", "∂₁ ∧ ∂₃", "∂₂ ∧ ∂₃"]
 

@@ -117,9 +117,9 @@ function _tensor_base_type_expr(Nr,Sr)
     if D isa Int
       :( VectorValue{$(Sr[1])} )
     elseif D isa Cov
-      :( ExteriorFormValue{1,$(Sr[1])} )
+      :( CoVectorValue{$(Sr[1])} )
     elseif D isa Con
-      :( ExteriorVectorValue{1,$(Sr[1])} )
+      :( ContraVectorValue{$(Sr[1])} )
     else
       :( @unreachable )
     end

@@ -160,7 +160,7 @@ end
 
 # VectorValue is assumed contravariant for the interior product
 function interior_product(v::VectorValue{D}, ω::ExteriorFormValue) where D
-  contra_v = ExteriorVectorValue{1,D}(Tuple(v))
+  contra_v = ContraVectorValue{D}(Tuple(v))
   interior_product(contra_v, ω)
 end
 const ι = interior_product
@@ -332,10 +332,10 @@ const ⋆ = hodge_star
 # ============================================================
 # Musical isomorphisms  ♭ (flat) and ♯ (sharp)
 #
-# flat  (♭):  ExteriorVectorValue{1,D} → ExteriorFormValue{1,D}
+# flat  (♭):  ContraVectorValue{D} → CoVectorValue{D}
 #   (v♭)_i = Σ_j g_{ij} v^j           (lowers an index)
 #
-# sharp (♯):  ExteriorFormValue{1,D} → ExteriorVectorValue{1,D}
+# sharp (♯):  CoVectorValue{D} → ContraVectorValue{D}
 #   (ω♯)^i = Σ_j g^{ij} ω_j           (raises an index)
 # ============================================================
 
@@ -355,16 +355,16 @@ metric `g`, resulting into a covector (1-form).
   Dv isa Con || return :(throw(ArgumentError("flat undefined for 1-tensor that is not contravariant, got $Dv")))
   D = Int(Dv)
   Dcov = inverse_variance(Dv)
-  iszero(D) && return :( zero(ExteriorFormValue{1,$Dcov,$(Base.promote_op(*,Tg,Tv))}) )
+  iszero(D) && return :( zero(CoVectorValue{$Dcov,$(Base.promote_op(*,Tg,Tv))}) )
 
   comps = [Expr(:call, :+, (:(g[$i,$j] * v[$j]) for j in 1:D)...) for i in 1:D]
   quote
     (; g) = parse_metric_data(g_or_ginv)
-    ExteriorFormValue{1,$Dcov}(($(comps...),))
+    CoVectorValue{$Dcov}(($(comps...),))
   end
 end
 function flat(v::VectorValue{D}, g_or_ginv::SymTensorValue) where D
-  contra_v = ExteriorVectorValue{1,D}(Tuple(v))
+  contra_v = ContraVectorValue{D}(Tuple(v))
   flat(contra_v, g_or_ginv)
 end
 
@@ -385,12 +385,12 @@ inverse metric `g_inv`, resulting into a contravariant vector.
   Dw isa Cov || return :(throw(ArgumentError("sharp undefined for 1-tensor that is not covariant, got $Dw")))
   D = Int(Dw)
   Dcon = inverse_variance(Dw)
-  iszero(D) && return :( zero(ExteriorVectorValue{1,$Dcon,$(Base.promote_op(*,Tg,Tw))}) )
+  iszero(D) && return :( zero(ContraVectorValue{$Dcon,$(Base.promote_op(*,Tg,Tw))}) )
 
   comps = [Expr(:call, :+, (:(g_inv[$i,$j] * indep_comp_getindex(ω,$j)) for j in 1:D)...) for i in 1:D]
   quote
     (; g_inv) = parse_metric_data(g_or_ginv)
-    ExteriorVectorValue{1,$Dcon}(($(comps...),))
+    ContraVectorValue{$Dcon}(($(comps...),))
   end
 end
 
@@ -420,7 +420,7 @@ Each vector must be a size `(D, )` tensor. Behaves like `getindex` for scalar `K
 end
 function apply_tensor(ω::ExteriorFormValue{K}, vs::Vararg{VectorValue{D},K}) where {K,D}
   K == 0 && return ω[1]
-  contra_vs = map(vi -> ExteriorVectorValue{1,D}(Tuple(vi)), vs)
+  contra_vs = map(vi -> ContraVectorValue{D}(Tuple(vi)), vs)
   apply_tensor(ω, contra_vs...)
 end
 
@@ -593,7 +593,7 @@ const ⊙ᴱ = flat_inner
 
 
 # ============================================================
-# Isomorphism: VectorValue{D} ↔ ExteriorFormValue{1,D}
+# Isomorphism: VectorValue{D} ↔ CoVectorValue{D}
 #
 # In a flat Euclidean space, 1-forms and vectors are identified
 # via the standard inner product.  These conversions let you
@@ -625,18 +625,18 @@ end
 """
     to_1form(v::VectorValue{D})
 
-Conversion of `v` to a 1-form, a `ExteriorFormValue{1,D}`, assuming Euclidean space
+Conversion of `v` to a 1-form, a `CoVectorValue{D}`, assuming Euclidean space
 (the metric tensor is the iddentity matrix).
 """
-to_1form(v::VectorValue{D,T}) where {D,T} = ExteriorFormValue{1,D,T}(Tuple(v))
+to_1form(v::VectorValue{D,T}) where {D,T} = CoVectorValue{D,T}(Tuple(v))
 
 """
-    from_1form(ω::ExteriorFormValue{1})
+    from_1form(ω::CoVectorValue)
 
 Conversion of the 1-form value `ω` to a `VectorValue{D}`, assuming Euclidean space
 (the metric tensor is the iddentity matrix).
 """
-from_1form(ω::ExteriorFormValue{1,D,T}) where {D,T} = VectorValue{Int(D),T}(Tuple(ω))
+from_1form(ω::CoVectorValue{D,T}) where {D,T} = VectorValue{Int(D),T}(Tuple(ω))
 
 # General K-form ↔ VectorValue{binomial(D,K)} (component-wise isomorphism)
 

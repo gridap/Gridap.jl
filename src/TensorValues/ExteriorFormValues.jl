@@ -47,7 +47,21 @@ basis `{∂_I}`.
 `:coordinates` is `:barycentric`.
 """
 const ExteriorVectorValue{K,D,T,L} = SkewSymKTensorValue{Con,K,D,T,L}
-#const _UnvariancedSkewSymKTensorValue{K,D,T,L} = SkewSymKTensorValue{Int,K,D,T,L}
+
+"""
+    CoVectorValue{D,T,L} = ExteriorFormValue{1,D,T,L}
+
+Alias for a covector (1-form) value. `D = Cov(L)` holds.
+"""
+const CoVectorValue{D,T,L} = ExteriorFormValue{1,D,T,L}
+
+"""
+    ContraVectorValue{D,T,L} = ExteriorVectorValue{1,D,T,L}
+
+Alias for a contravariant vector (1-vector) value. Needed because `VectorValue`
+cannot carry the variance in it's dimension type parameter. `D = Con(L)` holds.
+"""
+const ContraVectorValue{D,T,L} = ExteriorVectorValue{1,D,T,L}
 
 ###############################################################
 # Constructors (SkewSymKTensorValue)

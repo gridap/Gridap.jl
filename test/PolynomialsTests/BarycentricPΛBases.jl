@@ -597,8 +597,8 @@ end
 
   # Project an ambient barycentric 1-form (dλ¹,…,dλᴺ) to the physical D = N−1
   # frame by imposing dλ¹ = −dλ² − … − dλᴺ: phys[j] = c[j+1] − c[1].
-  reduce_ambient(ω::ExteriorFormValue{1,N}) where N =
-      ExteriorFormValue{1,N-1}(ntuple(j -> ω.data[j+1] - ω.data[1], N-1))
+  reduce_ambient(ω::CoVectorValue{N}) where N =
+      CoVectorValue{N-1}(ntuple(j -> ω.data[j+1] - ω.data[1], N-1))
 
   # ── Oracles (identical formulas to the basis testsets) ───────────────────────
 
@@ -616,7 +616,7 @@ end
   function oracle_eval(f::Vector{Int}, k::Int, α::Vector{Int}, x)   # untrimmed
       λ = to_barycentric(x); N = length(λ)
       val = multinomial(α...) * prod(λ[i]^α[i] for i in 1:N)
-      ω = ExteriorFormValue{1,N}(Tuple(rotating_psi(f, k, α, N)))
+      ω = CoVectorValue{N}(Tuple(rotating_psi(f, k, α, N)))
       val * reduce_ambient(ω)
   end
 
@@ -632,7 +632,7 @@ end
   function oracle_eval_afw(f::Vector{Int}, k::Int, α::Vector{Int}, x)
       λ = to_barycentric(x); N = length(λ)
       val = multinomial(α...) * prod(λ[i]^α[i] for i in 1:N)
-      ω = ExteriorFormValue{1,N}(Tuple(afw_phi(f, k, α, N)))
+      ω = CoVectorValue{N}(Tuple(afw_phi(f, k, α, N)))
       val * reduce_ambient(ω)
   end
 
@@ -641,7 +641,7 @@ end
       e1, e2 = e
       c = zeros(eltype(λ), N); c[e2] += λ[e1]; c[e1] -= λ[e2]
       val = prod(λ[i]^α[i] for i in 1:N)   # BARE monomial λ^α, the :BMM scaling
-      val * reduce_ambient(ExteriorFormValue{1,N}(Tuple(c)))
+      val * reduce_ambient(CoVectorValue{N}(Tuple(c)))
   end
 
   # Trimmed :AFW are trimmed :BMM times |α|/α!
@@ -805,8 +805,8 @@ end
 
   # Project an ambient barycentric 1-form (dλ¹,…,dλᴺ) to the physical D = N−1
   # frame by imposing dλ¹ = −dλ² − … − dλᴺ: phys[j] = c[j+1] − c[1].
-  reduce_ambient(ω::ExteriorFormValue{1,N}) where N =
-      ExteriorFormValue{1,N-1}(ntuple(j -> ω.data[j+1] - ω.data[1], N-1))
+  reduce_ambient(ω::CoVectorValue{N}) where N =
+      CoVectorValue{N-1}(ntuple(j -> ω.data[j+1] - ω.data[1], N-1))
 
   # ψ(f,k,α) = dλᵏ − (𝟙[k∈supp(α)] / |supp(α)|) · Σ_{i∈f} dλⁱ
   # returned as a coefficient vector in the AMBIENT (D+1)-dim barycentric frame
@@ -857,7 +857,7 @@ end
   function rotating_eval(f::Vector{Int}, k::Int, α::NTuple{N,Int}, x) where N
       λ   = to_barycentric(x)
       val = multinomial(α...) * prod(λ[i]^α[i] for i in 1:N)
-      ω   = ExteriorFormValue{1,N}(Tuple(rotating_psi(f, k, α)))
+      ω   = CoVectorValue{N}(Tuple(rotating_psi(f, k, α)))
       val * reduce_ambient(ω)
   end
 
@@ -920,7 +920,7 @@ end
           key = (f, k, collect(α))
           @test haskey(pkg_index, key)
           pkg_ψ    = collect(pkg_basis.Ψ[pkg_index[key]].data)
-          oracle_ψ = collect(reduce_ambient(ExteriorFormValue{1,D+1}(Tuple(rotating_psi(f, k, α)))).data)
+          oracle_ψ = collect(reduce_ambient(CoVectorValue{D+1}(Tuple(rotating_psi(f, k, α)))).data)
           @test pkg_ψ ≈ oracle_ψ atol=1e-12
       end
   end
@@ -961,8 +961,8 @@ end
 
   # Project an ambient barycentric 1-form (dλ¹,…,dλᴺ) to the physical D = N−1
   # frame by imposing dλ¹ = −dλ² − … − dλᴺ: phys[j] = c[j+1] − c[1].
-  reduce_ambient(ω::ExteriorFormValue{1,N}) where N =
-      ExteriorFormValue{1,N-1}(ntuple(j -> ω.data[j+1] - ω.data[1], N-1))
+  reduce_ambient(ω::CoVectorValue{N}) where N =
+      CoVectorValue{N-1}(ntuple(j -> ω.data[j+1] - ω.data[1], N-1))
 
   # ϕ(e1,e2;λ) = λ^{e1} dλ^{e2} − λ^{e2} dλ^{e1}, returned as a coefficient vector in
   # the AMBIENT (D+1)-dim barycentric frame dλ¹,…,dλ^{D+1} at the barycentric
@@ -1009,7 +1009,7 @@ end
       λ      = to_barycentric(x)
       e1, e2 = e
       val    = prod(λ[i]^α[i] for i in 1:N)   # bare monomial, i.e. flavor=:BMM
-      ω      = ExteriorFormValue{1,N}(Tuple(trimmed_phi(e1, e2, N, λ)))
+      ω      = CoVectorValue{N}(Tuple(trimmed_phi(e1, e2, N, λ)))
       val * reduce_ambient(ω)
   end
 

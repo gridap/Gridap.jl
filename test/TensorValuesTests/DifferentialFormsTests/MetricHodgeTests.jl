@@ -65,13 +65,13 @@ g_diag     = SymTensorValue{cov2,Float64,3}(p, 0.0, q)
 g_inv_diag = inv(g_diag) # con2
 sdg_diag   = sqrt(p*q)
 
-dx1 = ExteriorFormValue{1,2}((1.0, 0.0))
-dx2 = ExteriorFormValue{1,2}((0.0, 1.0))
+dx1 = CoVectorValue{2}((1.0, 0.0))
+dx2 = CoVectorValue{2}((0.0, 1.0))
 
 star_dx1 = hodge_star(dx1, g_inv_diag, sdg_diag)
 star_dx2 = hodge_star(dx2, g_inv_diag, sdg_diag)
 
-@test typeof(star_dx1) <: ExteriorFormValue{1,cov2}
+@test typeof(star_dx1) <: CoVectorValue{cov2}
 @test collect(star_dx1.data) ≈ [0.0, sqrt(q/p)]    atol=1e-12   # √(q/p) dx²
 @test collect(star_dx2.data) ≈ [-sqrt(p/q), 0.0]   atol=1e-12   # -√(p/q) dx¹
 
@@ -110,7 +110,7 @@ for ω in [dx1, dx2]
 end
 
 # Generic 1-form
-omega_gen = ExteriorFormValue{1,2}((0.7, -0.3))
+omega_gen = CoVectorValue{2}((0.7, -0.3))
 s1 = hodge_star(omega_gen, g_inv, sdg)
 s2 = hodge_star(s1,        g_inv, sdg)
 @test collect(s2.data) ≈ collect((-1.0 * omega_gen).data)   atol=1e-10
@@ -154,7 +154,7 @@ for v in [e1, e2, VectorValue(1.5, -0.7)]
 end
 
 # Round-trip: flat(sharp(ω, g_inv), g) = ω
-for ω in [dx1, dx2, ExteriorFormValue{1,2}((0.4, -0.9))]
+for ω in [dx1, dx2, CoVectorValue{2}((0.4, -0.9))]
   ω_rt = flat(sharp(ω, g_inv_diag), g_diag)
   @test collect(ω_rt.data) ≈ collect(ω.data)   atol=1e-12
 end

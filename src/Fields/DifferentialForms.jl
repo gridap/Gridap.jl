@@ -116,12 +116,12 @@ function evaluate!(cache, dω::ExteriorDerivativeForm{K,D,F}, x::Point) where {K
   gvs = map((c,g) -> evaluate!(c, g, x), caches, grad_fields)
   # Accumulate using an explicit loop (map-reduce over tuple is type-stable)
   gv1  = gvs[1]
-  dfi1 = ExteriorFormValue{1,D}(gv1.data)
+  dfi1 = CoVectorValue{D}(gv1.data)
   kbi1 = ExteriorFormValue{K,D}(ntuple(j -> j == 1 ? 1.0 : 0.0, Val(L)))
   acc  = dfi1 ∧ kbi1
   for i in 2:L
     gv  = gvs[i]
-    dfi = ExteriorFormValue{1,D}(gv.data)
+    dfi = CoVectorValue{D}(gv.data)
     kbi = ExteriorFormValue{K,D}(ntuple(j -> j == i ? 1.0 : 0.0, Val(L)))
     acc = acc + (dfi ∧ kbi)
   end
@@ -243,11 +243,11 @@ function evaluate!(cache, δω::CodifferentialForm{K,D,F}, x::Point) where {K,D,
   end
 
   # d(⋆ω): same accumulation as ExteriorDerivativeForm but using star_grads
-  dfi1 = ExteriorFormValue{1,D}(star_grads[1].data)
+  dfi1 = CoVectorValue{D}(star_grads[1].data)
   kbm1 = ExteriorFormValue{D-K,D}(ntuple(j -> j == 1 ? 1.0 : 0.0, Val(L)))
   acc  = dfi1 ∧ kbm1
   for m in 2:L
-    dfi = ExteriorFormValue{1,D}(star_grads[m].data)
+    dfi = CoVectorValue{D}(star_grads[m].data)
     kbm = ExteriorFormValue{D-K,D}(ntuple(j -> j == m ? 1.0 : 0.0, Val(L)))
     acc = acc + (dfi ∧ kbm)
   end

@@ -119,7 +119,7 @@ f_vol = GenericField(_ -> 1.0)
 κω_vol = KoszulForm(ω_vol)
 c3 = return_cache(κω_vol, x0)
 κval2 = evaluate!(c3, κω_vol, x0)
-@test typeof(κval2) <: ExteriorFormValue{1,cov2}
+@test typeof(κval2) <: CoVectorValue{cov2}
 # ι_{(2,3)}(dx¹∧dx²): d[1] = -x₀[2] = -3, d[2] = x₀[1] = 2
 @test collect(κval2.data) ≈ [-3.0, 2.0]   atol=1e-12
 
@@ -167,7 +167,7 @@ pb_fld = pullback(φ_fld, ω_target, Val(2))
 ξ0  = Point(1.0, 1.0)
 cpb = return_cache(pb_fld, ξ0)
 pb_val = evaluate!(cpb, pb_fld, ξ0)
-@test typeof(pb_val) <: ExteriorFormValue{1,cov2}
+@test typeof(pb_val) <: CoVectorValue{cov2}
 # φ*(x¹dx¹+x²dx²) = aξ¹·(adξ¹) + bξ²·(bdξ²) = a²ξ¹dξ¹ + b²ξ²dξ²
 # At ξ=(1,1): (a², b²) = (4, 9)
 @test collect(pb_val.data) ≈ [a^2, b^2]   atol=1e-8

@@ -216,7 +216,7 @@ function codifferential end
     d_0form(f) = to_1form(∇(f))
 
 Discrete exterior derivative of a scalar (0-form) cell field.
-Returns a `ExteriorFormValue{1,D}`-valued `OperationCellField`.
+Returns a `CoVectorValue{D}`-valued `OperationCellField`.
 """
 d_0form(f) = to_1form(∇(f))
 

@@ -518,6 +518,16 @@ c = s4ot + 0
 r = SymFourthOrderTensorValue(1,0,0, 0,.5,0, 0,0,1)
 @test c == r
 
+# Interraction with UniformScaling
+@test_throws "" a + LinearAlgebra.I
+c = t + LinearAlgebra.I
+@test c == t + one(t)
+c = one(SymTensorValue{2,Float64}) - LinearAlgebra.I
+@test c == zero(c)
+@test_throws "" qt  + LinearAlgebra.I
+@test_throws "" sk  + LinearAlgebra.I
+@test_throws "" s4ot + LinearAlgebra.I
+
 # Dot product (simple contraction)
 
 a = VectorValue(1,2,3)

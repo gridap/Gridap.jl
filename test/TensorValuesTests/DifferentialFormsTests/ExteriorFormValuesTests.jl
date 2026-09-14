@@ -10,16 +10,16 @@ using Test
 # ── Construction for all (K,D) up to D=4 ─────────────────────────────────────
 
 ExteriorFormValue{0,2}((1,))
-ExteriorFormValue{1,2}((1,2))
+CoVectorValue{2}((1,2))
 ExteriorFormValue{2,2}((1,))
 
 ExteriorFormValue{0,3}((1,))
-ExteriorFormValue{1,3}((1,2,3))
+CoVectorValue{3}((1,2,3))
 ExteriorFormValue{2,3}((1,2,3))
 ExteriorFormValue{3,3}((1,))
 
 ExteriorFormValue{0,4}((1,))
-ExteriorFormValue{1,4}((1,2,3,4))
+CoVectorValue{4}((1,2,3,4))
 ExteriorFormValue{2,4}((1,2,3,4,5,6))
 ExteriorFormValue{3,4}((1,2,3,4))
 ExteriorFormValue{4,4}((1,))
@@ -27,20 +27,20 @@ ExteriorFormValue{4,4}((1,))
 # ── Constructor family ───────────────────────────────────────────────────────
 
 # Homogeneous NTuple, with and without an explicit component type
-@test isa(ExteriorFormValue{1,3}((1,2,3)),            ExteriorFormValue{1,cov3,Int,3})
-@test isa(ExteriorFormValue{1,3,Float64}((1,2,3)),    ExteriorFormValue{1,cov3,Float64,3})
-@test isa(ExteriorFormValue{1,3,Float64,3}((1,2,3)),  ExteriorFormValue{1,cov3,Float64,3})
-@test isa(ExteriorFormValue{1,3,Float64,3}((1.,2.,3.)), ExteriorFormValue{1,cov3,Float64,3})
+@test isa(CoVectorValue{3}((1,2,3)),            CoVectorValue{cov3,Int,3})
+@test isa(CoVectorValue{3,Float64}((1,2,3)),    CoVectorValue{cov3,Float64,3})
+@test isa(CoVectorValue{3,Float64,3}((1,2,3)),  CoVectorValue{cov3,Float64,3})
+@test isa(CoVectorValue{3,Float64,3}((1.,2.,3.)), CoVectorValue{cov3,Float64,3})
 
 # Heterogeneous Tuple: promoted, or converted to the requested type
-@test isa(ExteriorFormValue{1,3}((1,2.0,3)),          ExteriorFormValue{1,cov3,Float64,3})
-@test isa(ExteriorFormValue{1,3,Int}((1,2.0,3)),      ExteriorFormValue{1,cov3,Int,3})
-@test isa(ExteriorFormValue{1,3,Int,3}((1,2.0,3)),    ExteriorFormValue{1,cov3,Int,3})
+@test isa(CoVectorValue{3}((1,2.0,3)),          CoVectorValue{cov3,Float64,3})
+@test isa(CoVectorValue{3,Int}((1,2.0,3)),      CoVectorValue{cov3,Int,3})
+@test isa(CoVectorValue{3,Int,3}((1,2.0,3)),    CoVectorValue{cov3,Int,3})
 
 # Vararg
-@test ExteriorFormValue{1,3}(1,2.0,3)       == ExteriorFormValue{1,cov3}((1.0,2.0,3.0))
-@test ExteriorFormValue{1,3,Int}(1,2.0,3)   == ExteriorFormValue{1,cov3}((1,2,3))
-@test ExteriorFormValue{1,3,Int,3}(1,2.0,3) == ExteriorFormValue{1,cov3}((1,2,3))
+@test CoVectorValue{3}(1,2.0,3)       == CoVectorValue{cov3}((1.0,2.0,3.0))
+@test CoVectorValue{3,Int}(1,2.0,3)   == CoVectorValue{cov3}((1,2,3))
+@test CoVectorValue{3,Int,3}(1,2.0,3) == CoVectorValue{cov3}((1,2,3))
 
 # A single scalar is a full 0-form and a full D-form
 @test isa(ExteriorFormValue{0,3}(1),   ExteriorFormValue{0,cov3,Int,1})
@@ -55,10 +55,10 @@ ExteriorFormValue{4,4}((1,))
 @test isa(ExteriorFormValue{4,3,Int,0}(),    ExteriorFormValue{4,cov3,Int,0})
 @test isa(ExteriorFormValue{4,3,Int,0}(()),  ExteriorFormValue{4,cov3,Int,0})
 
-@test_throws AssertionError ExteriorFormValue{1,cov3}((1,2))
-@test_throws AssertionError ExteriorFormValue{1,cov3,Int}((1,2))
-@test_throws AssertionError ExteriorFormValue{1,cov3,Int,2}((1,2))
-@test_throws AssertionError ExteriorFormValue{1,cov3,Int,2}(1,2)
+@test_throws AssertionError CoVectorValue{cov3}((1,2))
+@test_throws AssertionError CoVectorValue{cov3,Int}((1,2))
+@test_throws AssertionError CoVectorValue{cov3,Int,2}((1,2))
+@test_throws AssertionError CoVectorValue{cov3,Int,2}(1,2)
 @test_throws AssertionError ExteriorFormValue{0,cov3}()
 @test_throws AssertionError ExteriorFormValue{0,cov3,Int}()
 
@@ -66,7 +66,7 @@ ExteriorFormValue{4,4}((1,))
 
 @test num_indep_components(ExteriorFormValue{0,cov2}) == 1
 @test num_indep_components(ExteriorFormValue{2,cov2}) == 1
-@test num_indep_components(ExteriorFormValue{1,cov3}) == 3
+@test num_indep_components(CoVectorValue{cov3}) == 3
 @test num_indep_components(ExteriorFormValue{2,cov3}) == 3
 @test num_indep_components(ExteriorFormValue{4,cov3}) == 0
 
@@ -94,7 +94,7 @@ A = convert(SArray{Tuple{3,3},Int}, ExteriorFormValue{2,3}((1,2,3)))
 @test eltype(convert(SArray{Tuple{3,3},Float64}, ExteriorFormValue{2,3}((1,2,3)))) == Float64
 
 # A 1-form gives back its components, a 0-form a zero-dimensional array
-@test convert(SArray{Tuple{3},Int}, ExteriorFormValue{1,3}((1,2,3))) == [1,2,3]
+@test convert(SArray{Tuple{3},Int}, CoVectorValue{3}((1,2,3))) == [1,2,3]
 @test convert(SArray{Tuple{},Int}, ExteriorFormValue{0,3}((7,)))[] == 7
 
 # The volume form is the Levi-Civita symbol scaled by its single component
@@ -107,8 +107,8 @@ A4 = convert(SArray{Tuple{3,3,3,3},Int}, ExteriorFormValue{4,3}())
 @test all(iszero, A4)
 
 # The wedge of two 1-forms expands to the antisymmetric part of their outer product
-a1 = ExteriorFormValue{1,4}((1,2,3,4))
-b1 = ExteriorFormValue{1,4}((5,6,7,8))
+a1 = CoVectorValue{4}((1,2,3,4))
+b1 = CoVectorValue{4}((5,6,7,8))
 va = convert(SArray{Tuple{4},Int}, a1)
 vb = convert(SArray{Tuple{4},Int}, b1)
 @test convert(SArray{Tuple{4,4},Int}, a1 ∧ b1) == va*transpose(vb) - vb*transpose(va)
@@ -124,8 +124,8 @@ vb = convert(SArray{Tuple{4},Int}, b1)
 
 # ── zero, +, -, * ────────────────────────────────────────────────────────────
 
-a3 = ExteriorFormValue{1,3}((1.0, 2.0, 3.0))
-b3 = ExteriorFormValue{1,3}((4.0, 5.0, 6.0))
+a3 = CoVectorValue{3}((1.0, 2.0, 3.0))
+b3 = CoVectorValue{3}((4.0, 5.0, 6.0))
 
 @test zero(a3).data == (0.0, 0.0, 0.0)
 @test (a3 + b3).data == (5.0, 7.0, 9.0)
@@ -143,40 +143,40 @@ s = 5.0
 # ∧ of 0-form and 1-forms in 2D
 D = cov2
 a = ExteriorFormValue{0,D}((4,))
-b = ExteriorFormValue{1,D}((1,1))
+b = CoVectorValue{D}((1,1))
 c = a ∧ b
-@test typeof(c) <: ExteriorFormValue{1,D}
+@test typeof(c) <: CoVectorValue{D}
 @test c.data == (4.0,4.0)
 
 # ∧ of 1-forms in 2D
-a = ExteriorFormValue{1,D}((0,1))
-b = ExteriorFormValue{1,D}((1,0))
+a = CoVectorValue{D}((0,1))
+b = CoVectorValue{D}((1,0))
 c = a ∧ b
 @test typeof(c) <: ExteriorFormValue{2,D}
 @test c.data == (-1.0,)
 
-a = ExteriorFormValue{1,D}((1,0))
-b = ExteriorFormValue{1,D}((0,1))
+a = CoVectorValue{D}((1,0))
+b = CoVectorValue{D}((0,1))
 @test (a ∧ b).data == (1.0,)
 
-a = ExteriorFormValue{1,D}((1,0))
-b = ExteriorFormValue{1,D}((1,0))
+a = CoVectorValue{D}((1,0))
+b = CoVectorValue{D}((1,0))
 @test (a ∧ b).data == (0.0,)
 
-a = ExteriorFormValue{1,D}((0,1))
-b = ExteriorFormValue{1,D}((0,1))
+a = CoVectorValue{D}((0,1))
+b = CoVectorValue{D}((0,1))
 @test (a ∧ b).data == (0.0,)
 
-a = ExteriorFormValue{1,D}((1,1))
-b = ExteriorFormValue{1,D}((1,1))
+a = CoVectorValue{D}((1,1))
+b = CoVectorValue{D}((1,1))
 @test (a ∧ b).data == (0.0,)
 
-a = ExteriorFormValue{1,D}((4,1))
-b = ExteriorFormValue{1,D}((1,1))
+a = CoVectorValue{D}((4,1))
+b = CoVectorValue{D}((1,1))
 @test (a ∧ b).data == (3.0,)
 
 # ∧ of 1-form and 2-form in 2D: K1+K2 = 3 > D = 2, result is the zero 3-form
-a = ExteriorFormValue{1,D}((4,1))
+a = CoVectorValue{D}((4,1))
 b = ExteriorFormValue{2,D}((1,))
 c = a ∧ b
 @test typeof(c) <: ExteriorFormValue{3,D}
@@ -191,23 +191,23 @@ c = a ∧ b
 
 # 3D wedges
 D = cov3
-a = ExteriorFormValue{1,D}((0,0,1))
-b = ExteriorFormValue{1,D}((1,0,0))
+a = CoVectorValue{D}((0,0,1))
+b = CoVectorValue{D}((1,0,0))
 c = a ∧ b
 @test typeof(c) <: ExteriorFormValue{2,D}
 @test c.data == (0.0,-1.0,0.0)
 
-a = ExteriorFormValue{1,D}((1,0,0))
-b = ExteriorFormValue{1,D}((1,1,0))
+a = CoVectorValue{D}((1,0,0))
+b = CoVectorValue{D}((1,1,0))
 @test (a ∧ b).data == (1.0,0.0,0.0)
 
-a = ExteriorFormValue{1,D}((1,0,0))
+a = CoVectorValue{D}((1,0,0))
 b = ExteriorFormValue{2,D}((1,1,0))
 c = a ∧ b
 @test typeof(c) <: ExteriorFormValue{3,D}
 @test c.data == (0.0,)
 
-a = ExteriorFormValue{1,D}((0,0,1))
+a = CoVectorValue{D}((0,0,1))
 b = ExteriorFormValue{2,D}((1,0,0))
 @test (a ∧ b).data == (1.0,)
 
@@ -223,8 +223,8 @@ D2 = 2
 e1 = VectorValue(1.0, 0.0)
 e2 = VectorValue(0.0, 1.0)
 
-dx1_2d = ExteriorFormValue{1,D2}((1.0, 0.0))
-dx2_2d = ExteriorFormValue{1,D2}((0.0, 1.0))
+dx1_2d = CoVectorValue{D2}((1.0, 0.0))
+dx2_2d = CoVectorValue{D2}((0.0, 1.0))
 
 # ι_eᵢ(dxʲ) = δᵢʲ  (0-form = scalar)
 r11 = ι(e1, dx1_2d);  @test typeof(r11) <: ExteriorFormValue{0,cov2};  @test r11.data == (1.0,)
@@ -234,7 +234,7 @@ r21 = ι(e2, dx1_2d);  @test r21.data == (0.0,)
 
 # ι_e₁(dx¹∧dx²) = dx², ι_e₂(dx¹∧dx²) = -dx¹
 vol2 = ExteriorFormValue{2,D2}((1.0,))
-rv1  = ι(e1, vol2);  @test typeof(rv1) <: ExteriorFormValue{1,cov2};  @test rv1.data == (0.0, 1.0)
+rv1  = ι(e1, vol2);  @test typeof(rv1) <: CoVectorValue{cov2};  @test rv1.data == (0.0, 1.0)
 rv2  = ι(e2, vol2);  @test rv2.data == (-1.0, 0.0)
 
 # In 3D: ι_e₁(dx¹∧dx²∧dx³) = dx²∧dx³
@@ -249,9 +249,9 @@ r3   = ι(e13, vol3)
 # ── Hodge star (flat Euclidean) ──────────────────────────────────────────────
 
 # 3D: ⋆dx¹ = dx²∧dx³,  ⋆dx² = -dx¹∧dx³,  ⋆dx³ = dx¹∧dx²
-dx1_3d = ExteriorFormValue{1,D3}((1.0, 0.0, 0.0))
-dx2_3d = ExteriorFormValue{1,D3}((0.0, 1.0, 0.0))
-dx3_3d = ExteriorFormValue{1,D3}((0.0, 0.0, 1.0))
+dx1_3d = CoVectorValue{D3}((1.0, 0.0, 0.0))
+dx2_3d = CoVectorValue{D3}((0.0, 1.0, 0.0))
+dx3_3d = CoVectorValue{D3}((0.0, 0.0, 1.0))
 
 @test flat_hodge_star(dx1_3d).data == (0.0,  0.0,  1.0)    # dx²∧dx³
 @test flat_hodge_star(dx2_3d).data == (0.0, -1.0,  0.0)    # -dx¹∧dx³
@@ -277,7 +277,7 @@ svol3 = flat_hodge_star(vol3)
 # ⋆dx¹ = dx², ⋆dx² = -dx¹  (standard 2D orientation)
 sdx1_2d = flat_hodge_star(dx1_2d)
 sdx2_2d = flat_hodge_star(dx2_2d)
-@test typeof(sdx1_2d) <: ExteriorFormValue{1,cov2}
+@test typeof(sdx1_2d) <: CoVectorValue{cov2}
 @test sdx1_2d.data == (0.0, 1.0)    # 0*dx¹ + 1*dx²
 @test sdx2_2d.data == (-1.0, 0.0)   # -1*dx¹ + 0*dx²
 
@@ -326,8 +326,8 @@ sdg_fi   = 1 / sqrt(det(g_inv_fi))
 
 for (α, β) in [(ExteriorFormValue{0,D3}((7.0,)),
                 ExteriorFormValue{0,D3}((3.0,))),
-               (ExteriorFormValue{1,D3}((1.0, 2.0, 3.0)),
-                ExteriorFormValue{1,D3}((4.0, 5.0, 6.0))),
+               (CoVectorValue{D3}((1.0, 2.0, 3.0)),
+                CoVectorValue{D3}((4.0, 5.0, 6.0))),
                (ExteriorFormValue{2,D3}((1.0, 2.0, 3.0)),
                 ExteriorFormValue{2,D3}((4.0, 5.0, 6.0))),
                (ExteriorFormValue{3,D3}((2.0,)),
@@ -366,8 +366,8 @@ g5_inv = SymTensorValue{con6}(symmetric_part(diagonal_tensor(d5))...)
 
 # A 0-form has no index to contract
 ω0_fi = ExteriorFormValue{0,D3}((2.0,))
-ω1_fi = ExteriorFormValue{1,D3}((1.0, 2.0, 3.0))
-@test outer(ω0_fi, ω1_fi) === ExteriorFormValue{1,D3}(2.0, 4.0, 6.0)
+ω1_fi = CoVectorValue{D3}((1.0, 2.0, 3.0))
+@test outer(ω0_fi, ω1_fi) === CoVectorValue{D3}(2.0, 4.0, 6.0)
 @test_throws DimensionMismatch contracted_product(Val(1), ω0_fi, ω1_fi)
 
 # ── Display: coframe labelling ───────────────────────────────────────────────
@@ -375,7 +375,7 @@ g5_inv = SymTensorValue{con6}(symmetric_part(diagonal_tensor(d5))...)
 _str(io_props, ω) = sprint((io, x) -> show(io, MIME("text/plain"), x), ω;
                            context = io_props)
 
-ω_show = ExteriorFormValue{1,D3}((1.0, 2.0, 3.0))
+ω_show = CoVectorValue{D3}((1.0, 2.0, 3.0))
 @test _str(:coordinates => :cartesian,   ω_show) == "1.0 dx¹ + 2.0 dx² + 3.0 dx³"
 @test _str(:coordinates => :barycentric, ω_show) == "1.0 dλ¹ + 2.0 dλ² + 3.0 dλ³"
 # Cartesian labelling is the default when the property is absent
@@ -390,7 +390,7 @@ _str(io_props, ω) = sprint((io, x) -> show(io, MIME("text/plain"), x), ω;
 @test occursin("dx¹ ∧ dx²", _str(:coordinates => :cartesian,   ω2_show))
 @test occursin("dλ¹ ∧ dλ²", _str(:coordinates => :barycentric, ω2_show))
 
-@test indep_components_names(ExteriorFormValue{1,D3}) == ["dx¹", "dx²", "dx³"]
+@test indep_components_names(CoVectorValue{D3}) == ["dx¹", "dx²", "dx³"]
 @test indep_components_names(ExteriorFormValue{2,D3}) ==
       ["dx¹ ∧ dx²", "dx¹ ∧ dx³", "dx² ∧ dx³"]
 
@@ -398,8 +398,8 @@ _str(io_props, ω) = sprint((io, x) -> show(io, MIME("text/plain"), x), ω;
 
 # The eltype comes from the arithmetic on the components, so it follows the
 # usual promotion of the scalar types of the arguments.
-a_i  = ExteriorFormValue{1,D3,Int}((1,2,3))
-b_f  = ExteriorFormValue{1,D3,Float32}((1f0,2f0,3f0))
+a_i  = CoVectorValue{D3,Int}((1,2,3))
+b_f  = CoVectorValue{D3,Float32}((1f0,2f0,3f0))
 v_i  = VectorValue{D3,Int}(1,2,3)
 g_f  = SymTensorValue{Cov(D3),Float32}(1f0,0f0,0f0,1f0,0f0,1f0)
 gif  = inv(g_f)
@@ -441,15 +441,15 @@ triv = ExteriorFormValue{4,D3,Float32}(())
 # the vectors take part in the promotion even though no term survives
 @test (@inferred apply_tensor(triv, v_i, v_i, v_i, VectorValue{D3,Float64}(1,2,3))) === zero(Float64)
 @test apply_tensor(ExteriorFormValue{4,D3,Int}(()), v_i, v_i, v_i, v_i) === zero(Int)
-@test apply_tensor(ExteriorFormValue{1,0,Float32}(()), VectorValue{0,Float32}()) === zero(Float32)
+@test apply_tensor(CoVectorValue{0,Float32}(()), VectorValue{0,Float32}()) === zero(Float32)
 @test flat_form_inner(triv, ExteriorFormValue{4,D3,Int}(())) === zero(Float32)
 @test form_inner(triv, ExteriorFormValue{4,D3,Int}(()), gif) === zero(Float32)
 # the conversions name the eltype, so it survives an empty container
 @test to_Kform(VectorValue{0,Float32}(()), Val(4), Val(D3)) ===
       zero(ExteriorFormValue{4,D3,Float32})
 @test from_Kform(triv) === zero(VectorValue{0,Float32})
-@test to_1form(VectorValue{0,Float32}()) === zero(ExteriorFormValue{1,0,Float32})
-@test from_1form(ExteriorFormValue{1,0,Float32}(())) === zero(VectorValue{0,Float32})
+@test to_1form(VectorValue{0,Float32}()) === zero(CoVectorValue{0,Float32})
+@test from_1form(CoVectorValue{0,Float32}(())) === zero(VectorValue{0,Float32})
 
 # ⋆ of such a form would be a Λ^(D-K) with D-K < 0, which is not a type
 @test_throws ErrorException flat_hodge_star(triv)
