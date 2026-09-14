@@ -294,6 +294,8 @@ Euclidean.
 flat_hodge_star
 flat_alt_inner
 flat_inner
+flat_flat
+flat_sharp
 ```
 
 ### Conversions to and from `MultiValue`s

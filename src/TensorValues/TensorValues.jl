@@ -35,7 +35,9 @@ $(public_names_in_md(@__MODULE__; change_link=Dict(
   :⋆  => "hodge_star",
   :⋆ᴱ => "flat_hodge_star",
   :♭  => "flat",
+  :♭ᴱ => "flat_flat",
   :♯  => "sharp",
+  :♯ᴱ => "flat_sharp",
   :⨟  => "alt_inner",
   :⨟ᴱ => "flat_alt_inner",
   :⊙ᴱ => "flat_inner"
@@ -126,7 +128,9 @@ export alt_inner, ⨟
 export flat_alt_inner, ⨟ᴱ
 export flat_inner, ⊙ᴱ
 export flat, ♭
+export flat_flat, ♭ᴱ
 export sharp, ♯
+export flat_sharp, ♯ᴱ
 export apply_tensor
 export pullback
 export symbolic_coordinates

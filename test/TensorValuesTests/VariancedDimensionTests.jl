@@ -468,6 +468,30 @@ g_up  = SymTensorValue{con2}(1.0, 0.0, 1.0)
 @test_throws DimensionMismatch sharp(ω2, SymTensorValue{con3}(1.,0.,0.,1.,0.,1.))
 @test_throws DimensionMismatch flat(v2, SymTensorValue{cov3}(1.,0.,0.,1.,0.,1.))
 
+# `LinearAlgebra.I` (a `UniformScaling`) selects the Euclidean (identity
+# metric) version of each operator, without needing a `SymTensorValue`
+@test hodge_star(ω2, I)     ≈ flat_hodge_star(ω2)
+@test flat(v2, I)           ≈ flat(v2, g_lo)
+@test sharp(ω2, I)          ≈ sharp(ω2, g_up)
+@test alt_inner(ω2, ω2, I)  ≈ alt_inner(ω2, ω2, g_up)
+@test alt_inner(v2, v2, I)  ≈ alt_inner(v2, v2, g_lo)
+@test flat(v2, I) isa CoVectorValue{cov2}
+@test sharp(ω2, I) isa ContraVectorValue{con2}
+
+# `flat_flat`/`flat_sharp` are the Euclidean musical isomorphisms directly,
+# inverses of each other, and reject the wrong variance like `flat`/`sharp` do
+@test flat_flat(v2)  ≈ ω2
+@test flat_sharp(ω2) ≈ v2
+@test flat_sharp(flat_flat(v2)) === v2
+@test flat_flat(flat_sharp(ω2)) === ω2
+@test flat_flat(v2_un) ≈ flat_flat(v2)
+@test_throws ArgumentError flat_flat(ω2)
+@test_throws ArgumentError flat_sharp(v2)
+
+# the flat operators alias the non-flat symbol suffixed by ᴱ, like flat_hodge_star/⋆ᴱ
+@test ♭ᴱ(v2) === flat_flat(v2)
+@test ♯ᴱ(ω2) === flat_sharp(ω2)
+
 # `hodge_star` keeps the variance of `ω`: it raises the indices of a form with
 # `g_inv` and scales by √|det(g)|, and does the dual for a K-vector
 gd  = SymTensorValue{cov2,Float64,3}(2.0, 0.0, 3.0)

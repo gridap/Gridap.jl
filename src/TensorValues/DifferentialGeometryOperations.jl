@@ -325,7 +325,7 @@ passing `LinearAlgebra.I`.
   end
 end
 
-function hodge_star(a::MultiValue{NTuple{K,D}}, g_or_ginv, sqrt_abs_g=nothing) where {K,D}
+function hodge_star(a::MultiValue{NTuple{K,D}}, g_or_ginv::SymTensorValue, sqrt_abs_g=nothing) where {K,D}
   hodge_star(𝔸(a), g_or_ginv, sqrt_abs_g)
 end
 
@@ -346,6 +346,7 @@ const ⋆ = hodge_star
 """
     flat(v::VectorValue,          g_or_ginv::SymTensorValue)
     flat(v::MultiValue{Tuple{D}}, g_or_ginv::SymTensorValue)
+    flat(v, LinearAlgebra.I) = flat_flat(v)
     ♭(v, g_or_ginv)
 
 Musical isomorphism ♭: lower the index of the contravariant vector `v` with the
@@ -353,6 +354,9 @@ metric `g`, resulting into a covector (1-form).
 
 `g_or_ginv` is either the metric tensor `g` (covariant) or its inverse `g_inv`
 (contravariant), see [`parse_metric_data`](@ref).
+
+See also [`flat_flat(v)`](@ref) for the Euclidean version, accessible by
+passing `LinearAlgebra.I`.
 """
 @generated function flat(v::MultiValue{Tuple{Dv},Tv}, g_or_ginv::SymTensorValue{Dg,Tg}) where {Dv,Dg,Tv,Tg}
   Dg == Dv || return :(throw(DimensionMismatch()))
@@ -372,10 +376,38 @@ function flat(v::VectorValue{D}, g_or_ginv::SymTensorValue) where D
   flat(contra_v, g_or_ginv)
 end
 
+flat(v::MultiValue, ::UniformScaling) = flat_flat(v)
+
 const ♭ = flat
 
 """
+    flat_flat(v::VectorValue{D})
+    flat_flat(v::MultiValue{Tuple{D}})
+    ♭ᴱ(v)
+
+Musical isomorphism ♭ in Euclidean space, that is [`flat`](@ref) with the
+identity metric: the covector (1-form) with the same components as the
+contravariant vector `v`. Unlike [`to_1form`](@ref), `v` may already carry its
+contravariant variance, and the result always carries the covariant one.
+"""
+@generated function flat_flat(v::MultiValue{Tuple{Dv},Tv}) where {Dv,Tv}
+  Dv isa Con || return :(throw(ArgumentError("flat_flat undefined for 1-tensor that is not contravariant, got $Dv")))
+  D = Int(Dv)
+  Dcov = inverse_variance(Dv)
+  iszero(D) && return :( zero(CoVectorValue{$Dcov,$Tv}) )
+
+  comps = [:( v[$i] ) for i in 1:D]
+  :( CoVectorValue{$Dcov}(($(comps...),)) )
+end
+function flat_flat(v::VectorValue{D}) where D
+  contra_v = ContraVectorValue{D}(Tuple(v))
+  flat_flat(contra_v)
+end
+const ♭ᴱ = flat_flat
+
+"""
     sharp(ω, g_or_ginv::SymTensorValue{D})
+    sharp(ω, LinearAlgebra.I) = flat_sharp(ω)
     ♯(ω, g_or_ginv)
 
 Musical isomorphism `♯`: raise the index of the covector (1-form) `ω` with the
@@ -383,6 +415,9 @@ inverse metric `g_inv`, resulting into a contravariant vector.
 
 `g_or_ginv` is either the metric tensor `g` (covariant) or its inverse `g_inv`
 (contravariant), see [`parse_metric_data`](@ref).
+
+See also [`flat_sharp(ω)`](@ref) for the Euclidean version, accessible by
+passing `LinearAlgebra.I`.
 """
 @generated function sharp(ω::MultiValue{Tuple{Dw},Tw}, g_or_ginv::SymTensorValue{Dg,Tg}) where {Dg,Dw,Tw,Tg}
   Dg == Dw || return :(throw(DimensionMismatch()))
@@ -398,7 +433,29 @@ inverse metric `g_inv`, resulting into a contravariant vector.
   end
 end
 
+sharp(ω::MultiValue, ::UniformScaling) = flat_sharp(ω)
+
 const ♯ = sharp
+
+"""
+    flat_sharp(ω::MultiValue{Tuple{D}})
+    ♯ᴱ(ω)
+
+Musical isomorphism ♯ in Euclidean space, that is [`sharp`](@ref) with the
+identity metric: the contravariant vector with the same components as the
+covector (1-form) `ω`. Unlike [`from_1form`](@ref), the result carries its
+contravariant variance rather than being un-varianced.
+"""
+@generated function flat_sharp(ω::MultiValue{Tuple{Dw},Tw}) where {Dw,Tw}
+  Dw isa Cov || return :(throw(ArgumentError("flat_sharp undefined for 1-tensor that is not covariant, got $Dw")))
+  D = Int(Dw)
+  Dcon = inverse_variance(Dw)
+  iszero(D) && return :( zero(ContraVectorValue{$Dcon,$Tw}) )
+
+  comps = [:( indep_comp_getindex(ω,$i) ) for i in 1:D]
+  :( ContraVectorValue{$Dcon}(($(comps...),)) )
+end
+const ♯ᴱ = flat_sharp
 
 """
     apply_tensor(ω::ExteriorFormValue{K,D,T}, v₁, …, vₖ) → scalar
@@ -526,6 +583,7 @@ end
 """
     alt_inner(a::ExteriorFormValue{K,D},   b::ExteriorFormValue{K,D},   g_or_ginv::SymTensorValue{D})
     alt_inner(a::ExteriorVectorValue{K,D}, b::ExteriorVectorValue{K,D}, g_or_ginv::SymTensorValue{D})
+    alt_inner(a, b, LinearAlgebra.I) = flat_alt_inner(a, b)
     ⨟(a,b)
     a ⨟ b
 
@@ -537,8 +595,10 @@ that, for two `K`-forms,
 `g_or_ginv` is either the metric tensor `g` (covariant) or its inverse `g_inv`
 (contravariant), see [`parse_metric_data`](@ref). A `K`-form pair is
 contracted through `g_inv`, raising the indices of `b` as `hodge_star` does; a
-`K`-vector pair is contracted through `g`, lowering them instead. See
-[`flat_alt_inner`](@ref) for the identity metric.
+`K`-vector pair is contracted through `g`, lowering them instead.
+
+See also [`flat_alt_inner`](@ref) for the Euclidean version, accessible by
+passing `LinearAlgebra.I`.
 """
 @generated function alt_inner(a::SkewSymKTensorValue{V,K,Dw,Ta}, b::SkewSymKTensorValue{V,K,Dw,Tb},
                               g_or_ginv::SymTensorValue{Dg,Tg}) where {V,K,Dg,Dw,Ta,Tb,Tg}
@@ -559,6 +619,10 @@ contracted through `g_inv`, raising the indices of `b` as `hodge_star` does; a
     $(_sum_expr(terms, T))
   end
 end
+
+alt_inner(a::SkewSymKTensorValue{V,K,D}, b::SkewSymKTensorValue{V,K,D}, ::UniformScaling) where {V,K,D} =
+  flat_alt_inner(a, b)
+
 const ⨟ = alt_inner
 
 """
