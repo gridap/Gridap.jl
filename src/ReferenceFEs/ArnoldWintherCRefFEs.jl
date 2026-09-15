@@ -44,7 +44,7 @@ At each vertex `v` the three independent components,
 per edge `e`, with unit tangent `t`, normal `n = R t` and `μᵢ` the
 L²(e)-orthonormal Legendre basis,
 
-    ℓ^{nn,i}_e(τ) = ∫ₑ (n⋅τn) μᵢ ds,    ℓ^{nt,i}_e(τ) = ∫ₑ (n⋅τt) μᵢ ds,   i = 0, 1
+    ℓ^{nn,i}_e(τ) = ∫ₑ (n⋅τ⋅n) μᵢ ds,    ℓ^{nt,i}_e(τ) = ∫ₑ (n⋅τ⋅t) μᵢ ds,   i = 0, 1
 
 and over the cell the same three components,
 

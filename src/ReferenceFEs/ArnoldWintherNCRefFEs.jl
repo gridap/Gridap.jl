@@ -21,7 +21,7 @@ Pushforward(::Type{ArnoldWintherNC}) = DoubleContraVariantPiolaMap()
 The nonconforming Arnold--Winther reference FE on the triangle `K`, with `T` the
 scalar type: 15 DoFs and, writing `S` for the symmetric 2×2 matrices,
 
-    AWnc(K) = {τ ∈ P₂(K;S) : (n⋅τn)|ₑ ∈ P₁(e) ∀ e ⊂ ∂K}
+    AWnc(K) = {τ ∈ P₂(K;S) : (n⋅τ⋅n)|ₑ ∈ P₁(e) ∀ e ⊂ ∂K}
 
 of dimension 15 [Arnold & Winther, M3AS 13 (2003) 295].
 
@@ -31,7 +31,7 @@ Implementation follows the augmented element approach of [Kirby, SMAI-JCM 4 (201
 
 The prebasis is taken as `P₂(K;S)`, of dimension 18, with constraints
 
-    ∫ₑ (n⋅τn) μ ds = 0    ∀ μ ∈ P₂(e) ∩ P₁(e)^⊥,  ∀ e ⊂ ∂K
+    ∫ₑ (n⋅τ⋅n) μ ds = 0    ∀ μ ∈ P₂(e) ∩ P₁(e)^⊥,  ∀ e ⊂ ∂K
 
 enforced using moments, yielding the 15 DoFs of the nonconforming Arnold--Winther element.
 
@@ -40,8 +40,8 @@ enforced using moments, yielding the 15 DoFs of the nonconforming Arnold--Winthe
 Per edge `e`, with unit tangent `t`, normal `n = R t` and `μᵢ` the
 L²(e)-orthonormal Legendre basis:
 
-    ℓ^{nn,i}_e(τ) = ∫ₑ (n⋅τn) μᵢ ds,    i = 0, 1
-    ℓ^{nt,i}_e(τ) = ∫ₑ (n⋅τt) μᵢ ds,    i = 0, 1
+    ℓ^{nn,i}_e(τ) = ∫ₑ (n⋅τ⋅n) μᵢ ds,    i = 0, 1
+    ℓ^{nt,i}_e(τ) = ∫ₑ (n⋅τ⋅t) μᵢ ds,    i = 0, 1
 
 four per edge; and over the cell the three independent components,
 
@@ -55,7 +55,7 @@ function ArnoldWintherNCRefFE(::Type{T}, p::Polytope{D}) where {T,D}
   prebasis = BernsteinBasisOnSimplex(Val(2), SymTensorValue{2,T}, 2)
   fb = LegendreBasis(Val(1), T, 1)                            # μ₀, μ₁ : the DoF weights
   # μ₂ : the constraint, the degree-2 Legendre polynomial alone. It spans
-  # P₂(e) ∩ P₁(e)^⊥, so the single moment against it states (n⋅τn)|ₑ ∈ P₁(e).
+  # P₂(e) ∩ P₁(e)^⊥, so the single moment against it states (n⋅τ⋅n)|ₑ ∈ P₁(e).
   gb = LegendreBasis(Val(1), T, 2, Polynomials._p_complement_filter(1))
   cb = MonomialBasis(Val(2), T, 0, Polynomials._p_filter)                 # the constant on the cell
   Ei = (
@@ -141,7 +141,7 @@ end
 
 # Both AW elements are mapped by the double contravariant Piola map
 # τ = det(J)⁻² J τ̂ Jᵀ, and both carry the same four edge DoFs -- the degree 0 and
-# 1 moments of n⋅τn and of n⋅τt. Those give one 4×4 block per edge, in the DoF
+# 1 moments of n⋅τ⋅n and of n⋅τ⋅t. Those give one 4×4 block per edge, in the DoF
 # order (nn0, nn1, nt0, nt1),
 #
 #   W = [1/L  0    0  0;  0  1/L  0  0;  α  0  β  0;  0  α  0  β],
@@ -154,7 +154,7 @@ end
 # The conforming element adds a 3×3 block per vertex, det(J)⁻² times the matrix
 # of H ↦ J H Jᵀ, i.e. `_congruence_matrix` with A = J rather than the A = J⁻ᵀ the
 # Argyris Hessian block uses. Both DoF kinds are invariant under reversing an
-# edge -- n⋅τn is quadratic in n, n⋅τt bilinear with both flipping -- so only the
+# edge -- n⋅τ⋅n is quadratic in n, n⋅τ⋅t bilinear with both flipping -- so only the
 # parity of the Legendre weight enters σ.
 
 function _aw_edge_blocks!(M, tangents, normals, edge_dofs, Jt, σ, transposed_inverse)

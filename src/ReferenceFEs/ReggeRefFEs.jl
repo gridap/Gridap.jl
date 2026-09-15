@@ -40,16 +40,16 @@ Per edge `e` with unit tangent `t` and `μᵢ` the L²(e)-orthonormal Legendre b
 of `P_r(e)`, the tangential--tangential moments; over the cell, the moments
 against a basis `{τ}` of `P_{r-1}(K;S)`:
 
-    ℓ^{e,i}(M) = ∫ₑ (t⋅Mt) μᵢ ds,    i = 0 … r
+    ℓ^{e,i}(M) = ∫ₑ (t⋅M⋅t) μᵢ ds,    i = 0 … r
     ℓ^{K,τ}(M) = ∫_K M ⊙ τ dK
 
 `3(r+1) + 3r(r+1)/2 = 3(r+1)(r+2)/2`. The edge DoFs are the ones that glue: they
 give the tangential--tangential continuity Regge needs, while the full tensor
 jump stays O(1). At `r = 0` there are no interior moments.
 
-`t⋅Mt` is quadratic in `t`, so its sign is irrelevant and no orientation
+`t⋅M⋅t` is quadratic in `t`, so its sign is irrelevant and no orientation
 convention is needed at all — the same freedom [`HHJRefFE`](@ref) has with
-`n⋅ϕn`.
+`n⋅ϕ⋅n`.
 """
 function ReggeRefFE(::Type{T}, p::Polytope{D}, order::Integer) where {T,D}
   @notimplementedif !(D == 2 && is_simplex(p)) """\n
@@ -64,7 +64,7 @@ function ReggeRefFE(::Type{T}, p::Polytope{D}, order::Integer) where {T,D}
   fb = LegendreBasis(Val(1), T, order)  # μ₀..μ_r on the edge, μᵢ of parity (-1)ⁱ
   cb = order > 0 ? BernsteinBasisOnSimplex(Val(2), S, order - 1) : nothing
 
-  function fmom(φ, μ, ds)  # σ_e(M,μ) = ∫ₑ (t⋅Mt) μ ds
+  function fmom(φ, μ, ds)  # σ_e(M,μ) = ∫ₑ (t⋅M⋅t) μ ds
     t = get_edge_tangent(ds)
     Mt = Broadcasting(Operation(⋅))(φ, t)
     Mtt = Broadcasting(Operation(⋅))(Mt, t)

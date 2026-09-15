@@ -158,7 +158,7 @@ function test_regge_dofs(r)
   own = get_face_own_dofs(reffe)
   ndofs = num_dofs(reffe)
 
-  # The edge DoFs are ∫ₑ (t⋅Mt) μᵢ ds against the Legendre basis
+  # The edge DoFs are ∫ₑ (t⋅M⋅t) μᵢ ds against the Legendre basis
   μb = LegendreBasis(Val(1), Float64, r)
   quad = Quadrature(SEGMENT, 12)
   ŝ = get_coordinates(quad)

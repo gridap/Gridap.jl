@@ -17,14 +17,14 @@ const gls = GopalakrishnanLedererSchoberl()
 
 Pushforward(::Type{GopalakrishnanLedererSchoberl}) = CoContraVariantPiolaMap()
 
-# The tensor t ⊗ n of the current edge of `ds`, so that M ⊙ (t⊗n) = t⋅Mn. Here
+# The tensor t ⊗ n of the current edge of `ds`, so that M ⊙ (t⊗n) = t⋅M⋅n. Here
 # n = R t, which is what makes the pair flip together under a reversal of the
 # edge and the functional invariant.
 _gls_tn(ds) = ConstantField(outer(get_edge_tangent(ds).value,
                                   _rot90(get_edge_tangent(ds).value)))
 
 """
-    GLSRefFE(::Type{T}, p::Polytope{2}, order::Integer)
+    GLSRefFE(::Type{T}, K::Polytope{2}, order::Integer)
 
 The Gopalakrishnan--Lederer--Schoberl reference FE of the second kind, degree
 `r = order` on the triangle `K`, with `T` the scalar type. Writing `M₀` for the
@@ -52,8 +52,8 @@ L²(e)-orthonormal Legendre basis of `P_r(e)`; and over the cell, the same
 normal-tangential functional of each edge's frame against a basis `{q}` of
 `P_{r-1}(K)`:
 
-    ℓ^{e,i}(M)   = ∫ₑ (t⋅Mn) μᵢ ds,     i = 0 … r
-    ℓ^{K,e,q}(M) = ∫_K (t_e⋅Mn_e) q dK
+    ℓ^{e,i}(M)   = ∫ₑ (t⋅M⋅n) μᵢ ds,     i = 0 … r
+    ℓ^{K,e,q}(M) = ∫_K (t_e⋅M⋅n_e) q dK
 
 """
 function GLSRefFE(::Type{T}, p::Polytope{D}, order::Integer) where {T,D}
@@ -69,7 +69,7 @@ function GLSRefFE(::Type{T}, p::Polytope{D}, order::Integer) where {T,D}
   # DoF moments
   fb = LegendreBasis(Val(1), T, order)                       # μ₀..μ_r on an edge
   cb = order > 0 ? BernsteinBasisOnSimplex(Val(2), T, order - 1) : nothing
-  ntmom(φ, μ, ds) = Broadcasting(Operation(*))(              # ∫ₑ (t⋅Mn) μ ds
+  ntmom(φ, μ, ds) = Broadcasting(Operation(*))(              # ∫ₑ (t⋅M⋅n) μ ds
     Broadcasting(Operation(⊙))(φ, _gls_tn(ds)), μ
   )
   # the interior moments test with each edge's own (t⊗n), a fixed reference

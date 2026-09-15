@@ -157,7 +157,7 @@ function test_hhj_dofs(r)
   own = get_face_own_dofs(reffe)
   ndofs = num_dofs(reffe)
 
-  # The edge DoFs are ∫ₑ (n⋅ϕn) μᵢ ds against the Legendre basis
+  # The edge DoFs are ∫ₑ (n⋅ϕ⋅n) μᵢ ds against the Legendre basis
   μb = LegendreBasis(Val(1), Float64, r)
   quad = Quadrature(SEGMENT, 12)
   ŝ = get_coordinates(quad)

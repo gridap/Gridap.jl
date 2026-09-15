@@ -168,7 +168,7 @@ function test_gls_dofs(r)
   own = get_face_own_dofs(reffe)
   ndofs = num_dofs(reffe)
 
-  # The edge DoFs are ∫ₑ (t⋅Mn) μᵢ ds against the Legendre basis
+  # The edge DoFs are ∫ₑ (t⋅M⋅n) μᵢ ds against the Legendre basis
   μb = LegendreBasis(Val(1), Float64, r)
   quad = Quadrature(SEGMENT, 12)
   ŝ = get_coordinates(quad)
@@ -186,7 +186,7 @@ function test_gls_dofs(r)
     end
   end
 
-  # The interior DoFs are ∫_K (t_e⋅Mn_e) q dK against P_{r-1}(K), one set per edge
+  # The interior DoFs are ∫_K (t_e⋅M⋅n_e) q dK against P_{r-1}(K), one set per edge
   if r > 0
     cb = BernsteinBasisOnSimplex(Val(2), Float64, r - 1)
     cq = Quadrature(TRI, 12)

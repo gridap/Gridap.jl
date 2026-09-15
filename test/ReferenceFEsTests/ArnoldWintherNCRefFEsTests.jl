@@ -138,7 +138,7 @@ reffe = ArnoldWintherNCRefFE(Float64, TRI)
 
 Ψ = get_shapefuns(reffe)
 
-# (n⋅τn)|ₑ ∈ P₁(e): the degree-2 Legendre moment vanishes on every edge
+# (n⋅τ⋅n)|ₑ ∈ P₁(e): the degree-2 Legendre moment vanishes on every edge
 μb2 = LegendreBasis(Val(1), Float64, 2)
 quad_e = Quadrature(SEGMENT, 10)
 ŝe = get_coordinates(quad_e)

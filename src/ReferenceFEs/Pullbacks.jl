@@ -381,13 +381,13 @@ end
 # times `(-1)ⁱ` when the cell traverses that edge against the global direction, and
 # `1` on the interior DoFs. `transposed_inverse` selects `P⁻ᵀ` over `P`.
 #
-# This covers every element whose edge DoF has the form `∫ₑ (a⋅Mb) μᵢ ds` for a
+# This covers every element whose edge DoF has the form `∫ₑ (a⋅M⋅b) μᵢ ds` for a
 # pair of directions carried dually by that element's push-forward — a normal and a
 # normal under the double contravariant map, two tangents under the double
 # covariant one, one of each under the co-contravariant one. In every case the
 # Jacobians cancel completely,
 #
-#     a⋅Mb = (â⋅M̂b̂) / ‖J t̂ₑ‖²,   ds = ‖J t̂ₑ‖ dŝ   ⟹   F∗(ℓ^{e,i}) = ℓ̂^{e,i} / ‖J t̂ₑ‖.
+#     a⋅M⋅b = (â⋅M̂⋅b̂) / ‖J t̂ₑ‖²,   ds = ‖J t̂ₑ‖ dŝ   ⟹   F∗(ℓ^{e,i}) = ℓ̂^{e,i} / ‖J t̂ₑ‖.
 #
 # That is not a coincidence. A Piola map is *chosen* so that its element's DoF is
 # invariant, so what is left over cannot depend on which pairing was picked — only
@@ -395,7 +395,7 @@ end
 # elements still need their own `compute_cell_bases_changes`, which dispatches on
 # the reference FE name and the push-forward.
 #
-# Since `a⋅Mb` is quadratic in the directions, or bilinear with both of them
+# Since `a⋅M⋅b` is quadratic in the directions, or bilinear with both of them
 # flipping, none of these elements needs a normal or tangent sign convention; the
 # only orientation effect is the parity of the weight, which is the `(-1)ⁱ` above.
 # At order 0 even that disappears.

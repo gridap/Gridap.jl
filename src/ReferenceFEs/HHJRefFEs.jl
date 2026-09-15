@@ -37,7 +37,7 @@ Per edge `e` with unit normal `n` and `μᵢ` the L²(e)-orthonormal Legendre ba
 of `P_r(e)`, the normal--normal moments; over the cell, the moments against a
 basis `{τ}` of `P_{r-1}(K;S)`:
 
-    ℓ^{e,i}(ϕ) = ∫ₑ (n⋅ϕn) μᵢ ds,    i = 0 … r
+    ℓ^{e,i}(ϕ) = ∫ₑ (n⋅ϕ⋅n) μᵢ ds,    i = 0 … r
     ℓ^{K,τ}(ϕ) = ∫_K ϕ ⊙ τ dK.
 
 """
@@ -54,7 +54,7 @@ function HHJRefFE(::Type{T}, p::Polytope{D}, order::Integer) where {T,D}
   fb = LegendreBasis(Val(1), T, order)  # μ₀..μ_r on the edge, μᵢ of parity (-1)ⁱ
   cb = order > 0 ? BernsteinBasisOnSimplex(Val(2), S, order - 1) : nothing
 
-  function fmom(φ, μ, ds)  # σ_e(ϕ,μ) = ∫ₑ (n⋅ϕn) μ ds
+  function fmom(φ, μ, ds)  # σ_e(ϕ,μ) = ∫ₑ (n⋅ϕ⋅n) μ ds
     n = get_facet_normal(ds)
     φn = Broadcasting(Operation(⋅))(φ, n)
     φnn = Broadcasting(Operation(⋅))(φn, n)
