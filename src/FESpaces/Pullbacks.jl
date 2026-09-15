@@ -207,6 +207,23 @@ function compute_facet_owners(model::DiscreteModel{Dc}, select_nbor=maximum) whe
   return owners
 end
 
+##############################
+# Edge orientation signs     #
+##############################
+
+function _edge_signs(model::DiscreteModel, p::Polytope{2})
+  cell_ledge_pindex = get_cell_permutations(get_grid_topology(model), 1)
+  nedges = num_faces(p, 1)
+
+  cache = array_cache(cell_ledge_pindex)
+  signs = Vector{NTuple{nedges,Float64}}(undef, length(cell_ledge_pindex))
+  for cell in eachindex(cell_ledge_pindex)
+    pinds = getindex!(cache, cell_ledge_pindex, cell)
+    signs[cell] = ntuple(e -> ifelse(isone(pinds[e]), 1.0, -1.0), nedges)
+  end
+  return signs
+end
+
 #################
 # DOFScalingMap #
 #################
@@ -497,4 +514,209 @@ function compute_pλ_cell_bases_changes(cell_verts, rc::RotationCache)
   cell_change = CompressedArray(pid_to_M, cell_to_pid)
   cell_change_invt = CompressedArray(pid_to_Minv, cell_to_pid)
   return (cell_change, cell_change_invt)
+end
+
+############################################################################################
+# Argyris
+
+function compute_cell_bases_changes(
+  ::Argyris, ::IdentityPiolaMap, model::DiscreteModel, cell_reffe, cell_Jt
+)
+  p = get_polytope(testitem(cell_reffe))
+  cell_σ = _edge_signs(model, p)
+
+  # The geometrical map is affine on simplices, so its Jacobian is constant.
+  x0 = Fill(first(get_vertex_coordinates(p)), length(cell_Jt))
+  cell_Jtx = lazy_map(evaluate, cell_Jt, x0)
+
+  cell_change = lazy_map(
+    ReferenceFEs.ArgyrisChangeOfBasis(p, false), cell_Jtx, cell_σ
+  )
+  cell_change_invt = lazy_map(
+    ReferenceFEs.ArgyrisChangeOfBasis(p, true), cell_Jtx, cell_σ
+  )
+  return (cell_change, cell_change_invt)
+end
+
+############################################################################################
+# Morley
+
+function compute_cell_bases_changes(
+  ::Morley, ::IdentityPiolaMap, model::DiscreteModel, cell_reffe, cell_Jt
+)
+  p = get_polytope(testitem(cell_reffe))
+  cell_σ = _edge_signs(model, p)
+
+  # The geometrical map is affine on simplices, so its Jacobian is constant.
+  x0 = Fill(first(get_vertex_coordinates(p)), length(cell_Jt))
+  cell_Jtx = lazy_map(evaluate, cell_Jt, x0)
+
+  cell_change = lazy_map(
+    ReferenceFEs.MorleyChangeOfBasis(p, false), cell_Jtx, cell_σ
+  )
+  cell_change_invt = lazy_map(
+    ReferenceFEs.MorleyChangeOfBasis(p, true), cell_Jtx, cell_σ
+  )
+  return (cell_change, cell_change_invt)
+end
+
+############################################################################################
+# HHJ, Regge and GLS
+
+# These three share `EdgeScalingChangeOfBasis` verbatim: each has an edge DoF of
+# the form ∫ₑ (a⋅Mb) μᵢ ds for a pair of directions carried dually by that
+# element's push-forward, so the Jacobians cancel and only 1/‖J t̂ₑ‖ is left. See
+# that type, in src/ReferenceFEs/Pullbacks.jl, for why the three coincide. The
+# interior DoFs are left as the push-forward of the reference ones -- they are
+# cell-owned and shared with nobody, so any per-cell convention gives the same
+# space, as Gridap already does for the cell moments of Raviart-Thomas and BDM.
+
+function _edge_scaling_cell_bases_changes(model::DiscreteModel, cell_reffe, cell_Jt)
+  reffe = testitem(cell_reffe)
+  p = get_polytope(reffe)
+  cell_σ = _edge_signs(model, p)
+
+  # The geometrical map is affine on simplices, so its Jacobian is constant.
+  x0 = Fill(first(get_vertex_coordinates(p)), length(cell_Jt))
+  cell_Jtx = lazy_map(evaluate, cell_Jt, x0)
+
+  cell_change = lazy_map(
+    ReferenceFEs.EdgeScalingChangeOfBasis(reffe, false), cell_Jtx, cell_σ
+  )
+  cell_change_invt = lazy_map(
+    ReferenceFEs.EdgeScalingChangeOfBasis(reffe, true), cell_Jtx, cell_σ
+  )
+  return (cell_change, cell_change_invt)
+end
+
+function compute_cell_bases_changes(
+  ::HellanHerrmannJohnson, ::ReferenceFEs.DoubleContraVariantPiolaMap,
+  model::DiscreteModel, cell_reffe, cell_Jt
+)
+  _edge_scaling_cell_bases_changes(model, cell_reffe, cell_Jt)
+end
+
+function compute_cell_bases_changes(
+  ::Regge, ::ReferenceFEs.DoubleCoVariantPiolaMap,
+  model::DiscreteModel, cell_reffe, cell_Jt
+)
+  _edge_scaling_cell_bases_changes(model, cell_reffe, cell_Jt)
+end
+
+function compute_cell_bases_changes(
+  ::GopalakrishnanLedererSchoberl, ::ReferenceFEs.CoContraVariantPiolaMap,
+  model::DiscreteModel, cell_reffe, cell_Jt
+)
+  _edge_scaling_cell_bases_changes(model, cell_reffe, cell_Jt)
+end
+
+############################################################################################
+# Arnold-Winther, conforming and nonconforming
+
+function compute_cell_bases_changes(
+  ::ArnoldWintherNC, ::ReferenceFEs.DoubleContraVariantPiolaMap,
+  model::DiscreteModel, cell_reffe, cell_Jt
+)
+  K = ReferenceFEs.AWNCChangeOfBasis
+  _aw_cell_bases_changes(K, model, cell_reffe, cell_Jt)
+end
+
+function compute_cell_bases_changes(
+  ::ArnoldWintherC, ::ReferenceFEs.DoubleContraVariantPiolaMap,
+  model::DiscreteModel, cell_reffe, cell_Jt
+)
+  K = ReferenceFEs.AWCChangeOfBasis
+  _aw_cell_bases_changes(K, model, cell_reffe, cell_Jt)
+end
+
+function _aw_cell_bases_changes(K, model::DiscreteModel, cell_reffe, cell_Jt)
+  reffe = testitem(cell_reffe)
+  p = get_polytope(reffe)
+  cell_σ = _edge_signs(model, p)
+
+  # The geometrical map is affine on simplices, so its Jacobian is constant.
+  x0 = Fill(first(get_vertex_coordinates(p)), length(cell_Jt))
+  cell_Jtx = lazy_map(evaluate, cell_Jt, x0)
+
+  cell_change = lazy_map(K(reffe, false), cell_Jtx, cell_σ)
+  cell_change_invt = lazy_map(K(reffe, true), cell_Jtx, cell_σ)
+  return (cell_change, cell_change_invt)
+end
+
+############################################################################################
+# Mardal-Tai-Winther, 2D and 3D
+#
+# The element is one family but its change of basis has two shapes, because the
+# mismatch between two cells sharing a facet is a *sign* in 2D and a
+# *permutation* in 3D: an edge has two orderings, a triangular face has 3! = 6.
+# `compute_cell_bases_changes` therefore branches on the polytope, feeding
+# `_edge_signs` in 2D and `get_cell_permutations(topo, 2)` in 3D. Both blocks are
+# closed form; neither inverts anything at run time.
+
+function compute_cell_bases_changes(
+  ::MardalTaiWinther, ::ContraVariantPiolaMap, model::DiscreteModel, cell_reffe, cell_Jt
+)
+  reffe = testitem(cell_reffe)
+  p = get_polytope(reffe)
+
+  # The geometrical map is affine on simplices, so its Jacobian is constant.
+  x0 = Fill(first(get_vertex_coordinates(p)), length(cell_Jt))
+  cell_Jtx = lazy_map(evaluate, cell_Jt, x0)
+
+  if num_dims(p) == 2
+    cell_σ = _edge_signs(model, p)
+    cell_change = lazy_map(
+      ReferenceFEs.MTWChangeOfBasis(p, false), cell_Jtx, cell_σ
+    )
+    cell_change_invt = lazy_map(
+      ReferenceFEs.MTWChangeOfBasis(p, true), cell_Jtx, cell_σ
+    )
+  else
+    cell_pids = get_cell_permutations(get_grid_topology(model), 2)
+    cell_change = lazy_map(
+      ReferenceFEs.TWChangeOfBasis(reffe, false), cell_Jtx, cell_pids
+    )
+    cell_change_invt = lazy_map(
+      ReferenceFEs.TWChangeOfBasis(reffe, true), cell_Jtx, cell_pids
+    )
+  end
+  return (cell_change, cell_change_invt)
+end
+
+############################################################################################
+# Cartesian products
+
+function _cp_cell_bases_changes(::Val{K}, pfs, model, cell_reffe, cell_Jt) where K
+  reffes = ReferenceFEs.get_metadata(testitem(cell_reffe))
+  ncells = length(cell_reffe)
+
+  changes = ntuple(K) do c
+    compute_cell_bases_changes(
+      get_name(reffes[c]), pfs[c], model, Fill(reffes[c], ncells), cell_Jt
+    )
+  end
+  all(isnothing, changes) && return nothing
+
+  eye(c) = Fill(Matrix{Float64}(I, num_dofs(reffes[c]), num_dofs(reffes[c])), ncells)
+  fwd = ntuple(c -> isnothing(changes[c]) ? eye(c) : changes[c][1], K)
+  bwd = ntuple(c -> isnothing(changes[c]) ? eye(c) : changes[c][2], K)
+  return (lazy_map(ReferenceFEs.CartProdBlockDiag(), fwd...),
+          lazy_map(ReferenceFEs.CartProdBlockDiag(), bwd...))
+end
+
+function compute_cell_bases_changes(
+  ::CartProd{K,NS}, pf::ReferenceFEs.CartProdPushforward{K},
+  model::DiscreteModel, cell_reffe, cell_Jt
+) where {K,NS}
+  pfs = ReferenceFEs._cp_maps(pf, Val(K))
+  _cp_cell_bases_changes(Val(K), pfs, model, cell_reffe, cell_Jt)
+end
+
+# every factor is identity-mapped, so the stack is too and the push-forward comes
+# back unwrapped
+function compute_cell_bases_changes(
+  ::CartProd{K,NS}, pf::IdentityPiolaMap, model::DiscreteModel, cell_reffe, cell_Jt
+) where {K,NS}
+  pfs = ReferenceFEs._cp_maps(pf, Val(K))
+  _cp_cell_bases_changes(Val(K), pfs, model, cell_reffe, cell_Jt)
 end

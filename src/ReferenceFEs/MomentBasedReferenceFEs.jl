@@ -285,10 +285,11 @@ function MomentBasedDofBasis(
       vals, coords = evaluate!(cache,σ,op_φ,μ,ds)
 
       mom_offset = face_n_moms[face]
+      row_offset = face_n_nodes[face]
       node_offset = first(face_nodes[face]) + face_n_nodes[face] - 1
       for i in axes(vals,1)
         for j in axes(vals,2)
-          face_moments[face][i,j+mom_offset] = V(vals[i,j,:]...)
+          face_moments[face][i+row_offset,j+mom_offset] = V(vals[i,j,:]...)
         end
         nodes[i+node_offset] = coords[i]
       end
@@ -388,6 +389,28 @@ end
 function get_edge_tangent(m::FaceMeasure{1,Dc}) where {Dc}
   t = get_edge_tangent(m.cpoly)
   return ConstantField(t[m.face])
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# The rotated edge frame `n = R t`
+# ─────────────────────────────────────────────────────────────────────────────
+# In 2D an edge admits a normal fixed by the direction in which the edge is
+# traversed rather than by which cell it bounds,
+#
+#   n = R t,   R = [0 1; -1 0]   (clockwise rotation),
+#
+# the convention of [Aznaran, Farrell & Kirby, SMAI-JCM 8 (2022) 399, §2.1].
+# It is NOT NECESSARILY the polytope's outward normal (e.g. for TRIs).
+#
+# This frame has some advantages as it keeps the sign of the normal consistent 
+# w.r.t to the edge's orientation.
+_rot90(t::VectorValue{2,T}) where T = VectorValue{2,T}(t[2], -t[1])
+
+_edge_normal(ds) = ConstantField(_rot90(get_edge_tangent(ds).value))
+
+function _edge_frames(p::Polytope{2})
+  ts = get_edge_tangent(p)
+  return (ts, map(_rot90, ts))
 end
 
 # Matrix of the contravariant piola map from `m.fpoly` to to the face `m.face`
@@ -533,3 +556,22 @@ function _mom_reffe_default_PT(p)
   Monomial
 end
 
+function restrict(b::MomentBasedDofBasis, ids::AbstractArray)
+  @check issorted(ids) && allunique(ids) """\n
+  `ids` must be sorted and unique, got $ids.
+  """
+  newid = Dict(id => i for (i, id) in enumerate(ids))
+
+  face_moments = similar(b.face_moments)
+  face_own_moms = [Int[] for _ in b.face_own_moms]
+  for f in eachindex(b.face_own_moms)
+    own = b.face_own_moms[f]
+    cols = findall(id -> haskey(newid, id), own)
+    face_moments[f] = b.face_moments[f][:, cols]
+    face_own_moms[f] = [newid[own[c]] for c in cols]
+  end
+
+  return MomentBasedDofBasis(
+    b.nodes, face_moments, b.face_nodes, face_own_moms, b.operator
+  )
+end

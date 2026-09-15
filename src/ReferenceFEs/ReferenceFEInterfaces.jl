@@ -314,8 +314,17 @@ function get_face_own_dofs_permutations(reffe::ReferenceFE, conf::Conformity)
   _trivial_face_own_dofs_permutations(face_own_dofs)
 end
 
+# Does not allow face permutations to exist (will error)
 function _trivial_face_own_dofs_permutations(face_own_dofs)
   [[collect(Int, 1:length(dofs)),] for dofs in face_own_dofs]
+end
+
+# Allows face permutations to exist (will return identity permutations)
+function _identity_dof_permutations(reffe::ReferenceFE, conf::Conformity)
+  face_own_dofs = get_face_own_dofs(reffe, conf)
+  vtx_perms = get_face_vertex_permutations(get_polytope(reffe))
+  [[collect(1:length(own)) for _ in vtx_perms[face]]
+   for (face, own) in enumerate(face_own_dofs)]
 end
 
 function get_face_own_dofs_permutations(reffe::ReferenceFE)

@@ -152,6 +152,24 @@ function Arrays.evaluate!(cache, b::ConcatenatedDofVector, field)
   r
 end
 
+"""
+    restrict(dofs::AbstractVector{<:Dof}, ids::AbstractArray)
+
+The sub-basis of `dofs` holding only the DoFs `ids`, which must be sorted and
+unique. The companion of [`vcat(::AbstractVector{<:Dof})`](@ref).
+"""
+function restrict(dofs::AbstractVector{<:Dof}, ids::AbstractArray)
+  @check issorted(ids) && allunique(ids) """\n
+  `ids` must be sorted and unique, got $ids.
+  """
+  # selecting is the linear combination whose matrix is the non-square diagonal
+  # values[ids[i],i] = 1, so that transpose(values)*dofs is dofs[ids]
+  values = zeros(Float64, length(dofs), length(ids))
+  for (i, id) in enumerate(ids)
+    values[id, i] = 1.0
+  end
+  linear_combination(values, dofs)
+end
 
 """
     struct MappedDofBasis{T<:Dof,MT,BT} <: AbstractVector{T}

@@ -14,4 +14,18 @@ using Test
   @time @testset "Elasticity - HHO (mixed order)" begin include("HHOMixedElasticity.jl") end
 end
 
+@testset "Fourth-order plate elements" begin
+  @time @testset "Biharmonic - Argyris" begin include("Argyris.jl") end
+  @time @testset "Biharmonic - Morley" begin include("Morley.jl") end
+  @time @testset "Kirchhoff plate - HHJ" begin include("HHJ.jl") end
+end
+
+@testset "Mixed elasticity" begin
+  @time @testset "Hellinger-Reissner - Arnold-Winther" begin include("ArnoldWinther.jl") end
+end
+
+@testset "Darcy-Stokes" begin
+  @time @testset "Mardal-Tai-Winther, 2D and 3D" begin include("MardalTaiWinther.jl") end
+end
+
 end

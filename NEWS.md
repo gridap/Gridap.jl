@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## New reffes
+
+### Added
+
+- Added `ArgyrisRefFE`, the quintic C¹-conforming Argyris triangle.
+- Added `MorleyRefFE`, the quadratic nonconforming Morley triangle.
+- Added `HHJRefFE`, `ReggeRefFE` and `GLSRefFE`: the Hellan-Herrmann-Johnson, Regge and Gopalakrishnan-Lederer-Schoberl (second kind) triangles, of any degree `r >= 0`, normal-normal, tangential-tangential and normal-tangential continuous respectively.
+- Added `DubinerBasis`, the L2-orthonormal (Dubiner/Koornwinder) polynomial basis of `P_K` on the reference simplex in any dimension.
+- Added `ArnoldWintherNCRefFE` and `ArnoldWintherCRefFE`, the nonconforming (15 DoFs, P2-based) and conforming (24 DoFs, P3-based) Arnold-Winther symmetric stress triangles for mixed elasticity. Both are built as constrained subspaces of a larger prebasis, so `length(get_prebasis(reffe)) > num_dofs(reffe)` for them.
+- Added `MardalTaiWintherRefFE`, the Mardal-Tai-Winther element on triangles (9 DoFs) and tetrahedra (24 DoFs).
+- Added the missing `product_rule` methods for `⋅` and `outer`.
+- Added `CartProdRefFE`, the Cartesian product of reference elements sharing a polytope and a value type, stacked along a new last index: `Float64` becomes `VectorValue{K}` and `VectorValue{d}` becomes `TensorValue{d,K}`.
+
 ## [Unreleased]
 
 ### Added
