@@ -13,63 +13,16 @@ Singleton of the [`Argyris`](@ref) reference FE name.
 """
 const argyris = Argyris()
 
-# Mapped by the plain pullback; this is also the default, stated for clarity.
 Pushforward(::Type{Argyris}) = IdentityPiolaMap()
 
-function _argyris_dof_basis(::Type{T}, p::Polytope{2}, prebasis) where T
-  c0 = MonomialBasis(Val(0), T, 0)  # the constant on a vertex
-  e0 = MonomialBasis(Val(1), T, 0)  # the constant on an edge
-  verts = get_dimrange(p, 0)
-  edges = get_dimrange(p, 1)
-
-  # Directions contracted with ∇u and ∇∇u to pick single components. `ConstantField`
-  # is what lifts a fixed value into a `Field`, which `Operation` needs; a bare
-  # `VectorValue` or `TensorValue` has no `evaluate!`.
-  Ei = (ConstantField(VectorValue(one(T), zero(T))),      # e₁
-        ConstantField(VectorValue(zero(T), one(T))))      # e₂
-  Eij = (ConstantField(TensorValue(one(T), zero(T), zero(T), zero(T))),   # e₁⊗e₁
-         ConstantField(TensorValue(zero(T), zero(T), one(T), zero(T))),   # e₁⊗e₂
-         ConstantField(TensorValue(zero(T), zero(T), zero(T), one(T))))   # e₂⊗e₂
-  Emom(E) = (φ, μ, ds) -> Broadcasting(Operation(*))(     # ∇u(v)⊙E or ∇∇u(v)⊙E
-    Broadcasting(Operation(⊙))(φ, E), μ
-  )
-
-  vmom(φ, μ, ds) = Broadcasting(Operation(*))(φ, μ)
-  function emom(φ, μ, ds)  # σ_e(∇u,μ) = ∫ₑ (∇u⋅n) μ ds
-    n = _edge_normal(ds)
-    Broadcasting(Operation(*))(Broadcasting(Operation(⋅))(φ, n), μ)
-  end
-
-  values = MomentBasedDofBasis(p, prebasis, Tuple[(verts, vmom, c0)])
-  grads = MomentBasedDofBasis(
-    p, prebasis, Tuple[(verts, Emom(E), c0) for E in Ei], ∇
-  )
-  hessians = MomentBasedDofBasis(
-    p, prebasis, Tuple[(verts, Emom(E), c0) for E in Eij], ∇∇
-  )
-  normals = MomentBasedDofBasis(p, prebasis, Tuple[(edges, emom, e0)], ∇)
-
-  return vcat(values, grads, hessians, normals)
-end
-
-function _argyris_face_own_dofs(p::Polytope{2})
-  nv, ne = num_faces(p, 0), num_faces(p, 1)
-  own = [Int[] for _ in 1:num_faces(p)]
-  for v in 1:nv
-    own[v] = [v, nv + 2*v - 1, nv + 2*v, 3*nv + 3*v - 2, 3*nv + 3*v - 1, 3*nv + 3*v]
-  end
-  for e in 1:ne
-    own[nv+e] = [6*nv + e]
-  end
-  return own
-end
-
 """
-    ArgyrisRefFE(::Type{T}, p::Polytope{2})
+    ArgyrisRefFE(::Type{T}, K::Polytope{2})
 
 The Argyris reference FE on the triangle `K`, with `T` the scalar type: the
-quintic C¹ plate element of [Argyris, Fried & Scharpf, Aero. J. 72 (1968) 701].
+quintic C¹ plate element with 21 DoFs of [Argyris, Fried & Scharpf, Aero. J. 72 (1968) 701].
 Implementation follows [Kirby, SMAI-JCM 4 (2018) 197, §3.3.2].
+
+# Extended help
 
 ## Prebasis
 
@@ -112,19 +65,55 @@ function ReferenceFE(p::Polytope, ::Argyris, ::Type{T}, order) where T
   ArgyrisRefFE(T, p)
 end
 
+function _argyris_dof_basis(::Type{T}, p::Polytope{2}, prebasis) where T
+  verts = get_dimrange(p, 0)
+  edges = get_dimrange(p, 1)
+
+  vmom(φ, μ, ds) = Broadcasting(Operation(*))(φ, μ)
+  c0 = MonomialBasis(Val(0), T, 0)  # the constant on a vertex
+  values = MomentBasedDofBasis(p, prebasis, Tuple[(verts, vmom, c0)])
+
+  c0_grad = map(
+    constant_field, representatives_of_componentbasis_dual(VectorValue{2,T})
+  )
+  c0_hess = map(
+    constant_field, representatives_of_componentbasis_dual(SymTensorValue{2,T})
+  )
+  Dmom(Dφ, μ, ds) = Broadcasting(Operation(⊙))(Dφ, μ)  # ∇u(v)⊙μ or ∇∇u(v)⊙μ
+  grads = MomentBasedDofBasis(p, prebasis, Tuple[(verts, Dmom, c0_grad)], ∇)
+  hessians = MomentBasedDofBasis(p, prebasis, Tuple[(verts, Dmom, c0_hess)], ∇∇)
+
+  e0 = MonomialBasis(Val(1), T, 0)  # the constant on an edge
+  function emom(φ, μ, ds)  # σ_e(∇u,μ) = ∫ₑ (∇u⋅n) μ ds
+    n = _edge_normal(ds)
+    Broadcasting(Operation(*))(Broadcasting(Operation(⋅))(φ, n), μ)
+  end
+  normals = MomentBasedDofBasis(p, prebasis, Tuple[(edges, emom, e0)], ∇)
+
+  return vcat(values, grads, hessians, normals)
+end
+
+function _argyris_face_own_dofs(p::Polytope{2})
+  nv, ne = num_faces(p, 0), num_faces(p, 1)
+  own = [Int[] for _ in 1:num_faces(p)]
+  for v in 1:nv
+    own[v] = [v, nv + 2*v - 1, nv + 2*v, 3*nv + 3*v - 2, 3*nv + 3*v - 1, 3*nv + 3*v]
+  end
+  for e in 1:ne
+    own[nv+e] = [6*nv + e]
+  end
+  return own
+end
+
 function get_face_own_dofs_permutations(reffe::GenericRefFE{Argyris}, conf::Conformity)
   _identity_dof_permutations(reffe, conf)
 end
 
 ################################################################################
 # Change of basis
-#
-# The cell-local map. The mesh-level `compute_cell_bases_changes`, which reads
-# the orientation data off the model and maps this over the cells, lives in
-# src/FESpaces/Pullbacks.jl.
 
 #     _congruence_matrix(A) -> TensorValue{3,3}
-# 
+#
 # The 3×3 matrix of the congruence `H ↦ A H Aᵀ` acting on symmetric 2×2 matrices,
 # in the coordinates `(H₁₁, H₁₂, H₂₂)` — equivalently the second symmetric power
 # `Sym²(A)`, i.e. `A ⊗ A` restricted to the symmetric subspace.
