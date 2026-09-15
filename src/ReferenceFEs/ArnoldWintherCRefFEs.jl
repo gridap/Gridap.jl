@@ -16,7 +16,7 @@ const aw_c = ArnoldWintherC()
 Pushforward(::Type{ArnoldWintherC}) = DoubleContraVariantPiolaMap()
 
 """
-    ArnoldWintherCRefFE(::Type{T}, p::Polytope{2})
+    ArnoldWintherCRefFE(::Type{T}, K::Polytope{2})
 
 The conforming Arnold--Winther reference FE on the triangle `K`, with `T` the
 scalar type: 24 DoFs and, writing `S` for the symmetric 2×2 matrices,
@@ -25,7 +25,12 @@ scalar type: 24 DoFs and, writing `S` for the symmetric 2×2 matrices,
 
 of dimension 24 [Arnold & Winther, Numer. Math. 92 (2002) 401].
 
-Implementation follows the augmented element approach of [Kirby, SMAI-JCM 4 (2018) 197].
+This element is divergence conforming in the sense that the normal-normal trace
+on facets `n⋅τ⋅n` is pointwise continuous.
+
+The implementation follows the augmented element approach of [Kirby, SMAI-JCM 4 (2018) 197].
+
+# Extended help
 
 ## Prebasis
 
@@ -58,14 +63,8 @@ function ArnoldWintherCRefFE(::Type{T}, p::Polytope{D}) where {T,D}
   prebasis = BernsteinBasisOnSimplex(Val(2), SymTensorValue{2,T}, 3)
 
   # DoF moments
-  vb = MonomialBasis(Val(0), T, 0)                # the constant at a vertex
-  fb = LegendreBasis(Val(1), T, 1)                # μ₀, μ₁ on the edge
-  cb = MonomialBasis(Val(2), T, 0, Polynomials._p_filter)     # the constant on the cell
-  Ei = (
-    ConstantField(TensorValue(one(T), zero(T), zero(T), zero(T))),   # e₁⊗e₁
-    ConstantField(TensorValue(zero(T), zero(T), one(T), zero(T))),   # e₁⊗e₂
-    ConstantField(TensorValue(zero(T), zero(T), zero(T), one(T))),   # e₂⊗e₂
-  )
+  fb = LegendreBasis(Val(1), T, 1) # μ₀, μ₁ on the edge
+  Ei = map(constant_field, representatives_of_componentbasis_dual(SymTensorValue{2,T}))
   function nnmom(φ, μ, ds)
     n = _edge_normal(ds)
     φn = Broadcasting(Operation(⋅))(φ, n)
@@ -77,37 +76,25 @@ function ArnoldWintherCRefFE(::Type{T}, p::Polytope{D}) where {T,D}
     φn = Broadcasting(Operation(⋅))(φ, n)
     Broadcasting(Operation(*))(Broadcasting(Operation(⋅))(φn, t), μ)
   end
-  Emom(E) = (φ, μ, ds) -> Broadcasting(Operation(*))(
-    Broadcasting(Operation(⊙))(φ, E), μ
-  )
+  Emom(φ, μ, ds) = Broadcasting(Operation(⊙))(φ, μ)  # ∫_K τ⊙μ dK
 
   verts = get_dimrange(p, 0)
   edges = get_dimrange(p, 1)
   cell = get_dimrange(p, 2)
   moments = Tuple[
-    [(verts, Emom(E), vb) for E in Ei]...,  # Vertex moments
+    (verts, Emom, Ei),                      # Vertex moments
     (edges, nnmom, fb), (edges, ntmom, fb), # Edge moments
-    [(cell, Emom(E), cb) for E in Ei]...,   # Cell moments
+    (cell, Emom, Ei),                       # Cell moments
   ]
 
-  # Constraint moments.
-  # P₂(K) ∩ P₁(K)^⊥: the degree-2 Dubiner polynomials, i.e. the members of an
-  # L²(K)-orthonormal basis of P₂ that are orthogonal to every linear. A filtered
-  # Legendre basis would not do -- it is not orthogonal on a simplex.
-  qb = DubinerBasis(Val(2), T, 2, Polynomials._p_complement_filter(1))
-  Ej = (
-    ConstantField(VectorValue(one(T), zero(T))),
-    ConstantField(VectorValue(zero(T), one(T)))
-  )
-  divmom(e) = (φ, μ, ds) -> Broadcasting(Operation(*))(
-    Broadcasting(Operation(⋅))(Broadcasting(Operation(tr))(φ), e), μ
-  )
-  constraints = [ (cell, divmom(e), qb) for e in Ej ]
+  # Constraint moments. qb is a basis for P₂(K) ∩ P₁(K)^⊥ using hierarchical
+  # Dubiner, for all components
+  qb = DubinerBasis(Val(2), VectorValue{2,T}, 2, Polynomials._p_complement_filter(1))
+  divmom(divφ, μ, ds) = Broadcasting(Operation(⊙))(divφ, μ)  # ∫_K (div τ)⊙μ dK
+  constraints = Tuple[(cell, divmom, qb)]
 
-  # the 24 DoFs all take the identity operator, the 6 divergence constraints take
-  # ∇, so they are two bases joined with `vcat`.
   dofs = MomentBasedDofBasis(p, prebasis, moments)
-  cons = MomentBasedDofBasis(p, prebasis, constraints, ∇)
+  cons = MomentBasedDofBasis(p, prebasis, constraints, divergence)
   full = vcat(dofs, cons)
   ndofs = length(dofs)
 
@@ -115,7 +102,6 @@ function ArnoldWintherCRefFE(::Type{T}, p::Polytope{D}) where {T,D}
   The augmented element needs as many functionals as prebasis functions, got
   $(length(full)) and $(length(prebasis)).
   """
-  # the DoFs come first, so no `restrict` is needed: the slice suffices
   shapefuns = linear_combination(inv(evaluate(full, prebasis))[:, 1:ndofs], prebasis)
 
   @check maximum(abs, evaluate(dofs, shapefuns) - Matrix{Float64}(I, ndofs, ndofs)) < 1e-10 """\n
@@ -138,11 +124,7 @@ function ReferenceFE(p::Polytope, ::ArnoldWintherC, ::Type{T}, order) where T
   ArnoldWintherCRefFE(T, p)
 end
 
-# Identity for every admissible vertex permutation of every face. The vertex DoFs
-# are components in the global Cartesian frame, hence the same functionals for
-# every cell touching the vertex; the edge DoFs are ordered by moment kind and
-# Legendre degree, and reversing an edge only changes the signs of the odd-degree
-# ones, which the change of basis carries.
+# vertex/cell DoFs are permutation-invariant, edge DoFs only flip sign under reversal
 function get_face_own_dofs_permutations(
   reffe::GenericRefFE{ArnoldWintherC}, conf::Conformity
 )
