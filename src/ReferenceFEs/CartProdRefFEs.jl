@@ -1,48 +1,33 @@
 # The Cartesian product V₁ × … × V_K of reference elements; see `CartProdRefFE`.
 #
-# Two conventions, aligned: the copy index is **last** inside a value, and factor
-# `c` occupies **block `c`** of the numbering. Both follow from Gridap writing
-# derivative indices first, ∇A[k,i,j] = ∂_k A_ij. Appending then commutes with ∇,
-# so one rule, `outer(v, e)`, serves a value, a gradient and a Hessian alike;
-# prepending would need the copy index stepped over the derivative indices, which
-# no contraction of existing operations produces, and would transpose every
-# gradient invisibly whenever K == D.
-#
-# Together they are what Gridap's own operators expect. `divergence` is `tr(∇·)`
-# and `tr` traces the first two indices, so `div(A)_j = ∂ᵢ A_ij` is the divergence
-# of the *columns*, i.e. the vector of the factors' divergences. And
-# `_generate_dof_layout_node_major` blocks by component, so a stacked scalar
-# Lagrangian element reproduces `lagrangian(VectorValue{K,T})` DoF for DoF.
-#
-# The price: the weak-symmetry stress space is usually written with one H(div)
-# *row* per component of the divergence; here it is one per column.
-
-# The injection ι_c(v) = v ⊗ e_c and its inverse π_c(v) = v ⋅ e_c, the two
-# constant linear maps the whole construction rests on. Shared by the basis
-# scatter and the moment stacking -- the same operation, which is why the DoFs
-# need no type of their own. Only rank ≤ 2 factors stack: a 2-tensor-valued one
-# would need a rank-4 stacked gradient, which `outer` does not build.
+# We stack the factors along the LAST index. Two reasons:
+#   - Derivatives in Gridap are ∇A[k,i,j] = ∂_k A_ij. By stacking on the last index, 
+#     the derivative and the stacking (injection operator below) commute.
+#   - The last index is also the slow index in Julia. This means that using this 
+#     convention, each copy of the factor is stored contiguously in memory. Thus, 
+#     block access patterns are more efficient.
+# 
+# The injection ι_c(v) = v ⊗ e_c and its inverse π_c(v) = v ⋅ e_c are the two
+# constant linear maps the whole construction rests on:
 @inline _cp_insert(e, v) = outer(v, e)
 @inline _cp_extract(e, v) = v ⋅ e
-
-# `E` throughout is `representatives_of_componentbasis_dual(VectorValue{K})`, the
-# stacking axis. Every use needs all K of it at once, so it is built whole and
-# kept in whatever cache is already at hand. That basis is orthonormal, so the
-# same `e` both injects and reads back.
+# where `v` is the element of `V` to be injected or extracted 
+# and `e` is an element of the orthonormal basis of the stacked product space.
+# If `e` is the `c`-th element of the orthonormal basis, these operators 
+# inject into and extract from the `c`-th block.
 
 ############################################################################################
-# The stacked basis
-
-# `K` stacked bases, factor `c` in block `c`. `bases` is either one basis, of
-# which the stack is `K` copies, or a `K`-tuple of them. The two cases differ in
-# one place only -- a power evaluates once and scatters, a product evaluates each
-# factor -- so they are one struct and two aliases, not two types.
+# Shape functions 
+# 
+# For each component `c` and each basis function `i` in the `c`-th factor basis, we have
+#  
+# Φ_{i,c}(x) = ι_c(Φ_i(x))
+# 
+# and since derivatives commute with the injection, we also have
 #
-# It must be a type rather than a `lazy_map` over the factors' elements: a basis
-# built on a `PolynomialBasis` does not support element access -- `getindex`
-# there returns the dummy `PT()` rather than a field -- so going through it would
-# produce garbage silently. Only array-level evaluation is safe, so that is all
-# this offers.
+# ∂_k Φ_{i,c}(x) = ι_c(∂_k Φ_i(x))
+#
+
 struct CartProdBasis{K,B} <: AbstractVector{Field}
   bases::B
 end
@@ -63,14 +48,10 @@ get_order(b::CartProdTupleBasis) = maximum(get_order, b.bases)
 Base.getindex(b::CartProdPowerBasis, ::Integer) = first(b.bases)
 Base.getindex(b::CartProdTupleBasis, ::Integer) = first(first(b.bases))
 
-# values and derivatives share one scatter, differing only in what they evaluate
 _cp_src(f, ::Val{0}) = f
 _cp_src(f, ::Val{1}) = Broadcasting(∇)(f)
 _cp_src(f, ::Val{2}) = Broadcasting(∇∇)(f)
 
-# The cache holds the sources and their caches -- one shared for a power, one per
-# factor for a product -- and `_cp_vals` turns them into the `K` value arrays
-# without evaluating a power `K` times.
 function _cp_prepare(b::CartProdPowerBasis, N, x)
   src = _cp_src(b.bases, N)
   return src, return_cache(src, x)
@@ -130,23 +111,13 @@ evaluate!(
 ) where N = _cp_eval!(cache, fg.fa, x, Val(N))
 
 ############################################################################################
-# The stacked DoF basis
-
-# The primitive is one slot, not the whole stack: the DoFs of `b` acting on slice
-# `c` of a `K`-fold stacked value,
+# DoF basis
+#
+# For each component `c` and each basis function `i` in the `c`-th factor dof basis, we have
 #
 #   σ_{i,c}(u) = σ_i(π_c u),    π_c u = u ⋅ e_c,
 #
-# which is an ordinary DoF basis of the same kind as `b` -- the slicing is
-# absorbed into the moment weights, possible because a moment DoF is linear in
-# the field. Nothing here has to differentiate, cache, or be evaluated
-# field-by-field, and the DoF indices within a slot are the atom's own, so face
-# ownership carries over untouched.
-#
-# The stack is then the `vcat` of the `K` slots, which is what puts copy `c` in
-# block `c`. It has to be a `vcat`: a single `MomentBasedDofBasis` emits its DoFs
-# *face-major* (see its `evaluate!`), so one stacked basis could only interleave
-# the copies within each face, never block them across the element.
+
 function _cp_slot_dofs(b::MomentBasedDofBasis, c::Integer, ::Val{K}) where K
   e = representatives_of_componentbasis_dual(VectorValue{K,Float64})[c]
   fm = get_face_moments(b)
@@ -163,10 +134,6 @@ _cp_slot_dofs(b::ConcatenatedDofVector, c::Integer, K::Val) =
 _cp_slot_dofs(b::LinearCombinationDofVector, c::Integer, K::Val) =
   linear_combination(b.values, _cp_slot_dofs(b.predofs, c, K))
 
-# A nodal basis has no slot form: `LagrangianDofBasis` assigns a DoF to *every*
-# component of its value type, so it cannot leave the other `K-1` slots empty.
-# Its whole stack is built at once below, and one slot is a slice of that --
-# contiguous, because the copies are blocked.
 function _cp_slot_dofs(b::LagrangianDofBasis, c::Integer, K::Val)
   n = length(b.dof_to_node)
   restrict(_cp_stack_dofs(b, K), ((c-1)*n+1):(c*n))
@@ -183,16 +150,7 @@ _cp_stack_dofs(bs::Tuple, K::Val{NK}) where NK =
 # `K` copies of one, which is the same thing with every factor equal
 _cp_stack_dofs(b, K::Val{NK}) where NK = _cp_stack_dofs(ntuple(i -> b, NK), K)
 
-# ... except for a nodal basis, which stacks whole with no slicing at all. For an
-# atom in Gridap's canonical layout the result is exactly
-# `LagrangianDofBasis(W, b.nodes)`; it is built explicitly so that a
-# non-canonical atom is stacked correctly too.
-#
-# With `d = num_indep_components(V)`, DoF `a` of the atom reads component
-# `j = dof_to_comp[a]` at node `dof_to_node[a]`, and copy `c` of it reads
-# component `j + d*(c-1)` of the stacked value -- the linear independent-component
-# index of `(j,c)`, since the copy index goes last and `MultiValue`s are column
-# major.
+# ... except for a nodal basis, which stacks whole with no slicing at all. 
 function _cp_stack_dofs(b::LagrangianDofBasis{P,V}, ::Val{K}) where {P,V,K}
   ndofs = length(b.dof_to_node)
   nnodes = length(b.nodes)
@@ -219,24 +177,16 @@ end
 
 ############################################################################################
 # The push-forward
+#
+# Pushforwards apply component-wise, that is for each component `c` and each 
+# index `i` of the `c`-th component, we have
+#
+#   Φ_c = ι_c(PF_c(π_c(ϕ))), that is Φ_{c,i} = ι_c(PF_c(ϕ_{c,i}))
+#
 
-# Factor `i`'s push-forward applied to slice `i`,
-#
-#   φ = Σ_i ι_i( PF_i(π_i φ̂) ),
-#
-# with `PFS` the `Tuple` type of the factors' maps. For `V^K` they are `K` copies
-# of one.
-#
-# This is *not* one of the double Piola maps. Stacking K contravariant Piola maps
-# gives φ = det(J)⁻¹ J φ̂, contravariant on the first index only, whereas
-# `DoubleContraVariantPiolaMap` is det(J)⁻² J φ̂ Jᵀ. So Hellan-Herrmann-Johnson is
-# not obtainable by wrapping Raviart-Thomas, and should not be: the column-wise
-# tensor is a different element with a different conformity.
 struct CartProdPushforward{K,PFS<:Tuple} <: Pushforward end
 
-# `IdentityPiolaMap` is short-circuited rather than evaluated by Gridap, so a
-# stack that mixes it with a Piola map cannot take that branch and must apply it
-# explicitly. It is the identity.
+# `IdentityPiolaMap` is short-circuited for efficiency.
 @inline _cp_apply(::IdentityPiolaMap, v, Jt) = v
 @inline _cp_apply(::InversePushforward{IdentityPiolaMap}, v, Jt) = v
 @inline _cp_apply(pf, v, Jt) = evaluate(pf, v, Jt)
@@ -247,8 +197,6 @@ _cp_maps(::Type{PFS}) where PFS<:Tuple =
 _cp_blockwise(pfs, v, Jt, E) =
   sum(_cp_insert(E[i], _cp_apply(pfs[i], _cp_extract(E[i], v), Jt)) for i in eachindex(E))
 
-# `OperationField` builds the cache of its operation once and hands it back to
-# every `evaluate!`, so these are built once per cell, not per value.
 return_cache(::CartProdPushforward{K,PFS}, ::Number, ::Number) where {K,PFS} =
   (representatives_of_componentbasis_dual(VectorValue{K,Float64}), _cp_maps(PFS))
 
@@ -283,9 +231,11 @@ Cartesian product of reference elements. We provide two constructors:
 -  `CartProdRefFE(reffes::ReferenceFE...)` builds `V_1 × … × V_K`, the Cartesian
     product of `K` different spaces, given by the `reffes` tuple.
 
-By design, the individual spaces are stacked along the last index of the new value type. 
-This is deliberately chosen to be compatible with Gridap's conventions for derivatives, 
+By design, the individual spaces are stacked along the last index of the new value type.
+This is deliberately chosen to be compatible with Gridap's conventions for derivatives,
 and to keep DoFs of each factor in contiguous blocks.
+
+The factors must share a polytope and a value type.
 
 ## Examples:
 
@@ -299,19 +249,43 @@ and to keep DoFs of each factor in contiguous blocks.
 """
 struct CartProd{K,NS} <: ReferenceFEName end
 
-_cp_name_maps(::Val{K}, ::Type{N}) where {K,N<:ReferenceFEName} =
-  ntuple(i -> Pushforward(N), K)
+"""
+    struct CartProdConformity{K} <: Conformity
 
-_cp_name_maps(::Val{K}, ::Type{NS}) where {K,NS<:Tuple} =
-  ntuple(i -> Pushforward(fieldtype(NS, i)), K)
+    CartProdConformity(confs::Conformity...)
+    CartProdConformity(conf::Conformity, K::Integer)
 
-function Pushforward(::Type{CartProd{K,NS}}) where {K,NS}
-  pfs = _cp_name_maps(Val(K), NS)
+The conformity of a [`CartProd`](@ref) element whose factors do not all share one.
+"""
+struct CartProdConformity{K,C<:NTuple{K,Conformity}} <: Conformity
+  confs::C
+end
+
+CartProdConformity(confs::Conformity...) = CartProdConformity(confs)
+CartProdConformity(conf::Conformity, K::Integer) =
+  CartProdConformity(ntuple(i -> conf, K))
+
+# only what every factor accepts, which for a mixed product is just `:L2`
+valid_conformity_symbols(conf::CartProdConformity) =
+  Tuple(intersect(map(valid_conformity_symbols, conf.confs)...))
+
+_cp_factor_names(::Val{K}, ::Type{N}) where {K,N<:ReferenceFEName} = ntuple(i -> N, K)
+_cp_factor_names(::Val{K}, ::Type{NS}) where {K,NS<:Tuple} = ntuple(i -> fieldtype(NS, i), K)
+
+function Pushforward(N::Type{CartProd{K,NS}}, conf::CartProdConformity{K}) where {K,NS}
+  pfs = map(Pushforward, _cp_factor_names(Val(K), NS), conf.confs)
   # K copies of the identity is the identity, and Gridap short-circuits that map
   # rather than evaluating it, so it must be returned unwrapped.
   all(pf -> isa(pf, IdentityPiolaMap), pfs) && return IdentityPiolaMap()
   return CartProdPushforward{K,Tuple{map(typeof, pfs)...}}()
 end
+
+Pushforward(N::Type{CartProd{K,NS}}, conf::Conformity) where {K,NS} =
+  Pushforward(N, CartProdConformity(conf, K))
+
+# needed only to break the tie with the generic `L2Conformity` method
+Pushforward(N::Type{CartProd{K,NS}}, conf::L2Conformity) where {K,NS} =
+  Pushforward(N, CartProdConformity(conf, K))
 
 """
 
@@ -327,9 +301,6 @@ function CartProdRefFE(reffes::ReferenceFE...)
   @notimplementedif K < 1 "Need at least one factor."
   @notimplementedif any(r -> get_polytope(r) != get_polytope(first(reffes)), reffes) """\n
   All factors must share a polytope.
-  """
-  @notimplementedif any(r -> Conformity(r) != Conformity(first(reffes)), reffes) """\n
-  All factors must share a conformity, got $(map(Conformity, reffes)).
   """
   @notimplementedif any(r -> _cp_value_type(r) != _cp_value_type(first(reffes)), reffes) """\n
   All factors must share a value type, got a mix. Use a `MultiFieldFESpace`.
@@ -365,17 +336,18 @@ _cp_value_type(reffe) = typeof(testitem(
 # The factors never mix, so everything is blocked: the DoFs are the `vcat` of the
 # slots, and a face owns each factor's own DoFs shifted past the factors before
 # it.
+#
+# The conformity is the factors' when they all share one, so that a homogeneous
+# product looks like its factors to everything that dispatches on it, and a
+# `CartProdConformity` otherwise.
 function _cp_reffe(::Type{Name}, reffes, prebasis, shapefuns) where Name
   K = length(reffes)
   p = get_polytope(first(reffes))
-  conf = Conformity(first(reffes))
-  offs = _cp_offsets(map(num_dofs, reffes))
+  confs = map(Conformity, reffes)
+  conf = all(==(first(confs)), confs) ? first(confs) : CartProdConformity(confs)
 
   dofs = _cp_stack_dofs(map(get_dof_basis, reffes), Val(K))
-  owns = map(r -> get_face_own_dofs(r, conf), reffes)
-  face_own_dofs = [
-    Int[offs[c] + d for c in 1:K for d in owns[c][f]] for f in eachindex(first(owns))
-  ]
+  face_own_dofs = _cp_face_own_dofs(reffes, CartProdConformity(confs))
 
   return GenericRefFE{Name}(
     sum(num_dofs, reffes), p, prebasis, dofs, conf, reffes, face_own_dofs, shapefuns
@@ -385,15 +357,32 @@ end
 # `_cp_offsets(ns)[c]` is the number of items before factor `c`
 _cp_offsets(ns) = (0, cumsum(ns)[1:end-1]...)
 
-# The factors' permutations, blocked. The offsets are per face: factor `c`'s own
-# DoFs on a face sit after those of the factors before it *on that same face*.
-# `INVALID_PERM` propagates.
+# Ownership and permutations are the factors', each under its own conformity,
+# blocked. Any other conformity is applied to every factor alike, which is how
+# `conformity=:L2` detaches a product.
+
+function _cp_face_own_dofs(reffes, conf::CartProdConformity)
+  offs = _cp_offsets(map(num_dofs, reffes))
+  owns = map(get_face_own_dofs, reffes, conf.confs)
+  [Int[offs[c] + d for c in eachindex(owns) for d in owns[c][f]]
+   for f in eachindex(first(owns))]
+end
+
+get_face_own_dofs(
+  reffe::GenericRefFE{CartProd{K,NS}}, conf::CartProdConformity{K}
+) where {K,NS} = _cp_face_own_dofs(get_metadata(reffe), conf)
+
+get_face_own_dofs(reffe::GenericRefFE{CartProd{K,NS}}, conf::Conformity) where {K,NS} =
+  get_face_own_dofs(reffe, CartProdConformity(conf, K))
+
+# The offsets are per face: factor `c`'s own DoFs on a face sit after those of
+# the factors before it *on that same face*. `INVALID_PERM` propagates.
 function get_face_own_dofs_permutations(
-  reffe::GenericRefFE{CartProd{K,NS}}, conf::Conformity
+  reffe::GenericRefFE{CartProd{K,NS}}, conf::CartProdConformity{K}
 ) where {K,NS}
   reffes = get_metadata(reffe)
-  perms = map(r -> get_face_own_dofs_permutations(r, conf), reffes)
-  owns = map(r -> get_face_own_dofs(r, conf), reffes)
+  perms = map(get_face_own_dofs_permutations, reffes, conf.confs)
+  owns = map(get_face_own_dofs, reffes, conf.confs)
   map(eachindex(first(perms))) do f
     offs = _cp_offsets(map(o -> length(o[f]), owns))
     map(eachindex(first(perms)[f])) do pindex
@@ -402,6 +391,10 @@ function get_face_own_dofs_permutations(
     end
   end
 end
+
+get_face_own_dofs_permutations(
+  reffe::GenericRefFE{CartProd{K,NS}}, conf::Conformity
+) where {K,NS} = get_face_own_dofs_permutations(reffe, CartProdConformity(conf, K))
 
 ################################################################################
 # Change of basis

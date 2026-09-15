@@ -32,6 +32,7 @@ rt0 = ReferenceFE(TRI, raviart_thomas, Float64, 0)
 rt1 = ReferenceFE(TRI, raviart_thomas, Float64, 1)
 bdm1 = ReferenceFE(TRI, bdm, Float64, 1)
 mtw2 = MardalTaiWintherRefFE(Float64, TRI)
+ned0 = ReferenceFE(TRI, nedelec, Float64, 0)
 
 # K = 3 on a 2D polytope everywhere it matters: an implementation that prepends
 # the copy index instead of appending it transposes every gradient, and that is
@@ -52,7 +53,13 @@ function test_cp_reffe(r, reffes)
   @test length(get_shapefuns(r)) == n
   @test length(get_prebasis(r)) == sum(a -> length(get_prebasis(a)), reffes)
   @test get_polytope(r) == get_polytope(first(reffes))
-  @test Conformity(r) == Conformity(first(reffes))
+  # a shared conformity is reported as is, a mixed one per factor
+  confs = map(Conformity, reffes)
+  if all(==(first(confs)), confs)
+    @test Conformity(r) == first(confs)
+  else
+    @test Conformity(r) == CartProdConformity(confs...)
+  end
 
   # duality: the whole point of the construction
   M = evaluate(get_dof_basis(r), get_shapefuns(r))
@@ -84,13 +91,48 @@ test_cp_reffe(CartProdRefFE(rt0, bdm1), (rt0, bdm1))
 test_cp_reffe(CartProdRefFE(rt0, rt1), (rt0, rt1))
 test_cp_reffe(CartProdRefFE(lag2, lag2, argyris), (lag2, lag2, argyris))
 test_cp_reffe(CartProdRefFE(morley), (morley,))
+test_cp_reffe(CartProdRefFE(rt0, ned0), (rt0, ned0))
+test_cp_reffe(CartProdRefFE(ned0, rt1, ned0), (ned0, rt1, ned0))
 
 @test_throws ErrorException CartProdRefFE(morley, Val(0))
 
-# the factors have to be stackable into one MultiValue, on one polytope, with one
-# conformity
+# the factors have to be stackable into one MultiValue, on one polytope
 @test_throws ErrorException CartProdRefFE(morley, rt0)
-@test_throws ErrorException CartProdRefFE(rt0, ReferenceFE(TRI, nedelec, Float64, 0))
+
+############################################################################################
+# Mixed conformities
+############################################################################################
+
+let r = CartProdRefFE(rt0, ned0)
+  conf = CartProdConformity(DivConformity(), CurlConformity())
+  @test Conformity(r) == conf
+  @test conf == CartProdConformity((DivConformity(), CurlConformity()))
+  @test CartProdConformity(DivConformity(), 2) ==
+    CartProdConformity(DivConformity(), DivConformity())
+  @test Conformity(CartProdRefFE(rt0, Val(2))) == DivConformity()
+
+  # each factor keeps its own map
+  @test Pushforward(get_name(r), Conformity(r)) isa
+    ReferenceFEs.CartProdPushforward{2,Tuple{ContraVariantPiolaMap,CoVariantPiolaMap}}
+
+  # a single conformity is applied to every factor, and only L2 suits both
+  @test ReferenceFEs.valid_conformity_symbols(conf) == (:L2,)
+  @test Conformity(r, :L2) == L2Conformity()
+  @test_throws ErrorException Conformity(r, :Hdiv)
+  @test Pushforward(get_name(r), L2Conformity()) isa IdentityPiolaMap
+  own = get_face_own_dofs(r, L2Conformity())
+  @test own[end] == 1:num_dofs(r) && all(isempty, own[1:end-1])
+  @test get_face_own_dofs_permutations(r, L2Conformity())[end][1] == 1:num_dofs(r)
+
+  # passing the conformity explicitly, or it spelled out, is the same
+  @test get_face_own_dofs(r, conf) == get_face_own_dofs(r)
+  @test get_face_own_dofs_permutations(r, conf) == get_face_own_dofs_permutations(r)
+end
+
+# A homogeneous product used to take its map from the factors' names alone, which
+# is the identity for `rotating_pλ` even under `CurlConformity`.
+@test Pushforward(CartProd{2,ReferenceFEs.RotatingPΛName}, CurlConformity()) isa
+  ReferenceFEs.CartProdPushforward{2,NTuple{2,CoVariantPiolaMap}}
 
 ############################################################################################
 # Stacking a nodal DoF basis
@@ -437,6 +479,46 @@ let model = unit_square(4)
   n = get_normal_vector(Λ).⁺
   @test sqrt(sum( ∫( (n ⋅ jump(wh)) ⋅ (n ⋅ jump(wh)) )dΛ )) < 1e-12
   @test sqrt(sum( ∫( jump(wh) ⊙ jump(wh) )dΛ )) > 1e-3
+end
+
+############################################################################################
+# FE spaces: an H(div) column beside an H(curl) one
+#
+# The case that needs `CartProdConformity`: column 1 must keep its normal trace
+# continuous and column 2 its tangential one, and neither the other.
+############################################################################################
+
+let model = unit_square(4)
+  r = CartProdRefFE(rt0, ned0)
+  V = FESpace(model, r)
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω, 8)
+
+  topo = get_grid_topology(model)
+  @test num_free_dofs(V) == 2*num_faces(topo, 1)
+  @test num_free_dofs(FESpace(model, r; conformity=:L2)) == 6*num_cells(model)
+
+  # column 1 in RT0 (a + b*x), column 2 in Nédélec (a + b*(-y, x)); TensorValue is
+  # column major, so the entries are (m11, m21, m12, m22)
+  σ(x) = TensorValue{2,2,Float64}(1.0 + x[1], 2.0 + x[2], -1.0 - 2*x[2], 0.5 + 2*x[1])
+  e = interpolate(σ, V) - σ
+  @test sqrt(sum( ∫( e ⊙ e )dΩ )) < 1e-12
+
+  w(x) = TensorValue{2,2,Float64}(sin(2*x[1]), cos(3*x[2]), sin(x[1]+x[2]), x[1]^2)
+  wh = interpolate(w, V)
+  Λ = SkeletonTriangulation(model)
+  dΛ = Measure(Λ, 8)
+  n = get_normal_vector(Λ).⁺
+  e1, e2 = VectorValue(1.0, 0.0), VectorValue(0.0, 1.0)
+
+  # A ⋅ e_c is column c
+  jn(c) = n ⋅ (jump(wh) ⋅ c)
+  jt(c) = (jump(wh) ⋅ c) - (n ⋅ (jump(wh) ⋅ c)) * n
+  nrm(f) = sqrt(sum( ∫( f ⋅ f )dΛ ))
+  @test nrm(jn(e1)) < 1e-12
+  @test nrm(jt(e2)) < 1e-12
+  @test nrm(jt(e1)) > 1e-3
+  @test nrm(jn(e2)) > 1e-3
 end
 
 end # module

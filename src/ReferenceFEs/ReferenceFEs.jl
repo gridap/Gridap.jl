@@ -207,6 +207,7 @@ export ArnoldWintherNCRefFE
 export ArnoldWintherCRefFE
 export MardalTaiWintherRefFE
 export CartProdRefFE
+export CartProdConformity
 export BubbleRefFE
 
 export Lagrangian
