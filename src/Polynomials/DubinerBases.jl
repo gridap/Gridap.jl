@@ -55,11 +55,10 @@
 #     2n(n+a)(c-2) Rₙ = (c-1)[c(c-2)w + a²s] R_{n-1} - 2(n+a-1)(n-1)c s² R_{n-2}.
 #
 # No division by anything that vanishes on the simplex. Derivatives come from
-# differentiating the same recurrence, seeded with `∂ᵤR₁ = a+1`, `∂ᵥR₁ = -1`.
-#
-# Hessians are not implemented — `PolynomialBasis` allows that, and the intended
-# use (moment weights, and prebases used through `linear_combination`) does not
-# need them.
+# differentiating the same recurrence, seeded with `∂ᵤR₁ = a+1`, `∂ᵥR₁ = -1`,
+# and second derivatives from differentiating it once more, seeded with zeros
+# since R₀ and R₁ are affine. The map x ↦ (u_k, v_k) = (x_k, σ_{k-1}) is affine
+# too, so the chain rule brings no second-order term of its own.
 ############################################################################################
 
 """
@@ -157,8 +156,8 @@ testvalue(::Type{DubinerBasis{D,V}}) where {D,V} = DubinerBasis(Val(D), V, 0)
 function _return_cache(
   b::DubinerBasis{D}, x, ::Type{G}, ::Val{N_deriv}) where {D,G,N_deriv}
 
-  @notimplementedif N_deriv > 1 """\n
-  `DubinerBasis` implements values and gradients, not $(N_deriv)th derivatives.
+  @notimplementedif N_deriv > 2 """\n
+  `DubinerBasis` implements values, gradients and hessians, not $(N_deriv)th derivatives.
   """
   T = eltype(G)
   K = get_order(b)
@@ -167,19 +166,19 @@ function _return_cache(
   r = CachedArray(zeros(G, (length(x), length(b))))
   s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
   c = CachedArray(zeros(T, (D, na, K + 1)))
-  # the derivative table holds ∂ᵤR and ∂ᵥR in its last index
-  t = ntuple(_ -> CachedArray(zeros(T, (D, na, K + 1, 2))), Val(N_deriv))
+  # the derivative tables hold (∂ᵤR, ∂ᵥR), then (∂ᵤᵤR, ∂ᵤᵥR, ∂ᵥᵥR), in their last index
+  t = ntuple(n -> CachedArray(zeros(T, (D, na, K + 1, n + 1))), Val(N_deriv))
   return (r, s, c, t...)
 end
 
-function _setsize!(b::DubinerBasis{D}, np, r, t...) where D
+function _setsize!(b::DubinerBasis{D}, np, r, c, t...) where D
   K = get_order(b)
   na = _dubiner_na(K, D)
   setsize!(r, (np, length(b)))
-  setsize!(t[1], (D, na, K + 1))
-  for i in 2:length(t)
-    setsize!(t[i], (D, na, K + 1, 2))
-  end
+  setsize!(c, (D, na, K + 1))
+  # unrolled: a runtime index into the (heterogeneous) tuple of tables allocates
+  ntuple(n -> setsize!(t[n], (D, na, K + 1, n + 1)), Val(length(t)))
+  nothing
 end
 
 # The pair (x_d, σ_{d-1}) the d-th factor is a homogeneous Jacobi polynomial of,
@@ -252,6 +251,64 @@ function _dubiner_tables!(
             g[d, a + 1, n + 1, q] =
               (Fq * cm1 + F * g[d, a + 1, n, q]
                - H * (2*s * cm2 + s * s * g[d, a + 1, n - 1, q])) / E
+          end
+        end
+      end
+    end
+  end
+end
+
+# As above, and additionally h[d,a+1,n+1,1:3] = ∂ᵤᵤRₙ⁽ᵃ⁾, ∂ᵤᵥRₙ⁽ᵃ⁾, ∂ᵥᵥRₙ⁽ᵃ⁾, by
+# differentiating the recurrence twice (F is affine, s² is quadratic, in u and v).
+function _dubiner_tables!(
+  c::AbstractArray{T,3}, g::AbstractArray{T,4}, h::AbstractArray{T,4},
+  x, ::Val{D}, K) where {T,D}
+
+  na = size(c, 2)
+  z = zero(T)
+  for d in 1:D
+    u, v = _dubiner_args(x, d, Val(D))
+    s, w = u + v, u - v
+    for a in 0:(na - 1)
+      @inbounds begin
+        c[d, a + 1, 1] = one(T)
+        g[d, a + 1, 1, 1] = z
+        g[d, a + 1, 1, 2] = z
+        h[d, a + 1, 1, 1] = z
+        h[d, a + 1, 1, 2] = z
+        h[d, a + 1, 1, 3] = z
+      end
+      K == 0 && continue
+      @inbounds begin
+        c[d, a + 1, 2] = (a + 1) * u - v
+        g[d, a + 1, 2, 1] = a + 1
+        g[d, a + 1, 2, 2] = -one(T)
+        h[d, a + 1, 2, 1] = z
+        h[d, a + 1, 2, 2] = z
+        h[d, a + 1, 2, 3] = z
+      end
+      for n in 2:K
+        cc = 2*n + a
+        E  = 2*n * (n + a) * (cc - 2)
+        F  = (cc - 1) * (cc * (cc - 2) * w + a * a * s)
+        Fu = (cc - 1) * (cc * (cc - 2) + a * a)
+        Fv = (cc - 1) * (a * a - cc * (cc - 2))
+        H  = 2*(n + a - 1) * (n - 1) * cc
+        @inbounds begin
+          cm1, cm2 = c[d, a + 1, n], c[d, a + 1, n - 1]
+          c[d, a + 1, n + 1] = (F * cm1 - H * s * s * cm2) / E
+          for (q, Fq) in ((1, Fu), (2, Fv))
+            g[d, a + 1, n + 1, q] =
+              (Fq * cm1 + F * g[d, a + 1, n, q]
+               - H * (2*s * cm2 + s * s * g[d, a + 1, n - 1, q])) / E
+          end
+          # (q, p) ∈ {(u,u), (u,v), (v,v)} stored at index 1, 2, 3
+          for (qp, q, p, Fq, Fp) in ((1, 1, 1, Fu, Fu), (2, 1, 2, Fu, Fv), (3, 2, 2, Fv, Fv))
+            gm1q, gm1p = g[d, a + 1, n, q], g[d, a + 1, n, p]
+            gm2q, gm2p = g[d, a + 1, n - 1, q], g[d, a + 1, n - 1, p]
+            h[d, a + 1, n + 1, qp] =
+              (Fq * gm1p + Fp * gm1q + F * h[d, a + 1, n, qp]
+               - H * (2*cm2 + 2*s * (gm2q + gm2p) + s * s * h[d, a + 1, n - 1, qp])) / E
           end
         end
       end
@@ -345,6 +402,69 @@ function _gradient_nd!(
   end
 end
 
-function _hessian_nd!(b::DubinerBasis, x, r, i, c, g, h, s, K)
-  @notimplemented "`DubinerBasis` does not implement hessians."
+function _hessian_nd!(
+  b::DubinerBasis{D,V}, x, r::AbstractMatrix{G}, i,
+  c::AbstractArray{T,3}, g::AbstractArray{T,4}, h::AbstractArray{T,4},
+  s::MMatrix{D,D,T}, K) where {D,V,G,T}
+
+  _dubiner_tables!(c, g, h, x, Val(D), K)
+
+  F   = MVector{D,T}(undef)     # the D factors
+  dF  = MMatrix{D,D,T}(undef)   # dF[j,d] = ∂_j F_d
+  O1  = MVector{D,T}(undef)     # the product of all factors but one
+  O2  = MMatrix{D,D,T}(undef)   # the product of all factors but two
+  as  = MVector{D,Int}(undef)   # the Jacobi parameters
+
+  k = 1
+  for (it, ci) in enumerate(b.terms)
+    α = Tuple(ci)
+    _dubiner_factors!(F, as, c, α, Val(D))
+
+    # as for the gradient: ∂_j F_d = δ_{jd} ∂ᵤR_d - [j ≥ d] ∂ᵥR_d
+    @inbounds for d in 1:D
+      Ru, Rv = g[d, as[d] + 1, α[d], 1], g[d, as[d] + 1, α[d], 2]
+      for j in 1:D
+        dF[j, d] = ifelse(j == d, Ru, zero(T)) - ifelse(j >= d, Rv, zero(T))
+      end
+    end
+
+    # explicit products, so that a vanishing factor is harmless
+    @inbounds for d in 1:D
+      p = one(T)
+      for m in 1:D
+        p *= ifelse(m == d, one(T), F[m])
+      end
+      O1[d] = p
+      for e in 1:D
+        p = one(T)
+        for m in 1:D
+          p *= ifelse(m == d || m == e, one(T), F[m])
+        end
+        O2[d, e] = p
+      end
+    end
+
+    # ∂_j∂_l φ = N [ Σ_d (∂_j∂_l F_d) ∏_{m≠d} F_m + Σ_{d≠e} (∂_j F_d)(∂_l F_e) ∏_{m≠d,e} F_m ]
+    # with, the chain rule having no second-order term (the argument map is affine),
+    #   ∂_j∂_l F_d = δ_{jd}δ_{ld} ∂ᵤᵤR_d - (δ_{jd}[l ≥ d] + [j ≥ d]δ_{ld}) ∂ᵤᵥR_d + [j ≥ d][l ≥ d] ∂ᵥᵥR_d
+    N = T(b.scales[it])
+    @inbounds for l in 1:D, j in 1:D
+      acc = zero(T)
+      for d in 1:D
+        Ruu, Ruv, Rvv = h[d, as[d] + 1, α[d], 1], h[d, as[d] + 1, α[d], 2], h[d, as[d] + 1, α[d], 3]
+        jd, ld = j == d, l == d
+        jged, lged = j >= d, l >= d
+        ddF = ifelse(jd & ld, Ruu, zero(T))
+        ddF -= ifelse(jd & lged, Ruv, zero(T)) + ifelse(jged & ld, Ruv, zero(T))
+        ddF += ifelse(jged & lged, Rvv, zero(T))
+        acc += O1[d] * ddF
+        for e in 1:D
+          acc += ifelse(e == d, zero(T), dF[j, d] * dF[l, e] * O2[d, e])
+        end
+      end
+      s[j, l] = N * acc
+    end
+
+    k = _cartprod_set_derivative!(r, i, s, k, V)
+  end
 end

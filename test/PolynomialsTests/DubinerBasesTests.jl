@@ -3,6 +3,7 @@ module DubinerBasesTests
 using LinearAlgebra
 using Random: MersenneTwister
 using Test
+using ForwardDiff
 
 using Gridap
 using Gridap.Helpers
@@ -192,7 +193,62 @@ end
 # gradients at the collapsed vertex too
 b4 = DubinerBasis(Val(2), Float64, 4)
 @test all(isfinite, norm.(evaluate(Broadcasting(∇)(b4), get_vertex_coordinates(TRI))))
-@test_throws ErrorException evaluate(Broadcasting(∇∇)(b4), [Point(0.2, 0.3)])
+
+############################################################################################
+# Hessians
+#
+# Against automatic differentiation of the collapsed-coordinate definition, as
+# for `BernsteinBasisOnSimplex`: the twice-differentiated recurrence shares no
+# code with `dubiner_reference`. Interior points only, where the reference is
+# regular.
+############################################################################################
+
+_∇(f) = x -> ForwardDiff.jacobian(f, get_array(x))
+_H(f) = x -> ForwardDiff.jacobian(y -> ForwardDiff.jacobian(f, y), get_array(x))
+
+# the whole basis at x, as a plain vector-valued function of the coordinates
+dubiner_nD(b) = x -> [dubiner_reference(α, x) for α in get_exponents(b)]
+
+_bx( b, x   ) = transpose(reduce(hcat, (                                    dubiner_nD(b)(xi)               for xi in x)))
+_Gbx(b, x, G) = transpose(reduce(hcat, ( map(G,          eachrow(        _∇(dubiner_nD(b))(xi)))             for xi in x)))
+_Hbx(b, x, H) = transpose(reduce(hcat, ( map(x->H(x...), eachrow(reshape(_H(dubiner_nD(b))(xi), :, length(H)))) for xi in x)))
+
+for (p, D, K) in ((TRI, 2, 5), (TET, 3, 4))
+  b = DubinerBasis(Val(D), Float64, K)
+  pts = interior_points(Val(D), 20)
+  G = gradient_type(Float64, pts[1])
+  H = gradient_type(G, pts[1])
+  bx  = _bx( b, pts)
+  Gbx = _Gbx(b, pts, G)
+  Hbx = _Hbx(b, pts, H)
+  # the reference carries round-off where the recurrence is exactly zero, e.g.
+  # the hessians of the affine members, which a relative comparison rejects
+  cmp = (a, c) -> isapprox(a, c; atol=1e-9)
+  test_field_array(b, pts, bx, cmp, grad=Gbx, gradgrad=Hbx)
+  test_field_array(b, pts[1], bx[1, :], cmp, grad=Gbx[1, :], gradgrad=Hbx[1, :])
+
+  # the hessians are symmetric, finite at the collapsed vertex, and for K = 2
+  # constant over the cell and zero for the degree ≤ 1 members
+  Hb = evaluate(Broadcasting(∇∇)(b), pts)
+  @test all(h -> h ≈ transpose(h), Hb)
+  @test all(isfinite, norm.(evaluate(Broadcasting(∇∇)(b), get_vertex_coordinates(p))))
+  b2 = DubinerBasis(Val(D), Float64, 2)
+  H2 = evaluate(Broadcasting(∇∇)(b2), pts)
+  @test all(j -> all(i -> H2[i, j] ≈ H2[1, j], axes(H2, 1)), axes(H2, 2))
+  affine = [j for (j, α) in enumerate(get_exponents(b2)) if sum(α) <= 1]
+  @test all(iszero, H2[:, affine])
+end
+
+# the seeding of the recurrence: K = 0 has no R₁, K = 1 no recurrence
+for (p, D, K) in ((TRI, 2, 0), (TRI, 2, 1), (TET, 3, 0), (TET, 3, 1))
+  b = DubinerBasis(Val(D), Float64, K)
+  pts = interior_points(Val(D), 6)
+  G = gradient_type(Float64, pts[1])
+  H = gradient_type(G, pts[1])
+  cmp = (a, c) -> isapprox(a, c; atol=1e-12)
+  test_field_array(b, pts, _bx(b, pts), cmp, grad=_Gbx(b, pts, G), gradgrad=_Hbx(b, pts, H))
+  @test all(isfinite, norm.(evaluate(Broadcasting(∇∇)(b), get_vertex_coordinates(p))))
+end
 
 ############################################################################################
 # MultiValue
@@ -204,6 +260,7 @@ b4 = DubinerBasis(Val(2), Float64, 4)
 mv_pts = interior_points(Val(2), 12)
 sb = DubinerBasis(Val(2), Float64, 3)
 sv = evaluate(sb, mv_pts)
+sh = evaluate(Broadcasting(∇∇)(sb), mv_pts)
 for V in (VectorValue{2,Float64}, SymTensorValue{2,Float64,3})
   n = num_indep_components(V)
   vb = DubinerBasis(Val(2), V, 3)
@@ -212,6 +269,15 @@ for V in (VectorValue{2,Float64}, SymTensorValue{2,Float64,3})
   for j in axes(sv, 2), c in 1:n
     comp = [vv[i, n * (j - 1) + c] for i in axes(sv, 1)]
     expect = [V(ntuple(q -> q == c ? sv[i, j] : 0.0, n)...) for i in axes(sv, 1)]
+    @test comp ≈ expect
+  end
+  # and the hessians are the scalar ones tensored with the component basis of V
+  vh = evaluate(Broadcasting(∇∇)(vb), mv_pts)
+  @test size(vh) == (length(mv_pts), length(sb) * n)
+  Hc = TensorValues.component_basis(eltype(sh))
+  for j in axes(sv, 2), (c, vc) in enumerate(TensorValues.component_basis(V))
+    comp = [vh[i, n * (j - 1) + c] for i in axes(sv, 1)]
+    expect = [sum(sh[i, j][m] * (Hc[m] ⊗ vc) for m in eachindex(Hc)) for i in axes(sv, 1)]
     @test comp ≈ expect
   end
 end
@@ -231,6 +297,7 @@ for (k, qq) in ((2, 0), (2, 1), (3, 1), (4, 2))
   M = transpose(evaluate(lower, xq2)) * (wq2 .* evaluate(b, xq2))
   @test maximum(abs, M) < 1e-14        # orthogonal to P_q, term by term
   @test norm(gram(b, TRI, 2*k + 2) - I) < 1e-13
+  @test all(isfinite, norm.(evaluate(Broadcasting(∇∇)(b), xq2)))
 end
 
 # in 3D as well
@@ -278,9 +345,8 @@ end
 ############################################################################################
 # Conditioning
 #
-# The reason to want an orthogonal basis beyond tidiness: the generalized
-# Vandermonde against point evaluations stays far better conditioned than the
-# monomial one as the degree grows.
+# The generalized Vandermonde against point evaluations stays far better
+# conditioned than the monomial one as the degree grows.
 ############################################################################################
 
 for K in (3, 5, 7)
