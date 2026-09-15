@@ -17,12 +17,6 @@ const gls = GopalakrishnanLedererSchoberl()
 
 Pushforward(::Type{GopalakrishnanLedererSchoberl}) = CoContraVariantPiolaMap()
 
-# The tensor t ⊗ n of the current edge of `ds`, so that M ⊙ (t⊗n) = t⋅M⋅n. Here
-# n = R t, which is what makes the pair flip together under a reversal of the
-# edge and the functional invariant.
-_gls_tn(ds) = ConstantField(outer(get_edge_tangent(ds).value,
-                                  _rot90(get_edge_tangent(ds).value)))
-
 """
     GLSRefFE(::Type{T}, K::Polytope{2}, order::Integer)
 
@@ -36,6 +30,8 @@ of dimension `3(r+1)(r+2)/2`, for any `r ≥ 0`
 [Gopalakrishnan, Lederer & Schoberl, SIAM J. Numer. Anal. 58 (2020) 706].
 
 Implementation follows the augmented element approach of [Kirby, SMAI-JCM 4 (2018) 197].
+
+# Extended help
 
 ## Prebasis
 
@@ -78,9 +74,9 @@ function GLSRefFE(::Type{T}, p::Polytope{D}, order::Integer) where {T,D}
     Broadcasting(Operation(⊙))(φ, ConstantField(E)), μ
   )
 
-  # Constraint moments: tr(M) = M ⊙ I against a complete P_r(K)
+  # Constraint moments: tr(M) against a complete P_r(K)
   qb = BernsteinBasisOnSimplex(Val(2), T, order)
-  Id = TensorValue(one(T), zero(T), zero(T), one(T))
+  trmom(φ, μ, ds) = Broadcasting(Operation(*))(Broadcasting(Operation(tr))(φ), μ)
 
   edges = get_dimrange(p, 1)
   cell = get_dimrange(p, 2)
@@ -89,7 +85,7 @@ function GLSRefFE(::Type{T}, p::Polytope{D}, order::Integer) where {T,D}
   if order > 0
     append!(moments, [(cell, cmom(outer(ts[e], ns[e])), cb) for e in 1:num_faces(p, 1)])
   end
-  push!(moments, (cell, cmom(Id), qb))                       # the constraints
+  push!(moments, (cell, trmom, qb))                          # the constraints
 
   full = MomentBasedDofBasis(p, prebasis, moments)
   ndofs = 3 * (order + 1) * (order + 2) ÷ 2
@@ -112,14 +108,15 @@ function GLSRefFE(::Type{T}, p::Polytope{D}, order::Integer) where {T,D}
   )
 end
 
+# The tensor t ⊗ n of the current edge of `ds`, so that M ⊙ (t⊗n) = t⋅M⋅n.
+_gls_tn(ds) = ConstantField(outer(get_edge_tangent(ds).value,
+                                  _rot90(get_edge_tangent(ds).value)))
+
 function ReferenceFE(p::Polytope, ::GopalakrishnanLedererSchoberl, ::Type{T}, order) where T
   GLSRefFE(T, p, order)
 end
 
-# Identity for every admissible vertex permutation of every face: the DoFs of an
-# edge are ordered by the degree of their Legendre weight, which both adjacent
-# cells agree on, and reversing the edge only changes the signs of the odd ones,
-# which the change of basis carries.
+# edge DoFs only flip sign under reversal, cell DoFs are permutation-invariant
 function get_face_own_dofs_permutations(
   reffe::GenericRefFE{GopalakrishnanLedererSchoberl}, conf::Conformity
 )
