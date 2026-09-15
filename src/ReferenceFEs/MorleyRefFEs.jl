@@ -14,35 +14,17 @@ Singleton of the [`Morley`](@ref) reference FE name.
 """
 const morley = Morley()
 
-# Mapped by the plain pullback; this is also the default, stated for clarity.
 Pushforward(::Type{Morley}) = IdentityPiolaMap()
 
-# The Morley DoFs: the vertex point evaluations, then the edge normal-derivative
-# moments. Both are `MomentBasedDofBasis`es -- the second built with `operator=∇`
-# -- concatenated with `vcat`, since a single one carries a single operator for
-# all of its moments.
-function _morley_dof_basis(::Type{T}, p::Polytope{2}, prebasis) where T
-  vb = MonomialBasis(Val(0), T, 0)  # the constant on a vertex
-  eb = MonomialBasis(Val(1), T, 0)  # the constant on an edge
-
-  vmom(φ, μ, ds) = Broadcasting(Operation(*))(φ, μ)      # σ_v(u,μ) = u(v) μ
-  function emom(φ, μ, ds)                                # σ_e(∇u,μ) = ∫(∇u⋅n)μ
-    n = _edge_normal(ds)
-    φn = Broadcasting(Operation(⋅))(φ, n)
-    Broadcasting(Operation(*))(φn, μ)
-  end
-
-  vertex_dofs = MomentBasedDofBasis(p, prebasis, Tuple[(get_dimrange(p, 0), vmom, vb)])
-  edge_dofs = MomentBasedDofBasis(p, prebasis, Tuple[(get_dimrange(p, 1), emom, eb)], ∇)
-  return vcat(vertex_dofs, edge_dofs)
-end
-
 """
-    MorleyRefFE(::Type{T}, p::Polytope{2})
+    MorleyRefFE(::Type{T}, K::Polytope{2})
 
 The Morley reference FE on the triangle `K`, with `T` the scalar type: the
 quadratic nonconforming plate element of [Morley, Aero. Quart. 19 (1968) 149],
 with 6 DoFs.
+
+It's implementation conformity is `:H1`, but the element also have continuous
+normal derivatives accross cell edges.
 
 ## Prebasis
 
@@ -74,6 +56,22 @@ function MorleyRefFE(::Type{T}, p::Polytope{D}) where {T,D}
   GenericRefFE{Morley}(ndofs, p, prebasis, dofs, H1Conformity(), nothing, face_own_dofs)
 end
 
+function _morley_dof_basis(::Type{T}, p::Polytope{2}, prebasis) where T
+  vb = MonomialBasis(Val(0), T, 0)  # the constant on a vertex
+  vmom(φ, μ, ds) = Broadcasting(Operation(*))(φ, μ)      # σ_v(u,μ) = u(v) μ
+  vertex_dofs = MomentBasedDofBasis(p, prebasis, Tuple[(get_dimrange(p, 0), vmom, vb)])
+
+  eb = MonomialBasis(Val(1), T, 0)  # the constant on an edge
+  function emom(φ, μ, ds)                                # σ_e(∇u,μ) = ∫(∇u⋅n)μ
+    n = _edge_normal(ds)
+    φn = Broadcasting(Operation(⋅))(φ, n)
+    Broadcasting(Operation(*))(φn, μ)
+  end
+  edge_dofs = MomentBasedDofBasis(p, prebasis, Tuple[(get_dimrange(p, 1), emom, eb)], ∇)
+
+  return vcat(vertex_dofs, edge_dofs)
+end
+
 function ReferenceFE(p::Polytope, ::Morley, ::Type{T}) where T
   MorleyRefFE(T, p)
 end
@@ -85,9 +83,7 @@ function ReferenceFE(p::Polytope, ::Morley, ::Type{T}, order) where T
   MorleyRefFE(T, p)
 end
 
-# Identity for every admissible vertex permutation of every face: each face owns
-# a single DoF, and reversing an edge changes only the sign of that DoF, which
-# the change of basis carries.
+# dofs are robust to permutation up to edge orientation, delt with in FESpaces/Pullbacks.jl
 function get_face_own_dofs_permutations(reffe::GenericRefFE{Morley}, conf::Conformity)
   _identity_dof_permutations(reffe, conf)
 end
