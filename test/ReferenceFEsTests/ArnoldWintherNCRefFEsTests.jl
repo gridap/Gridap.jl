@@ -117,7 +117,7 @@ reffe = ArnoldWintherNCRefFE(Float64, TRI)
 # space: the augmented construction restricts to the DoFs through the shape
 # functions, so `num_dofs != length(prebasis)` here by design
 @test length(get_prebasis(reffe)) == 18
-@test Conformity(reffe) == DivConformity()
+@test Conformity(reffe) == L2Conformity()
 @test Pushforward(ArnoldWintherNC) == ReferenceFEs.DoubleContraVariantPiolaMap()
 @test reffe == ReferenceFE(TRI, aw_nc, Float64)
 # NB: `test_reference_fe` is not applicable here -- it asserts
@@ -206,6 +206,8 @@ function test_awnc_fe_space(model)
   V = FESpace(model, ReferenceFE(TRI, aw_nc, Float64))
 
   topo = get_grid_topology(model)
+  # its conformity is `:L2`, but its edge dofs are still identified across the
+  # cells that share that edge -- only the cell-owned ones are never shared
   @test num_free_dofs(V) == 4*num_faces(topo, 1) + 3*num_cells(model)
 
   # P₁(K;S) ⊂ AWnc, so a global linear symmetric tensor is interpolated exactly
@@ -221,10 +223,12 @@ function test_awnc_fe_space(model)
   dΛ = Measure(Λ, 10)
   n = get_normal_vector(Λ).⁺
 
-  # AWnc is nonconforming in H(div;S): the traction jumps ...
+  # AWnc is nonconforming in H(div;S): the traction jumps, since the interior
+  # dofs are never shared and the tangential edge moments do not pin the full
+  # (degree-2) tangential trace, only its first two moments ...
   @test sqrt(sum(∫((jump(wh) ⋅ n) ⋅ (jump(wh) ⋅ n))dΛ)) > 1e-4
   # ... but the normal-normal component is continuous outright, since its trace
-  # is linear by construction and both of its moments are shared
+  # is exactly P₁(e) by construction and both of its moments are shared
   @test sqrt(sum(∫((n ⋅ jump(wh) ⋅ n) * (n ⋅ jump(wh) ⋅ n))dΛ)) < 1e-12
 end
 

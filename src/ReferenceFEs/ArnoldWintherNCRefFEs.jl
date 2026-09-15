@@ -14,9 +14,10 @@ Singleton of the [`ArnoldWintherNC`](@ref) reference FE name.
 const aw_nc = ArnoldWintherNC()
 
 Pushforward(::Type{ArnoldWintherNC}) = DoubleContraVariantPiolaMap()
+Pushforward(::Type{ArnoldWintherNC}, ::L2Conformity) = DoubleContraVariantPiolaMap()
 
 """
-    ArnoldWintherNCRefFE(::Type{T}, p::Polytope{2})
+    ArnoldWintherNCRefFE(::Type{T}, K::Polytope{2})
 
 The nonconforming Arnold--Winther reference FE on the triangle `K`, with `T` the
 scalar type: 15 DoFs and, writing `S` for the symmetric 2×2 matrices,
@@ -25,7 +26,13 @@ scalar type: 15 DoFs and, writing `S` for the symmetric 2×2 matrices,
 
 of dimension 15 [Arnold & Winther, M3AS 13 (2003) 295].
 
-Implementation follows the augmented element approach of [Kirby, SMAI-JCM 4 (2018) 197].
+This element is not divergence conforming so it's conformity is `:L2`. But the
+normal-normal moment on facets, `∫_f n⋅τ⋅n df`, are preserved, that is single
+valued on both sides.
+
+The implementation follows the augmented element approach of [Kirby, SMAI-JCM 4 (2018) 197].
+
+# Extended help
 
 ## Prebasis
 
@@ -57,12 +64,7 @@ function ArnoldWintherNCRefFE(::Type{T}, p::Polytope{D}) where {T,D}
   # μ₂ : the constraint, the degree-2 Legendre polynomial alone. It spans
   # P₂(e) ∩ P₁(e)^⊥, so the single moment against it states (n⋅τ⋅n)|ₑ ∈ P₁(e).
   gb = LegendreBasis(Val(1), T, 2, Polynomials._p_complement_filter(1))
-  cb = MonomialBasis(Val(2), T, 0, Polynomials._p_filter)                 # the constant on the cell
-  Ei = (
-    ConstantField(TensorValue(one(T), zero(T), zero(T), zero(T))),   # e₁⊗e₁
-    ConstantField(TensorValue(zero(T), zero(T), one(T), zero(T))),   # e₁⊗e₂
-    ConstantField(TensorValue(zero(T), zero(T), zero(T), one(T))),   # e₂⊗e₂
-  )
+  Ei = map(constant_field, representatives_of_componentbasis_dual(SymTensorValue{2,T}))
 
   function nnmom(φ, μ, ds)
     n = _edge_normal(ds)
@@ -75,15 +77,13 @@ function ArnoldWintherNCRefFE(::Type{T}, p::Polytope{D}) where {T,D}
     φn = Broadcasting(Operation(⋅))(φ, n)
     Broadcasting(Operation(*))(Broadcasting(Operation(⋅))(φn, t), μ)
   end
-  cmom(E) = (φ, μ, ds) -> Broadcasting(Operation(*))(   # ∫_K τ ⊙ E dK
-    Broadcasting(Operation(⊙))(φ, E), μ
-  )
+  cmom(φ, μ, ds) = Broadcasting(Operation(⊙))(φ, μ)  # ∫_K τ⊙μ dK
 
   edges = get_dimrange(p, 1)
   cell = get_dimrange(p, 2)
   moments = Tuple[
     (edges, nnmom, fb), (edges, ntmom, fb), (edges, nnmom, gb), # Edge moments
-    [(cell, cmom(E), cb) for E in Ei]...,                       # Cell moments
+    (cell, cmom, Ei),                                           # Cell moments
   ]
 
   # Note the constraint weight is degree 2 while the DoF weights are degree 1, so
@@ -106,7 +106,7 @@ function ArnoldWintherNCRefFE(::Type{T}, p::Polytope{D}) where {T,D}
   The augmented AWnc Vandermonde is singular or badly conditioned.
   """
   GenericRefFE{ArnoldWintherNC}(
-    ndofs, p, prebasis, dofs, DivConformity(), nothing,
+    ndofs, p, prebasis, dofs, L2Conformity(), nothing,
     get_face_own_moments(dofs), shapefuns
   )
 end
@@ -122,10 +122,7 @@ function ReferenceFE(p::Polytope, ::ArnoldWintherNC, ::Type{T}, order) where T
   ArnoldWintherNCRefFE(T, p)
 end
 
-# Identity for every admissible vertex permutation of every face: the DoFs of an
-# edge are ordered by moment kind and then by Legendre degree, which both
-# adjacent cells agree on, and reversing the edge only changes the signs of the
-# odd-degree ones, which the change of basis carries.
+# edge DoFs only flip sign under reversal, cell DoFs are permutation-invariant
 function get_face_own_dofs_permutations(
   reffe::GenericRefFE{ArnoldWintherNC}, conf::Conformity
 )
