@@ -1,47 +1,6 @@
-############################################################################################
+################################################################################
 # The Mardal-Tai-Winther family, on triangles and on tetrahedra.
-#
-# One element in two dimensions:
-#
-#   V(K) = P₁(K;Rᴰ) + curl(b P₁(K;Λ^{D-2})),    b the barycentric bubble
-#
-# with `curl` the scalar rot in 2D and the vector curl in 3D. `b` is cubic in 2D
-# and quartic in 3D, and `curl` drops one degree, so `V(K)` sits in `P₃` and `P₄`
-# respectively, of dimension 9 and 24.
-#
-# The DoFs are the same in both dimensions, six per facet in 3D and three per
-# facet in 2D: the normal component against `P₁(f)`, and the tangential component
-# against the *rigid motions* of `f`. The rigid motions of a segment are the
-# constants, one-dimensional, which is why 2D has a single tangential moment per
-# edge; those of a triangle are three-dimensional, two translations and the
-# in-plane rotation. FIAT unifies the two the same way.
-#
-# The element is H(div)-conforming and only weakly H¹ -- the tangential jump
-# across a facet does not vanish, but its rigid-motion moments do -- which is
-# what makes it robust for Darcy-Stokes uniformly in the parameter.
-#
-# THE TWO CONSTRUCTIONS ARE NOT THE SAME
-#
-# 2D builds `V(K)` as a *kernel*: [Mardal, Tai & Winther, §4.1] define it by
-# `div Φ ∈ P₀(K)` and `(Φ⋅n)|ₑ ∈ P₁(e)`, eleven constraints inside the
-# 20-dimensional `P₃(K;R²)`, and the element is assembled as the augmented
-# element of [Kirby, SMAI-JCM 4 (2018) 197, §5.5].
-#
-# 3D builds it as a *sum*: `P₁ + curl(bP₁)` has no comparable constraint set, so
-# the 24 generators are written into the Bernstein basis of `P₄(T;R³)` by exact
-# integer arithmetic instead.
-#
-# The 2D space is in fact the same sum -- verified -- so the 2D case could be
-# rebuilt the 3D way, which would drop the constraints, the `restrict` and the
-# 20x20 inverse. Left as is for now: the 2D change of basis is the published
-# [Aznaran, Farrell & Kirby, SMAI-JCM 8 (2022) 399, (5.21)-(5.25)] and is worth
-# keeping in the form it was verified in.
-#
-# Consequently the change of basis has two shapes: 3x3 per edge in 2D, keyed by
-# an edge orientation sign, and 6x6 per face in 3D, keyed by the face's `pindex`
-# -- a triangular face has 3! = 6 orderings, so the mismatch between neighbours
-# is a permutation and not a sign. Both are closed form. See `FESpaces`.
-############################################################################################
+# Long AI summary at the end of the file
 
 """
     struct MardalTaiWinther <: ReferenceFEName end
@@ -62,7 +21,7 @@ const mtw = MardalTaiWinther()
 Pushforward(::Type{MardalTaiWinther}) = ContraVariantPiolaMap()
 
 """
-    MardalTaiWintherRefFE(::Type{T}, p::Polytope{D})
+    MardalTaiWintherRefFE(::Type{T}, K::Polytope{D})
 
 The Mardal--Tai--Winther reference FE on the simplex `K`, with `T` the scalar
 type, for `D = 2` and `D = 3`:
@@ -71,7 +30,7 @@ type, for `D = 2` and `D = 3`:
 
 of dimension 9 on a triangle [Mardal, Tai & Winther, SIAM J. Numer. Anal. 40
 (2002) 1605, Lemma 4.1] and 24 on a tetrahedron [Tai & Winther, Calcolo 43 (2006)
-287, (8) and (12)]. 
+287, (8) and (12)].
 
 ## Prebasis
 
@@ -83,7 +42,7 @@ We take `P₃(K;R²)`, of dimension 20, with constraints
 
 which enforce 11 constraints on the 20 prebasis functions, yielding the 9 DoFs.
 
-In 3D, we directly build the prebasis `P₁(T;R³) + curl(b P₁(T;R³))`, of dimension 24. 
+In 3D, we directly build the prebasis `P₁(T;R³) + curl(b P₁(T;R³))`, of dimension 24.
 
 ## Moments
 
@@ -94,8 +53,6 @@ motions of `f`:
 
 """
 function MardalTaiWintherRefFE(::Type{T}, p::Polytope{D}) where {T,D}
-  # `@notimplemented`, not `@check`: the latter is compiled out in Gridap's
-  # performance mode, and this guard must fire in every mode.
   @notimplementedif !(D in (2, 3) && is_simplex(p)) """\n
   The Mardal-Tai-Winther element is only defined on 2D and 3D simplices, got $p.
   """
@@ -113,11 +70,8 @@ function ReferenceFE(p::Polytope, ::MardalTaiWinther, ::Type{T}, order) where T
   MardalTaiWintherRefFE(T, p)
 end
 
-# Identity for every admissible vertex permutation of every face. In 2D reversing
-# an edge changes the sign of two of its DoFs but never their order; in 3D the
-# physical DoFs are defined from each face's vertices in increasing global id
-# order, so both neighbours agree on them, in the same order, whatever order they
-# list the face themselves. Either way the change of basis carries the rest.
+# the test base of all moment are invariant by vertex permutation (modulo sign
+# for edges)
 function get_face_own_dofs_permutations(
   reffe::GenericRefFE{MardalTaiWinther}, conf::Conformity
 )
@@ -127,29 +81,25 @@ end
 # ─────────────────────────────────────────────────────────────────────────────
 # 2D: the augmented element
 #
-# The 9 DoFs and the 11 constraints are *both* declared as ordinary moments on
-# the unconstrained Bernstein basis of P₃(K;R²). Together they are a dual basis
-# for all of it -- a Φ killed by all twenty is in MTW(K) by the constraints and
-# then zero by unisolvency -- so inverting their 20x20 Vandermonde and keeping
-# the columns dual to the DoFs gives the nodal basis.
+# The 9 DoFs and the 11 constraints are both implemented by moments bases on
+# the unconstrained Bernstein basis of P₃(K;R²). Together they spane the dual
+# of this whole space, enabling defining shape functions by duality.
 #
-# The constraints need two `MomentBasedDofBasis`es because a single one carries
-# one `operator` for all its moments, and the divergence rows need `∇` while
-# everything else needs none. `vcat` joins them.
-#
-# The weight bases are Legendre on the edges and Dubiner on the cell. Both are
-# L²-orthogonal on the face they live on, so both `P₃(e) ∩ P₁(e)^⊥` and
-# `P₂(K) ∩ P₀(K)^⊥` are a plain selection by degree -- `_p_complement_filter`,
-# no projection. Legendre cannot serve on the cell: it is a tensor product, so
-# orthogonal on a segment and an n-cube but not on a triangle.
-# ─────────────────────────────────────────────────────────────────────────────
+# The moment test bases are hierarchical bases (Legendre / Dubiner) to enable
+# easier DOF permutation, and being able to implement the divergence the
+# contraint moment.
 
 function _mtw_reffe(::Type{T}, p::Polytope{2}) where T
   prebasis = BernsteinBasisOnSimplex(Val(2), VectorValue{2,T}, 3)
 
-  # DoF moments
+  edges = get_dimrange(p, 1)
+  cell = get_dimrange(p, 2)
+
+  # Dof and constraint edge moments
   nb = LegendreBasis(Val(1), T, 1)   # μ₀, μ₁ : the normal DoF weights
   tb = LegendreBasis(Val(1), T, 0)   # μ₀     : the tangential DoF weight
+  cb = LegendreBasis(Val(1), T, 3, Polynomials._p_complement_filter(1))  # P₃(e) ∩ P₁(e)^⊥
+
   function nmom(φ, μ, ds)            # ∫ₑ (Φ⋅n) μ ds
     n = _edge_normal(ds)
     Broadcasting(Operation(*))(Broadcasting(Operation(⋅))(φ, n), μ)
@@ -158,26 +108,18 @@ function _mtw_reffe(::Type{T}, p::Polytope{2}) where T
     t = get_edge_tangent(ds)
     Broadcasting(Operation(*))(Broadcasting(Operation(⋅))(φ, t), μ)
   end
-
-  # Constraint moments. The normal-trace constraints share `nmom` and so ride on
-  # the same (identity-operator) basis as the DoFs; the divergence ones need `∇`.
-  cb = LegendreBasis(Val(1), T, 3, Polynomials._p_complement_filter(1))  # P₃(e) ∩ P₁(e)^⊥
-  qb = DubinerBasis(Val(2), T, 2, Polynomials._p_complement_filter(0))   # P₂(K) ∩ P₀(K)^⊥
-  Id = ConstantField(TensorValue(one(T), zero(T), zero(T), one(T)))
-  divmom(φ, μ, ds) = Broadcasting(Operation(*))(   # ∫_K (∇Φ ⊙ I) μ dK = ∫_K (div Φ) μ dK
-    Broadcasting(Operation(⊙))(φ, Id), μ
-  )
-
-  edges = get_dimrange(p, 1)
-  cell = get_dimrange(p, 2)
-  moments = Tuple[
+  edge_moments = Tuple[
     (edges, nmom, nb), (edges, tmom, tb),                      # Edge DoFs
     (edges, nmom, cb),                                         # Edge constraints
   ]
-  constraints = Tuple[(cell, divmom, qb)]                      # Cell constraints
 
-  edge_functionals = MomentBasedDofBasis(p, prebasis, moments)
-  div_functionals = MomentBasedDofBasis(p, prebasis, constraints, ∇)
+  # Cell divergence constraint
+  qb = DubinerBasis(Val(2), T, 2, Polynomials._p_complement_filter(0))   # P₂(K) ∩ P₀(K)^⊥
+  divmom(divφ, μ, ds) = Broadcasting(Operation(*))(divφ,μ)     # ∫_K (div Φ) μ dK
+  cell_moments = Tuple[(cell, divmom, qb)]                 # Cell constraints
+
+  edge_functionals = MomentBasedDofBasis(p, prebasis, edge_moments)
+  div_functionals  = MomentBasedDofBasis(p, prebasis, cell_moments, divergence)
   full = vcat(edge_functionals, div_functionals)
 
   # each edge contributes (ℓⁿ⁰, ℓⁿ¹, ℓᵗ⁰, c₂, c₃) and the first three are DoFs
@@ -226,20 +168,17 @@ end
 # construction. Bernstein rather than monomials because this basis is *why* the
 # construction is clean, and because it is far better conditioned on a simplex.
 function _mtw_prebasis_3d(::Type{T}, p::Polytope{3}) where T
-  @notimplementedif get_vertex_coordinates(p) != [Point(0.0, 0.0, 0.0), Point(1.0, 0.0, 0.0),
-                                                  Point(0.0, 1.0, 0.0), Point(0.0, 0.0, 1.0)] """\n
+  @notimplementedif get_vertex_coordinates(p) != get_vertex_coordinates(TET) """\n
   The 3D Mardal-Tai-Winther prebasis assumes Gridap's reference tetrahedron,
   whose barycentric gradients ∇λ are hard-coded below.
   """
   amb = BernsteinBasisOnSimplex(Val(3), VectorValue{3,T}, 4)
   terms = bernstein_terms(4, 3)
-  id = Dict(Tuple(a) => k for (k, a) in enumerate(terms))
   # a MultiValue basis scatters the components of each term consecutively
-  row(α, c) = 3*(id[α] - 1) + c
+  row(α, c) = 3*(bernstein_term_id(α) - 1) + c
 
-  ∇λ = (VectorValue{3,T}(-1, -1, -1), VectorValue{3,T}(1, 0, 0),
-        VectorValue{3,T}(0, 1, 0),    VectorValue{3,T}(0, 0, 1))
-  es = (VectorValue{3,T}(1, 0, 0), VectorValue{3,T}(0, 1, 0), VectorValue{3,T}(0, 0, 1))
+  ∇λ = TensorValue{4,3}(amb.x_to_λ[:, 2:4])
+  e = component_basis(VectorValue{3,T})
 
   C = zeros(T, length(amb), 24)
   k = 0
@@ -253,7 +192,7 @@ function _mtw_prebasis_3d(::Type{T}, p::Polytope{3}) where T
     k += 1
     γ = ntuple(q -> q == m ? 2 : 1, 4)
     for i in 1:4
-      v = cross(∇λ[i], es[j])
+      v = cross(∇λ[i,:], e[j])
       β = ntuple(q -> q == i ? γ[q] - 1 : γ[q], 4)
       for c in 1:3
         C[row(β, c), k] += 5 * v[c]
@@ -282,7 +221,7 @@ end
 # only at lowest order, so it is not a family parameter. FIAT makes the same
 # choice.
 function _mtw_dof_basis_3d(::Type{T}, p::Polytope{3}, prebasis) where T
-  fb = MonomialBasis(Val(2), T, 1, Polynomials._p_filter)                    # {1, u, v}
+  fb = MonomialBasis(Val(2), T, 1, Polynomials._p_filter)        # {1, u, v}
   fb_rt0 = FEEC_poly_basis(Val(2), T, 1, 1, :P⁻; rotate_90=true) # P⁻₁Λ¹ on the face
 
   function nmom(φ, μ, ds)                     # ∫_f (v⋅n) q dA,  q ∈ P₁(f)
@@ -558,3 +497,47 @@ function evaluate!(_cache, k::TWChangeOfBasis, Jt, pids)
 
   return M
 end
+
+################################################################################
+# One element in two dimensions:
+#
+#   V(K) = P₁(K;Rᴰ) + curl(b P₁(K;Λ^{D-2})),    b the barycentric bubble
+#
+# with `curl` the scalar rot in 2D and the vector curl in 3D. `b` is cubic in 2D
+# and quartic in 3D, and `curl` drops one degree, so `V(K)` sits in `P₃` and `P₄`
+# respectively, of dimension 9 and 24.
+#
+# The DoFs are the same in both dimensions, six per facet in 3D and three per
+# facet in 2D: the normal component against `P₁(f)`, and the tangential component
+# against the *rigid motions* of `f`. The rigid motions of a segment are the
+# constants, one-dimensional, which is why 2D has a single tangential moment per
+# edge; those of a triangle are three-dimensional, two translations and the
+# in-plane rotation. FIAT unifies the two the same way.
+#
+# The element is H(div)-conforming and only weakly H¹ -- the tangential jump
+# across a facet does not vanish, but its rigid-motion moments do -- which is
+# what makes it robust for Darcy-Stokes uniformly in the parameter.
+#
+# THE TWO CONSTRUCTIONS ARE NOT THE SAME
+#
+# 2D builds `V(K)` as a *kernel*: [Mardal, Tai & Winther, §4.1] define it by
+# `div Φ ∈ P₀(K)` and `(Φ⋅n)|ₑ ∈ P₁(e)`, eleven constraints inside the
+# 20-dimensional `P₃(K;R²)`, and the element is assembled as the augmented
+# element of [Kirby, SMAI-JCM 4 (2018) 197, §5.5].
+#
+# 3D builds it as a *sum*: `P₁ + curl(bP₁)` has no comparable constraint set, so
+# the 24 generators are written into the Bernstein basis of `P₄(T;R³)` by exact
+# integer arithmetic instead.
+#
+# The 2D space is in fact the same sum -- verified -- so the 2D case could be
+# rebuilt the 3D way, which would drop the constraints, the `restrict` and the
+# 20x20 inverse. Left as is for now: the 2D change of basis is the published
+# [Aznaran, Farrell & Kirby, SMAI-JCM 8 (2022) 399, (5.21)-(5.25)] and is worth
+# keeping in the form it was verified in.
+#
+# Consequently the change of basis has two shapes: 3x3 per edge in 2D, keyed by
+# an edge orientation sign, and 6x6 per face in 3D, keyed by the face's `pindex`
+# -- a triangular face has 3! = 6 orderings, so the mismatch between neighbours
+# is a permutation and not a sign. Both are closed form. See `FESpaces`.
+################################################################################
+
