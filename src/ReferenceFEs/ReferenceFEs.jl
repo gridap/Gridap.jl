@@ -2,6 +2,7 @@
 
 $(public_names_in_md(@__MODULE__; change_link=Dict(
   :H1Conformity  => "GradConformity",
+  :H2Conformity  => "HessianConformity",
   :nedelec1  => "nedelec",
   :modal_serendipity  => "modal_lagrangian",
 )))
@@ -186,6 +187,8 @@ export Conformity
 export L2Conformity
 export H1Conformity
 export GradConformity
+export H2Conformity
+export HessianConformity
 export CurlConformity
 export DivConformity
 export CDConformity

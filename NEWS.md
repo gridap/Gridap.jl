@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added `ArgyrisRefFE`, the quintic C¹-conforming Argyris triangle.
+- Added `ArgyrisRefFE`, the quintic C¹-conforming Argyris triangle. It comes with the new `H2Conformity`, which can be explicitly requested by passing any of `:C1`, `:H2`, `:Hhess`, `:HHess`.
 - Added `MorleyRefFE`, the quadratic nonconforming Morley triangle.
 - Added `HHJRefFE`, `ReggeRefFE` and `GLSRefFE`: the Hellan-Herrmann-Johnson, Regge and Gopalakrishnan-Lederer-Schoberl (second kind) triangles, of any degree `r >= 0`, normal-normal, tangential-tangential and normal-tangential continuous respectively.
 - Added `DubinerBasis`, the L2-orthonormal (Dubiner/Koornwinder) polynomial basis of `P_K` on the reference simplex in any dimension.

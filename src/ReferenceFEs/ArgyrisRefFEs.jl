@@ -51,7 +51,7 @@ function ArgyrisRefFE(::Type{T}, p::Polytope{D}) where {T,D}
   ndofs = 6*num_faces(p, 0) + num_faces(p, 1)
   @check length(dofs) == ndofs == length(prebasis)
 
-  GenericRefFE{Argyris}(ndofs, p, prebasis, dofs, H1Conformity(), nothing, face_own_dofs)
+  GenericRefFE{Argyris}(ndofs, p, prebasis, dofs, H2Conformity(), nothing, face_own_dofs)
 end
 
 function ReferenceFE(p::Polytope, ::Argyris, ::Type{T}) where T

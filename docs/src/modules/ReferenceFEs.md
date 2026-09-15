@@ -50,7 +50,7 @@ The following table summarizes the elements implemented in Gridap (legend below)
 | Bezier, ModalC0                                                                         | as above                                     |           |             | ``{o≥0, o}``    | `:L2`     |
 |                                                                                                                                                                                                |
 | [Morley](https://defelement.org/elements/morley.html)                                   | [`morley`](@ref MorleyRefFE)                 |           | `TRI`       | ``{o=2, o}``    | `:H1`     |
-| [Argyris](https://defelement.org/elements/argyris.html)                                 | [`argyris`](@ref ArgyrisRefFE)               |           | `TRI`       | ``{o=5, o}``    | `:H1`     |
+| [Argyris](https://defelement.org/elements/argyris.html)                                 | [`argyris`](@ref ArgyrisRefFE)               |           | `TRI`       | ``{o=5, o}``    | `:H2`     |
 |                                                                                                                                                                                                |
 | [Mardal-Tai-Winther](https://defelement.org/elements/mardal-tai-winther.html)           | [`mtw`](@ref MardalTaiWintherRefFE)          |           | `TRI`,`TET` | ``{o=1, D+1}``  | `:Hdiv`   |
 | [Arnold-Winther](https://defelement.org/elements/arnold-winther.html)                    | [`aw_c`](@ref ArnoldWintherCRefFE)           |           | `TRI`       | ``{o=3, o}``    | `:Hdiv`   |
@@ -343,9 +343,9 @@ A consequence, since [`divergence`](@ref)`(f) = tr(∇f)` and `tr` of a third-or
 tensor traces its first two indices: on ``V^K`` it is exactly the vector of the
 ``K`` copies' divergences.
 
-On the other hand, first-index stacking would give ``(k, c, j…)`` instead 
-of ``(c, k, j…)``: the copy index would be inserted *between* the derivative 
-and the value indices, and every gradient would come out transposed 
+On the other hand, first-index stacking would give ``(k, c, j…)`` instead
+of ``(c, k, j…)``: the copy index would be inserted *between* the derivative
+and the value indices, and every gradient would come out transposed
 (invisibly when ``K = D``).
 
 **B - Each copy is contiguous.** [`MultiValue`](@ref Gridap.TensorValues)s are stored

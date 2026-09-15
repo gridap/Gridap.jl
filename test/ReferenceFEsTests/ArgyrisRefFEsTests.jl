@@ -119,7 +119,7 @@ reffe = ArgyrisRefFE(Float64, TRI)
 @test get_name(reffe) isa Argyris
 @test num_dofs(reffe) == 21
 @test length(get_prebasis(reffe)) == 21
-@test Conformity(reffe) == H1Conformity()
+@test Conformity(reffe) == H2Conformity()
 @test Pushforward(Argyris) == IdentityPiolaMap()
 @test reffe == ReferenceFE(TRI, argyris, Float64)
 test_reference_fe(reffe)

@@ -30,6 +30,13 @@ const H1Conformity = GradConformity
 valid_conformity_symbols(::GradConformity) = (:L2, :H1, :Hgrad, :HGrad, :C0)
 
 """
+    struct HessianConformity <: Conformity
+"""
+struct HessianConformity <: Conformity end
+const H2Conformity = HessianConformity
+valid_conformity_symbols(::HessianConformity) = (:L2, :H2, :Hhess, :HHess, :C1)
+
+"""
     struct CurlConformity <: Conformity
 """
 struct CurlConformity <: Conformity end
@@ -95,6 +102,10 @@ function symbol_conformity(symb::Symbol, ::ReferenceFEName)
   symb == :C0    && return GradConformity()
   symb == :Hgrad && return GradConformity()
   symb == :HGrad && return GradConformity()
+  symb == :H2    && return HessianConformity()
+  symb == :C1    && return HessianConformity()
+  symb == :Hhess && return HessianConformity()
+  symb == :HHess && return HessianConformity()
   symb == :Hcurl && return CurlConformity()
   symb == :HCurl && return CurlConformity()
   symb == :Hdiv  && return DivConformity()
