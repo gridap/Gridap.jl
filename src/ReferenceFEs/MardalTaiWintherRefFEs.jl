@@ -30,7 +30,9 @@ type, for `D = 2` and `D = 3`:
 
 of dimension 9 on a triangle [Mardal, Tai & Winther, SIAM J. Numer. Anal. 40
 (2002) 1605, Lemma 4.1] and 24 on a tetrahedron [Tai & Winther, Calcolo 43 (2006)
-287, (8) and (12)].
+287, (8) and (12)]. The element is div-conforming.
+
+# Extended help
 
 ## Prebasis
 
@@ -109,14 +111,14 @@ function _mtw_reffe(::Type{T}, p::Polytope{2}) where T
     Broadcasting(Operation(*))(Broadcasting(Operation(⋅))(φ, t), μ)
   end
   edge_moments = Tuple[
-    (edges, nmom, nb), (edges, tmom, tb),                      # Edge DoFs
-    (edges, nmom, cb),                                         # Edge constraints
+    (edges, nmom, nb), (edges, tmom, tb), # Edge DoFs
+    (edges, nmom, cb),                    # Edge constraints
   ]
 
   # Cell divergence constraint
-  qb = DubinerBasis(Val(2), T, 2, Polynomials._p_complement_filter(0))   # P₂(K) ∩ P₀(K)^⊥
-  divmom(divφ, μ, ds) = Broadcasting(Operation(*))(divφ,μ)     # ∫_K (div Φ) μ dK
-  cell_moments = Tuple[(cell, divmom, qb)]                 # Cell constraints
+  qb = DubinerBasis(Val(2), T, 2, Polynomials._p_complement_filter(0)) # P₂(K) ∩ P₀(K)^⊥
+  divmom(divφ, μ, ds) = Broadcasting(Operation(*))(divφ,μ)             # ∫_K (div Φ) μ dK
+  cell_moments = Tuple[(cell, divmom, qb)]                             # Cell constraints
 
   edge_functionals = MomentBasedDofBasis(p, prebasis, edge_moments)
   div_functionals  = MomentBasedDofBasis(p, prebasis, cell_moments, divergence)
@@ -134,8 +136,6 @@ function _mtw_reffe(::Type{T}, p::Polytope{2}) where T
   shapefuns = linear_combination(inv(evaluate(full, prebasis))[:, dof_ids], prebasis)
   dofs = restrict(edge_functionals, dof_ids)
 
-  # the post-condition of the whole construction, and the thing that catches a
-  # rank-deficient or badly conditioned constraint set
   @check maximum(abs, evaluate(dofs, shapefuns) - Matrix{Float64}(I, ndofs, ndofs)) < 1e-10 """\n
   The augmented MTW Vandermonde is singular or badly conditioned.
   """

@@ -17,7 +17,7 @@ const hhj = HellanHerrmannJohnson()
 Pushforward(::Type{HellanHerrmannJohnson}) = DoubleContraVariantPiolaMap()
 
 """
-    HHJRefFE(::Type{T}, p::Polytope{2}, order::Integer)
+    HHJRefFE(::Type{T}, K::Polytope{2}, order::Integer)
 
 The Hellan--Herrmann--Johnson reference FE of degree `r = order` on the triangle
 `K`, with `T` the scalar type [Arnold & Walker, SIAM J. Numer. Anal. 58 (2020)
@@ -26,6 +26,8 @@ The Hellan--Herrmann--Johnson reference FE of degree `r = order` on the triangle
     HHJ_r(K) = P_r(K;S)
 
 of dimension `3(r+1)(r+2)/2`, for any `r ≥ 0`.
+
+# Extended help
 
 ## Prebasis
 
@@ -74,10 +76,7 @@ function ReferenceFE(p::Polytope, ::HellanHerrmannJohnson, ::Type{T}, order) whe
   HHJRefFE(T, p, order)
 end
 
-# Identity for every admissible vertex permutation of every face: the DoFs of an
-# edge are ordered by the degree of their Legendre weight, which both adjacent
-# cells agree on, and reversing the edge only changes the signs of the odd ones,
-# which the change of basis carries.
+# edge DoFs only flip sign under reversal, cell DoFs are permutation-invariant
 function get_face_own_dofs_permutations(
   reffe::GenericRefFE{HellanHerrmannJohnson}, conf::Conformity
 )

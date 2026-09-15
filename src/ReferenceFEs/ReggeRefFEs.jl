@@ -17,18 +17,18 @@ const regge = Regge()
 Pushforward(::Type{Regge}) = DoubleCoVariantPiolaMap()
 
 """
-    ReggeRefFE(::Type{T}, p::Polytope{2}, order::Integer)
+    ReggeRefFE(::Type{T}, K::Polytope{2}, order::Integer)
 
 The Regge reference FE of degree `r = order` on the triangle `K`, with `T` the
 scalar type. Writing `S` for the symmetric 2×2 matrices,
 
     Regge_r(K) = P_r(K;S)
 
-of dimension `3(r+1)(r+2)/2`, for any `r ≥ 0`. Unconstrained: what is
-non-standard is that the DoFs are not preserved by the double *covariant* Piola
-map. They are preserved up to one positive scalar per edge, so the change of
-basis is diagonal — as mild as that of the mirror element [`HHJRefFE`](@ref),
-and with the same entries.
+of dimension `3(r+1)(r+2)/2`, for any `r ≥ 0`. This element is H(curl-curl)
+conform, since the tangential-tangential trace `t⋅M⋅t` is continuous on the
+boundary.
+
+# Extended help
 
 ## Prebasis
 
@@ -84,10 +84,7 @@ function ReferenceFE(p::Polytope, ::Regge, ::Type{T}, order) where T
   ReggeRefFE(T, p, order)
 end
 
-# Identity for every admissible vertex permutation of every face: the DoFs of an
-# edge are ordered by the degree of their Legendre weight, which both adjacent
-# cells agree on, and reversing the edge only changes the signs of the odd ones,
-# which the change of basis carries.
+# edge DoFs only flip sign under reversal, cell DoFs are permutation-invariant
 function get_face_own_dofs_permutations(reffe::GenericRefFE{Regge}, conf::Conformity)
   _identity_dof_permutations(reffe, conf)
 end

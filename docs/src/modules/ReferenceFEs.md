@@ -32,6 +32,9 @@ The following table summarizes the elements implemented in Gridap (legend below)
 |                                                                                                                                                                                                |
 | [Modal scalar](@ref "Modal and nodal scalar reference elements")                        | [`modal_lagrangian`](@ref ModalScalarRefFE)  | 𝓟/𝓠ᵣ⁻Λ⁰   |△,``\square``| ``{r=o≥1, o}``  | `:H1`     |
 |                                                                                         | [`modal_serendipity`](@ref ModalScalarRefFE) | SᵣΛ⁰      | ``\square`` | ``{r=o≥1, o}``  | `:H1`     |
+| [Morley](https://defelement.org/elements/morley.html)                                   | [`morley`](@ref MorleyRefFE)                 |           | `TRI`       | ``{o=2, o}``    | `:H1`     |
+|                                                                                                                                                                                                |
+| [Argyris](https://defelement.org/elements/argyris.html)                                 | [`argyris`](@ref ArgyrisRefFE)               |           | `TRI`       | ``{o=5, o}``    | `:H2`     |
 |                                                                                                                                                                                                |
 | [Nédélec (first kind)](https://defelement.org/elements/nedelec1.html)                   | [`nedelec`](@ref NedelecRefFE)               | 𝓟ᵣ⁻Λ¹     | `TRI`,`TET` | ``{r=o+1≥1, r}``| `:Hcurl`  |
 |                                                                                         |                                              | 𝓠ᵣ⁻Λ¹     | `QUAD`,`HEX`| ``{r=o+1≥1, r}``| `:Hcurl`  |
@@ -40,6 +43,7 @@ The following table summarizes the elements implemented in Gridap (legend below)
 | [Raviart-Thomas](https://defelement.org/elements/raviart-thomas.html)                   | [`raviart_thomas`](@ref LagrangianRefFE)     | 𝓟ᵣ⁻Λᴰ⁻¹   | `TRI`,`TET` | ``{r=o+1≥1, r}``| `:Hdiv`   |
 |                                                                                         |                                              | 𝓠ᵣ⁻Λᴰ⁻¹   | `QUAD`,`HEX`| ``{r=o+1≥1, r}``| `:Hdiv`   |
 | [Brezzi-Douglas-Marini](https://defelement.org/elements/brezzi-douglas-marini.html)     | [`bdm`](@ref BDMRefFE)                       | 𝓟ᵣΛᴰ⁻¹    | `TRI`,`TET` | ``{r=o≥1,   r}``| `:Hdiv`   |
+| [Mardal-Tai-Winther](https://defelement.org/elements/mardal-tai-winther.html)           | [`mtw`](@ref MardalTaiWintherRefFE)          |           | `TRI`,`TET` | ``{o=1, D+1}``  | `:Hdiv`   |
 |                                                                                                                                                                                                |
 | [Crouzeix-Raviart](https://defelement.org/elements/crouzeix-raviart.html)               |[`crouzeix_raviart`](@ref CrouzeixRaviartRefFE)|          |  `TRI`      | ``{o=1, o}``    | `:L2`     |
 | [discontinuous Lagrangian](https://defelement.org/elements/discontinuous-lagrange.html) | [`lagrangian`](@ref LagrangianRefFE)         | 𝓟ᵣ⁻Λᴰ     | △           | ``{r-1=o≥0, o}``| `:L2`     |
@@ -49,16 +53,14 @@ The following table summarizes the elements implemented in Gridap (legend below)
 | [MINI bubble](@ref "Bubble reference element")                                               | [`bubble`](@ref BubbleRefFE)                 |           |△,``\square``| ``{o=1, 2}``    | `:L2`     |
 | Bezier, ModalC0                                                                         | as above                                     |           |             | ``{o≥0, o}``    | `:L2`     |
 |                                                                                                                                                                                                |
-| [Morley](https://defelement.org/elements/morley.html)                                   | [`morley`](@ref MorleyRefFE)                 |           | `TRI`       | ``{o=2, o}``    | `:H1`     |
-| [Argyris](https://defelement.org/elements/argyris.html)                                 | [`argyris`](@ref ArgyrisRefFE)               |           | `TRI`       | ``{o=5, o}``    | `:H2`     |
+| [Arnold-Winther (nonconforming)](https://defelement.org/elements/nonconforming-arnold-winther.html) | [`aw_nc`](@ref ArnoldWintherNCRefFE) |           | `TRI`       | ``{o=2, o}``    | `:L2`   |
 |                                                                                                                                                                                                |
-| [Mardal-Tai-Winther](https://defelement.org/elements/mardal-tai-winther.html)           | [`mtw`](@ref MardalTaiWintherRefFE)          |           | `TRI`,`TET` | ``{o=1, D+1}``  | `:Hdiv`   |
 | [Arnold-Winther](https://defelement.org/elements/arnold-winther.html)                    | [`aw_c`](@ref ArnoldWintherCRefFE)           |           | `TRI`       | ``{o=3, o}``    | `:Hdiv`   |
-| [Arnold-Winther (nonconforming)](https://defelement.org/elements/nonconforming-arnold-winther.html) | [`aw_nc`](@ref ArnoldWintherNCRefFE) |           | `TRI`       | ``{o=2, o}``    | `:Hdiv`   |
+| [Hellan-Herrmann-Johnson](https://defelement.org/elements/hellan-herrmann-johnson.html) | [`hhj`](@ref HHJRefFE)                       |           | `TRI`       | ``{o≥0, o}``  | `:Hdiv`   |
 |                                                                                                                                                                                                |
-| [Hellan-Herrmann-Johnson](https://defelement.org/elements/hellan-herrmann-johnson.html) | [`hhj`](@ref HHJRefFE)                       |           | `TRI`       | ``{r=o≥0, o}``  | `:Hdiv`   |
-| [Regge](https://defelement.org/elements/regge.html)                                     | [`regge`](@ref ReggeRefFE)                   |           | `TRI`       | ``{r=o≥0, o}``  | `:Hdiv`   |
-| [Gopalakrishnan-Lederer-Schoberl](https://defelement.org/elements/gopalakrishnan-lederer-schoberl-second-kind.html) | [`gls`](@ref GLSRefFE) |     | `TRI`       | ``{r=o≥0, o}``  | `:Hdiv`   |
+| [Regge](https://defelement.org/elements/regge.html)                                     | [`regge`](@ref ReggeRefFE)                   |           | `TRI`       | ``{o≥0, o}``  | `:Hcurl`   |
+|                                                                                                                                                                                                |
+| Gopalakrishnan-Lederer-Schoberl | [`gls`](@ref GLSRefFE) |     | `TRI`       | ``{o≥0, o}``  | `:Hdiv`   |
 
 ##### Legend
 

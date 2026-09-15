@@ -26,6 +26,8 @@ with 6 DoFs.
 It's implementation conformity is `:H1`, but the element also have continuous
 normal derivatives accross cell edges.
 
+# Extended help
+
 ## Prebasis
 
 We take prebasis `P₂(K)`, of dimension 6.
