@@ -202,6 +202,7 @@ export ModalC0RefFE
 export ModalScalarRefFE
 export CrouzeixRaviartRefFE
 export ArgyrisRefFE
+export HermiteRefFE
 export MorleyRefFE
 export HHJRefFE
 export ReggeRefFE
@@ -222,6 +223,7 @@ export ModalC0
 export ModalScalar
 export CrouzeixRaviart
 export Argyris
+export Hermite
 export Morley
 export HellanHerrmannJohnson
 export Regge
@@ -252,6 +254,7 @@ export modal_lagrangian
 export modal_serendipity
 export crouzeix_raviart
 export argyris
+export hermite
 export morley
 export hhj
 export regge
@@ -337,6 +340,8 @@ include("ModalScalarRefFEs.jl")
 include("CrouzeixRaviartRefFEs.jl")
 
 include("ArgyrisRefFEs.jl")
+
+include("HermiteRefFEs.jl")
 
 include("MorleyRefFEs.jl")
 

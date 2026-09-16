@@ -29,9 +29,9 @@ The following table summarizes the elements implemented in Gridap (legend below)
 | [Bezier](https://defelement.org/elements/bernstein.html)                                | [`bezier`](@ref BezierRefFE)                 | 𝓟ᵣ⁻Λ⁰     | △           | ``{r=o≥1, o}``  | `:H1`     |
 |                                                                                         |                                              | 𝓠ᵣ⁻Λ⁰     | ``\square`` | ``{r=o≥1, o}``  | `:H1`     |
 | [ModalC0](https://doi.org/10.48550/arXiv.2201.06632)                                    | [`modalC0`](@ref ModalC0RefFE)               | 𝓠ᵣ⁻Λ⁰     | ``\square`` | ``{r=o≥1, o}``  | `:H1`     |
-|                                                                                                                                                                                                |
 | [Modal scalar](@ref "Modal and nodal scalar reference elements")                        | [`modal_lagrangian`](@ref ModalScalarRefFE)  | 𝓟/𝓠ᵣ⁻Λ⁰   |△,``\square``| ``{r=o≥1, o}``  | `:H1`     |
 |                                                                                         | [`modal_serendipity`](@ref ModalScalarRefFE) | SᵣΛ⁰      | ``\square`` | ``{r=o≥1, o}``  | `:H1`     |
+| [Hermite](https://defelement.org/elements/hermite.html)                                 | [`hermite`](@ref HermiteRefFE)               |           | △           | ``{o=3, o}``    | `:H1`     |
 | [Morley](https://defelement.org/elements/morley.html)                                   | [`morley`](@ref MorleyRefFE)                 |           | `TRI`       | ``{o=2, o}``    | `:H1`     |
 |                                                                                                                                                                                                |
 | [Argyris](https://defelement.org/elements/argyris.html)                                 | [`argyris`](@ref ArgyrisRefFE)               |           | `TRI`       | ``{o=5, o}``    | `:H2`     |
@@ -293,7 +293,7 @@ Pages   = ["GeometricDecompositions.jl"]
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CrouzeixRaviartRefFEs.jl","ModalScalarRefFEs.jl","RotatingPLambdaRefFEs.jl","MorleyRefFEs.jl","ArgyrisRefFEs.jl","HHJRefFEs.jl","ReggeRefFEs.jl","GLSRefFEs.jl","ArnoldWintherNCRefFEs.jl","ArnoldWintherCRefFEs.jl","MardalTaiWintherRefFEs.jl"]
+Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CrouzeixRaviartRefFEs.jl","ModalScalarRefFEs.jl","RotatingPLambdaRefFEs.jl","HermiteRefFEs.jl","MorleyRefFEs.jl","ArgyrisRefFEs.jl","HHJRefFEs.jl","ReggeRefFEs.jl","GLSRefFEs.jl","ArnoldWintherNCRefFEs.jl","ArnoldWintherCRefFEs.jl","MardalTaiWintherRefFEs.jl"]
 ```
 
 ### Cartesian product ReferenceFEs

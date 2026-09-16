@@ -14,6 +14,10 @@ using Test
   @time @testset "Elasticity - HHO (mixed order)" begin include("HHOMixedElasticity.jl") end
 end
 
+@testset "C1-at-vertices elements" begin
+  @time @testset "Poisson - Hermite" begin include("Hermite.jl") end
+end
+
 @testset "Fourth-order plate elements" begin
   @time @testset "Biharmonic - Argyris" begin include("Argyris.jl") end
   @time @testset "Biharmonic - Morley" begin include("Morley.jl") end

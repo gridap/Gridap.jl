@@ -61,6 +61,8 @@ using Test
 
 @testset "ArgyrisRefFEs" begin include("ArgyrisRefFEsTests.jl") end
 
+@testset "HermiteRefFEs" begin include("HermiteRefFEsTests.jl") end
+
 @testset "MorleyRefFEs" begin include("MorleyRefFEsTests.jl") end
 
 @testset "HHJRefFEs" begin include("HHJRefFEsTests.jl") end

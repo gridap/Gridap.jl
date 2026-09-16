@@ -539,6 +539,26 @@ function compute_cell_bases_changes(
 end
 
 ############################################################################################
+# Hermite
+
+# No orientation data: every Hermite DoF is a point evaluation in the global
+# Cartesian frame, so only the cell Jacobian enters.
+function compute_cell_bases_changes(
+  ::Hermite, ::IdentityPiolaMap, model::DiscreteModel, cell_reffe, cell_Jt
+)
+  reffe = testitem(cell_reffe)
+  p = get_polytope(reffe)
+
+  # The geometrical map is affine on simplices, so its Jacobian is constant.
+  x0 = Fill(first(get_vertex_coordinates(p)), length(cell_Jt))
+  cell_Jtx = lazy_map(evaluate, cell_Jt, x0)
+
+  cell_change = lazy_map(ReferenceFEs.HermiteChangeOfBasis(reffe, false), cell_Jtx)
+  cell_change_invt = lazy_map(ReferenceFEs.HermiteChangeOfBasis(reffe, true), cell_Jtx)
+  return (cell_change, cell_change_invt)
+end
+
+############################################################################################
 # Morley
 
 function compute_cell_bases_changes(

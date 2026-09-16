@@ -138,6 +138,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 
 @publish ReferenceFEs Morley
 @publish ReferenceFEs Argyris
+@publish ReferenceFEs Hermite
 @publish ReferenceFEs HellanHerrmannJohnson
 @publish ReferenceFEs Regge
 @publish ReferenceFEs GopalakrishnanLedererSchoberl
@@ -146,6 +147,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs MardalTaiWinther
 @publish ReferenceFEs morley
 @publish ReferenceFEs argyris
+@publish ReferenceFEs hermite
 @publish ReferenceFEs hhj
 @publish ReferenceFEs regge
 @publish ReferenceFEs gls
@@ -154,6 +156,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs mtw
 @publish ReferenceFEs MorleyRefFE
 @publish ReferenceFEs ArgyrisRefFE
+@publish ReferenceFEs HermiteRefFE
 @publish ReferenceFEs HHJRefFE
 @publish ReferenceFEs ReggeRefFE
 @publish ReferenceFEs GLSRefFE
