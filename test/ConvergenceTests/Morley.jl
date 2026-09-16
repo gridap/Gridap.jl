@@ -1,5 +1,6 @@
 module MorleyConvgTests
 
+using Test
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
@@ -93,6 +94,11 @@ el, eh, hs = convg_test(ncs, u, Hu, f)
 println("Slope L2-norm u: $(slope(hs,el))")
 println("Slope H2-seminorm u: $(slope(hs,eh))")
 
+# The coarsest mesh is pre-asymptotic
+w = 2:length(ncs)
+@test slope(hs[w], el[w]) > 2 - 0.2
+@test slope(hs[w], eh[w]) > 1 - 0.2
+
 # The solved solution must not depend on how the cells list their vertices, even
 # though the interpolant of a non-polynomial function does (the edge moments are
 # discretized, and the change of basis mixes them with the vertex DoFs using
@@ -100,5 +106,6 @@ println("Slope H2-seminorm u: $(slope(hs,eh))")
 sorted = solve_biharmonic((8,8), u, Hu, f)
 permuted = solve_biharmonic((8,8), u, Hu, f; permute=true)
 println("Sorted vs permuted mesh: $(sorted) vs $(permuted)")
+@test all(isapprox.(sorted, permuted; rtol=1e-8))
 
 end # module

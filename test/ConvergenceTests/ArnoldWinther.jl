@@ -1,5 +1,6 @@
 module ArnoldWintherConvgTests
 
+using Test
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
@@ -150,26 +151,44 @@ function slope(hs,errors)
 end
 
 ncs = [(4,4),(8,8),(16,16)]
+# The coarsest mesh is pre-asymptotic
+w = 2:length(ncs)
 
 # AWnc: the space approximates σ at O(h²), while the nonconforming method
 # delivers O(h) in the stress and O(h²) in the displacement -- the low end of the
 # published range, not a defect.
 reffe_nc = ReferenceFE(TRI, aw_nc, Float64)
 println("--- AWnc ---")
-println("Interpolation of σ: $(interp_test(ncs, reffe_nc))")
-eσ, eu, hs = convg_test(ncs, reffe_nc, 8)
-println("Slope L2-norm σ: $(slope(hs,eσ))")
-println("Slope L2-norm u: $(slope(hs,eu))")
-println("Sorted vs permuted: $(solve_elasticity((8,8), reffe_nc, 8)) vs $(solve_elasticity((8,8), reffe_nc, 8; permute=true))")
-println("By parts vs DIV: $(solve_elasticity((4,4), reffe_nc, 8)) vs $(solve_elasticity_div((4,4), reffe_nc, 8))")
+@testset "AWnc" begin
+  println("Interpolation of σ: $(interp_test(ncs, reffe_nc))")
+  eσ, eu, hs = convg_test(ncs, reffe_nc, 8)
+  println("Slope L2-norm σ: $(slope(hs,eσ))")
+  println("Slope L2-norm u: $(slope(hs,eu))")
+  @test slope(hs[w], eσ[w]) > 1 - 0.2
+  @test slope(hs[w], eu[w]) > 2 - 0.2
+  sorted, permuted = solve_elasticity((8,8), reffe_nc, 8), solve_elasticity((8,8), reffe_nc, 8; permute=true)
+  println("Sorted vs permuted: $(sorted) vs $(permuted)")
+  @test all(isapprox.(sorted, permuted; rtol=1e-8))
+  byparts, withdiv = solve_elasticity((4,4), reffe_nc, 8), solve_elasticity_div((4,4), reffe_nc, 8)
+  println("By parts vs DIV: $(byparts) vs $(withdiv)")
+  @test all(isapprox.(byparts, withdiv; rtol=1e-8))
+end
 
 # AWc: O(h³) in the stress and O(h²) in the displacement
 reffe_c = ReferenceFE(TRI, aw_c, Float64)
 println("--- AWc ---")
-eσ, eu, hs = convg_test(ncs, reffe_c, 10)
-println("Slope L2-norm σ: $(slope(hs,eσ))")
-println("Slope L2-norm u: $(slope(hs,eu))")
-println("Sorted vs permuted: $(solve_elasticity((8,8), reffe_c, 10)) vs $(solve_elasticity((8,8), reffe_c, 10; permute=true))")
-println("By parts vs DIV: $(solve_elasticity((4,4), reffe_c, 10)) vs $(solve_elasticity_div((4,4), reffe_c, 10))")
+@testset "AWc" begin
+  eσ, eu, hs = convg_test(ncs, reffe_c, 10)
+  println("Slope L2-norm σ: $(slope(hs,eσ))")
+  println("Slope L2-norm u: $(slope(hs,eu))")
+  @test slope(hs[w], eσ[w]) > 3 - 0.2
+  @test slope(hs[w], eu[w]) > 2 - 0.2
+  sorted, permuted = solve_elasticity((8,8), reffe_c, 10), solve_elasticity((8,8), reffe_c, 10; permute=true)
+  println("Sorted vs permuted: $(sorted) vs $(permuted)")
+  @test all(isapprox.(sorted, permuted; rtol=1e-8))
+  byparts, withdiv = solve_elasticity((4,4), reffe_c, 10), solve_elasticity_div((4,4), reffe_c, 10)
+  println("By parts vs DIV: $(byparts) vs $(withdiv)")
+  @test all(isapprox.(byparts, withdiv; rtol=1e-8))
+end
 
 end # module

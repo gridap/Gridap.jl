@@ -1,5 +1,6 @@
 module ArgyrisConvgTests
 
+using Test
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
@@ -94,6 +95,11 @@ el, eh, hs = convg_test(ncs, u, Hu, f)
 println("Slope L2-norm u: $(slope(hs,el))")
 println("Slope H2-seminorm u: $(slope(hs,eh))")
 
+# Sixth order in L², fourth in H²; the 2x2 mesh is pre-asymptotic in H².
+w = 2:length(ncs)
+@test slope(hs[w], el[w]) > 6 - 0.2
+@test slope(hs[w], eh[w]) > 4 - 0.2
+
 # The solved solution must not depend on how the cells list their vertices. The
 # boundary data is interpolated, so this also exercises the discretized edge
 # moment; here the internal quadrature integrates it exactly, so the agreement is
@@ -101,5 +107,6 @@ println("Slope H2-seminorm u: $(slope(hs,eh))")
 sorted = solve_biharmonic((4,4), u, Hu, f)
 permuted = solve_biharmonic((4,4), u, Hu, f; permute=true)
 println("Sorted vs permuted mesh: $(sorted) vs $(permuted)")
+@test all(isapprox.(sorted, permuted; rtol=1e-8))
 
 end # module

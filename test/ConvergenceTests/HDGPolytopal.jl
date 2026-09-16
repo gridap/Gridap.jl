@@ -1,5 +1,6 @@
 module PolytopalHDGConvgTests
 
+using Test
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
@@ -110,5 +111,9 @@ order = 0
 
 el, hs = convg_test(domain,ncs,order,u,f)
 println("Slope L2-norm u: $(slope(hs,el))")
+
+# the two coarsest meshes are pre-asymptotic
+w = 3:length(ncs)
+@test slope(hs[w], el[w]) > (order + 2) - 0.2
 
 end # module

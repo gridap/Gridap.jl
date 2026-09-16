@@ -1,5 +1,6 @@
 module HHJConvgTests
 
+using Test
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
@@ -108,13 +109,21 @@ f(x) = 24*p(x[2]) + 2*pdd(x[1]) * pdd(x[2]) + 24*p(x[1])
 ncs = [(4,4),(8,8),(16,16)]
 
 for r in 0:1
-  ew, eσ, hs = convg_test(ncs, r, w, σ, f)
-  println("Order $r -- slope L2-norm w: $(slope(hs,ew))")
-  println("Order $r -- slope L2-norm σ: $(slope(hs,eσ))")
+  @testset "r = $r" begin
+    ew, eσ, hs = convg_test(ncs, r, w, σ, f)
+    println("Order $r -- slope L2-norm w: $(slope(hs,ew))")
+    println("Order $r -- slope L2-norm σ: $(slope(hs,eσ))")
 
-  sorted = solve_plate((8,8), r, w, σ, f)
-  permuted = solve_plate((8,8), r, w, σ, f; permute=true)
-  println("Order $r -- sorted vs permuted mesh: $(sorted) vs $(permuted)")
+    # The coarsest mesh is pre-asymptotic for r = 0
+    win = 2:length(ncs)
+    @test slope(hs[win], ew[win]) > (r + 2) - 0.2
+    @test slope(hs[win], eσ[win]) > (r + 1) - 0.2
+
+    sorted = solve_plate((8,8), r, w, σ, f)
+    permuted = solve_plate((8,8), r, w, σ, f; permute=true)
+    println("Order $r -- sorted vs permuted mesh: $(sorted) vs $(permuted)")
+    @test all(isapprox.(sorted, permuted; rtol=1e-8))
+  end
 end
 
 end # module

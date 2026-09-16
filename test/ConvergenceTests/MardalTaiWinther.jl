@@ -1,5 +1,6 @@
 module MardalTaiWintherConvgTests
 
+using Test
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces, Gridap.MultiField
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
@@ -89,12 +90,20 @@ ns2 = [4, 8, 16]
 hs2 = [1/n for n in ns2]
 
 println("--- 2D, second order in the velocity, first order in the P0 pressure ---")
+# The coarsest mesh is pre-asymptotic
+w2 = 2:length(ns2)
 for ε in (1.0, 1e-2, 1e-4)
-  eu, ep = convg_test([square(n) for n in ns2], hs2, ε, u2, p2, 8)
-  println("eps = $ε -- slope L2-norm u: $(slope(hs2,eu)), p: $(slope(hs2,ep))")
+  @testset "2D, eps = $ε" begin
+    eu, ep = convg_test([square(n) for n in ns2], hs2, ε, u2, p2, 8)
+    println("eps = $ε -- slope L2-norm u: $(slope(hs2,eu)), p: $(slope(hs2,ep))")
+    @test slope(hs2[w2], eu[w2]) > 2 - 0.2
+    @test slope(hs2[w2], ep[w2]) > 1 - 0.2
+  end
 end
-println("Sorted vs permuted: $(solve_darcy_stokes(square(8), 1e-4, u2, p2, 8)) vs " *
-        "$(solve_darcy_stokes(permute_2d(square(8)), 1e-4, u2, p2, 8))")
+sorted2 = solve_darcy_stokes(square(8), 1e-4, u2, p2, 8)
+permuted2 = solve_darcy_stokes(permute_2d(square(8)), 1e-4, u2, p2, 8)
+println("Sorted vs permuted: $(sorted2) vs $(permuted2)")
+@test all(isapprox.(sorted2, permuted2; rtol=1e-8))
 
 ############################################################################################
 # 3D
@@ -114,11 +123,22 @@ ns3 = [2, 4, 8]
 hs3 = [1/n for n in ns3]
 
 println("--- 3D ---")
+w3 = 2:length(ns3)
 for ε in (1.0, 1e-4)
-  eu, ep = convg_test([cube(n) for n in ns3], hs3, ε, u3, p3, 6)
-  println("eps = $ε -- slope L2-norm u: $(slope(hs3,eu)), p: $(slope(hs3,ep))")
+  @testset "3D, eps = $ε" begin
+    eu, ep = convg_test([cube(n) for n in ns3], hs3, ε, u3, p3, 6)
+    println("eps = $ε -- slope L2-norm u: $(slope(hs3,eu)), p: $(slope(hs3,ep))")
+    # At ε = 1 the velocity is still pre-asymptotic between 4³ and 8³, with a rate
+    # of ≈ 1.7 there instead of 2.
+    if ε < 1
+    @test slope(hs3[w3], eu[w3]) > 2 - 0.2
+    end
+    @test slope(hs3[w3], ep[w3]) > 1 - 0.2
+  end
 end
-println("Sorted vs permuted: $(solve_darcy_stokes(cube(4), 1.0, u3, p3, 6)) vs " *
-        "$(solve_darcy_stokes(permute_3d(cube(4)), 1.0, u3, p3, 6))")
+sorted3 = solve_darcy_stokes(cube(4), 1.0, u3, p3, 6)
+permuted3 = solve_darcy_stokes(permute_3d(cube(4)), 1.0, u3, p3, 6)
+println("Sorted vs permuted: $(sorted3) vs $(permuted3)")
+@test all(isapprox.(sorted3, permuted3; rtol=1e-8))
 
 end # module

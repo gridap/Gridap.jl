@@ -1,5 +1,6 @@
 module HermiteConvgTests
 
+using Test
 using Gridap
 using Gridap.Geometry, Gridap.FESpaces
 using Gridap.CellData, Gridap.Fields, Gridap.Helpers
@@ -89,9 +90,15 @@ el, eh, hs = convg_test(ncs, u, f)
 println("Slope L2-norm u: $(slope(hs,el))")
 println("Slope H1-seminorm u: $(slope(hs,eh))")
 
+# the two coarsest meshes are pre-asymptotic
+w = 3:length(ncs)
+@test slope(hs[w], el[w]) > 4 - 0.2
+@test slope(hs[w], eh[w]) > 3 - 0.2
+
 # The solved solution must not depend on how the cells list their vertices.
 sorted = solve_poisson((8,8), u, f)
 permuted = solve_poisson((8,8), u, f; permute=true)
 println("Sorted vs permuted mesh: $(sorted) vs $(permuted)")
+@test all(isapprox.(sorted, permuted; rtol=1e-8))
 
 end # module
