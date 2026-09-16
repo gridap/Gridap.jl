@@ -404,4 +404,75 @@ test_field(∇f, p, ∇cp, grad=∇∇cp)
 test_field(∇f, x, ∇(f).(x), grad=∇∇(f).(x))
 test_field(∇f, z, ∇(f).(z), grad=∇∇(f).(z))
 
+# Product rules
+#
+# `gradient(::OperationField{typeof(op)})` delegates to `product_rule`, so each
+# method is exercised through a real field operation and checked against central
+# finite differences -- an oracle that assumes no index convention, which is
+# exactly what these rules get wrong when they are wrong.
+
+# ∂_k of a field by central differences, derivative index first as Gridap writes it
+function fd(f,x::Point{D},h=1e-6) where D
+  ntuple(Val(D)) do k
+    e = VectorValue(ntuple(i -> i==k ? h : 0.0, Val(D)))
+    (evaluate(f,x+e) - evaluate(f,x-e))/(2*h)
+  end
+end
+
+# the value indices are contiguous within a slice of fixed k, since k leads and
+# MultiValues are column major
+function grad_matches(f,x,tol=1e-5)
+  g = evaluate(gradient(f),x)
+  d = fd(f,x)
+  D = length(d)
+  all(abs(g.data[(c-1)*D+k] - d[k].data[c]) < tol for k in 1:D for c in 1:length(d[k]))
+end
+
+function test_product_rule(op,f1,f2,x)
+  h = Operation(op)(f1,f2)
+  @test evaluate(h,x) ≈ op(evaluate(f1,x),evaluate(f2,x))
+  @test grad_matches(h,x)
+end
+
+xp = Point(0.31,0.22)
+sf = GenericField(x -> 1.0 + x[1]^2 + x[2])
+vf = GenericField(x -> VectorValue(1.0 + x[1], 2.0 - x[2]^2))
+wf = GenericField(x -> VectorValue(x[2], 1.0 + x[1]*x[2]))
+mf = GenericField(x -> TensorValue(1.0 + x[1], 2.0*x[2], x[1]*x[2], 3.0 - x[2]))
+nf = GenericField(x -> TensorValue(x[2], 1.0 - x[1], 2.0 + x[1]^2, x[1]*x[2]))
+
+test_product_rule(⋅,vf,mf,xp)
+test_product_rule(⋅,mf,nf,xp)
+test_product_rule(outer,vf,sf,xp)
+test_product_rule(outer,sf,vf,xp)
+test_product_rule(outer,mf,sf,xp)
+test_product_rule(outer,sf,mf,xp)
+test_product_rule(outer,wf,vf,xp)
+test_product_rule(outer,vf,mf,xp)
+test_product_rule(outer,mf,vf,xp)
+test_product_rule(outer,mf,nf,xp)
+
+# What the ⋅ rules are for: the chain rule for ∇∇ of u∘F differentiates a matrix
+# product. Checked against ∂_i∂_j (u∘F)_c = ∂_iF_a ∂_jF_b (∂_a∂_b u_c).
+Faff = AffineField(TensorValue(2.0,0.5,-0.3,3.0),VectorValue(0.1,0.2))
+uv = GenericField(x -> VectorValue(x[1]^2 + x[2]^3, 2.0*x[1]*x[2]))
+Huf = evaluate(Broadcasting(∇∇)(Operation(uv)(Faff)),[xp])[1]
+@test Huf isa ThirdOrderTensorValue{2,2,2}
+Jaff = evaluate(gradient(Faff),xp)
+Hu = evaluate(∇∇(uv),evaluate(Faff,xp))
+for c in 1:2, i in 1:2, j in 1:2
+  @test Huf[i,j,c] ≈ sum(Jaff[i,a]*Hu[a,b,c]*Jaff[j,b] for a in 1:2, b in 1:2) atol=1e-10
+end
+
+# What the outer rules are for: scattering a basis over the components of a
+# bigger value, which was not differentiable at all.
+function test_outer_scatter(b,x)
+  sb = Broadcasting(Operation(outer))(ConstantField(VectorValue(1.0,0.0)),b)
+  @test size(evaluate(Broadcasting(∇)(sb),[x])) == (1,length(b))
+  @test all(grad_matches(sb[j],x) for j in 1:length(b))
+end
+
+test_outer_scatter([GenericField(x -> 1.0 + x[1]), GenericField(x -> x[1]*x[2])],xp)
+test_outer_scatter([GenericField(x -> VectorValue(1.0 + x[1], x[2]))],xp)
+
 end # module

@@ -30,6 +30,13 @@ const H1Conformity = GradConformity
 valid_conformity_symbols(::GradConformity) = (:L2, :H1, :Hgrad, :HGrad, :C0)
 
 """
+    struct HessianConformity <: Conformity
+"""
+struct HessianConformity <: Conformity end
+const H2Conformity = HessianConformity
+valid_conformity_symbols(::HessianConformity) = (:L2, :H2, :Hhess, :HHess, :C1)
+
+"""
     struct CurlConformity <: Conformity
 """
 struct CurlConformity <: Conformity end
@@ -95,6 +102,10 @@ function symbol_conformity(symb::Symbol, ::ReferenceFEName)
   symb == :C0    && return GradConformity()
   symb == :Hgrad && return GradConformity()
   symb == :HGrad && return GradConformity()
+  symb == :H2    && return HessianConformity()
+  symb == :C1    && return HessianConformity()
+  symb == :Hhess && return HessianConformity()
+  symb == :HHess && return HessianConformity()
   symb == :Hcurl && return CurlConformity()
   symb == :HCurl && return CurlConformity()
   symb == :Hdiv  && return DivConformity()
@@ -122,7 +133,7 @@ Keyword arguments are element specific, except
 - `rotate_90::Bool=false`, set to true for div-conforming FEEC bases in 2D (only if k=1).
 - `nodal::Bool=false`, for FEEC constructor, choice between moment DOFs ([`ModalScalar`](@ref ModalScalarRefFE) FEs) or Lagrangian/node-based DOFs ([`lagrangian`](@ref)/[`serendipity`](@ref)).
 
-!!! warning
+!!! info
     This method only returns the tuple of its arguments, the actual Reference
     FE(s) is(are) only built once the polytope(s) is(are) known. See the other
     `ReferenceFE` methods or the FESpaces constructors.
@@ -314,8 +325,17 @@ function get_face_own_dofs_permutations(reffe::ReferenceFE, conf::Conformity)
   _trivial_face_own_dofs_permutations(face_own_dofs)
 end
 
+# Does not allow face permutations to exist (will error)
 function _trivial_face_own_dofs_permutations(face_own_dofs)
   [[collect(Int, 1:length(dofs)),] for dofs in face_own_dofs]
+end
+
+# Allows face permutations to exist (will return identity permutations)
+function _identity_dof_permutations(reffe::ReferenceFE, conf::Conformity)
+  face_own_dofs = get_face_own_dofs(reffe, conf)
+  vtx_perms = get_face_vertex_permutations(get_polytope(reffe))
+  [[collect(1:length(own)) for _ in vtx_perms[face]]
+   for (face, own) in enumerate(face_own_dofs)]
 end
 
 function get_face_own_dofs_permutations(reffe::ReferenceFE)

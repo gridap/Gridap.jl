@@ -302,6 +302,9 @@ BernsteinBasis(args...)
 BernsteinBasis
 BernsteinBasisOnSimplex
 BernsteinBasisOnSimplex(::Val,::Type,::Int)
+Dubiner
+DubinerBasis
+DubinerBasis(::Val,::Type,::Int)
 bernstein_terms
 bernstein_term_id
 BarycentricPmΛBasis(::Val{D},::Type{T},r,k; kwargs...) where {D,T}

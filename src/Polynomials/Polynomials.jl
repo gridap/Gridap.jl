@@ -124,6 +124,9 @@ export Bernstein
 export BernsteinBasis
 
 export BernsteinBasisOnSimplex
+
+export Dubiner
+export DubinerBasis
 export bernstein_terms
 export bernstein_term_id
 
@@ -164,6 +167,8 @@ include("LegendreBases.jl")
 include("ChebyshevBases.jl")
 
 include("BernsteinBases.jl")
+
+include("DubinerBases.jl")
 
 include("ModalC0Bases.jl")
 
