@@ -5,19 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## New reffes
-
-### Added
-
-- Added `ArgyrisRefFE`, the quintic C¹-conforming Argyris triangle. It comes with the new `H2Conformity`, which can be explicitly requested by passing any of `:C1`, `:H2`, `:Hhess`, `:HHess`.
-- Added `MorleyRefFE`, the quadratic nonconforming Morley triangle.
-- Added `HHJRefFE`, `ReggeRefFE` and `GLSRefFE`: the Hellan-Herrmann-Johnson, Regge and Gopalakrishnan-Lederer-Schoberl (second kind) triangles, of any degree `r >= 0`, normal-normal, tangential-tangential and normal-tangential continuous respectively.
-- Added `DubinerBasis`, the L2-orthonormal (Dubiner/Koornwinder) polynomial basis of `P_K` on the reference simplex in any dimension.
-- Added `ArnoldWintherNCRefFE` and `ArnoldWintherCRefFE`, the nonconforming (15 DoFs, P2-based) and conforming (24 DoFs, P3-based) Arnold-Winther symmetric stress triangles for mixed elasticity. Both are built as constrained subspaces of a larger prebasis, so `length(get_prebasis(reffe)) > num_dofs(reffe)` for them.
-- Added `MardalTaiWintherRefFE`, the Mardal-Tai-Winther element on triangles (9 DoFs) and tetrahedra (24 DoFs).
-- Added the missing `product_rule` methods for `⋅` and `outer`.
-- Added `CartProdRefFE`, the Cartesian product of reference elements sharing a polytope and a value type, stacked along a new last index: `Float64` becomes `VectorValue{K}` and `VectorValue{d}` becomes `TensorValue{d,K}`.
-
 ## [Unreleased]
 
 ### Added
@@ -27,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added the associated reference FEs (named `rotating_pλ`, `trimmed_pλ`) which provide H(curl)-conforming FE spaces on meshes with arbitrary simplex ordering (`NonOriented`).
   - Initial experimental support (API is still unstable) for tensor calculus and Finite Element Exterior Calulus (FEEC): added `ExteriorFormValue`, a `MultiValue` representing alternating K-forms, with pointwise exterior calculus (wedge, interior product, Hodge star, musical isomorphisms, Koszul operator, pullback/pushforward), and lazy `Field` counterparts for some of them.
   - New experimental extension for Symbolic.jl (API is still unstable): it provides support of symbolic exterior calculus (exterior derivative, codifferential, Lie derivative).
+- Since PR[#1336](https://github.com/gridap/Gridap.jl/pull/1336), new ReferenceFEs added to the library:
+  - Added `ArgyrisRefFE`, the quintic C¹-conforming Argyris triangle. It comes with the new `H2Conformity`, which can be explicitly requested by passing any of `:C1`, `:H2`, `:Hhess`, `:HHess`.
+  - Added `MorleyRefFE`, the quadratic nonconforming Morley triangle.
+  - Added `HHJRefFE`, `ReggeRefFE` and `GLSRefFE`: the Hellan-Herrmann-Johnson, Regge and Gopalakrishnan-Lederer-Schoberl (second kind) triangles, of any degree `r >= 0`, normal-normal, tangential-tangential and normal-tangential continuous respectively.
+  - Added `DubinerBasis`, the L2-orthonormal (Dubiner/Koornwinder) polynomial basis of `P_K` on the reference simplex in any dimension.
+  - Added `ArnoldWintherNCRefFE` and `ArnoldWintherCRefFE`, the nonconforming (15 DoFs, P2-based) and conforming (24 DoFs, P3-based) Arnold-Winther symmetric stress triangles for mixed elasticity. Both are built as constrained subspaces of a larger prebasis, so `length(get_prebasis(reffe)) > num_dofs(reffe)` for them.
+  - Added `MardalTaiWintherRefFE`, the Mardal-Tai-Winther element on triangles (9 DoFs) and tetrahedra (24 DoFs).
+  - Added the missing `product_rule` methods for `⋅` and `outer`.
+  - Added `CartProdRefFE`, the Cartesian product of reference elements sharing a polytope and a value type, stacked along a new last index: `Float64` becomes `VectorValue{K}` and `VectorValue{d}` becomes `TensorValue{d,K}`.
 
 ### Fixed
 
