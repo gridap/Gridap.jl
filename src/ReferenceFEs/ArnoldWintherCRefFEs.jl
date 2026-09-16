@@ -19,7 +19,7 @@ Pushforward(::Type{ArnoldWintherC}) = DoubleContraVariantPiolaMap()
     ArnoldWintherCRefFE(::Type{T}, K::Polytope{2})
 
 The conforming Arnold--Winther reference FE on the triangle `K`, with `T` the
-scalar type: 24 DoFs and, writing `S` for the symmetric 2×2 matrices,
+scalar type: 24 DoFs and, writing `S` for the symmetric 2×2 tensors,
 
     AWc(K) = {τ ∈ P₃(K;S) : div τ ∈ P₁(K;R²)}
 

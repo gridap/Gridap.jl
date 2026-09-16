@@ -20,7 +20,7 @@ Pushforward(::Type{Regge}) = DoubleCoVariantPiolaMap()
     ReggeRefFE(::Type{T}, K::Polytope{2}, order::Integer)
 
 The Regge reference FE of degree `r = order` on the triangle `K`, with `T` the
-scalar type. Writing `S` for the symmetric 2×2 matrices,
+scalar type. Writing `S` for the symmetric 2×2 tensors,
 
     Regge_r(K) = P_r(K;S)
 

@@ -22,14 +22,17 @@ Pushforward(::Type{GopalakrishnanLedererSchoberl}) = CoContraVariantPiolaMap()
 
 The Gopalakrishnan--Lederer--Schoberl reference FE of the second kind, degree
 `r = order` on the triangle `K`, with `T` the scalar type. Writing `M₀` for the
-traceless 2×2 matrices,
+traceless 2×2 tensors,
 
     GLS_r(K) = P_r(K;M₀)
 
 of dimension `3(r+1)(r+2)/2`, for any `r ≥ 0`
 [Gopalakrishnan, Lederer & Schoberl, SIAM J. Numer. Anal. 58 (2020) 706].
 
-Implementation follows the augmented element approach of [Kirby, SMAI-JCM 4 (2018) 197].
+This element is divergence conforming in the sense that the normal-normal trace
+on facets `n⋅τ⋅n` is pointwise continuous.
+
+The implementation follows the augmented element approach of [Kirby, SMAI-JCM 4 (2018) 197].
 
 # Extended help
 

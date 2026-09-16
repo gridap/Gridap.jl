@@ -21,11 +21,14 @@ Pushforward(::Type{HellanHerrmannJohnson}) = DoubleContraVariantPiolaMap()
 
 The Hellan--Herrmann--Johnson reference FE of degree `r = order` on the triangle
 `K`, with `T` the scalar type [Arnold & Walker, SIAM J. Numer. Anal. 58 (2020)
-2829, (2.3)]. Writing `S` for the symmetric 2×2 matrices,
+2829, (2.3)]. Writing `S` for the symmetric 2×2 tensors,
 
     HHJ_r(K) = P_r(K;S)
 
 of dimension `3(r+1)(r+2)/2`, for any `r ≥ 0`.
+
+This element is divergence conforming in the sense that the normal-normal trace
+on facets `n⋅τ⋅n` is pointwise continuous.
 
 # Extended help
 

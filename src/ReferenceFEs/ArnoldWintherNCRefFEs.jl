@@ -20,7 +20,7 @@ Pushforward(::Type{ArnoldWintherNC}, ::L2Conformity) = DoubleContraVariantPiolaM
     ArnoldWintherNCRefFE(::Type{T}, K::Polytope{2})
 
 The nonconforming Arnold--Winther reference FE on the triangle `K`, with `T` the
-scalar type: 15 DoFs and, writing `S` for the symmetric 2×2 matrices,
+scalar type: 15 DoFs and, writing `S` for the symmetric 2×2 tensors,
 
     AWnc(K) = {τ ∈ P₂(K;S) : (n⋅τ⋅n)|ₑ ∈ P₁(e) ∀ e ⊂ ∂K}
 
@@ -148,7 +148,7 @@ end
 # and shared with nobody -- which sidesteps a dense interior block entirely, as
 # Gridap already does for the cell moments of Raviart-Thomas.
 #
-# The conforming element adds a 3×3 block per vertex, det(J)⁻² times the matrix
+# The conforming element adds a 3×3 block per vertex, det(J)⁻² times the tensor
 # of H ↦ J H Jᵀ, i.e. `_congruence_matrix` with A = J rather than the A = J⁻ᵀ the
 # Argyris Hessian block uses. Both DoF kinds are invariant under reversing an
 # edge -- n⋅τ⋅n is quadratic in n, n⋅τ⋅t bilinear with both flipping -- so only the

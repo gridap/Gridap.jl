@@ -20,7 +20,8 @@ Pushforward(::Type{Argyris}) = IdentityPiolaMap()
 
 The Argyris reference FE on the triangle `K`, with `T` the scalar type: the
 quintic C¹ plate element with 21 DoFs of [Argyris, Fried & Scharpf, Aero. J. 72 (1968) 701].
-Implementation follows [Kirby, SMAI-JCM 4 (2018) 197, §3.3.2].
+
+The implementation follows [Kirby, SMAI-JCM 4 (2018) 197, §3.3.2].
 
 # Extended help
 
@@ -114,12 +115,12 @@ end
 
 #     _congruence_matrix(A) -> TensorValue{3,3}
 #
-# The 3×3 matrix of the congruence `H ↦ A H Aᵀ` acting on symmetric 2×2 matrices,
+# The 3×3 tensor of the congruence `H ↦ A H Aᵀ` acting on symmetric 2×2 tensor,
 # in the coordinates `(H₁₁, H₁₂, H₂₂)` — equivalently the second symmetric power
 # `Sym²(A)`, i.e. `A ⊗ A` restricted to the symmetric subspace.
 function _congruence_matrix(A)
   a11, a12, a21, a22 = A[1,1], A[1,2], A[2,1], A[2,2]
-  # column-major, one column per basis matrix: [1 0;0 0], [0 1;1 0], [0 0;0 1]
+  # column-major, one column per basis tensor: [1 0;0 0], [0 1;1 0], [0 0;0 1]
   return TensorValue{3,3}(
     a11*a11, a11*a21,             a21*a21,
     2*a11*a12, a11*a22 + a12*a21, 2*a21*a22,
@@ -148,7 +149,7 @@ end
 #
 # with Kg, Kh block diagonal over the vertices and A = diag(Aₖ) — block
 # triangular, not block diagonal. Kg⁻¹ and Kh⁻¹ are the same constructions
-# applied to K⁻¹ = Jᵀ, so no matrix is ever inverted numerically.
+# applied to K⁻¹ = Jᵀ, so no tensor is ever inverted numerically.
 #
 # Edge orientation follows `_edge_signs`, with D = diag(1,…,1,σ₁,σ₂,σ₃) folded in
 # as P = W⁻¹D and P⁻ᵀ = WᵀD. The vertex DoFs need no such treatment, being stated
