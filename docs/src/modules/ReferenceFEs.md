@@ -18,8 +18,9 @@ A reference finite element is defined using the following signature
 ReferenceFE(::ReferenceFEName, args...; kwargs...)
 ```
 
-The following table summarizes the elements implemented in Gridap (legend below).
+The following table summarizes the elements implemented in Gridap ([legend below](@ref "Legend")).
 
+#### $H^1$-elements
 | Name                                                                                    | Gridap name                                  | FEEC name | Polytopes   | Order           | Conformity|
 | :-------------------------------------------------------------------------------------- | :------------------------------------------- | :-------- | :---------- | --------------: | :-------- |
 | [Lagrangian](https://defelement.org/elements/lagrange.html)                             | [`lagrangian`](@ref LagrangianRefFE)         | 𝓟ᵣ⁽⁻⁾Λ⁰   | △           | ``{r=o≥1, o}``  | `:H1`     |
@@ -33,9 +34,15 @@ The following table summarizes the elements implemented in Gridap (legend below)
 |                                                                                         | [`modal_serendipity`](@ref ModalScalarRefFE) | SᵣΛ⁰      | ``\square`` | ``{r=o≥1, o}``  | `:H1`     |
 | [Hermite](https://defelement.org/elements/hermite.html)                                 | [`hermite`](@ref HermiteRefFE)               |           | △           | ``{o=3, o}``    | `:H1`     |
 | [Morley](https://defelement.org/elements/morley.html)                                   | [`morley`](@ref MorleyRefFE)                 |           | `TRI`       | ``{o=2, o}``    | `:H1`     |
-|                                                                                                                                                                                                |
+
+#### $H^2$ elements
+| Name                                                                                    | Gridap name                                  | FEEC name | Polytopes   | Order           | Conformity|
+| :-------------------------------------------------------------------------------------- | :------------------------------------------- | :-------- | :---------- | --------------: | :-------- |
 | [Argyris](https://defelement.org/elements/argyris.html)                                 | [`argyris`](@ref ArgyrisRefFE)               |           | `TRI`       | ``{o=5, o}``    | `:H2`     |
-|                                                                                                                                                                                                |
+
+#### $H(\text{curl})$ and $H(\text{div})$ elements
+| Name                                                                                    | Gridap name                                  | FEEC name | Polytopes   | Order           | Conformity|
+| :-------------------------------------------------------------------------------------- | :------------------------------------------- | :-------- | :---------- | --------------: | :-------- |
 | [Nédélec (first kind)](https://defelement.org/elements/nedelec1.html)                   | [`nedelec`](@ref NedelecRefFE)               | 𝓟ᵣ⁻Λ¹     | `TRI`,`TET` | ``{r=o+1≥1, r}``| `:Hcurl`  |
 |                                                                                         |                                              | 𝓠ᵣ⁻Λ¹     | `QUAD`,`HEX`| ``{r=o+1≥1, r}``| `:Hcurl`  |
 | [Nédélec (second kind)](https://defelement.org/elements/nedelec2.html)                  | [`nedelec2`](@ref NedelecRefFE)              | 𝓟ᵣΛ¹      | `TRI`,`TET` | ``{r=o≥1,   r}``| `:Hcurl`  |
@@ -44,7 +51,10 @@ The following table summarizes the elements implemented in Gridap (legend below)
 |                                                                                         |                                              | 𝓠ᵣ⁻Λᴰ⁻¹   | `QUAD`,`HEX`| ``{r=o+1≥1, r}``| `:Hdiv`   |
 | [Brezzi-Douglas-Marini](https://defelement.org/elements/brezzi-douglas-marini.html)     | [`bdm`](@ref BDMRefFE)                       | 𝓟ᵣΛᴰ⁻¹    | `TRI`,`TET` | ``{r=o≥1,   r}``| `:Hdiv`   |
 | [Mardal-Tai-Winther](https://defelement.org/elements/mardal-tai-winther.html)           | [`mtw`](@ref MardalTaiWintherRefFE)          |           | `TRI`,`TET` | ``{o=1, D+1}``  | `:Hdiv`   |
-|                                                                                                                                                                                                |
+
+#### $L^2$ elements
+| Name                                                                                    | Gridap name                                  | FEEC name | Polytopes   | Order           | Conformity|
+| :-------------------------------------------------------------------------------------- | :------------------------------------------- | :-------- | :---------- | --------------: | :-------- |
 | [Crouzeix-Raviart](https://defelement.org/elements/crouzeix-raviart.html)               |[`crouzeix_raviart`](@ref CrouzeixRaviartRefFE)|          |  `TRI`      | ``{o=1, o}``    | `:L2`     |
 | [discontinuous Lagrangian](https://defelement.org/elements/discontinuous-lagrange.html) | [`lagrangian`](@ref LagrangianRefFE)         | 𝓟ᵣ⁻Λᴰ     | △           | ``{r-1=o≥0, o}``| `:L2`     |
 |                                                                                         |                                              | 𝓟ᵣΛᴰ      | △           | ``{r=o≥0, o}``  | `:L2`     |
@@ -52,33 +62,43 @@ The following table summarizes the elements implemented in Gridap (legend below)
 |                                                                                         | kwarg `space=:P`                             | 𝓢ᵣΛᴰ      | ``\square`` | ``{r=o≥0, o}``  | `:L2`     |
 | [MINI bubble](@ref "Bubble reference element")                                               | [`bubble`](@ref BubbleRefFE)                 |           |△,``\square``| ``{o=1, 2}``    | `:L2`     |
 | Bezier, ModalC0                                                                         | as above                                     |           |             | ``{o≥0, o}``    | `:L2`     |
+
+#### Square $2$-tensor valued elements
+
+For these elements, the conformity indicates continuity of left and right,
+normal and/or tangential, traces on facets. This is not full
+$H(\text{op},\text{op})$ conformity, see
+[GLS2020](https://arxiv.org/abs/1901.04648).
+
+| Name                                                                                    | Gridap name                                  | FEEC name | Polytopes   | Order           | Conformity|
+| :-------------------------------------------------------------------------------------- | :------------------------------------------- | :-------- | :---------- | --------------: | :-------- |
+| [Arnold-Winther (nonconforming)](https://defelement.org/elements/nonconforming-arnold-winther.html) | [`aw_nc`](@ref ArnoldWintherNCRefFE) |           | `TRI`       | ``{o=2, o}``    | $L^2$-$L^2$   |
 |                                                                                                                                                                                                |
-| [Arnold-Winther (nonconforming)](https://defelement.org/elements/nonconforming-arnold-winther.html) | [`aw_nc`](@ref ArnoldWintherNCRefFE) |           | `TRI`       | ``{o=2, o}``    | `:L2`   |
+| [Arnold-Winther](https://defelement.org/elements/arnold-winther.html)                    | [`aw_c`](@ref ArnoldWintherCRefFE)           |           | `TRI`       | ``{o=3, o}``    | div-div   |
+| [Hellan-Herrmann-Johnson](https://defelement.org/elements/hellan-herrmann-johnson.html) | [`hhj`](@ref HHJRefFE)                       |           | `TRI`       | ``{o≥0, o}``  | div-div   |
 |                                                                                                                                                                                                |
-| [Arnold-Winther](https://defelement.org/elements/arnold-winther.html)                    | [`aw_c`](@ref ArnoldWintherCRefFE)           |           | `TRI`       | ``{o=3, o}``    | `:Hdiv`   |
-| [Hellan-Herrmann-Johnson](https://defelement.org/elements/hellan-herrmann-johnson.html) | [`hhj`](@ref HHJRefFE)                       |           | `TRI`       | ``{o≥0, o}``  | `:Hdiv`   |
+| [Regge](https://defelement.org/elements/regge.html)                                     | [`regge`](@ref ReggeRefFE)                   |           | `TRI`       | ``{o≥0, o}``  | curl-curl   |
 |                                                                                                                                                                                                |
-| [Regge](https://defelement.org/elements/regge.html)                                     | [`regge`](@ref ReggeRefFE)                   |           | `TRI`       | ``{o≥0, o}``  | `:Hcurl`   |
+| [Gopalakrishnan-Lederer-Schoberl](https://arxiv.org/abs/1901.04648) | [`gls`](@ref GLSRefFE) |     | `TRI`       | ``{o≥0, o}``  | div-curl   |
 |                                                                                                                                                                                                |
-| Gopalakrishnan-Lederer-Schoberl | [`gls`](@ref GLSRefFE) |     | `TRI`       | ``{o≥0, o}``  | `:Hdiv`   |
 
 ##### Legend
 
-- Name: usual name of the element and link to its
+- __Name__: usual name of the element and link to its
     [DefElement](https://defelement.org/) page, containing all the details
     defining the element and references.
-- Gridap name: the name  to use in the Gridap APIs (it is a [`ReferenceFEName`](@ref ReferenceFEs.ReferenceFEName)
+- __Gridap name__: the name  to use in the Gridap APIs (it is a [`ReferenceFEName`](@ref ReferenceFEs.ReferenceFEName)
     singleton), with a link to the docstring of the element constructor.
-- FEEC name: name of the element family in the [Periodic Table of the Finite
+- __FEEC name__: name of the element family in the [Periodic Table of the Finite
     Elements](https://www-users.cse.umn.edu/~arnold/femtable/index.html) [1]
-- Polytopes:
+- __Polytopes__:
   - △ simplices (`SEGMENT`, `TRI`  (triangle),      `TET` (tetrahedron))
   - ``\square`` n-cubes   (`SEGMENT`, `QUAD` (quadridateral), `HEX` (hexahedron))
-- Order: ( _definition of ``r`` and ``o``_; _``k``_ ) where
+- __Order__: ( _definition of ``r`` and ``o``_; _``k``_ ) where
   - ``r`` is the FEEC polynomial degree parameter (if defined).
   - ``o`` is the `order` parameter of the non FEEC `ReferenceFE` constructor (using [`name::ReferenceFEName`](@ref ReferenceFEName)),
   - ``k`` is the maximum polynomial order of the shape functions in one direction (Lagrange superdegree), defined in function of ``r`` or ``o``,
-- Conformity: supported [`Conformity`](@ref). All the elements also implement `:L2` conformity.
+- __Conformity__: supported [`Conformity`](@ref). All the elements also implement `:L2` conformity.
 
 #### Additional information
 
