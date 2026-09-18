@@ -87,6 +87,16 @@ SkewSymKTensorValue{V,K,D,T1}(data::Tuple) where {V,K,D,T1} = SkewSymKTensorValu
 SkewSymKTensorValue{V,K,D}(data::Number...) where {V,K,D}       = SkewSymKTensorValue{V,K,D}(data)
 SkewSymKTensorValue{V,K,D,T1}(data::Number...) where {V,K,D,T1} = SkewSymKTensorValue{V,K,D,T1}(data)
 
+# CoVectorValue convenience
+CoVectorValue(data::Number...) = CoVectorValue(data)
+CoVectorValue(data::Tuple) = CoVectorValue(promote(data...))
+CoVectorValue(data::NTuple{L}) where L = CoVectorValue{Cov(L)}(data)
+
+# ContraVectorValue convenience
+ContraVectorValue(data::Number...) = ContraVectorValue(data)
+ContraVectorValue(data::Tuple) = ContraVectorValue(promote(data...))
+ContraVectorValue(data::NTuple{L}) where L = ContraVectorValue{Con(L)}(data)
+
 ######################################
 # Conversions and other constructors #
 ######################################
