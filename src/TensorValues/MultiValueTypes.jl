@@ -15,11 +15,15 @@ abstract type VariancedDimension <: Integer end
 `Int` wrapper representing a covariant tensor dimension. The constants `cov0 =
 Cov(0)`, ..., `cov9 = Cov(9)` are exported for convenience.
 
+`==` tests equality of the wrapped `Int` only
 ```julia
-cov1 === Cov(1) # true
 1 == cov1 # true
 1 === cov1 # false
-1 === cov1[1] # true
+cov1 === Cov(1) # true
+```
+The wrapped `Int` can be accessed via getindex
+```julia
+1 === cov1[] # true
 ```
 """
 struct Cov <: VariancedDimension
@@ -33,7 +37,7 @@ end
 `Int` wrapper representing a contravariant tensor dimension. The constants
 `con0 = Con(0)`, ..., `con9 = Con(9)` are exported for convenience.
 
-See also [`Cov`](@ref).
+Behaves as [`Cov`](@ref).
 """
 struct Con <: VariancedDimension
   index::Int
@@ -55,10 +59,10 @@ Base.getindex(covi::VariancedDimension) = covi.index
 Base.Int(covi::VariancedDimension) = covi[]
 
 Base.convert(::Type{Cov}, i::Int) = Cov(i)
-Base.promote_rule(::Type{Cov}, ::Type{Int}) = Int#Cov
+Base.promote_rule(::Type{Cov}, ::Type{Int}) = Int
 Base.convert(::Type{Con}, i::Int) = Con(i)
-Base.promote_rule(::Type{Con}, ::Type{Int}) = Int#Con
-Base.promote_rule(::Type{Con}, ::Type{Cov}) = Int#Con
+Base.promote_rule(::Type{Con}, ::Type{Int}) = Int
+Base.promote_rule(::Type{Con}, ::Type{Cov}) = Int
 
 Base.:(==)(x::VariancedDimension, y::Integer) = x[] == y
 Base.:(==)(x::Integer, y::VariancedDimension) = x == y[]
@@ -90,11 +94,11 @@ _rm_size_variance(s::Tuple) = tuple(Int.(s)...)
 end
 
 """
-    Dim = Union{Int, VariancedDimension}
+    Dim = Union{Int, Cov, Con}
 
 Valid type of values to use in `MultiValue`'s size, `S=Tuple{I...}` where each `D` in `I` is a `Dim`.
 """
-const Dim = Union{Int, VariancedDimension}
+const Dim = Union{Int, Cov, Con}
 
 """
     is_same_variance(i::Dim, j::Dim) = typeof(i) === typeof(j)
@@ -105,15 +109,26 @@ Wether dimensions `i` and `j` have the same variance.
 is_same_variance(i::Dim, j::Dim) = typeof(i) === typeof(j)
 
 """
-    can_contract(i::Dim, j::Dim)
+    is_opposit_variance(i::Dim, j::Dim)
 
-Wether dimensions `i` and `j` can be contracted. They must be equal, and either
-be un-varianced (both `Int`), or of oposite variance (one `Cov`, one `Con`).
+
+Wether dimensions `i` and `j` have variance compatible for contraction, both
+`Int` or `Cov`↔`Con`.
+
+This is not the contrary of `is_same_variance`, because e.g.
+    is_opposite_variance(::Int, ::Con) == false
 """
-can_contract(i::Int, j::Int) = i == j
-can_contract(i::Con, j::Cov) = i == j
-can_contract(i::Cov, j::Con) = i == j
-can_contract(i::Dim, j::Dim) = false
+is_opposit_variance(i::Int, j::Int) = true
+is_opposit_variance(i::Con, j::Cov) = true
+is_opposit_variance(i::Cov, j::Con) = true
+is_opposit_variance(i::Dim, j::Dim) = false
+
+"""
+    can_contract(i::Dim, j::Dim) = is_opposit_variance(i,j) && i==j
+
+Whether dimensions `i` and `j` can be contracted.
+"""
+can_contract(i::Dim, j::Dim) = is_opposit_variance(i,j) && i==j
 
 """
     inverse_variance(i::Dim)
@@ -122,7 +137,7 @@ Dimension `i` with its variance flipped, `Cov`↔`Con`, an un-varianced dimensio
 being its own flip. Inverting a tensor raises its lower indices and lowers its
 upper ones, so `inv(a)` has size `reverse(inverse_variance.(size(a)))`.
 
-`can_contract(i, inverse_variance(i))` holds for every `i`.
+`can_contract(i, inverse_variance(i))` holds for every `i::Dim`.
 """
 inverse_variance(i::Int) = i
 inverse_variance(i::Cov) = Con(i[])
