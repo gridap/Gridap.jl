@@ -115,8 +115,8 @@ end
 """
     compute_metric_data(g_or_ginv::SymTensorValue)
 
-The callee will use [`parse_metric_data(; kwargs...)`](@ref parse_metric_data)
-which lazily compute missing required data.
+Return a [`MetricData`](@ref) behaving like `(;g, g_inv, sqrt_abs_g)` with all three
+fields eagerly computed.
 """
 function compute_metric_data(g_or_ginv::SymTensorValue{D}, sqrt_abs_g=nothing) where {D}
   data = if D isa Con
@@ -154,7 +154,7 @@ md = parse_metric_data(; g)
 function parse_metric_data(g_or_ginv::SymTensorValue{Dg}, sqrt_abs_g=nothing) where Dg
   Dg isa Cov && return MetricData(g_or_ginv, nothing, sqrt_abs_g)
   Dg isa Con && return MetricData(nothing, g_or_ginv, sqrt_abs_g)
-  throw(ArgumentError("The given (inverse) metric tensor has no variance"))
+  throw(ArgumentError("The given (inverse) metric tensor has no variance, use the kwarg constructor"))
 end
 function parse_metric_data(; g::Union{SymTensorValue{Dg,Tg,L},Nothing}=nothing,
                              g_inv::Union{SymTensorValue{Di,Ti,L},Nothing}=nothing,
