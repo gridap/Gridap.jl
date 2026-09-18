@@ -163,9 +163,9 @@ import Base: permutedims
 import Base: rand
 import Base: sqrt
 
-import LinearAlgebra: det, inv, tr, cross, dot, norm, normalize, eigen
+import LinearAlgebra: det, inv, tr, cross, dot, norm, normalize, eigen, rank
 # Reexport from LinearAlgebra (just for convenience)
-export det, inv, tr, cross, dot, norm, normalize, eigen, ×, ⋅
+export det, inv, tr, cross, dot, norm, normalize, eigen, rank, ×, ⋅
 
 import Gridap.Arrays: get_array
 

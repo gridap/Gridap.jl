@@ -957,6 +957,8 @@ cross(a::MultiValue, b::MultiValue) = error("Cross product only defined for R2 a
 # Linear Algebra
 ###############################################################
 
+rank(a::MultiValue) = rank(SArray(a))
+
 """
     det(a::MultiValue{Tuple{D,D},T})
 
