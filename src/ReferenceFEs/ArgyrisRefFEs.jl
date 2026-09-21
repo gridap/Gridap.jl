@@ -96,14 +96,14 @@ end
 
 function _argyris_face_own_dofs(p::Polytope{2})
   nv, ne = num_faces(p, 0), num_faces(p, 1)
-  own = [Int[] for _ in 1:num_faces(p)]
+  face_own_dofs = [Int[] for _ in 1:num_faces(p)]
   for v in 1:nv
-    own[v] = [v, nv + 2*v - 1, nv + 2*v, 3*nv + 3*v - 2, 3*nv + 3*v - 1, 3*nv + 3*v]
+    face_own_dofs[v] = [v, nv + 2*v - 1, nv + 2*v, 3*nv + 3*v - 2, 3*nv + 3*v - 1, 3*nv + 3*v]
   end
   for e in 1:ne
-    own[nv+e] = [6*nv + e]
+    face_own_dofs[nv+e] = [6*nv + e]
   end
-  return own
+  return face_own_dofs
 end
 
 function get_face_own_dofs_permutations(reffe::GenericRefFE{Argyris}, conf::Conformity)
@@ -235,3 +235,23 @@ function evaluate!(cache, k::ArgyrisChangeOfBasis, Jt, σ)
 
   return M
 end
+
+################################################################################
+# DOF scaling
+#
+# The vertex values are invariant, `h⁰`. Each Cartesian derivative at a vertex
+# carries one `K = J⁻ᵀ`, so the gradients scale like `h⁻¹` and the Hessians like
+# `h⁻²`. The edge DoF `∫ₑ (∇u⋅n) ds` scales like `h ⋅ h⁻¹ = h⁰`, the default of the
+# identity map.
+function get_dofscale_setter_function(reffe::GenericRefFE{Argyris}, ::IdentityPiolaMap)
+  exponent = zeros(Int, num_dofs(reffe))
+  face_own_dofs = get_face_own_dofs(reffe)
+  for v in get_dimrange(get_polytope(reffe), 0)
+    # a vertex owns its value, its 2 gradient and its 3 Hessian components, in order
+    _, g1, g2, h1, h2, h3 = face_own_dofs[v]
+    exponent[[g1, g2]] .= -1
+    exponent[[h1, h2, h3]] .= -2
+  end
+  _dofscale_setter_from_exponents(exponent)
+end
+

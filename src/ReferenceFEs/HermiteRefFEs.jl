@@ -168,15 +168,19 @@ struct HermiteChangeOfBasis <: Map
 end
 
 function HermiteChangeOfBasis(reffe::GenericRefFE{Hermite}, transposed_inverse::Bool)
+  HermiteChangeOfBasis(_hermite_vertex_grad_dofs(reffe), num_dofs(reffe), transposed_inverse)
+end
+
+# per vertex, the gradient DoFs, direction-major
+function _hermite_vertex_grad_dofs(reffe::GenericRefFE{Hermite})
   p = get_polytope(reffe)
   D = num_dims(p)
   own = get_face_own_dofs(reffe)
   # a vertex owns its value(s) first, then D gradient components per value
-  vertex_grad_dofs = map(get_dimrange(p, 0)) do v
+  map(get_dimrange(p, 0)) do v
     nc = length(own[v]) ÷ (D + 1)
     own[v][nc+1:end]
   end
-  HermiteChangeOfBasis(vertex_grad_dofs, num_dofs(reffe), transposed_inverse)
 end
 
 function return_cache(k::HermiteChangeOfBasis, Jt)
@@ -205,3 +209,17 @@ function evaluate!(cache, k::HermiteChangeOfBasis, Jt)
 
   return M
 end
+
+################################################################################
+# DOF scaling
+#
+# The point values are invariant, `h⁰`. A Cartesian derivative at a vertex
+# carries one `K = J⁻ᵀ`, so it scales like `h⁻¹`.
+function get_dofscale_setter_function(reffe::GenericRefFE{Hermite}, ::IdentityPiolaMap)
+  exponent = zeros(Int, num_dofs(reffe))
+  for dofs in _hermite_vertex_grad_dofs(reffe)
+    exponent[dofs] .= -1
+  end
+  _dofscale_setter_from_exponents(exponent)
+end
+

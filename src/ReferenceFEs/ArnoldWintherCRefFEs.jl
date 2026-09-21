@@ -188,3 +188,13 @@ function evaluate!(cache, k::AWCChangeOfBasis, Jt, σ)
   _aw_edge_blocks!(M, k.tangents, k.normals, k.edge_dofs, Jt, σ, k.transposed_inverse)
   return M
 end
+
+################################################################################
+# DOF scaling
+#
+function get_dofscale_setter_function(
+  reffe::GenericRefFE{ArnoldWintherC}, ::DoubleContraVariantPiolaMap
+)
+  _face_dim_dofscale_setter(reffe)
+end
+

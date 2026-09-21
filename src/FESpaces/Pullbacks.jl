@@ -15,7 +15,7 @@ function get_cell_shapefuns_and_dof_basis(
   )
 end
 
-# This constructor allows fo provided cell changes and jacobians, 
+# This constructor allows fo provided cell changes and jacobians,
 # which is necessary for GridapDistributed
 function get_cell_shapefuns_and_dof_basis(
   pushforward::Pushforward, model, cell_reffe, cell_changes, cell_Jt;
@@ -249,8 +249,8 @@ function apply_dof_scaling(cell_changes, model, cell_reffe, pushforward,
   dof_scales = lazy_map(dofscaling_map, cell_ids)
   inv_dof_scales = lazy_map(inv, dof_scales)
 
-  cell_change = lazy_map(*, dof_scales, cell_change)
-  cell_change_invt = lazy_map(*, inv_dof_scales, cell_change_invt)
+  cell_change = lazy_map(*, cell_change, dof_scales)               # Φ = D Cᵀ F_*Φ̂
+  cell_change_invt = lazy_map(*, cell_change_invt, inv_dof_scales) # Σ = D⁻¹ C⁻¹ (F^*)⁻¹Σ̂
   return (cell_change, cell_change_invt)
 end
 
