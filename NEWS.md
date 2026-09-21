@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.10] - 2026-09-22
+
 ### Added
 
 - Since PR[#1335](https://github.com/gridap/Gridap.jl/pull/1335).
