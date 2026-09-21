@@ -149,18 +149,21 @@ function _scaled_cell_mass(reffe, D, L; simplex, global_meshsize, degree=8)
   domain = ntuple(i -> isodd(i) ? 0 : L, 2D)
   model = CartesianDiscreteModel(domain, tfill(1, Val(D)))
   simplex && (model = simplexify(model))
-  name, args, kwargs = reffe
-  cell_reffe = ReferenceFE(model, name, args...; kwargs...)
+  p = first(get_polytopes(model))
+  cell_reffe = Fill(_reffe_on(reffe, p), num_cells(model))
   conf = Conformity(testitem(cell_reffe), nothing)
   h = global_meshsize ? L : nothing
   cell_shapefuns, _ = FESpaces.get_cell_shapefuns_and_dof_basis(
     model, cell_reffe, conf; scale_dof=true, global_meshsize=h
   )
 
-  quad = Quadrature(first(get_polytopes(model)), degree)
+  quad = Quadrature(p, degree)
   x, w = get_coordinates(quad), get_weights(quad)
   _quadrature_mass(evaluate(cell_shapefuns[1], x), w) # npoints × ndofs
 end
+
+_reffe_on((name, args, kwargs)::Tuple, p) = ReferenceFE(p, name, args...; kwargs...)
+_reffe_on(reffe_fun, p) = reffe_fun(p)
 
 function _quadrature_mass(φ, w)
   n = size(φ, 2)
@@ -171,15 +174,44 @@ function _quadrature_mass(φ, w)
   M
 end
 
-function _test_FESpace_dof_scaling(reffe; dims=2:3, n_cube=true, simplex=true)
+function _test_FESpace_dof_scaling(
+  reffe; dims=2:3, n_cube=true, simplex=true, local_meshsize=true
+)
   cells = (n_cube ? (false,) : ())..., (simplex ? (true,) : ())...
-  for D in dims, on_simplex in cells, global_meshsize in (false, true)
+  meshsizes = local_meshsize ? (false, true) : (true,)
+  for D in dims, on_simplex in cells, global_meshsize in meshsizes
     M1 = _scaled_cell_mass(reffe, D, 1.0 ; simplex=on_simplex, global_meshsize)
     ML = _scaled_cell_mass(reffe, D, 1e-4; simplex=on_simplex, global_meshsize)
     @test all(isapprox.(diag(ML), diag(M1); rtol=1e-6))
     @test M1 ≈ ML
   end
 end
+
+# The default setters scale every DoF like the pushforward does
+function _default_dofscale(p, pushforward, h)
+  reffe = ReferenceFE(p, lagrangian, Float64, 1)
+  setter = ReferenceFEs.get_dofscale_setter_function(reffe, pushforward)
+  dofscale = zeros(num_dofs(reffe))
+  setter(dofscale, get_face_own_dofs(reffe), fill(h, num_faces(reffe)))
+  dofscale
+end
+for (p, D) in ((TRI, 2), (TET, 3)), h in (0.5, 2.0)
+  n = num_vertices(p)
+  @test _default_dofscale(p, ReferenceFEs.IdentityPiolaMap(), h) == fill(1.0, n)
+  @test _default_dofscale(p, ReferenceFEs.CoVariantPiolaMap(), h) == fill(h, n)
+  @test _default_dofscale(p, ReferenceFEs.DoubleCoVariantPiolaMap(), h) == fill(h^2, n)
+  @test _default_dofscale(p, ReferenceFEs.ContraVariantPiolaMap(), h) == fill(h^(D-1), n)
+  @test _default_dofscale(p, ReferenceFEs.DoubleContraVariantPiolaMap(), h) == fill(h^(2D-2), n)
+  @test _default_dofscale(p, ReferenceFEs.CoContraVariantPiolaMap(), h) == fill(h^D, n)
+end
+
+# A setter built from per-DoF exponents, the DoFs of a face sharing its meshsize
+reffe = ReferenceFE(TRI, lagrangian, Float64, 2)  # 3 vertex DoFs, 3 edge DoFs
+setter = ReferenceFEs._dofscale_setter_from_exponents([0, -1, 2, 1, 1, -2])
+dofscale = zeros(num_dofs(reffe))
+face_meshsize = [2.0, 3.0, 5.0, 7.0, 11.0, 13.0, 17.0]
+setter(dofscale, get_face_own_dofs(reffe), face_meshsize)
+@test dofscale == [1.0, 3.0^-1, 5.0^2, 7.0, 11.0, 13.0^-2]
 
 # In theory, mapped k-forms scale with ~hᵏ, empirical scaling results:
 # - (0/D)-form mapped: ~h⁰ (D-form same as 1-form because we don't use the broken Piola map in Gridap)
@@ -203,6 +235,47 @@ _test_FESpace_dof_scaling(reffe; n_cube=false)
 # normal ones like h²
 reffe = ReferenceFE(mtw, Float64, 1)
 _test_FESpace_dof_scaling(reffe; n_cube=false)
+
+reffe = ReferenceFE(hermite, Float64)
+_test_FESpace_dof_scaling(reffe; dims=1:3, n_cube=false, local_meshsize=false)
+
+reffe = ReferenceFE(hermite, VectorValue{2,Float64})
+_test_FESpace_dof_scaling(reffe; dims=2:2, n_cube=false, local_meshsize=false)
+
+reffe = ReferenceFE(argyris, Float64)
+_test_FESpace_dof_scaling(reffe; dims=2:2, n_cube=false, local_meshsize=false)
+
+reffe = ReferenceFE(morley, Float64)
+_test_FESpace_dof_scaling(reffe; dims=2:2, n_cube=false, local_meshsize=false)
+
+for order in (0, 2)
+  reffe = ReferenceFE(hhj, Float64, order)
+  _test_FESpace_dof_scaling(reffe; dims=2:2, n_cube=false)
+
+  reffe = ReferenceFE(regge, Float64, order)
+  _test_FESpace_dof_scaling(reffe; dims=2:2, n_cube=false)
+
+  reffe = ReferenceFE(gls, Float64, order)
+  _test_FESpace_dof_scaling(reffe; dims=2:2, n_cube=false)
+end
+
+reffe = ReferenceFE(aw_nc, Float64)
+_test_FESpace_dof_scaling(reffe; dims=2:2, n_cube=false)
+
+reffe = ReferenceFE(aw_c, Float64)
+_test_FESpace_dof_scaling(reffe; dims=2:2, n_cube=false, local_meshsize=false)
+
+reffe = ReferenceFE(rotating_pλ, Float64, 2)
+_test_FESpace_dof_scaling(reffe; n_cube=false)
+
+reffe = ReferenceFE(trimmed_pλ, Float64, 2)
+_test_FESpace_dof_scaling(reffe; n_cube=false)
+
+reffe = p -> CartProdRefFE(ReferenceFE(p, lagrangian, Float64, 2), ReferenceFE(p, argyris, Float64))
+_test_FESpace_dof_scaling(reffe; dims=2:2, n_cube=false, local_meshsize=false)
+
+reffe = p -> CartProdRefFE(ReferenceFE(p, raviart_thomas, Float64, 1), ReferenceFE(p, mtw, Float64, 1))
+_test_FESpace_dof_scaling(reffe; dims=3:3, n_cube=false)
 
 # All trivial elements
 #

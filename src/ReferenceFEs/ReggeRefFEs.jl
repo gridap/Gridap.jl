@@ -88,3 +88,12 @@ end
 function get_face_own_dofs_permutations(reffe::GenericRefFE{Regge}, conf::Conformity)
   _identity_dof_permutations(reffe, conf)
 end
+
+################################################################################
+# DOF scaling
+#
+# The change of basis is `EdgeScalingChangeOfBasis`, in Pullbacks.jl.
+function get_dofscale_setter_function(reffe::GenericRefFE{Regge}, ::DoubleCoVariantPiolaMap)
+  _face_dim_dofscale_setter(reffe)
+end
+

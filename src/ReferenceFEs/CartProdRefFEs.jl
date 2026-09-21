@@ -433,3 +433,31 @@ _cp_maps(::CartProdPushforward{K,PFS}, ::Val{K}) where {K,PFS} =
   _cp_maps(PFS)
 
 _cp_maps(pf::IdentityPiolaMap, ::Val{K}) where K = ntuple(i -> pf, K)
+
+################################################################################
+# DOF scaling
+#
+# The factors never mix, so each factor's own setter scales its block through a
+# view.
+function get_dofscale_setter_function(
+  reffe::GenericRefFE{CartProd{K,NS}}, pf::Pushforward
+) where {K,NS}
+  reffes = get_metadata(reffe)
+  ndofs = map(num_dofs, reffes)
+  blocks = map((off, n) -> off .+ (1:n), _cp_offsets(ndofs), ndofs)
+  setters = map(get_dofscale_setter_function, reffes, _cp_maps(pf, Val(K)))
+  factor_own_dofs = map(get_face_own_dofs, reffes)
+  blocked_own_dofs = get_face_own_dofs(reffe)
+
+  let setters=setters, blocks=blocks, factor_own_dofs=factor_own_dofs,
+      blocked_own_dofs=blocked_own_dofs
+    @inline function(dofscale, face_own_dofs, face_meshsize)
+      @check face_own_dofs == blocked_own_dofs "unexpected face ownership in the DoF scale setter. scale_dof may be disabled as a temporary solution."
+      foreach(setters, blocks, factor_own_dofs) do setter, block, own_dofs
+        setter(view(dofscale, block), own_dofs, face_meshsize)
+      end
+      nothing
+    end
+  end
+end
+

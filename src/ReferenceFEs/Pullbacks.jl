@@ -245,7 +245,7 @@ end
 The mixed Piola map `φ̂ ↦ φ = det(J)⁻¹ J⁻ᵀ φ̂ Jᵀ`, covariant on the first index
 and contravariant on the second, for matrix-valued fields whose
 *normal-tangential* components are the continuous ones. It is the map of the
-Gopalakrishnan--Lederer--Schöberl element. 
+Gopalakrishnan--Lederer--Schöberl element.
 Does not preserve symmetry, but preserves the trace.
 """
 struct CoContraVariantPiolaMap <: Pushforward end
@@ -335,7 +335,9 @@ something equivalent to
 
     @inline function scale_setter!(dofscale, face_own_dofs, face_meshsize)
       for (face_dofs, h) in zip(face_own_dofs, face_meshsize)
-        @inbounds dofscale[face_dofs] .= h^(D-1)
+        for dof in face_dofs
+          dofscale[dof] = h^(D-1)
+        end
       end
     end
 
@@ -352,7 +354,10 @@ function get_dofscale_setter_function(::ReferenceFE{D}, pushforward::Pushforward
     # The returned "scale_setter!" anonymous funtion:
     @inline function(dofscale, face_own_dofs, face_meshsize)
       for (face_dofs, h) in zip(face_own_dofs, face_meshsize)
-        @inbounds dofscale[face_dofs] .= scaler(h)
+        hp = scaler(h)
+        for dof in face_dofs
+          dofscale[dof] = hp
+        end
       end
     end
 
@@ -368,6 +373,37 @@ _scaling_function(::ContraVariantPiolaMap, D::Int) = let D=D
 end
 _scaling_function(::DoubleContraVariantPiolaMap, D::Int) = let D=D
   h -> h^(2D-2)
+end
+_scaling_function(::CoContraVariantPiolaMap, D::Int) = let D=D
+  h -> h^D
+end
+
+# The scale setter of a reffe whose DoF `i` scales like `h^exponent[i]`
+function _dofscale_setter_from_exponents(exponent::AbstractVector{<:Integer})
+  let exponent=exponent
+    @inline function(dofscale, face_own_dofs, face_meshsize)
+      for (face_dofs, h) in zip(face_own_dofs, face_meshsize)
+        e, he = 0, one(h)
+        for dof in face_dofs
+          if exponent[dof] != e
+            e = exponent[dof]
+            he = h^e
+          end
+          dofscale[dof] = he
+        end
+      end
+    end
+  end
+end
+
+# The setter of an element whose every DoF is a moment over the face owning it,
+# scaling like the `d`-measure of its `d`-face: `h^d`
+function _face_dim_dofscale_setter(reffe::ReferenceFE)
+  exponent = zeros(Int, num_dofs(reffe))
+  for (face_dofs, d) in zip(get_face_own_dofs(reffe), get_facedims(get_polytope(reffe)))
+    exponent[face_dofs] .= d
+  end
+  _dofscale_setter_from_exponents(exponent)
 end
 
 ################################################################################

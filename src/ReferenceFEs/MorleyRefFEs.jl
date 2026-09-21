@@ -184,3 +184,7 @@ function evaluate!(cache, k::MorleyChangeOfBasis, Jt, σ)
 
   return M
 end
+
+# DOF scaling: the default `h⁰` of the identity map is correct since the vertex
+# values are invariant and the edge DoF `∫ₑ (∇u⋅n) ds` scales like `h ⋅ h⁻¹`.
+

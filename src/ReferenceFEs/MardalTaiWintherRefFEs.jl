@@ -499,6 +499,30 @@ function evaluate!(_cache, k::TWChangeOfBasis, Jt, pids)
 end
 
 ################################################################################
+# DOF scaling
+#
+# 2D: every DoF is an edge moment against a unit normal or tangent, so all of them
+# scale with the edge length -- the default of the contravariant Piola map.
+#
+# 3D: the normal moments are preserved by the map and scale with the face area,
+# `h²`. The tangential weights `n×e₁`, `n×e₂`, `n×(x-a)` are built from the
+# scaled normal `n = e₁×e₂` and edge vectors `eᵢ = J êᵢ`, one power of `h` more
+# than the physical measure (the `μ` diagonal of `W` above is `~h`), so those
+# DoFs scale like `h³`. Each face owns its three normal DoFs first, then its
+# three tangential ones.
+function get_dofscale_setter_function(
+  reffe::GenericRefFE{MardalTaiWinther,3}, ::ContraVariantPiolaMap
+)
+  exponent = zeros(Int, num_dofs(reffe))
+  for face_dofs in get_face_own_dofs(reffe)
+    for (i, dof) in enumerate(face_dofs)
+      exponent[dof] = i <= 3 ? 2 : 3
+    end
+  end
+  _dofscale_setter_from_exponents(exponent)
+end
+
+################################################################################
 # One element in two dimensions:
 #
 #   V(K) = P₁(K;Rᴰ) + curl(b P₁(K;Λ^{D-2})),    b the barycentric bubble
