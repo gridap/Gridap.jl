@@ -10,6 +10,7 @@ using Gridap.FESpaces
 using Gridap.CellData
 using Gridap.Fields
 using FillArrays
+using LinearAlgebra
 
 # testing compute_conforming_cell_dofs
 
@@ -135,113 +136,98 @@ cell_conformity_gen = FESpaces.GenericCellConformity(cell_lface_own_ldofs, cell_
 @test get_cell_type(cell_conformity_gen) == Base.OneTo(9)
 
 # Test DOF scaling
+#
+# On a cell K_L = L K_1, a DOF scaling like h^p has a dual shape function scaling
+# like h^-p, so the scaled elemental mass matrix normalized by the cell volume,
+# ∫_K φᵢ⊙φⱼ / |K|, is independent of L iff the DOFs are correctly scaled: its
+# diagonal entries are positive and scale like L^{2(p-q)} when a DOF is scaled
+# by h^q instead of h^p, in either direction.
+#
+# The cell is affine, so |det J| is constant and the normalization amounts to
+# integrating on the reference cell with the pushed-forward shape functions.
+function _scaled_cell_mass(reffe, D, L; simplex, global_meshsize, degree=8)
+  domain = ntuple(i -> isodd(i) ? 0 : L, 2D)
+  model = CartesianDiscreteModel(domain, tfill(1, Val(D)))
+  simplex && (model = simplexify(model))
+  name, args, kwargs = reffe
+  cell_reffe = ReferenceFE(model, name, args...; kwargs...)
+  conf = Conformity(testitem(cell_reffe), nothing)
+  h = global_meshsize ? L : nothing
+  cell_shapefuns, _ = FESpaces.get_cell_shapefuns_and_dof_basis(
+    model, cell_reffe, conf; scale_dof=true, global_meshsize=h
+  )
 
-function _freedof_value_absmax(
-    reffe, one_function, D, L=1.e-4; simplex=false, scale_dof=false, use_global_meshsize=false
-)
-
-  partition = tfill(5-D,Val(D))
-  stretching = if use_global_meshsize
-    #no stretch if testing global mesh size
-    _ -> x -> x
-  else
-    # The stretching helps ensuring that the FESpace with scaled DOFs keeps
-    # conformity on arbitrary sizes of neighbooring elements
-    L -> x -> x*(1 + 9norm(x)^2/(L^2))/10
-  end
-
-  domain = ntuple( i-> isodd(i) ? 0 : L, 2D)
-  model = CartesianDiscreteModel(domain, partition, map=stretching(L))
-  trian = simplex ? Triangulation(simplexify(model)) : Triangulation(model)
-  global_meshsize = use_global_meshsize ? L/first(partition) : nothing
-  fe_space = FESpace(trian, reffe; scale_dof, global_meshsize)
-  one_fef = interpolate(one_function, fe_space)
-  maxdof = maximum(abs.(get_free_dof_values(one_fef)))
-
-  maxdof
+  quad = Quadrature(first(get_polytopes(model)), degree)
+  x, w = get_coordinates(quad), get_weights(quad)
+  _quadrature_mass(evaluate(cell_shapefuns[1], x), w) # npoints × ndofs
 end
 
-function _test_FESpace_dof_scaling(reffe,one_function; dims=2:3, n_cube=true, simplex=true, tol=2)
-  for D in dims
-    if n_cube
-      #maxdof1 = _freedof_value_absmax(reffe, one_function(D), D, 1)
-      #maxdofL = _freedof_value_absmax(reffe, one_function(D), D)
-      #println(D,"D ", reffe[1]," quad, ", "ratio ", round(maxdofL/maxdof1; sigdigits=true))
+function _quadrature_mass(φ, w)
+  n = size(φ, 2)
+  M = zeros(n, n)
+  for j in 1:n, i in 1:n, q in eachindex(w)
+    M[i, j] += w[q] * inner(φ[q, i], φ[q, j])
+  end
+  M
+end
 
-      maxdof1 = _freedof_value_absmax(reffe, one_function(D), D, 1; scale_dof=true)
-      maxdofL = _freedof_value_absmax(reffe, one_function(D), D; scale_dof=true)
-      #println(D,"D ", reffe[1]," quad, ", "ratio ", round(maxdofL/maxdof1; sigdigits=true), " (scaled)")
-      @test  (maxdof1/tol < maxdofL < maxdof1*tol)
-
-      maxdof1 = _freedof_value_absmax(reffe, one_function(D), D, 1; scale_dof=true, use_global_meshsize=true)
-      maxdofL = _freedof_value_absmax(reffe, one_function(D), D; scale_dof=true, use_global_meshsize=true)
-      #println(D,"D ", reffe[1]," quad, ", "ratio ", round(maxdofL/maxdof1; sigdigits=true), " (globally scaled)")
-      @test  (maxdof1/tol < maxdofL < maxdof1*tol)
-    end
-
-    if simplex
-      #maxdof1 = _freedof_value_absmax(reffe, one_function(D), D, 1; simplex)
-      #maxdofL = _freedof_value_absmax(reffe, one_function(D), D   ; simplex)
-      #println(D,"D ", reffe[1]," simplex, ", "ratio ", round(maxdofL/maxdof1; sigdigits=true))
-
-      maxdof1 = _freedof_value_absmax(reffe, one_function(D), D, 1; simplex, scale_dof=true)
-      maxdofL = _freedof_value_absmax(reffe, one_function(D), D   ; simplex, scale_dof=true)
-      #println(D,"D ", reffe[1]," simplex, ", "ratio ", round(maxdofL/maxdof1; sigdigits=true), " (scaled)")
-      @test  (maxdof1/tol < maxdofL < maxdof1*tol)
-
-      maxdof1 = _freedof_value_absmax(reffe, one_function(D), D, 1; simplex, scale_dof=true, use_global_meshsize=true)
-      maxdofL = _freedof_value_absmax(reffe, one_function(D), D   ; simplex, scale_dof=true, use_global_meshsize=true)
-      #println(D,"D ", reffe[1]," simplex, ", "ratio ", round(maxdofL/maxdof1; sigdigits=true), " (globally scaled)")
-      @test  (maxdof1/tol < maxdofL < maxdof1*tol)
-    end
+function _test_FESpace_dof_scaling(reffe; dims=2:3, n_cube=true, simplex=true)
+  cells = (n_cube ? (false,) : ())..., (simplex ? (true,) : ())...
+  for D in dims, on_simplex in cells, global_meshsize in (false, true)
+    M1 = _scaled_cell_mass(reffe, D, 1.0 ; simplex=on_simplex, global_meshsize)
+    ML = _scaled_cell_mass(reffe, D, 1e-4; simplex=on_simplex, global_meshsize)
+    @test all(isapprox.(diag(ML), diag(M1); rtol=1e-6))
+    @test M1 ≈ ML
   end
 end
 
-
-# In theory, mapped k-formed scale with ~hᵏ, empirical scaling results:
+# In theory, mapped k-forms scale with ~hᵏ, empirical scaling results:
 # - (0/D)-form mapped: ~h⁰ (D-form same as 1-form because we don't use the broken Piola map in Gridap)
 # - 1-form mapped: ~h¹
 # - (D-1)-form mapped: ~hᴰ⁻¹
-vec_value(D) = (D > 1 ? x->VectorValue{D}(tfill(1.0,Val(D))) : x->1.0)
 
 reffe = ReferenceFE(nedelec, Float64, 3)
-_test_FESpace_dof_scaling(reffe, vec_value)
+_test_FESpace_dof_scaling(reffe)
 
 reffe = ReferenceFE(nedelec2, Float64, 3)
-_test_FESpace_dof_scaling(reffe, vec_value; n_cube=false)
+_test_FESpace_dof_scaling(reffe; n_cube=false)
 
 reffe = ReferenceFE(raviart_thomas, Float64, 3)
-_test_FESpace_dof_scaling(reffe, vec_value)
-_test_FESpace_dof_scaling(reffe, vec_value, dims=4:4, n_cube=false)
+_test_FESpace_dof_scaling(reffe)
+_test_FESpace_dof_scaling(reffe, dims=4:4, n_cube=false)
 
 reffe = ReferenceFE(bdm, Float64, 3)
-_test_FESpace_dof_scaling(reffe, vec_value; n_cube=false)
+_test_FESpace_dof_scaling(reffe; n_cube=false)
+
+# Heterogeneous scaling within a face: the 3D tangential DoFs scale like h³, the
+# normal ones like h²
+reffe = ReferenceFE(mtw, Float64, 1)
+_test_FESpace_dof_scaling(reffe; n_cube=false)
 
 # All trivial elements
 #
 # reffe = ReferenceFE(lagrangian, Float64, 4)
-# _test_FESpace_dof_scaling(reffe, D -> (x->1.0), dims=1:4)
+# _test_FESpace_dof_scaling(reffe; dims=1:4)
 #
 # reffe = ReferenceFE(bezier, Float64, 4)
-# _test_FESpace_dof_scaling(reffe, D -> (x->1.0), dims=1:3)
+# _test_FESpace_dof_scaling(reffe; dims=1:3)
 #
 # reffe = ReferenceFE(modalC0, Float64, 2)
-# _test_FESpace_dof_scaling(reffe, D -> (x->1.0), dims=1:3, simplex=false)
-# #_test_FESpace_dof_scaling(reffe, D -> (x->1+sum(x)^(3-D)), dims=1:3, simplex=false)
+# _test_FESpace_dof_scaling(reffe; dims=1:3, simplex=false)
 #
 # reffe = ReferenceFE(serendipity, Float64, 4)
-# _test_FESpace_dof_scaling(reffe, D -> (x->1.0), dims=1:3, simplex=false)
+# _test_FESpace_dof_scaling(reffe; dims=1:3, simplex=false)
 #
 # reffe = ReferenceFE(modal_lagrangian, Float64, 4)
-# _test_FESpace_dof_scaling(reffe, D -> (x->1.0), dims=1:3)
+# _test_FESpace_dof_scaling(reffe; dims=1:3)
 #
 # reffe = ReferenceFE(modal_serendipity, Float64, 4)
-# _test_FESpace_dof_scaling(reffe, D -> (x->1.0), dims=1:3, simplex=false)
+# _test_FESpace_dof_scaling(reffe; dims=1:3, simplex=false)
 #
 # reffe = ReferenceFE(crouzeix_raviart, Float64, 1)
-# _test_FESpace_dof_scaling(reffe, D -> (x->1.0), dims=2:2, n_cube=false)
+# _test_FESpace_dof_scaling(reffe; dims=2:2, n_cube=false)
 #
 # reffe = ReferenceFE(bubble, Float64, 1)
-# _test_FESpace_dof_scaling(reffe, D -> (x->1.0), dims=2:2, n_cube=false)
+# _test_FESpace_dof_scaling(reffe; dims=2:2, n_cube=false)
 
 end  # module
