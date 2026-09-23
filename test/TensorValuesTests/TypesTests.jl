@@ -645,6 +645,14 @@ V = VectorValue{3}
 @test length(V) == 3
 @test size(V) == (3,)
 
+# Too abstract types error instead of silently giving a wrong answer
+
+@test_throws "has no element type" eltype(VectorValue{3})
+@test_throws "the size information is needed" length(VectorValue)
+@test_throws "has no size information" size(VectorValue)
+@test_throws "the size and eltype parameters" zero(VectorValue{3})
+@test_throws "parametric argument) is needed" num_components(VectorValue)
+
 # Custom type printing
 
 v = TensorValue{3,2,Float64}(1,2,3,4,5,6)

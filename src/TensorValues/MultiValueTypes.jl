@@ -180,9 +180,11 @@ end
 
 eltype(::Type{<:MultiValue{S,T}}) where {S,T} = T
 eltype(::MultiValue{S,T}) where {S,T} = T
+eltype(V::Type{<:MultiValue}) = @unreachable "$V type has no element type T."
 
 length(::Type{<:MultiValue{S}}) where S = prod(_rm_size_variance(size(MultiValue{S})))
 length(a::MultiValue) = length(typeof(a))
+length(V::Type{<:MultiValue}) = @unreachable "$V type is too abstract to count its components, the size information is needed."
 
 size(::Type{<:MultiValue{S}}) where S<:Tuple = tuple(S.parameters...)
 size(a::MultiValue) = size(typeof(a))
@@ -191,6 +193,7 @@ function size(::Type{<:MultiValue{S,T,N}}, d::Integer) where {S,T,N}
   return d > N ? 1 :  @inbounds size(MultiValue{S})[d] # @inbounds
 end
 size(a::MultiValue, d::Integer) = size(typeof(a), d)
+size(V::Type{<:MultiValue}) = @unreachable "$V type has no size information."
 
 """
     tensor_type(a::Number)
@@ -220,7 +223,7 @@ and the product of the size dimensions for a `MultiValue`. This is the same as `
 """
 num_components(a::Number) = num_components(typeof(a))
 num_components(::Type{<:Number}) = 1
-num_components(T::Type{<:MultiValue}) = @unreachable "$T type is too abstract to count its components, the shape (firt parametric argument) is neede."
+num_components(V::Type{<:MultiValue}) = @unreachable "$V type is too abstract to count its components, the shape (first parametric argument) is needed."
 num_components(::Type{<:MultiValue{S}}) where S = length(MultiValue{S})
 
 """
@@ -252,6 +255,7 @@ function n_components end
 
 zero(::Type{V}) where V<:MultiValue{S,T} where {S,T} = V(tfill(zero(T),Val(num_indep_components(V))))
 zero(a::MultiValue) = zero(typeof(a))
+zero(V::Type{<:MultiValue}) = @unreachable "$V type is too abstract, the size and eltype parameters."
 
 one(::Type{V}) where V<:MultiValue = @unreachable "`one` not defined for $V"
 one(a::MultiValue) = one(typeof(a))
