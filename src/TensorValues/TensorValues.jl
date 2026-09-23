@@ -71,6 +71,7 @@ export inverse_variance
 export MetricData
 export compute_metric_data
 export parse_metric_data
+export isidentity
 
 export MultiValue
 export VectorValue

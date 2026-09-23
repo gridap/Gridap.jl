@@ -153,7 +153,7 @@ Interior product (contraction) `ι_v ω`, of a an alternating `K`-tensor `ω` an
     (ι_v ω)(w₂,…,wₖ) = ω(v, w₂,…,wₖ).
 
 If `v` is not a `VectorValue`, the index of `v` should be contractable with
-that of `ω`, else, `v` is assumed contravariant.
+that of `ω`, else, `v` is assumed contravariant so `ω` should be covariant.
 """
 @generated function interior_product(v::MultiValue{Tuple{Dv},Tv}, ω::SkewSymKTensorValue{V,K,Dw,Tw}) where {V,K,Dv,Dw,Tv,Tw}
   K >= 1 || return :(@unreachable "interior product requires K ≥ 1")
@@ -187,14 +187,35 @@ function interior_product(v::VectorValue{D}, ω::ExteriorFormValue) where D
 end
 const ι = interior_product
 
+
+"""
+    symbolic_coordinates(D::Integer)
+
+The first `D` global Cartesian symbolic coordinate variables `x¹,…,x⁹`
+(at most 9), as a tuple of `Symbolics.Num`. These are the variables
+`exterior_derivative` differentiates with respect to for symbolic forms.
+
+Provided by the GridapSymbolicsExt package extension when Symbolics is loaded.
+"""
+function symbolic_coordinates end
+
+function _check_metric_dim(g_or_ginv::SymTensorValue{Dg}, D::Int) where Dg
+  Int(Dg) == D || throw(DimensionMismatch(
+    "the metric tensor has dimension $(Int(Dg)), but the tensor it acts on has dimension $D"))
+  nothing
+end
+
 # ============================================================
-# Hodge star ⋆ (flat Euclidean metric, g = Iᴅ, so √|det(g)| = 1)
+# Riemannian Hodge star  ⋆ : Ωᴷ → Ωᴰ⁻ᴷ
 #
-# (⋆ω)_J = ∑_I  ε_{IJ}  ω_I
-# where I ranges over K-combinations, J over (D-K)-combinations,
-# and ε_{IJ} = levicivita of the permutation (I,J) → sorted (1…D).
-# Only the complementary pair J = Iᶜ contributes, since ε_{IJ} vanishes as soon
-# as I and J share an index.
+# Algorithm (coordinate formula):
+#   Step 1 — raise indices:
+#     ω^I = Σ_{J sorted K-index} det([g_inv[I[a],J[b]]]_{a,b}) ω_J
+#   Step 2 — Levi-Civita contraction:
+#     (⋆ ω)_L = √|det(g)| Σ_{I sorted} ε(I,L) ω^I
+#
+# Passing g_inv (the pointwise inverse metric tensor) and sqrt_abs_g
+# (the pointwise square root of det g) keeps this purely algebraic.
 # ============================================================
 
 """
@@ -239,72 +260,17 @@ function _hodge_star_signs(K::Int, D::Int)
   signs
 end
 
-
 """
-    flat_hodge_star(ω::ExteriorFormValue{K,D})
-    flat_hodge_star(ω::MultiValue{NTuple{K,D}})
-    ⋆ᴱ(ω)
-
-Hodge star `⋆ω` in Euclidean space, that is [`hodge_star`](@ref) with the
-identity metric, an alternating `(D-K)`-tensor with same variance as `ω`.
-"""
-@generated function flat_hodge_star(ω::SkewSymKTensorValue{V,K,Dw}) where {V,K,Dw}
-  D = Int(Dw)
-  K <= D || return :(@unreachable $("hodge star requires K ≤ D, got K = $K and D = $D"))
-
-  Kc = D - K
-  L  = binomial(D, K)   # = binomial(D, Kc), the two are matched by complementation
-  s  = _hodge_star_signs(K, D)
-  comps = [_signed(s[L+1-m], :(indep_comp_getindex(ω,$(L+1-m)))) for m in 1:L]
-  :( SkewSymKTensorValue{V,$Kc,$Dw}($(comps...)) )
-end
-flat_hodge_star(a::MultiValue{NTuple{K,Dw}}) where {K,Dw} = flat_hodge_star(𝔸(a))
-const ⋆ᴱ = flat_hodge_star
-
-# ============================================================
-# Generic functions extended elsewhere
-#
-# Methods for Symbolics.Num coefficients are provided by the GridapSymbolicsExt
-# package extension.
-# ============================================================
-
-"""
-    symbolic_coordinates(D::Integer)
-
-The first `D` global Cartesian symbolic coordinate variables `x¹,…,x⁹`
-(at most 9), as a tuple of `Symbolics.Num`. These are the variables
-`exterior_derivative` differentiates with respect to for symbolic forms.
-
-Provided by the GridapSymbolicsExt package extension when Symbolics is loaded.
-"""
-function symbolic_coordinates end
-
-# ============================================================
-# Riemannian Hodge star  ⋆_g : Ωᴷ → Ωᴰ⁻ᴷ
-#
-# Algorithm (coordinate formula):
-#   Step 1 — raise indices:
-#     ω^I = Σ_{J sorted K-index} det([g_inv[I[a],J[b]]]_{a,b}) ω_J
-#   Step 2 — Levi-Civita contraction:
-#     (⋆_g ω)_L = √|det(g)| Σ_{I sorted} ε(I,L) ω^I
-#
-# Passing g_inv (the pointwise inverse metric tensor) and sqrt_abs_g
-# (the pointwise square root of det g) keeps this purely algebraic.
-# ============================================================
-
-"""
-    hodge_star(ω::MultiValue{NTuple{K,D}},  g_or_ginv[, sqrt_abs_g])
-    hodge_star(ω, LinearAlgebra.I) = flat_hodge_star(ω)
-    ⋆(ω, g_or_ginv[, sqrt_abs_g])
+    hodge_star(ω::MultiValue{NTuple{K,D}}, metric_args...)
+    ⋆(ω, metric_args...)
 
 Hodge star `⋆ω` of a `K`-tensor `ω` with variance. It is an alternating
 `(D-K)`-tensor of the same variance, a form for a covariant `ω` and a
 `(D-K)`-vector for a contravariant one.
 
-`g_or_ginv` is either the metric tensor `g` (covariant) or its inverse `g_inv`
-(contravariant); whichever is missing is computed on demand, see
-[`parse_metric_data`](@ref). Passing `sqrt_abs_g` = `√|det(g)|` spares computing
-a determinant.
+`metric_args` contains the metric information, see [`parse_metric_data`](@ref).
+`hodge_star` uses `sqrt_abs_g` and the metric with opposite variance to `ω`,
+that is `g_inv` for a form and `g` for a `K`-vector.
 
 A not-alternating `K`-tensor with homogeneous variance is accepted, and
 starred through its alternating part.
@@ -312,11 +278,9 @@ starred through its alternating part.
 See also [`flat_hodge_star(ω)`](@ref) for the Euclidean version, accessible by
 passing `LinearAlgebra.I`.
 """
-@generated function hodge_star(ω::SkewSymKTensorValue{V,K,Dw,Tw}, g_or_ginv::SymTensorValue{Dg},
-                               sqrt_abs_g=nothing) where {V,K,Dg,Dw,Tw}
+@generated function hodge_star(ω::SkewSymKTensorValue{V,K,Dw,Tw}, metric_args::Vararg{_MetricArg}) where {V,K,Dw,Tw}
   V === Int && return :(@unreachable $("hodge_star requires a K-tensor with variance, got $V index"))
-  Dg == Dw || return :(throw(DimensionMismatch()))
-  D = Int(Dg)
+  D = Int(Dw)
   K <= D || return :(@unreachable $("hodge star requires K ≤ D, got K = $K and D = $D"))
 
   Kc  = D - K
@@ -340,20 +304,43 @@ passing `LinearAlgebra.I`.
   # The metric data is read into locals once: `MetricData` is immutable, so a
   # field it does not store is recomputed at every access.
   quote
-    (; $_g_or_ginv, sqrt_abs_g) = parse_metric_data(g_or_ginv, sqrt_abs_g)
+    md = parse_metric_data(metric_args...)
+    isidentity(md) && return flat_hodge_star(ω)
+    (; $_g_or_ginv, sqrt_abs_g) = md
+    _check_metric_dim($_g_or_ginv, $D)
     vol = $_volume
     ω_swapped = ($(swapped...),)
     SkewSymKTensorValue{$V,$Kc,$Dw}(($(comps...),))
   end
 end
 
-function hodge_star(a::MultiValue{NTuple{K,D}}, g_or_ginv::SymTensorValue, sqrt_abs_g=nothing) where {K,D}
-  hodge_star(𝔸(a), g_or_ginv, sqrt_abs_g)
+function hodge_star(a::MultiValue{NTuple{K,D}}, metric_args::Vararg{_MetricArg}) where {K,D}
+  hodge_star(𝔸(a), metric_args...)
 end
 
-hodge_star(ω::MultiValue, ::UniformScaling) = flat_hodge_star(ω)
-
 const ⋆ = hodge_star
+
+"""
+    flat_hodge_star(ω::ExteriorFormValue{K,D})
+    flat_hodge_star(ω::MultiValue{NTuple{K,D}})
+    ⋆ᴱ(ω)
+
+Hodge star `⋆ω` in Euclidean space, that is [`hodge_star`](@ref) with the
+identity metric, an alternating `(D-K)`-tensor with same variance as `ω`.
+"""
+@generated function flat_hodge_star(ω::SkewSymKTensorValue{V,K,Dw}) where {V,K,Dw}
+  D = Int(Dw)
+  K <= D || return :(@unreachable $("hodge star requires K ≤ D, got K = $K and D = $D"))
+
+  Kc = D - K
+  L  = binomial(D, K)   # = binomial(D, Kc), the two are matched by complementation
+  s  = _hodge_star_signs(K, D)
+  comps = [_signed(s[L+1-m], :(indep_comp_getindex(ω,$(L+1-m)))) for m in 1:L]
+  :( SkewSymKTensorValue{V,$Kc,$Dw}($(comps...)) )
+end
+flat_hodge_star(a::MultiValue{NTuple{K,Dw}}) where {K,Dw} = flat_hodge_star(𝔸(a))
+const ⋆ᴱ = flat_hodge_star
+
 
 # ============================================================
 # Musical isomorphisms  ♭ (flat) and ♯ (sharp)
@@ -366,39 +353,40 @@ const ⋆ = hodge_star
 # ============================================================
 
 """
-    flat(v::VectorValue,          g_or_ginv::SymTensorValue)
-    flat(v::MultiValue{Tuple{D}}, g_or_ginv::SymTensorValue)
-    flat(v, LinearAlgebra.I) = flat_flat(v)
-    ♭(v, g_or_ginv)
+    flat(v::VectorValue,          metric_args...)
+    flat(v::MultiValue{Tuple{D}}, metric_args...)
+    ♭(v, metric_args...)
 
 Musical isomorphism ♭: lower the index of the contravariant vector `v` with the
 metric `g`, resulting into a covector (1-form).
 
-`g_or_ginv` is either the metric tensor `g` (covariant) or its inverse `g_inv`
-(contravariant), see [`parse_metric_data`](@ref).
+`metric_args` contains the metric information, see [`parse_metric_data`](@ref).
+`flat` uses `g`.
 
 See also [`flat_flat(v)`](@ref) for the Euclidean version, accessible by
 passing `LinearAlgebra.I`.
 """
-@generated function flat(v::MultiValue{Tuple{Dv},Tv}, g_or_ginv::SymTensorValue{Dg,Tg}) where {Dv,Dg,Tv,Tg}
-  Dg == Dv || return :(throw(DimensionMismatch()))
+@generated function flat(v::MultiValue{Tuple{Dv},Tv}, metric_args::Vararg{_MetricArg}) where {Dv,Tv}
   Dv isa Con || return :(throw(ArgumentError("flat undefined for 1-tensor that is not contravariant, got $Dv")))
   D = Int(Dv)
   Dcov = inverse_variance(Dv)
-  iszero(D) && return :( zero(CoVectorValue{$Dcov,$(Base.promote_op(*,Tg,Tv))}) )
 
+  # An empty result still promotes with the scalar type of the metric.
   comps = [Expr(:call, :+, (:(g[$i,$j] * v[$j]) for j in 1:D)...) for i in 1:D]
+  result = iszero(D) ? :( zero(CoVectorValue{$Dcov,Base.promote_op(*,eltype(g),$Tv)}) ) :
+                       :( CoVectorValue{$Dcov}(($(comps...),)) )
   quote
-    (; g) = parse_metric_data(g_or_ginv)
-    CoVectorValue{$Dcov}(($(comps...),))
+    md = parse_metric_data(metric_args...)
+    isidentity(md) && return flat_flat(v)
+    (; g) = md
+    _check_metric_dim(g, $D)
+    $result
   end
 end
-function flat(v::VectorValue{D}, g_or_ginv::SymTensorValue) where D
+function flat(v::VectorValue{D}, metric_args::Vararg{_MetricArg}) where D
   contra_v = ContraVectorValue{D}(Tuple(v))
-  flat(contra_v, g_or_ginv)
+  flat(contra_v, metric_args...)
 end
-
-flat(v::MultiValue, ::UniformScaling) = flat_flat(v)
 
 const ♭ = flat
 
@@ -428,34 +416,35 @@ end
 const ♭ᴱ = flat_flat
 
 """
-    sharp(ω, g_or_ginv::SymTensorValue{D})
-    sharp(ω, LinearAlgebra.I) = flat_sharp(ω)
-    ♯(ω, g_or_ginv)
+    sharp(ω::MultiValue{Tuple{D}}, metric_args...)
+    ♯(ω, metric_args...)
 
 Musical isomorphism `♯`: raise the index of the covector (1-form) `ω` with the
 inverse metric `g_inv`, resulting into a contravariant vector.
 
-`g_or_ginv` is either the metric tensor `g` (covariant) or its inverse `g_inv`
-(contravariant), see [`parse_metric_data`](@ref).
+`metric_args` contains the metric information, see [`parse_metric_data`](@ref).
+`sharp` uses `g_inv`.
 
 See also [`flat_sharp(ω)`](@ref) for the Euclidean version, accessible by
 passing `LinearAlgebra.I`.
 """
-@generated function sharp(ω::MultiValue{Tuple{Dw},Tw}, g_or_ginv::SymTensorValue{Dg,Tg}) where {Dg,Dw,Tw,Tg}
-  Dg == Dw || return :(throw(DimensionMismatch()))
+@generated function sharp(ω::MultiValue{Tuple{Dw},Tw}, metric_args::Vararg{_MetricArg}) where {Dw,Tw}
   Dw isa Cov || return :(throw(ArgumentError("sharp undefined for 1-tensor that is not covariant, got $Dw")))
   D = Int(Dw)
   Dcon = inverse_variance(Dw)
-  iszero(D) && return :( zero(ContraVectorValue{$Dcon,$(Base.promote_op(*,Tg,Tw))}) )
 
+  # An empty result still promotes with the scalar type of the metric.
   comps = [Expr(:call, :+, (:(g_inv[$i,$j] * indep_comp_getindex(ω,$j)) for j in 1:D)...) for i in 1:D]
+  result = iszero(D) ? :( zero(ContraVectorValue{$Dcon,Base.promote_op(*,eltype(g_inv),$Tw)}) ) :
+                       :( ContraVectorValue{$Dcon}(($(comps...),)) )
   quote
-    (; g_inv) = parse_metric_data(g_or_ginv)
-    ContraVectorValue{$Dcon}(($(comps...),))
+    md = parse_metric_data(metric_args...)
+    isidentity(md) && return flat_sharp(ω)
+    (; g_inv) = md
+    _check_metric_dim(g_inv, $D)
+    $result
   end
 end
-
-sharp(ω::MultiValue, ::UniformScaling) = flat_sharp(ω)
 
 const ♯ = sharp
 
@@ -478,6 +467,9 @@ contravariant variance rather than being un-varianced.
   :( ContraVectorValue{$Dcon}(($(comps...),)) )
 end
 const ♯ᴱ = flat_sharp
+
+
+# Application of tensors to vectors and co-vectors (contractions)
 
 """
     apply_tensor(ω::ExteriorFormValue{K,D,T}, v₁, …, vₖ) → scalar
@@ -511,6 +503,7 @@ end
 
 apply_tensor(ω::SkewSymKTensorValue{V,K,D}, vs...) where {V,K,D} =
   @unreachable "a K-tensor takes K arguments (subtyping `MultiValue`) of size (D,), got $(typeof.(vs)) for K = $K and D = $D"
+
 
 # ============================================================
 # Pullback  φ*ω : Ωᴷ(Dn) → Ωᴷ(Dm)
@@ -588,8 +581,9 @@ function koszul(x::VectorValue{D}, ω::ExteriorFormValue{K,Dw}) where {K,D,Dw}
 end
 
 # ============================================================
-# Inner product of K-forms
+# Inner product of alternating tensors
 #
+# For K-forms:
 # (α|β) = (1/K!) α_{i₁…i_K} g^{i₁j₁} ⋯ g^{i_Kj_K} β_{j₁…j_K}
 #       = Σ_{|I|=|J|=K} α_I β_J det([g⁻¹[I[a],J[b]]]_{a,b})
 #
@@ -603,47 +597,45 @@ end
 # ============================================================
 
 """
-    alt_inner(a::ExteriorFormValue{K,D},   b::ExteriorFormValue{K,D},   g_or_ginv::SymTensorValue{D})
-    alt_inner(a::ExteriorVectorValue{K,D}, b::ExteriorVectorValue{K,D}, g_or_ginv::SymTensorValue{D})
-    alt_inner(a, b, LinearAlgebra.I) = flat_alt_inner(a, b)
-    ⨟(a,b)
-    a ⨟ b
+    alt_inner(a::ExteriorFormValue{K,D},   b::ExteriorFormValue{K,D},   metric_args...)
+    alt_inner(a::ExteriorVectorValue{K,D}, b::ExteriorVectorValue{K,D}, metric_args...)
+    ⨟(a, b, metric_args...)
 
 Inner product ``(a|b)`` of two `K`-forms or two `K`-vectors, the scalar such
 that, for two `K`-forms,
 
-``a ∧ ⋆_g b = √|det(g)| (a|b) dx¹∧…∧dx^D``.
+``a ∧ ⋆ b = √|det(g)| (a|b) dx¹∧…∧dx^D``.
 
-`g_or_ginv` is either the metric tensor `g` (covariant) or its inverse `g_inv`
-(contravariant), see [`parse_metric_data`](@ref). A `K`-form pair is
-contracted through `g_inv`, raising the indices of `b` as `hodge_star` does; a
-`K`-vector pair is contracted through `g`, lowering them instead.
+`metric_args` contains the metric information, see [`parse_metric_data`](@ref).
+`alt_inner` uses the metric with opposite variance to its arguments: a `K`-form
+pair is contracted through `g_inv`, raising the indices of `b` as `hodge_star`
+does, and a `K`-vector pair through `g`, lowering them instead.
 
 See also [`flat_alt_inner`](@ref) for the Euclidean version, accessible by
 passing `LinearAlgebra.I`.
 """
 @generated function alt_inner(a::SkewSymKTensorValue{V,K,Dw,Ta}, b::SkewSymKTensorValue{V,K,Dw,Tb},
-                              g_or_ginv::SymTensorValue{Dg,Tg}) where {V,K,Dg,Dw,Ta,Tb,Tg}
+                              metric_args::Vararg{_MetricArg}) where {V,K,Dw,Ta,Tb}
   V === Int && return :(@unreachable $("alt_inner requires a K-tensor with variance, got $V index"))
-  Dg == Dw || return :(throw(DimensionMismatch()))
-  D = Int(Dg)
-  T = Base.promote_op(*, Ta, Tb, Tg)
+  D = Int(Dw)
   c_K = sorted_combinations(D, K)
   # raising or lowering b's indices as `hodge_star` does, depending on V
   _g_or_ginv = V === Cov ? :g_inv : :g
+  # A `K > D` pair has no components; its zero still promotes with the metric.
+  T = :( Base.promote_op(*, $Ta, $Tb, eltype($_g_or_ginv)) )
   terms = [:( indep_comp_getindex(a,$m) *
               $(_sum_expr([:( $(_minor_expr(_g_or_ginv, I, J)) * indep_comp_getindex(b,$n) )
                            for (n, J) in enumerate(c_K)], T)) )
            for (m, I) in enumerate(c_K)]
   # (a|b) = Σ_I a_I b^I
   quote
-    (; $_g_or_ginv) = parse_metric_data(g_or_ginv)
+    md = parse_metric_data(metric_args...)
+    isidentity(md) && return flat_alt_inner(a, b)
+    (; $_g_or_ginv) = md
+    _check_metric_dim($_g_or_ginv, $D)
     $(_sum_expr(terms, T))
   end
 end
-
-alt_inner(a::SkewSymKTensorValue{V,K,D}, b::SkewSymKTensorValue{V,K,D}, ::UniformScaling) where {V,K,D} =
-  flat_alt_inner(a, b)
 
 const ⨟ = alt_inner
 

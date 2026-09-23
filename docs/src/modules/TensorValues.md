@@ -265,11 +265,23 @@ apply_tensor
 koszul(::VectorValue{D}, ::ExteriorFormValue{K,D}) where {K,D}
 ```
 
-### Metric operations
+### Metric dependent operations
 
-Operations depending on the metric tensor `g` or its inverse `g_inv`. Either
-may be given, with the variance saying which it is, `(0,2)` or `(2,0)`
-respectively; the other one is computed on demand.
+Operations depending on the metric take the metric information as trailing
+arguments `metric_args...`, which are either
+
+- `LinearAlgebra.I`, the identity metric, which selects the Euclidean version
+  of the operation.
+- Or, in any order, the metric tensor `g` and/or its inverse `g_inv`, which are
+  `SymTensorValue`s whose variance are `(0,2)` or `(2,0)` respectively.
+  Optionally, the scalar `sqrt_abs_g` = `√|det(g)|` can be added second.
+- A [`MetricData`](@ref), object that behaves like the `(; g, g_inv, sqrt_abs_g)` named tuple.
+
+They are internally parsed into a `MetricData` by [`parse_metric_data`](@ref),
+which computes the missing data on demand: the inverse of the given tensor if
+the other one is needed, and `sqrt_abs_g` from either. The docstring of each of
+the following tensor operation states which of `g`, `g_inv` and `sqrt_abs_g` it
+uses, so that providing exactly these spares any such computation.
 
 ```@docs
 hodge_star
@@ -285,6 +297,7 @@ The parsing of metric arguments is done via the following helpers.
 MetricData
 parse_metric_data
 compute_metric_data
+isidentity
 ```
 
 Convenience functions assuming the metric is the identity, that is the space is

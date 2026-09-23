@@ -185,4 +185,104 @@ inner12 = (dx1 ∧ hodge_star(dx2, g_inv_diag, sdg_diag)).data[1]
 @test inner22 ≈ sdg_diag / q   atol=1e-12    # √(pq)/q = √(p/q)
 @test abs(inner12) < 1e-12
 
+# ── Part 5: metric arguments ─────────────────────────────────────────────────
+# Every metric operation takes the same trailing `metric_args...`: a
+# `MetricData` is accepted wherever `g`/`g_inv`[, `√det g`] is.
+
+md_lazy  = parse_metric_data(g_diag)
+md_eager = compute_metric_data(g_diag)
+v_gen    = ContraVectorValue{con2}((1.5, -0.7))
+for md in (md_lazy, md_eager)
+  @test collect(hodge_star(dx1, md).data)          ≈ collect(hodge_star(dx1, g_inv_diag, sdg_diag).data)  atol=1e-12
+  @test collect(flat(v_gen, md).data)              ≈ collect(flat(v_gen, g_diag).data)                    atol=1e-12
+  @test collect(sharp(omega_gen, md).data)         ≈ collect(sharp(omega_gen, g_inv_diag).data)           atol=1e-12
+  @test alt_inner(dx1, omega_gen, md)              ≈ alt_inner(dx1, omega_gen, g_inv_diag)                 atol=1e-12
+  @test alt_inner(v_gen, v_gen, md)                ≈ alt_inner(v_gen, v_gen, g_diag)                       atol=1e-12
+  # a non-alternating tensor is starred through 𝔸, here dx¹∧dx² (data is column-major)
+  @test collect(hodge_star(TensorValue{cov2,cov2}(0.,-1.,1.,0.), md).data) ≈ collect(hodge_star(ExteriorFormValue{2,cov2}((1.,)), g_diag).data)  atol=1e-12
+end
+
+# The metric must have the dimension of the tensor it acts on, whichever form
+# it is given in
+g3   = SymTensorValue{cov3}(1.,0.,0.,1.,0.,1.)
+md3  = parse_metric_data(g3)
+dx1_3 = CoVectorValue{cov3}((1.,0.,0.))
+@test_throws DimensionMismatch hodge_star(dx1, g3)
+@test_throws DimensionMismatch hodge_star(dx1, md3)
+@test_throws DimensionMismatch flat(v_gen, g3)
+@test_throws DimensionMismatch flat(e1, md3)
+@test_throws DimensionMismatch sharp(omega_gen, inv(g3), 1.0)
+@test_throws DimensionMismatch sharp(omega_gen, md3)
+@test_throws DimensionMismatch alt_inner(dx1, dx1, g3)
+@test_throws DimensionMismatch alt_inner(dx1, dx1, md3)
+@test hodge_star(dx1_3, md3) isa ExteriorFormValue{2,cov3}
+
+# Missing metric information is an error, not a silent Euclidean fallback
+@test_throws ArgumentError hodge_star(dx1)
+@test_throws ArgumentError flat(v_gen)
+@test_throws ArgumentError sharp(omega_gen)
+@test_throws ArgumentError alt_inner(dx1, dx1)
+
+# The tensors and the scalar are told apart by type, so they parse in any order
+# and only what is given is stored
+for args in ((g_diag, g_inv_diag, sdg_diag), (sdg_diag, g_inv_diag, g_diag), (g_inv_diag, sdg_diag, g_diag))
+  md = parse_metric_data(args...)
+  @test getfield(md, :g)          === g_diag
+  @test getfield(md, :g_inv)      === g_inv_diag
+  @test getfield(md, :sqrt_abs_g) === sdg_diag
+end
+md_rev = parse_metric_data(sdg_diag, g_inv_diag)
+@test getfield(md_rev, :g)          === nothing
+@test getfield(md_rev, :g_inv)      === g_inv_diag
+@test getfield(md_rev, :sqrt_abs_g) === sdg_diag
+@test collect(hodge_star(dx1, sdg_diag, g_inv_diag).data) ≈ collect(hodge_star(dx1, g_inv_diag, sdg_diag).data)  atol=1e-12
+@test compute_metric_data(sdg_diag, g_diag).sqrt_abs_g === sdg_diag
+@test compute_metric_data(g_diag, sdg_diag).sqrt_abs_g === sdg_diag
+# eager computation from either tensor alone stores all three data
+for md in (compute_metric_data(g_diag), compute_metric_data(g_inv_diag), compute_metric_data(parse_metric_data(g_inv_diag)))
+  @test getfield(md, :g)     isa SymTensorValue{cov2}
+  @test getfield(md, :g_inv) isa SymTensorValue{con2}
+  @test getfield(md, :sqrt_abs_g) isa Float64
+  @test collect(md.g.data) ≈ collect(g_diag.data)  atol=1e-12
+  @test collect(md.g_inv.data) ≈ collect(g_inv_diag.data)  atol=1e-12
+  @test md.sqrt_abs_g ≈ sdg_diag  atol=1e-12
+end
+
+# Each datum at most once, tensors must carry a variance, anything else is rejected
+@test_throws ArgumentError parse_metric_data(g_diag, g_diag)
+@test_throws ArgumentError parse_metric_data(g_inv_diag, sdg_diag, g_inv_diag)
+@test_throws ArgumentError parse_metric_data(g_diag, sdg_diag, 2.0)
+@test_throws ArgumentError parse_metric_data(SymTensorValue{2}(1.,0.,1.))
+@test_throws ArgumentError parse_metric_data(TensorValue{cov2,cov2}(1.,0.,0.,1.))
+@test_throws ArgumentError parse_metric_data(g_diag, "sqrt_abs_g")
+@test_throws ArgumentError parse_metric_data(md_lazy, sdg_diag)
+@test_throws ArgumentError parse_metric_data(I, sdg_diag)
+@test_throws ArgumentError hodge_star(dx1, md_lazy, sdg_diag)
+@test_throws ArgumentError flat(v_gen, g_diag, TensorValue{cov2,cov2}(1.,0.,0.,1.))
+
+# g and g_inv must be inverse of each other, a `@check` that is only active when
+# Gridap runs in debug mode
+@test_throws AssertionError parse_metric_data(g_diag, SymTensorValue{con2}(1.,0.,1.))
+@test_throws AssertionError parse_metric_data(sdg_diag, SymTensorValue{con2}(1.,0.,1.), g_diag)
+@test_throws AssertionError compute_metric_data(g_diag, SymTensorValue{con2}(1.,0.,1.))
+
+# `LinearAlgebra.I` parses into a `MetricData` storing no tensor, on which every
+# operation selects its Euclidean version
+md_I = parse_metric_data(I)
+@test isidentity(md_I)
+@test !isidentity(md_lazy) && !isidentity(md_eager)
+@test md_I.g === I && md_I.g_inv === I && md_I.sqrt_abs_g === true
+@test compute_metric_data(I) === md_I
+@test compute_metric_data(md_I) === md_I
+@test hodge_star(dx1, I)          === flat_hodge_star(dx1)
+@test hodge_star(dx1, md_I)       === flat_hodge_star(dx1)
+@test flat(v_gen, I)              === flat_flat(v_gen)
+@test flat(e1, I)                 === flat_flat(e1)
+@test flat(e1, md_I)              === flat_flat(e1)
+@test sharp(omega_gen, I)         === flat_sharp(omega_gen)
+@test sharp(omega_gen, md_I)      === flat_sharp(omega_gen)
+@test alt_inner(dx1, dx1, I)      === flat_alt_inner(dx1, dx1)
+@test alt_inner(dx1, dx1, md_I)   === flat_alt_inner(dx1, dx1)
+@test hodge_star(TensorValue{cov2,cov2}(0.,-1.,1.,0.), I) === flat_hodge_star(TensorValue{cov2,cov2}(0.,-1.,1.,0.))
+
 end # module

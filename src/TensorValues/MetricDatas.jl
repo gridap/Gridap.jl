@@ -1,37 +1,34 @@
 # Metric data handler
 
 """
-    struct MetricData{
-        G    <: Union{SymTensorValue,Nothing},
-        Ginv <: Union{SymTensorValue,Nothing},
-        T    <: Union{Number,Nothing}
-    }
-      g::G
-      g_inv::Ginv
-      sqrt_abs_g::T
-    end
+    MetricData(::UniformScaling)
+    MetricData(g, g_inv, sqrt_abs_g)
 
 Helper struct to handle the metric information consisting of the metric tensor
-`g`, its inverse `g_inv`, and `sqrt_abs_g`=√|det(g)|. At least one of the
-tensors needs be provided. Missing field are computed on the fly during access.
+`g`, its inverse `g_inv`, and `sqrt_abs_g`=√|det(g)|.
 
 See [`parse_metric_data`](@ref) for lazy computation, and
 [`compute_metric_data`](@ref) for greedy computation.
 
 ```
 _g = SymTensorValue{cov2}(1.,2,3)
-_g_inv = inv(g)
+_g_inv = inv(_g)
 _sqrt_abs_g = sqrt(abs(det(_g)))
 
 g_or_ginv      = rand(Bool) ? _g : _g_inv
 det_or_nothing = rand(Bool) ? _sqrt_abs_g : nothing
+
 md = compute_metric_data(g_or_ginv, det_or_nothing)
 md.g ≈ _g && md.g_inv ≈ _g_inv && md.sqrt_abs_g ≈ _sqrt_abs_g # true
-(; g, g_inv, sqrt_abs_g) = md
+
+md = parse_metric_data(g_or_ginv, det_or_nothing)
+(; g, g_inv, sqrt_abs_g) = md # struct destructuring, lazily computing destructured fields only
    g ≈ _g &&    g_inv ≈ _g_inv &&    sqrt_abs_g ≈ _sqrt_abs_g  # true
 ```
 """
 struct MetricData{
+  # G and Ginv are both Nothing if and only if the metric is UniformScaling{T}(one(T))
+  # non-nothing G and Ginv are covariant and contravariant, respectively
   G    <: Union{SymTensorValue,Nothing},
   Ginv <: Union{SymTensorValue,Nothing},
   T    <: Union{Number,Nothing}
@@ -40,11 +37,16 @@ struct MetricData{
   g_inv::Ginv
   sqrt_abs_g::T
 
-  function MetricData(g::Union{SymTensorValue{Dcov,Tg,L},Nothing},
-                      g_inv::Union{SymTensorValue{Dcon,Ti,L},Nothing},
-                      sq_g::Ts) where {Dcov,Tg,Dcon,Ti,L,Ts}
+  function MetricData(I::UniformScaling{T}) where T
+    @assert I.λ == one(T) "UniformScaling can only be used as a metric if it is the scaling by 1"
+    new{Nothing,Nothing,T}(nothing,nothing,one(T))
+  end
 
-    isnothing(g) && isnothing(g_inv) && throw(ArgumentError("either the g or g_inv kwarg must be provided, got neither"))
+  function MetricData(g::Union{SymTensorValue{Dcov,Tg},Nothing},
+                      g_inv::Union{SymTensorValue{Dcon,Ti},Nothing},
+                      sq_g::Ts) where {Dcov,Tg,Dcon,Ti,Ts}
+
+    isnothing(g) && isnothing(g_inv) && throw(ArgumentError("either the metric tensor g or its inverse g_inv must be provided, got neither"))
 
     # validate dimension and variance
     _Dcov = isnothing(g)     ? inverse_variance(Dcon) : Dcov
@@ -61,6 +63,9 @@ struct MetricData{
     _g     = isnothing(g)     ? g     : convert(SymTensorValue{_Dcov,_T}, g)
     _g_inv = isnothing(g_inv) ? g_inv : convert(SymTensorValue{_Dcon,_T}, g_inv)
     _sq_g  = isnothing(sq_g)  ? sq_g  : convert(_T, sq_g)
+
+    @check(isnothing(_g) || isnothing(_g_inv) || _g⋅_g_inv ≈ one(TensorValue{_Dcov,_Dcon,_T}),
+           "the metric tensor g and its inverse g_inv are not inverse of each other")
 
     G, Ginv, T = typeof(_g), typeof(_g_inv), typeof(_sq_g)
     new{G,Ginv,T}(_g, _g_inv, _sq_g)
@@ -97,69 +102,117 @@ function Base.getproperty(md::MetricData, name::Symbol)
   end
 end
 
-#    compute_metric_data(; g=nothing, g_inv=nothing, sqrt_abs_g=nothing)
-#
-#
-#The `MetricData` constructors will store all three data, eagrly computing all
-#those missing (`nothing`) in the argument. This is meant for use at the call site:
-#
-#```julia
-#md = MetricData(g) # or g_inv
-#md = MetricData(; g_inv=inv(g), sqrt_abs_g=sqrt(abs(det(g))) )
-#```
-#
-#This is useful if the caller does not now if only either `g` and `g_inv` might
-#be needed. Otherwise, the caller may only pass one of them, and let the
-#operator compute missing data.
-#
-"""
-    compute_metric_data(g_or_ginv::SymTensorValue)
-
-Return a [`MetricData`](@ref) behaving like `(;g, g_inv, sqrt_abs_g)` with all three
-fields eagerly computed.
-"""
-function compute_metric_data(g_or_ginv::SymTensorValue{D}, sqrt_abs_g=nothing) where {D}
-  data = if D isa Con
-    # g_or_ginv is g_inv
-    det_g = inv(det(g_or_ginv))
-    adj_ginv = adjugate(g_or_ginv)
-    inverse_variance(D), D, adj_ginv*det_g, g_or_ginv, det_g
-  elseif D isa Cov
-    # g_or_ginv is g
-    det_g = det(g_or_ginv)
-    g_adj = adjugate(g_or_ginv)
-    D, inverse_variance(D), g_or_ginv, g_adj/det_g, det_g
+function Base.getproperty(::MetricData{Nothing,Nothing,T}, name::Symbol) where T
+  if     name==:g
+    return UniformScaling{T}(one(T))
+  elseif name==:g_inv
+    return UniformScaling{T}(one(T))
+  elseif name==:sqrt_abs_g
+    return one(T)
   else
-    throw(ArgumentError("the argument has no variance, got size $(size(g_or_ginv))"))
+    throw(Base.FieldError(MetricData, name))
   end
-  Dcov, Dcon, g, g_inv, det_g = data
-  sqrt_abs_g = sqrt(abs(det_g))
-  MetricData(g, g_inv, sqrt_abs_g)
 end
 
 """
-    parse_metric_data(g_or_ginv::SymTensorValue, sqrt_abs_g=nothing)
+    isidentity(md::MetricData) -> Bool
 
-Extract the available metric data from the given keyword argument, without
-doing any computation. Return a `MetricData` with possibly some `nothing`
-stored, but computes missing values if the field is accessed. Since
-`MetricData` is immutable, the computed value is returned but not stored, so do
-not access a field several times.
+Whether `md` represents the iddentity metric `LinearAlgebra.I`.
+"""
+isidentity(::MetricData{Nothing,Nothing}) = true
+isidentity(::MetricData) = false
+
+# Metric arguments:
+# Type of valid slurped arguments to forward to parse_metric_data or
+# compute_metric_data
+const _MetricArg = Union{MetricData,SymTensorValue,Number,UniformScaling}
+
+
+"""
+    compute_metric_data(metric_args...)
+    compute_metric_data(md::MetricData)
+    compute_metric_data(LinearAlgebra.I)
+
+Return a [`MetricData`](@ref) behaving like `(;g, g_inv, sqrt_abs_g)` with all
+three fields eagerly computed. `metric_args` are the positional arguments
+accepted by [`parse_metric_data`](@ref), in any order.
+"""
+compute_metric_data(metric_args...) = compute_metric_data(parse_metric_data(metric_args...))
+compute_metric_data(I::UniformScaling) = MetricData(I)
+compute_metric_data(md::MetricData{Nothing,Nothing}) = md # nothing to compute for the identity
+compute_metric_data(md::MetricData) = MetricData(md.g, md.g_inv, md.sqrt_abs_g) # getproperty computes missing ones
+
+# When a single tensor is stored, its inverse and √|det| share one determinant.
+function compute_metric_data(md::MetricData{<:SymTensorValue,Nothing,Nothing})
+  g = getfield(md, :g)
+  det_g = det(g)
+  MetricData(g, adjugate(g)/det_g, sqrt(abs(det_g)))
+end
+function compute_metric_data(md::MetricData{Nothing,<:SymTensorValue,Nothing})
+  g_inv = getfield(md, :g_inv)
+  det_g = inv(det(g_inv))
+  MetricData(adjugate(g_inv)*det_g, g_inv, sqrt(abs(det_g)))
+end
+
+"""
+    parse_metric_data(metric_args...)
+    parse_metric_data(md::MetricData) = md
+
+Gather the provided metric data amongst `g`, `g_inv`, `sqrt_abs_g` given as
+positional `metric_args`, in any order, without doing any computation.
 
 ```julia
 g = SymTensorValue{cov3}(1.:6...)
-md = parse_metric_data(; g)
+md = parse_metric_data(g)
+md = parse_metric_data(sqrt(abs(det(g))), inv(g)) # same data, g_inv stored instead of g
 ```
-"""
-function parse_metric_data(g_or_ginv::SymTensorValue{Dg}, sqrt_abs_g=nothing) where Dg
-  Dg isa Cov && return MetricData(g_or_ginv, nothing, sqrt_abs_g)
-  Dg isa Con && return MetricData(nothing, g_or_ginv, sqrt_abs_g)
-  throw(ArgumentError("The given (inverse) metric tensor has no variance, use the kwarg constructor"))
-end
-function parse_metric_data(; g::Union{SymTensorValue{Dg,Tg,L},Nothing}=nothing,
-                             g_inv::Union{SymTensorValue{Di,Ti,L},Nothing}=nothing,
-                             sqrt_abs_g::Ts=nothing, kwargs...) where {Dg,Tg,Di,Ti,Ts,L}
-  MetricData(g, g_inv, sqrt_abs_g)
-end
 
+Return a `MetricData` with possibly some `nothing` stored, but computes missing
+values if the field is accessed. Since `MetricData` is immutable, the computed
+value is returned but not stored, so do not access a field several times.
+
+`LinearAlgebra.I` is parsed into a `MetricData` storing no tensor.
+"""
+parse_metric_data(md::MetricData) = md
+parse_metric_data(I::UniformScaling) = MetricData(I)
+function parse_metric_data(metric_args...)
+  _parse_metric_args((g=nothing, g_inv=nothing, sqrt_abs_g=nothing), metric_args...)
+end
+#function parse_metric_data(; g::Union{SymTensorValue{Dg,Tg,L},Nothing}=nothing,
+#                             g_inv::Union{SymTensorValue{Di,Ti,L},Nothing}=nothing,
+#                             sqrt_abs_g::Ts=nothing, kwargs...) where {Dg,Tg,Di,Ti,Ts,L}
+#  MetricData(g, g_inv, sqrt_abs_g)
+#end
+
+# The positional arguments are folded one at a time into the named tuple of the
+# three data, each assigned by its type. The dispatch and the `D isa Cov` test
+# on a type parameter resolve at compile time, so accepting the arguments in any
+# order costs nothing at runtime.
+_parse_metric_args(nt) = MetricData(nt.g, nt.g_inv, nt.sqrt_abs_g)
+_parse_metric_args(nt, a, rest...) = _parse_metric_args(_add_metric_arg(nt, a), rest...)
+
+function _add_metric_arg(nt, a::SymTensorValue{D}) where D
+  if D isa Cov
+    isnothing(nt.g) || throw(ArgumentError("the metric tensor g was given twice"))
+    merge(nt, (g = a,))
+  elseif D isa Con
+    isnothing(nt.g_inv) || throw(ArgumentError("the inverse metric tensor g_inv was given twice"))
+    merge(nt, (g_inv = a,))
+  else
+    throw(ArgumentError("a metric tensor must carry its variance, Cov for g or Con for g_inv, got $(typeof(a))"))
+  end
+end
+function _add_metric_arg(nt, a::Number)
+  isnothing(nt.sqrt_abs_g) || throw(ArgumentError("the scalar sqrt_abs_g was given twice"))
+  merge(nt, (sqrt_abs_g = a,))
+end
+_add_metric_arg(nt, a::MultiValue) = throw(ArgumentError(
+  "a metric tensor must be a SymTensorValue with variance, got $(typeof(a))"))
+# `nothing` is an absent datum, so that a caller can forward an optional one
+# without branching, as in `parse_metric_data(g, sqrt_abs_g_or_nothing)`.
+_add_metric_arg(nt, ::Nothing) = nt
+_add_metric_arg(nt, a) = throw(ArgumentError(
+  "cannot parse metric data from an argument of type $(typeof(a)): expected a MetricData or \
+  LinearAlgebra.I on its own, or else the metric tensor g and/or its inverse g_inv as \
+  SymTensorValues with variance, optionally with the scalar sqrt_abs_g, in any order"))
 

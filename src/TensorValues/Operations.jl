@@ -329,13 +329,36 @@ const ⋅¹ = dot
 # Inner product (full contraction)
 ###############################################################
 
-inner(a::_Scalar, b::_Scalar) = a * b
+inner(a::_Scalar, b::_Scalar, metric_args...) = a * b
 
 """
-    inner(a::MultiValue{S}, b::MultiValue{S}) -> scalar
+    inner(a, b, metric_args...) -> scalar
+    inner(a, b, LinearAlgebra.I) = flat_inner(a,b) = A ⊙ᴱ b
     a ⊙ b
 
-Inner product of two tensors, that is the full contraction along each indices. The size `S` of `a` and `b` must match.
+Inner product of two tensors, that is the inner product along each indices. `a`
+and `b` must have iddentical sizes, including variances.
+
+The metric information is strictly required for tensors with variance since the
+inner product requires lowering and or raising the varianced indices of one
+argument, see the [metric operation](@ref "Metric dependent operations")
+documentation.
+
+The indices without variance are contracted assuming iddentity metric. If `a`
+and `b` are type `(r,s,u)` tensors, the mathematical definition of inner is
+thus
+
+    a ⊙ b = Σ_{IJKLM} a_{i1, ..., ir}^{j1, ..., jr}{k1, ..., ku} *
+              ginv^{i1,l1} * ... * g_{ir,lr} *
+              g_{j1,m1} * ... * g_{js,ms} *
+            b_{i1, ..., ir}^{j1, ..., jr}{k1, ..., ku}
+
+where the sum is over all the cartesian indices `I` and `L` of the `r`
+contravariant indices, `J` and `M` that on the `s` covariant indices, and `K`
+of the `u` un-varianced indices.
+
+The Euclidean method [`flat_inner`](@ref) is called if the given metric is
+`LinearAlgebra.I`.
 """
 function inner(a::MultiValue, b::MultiValue)
   @notimplemented "Sizes of tensors must match."
