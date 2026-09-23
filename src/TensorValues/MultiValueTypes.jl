@@ -242,6 +242,19 @@ num_indep_components(::T) where T<:Number = num_indep_components(T)
 get_indep_components(a::MultiValue) = Tuple(a)
 
 """
+    num_stored_components(::Type{<:MultiValue})
+    num_stored_components(a::MultiValue{S,T,N,L}) = L
+
+Return the number of stored components of a tensor.
+
+An example for which this differs from `num_indep_components` is
+`SymTracelessTensorValue`, that stores the last diagonal value although it
+equals minus the sum of the others.
+"""
+num_stored_components(V::Type{<:MultiValue}) = num_indep_components(V)
+num_stored_components(a::MultiValue) = num_stored_components(typeof(a))
+
+"""
 !!! warning
     Deprecated in favor on [`num_components`](@ref).
 """

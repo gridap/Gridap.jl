@@ -84,6 +84,7 @@ export QTensorValue
 export SymFourthOrderTensorValue
 export ThirdOrderTensorValue
 export HighOrderTensorValue
+export ProductTensorValue
 
 export inner, outer, meas
 export mutable
@@ -191,6 +192,8 @@ include("HighOrderTensorValueTypes.jl")
 include("ThirdOrderTensorValueTypes.jl")
 
 include("ExteriorFormValues.jl")
+
+include("ProductTensorValueTypes.jl")
 
 include("Indexing.jl")
 

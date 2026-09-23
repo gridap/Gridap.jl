@@ -1,0 +1,300 @@
+###############################################################
+# ProductTensorValue helpers
+###############################################################
+
+"""
+    _minimal_tensortype_with_shape(V::Type{<:MultiValue{S}})
+
+Return `V` with all type parameter removed, except those necessary for the S
+parameter of the MultiValue supertype to still be defined.
+"""
+_minimal_tensortype_with_shape(::Type{<:VectorValue{D}})              where D        = VectorValue{D}
+_minimal_tensortype_with_shape(::Type{<:TensorValue{D}})              where D        = TensorValue{D,D}
+_minimal_tensortype_with_shape(::Type{<:TensorValue{D1,D2}})          where {D1,D2}  = TensorValue{D1,D2}
+_minimal_tensortype_with_shape(::Type{<:SymTensorValue{D}})           where D        = SymTensorValue{D}
+_minimal_tensortype_with_shape(::Type{<:SymTracelessTensorValue{D}})  where D        = SymTracelessTensorValue{D}
+_minimal_tensortype_with_shape(::Type{<:SkewSymTensorValue{D}})       where D        = SkewSymTensorValue{D}
+_minimal_tensortype_with_shape(::Type{<:SymFourthOrderTensorValue{D}})where D        = SymFourthOrderTensorValue{D}
+_minimal_tensortype_with_shape(::Type{<:ThirdOrderTensorValue{D}})    where D        = ThirdOrderTensorValue{D,D,D}
+_minimal_tensortype_with_shape(::Type{<:ThirdOrderTensorValue{D1,D2,D3}}) where {D1,D2,D3} = ThirdOrderTensorValue{D1,D2,D3}
+_minimal_tensortype_with_shape(::Type{<:HighOrderTensorValue{S}})     where S        = HighOrderTensorValue{S}
+_minimal_tensortype_with_shape(::Type{<:SkewSymKTensorValue{V,K,D}})  where {V,K,D}  = SkewSymKTensorValue{V,K,D}
+_minimal_tensortype_with_shape(::Type{V}) where V<:MultiValue = @unreachable "$V cannot be a
+  factor of a ProductTensorValue, `_minimal_tensortype_with_shape` is not implemented for it."
+
+# Stored and independent component counts of both factors of the product of `A`
+# and `B`: `(La, Lb, iLa, iLb)`. `A` and `B` must be canonical factor argument
+# types, so that these counts describe the same tensors as the product size.
+function _prod_counts(::Type{A}, ::Type{B}) where {A,B}
+  La  = num_stored_components(A)
+  Lb  = num_stored_components(B)
+  iLa = num_indep_components(A)
+  iLb = num_indep_components(B)
+  (La, Lb, iLa, iLb)
+end
+
+# Canonical factor argument types, size, order, and number of stored and of independent
+# components of the product of `A` and `B`.
+function _prod_shape_impl(::Type{A}, ::Type{B}) where {A,B}
+  Ac, Bc = _minimal_tensortype_with_shape(A), _minimal_tensortype_with_shape(B)
+  S = Tuple{size(Ac)..., size(Bc)...}
+  La, Lb, iLa, iLb = _prod_counts(Ac,Bc)
+  N = length(S.parameters)
+  (Ac, Bc, S, N, La*Lb, iLa*iLb)
+end
+
+# @generated ensures compile time constants and inference of the parameters
+@generated _prod_shape(::Type{A}, ::Type{B}) where {A,B} = :( $(_prod_shape_impl(A,B)) )
+
+# The stored components of a product, from its independent ones.
+@generated function _prod_stored_components(
+  ::Type{A}, ::Type{B}, ::Type{T}, data::Tuple) where {A,B,T}
+
+  La, Lb, iLa, iLb = _prod_counts(A,B)
+  La*Lb == iLa*iLb && return :( data )
+
+  ca = Tuple.(component_basis(make_concretetype(A{Int})))
+  cb = Tuple.(component_basis(make_concretetype(B{Int})))
+
+  comps = Expr[]
+  for kb in 1:Lb, ka in 1:La
+    terms = Expr[]
+    for lb in 1:iLb, la in 1:iLa
+      c = ca[la][ka]*cb[lb][kb]
+      iszero(c) && continue
+      l = (lb-1)*iLa + la
+      push!(terms, isone(c)  ? :(  data[$l] ) :
+                   isone(-c) ? :( -data[$l] ) : :( $c*data[$l] ))
+    end
+    push!(comps, isempty(terms) ? :( zero(T) ) : Expr(:call, :+, terms...))
+  end
+  Expr(:tuple, comps...)
+end
+
+# The component type given by a factor type, `nothing` when it leaves it free.
+_factor_eltype(::Type{<:MultiValue{S,T}}) where {S,T} = T
+_factor_eltype(::Type{<:MultiValue}) = nothing
+_factor_eltype(::Type) = nothing
+
+# The component type that the factor types impose on their product, `nothing`
+# when neither gives one.
+function _prod_eltype(::Type{A}, ::Type{B}) where {A,B}
+  Ta, Tb = _factor_eltype(A), _factor_eltype(B)
+  isnothing(Ta) && return Tb
+  isnothing(Tb) && return Ta
+  Base.promote_op(*, Ta, Tb)
+end
+_prod_eltype(::Type{A}, ::Type{B}, ::Type{Td}) where {A,B,Td} = something(_prod_eltype(A,B), Td)
+
+
+###############################################################
+# ProductTensorValue type
+###############################################################
+
+"""
+    ProductTensorValue{A,B,T,S,N,L} <: MultiValue{S,T,N,L}
+
+Tensor type used to store the tensor (outer) product of `a::A` and `b::B`,
+without more redundancy than `a` and `b`'s storage (when they have dependent
+components).
+
+- `S` concatenates `Sa` and `Sb`,
+- `N` is the sum `Na + Nb`
+- `L` is the product `La`×`Lb`, where does are the numer of stored components
+
+The product tensor has `num_indep_components(b)`×`num_indep_components(b)`
+independent components.
+
+The independent components of `A` vary fastest in the internal storage,
+consistently with the column major ordering of Julia:
+
+    p = ProductTensorValue(a,b)
+    La = num_indep_components(a)
+    indep_comp_getindex(p, (lb-1)*La + la) == indep_comp_getindex(a,la)*indep_comp_getindex(b,lb)
+
+"""
+struct ProductTensorValue{A,B,T,S,N,L} <: MultiValue{S,T,N,L}
+  data::NTuple{L,T}
+
+  function ProductTensorValue{A,B}(data::NTuple{Lid,Td}) where {A,B,Lid,Td}
+    Ac, Bc, S, N, L, Li = _prod_shape(A,B)
+    @check Lid == Li "Invalid number of components in ProductTensorValue{$A,$B} constructor, expecting $Li, got $Lid"
+    T = _prod_eltype(A,B,Td)
+    new{Ac,Bc,T,S,N,L}(_prod_stored_components(Ac,Bc,T,NTuple{Li,T}(data)))
+  end
+
+  function ProductTensorValue{A,B,T,S,N,L}(data::Tuple) where {A,B,T,S,N,L}
+    Ac, Bc, Sc, Nc, Lc, Li = _prod_shape(A,B)
+    @check (S,N,L) === (Sc,Nc,Lc) "The product of $A and $B has size $Sc, order
+      $Nc and $Lc stored components, got $S, $N and $L"
+    @check length(data) == Li "Invalid number of components in ProductTensorValue{$A,$B} constructor, expecting $Li, got $(length(data))"
+    Tt = _prod_eltype(A,B)
+    @check isnothing(Tt) || promote_type(Tt,T) === T "The components of the
+      product of $A and $B have type $Tt, which does not promote to $T"
+    new{Ac,Bc,T,Sc,Nc,Lc}(_prod_stored_components(Ac,Bc,T,NTuple{Li,T}(data)))
+  end
+end
+
+# prevent nested ProductTensorValue
+_minimal_tensortype_with_shape(::Type{V}) where V<:ProductTensorValue = @unreachable "$V cannot be
+  a factor of a ProductTensorValue, products do not nest. Use `outer` to combine
+  more than two tensors."
+
+function promote_rule(
+  ::Type{<:ProductTensorValue{A,B,Ta,S,N,L}},
+  ::Type{<:ProductTensorValue{A,B,Tb,S,N,L}}) where {A,B,Ta,Tb,S,N,L}
+
+  ProductTensorValue{A,B,promote_type(Ta,Tb),S,N,L}
+end
+
+###############################################################
+# Constructors (ProductTensorValue)
+###############################################################
+
+ProductTensorValue{A,B}(data::Tuple) where {A,B} = ProductTensorValue{A,B}(promote(data...))
+
+# An empty tuple carries no component type, only the factors can give it. The
+# shape is read first, so that an invalid factor is reported as such.
+function ProductTensorValue{A,B}(data::Tuple{}) where {A,B}
+  _, _, S, N, L = _prod_shape(A,B)
+  T = _prod_eltype(A,B)
+  isnothing(T) && @unreachable "The component type of an empty
+    ProductTensorValue{$A,$B} is given neither by its (empty) data nor by its
+    factors, use the ProductTensorValue{A,B,T} constructor."
+  ProductTensorValue{A,B,T,S,N,L}(data)
+end
+function ProductTensorValue{A,B,T}(data::Tuple) where {A,B,T}
+  _, _, S, N, L = _prod_shape(A,B)
+  ProductTensorValue{A,B,T,S,N,L}(data)
+end
+function ProductTensorValue{A,B,T,S}(data::Tuple) where {A,B,T,S}
+  _, _, _, N, L = _prod_shape(A,B)
+  ProductTensorValue{A,B,T,S,N,L}(data)
+end
+function ProductTensorValue{A,B,T,S,N}(data::Tuple) where {A,B,T,S,N}
+  _, _, _, _, L = _prod_shape(A,B)
+  ProductTensorValue{A,B,T,S,N,L}(data)
+end
+
+# ProductTensorValue Vararg constructor
+
+ProductTensorValue{A,B}(data::Number...) where {A,B} = ProductTensorValue{A,B}(data)
+ProductTensorValue{A,B,T}(data::Number...) where {A,B,T} = ProductTensorValue{A,B,T}(data)
+ProductTensorValue{A,B,T,S}(data::Number...) where {A,B,T,S} = ProductTensorValue{A,B,T,S}(data)
+ProductTensorValue{A,B,T,S,N}(data::Number...) where {A,B,T,S,N} = ProductTensorValue{A,B,T,S,N}(data)
+ProductTensorValue{A,B,T,S,N,L}(data::Number...) where {A,B,T,S,N,L} = ProductTensorValue{A,B,T,S,N,L}(data)
+
+"""
+    ProductTensorValue(a::MultiValue, b::MultiValue)
+
+The tensor (outer) product of `a` and `b`, keeping the dependent components of
+both factors, that is `ProductTensorValue(a,b)[ia...,ib...] = a[ia...]*b[ib...]`.
+
+This differs from `outer(a,b)` only by the type of the result: `outer` returns
+a tensor with no dependent component.
+"""
+@generated function ProductTensorValue(a::MultiValue, b::MultiValue)
+  A, B, S, N, L, Li = _prod_shape(a,b)
+  if iszero(Li)
+    # A product without independent component holds none to give its component
+    # type, only the factors can give it
+    T = _prod_eltype(a,b)
+    return :( ProductTensorValue{$A,$B,$T,$S,$N,$L}(()) )
+  end
+
+  iLa = num_indep_components(A)
+  comps = [ :( indep_comp_getindex(a,$la) * indep_comp_getindex(b,$lb) )
+            for lb in 1:(Li÷iLa) for la in 1:iLa ]
+  :( ProductTensorValue{$A,$B}($(Expr(:tuple, comps...))) )
+end
+
+###############################################################
+# Conversions (ProductTensorValue)
+###############################################################
+
+@generated function _ProductTensorValue_to_array(arg::ProductTensorValue{A,B,T}) where {A,B,T}
+  s = Int.(size(arg))
+  comps = [ :( arg[$(Tuple(ci)...)] ) for ci in CartesianIndices(s) ]
+  :( return SArray{$(Tuple{s...}),T}($(Expr(:tuple, comps...))) )
+end
+
+# Inverse conversion
+convert(::Type{<:SArray{S2,T2}}, arg::ProductTensorValue) where {S2,T2} = SArray{S2,T2}(_ProductTensorValue_to_array(arg))
+convert(::Type{<:MArray{S2,T2}}, arg::ProductTensorValue) where {S2,T2} = MArray{S2,T2}(_ProductTensorValue_to_array(arg))
+
+# Internal conversion
+convert(::Type{<:ProductTensorValue{A,B,T,S,N,L}}, arg::ProductTensorValue{A,B,T2,S,N,L}) where {A,B,T,T2,S,N,L} =
+  ProductTensorValue{A,B,T,S,N,L}(get_indep_components(arg))
+convert(::Type{<:ProductTensorValue{A,B,T,S,N,L}}, arg::ProductTensorValue{A,B,T,S,N,L}) where {A,B,T,S,N,L} = arg
+
+###############################################################
+# Comparison (ProductTensorValue)
+###############################################################
+
+(==)(a::ProductTensorValue{A,B,Ta,S}, b::ProductTensorValue{A,B,Tb,S}) where {A,B,Ta,Tb,S} = a.data == b.data
+(==)(a::ProductTensorValue{Aa,Ba,Ta,S}, b::ProductTensorValue{Ab,Bb,Tb,S}) where {Aa,Ba,Ta,Ab,Bb,Tb,S} = get_array(a) == get_array(b)
+(==)(a::ProductTensorValue{A,B,T,S}, b::MultiValue{S}) where {A,B,T,S} = get_array(a) == get_array(b)
+(==)(a::MultiValue{S}, b::ProductTensorValue{A,B,T,S}) where {A,B,T,S} = get_array(a) == get_array(b)
+
+###############################################################
+# Other constructors and conversions (ProductTensorValue)
+###############################################################
+
+change_eltype(::Type{<:ProductTensorValue{A,B,T1}},::Type{T2}) where {A,B,T1,T2} =
+  ProductTensorValue{A,B,T2}
+change_eltype(::Type{<:ProductTensorValue{A,B,T1,S,N,L}},::Type{T2}) where {A,B,T1,T2,S,N,L} =
+  ProductTensorValue{A,B,T2,S,N,L}
+
+num_indep_components(::Type{<:ProductTensorValue{A,B}}) where {A,B} =
+  num_indep_components(A)*num_indep_components(B)
+
+num_stored_components(::Type{<:ProductTensorValue{A,B}}) where {A,B} =
+  num_stored_components(A)*num_stored_components(B)
+
+###############################################################
+# Indexing helpers (ProductTensorValue)
+###############################################################
+
+# similar to CartesianIndices, but indicating the linear index in the stored
+# component, with the sign flip to apply (for e.g. skew tensors).
+function stored_comp_indices(V::Type{<:MultiValue})
+  Li = num_indep_components(V)
+  Li == num_stored_components(V) || @notimplemented "$V materialises dependent
+    components, it needs a `stored_comp_indices` method to be the factor of a
+    ProductTensorValue."
+  V(Tuple(1:Li))
+end
+
+# A traceless tensor stores its dependent component last, in the layout of a
+# symmetric tensor, which is therefore its slot map.
+stored_comp_indices(::Type{<:SymTracelessTensorValue{D}}) where D =
+  stored_comp_indices(SymTensorValue{D})
+
+@propagate_inbounds function _get_data(p::ProductTensorValue{A,B}, i::Integer) where {A,B}
+  La, _, iLa, _ = _prod_counts(A,B)
+  La == iLa && return p.data[i]
+  lb, la = divrem(i-1, iLa)
+  p.data[lb*La + la + 1]
+end
+
+@generated function get_indep_components(p::ProductTensorValue{A,B}) where {A,B}
+  La, _, iLa, iLb = _prod_counts(A,B)
+  Expr(:tuple, ( :( p.data[$((lb-1)*La + la)] ) for lb in 1:iLb for la in 1:iLa )...)
+end
+
+###############################################################
+# VTK export (ProductTensorValue)
+###############################################################
+
+function indep_components_names(::Type{<:ProductTensorValue{A,B}}) where {A,B}
+  names_a, names_b = indep_components_names(A), indep_components_names(B)
+  iLa, iLb = num_indep_components(A), num_indep_components(B)
+
+  if length(names_a) != iLa || length(names_b) != iLb
+    @warn "indep_components_names is inconsistent with num_indep_components for
+    a factor of ProductTensorValue{$A,$B}, falling back to default names [string(i) for i in 1:L]"
+    return [string(i) for i in 1:(iLa*iLb)]
+  end
+
+  [ na*nb for nb in names_b for na in names_a ]
+end

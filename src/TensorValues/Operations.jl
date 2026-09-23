@@ -431,6 +431,45 @@ function inner(a::MultiValue{Tuple{D,D}}, b::MultiValue{Tuple{D,D,D,D}}) where D
   double_contraction(a,b)
 end
 
+# The multiplicities `wᵢ = eᵢ⊙eᵢ` of the component basis `{eᵢ}` of `V`, or
+# `nothing` if that basis is not orthogonal -- in which case the inner product
+# is not a weighted sum over the independent components -- or if `V` has an
+# index it cannot contract with itself, so that `V` has no inner product.
+function _component_basis_weights(V::Type{<:MultiValue})
+  all(i -> can_contract(i,i), size(V)) || return nothing
+  basis = component_basis(V)
+  for i in eachindex(basis), j in eachindex(basis)
+    i == j && continue
+    iszero(inner(basis[i],basis[j])) || return nothing
+  end
+  Int[ inner(b,b) for b in basis ]
+end
+
+# Σ_(la,lb) wa(la)*wb(lb)*a_(la,lb)*b_(la,lb), the component basis of a product
+# being the products of the factors' component bases.
+@generated function inner(
+  a::ProductTensorValue{A,B,Ta,S,N,L}, b::ProductTensorValue{A,B,Tb,S,N,L}) where {A,B,Ta,Tb,S,N,L}
+
+  zero_e = :( zero(Base.promote_op(*,Ta,Tb)) )
+  iszero(L) && return zero_e
+
+  wa = _component_basis_weights(make_concretetype(A{Int}))
+  wb = _component_basis_weights(make_concretetype(B{Int}))
+  (isnothing(wa) || isnothing(wb)) && return :( contracted_product(Val(N), a, b) )
+
+  La, = _prod_counts(A,B)
+  terms = Expr[]
+  for lb in eachindex(wb), la in eachindex(wa)
+    w = wa[la]*wb[lb]
+    iszero(w) && continue
+    k = (lb-1)*La + la
+    prod_e = :( a.data[$k]*b.data[$k] )
+    push!(terms, isone(w) ? prod_e : :( $w * $prod_e ))
+  end
+  isempty(terms) && return zero_e
+  Expr(:call, :+, terms...)
+end
+
 const ⊙ = inner
 
 ###############################################################

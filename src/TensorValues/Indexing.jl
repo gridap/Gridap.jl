@@ -237,6 +237,45 @@ function _4d_sym_tensor_linear_index(D,i,j,k,l)
 end
 
 ###############################################################
+# Indexing a product of two tensors
+###############################################################
+
+@propagate_inbounds function getindex(
+  arg::ProductTensorValue{A,B,T,S,N}, inds::Vararg{Integer,N}) where {A,B,T,S,N}
+
+  @boundscheck @check checkbounds(arg, inds...) === nothing
+  _prod_getindex(arg, inds...)
+end
+
+# A component of the product is the product of a stored component of each factor,
+# up to a sign, because each factor reads one of its stored components per index.
+# The factors' stored component indices give the position of that pair in
+# the storage, `p.data[(kb-1)*La+ka]`, and zero for a component that either
+# factor leaves structurally zero.
+@generated function _prod_getindex(
+  arg::ProductTensorValue{A,B,T,S,N,L}, inds::Vararg{Integer,N}) where {A,B,T,S,N,L}
+
+  iszero(L) && return :( zero(T) )
+
+  Na = length(size(A))
+  ia = [ :(inds[$i]) for i in 1:Na ]
+  ib = [ :(inds[$i]) for i in Na+1:N ]
+
+  La, = _prod_counts(A,B)
+  slots_a = stored_comp_indices(A) # A(1:La...) if A has as many indep and stored components
+  slots_b = stored_comp_indices(B)
+
+  quote
+    ka = $(slots_a)[$(ia...)]
+    iszero(ka) && return zero(T)
+    kb = $(slots_b)[$(ib...)]
+    iszero(kb) && return zero(T)
+    v = arg.data[(abs(kb)-1)*$La + abs(ka)]
+    xor(ka < 0, kb < 0) ? -v : v
+  end
+end
+
+###############################################################
 # Voigt and Mandel notation
 ###############################################################
 

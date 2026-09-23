@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ExteriorFormValue` is now an alias of the new `SkewSymKTensorValue{K,D,T,L,V}`, a totally skew symmetric order `K` tensor whose indices all have all variance `V`. The alias `ExteriorVectorValue{K,D,T,L}` represents a K-vector.
   - Added right division `(/)(::MultiValue, ::MultiValue)`, that is `a⋅inv(b)`.
   - Added `adjugate` of second order tensors, the transpose of the co-factor tensor such that `adjugate(a)⋅a = det(a)*one(a)`.
+  - Added `ProductTensorValue{A,B,T,..}`, a `MultiValue` containing the tensor product of two tensors of types `A` and `B` without duplicating storage of dependent components of both factors (e.g. that can represent the hessian of a 2D-`SkewSymTensorValue{2}` valued field storing only 3*1 independent components instead of 4*4). Its size, order and number of stored components follow from `A` and `B`, so the types to spell out are `ProductTensorValue{A,B}` and, to impose a component type, `ProductTensorValue{A,B,T}`. A `ProductTensorValue` is not a valid factor of another one, use `outer` to combine more than two tensors.
 
 ### Changed
 

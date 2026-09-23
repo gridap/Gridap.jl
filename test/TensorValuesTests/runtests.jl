@@ -14,6 +14,10 @@ end
   include("IndexingTests.jl")
 end
 
+@testset "ProductTensorValueTests" begin
+  include("ProductTensorValueTests.jl")
+end
+
 @testset "ReinterpretTests" begin
   include("ReinterpretTests.jl")
 end
