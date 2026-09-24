@@ -128,23 +128,16 @@ IndexStyle(::Type{<:LazyArray{G,T,1} where {G,T}}) = IndexLinear()
 uses_hash(::Type{<:LazyArray}) = Val{true}()
 
 function same_branch(a,b)
-  a === b
+  return a === b
 end
 
 function same_branch(a::Fill,b::Fill)
   typeof(a) != typeof(b) && return false
   size(a) != size(b) && return false
-  a.value == b.value
+  return a.value == b.value
 end
 
-function all_same_branch(a::Tuple,b::Tuple)
-  for i in 1:length(a)
-    if same_branch(a[i],b[i]) == false
-      return false
-    end
-  end
-  true
-end
+all_same_branch(a::Tuple,b::Tuple) = all(map(same_branch,a,b))
 
 function same_branch(a::LazyArray,b::LazyArray)
   typeof(a) != typeof(b) && return false
@@ -155,26 +148,32 @@ end
 function _get_cache(dict,a)
   id = objectid(a)
   if haskey(dict,id)
-    o,c = dict[id]
+    o, c = dict[id]
     return c
   end
-  for item in dict
-    if same_branch(a,second(item)[1])
-      return second(item)[2]
+  for item in values(dict)
+    o, c = item
+    if same_branch(a,o)
+      return c
     end
   end
   return nothing
 end
 
+# We recompute the cache even if we find an existing one, 
+# because otherwise we CANNOT infer the type and we get 
+# a type instability for every subsequent getindex! call.
 function array_cache(dict::Dict,a::LazyArray)
-  cache = _get_cache(dict,a)
-  if cache === nothing
-    _cache = _array_cache!(dict,a)
-    dict[objectid(a)] = (a,_cache)
+  cache = _array_cache!(dict,a)
+  existing = _get_cache(dict,a)
+  T = typeof(cache)
+  if isnothing(existing)
+    dict[objectid(a)] = (a,cache)
+    return cache::T
   else
-    _cache = cache
+    dict[objectid(a)] = (a,existing)
+    return existing::T
   end
-  _cache
 end
 
 # to memoize last access of a lazy array
@@ -190,16 +189,13 @@ end
 
 function _array_cache!(dict::Dict,a::LazyArray)
   @check begin
-    @notimplementedif ! all(map(isconcretetype, map(eltype, a.args)))
-    if !(eltype(a.maps) <: Function)
-      @notimplementedif !isconcretetype(eltype(a.maps))
-    end
-    true
+    all(map(isconcretetype, map(eltype, a.args))) &&
+      (eltype(a.maps) <: Function || isconcretetype(eltype(a.maps)))
   end
   gi = testitem(a.maps)
   fi = map(testitem,a.args)
   cg = array_cache(dict,a.maps)
-  cf = map(fi->array_cache(dict,fi),a.args)
+  cf = map(Base.Fix1(array_cache, dict),a.args)
   cgi = return_cache(gi, fi...)
   index = -1
   #item = evaluate!(cgi,gi,testargs(gi,fi...)...)
