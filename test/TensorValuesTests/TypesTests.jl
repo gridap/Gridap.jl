@@ -375,6 +375,97 @@ s = SymFourthOrderTensorValue{2,Int}(1111,2111,2211.0, 1121,2121.0,2221, 1122,21
 @test isa(s,SymFourthOrderTensorValue{2,Int})
 @test Tuple(s) == (1111,2111,2211, 1121,2121,2221, 1122,2122,2222  )
 
+# Constructors (SymNTensorValue)
+
+# A fully symmetric Nth-order tensor stores the binomial(D+N-1,N) components of
+# the non-decreasing indices, in lexicographic order
+sn = SymNTensorValue{Tuple{2,2}}((1,2,3))
+@test isa(sn,SymNTensorValue{Tuple{2,2},Int,2,3})
+sn = SymNTensorValue{Tuple{3,3}}((1,2,3,4,5,6))
+@test isa(sn,SymNTensorValue{Tuple{3,3},Int,2,6})
+sn = SymNTensorValue{Tuple{2,2,2,2}}((1,2,3,4,5))
+@test isa(sn,SymNTensorValue{Tuple{2,2,2,2},Int,4,5})
+
+# Homogeneous NTuple, with and without an explicit component type
+@test isa(SymNTensorValue{Tuple{2,2,2}}((1,2,3,4)),
+          SymNTensorValue{Tuple{2,2,2},Int,3,4})
+@test isa(SymNTensorValue{Tuple{2,2,2},Float64}((1,2,3,4)),
+          SymNTensorValue{Tuple{2,2,2},Float64,3,4})
+@test isa(SymNTensorValue{Tuple{2,2,2},Float64,3}((1,2,3,4)),
+          SymNTensorValue{Tuple{2,2,2},Float64,3,4})
+@test isa(SymNTensorValue{Tuple{2,2,2},Float64,3,4}((1.,2.,3.,4.)),
+          SymNTensorValue{Tuple{2,2,2},Float64,3,4})
+
+# Heterogeneous Tuple: promoted, or converted to the requested type
+@test isa(SymNTensorValue{Tuple{2,2,2}}((1,2.0,3,4)),
+          SymNTensorValue{Tuple{2,2,2},Float64,3,4})
+@test isa(SymNTensorValue{Tuple{2,2,2},Int}((1,2.0,3,4)),
+          SymNTensorValue{Tuple{2,2,2},Int,3,4})
+
+# Vararg
+@test SymNTensorValue{Tuple{2,2,2}}(1,2.0,3,4)     == SymNTensorValue{Tuple{2,2,2}}((1.0,2.0,3.0,4.0))
+@test SymNTensorValue{Tuple{2,2,2},Int}(1,2.0,3,4) == SymNTensorValue{Tuple{2,2,2}}((1,2,3,4))
+
+# Wrong number of components
+@test_throws AssertionError SymNTensorValue{Tuple{3,3}}((1,2,3))
+@test_throws AssertionError SymNTensorValue{Tuple{3,3},Int}((1,2,3))
+@test_throws AssertionError SymNTensorValue{Tuple{3,3},Int,2}(1,2,3)
+
+# Dimensions that do not all share the same value are not a symmetric shape
+@test_throws ErrorException SymNTensorValue{Tuple{2,3}}((1,2,3,4,5,6))
+@test_throws ErrorException SymNTensorValue{Tuple{2,2,3}}((1,2,3,4))
+
+# Order 0 holds the single scalar component
+sn = SymNTensorValue{Tuple{},Int}((5,))
+@test num_indep_components(sn) == 1
+@test_throws AssertionError SymNTensorValue{Tuple{},Int}()
+
+# A zero dimension leaves no component at all
+sn = SymNTensorValue{Tuple{0,0}}()
+@test isa(sn,SymNTensorValue{Tuple{0,0},Int,2,0})
+@test num_indep_components(sn) == 0
+@test num_components(sn) == 0
+@test isa(SymNTensorValue{Tuple{0,0,0},Float64}(), SymNTensorValue{Tuple{0,0,0},Float64,3,0})
+
+# Every fully symmetric tensor is an AbstractSymMultiValue, second-order ones
+# included -- symmetry ij<->ji being full symmetry of a pair of indices
+@test SymNTensorValue{Tuple{2,2,2}}(1,2,3,4) isa AbstractSymMultiValue
+@test SymTensorValue{2}(1,2,3) isa AbstractSymMultiValue
+@test SymTensorValue{2}(1,2,3) isa AbstractSymTensorValue
+@test AbstractSymTensorValue{2} <: AbstractSymMultiValue
+# Symmetry does not fix the stored component count: this one is traceless too
+@test SymTracelessTensorValue{2}(1,2) isa AbstractSymMultiValue
+
+# Tensors of a different symmetry class are not
+@test !(SkewSymTensorValue{2}(1) isa AbstractSymMultiValue)
+# Minor and major symmetry is weaker than full symmetry
+@test !(zero(SymFourthOrderTensorValue{2,Int}) isa AbstractSymMultiValue)
+@test !(zero(TensorValue{2,2,Int}) isa AbstractSymMultiValue)
+
+# From a full array, which only its non-decreasing indices are read from
+for sn in (SymNTensorValue{Tuple{2,2}}(1:3...),
+           SymNTensorValue{Tuple{4,4}}(1:10...),
+           SymNTensorValue{Tuple{2,2,2,2}}(1:5...),
+           SymNTensorValue{Tuple{3,3,3}}(1:10...))
+  A = get_array(sn)
+  D, N = size(A,1), ndims(A)
+  @test SymNTensorValue{Tuple{ntuple(_->D,N)...}}(A) == sn
+end
+
+# The full symmetrization of δ⊗δ is fully symmetric, so the round trip through a
+# full array reproduces it exactly
+kd(i,j) = i == j ? 1 : 0
+A_symδδ = [ kd(i,j)*kd(k,l) + kd(i,k)*kd(j,l) + kd(i,l)*kd(j,k) for i in 1:3, j in 1:3, k in 1:3, l in 1:3 ]
+symδδ = SymNTensorValue{Tuple{3,3,3,3}}(A_symδδ)
+@test get_array(symδδ) == A_symδδ
+@test symδδ[1,1,2,2] == symδδ[1,2,1,2] == 1
+@test symδδ[1,1,1,1] == 3
+
+# δ⊗δ alone is symmetric in `ij` and in `kl` separately, not under any permutation
+A_δδ = [ kd(i,j)*kd(k,l) for i in 1:3, j in 1:3, k in 1:3, l in 1:3 ]
+@test A_δδ[1,1,2,2] != A_δδ[1,2,1,2]
+@test get_array(SymNTensorValue{Tuple{3,3,3,3}}(A_δδ)) != A_δδ
+
 # Constructors (VectorValue)
 
 a = SVector(1)
@@ -555,6 +646,19 @@ r = rand(SymFourthOrderTensorValue{3,Int})
 r = rand(HighOrderTensorValue{Tuple{3,3,3,3},Int})
 @test isa(r,HighOrderTensorValue{Tuple{3,3,3,3},Int,4,81})
 @test r ≠ rand(typeof(r))
+
+sn3 = SymNTensorValue{Tuple{3,3,3}}(1:10...)
+z = zero(sn3)
+@test z == SymNTensorValue{Tuple{3,3,3}}(ntuple(_->0,10))
+@test iszero(z)
+@test isa(z,SymNTensorValue{Tuple{3,3,3},Int,3,10})
+
+# Only orders 0 and 2 have a multiplicative neutral element
+@test one(SymNTensorValue{Tuple{},Int}) === 1
+@test one(SymNTensorValue{Tuple{3,3},Int}) == SymNTensorValue{Tuple{3,3}}(1,0,0,1,0,1)
+@test get_array(one(SymNTensorValue{Tuple{3,3},Int})) == [1 0 0; 0 1 0; 0 0 1]
+@test_throws ErrorException one(SymNTensorValue{Tuple{3,3,3},Int})
+@test_throws ErrorException one(SymNTensorValue{Tuple{3,3,3,3},Int})
 
 # Conversions
 
@@ -851,6 +955,17 @@ M2 = Mutable(v)
 
 @test_throws ErrorException Mutable(MultiValue) # @abstractmethod
 
+sn3 = SymNTensorValue{Tuple{3,3,3}}(1:10...)
+@test isa(get_array(sn3), SArray{Tuple{3,3,3},Int,3,27})
+@test isa(SArray(sn3), SArray{Tuple{3,3,3},Int,3,27})
+@test isa(Array(sn3), Array{Int,3})
+@test Array(sn3) == get_array(sn3)
+@test isa(mutable(sn3), MArray{Tuple{3,3,3},Int,3,27})
+@test Mutable(sn3) == MArray{Tuple{3,3,3},Int,3,27}
+@test convert(SymNTensorValue{Tuple{3,3,3},Float64}, sn3) ==
+      SymNTensorValue{Tuple{3,3,3},Float64}(1:10...)
+@test convert(SymNTensorValue{Tuple{3,3,3},Int}, sn3) === sn3
+
 # conversion with scalar for Tensors with exactly one physical component
 v  = VectorValue(1)
 t2 = TensorValue(1)
@@ -896,6 +1011,7 @@ sk = SkewSymTensorValue(1)
 @test num_components(ThirdOrderTensorValue(111,112,121,122,211,212,221,222)) == 8
 @test num_components(SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)) == 16
 @test num_components(HighOrderTensorValue{Tuple{2,3,1,5}}) == 2*3*1*5
+@test num_components(SymNTensorValue{Tuple{3,3,3},Int}) == 27
 
 @test num_indep_components(Int) == 1
 @test num_indep_components(Float64) == 1
@@ -918,6 +1034,8 @@ sk = SkewSymTensorValue(1)
 @test num_indep_components(SymFourthOrderTensorValue{2}) == 9
 @test num_indep_components(SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)) == 9
 @test num_indep_components(HighOrderTensorValue{Tuple{2,3,1,5}}) == 2*3*1*5
+@test num_indep_components(SymNTensorValue{Tuple{3,3,3}}) == 10
+@test num_indep_components(SymNTensorValue{Tuple{2,2,2,2}}) == 5
 
 @test_throws ErrorException num_components(VectorValue)
 @test_throws ErrorException num_components(TensorValue)
@@ -960,6 +1078,15 @@ sk = SkewSymTensorValue(1)
 ]
 @test indep_components_names(HighOrderTensorValue{Tuple{1,2,2,1}}) == ["XXXX","XYXX","XXYX","XYYX"]
 @test indep_components_names(HighOrderTensorValue{Tuple{1,1,4,1}}) == ["1111","1121","1131","1141"]
+
+@test indep_components_names(SymNTensorValue{Tuple{2,2,2},Int}) == ["XXX","XXY","XYY","YYY"]
+@test indep_components_names(SymNTensorValue{Tuple{3,3},Int}) == ["XX","XY","XZ","YY","YZ","ZZ"]
+@test indep_components_names(SymNTensorValue{Tuple{4,4},Int}) ==
+      indep_components_names(SymTensorValue{4,Int})
+# On the fully parameterized type too, which is what the VTK export passes
+@test indep_components_names(SymNTensorValue{Tuple{3,3,3},Int,3,10}) ==
+      [ join(("X","Y","Z")[i] for i in I) for I in sorted_multisets(3,3) ]
+
 V = MultiValue{Tuple{3,4},Int,2,5}
 warn_log = "indep_components_names has not been implemented"
 @test (@test_warn  warn_log indep_components_names(V)) == ["1","2","3","4","5"]
@@ -1017,6 +1144,17 @@ a = SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
 @test change_eltype(SymFourthOrderTensorValue{2,Float64},Int) == SymFourthOrderTensorValue{2,Int}
 @test isa(Tuple(a),Tuple)
 @test Tuple(a) == a.data
+
+sn3 = SymNTensorValue{Tuple{3,3,3}}(1:10...)
+@test change_eltype(sn3,Float64) == SymNTensorValue{Tuple{3,3,3},Float64,3,10}
+@test change_eltype(SymNTensorValue{Tuple{3,3,3},Int,3,10},Float64) ==
+      SymNTensorValue{Tuple{3,3,3},Float64,3,10}
+@test isa(Tuple(sn3),Tuple)
+@test Tuple(sn3) == sn3.data
+@test promote_type(SymNTensorValue{Tuple{3,3,3},Int,3,10},
+                   SymNTensorValue{Tuple{3,3,3},Float64,3,10}) ==
+      SymNTensorValue{Tuple{3,3,3},Float64,3}
+
 
 for V in (VectorValue, SymTensorValue, SkewSymTensorValue,
             SymTracelessTensorValue, SymFourthOrderTensorValue)

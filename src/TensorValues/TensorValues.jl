@@ -85,6 +85,8 @@ export SymFourthOrderTensorValue
 export ThirdOrderTensorValue
 export HighOrderTensorValue
 export ProductTensorValue
+export AbstractSymMultiValue
+export SymNTensorValue
 
 export inner, outer, meas
 export mutable
@@ -112,6 +114,8 @@ export representatives_of_componentbasis_dual
 export representatives_of_basis_dual
 export sorted_combinations
 export combination_index
+export sorted_multisets
+export multiset_index
 export sorting_sign
 export to_voigt
 export from_voigt
@@ -177,7 +181,7 @@ include("VectorValueTypes.jl")
 
 include("TensorValueTypes.jl")
 
-include("SymHighOrderTensorValueTypes.jl")
+include("SymNTensorValueTypes.jl")
 
 include("SymTensorValueTypes.jl")
 

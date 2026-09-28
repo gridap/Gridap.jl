@@ -649,6 +649,59 @@ The right-to-left index does not depend on `D`, unlike the default left-to-right
 end
 
 """
+    sorted_multisets(D,N)
+
+Return a (collected) vector of all the non-decreasing multi-indices I_i of {1:`D`} of length `N`:
+
+    1 ≤ I\\_1 ≤ ... ≤ I\\_N ≤ `D`
+
+sorted in (left-to-right, i.e. standard) lexicographic order, e.g.
+
+```julia
+[ [1,1], [1,2], [1,3], [2,2], [2,3], [3,3] ]  # for D=3, N=2
+```
+
+These index the independent components of a fully symmetric `N`th-order tensor,
+of which there are `binomial(D+N-1,N)`.
+
+`N=0` gives the single empty multi-index `[ Int[] ]`, while `N<0`, or `D=0` with
+`N>0`, give no multi-index at all.
+
+See also [`multiset_index`](@ref), [`sorted_combinations`](@ref).
+"""
+function sorted_multisets(D::Int,N::Int)
+  # A non-decreasing I of {1:D} is the strictly increasing (I_i + i - 1) of
+  # {1:D+N-1}, which is the bijection `multiset_index` inverts.
+  [ combi .- (0:N-1) for combi in sorted_combinations(D+N-1, N) ]
+end
+
+# Multiplicative form of `binomial`: `c * (n-k+i) ÷ i`, unlike `binomial` it
+# inlines and carries no overflow check (which are irrelevant for tensor type).
+@inline _unchecked_binomial(n, k) = (c = 1; for i in 1:k; c = c * (n-k+i) ÷ i; end; c)
+
+"""
+    multiset_index(I, D)
+
+Linear index of the non-decreasing multi-index `I` amongst the multi-indices of
+1:`D` of the same length `N`, sorted like in [`sorted_multisets`](@ref), that is
+
+    (multiset_index(I, D), I) ∈ enumerate(sorted_multisets(D,N))
+
+This is the index of the component `a[I...]` in the independent components of a
+fully symmetric tensor `a` of order `N` and dimension `D`.
+
+See also [`combination_index`](@ref).
+"""
+@inline function multiset_index(multiset, D)
+  @check issorted(multiset)
+  @check isempty(multiset) || last(multiset) ≤ D
+  N = length(multiset)
+  # `combination_index` of the associated combination (I_i + i - 1) of 1:D+N-1,
+  # with the shift folded into the binomials.
+  return binomial(D+N-1,N) - sum(_unchecked_binomial(D+N-i-Ii, N-i+1) for (i,Ii) in enumerate(multiset); init=0)
+end
+
+"""
     sorting_sign(inds::Integer...)
 
 Signature of the permutation sorting `inds`, or `0` if `inds` repeats an index.

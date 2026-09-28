@@ -358,6 +358,11 @@ f = SymFourthOrderTensorValue(1:9...)
 @test_throws ErrorException 0-q
 @test_throws ErrorException q-0
 
+sn3 = SymNTensorValue{Tuple{3,3,3}}(1:10...)
+@test sn3 + sn3 == SymNTensorValue{Tuple{3,3,3}}((2:2:20)...)
+@test sn3 - sn3 == zero(sn3)
+@test -sn3 == SymNTensorValue{Tuple{3,3,3}}((-1:-1:-10)...)
+
 # Multiplication / division
 
 @test_throws ErrorException v*t
@@ -517,6 +522,15 @@ c = s4ot + 0
 @test isa(c,SymFourthOrderTensorValue{2})
 r = SymFourthOrderTensorValue(1,0,0, 0,.5,0, 0,0,1)
 @test c == r
+
+sn3 = SymNTensorValue{Tuple{3,3,3}}(1:10...)
+c = sn3 * 2
+@test isa(c,SymNTensorValue{Tuple{3,3,3},Int,3,10})
+@test c == SymNTensorValue{Tuple{3,3,3}}((2:2:20)...)
+
+c = sn3 / 2
+@test isa(c,SymNTensorValue{Tuple{3,3,3},Float64,3,10})
+@test c == SymNTensorValue{Tuple{3,3,3}}((0.5:0.5:5.0)...)
 
 # Interraction with UniformScaling
 @test_throws "" a + LinearAlgebra.I

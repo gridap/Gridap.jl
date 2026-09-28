@@ -2,13 +2,16 @@
 # SymTensorValue Type
 ###############################################################
 """
-    AbstractSymTensorValue{D,T,L} <: MultiValue{Tuple{D,D},T,2,L}
+    AbstractSymTensorValue{D,T,L} <: AbstractSymMultiValue{Tuple{D,D},T,2,L}
 
 Abstract type representing any symmetric second-order `D`×`D` tensor, with symmetry ij↔ji.
 
+This is the second-order case of [`AbstractSymMultiValue`](@ref), full symmetry
+of a pair of indices being the symmetry ij↔ji.
+
 See also [`SymTensorValue`](@ref), [`SymTracelessTensorValue`](@ref).
 """
-abstract type AbstractSymTensorValue{D,T,L} <: MultiValue{Tuple{D,D},T,2,L} end
+abstract type AbstractSymTensorValue{D,T,L} <: AbstractSymMultiValue{Tuple{D,D},T,2,L} end
 
 num_indep_components(::Type{<:AbstractSymTensorValue}) = @unreachable "Concrete
   type and dimension are needed to count components of symmetric tensors."

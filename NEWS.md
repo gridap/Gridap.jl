@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The new tensor calculus operation strictly require varianced tensors to be applied, `Int` is not assumed `Con`. These are `apply_tensor`, `flat`, `sharp`, `vol_coef`, `interior_product`, `hodge_star`, `pullback`, `koszul`, `∧`.
   - Operation depending on the metric for correctness on tensors with variance, `inner`, `alt_inner`, `hodge_star`, require the metric (inverse) tensor to be given explicitly, and it must have correct variance. Now methods `flat_inner`/`⊙ᴱ`, `flat_alt_inner`/`⨟ᴱ`, `flat_hodge_star`/`⋆ᴱ` assume the metric is trivial (Euclidean space). Passing `LinearAlgebra.I` as the metric of `hodge_star`, `flat`, `sharp` or `alt_inner` delegates to their Euclidean counterpart, the latter two newly added as `flat_flat`/`♭ᴱ` and `flat_sharp`/`♯ᴱ`.
   - `ExteriorFormValue` is now an alias of the new `SkewSymKTensorValue{K,D,T,L,V}`, a totally skew symmetric order `K` tensor whose indices all have all variance `V`. The alias `ExteriorVectorValue{K,D,T,L}` represents a K-vector.
+  - Added `SymNTensorValue`, a `MultiValue` representing a fully symmetric tensor of arbitrary order `N` and dimension `D`, storing its `binomial(D+N-1,N)` independent components. Added its abstract supertype `AbstractSymMultiValue`, and the helpers `sorted_multisets` and `multiset_index` that enumerate and index the independent components.
   - Added right division `(/)(::MultiValue, ::MultiValue)`, that is `a⋅inv(b)`.
   - Added `adjugate` of second order tensors, the transpose of the co-factor tensor such that `adjugate(a)⋅a = det(a)*one(a)`.
   - Added `ProductTensorValue{A,B,T,..}`, a `MultiValue` containing the tensor product of two tensors of types `A` and `B` without duplicating storage of dependent components of both factors (e.g. that can represent the hessian of a 2D-`SkewSymTensorValue{2}` valued field storing only 3*1 independent components instead of 4*4). Its size, order and number of stored components follow from `A` and `B`, so the types to spell out are `ProductTensorValue{A,B}` and, to impose a component type, `ProductTensorValue{A,B,T}`. A `ProductTensorValue` is not a valid factor of another one, use `outer` to combine more than two tensors.
@@ -28,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX):
+  - `AbstractSymTensorValue` now subtypes `AbstractSymMultiValue` instead of `MultiValue` directly.
   - `isless(::Number, ::MultiValue)` and `(<=)(::Number, ::MultiValue)` now compare against every component instead of the stored ones only, which fixes them on `SkewSymTensorValue`.
   - `(\)(a::MultiValue, b::MultiValue)` no longer types its result after `b`. `inv(a)⋅b` is not symmetric even when `b` is, and a `SymTensorValue` result silently dropped the asymmetry.
 

@@ -179,6 +179,13 @@ end
   return s > 0 ? v : -v
 end
 
+@propagate_inbounds function getindex(arg::SymNTensorValue{S,T,N}, inds::Vararg{Integer,N}) where {S,T,N}
+  @boundscheck @check checkbounds(arg, inds...) === nothing
+  D, _, _ = _sym_n_tensor_params(S)
+  index = multiset_index(sort(SVector{N,Int}(inds)), D)
+  @inbounds arg.data[index]
+end
+
 
 function Base.checkbounds(A::MultiValue{S}, I::Integer...) where S
   if CartesianIndex(I...) ∉ CartesianIndices(A)

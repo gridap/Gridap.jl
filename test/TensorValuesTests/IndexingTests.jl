@@ -98,6 +98,43 @@ for (k,Ki) in enumerate(r)
   @test Ki == K[k]
 end
 
+sn3 = SymNTensorValue{Tuple{3,3,3}}(1:10...)
+
+@test size(sn3) == (3,3,3)
+@test length(sn3) == 27
+@test_throws BoundsError sn3[4,1,1]
+@test_throws BoundsError sn3[0,1,1]
+
+# The non-decreasing multi-indices carry the stored components, in order
+for (l,I) in enumerate(sorted_multisets(3,3))
+  @test sn3[I...] == l
+end
+
+# A component only depends on the multiset of its indices
+for I in CartesianIndices(sn3)
+  @test sn3[I] == sn3[sort(collect(Tuple(I)))...]
+end
+
+# Against the dense tensor, for several orders and dimensions
+for a in (SymNTensorValue{Tuple{2,2}}(1:3...),
+          SymNTensorValue{Tuple{4,4}}(1:10...),
+          SymNTensorValue{Tuple{2,2,2,2}}(1:5...),
+          SymNTensorValue{Tuple{3,3,3}}(1:10...))
+  A = convert(SArray{Tuple{size(a)...},Int}, a)
+  for I in CartesianIndices(A)
+    @test a[I] == A[I]
+    @test A[I] == A[sort(collect(Tuple(I)))...]
+  end
+end
+
+# Second order coincides with SymTensorValue: same shape, same component order
+for D in 1:4
+  L = D*(D+1)÷2
+  @test all( SymNTensorValue{Tuple{D,D}}(1:L...)[i,j] == SymTensorValue{D}(1:L...)[i,j]
+             for i in 1:D, j in 1:D )
+end
+
+
 ω2 = ExteriorFormValue{2,3}((1,2,3))
 f2 = TensorValue(convert(SMatrix{3,3,Int}, ω2))
 
@@ -153,6 +190,21 @@ for I in Iterators.product(ntuple(_->1:4, 3)...)
   @test sorting_sign(I...) == expected
 end
 @test sorting_sign() == 1
+
+# The non-decreasing multi-indices of 1:D index the independent components of a
+# fully symmetric Nth-order tensor, of which there are binomial(D+N-1,N)
+for D in 0:4, N in 0:4
+  @test length(sorted_multisets(D,N)) == (N == 0 ? 1 : binomial(D+N-1,N))
+end
+@test sorted_multisets(3,2) == [[1,1],[1,2],[1,3],[2,2],[2,3],[3,3]]
+@test sorted_multisets(2,3) == [[1,1,1],[1,1,2],[1,2,2],[2,2,2]]
+@test sorted_multisets(3,0) == [Int[]]
+@test sorted_multisets(0,2) == Vector{Int}[]
+
+# multiset_index is the rank in that enumeration
+for D in 0:4, N in 0:4
+  @test all( multiset_index(I,D) == i for (i,I) in enumerate(sorted_multisets(D,N)) )
+end
 
 # Index and size APIs
 v = SMatrix{2,3}(1:6...)

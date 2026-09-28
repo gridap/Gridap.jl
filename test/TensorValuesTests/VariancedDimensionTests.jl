@@ -27,6 +27,36 @@ v_outer_t = ThirdOrderTensorValue{2, con2, cov2}(1,1,1,1,1,1,1,1)
 ω23 = ExteriorFormValue{2,3}((1,2,3))
 @test size(ω23) == (cov3,cov3)
 
+# A fully symmetric tensor carries one variance per index, all of them being
+# free as long as the dimensions are equal in value.
+s3 = SymNTensorValue{Tuple{con3,con3,con3}}(1:10...)
+@test size(s3) == (con3,con3,con3)
+@test tensor_type(s3) == (3,0,0)
+@test num_indep_components(s3) == 10
+
+s_mix = SymNTensorValue{Tuple{cov2,con2}}(1,2,3)
+@test size(s_mix) == (cov2,con2)
+@test tensor_type(s_mix) == (1,1,0)
+@test s_mix[1,2] == s_mix[2,1]
+
+# Sizes equal in value but not in variance are distinct shapes: they neither
+# compare equal nor promote together.
+s_int = SymNTensorValue{Tuple{2,2}}(1,2,3)
+s_cov = SymNTensorValue{Tuple{cov2,cov2}}(1,2,3)
+@test s_int != s_cov
+@test s_cov != s_mix
+@test s_cov == SymNTensorValue{Tuple{cov2,cov2}}(1,2,3)
+@test_throws "failed to change any argument" s_int + s_cov
+@test_throws "failed to change any argument" s_cov + s_mix
+@test promote_type(SymNTensorValue{Tuple{cov2,cov2},Int,2,3},
+                   SymNTensorValue{Tuple{cov2,cov2},Float64,2,3}) ==
+      SymNTensorValue{Tuple{cov2,cov2},Float64,2}
+
+# Converting to an array drops the variance, as it does for any tensor
+@test get_array(s_mix) isa SArray{Tuple{2,2},Int}
+@test get_array(s_mix) == get_array(s_int)
+@test Mutable(s_mix) == MArray{Tuple{2,2},Int,2,4}
+
 @test tensor_type(1) == (0,0,0)
 @test tensor_type(v) == (0,0,1)
 @test tensor_type(t) == (1,1,0)
