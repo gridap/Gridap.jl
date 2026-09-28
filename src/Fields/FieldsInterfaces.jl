@@ -139,6 +139,40 @@ function gradient_type(::Type{T},x::Point) where T
 end
 
 """
+    derivatives_type(::Type{T}, x::Union{Point,ContraVectorValue})
+    derivatives_type(::Type{T}, x::Union{Point,ContraVectorValue}, ::Val{N})
+
+Tensor type holding the `N`th order partial derivatives, with respect to the
+coordinate `x`, of a `T` valued function.
+
+The `N` derivation indices come first and are held by a fully symmetric
+[`SymNTensorValue`](@ref), which a [`ProductTensorValue`](@ref) tensors with the
+indices of `T`:
+
+    D = derivatives_type(T, x, Val(N))
+    zero(D)[i_1, …, i_N, J…] # ∂_{i_1} ⋯ ∂_{i_N} of the `J…` component
+
+`N` has to be given to a single call: unlike [`gradient_type`](@ref),
+`derivatives_type` does not compose.
+"""
+function derivatives_type(::Type{T}, x::Union{Point,ContraVectorValue}) where T
+    derivatives_type(T,x,Val(1))
+end
+function derivatives_type(::Type{T}, x::Union{Point,ContraVectorValue}, ::Val{0}) where T<:Number
+    typeof(zero(T)*zero(eltype(x)))
+end
+function derivatives_type(::Type{T}, x::Union{Point,ContraVectorValue}, ::Val{N}) where {T<:Number,N}
+  D = Cov(first(size(x))[]) # automatically consider point coordinates are contravariant, and partials are covariant
+  zero_partials = zero(SymNTensorValue{Tuple{ntuple(_ -> D, Val(N))...},eltype(x)})
+  zero_T = zero(T)
+  if T <: MultiValue
+    return typeof(ProductTensorValue(zero_partials,zero_T))
+  else
+    return typeof(zero_partials*zero_T)
+  end
+end
+
+"""
     struct FieldGradient{N,F} <: Field
 
 Type that represents the gradient of a field of type `F`. `N` is how many times

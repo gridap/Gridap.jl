@@ -19,7 +19,8 @@ tags = [
   SymTracelessTensorValue{2}, SymTracelessTensorValue{3},
   SkewSymTensorValue{3},
   ExteriorFormValue{2,cov3},
-  HighOrderTensorValue{Tuple{2,2,2}}
+  HighOrderTensorValue{Tuple{2,2,2}},
+  SymNTensorValue{Tuple{cov2,cov2,cov2}}
  ]
 
 # Canonicalisation of the factor tags
@@ -28,6 +29,7 @@ tags = [
 @test _minimal_tensortype_with_shape(SymTensorValue{3,Float64,6}) === SymTensorValue{3}
 @test _minimal_tensortype_with_shape(SymTensorValue{3}) === SymTensorValue{3}
 @test _minimal_tensortype_with_shape(ThirdOrderTensorValue{2,3,4,Int,24}) === ThirdOrderTensorValue{2,3,4}
+@test _minimal_tensortype_with_shape(SymNTensorValue{Tuple{cov2,cov2,cov2},Int,3,4}) === SymNTensorValue{Tuple{cov2,cov2,cov2}}
 @test _minimal_tensortype_with_shape(CoVectorValue{cov3,Float64,3}) === ExteriorFormValue{1,cov3}
 
 @test _factor_eltype(VectorValue{3}) === nothing

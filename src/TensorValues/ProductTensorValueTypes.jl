@@ -18,6 +18,7 @@ _minimal_tensortype_with_shape(::Type{<:SymFourthOrderTensorValue{D}})where D   
 _minimal_tensortype_with_shape(::Type{<:ThirdOrderTensorValue{D}})    where D        = ThirdOrderTensorValue{D,D,D}
 _minimal_tensortype_with_shape(::Type{<:ThirdOrderTensorValue{D1,D2,D3}}) where {D1,D2,D3} = ThirdOrderTensorValue{D1,D2,D3}
 _minimal_tensortype_with_shape(::Type{<:HighOrderTensorValue{S}})     where S        = HighOrderTensorValue{S}
+_minimal_tensortype_with_shape(::Type{<:SymNTensorValue{S}})          where S        = SymNTensorValue{S}
 _minimal_tensortype_with_shape(::Type{<:SkewSymKTensorValue{V,K,D}})  where {V,K,D}  = SkewSymKTensorValue{V,K,D}
 _minimal_tensortype_with_shape(::Type{V}) where V<:MultiValue = @unreachable "$V cannot be a
   factor of a ProductTensorValue, `_minimal_tensortype_with_shape` is not implemented for it."

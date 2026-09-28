@@ -404,4 +404,52 @@ test_field(∇f, p, ∇cp, grad=∇∇cp)
 test_field(∇f, x, ∇(f).(x), grad=∇∇(f).(x))
 test_field(∇f, z, ∇(f).(z), grad=∇∇(f).(z))
 
+
+# derivatives_type
+
+xc = ContraVectorValue(1.0,2.0)
+
+# The derivation order defaults to one
+@test derivatives_type(Float64,xc) === derivatives_type(Float64,xc,Val(1))
+
+# Order zero derives nothing, the value type prevails, promoted with the coordinates
+@test derivatives_type(Float64,xc,Val(0)) === Float64
+@test derivatives_type(Int,xc,Val(0)) === Float64
+@test derivatives_type(VectorValue{2,Int},xc,Val(0)) === VectorValue{2,Float64}
+
+# The derivation indices come first and are covariant, an un-varianced
+# `Point` coordinate being read as a `ContraVectorValue`. A scalar valued
+# function has no index to tensor them with, so its derivatives are the
+# symmetric tensor itself
+@test derivatives_type(Float64,xc,Val(1)) === SymNTensorValue{Tuple{cov2},Float64,1,2}
+@test derivatives_type(Float64,xc,Val(2)) === SymNTensorValue{Tuple{cov2,cov2},Float64,2,3}
+@test derivatives_type(Float64,ContraVectorValue(1.0,2.0,3.0),Val(2)) === SymNTensorValue{Tuple{cov3,cov3},Float64,2,6}
+
+@test derivatives_type(VectorValue{2,Float64},xc,Val(1)) ===
+  ProductTensorValue{SymNTensorValue{Tuple{cov2}},VectorValue{2},Float64,Tuple{cov2,2},2,4}
+@test derivatives_type(VectorValue{2,Float64},xc,Val(2)) ===
+  ProductTensorValue{SymNTensorValue{Tuple{cov2,cov2}},VectorValue{2},Float64,Tuple{cov2,cov2,2},3,6}
+
+# A `Point` gives the same derivatives as the contravariant vector of the same
+# dimension and component type
+for N in 0:2, V in (Float64, VectorValue{2,Float64}, SymTensorValue{2,Float64})
+  @test derivatives_type(V,Point(1.0,2.0),Val(N)) === derivatives_type(V,xc,Val(N))
+end
+
+# Both factors keep their dependent components, so the independent ones of the
+# derivatives are those of the partials times those of the value
+@test num_indep_components(derivatives_type(TensorValue{2,2,Float64},xc,Val(2))) == 3*4
+@test num_indep_components(derivatives_type(SymTensorValue{2,Float64},xc,Val(2))) == 3*3
+
+for x in (ContraVectorValue(1.0,2.0), Point(1.0,2.0))
+  for V in (Float64, VectorValue{2,Float64}, CoVectorValue{cov2,Float64,2},
+            TensorValue{2,2,Float64}, SymTensorValue{2,Float64})
+    for N in 0:2
+      D = @inferred derivatives_type(V,x,Val(N))
+      @test size(zero(D)) === (ntuple(i->cov2,N)..., size(zero(V))...)
+      @test eltype(D) === Float64
+    end
+  end
+end
+
 end # module
