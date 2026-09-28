@@ -154,7 +154,7 @@ end
   @inbounds arg.data[index]
 end
 
-@propagate_inbounds function getindex(arg::HighOrderTensorValue{S,T,N}, inds::Vararg{Integer,N}) where {S,T,N}
+@propagate_inbounds function getindex(arg::NTensorValue{S,T,N}, inds::Vararg{Integer,N}) where {S,T,N}
   @boundscheck @check checkbounds(arg, inds...) === nothing
   li = LinearIndices(arg)
   @inbounds arg.data[li[inds...]]
@@ -162,10 +162,10 @@ end
 # The following attempt to switch to IndexLinear style failed due to the manual
 # indexing dispatches above...
 #
-#Base.IndexStyle(::HighOrderTensorValue) = IndexLinear()
-#Base.IndexStyle(::Type{<:HighOrderTensorValue}) = IndexLinear()
-#Base.checkbounds(arg::HighOrderTensorValue, i::Integer) = checkbounds(arg.data, i)
-#@propagate_inbounds function getindex(arg::HighOrderTensorValue, i::Integer)
+#Base.IndexStyle(::NTensorValue) = IndexLinear()
+#Base.IndexStyle(::Type{<:NTensorValue}) = IndexLinear()
+#Base.checkbounds(arg::NTensorValue, i::Integer) = checkbounds(arg.data, i)
+#@propagate_inbounds function getindex(arg::NTensorValue, i::Integer)
 #  @boundscheck @check checkbounds(arg, i) === nothing
 #  @inbounds @inline getindex(arg.data, i)
 #end

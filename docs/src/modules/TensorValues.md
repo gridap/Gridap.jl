@@ -14,7 +14,7 @@ tensors:
 - 2nd order, symmetric and traceless [`SymTracelessTensorValue`](@ref),
 - 3rd order [`ThirdOrderTensorValue`](@ref),
 - 4th order and symmetric [`SymFourthOrderTensorValue`](@ref).
-- ≥ 4 orders [`HighOrderTensorValue`](@ref)
+- ≥ 4 orders [`NTensorValue`](@ref)
 
 ## Summary
 
@@ -96,7 +96,7 @@ SkewSymTensorValue
 SymTracelessTensorValue
 ThirdOrderTensorValue
 SymFourthOrderTensorValue
-HighOrderTensorValue
+NTensorValue
 ```
 
 ### Abstract tensor types

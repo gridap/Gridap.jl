@@ -593,10 +593,10 @@ z2= zero(z)
 @test isa(z,SymFourthOrderTensorValue{2,Int,9})
 @test Tuple(z) == Tuple(zeros(Int,(9)))
 
-z = zero(HighOrderTensorValue{Tuple{3,3,3,3},Int,4,81})
+z = zero(NTensorValue{Tuple{3,3,3,3},Int,4,81})
 z2= zero(z)
 @test z == z2
-@test isa(z,HighOrderTensorValue{Tuple{3,3,3,3},Int,4,81})
+@test isa(z,NTensorValue{Tuple{3,3,3,3},Int,4,81})
 @test Tuple(z) == Tuple(zeros(Int,(81)))
 
 z = zero(VectorValue{3,Int})
@@ -643,8 +643,8 @@ r = rand(SymFourthOrderTensorValue{3,Int})
 @test isa(r,SymFourthOrderTensorValue{3,Int,36})
 @test r ≠ rand(typeof(r))
 
-r = rand(HighOrderTensorValue{Tuple{3,3,3,3},Int})
-@test isa(r,HighOrderTensorValue{Tuple{3,3,3,3},Int,4,81})
+r = rand(NTensorValue{Tuple{3,3,3,3},Int})
+@test isa(r,NTensorValue{Tuple{3,3,3,3},Int,4,81})
 @test r ≠ rand(typeof(r))
 
 sn3 = SymNTensorValue{Tuple{3,3,3}}(1:10...)
@@ -736,8 +736,8 @@ b = V[a,a,a,]
 @test isa(b,Vector{V})
 
 a = ones(Int,(2,3,1,5))
-b = convert(HighOrderTensorValue{Tuple{2,3,1,5},Int},a)
-@test isa(b,HighOrderTensorValue{Tuple{2,3,1,5},Int})
+b = convert(NTensorValue{Tuple{2,3,1,5},Int},a)
+@test isa(b,NTensorValue{Tuple{2,3,1,5},Int})
 
 # Misc operations on the type itself
 
@@ -807,29 +807,29 @@ t = ThirdOrderTensorValue{2,2,2,Int}(1,2.0,3,4,5,6,7,8)
 # Fourth order tensor
 
 a = SArray{Tuple{2,2,2,2}}(1:16...)
-t = HighOrderTensorValue(a)
-@test isa(t,HighOrderTensorValue{Tuple{2,2,2,2},Int})
+t = NTensorValue(a)
+@test isa(t,NTensorValue{Tuple{2,2,2,2},Int})
 @test convert(SArray{Tuple{2,2,2,2},Int},t) === SArray(t)
 @test convert(MArray{Tuple{2,2,2,2},Int},t) == MArray(t)
 @test t === MultiValue(a)
 
-t = HighOrderTensorValue(Val(4),1:16...)
-@test isa(t,HighOrderTensorValue{Tuple{2,2,2,2},Int})
+t = NTensorValue(Val(4),1:16...)
+@test isa(t,NTensorValue{Tuple{2,2,2,2},Int})
 
-t = HighOrderTensorValue{Tuple{2,2,2,2}}(1:16...)
-@test isa(t,HighOrderTensorValue{Tuple{2,2,2,2},Int})
+t = NTensorValue{Tuple{2,2,2,2}}(1:16...)
+@test isa(t,NTensorValue{Tuple{2,2,2,2},Int})
 
-t = HighOrderTensorValue{Tuple{2,2,2,2},Float64}(1:16...)
-@test isa(t,HighOrderTensorValue{Tuple{2,2,2,2},Float64})
+t = NTensorValue{Tuple{2,2,2,2},Float64}(1:16...)
+@test isa(t,NTensorValue{Tuple{2,2,2,2},Float64})
 
-t = HighOrderTensorValue(Val(4),1,2.0,3:16...)
-@test isa(t,HighOrderTensorValue{Tuple{2,2,2,2},Float64})
+t = NTensorValue(Val(4),1,2.0,3:16...)
+@test isa(t,NTensorValue{Tuple{2,2,2,2},Float64})
 
-t = HighOrderTensorValue{Tuple{2,2,2,2}}(1,2.0,3:16...)
-@test isa(t,HighOrderTensorValue{Tuple{2,2,2,2},Float64})
+t = NTensorValue{Tuple{2,2,2,2}}(1,2.0,3:16...)
+@test isa(t,NTensorValue{Tuple{2,2,2,2},Float64})
 
-t = HighOrderTensorValue{Tuple{2,2,2,2},Int}(1.,2.0,3:16...)
-@test isa(t,HighOrderTensorValue{Tuple{2,2,2,2},Int})
+t = NTensorValue{Tuple{2,2,2,2},Int}(1.,2.0,3:16...)
+@test isa(t,NTensorValue{Tuple{2,2,2,2},Int})
 
 
 # mutable, Mutable, implicit convert
@@ -864,7 +864,7 @@ m = mutable(v)
 @test m == get_array(v)
 @test isa(m,MArray)
 
-v = HighOrderTensorValue{Tuple{2,1,3,1}}(1:6...)
+v = NTensorValue{Tuple{2,1,3,1}}(1:6...)
 m = mutable(v)
 @test m == get_array(v) == SArray(v)
 @test isa(m,MArray)
@@ -942,11 +942,11 @@ M2 = Mutable(v)
 @test M == M2
 @test V[ v ] == V[ m ]
 
-V = HighOrderTensorValue{Tuple{3,1,2,1},Int}
+V = NTensorValue{Tuple{3,1,2,1},Int}
 M = Mutable(V)
 @test M == MArray{Tuple{3,1,2,1},Int,4,6}
 m = rand(M)
-v = HighOrderTensorValue(m)
+v = NTensorValue(m)
 @test isa(v,V)
 M2 = Mutable(v)
 @test M == M2
@@ -972,7 +972,7 @@ t2 = TensorValue(1)
 s  = SymTensorValue(1)
 t3 = ThirdOrderTensorValue(1)
 f  = SymFourthOrderTensorValue(1)
-h5 = HighOrderTensorValue(Val(5),1)
+h5 = NTensorValue(Val(5),1)
 @test Float64[ v ]  == [ 1. ]
 @test Float64[ t2 ] == [ 1. ]
 @test Float64[ s ]  == [ 1. ]
@@ -984,7 +984,7 @@ h5 = HighOrderTensorValue(Val(5),1)
 @test SymTensorValue{1,Int}[ 1 ] == [ s ]
 @test ThirdOrderTensorValue{1,1,1,Int,1}[ 1 ] == [ t3 ]
 @test SymFourthOrderTensorValue{1,Int}[ 1 ] == [ f ]
-@test HighOrderTensorValue{Tuple{1,1,1,1,1},Int,5,1}[ 1 ] == [ h5 ]
+@test NTensorValue{Tuple{1,1,1,1,1},Int,5,1}[ 1 ] == [ h5 ]
 
 v  = VectorValue(1,2)
 st = SymTracelessTensorValue{1}()
@@ -995,7 +995,7 @@ sk = SkewSymTensorValue(1)
 @test_throws ErrorException VectorValue{2,Int,2}[ 1 ]
 @test_throws ErrorException SymTracelessTensorValue{1,Int,0}[ 1 ]
 @test_throws ErrorException SkewSymTensorValue{1,Int,1}[ 1 ]
-@test_throws ErrorException HighOrderTensorValue{Tuple{1,2,1,1},Int,2}[ 1 ]
+@test_throws ErrorException NTensorValue{Tuple{1,2,1,1},Int,2}[ 1 ]
 
 # component number APIs
 @test num_components(Int) == 1
@@ -1010,7 +1010,7 @@ sk = SkewSymTensorValue(1)
 @test num_components(SymTracelessTensorValue(1,2)) == 4
 @test num_components(ThirdOrderTensorValue(111,112,121,122,211,212,221,222)) == 8
 @test num_components(SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)) == 16
-@test num_components(HighOrderTensorValue{Tuple{2,3,1,5}}) == 2*3*1*5
+@test num_components(NTensorValue{Tuple{2,3,1,5}}) == 2*3*1*5
 @test num_components(SymNTensorValue{Tuple{3,3,3},Int}) == 27
 
 @test num_indep_components(Int) == 1
@@ -1033,7 +1033,7 @@ sk = SkewSymTensorValue(1)
 @test num_indep_components(ThirdOrderTensorValue(111,112,121,122,211,212,221,222)) == 8
 @test num_indep_components(SymFourthOrderTensorValue{2}) == 9
 @test num_indep_components(SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)) == 9
-@test num_indep_components(HighOrderTensorValue{Tuple{2,3,1,5}}) == 2*3*1*5
+@test num_indep_components(NTensorValue{Tuple{2,3,1,5}}) == 2*3*1*5
 @test num_indep_components(SymNTensorValue{Tuple{3,3,3}}) == 10
 @test num_indep_components(SymNTensorValue{Tuple{2,2,2,2}}) == 5
 
@@ -1053,7 +1053,7 @@ sk = SkewSymTensorValue(1)
 @test_throws ErrorException num_indep_components(SymTracelessTensorValue)
 @test_throws ErrorException num_indep_components(ThirdOrderTensorValue{2,2})
 @test_throws ErrorException num_indep_components(SymFourthOrderTensorValue)
-@test_throws ErrorException num_indep_components(HighOrderTensorValue)
+@test_throws ErrorException num_indep_components(NTensorValue)
 
 # To vizualise component names:
 # tt = TensorValue(1:4...)
@@ -1076,8 +1076,8 @@ sk = SkewSymTensorValue(1)
 @test indep_components_names(SymFourthOrderTensorValue{2}) == [
  "XXXX", "XXXY", "XXYY", "XYXX", "XYXY", "XYYY", "YYXX", "YYXY", "YYYY"
 ]
-@test indep_components_names(HighOrderTensorValue{Tuple{1,2,2,1}}) == ["XXXX","XYXX","XXYX","XYYX"]
-@test indep_components_names(HighOrderTensorValue{Tuple{1,1,4,1}}) == ["1111","1121","1131","1141"]
+@test indep_components_names(NTensorValue{Tuple{1,2,2,1}}) == ["XXXX","XYXX","XXYX","XYYX"]
+@test indep_components_names(NTensorValue{Tuple{1,1,4,1}}) == ["1111","1121","1131","1141"]
 
 @test indep_components_names(SymNTensorValue{Tuple{2,2,2},Int}) == ["XXX","XXY","XYY","YYY"]
 @test indep_components_names(SymNTensorValue{Tuple{3,3},Int}) == ["XX","XY","XZ","YY","YZ","ZZ"]

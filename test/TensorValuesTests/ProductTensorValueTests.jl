@@ -19,7 +19,7 @@ tags = [
   SymTracelessTensorValue{2}, SymTracelessTensorValue{3},
   SkewSymTensorValue{3},
   ExteriorFormValue{2,cov3},
-  HighOrderTensorValue{Tuple{2,2,2}},
+  NTensorValue{Tuple{2,2,2}},
   SymNTensorValue{Tuple{cov2,cov2,cov2}}
  ]
 

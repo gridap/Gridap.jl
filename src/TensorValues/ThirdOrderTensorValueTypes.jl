@@ -1,13 +1,13 @@
 
 """
-    ThirdOrderTensorValue{D1,D2,D3,T,L} = HighOrderTensorValue{Tuple{D1,D2,D3},T,3,L}
+    ThirdOrderTensorValue{D1,D2,D3,T,L} = NTensorValue{Tuple{D1,D2,D3},T,3,L}
 
 Alias representing a third-order `D1`×`D2`×`D3` tensor, providing similar
 contructors than the 1st and 2nd order counterparts. It must hold `L` = `D1`\\*`D2`\\*`D3`.
 
 If only `D1` or no dimension parameter is given to the constructor, `D1`=`D2`=`D3` is assumed.
 """
-const ThirdOrderTensorValue{D1,D2,D3,T,L} = HighOrderTensorValue{Tuple{D1,D2,D3},T,3,L}
+const ThirdOrderTensorValue{D1,D2,D3,T,L} = NTensorValue{Tuple{D1,D2,D3},T,3,L}
 
 # Empty ThirdOrderTensorValue constructor
 

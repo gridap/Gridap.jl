@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `AbstractSymTensorValue` now subtypes `AbstractSymMultiValue` instead of `MultiValue` directly.
   - `isless(::Number, ::MultiValue)` and `(<=)(::Number, ::MultiValue)` now compare against every component instead of the stored ones only, which fixes them on `SkewSymTensorValue`.
   - `(\)(a::MultiValue, b::MultiValue)` no longer types its result after `b`. `inv(a)⋅b` is not symmetric even when `b` is, and a `SymTensorValue` result silently dropped the asymmetry.
+  - `HighOrderTensorValue` is renamed `NTensorValue`.
 
 ## [0.20.9] - 2026-08-17
 

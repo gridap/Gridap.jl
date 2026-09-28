@@ -336,7 +336,7 @@ r3i = ThirdOrderTensorValue{2,2,2}(1:8...)
 # with two indices of each variance, which no `SymFourthOrderTensorValue` holds
 @test_throws DimensionMismatch f_cov ⋅² f_cov
 @test (f_int ⋅² f_int) isa SymFourthOrderTensorValue{2}
-@test (f_cov ⋅² f_con) isa HighOrderTensorValue{Tuple{cov2,cov2,con2,con2}}
+@test (f_cov ⋅² f_con) isa NTensorValue{Tuple{cov2,cov2,con2,con2}}
 @test get_array(f_cov ⋅² f_con) == get_array(f_int ⋅² f_int)
 
 # ==================================================================
@@ -645,7 +645,7 @@ end
 @test (ω1 ⊗ ω1) isa TensorValue{cov2,cov2}
 @test (ω1 ⊗ VectorValue(1,2)) isa TensorValue{cov2,2}
 @test (VectorValue(1,2) ⊗ ω1) isa TensorValue{2,cov2}
-@test (t_cov ⊗ t_cov) isa HighOrderTensorValue{Tuple{cov2,cov2,cov2,cov2}}
+@test (t_cov ⊗ t_cov) isa NTensorValue{Tuple{cov2,cov2,cov2,cov2}}
 
 # Contracting away every index of one operand leaves the other's variance
 @test (t_mix2 ⋅ ω1) isa CoVectorValue{cov2}
@@ -692,7 +692,7 @@ end
 @test_throws DimensionMismatch tensor_contraction(t_cov, Val((1,)), Val((2,)))
 @test_throws DimensionMismatch tensor_contraction(t_con, Val((1,)), Val((2,)))
 
-h4 = HighOrderTensorValue{Tuple{con2,cov3,cov2,con3}}(reshape(1:36,2,3,2,3))
+h4 = NTensorValue{Tuple{con2,cov3,cov2,con3}}(reshape(1:36,2,3,2,3))
 @test tensor_contraction(h4, Val((1,)), Val((3,))) isa TensorValue{cov3,con3}
 @test tensor_contraction(h4, Val((2,)), Val((4,))) isa TensorValue{con2,cov2}
 @test tensor_contraction(h4, Val((1,2)), Val((3,4))) isa Int

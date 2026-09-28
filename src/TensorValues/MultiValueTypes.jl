@@ -324,7 +324,7 @@ get_array(a::MultiValue{S,T}) where {S,T} = convert(SArray{_rm_size_variance(S),
     MultiValue(a::MArray)
 
 Converts `a` to a tensor of type `<:MultiValue`.
-""" # the S param is there to allow HighOrderTensorValue's specialization to be more specific
+""" # the S param is there to allow NTensorValue's specialization to be more specific
 MultiValue(::StaticArray{S}) where S = @abstractmethod
 
 """
@@ -455,7 +455,7 @@ of Paraview. Else, if `maximum(S)>3`, they are labeled by integers starting from
 """
 indep_components_names(a::MultiValue) = indep_components_names(typeof(a))
 function indep_components_names(::Type{V}) where V<:MultiValue{S,T,N,L} where {S,T,N,L}
-  s = size(HighOrderTensorValue{S})
+  s = size(NTensorValue{S})
 
   # if there are dependant components, numbered linearly by default
   if L != prod(s)
@@ -468,7 +468,7 @@ function indep_components_names(::Type{V}) where V<:MultiValue{S,T,N,L} where {S
 end
 
 function indep_components_names(::Type{V}) where V<:MultiValue{S} where {S}
-  s = size(HighOrderTensorValue{S})
+  s = size(NTensorValue{S})
 
   if maximum(s; init=0) > 3
     names = [ join(Tuple(ci)) for ci in CartesianIndices(s) ]

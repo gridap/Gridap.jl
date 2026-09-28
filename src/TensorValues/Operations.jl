@@ -165,7 +165,7 @@ function _tensor_base_type_expr(Nr,Sr)
   elseif Nr == 2
     :( TensorValue{$(Sr[1]),$(Sr[2])} )
   else
-    :( HighOrderTensorValue{$(Tuple{Sr...})} )
+    :( NTensorValue{$(Tuple{Sr...})} )
   end
 end
 
@@ -767,7 +767,7 @@ the specific functions above if possible), but is used as default generic implem
 
   # TODO, if the length of the resulting tensor exceeds some threshold, switch
   # to runtime looping over the indices, or even using BLAS. Also, we might need
-  # to change HighOrderTensorValue to store into Memory or simply some fixed sized array.
+  # to change NTensorValue to store into Memory or simply some fixed sized array.
   # Context: compiling double_contaction of 4th order 4D tensors takes 5-10 min, runtime 15μs.
   comps = Expr[]
   for cib in CartesianIndices(Int.(Sb_keep)) # Julia is column major, last index enumerates first
@@ -1370,7 +1370,7 @@ end
 
 Return a vector of length `D2` of traces computed on the first two indices: `resⱼ = Σᵢ vᵢᵢⱼ`.
 """
-@generated function tr(v::HighOrderTensorValue{S,T,N}) where {S,T,N}
+@generated function tr(v::NTensorValue{S,T,N}) where {S,T,N}
   @assert S <: Tuple "Ill-defined MultiValue value"
 
   if N > 3

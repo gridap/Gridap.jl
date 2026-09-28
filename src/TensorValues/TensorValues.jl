@@ -83,7 +83,7 @@ export SkewSymTensorValue
 export QTensorValue
 export SymFourthOrderTensorValue
 export ThirdOrderTensorValue
-export HighOrderTensorValue
+export NTensorValue
 export ProductTensorValue
 export AbstractSymMultiValue
 export SymNTensorValue
@@ -191,7 +191,7 @@ include("SkewSymTensorValueTypes.jl")
 
 include("SymFourthOrderTensorValueTypes.jl")
 
-include("HighOrderTensorValueTypes.jl")
+include("NTensorValueTypes.jl")
 
 include("ThirdOrderTensorValueTypes.jl")
 
