@@ -178,3 +178,51 @@ symmetric_gradient(f::Function,x::SVector) = symmetric_gradient(f,Point(x))
 divergence(f::Function,x::SVector) = divergence(f,Point(x))
 curl(f::Function,x::SVector) = curl(f,Point(x))
 laplacian(f::Function,x::SVector) = laplacian(f,Point(x))
+
+
+##############################################
+# Variance consistent differential operators #
+##############################################
+
+# `N`th order partial derivatives of an `L` component function `g`. Each
+# nesting flattens the previous result column major, so with `D = length(y)`:
+#     a[l + L*∑_{k<N} (i_k-1)*D^(k-1), i_N] == ∂_{i_1} ⋯ ∂_{i_N} g_l
+_nested_jacobian(g, y::SVector{D,T}, ::Val{1}, ::Val{L}) where {D,T,L} =
+  ForwardDiff.jacobian(g,y)::SMatrix{L,D,T,L*D}
+
+function _nested_jacobian(g, y::SVector{D,T}, ::Val{N}, ::Val{L}) where {D,T,N,L}
+  ForwardDiff.jacobian(z -> _nested_jacobian(g,z,Val(N-1),Val(L)), y)::SMatrix{L*D^(N-1),D,T,L*D^N}
+end
+
+@generated function _partials_data(a::StaticMatrix, ::Val{D}, ::Val{N}, ::Val{L}) where {D,N,L}
+  # A row of `a` holds one component and the `N-1` outermost derivation indices,
+  # the innermost one indexing the columns.
+  rows = LinearIndices((L, ntuple(_->D, N-1)...))
+  comps = [ :( a[$(rows[l, I[1:N-1]...]), $(I[N])] )
+            for l in 1:L for I in sorted_multisets(D,N) ]
+  Expr(:tuple, comps...)
+end
+
+function partial_derivatives(f::Function, ::Val{N}) where N
+  function _partial_derivatives(x)
+    partial_derivatives(f,x,Val(N))
+  end
+end
+
+function partial_derivatives(f::Function, x::Point, ::Val{N}) where N
+  partial_derivatives(f, x, return_value(f,x), Val(N))
+end
+
+partial_derivatives(f::Function, x::Point, fx::Number, ::Val{0}) = fx*one(eltype(x))
+
+# Only the independent components of `fx` are differentiated, and only the
+# non-decreasing derivation multi-indices are stored in the resulting ProductTensorValue.
+function partial_derivatives(f::Function, x::Point{D}, fx::Number, ::Val{N}) where {D,N}
+  V = derivatives_type(typeof(fx), x, Val(N))
+  L = num_indep_components(typeof(fx))
+  iszero(L) && return zero(V)
+  a = _nested_jacobian(_indep_comp_svector∘f∘Point, get_array(x), Val(N), Val(L))
+  V(_partials_data(a, Val(D), Val(N), Val(L)))
+end
+
+_indep_comp_svector(a::Number) = SVector(get_indep_components(a))

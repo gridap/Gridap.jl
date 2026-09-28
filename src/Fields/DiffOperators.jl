@@ -180,7 +180,19 @@ function Base.broadcasted(::typeof(*),s::ShiftedNabla,f::Function)
   Base.broadcasted(*,s,GenericField(f))
 end
 
-# Differential geometry operators
+# Variance consistent differential operators, a.k.a. Differential geometry operators
+
+"""
+    partial_derivatives(f, Val(N))
+
+`N`th order partial derivatives of a tensor field `f`.
+
+Similar to `gradient(f, Val(N))`, but this operator stores independent partial
+derivatives in a [`ProductTensorValue`](@ref) and enforces correct variance of
+the `N` first indices, that is covariant.
+"""
+function partial_derivatives end
+partial_derivatives(f) = partial_derivatives(f, Val(1))
 
 """
     exterior_derivative(ω)

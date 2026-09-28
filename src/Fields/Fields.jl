@@ -41,6 +41,7 @@ import LinearAlgebra: ⋅, dot
 
 import Base: +, -, *, /
 import Gridap.TensorValues: ⊗, ⊙, symmetric_part, outer, meas, ∧
+using Gridap.TensorValues: get_indep_components
 
 import Gridap.Arrays: IndexStyle
 import Gridap.Arrays: return_cache
@@ -108,6 +109,7 @@ export VoidBasisMap
 
 export DensifyInnerMostBlockLevelMap
 
+export partial_derivatives
 export exterior_derivative, 𝑑
 export lie_derivative, 𝓛
 export codifferential
