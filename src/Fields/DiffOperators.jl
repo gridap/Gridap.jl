@@ -200,8 +200,17 @@ partial_derivatives(f) = partial_derivatives(f, Val(1))
 
 Exterior derivative of a differential K-form `dω`, is a (K+1)-form.
 """
-function exterior_derivative end
+exterior_derivative(ω) = Operation(partials_to_exteriorderivative)(partial_derivatives(ω))
 const 𝑑 = exterior_derivative
+
+"""
+    ∧(∇,f)
+    ∇∧f
+
+Equivalent to `exterior_derivative(f)`.
+"""
+∧(::typeof(∇),f::Field) = exterior_derivative(f)
+∧(::typeof(∇),f::Function) = exterior_derivative(f)
 
 """
     lie_derivative(v, ω)
@@ -212,7 +221,7 @@ Lie derivative 𝓛_v ω = d(ι_v ω) + ι_v(dω) (Cartan's magic formula).
 Requires symbolic (`Symbolics.Num`) coefficients: methods are provided by the
 GridapSymbolicsExt package extension when Symbolics is loaded.
 """
-function lie_derivative end
+lie_derivative(v,ω) = Operation(partials_to_liederivative)(v,ω,partial_derivatives(v),partial_derivatives(ω))
 const 𝓛 = lie_derivative
 
 """
@@ -222,7 +231,9 @@ Codifferential of a differential K-form `ω`, is a (K-1)-form. In flat Euclidean
 space, `δω = (-1)^{D(K-1)+1} ⋆ d ⋆ ω`.
 """
 function codifferential end
-
+codifferential(ω) = Operation(partials_to_codifferential)(partial_derivatives(ω))
+# TODO, a curved metric makes δω depend on ω and on the derivatives of the
+# metric too: decide on an API for the Christoffel symbols before adding them.
 
 """
     d_0form(f) = to_1form(∇(f))
@@ -241,8 +252,7 @@ Returns a `ExteriorFormValue{2,D}`-valued `OperationCellField`.
 """
 d_1form(f) = Operation(grad_to_2form)(∇(f))
 
-# Broadcasting of differential operators
-
+# Broadcasting of differential operators using gradient
 for (diff_op, op) in (
   (:divergence, :tr), (:symmetric_gradient,:symmetric_part),
   (:skew_symmetric_gradient,:skew_symmetric_part),
@@ -254,6 +264,22 @@ for (diff_op, op) in (
     end
     function evaluate!(cache,::Broadcasting{typeof($diff_op)},f)
       Broadcasting(Operation($op))(Broadcasting(∇)(f))
+    end
+  end
+end
+
+# Broadcasting of differential operators using partial_derivatives
+for (diff_op, op) in (
+  (:exterior_derivative,:partials_to_exteriorderivative),
+  (:lie_derivative,     :partials_to_liederivative),
+  (:codifferential,     :partials_to_codifferential),
+)
+  @eval begin
+    function return_value(::Broadcasting{typeof($diff_op)},f)
+      Broadcasting(Operation($op))(Broadcasting(partial_derivatives)(f))
+    end
+    function evaluate!(cache,::Broadcasting{typeof($diff_op)},f)
+      Broadcasting(Operation($op))(Broadcasting(partial_derivatives)(f))
     end
   end
 end
