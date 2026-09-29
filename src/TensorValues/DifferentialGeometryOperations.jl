@@ -170,8 +170,8 @@ that of `ω`, else, `v` is assumed contravariant so `ω` should be covariant.
   # (ι_v ω)_{I∖I[j]} = Σ_j (-1)^{j-1} v^{I[j]} ω_I. Dropping one entry of the
   # sorted I leaves it sorted, so the output slot is its combination index.
   terms = [Expr[] for _ in 1:L]
-  for (n, I) in enumerate(sorted_combinations(D, K)), j in 1:K
-    l = combination_index(deleteat!(copy(I), j), D)
+  for (n, I) in enumerate(sorted_combinations(D, K)),
+      (j, l) in enumerate(sub_combinations_ids(I, D))
     push!(terms[l], _signed(iseven(j-1) ? 1 : -1,
                             :(v[$(I[j])] * indep_comp_getindex(ω,$n))))
   end
@@ -782,3 +782,207 @@ function vol_coeff(ω::ExteriorFormValue{K,D}) where {K,D}
   indep_comp_getindex(ω, 1)
 end
 
+
+# ============================================================
+# Low level differential operators from partial derivatives
+#
+# Each of these consumes a tensor of partial derivatives of its arguments: the
+# `N` derivation indices come first and are covariant.
+# ============================================================
+
+# Exterior derivative
+
+"""
+    partials_to_exteriorderivative(∂ω)
+    partials_to_exteriorderivative(∂f)
+
+Value of the exterior derivative `dω` of a K-form `ω` at `x`, from its first
+order partial derivatives `∂ω = partial_derivatives(ω)(x)`. The second method
+takes the partial derivatives (gradient) of a scalar function `f`.
+
+`dω` is the alternation of `∂ω` scaled by `K+1`, so that
+
+    dω[i_0, …, i_K] = ∑_a (-1)^a ∂ω[i_a, i_0, …, î_a, …, i_K]
+
+which is a `ExteriorFormValue{K+1,D}`.
+"""
+@generated function partials_to_exteriorderivative(
+  ∂ω::ProductTensorValue{<:MultiValue{Tuple{Dw}},ExteriorFormValue{K,Dw},T}) where {K,Dw,T}
+
+  D  = Int(Dw)
+  Kp1 = K + 1
+  ncomp = binomial(D, Kp1)
+  iszero(ncomp) &&
+    return :( zero(ExteriorFormValue{$Kp1,$Dw,$(Base.promote_op(-,T,T))}) )
+
+  # (dω)_I = Σ_q (-1)^{q-1} ∂_{I[q]} ω_{I∖I[q]}
+  comps = Vector{Expr}(undef, ncomp)
+  for (w,I) in enumerate(sorted_combinations(D, Kp1))
+    terms = Vector{Expr}(undef, Kp1)
+    for (q, I_sub_q_id) in enumerate(sub_combinations_ids(I,D))
+      sgn = isodd(q) ? 1 : -1
+      i = (I_sub_q_id-1)*D + I[q]
+      terms[q] = _signed(sgn, :( indep_comp_getindex(∂ω, $i) ))
+    end
+    comps[w] = _sum_expr(terms, T)
+  end
+
+  :( ExteriorFormValue{$Kp1,$Dw}(($(comps...),)) )
+end
+
+function partials_to_exteriorderivative(∂f::MultiValue{Tuple{Dw},T,1}) where {Dw,T}
+  Dw isa Cov || throw(ArgumentError(
+    "the exterior derivative expect covariant (`Cov`) partial derivatives, got a derivation index of variance $(typeof(Dw))"))
+  ExteriorFormValue{1,Dw,T}(Tuple(∂f))
+end
+
+
+# Lie derivative
+
+"""
+    partials_to_liederivative(u, v, ∂u, ∂v)
+    partials_to_liederivative(u, ω::ExteriorFormValue, ∂u, ∂ω)
+
+Lie derivative `𝓛_u v` of a field `v` along the contravariant vector field `u`,
+from both fields and their first order partial derivatives. `v` may be a
+function, a vector, a covector or a K-form, and `𝓛_u v` has its variance and
+degree.
+
+On a K-form, Cartan's magic formula `𝓛_u ω = d(ι_u ω) + ι_u(dω)` expands to
+
+    𝓛_u ω[i_1, …, i_K] = ∑_j u[j]*∂ω[j, i_1, …, i_K]
+                       + ∑_a ∑_j ω[i_1, …, j, …, i_K]*∂u[i_a, j]
+
+the second sum replacing `i_a` by `j`. On a vector field it is the Lie bracket
+`𝓛_u v = [u, v]`, on a function, 𝓛_u f = u⋅∂f.
+"""
+function partials_to_liederivative(v::MultiValue, ω::Number, ∂v::MultiValue, ∂ω::MultiValue)
+  @notimplemented
+end
+
+# Lie derivative of a scalar function
+function partials_to_liederivative(
+  u::MultiValue{Tuple{Du}}, f::Number,
+  ∂u::MultiValue{Tuple{Dp,Du}}, ∂f::MultiValue{Tuple{Dp}}) where {Du,Dp}
+
+  Du isa Con || throw(ArgumentError(
+    "Lie derivative requires a contravariant first argument"))
+  Dp isa Cov || throw(ArgumentError(
+    "partial derivatives should have a covariant index, got $Dp"))
+
+  # 𝓛ᵤf = u(f) = df(u) = uʲ ∂ⱼf
+  return u⋅∂f
+end
+
+# Lie derivative of a vector field
+function partials_to_liederivative(
+  u::MultiValue{Tuple{D}}, v::MultiValue{Tuple{D}},
+  ∂u::MultiValue{Tuple{Dp,D}}, ∂v::MultiValue{Tuple{Dp,D}}) where {D,Dp}
+
+  D == Dp || throw(DimensionMismatch(
+    "the arguments of Lie derivative must all be expressed in the same coordinates, got incompatible dimensions $D ≠ $Dp"))
+  D isa Con || throw(ArgumentError(
+    "Lie derivative requires a contravariant first argument"))
+  Dp isa Cov || throw(ArgumentError(
+    "partial derivatives should have a covariant index, got $Dp"))
+
+  # (𝓛ᵤv)ⁱ = [u, v]ⁱ = uʲ ∂ⱼvⁱ - vʲ ∂ⱼuⁱ
+  return u⋅∂v - v⋅∂u
+end
+
+# Lie derivative of a covector
+function partials_to_liederivative(
+  u::MultiValue{Tuple{Du}}, ω::MultiValue{Tuple{Dv}},
+  ∂u::MultiValue{Tuple{Dv,Du}}, ∂ω::MultiValue{Tuple{Dv,Dv}}) where {Du,Dv}
+
+  Du == Dv || throw(DimensionMismatch(
+    "the arguments of Lie derivative must all be expressed in the same coordinates, got incompatible dimensions $Du ≠ $Dv"))
+  Du isa Con || throw(ArgumentError(
+    "Lie derivative requires a contravariant first argument"))
+  Dv isa Cov || throw(ArgumentError(
+    "the partial derivatives for the lie derivative should have a covariant index, got $Dv"))
+
+  # (𝓛ᵤω)ᵢ =  uʲ ∂ⱼωᵢ + ∂ᵢuʲ ωⱼ
+  return u⋅∂ω + ∂u⋅ω
+end
+
+# Lie derivative of a k-form
+@generated function partials_to_liederivative(
+  u::MultiValue{Tuple{Du},Tu}, ω::ExteriorFormValue{K,Dw,Tw},
+  ∂u::MultiValue{Tuple{Dw,Du},Tdu},
+  ∂ω::ProductTensorValue{<:MultiValue{Tuple{Dw}},ExteriorFormValue{K,Dw},Tdw}
+  ) where {K,Du,Dw,Tu,Tw,Tdu,Tdw}
+
+  Du isa Con || return :(throw(ArgumentError(
+    $("the Lie derivative requires a contravariant vector field, got a first argument of size ($Du,)"))))
+  Du == Dw || return :(throw(DimensionMismatch(
+    $("the vector field and the form must live in the same dimension, got $(Int(Du)) and $(Int(Dw))"))))
+
+  D = Int(Dw)
+  T = Base.promote_op(+, Base.promote_op(*,Tu,Tdw), Base.promote_op(*,Tdu,Tw))
+  ncomp = binomial(D, K)
+  iszero(ncomp) && return :( zero(ExteriorFormValue{$K,$Dw,$T}) )
+
+  comps = Vector{Expr}(undef, ncomp)
+  for (n,I) in enumerate(sorted_combinations(D, K))
+    # uʲ ∂ⱼω_I, the transport of ω along the flow of u
+    terms = Expr[:( u[$j] * ∂ω[$j, $(I...)] ) for j in 1:D]
+    # ∂_{i_a}uʲ ω_{i_1…j…i_K}, which vanishes when j already sits in I∖I[a], so
+    # for each a the sum runs over the complement of that sub-combination
+    for a in 1:K
+      Ia = ntuple(i -> I[i + Int(i≥a)], K-1)
+      Iacomp = combination_complement(Ia, D)
+      for (q, l) in enumerate(sup_combinations_ids(Ia, D))
+        j = Iacomp[q]
+        sgn = sorting_sign(I[1:a-1]..., j, I[a+1:end]...)
+        push!(terms, _signed(sgn, :( ∂u[$(I[a]), $j] * indep_comp_getindex(ω, $l) )))
+      end
+    end
+    comps[n] = _sum_expr(terms, T)
+  end
+
+  :( ExteriorFormValue{$K,$Dw}(($(comps...),)) )
+end
+
+# TODO later, Lie derivative of arbitrary tensor with no (or unknown) symmetries
+
+# codifferential
+
+"""
+    partials_to_codifferential(∂ω)
+
+Value of the flat codifferential `δω` of a K-form `ω` at `x`, a (K-1)-form, from
+its first order partial derivatives `∂ω = partial_derivatives(ω)(x)`.
+
+`δω` contracts the derivation index of `∂ω` with the first index of `ω`,
+
+    δω[i_1, …, i_{K-1}] = -∑_j ∂ω[j, j, i_1, …, i_{K-1}]
+"""
+@generated function partials_to_codifferential(
+  ∂ω::ProductTensorValue{<:MultiValue{Tuple{Dw}},ExteriorFormValue{K,Dw},T}) where {K,Dw,T}
+
+  K >= 1 || return :(@unreachable "the codifferential requires K ≥ 1")
+  D = Int(Dw)
+  Km1 = K - 1
+  ncomp = binomial(D, Km1)
+  iszero(ncomp) &&
+    return :( zero(ExteriorFormValue{$Km1,$Dw,$(Base.promote_op(-,T,T))}) )
+
+  # (δω)_I = -Σ_j ∂_j ω_{j I}. Only j ∉ I contributes, the other terms vanishing
+  # by antisymmetry, so the sum runs over the complement of I.
+  comps = Vector{Expr}(undef, ncomp)
+  for (n,I) in enumerate(sorted_combinations(D, Km1))
+    Icomp = combination_complement(I, D)
+    terms = Vector{Expr}(undef, length(Icomp))
+    for (q, I_sup_q_id) in enumerate(sup_combinations_ids(I, D))
+      j = Icomp[q]
+      i = (I_sup_q_id-1)*D + j
+      terms[q] = _signed(-sorting_sign(j, I...), :( indep_comp_getindex(∂ω, $i) ))
+    end
+    comps[n] = _sum_expr(terms, T)
+  end
+
+  :( ExteriorFormValue{$Km1,$Dw}(($(comps...),)) )
+end
+
+# TODO later, codifferential in non-euclidean coordinates

@@ -155,6 +155,9 @@ export from_Kform
 export to_0form
 export to_Dform
 export grad_to_2form
+export partials_to_exteriorderivative
+export partials_to_liederivative
+export partials_to_codifferential
 
 import Base: show
 import Base: promote_rule
