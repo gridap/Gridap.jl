@@ -622,9 +622,9 @@ function _basis_forms_components(D,k,DG_style,rot_90)
     if DG_style || iszero(k) || isone(k) && !rot_90
       components[I_id] = (I_id, I, 1)
     else # if k == D, I = [1:D] and this is just (1, [], 1) (but that works)
-      Icomp = _complement(I, D)
+      Icomp = combination_complement(I, D)
       Istar_id = combination_index(Icomp, D)
-      Istar_sgn = _combination_sign(I)
+      Istar_sgn = combination_sign(I)
       components[I_id] = (Istar_id, I, Istar_sgn)
     end
   end
@@ -654,7 +654,7 @@ function _PmΛ_F_bubble_functions(r,k,D,F,w)
   for α in bernstein_terms(r-1,D)
     sup_α_ids = _sup_multi_indices(α)
     for J in sorted_combinations(N,k+1)
-      sub_J_ids = _sub_combinations_ids(J, N)
+      sub_J_ids = sub_combinations_ids(J, N)
       j = _minimum_or_one(J)-1
       if issetequal(_support(α) ∪ J, F) && all(α[1:j] .== 0)
         w += 1
@@ -1019,69 +1019,6 @@ end
 ################################################################
 
 """
-    _complement(I, D)
-
-Given a k-combination `I` of elements of `1:D`, returns the unique (`D`-k)
-combination of `1:D` "`Icomp`" such that `I ∪ Icomp ⊇ 1:D`.
-"""
-function _complement(combi, D)
-  k = length(combi)
-  combi_comp = Vector{Int}(undef, D-k)
-  curr_perm, curr_comp = 1, 1
-  for i in 1:D
-    if curr_perm ≤ k && combi[curr_perm] == i
-      curr_perm += 1
-    else
-      combi_comp[curr_comp] = i
-      curr_comp += 1
-    end
-  end
-  combi_comp
-end
-
-"""
-    _combination_sign(I)
-
-Given a combination `I`, returns the sign of the permutation resulting from
-the concatenation of `I` and its complement [`_complement(I,D)`](@ref _complement).
-"""
-function _combination_sign(combi)
-  @check issorted(combi)
-  i, k, acc, delta = 1, 1, 0, 0
-  while k <= length(combi)
-    if combi[k] == i
-      acc += delta
-      k += 1
-    else
-      delta += 1
-    end
-    i += 1
-  end
-  return iseven(acc) ? 1 : -1
-end
-
-"""
-    _sub_combinations_ids(J, D)
-
-Return a vector containing the `combination_index` of the `k` different
-combinations `J\\J[i]` of 1:`D` for 1 ≤ i ≤ `k`, where `k=length(J)`.
-
-`D` is the ambient dimension the indices are taken in, that is the one `J`
-itself is a combination of — not the dimension of the space the forms live in.
-"""
-function _sub_combinations_ids(combi, D)
-  k = length(combi)
-  sub_combi = MVector{k-1,Int}(undef)
-  sub_combi_ids = Vector{Int}(undef, k)
-  for i in 1:k
-    sub_combi .= ntuple(j -> combi[j + Int(j≥i)],k-1)
-    sub_combi_id = combination_index(sub_combi, D)
-    sub_combi_ids[i] = sub_combi_id
-  end
-  sub_combi_ids
-end
-
-"""
     _sup_multi_indices(α)
 
 Given `α` a Bernstein term of length N, return the [`bernstein_term_id `](@ref)
@@ -1089,12 +1026,13 @@ of the N terms `α`+eᵢ for 1 ≤ i ≤ N in a Vector (in order of i increasing
 """
 function _sup_multi_indices(α)
   N = length(α)
-  sup_α = MVector{N,Int}(undef)
+  sup_α = Vector{Int}(undef, N)
   sup_α_ids = Vector{Int}(undef, N)
   for i in 1:N
-    sup_α .=  ntuple(k -> α[k]+Int(k==i), N)
-    sup_α_id = bernstein_term_id(sup_α)
-    sup_α_ids[i] = sup_α_id
+    for k in 1:N
+      sup_α[k] = α[k] + Int(k==i)
+    end
+    sup_α_ids[i] = bernstein_term_id(sup_α)
   end
   return sup_α_ids
 end

@@ -633,6 +633,14 @@ function sorted_combinations(D::Int,k::Int; right_to_left=false)
   return combis
 end
 
+# Multiplicative form of `binomial`: `c * (n-k+i) ÷ i`, unlike `binomial` it
+# inlines and carries no overflow check (which are irrelevant for tensor type).
+@inline function _unchecked_binomial(n, k)
+  c = 1
+  for i in 1:k; c = c * (n-k+i) ÷ i; end
+  c
+end
+
 """
     combination_index(I, D; right_to_left=false)
 
@@ -649,10 +657,105 @@ The right-to-left index does not depend on `D`, unlike the default left-to-right
   k = length(combi)
   # Counting the combinations that come before `combi`: those first differing
   # from it at position i, read from the right, number binomial(combi[i]-1, i).
-  right_to_left && return sum(binomial(combi[i]-1, i) for i in 1:k; init=0) + 1
+  right_to_left && return sum(_unchecked_binomial(combi[i]-1, i) for i in 1:k; init=0) + 1
   # Counting the combinations that come after `combi`: those first exceeding it
   # at position i number binomial(D-combi[i], k-i+1).
-  return binomial(D,k) - sum(binomial(D-combi[i], k-i+1) for i in 1:k; init=0)
+  return _unchecked_binomial(D,k) - sum(_unchecked_binomial(D-combi[i], k-i+1) for i in 1:k; init=0)
+end
+
+"""
+    combination_complement(I, D)
+
+Given a `k`-combination `I` of elements of `1:D`, return the unique (`D`-`k`)
+combination of `1:D` "`Icomp`" such that `I ∪ Icomp ⊇ 1:D`.
+
+See also [`combination_sign`](@ref).
+"""
+function combination_complement(combi, D)
+  k = length(combi)
+  combi_comp = Vector{Int}(undef, D-k)
+  curr_combi, curr_comp = 1, 1
+  for i in 1:D
+    if curr_combi ≤ k && combi[curr_combi] == i
+      curr_combi += 1
+    else
+      combi_comp[curr_comp] = i
+      curr_comp += 1
+    end
+  end
+  combi_comp
+end
+
+"""
+    combination_sign(I)
+
+Given a combination `I`, return the sign of the permutation resulting from the
+concatenation of `I` and its complement [`combination_complement(I,D)`](@ref
+combination_complement).
+"""
+function combination_sign(combi)
+  @check issorted(combi)
+  i, k, acc, delta = 1, 1, 0, 0
+  while k <= length(combi)
+    if combi[k] == i
+      acc += delta
+      k += 1
+    else
+      delta += 1
+    end
+    i += 1
+  end
+  return iseven(acc) ? 1 : -1
+end
+
+"""
+    sub_combinations_ids(J, D)
+
+Return a vector containing the [`combination_index`](@ref) of the `k` different
+combinations `J\\J[i]` of 1:`D` for 1 ≤ i ≤ `k`, where `k=length(J)`.
+
+`D` is the ambient dimension the indices are taken in, that is the one `J`
+itself is a combination of — not the dimension of the space the forms live in.
+
+See also [`sup_combinations_ids`](@ref), the inverse direction.
+"""
+function sub_combinations_ids(combi, D)
+  k = length(combi)
+  sub_combi = Vector{Int}(undef, k-1)
+  sub_combi_ids = Vector{Int}(undef, k)
+  for i in 1:k
+    for j in 1:k-1
+      sub_combi[j] = combi[j + Int(j≥i)]
+    end
+    sub_combi_ids[i] = combination_index(sub_combi, D)
+  end
+  sub_combi_ids
+end
+
+"""
+    sup_combinations_ids(I, D)
+
+Return a vector containing the [`combination_index`](@ref) of the `D`-`k`
+different combinations `I ∪ {j}` of 1:`D` for `j ∉ I`, where `k=length(I)`,
+ordered by increasing `j`, which is also the lexicographic order of the
+combinations.
+"""
+function sup_combinations_ids(combi, D)
+  k = length(combi)
+  sup_combi = Vector{Int}(undef, k+1)
+  sup_combi[2:end] .= combi
+  sup_combi_ids = Vector{Int}(undef, D-k)
+  p, n = 1, 1
+  for j in 1:D
+    sup_combi[p] = j
+    if p ≤ k && combi[p] == j
+      p += 1
+    else
+      sup_combi_ids[n] = combination_index(sup_combi, D)
+      n += 1
+    end
+  end
+  sup_combi_ids
 end
 
 """
@@ -681,10 +784,6 @@ function sorted_multisets(D::Int,N::Int)
   # {1:D+N-1}, which is the bijection `multiset_index` inverts.
   [ combi .- (0:N-1) for combi in sorted_combinations(D+N-1, N) ]
 end
-
-# Multiplicative form of `binomial`: `c * (n-k+i) ÷ i`, unlike `binomial` it
-# inlines and carries no overflow check (which are irrelevant for tensor type).
-@inline _unchecked_binomial(n, k) = (c = 1; for i in 1:k; c = c * (n-k+i) ÷ i; end; c)
 
 """
     multiset_index(I, D)

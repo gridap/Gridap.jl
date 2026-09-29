@@ -133,6 +133,10 @@ tensor.
 ```@docs
 sorted_combinations
 combination_index
+combination_complement
+combination_sign
+sub_combinations_ids
+sup_combinations_ids
 sorting_sign
 ```
 

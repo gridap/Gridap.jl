@@ -114,6 +114,10 @@ export representatives_of_componentbasis_dual
 export representatives_of_basis_dual
 export sorted_combinations
 export combination_index
+export combination_complement
+export combination_sign
+export sub_combinations_ids
+export sup_combinations_ids
 export sorted_multisets
 export multiset_index
 export sorting_sign

@@ -499,8 +499,9 @@ Euclidean (Riemannian) space is
 where ``\bar{I}`` is the complement of ``I`` in ``1\!:\!D``, that is the only
 combination such that the concatenated permutation ``I\!*\!\bar{I}`` is a
 permutation of ``1\!:\!D``. ``\bar{I}`` is implemented by
-[`_complement(I,D)`](@ref _complement). [`_combination_sign(I)`](@ref
-_combination_sign) computes the sign of ``I\!*\!\bar{I}``.
+[`combination_complement(I,D)`](@ref combination_complement).
+[`combination_sign(I)`](@ref combination_sign) computes the sign of
+``I\!*\!\bar{I}``.
 
 
 
@@ -597,8 +598,6 @@ _de_Casteljau_nD!
 _downwards_de_Casteljau_nD!
 _basis_forms_components
 _update_φ_αF!
-_combination_sign
-_complement
 ```
 
 ## References
