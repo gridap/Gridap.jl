@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `SymNTensorValue`, a `MultiValue` representing a fully symmetric tensor of arbitrary order `N` and dimension `D`, storing its `binomial(D+N-1,N)` independent components. Added its abstract supertype `AbstractSymMultiValue`, and the helpers `sorted_multisets` and `multiset_index` that enumerate and index the independent components.
   - Added right division `(/)(::MultiValue, ::MultiValue)`, that is `a⋅inv(b)`.
   - Added `adjugate` of second order tensors, the transpose of the co-factor tensor such that `adjugate(a)⋅a = det(a)*one(a)`.
-  - Added `ProductTensorValue{A,B,T,..}`, a `MultiValue` containing the tensor product of two tensors of types `A` and `B` without duplicating storage of dependent components of both factors (e.g. that can represent the hessian of a 2D-`SkewSymTensorValue{2}` valued field storing only 3*1 independent components instead of 4*4). Its size, order and number of stored components follow from `A` and `B`, so the types to spell out are `ProductTensorValue{A,B}` and, to impose a component type, `ProductTensorValue{A,B,T}`. A `ProductTensorValue` is not a valid factor of another one, use `outer` to combine more than two tensors.
+  - Added `ProductTensorValue{A,B,T,..}`, a `MultiValue` containing the tensor product of two tensors of types `A` and `B` without duplicating storage of dependent components of both factors (e.g. that can represent the hessian of a 2D-`SkewSymTensorValue{2}` valued field storing only 3*1 independent components instead of 4*4).
 
 ### Changed
 

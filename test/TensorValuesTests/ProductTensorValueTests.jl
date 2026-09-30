@@ -51,7 +51,8 @@ _eltype_val() = Val(_prod_eltype(VectorValue{3,Float64}, VectorValue{2}))
 @test @inferred(_eltype_val()) === Val(Float64)
 
 a, b = VectorValue(1.0,2.0), SymTensorValue(1,2,3)
-P = ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2},3,6}
+V = ProductTensorValue{VectorValue{2},SymTensorValue{2}}
+P = V{Float64,Tuple{2,2,2},3,6}
 @test typeof(ProductTensorValue(a,b)) === P
 
 # A component type given in a factor is not kept in the factor tags, it gives
@@ -60,8 +61,8 @@ P = ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2},3,6
 @test typeof(@inferred(ProductTensorValue{VectorValue{2,Float64},SymTensorValue{2}}(ntuple(Int,6)))) === P
 @test typeof(ProductTensorValue{VectorValue{2},SymTensorValue{2,Float64,3}}(ntuple(Int,6))) === P
 @test typeof(ProductTensorValue{VectorValue{2,Int},SymTensorValue{2,Float64,3}}(ntuple(Int,6))) === P
-@test typeof(ProductTensorValue{VectorValue{2},SymTensorValue{2}}(ntuple(Float64,6))) === P
-@test typeof(ProductTensorValue{VectorValue{2},SymTensorValue{2}}(ntuple(Int,6))) === change_eltype(P,Int)
+@test typeof(V(ntuple(Float64,6))) === P
+@test typeof(V(ntuple(Int,6))) === change_eltype(P,Int)
 
 # An explicitly given component type prevails over that of the factors, as long
 # as the latter promotes to it
@@ -72,33 +73,67 @@ P = ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2},3,6
 # `S`, `N` and `L` follow from the factor types, so the component type is the
 # only other parameter to give
 
-@test typeof(@inferred(ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64}(ntuple(Int,6)))) === P
-@test typeof(ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64}(ntuple(Int,6)...)) === P
+@test typeof(@inferred(V{Float64}(ntuple(Int,6)))) === P
+@test typeof(V{Float64}(ntuple(Int,6)...)) === P
 @test_throws AssertionError ProductTensorValue{VectorValue{2,Float64},SymTensorValue{2},Int}(ntuple(Int,6))
 
 # `S`, `N` and `L` may still be spelled out, in part or in full, and are then
 # checked against the ones the factors give
 
-@test typeof(@inferred(ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2}}(ntuple(Int,6)))) === P
-@test typeof(ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2}}(ntuple(Int,6)...)) === P
-@test typeof(@inferred(ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2},3}(ntuple(Int,6)))) === P
-@test typeof(ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2},3}(ntuple(Int,6)...)) === P
+@test typeof(@inferred(V{Float64,Tuple{2,2,2}}(ntuple(Int,6)))) === P
+@test typeof(V{Float64,Tuple{2,2,2}}(ntuple(Int,6)...)) === P
+@test typeof(@inferred(V{Float64,Tuple{2,2,2},3}(ntuple(Int,6)))) === P
+@test typeof(V{Float64,Tuple{2,2,2},3}(ntuple(Int,6)...)) === P
 
-@test_throws AssertionError ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,3}}(ntuple(Int,6))
-@test_throws AssertionError ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2},2}(ntuple(Int,6))
+@test_throws AssertionError V{Float64,Tuple{2,2,3}}(ntuple(Int,6))
+@test_throws AssertionError V{Float64,Tuple{2,2,2},2}(ntuple(Int,6))
 
 # All the spellings build the same value
 
 @test allequal((
-  ProductTensorValue{VectorValue{2},SymTensorValue{2}}(ntuple(Float64,6)),
-  ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64}(ntuple(Int,6)),
-  ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64}(ntuple(Int,6)...),
-  ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2}}(ntuple(Int,6)),
-  ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2}}(ntuple(Int,6)...),
-  ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2},3}(ntuple(Int,6)),
-  ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2},3}(ntuple(Int,6)...),
-  ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2},3,6}(ntuple(Int,6)),
-  ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2},3,6}(ntuple(Int,6)...)))
+  V(ntuple(Float64,6)),
+  V{Float64}(ntuple(Int,6)),
+  V{Float64}(ntuple(Int,6)...),
+  V{Float64,Tuple{2,2,2}}(ntuple(Int,6)),
+  V{Float64,Tuple{2,2,2}}(ntuple(Int,6)...),
+  V{Float64,Tuple{2,2,2},3}(ntuple(Int,6)),
+  V{Float64,Tuple{2,2,2},3}(ntuple(Int,6)...),
+  V{Float64,Tuple{2,2,2},3,6}(ntuple(Int,6)),
+  V{Float64,Tuple{2,2,2},3,6}(ntuple(Int,6)...)))
+
+# Array constructors tests
+
+full = [ Float64(i + 10j + 100k) for i in 1:2, j in 1:2, k in 1:2 ]
+full[:,1,2] = full[:,2,1]
+
+@test typeof(@inferred(V(full))) === P
+@test get_array(V(full)) == full
+
+@test allequal((
+  V(full),
+  V{Float64}(full),
+  V{Float64,Tuple{2,2,2}}(full),
+  V{Float64,Tuple{2,2,2},3}(full),
+  V{Float64,Tuple{2,2,2},3,6}(full),
+  V(SArray{Tuple{2,2,2}}(full)),
+  V{Float64}(Int.(full))))
+
+@test eltype(V(Int.(full))) === Int
+@test eltype(ProductTensorValue{VectorValue{2,Float64},SymTensorValue{2}}(Int.(full))) === Float64
+@test typeof(ProductTensorValue{VectorValue{0},SymTensorValue{2}}(zeros(0,2,2))) ===
+      ProductTensorValue{VectorValue{0},SymTensorValue{2},Float64,Tuple{0,2,2},3,0}
+
+@test_throws AssertionError V(zeros(2,2,3))
+@test_throws AssertionError V(zeros(8))
+
+# A full tensor of the right size but of offset indices would be read at the
+# wrong components
+@test_throws ArgumentError V(view(zeros(3,3,3), ntuple(_ -> Base.IdentityUnitRange(2:3), 3)...))
+
+# The components that a factor makes dependent are never read, so a full tensor
+# lacking the symmetry of its factor is read at its representatives only
+@test Tuple(ProductTensorValue{SymTensorValue{2},VectorValue{1}}(reshape(Float64[1 2; 3 4],2,2,1))) ==
+      Tuple(ProductTensorValue{SymTensorValue{2},VectorValue{1}}(1.,3.,4.))
 
 # Storage layout: the independent components of the first factor vary fastest,
 # so a product of two tensors without dependent components has the components
@@ -178,15 +213,15 @@ p0 = ProductTensorValue(zero(SymTracelessTensorValue{1,Float64}), v)
 
 a, b = VectorValue(1.0,2.0), SymTensorValue(1.0,2.0,3.0)
 p = @inferred ProductTensorValue(a,b)
-@test typeof(p) === ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2},3,6}
+@test typeof(p) === V{Float64,Tuple{2,2,2},3,6}
 @test @inferred(zero(typeof(p))) == ProductTensorValue(zero(a),b)
 @test typeof(@inferred(p+p)) === typeof(p)
 @test typeof(@inferred(2.0*p)) === typeof(p)
 @test typeof(@inferred(2*p)) === typeof(p)
 @test @inferred(p[1,2,2]) == a[1]*b[2,2]
-@test typeof(@inferred(ProductTensorValue{VectorValue{2},SymTensorValue{2},Float64,Tuple{2,2,2},3,6}(ntuple(Float64,6)))) === typeof(p)
+@test typeof(@inferred(V{Float64,Tuple{2,2,2},3,6}(ntuple(Float64,6)))) === typeof(p)
 
-@test change_eltype(p,Int) === ProductTensorValue{VectorValue{2},SymTensorValue{2},Int,Tuple{2,2,2},3,6}
+@test change_eltype(p,Int) === V{Int,Tuple{2,2,2},3,6}
 @test promote_type(typeof(p),change_eltype(p,Int)) === typeof(p)
 @test convert(change_eltype(p,Float32),p) == p
 
@@ -214,6 +249,11 @@ for Ta in tags, Tb in tags
   # exceeds the independent ones for a factor that stores dependent components
   @test length(Tuple(p)) == length(Tuple(a))*length(Tuple(b))
   @test length(get_indep_components(p)) == num_indep_components(p)
+
+  # The full tensor holds every independent component, so it reconstructs the
+  # product, built from the canonical factor types that the product stores
+  Ca, Cb = _minimal_tensortype_with_shape(typeof(a)), _minimal_tensortype_with_shape(typeof(b))
+  @test ProductTensorValue{Ca,Cb}(get_array(p)) === p
 
   for cia in CartesianIndices(size(get_array(a))), cib in CartesianIndices(size(get_array(b)))
     @test p[Tuple(cia)...,Tuple(cib)...] == a[cia]*b[cib]
@@ -290,7 +330,7 @@ p = zero(ProductTensorValue{VectorValue{0},SymTensorValue{2},Float64,Tuple{0,2,2
 
 # Wrong number of components
 
-@test_throws AssertionError ProductTensorValue{VectorValue{2},SymTensorValue{2}}(1.0,2.0)
+@test_throws AssertionError V(1.0,2.0)
 
 # A product is not a valid factor, products do not nest
 

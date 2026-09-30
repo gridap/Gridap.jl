@@ -2,6 +2,7 @@ module IndexingTests
 
 using Test
 using Gridap.TensorValues
+using Gridap.TensorValues: get_indep_components
 using StaticArrays
 using Combinatorics: levicivita
 
@@ -205,6 +206,29 @@ end
 for D in 0:4, N in 0:4
   @test all( multiset_index(I,D) == i for (i,I) in enumerate(sorted_multisets(D,N)) )
 end
+
+# complement of a combination
+for D in 1:5, k in 0:D, combi in sorted_combinations(D,k)
+  Icomp = combination_complement(combi, D)
+  @test Icomp == setdiff(1:D, combi)
+  @test combination_complement(Tuple(combi), D) == Icomp
+
+  ids = sup_combinations_ids(combi, D)
+  @test ids == [combination_index(sort(vcat(j, combi)), D) for j in Icomp]
+  @test issorted(ids)
+  @test sup_combinations_ids(Tuple(combi), D) == ids
+end
+
+# `get_indep_components` gathers exactly what `indep_comp_getindex` reads, in the
+# same order, for every tensor family and for a bare `Number`
+for a in (1.0, 2, SymTensorValue{2}(1.,2.,3.), SymTracelessTensorValue{2}(1.,2.),
+          TensorValue{2,2}(1.,2.,3.,4.), ExteriorFormValue{2,3}(1.,2.,3.),
+          ThirdOrderTensorValue{2,2,2}(1.,2.,3.,4.,5.,6.,7.,8.))
+  @test length(get_indep_components(a)) == num_indep_components(typeof(a))
+  @test all(l -> indep_comp_getindex(a,l) === get_indep_components(a)[l],
+            1:num_indep_components(typeof(a)))
+end
+@test get_indep_components(1.0) === (1.0,)
 
 # Index and size APIs
 v = SMatrix{2,3}(1:6...)

@@ -72,6 +72,27 @@ end
   Expr(:tuple, comps...)
 end
 
+"""
+    _indep_comp_cartesian_indices(::Type{V<:MultiValue})
+
+A full tensor index at which each independent component of `V` can be read, that
+is the position where `V`'s component basis reduces to the `l`th Cartesian basis
+vector, so that for any `u::V`
+
+    get_array(u)[_indep_comp_cartesian_indices(V)[l]...] == indep_comp_getindex(u,l)
+"""
+function _indep_comp_cartesian_indices(::Type{V}) where V<:MultiValue
+  VV = make_concretetype(_minimal_tensortype_with_shape(V){Int})
+  basis = map(get_array, component_basis(VV))
+  map(eachindex(basis)) do l
+    for I in CartesianIndices(first(basis))
+      all(basis[i][I] == (i == l ? 1 : 0) for i in eachindex(basis)) && return Tuple(I)
+    end
+    @unreachable "No component of $V holds its independent component $l alone, it
+      cannot be read from a full tensor."
+  end
+end
+
 # The component type given by a factor type, `nothing` when it leaves it free.
 _factor_eltype(::Type{<:MultiValue{S,T}}) where {S,T} = T
 _factor_eltype(::Type{<:MultiValue}) = nothing
@@ -185,20 +206,39 @@ ProductTensorValue{A,B,T,S}(data::Number...) where {A,B,T,S} = ProductTensorValu
 ProductTensorValue{A,B,T,S,N}(data::Number...) where {A,B,T,S,N} = ProductTensorValue{A,B,T,S,N}(data)
 ProductTensorValue{A,B,T,S,N,L}(data::Number...) where {A,B,T,S,N,L} = ProductTensorValue{A,B,T,S,N,L}(data)
 
-"""
-    ProductTensorValue(a::MultiValue, b::MultiValue)
+# single AbstractArray argument constructors
 
-The tensor (outer) product of `a` and `b`, keeping the dependent components of
-both factors, that is `ProductTensorValue(a,b)[ia...,ib...] = a[ia...]*b[ib...]`.
+# Independent components of a product, read from its full tensor, without
+# validating unicity of values of an assumed independent component.
+@generated function _flatten_prod_components(
+  data::AbstractArray, ::Type{A}, ::Type{B}) where {A,B}
 
-This differs from `outer(a,b)` only by the type of the result: `outer` returns
-a tensor with no dependent component.
-"""
+  Ac, Bc, = _prod_shape(A,B)
+  s = Int.((size(Ac)..., size(Bc)...))
+  msg = "expected an array of size $s"
+  Ia, Ib = _indep_comp_cartesian_indices(Ac), _indep_comp_cartesian_indices(Bc)
+  comps = [ :( data[$(cia...), $(cib...)] ) for cib in Ib for cia in Ia ]
+  quote
+    Base.require_one_based_indexing(data)
+    @check $s == size(data) $msg
+    return $(Expr(:tuple, comps...))
+  end
+end
+
+ProductTensorValue{A,B}(data::AbstractArray{T}) where {A,B,T} =
+  ProductTensorValue{A,B,_prod_eltype(A,B,T)}(_flatten_prod_components(data,A,B))
+ProductTensorValue{A,B,T}(data::AbstractArray) where {A,B,T} =
+  ProductTensorValue{A,B,T}(_flatten_prod_components(data,A,B))
+ProductTensorValue{A,B,T,S}(data::AbstractArray) where {A,B,T,S} =
+  ProductTensorValue{A,B,T,S}(_flatten_prod_components(data,A,B))
+ProductTensorValue{A,B,T,S,N}(data::AbstractArray) where {A,B,T,S,N} =
+  ProductTensorValue{A,B,T,S,N}(_flatten_prod_components(data,A,B))
+ProductTensorValue{A,B,T,S,N,L}(data::AbstractArray) where {A,B,T,S,N,L} =
+  ProductTensorValue{A,B,T,S,N,L}(_flatten_prod_components(data,A,B))
+
 @generated function ProductTensorValue(a::MultiValue, b::MultiValue)
   A, B, S, N, L, Li = _prod_shape(a,b)
   if iszero(Li)
-    # A product without independent component holds none to give its component
-    # type, only the factors can give it
     T = _prod_eltype(a,b)
     return :( ProductTensorValue{$A,$B,$T,$S,$N,$L}(()) )
   end

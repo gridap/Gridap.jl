@@ -43,15 +43,7 @@ end
 x2 = Point(0.3,-0.7)
 x3 = Point(0.3,-0.7,0.2)
 
-for a in (1.0, 2, SymTensorValue{2}(1.,2.,3.), SymTracelessTensorValue{2}(1.,2.),
-          TensorValue{2,2}(1.,2.,3.,4.), ExteriorFormValue{2,3}(1.,2.,3.),
-          ThirdOrderTensorValue{2,2,2}(1.,2.,3.,4.,5.,6.,7.,8.))
-  @test length(get_indep_components(a)) == num_indep_components(typeof(a))
-  @test all(l -> indep_comp_getindex(a,l) === get_indep_components(a)[l],
-            1:num_indep_components(typeof(a)))
-end
 
-@test get_indep_components(1.0) === (1.0,)
 
 # scalar valued, cross checked against ForwardDiff's own gradient and hessian
 fs(x) = sin(x[1])*exp(x[2]) + x[1]^3*x[2]
@@ -203,21 +195,6 @@ f0form(y) = mk(ExteriorFormValue{0,Cov(2)},y)
 
 f4e(y) = zero(ExteriorFormValue{4,Cov(2),Float64,0})
 @test typeof(δ(f4e)(x2)) === ExteriorFormValue{3,Cov(2),Float64,0}
-
-# The complement of a combination, and the ids of every combination obtained by
-# adding one index to it, wherever that index lands, in lexicographic order. Both
-# take the `Tuple` that the generators pass as well as a `Vector`, including the
-# empty combination.
-for D in 1:5, k in 0:D, combi in sorted_combinations(D,k)
-  Icomp = combination_complement(combi, D)
-  @test Icomp == setdiff(1:D, combi)
-  @test combination_complement(Tuple(combi), D) == Icomp
-
-  ids = sup_combinations_ids(combi, D)
-  @test ids == [combination_index(sort(vcat(j, combi)), D) for j in Icomp]
-  @test issorted(ids)
-  @test sup_combinations_ids(Tuple(combi), D) == ids
-end
 
 # The derivation indices may be held by any order 1 tensor, not only by the
 # SymNTensorValue that partial_derivatives produces
