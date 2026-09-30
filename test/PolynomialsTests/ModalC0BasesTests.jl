@@ -126,20 +126,26 @@ b2x_perm   = b2x[  sortperm(b2x)[  invperm(sortperm(b2xu))]]
 
 # Misc
 
-# Derivatives not implemented for symmetric tensor types
+# Derivatives are set with respect to each independent component of V, at the same
+# dof as the value of that component
 
 D = 2
 T = Float64
-V = SymTensorValue{D,T}
-G = gradient_type(V,x1)
-s = MVector(0.,0.)
-r = zeros(G, (1,1))
-@test_throws ErrorException Polynomials._set_derivative_mc0!(r,1,s,0,0,V)
+s = MVector(1.,2.)
+l = 3
+for V in (TensorValue{D,D,T}, SymTensorValue{D,T}, SymTracelessTensorValue{D,T})
+  n = num_indep_components(V)
+  ndof = 1+l*(n-1)
+  rv = zeros(V, (1,ndof))
+  rd = zeros(gradient_type(V,x1), (1,ndof))
 
-V = SymTracelessTensorValue{D,T}
-G = gradient_type(V,x1)
-r = zeros(G, (1,1))
-@test_throws ErrorException Polynomials._set_derivative_mc0!(r,1,s,0,0,V)
+  @test Polynomials._set_value_mc0!(     rv,1,one(T),1,l) == 2
+  @test Polynomials._set_derivative_mc0!(rd,1,s,     1,l,V) == 2
+
+  # the value and its derivative are nonzero at the same dofs
+  @test all(iszero(rv[1,k]) == iszero(rd[1,k]) for k in axes(rv,2))
+  @test all(rd[1,1+l*(j-1)] == MultiValue(s) ⊗ rv[1,1+l*(j-1)] for j in 1:n)
+end
 
 # value_type must be concrete even when user passes a non-concrete tensor type
 for V in (TensorValue{2,2,Float64}, SymTensorValue{2,Float64},
