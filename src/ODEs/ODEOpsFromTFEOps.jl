@@ -269,17 +269,38 @@ function Algebra.residual!(
   forms = get_forms(odeop.tfeop)
   ∂tkuh = uh
   for k in 0:order
-    form = forms[k+1]
-    dc = dc + form(t, ∂tkuh, v)
+    const_form = odeopcache.const_forms[k+1]
+    # If a form is constant and the space of the corresponding time derivative
+    # has zero Dirichlet values, its contribution is the product of the stored
+    # matrix with the free values, so it does not need to be re-assembled
+    if !isnothing(const_form) && _has_zero_dirichlet_values(odeopcache.Us[k+1])
+      mul!(r, const_form, us[k+1], true, true)
+    else
+      form = forms[k+1]
+      dc = dc + form(t, ∂tkuh, v)
+    end
     if k < order
       ∂tkuh = ∂t(∂tkuh)
     end
   end
 
-  vecdata = collect_cell_vector(V, dc)
-  assemble_vector_add!(r, assembler, vecdata)
+  if num_domains(dc) > 0
+    vecdata = collect_cell_vector(V, dc)
+    assemble_vector_add!(r, assembler, vecdata)
+  end
 
   r
+end
+
+# Whether the FE functions of a space are fully determined by their free values
+_has_zero_dirichlet_values(U) = false
+
+function _has_zero_dirichlet_values(U::SingleFieldFESpace)
+  (num_dirichlet_dofs(U) == 0) || iszero(get_dirichlet_dof_values(U))
+end
+
+function _has_zero_dirichlet_values(U::MultiFieldFESpace)
+  all(_has_zero_dirichlet_values, U)
 end
 
 function Algebra.allocate_jacobian(
