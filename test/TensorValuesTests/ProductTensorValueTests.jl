@@ -4,6 +4,7 @@ using Gridap.TensorValues
 using Gridap.TensorValues: _minimal_tensortype_with_shape, _factor_eltype, stored_comp_indices
 using Gridap.TensorValues: _prod_counts, _prod_eltype
 using Gridap.TensorValues: get_indep_components, num_stored_components
+using Gridap.TensorValues: _indep_comp_cartesian_indices, is_full_rank
 using Gridap.Arrays: get_array
 using Test
 using StaticArrays
@@ -309,6 +310,147 @@ s4 = outer(a,b)
 @test get_array(p) ≈ get_array(s4)
 @test p ≈ s4
 @test Tuple(p) != Tuple(s4)
+
+# Conversions from and to the full rank tensor of same size
+#
+# A full rank factor holds one component per entry of its full tensor, in the
+# column major order of that tensor.
+
+function _holds_full_tensor(V)
+  s = Int.(size(V))
+  num_indep_components(V) == prod(s) &&
+    _indep_comp_cartesian_indices(V) == [Tuple(I) for I in vec(CartesianIndices(s))]
+end
+
+@test all(V -> is_full_rank(V) === _holds_full_tensor(V), tags)
+
+# The predicate is constant folded, so the conversions carry no run time check
+
+_full_rank_val(::Type{V}) where V = Val(is_full_rank(V))
+@test @inferred(_full_rank_val(TensorValue{cov2,con3})) === Val(true)
+@test @inferred(_full_rank_val(CoVectorValue{cov2})) === Val(true)
+@test @inferred(_full_rank_val(SymTensorValue{3})) === Val(false)
+
+@test is_full_rank(VectorValue{3})
+@test is_full_rank(TensorValue{2,3})
+@test is_full_rank(ThirdOrderTensorValue{2,3,4})
+@test is_full_rank(CoVectorValue{cov2})
+@test is_full_rank(ContraVectorValue{con3})
+@test !is_full_rank(SymTensorValue{2})
+@test !is_full_rank(ExteriorFormValue{2,cov3})
+
+"""
+    _full_rank_tensortype(::Type{<:ProductTensorValue{A,B,T,S,N}})
+
+The full rank tensor type holding the same components as the product type: a
+`TensorValue` for an order two product, an `NTensorValue` beyond. Its size
+parameter is the product's, so the variance of each dimension is preserved.
+
+`A` and `B` must be full rank for both types to hold the same components, which
+this function does not check.
+"""
+@generated function _full_rank_tensortype(
+  ::Type{<:ProductTensorValue{A,B,T,S,N}}) where {A,B,T,S,N}
+
+  L = prod(Int.(S.parameters))
+  V = N == 2 ? TensorValue{S.parameters...,T,L} :
+      N  > 2 ? NTensorValue{S,T,N,L}            :
+      throw(ErrorException("A product of tensors of order at least one has order at least two, got order $N"))
+  :( $V )
+end
+
+full_tags = filter(is_full_rank, tags)
+
+for Ta in full_tags, Tb in full_tags
+  A, B = make_concretetype(Ta{Int}), make_concretetype(Tb{Int})
+  a = A(ntuple(identity, num_indep_components(A)))
+  b = B(ntuple(i -> 10i, num_indep_components(B)))
+  p = ProductTensorValue(a,b)
+  F = _full_rank_tensortype(typeof(p))
+  t = convert(F,p)
+
+  @test t isa F
+  @test size(t) === size(p)
+  # the data field is passed through untouched, in both directions, which is what
+  # makes the conversion cost nothing
+  @test t.data === p.data
+  @test convert(typeof(p),t).data === p.data
+  # and the full tensors agree, which is what a wrong component order would break
+  @test get_array(t) == get_array(p)
+  @test t == p
+
+  @test convert(typeof(p),t) === p
+  @test convert(ProductTensorValue{_minimal_tensortype_with_shape(A),_minimal_tensortype_with_shape(B),Int},t) === p
+  @test convert(change_eltype(F,Float64),p) == t
+
+  # the product is the common type of the pair: it holds the same components and
+  # knows the two factors on top, so arithmetic with the full rank tensor lands on it
+  @test promote_type(typeof(p), F) === typeof(p)
+  @test promote_type(F, typeof(p)) === typeof(p)
+  @test p + t === p + p
+end
+
+pv = ProductTensorValue(CoVectorValue(1.0,2.0), ContraVectorValue(1.0,2.0,3.0))
+Fv = _full_rank_tensortype(typeof(pv))
+@test Fv === TensorValue{cov2,con3,Float64,6}
+@test typeof(@inferred(convert(Fv,pv))) === Fv
+@test @inferred(convert(typeof(pv),convert(Fv,pv))) === pv
+
+pw = ProductTensorValue(TensorValue{cov2,con3,Float64}(ntuple(Float64,6)), CoVectorValue(1.0,2.0))
+@test _full_rank_tensortype(typeof(pw)) === ThirdOrderTensorValue{cov2,con3,cov2,Float64,12}
+
+pe = ProductTensorValue(zero(VectorValue{0,Float64}), VectorValue(1.0,2.0))
+@test _full_rank_tensortype(typeof(pe)) === TensorValue{0,2,Float64,0}
+@test Tuple(convert(TensorValue{0,2,Float64,0},pe)) === ()
+@test convert(typeof(pe),convert(TensorValue{0,2,Float64,0},pe)) === pe
+
+p3 = ProductTensorValue(rand(ThirdOrderTensorValue{2,2,2,Float64}), VectorValue(1.0,2.0))
+F3 = _full_rank_tensortype(typeof(p3))
+@test F3 === NTensorValue{Tuple{2,2,2,2},Float64,4,16}
+@test get_array(convert(F3,p3)) == get_array(p3)
+@test convert(typeof(p3),convert(F3,p3)) === p3
+
+# Only a product of full rank factors converts: a factor holding fewer
+# components than its full tensor has no full rank counterpart
+
+ps = ProductTensorValue(VectorValue(1,2), SymTensorValue(1,2,3))
+@test_throws ErrorException convert(NTensorValue{Tuple{2,2,2},Int}, ps)
+@test_throws ErrorException convert(
+  ProductTensorValue{VectorValue{2},SymTensorValue{2},Int}, NTensorValue{Tuple{2,2,2},Int,3}(ntuple(identity,8)))
+
+# `_full_rank_tensortype` reads the size only, it does not check the factors
+@test _full_rank_tensortype(typeof(ps)) === NTensorValue{Tuple{2,2,2},Int,3,8}
+
+# The full rank tensor must have the size of the product, variance included,
+# which the two component counts alone do not tell apart
+
+@test_throws AssertionError convert(
+  ProductTensorValue{VectorValue{2},VectorValue{3},Int}, TensorValue{3,2,Int}(ntuple(identity,6)))
+@test_throws AssertionError convert(
+  ProductTensorValue{CoVectorValue{cov2},ContraVectorValue{con3},Int}, TensorValue{2,3,Int}(ntuple(identity,6)))
+
+# Promotion with a full rank tensor keeps the factors and promotes the components
+
+@test promote_type(change_eltype(typeof(pv),Int), Fv) === typeof(pv)
+@test promote_type(Fv, change_eltype(typeof(pv),Int)) === typeof(pv)
+@test promote_type(typeof(p3), F3) === typeof(p3)
+
+tv = convert(Fv,pv)
+@test pv + tv === pv + pv
+@test tv - pv === zero(typeof(pv))
+@test typeof(@inferred(pv + tv)) === typeof(pv)
+
+# A full rank tensor of another size, variance included, is another tensor: no rule
+# applies, the promotion falls back to the join of the two and the sum is rejected
+@test promote_type(typeof(pv), TensorValue{con3,cov2,Float64,6}) !== typeof(pv)
+@test promote_type(typeof(pv), TensorValue{2,3,Float64,6}) !== typeof(pv)
+@test_throws ErrorException pv + TensorValue{con3,cov2,Float64,6}(ntuple(Float64,6))
+@test_throws ErrorException pv + TensorValue{2,3,Float64,6}(ntuple(Float64,6))
+
+# The rule claims the product for any matching size; whether the factors are full
+# rank is reported by the conversion that promotion then applies
+@test promote_type(typeof(ps), NTensorValue{Tuple{2,2,2},Int,3,8}) === typeof(ps)
+@test_throws ErrorException ps + NTensorValue{Tuple{2,2,2},Int,3}(ntuple(identity,8))
 
 # VTK component names follow the storage order
 

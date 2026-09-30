@@ -268,6 +268,81 @@ convert(::Type{<:ProductTensorValue{A,B,T,S,N,L}}, arg::ProductTensorValue{A,B,T
   ProductTensorValue{A,B,T,S,N,L}(get_indep_components(arg))
 convert(::Type{<:ProductTensorValue{A,B,T,S,N,L}}, arg::ProductTensorValue{A,B,T,S,N,L}) where {A,B,T,S,N,L} = arg
 
+# Conversions from and to full rank tensors
+#
+# It is assumed that all full rank tensors of the TensorValues module store
+# their components "column" major
+
+"""
+    is_full_rank(V::Type{<:Number})
+    is_full_rank(a::Number)
+
+Wether all components of `a::V` are independent.
+"""
+is_full_rank(::Type{V}) where V<:MultiValue = length(V) == num_indep_components(V)
+is_full_rank(::Type{<:Number}) = true
+is_full_rank(a::Number) = is_full_rank(typeof(a))
+
+function _check_full_rank_factors(::Type{A}, ::Type{B}) where {A,B}
+  is_full_rank(A) && is_full_rank(B) ||
+    @notimplemented "The product of $A and $B is not a full rank tensor space, it
+      does not convert from or to a full rank tensor type; `get_array` gives its
+      full tensor."
+end
+
+function convert(
+  ::Type{<:TensorValue{D1,D2,T}}, arg::ProductTensorValue{A,B,T2,Tuple{D1,D2}}) where {A,B,T,T2,D1,D2}
+
+  _check_full_rank_factors(A,B)
+  TensorValue{D1,D2,T}(Tuple(arg))
+end
+
+function convert(
+  ::Type{<:NTensorValue{S,T}}, arg::ProductTensorValue{A,B,T2,S,N}) where {A,B,T,T2,S,N}
+
+  _check_full_rank_factors(A,B)
+  NTensorValue{S,T,N}(Tuple(arg))
+end
+
+# To ProductTensorValue
+
+function _check_full_rank_size(::Type{A}, ::Type{B}, ::Type{S}) where {A,B,S}
+  _check_full_rank_factors(A,B)
+  Sp = _prod_shape(A,B)[3]
+  @check S === Sp "The product of $A and $B has size $Sp, it does not hold the
+    components of a full rank tensor of size $S"
+end
+
+function convert(
+  ::Type{<:ProductTensorValue{A,B,T}}, arg::TensorValue{D1,D2}) where {A,B,T,D1,D2}
+
+  _check_full_rank_size(A,B,Tuple{D1,D2})
+  ProductTensorValue{A,B,T}(Tuple(arg))
+end
+
+function convert(
+  ::Type{<:ProductTensorValue{A,B,T}}, arg::NTensorValue{S}) where {A,B,T,S}
+
+  _check_full_rank_size(A,B,S)
+  ProductTensorValue{A,B,T}(Tuple(arg))
+end
+
+# Promotion with full rank tensors
+
+function promote_rule(
+  ::Type{<:ProductTensorValue{A,B,Ta,Tuple{D1,D2},N,L}},
+  ::Type{<:TensorValue{D1,D2,Tb}}) where {A,B,Ta,Tb,D1,D2,N,L}
+
+  ProductTensorValue{A,B,promote_type(Ta,Tb),Tuple{D1,D2},N,L}
+end
+
+function promote_rule(
+  ::Type{<:ProductTensorValue{A,B,Ta,S,N,L}},
+  ::Type{<:NTensorValue{S,Tb}}) where {A,B,Ta,Tb,S,N,L}
+
+  ProductTensorValue{A,B,promote_type(Ta,Tb),S,N,L}
+end
+
 ###############################################################
 # Comparison (ProductTensorValue)
 ###############################################################
