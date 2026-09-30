@@ -245,59 +245,45 @@ end
     _cartprod_set_derivative!(r::AbstractMatrix{G},i,s,k,::Type{V})
 
 ```
-z = zero(s)
-r[i,k]     = G(s…, z…,     ..., z…) = (Dbᵏ    )(xi)
-r[i,k+1]   = G(z…, s…, z…, ..., z…) = (Dbᵏ⁺¹  )(xi)
+r[i,k]     = MultiValue(s) ⊗ V₁ = (Dbᵏ    )(xi)
 ⋮
-r[i,k+n-1] = G(z…,     ..., z…, s…) = (Dbᵏ⁺ⁿ⁻¹)(xi)
+r[i,k+n-1] = MultiValue(s) ⊗ Vₙ = (Dbᵏ⁺ⁿ⁻¹)(xi)
 return k+n
 ```
 
-Note that `r[i,k]` is a `TensorValue` or `ThirdOrderTensorValue` and `s` a
-`MVector` or `MMatrix`.
+where `Vⱼ` is the `j`ᵗʰ element of the component basis of `V` and `n` its length.
+`r[i,k]` is a `TensorValue` or `ThirdOrderTensorValue` and `s` a `MVector` or
+`MMatrix` holding the derivatives of the `k`ᵗʰ basis polynomial.
 
-# Extended help
-
-When `V` has dependent components, the derivative values are not defined as
-simply as above, but this function implements what it should: seting derivatives
-with respect to each independent components of `V`.
+When `V` has dependent components, the derivatives are set with respect to each of
+its independent components.
 """
 @generated function _cartprod_set_derivative!(
   r::AbstractMatrix{G},i,s,k,::Type{V}) where {G,V<:MultiValue}
 
-  T = eltype(s)
-  zs = zero(s)
-  ncomps = length(G)
+  ∇basis = component_basis(MultiValue(zero(s)))
+  sd    = [Symbol(:s,d)       for d in eachindex(∇basis)]
+  loads = [:($(sd[d]) = s[$d]) for d in eachindex(∇basis)]
 
-  V_deri = MultiValue(zs)
-  grad_V_basis = [ ∇i⊗vj for ∇i in component_basis(V_deri), vj in component_basis(V)]
-
-  ex = Expr[]
-  push!(ex, :(z = $(zero(T))))
-
-  s_syms = [Symbol(:s, i) for i in 1:length(zs)]
-  for i in 1:length(zs)
-    push!(ex, :(@inbounds $(s_syms[i]) = s[$i]))
-  end
-
-  for icomp in 1:num_indep_components(V)
-    comps = Vector{Any}(undef, ncomps)
-    fill!(comps, :z)
-    for i in 1:length(zs)
-      gVi_comps = grad_V_basis[i,icomp]
-      for j in 1:ncomps
-        gVij = gVi_comps[j]
-        if !iszero(gVij)
-          comps[j] = :($(comps[j]) + $(gVij) * $(s_syms[i]))
-        end
-      end
+  setters = map(component_basis(V)) do Vj
+    coeffs = [∇d ⊗ Vj for ∇d in ∇basis]
+    comps = map(1:length(G)) do m
+      d = findfirst(c -> !iszero(c[m]), coeffs)
+      isnothing(d)        ? :z    :
+      isone(coeffs[d][m]) ? sd[d] : :($(coeffs[d][m]) * $(sd[d]))
     end
-    push!(ex, :(@inbounds r[i,k] = $(Expr(:tuple, comps...))))
-    push!(ex, :(k = k + 1))
+    :(r[i,k] = $(Expr(:tuple, comps...)); k += 1)
   end
 
-  push!(ex, :(return k))
-  return Expr(:block, ex...)
+  quote
+    z = zero(eltype(s))
+    @inbounds begin
+      $(loads...)
+      $(setters...)
+    end
+    k
+  end
+
 end
 
 function _hessian_nd!(

@@ -305,15 +305,29 @@ component of `V` are `l` apart, as in [`_set_value_mc0!`](@ref).
 When `V` has dependent components, the derivatives are set with respect to each of
 its independent components.
 """
-@inline function _set_derivative_mc0!(
+@generated function _set_derivative_mc0!(
   r::AbstractMatrix{G},i1,s,k,l,::Type{V}) where {G,V<:MultiValue}
 
-  L = Val(num_indep_components(V))
-  Ds = MultiValue(s)
-  for j in 1:num_indep_components(V)
-    r[i1,k+l*(j-1)] = Ds ⊗ V(ntuple(p -> Int(p == j), L))
+  ∇basis = component_basis(MultiValue(zero(s)))
+  sd    = [Symbol(:s,d)       for d in eachindex(∇basis)]
+  loads = [:($(sd[d]) = s[$d]) for d in eachindex(∇basis)]
+
+  setters = map(enumerate(component_basis(V))) do (j,Vj)
+    coeffs = [∇d ⊗ Vj for ∇d in ∇basis]
+    comps = map(1:length(G)) do m
+      d = findfirst(c -> !iszero(c[m]), coeffs)
+      isnothing(d)        ? :z    :
+      isone(coeffs[d][m]) ? sd[d] : :($(coeffs[d][m]) * $(sd[d]))
+    end
+    :(r[i1,k+l*$(j-1)] = $(Expr(:tuple, comps...)))
   end
-  k+1
+
+  quote
+    z = zero(eltype(s))
+    $(loads...)
+    $(setters...)
+    k+1
+  end
 end
 
 function _hessian_nd!(

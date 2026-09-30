@@ -231,18 +231,42 @@ end
     _comp_wize_set_derivative!(r::AbstractMatrix{G},i,s,k,l,::Type{V})
 
 ```
-z = zero(s)
-r[i,k]     = G(z…, ..., z…, s…, z…, ..., z…) = (Dbᵏ)(xi)
+r[i,k] = MultiValue(s) ⊗ Vₗ = (Dbᵏ)(xi)
 return k+1
 ```
 
-where `s…` is the `l`ᵗʰ set of components. This is the gradient or hessian of
-the `k`ᵗʰ basis polynomial, whose nonzero component in `V` is the `l`ᵗʰ.
+where `Vₗ` is the `l`ᵗʰ element of the component basis of `V`, the only component in
+which the `k`ᵗʰ basis polynomial does not vanish. `r[i,k]` is a `TensorValue` or
+`ThirdOrderTensorValue` and `s` a `MVector` or `MMatrix` holding the derivatives of
+that polynomial.
 """
-function _comp_wize_set_derivative!(
+@generated function _comp_wize_set_derivative!(
   r::AbstractMatrix{G},i,s,k,l,::Type{V}) where {G,V}
-  @inbounds r[i,k]  = MultiValue(s) ⊗ V(ntuple( i -> Int(i==l), Val(num_indep_components(V))))
-  k+1
+
+  ∇basis = component_basis(MultiValue(zero(s)))
+  sd    = [Symbol(:s,d)       for d in eachindex(∇basis)]
+  loads = [:($(sd[d]) = s[$d]) for d in eachindex(∇basis)]
+
+  setters = map(component_basis(V)) do Vj
+    coeffs = [∇d ⊗ Vj for ∇d in ∇basis]
+    comps = map(1:length(G)) do m
+      d = findfirst(c -> !iszero(c[m]), coeffs)
+      isnothing(d)        ? :z    :
+      isone(coeffs[d][m]) ? sd[d] : :($(coeffs[d][m]) * $(sd[d]))
+    end
+    :(r[i,k] = $(Expr(:tuple, comps...)))
+  end
+  switch = foldr(((j,set),rest) -> Expr(:if, :(l == $j), set, rest),
+                 collect(pairs(setters)); init=:(throw(BoundsError($V,l))))
+
+  quote
+    z = zero(eltype(s))
+    @inbounds begin
+      $(loads...)
+      $switch
+    end
+    k+1
+  end
 end
 
 function _hessian_nd!(
