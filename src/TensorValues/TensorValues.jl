@@ -85,6 +85,7 @@ export SymFourthOrderTensorValue
 export ThirdOrderTensorValue
 export NTensorValue
 export ProductTensorValue
+export product_tensor
 export AbstractSymMultiValue
 export SymNTensorValue
 

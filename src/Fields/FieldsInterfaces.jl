@@ -165,11 +165,7 @@ function derivatives_type(::Type{T}, x::Union{Point,ContraVectorValue}, ::Val{N}
   D = Cov(first(size(x))[]) # automatically consider point coordinates are contravariant, and partials are covariant
   zero_partials = zero(SymNTensorValue{Tuple{ntuple(_ -> D, Val(N))...},eltype(x)})
   zero_T = zero(T)
-  if T <: MultiValue
-    return typeof(ProductTensorValue(zero_partials,zero_T))
-  else
-    return typeof(zero_partials*zero_T)
-  end
+  typeof(product_tensor(zero_partials,zero_T))
 end
 
 """

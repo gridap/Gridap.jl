@@ -199,8 +199,8 @@ f4e(y) = zero(ExteriorFormValue{4,Cov(2),Float64,0})
 # The derivation indices may be held by any order 1 tensor, not only by the
 # SymNTensorValue that partial_derivatives produces
 ∂2form = ExteriorFormValue{2,Cov(3)}(5.,6.,7.)
-∂sym   = ProductTensorValue(SymNTensorValue{Tuple{Cov(3)}}(1.,2.,3.), ∂2form)
-∂covec = ProductTensorValue(CoVectorValue{Cov(3)}(1.,2.,3.), ∂2form)
+∂sym   = product_tensor(SymNTensorValue{Tuple{Cov(3)}}(1.,2.,3.), ∂2form)
+∂covec = product_tensor(CoVectorValue{Cov(3)}(1.,2.,3.), ∂2form)
 @test partials_to_exteriorderivative(∂covec) === partials_to_exteriorderivative(∂sym)
 @test partials_to_codifferential(∂covec) === partials_to_codifferential(∂sym)
 

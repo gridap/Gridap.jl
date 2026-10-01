@@ -54,7 +54,7 @@ _eltype_val() = Val(_prod_eltype(VectorValue{3,Float64}, VectorValue{2}))
 a, b = VectorValue(1.0,2.0), SymTensorValue(1,2,3)
 V = ProductTensorValue{VectorValue{2},SymTensorValue{2}}
 P = V{Float64,Tuple{2,2,2},3,6}
-@test typeof(ProductTensorValue(a,b)) === P
+@test typeof(product_tensor(a,b)) === P
 
 # A component type given in a factor is not kept in the factor tags, it gives
 # the component type of the product instead
@@ -140,13 +140,13 @@ full[:,1,2] = full[:,2,1]
 # so a product of two tensors without dependent components has the components
 # of their `outer` product, in the same order.
 
-p = ProductTensorValue(VectorValue(1,2), VectorValue(10,20,30))
+p = product_tensor(VectorValue(1,2), VectorValue(10,20,30))
 @test Tuple(p) == (10,20,20,40,30,60)
 @test Tuple(p) == Tuple(VectorValue(1,2) ⊗ VectorValue(10,20,30))
 @test size(p) == (2,3)
 @test num_indep_components(p) == 6
 
-p = ProductTensorValue(VectorValue(1,2), SymTensorValue(10,20,30))
+p = product_tensor(VectorValue(1,2), SymTensorValue(10,20,30))
 @test Tuple(p) == (10,20,20,40,30,60)
 @test num_indep_components(p) == 6
 @test num_components(p) == 8
@@ -174,7 +174,7 @@ _stored_L(::Type{<:MultiValue{S,T,N,L}}) where {S,T,N,L} = L
 @test all(V -> num_stored_components(V) == _stored_L(make_concretetype(V{Int})), tags)
 @test_throws "too abstract to count its components" num_stored_components(VectorValue)
 
-pq = ProductTensorValue(q,v)
+pq = product_tensor(q,v)
 @test num_stored_components(typeof(pq)) == _stored_L(typeof(pq)) == 12
 @test num_indep_components(pq) == 10
 @test length(Tuple(pq)) == 12
@@ -204,7 +204,7 @@ pq = ProductTensorValue(q,v)
 # All the components of a 1×1 traceless tensor are dependent, so the product has
 # no independent component to give its component type
 
-p0 = ProductTensorValue(zero(SymTracelessTensorValue{1,Float64}), v)
+p0 = product_tensor(zero(SymTracelessTensorValue{1,Float64}), v)
 @test num_indep_components(p0) == 0
 @test length(Tuple(p0)) == 2
 @test eltype(p0) === Float64
@@ -213,9 +213,9 @@ p0 = ProductTensorValue(zero(SymTracelessTensorValue{1,Float64}), v)
 # Type parameters and inference
 
 a, b = VectorValue(1.0,2.0), SymTensorValue(1.0,2.0,3.0)
-p = @inferred ProductTensorValue(a,b)
+p = @inferred product_tensor(a,b)
 @test typeof(p) === V{Float64,Tuple{2,2,2},3,6}
-@test @inferred(zero(typeof(p))) == ProductTensorValue(zero(a),b)
+@test @inferred(zero(typeof(p))) == product_tensor(zero(a),b)
 @test typeof(@inferred(p+p)) === typeof(p)
 @test typeof(@inferred(2.0*p)) === typeof(p)
 @test typeof(@inferred(2*p)) === typeof(p)
@@ -228,7 +228,7 @@ p = @inferred ProductTensorValue(a,b)
 
 # The variance of both factors is carried by the product size
 
-pv = ProductTensorValue(CoVectorValue(1.0,2.0), ContraVectorValue(1.0,2.0,3.0))
+pv = product_tensor(CoVectorValue(1.0,2.0), ContraVectorValue(1.0,2.0,3.0))
 @test size(pv) === (cov2,con3)
 @test tensor_type(pv) == (1,1,0)
 
@@ -241,7 +241,7 @@ for Ta in tags, Tb in tags
   A, B = make_concretetype(Ta{Int}), make_concretetype(Tb{Int})
   a = A(ntuple(identity, num_indep_components(A)))
   b = B(ntuple(i -> 10i, num_indep_components(B)))
-  p = ProductTensorValue(a,b)
+  p = product_tensor(a,b)
 
   @test size(p) == (size(a)...,size(b)...)
   @test num_components(p) == num_components(a)*num_components(b)
@@ -264,8 +264,8 @@ for Ta in tags, Tb in tags
   @test p ≈ outer(a,b)
   @test p == outer(a,b)
   @test outer(a,b) == p
-  @test p == ProductTensorValue(a,b)
-  @test p != ProductTensorValue(2a,b)
+  @test p == product_tensor(a,b)
+  @test p != product_tensor(2a,b)
 
   # A product of tensors of a variance that cannot contract with itself has no
   # inner product, like the tensors themselves
@@ -291,7 +291,7 @@ end
 for Ta in tags, Tb in tags
   A, B = make_concretetype(Ta{Float64}), make_concretetype(Tb{Float64})
   a, b = rand(A), rand(B)
-  p = ProductTensorValue(a,b)
+  p = product_tensor(a,b)
   @test eltype(p) === Float64
   @test get_array(p) ≈ get_array(outer(a,b))
   @test p ≈ outer(a,b)
@@ -304,7 +304,7 @@ end
 
 a = rand(SymTensorValue{3,Float64})
 b = rand(SymTensorValue{3,Float64})
-p = ProductTensorValue(a,b)
+p = product_tensor(a,b)
 s4 = outer(a,b)
 @test isa(s4,SymFourthOrderTensorValue{3})
 @test get_array(p) ≈ get_array(s4)
@@ -365,7 +365,7 @@ for Ta in full_tags, Tb in full_tags
   A, B = make_concretetype(Ta{Int}), make_concretetype(Tb{Int})
   a = A(ntuple(identity, num_indep_components(A)))
   b = B(ntuple(i -> 10i, num_indep_components(B)))
-  p = ProductTensorValue(a,b)
+  p = product_tensor(a,b)
   F = _full_rank_tensortype(typeof(p))
   t = convert(F,p)
 
@@ -390,21 +390,21 @@ for Ta in full_tags, Tb in full_tags
   @test p + t === p + p
 end
 
-pv = ProductTensorValue(CoVectorValue(1.0,2.0), ContraVectorValue(1.0,2.0,3.0))
+pv = product_tensor(CoVectorValue(1.0,2.0), ContraVectorValue(1.0,2.0,3.0))
 Fv = _full_rank_tensortype(typeof(pv))
 @test Fv === TensorValue{cov2,con3,Float64,6}
 @test typeof(@inferred(convert(Fv,pv))) === Fv
 @test @inferred(convert(typeof(pv),convert(Fv,pv))) === pv
 
-pw = ProductTensorValue(TensorValue{cov2,con3,Float64}(ntuple(Float64,6)), CoVectorValue(1.0,2.0))
+pw = product_tensor(TensorValue{cov2,con3,Float64}(ntuple(Float64,6)), CoVectorValue(1.0,2.0))
 @test _full_rank_tensortype(typeof(pw)) === ThirdOrderTensorValue{cov2,con3,cov2,Float64,12}
 
-pe = ProductTensorValue(zero(VectorValue{0,Float64}), VectorValue(1.0,2.0))
+pe = product_tensor(zero(VectorValue{0,Float64}), VectorValue(1.0,2.0))
 @test _full_rank_tensortype(typeof(pe)) === TensorValue{0,2,Float64,0}
 @test Tuple(convert(TensorValue{0,2,Float64,0},pe)) === ()
 @test convert(typeof(pe),convert(TensorValue{0,2,Float64,0},pe)) === pe
 
-p3 = ProductTensorValue(rand(ThirdOrderTensorValue{2,2,2,Float64}), VectorValue(1.0,2.0))
+p3 = product_tensor(rand(ThirdOrderTensorValue{2,2,2,Float64}), VectorValue(1.0,2.0))
 F3 = _full_rank_tensortype(typeof(p3))
 @test F3 === NTensorValue{Tuple{2,2,2,2},Float64,4,16}
 @test get_array(convert(F3,p3)) == get_array(p3)
@@ -413,7 +413,7 @@ F3 = _full_rank_tensortype(typeof(p3))
 # Only a product of full rank factors converts: a factor holding fewer
 # components than its full tensor has no full rank counterpart
 
-ps = ProductTensorValue(VectorValue(1,2), SymTensorValue(1,2,3))
+ps = product_tensor(VectorValue(1,2), SymTensorValue(1,2,3))
 @test_throws ErrorException convert(NTensorValue{Tuple{2,2,2},Int}, ps)
 @test_throws ErrorException convert(
   ProductTensorValue{VectorValue{2},SymTensorValue{2},Int}, NTensorValue{Tuple{2,2,2},Int,3}(ntuple(identity,8)))
@@ -454,7 +454,7 @@ tv = convert(Fv,pv)
 
 # VTK component names follow the storage order
 
-p = ProductTensorValue(VectorValue(1,2), SymTensorValue(1,2,3))
+p = product_tensor(VectorValue(1,2), SymTensorValue(1,2,3))
 @test indep_components_names(typeof(p)) == ["XXX","YXX","XXY","YXY","XYY","YYY"]
 
 # Empty factors
@@ -467,7 +467,7 @@ p = zero(ProductTensorValue{VectorValue{0},SymTensorValue{2},Float64,Tuple{0,2,2
 
 # The factors give the component type that the empty data cannot
 @test typeof(ProductTensorValue{VectorValue{0,Float64},SymTensorValue{2}}(())) === typeof(p)
-@test typeof(ProductTensorValue(zero(VectorValue{0,Float64}),zero(SymTensorValue{2,Int}))) === typeof(p)
+@test typeof(product_tensor(zero(VectorValue{0,Float64}),zero(SymTensorValue{2,Int}))) === typeof(p)
 @test typeof(ProductTensorValue{VectorValue{0},SymTensorValue{2},Float64}(())) === typeof(p)
 
 # Wrong number of components
@@ -476,12 +476,12 @@ p = zero(ProductTensorValue{VectorValue{0},SymTensorValue{2},Float64,Tuple{0,2,2
 
 # A product is not a valid factor, products do not nest
 
-pp = ProductTensorValue(VectorValue(1,2),VectorValue(3,4))
+pp = product_tensor(VectorValue(1,2),VectorValue(3,4))
 PP = typeof(pp)
 @test_throws ErrorException _minimal_tensortype_with_shape(PP)
-@test_throws ErrorException ProductTensorValue(pp,VectorValue(1,2))
-@test_throws ErrorException ProductTensorValue(VectorValue(1,2),pp)
-@test_throws ErrorException ProductTensorValue(pp,pp)
+@test_throws ErrorException product_tensor(pp,VectorValue(1,2))
+@test_throws ErrorException product_tensor(VectorValue(1,2),pp)
+@test_throws ErrorException product_tensor(pp,pp)
 @test_throws ErrorException ProductTensorValue{PP,VectorValue{2}}(ntuple(identity,8))
 @test_throws ErrorException ProductTensorValue{PP,VectorValue{2},Int}(ntuple(identity,8))
 @test_throws ErrorException ProductTensorValue{PP,VectorValue{2}}(())

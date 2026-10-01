@@ -130,7 +130,7 @@ independent components.
 The independent components of `A` vary fastest in the internal storage,
 consistently with the column major ordering of Julia:
 
-    p = ProductTensorValue(a,b)
+    p = product_tensor(a,b)
     La = num_indep_components(a)
     indep_comp_getindex(p, (lb-1)*La + la) == indep_comp_getindex(a,la)*indep_comp_getindex(b,lb)
 
@@ -236,7 +236,14 @@ ProductTensorValue{A,B,T,S,N}(data::AbstractArray) where {A,B,T,S,N} =
 ProductTensorValue{A,B,T,S,N,L}(data::AbstractArray) where {A,B,T,S,N,L} =
   ProductTensorValue{A,B,T,S,N,L}(_flatten_prod_components(data,A,B))
 
-@generated function ProductTensorValue(a::MultiValue, b::MultiValue)
+"""
+    product_tensor(a::Number, b::Number)
+
+The tensor product of `a` and `b`, like `outer(a,b)`, but returns a
+[`ProductTensorValue`](@ref) preserving the dependent components information
+when both factors are tensors.
+"""
+@generated function product_tensor(a::MultiValue, b::MultiValue)
   A, B, S, N, L, Li = _prod_shape(a,b)
   if iszero(Li)
     T = _prod_eltype(a,b)
@@ -248,6 +255,8 @@ ProductTensorValue{A,B,T,S,N,L}(data::AbstractArray) where {A,B,T,S,N,L} =
             for lb in 1:(Li÷iLa) for la in 1:iLa ]
   :( ProductTensorValue{$A,$B}($(Expr(:tuple, comps...))) )
 end
+
+product_tensor(a::Number, b::Number) = a*b
 
 ###############################################################
 # Conversions (ProductTensorValue)
