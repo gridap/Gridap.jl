@@ -271,7 +271,7 @@ function Algebra.residual!(
   for k in 0:order
     # If the form is constant and the k-th time derivative has zero Dirichlet
     # values, its contribution is the stored matrix times the free values
-    if is_form_constant(odeop, k) && _has_zero_dirichlet_values(odeop, odeopcache, k)
+    if is_form_constant_and_zero_dirichlet(odeop, odeopcache, k)
       muladd!(r, odeopcache.const_forms[k+1], us[k+1])
     else
       form = forms[k+1]
@@ -292,8 +292,8 @@ end
 
 # Whether the k-th time derivative of the FE function is fully determined by its
 # free values at the time of the last `update_odeopcache!`
-function _has_zero_dirichlet_values(odeop::ODEOpFromTFEOp, odeopcache, k::Integer)
-  _has_zero_dirichlet_values(odeopcache.Us[k+1])
+function is_form_constant_and_zero_dirichlet(odeop::ODEOpFromTFEOp, odeopcache, k::Integer)
+  is_form_constant(odeop, k) && _has_zero_dirichlet_values(odeopcache.Us[k+1])
 end
 
 _has_zero_dirichlet_values(U) = false
