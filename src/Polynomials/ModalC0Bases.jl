@@ -291,37 +291,29 @@ end
   k+1
 end
 
-# Indexing and m definition should be fixed if G contains symmetries, that is
-# if the code is  optimized for symmetric tensor V valued FESpaces
-# (if gradient_type(V) returned a symmetric higher order tensor type G)
-@inline @generated function _set_derivative_mc0!(
-  r::AbstractMatrix{G},i1,s,k,l,::Type{V}) where {V,G}
-  # Git blame me for readable non-generated version
-  @notimplementedif num_indep_components(V) != num_components(V) "Not implemented for symmetric Jacobian or Hessian"
+"""
+    _set_derivative_mc0!(r::AbstractMatrix{G},i1,s,k,l,::Type{V})
 
-  m = Array{Symbol}(undef, size(G))
-  N_val_dims = length(size(V))
-  s_size = size(G)[1:end-N_val_dims]
+```
+r[i1,k+l*(j-1)] = MultiValue(s) ⊗ Vⱼ,  j = 1 … num_indep_components(V)
+return k+1
+```
 
-  ex = Expr[]
-  ex = push!(ex, :(T = eltype(s); z = zero(T);) )
+where `Vⱼ` is the `j`ᵗʰ element of the component basis of `V`. The dofs of one
+component of `V` are `l` apart, as in [`_set_value_mc0!`](@ref).
 
-  s_syms = [Symbol(:s, Tuple(ci)...) for ci in CartesianIndices(s_size)]
-  for ci in CartesianIndices(s_size)
-    push!(ex, :(@inbounds $(s_syms[ci]) = s[$ci]))
+When `V` has dependent components, the derivatives are set with respect to each of
+its independent components.
+"""
+@inline function _set_derivative_mc0!(
+  r::AbstractMatrix{G},i1,s,k,l,::Type{V}) where {G,V<:MultiValue}
+
+  L = Val(num_indep_components(V))
+  Ds = MultiValue(s)
+  for j in 1:num_indep_components(V)
+    r[i1,k+l*(j-1)] = Ds ⊗ V(ntuple(p -> Int(p == j), L))
   end
-
-  for (ij,j) in enumerate(CartesianIndices(V))
-    fill!(m, :z)
-    for ci in CartesianIndices(s_size)
-      m[ci,j] = s_syms[ci]
-    end
-    push!(ex, :(i = k + l*($ij-1)))
-    push!(ex, :(@inbounds r[i1,k] = $(Expr(:tuple, m...))))
-  end
-
-  push!(ex, :(return k))
-  return Expr(:block, ex...)
+  k+1
 end
 
 function _hessian_nd!(
