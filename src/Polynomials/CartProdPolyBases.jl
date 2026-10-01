@@ -283,7 +283,20 @@ its independent components.
     end
     k
   end
+end
 
+# method for partial_derivatives: G <: ProductTensorValue{A,V}
+# r[i,k] = A(s) ⊗ Vⱼ = (Dbᵏ)(xi)
+function _cartprod_set_derivative!(
+  r::AbstractMatrix{G},i,s,k,::Type{V}) where {A,B,G<:ProductTensorValue{A,B},V<:MultiValue}
+
+  L = Val(num_indep_components(B))
+  Ds = A(s) # only reads required indep partials
+  for j in 1:num_indep_components(B)
+    r[i,k] = product_tensor(Ds, B(ntuple(p -> Int(p == j), L)))
+    k += 1
+  end
+  k
 end
 
 function _hessian_nd!(

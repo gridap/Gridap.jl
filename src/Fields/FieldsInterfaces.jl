@@ -88,10 +88,41 @@ Abstract hessian operator.
 gradient(f,::Val{1}) = ∇(f)
 gradient(f,::Val{2}) = ∇∇(f)
 
+"""
+    struct PartialDerivatives{N} <: Map
+
+Operator taking the `N`th order partial derivatives of a tensor field. Two orders
+are named:
+
+    partial_derivatives        === PartialDerivatives{1}()
+    second_partial_derivatives === PartialDerivatives{2}()
+
+Similar to `gradient(f, Val(N))`, but this operator stores independent partial
+derivatives in a [`ProductTensorValue`](@ref) and enforces correct variance of
+the `N` first indices, that is covariant.
+"""
+struct PartialDerivatives{N} <: Map
+  function PartialDerivatives{N}() where N
+    # Only a single non-negative integer order is implemented.
+    # We could support N::NTuple{Int} to compute the partial of several orders simultaneously
+    N isa Int || throw(ArgumentError(
+      "the derivation order must be an Int, got $N::$(typeof(N))"))
+    N ≥ 0 || throw(ArgumentError("the derivation order must be non negative, got $N"))
+    new{N}()
+  end
+end
+
+const partial_derivatives = PartialDerivatives{1}()
+const second_partial_derivatives = PartialDerivatives{2}()
+
+evaluate!(cache,k::PartialDerivatives,f) = k(f)
+
 evaluate!(cache,::Broadcasting{typeof(∇)},a::Field) = ∇(a)
 evaluate!(cache,::Broadcasting{typeof(∇∇)},a::Field) = ∇∇(a)
 lazy_map(::Broadcasting{typeof(∇)},a::AbstractArray{<:Field}) = lazy_map(∇,a)
 lazy_map(::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field}) = lazy_map(∇∇,a)
+evaluate!(cache,k::Broadcasting{<:PartialDerivatives},a::Field) = k.f(a)
+lazy_map(k::Broadcasting{<:PartialDerivatives},a::AbstractArray{<:Field}) = lazy_map(k.f,a)
 
 """
     push_∇(∇a::Field, ϕ::Field) = pinvJt(∇(ϕ))⋅∇a
@@ -193,6 +224,40 @@ return_cache(f::FieldGradient,x::Point) = nothing
 evaluate!(cache,f::FieldGradient,x::Point) = @abstractmethod
 testvalue(::Type{FieldGradient{N,T}}) where {N,T} = FieldGradient{N}(testvalue(T))
 
+"""
+    struct FieldPartialDerivatives{N,F} <: Field
+
+Type that represents the `N`th order partial derivatives of a field of type `F`,
+as computed by [`PartialDerivatives`](@ref).
+
+Unlike [`FieldGradient`](@ref), the `N` derivation indices are held by one
+fully symmetric tensor, see [`derivatives_type`](@ref).
+
+`evaluate!` falls back on differentiating the wrapped field numerically, which
+allocates a cache per point. A field family that can do better should add a
+method for its own `FieldPartialDerivatives{N,<:MyField}`.
+"""
+struct FieldPartialDerivatives{N,F} <: Field
+  object::F
+  FieldPartialDerivatives{N}(object::F) where {N,F} = new{N,F}(object)
+end
+
+(::PartialDerivatives{N})(f::Field) where N = FieldPartialDerivatives{N}(f)
+
+function (::PartialDerivatives{M})(f::FieldPartialDerivatives{N}) where {N,M}
+  @unreachable """\n
+  Partial derivatives do not compose: the order $M partials of the order $N
+  partials of a field are not its order $(N+M) partials, they hold their
+  derivation indices in different tensors.
+
+  Use PartialDerivatives{$(N+M)}() on the undifferentiated field instead.
+  """
+end
+
+testargs(f::FieldPartialDerivatives,x::Point) = testargs(f.object,x)
+testvalue(::Type{FieldPartialDerivatives{N,T}}) where {N,T} = FieldPartialDerivatives{N}(testvalue(T))
+evaluate!(cache,f::FieldPartialDerivatives,x::Point) = @abstractmethod
+
 # Default methods for arrays of points
 
 function testargs(f::Field,x::AbstractArray{<:Point})
@@ -260,6 +325,14 @@ end
 
 function evaluate!(c,f::FieldGradient{N,<:GenericField},x::Point) where N
   evaluate!(c,FieldGradient{N}(f.object.object),x)
+end
+
+function return_cache(f::FieldPartialDerivatives{N,<:GenericField},x::Point) where N
+  return_cache(FieldPartialDerivatives{N}(f.object.object),x)
+end
+
+function evaluate!(c,f::FieldPartialDerivatives{N,<:GenericField},x::Point) where N
+  evaluate!(c,FieldPartialDerivatives{N}(f.object.object),x)
 end
 
 # Make Field behave like a collection
@@ -380,6 +453,17 @@ function evaluate!(c,f::FieldGradient{N,<:ConstantField},x::AbstractArray{<:Poin
   c.array
 end
 
+# TODO review why this is different from FieldGradient
+# Partials of a constant vanish, there is nothing to differentiate.
+function return_cache(f::FieldPartialDerivatives{N,<:ConstantField},x::Point) where N
+  zero(derivatives_type(typeof(f.object.value),x,Val(N)))
+end
+
+return_cache(f::FieldPartialDerivatives{0,<:ConstantField},x::Point) =
+  f.object.value*one(eltype(x))
+
+evaluate!(c,f::FieldPartialDerivatives{N,<:ConstantField},x::Point) where N = c
+
 function lazy_map(::Operation{typeof(inv)},a::LazyArray{<:Fill{typeof(constant_field)}})
   v = a.args[1]
   vinv = lazy_map(inv,v)
@@ -400,6 +484,8 @@ end
 
 return_cache(f::FieldGradient{N,<:Function},x::Point) where N = gradient(f.object,Val(N))
 evaluate!(c,f::FieldGradient{N,<:Function},x::Point) where N = c(x)
+return_cache(f::FieldPartialDerivatives{N,<:Function},x::Point) where N = PartialDerivatives{N}()(f.object)
+evaluate!(c,f::FieldPartialDerivatives{N,<:Function},x::Point) where N = c(x)
 
 # Operations
 

@@ -269,6 +269,16 @@ that polynomial.
   end
 end
 
+# method for partial_derivatives: G <: ProductTensorValue{A,V}
+# r[i,k] = A(s) ⊗ Vₗ = (Dbᵏ)(xi)
+function _comp_wize_set_derivative!(
+  r::AbstractMatrix{G},i,s,k,l,::Type{V}) where {A,B,G<:ProductTensorValue{A,B},V}
+
+  # A(s) only reads required indep partials
+  r[i,k] = product_tensor(A(s), B(ntuple( j -> Int(j==l), Val(num_indep_components(B)))))
+  k+1
+end
+
 function _hessian_nd!(
   b::CompWiseTensorPolyBasis{D,V,PT}, x,
   r::AbstractMatrix{H}, i,

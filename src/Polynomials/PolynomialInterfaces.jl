@@ -258,6 +258,44 @@ end
   nothing
 end
 
+# Partial derivatives reuse the gradient and hessian kernels
+function return_cache(
+  fp::FieldPartialDerivativesArray{Np,<:PolynomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {Np,D,V}
+
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  f = fp.fa
+  Vr = _return_val_eltype(f,x)
+  P = derivatives_type(Vr,testitem(x),Val(Np))
+  _return_cache(f,x,P,Val(Np))
+end
+
+function evaluate!(cache,
+  fp::FieldPartialDerivativesArray{1,<:PolynomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
+
+  f = fp.fa
+  r, s, c, g = cache
+  np = length(x)
+  _setsize!(f,np,r,c,g)
+  params = _get_parameters(f)
+  _loop_point_grads!(np,x,f,r,c,g,s,params)
+  r.array
+end
+
+function evaluate!(cache,
+  fp::FieldPartialDerivativesArray{2,<:PolynomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
+
+  f = fp.fa
+  r, s, c, g, h = cache
+  np = length(x)
+  _setsize!(f,np,r,c,g,h)
+  params = _get_parameters(f)
+  _loop_point_hess!(np,x,f,r,c,g,h,s,params)
+  r.array
+end
+
 
 ##############################################
 # Optimizing of evaluation at a single point #
@@ -282,8 +320,12 @@ function evaluate!(cache,f::PolynomialBasis,x::Point)
   a
 end
 
+const _PolynomialBasisDerivatives{N} = Union{
+  FieldGradientArray{N,<:PolynomialBasis},
+  FieldPartialDerivativesArray{N,<:PolynomialBasis}}
+
 function return_cache(
-  f::FieldGradientArray{N,<:PolynomialBasis}, x::Point) where N
+  f::_PolynomialBasisDerivatives{N}, x::Point) where N
 
   xs = [x]
   cf = return_cache(f,xs)
@@ -293,7 +335,7 @@ function return_cache(
 end
 
 function evaluate!(
-  cache, f::FieldGradientArray{N,<:PolynomialBasis}, x::Point) where N
+  cache, f::_PolynomialBasisDerivatives{N}, x::Point) where N
 
   r, cf, xs = cache
   xs[1] = x

@@ -164,6 +164,55 @@ Base.getindex(
    a::FieldGradientArray{Ng,A,T,N},i::Vararg{Integer,N}) where {Ng,A,T,N} = gradient(a.fa[i...],Val(Ng))
 Base.IndexStyle(::Type{<:FieldGradientArray{Ng,A}}) where {Ng,A} = IndexStyle(A)
 
+"""
+    struct FieldPartialDerivativesArray{Np,A,T,N} <: AbstractArray{T,N}
+
+A wrapper that represents the broadcast of `partial_derivatives` over an array of
+fields. `Np` is the order of the partial derivatives, `A` the type of the array of
+fields to differentiate.
+"""
+struct FieldPartialDerivativesArray{Np,A,T,N} <: AbstractArray{T,N}
+  fa::A
+  function FieldPartialDerivativesArray{Np}(f::AbstractArray{<:Field}) where Np
+    T = typeof(PartialDerivatives{Np}()(testitem(f)))
+    N = ndims(f)
+    A = typeof(f)
+    new{Np,A,T,N}(f)
+  end
+end
+
+function testvalue(::Type{<:FieldPartialDerivativesArray{Np,A}}) where {Np,A}
+  f = testvalue(A)
+  FieldPartialDerivativesArray{Np}(f)
+end
+
+function return_value(k::Broadcasting{<:PartialDerivatives},a::AbstractArray{<:Field})
+  evaluate(k,a)
+end
+
+function evaluate!(
+  cache,k::Broadcasting{PartialDerivatives{Np}},a::AbstractArray{<:Field}) where Np
+  FieldPartialDerivativesArray{Np}(a)
+end
+
+function (k::PartialDerivatives)(a::AbstractArray{<:Field})
+  msg =
+  """\n
+  A PartialDerivatives operator is not defined for arrays of Field objects.
+  Use Broadcasting($k) instead.
+  """
+  @unreachable msg
+end
+
+Base.size(a::FieldPartialDerivativesArray) = size(a.fa)
+Base.axes(a::FieldPartialDerivativesArray) = axes(a.fa)
+Base.getindex(a::FieldPartialDerivativesArray{Np},i::Integer) where Np =
+  PartialDerivatives{Np}()(a.fa[i])
+Base.getindex(
+   a::FieldPartialDerivativesArray{Np,A,T,N},i::Vararg{Integer,N}) where {Np,A,T,N} =
+  PartialDerivatives{Np}()(a.fa[i...])
+Base.IndexStyle(::Type{<:FieldPartialDerivativesArray{Np,A}}) where {Np,A} = IndexStyle(A)
+
 # Optimizing linear_combination.
 
 function linear_combination(a::AbstractVector{<:Number},b::AbstractVector{<:Field})

@@ -345,6 +345,7 @@ function lazy_map(
 end
 
 # Memoization
+# This is currently unused / has no effect, the MemoArray constructor just returns the parent.
 
 struct MemoArray{T,N,A} <: AbstractArray{T,N}
   parent::A
@@ -414,6 +415,19 @@ function lazy_map(
     cell_∇a.memo[key] = MemoArray(lazy_map(k,cell_∇a.parent,cell_map))
   end
   cell_∇a.memo[key]
+end
+
+function lazy_map(k::PartialDerivatives,a::MemoArray)
+  lazy_map(Broadcasting(k),a)
+end
+
+function lazy_map(k::Broadcasting{PartialDerivatives{Np}},a::MemoArray) where Np
+  # The order is part of the key, so each order gets its own memo entry.
+  key = (:partials,Np)
+  if ! haskey(a.memo,key)
+    a.memo[key] = MemoArray(lazy_map(k,a.parent))
+  end
+  a.memo[key]
 end
 
 function lazy_map(k::typeof(axes),a::MemoArray)

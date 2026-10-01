@@ -330,6 +330,19 @@ its independent components.
   end
 end
 
+# method for partial_derivatives: G <: ProductTensorValue{A,V}
+# r[i1,k+l*(j-1)] = A(s) ⊗ Vⱼ
+@inline function _set_derivative_mc0!(
+  r::AbstractMatrix{G},i1,s,k,l,::Type{V}) where {A,B,G<:ProductTensorValue{A,B},V<:MultiValue}
+
+  L = Val(num_indep_components(B))
+  Ds = A(s) # only reads required indep partials
+  for j in 1:num_indep_components(B)
+    r[i1,k+l*(j-1)] = product_tensor(Ds, B(ntuple(p -> Int(p == j), L)))
+  end
+  k+1
+end
+
 function _hessian_nd!(
   basis::ModalC0Basis{D,V}, x,
   r::AbstractMatrix{G}, i,

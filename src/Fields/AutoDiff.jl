@@ -203,21 +203,21 @@ end
   Expr(:tuple, comps...)
 end
 
-function partial_derivatives(f::Function, ::Val{N}) where N
+function (k::PartialDerivatives)(f::Function)
   function _partial_derivatives(x)
-    partial_derivatives(f,x,Val(N))
+    k(f,x)
   end
 end
 
-function partial_derivatives(f::Function, x::Point, ::Val{N}) where N
-  partial_derivatives(f, x, return_value(f,x), Val(N))
+function (k::PartialDerivatives)(f::Function, x::Point)
+  k(f, x, return_value(f,x))
 end
 
-partial_derivatives(f::Function, x::Point, fx::Number, ::Val{0}) = fx*one(eltype(x))
+(::PartialDerivatives{0})(f::Function, x::Point, fx::Number) = fx*one(eltype(x))
 
 # Only the independent components of `fx` are differentiated, and only the
 # non-decreasing derivation multi-indices are stored in the resulting ProductTensorValue.
-function partial_derivatives(f::Function, x::Point{D}, fx::Number, ::Val{N}) where {D,N}
+function (::PartialDerivatives{N})(f::Function, x::Point{D}, fx::Number) where {D,N}
   V = derivatives_type(typeof(fx), x, Val(N))
   L = num_indep_components(typeof(fx))
   iszero(L) && return zero(V)

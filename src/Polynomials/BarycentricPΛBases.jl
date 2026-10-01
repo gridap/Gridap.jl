@@ -560,20 +560,32 @@ function _return_cache(b::_BaryPΛBasis,x,::Type{G},::Val{N_deriv}) where {G,N_d
   cB = CachedVector(zeros(T,ndof_bernstein))
   # Cache for derivatives of Bα (∇Bα or HBα)
   if N_deriv > 0
-    DB = T
-    xi = testitem(x)
-    for _ in 1:N_deriv
-      DB = gradient_type(DB,xi)
-    end
+    DB = _scalar_derivative_type(value_type(b),G,testitem(x),Val(N_deriv))
     # Cache for N_deriv's derivatives all of scalar nD-Bernstein polynomials
     t = (( nothing for _ in 2:N_deriv)..., CachedArray(zeros(DB,(1,ndof_bernstein))))
-    s = MArray{Tuple{size(DB)...},T}(undef)
+    # The scalar kernels fill every derivation index, so the scratch is the dense
+    # tensor of DB's shape, without variance
+    s = Mutable(DB)(undef)
   else
     t = ()
     s = nothing
   end
   (r, s, cB, t...)
 end
+
+function _scalar_derivative_type(::Type{V},::Type{G},xi,::Val{N}) where {V,G,N}
+  DB = eltype(G)
+  for _ in 1:N
+    DB = gradient_type(DB,xi)
+  end
+  DB
+end
+function _scalar_derivative_type(
+  ::Type{V},::Type{G},xi,::Val{N}) where {V<:MultiValue,G<:ProductTensorValue,N}
+
+  derivatives_type(eltype(G),xi,Val(N))
+end
+_scalar_derivative_type(::Type{<:Real},::Type{G},xi,::Val) where G = G
 
 function _setsize!(b::_BaryPΛBasis, np, ω, t...)
   ndof = length(b)
@@ -751,16 +763,18 @@ end
 
 function _gradient_nd!(
   b::BarycentricPmΛBasis{D}, x,
-  ∇ω::AbstractMatrix{G}, i, cB,
-  ∇B::AbstractMatrix{<:VectorValue{D}},
+  ∇ω::AbstractMatrix, i, cB,
+  ∇B::AbstractMatrix{<:MultiValue{Tuple{Db}}},
   s::MVector{D},
-  ::Val{r}) where {D,G,r}
+  ::Val{r}) where {D,Db,r}
 
   _gradient_nd!(b.scalar_bernstein_basis, x, ∇B, 1, cB, nothing, s, Val(r))
 
+  z = product_tensor(zero(eltype(∇B)), zero(eltype(b.m)))
+
   @inbounds for (_, bubble_functions) in get_bubbles(b)
     for (w, α, _, J, sub_J_ids, sup_α_ids) in bubble_functions
-      ∇ω_w = zero(G)
+      ∇ω_w = z
 
       for (l, J_sub_Jl_id) in enumerate(sub_J_ids)
         sgnl = _minusone_if_even_else_one(l)
@@ -771,13 +785,14 @@ function _gradient_nd!(
         c_α_Jl = (α[Jl]+1) * sgnl / r
         m_J_l = b.m[J_sub_Jl_id]
 
-        ∇ω_w += (c_α_Jl * ∇Bα_pJl) ⊗ m_J_l
+        ∇ω_w += product_tensor(c_α_Jl * ∇Bα_pJl, m_J_l)
       end
 
       if b.flavor === :BMM
         ∇ω_w /= multinomial(α...)
       end
 
+      # the value converts to (c_α_Jl * ∇Bα_pJl)⊗ m_J_l if eltype(∇ω) is not a ProductTensorValue
       ∇ω[i,w] = ∇ω_w
     end
   end
@@ -785,17 +800,19 @@ end
 
 function _hessian_nd!(
   b::BarycentricPmΛBasis{D}, x,
-  Hω::AbstractMatrix{G}, i, cB,
+  Hω::AbstractMatrix, i, cB,
   ::Nothing,
-  HB::AbstractMatrix{<:TensorValue{D,D}},
+  HB::AbstractMatrix{<:MultiValue{Tuple{Db,Db}}},
   s::MMatrix{D,D},
-  ::Val{r}) where {D,G,r}
+  ::Val{r}) where {D,Db,r}
 
   _hessian_nd!(b.scalar_bernstein_basis, x, HB, 1, cB, nothing, nothing, s, Val(r))
 
+  z = product_tensor(zero(eltype(HB)), zero(eltype(b.m)))
+
   @inbounds for (_, bubble_functions) in get_bubbles(b)
     for (w, α, _, J, sub_J_ids, sup_α_ids) in bubble_functions
-      Hω_w = zero(G)
+      Hω_w = z
 
       for (l, J_sub_Jl_id) in enumerate(sub_J_ids)
         sgnl = _minusone_if_even_else_one(l)
@@ -806,7 +823,7 @@ function _hessian_nd!(
         c_αJl = (α[Jl]+1) * sgnl / r
         m_Jl = b.m[J_sub_Jl_id]
 
-        Hω_w += (c_αJl * HB_αJl) ⊗ m_Jl
+        Hω_w += product_tensor(c_αJl * HB_αJl, m_Jl)
       end
 
       if b.flavor === :BMM
@@ -979,9 +996,9 @@ end
 function _gradient_nd!(
   b::BarycentricPΛBasis{D}, x,
   ∇ω::AbstractMatrix, i, cB,
-  ∇B::AbstractMatrix{<:VectorValue{D}},
+  ∇B::AbstractMatrix{<:MultiValue{Tuple{Db}}},
   s::MVector{D},
-  ::Val{r}) where {D,r}
+  ::Val{r}) where {D,Db,r}
 
   _gradient_nd!(b.scalar_bernstein_basis, x, ∇B, 1, cB, nothing, s, Val(r))
 
@@ -989,7 +1006,8 @@ function _gradient_nd!(
     for (w, _, α_id) in bubble_functions
       Ψw = b.Ψ[w]
       ∇Bα = ∇B[1,α_id]
-      ∇ω[i,w] = ∇Bα ⊗ Ψw
+      # the value converts to ∇Bα ⊗ Ψw if eltype(∇ω) is not a ProductTensorValue
+      ∇ω[i,w] = product_tensor(∇Bα, Ψw)
     end
   end
 end
@@ -998,9 +1016,9 @@ function _hessian_nd!(
   b::BarycentricPΛBasis{D}, x,
   Hω::AbstractMatrix, i, cB,
   ::Nothing,
-  HB::AbstractMatrix{<:TensorValue{D,D}},
+  HB::AbstractMatrix{<:MultiValue{Tuple{Db,Db}}},
   s::MMatrix{D,D},
-  ::Val{r}) where {D,r}
+  ::Val{r}) where {D,Db,r}
 
   _hessian_nd!(b.scalar_bernstein_basis, x, HB, 1, cB, nothing, nothing, s, Val(r))
 
@@ -1008,7 +1026,7 @@ function _hessian_nd!(
     for (w, _, α_id) in bubble_functions
       Ψw = b.Ψ[w]
       HBα = HB[1,α_id]
-      Hω[i,w] = HBα ⊗ Ψw
+      Hω[i,w] = product_tensor(HBα, Ψw)
     end
   end
 end
