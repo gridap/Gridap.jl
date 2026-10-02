@@ -419,11 +419,19 @@ xc = ContraVectorValue(1.0,2.0)
 
 # The derivation indices come first and are covariant, an un-varianced
 # `Point` coordinate being read as a `ContraVectorValue`. A scalar valued
-# function has no index to tensor them with, so its derivatives are the
-# symmetric tensor itself
-@test derivatives_type(Float64,xc,Val(1)) === SymNTensorValue{Tuple{cov2},Float64,1,2}
-@test derivatives_type(Float64,xc,Val(2)) === SymNTensorValue{Tuple{cov2,cov2},Float64,2,3}
-@test derivatives_type(Float64,ContraVectorValue(1.0,2.0,3.0),Val(2)) === SymNTensorValue{Tuple{cov3,cov3},Float64,2,6}
+# function brings no index of its own, and is carried by the order 0
+# `ScalarValue`, so that the derivation indices are always a factor of a product
+@test derivatives_type(Float64,xc,Val(1)) ===
+  ProductTensorValue{SymNTensorValue{Tuple{cov2}},ScalarValue,Float64,Tuple{cov2},1,2}
+@test derivatives_type(Float64,xc,Val(2)) ===
+  ProductTensorValue{SymNTensorValue{Tuple{cov2,cov2}},ScalarValue,Float64,Tuple{cov2,cov2},2,3}
+@test derivatives_type(Float64,ContraVectorValue(1.0,2.0,3.0),Val(2)) ===
+  ProductTensorValue{SymNTensorValue{Tuple{cov3,cov3}},ScalarValue,Float64,Tuple{cov3,cov3},2,6}
+
+# The order 0 factor adds no index, so the derivatives have exactly the
+# independent components of the partials
+@test num_indep_components(derivatives_type(Float64,xc,Val(2))) ==
+  num_indep_components(SymNTensorValue{Tuple{cov2,cov2},Float64})
 
 @test derivatives_type(VectorValue{2,Float64},xc,Val(1)) ===
   ProductTensorValue{SymNTensorValue{Tuple{cov2}},VectorValue{2},Float64,Tuple{cov2,2},2,4}

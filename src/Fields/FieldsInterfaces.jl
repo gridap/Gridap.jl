@@ -170,21 +170,18 @@ function gradient_type(::Type{T},x::Point) where T
 end
 
 """
-    derivatives_type(::Type{T}, x::Union{Point,ContraVectorValue})
-    derivatives_type(::Type{T}, x::Union{Point,ContraVectorValue}, ::Val{N})
+    derivatives_type(::Type{T}, x)
+    derivatives_type(::Type{T}, x, ::Val{N})
 
-Tensor type holding the `N`th order partial derivatives, with respect to the
-coordinate `x`, of a `T` valued function.
+Tensor type holding the `N`th order partial derivatives (`N`=1 by default),
+with respect to the coordinate `x`, of a `T` valued function.
 
-The `N` derivation indices come first and are held by a fully symmetric
-[`SymNTensorValue`](@ref), which a [`ProductTensorValue`](@ref) tensors with the
-indices of `T`:
+The returned type is a [`ProductTensorValue`](@ref) with the same shape as
+`x⊗...⊗x⊗T` where `x` appears `N` times: the `N` derivation indices are first,
+and are stored in a fully symmetric [`SymNTensorValue`](@ref)
 
     D = derivatives_type(T, x, Val(N))
     zero(D)[i_1, …, i_N, J…] # ∂_{i_1} ⋯ ∂_{i_N} of the `J…` component
-
-`N` has to be given to a single call: unlike [`gradient_type`](@ref),
-`derivatives_type` does not compose.
 """
 function derivatives_type(::Type{T}, x::Union{Point,ContraVectorValue}) where T
     derivatives_type(T,x,Val(1))
@@ -194,9 +191,10 @@ function derivatives_type(::Type{T}, x::Union{Point,ContraVectorValue}, ::Val{0}
 end
 function derivatives_type(::Type{T}, x::Union{Point,ContraVectorValue}, ::Val{N}) where {T<:Number,N}
   D = Cov(first(size(x))[]) # automatically consider point coordinates are contravariant, and partials are covariant
-  zero_partials = zero(SymNTensorValue{Tuple{ntuple(_ -> D, Val(N))...},eltype(x)})
-  zero_T = zero(T)
-  typeof(product_tensor(zero_partials,zero_T))
+  zero_partials = zero(SymNTensorValue{NTuple{N,D},eltype(x)})
+  V = T <: MultiValue ? T : ScalarValue{T}
+  zero_V = zero(V)
+  typeof(product_tensor(zero_partials,zero_V))
 end
 
 """

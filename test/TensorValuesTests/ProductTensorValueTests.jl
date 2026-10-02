@@ -410,24 +410,91 @@ F3 = _full_rank_tensortype(typeof(p3))
 @test get_array(convert(F3,p3)) == get_array(p3)
 @test convert(typeof(p3),convert(F3,p3)) === p3
 
+# Each direction is one method taking any tensor type of the product's size, so
+# a partially parametrized target is enough, and a product of other factors
+# holding the same components converts like any other tensor
+
+@test @inferred(convert(ProductTensorValue{CoVectorValue{cov2},ContraVectorValue{con3},Float64},convert(Fv,pv))) === pv
+@test typeof(@inferred(convert(NTensorValue{Tuple{2,2,2,2},Float64},p3))) === F3
+
+pp = convert(ProductTensorValue{ScalarValue,TensorValue{cov2,con3},Float64}, pv)
+@test pp.data === pv.data
+@test get_array(pp) == get_array(pv)
+@test convert(typeof(pv),pp) === pv
+
+# A `ScalarValue` factor adds no dimension, so a product holding one is a tensor
+# of the size of its other factor, and converts with it. Two of them make a
+# product of size (), the one component tensor that `ScalarValue` also is.
+
+pvs = product_tensor(VectorValue(1.0,2.0), ScalarValue(3.0))
+@test typeof(pvs) === ProductTensorValue{VectorValue{2},ScalarValue,Float64,Tuple{2},1,2}
+@test @inferred(convert(VectorValue{2,Float64},pvs)) === VectorValue(3.0,6.0)
+@test @inferred(convert(typeof(pvs),VectorValue(3.0,6.0))) === pvs
+
+pss = product_tensor(ScalarValue(2.0), ScalarValue(3.0))
+@test typeof(pss) === ProductTensorValue{ScalarValue,ScalarValue,Float64,Tuple{},0,1}
+@test @inferred(convert(ScalarValue{Float64},pss)) === ScalarValue(6.0)
+@test @inferred(convert(typeof(pss),ScalarValue(6.0))) === pss
+@test convert(ProductTensorValue{ScalarValue,ScalarValue,Float64},ScalarValue(6.0)) === pss
+@test promote_type(typeof(pss),ScalarValue{Float64}) === typeof(pss)
+@test pss + ScalarValue(1.0) === convert(typeof(pss),ScalarValue(7.0))
+
+# The other factor keeps its own components, whether it is full rank or not, and
+# only its own type reads them: no other tensor of that size converts
+
+psn = product_tensor(SymNTensorValue{Tuple{cov2,cov2},Float64}(1.0,2.0,3.0), ScalarValue(2.0))
+SN = SymNTensorValue{Tuple{cov2,cov2},Float64,2,3}
+@test typeof(psn) === ProductTensorValue{SymNTensorValue{Tuple{cov2,cov2}},ScalarValue,Float64,Tuple{cov2,cov2},2,3}
+@test !is_full_rank(typeof(psn))
+@test @inferred(convert(SN,psn)) === SN(2.0,4.0,6.0)
+@test convert(SN,psn).data === psn.data
+@test @inferred(convert(typeof(psn),SN(2.0,4.0,6.0))) === psn
+@test convert(ProductTensorValue{SymNTensorValue{Tuple{cov2,cov2}},ScalarValue,Float64},SN(2.0,4.0,6.0)) === psn
+
+@test_throws MethodError convert(TensorValue{cov2,cov2,Float64},psn)
+@test_throws MethodError convert(typeof(psn),TensorValue{cov2,cov2,Float64}(ntuple(Float64,4)))
+
+# The scalar factor is read in either position
+
+pns = product_tensor(ScalarValue(2.0), SymNTensorValue{Tuple{cov2,cov2},Float64}(1.0,2.0,3.0))
+@test @inferred(convert(SN,pns)) === SN(2.0,4.0,6.0)
+@test @inferred(convert(typeof(pns),SN(2.0,4.0,6.0))) === pns
+
+# A factor materialising its dependent components has the product materialise
+# them too, so the data is passed through there as well
+
+ptl = product_tensor(SymTracelessTensorValue(1.0,2.0,3.0,4.0,5.0), ScalarValue(2.0))
+TL = SymTracelessTensorValue{3,Float64,6}
+@test (num_indep_components(ptl), num_stored_components(typeof(ptl))) == (5,6)
+@test @inferred(convert(TL,ptl)) === 2*SymTracelessTensorValue(1.0,2.0,3.0,4.0,5.0)
+@test convert(TL,ptl).data === ptl.data
+@test @inferred(convert(typeof(ptl),convert(TL,ptl))) === ptl
+
+# Promotion stays on the full rank tensors, so these pairs have no common type
+@test promote_type(typeof(psn),SN) !== typeof(psn)
+@test promote_type(typeof(ptl),TL) !== typeof(ptl)
+
 # Only a product of full rank factors converts: a factor holding fewer
 # components than its full tensor has no full rank counterpart
 
 ps = product_tensor(VectorValue(1,2), SymTensorValue(1,2,3))
-@test_throws ErrorException convert(NTensorValue{Tuple{2,2,2},Int}, ps)
-@test_throws ErrorException convert(
+@test_throws MethodError convert(NTensorValue{Tuple{2,2,2},Int}, ps)
+@test_throws MethodError convert(
   ProductTensorValue{VectorValue{2},SymTensorValue{2},Int}, NTensorValue{Tuple{2,2,2},Int,3}(ntuple(identity,8)))
 
 # `_full_rank_tensortype` reads the size only, it does not check the factors
 @test _full_rank_tensortype(typeof(ps)) === NTensorValue{Tuple{2,2,2},Int,3,8}
 
 # The full rank tensor must have the size of the product, variance included,
-# which the two component counts alone do not tell apart
+# which the two component counts alone do not tell apart. A tensor of another
+# size has no conversion to the product at all
 
-@test_throws AssertionError convert(
+@test_throws MethodError convert(
   ProductTensorValue{VectorValue{2},VectorValue{3},Int}, TensorValue{3,2,Int}(ntuple(identity,6)))
-@test_throws AssertionError convert(
+@test_throws MethodError convert(
   ProductTensorValue{CoVectorValue{cov2},ContraVectorValue{con3},Int}, TensorValue{2,3,Int}(ntuple(identity,6)))
+@test_throws MethodError convert(
+  typeof(pv), TensorValue{con3,cov2,Float64,6}(ntuple(Float64,6)))
 
 # Promotion with a full rank tensor keeps the factors and promotes the components
 
@@ -447,10 +514,18 @@ tv = convert(Fv,pv)
 @test_throws ErrorException pv + TensorValue{con3,cov2,Float64,6}(ntuple(Float64,6))
 @test_throws ErrorException pv + TensorValue{2,3,Float64,6}(ntuple(Float64,6))
 
-# The rule claims the product for any matching size; whether the factors are full
-# rank is reported by the conversion that promotion then applies
-@test promote_type(typeof(ps), NTensorValue{Tuple{2,2,2},Int,3,8}) === typeof(ps)
-@test_throws ErrorException ps + NTensorValue{Tuple{2,2,2},Int,3}(ntuple(identity,8))
+# A tensor of the product's size but holding other components, because a factor
+# holds fewer than its full tensor, has no common type with it either: the two
+# would not promote to one another's components
+@test promote_type(typeof(ps), NTensorValue{Tuple{2,2,2},Int,3,8}) !== typeof(ps)
+@test promote_type(NTensorValue{Tuple{2,2,2},Int,3,8}, typeof(ps)) !== typeof(ps)
+@test_throws MethodError ps + NTensorValue{Tuple{2,2,2},Int,3}(ntuple(identity,8))
+
+# Two products of different factors have no common type, although they convert
+# to one another: neither of the two factorisations holds the other
+@test promote_type(typeof(pv), typeof(pp)) !== typeof(pv)
+@test promote_type(typeof(pv), typeof(pp)) !== typeof(pp)
+@test promote_type(typeof(pv), change_eltype(typeof(pv),Int)) === typeof(pv)
 
 # VTK component names follow the storage order
 
@@ -469,6 +544,36 @@ p = zero(ProductTensorValue{VectorValue{0},SymTensorValue{2},Float64,Tuple{0,2,2
 @test typeof(ProductTensorValue{VectorValue{0,Float64},SymTensorValue{2}}(())) === typeof(p)
 @test typeof(product_tensor(zero(VectorValue{0,Float64}),zero(SymTensorValue{2,Int}))) === typeof(p)
 @test typeof(ProductTensorValue{VectorValue{0},SymTensorValue{2},Float64}(())) === typeof(p)
+
+# Order 0 factors
+
+# A ScalarValue brings no index, so the product has the shape and the components
+# of its other factor alone: this is what keeps the derivation indices of the
+# partial derivatives of a scalar field in a product
+p0 = product_tensor(VectorValue(1.0,2.0), ScalarValue(3.0))
+@test typeof(p0) === ProductTensorValue{VectorValue{2},ScalarValue,Float64,Tuple{2},1,2}
+@test size(p0) === (2,)
+@test Tuple(p0) === (3.0,6.0)
+@test get_array(p0) == get_array(VectorValue(3.0,6.0))
+@test indep_components_names(typeof(p0)) == ["X","Y"]
+
+# The canonical order 0 tag holds no component type, the data gives it
+@test typeof(product_tensor(VectorValue(1,2), ScalarValue(3.0))) === typeof(p0)
+
+# In first position it leaves the counts and the storage layout of the other
+# factor untouched, both components counts included
+ps0 = product_tensor(ScalarValue(2.0), SymTensorValue(1.0,2.0,3.0))
+@test typeof(ps0) === ProductTensorValue{ScalarValue,SymTensorValue{2},Float64,Tuple{2,2},2,3}
+@test (num_indep_components(ps0), num_stored_components(ps0)) == (3,3)
+@test get_array(ps0) == get_array(2*SymTensorValue(1.0,2.0,3.0))
+
+# including a factor that materialises its dependent components
+pt0 = product_tensor(ScalarValue(2.0), SymTracelessTensorValue(1.0,2.0))
+@test (num_indep_components(pt0), num_stored_components(pt0)) == (2,3)
+@test get_array(pt0) == get_array(2*SymTracelessTensorValue(1.0,2.0))
+
+# The second factor action reaches an order 0 factor like any other
+@test _map_second_factor(b -> 2*b, p0) === 2*p0
 
 # Wrong number of components
 

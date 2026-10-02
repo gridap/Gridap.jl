@@ -103,9 +103,7 @@ a = ScalarValue(2.0)
 @test a ≈ ScalarValue(2.0)
 @test a == ScalarValue(2.0)
 
-# Printing shows the component list, like the other tensors
-
 @test sprint(show,a) == "(2.0,)"
-@test sprint(show,MIME"text/plain"(),a) == "ScalarValue{Float64}(2.0,)"
+@test sprint(show,MIME"text/plain"(),a) == "$(ScalarValue{Float64})(2.0,)"
 
 end # module

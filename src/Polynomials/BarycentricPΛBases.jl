@@ -560,7 +560,7 @@ function _return_cache(b::_BaryPΛBasis,x,::Type{G},::Val{N_deriv}) where {G,N_d
   cB = CachedVector(zeros(T,ndof_bernstein))
   # Cache for derivatives of Bα (∇Bα or HBα)
   if N_deriv > 0
-    DB = _scalar_derivative_type(value_type(b),G,testitem(x),Val(N_deriv))
+    DB = _scalar_derivative_type(G,testitem(x),Val(N_deriv))
     # Cache for N_deriv's derivatives all of scalar nD-Bernstein polynomials
     t = (( nothing for _ in 2:N_deriv)..., CachedArray(zeros(DB,(1,ndof_bernstein))))
     # The scalar kernels fill every derivation index, so the scratch is the dense
@@ -573,19 +573,15 @@ function _return_cache(b::_BaryPΛBasis,x,::Type{G},::Val{N_deriv}) where {G,N_d
   (r, s, cB, t...)
 end
 
-function _scalar_derivative_type(::Type{V},::Type{G},xi,::Val{N}) where {V,G,N}
+function _scalar_derivative_type(::Type{G},xi,::Val{N}) where {G,N}
   DB = eltype(G)
   for _ in 1:N
     DB = gradient_type(DB,xi)
   end
   DB
 end
-function _scalar_derivative_type(
-  ::Type{V},::Type{G},xi,::Val{N}) where {V<:MultiValue,G<:ProductTensorValue,N}
-
-  derivatives_type(eltype(G),xi,Val(N))
-end
-_scalar_derivative_type(::Type{<:Real},::Type{G},xi,::Val) where G = G
+_scalar_derivative_type(::Type{G},xi,::Val) where {A,G<:ProductTensorValue{A}} =
+  make_concretetype(A{eltype(G)})
 
 function _setsize!(b::_BaryPΛBasis, np, ω, t...)
   ndof = length(b)

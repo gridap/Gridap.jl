@@ -104,8 +104,8 @@ grt = evaluate(FieldGradientArray{1}(rtb), xs2)
 # derivatives of one scalar Bernstein polynomial with a constant form. The derivation
 # indices are stored by the symmetric tensor of `derivatives_type`, so the product
 # holds one component per non-decreasing derivation multi-index and per form component.
-# A `k`=0 or `k`=`D` form is scalar valued, and `product_tensor` then leaves the
-# derivatives alone, so the output is the symmetric tensor itself.
+# A `k`=0 or `k`=`D` form is scalar valued, and its dofs then hold the derivation
+# indices tensored with the order 0 `ScalarValue` carrying the value.
 
 xs3 = [Point(0.3,-0.7,0.2), Point(0.1,0.4,0.3)]
 

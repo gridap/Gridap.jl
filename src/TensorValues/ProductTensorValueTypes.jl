@@ -8,6 +8,7 @@
 Return `V` with all type parameter removed, except those necessary for the S
 parameter of the MultiValue supertype to still be defined.
 """
+_minimal_tensortype_with_shape(::Type{<:ScalarValue})                                = ScalarValue
 _minimal_tensortype_with_shape(::Type{<:VectorValue{D}})              where D        = VectorValue{D}
 _minimal_tensortype_with_shape(::Type{<:TensorValue{D}})              where D        = TensorValue{D,D}
 _minimal_tensortype_with_shape(::Type{<:TensorValue{D1,D2}})          where {D1,D2}  = TensorValue{D1,D2}
@@ -162,13 +163,6 @@ _minimal_tensortype_with_shape(::Type{V}) where V<:ProductTensorValue = @unreach
   a factor of a ProductTensorValue, products do not nest. Use `outer` to combine
   more than two tensors."
 
-function promote_rule(
-  ::Type{<:ProductTensorValue{A,B,Ta,S,N,L}},
-  ::Type{<:ProductTensorValue{A,B,Tb,S,N,L}}) where {A,B,Ta,Tb,S,N,L}
-
-  ProductTensorValue{A,B,promote_type(Ta,Tb),S,N,L}
-end
-
 ###############################################################
 # Constructors (ProductTensorValue)
 ###############################################################
@@ -277,10 +271,11 @@ convert(::Type{<:ProductTensorValue{A,B,T,S,N,L}}, arg::ProductTensorValue{A,B,T
   ProductTensorValue{A,B,T,S,N,L}(get_indep_components(arg))
 convert(::Type{<:ProductTensorValue{A,B,T,S,N,L}}, arg::ProductTensorValue{A,B,T,S,N,L}) where {A,B,T,S,N,L} = arg
 
-# Conversions from and to full rank tensors
+# Conversions from and to the tensors holding the same components
 #
 # It is assumed that all full rank tensors of the TensorValues module store
-# their components "column" major
+# their components "column" major, so that two full rank tensors of the same
+# size hold the same components in the same order
 
 """
     is_full_rank(V::Type{<:Number})
@@ -292,63 +287,53 @@ is_full_rank(::Type{V}) where V<:MultiValue = length(V) == num_indep_components(
 is_full_rank(::Type{<:Number}) = true
 is_full_rank(a::Number) = is_full_rank(typeof(a))
 
-function _check_full_rank_factors(::Type{A}, ::Type{B}) where {A,B}
-  is_full_rank(A) && is_full_rank(B) ||
-    @notimplemented "The product of $A and $B is not a full rank tensor space, it
-      does not convert from or to a full rank tensor type; `get_array` gives its
-      full tensor."
-end
+# From ProductTensorValue
 
 function convert(
-  ::Type{<:TensorValue{D1,D2,T}}, arg::ProductTensorValue{A,B,T2,Tuple{D1,D2}}) where {A,B,T,T2,D1,D2}
+  ::Type{V}, arg::ProductTensorValue{A,B,T2,S}) where {A,B,T2,S,T,V<:MultiValue{S,T}}
 
-  _check_full_rank_factors(A,B)
-  TensorValue{D1,D2,T}(Tuple(arg))
-end
-
-function convert(
-  ::Type{<:NTensorValue{S,T}}, arg::ProductTensorValue{A,B,T2,S,N}) where {A,B,T,T2,S,N}
-
-  _check_full_rank_factors(A,B)
-  NTensorValue{S,T,N}(Tuple(arg))
+  is_full_rank(V) && is_full_rank(arg) ||
+    (A === ScalarValue && V<:B) || (B === ScalarValue && V<:A) ||
+    throw(MethodError(convert, (V, arg)))
+  V(get_indep_components(arg))
 end
 
 # To ProductTensorValue
 
-function _check_full_rank_size(::Type{A}, ::Type{B}, ::Type{S}) where {A,B,S}
-  _check_full_rank_factors(A,B)
-  Sp = _prod_shape(A,B)[3]
-  @check S === Sp "The product of $A and $B has size $Sp, it does not hold the
-    components of a full rank tensor of size $S"
+function _convert_to_product(
+  PT::Type{<:ProductTensorValue{A,B,T}}, arg::MultiValue{Sa}) where {A,B,T,Sa}
+
+  Va = typeof(arg)
+  _, _, S = _prod_shape(A,B)
+  Sa === S && (is_full_rank(PT) && is_full_rank(arg) ||
+    (A === ScalarValue && Va<:B) || (B === ScalarValue && Va<:A)) ||
+    throw(MethodError(convert, (PT, arg)))
+  PT(get_indep_components(arg))
 end
 
-function convert(
-  ::Type{<:ProductTensorValue{A,B,T}}, arg::TensorValue{D1,D2}) where {A,B,T,D1,D2}
+convert(PT::Type{<:ProductTensorValue{A,B,T}}, arg::MultiValue) where {A,B,T} =
+  _convert_to_product(PT,arg)
 
-  _check_full_rank_size(A,B,Tuple{D1,D2})
-  ProductTensorValue{A,B,T}(Tuple(arg))
-end
-
-function convert(
-  ::Type{<:ProductTensorValue{A,B,T}}, arg::NTensorValue{S}) where {A,B,T,S}
-
-  _check_full_rank_size(A,B,S)
-  ProductTensorValue{A,B,T}(Tuple(arg))
-end
+convert(
+  PT::Type{<:ProductTensorValue{A1,B1,T1,S}},
+  arg::ProductTensorValue{A2,B2,T2,S}) where {A1,B1,T1,A2,B2,T2,S} =
+  _convert_to_product(PT,arg)
 
 # Promotion with full rank tensors
 
 function promote_rule(
-  ::Type{<:ProductTensorValue{A,B,Ta,Tuple{D1,D2},N,L}},
-  ::Type{<:TensorValue{D1,D2,Tb}}) where {A,B,Ta,Tb,D1,D2,N,L}
+  ::Type{<:ProductTensorValue{A,B,Ta,S,N,L}},
+  ::Type{<:ProductTensorValue{A,B,Tb,S,N,L}}) where {A,B,Ta,Tb,S,N,L}
 
-  ProductTensorValue{A,B,promote_type(Ta,Tb),Tuple{D1,D2},N,L}
+  ProductTensorValue{A,B,promote_type(Ta,Tb),S,N,L}
 end
 
 function promote_rule(
   ::Type{<:ProductTensorValue{A,B,Ta,S,N,L}},
-  ::Type{<:NTensorValue{S,Tb}}) where {A,B,Ta,Tb,S,N,L}
+  ::Type{V}) where {A,B,Ta,S,N,L,Tb,V<:MultiValue{S,Tb}}
 
+  V<:ProductTensorValue && return Union{} # V cannot be PTV{A,B,Tb}, this dispatches above
+  is_full_rank(A) && is_full_rank(B) && is_full_rank(V) || return Union{}
   ProductTensorValue{A,B,promote_type(Ta,Tb),S,N,L}
 end
 
@@ -370,11 +355,21 @@ change_eltype(::Type{<:ProductTensorValue{A,B,T1}},::Type{T2}) where {A,B,T1,T2}
 change_eltype(::Type{<:ProductTensorValue{A,B,T1,S,N,L}},::Type{T2}) where {A,B,T1,T2,S,N,L} =
   ProductTensorValue{A,B,T2,S,N,L}
 
+size(::Type{<:ProductTensorValue{A,B}}) where {A,B} =
+  tuple(size(A)..., size(B)...)
+
+length(::Type{<:ProductTensorValue{A,B}}) where {A,B} = length(A)*length(B)
+
 num_indep_components(::Type{<:ProductTensorValue{A,B}}) where {A,B} =
   num_indep_components(A)*num_indep_components(B)
 
 num_stored_components(::Type{<:ProductTensorValue{A,B}}) where {A,B} =
   num_stored_components(A)*num_stored_components(B)
+
+function zero(::Type{<:ProductTensorValue{A,B,T}}) where {A,B,T}
+  Ac, Bc, S, N, L, Li = _prod_shape(A,B)
+  ProductTensorValue{Ac,Bc,T,S,N,L}(ntuple(_ -> zero(T), Val(Li)))
+end
 
 ###############################################################
 # Indexing helpers (ProductTensorValue)
