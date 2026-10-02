@@ -478,7 +478,7 @@ function _return_cache(
   ndof_scalar = binomial(K+D,D)
 
   r = CachedArray(zeros(G,(np,ndof)))
-  s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
+  s = MArray{NTuple{N_deriv,D},T}(undef)
   c = CachedVector(zeros(T,ndof_scalar))
   # The cache c here holds all scalar nD-Bernstein polynomials, no other caches needed for derivatives
   t = ntuple( _ -> nothing, Val(N_deriv))

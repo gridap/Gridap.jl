@@ -177,7 +177,7 @@ SymNTensorValue{S,T1,N,L}(data::AbstractArray{T2}) where {S,T1,T2,N,L} = SymNTen
     push!(comps, :(arg.data[$l]))
   end
 
-  S = Tuple{ntuple(_ -> D, N)...}
+  S = NTuple{N,D}
   quote
     return SArray{$S,T,$N,$(D^N)}( tuple($(comps...)) )
   end

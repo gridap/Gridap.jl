@@ -141,7 +141,7 @@ end
     end
   end
 
-  S = Tuple{ntuple(_ -> D, K)...}
+  S = NTuple{K,D}
   quote
     return SArray{$S,T,K,$(D^K)}( tuple($(comps...)) )
   end

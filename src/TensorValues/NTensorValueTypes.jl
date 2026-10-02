@@ -35,7 +35,7 @@ end
 
 # Empty NTensorValue constructor
 
-NTensorValue(::Val{N}) where N       = NTensorValue{Tuple{ntuple(_->0,Val(N))...},Int,N}(NTuple{0,Int}())
+NTensorValue(::Val{N}) where N       = NTensorValue{NTuple{N,0},Int,N}(NTuple{0,Int}())
 NTensorValue(::Val{N}, data::NTuple{0}) where N = NTensorValue(Val(N))
 NTensorValue{S}(data::NTuple{0}) where S = NTensorValue{S,Int}(data)
 
@@ -45,7 +45,7 @@ NTensorValue{S}(data::NTuple{0}) where S = NTensorValue{S,Int}(data)
   msg = "Invalid number of scalar arguments in NTensorValue{$N} constructor, expecting a $(N)th power number, got L=$L"
   D = round(Int, L^(1/N))
   @assert L == D^N msg
-  S = Tuple{ntuple(_->D, Val(N))...}
+  S = NTuple{N,D}
   quote
     NTensorValue{$S,T,N}(data)
   end

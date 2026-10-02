@@ -137,7 +137,7 @@ function _return_cache(
   # Cache for the returned array
   r = CachedArray(zeros(G,(np,ndof)))
   # Mutable cache for one N_deriv's derivative of a T-valued scalar polynomial
-  s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
+  s = MArray{NTuple{N_deriv,D},T}(undef)
   # Cache for the 1D basis function values in each dimension (to be
   # tensor-producted), and of their N_deriv'th 1D derivatives
   t = ntuple( _ -> CachedArray(zeros(T,(D,ndof_1d))), Val(N_deriv+1))

@@ -449,7 +449,7 @@ for sn in (SymNTensorValue{Tuple{2,2}}(1:3...),
            SymNTensorValue{Tuple{3,3,3}}(1:10...))
   A = get_array(sn)
   D, N = size(A,1), ndims(A)
-  @test SymNTensorValue{Tuple{ntuple(_->D,N)...}}(A) == sn
+  @test SymNTensorValue{NTuple{N,D}}(A) == sn
 end
 
 # The full symmetrization of δ⊗δ is fully symmetric, so the round trip through a

@@ -178,7 +178,7 @@ end
 # Higher-rank forms in a strictly larger dimension, against the dense tensor
 for (K,D,data) in ((2,4,(1,2,3,4,5,6)), (3,4,(1,2,3,4)))
   ω = ExteriorFormValue{K,D}(data)
-  a = convert(SArray{Tuple{ntuple(_->D,K)...},Int}, ω)
+  a = convert(SArray{NTuple{K,D},Int}, ω)
   for i in CartesianIndices(a)
     @test ω[i] == a[i]
   end
