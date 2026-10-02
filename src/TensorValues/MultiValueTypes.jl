@@ -101,6 +101,14 @@ Valid type of values to use in `MultiValue`'s size, `S=Tuple{I...}` where each `
 const Dim = Union{Int, Cov, Con}
 
 """
+    const _Scalar = Union{Real,Complex}
+
+Abstract type for the scalar types that `MultiValue` support component-wise
+operations with.
+"""
+const _Scalar = Union{Real,Complex}
+
+"""
     is_same_variance(i::Dim, j::Dim) = typeof(i) === typeof(j)
 
 

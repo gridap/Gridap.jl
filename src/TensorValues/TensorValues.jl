@@ -74,6 +74,7 @@ export parse_metric_data
 export isidentity
 
 export MultiValue
+export ScalarValue
 export VectorValue
 export TensorValue
 export AbstractSymTensorValue
@@ -184,6 +185,8 @@ export det, inv, tr, cross, dot, norm, normalize, eigen, rank, ×, ⋅
 import Gridap.Arrays: get_array
 
 include("MultiValueTypes.jl")
+
+include("ScalarValueTypes.jl")
 
 include("VectorValueTypes.jl")
 

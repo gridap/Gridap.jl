@@ -64,14 +64,6 @@ convert(::Type{<:TensorValue{D,D,Ta}},  a::SkewSymTensorValue{D,Tb})      where 
 convert(::Type{<:TensorValue{D,D,Ta}},  a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = TensorValue{D,D,promote_type(Ta,Tb)}(get_array(a))
 convert(::Type{<:SymTensorValue{D,Ta}}, a::SymTracelessTensorValue{D,Tb}) where {D,Ta,Tb} = SymTensorValue{D,promote_type(Ta,Tb)}(a.data)
 
-"""
-    const _Scalar = Union{Real,Complex}
-
-Abstract type for the scalar types that `MultiValue` support component-wise
-operations with.
-"""
-const _Scalar = Union{Real,Complex}
-
 # TODO deprecate next two methods ? A few stuff depend on this behavior but very ugly.
 function convert(V::Type{<:MultiValue}, a::T) where T<:_Scalar
   isone(length(V)) && isone(num_indep_components(V)) || error("Cannot convert value of type $V to type $T")

@@ -6,6 +6,10 @@ using Test
   include("TypesTests.jl")
 end
 
+@testset "ScalarValueTests" begin
+  include("ScalarValueTests.jl")
+end
+
 @testset "OperationsTests" begin
   include("OperationsTests.jl")
 end
