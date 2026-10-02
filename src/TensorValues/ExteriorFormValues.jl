@@ -152,6 +152,7 @@ convert(::Type{<:MArray{S,T}}, arg::SkewSymKTensorValue) where {S,T} = MArray{S,
 convert(::Type{<:SArray{S,T}}, arg::SkewSymKTensorValue) where {S,T} = SArray{S,T}(_SkewSymKTensorValue_to_array(arg))
 
 one(::Type{<:SkewSymKTensorValue{V,0,D,T}}) where {V,D,T} = one(T)
+one(::Type{<:SkewSymKTensorValue{V,0}}) where V = @unreachable "Unspecified scalar type T"
 one(::Type{<:SkewSymKTensorValue{V,K}}) where {V,K} = @unreachable "Skew symmetric k-tensors do not have multiplicative neutral for k > 0."
 
 change_eltype(::Type{<:SkewSymKTensorValue{V,K,D,T1,L}}, ::Type{T2}) where {V,K,D,T1,T2,L} =

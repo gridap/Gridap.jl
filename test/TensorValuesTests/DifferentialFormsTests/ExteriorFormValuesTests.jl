@@ -79,6 +79,7 @@ ExteriorFormValue{4,4}((1,))
 @test one(ExteriorFormValue{0,cov3,Float64}) === 1.0
 @test one(ExteriorFormValue{0,3,Int})     === 1
 @test one(ExteriorFormValue{0,cov3,Int})     === 1
+@test_throws "Unspecified scalar type T" one(ExteriorFormValue{0,3})
 @test_throws ErrorException one(ExteriorFormValue{2,3,Float64})
 @test_throws ErrorException one(ExteriorFormValue{2,cov3,Float64})
 
