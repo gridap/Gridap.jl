@@ -299,7 +299,7 @@ Arrays.evaluate!(cache, k::LocalSolveMap, matvec::Tuple) = evaluate!(cache,k,mat
 Arrays.return_value(k::LocalSolveMap, mat, vec) = similar(vec)
 
 function Arrays.return_cache(k::LocalSolveMap, mat, vec)
-  CachedArray(mat), CachedArray(vec)
+  CachedArray(copy(mat)), CachedArray(copy(vec))
 end
 
 function Arrays.evaluate!(cache,k::LocalSolveMap, mat, vec)
@@ -322,7 +322,8 @@ end
 
 function Arrays.return_cache(k::LocalSolveMap, mat::MatrixBlock, vec::MatrixBlock)
   @check size(mat,1) == size(mat,2) == size(vec,1) == 1
-  CachedArray(get_array(mat)[1,1]), ntuple(i -> CachedArray(get_array(vec)[i]), size(vec,2))
+  cmat = CachedArray(copy(get_array(mat)[1,1]))
+  cvec = ntuple(i -> CachedArray(copy(get_array(vec)[i])), size(vec,2))
 end
 
 function Arrays.evaluate!(cache,k::LocalSolveMap, mat::MatrixBlock, vec::MatrixBlock)
