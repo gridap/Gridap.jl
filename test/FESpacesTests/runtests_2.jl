@@ -36,4 +36,6 @@ using Test
 
 @testset "FESpaceReindexing" begin include("FESpaceReindexingTests.jl") end
 
+@testset "RotatingPLambda" begin include("RotatingPLambdaTests/runtests.jl") end
+
 end # module

@@ -22,4 +22,6 @@ using Test
 
 @testset "DensifyInnerMostBlockLevelMapsTests" begin include("DensifyInnerMostBlockLevelMapsTests.jl") end
 
+@testset "DifferentialForms" begin include("DifferentialFormsTests/runtests.jl") end
+
 end

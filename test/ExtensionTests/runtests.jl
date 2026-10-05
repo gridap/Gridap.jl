@@ -6,4 +6,6 @@ if !(Sys.ARCH == :aarch64 || Sys.ARCH == :i686) # Library issues on ARM and x86_
   @testset "TikzPictures" begin include("TikzPictures.jl") end
 end
 
+@testset "GridapSymbolics" begin include("GridapSymbolics.jl") end
+
 end

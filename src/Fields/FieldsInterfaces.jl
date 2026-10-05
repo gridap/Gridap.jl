@@ -1,8 +1,8 @@
 """
     const Point{D,T} = VectorValue{D,T}
 
-Type representing a point of D dimensions with coordinates of type T.
-Fields are evaluated at vectors of `Point` objects.
+Type representing a point of `D` dimensions with coordinates of type `T`.
+[`Field`](@ref)s are evaluated at vectors of `Point` objects.
 """
 const Point{D,T} = VectorValue{D,T}
 
@@ -29,28 +29,32 @@ const Point{D,T} = VectorValue{D,T}
 """
     abstract type Field <: Map
 
-Abstract type representing a physical (scalar, vector, or tensor) field. The
-domain is a `Point` and the range a scalar (i.e., a sub-type of Julia `Number`),
+Abstract type representing a physical (scalar, vector, or tensor valued) field.
+The domain is a [`Point`](@ref) and the range a scalar (sub-typing a `Number`),
 a `VectorValue`, or a `TensorValue`.
 
-These different cases are distinguished by the return value obtained when evaluating them. E.g.,
-a physical field returns a vector of values when evaluated at a vector of points, and a basis of `nf` fields
-returns a 2d matrix (`np` x `nf`) when evaluated at a vector of `np` points.
+The `Fields` module implements evaluate `Array` of fields at `Points` and
+`AbstractVector` of points. These different cases are distinguished by the
+return value obtained when evaluating them. For example, a field returns a
+`Vector` of values when evaluated at a `Vector` of points, and a basis of `nf`
+fields returns a (`np` x `nf`) `Matrix` when evaluated at a `Vector` of `np`
+points.
 
 The following functions (i.e., the `Map` API) need to be overloaded:
 
 - [`evaluate!(cache,f,x)`](@ref)
-- [`return_cache(f,x)`](@ref)
 
 and optionally
 
+- [`return_cache(f,x)`](@ref)
 - [`return_type(f,x)`](@ref)
 
-A `Field` can also provide its gradient if the following function is implemented
-- [`gradient(f)`](@ref)
-
-Higher derivatives can be obtained if the resulting object also implements this method.
-
+A `Field` or `Function` `f` can also provide its gradient if the following
+method is implemented
+- [`gradient(::typeof(f))`](@ref gradient)
+This also provide higher order derivatives of user defined `f`, and the other
+differential operators will use the derivatives provided by `gradient` rather
+than automatic differentiation.
 
 The interface can be tested with
 
@@ -60,7 +64,6 @@ For performance, the user can also consider a _vectorised_ version of the
 `Field` API that evaluates the field in a vector of points (instead of only one
 point). E.g., the `evaluate!` function for a vector of points returns a vector
 of scalar, vector or tensor values.
-
 """
 abstract type Field <: Map end
 
@@ -100,6 +103,8 @@ push_∇(∇a::Field,ϕ::Field) = pinvJt(∇(ϕ))⋅∇a
 """
     function pinvJt(Jt::MultiValue{Tuple{D,D}}) = inv(Jt)
     function pinvJt(Jt::MultiValue{Tuple{D1,D2}}) = transpose(inv(Jt⋅transpose(J))⋅Jt)
+
+(Psedo-)inverse of `Jt`.
 """
 function pinvJt(Jt::MultiValue{Tuple{D,D}}) where D
   inv(Jt)
@@ -112,6 +117,7 @@ function pinvJt(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
 end
 
 """
+    push_∇∇(∇∇a::Field, ϕ::Field) = @notimplemented
 """
 function push_∇∇(∇∇a::Field,ϕ::Field)
   @notimplemented """\n
@@ -135,11 +141,13 @@ end
 """
     struct FieldGradient{N,F} <: Field
 
-Type that represents the gradient of a field `F`. The wrapped field must
-implement `evaluate_gradient!` and `return_gradient_cache` for this gradient
-to work.
+Type that represents the gradient of a field of type `F`. `N` is how many times
+the gradient is applied. Requires implementing
 
-`N` is how many times the gradient is applied.
+    evaluate!(cache,f::FieldGradient,x::Point) = @abstractmethod.
+
+For `F<:Function`, `FieldGradient` is implemented for `N=1, 2` by `gradient`
+and `hessian`.
 """
 struct FieldGradient{N,F} <: Field
   object::F
@@ -434,7 +442,7 @@ evaluate!(cache,op::Broadcasting{<:Operation},x::Field...) = OperationField(op.f
 
 # Define some well known operations
 
-for op in (:+,:-,:*,:/,:⋅,:⊙,:⊗,:inv,:det,:meas,:pinvJt,:tr,:grad2curl,:symmetric_part,:transpose)
+for op in (:+,:-,:*,:/,:⋅,:⊙,:⊗,:inv,:det,:meas,:pinvJt,:tr,:grad2curl,:symmetric_part,:transpose,:∧)
   @eval ($op)(a::Field...) = Operation($op)(a...)
 end
 
@@ -444,14 +452,6 @@ for op in (:+,:-,:*,:/,:⋅,:⊙,:⊗)
   @eval ($op)(a::Field,b::Number) = Operation($op)(a,ConstantField(b))
   @eval ($op)(a::Number,b::Field) = Operation($op)(ConstantField(a),b)
 end
-
-#*(A::Number, B::Field) = ConstantField(A)*B
-#*(A::Field, B::Number) = A*ConstantField(B)
-#⋅(A::Number, B::Field) = ConstantField(A)⋅B
-#⋅(A::Field, B::Number) = A⋅ConstantField(B)
-
-#*(A::Function, B::Field) = GenericField(A)*B
-#*(A::Field, B::Function) = GenericField(B)*A
 
 # Gradient of the sum
 for op in (:+,:-)
@@ -471,17 +471,17 @@ function product_rule(fun,f1,f2,∇f1,∇f2)
   @notimplemented msg
 end
 
-function product_rule(::typeof(*),f1::Real,f2::Real,∇f1,∇f2)
+function product_rule(::typeof(*),f1::Union{Real,Complex},f2::Union{Real,Complex},∇f1,∇f2)
   ∇f1*f2 + f1*∇f2
 end
 
 for op in (:*,:⋅)
   @eval begin
-     function product_rule(::typeof($op),f1::Real,f2::VectorValue,∇f1,∇f2)
+     function product_rule(::typeof($op),f1::Union{Real,Complex},f2::VectorValue,∇f1,∇f2)
        ∇f1⊗f2 + ∇f2*f1
      end
 
-     function product_rule(::typeof($op),f1::VectorValue,f2::Real,∇f1,∇f2)
+     function product_rule(::typeof($op),f1::VectorValue,f2::Union{Real,Complex},∇f1,∇f2)
        product_rule(*,f2,f1,∇f2,∇f1)
      end
   end
@@ -493,6 +493,45 @@ end
 
 function product_rule(::typeof(⋅),f1::TensorValue,f2::VectorValue,∇f1,∇f2)
   ∇f1⋅f2 + ∇f2⋅transpose(f1)
+end
+
+# ∂_k (f1⋅f2)_j = (∂_k f1)_a f2_aj + f1_a (∂_k f2)_kaj. 
+function product_rule(::typeof(⋅),f1::VectorValue,f2::TensorValue,∇f1,∇f2)
+  ∇f1⋅f2 + tensor_contraction(∇f2,f1,Val(2),Val(1))
+end
+
+# ∂_k (f1⋅f2)_ij = (∂_k f1)_kia f2_aj + f1_ia (∂_k f2)_kaj. 
+function product_rule(::typeof(⋅),f1::TensorValue,f2::TensorValue,∇f1,∇f2)
+  ∇f1⋅f2 + permutedims(tensor_contraction(f1,∇f2,Val(2),Val(2)),Val((2,1,3)))
+end
+
+for V in (:VectorValue,:TensorValue)
+  @eval begin
+    function product_rule(::typeof(outer),f1::$V,f2::Union{Real,Complex},∇f1,∇f2)
+      outer(∇f1,f2) + outer(∇f2,f1)
+    end
+
+    function product_rule(::typeof(outer),f1::Union{Real,Complex},f2::$V,∇f1,∇f2)
+      product_rule(outer,f2,f1,∇f2,∇f1)
+    end
+  end
+end
+
+# ∂_k (f1⊗f2) = (∂_k f1)⊗f2 + f1⊗(∂_k f2).
+function product_rule(::typeof(outer),f1::VectorValue,f2::VectorValue,∇f1,∇f2)
+  outer(∇f1,f2) + permutedims(outer(f1,∇f2),Val((2,1,3)))
+end
+
+function product_rule(::typeof(outer),f1::VectorValue,f2::TensorValue,∇f1,∇f2)
+  outer(∇f1,f2) + permutedims(outer(f1,∇f2),Val((2,1,3,4)))
+end
+
+function product_rule(::typeof(outer),f1::TensorValue,f2::VectorValue,∇f1,∇f2)
+  outer(∇f1,f2) + permutedims(outer(f1,∇f2),Val((3,1,2,4)))
+end
+
+function product_rule(::typeof(outer),f1::TensorValue,f2::TensorValue,∇f1,∇f2)
+  outer(∇f1,f2) + permutedims(outer(f1,∇f2),Val((3,1,2,4,5)))
 end
 
 for op in (:*,:⋅,:⊙,:⊗)
@@ -527,7 +566,7 @@ function product_rule_hessian(fun,f1,f2,∇f1,∇f2,∇∇f1,∇∇f2)
   @notimplemented msg
 end
 
-function product_rule_hessian(::typeof(*),f1::Real,f2::Real,∇f1,∇f2,∇∇f1,∇∇f2)
+function product_rule_hessian(::typeof(*),f1::Union{Real,Complex},f2::Union{Real,Complex},∇f1,∇f2,∇∇f1,∇∇f2)
   ∇∇f1*f2 + ∇∇f2*f1 + ∇f1⊗∇f2 + ∇f2⊗∇f1
 end
 

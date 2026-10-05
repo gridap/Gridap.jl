@@ -100,7 +100,8 @@ function FESpace(
   """
   conformity = Conformity(cell_fe)
   _vector_type = _get_vector_type(vector_type,cell_fe,trian)
-  if isa(conformity,L2Conformity) && isempty(dirichlet_tags)
+  if isa(conformity,L2Conformity) && isempty(dirichlet_tags) &&
+     _all_dofs_are_cell_owned(CellConformity(cell_fe))
     F = _DiscontinuousFESpace(_vector_type,trian,cell_fe)
   else
     F = _ConformingFESpace(

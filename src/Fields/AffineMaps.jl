@@ -11,11 +11,11 @@ end
 """
     struct AffineField{D1,D2,T,L} <: Field
 
-A Field with the form:
+A `Field` with the form:
 
     y = x⋅G + y0
 
-with `G`::TensorValue{`D1`,`D2`,`T`,`L`} and `y0`::Point{`D2`,`T`}.
+with `G::TensorValue{D1,D2,T,L}` and `y0::Point{D2,T}`.
 """
 struct AffineField{D1,D2,T,L} <: Field
   gradient::TensorValue{D1,D2,T,L}

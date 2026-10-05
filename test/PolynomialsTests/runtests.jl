@@ -20,6 +20,8 @@ using Test
 
 @testset "BernsteinBases" begin include("BernsteinBasesTests.jl") end
 
+@testset "DubinerBases" begin include("DubinerBasesTests.jl") end
+
 @testset "BarycentricPΛBases" begin include("BarycentricPΛBases.jl") end
 
 @testset "FEECBases" begin include("ExteriorCalculusBasesTests.jl") end

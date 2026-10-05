@@ -13,11 +13,13 @@ using StaticArrays
 x = [Point(0.),Point(1.),Point(.4)]
 x1 = x[1]
 
+T = Float64
+
 #####################################
 # Tests for 1D Bernstein polynomial #
 #####################################
 
-V = Float64
+V = T
 G = gradient_type(V,x1)
 H = gradient_type(G,x1)
 
@@ -186,7 +188,7 @@ x = [Point(1.,0.), Point(.0,.5), Point(1.,.5), Point(.2,.3)]
 x3 = x[3]
 
 # scalar valued in 2D
-V = Float64
+V = T
 G = gradient_type(V,x3)
 H = gradient_type(G,x3)
 
@@ -228,19 +230,19 @@ test_field_array(b,x,bx,≈, grad=Gbx, gradgrad=Hbx)
 test_field_array(b,x[1],bx[1,:],≈,grad=Gbx[1,:],gradgrad=Hbx[1,:])
 
 b_terms = bernstein_terms(order,D)
-λ = Polynomials._cart_to_bary(x3, b.cart_to_bary_matrix)
+λ = Polynomials._cart_to_bary(x3, b.x_to_λ)
 for j in 1:length(b)
   α = b_terms[j]
   id_α = bernstein_term_id(α)
   @test id_α == j
-  c = Float64[ Int(i==id_α) for i in 1:length(b) ] # Bernstein coefficients of Bα
+  c = T[ Int(i==id_α) for i in 1:length(b) ] # Bernstein coefficients of Bα
   Polynomials._de_Casteljau_nD!(c, λ, Val(order), Val(D))
   Bα_x3 = c[1]
   @test Bα_x3 == bx[3,id_α]
 end
 
 # Vector valued in 2D
-V = VectorValue{3,Float64}
+V = VectorValue{3,T}
 G = gradient_type(V,x3)
 H = gradient_type(G,x3)
 
@@ -266,7 +268,7 @@ test_field_array(b,x[1],bx[1,:],grad=Gbx[1,:],gradgrad=Hbx[1,:])
 x = [Point(0.,0.,1.), Point(.5,.5,.5), Point(1.,.2,.4), Point(.2,.4,.3)]
 x1 = x[1]
 
-V = Float64
+V = T
 G = gradient_type(V,x1)
 H = gradient_type(G,x1)
 
@@ -283,12 +285,10 @@ test_field_array(b,x[1],bx[1,:],grad=Gbx[1,:],gradgrad=Hbx[1,:])
 ############################################################################
 # Tests for ND Bernstein polynomial with arbitrary barycentric coordinates #
 ############################################################################
-#
-T = Float64
 
 D = 0
 vertices = (Point(), )
-b = BernsteinBasisOnSimplex(Val(D), Float64, 3, vertices)
+b = BernsteinBasisOnSimplex(Val(D), T, 3, vertices)
 
 D = 2
 
@@ -297,16 +297,15 @@ vertices = (Point(0.,1.), Point(0.,2.), Point(0.,3.))
 
 vertices = (Point(5.,0.), Point(7.,2.), Point(0.,3.))
 
-b = BernsteinBasisOnSimplex(Val(D), Float64, 3, vertices)
+b = BernsteinBasisOnSimplex(Val(D), T, 3, vertices)
 x = [Point(.0,.5), Point(1.,.5), Point(.2,.3), Point(5.,0.), Point(7.,2.), Point(0.,3.)]
 x1 = x[1]
 
 for xi in x
-  λi = Polynomials._cart_to_bary(xi, b.cart_to_bary_matrix)
+  λi = Polynomials._cart_to_bary(xi, b.x_to_λ)
   @test sum(λi) ≈ 1.
   @test xi ≈ sum(λi .* vertices)
 end
-
 
 # Scalar value in 2D
 D = 2
@@ -333,7 +332,7 @@ x2λ = Polynomials._compute_cart_to_bary_matrix(vertices, Val(D+1))
 x = [Point(0.,0.,1.), Point(.5,.5,.5), Point(1.,.2,.4), Point(.2,.4,.3)]
 x1 = x[1]
 
-V = Float64
+V = T
 G = gradient_type(V,x1)
 H = gradient_type(G,x1)
 
@@ -346,8 +345,8 @@ test_field_array(b,x,bx,≈, grad=Gbx, gradgrad=Hbx)
 test_field_array(b,x1,bx[1,:],≈,grad=Gbx[1,:],gradgrad=Hbx[1,:])
 
 # value_type must be concrete even when user passes a non-concrete tensor type
-for V in (TensorValue{2,2,Float64}, SymTensorValue{2,Float64},
-          SkewSymTensorValue{2,Float64}, SymFourthOrderTensorValue{2,Float64})
+for V in (TensorValue{2,2,T}, SymTensorValue{2,T},
+          SkewSymTensorValue{2,T}, SymFourthOrderTensorValue{2,T})
   @test isconcretetype(value_type(BernsteinBasis(Val(2), V, 1)))
   @test isconcretetype(value_type(BernsteinBasisOnSimplex{2}(V, 1)))
 end

@@ -92,7 +92,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 
 using PolynomialBases: jacobi, jacobi_and_derivative
-using Combinatorics: multiexponents, multinomial, combinations
+using Combinatorics: multiexponents, multinomial
 using Base.Iterators: take
 using Base: @propagate_inbounds
 using Gridap.Fields: LinearCombinationFieldVector
@@ -124,6 +124,9 @@ export Bernstein
 export BernsteinBasis
 
 export BernsteinBasisOnSimplex
+
+export Dubiner
+export DubinerBasis
 export bernstein_terms
 export bernstein_term_id
 
@@ -144,6 +147,8 @@ export print_indices
 export FEEC_space_definition_checks
 export FEEC_poly_basis
 
+export print_forms
+
 
 include("PolynomialInterfaces.jl")
 
@@ -162,6 +167,8 @@ include("LegendreBases.jl")
 include("ChebyshevBases.jl")
 
 include("BernsteinBases.jl")
+
+include("DubinerBases.jl")
 
 include("ModalC0Bases.jl")
 

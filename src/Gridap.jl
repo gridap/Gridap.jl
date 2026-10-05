@@ -24,6 +24,8 @@ The module is structured in the following sub-modules:
 
 $(Helpers.public_names_in_md(@__MODULE__; change_link=Dict(
   :∇  => "gradient",
+  :ε  => "symmetric_gradient",
+  :Δ  => "laplacian",
   :∫  => "CellData.Integrand",
   :⊗  => "Gridap.TensorValues.outer",
   :⊙  => "Gridap.TensorValues.inner",

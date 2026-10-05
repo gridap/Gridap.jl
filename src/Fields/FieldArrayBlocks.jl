@@ -127,31 +127,35 @@ end
 
 # transpose + ArrayBlock
 
-function Base.transpose(f::ArrayBlock{A,1} where A)
-  fi = testitem(f)
-  fit = transpose(fi)
-  g = Matrix{typeof(fit)}(undef,(1,length(f.touched)))
-  for i in eachindex(f.touched)
-    if f.touched[i]
-      g[i] = transpose(f.array[i])
-    end
-  end
-  ArrayBlock(g,collect(transpose(f.touched)))
-end
-
-function Base.transpose(f::ArrayBlock{A,2} where A)
-  fi = testitem(f)
-  fit = transpose(fi)
-  ni,nj = size(f)
-  g = Matrix{typeof(fit)}(undef,(nj,ni))
-  for i in 1:ni
-    for j in 1:nj
-      if f.touched[i,j]
-        g[j,i] = transpose(f.array[i,j])
+for op in (:transpose, :adjoint)
+  @eval begin
+    function Base.$(op)(f::ArrayBlock{A,1} where A)
+      fi = testitem(f)
+      fit = $(op)(fi)
+      g = Matrix{typeof(fit)}(undef,(1,length(f.touched)))
+      for i in eachindex(f.touched)
+        if f.touched[i]
+          g[i] = $(op)(f.array[i])
+        end
       end
+      ArrayBlock(g,collect($(op)(f.touched)))
+    end
+
+    function Base.$(op)(f::ArrayBlock{A,2} where A)
+      fi = testitem(f)
+      fit = $(op)(fi)
+      ni,nj = size(f)
+      g = Matrix{typeof(fit)}(undef,(nj,ni))
+      for i in 1:ni
+        for j in 1:nj
+          if f.touched[i,j]
+            g[j,i] = $(op)(f.array[i,j])
+          end
+        end
+      end
+      ArrayBlock(g,collect($(op)(f.touched)))
     end
   end
-  ArrayBlock(g,collect(transpose(f.touched)))
 end
 
 function return_value(k::TransposeMap,f::ArrayBlock{A,1} where A)

@@ -496,7 +496,9 @@ Base.:(∘)(f::Function,g::Tuple{Vararg{Union{Function,CellField}}}) = Operation
 
 # Unary ops
 
-for op in (:symmetric_part,:inv,:det,:abs,:abs2,:+,:-,:tr,:transpose,:adjoint,:grad2curl,:real,:imag,:conj)
+for op in (:symmetric_part,:inv,:det,:abs,:abs2,:+,:-,:tr,:transpose,:adjoint,
+  :grad2curl,:real,:imag,:conj,:hodge_star,:vol_coeff,:to_1form,:from_1form
+)
   @eval begin
     ($op)(a::CellField) = Operation($op)(a)
   end
@@ -504,7 +506,9 @@ end
 
 # Binary ops
 
-for op in (:inner,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/)
+for op in (:inner,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/,
+  :interior_product, :sharp, :flat, :∧, :form_inner
+)
   @eval begin
     ($op)(a::CellField,b::CellField) = Operation($op)(a,b)
     ($op)(a::CellField,b::Number) = Operation($op)(a,b)
@@ -710,3 +714,13 @@ function (a::SkeletonPair{<:CellField})(x)
   Evaluating `n(x)` is not allowed. You need to call either `n.⁺(x)` or `n.⁻(x)`.
   """
 end
+
+################################################################################
+# Differential geometry operators needing derivatives or evaluation point
+
+for diff_op in (:exterior_derivative, :codifferential, :hodge_star_form, :koszul)
+  @eval begin
+    $diff_op(a::CellField) = similar_cell_field(a, lazy_map(Broadcasting($diff_op), get_data(a)))
+  end
+end
+

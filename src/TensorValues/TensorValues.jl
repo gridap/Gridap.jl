@@ -31,6 +31,11 @@ $(public_names_in_md(@__MODULE__; change_link=Dict(
   :⋅  => "dot",
   :⋅¹ => "dot",
   :⋅² => "double_contraction",
+  :ι  => "interior_product",
+  :⋆  => "hodge_star",
+  :♭  => "flat",
+  :♯  => "sharp",
+  :⨟  => "form_inner"
 )))
 """
 module TensorValues
@@ -45,6 +50,7 @@ using Gridap.Arrays
 using LinearAlgebra
 using Random
 using ForwardDiff
+using Combinatorics: combinations, permutations, levicivita
 
 export MultiValue
 export VectorValue
@@ -81,10 +87,33 @@ export indep_components_names
 export component_basis
 export representatives_of_componentbasis_dual
 export representatives_of_basis_dual
+export sorted_combinations
+export combination_index
+export sorting_sign
 export to_voigt
 export from_voigt
 export to_mandel
 export from_mandel
+
+export ExteriorFormValue
+export ∧
+export interior_product, ι
+export hodge_star, ⋆
+export form_inner, ⨟
+export flat, ♭
+export sharp, ♯
+export apply_form
+export pullback
+export symbolic_coordinates
+export koszul
+export vol_coeff
+export to_1form
+export from_1form
+export to_Kform
+export from_Kform
+export to_0form
+export to_Dform
+export grad_to_2form
 
 import Base: show
 import Base: promote_rule
@@ -127,10 +156,13 @@ include("HighOrderTensorValueTypes.jl")
 
 include("ThirdOrderTensorValueTypes.jl")
 
+include("ExteriorFormValues.jl")
+
 include("Indexing.jl")
 
 include("Operations.jl")
 
-include("Reinterpret.jl")
+include("DifferentialGeometryOperations.jl")
+
 
 end # module

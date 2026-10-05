@@ -17,8 +17,8 @@ Return `true` if the 1D basis of order `K` of the given [`Polynomial`](@ref)
 basis family is the union of the basis of order `K-1` and an other order `K`
 polynomial. This implies that the iᵗʰ basis polynomial is of order i-1.
 
-The currently implemented hierarchical families are [Monomial](@ref),
-[Legendre](@ref) and [Chebyshev](@ref).
+The currently implemented hierarchical families are [`Monomial`](@ref),
+[`Legendre`](@ref) and [`Chebyshev`](@ref).
 """
 isHierarchical(::Type{<:Polynomial}) = @abstractmethod
 
@@ -107,11 +107,12 @@ testvalue(::Type{<:PolynomialBasis}) = @abstractmethod
 # Helpers #
 ###########
 
-_q_filter( e,order)  = (maximum(e,init=0) <= order) # 𝓠ₙ
+_q_filter(e,order)   = (maximum(e,init=0) <= order) # 𝓠ₙ
 _qh_filter(e,order)  = (maximum(e,init=0) == order) # 𝓠̃ₙ = 𝓠ₙ\𝓠₍ₙ₋₁₎
-_p_filter( e,order)  = (sum(e) <= order)            # 𝓟ₙ
+_p_filter(e,order)   = (sum(e) <= order)            # 𝓟ₙ
 _ph_filter(e,order)  = (sum(e) == order)            # 𝓟̃ₙ = 𝓟ₙ\𝓟₍ₙ₋₁₎
 _ser_filter(e,order) = (sum( [ i for i in e if i>1 ] ) <= order) # Serendipity
+_p_complement_filter(k::Integer) = (e, order) -> k < sum(e) <= order # 𝓟ₙ ∩ (𝓟ₖ)^⊥
 
 function _define_terms(filter,orders)
   t = orders .+ 1

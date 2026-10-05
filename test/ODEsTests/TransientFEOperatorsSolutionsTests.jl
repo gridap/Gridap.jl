@@ -296,4 +296,68 @@ for constant_mass in (true, false)
   end
 end
 
+##########################################
+# Residual of linear operators computed  #
+# from the stored constant form matrices #
+##########################################
+# The residual of a linear operator with constant forms must match the one of
+# the same operator with non-constant forms (always re-assembled), whatever
+# the Dirichlet data
+function test_residual_from_const_forms(U, V, forms, res, t, us)
+  tfeop_c = TransientLinearFEOperator(forms, res, U, V; constant_forms=(true, true, true))
+  tfeop_n = TransientLinearFEOperator(forms, res, U, V; constant_forms=(false, false, false))
+
+  rs = ()
+  for tfeop in (tfeop_c, tfeop_n)
+    odeop = get_algebraic_operator(tfeop)
+    odeopcache = allocate_odeopcache(odeop, t, us)
+    update_odeopcache!(odeopcache, odeop, t)
+    r = allocate_residual(odeop, t, us, odeopcache)
+    residual!(r, odeop, t, us, odeopcache)
+    @test residual!(copy(r), odeop, t, us, odeopcache; add=true) ≈ 2 * r
+    rs = (rs..., r)
+  end
+  r_c, r_n = rs
+  @test norm(r_c - r_n) <= 1.0e-12 * norm(r_n)
+end
+
+ms(t, ∂ₜₜu, v) = ∫(∂ₜₜu ⋅ v) * dΩ
+cs(t, ∂ₜu, v) = ∫(0.1 * ∂ₜu ⋅ v) * dΩ
+as(t, u, v) = ∫(∇(u) ⋅ ∇(v)) * dΩ
+ls(t, v) = ∫(sin(t) * v) * dΩ
+forms = (as, cs, ms)
+
+n = num_free_dofs(V)
+t = 0.3
+us = (rand(n), rand(n), rand(n))
+
+# Zero Dirichlet values: all forms are applied from the stored matrices
+U0 = TransientTrialFESpace(V, t -> (x -> 0.0))
+test_residual_from_const_forms(U0, V, forms, ls, t, us)
+
+# Constant non-zero Dirichlet values: only the stiffness is re-assembled
+Uc = TransientTrialFESpace(V, t -> (x -> 1.0))
+test_residual_from_const_forms(Uc, V, forms, ls, t, us)
+
+# Time-dependent Dirichlet values: the stiffness and damping are re-assembled
+# (the Dirichlet values are affine in time, so the mass is still computed from
+# the stored matrix)
+test_residual_from_const_forms(U, V, forms, ls, t, us)
+
+# Multi-field
+Vmf = MultiFieldFESpace([V, V])
+mmf(t, (∂ₜₜu1, ∂ₜₜu2), (v1, v2)) = ∫(∂ₜₜu1 * v1 + ∂ₜₜu2 * v2) * dΩ
+cmf(t, (∂ₜu1, ∂ₜu2), (v1, v2)) = ∫(0.1 * ∂ₜu1 * v2) * dΩ
+amf(t, (u1, u2), (v1, v2)) = ∫(∇(u1) ⋅ ∇(v1) + ∇(u2) ⋅ ∇(v2) + u2 * v1) * dΩ
+lmf(t, (v1, v2)) = ∫(sin(t) * v1 + cos(t) * v2) * dΩ
+forms_mf = (amf, cmf, mmf)
+n = num_free_dofs(Vmf)
+us = (rand(n), rand(n), rand(n))
+
+Umf = TransientMultiFieldFESpace([U0, U0])
+test_residual_from_const_forms(Umf, Vmf, forms_mf, lmf, t, us)
+
+Umf = TransientMultiFieldFESpace([U0, U])
+test_residual_from_const_forms(Umf, Vmf, forms_mf, lmf, t, us)
+
 end # module TransientFEOperatorsSolutionsTests
