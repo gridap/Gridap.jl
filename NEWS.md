@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Arbitrary-order gradients `gradient(f, Val(N))` of fields, arrays of fields and `CellField`s, with `NthGradient{N}` as the broadcastable operator. The default implementation is forward-mode automatic differentiation: the whole basis is evaluated once at a point seeded with `N` nested `ForwardDiff.Dual`s of width `D`, so the dual type, and the compilation, is independent of the length of the basis. Hand-written kernels (e.g. `N ≤ 2` for `PolynomialBasis`) still take precedence. `FieldGradient{N}` of a field with no gradient kernel now falls back to the same AD default instead of erroring. The derivatives go through linear combinations, transposes and `Pushforward`s (Raviart-Thomas, Nédélec), and `push_∇ⁿ` / `PushNthGradient` push them forward by affine cell maps.
+
+### Fixed
+
+- `+` and `-` of `HighOrderTensorValue`s with more than 32 components are now type-stable.
+
 ### Changed
 
 - Enabled algebraic operations in residual of a linear `TransientFEOperator` when the space of the corresponding time derivative has zero Dirichlet values. Since PR[#1345](https://github.com/gridap/Gridap.jl/pull/1345).

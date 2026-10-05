@@ -164,6 +164,7 @@ function return_cache(
   x::AbstractVector{<:Point}) where {N,D,V}
 
   @assert D == length(eltype(x)) "Incorrect number of point components"
+  N > 2 && return ad_return_cache(fg,x)
   f = fg.fa
   xi = testitem(x)
   G = _return_val_eltype(f,x)
@@ -249,6 +250,14 @@ function evaluate!(cache,
   params = _get_parameters(f)
   _loop_point_hess!(np,x,f,r,c,g,h,s,params)
   r.array
+end
+
+# Derivatives of order N > 2: forward-mode AD (Fields/HigherOrderGradients.jl).
+function evaluate!(cache,
+  fg::FieldGradientArray{N,<:PolynomialBasis},
+  x::AbstractVector{<:Point}) where N
+
+  ad_evaluate!(cache,fg,x)
 end
 
 @noinline function _loop_point_hess!(np,x,f,r,c,g,h,s,params)

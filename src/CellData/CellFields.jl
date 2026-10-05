@@ -298,6 +298,27 @@ function ∇∇(a::CellField)
   similar_cell_field(a,h,get_triangulation(a),DomainStyle(a))
 end
 
+gradient(a::CellField,::Val{1}) = gradient(a)
+gradient(a::CellField,::Val{2}) = ∇∇(a)
+
+"""
+    gradient(a::CellField, Val(N))
+
+`N`-th gradient of `a`, `gradient(a,Val(N))[i₁,…,i_N,c…] = ∂_{i₁}⋯∂_{i_N} a_c`. The reference
+derivatives are computed by the fields themselves or, by default, by forward-mode automatic
+differentiation; the pushforward to the physical domain is implemented for affine cell maps.
+"""
+function gradient(a::CellField,::Val{N}) where N
+  cell_∇ⁿa = lazy_map(Broadcasting(NthGradient{N}()),get_data(a))
+  if DomainStyle(a) == PhysicalDomain()
+    h = cell_∇ⁿa
+  else
+    cell_map = get_cell_map(get_triangulation(a))
+    h = lazy_map(Broadcasting(PushNthGradient{N}()),cell_∇ⁿa,cell_map)
+  end
+  similar_cell_field(a,h,get_triangulation(a),DomainStyle(a))
+end
+
 # This function has to be removed when ∇⋅∇(a) is implemented
 laplacian(a::CellField) = tr(∇∇(a))
 

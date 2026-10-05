@@ -10,6 +10,8 @@ using Test
 
 @testset "DiffOperators" begin include("DiffOperatorsTests.jl") end
 
+@testset "HigherOrderGradients" begin include("HigherOrderGradientsTests.jl") end
+
 @testset "AffineMaps" begin include("AffineMapsTests.jl") end
 
 @testset "FieldArraysOperations" begin include("FieldArraysOperationsTests.jl") end

@@ -96,6 +96,7 @@ using Combinatorics: multiexponents, multinomial
 using Base.Iterators: take
 using Base: @propagate_inbounds
 using Gridap.Fields: LinearCombinationFieldVector
+using Gridap.Fields: ad_return_cache, ad_evaluate!
 
 import Gridap.Fields: evaluate!
 import Gridap.Fields: return_cache

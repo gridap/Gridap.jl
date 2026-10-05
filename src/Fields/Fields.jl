@@ -80,6 +80,9 @@ export ∇∇
 export gradient_type
 export push_∇
 export push_∇∇
+export push_∇ⁿ
+export NthGradient
+export PushNthGradient
 export pinvJt
 
 export curl
@@ -139,6 +142,8 @@ include("ApplyOptimizations.jl")
 include("DiffOperators.jl")
 
 include("AutoDiff.jl")
+
+include("HigherOrderGradients.jl")
 
 # include("ArrayBlocks.jl") # Partially moved to Gridap.Arrays
 include("FieldArrayBlocks.jl")

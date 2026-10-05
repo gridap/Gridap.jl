@@ -1665,4 +1665,14 @@ test_op_promote(typeof(v  ⊗ st), ⊗, v,  st)
 test_op_promote(typeof(st ⊗ st), ⊗, st, st)
 test_op_promote(typeof(qt ⊗ qt), ⊗, qt, qt)
 
+# + and - of HighOrderTensorValues with more than 32 components are inferred (high-order
+# gradients reach that size quickly)
+h5 = HighOrderTensorValue{Tuple{2,2,2,2,2}}(ntuple(Float64, 32))
+h4 = HighOrderTensorValue{Tuple{3,3,3,3}}(ntuple(Float64, 81))
+for h in (h5, h4)
+  @test (@inferred h + h) == 2h
+  @test iszero(@inferred h - h)
+  @test (@inferred -h) == (-1)*h
+end
+
 end # module OperationsTests

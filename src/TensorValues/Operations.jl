@@ -94,6 +94,16 @@ for op in (:+,:-)
       r = map(($op), get_indep_components(a), get_indep_components(b))
       V(r)
     end
+
+    # `map` over a tuple is not inferred past 32 entries, which high-order gradients reach
+    # quickly (3^4 = 81 in 3D): unroll with `ntuple` instead.
+    function ($op)(a::V) where V<:HighOrderTensorValue{S,T,N,L} where {S,T,N,L}
+      V(ntuple(i -> ($op)(a.data[i]), Val(L)))
+    end
+
+    function ($op)(a::V, b::V) where V<:HighOrderTensorValue{S,T,N,L} where {S,T,N,L}
+      V(ntuple(i -> ($op)(a.data[i], b.data[i]), Val(L)))
+    end
   end
 end
 

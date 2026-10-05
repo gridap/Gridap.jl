@@ -87,6 +87,12 @@ Abstract hessian operator.
 
 gradient(f,::Val{1}) = ∇(f)
 gradient(f,::Val{2}) = ∇∇(f)
+"""
+    gradient(f, Val(N))
+
+`N`-th gradient of `f`, `gradient(f,Val(N))[i₁,…,i_N,c…] = ∂_{i₁}⋯∂_{i_N} f_c`.
+"""
+gradient(f,::Val{N}) where N = gradient(gradient(f,Val(N-1)))
 
 evaluate!(cache,::Broadcasting{typeof(∇)},a::Field) = ∇(a)
 evaluate!(cache,::Broadcasting{typeof(∇∇)},a::Field) = ∇∇(a)
@@ -142,9 +148,12 @@ end
     struct FieldGradient{N,F} <: Field
 
 Type that represents the gradient of a field of type `F`. `N` is how many times
-the gradient is applied. Requires implementing
+the gradient is applied. Fields can implement
 
-    evaluate!(cache,f::FieldGradient,x::Point) = @abstractmethod.
+    evaluate!(cache,f::FieldGradient{N,F},x::Point)
+
+(and `return_cache`); otherwise the gradient is computed by forward-mode automatic
+differentiation of the field's own evaluation (see `HigherOrderGradients.jl`).
 
 For `F<:Function`, `FieldGradient` is implemented for `N=1, 2` by `gradient`
 and `hessian`.
@@ -160,7 +169,6 @@ gradient(f::FieldGradient{N}) where N = FieldGradient{N+1}(f.object)
 testargs(f::FieldGradient,x::Point) = testargs(f.object,x)
 return_value(f::FieldGradient,x::Point) = evaluate(f,testargs(f,x)...)
 return_cache(f::FieldGradient,x::Point) = nothing
-evaluate!(cache,f::FieldGradient,x::Point) = @abstractmethod
 testvalue(::Type{FieldGradient{N,T}}) where {N,T} = FieldGradient{N}(testvalue(T))
 
 # Default methods for arrays of points

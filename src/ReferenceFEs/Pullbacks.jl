@@ -68,6 +68,26 @@ function Arrays.evaluate!(
   Broadcasting(Operation(a.op))(grad_v,pf_args...)
 end
 
+# N-th gradient: differentiate the reference fields and apply the same pushforward, which acts
+# on the last (value) index. Like the gradient above, exact for affine geometrical maps.
+
+function Arrays.lazy_map(
+  k::Broadcasting{<:NthGradient}, a::LazyArray{<:Fill{Broadcasting{Operation{<:Pushforward}}}}
+)
+  cell_ref_fields, args... = a.args
+  cell_ref_gradient = lazy_map(k,cell_ref_fields)
+  return lazy_map(a.maps.value,cell_ref_gradient,args...)
+end
+
+function Arrays.evaluate!(
+  cache,
+  k::Broadcasting{NthGradient{N}},
+  a::Fields.BroadcastOpFieldArray{<:Pushforward}
+) where N
+  v, pf_args... = a.args
+  Broadcasting(Operation(a.op))(k(v),pf_args...)
+end
+
 # InversePushforward
 
 """

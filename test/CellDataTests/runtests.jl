@@ -4,6 +4,8 @@ using Test
 
 @testset "CellFields" begin include("CellFieldsTests.jl") end
 
+@testset "HigherOrderGradients" begin include("HigherOrderGradientsTests.jl") end
+
 @testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
 
 @testset "DomainContributions" begin include("DomainContributionsTests.jl") end
