@@ -292,7 +292,7 @@ end
 
 
 ###############################################################
-# Dot product (simple contraction)
+# Scalar product
 ###############################################################
 
 function (*)(a::MultiValue, b::MultiValue)
@@ -302,6 +302,21 @@ function (*)(a::MultiValue, b::MultiValue)
   """
   error(msg)
 end
+
+# Authorise * for order 0 tensors, they have no index to contract but represent a scalar component.
+(*)(a::MultiValue{Tuple{}}, b::MultiValue) = a[1]*b
+(*)(a::MultiValue, b::MultiValue{Tuple{}}) = a*b[1]
+(*)(a::MultiValue{Tuple{}}, b::MultiValue{Tuple{}}) = ScalarValue(a[1]*b[1])
+# Of two order 0 factors, a `ScalarValue` holds no shape of its own, so the other
+# one's type is kept; two forms of one family keep their embedding dimension.
+(*)(a::ScalarValue, b::MultiValue{Tuple{}}) = a[1]*b
+(*)(a::MultiValue{Tuple{}}, b::ScalarValue) = a*b[1]
+(*)(a::ScalarValue, b::ScalarValue) = ScalarValue(a[1]*b[1])
+(*)(a::SkewSymKTensorValue{V,0,D}, b::SkewSymKTensorValue{V,0,D}) where {V,D} = a*b[1]
+
+###############################################################
+# Dot product (simple contraction)
+###############################################################
 
 """
     dot(a::MultiValue{Tuple{...,D}}, b::MultiValue{Tuple{D,...}})

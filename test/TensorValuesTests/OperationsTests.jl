@@ -383,6 +383,26 @@ sn3 = SymNTensorValue{Tuple{3,3,3}}(1:10...)
 @test_throws ErrorException v/k
 @test_throws ErrorException k/v
 
+# An order 0 factor has no index to contract, so it scales, preserving the family
+# of the other factor
+sv0 = ScalarValue(2.0)
+vec0 = VectorValue(1.0,2.0)
+tl0 = SymTracelessTensorValue(1.0,2.0)
+@test sv0*vec0 === 2.0*vec0
+@test vec0*sv0 === vec0*2.0
+@test sv0*tl0 === 2.0*tl0
+@test tl0*sv0 === tl0*2.0
+@test sv0*sv0 === ScalarValue(4.0)
+
+# A `ScalarValue` holds no shape, so an order 0 form keeps its embedding dimension
+# through a product; two unrelated embeddings share none, leaving a `ScalarValue`
+form0 = ExteriorFormValue{0,2}((3.0,))
+@test form0*ExteriorFormValue{0,2}((5.0,)) === ExteriorFormValue{0,2}((15.0,))
+@test sv0*form0 === ExteriorFormValue{0,2}((6.0,))
+@test form0*sv0 === ExteriorFormValue{0,2}((6.0,))
+@test form0*vec0 === 3.0*vec0
+@test form0*ExteriorFormValue{0,3}((5.0,)) === ScalarValue(15.0)
+
 # Matrix Division
 
 a = VectorValue(1,2,3)
