@@ -218,5 +218,7 @@ include("MetricDatas.jl")
 
 include("DifferentialGeometryOperations.jl")
 
+include("PointOperations.jl")
+
 
 end # module

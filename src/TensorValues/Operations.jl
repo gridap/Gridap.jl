@@ -312,6 +312,11 @@ Single contraction of two tensors `a` and `b`, of the last index of `a` with
 the first index of `b`. The corresponding dimensions `D` must match. No symmetry
 is preserved.
 On two vectors, this is the same as the inner product.
+
+A `VectorValue`, whose index is un-varianced, is assumed contravariant: it
+also contracts against a covariant index, and the indices left over keep
+their own variance, so a vector contracted with a covariant two-tensor gives
+a covector.
 """
 dot(a::MultiValue, b::MultiValue) = contracted_product(Val(1), a, b)
 

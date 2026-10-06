@@ -1,30 +1,33 @@
 
 """
     struct AffineMap <: Map
+
+Map evaluated at `(G, y0::Point, x::Point)` and returns `Point(Tuple(x⋅G)...) + y0`.
 """
 struct AffineMap <: Map end
 
 function evaluate!(cache,::AffineMap,G::TensorValue{D1,D2},y0::Point{D2},x::Point{D1}) where {D1,D2}
-  x⋅G + y0
+  Point(Tuple(x⋅G)...) + y0
 end
 
 """
-    struct AffineField{D1,D2,T,L} <: Field
+    struct AffineField{D1,D2,D2p,T,L} <: Field
 
 A `Field` with the form:
 
-    y = x⋅G + y0
+    y = Point(Tuple(x⋅G)...) + y0
 
-with `G::TensorValue{D1,D2,T,L}` and `y0::Point{D2,T}`.
+with `G::TensorValue{D1,D2,T,L}` and `y0::Point{D2p,T}`.
 """
-struct AffineField{D1,D2,T,L} <: Field
+struct AffineField{D1,D2,D2p,T,L} <: Field
   gradient::TensorValue{D1,D2,T,L}
-  origin::Point{D2,T}
+  origin::Point{D2p,T}
   function AffineField(
     gradient::TensorValue{D1,D2,T,L},
-    origin::Point{D2,T}
-  ) where {D1,D2,T,L}
-    new{D1,D2,T,L}(gradient,origin)
+    origin::Point{D2p,T}
+  ) where {D1,D2,D2p,T,L}
+    @assert D2p == Int(D2) "the gradient maps into dimension $(Int(D2)), but the origin has dimension $D2p"
+    new{D1,D2,D2p,T,L}(gradient,origin)
   end
 end
 
@@ -35,16 +38,16 @@ See [`AffineField`](@ref).
 """
 affine_map(gradient,origin) = AffineField(gradient,origin)
 
-function Base.zero(::Type{<:AffineField{D1,D2,T}}) where {D1,D2,T}
-  gradient = TensorValue{D1,D2}(tfill(zero(T),Val{D1*D2}()))
-  origin = Point{D2,T}(tfill(zero(T),Val{D2}()))
+function Base.zero(::Type{<:AffineField{D1,D2,D2p,T}}) where {D1,D2,D2p,T}
+  gradient = zero(TensorValue{D1,D2,T})
+  origin = zero(Point{D2p,T})
   AffineField(gradient,origin)
 end
 
 function evaluate!(cache,f::AffineField,x::Point)
   G = f.gradient
   y0 = f.origin
-  x⋅G + y0
+  Point(Tuple(x⋅G)...) + y0
 end
 
 function return_cache(f::AffineField,x::AbstractVector{<:Point})
@@ -60,7 +63,7 @@ function evaluate!(cache,f::AffineField,x::AbstractVector{<:Point})
   y0 = f.origin
   for i in eachindex(x)
     xi = x[i]
-    yi = xi⋅G + y0
+    yi = Point(Tuple(xi⋅G)...) + y0
     y[i] = yi
   end
   y
@@ -124,7 +127,7 @@ function inverse_map(f::AffineField)
   Jt = f.gradient
   y0 = f.origin
   invJt = pinvJt(Jt)
-  x0 = -y0⋅invJt
+  x0 = -Point(Tuple(y0⋅invJt)...)
   AffineField(invJt,x0)
 end
 

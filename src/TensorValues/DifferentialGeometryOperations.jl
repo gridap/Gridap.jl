@@ -180,11 +180,6 @@ that of `ω`, else, `v` is assumed contravariant so `ω` should be covariant.
   :( SkewSymKTensorValue{V,$Km1,$Dw}(($(comps...),)) )
 end
 
-# VectorValue is assumed contravariant for the interior product
-function interior_product(v::VectorValue{D}, ω::ExteriorFormValue) where D
-  contra_v = ContraVectorValue{D}(Tuple(v))
-  interior_product(contra_v, ω)
-end
 const ι = interior_product
 
 
@@ -383,10 +378,6 @@ passing `LinearAlgebra.I`.
     $result
   end
 end
-function flat(v::VectorValue{D}, metric_args::Vararg{_MetricArg}) where D
-  contra_v = ContraVectorValue{D}(Tuple(v))
-  flat(contra_v, metric_args...)
-end
 
 const ♭ = flat
 
@@ -408,10 +399,6 @@ contravariant variance, and the result always carries the covariant one.
 
   comps = [:( v[$i] ) for i in 1:D]
   :( CoVectorValue{$Dcov}(($(comps...),)) )
-end
-function flat_flat(v::VectorValue{D}) where D
-  contra_v = ContraVectorValue{D}(Tuple(v))
-  flat_flat(contra_v)
 end
 const ♭ᴱ = flat_flat
 
@@ -493,11 +480,6 @@ Each vector must be a size `(D, )` tensor. Behaves like `getindex` for scalar `K
     for (n, I) in enumerate(sorted_combinations(Int(D), K))]
   Expr(:call, :+, terms...)
 end
-function apply_tensor(ω::ExteriorFormValue{K}, vs::Vararg{VectorValue{D},K}) where {K,D}
-  K == 0 && return ω[1]
-  contra_vs = map(vi -> ContraVectorValue{D}(Tuple(vi)), vs)
-  apply_tensor(ω, contra_vs...)
-end
 
 # TODO: generalize apply_tensor to non skew-symmetric tensor ω
 
@@ -571,12 +553,16 @@ end
 # ============================================================
 
 """
+    koszul(x::MultiValue{Tuple{D}}, ω::ExteriorFormValue)
     koszul(x::VectorValue, ω::ExteriorFormValue)
 
 Koszul differential ``κ_x(ω) = ι_x(ω)``, the interior product with the position
-vector `x`. A Field-level method is provided in `Gridap.Fields`.
+vector `x`, that is either a contravariant vector or a VectorValue.
 """
-function koszul(x::VectorValue{D}, ω::ExteriorFormValue{K,Dw}) where {K,D,Dw}
+function koszul(x::MultiValue{Tuple{D}}, ω::ExteriorFormValue{K,Dw}) where {K,D,Dw}
+  @assert(D isa Con,
+         "the Koszul differential contracts the position vector of a point, whose \
+         index is contravariant, got a vector of index $D.")
   interior_product(x, ω)
 end
 
