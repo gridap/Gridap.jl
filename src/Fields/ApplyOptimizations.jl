@@ -255,6 +255,82 @@ for op in (:*,)
   end
 end
 
+# Partial derivative rules, for the jointly linear operations
+for (op,nargs) in (
+  (:+,nothing),(:-,nothing),(:flat_hodge_star,1)
+)
+  arity_check = isnothing(nargs) ? nothing : :( @notimplementedif length(f) != $nargs )
+  @eval begin
+
+    function lazy_map(
+      k::PartialDerivatives, a::LazyArray{<:Fill{Operation{typeof($op)}}})
+
+      f = a.args
+      $arity_check
+      ∂f = map(i->lazy_map(k,i), f)
+      lazy_map(Operation(partials_op_rule($op)), ∂f...)
+    end
+
+    function lazy_map(
+      k::Broadcasting{<:PartialDerivatives},
+      a::LazyArray{<:Fill{Broadcasting{Operation{typeof($op)}}}})
+
+      f = a.args
+      $arity_check
+      ∂f = map(i->lazy_map(k,i), f)
+      lazy_map(Broadcasting(Operation(partials_op_rule($op))), ∂f...)
+    end
+
+  end
+end
+
+# Partial derivative rules for bilinear products at orders 1 and 2.
+for op in (:*,:⋅,:⊙,:⊗,:∧)
+  @eval begin
+
+    function lazy_map(
+      k::PartialDerivatives{1}, a::LazyArray{<:Fill{Operation{typeof($op)}}})
+
+      f = a.args
+      @notimplementedif length(f) != 2
+      ∂f = map(i->lazy_map(k,i), f)
+      lazy_map(Operation(partials_op_rule(Val(1),$op)), f..., ∂f...)
+    end
+
+    function lazy_map(
+      k::Broadcasting{PartialDerivatives{1}},
+      a::LazyArray{<:Fill{Broadcasting{Operation{typeof($op)}}}})
+
+      f = a.args
+      @notimplementedif length(f) != 2
+      ∂f = map(i->lazy_map(k,i), f)
+      lazy_map(Broadcasting(Operation(partials_op_rule(Val(1),$op))), f..., ∂f...)
+    end
+
+    function lazy_map(
+      k::PartialDerivatives{2}, a::LazyArray{<:Fill{Operation{typeof($op)}}})
+
+      f = a.args
+      @notimplementedif length(f) != 2
+      ∂f  = map(i->lazy_map(PartialDerivatives{1}(),i), f)
+      ∂∂f = map(i->lazy_map(k,i), f)
+      lazy_map(Operation(partials_op_rule(Val(2),$op)), f..., ∂f..., ∂∂f...)
+    end
+
+    function lazy_map(
+      k::Broadcasting{PartialDerivatives{2}},
+      a::LazyArray{<:Fill{Broadcasting{Operation{typeof($op)}}}})
+
+      f = a.args
+      @notimplementedif length(f) != 2
+      ∂f  = map(i->lazy_map(Broadcasting(PartialDerivatives{1}()),i), f)
+      ∂∂f = map(i->lazy_map(k,i), f)
+      lazy_map(Broadcasting(Operation(partials_op_rule(Val(2),$op))), f..., ∂f..., ∂∂f...)
+    end
+
+  end
+end
+
 
 function lazy_map(
   ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{Broadcasting{typeof(∘)}}})
@@ -278,6 +354,31 @@ function lazy_map(
   ∇g = lazy_map(∇,g)
 
   lazy_map(Operation(⋅),∇g,h)
+end
+
+# chain rule for partial derivatives
+function lazy_map(
+  k::PartialDerivatives{1}, a::LazyArray{<:Fill{typeof(∘)}})
+
+  f = a.args[1]
+  g = a.args[2]
+  ∂f = lazy_map(k,f)
+  h = lazy_map(∘,∂f,g)
+  ∂g = lazy_map(k,g)
+
+  lazy_map(Operation(⋅), ∂g, h)
+end
+
+function lazy_map(
+  k::Broadcasting{PartialDerivatives{1}}, a::LazyArray{<:Fill{Broadcasting{typeof(∘)}}})
+
+  f = a.args[1]
+  g = a.args[2]
+  ∂f = lazy_map(k,f)
+  h = lazy_map(Broadcasting(∘),∂f,g)
+  ∂g = lazy_map(k,g)
+
+  lazy_map(Broadcasting(Operation(⋅)), ∂g, h)
 end
 
 # Integration

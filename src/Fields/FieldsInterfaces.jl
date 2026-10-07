@@ -238,9 +238,8 @@ as computed by [`PartialDerivatives`](@ref).
 Unlike [`FieldGradient`](@ref), the `N` derivation indices are held by one
 fully symmetric tensor, see [`derivatives_type`](@ref).
 
-`evaluate!` falls back on differentiating the wrapped field numerically, which
-allocates a cache per point. A field family that can do better should add a
-method for its own `FieldPartialDerivatives{N,<:MyField}`.
+`evaluate!` has no generic method: a field family supports partial derivatives
+by adding one for its own `FieldPartialDerivatives{N,<:MyField}`.
 """
 struct FieldPartialDerivatives{N,F} <: Field
   object::F
@@ -248,16 +247,8 @@ struct FieldPartialDerivatives{N,F} <: Field
 end
 
 (::PartialDerivatives{N})(f::Field) where N = FieldPartialDerivatives{N}(f)
-
-function (::PartialDerivatives{M})(f::FieldPartialDerivatives{N}) where {N,M}
-  @unreachable """\n
-  Partial derivatives do not compose: the order $M partials of the order $N
-  partials of a field are not its order $(N+M) partials, they hold their
-  derivation indices in different tensors.
-
-  Use PartialDerivatives{$(N+M)}() on the undifferentiated field instead.
-  """
-end
+(::PartialDerivatives{M})(f::FieldPartialDerivatives{N}) where {N,M} =
+  FieldPartialDerivatives{N+M}(f.object)
 
 testargs(f::FieldPartialDerivatives,x::Point) = testargs(f.object,x)
 testvalue(::Type{FieldPartialDerivatives{N,T}}) where {N,T} = FieldPartialDerivatives{N}(testvalue(T))
@@ -1113,4 +1104,68 @@ function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{VoidBasisMap}},x::Abstr
   p = a.maps.value
   @notimplementedif p.isvoid
   lazy_map(evaluate,a.args[1],x)
+end
+
+# Partial derivatives rules
+
+(k::PartialDerivatives)(z::ZeroField) = ZeroField(k(z.field))
+
+(k::PartialDerivatives)(z::VoidField) = VoidField(k(z.field),z.isvoid)
+
+# Fully linear operations, commutes with differentiation of any order
+for (op,nargs) in (
+  (:+,nothing),(:-,nothing),(:flat_hodge_star,1)
+)
+  arity_check = isnothing(nargs) ? nothing : :( @notimplementedif length(fs) != $nargs )
+  @eval begin
+    function (k::PartialDerivatives)(a::OperationField{typeof($op)})
+      fs = a.fields
+      $arity_check
+      Operation(partials_op_rule($op))(map(k,fs)...)
+    end
+  end
+end
+
+# Order 1 and order 2 Leibniz rules for the bilinear operations
+for op in (:*,:⋅,:⊙,:⊗,:∧)
+  @eval begin
+    function (k::PartialDerivatives{1})(a::OperationField{typeof($op)})
+      fs = a.fields
+      @notimplementedif length(fs) != 2
+      ∂fs = map(k,fs)
+      Operation(partials_op_rule(Val(1),$op))(fs..., ∂fs...)
+    end
+
+    function (k::PartialDerivatives{2})(a::OperationField{typeof($op)})
+      fs = a.fields
+      @notimplementedif length(fs) != 2
+      ∂fs  = map(PartialDerivatives{1}(), fs)
+      ∂∂fs = map(k,fs)
+      Operation(partials_op_rule(Val(2),$op))(fs..., ∂fs..., ∂∂fs...)
+    end
+  end
+end
+
+function (k::PartialDerivatives{N})(
+  a::OperationField{<:Union{typeof(*),typeof(⋅),typeof(⊙),typeof(⊗),typeof(∧)}}) where N
+  @notimplemented """\n
+  A product of fields is only derived at orders 1 and 2, got order $N. A higher
+  order needs the multi index Leibniz sum, and order 0 is the product's own value.
+  """
+end
+
+# Chain rule for partial derivatives
+function (k::PartialDerivatives{1})(f::OperationField{<:Field})
+  a = f.op
+  @notimplementedif length(f.fields) != 1
+  b, = f.fields
+  Operation(⋅)(k(b), k(a)∘b)
+end
+
+function (k::PartialDerivatives{N})(f::OperationField{<:Field}) where N
+  @notimplemented """\n
+  A composition of fields is only derived at order 1, got order $N. A higher
+  order mixes the derivation orders of the two fields, so it needs the
+  derivatives of the inner field beyond those of the composition's own order.
+  """
 end

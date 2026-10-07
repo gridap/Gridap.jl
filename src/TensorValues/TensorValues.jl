@@ -160,6 +160,7 @@ export grad_to_2form
 export partials_to_exteriorderivative
 export partials_to_liederivative
 export partials_to_codifferential
+export partials_op_rule
 
 import Base: show
 import Base: promote_rule
@@ -220,5 +221,6 @@ include("DifferentialGeometryOperations.jl")
 
 include("PointOperations.jl")
 
+include("DerivativeOperationRules.jl")
 
 end # module

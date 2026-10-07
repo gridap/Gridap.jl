@@ -195,6 +195,11 @@ function evaluate!(
   FieldPartialDerivativesArray{Np}(a)
 end
 
+function evaluate!(
+  cache,k::Broadcasting{PartialDerivatives{M}},a::FieldPartialDerivativesArray{Np}) where {M,Np}
+  FieldPartialDerivativesArray{Np+M}(a.fa)
+end
+
 function (k::PartialDerivatives)(a::AbstractArray{<:Field})
   msg =
   """\n
@@ -878,6 +883,45 @@ for op in (:*,:⋅,:⊙,:⊗)
       g1, g2 = map(Broadcasting(∇), f)
       k(F1,F2,G1,G2) = product_rule($op,F1,F2,G1,G2)
       Broadcasting(Operation(k))(f1,f2,g1,g2)
+    end
+  end
+end
+
+# Partial derivatives of the jointly linear operations
+for (op,nargs) in (
+  (:+,nothing),(:-,nothing),(:flat_hodge_star,1)
+)
+  arity_check = isnothing(nargs) ? nothing : :( @notimplementedif length(f) != $nargs )
+  @eval begin
+    function evaluate!(
+      cache,k::Broadcasting{PartialDerivatives{Np}},
+      a::BroadcastOpFieldArray{typeof($op)}) where Np
+      f = a.args
+      $arity_check
+      ∂f = map(k, f)
+      Broadcasting(Operation(partials_op_rule($op)))(∂f...)
+    end
+  end
+end
+
+# Partial derivatives of the product, orders 1 and 2
+for op in (:*,:⋅,:⊙,:⊗,:∧)
+  @eval begin
+    function evaluate!(
+      cache,k::Broadcasting{PartialDerivatives{1}},a::BroadcastOpFieldArray{typeof($op)})
+      f = a.args
+      @notimplementedif length(f) != 2
+      ∂f = map(k, f)
+      Broadcasting(Operation(partials_op_rule(Val(1),$op)))(f..., ∂f...)
+    end
+
+    function evaluate!(
+      cache,k::Broadcasting{PartialDerivatives{2}},a::BroadcastOpFieldArray{typeof($op)})
+      f = a.args
+      @notimplementedif length(f) != 2
+      ∂f  = map(Broadcasting(PartialDerivatives{1}()), f)
+      ∂∂f = map(k, f)
+      Broadcasting(Operation(partials_op_rule(Val(2),$op)))(f..., ∂f..., ∂∂f...)
     end
   end
 end

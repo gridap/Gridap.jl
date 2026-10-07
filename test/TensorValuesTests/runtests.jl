@@ -22,6 +22,10 @@ end
   include("ProductTensorValueTests.jl")
 end
 
+@testset "DerivativeOperationRulesTests" begin
+  include("DerivativeOperationRulesTests.jl")
+end
+
 @testset "ReinterpretTests" begin
   include("ReinterpretTests.jl")
 end

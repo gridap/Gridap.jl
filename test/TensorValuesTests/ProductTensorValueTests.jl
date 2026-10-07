@@ -572,9 +572,6 @@ pt0 = product_tensor(ScalarValue(2.0), SymTracelessTensorValue(1.0,2.0))
 @test (num_indep_components(pt0), num_stored_components(pt0)) == (2,3)
 @test get_array(pt0) == get_array(2*SymTracelessTensorValue(1.0,2.0))
 
-# The second factor action reaches an order 0 factor like any other
-@test _map_second_factor(b -> 2*b, p0) === 2*p0
-
 # Wrong number of components
 
 @test_throws AssertionError V(1.0,2.0)

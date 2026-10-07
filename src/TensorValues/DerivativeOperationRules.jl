@@ -99,7 +99,6 @@ function dot(a::ProductTensorValue{Aa,Ba}, b::ProductTensorValue{Ab,Bb}) where {
   end
 end
 
-
 #######################################
 # API for differential operator rules #
 #######################################

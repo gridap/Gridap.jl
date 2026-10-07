@@ -73,6 +73,16 @@ function gradient(h::AffineField)
   ConstantField(h.gradient)
 end
 
+function (::PartialDerivatives{1})(h::AffineField{D1,D2,D2p,T}) where {D1,D2,D2p,T}
+  G = derivatives_type(VectorValue{D2p,T},zero(Point{D1,T}))
+  ConstantField(G(h.gradient.data))
+end
+
+function (::PartialDerivatives{N})(h::AffineField{D1,D2,D2p,T}) where {N,D1,D2,D2p,T}
+  D = derivatives_type(VectorValue{D2p,T},zero(Point{D1,T}),Val(N))
+  ConstantField(zero(D))
+end
+
 function push_∇∇(∇∇a::Field,ϕ::AffineField)
   # Assuming ϕ is affine map
   Jt = ∇(ϕ)
