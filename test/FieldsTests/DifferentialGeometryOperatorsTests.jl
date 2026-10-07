@@ -300,5 +300,138 @@ test_liederivative_scalar(y -> sin(y[1])*exp(y[2]) + y[1]^3*y[2]*y[3], x3)
 # the not-implemented fallback, which keeps catching the shapes it does not cover
 @test_throws ErrorException partials_to_liederivative(
   uvF(x2), TensorValue{2,2}(1.,2.,3.,4.), ∂uv, ∂fs)
+# Christoffel symbols of both kinds, from the partial derivatives of a metric
+
+using LinearAlgebra: I
+using Gridap.TensorValues: ProductTensorValue, _indep_comp_cartesian_indices,
+  _2d_sym_tensor_index_pair, _2d_sym_tensor_linear_index
+
+# The pair map inverts the index map a `SymTensorValue` is read with, and gives the
+# same pairs as the general component machinery, each up to its transposition
+for D in 0:6
+  for i in 1:D, j in i:D
+    @test _2d_sym_tensor_index_pair(D, _2d_sym_tensor_linear_index(D,i,j)) == (i,j)
+  end
+  D == 0 && continue
+  @test [_2d_sym_tensor_index_pair(D,l) for l in 1:(D*(D+1)÷2)] ==
+    [minmax(p...) for p in _indep_comp_cartesian_indices(SymTensorValue{Cov(D),Float64})]
+end
+
+# Γ_{kij} = (∂ᵢg_{jk} + ∂ⱼg_{ik} - ∂ₖg_{ij})/2, and Γᵏᵢⱼ = g⁻¹ᵏᵐ Γ_{mij}
+ref_Christoffel_1(∂g,k,i,j) = (∂g[i,j,k] + ∂g[j,i,k] - ∂g[k,i,j])/2
+ref_Christoffel_2(∂g,g_inv,D,k,i,j) =
+  sum(g_inv[k,m]*ref_Christoffel_1(∂g,m,i,j) for m in 1:D)
+
+function test_Christoffel(gF, x::Point{D}) where D
+  g, ∂g = gF(x), partial_derivatives(gF,x)
+  g_inv = inv(g)
+  Γ1 = partials_to_Christoffel_1(∂g)
+  Γ2 = partials_to_Christoffel_2(∂g, g_inv)
+
+  # the first kind is fully covariant, the second has its first index raised
+  @test size(Γ1) === (Cov(D), Cov(D), Cov(D))
+  @test size(Γ2) === (Con(D), Cov(D), Cov(D))
+  @test num_indep_components(typeof(Γ1)) == D*(D*(D+1)÷2)
+  @test (@inferred partials_to_Christoffel_1(∂g)) === Γ1
+  @test (@inferred partials_to_Christoffel_2(∂g, g_inv)) === Γ2
+
+  for k in 1:D, i in 1:D, j in 1:D
+    @test Γ1[k,i,j] ≈ ref_Christoffel_1(∂g,k,i,j) atol=1e-12
+    @test Γ2[k,i,j] ≈ ref_Christoffel_2(∂g,g_inv,D,k,i,j) atol=1e-12
+    # both kinds are symmetric in their last two indices
+    @test Γ1[k,i,j] === Γ1[k,j,i]
+    @test Γ2[k,i,j] === Γ2[k,j,i]
+    # lowering the first index of the second kind gives the first kind back
+    @test Γ1[k,i,j] ≈ sum(g[k,m]*Γ2[m,i,j] for m in 1:D) atol=1e-12
+  end
+
+  # the inverse metric is taken from the metric data in whichever form it comes
+  @test partials_to_Christoffel_2(∂g, g) ≈ Γ2
+  @test partials_to_Christoffel_2(∂g, parse_metric_data(g_inv)) === Γ2
+  @test partials_to_Christoffel_2(∂g, compute_metric_data(g)) ≈ Γ2
+  @test (@inferred partials_to_Christoffel_2(∂g, g)) ≈ Γ2
+
+  # the identity metric only raises the first index, leaving the components alone
+  ΓI = partials_to_Christoffel_2(∂g, I)
+  @test Tuple(ΓI) === Tuple(Γ1)
+  @test size(ΓI) === (Con(D), Cov(D), Cov(D))
+  @test (@inferred partials_to_Christoffel_2(∂g, I)) === ΓI
+
+  # the first kind takes no metric at all, the second needs one
+  @test_throws MethodError partials_to_Christoffel_1(∂g, g)
+  @test_throws ArgumentError partials_to_Christoffel_2(∂g)
+end
+
+# Metric fields: symmetric, diagonally dominant hence invertible, with partial
+# derivatives of either sign
+g2F(y) = SymTensorValue{cov2}(2.0 + y[1]^2, w(1,y), 3.0 + sin(y[2]))
+g3F(y) = SymTensorValue{Cov(3)}(
+  2.0 + y[1]^2, w(1,y), w(2,y), 3.0 + sin(y[2]), w(3,y), 4.0 + y[3]^2)
+
+test_Christoffel(g2F, x2)
+test_Christoffel(g3F, x3)
+
+# A metric of a dimension other than that of the partials has no index to raise
+@test_throws DimensionMismatch partials_to_Christoffel_2(
+  partial_derivatives(g3F,x3), inv(g2F(x2)))
+
+# Polar coordinates, where the symbols are known in closed form: in (r,θ) with
+# g = diag(1,r²) the only non-zero ones are Γʳ_θθ = -r, Γ^θ_rθ = Γ^θ_θr = 1/r,
+# and Γ_rθθ = -r, Γ_θrθ = Γ_θθr = r
+let r = 2.0
+  g = SymTensorValue{cov2}(1.0, 0.0, r^2)
+  # only ∂_r g_θθ = 2r
+  ∂g = ProductTensorValue{SymNTensorValue{Tuple{cov2}},SymTensorValue{cov2}}(
+    0.0, 0.0, 0.0, 0.0, 2r, 0.0)
+
+  Γ1 = partials_to_Christoffel_1(∂g)
+  Γ2 = partials_to_Christoffel_2(∂g, inv(g))
+
+  @test Γ1[1,2,2] ≈ -r
+  @test Γ1[2,1,2] ≈ r
+  @test Γ1[2,2,1] ≈ r
+  @test iszero(Γ1[1,1,1]) && iszero(Γ1[1,1,2]) && iszero(Γ1[2,1,1]) && iszero(Γ1[2,2,2])
+
+  @test Γ2[1,2,2] ≈ -r
+  @test Γ2[2,1,2] ≈ 1/r
+  @test Γ2[2,2,1] ≈ 1/r
+  @test iszero(Γ2[1,1,1]) && iszero(Γ2[1,1,2]) && iszero(Γ2[2,1,1]) && iszero(Γ2[2,2,2])
+end
+
+# A metric without independent component has constant, zero symbols
+let ∂g = ProductTensorValue{SymNTensorValue{Tuple{Cov(0)}},SymTensorValue{Cov(0)},Float64}(())
+  @test num_indep_components(typeof(partials_to_Christoffel_1(∂g))) == 0
+  @test num_indep_components(typeof(partials_to_Christoffel_2(∂g, I))) == 0
+  @test eltype(partials_to_Christoffel_1(∂g)) === Float64
+end
+
+# Integer partials widen on the halving
+let ∂g = ProductTensorValue{SymNTensorValue{Tuple{cov2}},SymTensorValue{cov2},Int}(
+           ntuple(n -> n, 6))
+  @test eltype(partials_to_Christoffel_1(∂g)) === Float64
+  @test (@inferred partials_to_Christoffel_1(∂g)) isa ProductTensorValue
+end
+
+# An order 1 first factor of either family carries the derivation index
+let data = ntuple(n -> Float64(n), 6)
+  ∂sym = ProductTensorValue{SymNTensorValue{Tuple{cov2}},SymTensorValue{cov2}}(data)
+  ∂cov = ProductTensorValue{CoVectorValue{cov2},SymTensorValue{cov2}}(data)
+  @test partials_to_Christoffel_1(∂cov) === partials_to_Christoffel_1(∂sym)
+end
+
+# The metric must be covariant, and the derivation index must share its dimension
+# and variance
+let data = ntuple(n -> Float64(n), 6)
+  ∂up = ProductTensorValue{SymNTensorValue{Tuple{cov2}},SymTensorValue{Con(2)}}(data)
+  @test_throws ArgumentError partials_to_Christoffel_1(∂up)
+  @test_throws ArgumentError partials_to_Christoffel_2(∂up, inv(g2F(x2)))
+
+  ∂con = ProductTensorValue{ContraVectorValue{Con(2)},SymTensorValue{cov2}}(data)
+  @test_throws DimensionMismatch partials_to_Christoffel_1(∂con)
+
+  ∂mix = ProductTensorValue{SymNTensorValue{Tuple{Cov(3)}},SymTensorValue{cov2}}(
+           ntuple(n -> Float64(n), 9))
+  @test_throws DimensionMismatch partials_to_Christoffel_1(∂mix)
+end
 
 end # module

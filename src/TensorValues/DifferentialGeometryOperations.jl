@@ -972,3 +972,87 @@ its first order partial derivatives `∂ω = partial_derivatives(ω)(x)`.
 end
 
 # TODO later, codifferential in non-euclidean coordinates
+
+
+# Christoffel symbols
+
+# Inverse of `_2d_sym_tensor_linear_index` on sorted pairs: the pair `(i,j)`,
+# `i ≤ j`. Implemented to be constant foldable.
+function _2d_sym_tensor_index_pair(D,l)
+  r = l
+  for i in 1:D
+    r <= D - i + 1 && return (i, i + r - 1)
+    r -= D - i + 1
+  end
+  @unreachable "a $D×$D symmetric tensor stores no component $l"
+end
+
+"""
+    partials_to_Christoffel_1(∂g, metric_args...)
+
+Christoffel symbols of the first kind `Γ` of a metric `g`, from the
+first order partial derivatives `∂g = partial_derivatives(g)(x)` of its value,
+
+    Γₖᵢⱼ = (∂ᵢgⱼₖ + ∂ⱼgᵢₖ - ∂ₖgᵢⱼ) / 2
+
+See also [`partials_to_Christoffel_2`](@ref).
+"""
+function partials_to_Christoffel_1(
+  ∂g::ProductTensorValue{A,SymTensorValue{Dg},T,Tuple{Dk,Dg,Dg},3,L}
+) where {A,Dk,Dg,T,L}
+
+  Dg isa Cov || throw(ArgumentError(
+    "the Christoffel symbols require a covariant metric tensor, got metric indices of variance $(typeof(Dg))"))
+  Dk === Dg || throw(DimensionMismatch(
+    "the derivation index and the metric indices must share dimension and variance, got $Dk and $Dg"))
+  TT = Base.promote_op(/,T,Int)
+  iszero(L) &&
+    return zero(ProductTensorValue{CoVectorValue{Dg},SymTensorValue{Dg},TT})
+
+  D = Int(Dg)
+  data = ntuple(Val(L)) do n
+    @inline
+    sij, k = fldmod1(n, D)
+    i, j = _2d_sym_tensor_index_pair(D, sij)
+    sjk = _2d_sym_tensor_linear_index(D,j,k)
+    sik = _2d_sym_tensor_linear_index(D,i,k)
+    (indep_comp_getindex(∂g, (sjk-1)*D + i) +
+     indep_comp_getindex(∂g, (sik-1)*D + j) -
+     indep_comp_getindex(∂g, (sij-1)*D + k)) / 2
+  end
+
+  ProductTensorValue{CoVectorValue{Dg},SymTensorValue{Dg}}(data)
+end
+
+"""
+    partials_to_Christoffel_2(∂g, metric_args...)
+
+Christoffel symbols of the second kind `Γ^k_{i j}` of a metric `g`, from the
+first order partial derivatives `∂g = partial_derivatives(g)(x)` of its value,
+
+    Γᵏᵢⱼ = g_invᵏᵐ (∂ᵢgⱼₘ + ∂ⱼgᵢₘ - ∂ₘgᵢⱼ) / 2
+
+`metric_args` contains the metric information, see [`parse_metric_data`](@ref).
+`partials_to_Christoffel_2` uses `g_inv`.
+
+See also [`partials_to_Christoffel_1`](@ref)
+"""
+function partials_to_Christoffel_2(
+  ∂g::ProductTensorValue{A,SymTensorValue{Dg},T,Tuple{Dk,Dg,Dg},3,L},
+  metric_args::Vararg{_MetricArg}) where {A,Dk,Dg,T,L}
+
+  Γ1 = partials_to_Christoffel_1(∂g)
+  V = ProductTensorValue{ContraVectorValue{inverse_variance(Dg)},SymTensorValue{Dg}}
+  iszero(L) && return zero(V{eltype(Γ1)})
+
+  md = parse_metric_data(metric_args...)
+  isidentity(md) && return V(Tuple(Γ1))
+
+  (; g_inv) = md
+  D = Int(Dg)
+  _check_metric_dim(g_inv, D)
+
+  # `Γ_{kij} = g_{kl} Γˡᵢⱼ`
+  Γ = SMatrix{D,(D*(D+1))÷2}(Tuple(Γ1))
+  V(Tuple(get_array(g_inv) * Γ))
+end

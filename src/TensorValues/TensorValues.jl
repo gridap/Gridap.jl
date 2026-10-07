@@ -160,6 +160,8 @@ export grad_to_2form
 export partials_to_exteriorderivative
 export partials_to_liederivative
 export partials_to_codifferential
+export partials_to_Christoffel_1
+export partials_to_Christoffel_2
 export partials_op_rule
 
 import Base: show
