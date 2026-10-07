@@ -192,9 +192,16 @@ end
 function derivatives_type(::Type{T}, x::Union{Point,ContraVectorValue}, ::Val{N}) where {T<:Number,N}
   D = Cov(first(size(x))[]) # automatically consider point coordinates are contravariant, and partials are covariant
   zero_partials = zero(SymNTensorValue{NTuple{N,D},eltype(x)})
-  V = T <: MultiValue ? T : ScalarValue{T}
-  zero_V = zero(V)
+  zero_V = zero(_varianced_value_type(T))
   typeof(product_tensor(zero_partials,zero_V))
+end
+
+# a Point implicitly converted to ContraVectorValue for Field compatibility
+_varianced_value_type(::Type{T}) where T<:Number = ScalarValue{T}
+_varianced_value_type(::Type{T}) where T<:MultiValue = T
+function _varianced_value_type(::Type{T}) where T<:VectorValue
+  D = first(size(T))
+  D isa Cov ? T : ContraVectorValue{Con(D[]),eltype(T)}
 end
 
 """

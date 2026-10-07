@@ -47,6 +47,14 @@ end
 dot(a::ProductTensorValue{A,VectorValue{D}}, b::VectorValue) where {A,D} =
   contracted_product(Val(1), a, b)
 
+function dot(
+  a::ProductTensorValue{A,VectorValue{D}}, b::ProductTensorValue) where {A,D}
+
+  D2 = first(size(b))
+  contracted_a = D2 isa Cov ? _as_contravariant(a) : a
+  dot(contracted_a, b)
+end
+
 ###############################################################
 # Differential geometry on un-varianced vectors
 ###############################################################
