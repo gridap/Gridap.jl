@@ -136,6 +136,12 @@ function gradient(a::SkeletonCellFieldPair)
   SkeletonCellFieldPair(grad_cf_plus_plus,grad_cf_minus_minus)
 end
 
+function (k::PartialDerivatives)(a::SkeletonCellFieldPair)
+  ∂cf_plus_plus = k(getfield(a, :cf_plus))
+  ∂cf_minus_minus = k(getfield(a, :cf_minus))
+  SkeletonCellFieldPair(∂cf_plus_plus, ∂cf_minus_minus)
+end
+
 function ∇∇(a::SkeletonCellFieldPair)
   hess_cf_plus_plus = ∇∇(getfield(a,:cf_plus))
   hess_cf_minus_minus = ∇∇(getfield(a,:cf_minus))

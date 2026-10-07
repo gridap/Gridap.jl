@@ -434,9 +434,9 @@ xc = ContraVectorValue(1.0,2.0)
   num_indep_components(SymNTensorValue{Tuple{cov2,cov2},Float64})
 
 @test derivatives_type(VectorValue{2,Float64},xc,Val(1)) ===
-  ProductTensorValue{SymNTensorValue{Tuple{cov2}},VectorValue{2},Float64,Tuple{cov2,2},2,4}
+  ProductTensorValue{SymNTensorValue{Tuple{cov2}},ContraVectorValue{con2},Float64,Tuple{cov2,con2},2,4}
 @test derivatives_type(VectorValue{2,Float64},xc,Val(2)) ===
-  ProductTensorValue{SymNTensorValue{Tuple{cov2,cov2}},VectorValue{2},Float64,Tuple{cov2,cov2,2},3,6}
+  ProductTensorValue{SymNTensorValue{Tuple{cov2,cov2}},ContraVectorValue{con2},Float64,Tuple{cov2,cov2,con2},3,6}
 
 # A `Point` gives the same derivatives as the contravariant vector of the same
 # dimension and component type
@@ -450,7 +450,7 @@ end
 @test num_indep_components(derivatives_type(SymTensorValue{2,Float64},xc,Val(2))) == 3*3
 
 for x in (ContraVectorValue(1.0,2.0), Point(1.0,2.0))
-  for V in (Float64, VectorValue{2,Float64}, CoVectorValue{cov2,Float64,2},
+  for V in (Float64, ContraVectorValue{con2,Float64,2}, CoVectorValue{cov2,Float64,2},
             TensorValue{2,2,Float64}, SymTensorValue{2,Float64})
     for N in 0:2
       D = @inferred derivatives_type(V,x,Val(N))

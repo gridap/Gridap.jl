@@ -537,6 +537,8 @@ end
 testitem(a::Transpose{<:Field}) = testitem(a.parent)
 evaluate!(cache,k::Broadcasting{typeof(∇)},a::Transpose{<:Field}) = transpose(k(a.parent))
 evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::Transpose{<:Field}) = transpose(k(a.parent))
+evaluate!(cache,k::Broadcasting{PartialDerivatives{Np}},a::Transpose{<:Field}) where Np =
+  transpose(k(a.parent))
 
 return_value(k::Transpose{<:Field},x::Point) = transpose(return_value(k.parent,x))
 return_cache(k::Transpose{<:Field},x::Point) = return_cache(k.parent,x)

@@ -580,6 +580,7 @@ get_triangulation(f::CellFieldAt) = get_triangulation(f.parent)
 DomainStyle(::Type{CellFieldAt{T,F}}) where {T,F} = DomainStyle(F)
 gradient(a::CellFieldAt{P}) where P = CellFieldAt{P}(gradient(a.parent))
 ∇∇(a::CellFieldAt{P}) where P = CellFieldAt{P}(∇∇(a.parent))
+(k::PartialDerivatives)(a::CellFieldAt{P}) where P = CellFieldAt{P}(k(a.parent))
 function similar_cell_field(f::CellFieldAt{T},cell_data,trian,ds) where T
   parent = similar_cell_field(f.parent,cell_data,trian,ds)
   CellFieldAt{T}(parent)

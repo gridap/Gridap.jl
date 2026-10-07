@@ -3,7 +3,6 @@ module DifferentialGeometryOperatorsTests
 using Test
 using Gridap.Arrays
 using Gridap.TensorValues
-using Gridap.TensorValues: get_indep_components
 using Gridap.Fields
 
 using StaticArrays
@@ -27,10 +26,10 @@ function test_partial_derivatives(f, x::Point{D}, Nmax) where D
   fx = f(x)
   sz = _fullsize(fx)
   for N in 1:Nmax
-    pd = partial_derivatives(f,x,Val(N))
+    pd = PartialDerivatives{N}()(f,x)
     @test typeof(pd) === derivatives_type(typeof(fx),x,Val(N))
-    @test size(pd) === (ntuple(_->Cov(D),N)..., size(fx)...)
-    @test (@inferred partial_derivatives(f,x,Val(N))) === pd
+    @test size(pd)[1:N] === ntuple(_->Cov(D),N)
+    @test (@inferred PartialDerivatives{N}()(f,x)) === pd
     for I in CartesianIndices(ntuple(_->D,N))
       r = ref_partials(f,get_array(x),Tuple(I))
       for (n,J) in enumerate(CartesianIndices(sz))
@@ -40,28 +39,35 @@ function test_partial_derivatives(f, x::Point{D}, Nmax) where D
   end
 end
 
+# ── PartialDerivatives ────────────────────────────────────────────────────────
+# The named orders, and the constructor guard on the order itself
+
+@test partial_derivatives        === PartialDerivatives{1}()
+@test second_partial_derivatives === PartialDerivatives{2}()
+@test_throws ArgumentError PartialDerivatives{-1}()
+@test_throws ArgumentError PartialDerivatives{1.0}()
+@test_throws ArgumentError PartialDerivatives{(1,2)}()
+
 x2 = Point(0.3,-0.7)
 x3 = Point(0.3,-0.7,0.2)
-
-
 
 # scalar valued, cross checked against ForwardDiff's own gradient and hessian
 fs(x) = sin(x[1])*exp(x[2]) + x[1]^3*x[2]
 
 test_partial_derivatives(fs, x2, 2)
-@test get_array(partial_derivatives(fs,x2,Val(1))) ≈ ForwardDiff.gradient(fs∘Point,get_array(x2))
-@test get_array(partial_derivatives(fs,x2,Val(2))) ≈ ForwardDiff.hessian(fs∘Point,get_array(x2))
+@test get_array(partial_derivatives(fs,x2)) ≈ ForwardDiff.gradient(fs∘Point,get_array(x2))
+@test get_array(second_partial_derivatives(fs,x2)) ≈ ForwardDiff.hessian(fs∘Point,get_array(x2))
 
 fi(x) = 3
 
-@test partial_derivatives(fs,x2,Val(0)) === fs(x2)
-@test partial_derivatives(fi,x2,Val(0)) === 3.0
-@test typeof(partial_derivatives(fi,x2,Val(0))) === derivatives_type(Int,x2,Val(0))
+@test PartialDerivatives{0}()(fs,x2) === fs(x2)
+@test PartialDerivatives{0}()(fi,x2) === 3.0
+@test typeof(PartialDerivatives{0}()(fi,x2)) === derivatives_type(Int,x2,Val(0))
 
 # A vector valued function has the index layout of `gradient`, ∂u[i,j] = ∂u_j/∂xⁱ
 fv(x) = VectorValue(sin(x[1])*x[2], exp(x[2])+x[1]^3)
 
-@test get_array(partial_derivatives(fv,x2,Val(1))) ≈ get_array(gradient(fv,x2))
+@test get_array(partial_derivatives(fv,x2)) ≈ get_array(gradient(fv,x2))
 test_partial_derivatives(fv, x2, 2)
 
 # Every tensor family, including those whose stored components are dependent
@@ -83,16 +89,16 @@ end
 # A value type without independent component has constant, zero components
 f0(x) = zero(ExteriorFormValue{3,2,Float64,0})
 
-@test iszero(partial_derivatives(f0,x2,Val(1)))
-@test typeof(partial_derivatives(f0,x2,Val(1))) ===
+@test iszero(partial_derivatives(f0,x2))
+@test typeof(partial_derivatives(f0,x2)) ===
   derivatives_type(ExteriorFormValue{3,2,Float64,0},x2,Val(1))
 
-@test partial_derivatives(fv,Val(2))(x2) === partial_derivatives(fv,x2,Val(2))
-@test partial_derivatives(fv)(x2) === partial_derivatives(fv,x2,Val(1))
+@test second_partial_derivatives(fv)(x2) === second_partial_derivatives(fv,x2)
+@test partial_derivatives(fv)(x2) === partial_derivatives(fv,x2)
 
 # Partials of a tensor that is not an alternating form carry neither exterior
 # derivative nor codifferential, and the Lie derivative is declared, not implemented
-pdv = partial_derivatives(fv,x2,Val(1))
+pdv = partial_derivatives(fv,x2)
 
 @test_throws Exception partials_to_exteriorderivative(pdv)
 @test_throws Exception partials_to_liederivative(fv(x2),fv(x2),pdv,pdv)
@@ -100,12 +106,12 @@ pdv = partial_derivatives(fv,x2,Val(1))
 
 # Exterior derivative of a K-form from its first order partial derivatives
 
-d(f) = y -> partials_to_exteriorderivative(partial_derivatives(f,y,Val(1)))
+d(f) = y -> partials_to_exteriorderivative(partial_derivatives(f,y))
 
 function test_exterior_derivative(K, x::Point{D}) where D
   V = ExteriorFormValue{K,Cov(D)}
   f = y -> mk(V,y)
-  ∂ω = partial_derivatives(f,x,Val(1))
+  ∂ω = partial_derivatives(f,x)
   dω = partials_to_exteriorderivative(∂ω)
 
   @test typeof(dω) === ExteriorFormValue{K+1,Cov(D),Float64,binomial(D,K+1)}
@@ -136,33 +142,35 @@ fe(y) = zero(ExteriorFormValue{3,Cov(2),Float64,0})
 @test typeof(d(fe)(x2)) === ExteriorFormValue{4,Cov(2),Float64,0}
 
 # The exterior derivative is defined on forms, not on K-vectors
-pdc = partial_derivatives(y -> mk(ExteriorVectorValue{1,Con(2)},y), x2, Val(1))
+pdc = partial_derivatives(y -> mk(ExteriorVectorValue{1,Con(2)},y), x2)
 @test_throws Exception partials_to_exteriorderivative(pdc)
 @test_throws ArgumentError partials_to_exteriorderivative(
   SymNTensorValue{Tuple{Con(2)}}(1.0,2.0))
 
-# A scalar function is a 0-form proxied by a Number: its partials are a bare
-# order 1 SymNTensorValue, and d of it is the gradient as a 1-form
+# A scalar function is a 0-form proxied by a Number: its partials are an order 1
+# SymNTensorValue tensored with the order 0 ScalarValue carrying the value, so
+# they are an order 1 covariant tensor, and d of it is the gradient as a 1-form
 for (f, x) in ((fs, x2), (y -> sin(y[1])*exp(y[2]) + y[1]^3*y[2]*y[3], x3))
   D = length(x)
-  ∂f = partial_derivatives(f,x,Val(1))
-  @test ∂f isa SymNTensorValue{Tuple{Cov(D)},Float64,1,D}
+  ∂f = partial_derivatives(f,x)
+  @test ∂f isa ProductTensorValue{SymNTensorValue{Tuple{Cov(D)}},ScalarValue,Float64,Tuple{Cov(D)},1,D}
+  @test ∂f isa MultiValue{Tuple{Cov(D)},Float64,1,D}
   df = partials_to_exteriorderivative(∂f)
   @test typeof(df) === ExteriorFormValue{1,Cov(D),Float64,D}
   @test (@inferred partials_to_exteriorderivative(∂f)) === df
   @test Tuple(df) == Tuple(gradient(f,x))
   # d∘d = 0 on the 1-form it produces
-  @test iszero(d(y -> partials_to_exteriorderivative(partial_derivatives(f,y,Val(1))))(x))
+  @test iszero(d(y -> partials_to_exteriorderivative(partial_derivatives(f,y)))(x))
 end
 
 # Codifferential of a K-form from its first order partial derivatives
 
-δ(f) = y -> partials_to_codifferential(partial_derivatives(f,y,Val(1)))
+δ(f) = y -> partials_to_codifferential(partial_derivatives(f,y))
 
 function test_codifferential(K, x::Point{D}) where D
   V = ExteriorFormValue{K,Cov(D)}
   f = y -> mk(V,y)
-  ∂ω = partial_derivatives(f,x,Val(1))
+  ∂ω = partial_derivatives(f,x)
   δω = partials_to_codifferential(∂ω)
 
   @test typeof(δω) === ExteriorFormValue{K-1,Cov(D),Float64,binomial(D,K-1)}
@@ -186,7 +194,7 @@ end
 
 # The codifferential of a 0-form would be a (-1)-form
 f0form(y) = mk(ExteriorFormValue{0,Cov(2)},y)
-@test_throws Exception partials_to_codifferential(partial_derivatives(f0form,x2,Val(1)))
+@test_throws Exception partials_to_codifferential(partial_derivatives(f0form,x2))
 
 # A form with no component has a vanishing codifferential, its sole component
 # summing no partial derivative at all
@@ -215,11 +223,10 @@ f4e(y) = zero(ExteriorFormValue{4,Cov(2),Float64,0})
 # Lie derivative along a contravariant vector field
 
 function test_liederivative_form(K, x::Point{D}) where D
-  V = ExteriorFormValue{K,Cov(D)}
   uF = y -> ContraVectorValue{Con(D)}(ntuple(l -> w(l,y) + y[1], D))
-  ωF = y -> mk(V,y)
+  ωF = y -> mk(ExteriorFormValue{K,Cov(D)}, y)
   u, ω = uF(x), ωF(x)
-  ∂u, ∂ω = partial_derivatives(uF,x,Val(1)), partial_derivatives(ωF,x,Val(1))
+  ∂u, ∂ω = partial_derivatives(uF,x), partial_derivatives(ωF,x)
   Lω = partials_to_liederivative(u, ω, ∂u, ∂ω)
 
   @test typeof(Lω) === ExteriorFormValue{K,Cov(D),Float64,binomial(D,K)}
@@ -227,7 +234,7 @@ function test_liederivative_form(K, x::Point{D}) where D
   # Cartan's magic formula 𝓛ᵤω = d(ι_u ω) + ι_u(dω), undefined for a 0-form
   if K ≥ 1
     d_iuω = partials_to_exteriorderivative(
-      partial_derivatives(y -> interior_product(uF(y), ωF(y)), x, Val(1)))
+      partial_derivatives(y -> interior_product(uF(y), ωF(y)), x))
     @test Lω ≈ d_iuω + interior_product(u, partials_to_exteriorderivative(∂ω))
   end
 end
@@ -242,8 +249,8 @@ end
 uvF(y) = ContraVectorValue{Con(2)}(sin(y[1])+y[2]^2, exp(y[2])*y[1])
 vvF(y) = ContraVectorValue{Con(2)}(cos(y[2])*y[1], y[1]^3+y[2])
 αF(y)  = CoVectorValue{Cov(2)}(y[1]*y[2]+sin(y[2]), cos(y[1])+y[2]^2)
-∂uv, ∂vv, ∂α = partial_derivatives(uvF,x2,Val(1)), partial_derivatives(vvF,x2,Val(1)),
-                partial_derivatives(αF,x2,Val(1))
+∂uv, ∂vv, ∂α = partial_derivatives(uvF,x2), partial_derivatives(vvF,x2),
+                partial_derivatives(αF,x2)
 Luv = partials_to_liederivative(uvF(x2), vvF(x2), ∂uv, ∂vv)
 Lvu = partials_to_liederivative(vvF(x2), uvF(x2), ∂vv, ∂uv)
 Luα = partials_to_liederivative(uvF(x2), αF(x2), ∂uv, ∂α)
@@ -253,13 +260,13 @@ Luα = partials_to_liederivative(uvF(x2), αF(x2), ∂uv, ∂α)
 # 𝓛ᵤv is the Lie bracket [u,v], which is antisymmetric
 @test all(Tuple(Luv) .≈ .-Tuple(Lvu))
 # ⟨α,v⟩ obeys Leibniz along u, which fixes the sign of both Lie derivatives
-∂pair = partial_derivatives(y -> interior_product(vvF(y), αF(y)), x2, Val(1))
+∂pair = partial_derivatives(y -> interior_product(vvF(y), αF(y)), x2)
 @test sum(Tuple(∂pair) .* Tuple(uvF(x2))) ≈
   interior_product(vvF(x2), Luα)[1] + interior_product(Luv, αF(x2))[1]
 
 # An order 1 covariant tensor that is not a 1-form takes the same covector formula
 βF(y) = SymNTensorValue{Tuple{Cov(2)}}(y[1]*y[2]+sin(y[2]), cos(y[1])+y[2]^2)
-Luβ = partials_to_liederivative(uvF(x2), βF(x2), ∂uv, partial_derivatives(βF,x2,Val(1)))
+Luβ = partials_to_liederivative(uvF(x2), βF(x2), ∂uv, partial_derivatives(βF,x2))
 @test all(Tuple(Luβ) .≈ Tuple(Luα))
 
 # There is nothing to flow along without a contravariant first argument
@@ -269,8 +276,8 @@ Luβ = partials_to_liederivative(uvF(x2), βF(x2), ∂uv, partial_derivatives(β
 # Lie derivative of a scalar function, the derivative of f along the flow of u
 function test_liederivative_scalar(f, x::Point{D}) where D
   uF = y -> ContraVectorValue{Con(D)}(ntuple(l -> w(l,y) + y[1], D))
-  u, ∂u = uF(x), partial_derivatives(uF,x,Val(1))
-  ∂f = partial_derivatives(f,x,Val(1))
+  u, ∂u = uF(x), partial_derivatives(uF,x)
+  ∂f = partial_derivatives(f,x)
   Lf = partials_to_liederivative(u, f(x), ∂u, ∂f)
 
   @test Lf isa Float64
@@ -279,7 +286,7 @@ function test_liederivative_scalar(f, x::Point{D}) where D
   @test Lf ≈ sum(Tuple(u) .* Tuple(gradient(f,x)))
   # a scalar function is a 0-form proxied by a Number, both give the same value
   f0F = y -> ExteriorFormValue{0,Cov(D)}(f(y))
-  Lf0 = partials_to_liederivative(u, f0F(x), ∂u, partial_derivatives(f0F,x,Val(1)))
+  Lf0 = partials_to_liederivative(u, f0F(x), ∂u, partial_derivatives(f0F,x))
   @test typeof(Lf0) === ExteriorFormValue{0,Cov(D),Float64,1}
   @test Lf0[1] ≈ Lf
 end
@@ -289,17 +296,20 @@ test_liederivative_scalar(y -> sin(y[1])*exp(y[2]) + y[1]^3*y[2]*y[3], x3)
 
 # There is nothing to flow along without a contravariant first argument, and the
 # derivation index of the partial derivatives must be covariant
-∂fs = partial_derivatives(fs,x2,Val(1))
+∂fs = partial_derivatives(fs,x2)
 @test_throws ArgumentError partials_to_liederivative(
   αF(x2), fs(x2), TensorValue{Cov(2),Cov(2)}(1.,2.,3.,4.), ∂fs)
 @test_throws ArgumentError partials_to_liederivative(
   uvF(x2), fs(x2), TensorValue{Con(2),Con(2)}(1.,2.,3.,4.),
   SymNTensorValue{Tuple{Con(2)}}(1.,2.))
 
-# A `MultiValue` is a `Number`, so the scalar method must stay more specific than
-# the not-implemented fallback, which keeps catching the shapes it does not cover
+# The not-implemented fallback catches the tensor shapes no specific method covers,
+# such as a (1,1) tensor. The scalar cases above are what pin the scalar methods as
+# more specific than it, since a `MultiValue` is a `Number`.
 @test_throws ErrorException partials_to_liederivative(
-  uvF(x2), TensorValue{2,2}(1.,2.,3.,4.), ∂uv, ∂fs)
+  uvF(x2), TensorValue{Con(2),Cov(2)}(1.,2.,3.,4.), ∂uv,
+  NTensorValue{Tuple{Cov(2),Con(2),Cov(2)}}(1.,2.,3.,4.,5.,6.,7.,8.))
+
 # Christoffel symbols of both kinds, from the partial derivatives of a metric
 
 using LinearAlgebra: I

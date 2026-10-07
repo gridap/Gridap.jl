@@ -37,6 +37,12 @@ function lazy_map(k::Broadcasting{typeof(gradient)},a::LazyArray{<:Fill{<:BlockM
   lazy_map(bm,args...)
 end
 
+function lazy_map(k::Broadcasting{<:PartialDerivatives},a::LazyArray{<:Fill{<:BlockMap}})
+  args = map(i->lazy_map(k,i), a.args)
+  bm = a.maps.value
+  lazy_map(bm, args...)
+end
+
 # evaluate + ArrayBlock
 
 function return_value(f::ArrayBlock{A,N},x) where {A,N}

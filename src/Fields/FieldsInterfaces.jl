@@ -1100,6 +1100,10 @@ function Fields.evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::VoidBasis)
   VoidBasis(k(a.basis),a.isvoid)
 end
 
+function Fields.evaluate!(cache,k::Broadcasting{PartialDerivatives{Np}},a::VoidBasis) where Np
+  VoidBasis(k(a.basis), a.isvoid)
+end
+
 function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{VoidBasisMap}},x::AbstractArray)
   p = a.maps.value
   @notimplementedif p.isvoid
