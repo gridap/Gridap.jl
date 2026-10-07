@@ -224,6 +224,17 @@ codifferential(ω) = Operation(partials_to_codifferential)(partial_derivatives(�
 # metric too: decide on an API for the Christoffel symbols before adding them.
 
 """
+    koszul(ω)
+
+Koszul differential of a differential K-form `ω`, is a (K-1)-form.
+
+`κ_x(ω) = ι_x(ω)` contracts `ω` with the evaluation point, which the identity
+field supplies as a second argument.
+"""
+koszul(ω::Field) = Operation(koszul)(GenericField(identity),ω)
+koszul(ω::Function) = koszul(GenericField(ω))
+
+"""
     d_0form(f) = to_1form(∇(f))
 
 Discrete exterior derivative of a scalar (0-form) cell field.
@@ -256,10 +267,10 @@ for (diff_op, op) in (
   end
 end
 
-# Broadcasting of differential operators using partial_derivatives
+# Broadcasting of differential operators using partial_derivatives.
+
 for (diff_op, op) in (
   (:exterior_derivative,:partials_to_exteriorderivative),
-  (:lie_derivative,     :partials_to_liederivative),
   (:codifferential,     :partials_to_codifferential),
 )
   @eval begin

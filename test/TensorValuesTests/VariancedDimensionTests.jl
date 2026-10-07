@@ -128,13 +128,20 @@ f_con   = SymFourthOrderTensorValue{con2}(1:9...)
 
 @test t_mix ≈ t_mix
 @test t_int ≈ TensorValue{2,2}(1.0,2.0,3.0,4.0)
-# `get_array` erases variance: sizes equal in value but not in variance compare false
-@test !(t_mix ≈ t_int)
-@test !(t_mix ≈ t_cov)
-@test !(t_mix ≈ t_mix2)
-@test !(s_cov ≈ s_int)
+# variance is part of the size, so tensors differing by it are not comparable
+@test_throws DimensionMismatch (t_mix ≈ t_int)
+@test_throws DimensionMismatch (t_mix ≈ t_cov)
+@test_throws DimensionMismatch (t_mix ≈ t_mix2)
+@test_throws DimensionMismatch (s_cov ≈ s_int)
 # a genuine size mismatch is still reported by the array comparison
 @test_throws DimensionMismatch (t_int ≈ TensorValue{2,3}(1:6...))
+
+# Point approx with ContraVectorValue
+@test VectorValue(1.0,2.0) ≈ ContraVectorValue{con2}((1.0,2.0))
+@test ContraVectorValue{con2}((1.0,2.0)) ≈ VectorValue(1.0,2.0)
+@test !(VectorValue(1.0,2.0) ≈ ContraVectorValue{con2}((1.0,3.0)))
+@test_throws DimensionMismatch (VectorValue(1.0,2.0) ≈ CoVectorValue{cov2}((1.0,2.0)))
+@test_throws DimensionMismatch (VectorValue(1.0,2.0) ≈ ContraVectorValue{con3}((1.0,2.0,3.0)))
 
 # `==` already discriminates variance through the size type parameter
 @test t_mix != t_int
@@ -621,6 +628,12 @@ end
 @test_throws DimensionMismatch t_cov .* t_con
 @test_throws DimensionMismatch t_cov .* t_int
 @test_throws DimensionMismatch s_cov .* s_int
+
+# Point with ContraVectorValue broadcasts
+@test (v2_un .* v2) isa ContraVectorValue{con2}
+@test (v2_un .* v2) == (v2 .* v2)
+@test (v2 .* v2_un) == (v2 .* v2)
+@test_throws DimensionMismatch v2_un .* ContraVectorValue{con3}((1.0,2.0,3.0))
 
 # ==================================================================
 # contracted_product

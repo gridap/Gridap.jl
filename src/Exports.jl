@@ -84,13 +84,6 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Fields ε
 @publish Fields symmetric_gradient
 
-#@publish Fields DifferentialForm
-#@publish Fields ExteriorDerivativeForm
-#@publish Fields CodifferentialForm
-#@publish Fields KoszulForm
-#@publish Fields PullbackForm
-#@publish Fields hodge_star_form
-
 @publish ReferenceFEs is_simplex
 @publish ReferenceFEs is_n_cube
 @publish ReferenceFEs simplexify

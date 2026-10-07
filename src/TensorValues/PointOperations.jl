@@ -55,6 +55,22 @@ function dot(
   dot(contracted_a, b)
 end
 
+############################
+# Comparison and broadcast #
+############################
+
+(≈)(a::VectorValue{D}, b::ContraVectorValue; kwargs...) where D =
+  ≈(ContraVectorValue{D}(Tuple(a)), b; kwargs...)
+
+(≈)(a::ContraVectorValue, b::VectorValue{D}; kwargs...) where D =
+  ≈(a, ContraVectorValue{D}(Tuple(b)); kwargs...)
+
+Base.broadcasted(f, a::VectorValue{D}, b::ContraVectorValue) where D =
+  Base.broadcasted(f, ContraVectorValue{D}(Tuple(a)), b)
+
+Base.broadcasted(f, a::ContraVectorValue, b::VectorValue{D}) where D =
+  Base.broadcasted(f, a, ContraVectorValue{D}(Tuple(b)))
+
 ###############################################################
 # Differential geometry on un-varianced vectors
 ###############################################################

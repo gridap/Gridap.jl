@@ -39,7 +39,6 @@ import Gridap.Fields: gradient, DIV
 import Gridap.Fields: ∇∇
 import Gridap.Fields: integrate
 import Gridap.Fields: grad2curl
-import Gridap.Fields: hodge_star_form
 import Gridap.Fields: exterior_derivative, codifferential
 import Gridap.Geometry: num_cells
 import Gridap.Geometry: get_triangulation

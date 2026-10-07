@@ -119,12 +119,6 @@ export second_partial_derivatives
 export exterior_derivative, 𝑑
 export lie_derivative, 𝓛
 export codifferential
-#export DifferentialForm
-#export ExteriorDerivativeForm
-#export CodifferentialForm
-#export KoszulForm
-#export PullbackForm
-#export hodge_star_form
 
 # Re-export from Gridap.Arrays
 export ArrayBlock
@@ -155,7 +149,5 @@ include("FieldArrayBlocks.jl")
 include("InverseFields.jl")
 
 include("DensifyInnerMostBlockLevelMaps.jl")
-
-include("DifferentialForms.jl")
 
 end

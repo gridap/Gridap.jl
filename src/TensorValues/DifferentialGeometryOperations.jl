@@ -78,6 +78,8 @@ method on the tensors both accept.
 end
 
 alternation(a::SkewSymKTensorValue) = a
+alternation(a::MultiValue{Tuple{}}) = throw(ArgumentError(
+  "alternation undefined for $(typeof(a)): it has no dimension nor variance."))
 const 𝔸 = alternation
 
 # ============================================================
@@ -508,8 +510,6 @@ transposed Jacobian `Jt = ∇φ`, that is `Jt[j,i] = ∂φⁱ/∂ξʲ`.
 The domain index `1≤j≤m` of `Jt` is covariant and its image index `1≤i≤n`
 contravariant, so `Jt` has size `(Cov(Dm), Con(Dn))`, the result is an
 `ExteriorFormValue{K,Cov(Dm)}`.
-
-A Field-level method for lazy pullbacks is provided in `Gridap.Fields`.
 """
 @generated function pullback(ω::ExteriorFormValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
   Dm isa Cov || return :(throw(ArgumentError(

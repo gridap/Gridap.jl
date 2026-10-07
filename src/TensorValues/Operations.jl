@@ -1577,19 +1577,29 @@ end
 # Broadcast
 ###############################################################
 
-#function _broadcast_check(a::MultiValue, b::MultiValue)
-#  size(a) === size(b) || throw(DimensionMismatch(
-#    "Cannot broadcast over tensors of sizes $(size(a)) and $(size(b))"))
-#end
+# Tensor components need to be relative to comparable tensor bases for
+# operations to be well defines.
+function _broadcast_check(a::MultiValue, b::MultiValue)
+  size(a) === size(b) || throw(DimensionMismatch(
+    "Cannot broadcast over tensors of sizes $(size(a)) and $(size(b))"))
+end
 
-function Base.broadcasted(f, a::VectorValue{D}, b::VectorValue{D}) where D
+function Base.broadcasted(f, a::VectorValue, b::VectorValue)
+  _broadcast_check(a, b)
   VectorValue(map(f, a.data, b.data))
 end
 
-function Base.broadcasted(f, a::TensorValue{D1,D2}, b::TensorValue{D1,D2})  where {D1,D2}
+function Base.broadcasted(f, a::ContraVectorValue{D}, b::ContraVectorValue) where D
+  _broadcast_check(a, b)
+  ContraVectorValue{D}(map(f, a.data, b.data))
+end
+
+function Base.broadcasted(f, a::TensorValue{D1,D2}, b::TensorValue)  where {D1,D2}
+  _broadcast_check(a, b)
   TensorValue{D1,D2}(map(f, a.data, b.data))
 end
 
-function Base.broadcasted(f, a::AbstractSymTensorValue{D}, b::AbstractSymTensorValue{D}) where D
+function Base.broadcasted(f, a::AbstractSymTensorValue{D}, b::AbstractSymTensorValue) where D
+  _broadcast_check(a, b)
   SymTensorValue{D}(map(f, a.data, b.data))
 end

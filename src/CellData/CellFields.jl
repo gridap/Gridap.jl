@@ -719,7 +719,7 @@ end
 ################################################################################
 # Differential geometry operators needing derivatives or evaluation point
 
-for diff_op in (:exterior_derivative, :codifferential, :hodge_star_form, :koszul)
+for diff_op in (:exterior_derivative, :codifferential, :koszul)
   @eval begin
     $diff_op(a::CellField) = similar_cell_field(a, lazy_map(Broadcasting($diff_op), get_data(a)))
   end

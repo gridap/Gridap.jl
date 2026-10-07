@@ -1,29 +1,18 @@
 module DifferentialFormsTests
-# Lazy Field-level differential forms: DifferentialForm and its wrappers
-# ExteriorDerivativeForm, CodifferentialForm, KoszulForm, PullbackForm,
-# pushforward, and hodge_star_form. Single-point and multi-point evaluation
-# through return_cache/evaluate!.
 
 using Gridap.TensorValues
 using Gridap.Arrays
 using Gridap.Fields
-using Gridap.Fields: DifferentialForm
-using Gridap.Fields: ExteriorDerivativeForm
-using Gridap.Fields: CodifferentialForm
-using Gridap.Fields: KoszulForm
-using Gridap.Fields: PullbackForm
-using Gridap.Fields: hodge_star_form
+using Gridap.Fields: FieldPartialDerivatives, FieldPartialDerivativesArray
+using Gridap.Fields: OperationField
+using FillArrays: Fill
 using Test
 
-fun(x) = 3.0*x[1]
-f = GenericField(fun) # 3x
-g = f*f               # 9x^2
-
-D = 2
-K = 1
-
-ω1 = DifferentialForm{K,D}((f,g)) # 3x dx¹ + 9x² dx²
-ω2 = DifferentialForm{K,D}((g,f)) # 9x² dx¹ + 3x dx²
+# ω1 = 3x¹ dx¹ + 9(x¹)² dx², ω2 swaps the two components
+ω1fun(x) = CoVectorValue(3.0*x[1], 9.0*x[1]^2)
+ω2fun(x) = CoVectorValue(9.0*x[1]^2, 3.0*x[1])
+ω1 = GenericField(ω1fun)
+ω2 = GenericField(ω2fun)
 
 # ── Single-point ──────────────────────────────────────────────────────────────
 
@@ -47,7 +36,7 @@ kx = evaluate(k,x)
 @test kx == ω1x ∧ ω1x
 @test kx.data == (0.0,)
 
-# ── Multi-point: DifferentialForm ─────────────────────────────────────────────
+# ── Multi-point evaluation ────────────────────────────────────────────────────
 
 xs = [Point(1.0,1.0), Point(2.0,1.0), Point(1.0,2.0)]
 
@@ -56,135 +45,292 @@ vals    = evaluate!(cache_v, ω1, xs)
 @test vals isa AbstractVector
 @test length(vals) == 3
 @test vals[1].data == (3.0, 9.0)
-@test vals[2].data == (6.0, 36.0)  # At (2,1): f = 3*2 = 6, g = f² = 36
-@test vals[3].data == (3.0, 9.0)   # At (1,2): f = 3*1 = 3, g = 9
+@test vals[2].data == (6.0, 36.0)  # At (2,1): 3x¹ = 6, 9(x¹)² = 36
+@test vals[3].data == (3.0, 9.0)   # At (1,2): the components ignore x²
 
-# cache reuse with different length
+# cache reuse with a different number of points
 xs2   = [Point(0.5,0.5)]
 vals2 = evaluate!(cache_v, ω1, xs2)
 @test length(vals2) == 1
-@test vals2[1].data == (1.5, 2.25)  # f=1.5, g=2.25
+@test vals2[1].data == (1.5, 2.25)
 
-# ── Multi-point: ExteriorDerivativeForm ───────────────────────────────────────
-# ω1 = 3x[1] dx¹ + 9x[1]² dx²   (components depend only on x[1])
-# dω1 = (∂(9x[1]²)/∂x[1] - ∂(3x[1])/∂x[2]) dx¹∧dx² = (18x[1] - 0) dx¹∧dx²
+# ── FieldPartialDerivatives ───────────────────────────────────────────────────
+# The wrapper defers to the same numbers as the `Function` method, which nests
+# `ForwardDiff.jacobian` directly.
 
-dω1 = ExteriorDerivativeForm(ω1)
+∂ω1 = partial_derivatives(ω1)
+@test ∂ω1 isa FieldPartialDerivatives{1}
+@test ∂ω1 === partial_derivatives(ω1)
 
-cache_d = return_cache(dω1, xs)
-dvals   = evaluate!(cache_d, dω1, xs)
-@test dvals isa AbstractVector
-@test length(dvals) == 3
-@test dvals[1].data[1] ≈ 18.0   atol=1e-12   # x[1]=1
-@test dvals[2].data[1] ≈ 36.0   atol=1e-12   # x[1]=2
-@test dvals[3].data[1] ≈ 18.0   atol=1e-12   # x[1]=1
+ref1 = partial_derivatives(ω1fun, x)
+@test evaluate(∂ω1, x) === ref1
+@test (@inferred evaluate(∂ω1, x)) === ref1
+@test typeof(evaluate(∂ω1, x)) === derivatives_type(typeof(ω1x), x, Val(1))
 
-# ── Multi-point: KoszulForm ───────────────────────────────────────────────────
-# κ_x(ω) = ι_x ω.  At x=(1,1), ω1=(3,9): κ_x(ω) = 3*1 + 9*1 = 12
+∂²ω1 = second_partial_derivatives(ω1)
+@test ∂²ω1 isa FieldPartialDerivatives{2}
+@test evaluate(∂²ω1, x) === second_partial_derivatives(ω1fun, x)
 
-kf = KoszulForm(ω1)
+# Multi point evaluation goes through the generic array method
+@test evaluate(∂ω1, xs) == [evaluate(∂ω1, xi) for xi in xs]
 
-cache_k = return_cache(kf, xs)
-kvals   = evaluate!(cache_k, kf, xs)
-@test kvals isa AbstractVector
-@test length(kvals) == 3
-# At (1,1): ι_{(1,1)}(3 dx¹ + 9 dx²) = 3*1 + 9*1 = 12
-@test kvals[1].data[1] ≈ 12.0   atol=1e-12
-# At (2,1): ω = (6,36), ι_{(2,1)} = 6*2 + 36*1 = 48
-@test kvals[2].data[1] ≈ 48.0   atol=1e-12
+# Order 0 is the value itself, promoted by the coordinate eltype
+@test evaluate(PartialDerivatives{0}()(ω1), x) === ω1x*one(eltype(x))
 
-# ── Single-point KoszulForm and koszul convenience constructor ────────────────
+# Derivation orders add up, the mixed partials of order N+M being held by one
+# fully symmetric derivation tensor
+@test partial_derivatives(∂ω1) === ∂²ω1
+@test evaluate(partial_derivatives(∂ω1), x) === evaluate(∂²ω1, x)
 
-f1_fld = GenericField(x -> x[1])   # coefficient x¹
-f2_fld = GenericField(x -> x[2])   # coefficient x²
-ω_id   = DifferentialForm{1,2}((f1_fld, f2_fld))   # x¹ dx¹ + x² dx²
-κω_fld = KoszulForm(ω_id)
-@test typeof(κω_fld) <: KoszulForm{1,2}
+# Order 0 leaves the partials alone, it does not promote their eltype like it
+# does the value of an undifferentiated field
+@test PartialDerivatives{0}()(∂ω1) === ∂ω1
 
-x0 = Point(2.0, 3.0)
-c = return_cache(κω_fld, x0)
-κval = evaluate!(c, κω_fld, x0)
-@test typeof(κval) <: ExteriorFormValue{0,cov2}
-# κ(ω)(x₀) = x¹·x¹ + x²·x² = 4 + 9 = 13
-@test κval.data[1] ≈ 13.0   atol=1e-12
+# An array of fields is differentiated through `Broadcasting`
+@test_throws ErrorException partial_derivatives([ω1, ω1])
 
-κω2_fld = koszul(ω_id)
-@test typeof(κω2_fld) <: KoszulForm{1,2}
-c2 = return_cache(κω2_fld, x0)
-@test evaluate!(c2, κω2_fld, x0).data[1] ≈ 13.0   atol=1e-12
+# A product with a constant field keeps only the term that differentiates the
+# other factor
+opf = Operation(*)(ConstantField(2.0), ω1)
+@test opf isa OperationField
+@test evaluate(partial_derivatives(opf), x) ===
+      partial_derivatives(y -> 2.0*ω1fun(y), x)
 
-# κ of a 2-form: κ(dx¹∧dx²)(x₀) = -x₀[2] dx¹ + x₀[1] dx²
-f_vol = GenericField(_ -> 1.0)
-ω_vol = DifferentialForm{2,2}((f_vol,))
-κω_vol = KoszulForm(ω_vol)
-c3 = return_cache(κω_vol, x0)
-κval2 = evaluate!(c3, κω_vol, x0)
-@test typeof(κval2) <: CoVectorValue{cov2}
-# ι_{(2,3)}(dx¹∧dx²): d[1] = -x₀[2] = -3, d[2] = x₀[1] = 2
-@test collect(κval2.data) ≈ [-3.0, 2.0]   atol=1e-12
+# Partials of a constant vanish without differentiating anything
+cf = ConstantField(ω1x)
+@test iszero(evaluate(partial_derivatives(cf), x))
+@test evaluate(partial_derivatives(cf), x) ===
+      zero(derivatives_type(typeof(ω1x), x, Val(1)))
+@test evaluate(PartialDerivatives{0}()(cf), x) === ω1x
 
-# ── Field-level hodge_star_form ───────────────────────────────────────────────
+# Derivation is linear, so the partials of a sum are the sum of the partials
+for op in (+,-)
+  @test evaluate(partial_derivatives(Operation(op)(ω1,ω2)), x) ===
+        partial_derivatives(y -> op(ω1fun(y),ω2fun(y)), x)
+end
+@test evaluate(partial_derivatives(ω1+ω2), x) ===
+      partial_derivatives(y -> ω1fun(y)+ω2fun(y), x)
 
-fun1(x) = 3.0*x[1]*x[2]
-fun2(x) = 5.0*x[2]^2
-ω_fld  = DifferentialForm{1,2}((GenericField(fun1), GenericField(fun2)))  # 3xy dx¹ + 5y² dx²
-star_ω = hodge_star_form(ω_fld)
-@test typeof(star_ω) <: DifferentialForm{1,2}
-
-x1 = Point(1.0, 2.0)
-star_val     = evaluate(star_ω, x1)
-expected_val = flat_hodge_star(evaluate(ω_fld, x1))   # value-level star
-@test collect(star_val.data) ≈ collect(expected_val.data)   atol=1e-12
-
-# ── Field-level codifferential ────────────────────────────────────────────────
-
-δω_fld = codifferential(ω_fld)
-@test typeof(δω_fld) <: CodifferentialForm{1,2}
-
-cδ   = return_cache(δω_fld, x1)
-δval = evaluate!(cδ, δω_fld, x1)
-@test typeof(δval) <: ExteriorFormValue{0,cov2}
-
-# ω₁=3xy, ω₂=5y²; ⋆ω = (-ω₂, ω₁); d⋆ω = (∂ω₁/∂x + ∂ω₂/∂y) vol = (3y+10y) vol
-# ⋆d⋆ω = 13y; δω = sign·⋆d⋆ω = -1·(13y).  At (1,2): -26
-@test δval.data[1] ≈ -26.0   atol=1e-8
-
-# ── Field-level pullback (PullbackForm) ───────────────────────────────────────
-
-# Map φ: ℝ² → ℝ²  by φ(ξ) = (aξ¹, bξ²)
-a, b = 2.0, 3.0
-φ_fun(ξ) = VectorValue(a*ξ[1], b*ξ[2])
-φ_fld    = GenericField(φ_fun)
-
-# Form on the target: ω = x¹dx¹ + x²dx²
-g1(x) = x[1]
-g2(x) = x[2]
-ω_target = DifferentialForm{1,2}((GenericField(g1), GenericField(g2)))
-
-pb_fld = pullback(φ_fld, ω_target, Val(2))
-@test typeof(pb_fld) <: PullbackForm{1,2,2}
-
-ξ0  = Point(1.0, 1.0)
-cpb = return_cache(pb_fld, ξ0)
-pb_val = evaluate!(cpb, pb_fld, ξ0)
-@test typeof(pb_val) <: CoVectorValue{cov2}
-# φ*(x¹dx¹+x²dx²) = aξ¹·(adξ¹) + bξ²·(bdξ²) = a²ξ¹dξ¹ + b²ξ²dξ²
-# At ξ=(1,1): (a², b²) = (4, 9)
-@test collect(pb_val.data) ≈ [a^2, b^2]   atol=1e-8
-
-# ── Field-level pushforward ───────────────────────────────────────────────────
-
-
-function _pushforward(φ::Field, v::Field)
-  Operation((J, u) -> J ⋅ u)(∇(φ), v)
+# A linear operation with constant coefficients commutes with derivation at every
+# order, so it acts on the value factor of the partials alone
+for Np in (1,2)
+  @test evaluate(PartialDerivatives{Np}()(Operation(flat_hodge_star)(ω1)), x) ===
+        PartialDerivatives{Np}()(y -> flat_hodge_star(ω1fun(y)), x)
 end
 
-v_fld = GenericField(ξ -> VectorValue(ξ[1], ξ[2]))   # v = ξ (identity vector field)
-pf_fld = _pushforward(φ_fld, v_fld)
-cpf    = return_cache(pf_fld, ξ0)
-pf_val = evaluate!(cpf, pf_fld, ξ0)
-@test typeof(pf_val) <: VectorValue{2}
-# φ_*(ξ) = Jφ·ξ = diag(a,b)·(1,1) = (a,b)
-@test collect(pf_val.data) ≈ [a, b]   atol=1e-8
+# A product rule is a two term sum, each term acting on the value factor of one
+# argument's partials
+sfun(y) = 2.0*y[1]^2
+ufun(y) = ContraVectorValue(y[1], 2.0*y[2])
+wfun(y) = CoVectorValue(3.0, y[1])
+for (op,f1fun,f2fun) in (
+  (*,sfun,ω1fun), (⋅,ufun,wfun), (⊗,ufun,wfun), (∧,ω1fun,ω2fun)
+)
+  opf2 = Operation(op)(GenericField(f1fun), GenericField(f2fun))
+  @test evaluate(partial_derivatives(opf2), x) ===
+        partial_derivatives(y -> op(f1fun(y),f2fun(y)), x)
+end
+
+@test_broken evaluate(partial_derivatives(Operation(⊙)(GenericField(ufun), GenericField(wfun))), x) ===
+             partial_derivatives(y -> ufun(y)⊙wfun(y), x)
+
+# A contraction of the two factors is scalar valued, and its partials keep the
+# product shape with a `ScalarValue` second factor
+@test typeof(evaluate(partial_derivatives(Operation(⋅)(GenericField(ufun),GenericField(wfun))), x)) ===
+      derivatives_type(typeof(ufun(x)⋅wfun(x)), x, Val(1))
+
+# The order 2 rule adds the mixed term pairing the two first derivatives, which
+# is the only non zero one when both factors are affine
+for (op,f1fun,f2fun) in (
+  (*,sfun,ω1fun), (⋅,ufun,wfun), (⊗,ufun,wfun), (∧,ω1fun,ω2fun)
+)
+  opf3 = Operation(op)(GenericField(f1fun), GenericField(f2fun))
+  @test evaluate(second_partial_derivatives(opf3), x) ===
+        second_partial_derivatives(y -> op(f1fun(y),f2fun(y)), x)
+end
+
+@test_broken evaluate(second_partial_derivatives(Operation(⊙)(GenericField(ufun), GenericField(wfun))), x) ===
+             second_partial_derivatives(y -> ufun(y)⊙wfun(y), x)
+
+# The two derivation indices share one fully symmetric tensor, which is not full
+# rank at order 2, so the mixed term has to build that container itself
+@test typeof(evaluate(second_partial_derivatives(Operation(⋅)(GenericField(ufun),GenericField(wfun))), x)) ===
+      derivatives_type(typeof(ufun(x)⋅wfun(x)), x, Val(2))
+
+# In 3D the two derivation indices have six independent pairs, so the order they
+# are stored in is no longer trivial
+x3 = Point(0.3,0.5,0.9)
+s3fun(y) = 2.0*y[1]^2 + y[2]*y[3]
+f3fun(y) = CoVectorValue(y[1]*y[2], 3.0*y[3]^2, y[1]+y[2])
+g3fun(y) = CoVectorValue(y[2]^2, y[1], 4.0)
+u3fun(y) = ContraVectorValue(y[1]^2, y[2]*y[3], y[1])
+w3fun(y) = CoVectorValue(y[3], y[1]*y[2], 2.0)
+for (op,f1fun,f2fun) in ((⋅,u3fun,w3fun), (⊗,u3fun,w3fun), (∧,f3fun,g3fun))
+  opf4 = Operation(op)(GenericField(f1fun), GenericField(f2fun))
+  @test evaluate(second_partial_derivatives(opf4), x3) ===
+        second_partial_derivatives(y -> op(f1fun(y),f2fun(y)), x3)
+end
+
+# Both sides sum the scalar factor's terms in their own order, so one component
+# of this one differs in its last bit
+opf5 = Operation(*)(GenericField(s3fun), GenericField(f3fun))
+@test evaluate(second_partial_derivatives(opf5), x3) ≈
+      second_partial_derivatives(y -> s3fun(y)*f3fun(y), x3)
+@test typeof(evaluate(second_partial_derivatives(opf5), x3)) ===
+      derivatives_type(typeof(s3fun(x3)*f3fun(x3)), x3, Val(2))
+
+# Above order 2 the rule is a multi index Leibniz sum, and a product rule needs
+# exactly two factors
+@test_throws ErrorException PartialDerivatives{3}()(Operation(*)(ConstantField(2.0), ω1))
+@test_throws ErrorException partial_derivatives(Operation(*)(ConstantField(2.0), ω1, ω2))
+
+# A scalar factor's partials have a `ScalarValue` value factor, which scales an
+# order 0 form without dropping its embedding dimension
+z0fun(y) = ExteriorFormValue{0,2}((2.0*y[1],))
+s0fun(y) = 3.0*y[2]
+opf0 = Operation(*)(GenericField(s0fun), GenericField(z0fun))
+@test evaluate(partial_derivatives(opf0), x) ===
+      partial_derivatives(y -> s0fun(y)*z0fun(y), x)
+@test typeof(evaluate(partial_derivatives(opf0), x)) ===
+      derivatives_type(typeof(s0fun(x)*z0fun(x)), x, Val(1))
+
+# Zero and void fields carry the derivation through their wrapper
+@test evaluate(partial_derivatives(ZeroField(ω1)), x) ===
+      zero(derivatives_type(typeof(ω1x), x, Val(1)))
+@test evaluate(partial_derivatives(Fields.VoidField(ω1,false)), x) ===
+      evaluate(partial_derivatives(ω1), x)
+
+# The partials of an affine field are its constant gradient, and it has no curvature
+h = AffineField(TensorValue(1.0,2.0,3.0,4.0), Point(1.0,1.0))
+@test evaluate(partial_derivatives(h), x) ===
+      partial_derivatives(y -> y⋅h.gradient + h.origin, x)
+@test iszero(evaluate(second_partial_derivatives(h), x))
+
+# ── FieldPartialDerivativesArray ──────────────────────────────────────────────
+
+fa  = Fill(ω1, 3)
+∂fa = Broadcasting(partial_derivatives)(fa)
+@test ∂fa isa FieldPartialDerivativesArray{1}
+@test size(∂fa) == size(fa)
+@test axes(∂fa) == axes(fa)
+@test IndexStyle(typeof(∂fa)) === IndexStyle(typeof(fa))
+@test eltype(∂fa) === typeof(∂ω1)
+@test ∂fa[2] === partial_derivatives(fa[2])
+@test evaluate(∂fa[2], x) === ref1
+@test typeof(testvalue(typeof(∂fa))) === typeof(∂fa)
+
+# The order is a type parameter of the operator, so `Broadcasting` carries it into
+# the array rather than being pinned to the first derivatives
+∂²fa = Broadcasting(second_partial_derivatives)(fa)
+@test ∂²fa isa FieldPartialDerivativesArray{2}
+@test ∂²fa[2] === second_partial_derivatives(fa[2])
+@test evaluate(∂²fa[2], x) === second_partial_derivatives(ω1fun, x)
+@test typeof(testvalue(typeof(∂²fa))) === typeof(∂²fa)
+@test lazy_map(Broadcasting(second_partial_derivatives), fa)[1] === second_partial_derivatives(fa[1])
+
+# Orders add up at the array level too
+∂∂fa = Broadcasting(partial_derivatives)(∂fa)
+@test ∂∂fa isa FieldPartialDerivativesArray{2}
+@test ∂∂fa === ∂²fa
+
+# ── exterior_derivative ───────────────────────────────────────────────────────
+# dω1 = (∂₁(9(x¹)²) - ∂₂(3x¹)) dx¹∧dx² = 18x¹ dx¹∧dx²
+
+dω1 = exterior_derivative(ω1)
+@test evaluate(dω1, x) === partials_to_exteriorderivative(ref1)
+@test evaluate(dω1, x) isa ExteriorFormValue{2,cov2}
+@test evaluate(dω1, x).data[1] ≈ 18.0   atol=1e-12
+
+dvals = evaluate(dω1, xs)
+@test length(dvals) == 3
+@test dvals[1].data[1] ≈ 18.0   atol=1e-12   # x¹ = 1
+@test dvals[2].data[1] ≈ 36.0   atol=1e-12   # x¹ = 2
+@test dvals[3].data[1] ≈ 18.0   atol=1e-12   # x¹ = 1
+
+@test evaluate(∇∧ω1, x) === evaluate(dω1, x)  # ∇∧ spells the same operator
+@test evaluate(𝑑(ω1), x) === evaluate(dω1, x)
+
+# d of a 0-form proxied by a Number
+sfun(x) = sin(x[1])*exp(x[2])
+sfld = GenericField(sfun)
+@test evaluate(exterior_derivative(sfld), x) ===
+      partials_to_exteriorderivative(partial_derivatives(sfun, x))
+
+# ── koszul ────────────────────────────────────────────────────────────────────
+# κ_x(ω) = ι_x(ω) contracts with the evaluation point
+
+κω1 = koszul(ω1)
+@test evaluate(κω1, x) === TensorValues.koszul(x, ω1x)
+@test evaluate(κω1, x) isa ExteriorFormValue{0,cov2}
+# ι_{(1,1)}(3 dx¹ + 9 dx²) = 3 + 9
+@test evaluate(κω1, x).data[1] ≈ 12.0   atol=1e-12
+
+κvals = evaluate(κω1, xs)
+@test length(κvals) == 3
+# At (2,1): ω = (6,36), ι = 6*2 + 36*1
+@test κvals[2].data[1] ≈ 48.0   atol=1e-12
+
+ω_id = GenericField(y -> CoVectorValue(y[1], y[2]))
+x0 = Point(2.0, 3.0)
+# κ(ω)(x₀) = (x¹)² + (x²)² = 4 + 9
+@test evaluate(koszul(ω_id), x0).data[1] ≈ 13.0   atol=1e-12
+#@test evaluate(koszul(y -> ExteriorFormValue{1,Cov(2)}((y[1], y[2]))), x0).data[1] ≈ 13.0
+@test evaluate(koszul(y -> CoVectorValue(y[1], y[2])), x0).data[1] ≈ 13.0
+
+# κ of a 2-form: ι_{(2,3)}(dx¹∧dx²) = -x² dx¹ + x¹ dx²
+ω_vol = GenericField(_ -> ExteriorFormValue{2,Cov(2)}((1.0,)))
+κω_vol = evaluate(koszul(ω_vol), x0)
+@test κω_vol isa CoVectorValue{cov2}
+@test collect(κω_vol.data) ≈ [-3.0, 2.0]   atol=1e-12
+
+# ── codifferential ────────────────────────────────────────────────────────────
+# ω = 3x¹x² dx¹ + 5(x²)² dx²; ⋆ω = -5(x²)² dx¹ + 3x¹x² dx²
+# d⋆ω = (∂₁(3x¹x²) + ∂₂(5(x²)²)) vol = (3x² + 10x²) vol, δω = -13x²
+
+ωfun(x) = ExteriorFormValue{1,Cov(2)}((3.0*x[1]*x[2], 5.0*x[2]^2))
+ωfld = GenericField(ωfun)
+x1 = Point(1.0, 2.0)
+
+δω = codifferential(ωfld)
+@test evaluate(δω, x1) === partials_to_codifferential(partial_derivatives(ωfun, x1))
+@test evaluate(δω, x1) isa ExteriorFormValue{0,cov2}
+@test evaluate(δω, x1).data[1] ≈ -26.0   atol=1e-8
+
+# ── pointwise Hodge star, and differentiating through it ──────────────────────
+# The star is an `Operation`, and `partial_derivatives` differentiates the
+# starred field as a black box, so the two compose.
+
+star_ω = Operation(flat_hodge_star)(ωfld)
+@test evaluate(star_ω, x1) === flat_hodge_star(evaluate(ωfld, x1))
+
+d_star_ω = exterior_derivative(star_ω)
+@test evaluate(d_star_ω, x1) ===
+      partials_to_exteriorderivative(partial_derivatives(y -> flat_hodge_star(ωfun(y)), x1))
+# δω = (-1)^{D(K-1)+1} ⋆d⋆ω, with D=2 and K=1 the sign is -1
+@test (-flat_hodge_star(evaluate(d_star_ω, x1))).data[1] ≈ evaluate(δω, x1).data[1]   atol=1e-8
+
+# ── lie_derivative ────────────────────────────────────────────────────────────
+
+ufun(x) = ContraVectorValue(x[1] + 2.0*x[2], x[2]^2)
+ufld = GenericField(ufun)
+
+Lω = lie_derivative(ufld, ωfld)
+@test evaluate(Lω, x1) === partials_to_liederivative(
+  ufun(x1), ωfun(x1),
+  partial_derivatives(ufun, x1), partial_derivatives(ωfun, x1))
+@test evaluate(𝓛(ufld, ωfld), x1) === evaluate(Lω, x1)
+
+# Broadcasting a two argument operator passes both of its arguments
+bL = Broadcasting(lie_derivative)(Fill(ufld,3), Fill(ωfld,3))
+@test evaluate(bL[1], x1) === evaluate(Lω, x1)
+
+bd = Broadcasting(exterior_derivative)(Fill(ωfld,3))
+@test evaluate(bd[1], x1) === evaluate(exterior_derivative(ωfld), x1)
+
+bδ = Broadcasting(codifferential)(Fill(ωfld,3))
+@test evaluate(bδ[1], x1) === evaluate(δω, x1)
+
+bκ = Broadcasting(koszul)(Fill(ωfld,3))
+@test evaluate(bκ[1], x1) === evaluate(koszul(ωfld), x1)
 
 end # module
