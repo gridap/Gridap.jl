@@ -132,22 +132,6 @@ Pushforward of `∇a` by the mapping `ϕ`, or covariant Piola transform.
 push_∇(∇a::Field,ϕ::Field) = pinvJt(∇(ϕ))⋅∇a
 
 """
-    function pinvJt(Jt::MultiValue{Tuple{D,D}}) = inv(Jt)
-    function pinvJt(Jt::MultiValue{Tuple{D1,D2}}) = transpose(inv(Jt⋅transpose(J))⋅Jt)
-
-(Psedo-)inverse of `Jt`.
-"""
-function pinvJt(Jt::MultiValue{Tuple{D,D}}) where D
-  inv(Jt)
-end
-
-function pinvJt(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
-  @check D1 < D2
-  J = transpose(Jt)
-  transpose(inv(Jt⋅J)⋅Jt)
-end
-
-"""
     push_∇∇(∇∇a::Field, ϕ::Field) = @notimplemented
 """
 function push_∇∇(∇∇a::Field,ϕ::Field)

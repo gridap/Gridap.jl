@@ -429,11 +429,23 @@ h3i = ThirdOrderTensorValue{2,2,3}(1:12...)
 # meas and norm
 # ==================================================================
 
-@test meas(t_mix) == meas(t_int)
+@test_throws ErrorException meas(t_mix)
 @test_throws ErrorException meas(t_cov)
 # a row read as a vector is only length preserving without variance
 @test meas(TensorValue{1,2}(3,4)) == 5
 @test_throws ErrorException meas(TensorValue{1,cov2}(3,4))
+# a non-square Jacobian measures the span of its rows, a point domain having the
+# unit measure that leaves an integral summing values
+@test meas(TensorValue{2,3}(2,0, 0,3, 0,0)) == 6
+@test meas(TensorValue{3,4}(1,0,0, 0,1,0, 0,0,1, 0,0,0)) == 1
+@test meas(zero(TensorValue{0,2,Float64,0})) == 1
+
+# the transposed Jacobian of a chart scales that one chart's volume form, so it
+# is measured with its variance dropped, at any shape and only in that order
+@test meas(TensorValue{cov2,con2}(1,2,3,4)) == meas(t_int)
+@test meas(TensorValue{cov2,con3}(2,0, 0,3, 0,0)) == 6
+@test meas(zero(TensorValue{Cov(0),con2,Float64,0})) == 1
+@test_throws ErrorException meas(TensorValue{con2,cov3}(1,0, 0,1, 0,0))
 
 # `norm` inherits its variance rules from `inner`, which pairs index k of `u`
 # with index k of `u`: no varianced tensor has an invariant Frobenius norm, a

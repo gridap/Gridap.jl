@@ -268,11 +268,11 @@ for Ta in tags, Tb in tags
   @test p != product_tensor(2a,b)
 
   # A product of tensors of a variance that cannot contract with itself has no
-  # inner product, like the tensors themselves
+  # metric-free inner product, like the tensors themselves
   if all(i -> can_contract(i,i), size(p))
     @test inner(p,p) == inner(outer(a,b),outer(a,b))
   else
-    @test_throws DimensionMismatch inner(p,p)
+    @test_throws ArgumentError inner(p,p)
   end
 
   @test iszero(zero(p))

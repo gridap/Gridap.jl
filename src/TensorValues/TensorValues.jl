@@ -147,6 +147,8 @@ export sharp, ♯
 export flat_sharp, ♯ᴱ
 export apply_tensor
 export pullback
+export pushforward
+export pinvJt
 export symbolic_coordinates
 export koszul
 export vol_coeff
@@ -215,9 +217,9 @@ include("ProductTensorValueTypes.jl")
 
 include("Indexing.jl")
 
-include("Operations.jl")
-
 include("MetricDatas.jl")
+
+include("Operations.jl")
 
 include("DifferentialGeometryOperations.jl")
 

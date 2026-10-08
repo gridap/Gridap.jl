@@ -1074,6 +1074,73 @@ function inv(a::MultiValue{Tuple{D1,D2}}) where {D1,D2}
   TensorValue{inverse_variance(D2),inverse_variance(D1)}(inv(get_array(a)))
 end
 
+"""
+    pinvJt(Jt::MultiValue{Tuple{D1,D2}})
+
+(Pseudo-)inverse of a transposed Jacobian `Jt`. This is the gradient
+`iJt=∇φ⁻¹` of the inverse of a diffeomorphism `φ`, computed from its gradient
+`Jt=∇φ`.
+
+If `Jt` is full rank, that is `D = Int(min(D1,D2))` the manifold dimension,
+`pinvJt(Jt)` is
+- `inv(Jt)`     if `D1` = `D2`,
+- `J⋅inv(Jt⋅J)` if `D1` < `D2`,
+- `inv(J⋅Jt)⋅J` if `D1` > `D2`,
+with `J = transpose(Jt)`. These closed forms are the Moore-Penrose
+pseudo-inverse of `Jt`, to which `pinvJt` falls back when `Jt` is rank
+deficient. Like the inverse, the pseudo-inverse swaps the position and
+variance of both indices of the argument.
+
+# Extended help
+
+Let φ :  ℝᴰᵐ ⊃ M → N ⊂ ℝᴰⁿ be a ``C^1``-diffeomorphism between manifolds M
+and N of dimension Dm = min(Dm,Dn), and ψ = φ⁻¹ its inverse. Write Jφ for the
+Jacobian (transposed gradient) of φ, and Jψ for that of ψ. Both have a
+contravariant first index, in the image of their map, and a covariant
+second index, in its domain. Then
+
+    Jφᵀ = pinvJt(Jψᵀ) = (Jψ⋅Jψᵀ)⁻¹⋅Jψ
+    Jψᵀ = pinvJt(Jφᵀ) = Jφ⋅(Jφᵀ⋅Jφ)⁻¹
+
+where these relations collapse to Jφ = Jψ⁻¹ if Dm == Dn. Remark that these
+relations are not correct with regard to variance (two indices raising and
+lowering are needed). This is because Jφ and Jψ are the matrices of the tangent
+maps by φ and ψ and are thus coordinate dependent, they are not proper tensors.
+Conversion so `SArray` are used for the computations.
+
+Consider p̂ ∈ M, p = φ(p̂) ∈ N, and v̂ ∈ Tp̂M, ω̂ ∈ Tp̂*M, v ∈ TpN, ω ∈ Tp*M. The
+four transports between the (co)tangent spaces of M and N are
+
+    v = φ_* v̂ = ψ^* v̂,   vⁱ = v̂ʲ Jφ[j,i]
+    ω̂ = ψ_* ω = φ^* ω,   ω̂ⱼ = Jφ[j,i] ωᵢ
+    v̂ = ψ_* v = φ^* v,   v̂ʲ = vⁱ Jψ[i,j]
+    ω = φ_* ω̂ = ψ^* ω̂,   ωᵢ = Jψ[i,j] ω̂ⱼ
+
+The pushforward of a covariant tensor and the pullback of a contravariant one
+are transports by the inverse map, hence the need for its inverse Jacobian and
+`pinvJt`.
+"""
+function pinvJt(J_or_Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+  @assert is_opposit_variance(D1,D2) "the argument is not the gradient or the
+  Jacobian of a cell map, it needs be of type `(1,1)`, got
+  $(tensor_type(J_or_Jt)[1:2])"
+
+  V = TensorValue{inverse_variance(D2),inverse_variance(D1)}
+  m = get_array(J_or_Jt)
+
+  # pinv is not systematically used because it is very slow (500ns minimum, vs
+  # 10-20 for the full rank formula) TODO: implement custom lu for small
+  # MMatrix in StaticArrays to avoid calling blas, to optimize pinv.
+  m_pinv = if D1 == D2
+    iszero(abs(det(m))) ? pinv(m) : inv(m)
+  elseif D1 < D2
+    iszero(abs(det(m*m'))) ? pinv(m) : m'*inv(m*m')
+  else # D1 > D2
+    iszero(abs(det(m'*m))) ? pinv(m) : inv(m'*m)*m'
+  end
+  V(m_pinv)
+end
+
 const InverseStableTensorTypes{D} = Union{SymTensorValue{D},SkewSymTensorValue{D}}
 
 for V in (:SymTensorValue, :SkewSymTensorValue)
@@ -1311,9 +1378,21 @@ end
 Returns the absolute `D1`-dimensional volume of the parallelepiped
 formed by the rows of `J`, that is `sqrt(det(J⋅Jᵀ))`, or `abs(det(J))` if `D1`=`D2`.
 This is used to compute the contribution of the metric `G = J⋅Jᵀ` of a changes of variables in integrals.
+
+If it has variance, `J` may only be a cell map gradient of size `(Cov(D1), Con(D2))`.
 """
 @generated function meas(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
-  can_contract(D1,D2) || @unreachable "meas undefined for this tensor shape: $(size(Jt)), indices cannot contract"
+  if D1 isa Cov && D2 isa Con
+    V = TensorValue{Int(D1),Int(D2)}
+    return :( meas($V(get_array(Jt))) )
+  end
+
+  if !(D1 isa Int && D2 isa Int)
+    msg = "meas undefined for this tensor shape: $(size(Jt)), it is not the
+      transposed Jacobian of a chart"
+    return :( @unreachable $msg )
+  end
+
   D1 == D2 && return :( abs(det(Jt)) )
   :( sqrt(det(Jt ⋅ transpose(Jt))) )
 end

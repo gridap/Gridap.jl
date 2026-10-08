@@ -351,8 +351,8 @@ for (α, β) in [(ExteriorFormValue{0,D3}((7.0,)),
   # covariant indices, which `can_contract` pairs only with contravariant ones.
   if K > 0 # MultiValue has no constructor from the 0-dimensional array of a 0-form
     @test contracted_product(Val(K), _full(α), _full(β)) ≈ factorial(K) * flat_alt_inner(α, β)
-    # `inner` raises no index, so it refuses two covariant ones
-    @test_throws DimensionMismatch inner(α, β)
+    # `inner` raises no index on its own, so two covariant ones need a metric
+    @test_throws ArgumentError inner(α, β)
   end
 end
 
@@ -433,6 +433,7 @@ _str(io_props, ω) = sprint((io, x) -> show(io, MIME("text/plain"), x), ω;
 a_i  = CoVectorValue{D3,Int}((1,2,3))
 b_f  = CoVectorValue{D3,Float32}((1f0,2f0,3f0))
 v_i  = VectorValue{D3,Int}(1,2,3)
+cv_i = ContraVectorValue{2,Int}((1,2))
 g_f  = SymTensorValue{Cov(D3),Float32}(1f0,0f0,0f0,1f0,0f0,1f0)
 gif  = inv(g_f)
 Jt_f = TensorValue{cov2,con3,Float32}(1f0,0f0,  0f0,1f0,  0f0,0f0)
@@ -447,6 +448,7 @@ Jt_f = TensorValue{cov2,con3,Float32}(1f0,0f0,  0f0,1f0,  0f0,0f0)
 # to one that can hold the inverse it may have to compute.
 @test eltype(sharp(b_f, SymTensorValue{Con(D3),Int}(1,0,0,1,0,1))) === Float64
 @test eltype(pullback(a_i, Jt_f))            === Float32
+@test eltype(pushforward(cv_i, Jt_f))        === Float32
 @test eltype(outer(v_i, b_f))                === Float32
 @test typeof(flat_alt_inner(a_i, b_f))       === Float32
 @test typeof(alt_inner(a_i, b_f, gif))       === Float32
@@ -464,11 +466,13 @@ Jt_f = TensorValue{cov2,con3,Float32}(1f0,0f0,  0f0,1f0,  0f0,0f0)
 # Λᴷ is trivial for K > D. Operations on such a form must keep the promoted
 # scalar type rather than fall back to the eltype of the empty tuple.
 triv = ExteriorFormValue{4,D3,Float32}(())
+triv_v = ExteriorVectorValue{3,2,Float32}(())
 
 # ι lands in the nontrivial Λ³: a zero form, not an empty one
 @test ι(v_i, triv) === zero(ExteriorFormValue{3,D3,Float32})
 @test a_i ∧ triv   === zero(ExteriorFormValue{5,D3,Float32})
 @test pullback(triv, Jt_f) === zero(ExteriorFormValue{4,2,Float32})
+@test pushforward(triv_v, Jt_f) === zero(ExteriorVectorValue{3,con3,Float32})
 @test apply_tensor(triv, v_i, v_i, v_i, v_i) === zero(Float32)
 # the vectors take part in the promotion even though no term survives
 @test (@inferred apply_tensor(triv, v_i, v_i, v_i, VectorValue{D3,Float64}(1,2,3))) === zero(Float64)

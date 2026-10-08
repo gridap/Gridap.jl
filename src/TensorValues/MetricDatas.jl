@@ -114,6 +114,12 @@ function Base.getproperty(::MetricData{Nothing,Nothing,T}, name::Symbol) where T
   end
 end
 
+function _check_metric_dim(g_or_ginv::SymTensorValue{Dg}, D::Int) where Dg
+  Int(Dg) == D || throw(DimensionMismatch(
+    "the metric tensor has dimension $(Int(Dg)), but the tensor it acts on has dimension $D"))
+  nothing
+end
+
 """
     isidentity(md::MetricData) -> Bool
 
