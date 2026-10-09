@@ -93,6 +93,13 @@ _rm_size_variance(s::Tuple) = tuple(Int.(s)...)
   :(Tuple{$(Int.(S.parameters)...)})
 end
 
+# The size with the variance of every dimension flipped, as `inverse_variance`
+# flips one. Un-varianced dimensions are left alone.
+@generated function _inverse_variance_size(::Type{S}) where S<:Tuple
+  # @generated ensures a compile time constant and inference
+  :(Tuple{$(map(inverse_variance, tuple(S.parameters...))...)})
+end
+
 """
     Dim = Union{Int, Cov, Con}
 
@@ -137,6 +144,12 @@ is_opposit_variance(i::Dim, j::Dim) = false
 Whether dimensions `i` and `j` can be contracted.
 """
 can_contract(i::Dim, j::Dim) = is_opposit_variance(i,j) && i==j
+
+@inline function _ensure_contract(i::Dim, j::Dim)
+  can_contract(i, j) || throw(DimensionMismatch(
+    "Indices $i and $j cannot be contracted, see `can_contract`."))
+  nothing
+end
 
 """
     inverse_variance(i::Dim)
@@ -511,9 +524,9 @@ function component_basis(V::Type{<:MultiValue})
 end
 
 """
-    representatives_of_componentbasis_dual(V::Type{<:MultiValue}) -> V[ Vᵢ... ]
-    representatives_of_componentbasis_dual(T::Type{<:Real}) -> [ one(T) ]
-    representatives_of_componentbasis_dual(a::V<:Number)
+    representatives_of_componentbasis_dual(V::Type{<:MultiValue}, metric_args...) -> V[ Vᵢ... ]
+    representatives_of_componentbasis_dual(T::Type{<:Real}, metric_args...) -> [ one(T) ]
+    representatives_of_componentbasis_dual(a::V<:Number, metric_args...)
 
 Given a `Number` type `V` with N independent components, return a vector of
 N tensors ``\\{ Vⁱ \\}_i`` that define the form basis ``\\{ Lⁱ := (u → u ⊙ Vⁱ) \\}_i`` that
@@ -530,27 +543,37 @@ because ``Vʲ ≠ Vᵢ``, ``Vᵢ⊙Vⱼ≠δᵢʲ`` and
 
     u ≠ sum( indep_comp_getindex(u,i)*Vⁱ for i ∈ 1:N )
 
+`metric_args` is the metric information the inner product of a varianced `V`
+requires, see [`parse_metric_data`](@ref) and [`inner`](@ref).
+
 See also [`representatives_of_basis_dual`](@ref ) to compute a dual subspace basis.
 """
-representatives_of_componentbasis_dual(a::Number) = representatives_of_componentbasis_dual(typeof(a))
-representatives_of_componentbasis_dual(T::Type{<:Real}) = [ one(T) ]
-function representatives_of_componentbasis_dual(V::Type{<:MultiValue})
+representatives_of_componentbasis_dual(a::Number, metric_args...) =
+  representatives_of_componentbasis_dual(typeof(a), metric_args...)
+representatives_of_componentbasis_dual(T::Type{<:Real}, metric_args...) = [ one(T) ]
+function representatives_of_componentbasis_dual(V::Type{<:MultiValue}, metric_args...)
   V = typeof(zero(V)) # makes V concrete for type inference
   N = num_indep_components(V)
-  T = eltype(V)
-  B = component_basis(V)
-
-  M = MMatrix{N,N,T}(undef)
-  for ci in CartesianIndices(M)
-    M[ci] = B[ci[1]] ⊙ B[ci[2]]
-  end
-  Minv = inv(M)
+  iszero(N) && return V[]
+  Minv = inv(_gram_matrix(component_basis(V), metric_args...))
 
   return V[ Tuple(Minv[i,:]) for i in 1:N ]
 end
 
+# The Gram matrix `Mᵢⱼ = Bᵢ⊙Bⱼ` of a non-empty family of tensors, the inner
+# product being taken with the given metric.
+function _gram_matrix(B, metric_args...)
+  N = length(B)
+  m11 = inner(first(B), first(B), metric_args...)
+  M = MMatrix{N,N,typeof(m11)}(undef)
+  for ci in CartesianIndices(M)
+    M[ci] = inner(B[ci[1]], B[ci[2]], metric_args...)
+  end
+  M
+end
+
 """
-    representatives_of_basis_dual(basis)
+    representatives_of_basis_dual(basis, metric_args...)
 
 Same as [`representatives_of_componentbasis_dual`](@ref), but takes a basis as
 arguement, i.e. a collection of basis *vectors* -- in the linear algebra sense --
@@ -576,25 +599,21 @@ grad_Vd_dual_basis = representatives_of_basis_dual(grad_Vd_basis)
 [ gi ⊙ gdi for gi in grad_Vd_basis, gdi in grad_Vd_dual_basis] ≈ LinearAlgebra.I # true
 ```
 """
-function representatives_of_basis_dual(B)
-  isempty(B) && return B # also ensures we get a collection
-  representatives_of_basis_dual(B...)
+function representatives_of_basis_dual(B, metric_args...)
+  isempty(B) && return B
+  _representatives_of_basis_dual(B, metric_args...)
 end
-function representatives_of_basis_dual(B::T...) where {T<:Real}
-  @assert isone(length(B)) && !iszero(B[1])
-  T[ 1/B[1] ]
-end
-function representatives_of_basis_dual(B::V...) where {V<:MultiValue}
-  N = length(B)
-  T = eltype(V)
 
-  M = MMatrix{N,N,T}(undef)
-  for ci in CartesianIndices(M)
-    M[ci] = B[ci[1]] ⊙ B[ci[2]]
-  end
-  Minv = inv(M)
+function _representatives_of_basis_dual(B, metric_args...)
+  V = eltype(B)
+  N = length(B)
+  Minv = inv(_gram_matrix(B, metric_args...))
 
   return V[ sum(Minv[i,:].*B) for i in 1:N ]
+end
+function _representatives_of_basis_dual(B::AbstractVector{T}) where {T<:Real}
+  @assert isone(length(B)) && !iszero(first(B))
+  T[ 1/first(B) ]
 end
 
 @inline function ForwardDiff.value(x::MultiValue{S,<:ForwardDiff.Dual}) where S

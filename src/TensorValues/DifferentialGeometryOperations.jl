@@ -196,12 +196,6 @@ Provided by the GridapSymbolicsExt package extension when Symbolics is loaded.
 """
 function symbolic_coordinates end
 
-function _check_metric_dim(g_or_ginv::SymTensorValue{Dg}, D::Int) where Dg
-  Int(Dg) == D || throw(DimensionMismatch(
-    "the metric tensor has dimension $(Int(Dg)), but the tensor it acts on has dimension $D"))
-  nothing
-end
-
 # ============================================================
 # Riemannian Hodge star  ⋆ : Ωᴷ → Ωᴰ⁻ᴷ
 #
@@ -349,19 +343,289 @@ const ⋆ᴱ = flat_hodge_star
 #   (ω♯)^i = Σ_j g^{ij} ω_j           (raises an index)
 # ============================================================
 
+# The step between two components that differ only by index `k`, in the flat,
+# column-major layout of a tensor of size `sz`.
+_stride(sz, k) = prod(Int.(sz[1:k-1]), init=1)
+
+# Checks that the non-empty index list `ks` of `a` has the variance
+# `expected_Dim` and that one metric can act on all of it, and prepares result
+# data: the type of the result, the stride of each index of `ks` in the flat
+# column-major layout, the dimension they share and the component count.
+#
+# Returns `(nothing, expr)` with `expr` an `Expr` that the calling `@generated`
+# function must return as is to propagate the error.
+function _musical_index_data(a, ks, expected_Dim, op)
+  sz = size(a)
+  N = length(sz)
+  variance = expected_Dim === Con ? "contravariant" : "covariant"
+
+  all(k -> k isa Int && 1 <= k <= N, ks) || return nothing, :( throw(ArgumentError(
+    $("$op undefined for the indices $ks of a tensor of order $N"))) )
+  allunique(ks) || return nothing, :( throw(ArgumentError(
+    $("$op cannot act twice on one index, got the indices $ks"))) )
+  all(k -> sz[k] isa expected_Dim, ks) || return nothing, :( throw(ArgumentError(
+    $("$op undefined for the indices $ks of a tensor of size $sz, they are not all $variance"))) )
+
+  # One metric acts on every lowered or raised index, so they all share the
+  # dimension it is given for.
+  D = Int(sz[first(ks)])
+  all(k -> Int(sz[k]) == D, ks) || return nothing, :( throw(DimensionMismatch(
+    $("the indices $ks of a tensor of size $sz have different dimensions, so no \
+       single metric can act on them all"))) )
+
+
+  Sr = ntuple(i -> i in ks ? inverse_variance(sz[i]) : sz[i], N)
+  (V = _tensor_base_type_expr(N, Sr), ss = map(k -> _stride(sz, k), ks),
+   D = D, L = length(a)), nothing
+end
+
+# Lowering or raising of the indices of strides `ss`, each of dimension `D`, of
+# the `L` components of `a` by the metric named `g_or_ginv`.
+function _musical_iterations_expr(V, ss, D, L, g_or_ginv, Ta)
+  iterations = Expr(:block)
+  src, dst = :x0, :x1
+  for s in ss
+    push!(iterations.args, :( _data_single_metric_contract!($dst, $src, $g_or_ginv, Val($s), Val($D)) ))
+    src, dst = dst, src
+  end
+  quote
+    T = Base.promote_op(*, $Ta, eltype($g_or_ginv))
+    # these flattened reusable buffers enable minimizing the data shuffles
+    x0 = MVector{$L,T}(Tuple(get_array(a)))
+    x1 = MVector{$L,T}(undef)
+    $iterations
+    $V(Tuple($src))
+  end
+end
+
+# Lower or raise the `Dk` dimentional index `k` of tensor data `x`
+#
+#   y[i1,…,ik,…,iN] = Σ_j M[ik,j] * x[i1,…,j,…,iN]
+#
+# `y` and `x` must be distinct buffers. The stride `s` of `k` is the number of
+# components between two that differ only by ±1 their `k`th index.
+@inline function _data_single_metric_contract!(
+  y::MVector{L,T}, x::StaticVector{L}, g_or_ginv, ::Val{s}, ::Val{Dk}
+) where {L,T,s,Dk}
+
+  # TODO: check in marking the whole block @inbounds makes it faster
+  for o in 0:(L ÷ (s*Dk) - 1)
+    base = o*s*Dk
+    for p in 1:s
+      q = base + p
+      for i in 1:Dk
+        acc = zero(T)
+        for j in 1:Dk
+          acc += g_or_ginv[i,j] * x[q + (j-1)*s]
+        end
+        y[q + (i-1)*s] = acc
+      end
+    end
+  end
+  nothing
+end
+
+# The tensor types whose index symmetries a congruence preserves.
+# `SymFourthOrderTensorValue` is not an `AbstractSymMultiValue`, it carries only
+# its two minor symmetries, but its four indices share one `Dim` too.
+const _SymValue = Union{AbstractSymMultiValue,SymFourthOrderTensorValue}
+
+# The dense tensor holding the same components, which no index symmetry
+# constrains. This is what `drop_sym=Val(true)` asks the musical isomorphisms
+# for, and what their error message asks the caller to convert to.
+@generated function _as_full_rank(a::MultiValue{S,T,N}) where {S,T,N}
+  # `_tensor_base_type_expr` never has to name an order-0 type, and returning
+  # `a` here would make the callers that forward to a full rank tensor recurse.
+  iszero(N) && return :( ScalarValue{$T}((a[1],)) )
+  V = _tensor_base_type_expr(N, size(a))
+  iszero(length(a)) && return :( zero($V{$T}) )
+  :( $V(Tuple(get_array(a))) )
+end
+
+# Flipping an index contracts that slot with `g` or `g_inv`, so a type-encoded
+# index symmetry survives only if every index is contracted with the same
+# matrix, that is if the map is a congruence `a ↦ G…G a G…G` with `G` symmetric.
+# That requires all the indices to be flipped and to share one variance, which
+# must be `V` for the operation to be defined at all.
+#
+# A mixed variance kills it for any flip: lowering the upper index of `a_i{}^j`
+# computes the similarity `g⋅A⋅g`, which is symmetric in no pair of indices.
+function _musical_keeps_symmetry(sz, ks, ::Type{V}) where V
+  N = length(sz)
+  # `ks` holds every index once: it has `N` of them and each of `1:N` is in it.
+  length(ks) === N && all(k -> k isa Int, ks) && all(k -> k in ks, 1:N) || return false
+  # `===` and not `==`: a `Dim` is an `Integer`, so `Cov(2) == Con(2)` holds and
+  # would accept a mixed variance.
+  first(sz) isa V && all(d -> d === first(sz), sz)
+end
+
+# The type carrying the symmetries of `V` with the variance of every index
+# flipped.
+#
+# A `SymTracelessTensorValue` degrades to a `SymTensorValue`: the congruence
+# preserves the symmetry but not the constraint `δ^{ij} a_ij == 0`, since the
+# Euclidean trace is not invariant under it. No musical isomorphism returns a
+# traceless type.
+_musical_symmetric_type(::Type{<:AbstractSymTensorValue{D}}) where D =
+  SymTensorValue{inverse_variance(D)}
+_musical_symmetric_type(::Type{<:SymNTensorValue{S}}) where S =
+  SymNTensorValue{_inverse_variance_size(S)}
+_musical_symmetric_type(::Type{<:SymFourthOrderTensorValue{D}}) where D =
+  SymFourthOrderTensorValue{inverse_variance(D)}
+
+# The multi-indices of the independent components, in the order they are stored,
+# which is the order `_musical_symmetric_type(V)`'s constructor expects them in.
+_musical_indep_indices(::Type{<:AbstractSymTensorValue{Dd}}) where Dd =
+  ((D = Int(Dd)); [(i,j) for i in 1:D for j in i:D])
+_musical_indep_indices(::Type{<:SymNTensorValue{S}}) where S =
+  ((D, N, _) = _sym_n_tensor_params(S); sorted_multisets(D, N))
+_musical_indep_indices(::Type{<:SymFourthOrderTensorValue{Dd}}) where Dd =
+  ((D = Int(Dd)); [(i,j,k,l) for i in 1:D for j in i:D for k in 1:D for l in k:D])
+
+# Flipping the variance of every index of a symmetric tensor by the identity
+# metric leaves its independent components untouched, in the same order.
+_musical_relabel(a::_SymValue) = _musical_symmetric_type(typeof(a))(a.data)
+
+# `b_I = Σ_J G[i₁,j₁] … G[i_N,j_N] a_J`, the congruence by the symmetric matrix
+# `G` that every index of `a` is flipped by.
+#
+# The `N-1` first indices are contracted by the mode-product ping-pong the
+# generic methods use, whose loop LLVM vectorizes. The last one is contracted
+# straight into the components the result stores, which costs
+# `num_indep_components·D` products where one more pass would cost `D^(N+1)`.
+# No component of the result but those is formed and no intermediate
+# `MultiValue` is constructed; the buffer the passes work in still holds the
+# whole `D^N` of the argument.
+#
+# Running the last index through the loop as well and only reading the stored
+# components off the buffer is the other option, and a slower one everywhere but
+# on a `SymFourthOrderTensorValue{con3}`, where the two are within 1%:
+# 23.8 against 18.5 ns on a `SymTensorValue{con3}`, 33.6 against 29.1 ns on a
+# `SymTensorValue{con4}` and 64.0 against 36.8 ns on a
+# `SymNTensorValue{Tuple{con3,con3,con3}}`.
+@generated function _musical_congruence_kernel(a::MultiValue{S,Ta,N}, G) where {S,Ta,N}
+  D = Int(size(a)[1])
+  L = D^N
+  Vr = _musical_symmetric_type(a)
+  iszero(L) && return :( zero($Vr{Base.promote_op(*,eltype(G),$Ta)}) )
+
+  passes = Expr(:block)
+  src, dst = :x0, :x1
+  for k in 1:N-1
+    push!(passes.args,
+          :( _data_single_metric_contract!($dst, $src, G, Val($(D^(k-1))), Val($D)) ))
+    src, dst = dst, src
+  end
+
+  # Position of the component `(I₁, …, I_{N-1}, j)` of the buffer the passes
+  # leave the `N-1` first indices flipped in, the last one having stride D^(N-1).
+  pos(I, j) = 1 + sum(((I[k]-1)*D^(k-1) for k in 1:N-1), init=0) + (j-1)*D^(N-1)
+  comps = [ _sum_expr([ :( G[$(I[N]),$j] * y[$(pos(I,j))] ) for j in 1:D ], :T)
+            for I in _musical_indep_indices(a) ]
+
+  quote
+    T = Base.promote_op(*, $Ta, eltype(G))
+    x0 = MVector{$L,T}(Tuple(get_array(a)))
+    $(N > 1 ? :( x1 = MVector{$L,T}(undef) ) : nothing)
+    $passes
+    # One bulk read of the buffer: indexing the tuple is free, where a scalar
+    # `getindex` on the buffer is a bounds checked load.
+    y = Tuple($src)
+    $Vr(($(comps...),))
+  end
+end
+
+# The congruence `op` applies to every index of `a`, which `_musical_sym` has
+# checked its symmetries survive. `op` names which metric matrix acts, and
+# whether a metric is needed at all.
+function _musical_congruence(op::F, a::_SymValue, ::Type{V},
+                             metric_args::Vararg{_MetricArg}) where {F,V}
+  (op === flat_flat || op === flat_sharp) && return _musical_relabel(a)
+  md = parse_metric_data(metric_args...)
+  isidentity(md) && return _musical_relabel(a)
+  D = Int(size(a)[1])
+  if V === Con
+    (; g) = md
+    _check_metric_dim(g, D)
+    _musical_congruence_kernel(a, g)
+  else
+    (; g_inv) = md
+    _check_metric_dim(g_inv, D)
+    _musical_congruence_kernel(a, g_inv)
+  end
+end
+
+function _musical_sym_msg(op, l)
+  "This $op operation does not preserve the symmetries of the tensor type (not
+    all indices are flipped, or they do not share one variance). If you really
+    mean it, pass `drop_sym=Val(true)`, or convert `a` to a tensor type that
+    won't loose symmetry through `$op(a, Val($l), …)`."
+end
+
+# `op` is one of `flat`, `sharp`, `flat_flat` and `flat_sharp`, and `V` the
+# variance its flipped indices must have. The symmetric result is read off the
+# full-rank one, so it is exactly symmetric where the full-rank components are
+# symmetric only up to roundoff.
+#
+# `ds` is the `drop_sym` flag: it lets the operation drop the symmetries instead
+# of refusing an index list that does not preserve them, which a caller flipping
+# the indices of a tensor it knows nothing about needs. `inner` is such a
+# caller. An index list that does preserve them is honoured either way, so a
+# symmetric result costs such a caller nothing.
+#
+# `op::F where F` rather than a bare `op`: Julia does not specialize on an
+# argument of `Function` type unless a type parameter forces it, and without
+# that specialization the whole chain down to the kernel stays dynamic.
+function _musical_sym(op::F, a::_SymValue, ::Val{l}, ::Type{V}, ::Val{ds},
+                      metric_args::Vararg{_MetricArg}) where {F,l,V,ds}
+  ks = tuple(l...)
+  isempty(ks) && return a
+  sz = size(a)
+  _musical_keeps_symmetry(sz, ks, V) && return _musical_congruence(op, a, V, metric_args...)
+  # A list that the operation refuses anyway is left to report its own error.
+  if !ds && all(k -> k isa Int && 1 <= k <= length(sz) && sz[k] isa V, ks)
+    throw(ArgumentError(_musical_sym_msg(op, l)))
+  end
+  op(_as_full_rank(a), Val(l), metric_args...)
+end
+
 """
-    flat(v::VectorValue,          metric_args...)
-    flat(v::MultiValue{Tuple{D}}, metric_args...)
-    ♭(v, metric_args...)
+    flat(v::VectorValue,             metric_args...)
+    flat(v::MultiValue{Tuple{D}},    metric_args...)
+    flat(b::ExteriorVectorValue,     metric_args...)
+    flat(a::MultiValue, ::Val{k},    metric_args...)
+    flat(a::MultiValue, ::Val{l...}, metric_args...)
+    flat(a::MultiValue, ::Val{l...}, metric_args...; drop_sym=Val(false))
+    ♭(...)
 
-Musical isomorphism ♭: lower the index of the contravariant vector `v` with the
-metric `g`, resulting into a covector (1-form).
+Musical isomorphism `♭` that lowers:
+- the only index of the vector `v`, or
+- all the indices of the K-vector `b`, or
+- the `k`-th index of an arbitrary tensor `a`, or
+- the indices `k ∈ l` of `a` all at once.
 
-`metric_args` contains the metric information, see [`parse_metric_data`](@ref).
-`flat` uses `g`.
+    (v♭)ᵢ = gᵢⱼ vʲ
+    (b♭)_I = Σ_J g_{I₁,J₁} … g_{I₁,J₁} b^J
+    (a♭){i₁,…}_iₖ{…,i_N} = Σ_j g_{iₖ,j} a{i₁,…}^j{…,i_N}
 
-See also [`flat_flat(v)`](@ref) for the Euclidean version, accessible by
-passing `LinearAlgebra.I`.
+The lowered indices must be contravariant. `metric_args` contains the metric
+information, see [`parse_metric_data`](@ref). `flat` uses `g`.
+
+See also [`flat_flat`](@ref) for the Euclidean version, accessible by passing
+`LinearAlgebra.I`.
+
+# Extended help
+
+A tensor type that encodes index symmetries keeps them only if every one of its
+indices is lowered and they all share one variance, in which case `a` is mapped
+by a congruence and the result is of the same type with the dual variance -- a
+`SymTracelessTensorValue` excepted, which gives a `SymTensorValue` since the
+Euclidean trace is not invariant under a congruence. Any other index list makes
+`flat` refuse rather than silently drop the symmetries. Passing
+`drop_sym=Val(true)` lifts that refusal and lowers the listed indices of the
+full rank tensor instead, which a caller that flips the indices of a tensor it
+knows nothing about needs -- [`inner`](@ref) does so. An index list that does
+preserve the symmetries is honoured either way.
 """
 @generated function flat(v::MultiValue{Tuple{Dv},Tv}, metric_args::Vararg{_MetricArg}) where {Dv,Tv}
   Dv isa Con || return :(throw(ArgumentError("flat undefined for 1-tensor that is not contravariant, got $Dv")))
@@ -381,17 +645,96 @@ passing `LinearAlgebra.I`.
   end
 end
 
+@generated function flat(a::MultiValue{S,Ta}, ::Val{l}, metric_args::Vararg{_MetricArg};
+                         drop_sym::Val{ds}=Val(false)) where {S,Ta,l,ds}
+  ks = tuple(l...) # puts scalar l into a tuple
+  isempty(ks) && return :( a )
+  data, err = _musical_index_data(a, ks, Con, "flat")
+  err === nothing || return err
+  (; V, ss, D, L) = data
+
+  if iszero(L)
+    result = :( zero($V{Base.promote_op(*,eltype(g),$Ta)}) )
+  else
+    result = _musical_iterations_expr(V, ss, D, L, :g, Ta)
+  end
+
+  quote
+    md = parse_metric_data(metric_args...)
+    isidentity(md) && return flat_flat(a, Val($l))
+    (; g) = md
+    _check_metric_dim(g, $D)
+    $result
+  end
+end
+
+function flat(a::SkewSymKTensorValue{Con,K}, ::Val{l},
+                         metric_args::Vararg{_MetricArg};
+                         drop_sym::Val{ds}=Val(false)) where {K,l,ds}
+  ks = tuple(l...)
+  ks === ntuple(identity, K) && return flat(a, metric_args...)
+  ds || throw(ArgumentError(
+    "This flat operation does not preserve the skew-symmetry (not all indices
+      are lowered). If you really mean it, pass `drop_sym=Val(true)`, or convert
+      `a` to a tensor type that won't loose symmetry through
+      `flat(a, Val($l), metric_args...)`."))
+  flat(_as_full_rank(a), Val(l), metric_args...)
+end
+
+# A congruence preserves the index symmetries, so only the independent
+# components of the result are kept.
+function flat(a::_SymValue, ::Val{l}, metric_args::Vararg{_MetricArg};
+              drop_sym::Val{ds}=Val(false)) where {l,ds}
+  _musical_sym(flat, a, Val(l), Con, Val(ds), metric_args...)
+end
+
+# optimization for skew-symmetry flat:
+#   ωᵢ₁…ᵢₖ = Σ_{j₁<…<j_K} det(g[I,J]) ω^j₁…^j_K
+@generated function flat(b::ExteriorVectorValue{K,Db,Tb},
+                         metric_args::Vararg{_MetricArg}) where {K,Db,Tb}
+  D = Int(Db)
+  Dcov = Cov(D)
+  c = sorted_combinations(D, K)
+
+  T = :( Base.promote_op(*, $Tb, eltype(g)) )
+  result = if isempty(c)
+    # An empty result still promotes with the scalar type of the metric.
+    :( zero(ExteriorFormValue{$K,$Dcov,$T}) )
+  else
+    begin
+      comps = [ _sum_expr([ :( $(_minor_expr(:g, I, J)) * indep_comp_getindex(b,$l) )
+                            for (l, J) in enumerate(c) ], T)
+                for I in c ]
+      :( ExteriorFormValue{$K,$Dcov}(($(comps...),)) )
+    end
+  end
+
+  quote
+    md = parse_metric_data(metric_args...)
+    isidentity(md) && return flat_flat(b)
+    (; g) = md
+    _check_metric_dim(g, $D)
+    $result
+  end
+end
+
 const ♭ = flat
 
 """
     flat_flat(v::VectorValue{D})
     flat_flat(v::MultiValue{Tuple{D}})
-    ♭ᴱ(v)
+    flat_flat(b::ExteriorVectorValue,)
+    flat_flat(a::MultiValue, ::Val{k})
+    flat_flat(a::MultiValue, ::Val{l...})
+    flat_flat(a::MultiValue, ::Val{l...}; drop_sym=Val(false))
+    ♭ᴱ(...)
 
-Musical isomorphism ♭ in Euclidean space, that is [`flat`](@ref) with the
-identity metric: the covector (1-form) with the same components as the
-contravariant vector `v`. Unlike [`to_1form`](@ref), `v` may already carry its
-contravariant variance, and the result always carries the covariant one.
+Musical isomorphism `♭` in Euclidean space, that is [`flat`](@ref) with the
+identity metric
+
+    (♭ᴱ(v))ᵢ = vⁱ
+    (b♭ᴱ)_I = b^I
+    (a♭ᴱ){i₁,…}_iₖ{…,i_N} = a{i₁,…}^iₖ{…,i_N}
 """
 @generated function flat_flat(v::MultiValue{Tuple{Dv},Tv}) where {Dv,Tv}
   Dv isa Con || return :(throw(ArgumentError("flat_flat undefined for 1-tensor that is not contravariant, got $Dv")))
@@ -402,20 +745,77 @@ contravariant variance, and the result always carries the covariant one.
   comps = [:( v[$i] ) for i in 1:D]
   :( CoVectorValue{$Dcov}(($(comps...),)) )
 end
+@generated function flat_flat(a::MultiValue{S,Ta}, ::Val{l};
+                              drop_sym::Val{ds}=Val(false)) where {S,Ta,l,ds}
+  ks = tuple(l...)
+  isempty(ks) && return :( a )
+  data, err = _musical_index_data(a, ks, Con, "flat_flat")
+  err === nothing || return err
+  (; V, L) = data
+  iszero(L) && return :( zero($V{$Ta}) )
+  :( $V(Tuple(get_array(a))) )
+end
+
+function flat_flat(a::SkewSymKTensorValue{Con,K}, ::Val{l};
+                   drop_sym::Val{ds}=Val(false)) where {K,l,ds}
+  ks = tuple(l...)
+  ks === ntuple(identity, Val(K)) && return flat_flat(a)
+  ds || throw(ArgumentError(
+    "flat_flat of a skew-symmetric tensor acts on all of its $K indices at once, \
+      so the only index list it accepts is $(ntuple(identity, Val(K))), got $l. \
+      Pass `drop_sym=Val(true)` for the full rank result."))
+  flat_flat(_as_full_rank(a), Val(l))
+end
+
+function flat_flat(a::_SymValue, ::Val{l}; drop_sym::Val{ds}=Val(false)) where {l,ds}
+  _musical_sym(flat_flat, a, Val(l), Con, Val(ds))
+end
+
+# Lowering every index of a skew-symmetric tensor Euclideanly relabels its
+# variance, the independent components are those of `b` in the same order.
+function flat_flat(b::ExteriorVectorValue{K,Db,Tb}) where {K,Db,Tb}
+  Dcov = inverse_variance(Db)
+  K > Db && return zero(ExteriorFormValue{K,Dcov,Tb})
+  ExteriorFormValue{K,Dcov}(Tuple(b))
+end
 const ♭ᴱ = flat_flat
 
 """
-    sharp(ω::MultiValue{Tuple{D}}, metric_args...)
-    ♯(ω, metric_args...)
+    sharp(ω::MultiValue{Tuple{D}},    metric_args...)
+    sharp(η::ExteriorFormValue,       metric_args...)
+    sharp(a::MultiValue, ::Val{k},    metric_args...)
+    sharp(a::MultiValue, ::Val{l...}, metric_args...)
+    sharp(a::MultiValue, ::Val{l...}, metric_args...; drop_sym=Val(false))
+    ♯(...)
 
-Musical isomorphism `♯`: raise the index of the covector (1-form) `ω` with the
-inverse metric `g_inv`, resulting into a contravariant vector.
+Musical isomorphism `♯` that raises:
+- the only index of the covector `ω`, or
+- all the indices of the K-form `η`, or
+- the `k`-th index of an arbitrary tensor `a`, or
+- the indices `k ∈ l` of `a` all at once.
 
-`metric_args` contains the metric information, see [`parse_metric_data`](@ref).
-`sharp` uses `g_inv`.
+    (ω♯)ⁱ = g_invⁱʲ ωⱼ
+    (η♯)^I = g_inv^{IJ} η_J
+    (a♯){i₁,…}^iₖ{…,i_N} = Σ_j g_inv^{iₖ,j} a{i₁,…}_j{…,i_N}
+
+The lowered indices must be covariant. `metric_args` contains the metric
+information, see [`parse_metric_data`](@ref). `sharp` uses `g_inv`.
 
 See also [`flat_sharp(ω)`](@ref) for the Euclidean version, accessible by
 passing `LinearAlgebra.I`.
+
+# Extended help
+
+A tensor type that encodes index symmetries keeps them only if every one of its
+indices is raised and they all share one variance, in which case `a` is mapped
+by a congruence and the result is of the same type with the dual variance -- a
+`SymTracelessTensorValue` excepted, which gives a `SymTensorValue` since the
+Euclidean trace is not invariant under a congruence. Any other index list makes
+`sharp` refuse rather than silently drop the symmetries. Passing
+`drop_sym=Val(true)` lifts that refusal and raises the listed indices of the
+full rank tensor instead, which a caller that flips the indices of a tensor it
+knows nothing about needs -- [`inner`](@ref) does so. An index list that does
+preserve the symmetries is honoured either way.
 """
 @generated function sharp(ω::MultiValue{Tuple{Dw},Tw}, metric_args::Vararg{_MetricArg}) where {Dw,Tw}
   Dw isa Cov || return :(throw(ArgumentError("sharp undefined for 1-tensor that is not covariant, got $Dw")))
@@ -435,16 +835,94 @@ passing `LinearAlgebra.I`.
   end
 end
 
+@generated function sharp(a::MultiValue{S,Ta}, ::Val{l}, metric_args::Vararg{_MetricArg};
+                          drop_sym::Val{ds}=Val(false)) where {S,Ta,l,ds}
+  ks = tuple(l...)
+  isempty(ks) && return :( a )
+  data, err = _musical_index_data(a, ks, Cov, "sharp")
+  err === nothing || return err
+  (; V, ss, D, L) = data
+
+  result = if iszero(L)
+    :( zero($V{Base.promote_op(*,eltype(g_inv),$Ta)}) )
+  else
+    _musical_iterations_expr(V, ss, D, L, :g_inv, Ta)
+  end
+
+  quote
+    md = parse_metric_data(metric_args...)
+    isidentity(md) && return flat_sharp(a, Val($l))
+    (; g_inv) = md
+    _check_metric_dim(g_inv, $D)
+    $result
+  end
+end
+
+function sharp(a::SkewSymKTensorValue{Cov,K}, ::Val{l},
+                          metric_args::Vararg{_MetricArg};
+                          drop_sym::Val{ds}=Val(false)) where {K,l,ds}
+  ks = tuple(l...)
+  ks === ntuple(identity, K) && return sharp(a, metric_args...)
+  ds || throw(ArgumentError(
+    "This sharp operation does not preserve the skew-symmetry (not all indices
+      are raised). If you really mean it, pass `drop_sym=Val(true)`, or convert
+      `a` to a tensor type that won't loose symmetry through
+      `sharp(a, Val($l), metric_args...)`."))
+  sharp(_as_full_rank(a), Val(l), metric_args...)
+end
+
+# A congruence preserves the index symmetries, so only the independent
+# components of the result are kept.
+function sharp(a::_SymValue, ::Val{l}, metric_args::Vararg{_MetricArg};
+               drop_sym::Val{ds}=Val(false)) where {l,ds}
+  _musical_sym(sharp, a, Val(l), Cov, Val(ds), metric_args...)
+end
+
+# optimization for skew-symmetric sharp
+#   η^i₁…^i_K = Σ_{j₁<…<j_K} det(g_inv[I,J]) η_j₁…_j_K
+@generated function sharp(η::ExteriorFormValue{K,Dη,Tη},
+                          metric_args::Vararg{_MetricArg}) where {K,Dη,Tη}
+  D = Int(Dη)
+  Dcon = inverse_variance(Dη)
+  c = sorted_combinations(D, K)
+
+  T = :( Base.promote_op(*, $Tη, eltype(g_inv)) )
+  result = if isempty(c)
+    :( zero(ExteriorVectorValue{$K,$Dcon,$T}) )
+  else
+    begin
+      comps = [ _sum_expr([ :( $(_minor_expr(:g_inv, I, J)) * indep_comp_getindex(η,$l) )
+                            for (l, J) in enumerate(c) ], T)
+                for I in c ]
+      :( ExteriorVectorValue{$K,$Dcon}(($(comps...),)) )
+    end
+  end
+
+  quote
+    md = parse_metric_data(metric_args...)
+    isidentity(md) && return flat_sharp(η)
+    (; g_inv) = md
+    _check_metric_dim(g_inv, $D)
+    $result
+  end
+end
+
 const ♯ = sharp
 
 """
     flat_sharp(ω::MultiValue{Tuple{D}})
-    ♯ᴱ(ω)
+    flat_sharp(η::ExteriorFormValue)
+    flat_sharp(a::MultiValue, ::Val{k})
+    flat_sharp(a::MultiValue, ::Val{l...})
+    flat_sharp(a::MultiValue, ::Val{l...}; drop_sym=Val(false))
+    ♯ᴱ(...)
 
-Musical isomorphism ♯ in Euclidean space, that is [`sharp`](@ref) with the
-identity metric: the contravariant vector with the same components as the
-covector (1-form) `ω`. Unlike [`from_1form`](@ref), the result carries its
-contravariant variance rather than being un-varianced.
+Musical isomorphism `♯` in Euclidean space, that is [`sharp`](@ref) with the
+identity metric:
+
+    (ω♯ᴱ)ⁱ = ωᵢ
+    (η♯ᴱ)^I = η_I
+    (a♯ᴱ){i₁,…}^iₖ{…,i_N} = a{i₁,…}_iₖ{…,i_N}
 """
 @generated function flat_sharp(ω::MultiValue{Tuple{Dw},Tw}) where {Dw,Tw}
   Dw isa Cov || return :(throw(ArgumentError("flat_sharp undefined for 1-tensor that is not covariant, got $Dw")))
@@ -454,6 +932,37 @@ contravariant variance rather than being un-varianced.
 
   comps = [:( indep_comp_getindex(ω,$i) ) for i in 1:D]
   :( ContraVectorValue{$Dcon}(($(comps...),)) )
+end
+@generated function flat_sharp(a::MultiValue{S,Ta}, ::Val{l};
+                               drop_sym::Val{ds}=Val(false)) where {S,Ta,l,ds}
+  ks = tuple(l...)
+  isempty(ks) && return :( a )
+  data, err = _musical_index_data(a, ks, Cov, "flat_sharp")
+  err === nothing || return err
+  (; V, L) = data
+  iszero(L) && return :( zero($V{$Ta}) )
+  :( $V(Tuple(get_array(a))) )
+end
+
+function flat_sharp(a::SkewSymKTensorValue{Cov,K}, ::Val{l};
+                    drop_sym::Val{ds}=Val(false)) where {K,l,ds}
+  ks = tuple(l...)
+  ks === ntuple(identity, K) && return flat_sharp(a)
+  ds || throw(ArgumentError(
+    "flat_sharp of a skew-symmetric tensor acts on all of its $K indices at \
+       once, so the only index list it accepts is $(ntuple(identity, K)), got \
+       $l. Pass `drop_sym=Val(true)` for the full rank result."))
+  flat_sharp(_as_full_rank(a), Val(l))
+end
+
+function flat_sharp(a::_SymValue, ::Val{l}; drop_sym::Val{ds}=Val(false)) where {l,ds}
+  _musical_sym(flat_sharp, a, Val(l), Cov, Val(ds))
+end
+
+function flat_sharp(η::ExteriorFormValue{K,Dη,Tη}) where {K,Dη,Tη}
+  Dcon = inverse_variance(Dη)
+  K > Dη && return zero(ExteriorVectorValue{K,Dcon,Tη})
+  ExteriorVectorValue{K,Dcon}(Tuple(η))
 end
 const ♯ᴱ = flat_sharp
 
@@ -507,7 +1016,7 @@ apply_tensor(ω::SkewSymKTensorValue{V,K,D}, vs...) where {V,K,D} =
 Pointwise pullback `φ^*ω` of a K-form by a map `φ : ℝᴰᵐ → ℝᴰⁿ` with
 transposed Jacobian `Jt = ∇φ`, that is `Jt[j,i] = ∂φⁱ/∂ξʲ`.
 
-The domain index `1≤j≤m` of `Jt` is covariant and its image index `1≤i≤n`
+The domain index `1≤j≤Dm` of `Jt` is covariant and its image index `1≤i≤Dn`
 contravariant, so `Jt` has size `(Cov(Dm), Con(Dn))`, the result is an
 `ExteriorFormValue{K,Cov(Dm)}`.
 """
@@ -534,13 +1043,429 @@ contravariant, so `Jt` has size `(Cov(Dm), Con(Dn))`, the result is an
 
   :( ExteriorFormValue{$K,$Dm}(($(comps...),)) )
 end
-# TODO: generalize the pullback to tensor of type (r,s,0)
-# - mathematically express the general pullback using contractions with J and Jt_pinv, add Jt_pinv=pinvJt(Jt) as optional argument
-# - implement using tensor_contraction
 
-# TODO implement the pushforward of k-forms, this is just taking the inverse of Jt and feeding to pullback
+"""
+    pushforward(v::ExteriorVectorValue{K,Dm}, Jt::TensorValue{Dm,Dn})
+    pushforward(v::ExteriorVectorValue{K,Dm}, Jt::TensorValue{Dm,Dn}, iJt::TensorValue)
 
-# TODO implement the pushforward of type (r,s,0) tensors, this is just taking the inverse of Jt and feeding to pullback
+Pointwise pushforward `φ_*v` of a K-vector by a map `φ : ℝᴰᵐ → ℝᴰⁿ` with
+transposed Jacobian `Jt = ∇φ`, that is `Jt[j,i] = ∂φⁱ/∂ξʲ`.
+
+The domain index `1≤j≤Dm` of `Jt` is covariant and its image index `1≤i≤Dn`
+contravariant, so `Jt` has size `(Cov(Dm), Con(Dn))`, the result is an
+`ExteriorVectorValue{K,Con(Dn)}`.
+
+Unlike [`pullback`](@ref), which contracts `Jt`'s image (second) index against
+the form, `pushforward` contracts its domain (first) index against the
+K-vector, so it is defined directly from `Jt` with no (pseudo-)inversion. The
+three argument form ignores `iJt`, it is accepted so that a caller holding a
+precomputed `iJt = pinvJt(Jt)` transports every kind of tensor with one call.
+"""
+@generated function pushforward(v::ExteriorVectorValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
+  Dm isa Cov || return :(throw(ArgumentError(
+    "the domain (first) index of Jt should be covariant, got size $(size(Jt))"
+  )))
+  can_contract(Dm, Dw) || return :(throw(DimensionMismatch(
+    "cannot pushforward a vector of dimension $Dw by a transposed jacobian of domain (first) dimension $Dm, indices cannot contract"
+  )))
+  T = Base.promote_op(*, Tw, Tj)
+
+  m, n = Int(Dm), Int(Dn)
+  (iszero(binomial(n, K)) || iszero(binomial(m, K))) &&
+    return :( zero(ExteriorVectorValue{$K,$Dn,$T}) )
+
+  c_I = sorted_combinations(n, K)   # K-combins in image (ambient) space
+  c_J = sorted_combinations(m, K)   # K-combins in domain (chart) space
+
+  # det([∂φ^{I[b]}/∂ξ^{J[a]}]) is the minor of Jt on rows J and columns I
+  comps = [_sum_expr([:( $(_minor_expr(:Jt, J, I)) * indep_comp_getindex(v,$l) )
+                      for (l, J) in enumerate(c_J)], T)
+           for I in c_I]
+
+  :( ExteriorVectorValue{$K,$Dn}(($(comps...),)) )
+end
+
+# ============================================================
+# Transport of a tensor of type (r,s,0) by a map
+#
+# Given φ : ℝᴰᵐ → ℝᴰⁿ with transposed Jacobian Jt = ∇φ and iJt = pinvJt(Jt),
+# a covariant index is pulled back by Jt and pushed forward by iJt, and a
+# contravariant index is pushed forward by Jt and pulled back by iJt:
+#
+#   (φ^*a)_J = Σ_I a_I · M₁(J₁,I₁) ⋯ M_K(J_K,I_K)
+#
+# In both directions the matrix of a covariant index is read [out,in] and that
+# of a contravariant one [in,out]; only which of Jt and iJt plays each role
+# changes, which is what the `cov_mat`/`con_mat` arguments below select.
+# ============================================================
+
+# Number of scalar `K`-factor product terms in the direct, fully unrolled
+# expansion of an order-`K` transport between dimensions `n_in` and `n_out`:
+# `n_out^K` output components, each a sum of `n_in^K` products.
+_pullpush_num_terms(n_out::Int, n_in::Int, K::Int) = (n_out*n_in)^K
+
+# Above this many terms, the direct expansion makes its own @generated compile
+# time impractical: that time grows much faster than linearly in the term count
+# (729 terms: 0.2s, 1296: 1.8s, 2401: 4.5s, 4096: 10.3s). The threshold trades
+# a bit of runtime speed -- the direct expansion is ~3x faster than the
+# iterative one -- for keeping the one-time compile cost of any new tensor
+# shape under ~2s.
+const _direct_pullpush_term_threshold = 2000
+
+# `iJt = pinvJt(Jt)` is a true inverse only for a square `Jt`; for
+# `Int(Dm) < Int(Dn)` it is a left inverse, exact on an object carried by the
+# image tangent space, and `Int(Dm) > Int(Dn)` has no such inverse. Returns
+# `nothing` when `Jt` admits the transport, else the `Expr` the calling
+# `@generated` function returns to raise at runtime.
+function _inverse_pullpush_error(Dm, Dn, op)
+  Int(Dm) <= Int(Dn) && return nothing
+  msg = "$op by the inverse map requires Int(Dm) ≤ Int(Dn) (got Dm=$Dm,
+    Dn=$Dn), see `pinvJt`"
+  :(throw(ArgumentError($msg)))
+end
+
+# `pinvJt` swaps the position and the variance of both indices, so this is the
+# only shape an `iJt` of a `Jt` of size `(Dm, Dn)` can have. The comparison is
+# by identity: `==` between two `Dim`s compares their value and ignores their
+# variance, so it would accept a transposed `iJt`.
+function _pinvJt_shape_error(Dm, Dn, Di1, Di2)
+  (Di1 === inverse_variance(Dn) && Di2 === inverse_variance(Dm)) && return nothing
+  msg = "iJt must equal pinvJt(Jt): expected size
+    ($(inverse_variance(Dn)), $(inverse_variance(Dm))), got ($Di1, $Di2)"
+  :(throw(ArgumentError($msg)))
+end
+
+# Validates that every index of `a` (of size `sz`) can be transported, and
+# classifies each as covariant or contravariant. `Dc` is the contravariant
+# dimension that a covariant index of `a` must contract with: the image
+# dimension of `Jt` for a pullback, the flipped domain dimension for a
+# pushforward. Returns `(is_cov, nothing)` on success, or `(nothing, expr)`
+# with `expr` an `Expr` the calling `@generated` function should return
+# immediately to propagate the error.
+function _pullpush_validate_indices(sz, Dc, op)
+  is_cov = Bool[]
+  for k in eachindex(sz)
+    Sk = sz[k]
+    if Sk isa Int
+      msg = "$op requires every index of `a` to be covariant or contravariant,
+        got index $k of dimension $Sk"
+      return nothing, :(throw(ArgumentError($msg)))
+    else # Sk is varianced
+      if !can_contract(Sk isa Cov ? Dc : inverse_variance(Dc), Sk)
+        msg = "cannot $op a tensor whose index $k has dimension $Sk, every
+          index must be covariant or contravariant of dimension $(Int(Dc))"
+        return nothing, :(throw(DimensionMismatch($msg)))
+      end
+    end
+    push!(is_cov, Sk isa Cov)
+  end
+  is_cov, nothing
+end
+
+_pullpush_eltype(Ta, is_cov, Tcov, Tcon) =
+  all(is_cov) ? Base.promote_op(*, Ta, Tcov)        :
+  any(is_cov) ? Base.promote_op(*, Ta, Tcov, Tcon)  :
+                Base.promote_op(*, Ta, Tcon)
+
+# Fully unrolled transport body, with `a` and the result dense (not
+# alternating), so every input index tuple `I ∈ (1:n_in)^K` and every output
+# tuple `O ∈ (1:n_out)^K` contributes. Assumes `a` and the matrices named by
+# `cov_mat` and `con_mat` are bound in the generated code's scope.
+function _pullpush_direct_body(is_cov, n_out, n_in, K, T, V, cov_mat, con_mat)
+  o_ci = CartesianIndices(ntuple(_ -> n_out, K))
+  i_ci = CartesianIndices(ntuple(_ -> n_in, K))
+  comps = [_sum_expr(
+             [Expr(:call, :*, :( a[$I] ),
+                   (is_cov[k] ? :( $cov_mat[$(O[k]),$(I[k])] ) :
+                                :( $con_mat[$(I[k]),$(O[k])] ) for k in 1:K)...)
+              for I in i_ci],
+             T)
+           for O in o_ci]
+  :( $V($(comps...)) )
+end
+
+# Same transport, computed by contracting one index of `a` at a time with
+# `tensor_contraction` instead of unrolling the full `K`-way sum, to keep the
+# generated code size (and so compile time) bounded for large `K`.
+# `tensor_contraction` always appends the newly contracted index at the end of
+# its result, so repeatedly contracting the *current* tensor's first index,
+# processing `a`'s original indices 1,…,K in order, leaves the final indices
+# in that same original order.
+function _pullpush_iterative_body(is_cov, K, cov_mat, con_mat)
+  body = Expr(:block, :( c = a ))
+  for k in 1:K
+    M, slot = is_cov[k] ? (cov_mat, 2) : (con_mat, 1)
+    push!(body.args, :( c = tensor_contraction(c, $M, Val(1), Val($slot)) ))
+  end
+  push!(body.args, :c)
+  body
+end
+
+_pullpush_core_body(is_cov, n_out, n_in, K, T, V, cov_mat, con_mat) =
+  _pullpush_num_terms(n_out, n_in, K) > _direct_pullpush_term_threshold ?
+    _pullpush_iterative_body(is_cov, K, cov_mat, con_mat) :
+    _pullpush_direct_body(is_cov, n_out, n_in, K, T, V, cov_mat, con_mat)
+
+"""
+    pullback(a::MultiValue{S}, Jt::TensorValue{Dm,Dn})
+    pullback(a::MultiValue{S}, Jt::TensorValue{Dm,Dn}, iJt::TensorValue)
+
+Pointwise pullback `φ^*a` of a tensor `a` of type `(r,s)` (`r` covariant and
+`s` contravariant indices, in the order given by `S`) by a map `φ : ℝᴰᵐ → ℝᴰⁿ`
+with transposed Jacobian `Jt = ∇φ`, that is `Jt[j,i] = ∂φⁱ/∂ξʲ`:
+
+    (φ^*a)_{J} = Σ_{I} a_{I} · M₁(J₁,I₁) ⋯ M_K(J_K,I_K)
+
+    M_k(j,i) = Jt[j,i]    if the `k`-th index of `a` is covariant
+               iJt[i,j]   if the `k`-th index of `a` is contravariant
+
+with `iJt = pinvJt(Jt)`. The domain index `1≤j≤Dm` of `Jt` is covariant and
+its image index `1≤i≤Dn` contravariant, so `Jt` has size
+`(Cov(Dm), Con(Dn))`. The result is a tensor of the same `(r,s)` type, with every
+index now of dimension `Dm`.
+
+Unlike [`pullback`](@ref)`(::ExteriorFormValue, ::TensorValue)`, `a` need not
+be alternating: no symmetry of `a` is assumed or preserved, and the result is
+a dense `CoVectorValue`/`ContraVectorValue`, `TensorValue` or `NTensorValue`
+(for `K = 1`, `2` or `≥ 3` respectively).
+
+A contravariant index is only ever pulled back exactly when `Int(Dm)` equals
+`Int(Dn)`: for `Int(Dm) < Int(Dn)` (e.g. `φ` the embedding of a lower
+dimensional domain), `iJt` is a pseudo-inverse and a contravariant index gets
+projected onto the image tangent space instead, see [`pinvJt`](@ref).
+`Int(Dm) > Int(Dn)` is not supported for a contravariant index.
+
+Above `_direct_pullpush_term_threshold` terms, `a` is pulled back index by
+index with [`tensor_contraction`](@ref) instead of a single fully unrolled
+expression, to keep `@generated` compile times bounded.
+
+If `a` has a contravariant index, `pullback(a,Jt)` computes `iJt = pinvJt(Jt)`
+itself on every call. When pulling back many tensors by the same `Jt` (e.g.
+across the quadrature points of one cell), pass a precomputed
+`iJt = pinvJt(Jt)` explicitly with the 3-argument form to avoid recomputing it
+each time; `iJt` is trusted to equal `pinvJt(Jt)` and is not checked against
+it, only against its expected size.
+"""
+@generated function pullback(a::MultiValue{S,Ta}, Jt::TensorValue{Dm,Dn,Tj}) where {S,Ta,Dm,Dn,Tj}
+  Dm isa Cov || return :(throw(ArgumentError(
+    "the domain (first) index of Jt should be covariant, got size $(size(Jt))"
+  )))
+  sz = size(a)
+  isempty(sz) && return :( a )
+  is_cov, err = _pullpush_validate_indices(sz, Dn, "pullback")
+  err !== nothing && return err
+
+  if !all(is_cov)
+    err = _inverse_pullpush_error(Dm, Dn, "pullback")
+    err === nothing || return err
+    return :( pullback(a, Jt, pinvJt(Jt)) )
+  end
+
+  K = length(sz)
+  m, n = Int(Dm), Int(Dn)
+  T = _pullpush_eltype(Ta, is_cov, Tj, Tj)
+  V = _tensor_base_type_expr(K, ntuple(_ -> Dm, K))
+
+  (iszero(m) || iszero(n)) && return :( zero($V{$T}) )
+
+  _pullpush_core_body(is_cov, m, n, K, T, V, :Jt, :iJt)
+end
+
+@generated function pullback(
+  a::MultiValue{S,Ta}, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
+  ) where {S,Ta,Dm,Dn,Tj,Di1,Di2,Ti}
+
+  Dm isa Cov || return :(throw(ArgumentError(
+    "the domain (first) index of Jt should be covariant, got size $(size(Jt))"
+  )))
+  err = _pinvJt_shape_error(Dm, Dn, Di1, Di2)
+  err === nothing || return err
+  sz = size(a)
+  isempty(sz) && return :( a )
+  is_cov, err = _pullpush_validate_indices(sz, Dn, "pullback")
+  err !== nothing && return err
+
+  if !all(is_cov)
+    err = _inverse_pullpush_error(Dm, Dn, "pullback")
+    err === nothing || return err
+  end
+
+  K = length(sz)
+  m, n = Int(Dm), Int(Dn)
+  T = _pullpush_eltype(Ta, is_cov, Tj, Ti)
+  Sr = ntuple(k -> is_cov[k] ? Dm : inverse_variance(Dm), K)
+  V = _tensor_base_type_expr(K, Sr)
+
+  (iszero(m) || iszero(n)) && return :( zero($V{$T}) )
+
+  _pullpush_core_body(is_cov, m, n, K, T, V, :Jt, :iJt)
+end
+
+"""
+    pushforward(a::MultiValue{S}, Jt::TensorValue{Dm,Dn})
+    pushforward(a::MultiValue{S}, Jt::TensorValue{Dm,Dn}, iJt::TensorValue)
+
+Pointwise pushforward `φ_*a` of a tensor `a` of type `(r,s,0)` by a map
+`φ : ℝᴰᵐ → ℝᴰⁿ` with transposed Jacobian `Jt = ∇φ`:
+
+    (φ_*a)_{I} = Σ_{J} a_{J} · M₁(I₁,J₁) ⋯ M_K(I_K,J_K)
+
+    M_k(i,j) = iJt[i,j]   if the `k`-th index of `a` is covariant
+               Jt[j,i]    if the `k`-th index of `a` is contravariant
+
+with `iJt = pinvJt(Jt)`. Every index of `a` must be covariant or contravariant
+of dimension `Dm`; the result is a tensor of the same `(r,s,0)` type, with
+every index now of dimension `Dn`.
+
+This is the exact mirror of [`pullback`](@ref)`(::MultiValue, ::TensorValue)`,
+including the densification of an alternating or symmetric `a`: it is the
+contravariant index that needs no (pseudo-)inversion here, while a covariant
+index is transported by `iJt` and so requires `Int(Dm) ≤ Int(Dn)`.
+"""
+@generated function pushforward(a::MultiValue{S,Ta}, Jt::TensorValue{Dm,Dn,Tj}) where {S,Ta,Dm,Dn,Tj}
+  Dm isa Cov || return :(throw(ArgumentError(
+    "the domain (first) index of Jt should be covariant, got size $(size(Jt))"
+  )))
+  sz = size(a)
+  isempty(sz) && return :( a )
+  is_cov, err = _pullpush_validate_indices(sz, inverse_variance(Dm), "pushforward")
+  err !== nothing && return err
+
+  if any(is_cov)
+    err = _inverse_pullpush_error(Dm, Dn, "pushforward")
+    err === nothing || return err
+    return :( pushforward(a, Jt, pinvJt(Jt)) )
+  end
+
+  K = length(sz)
+  m, n = Int(Dm), Int(Dn)
+  T = _pullpush_eltype(Ta, is_cov, Tj, Tj)
+  V = _tensor_base_type_expr(K, ntuple(_ -> Dn, K))
+
+  (iszero(m) || iszero(n)) && return :( zero($V{$T}) )
+
+  _pullpush_core_body(is_cov, n, m, K, T, V, :iJt, :Jt)
+end
+
+@generated function pushforward(
+  a::MultiValue{S,Ta}, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
+  ) where {S,Ta,Dm,Dn,Tj,Di1,Di2,Ti}
+
+  Dm isa Cov || return :(throw(ArgumentError(
+    "the domain (first) index of Jt should be covariant, got size $(size(Jt))"
+  )))
+  err = _pinvJt_shape_error(Dm, Dn, Di1, Di2)
+  err === nothing || return err
+  sz = size(a)
+  isempty(sz) && return :( a )
+  is_cov, err = _pullpush_validate_indices(sz, inverse_variance(Dm), "pushforward")
+  err !== nothing && return err
+
+  if any(is_cov)
+    err = _inverse_pullpush_error(Dm, Dn, "pushforward")
+    err === nothing || return err
+  end
+
+  K = length(sz)
+  m, n = Int(Dm), Int(Dn)
+  T = _pullpush_eltype(Ta, is_cov, Ti, Tj)
+  Sr = ntuple(k -> is_cov[k] ? inverse_variance(Dn) : Dn, K)
+  V = _tensor_base_type_expr(K, Sr)
+
+  (iszero(m) || iszero(n)) && return :( zero($V{$T}) )
+
+  _pullpush_core_body(is_cov, n, m, K, T, V, :iJt, :Jt)
+end
+
+# ============================================================
+# Alternating transports
+#
+# A pullback of a K-form and a pushforward of a K-vector contract a minor of
+# Jt, the two other transports a minor of iJt = pinvJt(Jt). All four keep the
+# alternating type, which the dense (r,s,0) methods above would drop since
+# ExteriorFormValue and ExteriorVectorValue are MultiValues too.
+# ============================================================
+
+@generated function pushforward(
+  v::ExteriorVectorValue, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
+  ) where {Dm,Dn,Tj,Di1,Di2,Ti}
+
+  err = _pinvJt_shape_error(Dm, Dn, Di1, Di2)
+  err === nothing || return err
+  :( pushforward(v, Jt) )
+end
+
+@generated function pullback(
+  ω::ExteriorFormValue, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
+  ) where {Dm,Dn,Tj,Di1,Di2,Ti}
+
+  err = _pinvJt_shape_error(Dm, Dn, Di1, Di2)
+  err === nothing || return err
+  :( pullback(ω, Jt) )
+end
+
+"""
+    pushforward(ω::ExteriorFormValue{K,Dm}, Jt::TensorValue{Dm,Dn}[, iJt])
+    pullback(v::ExteriorVectorValue{K,Dn}, Jt::TensorValue{Dm,Dn}[, iJt])
+
+Pushforward `φ_*ω` of a K-form and pullback `φ^*v` of a K-vector, the two
+transports that go against the direction of `φ : ℝᴰᵐ → ℝᴰⁿ`. They are
+respectively the pullback and the pushforward by the inverse map `ψ = φ⁻¹`,
+whose transposed Jacobian is `iJt = pinvJt(Jt)`, so they are computed from
+`iJt` rather than from `Jt` and require `Int(Dm) ≤ Int(Dn)`, see [`pinvJt`](@ref).
+
+Pass a precomputed `iJt` to avoid recomputing it on every call; it is trusted
+to equal `pinvJt(Jt)` and is only checked against its expected size.
+"""
+@generated function pushforward(
+  ω::ExteriorFormValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
+
+  Dm isa Cov || return :(throw(ArgumentError(
+    "the domain (first) index of Jt should be covariant, got size $(size(Jt))"
+  )))
+  err = _inverse_pullpush_error(Dm, Dn, "pushforward")
+  err === nothing || return err
+  :( pullback(ω, pinvJt(Jt)) )
+end
+
+@generated function pushforward(
+  ω::ExteriorFormValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
+  ) where {K,Dw,Dm,Dn,Tw,Tj,Di1,Di2,Ti}
+
+  Dm isa Cov || return :(throw(ArgumentError(
+    "the domain (first) index of Jt should be covariant, got size $(size(Jt))"
+  )))
+  err = _pinvJt_shape_error(Dm, Dn, Di1, Di2)
+  err === nothing || return err
+  err = _inverse_pullpush_error(Dm, Dn, "pushforward")
+  err === nothing || return err
+  :( pullback(ω, iJt) )
+end
+
+@generated function pullback(
+  v::ExteriorVectorValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
+
+  Dm isa Cov || return :(throw(ArgumentError(
+    "the domain (first) index of Jt should be covariant, got size $(size(Jt))"
+  )))
+  err = _inverse_pullpush_error(Dm, Dn, "pullback")
+  err === nothing || return err
+  :( pushforward(v, pinvJt(Jt)) )
+end
+
+@generated function pullback(
+  v::ExteriorVectorValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
+  ) where {K,Dw,Dm,Dn,Tw,Tj,Di1,Di2,Ti}
+
+  Dm isa Cov || return :(throw(ArgumentError(
+    "the domain (first) index of Jt should be covariant, got size $(size(Jt))"
+  )))
+  err = _pinvJt_shape_error(Dm, Dn, Di1, Di2)
+  err === nothing || return err
+  err = _inverse_pullpush_error(Dm, Dn, "pullback")
+  err === nothing || return err
+  :( pushforward(v, iJt) )
+end
 
 # ============================================================
 # Koszul operator  κ_x(ω) = ι_x(ω)  (value level)
@@ -645,24 +1570,19 @@ This differs from the tensor inner product by a factor `K!`, see [`flat_inner`](
 end
 const ⨟ᴱ = flat_alt_inner
 
-"""
-    flat_inner(ω::MultiValue{S}, η::MultiValue{S})
-    ⊙ᴱ(ω,η)
-    ω ⊙ᴱ η
-
-Tensor inner product in Euclidean space, that is `inner`/`⊙` even if `ω` and
-`η` have variance but with iddentity (inverse) metric.
-"""
 function flat_inner(a::SkewSymKTensorValue{V,K,D,Ta},
                     b::SkewSymKTensorValue{V,K,D,Tb}) where {V,K,D,Ta,Tb}
   K > D && return zero(Base.promote_op(*,Ta,Tb))
   factorial(K) * flat_alt_inner(a, b)
 end
-const ⊙ᴱ = flat_inner
 
-# TODO: generalize flat_inner to tensor of type (r,s,u), you can e.g. invert
-# variace of `a` with a `convert`, and call inner, (or remove the variance of
-# both argument by `convert` if that's simpler).
+function inner(a::SkewSymKTensorValue{V,K,D,Ta}, b::SkewSymKTensorValue{V,K,D,Tb},
+               metric_args::Vararg{_MetricArg}) where {V,K,D,Ta,Tb}
+  V === Int && return flat_inner(a, b)
+  md = _require_metric_data(a, b, metric_args...)
+  K > D && return alt_inner(a, b, md)
+  factorial(K) * alt_inner(a, b, md)
+end
 
 
 # ============================================================

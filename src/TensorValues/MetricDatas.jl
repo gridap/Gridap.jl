@@ -128,10 +128,10 @@ Whether `md` represents the iddentity metric `LinearAlgebra.I`.
 isidentity(::MetricData{Nothing,Nothing}) = true
 isidentity(::MetricData) = false
 
-# Metric arguments:
-# Type of valid slurped arguments to forward to parse_metric_data or
-# compute_metric_data
-const _MetricArg = Union{MetricData,SymTensorValue,Number,UniformScaling}
+# Metric arguments: Type of valid slurped arguments to forward to
+# parse_metric_data or compute_metric_data
+const _MetricArgNoDetG = Union{MetricData,SymTensorValue,UniformScaling} # for norm(a, p, metric_args_nodet...)
+const _MetricArg = Union{_MetricArgNoDetG,Number}
 
 
 """
@@ -221,4 +221,13 @@ _add_metric_arg(nt, a) = throw(ArgumentError(
   "cannot parse metric data from an argument of type $(typeof(a)): expected a MetricData or \
   LinearAlgebra.I on its own, or else the metric tensor g and/or its inverse g_inv as \
   SymTensorValues with variance, optionally with the scalar sqrt_abs_g, in any order"))
+
+function _require_metric_data(a, b)
+  throw(ArgumentError(
+    "inner(::$(typeof(a)), ::$(typeof(b))) requires metric information, because \
+    the tensors carry varianced indices. Pass the metric tensor g and/or its \
+    inverse g_inv, or LinearAlgebra.I for the Euclidean inner product, see \
+    `parse_metric_data` and `flat_inner`."))
+end
+_require_metric_data(a, b, metric_args::Vararg{_MetricArg}) = parse_metric_data(metric_args...)
 

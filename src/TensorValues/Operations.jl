@@ -181,7 +181,7 @@ identical, variance included. The result carries the indices
     msg = "Left division requires a square left operand, got dimensions $D1 and $D2"
     return :( throw(DimensionMismatch($msg)) )
   end
-  B1 = first(Sb.parameters)
+  B1 = first(size(b))
   if D1 !== B1
     msg = "Cannot left-divide a tensor of first index $B1 by a tensor of first
       index $D1, they must be identical, variance included."
@@ -190,7 +190,7 @@ identical, variance included. The result carries the indices
 
   # `inv(a)⋅b` is not symmetric even when `b` is, so the result type is built
   # from the indices and never from `typeof(b)`.
-  Sr = (inverse_variance(D2), Sb.parameters[2:Nb]...)
+  Sr = (inverse_variance(D2), size(b)[2:Nb]...)
   V = _tensor_base_type_expr(Nb, Sr)
   quote
     r = get_array(a) \ get_array(b)
@@ -341,53 +341,107 @@ const ⋅¹ = dot
 # Inner product (full contraction)
 ###############################################################
 
-inner(a::_Scalar, b::_Scalar, metric_args...) = a * b
+inner(a::_Scalar, b::_Scalar, metric_args::Vararg{_MetricArg}) = a * b
 
 """
-    inner(a, b, metric_args...) -> scalar
-    inner(a, b, LinearAlgebra.I) = flat_inner(a,b) = A ⊙ᴱ b
+    flat_inner(ω::MultiValue{S}, η::MultiValue{S})
+    ⊙ᴱ(ω,η)
+    ω ⊙ᴱ η
+
+Tensor inner product in Euclidean space, that is `inner`/`⊙` even if `ω` and
+`η` have variance but with iddentity (inverse) metric:
+
+    ⊙ᴱ(ω,η) = Σ_I ω_I η_I
+
+over every cartesian index `I`.
+"""
+function flat_inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N}) where {S,Ta,Tb,N}
+  iszero(length(a)) && return zero(Base.promote_op(*,Ta,Tb))
+  # This is StaticArrays's dot, but that doesn't conjugate a.
+  za, zb = zero(Ta), zero(Tb)
+  ret = za*zb + za*zb
+  @inbounds @simd for j in 1:length(a)
+    ret += a[j]*b[j]
+  end
+  ret
+end
+
+const ⊙ᴱ = flat_inner
+
+"""
+    inner(a::MultiValue{S}, b::MultiValue{S}, metric_args...) -> scalar
+    inner(a, b, LinearAlgebra.I) = flat_inner(a,b) = a ⊙ᴱ b
     a ⊙ b
 
 Inner product of two tensors, that is the inner product along each indices. `a`
-and `b` must have iddentical sizes, including variances.
+and `b` must have iddentical sizes, including variances: the two live in the
+same tensor space, which is the only case in which pairing index `k` of `a`
+with index `k` of `b` is an invariant operation.
 
 The metric information is strictly required for tensors with variance since the
 inner product requires lowering and or raising the varianced indices of one
 argument, see the [metric operation](@ref "Metric dependent operations")
-documentation.
+documentation. `metric_args` are the arguments of
+[`parse_metric_data`](@ref), in any order.
 
 The indices without variance are contracted assuming iddentity metric. If `a`
 and `b` are type `(r,s,u)` tensors, the mathematical definition of inner is
 thus
 
-    a ⊙ b = Σ_{IJKLM} a_{i1, ..., ir}^{j1, ..., jr}{k1, ..., ku} *
-              ginv^{i1,l1} * ... * g_{ir,lr} *
-              g_{j1,m1} * ... * g_{js,ms} *
-            b_{i1, ..., ir}^{j1, ..., jr}{k1, ..., ku}
+    a ⊙ b = Σ_{IJKLM} a^{i1, ..., ir}_{j1, ..., js}{k1, ..., ku} *
+              g_{i1,l1} * ... * g_{ir,lr} *
+              ginv^{j1,m1} * ... * ginv^{js,ms} *
+            b^{l1, ..., lr}_{m1, ..., ms}{k1, ..., ku}
 
 where the sum is over all the cartesian indices `I` and `L` of the `r`
 contravariant indices, `J` and `M` that on the `s` covariant indices, and `K`
-of the `u` un-varianced indices.
+of the `u` un-varianced indices. A contravariant index pair is thus contracted
+through `g` and a covariant one through `g_inv`, as in [`alt_inner`](@ref).
 
 The Euclidean method [`flat_inner`](@ref) is called if the given metric is
 `LinearAlgebra.I`.
+
+# Extended help
+
+Neither argument is conjugated: `inner` is bilinear, so for complex components
+`a ⊙ b = Σ_I a_I b_I` and `a ⊙ a` is not `|a|²`. The Galerkin weak forms of
+time-harmonic problems are complex-symmetric rather than Hermitian, so they are
+written directly as `a ⊙ b`; conjugate an argument explicitly, as
+`inner(a, conj(b))`, for the Hermitian product -- which is what [`norm`](@ref)
+does internally.
 """
-function inner(a::MultiValue, b::MultiValue)
+function inner(a::MultiValue, b::MultiValue, metric_args::Vararg{_MetricArg})
   @notimplemented "Sizes of tensors must match."
 end
 
-inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N}) where {S,Ta,Tb,N} = contracted_product(Val(N),a,b)
+function inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N},
+                          metric_args::Vararg{_MetricArg}) where {S,Ta,Tb,N}
 
-# Rejection of an index pair that `can_contract` refuses, as a value for a plain
-# method body and as an `Expr` for a `@generated` one. The `Expr` form carries
-# the message rather than the dimensions, so that it holds only literals.
-_cannot_contract_msg(i, j) = "Indices $i and $j cannot be contracted, see `can_contract`."
-_cannot_contract(i, j) = throw(DimensionMismatch(_cannot_contract_msg(i,j)))
-_cannot_contract_expr(i, j) = :( throw(DimensionMismatch($(_cannot_contract_msg(i,j)))) )
+  # Call flat_inner if S has no variance, md is ignored
+  all(i -> i isa Int, size(a)) && return flat_inner(a, b)
+  md = _require_metric_data(a, b, metric_args...)
+
+  # A tensor with no component contracts to zero whatever the metric.
+  iszero(length(a)) && return zero(Base.promote_op(*,Ta,Tb))
+  # Flat metric
+  isidentity(md) && return flat_inner(a, b)
+
+  # `flat` and `sharp` act on all the indices they are given at once, and check
+  # both their variance and the dimension of the metric against them.
+  indices = ntuple(identity, Val(N))
+  cons = filter(k -> size(a)[k] isa Con, indices)
+  covs = filter(k -> size(a)[k] isa Cov, indices)
+  b♯  = isempty(cons) ? b  : flat( b, Val(cons), md; drop_sym=Val(true))
+  b♭♯ = isempty(covs) ? b♯ : sharp(b♯,Val(covs), md; drop_sym=Val(true))
+
+  contracted_product(Val(N), a, b♭♯)
+end
 
 # Σᵢⱼ aᵢⱼbᵢⱼ for two symmetric `D`×`D` tensors, read off their independent
-# components only.
+# components only. Euclidean, hence restricted to un-varianced indices; the
+# generic method takes the varianced ones, with the metric they require.
 @generated function inner(a::AbstractSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
+  D isa Int || return :( _require_metric_data(a, b) )
   iszero(D) && return :(zero($(Base.promote_op(*,Ta,Tb))))
   terms = Expr(:call, :+)
   for i in 1:D
@@ -404,6 +458,7 @@ _cannot_contract_expr(i, j) = :( throw(DimensionMismatch($(_cannot_contract_msg(
 end
 
 @generated function inner(a::SymFourthOrderTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
+  D isa Int || return :( _require_metric_data(a, b) )
   iszero(D) && return :(zero($(Base.promote_op(*,Ta,Tb))))
 
   S = Tuple{D,D,D,D}
@@ -423,10 +478,14 @@ end
 end
 
 function inner(a::SkewSymTensorValue{D,Ta}, b::SkewSymTensorValue{D,Tb}) where {D,Ta,Tb}
+  D isa Int || return _require_metric_data(a, b)
   iszero(D) && return zero(Base.promote_op(*,Ta,Tb))
   2 * inner(VectorValue(a.data), VectorValue(b.data))
 end
 
+# A skew symmetric tensor is orthogonal to a symmetric one under any symmetric
+# metric: `Σ kᵢⱼ gⁱᵏ gʲˡ sₖₗ` is its own negative under the relabelling
+# `i↔j, k↔l`. The pair thus needs no metric even when varianced.
 function inner(a::SkewSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
   zero(Base.promote_op(*,Ta,Tb))
 end
@@ -462,12 +521,16 @@ end
 @generated function inner(
   a::ProductTensorValue{A,B,Ta,S,N,L}, b::ProductTensorValue{A,B,Tb,S,N,L}) where {A,B,Ta,Tb,S,N,L}
 
+  all(i -> i isa Int, size(a)) || return :( _require_metric_data(a, b) )
+
   zero_e = :( zero(Base.promote_op(*,Ta,Tb)) )
   iszero(L) && return zero_e
 
   wa = _component_basis_weights(make_concretetype(A{Int}))
   wb = _component_basis_weights(make_concretetype(B{Int}))
-  (isnothing(wa) || isnothing(wb)) && return :( contracted_product(Val(N), a, b) )
+  # A factor whose component basis is not orthogonal has no such weighted sum,
+  # so the contraction is read off every component instead.
+  (isnothing(wa) || isnothing(wb)) && return :( flat_inner(a, b) )
 
   La, = _prod_counts(A,B)
   terms = Expr[]
@@ -645,7 +708,7 @@ The type of the resulting value is (skew) symmetric stable w.r.t. `typeof(a)`.
 it, so the first index `Db` of `b` must satisfy `can_contract(Db,D)`.
 """
 function congruent_prod(a::MultiValue{Tuple{D,D},Ta}, b::MultiValue{Tuple{Db,D1},Tb}) where {D,Db,D1,Ta,Tb}
-  can_contract(Db,D) || _cannot_contract(Db,D)
+  _ensure_contract(Db,D)
   T = Base.promote_op(*,Ta,Tb)
   V = _congruent_ret_type(a, D1)
   (iszero(Int(D)) || iszero(Int(D1))) && return zero(V{T})
@@ -746,8 +809,6 @@ the specific functions above if possible), but is used as default generic implem
 @generated function contracted_product(
   ::Val{N}, a::MultiValue{Sa,Ta,Na}, b::MultiValue{Sb,Tb,Nb}) where {N,Sa,Ta,Na,Sb,Tb,Nb}
 
-  @assert ( Sa <: Tuple && Sb <: Tuple ) "Ill-defined MultiValue value"
-
   # An order-0 tensor can only be contracted if has exactly one component
   if (iszero(Na) && length(a) != 1) || (iszero(Nb) && length(b) != 1)
     msg = "Generic $N-contraction requires an order-0 tensor to hold exactly one
@@ -755,8 +816,9 @@ the specific functions above if possible), but is used as default generic implem
     return :( error($msg) )
   end
 
-  last_N_Sa = last(Sa.parameters, N)
-  first_N_Sb = first(Sb.parameters, N)
+  sz_a, sz_b = size(a), size(b)
+  last_N_Sa = last(sz_a, N)
+  first_N_Sb = first(sz_b, N)
   if ( length(last_N_Sa)≠N || length(first_N_Sb)≠N)
     msg = "$N-contraction is not possible for tensors of size $Sa and $Sb, one tensor does not have $N indices"
     return :( throw(DimensionMismatch($(msg) )) )
@@ -769,7 +831,7 @@ the specific functions above if possible), but is used as default generic implem
   end
 
   S_contract = tuple(last_N_Sa...)
-  Sa_keep, Sb_keep = tuple(Sa.parameters[1:Na-N]...), tuple(Sb.parameters[N+1:Nb]...)
+  Sa_keep, Sb_keep = sz_a[1:Na-N], sz_b[N+1:Nb]
 
   Sr = tuple(Sa_keep..., Sb_keep...)
   Nr = length(Sr)
@@ -833,7 +895,6 @@ tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
 
   @assert (Ia isa NTuple || Ia isa Dim)
   @assert (Ib isa NTuple || Ib isa Dim)
-  @assert (Sa <: Tuple && Sb <: Tuple) "Ill-defined MultiValue"
   Nc = length(Ia)
   @assert length(Ib) == Nc
 
@@ -857,8 +918,9 @@ tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
   length(unique(Ia)) == Nc || return :(throw(ArgumentError("ia contains duplicate indices")))
   length(unique(Ib)) == Nc || return :(throw(ArgumentError("ib contains duplicate indices")))
 
+  sz_a, sz_b = size(a), size(b)
   for k in 1:Nc
-    da, db = Sa.parameters[Ia[k]], Sb.parameters[Ib[k]]
+    da, db = sz_a[Ia[k]], sz_b[Ib[k]]
     if !can_contract(da, db)
       msg = "Index pair $k: Sa[$(Ia[k])]=$da and Sb[$(Ib[k])]=$db, cannot be contracted. See [`can_contract`](@ref)."
       return :(throw(DimensionMismatch($msg)))
@@ -870,9 +932,9 @@ tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
   ka = tuple(filter(i -> !(i in Ia_set), 1:Na)...)
   kb = tuple(filter(i -> !(i in Ib_set), 1:Nb)...)
 
-  S_a_kept   = ntuple(j -> Sa.parameters[ka[j]], length(ka))
-  S_b_kept   = ntuple(j -> Sb.parameters[kb[j]], length(kb))
-  S_contract = ntuple(k -> Sa.parameters[Ia[k]], Nc)
+  S_a_kept   = ntuple(j -> sz_a[ka[j]], length(ka))
+  S_b_kept   = ntuple(j -> sz_b[kb[j]], length(kb))
+  S_contract = ntuple(k -> sz_a[Ia[k]], Nc)
 
   Sr = (S_a_kept..., S_b_kept...)
   Nr = length(Sr)
@@ -944,7 +1006,6 @@ tensor_contraction(a::MultiValue, i::Int, j::Int) =
 
   @assert (I isa NTuple || I isa Int)
   @assert (J isa NTuple || J isa Int)
-  @assert Sa <: Tuple "Ill-defined MultiValue"
   Nc = length(I)
   @assert length(J) == Nc
 
@@ -965,8 +1026,9 @@ tensor_contraction(a::MultiValue, i::Int, j::Int) =
   length(unique([I..., J...])) == 2Nc ||
     return :(throw(ArgumentError("i and j must be disjoint with no internal duplicates")))
 
+  sz_a = size(a)
   for k in 1:Nc
-    di, dj = Sa.parameters[I[k]], Sa.parameters[J[k]]
+    di, dj = sz_a[I[k]], sz_a[J[k]]
     if !can_contract(di, dj)
       msg = "Index pair $k: Sa[$(I[k])]=$di and Sb[$(J[k])]=$dj, cannot be contracted. See [`can_contract`](@ref)."
       return :(throw(DimensionMismatch($msg)))
@@ -975,8 +1037,8 @@ tensor_contraction(a::MultiValue, i::Int, j::Int) =
 
   contracted = Set([I..., J...])
   ka         = tuple(filter(idx -> !(idx in contracted), 1:Na)...)
-  Sr     = ntuple(m -> Sa.parameters[ka[m]], length(ka))
-  S_contract = ntuple(k -> Sa.parameters[I[k]], Nc)
+  Sr     = ntuple(m -> sz_a[ka[m]], length(ka))
+  S_contract = ntuple(k -> sz_a[I[k]], Nc)
   Nr         = length(Sr)
   V = _tensor_base_type_expr(Nr,Sr)
 
@@ -1349,12 +1411,13 @@ end
 ###############################################################
 
 """
-    meas(a::MultiValue{Tuple{D}})
+    meas(a::MultiValue{Tuple{D}}, metric_args...)
     meas(a::MultiValue{Tuple{1,D2}})
 
-Euclidean norm of a vector.
+Norm of a vector.
 """
-meas(a::MultiValue{Tuple{D}}) where D = sqrt(inner(a, a))
+meas(a::MultiValue{Tuple{D}}, metric_args::Vararg{_MetricArg}) where D =
+  sqrt(inner(a, a, metric_args...))
 
 function meas(v::MultiValue{Tuple{1,D}}) where D
   # The row is read as a plain vector, which is only a length-preserving
@@ -1398,17 +1461,28 @@ If it has variance, `J` may only be a cell map gradient of size `(Cov(D1), Con(D
 end
 
 """
-    norm(u::MultiValue{Tuple{D}})
-    norm(u::MultiValue{Tuple{D1,D2}})
+    norm(a::MultiValue, metric_args...)
+    norm(a::MultiValue, p::Number, metric_args...)
 
-Euclidean (2-)norm of `u`, namely `sqrt(inner(u,u))`.
+2-norm of `a` (`p` must be 2), defined as `sqrt(inner(u,u,metric_args...))`.
+
+See also [`parse_metric_data`](@ref) and [`inner`](@ref).
 """
-@inline norm(u::MultiValue{Tuple{D},<:Real}) where D = sqrt(inner(u, u))
-@inline norm(u::MultiValue{Tuple{D}}) where D = sqrt(real(inner(u, conj(u))))
-@inline norm(u::MultiValue{Tuple{D1,D2},<:Real}) where {D1,D2} = sqrt(inner(u, u))
-@inline norm(u::MultiValue{Tuple{D1,D2}}) where {D1,D2} = sqrt(real(inner(u, conj(u))))
+@inline norm(u::MultiValue{Tuple{D},<:Real}, metric_args::Vararg{_MetricArgNoDetG}) where D =
+  sqrt(inner(u, u, metric_args...))
+@inline norm(u::MultiValue{Tuple{D}}, metric_args::Vararg{_MetricArgNoDetG}) where D =
+  sqrt(real(inner(u, conj(u), metric_args...)))
+@inline norm(u::MultiValue{Tuple{D1,D2},<:Real}, metric_args::Vararg{_MetricArgNoDetG}) where {D1,D2} =
+  sqrt(inner(u, u, metric_args...))
+@inline norm(u::MultiValue{Tuple{D1,D2}}, metric_args::Vararg{_MetricArgNoDetG}) where {D1,D2} =
+  sqrt(real(inner(u, conj(u), metric_args...)))
 @inline norm(u::MultiValue{Tuple{0},T}) where T<:Real= sqrt(zero(T))
 @inline norm(u::MultiValue{Tuple{0},T}) where T = sqrt(real(zero(T)))
+
+@inline function norm(u::MultiValue, p::Real, metric_args::Vararg{_MetricArgNoDetG})
+  p == 2 || throw(ArgumentError("only the 2-norm of a MultiValue is defined, got p = $p"))
+  norm(u, metric_args...)
+end
 
 ###############################################################
 # conj, real, imag
@@ -1462,18 +1536,16 @@ end
 Return a vector of length `D2` of traces computed on the first two indices: `resⱼ = Σᵢ vᵢᵢⱼ`.
 """
 @generated function tr(v::NTensorValue{S,T,N}) where {S,T,N}
-  @assert S <: Tuple "Ill-defined MultiValue value"
-
   if N > 3
     # This may be generalizable if wanted
     msg = "Trace is not implemented for tensors of order ≥ 4, got tensors ::$(v)"
     return :( throw(ArgumentError($msg)) )
   end
 
-  A12 = first(S.parameters, 2)
+  A12 = first(size(v), 2)
   can_contract(A12...) || return _not_traceable_expr(A12...)
 
-  B = last(S.parameters)
+  B = last(size(v))
   V = _tensor_base_type_expr(1, (B,))
   iszero(length(v)) && return :(zero($V{T}))
 
@@ -1558,7 +1630,6 @@ end
   a::MultiValue{Sa,Ta,Na}, ::Val{P}) where {Sa,Ta,Na,P}
 
   @assert P isa Tuple || P isa Int
-  @assert Sa <: Tuple "Ill-defined MultiValue"
 
   sort([P...]) == collect(1:Na) || begin
     msg = "$P is not a valid permutation of 1:$Na"
@@ -1567,8 +1638,8 @@ end
 
   # Reordering the slots carries each index along with its own variance, so any
   # permutation is admissible whatever the variances are.
-  Sa_params = tuple(Sa.parameters...)
-  Sr = ntuple(k -> Sa_params[P[k]], Na)
+  sz_a = size(a)
+  Sr = ntuple(k -> sz_a[P[k]], Na)
   V = _tensor_base_type_expr(Na,Sr)
 
   iszero(length(a)) && return :( zero($V) )
