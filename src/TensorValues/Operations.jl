@@ -438,10 +438,8 @@ function inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N},
 end
 
 # Σᵢⱼ aᵢⱼbᵢⱼ for two symmetric `D`×`D` tensors, read off their independent
-# components only. Euclidean, hence restricted to un-varianced indices; the
-# generic method takes the varianced ones, with the metric they require.
-@generated function inner(a::AbstractSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
-  D isa Int || return :( _require_metric_data(a, b) )
+# components only: an off diagonal component is stored once and counted twice.
+@generated function flat_inner(a::AbstractSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return :(zero($(Base.promote_op(*,Ta,Tb))))
   terms = Expr(:call, :+)
   for i in 1:D
@@ -457,8 +455,7 @@ end
   terms
 end
 
-@generated function inner(a::SymFourthOrderTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
-  D isa Int || return :( _require_metric_data(a, b) )
+@generated function flat_inner(a::SymFourthOrderTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return :(zero($(Base.promote_op(*,Ta,Tb))))
 
   S = Tuple{D,D,D,D}
@@ -470,17 +467,18 @@ end
   # for each independent component, add its product in the sum of the
   # corresponding multiplicative factor
   for (i, fi) in enumerate(component_basis(VInt))
-    factor = @invoke inner(fi::MultiValue{S,Int,4}, fi::MultiValue{S,Int,4}) # use the generic but slower method
+    factor = @invoke flat_inner(fi::MultiValue{S,Int,4}, fi::MultiValue{S,Int,4}) # use the generic but slower method
     push!(sums[factor].args, :(indep_comp_getindex(a,$i)*indep_comp_getindex(b,$i)))
   end
 
   :( $(sums[1]) + 2*$(sums[2]) + 4*$(sums[4]) )
 end
 
-function inner(a::SkewSymTensorValue{D,Ta}, b::SkewSymTensorValue{D,Tb}) where {D,Ta,Tb}
-  D isa Int || return _require_metric_data(a, b)
+# The `D(D-1)/2` independent components are the strict upper triangle, each one
+# counted twice.
+function flat_inner(a::SkewSymTensorValue{D,Ta}, b::SkewSymTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return zero(Base.promote_op(*,Ta,Tb))
-  2 * inner(VectorValue(a.data), VectorValue(b.data))
+  2 * flat_inner(VectorValue(a.data), VectorValue(b.data))
 end
 
 # A skew symmetric tensor is orthogonal to a symmetric one under any symmetric
@@ -492,45 +490,45 @@ end
 function inner(a::AbstractSymTensorValue{D,Tb}, b::SkewSymTensorValue{D,Ta}) where {D,Ta,Tb}
   zero(Base.promote_op(*,Ta,Tb))
 end
-
-# TODO These two methods make no sense and shold be removed
-function inner(a::MultiValue{Tuple{D,D,D,D}}, b::MultiValue{Tuple{D,D}}) where D
-  double_contraction(a,b)
+function flat_inner(a::SkewSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
+  zero(Base.promote_op(*,Ta,Tb))
+end
+function flat_inner(a::AbstractSymTensorValue{D,Tb}, b::SkewSymTensorValue{D,Ta}) where {D,Ta,Tb}
+  zero(Base.promote_op(*,Ta,Tb))
 end
 
-function inner(a::MultiValue{Tuple{D,D}}, b::MultiValue{Tuple{D,D,D,D}}) where D
-  double_contraction(a,b)
-end
+# inner should only be defined on tensors with same size
+@deprecate inner(a::MultiValue{Tuple{D,D,D,D}}, b::MultiValue{Tuple{D,D}}) where D double_contraction(a,b)
+@deprecate inner(a::MultiValue{Tuple{D,D}}, b::MultiValue{Tuple{D,D,D,D}}) where D double_contraction(a,b)
 
-# The multiplicities `wᵢ = eᵢ⊙eᵢ` of the component basis `{eᵢ}` of `V`, or
-# `nothing` if that basis is not orthogonal -- in which case the inner product
-# is not a weighted sum over the independent components -- or if `V` has an
-# index it cannot contract with itself, so that `V` has no inner product.
+# The Euclidean multiplicities `wᵢ = eᵢ⊙ᴱeᵢ` of the component basis `{eᵢ}` of
+# `V`, or `nothing` if that basis is not orthogonal -- in which case the
+# contraction is not a weighted sum over the independent components.
 function _component_basis_weights(V::Type{<:MultiValue})
-  all(i -> can_contract(i,i), size(V)) || return nothing
   basis = component_basis(V)
   for i in eachindex(basis), j in eachindex(basis)
     i == j && continue
-    iszero(inner(basis[i],basis[j])) || return nothing
+    iszero(flat_inner(basis[i],basis[j])) || return nothing
   end
-  Int[ inner(b,b) for b in basis ]
+  Int[ flat_inner(b,b) for b in basis ]
 end
 
 # Σ_(la,lb) wa(la)*wb(lb)*a_(la,lb)*b_(la,lb), the component basis of a product
 # being the products of the factors' component bases.
-@generated function inner(
+@generated function flat_inner(
   a::ProductTensorValue{A,B,Ta,S,N,L}, b::ProductTensorValue{A,B,Tb,S,N,L}) where {A,B,Ta,Tb,S,N,L}
 
-  all(i -> i isa Int, size(a)) || return :( _require_metric_data(a, b) )
+  zero_result = :( zero(Base.promote_op(*,Ta,Tb)) )
+  iszero(L) && return zero_result
 
-  zero_e = :( zero(Base.promote_op(*,Ta,Tb)) )
-  iszero(L) && return zero_e
+  generic_e = :( @invoke flat_inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N}) )
+  all(i -> i isa Int, size(a)) || return generic_e
 
   wa = _component_basis_weights(make_concretetype(A{Int}))
   wb = _component_basis_weights(make_concretetype(B{Int}))
   # A factor whose component basis is not orthogonal has no such weighted sum,
   # so the contraction is read off every component instead.
-  (isnothing(wa) || isnothing(wb)) && return :( flat_inner(a, b) )
+  (isnothing(wa) || isnothing(wb)) && return generic_e
 
   La, = _prod_counts(A,B)
   terms = Expr[]
@@ -538,10 +536,10 @@ end
     w = wa[la]*wb[lb]
     iszero(w) && continue
     k = (lb-1)*La + la
-    prod_e = :( a.data[$k]*b.data[$k] )
-    push!(terms, isone(w) ? prod_e : :( $w * $prod_e ))
+    prod_expr = :( a.data[$k]*b.data[$k] )
+    push!(terms, isone(w) ? prod_expr : :( $w * $prod_e ))
   end
-  isempty(terms) && return zero_e
+  isempty(terms) && return zero_result
   Expr(:call, :+, terms...)
 end
 
@@ -552,13 +550,11 @@ const ⊙ = inner
 ###############################################################
 
 """
-    double_contraction(a::MultiValue{Tuple{...,D,E}}, b::MultiValue{Tuple{D,E,...})
+    double_contraction(a::MultiValue{Tuple{...,Da,Ea}}, b::MultiValue{Tuple{Db,Eb,...})
     a ⋅² b
 
 Double contraction of two tensors `a` and `b`, along the two last indices of `a`
-and two first of `b`. The corresponding dimensions `D` and `E` must match, the
-contraction order is chosen to be consistent with the inner product of second
-order tensors.
+and two first of `b`, that is `Da` contracts with `Db` and `Ea` with `Eb`.
 
 The `double_contraction` between second- and/or fourth-order symmetric tensors
 preserves the symmetry (returns a symmetric tensor type).
@@ -596,6 +592,7 @@ end
 
 # c_ijkl = a_ijmn*b_mnkl (general case)
 @generated function double_contraction(a::SymFourthOrderTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
+  D isa Int || return :( contracted_product(Val(2), a, b) )
   iszero(D) && return :(SymFourthOrderTensorValue{0,$(Base.promote_op(*,Ta,Tb))}())
 
   comps = Expr[]
@@ -631,23 +628,27 @@ end
 end
 
 # c_ijk = a_ilm*b_lmjk
-@generated function double_contraction(a::ThirdOrderTensorValue{D1,D,D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D1,D,Ta,Tb}
-  iszero(length(a)) && return :(zero(ThirdOrderTensorValue{D1,D,D,$(Base.promote_op(*,Ta,Tb))}))
+@generated function double_contraction(a::ThirdOrderTensorValue{D1,Da,Da,Ta}, b::SymFourthOrderTensorValue{Db,Tb}) where {D1,Da,Db,Ta,Tb}
+  can_contract(Da,Db) || return :( contracted_product(Val(2), a, b) ) # for error msg
+  D = Int(Da)
+  iszero(length(a)) && return :(zero(ThirdOrderTensorValue{D1,Db,Db,$(Base.promote_op(*,Ta,Tb))}))
   comps = Expr[]
   for k in 1:D
     for j in 1:D
-      for i in 1:D1
+      for i in 1:Int(D1)
         summands = [:(a[$i,$l,$m]*b[$l,$m,$j,$k]) for l in 1:D for m in 1:D]
         push!(comps, Expr(:call, :+, summands...))
       end
     end
   end
-  :( ThirdOrderTensorValue{D1,D,D}($(comps...)) )
+  :( ThirdOrderTensorValue{D1,Db,Db}($(comps...)) )
 end
 
 # c_ij = a_ijkl*b_kl
-@generated function double_contraction(a::SymFourthOrderTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
-  iszero(D) && return :(zero(SymTensorValue{D,$(Base.promote_op(*,Ta,Tb))}))
+@generated function double_contraction(a::SymFourthOrderTensorValue{Da,Ta}, b::AbstractSymTensorValue{Db,Tb}) where {Da,Db,Ta,Tb}
+  can_contract(Da,Db) || return :( contracted_product(Val(2), a, b) ) # for error msg
+  D = Int(Da)
+  iszero(D) && return :(zero(SymTensorValue{Da,$(Base.promote_op(*,Ta,Tb))}))
   comps = Expr[]
   for i in 1:D
     for j in i:D
@@ -660,12 +661,14 @@ end
       push!(comps, :( $diag_sum + 2*$offdiag_sum) )
     end
   end
-  :( SymTensorValue{D}($(comps...)) )
+  :( SymTensorValue{Da}($(comps...)) )
 end
 
-# c_ij = a_kl*b_klij
-@generated function double_contraction(a::AbstractSymTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
-  iszero(D) && return :(zero(SymTensorValue{D,$(Base.promote_op(*,Ta,Tb))}))
+# c_ij = a_kl*b_klij, the two free indices being the two last of `b`
+@generated function double_contraction(a::AbstractSymTensorValue{Da,Ta}, b::SymFourthOrderTensorValue{Db,Tb}) where {Da,Db,Ta,Tb}
+  can_contract(Da,Db) || return :( contracted_product(Val(2), a, b) ) # for error msg
+  D = Int(Db)
+  iszero(D) && return :(zero(SymTensorValue{Db,$(Base.promote_op(*,Ta,Tb))}))
   comps = Expr[]
   for i in 1:D
     for j in i:D
@@ -679,16 +682,16 @@ end
     end
   end
 
-  :( SymTensorValue{D}($(comps...)) )
+  :( SymTensorValue{Db}($(comps...)) )
 end
 
-# c_ij = a_ijkl*b_kl
-function double_contraction(a::SymFourthOrderTensorValue{D}, b::MultiValue{Tuple{D,D}}) where {D}
+# c_ij = a_ijkl*b_kl.
+function double_contraction(a::SymFourthOrderTensorValue, b::MultiValue{Tuple{Db,Dc}}) where {Db,Dc}
   double_contraction(a, symmetric_part(b))
 end
 
 # c_ij = a_kl*b_klij
-function double_contraction(a::MultiValue{Tuple{D,D}}, b::SymFourthOrderTensorValue{D}) where {D}
+function double_contraction(a::MultiValue{Tuple{Da,Db}}, b::SymFourthOrderTensorValue) where {Da,Db}
   double_contraction(symmetric_part(a), b)
 end
 

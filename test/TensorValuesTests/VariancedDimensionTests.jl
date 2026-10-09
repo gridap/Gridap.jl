@@ -358,10 +358,13 @@ dual_cov  = representatives_of_componentbasis_dual(Vcov, gm_lo)
 @test_throws ErrorException k_cov ⊙ s_con
 
 # `inner` of an order-4 with an order-2 tensor is `double_contraction`, through
-# a pair of methods that predate the same-size contract and are pending
-# removal: they pair indices by rank, not by position
-@test get_array(f_cov ⊙ s_cov) == get_array(f_int ⊙ s_int)
-@test get_array(s_cov ⊙ f_cov) == get_array(s_int ⊙ f_int)
+# a deprecated pair of methods that pair the indices by rank and not by
+# position. They inherit the variance check of `double_contraction`, so two
+# covariant arguments do not contract
+@test get_array(f_int ⊙ s_int) == get_array(contracted_product(Val(2), f_int, s_int))
+@test get_array(s_int ⊙ f_int) == get_array(contracted_product(Val(2), s_int, f_int))
+@test_throws DimensionMismatch f_cov ⊙ s_cov
+@test_throws DimensionMismatch s_cov ⊙ f_cov
 @test_throws ErrorException f_cov ⊙ s_con
 @test_throws ErrorException f_int ⊙ TensorValue{2,3}(1:6...)
 

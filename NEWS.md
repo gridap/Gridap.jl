@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `(\)(a::MultiValue, b::MultiValue)` no longer types its result after `b`. `inv(a)⋅b` is not symmetric even when `b` is, and a `SymTensorValue` result silently dropped the asymmetry.
   - `HighOrderTensorValue` is renamed `NTensorValue`.
 
+### Removed
+- Deprecated `inner` between a 4th order tensor and 2nd order tensors, this used to call `double_contraction`, but this doesn't make sense mathematically, in particular for tensors with variance.
+
 ## [0.20.9] - 2026-08-17
 
 ### Added
