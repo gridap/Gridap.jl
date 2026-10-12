@@ -87,25 +87,23 @@ Base.:/(a::Con, b::Con) = Con(a[] / b[])
 Base.div(a::Con, b::Con, r::RoundingMode=RoundToZero) = div(a[], b[], r)
 Base.:-(x::Con) = Con(-x[])
 
-_rm_size_variance(s::Tuple) = tuple(Int.(s)...)
-@generated function _rm_size_variance(::Type{S}) where S<:Tuple
-  # @generated ensures a compile time constant and inference
-  :(Tuple{$(Int.(S.parameters)...)})
-end
-
-# The size with the variance of every dimension flipped, as `inverse_variance`
-# flips one. Un-varianced dimensions are left alone.
-@generated function _inverse_variance_size(::Type{S}) where S<:Tuple
-  # @generated ensures a compile time constant and inference
-  :(Tuple{$(map(inverse_variance, tuple(S.parameters...))...)})
-end
-
 """
     Dim = Union{Int, Cov, Con}
 
 Valid type of values to use in `MultiValue`'s size, `S=Tuple{I...}` where each `D` in `I` is a `Dim`.
 """
 const Dim = Union{Int, Cov, Con}
+
+# convert a size Tuple S to the tuple size(::MultiValue{S})
+# @generated because the functions needt to read the `parameters` field of the
+# S::DataType, while remaining constant folded
+@generated function _Size_to_size(::Type{S}) where S<:Tuple
+  s = tuple(S.parameters...)
+  isempty(filter(D -> !isa(D, Dim), s)) || return :(
+    throw(ErrorException("$S is not a tensor size Tuple, it should only contain [`Dim`](@ref) indices."))
+  )
+  :( $s )
+end
 
 """
     const _Scalar = Union{Real,Complex}
@@ -152,17 +150,23 @@ can_contract(i::Dim, j::Dim) = is_opposit_variance(i,j) && i==j
 end
 
 """
-    inverse_variance(i::Dim)
+    inverse_variance(i::Dim) -> Dim
+    inverse_variance(s::Tuple) -> tuple
+    inverse_variance(::Type{S<:Tuple}) -> Tuple
 
-Dimension `i` with its variance flipped, `Cov`↔`Con`, an un-varianced dimension
-being its own flip. Inverting a tensor raises its lower indices and lowers its
-upper ones, so `inv(a)` has size `reverse(inverse_variance.(size(a)))`.
+Dimension `i` with its variance flipped, `Cov`↔`Con` or `Int`↔`Int`. If a size
+tuple or Size Tuple is given, `inverse_variance` is applied to each index.
 
 `can_contract(i, inverse_variance(i))` holds for every `i::Dim`.
 """
 inverse_variance(i::Int) = i
 inverse_variance(i::Cov) = Con(i[])
 inverse_variance(i::Con) = Cov(i[])
+inverse_variance(s::Tuple) = map(inverse_variance, s)
+inverse_variance(::Type{S}) where S<:Tuple = Tuple{map(inverse_variance, _Size_to_size(S))...}
+
+_rm_size_variance(s::Tuple) = tuple(Int.(s)...)
+_rm_size_variance(::Type{S}) where S<:Tuple = Tuple{Int.(_Size_to_size(S))...}
 
 
 ###############################################################
@@ -207,7 +211,7 @@ length(::Type{<:MultiValue{S}}) where S = prod(_rm_size_variance(size(MultiValue
 length(a::MultiValue) = length(typeof(a))
 length(V::Type{<:MultiValue}) = @unreachable "$V type is too abstract to count its components, the size information is needed."
 
-size(::Type{<:MultiValue{S}}) where S<:Tuple = tuple(S.parameters...)
+size(::Type{<:MultiValue{S}}) where S<:Tuple = _Size_to_size(S)
 size(a::MultiValue) = size(typeof(a))
 function size(::Type{<:MultiValue{S,T,N}}, d::Integer) where {S,T,N}
     d < 1 && error("arraysize: dimension out of range")

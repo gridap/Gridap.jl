@@ -2,9 +2,10 @@ module ProductTensorValueTests
 
 using Gridap.TensorValues
 using Gridap.TensorValues: _minimal_tensortype_with_shape, _factor_eltype, stored_comp_indices
-using Gridap.TensorValues: _prod_counts, _prod_eltype
+using Gridap.TensorValues: _prod_counts, _prod_eltype, _rm_size_variance, _Size_to_size
 using Gridap.TensorValues: get_indep_components, num_stored_components
 using Gridap.TensorValues: _indep_comp_cartesian_indices, is_full_rank
+using Gridap.TensorValues: _stored_comp_cartesian_indices
 using Gridap.Arrays: get_array
 using Test
 using StaticArrays
@@ -324,6 +325,25 @@ end
 
 @test all(V -> is_full_rank(V) === _holds_full_tensor(V), tags)
 
+# Each stored component, dependent ones included, is read from the full tensor
+# at its `_stored_comp_cartesian_indices`, in the order they are stored
+
+function _reads_stored_comps(V)
+  VV = make_concretetype(_minimal_tensortype_with_shape(V){Int})
+  u = VV(ntuple(i -> i, num_indep_components(VV)))
+  Is = _stored_comp_cartesian_indices(VV)
+  length(Is) == num_stored_components(VV) &&
+    all(get_array(u)[I...] == Tuple(u)[k] for (k,I) in enumerate(Is))
+end
+
+@test all(_reads_stored_comps, tags)
+@test _reads_stored_comps(SymFourthOrderTensorValue{2})
+# a type that stores dependent components needs its own method, and gives more
+# indices than it has independent components
+@test length(_stored_comp_cartesian_indices(SymTracelessTensorValue{3})) == 6
+@test_throws ErrorException _stored_comp_cartesian_indices(
+  ProductTensorValue{VectorValue{2},SymTracelessTensorValue{2},Int})
+
 # The predicate is constant folded, so the conversions carry no run time check
 
 _full_rank_val(::Type{V}) where V = Val(is_full_rank(V))
@@ -352,9 +372,10 @@ this function does not check.
 @generated function _full_rank_tensortype(
   ::Type{<:ProductTensorValue{A,B,T,S,N}}) where {A,B,T,S,N}
 
-  L = prod(Int.(S.parameters))
-  V = N == 2 ? TensorValue{S.parameters...,T,L} :
-      N  > 2 ? NTensorValue{S,T,N,L}            :
+  s = _Size_to_size(S)
+  L = prod(_rm_size_variance(s))
+  V = N == 2 ? TensorValue{s...,T,L} :
+      N  > 2 ? NTensorValue{S,T,N,L} :
       throw(ErrorException("A product of tensors of order at least one has order at least two, got order $N"))
   :( $V )
 end

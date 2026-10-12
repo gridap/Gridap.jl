@@ -53,8 +53,8 @@ end
 NTensorValue(::Val{N}, data...) where N = NTensorValue(Val(N),data)
 NTensorValue(::Val{N}, data::AbstractArray{T,N}) where {N,T} = NTensorValue(Val(N), data...)
 
-@generated NTensorValue{S}(data::NTuple{L,T}) where {S,L,T}   = :( NTensorValue{S,T,$(length(S.parameters)),}(data) )
-@generated NTensorValue{S,T}(data::NTuple{L,T}) where {S,L,T} = :( NTensorValue{S,T,$(length(S.parameters)),}(data) )
+NTensorValue{S}(data::NTuple{L,T}) where {S,L,T}   = NTensorValue{S,T,length(_Size_to_size(S))}(data)
+NTensorValue{S,T}(data::NTuple{L,T}) where {S,L,T} = NTensorValue{S,T,length(_Size_to_size(S))}(data)
 
 # NTensorValue single Tuple argument constructor
 

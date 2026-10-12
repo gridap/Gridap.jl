@@ -89,6 +89,9 @@ for D in (2, cov2, con2)
   @test can_contract(D, inverse_variance(D))
   @test inverse_variance(inverse_variance(D)) === D
 end
+# a size tuple or Size Tuple is flipped index by index
+@test inverse_variance((con2, cov3, 2)) === (cov2, con3, 2)
+@test inverse_variance(Tuple{con2,cov3,2}) === Tuple{cov2,con3,2}
 
 # Negating a dimension preserves its variance
 @test -cov2 === Cov(-2)
@@ -790,6 +793,15 @@ end
 @test flat(v2f, Val(1), g3; drop_sym=Val(true))      isa TensorValue{cov3,con3}
 @test flat_sharp(ω2f, Val((1,)); drop_sym=Val(true)) isa TensorValue{con3,cov3}
 
+# empty index is iddentity
+@test flat(v2f, Val(()), g3)  === v2f
+@test sharp(ω2f, Val(()), g3) === ω2f
+@test flat_flat(v2f, Val(()))  === v2f
+@test flat_sharp(ω2f, Val(())) === ω2f
+@test flat_flat(v2f, Val(()); drop_sym=Val(true)) === v2f
+@test flat_flat(ContraVectorValue{con3}((1.0, 2.0, 3.0)), Val(());
+                drop_sym=Val(true)) isa ContraVectorValue{con3}
+
 # a K-form contracts with itself through that one raising: the scalar agrees
 # with the dense sum over the expanded tensors, and is the `K!` multiple of the
 # alternating inner product that stays within the independent components
@@ -831,6 +843,94 @@ end
 @test flat(v2, g_lo)            isa CoVectorValue{cov2}
 @test hodge_star(ω2, g_up, 1.0) isa CoVectorValue{cov2}
 @test sharp(ω2, g_up)           isa ContraVectorValue{con2}
+
+# ==================================================================
+# Musical isomorphisms on a product tensor
+# ==================================================================
+
+# The two factors of a product hold disjoint indices, so flipping some of them
+# is the product of the flips of each factor, read with that factor's own
+# indices: the two first indices below are those of `t_up`, the two last those
+# of `s_up`
+t_up = TensorValue{con2,con2}(1.0, 2.0, 3.0, 4.0)
+p_up = product_tensor(t_up, s_up)
+for (ls, la, lb) in (((1,), (1,), ()), ((3,4), (), (1,2)), ((1,2), (1,2), ()),
+                     ((1,2,3,4), (1,2), (1,2)), ((2,3,4), (2,), (1,2)),
+                     ((1,3), (1,), (1,)))
+  got  = flat(p_up, Val(ls), gm_lo; drop_sym=Val(true))
+  want = product_tensor(flat(t_up, Val(la), gm_lo; drop_sym=Val(true)),
+                        flat(s_up, Val(lb), gm_lo; drop_sym=Val(true)))
+  @test typeof(got) === typeof(want)
+  @test got ≈ want
+end
+
+# a factor all or none of whose indices are flipped keeps its own type, so the
+# result stores the components of both factors and no more
+@test flat(p_up, Val((1,2,3,4)), gm_lo) isa
+      ProductTensorValue{TensorValue{cov2,cov2},SymTensorValue{cov2}}
+@test num_indep_components(typeof(flat(p_up, Val((3,4)), gm_lo))) == 4*3
+
+# flipping part of the indices of the symmetric factor leaves a symmetry that no
+# tensor type carries, so that factor is refused like a lone symmetric tensor
+# and degrades to the full rank tensor once `drop_sym` allows it
+@test_throws "does not preserve the symmetries" flat(p_up, Val((1,3)), gm_lo)
+@test_throws "second factor" flat(p_up, Val((1,3)), gm_lo)
+@test_throws "This flat operation" flat(p_up, Val((1,3)), gm_lo)
+@test flat(p_up, Val((1,3)), gm_lo; drop_sym=Val(true)) isa
+      ProductTensorValue{TensorValue{cov2,con2},TensorValue{cov2,con2}}
+@test get_array(flat(p_up, Val((1,3)), gm_lo; drop_sym=Val(true))) ≈ [
+  sum(gm_lo[i,p]*gm_lo[k,r]*p_up[p,j,r,m] for p in 1:2, r in 1:2)
+  for i in 1:2, j in 1:2, k in 1:2, m in 1:2]
+
+# the whole index list is validated against the product and not factor by
+# factor, so one metric still cannot act on indices of different dimensions
+p_mix = product_tensor(ContraVectorValue{con3}((1.0, 2.0, 3.0)), s_up)
+@test_throws DimensionMismatch flat(p_mix, Val((1,2,3)), gm_lo)
+@test_throws "not all covariant" flat_sharp(p_up, Val((1,)))
+@test_throws "of a tensor of order 4" flat(p_up, Val((1,5)), gm_lo)
+
+# an empty list leaves the product alone, factors included, and the Euclidean
+# isomorphisms only relabel the variance of each factor
+@test flat(p_up, Val(()), gm_lo) === p_up
+@test flat_flat(p_up, Val((1,2,3,4))) ===
+      product_tensor(flat_flat(t_up, Val((1,2))), flat_flat(s_up, Val((1,2))))
+
+# a traceless factor degrades to a symmetric one, as a lone one does
+@test flat(product_tensor(q_up, s_up), Val((1,2)), gm_lo) isa
+      ProductTensorValue{SymTensorValue{cov2},SymTensorValue{con2}}
+
+# a skew-symmetric factor accepts all of its indices at once and nothing else
+pk_up = product_tensor(ExteriorVectorValue{2,con3}((1.0, 2.0, 3.0)),
+                       ContraVectorValue{con3}((1.0, 2.0, 3.0)))
+@test flat_flat(pk_up, Val((1,2))) isa
+      ProductTensorValue{ExteriorFormValue{2,cov3},ContraVectorValue{con3}}
+@test_throws "first factor" flat_flat(pk_up, Val((1,)))
+
+# a scalar factor carries no index to flip
+@test flat(product_tensor(ScalarValue(2.0), s_up), Val((1,2)), gm_lo) isa
+      ProductTensorValue{ScalarValue,SymTensorValue{cov2}}
+
+# the only index of an order 1 product is that of its order 1 factor, and needs
+# no index list, like that of any other order 1 tensor
+p1_up = product_tensor(ScalarValue(2.0), ContraVectorValue{con2}((1.0, 2.0)))
+@test flat(p1_up, gm_lo) === flat(p1_up, Val(1), gm_lo)
+@test flat_flat(p1_up) ===
+      product_tensor(ScalarValue(2.0), flat_flat(ContraVectorValue{con2}((1.0, 2.0))))
+
+# a factor with no independent component leaves nothing to flip, and the product
+# of the flipped factors still carries the variance of the result
+p0_up = product_tensor(zero(ExteriorVectorValue{3,con2,Float64}), s_up)
+@test flat(p0_up, Val((1,2,3,4,5)), gm_lo) isa
+      ProductTensorValue{ExteriorFormValue{3,cov2},SymTensorValue{cov2}}
+@test num_indep_components(typeof(flat(p0_up, Val((4,5)), gm_lo))) == 0
+
+# `sharp` and `flat_sharp` raise the indices of a product with the dual
+# variances, and the Euclidean pair is inverse of each other on it
+p_lo = product_tensor(TensorValue{cov2,cov2}(1.0, 2.0, 3.0, 4.0),
+                      SymTensorValue{cov2}(1.0, 2.0, 3.0))
+@test sharp(p_lo, Val((1,2,3,4)), gm_up) isa
+      ProductTensorValue{TensorValue{con2,con2},SymTensorValue{con2}}
+@test flat_flat(flat_sharp(p_lo, Val((1,2,3,4))), Val((1,2,3,4))) === p_lo
 
 # ==================================================================
 # Adjoint, transpose and permutedims

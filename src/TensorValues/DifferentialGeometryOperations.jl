@@ -335,12 +335,6 @@ const ⋆ᴱ = flat_hodge_star
 
 # ============================================================
 # Musical isomorphisms  ♭ (flat) and ♯ (sharp)
-#
-# flat  (♭):  ContraVectorValue{D} → CoVectorValue{D}
-#   (v♭)_i = Σ_j g_{ij} v^j           (lowers an index)
-#
-# sharp (♯):  CoVectorValue{D} → ContraVectorValue{D}
-#   (ω♯)^i = Σ_j g^{ij} ω_j           (raises an index)
 # ============================================================
 
 # The step between two components that differ only by index `k`, in the flat,
@@ -354,7 +348,7 @@ _stride(sz, k) = prod(Int.(sz[1:k-1]), init=1)
 #
 # Returns `(nothing, expr)` with `expr` an `Expr` that the calling `@generated`
 # function must return as is to propagate the error.
-function _musical_index_data(a, ks, expected_Dim, op)
+function _parse_musical_indices(a, ks, expected_Dim, op)
   sz = size(a)
   N = length(sz)
   variance = expected_Dim === Con ? "contravariant" : "covariant"
@@ -425,66 +419,38 @@ end
   nothing
 end
 
-# The tensor types whose index symmetries a congruence preserves.
-# `SymFourthOrderTensorValue` is not an `AbstractSymMultiValue`, it carries only
-# its two minor symmetries, but its four indices share one `Dim` too.
 const _SymValue = Union{AbstractSymMultiValue,SymFourthOrderTensorValue}
 
-# The dense tensor holding the same components, which no index symmetry
-# constrains. This is what `drop_sym=Val(true)` asks the musical isomorphisms
-# for, and what their error message asks the caller to convert to.
-@generated function _as_full_rank(a::MultiValue{S,T,N}) where {S,T,N}
-  # `_tensor_base_type_expr` never has to name an order-0 type, and returning
-  # `a` here would make the callers that forward to a full rank tensor recurse.
-  iszero(N) && return :( ScalarValue{$T}((a[1],)) )
+# unlike MultiValue(SArray(a)), this preserves variance and return ScalarValue for 0-tensors
+@generated function full_rank(a::MultiValue{S,T,N}) where {S,T,N}
+  iszero(N) && return :( ScalarValue{$T}((a[1],)) ) # V is :() for O order tensor
   V = _tensor_base_type_expr(N, size(a))
   iszero(length(a)) && return :( zero($V{$T}) )
   :( $V(Tuple(get_array(a))) )
 end
 
-# Flipping an index contracts that slot with `g` or `g_inv`, so a type-encoded
-# index symmetry survives only if every index is contracted with the same
-# matrix, that is if the map is a congruence `a ↦ G…G a G…G` with `G` symmetric.
-# That requires all the indices to be flipped and to share one variance, which
-# must be `V` for the operation to be defined at all.
-#
-# A mixed variance kills it for any flip: lowering the upper index of `a_i{}^j`
-# computes the similarity `g⋅A⋅g`, which is symmetric in no pair of indices.
-function _musical_keeps_symmetry(sz, ks, ::Type{V}) where V
+# Whether a musical operator flipping the indices `ks`, of variance `V`, of a
+# tensor of type `F` returns a tensor with the same symmetries.
+function _musical_preserves_symmetry(F, ks, ::Type{V}) where V
+  isempty(ks) && return true
+  F <: SkewSymKTensorValue && return ks === ntuple(identity, length(size(F)))
+  F <: _SymValue || return true
+
+  sz = size(F)
   N = length(sz)
   # `ks` holds every index once: it has `N` of them and each of `1:N` is in it.
-  length(ks) === N && all(k -> k isa Int, ks) && all(k -> k in ks, 1:N) || return false
-  # `===` and not `==`: a `Dim` is an `Integer`, so `Cov(2) == Con(2)` holds and
-  # would accept a mixed variance.
+  length(ks) === N && all(k -> k isa Int, ks) && all(∈(ks), 1:N) || return false
+  # all indices are iddentical
   first(sz) isa V && all(d -> d === first(sz), sz)
 end
 
-# The type carrying the symmetries of `V` with the variance of every index
-# flipped.
-#
-# A `SymTracelessTensorValue` degrades to a `SymTensorValue`: the congruence
-# preserves the symmetry but not the constraint `δ^{ij} a_ij == 0`, since the
-# Euclidean trace is not invariant under it. No musical isomorphism returns a
-# traceless type.
 _musical_symmetric_type(::Type{<:AbstractSymTensorValue{D}}) where D =
   SymTensorValue{inverse_variance(D)}
 _musical_symmetric_type(::Type{<:SymNTensorValue{S}}) where S =
-  SymNTensorValue{_inverse_variance_size(S)}
+  SymNTensorValue{inverse_variance(S)}
 _musical_symmetric_type(::Type{<:SymFourthOrderTensorValue{D}}) where D =
   SymFourthOrderTensorValue{inverse_variance(D)}
 
-# The multi-indices of the independent components, in the order they are stored,
-# which is the order `_musical_symmetric_type(V)`'s constructor expects them in.
-_musical_indep_indices(::Type{<:AbstractSymTensorValue{Dd}}) where Dd =
-  ((D = Int(Dd)); [(i,j) for i in 1:D for j in i:D])
-_musical_indep_indices(::Type{<:SymNTensorValue{S}}) where S =
-  ((D, N, _) = _sym_n_tensor_params(S); sorted_multisets(D, N))
-_musical_indep_indices(::Type{<:SymFourthOrderTensorValue{Dd}}) where Dd =
-  ((D = Int(Dd)); [(i,j,k,l) for i in 1:D for j in i:D for k in 1:D for l in k:D])
-
-# Flipping the variance of every index of a symmetric tensor by the identity
-# metric leaves its independent components untouched, in the same order.
-_musical_relabel(a::_SymValue) = _musical_symmetric_type(typeof(a))(a.data)
 
 # `b_I = Σ_J G[i₁,j₁] … G[i_N,j_N] a_J`, the congruence by the symmetric matrix
 # `G` that every index of `a` is flipped by.
@@ -503,98 +469,85 @@ _musical_relabel(a::_SymValue) = _musical_symmetric_type(typeof(a))(a.data)
 # 23.8 against 18.5 ns on a `SymTensorValue{con3}`, 33.6 against 29.1 ns on a
 # `SymTensorValue{con4}` and 64.0 against 36.8 ns on a
 # `SymNTensorValue{Tuple{con3,con3,con3}}`.
-@generated function _musical_congruence_kernel(a::MultiValue{S,Ta,N}, G) where {S,Ta,N}
+@generated function _musical_congruence_kernel(a::MultiValue{S,Ta,N}, g_or_ginv) where {S,Ta,N}
   D = Int(size(a)[1])
   L = D^N
   Vr = _musical_symmetric_type(a)
-  iszero(L) && return :( zero($Vr{Base.promote_op(*,eltype(G),$Ta)}) )
+  T = :( Base.promote_op(*, eltype(g_or_ginv),Ta) )
+  iszero(L) && return :( zero($Vr{$T}) )
 
   passes = Expr(:block)
   src, dst = :x0, :x1
   for k in 1:N-1
     push!(passes.args,
-          :( _data_single_metric_contract!($dst, $src, G, Val($(D^(k-1))), Val($D)) ))
+          :( _data_single_metric_contract!($dst, $src, g_or_ginv, Val($(D^(k-1))), Val($D)) ))
     src, dst = dst, src
   end
 
   # Position of the component `(I₁, …, I_{N-1}, j)` of the buffer the passes
   # leave the `N-1` first indices flipped in, the last one having stride D^(N-1).
   pos(I, j) = 1 + sum(((I[k]-1)*D^(k-1) for k in 1:N-1), init=0) + (j-1)*D^(N-1)
-  comps = [ _sum_expr([ :( G[$(I[N]),$j] * y[$(pos(I,j))] ) for j in 1:D ], :T)
-            for I in _musical_indep_indices(a) ]
+  comps = [ _sum_expr([ :( g_or_ginv[$(I[N]),$j] * y[$(pos(I,j))] ) for j in 1:D ], :T)
+            for I in _stored_comp_cartesian_indices(a) ]
 
   quote
-    T = Base.promote_op(*, $Ta, eltype(G))
-    x0 = MVector{$L,T}(Tuple(get_array(a)))
-    $(N > 1 ? :( x1 = MVector{$L,T}(undef) ) : nothing)
+    x0 = MVector{$L,$T}(Tuple(get_array(a)))
+    $(N > 1 ? :( x1 = MVector{$L,$T}(undef) ) : nothing)
     $passes
-    # One bulk read of the buffer: indexing the tuple is free, where a scalar
-    # `getindex` on the buffer is a bounds checked load.
-    y = Tuple($src)
+    y = Tuple($src) # for more performent getindex in comps access
     $Vr(($(comps...),))
   end
 end
 
-# The congruence `op` applies to every index of `a`, which `_musical_sym` has
-# checked its symmetries survive. `op` names which metric matrix acts, and
-# whether a metric is needed at all.
-function _musical_congruence(op::F, a::_SymValue, ::Type{V},
-                             metric_args::Vararg{_MetricArg}) where {F,V}
-  (op === flat_flat || op === flat_sharp) && return _musical_relabel(a)
-  md = parse_metric_data(metric_args...)
-  isidentity(md) && return _musical_relabel(a)
-  D = Int(size(a)[1])
-  if V === Con
-    (; g) = md
-    _check_metric_dim(g, D)
-    _musical_congruence_kernel(a, g)
-  else
-    (; g_inv) = md
-    _check_metric_dim(g_inv, D)
-    _musical_congruence_kernel(a, g_inv)
-  end
-end
-
-function _musical_sym_msg(op, l)
-  "This $op operation does not preserve the symmetries of the tensor type (not
-    all indices are flipped, or they do not share one variance). If you really
-    mean it, pass `drop_sym=Val(true)`, or convert `a` to a tensor type that
-    won't loose symmetry through `$op(a, Val($l), …)`."
-end
-
-# `op` is one of `flat`, `sharp`, `flat_flat` and `flat_sharp`, and `V` the
-# variance its flipped indices must have. The symmetric result is read off the
-# full-rank one, so it is exactly symmetric where the full-rank components are
-# symmetric only up to roundoff.
+# - `op` ∈ (flat, sharp, flat_flat, flat_sharp)
+# - `V<:Dim` the flipped indices variance
+# - `ds` is `drop_sym`, enables returning a tensor with less symetries than the input
 #
-# `ds` is the `drop_sym` flag: it lets the operation drop the symmetries instead
-# of refusing an index list that does not preserve them, which a caller flipping
-# the indices of a tensor it knows nothing about needs. `inner` is such a
-# caller. An index list that does preserve them is honoured either way, so a
-# symmetric result costs such a caller nothing.
-#
-# `op::F where F` rather than a bare `op`: Julia does not specialize on an
-# argument of `Function` type unless a type parameter forces it, and without
-# that specialization the whole chain down to the kernel stays dynamic.
-function _musical_sym(op::F, a::_SymValue, ::Val{l}, ::Type{V}, ::Val{ds},
-                      metric_args::Vararg{_MetricArg}) where {F,l,V,ds}
+# `@generated`: the index list and the symmetries are both type level, so which
+# of the three branches is taken is too. Leaving the choice to the generated
+# code would make the return type the union of the symmetric and the full rank
+# results, since `_musical_preserves_symmetry` does not constant fold.
+@generated function _symmetry_preserving_musical_op(
+  op::F, a::_SymValue, ::Val{l}, ::Type{V}, ::Val{ds}, metric_args::Vararg{_MetricArg}) where {F,l,V,ds}
+
   ks = tuple(l...)
-  isempty(ks) && return a
-  sz = size(a)
-  _musical_keeps_symmetry(sz, ks, V) && return _musical_congruence(op, a, V, metric_args...)
-  # A list that the operation refuses anyway is left to report its own error.
-  if !ds && all(k -> k isa Int && 1 <= k <= length(sz) && sz[k] isa V, ks)
-    throw(ArgumentError(_musical_sym_msg(op, l)))
+  isempty(ks) && return :( a )
+  size_a = size(a)
+  flat_res = :( _musical_symmetric_type(typeof(a))(Tuple(a)) )
+  g_or_ginv = V === Con ? :g : :g_inv
+
+  _musical_preserves_symmetry(a, ks, V) && return quote
+    (op === flat_flat || op === flat_sharp) && return $flat_res
+    md = parse_metric_data(metric_args...)
+    isidentity(md) && return $flat_res
+
+    (; $g_or_ginv) = md
+    D = Int(size(a)[1])
+    _check_metric_dim($g_or_ginv, D)
+    _musical_congruence_kernel(a, $g_or_ginv)
   end
-  op(_as_full_rank(a), Val(l), metric_args...)
+
+  # A list that the operation refuses anyway is left to report its own error.
+  N = length(size_a)
+  if !ds && all(k -> k isa Int && 1 <= k <= N && size_a[k] isa V, ks)
+    return :( throw(ArgumentError(
+      "This $op operation does not preserve the symmetries of the tensor type (not
+        all indices are flipped, or they do not share one variance). If you really
+        mean it, pass `drop_sym=Val(true)`, or convert `a` to a tensor type that
+        won't loose symmetry through `$op(a, Val($l), …)`."
+    )) )
+  end
+
+  quote
+    op(full_rank(a), Val($l), metric_args...)
+  end
 end
 
 """
     flat(v::VectorValue,             metric_args...)
     flat(v::MultiValue{Tuple{D}},    metric_args...)
     flat(b::ExteriorVectorValue,     metric_args...)
-    flat(a::MultiValue, ::Val{k},    metric_args...)
-    flat(a::MultiValue, ::Val{l...}, metric_args...)
+    flat(a::MultiValue, ::Val{k},    metric_args...; drop_sym=Val(false))
     flat(a::MultiValue, ::Val{l...}, metric_args...; drop_sym=Val(false))
     ♭(...)
 
@@ -611,21 +564,15 @@ Musical isomorphism `♭` that lowers:
 The lowered indices must be contravariant. `metric_args` contains the metric
 information, see [`parse_metric_data`](@ref). `flat` uses `g`.
 
+A tensor type containing symmetries only keeps them if every index is lowered
+to `Cov`. Otherwise, `flat` errors on such types rather than removing the
+symmetries, except if `drop_sym=Val(true)` is passed.
+
+For [`ProductTensorValue`](@ref), the previous rule applies to each product
+factor types independently. `drop_sym` applies to every factor.
+
 See also [`flat_flat`](@ref) for the Euclidean version, accessible by passing
 `LinearAlgebra.I`.
-
-# Extended help
-
-A tensor type that encodes index symmetries keeps them only if every one of its
-indices is lowered and they all share one variance, in which case `a` is mapped
-by a congruence and the result is of the same type with the dual variance -- a
-`SymTracelessTensorValue` excepted, which gives a `SymTensorValue` since the
-Euclidean trace is not invariant under a congruence. Any other index list makes
-`flat` refuse rather than silently drop the symmetries. Passing
-`drop_sym=Val(true)` lifts that refusal and lowers the listed indices of the
-full rank tensor instead, which a caller that flips the indices of a tensor it
-knows nothing about needs -- [`inner`](@ref) does so. An index list that does
-preserve the symmetries is honoured either way.
 """
 @generated function flat(v::MultiValue{Tuple{Dv},Tv}, metric_args::Vararg{_MetricArg}) where {Dv,Tv}
   Dv isa Con || return :(throw(ArgumentError("flat undefined for 1-tensor that is not contravariant, got $Dv")))
@@ -649,7 +596,7 @@ end
                          drop_sym::Val{ds}=Val(false)) where {S,Ta,l,ds}
   ks = tuple(l...) # puts scalar l into a tuple
   isempty(ks) && return :( a )
-  data, err = _musical_index_data(a, ks, Con, "flat")
+  data, err = _parse_musical_indices(a, ks, Con, "flat")
   err === nothing || return err
   (; V, ss, D, L) = data
 
@@ -672,20 +619,21 @@ function flat(a::SkewSymKTensorValue{Con,K}, ::Val{l},
                          metric_args::Vararg{_MetricArg};
                          drop_sym::Val{ds}=Val(false)) where {K,l,ds}
   ks = tuple(l...)
+  isempty(ks) && return a
   ks === ntuple(identity, K) && return flat(a, metric_args...)
   ds || throw(ArgumentError(
     "This flat operation does not preserve the skew-symmetry (not all indices
       are lowered). If you really mean it, pass `drop_sym=Val(true)`, or convert
       `a` to a tensor type that won't loose symmetry through
       `flat(a, Val($l), metric_args...)`."))
-  flat(_as_full_rank(a), Val(l), metric_args...)
+  flat(full_rank(a), Val(l), metric_args...)
 end
 
 # A congruence preserves the index symmetries, so only the independent
 # components of the result are kept.
 function flat(a::_SymValue, ::Val{l}, metric_args::Vararg{_MetricArg};
               drop_sym::Val{ds}=Val(false)) where {l,ds}
-  _musical_sym(flat, a, Val(l), Con, Val(ds), metric_args...)
+  _symmetry_preserving_musical_op(flat, a, Val(l), Con, Val(ds), metric_args...)
 end
 
 # optimization for skew-symmetry flat:
@@ -724,8 +672,7 @@ const ♭ = flat
     flat_flat(v::VectorValue{D})
     flat_flat(v::MultiValue{Tuple{D}})
     flat_flat(b::ExteriorVectorValue,)
-    flat_flat(a::MultiValue, ::Val{k})
-    flat_flat(a::MultiValue, ::Val{l...})
+    flat_flat(a::MultiValue, ::Val{k};    drop_sym=Val(false))
     flat_flat(a::MultiValue, ::Val{l...}; drop_sym=Val(false))
     ♭ᴱ(...)
 
@@ -749,7 +696,7 @@ end
                               drop_sym::Val{ds}=Val(false)) where {S,Ta,l,ds}
   ks = tuple(l...)
   isempty(ks) && return :( a )
-  data, err = _musical_index_data(a, ks, Con, "flat_flat")
+  data, err = _parse_musical_indices(a, ks, Con, "flat_flat")
   err === nothing || return err
   (; V, L) = data
   iszero(L) && return :( zero($V{$Ta}) )
@@ -759,16 +706,17 @@ end
 function flat_flat(a::SkewSymKTensorValue{Con,K}, ::Val{l};
                    drop_sym::Val{ds}=Val(false)) where {K,l,ds}
   ks = tuple(l...)
+  isempty(ks) && return a
   ks === ntuple(identity, Val(K)) && return flat_flat(a)
   ds || throw(ArgumentError(
     "flat_flat of a skew-symmetric tensor acts on all of its $K indices at once, \
       so the only index list it accepts is $(ntuple(identity, Val(K))), got $l. \
       Pass `drop_sym=Val(true)` for the full rank result."))
-  flat_flat(_as_full_rank(a), Val(l))
+  flat_flat(full_rank(a), Val(l))
 end
 
 function flat_flat(a::_SymValue, ::Val{l}; drop_sym::Val{ds}=Val(false)) where {l,ds}
-  _musical_sym(flat_flat, a, Val(l), Con, Val(ds))
+  _symmetry_preserving_musical_op(flat_flat, a, Val(l), Con, Val(ds))
 end
 
 # Lowering every index of a skew-symmetric tensor Euclideanly relabels its
@@ -783,8 +731,7 @@ const ♭ᴱ = flat_flat
 """
     sharp(ω::MultiValue{Tuple{D}},    metric_args...)
     sharp(η::ExteriorFormValue,       metric_args...)
-    sharp(a::MultiValue, ::Val{k},    metric_args...)
-    sharp(a::MultiValue, ::Val{l...}, metric_args...)
+    sharp(a::MultiValue, ::Val{k},    metric_args...; drop_sym=Val(false))
     sharp(a::MultiValue, ::Val{l...}, metric_args...; drop_sym=Val(false))
     ♯(...)
 
@@ -801,21 +748,15 @@ Musical isomorphism `♯` that raises:
 The lowered indices must be covariant. `metric_args` contains the metric
 information, see [`parse_metric_data`](@ref). `sharp` uses `g_inv`.
 
+A tensor type containing symmetries only keeps them if every index is raised
+to `Con`. Otherwise, `sharp` errors on such types rather than removing the
+symmetries, except if `drop_sym=Val(true)` is passed.
+
+For [`ProductTensorValue`](@ref), the previous rule applies to each product
+factor types independently. `drop_sym` applies to every factor.
+
 See also [`flat_sharp(ω)`](@ref) for the Euclidean version, accessible by
 passing `LinearAlgebra.I`.
-
-# Extended help
-
-A tensor type that encodes index symmetries keeps them only if every one of its
-indices is raised and they all share one variance, in which case `a` is mapped
-by a congruence and the result is of the same type with the dual variance -- a
-`SymTracelessTensorValue` excepted, which gives a `SymTensorValue` since the
-Euclidean trace is not invariant under a congruence. Any other index list makes
-`sharp` refuse rather than silently drop the symmetries. Passing
-`drop_sym=Val(true)` lifts that refusal and raises the listed indices of the
-full rank tensor instead, which a caller that flips the indices of a tensor it
-knows nothing about needs -- [`inner`](@ref) does so. An index list that does
-preserve the symmetries is honoured either way.
 """
 @generated function sharp(ω::MultiValue{Tuple{Dw},Tw}, metric_args::Vararg{_MetricArg}) where {Dw,Tw}
   Dw isa Cov || return :(throw(ArgumentError("sharp undefined for 1-tensor that is not covariant, got $Dw")))
@@ -839,7 +780,7 @@ end
                           drop_sym::Val{ds}=Val(false)) where {S,Ta,l,ds}
   ks = tuple(l...)
   isempty(ks) && return :( a )
-  data, err = _musical_index_data(a, ks, Cov, "sharp")
+  data, err = _parse_musical_indices(a, ks, Cov, "sharp")
   err === nothing || return err
   (; V, ss, D, L) = data
 
@@ -862,20 +803,21 @@ function sharp(a::SkewSymKTensorValue{Cov,K}, ::Val{l},
                           metric_args::Vararg{_MetricArg};
                           drop_sym::Val{ds}=Val(false)) where {K,l,ds}
   ks = tuple(l...)
+  isempty(ks) && return a
   ks === ntuple(identity, K) && return sharp(a, metric_args...)
   ds || throw(ArgumentError(
     "This sharp operation does not preserve the skew-symmetry (not all indices
       are raised). If you really mean it, pass `drop_sym=Val(true)`, or convert
       `a` to a tensor type that won't loose symmetry through
       `sharp(a, Val($l), metric_args...)`."))
-  sharp(_as_full_rank(a), Val(l), metric_args...)
+  sharp(full_rank(a), Val(l), metric_args...)
 end
 
 # A congruence preserves the index symmetries, so only the independent
 # components of the result are kept.
 function sharp(a::_SymValue, ::Val{l}, metric_args::Vararg{_MetricArg};
                drop_sym::Val{ds}=Val(false)) where {l,ds}
-  _musical_sym(sharp, a, Val(l), Cov, Val(ds), metric_args...)
+  _symmetry_preserving_musical_op(sharp, a, Val(l), Cov, Val(ds), metric_args...)
 end
 
 # optimization for skew-symmetric sharp
@@ -912,8 +854,7 @@ const ♯ = sharp
 """
     flat_sharp(ω::MultiValue{Tuple{D}})
     flat_sharp(η::ExteriorFormValue)
-    flat_sharp(a::MultiValue, ::Val{k})
-    flat_sharp(a::MultiValue, ::Val{l...})
+    flat_sharp(a::MultiValue, ::Val{k};    drop_sym=Val(false))
     flat_sharp(a::MultiValue, ::Val{l...}; drop_sym=Val(false))
     ♯ᴱ(...)
 
@@ -937,7 +878,7 @@ end
                                drop_sym::Val{ds}=Val(false)) where {S,Ta,l,ds}
   ks = tuple(l...)
   isempty(ks) && return :( a )
-  data, err = _musical_index_data(a, ks, Cov, "flat_sharp")
+  data, err = _parse_musical_indices(a, ks, Cov, "flat_sharp")
   err === nothing || return err
   (; V, L) = data
   iszero(L) && return :( zero($V{$Ta}) )
@@ -947,16 +888,17 @@ end
 function flat_sharp(a::SkewSymKTensorValue{Cov,K}, ::Val{l};
                     drop_sym::Val{ds}=Val(false)) where {K,l,ds}
   ks = tuple(l...)
+  isempty(ks) && return a
   ks === ntuple(identity, K) && return flat_sharp(a)
   ds || throw(ArgumentError(
     "flat_sharp of a skew-symmetric tensor acts on all of its $K indices at \
        once, so the only index list it accepts is $(ntuple(identity, K)), got \
        $l. Pass `drop_sym=Val(true)` for the full rank result."))
-  flat_sharp(_as_full_rank(a), Val(l))
+  flat_sharp(full_rank(a), Val(l))
 end
 
 function flat_sharp(a::_SymValue, ::Val{l}; drop_sym::Val{ds}=Val(false)) where {l,ds}
-  _musical_sym(flat_sharp, a, Val(l), Cov, Val(ds))
+  _symmetry_preserving_musical_op(flat_sharp, a, Val(l), Cov, Val(ds))
 end
 
 function flat_sharp(η::ExteriorFormValue{K,Dη,Tη}) where {K,Dη,Tη}
@@ -967,7 +909,134 @@ end
 const ♯ᴱ = flat_sharp
 
 
-# Application of tensors to vectors and co-vectors (contractions)
+# ============================================================
+# Musical isomorphisms on a product tensor
+# ============================================================
+
+# Musicals apply on each factor independently:
+#
+#   ♭(a ⊗ b, (ks_a, ks_b)) = ♭(a, ks_a) ⊗ ♭(b, ks_b)
+#
+# The symmetry preserving rules are thus applied for each factors indices independently.
+
+# A product stores the independent components of its first factor fastest, so
+# `b_rows[lar]` holds, for each `lbr`, the component `(lar, lbr)` of the result.
+@generated function _ProductTV_from_second_factor_rows(
+  ::Type{A}, b_rows::NTuple{iLa,B}) where {A,B,iLa}
+
+  iszero(iLa) && return :(@unreachable "Non-empty first factor is assumed here")
+  comps = [ :( indep_comp_getindex(b_rows[$la], $lb) )
+            for lb in 1:num_indep_components(B) for la in 1:iLa ]
+  :( ProductTensorValue{$A,$B}(($(comps...),)) )
+end
+
+@generated function _ProductTV_musical_apply_second_factor(
+  op::F, acols::NTuple{iLb,A}, ::Type{B}, ::Val{ksb},
+  metric_args::Vararg{_MetricArg}) where {F,A,iLb,B,ksb}
+
+  iszero(iLb) && return :(@unreachable "Non-empty second factor is assumed here")
+  iLa = num_indep_components(A)
+  rows = [ :( op($B(($(( :( indep_comp_getindex(acols[$lb], $la) ) for lb in 1:iLb)...),)),
+                Val($ksb), metric_args...; drop_sym=Val(true)) )
+           for la in 1:iLa ]
+  :( _ProductTV_from_second_factor_rows($A, ($(rows...),)) )
+end
+
+#
+@generated function _ProductTV_musical(
+  op::F, p::ProductTensorValue{A,B,Tp}, ::Val{l}, ::Type{V}, ::Val{ds},
+  metric_args::Vararg{_MetricArg}) where {F,A,B,Tp,l,V,ds}
+
+  ks = tuple(l...)
+  isempty(ks) && return :( p )
+  op_name = string(nameof(F.instance))
+  _, err = _parse_musical_indices(p, ks, V, op_name)
+  err === nothing || return err
+
+  Na = length(size(A))
+  # flipped indices of each factor
+  ksa, ksb = (filter(<=(Na), ks), map(k -> k - Na, filter(>(Na), ks)))
+
+  if !ds
+    wrong_factor = !_musical_preserves_symmetry(A, ksa, V) ? (A, "first")  :
+                   !_musical_preserves_symmetry(B, ksb, V) ? (B, "second") : nothing
+
+    if !isnothing(wrong_factor)
+      factor, which = wrong_factor
+      _msg = "This $op_name operation does not preserve the symmetries of the $which factor
+            ($factor) of the product tensor (not all of its indices are flipped, or
+             they do not share one variance). If you really mean it, pass
+             `drop_sym=Val(true)` to flip the indices of the full rank factor instead, or
+             convert that factor to a tensor type that won't loose symmetry through
+             `$op_name(a, Val($l), …)`."
+      return :( throw(ArgumentError($_msg)) )
+    end
+  end
+
+  iLa, iLb = num_indep_components(A), num_indep_components(B)
+  # No component to flip: the result is the product of the flipped zero factors.
+  iszero(iLa*iLb) && return :( product_tensor(
+    op(zero($(make_concretetype(A{Tp}))), Val($ksa), metric_args...; drop_sym=Val(true)),
+    op(zero($(make_concretetype(B{Tp}))), Val($ksb), metric_args...; drop_sym=Val(true))) )
+
+  # to parse (maybe compute) the correct metric tensor once for all
+  _metric_args_expr = if op === typeof(flat)
+    :( (; g)     = parse_metric_data(metric_args...); _metric_args = (; g) )
+  elseif op === typeof(sharp)
+    :( (; g_inv) = parse_metric_data(metric_args...); _metric_args = (; g_inv)  )
+  else # flat_*
+    :( _metric_args = () )
+  end
+
+  # Apply op of the indices of the first factor A
+  cols = [ :( op($A(($(( :( ic[$((lb-1)*iLa + la)] ) for la in 1:iLa)...),)),
+                Val($ksa), _metric_args...; drop_sym=Val(true)) )
+           for lb in 1:iLb ]
+
+  quote
+    ic = get_indep_components(p)
+    $_metric_args_expr
+    _ProductTV_musical_apply_second_factor(op, ($(cols...),), $B, Val($ksb), _metric_args...)
+  end
+end
+
+function flat(p::ProductTensorValue, ::Val{l}, metric_args::Vararg{_MetricArg};
+              drop_sym::Val{ds}=Val(false)) where {l,ds}
+  _ProductTV_musical(flat, p, Val(l), Con, Val(ds), metric_args...)
+end
+
+function sharp(p::ProductTensorValue, ::Val{l}, metric_args::Vararg{_MetricArg};
+               drop_sym::Val{ds}=Val(false)) where {l,ds}
+  _ProductTV_musical(sharp, p, Val(l), Cov, Val(ds), metric_args...)
+end
+
+function flat_flat(p::ProductTensorValue, ::Val{l};
+                   drop_sym::Val{ds}=Val(false)) where {l,ds}
+  _ProductTV_musical(flat_flat, p, Val(l), Con, Val(ds))
+end
+
+function flat_sharp(p::ProductTensorValue, ::Val{l};
+                    drop_sym::Val{ds}=Val(false)) where {l,ds}
+  _ProductTV_musical(flat_sharp, p, Val(l), Cov, Val(ds))
+end
+
+# The only index of an order 1 product is the only index of its order 1 factor.
+flat(p::ProductTensorValue{A,B,T,Tuple{D}}, metric_args::Vararg{_MetricArg}) where {A,B,T,D} =
+  _ProductTV_musical(flat, p, Val((1,)), Con, Val(false), metric_args...)
+
+sharp(p::ProductTensorValue{A,B,T,Tuple{D}}, metric_args::Vararg{_MetricArg}) where {A,B,T,D} =
+  _ProductTV_musical(sharp, p, Val((1,)), Cov, Val(false), metric_args...)
+
+flat_flat(p::ProductTensorValue{A,B,T,Tuple{D}}) where {A,B,T,D} =
+  _ProductTV_musical(flat_flat, p, Val((1,)), Con, Val(false))
+
+flat_sharp(p::ProductTensorValue{A,B,T,Tuple{D}}) where {A,B,T,D} =
+  _ProductTV_musical(flat_sharp, p, Val((1,)), Cov, Val(false))
+
+
+###################################################################
+# Application of tensors to vectors and co-vectors (contractions) #
+###################################################################
 
 """
     apply_tensor(ω::ExteriorFormValue{K,D,T}, v₁, …, vₖ) → scalar

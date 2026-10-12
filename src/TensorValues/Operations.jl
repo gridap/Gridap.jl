@@ -423,7 +423,6 @@ function inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N},
 
   # A tensor with no component contracts to zero whatever the metric.
   iszero(length(a)) && return zero(Base.promote_op(*,Ta,Tb))
-  # Flat metric
   isidentity(md) && return flat_inner(a, b)
 
   # `flat` and `sharp` act on all the indices they are given at once, and check
@@ -537,7 +536,7 @@ end
     iszero(w) && continue
     k = (lb-1)*La + la
     prod_expr = :( a.data[$k]*b.data[$k] )
-    push!(terms, isone(w) ? prod_expr : :( $w * $prod_e ))
+    push!(terms, isone(w) ? prod_expr : :( $w * $prod_expr ))
   end
   isempty(terms) && return zero_result
   Expr(:call, :+, terms...)

@@ -41,7 +41,7 @@ function _prod_shape_impl(::Type{A}, ::Type{B}) where {A,B}
   Ac, Bc = _minimal_tensortype_with_shape(A), _minimal_tensortype_with_shape(B)
   S = Tuple{size(Ac)..., size(Bc)...}
   La, Lb, iLa, iLb = _prod_counts(Ac,Bc)
-  N = length(S.parameters)
+  N = length(_Size_to_size(S))
   (Ac, Bc, S, N, La*Lb, iLa*iLb)
 end
 
@@ -93,6 +93,31 @@ function _indep_comp_cartesian_indices(::Type{V}) where V<:MultiValue
       cannot be read from a full tensor."
   end
 end
+
+"""
+    _stored_comp_cartesian_indices(::Type{V<:MultiValue})
+
+A full tensor index at which each *stored* component of `V` can be read, in the
+order they are stored, so that for any `u::V`
+
+    get_array(u)[_stored_comp_cartesian_indices(V)[k]...] == Tuple(u)[k]
+
+A type that stores only independent components reads them at
+[`_indep_comp_cartesian_indices`](@ref); one that materialises dependent
+components needs its own method, giving the indices of the type whose
+independent components are `V`'s stored ones.
+"""
+function _stored_comp_cartesian_indices(::Type{V}) where V<:MultiValue
+  num_indep_components(V) == num_stored_components(V) || @notimplemented "$V
+    materialises dependent components, it needs a
+    `_stored_comp_cartesian_indices` method."
+  _indep_comp_cartesian_indices(V)
+end
+
+# A traceless tensor derives its last diagonal component, and stores the
+# others in the layout of a symmetric tensor.
+_stored_comp_cartesian_indices(::Type{<:SymTracelessTensorValue{D}}) where D =
+  _indep_comp_cartesian_indices(SymTensorValue{D})
 
 # The component type given by a factor type, `nothing` when it leaves it free.
 _factor_eltype(::Type{<:MultiValue{S,T}}) where {S,T} = T
