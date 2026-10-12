@@ -145,8 +145,9 @@ for op in (:+,:-,:*)
   end
 end
 
-muladd(a::_Scalar, b::MultiValue, c::MultiValue) = a*b + c
-muladd(a::MultiValue, b::_Scalar, c::MultiValue) = a*b + c
+muladd(a::Number, b::MultiValue, c::MultiValue) = a*b + c
+muladd(a::MultiValue, b::Number, c::MultiValue) = a*b + c
+muladd(a::MultiValue, b::MultiValue, c::MultiValue) = a*b + c
 
 const _AbstractTracelessTensor{D} = Union{SymTracelessTensorValue{D},SkewSymTensorValue{D}}
 _err = "This operation is undefined for traceless tensors"
