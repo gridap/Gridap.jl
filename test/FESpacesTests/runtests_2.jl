@@ -12,6 +12,8 @@ using Test
 
 @testset "ExtendedFESpaces" begin include("ExtendedFESpacesTests.jl") end
 
+@testset "ConstraintHandler" begin include("ConstraintHandlerTests.jl") end
+
 @testset "FESpacesWithLinearConstraints" begin include("FESpacesWithLinearConstraintsTests.jl") end
 
 @testset "FEAutodiff" begin include("FEAutodiffTests.jl") end
