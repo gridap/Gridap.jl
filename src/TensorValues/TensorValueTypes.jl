@@ -106,6 +106,15 @@ end
 change_eltype(::Type{<:TensorValue{D1,D2}},::Type{T2}) where {D1,D2,T2} = TensorValue{D1,D2,T2}
 change_eltype(::Type{TensorValue{D1,D2,T1,L}},::Type{T2}) where {D1,D2,T1,T2,L} = TensorValue{D1,D2,T2,L}
 
+function change_variance(::Type{<:TensorValue{D1,D2}}, ::Val{Sv}) where {D1,D2,Sv}
+  _check_change_variance(TensorValue{D1,D2}, Sv)
+  TensorValue{Sv[1],Sv[2]}
+end
+function change_variance(::Type{<:TensorValue{D1,D2,T}}, ::Val{Sv}) where {D1,D2,T,Sv}
+  _check_change_variance(TensorValue{D1,D2}, Sv)
+  TensorValue{Sv[1],Sv[2],T}
+end
+
 """
     diagonal_tensor(v::VectorValue{D,T}) -> ::TensorValue{D,D,T}
 

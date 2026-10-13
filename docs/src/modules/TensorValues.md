@@ -163,6 +163,7 @@ representatives_of_componentbasis_dual
 representatives_of_basis_dual
 indep_components_names
 change_eltype
+change_variance
 make_concretetype
 
 inner

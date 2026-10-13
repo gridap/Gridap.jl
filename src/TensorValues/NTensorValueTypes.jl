@@ -110,3 +110,12 @@ end
 #change_eltype(::Type{<:NTensorValue{D1,D2,D3}},::Type{T2}) where {D1,D2,D3,D4,T2} = NTensorValue{D1,D2,D3,D4,T2}
 change_eltype(::Type{NTensorValue{S,T1,N,L}},::Type{T2}) where {S,T1,T2,N,L} = NTensorValue{S,T2,N,L}
 
+function change_variance(::Type{<:NTensorValue{S}}, ::Val{Sv}) where {S,Sv}
+  _check_change_variance(NTensorValue{S}, Sv)
+  NTensorValue{Tuple{Sv...}}
+end
+function change_variance(::Type{<:NTensorValue{S,T}}, ::Val{Sv}) where {S,T,Sv}
+  _check_change_variance(NTensorValue{S}, Sv)
+  NTensorValue{Tuple{Sv...},T}
+end
+

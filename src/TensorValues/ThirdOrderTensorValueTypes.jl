@@ -75,3 +75,12 @@ MultiValue(a::StaticArray{Tuple{D1,D2,D3},T}) where {D1,D2,D3,T} = convert(Third
 change_eltype(::Type{<:ThirdOrderTensorValue{D1,D2,D3}},::Type{T2}) where {D1,D2,D3,T2} = ThirdOrderTensorValue{D1,D2,D3,T2}
 change_eltype(::Type{ThirdOrderTensorValue{D1,D2,D3,T1,L}},::Type{T2}) where {D1,D2,D3,T1,T2,L} = ThirdOrderTensorValue{D1,D2,D3,T2,L}
 
+function change_variance(::Type{<:ThirdOrderTensorValue{D1,D2,D3}}, ::Val{Sv}) where {D1,D2,D3,Sv}
+  _check_change_variance(ThirdOrderTensorValue{D1,D2,D3}, Sv)
+  ThirdOrderTensorValue{Sv[1],Sv[2],Sv[3]}
+end
+function change_variance(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, ::Val{Sv}) where {D1,D2,D3,T,Sv}
+  _check_change_variance(ThirdOrderTensorValue{D1,D2,D3}, Sv)
+  ThirdOrderTensorValue{Sv[1],Sv[2],Sv[3],T}
+end
+

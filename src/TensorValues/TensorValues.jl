@@ -99,6 +99,7 @@ export adjugate
 export num_components
 export num_indep_components
 export change_eltype
+export change_variance
 export make_concretetype
 export diagonal_tensor
 export ⊙

@@ -132,6 +132,15 @@ end
 change_eltype(::Type{<:SymTensorValue{D}},::Type{T2}) where {D,T2} = SymTensorValue{D,T2}
 change_eltype(::Type{SymTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymTensorValue{D,T2,L}
 
+function change_variance(::Type{<:SymTensorValue{D}}, ::Val{Sv}) where {D,Sv}
+  _check_change_variance(SymTensorValue{D}, Sv, true)
+  SymTensorValue{first(Sv)}
+end
+function change_variance(::Type{<:SymTensorValue{D,T}}, ::Val{Sv}) where {D,T,Sv}
+  _check_change_variance(SymTensorValue{D}, Sv, true)
+  SymTensorValue{first(Sv),T}
+end
+
 num_indep_components(::Type{<:SymTensorValue{D}}) where {D} = D*(D+1)÷2
 
 ###############################################################

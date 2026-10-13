@@ -210,6 +210,15 @@ end
 change_eltype(::Type{<:SymNTensorValue{S}},::Type{T2}) where {S,T2} = SymNTensorValue{S,T2}
 change_eltype(::Type{SymNTensorValue{S,T1,N,L}},::Type{T2}) where {S,T1,T2,N,L} = SymNTensorValue{S,T2,N,L}
 
+function change_variance(::Type{<:SymNTensorValue{S}}, ::Val{Sv}) where {S,Sv}
+  _check_change_variance(SymNTensorValue{S}, Sv, true)
+  SymNTensorValue{Tuple{Sv...}}
+end
+function change_variance(::Type{<:SymNTensorValue{S,T}}, ::Val{Sv}) where {S,T,Sv}
+  _check_change_variance(SymNTensorValue{S}, Sv, true)
+  SymNTensorValue{Tuple{Sv...},T}
+end
+
 num_indep_components(::Type{<:SymNTensorValue{S}}) where S = _sym_n_tensor_params(S)[3]
 
 ###############################################################

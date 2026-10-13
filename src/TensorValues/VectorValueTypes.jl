@@ -75,6 +75,15 @@ convert(::Type{<:VectorValue{D,T}}, arg::VectorValue{D,T}) where {D,T} = arg
 
 change_eltype(::Type{<:VectorValue{D}},::Type{T}) where {D,T} = VectorValue{D,T}
 
+function change_variance(::Type{<:VectorValue{D}}, ::Val{Sv}) where {D,Sv}
+  _check_change_variance(VectorValue{D}, Sv)
+  first(Sv) isa Int || @notimplemented "$(VectorValue{D}) can only have an
+    un-varianced `Int` index, got size $Sv."
+  VectorValue{D}
+end
+change_variance(::Type{<:VectorValue{D,T}}, ::Val{Sv}) where {D,T,Sv} =
+  (change_variance(VectorValue{D}, Val(Sv))){T}
+
 # Construction from SArray or MArray
 MultiValue(a::StaticVector{D,T}) where {D,T} = convert(VectorValue{D,T}, a)
 

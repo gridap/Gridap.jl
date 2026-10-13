@@ -158,6 +158,18 @@ one(::Type{<:SkewSymKTensorValue{V,K}}) where {V,K} = @unreachable "Skew symmetr
 change_eltype(::Type{<:SkewSymKTensorValue{V,K,D,T1,L}}, ::Type{T2}) where {V,K,D,T1,T2,L} =
   SkewSymKTensorValue{V,K,D,T2,L}
 
+function change_variance(::Type{<:SkewSymKTensorValue{V,K,D}}, ::Val{Sv}) where {V,K,D,Sv}
+  _check_change_variance(SkewSymKTensorValue{V,K,D}, Sv, true)
+  iszero(K) && return SkewSymKTensorValue{V,K,D}
+  Dv = first(Sv)
+  Dv isa Int && @notimplemented "$K alternating tensor must have variance, so
+  $(SkewSymKTensorValue{V,K,D}) has no variance change to the dimensions $Sv."
+  SkewSymKTensorValue{typeof(Dv),K,Dv}
+end
+
+change_variance(::Type{<:SkewSymKTensorValue{V,K,D,T}}, ::Val{Sv}) where {V,K,D,T,Sv} =
+  (change_variance(SkewSymKTensorValue{V,K,D}, Val(Sv))){T}
+
 num_indep_components(::Type{<:SkewSymKTensorValue{V,K,D}}) where {V,K,D} = binomial(Int(D),K)
 
 # ============================================================

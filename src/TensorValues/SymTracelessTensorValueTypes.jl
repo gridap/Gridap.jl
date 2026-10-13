@@ -141,6 +141,15 @@ convert(::Type{<:SymTracelessTensorValue{D,T}}, arg::SymTracelessTensorValue{D})
 change_eltype(::Type{<:SymTracelessTensorValue{D}},::Type{T2}) where {D,T2} = SymTracelessTensorValue{D,T2}
 change_eltype(::Type{SymTracelessTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymTracelessTensorValue{D,T2,L}
 
+function change_variance(::Type{<:SymTracelessTensorValue{D}}, ::Val{Sv}) where {D,Sv}
+  _check_change_variance(SymTracelessTensorValue{D}, Sv, true)
+  SymTracelessTensorValue{first(Sv)}
+end
+function change_variance(::Type{<:SymTracelessTensorValue{D,T}}, ::Val{Sv}) where {D,T,Sv}
+  _check_change_variance(SymTracelessTensorValue{D}, Sv, true)
+  SymTracelessTensorValue{first(Sv),T}
+end
+
 num_indep_components(::Type{<:SymTracelessTensorValue{0}}) = 0
 num_indep_components(::Type{<:SymTracelessTensorValue{D}}) where {D} = D*(D+1)÷2-1
 

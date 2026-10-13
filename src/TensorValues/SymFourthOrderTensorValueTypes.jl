@@ -137,6 +137,15 @@ end
 change_eltype(::Type{<:SymFourthOrderTensorValue{D}},::Type{T2}) where {D,T2} = SymFourthOrderTensorValue{D,T2}
 change_eltype(::Type{SymFourthOrderTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymFourthOrderTensorValue{D,T2,L}
 
+function change_variance(::Type{<:SymFourthOrderTensorValue{D}}, ::Val{Sv}) where {D,Sv}
+  _check_change_variance(SymFourthOrderTensorValue{D}, Sv, true)
+  SymFourthOrderTensorValue{first(Sv)}
+end
+function change_variance(::Type{<:SymFourthOrderTensorValue{D,T}}, ::Val{Sv}) where {D,T,Sv}
+  _check_change_variance(SymFourthOrderTensorValue{D}, Sv, true)
+  SymFourthOrderTensorValue{first(Sv),T}
+end
+
 num_indep_components(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = (D*(D+1)÷2)^2
 
 ###############################################################

@@ -342,6 +342,33 @@ change_eltype(::Type{<:Number}, T::Type) = T
 change_eltype(::T,::Type{T2}) where {T<:Number,T2} = change_eltype(T,T2)
 change_eltype(a::MultiValue,::Type{T2}) where T2 = change_eltype(typeof(a),T2)
 
+"""
+    change_variance(m::MultiValue, ::Val{Sv})
+    change_variance(M::Type{<:MultiValue}, ::Val{Sv})
+    change_variance(m::MultiValue, ::Type{S})
+    change_variance(M::Type{<:MultiValue}, ::Type{S})
+
+Return `M` or `typeof(m)` with its dimensions replaced by those of the tuple
+`Sv`, or of the size `Tuple` `S`. The returned type is not concrete, but can
+un-ambiguously be made so using [`make_concretetype`](@ref).
+"""
+change_variance(a::MultiValue, S) = change_variance(typeof(a), S)
+change_variance(V::Type{<:MultiValue}, ::Type{S}) where S<:Tuple =
+  change_variance(V, Val(_Size_to_size(S)))
+
+function _check_change_variance(::Type{V}, Sv::Tuple, uniform::Bool=false) where V<:MultiValue
+  sz = size(V)
+  length(Sv) == length(sz) || throw(ArgumentError("$V has $(length(sz)) indices,
+    its variance cannot be changed to the $(length(Sv)) dimensions $Sv."))
+  all(k -> Int(Sv[k]) == Int(sz[k]), eachindex(Sv)) || throw(ArgumentError(
+    "`change_variance` only flips variances, but $Sv and the size $sz of $V do
+     not have the same dimensions."))
+  uniform && !isempty(Sv) && !all(d -> d === first(Sv), Sv) && throw(ArgumentError(
+    "$V carries a single dimension for several of its indices, so no type
+     expresses it with the dimensions $Sv."))
+  nothing
+end
+
 get_array(a::MultiValue{S,T}) where {S,T} = convert(SArray{_rm_size_variance(S),T},a)
 
 """

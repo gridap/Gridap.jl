@@ -227,6 +227,19 @@ p = @inferred product_tensor(a,b)
 @test promote_type(typeof(p),change_eltype(p,Int)) === typeof(p)
 @test convert(change_eltype(p,Float32),p) == p
 
+# A product distributes the dimensions over its factors and changes the variance
+# of each, keeping its factorisation
+Pv = ProductTensorValue{CoVectorValue{cov2},SymTensorValue{con2}}
+@test change_variance(Pv, Val((con2,cov2,cov2))) ===
+      ProductTensorValue{ContraVectorValue{con2},SymTensorValue{cov2}}
+@test change_variance(Pv{Float64}, Val((con2,cov2,cov2))) ===
+      ProductTensorValue{ContraVectorValue{con2},SymTensorValue{cov2},Float64}
+@test change_variance(Pv, inverse_variance(Tuple{cov2,con2,con2})) ===
+      ProductTensorValue{ContraVectorValue{con2},SymTensorValue{cov2}}
+# each factor applies its own contract to its own block of indices
+@test_throws ArgumentError change_variance(Pv, Val((con2,cov2)))
+@test_throws ArgumentError change_variance(Pv, Val((con2,cov2,con2)))
+
 # The variance of both factors is carried by the product size
 
 pv = product_tensor(CoVectorValue(1.0,2.0), ContraVectorValue(1.0,2.0,3.0))

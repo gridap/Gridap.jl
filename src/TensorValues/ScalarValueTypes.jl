@@ -61,6 +61,15 @@ convert(::Type{T}, arg::ScalarValue) where T<:_Scalar = T(arg[])
 
 change_eltype(::Type{<:ScalarValue},::Type{T}) where T = ScalarValue{T}
 
+function change_variance(::Type{<:ScalarValue}, ::Val{Sv}) where Sv
+  _check_change_variance(ScalarValue, Sv)
+  ScalarValue
+end
+function change_variance(::Type{<:ScalarValue{T}}, ::Val{Sv}) where {T,Sv}
+  _check_change_variance(ScalarValue, Sv)
+  ScalarValue{T}
+end
+
 MultiValue(a::StaticArray{Tuple{},T,0}) where T = ScalarValue{T}(a[])
 
 ###############################################################

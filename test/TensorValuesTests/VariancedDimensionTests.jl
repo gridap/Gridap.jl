@@ -416,6 +416,55 @@ b_int = TensorValue{2,2}(1,2,3,4)
 @test congruent_prod(k_cov, b_con) isa SkewSymTensorValue{con2}
 @test_throws DimensionMismatch congruent_prod(t_cov, TensorValue{cov2,cov2}(1,2,3,4))
 
+
+# ==================================================================
+# change_variance
+# ==================================================================
+
+# A relabelling of the indices: the type constructor, the dimensions and the
+# component type are kept, only the variances change. `L` is recomputed, so the
+# result carries no `L`.
+@test change_variance(t_cov, Val((con2,cov2)))       === TensorValue{con2,cov2,Int}
+@test change_variance(TensorValue{cov2,cov2}, Tuple{con2,cov2}) === TensorValue{con2,cov2}
+@test change_variance(s_cov, Val((con2,con2)))       === SymTensorValue{con2,Int}
+@test change_variance(k_cov, Val((con2,con2)))       === SkewSymTensorValue{con2,Int}
+@test change_variance(f_cov, Val(ntuple(_->con2,4))) === SymFourthOrderTensorValue{con2,Int}
+@test change_variance(s3, Val(ntuple(_->cov3,3)))    === SymNTensorValue{Tuple{cov3,cov3,cov3},Int}
+@test change_variance(r3, Val((2,con2,con2)))        === ThirdOrderTensorValue{2,con2,con2,Int}
+@test change_variance(ScalarValue(1.0), Val(()))     === ScalarValue{Float64}
+@test change_variance(w_cov, Val((con3,con3)))       === ExteriorVectorValue{2,con3,Float64}
+
+# Unlike a congruence by a matrix, a relabelling keeps a vanishing trace
+@test change_variance(q_cov, Val((con2,con2))) === SymTracelessTensorValue{con2,Int}
+
+# The variance of an alternating tensor is that of all its indices at once
+@test change_variance(CoVectorValue{cov2}, Val((con2,)))       === ContraVectorValue{con2}
+@test change_variance(ExteriorFormValue{2,cov3,Int}, Val((con3,con3))) ===
+      ExteriorVectorValue{2,con3,Int}
+# A `VectorValue` carries no variance and an alternating tensor nothing else, so
+# neither has a variance change to the dimensions of the other kind
+@test change_variance(VectorValue{2,Int}, Val((2,))) === VectorValue{2,Int}
+@test_throws ErrorException change_variance(VectorValue{2,Int}, Val((cov2,)))
+@test_throws ErrorException change_variance(ContraVectorValue{con2,Int}, Val((2,)))
+@test_throws ErrorException change_variance(ExteriorFormValue{2,cov3}, Val((3,3)))
+
+# The dimensions must be as many as the indices of the tensor, each of the same
+# dimension, and identical for a type carrying a single dimension for several of
+# its indices
+@test_throws ArgumentError change_variance(s_cov, Val((con2,)))
+@test_throws ArgumentError change_variance(s_cov, Val((con3,con3)))
+@test_throws ArgumentError change_variance(s_cov, Val((con2,cov2)))
+@test_throws ArgumentError change_variance(t_cov, Val((con2,con3)))
+@test_throws ArgumentError change_variance(q_cov, Val((con3,con3)))
+
+# The eltype free form round trips
+for V in (SymTensorValue{cov3}, SymTracelessTensorValue{cov3}, SkewSymTensorValue{cov3},
+          SymFourthOrderTensorValue{cov3}, SymNTensorValue{Tuple{cov3,cov3,cov3}},
+          TensorValue{cov3,con3}, NTensorValue{Tuple{cov3,con3,3}}, CoVectorValue{cov3})
+  S = Tuple{size(V)...}
+  @test change_variance(change_variance(V, inverse_variance(S)), S) === V
+end
+
 # ==================================================================
 # Determinant, inverse, eigen, sqrt
 # ==================================================================

@@ -380,6 +380,16 @@ change_eltype(::Type{<:ProductTensorValue{A,B,T1}},::Type{T2}) where {A,B,T1,T2}
 change_eltype(::Type{<:ProductTensorValue{A,B,T1,S,N,L}},::Type{T2}) where {A,B,T1,T2,S,N,L} =
   ProductTensorValue{A,B,T2,S,N,L}
 
+function change_variance(::Type{<:ProductTensorValue{A,B}}, ::Val{Sv}) where {A,B,Sv}
+  _check_change_variance(ProductTensorValue{A,B}, Sv)
+  Na = length(size(A))
+  ProductTensorValue{change_variance(A, Val(Sv[1:Na])),
+                     change_variance(B, Val(Sv[Na+1:end]))}
+end
+
+change_variance(::Type{<:ProductTensorValue{A,B,T}}, ::Val{Sv}) where {A,B,T,Sv} =
+  (change_variance(ProductTensorValue{A,B}, Val(Sv))){T}
+
 size(::Type{<:ProductTensorValue{A,B}}) where {A,B} =
   tuple(size(A)..., size(B)...)
 

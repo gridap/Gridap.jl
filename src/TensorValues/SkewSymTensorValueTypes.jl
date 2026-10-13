@@ -125,6 +125,15 @@ one(::Type{<:SkewSymTensorValue}) = @unreachable "Skew symmetric tensors do not 
 change_eltype(::Type{<:SkewSymTensorValue{D}},::Type{T2}) where {D,T2} = SkewSymTensorValue{D,T2}
 change_eltype(::Type{SkewSymTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SkewSymTensorValue{D,T2,L}
 
+function change_variance(::Type{<:SkewSymTensorValue{D}}, ::Val{Sv}) where {D,Sv}
+  _check_change_variance(SkewSymTensorValue{D}, Sv, true)
+  SkewSymTensorValue{first(Sv)}
+end
+function change_variance(::Type{<:SkewSymTensorValue{D,T}}, ::Val{Sv}) where {D,T,Sv}
+  _check_change_variance(SkewSymTensorValue{D}, Sv, true)
+  SkewSymTensorValue{first(Sv),T}
+end
+
 num_indep_components(::Type{<:SkewSymTensorValue{D}}) where {D} = D*(D-1)÷2
 
 
