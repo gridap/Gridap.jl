@@ -534,6 +534,24 @@ for x in (a, t, st, qt, sk, s4ot)
   end
 end
 
+# The two tensors carry different eltypes, so the result eltype comes from
+# promoting all three arguments at once.
+for x in (a, t, st, qt, sk, s4ot)
+  for y in (convert(change_eltype(typeof(x),Float32),x), convert(change_eltype(typeof(x),Float64),x))
+    for α in (2, 2.5, 2.0f0, 2+0im)
+      c = muladd(α, x, y)
+      r = α*x + y
+      @test isa(c,typeof(r))
+      @test c == r
+
+      c = muladd(x, α, y)
+      r = x*α + y
+      @test isa(c,typeof(r))
+      @test c == r
+    end
+  end
+end
+
 c = muladd(2, st, t)
 @test isa(c,TensorValue{3,3,Int})
 @test c == 2*st + t
