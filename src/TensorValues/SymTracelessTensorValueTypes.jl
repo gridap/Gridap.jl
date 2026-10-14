@@ -157,3 +157,5 @@ num_stored_components(::Type{<:SymTracelessTensorValue{D}}) where D = num_indep_
 
 get_indep_components(a::SymTracelessTensorValue) = Base.front(Tuple(a))
 
+stored_comp_indices(::Type{<:SymTracelessTensorValue{D}}) where D = stored_comp_indices(SymTensorValue{D})
+

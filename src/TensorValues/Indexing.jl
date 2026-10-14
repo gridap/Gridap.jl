@@ -269,13 +269,13 @@ end
   ib = [ :(inds[$i]) for i in Na+1:N ]
 
   La, = _prod_counts(A,B)
-  slots_a = stored_comp_indices(A) # A(1:La...) if A has as many indep and stored components
-  slots_b = stored_comp_indices(B)
+  a_sci = stored_comp_indices(A) # A(1:La...) if A has as many indep and stored components
+  b_sci = stored_comp_indices(B)
 
   quote
-    ka = $(slots_a)[$(ia...)]
+    ka = $(a_sci)[$(ia...)]
     iszero(ka) && return zero(T)
-    kb = $(slots_b)[$(ib...)]
+    kb = $(b_sci)[$(ib...)]
     iszero(kb) && return zero(T)
     v = arg.data[(abs(kb)-1)*$La + abs(ka)]
     xor(ka < 0, kb < 0) ? -v : v

@@ -138,27 +138,48 @@ end
 # Matrix Division
 ###############################################################
 
-#Return an `Expr` containing the canonical type (with tuple dimension set) of a
-#tensor of order `Nr` and size `Tuple` `Sr`.
-function _tensor_base_type_expr(Nr,Sr)
+#The canonical type (with tuple dimension set) of a tensor of order `Nr` and
+#size `Tuple` `Sr`. At order 1 the variance of `Sr[1]` picks the type
+#constructor, the three being distinct types.
+function _tensor_base_type(Nr,Sr)
   if Nr == 0
-    :()
+    ScalarValue
   elseif Nr == 1
     D = Sr[1]
     if D isa Int
-      :( VectorValue{$(Sr[1])} )
+      VectorValue{D}
     elseif D isa Cov
-      :( CoVectorValue{$(Sr[1])} )
+      CoVectorValue{D}
     elseif D isa Con
-      :( ContraVectorValue{$(Sr[1])} )
+      ContraVectorValue{D}
     else
-      :( @unreachable )
+      @unreachable "$D is not a tensor dimension, see `Dim`."
     end
   elseif Nr == 2
-    :( TensorValue{$(Sr[1]),$(Sr[2])} )
+    TensorValue{Sr[1],Sr[2]}
   else
-    :( NTensorValue{$(Tuple{Sr...})} )
+    NTensorValue{Tuple{Sr...}}
   end
+end
+
+# expr of _tensor_base_type, except for Nr=0, empty expr is returned instead of ScalarValue
+_tensor_base_type_expr(Nr,Sr) =
+  Nr == 0 ? :() : :( $(_tensor_base_type(Nr,Sr)) )
+
+# Sum of `terms`, without the wrapping call when there is only one of them.
+_plus_expr(terms) = length(terms) == 1 ? only(terms) : Expr(:call, :+, terms...)
+
+# `Σₗ wₗ * term(l)` over the stored components `ls` of a tensor layout weighted
+# by their multiplicities `ws`, see [`_stored_comp_weights`](@ref): the stored
+# components sharing a weight are summed first, so each weight
+# multiplies once. `ls` is not empty.
+function _weighted_sum_expr(term, ls, ws)
+  groups = Dict{Int,Vector{Any}}()
+  for (l, w) in zip(ls, ws)
+    push!(get!(Vector{Any}, groups, w), term(l))
+  end
+  _plus_expr([ isone(w) ? _plus_expr(ts) : :( $w * $(_plus_expr(ts)) )
+               for (w, ts) in sort!(collect(groups), by=first) ])
 end
 
 """
@@ -343,6 +364,41 @@ const ⋅¹ = dot
 
 inner(a::_Scalar, b::_Scalar, metric_args::Vararg{_MetricArg}) = a * b
 
+# `Σ_I a_I b_I` read off every component of the two full tensors.
+function _dense_flat_inner(
+  a::MultiValue{Sa,Ta,N}, b::MultiValue{Sb,Tb,N}) where {Sa,Ta,Sb,Tb,N}
+  iszero(length(a)) && return zero(Base.promote_op(*,Ta,Tb))
+  # This is StaticArrays's dot, but that doesn't conjugate a.
+  za, zb = zero(Ta), zero(Tb)
+  ret = za*zb + za*zb
+  @inbounds @simd for j in 1:length(a)
+    ret += a[j]*b[j]
+  end
+  ret
+end
+
+# The body of the Euclidean contraction of two tensors `a` and `b`,
+#
+# For tensors with same stored components, so the sum over the full tensors is
+# the sum over the stored components weighted by their multiplicities.
+@generated function _flat_inner_body(a, b)
+  dense_e = :( _dense_flat_inner(a, b) )
+  a_sci, b_sci = try
+    stored_comp_indices(a), stored_comp_indices(b)
+  catch
+    return dense_e
+  end
+  get_array(a_sci) == get_array(b_sci) || return dense_e
+  num_stored_components(a) < length(a) || return dense_e
+
+  ws = _stored_comp_weights(a) # shouln't error if stored_comp_indices didn't
+  isempty(ws) && return dense_e
+  quote
+    da, db = Tuple(a), Tuple(b)
+    $(_weighted_sum_expr(k -> :( da[$k]*db[$k] ), eachindex(ws), ws))
+  end
+end
+
 """
     flat_inner(ω::MultiValue{S}, η::MultiValue{S})
     ⊙ᴱ(ω,η)
@@ -357,13 +413,7 @@ over every cartesian index `I`.
 """
 function flat_inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N}) where {S,Ta,Tb,N}
   iszero(length(a)) && return zero(Base.promote_op(*,Ta,Tb))
-  # This is StaticArrays's dot, but that doesn't conjugate a.
-  za, zb = zero(Ta), zero(Tb)
-  ret = za*zb + za*zb
-  @inbounds @simd for j in 1:length(a)
-    ret += a[j]*b[j]
-  end
-  ret
+  _flat_inner_body(a, b)
 end
 
 const ⊙ᴱ = flat_inner
@@ -417,8 +467,10 @@ end
 function inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N},
                           metric_args::Vararg{_MetricArg}) where {S,Ta,Tb,N}
 
+  sa = size(a)
+
   # Call flat_inner if S has no variance, md is ignored
-  all(i -> i isa Int, size(a)) && return flat_inner(a, b)
+  all(i -> i isa Int, sa) && return flat_inner(a, b)
   md = _require_metric_data(a, b, metric_args...)
 
   # A tensor with no component contracts to zero whatever the metric.
@@ -428,71 +480,28 @@ function inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N},
   # `flat` and `sharp` act on all the indices they are given at once, and check
   # both their variance and the dimension of the metric against them.
   indices = ntuple(identity, Val(N))
-  cons = filter(k -> size(a)[k] isa Con, indices)
-  covs = filter(k -> size(a)[k] isa Cov, indices)
+  cons = filter(k -> sa[k] isa Con, indices)
+  covs = filter(k -> sa[k] isa Cov, indices)
   b♯  = isempty(cons) ? b  : flat( b, Val(cons), md; drop_sym=Val(true))
   b♭♯ = isempty(covs) ? b♯ : sharp(b♯,Val(covs), md; drop_sym=Val(true))
 
-  contracted_product(Val(N), a, b♭♯)
+  @check all(k -> can_contract(sa[k], size(b♭♯)[k]), 1:N)
+  iszero(length(a)) && return zero(Base.promote_op(*,Ta,Tb))
+  # this is a full contracted_product optimized for dependent component inputs
+  _flat_inner_body(a, b♭♯)
 end
 
-# Σᵢⱼ aᵢⱼbᵢⱼ for two symmetric `D`×`D` tensors, read off their independent
-# components only: an off diagonal component is stored once and counted twice.
-@generated function flat_inner(a::AbstractSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
-  iszero(D) && return :(zero($(Base.promote_op(*,Ta,Tb))))
-  terms = Expr(:call, :+)
-  for i in 1:D
-    push!(terms.args, :(a[$i,$i]*b[$i,$i]))
-  end
-  terms2 = Expr(:call, :+)
-  for i in 1:D
-    for j in i+1:D
-      push!(terms2.args, :(a[$i,$j]*b[$i,$j]))
-    end
-  end
-  push!(terms.args, :(2*( $terms2 )))
-  terms
-end
-
-@generated function flat_inner(a::SymFourthOrderTensorValue{D,Ta}, b::SymFourthOrderTensorValue{D,Tb}) where {D,Ta,Tb}
-  iszero(D) && return :(zero($(Base.promote_op(*,Ta,Tb))))
-
-  S = Tuple{D,D,D,D}
-  VInt = change_eltype(a, Int)
-  # each independent component appear either 1,2 of 4 times in inputs, we gather
-  # sums for all cases in different expr.
-  sums = [ Expr(:call, :+) for _ in 1:4 ] # the third is unused...
-
-  # for each independent component, add its product in the sum of the
-  # corresponding multiplicative factor
-  for (i, fi) in enumerate(component_basis(VInt))
-    factor = @invoke flat_inner(fi::MultiValue{S,Int,4}, fi::MultiValue{S,Int,4}) # use the generic but slower method
-    push!(sums[factor].args, :(indep_comp_getindex(a,$i)*indep_comp_getindex(b,$i)))
-  end
-
-  :( $(sums[1]) + 2*$(sums[2]) + 4*$(sums[4]) )
-end
-
-# The `D(D-1)/2` independent components are the strict upper triangle, each one
-# counted twice.
-function flat_inner(a::SkewSymTensorValue{D,Ta}, b::SkewSymTensorValue{D,Tb}) where {D,Ta,Tb}
-  iszero(D) && return zero(Base.promote_op(*,Ta,Tb))
-  2 * flat_inner(VectorValue(a.data), VectorValue(b.data))
-end
-
-# A skew symmetric tensor is orthogonal to a symmetric one under any symmetric
-# metric: `Σ kᵢⱼ gⁱᵏ gʲˡ sₖₗ` is its own negative under the relabelling
-# `i↔j, k↔l`. The pair thus needs no metric even when varianced.
-function inner(a::SkewSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
+# skew symmetric and symmetric tensors are orthogonal
+function inner(::SkewSymTensorValue{D,Ta}, ::AbstractSymTensorValue{D,Tb}, ::Vararg{_MetricArg}) where {D,Ta,Tb}
   zero(Base.promote_op(*,Ta,Tb))
 end
-function inner(a::AbstractSymTensorValue{D,Tb}, b::SkewSymTensorValue{D,Ta}) where {D,Ta,Tb}
+function inner(::AbstractSymTensorValue{D,Tb}, ::SkewSymTensorValue{D,Ta}, ::Vararg{_MetricArg}) where {D,Ta,Tb}
   zero(Base.promote_op(*,Ta,Tb))
 end
-function flat_inner(a::SkewSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
+function flat_inner(::SkewSymTensorValue{D,Ta}, ::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
   zero(Base.promote_op(*,Ta,Tb))
 end
-function flat_inner(a::AbstractSymTensorValue{D,Tb}, b::SkewSymTensorValue{D,Ta}) where {D,Ta,Tb}
+function flat_inner(::AbstractSymTensorValue{D,Ta}, ::SkewSymTensorValue{D,Tb}) where {D,Ta,Tb}
   zero(Base.promote_op(*,Ta,Tb))
 end
 
@@ -507,9 +516,9 @@ function _component_basis_weights(V::Type{<:MultiValue})
   basis = component_basis(V)
   for i in eachindex(basis), j in eachindex(basis)
     i == j && continue
-    iszero(flat_inner(basis[i],basis[j])) || return nothing
+    iszero(_dense_flat_inner(basis[i],basis[j])) || return nothing
   end
-  Int[ flat_inner(b,b) for b in basis ]
+  Int[ _dense_flat_inner(b,b) for b in basis ]
 end
 
 # Σ_(la,lb) wa(la)*wb(lb)*a_(la,lb)*b_(la,lb), the component basis of a product
@@ -521,8 +530,9 @@ end
   iszero(L) && return zero_result
 
   generic_e = :( @invoke flat_inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N}) )
-  all(i -> i isa Int, size(a)) || return generic_e
 
+  # The multiplicities of a component basis are Euclidean, so they are the same
+  # whether or not the factors carry variance.
   wa = _component_basis_weights(make_concretetype(A{Int}))
   wb = _component_basis_weights(make_concretetype(B{Int}))
   # A factor whose component basis is not orthogonal has no such weighted sum,
@@ -559,25 +569,6 @@ The `double_contraction` between second- and/or fourth-order symmetric tensors
 preserves the symmetry (returns a symmetric tensor type).
 """
 double_contraction(a::MultiValue, b::MultiValue) = contracted_product(Val(2), a, b)
-
-# c_ijkl = a_ijmn*b_mnkl (3D)
-@generated function double_contraction(a::SymFourthOrderTensorValue{3}, b::SymFourthOrderTensorValue{3})
-
-  Sym4TensorIndexing = [1111, 1121, 1131, 1122, 1132, 1133, 2111, 2121, 2131, 2122, 2132, 2133,
-    3111, 3121, 3131, 3122, 3132, 3133, 2211, 2221, 2231, 2222, 2232, 2233,
-    2311, 2321, 2331, 2322, 2332, 2333, 3311, 3321, 3331, 3322, 3332, 3333]
-  comps = Expr[]
-  for off_index in Sym4TensorIndexing
-    i = parse(Int, string(off_index)[1])
-    j = parse(Int, string(off_index)[2])
-    k = parse(Int, string(off_index)[3])
-    l = parse(Int, string(off_index)[4])
-    summands = [:( a[$j,$i,$m,$n]*b[$m,$n,$l,$k] ) for m in 1:3 for n in 1:3]
-    comp = Expr(:call, :+, summands...)
-    push!(comps, comp)
-  end
-  :( SymFourthOrderTensorValue{3}($(comps...)) )
-end
 
 function _comp_prod_double_symfourth4(::Val{D},a,b,i,j,k,l) where D
   s = zero(promote_type(eltype(a), eltype(b)))
@@ -648,18 +639,12 @@ end
   can_contract(Da,Db) || return :( contracted_product(Val(2), a, b) ) # for error msg
   D = Int(Da)
   iszero(D) && return :(zero(SymTensorValue{Da,$(Base.promote_op(*,Ta,Tb))}))
-  comps = Expr[]
-  for i in 1:D
-    for j in i:D
-      summands = [:(a[$i,$j,$k,$k]*b[$k,$k]) for k in 1:D]
-      diag_sum = Expr(:call, :+, summands...)
-
-      summands = [:(a[$i,$j,$k,$l]*b[$k,$l]) for k in 1:D for l in k+1:D]
-      offdiag_sum = Expr(:call, :+, summands...)
-
-      push!(comps, :( $diag_sum + 2*$offdiag_sum) )
-    end
-  end
+  # `b` is contracted over the whole tensor, read off the stored comp indices
+  # of the symmetric layout weighted by their multiplicities.
+  Is = _indep_comp_cartesian_indices(SymTensorValue{D})
+  ws = _stored_comp_weights(SymTensorValue{D})
+  comps = [ _weighted_sum_expr(K -> :( a[$i,$j,$(K[1]),$(K[2])]*b[$(K[1]),$(K[2])] ), Is, ws)
+            for (i,j) in Is ]
   :( SymTensorValue{Da}($(comps...)) )
 end
 
@@ -668,19 +653,12 @@ end
   can_contract(Da,Db) || return :( contracted_product(Val(2), a, b) ) # for error msg
   D = Int(Db)
   iszero(D) && return :(zero(SymTensorValue{Db,$(Base.promote_op(*,Ta,Tb))}))
-  comps = Expr[]
-  for i in 1:D
-    for j in i:D
-      summands = [:(a[$k,$k]*b[$k,$k,$i,$j]) for k in 1:D]
-      diag_sum = Expr(:call, :+, summands...)
-
-      summands = [:(a[$k,$l]*b[$k,$l,$i,$j]) for k in 1:D for l in k+1:D]
-      offdiag_sum = Expr(:call, :+, summands...)
-
-      push!(comps, :( $diag_sum + 2*$offdiag_sum) )
-    end
-  end
-
+  # `a` is contracted over the whole tensor, read off the stored comp indices
+  # of the symmetric layout weighted by their multiplicities.
+  Is = _indep_comp_cartesian_indices(SymTensorValue{D})
+  ws = _stored_comp_weights(SymTensorValue{D})
+  comps = [ _weighted_sum_expr(K -> :( a[$(K[1]),$(K[2])]*b[$(K[1]),$(K[2]),$i,$j] ), Is, ws)
+            for (i,j) in Is ]
   :( SymTensorValue{Db}($(comps...)) )
 end
 
@@ -698,28 +676,61 @@ const ⋅² = double_contraction
 
 ###############################################################
 # Congruent product
+#
+# bᵀ⋅a⋅b if a is order 2,
+#
+# a_J = Σ_I M[j₁,i₁] ⋯ M[j_N,i_N] a_I else.
+#
 ###############################################################
+
+# tensor type of the result of congruent_prod preserving as much symmetries as
+# possible, depending on the argument types
+_congruence_type(::Type{Va}, ::Type{Vb}) where {Va<:MultiValue,Vb<:MultiValue} =
+  _congruence_type(Va, size(Vb)[2])
+
+_congruence_type(::Type{V}, Dout::Dim) where V<:MultiValue =
+  _tensor_base_type(length(size(V)), ntuple(_ -> Dout, length(size(V))))
+
+_congruence_type(::Type{<:AbstractSymTensorValue}, Dout::Dim)    = SymTensorValue{Dout}
+_congruence_type(::Type{<:SkewSymTensorValue}, Dout::Dim)        = SkewSymTensorValue{Dout}
+_congruence_type(::Type{<:SymFourthOrderTensorValue}, Dout::Dim) = SymFourthOrderTensorValue{Dout}
+_congruence_type(::Type{V}, Dout::Dim) where V<:SymNTensorValue =
+  SymNTensorValue{Tuple{ntuple(_ -> Dout, length(size(V)))...}}
+_congruence_type(::Type{<:SkewSymKTensorValue{V,K}}, Dout::Dim) where {V,K} =
+  SkewSymKTensorValue{typeof(Dout),K,Dout}
 
 """
     congruent_prod(a, b)
+    congruent_prod(a, b, ::Val{l})
 
-Given a square second order tensors `a` and `b`, return `b`ᵀ⋅`a`⋅`b`.
-The type of the resulting value is (skew) symmetric stable w.r.t. `typeof(a)`.
+Given an order `N ≥ 1` tensor `a` and a second order tensor `b`, return the
+congruence of every index of `a` by `b`
 
-`a` carries twice the same index `D`, and `b`ᵀ contracts its second index against
-it, so the first index `Db` of `b` must satisfy `can_contract(Db,D)`.
+    c_O = Σ_I b[i₁,o₁] ⋯ b[i_N,o_N] a_I
+
+that is `b`ᵀ⋅`a`⋅`b` for `N = 2`, and `b`ᵀ⋅`a` for `N = 1`.
+The type of the resulting value is (skew) symmetric stable w.r.t. `typeof(a)`,
+a traceless `a` widening to a `SymTensorValue`: a congruence keeps an index
+symmetry but not a vanishing trace, see [`change_variance`](@ref) for the
+relabelling that keeps both.
+
+`a` carries `N` times the same index `D`, variance included, and `b`ᵀ contracts
+its second index against each of them, so the first index `Db` of `b` must
+satisfy `can_contract(Db,D)`. Every index of the result carries the second
+index of `b`, and only the components the result stores are computed.
+
+A congruence needs an index to contract, so an order 0 `a` is an error.
+
+The three argument form congruences the indices `k ∈ l` only,
+
+    c_{…,o_k,…} = Σ_{…,i_k,…} b[i_k,o_k] ⋯ a_{…,i_k,…}
+
+leaving the others untouched. Only the indices in `l` need to share their
+dimension and variance, the others are unconstrained. An index symmetry
+survives a congruence of *every* index, so a `l` that leaves one out returns a
+tensor of the corresponding full rank type: the widening is automatic, it is
+the two argument form that preserves symmetries.
 """
-function congruent_prod(a::MultiValue{Tuple{D,D},Ta}, b::MultiValue{Tuple{Db,D1},Tb}) where {D,Db,D1,Ta,Tb}
-  _ensure_contract(Db,D)
-  T = Base.promote_op(*,Ta,Tb)
-  V = _congruent_ret_type(a, D1)
-  (iszero(Int(D)) || iszero(Int(D1))) && return zero(V{T})
-  V(get_array(transpose(b) ⋅ a ⋅ b))
-end
-_congruent_ret_type(a, D1) = TensorValue{D1,D1}
-_congruent_ret_type(a::AbstractSymTensorValue, D1) = SymTensorValue{D1}
-_congruent_ret_type(a::SkewSymTensorValue, D1) = SkewSymTensorValue{D1}
-
 function congruent_prod(a::Number, b::Number)
   msg = """ operation only defined for 2nd order tensors `a` and `b` with
       `size(b,1) == size(a, 1) == size(a, 2)`, got `size(a)=$(size(a))` and
@@ -727,6 +738,8 @@ function congruent_prod(a::Number, b::Number)
       """
   @unreachable msg
 end
+
+congruent_prod(a::Number, b::Number, ::Val) = congruent_prod(a, b)
 
 ###############################################################
 # Reductions
@@ -760,16 +773,8 @@ outer(a::MultiValue, b::MultiValue) = contracted_product(Val(0), a, b)
 # c_ijkl = a_ij*b_kl
 @generated function outer(a::AbstractSymTensorValue{D,Ta}, b::AbstractSymTensorValue{D,Tb}) where {D,Ta,Tb}
   iszero(D) && return :(zero(SymFourthOrderTensorValue{D,$(Base.promote_op(*,Ta,Tb))}))
-  comps = Expr[]
-  for i in 1:D
-    for j in i:D
-      for k in 1:D
-        for l in k:D
-          push!(comps, :(a[$i,$j]*b[$k,$l]) )
-        end
-      end
-    end
-  end
+  comps = [ :( a[$i,$j]*b[$k,$l] )
+            for (i,j,k,l) in _indep_comp_cartesian_indices(SymFourthOrderTensorValue{D}) ]
   :( SymFourthOrderTensorValue{D}($(comps...)) )
 end
 
@@ -1638,8 +1643,6 @@ end
     return :(throw(ArgumentError($msg)))
   end
 
-  # Reordering the slots carries each index along with its own variance, so any
-  # permutation is admissible whatever the variances are.
   sz_a = size(a)
   Sr = ntuple(k -> sz_a[P[k]], Na)
   V = _tensor_base_type_expr(Na,Sr)

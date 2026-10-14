@@ -50,9 +50,8 @@ dot(a::ProductTensorValue{A,VectorValue{D}}, b::VectorValue) where {A,D} =
 function dot(
   a::ProductTensorValue{A,VectorValue{D}}, b::ProductTensorValue) where {A,D}
 
-  D2 = first(size(b))
-  contracted_a = D2 isa Cov ? _as_contravariant(a) : a
-  dot(contracted_a, b)
+  first(size(b)) isa Cov || return @invoke dot(a::ProductTensorValue, b::ProductTensorValue)
+  dot(_as_contravariant(a), b)
 end
 
 ############################

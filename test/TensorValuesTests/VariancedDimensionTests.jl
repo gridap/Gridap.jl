@@ -5,6 +5,8 @@ using Gridap
 using Gridap.TensorValues
 using LinearAlgebra
 using StaticArrays
+using Gridap.Arrays: get_array
+using Gridap.TensorValues: full_rank, _second_factors
 
 t = TensorValue{con2, cov2}(1, 2, 3, 4)
 @test 2 * t == TensorValue{Con(2), Cov(2)}(2, 4, 6, 8)
@@ -416,6 +418,120 @@ b_int = TensorValue{2,2}(1,2,3,4)
 @test congruent_prod(k_cov, b_con) isa SkewSymTensorValue{con2}
 @test_throws DimensionMismatch congruent_prod(t_cov, TensorValue{cov2,cov2}(1,2,3,4))
 
+# `c_{…o_k…} = Σ_{…i_k…} b[i_k,o_k] ⋯ a_{…i_k…}` over the indices `k ∈ ks`,
+# component by component. An index outside `ks` keeps its dimension and is
+# carried over, so `O` and `I` must agree on it; `ks` defaults to every index.
+function congruence_ref(a, b, ks=ntuple(identity, ndims(get_array(a))))
+  A, B = get_array(a), get_array(b)
+  N, Dout = ndims(A), size(B,2)
+  R = zeros(typeof(zero(eltype(A))*zero(eltype(B))),
+            ntuple(i -> i in ks ? Dout : size(A,i), N))
+  for I in CartesianIndices(A), Oks in CartesianIndices(ntuple(_ -> Dout, length(ks)))
+    O = collect(Tuple(I))
+    for (m,k) in enumerate(ks); O[k] = Tuple(Oks)[m]; end
+    R[O...] += A[I] * prod(B[Tuple(I)[k], O[k]] for k in ks)
+  end
+  R
+end
+
+@test get_array(congruent_prod(t_cov, b_con)) == congruence_ref(t_cov, b_con)
+@test get_array(congruent_prod(s_cov, b_con)) == congruence_ref(s_cov, b_con)
+@test get_array(congruent_prod(k_cov, b_con)) == congruence_ref(k_cov, b_con)
+
+# A traceless `a` keeps its symmetry but not its vanishing trace
+@test congruent_prod(q_cov, b_con) isa SymTensorValue{con2}
+let r = congruent_prod(q_cov, b_con)
+  @test !iszero(r[1,1] + r[2,2])
+end
+@test get_array(congruent_prod(q_cov, b_con)) == congruence_ref(q_cov, b_con)
+
+# One matrix contracts every index, which every index symmetry survives at any
+# order
+sn_cov = SymNTensorValue{Tuple{cov2,cov2,cov2}}(1.0,2.0,3.0,4.0)
+@test congruent_prod(sn_cov, b_con) isa SymNTensorValue{Tuple{con2,con2,con2}}
+@test get_array(congruent_prod(sn_cov, b_con)) ≈ congruence_ref(sn_cov, b_con)
+@test congruent_prod(f_cov, b_con) isa SymFourthOrderTensorValue{con2}
+@test get_array(congruent_prod(f_cov, b_con)) ≈ congruence_ref(f_cov, b_con)
+
+# alternation included
+w_cov  = ExteriorFormValue{2,cov3}(1.0,2.0,3.0)
+b3_con = TensorValue{con3,con3}(1.0,0.5,0.0, 0.0,2.0,0.5, 0.1,0.0,3.0)
+@test congruent_prod(w_cov, b3_con) isa ExteriorVectorValue{2,con3}
+@test get_array(congruent_prod(w_cov, b3_con)) ≈ congruence_ref(w_cov, b3_con)
+
+# At order 1 the same sum contracts the only index
+v_cov = SymNTensorValue{Tuple{cov2}}(1.0,2.0)
+@test congruent_prod(v_cov, b_con) isa SymNTensorValue{Tuple{con2}}
+@test get_array(congruent_prod(v_cov, b_con)) ≈ congruence_ref(v_cov, b_con)
+
+# A non square `b` resizes every index of the result, both ways
+b_23 = TensorValue{con2,con3}(1:6...)
+b_32 = TensorValue{con3,con2}(1:6...)
+@test congruent_prod(s_cov, b_23) isa SymTensorValue{con3}
+@test get_array(congruent_prod(s_cov, b_23)) == congruence_ref(s_cov, b_23)
+@test congruent_prod(SymTensorValue{cov3}(1:6...), b_32) isa SymTensorValue{con2}
+@test get_array(congruent_prod(SymTensorValue{cov3}(1:6...), b_32)) ==
+      congruence_ref(SymTensorValue{cov3}(1:6...), b_32)
+
+# One matrix contracts every index of `a`, so they must all be identical, and an
+# order 0 tensor has no index to contract
+@test_throws ErrorException congruent_prod(t_mix, b_con)
+@test_throws ErrorException congruent_prod(s_mix, b_con)
+@test_throws ErrorException congruent_prod(ScalarValue(2.0), b_con)
+
+# An alternating `a` is congruenced by the `K`-th compound matrix of `b`, which
+# agrees with contracting each index in turn
+@test congruent_prod(k_cov, b_con) isa SkewSymTensorValue{con2}
+@test get_array(congruent_prod(k_cov, b_con)) == congruence_ref(k_cov, b_con)
+k3_cov = SkewSymTensorValue{cov3}(1.0,2.0,3.0)
+@test congruent_prod(k3_cov, b3_con) isa SkewSymTensorValue{con3}
+@test get_array(congruent_prod(k3_cov, b3_con)) ≈ congruence_ref(k3_cov, b3_con)
+w3_cov = ExteriorFormValue{3,cov4}(1.0,2.0,3.0,4.0)
+b4_con = TensorValue{con4,con4}(1.0,0.5,0.0,0.1, 0.0,2.0,0.5,0.0, 0.1,0.0,3.0,0.2, 0.0,0.1,0.0,4.0)
+@test congruent_prod(w3_cov, b4_con) isa ExteriorVectorValue{3,con4}
+@test get_array(congruent_prod(w3_cov, b4_con)) ≈ congruence_ref(w3_cov, b4_con)
+# a non square `b` resizes the alternating result too, down to no component at all
+@test congruent_prod(w_cov, b_32) isa ExteriorVectorValue{2,con2}
+@test get_array(congruent_prod(w_cov, b_32)) ≈ congruence_ref(w_cov, b_32)
+@test iszero(num_indep_components(typeof(congruent_prod(w3_cov, TensorValue{con4,con2}(1.0:8.0...)))))
+
+# ------------------------------------------------------------------
+# Congruence of a subset of the indices
+# ------------------------------------------------------------------
+
+# Only the listed indices are congruenced, the others keep their dimension and
+# variance and are unconstrained
+t_23 = TensorValue{cov2,cov3}(1:6...)
+@test congruent_prod(t_23, b_con, Val(1)) isa TensorValue{con2,cov3}
+@test get_array(congruent_prod(t_23, b_con, Val(1))) == congruence_ref(t_23, b_con, (1,))
+@test congruent_prod(t_23, b_32, Val(2)) isa TensorValue{cov2,con2}
+@test get_array(congruent_prod(t_23, b_32, Val(2))) == congruence_ref(t_23, b_32, (2,))
+
+# An index symmetry survives a congruence of every index only, so a list that
+# leaves one out widens to the full rank type
+@test congruent_prod(s_cov, b_con, Val(1)) isa TensorValue{con2,cov2}
+@test get_array(congruent_prod(s_cov, b_con, Val(1))) == congruence_ref(s_cov, b_con, (1,))
+@test congruent_prod(f_cov, b_con, Val((1,2))) isa NTensorValue{Tuple{con2,con2,cov2,cov2}}
+@test get_array(congruent_prod(f_cov, b_con, Val((1,2)))) ≈ congruence_ref(f_cov, b_con, (1,2))
+@test congruent_prod(sn_cov, b_con, Val((1,3))) isa NTensorValue{Tuple{con2,cov2,con2}}
+@test get_array(congruent_prod(sn_cov, b_con, Val((1,3)))) ≈ congruence_ref(sn_cov, b_con, (1,3))
+@test congruent_prod(k_cov, b_con, Val(2)) isa TensorValue{cov2,con2}
+@test get_array(congruent_prod(k_cov, b_con, Val(2))) == congruence_ref(k_cov, b_con, (2,))
+
+# A list of every index is the symmetry preserving congruence itself
+@test congruent_prod(s_cov, b_con, Val((1,2))) === congruent_prod(s_cov, b_con)
+@test congruent_prod(w_cov, b3_con, Val((1,2))) === congruent_prod(w_cov, b3_con)
+# and an empty list is the identity
+@test congruent_prod(s_cov, b_con, Val(())) === s_cov
+
+# The listed indices must exist, be distinct, share dimension and variance, and
+# contract with the first index of `b`
+@test_throws ArgumentError congruent_prod(t_23, b_con, Val(3))
+@test_throws ArgumentError congruent_prod(t_23, b_con, Val((1,1)))
+@test_throws DimensionMismatch congruent_prod(t_23, b_con, Val(2))
+# a list of every index reports through the two argument form, as that one does
+@test_throws ErrorException congruent_prod(t_23, b_con, Val((1,2)))
+@test_throws DimensionMismatch congruent_prod(t_23, TensorValue{cov2,con2}(1:4...), Val(1))
 
 # ==================================================================
 # change_variance
@@ -738,8 +854,10 @@ q_up = SymTracelessTensorValue{con2}(1.0, 2.0)
 @test flat(q_up, Val((1,2)), gm_lo) isa SymTensorValue{cov2}
 @test get_array(flat(q_up, Val((1,2)), gm_lo)) ≈
       get_array(gm_lo)*get_array(q_up)*get_array(gm_lo)'
-# even Euclideanly, where the trace does survive: one policy for both metrics
-@test flat_flat(q_up, Val((1,2))) isa SymTensorValue{cov2}
+# Euclidean musical leave components as is
+@test flat_flat(q_up, Val((1,2))) isa SymTracelessTensorValue{cov2}
+@test flat(q_up, Val((1,2)), I)  isa SymTracelessTensorValue{cov2}
+@test get_array(flat_flat(q_up, Val((1,2)))) == get_array(q_up)
 
 # the same holds for the fully symmetric tensors of any order
 a3_up = SymNTensorValue{Tuple{con2,con2,con2}}(1.0, 2.0, 3.0, 4.0)
@@ -1200,5 +1318,145 @@ _str_v(io_props, a) = sprint((io, x) -> show(io, MIME("text/plain"), x), a;
 @test indep_components_names(ContraVectorValue{con3}) == ["∂₁", "∂₂", "∂₃"]
 @test indep_components_names(ExteriorVectorValue{2,con3}) ==
       ["∂₁ ∧ ∂₂", "∂₁ ∧ ∂₃", "∂₂ ∧ ∂₃"]
+
+########################################################################
+# Index symmetries under the musicals and the pullback and pushforward #
+########################################################################
+
+# A type encoding an index symmetry keeps it exactly under a map acting on every
+# one of its indices with the same matrix, which needs them to share a variance.
+
+g_3   = SymTensorValue{cov3}(2.0,0.1,0.2,3.0,0.3,4.0)
+sym_c = SymTensorValue{con3}(1.0,2.0,3.0,4.0,5.0,6.0)
+skw_c = SkewSymTensorValue{con3}(1.0,2.0,3.0)
+trl_c = SymTracelessTensorValue{con3}(1.0,2.0,3.0,4.0,5.0)
+s4_c  = SymFourthOrderTensorValue{con3}(ntuple(i->Float64(i),36)...)
+sn_c  = SymNTensorValue{Tuple{con3,con3,con3}}(ntuple(i->Float64(i),10)...)
+
+# A skew symmetric tensor under the musicals
+
+@test flat(skw_c, Val((1,2)), g_3) isa SkewSymTensorValue{cov3}
+@test flat_flat(skw_c, Val((1,2)))  isa SkewSymTensorValue{cov3}
+@test get_array(flat(skw_c, Val((1,2)), g_3)) ≈
+      get_array(flat(full_rank(skw_c), Val((1,2)), g_3))
+@test get_array(flat_flat(skw_c, Val((1,2)))) ==
+      get_array(flat_flat(full_rank(skw_c), Val((1,2))))
+
+# A list of fewer indices loses the skew-symmetry, which is refused by default
+@test_throws ArgumentError flat(skw_c, Val((1,)), g_3)
+@test_throws ArgumentError flat_flat(skw_c, Val((2,)))
+@test_throws "SkewSymTensorValue" flat(skw_c, Val((1,)), g_3)
+@test flat(skw_c, Val((1,)), g_3; drop_sym=Val(true)) isa TensorValue
+@test flat(skw_c, Val(()), g_3) === skw_c
+
+# A Euclidean flip leaves every component where it is, so a traceless tensor
+# stays traceless; a general metric widens it, as it moves the components
+
+_eu_tr(a) = sum(get_array(a)[i,i] for i in 1:3)
+
+@test flat_flat(trl_c, Val((1,2))) isa SymTracelessTensorValue{cov3}
+@test flat(trl_c, Val((1,2)), I)   isa SymTracelessTensorValue{cov3}
+@test flat_sharp(SymTracelessTensorValue{cov3}(1.0,2.0,3.0,4.0,5.0), Val((1,2))) isa
+      SymTracelessTensorValue{con3}
+@test iszero(_eu_tr(flat_flat(trl_c, Val((1,2)))))
+@test get_array(flat_flat(trl_c, Val((1,2)))) ==
+      get_array(flat_flat(full_rank(trl_c), Val((1,2))))
+
+@test flat(trl_c, Val((1,2)), g_3) isa SymTensorValue{cov3}
+@test !iszero(_eu_tr(flat(trl_c, Val((1,2)), g_3)))
+
+# A skew symmetric tensor is orthogonal to a symmetric one under any metric, so
+# the pair accepts the metric arguments and ignores them
+
+@test inner(skw_c, sym_c, g_3) == 0.0
+@test inner(sym_c, skw_c, g_3) == 0.0
+@test inner(skw_c, sym_c) == 0.0
+
+# `inner` with variance flips every index of its second argument and contracts
+# the pair over the full tensors, which the shared stored layout lets it read off
+# the stored components instead
+
+function _full_tensor_inner(a, b, md)
+  idx  = ntuple(identity, length(size(a)))
+  cons = filter(k -> size(a)[k] isa Con, idx)
+  covs = filter(k -> size(a)[k] isa Cov, idx)
+  b♯  = isempty(cons) ? b  : flat( b,  Val(cons), md; drop_sym=Val(true))
+  b♭♯ = isempty(covs) ? b♯ : sharp(b♯, Val(covs), md; drop_sym=Val(true))
+  sum(get_array(a) .* get_array(b♭♯))
+end
+
+sym_c2 = SymTensorValue{con3}(2.0,3.0,4.0,5.0,6.0,7.0)
+skw_c2 = SkewSymTensorValue{con3}(4.0,5.0,6.0)
+s4_c2  = SymFourthOrderTensorValue{con3}(ntuple(i->Float64(2i),36)...)
+
+for (x,y) in ((sym_c,sym_c2), (trl_c,sym_c2), (skw_c,skw_c2), (s4_c,s4_c2), (sn_c,sn_c))
+  @test inner(x, y, g_3) ≈ _full_tensor_inner(x, y, g_3)
+end
+
+# if the one matrix is the (pseudo-inverse) jacobian
+
+Jt_33  = TensorValue{cov3,con3}(2.0,0.1,0.0, 0.2,3.0,0.1, 0.0,0.3,4.0)
+iJt_33 = pinvJt(Jt_33)
+sym_v = SymTensorValue{cov3}(1.0,2.0,3.0,4.0,5.0,6.0)
+skw_v = SkewSymTensorValue{cov3}(1.0,2.0,3.0)
+trl_v = SymTracelessTensorValue{cov3}(1.0,2.0,3.0,4.0,5.0)
+s4_v  = SymFourthOrderTensorValue{cov3}(ntuple(i->Float64(i),36)...)
+sn_v  = SymNTensorValue{Tuple{cov3,cov3,cov3}}(ntuple(i->Float64(i),10)...)
+
+@test pullback(sym_v, Jt_33)    isa SymTensorValue{cov3}
+@test pullback(skw_v, Jt_33)    isa SkewSymTensorValue{cov3}
+@test pullback(s4_v,  Jt_33)    isa SymFourthOrderTensorValue{cov3}
+@test pullback(sn_v,  Jt_33)    isa SymNTensorValue{Tuple{cov3,cov3,cov3}}
+@test pullback(sym_c, Jt_33)    isa SymTensorValue{con3}
+@test pushforward(sym_c, Jt_33) isa SymTensorValue{con3}
+@test pushforward(skw_c, Jt_33) isa SkewSymTensorValue{con3}
+@test pushforward(sym_v, Jt_33) isa SymTensorValue{cov3}
+@test pushforward(s4_v,  Jt_33) isa SymFourthOrderTensorValue{cov3}
+
+# symmetry preserved, but not the trace
+@test pullback(trl_v, Jt_33)    isa SymTensorValue{cov3}
+@test pushforward(trl_v, Jt_33) isa SymTensorValue{cov3}
+
+for x in (sym_v, skw_v, trl_v, s4_v, sn_v, sym_c, skw_c)
+  @test get_array(pullback(x, Jt_33))    ≈ get_array(pullback(full_rank(x), Jt_33))
+  @test get_array(pushforward(x, Jt_33)) ≈ get_array(pushforward(full_rank(x), Jt_33))
+end
+
+# A square jacobian round trips
+@test get_array(pushforward(pullback(sym_v, Jt_33), Jt_33, iJt_33)) ≈ get_array(sym_v)
+@test get_array(pushforward(pullback(s4_v, Jt_33), Jt_33, iJt_33))  ≈ get_array(s4_v)
+
+# For `φ : ℝᴰᵐ → ℝᴰⁿ` with `Int(Dm) < Int(Dn)`, `a` carries the image dimension
+# and its pullback the domain one, so the pullback and pushforward are not square
+
+Jt_23 = TensorValue{cov2,con3}(1.0,2.0, 3.0,4.0, 5.0,6.0)
+@test pullback(sym_v, Jt_23) isa SymTensorValue{cov2}
+@test pullback(s4_v,  Jt_23) isa SymFourthOrderTensorValue{cov2}
+@test pullback(sn_v,  Jt_23) isa SymNTensorValue{Tuple{cov2,cov2,cov2}}
+for x in (sym_v, skw_v, trl_v, s4_v, sn_v)
+  @test get_array(pullback(x, Jt_23)) == get_array(pullback(full_rank(x), Jt_23))
+end
+
+# `Int(Dm) > Int(Dn)` leaves no inverse to pull a contravariant index back with
+Jt_32 = TensorValue{cov3,con2}(1.0,2.0,3.0, 4.0,5.0,6.0)
+@test_throws ArgumentError pullback(SymTensorValue{con2}(1.0,2.0,3.0), Jt_32)
+
+# A tensor of mixed variance has its two index blocks mapped by two
+# different matrices, which no index symmetry survives
+@test pullback(TensorValue{cov3,con3}(ntuple(Float64,9)), Jt_33, iJt_33) isa
+      TensorValue{cov3,con3}
+
+# A product tensor is pulled/pushed factor by factor, so it keeps the factors the
+# derivative rules of a partial derivative tensor read
+
+A_pt  = SymNTensorValue{Tuple{cov3,cov3}}
+∂_pt  = ProductTensorValue{A_pt,ContraVectorValue{con3}}(ntuple(Float64, 18))
+pb_pt = pullback(∂_pt, Jt_33)
+@test pb_pt isa ProductTensorValue{A_pt}
+@test get_array(pb_pt) ≈ get_array(pullback(full_rank(∂_pt), Jt_33))
+@test length(_second_factors(pb_pt)) == num_indep_components(A_pt)
+@test pushforward(∂_pt, Jt_33, iJt_33) isa ProductTensorValue{A_pt}
+
+@test pullback(ExteriorFormValue{2,cov3}(1.0,2.0,3.0), Jt_33) isa ExteriorFormValue{2,cov3}
 
 end # module

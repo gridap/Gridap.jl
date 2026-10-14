@@ -468,6 +468,17 @@ function data_index(::Type{<:MultiValue},i...)
 end
 @deprecate data_index getindex
 
+# similar to CartesianIndices, but indicating the linear index in the stored
+# component, with the sign flip to apply (for e.g. skew tensors). `nothing` for a
+# type that materialises a component no single full tensor index reads, which has
+# no such map.
+function stored_comp_indices(V::Type{<:MultiValue})
+  Li = num_indep_components(V)
+  Li == num_stored_components(V) || @notimplemented "$V stores components that
+    are not independent, it needs a `stored_comp_indices` method for this operation."
+  V(Tuple(1:Li))
+end
+
 # The order of export of components is that of their position in the .data
 # field, but the actual method "choosing" the export order is
 # Gridap.Visualization._prepare_data(::Multivalue).

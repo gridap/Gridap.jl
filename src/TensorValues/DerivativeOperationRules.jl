@@ -6,57 +6,6 @@
 const _PartialsTensor{O,D,B} = ProductTensorValue{SymNTensorValue{NTuple{O,D}},B}
 
 """
-    _map_second_factor(f, p::ProductTensorValue)
-
-The product tensor with the first factor of `p` and the images by `f` of its
-second factors.
-
-`p` is the sum of `aₗ ⊗ bₗ` over the independent components of its first factor,
-and the result is the sum of the `aₗ ⊗ f(bₗ)`, that is the image of `p` by `f`
-acting on its second index block alone.
-
-`f` must be linear: a first factor with interdependent components only has the
-second factors of its dependent components reproduced by linearity.
-
-A scalar valued `f` gives a [`ScalarValue`](@ref) second factor, so the result
-is a product tensor whatever `f` returns.
-"""
-_map_second_factor(f, p::ProductTensorValue{A}) where A =
-  _product_from_second_factors(A, map(f, _second_factors(p)))
-
-# The second factors of `p`, one per independent component of its first factor.
-#
-# A factor with no component leaves the second factor type of the result
-# undetermined, as an empty tuple of second factors has no element type.
-@generated function _second_factors(p::ProductTensorValue{A,B,T}) where {A,B,T}
-  _, _, iLa, iLb = _prod_counts(A,B)
-  if iszero(iLa*iLb)
-    return :( @notimplemented "The second factors of a ProductTensorValue are only
-      accessible when both factors have at least one component, got $($A) and $($B)" )
-  end
-
-  Bc = make_concretetype(B{T})
-  factors = [ :( $Bc($(Expr(:tuple,
-                [:( indep_comp_getindex(p, $(la + iLa*(lb-1))) ) for lb in 1:iLb]...))) )
-              for la in 1:iLa ]
-  Expr(:tuple, factors...)
-end
-
-# The product tensor with first factor type `A` and second factors `bs`.
-@generated function _product_from_second_factors(
-  ::Type{A}, bs::NTuple{iLa,B}) where {A,iLa,B<:MultiValue}
-
-  iLb = num_indep_components(B)
-  comps = [ :( indep_comp_getindex(bs[$la], $lb) ) for lb in 1:iLb for la in 1:iLa ]
-  :( ProductTensorValue{$A,$B}($(Expr(:tuple, comps...))) )
-end
-
-# A scalar valued action gives a `ScalarValue` second factor, so a product
-# tensor maps to a product tensor whatever the action returns.
-_product_from_second_factors(::Type{A}, bs::NTuple{iLa,B}) where {A,iLa,B<:Number} =
-  ProductTensorValue{A,ScalarValue}(bs)
-
-"""
     _leibniz_cross_term(op, ∂f1, ∂f2)
 
 The mixed term `∂ᵢf₁ op ∂ⱼf₂ + ∂ⱼf₁ op ∂ᵢf₂` of the order 2 Leibniz rule, as a
@@ -78,7 +27,7 @@ derivation indices share one fully symmetric tensor.
 end
 
 # TODO move to Operations.jl and see potential for generalization
-function dot(a::ProductTensorValue{Aa,Ba}, b::ProductTensorValue{Ab,Bb}) where {Aa,Ba,Ab,Bb}
+@generated function dot(a::ProductTensorValue{Aa,Ba}, b::ProductTensorValue{Ab,Bb}) where {Aa,Ba,Ab,Bb}
 
   Sa, Sb = size(Ba), size(Ab)
   if length(Sa) != 1 || length(Sb) != 1

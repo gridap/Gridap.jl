@@ -6,6 +6,8 @@ using Gridap.TensorValues: _prod_counts, _prod_eltype, _rm_size_variance, _Size_
 using Gridap.TensorValues: get_indep_components, num_stored_components
 using Gridap.TensorValues: _indep_comp_cartesian_indices, is_full_rank
 using Gridap.TensorValues: _stored_comp_cartesian_indices
+using Gridap.TensorValues: stored_comp_indices, _stored_comp_weights, _dense_flat_inner
+using Gridap.TensorValues: full_rank
 using Gridap.Arrays: get_array
 using Test
 using StaticArrays
@@ -240,6 +242,13 @@ Pv = ProductTensorValue{CoVectorValue{cov2},SymTensorValue{con2}}
 @test_throws ArgumentError change_variance(Pv, Val((con2,cov2)))
 @test_throws ArgumentError change_variance(Pv, Val((con2,cov2,con2)))
 
+# A product encodes no index symmetry of its own, so a congruence of all its
+# indices only gives their new dimension
+pc = ProductTensorValue{CoVectorValue{cov2},CoVectorValue{cov2}}(1.0,2.0,3.0,4.0)
+@test congruent_prod(pc, TensorValue{con2,con3}(1:6...)) isa TensorValue{con3,con3}
+@test get_array(congruent_prod(pc, TensorValue{con2,con2}(1,2,3,4))) ≈
+      get_array(congruent_prod(full_rank(pc), TensorValue{con2,con2}(1,2,3,4)))
+
 # The variance of both factors is carried by the product size
 
 pv = product_tensor(CoVectorValue(1.0,2.0), ContraVectorValue(1.0,2.0,3.0))
@@ -356,6 +365,89 @@ end
 @test length(_stored_comp_cartesian_indices(SymTracelessTensorValue{3})) == 6
 @test_throws ErrorException _stored_comp_cartesian_indices(
   ProductTensorValue{VectorValue{2},SymTracelessTensorValue{2},Int})
+
+# The slot map holds `±k` at every full tensor index that reads the stored
+# component `k`, and `0` where the full tensor vanishes identically, so every
+# component of a tensor is read from its full tensor through it. This is what the
+# weighted contraction below rests on: a type whose full tensor held a
+# combination of several stored components would break it silently.
+
+function _reads_through_slot_map(V)
+  VV = make_concretetype(_minimal_tensortype_with_shape(V){Float64})
+  slots = get_array(stored_comp_indices(VV))
+  all(1:20) do _
+    u = VV(ntuple(i -> randn(), num_indep_components(VV)))
+    full, stored = get_array(u), Tuple(u)
+    all(CartesianIndices(slots)) do I
+      k = slots[I]
+      iszero(k) ? iszero(full[I]) : full[I] == sign(k)*stored[abs(k)]
+    end
+  end
+end
+
+@test all(_reads_through_slot_map, tags)
+@test all(_reads_through_slot_map, (SymFourthOrderTensorValue{2}, SymFourthOrderTensorValue{3},
+                                    SkewSymTensorValue{4}, SymNTensorValue{Tuple{3,3,3}}))
+
+# A type materialising a component that no single index reads has no slot map
+
+@test_throws ErrorException stored_comp_indices(
+  ProductTensorValue{VectorValue{2},SymTracelessTensorValue{2},Int})
+
+# A symmetric factor materialises no such component, so the product keeps a map
+
+@test Tuple(stored_comp_indices(
+  ProductTensorValue{VectorValue{2},SymTensorValue{2},Int})) == ntuple(identity,6)
+
+# The weights count the indices reading each stored component, that is the
+# Euclidean multiplicities of the stored layout. They do not depend on the
+# variance, and a traceless tensor shares the symmetric layout's
+
+@test _stored_comp_weights(SymTensorValue{3})             == [1,2,2,1,2,1]
+@test _stored_comp_weights(SymTracelessTensorValue{3})    == [1,2,2,1,2,1]
+@test _stored_comp_weights(SymTensorValue{con3})          == [1,2,2,1,2,1]
+@test _stored_comp_weights(SkewSymTensorValue{3})         == [2,2,2]
+@test _stored_comp_weights(SymNTensorValue{Tuple{3,3,3}}) == [1,3,3,3,6,3,1,3,3,1]
+@test_throws ErrorException _stored_comp_weights(
+  ProductTensorValue{VectorValue{2},SymTracelessTensorValue{2},Int})
+
+# An alternating K-tensor stores one component per sorted combination of indices,
+# read at each of its `K!` permutations, and none at all when `K > D`
+
+@test _stored_comp_weights(ExteriorFormValue{1,cov3})   == fill(1, 3)
+@test _stored_comp_weights(ExteriorFormValue{2,cov3})   == fill(2, 3)
+@test _stored_comp_weights(ExteriorFormValue{3,Cov(4)}) == fill(6, 4)
+@test isempty(_stored_comp_weights(ExteriorFormValue{4,cov3}))
+
+# Two tensors sharing a slot map pair their components up with cancelling signs,
+# so their Euclidean contraction is the sum over the stored components weighted
+# by those multiplicities, and agrees with the dense contraction over the full
+# tensors. Sharing the map, and not only the multiplicities, is what makes it
+# hold for a symmetric and a traceless tensor against each other
+
+s3, t3 = SymTensorValue{3}(1.,2,3,4,5,6), SymTracelessTensorValue{3}(1.,2,3,4,5)
+@test flat_inner(s3, t3) == 63.0
+@test flat_inner(s3, t3) == _dense_flat_inner(s3, t3)
+@test flat_inner(t3, s3) == _dense_flat_inner(t3, s3)
+@test flat_inner(t3, t3) == _dense_flat_inner(t3, t3)
+@test flat_inner(s3, s3) == _dense_flat_inner(s3, s3)
+
+@test flat_inner(SkewSymTensorValue{3}(1.,2,3), SkewSymTensorValue{3}(1.,2,3)) == 28.0
+for u in (SymNTensorValue{Tuple{3,3,3}}(ntuple(Float64, 10)),
+          SymFourthOrderTensorValue{3}(ntuple(Float64, 36)),
+          ExteriorFormValue{2,cov3}(1.,2,3),
+          ExteriorVectorValue{3,Con(4)}(1.,2,3,4))
+  @test flat_inner(u, u) == _dense_flat_inner(u, u)
+end
+
+# A product contracts through the same weights, whether or not its factors carry
+# variance: the multiplicities are Euclidean
+
+for p in (ProductTensorValue{VectorValue{2},SymTensorValue{2}}(ntuple(Float64, 6)),
+          ProductTensorValue{ContraVectorValue{con2},SymTensorValue{con2}}(ntuple(Float64, 6)),
+          ProductTensorValue{SymTensorValue{con3},SymTensorValue{con3}}(ntuple(Float64, 36)))
+  @test flat_inner(p, p) == _dense_flat_inner(p, p)
+end
 
 # The predicate is constant folded, so the conversions carry no run time check
 
@@ -621,5 +713,34 @@ PP = typeof(pp)
 @test_throws ErrorException ProductTensorValue{PP,VectorValue{2}}(ntuple(identity,8))
 @test_throws ErrorException ProductTensorValue{PP,VectorValue{2},Int}(ntuple(identity,8))
 @test_throws ErrorException ProductTensorValue{PP,VectorValue{2}}(())
+
+# A product contraction consumes a whole factor of each operand: the second
+# factor of the first operand against the first factor of the second one
+
+pc_a = ProductTensorValue{SymTensorValue{2},ContraVectorValue{con2}}(ntuple(Float64, 6))
+pc_b = ProductTensorValue{CoVectorValue{cov2},VectorValue{3}}(ntuple(Float64, 6))
+pc = dot(pc_a, pc_b)
+@test pc isa ProductTensorValue{SymTensorValue{2},VectorValue{3}}
+@test get_array(pc) ≈ [ sum(get_array(pc_a)[i,j,l]*get_array(pc_b)[l,k] for l in 1:2)
+                        for i in 1:2, j in 1:2, k in 1:3 ]
+
+# A factor of order 2 leaves no single index for the contraction to consume
+
+@test_throws ErrorException dot(
+  ProductTensorValue{SymTensorValue{2},SymTensorValue{2}}(ntuple(Float64, 9)), pc_b)
+
+# Point as ContraVectorValue overloads
+
+pp_a   = ProductTensorValue{SymNTensorValue{Tuple{cov2,cov2}},VectorValue{2}}(ntuple(Float64, 6))
+pp_flat = ProductTensorValue{VectorValue{2},VectorValue{3}}(ntuple(Float64, 6))
+pp_ref  = [ sum(get_array(pp_a)[i,j,l]*get_array(pp_flat)[l,k] for l in 1:2)
+            for i in 1:2, j in 1:2, k in 1:3 ]
+
+@test dot(pp_a, pp_flat) isa ProductTensorValue{SymNTensorValue{Tuple{cov2,cov2}},VectorValue{3}}
+@test get_array(dot(pp_a, pp_flat)) == pp_ref
+@test get_array(dot(pp_a, pc_b)) == pp_ref
+# Int - Con is wrong
+@test_throws DimensionMismatch dot(
+  pp_a, ProductTensorValue{ContraVectorValue{con2},VectorValue{3}}(ntuple(Float64, 6)))
 
 end # module

@@ -174,6 +174,7 @@ normalize
 
 contracted_product
 tensor_contraction
+congruent_prod
 Base.permutedims
 ```
 
@@ -187,7 +188,6 @@ inv
 eigen
 symmetric_part
 skew_symmetric_part
-congruent_prod
 ```
 
 #### For first order tensors

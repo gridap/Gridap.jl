@@ -103,21 +103,20 @@ order they are stored, so that for any `u::V`
     get_array(u)[_stored_comp_cartesian_indices(V)[k]...] == Tuple(u)[k]
 
 A type that stores only independent components reads them at
-[`_indep_comp_cartesian_indices`](@ref); one that materialises dependent
-components needs its own method, giving the indices of the type whose
-independent components are `V`'s stored ones.
+[`_indep_comp_cartesian_indices`](@ref). The general case inverts
+[`stored_comp_indices`](@ref), which holds `+k` exactly at the indices reading
+the stored component `k`.
 """
 function _stored_comp_cartesian_indices(::Type{V}) where V<:MultiValue
-  num_indep_components(V) == num_stored_components(V) || @notimplemented "$V
-    materialises dependent components, it needs a
-    `_stored_comp_cartesian_indices` method."
-  _indep_comp_cartesian_indices(V)
+  V_sci = get_array(stored_comp_indices(V))
+  map(1:num_stored_components(V)) do k
+    for I in CartesianIndices(V_sci)
+      V_sci[I] == k && return Tuple(I)
+    end
+    @unreachable "The $k th stored component of $V is not a component of the
+    full tensor."
+  end
 end
-
-# A traceless tensor derives its last diagonal component, and stores the
-# others in the layout of a symmetric tensor.
-_stored_comp_cartesian_indices(::Type{<:SymTracelessTensorValue{D}}) where D =
-  _indep_comp_cartesian_indices(SymTensorValue{D})
 
 # The component type given by a factor type, `nothing` when it leaves it free.
 _factor_eltype(::Type{<:MultiValue{S,T}}) where {S,T} = T
@@ -410,20 +409,14 @@ end
 # Indexing helpers (ProductTensorValue)
 ###############################################################
 
-# similar to CartesianIndices, but indicating the linear index in the stored
-# component, with the sign flip to apply (for e.g. skew tensors).
-function stored_comp_indices(V::Type{<:MultiValue})
-  Li = num_indep_components(V)
-  Li == num_stored_components(V) || @notimplemented "$V materialises dependent
-    components, it needs a `stored_comp_indices` method to be the factor of a
-    ProductTensorValue."
-  V(Tuple(1:Li))
+# The multiplicity of each stored component of `V` in its full tensor, that is
+# the number of full tensor indices that read it.
+function _stored_comp_weights(V::Type{<:MultiValue})
+  V_sci = stored_comp_indices(V)
+  AV_sci = get_array(V_sci)
+  map(k -> count(I -> abs(AV_sci[I]) == k, CartesianIndices(AV_sci)),
+      1:num_stored_components(V))
 end
-
-# A traceless tensor stores its dependent component last, in the layout of a
-# symmetric tensor, which is therefore its slot map.
-stored_comp_indices(::Type{<:SymTracelessTensorValue{D}}) where D =
-  stored_comp_indices(SymTensorValue{D})
 
 @propagate_inbounds function _get_data(p::ProductTensorValue{A,B}, i::Integer) where {A,B}
   La, _, iLa, _ = _prod_counts(A,B)
@@ -453,3 +446,101 @@ function indep_components_names(::Type{<:ProductTensorValue{A,B}}) where {A,B}
 
   [ na*nb for nb in names_b for na in names_a ]
 end
+
+###############################################################
+# Factor slicing (ProductTensorValue)
+###############################################################
+
+# `p` is the sum of `aₗ ⊗ bₗ` over the independent components of one factor, so
+# slicing it along either factor gives the other one's, and an operation acting
+# on one index block alone acts on those slices.
+#
+# A factor with no component leaves the type of the slices undetermined, as an
+# empty tuple of them has no element type.
+_no_factor_slice_msg(A, B) = :( @notimplemented "The factors of a
+  ProductTensorValue are only accessible when both of them have at least one
+  component, got $($A) and $($B)" )
+
+# The second factors of `p`, one per independent component of its first factor.
+@generated function _second_factors(p::ProductTensorValue{A,B,T}) where {A,B,T}
+  _, _, iLa, iLb = _prod_counts(A,B)
+  iszero(iLa*iLb) && return _no_factor_slice_msg(A, B)
+
+  Bc = make_concretetype(B{T})
+  factors = [ :( $Bc($(Expr(:tuple,
+                [:( indep_comp_getindex(p, $(la + iLa*(lb-1))) ) for lb in 1:iLb]...))) )
+              for la in 1:iLa ]
+  Expr(:tuple, factors...)
+end
+
+# The first factors of `p`, one per independent component of its second factor.
+@generated function _first_factors(p::ProductTensorValue{A,B,T}) where {A,B,T}
+  _, _, iLa, iLb = _prod_counts(A,B)
+  iszero(iLa*iLb) && return _no_factor_slice_msg(A, B)
+
+  Ac = make_concretetype(A{T})
+  factors = [ :( $Ac($(Expr(:tuple,
+                [:( indep_comp_getindex(p, $(la + iLa*(lb-1))) ) for la in 1:iLa]...))) )
+              for lb in 1:iLb ]
+  Expr(:tuple, factors...)
+end
+
+# The product tensor with first factor type `A` and second factors `bs`.
+@generated function _product_from_second_factors(
+  ::Type{A}, bs::NTuple{iLa,B}) where {A,iLa,B<:MultiValue}
+
+  iLb = num_indep_components(B)
+  comps = [ :( indep_comp_getindex(bs[$la], $lb) ) for lb in 1:iLb for la in 1:iLa ]
+  :( ProductTensorValue{$A,$B}($(Expr(:tuple, comps...))) )
+end
+
+# A scalar valued action gives a `ScalarValue` second factor, so a product
+# tensor maps to a product tensor whatever the action returns.
+_product_from_second_factors(::Type{A}, bs::NTuple{iLa,B}) where {A,iLa,B<:Number} =
+  ProductTensorValue{A,ScalarValue}(bs)
+
+# The product tensor with second factor type `B` and first factors `as`.
+@generated function _product_from_first_factors(
+  ::Type{B}, as::NTuple{iLb,A}) where {B,iLb,A<:MultiValue}
+
+  iLa = num_indep_components(A)
+  comps = [ :( indep_comp_getindex(as[$lb], $la) ) for lb in 1:iLb for la in 1:iLa ]
+  :( ProductTensorValue{$A,$B}($(Expr(:tuple, comps...))) )
+end
+
+"""
+    _map_second_factor(f, p::ProductTensorValue)
+
+The product tensor with the first factor of `p` and the images by `f` of its
+second factors.
+
+`p` is the sum of `aₗ ⊗ bₗ` over the independent components of its first factor,
+and the result is the sum of the `aₗ ⊗ f(bₗ)`, that is the image of `p` by `f`
+acting on its second index block alone.
+
+`f` must be linear: a first factor with interdependent components only has the
+second factors of its dependent components reproduced by linearity.
+
+A scalar valued `f` gives a [`ScalarValue`](@ref) second factor, so the result
+is a product tensor whatever `f` returns.
+"""
+# `@inline`: the `map` closure is emitted out of line otherwise, once per factor
+# slice, which costs several times the whole mapping.
+@inline _map_second_factor(f, p::ProductTensorValue{A}) where A =
+  _product_from_second_factors(A, map(f, _second_factors(p)))
+
+"""
+    _map_first_factor(f, p::ProductTensorValue)
+
+The product tensor with the images by `f` of the first factors of `p` and its
+second factor.
+
+This is the mirror of [`_map_second_factor`](@ref): `p` is the sum of
+`aₗ ⊗ bₗ` over the independent components of its second factor, and the result
+is the sum of the `f(aₗ) ⊗ bₗ`, the image of `p` by `f` acting on its first
+index block alone. `f` must be linear for the same reason.
+"""
+# `@inline` for the same reason as [`_map_second_factor`](@ref).
+@inline _map_first_factor(f, p::ProductTensorValue{A,B}) where {A,B} =
+  _product_from_first_factors(B, map(f, _first_factors(p)))
+

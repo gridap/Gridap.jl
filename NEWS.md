@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added right division `(/)(::MultiValue, ::MultiValue)`, that is `a⋅inv(b)`.
   - Added `adjugate` of second order tensors, the transpose of the co-factor tensor such that `adjugate(a)⋅a = det(a)*one(a)`.
   - Added `ProductTensorValue{A,B,T,..}`, a `MultiValue` containing the tensor product of two tensors of types `A` and `B` without duplicating storage of dependent components of both factors (e.g. that can represent the hessian of a 2D-`SkewSymTensorValue{2}` valued field storing only 3*1 independent components instead of 4*4).
+  - Added `congruent_prod(a, b, Val(l))` congruences only the indices `k ∈ l` of `a`, the others being left untouched and unconstrained in dimension and variance. An index symmetry of `a` survives a congruence of every index only, so a list that leaves one out widens the result to the corresponding full rank type. `congruent_prod` now also accepts skew-symmetric `a`, computed with the `K`-th compound matrix of `b`. It is the single backend of `flat`, `sharp`, `pullback` and `pushforward`.
 
 ### Changed
 
