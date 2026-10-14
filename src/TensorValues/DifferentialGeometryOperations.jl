@@ -1124,116 +1124,99 @@ apply_tensor(ω::SkewSymKTensorValue{V,K,D}, vs...) where {V,K,D} =
 
 
 # ============================================================
-# Pullback  φ*ω : Ωᴷ(Dn) → Ωᴷ(Dm)
-#
-# Given a map φ : ℝᴰᵐ → ℝᴰⁿ from a chart to an ambient space, its transposed
-# Jacobian Jt = ∇φ, Jt[j,i] = ∂φⁱ/∂ξʲ, and a K-form ω on ℝᴰⁿ:
-#
-#   (φ*ω)_J(ξ) = Σ_I  ω_I(φ(ξ)) · det(Jt[J, I])
-#
-# where I is a sorted K-multi-index into {1:Dn} (ambient) and
-# J is a sorted K-multi-index into {1:Dm} (chart).
+# Pullback and pushforward
 # ============================================================
 
 """
-    pullback(ω::ExteriorFormValue{K,Dn}, Jt::TensorValue{Dm,Dn})
+    pullback(ω::ExteriorFormValue{K,Dn}, Jt::TensorValue{Dm,Dn}[, iJt])
+    pullback(a::MultiValue{S},           Jt::TensorValue{Dm,Dn}[, iJt])
 
-Pointwise pullback `φ^*ω` of a K-form by a map `φ : ℝᴰᵐ → ℝᴰⁿ` with
-transposed Jacobian `Jt = ∇φ`, that is `Jt[j,i] = ∂φⁱ/∂ξʲ`.
+Pointwise pullback `φ^*a` of a tensor of type `(r,s)` by a map `φ : ℝᴰᵐ → ℝᴰⁿ`
+with transposed Jacobian `Jt = ∇φ`, that is `Jt[j,i] = ∂φⁱ/∂ξʲ`, and `iJt =
+pinvJt(Jt)`.  Formally:
+
+    (φ^*a)_{J} = Σ_{I} a_{I} · M₁(J₁,I₁) ⋯ M_K(J_K,I_K)
+
+    M_k(j,i) = Jt[j,i]    if the `k`-th index of `a` is covariant
+               iJt[i,j]   if it is contravariant
 
 The domain index `1≤j≤Dm` of `Jt` is covariant and its image index `1≤i≤Dn`
-contravariant, so `Jt` has size `(Cov(Dm), Con(Dn))`, the result is an
-`ExteriorFormValue{K,Cov(Dm)}`.
+contravariant. Ther must be `Dm ≤ Dn`. Every index of `a` must have a variance
+(no `Int` in `size(a)`).
+
+`iJt` is optional but can be passed to spare the computation of `pinvJt(Jt)`.
+It only computed when needed, that is if the input has contravariant indices.
+
+The pullback preserves the (skew-)symmetries of the tensor types, when those
+(skew-)symmetries relate to indices of same variance.
 """
-@generated function pullback(ω::ExteriorFormValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
-  Dm isa Cov || return :(throw(ArgumentError(
-    "the domain (first) index of Jt should be covariant, got size $(size(Jt))"
-  )))
-  can_contract(Dn, Dw) || return :(throw(DimensionMismatch(
+function pullback(ω::ExteriorFormValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
+  _check(_Jt_variance_error, Dm, Dn)
+  can_contract(Dn, Dw) || throw(DimensionMismatch(
     "cannot pullback a form of dimension $Dw by a transposed jacobian of image (second) dimension $Dn, indices cannot contract"
-  )))
+  ))
   # A covariant index is pulled back by `Jt` read [out,in], and a congruence
   # contracts `b`'s first index, so `b` is `transpose(Jt)`: the minor
   # det(transpose(Jt)[I,J]) on rows I in the image and columns J in the domain
   # is det([∂φ^{I[b]}/∂ξ^{J[a]}]).
-  :( congruent_prod(ω, transpose(Jt)) )
+  congruent_prod(ω, transpose(Jt))
 end
 
 """
-    pushforward(v::ExteriorVectorValue{K,Dm}, Jt::TensorValue{Dm,Dn})
-    pushforward(v::ExteriorVectorValue{K,Dm}, Jt::TensorValue{Dm,Dn}, iJt::TensorValue)
+    pushforward(v::ExteriorVectorValue{K,Dm}, Jt::TensorValue{Dm,Dn}[, iJt])
+    pushforward(a::MultiValue{S},             Jt::TensorValue{Dm,Dn}[, iJt])
 
-Pointwise pushforward `φ_*v` of a K-vector by a map `φ : ℝᴰᵐ → ℝᴰⁿ` with
-transposed Jacobian `Jt = ∇φ`, that is `Jt[j,i] = ∂φⁱ/∂ξʲ`.
+Pointwise pushforward `φ_*a` of a tensor of type `(r,s)` by a map
+`φ : ℝᴰᵐ → ℝᴰⁿ` with transposed Jacobian `Jt = ∇φ`, that is
+`Jt[j,i] = ∂φⁱ/∂ξʲ`, and `iJt = pinvJt(Jt)`. Every index of `a` must be
+covariant or contravariant of dimension `Dm`. Formally:
+
+    (φ_*a)_{I} = Σ_{J} a_{J} · M₁(I₁,J₁) ⋯ M_K(I_K,J_K)
+
+    M_k(i,j) = iJt[i,j]   if the `k`-th index of `a` is covariant
+               Jt[j,i]    if it is contravariant
 
 The domain index `1≤j≤Dm` of `Jt` is covariant and its image index `1≤i≤Dn`
-contravariant, so `Jt` has size `(Cov(Dm), Con(Dn))`, the result is an
-`ExteriorVectorValue{K,Con(Dn)}`.
+contravariant. Ther must be `Dm ≤ Dn`. Every index of `a` must have a variance
+(no `Int` in `size(a)`).
 
-Unlike [`pullback`](@ref), which contracts `Jt`'s image (second) index against
-the form, `pushforward` contracts its domain (first) index against the
-K-vector, so it is defined directly from `Jt` with no (pseudo-)inversion. The
-three argument form ignores `iJt`, it is accepted so that a caller holding a
-precomputed `iJt = pinvJt(Jt)` transports every kind of tensor with one call.
+`iJt` is optional but can be passed to spare the computation of `pinvJt(Jt)`.
+It only computed when needed, that is if the input has covariant indices.
+
+The pullback preserves the (skew-)symmetries of the tensor types, when those
+(skew-)symmetries relate to indices of same variance.
 """
-@generated function pushforward(v::ExteriorVectorValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
-  Dm isa Cov || return :(throw(ArgumentError(
-    "the domain (first) index of Jt should be covariant, got size $(size(Jt))"
-  )))
-  can_contract(Dm, Dw) || return :(throw(DimensionMismatch(
+function pushforward(v::ExteriorVectorValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
+  _check(_Jt_variance_error, Dm, Dn)
+  can_contract(Dm, Dw) || throw(DimensionMismatch(
     "cannot pushforward a vector of dimension $Dw by a transposed jacobian of domain (first) dimension $Dm, indices cannot contract"
-  )))
-  # A contravariant index is pushed forward by `Jt` read [in,out], which is
-  # already the orientation a congruence contracts, so `Jt` is passed as is: the
-  # minor det(Jt[J,I]) on rows J in the domain and columns I in the image is
-  # det([∂φ^{I[b]}/∂ξ^{J[a]}]).
-  :( congruent_prod(v, Jt) )
+  ))
+  congruent_prod(v, Jt)
 end
 
-# ============================================================
-# Transport of a tensor of type (r,s,0) by a map
-#
-# Given φ : ℝᴰᵐ → ℝᴰⁿ with transposed Jacobian Jt = ∇φ and iJt = pinvJt(Jt),
-# a covariant index is pulled back by Jt and pushed forward by iJt, and a
-# contravariant index is pushed forward by Jt and pulled back by iJt:
-#
-#   (φ^*a)_J = Σ_I a_I · M₁(J₁,I₁) ⋯ M_K(J_K,I_K)
-#
-# In both directions the matrix of a covariant index is read [out,in] and that
-# of a contravariant one [in,out]; only which of Jt and iJt plays each role
-# changes, which is what the `cov_mat`/`con_mat` arguments below select.
-# ============================================================
+# Each `_*_error` below returns `nothing` for a valid configuration, else the
+# exception it deserves.
+@inline function _check(err, args...)
+  e = err(args...)
+  isnothing(e) || throw(e)
+  nothing
+end
 
-# `iJt = pinvJt(Jt)` is a true inverse only for a square `Jt`; for
-# `Int(Dm) < Int(Dn)` it is a left inverse, exact on an object carried by the
-# image tangent space, and `Int(Dm) > Int(Dn)` has no such inverse. Returns
-# `nothing` when `Jt` admits the transport, else the `Expr` the calling
-# `@generated` function returns to raise at runtime.
+_throw_expr(err, args...) = (e = err(args...); isnothing(e) ? nothing : :( throw($e) ))
+
 function _inverse_pullpush_error(Dm, Dn, op)
   Int(Dm) <= Int(Dn) && return nothing
-  msg = "$op by the inverse map requires Int(Dm) ≤ Int(Dn) (got Dm=$Dm,
-    Dn=$Dn), see `pinvJt`"
-  :(throw(ArgumentError($msg)))
+  ArgumentError("$op by the inverse map requires Int(Dm) ≤ Int(Dn) (got Dm=$Dm,
+    Dn=$Dn), see `pinvJt`")
 end
 
-# `pinvJt` swaps the position and the variance of both indices, so this is the
-# only shape an `iJt` of a `Jt` of size `(Dm, Dn)` can have. The comparison is
-# by identity: `==` between two `Dim`s compares their value and ignores their
-# variance, so it would accept a transposed `iJt`.
 function _pinvJt_shape_error(Dm, Dn, Di1, Di2)
   (Di1 === inverse_variance(Dn) && Di2 === inverse_variance(Dm)) && return nothing
-  msg = "iJt must equal pinvJt(Jt): expected size
-    ($(inverse_variance(Dn)), $(inverse_variance(Dm))), got ($Di1, $Di2)"
-  :(throw(ArgumentError($msg)))
+  ArgumentError("iJt must equal pinvJt(Jt): expected size
+    ($(inverse_variance(Dn)), $(inverse_variance(Dm))), got ($Di1, $Di2)")
 end
 
-# Validates that every index of `a` (of size `sz`) can be transported, and
-# classifies each as covariant or contravariant. `Dc` is the contravariant
-# dimension that a covariant index of `a` must contract with: the image
-# dimension of `Jt` for a pullback, the flipped domain dimension for a
-# pushforward. Returns `(is_cov, nothing)` on success, or `(nothing, expr)`
-# with `expr` an `Expr` the calling `@generated` function should return
-# immediately to propagate the error.
+# Validates that all indices of `a`, in sz, can be pulled/pushed
 function _pullpush_validate_indices(sz, Dc, op)
   is_cov = Bool[]
   for k in eachindex(sz)
@@ -1259,49 +1242,25 @@ _pullpush_eltype(Ta, is_cov, Tcov, Tcon) =
   any(is_cov) ? Base.promote_op(*, Ta, Tcov, Tcon)  :
                 Base.promote_op(*, Ta, Tcon)
 
-# The domain index of a transposed jacobian is the one a chart coordinate is
-# differentiated along, so it is covariant. Returns `nothing` when a `Jt` of size
-# `(Dm, Dn)` has it, else the `Expr` the calling `@generated` function returns.
 function _Jt_variance_error(Dm, Dn)
   Dm isa Cov && return nothing
-  :(throw(ArgumentError(
-    $("the domain (first) index of Jt should be covariant, got size $((Dm,Dn))"))))
+  ArgumentError("the domain (first) index of Jt should be covariant, got size $((Dm,Dn))")
 end
 
-# The validation every transport of `a` of size `sz` by a `Jt` of size
-# `(Dm, Dn)` shares: that `Jt` has a covariant domain index, that an `iJt` given
-# by its size `(Di1, Di2)` has the shape of `pinvJt(Jt)`, and that every index of
-# `a` can be transported, `Dc` being the contravariant dimension a covariant
-# index of `a` must contract with.
-#
-# Returns `(is_cov, nothing)` classifying the indices of `a`, or `(nothing, expr)`
-# with `expr` an `Expr` the calling `@generated` function returns as is -- an
-# error, or the order 0 tensor that is its own transport.
+# validates the size and variance of the input tensors for pullback and pushforward
 function _pullpush_setup(sz, Dm, Dn, Dc, op, Di1=nothing, Di2=nothing)
-  err = _Jt_variance_error(Dm, Dn)
+  err = _throw_expr(_Jt_variance_error, Dm, Dn)
   isnothing(err) || return nothing, err
   if !isnothing(Di1)
-    err = _pinvJt_shape_error(Dm, Dn, Di1, Di2)
+    err = _throw_expr(_pinvJt_shape_error, Dm, Dn, Di1, Di2)
     isnothing(err) || return nothing, err
   end
   isempty(sz) && return nothing, :( a )
   _pullpush_validate_indices(sz, Dc, op)
 end
 
-# The transport of `a` as one congruence per matrix: its covariant indices by
-# `cov_mat`, its contravariant ones by `con_mat`. Assumes `a` and the matrices
-# named are bound in the generated code's scope.
-#
-# The `K` matrices of a transport act one on each index, so the `K`-way sum
-# factorizes into one single-index contraction per index, which is one
-# `congruent_prod` over each variance's index list. A congruence contracts `b`'s
-# first index, so the matrix read [out,in] -- the covariant one -- is transposed
-# and the one read [in,out] is passed as is.
-#
-# An index symmetry requires every index to carry the same variance, so whenever
-# one survives the transport, one of the two lists is empty and a single
-# congruence runs, which is the symmetry preserving `congruent_prod`. Splitting
-# therefore drops no symmetry that one matrix would have kept.
+# This does not preserve full symmetries, but is only called for mixed
+# varianced tensors, that cannot be fully symmetric.
 function _pullpush_congruence_body(is_cov, cov_mat, con_mat)
   ks(p) = Tuple(k for k in eachindex(is_cov) if is_cov[k] == p)
   body = :a
@@ -1310,59 +1269,13 @@ function _pullpush_congruence_body(is_cov, cov_mat, con_mat)
   body
 end
 
-"""
-    pullback(a::MultiValue{S}, Jt::TensorValue{Dm,Dn})
-    pullback(a::MultiValue{S}, Jt::TensorValue{Dm,Dn}, iJt::TensorValue)
-
-Pointwise pullback `φ^*a` of a tensor `a` of type `(r,s)` (`r` covariant and
-`s` contravariant indices, in the order given by `S`) by a map `φ : ℝᴰᵐ → ℝᴰⁿ`
-with transposed Jacobian `Jt = ∇φ`, that is `Jt[j,i] = ∂φⁱ/∂ξʲ`:
-
-    (φ^*a)_{J} = Σ_{I} a_{I} · M₁(J₁,I₁) ⋯ M_K(J_K,I_K)
-
-    M_k(j,i) = Jt[j,i]    if the `k`-th index of `a` is covariant
-               iJt[i,j]   if the `k`-th index of `a` is contravariant
-
-with `iJt = pinvJt(Jt)`. The domain index `1≤j≤Dm` of `Jt` is covariant and
-its image index `1≤i≤Dn` contravariant, so `Jt` has size
-`(Cov(Dm), Con(Dn))`. The result is a tensor of the same `(r,s)` type, with every
-index now of dimension `Dm`.
-
-Unlike [`pullback`](@ref)`(::ExteriorFormValue, ::TensorValue)`, `a` need not
-be alternating. One matrix transports every index of an `a` whose indices share
-a variance, which preserves the index symmetries its type encodes, so such an
-`a` keeps its type -- a `SymTracelessTensorValue` widening to
-`SymTensorValue`, only a Euclidean transport keeping a trace zero, and a
-[`ProductTensorValue`](@ref) being transported factor by factor. An `a` of mixed
-variance has its covariant and contravariant indices transported by two
-different matrices, which no index symmetry survives, so the result is a dense
-`CoVectorValue`/`ContraVectorValue`, `TensorValue` or `NTensorValue` (for
-`K = 1`, `2` or `≥ 3` respectively).
-
-A contravariant index is only ever pulled back exactly when `Int(Dm)` equals
-`Int(Dn)`: for `Int(Dm) < Int(Dn)` (e.g. `φ` the embedding of a lower
-dimensional domain), `iJt` is a pseudo-inverse and a contravariant index gets
-projected onto the image tangent space instead, see [`pinvJt`](@ref).
-`Int(Dm) > Int(Dn)` is not supported for a contravariant index.
-
-`a` is pulled back one index at a time, as a [`congruent_prod`](@ref) over the
-covariant indices and another over the contravariant ones, so the generated
-expression stays the same size whatever the order of `a`.
-
-If `a` has a contravariant index, `pullback(a,Jt)` computes `iJt = pinvJt(Jt)`
-itself on every call. When pulling back many tensors by the same `Jt` (e.g.
-across the quadrature points of one cell), pass a precomputed
-`iJt = pinvJt(Jt)` explicitly with the 3-argument form to avoid recomputing it
-each time; `iJt` is trusted to equal `pinvJt(Jt)` and is not checked against
-it, only against its expected size.
-"""
 @generated function pullback(a::MultiValue{S,Ta}, Jt::TensorValue{Dm,Dn,Tj}) where {S,Ta,Dm,Dn,Tj}
   sz = size(a)
   is_cov, err = _pullpush_setup(sz, Dm, Dn, Dn, "pullback")
   err !== nothing && return err
 
   if !all(is_cov)
-    err = _inverse_pullpush_error(Dm, Dn, "pullback")
+    err = _throw_expr(_inverse_pullpush_error, Dm, Dn, "pullback")
     err === nothing || return err
     return :( pullback(a, Jt, pinvJt(Jt)) )
   end
@@ -1386,7 +1299,7 @@ end
   err !== nothing && return err
 
   if !all(is_cov)
-    err = _inverse_pullpush_error(Dm, Dn, "pullback")
+    err = _throw_expr(_inverse_pullpush_error, Dm, Dn, "pullback")
     err === nothing || return err
   end
 
@@ -1401,34 +1314,13 @@ end
   _pullpush_congruence_body(is_cov, :Jt, :iJt)
 end
 
-"""
-    pushforward(a::MultiValue{S}, Jt::TensorValue{Dm,Dn})
-    pushforward(a::MultiValue{S}, Jt::TensorValue{Dm,Dn}, iJt::TensorValue)
-
-Pointwise pushforward `φ_*a` of a tensor `a` of type `(r,s,0)` by a map
-`φ : ℝᴰᵐ → ℝᴰⁿ` with transposed Jacobian `Jt = ∇φ`:
-
-    (φ_*a)_{I} = Σ_{J} a_{J} · M₁(I₁,J₁) ⋯ M_K(I_K,J_K)
-
-    M_k(i,j) = iJt[i,j]   if the `k`-th index of `a` is covariant
-               Jt[j,i]    if the `k`-th index of `a` is contravariant
-
-with `iJt = pinvJt(Jt)`. Every index of `a` must be covariant or contravariant
-of dimension `Dm`; the result is a tensor of the same `(r,s,0)` type, with
-every index now of dimension `Dn`.
-
-This is the exact mirror of [`pullback`](@ref)`(::MultiValue, ::TensorValue)`,
-including which types of `a` it preserves: it is the contravariant index that
-needs no (pseudo-)inversion here, while a covariant index is transported by
-`iJt` and so requires `Int(Dm) ≤ Int(Dn)`.
-"""
 @generated function pushforward(a::MultiValue{S,Ta}, Jt::TensorValue{Dm,Dn,Tj}) where {S,Ta,Dm,Dn,Tj}
   sz = size(a)
   is_cov, err = _pullpush_setup(sz, Dm, Dn, inverse_variance(Dm), "pushforward")
   err !== nothing && return err
 
   if any(is_cov)
-    err = _inverse_pullpush_error(Dm, Dn, "pushforward")
+    err = _throw_expr(_inverse_pullpush_error, Dm, Dn, "pushforward")
     err === nothing || return err
     return :( pushforward(a, Jt, pinvJt(Jt)) )
   end
@@ -1452,7 +1344,7 @@ end
   err !== nothing && return err
 
   if any(is_cov)
-    err = _inverse_pullpush_error(Dm, Dn, "pushforward")
+    err = _throw_expr(_inverse_pullpush_error, Dm, Dn, "pushforward")
     err === nothing || return err
   end
 
@@ -1467,14 +1359,8 @@ end
   _pullpush_congruence_body(is_cov, :iJt, :Jt)
 end
 
-# ============================================================
-# Transport of a product tensor
-#
-# Each factor holds its own block of indices, transported by its own matrices,
-# so a product keeps its factorization -- and with it the factors the derivative
-# rules of a partial derivative tensor read. Each factor validates its own
-# indices, so a product of factors of different variances transports too.
-# ============================================================
+# pullback and pushforward of a product tensor: comutes with outer product so
+# preserve symmetries of the factors.
 
 pullback(p::ProductTensorValue, Jt::TensorValue{Dm,Dn,Tj}) where {Dm,Dn,Tj} =
   _map_second_factor(b -> pullback(b, Jt), _map_first_factor(a -> pullback(a, Jt), p))
@@ -1492,90 +1378,61 @@ pushforward(p::ProductTensorValue, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{D
   _map_second_factor(b -> pushforward(b, Jt, iJt),
                      _map_first_factor(a -> pushforward(a, Jt, iJt), p))
 
-# ============================================================
-# Alternating transports
-#
-# A pullback of a K-form and a pushforward of a K-vector contract a minor of
-# Jt, the two other transports a minor of iJt = pinvJt(Jt). All four keep the
-# alternating type, which the dense (r,s,0) methods above would drop since
-# ExteriorFormValue and ExteriorVectorValue are MultiValues too.
-# ============================================================
+# pullback and pushforward of a alternating tensor: comutes with outer product
+# so preserves symmetries
 
-@generated function pushforward(
+function pushforward(
   v::ExteriorVectorValue, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
   ) where {Dm,Dn,Tj,Di1,Di2,Ti}
 
-  err = _pinvJt_shape_error(Dm, Dn, Di1, Di2)
-  err === nothing || return err
-  :( pushforward(v, Jt) )
+  _check(_pinvJt_shape_error, Dm, Dn, Di1, Di2)
+  pushforward(v, Jt)
 end
 
-@generated function pullback(
+function pullback(
   ω::ExteriorFormValue, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
   ) where {Dm,Dn,Tj,Di1,Di2,Ti}
 
-  err = _pinvJt_shape_error(Dm, Dn, Di1, Di2)
-  err === nothing || return err
-  :( pullback(ω, Jt) )
+  _check(_pinvJt_shape_error, Dm, Dn, Di1, Di2)
+  pullback(ω, Jt)
 end
 
-"""
-    pushforward(ω::ExteriorFormValue{K,Dm}, Jt::TensorValue{Dm,Dn}[, iJt])
-    pullback(v::ExteriorVectorValue{K,Dn}, Jt::TensorValue{Dm,Dn}[, iJt])
-
-Pushforward `φ_*ω` of a K-form and pullback `φ^*v` of a K-vector, the two
-transports that go against the direction of `φ : ℝᴰᵐ → ℝᴰⁿ`. They are
-respectively the pullback and the pushforward by the inverse map `ψ = φ⁻¹`,
-whose transposed Jacobian is `iJt = pinvJt(Jt)`, so they are computed from
-`iJt` rather than from `Jt` and require `Int(Dm) ≤ Int(Dn)`, see [`pinvJt`](@ref).
-
-Pass a precomputed `iJt` to avoid recomputing it on every call; it is trusted
-to equal `pinvJt(Jt)` and is only checked against its expected size.
-"""
-@generated function pushforward(
+# The two transports that go against the direction of φ are the pullback and
+# the pushforward by the inverse map ψ = φ⁻¹, whose transposed jacobian is iJt.
+function pushforward(
   ω::ExteriorFormValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
 
-  err = _Jt_variance_error(Dm, Dn)
-  err === nothing || return err
-  err = _inverse_pullpush_error(Dm, Dn, "pushforward")
-  err === nothing || return err
-  :( pullback(ω, pinvJt(Jt)) )
+  _check(_Jt_variance_error, Dm, Dn)
+  _check(_inverse_pullpush_error, Dm, Dn, "pushforward")
+  pullback(ω, pinvJt(Jt))
 end
 
-@generated function pushforward(
+function pushforward(
   ω::ExteriorFormValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
   ) where {K,Dw,Dm,Dn,Tw,Tj,Di1,Di2,Ti}
 
-  err = _Jt_variance_error(Dm, Dn)
-  err === nothing || return err
-  err = _pinvJt_shape_error(Dm, Dn, Di1, Di2)
-  err === nothing || return err
-  err = _inverse_pullpush_error(Dm, Dn, "pushforward")
-  err === nothing || return err
-  :( pullback(ω, iJt) )
+  _check(_Jt_variance_error, Dm, Dn)
+  _check(_pinvJt_shape_error, Dm, Dn, Di1, Di2)
+  _check(_inverse_pullpush_error, Dm, Dn, "pushforward")
+  pullback(ω, iJt)
 end
 
-@generated function pullback(
+function pullback(
   v::ExteriorVectorValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
 
-  err = _Jt_variance_error(Dm, Dn)
-  err === nothing || return err
-  err = _inverse_pullpush_error(Dm, Dn, "pullback")
-  err === nothing || return err
-  :( pushforward(v, pinvJt(Jt)) )
+  _check(_Jt_variance_error, Dm, Dn)
+  _check(_inverse_pullpush_error, Dm, Dn, "pullback")
+  pushforward(v, pinvJt(Jt))
 end
 
-@generated function pullback(
+function pullback(
   v::ExteriorVectorValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
   ) where {K,Dw,Dm,Dn,Tw,Tj,Di1,Di2,Ti}
 
-  err = _Jt_variance_error(Dm, Dn)
-  err === nothing || return err
-  err = _pinvJt_shape_error(Dm, Dn, Di1, Di2)
-  err === nothing || return err
-  err = _inverse_pullpush_error(Dm, Dn, "pullback")
-  err === nothing || return err
-  :( pushforward(v, iJt) )
+  _check(_Jt_variance_error, Dm, Dn)
+  _check(_pinvJt_shape_error, Dm, Dn, Di1, Di2)
+  _check(_inverse_pullpush_error, Dm, Dn, "pullback")
+  pushforward(v, iJt)
 end
 
 # ============================================================
