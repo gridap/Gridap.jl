@@ -220,6 +220,8 @@ include("Indexing.jl")
 
 include("MetricDatas.jl")
 
+include("CoreContractionOperations.jl")
+
 include("Operations.jl")
 
 include("DifferentialGeometryOperations.jl")
