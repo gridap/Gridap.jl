@@ -85,10 +85,18 @@ function Base.show(io::IO,::MIME"text/plain",f::CellField)
   print(io,"\n Triangulation id: $(objectid(get_triangulation(f)))")
 end
 
-function CellField(f::Function,trian::Triangulation,domain_style::DomainStyle)
+# Functions are assumed physical
+CellField(f::Function, trian::Triangulation) = CellField(f, trian, PhysicalDomain())
+
+function CellField(f::Function, trian::Triangulation, ::PhysicalDomain)
   s = size(get_cell_map(trian))
-  cell_field = Fill(GenericField(f),s)
-  GenericCellField(cell_field,trian,PhysicalDomain())
+  cell_field = Fill(GenericField(f), s)
+  GenericCellField(cell_field, trian, PhysicalDomain())
+end
+
+function CellField(f::Function, trian::Triangulation, ::ReferenceDomain)
+  phys_f = CellField(f, trian, PhysicalDomain())
+  change_domain(phys_f, PhysicalDomain(), ReferenceDomain())
 end
 
 function CellField(f::Number,trian::Triangulation,domain_style::DomainStyle)
