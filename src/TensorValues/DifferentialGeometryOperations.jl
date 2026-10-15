@@ -852,8 +852,8 @@ apply_tensor(ω::SkewSymKTensorValue{V,K,D}, vs...) where {V,K,D} =
 # ============================================================
 
 """
-    pullback(ω::ExteriorFormValue{K,Dn}, Jt::TensorValue{Dm,Dn}[, iJt])
-    pullback(a::MultiValue{S},           Jt::TensorValue{Dm,Dn}[, iJt])
+    pullback(ω::ExteriorFormValue{K,Dn}, Jt::MultiValue{Tuple{Dm,Dn}}[, iJt])
+    pullback(a::MultiValue{S},           Jt::MultiValue{Tuple{Dm,Dn}}[, iJt])
 
 Pointwise pullback `φ^*a` of a tensor of type `(r,s)` by a map `φ : ℝᴰᵐ → ℝᴰⁿ`
 with transposed Jacobian `Jt = ∇φ`, that is `Jt[j,i] = ∂φⁱ/∂ξʲ`, and `iJt =
@@ -874,7 +874,10 @@ It only computed when needed, that is if the input has contravariant indices.
 The pullback preserves the (skew-)symmetries of the tensor types, when those
 (skew-)symmetries relate to indices of same variance.
 """
-function pullback(ω::ExteriorFormValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
+function pullback(
+  ω::ExteriorFormValue{K,Dw,Tw}, Jt::MultiValue{Tuple{Dm,Dn},Tj}
+  ) where {K,Dw,Dm,Dn,Tw,Tj}
+
   _check(_Jt_variance_error, Dm, Dn)
   can_contract(Dn, Dw) || throw(DimensionMismatch(
     "cannot pullback a form of dimension $Dw by a transposed jacobian of image (second) dimension $Dn, indices cannot contract"
@@ -887,8 +890,8 @@ function pullback(ω::ExteriorFormValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) whe
 end
 
 """
-    pushforward(v::ExteriorVectorValue{K,Dm}, Jt::TensorValue{Dm,Dn}[, iJt])
-    pushforward(a::MultiValue{S},             Jt::TensorValue{Dm,Dn}[, iJt])
+    pushforward(v::ExteriorVectorValue{K,Dm}, Jt::MultiValue{Tuple{Dm,Dn}}[, iJt])
+    pushforward(a::MultiValue{S},             Jt::MultiValue{Tuple{Dm,Dn}}[, iJt])
 
 Pointwise pushforward `φ_*a` of a tensor of type `(r,s)` by a map
 `φ : ℝᴰᵐ → ℝᴰⁿ` with transposed Jacobian `Jt = ∇φ`, that is
@@ -910,7 +913,7 @@ It only computed when needed, that is if the input has covariant indices.
 The pullback preserves the (skew-)symmetries of the tensor types, when those
 (skew-)symmetries relate to indices of same variance.
 """
-function pushforward(v::ExteriorVectorValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
+function pushforward(v::ExteriorVectorValue{K,Dw,Tw}, Jt::MultiValue{Tuple{Dm,Dn},Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
   _check(_Jt_variance_error, Dm, Dn)
   can_contract(Dm, Dw) || throw(DimensionMismatch(
     "cannot pushforward a vector of dimension $Dw by a transposed jacobian of domain (first) dimension $Dm, indices cannot contract"
@@ -993,7 +996,7 @@ function _pullpush_congruence_body(is_cov, cov_mat, con_mat)
   body
 end
 
-@generated function pullback(a::MultiValue{S,Ta}, Jt::TensorValue{Dm,Dn,Tj}) where {S,Ta,Dm,Dn,Tj}
+@generated function pullback(a::MultiValue{S,Ta}, Jt::MultiValue{Tuple{Dm,Dn},Tj}) where {S,Ta,Dm,Dn,Tj}
   sz = size(a)
   is_cov, err = _pullpush_setup(sz, Dm, Dn, Dn, "pullback")
   err !== nothing && return err
@@ -1015,7 +1018,7 @@ end
 end
 
 @generated function pullback(
-  a::MultiValue{S,Ta}, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
+  a::MultiValue{S,Ta}, Jt::MultiValue{Tuple{Dm,Dn},Tj}, iJt::MultiValue{Tuple{Di1,Di2},Ti}
   ) where {S,Ta,Dm,Dn,Tj,Di1,Di2,Ti}
 
   sz = size(a)
@@ -1038,7 +1041,7 @@ end
   _pullpush_congruence_body(is_cov, :Jt, :iJt)
 end
 
-@generated function pushforward(a::MultiValue{S,Ta}, Jt::TensorValue{Dm,Dn,Tj}) where {S,Ta,Dm,Dn,Tj}
+@generated function pushforward(a::MultiValue{S,Ta}, Jt::MultiValue{Tuple{Dm,Dn},Tj}) where {S,Ta,Dm,Dn,Tj}
   sz = size(a)
   is_cov, err = _pullpush_setup(sz, Dm, Dn, inverse_variance(Dm), "pushforward")
   err !== nothing && return err
@@ -1060,7 +1063,7 @@ end
 end
 
 @generated function pushforward(
-  a::MultiValue{S,Ta}, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
+  a::MultiValue{S,Ta}, Jt::MultiValue{Tuple{Dm,Dn},Tj}, iJt::MultiValue{Tuple{Di1,Di2},Ti}
   ) where {S,Ta,Dm,Dn,Tj,Di1,Di2,Ti}
 
   sz = size(a)
@@ -1086,18 +1089,18 @@ end
 # pullback and pushforward of a product tensor: comutes with outer product so
 # preserve symmetries of the factors.
 
-pullback(p::ProductTensorValue, Jt::TensorValue{Dm,Dn,Tj}) where {Dm,Dn,Tj} =
+pullback(p::ProductTensorValue, Jt::MultiValue{Tuple{Dm,Dn},Tj}) where {Dm,Dn,Tj} =
   _map_second_factor(b -> pullback(b, Jt), _map_first_factor(a -> pullback(a, Jt), p))
 
-pullback(p::ProductTensorValue, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
+pullback(p::ProductTensorValue, Jt::MultiValue{Tuple{Dm,Dn},Tj}, iJt::MultiValue{Tuple{Di1,Di2},Ti}
         ) where {Dm,Dn,Tj,Di1,Di2,Ti} =
   _map_second_factor(b -> pullback(b, Jt, iJt),
                      _map_first_factor(a -> pullback(a, Jt, iJt), p))
 
-pushforward(p::ProductTensorValue, Jt::TensorValue{Dm,Dn,Tj}) where {Dm,Dn,Tj} =
+pushforward(p::ProductTensorValue, Jt::MultiValue{Tuple{Dm,Dn},Tj}) where {Dm,Dn,Tj} =
   _map_second_factor(b -> pushforward(b, Jt), _map_first_factor(a -> pushforward(a, Jt), p))
 
-pushforward(p::ProductTensorValue, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
+pushforward(p::ProductTensorValue, Jt::MultiValue{Tuple{Dm,Dn},Tj}, iJt::MultiValue{Tuple{Di1,Di2},Ti}
            ) where {Dm,Dn,Tj,Di1,Di2,Ti} =
   _map_second_factor(b -> pushforward(b, Jt, iJt),
                      _map_first_factor(a -> pushforward(a, Jt, iJt), p))
@@ -1106,7 +1109,7 @@ pushforward(p::ProductTensorValue, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{D
 # so preserves symmetries
 
 function pushforward(
-  v::ExteriorVectorValue, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
+  v::ExteriorVectorValue, Jt::MultiValue{Tuple{Dm,Dn},Tj}, iJt::MultiValue{Tuple{Di1,Di2},Ti}
   ) where {Dm,Dn,Tj,Di1,Di2,Ti}
 
   _check(_pinvJt_shape_error, Dm, Dn, Di1, Di2)
@@ -1114,7 +1117,7 @@ function pushforward(
 end
 
 function pullback(
-  ω::ExteriorFormValue, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
+  ω::ExteriorFormValue, Jt::MultiValue{Tuple{Dm,Dn},Tj}, iJt::MultiValue{Tuple{Di1,Di2},Ti}
   ) where {Dm,Dn,Tj,Di1,Di2,Ti}
 
   _check(_pinvJt_shape_error, Dm, Dn, Di1, Di2)
@@ -1124,7 +1127,7 @@ end
 # The two transports that go against the direction of φ are the pullback and
 # the pushforward by the inverse map ψ = φ⁻¹, whose transposed jacobian is iJt.
 function pushforward(
-  ω::ExteriorFormValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
+  ω::ExteriorFormValue{K,Dw,Tw}, Jt::MultiValue{Tuple{Dm,Dn},Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
 
   _check(_Jt_variance_error, Dm, Dn)
   _check(_inverse_pullpush_error, Dm, Dn, "pushforward")
@@ -1132,7 +1135,7 @@ function pushforward(
 end
 
 function pushforward(
-  ω::ExteriorFormValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
+  ω::ExteriorFormValue{K,Dw,Tw}, Jt::MultiValue{Tuple{Dm,Dn},Tj}, iJt::MultiValue{Tuple{Di1,Di2},Ti}
   ) where {K,Dw,Dm,Dn,Tw,Tj,Di1,Di2,Ti}
 
   _check(_Jt_variance_error, Dm, Dn)
@@ -1142,7 +1145,7 @@ function pushforward(
 end
 
 function pullback(
-  v::ExteriorVectorValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
+  v::ExteriorVectorValue{K,Dw,Tw}, Jt::MultiValue{Tuple{Dm,Dn},Tj}) where {K,Dw,Dm,Dn,Tw,Tj}
 
   _check(_Jt_variance_error, Dm, Dn)
   _check(_inverse_pullpush_error, Dm, Dn, "pullback")
@@ -1150,7 +1153,7 @@ function pullback(
 end
 
 function pullback(
-  v::ExteriorVectorValue{K,Dw,Tw}, Jt::TensorValue{Dm,Dn,Tj}, iJt::TensorValue{Di1,Di2,Ti}
+  v::ExteriorVectorValue{K,Dw,Tw}, Jt::MultiValue{Tuple{Dm,Dn},Tj}, iJt::MultiValue{Tuple{Di1,Di2},Ti}
   ) where {K,Dw,Dm,Dn,Tw,Tj,Di1,Di2,Ti}
 
   _check(_Jt_variance_error, Dm, Dn)

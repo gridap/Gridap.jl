@@ -5,6 +5,7 @@ module PullbackKoszulTests
 using Gridap.TensorValues
 using Test
 using LinearAlgebra: pinv
+using Gridap.Arrays: get_array
 
 # ── Pullback (value level) ───────────────────────────────────────────────────
 
@@ -402,6 +403,34 @@ Amix_i = TensorValue{con2,cov2,Int,4}(1,0,0,1)
 @test eltype(pullback(CoVectorValue{cov2,Int}((1,2)),     Jt_32, iJt_64))    === Float32
 @test eltype(pullback(ContraVectorValue{con2,Int}((1,2)), Jt_32, iJt_64))    === Float64
 @test eltype(pullback(Amix_i, Jt_32, iJt_64))                                === Float64
+
+# ── A ProductTensorValue jacobian  ─────────────────────────────────
+
+Jt_pt  = ProductTensorValue{SymNTensorValue{Tuple{cov2}},ContraVectorValue{con2}}(1.0,3.0,2.0,4.0)
+iJt_pt = ProductTensorValue{SymNTensorValue{Tuple{cov2}},ContraVectorValue{con2}}(Tuple(iJt_gen))
+@test Jt_pt isa MultiValue{Tuple{cov2,con2}}
+@test get_array(Jt_pt) == get_array(Jt_gen)
+
+for x in (ω1, e1, vol2, biv2, A2, A2con, Amix)
+  @test pullback(x, Jt_pt)             === pullback(x, Jt_gen)
+  @test pushforward(x, Jt_pt)          === pushforward(x, Jt_gen)
+  @test pullback(x, Jt_pt, iJt_pt)     === pullback(x, Jt_gen, iJt_gen)
+  @test pushforward(x, Jt_pt, iJt_pt)  === pushforward(x, Jt_gen, iJt_gen)
+end
+
+# A dense jacobian pairs with a factored pseudo-inverse, and conversely
+@test pullback(A2, Jt_gen, iJt_pt)        === pullback(A2, Jt_gen, iJt_gen)
+@test pushforward(A2con, Jt_pt, iJt_gen)  === pushforward(A2con, Jt_gen, iJt_gen)
+
+# A product tensor transported by a product tensor keeps its factors, as the
+# carrier of the jacobian does not reach the transport of the value
+∂ω = product_tensor(SymNTensorValue{Tuple{cov2}}(1.0,2.0), CoVectorValue{cov2}(3.0,4.0))
+@test pullback(∂ω, Jt_pt) isa
+      ProductTensorValue{SymNTensorValue{Tuple{cov2}},CoVectorValue{cov2}}
+@test pullback(∂ω, Jt_pt)            === pullback(∂ω, Jt_gen)
+@test pushforward(∂ω, Jt_pt)         === pushforward(∂ω, Jt_gen)
+@test pullback(∂ω, Jt_pt, iJt_pt)    === pullback(∂ω, Jt_gen, iJt_gen)
+@test pushforward(∂ω, Jt_pt, iJt_pt) === pushforward(∂ω, Jt_gen, iJt_gen)
 
 # ── Koszul operator κ_x(ω) = ι_x(ω) ─────────────────────────────────────────
 
