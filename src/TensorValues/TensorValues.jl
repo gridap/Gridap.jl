@@ -226,8 +226,8 @@ include("Operations.jl")
 
 include("DifferentialGeometryOperations.jl")
 
-include("PointOperations.jl")
-
 include("DerivativeOperationRules.jl")
+
+include("PointOperations.jl")
 
 end # module

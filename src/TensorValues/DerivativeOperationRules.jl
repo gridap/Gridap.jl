@@ -26,7 +26,22 @@ derivation indices share one fully symmetric tensor.
   end
 end
 
-# TODO move to Operations.jl and see potential for generalization
+# Whether a contraction of a product tensor falls inside its second factor
+_contracts_in_second_factor(::Type{P}) where P<:ProductTensorValue =
+  !iszero(length(size(_second_factor(P)))) && !iszero(num_indep_components(P))
+
+# For `∂_I(ϕ_J) = Σₐ ∂_I(bₐ(x)) ⊗ tₐ_J` where `bₐ` are Fields, and `tₐ` constant MultiValue
+function outer(a::_PartialsTensor, b::MultiValue)
+  !iszero(num_indep_components(a)) || return contracted_product(Val(0), a, b)
+  _map_second_factor(x -> outer(x, b), a)
+end
+
+# For `∂_I(ϕ⋅b) = ∂_I(ϕ)⋅b` with `b` constant
+function dot(a::_PartialsTensor, b::MultiValue)
+  _contracts_in_second_factor(typeof(a)) || return contracted_product(Val(1), a, b)
+  _map_second_factor(x -> dot(x, b), a)
+end
+
 @generated function dot(a::ProductTensorValue{Aa,Ba}, b::ProductTensorValue{Ab,Bb}) where {Aa,Ba,Ab,Bb}
 
   Sa, Sb = size(Ba), size(Ab)
@@ -47,6 +62,18 @@ end
     _product_from_second_factors($Aa, $(Expr(:tuple, comps...)))
   end
 end
+
+# fixes method ambiguity of the two above
+function dot(a::_PartialsTensor, b::ProductTensorValue)
+  # Whether a product tensor contraction consumes a whole factor of each operand,
+  # which it does when a single index is left to contract on either side.
+  contracts_whole_factors = isone(length(size(_second_factor(a)))) && isone(length(size(_first_factor(b))))
+
+  contracts_whole_factors  ?
+    @invoke(dot(a::ProductTensorValue, b::ProductTensorValue)) :
+    @invoke(dot(a::_PartialsTensor,    b::MultiValue))
+end
+
 
 #######################################
 # API for differential operator rules #

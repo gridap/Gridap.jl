@@ -28,30 +28,44 @@ dot(a::MultiValue{Tuple{D1}}, b::VectorValue) where D1 =
 dot(a::VectorValue, b::VectorValue) = contracted_product(Val(1), a, b)
 
 ###############################################################
-# For derivatives of point valued maps
+# For derivatives of point valued maps and friends
 ###############################################################
 
-_as_contravariant(p::ProductTensorValue{A,VectorValue{D}}) where {A,D} =
-  ProductTensorValue{A,ContraVectorValue{Con(D)}}(p.data)
+# The value index of the derivatives of a `Point` valued map is contravariant,
+# like the coordinates it holds.
+_as_contravariant(p::_PartialsTensor{O,D,VectorValue{Dv}}) where {O,D,Dv} =
+  ProductTensorValue{SymNTensorValue{NTuple{O,D}},ContraVectorValue{Con(Dv)}}(p.data)
 
-# e.g. `∂ᵢ(a∘b) = ∂ⱼa(b) ∂ᵢbʲ` contracts the value index of `∂b` with the first
-# partial index of `∂a`
-function dot(
-  a::ProductTensorValue{A,VectorValue{D}}, b::MultiValue{Sb}) where {A,D,Sb}
+# For `∂ᵢ(a∘b) = ∂ⱼa(b) ∂ᵢbʲ` = ∂b⋅∂a(b) where `a` is a `Point` valued
+# Fields, contracts the value index of `∂b` with the first partial index of
+# `∂a`.
+_point_partials_dot(b::_PartialsTensor{O,Dd,VectorValue{D}}, a::MultiValue) where {O,Dd,D} =
+  _map_second_factor(x -> contracted_product(Val(1), _as_contravariant(x, first(size(a))), a), b)
 
-  D2 = first(size(b))
-  contracted_a = D2  isa Cov ? _as_contravariant(a) : a
-  contracted_product(Val(1), contracted_a, b)
+#`∂_I(ϕ⋅b) = ∂_I(ϕ)⋅b` with `b` constant `Point`s
+function dot(a::_PartialsTensor, b::VectorValue)
+  _contracts_in_second_factor(typeof(a)) ||
+    return contracted_product(Val(1), a, _as_contravariant(b, last(size(a))))
+  _map_second_factor(x -> dot(x, b), a)
 end
 
-dot(a::ProductTensorValue{A,VectorValue{D}}, b::VectorValue) where {A,D} =
-  contracted_product(Val(1), a, b)
+dot(b::_PartialsTensor{O,Dd,VectorValue{D}}, a::MultiValue) where {O,Dd,D} =
+  _point_partials_dot(b, a)
 
-function dot(
-  a::ProductTensorValue{A,VectorValue{D}}, b::ProductTensorValue) where {A,D}
+dot(b::_PartialsTensor{O,Dd,VectorValue{D}}, a::VectorValue) where {O,Dd,D} =
+  _point_partials_dot(b, a)
 
-  first(size(b)) isa Cov || return @invoke dot(a::ProductTensorValue, b::ProductTensorValue)
-  dot(_as_contravariant(a), b)
+function dot(b::_PartialsTensor{O,Dd,VectorValue{D}}, a::ProductTensorValue) where {O,Dd,D}
+  first(size(a)) isa Cov || return @invoke dot(b::ProductTensorValue, a::ProductTensorValue)
+  dot(_as_contravariant(b), a)
+end
+
+# For `∂ᵢϕʲ = Σₐ ∂ᵢbₐ xₐʲ` where `bₐ` are scalar functions, and `xₐ` constant
+# Points.
+function outer(a::_PartialsTensor{O,Dd,B}, b::VectorValue{D}) where {O,Dd,B,D}
+  cb = Dd isa VariancedDimension ? ContraVectorValue{D}(Tuple(b)) : b
+  !iszero(num_indep_components(a)) || return contracted_product(Val(0), a, cb)
+  _map_second_factor(x -> outer(x, cb), a)
 end
 
 ############################

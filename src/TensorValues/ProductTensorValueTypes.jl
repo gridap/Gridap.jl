@@ -451,6 +451,11 @@ end
 # Factor slicing (ProductTensorValue)
 ###############################################################
 
+_first_factor(::Type{<:ProductTensorValue{A,B}}) where {A,B} = A
+_first_factor(a::ProductTensorValue) = _first_factor(typeof(a))
+_second_factor(::Type{<:ProductTensorValue{A,B}}) where {A,B} = B
+_second_factor(a::ProductTensorValue) = _second_factor(typeof(a))
+
 # `p` is the sum of `aₗ ⊗ bₗ` over the independent components of one factor, so
 # slicing it along either factor gives the other one's, and an operation acting
 # on one index block alone acts on those slices.

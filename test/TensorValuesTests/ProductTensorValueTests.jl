@@ -7,7 +7,7 @@ using Gridap.TensorValues: get_indep_components, num_stored_components
 using Gridap.TensorValues: _indep_comp_cartesian_indices, is_full_rank
 using Gridap.TensorValues: _stored_comp_cartesian_indices
 using Gridap.TensorValues: stored_comp_indices, _stored_comp_weights, _dense_flat_inner
-using Gridap.TensorValues: full_rank
+using Gridap.TensorValues: full_rank, is_opposit_variance
 using Gridap.Arrays: get_array
 using Test
 using StaticArrays
@@ -742,5 +742,46 @@ pp_ref  = [ sum(get_array(pp_a)[i,j,l]*get_array(pp_flat)[l,k] for l in 1:2)
 # Int - Con is wrong
 @test_throws DimensionMismatch dot(
   pp_a, ProductTensorValue{ContraVectorValue{con2},VectorValue{3}}(ntuple(Float64, 6)))
+
+# A partials tensor keeps its derivation indices through the operations acting on
+# its second factor alone
+
+∂u  = ProductTensorValue{SymNTensorValue{Tuple{cov2}},ScalarValue}(1.0,2.0)
+∂∂u = ProductTensorValue{SymNTensorValue{Tuple{cov2,cov2}},ScalarValue}(1.0,2.0,3.0)
+∂v  = ProductTensorValue{SymNTensorValue{Tuple{cov2}},ContraVectorValue{con2}}(ntuple(Float64,4))
+ω   = CoVectorValue{cov2}(1.0,2.0)
+x   = VectorValue(1.0,2.0)
+
+@test outer(∂u, ω) isa ProductTensorValue{SymNTensorValue{Tuple{cov2}},CoVectorValue{cov2}}
+@test get_array(outer(∂∂u, ω)) ≈ get_array(contracted_product(Val(0), ∂∂u, ω))
+@test dot(∂v, ω) isa ProductTensorValue{SymNTensorValue{Tuple{cov2}},ScalarValue}
+@test get_array(dot(∂v, ω)) ≈ get_array(contracted_product(Val(1), ∂v, ω))
+
+# The second factor of the right operand is kept factored when a whole factor of
+# each is consumed, and flattened when the contraction has to reach inside one
+∂a = ProductTensorValue{SymNTensorValue{Tuple{cov2}},SymTensorValue{con2}}(ntuple(Float64,6))
+@test dot(∂v, ∂a) isa ProductTensorValue{SymNTensorValue{Tuple{cov2}},SymTensorValue{con2}}
+@test dot(∂v, product_tensor(SymNTensorValue{Tuple{cov2,cov2}}(1.0,2.0,3.0), ω)) isa
+      ProductTensorValue{SymNTensorValue{Tuple{cov2}},TensorValue{cov2,cov2}}
+
+# The contraction reaches the last derivation index when the second factor has no
+# index of its own, so there the derivation indices cannot be kept apart
+@test dot(∂∂u, x) isa CoVectorValue{cov2}
+@test get_array(dot(∂∂u, x)) ≈ get_array(∂∂u)*get_array(x)
+@test dot(∂∂u, ContraVectorValue{con2}(1.0,2.0)) === dot(∂∂u, x)
+
+# A factor with no independent component has no slice to act on, so the dense
+# product is the only possible result
+∂w = product_tensor(zero(SymNTensorValue{Tuple{cov2},Float64}),
+                    zero(ExteriorFormValue{3,cov2,Float64}))
+@test outer(∂w, x) isa NTensorValue{Tuple{cov2,cov2,cov2,cov2,con2}}
+@test iszero(outer(∂w, x))
+
+# A point coefficient contributes a contravariant index, so that the jacobian it
+# builds has opposite variances
+@test outer(∂u, x) isa ProductTensorValue{SymNTensorValue{Tuple{cov2}},ContraVectorValue{con2}}
+@test get_array(outer(∂u, x)) ≈ get_array(∂u)*get_array(x)'
+@test is_opposit_variance(size(outer(∂u, x))...)
+@test outer(∂u, x) === outer(∂u, ContraVectorValue{con2}(1.0,2.0))
 
 end # module
