@@ -222,4 +222,36 @@ allocs = @allocated for i in 1:num_cells(Ω)
 end
 @test allocs / num_cells(Ω) < 500
 
+# ── Derivatives of linear combinations: FE functions and non affine maps ─────
+
+V  = TestFESpace(model, ReferenceFE(lagrangian,Float64,2))
+uh = FEFunction(V, rand(num_free_dofs(V)))
+du = get_fe_basis(V)
+
+for fe_cf in (uh, du)
+  dfe  = exterior_derivative(fe_cf)(pts)
+  cdfe = array_cache(dfe)
+  @test eltype(getindex!(cdfe, dfe, 1)) <: ExteriorFormValue{1,cov2}
+end
+
+# The jacobian of a bilinear cell map holds the same numbers as `∇` and has
+# opposite variances, so `pinvJt` accepts it.
+Ωu  = Triangulation(UnstructuredDiscreteModel(model))
+cmu = get_cell_map(Ωu)
+q   = Point(0.3,0.7)
+Jt  = evaluate(lazy_map(partial_derivatives, cmu)[1], q)
+@test isa(Jt, MultiValue{Tuple{cov2,con2}})
+@test get_array(Jt) ≈ get_array(evaluate(∇(cmu[1]), q))
+@test get_array(pinvJt(Jt)) ≈ get_array(pinvJt(evaluate(∇(cmu[1]), q)))
+
+# Differentiating a cell field needs the pushforward of the derivation indices
+# that `∇` performs with `push_∇`, so only the physical domain is available.
+@test DomainStyle(uh) == ReferenceDomain()
+@test_throws ErrorException partial_derivatives(uh)
+∂ω = partial_derivatives(ω)
+@test DomainStyle(∂ω) == PhysicalDomain()
+∂ωx = ∂ω(pts)
+@test eltype(getindex!(array_cache(∂ωx), ∂ωx, 1)) ===
+  derivatives_type(CoVectorValue{cov2,Float64}, x_c)
+
 end # module

@@ -282,6 +282,11 @@ for op in (:∇,:∇∇)
   end
 end
 
+function (k::PartialDerivatives)(a::LinearCombinationField)
+  fields = Broadcasting(k)(a.fields)
+  LinearCombinationField(a.values, fields, a.column)
+end
+
 """
     linear_combination(v::AbstractVector{<:Number}, f::AbstractVector{<:Field})
     linear_combination(m::AbstractMatrix{<:Number}, f::AbstractVector{<:Field})
@@ -374,6 +379,12 @@ for op in (:∇,:∇∇)
       LinearCombinationFieldVector(a.values,fields)
     end
   end
+end
+
+function evaluate!(
+  cache, k::Broadcasting{PartialDerivatives{Np}}, a::LinearCombinationFieldVector) where Np
+  fields = Broadcasting(PartialDerivatives{Np}())(a.fields)
+  LinearCombinationFieldVector(a.values, fields)
 end
 
 function get_children(n::TreeNode, a::LinearCombinationFieldVector)

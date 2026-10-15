@@ -384,6 +384,44 @@ f = linear_combination(b,a)
 fp = transpose(b)*evaluate(a,p)
 test_field_array(f,p,fp)
 
+# Partial derivatives of a linear combination
+
+sb  = MonomialBasis{2}(Float64,(1,1))
+∂sb = Broadcasting(partial_derivatives)(sb)
+
+# Scalar coefficients, as in a FE function: the value stays scalar and the
+# derivation indices are the basis'.
+avals = rand(length(sb))
+f = linear_combination(avals,sb)
+∂f = partial_derivatives(f)
+@test isa(∂f,Fields.LinearCombinationField)
+@test typeof(evaluate(∂f,p)) === derivatives_type(Float64,p)
+test_map(evaluate(linear_combination(avals,∂sb),p),∂f,p)
+@test get_array(evaluate(∂f,p)) ≈ get_array(evaluate(∇(f),p))
+@test get_array(evaluate(second_partial_derivatives(f),p)) ≈ get_array(evaluate(∇∇(f),p))
+
+# Point coefficients, as in a cell map: the value index carries the
+# contravariance of the point coordinates, so the jacobian has opposite
+# variances and `pinvJt` accepts it.
+bvals = VectorValue{2,Float64}[(1,1),(4,2),(3,5),(1,2)]
+ϕ = linear_combination(bvals,sb)
+Jt = evaluate(partial_derivatives(ϕ),p)
+@test isa(Jt,MultiValue{Tuple{Cov(2),Con(2)}})
+@test get_array(Jt) ≈ get_array(evaluate(∇(ϕ),p))
+@test get_array(pinvJt(Jt)) ≈ get_array(pinvJt(evaluate(∇(ϕ),p)))
+
+# A basis given as a linear combination, as a reffe basis is of the monomials
+bm = rand(length(sb),3)
+fv = linear_combination(bm,sb)
+∂fv = Broadcasting(partial_derivatives)(fv)
+@test isa(∂fv,Fields.LinearCombinationFieldVector)
+@test size(∂fv) === size(fv)
+@test get_array.(evaluate(∂fv,p)) ≈ get_array.(evaluate(Broadcasting(∇)(fv),p))
+
+cvals = rand(3)
+∂g = partial_derivatives(linear_combination(cvals,fv))
+@test get_array(evaluate(∂g,p)) ≈ get_array(evaluate(∇(linear_combination(cvals,fv)),p))
+
 ## Test MockField
 #
 #np = 4

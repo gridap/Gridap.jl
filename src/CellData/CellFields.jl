@@ -279,6 +279,18 @@ function gradient(a::CellField)
   similar_cell_field(a,g,get_triangulation(a),DomainStyle(a))
 end
 
+function (k::PartialDerivatives)(a::CellField)
+  if DomainStyle(a) == ReferenceDomain()
+    @notimplemented """\n
+    Partial derivatives of a cell field defined in the reference domain are not
+    implemented yet: they require the pushforward of the covariant derivation
+    indices by the cell map, which `∇` performs with `push_∇`.
+    """
+  end
+  cell_∂a = lazy_map(Broadcasting(k),get_data(a))
+  similar_cell_field(a,cell_∂a,get_triangulation(a),DomainStyle(a))
+end
+
 function DIV(a::CellField)
   DIVa = DIV(get_data(a))
   if DomainStyle(a) == PhysicalDomain()
