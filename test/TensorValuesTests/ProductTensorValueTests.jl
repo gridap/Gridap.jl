@@ -784,4 +784,15 @@ x   = VectorValue(1.0,2.0)
 @test is_opposit_variance(size(outer(∂u, x))...)
 @test outer(∂u, x) === outer(∂u, ContraVectorValue{con2}(1.0,2.0))
 
+# Transposing a product of two vectors exchanges its factors, variance included
+
+@test transpose(∂v) isa ProductTensorValue{ContraVectorValue{con2},SymNTensorValue{Tuple{cov2}}}
+@test size(transpose(∂v)) === (con2, cov2)
+@test get_array(transpose(∂v)) == transpose(get_array(∂v))
+@test transpose(transpose(∂v)) === ∂v
+
+# Any other pair of factors leaves no two indices to exchange
+@test_throws ErrorException transpose(
+  ProductTensorValue{SymTensorValue{2},ScalarValue}(1.0,2.0,3.0))
+
 end # module

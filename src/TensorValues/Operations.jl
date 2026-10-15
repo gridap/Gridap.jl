@@ -1211,6 +1211,15 @@ adjoint(a::SkewSymTensorValue) = -conj(a)
 transpose(a::AbstractSymTensorValue) = a
 transpose(a::SkewSymTensorValue) = -a
 
+# a ⊗ b -> b ⊗ a
+@generated function transpose(a::ProductTensorValue{A,B,T}
+    ) where {D1,D2,A<:MultiValue{Tuple{D1}},B<:MultiValue{Tuple{D2}},T}
+
+  La, Lb = num_indep_components(A), num_indep_components(B)
+  comps = [ :( indep_comp_getindex(a, $((lb-1)*La + la)) ) for la in 1:La for lb in 1:Lb ]
+  :( ProductTensorValue{$B,$A,$T}($(Expr(:tuple, comps...))) )
+end
+
 ###############################################################
 # permutedims
 ###############################################################
