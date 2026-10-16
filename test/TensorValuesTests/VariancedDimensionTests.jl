@@ -66,6 +66,15 @@ s_cov = SymNTensorValue{Tuple{cov2,cov2}}(1,2,3)
 @test tensor_type(ω23) == (0,2,0)
 @test tensor_type(v_outer_t) == (1,1,1)
 
+# A traceless tensor of dimension 0 or 1 is zero: it stores no component given
+# by the caller, with any variance of its dimension
+for D in (0, cov0, con0, 1, cov1, con1)
+  @test num_indep_components(SymTracelessTensorValue{D}) == 0
+  @test iszero(SymTracelessTensorValue{D,Float64}())
+  @test SymTracelessTensorValue{D,Float64}() === SymTracelessTensorValue{D,Float64}(())
+  @test SymTracelessTensorValue{D}() isa SymTracelessTensorValue{D,Int}
+end
+
 # ==================================================================
 # Dimension predicates
 # ==================================================================
