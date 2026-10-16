@@ -38,6 +38,7 @@ import Gridap.Arrays: return_type
 import Gridap.Fields: evaluate
 import Gridap.Fields: lazy_map
 import Gridap.Fields: linear_combination
+import Gridap.Fields: needs_DG_calc
 
 import Gridap.Polynomials: get_order
 import Gridap.Polynomials: get_orders
@@ -108,6 +109,7 @@ export Pullback
 export IdentityPiolaMap
 export CoVariantPiolaMap
 export ContraVariantPiolaMap
+export TensorPushforward
 export get_dofscale_setter_function
 
 export Dof
@@ -189,6 +191,7 @@ export H1Conformity
 export GradConformity
 export CurlConformity
 export DivConformity
+export PΛConformity
 export CDConformity
 
 export SerendipityRefFE

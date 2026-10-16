@@ -273,6 +273,34 @@ function evaluate!( # φ -> φ̂ = Jᵀ φ∘F J
 end
 
 
+# TensorPushforward
+
+"""
+    struct TensorPushforward <: Pushforward
+
+[`pushforward`](@ref) `ω ↦ (F⁻¹)^*ω` for tensors with variance. Its
+`InversePushforward` is [`pullback`](@ref).
+
+For `ExteriorFormValue{k,Cov(D)}`, it is equivalent to the `IdentityPiolaMap`,
+`CoVariantPiolaMap`, `ContraVariantPiolaMap` with signed `det(J)` and
+multiplication by `inv(det(J))` for the vector proxy of forms orders 0, 1, D-1
+and D, respectively.
+"""
+struct TensorPushforward <: Pushforward end
+
+function evaluate!(
+  cache, ::TensorPushforward, v_ref::MultiValue, Jt::Number
+)
+  return pushforward(v_ref, Jt)
+end
+
+function evaluate!(
+  cache, ::InversePushforward{TensorPushforward}, v_phys::MultiValue, Jt::Number
+)
+  return pullback(v_phys, Jt)
+end
+
+
 ###################
 # DOF scaling API #
 ###################
@@ -332,5 +360,17 @@ _scaling_function(::ContraVariantPiolaMap, D::Int) = let D=D
 end
 _scaling_function(::DoubleContraVariantPiolaMap, D::Int) = let D=D
   h -> h^(2D-2)
+end
+
+# A k-form scales like the k-fold product of covectors, i.e. hᵏ.
+function get_dofscale_setter_function(reffe::ReferenceFE{D}, ::TensorPushforward) where D
+  K = get_form_degree(reffe)
+  let K=K
+    @inline function(dofscale, face_own_dofs, face_meshsize)
+      for (face_dofs, h) in zip(face_own_dofs, face_meshsize)
+        @inbounds dofscale[face_dofs] .= h^K
+      end
+    end
+  end
 end
 
