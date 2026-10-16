@@ -613,6 +613,29 @@ e_int = TensorValue{2,2}(2.,1.,1.,3.)
 # a (1,1) tensor composes with its inverse into the identity of the same shape
 @test inv(t_mix) ⋅ t_mix ≈ TensorValue{con2,cov2}(1.,0.,0.,1.)
 
+# The closed forms of `det` and `inv` apply to every variance of the two
+# indices. The data is not symmetric, so a transposition would show.
+for (data, index_pairs) in (
+    ((2.,0.7,-0.3,1.5),
+     ((2,2), (cov2,cov2), (cov2,con2), (con2,cov2), (con2,con2))),
+    ((2.,0.7,-0.3, 0.1,1.5,0.4, -0.2,0.6,1.1),
+     ((3,3), (cov3,cov3), (cov3,con3), (con3,cov3), (con3,con3))))
+  for (D1,D2) in index_pairs
+    a = TensorValue{D1,D2}(data)
+    @test det(a) ≈ det(get_array(a))
+    @test inv(a) isa TensorValue{inverse_variance(D2),inverse_variance(D1)}
+    @test get_array(inv(a)) ≈ inv(get_array(a))
+  end
+end
+
+# The symmetries of the argument, and the convention on singular arguments, hold
+# whatever its variance
+@test inv(q_cov) isa SymTracelessTensorValue{con2}
+@test get_array(inv(q_cov)) ≈ inv(get_array(q_cov))
+@test inv(SymTensorValue{cov3}(1.,2.,3.,5.,7.,11.)) isa SymTensorValue{con3}
+@test inv(SkewSymTensorValue{cov3}(1.,2.,3.)) isa SkewSymTensorValue{con3}
+@test all(isinf, inv(SkewSymTensorValue{cov3}(1.,2.,3.)).data)
+
 # `sqrt` keeps the indices of its argument
 @test sqrt(TensorValue{2,2}(4.,0.,0.,4.)) isa TensorValue{2,2}
 @test sqrt(TensorValue{con2,cov2}(4.,0.,0.,4.)) isa TensorValue{con2,cov2}
