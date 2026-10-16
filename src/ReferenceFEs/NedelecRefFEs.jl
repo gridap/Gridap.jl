@@ -23,17 +23,27 @@ Singleton of the second kind of [`Nedelec`](@ref) reference FE name.
 const nedelec2 = Nedelec{2}()
 
 Pushforward(::Type{<:Nedelec}) = CoVariantPiolaMap()
+Pushforward(::Type{<:Nedelec}, ::PΛConformity) = TensorPushforward()
 
 """
     NedelecRefFE(::Type{T}, p::Polytope, order::Integer;  kind::Int=1, kwargs...)
 
 The `order` argument has the following meaning: the curl of the  functions in
-this basis is in the 𝓟/𝓠 space of degree `order`. `T` is the type of scalar components.
+this basis is in the 𝓟/𝓠 space of degree `order`.
 
-The `kwargs` are [`change_dof`](@ref "`change_dof` keyword argument"),
-[`poly_type`](@ref "`poly_type` keyword argument") and
-[`mom_poly_type`](@ref "`mom_poly_type` keyword argument").
+`T` is either:
+- the type of the scalar components, in which case a `VectorValue`d element with
+  `CurlConformity` is returned
+- a 1-form type `ExteriorFormValue{1,D}`, for the FEEC version with `PΛConformity`.
+
+`kind` chooses between first and second kind Nédélec elements. The other
+`kwargs` are [`change_dof`](@ref "`change_dof` keyword argument"),
+[`poly_type`](@ref "`poly_type` keyword argument") and [`mom_poly_type`](@ref
+"`mom_poly_type` keyword argument").
 """
+NedelecRefFE(::Type{V},p::Polytope,order::Integer; kind::Int=1, kwargs...) where V<:ExteriorFormValue =
+  FEEC_reference_fe(Nedelec{kind}(), V, p, order; kwargs...)
+
 function NedelecRefFE(
   ::Type{T},p::Polytope{D},order::Integer; kind::Int=1,
   change_dof=true, poly_type=_mom_reffe_default_PT(p), mom_poly_type=poly_type) where {T,D}

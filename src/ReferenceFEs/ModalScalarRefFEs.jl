@@ -21,11 +21,18 @@ Singletons of the [`ModalScalar`](@ref) reference FE name.
 const modal_lagrangian = ModalScalar(lagrangian)
 const modal_serendipity  = ModalScalar(serendipity)
 
+Pushforward(::Type{<:ModalScalar}, ::PΛConformity) = TensorPushforward()
+
 """
     ModalScalarRefFE(::Type{T}, p::Polytope{D}, order::Integer; F::Symbol, kwargs...)
 
 Scalar moment-based reference FE, for space ``\\mathrm{F}ᵣΛ⁰`` where `r=order`
-and F is either `:P⁻`, `:P`, `:Q⁻` or `:S`. `T` is the type of scalar components.
+and F is either `:P⁻`, `:P`, `:Q⁻` or `:S`.
+
+`T` is either:
+- the type of the scalar components, in which case a scalar valued element with
+  `GradConformity` is returned
+- an `ExteriorFormValue{k,D}` of degree 0 or `D`, for the FEEC version with `PΛConformity` .
 
 This is a variant of `lagrangian`/`serendipity` elements that is more accurate for high order (≥5).
 
@@ -36,6 +43,16 @@ The `kwargs` are [`change_dof`](@ref "`change_dof` keyword argument"),
 For `F=:S`, `mom_poly_type` is changed for `Legendre` when `ModalC0` (the
 default) is given because the moment basis need be hierarchical.
 """
+function ModalScalarRefFE(
+  ::Type{V},p::Polytope{D},order::Integer; F::Symbol, kwargs...
+) where {V<:ExteriorFormValue,D}
+
+  families = is_simplex(p) ? (:P⁻, :P) : (:Q⁻, :S)
+  @check F in families || F == :P "`F=$F` does not name a family of $D-forms on $p"
+  name = F == :S ? modal_serendipity : modal_lagrangian
+  FEEC_reference_fe(name, V, p, order; kwargs...)
+end
+
 function ModalScalarRefFE(::Type{T}, p::Polytope{D}, r::Integer; F::Symbol,
   change_dof=true, poly_type=_mom_reffe_default_PT(p), mom_poly_type=poly_type) where {T,D}
 
