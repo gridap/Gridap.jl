@@ -825,8 +825,6 @@ function pinvJt(J_or_Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
   V(m_pinv)
 end
 
-const InverseStableTensorTypes{D} = Union{SymTensorValue{D},SkewSymTensorValue{D}}
-
 function inv(a::SymTensorValue{D}) where D
   V = SymTensorValue{inverse_variance(D)}
   if Int(D) == 2
