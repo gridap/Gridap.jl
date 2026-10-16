@@ -91,15 +91,12 @@ gradient(f,::Val{2}) = ∇∇(f)
 """
     struct PartialDerivatives{N} <: Map
 
-Operator taking the `N`th order partial derivatives of a tensor field. Two orders
-are named:
-
-    partial_derivatives        === PartialDerivatives{1}()
-    second_partial_derivatives === PartialDerivatives{2}()
+Operator taking the `N`th order partial derivatives of a tensor field.
 
 Similar to `gradient(f, Val(N))`, but this operator stores independent partial
-derivatives in a [`ProductTensorValue`](@ref) and enforces correct variance of
-the `N` first indices, that is covariant.
+derivatives in a [`ProductTensorValue`](@ref) using a [`SymNTensorValue`](@ref)
+to store the partials of a tensor field component, and enforces correct variance
+of the `N` first indices, that is covariant.
 """
 struct PartialDerivatives{N} <: Map
   function PartialDerivatives{N}() where N
@@ -112,8 +109,44 @@ struct PartialDerivatives{N} <: Map
   end
 end
 
+"""
+    const partial_derivatives = PartialDerivatives{1}()
+    ∂
+
+Abstract first order partial derivatives operator. It implements tensor
+calculus: partial derivatives are covariant.
+"""
 const partial_derivatives = PartialDerivatives{1}()
+"""
+    const second_partial_derivatives = PartialDerivatives{2}()
+    ∂∂
+
+Abstract second order partial derivatives operator. It implements tensor
+calculus: partial derivatives are covariant.
+"""
 const second_partial_derivatives = PartialDerivatives{2}()
+const ∂  = partial_derivatives
+const ∂∂ = second_partial_derivatives
+
+"""
+    needs_DG_calc(V::Type{<:Number}) -> Bool
+    needs_DG_calc(f::Field, x::Point)
+    needs_DG_calc(reffe::ReferenceFE)
+
+Whether `V` is a tensor type with variance, and requires proper
+tensor/differential geometry calculus. This is true for order 0
+`ExteriorFormValue` and `ExteriorVectorValue`, although they have empty `size`.
+
+On a field or reffe, the function looks at the value type of the field and
+shape functions, respectively.
+"""
+needs_DG_calc(::Type{<:Number}) = false
+needs_DG_calc(::Type{<:SkewSymKTensorValue{V}}) where V<:Union{Cov,Con} = true
+needs_DG_calc(::Type{V}) where {S,V<:MultiValue{S}} = any(d -> d isa Union{Cov,Con}, size(V))
+
+needs_DG_calc(f::Field, x::Point) = needs_DG_calc(return_type(f,x))
+needs_DG_calc(basis::AbstractArray{<:Field}, x::Point) =
+  needs_DG_calc(eltype(return_type(basis,x)))
 
 evaluate!(cache,k::PartialDerivatives,f) = k(f)
 
