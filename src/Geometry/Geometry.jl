@@ -120,6 +120,7 @@ export get_facet_normal
 export get_edge_tangent
 export test_triangulation
 export get_cell_map
+export get_cell_jac
 
 export get_background_model
 export get_active_model
