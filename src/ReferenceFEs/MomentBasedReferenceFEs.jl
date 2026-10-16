@@ -106,12 +106,20 @@ function num_dofs(b::MomentBasedDofBasis)
   n
 end
 
+# Throughout this file, the dof functionnals are "compiled" and stored using a
+# Riesz representative `m` for the inner product ⊙ᴱ, such that `σ(φ) = Σ_nodes
+# m ⊙ᴱ φ(x)`.
+#
+# The choice for ⊙ᴱ needs to be consistent, the Riesz representatives basis are
+# obtained by `representatives_of_componentbasis_dual(V, I)`, because
+# ⊙(a,b,I) === ⊙ᴱ(a,b).
+
 function return_cache(b::MomentBasedDofBasis{P,V}, field) where {P,V}
   field = apply_operator(b, field)
   cf = return_cache(field,b.nodes)
   vals = evaluate!(cf,field,b.nodes)
   Vr = eltype(vals)
-  T = typeof( zero(V) ⊙ zero(Vr) )
+  T = typeof( zero(V) ⊙ᴱ zero(Vr) )
   r = Array{T}(undef, (num_dofs(b), size(field)...))
   c = CachedArray(r)
   return c, cf
@@ -136,7 +144,7 @@ function evaluate!(cache, b::MomentBasedDofBasis, field::Field)
       for j in 1:nj
         dofs[o] = z
         for i in 1:ni
-          dofs[o] += moments[i,j] ⊙ vals[nodes[i]]
+          dofs[o] += moments[i,j] ⊙ᴱ vals[nodes[i]]
         end
         o += 1
       end
@@ -167,7 +175,7 @@ function evaluate!(cache, b::MomentBasedDofBasis, field::AbstractVector{<:Field}
         for a in 1:na
           dofs[o,a] = z
           for i in 1:ni
-            dofs[o,a] += moments[i,j] ⊙ vals[nodes[i],a]
+            dofs[o,a] += moments[i,j] ⊙ᴱ vals[nodes[i],a]
           end
         end
         o += 1
@@ -231,7 +239,7 @@ function MomentBasedDofBasis(
   field = _apply_operator(operator, prebasis)
   x = first(get_vertex_coordinates(p))
   V = eltype(return_type(field, x))
-  op_φ_vec = representatives_of_componentbasis_dual(V)
+  op_φ_vec = representatives_of_componentbasis_dual(V, I)
   op_φ = map(constant_field, op_φ_vec)
 
   # Create face measures for each moment
