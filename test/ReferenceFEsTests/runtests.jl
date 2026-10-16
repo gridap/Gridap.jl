@@ -64,4 +64,6 @@ using Test
 
 @testset "RotatingPLambda" begin include("PΛRefFEsTests.jl") end
 
+@testset "FormValuedPLambda" begin include("FormValuedPΛRefFEsTests.jl") end
+
 end # module
