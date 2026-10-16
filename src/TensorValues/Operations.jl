@@ -373,6 +373,7 @@ end
 
 """
     flat_inner(ω::MultiValue{S}, η::MultiValue{S})
+    flat_inner(a::_Scalar, b::_Scalar)
     ⊙ᴱ(ω,η)
     ω ⊙ᴱ η
 
@@ -383,6 +384,8 @@ Tensor inner product in Euclidean space, that is `inner`/`⊙` even if `ω` and
 
 over every cartesian index `I`.
 """
+flat_inner(a::_Scalar, b::_Scalar) = a * b
+
 function flat_inner(a::MultiValue{S,Ta,N}, b::MultiValue{S,Tb,N}) where {S,Ta,Tb,N}
   iszero(length(a)) && return zero(Base.promote_op(*,Ta,Tb))
   _flat_inner_body(a, b)
