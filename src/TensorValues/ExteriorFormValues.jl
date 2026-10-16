@@ -156,7 +156,9 @@ one(::Type{<:SkewSymKTensorValue{V,0}}) where V = @unreachable "Unspecified scal
 one(::Type{<:SkewSymKTensorValue{V,K}}) where {V,K} = @unreachable "Skew symmetric k-tensors do not have multiplicative neutral for k > 0."
 
 change_eltype(::Type{<:SkewSymKTensorValue{V,K,D,T1,L}}, ::Type{T2}) where {V,K,D,T1,T2,L} =
-  SkewSymKTensorValue{V,K,D,T2,L}
+  SkewSymKTensorValue{V,K,V(D),T2,L}
+change_eltype(::Type{<:SkewSymKTensorValue{V,K,D,T1}}, ::Type{T2}) where {V,K,D,T1,T2} =
+  SkewSymKTensorValue{V,K,V(D),T2,binomial(Int(D),K)}
 
 function change_variance(::Type{<:SkewSymKTensorValue{V,K,D}}, ::Val{Sv}) where {V,K,D,Sv}
   _check_change_variance(SkewSymKTensorValue{V,K,D}, Sv, true)
