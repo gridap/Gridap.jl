@@ -397,11 +397,10 @@ end
 # `partial_derivatives` of a cell map produces, since that is the only kind
 # `TensorPushforward` accepts.
 #
-# BROKEN: derivatives of the pushed-forward basis are not exercised. The
-# `Broadcasting(∇)` reroute of `Pullbacks.jl` feeds the map a half varianced
-# reference gradient, which is now refused, and the `PartialDerivatives` chain
-# rule through a `Pushforward` is not implemented yet. Being addressed
-# separately.
+# Derivatives go through `∂`, not `∇`: the `Broadcasting(∇)` reroute of
+# `Pullbacks.jl` feeds the map a half varianced reference gradient, which is
+# refused, while the `PartialDerivatives` reroute maps the value index block
+# alone, with `PushforwardPartials`.
 
 @testset "TensorPushforward over shape function fields" begin
   tpf = TensorPushforward()
@@ -423,10 +422,17 @@ end
     # derivation index carries no variance, which `pushforward` refuses
     @test_throws ArgumentError evaluate(Broadcasting(∇)(pf), pts)
 
-    # `∂` is the spelling that must work instead, once the `PartialDerivatives`
-    # chain rule through a `Pushforward` lands. Flips to "Unexpected Pass" then,
-    # which is the signal to turn it into a real assertion.
-    @test_broken evaluate(Broadcasting(∂)(pf), pts) isa AbstractArray
+    # `∂` is the spelling that works instead: `PushforwardPartials` pushes the
+    # value index block forward and leaves the derivation index covariant in
+    # the reference basis, for `push_first_partials` to transport when the cell
+    # field is differentiated.
+    ∂pf = evaluate(Broadcasting(∂)(pf), pts)
+    @test size(∂pf) == (length(pts), num_dofs(reffe))
+    @test eltype(∂pf) <: ProductTensorValue{<:SymNTensorValue{Tuple{Cov(D)}}}
+
+    # the map is the identity on 0-forms, so there the value block is untouched
+    # and the reference partials must come back unchanged
+    k == 0 && @test ∂pf ≈ evaluate(Broadcasting(∂)(sf), pts)
 
     # DIV must refuse rather than silently produce nonsense through the
     # `LazyArray{<:Fill}` catch-all

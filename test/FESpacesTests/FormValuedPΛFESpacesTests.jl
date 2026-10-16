@@ -33,8 +33,10 @@ _coef(x,q,s) = sum( (s*j+1) * sum((j+i+s)*x[i] for i in 1:length(x))^j for j in 
 # A polynomial `k`-form in dimension `D` with coefficients of degree `q`. For
 # `q` within reach of the space under test it lies in 𝓟_qΛᵏ ⊆ the space, so a
 # conforming space with the right transport reproduces it exactly.
+# `eltype(x)`, not `Float64`: the exact derivative is taken by differentiating
+# this through the `Field` machinery, which evaluates it on dual numbers.
 _form(::Val{k},::Val{D},q) where {k,D} =
-  x -> ExteriorFormValue{k,D,Float64}(ntuple(s -> _coef(x,q,s), binomial(D,k))...)
+  x -> ExteriorFormValue{k,D,eltype(x)}(ntuple(s -> _coef(x,q,s), binomial(D,k))...)
 
 # The highest coefficient degree the space `𝓕_rΛᵏ` is guaranteed to contain:
 # `r` for the full family, and only `r-1` for the trimmed one, which is complete
@@ -116,26 +118,39 @@ end
 end
 
 # ─────────────────────────────────────────────────────────────────────────────
-# BROKEN: differentiating a form valued FE function
+# Differentiating a form valued FE function
 # ─────────────────────────────────────────────────────────────────────────────
 # `∇` is refused by design: the `Broadcasting(∇)` reroute of
 # src/ReferenceFEs/Pullbacks.jl hands `TensorPushforward` a reference gradient
 # whose derivation index carries no variance, because `gradient_type` builds it
-# out of a `Point`. `∂` is the spelling that must work instead, but the
-# `PartialDerivatives` chain rule through a `Pushforward` does not exist yet --
-# it is being added separately. This used to assemble through `∇` for k=0,1.
+# out of a `Point`. `∂` is the spelling that works: its own reroute maps the
+# value index block of the reference partials with `PushforwardPartials`, and
+# `push_first_partials` transports their derivation index when the cell field
+# is differentiated, so each index block is transported exactly once.
+#
+# The test forms lie in the space, so the FE derivative must reproduce the
+# exact one to round-off. The errors are measured relative to the exact
+# derivative, which is not normalised.
 
 @testset "derivatives of a form valued FE function" begin
-  for k in 0:1
-    q = _full_degree(:P,1,k)
-    V = FESpace(sorted_tri, ReferenceFE(TRI,:P,1,k,Float64; DG_calc=true))
-    Ω = Triangulation(sorted_tri); dΩ = Measure(Ω, 2*(1+q)+2)
-    uh = interpolate(_form(Val(k),Val(2),q), V)
+  cell_vals(cf,x) = (a = cf(x); c = array_cache(a); [getindex!(c,a,i) for i in 1:length(a)])
+  _maxabs(vs) = maximum(maximum(abs.(get_array(v))) for cell in vs for v in cell)
+  _relerr(a,b) = maximum(maximum(abs.(get_array(ai) .- get_array(bi)))
+                         for (as,bs) in zip(a,b) for (ai,bi) in zip(as,bs)) / _maxabs(b)
+
+  for F in (:P,:P⁻), r in 1:2, k in 0:2
+    q = _full_degree(F,r,k)
+    V = FESpace(sorted_tri, ReferenceFE(TRI,F,r,k,Float64; DG_calc=true))
+    Ω = Triangulation(sorted_tri); dΩ = Measure(Ω, 2*(r+q)+2)
+    f = _form(Val(k),Val(2),q)
+    uh = interpolate(f, V); fc = CellField(f, Ω)
     x = get_cell_points(dΩ)
+
     @test_throws ArgumentError ∇(uh)(x)
-    # flips to "Unexpected Pass" when the chain rule lands, which is the signal
-    # to turn this into a real assertion against the exact derivative
-    @test_broken ∂(uh)(x) isa AbstractArray
+
+    @test _relerr(cell_vals(∂(uh),x), cell_vals(∂(fc),x)) < TOL
+    # 𝑑 of a 2-form vanishes in 2D, and the operator refuses that degree
+    k < 2 && @test _relerr(cell_vals(𝑑(uh),x), cell_vals(𝑑(fc),x)) < TOL
   end
 end
 

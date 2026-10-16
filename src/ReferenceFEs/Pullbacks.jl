@@ -68,6 +68,46 @@ function Arrays.evaluate!(
   Broadcasting(Operation(a.op))(grad_v,pf_args...)
 end
 
+"""
+    struct PushforwardPartials{PF<:Pushforward} <: Map
+
+Applies the pushforward `PF` to the value index block of `∂φ̂`, the
+[`partial_derivatives`](@ref) of a reference field, and leaves its derivation
+indices alone.
+
+Like the `∇` broadcast method on `Pushforward`s , this assumes that the
+pushforward is constant over the cell, so the cell map is affine.
+"""
+struct PushforwardPartials{PF<:Pushforward} <: Map
+  pushforward::PF
+end
+
+function Arrays.evaluate!(
+  cache, k::PushforwardPartials, ∂v_ref::MultiValue, args...
+)
+  _map_second_factor(b -> evaluate!(nothing, k.pushforward, b, args...), ∂v_ref)
+end
+
+function Arrays.lazy_map(
+  k::Broadcasting{PartialDerivatives{Np}},
+  a::LazyArray{<:Fill{<:Broadcasting{<:Operation{<:Pushforward}}}}
+) where Np
+  cell_ref_fields, args... = a.args
+  pf = a.maps.value.f.op
+  cell_ref_partials = lazy_map(k,cell_ref_fields)
+  return lazy_map(Broadcasting(Operation(PushforwardPartials(pf))),cell_ref_partials,args...)
+end
+
+function Arrays.evaluate!(
+  cache,
+  k::Broadcasting{PartialDerivatives{Np}},
+  a::Fields.BroadcastOpFieldArray{<:Pushforward}
+) where Np
+  v, pf_args... = a.args
+  ∂v = k(v)
+  Broadcasting(Operation(PushforwardPartials(a.op)))(∂v,pf_args...)
+end
+
 # InversePushforward
 
 """
