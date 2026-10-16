@@ -16,68 +16,74 @@ end
 "Factory for polynomial basis of Finite Element Exterior Calculus spaces"
 
 Return, if it is implemented, a polynomial basis for the space  ``\\mathrm{F}ᵣΛᵏ`` in
-dimension `D`, with `T` the scalar component type and `PT<:Polynomial` the
-polynomial basis family.
+dimension `D`, with  `PT<:Polynomial` the polynomial basis family.
+
+`T` may be a `ExteriorFormValue{k,D}`, in which case the basis is `T` valued.
+Else, `T` is the scalar type of the vector proxy of the space, except if
+`cart_prod=true` is given, see kwargs below.
 
 The default `PT` is `Bernstein` on simplices and `ModalC0` on D-cubes.
 
 # Arguments
 - `D`: spatial dimension
-- `T::Type`: scalar components type
+- `T::Type`: an `ExteriorFormValue` or the scalar component type, except if `cart_prod=true`, see kwargs
 - `r::Int`: polynomial order
 - `k::Int`: form order
 - `F::Symbol`: family, i.e. `:P⁻`, `:P`, `:Q⁻` or `:S`
 ### kwargs
 - `rotate_90::Bool`: only if `D`=2 and `k`=1, tells to use the vector proxy corresponding to div conform function instead of curl conform ones.
 - `vertices=nothing`: for `PT=Bernstein` bases on simplices (`F = :P` or `:P⁻`), the basis is defined on the simplex defined by `vertices` instead of the reference one.
-- `cart_prod=false`: for `k`=0 or `k=D`, authorise `T` to be a tensor type for Cartesian product space of the scalar space.
-""" # document DG_calc once it's implemented
+- `cart_prod=false`: for `k`=0 or `k=D` and if `T` is not a `ExteriorFormValue`, `true` authorise `T` to be a tensor type for Cartesian product space of the scalar space.
+"""
 function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(F);
-    DG_calc=false, rotate_90=false, vertices=nothing, cart_prod=false) where {D,T}
+    rotate_90=false, vertices=nothing, cart_prod=false) where {D,T}
 
   @assert PT <: Polynomial
 
   # these call FEEC_space_definition_checks internally
   if !cart_prod
-    F == :P⁻ && PT == Bernstein && return BarycentricPmΛBasis(Val(D),T,r,k,vertices; rotate_90, DG_calc)
-    F == :P  && PT == Bernstein && return BarycentricPΛBasis( Val(D),T,r,k,vertices; rotate_90, DG_calc)
+    F == :P⁻ && PT == Bernstein && return BarycentricPmΛBasis(Val(D),T,r,k,vertices; rotate_90)
+    F == :P  && PT == Bernstein && return BarycentricPΛBasis( Val(D),T,r,k,vertices; rotate_90)
   end
 
 
-  FEEC_space_definition_checks(Val(D), T, r, k, F, rotate_90, DG_calc; cart_prod)
-  @notimplementedif DG_calc # This ensures 0≤k≤D≤3
+  FEEC_space_definition_checks(Val(D), T, r, k, F, rotate_90; cart_prod)
+  # This also ensures 0≤k≤D≤3 on the proxied path
+  DG_calc = T <: ExteriorFormValue
+  @notimplementedif DG_calc && !(k in (0,D))
+  V = make_concretetype(T)
 
   if k == 0
     # Scalar H1 conforming functions
     @notimplementedif r < 0
     if     F == :P⁻ || F == :P # Lagrange, 𝓟r space
-      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r,vertices) # only if cart_prod
+      PT == Bernstein && return BernsteinBasisOnSimplex{D}(V,r,vertices) # only if cart_prod or DG_calc
       _ensure_hierarchical(PT)
-      CartProdPolyBasis(PT,Val(D),T,r,_p_filter)
+      CartProdPolyBasis(PT,Val(D),V,r,_p_filter)
     elseif F == :Q⁻            # Lagrange, 𝓠r space
-      CartProdPolyBasis(PT,Val(D),T,r,_q_filter)
+      CartProdPolyBasis(PT,Val(D),V,r,_q_filter)
     elseif F == :S             # Lagrange, 𝓢r space
       PT==ModalC0 || _ensure_hierarchical(PT)
-      CartProdPolyBasis(PT,Val(D),T,r,_ser_filter)
+      CartProdPolyBasis(PT,Val(D),V,r,_ser_filter)
     end
 
 
   elseif k == D
     # Scalar L2 conforming densities
     if     F == :P⁻ # Lagrange, 𝓟r₋1 space
-      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r-1,vertices) # only if cart_prod
+      PT == Bernstein && return BernsteinBasisOnSimplex{D}(V,r-1,vertices) # only if cart_prod or DG_calc
       _ensure_hierarchical(PT)
-      CartProdPolyBasis(PT,Val(D),T,r-1,_p_filter)
+      CartProdPolyBasis(PT,Val(D),V,r-1,_p_filter)
     elseif F == :P  # Lagrange, 𝓟r space
-      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r,vertices) # only if cart_prod
+      PT == Bernstein && return BernsteinBasisOnSimplex{D}(V,r,vertices) # only if cart_prod or DG_calc
       _ensure_hierarchical(PT)
-      CartProdPolyBasis(PT,Val(D),T,r,_p_filter)
+      CartProdPolyBasis(PT,Val(D),V,r,_p_filter)
     elseif F == :Q⁻ # Lagrange, 𝓠r₋1 space
-      CartProdPolyBasis(PT,Val(D),T,r-1,_q_filter)
+      CartProdPolyBasis(PT,Val(D),V,r-1,_q_filter)
     elseif F == :S  # Serendipity Lagrange ≡ 𝓟r space
-      PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r,vertices) # only if cart_prod
+      PT == Bernstein && return BernsteinBasisOnSimplex{D}(V,r,vertices) # only if cart_prod or DG_calc
       _ensure_hierarchical(PT)
-      CartProdPolyBasis(PT,Val(D),T,r,_p_filter)
+      CartProdPolyBasis(PT,Val(D),V,r,_p_filter)
     end
 
 

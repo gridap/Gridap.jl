@@ -40,7 +40,7 @@ function ModalScalarRefFE(::Type{T}, p::Polytope{D}, r::Integer; F::Symbol,
   change_dof=true, poly_type=_mom_reffe_default_PT(p), mom_poly_type=poly_type) where {T,D}
 
   PT, MPT = poly_type, mom_poly_type
-  cart_prod = T <: MultiValue
+  cart_prod = _is_cart_prod(T)
 
   # TODO fix Q⁻/S on SEGMENT
   if is_simplex(p)

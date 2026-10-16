@@ -120,7 +120,7 @@ end
 
 function compute_poly_basis(::Type{T},p::SerendipityPolytope{D},orders,poly_type) where {T,D}
   r = iszero(D) ? 0 : first(orders)
-  FEEC_poly_basis(Val(D),T,r,0,:S,poly_type; cart_prod=(T <: MultiValue)) # SᵣΛ⁰(□ᴰ)
+  FEEC_poly_basis(Val(D),T,r,0,:S,poly_type; cart_prod=_is_cart_prod(T)) # SᵣΛ⁰(□ᴰ)
 end
 
 function compute_own_nodes(p::SerendipityPolytope{0},orders)

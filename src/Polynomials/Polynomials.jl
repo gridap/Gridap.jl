@@ -89,6 +89,7 @@ using StaticArrays
 using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.TensorValues
+using Gridap.TensorValues: _form_degree_dim
 using Gridap.Fields
 
 using PolynomialBases: jacobi, jacobi_and_derivative

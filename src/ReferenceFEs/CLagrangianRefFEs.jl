@@ -617,7 +617,7 @@ function compute_poly_basis(::Type{T},p::ExtrusionPolytope{D},orders,poly_type) 
   else
     @notimplemented "Non `Monomial` pre-basis only available on simplices and n-cubes"
   end
-  cart_prod = T <: MultiValue
+  cart_prod = _is_cart_prod(T)
   FEEC_poly_basis(Val(D),T,r,0,F,poly_type;cart_prod) # FᵣΛ⁰(□ᴰ)
 end
 
