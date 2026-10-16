@@ -85,10 +85,18 @@ function Base.show(io::IO,::MIME"text/plain",f::CellField)
   print(io,"\n Triangulation id: $(objectid(get_triangulation(f)))")
 end
 
-function CellField(f::Function,trian::Triangulation,domain_style::DomainStyle)
+# Functions are assumed physical
+CellField(f::Function, trian::Triangulation) = CellField(f, trian, PhysicalDomain())
+
+function CellField(f::Function, trian::Triangulation, ::PhysicalDomain)
   s = size(get_cell_map(trian))
-  cell_field = Fill(GenericField(f),s)
-  GenericCellField(cell_field,trian,PhysicalDomain())
+  cell_field = Fill(GenericField(f), s)
+  GenericCellField(cell_field, trian, PhysicalDomain())
+end
+
+function CellField(f::Function, trian::Triangulation, ::ReferenceDomain)
+  phys_f = CellField(f, trian, PhysicalDomain())
+  change_domain(phys_f, PhysicalDomain(), ReferenceDomain())
 end
 
 function CellField(f::Number,trian::Triangulation,domain_style::DomainStyle)
@@ -266,7 +274,13 @@ function _to_common_domain(f::CellField,x::CellPoint)
   f_on_trian_x, x
 end
 
-# Gradient
+# Differentiation operators
+#
+# ∂ᴺ of a CellField `a` returns the field whose values are the N-th physical
+# derivative, expressed in `a`'s own coordinates, its DomainStyle. The low
+# level differentiation implementation differentiates in `a`'s coordinates and
+# converts the derivation indices from `a`'s coordinate basis to the physical
+# one.
 
 function gradient(a::CellField)
   cell_∇a = lazy_map(Broadcasting(∇),get_data(a))
@@ -279,16 +293,23 @@ function gradient(a::CellField)
   similar_cell_field(a,g,get_triangulation(a),DomainStyle(a))
 end
 
-function (k::PartialDerivatives)(a::CellField)
-  if DomainStyle(a) == ReferenceDomain()
-    @notimplemented """\n
-    Partial derivatives of a cell field defined in the reference domain are not
-    implemented yet: they require the pushforward of the covariant derivation
-    indices by the cell map, which `∇` performs with `push_∇`.
+function (k::PartialDerivatives{N})(a::CellField) where N
+  cell_∂a = lazy_map(Broadcasting(k), get_data(a))
+  if DomainStyle(a) == PhysicalDomain()
+    ka = cell_∂a
+  else
+    @notimplementedif N != 1 """\n
+    Partial derivatives of order $N of a cell field defined in the reference
+    domain are not implemented yet: their pushforward by the cell map involves
+    the derivatives of the map itself, up to order $N, as `push_∇∇` does.
     """
+    cell_map = get_cell_map(get_triangulation(a))
+    cell_Jt = lazy_map(partial_derivatives, cell_map)
+    cell_iJt = lazy_map(Operation(pinvJt), cell_Jt)
+    # `pushforward_partials` transports the derivation index with `pinv(Jt)`
+    ka = lazy_map(Broadcasting(Operation(push_first_partials)), cell_∂a, cell_iJt)
   end
-  cell_∂a = lazy_map(Broadcasting(k),get_data(a))
-  similar_cell_field(a,cell_∂a,get_triangulation(a),DomainStyle(a))
+  similar_cell_field(a, ka, get_triangulation(a), DomainStyle(a))
 end
 
 function DIV(a::CellField)
@@ -305,6 +326,7 @@ function ∇∇(a::CellField)
     h = cell_∇∇a
   else
     cell_map = get_cell_map(get_triangulation(a))
+    # this assumes that cell_map is affine, and push_∇∇ enforces it.
     h = lazy_map(Broadcasting(push_∇∇),cell_∇∇a,cell_map)
   end
   similar_cell_field(a,h,get_triangulation(a),DomainStyle(a))
@@ -427,6 +449,15 @@ for diffop in (:gradient,:divergence,:curl,:∇∇)
         args = map($diffop,f.args)
         OperationCellField(Operation($op),args...)
       end
+    end
+  end
+end
+
+for op in (:+,:-)
+  @eval begin
+    function (k::PartialDerivatives)(f::OperationCellField{DS,typeof($op)}) where DS
+      args = map(k, f.args)
+      OperationCellField(Operation($op), args...)
     end
   end
 end
@@ -731,9 +762,19 @@ end
 ################################################################################
 # Differential geometry operators needing derivatives or evaluation point
 
-for diff_op in (:exterior_derivative, :codifferential, :koszul)
+for (diff_op, partials_op) in (
+  (:exterior_derivative, :partials_to_exteriorderivative),
+  (:codifferential,      :partials_to_codifferential),
+)
   @eval begin
-    $diff_op(a::CellField) = similar_cell_field(a, lazy_map(Broadcasting($diff_op), get_data(a)))
+    function $diff_op(a::CellField)
+      ∂a = partial_derivatives(a)
+      cell_data = lazy_map(Broadcasting(Operation($partials_op)), get_data(∂a))
+      similar_cell_field(a, cell_data, get_triangulation(a), DomainStyle(a))
+    end
   end
 end
+
+# `κ_x(a) = ι_x(a)` contracts `a` with the position vector
+koszul(a::CellField) = Operation(koszul)(get_physical_coordinate(get_triangulation(a)), a)
 

@@ -14,14 +14,10 @@ The constructor determines the value of index (`D`,`D`) as minus the sum of the 
 struct SymTracelessTensorValue{D,T,L} <: AbstractSymTensorValue{D,T,L}
   data::NTuple{L,T}
   function SymTracelessTensorValue{D,T}(data::NTuple{L,T}) where {D,T,L}
-    @check L == D*(D+1)÷2-1
+    @check L == num_indep_components(SymTracelessTensorValue{D})
+    Int(D) == 0 && return new{D,T,0}(data)
+    Int(D) == 1 && return new{D,T,1}( (zero(T),) )
     new{D,T,L+1}( (data..., _minus_trace(data,Val(D))) )
-  end
-  function SymTracelessTensorValue{0,T}(data::NTuple{0,T}) where {T}
-    new{0,T,0}(data)
-  end
-  function SymTracelessTensorValue{1,T}(::NTuple{0,T}) where {T}
-    new{1,T,1}( (zero(T),) )
   end
 end
 
@@ -50,16 +46,15 @@ end
 
 # Empty SymTracelessTensorValue constructor
 
-SymTracelessTensorValue()                   = SymTracelessTensorValue{0,Int}(NTuple{0,Int}())
-SymTracelessTensorValue{0}()                = SymTracelessTensorValue{0,Int}(NTuple{0,Int}())
-SymTracelessTensorValue{0,T}() where {T}    = SymTracelessTensorValue{0,T}(NTuple{0,T}())
-SymTracelessTensorValue(data::NTuple{0})    = SymTracelessTensorValue{0,Int}(data)
-SymTracelessTensorValue{0}(data::NTuple{0}) = SymTracelessTensorValue{0,Int}(data)
+SymTracelessTensorValue()                = SymTracelessTensorValue{0,Int}(NTuple{0,Int}())
+SymTracelessTensorValue{0,T}() where {T} = SymTracelessTensorValue{0,T}(NTuple{0,T}())
+SymTracelessTensorValue(data::NTuple{0}) = SymTracelessTensorValue{0,Int}(data)
 
-# 1D SymTracelessTensorValue missing constructor
+# A traceless tensor of dimension 0 or 1 is zero, so no component is given, for
+# any variance of its dimension
 
-SymTracelessTensorValue{1}()                = SymTracelessTensorValue{1,Int}(NTuple{0,Int}())
-SymTracelessTensorValue{1}(data::NTuple{0}) = SymTracelessTensorValue{1,Int}(data)
+SymTracelessTensorValue{D}()                where D = SymTracelessTensorValue{D,Int}(NTuple{0,Int}())
+SymTracelessTensorValue{D}(data::NTuple{0}) where D = SymTracelessTensorValue{D,Int}(data)
 
 # SymTracelessTensorValue single NTuple argument constructor
 
@@ -150,8 +145,8 @@ function change_variance(::Type{<:SymTracelessTensorValue{D,T}}, ::Val{Sv}) wher
   SymTracelessTensorValue{first(Sv),T}
 end
 
-num_indep_components(::Type{<:SymTracelessTensorValue{0}}) = 0
-num_indep_components(::Type{<:SymTracelessTensorValue{D}}) where {D} = D*(D+1)÷2-1
+num_indep_components(::Type{<:SymTracelessTensorValue{D}}) where {D} =
+  iszero(Int(D)) ? 0 : D*(D+1)÷2-1
 
 num_stored_components(::Type{<:SymTracelessTensorValue{D}}) where D = num_indep_components(SymTensorValue{D})
 

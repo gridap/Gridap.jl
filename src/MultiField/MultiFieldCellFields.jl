@@ -167,6 +167,11 @@ for fun in (:gradient,:DIV,:∇∇)
   end
 end
 
+function (k::PartialDerivatives)(f::MultiFieldFEBasisComponent)
+  ∂f = k(f.single_field)
+  MultiFieldFEBasisComponent(∂f, f.fieldid, f.nfields)
+end
+
 function CellData.change_domain(
   a::MultiFieldFEBasisComponent,tdomain::DomainStyle
 )

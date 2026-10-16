@@ -23,13 +23,16 @@ using FillArrays: Fill
 #   d⋆ω = (∂(3xy)/∂x − ∂(−x²)/∂y) dx¹∧dx² = 3y dx¹∧dx²
 #   δω = −1 × ⋆(3y vol) = −3y;  at (0.125,0.125): −0.375
 
+# The values a cell field takes at the cell points of its own triangulation.
+function cell_values(cf)
+  a = cf(get_cell_points(get_triangulation(cf)))
+  c = array_cache(a)
+  [getindex!(c, a, i) for i in 1:length(a)]
+end
+
 # Element type of the values a form valued cell field produces, read off the
 # values themselves rather than off a declared type parameter.
-function form_eltype(cf)
-  Ωc = get_triangulation(cf)
-  a  = cf(get_cell_points(Ωc))
-  eltype(getindex!(array_cache(a), a, 1))
-end
+form_eltype(cf) = eltype(first(cell_values(cf)))
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 
@@ -232,6 +235,10 @@ for fe_cf in (uh, du)
   dfe  = exterior_derivative(fe_cf)(pts)
   cdfe = array_cache(dfe)
   @test eltype(getindex!(cdfe, dfe, 1)) <: ExteriorFormValue{1,cov2}
+
+  # The exterior derivative of a 0-form is its gradient read as a 1-form.
+  @test all(all(a .≈ b) for (a,b) in
+            zip(cell_values(𝑑(fe_cf)), cell_values(to_1form(∇(fe_cf)))))
 end
 
 # The jacobian of a bilinear cell map holds the same numbers as `∇` and has
@@ -244,14 +251,52 @@ Jt  = evaluate(lazy_map(partial_derivatives, cmu)[1], q)
 @test get_array(Jt) ≈ get_array(evaluate(∇(cmu[1]), q))
 @test get_array(pinvJt(Jt)) ≈ get_array(pinvJt(evaluate(∇(cmu[1]), q)))
 
-# Differentiating a cell field needs the pushforward of the derivation indices
-# that `∇` performs with `push_∇`, so only the physical domain is available.
-@test DomainStyle(uh) == ReferenceDomain()
-@test_throws ErrorException partial_derivatives(uh)
+# ── Derivatives in the reference domain ──────────────────────────────────────
+# A reference domain cell field takes reference coordinates and returns values
+# in the physical basis, so differentiating it transports its derivation
+# indices alone, which `pushforward_partials` does, as `∇` does with `push_∇`.
+# The carrier of the result is the one `derivatives_type` prescribes, in either
+# domain.
+
 ∂ω = partial_derivatives(ω)
 @test DomainStyle(∂ω) == PhysicalDomain()
-∂ωx = ∂ω(pts)
-@test eltype(getindex!(array_cache(∂ωx), ∂ωx, 1)) ===
-  derivatives_type(CoVectorValue{cov2,Float64}, x_c)
+@test form_eltype(∂ω) === derivatives_type(CoVectorValue{cov2,Float64}, x_c)
+
+@test DomainStyle(uh) == ReferenceDomain()
+∂uh = partial_derivatives(uh)
+@test DomainStyle(∂uh) == ReferenceDomain()
+@test form_eltype(∂uh) === derivatives_type(Float64, x_c)
+@test all(all(get_array(ai) ≈ get_array(bi) for (ai,bi) in zip(as,bs))
+          for (as,bs) in zip(cell_values(∂uh), cell_values(∇(uh))))
+
+# Pushing a higher order derivative forward needs the derivatives of the cell
+# map itself, as `push_∇∇` does.
+@test_throws ErrorException second_partial_derivatives(uh)
+
+# The operators agree with their physical twins, on a mesh whose cell maps are
+# not affine as well as on the affine one.
+model_na = CartesianDiscreteModel((0.0,1.0,0.0,1.0), (4,4),
+                                  map = x -> Point(x[1]+0.3*x[1]*x[2], x[2]+0.1*x[1]))
+
+for Ωi in (Ω, Triangulation(model_na))
+  ω_phys = CellField(ωfun, Ωi, PhysicalDomain())
+  ω_ref  = change_domain(ω_phys, Ωi, ReferenceDomain())
+  @test DomainStyle(ω_ref) == ReferenceDomain()
+
+  for op in (exterior_derivative, codifferential, koszul, partial_derivatives)
+    @test form_eltype(op(ω_ref)) === form_eltype(op(ω_phys))
+    @test all(all(a .≈ b) for (a,b) in
+              zip(cell_values(op(ω_phys)), cell_values(op(ω_ref))))
+  end
+end
+
+# ── The FEEC spelling of a bilinear form ─────────────────────────────────────
+# On a 0-form space `∫ 𝑑u ∧ ⋆𝑑v` is the stiffness matrix `∫ ∇u⋅∇v`, which pins
+# the pushforward: the FE basis lives in the reference domain.
+
+U = TrialFESpace(V)
+A_dg = assemble_matrix((u,v) -> ∫( vol_coeff(𝑑(u) ∧ flat_hodge_star(𝑑(v))) )dΩ, U, V)
+A_eu = assemble_matrix((u,v) -> ∫( ∇(u)⋅∇(v) )dΩ, U, V)
+@test A_dg ≈ A_eu
 
 end # module

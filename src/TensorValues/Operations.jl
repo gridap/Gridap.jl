@@ -722,27 +722,32 @@ Determinent of square second order tensors.
 """
 function det(a::MultiValue{Tuple{D1,D2}}) where {D1,D2}
   D1 == D2 || @unreachable "det only defined for square tensors, got size $(size(a))"
-  det(get_array(a))
+  _det(Val(Int(D1)), a)
 end
 det(a::MultiValue) = @unreachable "det only defined for square tensors, got size $(size(a))"
 
-det(a::MultiValue{Tuple{1,1}}) = a[1]
+# A skew symmetric tensor of odd dimension is singular, since
+# det(a) = det(-transpose(a)) = -det(a).
+det(a::SkewSymTensorValue{D,T}) where {D,T} =
+  isodd(Int(D)) ? zero(T) : _det(Val(Int(D)), a)
 
-function det(a::MultiValue{Tuple{2,2}})
+_det(::Val{D}, a) where D = det(get_array(a))
+
+_det(::Val{1}, a) = a[1]
+
+function _det(::Val{2}, a)
   a_11 = a[1, 1]; a_12 = a[1, 2]
   a_21 = a[2, 1]; a_22 = a[2, 2]
   a_11*a_22 - a_12*a_21
 end
 
-function det(a::MultiValue{Tuple{3,3}})
+function _det(::Val{3}, a)
   a_11 = a[1,1]; a_12 = a[1,2]; a_13 = a[1,3]
   a_21 = a[2,1]; a_22 = a[2,2]; a_23 = a[2,3]
   a_31 = a[3,1]; a_32 = a[3,2]; a_33 = a[3,3]
   a_11*a_22*a_33 + a_12*a_23*a_31 + a_13*a_21*a_32 -
     (a_11*a_23*a_32 + a_12*a_21*a_33 + a_13*a_22*a_31)
 end
-
-det(::SkewSymTensorValue{3,T}) where T = zero(T)
 
 """
     inv(a::MultiValue{Tuple{D1,D2}})
@@ -753,7 +758,7 @@ Inverse of a second order tensor.
 """
 function inv(a::MultiValue{Tuple{D1,D2}}) where {D1,D2}
   Int(D1) == Int(D2) || @unreachable "inv undefined for this tensor shape: $(size(a))"
-  TensorValue{inverse_variance(D2),inverse_variance(D1)}(inv(get_array(a)))
+  _inv(Val(Int(D1)), TensorValue{inverse_variance(D2),inverse_variance(D1)}, a)
 end
 
 """
@@ -823,28 +828,61 @@ function pinvJt(J_or_Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
   V(m_pinv)
 end
 
-const InverseStableTensorTypes{D} = Union{SymTensorValue{D},SkewSymTensorValue{D}}
-
-for V in (:SymTensorValue, :SkewSymTensorValue)
-  @eval function inv(a::$V{D}) where D
-    ai = inv(get_array(a))
-    $V{inverse_variance(D),eltype(ai)}(ai)
+function inv(a::SymTensorValue{D}) where D
+  V = SymTensorValue{inverse_variance(D)}
+  if Int(D) == 2
+    c = 1/det(a)
+    V(a[2,2]*c, -a[2,1]*c, a[1,1]*c)
+  else
+    _inv_array(V, a)
   end
 end
 
-function inv(a::MultiValue{Tuple{1,1}})
-  r = 1 / a[1]
-  T = change_eltype(a, typeof(r))
-  T(r)
+function inv(a::SymTracelessTensorValue{D,T}) where {D,T}
+  D_inv = inverse_variance(D)
+  if Int(D) == 1
+    # A 1x1 traceless tensor is zero, so its inverse is not traceless.
+    TensorValue{D_inv,D_inv}(inv(zero(T)))
+  elseif Int(D) == 2
+    # In dimension two, and only there, the inverse is traceless as well.
+    c = -1/det(a)
+    SymTracelessTensorValue{D_inv}(a[1,1]*c, a[2,1]*c)
+  else
+    _inv_array(TensorValue{D_inv,D_inv}, a)
+  end
 end
 
-function inv(a::MultiValue{Tuple{2,2}})
+# A skew symmetric tensor of odd dimension is singular, see `det`, so its
+# inverse is infinite.
+function inv(a::SkewSymTensorValue{D,T,L}) where {D,T,L}
+  D_inv = inverse_variance(D)
+  if Int(D) == 1
+    # A 1x1 skew symmetric tensor is zero, so its inverse is not skew symmetric.
+    TensorValue{D_inv,D_inv}(inv(zero(T)))
+  elseif Int(D) == 2
+    SkewSymTensorValue{D_inv}(-inv(a.data[1]))
+  elseif Int(D) == 3
+    SkewSymTensorValue{D_inv,T}(tfill(inv(zero(T)), Val(L)))
+  else
+    _inv_array(SkewSymTensorValue{D_inv}, a)
+  end
+end
+
+function _inv_array(::Type{V}, a) where V
+  ai = inv(get_array(a))
+  V{eltype(ai)}(ai)
+end
+
+_inv(::Val{D}, ::Type{V}, a) where {D,V} = _inv_array(V, a)
+_inv(::Val{1}, ::Type{V}, a) where V = V(1 / a[1])
+
+function _inv(::Val{2}, ::Type{V}, a) where V
   c = 1 / det(a)
   data = (a[2, 2] * c, -a[2, 1] * c, -a[1, 2] * c, a[1, 1] * c)
-  TensorValue{2}(data)
+  V(data)
 end
 
-function inv(a::MultiValue{Tuple{3,3}})
+function _inv(::Val{3}, ::Type{V}, a) where V
   a_11 = a[1,1]; a_12 = a[1,2]; a_13 = a[1,3]
   a_21 = a[2,1]; a_22 = a[2,2]; a_23 = a[2,3]
   a_31 = a[3,1]; a_32 = a[3,2]; a_33 = a[3,3]
@@ -859,25 +897,8 @@ function inv(a::MultiValue{Tuple{3,3}})
      ( a_12*a_23 - a_13*a_22 )*c,
     -( a_11*a_23 - a_13*a_21 )*c,
      ( a_11*a_22 - a_12*a_21 )*c)
-  TensorValue{3}(data)
+  V(data)
 end
-
-function inv(a::SymTensorValue{2})
-  c = 1/det(a)
-  T = change_eltype(a,typeof(c))
-  T(a[2,2]*c, -a[2,1]*c, a[1,1]*c)
-end
-
-inv(::SymTracelessTensorValue{1,T}) where T = TensorValue{1,1}(inv(zero(T)))
-function inv(a::SymTracelessTensorValue{2})
-  c = -1/det(a)
-  T = change_eltype(a,typeof(c))
-  T(a[1,1]*c, a[2,1]*c)
-end
-
-inv(::SkewSymTensorValue{1,T}) where T = TensorValue{1,1}(inv(zero(T)))
-inv(a::SkewSymTensorValue{2}) = (typeof(a))(-inv(a.data[1]))
-inv(a::SkewSymTensorValue{3,T,L}) where {T,L} = SkewSymTensorValue{3,T}(tfill(inv(zero(T)), Val(L)))
 
 
 # TODO: write tests for the adjugate, based on adjugate(a)⋅a = det(a)*one(a), except for SymTracelessTensorValue that has no "one", but promotes to SymTensorValue.
