@@ -131,6 +131,7 @@ export from_mandel
 
 export SkewSymKTensorValue
 export ExteriorFormValue
+export get_form_degree
 export ExteriorVectorValue
 export CoVectorValue
 export ContraVectorValue

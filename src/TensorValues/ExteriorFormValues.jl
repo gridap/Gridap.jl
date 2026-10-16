@@ -174,6 +174,19 @@ change_variance(::Type{<:SkewSymKTensorValue{V,K,D,T}}, ::Val{Sv}) where {V,K,D,
 
 num_indep_components(::Type{<:SkewSymKTensorValue{V,K,D}}) where {V,K,D} = binomial(Int(D),K)
 
+"""
+    get_form_degree(V::Type) -> Int
+    get_form_degree(reffe::ReferenceFE) -> Int
+
+The degree `k` of the differential forms value type `V`, or that of `reffe`'s
+shape functions.
+"""
+get_form_degree(::Type{<:ExteriorFormValue{K}}) where K = K
+get_form_degree(::Type{V}) where V<:Number = @unreachable """
+  $V is not form valued so it has no form degree.
+  """
+_form_degree_dim(::Type{<:ExteriorFormValue{K,D}}) where {K,D} = (K, Int(D))
+
 # ============================================================
 # Display
 # ============================================================
