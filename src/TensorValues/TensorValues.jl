@@ -149,6 +149,7 @@ export flat_sharp, ♯ᴱ
 export apply_tensor
 export pullback
 export pushforward
+export push_first_partials
 export pinvJt
 export symbolic_coordinates
 export koszul

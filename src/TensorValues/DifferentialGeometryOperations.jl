@@ -1105,6 +1105,21 @@ pushforward(p::ProductTensorValue, Jt::MultiValue{Tuple{Dm,Dn},Tj}, iJt::MultiVa
   _map_second_factor(b -> pushforward(b, Jt, iJt),
                      _map_first_factor(a -> pushforward(a, Jt, iJt), p))
 
+"""
+    push_first_partials(∂a, iJt::MultiValue{Tuple{Di1,Di2}})
+
+Inverse chainrule on the derivation index of `∂a`, the
+[`partial_derivatives`](@ref) of a tensor field `a`, composed by a map `φ` of
+transposed jacobian `Jt`, where `iJt = pinvJt(Jt)`. The chain-rule is thus
+applied to the first index only.
+"""
+function push_first_partials(
+  ∂a::ProductTensorValue{<:SymNTensorValue{Tuple{D}}}, iJt::MultiValue{Tuple{Di1,Di2},Ti}) where {D,Di1,Di2,Ti}
+
+  iszero(num_indep_components(∂a)) && return ∂a
+  _map_first_factor(a -> pullback(a, iJt), ∂a)
+end
+
 # pullback and pushforward of a alternating tensor: comutes with outer product
 # so preserves symmetries
 
