@@ -46,10 +46,14 @@ The following table summarizes the elements implemented in Gridap ([legend below
 | [Nédélec (first kind)](https://defelement.org/elements/nedelec1.html)                   | [`nedelec`](@ref NedelecRefFE)               | 𝓟ᵣ⁻Λ¹     | `TRI`,`TET` | ``{r=o+1≥1, r}``| `:Hcurl`  |
 |                                                                                         |                                              | 𝓠ᵣ⁻Λ¹     | `QUAD`,`HEX`| ``{r=o+1≥1, r}``| `:Hcurl`  |
 | [Nédélec (second kind)](https://defelement.org/elements/nedelec2.html)                  | [`nedelec2`](@ref NedelecRefFE)              | 𝓟ᵣΛ¹      | `TRI`,`TET` | ``{r=o≥1,   r}``| `:Hcurl`  |
+| [Serendipity H(curl)](https://defelement.org/elements/scurl.html)                      | [`scurl`](@ref SerendipityCurlRefFE)         | 𝓢ᵣΛ¹      | `QUAD`,`HEX`| ``{r=o≥1, r+1}``| `:Hcurl`  |
+| [Trimmed serendipity H(curl)](https://defelement.org/elements/trimmed-serendipity-curl.html)| [`trimmed_scurl`](@ref TrimmedSerendipityCurlRefFE) | 𝓢ᵣ⁻Λ¹ | `QUAD`,`HEX`| ``{r=o+1≥1, r}``| `:Hcurl`  |
 |                                                                                                                                                                                                |
 | [Raviart-Thomas](https://defelement.org/elements/raviart-thomas.html)                   | [`raviart_thomas`](@ref LagrangianRefFE)     | 𝓟ᵣ⁻Λᴰ⁻¹   | `TRI`,`TET` | ``{r=o+1≥1, r}``| `:Hdiv`   |
 |                                                                                         |                                              | 𝓠ᵣ⁻Λᴰ⁻¹   | `QUAD`,`HEX`| ``{r=o+1≥1, r}``| `:Hdiv`   |
 | [Brezzi-Douglas-Marini](https://defelement.org/elements/brezzi-douglas-marini.html)     | [`bdm`](@ref BDMRefFE)                       | 𝓟ᵣΛᴰ⁻¹    | `TRI`,`TET` | ``{r=o≥1,   r}``| `:Hdiv`   |
+| [Serendipity H(div)](https://defelement.org/elements/sdiv.html)                        | [`sdiv`](@ref SerendipityDivRefFE)           | 𝓢ᵣΛᴰ⁻¹    | `QUAD`,`HEX`| ``{r=o≥1, r+1}``| `:Hdiv`   |
+| [Trimmed serendipity H(div)](https://defelement.org/elements/trimmed-serendipity-div.html)| [`trimmed_sdiv`](@ref TrimmedSerendipityDivRefFE) | 𝓢ᵣ⁻Λᴰ⁻¹ | `QUAD`,`HEX`| ``{r=o+1≥1, r}``| `:Hdiv`   |
 | [Mardal-Tai-Winther](https://defelement.org/elements/mardal-tai-winther.html)           | [`mtw`](@ref MardalTaiWintherRefFE)          |           | `TRI`,`TET` | ``{o=1, D+1}``  | `:Hdiv`   |
 
 #### $L^2$ elements
@@ -313,7 +317,7 @@ Pages   = ["GeometricDecompositions.jl"]
 ```@autodocs
 Modules = [ReferenceFEs,]
 Order   = [:type, :constant, :macro, :function]
-Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CrouzeixRaviartRefFEs.jl","ModalScalarRefFEs.jl","RotatingPLambdaRefFEs.jl","HermiteRefFEs.jl","MorleyRefFEs.jl","ArgyrisRefFEs.jl","HHJRefFEs.jl","ReggeRefFEs.jl","GLSRefFEs.jl","ArnoldWintherNCRefFEs.jl","ArnoldWintherCRefFEs.jl","MardalTaiWintherRefFEs.jl"]
+Pages   = ["RaviartThomasRefFEs.jl","NedelecRefFEs.jl","BDMRefFEs.jl","CrouzeixRaviartRefFEs.jl","ModalScalarRefFEs.jl","RotatingPLambdaRefFEs.jl","HermiteRefFEs.jl","MorleyRefFEs.jl","ArgyrisRefFEs.jl","HHJRefFEs.jl","ReggeRefFEs.jl","GLSRefFEs.jl","ArnoldWintherNCRefFEs.jl","ArnoldWintherCRefFEs.jl","MardalTaiWintherRefFEs.jl","SerendipityHdivHcurl.jl"]
 ```
 
 ### Cartesian product ReferenceFEs

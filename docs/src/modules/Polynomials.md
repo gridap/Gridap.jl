@@ -219,6 +219,18 @@ They are respectively implemented by [`BarycentricPmΛBasis`](@ref) and
 details are provided in [this](@ref "Bernstein-basis-generalization-for-``\mathcal{P}Λ``-spaces")
 developer note.
 
+#### ``\mathcal{S}_rΛ^k`` and ``\mathcal{S}_r^{-}Λ^k`` bases
+
+On D-cubes, the serendipity spaces of Arnold and Awanou and the trimmed
+serendipity spaces of Gillette and Kloefkorn are, for ``1 ≤ k ≤ D-1``,
+```math
+\mathcal{S}_rΛ^k = \mathcal{P}_rΛ^k ⊕ \mathcal{J}_rΛ^k ⊕ d\mathcal{J}_{r+1}Λ^{k-1},\qquad
+\mathcal{S}_r^{-}Λ^k = \mathcal{P}_{r-1}Λ^k ⊕ κ\tilde{\mathcal{P}}_{r-1}Λ^{k+1} ⊕ \mathcal{J}_rΛ^k ⊕ d\mathcal{J}_rΛ^{k-1},
+```
+where ``κ`` is the Koszul operator and ``\mathcal{J}_rΛ^k`` is spanned by Koszul
+images of monomial forms. They are implemented by [`SerendipityPolyBasis`](@ref),
+whose docstring details the spaces and the choice of basis.
+
 
 #### Filter functions
 
@@ -309,6 +321,7 @@ bernstein_terms
 bernstein_term_id
 BarycentricPmΛBasis(::Val{D},::Type{T},r,k; kwargs...) where {D,T}
 BarycentricPΛBasis(::Val{D},::Type{T},r,k; kwargs...) where {D,T}
+SerendipityPolyBasis
 ```
 ## Low level APIs and internals
 

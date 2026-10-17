@@ -4,14 +4,15 @@
 
 _ensure_hierarchical(PT) = !isHierarchical(PT) && @unreachable "Polynomial family must be hierarchical, got $PT."
 
-function _default_poly_type(F)
+function _default_poly_type(F,k,D)
   F ∈ (:P, :P⁻) && return Bernstein
-  F ∈ (:Q⁻,:S)  && return ModalC0
+  F ∈ (:S,:S⁻) && 0 < k < D && return Legendre
+  F ∈ (:Q⁻,:S,:S⁻) && return ModalC0
   Monomial
 end
 
 """
-    FEEC_poly_basis(::Val{D},T,r,k, F::Symbol, PT=_default_poly_type(F); kwargs...)
+    FEEC_poly_basis(::Val{D},T,r,k, F::Symbol, PT=_default_poly_type(F,k,D); kwargs...)
 
 "Factory for polynomial basis of Finite Element Exterior Calculus spaces"
 
@@ -19,20 +20,21 @@ Return, if it is implemented, a polynomial basis for the space  ``\\mathrm{F}ᵣ
 dimension `D`, with `T` the scalar component type and `PT<:Polynomial` the
 polynomial basis family.
 
-The default `PT` is `Bernstein` on simplices and `ModalC0` on D-cubes.
+The default `PT` is `Bernstein` on simplices and `ModalC0` on D-cubes, except
+`Legendre` for the vector-valued serendipity spaces.
 
 # Arguments
 - `D`: spatial dimension
 - `T::Type`: scalar components type
 - `r::Int`: polynomial order
 - `k::Int`: form order
-- `F::Symbol`: family, i.e. `:P⁻`, `:P`, `:Q⁻` or `:S`
+- `F::Symbol`: family, i.e. `:P⁻`, `:P`, `:Q⁻`, `:S` or `:S⁻` (trimmed serendipity)
 ### kwargs
 - `rotate_90::Bool`: only if `D`=2 and `k`=1, tells to use the vector proxy corresponding to div conform function instead of curl conform ones.
 - `vertices=nothing`: for `PT=Bernstein` bases on simplices (`F = :P` or `:P⁻`), the basis is defined on the simplex defined by `vertices` instead of the reference one.
 - `cart_prod=false`: for `k`=0 or `k=D`, authorise `T` to be a tensor type for Cartesian product space of the scalar space.
 """ # document DG_calc once it's implemented
-function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(F);
+function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(F,k,D);
     DG_calc=false, rotate_90=false, vertices=nothing, cart_prod=false) where {D,T}
 
   @assert PT <: Polynomial
@@ -56,7 +58,7 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
       CartProdPolyBasis(PT,Val(D),T,r,_p_filter)
     elseif F == :Q⁻            # Lagrange, 𝓠r space
       CartProdPolyBasis(PT,Val(D),T,r,_q_filter)
-    elseif F == :S             # Lagrange, 𝓢r space
+    elseif F == :S || F == :S⁻ # Lagrange, 𝓢r space, 𝓢⁻ᵣΛ⁰ = 𝓢ᵣΛ⁰
       PT==ModalC0 || _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),T,r,_ser_filter)
     end
@@ -78,6 +80,9 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
       PT == Bernstein && return BernsteinBasisOnSimplex{D}(T,r,vertices) # only if cart_prod
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),T,r,_p_filter)
+    elseif F == :S⁻ # 𝓢⁻ᵣΛᴰ = 𝓟ᵣ₋₁Λᴰ
+      _ensure_hierarchical(PT)
+      CartProdPolyBasis(PT,Val(D),T,r-1,_p_filter)
     end
 
 
@@ -105,8 +110,8 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
           orders = [ r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D ]
           CompWiseTensorPolyBasis{D}(PT, V, orders)
         end
-      elseif F == :S  # BDM on D-cubes
-        @notimplemented
+      elseif F ∈ (:S,:S⁻) # BDM on D-cubes, Arnold-Awanou, Gillette-Kloefkorn
+        SerendipityPolyBasis{D}(PT,T,r,k; trimmed=(F == :S⁻), rotate_90)
       end
 
     elseif D == 3
@@ -120,8 +125,8 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
         # former QGradBasis(PT,Val(D),T,r-1)
         orders = [ r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D ]
         CompWiseTensorPolyBasis{D}(PT, V, orders)
-      elseif F == :S  # "Serendipity second kind Nedelec" ?
-        @notimplemented
+      elseif F ∈ (:S,:S⁻) # Arnold-Awanou, Gillette-Kloefkorn
+        SerendipityPolyBasis{D}(PT,T,r,k; trimmed=(F == :S⁻))
       end
 
     else # D > 3
@@ -143,8 +148,8 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
       # former QCurlGradBasis(PT,Val(D),T,r-1)
       orders = [ r-1 + (i==j ? 1 : 0) for i in 1:D, j in 1:D ]
       CompWiseTensorPolyBasis{D}(PT, V, orders)
-    elseif F == :S  # "3D Serendipity BDM" ?
-      @notimplemented
+    elseif F ∈ (:S,:S⁻) # Arnold-Awanou, Gillette-Kloefkorn
+      SerendipityPolyBasis{D}(PT,T,r,k; trimmed=(F == :S⁻))
     end
 
   else

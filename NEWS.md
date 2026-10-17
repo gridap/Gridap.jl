@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Implemented `Base.muladd` for `MultiValue`'d inputs, optimizing it using fma if an argument is scalar. Since PR[#1347](https://github.com/gridap/Gridap.jl/pull/1347).
+- Added the serendipity H(div) and H(curl) reference FEs on quadrilaterals and hexahedra, `sdiv`, `scurl`, `trimmed_sdiv` and `trimmed_scurl`. Their prebasis is the new `SerendipityPolyBasis`, also available through `FEEC_poly_basis` with the family `:S` or `:S⁻`.
 
 ### Changed
 

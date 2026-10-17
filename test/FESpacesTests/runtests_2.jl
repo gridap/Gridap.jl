@@ -38,4 +38,6 @@ using Test
 
 @testset "RotatingPLambda" begin include("RotatingPLambdaTests/runtests.jl") end
 
+@testset "SerendipityHdivHcurl" begin include("SerendipityHdivHcurlFESpacesTests.jl") end
+
 end # module
