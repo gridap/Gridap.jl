@@ -518,6 +518,62 @@ c = s4ot + 0
 r = SymFourthOrderTensorValue(1,0,0, 0,.5,0, 0,0,1)
 @test c == r
 
+# muladd with a scalar (used by generic matrix multiplication in LinearAlgebra)
+
+for x in (a, t, st, qt, sk, s4ot)
+  for α in (2, 2.5)
+    c = muladd(α, x, x)
+    r = α*x + x
+    @test isa(c,typeof(r))
+    @test c == r
+
+    c = muladd(x, α, x)
+    r = x*α + x
+    @test isa(c,typeof(r))
+    @test c == r
+  end
+end
+
+# The two tensors carry different eltypes, so the result eltype comes from
+# promoting all three arguments at once.
+for x in (a, t, st, qt, sk, s4ot)
+  for y in (convert(change_eltype(typeof(x),Float32),x), convert(change_eltype(typeof(x),Float64),x))
+    for α in (2, 2.5, 2.0f0, 2+0im)
+      c = muladd(α, x, y)
+      r = α*x + y
+      @test isa(c,typeof(r))
+      @test c == r
+
+      c = muladd(x, α, y)
+      r = x*α + y
+      @test isa(c,typeof(r))
+      @test c == r
+    end
+  end
+end
+
+c = muladd(2, st, t)
+@test isa(c,TensorValue{3,3,Int})
+@test c == 2*st + t
+
+c = muladd(sk, 2, qt)
+@test isa(c,TensorValue{3,3,Int})
+@test c == sk*2 + qt
+
+A = [1.0 2.0; 3.0 4.0]
+u = [VectorValue(1,2), VectorValue(3,4)]
+r = [VectorValue(7.,10.), VectorValue(15.,22.)]
+@test A*u == r
+@test transpose(A)*u == [VectorValue(10.,14.), VectorValue(14.,20.)]
+@test mul!(similar(r), A, u) == r
+@test mul!(copy(r), A, u, 2, 1) == 3*r
+@test A*[u u] == [r r]
+
+T = [t st; sk qt]
+v = [1.0, 2.0]
+@test T*v == [t + 2*st, sk + 2*qt]
+@test T*[v v] == [T*v T*v]
+
 # Dot product (simple contraction)
 
 a = VectorValue(1,2,3)
