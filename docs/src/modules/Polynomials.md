@@ -215,7 +215,7 @@ these bases are of maximum degree K+1 and the divergence of their elements are i
 Those bases are a generalization of the scalar Bernstein bases to the spaces for
 the two principal finite element families forming a de Rham complex on simplices.
 They are respectively implemented by [`BarycentricPmΛBasis`](@ref) and
-[`BarycentricPmΛBasis`](@ref). Their definition with references, and implementation
+[`BarycentricPΛBasis`](@ref). Their definition with references, and implementation
 details are provided in [this](@ref "Bernstein-basis-generalization-for-``\mathcal{P}Λ``-spaces")
 developer note.
 
