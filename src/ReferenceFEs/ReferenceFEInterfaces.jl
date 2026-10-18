@@ -294,7 +294,13 @@ function get_face_own_dofs(reffe::ReferenceFE, conf::Nothing)
   get_face_own_dofs(reffe)
 end
 
-function _get_face_own_dofs_l2(reffe::ReferenceFE)
+"""
+    l2_face_own_dofs(reffe::ReferenceFE)
+
+The DoF ownership of `reffe` under [`L2Conformity`](@ref): every DoF is owned
+by the cell itself, no face owns any.
+"""
+function l2_face_own_dofs(reffe::ReferenceFE)
   p = get_polytope(reffe)
   r = [Int[] for i in 1:num_faces(p)]
   r[end] = collect(1:num_dofs(reffe))
@@ -322,11 +328,20 @@ anisotropic order). For these permutations the corresponding vector in
 """
 function get_face_own_dofs_permutations(reffe::ReferenceFE, conf::Conformity)
   face_own_dofs = get_face_own_dofs(reffe, conf)
-  _trivial_face_own_dofs_permutations(face_own_dofs)
+  l2_face_own_dofs_permutations(face_own_dofs)
 end
 
 # Does not allow face permutations to exist (will error)
-function _trivial_face_own_dofs_permutations(face_own_dofs)
+"""
+    l2_face_own_dofs_permutations(face_own_dofs)
+
+The DoF permutation tables for an ownership that is never shared across cells,
+as under [`L2Conformity`](@ref): one entry per face, the identity, answering
+only the first vertex permutation (`pindex == 1`). Used as a fallback for other
+conformities too, where it is only valid on meshes whose shared faces are seen
+with the same vertex order by every cell.
+"""
+function l2_face_own_dofs_permutations(face_own_dofs)
   [[collect(Int, 1:length(dofs)),] for dofs in face_own_dofs]
 end
 
@@ -734,7 +749,7 @@ Conformity(reffe::GenericRefFE) = reffe.conformity
 get_face_own_dofs(reffe::GenericRefFE) = reffe.face_own_dofs
 function get_face_own_dofs(reffe::GenericRefFE, conf::Conformity)
   conf == Conformity(reffe) && return reffe.face_own_dofs
-  conf isa L2Conformity && return _get_face_own_dofs_l2(reffe)
+  conf isa L2Conformity && return l2_face_own_dofs(reffe)
   @unreachable """\n
   It is not possible to use conformity $conf on this reference FE.
   """

@@ -765,15 +765,6 @@ function _facet_orientation_signs(reffe)
   Diagonal(signs)
 end
 
-"""
-    struct FaceDofSignMap <: Map
-      ...
-    end
-
-Map taking a cell id to the diagonal ±1 change of basis of its DoFs: the
-`face_own_dofs_signs` stored in the metadata of the reference FE, at the
-`pindex` of each local face of the cell (`get_cell_permutations(topo)`).
-"""
 struct FaceDofSignMap{P} <: Map
   cell_lface_pindex::P
   face_own_dofs::Vector{Vector{Int}}
