@@ -140,9 +140,9 @@ keyword argument, which gives the choice of the polynomial family to use as
 *basis* but not the spanned polynomial *space* (for affine-mapped reference
 elements).
 
-`poly_type` defaults to `Bernstein` on simplices and to `ModalC0` on n-cubes
-(incl. `SEGMENT`), except for `lagrangian` and `serendipity` elements for which
-it defaults to `Monomial`.
+`poly_type` defaults to `Bernstein` on simplices and n-cubes (incl. `SEGMENT`),
+except for `lagrangian` and `serendipity` elements for which it defaults to
+`Monomial`, and for `modal_serendipity` for which it defaults to `ModalC0`.
 
 ###### `mom_poly_type` keyword argument
 

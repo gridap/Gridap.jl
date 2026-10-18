@@ -551,8 +551,7 @@ end
 
 # Default polynomial type for moment based reference FEs
 function _mom_reffe_default_PT(p)
-  is_simplex(p) && return Bernstein
-  is_n_cube(p) && return Polynomials.ModalC0
+  (is_simplex(p) || is_n_cube(p)) && return Bernstein
   Monomial
 end
 
