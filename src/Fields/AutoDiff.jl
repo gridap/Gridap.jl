@@ -55,19 +55,14 @@ function gradient(f::Function,x::Point,fx::Number)
   VectorValue(ForwardDiff.gradient(f∘Point,get_array(x)))
 end
 
-function gradient(f::Function,x::Point,fx::VectorValue)
-  TensorValue(transpose(ForwardDiff.jacobian(get_array∘f∘Point,get_array(x))))
-end
-
-# Implementation for all second order tensor values
+# Implementation for tensor values of any order
 # Does not exploit possible symmetries
-function gradient(f::Function,x::Point{A},fx::S) where S<:MultiValue{Tuple{B,C}} where {A,B,C}
-  a = transpose(ForwardDiff.jacobian(get_array∘f∘Point,get_array(x)))
-  ThirdOrderTensorValue(reshape(a, (A,B,C)))
-end
-
 function gradient(f::Function,x::Point,fx::MultiValue)
-  @notimplemented
+  # Jacobian of size (num_components(fx), D), components in column-major order. Transposing
+  # puts the derivative index first, which is the storage order of `gradient_type`.
+  a = ForwardDiff.jacobian(get_array∘f∘Point,get_array(x))
+  G = gradient_type(typeof(fx),x)
+  G(Tuple(transpose(a)))
 end
 
 function symmetric_gradient(f::Function,x::Point)
