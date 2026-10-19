@@ -48,6 +48,8 @@ import Gridap.TensorValues: ∧, hodge_star, flat_hodge_star, flat, sharp, inter
 import Gridap.TensorValues: koszul
 import Gridap.TensorValues: vol_coeff, to_1form, from_1form
 import LinearAlgebra: det, tr, cross, dot, ⋅, rmul!
+import LinearAlgebra
+using LinearAlgebra: UniformScaling
 import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose, real, imag, conj
 import Statistics: mean
 
@@ -96,6 +98,7 @@ export attach_constraints_rows
 export attach_constraints_cols
 export identity_constraints
 export get_physical_coordinate
+export get_metric_data
 
 export CellState
 export update_state!
@@ -110,6 +113,8 @@ export d_1form
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
+
+include("CellMetrics.jl")
 
 include("Interpolation.jl")
 

@@ -3,7 +3,7 @@
     abstract type Grid{Dc,Dp}
 
 Abstract type that represents mesh of a domain of parametric dimension `Dc` and
-physical dimension `Dp`.
+physical, or embedding, dimension `Dp`.
 
 The interface of `Grid` is defined by overloading:
 

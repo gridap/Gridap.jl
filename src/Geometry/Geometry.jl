@@ -12,7 +12,8 @@ using Test
 using DocStringExtensions
 using FillArrays
 
-using LinearAlgebra: ⋅, Diagonal
+import LinearAlgebra
+using LinearAlgebra: ⋅, Diagonal, UniformScaling
 using Statistics: mean
 using DataStructures: SortedSet
 using SparseArrays: sparse
@@ -167,6 +168,8 @@ export compute_face_own_nodes
 export compute_vertex_node
 export get_node_face_owner
 export compute_node_face_owner
+export get_cell_metric
+export get_cell_inv_metric
 export get_triangulation
 
 export UnstructuredDiscreteModel
@@ -223,6 +226,8 @@ include("UnstructuredGridTopologies.jl")
 include("FaceLabelings.jl")
 
 include("DiscreteModels.jl")
+
+include("CellMetrics.jl")
 
 include("DiscreteModelMocks.jl")
 
