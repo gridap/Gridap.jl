@@ -10,6 +10,7 @@ module FormValuedPΛFESpacesTests
 
 using Test
 using LinearAlgebra
+using Random
 using Gridap
 using Gridap.FESpaces
 using Gridap.Geometry
@@ -137,6 +138,58 @@ end
   )
   for r in rs, k in 0:D
     @test projection_error(model,p,Val(D),:Q⁻,r,Val(k)) < TOL
+  end
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# No `NormalSignMap`: the conforming trace is single valued as it stands
+# ─────────────────────────────────────────────────────────────────────────────
+# The AFW moments read `ι_f̂^* ω`, pulled back along the face's own parametrisation
+# (`form_moment`), not `u⋅n̂` as the proxies do: no side is chosen, so no sign is
+# owed, and there is no `apply_face_signflip` for `PΛConformity` either.
+
+"component ids tangential (resp. not) to a facet of normal `eⱼ`, for each `j`"
+_comp_ids(D,k,tangential) =
+  [[s for (s,I) in enumerate(Gridap.TensorValues.sorted_combinations(D,k))
+       if (j in I) != tangential] for j in 1:D]
+
+_nrm_dir(n) = argmax(ntuple(i -> abs(n[i]), length(n)))
+
+function _jump2(ωp, ωm, np, ids_per_dir)
+  ids = ids_per_dir[_nrm_dir(np)]
+  isempty(ids) && return zero(ωp.data[1])
+  sum((ωp.data[s] - ωm.data[s])^2 for s in ids)
+end
+
+@testset "Q⁻Λᵏ needs no NormalSignMap on $lbl" for (lbl,model,p,D,krs) in (
+    ("cartesian QUAD", cart_quad,   QUAD, 2, ((1,1),(1,2),(1,3))),
+    ("graded QUAD",    graded_quad, QUAD, 2, ((1,1),(1,2))),
+    ("cartesian HEX",  cart_hex,    HEX,  3, ((1,1),(1,2),(2,1),(2,2))),
+  )
+  for (k,r) in krs
+    reffe = ReferenceFE(p,:Q⁻,r,k,Float64; DG_calc=true)
+    V = FESpace(model, reffe)
+    Random.seed!(1234)
+    uh = FEFunction(V, rand(num_free_dofs(V)))
+
+    Γ  = SkeletonTriangulation(model)
+    dΓ = Measure(Γ, 2*(r+2))
+    n  = get_normal_vector(Γ)
+    J(u,ids) = sum(∫( Operation((a,b,c) -> _jump2(a,b,c,ids))(u.plus,u.minus,n.plus) )dΓ)
+
+    @test J(uh, _comp_ids(D,k,true))  < 1.0e-20  # on `eⱼ` the trace keeps `dx^I`, `j ∉ I`
+    @test J(uh, _comp_ids(D,k,false)) > 1.0e-6   # calibration: the dropped components jump
+
+    # Vacuous where the sign map is the identity: it only touches facet owned DOFs.
+    cell_reffe = [reffe for _ in 1:num_cells(model)]
+    sgn = lazy_map(d -> diag(d), Gridap.FESpaces.get_sign_flip(model, cell_reffe))
+    if any(c -> any(<(0), sgn[c]), 1:num_cells(model))
+      basis = get_fe_basis(V)
+      cvb = lazy_map(Broadcasting(*), get_cell_dof_values(uh), sgn)
+      ub  = GenericCellField(lazy_map(linear_combination, cvb, get_data(basis)),
+                             get_triangulation(basis), DomainStyle(basis))
+      @test J(ub, _comp_ids(D,k,true)) > 1.0e-6  # calibration: a sign flip breaks it
+    end
   end
 end
 
@@ -436,6 +489,13 @@ end
   Ω = Triangulation(permuted); dΩ = Measure(Ω,8)
   f = _form(Val(2),Val(2),1)
   @test relative_error(interpolate(f,V), CellField(f,Ω), dΩ) < TOL
+
+  # Moment based: identity permutation only, so the `has_sorted_cells` guard refuses it.
+  for k in 0:2
+    mom = ReferenceFE(QUAD,:Q⁻,2,k,Float64; DG_calc=true)
+    @test !Gridap.ReferenceFEs.has_complete_dof_permutations(mom)
+    @test_throws ErrorException FESpace(permuted, mom)
+  end
 end
 
 end # module
