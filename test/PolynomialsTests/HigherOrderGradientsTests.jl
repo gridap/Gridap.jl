@@ -4,7 +4,6 @@ using Test
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
-using Gridap.Fields: ad_return_cache, ad_evaluate!
 using Gridap.Polynomials
 
 # PolynomialBasis: hand-written kernels for N ≤ 2, forward-mode AD above. The AD evaluation
@@ -14,7 +13,10 @@ for (D, k) in ((2, 3), (3, 2))
   xs = [Point(ntuple(d -> 0.1d + 0.05i, D)) for i in 1:4]
   for N in 1:2
     fg = FieldGradientArray{N}(b)
-    @test ad_evaluate!(ad_return_cache(fg, xs), fg, xs) == evaluate(fg, xs)
+    # Generic AD path (FieldArrays.jl), bypassing the hand-written kernels
+    G = FieldGradientArray{N,<:AbstractArray{<:Field}}
+    c = invoke(return_cache, Tuple{G,AbstractVector{<:Point}}, fg, xs)
+    @test invoke(evaluate!, Tuple{Any,G,AbstractVector{<:Point}}, c, fg, xs) == evaluate(fg, xs)
   end
   for N in 3:4
     fg = FieldGradientArray{N}(b)

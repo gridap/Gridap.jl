@@ -143,8 +143,6 @@ include("DiffOperators.jl")
 
 include("AutoDiff.jl")
 
-include("HigherOrderGradients.jl")
-
 # include("ArrayBlocks.jl") # Partially moved to Gridap.Arrays
 include("FieldArrayBlocks.jl")
 

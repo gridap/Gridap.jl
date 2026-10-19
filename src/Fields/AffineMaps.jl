@@ -117,7 +117,7 @@ function lazy_map(
   cell_map::AbstractArray{<:AffineField})
   cell_Jt = lazy_map(∇,cell_map)
   cell_invJt = lazy_map(Operation(pinvJt),cell_Jt)
-  lazy_map(Broadcasting(Operation(push_∇∇)),cell_∇∇a,cell_invJt)
+  return lazy_map(Broadcasting(Operation(push_∇∇)),cell_∇∇a,cell_invJt)
 end
 
 function lazy_map(
@@ -126,8 +126,24 @@ function lazy_map(
   cell_map::AbstractArray{<:AffineField})
   cell_∇∇a = cell_∇∇at.args[1]
   cell_∇∇b = lazy_map(k,cell_∇∇a,cell_map)
-  cell_∇∇bt = lazy_map(transpose,cell_∇∇b)
-  cell_∇∇bt
+  return lazy_map(transpose,cell_∇∇b)
+end
+
+function lazy_map(
+  k::Broadcasting{PushNthGradient{N}},
+  cell_∇ⁿa::AbstractArray,
+  cell_map::AbstractArray{<:AffineField}) where N
+  cell_Jt = lazy_map(∇,cell_map)
+  cell_invJt = lazy_map(Operation(pinvJt),cell_Jt)
+  return lazy_map(Broadcasting(Operation(_PushNthGradientMap{N}())),cell_∇ⁿa,cell_invJt)
+end
+
+function lazy_map(
+  k::Broadcasting{PushNthGradient{N}},
+  cell_∇ⁿat::LazyArray{<:Fill{typeof(transpose)}},
+  cell_map::AbstractArray{<:AffineField}) where N
+  cell_∇ⁿa = cell_∇ⁿat.args[1]
+  return lazy_map(transpose, lazy_map(k,cell_∇ⁿa,cell_map))
 end
 
 function inverse_map(f::AffineField)

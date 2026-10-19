@@ -100,6 +100,18 @@ lazy_map(::Broadcasting{typeof(∇)},a::AbstractArray{<:Field}) = lazy_map(∇,a
 lazy_map(::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field}) = lazy_map(∇∇,a)
 
 """
+    struct NthGradient{N} <: Function
+
+The `N`-th gradient operator, `NthGradient{N}()(f) == gradient(f, Val(N))`. Use
+`Broadcasting(NthGradient{N}())` on arrays of fields, as for `∇` and `∇∇`.
+"""
+struct NthGradient{N} <: Function end
+
+(::NthGradient{N})(f) where N = gradient(f, Val(N))
+
+evaluate!(cache,g::Broadcasting{<:NthGradient},a::Field) = g.f(a)
+
+"""
     push_∇(∇a::Field, ϕ::Field) = pinvJt(∇(ϕ))⋅∇a
 
 Pushforward of `∇a` by the mapping `ϕ`, or covariant Piola transform.
@@ -147,6 +159,16 @@ function push_∇ⁿ(∇ⁿa::Field,ϕ::Field,::Val{N}) where N
   affine cell maps.
   """
 end
+
+"""
+    struct PushNthGradient{N} <: Function
+
+`PushNthGradient{N}()(∇ⁿa, ϕ) == push_∇ⁿ(∇ⁿa, ϕ, Val(N))`. Use
+`Broadcasting(PushNthGradient{N}())` on cell arrays, as for `push_∇` and `push_∇∇`.
+"""
+struct PushNthGradient{N} <: Function end
+
+(::PushNthGradient{N})(∇ⁿa::Field,ϕ::Field) where N = push_∇ⁿ(∇ⁿa,ϕ,Val(N))
 
 """
     gradient_type(::Type{T}, x::Point) where T

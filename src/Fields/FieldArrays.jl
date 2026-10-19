@@ -139,6 +139,22 @@ function evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Fiel
   FieldGradientArray{2}(a)
 end
 
+function evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::FieldGradientArray{N}) where N
+  FieldGradientArray{N+2}(a.fa)
+end
+
+function return_value(k::Broadcasting{<:NthGradient},a::AbstractArray{<:Field})
+  evaluate(k,a)
+end
+
+function evaluate!(cache,k::Broadcasting{NthGradient{N}},a::AbstractArray{<:Field}) where N
+  FieldGradientArray{N}(a)
+end
+
+function evaluate!(cache,k::Broadcasting{NthGradient{N}},a::FieldGradientArray{M}) where {N,M}
+  FieldGradientArray{N+M}(a.fa)
+end
+
 function gradient(a::AbstractArray{<:Field})
   msg =
   """\n
@@ -192,6 +208,28 @@ function evaluate!(
     @inbounds r.array[i] = taylor_tensor(G, fx[i], Val(N), Val(D))
   end
   return r.array
+end
+
+# Single point: evaluate at a one-point vector, so that the array is differentiated as a whole
+function return_cache(
+  fg::FieldGradientArray{N,<:AbstractArray{<:Field}}, x::Point) where N
+  xs = [x]
+  cf = return_cache(fg,xs)
+  v = evaluate!(cf,fg,xs)
+  r = CachedArray(zeros(eltype(v),(size(v,2),)))
+  return r, cf, xs
+end
+
+function evaluate!(
+  cache, fg::FieldGradientArray{N,<:AbstractArray{<:Field}}, x::Point) where N
+  r, cf, xs = cache
+  xs[1] = x
+  v = evaluate!(cf,fg,xs)
+  ndof = size(v,2)
+  setsize!(r,(ndof,))
+  a = r.array
+  copyto!(a,v)
+  return a
 end
 
 # Optimizing linear_combination.
@@ -350,6 +388,16 @@ for op in (:∇,:∇∇)
       LinearCombinationFieldVector(a.values,fields)
     end
   end
+end
+
+function evaluate!(cache,k::Broadcasting{NthGradient{N}},a::LinearCombinationFieldVector) where N
+  fields = k(a.fields)
+  LinearCombinationFieldVector(a.values,fields)
+end
+
+function (g::NthGradient)(a::LinearCombinationField)
+  fields = Broadcasting(g)(a.fields)
+  LinearCombinationField(a.values,fields,a.column)
 end
 
 function get_children(n::TreeNode, a::LinearCombinationFieldVector)
@@ -513,6 +561,7 @@ end
 testitem(a::Transpose{<:Field}) = testitem(a.parent)
 evaluate!(cache,k::Broadcasting{typeof(∇)},a::Transpose{<:Field}) = transpose(k(a.parent))
 evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::Transpose{<:Field}) = transpose(k(a.parent))
+evaluate!(cache,k::Broadcasting{NthGradient{N}},a::Transpose{<:Field}) where N = transpose(k(a.parent))
 
 return_value(k::Transpose{<:Field},x::Point) = transpose(return_value(k.parent,x))
 return_cache(k::Transpose{<:Field},x::Point) = return_cache(k.parent,x)
