@@ -136,12 +136,40 @@ function push_∇∇(∇∇a::Field,ϕ::Field)
 end
 
 """
+    push_∇ⁿ(∇ⁿa::Field, ϕ::Field, Val(N)) = @notimplemented
+
+Pushforward of the `N`-th gradient `∇ⁿa` of a reference quantity by the cell map `ϕ`;
+`push_∇` at `N = 1` and `push_∇∇` at `N = 2`.
+"""
+function push_∇ⁿ(∇ⁿa::Field,ϕ::Field,::Val{N}) where N
+  @notimplemented """\n
+  Pushforward of N-th order derivatives of reference quantities is only implemented for
+  affine cell maps.
+  """
+end
+
+"""
     gradient_type(::Type{T}, x::Point) where T
 
 Tensor type of the gradient of a `T` valued function.
 """
 function gradient_type(::Type{T},x::Point) where T
   typeof(outer(zero(x),zero(T)))
+end
+
+"""
+    nth_gradient_type(::Type{T}, x::Point, Val(N))
+
+Type of the `N`-th gradient of a `T`-valued field, i.e. `gradient_type` applied `N`
+times. Scalar values give `VectorValue`, `TensorValue`, `ThirdOrderTensorValue` and then
+`HighOrderTensorValue`.
+"""
+function nth_gradient_type(::Type{T}, x::Point, ::Val{N}) where {T,N}
+  G = T
+  for _ in 1:N
+    G = gradient_type(G, x)
+  end
+  return G
 end
 
 """
@@ -153,7 +181,7 @@ the gradient is applied. Fields can implement
     evaluate!(cache,f::FieldGradient{N,F},x::Point)
 
 (and `return_cache`); otherwise the gradient is computed by forward-mode automatic
-differentiation of the field's own evaluation (see `HigherOrderGradients.jl`).
+differentiation of the field's own evaluation.
 
 For `F<:Function`, `FieldGradient` is implemented for `N=1, 2` by `gradient`
 and `hessian`.
@@ -170,6 +198,13 @@ testargs(f::FieldGradient,x::Point) = testargs(f.object,x)
 return_value(f::FieldGradient,x::Point) = evaluate(f,testargs(f,x)...)
 return_cache(f::FieldGradient,x::Point) = nothing
 testvalue(::Type{FieldGradient{N,T}}) where {N,T} = FieldGradient{N}(testvalue(T))
+
+# Default evaluation of the N-th gradient for a single point via forward-mode AD
+function evaluate!(cache, fg::FieldGradient{N}, x::Point{D}) where {N,D}
+  fx = evaluate(fg.object, seed_point(x, Val(N)))
+  G = nth_gradient_type(typeof(evaluate(fg.object, x)), x, Val(N))
+  taylor_tensor(G, fx, Val(N), Val(D))
+end
 
 # Default methods for arrays of points
 

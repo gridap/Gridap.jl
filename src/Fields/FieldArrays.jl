@@ -164,6 +164,36 @@ Base.getindex(
    a::FieldGradientArray{Ng,A,T,N},i::Vararg{Integer,N}) where {Ng,A,T,N} = gradient(a.fa[i...],Val(Ng))
 Base.IndexStyle(::Type{<:FieldGradientArray{Ng,A}}) where {Ng,A} = IndexStyle(A)
 
+# Default caching and evaluation of the N-th gradient for arrays of points via forward-mode AD
+function return_cache(
+  fg::FieldGradientArray{N,<:AbstractArray{<:Field}}, x::AbstractVector{<:Point}) where N
+  f  = fg.fa
+  xi = testitem(x)
+  xd = CachedArray([seed_point(xj, Val(N)) for xj in x])
+  cf = return_cache(f, xd.array)
+  G  = nth_gradient_type(eltype(return_value(f, x)), xi, Val(N))
+  fx = evaluate!(cf, f, xd.array)
+  r  = CachedArray(zeros(G, size(fx)))
+  return xd, cf, r
+end
+
+function evaluate!(
+  cache, fg::FieldGradientArray{N,<:AbstractArray{<:Field}}, x::AbstractVector{<:Point}) where N
+  xd, cf, r = cache
+  D = length(eltype(x))
+  setsize!(xd, size(x))
+  for i in eachindex(x)
+    xd.array[i] = seed_point(x[i], Val(N))
+  end
+  fx = evaluate!(cf, fg.fa, xd.array)
+  setsize!(r, size(fx))
+  G = eltype(r.array)
+  for i in eachindex(fx)
+    @inbounds r.array[i] = taylor_tensor(G, fx[i], Val(N), Val(D))
+  end
+  return r.array
+end
+
 # Optimizing linear_combination.
 
 function linear_combination(a::AbstractVector{<:Number},b::AbstractVector{<:Field})

@@ -747,7 +747,7 @@ tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
         for (k, pos) in enumerate(Ib)
           b_idx[pos] = ciC[k]
         end
-        push!(summands, :(a[$a_idx...]*b[$b_idx...]) )
+        push!(summands, :(a[$(Tuple(a_idx)...)]*b[$(Tuple(b_idx)...)]) )
       end
       push!(comps, Expr(:call, :+, summands...))
     end
@@ -858,7 +858,7 @@ tensor_contraction(a::MultiValue, i::Int, j::Int) =
       for (k, pos) in enumerate(J)
         a_idx[pos] = ciC[k]
       end
-      push!(summands, :(a[$a_idx...]))
+      push!(summands, :(a[$(Tuple(a_idx)...)]))
     end
     push!(comps, Expr(:call, :+, summands...))
   end
@@ -1213,7 +1213,7 @@ end
   comps = Expr[]
   for ci in CartesianIndices(Sr)
     a_idx = ntuple(k -> ci[inv_perm[k]], Na)
-    push!(comps, :( a[$a_idx...] ) )
+    push!(comps, :( a[$(a_idx...)] ) )
   end
   :( $V($(comps...)) )
 end
