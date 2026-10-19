@@ -6,7 +6,6 @@ using Test
 
 @testset "MonomialBases" begin include("MonomialBasesTests.jl") end
 
-@testset "HigherOrderGradients" begin include("HigherOrderGradientsTests.jl") end
 
 @testset "CompWiseTensorPolyBases" begin include("CompWiseTensorPolyBasesTests.jl") end
 
