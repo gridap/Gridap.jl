@@ -22,6 +22,8 @@ using Test
 
 @testset "MomentBasedReferenceFEs" begin include("MomentBasedReferenceFEsTests.jl") end
 
+@testset "FaceDofPermutations" begin include("FaceDofPermutationsTests.jl") end
+
 @testset "LagrangianRefFEs" begin include("LagrangianRefFEsTests.jl") end
 
 @testset "CLagrangianRefFEs" begin include("CLagrangianRefFEsTests.jl") end

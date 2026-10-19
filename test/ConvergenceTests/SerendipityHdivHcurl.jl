@@ -11,8 +11,8 @@ using Gridap.ReferenceFEs
 # cube: the discrete solution must not depend on it
 function relabel_cells(model)
   grid = get_grid(model)
-  syms = ReferenceFEs._cube_symmetries(only(get_polytopes(model)))
-  perms = [s[3] for s in syms[randperm(MersenneTwister(0), length(syms))]]
+  syms = get_vertex_permutations(only(get_polytopes(model)))
+  perms = syms[randperm(MersenneTwister(0), length(syms))]
   cell_nodes = get_cell_node_ids(grid)
   relabelled = [collect(cell_nodes[i])[perms[mod1(i,length(perms))]] for i in 1:length(cell_nodes)]
   x = vec(collect(get_node_coordinates(grid)))

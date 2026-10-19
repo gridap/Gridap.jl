@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implemented `Base.muladd` for `MultiValue`'d inputs, optimizing it using fma if an argument is scalar. Since PR[#1347](https://github.com/gridap/Gridap.jl/pull/1347).
 - Added the serendipity H(div) and H(curl) reference FEs on quadrilaterals and hexahedra, `sdiv`, `scurl`, `trimmed_sdiv` and `trimmed_scurl`. Their prebasis is the new `SerendipityPolyBasis`, also available through `FEEC_poly_basis` with the family `:S` or `:S⁻`.
+- Reference FEs built through `MomentBasedReferenceFE` with `change_dof=false` now carry, for every face and vertex permutation of it, the signed permutation of their face DoFs, derived in closed form from the symmetries of the weight bases (`moment_face_own_dofs_permutations`): tensor Legendre and Bernstein, and Bernstein on simplices. Faces with other weights keep the previous one-entry table.
+- `GenericRefFE` has a new field `face_own_dofs_permutations` holding, for every face and vertex permutation of it, a signed permutation of the DoFs the face owns (`s*j`), read through `get_face_own_dofs_permutations` and the new `get_face_own_dofs_signs`. Its default is the L2 table, so existing constructor calls are unchanged. The serendipity H(div)/H(curl) elements store their tables there instead of in `metadata`.
 
 ### Changed
 

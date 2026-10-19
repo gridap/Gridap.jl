@@ -129,6 +129,7 @@ export get_prebasis
 export get_dof_basis
 export get_face_own_dofs
 export get_face_own_dofs_permutations
+export get_face_own_dofs_signs
 export get_face_dofs
 export get_own_dofs_permutations
 export get_shapefuns

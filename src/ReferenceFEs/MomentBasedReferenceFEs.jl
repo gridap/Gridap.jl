@@ -543,10 +543,181 @@ function MomentBasedReferenceFE(
 
   if isnothing(face_own_dofs)
     face_own_dofs = get_face_own_moments(dof_basis)
+    face_own_dofs_permutations = moment_face_own_dofs_permutations(p, moments, conformity)
+  else
+    face_own_dofs_permutations = l2_face_own_dofs_permutations(face_own_dofs)
   end
   GenericRefFE{typeof(name)}(
-    n_dofs, p, prebasis, dof_basis, conformity, metadata, face_own_dofs
+    n_dofs, p, prebasis, dof_basis, conformity, metadata, face_own_dofs;
+    face_own_dofs_permutations
   )
+end
+
+############################################################################################
+# Face DoF permutations
+#
+# A cell sees a shared face through its geometrical map, which lists the face's
+# vertices in the cell's local order (the `pindex` of `get_cell_permutations`).
+# The global DoFs of the face are the reference ones taken through the symmetry
+# Φ(x) = Ax + b of the reference face polytope realising that vertex
+# permutation. Pulled back by Φ, a moment ∫_f σ(φ, μᵢ) is a moment against
+# μᵢ∘Φ⁻¹, times the factor by which Φ changes the frame σ is written in: det(A)
+# for a tangential moment (the edge tangent follows the vertex order, and so
+# does the orientation of n×· on a face), 1 for a normal moment against the
+# outward normal and for a scalar one. So when the weight basis is closed under
+# Φ up to signs,
+#
+#     μᵢ∘Φ⁻¹ = sᵢ μ_τ(i),    or  A μᵢ∘Φ⁻¹ = sᵢ μ_τ(i) for a vector-valued μ,
+#
+# the DoFs of the face are a *signed permutation* of the global ones, which is
+# what `face_own_dofs_permutations` stores (see `GenericRefFE`). That holds for
+# the tensor Legendre basis (Lₙ(1-t) = (-1)ⁿLₙ(t)), the tensor Bernstein basis
+# (B_{k,K}(1-t) = B_{K-k,K}(t)) and the simplex Bernstein basis (a permutation
+# of the multi-index): the face weights of Raviart–Thomas, BDM, Nédélec on
+# n-cubes and the serendipity elements. It does not hold for Nédélec's
+# triangular face weights (a basis of 1-forms, which Φ mixes) nor for a
+# polynomial type without such a symmetry; a face with such weights keeps the
+# one-entry table of `l2_face_own_dofs_permutations`, which only answers cells
+# listing the face's vertices in the same order.
+############################################################################################
+
+"""
+    moment_face_own_dofs_permutations(p::Polytope, moments, conf::Conformity)
+
+The signed `face_own_dofs_permutations` (see [`GenericRefFE`](@ref)) of the
+moment-based reference FE on `p` defined by `moments` (see
+[`MomentBasedDofBasis`](@ref)) with conformity `conf`, in closed form from the
+symmetries of the weight bases. Faces whose weights have no such symmetry get
+the one-entry table of [`l2_face_own_dofs_permutations`](@ref).
+"""
+function moment_face_own_dofs_permutations(p::Polytope{D}, moments, conf::Conformity) where D
+  vperms = get_face_vertex_permutations(p)
+  face_bases = [[μ for (faces, _, μ) in moments if f in faces] for f in 1:num_faces(p)]
+  nown = map(bases -> sum(length, bases; init=0), face_bases)
+  perms = [[collect(1:n) for _ in fperms] for (n, fperms) in zip(nown, vperms)]
+  for d in 1:D-1, f in get_dimrange(p, d)
+    isempty(face_bases[f]) && continue
+    fp = Polytope{d}(p, f - get_offset(p, d))
+    tables = map(vperms[f]) do π
+      _face_signed_permutation(fp, face_bases[f], conf, π)
+    end
+    perms[f] = any(isnothing, tables) ? [collect(1:nown[f])] : tables
+  end
+  perms
+end
+
+# The signed permutation of the DoFs owned by a face with weights `bases`, for
+# its vertex permutation π; `nothing` if a weight basis is not closed under the
+# symmetry realising π.
+function _face_signed_permutation(fp::Polytope, bases, conf::Conformity, π)
+  A = _face_symmetry(fp, π)
+  orientation = conf isa CurlConformity ? det(A) : 1
+  perm = Int[]
+  for μ in bases
+    τs = _signed_permutation(μ, A, π)
+    isnothing(τs) && return nothing
+    τ, s = τs
+    offset = length(perm)
+    append!(perm, zeros(Int, length(τ)))
+    # local DoF τ(j) is ±global DoF j
+    perm[offset .+ τ] = (orientation .* s) .* (offset .+ (1:length(τ)))
+  end
+  perm
+end
+
+# The matrix A of the symmetry x ↦ Ax + b of the reference face polytope `fp`
+# realising the vertex permutation π, i.e. sending vertex i to vertex
+# invperm(π)[i]: A eᵢ is the image of the edge from vertex 1 to the vertex at
+# eᵢ. Reference coordinates are 0 or 1, so A is exact.
+function _face_symmetry(fp::Polytope{d}, π) where d
+  x = get_vertex_coordinates(fp)
+  v(i) = VectorValue{d,Int}(Int.(Tuple(x[i])))
+  axes = is_simplex(fp) ? ntuple(i -> i + 1, d) : ntuple(i -> 1 + 2^(i-1), d)
+  πinv = invperm(π)
+  b = v(πinv[1])
+  cols = ntuple(i -> v(πinv[axes[i]]) - b, d)
+  TensorValue{d,d,Int}(ntuple(k -> cols[(k-1) ÷ d + 1][(k-1) % d + 1], d*d))
+end
+
+# (σ, flip) with A eⱼ = ± e_i, σ[i] = j, flip[i] = (A[i,σ[i]] < 0), for a signed
+# permutation matrix A; `nothing` otherwise (the symmetries of a simplex face
+# are not of that kind)
+function _axes_of(A::TensorValue{d,d,Int}) where d
+  σ = [findfirst(j -> !iszero(A[i,j]), 1:d) for i in 1:d]
+  (any(isnothing, σ) || !allunique(σ)) && return nothing
+  all(i -> all(j -> j == σ[i] || iszero(A[i,j]), 1:d) && abs(A[i,σ[i]]) == 1, 1:d) || return nothing
+  σ, [A[i,σ[i]] < 0 for i in 1:d]
+end
+
+# (τ, s) with μᵢ∘Φ⁻¹ = sᵢ μ_τ(i) — or A μᵢ∘Φ⁻¹ = sᵢ μ_τ(i) for a vector-valued
+# μ, whose components follow A e_c = A[i,c] e_i — for the symmetry Φ(x) = Ax + b
+# of the reference face, with vertex permutation π; `nothing` when the basis is
+# not closed under Φ up to signs.
+_signed_permutation(μ, A, π) = nothing
+
+# Tensor-product bases: Φ permutes the axes, x ↦ y with x_σ[i] = y_i or
+# 1 - y_i, so the term of exponents α goes to the term with α′[i] = α[σ[i]],
+# or K - α[σ[i]] on a reversed axis for Bernstein, with the Legendre parity.
+function _signed_permutation(μ::CartProdPolyBasis{d,V,PT}, A, π) where {d,V,PT}
+  PT in (Legendre, Bernstein) || return nothing
+  axes = _axes_of(A)
+  isnothing(axes) && return nothing
+  σ, flip = axes
+  orders = get_orders(μ)
+  all(i -> orders[i] == orders[σ[i]], 1:d) || return nothing
+  ncomp = num_indep_components(V)
+  ncomp in (1, d) || return nothing
+  exps = get_exponents(μ)
+  term = Dict(α => t for (t, α) in enumerate(exps))
+  τ, s = Int[], Int[]
+  for α in exps
+    α′ = ntuple(i -> ifelse(flip[i] && PT == Bernstein, orders[i] - α[σ[i]], α[σ[i]]), d)
+    haskey(term, α′) || return nothing
+    t = term[α′]
+    sα = PT == Legendre ? prod(i -> ifelse(flip[i], (-1)^α[σ[i]], 1), 1:d) : 1
+    for c in 1:ncomp           # components are consecutive within a term
+      i = isone(ncomp) ? 1 : findfirst(==(c), σ)
+      push!(τ, ncomp*(t-1) + i)
+      push!(s, isone(ncomp) ? sα : sα*A[i,c])
+    end
+  end
+  τ, s
+end
+
+# Component-wise tensor-product bases (Nédélec's face weights on hexahedra):
+# as above, component by component, each block of terms going to the block of
+# the component A e_c = A[i,c] e_i, whose orders must match.
+function _signed_permutation(μ::CompWiseTensorPolyBasis{d,V,PT}, A, π) where {d,V,PT}
+  PT in (Legendre, Bernstein) || return nothing
+  axes = _axes_of(A)
+  isnothing(axes) && return nothing
+  σ, flip = axes
+  num_indep_components(V) == d || return nothing
+  orders, comp_terms = μ.orders, Polynomials.get_comp_terms(μ)
+  offsets = cumsum([0; length.(comp_terms)[1:end-1]])
+  τ, s = Int[], Int[]
+  for c in 1:d
+    i = findfirst(==(c), σ)
+    all(k -> orders[i,k] == orders[c,σ[k]], 1:d) || return nothing
+    term = Dict(ci => t for (t, ci) in enumerate(comp_terms[i]))
+    for ci in comp_terms[c]
+      ci′ = CartesianIndex(ntuple(k -> ifelse(flip[k] && PT == Bernstein, orders[i,k] + 2 - ci[σ[k]], ci[σ[k]]), d))
+      haskey(term, ci′) || return nothing
+      sα = PT == Legendre ? prod(k -> ifelse(flip[k], (-1)^(ci[σ[k]]-1), 1), 1:d) : 1
+      push!(τ, offsets[i] + term[ci′])
+      push!(s, sα*A[i,c])
+    end
+  end
+  τ, s
+end
+
+# Bernstein basis on a simplex: λ∘Φ⁻¹ = λ[invperm(π)], so B_α∘Φ⁻¹ = B_α[π]; a
+# pure permutation of the multi-indices.
+function _signed_permutation(μ::BernsteinBasisOnSimplex{d,V}, A, π) where {d,V}
+  num_indep_components(V) == 1 || return nothing
+  K = get_order(μ)
+  τ = [bernstein_term_id(α[π]) for α in bernstein_terms(K, d)]
+  τ, ones(Int, length(τ))
 end
 
 # Default polynomial type for moment based reference FEs

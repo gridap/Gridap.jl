@@ -131,9 +131,10 @@ function SerendipityDivRefFE(::Type{T}, p::Polytope{D}, r::Integer) where {T,D}
   end
   conf = DivConformity()
   dofs = MomentBasedDofBasis(p, prebasis, moments)
-  metadata = _face_own_dofs_signed_permutations(p, moments, conf)
+  face_own_dofs_permutations = moment_face_own_dofs_permutations(p, moments, conf)
   GenericRefFE{SerendipityDiv}(
-    length(dofs), p, prebasis, dofs, conf, metadata, get_face_own_moments(dofs))
+    length(dofs), p, prebasis, dofs, conf, nothing, get_face_own_moments(dofs);
+    face_own_dofs_permutations)
 end
 
 function ReferenceFE(p::Polytope, ::SerendipityDiv, ::Type{T}, order) where T
@@ -203,9 +204,10 @@ function SerendipityCurlRefFE(::Type{T}, p::Polytope{D}, r::Integer) where {T,D}
   end
   conf = CurlConformity()
   dofs = MomentBasedDofBasis(p, prebasis, moments)
-  metadata = _face_own_dofs_signed_permutations(p, moments, conf)
+  face_own_dofs_permutations = moment_face_own_dofs_permutations(p, moments, conf)
   GenericRefFE{SerendipityCurl}(
-    length(dofs), p, prebasis, dofs, conf, metadata, get_face_own_moments(dofs))
+    length(dofs), p, prebasis, dofs, conf, nothing, get_face_own_moments(dofs);
+    face_own_dofs_permutations)
 end
 
 function ReferenceFE(p::Polytope, ::SerendipityCurl, ::Type{T}, order) where T
@@ -268,9 +270,10 @@ function TrimmedSerendipityDivRefFE(::Type{T}, p::Polytope{D}, k::Integer) where
   end
   conf = DivConformity()
   dofs = MomentBasedDofBasis(p, prebasis, moments)
-  metadata = _face_own_dofs_signed_permutations(p, moments, conf)
+  face_own_dofs_permutations = moment_face_own_dofs_permutations(p, moments, conf)
   GenericRefFE{TrimmedSerendipityDiv}(
-    length(dofs), p, prebasis, dofs, conf, metadata, get_face_own_moments(dofs))
+    length(dofs), p, prebasis, dofs, conf, nothing, get_face_own_moments(dofs);
+    face_own_dofs_permutations)
 end
 
 function ReferenceFE(p::Polytope, ::TrimmedSerendipityDiv, ::Type{T}, order) where T
@@ -358,9 +361,10 @@ function TrimmedSerendipityCurlRefFE(::Type{T}, p::Polytope{D}, k::Integer) wher
   end
   conf = CurlConformity()
   dofs = MomentBasedDofBasis(p, prebasis, moments)
-  metadata = _face_own_dofs_signed_permutations(p, moments, conf)
+  face_own_dofs_permutations = moment_face_own_dofs_permutations(p, moments, conf)
   GenericRefFE{TrimmedSerendipityCurl}(
-    length(dofs), p, prebasis, dofs, conf, metadata, get_face_own_moments(dofs))
+    length(dofs), p, prebasis, dofs, conf, nothing, get_face_own_moments(dofs);
+    face_own_dofs_permutations)
 end
 
 function ReferenceFE(p::Polytope, ::TrimmedSerendipityCurl, ::Type{T}, order) where T
@@ -368,91 +372,10 @@ function ReferenceFE(p::Polytope, ::TrimmedSerendipityCurl, ::Type{T}, order) wh
 end
 
 ################################################################################
-# Gluing on arbitrarily numbered meshes
-#
-# A cell sees a shared face F through its geometric map, which lists F's
-# vertices in the cell's local order. The global DoFs of F are the reference
-# ones taken through a symmetry Φ of the cube realising the face's vertex
-# permutation `pindex`. Restricted to F, Φ is x ↦ A_f x + b_f with A_f a signed
-# permutation, and the face test functions are tensor Legendre polynomials
-# (scalar, vector, or gradients of scalar ones), with Lₙ(1-t) = (-1)ⁿLₙ(t). So
-# the DoFs of a face are a *signed permutation* of the global ones, exactly,
-# with an extra det(A_f) for tangential moments. The permutation goes to
-# `get_face_own_dofs_permutations`, as for Lagrangian nodes, and the signs to a
-# per-cell diagonal change of basis (see src/FESpaces/Pullbacks.jl), times the
-# outward-normal signs where Gridap applies them. No basis of 𝓟ᵣ(□) is permuted
-# without signs (the half turn has trace -1 on 𝓟₁), so signs are unavoidable.
-
-# All x ↦ Ax + b mapping □ᴰ onto itself, with the vertex permutation each
-# induces (`get_vertex_permutations(HEX)` lists only the identity).
-function _cube_symmetries(p::Polytope{D}) where D
-  vs = get_vertex_coordinates(p)
-  syms = Tuple{TensorValue{D,D,Int},VectorValue{D,Int},Vector{Int}}[]
-  σs = filter(allunique, vec(collect(Iterators.product(ntuple(_ -> 1:D, D)...))))
-  for σ in σs, flips in Iterators.product(ntuple(_ -> (1,-1), D)...)
-    A = TensorValue{D,D,Int}(ntuple(D*D) do k
-      i, j = Tuple(CartesianIndices((D,D))[k])
-      ifelse(σ[i] == j, flips[i], 0)
-    end)
-    b = VectorValue{D,Int}(ntuple(i -> ifelse(flips[i] == -1, 1, 0), D))
-    img = [findfirst(==(A⋅v + b), vs) for v in vs]
-    push!(syms, (A, b, img))
-  end
-  syms
-end
-
-# (τ, s) such that μᵢ∘Φ⁻¹ = sᵢ μ_τ(i), or A μᵢ∘Φ⁻¹ = sᵢ μ_τ(i) for a
-# vector-valued μ, for the symmetry Φ(x) = Ax + b of the reference cube
-function _signed_permutation(μ::LegendreBasis{d,V}, A) where {d,V}
-  σ = [findfirst(j -> !iszero(A[i,j]), 1:d) for i in 1:d]
-  flip = [A[i,σ[i]] < 0 for i in 1:d]
-  exps = get_exponents(μ)
-  term = Dict(α => t for (t, α) in enumerate(exps))
-  ncomp = num_indep_components(V)
-  τ, s = Int[], Int[]
-  for α in exps
-    t = term[ntuple(i -> α[σ[i]], d)]
-    sα = prod(i -> ifelse(flip[i], (-1)^α[σ[i]], 1), 1:d)
-    for c in 1:ncomp           # components are consecutive; A e_c = A[i,c] e_i
-      i = isone(ncomp) ? 1 : findfirst(==(c), σ)
-      push!(τ, ncomp*(t-1) + i)
-      push!(s, isone(ncomp) ? sα : sα*Int(A[i,c]))
-    end
-  end
-  τ, s
-end
-
-# `face_own_dofs_permutations[f][pindex]` and `face_own_dofs_signs[f][pindex]`
-# of the moment-based reference FE on `p` defined by `moments`
-function _face_own_dofs_signed_permutations(p::Polytope{D}, moments, conf::Conformity) where D
-  vperms = get_face_vertex_permutations(p)
-  face_bases = [[μ for (faces, _, μ) in moments if f in faces] for f in 1:num_faces(p)]
-  nown = map(bases -> sum(length, bases; init=0), face_bases)
-  perms = [[collect(1:n) for _ in fperms] for (n, fperms) in zip(nown, vperms)]
-  signs = [[ones(n) for _ in fperms] for (n, fperms) in zip(nown, vperms)]
-
-  for d in 1:D-1
-    syms = _cube_symmetries(only(get_reffaces(Polytope{d}, p)))
-    for f in get_dimrange(p, d), (pindex, π) in enumerate(vperms[f])
-      A, _, _ = syms[findfirst(s -> s[3] == invperm(π), syms)]
-      orientation = conf isa CurlConformity ? det(A) : 1
-      offset = 0
-      for μ in face_bases[f]
-        τ, sμ = _signed_permutation(μ, A)
-        # local DoF τ(j) is global DoF j
-        perms[f][pindex][offset .+ τ] = offset .+ (1:length(τ))
-        signs[f][pindex][offset .+ τ] = orientation .* sμ
-        offset += length(μ)
-      end
-    end
-  end
-
-  (face_own_dofs_permutations=perms, face_own_dofs_signs=signs)
-end
-
-function get_face_own_dofs_permutations(
-  reffe::GenericRefFE{<:_SerendipityHdivHcurl}, conf::Conformity
-)
-  conf == Conformity(reffe) || return _identity_dof_permutations(reffe, conf)
-  get_metadata(reffe).face_own_dofs_permutations
-end
+# Gluing on arbitrarily numbered meshes: the face DoFs of a cell are a signed
+# permutation of the global ones, derived in closed form by
+# `moment_face_own_dofs_permutations` (see MomentBasedReferenceFEs.jl) and
+# stored in the reference FE; the signs are applied per cell by `FaceDofSignMap`
+# (src/FESpaces/Pullbacks.jl), times the outward-normal signs where Gridap
+# applies them. No basis of 𝓟ᵣ(□) is permuted without signs (the half turn has
+# trace -1 on 𝓟₁), so signs are unavoidable.

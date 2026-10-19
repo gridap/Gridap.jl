@@ -88,46 +88,7 @@ for k in 1:4
   @test (rank(V) == size(V,1)) == isodd(k)
 end
 
-# The face DoFs are signed permutations of the global ones: checked against the
-# reference DoFs taken through each symmetry Φ(x) = Ax+b of the cube realising a
-# face permutation, ℓ̂ⱼ(Φ*ψ̂ᵢ), with Gridap's Piola maps.
-function twist(dofs::MomentBasedDofBasis, A, b)
-  nodes = map(x -> A⋅x + b, dofs.nodes)
-  moments = map(m -> map(mᵢ -> A⋅mᵢ, m), dofs.face_moments)
-  MomentBasedDofBasis(nodes, moments, dofs.face_nodes, dofs.face_own_moms, dofs.operator)
-end
-
-function test_face_permutations(reffe)
-  p = get_polytope(reffe)
-  D = num_dims(p)
-  dofs, shapefuns = get_dof_basis(reffe), get_shapefuns(reffe)
-  own = get_face_own_dofs(reffe)
-  perms = ReferenceFEs.get_metadata(reffe).face_own_dofs_permutations
-  signs = ReferenceFEs.get_metadata(reffe).face_own_dofs_signs
-  @test get_face_own_dofs_permutations(reffe, Conformity(reffe)) === perms
-  @test get_face_own_dofs_permutations(reffe, L2Conformity()) != perms
-
-  face_vertices = reduce(vcat, [get_faces(p,d,0) for d in 0:D])
-  vperms = get_face_vertex_permutations(p)
-  syms = ReferenceFEs._cube_symmetries(p)
-  for d in 1:D-1, f in get_dimrange(p,d)
-    isempty(own[f]) && continue
-    fv = face_vertices[f]
-    for (pindex, π) in enumerate(vperms[f])
-      A, b, _ = syms[findfirst(s -> s[3][fv] == fv[invperm(π)], syms)]
-      S = evaluate(twist(dofs,A,b), shapefuns)[own[f],own[f]]
-      P = zeros(size(S))
-      foreach(i -> P[perms[f][pindex][i],i] = signs[f][pindex][i], axes(S,2))
-      @test S ≈ P atol=1e-10
-    end
-  end
-end
-
-test_face_permutations(SerendipityDivRefFE(Float64,QUAD,3))
-test_face_permutations(SerendipityDivRefFE(Float64,HEX,2))
-test_face_permutations(SerendipityCurlRefFE(Float64,QUAD,3))
-test_face_permutations(SerendipityCurlRefFE(Float64,HEX,3))
-test_face_permutations(TrimmedSerendipityDivRefFE(Float64,HEX,2))
-test_face_permutations(TrimmedSerendipityCurlRefFE(Float64,HEX,2))
+# The face DoF permutation tables are checked against a numerical oracle, for
+# these and the other moment-based elements, in FaceDofPermutationsTests.jl.
 
 end # module
