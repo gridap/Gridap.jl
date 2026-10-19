@@ -160,17 +160,25 @@ function return_cache(f::PolynomialBasis{D,V}, x::AbstractVector{<:Point}) where
 end
 
 function return_cache(
-  fg::FieldGradientArray{N,<:PolynomialBasis{D,V}},
-  x::AbstractVector{<:Point}) where {N,D,V}
+  fg::FieldGradientArray{1,<:PolynomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
 
   @assert D == length(eltype(x)) "Incorrect number of point components"
   f = fg.fa
   xi = testitem(x)
-  G = _return_val_eltype(f,x)
-  for _ in 1:N
-    G = gradient_type(G,xi)
-  end
-  _return_cache(f,x,G,Val(N))
+  G = gradient_type(_return_val_eltype(f,x),xi)
+  _return_cache(f,x,G,Val(1))
+end
+
+function return_cache(
+  fg::FieldGradientArray{2,<:PolynomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
+
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  f = fg.fa
+  xi = testitem(x)
+  G = gradient_type(gradient_type(_return_val_eltype(f,x),xi),xi)
+  _return_cache(f,x,G,Val(2))
 end
 
 
@@ -259,7 +267,6 @@ end
   nothing
 end
 
-
 ##############################################
 # Optimizing of evaluation at a single point #
 ##############################################
@@ -282,30 +289,6 @@ function evaluate!(cache,f::PolynomialBasis,x::Point)
   copyto!(a,v)
   a
 end
-
-function return_cache(
-  f::FieldGradientArray{N,<:PolynomialBasis}, x::Point) where N
-
-  xs = [x]
-  cf = return_cache(f,xs)
-  v = evaluate!(cf,f,xs)
-  r = CachedArray(zeros(eltype(v),(size(v,2),)))
-  r, cf, xs
-end
-
-function evaluate!(
-  cache, f::FieldGradientArray{N,<:PolynomialBasis}, x::Point) where N
-
-  r, cf, xs = cache
-  xs[1] = x
-  v = evaluate!(cf,f,xs)
-  ndof = size(v,2)
-  setsize!(r,(ndof,))
-  a = r.array
-  copyto!(a,v)
-  a
-end
-
 
 ###############################
 # nD internal polynomial APIs #

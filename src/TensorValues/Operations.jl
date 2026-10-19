@@ -85,14 +85,16 @@ Base.iszero(a::MultiValue) = all(iszero.(a.data))
 for op in (:+,:-)
   @eval begin
 
-    function ($op)(a::T) where T<:MultiValue
-      r = map($op, get_indep_components(a))
-      T(r)
+    # `map` over a tuple is not inferred past 32 entries, which high-order gradients reach
+    # quickly (3^4 = 81 in 3D): unroll with `ntuple` instead.
+    function ($op)(a::V) where V<:MultiValue
+      L = num_indep_components(V)
+      V(ntuple(i -> ($op)(indep_comp_getindex(a,i)), Val(L)))
     end
 
     function ($op)(a::V, b::V) where V<:MultiValue
-      r = map(($op), get_indep_components(a), get_indep_components(b))
-      V(r)
+      L = num_indep_components(V)
+      V(ntuple(i -> ($op)(indep_comp_getindex(a,i), indep_comp_getindex(b,i)), Val(L)))
     end
   end
 end
@@ -737,7 +739,7 @@ tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
         for (k, pos) in enumerate(Ib)
           b_idx[pos] = ciC[k]
         end
-        push!(summands, :(a[$a_idx...]*b[$b_idx...]) )
+        push!(summands, :(a[$(a_idx...)]*b[$(b_idx...)]) )
       end
       push!(comps, Expr(:call, :+, summands...))
     end
@@ -848,7 +850,7 @@ tensor_contraction(a::MultiValue, i::Int, j::Int) =
       for (k, pos) in enumerate(J)
         a_idx[pos] = ciC[k]
       end
-      push!(summands, :(a[$a_idx...]))
+      push!(summands, :(a[$(a_idx...)]))
     end
     push!(comps, Expr(:call, :+, summands...))
   end
@@ -1203,7 +1205,7 @@ end
   comps = Expr[]
   for ci in CartesianIndices(Sr)
     a_idx = ntuple(k -> ci[inv_perm[k]], Na)
-    push!(comps, :( a[$a_idx...] ) )
+    push!(comps, :( a[$(a_idx...)] ) )
   end
   :( $V($(comps...)) )
 end
