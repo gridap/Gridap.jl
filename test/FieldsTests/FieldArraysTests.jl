@@ -539,68 +539,62 @@ test_field_array(f,p,fp)
 #c = return_cache(bfa,x)
 ## @btime evaluate!($c,$bfa,$x)
 
-
 # Higher-order gradients by forward-mode AD
 
-# A 2D monomial x^a y^b with no hand-written derivatives: every gradient comes from the AD
-# default. Its N-th derivatives are known in closed form.
-struct Monomial2D <: Field
-  a::Int
-  b::Int
-end
-Fields.evaluate!(cache, m::Monomial2D, x::Point) = x[1]^m.a * x[2]^m.b
+# 2D monomials x^a y^b as GenericFields: no hand-written derivatives, so every gradient comes
+# from the AD default. Their N-th derivatives are known in closed form.
+monomial(a, b) = GenericField(x -> x[1]^a * x[2]^b)
 
 falling(n, k) = k > n ? 0 : prod(n-k+1:n; init = 1)
-function exact_gradient(m::Monomial2D, x::Point, N)
+function exact_gradient((a, b), x::Point, N)
   G = nth_gradient_type(Float64, x, Val(N))
   G(Tuple(begin
     i = count(==(1), Tuple(I)); j = N - i
-    falling(m.a, i) * falling(m.b, j) * x[1]^max(m.a - i, 0) * x[2]^max(m.b - j, 0)
+    falling(a, i) * falling(b, j) * x[1]^max(a - i, 0) * x[2]^max(b - j, 0)
   end for I in CartesianIndices(ntuple(_ -> 2, N))))
 end
 
-@testset "Higher-order gradients" begin
+x = Point(0.3, 0.7)
+@test nth_gradient_type(Float64, x, Val(0)) == Float64
+@test nth_gradient_type(Float64, x, Val(1)) == VectorValue{2,Float64}
+@test nth_gradient_type(Float64, x, Val(2)) == TensorValue{2,2,Float64,4}
+@test nth_gradient_type(Float64, x, Val(3)) == ThirdOrderTensorValue{2,2,2,Float64,8}
+@test nth_gradient_type(Float64, x, Val(4)) == HighOrderTensorValue{Tuple{2,2,2,2},Float64,4,16}
+@test nth_gradient_type(VectorValue{2,Float64}, x, Val(2)) == ThirdOrderTensorValue{2,2,2,Float64,8}
 
-  x = Point(0.3, 0.7)
-  @test nth_gradient_type(Float64, x, Val(0)) == Float64
-  @test nth_gradient_type(Float64, x, Val(1)) == VectorValue{2,Float64}
-  @test nth_gradient_type(Float64, x, Val(2)) == TensorValue{2,2,Float64,4}
-  @test nth_gradient_type(Float64, x, Val(3)) == ThirdOrderTensorValue{2,2,2,Float64,8}
-  @test nth_gradient_type(Float64, x, Val(4)) == HighOrderTensorValue{Tuple{2,2,2,2},Float64,4,16}
-  @test nth_gradient_type(VectorValue{2,Float64}, x, Val(2)) == ThirdOrderTensorValue{2,2,2,Float64,8}
+# Single field: the FieldGradient{N} AD default (FieldsInterfaces.jl), reached with invoke
+# since a GenericField of a function dispatches to the function-AD path
 
-  # Single field: FieldGradient{N} by AD, any N
-
-  m = Monomial2D(3, 2)
-  for N in 1:5
-    @test evaluate(gradient(m, Val(N)), x) ≈ exact_gradient(m, x, N)
-  end
-  @test evaluate(∇(m), x) ≈ exact_gradient(m, x, 1)
-  @test evaluate(∇∇(m), x) ≈ exact_gradient(m, x, 2)
-  @test gradient(m, Val(3)) isa FieldGradient{3}
-  @test gradient(gradient(m, Val(2)), Val(2)) isa FieldGradient{4}
-
-  # Arrays of fields: FieldGradientArray{N} by AD, the whole array evaluated at once
-
-  fields = [Monomial2D(3, 2), Monomial2D(1, 1), Monomial2D(0, 4), Monomial2D(2, 0)]
-  xs = [Point(0.1, 0.2), Point(0.5, 0.9), Point(0.3, 0.7), Point(1.0, -0.5)]
-  for N in 1:4
-    g = Broadcasting(NthGradient{N}())(fields)
-    @test g isa FieldGradientArray{N}
-    r = evaluate(g, xs)
-    @test r ≈ [exact_gradient(f, xi, N) for xi in xs, f in fields]
-    test_map(r, g, xs; cmp = (a, b) -> a ≈ b)
-  end
-  @test Broadcasting(∇)(Broadcasting(NthGradient{3}())(fields)) isa FieldGradientArray{4}
-  @test Broadcasting(NthGradient{2}())(Broadcasting(NthGradient{3}())(fields)) isa FieldGradientArray{5}
-
-  # Linear combinations of fields differentiate the underlying fields
-
-  values = [1.0 2.0; -1.0 0.5; 0.0 3.0; 2.0 -1.0]
-  lc = linear_combination(values, fields)
-  r = evaluate(Broadcasting(NthGradient{3}())(lc), xs)
-  @test r ≈ [sum(values[i,j] * exact_gradient(fields[i], xk, 3) for i in 1:4) for xk in xs, j in 1:2]
-
+m = monomial(3, 2)
+for N in 1:5
+  fg = FieldGradient{N}(m)
+  r = invoke(evaluate!, Tuple{Any,FieldGradient{N},Point}, nothing, fg, x)
+  @test r ≈ exact_gradient((3, 2), x, N)
 end
+@test evaluate(∇(m), x) ≈ exact_gradient((3, 2), x, 1)
+@test evaluate(∇∇(m), x) ≈ exact_gradient((3, 2), x, 2)
+@test gradient(FieldGradient{3}(m)) isa FieldGradient{4}
+
+# Arrays of fields: FieldGradientArray{N} by AD, the whole array evaluated at once
+
+exps = [(3, 2), (1, 1), (0, 4), (2, 0)]
+fields = [monomial(a, b) for (a, b) in exps]
+xs = [Point(0.1, 0.2), Point(0.5, 0.9), Point(0.3, 0.7), Point(1.0, -0.5)]
+for N in 1:4
+  g = Broadcasting(NthGradient{N}())(fields)
+  @test g isa FieldGradientArray{N}
+  r = evaluate(g, xs)
+  @test r ≈ [exact_gradient(ab, xi, N) for xi in xs, ab in exps]
+  test_map(r, g, xs; cmp = (a, b) -> a ≈ b)
+end
+@test Broadcasting(∇)(Broadcasting(NthGradient{3}())(fields)) isa FieldGradientArray{4}
+@test Broadcasting(NthGradient{2}())(Broadcasting(NthGradient{3}())(fields)) isa FieldGradientArray{5}
+
+# Linear combinations of fields differentiate the underlying fields
+
+values = [1.0 2.0; -1.0 0.5; 0.0 3.0; 2.0 -1.0]
+lc = linear_combination(values, fields)
+r = evaluate(Broadcasting(NthGradient{3}())(lc), xs)
+@test r ≈ [sum(values[i,j] * exact_gradient(exps[i], xk, 3) for i in 1:4) for xk in xs, j in 1:2]
 
 end # module
