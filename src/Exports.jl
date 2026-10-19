@@ -160,6 +160,8 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry move_contributions
 @publish Geometry get_background_model
 @publish Geometry get_active_model
+@publish Geometry get_cell_metric
+@publish Geometry get_cell_inv_metric
 
 @publish CellData CellQuadrature
 @publish CellData Measure
@@ -177,6 +179,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 using Gridap.CellData: ∫; export ∫
 @publish CellData get_cell_measure
 @publish CellData get_physical_coordinate
+@publish CellData get_metric_data
 @publish CellData DiracDelta
 
 #@publish CellData d_0form
