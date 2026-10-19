@@ -11,13 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implemented `Base.muladd` for `MultiValue`'d inputs, optimizing it using fma if an argument is scalar. Since PR[#1347](https://github.com/gridap/Gridap.jl/pull/1347).
 - Added the serendipity H(div) and H(curl) reference FEs on quadrilaterals and hexahedra, `sdiv`, `scurl`, `trimmed_sdiv` and `trimmed_scurl`. Their prebasis is the new `SerendipityPolyBasis`, also available through `FEEC_poly_basis` with the family `:S` or `:S⁻`.
-- Reference FEs built through `MomentBasedReferenceFE` with `change_dof=false` now carry, for every face and vertex permutation of it, the signed permutation of their face DoFs, derived in closed form from the symmetries of the weight bases (`moment_face_own_dofs_permutations`): tensor Legendre and Bernstein, and Bernstein on simplices. Faces with other weights keep the previous one-entry table.
-- `GenericRefFE` has a new field `face_own_dofs_permutations` holding, for every face and vertex permutation of it, a signed permutation of the DoFs the face owns (`s*j`), read through `get_face_own_dofs_permutations` and the new `get_face_own_dofs_signs`. Its default is the L2 table, so existing constructor calls are unchanged. The serendipity H(div)/H(curl) elements store their tables there instead of in `metadata`.
+- Raviart–Thomas, Nédélec and BDM now work on `NonOriented` meshes, except for Nédélec on tetrahedra (one must use `rotating_pλ`, `trimmed_pλ`).
 
 ### Changed
 
-- `get_vertex_permutations` now returns the full symmetry group of 3D polytopes (24 for `TET`, 48 for `HEX`, 8 for `PYRAMID`, 12 for `WEDGE`) instead of only the identity, and the n-cube permutations are generated directly as axis permutations times reflections instead of by filtering all vertex permutations. The order of the `QUAD` permutations changed. The first entry of an `ExtrusionPolytope`'s extrusion, which carries no information, is normalised at construction, so `==`, `hash`, `is_simplex` and `is_n_cube` no longer depend on it. Taken from PR[#1306](https://github.com/gridap/Gridap.jl/pull/1306).
-- `FEEC_poly_basis` returns a plain `BernsteinBasisOnSimplex` for the 0-form and D-form `:P`/`:P⁻` families with `Bernstein` polynomials, and the default `poly_type` of the moment-based reference FEs (`raviart_thomas`, `nedelec`, `bdm`) is now `Bernstein` on n-cubes too, instead of `ModalC0`; `modal_serendipity` keeps `ModalC0`. Taken from PR[#1306](https://github.com/gridap/Gridap.jl/pull/1306).
+- `get_vertex_permutations` now returns the full symmetry group of 3D polytopes (24 for `TET`, 48 for `HEX`, 8 for `PYRAMID`, 12 for `WEDGE`) instead of only the identity.
 - Enabled algebraic operations in residual of a linear `TransientFEOperator` when the space of the corresponding time derivative has zero Dirichlet values. Since PR[#1345](https://github.com/gridap/Gridap.jl/pull/1345).
 
 ## [0.20.10] - 2026-09-22

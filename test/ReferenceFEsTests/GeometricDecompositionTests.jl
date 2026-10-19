@@ -198,8 +198,8 @@ function HDiv_facet_flux(φ,_,ds) #  ∫ φ⋅n dF
   Broadcasting(Operation(⋅))(φ,n)
 end
 
-function HCurl_facet_tan_tr_1(φ,_,ds) #  ∫ φ×n ⋅ e1 dF
-  n = get_facet_normal(ds)
+function HCurl_facet_tan_tr_1(φ,_,ds) #  ∫ φ×n ⋅ e1 dF, n the facet frame's
+  n = ReferenceFEs._facet_normal(ds)
   E = ReferenceFEs.get_extension(ds)
   e1 = ConstantField(VectorValue(1.,0))
   E1 = Broadcasting(Operation(⋅))(E,e1)
@@ -207,8 +207,8 @@ function HCurl_facet_tan_tr_1(φ,_,ds) #  ∫ φ×n ⋅ e1 dF
   Broadcasting(Operation(⋅))(φn,E1)
 end
 
-function HCurl_facet_tan_tr_2(φ,_,ds) #  ∫ φ×n ⋅ e2 dF
-  n = get_facet_normal(ds)
+function HCurl_facet_tan_tr_2(φ,_,ds) #  ∫ φ×n ⋅ e2 dF, n the facet frame's
+  n = ReferenceFEs._facet_normal(ds)
   E = ReferenceFEs.get_extension(ds)
   e2 = ConstantField(VectorValue(0.,1))
   E2 = Broadcasting(Operation(⋅))(E,e2)

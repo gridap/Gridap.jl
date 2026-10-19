@@ -79,26 +79,39 @@ function compute_cell_bases_changes(
   nothing
 end
 
+# The face DoFs of a cell are a signed permutation of the global ones (see
+# `get_face_own_dofs_permutations` and `get_face_own_dofs_signs`): the
+# permutations are applied by the DoF numbering, and the signs here, from the
+# `pindex` table that numbering reads (`FaceDofSignMap`). The normal moments of
+# H(div) are taken against the outward normal, opposite for the two cells
+# sharing the facet: that is `get_sign_flip`. The tangential moments of H(curl)
+# are written in the facet's own frame, which the permutation accounts for.
+
 function compute_cell_bases_changes(
   ::ReferenceFEName, ::ContraVariantPiolaMap, model, cell_reffe, cell_Jt
 )
-  change = get_sign_flip(model, cell_reffe) # equal to its transposed inverse
-  return (change,change)
+  normal_change = get_sign_flip(model, cell_reffe) # equal to its transposed inverse
+  _face_sign_cell_bases_changes(model, cell_reffe, normal_change)
 end
 
 function compute_cell_bases_changes(
   ::ReferenceFEName, ::CoVariantPiolaMap, model, cell_reffe, cell_Jt
 )
-  D = num_cell_dims(model)
-  poly = only(get_polytopes(model))
-  if (D==2) || is_simplex(poly)
-    # For these cases, we do not need to aply a sign flip
-    return nothing
-  elseif (D==3) && is_n_cube(poly)
-    change = get_sign_flip(model, cell_reffe)
-    return (change,change)
+  _face_sign_cell_bases_changes(model, cell_reffe, nothing)
+end
+
+function _face_sign_cell_bases_changes(model, cell_reffe, normal_change)
+  reffe = testitem(cell_reffe)
+  k = FaceDofSignMap(model, reffe)
+  trivial = all(isone, k.cell_lface_pindex.data) || all(f -> all(s -> all(isone, s), f), k.face_dof_signs)
+  if trivial
+    isnothing(normal_change) && return nothing
+    return (normal_change, normal_change)
   end
-  @notimplemented
+  face_change = lazy_map(k, IdentityVector(num_cells(model)))
+  isnothing(normal_change) && return (face_change, face_change)
+  change = lazy_map(*, normal_change, face_change)
+  return (change, change)
 end
 
 using Gridap.ReferenceFEs: DoubleContraVariantPiolaMap
@@ -701,47 +714,6 @@ function compute_cell_bases_changes(
     )
   end
   return (cell_change, cell_change_invt)
-end
-
-############################################################################################
-# Serendipity H(div) and H(curl), on quadrilaterals and hexahedra
-#
-# The face DoFs of a cell are a signed permutation of the global ones (see
-# `moment_face_own_dofs_permutations`): the permutations are applied by the DoF
-# numbering, through `get_face_own_dofs_permutations`, and the signs here, from
-# the `pindex` table that numbering reads. The normal moments of H(div) are
-# taken against the outward normal, opposite for the two cells sharing the
-# facet: that is Gridap's `get_sign_flip`. The tangential moments of H(curl) are
-# written in the facet's own frame (`_facet_frames`), which the permutation
-# already accounts for, so they need nothing else.
-
-function compute_cell_bases_changes(
-  ::Union{ReferenceFEs.SerendipityDiv,ReferenceFEs.TrimmedSerendipityDiv},
-  ::ContraVariantPiolaMap, model::DiscreteModel, cell_reffe, cell_Jt
-)
-  _serendipityhdivhcurl_cell_bases_changes(model, cell_reffe)
-end
-
-function compute_cell_bases_changes(
-  ::Union{ReferenceFEs.SerendipityCurl,ReferenceFEs.TrimmedSerendipityCurl},
-  ::CoVariantPiolaMap, model::DiscreteModel, cell_reffe, cell_Jt
-)
-  _serendipityhdivhcurl_cell_bases_changes(model, cell_reffe)
-end
-
-function _serendipityhdivhcurl_cell_bases_changes(model::DiscreteModel, cell_reffe)
-  reffe = testitem(cell_reffe)
-  normal_change = Conformity(reffe) isa DivConformity ? get_sign_flip(model, cell_reffe) : nothing
-
-  k = FaceDofSignMap(model, reffe)
-  if all(isone, k.cell_lface_pindex.data)
-    isnothing(normal_change) && return nothing
-    return (normal_change, normal_change)
-  end
-  face_change = lazy_map(k, IdentityVector(num_cells(model)))
-  isnothing(normal_change) && return (face_change, face_change)
-  change = lazy_map(*, normal_change, face_change)
-  return (change, change)
 end
 
 """

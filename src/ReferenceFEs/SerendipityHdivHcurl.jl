@@ -130,11 +130,7 @@ function SerendipityDivRefFE(::Type{T}, p::Polytope{D}, r::Integer) where {T,D}
     push!(moments, (get_dimrange(p, D), cmom, cb))
   end
   conf = DivConformity()
-  dofs = MomentBasedDofBasis(p, prebasis, moments)
-  face_own_dofs_permutations = moment_face_own_dofs_permutations(p, moments, conf)
-  GenericRefFE{SerendipityDiv}(
-    length(dofs), p, prebasis, dofs, conf, nothing, get_face_own_moments(dofs);
-    face_own_dofs_permutations)
+  MomentBasedReferenceFE(sdiv, p, prebasis, moments, conf)
 end
 
 function ReferenceFE(p::Polytope, ::SerendipityDiv, ::Type{T}, order) where T
@@ -193,21 +189,20 @@ function SerendipityCurlRefFE(::Type{T}, p::Polytope{D}, r::Integer) where {T,D}
 
   eb = LegendreBasis(Val(1), T, r, Polynomials._p_filter)  # 𝓟ᵣ(e)
   moments = Tuple[(get_dimrange(p, 1), emom, eb)]
+  oriented = Bool[true]                           # t and n× flip with their face
   if D == 3 && r > 1
     fb = LegendreBasis(Val(2), VectorValue{2,T}, r-2, Polynomials._p_filter) # 𝓟ᵣ₋₂(f;R²)
     push!(moments, (get_dimrange(p, 2), fmom, fb))
+    push!(oriented, true)
   end
   ρ = r - 2*(D-1)
   if ρ ≥ 0
     cb = LegendreBasis(Val(D), VectorValue{D,T}, ρ, Polynomials._p_filter)   # 𝓟ρ(K;Rᴰ)
     push!(moments, (get_dimrange(p, D), cmom, cb))
+    push!(oriented, false)
   end
   conf = CurlConformity()
-  dofs = MomentBasedDofBasis(p, prebasis, moments)
-  face_own_dofs_permutations = moment_face_own_dofs_permutations(p, moments, conf)
-  GenericRefFE{SerendipityCurl}(
-    length(dofs), p, prebasis, dofs, conf, nothing, get_face_own_moments(dofs);
-    face_own_dofs_permutations)
+  MomentBasedReferenceFE(scurl, p, prebasis, moments, conf; oriented)
 end
 
 function ReferenceFE(p::Polytope, ::SerendipityCurl, ::Type{T}, order) where T
@@ -269,11 +264,7 @@ function TrimmedSerendipityDivRefFE(::Type{T}, p::Polytope{D}, k::Integer) where
     push!(moments, (get_dimrange(p, D), cmom, gb))
   end
   conf = DivConformity()
-  dofs = MomentBasedDofBasis(p, prebasis, moments)
-  face_own_dofs_permutations = moment_face_own_dofs_permutations(p, moments, conf)
-  GenericRefFE{TrimmedSerendipityDiv}(
-    length(dofs), p, prebasis, dofs, conf, nothing, get_face_own_moments(dofs);
-    face_own_dofs_permutations)
+  MomentBasedReferenceFE(trimmed_sdiv, p, prebasis, moments, conf)
 end
 
 function ReferenceFE(p::Polytope, ::TrimmedSerendipityDiv, ::Type{T}, order) where T
@@ -339,6 +330,7 @@ function TrimmedSerendipityCurlRefFE(::Type{T}, p::Polytope{D}, k::Integer) wher
 
   eb = LegendreBasis(Val(1), T, k, Polynomials._p_filter)  # 𝓟ₖ(e)
   moments = Tuple[(get_dimrange(p, 1), emom, eb)]
+  oriented = Bool[true]                           # t and n× flip with their face
   for d in 2:D
     s = k + 1 - 2*(d-1)
     faces = get_dimrange(p, d)
@@ -346,6 +338,7 @@ function TrimmedSerendipityCurlRefFE(::Type{T}, p::Polytope{D}, k::Integer) wher
     if s > 0
       pb = LegendreBasis(Val(d), VectorValue{d,T}, s-1, Polynomials._p_filter) # 𝓟ₛ₋₁Λᵈ⁻¹
       push!(moments, (faces, mom, pb))
+      push!(oriented, d < D)
     end
     s < 0 && continue
     if d < D
@@ -354,28 +347,17 @@ function TrimmedSerendipityCurlRefFE(::Type{T}, p::Polytope{D}, k::Integer) wher
       # symmetries of the face
       gb = LegendreBasis(Val(d), T, s+1, Polynomials._p_complement_filter(s))
       push!(moments, (faces, gmom, gb))
+      push!(oriented, true)
     else
       gb = Polynomials._exact_poly_basis(Legendre, T, D, s, D-1; rotate_90=(D==2))
       push!(moments, (faces, cmom, gb))                                       # d𝓗ₛ₊₁Λᴰ⁻²
+      push!(oriented, false)
     end
   end
   conf = CurlConformity()
-  dofs = MomentBasedDofBasis(p, prebasis, moments)
-  face_own_dofs_permutations = moment_face_own_dofs_permutations(p, moments, conf)
-  GenericRefFE{TrimmedSerendipityCurl}(
-    length(dofs), p, prebasis, dofs, conf, nothing, get_face_own_moments(dofs);
-    face_own_dofs_permutations)
+  MomentBasedReferenceFE(trimmed_scurl, p, prebasis, moments, conf; oriented)
 end
 
 function ReferenceFE(p::Polytope, ::TrimmedSerendipityCurl, ::Type{T}, order) where T
   TrimmedSerendipityCurlRefFE(T, p, order)
 end
-
-################################################################################
-# Gluing on arbitrarily numbered meshes: the face DoFs of a cell are a signed
-# permutation of the global ones, derived in closed form by
-# `moment_face_own_dofs_permutations` (see MomentBasedReferenceFEs.jl) and
-# stored in the reference FE; the signs are applied per cell by `FaceDofSignMap`
-# (src/FESpaces/Pullbacks.jl), times the outward-normal signs where Gridap
-# applies them. No basis of 𝓟ᵣ(□) is permuted without signs (the half turn has
-# trace -1 on 𝓟₁), so signs are unavoidable.

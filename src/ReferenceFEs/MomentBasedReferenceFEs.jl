@@ -512,7 +512,8 @@ end
       moments::AbstractVector{<:Tuple},
       conformity::Conformity,
       face_own_dofs=nothing;
-      change_dof=false
+      change_dof=false,
+      oriented=falses(length(moments))
     )
 
 Constructs a ReferenceFEs on `p` with a moment DoF (pre-)basis defined by
@@ -520,6 +521,10 @@ Constructs a ReferenceFEs on `p` with a moment DoF (pre-)basis defined by
 
 The dofs ownership to faces can be overloaded, the default is given by
 [`get_face_own_moments`](@ref).
+
+`oriented[m]` says whether the `m`-th moment carries a vector of the frame of
+its face that flips with the face's orientation (an edge tangent, `n×` on a
+face, a rotation), see [`moment_face_own_dofs_permutations`](@ref).
 
 If `change_dof=true`, `prebasis` is used as shape functions.
 This requires it to fullfill a geometric decomposition relative to the faces of
@@ -537,7 +542,8 @@ function MomentBasedReferenceFE(
   moments::AbstractVector{<:Tuple},
   conformity::Conformity,
   face_own_dofs=nothing;
-  change_dof=false
+  change_dof=false,
+  oriented=falses(length(moments))
 )
 
   dof_basis = MomentBasedDofBasis(p, prebasis, moments)
@@ -562,7 +568,7 @@ function MomentBasedReferenceFE(
 
   if isnothing(face_own_dofs)
     face_own_dofs = get_face_own_moments(dof_basis)
-    face_own_dofs_permutations = moment_face_own_dofs_permutations(p, moments, conformity)
+    face_own_dofs_permutations = moment_face_own_dofs_permutations(p, moments, oriented, face_own_dofs)
   else
     face_own_dofs_permutations = l2_face_own_dofs_permutations(face_own_dofs)
   end
@@ -576,17 +582,6 @@ end
 # Face DoF permutations
 ############################################################################################
 
-"""
-    get_basis_permutations(poly::Polytope, basis) -> Vector{Vector{Int}}
-
-For each vertex permutation `σ` of `poly`, in the order of
-[`get_vertex_permutations`](@ref), the signed permutation `π` of `basis` under
-the affine map `Mσ` of `poly` onto itself sending its vertex `v` to the vertex
-`invperm(σ)[v]` (the map of [`compute_own_nodes_permutations`](@ref)):
-`π[i] = s*j` means `basis[i]∘Mσ = s*basis[j]`, with `s = ±1`, a vector-valued
-basis being pulled back as a vector field. Returns `nothing` for a basis that
-`Mσ` does not map onto itself up to signs.
-"""
 get_basis_permutations(poly::Polytope, basis) = nothing
 
 # Bernstein on a simplex: the multi-indices are the domain points
@@ -594,20 +589,21 @@ get_basis_permutations(poly::Polytope, basis) = nothing
 function get_basis_permutations(poly::Polytope{D}, b::BernsteinBasisOnSimplex{D,<:Real}) where D
   K = get_order(b)
   verts = get_vertex_coordinates(poly)
-  nodes = map(bernstein_terms(K, D)) do α
-    sum(α[i]/K * verts[i] for i in eachindex(α))
+  nodes = map(bernstein_terms(K, D)) do α      # the barycenter at K = 0
+    sum((α[i] + 1)/(K + D + 1) * verts[i] for i in eachindex(α))
   end
   compute_own_nodes_permutations(poly, nodes)
 end
 
-# 1D: the vertex permutations of the segment are [1,2], the identity, and
-# [2,1], the reflection t ↦ 1 - t
+# 1D
 
 function get_basis_permutations(::Polytope{1}, b::CartProdPolyBasis{1,<:Real,PT}) where PT
   get_basis_permutations(SEGMENT, PT, get_order(b))
 end
 
 get_basis_permutations(::Polytope{1}, ::Type{<:Polynomial}, K) = nothing
+
+_has_1d_permutations(PT) = !isnothing(get_basis_permutations(SEGMENT, PT, 0))
 
 # B_α(1-t) = B_{K-α}(t)
 get_basis_permutations(::Polytope{1}, ::Type{Bernstein}, K) = [collect(1:K+1), collect(K+1:-1:1)]
@@ -616,12 +612,14 @@ get_basis_permutations(::Polytope{1}, ::Type{Bernstein}, K) = [collect(1:K+1), c
 get_basis_permutations(::Polytope{1}, ::Type{Legendre}, K) = [collect(1:K+1), [(-1)^α*(α+1) for α in 0:K]]
 
 # n-cubes: the Jacobian J of a symmetry of the cube is a signed permutation
-# matrix, Jᵀeₖ = ±eₘ, the k-th coordinate of the image being ± the m-th one.
-# It acts on the factors of a tensor-product basis, and on the components of
-# a vector-valued one, in that same way (see `_image_axis`).
+# matrix, Jᵀeₖ = ±eₘ, the k-th coordinate of the image being ± the m-th one:
+# a function of the k-th coordinate becomes, composed with Mσ, a function of
+# the m-th one, reversed if the sign is negative, and so does the k-th
+# component of a vector field pulled back by Jᵀ: m is the one nonzero of the
+# k-th row of J, and the sign is J[k,m].
 
 function get_basis_permutations(poly::Polytope{D}, b::CartProdPolyBasis{D,<:Real,PT}) where {D,PT}
-  is_n_cube(poly) || return nothing
+  (is_n_cube(poly) && _has_1d_permutations(PT)) || return nothing
   map(get_vertex_permutation_jacobians(poly)) do J
     _tensor_product(PT, get_orders(b), b.terms, b.terms, J)
   end
@@ -629,16 +627,15 @@ end
 
 # the components are consecutive within each term
 function get_basis_permutations(poly::Polytope{D}, b::CartProdPolyBasis{D,V,PT}) where {D,V,PT}
-  is_n_cube(poly) || return nothing
+  (is_n_cube(poly) && _has_1d_permutations(PT)) || return nothing
   L = num_indep_components(V)
   L == D || return nothing
   map(get_vertex_permutation_jacobians(poly)) do J
     τ = _tensor_product(PT, get_orders(b), b.terms, b.terms, J)
-    isnothing(τ) && return nothing
     perm = zeros(Int, L*length(τ))
     for (i, t) in enumerate(τ), l in 1:L
-      m, s = _image_axis(J, l)
-      perm[L*(i-1) + l] = s*sign(t)*(L*(abs(t)-1) + m)
+      m = findfirst(!iszero, Tuple(J[l,:]))
+      perm[L*(i-1) + l] = J[l,m]*sign(t)*(L*(abs(t)-1) + m)
     end
     perm
   end
@@ -646,7 +643,7 @@ end
 
 # one block of terms per component, each of its own orders
 function get_basis_permutations(poly::Polytope{D}, b::CompWiseTensorPolyBasis{D,V,PT}) where {D,V,PT}
-  is_n_cube(poly) || return nothing
+  (is_n_cube(poly) && _has_1d_permutations(PT)) || return nothing
   L = num_indep_components(V)
   L == D || return nothing
   blocks = Polynomials.get_comp_terms(b)
@@ -654,77 +651,88 @@ function get_basis_permutations(poly::Polytope{D}, b::CompWiseTensorPolyBasis{D,
   map(get_vertex_permutation_jacobians(poly)) do J
     perm = zeros(Int, sum(length, blocks))
     for l in 1:L
-      m, s = _image_axis(J, l)
+      m = findfirst(!iszero, Tuple(J[l,:]))
       τ = _tensor_product(PT, b.orders[l,:], blocks[l], blocks[m], J)
-      isnothing(τ) && return nothing
-      perm[offsets[l] .+ (1:length(τ))] = s .* sign.(τ) .* (offsets[m] .+ abs.(τ))
+      perm[offsets[l] .+ (1:length(τ))] = J[l,m] .* sign.(τ) .* (offsets[m] .+ abs.(τ))
     end
     perm
   end
 end
 
-# Mσ(x)ₖ = s xₘ + bₖ, i.e. Jᵀeₖ = s eₘ: a function of the k-th coordinate
-# becomes, composed with Mσ, a function of the m-th one, reversed if s < 0, and
-# so does the k-th component of a vector field pulled back by Jᵀ
-function _image_axis(J, k)
-  m = findfirst(!iszero, Tuple(J[k,:]))
-  m, Int(J[k,m])
-end
-
 # The tensor product of the 1D permutations of the factors under the cube
-# symmetry of Jacobian J: the factor k, reversed if J reverses the axis k,
-# becomes the factor along the image axis, so the term α of `terms`, of orders
-# `orders`, goes to the term α′ of `terms′` with α′[m] = |pₖ[αₖ]|, pₖ the 1D
-# permutation of the factor k and m its image axis, with the product of signs.
-function _tensor_product(PT, orders, terms, terms′, J)
-  perms = [get_basis_permutations(SEGMENT, PT, K) for K in orders]
-  any(isnothing, perms) && return nothing
-  axes = [_image_axis(J, k) for k in eachindex(orders)]
-  p = [s < 0 ? perms[k][2] : perms[k][1] for (k, (m, s)) in enumerate(axes)]
-  ids = Dict(t => i for (i, t) in enumerate(terms′))
+# symmetry encoded in the Jacobian J: 
+# the term α of `terms`, of orders `orders`, goes to the term β of `image_terms`
+function _tensor_product(PT, orders, terms, image_terms, J)
+  # the symmetry sends the axis k to the axis axes[k], reversed if flip[k]
+  axes = [findfirst(!iszero, Tuple(J[k,:])) for k in eachindex(orders)]
+  flip = [J[k,axes[k]] < 0 for k in eachindex(orders)]
+  # hence the 1D permutation of each factor: the identity or the reflection
+  p = [get_basis_permutations(SEGMENT, PT, K)[flip[k] ? 2 : 1] for (k, K) in enumerate(orders)]
+  # the term α goes to the term β with β[axes[k]] = |p[k][α[k]]|, with the product of the signs
+  ids = Dict(t => i for (i, t) in enumerate(image_terms))
   map(terms) do α
     image = [p[k][α[k]] for k in eachindex(orders)]
-    α′ = zeros(Int, length(orders))
-    α′[first.(axes)] = abs.(image)
-    prod(sign, image) * ids[CartesianIndex(α′...)]
+    β = zeros(Int, length(orders))
+    β[axes] = abs.(image)
+    prod(sign, image) * ids[CartesianIndex(β...)]
   end
 end
 
 """
-    moment_face_own_dofs_permutations(p::Polytope, moments, conf::Conformity)
+    moment_face_own_dofs_permutations(p::Polytope, moments, oriented::AbstractVector{Bool}, face_own_dofs)
 
 The signed `face_own_dofs_permutations` (see [`GenericRefFE`](@ref)) of the
-moment-based reference FE on `p` defined by `moments` (see
-[`MomentBasedDofBasis`](@ref)): on each face, the concatenation of the
-[`get_basis_permutations`](@ref) of the weight bases of its moments, times
-the orientation of the face's symmetry for the tangential moments of
-`CurlConformity`, whose edge tangents and face normals follow the vertex order
-(see `_facet_frames`). A face with a weight basis that has no permutations
-keeps the one-entry table of [`l2_face_own_dofs_permutations`](@ref).
+moment-based reference FE on `p` defined by `moments` (see [`MomentBasedDofBasis`](@ref)). 
+
+For a moment (face, σ, μ), the signed permutations, given a face permutation π, 
+are determined by two factors: 
+
+1. The permutations of the basis μ under the face permutation π.
+2. A possible sign factor given by the moment's dependence on the face's frame, for 
+instance if σ depends on the tangents of the face.
+
+If such a permutation cannot be deduced, we return [`l2_face_own_dofs_permutations`](@ref).
+
 """
-function moment_face_own_dofs_permutations(p::Polytope{D}, moments, conf::Conformity) where D
-  vperms = get_face_vertex_permutations(p)
-  face_bases = [[μ for (faces, _, μ) in moments if f in faces] for f in 1:num_faces(p)]
-  nown = map(bases -> sum(length, bases; init=0), face_bases)
-  perms = [[collect(1:n) for _ in fperms] for (n, fperms) in zip(nown, vperms)]
-  for d in 1:D-1, f in get_dimrange(p, d)
-    isempty(face_bases[f]) && continue
-    fp = Polytope{d}(p, f - get_offset(p, d))
-    bperms = map(μ -> get_basis_permutations(fp, μ), face_bases[f])
-    if any(isnothing, bperms)
-      perms[f] = [collect(1:nown[f])]
-      continue
+function moment_face_own_dofs_permutations(
+  p::Polytope{D}, moments, oriented, face_own_dofs
+) where D
+  @check length(oriented) == length(moments)
+  facedims = get_facedims(p)
+
+  # the signed permutations of each moment's weights under the symmetries of its face
+  moment_perms = map(moments, oriented) do (faces, _, μ), is_oriented
+    d = facedims[first(faces)]
+    fp = Polytope{d}(p, first(faces) - get_offset(p, d))
+    if !(0 < d < D)
+      # a vertex or the cell is seen in one order only
+      return [collect(1:length(μ)) for _ in get_vertex_permutations(fp)]
     end
-    orientations = conf isa CurlConformity ? det.(get_vertex_permutation_jacobians(fp)) : ones(Int, length(vperms[f]))
-    for (pindex, orientation) in enumerate(orientations)
-      offset = 0
-      for π in getindex.(bperms, pindex)
-        perms[f][pindex][offset .+ (1:length(π))] = orientation .* sign.(π) .* (offset .+ abs.(π))
-        offset += length(π)
+    perms = get_basis_permutations(fp, μ)
+    (isnothing(perms) || !is_oriented) && return perms
+    map((J, π) -> det(J) .* π, get_vertex_permutation_jacobians(fp), perms)
+  end
+
+  # If we cannot determine the signed permutations for all moments, 
+  # we fall back to the L2 face own dofs permutations.
+  if any(isnothing, moment_perms)
+    return l2_face_own_dofs_permutations(face_own_dofs)
+  end
+
+  # on each face, the concatenation of the blocks of the moments on it
+  vperms = get_face_vertex_permutations(p)
+  map(1:num_faces(p)) do f
+    blocks = moment_perms[findall(moment -> f in first(moment), moments)]
+    npindex = isempty(blocks) ? length(vperms[f]) : length(first(blocks))
+    map(1:npindex) do pindex
+      # each block permuted within itself, shifted by what precedes it
+      perm = Int[]
+      for π in getindex.(blocks, pindex)
+        append!(perm, sign.(π) .* (length(perm) .+ abs.(π)))
       end
+      perm
     end
   end
-  perms
 end
 
 # Default polynomial type for moment based reference FEs
