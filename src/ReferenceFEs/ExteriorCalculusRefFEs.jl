@@ -41,7 +41,7 @@ end
 ###########################################################
 
 """
-    FEEC_reference_fe(name, ::Type{V}, p::Polytope{D}, order; kwargs...)
+    FEEC_reference_fe(name, ::Type{V<:ExteriorFormValue}, p::Polytope{D}, order; kwargs...)
 
 Build the form valued FEEC reference element that `name` denotes, with shape
 functions valued in the [`ExteriorFormValue`](@ref) type `V`.
