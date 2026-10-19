@@ -148,27 +148,21 @@ function push_∇∇(∇∇a::Field,ϕ::Field)
 end
 
 """
-    push_∇ⁿ(∇ⁿa::Field, ϕ::Field, Val(N)) = @notimplemented
+    struct PushNthGradient{N} <: Function
 
-Pushforward of the `N`-th gradient `∇ⁿa` of a reference quantity by the cell map `ϕ`;
-`push_∇` at `N = 1` and `push_∇∇` at `N = 2`.
+    PushNthGradient{N}()(∇ⁿa::Field, ϕ::Field) = @notimplemented
+
+Pushforward of the `N`-th gradient `∇ⁿa` of a reference quantity by the cell map `ϕ`.
+Equivalent to `push_∇` at `N = 1` and `push_∇∇` at `N = 2`.
 """
-function push_∇ⁿ(∇ⁿa::Field,ϕ::Field,::Val{N}) where N
+struct PushNthGradient{N} <: Function end
+
+function (::PushNthGradient{N})(∇ⁿa::Field,ϕ::Field) where N
   @notimplemented """\n
   Pushforward of N-th order derivatives of reference quantities is only implemented for
   affine cell maps.
   """
 end
-
-"""
-    struct PushNthGradient{N} <: Function
-
-`PushNthGradient{N}()(∇ⁿa, ϕ) == push_∇ⁿ(∇ⁿa, ϕ, Val(N))`. Use
-`Broadcasting(PushNthGradient{N}())` on cell arrays, as for `push_∇` and `push_∇∇`.
-"""
-struct PushNthGradient{N} <: Function end
-
-(::PushNthGradient{N})(∇ⁿa::Field,ϕ::Field) where N = push_∇ⁿ(∇ⁿa,ϕ,Val(N))
 
 """
     gradient_type(::Type{T}, x::Point) where T

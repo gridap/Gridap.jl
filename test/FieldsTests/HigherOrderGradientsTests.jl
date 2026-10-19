@@ -4,7 +4,7 @@ using Test
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
-using Gridap.Fields: seed_point, taylor_tensor, nth_gradient_type, push_∇ⁿ
+using Gridap.Fields: seed_point, taylor_tensor, nth_gradient_type
 
 # A scalar polynomial field p(x) = Σ_α c_α x^α with no hand-written gradient: all its
 # derivatives come from the AD default. Its derivatives in closed form are the reference.
@@ -97,8 +97,8 @@ r_exact = [sum(values[i,j] * exact_gradient(fields[i], xk, 3) for i in 1:3) for 
 
 Jt_inv = TensorValue(0.5, 0.1, -0.2, 2.0)
 g1 = VectorValue(1.0, -3.0)
-@test push_∇ⁿ(g1, Jt_inv, Val(1)) ≈ Jt_inv ⋅ g1
+@test PushNthGradient{1}()(g1, Jt_inv) ≈ Jt_inv ⋅ g1
 g2 = TensorValue(1.0, 2.0, 2.0, -1.0)
-@test push_∇ⁿ(g2, Jt_inv, Val(2)) ≈ push_∇∇(g2, Jt_inv)
+@test PushNthGradient{2}()(g2, Jt_inv) ≈ push_∇∇(g2, Jt_inv)
 
 end # module

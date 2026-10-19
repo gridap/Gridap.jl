@@ -78,38 +78,29 @@ function push_∇∇(∇∇a::Field,ϕ::AffineField)
 end
 
 function push_∇∇(∇∇a::Number,Jt_inv::MultiValue{Tuple{D1,D2}} where {D1,D2})
-  push_∇ⁿ(∇∇a, Jt_inv, Val(2))
+  PushNthGradient{2}()(∇∇a, Jt_inv)
 end
 
 # Pushforward of the N-th gradient by an affine map
 #
 # For x = Jξ + b, ∂ₓ = J⁻ᵀ ∂_ξ in every derivative index, so the physical N-th gradient is the
 # reference one with each of its first N indices contracted with J⁻ᵀ (`pinvJt`).
-
-function push_∇ⁿ(∇ⁿa::Field,ϕ::AffineField,::Val{N}) where N
+function (k::PushNthGradient)(∇ⁿa::Field,ϕ::AffineField)
   Jt = ∇(ϕ)
   Jt_inv = pinvJt(Jt)
-  Operation(_PushNthGradientMap{N}())(∇ⁿa, Jt_inv)
+  Operation(k)(∇ⁿa, Jt_inv)
 end
 
-"""
-    push_∇ⁿ(∇ⁿa::MultiValue, Jt_inv::MultiValue, Val(N))
-
-Pushforward of the reference `N`-th gradient `∇ⁿa` by an affine map with inverse transposed
-Jacobian `Jt_inv`: each of the first `N` indices is contracted with `Jt_inv`.
-"""
-function push_∇ⁿ(∇ⁿa::MultiValue,Jt_inv::MultiValue,::Val{N}) where N
+# Each of the first `N` indices is contracted with `Jt_inv`.
+function (::PushNthGradient{N})(∇ⁿa::MultiValue,Jt_inv::MultiValue) where N
   # Contracting the last derivative index moves the new index to the front,
   # so after N rounds the derivative indices are back in their original order.
   t = ∇ⁿa
   for _ in 1:N
     t = tensor_contraction(Jt_inv, t, Val(2), Val(N))
   end
-  t
+  return t
 end
-
-struct _PushNthGradientMap{N} <: Function end
-(::_PushNthGradientMap{N})(t, Jt_inv) where N = push_∇ⁿ(t, Jt_inv, Val(N))
 
 function lazy_map(
   k::Broadcasting{typeof(push_∇∇)},
@@ -135,7 +126,7 @@ function lazy_map(
   cell_map::AbstractArray{<:AffineField}) where N
   cell_Jt = lazy_map(∇,cell_map)
   cell_invJt = lazy_map(Operation(pinvJt),cell_Jt)
-  return lazy_map(Broadcasting(Operation(_PushNthGradientMap{N}())),cell_∇ⁿa,cell_invJt)
+  return lazy_map(Broadcasting(Operation(k.f)),cell_∇ⁿa,cell_invJt)
 end
 
 function lazy_map(
