@@ -154,8 +154,7 @@ function integrate(f::CellField,quad::CellQuadrature)
     lazy_map(IntegrationMap(),bx,quad.cell_weight)
   elseif quad.data_domain_style == ReferenceDomain() &&
             quad.integration_domain_style == PhysicalDomain()
-    cell_map = get_cell_map(quad.trian)
-    cell_Jt = lazy_map(∇,cell_map)
+    cell_Jt = get_cell_jac(quad.trian)
     cell_Jtx = lazy_map(evaluate,cell_Jt,quad.cell_point)
     lazy_map(IntegrationMap(),bx,quad.cell_weight,cell_Jtx)
   elseif quad.data_domain_style == ReferenceDomain() &&

@@ -23,9 +23,12 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 
+using Gridap.TensorValues: _form_degree_dim
+
 using Gridap.Polynomials: _q_filter, _ser_filter
 using Gridap.Polynomials: _compute_filter_mask
 using Gridap.Polynomials: _define_terms, _sort_by_nfaces!
+using Gridap.Polynomials: _is_cart_prod
 
 using QuadGK: gauss
 using FastGaussQuadrature: gaussjacobi
@@ -37,6 +40,9 @@ import Gridap.Arrays: return_type
 import Gridap.Fields: evaluate
 import Gridap.Fields: lazy_map
 import Gridap.Fields: linear_combination
+import Gridap.Fields: needs_DG_calc
+
+import Gridap.TensorValues: get_form_degree
 
 import Gridap.Polynomials: get_order
 import Gridap.Polynomials: get_orders
@@ -107,7 +113,10 @@ export Pullback
 export IdentityPiolaMap
 export CoVariantPiolaMap
 export ContraVariantPiolaMap
+export TensorPushforward
+export is_pushed_by
 export get_dofscale_setter_function
+export get_form_degree
 
 export Dof
 export get_nodes
@@ -188,6 +197,7 @@ export H1Conformity
 export GradConformity
 export CurlConformity
 export DivConformity
+export PΛConformity
 export CDConformity
 
 export SerendipityRefFE
@@ -264,8 +274,6 @@ include("ReferenceFEInterfaces.jl")
 
 include("GeometricDecompositions.jl")
 
-include("ExteriorCalculusRefFEs.jl")
-
 include("Pullbacks.jl")
 
 include("LagrangianRefFEs.jl")
@@ -303,6 +311,8 @@ include("BDMRefFEs.jl")
 include("NedelecRefFEs.jl")
 
 include("ModalScalarRefFEs.jl")
+
+include("ExteriorCalculusRefFEs.jl")
 
 include("CrouzeixRaviartRefFEs.jl")
 

@@ -11,6 +11,8 @@ Singleton of the [`Serendipity`](@ref) reference FE name.
 """
 const serendipity = Serendipity()
 
+Pushforward(::Type{<:Serendipity}, ::PΛConformity) = TensorPushforward()
+
 """
     SerendipityRefFE(::Type{T}, p::Polytope, order::Int)
     SerendipityRefFE(::Type{T}, p::Polytope, orders::Tuple)
@@ -18,6 +20,12 @@ const serendipity = Serendipity()
 Return a Lagrangian reference FE whose underlying approximation space is the
 serendipity polynomial space 𝓢r of order `order`. Implemented on n-cubes with
 homogneous order.
+
+`T` is either:
+- the type of the scalar components, in which case a scalar valued element with
+  `GradConformity` is returned
+- an `ExteriorFormValue{k,D}` of degree 0 or `D`, for the FEEC version with
+  `PΛConformity`, giving either `𝓢ᵣΛ⁰` or `𝓢ᵣΛᴰ ≡ 𝓟ᵣ`.
 
 The type of the polytope `p` has to implement all the queries detailed in the
 constructor [`LagrangianRefFE(::Type{T}, p::Polytope{D}, orders) where {T,D}`](@ref).
@@ -41,6 +49,17 @@ println( num_dofs(reffe) )
     on cartesian meshes (meshes with all geometrical mappings having diagonal
     Jacobians).
 """
+function SerendipityRefFE(::Type{V},p::Polytope{D},order::Int;
+  poly_type=Monomial) where {V<:ExteriorFormValue,D}
+
+  if D > 0 && get_form_degree(V) == D
+    return LagrangianRefFE(V,p,order; space=:P, poly_type)
+  end
+  @assert is_n_cube(p) "Polytope not compatible with serendipity elements"
+  sp = order > 0 ? SerendipityPolytope(p) : p
+  LagrangianRefFE(V,sp,order; poly_type)
+end
+
 function SerendipityRefFE(::Type{T},p::Polytope,order::Int;
   poly_type=Monomial) where T
 
@@ -120,7 +139,7 @@ end
 
 function compute_poly_basis(::Type{T},p::SerendipityPolytope{D},orders,poly_type) where {T,D}
   r = iszero(D) ? 0 : first(orders)
-  FEEC_poly_basis(Val(D),T,r,0,:S,poly_type; cart_prod=(T <: MultiValue)) # SᵣΛ⁰(□ᴰ)
+  FEEC_poly_basis(Val(D),T,r,0,:S,poly_type; cart_prod=_is_cart_prod(T)) # SᵣΛ⁰(□ᴰ)
 end
 
 function compute_own_nodes(p::SerendipityPolytope{0},orders)

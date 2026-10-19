@@ -26,6 +26,8 @@ Singleton of the [`Lagrangian`](@ref) reference FE name.
 """
 const lagrangian = Lagrangian()
 
+Pushforward(::Type{<:Lagrangian}, ::PΛConformity) = TensorPushforward()
+
 """
     get_face_own_nodes(reffe::LagrangianRefFE[, conf::Conformity][, d::Int])
 

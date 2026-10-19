@@ -50,24 +50,6 @@ function evaluate!(
   Operation(k)(f_ref,args...)
 end
 
-function Arrays.lazy_map(
-  ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{Broadcasting{Operation{<:Pushforward}}}}
-)
-  cell_ref_fields, args... = a.args
-  cell_ref_gradient = lazy_map(Broadcasting(∇),cell_ref_fields)
-  return lazy_map(a.maps.value,cell_ref_gradient,args...)
-end
-
-function Arrays.evaluate!(
-  cache,
-  ::Broadcasting{typeof(gradient)},
-  a::Fields.BroadcastOpFieldArray{<:Pushforward}
-)
-  v, pf_args... = a.args
-  grad_v = Broadcasting(∇)(v)
-  Broadcasting(Operation(a.op))(grad_v,pf_args...)
-end
-
 # InversePushforward
 
 """
@@ -194,30 +176,6 @@ function evaluate!( # φ -> φ̂ = |det(J)| J⁻¹ φ∘F
   return v_phys ⋅ (detJ * pinvJt(Jt))
 end
 
-# TODO: Should this be here? Probably not...
-
-function Fields.DIV(f::LazyArray{<:Fill})
-  df = Fields.DIV(f.args[1])
-  k  = f.maps.value
-  lazy_map(k,df)
-end
-
-function Fields.DIV(a::LazyArray{<:Fill{typeof(linear_combination)}})
-  i_to_basis  = Fields.DIV(a.args[2])
-  i_to_values = a.args[1]
-  lazy_map(linear_combination,i_to_values,i_to_basis)
-end
-
-function Fields.DIV(f::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}})
-  ϕrgₖ = f.args[1]
-  return lazy_map(Broadcasting(divergence),ϕrgₖ)
-end
-
-function Fields.DIV(f::Fill{<:Fields.BroadcastOpFieldArray{ContraVariantPiolaMap}})
-  ϕrgₖ = f.value.args[1]
-  return Fill(Broadcasting(divergence)(ϕrgₖ),length(f))
-end
-
 # CoVariantPiolaMap
 
 """
@@ -270,6 +228,165 @@ function evaluate!( # φ -> φ̂ = Jᵀ φ∘F J
   cache, ::InversePushforward{DoubleCoVariantPiolaMap}, v_phys::Number, Jt::Number
 )
   return congruent_prod(v_phys, transpose(Jt)) # symmetry stable Jt ⋅ v_phys ⋅ Jtᵀ
+end
+
+
+# TensorPushforward
+
+"""
+    struct TensorPushforward <: Pushforward
+
+[`pushforward`](@ref) `ω ↦ (F⁻¹)^*ω` for tensors with variance. Its
+`InversePushforward` is [`pullback`](@ref).
+
+For `ExteriorFormValue{k,Cov(D)}`, it is equivalent to the `IdentityPiolaMap`,
+`CoVariantPiolaMap`, `ContraVariantPiolaMap` with signed `det(J)` and
+multiplication by `inv(det(J))` for the vector proxy of forms orders 0, 1, D-1
+and D, respectively.
+"""
+struct TensorPushforward <: Pushforward end
+
+function evaluate!(
+  cache, ::TensorPushforward, v_ref::MultiValue, Jt::Number
+)
+  return pushforward(v_ref, Jt)
+end
+
+function evaluate!(
+  cache, ::InversePushforward{TensorPushforward}, v_phys::MultiValue, Jt::Number
+)
+  return pullback(v_phys, Jt)
+end
+
+
+###############################################################
+# Commutation between Pushforwards and differential operators #
+###############################################################
+
+# Those gradient methods silently assume that the pushforward arguments are
+# constant over the cell
+function Arrays.lazy_map(
+  ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{Broadcasting{Operation{<:Pushforward}}}}
+)
+  cell_ref_fields, args... = a.args
+  cell_ref_gradient = lazy_map(Broadcasting(∇),cell_ref_fields)
+  return lazy_map(a.maps.value,cell_ref_gradient,args...)
+end
+
+function Arrays.evaluate!(
+  cache,
+  ::Broadcasting{typeof(gradient)},
+  a::Fields.BroadcastOpFieldArray{<:Pushforward}
+)
+  v, pf_args... = a.args
+  grad_v = Broadcasting(∇)(v)
+  Broadcasting(Operation(a.op))(grad_v,pf_args...)
+end
+
+# partial derivatives of varianced tensor field, like the gradient method
+# above, it is only correct for constant pushforward, but it requires it.
+#
+# The derivation indices of `∂φ̂` do carry their own variance, so only the
+# value index block is pushed forward here, by `push_second_partials`, and
+# `push_first_partials` transports the derivation indices when the cell field
+# is differentiated.
+
+_constant_over_cell(f::ConstantField) = true
+_constant_over_cell(f::Field) = false
+_constant_over_cell(a::AbstractArray) = _constant_over_cell(testitem(a))
+
+function _check_affine_pushforward(args...)
+  all(_constant_over_cell,args) && return nothing
+  @notimplemented """\n
+  Partial derivatives of a basis pushed forward by `TensorPushforward` are only
+  implemented for a pushforward that is constant over the cell, that is for an
+  affine cell map.
+  """
+end
+
+function Arrays.lazy_map(
+  k::Broadcasting{PartialDerivatives{Np}},
+  a::LazyArray{<:Fill{Broadcasting{Operation{TensorPushforward}}}}
+) where Np
+  cell_ref_fields, args... = a.args
+  _check_affine_pushforward(args...)
+  cell_ref_partials = lazy_map(k,cell_ref_fields)
+  return lazy_map(Broadcasting(Operation(push_second_partials)),cell_ref_partials,args...)
+end
+
+function Arrays.evaluate!(
+  cache,
+  k::Broadcasting{PartialDerivatives{Np}},
+  a::Fields.BroadcastOpFieldArray{TensorPushforward}
+) where Np
+  v, pf_args... = a.args
+  _check_affine_pushforward(pf_args...)
+  ∂v = k(v)
+  Broadcasting(Operation(push_second_partials))(∂v,pf_args...)
+end
+
+
+# Reference space divergence
+function Fields.DIV(f::LazyArray{<:Fill})
+  df = Fields.DIV(f.args[1])
+  k  = f.maps.value
+  lazy_map(k,df)
+end
+
+function Fields.DIV(a::LazyArray{<:Fill{typeof(linear_combination)}})
+  i_to_basis  = Fields.DIV(a.args[2])
+  i_to_values = a.args[1]
+  lazy_map(linear_combination,i_to_values,i_to_basis)
+end
+
+function Fields.DIV(f::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}})
+  ϕrgₖ = f.args[1]
+  return lazy_map(Broadcasting(divergence),ϕrgₖ)
+end
+
+function Fields.DIV(f::Fill{<:Fields.BroadcastOpFieldArray{ContraVariantPiolaMap}})
+  ϕrgₖ = f.value.args[1]
+  return Fill(Broadcasting(divergence)(ϕrgₖ),length(f))
+end
+
+
+"""
+    is_pushed_by(cell_data, pf::Pushforward)
+
+Whether `cell_data`, a field array, is a (reference) field pushed forward by `pf`.
+"""
+is_pushed_by(cell_data, ::Pushforward) = false
+is_pushed_by(::LazyArray{<:Fill{Broadcasting{Operation{PF}}}}, ::PF) where PF<:Pushforward = true
+is_pushed_by(::Fill{<:Fields.BroadcastOpFieldArray{PF}}, ::PF) where PF<:Pushforward = true
+is_pushed_by(a::LazyArray{<:Fill{typeof(linear_combination)}}, pf::Pushforward) =
+  is_pushed_by(a.args[2],pf)
+
+
+# Commutation rules between exterior_derivative and pullback for varianced
+# tensor field arrays
+function Fields.exterior_derivative(
+  a::LazyArray{<:Fill{Broadcasting{Operation{TensorPushforward}}}}
+)
+  cell_ref_fields, args... = a.args
+  cell_ref_d = lazy_map(Broadcasting(exterior_derivative),cell_ref_fields)
+  return lazy_map(a.maps.value,cell_ref_d,args...)
+end
+
+function Fields.exterior_derivative(a::Fill{<:Fields.BroadcastOpFieldArray{TensorPushforward}})
+  pf = a.value
+  ref_fields, args... = pf.args
+  ref_d = Broadcasting(exterior_derivative)(ref_fields)
+  return Fill(Broadcasting(Operation(pf.op))(ref_d,args...),length(a))
+end
+
+function Fields.exterior_derivative(a::LazyArray{<:Fill{typeof(linear_combination)}})
+  cell_values, cell_basis = a.args
+  @check is_pushed_by(cell_basis,TensorPushforward()) """\n
+  The exterior derivative of a cell basis is only defined for one pushed
+  forward by `TensorPushforward`, which commutes with it. Take it through the
+  partial derivatives otherwise.
+  """
+  return lazy_map(linear_combination,cell_values,exterior_derivative(cell_basis))
 end
 
 
@@ -332,5 +449,17 @@ _scaling_function(::ContraVariantPiolaMap, D::Int) = let D=D
 end
 _scaling_function(::DoubleContraVariantPiolaMap, D::Int) = let D=D
   h -> h^(2D-2)
+end
+
+# A k-form scales like the k-fold product of covectors, i.e. hᵏ.
+function get_dofscale_setter_function(reffe::ReferenceFE{D}, ::TensorPushforward) where D
+  K = get_form_degree(reffe)
+  let K=K
+    @inline function(dofscale, face_own_dofs, face_meshsize)
+      for (face_dofs, h) in zip(face_own_dofs, face_meshsize)
+        @inbounds dofscale[face_dofs] .= h^K
+      end
+    end
+  end
 end
 

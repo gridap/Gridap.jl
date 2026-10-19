@@ -71,6 +71,9 @@ get_cell_type(g::DiscreteModel) = get_cell_type(get_grid(g))
 
 get_reffes(g::DiscreteModel) = get_reffes(get_grid(g))
 
+get_cell_jac(model::DiscreteModel, DG_calc::Bool=false) =
+  get_cell_jac(get_grid(model), DG_calc)
+
 # Default API
 
 """
@@ -353,6 +356,21 @@ function compute_reffaces(g::DiscreteModel)
     d_to_dface_to_ftype[d+1] .+= d_to_offset[d+1]
   end
   (vcat(d_to_refdfaces...), vcat(d_to_dface_to_ftype...), d_to_offset)
+end
+
+"""
+    has_sorted_cells(model::DiscreteModel) -> Bool
+
+Whether every cell of `model` lists its vertices in increasing global id order.
+"""
+function has_sorted_cells(model::DiscreteModel)
+  D = num_cell_dims(model)
+  cell_verts = Geometry.get_faces(get_grid_topology(model), D, 0)
+  cache = array_cache(cell_verts)
+  for cell in eachindex(cell_verts)
+    issorted(getindex!(cache, cell_verts, cell)) || return false
+  end
+  return true
 end
 
 """

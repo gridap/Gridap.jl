@@ -15,11 +15,12 @@ function _PDiscRefFE(::Type{V},p::Polytope,order::Integer, poly_type) where V
   face_nodes = [Int[] for face in 1:num_faces(p)]
   face_nodes[end] = collect(1:num_nodes(reffe))
   # basis for ( SᵣΛᴰ(□ᴰ) )ⁿ, n=num_indep_components(V)
-  basis = FEEC_poly_basis(Val(D),V,order,D,:S,poly_type; cart_prod=(V <: MultiValue))
+  basis = FEEC_poly_basis(Val(D),V,order,D,:S,poly_type; cart_prod=_is_cart_prod(V))
   dofs = get_dof_basis(reffe)
   face_own_dofs = _generate_face_own_dofs(face_nodes,dofs.node_and_comp_to_dof)
 
-  conf = L2Conformity()
+  # The PΛConformity actually has the same behavior as L2Conformity of the proxy.
+  conf = V <: ExteriorFormValue ? PΛConformity() : L2Conformity()
 
   reffe = GenericRefFE{typeof(conf)}(
     num_dofs(reffe),

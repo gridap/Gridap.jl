@@ -762,17 +762,30 @@ end
 ################################################################################
 # Differential geometry operators needing derivatives or evaluation point
 
-for (diff_op, partials_op) in (
-  (:exterior_derivative, :partials_to_exteriorderivative),
-  (:codifferential,      :partials_to_codifferential),
-)
-  @eval begin
-    function $diff_op(a::CellField)
-      ∂a = partial_derivatives(a)
-      cell_data = lazy_map(Broadcasting(Operation($partials_op)), get_data(∂a))
-      similar_cell_field(a, cell_data, get_triangulation(a), DomainStyle(a))
-    end
+function exterior_derivative(a::CellField)
+  cell_a = get_data(a)
+  if DomainStyle(a) == ReferenceDomain() && is_pushed_by(cell_a, TensorPushforward())
+    # `𝑑` does commute with the pullback, so on a basis pushed forward by
+    # `TensorPushforward` it is taken in the reference space and pushed forward
+    # as a `k+1` form.
+    cell_da = exterior_derivative(cell_a)
+    # where exterior_derivative is overloaded for field arrays, in ReferenceFEs/Pullbacks.jl
+  else
+    # A field that is not a pushforward for reference space (e.g. physical or
+    # 0-form reference) has it's partial derivatives computed in the physical
+    # space.
+    ∂a = partial_derivatives(a)
+    cell_da = lazy_map(Broadcasting(Operation(partials_to_exteriorderivative)), get_data(∂a))
   end
+  similar_cell_field(a, cell_da, get_triangulation(a), DomainStyle(a))
+end
+
+# `δ` does not comute with pullback, the derivatives have to be taken in
+# physical space
+function codifferential(a::CellField)
+  ∂a = partial_derivatives(a)
+  cell_δa = lazy_map(Broadcasting(Operation(partials_to_codifferential)), get_data(∂a))
+  similar_cell_field(a, cell_δa, get_triangulation(a), DomainStyle(a))
 end
 
 # `κ_x(a) = ι_x(a)` contracts `a` with the position vector

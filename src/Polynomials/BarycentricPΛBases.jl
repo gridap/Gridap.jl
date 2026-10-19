@@ -2,20 +2,41 @@
 # Bernstein bases algorithms Developper notes of the official documentation.
 
 """
-    FEEC_space_definition_checks(::Val{D}, T, r, k, F, rotate_90; cart_prod=false)
+    FEEC_space_definition_checks(::Val{D}, V, r, k, F, rotate_90; cart_prod=false, element=false)
 
 Check if the argument define a valid Finite Element Exterior Calculus (FEEC) polynomial space,
 as defined in the Periodic Table of the Finite Elements, ``\\mathrm{F}ᵣΛᵏ`` in dimension `D`.
 
+`V` may be:
+- an `ExteriorFormValue{k,D,T}`, in which case a properly form-valued space is described,
+- a scalar number type, that is used as the element type of a vector proxy, i.e. `VectorValue` basis,
+- or a tensor type with no variance with `cart_prod=true`.
+
+Pass `element=true` to also check `r>0` for `:P` family, because 𝓟₀Λ⁰ is a
+valid basis necessary for some moment test polynomials, but is not a valid
+element space.
+
 The arguments are also described in [`FEEC_poly_basis`](@ref).
 """
 function FEEC_space_definition_checks(
-  ::Val{D},::Type{T},r::Integer,k::Integer,F::Symbol, rotate_90::Bool=false, DG_calc::Bool=false;
-  cart_prod=false
-) where {D,T}
+  ::Val{D},::Type{V},r::Integer,k::Integer,F::Symbol, rotate_90::Bool=false;
+  cart_prod=false, element::Bool=false
+) where {D,V}
+
+  DG_calc = V <: ExteriorFormValue
+  # the scalar type the polynomial bases speak of
+  T = DG_calc ? eltype(V) : V
 
   if cart_prod
     @check k in (0, D) "Basis for Cartesian product of polynomial space only possible for `k` = 0 or `D`, got k=$k and D=$D"
+    @check V <: MultiValue """
+      A Cartesian product space is built on a tensor value type; the plain \
+      scalar type $V is the scalar space itself, so `cart_prod` is not it.
+      """
+    @check !needs_DG_calc(V) """
+      A Cartesian product of scalar spaces cannot have the varianced component \
+      type $V: a scalar is not transported, a form or a vector is.
+      """
     @check T<:Number
   else
     @check T<:Real "T needs to be <:Real since represents the scalar type, got $T. If you want to define a Cartesian product FEEC basis, use `cart_prod=true`"
@@ -24,20 +45,36 @@ function FEEC_space_definition_checks(
   @check k in 0:D "The form order k must be in 0:D, got k=$k and D=$D."
   @check r ≥ 0    "The polynomial order r must be positive, got $r."
 
+  if element && !(k==D && F in (:P,:S)) # 𝓟₀Λ⁰ is a valid basis, but not element
+    @check r ≥ 1 "This exterior calculus FE starts at r=1, (F,r,k) = ($F,$r,$k)"
+  end
+
   if DG_calc
-    @notimplemented "A new MultiValue type and associated algebraic operations ∧/⋆/𝑑/δ need to be implemented to use form valued polynomials."
-  elseif D>3 && ( 1 < k < D-1)
+    @notimplementedif !(k in (0,D) || F in (:P, :P⁻)) """
+      Form valued spaces of degree 0 < k < D are only implemented for the :P \
+      and :P⁻ families so far, got F=$F
+      """
+  elseif 1 < k < D-1
     @unreachable "Vector calculus proxy of differential form bases are only available for `k`=0,1,`D`-1 or `D`, got k=$k and D=$D."
   end
 
-  if rotate_90 && !(!DG_calc && isone(k) && D==2)
-    @warn """The `rotate_90` kwarg only makes sense for 2D vector proxied forms
+  if rotate_90
+    @check !DG_calc "`rotate_90` is a vector proxy convention and is meaningless for form valued spaces"
+    isone(k) && D==2 || @warn """The `rotate_90` kwarg only makes sense for 2D vector proxied forms
               of degree 1, it will be ignored and may lead to errors.
               Got k=$k, D=$D for F=$F
           """
   end
   true
 end
+
+function FEEC_tensor_type(T, D, k, DG_calc; cart_prod=false)
+  cart_prod && return T
+  DG_calc && return make_concretetype(ExteriorFormValue{k,D,T})
+  k∈(0,D) ? T : VectorValue{D,T} # vector proxy of 1, D-1 and D forms
+end
+
+_is_cart_prod(::Type{T}) where T = T <: MultiValue && !needs_DG_calc(T)
 
 #############################
 # BarycentricPΛIndices type #
@@ -207,12 +244,17 @@ end
     BarycentricPmΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
 
 Finite Element Exterior Calculus polynomial basis for the spaces P⁻`ᵣ`Λ`ᵏ` on
-`D`-dimensional simplices, but with polynomial forms explicitely transformed
-into vectors using the standard equivalence with usual vector calculus defined
-in terms of the hodge star operator ⋆ and the sharp map ♯, see
-[`_basis_forms_components`](@ref) (the simplex is assumed Euclidean).
+`D`-dimensional simplices.
 
-- `V` is `VectorValue{L,T}` where `L` is binomial(`D`,`k`),
+Unless the constructor is handed an `ExteriorFormValue`, the polynomial forms
+are explicitely transformed into vectors using the standard equivalence with
+usual vector calculus defined in terms of the hodge star operator ⋆ and the
+sharp map ♯, see [`_basis_forms_components`](@ref) (the simplex is assumed
+Euclidean).
+
+- `V` is given by [`FEEC_tensor_type`](@ref): the `ExteriorFormValue{k,D,T}` the
+  constructor was handed, else `T` for `k=0` or `D` and `VectorValue{D,T}` for
+  `k=1` or `D-1`
 - `K` is the polynomial order of the underlying scalar bernstein polynomial basis
 
 The number of basis polynomials is binomial(`r`+`k`-1,`k`)*binomial(`D`+`r`,`D`-`k`) if no filtered bubble indices are given.
@@ -228,28 +270,32 @@ struct BarycentricPmΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
   _indices::BarycentricPΛIndices
   flavor::Symbol
 
-  function BarycentricPmΛBasis{D}(::Type{T}, r, k, vertices;
-        DG_calc=false, indices=nothing, rotate_90=false, flavor=:AFW) where {D,T}
+  function BarycentricPmΛBasis{D}(::Type{V0}, r, k, vertices;
+        indices=nothing, rotate_90=false, flavor=:AFW) where {D,V0}
 
     @check flavor in (:AFW, :BMM)
-    FEEC_space_definition_checks(Val(D), T, r, k, :P⁻, rotate_90, DG_calc)
+    FEEC_space_definition_checks(Val(D), V0, r, k, :P⁻, rotate_90)
     _simplex_vertices_checks(Val(D), vertices)
+
+    DG_calc = V0 <: ExteriorFormValue
+    DG_calc && @check _form_degree_dim(V0) == (k,D) """
+      The value type $V0 is a $(first(_form_degree_dim(V0)))-form in dimension \
+      $(last(_form_degree_dim(V0))), but a basis of P⁻ᵣΛᵏ with k=$k in \
+      dimension $D was asked for.
+      """
+    T = DG_calc ? eltype(V0) : V0
 
     indices = _generate_or_check_PmΛ_indices(r,k,D,DG_calc,indices,rotate_90)
 
-    L = binomial(D,k) # Number of components of a basis form
-    V = VectorValue{L,T} # To update once DG_calc is implemented
-
+    V = FEEC_tensor_type(T, D, k, DG_calc)
     b = BernsteinBasisOnSimplex{D}(Float64, r, vertices)
     K = get_order(b)
-    LN = binomial(D+1,k) # Number of k-faces J of a D-dimensional tetrahedron
-    m = Vector{V}(undef, LN)
-    _compute_PmΛ_basis_coefficients!(m,Val(k),D,b,vertices,indices)
 
-    if isone(L) && !DG_calc
-      V = T
-      m = collect(reinterpret(T, m))
-    end
+    L = binomial(D,k)    # Number of components of a basis form
+    LN = binomial(D+1,k) # Number of k-faces J of a D-dimensional tetrahedron
+    m = Vector{VectorValue{L,T}}(undef, LN)
+    _compute_PmΛ_basis_coefficients!(m,Val(k),D,b,vertices,indices)
+    m = collect(reinterpret(V, m))
 
     new{D,V,K}(k,b,m,indices,flavor)
   end
@@ -298,12 +344,13 @@ end
     BarycentricPmΛBasis(::Val{D}, T, r, k; kwargs...)
     BarycentricPmΛBasis(::Val{D}, T, r, k, vertices; kwargs...)
 
-Constructors for [`BarycentricPmΛBasis`](@ref) of scalar type `T`.
+Constructors for [`BarycentricPmΛBasis`](@ref) of value type `T`: give the
+scalar type for the vector proxied polynomials, or an `ExteriorFormValue{k,D,S}`
+for the `k`-form valued ones.
 If `vertices` are specified, they must define a non-degenerate simplex, c.f. [`BernsteinBasisOnSimplex`](@ref).
 
 The kwargs are the following:
 - `indices::BarycentricPΛIndices = nothing`: may be provided to avoid allocations of new indices, or to select specific bubbles spaces,
-- `DG_calc = false`: set to `true` to choose `k`-form valued polynomials instead of vector valued polynomials (not implemented yet),
 - `rotate_90 = false`: In 2`D` for `k`=1, `true` to apply a 90° rotation of the vector proxied polynomials ((x,y) -> (-y,x)), needed for Raviart-Thomas/BDM.
 """
 function BarycentricPmΛBasis(::Val{D},::Type{T},r,k; kwargs...) where {D,T}
@@ -341,12 +388,17 @@ end
     BarycentricPΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
 
 Finite Element Exterior Calculus polynomial basis for the spaces P`ᵣ`Λ`ᵏ` on
-`D`-dimensional simplices, but with polynomial forms explicitely transformed
-into vectors using the standard equivalence with usual vector calculus defined
-in terms of the hodge star operator ⋆ and the sharp map ♯, see
-[`_basis_forms_components`](@ref) (the simplex is assumed Euclidean).
+`D`-dimensional simplices.
 
-- `V` is `VectorValue{L,T}` where `L=binomial(D,k)`,
+Unless the constructor is handed an `ExteriorFormValue`, the polynomial forms
+are explicitely transformed into vectors using the standard equivalence with
+usual vector calculus defined in terms of the hodge star operator ⋆ and the
+sharp map ♯, see [`_basis_forms_components`](@ref) (the simplex is assumed
+Euclidean).
+
+- `V` is given by [`FEEC_tensor_type`](@ref): the `ExteriorFormValue{k,D,T}` the
+  constructor was handed, else `T` for `k=0` or `D` and `VectorValue{D,T}` for
+  `k=1` or `D-1`
 - `K` is the polynomial order of the underlying scalar bernstein polynomial basis
 
 The number of basis polynomials is binomial(`r`+`k`,`k`)*binomial(`D`+`r`,`D`-`k`) if no custom bubble indices are given.
@@ -361,30 +413,33 @@ struct BarycentricPΛBasis{D,V,K} <: PolynomialBasis{D,V,Bernstein}
   _indices::BarycentricPΛIndices
   flavor::Symbol
 
-  function BarycentricPΛBasis{D}(::Type{T}, r, k, vertices;
-        DG_calc=false, indices=nothing, rotate_90=false, flavor=:AFW) where {D,T}
+  function BarycentricPΛBasis{D}(::Type{V0}, r, k, vertices;
+        indices=nothing, rotate_90=false, flavor=:AFW) where {D,V0}
 
     @check flavor in (:AFW, :BMM)
-    FEEC_space_definition_checks(Val(D), T, r, k, :P⁻, rotate_90, DG_calc)
+    FEEC_space_definition_checks(Val(D), V0, r, k, :P⁻, rotate_90)
     _simplex_vertices_checks(Val(D), vertices)
+
+    DG_calc = V0 <: ExteriorFormValue
+    DG_calc && @check _form_degree_dim(V0) == (k,D) """
+      The value type $V0 is a $(first(_form_degree_dim(V0)))-form in dimension \
+      $(last(_form_degree_dim(V0))), but a basis of PᵣΛᵏ with k=$k in \
+      dimension $D was asked for.
+      """
+    T = DG_calc ? eltype(V0) : V0
 
     indices = _generate_or_check_PΛ_indices(r,k,D,DG_calc,indices,rotate_90)
 
-    L = binomial(D,k) # Number of components of a basis form
-    V = VectorValue{L,T} # To update once DG_calc is implemented
-    C = _last_bubble_function_index(indices) # Cardinal of the basis
-
+    V = FEEC_tensor_type(T, D, k, DG_calc)
     b = BernsteinBasisOnSimplex{D}(Float64, r, vertices)
-    K = get_order(b)
-    Ψ = Vector{V}(undef, C)
+
+    L = binomial(D,k) # Number of components of a basis form
+    C = _last_bubble_function_index(indices) # Cardinal of the basis
+    Ψ = Vector{VectorValue{L,T}}(undef, C)
     _compute_PΛ_basis_form_coefficient!(Ψ,r,k,Val(D),b,vertices,indices,flavor)
+    Ψ = collect(reinterpret(V, Ψ))
 
-    if isone(L) && !DG_calc
-      V = T
-      Ψ = collect(reinterpret(T, Ψ))
-    end
-
-    new{D,V,K}(k,b,Ψ,indices,flavor)
+    new{D,V,r}(k,b,Ψ,indices,flavor)
   end
 
   @doc """
@@ -437,12 +492,13 @@ end
     BarycentricPΛBasis(::Val{D}, T, r, k; kwargs...)
     BarycentricPΛBasis(::Val{D}, T, r, k, vertices; kwargs...)
 
-Constructors for [`BarycentricPΛBasis`](@ref) of scalar type `T`.
+Constructors for [`BarycentricPΛBasis`](@ref) of value type `T`: give the
+scalar type for the vector proxied polynomials, or an `ExteriorFormValue{k,D,S}`
+for the `k`-form valued ones.
 If `vertices` are specified, they must define a non-degenerate simplex, c.f. [`BernsteinBasisOnSimplex`](@ref).
 
 The kwargs are the following:
 - `indices::BarycentricPΛIndices = nothing`: may be provided to avoid allocations of new indices, or to select specific bubbles spaces,
-- `DG_calc = false`: set to `true` to choose `k`-form valued polynomials instead of vector valued polynomials (not implemented yet),
 - `rotate_90 = false`: In 2`D` for `k`=1, `true` to apply a 90° rotation of the vector proxied polynomials ((x,y) -> (-y,x)), needed for Raviart-Thomas/BDM.
 - `flavor = :AFW`: `:BMM` selects the alternative direction forms of [`_update_φ_αF!`](@ref), only defined for `k` ≤ 1.
 """

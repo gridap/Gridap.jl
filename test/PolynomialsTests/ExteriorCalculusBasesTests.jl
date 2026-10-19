@@ -18,7 +18,7 @@ using StaticArrays
 
 # differential geometry / exterior calculus isn't implemented yet
 DG_calc = true
-@test_throws ErrorException FEEC_space_definition_checks(Val(0),Float64,0,0,:P,false,DG_calc)
+#@test_throws ErrorException FEEC_space_definition_checks(Val(0),Float64,0,0,:P,false,DG_calc)
 
 # no vector proxy for 1 < k < D-1 forms
 D,k = 4, 2

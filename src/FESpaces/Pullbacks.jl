@@ -3,11 +3,11 @@ function get_cell_shapefuns_and_dof_basis(
   model::DiscreteModel, cell_reffe::AbstractArray{T}, conf::Conformity; kwargs...
 ) where T <: ReferenceFE
 
-  cell_map  = get_cell_map(get_grid(model))
-  cell_Jt = lazy_map(Broadcasting(∇), cell_map)
+  DG_calc = needs_DG_calc(testitem(cell_reffe))
+  cell_Jt = get_cell_jac(get_grid(model), DG_calc)
 
   reffe_name = get_name(T)
-  pushforward = Pushforward(reffe_name, conf)
+  pushforward = DG_calc ? TensorPushforward() : Pushforward(reffe_name, conf)
   cell_changes = compute_cell_bases_changes(reffe_name, pushforward, model, cell_reffe, cell_Jt)
 
   return get_cell_shapefuns_and_dof_basis(
@@ -15,7 +15,7 @@ function get_cell_shapefuns_and_dof_basis(
   )
 end
 
-# This constructor allows fo provided cell changes and jacobians, 
+# This constructor allows fo provided cell changes and jacobians,
 # which is necessary for GridapDistributed
 function get_cell_shapefuns_and_dof_basis(
   pushforward::Pushforward, model, cell_reffe, cell_changes, cell_Jt;
@@ -108,6 +108,32 @@ function compute_cell_bases_changes(
   change = lazy_map(r -> Diagonal(fill(one(Float64), num_dofs(r))), cell_reffe) # TODO: Replace by sign flip
   #change  = get_sign_flip(model, cell_reffe) # equal to its transposed inverse
   return (change,change)
+end
+
+############################################################################################
+# Form valued (ExteriorFormValue) FEEC elements: mesh level conformity
+#
+# See src/ReferenceFEs/ExteriorCalculusRefFEs.jl. The DOFs of a `d`-face `f` are the AFW
+# moments
+#
+#     σ_{f,i}(ω) = ∫_f̂ (ι_f̂^* ω̂) ∧ μ_i ,
+#
+# Two cells `K`, `K'` sharing a physical face `f` therefore agree on its DOFs
+# exactly when the composite `f̂ → f → f̂'` is the identity, i.e. when the `j`-th
+# local vertex of `f̂` and of `f̂'` is the same physical vertex for every `j`.
+
+function compute_cell_bases_changes(
+  ::ReferenceFEName, ::TensorPushforward, model::DiscreteModel, cell_reffe, cell_Jt
+)
+  ctype_reffe, _ = compress_cell_data(cell_reffe)
+  all(ReferenceFEs.has_complete_dof_permutations, ctype_reffe) && return nothing
+
+  Geometry.has_sorted_cells(model) || @notimplemented """
+  This form valued reference FE requires a mesh whose cells list their vertices
+  in increasing global id order because does not declare DOF permutation every
+  possible face permutation.
+  """
+  return nothing
 end
 
 #################

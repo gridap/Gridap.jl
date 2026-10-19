@@ -169,6 +169,19 @@ function has_geometric_decomposition(b::_BaryPΛBasis, p::Polytope, conf::Confor
   false
 end
 
+function has_geometric_decomposition(b::_BaryPΛBasis, p::Polytope, ::PΛConformity)
+  D = get_dimension(b)
+  (!is_simplex(p) || D != num_dims(p)) && return false
+  if !_are_barycoords_relative_to_simplex(b.scalar_bernstein_basis, p)
+    @warn """
+      The barycentric coordinates of the given basis is not defined relative to the given simplex vertices.
+      $(sprint(Base.show_backtrace, stacktrace()))
+    """
+    return false
+  end
+  true
+end
+
 function get_face_own_funs(b::_BaryPΛBasis, p::Polytope, conf::Conformity)
   @check has_geometric_decomposition(b,p,conf)
 

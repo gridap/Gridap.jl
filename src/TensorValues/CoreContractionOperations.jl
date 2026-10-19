@@ -662,12 +662,11 @@ end
 @generated function congruent_prod(a::SkewSymKTensorValue{V,K,Dw,Ta},
     b::MultiValue{Tuple{Db,D1},Tb}) where {V,K,Dw,Ta,Db,D1,Tb}
 
-  iszero(K) && return :( @unreachable _alt_congruence_order_msg(
-      "congruent_prod is only defined for a tensor `a` of order at least 1, got order $($K)")
-  )
   can_contract(Db, Dw) || return :( _ensure_contract($Db, $Dw) )
-  _alt_congruence_body(_congruence_type(a, b), K, Int(Dw), Int(D1),
-                       Base.promote_op(*, Tb, Ta))
+  T = Base.promote_op(*, Tb, Ta)
+  Vr = _congruence_type(a, b)
+  iszero(K) && return :( $Vr{$T}(a.data) )
+  _alt_congruence_body(Vr, K, Int(Dw), Int(D1), T)
 end
 
 # same as `SkewSymKTensorValue{V,2,D}`

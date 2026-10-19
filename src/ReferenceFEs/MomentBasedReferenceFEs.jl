@@ -106,12 +106,20 @@ function num_dofs(b::MomentBasedDofBasis)
   n
 end
 
+# Throughout this file, the dof functionnals are "compiled" and stored using a
+# Riesz representative `m` for the inner product ⊙ᴱ, such that `σ(φ) = Σ_nodes
+# m ⊙ᴱ φ(x)`.
+#
+# The choice for ⊙ᴱ needs to be consistent, the Riesz representatives basis are
+# obtained by `representatives_of_componentbasis_dual(V, I)`, because
+# ⊙(a,b,I) === ⊙ᴱ(a,b).
+
 function return_cache(b::MomentBasedDofBasis{P,V}, field) where {P,V}
   field = apply_operator(b, field)
   cf = return_cache(field,b.nodes)
   vals = evaluate!(cf,field,b.nodes)
   Vr = eltype(vals)
-  T = typeof( zero(V) ⊙ zero(Vr) )
+  T = typeof( zero(V) ⊙ᴱ zero(Vr) )
   r = Array{T}(undef, (num_dofs(b), size(field)...))
   c = CachedArray(r)
   return c, cf
@@ -136,7 +144,7 @@ function evaluate!(cache, b::MomentBasedDofBasis, field::Field)
       for j in 1:nj
         dofs[o] = z
         for i in 1:ni
-          dofs[o] += moments[i,j] ⊙ vals[nodes[i]]
+          dofs[o] += moments[i,j] ⊙ᴱ vals[nodes[i]]
         end
         o += 1
       end
@@ -167,7 +175,7 @@ function evaluate!(cache, b::MomentBasedDofBasis, field::AbstractVector{<:Field}
         for a in 1:na
           dofs[o,a] = z
           for i in 1:ni
-            dofs[o,a] += moments[i,j] ⊙ vals[nodes[i],a]
+            dofs[o,a] += moments[i,j] ⊙ᴱ vals[nodes[i],a]
           end
         end
         o += 1
@@ -231,7 +239,7 @@ function MomentBasedDofBasis(
   field = _apply_operator(operator, prebasis)
   x = first(get_vertex_coordinates(p))
   V = eltype(return_type(field, x))
-  op_φ_vec = representatives_of_componentbasis_dual(V)
+  op_φ_vec = representatives_of_componentbasis_dual(V, I)
   op_φ = map(constant_field, op_φ_vec)
 
   # Create face measures for each moment
@@ -415,7 +423,7 @@ function Arrays.return_cache(
 )
   fmap = ds.fmaps[ds.face]
   φf = transpose(Broadcasting(Operation(∘))(φ,fmap))
-  return_cache(σ(φf,μ,ds),ds)
+  return_cache(σ(φf,μ,ds), ds, _needs_DG_calc(φ,ds))
 end
 
 function Arrays.evaluate!(
@@ -427,33 +435,41 @@ function Arrays.evaluate!(
 )
   fmap = ds.fmaps[ds.face]
   φf = transpose(Broadcasting(Operation(∘))(φ,fmap))
-  evaluate!(cache,σ(φf,μ,ds),ds)
+  evaluate!(cache,σ(φf,μ,ds), ds, _needs_DG_calc(φ,ds))
 end
 
-function Arrays.return_cache(f,ds::FaceMeasure)
+_needs_DG_calc(φ,::FaceMeasure{Df,Dc}) where {Df,Dc} =
+  needs_DG_calc(φ, zero(Point{Dc,Float64}))
+
+function Arrays.return_cache(f,ds::FaceMeasure, DG_calc=false)
   fmap = ds.fmaps[ds.face]
 
   xf = get_coordinates(ds.quad)
   w = get_weights(ds.quad)
   fmap_cache = return_cache(fmap,xf)
 
-  detJ = Broadcasting(Operation(meas))(Broadcasting(∇)(fmap))
-  detJ_cache = return_cache(detJ,xf)
+  # differential forms already carry the volume measure
+  detJ_cache = DG_calc ? nothing : return_cache(
+    Broadcasting(Operation(meas))(Broadcasting(∇)(fmap)), xf
+  )
 
   f_cache = return_cache(f,xf)
   return fmap_cache, detJ_cache, f_cache, xf, w
 end
 
-function Arrays.evaluate!(cache,f,ds::FaceMeasure)
+function Arrays.evaluate!(cache,f,ds::FaceMeasure, DG_calc=false)
   fmap_cache, detJ_cache, f_cache, xf, w = cache
   fmap = ds.fmaps[ds.face]
 
-  detJ = Broadcasting(Operation(meas))(Broadcasting(∇)(fmap))
-  dF = evaluate!(detJ_cache,detJ,xf)
-
   xc = evaluate!(fmap_cache,fmap,xf) # quad pts on the cell
   fx = evaluate!(f_cache,f,xf) # f evaluated on the quad pts
-  fx .= (w .* dF) .* fx
+  if DG_calc
+    fx .= w .* fx
+  else
+    detJ = Broadcasting(Operation(meas))(Broadcasting(∇)(fmap))
+    dF = evaluate!(detJ_cache, detJ, xf)
+    fx .= (w .* dF) .* fx
+  end
   return fx, xc
 end
 

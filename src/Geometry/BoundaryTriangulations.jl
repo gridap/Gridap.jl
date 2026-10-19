@@ -270,8 +270,7 @@ function get_facet_normal(
   face_s_nref = lazy_map(constant_field,face_to_nref)
 
   # Inverse of the Jacobian transpose
-  cell_q_x = get_cell_map(cell_grid)
-  cell_q_Jt = lazy_map(∇,cell_q_x)
+  cell_q_Jt = get_cell_jac(cell_grid)
   cell_q_invJt = lazy_map(Operation(pinvJt),cell_q_Jt)
   face_q_invJt = lazy_map(Reindex(cell_q_invJt),face_to_cell_glue.face_to_cell)
 

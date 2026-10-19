@@ -11,18 +11,26 @@ Singleton of the [`BDM`](@ref) reference FE name.
 const bdm = BDM()
 
 Pushforward(::Type{BDM}) = ContraVariantPiolaMap()
+Pushforward(::Type{<:BDM}, ::PΛConformity) = TensorPushforward()
 
 """
     BDMRefFE(::Type{T}, p::Polytope, order::Integer; kwargs...)
 
 The `order` argument has the following meaning: the divergence of the  functions
-in this basis is in the 𝓟 space of degree `order`. `T` is the type of scalar
-components.
+in this basis is in the 𝓟 space of degree `order`.
+
+`T` is either:
+- the type of the scalar components, in which case a `VectorValue`d element with
+  `DivConformity` is returned
+- a `(D-1)`-form type `ExteriorFormValue{D-1,D}`, for the FEEC version with `PΛConformity`.
 
 The `kwargs` are [`change_dof`](@ref "`change_dof` keyword argument"),
 [`poly_type`](@ref "`poly_type` keyword argument") and
 [`mom_poly_type`](@ref "`mom_poly_type` keyword argument").
 """
+BDMRefFE(::Type{V},p::Polytope,order::Integer; kwargs...) where V<:ExteriorFormValue =
+  FEEC_reference_fe(BDM(), V, p, order; kwargs...)
+
 function BDMRefFE(
   ::Type{T},p::Polytope{D},order::Integer;
   change_dof=true, poly_type=_mom_reffe_default_PT(p), mom_poly_type=poly_type) where {T,D}

@@ -42,6 +42,16 @@ struct DivConformity <: Conformity end
 valid_conformity_symbols(::DivConformity) = (:L2, :Hdiv, :HDiv)
 
 """
+    struct PΛConformity <: Conformity
+
+Conformity of the `ExteriorFormValue`d FEEC elements, it means that the form
+trace ``ι_f^*ω`` on face `f` is single valued. It is the conformity that makes
+`exterior_derivative` ``L^2``.
+"""
+struct PΛConformity <: Conformity end
+valid_conformity_symbols(::PΛConformity) = (:L2, :HΛ, :HLambda)
+
+"""
     abstract type ReferenceFE{D} <: GridapType
 
 Abstract type representing a Reference finite element. `D` is the underlying
@@ -99,6 +109,8 @@ function symbol_conformity(symb::Symbol, ::ReferenceFEName)
   symb == :HCurl && return CurlConformity()
   symb == :Hdiv  && return DivConformity()
   symb == :HDiv  && return DivConformity()
+  symb == :HΛ      && return PΛConformity()
+  symb == :HLambda && return PΛConformity()
 end
 
 # Extensible factory function
@@ -325,6 +337,21 @@ end
 
 function get_face_own_dofs_permutations(reffe::ReferenceFE, conf::Nothing)
   get_face_own_dofs_permutations(reffe)
+end
+
+"""
+    has_complete_dof_permutations(reffe::ReferenceFE) -> Bool
+
+Whether `reffe` declares one DOF permutation per vertex permutation, on every
+face that might be shared.
+"""
+function has_complete_dof_permutations(reffe::ReferenceFE)
+  p = get_polytope(reffe)
+  face_pindex_pdofs = get_face_own_dofs_permutations(reffe)
+  face_vertex_perms = get_face_vertex_permutations(p)
+  # The last face is the polytope itself, whose DOFs are never glued.
+  all(face -> length(face_pindex_pdofs[face]) == length(face_vertex_perms[face]),
+      1:num_faces(p)-1)
 end
 
 """
@@ -564,6 +591,13 @@ function get_shapefuns(reffe::ReferenceFE)
   dofs = get_dof_basis(reffe)
   prebasis = get_prebasis(reffe)
   compute_shapefuns(dofs, prebasis)
+end
+
+function needs_DG_calc(reffe::ReferenceFE)
+  p = get_polytope(reffe)
+  x = first(get_vertex_coordinates(p))
+  φ = get_shapefuns(reffe)
+  needs_DG_calc(φ, x)
 end
 
 """

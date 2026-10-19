@@ -241,6 +241,21 @@ function get_cell_map(trian::Grid)
 end
 
 """
+    get_cell_jac(grid::Grid, DG_calc::Bool=false) -> AbstractArray{<:Field}
+
+The cell-wise transposed jacobian `Jt` of the geometrical map, i.e. the
+derivative of [`get_cell_map`](@ref).
+
+`DG_calc` is to opt-in tensor calculus:
+  - `false`: `∇` is used, `Jt` are un-varianced.
+  - `true`: `∂` is used, `Jt` has variance `(Cov(Dm),Con(Dn))`.
+"""
+function get_cell_jac(grid::Grid, DG_calc::Bool=false)
+  k = DG_calc ? ∂ : ∇
+  lazy_map(Broadcasting(k), get_cell_map(grid))
+end
+
+"""
     get_cell_coordinates(grid::Grid)
 """
 function get_cell_coordinates(trian::Grid)
