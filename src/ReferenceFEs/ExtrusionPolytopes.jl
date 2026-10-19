@@ -213,6 +213,20 @@ function get_vertex_permutations(p::ExtrusionPolytope)
   p.vertex_perms
 end
 
+# The k-th column of the Jacobian is the image of the edge from the origin to
+# the unit point of axis k, both vertices of any extrusion polytope
+function get_vertex_permutation_jacobians(p::ExtrusionPolytope{D}) where D
+  x = get_vertex_coordinates(p)
+  vertex(c) = findfirst(==(c), x)
+  origin = vertex(zero(eltype(x)))
+  units = [vertex(Point(ntuple(==(k), D))) for k in 1:D]
+  map(get_vertex_permutations(p)) do σ
+    w = invperm(σ)
+    columns = [Int.(Tuple(x[w[units[k]]] - x[w[origin]])) for k in 1:D]
+    TensorValue{D,D,Int}(Tuple(Iterators.flatten(columns)))
+  end
+end
+
 function get_face_vertex_permutations(p::ExtrusionPolytope, d::Integer)
   r = get_dimrange(p, d)
   perms = get_face_vertex_permutations(p)
@@ -224,7 +238,7 @@ function get_face_vertex_permutations(p::ExtrusionPolytope)
 end
 
 function is_simplex(p::ExtrusionPolytope{D}) where D
-   D<2 || all(Tuple(p.extrusion) .== TET_AXIS)
+  D<2 || all(Tuple(p.extrusion) .== TET_AXIS)
 end
 
 function is_n_cube(p::ExtrusionPolytope{D}) where D

@@ -574,40 +574,133 @@ end
 
 ############################################################################################
 # Face DoF permutations
-#
-# A cell sees a shared face through its geometrical map, which lists the face's
-# vertices in the cell's local order (the `pindex` of `get_cell_permutations`).
-# The global DoFs of the face are the reference ones taken through the symmetry
-# Φ(x) = Ax + b of the reference face polytope realising that vertex
-# permutation. Pulled back by Φ, a moment ∫_f σ(φ, μᵢ) is a moment against
-# μᵢ∘Φ⁻¹, times the factor by which Φ changes the frame σ is written in: det(A)
-# for a tangential moment (the edge tangent follows the vertex order, and so
-# does the orientation of n×· on a face), 1 for a normal moment against the
-# outward normal and for a scalar one. So when the weight basis is closed under
-# Φ up to signs,
-#
-#     μᵢ∘Φ⁻¹ = sᵢ μ_τ(i),    or  A μᵢ∘Φ⁻¹ = sᵢ μ_τ(i) for a vector-valued μ,
-#
-# the DoFs of the face are a *signed permutation* of the global ones, which is
-# what `face_own_dofs_permutations` stores (see `GenericRefFE`). That holds for
-# the tensor Legendre basis (Lₙ(1-t) = (-1)ⁿLₙ(t)), the tensor Bernstein basis
-# (B_{k,K}(1-t) = B_{K-k,K}(t)) and the simplex Bernstein basis (a permutation
-# of the multi-index): the face weights of Raviart–Thomas, BDM, Nédélec on
-# n-cubes and the serendipity elements. It does not hold for Nédélec's
-# triangular face weights (a basis of 1-forms, which Φ mixes) nor for a
-# polynomial type without such a symmetry; a face with such weights keeps the
-# one-entry table of `l2_face_own_dofs_permutations`, which only answers cells
-# listing the face's vertices in the same order.
 ############################################################################################
+
+"""
+    get_basis_permutations(poly::Polytope, basis) -> Vector{Vector{Int}}
+
+For each vertex permutation `σ` of `poly`, in the order of
+[`get_vertex_permutations`](@ref), the signed permutation `π` of `basis` under
+the affine map `Mσ` of `poly` onto itself sending its vertex `v` to the vertex
+`invperm(σ)[v]` (the map of [`compute_own_nodes_permutations`](@ref)):
+`π[i] = s*j` means `basis[i]∘Mσ = s*basis[j]`, with `s = ±1`, a vector-valued
+basis being pulled back as a vector field. Returns `nothing` for a basis that
+`Mσ` does not map onto itself up to signs.
+"""
+get_basis_permutations(poly::Polytope, basis) = nothing
+
+# Bernstein on a simplex: the multi-indices are the domain points
+
+function get_basis_permutations(poly::Polytope{D}, b::BernsteinBasisOnSimplex{D,<:Real}) where D
+  K = get_order(b)
+  verts = get_vertex_coordinates(poly)
+  nodes = map(bernstein_terms(K, D)) do α
+    sum(α[i]/K * verts[i] for i in eachindex(α))
+  end
+  compute_own_nodes_permutations(poly, nodes)
+end
+
+# 1D: the vertex permutations of the segment are [1,2], the identity, and
+# [2,1], the reflection t ↦ 1 - t
+
+function get_basis_permutations(::Polytope{1}, b::CartProdPolyBasis{1,<:Real,PT}) where PT
+  get_basis_permutations(SEGMENT, PT, get_order(b))
+end
+
+get_basis_permutations(::Polytope{1}, ::Type{<:Polynomial}, K) = nothing
+
+# B_α(1-t) = B_{K-α}(t)
+get_basis_permutations(::Polytope{1}, ::Type{Bernstein}, K) = [collect(1:K+1), collect(K+1:-1:1)]
+
+# L_α(1-t) = (-1)^α L_α(t)
+get_basis_permutations(::Polytope{1}, ::Type{Legendre}, K) = [collect(1:K+1), [(-1)^α*(α+1) for α in 0:K]]
+
+# n-cubes: the Jacobian J of a symmetry of the cube is a signed permutation
+# matrix, Jᵀeₖ = ±eₘ, the k-th coordinate of the image being ± the m-th one.
+# It acts on the factors of a tensor-product basis, and on the components of
+# a vector-valued one, in that same way (see `_image_axis`).
+
+function get_basis_permutations(poly::Polytope{D}, b::CartProdPolyBasis{D,<:Real,PT}) where {D,PT}
+  is_n_cube(poly) || return nothing
+  map(get_vertex_permutation_jacobians(poly)) do J
+    _tensor_product(PT, get_orders(b), b.terms, b.terms, J)
+  end
+end
+
+# the components are consecutive within each term
+function get_basis_permutations(poly::Polytope{D}, b::CartProdPolyBasis{D,V,PT}) where {D,V,PT}
+  is_n_cube(poly) || return nothing
+  L = num_indep_components(V)
+  L == D || return nothing
+  map(get_vertex_permutation_jacobians(poly)) do J
+    τ = _tensor_product(PT, get_orders(b), b.terms, b.terms, J)
+    isnothing(τ) && return nothing
+    perm = zeros(Int, L*length(τ))
+    for (i, t) in enumerate(τ), l in 1:L
+      m, s = _image_axis(J, l)
+      perm[L*(i-1) + l] = s*sign(t)*(L*(abs(t)-1) + m)
+    end
+    perm
+  end
+end
+
+# one block of terms per component, each of its own orders
+function get_basis_permutations(poly::Polytope{D}, b::CompWiseTensorPolyBasis{D,V,PT}) where {D,V,PT}
+  is_n_cube(poly) || return nothing
+  L = num_indep_components(V)
+  L == D || return nothing
+  blocks = Polynomials.get_comp_terms(b)
+  offsets = cumsum([0; length.(blocks)[1:end-1]])
+  map(get_vertex_permutation_jacobians(poly)) do J
+    perm = zeros(Int, sum(length, blocks))
+    for l in 1:L
+      m, s = _image_axis(J, l)
+      τ = _tensor_product(PT, b.orders[l,:], blocks[l], blocks[m], J)
+      isnothing(τ) && return nothing
+      perm[offsets[l] .+ (1:length(τ))] = s .* sign.(τ) .* (offsets[m] .+ abs.(τ))
+    end
+    perm
+  end
+end
+
+# Mσ(x)ₖ = s xₘ + bₖ, i.e. Jᵀeₖ = s eₘ: a function of the k-th coordinate
+# becomes, composed with Mσ, a function of the m-th one, reversed if s < 0, and
+# so does the k-th component of a vector field pulled back by Jᵀ
+function _image_axis(J, k)
+  m = findfirst(!iszero, Tuple(J[k,:]))
+  m, Int(J[k,m])
+end
+
+# The tensor product of the 1D permutations of the factors under the cube
+# symmetry of Jacobian J: the factor k, reversed if J reverses the axis k,
+# becomes the factor along the image axis, so the term α of `terms`, of orders
+# `orders`, goes to the term α′ of `terms′` with α′[m] = |pₖ[αₖ]|, pₖ the 1D
+# permutation of the factor k and m its image axis, with the product of signs.
+function _tensor_product(PT, orders, terms, terms′, J)
+  perms = [get_basis_permutations(SEGMENT, PT, K) for K in orders]
+  any(isnothing, perms) && return nothing
+  axes = [_image_axis(J, k) for k in eachindex(orders)]
+  p = [s < 0 ? perms[k][2] : perms[k][1] for (k, (m, s)) in enumerate(axes)]
+  ids = Dict(t => i for (i, t) in enumerate(terms′))
+  map(terms) do α
+    image = [p[k][α[k]] for k in eachindex(orders)]
+    α′ = zeros(Int, length(orders))
+    α′[first.(axes)] = abs.(image)
+    prod(sign, image) * ids[CartesianIndex(α′...)]
+  end
+end
 
 """
     moment_face_own_dofs_permutations(p::Polytope, moments, conf::Conformity)
 
 The signed `face_own_dofs_permutations` (see [`GenericRefFE`](@ref)) of the
 moment-based reference FE on `p` defined by `moments` (see
-[`MomentBasedDofBasis`](@ref)) with conformity `conf`, in closed form from the
-symmetries of the weight bases. Faces whose weights have no such symmetry get
-the one-entry table of [`l2_face_own_dofs_permutations`](@ref).
+[`MomentBasedDofBasis`](@ref)): on each face, the concatenation of the
+[`get_basis_permutations`](@ref) of the weight bases of its moments, times
+the orientation of the face's symmetry for the tangential moments of
+`CurlConformity`, whose edge tangents and face normals follow the vertex order
+(see `_facet_frames`). A face with a weight basis that has no permutations
+keeps the one-entry table of [`l2_face_own_dofs_permutations`](@ref).
 """
 function moment_face_own_dofs_permutations(p::Polytope{D}, moments, conf::Conformity) where D
   vperms = get_face_vertex_permutations(p)
@@ -617,126 +710,21 @@ function moment_face_own_dofs_permutations(p::Polytope{D}, moments, conf::Confor
   for d in 1:D-1, f in get_dimrange(p, d)
     isempty(face_bases[f]) && continue
     fp = Polytope{d}(p, f - get_offset(p, d))
-    tables = map(vperms[f]) do π
-      _face_signed_permutation(fp, face_bases[f], conf, π)
+    bperms = map(μ -> get_basis_permutations(fp, μ), face_bases[f])
+    if any(isnothing, bperms)
+      perms[f] = [collect(1:nown[f])]
+      continue
     end
-    perms[f] = any(isnothing, tables) ? [collect(1:nown[f])] : tables
+    orientations = conf isa CurlConformity ? det.(get_vertex_permutation_jacobians(fp)) : ones(Int, length(vperms[f]))
+    for (pindex, orientation) in enumerate(orientations)
+      offset = 0
+      for π in getindex.(bperms, pindex)
+        perms[f][pindex][offset .+ (1:length(π))] = orientation .* sign.(π) .* (offset .+ abs.(π))
+        offset += length(π)
+      end
+    end
   end
   perms
-end
-
-# The signed permutation of the DoFs owned by a face with weights `bases`, for
-# its vertex permutation π; `nothing` if a weight basis is not closed under the
-# symmetry realising π.
-function _face_signed_permutation(fp::Polytope, bases, conf::Conformity, π)
-  A = _face_symmetry(fp, π)
-  orientation = conf isa CurlConformity ? det(A) : 1
-  perm = Int[]
-  for μ in bases
-    τs = _signed_permutation(μ, A, π)
-    isnothing(τs) && return nothing
-    τ, s = τs
-    offset = length(perm)
-    append!(perm, zeros(Int, length(τ)))
-    # local DoF τ(j) is ±global DoF j
-    perm[offset .+ τ] = (orientation .* s) .* (offset .+ (1:length(τ)))
-  end
-  perm
-end
-
-# The matrix A of the symmetry x ↦ Ax + b of the reference face polytope `fp`
-# realising the vertex permutation π, i.e. sending vertex i to vertex
-# invperm(π)[i]: A eᵢ is the image of the edge from vertex 1 to the vertex at
-# eᵢ. Reference coordinates are 0 or 1, so A is exact.
-function _face_symmetry(fp::Polytope{d}, π) where d
-  x = get_vertex_coordinates(fp)
-  v(i) = VectorValue{d,Int}(Int.(Tuple(x[i])))
-  axes = is_simplex(fp) ? ntuple(i -> i + 1, d) : ntuple(i -> 1 + 2^(i-1), d)
-  πinv = invperm(π)
-  b = v(πinv[1])
-  cols = ntuple(i -> v(πinv[axes[i]]) - b, d)
-  TensorValue{d,d,Int}(ntuple(k -> cols[(k-1) ÷ d + 1][(k-1) % d + 1], d*d))
-end
-
-# (σ, flip) with A eⱼ = ± e_i, σ[i] = j, flip[i] = (A[i,σ[i]] < 0), for a signed
-# permutation matrix A; `nothing` otherwise (the symmetries of a simplex face
-# are not of that kind)
-function _axes_of(A::TensorValue{d,d,Int}) where d
-  σ = [findfirst(j -> !iszero(A[i,j]), 1:d) for i in 1:d]
-  (any(isnothing, σ) || !allunique(σ)) && return nothing
-  all(i -> all(j -> j == σ[i] || iszero(A[i,j]), 1:d) && abs(A[i,σ[i]]) == 1, 1:d) || return nothing
-  σ, [A[i,σ[i]] < 0 for i in 1:d]
-end
-
-# (τ, s) with μᵢ∘Φ⁻¹ = sᵢ μ_τ(i) — or A μᵢ∘Φ⁻¹ = sᵢ μ_τ(i) for a vector-valued
-# μ, whose components follow A e_c = A[i,c] e_i — for the symmetry Φ(x) = Ax + b
-# of the reference face, with vertex permutation π; `nothing` when the basis is
-# not closed under Φ up to signs.
-_signed_permutation(μ, A, π) = nothing
-
-# Tensor-product bases: Φ permutes the axes, x ↦ y with x_σ[i] = y_i or
-# 1 - y_i, so the term of exponents α goes to the term with α′[i] = α[σ[i]],
-# or K - α[σ[i]] on a reversed axis for Bernstein, with the Legendre parity.
-function _signed_permutation(μ::CartProdPolyBasis{d,V,PT}, A, π) where {d,V,PT}
-  PT in (Legendre, Bernstein) || return nothing
-  axes = _axes_of(A)
-  isnothing(axes) && return nothing
-  σ, flip = axes
-  orders = get_orders(μ)
-  all(i -> orders[i] == orders[σ[i]], 1:d) || return nothing
-  ncomp = num_indep_components(V)
-  ncomp in (1, d) || return nothing
-  exps = get_exponents(μ)
-  term = Dict(α => t for (t, α) in enumerate(exps))
-  τ, s = Int[], Int[]
-  for α in exps
-    α′ = ntuple(i -> ifelse(flip[i] && PT == Bernstein, orders[i] - α[σ[i]], α[σ[i]]), d)
-    haskey(term, α′) || return nothing
-    t = term[α′]
-    sα = PT == Legendre ? prod(i -> ifelse(flip[i], (-1)^α[σ[i]], 1), 1:d) : 1
-    for c in 1:ncomp           # components are consecutive within a term
-      i = isone(ncomp) ? 1 : findfirst(==(c), σ)
-      push!(τ, ncomp*(t-1) + i)
-      push!(s, isone(ncomp) ? sα : sα*A[i,c])
-    end
-  end
-  τ, s
-end
-
-# Component-wise tensor-product bases (Nédélec's face weights on hexahedra):
-# as above, component by component, each block of terms going to the block of
-# the component A e_c = A[i,c] e_i, whose orders must match.
-function _signed_permutation(μ::CompWiseTensorPolyBasis{d,V,PT}, A, π) where {d,V,PT}
-  PT in (Legendre, Bernstein) || return nothing
-  axes = _axes_of(A)
-  isnothing(axes) && return nothing
-  σ, flip = axes
-  num_indep_components(V) == d || return nothing
-  orders, comp_terms = μ.orders, Polynomials.get_comp_terms(μ)
-  offsets = cumsum([0; length.(comp_terms)[1:end-1]])
-  τ, s = Int[], Int[]
-  for c in 1:d
-    i = findfirst(==(c), σ)
-    all(k -> orders[i,k] == orders[c,σ[k]], 1:d) || return nothing
-    term = Dict(ci => t for (t, ci) in enumerate(comp_terms[i]))
-    for ci in comp_terms[c]
-      ci′ = CartesianIndex(ntuple(k -> ifelse(flip[k] && PT == Bernstein, orders[i,k] + 2 - ci[σ[k]], ci[σ[k]]), d))
-      haskey(term, ci′) || return nothing
-      sα = PT == Legendre ? prod(k -> ifelse(flip[k], (-1)^(ci[σ[k]]-1), 1), 1:d) : 1
-      push!(τ, offsets[i] + term[ci′])
-      push!(s, sα*A[i,c])
-    end
-  end
-  τ, s
-end
-
-# Bernstein basis on a simplex: λ∘Φ⁻¹ = λ[invperm(π)], so B_α∘Φ⁻¹ = B_α[π]; a
-# pure permutation of the multi-indices.
-function _signed_permutation(μ::BernsteinBasisOnSimplex{d,V}, A, π) where {d,V}
-  num_indep_components(V) == 1 || return nothing
-  K = get_order(μ)
-  τ = [bernstein_term_id(α[π]) for α in bernstein_terms(K, d)]
-  τ, ones(Int, length(τ))
 end
 
 # Default polynomial type for moment based reference FEs

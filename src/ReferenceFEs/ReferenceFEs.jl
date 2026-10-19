@@ -64,6 +64,7 @@ export get_facet_normal
 export get_facet_orientations
 export get_edge_tangent
 export get_vertex_permutations
+export get_vertex_permutation_jacobians
 export get_face_dimranges
 export get_face_coordinates
 export is_simplex

@@ -1,6 +1,7 @@
 module ExtrusionPolytopesTests
 
 using Test
+using LinearAlgebra: det
 using Gridap: Gridap
 using Gridap.Helpers
 using Gridap.TensorValues
@@ -306,5 +307,18 @@ end
 #
 #f = DFace{3}(p,27)
 
+
+# the Jacobian of each vertex permutation's symmetry maps the vertices onto
+# the permuted ones, exactly, and has determinant ±1
+for p in (SEGMENT, TRI, QUAD, TET, HEX, WEDGE, PYRAMID)
+  x = get_vertex_coordinates(p)
+  for (σ, J) in zip(get_vertex_permutations(p), get_vertex_permutation_jacobians(p))
+    w = invperm(σ)
+    b = x[w[1]] - J⋅x[1]
+    @test all(v -> J⋅x[v] + b == x[w[v]], 1:length(x))
+    @test abs(det(J)) == 1
+  end
+end
+@test all(J -> all(c -> count(!iszero, Tuple(J[:,c])) == 1, 1:3), get_vertex_permutation_jacobians(HEX))
 
 end # module

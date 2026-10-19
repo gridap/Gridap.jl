@@ -37,6 +37,7 @@ And optionally these ones:
 - [`get_facet_normal(p::Polytope)`](@ref)
 - [`get_facet_orientations(p::Polytope)`](@ref)
 - [`get_vertex_permutations(p::Polytope)`](@ref)
+- [`get_vertex_permutation_jacobians(p::Polytope)`](@ref)
 - [`is_n_cube(p::Polytope)`](@ref)
 - [`is_simplex(p::Polytope)`](@ref)
 - [`simplexify(p::Polytope)`](@ref)
@@ -238,6 +239,19 @@ permutations of its vertices, but 16 of them "pinch" the square into an "hourgla
 creating a point where the map is not differentiable.
 """
 function get_vertex_permutations(p::Polytope)
+  @abstractmethod
+end
+
+"""
+    get_vertex_permutation_jacobians(p::Polytope{D}) -> Vector{TensorValue{D,D,Int}}
+
+For each vertex permutation `σ` of `p`, in the order of
+[`get_vertex_permutations`](@ref), the Jacobian of the affine map of `p` onto
+itself sending its vertex `v` to the vertex `invperm(σ)[v]`, the map of
+[`compute_own_nodes_permutations`](@ref). On an n-cube it is a signed
+permutation matrix; its determinant, `±1`, is the orientation of the symmetry.
+"""
+function get_vertex_permutation_jacobians(p::Polytope)
   @abstractmethod
 end
 
