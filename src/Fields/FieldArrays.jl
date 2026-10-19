@@ -887,7 +887,7 @@ for op in (:+,:-)
 end
 
 # Gradient of the product
-for op in (:*,:⋅,:⊙,:⊗)
+for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗)
   @eval begin
     function evaluate!(cache,::Broadcasting{typeof(∇)},a::BroadcastOpFieldArray{typeof($op)})
       f = a.args
@@ -918,7 +918,7 @@ for (op,nargs) in (
 end
 
 # Partial derivatives of the product, orders 1 and 2
-for op in (:*,:⋅,:⊙,:⊗,:∧)
+for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗,:∧)
   @eval begin
     function evaluate!(
       cache,k::Broadcasting{PartialDerivatives{1}},a::BroadcastOpFieldArray{typeof($op)})

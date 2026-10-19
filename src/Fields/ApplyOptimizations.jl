@@ -201,7 +201,7 @@ for op in (:+,:-)
   end
 end
 
-for op in (:*,:⋅,:⊙,:⊗)
+for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗)
   @eval begin
 
     function lazy_map(
@@ -308,7 +308,7 @@ for (op,nargs) in (
 end
 
 # Partial derivative rules for bilinear products at orders 1 and 2.
-for op in (:*,:⋅,:⊙,:⊗,:∧)
+for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗,:∧)
   @eval begin
 
     function lazy_map(
