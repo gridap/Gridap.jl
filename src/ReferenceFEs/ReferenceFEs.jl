@@ -24,7 +24,6 @@ using Gridap.Fields
 using Gridap.Polynomials
 
 using Gridap.TensorValues: _form_degree_dim
-using Gridap.TensorValues: _map_second_factor
 
 using Gridap.Polynomials: _q_filter, _ser_filter
 using Gridap.Polynomials: _compute_filter_mask
@@ -115,6 +114,7 @@ export IdentityPiolaMap
 export CoVariantPiolaMap
 export ContraVariantPiolaMap
 export TensorPushforward
+export is_pushed_by
 export get_dofscale_setter_function
 export get_form_degree
 

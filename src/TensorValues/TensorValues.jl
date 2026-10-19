@@ -151,6 +151,7 @@ export apply_tensor
 export pullback
 export pushforward
 export push_first_partials
+export push_second_partials
 export pinvJt
 export symbolic_coordinates
 export koszul

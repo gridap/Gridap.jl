@@ -400,7 +400,7 @@ end
 # Derivatives go through `∂`, not `∇`: the `Broadcasting(∇)` reroute of
 # `Pullbacks.jl` feeds the map a half varianced reference gradient, which is
 # refused, while the `PartialDerivatives` reroute maps the value index block
-# alone, with `PushforwardPartials`.
+# alone, with `push_second_partials`.
 
 @testset "TensorPushforward over shape function fields" begin
   tpf = TensorPushforward()
@@ -422,7 +422,7 @@ end
     # derivation index carries no variance, which `pushforward` refuses
     @test_throws ArgumentError evaluate(Broadcasting(∇)(pf), pts)
 
-    # `∂` is the spelling that works instead: `PushforwardPartials` pushes the
+    # `∂` is the spelling that works instead: `push_second_partials` pushes the
     # value index block forward and leaves the derivation index covariant in
     # the reference basis, for `push_first_partials` to transport when the cell
     # field is differentiated.
@@ -433,6 +433,19 @@ end
     # the map is the identity on 0-forms, so there the value block is untouched
     # and the reference partials must come back unchanged
     k == 0 && @test ∂pf ≈ evaluate(Broadcasting(∂)(sf), pts)
+
+    # a jacobian that varies over the cell is refused rather than silently
+    # approximated: differentiating it brings a term in its own derivatives,
+    # which `∇` drops and `∂` will not
+    Jt_var = GenericField(x -> (1 + x[1]) * Jt_val)
+    @test_throws ErrorException Broadcasting(∂)(Broadcasting(Operation(tpf))(sf, Jt_var))
+
+    # `𝑑` needs no such thing, it commutes with the pullback, so it takes the
+    # derivative in the reference cell and pushes it forward as a `k+1` form
+    lz_var = lazy_map(tpf, Fill(sf,1), Fill(Jt_var,1))
+    @test is_pushed_by(lz_var, tpf)
+    @test !is_pushed_by(lz_var, CoVariantPiolaMap())
+    @test evaluate(exterior_derivative(lz_var)[1], pts) isa AbstractArray
 
     # DIV must refuse rather than silently produce nonsense through the
     # `LazyArray{<:Fill}` catch-all

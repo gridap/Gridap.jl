@@ -124,7 +124,7 @@ end
 # src/ReferenceFEs/Pullbacks.jl hands `TensorPushforward` a reference gradient
 # whose derivation index carries no variance, because `gradient_type` builds it
 # out of a `Point`. `∂` is the spelling that works: its own reroute maps the
-# value index block of the reference partials with `PushforwardPartials`, and
+# value index block of the reference partials with `push_second_partials`, and
 # `push_first_partials` transports their derivation index when the cell field
 # is differentiated, so each index block is transported exactly once.
 #
@@ -135,8 +135,9 @@ end
 @testset "derivatives of a form valued FE function" begin
   cell_vals(cf,x) = (a = cf(x); c = array_cache(a); [getindex!(c,a,i) for i in 1:length(a)])
   _maxabs(vs) = maximum(maximum(abs.(get_array(v))) for cell in vs for v in cell)
-  _relerr(a,b) = maximum(maximum(abs.(get_array(ai) .- get_array(bi)))
-                         for (as,bs) in zip(a,b) for (ai,bi) in zip(as,bs)) / _maxabs(b)
+  _maxdiff(a,b) = maximum(maximum(abs.(get_array(ai) .- get_array(bi)))
+                          for (as,bs) in zip(a,b) for (ai,bi) in zip(as,bs))
+  _err(a,b) = (s = _maxabs(b); s > 0 ? _maxdiff(a,b)/s : _maxdiff(a,b))
 
   for F in (:P,:P⁻), r in 1:2, k in 0:2
     q = _full_degree(F,r,k)
@@ -146,12 +147,37 @@ end
     uh = interpolate(f, V); fc = CellField(f, Ω)
     x = get_cell_points(dΩ)
 
-    @test_throws ArgumentError ∇(uh)(x)
+    if k < 2
+      @test_throws ArgumentError ∇(uh)(x)
+    else
+      # at k=D the reference gradient has no `pushforward` method at all, so
+      # the variance check that refuses the lower degrees is never reached
+      @test_throws MethodError ∇(uh)(x)
+    end
 
-    @test _relerr(cell_vals(∂(uh),x), cell_vals(∂(fc),x)) < TOL
+    @test _err(cell_vals(∂(uh),x), cell_vals(∂(fc),x)) < TOL
     # 𝑑 of a 2-form vanishes in 2D, and the operator refuses that degree
-    k < 2 && @test _relerr(cell_vals(𝑑(uh),x), cell_vals(𝑑(fc),x)) < TOL
+    k < 2 && @test _err(cell_vals(𝑑(uh),x), cell_vals(𝑑(fc),x)) < TOL
   end
+end
+
+# `𝑑` of a cell basis takes the `natural_exterior_derivative` short circuit,
+# which the FE function tests above do not reach in the same shape. On a 0-form
+# space `∫ 𝑑u ∧ ⋆𝑑v` is the stiffness matrix `∫ ∇u⋅∇v` of the P1 Lagrangian
+# space, up to the DOF numbering, which the spectrum is blind to.
+
+@testset "FEEC stiffness matrix of a 0-form space" begin
+  Ω = Triangulation(sorted_tri); dΩ = Measure(Ω, 4)
+  V = FESpace(sorted_tri, ReferenceFE(TRI,:P,1,0,Float64; DG_calc=true))
+  U = TrialFESpace(V)
+  A = assemble_matrix((u,v) -> ∫( vol_coeff(𝑑(u) ∧ flat_hodge_star(𝑑(v))) )dΩ, U, V)
+
+  Vl = FESpace(sorted_tri, ReferenceFE(lagrangian,Float64,1))
+  Ul = TrialFESpace(Vl)
+  Al = assemble_matrix((u,v) -> ∫( ∇(u)⋅∇(v) )dΩ, Ul, Vl)
+
+  @test size(A) == size(Al)
+  @test eigvals(Symmetric(Array(A))) ≈ eigvals(Symmetric(Array(Al)))
 end
 
 # ─────────────────────────────────────────────────────────────────────────────

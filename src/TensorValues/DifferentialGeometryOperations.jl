@@ -1120,6 +1120,21 @@ function push_first_partials(
   _map_first_factor(a -> pullback(a, iJt), ∂a)
 end
 
+"""
+    push_second_partials(∂a, Jt::MultiValue{Tuple{Dm,Dn}})
+
+[`pushforward`](@ref) of the value indices of `∂a`, that is all except the
+derivation indices. `∂a` being the [`partial_derivatives`](@ref) of a tensor
+field `a` defined on the reference cell of a map `φ` of transposed jacobian
+`Jt`.
+"""
+function push_second_partials(
+  ∂a::ProductTensorValue{<:SymNTensorValue{Tuple{D}}}, Jt::MultiValue{Tuple{Dm,Dn},Tj}) where {D,Dm,Dn,Tj}
+
+  iszero(num_indep_components(∂a)) && return ∂a
+  _map_second_factor(b -> pushforward(b, Jt), ∂a)
+end
+
 # pullback and pushforward of a alternating tensor: comutes with outer product
 # so preserves symmetries
 
