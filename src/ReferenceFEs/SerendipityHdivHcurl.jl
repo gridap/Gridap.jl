@@ -160,8 +160,8 @@ of dimension `Σ_{d=1}^{min(D,⌊r/2⌋+1)} 2ᴰ⁻ᵈ C(D,d) C(r-d+2,d) d` [AA,
 
 ## Moments
 
-With `t` the unit tangent of the edge `e` and `n` the unit outward normal of the
-face `f`,
+With `t` the unit tangent of the edge `e` and `n` the unit normal of the face `f`
+in its own frame, `n = e₁×e₂` for the edges `e₁, e₂` of `f` at its first vertex,
 
     ℓ^{e,q}(u) = ∫_e (u⋅t) q,     q ∈ 𝓟ᵣ(e),                for each edge e
     ℓ^{f,p}(u) = ∫_f (u×n)⋅p,     p ∈ 𝓟ᵣ₋₂(f;R²),           for each face f (3D)
@@ -178,8 +178,8 @@ function SerendipityCurlRefFE(::Type{T}, p::Polytope{D}, r::Integer) where {T,D}
   function cmom(φ,μ,ds) # Cell moment function: σ_K(φ,μ) = ∫(φ·μ)dK
     Broadcasting(Operation(⋅))(φ,μ)
   end
-  function fmom(φ,μ,ds) # Face moment function: σ_F(φ,μ) = ∫((φ×n)·Eμ)dF, n outward
-    n = get_facet_normal(ds)
+  function fmom(φ,μ,ds) # Face moment function: σ_F(φ,μ) = ∫((φ×n)·Eμ)dF, n the facet frame's
+    n = _facet_normal(ds)
     E = get_extension(ds)
     Eμ = Broadcasting(Operation(⋅))(E,μ)
     φn = Broadcasting(Operation(×))(φ,n)
@@ -299,8 +299,8 @@ Nédélec element at `k = 0`. The element is curl-conforming.
 
 ## Moments
 
-With `t` the unit tangent of the edge `e` and `n` the unit outward normal of the
-face `f`,
+With `t` the unit tangent of the edge `e` and `n` the unit normal of the face `f`
+in its own frame, `n = e₁×e₂` for the edges `e₁, e₂` of `f` at its first vertex,
 
     ℓ^{e,q}(u) = ∫_e (u⋅t) q,   q ∈ 𝓟ₖ(e),                       for each edge e
     ℓ^{f,p}(u) = ∫_f (u×n)⋅p,   p ∈ 𝓟ₖ₋₂(f;R²) ⊕ ∇𝓗ₖ(f),          for each face f (3D)
@@ -321,8 +321,8 @@ function TrimmedSerendipityCurlRefFE(::Type{T}, p::Polytope{D}, k::Integer) wher
   function cmom(φ,μ,ds) # Cell moment function: σ_K(φ,μ) = ∫(φ·μ)dK
     Broadcasting(Operation(⋅))(φ,μ)
   end
-  function fmom(φ,μ,ds) # Face moment function: σ_F(φ,μ) = ∫((φ×n)·Eμ)dF, n outward
-    n = get_facet_normal(ds)
+  function fmom(φ,μ,ds) # Face moment function: σ_F(φ,μ) = ∫((φ×n)·Eμ)dF, n the facet frame's
+    n = _facet_normal(ds)
     E = get_extension(ds)
     Eμ = Broadcasting(Operation(⋅))(E,μ)
     φn = Broadcasting(Operation(×))(φ,n)

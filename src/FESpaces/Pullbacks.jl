@@ -707,38 +707,31 @@ end
 # Serendipity H(div) and H(curl), on quadrilaterals and hexahedra
 #
 # The face DoFs of a cell are a signed permutation of the global ones (see
-# src/ReferenceFEs/SerendipityHdivHcurl.jl): the permutations are applied by the
-# DoF numbering, through `get_face_own_dofs_permutations`, and the signs here,
-# from the `pindex` table that numbering reads. The facet moments are taken
-# against the outward normal, which is opposite for the two cells sharing the
-# facet: for the normal moments of H(div), that is Gridap's `get_sign_flip`; the
-# tangential moments ∫(u×n)⋅Eμ of H(curl) in 3D are instead o(f) times the same
-# moment against the facet's intrinsic normal e₁×e₂, which glues by the face
-# symmetry alone, o(f) = sign((e₁×e₂)⋅n) a constant of each reference facet.
+# `moment_face_own_dofs_permutations`): the permutations are applied by the DoF
+# numbering, through `get_face_own_dofs_permutations`, and the signs here, from
+# the `pindex` table that numbering reads. The normal moments of H(div) are
+# taken against the outward normal, opposite for the two cells sharing the
+# facet: that is Gridap's `get_sign_flip`. The tangential moments of H(curl) are
+# written in the facet's own frame (`_facet_frames`), which the permutation
+# already accounts for, so they need nothing else.
 
 function compute_cell_bases_changes(
   ::Union{ReferenceFEs.SerendipityDiv,ReferenceFEs.TrimmedSerendipityDiv},
   ::ContraVariantPiolaMap, model::DiscreteModel, cell_reffe, cell_Jt
 )
-  _face_sign_cell_bases_changes(model, cell_reffe)
+  _serendipityhdivhcurl_cell_bases_changes(model, cell_reffe)
 end
 
 function compute_cell_bases_changes(
   ::Union{ReferenceFEs.SerendipityCurl,ReferenceFEs.TrimmedSerendipityCurl},
   ::CoVariantPiolaMap, model::DiscreteModel, cell_reffe, cell_Jt
 )
-  _face_sign_cell_bases_changes(model, cell_reffe)
+  _serendipityhdivhcurl_cell_bases_changes(model, cell_reffe)
 end
 
-function _face_sign_cell_bases_changes(model::DiscreteModel{D}, cell_reffe) where D
+function _serendipityhdivhcurl_cell_bases_changes(model::DiscreteModel, cell_reffe)
   reffe = testitem(cell_reffe)
-  if Conformity(reffe) isa DivConformity
-    normal_change = get_sign_flip(model, cell_reffe)
-  elseif D == 3
-    normal_change = Fill(_facet_orientation_signs(reffe), num_cells(model))
-  else
-    normal_change = nothing
-  end
+  normal_change = Conformity(reffe) isa DivConformity ? get_sign_flip(model, cell_reffe) : nothing
 
   k = FaceDofSignMap(model, reffe)
   if all(isone, k.cell_lface_pindex.data)
@@ -749,20 +742,6 @@ function _face_sign_cell_bases_changes(model::DiscreteModel{D}, cell_reffe) wher
   isnothing(normal_change) && return (face_change, face_change)
   change = lazy_map(*, normal_change, face_change)
   return (change, change)
-end
-
-# o(f) on the DoFs owned by each facet f, 1 elsewhere
-function _facet_orientation_signs(reffe)
-  p = get_polytope(reffe)
-  D = num_dims(p)
-  x = get_vertex_coordinates(p)
-  signs = ones(num_dofs(reffe))
-  facet_own_dofs = get_face_own_dofs(reffe)[get_dimrange(p, D-1)]
-  for (f, (v, n)) in enumerate(zip(get_faces(p, D-1, 0), get_facet_normal(p)))
-    e₁, e₂ = x[v[2]] - x[v[1]], x[v[3]] - x[v[1]]
-    signs[facet_own_dofs[f]] .= sign(cross(e₁, e₂) ⋅ n)
-  end
-  Diagonal(signs)
 end
 
 """

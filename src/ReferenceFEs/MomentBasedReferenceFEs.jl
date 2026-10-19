@@ -392,35 +392,54 @@ function get_edge_tangent(m::FaceMeasure{1,Dc}) where {Dc}
 end
 
 # ─────────────────────────────────────────────────────────────────────────────
-# The rotated edge frame `n = R t`
+# The frame of a facet
 # ─────────────────────────────────────────────────────────────────────────────
-# In 2D an edge admits a normal fixed by the direction in which the edge is
-# traversed rather than by which cell it bounds,
+# A facet with vertices v₁, v₂, … in the order `get_faces(p, D-1, 0)` lists
+# them carries the tangents eᵢ = vᵢ₊₁ - v₁ (i = 1 … D-1) and the normal
 #
-#   n = R t,   R = [0 1; -1 0]   (clockwise rotation),
+#   nᵢ = det[ êᵢ | e₁ | ⋯ | e_{D-1} ],   i.e. n = ⋆(e₁ ∧ ⋯ ∧ e_{D-1}),
 #
-# the convention of [Aznaran, Farrell & Kirby, SMAI-JCM 8 (2022) 399, §2.1].
-# It is NOT NECESSARILY the polytope's outward normal (e.g. for TRIs).
+# completing (n, e₁, …, e_{D-1}) to a positively oriented basis of Rᴰ. In 2D
+# this is n = R t with R = [0 1; -1 0] the clockwise rotation, the convention of
+# [Aznaran, Farrell & Kirby, SMAI-JCM 8 (2022) 399, §2.1]; in 3D it is e₁ × e₂.
 #
-# This frame has some advantages as it keeps the sign of the normal consistent 
-# w.r.t to the edge's orientation.
-_rot90(t::VectorValue{2,T}) where T = VectorValue{2,T}(t[2], -t[1])
+# This frame is fixed by the order in which the facet's vertices are listed,
+# not by the cell the facet bounds, so n is NOT in general the outward normal
+# (e.g. for TRIs): two cells listing the vertices of a shared facet in the same
+# order agree on it, where their outward normals are opposite, and relabelling
+# the facet multiplies it by the det of the relabelling. That is what makes it
+# the normal of moments glued by a signed permutation of the facet's DoFs.
+_frame_normal(t::VectorValue{2,T}) where T = VectorValue{2,T}(t[2], -t[1])
+_frame_normal(e₁::VectorValue{3}, e₂::VectorValue{3}) = cross(e₁, e₂)
 
-_edge_normal(ds) = ConstantField(_rot90(get_edge_tangent(ds).value))
-
-function _edge_frames(p::Polytope{2})
-  ts = get_edge_tangent(p)
-  return (ts, map(_rot90, ts))
+# The tangents (eᵢ = vᵢ₊₁ - v₁, not unitary) and the unit normal of every facet
+# of `p`, as `(tangents, normals)`
+function _facet_frames(p::Polytope{D}) where D
+  x = get_vertex_coordinates(p)
+  es = map(v -> ntuple(i -> x[v[i+1]] - x[v[1]], D-1), get_faces(p, D-1, 0))
+  ns = map(e -> (n = _frame_normal(e...); n/norm(n)), es)
+  return (es, ns)
 end
 
-# Matrix of the contravariant piola map from `m.fpoly` to to the face `m.face`
-# of `m.cpoly`, used to extend a Df-dimensional vector in `m.fpoly` to a
-# Dc-dimensional one that lives in the tangent space of the Dc-embedded Df-dimensional
-# manifold `m.face`.
+# the frame of the facet `ds.face`, as constant fields
+function _facet_tangents(ds::FaceMeasure{Df,Dc}) where {Df,Dc}
+  @check Df == Dc - 1
+  map(ConstantField, first(_facet_frames(ds.cpoly))[ds.face])
+end
+
+function _facet_normal(ds::FaceMeasure{Df,Dc}) where {Df,Dc}
+  @check Df == Dc - 1
+  ConstantField(last(_facet_frames(ds.cpoly))[ds.face])
+end
+
+# Matrix of the contravariant piola map from `m.fpoly` to the face `m.face` of
+# `m.cpoly`, used to extend a Df-dimensional vector in `m.fpoly` to a
+# Dc-dimensional one that lives in the tangent space of the Dc-embedded
+# Df-dimensional manifold `m.face`: the facet's tangents, by columns.
 function get_extension(m::FaceMeasure{Df,Dc}) where {Df,Dc}
   @check Df == Dc - 1
-  vs = ReferenceFEs._nfaces_vertices(Float64,m.cpoly,Df)[m.face]
-  J = TensorValue(hcat([vs[2]-vs[1]...],[vs[3]-vs[1]...]))
+  e = first(_facet_frames(m.cpoly))[m.face]
+  J = TensorValue{Dc,Df}(ntuple(k -> e[(k-1) ÷ Dc + 1][(k-1) % Dc + 1], Dc*Df))
   return ConstantField(J/meas(transpose(J)))
 end
 # function get_extension(m::FaceMeasure{Df,Dc}) where {Df,Dc}
