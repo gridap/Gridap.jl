@@ -99,9 +99,10 @@ test_face_permutations(ReferenceFE(HEX, trimmed_sdiv, 2))
 test_face_permutations(ReferenceFE(HEX, trimmed_scurl, 2))
 
 # Nédélec's triangular face weights are 1-forms, mixed by the face symmetries:
-# those faces, and only those, have no table
+# with them the whole element keeps the one-entry tables, edges included
 nd_tet = ReferenceFE(TET, nedelec, 1; change_dof=false)
-@test unsupported_faces(nd_tet) == collect(get_dimrange(TET, 2))
+@test unsupported_faces(nd_tet) == [get_dimrange(TET, 1); get_dimrange(TET, 2)]
+@test isempty(unsupported_faces(ReferenceFE(TET, nedelec, 0; change_dof=false)))
 @test isempty(unsupported_faces(ReferenceFE(HEX, nedelec, 1; change_dof=false)))
 @test isempty(unsupported_faces(ReferenceFE(TET, raviart_thomas, 1; change_dof=false)))
 
