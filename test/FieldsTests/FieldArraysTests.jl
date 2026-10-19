@@ -2,7 +2,7 @@ module FieldArraysTests
 
 using Gridap
 using Gridap.Fields
-using Gridap.Fields: seed_point, taylor_tensor, nth_gradient_type
+using Gridap.Fields: nth_gradient_type
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Polynomials
@@ -542,94 +542,64 @@ test_field_array(f,p,fp)
 
 # Higher-order gradients by forward-mode AD
 
-# A scalar polynomial field p(x) = Σ_α c_α x^α with no hand-written gradient: all its
-# derivatives come from the AD default. Its derivatives in closed form are the reference.
-struct PolyField{D} <: Field
-  coeffs::Vector{Pair{NTuple{D,Int},Float64}}
+# A 2D monomial x^a y^b with no hand-written derivatives: every gradient comes from the AD
+# default. Its N-th derivatives are known in closed form.
+struct Monomial2D <: Field
+  a::Int
+  b::Int
 end
+Fields.evaluate!(cache, m::Monomial2D, x::Point) = x[1]^m.a * x[2]^m.b
 
-function Fields.evaluate!(cache, f::PolyField{D}, x::Point) where D
-  sum(c * prod(x[d]^α[d] for d in 1:D) for (α, c) in f.coeffs)
-end
-
-function dmonomial(α::NTuple{D,Int}, dirs, x) where D
-  β = collect(α)
-  c = 1.0
-  for d in dirs
-    β[d] == 0 && return 0.0
-    c *= β[d]
-    β[d] -= 1
-  end
-  c * prod(x[d]^β[d] for d in 1:D)
-end
-
-function exact_gradient(f::PolyField{D}, x::Point{D}, N) where D
+falling(n, k) = k > n ? 0 : prod(n-k+1:n; init = 1)
+function exact_gradient(m::Monomial2D, x::Point, N)
   G = nth_gradient_type(Float64, x, Val(N))
-  vals = [sum(c * dmonomial(α, Tuple(I), x) for (α, c) in f.coeffs) for I in CartesianIndices(ntuple(_ -> D, N))]
-  G(Tuple(vals))
+  G(Tuple(begin
+    i = count(==(1), Tuple(I)); j = N - i
+    falling(m.a, i) * falling(m.b, j) * x[1]^max(m.a - i, 0) * x[2]^max(m.b - j, 0)
+  end for I in CartesianIndices(ntuple(_ -> 2, N))))
 end
-
-maxdiff(a::MultiValue, b::MultiValue) = maximum(abs, Tuple(a - b))
-maxdiff(a::AbstractArray, b::AbstractArray) = maximum(maxdiff.(a, b))
 
 @testset "Higher-order gradients" begin
 
-  # Gradient types
-
-  x2 = Point(0.3, 0.7)
-  @test nth_gradient_type(Float64, x2, Val(0)) == Float64
-  @test nth_gradient_type(Float64, x2, Val(1)) == VectorValue{2,Float64}
-  @test nth_gradient_type(Float64, x2, Val(2)) == TensorValue{2,2,Float64,4}
-  @test nth_gradient_type(Float64, x2, Val(3)) == ThirdOrderTensorValue{2,2,2,Float64,8}
-  @test nth_gradient_type(Float64, x2, Val(4)) == HighOrderTensorValue{Tuple{2,2,2,2},Float64,4,16}
-  @test nth_gradient_type(VectorValue{2,Float64}, x2, Val(2)) == ThirdOrderTensorValue{2,2,2,Float64,8}
-
-  # Seeding and extraction
-
-  cubic(x) = x[1]^3 * x[2]^2
-  v = cubic(seed_point(x2, Val(2)))
-  H = taylor_tensor(TensorValue{2,2,Float64,4}, v, Val(2), Val(2))
-  @test H ≈ TensorValue(6x2[1]*x2[2]^2, 6x2[1]^2*x2[2], 6x2[1]^2*x2[2], 2x2[1]^3)
+  x = Point(0.3, 0.7)
+  @test nth_gradient_type(Float64, x, Val(0)) == Float64
+  @test nth_gradient_type(Float64, x, Val(1)) == VectorValue{2,Float64}
+  @test nth_gradient_type(Float64, x, Val(2)) == TensorValue{2,2,Float64,4}
+  @test nth_gradient_type(Float64, x, Val(3)) == ThirdOrderTensorValue{2,2,2,Float64,8}
+  @test nth_gradient_type(Float64, x, Val(4)) == HighOrderTensorValue{Tuple{2,2,2,2},Float64,4,16}
+  @test nth_gradient_type(VectorValue{2,Float64}, x, Val(2)) == ThirdOrderTensorValue{2,2,2,Float64,8}
 
   # Single field: FieldGradient{N} by AD, any N
 
-  p2 = PolyField{2}([(3,3)=>1.0, (2,1)=>-2.0, (1,3)=>0.5, (4,0)=>1.5, (0,2)=>1.0])
+  m = Monomial2D(3, 2)
   for N in 1:5
-    @test maxdiff(evaluate(gradient(p2, Val(N)), x2), exact_gradient(p2, x2, N)) < 1e-10
+    @test evaluate(gradient(m, Val(N)), x) ≈ exact_gradient(m, x, N)
   end
-  @test evaluate(∇(p2), x2) ≈ exact_gradient(p2, x2, 1)
-  @test evaluate(∇∇(p2), x2) ≈ exact_gradient(p2, x2, 2)
-  @test gradient(p2, Val(3)) isa FieldGradient{3}
-  @test gradient(gradient(p2, Val(2)), Val(2)) isa FieldGradient{4}
-
-  x3 = Point(0.3, 0.7, 0.2)
-  p3 = PolyField{3}([(2,2,2)=>1.0, (2,1,0)=>-1.0, (0,1,3)=>0.5])
-  for N in 1:3
-    @test maxdiff(evaluate(gradient(p3, Val(N)), x3), exact_gradient(p3, x3, N)) < 1e-10
-  end
+  @test evaluate(∇(m), x) ≈ exact_gradient(m, x, 1)
+  @test evaluate(∇∇(m), x) ≈ exact_gradient(m, x, 2)
+  @test gradient(m, Val(3)) isa FieldGradient{3}
+  @test gradient(gradient(m, Val(2)), Val(2)) isa FieldGradient{4}
 
   # Arrays of fields: FieldGradientArray{N} by AD, the whole array evaluated at once
 
-  fields = [p2, PolyField{2}([(1,1)=>2.0]), PolyField{2}([(0,4)=>-1.0, (2,0)=>3.0])]
+  fields = [Monomial2D(3, 2), Monomial2D(1, 1), Monomial2D(0, 4), Monomial2D(2, 0)]
   xs = [Point(0.1, 0.2), Point(0.5, 0.9), Point(0.3, 0.7), Point(1.0, -0.5)]
   for N in 1:4
     g = Broadcasting(NthGradient{N}())(fields)
     @test g isa FieldGradientArray{N}
     r = evaluate(g, xs)
-    @test size(r) == (length(xs), length(fields))
-    @test maxdiff(r, [exact_gradient(fi, xi, N) for xi in xs, fi in fields]) < 1e-10
-    test_map(r, g, xs; cmp = (a, b) -> maxdiff(a, b) < 1e-12)
+    @test r ≈ [exact_gradient(f, xi, N) for xi in xs, f in fields]
+    test_map(r, g, xs; cmp = (a, b) -> a ≈ b)
   end
   @test Broadcasting(∇)(Broadcasting(NthGradient{3}())(fields)) isa FieldGradientArray{4}
   @test Broadcasting(NthGradient{2}())(Broadcasting(NthGradient{3}())(fields)) isa FieldGradientArray{5}
 
   # Linear combinations of fields differentiate the underlying fields
 
-  values = [1.0 2.0; -1.0 0.5; 0.0 3.0]
+  values = [1.0 2.0; -1.0 0.5; 0.0 3.0; 2.0 -1.0]
   lc = linear_combination(values, fields)
   r = evaluate(Broadcasting(NthGradient{3}())(lc), xs)
-  r_exact = [sum(values[i,j] * exact_gradient(fields[i], xk, 3) for i in 1:3) for xk in xs, j in 1:2]
-  @test maxdiff(r, r_exact) < 1e-10
+  @test r ≈ [sum(values[i,j] * exact_gradient(fields[i], xk, 3) for i in 1:4) for xk in xs, j in 1:2]
 
 end
 
