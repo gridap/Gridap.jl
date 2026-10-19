@@ -11,7 +11,8 @@ given conformity. This is always true for `L2Conformity()`.
 Otherwise, the decomposition is defined relatively to the appropriate trace:
 - For `GradConformity()`, the trace is the restriction to the face, defined on all boundary faces,
 - For `CurlConformity()`, the trace is the tangential trace to edges and tangential component to 2D facets,
-- For `DivConformity()`, the trace is the normal trace to facets (rotated tangents in 2D).
+- For `DivConformity()`, the trace is the normal trace to facets (rotated tangents in 2D),
+- For `PΛConformity()`, the trace is the form trace ``ι_f^*ω`` on the faces of dimension ≥ `k`, it generalized the three above.
 """
 has_geometric_decomposition(shapefuns, p::Polytope, conf::Conformity) = conf isa L2Conformity
 
@@ -293,12 +294,31 @@ function has_geometric_decomposition(
 
   conf isa GradConformity && minimum(b.orders) > 0 && return true
 
+  # A form valued `CartProdPolyBasis` has `k`=0 or `k`=`D`, corresponding to H1
+  # and L2 conforming elements respectively.
+  if conf isa PΛConformity && V <: ExteriorFormValue
+    k, Dv = _form_degree_dim(V)
+    Dv == D && k == D && return true
+    Dv == D && k == 0 && minimum(b.orders) > 0 && return true
+  end
+
   # # could be generalized to Curl and Div conformity in this case, although
   # # it is quite redundant with `CompWiseTensorPolyBasis` if terms filtering
   # # is implemented for it
   # V <: VectorValue{D}     && minimum(b.orders) > 0 && return true
 
   false
+end
+
+function get_face_own_funs(
+  b::CartProdPolyBasis{D,V,PT}, p::Polytope, conf::PΛConformity) where {D,V,PT<:GD_1D_PT}
+
+  @check has_geometric_decomposition(b,p,conf)
+
+  k, _ = _form_degree_dim(V)
+  # `D`-forms are cell owned, 0-forms own faces like H¹ shape functions do
+  k == D && return _l2_conforming_own_funs(b,p)
+  get_face_own_funs(b, p, GradConformity())
 end
 
 function get_face_own_funs(
@@ -330,8 +350,20 @@ function has_geometric_decomposition(
 
   conf isa L2Conformity && return true
 
-  !(V <: VectorValue{D}) && return false
   !_is_poly_reference_D_cube(p,D) && return false
+
+  if conf isa PΛConformity && V <: ExteriorFormValue
+    # Form valued 𝓠⁻ᵣΛᵏ(□ᴰ) basis:
+    # The trace of dxᴵ is 0 on facets normal to eʲ if j is not in I.
+    # Otherwise, order≥1 is required in coordinate xʲ in order to control the
+    # trace using the 1D geometric decomposition.
+    k, Dv = _form_degree_dim(V)
+    Dv == D || return false
+    comps = sorted_combinations(D,k)
+    return all(b.orders[l,j] > 0 for l in axes(b.orders,1), j in 1:D if !(j in comps[l]))
+  end
+
+  !(V <: VectorValue{D}) && return false
 
   orders = MMatrix{D,D}(b.orders)
   conf isa GradConformity && minimum(orders)   > 0 && return true
@@ -357,7 +389,13 @@ function get_face_own_funs(
   # to indicate that the ownership along x-axis is ignored for the first component.
   # This also ensures that no vertex can own a Curl-conforming function and that
   # only facets and interior can own a Div-conforming function, as expected.
+  #
+  # For `PΛConformity` the rule is uniform in the form degree: the component `l`
+  # carries `dxᴵ`, and ownership is ignored exactly along the directions of I.
+  comps = conf isa PΛConformity ? sorted_combinations(D, first(_form_degree_dim(V))) : nothing
+
   function _compute_mask(VD, d, conf)
+    conf isa PΛConformity   && return MVector(ntuple(i -> i in comps[d], VD))
     conf isa GradConformity && return MVector(tfill(true, VD))
     conf isa CurlConformity && return MVector(ntuple(i -> i==d, VD))
     conf isa DivConformity  && return MVector(ntuple(i -> i!=d, VD))

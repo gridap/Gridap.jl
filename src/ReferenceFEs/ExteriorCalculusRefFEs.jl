@@ -65,15 +65,14 @@ function FEEC_reference_fe(
     in dimension $D, but the value type $V is a $k-form. \
     In dimension $D the $k-forms are named by $(_FEEC_degree_names(k, D)).
     """
-  @check is_simplex(p) """
-    Form valued *moment based* reference FEs are only available on simplices so
-    far: the AFW moment table below is the one of the P/P⁻ families, and
-    `FEEC_poly_basis` has no 0 < k < D form valued basis on $p anyway. The
-    0-forms and D-forms of an n-cube are reachable through the nodal names,
-    `lagrangian` and `serendipity`.
+  F, r = FEEC_family_and_order(name, p, order, k)
+
+  @check (F in (:P,:P⁻) && is_simplex(p)) || (F == :Q⁻ && is_n_cube(p)) """
+    Form valued *moment based* reference FEs are available for the P and P⁻
+    families on simplices, and for the Q⁻ family on n-cubes; got the $F family
+    on $p.
     """
 
-  F, r = FEEC_family_and_order(name, p, order, k)
   PT, MPT = poly_type, mom_poly_type
   # the value type asks for the form valued bases, no flag needed
   prebasis = FEEC_poly_basis(Val(D), VV, r, k, F, PT)
@@ -155,6 +154,10 @@ end
 function FEEC_face_mom_order_and_family(::Val{:P⁻}, r, k, d)
   mom_r = r+k-d-1
   mom_r ≥ 0 ? (mom_r, :P)  : (-1, nothing)
+end
+function FEEC_face_mom_order_and_family(::Val{:Q⁻}, r, k, d)
+  mom_r = r-1
+  mom_r ≥ 0 ? (mom_r, :Q⁻) : (-1, nothing)
 end
 
 FEEC_form_degrees(::Nedelec, D) = (1,)

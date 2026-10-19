@@ -107,6 +107,39 @@ end
   end
 end
 
+# ─────────────────────────────────────────────────────────────────────────────
+# The trimmed cubical family 𝓠⁻ᵣΛᵏ(□ᴰ)
+# ─────────────────────────────────────────────────────────────────────────────
+
+cart_quad   = CartesianDiscreteModel((0,1,0,1),(2,2))
+cart_hex    = CartesianDiscreteModel((0,1,0,1,0,1),(2,2,2))
+graded_quad = CartesianDiscreteModel((0,1,0,1),(4,4); map = x -> VectorValue(x[1]^2, 0.5*x[2]))
+
+@testset "Q⁻ dof count parity with the vector proxies" begin
+  for (model,p,D) in ((cart_quad,QUAD,2), (cart_hex,HEX,3)), r in 1:2
+    proxies = (
+      (0  , lagrangian    , r  ),
+      (1  , nedelec       , r-1),
+      (D-1, raviart_thomas, r-1),
+    )
+    for (k,proxy_name,proxy_order) in proxies
+      form  = FESpace(model, ReferenceFE(p,:Q⁻,r,k,Float64; DG_calc=true))
+      proxy = FESpace(model, ReferenceFE(p,proxy_name,Float64,proxy_order))
+      @test num_free_dofs(form) == num_free_dofs(proxy)
+    end
+  end
+end
+
+@testset "Q⁻ exact L2 projection on $lbl" for (lbl,model,p,D,rs) in (
+    ("cartesian QUAD", cart_quad,   QUAD, 2, 1:3),
+    ("graded QUAD",    graded_quad, QUAD, 2, 1:2),
+    ("cartesian HEX",  cart_hex,    HEX,  3, 1:1),
+  )
+  for r in rs, k in 0:D
+    @test projection_error(model,p,Val(D),:Q⁻,r,Val(k)) < TOL
+  end
+end
+
 @testset "exact interpolation" begin
   for F in (:P,:P⁻), r in 1:2, k in 0:2
     q = _full_degree(F,r,k)
@@ -256,8 +289,8 @@ hex_model  = CartesianDiscreteModel((0,1,0,1,0,1),(2,2,2))
     end
   end
 
-  # The modal names on an n-cube still need the `:Q⁻` moment table.
-  @test_throws AssertionError ReferenceFE(QUAD,:Q⁻,2,0,Float64; DG_calc=true)
+  # The modal names on an n-cube go through the `:Q⁻` moment table.
+  @test num_dofs(ReferenceFE(QUAD,:Q⁻,2,0,Float64; DG_calc=true)) == 9
 end
 
 # ─────────────────────────────────────────────────────────────────────────────

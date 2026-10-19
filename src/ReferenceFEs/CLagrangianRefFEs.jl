@@ -296,6 +296,12 @@ function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders,poly_type) where {T,
   elseif all(map(i->i==0,orders) ) && D>0
     conf = L2Conformity()
   else
+    @check !(T <: ExteriorFormValue) """
+      Nodal DOFs are only meaningful for 0-forms and D-forms, got a \
+      $(get_form_degree(T))-form in dimension $D. Use a moment based element \
+      instead: `ReferenceFE(p, F, r, $(get_form_degree(T)), T)`, or the \
+      `nedelec` / `raviart_thomas` / `bdm` names.
+      """
     conf = GradConformity()
   end
 
