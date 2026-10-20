@@ -118,7 +118,7 @@ export grad_to_2form
 import Base: show
 import Base: promote_rule
 import Base: zero, one
-import Base: +, -, *, /, \, ==, ≈, isless, <=
+import Base: +, -, *, muladd, /, \, ==, ≈, isless, <=
 import Base: conj, real, imag
 import Base: sum, maximum, minimum
 import Base: getindex, iterate, eachindex, lastindex

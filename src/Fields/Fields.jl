@@ -80,6 +80,8 @@ export ∇∇
 export gradient_type
 export push_∇
 export push_∇∇
+export NthGradient
+export PushNthGradient
 export pinvJt
 
 export curl

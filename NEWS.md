@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Implemented arbitrary-order gradients `gradient(f, Val(N))` of fields using forward-mode automatic differentiation. Hand-written kernels still take precedence. Since PR[#1350](https://github.com/gridap/Gridap.jl/pull/1350).
+
+### Fixed
+
+- `+` and `-` of `HighOrderTensorValue`s with more than 32 components are now type-stable. Since PR[#1350](https://github.com/gridap/Gridap.jl/pull/1350).
+- Implemented `Base.muladd` for `MultiValue`'d inputs, optimizing it using fma if an argument is scalar. Since PR[#1347](https://github.com/gridap/Gridap.jl/pull/1347).
+
 ### Changed
 
 - Enabled algebraic operations in residual of a linear `TransientFEOperator` when the space of the corresponding time derivative has zero Dirichlet values. Since PR[#1345](https://github.com/gridap/Gridap.jl/pull/1345).

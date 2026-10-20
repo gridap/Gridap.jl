@@ -87,11 +87,29 @@ Abstract hessian operator.
 
 gradient(f,::Val{1}) = ∇(f)
 gradient(f,::Val{2}) = ∇∇(f)
+"""
+    gradient(f, Val(N))
+
+`N`-th gradient of `f`, `gradient(f,Val(N))[i₁,…,i_N,c…] = ∂_{i₁}⋯∂_{i_N} f_c`.
+"""
+gradient(f,::Val{N}) where N = gradient(gradient(f,Val(N-1)))
 
 evaluate!(cache,::Broadcasting{typeof(∇)},a::Field) = ∇(a)
 evaluate!(cache,::Broadcasting{typeof(∇∇)},a::Field) = ∇∇(a)
 lazy_map(::Broadcasting{typeof(∇)},a::AbstractArray{<:Field}) = lazy_map(∇,a)
 lazy_map(::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field}) = lazy_map(∇∇,a)
+
+"""
+    struct NthGradient{N} <: Function
+
+The `N`-th gradient operator, `NthGradient{N}()(f) == gradient(f, Val(N))`. Use
+`Broadcasting(NthGradient{N}())` on arrays of fields, as for `∇` and `∇∇`.
+"""
+struct NthGradient{N} <: Function end
+
+(::NthGradient{N})(f) where N = gradient(f, Val(N))
+
+evaluate!(cache,g::Broadcasting{<:NthGradient},a::Field) = g.f(a)
 
 """
     push_∇(∇a::Field, ϕ::Field) = pinvJt(∇(ϕ))⋅∇a
@@ -130,6 +148,23 @@ function push_∇∇(∇∇a::Field,ϕ::Field)
 end
 
 """
+    struct PushNthGradient{N} <: Function
+
+    PushNthGradient{N}()(∇ⁿa::Field, ϕ::Field) = @notimplemented
+
+Pushforward of the `N`-th gradient `∇ⁿa` of a reference quantity by the cell map `ϕ`.
+Equivalent to `push_∇` at `N = 1` and `push_∇∇` at `N = 2`.
+"""
+struct PushNthGradient{N} <: Function end
+
+function (::PushNthGradient{N})(∇ⁿa::Field,ϕ::Field) where N
+  @notimplemented """\n
+  Pushforward of N-th order derivatives of reference quantities is only implemented for
+  affine cell maps.
+  """
+end
+
+"""
     gradient_type(::Type{T}, x::Point) where T
 
 Tensor type of the gradient of a `T` valued function.
@@ -139,12 +174,30 @@ function gradient_type(::Type{T},x::Point) where T
 end
 
 """
+    nth_gradient_type(::Type{T}, x::Point, Val(N))
+
+Type of the `N`-th gradient of a `T`-valued field, i.e. `gradient_type` applied `N`
+times. Scalar values give `VectorValue`, `TensorValue`, `ThirdOrderTensorValue` and then
+`HighOrderTensorValue`.
+"""
+function nth_gradient_type(::Type{T}, x::Point, ::Val{N}) where {T,N}
+  G = T
+  for _ in 1:N
+    G = gradient_type(G, x)
+  end
+  return G
+end
+
+"""
     struct FieldGradient{N,F} <: Field
 
 Type that represents the gradient of a field of type `F`. `N` is how many times
-the gradient is applied. Requires implementing
+the gradient is applied. Fields can implement
 
-    evaluate!(cache,f::FieldGradient,x::Point) = @abstractmethod.
+    evaluate!(cache,f::FieldGradient{N,F},x::Point)
+
+(and `return_cache`); otherwise the gradient is computed by forward-mode automatic
+differentiation of the field's own evaluation.
 
 For `F<:Function`, `FieldGradient` is implemented for `N=1, 2` by `gradient`
 and `hessian`.
@@ -160,8 +213,14 @@ gradient(f::FieldGradient{N}) where N = FieldGradient{N+1}(f.object)
 testargs(f::FieldGradient,x::Point) = testargs(f.object,x)
 return_value(f::FieldGradient,x::Point) = evaluate(f,testargs(f,x)...)
 return_cache(f::FieldGradient,x::Point) = nothing
-evaluate!(cache,f::FieldGradient,x::Point) = @abstractmethod
 testvalue(::Type{FieldGradient{N,T}}) where {N,T} = FieldGradient{N}(testvalue(T))
+
+# Default evaluation of the N-th gradient for a single point via forward-mode AD
+function evaluate!(cache, fg::FieldGradient{N}, x::Point{D}) where {N,D}
+  fx = evaluate(fg.object, seed_point(x, Val(N)))
+  G = nth_gradient_type(typeof(evaluate(fg.object, x)), x, Val(N))
+  taylor_tensor(G, fx, Val(N), Val(D))
+end
 
 # Default methods for arrays of points
 
