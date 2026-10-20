@@ -83,7 +83,7 @@ function GLSRefFE(::Type{T}, p::Polytope{D}, order::Integer) where {T,D}
 
   edges = get_dimrange(p, 1)
   cell = get_dimrange(p, 2)
-  ts, ns = _edge_frames(p)
+  ts, ns = get_edge_tangent(p), last(_facet_frames(p))
   moments = Tuple[(edges, ntmom, fb)]
   if order > 0
     append!(moments, [(cell, cmom(outer(ts[e], ns[e])), cb) for e in 1:num_faces(p, 1)])
@@ -113,7 +113,7 @@ end
 
 # The tensor t ⊗ n of the current edge of `ds`, so that M ⊙ (t⊗n) = t⋅M⋅n.
 _gls_tn(ds) = ConstantField(outer(get_edge_tangent(ds).value,
-                                  _rot90(get_edge_tangent(ds).value)))
+                                  _frame_normal(get_edge_tangent(ds).value)))
 
 function ReferenceFE(p::Polytope, ::GopalakrishnanLedererSchoberl, ::Type{T}, order) where T
   GLSRefFE(T, p, order)

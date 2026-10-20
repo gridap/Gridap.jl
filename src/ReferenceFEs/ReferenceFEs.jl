@@ -13,7 +13,7 @@ using Test
 using DocStringExtensions
 using LinearAlgebra
 using StaticArrays
-using Combinatorics
+using Combinatorics: permutations, combinations
 using FillArrays
 using AutoHashEquals: @auto_hash_equals as @ahe
 using ..Gridap
@@ -64,6 +64,7 @@ export get_facet_normal
 export get_facet_orientations
 export get_edge_tangent
 export get_vertex_permutations
+export get_vertex_permutation_jacobians
 export get_face_dimranges
 export get_face_coordinates
 export is_simplex
@@ -129,6 +130,7 @@ export get_prebasis
 export get_dof_basis
 export get_face_own_dofs
 export get_face_own_dofs_permutations
+export get_face_own_dofs_signs
 export get_face_dofs
 export get_own_dofs_permutations
 export get_shapefuns
@@ -210,6 +212,10 @@ export GLSRefFE
 export ArnoldWintherNCRefFE
 export ArnoldWintherCRefFE
 export MardalTaiWintherRefFE
+export SerendipityDivRefFE
+export SerendipityCurlRefFE
+export TrimmedSerendipityDivRefFE
+export TrimmedSerendipityCurlRefFE
 export CartProdRefFE
 export CartProdConformity
 export BubbleRefFE
@@ -231,6 +237,10 @@ export GopalakrishnanLedererSchoberl
 export ArnoldWintherNC
 export ArnoldWintherC
 export MardalTaiWinther
+export SerendipityDiv
+export SerendipityCurl
+export TrimmedSerendipityDiv
+export TrimmedSerendipityCurl
 export CartProd
 export Serendipity
 export Bubble
@@ -262,6 +272,10 @@ export gls
 export aw_nc
 export aw_c
 export mtw
+export sdiv
+export scurl
+export trimmed_sdiv
+export trimmed_scurl
 export serendipity
 export bubble
 
@@ -356,6 +370,8 @@ include("ArnoldWintherNCRefFEs.jl")
 include("ArnoldWintherCRefFEs.jl")
 
 include("MardalTaiWintherRefFEs.jl")
+
+include("SerendipityHdivHcurl.jl")
 
 include("CartProdRefFEs.jl")
 

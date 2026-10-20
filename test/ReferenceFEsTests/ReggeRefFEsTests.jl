@@ -282,7 +282,7 @@ function test_regge_fe_space(r, model)
   Λ = SkeletonTriangulation(model)
   dΛ = Measure(Λ, 2*r + 6)
   n = get_normal_vector(Λ).⁺
-  t = Operation(ReferenceFEs._rot90)(n)   # the unit tangent of the shared edge
+  t = Operation(ReferenceFEs._frame_normal)(n)   # the unit tangent of the shared edge
 
   # Only the tangential-tangential component is continuous -- the defining property
   @test sqrt(sum(∫((t ⋅ jump(wh) ⋅ t) * (t ⋅ jump(wh) ⋅ t))dΛ)) < 1e-12

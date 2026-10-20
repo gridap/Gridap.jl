@@ -22,6 +22,8 @@ using Test
 
 @testset "MomentBasedReferenceFEs" begin include("MomentBasedReferenceFEsTests.jl") end
 
+@testset "FaceDofPermutations" begin include("FaceDofPermutationsTests.jl") end
+
 @testset "LagrangianRefFEs" begin include("LagrangianRefFEsTests.jl") end
 
 @testset "CLagrangianRefFEs" begin include("CLagrangianRefFEsTests.jl") end
@@ -76,6 +78,8 @@ using Test
 @testset "ArnoldWintherCRefFEs" begin include("ArnoldWintherCRefFEsTests.jl") end
 
 @testset "MardalTaiWintherRefFEs" begin include("MardalTaiWintherRefFEsTests.jl") end
+
+@testset "SerendipityHdivHcurl" begin include("SerendipityHdivHcurlTests.jl") end
 
 @testset "CartProdRefFEs" begin include("CartProdRefFEsTests.jl") end
 
