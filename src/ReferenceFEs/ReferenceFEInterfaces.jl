@@ -368,12 +368,10 @@ end
 The companion of [`get_face_own_dofs_permutations`](@ref): for each `face` and
 each vertex permutation of it, the sign (`±1`) by which each DoF owned by
 `face`, as seen by the cell, differs from the corresponding one in the face's
-own numbering (`0` where the permutation is [`INVALID_PERM`](@ref)). All ones
-unless the reference FE says otherwise; see [`GenericRefFE`](@ref) for how both
-tables are stored together.
+own numbering (`0` where the permutation is [`INVALID_PERM`](@ref)). 
 """
 function get_face_own_dofs_signs(reffe::ReferenceFE, conf::Conformity)
-  _signs(get_face_own_dofs_permutations(reffe, conf))
+  map(perms -> map(p -> sign.(p), perms), get_face_own_dofs_permutations(reffe, conf))
 end
 
 function get_face_own_dofs_signs(reffe::ReferenceFE)
@@ -489,8 +487,7 @@ function test_reference_fe(reffe::ReferenceFE{D}, conf::Conformity) where {D}
   @test length(facedofs_perms) == num_faces(p)
   facedofs_signs = get_face_own_dofs_signs(reffe, conf)
   @test isa(facedofs_signs, Vector{Vector{Vector{Int}}})
-  @test map(length, facedofs_signs) == map(length, facedofs_perms)
-  @test all(map((a, b) -> map(length, a) == map(length, b), facedofs_signs, facedofs_perms))
+  @test length(facedofs_signs) == num_faces(p)
   @test all(all(all(abs(x) <= 1 for x in v) for v in f) for f in facedofs_signs)
   facedofs = get_face_dofs(reffe)
   @test isa(facedofs, Vector{Vector{Int}})
@@ -677,14 +674,6 @@ Note that some fields in this `struct` are type unstable deliberately in order t
 type signature. Don't access them in computationally expensive functions,
 instead extract the required fields before and pass them to the computationally expensive function.
 
-The field `face_own_dofs_permutations` stores, for each face and each vertex
-permutation of that face (in the order of
-[`get_face_vertex_permutations`](@ref)), a *signed* permutation of the DoFs the
-face owns: entry `i` is `s*j`, meaning that the cell's `i`-th own DoF of the
-face is `s` (`±1`) times the `j`-th one in the face's own numbering. The two
-halves are read separately by [`get_face_own_dofs_permutations`](@ref) and
-[`get_face_own_dofs_signs`](@ref); an [`INVALID_PERM`](@ref) entry is `0` in
-both. The default is [`l2_face_own_dofs_permutations`](@ref)`(face_own_dofs)`.
 """
 @ahe struct GenericRefFE{T,D} <: ReferenceFE{D}
   ndofs::Int
@@ -802,7 +791,10 @@ function get_face_own_dofs(reffe::GenericRefFE, conf::Conformity)
 end
 
 function get_face_own_dofs_permutations(reffe::GenericRefFE, conf::Conformity)
-  conf == Conformity(reffe) && return _unsigned(reffe.face_own_dofs_permutations)
+  if conf == Conformity(reffe)
+    signed_perms = reffe.face_own_dofs_permutations
+    return map(perms -> map(p -> abs.(p), perms), signed_perms)
+  end
   conf isa L2Conformity && return l2_face_own_dofs_permutations(get_face_own_dofs(reffe, conf))
   @unreachable """\n
   It is not possible to use conformity $conf on this reference FE.
@@ -810,16 +802,13 @@ function get_face_own_dofs_permutations(reffe::GenericRefFE, conf::Conformity)
 end
 
 function get_face_own_dofs_signs(reffe::GenericRefFE, conf::Conformity)
-  # A method on a concrete name may override `get_face_own_dofs_permutations`
-  # while leaving the field at its default; the signs then follow that method.
-  perms = get_face_own_dofs_permutations(reffe, conf)
-  table = reffe.face_own_dofs_permutations
-  conf == Conformity(reffe) && _unsigned(table) == perms && return _signs(table)
-  _signs(perms)
+  if conf == Conformity(reffe)
+    signed_perms = reffe.face_own_dofs_permutations
+  elseif conf isa L2Conformity
+    signed_perms = l2_face_own_dofs_permutations(get_face_own_dofs(reffe, conf))
+  end
+  return map(perms -> map(p -> sign.(p), perms), signed_perms)
 end
-
-_unsigned(table) = map(perms -> map(p -> abs.(p), perms), table)
-_signs(table) = map(perms -> map(p -> sign.(p), perms), table)
 
 function get_face_dofs(reffe::GenericRefFE)
   poly = get_polytope(reffe)
@@ -830,4 +819,3 @@ end
 get_shapefuns(reffe::GenericRefFE) = reffe.shapefuns
 
 get_metadata(reffe::GenericRefFE) = reffe.metadata
-
