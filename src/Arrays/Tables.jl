@@ -777,7 +777,7 @@ function merge_entries(
     @inbounds as = getindex!(c2,c_to_la_to_a,c)
     for a in as
       bs = getindex!(c1,a_to_lb_to_b,a)
-      !isempty(bs) && push!(acc, bs...)
+      union!(acc, bs)
     end
     @inbounds ptrs[c+1] += length(post(acc))
     empty!(acc)
@@ -789,9 +789,9 @@ function merge_entries(
     as = getindex!(c2,c_to_la_to_a,c)
     for a in as
       bs = getindex!(c1,a_to_lb_to_b,a)
-      !isempty(bs) && push!(acc, bs...)
+      union!(acc, bs)
     end
-    data[ptrs[c]:ptrs[c+1]-1] = post(collect(acc))
+    copyto!(data, ptrs[c], post(acc))
     empty!(acc)
   end
 
