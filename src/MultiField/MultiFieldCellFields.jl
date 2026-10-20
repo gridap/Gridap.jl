@@ -158,7 +158,7 @@ function FESpaces.similar_fe_basis(
   @notimplemented
 end
 
-for fun in (:gradient,:DIV,:∇∇)
+for fun in (:gradient,:DIV,:∇∇,:exterior_derivative,:codifferential)
   @eval begin
     function $fun(f::MultiFieldFEBasisComponent)
       g = $fun(f.single_field)

@@ -214,12 +214,14 @@ const 𝓛 = lie_derivative
 
 """
     codifferential(ω)
+    δ(ω)
 
 Codifferential of a differential K-form `ω`, is a (K-1)-form. In flat Euclidean
 space, `δω = (-1)^{D(K-1)+1} ⋆ d ⋆ ω`.
 """
 function codifferential end
 codifferential(ω) = Operation(partials_to_codifferential)(partial_derivatives(ω))
+const δ = codifferential
 # TODO, a curved metric makes δω depend on ω and on the derivatives of the
 # metric too: decide on an API for the Christoffel symbols before adding them.
 

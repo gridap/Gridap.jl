@@ -23,7 +23,7 @@ using Gridap.CellData: SkeletonCellFieldPair
 
 using SparseMatricesCSR: SparseMatrixCSR
 
-import Gridap.Fields: gradient, DIV, ∇∇
+import Gridap.Fields: gradient, DIV, ∇∇, exterior_derivative, codifferential
 
 using FillArrays
 using SparseArrays

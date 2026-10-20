@@ -23,43 +23,43 @@ vfun(x) = x[1] + 3*x[2]
 v = CellField(vfun,Ω)
 
 degree = 2
-δ = DiracDelta{1}(model,degree,tags=5)
-@test sum(δ(v)) ≈ 0.5
+dirac = DiracDelta{1}(model,degree,tags=5)
+@test sum(dirac(v)) ≈ 0.5
 
 #using Gridap.Visualization
 #writevtk(get_triangulation(δ),"trian_d")
 #writevtk(Ω,"trian")
 
-δ = DiracDelta{0}(model,tags=2)
-@test sum(δ(v)) ≈ 1
+dirac = DiracDelta{0}(model,tags=2)
+@test sum(dirac(v)) ≈ 1
 
-δ = DiracDelta{0}(model,tags=4)
-@test sum(δ(v)) ≈ 4
+dirac = DiracDelta{0}(model,tags=4)
+@test sum(dirac(v)) ≈ 4
 
-@test sum(δ(3.0)) ≈ 3.0
-@test sum(δ(x->2*x)) ≈ VectorValue(2,2)
+@test sum(dirac(3.0)) ≈ 3.0
+@test sum(dirac(x->2*x)) ≈ VectorValue(2,2)
 
-δ = DiracDelta{0}(model,tags=[2,4])
-@test sum(δ(v)) ≈ 5
+dirac = DiracDelta{0}(model,tags=[2,4])
+@test sum(dirac(v)) ≈ 5
 
 # Tests for DiracDelta at a generic Point in the domain #
 
 p = Point(0.2,0.3)
-δ = DiracDelta(model,p)
-@test sum(δ(v)) ≈ v(p)
+dirac = DiracDelta(model,p)
+@test sum(dirac(v)) ≈ v(p)
 
-@show δ = DiracDelta(Ω,p)
-@test sum(δ(v)) ≈ v(p)
+@show dirac = DiracDelta(Ω,p)
+@test sum(dirac(v)) ≈ v(p)
 
 pvec = [p,π*p]
-δ = DiracDelta(model,pvec)
-@test sum(δ(v)) ≈ sum(v(pvec))
+dirac = DiracDelta(model,pvec)
+@test sum(dirac(v)) ≈ sum(v(pvec))
 
-@show δ = DiracDelta(Ω,pvec)
-@test sum(δ(v)) ≈ sum(v(pvec))
+@show dirac = DiracDelta(Ω,pvec)
+@test sum(dirac(v)) ≈ sum(v(pvec))
 
 p = Point(0.2,0.3)
-δ = DiracDelta(model,p)
+dirac = DiracDelta(model,p)
 reffe = ReferenceFE(lagrangian,Float64,3)
 V = FESpace(model,reffe,conformity=:L2)
 V0 = TestFESpace(model,reffe,conformity=:H1,dirichlet_tags="boundary")
@@ -69,18 +69,18 @@ vh = FEFunction(V,rand(num_free_dofs(V)))
 fe_basis = get_fe_basis(U0)
 dg_basis = get_fe_basis(V)
 
-@test sum(δ(uh)) ≈ uh(p)
-@test sum(δ(vh)) ≈ vh(p)
-@test norm(sum(δ(fe_basis)) .- fe_basis(p)) ≈ 0
-@test norm(sum(δ(dg_basis)) .- dg_basis(p)) ≈ 0
+@test sum(dirac(uh)) ≈ uh(p)
+@test sum(dirac(vh)) ≈ vh(p)
+@test norm(sum(dirac(fe_basis)) .- fe_basis(p)) ≈ 0
+@test norm(sum(dirac(dg_basis)) .- dg_basis(p)) ≈ 0
 
 pvec = [p,π*p]
-δ = DiracDelta(model,pvec)
+dirac = DiracDelta(model,pvec)
 
-@test sum(δ(uh)) ≈ sum(map(uh,pvec))
-@test sum(δ(vh)) ≈ sum(map(vh,pvec))
-@test norm(sum(δ(fe_basis)) .- sum(map(fe_basis,pvec))) ≈ 0
-@test norm(sum(δ(dg_basis)) .- sum(map(dg_basis,pvec))) ≈ 0
+@test sum(dirac(uh)) ≈ sum(map(uh,pvec))
+@test sum(dirac(vh)) ≈ sum(map(vh,pvec))
+@test norm(sum(dirac(fe_basis)) .- sum(map(fe_basis,pvec))) ≈ 0
+@test norm(sum(dirac(dg_basis)) .- sum(map(dg_basis,pvec))) ≈ 0
 
 # comparing exact solution with that of GenericDiracDelta
 
