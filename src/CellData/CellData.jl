@@ -47,6 +47,7 @@ import Gridap.TensorValues: inner, outer, double_contraction, symmetric_part
 import Gridap.TensorValues: ∧, hodge_star, flat_hodge_star, flat, sharp, interior_product, alt_inner
 import Gridap.TensorValues: koszul
 import Gridap.TensorValues: vol_coeff, to_1form, from_1form
+import Gridap.TensorValues: pullback, pushforward
 import LinearAlgebra: det, tr, cross, dot, ⋅, rmul!
 import LinearAlgebra
 using LinearAlgebra: UniformScaling

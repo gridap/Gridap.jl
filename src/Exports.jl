@@ -43,13 +43,20 @@ using Gridap.Arrays: ∑; export ∑
 @publish TensorValues num_components
 @publish TensorValues num_indep_components
 
-#@publish TensorValues ExteriorFormValue
-#using Gridap.TensorValues: ∧, ⋆; export ∧, ⋆
+@publish TensorValues ExteriorFormValue
+@publish TensorValues CoVectorValue
+@publish TensorValues ContraVectorValue
+using Gridap.TensorValues: ∧; export ∧
+@publish TensorValues hodge_star
+@publish TensorValues flat_hodge_star
+using Gridap.TensorValues: ⋆, ⋆ᴱ; export ⋆, ⋆ᴱ
+@publish TensorValues flat
+@publish TensorValues flat_flat
+@publish TensorValues sharp
+@publish TensorValues flat_sharp
+using Gridap.TensorValues: ♭, ♭ᴱ, ♯, ♯ᴱ; export ♭, ♭ᴱ, ♯, ♯ᴱ
 #@publish TensorValues interior_product
 #@publish TensorValues ι
-#@publish TensorValues hodge_star
-#@publish TensorValues flat
-#@publish TensorValues sharp
 #@publish TensorValues apply_tensor
 #@publish TensorValues pullback
 #@publish TensorValues pushforward
