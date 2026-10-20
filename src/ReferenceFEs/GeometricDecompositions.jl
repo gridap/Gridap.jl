@@ -13,8 +13,7 @@ Otherwise, the decomposition is defined relatively to the appropriate trace:
 - For `CurlConformity()`, the trace is the tangential trace to edges and tangential component to 2D facets,
 - For `DivConformity()`, the trace is the normal trace to facets (rotated tangents in 2D).
 """
-has_geometric_decomposition(shapefuns, p::Polytope, ::Conformity) = false
-has_geometric_decomposition(shapefuns, p::Polytope, ::L2Conformity) = true
+has_geometric_decomposition(shapefuns, p::Polytope, conf::Conformity) = conf isa L2Conformity
 
 """
     get_face_own_funs(shapefuns, p::Polytope, ::Conformity) -> Vector{Vector{Int}}
@@ -126,7 +125,7 @@ function _are_barycoords_relative_to_simplex(
   @check is_simplex(simplex) && D == num_dims(simplex)
 
   vertices = get_vertex_coordinates(simplex)
-  M = b.cart_to_bary_matrix
+  M = b.x_to_λ
   vλ = [ Polynomials._cart_to_bary(v, M) for v in vertices ] # return SVectors ...
 
   T = eltype(eltype(vλ))

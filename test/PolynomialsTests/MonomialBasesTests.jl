@@ -4,7 +4,7 @@ using Test
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
-using Gridap.Arrays: testvalue
+using Gridap.Arrays: testvalue, Broadcasting
 
 using Gridap.Polynomials: _q_filter, _qh_filter, _p_filter, _ph_filter
 
@@ -282,6 +282,35 @@ order = 2
 for V in (TensorValue{2,2,Float64}, SymTensorValue{2,Float64},
           SkewSymTensorValue{2,Float64}, SymFourthOrderTensorValue{2,Float64})
   @test isconcretetype(value_type(MonomialBasis{2}(V, (1,1))))
+end
+
+
+# Higher-order gradients: hand-written kernels for N ≤ 2, forward-mode AD above. The AD
+# evaluation reproduces the hand-written kernels exactly where both exist.
+
+@testset "Higher-order gradients" begin
+  for (D, k) in ((2, 3), (3, 2))
+    b = MonomialBasis(Val(D), Float64, k)
+    xs = [Point(ntuple(d -> 0.1d + 0.05i, D)) for i in 1:4]
+    for N in 1:2
+      fg = FieldGradientArray{N}(b)
+      # Generic AD path (FieldArrays.jl), bypassing the hand-written kernels
+      G = FieldGradientArray{N,<:AbstractArray{<:Field}}
+      c = invoke(return_cache, Tuple{G,AbstractVector{<:Point}}, fg, xs)
+      @test invoke(evaluate!, Tuple{Any,G,AbstractVector{<:Point}}, c, fg, xs) == evaluate(fg, xs)
+    end
+    for N in 3:4
+      fg = FieldGradientArray{N}(b)
+      r = evaluate(fg, xs)
+      @test size(r) == (length(xs), length(b))
+      @test eltype(r) == Fields.nth_gradient_type(Float64, first(xs), Val(N))
+      # The N-th gradient is the gradient of the (N-1)-th
+      rp = evaluate(Broadcasting(∇)(FieldGradientArray{N-1}(b)), xs)
+      @test r ≈ rp
+      # Single point
+      @test evaluate(fg, first(xs)) ≈ r[1,:]
+    end
+  end
 end
 
 end # module

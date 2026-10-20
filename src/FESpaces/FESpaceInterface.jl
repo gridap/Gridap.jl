@@ -209,7 +209,7 @@ struct TestBasis <: BasisStyle end
 """
     abstract type FEBasis <: CellField
 
-Has traits [BasisStyle](@ref) and [DomainStyle](@ref).
+Has traits [`BasisStyle`](@ref) and [`DomainStyle`](@ref Gridap.CellData.DomainStyle).
 """
 abstract type FEBasis <: CellField end
 BasisStyle(::Type{<:FEBasis}) = @abstractmethod
@@ -392,6 +392,12 @@ function get_dirichlet_dof_values(f::FEFunction)
   @abstractmethod
 end
 
+"""
+    get_cell_is_dirichlet(f::FESpace[, ttrian::Triangulation])
+
+Return a cell-wise mask telling, for each cell, whether it holds at least one
+Dirichlet DOF. The generic fallback is conservative and marks every cell.
+"""
 function get_cell_is_dirichlet(f::FESpace)
   trian = get_triangulation(f)
   Fill(true,num_cells(trian))

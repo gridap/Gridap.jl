@@ -55,4 +55,13 @@ T = AffineField{3,3,Int}
 #c = return_cache(h,x1)
 #@btime evaluate!($c,$h,$x1)
 
+
+# Pushforward of the N-th gradient: push_∇ and push_∇∇ at N = 1, 2
+
+Jt_inv = TensorValue(0.5, 0.1, -0.2, 2.0)
+g1 = VectorValue(1.0, -3.0)
+@test PushNthGradient{1}()(g1, Jt_inv) ≈ Jt_inv ⋅ g1
+g2 = TensorValue(1.0, 2.0, 2.0, -1.0)
+@test PushNthGradient{2}()(g2, Jt_inv) ≈ push_∇∇(g2, Jt_inv)
+
 end # module

@@ -13,7 +13,9 @@ function return_cache(f::AbstractArray{T},x::Point) where T<:Field
 end
 
 """
-Implementation of `return_cache` for a array of `Field`.
+    evaluate!(c, f::AbstractArray{T}, x::Point) where T<:Field
+
+Evaluation of an array of `Field`.
 
 If the field vector has length `nf` and it is evaluated in one point, it
 returns an `nf` vector with the result. If the same array is applied to a
@@ -96,8 +98,11 @@ end
 # Opening the door to optimize arrays of field gradients
 
 """
+    struct FieldGradientArray{Ng,A,T,N} <: AbstractArray{T,N}
+
 A wrapper that represents the broadcast of `gradient` over an array of fields.
-Ng is the number of times the gradient is applied
+`Ng` is the number of times the gradient is applied, `A` the type of the field
+array to take derivatives of.
 """
 struct FieldGradientArray{Ng,A,T,N} <: AbstractArray{T,N}
   fa::A
@@ -134,6 +139,22 @@ function evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Fiel
   FieldGradientArray{2}(a)
 end
 
+function evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::FieldGradientArray{N}) where N
+  FieldGradientArray{N+2}(a.fa)
+end
+
+function return_value(k::Broadcasting{<:NthGradient},a::AbstractArray{<:Field})
+  evaluate(k,a)
+end
+
+function evaluate!(cache,k::Broadcasting{NthGradient{N}},a::AbstractArray{<:Field}) where N
+  FieldGradientArray{N}(a)
+end
+
+function evaluate!(cache,k::Broadcasting{NthGradient{N}},a::FieldGradientArray{M}) where {N,M}
+  FieldGradientArray{N+M}(a.fa)
+end
+
 function gradient(a::AbstractArray{<:Field})
   msg =
   """\n
@@ -158,6 +179,58 @@ Base.getindex(a::FieldGradientArray{Ng},i::Integer) where Ng = gradient(a.fa[i],
 Base.getindex(
    a::FieldGradientArray{Ng,A,T,N},i::Vararg{Integer,N}) where {Ng,A,T,N} = gradient(a.fa[i...],Val(Ng))
 Base.IndexStyle(::Type{<:FieldGradientArray{Ng,A}}) where {Ng,A} = IndexStyle(A)
+
+# Default caching and evaluation of the N-th gradient for arrays of points via forward-mode AD
+function return_cache(
+  fg::FieldGradientArray{N,<:AbstractArray{<:Field}}, x::AbstractVector{<:Point}) where N
+  f  = fg.fa
+  xi = testitem(x)
+  xd = CachedArray([seed_point(xj, Val(N)) for xj in x])
+  cf = return_cache(f, xd.array)
+  G  = nth_gradient_type(eltype(return_value(f, x)), xi, Val(N))
+  fx = evaluate!(cf, f, xd.array)
+  r  = CachedArray(zeros(G, size(fx)))
+  return xd, cf, r
+end
+
+function evaluate!(
+  cache, fg::FieldGradientArray{N,<:AbstractArray{<:Field}}, x::AbstractVector{<:Point}) where N
+  xd, cf, r = cache
+  D = length(eltype(x))
+  setsize!(xd, size(x))
+  for i in eachindex(x)
+    xd.array[i] = seed_point(x[i], Val(N))
+  end
+  fx = evaluate!(cf, fg.fa, xd.array)
+  setsize!(r, size(fx))
+  G = eltype(r.array)
+  for i in eachindex(fx)
+    @inbounds r.array[i] = taylor_tensor(G, fx[i], Val(N), Val(D))
+  end
+  return r.array
+end
+
+# Single point: evaluate at a one-point vector, so that the array is differentiated as a whole
+function return_cache(
+  fg::FieldGradientArray{N,<:AbstractArray{<:Field}}, x::Point) where N
+  xs = [x]
+  cf = return_cache(fg,xs)
+  v = evaluate!(cf,fg,xs)
+  r = CachedArray(zeros(eltype(v),(size(v,2),)))
+  return r, cf, xs
+end
+
+function evaluate!(
+  cache, fg::FieldGradientArray{N,<:AbstractArray{<:Field}}, x::Point) where N
+  r, cf, xs = cache
+  xs[1] = x
+  v = evaluate!(cf,fg,xs)
+  ndof = size(v,2)
+  setsize!(r,(ndof,))
+  a = r.array
+  copyto!(a,v)
+  return a
+end
 
 # Optimizing linear_combination.
 
@@ -224,8 +297,13 @@ for op in (:∇,:∇∇)
 end
 
 """
-    linear_combination(a::AbstractVector{<:Number}, b::AbstractVector{<:Field})
-    linear_combination(a::AbstractMatrix{<:Number}, b::AbstractVector{<:Field})
+    linear_combination(v::AbstractVector{<:Number}, f::AbstractVector{<:Field})
+    linear_combination(m::AbstractMatrix{<:Number}, f::AbstractVector{<:Field})
+
+Lazy linear combination
+    lc = v*f = Σ vᵢfᵢ
+, or
+    lcⱼ = (transpose(m)*f)ⱼ = Σᵢ mᵢⱼfᵢ.
 """
 function linear_combination(a::AbstractMatrix{<:Number},b::AbstractVector{<:Field})
   LinearCombinationFieldVector(a,b)
@@ -310,6 +388,16 @@ for op in (:∇,:∇∇)
       LinearCombinationFieldVector(a.values,fields)
     end
   end
+end
+
+function evaluate!(cache,k::Broadcasting{NthGradient{N}},a::LinearCombinationFieldVector) where N
+  fields = k(a.fields)
+  LinearCombinationFieldVector(a.values,fields)
+end
+
+function (g::NthGradient)(a::LinearCombinationField)
+  fields = Broadcasting(g)(a.fields)
+  LinearCombinationField(a.values,fields,a.column)
 end
 
 function get_children(n::TreeNode, a::LinearCombinationFieldVector)
@@ -473,6 +561,7 @@ end
 testitem(a::Transpose{<:Field}) = testitem(a.parent)
 evaluate!(cache,k::Broadcasting{typeof(∇)},a::Transpose{<:Field}) = transpose(k(a.parent))
 evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::Transpose{<:Field}) = transpose(k(a.parent))
+evaluate!(cache,k::Broadcasting{NthGradient{N}},a::Transpose{<:Field}) where N = transpose(k(a.parent))
 
 return_value(k::Transpose{<:Field},x::Point) = transpose(return_value(k.parent,x))
 return_cache(k::Transpose{<:Field},x::Point) = return_cache(k.parent,x)

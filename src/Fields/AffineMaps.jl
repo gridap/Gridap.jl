@@ -11,11 +11,11 @@ end
 """
     struct AffineField{D1,D2,T,L} <: Field
 
-A Field with the form:
+A `Field` with the form:
 
     y = x⋅G + y0
 
-with `G`::TensorValue{`D1`,`D2`,`T`,`L`} and `y0`::Point{`D2`,`T`}.
+with `G::TensorValue{D1,D2,T,L}` and `y0::Point{D2,T}`.
 """
 struct AffineField{D1,D2,T,L} <: Field
   gradient::TensorValue{D1,D2,T,L}
@@ -77,28 +77,29 @@ function push_∇∇(∇∇a::Field,ϕ::AffineField)
   Operation(push_∇∇)(∇∇a, Jt_inv)
 end
 
-#function push_∇∇(∇∇a::Number,Jt_inv::MultiValue{Tuple{D,D}} where D)
-#  #Jt_inv⋅Jt_inv⋅∇∇a
-#  Jt_inv⋅∇∇a⋅transpose(Jt_inv)
-#end
-
 function push_∇∇(∇∇a::Number,Jt_inv::MultiValue{Tuple{D1,D2}} where {D1,D2})
-  _permdims_for_∇∇(Jt_inv⋅_permdims_for_∇∇(∇∇a)⋅transpose(Jt_inv))
+  PushNthGradient{2}()(∇∇a, Jt_inv)
 end
 
-function _permdims_for_∇∇(a::MultiValue{Tuple{D1,D2}}) where {D1,D2}
-  a
+# Pushforward of the N-th gradient by an affine map
+#
+# For x = Jξ + b, ∂ₓ = J⁻ᵀ ∂_ξ in every derivative index, so the physical N-th gradient is the
+# reference one with each of its first N indices contracted with J⁻ᵀ (`pinvJt`).
+function (k::PushNthGradient)(∇ⁿa::Field,ϕ::AffineField)
+  Jt = ∇(ϕ)
+  Jt_inv = pinvJt(Jt)
+  Operation(k)(∇ⁿa, Jt_inv)
 end
-@generated function _permdims_for_∇∇(a::MultiValue{Tuple{D1,D2,D3}}) where {D1,D2,D3}
-  comps = Expr[]
-  for k in 1:D2
-    for j in 1:D3
-      for i in 1:D1
-        push!(comps, :(a[$i,$k,$j]))
-      end
-    end
+
+# Each of the first `N` indices is contracted with `Jt_inv`.
+function (::PushNthGradient{N})(∇ⁿa::MultiValue,Jt_inv::MultiValue) where N
+  # Contracting the last derivative index moves the new index to the front,
+  # so after N rounds the derivative indices are back in their original order.
+  t = ∇ⁿa
+  for _ in 1:N
+    t = tensor_contraction(Jt_inv, t, Val(2), Val(N))
   end
-  :(return ThirdOrderTensorValue{$D1,$D3,$D2}($(Expr(:tuple, comps...))))
+  return t
 end
 
 function lazy_map(
@@ -107,7 +108,7 @@ function lazy_map(
   cell_map::AbstractArray{<:AffineField})
   cell_Jt = lazy_map(∇,cell_map)
   cell_invJt = lazy_map(Operation(pinvJt),cell_Jt)
-  lazy_map(Broadcasting(Operation(push_∇∇)),cell_∇∇a,cell_invJt)
+  return lazy_map(Broadcasting(Operation(push_∇∇)),cell_∇∇a,cell_invJt)
 end
 
 function lazy_map(
@@ -116,8 +117,24 @@ function lazy_map(
   cell_map::AbstractArray{<:AffineField})
   cell_∇∇a = cell_∇∇at.args[1]
   cell_∇∇b = lazy_map(k,cell_∇∇a,cell_map)
-  cell_∇∇bt = lazy_map(transpose,cell_∇∇b)
-  cell_∇∇bt
+  return lazy_map(transpose,cell_∇∇b)
+end
+
+function lazy_map(
+  k::Broadcasting{PushNthGradient{N}},
+  cell_∇ⁿa::AbstractArray,
+  cell_map::AbstractArray{<:AffineField}) where N
+  cell_Jt = lazy_map(∇,cell_map)
+  cell_invJt = lazy_map(Operation(pinvJt),cell_Jt)
+  return lazy_map(Broadcasting(Operation(k.f)),cell_∇ⁿa,cell_invJt)
+end
+
+function lazy_map(
+  k::Broadcasting{PushNthGradient{N}},
+  cell_∇ⁿat::LazyArray{<:Fill{typeof(transpose)}},
+  cell_map::AbstractArray{<:AffineField}) where N
+  cell_∇ⁿa = cell_∇ⁿat.args[1]
+  return lazy_map(transpose, lazy_map(k,cell_∇ⁿa,cell_map))
 end
 
 function inverse_map(f::AffineField)

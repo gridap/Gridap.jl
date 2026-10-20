@@ -68,6 +68,26 @@ function Arrays.evaluate!(
   Broadcasting(Operation(a.op))(grad_v,pf_args...)
 end
 
+# N-th gradient: differentiate the reference fields and apply the same pushforward, which acts
+# on the last (value) index. Like the gradient above, exact for affine geometrical maps.
+
+function Arrays.lazy_map(
+  k::Broadcasting{<:NthGradient}, a::LazyArray{<:Fill{Broadcasting{Operation{<:Pushforward}}}}
+)
+  cell_ref_fields, args... = a.args
+  cell_ref_gradient = lazy_map(k,cell_ref_fields)
+  return lazy_map(a.maps.value,cell_ref_gradient,args...)
+end
+
+function Arrays.evaluate!(
+  cache,
+  k::Broadcasting{NthGradient{N}},
+  a::Fields.BroadcastOpFieldArray{<:Pushforward}
+) where N
+  v, pf_args... = a.args
+  Broadcasting(Operation(a.op))(k(v),pf_args...)
+end
+
 # InversePushforward
 
 """
@@ -237,6 +257,31 @@ function evaluate!( # φ -> φ̂ = Jᵀ φ∘F
   return v_phys ⋅ transpose(Jt)
 end
 
+# CoContraVariantPiolaMap
+
+"""
+    struct CoContraVariantPiolaMap <: Pushforward
+
+The mixed Piola map `φ̂ ↦ φ = det(J)⁻¹ J⁻ᵀ φ̂ Jᵀ`, covariant on the first index
+and contravariant on the second, for matrix-valued fields whose
+*normal-tangential* components are the continuous ones. It is the map of the
+Gopalakrishnan--Lederer--Schöberl element.
+Does not preserve symmetry, but preserves the trace.
+"""
+struct CoContraVariantPiolaMap <: Pushforward end
+
+function evaluate!( # φ̂ -> φ = (det(J)⁻¹ J⁻ᵀ φ̂ Jᵀ)∘F⁻¹
+  cache, ::CoContraVariantPiolaMap, v_ref::Number, Jt::Number
+)
+  return ((1. / det(Jt)) * pinvJt(Jt)) ⋅ v_ref ⋅ Jt
+end
+
+function evaluate!( # φ -> φ̂ = det(J) Jᵀ φ∘F J⁻ᵀ
+  cache, ::InversePushforward{CoContraVariantPiolaMap}, v_phys::Number, Jt::Number
+)
+  return (det(Jt) * Jt) ⋅ v_phys ⋅ pinvJt(Jt)
+end
+
 # DoubleContraVariantPiolaMap
 
 struct DoubleContraVariantPiolaMap <: Pushforward end
@@ -253,6 +298,17 @@ function evaluate!( # φ -> φ̂ = det(J)² J⁻¹ φ∘F J⁻ᵀ
 )
   iJt = det(Jt) * pinvJt(Jt)
   return congruent_prod(v_phys, iJt) # symmetry stable iJtᵀ ⋅ v_ref ⋅ iJt
+end
+
+function Fields.DIV(f::LazyArray{<:Fill{Broadcasting{Operation{DoubleContraVariantPiolaMap}}}})
+  ϕrgₖ, Jt = f.args
+  return lazy_map(ContraVariantPiolaMap(), lazy_map(Broadcasting(divergence), ϕrgₖ), Jt)
+end
+
+function Fields.DIV(f::Fill{<:Fields.BroadcastOpFieldArray{DoubleContraVariantPiolaMap}})
+  ϕrgₖ, Jt = f.value.args
+  divϕ = Broadcasting(Operation(ContraVariantPiolaMap()))(Broadcasting(divergence)(ϕrgₖ), Jt)
+  return Fill(divϕ, length(f))
 end
 
 # DoubleCoVariantPiolaMap
@@ -299,7 +355,9 @@ something equivalent to
 
     @inline function scale_setter!(dofscale, face_own_dofs, face_meshsize)
       for (face_dofs, h) in zip(face_own_dofs, face_meshsize)
-        @inbounds dofscale[face_dofs] .= h^(D-1)
+        for dof in face_dofs
+          dofscale[dof] = h^(D-1)
+        end
       end
     end
 
@@ -316,7 +374,10 @@ function get_dofscale_setter_function(::ReferenceFE{D}, pushforward::Pushforward
     # The returned "scale_setter!" anonymous funtion:
     @inline function(dofscale, face_own_dofs, face_meshsize)
       for (face_dofs, h) in zip(face_own_dofs, face_meshsize)
-        @inbounds dofscale[face_dofs] .= scaler(h)
+        hp = scaler(h)
+        for dof in face_dofs
+          dofscale[dof] = hp
+        end
       end
     end
 
@@ -333,4 +394,105 @@ end
 _scaling_function(::DoubleContraVariantPiolaMap, D::Int) = let D=D
   h -> h^(2D-2)
 end
+_scaling_function(::CoContraVariantPiolaMap, D::Int) = let D=D
+  h -> h^D
+end
 
+# The scale setter of a reffe whose DoF `i` scales like `h^exponent[i]`
+function _dofscale_setter_from_exponents(exponent::AbstractVector{<:Integer})
+  let exponent=exponent
+    @inline function(dofscale, face_own_dofs, face_meshsize)
+      for (face_dofs, h) in zip(face_own_dofs, face_meshsize)
+        e, he = 0, one(h)
+        for dof in face_dofs
+          if exponent[dof] != e
+            e = exponent[dof]
+            he = h^e
+          end
+          dofscale[dof] = he
+        end
+      end
+    end
+  end
+end
+
+# The setter of an element whose every DoF is a moment over the face owning it,
+# scaling like the `d`-measure of its `d`-face: `h^d`
+function _face_dim_dofscale_setter(reffe::ReferenceFE)
+  exponent = zeros(Int, num_dofs(reffe))
+  for (face_dofs, d) in zip(get_face_own_dofs(reffe), get_facedims(get_polytope(reffe)))
+    exponent[face_dofs] .= d
+  end
+  _dofscale_setter_from_exponents(exponent)
+end
+
+################################################################################
+# Change of basis of the edge-scaled elements (HHJ, Regge, GLS)
+#
+# The cell-local map. The mesh-level `compute_cell_bases_changes` methods live in
+# src/FESpaces/Pullbacks.jl.
+
+# The change of basis of an element whose edge DoFs are *preserved up to one
+# positive scalar per edge*: diagonal, with `‖J t̂ₑ‖^{±1}` on the DoFs of edge `e`,
+# times `(-1)ⁱ` when the cell traverses that edge against the global direction, and
+# `1` on the interior DoFs. `transposed_inverse` selects `P⁻ᵀ` over `P`.
+#
+# This covers every element whose edge DoF has the form `∫ₑ (a⋅M⋅b) μᵢ ds` for a
+# pair of directions carried dually by that element's push-forward — a normal and a
+# normal under the double contravariant map, two tangents under the double
+# covariant one, one of each under the co-contravariant one. In every case the
+# Jacobians cancel completely,
+#
+#     a⋅M⋅b = (â⋅M̂⋅b̂) / ‖J t̂ₑ‖²,   ds = ‖J t̂ₑ‖ dŝ   ⟹   F∗(ℓ^{e,i}) = ℓ̂^{e,i} / ‖J t̂ₑ‖.
+#
+# That is not a coincidence. A Piola map is *chosen* so that its element's DoF is
+# invariant, so what is left over cannot depend on which pairing was picked — only
+# on the fact that the DoF is an edge moment against a degree-`i` weight. The
+# elements still need their own `compute_cell_bases_changes`, which dispatches on
+# the reference FE name and the push-forward.
+#
+# Since `a⋅M⋅b` is quadratic in the directions, or bilinear with both of them
+# flipping, none of these elements needs a normal or tangent sign convention; the
+# only orientation effect is the parity of the weight, which is the `(-1)ⁱ` above.
+# At order 0 even that disappears.
+struct EdgeScalingChangeOfBasis <: Map
+  tangents::Vector{VectorValue{2,Float64}}
+  edge_dofs::Vector{Vector{Int}}
+  ndofs::Int
+  transposed_inverse::Bool
+end
+
+function EdgeScalingChangeOfBasis(reffe::ReferenceFE, transposed_inverse::Bool)
+  p = get_polytope(reffe)
+  own = get_face_own_dofs(reffe)
+  nv = num_faces(p, 0)
+  edge_dofs = [own[nv+e] for e in 1:num_faces(p, 1)]
+  return EdgeScalingChangeOfBasis(
+    get_edge_tangent(p), edge_dofs, num_dofs(reffe), transposed_inverse
+  )
+end
+
+function return_cache(k::EdgeScalingChangeOfBasis, Jt, σ)
+  CachedArray(zeros(Float64, k.ndofs, k.ndofs))
+end
+
+function evaluate!(cache, k::EdgeScalingChangeOfBasis, Jt, σ)
+  setsize!(cache, (k.ndofs, k.ndofs))
+  M = cache.array
+  fill!(M, zero(eltype(M)))
+  for i in 1:k.ndofs
+    M[i, i] = 1.0
+  end
+
+  for e in eachindex(k.edge_dofs)
+    L = norm(k.tangents[e] ⋅ Jt)   # ‖J t̂ₑ‖, the edge length ratio
+    reversed = σ[e] < 0
+    for (i, d) in enumerate(k.edge_dofs[e])
+      # the i-th DoF of the edge carries the weight of degree i-1
+      s = ifelse(reversed && isodd(i - 1), -1.0, 1.0)
+      M[d, d] = ifelse(k.transposed_inverse, s / L, s * L)
+    end
+  end
+
+  return M
+end

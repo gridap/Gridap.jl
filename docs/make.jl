@@ -40,6 +40,7 @@ pages = [
 makedocs(
   sitename = "Gridap.jl",
   format = Documenter.HTML(
+    assets=["assets/favicon.ico"],
     size_threshold=nothing,
     size_threshold_warn=1000 * 2^10, # 1000 KiB
     search_size_threshold_warn=1000 * 2^10 # 1000 KiB

@@ -298,6 +298,27 @@ function ∇∇(a::CellField)
   similar_cell_field(a,h,get_triangulation(a),DomainStyle(a))
 end
 
+gradient(a::CellField,::Val{1}) = gradient(a)
+gradient(a::CellField,::Val{2}) = ∇∇(a)
+
+"""
+    gradient(a::CellField, Val(N))
+
+`N`-th gradient of `a`, `gradient(a,Val(N))[i₁,…,i_N,c…] = ∂_{i₁}⋯∂_{i_N} a_c`. The reference
+derivatives are computed by the fields themselves or, by default, by forward-mode automatic
+differentiation; the pushforward to the physical domain is implemented for affine cell maps.
+"""
+function gradient(a::CellField,::Val{N}) where N
+  cell_∇ⁿa = lazy_map(Broadcasting(NthGradient{N}()),get_data(a))
+  if DomainStyle(a) == PhysicalDomain()
+    h = cell_∇ⁿa
+  else
+    cell_map = get_cell_map(get_triangulation(a))
+    h = lazy_map(Broadcasting(PushNthGradient{N}()),cell_∇ⁿa,cell_map)
+  end
+  similar_cell_field(a,h,get_triangulation(a),DomainStyle(a))
+end
+
 # This function has to be removed when ∇⋅∇(a) is implemented
 laplacian(a::CellField) = tr(∇∇(a))
 
@@ -496,7 +517,9 @@ Base.:(∘)(f::Function,g::Tuple{Vararg{Union{Function,CellField}}}) = Operation
 
 # Unary ops
 
-for op in (:symmetric_part,:inv,:det,:abs,:abs2,:+,:-,:tr,:transpose,:adjoint,:grad2curl,:real,:imag,:conj)
+for op in (:symmetric_part,:inv,:det,:abs,:abs2,:+,:-,:tr,:transpose,:adjoint,
+  :grad2curl,:real,:imag,:conj,:hodge_star,:vol_coeff,:to_1form,:from_1form
+)
   @eval begin
     ($op)(a::CellField) = Operation($op)(a)
   end
@@ -504,7 +527,9 @@ end
 
 # Binary ops
 
-for op in (:inner,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/)
+for op in (:inner,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/,
+  :interior_product, :sharp, :flat, :∧, :form_inner
+)
   @eval begin
     ($op)(a::CellField,b::CellField) = Operation($op)(a,b)
     ($op)(a::CellField,b::Number) = Operation($op)(a,b)
@@ -710,3 +735,13 @@ function (a::SkeletonPair{<:CellField})(x)
   Evaluating `n(x)` is not allowed. You need to call either `n.⁺(x)` or `n.⁻(x)`.
   """
 end
+
+################################################################################
+# Differential geometry operators needing derivatives or evaluation point
+
+for diff_op in (:exterior_derivative, :codifferential, :hodge_star_form, :koszul)
+  @eval begin
+    $diff_op(a::CellField) = similar_cell_field(a, lazy_map(Broadcasting($diff_op), get_data(a)))
+  end
+end
+

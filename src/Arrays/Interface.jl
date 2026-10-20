@@ -217,6 +217,11 @@ function testvalue(::Type{T}) where T<:Transpose{E,A} where {E,A}
   Transpose(a)
 end
 
+function testvalue(::Type{T}) where T<:Adjoint{E,A} where {E,A}
+  a = testvalue(A)
+  Adjoint(a)
+end
+
 function testvalue(::Type{T}) where T<:Diagonal{E,A} where {E,A}
   a = testvalue(A)
   Diagonal(a)

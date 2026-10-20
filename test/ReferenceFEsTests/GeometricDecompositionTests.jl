@@ -287,6 +287,8 @@ geometrically decomposed for theoretical reason).
 function _test_geometric_decomposition(b,p,conf,
   face_own_funs=get_face_own_funs(b,p,conf), skip_check=false)
 
+  @test has_geometric_decomposition(b,p,L2Conformity())
+
   if !skip_check
     @test has_geometric_decomposition(b,p,conf)
   end

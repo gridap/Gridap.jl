@@ -9,11 +9,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Better control of `num_nearest_vertices` for `KDTreeSearch`. Added a new preference `set_num_nearest_vertices` to set a global default for the library. Since PR[#1312](https://github.com/gridap/Gridap.jl/pull/1312).
+- Implemented arbitrary-order gradients `gradient(f, Val(N))` of fields using forward-mode automatic differentiation. Hand-written kernels still take precedence. Since PR[#1350](https://github.com/gridap/Gridap.jl/pull/1350).
 
 ### Fixed
 
+- `+` and `-` of `HighOrderTensorValue`s with more than 32 components are now type-stable. Since PR[#1350](https://github.com/gridap/Gridap.jl/pull/1350).
+- Implemented `Base.muladd` for `MultiValue`'d inputs, optimizing it using fma if an argument is scalar. Since PR[#1347](https://github.com/gridap/Gridap.jl/pull/1347).
+
+### Changed
+
+- Enabled algebraic operations in residual of a linear `TransientFEOperator` when the space of the corresponding time derivative has zero Dirichlet values. Since PR[#1345](https://github.com/gridap/Gridap.jl/pull/1345).
+
+## [0.20.10] - 2026-09-22
+
+### Added
+
+- Since PR[#1335](https://github.com/gridap/Gridap.jl/pull/1335).
+  - New variants (accessible via kwarg `flavor=:BMM`) of the `BarycentricPΛBasis` and `BarycentricPmΛBasis` bases of the PᵣrΛᵏ and P⁻ᵣrΛᵏ spaces. For form order k=1, both flavors of both bases implement a closed-form change-of-basis with respect to relabelling/permutation of the simplex vertices.
+  - Added the associated reference FEs (named `rotating_pλ`, `trimmed_pλ`) which provide H(curl)-conforming FE spaces on meshes with arbitrary simplex ordering (`NonOriented`).
+  - Initial experimental support (API is still unstable) for tensor calculus and Finite Element Exterior Calulus (FEEC): added `ExteriorFormValue`, a `MultiValue` representing alternating K-forms, with pointwise exterior calculus (wedge, interior product, Hodge star, musical isomorphisms, Koszul operator, pullback/pushforward), and lazy `Field` counterparts for some of them.
+  - New experimental extension for Symbolic.jl (API is still unstable): it provides support of symbolic exterior calculus (exterior derivative, codifferential, Lie derivative).
+- Since PR[#1336](https://github.com/gridap/Gridap.jl/pull/1336), new ReferenceFEs added to the library:
+  - Added `ArgyrisRefFE`, the quintic C¹-conforming Argyris triangle. It comes with the new `H2Conformity`, which can be explicitly requested by passing any of `:C1`, `:H2`, `:Hhess`, `:HHess`.
+  - Added `MorleyRefFE`, the quadratic nonconforming Morley triangle.
+  - Added `HHJRefFE`, `ReggeRefFE` and `GLSRefFE`: the Hellan-Herrmann-Johnson, Regge and Gopalakrishnan-Lederer-Schoberl (second kind) triangles, of any degree `r >= 0`, normal-normal, tangential-tangential and normal-tangential continuous respectively.
+  - Added `DubinerBasis`, the L2-orthonormal (Dubiner/Koornwinder) polynomial basis of `P_K` on the reference simplex in any dimension.
+  - Added `ArnoldWintherNCRefFE` and `ArnoldWintherCRefFE`, the nonconforming (15 DoFs, P2-based) and conforming (24 DoFs, P3-based) Arnold-Winther symmetric stress triangles for mixed elasticity. Both are built as constrained subspaces of a larger prebasis, so `length(get_prebasis(reffe)) > num_dofs(reffe)` for them.
+  - Added `MardalTaiWintherRefFE`, the Mardal-Tai-Winther element on triangles (9 DoFs) and tetrahedra (24 DoFs).
+  - Added the missing `product_rule` methods for `⋅` and `outer`.
+  - Added `CartProdRefFE`, the Cartesian product of reference elements sharing a polytope and a value type, stacked along a new last index: `Float64` becomes `VectorValue{K}` and `VectorValue{d}` becomes `TensorValue{d,K}`.
+
+### Fixed
+
+- Fixed `refine` dropping the `map` and `isperiodic` fields of the `CartesianDescriptor` when refining a `CartesianDiscreteModel`. Since PR[#1334](https://github.com/gridap/Gridap.jl/pull/1334).
+
+## [0.20.9] - 2026-08-17
+
+### Added
+
+- Better control of `num_nearest_vertices` for `KDTreeSearch`. Added a new preference `set_num_nearest_vertices` to set a global default for the library. Since PR[#1312](https://github.com/gridap/Gridap.jl/pull/1312).
+- Add AD support for complex-valued DOFs. Since PR[#1325](https://github.com/gridap/Gridap.jl/pull/1325).
+- Added `Base.adjoint` method for `ArrayBlock`. Since PR[#1325](https://github.com/gridap/Gridap.jl/pull/1325).
+
+### Fixed
+
+- Fixed the dof signs flips for Curl-conforming reference FE bases for elements with `change_dof=true`. The signs are now tested for consistency with the `change_dof=false` version. Since PR [#1315](https://github.com/gridap/Gridap.jl/pull/1315).
 - Fixed evaluation of weak forms on empty trians with inverse maps. Since PR[#1316](https://github.com/gridap/Gridap.jl/pull/1316).
+- Fixed getting field type when changing domain on empty adapted triangulations. Since PR [#1326](https://github.com/gridap/Gridap.jl/pull/1326).
+- Fixed broadcasting of operation on `TensorValue{A,B}` components, and added broadcasting to `Third/HighOrderTensorValue`. Since PR [#1331](https://github.com/gridap/Gridap.jl/pull/1331).
+
+### Changed
+- Changed `product_rule` to allow for numbers of `Complex` type. Since PR[#1325](https://github.com/gridap/Gridap.jl/pull/1325).
+- Simplified the type parameters of `BernsteinBasisOnSimplex` and `BarycentricP(m)ΛBasisChanged`. The change of coordinate matrix is always stored, with `Float64` precision. Since PR[#1330](https://github.com/gridap/Gridap.jl/pull/1330).
 
 ## [0.20.8] - 2026-06-01
 

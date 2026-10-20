@@ -48,4 +48,18 @@ H = evaluate(k,e,E)
 J = evaluate(k,E,E)
 @test G == H == J
 
+A = ArrayBlock(reshape([fill(1.0+im,2,3),fill(0.0,0,0),fill(2.0,2,5), fill(3.0,4,5)],(2,2)), Bool[1 1; 0 1])
+B = ArrayBlock([fill(4.0,3),fill(5.0-im,5)], Bool[1,1])
+
+C = A*B;
+Ct = adjoint(C);
+V = Ct * C;
+
+C2 = A*B;
+Ct2 = transpose(C2);
+conj!.(Ct2.array)
+V2 = Ct2 * C
+
+@test V ≈ V2
+
 end

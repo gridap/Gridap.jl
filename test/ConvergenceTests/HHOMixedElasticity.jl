@@ -160,4 +160,8 @@ el2s, eh1s, hs = convg_test(domain,ncs,order,u,f,C)
 println("Slope L2-norm u: $(slope(hs,el2s))")
 println("Slope H1-norm u: $(slope(hs,eh1s))")
 
+w = 2:length(ncs)
+@test_broken slope(hs[w], el2s[w]) > (order + 2) - 0.2
+@test slope(hs[w], eh1s[w]) > (order + 1) - 0.2
+
 end

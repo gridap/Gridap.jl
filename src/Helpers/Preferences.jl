@@ -47,7 +47,7 @@ end
 """
     const default_num_nearest_vertices
 
-Default value of `num_nearest_vertices` used by [`KDTreeSearch`](@ref). Loaded from
+Default value of `num_nearest_vertices` used by [`KDTreeSearch`](@ref Gridap.CellData.KDTreeSearch). Loaded from
 `Preferences.jl` at package load time. Change with [`set_num_nearest_vertices`](@ref)
 and restart Julia for the new value to take effect.
 """
@@ -60,7 +60,7 @@ end
 """
     set_num_nearest_vertices(n::Int)
 
-Persists a new default for `num_nearest_vertices` used by [`KDTreeSearch`](@ref).
+Persists a new default for `num_nearest_vertices` used by [`KDTreeSearch`](@ref Gridap.CellData.KDTreeSearch).
 Restart Julia for the change to take effect.
 
 A value of 1 (the default) is fast but can fail for points near cell boundaries or mesh

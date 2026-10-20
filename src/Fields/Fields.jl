@@ -2,6 +2,10 @@
 
 $(public_names_in_md(@__MODULE__; change_link=Dict(
   :∇  => "gradient",
+  :ε  => "symmetric_gradient",
+  :Δ  => "laplacian",
+  :𝑑  => "exterior_derivative",
+  :𝓛  => "lie_derivative",
 )))
 """
 module Fields
@@ -36,7 +40,7 @@ import LinearAlgebra: det, inv, transpose, tr, cross
 import LinearAlgebra: ⋅, dot
 
 import Base: +, -, *, /
-import Gridap.TensorValues: ⊗, ⊙, symmetric_part, outer, meas
+import Gridap.TensorValues: ⊗, ⊙, symmetric_part, outer, meas, ∧
 
 import Gridap.Arrays: IndexStyle
 import Gridap.Arrays: return_cache
@@ -76,6 +80,8 @@ export ∇∇
 export gradient_type
 export push_∇
 export push_∇∇
+export NthGradient
+export PushNthGradient
 export pinvJt
 
 export curl
@@ -86,6 +92,8 @@ export DIV
 export Δ
 export ε
 export symmetric_gradient
+export d_0form
+export d_1form
 
 export test_field
 export test_field_array
@@ -100,6 +108,16 @@ export VoidBasis
 export VoidBasisMap
 
 export DensifyInnerMostBlockLevelMap
+
+export exterior_derivative, 𝑑
+export lie_derivative, 𝓛
+export codifferential
+#export DifferentialForm
+#export ExteriorDerivativeForm
+#export CodifferentialForm
+#export KoszulForm
+#export PullbackForm
+#export hodge_star_form
 
 # Re-export from Gridap.Arrays
 export ArrayBlock
@@ -130,5 +148,7 @@ include("FieldArrayBlocks.jl")
 include("InverseFields.jl")
 
 include("DensifyInnerMostBlockLevelMaps.jl")
+
+include("DifferentialForms.jl")
 
 end

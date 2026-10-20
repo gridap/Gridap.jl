@@ -20,4 +20,6 @@ using Test
 
 # @testset "SkeletonCellFieldPair" begin include("SkeletonCellFieldPairTests.jl") end
 
+@testset "DifferentialForms" begin include("DifferentialFormsTests/runtests.jl") end
+
 end # module

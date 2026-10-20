@@ -18,4 +18,8 @@ end
   include("ReinterpretTests.jl")
 end
 
+@testset "DifferentialFormsTests" begin
+  include("DifferentialFormsTests/runtests.jl")
+end
+
 end # module

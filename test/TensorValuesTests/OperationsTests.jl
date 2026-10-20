@@ -518,6 +518,62 @@ c = s4ot + 0
 r = SymFourthOrderTensorValue(1,0,0, 0,.5,0, 0,0,1)
 @test c == r
 
+# muladd with a scalar (used by generic matrix multiplication in LinearAlgebra)
+
+for x in (a, t, st, qt, sk, s4ot)
+  for α in (2, 2.5)
+    c = muladd(α, x, x)
+    r = α*x + x
+    @test isa(c,typeof(r))
+    @test c == r
+
+    c = muladd(x, α, x)
+    r = x*α + x
+    @test isa(c,typeof(r))
+    @test c == r
+  end
+end
+
+# The two tensors carry different eltypes, so the result eltype comes from
+# promoting all three arguments at once.
+for x in (a, t, st, qt, sk, s4ot)
+  for y in (convert(change_eltype(typeof(x),Float32),x), convert(change_eltype(typeof(x),Float64),x))
+    for α in (2, 2.5, 2.0f0, 2+0im)
+      c = muladd(α, x, y)
+      r = α*x + y
+      @test isa(c,typeof(r))
+      @test c == r
+
+      c = muladd(x, α, y)
+      r = x*α + y
+      @test isa(c,typeof(r))
+      @test c == r
+    end
+  end
+end
+
+c = muladd(2, st, t)
+@test isa(c,TensorValue{3,3,Int})
+@test c == 2*st + t
+
+c = muladd(sk, 2, qt)
+@test isa(c,TensorValue{3,3,Int})
+@test c == sk*2 + qt
+
+A = [1.0 2.0; 3.0 4.0]
+u = [VectorValue(1,2), VectorValue(3,4)]
+r = [VectorValue(7.,10.), VectorValue(15.,22.)]
+@test A*u == r
+@test transpose(A)*u == [VectorValue(10.,14.), VectorValue(14.,20.)]
+@test mul!(similar(r), A, u) == r
+@test mul!(copy(r), A, u, 2, 1) == 3*r
+@test A*[u u] == [r r]
+
+T = [t st; sk qt]
+v = [1.0, 2.0]
+@test T*v == [t + 2*st, sk + 2*qt]
+@test T*[v v] == [T*v T*v]
+
 # Dot product (simple contraction)
 
 a = VectorValue(1,2,3)
@@ -1347,6 +1403,16 @@ c = a .* b
 
 @test diag(a) == VectorValue(1,4)
 
+a = TensorValue([1. 1. 1.; 2. 2. 2.])
+b = a .* a
+@test b == TensorValue([1. 1. 1.; 4. 4. 4.])
+@test typeof(b) == TensorValue{2,3,Float64,6}
+
+b = TensorValue{2,3,Int}(1,2,3,4,5,6)
+@test typeof(a .* b) == TensorValue{2,3,Float64,6}
+
+c = TensorValue{3,2,Int}(1,2,3,4,5,6)
+@test_throws ErrorException a .* c
 
 a = SymTensorValue(1,2,4)
 b = SymTensorValue(1.,2.,4.)
@@ -1366,6 +1432,18 @@ c = a .* b
 
 a = SkewSymTensorValue(1,2,3)
 @test diag(a) == zero(VectorValue(1:3...))
+
+
+# Componant wise operations on tensor value of order > 2
+a = ThirdOrderTensorValue{1,3,2}(1,2,1,4,2,2)
+b = a .* a
+@test b == ThirdOrderTensorValue{1,3,2}(1,4,1,16,4,4)
+
+b = ThirdOrderTensorValue{1,3,2,Float64}(1,2,3,4,5,6)
+@test typeof(a .* b) == ThirdOrderTensorValue{1,3,2,Float64,6}
+
+c = ThirdOrderTensorValue{1,2,3,Int}(1,2,3,4,5,6)
+@test_throws ErrorException a .* c
 
 # Operation involving empty tensors (check type promotion)
 
@@ -1642,5 +1720,15 @@ test_op_promote(typeof(v  ⊗ v),  ⊗, v,  v)
 test_op_promote(typeof(v  ⊗ st), ⊗, v,  st)
 test_op_promote(typeof(st ⊗ st), ⊗, st, st)
 test_op_promote(typeof(qt ⊗ qt), ⊗, qt, qt)
+
+# + and - of HighOrderTensorValues with more than 32 components are inferred (high-order
+# gradients reach that size quickly)
+h5 = HighOrderTensorValue{Tuple{2,2,2,2,2}}(ntuple(Float64, 32))
+h4 = HighOrderTensorValue{Tuple{3,3,3,3}}(ntuple(Float64, 81))
+for h in (h5, h4)
+  @test (@inferred h + h) == 2h
+  @test iszero(@inferred h - h)
+  @test (@inferred -h) == (-1)*h
+end
 
 end # module OperationsTests

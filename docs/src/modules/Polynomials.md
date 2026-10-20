@@ -301,11 +301,14 @@ BernsteinBasis(args...)
 ```@docs
 BernsteinBasis
 BernsteinBasisOnSimplex
-BernsteinBasisOnSimplex(::Val,::Type,::Int,vertices=nothing)
+BernsteinBasisOnSimplex(::Val,::Type,::Int)
+Dubiner
+DubinerBasis
+DubinerBasis(::Val,::Type,::Int)
 bernstein_terms
 bernstein_term_id
-BarycentricPmΛBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
-BarycentricPΛBasis(::Val{D},::Type{T},r,k,vertices=nothing; kwargs...) where {D,T}
+BarycentricPmΛBasis(::Val{D},::Type{T},r,k; kwargs...) where {D,T}
+BarycentricPΛBasis(::Val{D},::Type{T},r,k; kwargs...) where {D,T}
 ```
 ## Low level APIs and internals
 
@@ -323,9 +326,10 @@ ModalC0Basis
 ModalC0Basis()
 BarycentricPmΛBasis
 BarycentricPΛBasis
-BarycentricPmΛBasis(::BarycentricPmΛBasis{D,V,LN,B}, ::Vector{Int}...) where {D,V,LN,B}
-BarycentricPΛBasis(::BarycentricPΛBasis{D,V,LN,B}, ::Vector{Int}...) where {D,V,LN,B}
+BarycentricPmΛBasis(::BarycentricPmΛBasis{D,V,B}, ::Vector{Int}...) where {D,V,B}
+BarycentricPΛBasis(::BarycentricPΛBasis{D,V,B}, ::Vector{Int}...) where {D,V,B}
 print_indices
+print_forms
 get_bubbles
 PΛ_bubbles
 PmΛ_bubbles
