@@ -567,7 +567,7 @@ end
 
 # Binary ops
 
-for op in (:outer,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/,
+for op in (:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/,
   :interior_product, :∧, :flat_inner, :flat_alt_inner, :pullback, :pushforward
 )
   @eval begin

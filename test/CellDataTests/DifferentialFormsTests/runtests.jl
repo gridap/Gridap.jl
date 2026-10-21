@@ -8,6 +8,8 @@ using Test
 
 @testset "MeasureConvention" begin include("MeasureConventionTests.jl") end
 
+@testset "MetricFormAssembly" begin include("MetricFormAssemblyTests.jl") end
+
 @testset "DifferentialFormCellFields" begin include("DifferentialFormCellFieldsTests.jl") end
 
 @testset "FeecPoisson" begin include("FeecPoissonTests.jl") end
