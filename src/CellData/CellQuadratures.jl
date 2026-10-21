@@ -149,7 +149,7 @@ function integrate(f::CellField, quad::CellQuadrature)
   b = change_domain(f, quad.trian, quad.data_domain_style)
   x = get_cell_points(quad)
 
-  T = eltype(testitem(b(x)))
+  T = _integrand_value_type(typeof(testitem(b(x))))
   bx = _integrand_coefficient(T, b, quad.trian)(x)
 
   if quad.data_domain_style == quad.integration_domain_style
@@ -167,6 +167,12 @@ function integrate(f::CellField, quad::CellQuadrature)
     @notimplemented
   end
 end
+
+# for MultiField and assembly routine support
+_integrand_value_type(::Type{T}) where T = T
+_integrand_value_type(::Type{<:AbstractArray{T}}) where T = _integrand_value_type(T)
+_integrand_value_type(::Type{<:ArrayBlock{A}}) where A = _integrand_value_type(A)
+_integrand_value_type(::Type{<:ArrayBlockView{A}}) where A = _integrand_value_type(A)
 
 _integrand_coefficient(::Type, b::CellField, trian::Triangulation) = b
 function _integrand_coefficient(
