@@ -71,7 +71,7 @@ graded_tri = simplexify(CartesianDiscreteModel((0,1,0,1),(3,3); map = x -> Vecto
       (:P , D-1, bdm            , r  ),
     )
     for (F,k,proxy_name,proxy_order) in proxies
-      form  = FESpace(model, ReferenceFE(p,F,r,k,Float64; DG_calc=true))
+      form  = FESpace(model, ReferenceFE(p,F,r,k,Float64))
       proxy = FESpace(model, ReferenceFE(p,proxy_name,Float64,proxy_order))
       @test num_free_dofs(form) == num_free_dofs(proxy)
     end
@@ -88,7 +88,7 @@ end
 
 function projection_error(model,p,::Val{D},F,r,::Val{k}) where {D,k}
   q = _full_degree(F,r,k)
-  V = FESpace(model, ReferenceFE(p,F,r,k,Float64; DG_calc=true))
+  V = FESpace(model, ReferenceFE(p,F,r,k,Float64))
   Ω = Triangulation(model)
   dΩ = Measure(Ω, 2*(r+q)+2)
   ω = CellField(_form(Val(k),Val(D),q), Ω)
@@ -124,7 +124,7 @@ graded_quad = CartesianDiscreteModel((0,1,0,1),(4,4); map = x -> VectorValue(x[1
       (D-1, raviart_thomas, r-1),
     )
     for (k,proxy_name,proxy_order) in proxies
-      form  = FESpace(model, ReferenceFE(p,:Q⁻,r,k,Float64; DG_calc=true))
+      form  = FESpace(model, ReferenceFE(p,:Q⁻,r,k,Float64))
       proxy = FESpace(model, ReferenceFE(p,proxy_name,Float64,proxy_order))
       @test num_free_dofs(form) == num_free_dofs(proxy)
     end
@@ -167,7 +167,7 @@ end
     ("cartesian HEX",  cart_hex,    HEX,  3, ((1,1),(1,2),(2,1),(2,2))),
   )
   for (k,r) in krs
-    reffe = ReferenceFE(p,:Q⁻,r,k,Float64; DG_calc=true)
+    reffe = ReferenceFE(p,:Q⁻,r,k,Float64)
     V = FESpace(model, reffe)
     Random.seed!(1234)
     uh = FEFunction(V, rand(num_free_dofs(V)))
@@ -196,7 +196,7 @@ end
 @testset "exact interpolation" begin
   for F in (:P,:P⁻), r in 1:2, k in 0:2
     q = _full_degree(F,r,k)
-    V = FESpace(sorted_tri, ReferenceFE(TRI,F,r,k,Float64; DG_calc=true))
+    V = FESpace(sorted_tri, ReferenceFE(TRI,F,r,k,Float64))
     Ω = Triangulation(sorted_tri); dΩ = Measure(Ω, 2*(r+q)+2)
     f = _form(Val(k),Val(2),q)
     @test relative_error(interpolate(f,V), CellField(f,Ω), dΩ) < TOL
@@ -227,7 +227,7 @@ end
 
   for F in (:P,:P⁻), r in 1:2, k in 0:2
     q = _full_degree(F,r,k)
-    V = FESpace(sorted_tri, ReferenceFE(TRI,F,r,k,Float64; DG_calc=true))
+    V = FESpace(sorted_tri, ReferenceFE(TRI,F,r,k,Float64))
     Ω = Triangulation(sorted_tri); dΩ = Measure(Ω, 2*(r+q)+2)
     f = _form(Val(k),Val(2),q)
     uh = interpolate(f, V); fc = CellField(f, Ω)
@@ -254,7 +254,7 @@ end
 
 @testset "FEEC stiffness matrix of a 0-form space" begin
   Ω = Triangulation(sorted_tri); dΩ = Measure(Ω, 4)
-  V = FESpace(sorted_tri, ReferenceFE(TRI,:P,1,0,Float64; DG_calc=true))
+  V = FESpace(sorted_tri, ReferenceFE(TRI,:P,1,0,Float64))
   U = TrialFESpace(V)
   A = assemble_matrix((u,v) -> ∫( flat_vol_coeff(𝑑(u) ∧ flat_hodge_star(𝑑(v))) )dΩ, U, V)
 
@@ -273,7 +273,7 @@ end
 @testset "Hodge mass matrix is symmetric positive definite" begin
   Ω = Triangulation(sorted_tri); dΩ = Measure(Ω,6)
   for F in (:P,:P⁻), r in 1:2, k in 0:2
-    V = FESpace(sorted_tri, ReferenceFE(TRI,F,r,k,Float64; DG_calc=true))
+    V = FESpace(sorted_tri, ReferenceFE(TRI,F,r,k,Float64))
     u, v = get_trial_fe_basis(V), get_fe_basis(V)
     M = Matrix(assemble_matrix(∫( Operation(eucl)(u,v) )dΩ, V, V))
     @test M ≈ M'
@@ -286,7 +286,7 @@ end
 # ─────────────────────────────────────────────────────────────────────────────
 
 @testset "D-form element" begin
-  V = FESpace(sorted_tri, ReferenceFE(TRI,:P⁻,1,2,Float64; DG_calc=true))
+  V = FESpace(sorted_tri, ReferenceFE(TRI,:P⁻,1,2,Float64))
   # 𝓟⁻₁Λ² is spanned by the piecewise constant densities: one DOF per cell, and
   # none of them glued -- the space is discontinuous.
   @test num_free_dofs(V) == num_cells(sorted_tri)
@@ -298,7 +298,7 @@ end
   # applied; with the identity transport ∫_K φ_K would be proportional to |K|.
   # (The number itself depends on how μ is normalised, so it is not asserted.)
   Ω = Triangulation(graded_tri); dΩ = Measure(Ω,4)
-  W = FESpace(graded_tri, ReferenceFE(TRI,:P⁻,1,2,Float64; DG_calc=true))
+  W = FESpace(graded_tri, ReferenceFE(TRI,:P⁻,1,2,Float64))
   areas = get_array(∫(1)dΩ)
   @test maximum(areas)/minimum(areas) > 4   # the mesh really is graded
 
@@ -327,7 +327,7 @@ hex_model  = CartesianDiscreteModel((0,1,0,1,0,1),(2,2,2))
       (hex_model ,HEX ,3,:Q⁻,1,0), (hex_model ,HEX ,3,:Q⁻,2,3),
       (hex_model ,HEX ,3,:S ,2,0), (hex_model ,HEX ,3,:S ,2,3),
     )
-    reffe = ReferenceFE(p,F,r,k,Float64; DG_calc=true, nodal=true)
+    reffe = ReferenceFE(p,F,r,k,Float64; nodal=true)
     V = FESpace(model, reffe)
 
     # 𝓠⁻ᵣΛᴰ drops to order r-1; the others keep r. 𝓢ᵣΛᴰ ≡ 𝓟ᵣ.
@@ -343,7 +343,7 @@ hex_model  = CartesianDiscreteModel((0,1,0,1,0,1),(2,2,2))
   end
 
   # The modal names on an n-cube go through the `:Q⁻` moment table.
-  @test num_dofs(ReferenceFE(QUAD,:Q⁻,2,0,Float64; DG_calc=true)) == 9
+  @test num_dofs(ReferenceFE(QUAD,:Q⁻,2,0,Float64)) == 9
 end
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -351,7 +351,7 @@ end
 # ─────────────────────────────────────────────────────────────────────────────
 
 @testset "conformity symbols" begin
-  reffe = ReferenceFE(TRI,:P,2,1,Float64; DG_calc=true)
+  reffe = ReferenceFE(TRI,:P,2,1,Float64)
   @test Conformity(reffe) isa PΛConformity
   for sym in (:HΛ, :HLambda)
     @test num_free_dofs(FESpace(sorted_tri,reffe; conformity=sym)) == 72
@@ -378,7 +378,7 @@ end
   # so it must leave the space -- and hence the interpolant -- untouched.
   for F in (:P,:P⁻), r in 1:2, k in 0:2
     q = _full_degree(F,r,k)
-    reffe = ReferenceFE(TRI,F,r,k,Float64; DG_calc=true)
+    reffe = ReferenceFE(TRI,F,r,k,Float64)
     V = FESpace(sorted_tri, reffe; scale_dof=true, global_meshsize=0.5)
     Ω = Triangulation(sorted_tri); dΩ = Measure(Ω, 2*(r+q)+2)
     f = _form(Val(k),Val(2),q)
@@ -387,15 +387,15 @@ end
 
   # Without a `global_meshsize` the local one is the `d`-root of a `d`-volume, which is
   # not available at a vertex -- so only the elements with no vertex owned DOF can do it.
-  @test num_free_dofs(FESpace(sorted_tri, ReferenceFE(TRI,:P,2,1,Float64; DG_calc=true);
+  @test num_free_dofs(FESpace(sorted_tri, ReferenceFE(TRI,:P,2,1,Float64);
                               scale_dof=true)) == 72
-  @test_throws ErrorException FESpace(sorted_tri, ReferenceFE(TRI,:P,2,0,Float64; DG_calc=true);
+  @test_throws ErrorException FESpace(sorted_tri, ReferenceFE(TRI,:P,2,0,Float64);
                                       scale_dof=true)
 end
 
 @testset "Dirichlet boundary conditions" begin
   for (k,ntotal) in ((0,25),(1,72))
-    reffe = ReferenceFE(TRI,:P,2,k,Float64; DG_calc=true)
+    reffe = ReferenceFE(TRI,:P,2,k,Float64)
     V = FESpace(sorted_tri, reffe; dirichlet_tags="boundary")
     @test num_free_dofs(V) + num_dirichlet_dofs(V) == ntotal
     @test num_dirichlet_dofs(V) > 0
@@ -445,7 +445,7 @@ end
 
   # The nodal elements declare a DOF permutation per vertex permutation, so they
   # are glued on any mesh, exactly as their scalar counterparts are.
-  nodal_k0 = ReferenceFE(TRI,:P,3,0,Float64; DG_calc=true, nodal=true)
+  nodal_k0 = ReferenceFE(TRI,:P,3,0,Float64; nodal=true)
   @test Gridap.ReferenceFEs.has_complete_dof_permutations(nodal_k0)
   for model in (reversed, mixed)
     V = FESpace(model, nodal_k0)
@@ -459,9 +459,9 @@ end
   # `k = 0` element -- it is *not* the nodal one, and from r = 3 on it carries
   # two orientation sensitive moments per edge -- and the `D`-forms, which glue
   # nothing but are still read by the gluing code face by face.
-  for reffe in (ReferenceFE(TRI,:P,3,0,Float64; DG_calc=true),
-                ReferenceFE(TRI,:P,2,1,Float64; DG_calc=true),
-                ReferenceFE(TRI,:P,2,2,Float64; DG_calc=true))
+  for reffe in (ReferenceFE(TRI,:P,3,0,Float64),
+                ReferenceFE(TRI,:P,2,1,Float64),
+                ReferenceFE(TRI,:P,2,2,Float64))
     @test !Gridap.ReferenceFEs.has_complete_dof_permutations(reffe)
     @test_throws ErrorException FESpace(mixed, reffe)
   end
@@ -481,7 +481,7 @@ end
     get_reffes(grid), collect(get_cell_type(grid))))
   @test !Gridap.Geometry.has_sorted_cells(permuted)
 
-  reffe = ReferenceFE(QUAD,:Q⁻,2,2,Float64; DG_calc=true, nodal=true)
+  reffe = ReferenceFE(QUAD,:Q⁻,2,2,Float64; nodal=true)
   @test Gridap.ReferenceFEs.has_complete_dof_permutations(reffe)
 
   V = FESpace(permuted, reffe)
@@ -492,7 +492,7 @@ end
 
   # Moment based: identity permutation only, so the `has_sorted_cells` guard refuses it.
   for k in 0:2
-    mom = ReferenceFE(QUAD,:Q⁻,2,k,Float64; DG_calc=true)
+    mom = ReferenceFE(QUAD,:Q⁻,2,k,Float64)
     @test !Gridap.ReferenceFEs.has_complete_dof_permutations(mom)
     @test_throws ErrorException FESpace(permuted, mom)
   end

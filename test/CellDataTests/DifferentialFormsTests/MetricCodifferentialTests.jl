@@ -174,7 +174,7 @@ end
 # assembles is the chart's rather than the euclidean one.
 let tri = simplexify(CartesianDiscreteModel((0,1,0,1),(2,2)))
   ctri = chart_model(tri, g2)
-  reffe = ReferenceFE(TRI,:P⁻,1,1,Float64; DG_calc=true)
+  reffe = ReferenceFE(TRI,:P⁻,1,1,Float64)
   spaces(model) = (V = FESpace(model,reffe); (TrialFESpace(V), V))
   Uc, Vc = spaces(ctri)
   U , V  = spaces(tri)

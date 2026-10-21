@@ -288,29 +288,29 @@ face_cdofs    = get_face_dofs(reffe)
 
 # Factory function: r=1, k=1
 reffe = ReferenceFE(QUAD,nedelec,0)
-@test reffe == ReferenceFE(QUAD,:Q⁻,1,1)
+@test reffe == ReferenceFE(QUAD,:Q⁻,1,1; DG_calc=false)
 
 reffe = ReferenceFE(QUAD,nedelec,Float64,0)
-@test reffe == ReferenceFE(QUAD,:Q⁻,1,1, Float64)
+@test reffe == ReferenceFE(QUAD,:Q⁻,1,1, Float64; DG_calc=false)
 
 reffe = ReferenceFE(TRI,nedelec,0)
-@test reffe == ReferenceFE(TRI,:P⁻,1,1)
+@test reffe == ReferenceFE(TRI,:P⁻,1,1; DG_calc=false)
 
 reffe = ReferenceFE(HEX,nedelec,0)
-@test reffe == ReferenceFE(HEX,:Q⁻,1,1)
+@test reffe == ReferenceFE(HEX,:Q⁻,1,1; DG_calc=false)
 
 reffe = ReferenceFE(TET,nedelec,0)
-@test reffe == ReferenceFE(TET,:P⁻,1,1)
+@test reffe == ReferenceFE(TET,:P⁻,1,1; DG_calc=false)
 
 reffe2 = ReferenceFE(TRI,nedelec2,1)
-@test reffe2 == ReferenceFE(TRI,:P,1,1)
+@test reffe2 == ReferenceFE(TRI,:P,1,1; DG_calc=false)
 
 reffe2 = ReferenceFE(TET,nedelec2,1)
-@test reffe2 == ReferenceFE(TET,:P,1,1)
+@test reffe2 == ReferenceFE(TET,:P,1,1; DG_calc=false)
 
 # Serendipity not implemented
-@test_throws ErrorException ReferenceFE(QUAD,:S,1,1)
-@test_throws ErrorException ReferenceFE(HEX, :S,1,1)
+@test_throws ErrorException ReferenceFE(QUAD,:S,1,1; DG_calc=false)
+@test_throws ErrorException ReferenceFE(HEX, :S,1,1; DG_calc=false)
 
 #display(face_odofs)
 

@@ -130,9 +130,11 @@ Signatures defining a reference finite element (but yet unspecified cell polytop
 - `order::Int`: the polynomial order parameter, or
 - `orders::NTuple{D,Int}`: a tuple of order per space dimension for anysotropic elements.
 
-Keyword arguments are element specific, except
+Most keyword arguments are element specific. The constructor takings a FEEC
+family `F::Symbol` all take:
 - `rotate_90::Bool=false`, set to true for div-conforming FEEC bases in 2D (only if k=1).
-- `nodal::Bool=false`, for FEEC constructor, choice between moment DOFs ([`ModalScalar`](@ref ModalScalarRefFE) FEs) or Lagrangian/node-based DOFs ([`lagrangian`](@ref)/[`serendipity`](@ref)).
+- `nodal::Bool=false`, choice between moment DOFs ([`ModalScalar`](@ref ModalScalarRefFE) FEs) or Lagrangian/node-based DOFs ([`lagrangian`](@ref)/[`serendipity`](@ref)).
+- `DG_calc::Bool=true`, the shape functions are valued in `ExteriorFormValue{k,D,T}`. Set it to `false` for the vector proxy element, whose values are `T` itself, which may then be a tensor type for a Cartesian product space if `k ∈ (0,D)`.
 
 !!! warning
     This method only returns the tuple of its arguments, the actual Reference

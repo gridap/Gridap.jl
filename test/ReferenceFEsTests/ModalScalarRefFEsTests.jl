@@ -11,8 +11,8 @@ nodal = false
 
 p, F = (TRI, :P⁻)
 reffe = ModalScalarRefFE(Float64,p,2; F)
-@test reffe == ReferenceFE(p,F,2,0)
-@test reffe == ReferenceFE(p,F,2,0; nodal)
+@test reffe == ReferenceFE(p,F,2,0; DG_calc=false)
+@test reffe == ReferenceFE(p,F,2,0; nodal, DG_calc=false)
 
 face_own_dofs = Vector{Int}[[1],[2],[3],[4],[5],[6],[]]
 face_dofs = Vector{Int}[[1],[2],[3],[1,2,4],[1,3,5],[2,3,6],[1,2,3,4,5,6]]
@@ -27,19 +27,19 @@ for (p,F) in [
   ]
 
   reffe = ModalScalarRefFE(Float64,p,1; F)
-  @test reffe == ReferenceFE(p,F,1,0)
-  @test reffe == ReferenceFE(p,F,1,0; nodal)
+  @test reffe == ReferenceFE(p,F,1,0; DG_calc=false)
+  @test reffe == ReferenceFE(p,F,1,0; nodal, DG_calc=false)
   test_reference_fe(reffe)
 
   reffe = ModalScalarRefFE(Float64,p,4; F)
-  @test reffe == ReferenceFE(p,F,4,0)
-  @test reffe == ReferenceFE(p,F,4,0; nodal)
+  @test reffe == ReferenceFE(p,F,4,0; DG_calc=false)
+  @test reffe == ReferenceFE(p,F,4,0; nodal, DG_calc=false)
   test_reference_fe(reffe)
 
   V = SymTensorValue{2,Float64}
   reffe = ModalScalarRefFE(V,p,2; F)
-  @test reffe == ReferenceFE(p,F,2,0,V)
-  @test reffe == ReferenceFE(p,F,2,0,V; nodal)
+  @test reffe == ReferenceFE(p,F,2,0,V; DG_calc=false)
+  @test reffe == ReferenceFE(p,F,2,0,V; nodal, DG_calc=false)
   test_reference_fe(reffe)
 end
 
@@ -49,7 +49,7 @@ change_dof=true
 order = 4
 reffe = ModalScalarRefFE(Float64,HEX,order; F=:S)
 test_reference_fe(reffe)
-@test reffe == ReferenceFE(HEX,:S,4,0; nodal)
+@test reffe == ReferenceFE(HEX,:S,4,0; nodal, DG_calc=false)
 @test get_order(reffe) == order
 @test Conformity(reffe,:H1) == GradConformity()
 @test Conformity(reffe,:L2) == L2Conformity()
@@ -58,13 +58,13 @@ test_reference_fe(reffe)
 
 reffe = ModalScalarRefFE(Float64,HEX,order; F=:S, poly_type)
 test_reference_fe(reffe)
-@test reffe == ReferenceFE(HEX,:S,4,0; poly_type)
-@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, nodal)
+@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, DG_calc=false)
+@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, nodal, DG_calc=false)
 
 reffe = ModalScalarRefFE(Float64,HEX,order; F=:S, poly_type, change_dof)
 test_reference_fe(reffe)
-@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, change_dof)
-@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, change_dof, nodal)
+@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, change_dof, DG_calc=false)
+@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, change_dof, nodal, DG_calc=false)
 
 @test_warn "falling back to `change_dof=false`" ModalScalarRefFE(Float64,HEX,order; F=:S, poly_type=Monomial, change_dof)
 

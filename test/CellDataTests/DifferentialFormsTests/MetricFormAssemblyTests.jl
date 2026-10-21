@@ -52,7 +52,7 @@ ctri = chart_model(sorted_tri, x -> g2)
 ctet = chart_model(sorted_tet, x -> g3)
 
 Ωc = Triangulation(ctri); Ω = Triangulation(sorted_tri)
-fe(p,F,r,k) = ReferenceFE(p,F,r,k,Float64; DG_calc=true)
+fe(p,F,r,k) = ReferenceFE(p,F,r,k,Float64)
 spaces(model,reffe) = (V = FESpace(model,reffe); (TrialFESpace(V), V))
 
 # ── The two spellings of a metric bilinear form assemble the same matrix ──────

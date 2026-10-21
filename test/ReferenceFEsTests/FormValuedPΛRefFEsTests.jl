@@ -19,7 +19,7 @@ using Test
 simplex(D) = D == 2 ? TRI : TET
 
 # The form valued FᵣΛᵏ(p), through the FEEC factory.
-pλ(p,r,k,F) = ReferenceFE(p, F, r, k, Float64; DG_calc=true)
+pλ(p,r,k,F) = ReferenceFE(p, F, r, k, Float64)
 
 # ─── TensorPushforward: reduction to the classical Piola maps ────────────────
 # A single map must reproduce every classical Piola map, selected by the
@@ -248,7 +248,7 @@ end
 
 # ─── The FEEC factory hop ────────────────────────────────────────────────────
 
-@testset "ReferenceFE(p,F,r,k,T; DG_calc=true) hops to the right name" begin
+@testset "ReferenceFE(p,F,r,k,T) hops to the right name" begin
   for D in (2,3), (F,k,r,name) in ((:P⁻,1,1,nedelec), (:P,1,1,nedelec2),
                                    (:P⁻,D-1,2,raviart_thomas), (:P,D-1,2,bdm),
                                    (:P⁻,D,2,modal_lagrangian), (:P,D,2,modal_lagrangian))
@@ -285,13 +285,13 @@ end
   end
 
   # Nodal DOFs are meaningless for `0 < k < D`
-  @test_throws AssertionError ReferenceFE(TET, :P, 2, 1, Float64; DG_calc=true, nodal=true)
+  @test_throws AssertionError ReferenceFE(TET, :P, 2, 1, Float64; nodal=true)
 
   # The family still has to match the polytope, at every k -- the form valued
   # branch returns before the proxy table that otherwise checks this
-  @test_throws AssertionError ReferenceFE(QUAD, :P, 2, 0, Float64; DG_calc=true, nodal=true)
-  @test_throws AssertionError ReferenceFE(TRI, :Q⁻, 2, 0, Float64; DG_calc=true, nodal=true)
-  @test_throws AssertionError ReferenceFE(QUAD, :P⁻, 2, 2, Float64; DG_calc=true, nodal=true)
+  @test_throws AssertionError ReferenceFE(QUAD, :P, 2, 0, Float64; nodal=true)
+  @test_throws AssertionError ReferenceFE(TRI, :Q⁻, 2, 0, Float64; nodal=true)
+  @test_throws AssertionError ReferenceFE(QUAD, :P⁻, 2, 2, Float64; nodal=true)
 
   # On the form valued path a tensor `T` is not a Cartesian product request,
   # and a form type must agree with the `(k,D)` asked for
@@ -299,7 +299,7 @@ end
   @test_throws AssertionError ReferenceFE(TET, :P, 2, 1, ExteriorFormValue{2,3,Float64})
   @test_throws AssertionError ReferenceFE(TET, :P, 2, 1, ExteriorFormValue{1,2,Float64})
   # the vector proxy path is unchanged
-  @test num_dofs(ReferenceFE(TET, :P, 2, 0, VectorValue{3,Float64})) == 30
+  @test num_dofs(ReferenceFE(TET, :P, 2, 0, VectorValue{3,Float64}; DG_calc=false)) == 30
 end
 
 # ─── The nodal names, on simplices AND n-cubes ───────────────────────────────
@@ -369,7 +369,7 @@ end
     # factory rather than build 𝓢ᵣ
     top = ReferenceFE(p, serendipity, ExteriorFormValue{D,D,Float64}, order)
     @test num_dofs(top) == binomial(order+D,D)
-    @test num_dofs(top) == num_dofs(ReferenceFE(p, :S, order, D, Float64; DG_calc=true, nodal=true))
+    @test num_dofs(top) == num_dofs(ReferenceFE(p, :S, order, D, Float64; nodal=true))
     @test Conformity(top) isa PΛConformity
     test_reference_fe(top)
   end
@@ -392,7 +392,7 @@ end
 
   # The same elements through the FEEC factory, `nodal=true`
   for (p,D,F) in ((TRI,2,:P),(TET,3,:P⁻),(QUAD,2,:Q⁻),(HEX,3,:Q⁻)), k in (0,D)
-    reffe = ReferenceFE(p, F, 2, k, Float64; DG_calc=true, nodal=true)
+    reffe = ReferenceFE(p, F, 2, k, Float64; nodal=true)
     @test get_form_degree(reffe) == k
     @test Conformity(reffe) isa PΛConformity
     # 𝓟ᵣ⁻Λᴰ = 𝓟ᵣ₋₁ and 𝓠ᵣ⁻Λᴰ = 𝓠ᵣ₋₁, one order below 𝓟ᵣΛ⁰/𝓠ᵣΛ⁰
@@ -402,7 +402,7 @@ end
 
   # 𝓢ᵣΛᴰ ≡ 𝓟ᵣ: the `space=:P` nodal Lagrangian element on an n-cube
   for (p,D) in ((QUAD,2),(HEX,3))
-    reffe = ReferenceFE(p, :S, 2, D, Float64; DG_calc=true, nodal=true)
+    reffe = ReferenceFE(p, :S, 2, D, Float64; nodal=true)
     @test num_dofs(reffe) == binomial(2+D,D)
     @test Conformity(reffe) isa PΛConformity
     @test get_form_degree(reffe) == D
@@ -497,7 +497,7 @@ end
 # only its `orders` matrix differs from the vector proxied one.
 
 ncube(D) = D == 2 ? QUAD : HEX
-qλ(p,r,k) = ReferenceFE(p, :Q⁻, r, k, Float64; DG_calc=true)
+qλ(p,r,k) = ReferenceFE(p, :Q⁻, r, k, Float64)
 
 @testset "Q⁻ᵣΛᵏ(□ᴰ) has the Arnold-Awanou dimension" begin
   for D in (2,3), r in 1:3, k in 0:D

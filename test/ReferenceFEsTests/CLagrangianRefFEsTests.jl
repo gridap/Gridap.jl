@@ -240,31 +240,31 @@ nodal = true
 D = 2
 # o = 0
 reffe = ReferenceFE(TRI,lagrangian,0)
-@test reffe == ReferenceFE(TRI,:P⁻, 1,D; nodal) # r=o-1, k=1
+@test reffe == ReferenceFE(TRI,:P⁻, 1,D; nodal, DG_calc=false) # r=o-1, k=1
 reffe = ReferenceFE(QUAD,lagrangian,0)
-@test reffe == ReferenceFE(QUAD,:Q⁻,1,D; nodal) # r=o+1, k=1
+@test reffe == ReferenceFE(QUAD,:Q⁻,1,D; nodal, DG_calc=false) # r=o+1, k=1
 
 reffe = ReferenceFE(TRI,lagrangian,0; poly_type=Bernstein)
-@test reffe == ReferenceFE(TRI,:P⁻, 1,D; nodal, poly_type=Bernstein) # r=o-1, k=1
+@test reffe == ReferenceFE(TRI,:P⁻, 1,D; nodal, poly_type=Bernstein, DG_calc=false) # r=o-1, k=1
 reffe = ReferenceFE(QUAD,lagrangian,0; poly_type=Legendre)
-@test reffe == ReferenceFE(QUAD,:Q⁻,1,D; nodal, poly_type=Legendre) # r=o+1, k=1
+@test reffe == ReferenceFE(QUAD,:Q⁻,1,D; nodal, poly_type=Legendre, DG_calc=false) # r=o+1, k=1
 
 V = SymTensorValue{2,Float64}
 reffe = ReferenceFE(TRI, lagrangian,V,0; poly_type=Bernstein)
-@test reffe == ReferenceFE(TRI,:P⁻, 1,D,V; nodal, poly_type=Bernstein) # r=o-1, k=1
+@test reffe == ReferenceFE(TRI,:P⁻, 1,D,V; nodal, poly_type=Bernstein, DG_calc=false) # r=o-1, k=1
 reffe = ReferenceFE(QUAD,lagrangian,V,0; poly_type=Legendre)
-@test reffe == ReferenceFE(QUAD,:Q⁻,1,D,V; nodal, poly_type=Legendre) # r=o+1, k=1
+@test reffe == ReferenceFE(QUAD,:Q⁻,1,D,V; nodal, poly_type=Legendre, DG_calc=false) # r=o+1, k=1
 
 @test_throws "Monomial" ReferenceFE(WEDGE,lagrangian,0; poly_type=Legendre)
 
 # o = 1
 reffe = ReferenceFE(TRI,lagrangian,1)
-@test reffe == ReferenceFE(TRI,:P⁻,1,0; nodal)  # r=o,   k=0
-@test reffe == ReferenceFE(TRI,:P⁻,2,D; nodal)  # r=o+1, k=D
-@test reffe == ReferenceFE(TRI,:P, 1,0; nodal)  # r=o,   k=0
-@test reffe == ReferenceFE(TRI,:P, 1,D; nodal)  # r=o,   k=D
+@test reffe == ReferenceFE(TRI,:P⁻,1,0; nodal, DG_calc=false)  # r=o,   k=0
+@test reffe == ReferenceFE(TRI,:P⁻,2,D; nodal, DG_calc=false)  # r=o+1, k=D
+@test reffe == ReferenceFE(TRI,:P, 1,0; nodal, DG_calc=false)  # r=o,   k=0
+@test reffe == ReferenceFE(TRI,:P, 1,D; nodal, DG_calc=false)  # r=o,   k=D
 reffe = ReferenceFE(QUAD,lagrangian,1)
-@test reffe == ReferenceFE(QUAD,:Q⁻, 1,0; nodal)# r=o,   k=0
-@test reffe == ReferenceFE(QUAD,:Q⁻, 2,D; nodal)# r=o+1, k=D
+@test reffe == ReferenceFE(QUAD,:Q⁻, 1,0; nodal, DG_calc=false)# r=o,   k=0
+@test reffe == ReferenceFE(QUAD,:Q⁻, 2,D; nodal, DG_calc=false)# r=o+1, k=D
 
 end # module
