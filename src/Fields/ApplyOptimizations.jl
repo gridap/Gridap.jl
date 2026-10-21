@@ -227,7 +227,7 @@ for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗)
   end
 end
 
-# Hessian rules 
+# Hessian rules
 for op in (:+,:-)
   @eval begin
 
@@ -302,6 +302,35 @@ for (op,nargs) in (
       $arity_check
       ∂f = map(i->lazy_map(k,i), f)
       lazy_map(Broadcasting(Operation(partials_op_rule($op))), ∂f...)
+    end
+
+  end
+end
+
+# Partial derivative rules for non jointly linear operations, N=1
+for (op,nargs) in (
+  (:inv,1),(:_sqrt_abs_det,1),(:hodge_star,nothing)
+)
+  arity_check = isnothing(nargs) ? nothing : :( @notimplementedif length(f) != $nargs )
+  @eval begin
+
+    function lazy_map(
+      k::PartialDerivatives{1}, a::LazyArray{<:Fill{Operation{typeof($op)}}})
+
+      f = a.args
+      $arity_check
+      ∂f = map(i->lazy_map(k,i), f)
+      lazy_map(Operation(partials_op_rule(Val(1),$op)), f..., ∂f...)
+    end
+
+    function lazy_map(
+      k::Broadcasting{PartialDerivatives{1}},
+      a::LazyArray{<:Fill{Broadcasting{Operation{typeof($op)}}}})
+
+      f = a.args
+      $arity_check
+      ∂f = map(i->lazy_map(k,i), f)
+      lazy_map(Broadcasting(Operation(partials_op_rule(Val(1),$op))), f..., ∂f...)
     end
 
   end

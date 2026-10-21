@@ -4,6 +4,7 @@ using Test
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
+using Gridap.TensorValues: _sqrt_abs_det
 
 using StaticArrays
 using ForwardDiff
@@ -505,5 +506,43 @@ let g = g2F(x2), ∂g = partial_derivatives(g2F,x2)
   @test_throws DimensionMismatch partials_to_codifferential(
     partial_derivatives(f1,x2), f1(x2), Γ3, g)
 end
+
+# Derivative rules of the metric dependent operations
+
+# `inv`, `√|det g|` and `⋆` are not linear in the metric, so their rules read
+# its value as well as its derivatives
+function test_metric_partials_rules(gF, x::Point{D}) where D
+  g, ∂g = gF(x), partial_derivatives(gF, x)
+
+  inv_g, sq_g = y -> inv(gF(y)), y -> _sqrt_abs_det(gF(y))
+  ∂inv = partials_op_rule(Val(1), inv)(g, ∂g)
+  ∂sq  = partials_op_rule(Val(1), _sqrt_abs_det)(g, ∂g)
+
+  @test ∂inv ≈ partial_derivatives(inv_g, x)
+  @test typeof(∂inv) === typeof(partial_derivatives(inv_g, x))
+  @test ∂sq ≈ partial_derivatives(sq_g, x)
+  @test typeof(∂sq) === typeof(partial_derivatives(sq_g, x))
+
+  # `⋆ω = vol ⋆ᴱ(Mᴷω)` raises the K indices of ω through the K-th compound of
+  # the metric, so the rule is a product rule over `vol` and the rows of each
+  # minor of that compound
+  for K in 0:D, V in (Cov, Con)
+    f = y -> mk(SkewSymKTensorValue{V,K,V(D)}, y)
+    star = y -> hodge_star(f(y), gF(y), inv_g(y), sq_g(y))
+    ∂star = partials_op_rule(Val(1), hodge_star)(
+      f(x), g, inv_g(x), sq_g(x), partial_derivatives(f, x), ∂g, ∂inv, ∂sq)
+    @test ∂star ≈ partial_derivatives(star, x)
+    @test typeof(∂star) === typeof(partial_derivatives(star, x))
+  end
+
+  # The rule reads the metric of the variance `⋆` raises and the volume factor
+  # off its arguments, and derives neither of the two from the other
+  f1 = y -> mk(CoVectorValue{Cov(D)}, y)
+  @test_throws ErrorException partials_op_rule(Val(1), hodge_star)(
+    f1(x), g, partial_derivatives(f1, x), ∂g)
+end
+
+test_metric_partials_rules(g2F, x2)
+test_metric_partials_rules(g3F, x3)
 
 end # module

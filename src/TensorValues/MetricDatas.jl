@@ -93,9 +93,9 @@ function Base.getproperty(md::MetricData, name::Symbol)
     sqrt_abs_g = getfield(md, :sqrt_abs_g)
     !isnothing(sqrt_abs_g) && return sqrt_abs_g
     g = getfield(md, :g)
-    !isnothing(g) && return sqrt(abs(det(g)))
+    !isnothing(g) && return _sqrt_abs_det(g)
     g_inv = getfield(md, :g_inv)
-    return inv(sqrt(abs(det(g_inv))))
+    return inv(_sqrt_abs_det(g_inv))
 
   else
     throw(Base.FieldError(MetricData, name))
@@ -113,6 +113,11 @@ function Base.getproperty(::MetricData{Nothing,Nothing,T}, name::Symbol) where T
     throw(Base.FieldError(MetricData, name))
   end
 end
+
+# The volume density √|det g| of a metric tensor. A function of its own so
+# that `partial_derivatives` of an expression holding it has a rule to apply,
+# see [`partials_op_rule`](@ref).
+_sqrt_abs_det(g::SymTensorValue) = sqrt(abs(det(g)))
 
 function _check_metric_dim(g_or_ginv::SymTensorValue{Dg}, D::Int) where Dg
   Int(Dg) == D || throw(DimensionMismatch(

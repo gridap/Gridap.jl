@@ -917,6 +917,22 @@ for (op,nargs) in (
   end
 end
 
+# Partial derivatives of the non jointly linear operations, N=1
+for (op,nargs) in (
+  (:inv,1),(:_sqrt_abs_det,1),(:hodge_star,nothing)
+)
+  arity_check = isnothing(nargs) ? nothing : :( @notimplementedif length(f) != $nargs )
+  @eval begin
+    function evaluate!(
+      cache,k::Broadcasting{PartialDerivatives{1}},a::BroadcastOpFieldArray{typeof($op)})
+      f = a.args
+      $arity_check
+      ∂f = map(k, f)
+      Broadcasting(Operation(partials_op_rule(Val(1),$op)))(f..., ∂f...)
+    end
+  end
+end
+
 # Partial derivatives of the product, orders 1 and 2
 for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗,:∧)
   @eval begin

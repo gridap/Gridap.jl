@@ -31,8 +31,6 @@ function _metric_data(trian::Triangulation, model, model_cell_g::AbstractArray)
   (g, g_inv, Operation(_sqrt_abs_det)(g))
 end
 
-_sqrt_abs_det(g::SymTensorValue) = sqrt(abs(det(g)))
-
 """
     get_metric_partials_data(trian::Triangulation)
 
