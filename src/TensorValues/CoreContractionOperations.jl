@@ -167,6 +167,23 @@ the specific functions above if possible), but is used as default generic implem
   iszero(Nr) ? :( $(comps[1]) ) : :( $V($(comps...)) )
 end
 
+# This method is for the material hodge stars: the most general way to transform
+# a K form into a D-K form is to contract it with a (K-form)⊗(K-vector) tensor
+@inline function contracted_product(
+  ::Val{K},
+  a::ProductTensorValue{A,B},
+  b::ExteriorFormValue{K,Db}
+  ) where {K,A,Da,B<:ExteriorVectorValue{K,Da},Db}
+
+
+  _msg = "A $K-vector block of dimension $Da does not contract a $K-form of dimension $Db."
+  Da == Db || return :( throw(DimensionMismatch($_msg)) )
+
+  T = Base.promote_op(*, eltype(a), eltype(b))
+  iszero(num_indep_components(A)) && return zero(make_concretetype(A{T}))
+  make_concretetype(A{T})(_map_second_factor(x -> _flat_inner_body(x, b), a).data)
+end
+
 ###############################################################
 # General tensor contraction (arbitrary index pairs)
 ###############################################################
@@ -279,7 +296,7 @@ tensor_contraction(a::MultiValue, b::MultiValue, ia::Int, ib::Int) =
         for (k, pos) in enumerate(Ib)
           b_idx[pos] = ciC[k]
         end
-        push!(summands, :(a[$a_idx...]*b[$b_idx...]) )
+        push!(summands, :(a[$(a_idx...)]*b[$(b_idx...)]) )
       end
       push!(comps, Expr(:call, :+, summands...))
     end
@@ -375,7 +392,7 @@ tensor_contraction(a::MultiValue, i::Int, j::Int) =
       for (k, pos) in enumerate(J)
         a_idx[pos] = ciC[k]
       end
-      push!(summands, :(a[$a_idx...]))
+      push!(summands, :(a[$(a_idx...)]))
     end
     push!(comps, Expr(:call, :+, summands...))
   end

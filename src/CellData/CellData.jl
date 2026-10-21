@@ -112,11 +112,15 @@ export SkeletonCellFieldPair
 export d_0form
 export d_1form
 
+export material_hodge_star
+
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
 
 include("CellMetrics.jl")
+
+include("MaterialHodgeStars.jl")
 
 include("Interpolation.jl")
 
