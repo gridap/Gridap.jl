@@ -135,7 +135,7 @@ function get_cell_points(a::CellQuadrature)
   CellPoint(a.cell_point,a.trian,a.data_domain_style)
 end
 
-function integrate(f::CellField,quad::CellQuadrature)
+function integrate(f::CellField, quad::CellQuadrature)
   trian_f = get_triangulation(f)
   trian_x = get_triangulation(quad)
 
@@ -146,23 +146,17 @@ function integrate(f::CellField,quad::CellQuadrature)
     """
   @check is_change_possible(trian_f,trian_x) msg
 
-  b = change_domain(f,quad.trian,quad.data_domain_style)
+  b = change_domain(f, quad.trian, quad.data_domain_style)
   x = get_cell_points(quad)
   bx = b(x)
-  if quad.data_domain_style == PhysicalDomain() &&
-            quad.integration_domain_style == PhysicalDomain()
-    lazy_map(IntegrationMap(),bx,quad.cell_weight)
+
+  if quad.data_domain_style == quad.integration_domain_style
+    lazy_map(IntegrationMap(), bx, quad.cell_weight)
   elseif quad.data_domain_style == ReferenceDomain() &&
             quad.integration_domain_style == PhysicalDomain()
     cell_Jt = get_cell_jac(quad.trian)
-    cell_Jtx = lazy_map(evaluate,cell_Jt,quad.cell_point)
-    lazy_map(IntegrationMap(),bx,quad.cell_weight,cell_Jtx)
-  elseif quad.data_domain_style == ReferenceDomain() &&
-            quad.integration_domain_style == ReferenceDomain()
-    cell_map = Fill(GenericField(identity),length(bx))
-    cell_Jt = lazy_map(∇,cell_map)
-    cell_Jtx = lazy_map(evaluate,cell_Jt,quad.cell_point)
-    lazy_map(IntegrationMap(),bx,quad.cell_weight,cell_Jtx)
+    cell_Jtx = lazy_map(evaluate, cell_Jt, quad.cell_point)
+    lazy_map(IntegrationMap(), bx, quad.cell_weight, cell_Jtx)
   else
     @notimplemented
   end
