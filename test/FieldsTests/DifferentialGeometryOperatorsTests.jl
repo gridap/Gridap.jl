@@ -444,4 +444,66 @@ let data = ntuple(n -> Float64(n), 6)
   @test_throws DimensionMismatch partials_to_Christoffel_1(∂mix)
 end
 
+# Codifferential in a chart, from the partials of the form, the form itself and
+# the Christoffel symbols of the metric
+
+function test_curved_codifferential(K, gF, x::Point{D}) where D
+  f = y -> mk(ExteriorFormValue{K,Cov(D)}, y)
+  g, ∂g = gF(x), partial_derivatives(gF, x)
+  g_inv = inv(g)
+  Γ = partials_to_Christoffel_2(∂g, g_inv)
+  ω, ∂ω = f(x), partial_derivatives(f, x)
+  δω = partials_to_codifferential(∂ω, ω, Γ, g, g_inv)
+
+  @test typeof(δω) === ExteriorFormValue{K-1,Cov(D),Float64,binomial(D,K-1)}
+  @test (@inferred partials_to_codifferential(∂ω, ω, Γ, g, g_inv)) === δω
+  # the inverse metric is taken from the metric data in whichever form it comes
+  @test partials_to_codifferential(∂ω, ω, Γ, g) ≈ δω
+  @test partials_to_codifferential(∂ω, ω, Γ, compute_metric_data(g)) ≈ δω
+
+  # δ is (-1)^{D(K+1)+1} ⋆d⋆ for a metric of index 0, the definition the three
+  # Christoffel terms answer to: one per index of ω
+  starf = y -> hodge_star(f(y), gF(y))
+  dstar = partials_to_exteriorderivative(partial_derivatives(starf, x))
+  @test δω ≈ (isodd(D*(K+1)+1) ? -1 : 1) * hodge_star(dstar, g)
+
+  # vanishing symbols and the identity metric give the euclidean kernel back
+  Γ0 = zero(ProductTensorValue{ContraVectorValue{Con(D)},SymTensorValue{Cov(D)},Float64})
+  δI, δE = partials_to_codifferential(∂ω, ω, Γ0, I), partials_to_flat_codifferential(∂ω)
+  @test typeof(δI) === typeof(δE)
+  # the zero terms the full `g^{jm}` emits may carry either sign of zero
+  @test δI == δE
+end
+
+for K in 1:2
+  test_curved_codifferential(K, g2F, x2)
+end
+for K in 1:3
+  test_curved_codifferential(K, g3F, x3)
+end
+
+let g = g2F(x2), ∂g = partial_derivatives(g2F,x2)
+  Γ = partials_to_Christoffel_2(∂g, inv(g))
+
+  # The codifferential of a 0-form would be a (-1)-form here too
+  f0 = y -> mk(ExteriorFormValue{0,cov2}, y)
+  @test_throws Exception partials_to_codifferential(
+    partial_derivatives(f0,x2), f0(x2), Γ, g)
+
+  # A form of degree above D has no component, so no metric is read at all
+  fe3 = y -> zero(ExteriorFormValue{3,cov2,Float64,0})
+  δe = partials_to_codifferential(partial_derivatives(fe3,x2), fe3(x2), Γ, g)
+  @test typeof(δe) === ExteriorFormValue{2,cov2,Float64,1}
+  @test iszero(δe)
+
+  # The symbols have two covariant indices and one contravariant one, of the
+  # dimension the form lives in
+  f1 = y -> mk(CoVectorValue{cov2}, y)
+  @test_throws ArgumentError partials_to_codifferential(
+    partial_derivatives(f1,x2), f1(x2), partials_to_Christoffel_1(∂g), g)
+  Γ3 = partials_to_Christoffel_2(partial_derivatives(g3F,x3), inv(g3F(x3)))
+  @test_throws DimensionMismatch partials_to_codifferential(
+    partial_derivatives(f1,x2), f1(x2), Γ3, g)
+end
+
 end # module
