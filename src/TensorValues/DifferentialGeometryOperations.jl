@@ -1593,7 +1593,8 @@ end
     partials_to_codifferential(∂ω)
 
 Value of the flat codifferential `δω` of a K-form `ω` at `x`, a (K-1)-form, from
-its first order partial derivatives `∂ω = partial_derivatives(ω)(x)`.
+its first order partial derivatives `∂ω = partial_derivatives(ω)(x)`. `K ≥ 1`,
+since no value type holds a (-1)-form.
 
 `δω` contracts the derivation index of `∂ω` with the first index of `ω`,
 
@@ -1602,7 +1603,8 @@ its first order partial derivatives `∂ω = partial_derivatives(ω)(x)`.
 @generated function partials_to_codifferential(
   ∂ω::ProductTensorValue{<:MultiValue{Tuple{Dw}},ExteriorFormValue{K,Dw},T}) where {K,Dw,T}
 
-  K >= 1 || return :(@unreachable "the codifferential requires K ≥ 1")
+  K >= 1 || return :(@unreachable $("δ of a 0-form is the zero (-1)-form, which has no value type: \
+  a degree K form is sized `NTuple{K,D}`, and no tuple has a negative length"))
   D = Int(Dw)
   Km1 = K - 1
   ncomp = binomial(D, Km1)

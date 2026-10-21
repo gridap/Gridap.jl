@@ -87,6 +87,10 @@ cδω   = array_cache(δωx)
 δv = evaluate(codifferential(ωfld), x_c)
 @test δv.data[1] ≈ -0.375   atol=1e-8
 
+# `δ` of a 0-form is the zero (-1)-form, which has no value type
+ω0 = CellField(x -> ExteriorFormValue{0,cov2}(x[1]*x[2]), Ω, PhysicalDomain())
+@test_throws ErrorException codifferential(ω0)(pts)
+
 # ── hodge_star (value level via Operation) ────────────────────────────────────
 
 star_ω = flat_hodge_star(ω)

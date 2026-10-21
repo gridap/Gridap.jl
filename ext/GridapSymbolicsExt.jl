@@ -67,7 +67,7 @@ end
 # ============================================================
 
 function codifferential(ω::ExteriorFormValue{K,Dw,Symbolics.Num}) where {K,Dw}
-  @assert K >= 1 "codifferential requires K ≥ 1"
+  @assert K >= 1 "δ of a 0-form is the zero (-1)-form, which has no value type"
   D   = Int(Dw)
   sgn = iseven(D*(K-1) + 1) ? 1 : -1
   sgn * exterior_derivative(flat_hodge_star(ω))  |> flat_hodge_star
