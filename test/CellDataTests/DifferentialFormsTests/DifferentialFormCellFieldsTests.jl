@@ -12,7 +12,7 @@ using Gridap.CellData: GenericCellField, get_data
 using FillArrays: Fill
 
 # Form-valued CellFields: construction, evaluation, form-level and
-# value-level operators, the vol_coeff/to_1form/from_1form bridges, and
+# value-level operators, the flat_vol_coeff/to_1form/from_1form bridges, and
 # near-zero-allocation cell traversal.
 #
 # The 1-form ω = 3xy dx¹ + x² dx²  is used throughout.
@@ -171,10 +171,10 @@ cκ    = array_cache(κωx)
 qp = get_data(change_domain(pts, PhysicalDomain()))[1]
 @test all(κval0[i].data[1] ≈ qp[i]⋅qp[i] for i in eachindex(κval0, qp))
 
-# ── vol_coeff (CellField level) ───────────────────────────────────────────────
+# ── flat_vol_coeff (CellField level) ──────────────────────────────────────────
 
 ω2_cf = CellField(x -> ExteriorFormValue{2,Cov(2)}((7.0,)), Ω, PhysicalDomain())
-scalar_cf = vol_coeff(ω2_cf)
+scalar_cf = flat_vol_coeff(ω2_cf)
 @test scalar_cf isa CellField
 
 svals  = scalar_cf(pts)
@@ -200,11 +200,11 @@ cv    = array_cache(vx)
 vval0 = getindex!(cv, vx, 1)
 @test typeof(vval0) <: AbstractArray{<:VectorValue{2}}
 
-# ── Integration: ∫(vol_coeff(ω ∧ ⋆ω)) dΩ equals ∫‖ω‖² dΩ ────────────────────
+# ── Integration: ∫(flat_vol_coeff(ω ∧ ⋆ω)) dΩ equals ∫‖ω‖² dΩ ───────────────
 # ω = x¹ dx¹ + x² dx² on [0,1]²
 # ‖ω‖² = x¹² + x²²; ∫₀¹∫₀¹(x²+y²) dx dy = 1/3+1/3 = 2/3
 dΩ = Measure(Ω, 4)
-norm2 = sum(∫(vol_coeff(ω_id_cf ∧ flat_hodge_star(ω_id_cf))) * dΩ)
+norm2 = sum(∫(flat_vol_coeff(ω_id_cf ∧ flat_hodge_star(ω_id_cf))) * dΩ)
 @test norm2 ≈ 2/3   atol=1e-4
 
 # ── Near-zero-allocation cell traversal ──────────────────────────────────────
@@ -295,7 +295,7 @@ end
 # the pushforward: the FE basis lives in the reference domain.
 
 U = TrialFESpace(V)
-A_dg = assemble_matrix((u,v) -> ∫( vol_coeff(𝑑(u) ∧ flat_hodge_star(𝑑(v))) )dΩ, U, V)
+A_dg = assemble_matrix((u,v) -> ∫( flat_vol_coeff(𝑑(u) ∧ flat_hodge_star(𝑑(v))) )dΩ, U, V)
 A_eu = assemble_matrix((u,v) -> ∫( ∇(u)⋅∇(v) )dΩ, U, V)
 @test A_dg ≈ A_eu
 

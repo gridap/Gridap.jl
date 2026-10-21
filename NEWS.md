@@ -15,10 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Initial experimental support (API is still unstable) for tensor calculus and Finite Element Exterior Calulus (FEEC): added `ExteriorFormValue`, a `MultiValue` representing alternating K-forms, with pointwise exterior calculus (wedge, interior product, Hodge star, musical isomorphisms, Koszul operator, pullback/pushforward), and lazy `Field` counterparts for some of them.
   - New experimental extension for Symbolic.jl (API is still unstable): it provides support of symbolic exterior calculus (exterior derivative, codifferential, Lie derivative).
   - Initial experimental support (API is still unstable) for varianced tensor dimensions: a `MultiValue` size may hold `Cov`/`Con` dimensions in addition to plain `Int`s, and the operations of `TensorValues` honour them. Added the predicates `can_contract`, `is_same_variance` and `inverse_variance`, and `tensor_type`, which counts the dimensions of each variance.
+  - Added `from_0form`, the inverse of `to_0form`.
+  - `∫( … )dΩ` now can integrate an `ExteriorFormValue{K,D}` for `K=0` or `D`. `from_0form` is implicitly added to a 0-form. So `∫( 𝑑(u) ∧ ⋆𝑑(v) )dΩ`, `∫( 𝑑(u) ⨟ 𝑑(v) )dΩ` and `∫( from_0form(⋆(𝑑(u) ∧ ⋆𝑑(v))) )dΩ` are equivalent, although the first is most efficient.
 - Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX):
   - Added abstraction for the variance of a tensor, `Cov` for covariant and `Con` for contravariant, optionally wrapping the dimension `Int` in the type parameters of `MultiValue` tensors. New associated `TensorValues` APIs: `Dim`, `is_same_variance`, `can_contract`, `inverse_variance`.
   - The existing tensor operations are generalized to tensors with variance when they are strictly consistent with it, in a fully retro-compatible way.
-  - The new tensor calculus operation strictly require varianced tensors to be applied, `Int` is not assumed `Con`. These are `apply_tensor`, `flat`, `sharp`, `vol_coef`, `interior_product`, `hodge_star`, `pullback`, `koszul`, `∧`.
+  - The new tensor calculus operation strictly require varianced tensors to be applied, `Int` is not assumed `Con`. These are `apply_tensor`, `flat`, `sharp`, `flat_vol_coeff`, `interior_product`, `hodge_star`, `pullback`, `koszul`, `∧`.
   - Operation depending on the metric for correctness on tensors with variance, `inner`, `alt_inner`, `hodge_star`, require the metric (inverse) tensor to be given explicitly, and it must have correct variance. Now methods `flat_inner`/`⊙ᴱ`, `flat_alt_inner`/`⨟ᴱ`, `flat_hodge_star`/`⋆ᴱ` assume the metric is trivial (Euclidean space). Passing `LinearAlgebra.I` as the metric of `hodge_star`, `flat`, `sharp` or `alt_inner` delegates to their Euclidean counterpart, the latter two newly added as `flat_flat`/`♭ᴱ` and `flat_sharp`/`♯ᴱ`.
   - `ExteriorFormValue` is now an alias of the new `SkewSymKTensorValue{K,D,T,L,V}`, a totally skew symmetric order `K` tensor whose indices all have all variance `V`. The alias `ExteriorVectorValue{K,D,T,L}` represents a K-vector.
   - Added `SymNTensorValue`, a `MultiValue` representing a fully symmetric tensor of arbitrary order `N` and dimension `D`, storing its `binomial(D+N-1,N)` independent components. Added its abstract supertype `AbstractSymMultiValue`, and the helpers `sorted_multisets` and `multiset_index` that enumerate and index the independent components.
@@ -29,7 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX):
+- Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX) (number to be filled when the PR is opened).
+  - On a model whose `get_cell_metric` is not the identity, `∫( … )dΩ` integrates against the volume element of the chart, `meas(Jt)·√|det g|`: a scalar or 0-form integrand now carries the `√|det g|` factor, and code writing that factor into its integrands must drop it. An integrand that is a top form takes the euclidean element, the Hodge star that produced it carrying the factor already.
   - `AbstractSymTensorValue` now subtypes `AbstractSymMultiValue` instead of `MultiValue` directly.
   - `isless(::Number, ::MultiValue)` and `(<=)(::Number, ::MultiValue)` now compare against every component instead of the stored ones only, which fixes them on `SkewSymTensorValue`.
   - `(\)(a::MultiValue, b::MultiValue)` no longer types its result after `b`. `inv(a)⋅b` is not symmetric even when `b` is, and a `SymTensorValue` result silently dropped the asymmetry.

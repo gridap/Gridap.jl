@@ -624,7 +624,7 @@ function product_rule(::typeof(⋅),f1::TensorValue,f2::VectorValue,∇f1,∇f2)
   ∇f1⋅f2 + ∇f2⋅transpose(f1)
 end
 
-for op in (:*,:⋅,:⊙,:⊗)
+for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗)
   @eval begin
     function gradient(a::OperationField{typeof($op)})
       f = a.fields
@@ -1148,7 +1148,7 @@ for (op,nargs) in (
 end
 
 # Order 1 and order 2 Leibniz rules for the bilinear operations
-for op in (:*,:⋅,:⊙,:⊗,:∧)
+for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗,:∧)
   @eval begin
     function (k::PartialDerivatives{1})(a::OperationField{typeof($op)})
       fs = a.fields
@@ -1168,7 +1168,7 @@ for op in (:*,:⋅,:⊙,:⊗,:∧)
 end
 
 function (k::PartialDerivatives{N})(
-  a::OperationField{<:Union{typeof(*),typeof(⋅),typeof(⊙),typeof(⊗),typeof(∧)}}) where N
+  a::OperationField{<:Union{typeof(*),typeof(⋅),typeof(⊙),typeof(⊙ᴱ),typeof(⊗),typeof(∧)}}) where N
   @notimplemented """\n
   A product of fields is only derived at orders 1 and 2, got order $N. A higher
   order needs the multi index Leibniz sum, and order 0 is the product's own value.
