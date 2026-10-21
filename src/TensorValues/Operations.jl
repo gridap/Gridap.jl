@@ -349,12 +349,28 @@ function _dense_flat_inner(
   ret
 end
 
+# unrolled loop instead of _dense_flat_inner's @simd to allow the loop to  fold into the caller.
+const _UNROLLED_INNER_MAX = 128
+
+function _dense_flat_inner_expr(A, B)
+  loop_e = :( _dense_flat_inner(a, b) )
+  (A <: MultiValue && B <: MultiValue) || return loop_e
+
+  # the linear index of the loop above runs over every component, stored or
+  # not, so the terms are `getindex` and not the stored components.
+  L = length(A)
+  (L == length(B) && L <= _UNROLLED_INNER_MAX) || return loop_e
+  iszero(L) && return :( zero(Base.promote_op(*,eltype(a),eltype(b))) )
+
+  Expr(:call, :+, [:( a[$j]*b[$j] ) for j in 1:L]...)
+end
+
 # The body of the Euclidean contraction of two tensors `a` and `b`,
 #
 # For tensors with same stored components, so the sum over the full tensors is
 # the sum over the stored components weighted by their multiplicities.
 @generated function _flat_inner_body(a, b)
-  dense_e = :( _dense_flat_inner(a, b) )
+  dense_e = _dense_flat_inner_expr(a, b)
   a_sci, b_sci = try
     stored_comp_indices(a), stored_comp_indices(b)
   catch

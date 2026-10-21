@@ -191,6 +191,7 @@ using Gridap.CellData: ∫; export ∫
 @publish CellData get_physical_coordinate
 @publish CellData get_metric_data
 @publish CellData get_metric_partials_data
+@publish CellData material_hodge_star
 @publish CellData DiracDelta
 
 #@publish CellData d_0form
