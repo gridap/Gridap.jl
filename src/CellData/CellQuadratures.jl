@@ -156,10 +156,24 @@ function integrate(f::CellField, quad::CellQuadrature)
             quad.integration_domain_style == PhysicalDomain()
     cell_Jt = get_cell_jac(quad.trian)
     cell_Jtx = lazy_map(evaluate, cell_Jt, quad.cell_point)
-    lazy_map(IntegrationMap(), bx, quad.cell_weight, cell_Jtx)
+    # The contribution of the triangulation's intrinsic metric is added to the
+    # weights rather than the integrand, which is more efficient for cell-wise
+    # constant metric.
+    vol_weights = _metric_weights(x, quad, get_metric_data(quad.trian))
+    lazy_map(IntegrationMap(), bx, vol_weights, cell_Jtx)
   else
     @notimplemented
   end
+end
+
+# The volume element of the integral of a function over a triangulation with
+# metric `g`, pulled back in reference space, is `meas(Jt)·√|det g|` where `Jt`
+# is the cell_map Jacobian from the triangulation's element to the reference
+# element.  meas(Jt) is added by the integration map, √|det g| is added here.
+function _metric_weights(x::CellPoint, quad::CellQuadrature, metric_data)
+  metric_data[1] isa UniformScaling && return quad.cell_weight
+  sqrt_abs_g = metric_data[3]
+  lazy_map(Broadcasting(*), quad.cell_weight, sqrt_abs_g(x))
 end
 
 """

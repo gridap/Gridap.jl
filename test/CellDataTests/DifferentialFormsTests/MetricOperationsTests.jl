@@ -100,10 +100,10 @@ md = compute_metric_data(g)
           map((w,e) -> alt_inner(w,e,md), first_point_values(ωc), first_point_values(ηc)))
 
 # The metric reaches the quadrature points: with this g and η, ⟨ω,η⟩_g is the
-# second component of ω, whose integral over the unit square is 2 + 1/3.
-# `Measure` integrates against the euclidean volume element, so the integral
-# carries no √|det g| factor.
-@test sum(∫( inner(ωc,ηc) )Measure(Ωc,2)) ≈ 7/3
+# second component of ω, whose integral over the unit square is 2 + 1/3. The
+# integral of a scalar is taken against the metric volume element, hence the
+# `√|det g|` factor.
+@test sum(∫( inner(ωc,ηc) )Measure(Ωc,2)) ≈ 7/3 * sqrt(det(g))
 
 # A face of a chart model needs the metric induced on it, which the model does
 # not carry, so the operators on it fail rather than read the cell metric.

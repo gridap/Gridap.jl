@@ -30,7 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX):
+- Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX) (number to be filled when the PR is opened).
+  - On a model whose `get_cell_metric` is not the identity, `∫( … )dΩ` integrates against the volume element of the chart, `meas(Jt)·√|det g|`: a scalar or 0-form integrand now carries the `√|det g|` factor, and code writing that factor into its integrands must drop it. An integrand that is a top form takes the euclidean element, the Hodge star that produced it carrying the factor already.
   - `AbstractSymTensorValue` now subtypes `AbstractSymMultiValue` instead of `MultiValue` directly.
   - `isless(::Number, ::MultiValue)` and `(<=)(::Number, ::MultiValue)` now compare against every component instead of the stored ones only, which fixes them on `SkewSymTensorValue`.
   - `(\)(a::MultiValue, b::MultiValue)` no longer types its result after `b`. `inv(a)⋅b` is not symmetric even when `b` is, and a `SymTensorValue` result silently dropped the asymmetry.
