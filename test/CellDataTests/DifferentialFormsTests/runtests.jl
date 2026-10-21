@@ -6,6 +6,8 @@ using Test
 
 @testset "MetricOperations" begin include("MetricOperationsTests.jl") end
 
+@testset "MeasureConvention" begin include("MeasureConventionTests.jl") end
+
 @testset "DifferentialFormCellFields" begin include("DifferentialFormCellFieldsTests.jl") end
 
 @testset "FeecPoisson" begin include("FeecPoissonTests.jl") end
