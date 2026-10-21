@@ -170,7 +170,7 @@ end
   Ω = Triangulation(sorted_tri); dΩ = Measure(Ω, 4)
   V = FESpace(sorted_tri, ReferenceFE(TRI,:P,1,0,Float64; DG_calc=true))
   U = TrialFESpace(V)
-  A = assemble_matrix((u,v) -> ∫( vol_coeff(𝑑(u) ∧ flat_hodge_star(𝑑(v))) )dΩ, U, V)
+  A = assemble_matrix((u,v) -> ∫( flat_vol_coeff(𝑑(u) ∧ flat_hodge_star(𝑑(v))) )dΩ, U, V)
 
   Vl = FESpace(sorted_tri, ReferenceFE(lagrangian,Float64,1))
   Ul = TrialFESpace(Vl)

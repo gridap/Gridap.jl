@@ -1,32 +1,32 @@
 module FormBridgeTests
 # Value-level bridges between the form algebra and Gridap's FE machinery:
-#   vol_coeff       — scalar content of a top D-form (makes ∫(ω ∧ ⋆η) integrable)
+#   flat_vol_coeff  — the component of a top D-form against dx¹∧…∧dx^D
 #   to_1form/from_1form, to_Kform/from_Kform, to_0form/to_Dform — VectorValue proxies
 #   grad_to_2form   — exterior derivative of a 1-form from its gradient (transposed Jacobian)
 
 using Gridap.TensorValues
 using Test
 
-# ── vol_coeff ────────────────────────────────────────────────────────────────
+# ── flat_vol_coeff ───────────────────────────────────────────────────────────
 
 # 2D: single-component 2-form
 ω2d = ExteriorFormValue{2,2}((5.0,))
-@test vol_coeff(ω2d) === 5.0
-@test vol_coeff(ω2d) isa Float64
+@test flat_vol_coeff(ω2d) === 5.0
+@test flat_vol_coeff(ω2d) isa Float64
 
 # 3D: single-component 3-form
 ω3d = ExteriorFormValue{3,3}((-2.5,))
-@test vol_coeff(ω3d) === -2.5
+@test flat_vol_coeff(ω3d) === -2.5
 
-# vol_coeff extracts the scalar content of ω ∧ ⋆η
+# flat_vol_coeff extracts the scalar content of ω ∧ ⋆η
 # In 2D: ω = (a, b), ⋆ω = (-b, a); ω ∧ ⋆ω = (a²+b²) dx¹∧dx²
 ω = CoVectorValue{2}((3.0, 4.0))
-@test vol_coeff(ω ∧ flat_hodge_star(ω)) ≈ 25.0   atol=1e-12  # 3²+4² = 25
+@test flat_vol_coeff(ω ∧ flat_hodge_star(ω)) ≈ 25.0   atol=1e-12  # 3²+4² = 25
 
-# vol_coeff(du ∧ ⋆dv) = ∇u·∇v
+# flat_vol_coeff(du ∧ ⋆dv) = ∇u·∇v
 du = CoVectorValue{2}((1.0, 2.0))
 dv = CoVectorValue{2}((3.0, 4.0))
-@test vol_coeff(du ∧ flat_hodge_star(dv)) ≈ 11.0   # 1·3 + 2·4
+@test flat_vol_coeff(du ∧ flat_hodge_star(dv)) ≈ 11.0   # 1·3 + 2·4
 
 # ── to_1form / from_1form ────────────────────────────────────────────────────
 
@@ -74,17 +74,17 @@ v_2form = VectorValue(1.0, -2.0, 3.0)
 
 # Identity Jacobian: ω = x¹dx¹+x²dx² has dω = 0 (Jt = I, symmetric)
 Jt_id = TensorValue{2,2,Float64,4}(1.0, 0.0, 0.0, 1.0)
-@test vol_coeff(grad_to_2form(Jt_id)) == 0.0
+@test flat_vol_coeff(grad_to_2form(Jt_id)) == 0.0
 
 # Rotation u = (−x², x¹): → Jt(u) = TensorValue(0,−1,1,0)
 # (dω)₁₂ = Jt[1,2]−Jt[2,1] = 1−(−1) = 2
 Jt_rot = TensorValue{2,2,Float64,4}(0.0, -1.0, 1.0, 0.0)
-@test vol_coeff(grad_to_2form(Jt_rot)) ≈ 2.0
+@test flat_vol_coeff(grad_to_2form(Jt_rot)) ≈ 2.0
 
 # Shear u = (x², 0): Jt[2,1]=∂u₁/∂x₂=1, others 0 → TensorValue(0,1,0,0)
 # (dω)₁₂ = Jt[1,2]−Jt[2,1] = 0−1 = −1
 Jt_sh = TensorValue{2,2,Float64,4}(0.0, 1.0, 0.0, 0.0)
-@test vol_coeff(grad_to_2form(Jt_sh)) ≈ -1.0
+@test flat_vol_coeff(grad_to_2form(Jt_sh)) ≈ -1.0
 
 # 3D: ω = (x¹, x², x³), Jt = I₃ → dω = 0 (symmetric, convention-independent)
 Jt3 = TensorValue{3,3,Float64,9}(1.0,0.0,0.0, 0.0,1.0,0.0, 0.0,0.0,1.0)

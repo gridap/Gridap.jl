@@ -1378,27 +1378,27 @@ to_0form(u::_Scalar, ::Val{D}) where D = ExteriorFormValue{0,D}((u,))
     to_Dform(u::Number, ::Val{D})
 
 Convert the scalar `u` as the sole component of the top-degree
-`ExteriorFormValue{D,D}`, the inverse of [`vol_coeff`](@ref).
+`ExteriorFormValue{D,D}`, the inverse of [`flat_vol_coeff`](@ref).
 """
 to_Dform(u::_Scalar, ::Val{D}) where D = ExteriorFormValue{D,D}((u,))
 
 # ============================================================
 # Volume form scalar extraction
 #
-# vol_coeff : Λᴰ → ℝ
+# flat_vol_coeff : Λᴰ → ℝ
 # A top-degree D-form in D dimensions has exactly one component.
 # Extracting it gives the scalar integrand for ∫(ω ∧ ⋆η) dΩ.
 # ============================================================
 
 """
-    vol_coeff(ω::ExteriorFormValue{D,D})
+    flat_vol_coeff(ω::ExteriorFormValue{D,D})
 
 The single scalar coefficient of a top-degree D-form in D dimensions.
 Enables using Gridap's standard measure for integration of differential forms:
-    ∫(vol_coeff(ω ∧ ⋆η)) * dΩ
-""" # to integrate a k-vector, the hodge_star (with metric) needs to be applied before vol_coeff.
-function vol_coeff(ω::ExteriorFormValue{K,D}) where {K,D}
-  K == D || @unreachable "vol_coeff requires a top-degree form, got K = $K and D = $(Int(D))"
+    ∫(flat_vol_coeff(ω ∧ ⋆η)) * dΩ
+""" # to integrate a k-vector, the hodge_star (with metric) needs to be applied before flat_vol_coeff.
+function flat_vol_coeff(ω::ExteriorFormValue{K,D}) where {K,D}
+  K == D || @unreachable "flat_vol_coeff requires a top-degree form, got K = $K and D = $(Int(D))"
   indep_comp_getindex(ω, 1)
 end
 

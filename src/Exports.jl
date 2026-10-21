@@ -58,7 +58,7 @@ using Gridap.Arrays: ∑; export ∑
 #@publish Fields codifferential
 #@publish TensorValues symbolic_coordinates
 #@publish TensorValues koszul
-#@publish TensorValues vol_coeff
+#@publish TensorValues flat_vol_coeff
 #@publish TensorValues to_1form
 #@publish TensorValues from_1form
 #@publish TensorValues to_Kform

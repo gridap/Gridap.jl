@@ -339,7 +339,7 @@ for (α, β) in [(ExteriorFormValue{0,D3}((7.0,)),
   @test flat_alt_inner(α, β) == sum(α.data .* β.data)
   @test flat_alt_inner(α, β) ≈ alt_inner(α, β, one(g_inv_fi))
   # α ∧ ⋆_g β = √det(g) (α|β) dx¹∧…∧dx^D, the property that defines (α|β)
-  @test vol_coeff(α ∧ hodge_star(β, g_inv_fi, sdg_fi)) ≈ sdg_fi * alt_inner(α, β, g_inv_fi)
+  @test flat_vol_coeff(α ∧ hodge_star(β, g_inv_fi, sdg_fi)) ≈ sdg_fi * alt_inner(α, β, g_inv_fi)
   # the flat tensor inner product drops the 1/K! of (α|β)
   @test flat_inner(α, β) ≈ factorial(K) * flat_alt_inner(α, β)
   # the flat operators alias the non-flat symbol suffixed by ᴱ

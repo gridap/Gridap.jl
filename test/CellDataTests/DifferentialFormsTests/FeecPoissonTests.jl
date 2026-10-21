@@ -2,7 +2,7 @@ module FeecPoissonTests
 # End-to-end validation of the differential-form bilinear forms for FEEC:
 #  1. d_0form, d_1form at CellField level
 #  2. Scalar Poisson:
-#       a(u,v) = ∫(vol_coeff(d_0form(u) ∧ ⋆(d_0form(v)))) * dΩ
+#       a(u,v) = ∫(flat_vol_coeff(d_0form(u) ∧ ⋆(d_0form(v)))) * dΩ
 #     gives a machine-precision identical solution to ∫(∇u·∇v)*dΩ,
 #     and the correct solution (L² error ≪ 1).
 
@@ -36,7 +36,7 @@ ddux = ddu_cf(pts)
 cddu = array_cache(ddux)
 dduv = getindex!(cddu, ddux, 1)
 @test typeof(dduv) <: AbstractArray{<:ExteriorFormValue{2,cov2}}
-@test all(v -> vol_coeff(v) ≈ 2.0, dduv)
+@test all(v -> flat_vol_coeff(v) ≈ 2.0, dduv)
 
 # ── 2. Scalar Poisson: differential-form weak form vs standard Gridap ────────
 # −Δu = f on [0,1]²,  u = 0 on ∂Ω
@@ -54,7 +54,7 @@ f_cf = CellField(x -> 2π^2*sin(π*x[1])*sin(π*x[2]), Ω8, PhysicalDomain())
 l(v) = ∫( f_cf * v ) * dΩ8
 
 # Differential-form bilinear form: a(u,v) = ∫(d₀u ∧ ⋆d₀v)
-a_form(u,v) = ∫( vol_coeff(d_0form(u) ∧ flat_hodge_star(d_0form(v))) ) * dΩ8
+a_form(u,v) = ∫( flat_vol_coeff(d_0form(u) ∧ flat_hodge_star(d_0form(v))) ) * dΩ8
 
 # Standard Gridap bilinear form for comparison
 a_std(u,v) = ∫( ∇(u) ⋅ ∇(v) ) * dΩ8
