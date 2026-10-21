@@ -176,8 +176,8 @@ end
   ) where {K,A,Da,B<:ExteriorVectorValue{K,Da},Db}
 
 
-  _msg = "A $K-vector block of dimension $Da does not contract a $K-form of dimension $Db."
-  Da == Db || return :( throw(DimensionMismatch($_msg)) )
+  Da == Db || throw(DimensionMismatch(
+    "A $K-vector block of dimension $Da does not contract a $K-form of dimension $Db."))
 
   T = Base.promote_op(*, eltype(a), eltype(b))
   iszero(num_indep_components(A)) && return zero(make_concretetype(A{T}))
