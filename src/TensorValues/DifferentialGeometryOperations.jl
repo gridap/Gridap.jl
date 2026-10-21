@@ -1590,19 +1590,23 @@ end
 # codifferential
 
 """
-    partials_to_codifferential(∂ω)
+    partials_to_flat_codifferential(∂ω)
 
-Value of the flat codifferential `δω` of a K-form `ω` at `x`, a (K-1)-form, from
-its first order partial derivatives `∂ω = partial_derivatives(ω)(x)`.
+Value of the codifferential `δω` of a K-form `ω` at `x` in Euclidean space, a
+(K-1)-form, from its first order partial derivatives.
 
 `δω` contracts the derivation index of `∂ω` with the first index of `ω`,
 
     δω[i_1, …, i_{K-1}] = -∑_j ∂ω[j, j, i_1, …, i_{K-1}]
+
+See also [`partials_to_codifferential`](@ref).
 """
-@generated function partials_to_codifferential(
+@generated function partials_to_flat_codifferential(
   ∂ω::ProductTensorValue{<:MultiValue{Tuple{Dw}},ExteriorFormValue{K,Dw},T}) where {K,Dw,T}
 
-  K >= 1 || return :(@unreachable "the codifferential requires K ≥ 1")
+  K >= 1 || return :(@unreachable "δ of a 0-form is the zero (-1)-form, which has no value type: \
+a degree K form is sized `NTuple{K,D}`, and no tuple has a negative length")
+
   D = Int(Dw)
   Km1 = K - 1
   ncomp = binomial(D, Km1)
@@ -1626,7 +1630,106 @@ its first order partial derivatives `∂ω = partial_derivatives(ω)(x)`.
   :( ExteriorFormValue{$Km1,$Dw}(($(comps...),)) )
 end
 
-# TODO later, codifferential in non-euclidean coordinates
+"""
+    partials_to_codifferential(∂ω, ω, Γ, metric_args...)
+
+Value of the codifferential `δω` of a K-form `ω` at `x`, a (K-1)-form, from the
+first order partial derivatives `∂ω = partial_derivatives(ω)(x)` and the second
+kind Christoffel symbols `Γ` at `x`, see [`partials_to_Christoffel_2`](@ref).
+
+`δω` contracts the derivation index of the covariant derivative `∇ω` with the
+first index of `ω`, so it carries one Christoffel term per index of `ω`: with
+`I = (i_1, …, i_{K-1})`,
+
+    (δω)_I = -g^{jm} ∂_j ω_{mI}
+             + g^{jm} Γˡ_{jm} ω_{lI}
+             + ∑_{a=1}^{K-1} g^{jm} Γˡ_{j i_a} ω_{m i_1…l…i_{K-1}}
+
+where `l` replaces `i_a` in the last sum.
+
+`metric_args` contains the metric information, see [`parse_metric_data`](@ref).
+`partials_to_codifferential` uses `g_inv`.
+"""
+@generated function partials_to_codifferential(
+  ∂ω::ProductTensorValue{<:MultiValue{Tuple{Dw}},ExteriorFormValue{K,Dw},Tdw},
+  ω::ExteriorFormValue{K,Dw,Tw},
+  Γ::ProductTensorValue{<:MultiValue{Tuple{Dl}},SymTensorValue{Dg},TΓ},
+  metric_args::Vararg{_MetricArg}) where {K,Dw,Dl,Dg,Tdw,Tw,TΓ}
+
+  K >= 1 || return :(@unreachable "δ of a 0-form is the zero (-1)-form, which has no value type: \
+a degree K form is sized `NTuple{K,D}`, and no tuple has a negative length")
+
+  Dg isa Cov || return :(throw(ArgumentError(
+    $("the Christoffel symbols are symmetric in two covariant indices, got $Dg"))))
+  Dl === inverse_variance(Dg) || return :(throw(ArgumentError(
+    $("the upper index of the Christoffel symbols must be contravariant of the dimension of the lower two, got $Dl and $Dg"))))
+  Int(Dg) == Int(Dw) || return :(throw(DimensionMismatch(
+    $("the form and the metric must live in the same dimension, got $(Int(Dw)) and $(Int(Dg))"))))
+
+  D = Int(Dw)
+  Km1 = K - 1
+  T = Base.promote_op(+, Tdw, Base.promote_op(*, Tw, TΓ))
+
+  # A form of degree above D has no component, so its codifferential vanishes
+  # before any metric is read.
+  K <= D || return :( zero(ExteriorFormValue{$Km1,$Dw,$T}) )
+
+  # `Γ` stores the symmetric pair of lower indices slowest
+  Γcomp(l,j,m) = :( indep_comp_getindex(
+    Γ, $((_2d_sym_tensor_linear_index(D, min(j,m), max(j,m))-1)*D + l)) )
+
+  # The two contractions of `Γ` with the metric that the terms below read: the
+  # trace `g^{jm} Γˡ_{jm}`, and `g^{jm} Γˡ_{jc}`, which leaves `c` free.
+  trΓ = [_sum_expr([:( g_inv[$j,$m] * $(Γcomp(l,j,m)) ) for j in 1:D for m in 1:D], T)
+         for l in 1:D]
+  gΓ_id(m,l,c) = (c-1)*D*D + (l-1)*D + m
+  gΓ = [_sum_expr([:( g_inv[$j,$m] * $(Γcomp(l,j,c)) ) for j in 1:D], T)
+        for c in 1:D for l in 1:D for m in 1:D]
+
+  comps = Vector{Expr}(undef, binomial(D, Km1))
+  for (n,I) in enumerate(sorted_combinations(D, Km1))
+    Icomp = combination_complement(I, D)
+    sup_ids = sup_combinations_ids(I, D)
+    terms = Expr[]
+
+    # -g^{jm} ∂_j ω_{mI}: `ω_{mI}` vanishes for `m ∈ I`, so `m` runs over the
+    # complement of `I`, while the full `g^{jm}` ties no `j` to it.
+    for (q, m) in enumerate(Icomp), j in 1:D
+      push!(terms, _signed(-sorting_sign(m, I...),
+        :( g_inv[$j,$m] * indep_comp_getindex(∂ω, $((sup_ids[q]-1)*D + j)) )))
+    end
+
+    # g^{jm} Γˡ_{jm} ω_{lI}, whose `l` runs over that same complement
+    for (q, l) in enumerate(Icomp)
+      push!(terms, _signed(sorting_sign(l, I...),
+        :( trΓ[$l] * indep_comp_getindex(ω, $(sup_ids[q])) )))
+    end
+
+    # g^{jm} Γˡ_{j i_a} ω_{m i_1…l…i_{K-1}}, one term per index of `I`: `l`
+    # replaces `i_a` and `m` heads the list, so both must miss the other indices,
+    # which `sorting_sign` reports by vanishing.
+    for a in 1:Km1, m in 1:D, l in 1:D
+      sgn = sorting_sign(m, I[1:a-1]..., l, I[a+1:end]...)
+      iszero(sgn) && continue
+      J = sort([m, l, I[1:a-1]..., I[a+1:end]...])
+      push!(terms, _signed(sgn, :( gΓ[$(gΓ_id(m,l,I[a]))] *
+        indep_comp_getindex(ω, $(combination_index(J, D))) )))
+    end
+
+    comps[n] = _sum_expr(terms, T)
+  end
+
+  pre = Expr[:( trΓ = ($(trΓ...),) )]
+  Km1 >= 1 && push!(pre, :( gΓ = ($(gΓ...),) ))
+
+  quote
+    md = parse_metric_data(metric_args...)
+    (; g_inv) = md
+    isidentity(md) || _check_metric_dim(g_inv, $D)
+    $(pre...)
+    ExteriorFormValue{$Km1,$Dw}(($(comps...),))
+  end
+end
 
 
 # Christoffel symbols

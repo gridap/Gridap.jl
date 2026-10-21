@@ -849,12 +849,25 @@ function exterior_derivative(a::CellField)
   similar_cell_field(a, cell_da, get_triangulation(a), DomainStyle(a))
 end
 
-# `δ` does not comute with pullback, the derivatives have to be taken in
-# physical space
+# `δ` does not comute with pullback, the derivatives have to be taken in physical space
 function codifferential(a::CellField)
+  trian = get_triangulation(a)
+  codifferential(a, get_metric_data(trian), get_metric_partials_data(trian))
+end
+
+codifferential(a::CellField, ::UniformScaling) =
+  codifferential(a, (LinearAlgebra.I,), LinearAlgebra.I)
+
+function codifferential(a::CellField, ::Tuple{UniformScaling}, ::UniformScaling)
   ∂a = partial_derivatives(a)
-  cell_δa = lazy_map(Broadcasting(Operation(partials_to_codifferential)), get_data(∂a))
+  cell_δa = lazy_map(Broadcasting(Operation(partials_to_flat_codifferential)), get_data(∂a))
   similar_cell_field(a, cell_δa, get_triangulation(a), DomainStyle(a))
+end
+
+function codifferential(a::CellField, metric_data::Tuple, ∂g::CellField)
+  g_inv = metric_data[2]
+  Γ = Operation(partials_to_Christoffel_2)(∂g, g_inv)
+  Operation(partials_to_codifferential)(partial_derivatives(a), a, Γ, g_inv)
 end
 
 # `κ_x(a) = ι_x(a)` contracts `a` with the position vector

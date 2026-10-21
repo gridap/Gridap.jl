@@ -3,7 +3,7 @@
 ############################################
 
 function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
-  rotate_90=false, DG_calc=false, nodal::Bool=false, kwargs...) where D
+  rotate_90=false, DG_calc=true, nodal::Bool=false, kwargs...) where D
 
   _DG_calc = DG_calc || T <: ExteriorFormValue
   cart_prod = !_DG_calc && k in (0,D) && _is_cart_prod(T)

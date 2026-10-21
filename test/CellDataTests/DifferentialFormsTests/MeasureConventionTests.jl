@@ -17,11 +17,6 @@ using Test
 
 # ── Chart models of given metric ──────────────────────────────────────────────
 
-struct CellMetric{F} <: Field
-  g::F
-end
-Gridap.Arrays.evaluate!(cache, m::CellMetric, x::Point) = m.g(x)
-
 struct ChartModel{Dc,Dp,M,A} <: DiscreteModel{Dc,Dp}
   model::M
   cell_metric::A
@@ -35,7 +30,7 @@ Gridap.Geometry.get_grid_topology(m::ChartModel) = get_grid_topology(m.model)
 Gridap.Geometry.get_face_labeling(m::ChartModel) = get_face_labeling(m.model)
 Gridap.Geometry.get_cell_metric(m::ChartModel)   = m.cell_metric
 
-chart_model(model,g) = ChartModel(model,Fill(CellMetric(g),num_cells(model)))
+chart_model(model,g) = ChartModel(model,Fill(GenericField(g),num_cells(model)))
 
 model = CartesianDiscreteModel((0.0,1.0,0.0,1.0),(4,4))
 Ω  = Triangulation(model)

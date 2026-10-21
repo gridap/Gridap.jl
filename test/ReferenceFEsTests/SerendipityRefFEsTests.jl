@@ -10,7 +10,7 @@ using Gridap.TensorValues
 nodal = true
 
 reffe = SerendipityRefFE(Float64,QUAD,2)
-@test reffe == ReferenceFE(QUAD,:S,2,0; nodal)
+@test reffe == ReferenceFE(QUAD,:S,2,0; nodal, DG_calc=false)
 @test get_node_coordinates(reffe) == Point{2,Float64}[
   (0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0),
   (0.5, 0.0), (0.5, 1.0), (0.0, 0.5), (1.0, 0.5)]
@@ -29,12 +29,12 @@ reffer = ReferenceFE(QUAD,serendipity,2)
 @test get_face_own_nodes(reffe) == get_face_own_nodes(reffer)
 
 reffe = SerendipityRefFE(Float64,QUAD,4)
-@test reffe == ReferenceFE(QUAD,:S,4,0; nodal)
+@test reffe == ReferenceFE(QUAD,:S,4,0; nodal, DG_calc=false)
 @test get_face_own_nodes(reffe) == [[1], [2], [3], [4], [5, 6, 7], [8, 9, 10], [11, 12, 13], [14, 15, 16], [17]]
 test_lagrangian_reference_fe(reffe)
 
 reffe = SerendipityRefFE(Float64,HEX,2)
-@test reffe == ReferenceFE(HEX,:S,2,0; nodal)
+@test reffe == ReferenceFE(HEX,:S,2,0; nodal, DG_calc=false)
 @test get_face_own_nodes(reffe) == [
   [1], [2], [3], [4], [5], [6], [7], [8],
   [9], [10], [11], [12], [13], [14], [15], [16],
@@ -50,7 +50,7 @@ poly_type=Polynomials.ModalC0
 order = 4
 reffe = SerendipityRefFE(Float64,HEX,order)
 test_lagrangian_reference_fe(reffe)
-@test reffe == ReferenceFE(HEX,:S,4,0; nodal)
+@test reffe == ReferenceFE(HEX,:S,4,0; nodal, DG_calc=false)
 @test get_order(reffe) == order
 @test get_orders(reffe) == (order,order,order)
 @test is_P(reffe) == false
@@ -61,7 +61,7 @@ test_lagrangian_reference_fe(reffe)
 
 reffe = SerendipityRefFE(Float64,HEX,order; poly_type)
 test_lagrangian_reference_fe(reffe)
-@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, nodal)
+@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, nodal, DG_calc=false)
 
 space=:S
 
@@ -75,11 +75,11 @@ test_lagrangian_reference_fe(reffe)
 
 reffe = LagrangianRefFE(Float64,HEX,order; space, poly_type)
 test_lagrangian_reference_fe(reffe)
-@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, nodal)
+@test reffe == ReferenceFE(HEX,:S,4,0; poly_type, nodal, DG_calc=false)
 
 reffe = SerendipityRefFE(Float64,QUAD,(3,3))
 test_lagrangian_reference_fe(reffe)
-@test reffe == ReferenceFE(QUAD,:S,3,0,Float64; nodal)
+@test reffe == ReferenceFE(QUAD,:S,3,0,Float64; nodal, DG_calc=false)
 @test reffe == from_dict(LagrangianRefFE,to_dict(reffe))
 
 reffe = SerendipityRefFE(VectorValue{2,Float64},QUAD,1)

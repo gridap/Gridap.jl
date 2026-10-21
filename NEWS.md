@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `isless(::Number, ::MultiValue)` and `(<=)(::Number, ::MultiValue)` now compare against every component instead of the stored ones only, which fixes them on `SkewSymTensorValue`.
   - `(\)(a::MultiValue, b::MultiValue)` no longer types its result after `b`. `inv(a)⋅b` is not symmetric even when `b` is, and a `SymTensorValue` result silently dropped the asymmetry.
   - `HighOrderTensorValue` is renamed `NTensorValue`.
+  - `ReferenceFE(p, F::Symbol, r, k[, T])` now builds the form valued element by default (`DG_calc=true`), valued in `ExteriorFormValue{k,D,T}`. Pass `DG_calc=false` for the vector proxy element, which is also the one reading a tensor `T` as a Cartesian product space.
 
 ### Removed
 - Deprecated `inner` between a 4th order tensor and 2nd order tensors, this used to call `double_contraction`, but this doesn't make sense mathematically, in particular for tensors with variance.

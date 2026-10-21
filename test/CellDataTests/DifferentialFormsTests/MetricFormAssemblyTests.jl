@@ -19,11 +19,6 @@ import LinearAlgebra
 
 # ── Chart models of given metric ──────────────────────────────────────────────
 
-struct CellMetric{F} <: Field
-  g::F
-end
-Gridap.Arrays.evaluate!(cache, m::CellMetric, x::Point) = m.g(x)
-
 struct ChartModel{Dc,Dp,M,A} <: DiscreteModel{Dc,Dp}
   model::M
   cell_metric::A
@@ -37,7 +32,7 @@ Gridap.Geometry.get_grid_topology(m::ChartModel) = get_grid_topology(m.model)
 Gridap.Geometry.get_face_labeling(m::ChartModel) = get_face_labeling(m.model)
 Gridap.Geometry.get_cell_metric(m::ChartModel)   = m.cell_metric
 
-chart_model(model,g) = ChartModel(model,Fill(CellMetric(g),num_cells(model)))
+chart_model(model,g) = ChartModel(model,Fill(GenericField(g),num_cells(model)))
 
 # Covariant as a metric must be, and constant so that the weak forms written by
 # hand below have a closed form.
@@ -57,7 +52,7 @@ ctri = chart_model(sorted_tri, x -> g2)
 ctet = chart_model(sorted_tet, x -> g3)
 
 Ωc = Triangulation(ctri); Ω = Triangulation(sorted_tri)
-fe(p,F,r,k) = ReferenceFE(p,F,r,k,Float64; DG_calc=true)
+fe(p,F,r,k) = ReferenceFE(p,F,r,k,Float64)
 spaces(model,reffe) = (V = FESpace(model,reffe); (TrialFESpace(V), V))
 
 # ── The two spellings of a metric bilinear form assemble the same matrix ──────

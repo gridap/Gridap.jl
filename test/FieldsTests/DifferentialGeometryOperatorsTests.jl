@@ -4,6 +4,7 @@ using Test
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
+using Gridap.TensorValues: _sqrt_abs_det
 
 using StaticArrays
 using ForwardDiff
@@ -102,7 +103,7 @@ pdv = partial_derivatives(fv,x2)
 
 @test_throws Exception partials_to_exteriorderivative(pdv)
 @test_throws Exception partials_to_liederivative(fv(x2),fv(x2),pdv,pdv)
-@test_throws Exception partials_to_codifferential(pdv)
+@test_throws Exception partials_to_flat_codifferential(pdv)
 
 # Exterior derivative of a K-form from its first order partial derivatives
 
@@ -165,16 +166,16 @@ end
 
 # Codifferential of a K-form from its first order partial derivatives
 
-δ(f) = y -> partials_to_codifferential(partial_derivatives(f,y))
+δ(f) = y -> partials_to_flat_codifferential(partial_derivatives(f,y))
 
 function test_codifferential(K, x::Point{D}) where D
   V = ExteriorFormValue{K,Cov(D)}
   f = y -> mk(V,y)
   ∂ω = partial_derivatives(f,x)
-  δω = partials_to_codifferential(∂ω)
+  δω = partials_to_flat_codifferential(∂ω)
 
   @test typeof(δω) === ExteriorFormValue{K-1,Cov(D),Float64,binomial(D,K-1)}
-  @test (@inferred partials_to_codifferential(∂ω)) === δω
+  @test (@inferred partials_to_flat_codifferential(∂ω)) === δω
   # the derivation index contracts with the first index of ω, reading ∂ω by full indices
   for (n,I) in enumerate(sorted_combinations(D,K-1))
     @test indep_comp_getindex(δω,n) ≈ -sum(j -> ∂ω[j,j,I...], 1:D)
@@ -194,7 +195,7 @@ end
 
 # The codifferential of a 0-form would be a (-1)-form
 f0form(y) = mk(ExteriorFormValue{0,Cov(2)},y)
-@test_throws Exception partials_to_codifferential(partial_derivatives(f0form,x2))
+@test_throws Exception partials_to_flat_codifferential(partial_derivatives(f0form,x2))
 
 # A form with no component has a vanishing codifferential, its sole component
 # summing no partial derivative at all
@@ -210,7 +211,7 @@ f4e(y) = zero(ExteriorFormValue{4,Cov(2),Float64,0})
 ∂sym   = product_tensor(SymNTensorValue{Tuple{Cov(3)}}(1.,2.,3.), ∂2form)
 ∂covec = product_tensor(CoVectorValue{Cov(3)}(1.,2.,3.), ∂2form)
 @test partials_to_exteriorderivative(∂covec) === partials_to_exteriorderivative(∂sym)
-@test partials_to_codifferential(∂covec) === partials_to_codifferential(∂sym)
+@test partials_to_flat_codifferential(∂covec) === partials_to_flat_codifferential(∂sym)
 
 # The 0-form method takes any order 1 covariant tensor as well
 @test partials_to_exteriorderivative(CoVectorValue{Cov(2)}(1.,2.)) ===
@@ -218,7 +219,7 @@ f4e(y) = zero(ExteriorFormValue{4,Cov(2),Float64,0})
 @test_throws ArgumentError partials_to_exteriorderivative(VectorValue(1.,2.))
 
 # The codifferential is defined on forms, not on K-vectors
-@test_throws Exception partials_to_codifferential(pdc)
+@test_throws Exception partials_to_flat_codifferential(pdc)
 
 # Lie derivative along a contravariant vector field
 
@@ -443,5 +444,105 @@ let data = ntuple(n -> Float64(n), 6)
            ntuple(n -> Float64(n), 9))
   @test_throws DimensionMismatch partials_to_Christoffel_1(∂mix)
 end
+
+# Codifferential in a chart, from the partials of the form, the form itself and
+# the Christoffel symbols of the metric
+
+function test_curved_codifferential(K, gF, x::Point{D}) where D
+  f = y -> mk(ExteriorFormValue{K,Cov(D)}, y)
+  g, ∂g = gF(x), partial_derivatives(gF, x)
+  g_inv = inv(g)
+  Γ = partials_to_Christoffel_2(∂g, g_inv)
+  ω, ∂ω = f(x), partial_derivatives(f, x)
+  δω = partials_to_codifferential(∂ω, ω, Γ, g, g_inv)
+
+  @test typeof(δω) === ExteriorFormValue{K-1,Cov(D),Float64,binomial(D,K-1)}
+  @test (@inferred partials_to_codifferential(∂ω, ω, Γ, g, g_inv)) === δω
+  # the inverse metric is taken from the metric data in whichever form it comes
+  @test partials_to_codifferential(∂ω, ω, Γ, g) ≈ δω
+  @test partials_to_codifferential(∂ω, ω, Γ, compute_metric_data(g)) ≈ δω
+
+  # δ is (-1)^{D(K+1)+1} ⋆d⋆ for a metric of index 0, the definition the three
+  # Christoffel terms answer to: one per index of ω
+  starf = y -> hodge_star(f(y), gF(y))
+  dstar = partials_to_exteriorderivative(partial_derivatives(starf, x))
+  @test δω ≈ (isodd(D*(K+1)+1) ? -1 : 1) * hodge_star(dstar, g)
+
+  # vanishing symbols and the identity metric give the euclidean kernel back
+  Γ0 = zero(ProductTensorValue{ContraVectorValue{Con(D)},SymTensorValue{Cov(D)},Float64})
+  δI, δE = partials_to_codifferential(∂ω, ω, Γ0, I), partials_to_flat_codifferential(∂ω)
+  @test typeof(δI) === typeof(δE)
+  # the zero terms the full `g^{jm}` emits may carry either sign of zero
+  @test δI == δE
+end
+
+for K in 1:2
+  test_curved_codifferential(K, g2F, x2)
+end
+for K in 1:3
+  test_curved_codifferential(K, g3F, x3)
+end
+
+let g = g2F(x2), ∂g = partial_derivatives(g2F,x2)
+  Γ = partials_to_Christoffel_2(∂g, inv(g))
+
+  # The codifferential of a 0-form would be a (-1)-form here too
+  f0 = y -> mk(ExteriorFormValue{0,cov2}, y)
+  @test_throws Exception partials_to_codifferential(
+    partial_derivatives(f0,x2), f0(x2), Γ, g)
+
+  # A form of degree above D has no component, so no metric is read at all
+  fe3 = y -> zero(ExteriorFormValue{3,cov2,Float64,0})
+  δe = partials_to_codifferential(partial_derivatives(fe3,x2), fe3(x2), Γ, g)
+  @test typeof(δe) === ExteriorFormValue{2,cov2,Float64,1}
+  @test iszero(δe)
+
+  # The symbols have two covariant indices and one contravariant one, of the
+  # dimension the form lives in
+  f1 = y -> mk(CoVectorValue{cov2}, y)
+  @test_throws ArgumentError partials_to_codifferential(
+    partial_derivatives(f1,x2), f1(x2), partials_to_Christoffel_1(∂g), g)
+  Γ3 = partials_to_Christoffel_2(partial_derivatives(g3F,x3), inv(g3F(x3)))
+  @test_throws DimensionMismatch partials_to_codifferential(
+    partial_derivatives(f1,x2), f1(x2), Γ3, g)
+end
+
+# Derivative rules of the metric dependent operations
+
+# `inv`, `√|det g|` and `⋆` are not linear in the metric, so their rules read
+# its value as well as its derivatives
+function test_metric_partials_rules(gF, x::Point{D}) where D
+  g, ∂g = gF(x), partial_derivatives(gF, x)
+
+  inv_g, sq_g = y -> inv(gF(y)), y -> _sqrt_abs_det(gF(y))
+  ∂inv = partials_op_rule(Val(1), inv)(g, ∂g)
+  ∂sq  = partials_op_rule(Val(1), _sqrt_abs_det)(g, ∂g)
+
+  @test ∂inv ≈ partial_derivatives(inv_g, x)
+  @test typeof(∂inv) === typeof(partial_derivatives(inv_g, x))
+  @test ∂sq ≈ partial_derivatives(sq_g, x)
+  @test typeof(∂sq) === typeof(partial_derivatives(sq_g, x))
+
+  # `⋆ω = vol ⋆ᴱ(Mᴷω)` raises the K indices of ω through the K-th compound of
+  # the metric, so the rule is a product rule over `vol` and the rows of each
+  # minor of that compound
+  for K in 0:D, V in (Cov, Con)
+    f = y -> mk(SkewSymKTensorValue{V,K,V(D)}, y)
+    star = y -> hodge_star(f(y), gF(y), inv_g(y), sq_g(y))
+    ∂star = partials_op_rule(Val(1), hodge_star)(
+      f(x), g, inv_g(x), sq_g(x), partial_derivatives(f, x), ∂g, ∂inv, ∂sq)
+    @test ∂star ≈ partial_derivatives(star, x)
+    @test typeof(∂star) === typeof(partial_derivatives(star, x))
+  end
+
+  # The rule reads the metric of the variance `⋆` raises and the volume factor
+  # off its arguments, and derives neither of the two from the other
+  f1 = y -> mk(CoVectorValue{Cov(D)}, y)
+  @test_throws ErrorException partials_op_rule(Val(1), hodge_star)(
+    f1(x), g, partial_derivatives(f1, x), ∂g)
+end
+
+test_metric_partials_rules(g2F, x2)
+test_metric_partials_rules(g3F, x3)
 
 end # module

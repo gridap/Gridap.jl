@@ -10,6 +10,7 @@ using Gridap.TensorValues
 using Gridap.Polynomials
 using Gridap.Fields
 using Test
+import LinearAlgebra
 
 # ── Symbolic coordinates ─────────────────────────────────────────────────────
 
@@ -100,7 +101,7 @@ end
 # In 2D on 1-forms with ⋆dx¹ = dx², ⋆dx² = -dx¹ and sign (-1)^{D(K-1)+1} = -1:
 # δω = -(∂ω₁/∂x¹ + ∂ω₂/∂x²).  For ω₁=x¹²x², ω₂=x¹x²²: δω = -4x¹x²
 f1 = CoVectorValue{2}((x¹^2 * x², x¹ * x²^2))
-δf1 = codifferential(f1)
+δf1 = codifferential(f1, LinearAlgebra.I)
 @test typeof(δf1) <: ExteriorFormValue{0,cov2}
 @test isequal(Symbolics.simplify(δf1.data[1]), Symbolics.simplify(-4*x¹*x²))
 

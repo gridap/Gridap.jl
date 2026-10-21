@@ -26,3 +26,17 @@ get_cell_inv_metric(model::DiscreteModel) = _inv_cell_metric(get_cell_metric(mod
 
 _inv_cell_metric(::UniformScaling) = LinearAlgebra.I
 _inv_cell_metric(cell_metric::AbstractArray) = lazy_map(Operation(inv), cell_metric)
+
+"""
+    get_cell_metric_partials(model::DiscreteModel)
+
+The first order partial derivatives `∂g` of the metric tensor.
+
+See also [`get_cell_metric`](@ref).
+"""
+get_cell_metric_partials(model::DiscreteModel) =
+  _cell_metric_partials(get_cell_metric(model))
+
+_cell_metric_partials(::UniformScaling) = LinearAlgebra.I
+_cell_metric_partials(cell_metric::AbstractArray) =
+  lazy_map(partial_derivatives, cell_metric)

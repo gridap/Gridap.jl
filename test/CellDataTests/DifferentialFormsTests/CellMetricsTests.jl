@@ -15,39 +15,28 @@ import LinearAlgebra
 
 # ── A chart model ─────────────────────────────────────────────────────────────
 
+# The metrics are functions of the point, which `get_cell_metric_partials`
+# differentiates; a metric `Field` defining only `evaluate!` has no derivative.
+
 # The metric of the chart, g = [[c + x¹, 3/10], [3/10, 3/2]], covariant as a
 # metric must be. The constant c is one per cell, so that a cell metric read at
 # the wrong cell shows.
-struct CovChartMetric <: Field
-  c::Float64
-end
-Gridap.Arrays.evaluate!(cache, m::CovChartMetric, x::Point{2}) =
-  SymTensorValue{Cov(2)}(m.c + x[1], 0.3, 1.5)
+cov_chart_metric(c) = GenericField(x -> SymTensorValue{Cov(2)}(c + x[1], 0.3, 1.5))
 
 # The same metric with its dimension left un-varianced, which carries no
 # variance for the operators to read.
-struct ChartMetric <: Field
-  c::Float64
-end
-Gridap.Arrays.evaluate!(cache, m::ChartMetric, x::Point{2}) =
-  SymTensorValue{2}(m.c + x[1], 0.3, 1.5)
+chart_metric(c) = GenericField(x -> SymTensorValue{2}(c + x[1], 0.3, 1.5))
 
 # A contravariant metric tensor, which is an inverse metric, not a metric.
-struct ConChartMetric <: Field
-  c::Float64
-end
-Gridap.Arrays.evaluate!(cache, m::ConChartMetric, x::Point{2}) =
-  SymTensorValue{Con(2)}(m.c + x[1], 0.3, 1.5)
+con_chart_metric(c) = GenericField(x -> SymTensorValue{Con(2)}(c + x[1], 0.3, 1.5))
 
 # The closed form of g⁻¹, with det g = (3/2)(c + x¹) - 9/100.
-struct InvChartMetric <: Field
-  c::Float64
-end
-function Gridap.Arrays.evaluate!(cache, m::InvChartMetric, x::Point{2})
-  g11 = m.c + x[1]
+function _inv_chart_metric(c, x)
+  g11 = c + x[1]
   d = 1.5*g11 - 0.09
   SymTensorValue{Con(2)}(1.5/d, -0.3/d, g11/d)
 end
+inv_chart_metric(c) = GenericField(x -> _inv_chart_metric(c, x))
 
 struct ChartModel{Dc,Dp,M,A,B} <: DiscreteModel{Dc,Dp}
   model::M
@@ -103,7 +92,7 @@ model = CartesianDiscreteModel((0.0,1.0,0.0,1.0),(2,2))
 # has x¹ = 0, 1/2, 0, 1/2, and the metric there is cell + x¹.
 expected_g_11 = [1.0, 2.5, 3.0, 4.5]
 
-cmodel = chart_model(model,CovChartMetric)
+cmodel = chart_model(model,cov_chart_metric)
 Ωc = Triangulation(cmodel)
 
 @test length(get_cell_metric(cmodel)) == num_cells(cmodel)
@@ -154,30 +143,61 @@ flat_quad = UnstructuredGrid([Point(0.,0.,0.),Point(1.,0.,0.),Point(0.,1.,0.),Po
 embedded = UnstructuredDiscreteModel(flat_quad)
 @test (num_cell_dims(embedded), num_point_dims(embedded)) == (2,3)
 @test get_metric_data(Triangulation(embedded)) === (LinearAlgebra.I,)
-@test_throws ErrorException get_metric_data(Triangulation(chart_model(embedded,CovChartMetric)))
+@test_throws ErrorException get_metric_data(Triangulation(chart_model(embedded,cov_chart_metric)))
 
 # ── The variance of the metric is the model's to carry ────────────────────────
 
 # An un-varianced metric is rejected rather than read as covariant
-@test_throws ArgumentError get_metric_data(Triangulation(chart_model(model,ChartMetric)))
+@test_throws ArgumentError get_metric_data(Triangulation(chart_model(model,chart_metric)))
 
 # A contravariant tensor is an inverse metric, not a metric
-@test_throws ArgumentError get_metric_data(Triangulation(chart_model(model,ConChartMetric)))
+@test_throws ArgumentError get_metric_data(Triangulation(chart_model(model,con_chart_metric)))
 
 # The same holds of an overridden g⁻¹, which must be contravariant
 unvarianced_inv = ChartModel(model,
-                             cell_metric_fields(CovChartMetric,model),
-                             cell_metric_fields(ChartMetric,model))
+                             cell_metric_fields(cov_chart_metric,model),
+                             cell_metric_fields(chart_metric,model))
 @test_throws ArgumentError get_metric_data(Triangulation(unvarianced_inv))
 
 # A model holding a closed form for g⁻¹ keeps it rather than inverting g
 imodel = ChartModel(model,
-                    cell_metric_fields(CovChartMetric,model),
-                    cell_metric_fields(InvChartMetric,model))
+                    cell_metric_fields(cov_chart_metric,model),
+                    cell_metric_fields(inv_chart_metric,model))
 @test get_cell_inv_metric(imodel) === imodel.cell_inv_metric
 g, g_inv = get_metric_data(Triangulation(imodel))
 gv, giv = map(first_point_values, (g,g_inv))
 @test all(v -> v isa SymTensorValue{Con(2),Float64}, giv)
 @test all(cell -> get_array(giv[cell]) ≈ inv(get_array(gv[cell])), 1:num_cells(imodel))
+
+# ── The partial derivatives of the metric ─────────────────────────────────────
+
+# The identity metric is read off `∂g` as it is off `g`
+@test get_cell_metric_partials(model) === LinearAlgebra.I
+@test get_metric_partials_data(Ω) === LinearAlgebra.I
+
+# The chart's metric differentiates, and `get_metric_partials_data` brings the
+# derivatives to the triangulation in the shape the Christoffel symbols consume.
+# Only ∂₁g₁₁ = 1 is non zero here.
+∂g = get_metric_partials_data(Ωc)
+@test DomainStyle(∂g) == PhysicalDomain()
+
+∂gv = first_point_values(∂g)
+@test all(v -> v isa ProductTensorValue{SymNTensorValue{Tuple{Cov(2)}},SymTensorValue{Cov(2)}}, ∂gv)
+@test all(v -> v[1,1,1] == 1.0, ∂gv)
+@test all(v -> all(iszero, (v[1,1,2],v[1,2,2],v[2,1,1],v[2,1,2],v[2,2,2])), ∂gv)
+@test partials_to_Christoffel_1(first(∂gv)) isa
+  ProductTensorValue{CoVectorValue{Cov(2)},SymTensorValue{Cov(2)}}
+
+# A facet needs the induced metric, so its derivatives are rejected with it
+@test_throws ErrorException get_metric_partials_data(BoundaryTriangulation(cmodel))
+
+# A model whose metric has no derivative supplies `∂g` itself
+struct OpaqueMetric <: Field end
+Gridap.Arrays.evaluate!(cache, ::OpaqueMetric, x::Point{2}) =
+  SymTensorValue{Cov(2)}(1.0 + x[1], 0.3, 1.5)
+
+omodel = ChartModel(model,[OpaqueMetric() for cell in 1:num_cells(model)])
+@test_throws ErrorException first_point_values(
+  get_metric_partials_data(Triangulation(omodel)))
 
 end # module
