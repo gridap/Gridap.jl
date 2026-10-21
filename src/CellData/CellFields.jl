@@ -1,6 +1,6 @@
 """
-A single point or an array of points on the cells of a Triangulation
-CellField objects can be evaluated efficiently at CellPoint instances.
+A single point or an array of points belonging to cells of a Triangulation.
+`CellField`s can be evaluated efficiently at `CellPoint`s.
 """
 struct CellPoint{DS,A,B,C} <: CellDatum
   cell_ref_point::A
@@ -65,6 +65,14 @@ function Base.:(==)(a::CellPoint,b::CellPoint)
 end
 
 """
+    abstract type CellField <: CellDatum end
+
+Represents a `Field` that is defined cell-wise, that is in each cell, of a
+`Triangulation`.
+
+Can only be efficiently evaluated at [`CellPoint`](@ref),
+since otherwise a cell map inversion is required to find the cell owning the
+point one wishes to evaluate the cell field at.
 """
 abstract type CellField <: CellDatum end
 
@@ -85,7 +93,16 @@ function Base.show(io::IO,::MIME"text/plain",f::CellField)
   print(io,"\n Triangulation id: $(objectid(get_triangulation(f)))")
 end
 
-# Functions are assumed physical
+
+"""
+    CellField(f::Function, trian::Triangulation, ds::DomainStyle=PhysicalDomain())
+    CellField(f::Number,   trian::Triangulation, ds::DomainStyle)
+    CellField(f::AbstractArray{<:Number}, trian::Triangulation, ds::DomainStyle)
+    CellField(f::CellField, trian::Triangulation, ds::DomainStyle=ReferenceDomain())
+
+Generic `CellField` factory for closed form cell fields. The default `DomainStyle` is `ReferenceDomain`
+except for julia `Function`s.
+""" # Functions are assumed physical
 CellField(f::Function, trian::Triangulation) = CellField(f, trian, PhysicalDomain())
 
 function CellField(f::Function, trian::Triangulation, ::PhysicalDomain)
