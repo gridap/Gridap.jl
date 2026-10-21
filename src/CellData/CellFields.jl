@@ -853,7 +853,7 @@ end
 # physical space
 function codifferential(a::CellField)
   ∂a = partial_derivatives(a)
-  cell_δa = lazy_map(Broadcasting(Operation(partials_to_codifferential)), get_data(∂a))
+  cell_δa = lazy_map(Broadcasting(Operation(partials_to_flat_codifferential)), get_data(∂a))
   similar_cell_field(a, cell_δa, get_triangulation(a), DomainStyle(a))
 end
 

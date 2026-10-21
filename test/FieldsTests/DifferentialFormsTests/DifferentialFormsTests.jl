@@ -292,7 +292,7 @@ x0 = Point(2.0, 3.0)
 x1 = Point(1.0, 2.0)
 
 δω = codifferential(ωfld)
-@test evaluate(δω, x1) === partials_to_codifferential(partial_derivatives(ωfun, x1))
+@test evaluate(δω, x1) === partials_to_flat_codifferential(partial_derivatives(ωfun, x1))
 @test evaluate(δω, x1) isa ExteriorFormValue{0,cov2}
 @test evaluate(δω, x1).data[1] ≈ -26.0   atol=1e-8
 

@@ -220,7 +220,7 @@ Codifferential of a differential K-form `ω`, is a (K-1)-form. In flat Euclidean
 space, `δω = (-1)^{D(K-1)+1} ⋆ d ⋆ ω`.
 """
 function codifferential end
-codifferential(ω) = Operation(partials_to_codifferential)(partial_derivatives(ω))
+codifferential(ω) = Operation(partials_to_flat_codifferential)(partial_derivatives(ω))
 const δ = codifferential
 # TODO, a curved metric makes δω depend on ω and on the derivatives of the
 # metric too: decide on an API for the Christoffel symbols before adding them.
@@ -273,7 +273,7 @@ end
 
 for (diff_op, op) in (
   (:exterior_derivative,:partials_to_exteriorderivative),
-  (:codifferential,     :partials_to_codifferential),
+  (:codifferential,     :partials_to_flat_codifferential),
 )
   @eval begin
     function return_value(::Broadcasting{typeof($diff_op)},f)

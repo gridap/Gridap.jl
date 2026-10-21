@@ -102,7 +102,7 @@ pdv = partial_derivatives(fv,x2)
 
 @test_throws Exception partials_to_exteriorderivative(pdv)
 @test_throws Exception partials_to_liederivative(fv(x2),fv(x2),pdv,pdv)
-@test_throws Exception partials_to_codifferential(pdv)
+@test_throws Exception partials_to_flat_codifferential(pdv)
 
 # Exterior derivative of a K-form from its first order partial derivatives
 
@@ -165,16 +165,16 @@ end
 
 # Codifferential of a K-form from its first order partial derivatives
 
-δ(f) = y -> partials_to_codifferential(partial_derivatives(f,y))
+δ(f) = y -> partials_to_flat_codifferential(partial_derivatives(f,y))
 
 function test_codifferential(K, x::Point{D}) where D
   V = ExteriorFormValue{K,Cov(D)}
   f = y -> mk(V,y)
   ∂ω = partial_derivatives(f,x)
-  δω = partials_to_codifferential(∂ω)
+  δω = partials_to_flat_codifferential(∂ω)
 
   @test typeof(δω) === ExteriorFormValue{K-1,Cov(D),Float64,binomial(D,K-1)}
-  @test (@inferred partials_to_codifferential(∂ω)) === δω
+  @test (@inferred partials_to_flat_codifferential(∂ω)) === δω
   # the derivation index contracts with the first index of ω, reading ∂ω by full indices
   for (n,I) in enumerate(sorted_combinations(D,K-1))
     @test indep_comp_getindex(δω,n) ≈ -sum(j -> ∂ω[j,j,I...], 1:D)
@@ -194,7 +194,7 @@ end
 
 # The codifferential of a 0-form would be a (-1)-form
 f0form(y) = mk(ExteriorFormValue{0,Cov(2)},y)
-@test_throws Exception partials_to_codifferential(partial_derivatives(f0form,x2))
+@test_throws Exception partials_to_flat_codifferential(partial_derivatives(f0form,x2))
 
 # A form with no component has a vanishing codifferential, its sole component
 # summing no partial derivative at all
@@ -210,7 +210,7 @@ f4e(y) = zero(ExteriorFormValue{4,Cov(2),Float64,0})
 ∂sym   = product_tensor(SymNTensorValue{Tuple{Cov(3)}}(1.,2.,3.), ∂2form)
 ∂covec = product_tensor(CoVectorValue{Cov(3)}(1.,2.,3.), ∂2form)
 @test partials_to_exteriorderivative(∂covec) === partials_to_exteriorderivative(∂sym)
-@test partials_to_codifferential(∂covec) === partials_to_codifferential(∂sym)
+@test partials_to_flat_codifferential(∂covec) === partials_to_flat_codifferential(∂sym)
 
 # The 0-form method takes any order 1 covariant tensor as well
 @test partials_to_exteriorderivative(CoVectorValue{Cov(2)}(1.,2.)) ===
@@ -218,7 +218,7 @@ f4e(y) = zero(ExteriorFormValue{4,Cov(2),Float64,0})
 @test_throws ArgumentError partials_to_exteriorderivative(VectorValue(1.,2.))
 
 # The codifferential is defined on forms, not on K-vectors
-@test_throws Exception partials_to_codifferential(pdc)
+@test_throws Exception partials_to_flat_codifferential(pdc)
 
 # Lie derivative along a contravariant vector field
 
