@@ -231,8 +231,11 @@ end
   @test_throws AssertionError ReferenceFE(TRI, nedelec, ExteriorFormValue{2,2,Float64}, 1)
   @test_throws AssertionError ReferenceFE(TET, raviart_thomas, ExteriorFormValue{1,3,Float64}, 1)
   @test_throws AssertionError ReferenceFE(TRI, nedelec, ExteriorFormValue{1,3,Float64}, 1)
-  # n-cubes have no form valued polynomial basis for 0 < k < D yet
-  @test_throws AssertionError ReferenceFE(QUAD, nedelec, ExteriorFormValue{1,2,Float64}, 1)
+  # n-cubes carry the trimmed cubical family, see the 𝓠⁻ section below
+  @test num_dofs(ReferenceFE(QUAD, nedelec, ExteriorFormValue{1,2,Float64}, 1)) == 12
+  # but the second kind names are simplex only, on any value type
+  @test_throws AssertionError ReferenceFE(QUAD, nedelec2, ExteriorFormValue{1,2,Float64}, 1)
+  @test_throws AssertionError ReferenceFE(QUAD, bdm, ExteriorFormValue{1,2,Float64}, 1)
 
   # Only a form value type has a form degree. A `Float64` is not a 0-form --
   # `∧`, `flat_hodge_star` and `pullback` are not defined on it -- and a vector
@@ -371,6 +374,22 @@ end
     test_reference_fe(top)
   end
 
+  # Nodal DOFs are only meaningful for 0-forms and D-forms.
+  for (p,D) in ((QUAD,2),(HEX,3),(TRI,2),(TET,3)), k in 1:D-1
+    @test_throws AssertionError ReferenceFE(p, lagrangian, ExteriorFormValue{k,D,Float64}, 1)
+    @test_throws AssertionError ReferenceFE(p, lagrangian, ExteriorFormValue{k,D,Float64}, 2)
+  end
+  for (p,D) in ((QUAD,2),(HEX,3)), k in 1:D-1
+    @test_throws AssertionError ReferenceFE(p, serendipity, ExteriorFormValue{k,D,Float64}, 2)
+  end
+  # ... but order 0 is cell wise constant, hence discontinuous: there is no
+  # gluing to get wrong, so any form degree is sound there.
+  for (p,D) in ((QUAD,2),(HEX,3)), k in 1:D-1
+    dg = ReferenceFE(p, lagrangian, ExteriorFormValue{k,D,Float64}, 0)
+    @test Conformity(dg) isa L2Conformity
+    @test num_dofs(dg) == binomial(D,k)
+  end
+
   # The same elements through the FEEC factory, `nodal=true`
   for (p,D,F) in ((TRI,2,:P),(TET,3,:P⁻),(QUAD,2,:Q⁻),(HEX,3,:Q⁻)), k in (0,D)
     reffe = ReferenceFE(p, F, 2, k, Float64; DG_calc=true, nodal=true)
@@ -469,6 +488,125 @@ end
     face_meshsize = fill(2.0, num_faces(get_polytope(reffe)))
     setter(dofscale, face_own_dofs, face_meshsize)
     @test all(≈(2.0^k), dofscale)
+  end
+end
+
+# ─── The trimmed cubical family 𝓠⁻ᵣΛᵏ(□ᴰ) ────────────────────────────────────
+# 𝓠⁻ᵣΛᵏ(□ᴰ) = ⊕_{|σ|=k} (⊗ⱼ 𝓟_{rⱼ}) dxˢⁱᵍᵐᵃ, with rⱼ = r-1 for j ∈ σ and r
+# otherwise, so the component wise tensor basis carries it with no change --
+# only its `orders` matrix differs from the vector proxied one.
+
+ncube(D) = D == 2 ? QUAD : HEX
+qλ(p,r,k) = ReferenceFE(p, :Q⁻, r, k, Float64; DG_calc=true)
+
+@testset "Q⁻ᵣΛᵏ(□ᴰ) has the Arnold-Awanou dimension" begin
+  for D in (2,3), r in 1:3, k in 0:D
+    reffe = qλ(ncube(D), r, k)
+    @test num_dofs(reffe) == binomial(D,k) * r^k * (r+1)^(D-k)
+    @test get_form_degree(reffe) == k
+    @test Conformity(reffe) isa PΛConformity
+  end
+  # the lowest order complex: the Whitney forms of the cube, one dof per
+  # vertex / edge / face / cell
+  @test map(k -> num_dofs(qλ(HEX, 1,k)), 0:3) == [8,12,6,1]
+  @test map(k -> num_dofs(qλ(QUAD,1,k)), 0:2) == [4,4,1]
+end
+
+@testset "𝑑 maps Q⁻ᵣΛᵏ(□ᴰ) into Q⁻ᵣΛᵏ⁺¹(□ᴰ)" begin
+  # The trimmed cubical family is a subcomplex. This is what pins down the
+  # `orders` matrix: a wrong per-direction degree still gives a basis of the
+  # right size, but breaks the inclusion.
+  pts(D,n) = [Point(ntuple(i -> (((h-1)÷(n^(i-1))) % n)/(n-1), D)) for h in 1:n^D]
+  flat(M) = reduce(vcat,
+    [reduce(hcat, [collect(M[i,j].data) for j in axes(M,2)]) for i in axes(M,1)])
+
+  for D in (2,3), r in 1:2, k in 0:D-1
+    bk  = FEEC_poly_basis(Val(D), ExteriorFormValue{k,  Cov(D),Float64}, r, k,   :Q⁻)
+    bk1 = FEEC_poly_basis(Val(D), ExteriorFormValue{k+1,Cov(D),Float64}, r, k+1, :Q⁻)
+    X = pts(D, r+3)
+    Y = flat(evaluate(Broadcasting(𝑑)(bk), X))
+    A = flat(evaluate(bk1, X))
+    @test norm(A*(A\Y) - Y) / norm(Y) < 1e-10
+  end
+end
+
+@testset "Q⁻ form valued element: construction, duality and trace locality" begin
+  for D in (2,3), r in 1:3, k in 0:D
+    p = ncube(D)
+    reffe = qλ(p, r, k)
+    prebasis = get_prebasis(reffe)
+
+    @test num_dofs(reffe) == length(prebasis)
+    M = evaluate(get_dof_basis(reffe), get_shapefuns(reffe))
+    @test M ≈ Matrix(I, num_dofs(reffe), num_dofs(reffe))
+
+    # the moments are unisolvent on the prebasis, not merely equinumerous
+    @test rank(Matrix(evaluate(get_dof_basis(reffe), prebasis))) == num_dofs(reffe)
+
+    # Trace locality, as for the simplex families above.
+    faces = get_faces(p)
+    face_own_dofs = get_face_own_dofs(reffe)
+    face_own_funs = get_face_own_funs(prebasis, p, PΛConformity())
+    A = evaluate(get_dof_basis(reffe), prebasis)
+    for (f, dof_ids) in enumerate(face_own_dofs), (g, fun_ids) in enumerate(face_own_funs)
+      (isempty(dof_ids) || isempty(fun_ids) || faces[g] ⊆ faces[f]) && continue
+      @test all(iszero, round.(A[dof_ids, fun_ids], digits=10))
+    end
+  end
+end
+
+# ─── Geometric decomposition of the cubical form valued bases ────────────────
+
+@testset "Q⁻ form valued bases admit the geometric decomposition" begin
+  for D in (2,3), r in 1:3, k in 0:D
+    p = ncube(D)
+    b = get_prebasis(qλ(p, r, k))
+    @test has_geometric_decomposition(b, p, PΛConformity())
+
+    own_funs = get_face_own_funs(b, p, PΛConformity())
+    # the face ownership is a partition of the basis
+    @test sum(length, own_funs) == length(b)
+    @test sort(vcat(own_funs...)) == collect(1:length(b))
+    # k-forms are never owned by a face of dimension < k
+    for (f, ids) in enumerate(own_funs)
+      isempty(ids) && continue
+      @test length(get_faces(p)[f]) ≥ 1
+      @test get_facedims(p)[f] ≥ k
+    end
+  end
+end
+
+@testset "Q⁻ form value type selects the form valued variant on n-cubes" begin
+  for D in (2,3)
+    p = ncube(D)
+    for (name, k) in ((nedelec, 1), (raviart_thomas, D-1)), order in 0:2
+      form  = ReferenceFE(p, name, ExteriorFormValue{k,D,Float64}, order)
+      proxy = ReferenceFE(p, name, Float64, order)
+
+      @test get_name(form) == get_name(proxy)
+      @test get_form_degree(form) == k
+      @test num_dofs(form) == num_dofs(proxy)
+      @test map(length, get_face_own_dofs(form)) == map(length, get_face_own_dofs(proxy))
+      @test Pushforward(get_name(form), Conformity(form)) isa TensorPushforward
+    end
+  end
+
+  # D-forms on an n-cube are L² densities spanning 𝓠_{order}, so -- unlike the
+  # 0-forms -- they are *not* the scalar modal element, which is H¹ conforming.
+  for D in (2,3), order in 0:2
+    p = ncube(D)
+    top = ReferenceFE(p, modal_lagrangian, ExteriorFormValue{D,D,Float64}, order)
+    @test num_dofs(top) == (order+1)^D
+    @test get_form_degree(top) == D
+    @test Conformity(top) isa PΛConformity
+    # every dof of a D-form is owned by the cell
+    @test last(map(length, get_face_own_dofs(top))) == num_dofs(top)
+  end
+end
+
+@testset "test_reference_fe on n-cubes" begin
+  for D in (2,3), r in 1:2, k in 0:D
+    test_reference_fe(qλ(ncube(D), r, k))
   end
 end
 

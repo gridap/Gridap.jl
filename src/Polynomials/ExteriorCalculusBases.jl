@@ -50,6 +50,14 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
   FEEC_space_definition_checks(Val(D), T, r, k, F, rotate_90; cart_prod)
   # This also ensures 0≤k≤D≤3 on the proxied path
   DG_calc = T <: ExteriorFormValue
+
+  # 𝓠⁻ᵣΛᵏ(□ᴰ) = ⊕_{|I|=k} (⊗ⱼ 𝓟_{rⱼ}) dx^I, with rⱼ = r-1 for j ∈ σ and r otherwise.
+  if DG_calc && F == :Q⁻ && 0 < k < D
+    comps = sorted_combinations(D,k) # components dtⁱ¹ ∧ dtⁱ² ∧ ... ∧  dtⁱᵏ for each variable t = xⱼ
+    orders = [ (j in comps[l] ? r-1 : r) for l in 1:binomial(D,k), j in 1:D ]
+    return CompWiseTensorPolyBasis{D}(PT, make_concretetype(T), orders)
+  end
+
   @notimplementedif DG_calc && !(k in (0,D))
   V = make_concretetype(T)
 

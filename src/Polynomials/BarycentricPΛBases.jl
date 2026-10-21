@@ -50,9 +50,10 @@ function FEEC_space_definition_checks(
   end
 
   if DG_calc
-    @notimplementedif !(k in (0,D) || F in (:P, :P⁻)) """
+    @notimplementedif !(k in (0,D) || F in (:P, :P⁻, :Q⁻)) """
       Form valued spaces of degree 0 < k < D are only implemented for the :P \
-      and :P⁻ families so far, got F=$F
+      and :P⁻ families (on simplices) and the :Q⁻ family (on n-cubes) so far, \
+      got F=$F
       """
   elseif 1 < k < D-1
     @unreachable "Vector calculus proxy of differential form bases are only available for `k`=0,1,`D`-1 or `D`, got k=$k and D=$D."
