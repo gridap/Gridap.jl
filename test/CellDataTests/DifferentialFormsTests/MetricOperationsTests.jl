@@ -18,11 +18,9 @@ import LinearAlgebra
 # ── A chart model of constant metric ──────────────────────────────────────────
 
 # g = [[2, 1/2], [1/2, 1]], covariant as a metric must be. It is constant, so
-# the operators have a closed form at every point.
+# the operators have a closed form at every point. It is given as a function of
+# the point, which `get_cell_metric_partials` differentiates.
 const g = SymTensorValue{Cov(2)}(2.0,0.5,1.0)
-
-struct ConstantMetric <: Field end
-Gridap.Arrays.evaluate!(cache, ::ConstantMetric, x::Point{2}) = g
 
 struct ChartModel{Dc,Dp,M,A} <: DiscreteModel{Dc,Dp}
   model::M
@@ -48,7 +46,7 @@ end
 operation_field(cf) = testitem(get_data(cf))
 
 model  = CartesianDiscreteModel((0.0,1.0,0.0,1.0),(2,2))
-cmodel = ChartModel(model,Fill(ConstantMetric(),num_cells(model)))
+cmodel = ChartModel(model,Fill(GenericField(x -> g),num_cells(model)))
 Ω  = Triangulation(model)
 Ωc = Triangulation(cmodel)
 

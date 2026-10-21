@@ -6,6 +6,8 @@ using Test
 
 @testset "MetricOperations" begin include("MetricOperationsTests.jl") end
 
+@testset "MetricCodifferential" begin include("MetricCodifferentialTests.jl") end
+
 @testset "MeasureConvention" begin include("MeasureConventionTests.jl") end
 
 @testset "MetricFormAssembly" begin include("MetricFormAssemblyTests.jl") end

@@ -8,6 +8,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Fields: GenericField
 using Test
+import LinearAlgebra
 using Gridap.CellData: GenericCellField, get_data
 using FillArrays: Fill
 
@@ -84,7 +85,7 @@ cδω   = array_cache(δωx)
 @test typeof(δval0) <: AbstractArray{<:ExteriorFormValue{0,cov2}}
 
 # Verify value: δω = -3y → at (0.125,0.125): -0.375
-δv = evaluate(codifferential(ωfld), x_c)
+δv = evaluate(codifferential(ωfld, LinearAlgebra.I), x_c)
 @test δv.data[1] ≈ -0.375   atol=1e-8
 
 # `δ` of a 0-form is the zero (-1)-form, which has no value type

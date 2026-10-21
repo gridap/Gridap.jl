@@ -7,6 +7,7 @@ using Gridap.Fields: FieldPartialDerivatives, FieldPartialDerivativesArray
 using Gridap.Fields: OperationField
 using FillArrays: Fill
 using Test
+import LinearAlgebra
 
 # ω1 = 3x¹ dx¹ + 9(x¹)² dx², ω2 swaps the two components
 ω1fun(x) = CoVectorValue(3.0*x[1], 9.0*x[1]^2)
@@ -291,7 +292,7 @@ x0 = Point(2.0, 3.0)
 ωfld = GenericField(ωfun)
 x1 = Point(1.0, 2.0)
 
-δω = codifferential(ωfld)
+δω = codifferential(ωfld,LinearAlgebra.I)
 @test evaluate(δω, x1) === partials_to_flat_codifferential(partial_derivatives(ωfun, x1))
 @test evaluate(δω, x1) isa ExteriorFormValue{0,cov2}
 @test evaluate(δω, x1).data[1] ≈ -26.0   atol=1e-8
@@ -327,7 +328,7 @@ bL = Broadcasting(lie_derivative)(Fill(ufld,3), Fill(ωfld,3))
 bd = Broadcasting(exterior_derivative)(Fill(ωfld,3))
 @test evaluate(bd[1], x1) === evaluate(exterior_derivative(ωfld), x1)
 
-bδ = Broadcasting(codifferential)(Fill(ωfld,3))
+bδ = Broadcasting(codifferential)(Fill(ωfld,3),LinearAlgebra.I)
 @test evaluate(bδ[1], x1) === evaluate(δω, x1)
 
 bκ = Broadcasting(koszul)(Fill(ωfld,3))

@@ -4,6 +4,7 @@ using Symbolics
 using Gridap
 using Gridap.TensorValues
 using Gridap.Polynomials
+using LinearAlgebra: UniformScaling
 
 using Gridap.Polynomials: multinomial  # Combinatorics, via Gridap.Polynomials
 using Gridap.Polynomials: _sup_str
@@ -63,10 +64,11 @@ end
 
 # ============================================================
 # Symbolic codifferential  δ : Ωᴷ(D) → Ωᴷ⁻¹(D)
-#   δ = (-1)^{D(K-1)+1} ⋆ d ⋆   (flat Euclidean metric, symbolic coefficients)
+#   δ = s(-1)^{D(K-1)+1} ⋆ d ⋆
+# with s = 1 for Riemanian metric, -1 for Lorentzian metric
 # ============================================================
 
-function codifferential(ω::ExteriorFormValue{K,Dw,Symbolics.Num}) where {K,Dw}
+function codifferential(ω::ExteriorFormValue{K,Dw,Symbolics.Num}, ::UniformScaling) where {K,Dw}
   @assert K >= 1 "δ of a 0-form is the zero (-1)-form, which has no value type"
   D   = Int(Dw)
   sgn = iseven(D*(K-1) + 1) ? 1 : -1

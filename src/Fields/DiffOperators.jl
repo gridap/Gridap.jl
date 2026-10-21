@@ -216,14 +216,24 @@ const 𝓛 = lie_derivative
     codifferential(ω)
     δ(ω)
 
-Codifferential of a differential K-form `ω`, is a (K-1)-form. In flat Euclidean
-space, `δω = (-1)^{D(K-1)+1} ⋆ d ⋆ ω`.
+Codifferential of a differential K-form `ω`, is a (K-1)-form:
+  ``δω = s(-1)^{D(K-1)+1} ⋆ d ⋆ ω``
+with ``s = 1`` for Riemanian metric, ``-1`` for Lorentzian metric.
+
+It depends on the metric via the [`hodge_star`](@ref). The metric is is
+automatically fed to `ω` if it is a cell field.
 """
 function codifferential end
-codifferential(ω) = Operation(partials_to_flat_codifferential)(partial_derivatives(ω))
+
+codifferential(ω, ::UniformScaling) =
+  Operation(partials_to_flat_codifferential)(partial_derivatives(ω))
+
+function codifferential(ω, g, metric_args...)
+  Γ = Operation(partials_to_Christoffel_2)(partial_derivatives(g), g, metric_args...)
+  Operation(partials_to_codifferential)(partial_derivatives(ω), ω, Γ, g, metric_args...)
+end
+
 const δ = codifferential
-# TODO, a curved metric makes δω depend on ω and on the derivatives of the
-# metric too: decide on an API for the Christoffel symbols before adding them.
 
 """
     koszul(ω)
@@ -271,17 +281,27 @@ end
 
 # Broadcasting of differential operators using partial_derivatives.
 
-for (diff_op, op) in (
-  (:exterior_derivative,:partials_to_exteriorderivative),
-  (:codifferential,     :partials_to_flat_codifferential),
-)
-  @eval begin
-    function return_value(::Broadcasting{typeof($diff_op)},f)
-      Broadcasting(Operation($op))(Broadcasting(partial_derivatives)(f))
-    end
-    function evaluate!(cache,::Broadcasting{typeof($diff_op)},f)
-      Broadcasting(Operation($op))(Broadcasting(partial_derivatives)(f))
-    end
-  end
+function return_value(::Broadcasting{typeof(exterior_derivative)},f)
+  Broadcasting(Operation(partials_to_exteriorderivative))(Broadcasting(partial_derivatives)(f))
+end
+
+function evaluate!(cache,::Broadcasting{typeof(exterior_derivative)},f)
+  Broadcasting(Operation(partials_to_exteriorderivative))(Broadcasting(partial_derivatives)(f))
+end
+
+# `δ` reads the metric, which a field array carries no more than a field does,
+# so its broadcast takes the metric arguments the operator itself takes.
+return_value(k::Broadcasting{typeof(codifferential)},f,metric_args...) =
+  evaluate!(nothing,k,f,metric_args...)
+
+function evaluate!(cache,::Broadcasting{typeof(codifferential)},f,::UniformScaling)
+  Broadcasting(Operation(partials_to_flat_codifferential))(Broadcasting(partial_derivatives)(f))
+end
+
+function evaluate!(cache,::Broadcasting{typeof(codifferential)},f,g,metric_args...)
+  Γ = Broadcasting(Operation(partials_to_Christoffel_2))(
+        Broadcasting(partial_derivatives)(g), g, metric_args...)
+  Broadcasting(Operation(partials_to_codifferential))(
+    Broadcasting(partial_derivatives)(f), f, Γ, g, metric_args...)
 end
 

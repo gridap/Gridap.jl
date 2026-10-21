@@ -101,6 +101,7 @@ export attach_constraints_cols
 export identity_constraints
 export get_physical_coordinate
 export get_metric_data
+export get_metric_partials_data
 
 export CellState
 export update_state!
