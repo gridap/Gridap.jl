@@ -328,6 +328,7 @@ from_1form
 to_Kform
 from_Kform
 to_0form
+from_0form
 to_Dform
 flat_vol_coeff
 grad_to_2form

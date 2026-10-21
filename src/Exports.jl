@@ -64,6 +64,7 @@ using Gridap.Arrays: ∑; export ∑
 #@publish TensorValues to_Kform
 #@publish TensorValues from_Kform
 #@publish TensorValues to_0form
+#@publish TensorValues from_0form
 #@publish TensorValues to_Dform
 #@publish TensorValues grad_to_2form
 using Gridap.TensorValues: ⊙; export ⊙

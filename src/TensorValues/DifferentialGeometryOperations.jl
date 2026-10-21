@@ -1375,6 +1375,13 @@ Convert the scalar `u` to a `ExteriorFormValue{0,D}`.
 to_0form(u::_Scalar, ::Val{D}) where D = ExteriorFormValue{0,D}((u,))
 
 """
+    from_0form(ω::ExteriorFormValue{0,D})
+
+The scalar value of the 0-form `ω`, the inverse of [`to_0form`](@ref).
+"""
+from_0form(ω::ExteriorFormValue{0,D}) where D = indep_comp_getindex(ω, 1)
+
+"""
     to_Dform(u::Number, ::Val{D})
 
 Convert the scalar `u` as the sole component of the top-degree

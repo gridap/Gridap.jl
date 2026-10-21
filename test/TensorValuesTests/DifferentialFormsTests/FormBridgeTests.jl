@@ -58,13 +58,16 @@ v_2form = VectorValue(1.0, -2.0, 3.0)
 @test ω_2form.data == (1.0, -2.0, 3.0)
 @test from_Kform(ω_2form) == v_2form
 
-# ── to_0form / to_Dform ──────────────────────────────────────────────────────
+# ── to_0form / from_0form / to_Dform ─────────────────────────────────────────
 
 @test to_0form(3.0, Val(2)) isa ExteriorFormValue{0,cov2}
 @test to_0form(3.0, Val(2)).data == (3.0,)
+@test from_0form(to_0form(3.0, Val(2))) === 3.0
+@test from_0form(to_0form(3.0, Val(3))) === 3.0
 @test to_Dform(5.0, Val(2)) isa ExteriorFormValue{2,cov2}
 @test to_Dform(5.0, Val(2)).data == (5.0,)
 @test to_Dform(7.0, Val(3)) isa ExteriorFormValue{3,cov3}
+@test flat_vol_coeff(to_Dform(5.0, Val(2))) === 5.0
 
 # ── grad_to_2form ─────────────────────────────────────────────────────────────
 # Gridap's ∇(u) is

@@ -161,6 +161,7 @@ export from_1form
 export to_Kform
 export from_Kform
 export to_0form
+export from_0form
 export to_Dform
 export grad_to_2form
 export partials_to_exteriorderivative
