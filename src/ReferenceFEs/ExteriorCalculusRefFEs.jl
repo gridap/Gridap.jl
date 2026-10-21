@@ -107,7 +107,7 @@ function form_moment(φ, μ, ds::FaceMeasure)
   Jt  = Broadcasting(∂)(ds.fmaps[ds.face])
   ιφ  = Broadcasting(Operation(pullback))(φ, Jt)
   wdg = Broadcasting(Operation(∧))(ιφ, μ)
-  Broadcasting(Operation(vol_coeff))(wdg)
+  Broadcasting(Operation(flat_vol_coeff))(wdg)
 end
 
 # ─────────────────────────────────────────────────────────────────────────────

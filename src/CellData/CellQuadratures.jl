@@ -135,7 +135,7 @@ function get_cell_points(a::CellQuadrature)
   CellPoint(a.cell_point,a.trian,a.data_domain_style)
 end
 
-function integrate(f::CellField,quad::CellQuadrature)
+function integrate(f::CellField, quad::CellQuadrature)
   trian_f = get_triangulation(f)
   trian_x = get_triangulation(quad)
 
@@ -146,37 +146,100 @@ function integrate(f::CellField,quad::CellQuadrature)
     """
   @check is_change_possible(trian_f,trian_x) msg
 
-  b = change_domain(f,quad.trian,quad.data_domain_style)
+  b = change_domain(f, quad.trian, quad.data_domain_style)
   x = get_cell_points(quad)
-  bx = b(x)
-  if quad.data_domain_style == PhysicalDomain() &&
-            quad.integration_domain_style == PhysicalDomain()
-    lazy_map(IntegrationMap(),bx,quad.cell_weight)
+
+  T = eltype(testitem(b(x)))
+  bx = _integrand_coefficient(T, b, quad.trian)(x)
+
+  if quad.data_domain_style == quad.integration_domain_style
+    lazy_map(IntegrationMap(), bx, quad.cell_weight)
   elseif quad.data_domain_style == ReferenceDomain() &&
             quad.integration_domain_style == PhysicalDomain()
     cell_Jt = get_cell_jac(quad.trian)
-    cell_Jtx = lazy_map(evaluate,cell_Jt,quad.cell_point)
-    lazy_map(IntegrationMap(),bx,quad.cell_weight,cell_Jtx)
-  elseif quad.data_domain_style == ReferenceDomain() &&
-            quad.integration_domain_style == ReferenceDomain()
-    cell_map = Fill(GenericField(identity),length(bx))
-    cell_Jt = lazy_map(∇,cell_map)
-    cell_Jtx = lazy_map(evaluate,cell_Jt,quad.cell_point)
-    lazy_map(IntegrationMap(),bx,quad.cell_weight,cell_Jtx)
+    cell_Jtx = lazy_map(evaluate, cell_Jt, quad.cell_point)
+    # The contribution of the triangulation's intrinsic metric is added to the
+    # weights rather than the integrand, which is more efficient for cell-wise
+    # constant metric.
+    vol_weights = _metric_weights(T, x, quad, get_metric_data(quad.trian),)
+    lazy_map(IntegrationMap(), bx, vol_weights, cell_Jtx)
   else
     @notimplemented
   end
 end
 
+_integrand_coefficient(::Type, b::CellField, trian::Triangulation) = b
+function _integrand_coefficient(
+  ::Type{<:ExteriorFormValue{K,Dw}}, b::CellField, trian::Triangulation) where {K,Dw}
+
+  # 0-form: same as integral of scalar function
+  K == 0 && return from_0form(b)
+
+  # b = b_I dxᴵ where length(I) = manifold dimension:
+  # ∫( b ) = ∫( b_I )dΩ (the latter being the usual integral).
+  K == Dw == num_cell_dims(trian) && return flat_vol_coeff(b)
+  # the "vol_coeff" name here is misleading: this is just the form components
+  # in the standard basis, the volume form contribution is delt with in
+  # _metric_weights, see [`flat_vol_coeff`](@ref).
+
+  @unreachable """\n
+  A $K-form of $(Int(Dw)) dimensions has no integral over a $(num_cell_dims(trian))-dimensional
+  domain. The form valued fields that can be integrated are:
+  - a 0-form, which is integrated like a scalar function,
+  - a top form of the domain, whose single coefficient is what the integral of a form means, have one.
+  Look at using an inner product such as `alt_inner(u,v) === u ∧ ⋆v` or
+  `inner`, or integrate its components as those of the vector `from_Kform(u)`.
+  """
+end
+
+# The volume element of the integral of a function over a triangulation with
+# metric `g`, pulled back in reference space, is `meas(Jt)·√|det g|` where `Jt`
+# is the cell_map Jacobian from the triangulation's element to the reference
+# element.  meas(Jt) is added by the integration map, √|det g| is added here.
+# For a volume form, √|det g| is accounted for naturally so must not be added.
+function _metric_weights(::Type{T}, x::CellPoint, quad::CellQuadrature, metric_data) where T
+  if (metric_data[1] isa UniformScaling) || (T <: ExteriorFormValue && !iszero(get_form_degree(T)))
+    return quad.cell_weight
+  end
+  # _integrand_coefficient guaranties this is a scalar integrand
+  sqrt_abs_g = metric_data[3]
+  lazy_map(Broadcasting(*), quad.cell_weight, sqrt_abs_g(x))
+end
+
 """
     integrate(integrand, dΩ::Measure)
     integrate(integrand, dΩ::CellQuadrature)
-    (integrand::Integrand) * dΩ
-    ∫(quantity) * dΩ
-    ∫(quantity)dΩ
+    ∫(integrand) * dΩ
+    ∫(integrand)dΩ
 
-High level integral definition API, the `integrand` can be created using
-[`∫`](@ref Integrand).
+High level integral definition API. The `integrand` can be a `CellField` such
+as an `FEFunction`, or something that the [`CellField`](@ref) factory
+accepts as a first argument like a closed form julia `Function` or constant
+`Number`.
+
+The definition of the integral depends on the return type of the integrand. If
+it is a scalar valued field, it is the standard (Riemannian, Lebesgue)
+integral. If the measure's triangulation declares a non-identity metric `g`
+tensor via [`get_cell_metric`](@ref), the volume element √|det `g`| is
+automatically added to the integrand.
+
+If the value type is a tensor type different from a differential form value,
+the integral is performed component-wise.
+
+If it is a differential form, that is its value type is `ExteriorFormValue{K,D}`, then:
+- if `K=0`, the integral is defined as above,
+- if `K=D` and `D` is the manifold dimension of the triangulation, proper
+  differential form integral is used: the single form coefficient is integrated
+  without adding the √|det `g`| term, since the form component already contains it,
+- else, the integral is not defined.
+
+As a consequence, integrating a `0`- or `D`-form `ω` can equivalently be done
+using `∫( ω )dΩ` or `∫( ⋆(ω) )dΩ`, since `⋆` acts on `0`- and `D`-forms by
+multiplying by √|det `g`| and √|det `g`⁻¹|, respectively. See also
+[`alt_inner`](@ref).
+
+The syntaxic sugar `∫(integrand)dΩ` relies on wrapping the integrand into an
+[`Integrand`](@ref Integrand).
 """
 function integrate(a,quad::CellQuadrature)
   b = CellField(a,quad.trian,quad.data_domain_style)

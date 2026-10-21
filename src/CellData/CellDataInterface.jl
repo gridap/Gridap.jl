@@ -14,7 +14,7 @@ struct PhysicalDomain <: DomainStyle end
     abstract type CellDatum <: GridapType
 
 Data associated with the cells of a Triangulation.
-CellDatum objects behave as if they are defined in the physical space of the triangulation.
+`CellDatum` objects behave as if they are defined in the physical space of the triangulation.
 But in some cases they are implemented as reference quantities plus some transformation to the physical domain.
 """
 abstract type CellDatum <: GridapType end

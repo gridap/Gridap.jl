@@ -131,10 +131,11 @@ md = compute_metric_data(gv[1],giv[1],sv[1])
 @test md.sqrt_abs_g == sv[1]
 @test hodge_star(ω,gv[1],giv[1],sv[1]) ≈ hodge_star(ω,md)
 
-# The cell fields reach the quadrature points:
+# The cell fields reach the quadrature points. `Measure` scales the weights of a
+# scalar integrand by `sqrt_abs_g`, which dividing by it cancels, leaving
 # ∫ det g = ∫ (3/2)(cell + x¹) - 9/100 over the unit square
 dΩc = Measure(Ωc,2)
-@test sum(∫(Operation(det)(g))dΩc) ≈ 1.5*3.0 - 0.09
+@test sum(∫(Operation(det)(g)/sqrt_abs_g)dΩc) ≈ 1.5*3.0 - 0.09
 
 # A triangulation of part of the model reads the metric of the cells it holds
 Ωp = Triangulation(cmodel,[2,4])

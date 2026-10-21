@@ -67,12 +67,13 @@ using Gridap.TensorValues: ♭, ♭ᴱ, ♯, ♯ᴱ; export ♭, ♭ᴱ, ♯, �
 @publish Fields δ
 #@publish TensorValues symbolic_coordinates
 #@publish TensorValues koszul
-#@publish TensorValues vol_coeff
+#@publish TensorValues flat_vol_coeff
 #@publish TensorValues to_1form
 #@publish TensorValues from_1form
 #@publish TensorValues to_Kform
 #@publish TensorValues from_Kform
 #@publish TensorValues to_0form
+#@publish TensorValues from_0form
 #@publish TensorValues to_Dform
 #@publish TensorValues grad_to_2form
 using Gridap.TensorValues: ⊙; export ⊙

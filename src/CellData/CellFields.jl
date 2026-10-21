@@ -1,6 +1,6 @@
 """
-A single point or an array of points on the cells of a Triangulation
-CellField objects can be evaluated efficiently at CellPoint instances.
+A single point or an array of points belonging to cells of a Triangulation.
+`CellField`s can be evaluated efficiently at `CellPoint`s.
 """
 struct CellPoint{DS,A,B,C} <: CellDatum
   cell_ref_point::A
@@ -65,6 +65,14 @@ function Base.:(==)(a::CellPoint,b::CellPoint)
 end
 
 """
+    abstract type CellField <: CellDatum end
+
+Represents a `Field` that is defined cell-wise, that is in each cell, of a
+`Triangulation`.
+
+Can only be efficiently evaluated at [`CellPoint`](@ref),
+since otherwise a cell map inversion is required to find the cell owning the
+point one wishes to evaluate the cell field at.
 """
 abstract type CellField <: CellDatum end
 
@@ -85,7 +93,16 @@ function Base.show(io::IO,::MIME"text/plain",f::CellField)
   print(io,"\n Triangulation id: $(objectid(get_triangulation(f)))")
 end
 
-# Functions are assumed physical
+
+"""
+    CellField(f::Function, trian::Triangulation, ds::DomainStyle=PhysicalDomain())
+    CellField(f::Number,   trian::Triangulation, ds::DomainStyle)
+    CellField(f::AbstractArray{<:Number}, trian::Triangulation, ds::DomainStyle)
+    CellField(f::CellField, trian::Triangulation, ds::DomainStyle=ReferenceDomain())
+
+Generic `CellField` factory for closed form cell fields. The default `DomainStyle` is `ReferenceDomain`
+except for julia `Function`s.
+""" # Functions are assumed physical
 CellField(f::Function, trian::Triangulation) = CellField(f, trian, PhysicalDomain())
 
 function CellField(f::Function, trian::Triangulation, ::PhysicalDomain)
@@ -540,7 +557,8 @@ Base.:(∘)(f::Function,g::Tuple{Vararg{Union{Function,CellField}}}) = Operation
 # Unary ops
 
 for op in (:symmetric_part,:inv,:det,:abs,:abs2,:+,:-,:tr,:transpose,:adjoint,
-  :grad2curl,:real,:imag,:conj,:flat_hodge_star,:vol_coeff,:to_1form,:from_1form
+  :grad2curl,:real,:imag,:conj,:flat_hodge_star,:flat_flat,:flat_sharp,
+  :flat_vol_coeff,:from_0form,:to_1form,:from_1form
 )
   @eval begin
     ($op)(a::CellField) = Operation($op)(a)
@@ -549,8 +567,8 @@ end
 
 # Binary ops
 
-for op in (:inner,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/,
-  :interior_product, :sharp, :flat, :∧, :alt_inner, :pullback, :pushforward
+for op in (:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/,
+  :interior_product, :∧, :flat_inner, :flat_alt_inner, :pullback, :pushforward
 )
   @eval begin
     ($op)(a::CellField,b::CellField) = Operation($op)(a,b)
@@ -560,6 +578,57 @@ for op in (:inner,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/,
     ($op)(a::Function,b::CellField) = Operation($op)(a,b)
     ($op)(a::CellField,b::AbstractArray{<:Number}) = Operation($op)(a,b)
     ($op)(a::AbstractArray{<:Number},b::CellField) = Operation($op)(a,b)
+  end
+end
+
+# Metric dependent ops: the triangulation's metric is automatically fed to the
+# operator, but an explicitly given is not changed.
+
+function _operate_with_metric(op, euclidean_op, a...)
+  a_cf = _convert_to_cellfields(a...)
+  # The metric is that of the triangulation the operation is evaluated on, so
+  # it is read after the arguments are brought to their common domain.
+  md_cf = get_metric_data(get_triangulation(first(a_cf)))
+  _metric_operation(op, euclidean_op, md_cf, a_cf...)
+end
+
+_metric_operation(op, euclidean_op, ::Tuple{UniformScaling}, a::CellField...) =
+  Operation(euclidean_op)(a...)
+_metric_operation(op, euclidean_op, metric_data::Tuple, a::CellField...) =
+  Operation(op)(a..., _metric_args(op, metric_data)...)
+
+# metric_data is `(g, g_inv, sqrt_abs_g)`, this eagerly computes all metric args
+# the operation might require
+_metric_args(::typeof(hodge_star), metric_data::Tuple) = metric_data
+_metric_args(::typeof(flat),       metric_data::Tuple) = (metric_data[1],)
+_metric_args(::typeof(sharp),      metric_data::Tuple) = (metric_data[2],)
+_metric_args(::typeof(inner),      metric_data::Tuple) = metric_data[1:2]
+_metric_args(::typeof(alt_inner),  metric_data::Tuple) = metric_data[1:2]
+
+# One field argument
+for (op, euclidean_op) in (
+  (:hodge_star,:flat_hodge_star), (:flat,:flat_flat), (:sharp,:flat_sharp)
+)
+  @eval begin
+    ($op)(a::CellField) = _operate_with_metric($op,$euclidean_op,a)
+    ($op)(a::CellField, ::UniformScaling) = Operation($euclidean_op)(a)
+    ($op)(a::CellField, g, gs...) = Operation($op)(a,g,gs...)
+  end
+end
+
+# Two field arguments
+for (op, euclidean_op) in ((:inner,:flat_inner), (:alt_inner,:flat_alt_inner))
+  for (Ta,Tb) in (
+    (:CellField,:CellField),
+    (:CellField,:Number), (:Number,:CellField),
+    (:CellField,:Function), (:Function,:CellField),
+    (:CellField,:(AbstractArray{<:Number})), (:(AbstractArray{<:Number}),:CellField)
+  )
+    @eval ($op)(a::$Ta,b::$Tb) = _operate_with_metric($op,$euclidean_op,a,b)
+  end
+  @eval begin
+    ($op)(a::CellField, b::CellField, ::UniformScaling) = Operation($euclidean_op)(a,b)
+    ($op)(a::CellField, b::CellField, g, gs...) = Operation($op)(a, b, g, gs...)
   end
 end
 

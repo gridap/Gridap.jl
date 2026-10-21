@@ -1233,19 +1233,25 @@ end
 # ============================================================
 
 """
-    alt_inner(a::ExteriorFormValue{K,D},   b::ExteriorFormValue{K,D},   metric_args...)
-    alt_inner(a::ExteriorVectorValue{K,D}, b::ExteriorVectorValue{K,D}, metric_args...)
-    ⨟(a, b, metric_args...)
+    alt_inner(ω::ExteriorFormValue{K,D},   η::ExteriorFormValue{K,D},   metric_args...)
+    alt_inner(u::ExteriorVectorValue{K,D}, v::ExteriorVectorValue{K,D}, metric_args...)
+    ω ⨟ η
 
-Inner product ``(a|b)`` of two `K`-forms or two `K`-vectors, the scalar such
-that, for two `K`-forms,
+Inner product of two `K`-forms `ω` and `η`, often denoted by ``(ω|η)`` in math
+textbook, or two `K`-vectors `u` and `v`. For forms, it is the scalar such
+that
 
-``a ∧ ⋆ b = √|det(g)| (a|b) dx¹∧…∧dx^D``.
+``ω ∧ ⋆η =  ω⨟η √|det(g)| dx¹∧…∧dx^D = ω⨟η μ``,
+
+where `μ` is the metric volume form. `ω ⊙ η` is `K!` times `ω⨟η`.
+
+Integrating `ω⨟η` is mathematically equivalent to integrating `ω ∧ ⋆η`. Indeed,
+the integrand of the former automatically get's fed a √|det(g)|, because it is
+a scalar, while the integrand of the latter is the form component `ω⨟η
+√|det(g)|`, because it is a top form.
 
 `metric_args` contains the metric information, see [`parse_metric_data`](@ref).
-`alt_inner` uses the metric with opposite variance to its arguments: a `K`-form
-pair is contracted through `g_inv`, raising the indices of `b` as `hodge_star`
-does, and a `K`-vector pair through `g`, lowering them instead.
+`alt_inner` uses `g_inv` on `K`-form and `g` on `K`-vectors.
 
 See also [`flat_alt_inner`](@ref) for the Euclidean version, accessible by
 passing `LinearAlgebra.I`.
@@ -1375,30 +1381,45 @@ Convert the scalar `u` to a `ExteriorFormValue{0,D}`.
 to_0form(u::_Scalar, ::Val{D}) where D = ExteriorFormValue{0,D}((u,))
 
 """
+    from_0form(ω::ExteriorFormValue{0,D})
+
+The scalar value of the 0-form `ω`, the inverse of [`to_0form`](@ref).
+"""
+from_0form(ω::ExteriorFormValue{0,D}) where D = indep_comp_getindex(ω, 1)
+
+"""
     to_Dform(u::Number, ::Val{D})
 
 Convert the scalar `u` as the sole component of the top-degree
-`ExteriorFormValue{D,D}`, the inverse of [`vol_coeff`](@ref).
+`ExteriorFormValue{D,D}`, the inverse of [`flat_vol_coeff`](@ref).
 """
 to_Dform(u::_Scalar, ::Val{D}) where D = ExteriorFormValue{D,D}((u,))
 
 # ============================================================
 # Volume form scalar extraction
 #
-# vol_coeff : Λᴰ → ℝ
+# flat_vol_coeff : Λᴰ → ℝ
 # A top-degree D-form in D dimensions has exactly one component.
-# Extracting it gives the scalar integrand for ∫(ω ∧ ⋆η) dΩ.
 # ============================================================
 
 """
-    vol_coeff(ω::ExteriorFormValue{D,D})
+    flat_vol_coeff(ω::ExteriorFormValue{D,D})
 
-The single scalar coefficient of a top-degree D-form in D dimensions.
-Enables using Gridap's standard measure for integration of differential forms:
-    ∫(vol_coeff(ω ∧ ⋆η)) * dΩ
-""" # to integrate a k-vector, the hodge_star (with metric) needs to be applied before vol_coeff.
-function vol_coeff(ω::ExteriorFormValue{K,D}) where {K,D}
-  K == D || @unreachable "vol_coeff requires a top-degree form, got K = $K and D = $(Int(D))"
+The single scalar component of a top-degree D-form in D dimensions, that is its
+coefficient in the `dx¹∧…∧dx^D` basis.
+
+The coefficient in the basis given by the metric volume form
+
+``μ = √|det g| dx¹∧…∧dx^D``
+
+would thus be
+
+``flat_vol_coeff(ω)/√|det g|``,
+
+which is equivalent to `from_0form(⋆(ω, metric_args...))`.
+""" # to integrate a k-vector, the hodge_star (with metric) needs to be applied before flat_vol_coeff.
+function flat_vol_coeff(ω::ExteriorFormValue{K,D}) where {K,D}
+  K == D || @unreachable "flat_vol_coeff requires a top-degree form, got K = $K and D = $(Int(D))"
   indep_comp_getindex(ω, 1)
 end
 
