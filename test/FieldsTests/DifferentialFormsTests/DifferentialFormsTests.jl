@@ -132,8 +132,8 @@ for (op,f1fun,f2fun) in (
         partial_derivatives(y -> op(f1fun(y),f2fun(y)), x)
 end
 
-@test_broken evaluate(partial_derivatives(Operation(⊙)(GenericField(ufun), GenericField(wfun))), x) ===
-             partial_derivatives(y -> ufun(y)⊙wfun(y), x)
+@test_throws ErrorException evaluate(
+  partial_derivatives(Operation(⊙)(GenericField(ufun), GenericField(wfun))), x)
 
 # A contraction of the two factors is scalar valued, and its partials keep the
 # product shape with a `ScalarValue` second factor
@@ -150,8 +150,8 @@ for (op,f1fun,f2fun) in (
         second_partial_derivatives(y -> op(f1fun(y),f2fun(y)), x)
 end
 
-@test_broken evaluate(second_partial_derivatives(Operation(⊙)(GenericField(ufun), GenericField(wfun))), x) ===
-             second_partial_derivatives(y -> ufun(y)⊙wfun(y), x)
+@test_throws ErrorException evaluate(
+  second_partial_derivatives(Operation(⊙)(GenericField(ufun), GenericField(wfun))), x)
 
 # The two derivation indices share one fully symmetric tensor, which is not full
 # rank at order 2, so the mixed term has to build that container itself
