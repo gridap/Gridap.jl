@@ -316,4 +316,24 @@ B_lie = assemble_matrix((u,v) -> ∫( 𝓛(uf_cf,u)*v )dΩ, U, V)
 B_cartan = assemble_matrix((u,v) -> ∫( interior_product(uf_cf, 𝑑(u))*v )dΩ, U, V)
 @test B_lie ≈ B_cartan
 
+# The derivative rules of ι and κ close Cartan's formula `𝓛ᵤω = 𝑑(ι_u ω) + ι_u(𝑑ω)`
+# on a 1-form, and the Koszul homotopy `𝑑κ + κ𝑑 = (r+K)id`, which reads `3ω` for
+# `ωfun`, homogeneous of degree r = 2 in Λ¹.
+same(a,b) = all(all(x .≈ y) for (x,y) in zip(cell_values(a), cell_values(b)))
+
+for Ωi in (Ω, Triangulation(model_na))
+  ωi, ui = CellField(ωfun, Ωi, PhysicalDomain()), CellField(uflow, Ωi, PhysicalDomain())
+
+  @test form_eltype(𝑑(interior_product(ui,ωi))) === form_eltype(𝓛(ui,ωi))
+  @test same(𝓛(ui,ωi), 𝑑(interior_product(ui,ωi)) + interior_product(ui,𝑑(ωi)))
+  @test same(𝑑(koszul(ωi)) + koszul(𝑑(ωi)), 3*ωi)
+
+  # Both rules hold at order 2, whose mixed term pairs the two arguments' first
+  # derivatives
+  ad(fun) = second_partial_derivatives(CellField(fun, Ωi, PhysicalDomain()))
+  @test same(second_partial_derivatives(interior_product(ui,ωi)),
+             ad(y -> interior_product(uflow(y), ωfun(y))))
+  @test same(second_partial_derivatives(koszul(ωi)), ad(y -> koszul(y, ωfun(y))))
+end
+
 end # module

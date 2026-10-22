@@ -44,7 +44,7 @@ import LinearAlgebra: ⋅, dot
 
 import Base: +, -, *, /
 using Gridap.TensorValues: get_indep_components, partials_op_rule, _sqrt_abs_det
-import Gridap.TensorValues: ⊗, ⊙, symmetric_part, outer, meas, ∧, koszul, pinvJt
+import Gridap.TensorValues: ⊗, ⊙, symmetric_part, outer, meas, ∧, koszul, pinvJt, ι
 
 import Gridap.Arrays: IndexStyle
 import Gridap.Arrays: return_cache

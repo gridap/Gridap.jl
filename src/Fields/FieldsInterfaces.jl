@@ -1163,7 +1163,7 @@ for (op,nargs) in (
 end
 
 # Order 1 and order 2 Leibniz rules for the bilinear operations
-for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗,:∧)
+for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗,:∧,:ι,:koszul)
   @eval begin
     function (k::PartialDerivatives{1})(a::OperationField{typeof($op)})
       fs = a.fields
@@ -1179,15 +1179,14 @@ for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗,:∧)
       ∂∂fs = map(k,fs)
       Operation(partials_op_rule(Val(2),$op))(fs..., ∂fs..., ∂∂fs...)
     end
-  end
-end
 
-function (k::PartialDerivatives{N})(
-  a::OperationField{<:Union{typeof(*),typeof(⋅),typeof(⊙),typeof(⊙ᴱ),typeof(⊗),typeof(∧)}}) where N
-  @notimplemented """\n
-  A product of fields is only derived at orders 1 and 2, got order $N. A higher
-  order needs the multi index Leibniz sum, and order 0 is the product's own value.
-  """
+    function (k::PartialDerivatives{N})(a::OperationField{typeof($op)}) where N
+      @notimplemented """\n
+      A product of fields is only derived at orders 1 and 2, got order $N. A higher
+      order needs the multi index Leibniz sum, and order 0 is the product's own value.
+      """
+    end
+  end
 end
 
 # Chain rule for partial derivatives

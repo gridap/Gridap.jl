@@ -55,8 +55,8 @@ using Gridap.TensorValues: ⋆, ⋆ᴱ; export ⋆, ⋆ᴱ
 @publish TensorValues sharp
 @publish TensorValues flat_sharp
 using Gridap.TensorValues: ♭, ♭ᴱ, ♯, ♯ᴱ; export ♭, ♭ᴱ, ♯, ♯ᴱ
-#@publish TensorValues interior_product
-#@publish TensorValues ι
+@publish TensorValues interior_product
+@publish TensorValues ι
 #@publish TensorValues apply_tensor
 #@publish TensorValues pullback
 #@publish TensorValues pushforward
@@ -67,7 +67,7 @@ using Gridap.TensorValues: ♭, ♭ᴱ, ♯, ♯ᴱ; export ♭, ♭ᴱ, ♯, �
 @publish Fields codifferential
 @publish Fields δ
 #@publish TensorValues symbolic_coordinates
-#@publish TensorValues koszul
+@publish TensorValues koszul
 #@publish TensorValues flat_vol_coeff
 #@publish TensorValues to_1form
 #@publish TensorValues from_1form
