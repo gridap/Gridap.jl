@@ -12,6 +12,8 @@ using Test
 
 @testset "MetricFormAssembly" begin include("MetricFormAssemblyTests.jl") end
 
+@testset "MaterialHodgeStars" begin include("MaterialHodgeStarsTests.jl") end
+
 @testset "DifferentialFormCellFields" begin include("DifferentialFormCellFieldsTests.jl") end
 
 @testset "FeecPoisson" begin include("FeecPoissonTests.jl") end

@@ -65,7 +65,7 @@ end
 # ============================================================
 # Symbolic codifferential  δ : Ωᴷ(D) → Ωᴷ⁻¹(D)
 #   δ = s(-1)^{D(K-1)+1} ⋆ d ⋆
-# with s = 1 for Riemanian metric, -1 for Lorentzian metric
+# with s = sgn(det(g)),  1 for Riemanian metric, -1 for Lorentzian metric
 # ============================================================
 
 function codifferential(ω::ExteriorFormValue{K,Dw,Symbolics.Num}, ::UniformScaling) where {K,Dw}

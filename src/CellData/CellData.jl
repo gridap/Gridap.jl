@@ -114,7 +114,8 @@ export SkeletonCellFieldPair
 export d_0form
 export d_1form
 
-export material_hodge_star
+export postcomposed_material_hodge_star
+export precomposed_material_hodge_star
 
 include("CellDataInterface.jl")
 
