@@ -62,7 +62,8 @@ using Gridap.TensorValues: ♭, ♭ᴱ, ♯, ♯ᴱ; export ♭, ♭ᴱ, ♯, �
 #@publish TensorValues pushforward
 @publish Fields exterior_derivative
 @publish Fields 𝑑
-#@publish Fields lie_derivative
+@publish Fields lie_derivative
+@publish Fields 𝓛
 @publish Fields codifferential
 @publish Fields δ
 #@publish TensorValues symbolic_coordinates

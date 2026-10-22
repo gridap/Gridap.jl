@@ -943,7 +943,8 @@ function _pinvJt_shape_error(Dm, Dn, Di1, Di2)
     ($(inverse_variance(Dn)), $(inverse_variance(Dm))), got ($Di1, $Di2)")
 end
 
-# Validates that all indices of `a`, in sz, can be pulled/pushed
+# Validates that every index of `a`, whose size is `sz`, carries a variance and
+# contracts with the dimension `Dc`
 function _pullpush_validate_indices(sz, Dc, op)
   is_cov = Bool[]
   for k in eachindex(sz)
@@ -954,7 +955,7 @@ function _pullpush_validate_indices(sz, Dc, op)
       return nothing, :(throw(ArgumentError($msg)))
     else # Sk is varianced
       if !can_contract(Sk isa Cov ? Dc : inverse_variance(Dc), Sk)
-        msg = "cannot $op a tensor whose index $k has dimension $Sk, every
+        msg = "$op is not defined for a tensor whose index $k has dimension $Sk, every
           index must be covariant or contravariant of dimension $(Int(Dc))"
         return nothing, :(throw(DimensionMismatch($msg)))
       end
@@ -1481,21 +1482,29 @@ end
 # Lie derivative
 
 """
-    partials_to_liederivative(u, v, ∂u, ∂v)
+    partials_to_liederivative(u, a, ∂u, ∂a)
     partials_to_liederivative(u, ω::ExteriorFormValue, ∂u, ∂ω)
 
-Lie derivative `𝓛_u v` of a field `v` along the contravariant vector field `u`,
-from both fields and their first order partial derivatives. `v` may be a
-function, a vector, a covector or a K-form, and `𝓛_u v` has its variance and
-degree.
+Lie derivative `𝓛_u a` of a field `a` along the contravariant vector field `u`,
+from both fields and their first order partial derivatives. `a` may be a
+function, or a tensor with variance of any order and with size indices of the
+dimension of `u`. `𝓛_u a` has the same type as `a`, module component type
+promotion with `v`.
 
 On a K-form, Cartan's magic formula `𝓛_u ω = d(ι_u ω) + ι_u(dω)` expands to
 
     𝓛_u ω[i_1, …, i_K] = ∑_j u[j]*∂ω[j, i_1, …, i_K]
                        + ∑_a ∑_j ω[i_1, …, j, …, i_K]*∂u[i_a, j]
 
-the second sum replacing `i_a` by `j`. On a vector field it is the Lie bracket
-`𝓛_u v = [u, v]`, on a function, 𝓛_u f = u⋅∂f.
+the second sum replacing `i_a` by `j`. On a general tensor each index is
+transported according to its own variance:
+
+    𝓛_u a[I] = ∑_m u[m]*∂a[m, I]
+             + ∑_{k covariant}     ∑_j a[I with i_k ← j]*∂u[i_k, j]
+             - ∑_{k contravariant} ∑_j a[I with i_k ← j]*∂u[j, i_k]
+
+This is the Lie bracket `𝓛_u v = [u, v]` if `v` is a vector field, or `𝓛_u f =
+u⋅∂f` if `f` is a function.
 """
 function partials_to_liederivative(v::MultiValue, ω::Number, ∂v::MultiValue, ∂ω::MultiValue)
   @notimplemented
@@ -1515,77 +1524,94 @@ function partials_to_liederivative(
   return u⋅∂f
 end
 
-# Lie derivative of a vector field
-function partials_to_liederivative(
-  u::MultiValue{Tuple{D}}, v::MultiValue{Tuple{D}},
-  ∂u::MultiValue{Tuple{Dp,D}}, ∂v::MultiValue{Tuple{Dp,D}}) where {D,Dp}
-
-  D == Dp || throw(DimensionMismatch(
-    "the arguments of Lie derivative must all be expressed in the same coordinates, got incompatible dimensions $D ≠ $Dp"))
-  D isa Con || throw(ArgumentError(
-    "Lie derivative requires a contravariant first argument"))
-  Dp isa Cov || throw(ArgumentError(
-    "partial derivatives should have a covariant index, got $Dp"))
-
-  # (𝓛ᵤv)ⁱ = [u, v]ⁱ = uʲ ∂ⱼvⁱ - vʲ ∂ⱼuⁱ
-  return u⋅∂v - v⋅∂u
-end
-
-# Lie derivative of a covector
-function partials_to_liederivative(
-  u::MultiValue{Tuple{Du}}, ω::MultiValue{Tuple{Dv}},
-  ∂u::MultiValue{Tuple{Dv,Du}}, ∂ω::MultiValue{Tuple{Dv,Dv}}) where {Du,Dv}
-
-  Du == Dv || throw(DimensionMismatch(
-    "the arguments of Lie derivative must all be expressed in the same coordinates, got incompatible dimensions $Du ≠ $Dv"))
-  Du isa Con || throw(ArgumentError(
-    "Lie derivative requires a contravariant first argument"))
-  Dv isa Cov || throw(ArgumentError(
-    "the partial derivatives for the lie derivative should have a covariant index, got $Dv"))
-
-  # (𝓛ᵤω)ᵢ =  uʲ ∂ⱼωᵢ + ∂ᵢuʲ ωⱼ
-  return u⋅∂ω + ∂u⋅ω
-end
-
-# Lie derivative of a k-form
+# Lie derivative of a K-form or a K-vector
 @generated function partials_to_liederivative(
-  u::MultiValue{Tuple{Du},Tu}, ω::ExteriorFormValue{K,Dw,Tw},
-  ∂u::MultiValue{Tuple{Dw,Du},Tdu},
-  ∂ω::ProductTensorValue{<:MultiValue{Tuple{Dw}},ExteriorFormValue{K,Dw},Tdw}
-  ) where {K,Du,Dw,Tu,Tw,Tdu,Tdw}
+  u::MultiValue{Tuple{Du},Tu}, ω::SkewSymKTensorValue{V,K,Dw,Tw},
+  ∂u::MultiValue{Tuple{Dp,Du},Tdu},
+  ∂ω::ProductTensorValue{<:MultiValue{Tuple{Dp}},SkewSymKTensorValue{V,K,Dw},Tdw}
+  ) where {V,K,Du,Dp,Dw,Tu,Tw,Tdu,Tdw}
 
   Du isa Con || return :(throw(ArgumentError(
     $("the Lie derivative requires a contravariant vector field, got a first argument of size ($Du,)"))))
+  Dp isa Cov || return :(throw(ArgumentError(
+    $("partial derivatives should have a covariant index, got $Dp"))))
   Du == Dw || return :(throw(DimensionMismatch(
-    $("the vector field and the form must live in the same dimension, got $(Int(Du)) and $(Int(Dw))"))))
+    $("the vector field and the tensor must live in the same dimension, got $(Int(Du)) and $(Int(Dw))"))))
+  can_contract(Dp, Du) || return :(throw(DimensionMismatch(
+    $("the vector field and the derivation index must live in the same dimension, got $(Int(Du)) and $(Int(Dp))"))))
 
   D = Int(Dw)
   T = Base.promote_op(+, Base.promote_op(*,Tu,Tdw), Base.promote_op(*,Tdu,Tw))
   ncomp = binomial(D, K)
-  iszero(ncomp) && return :( zero(ExteriorFormValue{$K,$Dw,$T}) )
+  iszero(ncomp) && return :( zero(SkewSymKTensorValue{$V,$K,$Dw,$T}) )
 
+  is_cov = V === Cov
   comps = Vector{Expr}(undef, ncomp)
   for (n,I) in enumerate(sorted_combinations(D, K))
     # uʲ ∂ⱼω_I, the transport of ω along the flow of u
     terms = Expr[:( u[$j] * ∂ω[$j, $(I...)] ) for j in 1:D]
     # ∂_{i_a}uʲ ω_{i_1…j…i_K}, which vanishes when j already sits in I∖I[a], so
-    # for each a the sum runs over the complement of that sub-combination
+    # for each a the sum runs over the complement of that sub-combination. A
+    # contravariant index is transported against ∂u, which signs the bracket.
     for a in 1:K
       Ia = ntuple(i -> I[i + Int(i≥a)], K-1)
       Iacomp = combination_complement(Ia, D)
       for (q, l) in enumerate(sup_combinations_ids(Ia, D))
         j = Iacomp[q]
         sgn = sorting_sign(I[1:a-1]..., j, I[a+1:end]...)
-        push!(terms, _signed(sgn, :( ∂u[$(I[a]), $j] * indep_comp_getindex(ω, $l) )))
+        ∂u_aj = is_cov ? :( ∂u[$(I[a]), $j] ) : :( ∂u[$j, $(I[a])] )
+        push!(terms, _signed(is_cov ? sgn : -sgn, :( $∂u_aj * indep_comp_getindex(ω, $l) )))
       end
     end
     comps[n] = _sum_expr(terms, T)
   end
 
-  :( ExteriorFormValue{$K,$Dw}(($(comps...),)) )
+  :( SkewSymKTensorValue{$V,$K,$Dw}(($(comps...),)) )
 end
 
-# TODO later, Lie derivative of arbitrary tensor with no (or unknown) symmetries
+# Lie derivative of a tensor of any order and variance
+@generated function partials_to_liederivative(
+  u::MultiValue{Tuple{Du},Tu}, a::MultiValue{S,Ta},
+  ∂u::MultiValue{Tuple{Dp,Du},Tdu},
+  ∂a::ProductTensorValue{<:MultiValue{Tuple{Dp}},<:MultiValue{S},Tda}
+  ) where {S,Du,Dp,Tu,Ta,Tdu,Tda}
+
+  Du isa Con || return :(throw(ArgumentError(
+    $("the Lie derivative requires a contravariant vector field, got a first argument of size ($Du,)"))))
+  Dp isa Cov || return :(throw(ArgumentError(
+    $("partial derivatives should have a covariant index, got $Dp"))))
+  can_contract(Dp, Du) || return :(throw(DimensionMismatch(
+    $("the vector field and the derivation index must live in the same dimension, got $(Int(Du)) and $(Int(Dp))"))))
+
+  sz = size(a)
+  N = length(sz)
+  iszero(N) && return :( @notimplemented )
+  is_cov, err = _pullpush_validate_indices(sz, Du, "Lie derivative")
+  isnothing(err) || return err
+
+  D = Int(Du)
+  T = Base.promote_op(+, Base.promote_op(*,Tu,Tda), Base.promote_op(*,Tdu,Ta))
+  # 𝓛 transports each index by its variance one at a time, a congruence all at
+  # once, so both keep the same index symmetries.
+  Vr = all(Dk -> Dk === first(sz), sz) ? _congruence_type(a, first(sz)) : _tensor_base_type(N, sz)
+  Vc = make_concretetype(Vr{Int})
+  (iszero(D) || iszero(num_stored_components(Vc))) && return :( zero($Vr{$T}) )
+
+  comps = map(_stored_comp_cartesian_indices(Vc)) do O
+    # uᵐ ∂ₘa_I, the transport of `a` along the flow of u
+    terms = Expr[:( u[$m] * ∂a[$m, $(O...)] ) for m in 1:D]
+    # A covariant index is transported by ∂u as a pullback transports it by the
+    # jacobian, a contravariant one against it, which signs the Lie bracket.
+    for k in eachindex(is_cov), j in 1:D
+      I = _congruence_source_index(O, (k,), (j,))
+      ∂u_kj = is_cov[k] ? :( ∂u[$(O[k]), $j] ) : :( ∂u[$j, $(O[k])] )
+      push!(terms, _signed(is_cov[k] ? 1 : -1, :( a[$(I...)] * $∂u_kj )))
+    end
+    _sum_expr(terms, T)
+  end
+
+  :( $Vr(($(comps...),)) )
+end
 
 # codifferential
 

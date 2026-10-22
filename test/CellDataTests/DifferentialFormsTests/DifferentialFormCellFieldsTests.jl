@@ -283,12 +283,17 @@ Jt  = evaluate(lazy_map(partial_derivatives, cmu)[1], q)
 model_na = CartesianDiscreteModel((0.0,1.0,0.0,1.0), (4,4),
                                   map = x -> Point(x[1]+0.3*x[1]*x[2], x[2]+0.1*x[1]))
 
+# The Lie derivative reads the partial derivatives of both its arguments and
+# needs no metric, so the generic `Fields` operation already carries it.
+uflow(x) = ContraVectorValue(x[1] + 2*x[2], x[2]^2)
+lie_along(a) = 𝓛(CellField(uflow, get_triangulation(a), PhysicalDomain()), a)
+
 for Ωi in (Ω, Triangulation(model_na))
   ω_phys = CellField(ωfun, Ωi, PhysicalDomain())
   ω_ref  = change_domain(ω_phys, Ωi, ReferenceDomain())
   @test DomainStyle(ω_ref) == ReferenceDomain()
 
-  for op in (exterior_derivative, codifferential, koszul, partial_derivatives)
+  for op in (exterior_derivative, codifferential, koszul, partial_derivatives, lie_along)
     @test form_eltype(op(ω_ref)) === form_eltype(op(ω_phys))
     @test all(all(a .≈ b) for (a,b) in
               zip(cell_values(op(ω_phys)), cell_values(op(ω_ref))))
@@ -303,5 +308,12 @@ U = TrialFESpace(V)
 A_dg = assemble_matrix((u,v) -> ∫( flat_vol_coeff(𝑑(u) ∧ flat_hodge_star(𝑑(v))) )dΩ, U, V)
 A_eu = assemble_matrix((u,v) -> ∫( ∇(u)⋅∇(v) )dΩ, U, V)
 @test A_dg ≈ A_eu
+
+# On a 0-form Cartan's formula is `𝓛ᵤf = ι_u(𝑑f)`, which pins 𝓛 on a FE basis
+# living in the reference domain.
+uf_cf = CellField(uflow, Ω, PhysicalDomain())
+B_lie = assemble_matrix((u,v) -> ∫( 𝓛(uf_cf,u)*v )dΩ, U, V)
+B_cartan = assemble_matrix((u,v) -> ∫( interior_product(uf_cf, 𝑑(u))*v )dΩ, U, V)
+@test B_lie ≈ B_cartan
 
 end # module

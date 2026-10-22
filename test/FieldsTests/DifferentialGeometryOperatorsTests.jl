@@ -247,6 +247,33 @@ for K in 0:3
   test_liederivative_form(K, x3)
 end
 
+# K-vector
+function test_liederivative_vector(K, x::Point{D}) where D
+  uF = y -> ContraVectorValue{Con(D)}(ntuple(l -> w(l,y) + y[1], D))
+  VF = y -> mk(ExteriorVectorValue{K,Con(D)}, y)
+  u, ∂u = uF(x), partial_derivatives(uF,x)
+  ∂V = partial_derivatives(VF,x)
+  LV = partials_to_liederivative(u, VF(x), ∂u, ∂V)
+
+  @test typeof(LV) === ExteriorVectorValue{K,Con(D),Float64,binomial(D,K)}
+  @test (@inferred partials_to_liederivative(u, VF(x), ∂u, ∂V)) === LV
+  # A K = 0 pairing is a product of scalars, which carries no index to transport
+  if K ≥ 1
+    ωF = y -> mk(ExteriorFormValue{K,Cov(D)}, y)
+    Lω = partials_to_liederivative(u, ωF(x), ∂u, partial_derivatives(ωF,x))
+    pairing(a,b) = contracted_product(Val(K), a, b)
+    ∂pairing = partial_derivatives(y -> pairing(ωF(y), VF(y)), x)
+    @test sum(Tuple(u) .* Tuple(∂pairing)) ≈ pairing(Lω, VF(x)) + pairing(ωF(x), LV)
+  end
+end
+
+for K in 0:2
+  test_liederivative_vector(K, x2)
+end
+for K in 0:3
+  test_liederivative_vector(K, x3)
+end
+
 uvF(y) = ContraVectorValue{Con(2)}(sin(y[1])+y[2]^2, exp(y[2])*y[1])
 vvF(y) = ContraVectorValue{Con(2)}(cos(y[2])*y[1], y[1]^3+y[2])
 αF(y)  = CoVectorValue{Cov(2)}(y[1]*y[2]+sin(y[2]), cos(y[1])+y[2]^2)
@@ -295,6 +322,29 @@ end
 test_liederivative_scalar(fs, x2)
 test_liederivative_scalar(y -> sin(y[1])*exp(y[2]) + y[1]^3*y[2]*y[3], x3)
 
+# A tensor with no (or unknown) index symmetry takes the general formula, each of
+# its indices transported according to its own variance.
+
+# 𝓛ᵤδ = 0 for the identity (1,1) tensor: its covariant index is transported
+# exactly against its contravariant one, which fixes the sign of both
+δF(y) = TensorValue{Con(2),Cov(2)}(1.,0.,0.,1.)
+∂δ = partial_derivatives(δF,x2)
+Lδ = partials_to_liederivative(uvF(x2), δF(x2), ∂uv, ∂δ)
+@test typeof(Lδ) === TensorValue{Con(2),Cov(2),Float64,4}
+@test (@inferred partials_to_liederivative(uvF(x2), δF(x2), ∂uv, ∂δ)) === Lδ
+@test all(iszero, Tuple(Lδ))
+
+# On the flat metric 𝓛ᵤg is the Killing operator ∂u + ∂uᵀ, so it vanishes for a
+# rotation field and keeps the symmetry of `g`
+gF(y) = SymTensorValue{cov2}(1.,0.,1.)
+∂g = partial_derivatives(gF,x2)
+Lg = partials_to_liederivative(uvF(x2), gF(x2), ∂uv, ∂g)
+@test typeof(Lg) === SymTensorValue{cov2,Float64,3}
+@test all(Tuple(Lg) .≈ (2∂uv[1,1], ∂uv[1,2]+∂uv[2,1], 2∂uv[2,2]))
+rotF(y) = ContraVectorValue{Con(2)}(-y[2], y[1])
+@test all(iszero, Tuple(partials_to_liederivative(
+  rotF(x2), gF(x2), partial_derivatives(rotF,x2), ∂g)))
+
 # There is nothing to flow along without a contravariant first argument, and the
 # derivation index of the partial derivatives must be covariant
 ∂fs = partial_derivatives(fs,x2)
@@ -304,9 +354,7 @@ test_liederivative_scalar(y -> sin(y[1])*exp(y[2]) + y[1]^3*y[2]*y[3], x3)
   uvF(x2), fs(x2), TensorValue{Con(2),Con(2)}(1.,2.,3.,4.),
   SymNTensorValue{Tuple{Con(2)}}(1.,2.))
 
-# The not-implemented fallback catches the tensor shapes no specific method covers,
-# such as a (1,1) tensor. The scalar cases above are what pin the scalar methods as
-# more specific than it, since a `MultiValue` is a `Number`.
+# Fallback if unvarianced argument was given.
 @test_throws ErrorException partials_to_liederivative(
   uvF(x2), TensorValue{Con(2),Cov(2)}(1.,2.,3.,4.), ∂uv,
   NTensorValue{Tuple{Cov(2),Con(2),Cov(2)}}(1.,2.,3.,4.,5.,6.,7.,8.))

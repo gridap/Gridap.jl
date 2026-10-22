@@ -204,10 +204,12 @@ Equivalent to `exterior_derivative(f)`.
     lie_derivative(v, ω)
     𝓛(v,ω)
 
-Lie derivative 𝓛_v ω = d(ι_v ω) + ι_v(dω) (Cartan's magic formula).
+Lie derivative of the the field `ω` with respect to the vector field `v`. If
+`ω` is a k-form, 𝓛_v ω = d(ι_v ω) + ι_v(dω) by Cartan's magic formula.
 
-Requires symbolic (`Symbolics.Num`) coefficients: methods are provided by the
-GridapSymbolicsExt package extension when Symbolics is loaded.
+`v` is a contravariant vector field and `ω` a scalar or tensor field with
+variance of any order. `𝓛_v ω` is of the same type as `ω`, modulo component type
+promotion with that of `v`.
 """
 lie_derivative(v,ω) = Operation(partials_to_liederivative)(v,ω,partial_derivatives(v),partial_derivatives(ω))
 const 𝓛 = lie_derivative
