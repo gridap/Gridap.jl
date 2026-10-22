@@ -1217,6 +1217,37 @@ function koszul(x::MultiValue{Tuple{D}}, ω::ExteriorFormValue{K,Dw}) where {K,D
   interior_product(x, ω)
 end
 
+
+# ============================================================
+# Endomorphism of Λᴷ given by its matrix on the stored components
+#
+# N : Λᴷ → Λᴷ,  (N ω)_I = Σ_J N[I,J] ω_J
+# ============================================================
+
+"""
+    alt_endomorphism(N::MultiValue{Tuple{L,L}}, ω::ExteriorFormValue{K,D})
+
+Apply to the `K`-form `ω` the endomorphism of `Λ^K` whose matrix is `N` on the
+stored components, `L = binomial(D,K)`:
+
+    alt_endomorphism(N,ω)_I = Σ_J N[I,J] ω_J,
+
+`N` carries no variance: it is a `L`×`L` matrix storing the component of a type
+`(K,K)`-tensor.
+"""
+function alt_endomorphism(
+  N::MultiValue{Tuple{L,L}}, ω::ExteriorFormValue{K,Dw}) where {L,K,Dw}
+
+  D = Int(Dw)
+  @check L == binomial(D,K) """\n
+  `alt_endomorphism` takes the matrix of an endomorphism of the $K-forms of
+  dimension $D, which is $(binomial(D,K))×$(binomial(D,K)), got a $L×$L one.
+  """
+  ET = ProductTensorValue{ExteriorFormValue{K,Dw},
+                          ExteriorVectorValue{K,inverse_variance(Dw)}}
+  contracted_product(Val(K), ET(Tuple(get_array(N))./factorial(K)), ω)
+end
+
 # ============================================================
 # Inner product of alternating tensors
 #

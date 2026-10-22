@@ -1,6 +1,7 @@
-# A material (constitutive) Hodge star is a linear map Λ^K → Λ^{D-K}, defined
-# by the composition of the metric Hodge star and an endomorphism m/K! on Λ^K
-# (pre-composed) or m/(D-K)! on Λ^{D-K} (post-composed).
+# A material (constitutive) Hodge star is a linear map Λ^K → Λ^{D-K}, the
+# composition of the metric Hodge star and an endomorphism of Λ^K
+# (pre-composed) or of Λ^{D-K} (post-composed), whose matrix the field `m`
+# holds.
 struct MaterialHodgeStar{K,D,PP,F<:CellField}
   m::F
 
@@ -106,22 +107,20 @@ function _material_hodge_star(M, K, trian, post_pre)
   `0 ≤ K ≤ D`, got K = $K and D = $(D).
   """
   J = _material_degree(K,D,post_pre)
-  m = CellField(M, trian)
+  m = _material_field(M, trian)
   x = get_cell_points(get_triangulation(m))
   _check_material_value(Val(J), Val(D), eltype(testitem(m(x))))
-  MaterialHodgeStar{K,D,post_pre}(_scaled_material(M, trian, Val(factorial(J))))
+  MaterialHodgeStar{K,D,post_pre}(m)
 end
 
-# The `J!` that the stored component contraction of a `J`-form carries is
-# divided out of the material once, here, so that applying the operator
-# contracts the material components as they are stored.
-_scaled(::Val{f}, M) where f = M/f
-
-_scaled_material(M::MultiValue, trian, f::Val) = CellField(_scaled(f,M), trian)
-_scaled_material(M::AbstractArray{<:MultiValue}, trian, f::Val) =
-  CellField(map(m -> _scaled(f,m), M), trian)
-_scaled_material(M::Function, trian, f::Val) = CellField(x -> _scaled(f,M(x)), trian)
-_scaled_material(M, trian, f::Val) = Operation(m -> _scaled(f,m))(CellField(M, trian))
+# A material holds the same components at a point whichever domain the field
+# carrying them is tagged with, and a physical tag leaves the form the operator
+# is applied to in the domain it comes in.
+_material_field(M::MultiValue, trian) = CellField(M, trian, PhysicalDomain())
+_material_field(M::AbstractArray{<:MultiValue}, trian) =
+  CellField(M, trian, PhysicalDomain())
+_material_field(M::CellField, trian) = CellField(M, trian, DomainStyle(M))
+_material_field(M, trian) = CellField(M, trian)
 
 # The material is the `L`×`L` matrix of an endomorphism of `Λ^J`, nothing else:
 # the `Λ^{D-K}(Cov) ⊗ Λ^K(Con)` tensor of the whole map is built from it.
@@ -141,27 +140,11 @@ end
 
 # ── Applying the operator ─────────────────────────────────────────────────────
 
-# Application of the endomorphism `m` to the J-form value, is a J contraction of `m/J!`.
-# The contraction is optimized by a specific method on ProductTensorValue
-
-function _as_endomorphism(
-  ::Val{J}, ::Val{D}, M::MultiValue{Tuple{L,L}}) where {J,D,L}
-
-  ET = ProductTensorValue{ExteriorFormValue{J,Cov(D)}, ExteriorVectorValue{J,Con(D)}}
-  ET(Tuple(get_array(M)))
-end
-
-(::MaterialHodgeStar{K,D,:post})(Mx::MultiValue, ωx::ExteriorFormValue) where {K,D} =
-  contracted_product(Val(D-K), _as_endomorphism(Val(D-K),Val(D),Mx), ωx)
-
-(::MaterialHodgeStar{K,D,:pre})(Mx::MultiValue, ωx::ExteriorFormValue) where {K,D} =
-  contracted_product(Val(K), _as_endomorphism(Val(K),Val(D),Mx), ωx)
-
-return_cache(::MaterialHodgeStar, ::MultiValue, ::ExteriorFormValue) = nothing
-evaluate!(cache, s::MaterialHodgeStar, M::MultiValue, ω::ExteriorFormValue) = s(M, ω)
+# The degree the material acts in is that of the form `alt_endomorphism` is
+# given, `D-K` after the Hodge star and `K` before it.
 
 (s::MaterialHodgeStar{K,D,:post})(a::CellField) where {K,D} =
-  Operation(s)(s.m, hodge_star(a))
+  Operation(alt_endomorphism)(s.m, hodge_star(a))
 
 (s::MaterialHodgeStar{K,D,:pre})(a::CellField) where {K,D} =
-  hodge_star(Operation(s)(s.m, a))
+  hodge_star(Operation(alt_endomorphism)(s.m, a))

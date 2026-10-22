@@ -337,7 +337,7 @@ for (op,nargs) in (
 end
 
 # Partial derivative rules for bilinear products at orders 1 and 2.
-for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗,:∧,:ι,:koszul)
+for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗,:∧,:ι,:koszul,:alt_endomorphism)
   @eval begin
 
     function lazy_map(

@@ -1163,7 +1163,7 @@ for (op,nargs) in (
 end
 
 # Order 1 and order 2 Leibniz rules for the bilinear operations
-for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗,:∧,:ι,:koszul)
+for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗,:∧,:ι,:koszul,:alt_endomorphism)
   @eval begin
     function (k::PartialDerivatives{1})(a::OperationField{typeof($op)})
       fs = a.fields

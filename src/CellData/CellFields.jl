@@ -568,7 +568,8 @@ end
 # Binary ops
 
 for op in (:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/,
-  :interior_product, :∧, :flat_inner, :flat_alt_inner, :pullback, :pushforward
+  :interior_product, :∧, :flat_inner, :flat_alt_inner, :pullback, :pushforward,
+  :alt_endomorphism
 )
   @eval begin
     ($op)(a::CellField,b::CellField) = Operation($op)(a,b)

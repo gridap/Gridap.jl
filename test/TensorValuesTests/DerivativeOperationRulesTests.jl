@@ -35,6 +35,8 @@ const BILINEAR_CASES = (
       ContraVectorValue{Con(2)}(0.1,0.2), ExteriorFormValue{2,Cov(2),Float64}(0.5)),
   (koszul, ContraVectorValue{Con(2)}(1.0,2.0), ExteriorFormValue{2,Cov(2),Float64}(3.0),
       ContraVectorValue{Con(2)}(0.1,0.2), ExteriorFormValue{2,Cov(2),Float64}(0.5)),
+  (alt_endomorphism, TensorValue(2.0,1.0,0.5,3.0), ExteriorFormValue{1,Cov(2),Float64}(1.0,2.0),
+      TensorValue(0.1,0.2,0.1,0.3), ExteriorFormValue{1,Cov(2),Float64}(0.3,0.1)),
 )
 
 # The first order expansion

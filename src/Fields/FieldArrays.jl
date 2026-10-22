@@ -934,7 +934,7 @@ for (op,nargs) in (
 end
 
 # Partial derivatives of the product, orders 1 and 2
-for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗,:∧,:ι,:koszul)
+for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗,:∧,:ι,:koszul,:alt_endomorphism)
   @eval begin
     function evaluate!(
       cache,k::Broadcasting{PartialDerivatives{1}},a::BroadcastOpFieldArray{typeof($op)})

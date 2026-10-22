@@ -46,7 +46,7 @@ import Gridap.Geometry: get_triangulation
 import Gridap.TensorValues: inner, outer, double_contraction, symmetric_part
 import Gridap.TensorValues: ∧, hodge_star, flat_hodge_star, flat, sharp, interior_product, alt_inner
 import Gridap.TensorValues: flat_inner, flat_alt_inner, flat_flat, flat_sharp
-import Gridap.TensorValues: koszul
+import Gridap.TensorValues: koszul, alt_endomorphism
 import Gridap.TensorValues: _sqrt_abs_det
 import Gridap.TensorValues: flat_vol_coeff, to_0form, from_0form, to_1form, from_1form
 import Gridap.TensorValues: pullback, pushforward

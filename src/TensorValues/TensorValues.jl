@@ -155,6 +155,7 @@ export push_second_partials
 export pinvJt
 export symbolic_coordinates
 export koszul
+export alt_endomorphism
 export flat_vol_coeff
 export to_1form
 export from_1form

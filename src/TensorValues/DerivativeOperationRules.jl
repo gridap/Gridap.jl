@@ -135,7 +135,7 @@ _second_partials_product_rule(op, f1, f2, ∂f1, ∂f2, ∂∂f1, ∂∂f2) =
   _leibniz_cross_term(op, ∂f1, ∂f2) +
   _map_second_factor(b -> op(f1,b), ∂∂f2)
 
-for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗,:∧,:ι,:koszul)
+for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗,:∧,:ι,:koszul,:alt_endomorphism)
   @eval partials_op_rule(::Val{1}, ::typeof($op)) = Base.Fix1(_partials_product_rule, $op)
 
   @eval partials_op_rule(::Val{2}, ::typeof($op)) =
