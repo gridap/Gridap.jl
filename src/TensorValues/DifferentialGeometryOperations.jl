@@ -173,7 +173,7 @@ Provided by the GridapSymbolicsExt package extension when Symbolics is loaded.
 function symbolic_coordinates end
 
 # ============================================================
-# Riemannian Hodge star  ⋆ : Ωᴷ → Ωᴰ⁻ᴷ
+# Metric Hodge star ⋆ : Ωᴷ → Ωᴰ⁻ᴷ
 #
 # Algorithm (coordinate formula):
 #   Step 1 — raise indices:

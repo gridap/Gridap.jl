@@ -193,8 +193,8 @@ function _integrand_coefficient(
   domain. The form valued fields that can be integrated are:
   - a 0-form, which is integrated like a scalar function,
   - a top form of the domain, whose single coefficient is what the integral of a form means, have one.
-  Look at using an inner product such as `alt_inner(u,v) === u ∧ ⋆v` or
-  `inner`, or integrate its components as those of the vector `from_Kform(u)`.
+  Look at using an inner product such as `alt_inner(u,v)` or `inner(u,v)`, or
+  integrate its components as those of the vector `from_Kform(u)`.
   """
 end
 

@@ -218,7 +218,7 @@ const 𝓛 = lie_derivative
 
 Codifferential of a differential K-form `ω`, is a (K-1)-form:
   ``δω = s(-1)^{D(K-1)+1} ⋆ d ⋆ ω``
-with ``s = 1`` for Riemanian metric, ``-1`` for Lorentzian metric.
+with ``s = sgn(det(g))``, ``+1`` for Riemanian metric, ``-1`` for Lorentzian metric.
 
 It depends on the metric via the [`hodge_star`](@ref). The metric is is
 automatically fed to `ω` if it is a cell field.
