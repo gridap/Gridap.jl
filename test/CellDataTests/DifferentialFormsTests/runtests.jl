@@ -14,6 +14,8 @@ using Test
 
 @testset "MaterialHodgeStars" begin include("MaterialHodgeStarsTests.jl") end
 
+@testset "InclusionTraces" begin include("InclusionTracesTests.jl") end
+
 @testset "DifferentialFormCellFields" begin include("DifferentialFormCellFieldsTests.jl") end
 
 @testset "FeecPoisson" begin include("FeecPoissonTests.jl") end

@@ -156,6 +156,12 @@ function integrate(f::CellField, quad::CellQuadrature)
     lazy_map(IntegrationMap(), bx, quad.cell_weight)
   elseif quad.data_domain_style == ReferenceDomain() &&
             quad.integration_domain_style == PhysicalDomain()
+    # The pullback of the inclusion has already contracted the cell map
+    # Jacobian into such a form, so `meas` must not be applied a second time.
+    # The integral of a top form is oriented, and that orientation is what
+    # `_oriented_weights` carries.
+    _is_reference_top_form(T, quad.trian) &&
+      return lazy_map(IntegrationMap(), bx, _oriented_weights(quad))
     cell_Jt = get_cell_jac(quad.trian)
     cell_Jtx = lazy_map(evaluate, cell_Jt, quad.cell_point)
     # The contribution of the triangulation's intrinsic metric is added to the
@@ -207,10 +213,26 @@ function _metric_weights(::Type{T}, x::CellPoint, quad::CellQuadrature, metric_d
   if (metric_data[1] isa UniformScaling) || (T <: ExteriorFormValue && !iszero(get_form_degree(T)))
     return quad.cell_weight
   end
+  # The volume factor of an induced metric is the `meas` of the cell map, which
+  # the integration map applies already, so it is not added here a second time.
+  _is_embedded(quad.trian) && return quad.cell_weight
   # _integrand_coefficient guaranties this is a scalar integrand
   sqrt_abs_g = metric_data[3]
   lazy_map(Broadcasting(*), quad.cell_weight, sqrt_abs_g(x))
 end
+
+# A top form of an embedded triangulation has its components in the reference
+# cell coordinates necessarily: an embedded cell has no ambient frame to carry
+# them, the ambient dimension exceeding its own.
+_is_reference_top_form(::Type{<:ExteriorFormValue{K,Dw}}, trian) where {K,Dw} =
+  K == Int(Dw) == num_cell_dims(trian) && _is_embedded(trian)
+
+_is_reference_top_form(::Type, trian) = false
+
+# the induced orientation is a sign per cell, so the weights carry it rather
+# than the integrand
+_oriented_weights(quad::CellQuadrature) =
+  lazy_map(Broadcasting(*), quad.cell_weight, _induced_orientation(quad.trian))
 
 """
     integrate(integrand, dΩ::Measure)

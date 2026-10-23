@@ -10,6 +10,8 @@ using Gridap.TensorValues
 using Test
 import LinearAlgebra
 
+using Gridap.CellData: induced_orientation
+
 # The metric of a model, as the arguments the metric aware operators take, on a
 # stock Cartesian model and on a mock chart model.
 
@@ -79,8 +81,35 @@ model = CartesianDiscreteModel((0.0,1.0,0.0,1.0),(2,2))
 @test get_cell_inv_metric(model) === LinearAlgebra.I
 
 @test get_metric_data(Ω) === (LinearAlgebra.I,)
-@test get_metric_data(BoundaryTriangulation(model)) === (LinearAlgebra.I,)
-@test get_metric_data(SkeletonTriangulation(model)) === (LinearAlgebra.I,)
+
+# ── A triangulation of lower dimension carries an induced metric ──────────────
+
+# The metric of a face is the pullback by the inclusion of the cell  one.,`ι*g`.
+Γ = BoundaryTriangulation(model)
+gΓ, gΓ_inv, sqrt_det_gΓ = get_metric_data(Γ)
+@test all(v -> Tuple(v) == (0.25,), first_point_values(gΓ))
+@test all(v -> Tuple(v) == (4.0,),  first_point_values(gΓ_inv))
+
+# Its volume element is signed by the induced orientation of the cell,this is
+# required for ⋆ to be compatible with  `∫( ω )dΓ` and `∫( ⋆ω )dΓ` agree.
+@test all(v -> abs(v) == 0.5, first_point_values(sqrt_det_gΓ))
+@test first_point_values(sqrt_det_gΓ) == 0.5 .* induced_orientation(Γ)
+
+# it is an inherited metric, not the identity a full rank triangulation carries
+@test !(get_metric_data(Γ)[1] isa LinearAlgebra.UniformScaling)
+
+# An interior facet carries the same induced metric and the orientation of the
+# side it is parametrised by, the one `get_normal_vector(Λ).⁺` points out of,
+# which is the sign `jump(a) = a.⁺ - a.⁻` assumes.
+Λ = SkeletonTriangulation(model)
+gΛ, gΛ_inv, sqrt_det_gΛ = get_metric_data(Λ)
+@test all(v -> Tuple(v) == (0.25,), first_point_values(gΛ))
+@test all(v -> Tuple(v) == (4.0,),  first_point_values(gΛ_inv))
+@test first_point_values(sqrt_det_gΛ) == 0.5 .* induced_orientation(Λ.plus)
+@test induced_orientation(Λ.minus) == -induced_orientation(Λ.plus)
+
+# the derivatives of an induced metric are not implemented, here as anywhere
+@test_throws ErrorException get_metric_partials_data(Λ)
 
 # The identity metric reproduces the metric free operators
 @test hodge_star(ω,get_metric_data(Ω)...) == flat_hodge_star(ω)
@@ -135,14 +164,17 @@ gp = first_point_values(first(get_metric_data(Ωp)))
 @test_throws ErrorException get_metric_data(BoundaryTriangulation(cmodel))
 @test_throws ErrorException get_metric_data(SkeletonTriangulation(cmodel))
 
-# A model whose cells are embedded in a space of higher dimension is rejected:
-# its physical points carry the dimension of that space, so its cell fields
-# cannot be a metric of the cells' own coordinates.
+# A model whose cells are embedded in a higher dimensional space keeps the
+# ambient identity: its fields have ambient components, which that identity
+# pairs correctly and whose area element the integration map supplies. What it
+# cannot carry is a *model supplied* metric, of rank `num_cell_dims` in the
+# ambient coordinates it is read in.
 flat_quad = UnstructuredGrid([Point(0.,0.,0.),Point(1.,0.,0.),Point(0.,1.,0.),Point(1.,1.,0.)],
                              Table([[1,2,3,4]]), [LagrangianRefFE(Float64,QUAD,1)], [1])
 embedded = UnstructuredDiscreteModel(flat_quad)
 @test (num_cell_dims(embedded), num_point_dims(embedded)) == (2,3)
 @test get_metric_data(Triangulation(embedded)) === (LinearAlgebra.I,)
+@test get_metric_partials_data(Triangulation(embedded)) === LinearAlgebra.I
 @test_throws ErrorException get_metric_data(Triangulation(chart_model(embedded,cov_chart_metric)))
 
 # ── The variance of the metric is the model's to carry ────────────────────────
