@@ -77,6 +77,27 @@ N2 = [2.0 1.0; 0.5 3.0]
 ⋆ᴺ⁻¹ = precomposed_material_hodge_star(-inv(N2),1,Ω2)
 @test all(first_point_values(⋆ᴺ⁻¹(⋆ᴺ₂(ω2))) .≈ first_point_values(ω2))
 
+@test all(first_point_values(inv(⋆ᴺ₂)(⋆ᴺ₂(ω2))) .≈ first_point_values(ω2))
+@test all(first_point_values(inv(⋆ᴺ₂)(⋆ᴺ₂(ω2))) .≈ first_point_values(⋆ᴺ⁻¹(⋆ᴺ₂(ω2))))
+
+# `K = 1` in dimension 3 inverts into a pre-composed star of the 2-forms, whose
+# material is the 3×3 `inv` of the original's
+invᴺ₃ = inv(⋆ᴺ)
+@test invᴺ₃ isa CellData.MaterialHodgeStar{2,3,:pre}
+@test (⋆ᴺ).inverse == false && invᴺ₃.inverse == true
+@test all(first_point_values(invᴺ₃(⋆ᴺ(ω3))) .≈ first_point_values(ω3))
+@test all(first_point_values(⋆ᴺ(invᴺ₃(η3))) .≈ first_point_values(η3))
+
+# and the pre-composed side inverts into the post-composed one
+invᴹ₃ = inverse_map(⋆ᴹ)
+@test invᴹ₃ isa CellData.MaterialHodgeStar{1,3,:post}
+@test all(first_point_values(invᴹ₃(⋆ᴹ(η3))) .≈ first_point_values(η3))
+
+# inverting twice gives the operator back, the material field included
+@test inv(invᴺ₃) isa typeof(⋆ᴺ)
+@test inv(invᴺ₃).inverse == (⋆ᴺ).inverse
+@test inv(invᴺ₃).m === (⋆ᴺ).m
+
 # ── The kinds a material may be given as ──────────────────────────────────────
 
 # in dimension 3, where the `2!` of `Λ²` tells a material that is rescaled once
@@ -149,6 +170,8 @@ Mηc = CellField(x -> form(Val(1),Val(2),(Sc\(N2*Sc))*[0.5,1.0]), Ωc, PhysicalD
 # the `⋆` of the chart metric is the one composed, not the Euclidean one
 η2 = CellField(x -> ExteriorFormValue{1,Cov(2)}(0.5, 1.0), Ω2, PhysicalDomain())
 @test !(sum(∫( ωc ∧ ⋆ᴺᶜ(ηc) )dΩc) ≈ sum(∫( ω2 ∧ ⋆ᴺ₂(η2) )dΩ2))
+
+@test all(first_point_values(inv(⋆ᴺᶜ)(⋆ᴺᶜ(ηc))) .≈ first_point_values(ηc))
 
 # ── Differentiation: the operator commutes with ∂ as the ⋆ it composes does ───
 

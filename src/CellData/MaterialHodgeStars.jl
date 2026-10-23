@@ -1,11 +1,13 @@
 # A material (constitutive) Hodge star is a linear map Λ^K → Λ^{D-K}, the
 # composition of the metric Hodge star and an endomorphism of Λ^K
 # (pre-composed) or of Λ^{D-K} (post-composed), whose matrix the field `m`
-# holds.
+# holds. `inverse` composes with the inverse metric star instead, which is what
+# an inverted material Hodge star is made of.
 struct MaterialHodgeStar{K,D,PP,F<:CellField}
   m::F
+  inverse::Bool
 
-  function MaterialHodgeStar{K,D,PP}(m::CellField) where {K,D,PP}
+  function MaterialHodgeStar{K,D,PP}(m::CellField, inverse::Bool=false) where {K,D,PP}
     @check K isa Int && D isa Int """\n
     `MaterialHodgeStar` takes integer `K` and `D`, got $K and $D.
     """
@@ -17,7 +19,7 @@ struct MaterialHodgeStar{K,D,PP,F<:CellField}
     The material composes `⋆` either before (`:pre`) or after (`:post`) it, got
     `$PP`.
     """
-    new{K,D,PP,typeof(m)}(m)
+    new{K,D,PP,typeof(m)}(m, inverse)
   end
 end
 
@@ -73,8 +75,8 @@ Hodge star writes
     inv(⋆ᴹ) = M⁻¹ ∘ ⋆⁻¹ = s(-1)^(K*(D-K)) M⁻¹ ∘ ⋆,
     inv(⋆ᴺ) = ⋆⁻¹ ∘ N⁻¹ = s(-1)^(K*(D-K)) ⋆ ∘ N⁻¹.
 
-This inverse is what transform a resistivity to a conductivity, a magnetic
-permeability to a magnetic reluctivity, etc.
+`⋆ᴹ` and `⋆ᴺ` support `inv`. This inverse is what transform a resistivity to a
+conductivity, a magnetic permeability to a magnetic reluctivity, etc.
 """
 postcomposed_material_hodge_star(N, K::Int, Ω::Triangulation) =
   _material_hodge_star(N, K, Ω, :post)
@@ -143,8 +145,25 @@ end
 # The degree the material acts in is that of the form `alt_endomorphism` is
 # given, `D-K` after the Hodge star and `K` before it.
 
+_metric_star(s::MaterialHodgeStar, a::CellField) =
+  s.inverse ? inverse_hodge_star(a) : hodge_star(a)
+
 (s::MaterialHodgeStar{K,D,:post})(a::CellField) where {K,D} =
-  Operation(alt_endomorphism)(s.m, hodge_star(a))
+  Operation(alt_endomorphism)(s.m, _metric_star(s, a))
 
 (s::MaterialHodgeStar{K,D,:pre})(a::CellField) where {K,D} =
-  hodge_star(Operation(alt_endomorphism)(s.m, a))
+  _metric_star(s, Operation(alt_endomorphism)(s.m, a))
+
+# ── Inverting the operator ────────────────────────────────────────────────────
+
+_inverse_material(m::CellField) = Operation(inv)(m)
+_inverse_material(m::OperationCellField{DS,typeof(inv)}) where DS = only(m.args)::CellField
+
+# `inv(⋆ᴹ) = M⁻¹ ∘ ⋆⁻¹` and `inv(⋆ᴺ) = ⋆⁻¹ ∘ N⁻¹` map `Λ^{D-K} → Λ^K
+inverse_map(s::MaterialHodgeStar{K,D,:pre}) where {K,D} =
+  MaterialHodgeStar{D-K,D,:post}(_inverse_material(s.m), !s.inverse)
+
+inverse_map(s::MaterialHodgeStar{K,D,:post}) where {K,D} =
+  MaterialHodgeStar{D-K,D,:pre}(_inverse_material(s.m), !s.inverse)
+
+Base.inv(s::MaterialHodgeStar) = inverse_map(s)
