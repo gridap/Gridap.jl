@@ -921,6 +921,17 @@ function pushforward(v::ExteriorVectorValue{K,Dw,Tw}, Jt::MultiValue{Tuple{Dm,Dn
   congruent_prod(v, Jt)
 end
 
+"""
+    congruent_prod(I::UniformScaling, Jt::MultiValue{Tuple{Dm,Dn}}) -> `Jt⋅Jtᵀ`
+"""
+function congruent_prod(I::UniformScaling, Jt::MultiValue{Tuple{Dm,Dn}}) where {Dm,Dn}
+  @check isone(I.λ) """\n
+  The congruence of a `UniformScaling` by a Jacobian is defined for the
+  Kronecker delta of an ambient frame only, got a scaling by $(I.λ).
+  """
+  pullback(one(SymTensorValue{Cov(Int(Dn)),eltype(Jt)}), Jt)
+end
+
 # Each `_*_error` below returns `nothing` for a valid configuration, else the
 # exception it deserves.
 @inline function _check(err, args...)
