@@ -119,6 +119,14 @@ md = compute_metric_data(gv[1],giv[1],sv[1])
 @test md.g_inv == giv[1]
 @test md.signed_sqrt_g == sv[1]
 @test hodge_star(ω,gv[1],giv[1],sv[1]) ≈ hodge_star(ω,md)
+@test inverse_hodge_star(ω,gv[1],giv[1],sv[1]) ≈ inverse_hodge_star(ω,md)
+
+# `⋆⁻¹` reads the triangulation's metric as `⋆` does, and inverts it
+ωc  = CellField(x -> ExteriorFormValue{1,Cov(2)}(1.0 + x[1], 2.0 - x[2]), Ωc, PhysicalDomain())
+ωcv = first_point_values(ωc)
+for rt in map(first_point_values, (inverse_hodge_star(hodge_star(ωc)), ⋆⁻¹(⋆(ωc))))
+  @test all(cell -> rt[cell] ≈ ωcv[cell], eachindex(rt))
+end
 
 # The cell fields reach the quadrature points. `Measure` scales the weights of a
 # scalar integrand by the volume density, which this metric being positive

@@ -320,4 +320,45 @@ for ω in (dx1, dx2)
   @test collect(star2(ω).data) ≈ collect(ω.data)  atol=1e-12
 end
 
+
+# ── Inverse Hodge star ────────────────────────────────────────────────────────
+#
+# `⋆⁻¹ = sgn(det g)(-1)^{K(D-K)} ⋆` inverts `⋆` on either side, on a form and on
+# a K-vector, whatever the index of the metric.
+
+g2_gen = SymTensorValue{cov2}(2.0, 0.5, 3.0)
+g3_gen = SymTensorValue{cov3}(2.0, 0.3, 0.1, 3.0, 0.2, 4.0)
+g3_lor = SymTensorValue{cov3}(-1.0, 0.0, 0.0, 1.0, 0.0, 1.0)
+
+for (D, mds) in ((2, (compute_metric_data(g2_gen), compute_metric_data(g_lor))),
+                 (3, (compute_metric_data(g3_gen), compute_metric_data(g3_lor))))
+  for K in 0:D, (Alias, Var) in ((ExteriorFormValue, Cov), (ExteriorVectorValue, Con))
+    ω = Alias{K,Var(D)}(ntuple(i -> 1.0 + i, binomial(D,K)))
+
+    for md in mds
+      σ = sign(det(md.g)) * (isodd(K*(D-K)) ? -1 : 1)
+      @test collect(inverse_hodge_star(hodge_star(ω, md), md).data) ≈ collect(ω.data)  atol=1e-12
+      @test collect(hodge_star(inverse_hodge_star(ω, md), md).data) ≈ collect(ω.data)  atol=1e-12
+      @test collect(inverse_hodge_star(ω, md).data) ≈ σ * collect(hodge_star(ω, md).data)  atol=1e-12
+    end
+
+    # The identity metric selects the Euclidean version, whose index is +1
+    @test inverse_hodge_star(ω, I) === flat_inverse_hodge_star(ω)
+    @test flat_inverse_hodge_star(flat_hodge_star(ω)) === ω
+    @test flat_hodge_star(flat_inverse_hodge_star(ω)) === ω
+  end
+end
+
+# A not-alternating tensor is inverse starred through its alternating part, and
+# missing metric information is an error, not a silent Euclidean fallback
+@test collect(inverse_hodge_star(TensorValue{cov2,cov2}(0.,-1.,1.,0.), md_eager).data) ≈
+      collect(inverse_hodge_star(ExteriorFormValue{2,cov2}((1.,)), md_eager).data)  atol=1e-12
+@test_throws ArgumentError inverse_hodge_star(dx1)
+@test_throws DimensionMismatch inverse_hodge_star(dx1, md3)
+
+# The aliases are the functions themselves
+@test (⋆⁻¹) === inverse_hodge_star && (⋆ᴱ⁻¹) === flat_inverse_hodge_star
+@test ⋆⁻¹(dx1, md_eager) === inverse_hodge_star(dx1, md_eager)
+@test ⋆ᴱ⁻¹(dx1)         === flat_inverse_hodge_star(dx1)
+
 end # module

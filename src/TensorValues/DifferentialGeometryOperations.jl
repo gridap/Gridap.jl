@@ -301,6 +301,70 @@ end
 flat_hodge_star(a::MultiValue{NTuple{K,Dw}}) where {K,Dw} = flat_hodge_star(𝔸(a))
 const ⋆ᴱ = flat_hodge_star
 
+"""
+    inverse_hodge_star(ω::MultiValue{NTuple{K,D}}, metric_args...)
+    ⋆⁻¹(ω, metric_args...)
+
+It is `⋆⁻¹ = sgn(det g) (-1)^{K(D-K)} ⋆`
+
+See also [`flat_inverse_hodge_star(ω)`](@ref) and [`hodge_star`].
+"""
+@generated function inverse_hodge_star(ω::SkewSymKTensorValue{V,K,Dw,Tw}, metric_args::Vararg{_MetricArg}) where {V,K,Dw,Tw}
+  V === Int && return :(@unreachable $("inverse_hodge_star requires a K-tensor with variance, got $V index"))
+  D = Int(Dw)
+  K <= D || return :(@unreachable $("inverse hodge star requires K ≤ D, got K = $K and D = $D"))
+
+  Kc  = D - K
+  L   = binomial(D, K)   # = binomial(D, Kc), the two are matched by complementation
+  c_K = sorted_combinations(D, K)
+
+  # The signed volume density is the volume factor of `⋆` and the `sgn(det g)`
+  # of the inverse in one, and the parity is type data: `⋆⁻¹` reads the same
+  # metric data as `⋆` and costs the same.
+  _g_or_ginv = V === Cov ? :g_inv : :g
+  _volume    = V === Cov ? :signed_sqrt_g : :(inv(signed_sqrt_g))
+  parity     = isodd(K*Kc) ? -1 : 1
+
+  swapped = _alt_compound_comps(_g_or_ginv, c_K, c_K, Tw, :ω)
+
+  s = _hodge_star_signs(K, D)
+  comps = [_signed(parity*s[L+1-m], :(vol * ω_swapped[$(L+1-m)])) for m in 1:L]
+
+  quote
+    $(_parse_and_check_metricargs(:( flat_inverse_hodge_star(ω) ), (_g_or_ginv, :signed_sqrt_g), D))
+    vol = $_volume
+    ω_swapped = ($(swapped...),)
+    SkewSymKTensorValue{$V,$Kc,$Dw}(($(comps...),))
+  end
+end
+
+function inverse_hodge_star(a::MultiValue{NTuple{K,D}}, metric_args::Vararg{_MetricArg}) where {K,D}
+  inverse_hodge_star(𝔸(a), metric_args...)
+end
+
+const ⋆⁻¹ = inverse_hodge_star
+
+"""
+    flat_inverse_hodge_star(ω::ExteriorFormValue{K,D})
+    flat_inverse_hodge_star(ω::MultiValue{NTuple{K,D}})
+    ⋆ᴱ⁻¹(ω)
+
+The inverse [`flat_hodge_star`](@ref), it is `⋆ᴱ⁻¹ = (-1)^{K(D-K)} ⋆ᴱ`.
+"""
+@generated function flat_inverse_hodge_star(ω::SkewSymKTensorValue{V,K,Dw}) where {V,K,Dw}
+  D = Int(Dw)
+  K <= D || return :(@unreachable $("inverse hodge star requires K ≤ D, got K = $K and D = $D"))
+
+  Kc = D - K
+  L  = binomial(D, K)   # = binomial(D, Kc), the two are matched by complementation
+  s  = _hodge_star_signs(K, D)
+  parity = isodd(K*Kc) ? -1 : 1
+  comps = [_signed(parity*s[L+1-m], :(indep_comp_getindex(ω,$(L+1-m)))) for m in 1:L]
+  :( SkewSymKTensorValue{V,$Kc,$Dw}($(comps...)) )
+end
+flat_inverse_hodge_star(a::MultiValue{NTuple{K,Dw}}) where {K,Dw} = flat_inverse_hodge_star(𝔸(a))
+const ⋆ᴱ⁻¹ = flat_inverse_hodge_star
+
 
 # ============================================================
 # Musical isomorphisms  ♭ (flat) and ♯ (sharp)

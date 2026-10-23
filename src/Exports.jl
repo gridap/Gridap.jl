@@ -49,7 +49,9 @@ using Gridap.Arrays: ∑; export ∑
 using Gridap.TensorValues: ∧; export ∧
 @publish TensorValues hodge_star
 @publish TensorValues flat_hodge_star
-using Gridap.TensorValues: ⋆, ⋆ᴱ; export ⋆, ⋆ᴱ
+@publish TensorValues inverse_hodge_star
+@publish TensorValues flat_inverse_hodge_star
+using Gridap.TensorValues: ⋆, ⋆ᴱ, ⋆⁻¹; export ⋆, ⋆ᴱ, ⋆⁻¹
 @publish TensorValues flat
 @publish TensorValues flat_flat
 @publish TensorValues sharp

@@ -290,6 +290,7 @@ uses, so that providing exactly these spares any such computation.
 
 ```@docs
 hodge_star
+inverse_hodge_star
 alt_inner
 flat
 sharp
@@ -310,6 +311,7 @@ Euclidean.
 
 ```@docs
 flat_hodge_star
+flat_inverse_hodge_star
 flat_alt_inner
 flat_inner
 flat_flat
