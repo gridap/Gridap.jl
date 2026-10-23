@@ -753,8 +753,8 @@ end
 
 Jump operator at interior facets of the supporting `Triangulation`, defined by
 `jump`(`a` n) = ⟦`a` n⟧ = `a`⁺n⁺ + `a`⁻n⁻, where n is an oriented normal field
-to the interior facets, n⁺ = -n⁻ are the normal pointing into the element on the +
-and - side of the facets, and `a`⁺/`a`⁻ are the restrictions of `a` to each
+to the interior facets, n⁺ = -n⁻ is the normal pointing outside the element on
+the + side of the facets, and `a`⁺/`a`⁻ are the restrictions of `a` to each
 element respectively.
 """
 jump(a::CellField) = a.⁺ - a.⁻
