@@ -279,17 +279,18 @@ arguments `metric_args...`, which are either
   of the operation.
 - Or, in any order, the metric tensor `g` and/or its inverse `g_inv`, which are
   `SymTensorValue`s whose variance are `(0,2)` or `(2,0)` respectively.
-  Optionally, the scalar `sqrt_abs_g` = `√|det(g)|` can be added second.
-- A [`MetricData`](@ref), object that behaves like the `(; g, g_inv, sqrt_abs_g)` named tuple.
+  Optionally, the scalar `signed_sqrt_g` = `sgn(det g)√|det(g)|` can be added second.
+- A [`MetricData`](@ref), object that behaves like the `(; g, g_inv, signed_sqrt_g)` named tuple.
 
 They are internally parsed into a `MetricData` by [`parse_metric_data`](@ref),
 which computes the missing data on demand: the inverse of the given tensor if
-the other one is needed, and `sqrt_abs_g` from either. The docstring of each of
-the following tensor operation states which of `g`, `g_inv` and `sqrt_abs_g` it
+the other one is needed, and `signed_sqrt_g` from either. The docstring of each of
+the following tensor operation states which of `g`, `g_inv` and `signed_sqrt_g` it
 uses, so that providing exactly these spares any such computation.
 
 ```@docs
 hodge_star
+inverse_hodge_star
 alt_inner
 flat
 sharp
@@ -310,6 +311,7 @@ Euclidean.
 
 ```@docs
 flat_hodge_star
+flat_inverse_hodge_star
 flat_alt_inner
 flat_inner
 flat_flat

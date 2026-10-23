@@ -136,14 +136,14 @@ end
 
 # ── The derivatives of the metric reach the operators ─────────────────────────
 
-# The inverse metric and the volume factor are built from the metric, so the
-# rules of `inv` and of `√|det g|` are what lets them be differentiated, and
-# with them the metric `⋆` of an expression `𝑑` is taken of.
+# The inverse metric and the signed volume density are built from the metric, so
+# the rules of `inv` and of `sgn(det g)√|det g|` are what lets them be
+# differentiated, and with them the metric `⋆` of an expression `𝑑` is taken of.
 let Ω = Triangulation(cmodel2), pts = get_cell_points(Ω)
-  g, g_inv, sqrt_abs_g = get_metric_data(Ω)
-  ∂g, ∂g_inv, ∂sqrt_abs_g = map(partial_derivatives, (g, g_inv, sqrt_abs_g))
+  g, g_inv, signed_sqrt_g = get_metric_data(Ω)
+  ∂g, ∂g_inv, ∂signed_sqrt_g = map(partial_derivatives, (g, g_inv, signed_sqrt_g))
   gv, giv, ∂gv, ∂giv, ∂sv = map(
-    a -> first(first(a(pts))), (g, g_inv, ∂g, ∂g_inv, ∂sqrt_abs_g))
+    a -> first(first(a(pts))), (g, g_inv, ∂g, ∂g_inv, ∂signed_sqrt_g))
 
   @test ∂gv isa ProductTensorValue{SymNTensorValue{Tuple{Cov(2)}},SymTensorValue{Cov(2)}}
   @test ∂giv isa ProductTensorValue{SymNTensorValue{Tuple{Cov(2)}},SymTensorValue{Con(2)}}

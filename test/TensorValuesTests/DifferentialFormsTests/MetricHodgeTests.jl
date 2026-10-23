@@ -229,23 +229,23 @@ for args in ((g_diag, g_inv_diag, sdg_diag), (sdg_diag, g_inv_diag, g_diag), (g_
   md = parse_metric_data(args...)
   @test getfield(md, :g)          === g_diag
   @test getfield(md, :g_inv)      === g_inv_diag
-  @test getfield(md, :sqrt_abs_g) === sdg_diag
+  @test getfield(md, :signed_sqrt_g) === sdg_diag
 end
 md_rev = parse_metric_data(sdg_diag, g_inv_diag)
 @test getfield(md_rev, :g)          === nothing
 @test getfield(md_rev, :g_inv)      === g_inv_diag
-@test getfield(md_rev, :sqrt_abs_g) === sdg_diag
+@test getfield(md_rev, :signed_sqrt_g) === sdg_diag
 @test collect(hodge_star(dx1, sdg_diag, g_inv_diag).data) ≈ collect(hodge_star(dx1, g_inv_diag, sdg_diag).data)  atol=1e-12
-@test compute_metric_data(sdg_diag, g_diag).sqrt_abs_g === sdg_diag
-@test compute_metric_data(g_diag, sdg_diag).sqrt_abs_g === sdg_diag
+@test compute_metric_data(sdg_diag, g_diag).signed_sqrt_g === sdg_diag
+@test compute_metric_data(g_diag, sdg_diag).signed_sqrt_g === sdg_diag
 # eager computation from either tensor alone stores all three data
 for md in (compute_metric_data(g_diag), compute_metric_data(g_inv_diag), compute_metric_data(parse_metric_data(g_inv_diag)))
   @test getfield(md, :g)     isa SymTensorValue{cov2}
   @test getfield(md, :g_inv) isa SymTensorValue{con2}
-  @test getfield(md, :sqrt_abs_g) isa Float64
+  @test getfield(md, :signed_sqrt_g) isa Float64
   @test collect(md.g.data) ≈ collect(g_diag.data)  atol=1e-12
   @test collect(md.g_inv.data) ≈ collect(g_inv_diag.data)  atol=1e-12
-  @test md.sqrt_abs_g ≈ sdg_diag  atol=1e-12
+  @test md.signed_sqrt_g ≈ sdg_diag  atol=1e-12
 end
 
 # Each datum at most once, tensors must carry a variance, anything else is rejected
@@ -254,7 +254,7 @@ end
 @test_throws ArgumentError parse_metric_data(g_diag, sdg_diag, 2.0)
 @test_throws ArgumentError parse_metric_data(SymTensorValue{2}(1.,0.,1.))
 @test_throws ArgumentError parse_metric_data(TensorValue{cov2,cov2}(1.,0.,0.,1.))
-@test_throws ArgumentError parse_metric_data(g_diag, "sqrt_abs_g")
+@test_throws ArgumentError parse_metric_data(g_diag, "signed_sqrt_g")
 @test_throws ArgumentError parse_metric_data(md_lazy, sdg_diag)
 @test_throws ArgumentError parse_metric_data(I, sdg_diag)
 @test_throws ArgumentError hodge_star(dx1, md_lazy, sdg_diag)
@@ -271,7 +271,7 @@ end
 md_I = parse_metric_data(I)
 @test isidentity(md_I)
 @test !isidentity(md_lazy) && !isidentity(md_eager)
-@test md_I.g === I && md_I.g_inv === I && md_I.sqrt_abs_g === true
+@test md_I.g === I && md_I.g_inv === I && md_I.signed_sqrt_g === true
 @test compute_metric_data(I) === md_I
 @test compute_metric_data(md_I) === md_I
 @test hodge_star(dx1, I)          === flat_hodge_star(dx1)
@@ -284,5 +284,81 @@ md_I = parse_metric_data(I)
 @test alt_inner(dx1, dx1, I)      === flat_alt_inner(dx1, dx1)
 @test alt_inner(dx1, dx1, md_I)   === flat_alt_inner(dx1, dx1)
 @test hodge_star(TensorValue{cov2,cov2}(0.,-1.,1.,0.), I) === flat_hodge_star(TensorValue{cov2,cov2}(0.,-1.,1.,0.))
+
+
+# ── Indefinite metric ─────────────────────────────────────────────────────────
+#
+# g = diag(-1,1) has det g = -1, so the volume density is 1 and the index that
+# `signed_sqrt_g` carries makes it -1.
+
+g_lor     = SymTensorValue{cov2,Float64,3}(-1.0, 0.0, 1.0)
+g_inv_lor = inv(g_lor) # con2
+
+@test compute_metric_data(g_lor).signed_sqrt_g         ≈ -1.0
+@test compute_metric_data(g_inv_lor).signed_sqrt_g     ≈ -1.0
+@test parse_metric_data(g_lor).signed_sqrt_g           ≈ -1.0
+@test parse_metric_data(g_inv_lor).signed_sqrt_g       ≈ -1.0
+@test compute_metric_data(g_lor, -1.0).signed_sqrt_g === -1.0
+
+# A density of the wrong sign contradicts the index, a `@check` that is only
+# active when Gridap runs in debug mode
+@test_throws AssertionError parse_metric_data(g_lor, 1.0)
+@test_throws AssertionError compute_metric_data(g_inv_lor, 1.0)
+
+# `hodge_star` reads the density `abs(signed_sqrt_g)`, here 1: ⋆ of a 0-form is
+# multiplication by it, and ⋆ of the top form by it times det g⁻¹
+md_lor = compute_metric_data(g_lor)
+@test collect(hodge_star(f0, md_lor).data)        ≈ [ 5.0]  atol=1e-12
+@test collect(hodge_star(vol_coord, md_lor).data) ≈ [-1.0]  atol=1e-12
+
+# ⋆ squares to sgn(det g)(-1)^{K(D-K)}, which is +1 on the 1-forms and -1 on
+# the 0- and 2-forms of this metric
+star2(ω) = hodge_star(hodge_star(ω, md_lor), md_lor)
+@test collect(star2(f0).data)        ≈ -collect(f0.data)         atol=1e-12
+@test collect(star2(vol_coord).data) ≈ -collect(vol_coord.data)  atol=1e-12
+for ω in (dx1, dx2)
+  @test collect(star2(ω).data) ≈ collect(ω.data)  atol=1e-12
+end
+
+
+# ── Inverse Hodge star ────────────────────────────────────────────────────────
+#
+# `⋆⁻¹ = sgn(det g)(-1)^{K(D-K)} ⋆` inverts `⋆` on either side, on a form and on
+# a K-vector, whatever the index of the metric.
+
+g2_gen = SymTensorValue{cov2}(2.0, 0.5, 3.0)
+g3_gen = SymTensorValue{cov3}(2.0, 0.3, 0.1, 3.0, 0.2, 4.0)
+g3_lor = SymTensorValue{cov3}(-1.0, 0.0, 0.0, 1.0, 0.0, 1.0)
+
+for (D, mds) in ((2, (compute_metric_data(g2_gen), compute_metric_data(g_lor))),
+                 (3, (compute_metric_data(g3_gen), compute_metric_data(g3_lor))))
+  for K in 0:D, (Alias, Var) in ((ExteriorFormValue, Cov), (ExteriorVectorValue, Con))
+    ω = Alias{K,Var(D)}(ntuple(i -> 1.0 + i, binomial(D,K)))
+
+    for md in mds
+      σ = sign(det(md.g)) * (isodd(K*(D-K)) ? -1 : 1)
+      @test collect(inverse_hodge_star(hodge_star(ω, md), md).data) ≈ collect(ω.data)  atol=1e-12
+      @test collect(hodge_star(inverse_hodge_star(ω, md), md).data) ≈ collect(ω.data)  atol=1e-12
+      @test collect(inverse_hodge_star(ω, md).data) ≈ σ * collect(hodge_star(ω, md).data)  atol=1e-12
+    end
+
+    # The identity metric selects the Euclidean version, whose index is +1
+    @test inverse_hodge_star(ω, I) === flat_inverse_hodge_star(ω)
+    @test flat_inverse_hodge_star(flat_hodge_star(ω)) === ω
+    @test flat_hodge_star(flat_inverse_hodge_star(ω)) === ω
+  end
+end
+
+# A not-alternating tensor is inverse starred through its alternating part, and
+# missing metric information is an error, not a silent Euclidean fallback
+@test collect(inverse_hodge_star(TensorValue{cov2,cov2}(0.,-1.,1.,0.), md_eager).data) ≈
+      collect(inverse_hodge_star(ExteriorFormValue{2,cov2}((1.,)), md_eager).data)  atol=1e-12
+@test_throws ArgumentError inverse_hodge_star(dx1)
+@test_throws DimensionMismatch inverse_hodge_star(dx1, md3)
+
+# The aliases are the functions themselves
+@test (⋆⁻¹) === inverse_hodge_star && (⋆ᴱ⁻¹) === flat_inverse_hodge_star
+@test ⋆⁻¹(dx1, md_eager) === inverse_hodge_star(dx1, md_eager)
+@test ⋆ᴱ⁻¹(dx1)         === flat_inverse_hodge_star(dx1)
 
 end # module

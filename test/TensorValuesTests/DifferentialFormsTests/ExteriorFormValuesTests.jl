@@ -1,7 +1,7 @@
 module ExteriorFormValuesTests
 # Construction and pointwise algebra of ExteriorFormValue:
-# zero/+/-/*, wedge product, interior product ι, flat Euclidean Hodge star,
-# inner product of forms.
+# zero/+/-/*, wedge product, interior product ι, endomorphisms of Λᴷ, flat
+# Euclidean Hodge star, inner product of forms.
 
 using Gridap.TensorValues
 using StaticArrays
@@ -246,6 +246,29 @@ vol3 = ExteriorFormValue{3,D3}((1.0,))
 r3   = ι(e13, vol3)
 @test typeof(r3) <: ExteriorFormValue{2,cov3}
 @test r3.data == (0.0, 0.0, 1.0)   # dx²∧dx³ is the third 2-combination
+
+# ── Endomorphism of Λᴷ from its matrix ───────────────────────────────────────
+
+# The matrix acts on the stored components as it stands, in that order, so a non
+# symmetric one tells which of its indices is summed over
+Nm3 = [1.0 2.0 3.0; 4.0 5.0 6.0; 7.0 8.0 10.0]
+N3  = TensorValue{3,3}(Tuple(Nm3))
+
+ω1_3d = CoVectorValue{D3}((1.0, 2.0, 3.0))
+@test typeof(alt_endomorphism(N3, ω1_3d)) <: CoVectorValue{cov3}
+@test collect(alt_endomorphism(N3, ω1_3d).data) ≈ Nm3 * collect(ω1_3d.data)
+
+# the `2!` that the stored component contraction of a 2-form carries is not
+# charged to the matrix
+ω2_3d = ExteriorFormValue{2,D3}((1.0, 2.0, 3.0))
+@test collect(alt_endomorphism(N3, ω2_3d).data) ≈ Nm3 * collect(ω2_3d.data)
+
+@test alt_endomorphism(one(TensorValue{3,3,Float64}), ω1_3d) == ω1_3d
+@test alt_endomorphism(one(TensorValue{3,3,Float64}), ω2_3d) == ω2_3d
+
+# the matrix is that of an endomorphism of Λᴷ, which is binomial(D,K) square
+@test_throws AssertionError alt_endomorphism(one(TensorValue{2,2,Float64}), ω2_3d)
+@test_throws AssertionError alt_endomorphism(N3, CoVectorValue{D2}((1.0, 2.0)))
 
 # ── Hodge star (flat Euclidean) ──────────────────────────────────────────────
 

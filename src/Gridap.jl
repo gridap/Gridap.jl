@@ -36,6 +36,7 @@ $(Helpers.public_names_in_md(@__MODULE__; change_link=Dict(
   :ι  => "interior_product",
   :⋆  => "hodge_star",
   :⋆ᴱ => "flat_hodge_star",
+  :⋆⁻¹ => "inverse_hodge_star",
   :♭  => "flat",
   :♭ᴱ => "flat_flat",
   :♯  => "sharp",

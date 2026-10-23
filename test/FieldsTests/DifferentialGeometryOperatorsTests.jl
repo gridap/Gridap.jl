@@ -4,7 +4,7 @@ using Test
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
-using Gridap.TensorValues: _sqrt_abs_det
+using Gridap.TensorValues: _signed_sqrt_det
 
 using StaticArrays
 using ForwardDiff
@@ -562,9 +562,9 @@ end
 function test_metric_partials_rules(gF, x::Point{D}) where D
   g, ∂g = gF(x), partial_derivatives(gF, x)
 
-  inv_g, sq_g = y -> inv(gF(y)), y -> _sqrt_abs_det(gF(y))
+  inv_g, sq_g = y -> inv(gF(y)), y -> _signed_sqrt_det(gF(y))
   ∂inv = partials_op_rule(Val(1), inv)(g, ∂g)
-  ∂sq  = partials_op_rule(Val(1), _sqrt_abs_det)(g, ∂g)
+  ∂sq  = partials_op_rule(Val(1), _signed_sqrt_det)(g, ∂g)
 
   @test ∂inv ≈ partial_derivatives(inv_g, x)
   @test typeof(∂inv) === typeof(partial_derivatives(inv_g, x))
@@ -592,5 +592,10 @@ end
 
 test_metric_partials_rules(g2F, x2)
 test_metric_partials_rules(g3F, x3)
+
+# Indefinite metric: the rules read the signed volume density, whose magnitude
+# is the volume factor `⋆` applies and whose sign factors out of the derivative
+g2LF(y) = SymTensorValue{cov2}(-2.0 - y[1]^2, w(1,y), 3.0 + sin(y[2]))
+test_metric_partials_rules(g2LF, x2)
 
 end # module

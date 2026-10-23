@@ -111,6 +111,13 @@ d_star_ω = exterior_derivative(star_ω)
 @test (-flat_hodge_star(evaluate(exterior_derivative(Operation(flat_hodge_star)(ωfld)), x_c))).data[1] ≈
       δv.data[1]   atol=1e-8
 
+# `⋆⁻¹` inverts `⋆`; the identity metric of this model selects its Euclidean
+# version, whose index is +1
+inv_star_ω = inverse_hodge_star(star_ω)
+@test form_eltype(inv_star_ω) <: ExteriorFormValue{1,cov2}
+@test all(first(cell_values(inv_star_ω)) .≈ first(cell_values(ω)))
+@test all(first(cell_values(⋆⁻¹(⋆(ω)))) .≈ first(cell_values(ω)))
+
 # ── wedge product ─────────────────────────────────────────────────────────────
 
 # η = dx² (constant 1-form)

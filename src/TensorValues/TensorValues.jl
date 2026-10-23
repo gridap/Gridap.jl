@@ -34,6 +34,8 @@ $(public_names_in_md(@__MODULE__; change_link=Dict(
   :ι  => "interior_product",
   :⋆  => "hodge_star",
   :⋆ᴱ => "flat_hodge_star",
+  :⋆⁻¹ => "inverse_hodge_star",
+  :⋆ᴱ⁻¹ => "flat_inverse_hodge_star",
   :♭  => "flat",
   :♭ᴱ => "flat_flat",
   :♯  => "sharp",
@@ -140,6 +142,8 @@ export ∧
 export interior_product, ι
 export hodge_star, ⋆
 export flat_hodge_star, ⋆ᴱ
+export inverse_hodge_star, ⋆⁻¹
+export flat_inverse_hodge_star, ⋆ᴱ⁻¹
 export alt_inner, ⨟
 export flat_alt_inner, ⨟ᴱ
 export flat_inner, ⊙ᴱ
@@ -155,6 +159,7 @@ export push_second_partials
 export pinvJt
 export symbolic_coordinates
 export koszul
+export alt_endomorphism
 export flat_vol_coeff
 export to_1form
 export from_1form
@@ -193,7 +198,7 @@ import LinearAlgebra: det, inv, tr, cross, dot, norm, normalize, eigen, rank
 # Reexport from LinearAlgebra (just for convenience)
 export det, inv, tr, cross, dot, norm, normalize, eigen, rank, ×, ⋅
 
-import Gridap.Arrays: get_array
+import Gridap.Arrays: get_array, testvalue
 
 include("MultiValueTypes.jl")
 

@@ -557,7 +557,8 @@ Base.:(∘)(f::Function,g::Tuple{Vararg{Union{Function,CellField}}}) = Operation
 # Unary ops
 
 for op in (:symmetric_part,:inv,:det,:abs,:abs2,:+,:-,:tr,:transpose,:adjoint,
-  :grad2curl,:real,:imag,:conj,:flat_hodge_star,:flat_flat,:flat_sharp,
+  :grad2curl,:real,:imag,:conj,:flat_hodge_star,:flat_inverse_hodge_star,
+  :flat_flat,:flat_sharp,
   :flat_vol_coeff,:from_0form,:to_1form,:from_1form
 )
   @eval begin
@@ -568,7 +569,8 @@ end
 # Binary ops
 
 for op in (:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/,
-  :interior_product, :∧, :flat_inner, :flat_alt_inner, :pullback, :pushforward
+  :interior_product, :∧, :flat_inner, :flat_alt_inner, :pullback, :pushforward,
+  :alt_endomorphism
 )
   @eval begin
     ($op)(a::CellField,b::CellField) = Operation($op)(a,b)
@@ -588,26 +590,37 @@ function _operate_with_metric(op, euclidean_op, a...)
   a_cf = _convert_to_cellfields(a...)
   # The metric is that of the triangulation the operation is evaluated on, so
   # it is read after the arguments are brought to their common domain.
-  md_cf = get_metric_data(get_triangulation(first(a_cf)))
-  _metric_operation(op, euclidean_op, md_cf, a_cf...)
+  trian = get_triangulation(first(a_cf))
+  md_cf = get_metric_data(trian)
+  _oriented(op, trian, _metric_operation(op, euclidean_op, md_cf, a_cf...))
 end
+
+# A `⋆` takes an orientation as well as a metric, and the one an embedded
+# triangulation carries is the one its background induces on it, not the one its
+# own parametrisation happens to have, see [`_induced_orientation`](@ref).
+_oriented(op, trian, b) = b
+
+_oriented(::Union{typeof(hodge_star),typeof(inverse_hodge_star)}, trian, b) =
+  _is_embedded(trian) ? CellField(_induced_orientation(trian), trian) * b : b
 
 _metric_operation(op, euclidean_op, ::Tuple{UniformScaling}, a::CellField...) =
   Operation(euclidean_op)(a...)
 _metric_operation(op, euclidean_op, metric_data::Tuple, a::CellField...) =
   Operation(op)(a..., _metric_args(op, metric_data)...)
 
-# metric_data is `(g, g_inv, sqrt_abs_g)`, this eagerly computes all metric args
+# metric_data is `(g, g_inv, signed_sqrt_g)`, this eagerly computes all metric args
 # the operation might require
-_metric_args(::typeof(hodge_star), metric_data::Tuple) = metric_data
-_metric_args(::typeof(flat),       metric_data::Tuple) = (metric_data[1],)
-_metric_args(::typeof(sharp),      metric_data::Tuple) = (metric_data[2],)
-_metric_args(::typeof(inner),      metric_data::Tuple) = metric_data[1:2]
-_metric_args(::typeof(alt_inner),  metric_data::Tuple) = metric_data[1:2]
+_metric_args(::typeof(hodge_star),         metric_data::Tuple) = metric_data
+_metric_args(::typeof(inverse_hodge_star), metric_data::Tuple) = metric_data
+_metric_args(::typeof(flat),               metric_data::Tuple) = (metric_data[1],)
+_metric_args(::typeof(sharp),              metric_data::Tuple) = (metric_data[2],)
+_metric_args(::typeof(inner),              metric_data::Tuple) = metric_data[1:2]
+_metric_args(::typeof(alt_inner),          metric_data::Tuple) = metric_data[1:2]
 
 # One field argument
 for (op, euclidean_op) in (
-  (:hodge_star,:flat_hodge_star), (:flat,:flat_flat), (:sharp,:flat_sharp)
+  (:hodge_star,:flat_hodge_star), (:inverse_hodge_star,:flat_inverse_hodge_star),
+  (:flat,:flat_flat), (:sharp,:flat_sharp)
 )
   @eval begin
     ($op)(a::CellField) = _operate_with_metric($op,$euclidean_op,a)

@@ -7,7 +7,11 @@ be splatted into them:
 
     hodge_star(ω, get_metric_data(Ω)...)
 
-Either `(LinearAlgebra.I,)`, the identity metric, or `(g, g_inv, _sqrt_abs_det)`.
+Either `(LinearAlgebra.I,)`, the identity metric, or `(g, g_inv, signed_sqrt_g)`.
+
+It is metric data only: a `⋆` takes an orientation as well, and on an embedded
+triangulation the lifted `⋆(ω)` supplies the one its background induces, which
+splatting this into `hodge_star` by hand does not.
 
 A triangulation whose cells do not fill the ambient space carries the metric its
 background *induces* on them and not the cell metric of that background. Which
@@ -41,22 +45,20 @@ _is_embedded(trian::Triangulation) = _is_embedded(trian, get_background_model(tr
 # `Jι` being the differential of the inclusion read in those coordinates and
 # the ambient frame, see [`_get_inclusion_jac`](@ref).
 #
-# Slot 3 is the component of the volume form of `g_Γ` in those coordinates, not
-# merely its volume factor: `g_Γ` is a Gram matrix, so `det g_Γ > 0` and the
-# magnitude is derivable from `g_Γ`, while the sign is not. A `⋆` takes an
-# orientation as well as a metric, and the one a face carries is the one its
-# background induces on it, so slot 3 is signed by `ε`. That is what makes the
-# two writings of a top form integral agree,
+# `g_Γ` is a Gram matrix, so `det g_Γ > 0` and slot 3 is positive, carrying the
+# index of the metric like any other's. The orientation a face carries is not a
+# datum of its metric -- `g_Γ` is invariant under `Jι → -Jι` -- and is held by
+# [`_induced_orientation`](@ref), which the two writings of a top form integral
 #
-#   ∫( ω )dΓ = ∫( ⋆ω )dΓ,
+#   ∫( ω )dΓ = ∫( ⋆ω )dΓ
 #
-# the first carrying `ε` in the weights, the second in the `⋆`. Its magnitude is
-# the area element `meas(Jι)` that the integration map already applies, so it is
-# not added to a scalar integrand a second time, see [`_metric_weights`](@ref).
+# both reach it through: the first in the weights, see [`_oriented_weights`](@ref),
+# the second in the `⋆`, see [`_oriented`](@ref). Slot 3's magnitude is the area
+# element `meas(Jι)` that the integration map already applies, so it is not added
+# to a scalar integrand a second time, see [`_metric_weights`](@ref).
 function _induced_metric_data(trian::Triangulation, model, ::UniformScaling)
   g = Operation(_induced_metric)(_get_inclusion_jac(trian))
-  ε = CellField(_induced_orientation(trian), trian)
-  (g, Operation(inv)(g), ε * Operation(_sqrt_abs_det)(g))
+  (g, Operation(inv)(g), Operation(_signed_sqrt_det)(g))
 end
 
 function _induced_metric_data(trian::Triangulation, model, cell_g)
@@ -91,7 +93,7 @@ function _metric_data(trian::Triangulation, model, model_cell_g::AbstractArray)
   g     = change_domain(m_g    , trian, PhysicalDomain())
   g_inv = change_domain(m_g_inv, trian, PhysicalDomain())
 
-  (g, g_inv, Operation(_sqrt_abs_det)(g))
+  (g, g_inv, Operation(_signed_sqrt_det)(g))
 end
 
 """

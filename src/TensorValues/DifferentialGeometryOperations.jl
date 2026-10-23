@@ -181,8 +181,8 @@ function symbolic_coordinates end
 #   Step 2 — Levi-Civita contraction:
 #     (⋆ ω)_L = √|det(g)| Σ_{I sorted} ε(I,L) ω^I
 #
-# Passing g_inv (the pointwise inverse metric tensor) and sqrt_abs_g
-# (the pointwise square root of det g) keeps this purely algebraic.
+# Passing g_inv (the pointwise inverse metric tensor) and signed_sqrt_g, whose
+# magnitude is the volume density √|det g|, keeps this purely algebraic.
 # ============================================================
 
 """
@@ -236,8 +236,8 @@ Hodge star `⋆ω` of a `K`-tensor `ω` with variance. It is an alternating
 `(D-K)`-vector for a contravariant one.
 
 `metric_args` contains the metric information, see [`parse_metric_data`](@ref).
-`hodge_star` uses `sqrt_abs_g` and the metric with opposite variance to `ω`,
-that is `g_inv` for a form and `g` for a `K`-vector.
+`hodge_star` uses the volume density `abs(signed_sqrt_g)` and the metric with
+opposite variance to `ω`, that is `g_inv` for a form and `g` for a `K`-vector.
 
 A not-alternating `K`-tensor with homogeneous variance is accepted, and
 starred through its alternating part.
@@ -257,7 +257,7 @@ passing `LinearAlgebra.I`.
   # Raising the indices of a form pairs with the volume factor √|det(g)|;
   # lowering those of a K-vector pairs with its reciprocal.
   _g_or_ginv = V === Cov ? :g_inv : :g
-  _volume    = V === Cov ? :sqrt_abs_g : :(inv(sqrt_abs_g))
+  _volume    = V === Cov ? :(abs(signed_sqrt_g)) : :(inv(abs(signed_sqrt_g)))
 
   # Step 1: swap (raise or lower) K indices of ω. `K ≤ D` makes the sum non-empty.
   swapped = _alt_compound_comps(_g_or_ginv, c_K, c_K, Tw, :ω)
@@ -267,7 +267,7 @@ passing `LinearAlgebra.I`.
   comps = [_signed(s[L+1-m], :(vol * ω_swapped[$(L+1-m)])) for m in 1:L]
 
   quote
-    $(_parse_and_check_metricargs(:( flat_hodge_star(ω) ), (_g_or_ginv, :sqrt_abs_g), D))
+    $(_parse_and_check_metricargs(:( flat_hodge_star(ω) ), (_g_or_ginv, :signed_sqrt_g), D))
     vol = $_volume
     ω_swapped = ($(swapped...),)
     SkewSymKTensorValue{$V,$Kc,$Dw}(($(comps...),))
@@ -300,6 +300,70 @@ identity metric, an alternating `(D-K)`-tensor with same variance as `ω`.
 end
 flat_hodge_star(a::MultiValue{NTuple{K,Dw}}) where {K,Dw} = flat_hodge_star(𝔸(a))
 const ⋆ᴱ = flat_hodge_star
+
+"""
+    inverse_hodge_star(ω::MultiValue{NTuple{K,D}}, metric_args...)
+    ⋆⁻¹(ω, metric_args...)
+
+It is `⋆⁻¹ = sgn(det g) (-1)^{K(D-K)} ⋆`
+
+See also [`flat_inverse_hodge_star(ω)`](@ref) and [`hodge_star`].
+"""
+@generated function inverse_hodge_star(ω::SkewSymKTensorValue{V,K,Dw,Tw}, metric_args::Vararg{_MetricArg}) where {V,K,Dw,Tw}
+  V === Int && return :(@unreachable $("inverse_hodge_star requires a K-tensor with variance, got $V index"))
+  D = Int(Dw)
+  K <= D || return :(@unreachable $("inverse hodge star requires K ≤ D, got K = $K and D = $D"))
+
+  Kc  = D - K
+  L   = binomial(D, K)   # = binomial(D, Kc), the two are matched by complementation
+  c_K = sorted_combinations(D, K)
+
+  # The signed volume density is the volume factor of `⋆` and the `sgn(det g)`
+  # of the inverse in one, and the parity is type data: `⋆⁻¹` reads the same
+  # metric data as `⋆` and costs the same.
+  _g_or_ginv = V === Cov ? :g_inv : :g
+  _volume    = V === Cov ? :signed_sqrt_g : :(inv(signed_sqrt_g))
+  parity     = isodd(K*Kc) ? -1 : 1
+
+  swapped = _alt_compound_comps(_g_or_ginv, c_K, c_K, Tw, :ω)
+
+  s = _hodge_star_signs(K, D)
+  comps = [_signed(parity*s[L+1-m], :(vol * ω_swapped[$(L+1-m)])) for m in 1:L]
+
+  quote
+    $(_parse_and_check_metricargs(:( flat_inverse_hodge_star(ω) ), (_g_or_ginv, :signed_sqrt_g), D))
+    vol = $_volume
+    ω_swapped = ($(swapped...),)
+    SkewSymKTensorValue{$V,$Kc,$Dw}(($(comps...),))
+  end
+end
+
+function inverse_hodge_star(a::MultiValue{NTuple{K,D}}, metric_args::Vararg{_MetricArg}) where {K,D}
+  inverse_hodge_star(𝔸(a), metric_args...)
+end
+
+const ⋆⁻¹ = inverse_hodge_star
+
+"""
+    flat_inverse_hodge_star(ω::ExteriorFormValue{K,D})
+    flat_inverse_hodge_star(ω::MultiValue{NTuple{K,D}})
+    ⋆ᴱ⁻¹(ω)
+
+The inverse [`flat_hodge_star`](@ref), it is `⋆ᴱ⁻¹ = (-1)^{K(D-K)} ⋆ᴱ`.
+"""
+@generated function flat_inverse_hodge_star(ω::SkewSymKTensorValue{V,K,Dw}) where {V,K,Dw}
+  D = Int(Dw)
+  K <= D || return :(@unreachable $("inverse hodge star requires K ≤ D, got K = $K and D = $D"))
+
+  Kc = D - K
+  L  = binomial(D, K)   # = binomial(D, Kc), the two are matched by complementation
+  s  = _hodge_star_signs(K, D)
+  parity = isodd(K*Kc) ? -1 : 1
+  comps = [_signed(parity*s[L+1-m], :(indep_comp_getindex(ω,$(L+1-m)))) for m in 1:L]
+  :( SkewSymKTensorValue{V,$Kc,$Dw}($(comps...)) )
+end
+flat_inverse_hodge_star(a::MultiValue{NTuple{K,Dw}}) where {K,Dw} = flat_inverse_hodge_star(𝔸(a))
+const ⋆ᴱ⁻¹ = flat_inverse_hodge_star
 
 
 # ============================================================
@@ -1226,6 +1290,37 @@ function koszul(x::MultiValue{Tuple{D}}, ω::ExteriorFormValue{K,Dw}) where {K,D
          "the Koszul differential contracts the position vector of a point, whose \
          index is contravariant, got a vector of index $D.")
   interior_product(x, ω)
+end
+
+
+# ============================================================
+# Endomorphism of Λᴷ given by its matrix on the stored components
+#
+# N : Λᴷ → Λᴷ,  (N ω)_I = Σ_J N[I,J] ω_J
+# ============================================================
+
+"""
+    alt_endomorphism(N::MultiValue{Tuple{L,L}}, ω::ExteriorFormValue{K,D})
+
+Apply to the `K`-form `ω` the endomorphism of `Λ^K` whose matrix is `N` on the
+stored components, `L = binomial(D,K)`:
+
+    alt_endomorphism(N,ω)_I = Σ_J N[I,J] ω_J,
+
+`N` carries no variance: it is a `L`×`L` matrix storing the component of a type
+`(K,K)`-tensor.
+"""
+function alt_endomorphism(
+  N::MultiValue{Tuple{L,L}}, ω::ExteriorFormValue{K,Dw}) where {L,K,Dw}
+
+  D = Int(Dw)
+  @check L == binomial(D,K) """\n
+  `alt_endomorphism` takes the matrix of an endomorphism of the $K-forms of
+  dimension $D, which is $(binomial(D,K))×$(binomial(D,K)), got a $L×$L one.
+  """
+  ET = ProductTensorValue{ExteriorFormValue{K,Dw},
+                          ExteriorVectorValue{K,inverse_variance(Dw)}}
+  contracted_product(Val(K), ET(Tuple(get_array(N))./factorial(K)), ω)
 end
 
 # ============================================================

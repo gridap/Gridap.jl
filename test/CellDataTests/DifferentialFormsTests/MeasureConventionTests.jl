@@ -54,6 +54,13 @@ vmodel = chart_model(model, x -> SymTensorValue{Cov(2)}((1.0 + x[1])^2,0.0,1.0))
 dΩv = Measure(Triangulation(vmodel),3)
 @test sum(∫( 1.0 )dΩv) ≈ 3/2
 
+# The volume element is the density √|det g|, positive whatever the index of
+# the metric: det g = -1 here, of density 1 over the unit square.
+lmodel = chart_model(model, x -> SymTensorValue{Cov(2)}(-1.0,0.0,1.0))
+Ωl  = Triangulation(lmodel)
+dΩl = Measure(Ωl,3)
+@test sum(∫( 1.0 )dΩl) ≈ 1.0
+
 # ── A differential form is integrated as the coefficient of a top form ────────
 
 ω2(x) = ExteriorFormValue{2,Cov(2)}(1.0 + x[1]*x[2])
@@ -115,6 +122,18 @@ for (D,Ωk,dΩk) in ((2,Ωc,dΩc), (3,Ωc3,dΩc3))
     # volume element of the 0-form it becomes restores.
     @test sum(∫( hodge_star(a ∧ hodge_star(b)) )dΩk) ≈ sum(∫( alt_inner(a,b) )dΩk)
   end
+end
+
+# `⋆` and the volume element read one density, so the convention holds whatever
+# the index of the metric. `⋆` of a top form carries that index, `⋆μ = sgn(det
+# g)`, so composing the two returns the inner product up to it.
+for K in 0:2
+  L = binomial(2,K)
+  alf(x) = ExteriorFormValue{K,Cov(2)}(ntuple(i -> 1.0 + i*x[1], L)...)
+  blf(x) = ExteriorFormValue{K,Cov(2)}(ntuple(i -> 2.0 - i*x[2], L)...)
+  a, b = map(f -> CellField(f,Ωl,PhysicalDomain()), (alf,blf))
+  @test sum(∫( a ∧ hodge_star(b) )dΩl) ≈  sum(∫( alt_inner(a,b) )dΩl)
+  @test sum(∫( hodge_star(a ∧ hodge_star(b)) )dΩl) ≈ -sum(∫( alt_inner(a,b) )dΩl)
 end
 
 # ── Assembly on a form valued space takes no `flat_vol_coeff` by hand ─────────

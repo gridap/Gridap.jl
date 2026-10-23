@@ -172,10 +172,10 @@ function induced_orientation(Γ::BoundaryTriangulation)
   end
 end
 
-# The orientation the cells of a triangulation carry, one sign per cell, as
-# [`get_metric_data`](@ref) and the integral of a top form need it. Unlike the
-# metric it is not a function of the background, which is why it is the one
-# thing a new triangulation has to declare.
+# The orientation the cells of a triangulation carry, one sign per cell, as the
+# `⋆` of an embedded triangulation and the integral of a top form need it. Unlike
+# the metric, which holds no orientation, it is not a function of the background,
+# which is why it is the one thing a new triangulation has to declare.
 _induced_orientation(trian::Triangulation) = @abstractmethod """\n
 The orientation the cells of a `$(nameof(typeof(trian)))` carry is not
 implemented, and there is no default: a triangulation that is a boundary of its

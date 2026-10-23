@@ -150,4 +150,45 @@ Mηc = CellField(x -> form(Val(1),Val(2),(Sc\(N2*Sc))*[0.5,1.0]), Ωc, PhysicalD
 η2 = CellField(x -> ExteriorFormValue{1,Cov(2)}(0.5, 1.0), Ω2, PhysicalDomain())
 @test !(sum(∫( ωc ∧ ⋆ᴺᶜ(ηc) )dΩc) ≈ sum(∫( ω2 ∧ ⋆ᴺ₂(η2) )dΩ2))
 
+# ── Differentiation: the operator commutes with ∂ as the ⋆ it composes does ───
+
+# The material contracts the form linearly, so a material Hodge star is a
+# bilinear operation of its material and its argument, and the Leibniz rule
+# commutes it with `∂` at the orders the composed Hodge star is derived at. The
+# reference is the same map written in closed form, which needs no such rule.
+ω2fun(x) = ExteriorFormValue{1,Cov(2)}(1.0 + 3x[1]*x[2]^2, 2.0 + x[1]^2)
+ω2d = CellField(ω2fun, Ω2, PhysicalDomain())
+refᴺ = CellField(x -> form(Val(1),Val(2),N2*comps(flat_hodge_star(ω2fun(x)))), Ω2, PhysicalDomain())
+
+# the pre-composed conjugate is the same map, so it has the same derivatives
+for material_star in (⋆ᴺ₂, ⋆ᴹ₂),
+    k in (exterior_derivative, partial_derivatives, second_partial_derivatives)
+  @test all(first_point_values(k(material_star(ω2d))) .≈ first_point_values(k(refᴺ)))
+end
+
+# On a chart, the metric Hodge star is derived at order 1 only, and so is a
+# material star composing it.
+ωcd = CellField(ω2fun, Ωc, PhysicalDomain())
+xc  = get_cell_points(Ωc)
+refᴺᶜ = CellField(x -> form(Val(1),Val(2),N2*comps(hodge_star(ω2fun(x),md))), Ωc, PhysicalDomain())
+for k in (exterior_derivative, partial_derivatives)
+  @test all(collect(k(⋆ᴺᶜ(ωcd))(xc)) .≈ collect(k(refᴺᶜ)(xc)))
+end
+@test_throws ErrorException collect(second_partial_derivatives(⋆ᴺᶜ(ωcd))(xc))
+@test_throws ErrorException collect(second_partial_derivatives(hodge_star(ωcd))(xc))
+
+# ── An FE basis is derived through either side alike ──────────────────────────
+
+# `𝑑(⋆ᴺu)` of an FE basis goes through the lazy path, where the material star
+# carries the rule of a bilinear operation. The material mixes the components of
+# `⋆u`, so this does not vanish on a space of divergence free Whitney forms, as
+# `𝑑(⋆u)` itself does.
+aᴺ(u,v) = ∫( exterior_derivative(⋆ᴺ₂(u)) ⨟ exterior_derivative(⋆ᴺ₂(v)) )dΩ2
+aᴹ(u,v) = ∫( exterior_derivative(⋆ᴹ₂(u)) ⨟ exterior_derivative(⋆ᴹ₂(v)) )dΩ2
+Aᴺ = assemble_matrix(aᴺ, V, V)
+@test Aᴺ ≈ assemble_matrix(aᴹ, V, V)
+@test norm(Aᴺ) > 0
+@test iszero(assemble_matrix((u,v) -> ∫(
+  exterior_derivative(hodge_star(u)) ⨟ exterior_derivative(hodge_star(v)) )dΩ2, V, V))
+
 end # module

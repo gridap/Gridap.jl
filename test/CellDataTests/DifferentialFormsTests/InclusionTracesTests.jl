@@ -89,14 +89,14 @@ g, g_inv, vol = get_metric_data(Γ)
 @test all(v -> Tuple(v) == (1/n^2,), first_point_values(g))
 @test all(v -> Tuple(v) == (n^2*1.0,), first_point_values(g_inv))
 
-# the volume element is their length, signed by the orientation the background
-# induces: that sign is what makes the two writings of an integral agree
-@test all(v -> abs(v) ≈ 1/n, first_point_values(vol))
+# the volume element is their length, and carries no orientation: a metric has
+# none. The sign that makes the two writings of an integral agree is held by the
+# triangulation, and reaches the measure and the `⋆` from there.
+@test all(v -> v ≈ 1/n, first_point_values(vol))
 
 ε = induced_orientation(Γ)
 @test length(ε) == num_cells(Γ)
 @test sort(unique(ε)) == [-1.0, 1.0]
-@test all(v -> v ≈ ε[1]/n, first_point_values(vol)[1:1])
 
 # ── A Neumann term assembles the same in every writing ────────────────────────
 
@@ -111,5 +111,18 @@ b_star = assemble_vector(v -> ∫( p̄ ∧ ⋆(tr8(v)) )dΓ8, V)
 
 @test b_form ≈ b_star
 @test !iszero(b_form)
+
+# ── An interior facet orients its `⋆` the same way ────────────────────────────
+
+# `jump` and `mean` are taken on `Ω` and the trace after them, a lifted operator
+# bringing its arguments to a common domain as it is built. `Λ` is oriented by
+# its `plus` side, so the two writings agree there as they do on a boundary.
+Λ   = SkeletonTriangulation(model)
+dΛ  = Measure(Λ,4)
+trΛ = get_trace_operator(Λ,Ω)
+ωΛ  = CellField(test_form(Val(2)), Ω, PhysicalDomain())
+
+@test sum(∫( trΛ(mean(ωΛ)) )dΛ) ≈ sum(∫( ⋆(trΛ(mean(ωΛ))) )dΛ)
+@test !iszero(sum(∫( trΛ(mean(ωΛ)) )dΛ))
 
 end # module

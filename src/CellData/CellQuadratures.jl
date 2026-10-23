@@ -217,8 +217,9 @@ function _metric_weights(::Type{T}, x::CellPoint, quad::CellQuadrature, metric_d
   # the integration map applies already, so it is not added here a second time.
   _is_embedded(quad.trian) && return quad.cell_weight
   # _integrand_coefficient guaranties this is a scalar integrand
-  sqrt_abs_g = metric_data[3]
-  lazy_map(Broadcasting(*), quad.cell_weight, sqrt_abs_g(x))
+  # The volume density is the magnitude of the signed one the metric data holds.
+  vol = Operation(abs)(metric_data[3])
+  lazy_map(Broadcasting(*), quad.cell_weight, vol(x))
 end
 
 # A top form of an embedded triangulation has its components in the reference

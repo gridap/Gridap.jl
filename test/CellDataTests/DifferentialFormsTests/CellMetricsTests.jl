@@ -90,10 +90,11 @@ gΓ, gΓ_inv, sqrt_det_gΓ = get_metric_data(Γ)
 @test all(v -> Tuple(v) == (0.25,), first_point_values(gΓ))
 @test all(v -> Tuple(v) == (4.0,),  first_point_values(gΓ_inv))
 
-# Its volume element is signed by the induced orientation of the cell,this is
-# required for ⋆ to be compatible with  `∫( ω )dΓ` and `∫( ⋆ω )dΓ` agree.
-@test all(v -> abs(v) == 0.5, first_point_values(sqrt_det_gΓ))
-@test first_point_values(sqrt_det_gΓ) == 0.5 .* induced_orientation(Γ)
+# Its volume element is positive, carrying the index of the metric and no
+# orientation: the sign that makes `∫( ω )dΓ` and `∫( ⋆ω )dΓ` agree is the
+# triangulation's, and is applied to the measure and to the `⋆`.
+@test all(v -> v == 0.5, first_point_values(sqrt_det_gΓ))
+@test sort(unique(induced_orientation(Γ))) == [-1.0, 1.0]
 
 # it is an inherited metric, not the identity a full rank triangulation carries
 @test !(get_metric_data(Γ)[1] isa LinearAlgebra.UniformScaling)
@@ -105,7 +106,8 @@ gΓ, gΓ_inv, sqrt_det_gΓ = get_metric_data(Γ)
 gΛ, gΛ_inv, sqrt_det_gΛ = get_metric_data(Λ)
 @test all(v -> Tuple(v) == (0.25,), first_point_values(gΛ))
 @test all(v -> Tuple(v) == (4.0,),  first_point_values(gΛ_inv))
-@test first_point_values(sqrt_det_gΛ) == 0.5 .* induced_orientation(Λ.plus)
+@test all(v -> v == 0.5, first_point_values(sqrt_det_gΛ))
+@test Gridap.CellData._induced_orientation(Λ) == induced_orientation(Λ.plus)
 @test induced_orientation(Λ.minus) == -induced_orientation(Λ.plus)
 
 # the derivatives of an induced metric are not implemented, here as anywhere
@@ -127,13 +129,13 @@ cmodel = chart_model(model,cov_chart_metric)
 @test length(get_cell_metric(cmodel)) == num_cells(cmodel)
 @test length(get_cell_inv_metric(cmodel)) == num_cells(cmodel)
 
-g, g_inv, sqrt_abs_g = get_metric_data(Ωc)
+g, g_inv, signed_sqrt_g = get_metric_data(Ωc)
 
 @test DomainStyle(g) == PhysicalDomain()
 @test DomainStyle(g_inv) == PhysicalDomain()
-@test DomainStyle(sqrt_abs_g) == PhysicalDomain()
+@test DomainStyle(signed_sqrt_g) == PhysicalDomain()
 
-gv, giv, sv = map(first_point_values, (g,g_inv,sqrt_abs_g))
+gv, giv, sv = map(first_point_values, (g,g_inv,signed_sqrt_g))
 
 @test all(v -> v isa SymTensorValue{Cov(2),Float64}, gv)
 @test all(v -> v isa SymTensorValue{Con(2),Float64}, giv)
@@ -146,14 +148,23 @@ gv, giv, sv = map(first_point_values, (g,g_inv,sqrt_abs_g))
 md = compute_metric_data(gv[1],giv[1],sv[1])
 @test md.g == gv[1]
 @test md.g_inv == giv[1]
-@test md.sqrt_abs_g == sv[1]
+@test md.signed_sqrt_g == sv[1]
 @test hodge_star(ω,gv[1],giv[1],sv[1]) ≈ hodge_star(ω,md)
+@test inverse_hodge_star(ω,gv[1],giv[1],sv[1]) ≈ inverse_hodge_star(ω,md)
+
+# `⋆⁻¹` reads the triangulation's metric as `⋆` does, and inverts it
+ωc  = CellField(x -> ExteriorFormValue{1,Cov(2)}(1.0 + x[1], 2.0 - x[2]), Ωc, PhysicalDomain())
+ωcv = first_point_values(ωc)
+for rt in map(first_point_values, (inverse_hodge_star(hodge_star(ωc)), ⋆⁻¹(⋆(ωc))))
+  @test all(cell -> rt[cell] ≈ ωcv[cell], eachindex(rt))
+end
 
 # The cell fields reach the quadrature points. `Measure` scales the weights of a
-# scalar integrand by `sqrt_abs_g`, which dividing by it cancels, leaving
+# scalar integrand by the volume density, which this metric being positive
+# definite makes `signed_sqrt_g` itself, so dividing by it cancels, leaving
 # ∫ det g = ∫ (3/2)(cell + x¹) - 9/100 over the unit square
 dΩc = Measure(Ωc,2)
-@test sum(∫(Operation(det)(g)/sqrt_abs_g)dΩc) ≈ 1.5*3.0 - 0.09
+@test sum(∫(Operation(det)(g)/signed_sqrt_g)dΩc) ≈ 1.5*3.0 - 0.09
 
 # A triangulation of part of the model reads the metric of the cells it holds
 Ωp = Triangulation(cmodel,[2,4])
