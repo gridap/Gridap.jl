@@ -68,6 +68,9 @@ function Geometry.get_facet_normal(trian::AdaptedTriangulation)
   get_facet_normal(trian.trian)
 end
 
+CellData._induced_orientation(t::AdaptedTriangulation) =
+  CellData._induced_orientation(t.trian)
+
 function Base.view(t::AdaptedTriangulation,ids::AbstractArray)
   v = view(t.trian,ids)
   return AdaptedTriangulation(v,t.adapted_model)

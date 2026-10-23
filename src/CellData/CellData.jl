@@ -40,6 +40,7 @@ import Gridap.Fields: ∇∇
 import Gridap.Fields: integrate
 import Gridap.Fields: grad2curl
 import Gridap.Fields: exterior_derivative, codifferential
+import Gridap.Fields: ∂
 import Gridap.Geometry: num_cells
 import Gridap.Geometry: get_triangulation
 
@@ -117,6 +118,8 @@ export d_1form
 export postcomposed_material_hodge_star
 export precomposed_material_hodge_star
 
+export get_trace_operator
+
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
@@ -124,6 +127,8 @@ include("CellFields.jl")
 include("CellMetrics.jl")
 
 include("MaterialHodgeStars.jl")
+
+include("InclusionTraces.jl")
 
 include("Interpolation.jl")
 
