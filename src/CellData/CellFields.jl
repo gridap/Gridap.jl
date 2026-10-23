@@ -588,12 +588,28 @@ end
 
 function _operate_with_metric(op, euclidean_op, a...)
   a_cf = _convert_to_cellfields(a...)
+  _ignores_metric(op, a_cf...) && return Operation(euclidean_op)(a_cf...)
   # The metric is that of the triangulation the operation is evaluated on, so
   # it is read after the arguments are brought to their common domain.
   trian = get_triangulation(first(a_cf))
   md_cf = get_metric_data(trian)
   _oriented(op, trian, _metric_operation(op, euclidean_op, md_cf, a_cf...))
 end
+
+# An inner product of un-varianced tensors has no index to raise, so the metric
+# it is handed is discarded pointwise, see [`inner`](@ref). Handing it none is
+# then the same operation, and it is the only one that keeps the block structure
+# of its operands: a metric is one field of the triangulation, not one per block,
+# and the extra operands would nest the blocks of a multi field integrand deeper
+# than those of a term that takes no metric, which could then not be added to it.
+_ignores_metric(op, a::CellField...) = false
+
+_ignores_metric(::Union{typeof(inner),typeof(alt_inner)}, a::CellField...) =
+  !_is_varianced(_cell_field_value_type(first(a)))
+
+# the variance test `inner` itself makes, on the type rather than on a value
+_is_varianced(::Type{T}) where T<:MultiValue = !all(i -> i isa Int, size(T))
+_is_varianced(::Type) = false
 
 # A `⋆` takes an orientation as well as a metric, and the one an embedded
 # triangulation carries is the one its background induces on it, not the one its
