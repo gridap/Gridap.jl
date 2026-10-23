@@ -919,7 +919,7 @@ end
 
 # Partial derivatives of the non jointly linear operations, N=1
 for (op,nargs) in (
-  (:inv,1),(:_sqrt_abs_det,1),(:hodge_star,nothing)
+  (:inv,1),(:_signed_sqrt_det,1),(:hodge_star,nothing)
 )
   arity_check = isnothing(nargs) ? nothing : :( @notimplementedif length(f) != $nargs )
   @eval begin

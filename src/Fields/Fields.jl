@@ -43,7 +43,7 @@ import LinearAlgebra: det, inv, transpose, tr, cross
 import LinearAlgebra: ⋅, dot
 
 import Base: +, -, *, /
-using Gridap.TensorValues: get_indep_components, partials_op_rule, _sqrt_abs_det
+using Gridap.TensorValues: get_indep_components, partials_op_rule, _signed_sqrt_det
 import Gridap.TensorValues: ⊗, ⊙, symmetric_part, outer, meas, ∧, koszul, pinvJt, ι
 
 import Gridap.Arrays: IndexStyle

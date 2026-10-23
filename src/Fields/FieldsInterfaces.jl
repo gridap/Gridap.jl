@@ -1149,7 +1149,7 @@ end
 
 # Order 1 rules for the non jointly linear operations
 for (op,nargs) in (
-  (:inv,1),(:_sqrt_abs_det,1),(:hodge_star,nothing)
+  (:inv,1),(:_signed_sqrt_det,1),(:hodge_star,nothing)
 )
   arity_check = isnothing(nargs) ? nothing : :( @notimplementedif length(fs) != $nargs )
   @eval begin

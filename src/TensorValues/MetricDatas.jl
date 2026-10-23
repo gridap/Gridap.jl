@@ -2,10 +2,14 @@
 
 """
     MetricData(::UniformScaling)
-    MetricData(g, g_inv, sqrt_abs_g)
+    MetricData(g, g_inv, signed_sqrt_g)
 
 Helper struct to handle the metric information consisting of the metric tensor
-`g`, its inverse `g_inv`, and `sqrt_abs_g`=√|det(g)|.
+`g`, its inverse `g_inv`, and `signed_sqrt_g` = sgn(det g)√|det(g)|.
+
+`signed_sqrt_g` carries the sign of `det g`, the index of the metric, which the
+volume density √|det g| = `abs(signed_sqrt_g)` does not hold. That sign is
+constant on a connected domain, `det g` being continuous and nowhere zero.
 
 See [`parse_metric_data`](@ref) for lazy computation, and
 [`compute_metric_data`](@ref) for greedy computation.
@@ -13,17 +17,17 @@ See [`parse_metric_data`](@ref) for lazy computation, and
 ```
 _g = SymTensorValue{cov2}(1.,2,3)
 _g_inv = inv(_g)
-_sqrt_abs_g = sqrt(abs(det(_g)))
+_signed_sqrt_g = copysign(sqrt(abs(det(_g))), det(_g))
 
 g_or_ginv      = rand(Bool) ? _g : _g_inv
-det_or_nothing = rand(Bool) ? _sqrt_abs_g : nothing
+det_or_nothing = rand(Bool) ? _signed_sqrt_g : nothing
 
 md = compute_metric_data(g_or_ginv, det_or_nothing)
-md.g ≈ _g && md.g_inv ≈ _g_inv && md.sqrt_abs_g ≈ _sqrt_abs_g # true
+md.g ≈ _g && md.g_inv ≈ _g_inv && md.signed_sqrt_g ≈ _signed_sqrt_g # true
 
 md = parse_metric_data(g_or_ginv, det_or_nothing)
-(; g, g_inv, sqrt_abs_g) = md # struct destructuring, lazily computing destructured fields only
-   g ≈ _g &&    g_inv ≈ _g_inv &&    sqrt_abs_g ≈ _sqrt_abs_g  # true
+(; g, g_inv, signed_sqrt_g) = md # struct destructuring, lazily computing destructured fields only
+   g ≈ _g &&    g_inv ≈ _g_inv &&    signed_sqrt_g ≈ _signed_sqrt_g  # true
 ```
 """
 struct MetricData{
@@ -35,7 +39,7 @@ struct MetricData{
 }
   g::G
   g_inv::Ginv
-  sqrt_abs_g::T
+  signed_sqrt_g::T
 
   function MetricData(I::UniformScaling{T}) where T
     @assert I.λ == one(T) "UniformScaling can only be used as a metric if it is the scaling by 1"
@@ -44,7 +48,7 @@ struct MetricData{
 
   function MetricData(g::Union{SymTensorValue{Dcov,Tg},Nothing},
                       g_inv::Union{SymTensorValue{Dcon,Ti},Nothing},
-                      sq_g::Ts) where {Dcov,Tg,Dcon,Ti,Ts}
+                      ssq_g::Ts) where {Dcov,Tg,Dcon,Ti,Ts}
 
     isnothing(g) && isnothing(g_inv) && throw(ArgumentError("either the metric tensor g or its inverse g_inv must be provided, got neither"))
 
@@ -58,22 +62,25 @@ struct MetricData{
     # promote to same scalar type
     _Tg = isnothing(g)     ? Bool : Tg
     _Ti = isnothing(g_inv) ? Bool : Ti
-    _Ts = isnothing(sq_g)  ? Bool : Ts
+    _Ts = isnothing(ssq_g) ? Bool : Ts
     _T = Base.promote_op(inv, promote_type(_Tg, _Ti, _Ts))
     _g     = isnothing(g)     ? g     : convert(SymTensorValue{_Dcov,_T}, g)
     _g_inv = isnothing(g_inv) ? g_inv : convert(SymTensorValue{_Dcon,_T}, g_inv)
-    _sq_g  = isnothing(sq_g)  ? sq_g  : convert(_T, sq_g)
+    _ssq_g = isnothing(ssq_g) ? ssq_g : convert(_T, ssq_g)
 
     @check(isnothing(_g) || isnothing(_g_inv) || _g⋅_g_inv ≈ one(TensorValue{_Dcov,_Dcon,_T}),
            "the metric tensor g and its inverse g_inv are not inverse of each other")
 
-    G, Ginv, T = typeof(_g), typeof(_g_inv), typeof(_sq_g)
-    new{G,Ginv,T}(_g, _g_inv, _sq_g)
+    @check(isnothing(_ssq_g) || sign(_ssq_g) == _sign_det_g(_g, _g_inv),
+           "signed_sqrt_g must carry the sign of det g")
+
+    G, Ginv, T = typeof(_g), typeof(_g_inv), typeof(_ssq_g)
+    new{G,Ginv,T}(_g, _g_inv, _ssq_g)
   end
 end
 
 # enable splating metric data in keyword arguments
-Base.NamedTuple(md::MetricData) = (g=md.g, g_inv=md.g_inv, sqrt_abs_g=md.sqrt_abs_g)
+Base.NamedTuple(md::MetricData) = (g=md.g, g_inv=md.g_inv, signed_sqrt_g=md.signed_sqrt_g)
 Base.merge(nt::NamedTuple, md::MetricData) = merge(nt, NamedTuple(md))
 MetricData(gdata::MetricData) = gdata
 
@@ -89,13 +96,13 @@ function Base.getproperty(md::MetricData, name::Symbol)
     !isnothing(g_inv) && return g_inv
     return inv(getfield(md, :g))
 
-  elseif name==:sqrt_abs_g
-    sqrt_abs_g = getfield(md, :sqrt_abs_g)
-    !isnothing(sqrt_abs_g) && return sqrt_abs_g
+  elseif name==:signed_sqrt_g
+    signed_sqrt_g = getfield(md, :signed_sqrt_g)
+    !isnothing(signed_sqrt_g) && return signed_sqrt_g
     g = getfield(md, :g)
-    !isnothing(g) && return _sqrt_abs_det(g)
+    !isnothing(g) && return _signed_sqrt_det(g)
     g_inv = getfield(md, :g_inv)
-    return inv(_sqrt_abs_det(g_inv))
+    return inv(_signed_sqrt_det(g_inv))
 
   else
     throw(Base.FieldError(MetricData, name))
@@ -107,17 +114,21 @@ function Base.getproperty(::MetricData{Nothing,Nothing,T}, name::Symbol) where T
     return UniformScaling{T}(one(T))
   elseif name==:g_inv
     return UniformScaling{T}(one(T))
-  elseif name==:sqrt_abs_g
+  elseif name==:signed_sqrt_g
     return one(T)
   else
     throw(Base.FieldError(MetricData, name))
   end
 end
 
-# The volume density √|det g| of a metric tensor. A function of its own so
-# that `partial_derivatives` of an expression holding it has a rule to apply,
-# see [`partials_op_rule`](@ref).
-_sqrt_abs_det(g::SymTensorValue) = sqrt(abs(det(g)))
+# The signed volume density sgn(det g)√|det g| of a metric tensor. A function of
+# its own so that `partial_derivatives` of an expression holding it has a rule
+# to apply, see [`partials_op_rule`](@ref).
+_signed_sqrt_det(g::SymTensorValue) = (d = det(g); copysign(sqrt(abs(d)), d))
+
+# `det g` and `det g⁻¹` are reciprocal, hence of one sign. One of the two is
+# always stored, so the sign of the metric index is always available.
+_sign_det_g(g, g_inv) = isnothing(g) ? sign(det(g_inv)) : sign(det(g))
 
 function _check_metric_dim(g_or_ginv::SymTensorValue{Dg}, D::Int) where Dg
   Int(Dg) == D || throw(DimensionMismatch(
@@ -144,38 +155,39 @@ const _MetricArg = Union{_MetricArgNoDetG,Number}
     compute_metric_data(md::MetricData)
     compute_metric_data(LinearAlgebra.I)
 
-Return a [`MetricData`](@ref) behaving like `(;g, g_inv, sqrt_abs_g)` with all
+Return a [`MetricData`](@ref) behaving like `(;g, g_inv, signed_sqrt_g)` with all
 three fields eagerly computed. `metric_args` are the positional arguments
 accepted by [`parse_metric_data`](@ref), in any order.
 """
 compute_metric_data(metric_args...) = compute_metric_data(parse_metric_data(metric_args...))
 compute_metric_data(I::UniformScaling) = MetricData(I)
 compute_metric_data(md::MetricData{Nothing,Nothing}) = md # nothing to compute for the identity
-compute_metric_data(md::MetricData) = MetricData(md.g, md.g_inv, md.sqrt_abs_g) # getproperty computes missing ones
+compute_metric_data(md::MetricData) = MetricData(md.g, md.g_inv, md.signed_sqrt_g) # getproperty computes missing ones
 
-# When a single tensor is stored, its inverse and √|det| share one determinant.
+# When a single tensor is stored, its inverse and signed volume density share
+# one determinant.
 function compute_metric_data(md::MetricData{<:SymTensorValue,Nothing,Nothing})
   g = getfield(md, :g)
   det_g = det(g)
-  MetricData(g, adjugate(g)/det_g, sqrt(abs(det_g)))
+  MetricData(g, adjugate(g)/det_g, copysign(sqrt(abs(det_g)), det_g))
 end
 function compute_metric_data(md::MetricData{Nothing,<:SymTensorValue,Nothing})
   g_inv = getfield(md, :g_inv)
   det_g = inv(det(g_inv))
-  MetricData(adjugate(g_inv)*det_g, g_inv, sqrt(abs(det_g)))
+  MetricData(adjugate(g_inv)*det_g, g_inv, copysign(sqrt(abs(det_g)), det_g))
 end
 
 """
     parse_metric_data(metric_args...)
     parse_metric_data(md::MetricData) = md
 
-Gather the provided metric data amongst `g`, `g_inv`, `sqrt_abs_g` given as
+Gather the provided metric data amongst `g`, `g_inv`, `signed_sqrt_g` given as
 positional `metric_args`, in any order, without doing any computation.
 
 ```julia
 g = SymTensorValue{cov3}(1.:6...)
 md = parse_metric_data(g)
-md = parse_metric_data(sqrt(abs(det(g))), inv(g)) # same data, g_inv stored instead of g
+md = parse_metric_data(copysign(sqrt(abs(det(g))), det(g)), inv(g)) # same data, g_inv stored instead of g
 ```
 
 Return a `MetricData` with possibly some `nothing` stored, but computes missing
@@ -187,19 +199,19 @@ value is returned but not stored, so do not access a field several times.
 parse_metric_data(md::MetricData) = md
 parse_metric_data(I::UniformScaling) = MetricData(I)
 function parse_metric_data(metric_args...)
-  _parse_metric_args((g=nothing, g_inv=nothing, sqrt_abs_g=nothing), metric_args...)
+  _parse_metric_args((g=nothing, g_inv=nothing, signed_sqrt_g=nothing), metric_args...)
 end
 #function parse_metric_data(; g::Union{SymTensorValue{Dg,Tg,L},Nothing}=nothing,
 #                             g_inv::Union{SymTensorValue{Di,Ti,L},Nothing}=nothing,
-#                             sqrt_abs_g::Ts=nothing, kwargs...) where {Dg,Tg,Di,Ti,Ts,L}
-#  MetricData(g, g_inv, sqrt_abs_g)
+#                             signed_sqrt_g::Ts=nothing, kwargs...) where {Dg,Tg,Di,Ti,Ts,L}
+#  MetricData(g, g_inv, signed_sqrt_g)
 #end
 
 # The positional arguments are folded one at a time into the named tuple of the
 # three data, each assigned by its type. The dispatch and the `D isa Cov` test
 # on a type parameter resolve at compile time, so accepting the arguments in any
 # order costs nothing at runtime.
-_parse_metric_args(nt) = MetricData(nt.g, nt.g_inv, nt.sqrt_abs_g)
+_parse_metric_args(nt) = MetricData(nt.g, nt.g_inv, nt.signed_sqrt_g)
 _parse_metric_args(nt, a, rest...) = _parse_metric_args(_add_metric_arg(nt, a), rest...)
 
 function _add_metric_arg(nt, a::SymTensorValue{D}) where D
@@ -214,18 +226,18 @@ function _add_metric_arg(nt, a::SymTensorValue{D}) where D
   end
 end
 function _add_metric_arg(nt, a::Number)
-  isnothing(nt.sqrt_abs_g) || throw(ArgumentError("the scalar sqrt_abs_g was given twice"))
-  merge(nt, (sqrt_abs_g = a,))
+  isnothing(nt.signed_sqrt_g) || throw(ArgumentError("the scalar signed_sqrt_g was given twice"))
+  merge(nt, (signed_sqrt_g = a,))
 end
 _add_metric_arg(nt, a::MultiValue) = throw(ArgumentError(
   "a metric tensor must be a SymTensorValue with variance, got $(typeof(a))"))
 # `nothing` is an absent datum, so that a caller can forward an optional one
-# without branching, as in `parse_metric_data(g, sqrt_abs_g_or_nothing)`.
+# without branching, as in `parse_metric_data(g, signed_sqrt_g_or_nothing)`.
 _add_metric_arg(nt, ::Nothing) = nt
 _add_metric_arg(nt, a) = throw(ArgumentError(
   "cannot parse metric data from an argument of type $(typeof(a)): expected a MetricData or \
   LinearAlgebra.I on its own, or else the metric tensor g and/or its inverse g_inv as \
-  SymTensorValues with variance, optionally with the scalar sqrt_abs_g, in any order"))
+  SymTensorValues with variance, optionally with the scalar signed_sqrt_g, in any order"))
 
 function _require_metric_data(a, b)
   throw(ArgumentError(

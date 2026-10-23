@@ -28,7 +28,7 @@ function _metric_data(trian::Triangulation, model, model_cell_g::AbstractArray)
   g     = change_domain(m_g    , trian, PhysicalDomain())
   g_inv = change_domain(m_g_inv, trian, PhysicalDomain())
 
-  (g, g_inv, Operation(_sqrt_abs_det)(g))
+  (g, g_inv, Operation(_signed_sqrt_det)(g))
 end
 
 """

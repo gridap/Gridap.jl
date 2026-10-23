@@ -181,8 +181,8 @@ function symbolic_coordinates end
 #   Step 2 — Levi-Civita contraction:
 #     (⋆ ω)_L = √|det(g)| Σ_{I sorted} ε(I,L) ω^I
 #
-# Passing g_inv (the pointwise inverse metric tensor) and sqrt_abs_g
-# (the pointwise square root of det g) keeps this purely algebraic.
+# Passing g_inv (the pointwise inverse metric tensor) and signed_sqrt_g, whose
+# magnitude is the volume density √|det g|, keeps this purely algebraic.
 # ============================================================
 
 """
@@ -236,8 +236,8 @@ Hodge star `⋆ω` of a `K`-tensor `ω` with variance. It is an alternating
 `(D-K)`-vector for a contravariant one.
 
 `metric_args` contains the metric information, see [`parse_metric_data`](@ref).
-`hodge_star` uses `sqrt_abs_g` and the metric with opposite variance to `ω`,
-that is `g_inv` for a form and `g` for a `K`-vector.
+`hodge_star` uses the volume density `abs(signed_sqrt_g)` and the metric with
+opposite variance to `ω`, that is `g_inv` for a form and `g` for a `K`-vector.
 
 A not-alternating `K`-tensor with homogeneous variance is accepted, and
 starred through its alternating part.
@@ -257,7 +257,7 @@ passing `LinearAlgebra.I`.
   # Raising the indices of a form pairs with the volume factor √|det(g)|;
   # lowering those of a K-vector pairs with its reciprocal.
   _g_or_ginv = V === Cov ? :g_inv : :g
-  _volume    = V === Cov ? :sqrt_abs_g : :(inv(sqrt_abs_g))
+  _volume    = V === Cov ? :(abs(signed_sqrt_g)) : :(inv(abs(signed_sqrt_g)))
 
   # Step 1: swap (raise or lower) K indices of ω. `K ≤ D` makes the sum non-empty.
   swapped = _alt_compound_comps(_g_or_ginv, c_K, c_K, Tw, :ω)
@@ -267,7 +267,7 @@ passing `LinearAlgebra.I`.
   comps = [_signed(s[L+1-m], :(vol * ω_swapped[$(L+1-m)])) for m in 1:L]
 
   quote
-    $(_parse_and_check_metricargs(:( flat_hodge_star(ω) ), (_g_or_ginv, :sqrt_abs_g), D))
+    $(_parse_and_check_metricargs(:( flat_hodge_star(ω) ), (_g_or_ginv, :signed_sqrt_g), D))
     vol = $_volume
     ω_swapped = ($(swapped...),)
     SkewSymKTensorValue{$V,$Kc,$Dw}(($(comps...),))

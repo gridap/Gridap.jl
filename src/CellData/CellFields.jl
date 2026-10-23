@@ -598,7 +598,7 @@ _metric_operation(op, euclidean_op, ::Tuple{UniformScaling}, a::CellField...) =
 _metric_operation(op, euclidean_op, metric_data::Tuple, a::CellField...) =
   Operation(op)(a..., _metric_args(op, metric_data)...)
 
-# metric_data is `(g, g_inv, sqrt_abs_g)`, this eagerly computes all metric args
+# metric_data is `(g, g_inv, signed_sqrt_g)`, this eagerly computes all metric args
 # the operation might require
 _metric_args(::typeof(hodge_star), metric_data::Tuple) = metric_data
 _metric_args(::typeof(flat),       metric_data::Tuple) = (metric_data[1],)

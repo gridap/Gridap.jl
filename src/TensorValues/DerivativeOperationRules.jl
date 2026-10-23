@@ -165,16 +165,17 @@ end
 end
 
 """
-    _partials_sqrt_abs_det_rule(g, ∂g)
+    _partials_signed_sqrt_det_rule(g, ∂g)
 
-Order 1 rule for `_sqrt_abs_det`, Jacobi's formula:
+Order 1 rule for `_signed_sqrt_det`, Jacobi's formula. With `v = sgn(det
+g)√|det g|`, whose sign is constant,
 
-    ∂_c √|det g| = √|det g| g^{ab} (∂_c g_{ab}) / 2
+    ∂_c v = v g^{ab} (∂_c g_{ab}) / 2
 """
-@inline function _partials_sqrt_abs_det_rule(g::SymTensorValue, ∂g)
-  half_sqrt_abs_g = _sqrt_abs_det(g) / 2
+@inline function _partials_signed_sqrt_det_rule(g::SymTensorValue, ∂g)
+  half_signed_sqrt_g = _signed_sqrt_det(g) / 2
   g_inv = inv(g)
-  _map_second_factor(b -> half_sqrt_abs_g * double_contraction(g_inv, b), ∂g)
+  _map_second_factor(b -> half_signed_sqrt_g * double_contraction(g_inv, b), ∂g)
 end
 
 # Σ_r of the determinant of the `K`×`K` submatrix of `M` with rows `I` and
@@ -240,9 +241,9 @@ end
 # derivation index.
 #
 # Both the metric tensor of the variance `⋆` raises the indices of `ω` with and
-# the volume factor `√|det g|` must be among `metric_args`: the rule
-# differentiates the arguments it is handed, and derives neither of the two from
-# the other. `get_metric_data` returns all of them.
+# the signed volume density must be among `metric_args`: the rule differentiates
+# the arguments it is handed, and derives neither of the two from the other.
+# `get_metric_data` returns all of them.
 @generated function _partials_hodge_star_rule(args::Vararg{Any,N}) where N
 
   nm = N ÷ 2 - 1
@@ -258,7 +259,7 @@ end
   iv = findfirst(i -> args[1+i] <: Number && !(args[1+i] <: MultiValue), 1:nm)
   (isnothing(im) || isnothing(iv)) && return :(@notimplemented $("the derivative \
   of `hodge_star` of a $Kw-tensor of variance $V reads the metric tensor of \
-  variance $(typeof(Dm)) and the volume factor √|det g| off its arguments, and \
+  variance $(typeof(Dm)) and the signed volume density off its arguments, and \
   derives neither of the two from the other: pass both of them"))
 
   D = Int(Dw)
@@ -266,11 +267,13 @@ end
   pm, pv = 1+im, 1+iv            # the metric tensor and the volume factor
   qm, qv = 2+nm+im, 2+nm+iv      # their derivatives
 
-  # Raising the indices of a form pairs with √|det(g)|, lowering those of a
-  # K-vector with its reciprocal, as in `hodge_star` itself.
-  _vol  = V === Cov ? :( args[$pv] ) : :( inv(args[$pv]) )
-  _dvol(c) = V === Cov ? :( indep_comp_getindex(args[$qv], $c) ) :
-                         :( -indep_comp_getindex(args[$qv], $c) / args[$pv]^2 )
+  # Raising the indices of a form pairs with the volume density √|det(g)|, the
+  # magnitude of the signed one, lowering those of a K-vector with its
+  # reciprocal, as in `hodge_star` itself. The sign of the signed density is
+  # constant, so it factors out of the derivative.
+  _vol  = V === Cov ? :( avol ) : :( inv(avol) )
+  _dvol(c) = V === Cov ? :( svol * indep_comp_getindex(args[$qv], $c) ) :
+                         :( -svol * indep_comp_getindex(args[$qv], $c) / avol^2 )
   slices = [:( _hodge_star_slice(
                  args[1], ∂ω_slices[$c], M, ∂M_slices[$c], vol, $(_dvol(c))) )
             for c in 1:D]
@@ -279,11 +282,13 @@ end
     M = args[$pm]
     _check_metric_dim(M, $D)
     ∂ω_slices, ∂M_slices = _second_factors(args[$(2+nm)]), _second_factors(args[$qm])
-    vol = $_vol
+    avol = abs(args[$pv])
+    svol = sign(args[$pv])
+    vol  = $_vol
     _product_from_second_factors($A, ($(slices...),))
   end
 end
 
-partials_op_rule(::Val{1}, ::typeof(inv))            = _partials_inv_rule
-partials_op_rule(::Val{1}, ::typeof(_sqrt_abs_det))  = _partials_sqrt_abs_det_rule
-partials_op_rule(::Val{1}, ::typeof(hodge_star))     = _partials_hodge_star_rule
+partials_op_rule(::Val{1}, ::typeof(inv))              = _partials_inv_rule
+partials_op_rule(::Val{1}, ::typeof(_signed_sqrt_det)) = _partials_signed_sqrt_det_rule
+partials_op_rule(::Val{1}, ::typeof(hodge_star))       = _partials_hodge_star_rule

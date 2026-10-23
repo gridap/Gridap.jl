@@ -98,13 +98,13 @@ cmodel = chart_model(model,cov_chart_metric)
 @test length(get_cell_metric(cmodel)) == num_cells(cmodel)
 @test length(get_cell_inv_metric(cmodel)) == num_cells(cmodel)
 
-g, g_inv, sqrt_abs_g = get_metric_data(Ωc)
+g, g_inv, signed_sqrt_g = get_metric_data(Ωc)
 
 @test DomainStyle(g) == PhysicalDomain()
 @test DomainStyle(g_inv) == PhysicalDomain()
-@test DomainStyle(sqrt_abs_g) == PhysicalDomain()
+@test DomainStyle(signed_sqrt_g) == PhysicalDomain()
 
-gv, giv, sv = map(first_point_values, (g,g_inv,sqrt_abs_g))
+gv, giv, sv = map(first_point_values, (g,g_inv,signed_sqrt_g))
 
 @test all(v -> v isa SymTensorValue{Cov(2),Float64}, gv)
 @test all(v -> v isa SymTensorValue{Con(2),Float64}, giv)
@@ -117,14 +117,15 @@ gv, giv, sv = map(first_point_values, (g,g_inv,sqrt_abs_g))
 md = compute_metric_data(gv[1],giv[1],sv[1])
 @test md.g == gv[1]
 @test md.g_inv == giv[1]
-@test md.sqrt_abs_g == sv[1]
+@test md.signed_sqrt_g == sv[1]
 @test hodge_star(ω,gv[1],giv[1],sv[1]) ≈ hodge_star(ω,md)
 
 # The cell fields reach the quadrature points. `Measure` scales the weights of a
-# scalar integrand by `sqrt_abs_g`, which dividing by it cancels, leaving
+# scalar integrand by the volume density, which this metric being positive
+# definite makes `signed_sqrt_g` itself, so dividing by it cancels, leaving
 # ∫ det g = ∫ (3/2)(cell + x¹) - 9/100 over the unit square
 dΩc = Measure(Ωc,2)
-@test sum(∫(Operation(det)(g)/sqrt_abs_g)dΩc) ≈ 1.5*3.0 - 0.09
+@test sum(∫(Operation(det)(g)/signed_sqrt_g)dΩc) ≈ 1.5*3.0 - 0.09
 
 # A triangulation of part of the model reads the metric of the cells it holds
 Ωp = Triangulation(cmodel,[2,4])

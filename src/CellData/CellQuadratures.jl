@@ -208,8 +208,9 @@ function _metric_weights(::Type{T}, x::CellPoint, quad::CellQuadrature, metric_d
     return quad.cell_weight
   end
   # _integrand_coefficient guaranties this is a scalar integrand
-  sqrt_abs_g = metric_data[3]
-  lazy_map(Broadcasting(*), quad.cell_weight, sqrt_abs_g(x))
+  # The volume density is the magnitude of the signed one the metric data holds.
+  vol = Operation(abs)(metric_data[3])
+  lazy_map(Broadcasting(*), quad.cell_weight, vol(x))
 end
 
 """
