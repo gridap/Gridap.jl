@@ -690,7 +690,7 @@ for fun in (:change_domain_ref_ref,:change_domain_phys_phys)
         """
       # If the underlying array is Fill it does not matter if we restrict if from
       # the plus or minus side.
-      @check isa(get_array(a.cell_field),Fill)
+      @check isa(get_array(a.cell_field),Fill) msg
       plus = $fun(a,ttrian,sglue,tglue.plus)
       plus
     end
@@ -744,4 +744,3 @@ for diff_op in (:exterior_derivative, :codifferential, :hodge_star_form, :koszul
     $diff_op(a::CellField) = similar_cell_field(a, lazy_map(Broadcasting($diff_op), get_data(a)))
   end
 end
-
