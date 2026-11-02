@@ -1347,9 +1347,10 @@ _str_v(io_props, a) = sprint((io, x) -> show(io, MIME("text/plain"), x), a;
 @test occursin("∂₁ ∧ ∂₂", _str_v(:coordinates => :cartesian, v_2))
 @test_throws ArgumentError _str_v(:coordinates => :something_else, v_1)
 
-@test indep_components_names(ContraVectorValue{con3}) == ["∂₁", "∂₂", "∂₃"]
+@test indep_components_names(ContraVectorValue{con3}) == ["X", "Y", "Z"]
+@test indep_components_names(ExteriorVectorValue{2,con3}) == ["XY", "XZ", "YZ"]
 @test indep_components_names(ExteriorVectorValue{2,con3}) ==
-      ["∂₁ ∧ ∂₂", "∂₁ ∧ ∂₃", "∂₂ ∧ ∂₃"]
+      indep_components_names(ExteriorFormValue{2,cov3})
 
 ########################################################################
 # Index symmetries under the musicals and the pullback and pushforward #

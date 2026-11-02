@@ -445,9 +445,14 @@ _str(io_props, ω) = sprint((io, x) -> show(io, MIME("text/plain"), x), ω;
 @test occursin("dx¹ ∧ dx²", _str(:coordinates => :cartesian,   ω2_show))
 @test occursin("dλ¹ ∧ dλ²", _str(:coordinates => :barycentric, ω2_show))
 
-@test indep_components_names(CoVectorValue{D3}) == ["dx¹", "dx²", "dx³"]
+@test indep_components_names(CoVectorValue{D3}) == ["X", "Y", "Z"]
+@test indep_components_names(ExteriorFormValue{2,D3}) == ["XY", "XZ", "YZ"]
 @test indep_components_names(ExteriorFormValue{2,D3}) ==
-      ["dx¹ ∧ dx²", "dx¹ ∧ dx³", "dx² ∧ dx³"]
+      indep_components_names(SkewSymTensorValue{3})
+@test indep_components_names(CoVectorValue{D3}) ==
+      indep_components_names(VectorValue{3})
+@test indep_components_names(ExteriorFormValue{2,Cov(4)}) ==
+      indep_components_names(SkewSymTensorValue{4})
 
 # ── Scalar types: mixed arguments and degenerate shapes ──────────────────────
 

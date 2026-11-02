@@ -210,12 +210,14 @@ function _frame_labels(io::IO, ::Type{V}) where V
   _frame_labels(V, Val(c))
 end
 
-# `V` is not deducible from a partially parametrised type, so the frame is
-# picked per alias, where it is fixed.
-indep_components_names(::Type{<:ExteriorFormValue{K,D}}) where {K,D} =
-  [join(_frame_labels(Cov, Val(:cartesian))[I], " ∧ ") for I in sorted_combinations(Int(D), K)]
-indep_components_names(::Type{<:ExteriorVectorValue{K,D}}) where {K,D} =
-  [join(_frame_labels(Con, Val(:cartesian))[I], " ∧ ") for I in sorted_combinations(Int(D), K)]
+###############################################################
+# VTK export (SkewSymKTensorValue)
+###############################################################
+
+function indep_components_names(::Type{<:SkewSymKTensorValue{V,K,D}}) where {V,K,D}
+  c_name = Int(D)>3 ? [string(i) for i in 1:Int(D)] : ["X", "Y", "Z"]
+  [ join(c_name[I]) for I in sorted_combinations(Int(D), K) ]
+end
 
 function _show_skewsymk(io::IO, a::SkewSymKTensorValue{V,K,D}, basis_strs) where {V,K,D}
   L = length(a.data)

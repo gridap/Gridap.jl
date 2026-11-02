@@ -149,14 +149,8 @@ function create_vtk_file(
   )
 
   if num_cells(trian)>0
-    for (k,v) in celldata
-      component_names = _data_component_names(v)
-      vtk_cell_data(vtkfile, _prepare_data(v), k; component_names)
-    end
-    for (k,v) in nodaldata
-      component_names = _data_component_names(v)
-      vtk_point_data(vtkfile, _prepare_data(v), k; component_names)
-    end
+    _add_field_data!(vtkfile, celldata,  VTKCellData())
+    _add_field_data!(vtkfile, nodaldata, VTKPointData())
   end
 
   return vtkfile
@@ -175,24 +169,22 @@ function create_pvtk_file(
   )
 
   if num_cells(trian) > 0
-    for (k, v) in celldata
-      # component_names are actually always nothing as there are no field in ptvk atm
-      component_names = _data_component_names(v)
-      vtkfile[k, VTKCellData(), component_names=component_names] = _prepare_data(v)
-    end
-    for (k, v) in nodaldata
-      component_names = _data_component_names(v)
-      vtkfile[k, VTKPointData(), component_names=component_names] = _prepare_data(v)
-    end
+    _add_field_data!(vtkfile, celldata,  VTKCellData())
+    _add_field_data!(vtkfile, nodaldata, VTKPointData())
   end
   return vtkfile
 end
 
+function _add_field_data!(vtkfile, data, loc)
+  for (k,v) in data
+    vtkfile[k, loc, component_names=_data_component_names(v)] = _prepare_data(v)
+  end
+end
+
 function _vtkpoints(trian)
   D = num_point_dims(trian)
-  x = get_node_coordinates(trian)
-  xflat = collect(x)
-  reshape(reinterpret(Float64,xflat),(D,length(x)))
+  x = collect(get_node_coordinates(trian))
+  reshape(reinterpret(x), (D, length(x)))
 end
 
 function _vtkcells(trian::Grid)
@@ -232,22 +224,24 @@ function _generate_vtk_cells(
   meshcells
 end
 
+_is_vtk_scalar(::Type{<:MultiValue{Tuple{}}}) = true
+_is_vtk_scalar(::Type{<:MultiValue}) = false
+
+_is_vtk_vector(::Type{<:MultiValue{Tuple{D},T,1,L}}) where {D,T,L} = !(D isa Cov) && 1 < L <= 3
+_is_vtk_vector(::Type{<:MultiValue}) = false
+
 _data_component_names(v) = nothing
 
-_data_component_names(v::AbstractArray{T}) where T<:MultiValue = indep_components_names(T)
+_data_component_names(v::AbstractArray{V}) where V<:MultiValue =
+  _is_vtk_scalar(V) || _is_vtk_vector(V) ? nothing : indep_components_names(V)
 
 _prepare_data(v) = v
 
-function _prepare_data(v::AbstractArray{<:MultiValue})
+function _prepare_data(v::AbstractArray{V}) where V<:MultiValue{S,T,N,L} where {S,T,N,L}
   a = collect(v)
-  reinterpret(a)
-end
-
-function _prepare_data(v::AbstractArray{<:VectorValue{2,T}}) where T
-  a = collect(v)
-  b = reshape(reinterpret(T,a),(2,length(a)))
-  z = zeros((1,size(b,2)))
-  vcat(b,z)
+  _is_vtk_scalar(V) && return vec(reinterpret(T,a))
+  b = reshape(reinterpret(T,a),(L,length(a)))
+  _is_vtk_vector(V) ? vcat(b,zeros(T,(3-L,length(a)))) : b
 end
 
 """
