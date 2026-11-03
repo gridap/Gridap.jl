@@ -15,7 +15,7 @@ splatting this into `hodge_star` by hand does not.
 
 A triangulation whose cells do not fill the ambient space carries the metric its
 background *induces* on them and not the cell metric of that background. Which
-of the two applies is read off the dimensions, see [`_is_embedded`](@ref): every
+of the two applies is read off the dimensions, see [`is_sub_trian`](@ref): every
 triangulation of the tree reads its cells in the frames of its background model,
 so none of them needs a method of its own. What they do not share is the
 orientation their cells carry, [`_induced_orientation`](@ref), which has no
@@ -23,23 +23,40 @@ default and is where a new triangulation declares itself.
 """
 function get_metric_data(trian::Triangulation)
   model = get_background_model(trian)
-  _is_embedded(trian) &&
-    return _induced_metric_data(trian, model, get_cell_metric(model))
-  _metric_data(trian, model, get_cell_metric(model))
+  cell_g = _varianced_cell_metric(model, get_cell_metric(model))
+  is_sub_trian(trian) && return _induced_metric_data(trian, model, cell_g)
+  _metric_data(trian, model, cell_g)
 end
 
-# A triangulation of lower dimension than its background carries the metric the
-# inclusion pulls back from it, not that background's cell metric: that is what
-# its fields are paired and starred with. A surface mesh, whose own cells are
-# embedded in a higher dimensional space, is deliberately not this case -- its
-# fields have ambient components, which the ambient identity pairs correctly and
-# whose area element the integration map supplies. What frame a triangulation's
-# components live in is not a function of its dimensions alone.
-_is_embedded(trian::Triangulation, model) =
+# The metric is ignored if unvarianced: it's effect should be accounted for explicitly.
+_varianced_cell_metric(model, cell_g::UniformScaling) = cell_g
+_varianced_cell_metric(model, cell_g::AbstractArray) =
+  _is_varianced_metric(_cell_metric_type(model, cell_g)) ? cell_g : LinearAlgebra.I
+
+_cell_metric_type(model, cell_g::AbstractArray) = return_type(
+  testitem(cell_g), testitem(testitem(get_cell_coordinates(Triangulation(model)))))
+
+_is_varianced_metric(::Type{<:SymTensorValue{D}}) where D = !(D isa Int)
+_is_varianced_metric(::Type) = true
+
+# Reading as euclidean a model that holds a metric is a choice of the weak form,
+# which writes the metric free operator to make it, not one these make for it.
+function _ensure_metric_has_variance(op, trian::Triangulation)
+  model = get_background_model(trian)
+  cell_g = get_cell_metric(model)
+  cell_g isa UniformScaling && return nothing
+  _is_varianced_metric(_cell_metric_type(model, cell_g)) || throw(ArgumentError("""\n
+  `$op` needs a metric with variance, use a metric with `Cov` dimension, or
+  call the metric free version (starting with `flat_`).
+  """))
+  nothing
+end
+
+is_sub_trian(trian::Triangulation, model) =
   num_point_dims(model) == num_cell_dims(model) &&
   num_cell_dims(trian)  <  num_cell_dims(model)
 
-_is_embedded(trian::Triangulation) = _is_embedded(trian, get_background_model(trian))
+is_sub_trian(trian::Triangulation) = is_sub_trian(trian, get_background_model(trian))
 
 # `g_Γ = ι*g = Jι ⋅ g ⋅ Jιᵀ`, in the reference cell coordinates of `trian`,
 # `Jι` being the differential of the inclusion read in those coordinates and
@@ -112,13 +129,15 @@ of an induced metric are not those of the background's.
 """
 function get_metric_partials_data(trian::Triangulation)
   model = get_background_model(trian)
-  @notimplementedif _is_embedded(trian) """\n
+  @notimplementedif is_sub_trian(trian) """\n
   The metric of a $(num_cell_dims(trian))-dimensional triangulation embedded in
   $(num_point_dims(trian)) dimensions is the one its background induces on it,
   see [`get_metric_data`](@ref), so its partial derivatives are those of that
   induced metric and not those of the background's, which are not implemented.
   The operators that need them, `δ` in particular, are not available there.
   """
+  _varianced_cell_metric(model, get_cell_metric(model)) isa UniformScaling &&
+    return LinearAlgebra.I
   _metric_partials_data(trian, model, get_cell_metric_partials(model))
 end
 
@@ -133,7 +152,7 @@ end
 # A triangulation of lower dimension than its model, or a model whose cells are
 # embedded in a higher dimensional space, carries a metric *induced* on it and
 # not the cell metric, so both are rejected unless that metric is the identity.
-# [`_is_embedded`](@ref) catches them upstream: this is the safety net for a
+# [`is_sub_trian`](@ref) catches them upstream: this is the safety net for a
 # `_metric_data` reached by another path.
 function _ensures_full_rank_metric(trian::Triangulation, model)
   Dm = num_cell_dims(model)

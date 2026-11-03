@@ -190,8 +190,22 @@ embedded = UnstructuredDiscreteModel(flat_quad)
 
 # ── The variance of the metric is the model's to carry ────────────────────────
 
-# An un-varianced metric is rejected rather than read as covariant
-@test_throws ArgumentError get_metric_data(Triangulation(chart_model(model,chart_metric)))
+# If the model's metric has no variance, the model is considered flat, the
+# effect of the metric have to be accounted for explicitly in weak forms.
+unvarianced = chart_model(model,chart_metric)
+@test get_metric_data(Triangulation(unvarianced)) === (LinearAlgebra.I,)
+@test get_metric_partials_data(Triangulation(unvarianced)) === LinearAlgebra.I
+@test sum(∫( 1.0 )Measure(Triangulation(unvarianced),3)) ≈ 1.0
+@test sum(∫( 1.0 )Measure(BoundaryTriangulation(unvarianced),3)) ≈ 4.0
+
+# A metric aware operator refuses an unvarianced metric rather than assuming it euclidean
+ω_cov = ExteriorFormValue{1,Cov(2)}(1.0,2.0)
+@test_throws ArgumentError hodge_star(CellField(ω_cov,Triangulation(unvarianced),PhysicalDomain()))
+@test flat_hodge_star(CellField(ω_cov,Triangulation(unvarianced),PhysicalDomain())) isa CellField
+
+# The metric of embedded models is the iddentity
+@test get_metric_data(Triangulation(embedded)) === (LinearAlgebra.I,)
+@test hodge_star(CellField(ω_cov,Triangulation(embedded),PhysicalDomain())) isa CellField
 
 # A contravariant tensor is an inverse metric, not a metric
 @test_throws ArgumentError get_metric_data(Triangulation(chart_model(model,con_chart_metric)))

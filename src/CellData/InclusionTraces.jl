@@ -1,3 +1,4 @@
+# TODO review this whole file
 # The trace of a purely covariant tensor field, a differential form in
 # particular, is the pullback of the inclusion, and nothing else. Only a purely
 # covariant tensor has one, see [`_check_purely_covariant`](@ref).
@@ -41,11 +42,11 @@ end
 _check_purely_covariant(::Type) = nothing
 
 function _check_purely_covariant(::Type{T}) where T<:MultiValue
-  all(D -> D isa Cov, size(T)) || throw(ArgumentError("""\n
-  The trace of a tensor field is the pullback of the inclusion, which is defined
-  for a purely covariant tensor, of type `(0,s,0)`. Got `$T`, whose indices
-  `$(size(T))` are not all covariant.
-  """))
+  all(D -> D isa Cov, size(T)) || throw(ArgumentError( """\n
+    The trace of a tensor field is the pullback of the inclusion, which is defined
+    for a purely covariant tensor, of type `(0,s)`. Got `$T`, whose indices
+    `$(size(T))` are not all covariant.
+    """))
   nothing
 end
 

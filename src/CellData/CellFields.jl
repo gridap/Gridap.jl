@@ -592,6 +592,7 @@ function _operate_with_metric(op, euclidean_op, a...)
   # The metric is that of the triangulation the operation is evaluated on, so
   # it is read after the arguments are brought to their common domain.
   trian = get_triangulation(first(a_cf))
+  _ensure_metric_has_variance(op, trian) # for retro-compatibility with varianceless Atlas models
   md_cf = get_metric_data(trian)
   _oriented(op, trian, _metric_operation(op, euclidean_op, md_cf, a_cf...))
 end
@@ -617,7 +618,7 @@ _is_varianced(::Type) = false
 _oriented(op, trian, b) = b
 
 _oriented(::Union{typeof(hodge_star),typeof(inverse_hodge_star)}, trian, b) =
-  _is_embedded(trian) ? CellField(_induced_orientation(trian), trian) * b : b
+  is_sub_trian(trian) ? CellField(_induced_orientation(trian), trian) * b : b
 
 _metric_operation(op, euclidean_op, ::Tuple{UniformScaling}, a::CellField...) =
   Operation(euclidean_op)(a...)

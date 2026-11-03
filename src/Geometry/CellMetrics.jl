@@ -7,6 +7,11 @@ The metric tensor `g` of the coordinates the cells of `model` map to, either
 - `LinearAlgebra.I` the identity metric, or
 - a physical cell field `Point{D} -> SymTensorValue{D}`, where `D` is a `Int` or `Cov`.
 
+If `D` is an `Int`, the model is assumed flat by the metric aware differential
+operators, like if it was `I`, so the metric has to be accounted for explicityl
+in the weak forms. If `D` is a `Cov`, it is provided implicitly and
+automatically to all metric aware operators and integrals.
+
 Currently, `g` needs to be invertible, which requires that `model`'s embedded
 dimension equal it's manifold dimension, or that `g` is `LinearAlgebra.I`.
 

@@ -215,7 +215,7 @@ function _metric_weights(::Type{T}, x::CellPoint, quad::CellQuadrature, metric_d
   end
   # The volume factor of an induced metric is the `meas` of the cell map, which
   # the integration map applies already, so it is not added here a second time.
-  _is_embedded(quad.trian) && return quad.cell_weight
+  is_sub_trian(quad.trian) && return quad.cell_weight
   # _integrand_coefficient guaranties this is a scalar integrand
   # The volume density is the magnitude of the signed one the metric data holds.
   vol = Operation(abs)(metric_data[3])
@@ -226,7 +226,7 @@ end
 # cell coordinates necessarily: an embedded cell has no ambient frame to carry
 # them, the ambient dimension exceeding its own.
 _is_reference_top_form(::Type{<:ExteriorFormValue{K,Dw}}, trian) where {K,Dw} =
-  K == Int(Dw) == num_cell_dims(trian) && _is_embedded(trian)
+  K == Int(Dw) == num_cell_dims(trian) && is_sub_trian(trian)
 
 _is_reference_top_form(::Type, trian) = false
 
