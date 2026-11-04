@@ -500,3 +500,19 @@ function patch_assembly!(caches,mat::MatOrMatBlock,vec::VecOrVecBlock,cell_matve
     _numeric_loop_matvec!(mat,vec,ac,cell_vals,cell_rows,cell_cols,cells)
   end
 end
+
+# ---------------------------------------------------------------------------
+# assemble_scalar — reduce a scalar DomainContribution to a per-patch vector
+# ---------------------------------------------------------------------------
+
+function assemble_scalar(ptopo::PatchTopology, a::DomainContribution)
+  @check CellData.is_scalar_contribution(a) "Expected a scalar DomainContribution"
+  T = eltype(first(values(a.dict)))
+  res = zeros(T, Geometry.num_patches(ptopo))
+  for trian in get_domains(a)
+    c = get_contribution(a, trian)
+    patch_vals = move_contributions(c, trian, ptopo)
+    res = lazy_map(+, res, patch_vals)
+  end
+  return res
+end
