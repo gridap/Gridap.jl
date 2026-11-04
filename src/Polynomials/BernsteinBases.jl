@@ -252,6 +252,15 @@ struct BernsteinBasisOnSimplex{D,V,K} <: PolynomialBasis{D,V,Bernstein}
     K = order
     new{D,VV,K}(x_to_λ)
   end
+
+  function BernsteinBasisOnSimplex{D,V,K}(x_to_λ::Matrix{Float64}) where {D,V,K}
+    @check size(x_to_λ) == (D+1, D+1) "x_to_λ must be (D+1)×(D+1)."
+    # so the columns of `x_to_λ` must sum to `(1, 0, …, 0)`
+    @check all(j -> abs(sum(view(x_to_λ, :, j)) - (j == 1)) < eps()*(D+1)^2, 1:D+1) """
+      Invalid change of coordinate matrix, see [`_compute_cart_to_bary_matrix`](@ref).
+    """
+    new{D,V,K}(x_to_λ)
+  end
 end
 
 function _simplex_vertices_checks(::Val{D}, vertices) where D
@@ -269,6 +278,16 @@ If specified, `vertices` is a collection of `D+1` `Point{D}` defining a simplex
 used to compute the barycentric coordinates from, it must be non-degenerated
 (have nonzero volume). Otherwise, the coordinates of the reference simplex
 (`ExtrusionPolytope`) are used.
+
+# Extended help
+
+    BernsteinBasisOnSimplex(b::BernsteinBasisOnSimplex, x_to_λ::Matrix{Float64})
+
+Allocation-free change of barycentric coordinates. The returned basis has the
+same type as `b`, so caches built for `b` can be reused, and it wraps the given
+matrix instead of computing one from vertices. `x_to_λ` must be a valid
+cartesian-to-barycentric change of coordinate matrix, see
+[`_compute_cart_to_bary_matrix`](@ref).
 """
 function BernsteinBasisOnSimplex(::Val{D}, ::Type{V}, order::Int) where {D,V}
   BernsteinBasisOnSimplex{D}(V,order)
@@ -286,6 +305,12 @@ end
 
 BernsteinBasisOnSimplex{D}(::Type{V},order::Int,::Nothing) where {D,V} = BernsteinBasisOnSimplex{D}(V,order)
 BernsteinBasisOnSimplex(::Val{D},::Type{V},order::Int,::Nothing) where {D,V} = BernsteinBasisOnSimplex(Val(D),V,order)
+
+function BernsteinBasisOnSimplex(
+  ::BernsteinBasisOnSimplex{D,V,K}, x_to_λ::Matrix{Float64}
+) where {D,V,K}
+  BernsteinBasisOnSimplex{D,V,K}(x_to_λ)
+end
 
 Base.size(b::BernsteinBasisOnSimplex{D,V}) where {D,V} = (num_indep_components(V)*binomial(D+get_order(b),D),)
 get_order(::BernsteinBasisOnSimplex{D,V,K}) where {D,V,K} = K

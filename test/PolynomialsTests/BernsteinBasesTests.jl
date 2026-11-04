@@ -307,6 +307,16 @@ for xi in x
   @test xi ≈ sum(λi .* vertices)
 end
 
+new_x_to_λ = b.x_to_λ
+bnew = BernsteinBasisOnSimplex(b, new_x_to_λ)
+@test iszero(@allocations BernsteinBasisOnSimplex(b, new_x_to_λ))
+@test typeof(bnew) === typeof(b)
+cb = return_cache(b,x)
+@test evaluate!(cb, b, x) ≈ evaluate!(cb, bnew, x)
+wrong_change = Matrix(transpose(new_x_to_λ))
+@test_throws "Invalid change of coordinate" BernsteinBasisOnSimplex(b, wrong_change)
+@test_throws "must be (D+1)×(D+1)" BernsteinBasisOnSimplex(b, zeros(2,2))
+
 # Scalar value in 2D
 D = 2
 vertices = (Point(5.,0.), Point(7.,2.), Point(0.,3.))
