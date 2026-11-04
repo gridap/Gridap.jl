@@ -51,6 +51,7 @@ function _check_purely_covariant(::Type{T}) where T<:MultiValue
 end
 
 # the value type a cell field takes, through the arrays a basis evaluates to
+# TODO: clean this mess, should be the same thing _integrand_value_type is factorized into
 _cell_field_value_type(a::CellField) =
   _integrand_value_type(typeof(testitem(a(get_cell_points(get_triangulation(a))))))
 

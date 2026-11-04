@@ -586,11 +586,11 @@ end
 # Metric dependent ops: the triangulation's metric is automatically fed to the
 # operator, but an explicitly given is not changed.
 
+# TODO clean this mess, define the sementic of what the metric field should be
+# properly, this is overly convoluted
 function _operate_with_metric(op, euclidean_op, a...)
   a_cf = _convert_to_cellfields(a...)
   _ignores_metric(op, a_cf...) && return Operation(euclidean_op)(a_cf...)
-  # The metric is that of the triangulation the operation is evaluated on, so
-  # it is read after the arguments are brought to their common domain.
   trian = get_triangulation(first(a_cf))
   _ensure_metric_has_variance(op, trian) # for retro-compatibility with varianceless Atlas models
   md_cf = get_metric_data(trian)
@@ -604,9 +604,9 @@ end
 # and the extra operands would nest the blocks of a multi field integrand deeper
 # than those of a term that takes no metric, which could then not be added to it.
 _ignores_metric(op, a::CellField...) = false
-
 _ignores_metric(::Union{typeof(inner),typeof(alt_inner)}, a::CellField...) =
-  !_is_varianced(_cell_field_value_type(first(a)))
+  !_is_varianced(_cell_field_value_type(first(a))) ||
+  (!is_sub_trian(trian) && get_cell_metric(get_background_model(trian)) isa UniformScaling)
 
 # the variance test `inner` itself makes, on the type rather than on a value
 _is_varianced(::Type{T}) where T<:MultiValue = !all(i -> i isa Int, size(T))

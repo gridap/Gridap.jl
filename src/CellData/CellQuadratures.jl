@@ -175,6 +175,7 @@ function integrate(f::CellField, quad::CellQuadrature)
 end
 
 # for MultiField and assembly routine support
+# TODO: clean this mess, make it a Map API
 _integrand_value_type(::Type{T}) where T = T
 _integrand_value_type(::Type{<:AbstractArray{T}}) where T = _integrand_value_type(T)
 _integrand_value_type(::Type{<:ArrayBlock{A}}) where A = _integrand_value_type(A)
