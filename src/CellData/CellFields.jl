@@ -604,9 +604,11 @@ end
 # and the extra operands would nest the blocks of a multi field integrand deeper
 # than those of a term that takes no metric, which could then not be added to it.
 _ignores_metric(op, a::CellField...) = false
-_ignores_metric(::Union{typeof(inner),typeof(alt_inner)}, a::CellField...) =
-  !_is_varianced(_cell_field_value_type(first(a))) ||
-  (!is_sub_trian(trian) && get_cell_metric(get_background_model(trian)) isa UniformScaling)
+function _ignores_metric(::Union{typeof(inner),typeof(alt_inner)}, a::CellField...)
+  trian = get_triangulation(first(a))
+  (!is_sub_trian(trian) && get_cell_metric(get_background_model(trian)) isa UniformScaling) ||
+    !_is_varianced(_cell_field_value_type(first(a)))
+end
 
 # the variance test `inner` itself makes, on the type rather than on a value
 _is_varianced(::Type{T}) where T<:MultiValue = !all(i -> i isa Int, size(T))
