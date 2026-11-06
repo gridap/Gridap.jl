@@ -51,7 +51,7 @@ value type; it is not called directly.
 """
 function FEEC_reference_fe(
   name::ReferenceFEName, ::Type{V}, p::Polytope{D}, order::Integer;
-  change_dof=true, poly_type=_mom_reffe_default_PT(p), mom_poly_type=poly_type
+  change_dof=nothing, poly_type=nothing, mom_poly_type=_mom_reffe_default_PT(p)
 ) where {V<:ExteriorFormValue,D}
 
   VV = make_concretetype(V)
@@ -67,12 +67,15 @@ function FEEC_reference_fe(
     """
   F, r = FEEC_family_and_order(name, p, order, k)
 
-  @check (F in (:P,:P⁻) && is_simplex(p)) || (F == :Q⁻ && is_n_cube(p)) """
+  @check (F in (:P,:P⁻) && is_simplex(p)) || (F in (:Q⁻,:S,:S⁻) && is_n_cube(p)) """
     Form valued *moment based* reference FEs are available for the P and P⁻
-    families on simplices, and for the Q⁻ family on n-cubes; got the $F family
-    on $p.
+    families on simplices, and for the Q⁻, S and S⁻ families on n-cubes; got
+    the $F family on $p.
     """
 
+  # only the 0 < k < D serendipity prebases are not geometrically decomposed
+  isnothing(change_dof) && (change_dof = !(F in (:S,:S⁻) && 0 < k < D))
+  isnothing(poly_type)  && (poly_type  = Polynomials._default_poly_type(F,k,D))
   PT, MPT = poly_type, mom_poly_type
   # the value type asks for the form valued bases, no flag needed
   prebasis = FEEC_poly_basis(Val(D), VV, r, k, F, PT)
@@ -80,13 +83,18 @@ function FEEC_reference_fe(
   # A d-face carries dofs for d ≥ k
   moments = Tuple[]
   for d in k:D
-    mom_r, mom_F = FEEC_face_mom_order_and_family(Val(F), r, k, d)
-    isnothing(mom_F) && continue
     mom_k = d-k
     μV = ExteriorFormValue{mom_k,d,T}
-    μ = FEEC_poly_basis(Val(d), μV, mom_r, mom_k, mom_F, MPT)
-    iszero(length(μ)) && continue
-    push!(moments, (get_dimrange(p,d), form_moment, μ))
+    mom_r, mom_F = FEEC_face_mom_order_and_family(Val(F), r, k, d)
+    if !isnothing(mom_F)
+      μ = FEEC_poly_basis(Val(d), μV, mom_r, mom_k, mom_F, MPT)
+      iszero(length(μ)) || push!(moments, (get_dimrange(p,d), form_moment, μ))
+    end
+    if F==:S⁻ && r-2*(d-k) ≥ 0 && mom_k > 0
+      # remaining :S⁻ dofs
+      μ = Polynomials._exact_poly_basis(Legendre, μV, d, r-2*(d-k), mom_k)
+      iszero(length(μ)) || push!(moments, (get_dimrange(p,d), form_moment, μ))
+    end
   end
 
   conf = PΛConformity()
@@ -135,10 +143,12 @@ function FEEC_name_and_order(F::Symbol, r, k, ::Val{D}, nodal::Bool, rotate_90::
     order = (iszero(k) || F in (:P,:S)) ? r : r-1
     return (nodal ? scalar : ModalScalar(scalar), order)
   elseif k == 1 && !rotate_90
-    F == :S && @notimplemented "Serendipity Nedelec is not implemented yet"
+    F == :S  && return (scurl, r)
+    F == :S⁻ && return (trimmed_scurl, r-1)
     return F == :P ? (nedelec2, r) : (nedelec1, r-1)
   elseif k == D-1 # in 2D, the k=1 space reached with the `rotate_90` proxy
-    F == :S && @notimplemented "BDM on n-cubes is not implemented yet"
+    F == :S  && return (sdiv, r)
+    F == :S⁻ && return (trimmed_sdiv, r-1)
     return F == :P ? (bdm, r) : (raviart_thomas, r-1)
   end
   @unreachable "No reference FE name stands for the $k-forms in dimension $D"
@@ -159,11 +169,23 @@ function FEEC_face_mom_order_and_family(::Val{:Q⁻}, r, k, d)
   mom_r = r-1
   mom_r ≥ 0 ? (mom_r, :Q⁻) : (-1, nothing)
 end
+function FEEC_face_mom_order_and_family(::Val{:S}, r, k, d)
+  mom_r = r-2*(d-k)
+  mom_r ≥ 0 ? (mom_r, :P) : (-1, nothing)
+end
+function FEEC_face_mom_order_and_family(::Val{:S⁻}, r, k, d)
+  mom_r = r-2*(d-k)-1
+  mom_r ≥ 0 ? (mom_r, :P) : (-1, nothing)
+end
 
 FEEC_form_degrees(::Nedelec, D) = (1,)
 FEEC_form_degrees(::RaviartThomas, D) = (D-1,)
 FEEC_form_degrees(::BDM, D) = (D-1,)
 FEEC_form_degrees(::ModalScalar, D) = (0,D)
+FEEC_form_degrees(::SerendipityCurl, D) = (1,)
+FEEC_form_degrees(::TrimmedSerendipityCurl, D) = (1,)
+FEEC_form_degrees(::SerendipityDiv, D) = (D-1,)
+FEEC_form_degrees(::TrimmedSerendipityDiv, D) = (D-1,)
 
 function FEEC_family_and_order(::Nedelec{1}, p, order, k)
   trimmed = is_simplex(p) ? :P⁻ : :Q⁻
@@ -180,6 +202,22 @@ end
 function FEEC_family_and_order(::BDM, p, order, k)
   @check is_simplex(p) "BDM reference elements are only defined on simplices"
   (:P, order)
+end
+function FEEC_family_and_order(::SerendipityCurl, p, order, k)
+  @check is_n_cube(p) "Serendipity reference elements are only defined on n-cubes"
+  (:S, order)
+end
+function FEEC_family_and_order(::SerendipityDiv, p, order, k)
+  @check is_n_cube(p) "Serendipity reference elements are only defined on n-cubes"
+  (:S, order)
+end
+function FEEC_family_and_order(::TrimmedSerendipityCurl, p, order, k)
+  @check is_n_cube(p) "Serendipity reference elements are only defined on n-cubes"
+  (:S⁻, order+1)
+end
+function FEEC_family_and_order(::TrimmedSerendipityDiv, p, order, k)
+  @check is_n_cube(p) "Serendipity reference elements are only defined on n-cubes"
+  (:S⁻, order+1)
 end
 function FEEC_family_and_order(::ModalScalar{Lagrangian}, p, order, k)
   trimmed = is_simplex(p) ? :P⁻ : :Q⁻

@@ -610,4 +610,107 @@ end
   end
 end
 
+# ─── The serendipity families 𝓢ᵣΛᵏ(□ᴰ) and 𝓢⁻ᵣΛᵏ(□ᴰ) ─────────────────────────
+# [AA] and [GK] span these from the same Koszul generators as the vector
+# proxied `scurl`/`sdiv`/`trimmed_*` elements, so the form valued variant must
+# span the very same spaces and carry the very same DOF counts.
+
+sλ(p,r,k,F) = ReferenceFE(p, F, r, k, Float64; DG_calc=true)
+
+@testset "𝓢ᵣΛᵏ(□ᴰ) form valued bases span the vector proxied spaces" begin
+  # the proxy sends the form components onto the vector ones with the signs of
+  # `_basis_forms_components`, so only the spans can be compared: where the
+  # Hodge star permutes the components, the two order their functions differently.
+  pts(D,n) = [Point(ntuple(i -> (((h-1)÷(n^(i-1))) % n)/(n-1), D)) for h in 1:n^D]
+  for D in (2,3), k in 1:D-1, F in (:S,:S⁻), r in 1:3
+    comps = Polynomials._basis_forms_components(D,k,false,false)
+    L = length(comps)
+    X = pts(D, r+3)
+    bf = FEEC_poly_basis(Val(D), ExteriorFormValue{k,Cov(D),Float64}, r, k, F)
+    bv = FEEC_poly_basis(Val(D), Float64, r, k, F)
+    @test length(bf) == length(bv)
+
+    n = length(bf)
+    vf, vv = evaluate(bf,X), evaluate(bv,X)
+    A, B = zeros(n, length(X)*L), zeros(n, length(X)*L)
+    for w in 1:n, i in eachindex(X), I in 1:L
+      pid, _, sgn = comps[I]
+      A[w, (i-1)*L + pid] = sgn*Tuple(vf[i,w])[I]
+      B[w, (i-1)*L + pid] = Tuple(vv[i,w])[pid]
+    end
+    @test rank(A; rtol=1e-8) == n
+    @test rank([A;B]; rtol=1e-8) == n
+  end
+end
+
+@testset "𝑑 maps the serendipity families into the next space" begin
+  # [AA] d𝓢ᵣΛᵏ ⊂ 𝓢ᵣ₋₁Λᵏ⁺¹ and [GK] d𝓢⁻ᵣΛᵏ ⊂ 𝓢⁻ᵣΛᵏ⁺¹. A wrong Koszul sign or
+  # index set still gives a basis of the right size, but breaks the inclusion.
+  flat(M) = reduce(vcat,
+    [reduce(hcat, [collect(M[i,j].data) for j in axes(M,2)]) for i in axes(M,1)])
+
+  pts(D,n) = [Point(ntuple(i -> (((h-1)÷(n^(i-1))) % n)/(n-1), D)) for h in 1:n^D]
+  for D in (2,3), k in 1:D-1, F in (:S,:S⁻), r in 1:3
+    r2 = F == :S ? r-1 : r
+    r2 < 1 && continue
+    X = pts(D, r+3)
+    bk  = FEEC_poly_basis(Val(D), ExteriorFormValue{k,Cov(D),Float64}, r, k, F)
+    Vk1 = ExteriorFormValue{k+1,Cov(D),Float64}
+    bk1 = FEEC_poly_basis(Val(D), Vk1, r2, k+1, F)
+    Y = flat(evaluate(Broadcasting(𝑑)(bk), X))
+    A = flat(evaluate(bk1, X))
+    @test norm(A*(A\Y) - Y) / norm(Y) < 1e-10
+  end
+end
+
+@testset "Serendipity form valued element: duality and vector proxy parity" begin
+  for D in (2,3), k in 1:D-1, F in (:S,:S⁻), r in 1:3
+    p = ncube(D)
+    reffe = sλ(p,r,k,F)
+    prebasis = get_prebasis(reffe)
+
+    @test get_form_degree(reffe) == k
+    @test Conformity(reffe) isa PΛConformity
+    @test num_dofs(reffe) == length(prebasis)
+
+    M = evaluate(get_dof_basis(reffe), get_shapefuns(reffe))
+    @test M ≈ Matrix(I, num_dofs(reffe), num_dofs(reffe))
+    @test rank(Matrix(evaluate(get_dof_basis(reffe), prebasis))) == num_dofs(reffe)
+
+    # the AFW/GK moment table must reproduce the vector proxied element, and
+    # the element name must reach the form valued variant
+    name, order = ReferenceFEs.FEEC_name_and_order(F, r, k, Val(D), false, false)
+    proxy = ReferenceFE(p, name, Float64, order)
+    @test num_dofs(reffe) == num_dofs(proxy)
+    @test map(length, get_face_own_dofs(reffe)) == map(length, get_face_own_dofs(proxy))
+    @test num_dofs(ReferenceFE(p, name, ExteriorFormValue{k,D,Float64}, order)) == num_dofs(reffe)
+  end
+end
+
+@testset "The serendipity spaces pick, and check, a hierarchical family" begin
+  # 𝓢ᵣΛᵏ is filtered by degree, so a non hierarchical family cannot carry it:
+  # the default resolves to one, an explicitly asked one is checked, not fixed.
+  for D in (2,3), k in 1:D-1, F in (:S,:S⁻)
+    V = ExteriorFormValue{k,Cov(D),Float64}
+    @test num_dofs(ReferenceFE(ncube(D),F,2,k,V)) ==
+          num_dofs(ReferenceFE(ncube(D),F,2,k,V; poly_type=Legendre))
+    @test_throws "hierarchical" ReferenceFE(ncube(D),F,2,k,V; poly_type=Bernstein)
+    @test_throws "hierarchical" ReferenceFE(ncube(D),F,2,k,V; poly_type=Polynomials.ModalC0)
+  end
+  # 𝓢ᵣΛᴰ ≡ 𝓟ᵣ and 𝓢⁻ᵣΛᴰ ≡ 𝓟ᵣ₋₁ are filtered by degree too, so their default
+  # family must be hierarchical as well
+  for D in (2,3), r in 1:3
+    @test length(FEEC_poly_basis(Val(D),Float64,r,D,:S )) == binomial(D+r,D)
+    @test length(FEEC_poly_basis(Val(D),Float64,r,D,:S⁻)) == binomial(D+r-1,D)
+    @test length(FEEC_poly_basis(Val(D),ExteriorFormValue{D,Cov(D),Float64},r,D,:S)) ==
+          binomial(D+r,D)
+  end
+end
+
+@testset "test_reference_fe on the serendipity families" begin
+  for D in (2,3), k in 1:D-1, F in (:S,:S⁻), r in 1:2
+    test_reference_fe(sλ(ncube(D),r,k,F))
+  end
+end
+
 end # module

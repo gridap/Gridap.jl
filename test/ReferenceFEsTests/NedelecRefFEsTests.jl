@@ -308,9 +308,9 @@ reffe2 = ReferenceFE(TRI,nedelec2,1)
 reffe2 = ReferenceFE(TET,nedelec2,1)
 @test reffe2 == ReferenceFE(TET,:P,1,1; DG_calc=false)
 
-# Serendipity not implemented
-@test_throws ErrorException ReferenceFE(QUAD,:S,1,1; DG_calc=false)
-@test_throws ErrorException ReferenceFE(HEX, :S,1,1; DG_calc=false)
+# the :S family reaches the serendipity H(curl) element
+@test ReferenceFE(QUAD,scurl,1) == ReferenceFE(QUAD,:S,1,1; DG_calc=false)
+@test ReferenceFE(HEX, scurl,1) == ReferenceFE(HEX, :S,1,1; DG_calc=false)
 
 #display(face_odofs)
 

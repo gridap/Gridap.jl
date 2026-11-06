@@ -88,7 +88,8 @@ end
     SerendipityPolyBasis{D}(PT, T, r, k; trimmed=false, rotate_90=false)
 
 Basis of 𝓢ᵣΛᵏ(□ᴰ), or of 𝓢⁻ᵣΛᵏ(□ᴰ) if `trimmed`, for 1 ≤ `k` ≤ `D`-1 and
-`r` ≥ 1, with `T` the scalar component type. `rotate_90` is described in
+`r` ≥ 1, with `T` the scalar component type of the vector proxy, or an
+`ExteriorFormValue{k,D}` for a form valued basis. `rotate_90` is described in
 [`FEEC_poly_basis`](@ref).
 """
 function SerendipityPolyBasis{D}(
@@ -99,8 +100,9 @@ function SerendipityPolyBasis{D}(
   @check 0 < k < D "Only 1 ≤ k ≤ D-1 is implemented, got k=$k and D=$D"
   @check r ≥ 1 "The polynomial order r must be at least 1, got $r"
 
-  V = VectorValue{binomial(D,k),T}
-  proxy = _form_proxy(D,k,rotate_90)
+  DG_calc = T <: ExteriorFormValue
+  V = FEEC_tensor_type(DG_calc ? eltype(T) : T, D, k, DG_calc)
+  proxy = _form_proxy(D,k,rotate_90,DG_calc)
 
   # 𝓟ᵣΛᵏ, or 𝓟ᵣ₋₁Λᵏ
   pterms = _define_terms(_p_filter, tfill(ifelse(trimmed, r-1, r), Val(D)))
@@ -147,11 +149,13 @@ end
     _exact_poly_basis(PT, T, D, s, k; rotate_90=false)
 
 The generators dκ(φα dx_σ), |α| = `s`, of a [`SerendipityPolyBasis`](@ref): a
-basis of the vector proxy of d𝓗ₛ₊₁Λᵏ⁻¹(ℝᴰ) = dκ𝓗ₛΛᵏ, up to terms in 𝓟ₛ₋₁Λᵏ.
+basis of d𝓗ₛ₊₁Λᵏ⁻¹(ℝᴰ) = dκ𝓗ₛΛᵏ, up to terms in 𝓟ₛ₋₁Λᵏ, vector proxied unless
+`T` is an `ExteriorFormValue`.
 """
 function _exact_poly_basis(::Type{PT}, ::Type{T}, D, s, k; rotate_90=false) where {PT,T}
-  V = VectorValue{binomial(D,k),T}
-  proxy = _form_proxy(D,k,rotate_90)
+  DG_calc = T <: ExteriorFormValue
+  V = FEEC_tensor_type(DG_calc ? eltype(T) : T, D, k, DG_calc)
+  proxy = _form_proxy(D,k,rotate_90,DG_calc)
   dκterms = [ (CartesianIndex(α .+ 1), combination_index(σ,D))
               for α in _monomial_exponents(D, s) for σ in sorted_combinations(D,k)
               if _koszul_cone_filter(α,σ) ]
@@ -205,8 +209,8 @@ end
 ##########################################
 
 # I => (proxy component, sign) for the k-combinations I, see _basis_forms_components
-function _form_proxy(D, k, rotate_90)
-  components = _basis_forms_components(D,k,false,rotate_90)
+function _form_proxy(D, k, rotate_90, DG_style=false)
+  components = _basis_forms_components(D,k,DG_style,rotate_90)
   Dict(I => (I_id, sgn) for (I_id, I, sgn) in components)
 end
 
@@ -243,7 +247,7 @@ end
 # and passed together as `c`. For gradients, `g` is a mutable accumulator for
 # the gradient of one basis polynomial.
 function _return_cache(
-  b::SerendipityPolyBasis{D}, x, ::Type{G}, ::Val{N_deriv}) where {D,G,N_deriv}
+  b::SerendipityPolyBasis{D,V}, x, ::Type{G}, ::Val{N_deriv}) where {D,V,G,N_deriv}
 
   # third 1D derivatives would be needed, which no Polynomial provides
   @notimplementedif N_deriv > 1 "Hessians of SerendipityPolyBasis are not implemented"
@@ -254,7 +258,7 @@ function _return_cache(
   r = CachedArray(zeros(G,(np,ndof)))
   s = MArray{Tuple{Vararg{D,N_deriv}},T}(undef)
   t = ntuple( _ -> CachedArray(zeros(T,(D,ndof_1d))), Val(N_deriv+2))
-  iszero(N_deriv) ? (r, s, t) : (r, s, t, zero(Mutable(G)))
+  iszero(N_deriv) ? (r, s, t) : (r, s, t, zero(MMatrix{D,num_indep_components(V),T}))
 end
 
 function _setsize!(b::SerendipityPolyBasis{D}, np, r, t, _...) where D
@@ -290,7 +294,7 @@ function _evaluate_nd!(
   c, g = t
   T = eltype(Vr)
   ξ = Tuple(x) .- T(1/2) # κ is taken about the cube centre
-  m = zero(Mutable(Vr))
+  m = zero(MVector{num_indep_components(V),T})
   k = 1
 
   @inbounds begin
@@ -305,7 +309,7 @@ function _evaluate_nd!(
       for (I, a, l) in b.κdx[σ]
         m[I] += a * ξ[l] * φ
       end
-      r[i,k] = m
+      r[i,k] = Vr(Tuple(m))
       k += 1
     end
 
@@ -315,7 +319,7 @@ function _evaluate_nd!(
       for (I, a, l, q) in b.dκdx[σ]
         m[I] += a * (iszero(l) ? prod(v) : ξ[l] * _∂(v,∂v,q))
       end
-      r[i,k] = m
+      r[i,k] = Vr(Tuple(m))
       k += 1
     end
   end
@@ -351,7 +355,7 @@ function _gradient_nd!(
       for (I, a, l) in b.κdx[σ], p in 1:D
         m[p,I] += a * (ξ[l] * _∂(v,∂v,p) + ifelse(p == l, φ, zero(T)))
       end
-      r[i,k] = m
+      r[i,k] = G(Tuple(m))
       k += 1
     end
 
@@ -366,7 +370,7 @@ function _gradient_nd!(
           m[p,I] += a * (ξ[l] * _∂∂(v,∂v,∂²v,p,q) + ifelse(p == l, _∂(v,∂v,q), zero(T)))
         end
       end
-      r[i,k] = m
+      r[i,k] = G(Tuple(m))
       k += 1
     end
   end

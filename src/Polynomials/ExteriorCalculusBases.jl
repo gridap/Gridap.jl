@@ -6,7 +6,7 @@ _ensure_hierarchical(PT) = !isHierarchical(PT) && @unreachable "Polynomial famil
 
 function _default_poly_type(F,k,D)
   F ∈ (:P, :P⁻) && return Bernstein
-  F ∈ (:S,:S⁻) && 0 < k < D && return Legendre
+  F ∈ (:S,:S⁻) && 0 < k && return Legendre
   F ∈ (:Q⁻,:S,:S⁻) && return ModalC0
   Monomial
 end
@@ -58,6 +58,11 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
     comps = sorted_combinations(D,k) # components dtⁱ¹ ∧ dtⁱ² ∧ ... ∧  dtⁱᵏ for each variable t = xⱼ
     orders = [ (j in comps[l] ? r-1 : r) for l in 1:binomial(D,k), j in 1:D ]
     return CompWiseTensorPolyBasis{D}(PT, make_concretetype(T), orders)
+  end
+
+  # 𝓢ᵣΛᵏ(□ᴰ) and 𝓢⁻ᵣΛᵏ(□ᴰ), the serendipity spaces of [AA] and [GK].
+  if DG_calc && F in (:S,:S⁻) && 0 < k < D
+    return SerendipityPolyBasis{D}(PT, T, r, k; trimmed=(F == :S⁻))
   end
 
   @notimplementedif DG_calc && !(k in (0,D))

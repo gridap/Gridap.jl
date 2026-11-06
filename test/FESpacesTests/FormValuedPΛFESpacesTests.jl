@@ -42,7 +42,7 @@ _form(::Val{k},::Val{D},q) where {k,D} =
 # The highest coefficient degree the space `𝓕_rΛᵏ` is guaranteed to contain:
 # `r` for the full family, and only `r-1` for the trimmed one, which is complete
 # one order below -- except at k=0, where 𝓟⁻_rΛ⁰ = 𝓟_rΛ⁰.
-_full_degree(F,r,k) = (F == :P || k == 0) ? r : r-1
+_full_degree(F,r,k) = (F in (:P,:S) || k == 0) ? r : r-1
 
 const TOL = 1.0e-12
 
@@ -138,6 +138,34 @@ end
   )
   for r in rs, k in 0:D
     @test projection_error(model,p,Val(D),:Q⁻,r,Val(k)) < TOL
+  end
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# The serendipity families 𝓢ᵣΛᵏ(□ᴰ) and 𝓢⁻ᵣΛᵏ(□ᴰ), for 0 < k < D: the 0-forms
+# and D-forms are the nodal `serendipity` space, covered above.
+# ─────────────────────────────────────────────────────────────────────────────
+
+@testset "𝓢 dof count parity with the vector proxies" begin
+  for (model,p,D) in ((cart_quad,QUAD,2), (cart_hex,HEX,3)), k in 1:D-1, r in 1:2
+    proxies = ((:S , k == 1 ? scurl         : sdiv        , r  ),
+               (:S⁻, k == 1 ? trimmed_scurl : trimmed_sdiv, r-1))
+    for (F,proxy_name,proxy_order) in proxies
+      proxy_order < 0 && continue
+      form  = FESpace(model, ReferenceFE(p,F,r,k,Float64))
+      proxy = FESpace(model, ReferenceFE(p,proxy_name,Float64,proxy_order))
+      @test num_free_dofs(form) == num_free_dofs(proxy)
+    end
+  end
+end
+
+@testset "𝓢 exact L2 projection on $lbl" for (lbl,model,p,D,rs) in (
+    ("cartesian QUAD", cart_quad,   QUAD, 2, 1:2),
+    ("graded QUAD",    graded_quad, QUAD, 2, 1:2),
+    ("cartesian HEX",  cart_hex,    HEX,  3, 1:1),
+  )
+  for F in (:S,:S⁻), r in rs, k in 1:D-1
+    @test projection_error(model,p,Val(D),F,r,Val(k)) < TOL
   end
 end
 

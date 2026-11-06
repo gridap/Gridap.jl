@@ -106,6 +106,9 @@ With `n` the unit outward normal of the facet `f`,
 
 that is `2D dim 𝓟ᵣ(f)` facet DoFs plus `D dim 𝓟ᵣ₋₂(□ᴰ)` interior ones.
 """
+SerendipityDivRefFE(::Type{V},p::Polytope,order::Integer; kwargs...) where V<:ExteriorFormValue =
+  FEEC_reference_fe(SerendipityDiv(), V, p, order; kwargs...)
+
 function SerendipityDivRefFE(::Type{T}, p::Polytope{D}, r::Integer) where {T,D}
   @notimplementedif !(D in (2,3) && is_n_cube(p)) """\n
   The serendipity H(div) element is only implemented on squares and cubes, got $p.
@@ -133,8 +136,8 @@ function SerendipityDivRefFE(::Type{T}, p::Polytope{D}, r::Integer) where {T,D}
   MomentBasedReferenceFE(sdiv, p, prebasis, moments, conf)
 end
 
-function ReferenceFE(p::Polytope, ::SerendipityDiv, ::Type{T}, order) where T
-  SerendipityDivRefFE(T, p, order)
+function ReferenceFE(p::Polytope, ::SerendipityDiv, ::Type{T}, order; kwargs...) where T
+  SerendipityDivRefFE(T, p, order; kwargs...)
 end
 
 """
@@ -163,6 +166,9 @@ in its own frame, `n = e₁×e₂` for the edges `e₁, e₂` of `f` at its firs
     ℓ^{f,p}(u) = ∫_f (u×n)⋅p,     p ∈ 𝓟ᵣ₋₂(f;R²),           for each face f (3D)
     ℓ^{p}(u)   = ∫_K u⋅p,         p ∈ 𝓟ᵣ₋₂₍ᴰ₋₁₎(□ᴰ;Rᴰ).
 """
+SerendipityCurlRefFE(::Type{V},p::Polytope,order::Integer; kwargs...) where V<:ExteriorFormValue =
+  FEEC_reference_fe(SerendipityCurl(), V, p, order; kwargs...)
+
 function SerendipityCurlRefFE(::Type{T}, p::Polytope{D}, r::Integer) where {T,D}
   @notimplementedif !(D in (2,3) && is_n_cube(p)) """\n
   The serendipity H(curl) element is only implemented on squares and cubes, got $p.
@@ -205,8 +211,8 @@ function SerendipityCurlRefFE(::Type{T}, p::Polytope{D}, r::Integer) where {T,D}
   MomentBasedReferenceFE(scurl, p, prebasis, moments, conf; oriented)
 end
 
-function ReferenceFE(p::Polytope, ::SerendipityCurl, ::Type{T}, order) where T
-  SerendipityCurlRefFE(T, p, order)
+function ReferenceFE(p::Polytope, ::SerendipityCurl, ::Type{T}, order; kwargs...) where T
+  SerendipityCurlRefFE(T, p, order; kwargs...)
 end
 
 """
@@ -236,6 +242,9 @@ With `n` the unit outward normal of the facet `f`,
 
 [GK, (4.1)].
 """
+TrimmedSerendipityDivRefFE(::Type{V},p::Polytope,order::Integer; kwargs...) where V<:ExteriorFormValue =
+  FEEC_reference_fe(TrimmedSerendipityDiv(), V, p, order; kwargs...)
+
 function TrimmedSerendipityDivRefFE(::Type{T}, p::Polytope{D}, k::Integer) where {T,D}
   @notimplementedif !(D in (2,3) && is_n_cube(p)) """\n
   The trimmed serendipity H(div) element is only implemented on squares and cubes, got $p.
@@ -267,8 +276,8 @@ function TrimmedSerendipityDivRefFE(::Type{T}, p::Polytope{D}, k::Integer) where
   MomentBasedReferenceFE(trimmed_sdiv, p, prebasis, moments, conf)
 end
 
-function ReferenceFE(p::Polytope, ::TrimmedSerendipityDiv, ::Type{T}, order) where T
-  TrimmedSerendipityDivRefFE(T, p, order)
+function ReferenceFE(p::Polytope, ::TrimmedSerendipityDiv, ::Type{T}, order; kwargs...) where T
+  TrimmedSerendipityDivRefFE(T, p, order; kwargs...)
 end
 
 """
@@ -301,6 +310,9 @@ in its own frame, `n = e₁×e₂` for the edges `e₁, e₂` of `f` at its firs
 [GK, (4.1)]: on a `d`-face, the index space `𝓟ₛ₋₁Λᵈ⁻¹ ⊕ d𝓗ₛ₊₁Λᵈ⁻²`,
 `s = k+1-2(d-1)`, paired with the trace of `u` by the wedge product.
 """
+TrimmedSerendipityCurlRefFE(::Type{V},p::Polytope,order::Integer; kwargs...) where V<:ExteriorFormValue =
+  FEEC_reference_fe(TrimmedSerendipityCurl(), V, p, order; kwargs...)
+
 function TrimmedSerendipityCurlRefFE(::Type{T}, p::Polytope{D}, k::Integer) where {T,D}
   @notimplementedif !(D in (2,3) && is_n_cube(p)) """\n
   The trimmed serendipity H(curl) element is only implemented on squares and cubes, got $p.
@@ -358,6 +370,6 @@ function TrimmedSerendipityCurlRefFE(::Type{T}, p::Polytope{D}, k::Integer) wher
   MomentBasedReferenceFE(trimmed_scurl, p, prebasis, moments, conf; oriented)
 end
 
-function ReferenceFE(p::Polytope, ::TrimmedSerendipityCurl, ::Type{T}, order) where T
-  TrimmedSerendipityCurlRefFE(T, p, order)
+function ReferenceFE(p::Polytope, ::TrimmedSerendipityCurl, ::Type{T}, order; kwargs...) where T
+  TrimmedSerendipityCurlRefFE(T, p, order; kwargs...)
 end

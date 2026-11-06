@@ -152,9 +152,9 @@ reffe = ReferenceFE(TET,bdm,Float64,1)
 reffe = ReferenceFE(TRI,bdm,1)
 @test reffe == ReferenceFE(TRI,:P,1,1; rotate_90=true, DG_calc=false) # r=1, k=2
 
-# Serendipity BDM not implemented
-@test_throws ErrorException ReferenceFE(QUAD,:S,1,1; rotate_90=true, DG_calc=false)
-@test_throws ErrorException ReferenceFE(HEX, :S,1,2; DG_calc=false)
+# the :S family reaches the serendipity H(div) element
+@test ReferenceFE(QUAD,sdiv,1) == ReferenceFE(QUAD,:S,1,1; rotate_90=true, DG_calc=false)
+@test ReferenceFE(HEX, sdiv,1) == ReferenceFE(HEX, :S,1,2; DG_calc=false)
 
 @test Conformity(reffe,:L2) == L2Conformity()
 @test Conformity(reffe,:Hdiv) == DivConformity()
