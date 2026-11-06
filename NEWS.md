@@ -9,17 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX) (number to be filled when the PR is opened).
-  - New variants (accessible via kwarg `flavor=:BMM`) of the `BarycentricPΛBasis` and `BarycentricPmΛBasis` bases of the PᵣrΛᵏ and P⁻ᵣrΛᵏ spaces. For form order k=1, both flavors of both bases implement a closed-form change-of-basis with respect to relabelling/permutation of the simplex vertices.
-  - Added the associated reference FEs (named `rotating_pλ`, `trimmed_pλ`) which provide H(curl)-conforming FE spaces on meshes with arbitrary simplex ordering (`NonOriented`).
-  - Initial experimental support (API is still unstable) for tensor calculus and Finite Element Exterior Calulus (FEEC): added `ExteriorFormValue`, a `MultiValue` representing alternating K-forms, with pointwise exterior calculus (wedge, interior product, Hodge star, musical isomorphisms, Koszul operator, pullback/pushforward), and lazy `Field` counterparts for some of them.
-  - New experimental extension for Symbolic.jl (API is still unstable): it provides support of symbolic exterior calculus (exterior derivative, codifferential, Lie derivative).
+- Implemented arbitrary-order gradients `gradient(f, Val(N))` of fields using forward-mode automatic differentiation. Hand-written kernels still take precedence. Since PR[#1350](https://github.com/gridap/Gridap.jl/pull/1350).
+- Added support for moment-based quadratures and measures on triangulations. Since PR[#1352](https://github.com/gridap/Gridap.jl/pull/1352).
+- Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX):
   - Initial experimental support (API is still unstable) for varianced tensor dimensions: a `MultiValue` size may hold `Cov`/`Con` dimensions in addition to plain `Int`s, and the operations of `TensorValues` honour them. Added the predicates `can_contract`, `is_same_variance` and `inverse_variance`, and `tensor_type`, which counts the dimensions of each variance.
   - Added `from_0form`, the inverse of `to_0form`.
   - `∫( … )dΩ` now can integrate an `ExteriorFormValue{K,D}` for `K=0` or `D`. `from_0form` is implicitly added to a 0-form. So `∫( 𝑑(u) ∧ ⋆𝑑(v) )dΩ`, `∫( 𝑑(u) ⨟ 𝑑(v) )dΩ` and `∫( from_0form(⋆(𝑑(u) ∧ ⋆𝑑(v))) )dΩ` are equivalent, although the first is most efficient.
   - implemented `lie_derivative`/`𝓛`, applied to a (contravariant) vector and an arbitrary tensor field.
   - implemented `interior_product`/`ι` and `koszul` on cell fields.
-- Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX):
   - Added abstraction for the variance of a tensor, `Cov` for covariant and `Con` for contravariant, optionally wrapping the dimension `Int` in the type parameters of `MultiValue` tensors. New associated `TensorValues` APIs: `Dim`, `is_same_variance`, `can_contract`, `inverse_variance`.
   - The existing tensor operations are generalized to tensors with variance when they are strictly consistent with it, in a fully retro-compatible way.
   - The new tensor calculus operation strictly require varianced tensors to be applied, `Int` is not assumed `Con`. These are `apply_tensor`, `flat`, `sharp`, `flat_vol_coeff`, `interior_product`, `hodge_star`, `pullback`, `koszul`, `∧`.
@@ -31,8 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `ProductTensorValue{A,B,T,..}`, a `MultiValue` containing the tensor product of two tensors of types `A` and `B` without duplicating storage of dependent components of both factors (e.g. that can represent the hessian of a 2D-`SkewSymTensorValue{2}` valued field storing only 3*1 independent components instead of 4*4).
   - Added `congruent_prod(a, b, Val(l))` congruences only the indices `k ∈ l` of `a`, the others being left untouched and unconstrained in dimension and variance. An index symmetry of `a` survives a congruence of every index only, so a list that leaves one out widens the result to the corresponding full rank type. `congruent_prod` now also accepts skew-symmetric `a`, computed with the `K`-th compound matrix of `b`. It is the single backend of `flat`, `sharp`, `pullback` and `pushforward`.
 
+### Fixed
+
+- `+` and `-` of `HighOrderTensorValue`s with more than 32 components are now type-stable. Since PR[#1350](https://github.com/gridap/Gridap.jl/pull/1350).
+- Implemented `Base.muladd` for `MultiValue`'d inputs, optimizing it using fma if an argument is scalar. Since PR[#1347](https://github.com/gridap/Gridap.jl/pull/1347).
+
 ### Changed
 
+- Enabled algebraic operations in residual of a linear `TransientFEOperator` when the space of the corresponding time derivative has zero Dirichlet values. Since PR[#1345](https://github.com/gridap/Gridap.jl/pull/1345).
 - Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX) (number to be filled when the PR is opened).
   - On a model whose `get_cell_metric` is not the identity, `∫( … )dΩ` integrates against the volume element of the chart, `meas(Jt)·√|det g|`: a scalar or 0-form integrand now carries the `√|det g|` factor, and code writing that factor into its integrands must drop it. An integrand that is a top form takes the euclidean element, the Hodge star that produced it carrying the factor already.
   - `AbstractSymTensorValue` now subtypes `AbstractSymMultiValue` instead of `MultiValue` directly.
@@ -42,7 +45,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ReferenceFE(p, F::Symbol, r, k[, T])` now builds the form valued element by default (`DG_calc=true`), valued in `ExteriorFormValue{k,D,T}`. Pass `DG_calc=false` for the vector proxy element, which is also the one reading a tensor `T` as a Cartesian product space.
 
 ### Removed
+
 - Deprecated `inner` between a 4th order tensor and 2nd order tensors, this used to call `double_contraction`, but this doesn't make sense mathematically, in particular for tensors with variance.
+
+## [0.20.10] - 2026-09-22
+
+### Added
+
+- Since PR[#1335](https://github.com/gridap/Gridap.jl/pull/1335).
+  - New variants (accessible via kwarg `flavor=:BMM`) of the `BarycentricPΛBasis` and `BarycentricPmΛBasis` bases of the PᵣrΛᵏ and P⁻ᵣrΛᵏ spaces. For form order k=1, both flavors of both bases implement a closed-form change-of-basis with respect to relabelling/permutation of the simplex vertices.
+  - Added the associated reference FEs (named `rotating_pλ`, `trimmed_pλ`) which provide H(curl)-conforming FE spaces on meshes with arbitrary simplex ordering (`NonOriented`).
+  - Initial experimental support (API is still unstable) for tensor calculus and Finite Element Exterior Calulus (FEEC): added `ExteriorFormValue`, a `MultiValue` representing alternating K-forms, with pointwise exterior calculus (wedge, interior product, Hodge star, musical isomorphisms, Koszul operator, pullback/pushforward), and lazy `Field` counterparts for some of them.
+  - New experimental extension for Symbolic.jl (API is still unstable): it provides support of symbolic exterior calculus (exterior derivative, codifferential, Lie derivative).
+- Since PR[#1336](https://github.com/gridap/Gridap.jl/pull/1336), new ReferenceFEs added to the library:
+  - Added `ArgyrisRefFE`, the quintic C¹-conforming Argyris triangle. It comes with the new `H2Conformity`, which can be explicitly requested by passing any of `:C1`, `:H2`, `:Hhess`, `:HHess`.
+  - Added `MorleyRefFE`, the quadratic nonconforming Morley triangle.
+  - Added `HHJRefFE`, `ReggeRefFE` and `GLSRefFE`: the Hellan-Herrmann-Johnson, Regge and Gopalakrishnan-Lederer-Schoberl (second kind) triangles, of any degree `r >= 0`, normal-normal, tangential-tangential and normal-tangential continuous respectively.
+  - Added `DubinerBasis`, the L2-orthonormal (Dubiner/Koornwinder) polynomial basis of `P_K` on the reference simplex in any dimension.
+  - Added `ArnoldWintherNCRefFE` and `ArnoldWintherCRefFE`, the nonconforming (15 DoFs, P2-based) and conforming (24 DoFs, P3-based) Arnold-Winther symmetric stress triangles for mixed elasticity. Both are built as constrained subspaces of a larger prebasis, so `length(get_prebasis(reffe)) > num_dofs(reffe)` for them.
+  - Added `MardalTaiWintherRefFE`, the Mardal-Tai-Winther element on triangles (9 DoFs) and tetrahedra (24 DoFs).
+  - Added the missing `product_rule` methods for `⋅` and `outer`.
+  - Added `CartProdRefFE`, the Cartesian product of reference elements sharing a polytope and a value type, stacked along a new last index: `Float64` becomes `VectorValue{K}` and `VectorValue{d}` becomes `TensorValue{d,K}`.
+
+### Fixed
+
+- Fixed `refine` dropping the `map` and `isperiodic` fields of the `CartesianDescriptor` when refining a `CartesianDiscreteModel`. Since PR[#1334](https://github.com/gridap/Gridap.jl/pull/1334).
 
 ## [0.20.9] - 2026-08-17
 
@@ -57,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed the dof signs flips for Curl-conforming reference FE bases for elements with `change_dof=true`. The signs are now tested for consistency with the `change_dof=false` version. Since PR [#1315](https://github.com/gridap/Gridap.jl/pull/1315).
 - Fixed evaluation of weak forms on empty trians with inverse maps. Since PR[#1316](https://github.com/gridap/Gridap.jl/pull/1316).
 - Fixed getting field type when changing domain on empty adapted triangulations. Since PR [#1326](https://github.com/gridap/Gridap.jl/pull/1326).
+- Fixed broadcasting of operation on `TensorValue{A,B}` components, and added broadcasting to `Third/HighOrderTensorValue`. Since PR [#1331](https://github.com/gridap/Gridap.jl/pull/1331).
 
 ### Changed
 - Changed `product_rule` to allow for numbers of `Complex` type. Since PR[#1325](https://github.com/gridap/Gridap.jl/pull/1325).

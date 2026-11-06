@@ -17,8 +17,12 @@ function refine(model::CartesianDiscreteModel{Dc}, cell_partition::Tuple) where 
   glue = AdaptivityGlue(faces_map,fcell_to_child_id,rrules)
 
   # Refined model
+  # NOTE: `domain` is given in the pre-image of `desc.map`, so both `map` and `isperiodic`
+  # have to be forwarded for the refined model.
   domain     = _get_cartesian_domain(desc)
-  _model_ref = CartesianDiscreteModel(domain,cell_partition.*nC)
+  _model_ref = CartesianDiscreteModel(
+    domain,cell_partition.*nC;map=desc.map,isperiodic=desc.isperiodic
+  )
 
   # Propagate face labels
   coarse_labels = get_face_labeling(model)

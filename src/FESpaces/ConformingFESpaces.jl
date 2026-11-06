@@ -66,6 +66,12 @@ end
 
 Geometry.num_cells(c::CompressedCellConformity) = length(c.cell_ctype)
 Geometry.get_cell_type(c::CompressedCellConformity) = c.cell_ctype
+# checks all dofs are cell-owned (so not glued). Needed for AWnc that is L2
+# conforming but still glues dofs.
+_all_dofs_are_cell_owned(c::GenericCellConformity) =
+  all(length(last(l)) == n for (l, n) in zip(c.cell_lface_own_ldofs, c.cell_num_dofs))
+_all_dofs_are_cell_owned(c::CompressedCellConformity) =
+  all(length(last(l)) == n for (l, n) in zip(c.ctype_lface_own_ldofs, c.ctype_num_dofs))
 
 function CellConformity(
   cell_ctype::AbstractVector{<:Integer},

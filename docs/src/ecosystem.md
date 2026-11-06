@@ -11,6 +11,7 @@ We here list the ones that are currently maintained by the Gridap team, as well 
 ## Meshing
 
 - [`GridapGmsh.jl`](https://github.com/gridap/GridapGmsh.jl) is our interface to the [Gmsh](https://gmsh.info/) mesh generator. It allows you to create meshes from julia scripts, or import existing meshes in the Gmsh format.
+- [`ComodoGridap.jl`](https://github.com/COMODO-research/ComodoGridap.jl) enables one to combine [Comodo.jl](https://github.com/COMODO-research/Comodo.jl) and Gridap.jl for finite element analysis. In addition, Comodo links with Makie for advanced Julia based visualisation.
 
 ## Visualization
 

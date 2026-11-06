@@ -1,155 +1,315 @@
-
-using Test
-using Gridap
-using Gridap.ReferenceFEs, Gridap.Geometry
-using Gridap.Helpers
-using Gridap.FESpaces
-using Gridap.TensorValues
-using Gridap.CellData
-using Gridap.Arrays
-using Gridap.Polynomials
-using Gridap.Fields
+module HHJRefFEsTests
 
 using LinearAlgebra
+using Test
 
+using Gridap
+using Gridap.Arrays
+using Gridap.TensorValues
+using Gridap.Fields
+using Gridap.Polynomials
+using Gridap.ReferenceFEs
+using Gridap.Geometry
+using Gridap.FESpaces
+using Gridap.CellData
 
-function nonpermutedmodel()
-  conn   = Table([[1 2 3],[4,3,2]])
-  coords = [VectorValue(0.0, 0.0),VectorValue(1.0, 0.0),VectorValue(0.0, 1.0),VectorValue(1.0, 1.0)]
-  polys  = [TRI]
-  reffes = [TRI3]
-  ctypes = Int8[1,1]
+############################################################################################
+# Helpers
+############################################################################################
 
-  topo = Geometry.UnstructuredGridTopology(coords,conn,ctypes,polys,Geometry.NonOriented())
-  grid = Geometry.UnstructuredGrid(coords,conn,reffes,ctypes,Geometry.NonOriented())
-  labels = Geometry.FaceLabeling(topo)
-  model = UnstructuredDiscreteModel(grid,topo,labels)
+# Transposed Jacobian of the affine map from the reference triangle onto the
+# triangle with vertices `verts`, in Gridap's convention Jt[i,j] = ∂Fⱼ/∂ξⁱ.
+function jacobian_t(verts)
+  e1 = verts[2] - verts[1]
+  e2 = verts[3] - verts[1]
+  J = TensorValue(e1[1], e1[2], e2[1], e2[2])  # columns e1, e2
+  transpose(J)
 end
 
-using Gridap.CellData: SkeletonPair
-function LinearAlgebra.dot(a::SkeletonPair,b::SkeletonPair)
-  SkeletonPair(dot(a.plus,b.plus),dot(a.minus,b.minus))
+affine_map(verts) = ξ -> verts[1] + (verts[2] - verts[1]) * ξ[1] +
+                         (verts[3] - verts[1]) * ξ[2]
+
+# A rebuilt model carries no face labels, so re-create the usual ones.
+function tag_boundary!(model)
+  topo = get_grid_topology(model)
+  labels = get_face_labeling(model)
+  D = num_cell_dims(model)
+  for d in 0:D-1
+    get_face_entity(labels, d) .= ifelse.(Geometry.get_isboundary_face(topo, d), 2, 1)
+  end
+  get_face_entity(labels, D) .= 1
+  add_tag!(labels, "interior", [1])
+  add_tag!(labels, "boundary", [2])
+  model
 end
 
-function l2_error(uh,u,dΩ)
-  eh = uh - u
-  println(sum(∫(eh⊙eh)dΩ))
-  println(collect(get_array(∫(eh⊙eh)dΩ)))
+# Rebuild `model` with the vertices of each cell listed in a permuted order,
+# cycling through `perms`. The mesh is geometrically identical; only the local
+# vertex numbering -- and hence the direction in which each cell traverses its
+# edges -- changes.
+function permute_cells(model, perms=([1, 2, 3], [2, 3, 1], [3, 1, 2],
+                                     [2, 1, 3], [1, 3, 2], [3, 2, 1]))
+  grid = get_grid(model)
+  cell_nodes = get_cell_node_ids(grid)
+  permuted = [collect(cell_nodes[i])[perms[mod1(i, length(perms))]]
+              for i in 1:length(cell_nodes)]
+  pgrid = UnstructuredGrid(get_node_coordinates(grid), Table(permuted),
+                           get_reffes(grid), get_cell_type(grid))
+  tag_boundary!(UnstructuredDiscreteModel(pgrid))
 end
 
-function airy(f,x)
-  H = ∇(∇(f))(x)
-  SymTensorValue(H[2,2],-H[2,1],H[1,1])
+unit_square(n) = simplexify(CartesianDiscreteModel((0, 1, 0, 1), (n, n)))
+
+# A symmetric-tensor field that is exactly of total degree `r`
+function poly_tensor(r)
+  x -> SymTensorValue{2,Float64}(1.0 + x[1]^r, 2.0 - x[2]^r, 3.0 + (x[1] * x[2])^(r ÷ 2))
 end
-airy(f) = x -> airy(f,x)
 
-ϕ(x) = x[1]^3 - 3.0*x[2]^2 + 2.0*x[1]*x[2]
-u(x) = airy(ϕ)(x)
+# Generalized Vandermonde matrix Q[l,i] = ℓₗ(F*(Ψ̂ᵢ)): the physical HHJ DoFs of
+# the triangle `verts` evaluated on the double contravariant Piola push-forward of
+# the reference shape functions, computed from scratch by quadrature on the
+# physical edges. `σ` gives, per edge, whether the cell traverses it along the
+# global direction; a reversed edge flips the odd-degree Legendre weights.
+# The interior DoFs are *defined* as the push-forward of the reference ones --
+# they are owned by the cell and shared with nobody -- so their rows are the
+# identity.
+function hhj_vandermonde(reffe, verts, σ; degree=12)
+  p = get_polytope(reffe)
+  Ψ̂ = get_shapefuns(reffe)
+  ndofs = num_dofs(reffe)
 
-p = TRI
-D = num_dims(p)
-order = 0
+  Jt = jacobian_t(verts)
+  J = transpose(Jt)
+  detJ = det(Jt)
+  F = affine_map(verts)
 
-reffe = ReferenceFEs.HellanHerrmannJhonsonRefFE(Float64,p,order)
-dofs_ref = get_dof_basis(reffe)
-basis_ref = get_shapefuns(reffe) 
-prebasis  = get_prebasis(reffe)
-get_face_own_dofs(reffe)
-get_face_own_dofs_permutations(reffe)
+  own = get_face_own_dofs(reffe)
+  nv = num_faces(p, 0)
+  order = length(own[nv+1]) - 1
+  μb = LegendreBasis(Val(1), Float64, order)
 
-M = evaluate(dofs_ref, basis_ref)
-@test M ≈ I(num_dofs(reffe))
+  Q = Matrix{Float64}(I, ndofs, ndofs)
+  quad = Quadrature(SEGMENT, degree)
+  ŝ = get_coordinates(quad)
+  ŵ = get_weights(quad)
 
-model = simplexify(CartesianDiscreteModel((0,1,0,1), (1,1)))
-#model = nonpermutedmodel()
-topo = get_grid_topology(model)
-cell_to_nodes = Geometry.get_faces(topo,2,0)
-cell_to_faces = Geometry.get_faces(topo,2,1)
-face_to_nodes = Geometry.get_faces(topo,1,0)
-face_to_cells = Geometry.get_faces(topo,1,2)
-perms = get_cell_permutations(topo)
-cmaps = get_cell_map(get_grid(model))
-Jt = lazy_map(Broadcasting(∇),cmaps)
+  for e in 1:num_faces(p, 1)
+    v̂a, v̂b = get_face_coordinates(p, 1)[e]
+    xa, xb = F(v̂a), F(v̂b)
+    L = norm(xb - xa)                # physical edge length: ds = L dŝ
+    n = ReferenceFEs._rot90((xb - xa) / L)  # nn-moments are quadratic in n
 
-pts = [VectorValue(0.,0.),VectorValue(1.0,0.),VectorValue(0.,1.)]
+    x̂ = [v̂a + s[1] * (v̂b - v̂a) for s in ŝ]
+    Ψ̂x = evaluate(Ψ̂, x̂)
+    μ = evaluate(μb, ŝ)
+    for (i, d) in enumerate(own[nv+e])
+      parity = (σ[e] < 0 && isodd(i - 1)) ? -1.0 : 1.0
+      for j in 1:ndofs
+        Φnn = [(n ⋅ ((1 / detJ^2) * (J ⋅ ψ ⋅ transpose(J)))) ⋅ n for ψ in view(Ψ̂x, :, j)]
+        Q[d, j] = parity * sum(ŵ .* L .* Φnn .* μ[:, i])
+      end
+    end
+  end
+  Q
+end
 
-Ω = Triangulation(model)
-Γ = Boundary(model)
-Γ.glue.face_to_bgface
-Λ = Skeleton(model)
-Λ.plus.glue.face_to_lcell
-Λ.minus.glue.face_to_lcell
+############################################################################################
+# Reference element
+############################################################################################
 
-dΩ = Measure(Ω,4*(order+1))
-dΓ = Measure(Γ,4*(order+1))
-dΛ = Measure(Λ,4*(order+1))
+function test_hhj_reffe(r)
+  reffe = HHJRefFE(Float64, TRI, r)
+  ndofs = 3*(r + 1) * (r + 2) ÷ 2
 
-V = FESpace(model,reffe)
-get_cell_dof_ids(V)
+  @test reffe isa GenericRefFE
+  @test get_name(reffe) isa HellanHerrmannJohnson
+  @test num_dofs(reffe) == ndofs
+  @test length(get_prebasis(reffe)) == ndofs
+  @test Conformity(reffe) == DivConformity()
+  @test Pushforward(HellanHerrmannJohnson) == ReferenceFEs.DoubleContraVariantPiolaMap()
+  @test reffe == ReferenceFE(TRI, hhj, Float64, r)
+  test_reference_fe(reffe)
 
-uh = interpolate(u,V)
+  # r+1 DoFs per edge, the rest owned by the cell, none on the vertices
+  @test length.(get_face_own_dofs(reffe)) ==
+        [0, 0, 0, r + 1, r + 1, r + 1, 3*r * (r + 1) ÷ 2]
 
-x = zeros(num_free_dofs(V))
-#x[[1,2,4,5]] .= 1.0
-x[3] = 1.0
-uh = FEFunction(V,x)
-get_cell_dof_values(uh)
+  # Unisolvency
+  @test evaluate(get_dof_basis(reffe), get_shapefuns(reffe)) ≈ Matrix(I, ndofs, ndofs)
+end
 
-uh_bis = interpolate(uh,V)
-get_cell_dof_values(uh_bis)
+test_hhj_reffe(0)
+test_hhj_reffe(1)
+test_hhj_reffe(2)
 
-cf = uh
-get_free_dof_values(cf)
+@test_throws ErrorException HHJRefFE(Float64, QUAD, 0)
+@test_throws ErrorException HHJRefFE(Float64, TET, 0)
+@test_throws ErrorException HHJRefFE(Float64, TRI, -1)
 
-#print_op_tree(cf.cell_field.cell_field)
+############################################################################################
+# The DoFs are the claimed functionals
+############################################################################################
 
-#μ_c = MonomialBasis(Val(2),SymTensorValue{2,Float64},order-1,Polynomials._p_filter)
-#μ_c = get_shapefuns(LagrangianRefFE(SymTensorValue{2,Float64}, TRI, order-1))
-μ_c = map(constant_field,[SymTensorValue(0.,1.,0.),SymTensorValue(-2.,1.,0.),SymTensorValue(0.,-1.,2.)])
-μ_Ω = GenericCellField([μ_c,μ_c],Ω,ReferenceDomain())
-collect(get_array(∫((cf⊙transpose(μ_Ω)))dΩ))
+function test_hhj_dofs(r)
+  reffe = HHJRefFE(Float64, TRI, r)
+  prebasis = get_prebasis(reffe)
+  V = evaluate(get_dof_basis(reffe), prebasis)
+  own = get_face_own_dofs(reffe)
+  ndofs = num_dofs(reffe)
 
-# μ_f = MonomialBasis(Val(1),Float64,order,Polynomials._p_filter)
-μ_f = get_shapefuns(LagrangianRefFE(Float64, SEGMENT, order))
-μ_Γ = GenericCellField([μ_f,μ_f,μ_f,μ_f],Γ,ReferenceDomain())
-μ_Λ = GenericCellField([μ_f],Λ,ReferenceDomain())
-nΓ = get_normal_vector(Γ)
-nΛ = get_normal_vector(Λ)
+  # The edge DoFs are ∫ₑ (n⋅ϕ⋅n) μᵢ ds against the Legendre basis
+  μb = LegendreBasis(Val(1), Float64, r)
+  quad = Quadrature(SEGMENT, 12)
+  ŝ = get_coordinates(quad)
+  ŵ = get_weights(quad)
+  for e in 1:3
+    v̂a, v̂b = get_face_coordinates(TRI, 1)[e]
+    L = norm(v̂b - v̂a)
+    n = ReferenceFEs._rot90((v̂b - v̂a) / L)
+    x̂ = [v̂a + s[1] * (v̂b - v̂a) for s in ŝ]
+    φx = evaluate(prebasis, x̂)
+    μ = evaluate(μb, ŝ)
+    for (i, d) in enumerate(own[3+e]), j in 1:ndofs
+      @test V[d, j] ≈ sum(ŵ .* L .* [(n ⋅ φ) ⋅ n for φ in view(φx, :, j)] .* μ[:, i]) atol = 1e-12
+    end
+  end
 
-collect(get_array(∫(nΓ⋅(cf⋅nΓ)*μ_Γ)dΓ))
-collect(get_array(∫((nΛ⋅(cf⋅nΛ)).plus - (nΛ⋅(cf⋅nΛ)).minus)dΛ))
-collect(get_array(∫((nΛ⋅(cf⋅nΛ)).plus)dΛ))
-collect(get_array(∫((nΛ⋅(cf⋅nΛ)).minus)dΛ))
+  # The interior DoFs are ∫_K ϕ⊙τ dK against P_{r-1}(K;S)
+  if r > 0
+    cb = BernsteinBasisOnSimplex(Val(2), SymTensorValue{2,Float64}, r - 1)
+    cq = Quadrature(TRI, 12)
+    xc, wc = get_coordinates(cq), get_weights(cq)
+    φc = evaluate(prebasis, xc)
+    τc = evaluate(cb, xc)
+    for (i, d) in enumerate(own[7]), j in 1:ndofs
+      @test V[d, j] ≈
+            sum(wc .* [φ ⊙ τ for (φ, τ) in zip(view(φc, :, j), view(τc, :, i))]) atol = 1e-12
+    end
+  end
+end
 
-pts_Ω = get_cell_points(dΩ.quad)
-pts_Γ = get_cell_points(dΓ.quad)
-pts_Λ = get_cell_points(dΛ.quad)
+test_hhj_dofs(0)
+test_hhj_dofs(1)
+test_hhj_dofs(2)
 
-cf_Λ = cf#(cf⋅nΛ)
-cf_Λ_plus = nΛ.plus⋅(cf.plus⋅nΛ.plus)
-cf_Λ_minus = nΛ.minus⋅(cf.minus⋅nΛ.minus)
+############################################################################################
+# Transformation to a physical cell
+############################################################################################
 
-cf_plus = cf.plus
-cf_minus = cf.minus
+test_cells = (
+  [Point(0.0, 0.0), Point(1.0, 0.0), Point(0.0, 1.0)],  # the reference cell
+  [Point(0.3, 0.1), Point(1.7, 0.2), Point(0.6, 2.3)],  # det J > 0
+  [Point(0.0, 0.0), Point(0.0, 1.0), Point(1.0, 0.0)],  # det J < 0
+  [Point(-1.0, 0.5), Point(2.0, -0.4), Point(0.1, 0.3)],
+)
+test_signs = ((1.0, 1.0, 1.0), (-1.0, 1.0, 1.0), (1.0, -1.0, -1.0),
+              (-1.0, -1.0, -1.0))
 
-cf_Λ.plus(pts_Λ)
-cf_Λ.minus(pts_Λ)
+function test_hhj_change_of_basis(r)
+  reffe = HHJRefFE(Float64, TRI, r)
+  ndofs = num_dofs(reffe)
 
-cf_Λ_plus(pts_Λ)
-cf_Λ_minus(pts_Λ)
+  for verts in test_cells, σ in test_signs
+    Jt = jacobian_t(verts)
+    P = copy(evaluate(ReferenceFEs.EdgeScalingChangeOfBasis(reffe, false), Jt, σ))
+    Pinvt = copy(evaluate(ReferenceFEs.EdgeScalingChangeOfBasis(reffe, true), Jt, σ))
 
-cf_plus(pts_Λ)[1]
-cf_minus(pts_Λ)[1]
+    @test transpose(Pinvt) * P ≈ Matrix(I, ndofs, ndofs)
 
-cf_plus_Λ = change_domain(cf_plus,Λ,ReferenceDomain())
-print_op_tree(get_data(cf_plus_Λ))
-cf_plus_Λ(pts_Λ)
+    # Unlike Morley and Argyris, this change of basis is diagonal: the
+    # nn-moments are preserved up to the scalar ‖J t̂ₑ‖.
+    @test P ≈ Diagonal(diag(P))
 
+    Q = hhj_vandermonde(reffe, verts, σ)
+    @test Q * P ≈ Matrix(I, ndofs, ndofs)
+  end
 
-pts = get_cell_points(dΩ.quad)
-dofs_phys = get_fe_dof_basis(V)
-basis_phys = get_fe_basis(V)
-map(a -> round.(a),collect(dofs_phys(basis_phys)))[2]
-y = collect(basis_phys(pts))
+  # The edge entries really are the edge length ratio ‖J t̂ₑ‖
+  verts = test_cells[2]
+  Jt = jacobian_t(verts)
+  P = copy(evaluate(ReferenceFEs.EdgeScalingChangeOfBasis(reffe, false), Jt, (1.0, 1.0, 1.0)))
+  own = get_face_own_dofs(reffe)
+  for e in 1:3
+    L = norm(get_edge_tangent(TRI)[e] ⋅ Jt)
+    for d in own[3+e]
+      @test P[d, d] ≈ L
+    end
+  end
+  for d in own[7]
+    @test P[d, d] ≈ 1.0
+  end
+end
 
-reffe_lag = LagrangianRefFE(SymTensorValue{2,Float64},TRI,1)
+test_hhj_change_of_basis(0)
+test_hhj_change_of_basis(1)
+test_hhj_change_of_basis(2)
+
+# At order 0 the only edge weight is the constant one, so orientation cannot
+# matter at all: the change of basis ignores σ entirely.
+reffe0 = HHJRefFE(Float64, TRI, 0)
+Jt0 = jacobian_t(test_cells[2])
+P⁺ = copy(evaluate(ReferenceFEs.EdgeScalingChangeOfBasis(reffe0, false), Jt0, (1.0, 1.0, 1.0)))
+P⁻ = copy(evaluate(ReferenceFEs.EdgeScalingChangeOfBasis(reffe0, false), Jt0, (-1.0, -1.0, -1.0)))
+@test P⁺ ≈ P⁻
+
+############################################################################################
+# FE space
+#
+# The discrete space must not depend on how each cell happens to list its
+# vertices, so this runs on a sorted mesh and on the same mesh permuted.
+############################################################################################
+
+function test_hhj_fe_space(r, model)
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω, 2*r + 6)
+  V = FESpace(model, ReferenceFE(hhj, Float64, r))
+
+  topo = get_grid_topology(model)
+  @test num_free_dofs(V) == (r + 1) * num_faces(topo, 1) +
+                            (3*r * (r + 1) ÷ 2) * num_cells(model)
+
+  # A global P_r symmetric tensor field is interpolated exactly
+  τ = poly_tensor(r)
+  τh = interpolate(τ, V)
+  @test sqrt(sum(∫((τh - τ) ⊙ (τh - τ))dΩ)) < 1e-12
+
+  # A field outside the space, to test conformity
+  w(x) = SymTensorValue{2,Float64}(sin(2*x[1]), cos(3*x[2]), sin(x[1] + x[2]))
+  wh = interpolate(w, V)
+  @test sqrt(sum(∫((wh - w) ⊙ (wh - w))dΩ)) > 1e-6
+
+  Λ = SkeletonTriangulation(model)
+  dΛ = Measure(Λ, 2*r + 6)
+  n = get_normal_vector(Λ).⁺
+
+  # Only the normal-normal component is continuous -- the defining property
+  @test sqrt(sum(∫((n ⋅ jump(wh) ⋅ n) * (n ⋅ jump(wh) ⋅ n))dΛ)) < 1e-12
+  @test sqrt(sum(∫(jump(wh) ⊙ jump(wh))dΛ)) > 1e-3
+end
+
+sorted3 = unit_square(3)
+permuted3 = permute_cells(unit_square(3))
+
+test_hhj_fe_space(0, sorted3)
+test_hhj_fe_space(1, sorted3)
+test_hhj_fe_space(2, sorted3)
+test_hhj_fe_space(0, permuted3)
+test_hhj_fe_space(1, permuted3)
+test_hhj_fe_space(2, permuted3)
+
+############################################################################################
+# Edge orientation
+############################################################################################
+
+sorted_model = unit_square(3)
+topo = get_grid_topology(sorted_model)
+@test all(issorted, Geometry.get_faces(topo, 2, 0))
+@test all(σ -> all(isequal(1.0), σ), FESpaces._edge_signs(sorted_model, TRI))
+
+pmodel = permute_cells(sorted_model)
+cell_vertices = Geometry.get_faces(get_grid_topology(pmodel), 2, 0)
+@test !all(issorted, cell_vertices)
+signs = FESpaces._edge_signs(pmodel, TRI)
+@test any(σ -> any(isequal(-1.0), σ), signs)
+
+end # module

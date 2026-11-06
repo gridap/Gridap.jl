@@ -83,14 +83,16 @@ Base.iszero(a::MultiValue) = all(iszero.(a.data))
 for op in (:+,:-)
   @eval begin
 
-    function ($op)(a::T) where T<:MultiValue
-      r = map($op, get_indep_components(a))
-      T(r)
+    # `map` over a tuple is not inferred past 32 entries, which high-order gradients reach
+    # quickly (3^4 = 81 in 3D): unroll with `ntuple` instead.
+    function ($op)(a::V) where V<:MultiValue
+      L = num_indep_components(V)
+      V(ntuple(i -> ($op)(indep_comp_getindex(a,i)), Val(L)))
     end
 
     function ($op)(a::V, b::V) where V<:MultiValue
-      r = map(($op), get_indep_components(a), get_indep_components(b))
-      V(r)
+      L = num_indep_components(V)
+      V(ntuple(i -> ($op)(indep_comp_getindex(a,i), indep_comp_getindex(b,i)), Val(L)))
     end
   end
 end
@@ -211,21 +213,9 @@ this is assembled, following `LinearAlgebra`'s generic `A/B = (Bᵀ \\ Aᵀ)ᵀ`
 # Operations with scalar numbers
 ###############################################################
 
-@generated function _bc(f, a::NTuple{N}, b::_Scalar) where N
-  res = Expr(:tuple)
-  for i in 1:N
-    push!(res.args, :(f(a[$i],b)) )
-  end
-  res
-end
+_bc(f, a::NTuple{N}, b::Number) where N = ntuple(i -> f(a[i],b), Val(N))
 
-@generated function _bc(f, b::_Scalar, a::NTuple{N}) where N
-  res = Expr(:tuple)
-  for i in 1:N
-    push!(res.args, :(f(b,a[$i])) )
-  end
-  res
-end
+_bc(f, a::Number, b::NTuple{N}) where N = ntuple(i -> f(a,b[i]), Val(N))
 
 for op in (:+,:-,:*)
   @eval begin
@@ -244,6 +234,36 @@ for op in (:+,:-,:*)
     end
   end
 end
+
+_bc(f, a::Number, b::NTuple{N}, c::NTuple{N}) where N = ntuple(i -> f(a,b[i],c[i]), Val(N))
+
+_bc(f, a::NTuple{N}, b::Number, c::NTuple{N}) where N = ntuple(i -> f(a[i],b,c[i]), Val(N))
+
+# broadcast the scalar muladd to appropriate components, which is more efficient for conversions
+function muladd(a::Number, b::MultiValue, c::MultiValue)
+  T = _muladd_eltype(a,b,c)
+  _muladd(change_eltype(b,T), change_eltype(c,T), a, b, c)
+end
+function muladd(a::MultiValue, b::Number, c::MultiValue)
+  T = _muladd_eltype(a,b,c)
+  _muladd(change_eltype(a,T), change_eltype(c,T), a, b, c)
+end
+muladd(a::MultiValue, b::MultiValue, c::MultiValue) = a*b + c
+
+@inline _muladd_eltype(a,b,c) =
+  typeof(muladd(zero(eltype(a)), zero(eltype(b)), zero(eltype(c))))
+
+@inline function _muladd(::Type{M}, ::Type{M}, a::Number, b::MultiValue, c::MultiValue) where M<:MultiValue
+  r = _bc(muladd, a, get_indep_components(b), get_indep_components(c))
+  M(r)
+end
+@inline function _muladd(::Type{M}, ::Type{M}, a::MultiValue, b::Number, c::MultiValue) where M<:MultiValue
+  r = _bc(muladd, get_indep_components(a), b, get_indep_components(c))
+  M(r)
+end
+# The two tensors do not store the same independent components, so they must go
+# through the promotion rules of `+`.
+@inline _muladd(::Type{<:MultiValue}, ::Type{<:MultiValue}, a, b, c) = a*b + c
 
 const _AbstractTracelessTensor{D} = Union{SymTracelessTensorValue{D},SkewSymTensorValue{D}}
 _err = "This operation is undefined for traceless tensors"
@@ -1316,7 +1336,7 @@ end
   comps = Expr[]
   for ci in CartesianIndices(Int.(Sr))
     a_idx = ntuple(k -> ci[inv_perm[k]], Na)
-    push!(comps, :( a[$a_idx...] ) )
+    push!(comps, :( a[$(a_idx...)] ) )
   end
   :( $V($(comps...)) )
 end
@@ -1408,6 +1428,10 @@ function Base.broadcasted(f, a::ContraVectorValue{D}, b::ContraVectorValue) wher
   ContraVectorValue{D}(map(f, a.data, b.data))
 end
 
+function Base.broadcasted(f, a::TensorValue{D1,D2}, b::TensorValue{D1,D2}) where {D1,D2}
+  TensorValue{D1,D2}(map(f, a.data, b.data))
+end
+
 function Base.broadcasted(f, a::TensorValue{D1,D2}, b::TensorValue)  where {D1,D2}
   _broadcast_check(a, b)
   TensorValue{D1,D2}(map(f, a.data, b.data))
@@ -1416,4 +1440,13 @@ end
 function Base.broadcasted(f, a::AbstractSymTensorValue{D}, b::AbstractSymTensorValue) where D
   _broadcast_check(a, b)
   SymTensorValue{D}(map(f, a.data, b.data))
+end
+
+function Base.broadcasted(f, a::NTensorValue{S}, b::NTensorValue{S}) where S
+  NTensorValue{S}(map(f, a.data, b.data))
+end
+
+function Base.broadcasted(f, a::NTensorValue{S}, b::NTensorValue) where S
+  _broadcast_check(a, b)
+  NTensorValue{S}(map(f, a.data, b.data))
 end

@@ -108,11 +108,12 @@ testvalue(::Type{<:PolynomialBasis}) = @abstractmethod
 # Helpers #
 ###########
 
-_q_filter( e,order)  = (maximum(e,init=0) <= order) # 𝓠ₙ
+_q_filter(e,order)   = (maximum(e,init=0) <= order) # 𝓠ₙ
 _qh_filter(e,order)  = (maximum(e,init=0) == order) # 𝓠̃ₙ = 𝓠ₙ\𝓠₍ₙ₋₁₎
-_p_filter( e,order)  = (sum(e) <= order)            # 𝓟ₙ
+_p_filter(e,order)   = (sum(e) <= order)            # 𝓟ₙ
 _ph_filter(e,order)  = (sum(e) == order)            # 𝓟̃ₙ = 𝓟ₙ\𝓟₍ₙ₋₁₎
 _ser_filter(e,order) = (sum( [ i for i in e if i>1 ] ) <= order) # Serendipity
+_p_complement_filter(k::Integer) = (e, order) -> k < sum(e) <= order # 𝓟ₙ ∩ (𝓟ₖ)^⊥
 
 function _define_terms(filter,orders)
   t = orders .+ 1
@@ -160,17 +161,25 @@ function return_cache(f::PolynomialBasis{D,V}, x::AbstractVector{<:Point}) where
 end
 
 function return_cache(
-  fg::FieldGradientArray{N,<:PolynomialBasis{D,V}},
-  x::AbstractVector{<:Point}) where {N,D,V}
+  fg::FieldGradientArray{1,<:PolynomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
 
   @assert D == length(eltype(x)) "Incorrect number of point components"
   f = fg.fa
   xi = testitem(x)
-  G = _return_val_eltype(f,x)
-  for _ in 1:N
-    G = gradient_type(G,xi)
-  end
-  _return_cache(f,x,G,Val(N))
+  G = gradient_type(_return_val_eltype(f,x),xi)
+  _return_cache(f,x,G,Val(1))
+end
+
+function return_cache(
+  fg::FieldGradientArray{2,<:PolynomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
+
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  f = fg.fa
+  xi = testitem(x)
+  G = gradient_type(gradient_type(_return_val_eltype(f,x),xi),xi)
+  _return_cache(f,x,G,Val(2))
 end
 
 

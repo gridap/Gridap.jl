@@ -6,6 +6,7 @@ using Test
 
 @testset "MonomialBases" begin include("MonomialBasesTests.jl") end
 
+
 @testset "CompWiseTensorPolyBases" begin include("CompWiseTensorPolyBasesTests.jl") end
 
 @testset "CurlConformBases" begin include("CurlConformBasesTests.jl") end
@@ -19,6 +20,8 @@ using Test
 @testset "ChebyshevBases" begin include("ChebyshevBasesTests.jl") end
 
 @testset "BernsteinBases" begin include("BernsteinBasesTests.jl") end
+
+@testset "DubinerBases" begin include("DubinerBasesTests.jl") end
 
 @testset "BarycentricPΛBases" begin include("BarycentricPΛBases.jl") end
 

@@ -152,6 +152,14 @@ function lazy_map(
   lazy_map(linear_combination, i_to_values, i_to_basis)
 end
 
+function lazy_map(
+  k::Broadcasting{<:NthGradient}, a::LazyArray{<:Fill{typeof(linear_combination)}})
+
+  i_to_basis = lazy_map(k,a.args[2])
+  i_to_values = a.args[1]
+  lazy_map(linear_combination,i_to_values,i_to_basis)
+end
+
 # Optimization for
 #
 #  g = lazy_map(transpose,cell_to_i_to_f)
@@ -175,6 +183,13 @@ function lazy_map(
   k::Broadcasting{<:PartialDerivatives}, a::LazyArray{<:Fill{typeof(transpose)}})
 
   i_to_basis = lazy_map(k, a.args[1])
+  lazy_map(transpose, i_to_basis)
+end
+
+function lazy_map(
+  k::Broadcasting{<:NthGradient}, a::LazyArray{<:Fill{typeof(transpose)}})
+
+  i_to_basis = lazy_map(k,a.args[1])
   lazy_map(transpose, i_to_basis)
 end
 

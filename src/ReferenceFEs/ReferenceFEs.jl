@@ -2,6 +2,7 @@
 
 $(public_names_in_md(@__MODULE__; change_link=Dict(
   :H1Conformity  => "GradConformity",
+  :H2Conformity  => "HessianConformity",
   :nedelec1  => "nedelec",
   :modal_serendipity  => "modal_lagrangian",
 )))
@@ -195,6 +196,8 @@ export Conformity
 export L2Conformity
 export H1Conformity
 export GradConformity
+export H2Conformity
+export HessianConformity
 export CurlConformity
 export DivConformity
 export PΛConformity
@@ -208,6 +211,17 @@ export BezierRefFE
 export ModalC0RefFE
 export ModalScalarRefFE
 export CrouzeixRaviartRefFE
+export ArgyrisRefFE
+export HermiteRefFE
+export MorleyRefFE
+export HHJRefFE
+export ReggeRefFE
+export GLSRefFE
+export ArnoldWintherNCRefFE
+export ArnoldWintherCRefFE
+export MardalTaiWintherRefFE
+export CartProdRefFE
+export CartProdConformity
 export BubbleRefFE
 
 export Lagrangian
@@ -218,6 +232,16 @@ export Bezier
 export ModalC0
 export ModalScalar
 export CrouzeixRaviart
+export Argyris
+export Hermite
+export Morley
+export HellanHerrmannJohnson
+export Regge
+export GopalakrishnanLedererSchoberl
+export ArnoldWintherNC
+export ArnoldWintherC
+export MardalTaiWinther
+export CartProd
 export Serendipity
 export Bubble
 
@@ -239,12 +263,23 @@ export modalC0
 export modal_lagrangian
 export modal_serendipity
 export crouzeix_raviart
+export argyris
+export hermite
+export morley
+export hhj
+export regge
+export gls
+export aw_nc
+export aw_c
+export mtw
 export serendipity
 export bubble
 
 export Quadrature
 export QuadratureName
 export GenericQuadrature
+export MomentBasedQuadrature
+export MomentBasedQuadratureMap
 export num_points
 export get_coordinates
 export get_weights
@@ -302,6 +337,8 @@ include("PolytopalQuadratures.jl")
 
 include("WitherdenVincentQuadratures.jl")
 
+include("MomentBasedQuadratures.jl")
+
 include("MomentBasedReferenceFEs.jl")
 
 include("RaviartThomasRefFEs.jl")
@@ -315,6 +352,26 @@ include("ModalScalarRefFEs.jl")
 include("ExteriorCalculusRefFEs.jl")
 
 include("CrouzeixRaviartRefFEs.jl")
+
+include("ArgyrisRefFEs.jl")
+
+include("HermiteRefFEs.jl")
+
+include("MorleyRefFEs.jl")
+
+include("HHJRefFEs.jl")
+
+include("ReggeRefFEs.jl")
+
+include("GLSRefFEs.jl")
+
+include("ArnoldWintherNCRefFEs.jl")
+
+include("ArnoldWintherCRefFEs.jl")
+
+include("MardalTaiWintherRefFEs.jl")
+
+include("CartProdRefFEs.jl")
 
 include("MockDofs.jl")
 

@@ -87,6 +87,12 @@ Abstract hessian operator.
 
 gradient(f,::Val{1}) = ∇(f)
 gradient(f,::Val{2}) = ∇∇(f)
+"""
+    gradient(f, Val(N))
+
+`N`-th gradient of `f`, `gradient(f,Val(N))[i₁,…,i_N,c…] = ∂_{i₁}⋯∂_{i_N} f_c`.
+"""
+gradient(f,::Val{N}) where N = gradient(gradient(f,Val(N-1)))
 
 """
     struct PartialDerivatives{N} <: Map
@@ -158,6 +164,18 @@ evaluate!(cache,k::Broadcasting{<:PartialDerivatives},a::Field) = k.f(a)
 lazy_map(k::Broadcasting{<:PartialDerivatives},a::AbstractArray{<:Field}) = lazy_map(k.f,a)
 
 """
+    struct NthGradient{N} <: Function
+
+The `N`-th gradient operator, `NthGradient{N}()(f) == gradient(f, Val(N))`. Use
+`Broadcasting(NthGradient{N}())` on arrays of fields, as for `∇` and `∇∇`.
+"""
+struct NthGradient{N} <: Function end
+
+(::NthGradient{N})(f) where N = gradient(f, Val(N))
+
+evaluate!(cache,g::Broadcasting{<:NthGradient},a::Field) = g.f(a)
+
+"""
     push_∇(∇a::Field, ϕ::Field) = pinvJt(∇(ϕ))⋅∇a
 
 Pushforward of `∇a` by the mapping `ϕ`, or covariant Piola transform.
@@ -174,6 +192,23 @@ function push_∇∇(∇∇a::Field,ϕ::Field)
   This is a feature that we want to have at some point in Gridap.
   If you are ready to help with this implementation, please contact the
   Gridap administrators.
+  """
+end
+
+"""
+    struct PushNthGradient{N} <: Function
+
+    PushNthGradient{N}()(∇ⁿa::Field, ϕ::Field) = @notimplemented
+
+Pushforward of the `N`-th gradient `∇ⁿa` of a reference quantity by the cell map `ϕ`.
+Equivalent to `push_∇` at `N = 1` and `push_∇∇` at `N = 2`.
+"""
+struct PushNthGradient{N} <: Function end
+
+function (::PushNthGradient{N})(∇ⁿa::Field,ϕ::Field) where N
+  @notimplemented """\n
+  Pushforward of N-th order derivatives of reference quantities is only implemented for
+  affine cell maps.
   """
 end
 
@@ -222,12 +257,30 @@ function _varianced_value_type(::Type{T}) where T<:VectorValue
 end
 
 """
+    nth_gradient_type(::Type{T}, x::Point, Val(N))
+
+Type of the `N`-th gradient of a `T`-valued field, i.e. `gradient_type` applied `N`
+times. Scalar values give `VectorValue`, `TensorValue`, `ThirdOrderTensorValue` and then
+`NTensorValue`.
+"""
+function nth_gradient_type(::Type{T}, x::Point, ::Val{N}) where {T,N}
+  G = T
+  for _ in 1:N
+    G = gradient_type(G, x)
+  end
+  return G
+end
+
+"""
     struct FieldGradient{N,F} <: Field
 
 Type that represents the gradient of a field of type `F`. `N` is how many times
-the gradient is applied. Requires implementing
+the gradient is applied. Fields can implement
 
-    evaluate!(cache,f::FieldGradient,x::Point) = @abstractmethod.
+    evaluate!(cache,f::FieldGradient{N,F},x::Point)
+
+(and `return_cache`); otherwise the gradient is computed by forward-mode automatic
+differentiation of the field's own evaluation.
 
 For `F<:Function`, `FieldGradient` is implemented for `N=1, 2` by `gradient`
 and `hessian`.
@@ -243,7 +296,6 @@ gradient(f::FieldGradient{N}) where N = FieldGradient{N+1}(f.object)
 testargs(f::FieldGradient,x::Point) = testargs(f.object,x)
 return_value(f::FieldGradient,x::Point) = evaluate(f,testargs(f,x)...)
 return_cache(f::FieldGradient,x::Point) = nothing
-evaluate!(cache,f::FieldGradient,x::Point) = @abstractmethod
 testvalue(::Type{FieldGradient{N,T}}) where {N,T} = FieldGradient{N}(testvalue(T))
 
 """
@@ -270,6 +322,13 @@ end
 testargs(f::FieldPartialDerivatives,x::Point) = testargs(f.object,x)
 testvalue(::Type{FieldPartialDerivatives{N,T}}) where {N,T} = FieldPartialDerivatives{N}(testvalue(T))
 evaluate!(cache,f::FieldPartialDerivatives,x::Point) = @abstractmethod
+
+# Default evaluation of the N-th gradient for a single point via forward-mode AD
+function evaluate!(cache, fg::FieldGradient{N}, x::Point{D}) where {N,D}
+  fx = evaluate(fg.object, seed_point(x, Val(N)))
+  G = nth_gradient_type(typeof(evaluate(fg.object, x)), x, Val(N))
+  taylor_tensor(G, fx, Val(N), Val(D))
+end
 
 # Default methods for arrays of points
 
@@ -622,6 +681,45 @@ end
 
 function product_rule(::typeof(⋅),f1::TensorValue,f2::VectorValue,∇f1,∇f2)
   ∇f1⋅f2 + ∇f2⋅transpose(f1)
+end
+
+# ∂_k (f1⋅f2)_j = (∂_k f1)_a f2_aj + f1_a (∂_k f2)_kaj. 
+function product_rule(::typeof(⋅),f1::VectorValue,f2::TensorValue,∇f1,∇f2)
+  ∇f1⋅f2 + tensor_contraction(∇f2,f1,Val(2),Val(1))
+end
+
+# ∂_k (f1⋅f2)_ij = (∂_k f1)_kia f2_aj + f1_ia (∂_k f2)_kaj. 
+function product_rule(::typeof(⋅),f1::TensorValue,f2::TensorValue,∇f1,∇f2)
+  ∇f1⋅f2 + permutedims(tensor_contraction(f1,∇f2,Val(2),Val(2)),Val((2,1,3)))
+end
+
+for V in (:VectorValue,:TensorValue)
+  @eval begin
+    function product_rule(::typeof(outer),f1::$V,f2::Union{Real,Complex},∇f1,∇f2)
+      outer(∇f1,f2) + outer(∇f2,f1)
+    end
+
+    function product_rule(::typeof(outer),f1::Union{Real,Complex},f2::$V,∇f1,∇f2)
+      product_rule(outer,f2,f1,∇f2,∇f1)
+    end
+  end
+end
+
+# ∂_k (f1⊗f2) = (∂_k f1)⊗f2 + f1⊗(∂_k f2).
+function product_rule(::typeof(outer),f1::VectorValue,f2::VectorValue,∇f1,∇f2)
+  outer(∇f1,f2) + permutedims(outer(f1,∇f2),Val((2,1,3)))
+end
+
+function product_rule(::typeof(outer),f1::VectorValue,f2::TensorValue,∇f1,∇f2)
+  outer(∇f1,f2) + permutedims(outer(f1,∇f2),Val((2,1,3,4)))
+end
+
+function product_rule(::typeof(outer),f1::TensorValue,f2::VectorValue,∇f1,∇f2)
+  outer(∇f1,f2) + permutedims(outer(f1,∇f2),Val((3,1,2,4)))
+end
+
+function product_rule(::typeof(outer),f1::TensorValue,f2::TensorValue,∇f1,∇f2)
+  outer(∇f1,f2) + permutedims(outer(f1,∇f2),Val((3,1,2,4,5)))
 end
 
 for op in (:*,:⋅,:⊙,:⊙ᴱ,:⊗)

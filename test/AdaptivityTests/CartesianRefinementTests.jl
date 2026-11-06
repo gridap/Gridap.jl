@@ -112,4 +112,40 @@ for D = 1:3
   test_grid_transfers(D,model2,model1,order)
 end
 
+
+# Refinement of a CartesianDiscreteModel must preserve the `map` and `isperiodic` fields of
+# the underlying CartesianDescriptor. Note that the periodic model is refined directly (i.e
+# without converting it to an UnstructuredDiscreteModel first), which exercises the
+# Cartesian-specific refinement path.
+function test_descriptor_preserved(model,ref_model)
+  desc  = Geometry.get_cartesian_descriptor(model)
+  rdesc = Geometry.get_cartesian_descriptor(Adaptivity.get_model(ref_model))
+  @test rdesc.isperiodic == desc.isperiodic
+  @test rdesc.map === desc.map
+end
+
+for isperiodic in ((true,false),(false,true),(true,true))
+  cmodel = CartesianDiscreteModel((0,1,0,1),(4,4);isperiodic)
+  fmodel = refine(cmodel,2)
+  test_descriptor_preserved(cmodel,fmodel)
+
+  # The refined model must have the same topology as a directly built periodic model
+  expected = CartesianDiscreteModel((0,1,0,1),(8,8);isperiodic)
+  for d in 0:2
+    @test num_faces(fmodel,d) == num_faces(expected,d)
+  end
+end
+
+let
+  sqmap(x) = VectorValue(x[1]*x[1],x[2])
+  cmodel = CartesianDiscreteModel((0,1,0,1),(4,4);map=sqmap)
+  fmodel = refine(cmodel,2)
+  test_descriptor_preserved(cmodel,fmodel)
+
+  # If the map is dropped, the refined nodes are no longer nested within the coarse ones
+  ccoords = get_node_coordinates(get_grid(cmodel))
+  fcoords = get_node_coordinates(get_grid(Adaptivity.get_model(fmodel)))
+  @test all(c -> any(f -> maximum(abs,Tuple(f-c)) < 1.e-12, fcoords), ccoords)
+end
+
 end
