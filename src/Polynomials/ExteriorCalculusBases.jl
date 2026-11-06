@@ -4,14 +4,15 @@
 
 _ensure_hierarchical(PT) = !isHierarchical(PT) && @unreachable "Polynomial family must be hierarchical, got $PT."
 
-function _default_poly_type(F)
+function _default_poly_type(F,k,D)
   F ∈ (:P, :P⁻) && return Bernstein
-  F ∈ (:Q⁻,:S)  && return ModalC0
+  F ∈ (:S,:S⁻) && 0 < k < D && return Legendre
+  F ∈ (:Q⁻,:S,:S⁻) && return ModalC0
   Monomial
 end
 
 """
-    FEEC_poly_basis(::Val{D},T,r,k, F::Symbol, PT=_default_poly_type(F); kwargs...)
+    FEEC_poly_basis(::Val{D},T,r,k, F::Symbol, PT=_default_poly_type(F,k,D); kwargs...)
 
 "Factory for polynomial basis of Finite Element Exterior Calculus spaces"
 
@@ -22,28 +23,29 @@ dimension `D`, with  `PT<:Polynomial` the polynomial basis family.
 Else, `T` is the scalar type of the vector proxy of the space, except if
 `cart_prod=true` is given, see kwargs below.
 
-The default `PT` is `Bernstein` on simplices and `ModalC0` on D-cubes.
+The default `PT` is `Bernstein` on simplices and `ModalC0` on D-cubes, except
+`Legendre` for the vector-valued serendipity spaces.
 
 # Arguments
 - `D`: spatial dimension
 - `T::Type`: an `ExteriorFormValue` or the scalar component type, except if `cart_prod=true`, see kwargs
 - `r::Int`: polynomial order
 - `k::Int`: form order
-- `F::Symbol`: family, i.e. `:P⁻`, `:P`, `:Q⁻` or `:S`
+- `F::Symbol`: family, i.e. `:P⁻`, `:P`, `:Q⁻`, `:S` or `:S⁻` (trimmed serendipity)
 ### kwargs
 - `rotate_90::Bool`: only if `D`=2 and `k`=1, tells to use the vector proxy corresponding to div conform function instead of curl conform ones.
 - `vertices=nothing`: for `PT=Bernstein` bases on simplices (`F = :P` or `:P⁻`), the basis is defined on the simplex defined by `vertices` instead of the reference one.
 - `cart_prod=false`: for `k`=0 or `k=D` and if `T` is not a `ExteriorFormValue`, `true` authorise `T` to be a tensor type for Cartesian product space of the scalar space.
 """
-function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(F);
+function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(F,k,D);
     rotate_90=false, vertices=nothing, cart_prod=false) where {D,T}
 
   @assert PT <: Polynomial
 
   # these call FEEC_space_definition_checks internally
-  if !cart_prod
-    F == :P⁻ && PT == Bernstein && return BarycentricPmΛBasis(Val(D),T,r,k,vertices; rotate_90)
-    F == :P  && PT == Bernstein && return BarycentricPΛBasis( Val(D),T,r,k,vertices; rotate_90)
+  if !cart_prod && k ∉ (0,D) && PT == Bernstein
+    F == :P⁻ && return BarycentricPmΛBasis(Val(D),T,r,k,vertices; rotate_90)
+    F == :P  && return BarycentricPΛBasis( Val(D),T,r,k,vertices; rotate_90)
   end
 
 
@@ -65,13 +67,13 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
     # Scalar H1 conforming functions
     @notimplementedif r < 0
     if     F == :P⁻ || F == :P # Lagrange, 𝓟r space
-      PT == Bernstein && return BernsteinBasisOnSimplex{D}(V,r,vertices) # only if cart_prod or DG_calc
+      PT == Bernstein && return BernsteinBasisOnSimplex{D}(V,r,vertices)
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),V,r,_p_filter)
     elseif F == :Q⁻            # Lagrange, 𝓠r space
       CartProdPolyBasis(PT,Val(D),V,r,_q_filter)
-    elseif F == :S             # Lagrange, 𝓢r space
-      PT==ModalC0 || _ensure_hierarchical(PT)
+    elseif F == :S || F == :S⁻ # Lagrange, 𝓢r space, 𝓢⁻ᵣΛ⁰ = 𝓢ᵣΛ⁰
+      PT==ModalC0 || _ensure_hierarchical(PT) # because ModalC0 is hierarchical from order 1, which we need
       CartProdPolyBasis(PT,Val(D),V,r,_ser_filter)
     end
 
@@ -79,11 +81,11 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
   elseif k == D
     # Scalar L2 conforming densities
     if     F == :P⁻ # Lagrange, 𝓟r₋1 space
-      PT == Bernstein && return BernsteinBasisOnSimplex{D}(V,r-1,vertices) # only if cart_prod or DG_calc
+      PT == Bernstein && return BernsteinBasisOnSimplex{D}(V,r-1,vertices)
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),V,r-1,_p_filter)
     elseif F == :P  # Lagrange, 𝓟r space
-      PT == Bernstein && return BernsteinBasisOnSimplex{D}(V,r,vertices) # only if cart_prod or DG_calc
+      PT == Bernstein && return BernsteinBasisOnSimplex{D}(V,r,vertices)
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),V,r,_p_filter)
     elseif F == :Q⁻ # Lagrange, 𝓠r₋1 space
@@ -92,6 +94,9 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
       PT == Bernstein && return BernsteinBasisOnSimplex{D}(V,r,vertices) # only if cart_prod or DG_calc
       _ensure_hierarchical(PT)
       CartProdPolyBasis(PT,Val(D),V,r,_p_filter)
+    elseif F == :S⁻ # 𝓢⁻ᵣΛᴰ = 𝓟ᵣ₋₁Λᴰ
+      _ensure_hierarchical(PT)
+      CartProdPolyBasis(PT,Val(D),V,r-1,_p_filter)
     end
 
 
@@ -119,8 +124,8 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
           orders = [ r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D ]
           CompWiseTensorPolyBasis{D}(PT, V, orders)
         end
-      elseif F == :S  # BDM on D-cubes
-        @notimplemented
+      elseif F ∈ (:S,:S⁻) # BDM on D-cubes, Arnold-Awanou, Gillette-Kloefkorn
+        SerendipityPolyBasis{D}(PT,T,r,k; trimmed=(F == :S⁻), rotate_90)
       end
 
     elseif D == 3
@@ -134,8 +139,8 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
         # former QGradBasis(PT,Val(D),T,r-1)
         orders = [ r-1 + (i==j ? 0 : 1) for i in 1:D, j in 1:D ]
         CompWiseTensorPolyBasis{D}(PT, V, orders)
-      elseif F == :S  # "Serendipity second kind Nedelec" ?
-        @notimplemented
+      elseif F ∈ (:S,:S⁻) # Arnold-Awanou, Gillette-Kloefkorn
+        SerendipityPolyBasis{D}(PT,T,r,k; trimmed=(F == :S⁻))
       end
 
     else # D > 3
@@ -157,8 +162,8 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
       # former QCurlGradBasis(PT,Val(D),T,r-1)
       orders = [ r-1 + (i==j ? 1 : 0) for i in 1:D, j in 1:D ]
       CompWiseTensorPolyBasis{D}(PT, V, orders)
-    elseif F == :S  # "3D Serendipity BDM" ?
-      @notimplemented
+    elseif F ∈ (:S,:S⁻) # Arnold-Awanou, Gillette-Kloefkorn
+      SerendipityPolyBasis{D}(PT,T,r,k; trimmed=(F == :S⁻))
     end
 
   else

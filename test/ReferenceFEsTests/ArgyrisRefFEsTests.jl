@@ -66,7 +66,7 @@ function argyris_vandermonde(reffe, verts; degree=8)
     v̂a, v̂b = get_face_coordinates(p, 1)[k]
     xa, xb = F(v̂a), F(v̂b)
     L = norm(xb - xa)
-    n = ReferenceFEs._rot90((xb - xa) / L)
+    n = ReferenceFEs._frame_normal((xb - xa) / L)
 
     x̂ = [v̂a + si[1] * (v̂b - v̂a) for si in ŝ]
     ∇Ψ̂ = evaluate(Broadcasting(∇)(Ψ̂), x̂)
@@ -168,7 +168,7 @@ quad = Quadrature(SEGMENT, 8)
 for k in 1:3
   v̂a, v̂b = get_face_coordinates(TRI, 1)[k]
   L = norm(v̂b - v̂a)
-  n = ReferenceFEs._rot90((v̂b - v̂a) / L)
+  n = ReferenceFEs._frame_normal((v̂b - v̂a) / L)
   x̂ = [v̂a + si[1] * (v̂b - v̂a) for si in ŝ]
   ∇e = evaluate(Broadcasting(∇)(prebasis), x̂)
   for j in 1:21

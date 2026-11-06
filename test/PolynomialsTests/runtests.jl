@@ -27,6 +27,8 @@ using Test
 
 @testset "FEECBases" begin include("ExteriorCalculusBasesTests.jl") end
 
+@testset "SerendipityPolyBases" begin include("SerendipityPolyBasesTests.jl") end
+
 @testset "PartialDerivative" begin include("PartialDerivativeTests.jl") end
 
 @testset "ForwardDiffTests.jl" begin include("ForwardDiffTests.jl") end

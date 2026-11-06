@@ -116,10 +116,10 @@ reffe = LagrangianRefFE(VectorValue{2,Float64},SEGMENT,orders)
 
 orders = (2,3)
 reffe = LagrangianRefFE(VectorValue{2,Float64},QUAD,orders)
-@test get_own_nodes_permutations(reffe) ==[[1, 2], [0, 0], [1, 2], [0, 0], [0, 0], [2, 1], [0, 0], [2, 1]]
+@test get_own_nodes_permutations(reffe) == [[1, 2], [0, 0], [1, 2], [0, 0], [2, 1], [0, 0], [2, 1], [0, 0]]
 @test get_own_dofs_permutations(reffe) == [
   [1, 2, 3, 4], [0, 0, 0, 0], [1, 2, 3, 4], [0, 0, 0, 0],
-  [0, 0, 0, 0], [2, 1, 4, 3], [0, 0, 0, 0], [2, 1, 4, 3]]
+  [2, 1, 4, 3], [0, 0, 0, 0], [2, 1, 4, 3], [0, 0, 0, 0]]
 
 reffe = LagrangianRefFE(VectorValue{2,Float64},QUAD,2)
 @test get_node_and_comp_to_dof(reffe) == VectorValue{2,Int}[

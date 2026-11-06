@@ -53,7 +53,8 @@ struct MockConformity <: Conformity end
 
 conf = MockConformity()
 reffe = GenericRefFE{typeof(conf)}(
-  ndofs, polytope, prebasis, dofs, conf, metadata ,face_dofs)
+  ndofs, polytope, prebasis, dofs, conf, metadata ,face_dofs;
+  face_own_dofs_permutations)
 
 function ReferenceFEs.get_face_own_dofs(reffe::GenericRefFE{MockConformity},::MockConformity)
   face_own_dofs
@@ -79,7 +80,8 @@ dofprebasis = dofs
 shapefuns = prebasis # just to get nontrivial dofs change of basis matrix
 
 reffe = GenericRefFE{typeof(conf)}(
-  ndofs, polytope, dofprebasis, conf, metadata, face_dofs, shapefuns)
+  ndofs, polytope, dofprebasis, conf, metadata, face_dofs, shapefuns;
+  face_own_dofs_permutations)
 
 test_reference_fe(reffe)
 
@@ -90,5 +92,26 @@ test_reference_fe(reffe)
 dofs = get_dof_basis(reffe)
 
 @test evaluate(dofs,shapefuns) == [1.0 0.0 0.0 0.0; 0.0 1.0 0.0 0.0; 0.0 0.0 1.0 0.0; 0.0 0.0 0.0 1.0]
+
+# signed face_own_dofs_permutations: the field holds s*j, the accessors split it
+@test get_face_own_dofs_signs(reffe) == map(f -> map(p -> ones(Int, length(p)), f), get_face_own_dofs_permutations(reffe))
+
+signed = [[Int[]] for _ in 1:num_faces(polytope)]
+signed[1] = [[1], [1]]            # vertex 1 owns dof 1, two "permutations"
+signed[end] = [[-2, 3, 4]]        # the cell owns dofs 2:4, with a flipped sign on the first
+face_dofs_signed = [Int[] for _ in 1:num_faces(polytope)]
+face_dofs_signed[1] = [1]
+face_dofs_signed[end] = [2, 3, 4]
+struct MockConformity2 <: Conformity end  # no permutation override on this one
+conf2 = MockConformity2()
+reffe_signed = GenericRefFE{typeof(conf2)}(
+  ndofs, polytope, prebasis, dofs, conf2, metadata, face_dofs_signed, shapefuns;
+  face_own_dofs_permutations = signed)
+@test get_face_own_dofs_permutations(reffe_signed)[1] == [[1], [1]]
+@test get_face_own_dofs_permutations(reffe_signed)[end] == [[2, 3, 4]]
+@test get_face_own_dofs_signs(reffe_signed)[1] == [[1], [1]]
+@test get_face_own_dofs_signs(reffe_signed)[end] == [[-1, 1, 1]]
+@test get_face_own_dofs_permutations(reffe_signed, L2Conformity())[end] == [[1, 2, 3, 4]]
+@test get_face_own_dofs_signs(reffe_signed, L2Conformity())[end] == [[1, 1, 1, 1]]
 
 end # module

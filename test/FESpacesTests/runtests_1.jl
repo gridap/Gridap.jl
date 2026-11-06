@@ -30,6 +30,8 @@ using Test
 
 @testset "FormValuedPΛFESpaces" begin include("FormValuedPΛFESpacesTests.jl") end
 
+@testset "NonOrientedMomentBased" begin include("NonOrientedMomentBasedTests.jl") end
+
 @testset "CellFields" begin include("CellFieldsTests.jl") end
 
 end # module

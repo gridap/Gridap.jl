@@ -233,13 +233,7 @@ end
     uh = interpolate(f, V); fc = CellField(f, Ω)
     x = get_cell_points(dΩ)
 
-    if k < 2
-      @test_throws ArgumentError ∇(uh)(x)
-    else
-      # at k=D the reference gradient has no `pushforward` method at all, so
-      # the variance check that refuses the lower degrees is never reached
-      @test_throws MethodError ∇(uh)(x)
-    end
+    @test_throws ArgumentError ∇(uh)(x)
 
     @test _err(cell_vals(∂(uh),x), cell_vals(∂(fc),x)) < TOL
     # 𝑑 of a 2-form vanishes in 2D, and the operator refuses that degree
