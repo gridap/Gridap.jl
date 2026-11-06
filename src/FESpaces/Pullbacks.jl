@@ -139,14 +139,14 @@ function compute_cell_bases_changes(
   ::ReferenceFEName, ::TensorPushforward, model::DiscreteModel, cell_reffe, cell_Jt
 )
   ctype_reffe, _ = compress_cell_data(cell_reffe)
-  all(ReferenceFEs.has_complete_dof_permutations, ctype_reffe) && return nothing
-
-  Geometry.has_sorted_cells(model) || @notimplemented """
-  This form valued reference FE requires a mesh whose cells list their vertices
-  in increasing global id order because does not declare DOF permutation every
-  possible face permutation.
-  """
-  return nothing
+  if !all(ReferenceFEs.has_complete_dof_permutations, ctype_reffe)
+    Geometry.has_sorted_cells(model) || @notimplemented """
+    This form valued reference FE requires a mesh whose cells list their vertices
+    in increasing global id order because does not declare DOF permutation every
+    possible face permutation.
+    """
+  end
+  _face_sign_cell_bases_changes(model, cell_reffe, nothing)
 end
 
 #################

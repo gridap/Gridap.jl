@@ -7,6 +7,7 @@ _ensure_hierarchical(PT) = !isHierarchical(PT) && @unreachable "Polynomial famil
 function _default_poly_type(F,k,D)
   F ∈ (:P, :P⁻) && return Bernstein
   F ∈ (:S,:S⁻) && 0 < k && return Legendre
+  F ∈ (:H,:dH) && return Legendre
   F ∈ (:Q⁻,:S,:S⁻) && return ModalC0
   Monomial
 end
@@ -31,7 +32,7 @@ The default `PT` is `Bernstein` on simplices and `ModalC0` on D-cubes, except
 - `T::Type`: an `ExteriorFormValue` or the scalar component type, except if `cart_prod=true`, see kwargs
 - `r::Int`: polynomial order
 - `k::Int`: form order
-- `F::Symbol`: family, i.e. `:P⁻`, `:P`, `:Q⁻`, `:S` or `:S⁻` (trimmed serendipity)
+- `F::Symbol`: family, i.e. `:P⁻`, `:P`, `:Q⁻`, `:S`, `:S⁻` (trimmed serendipity), `:H` (homogeneous 𝓗ᵣΛᵏ) or `:dH` (exact d𝓗ᵣΛᵏ⁻¹)
 ### kwargs
 - `rotate_90::Bool`: only if `D`=2 and `k`=1, tells to use the vector proxy corresponding to div conform function instead of curl conform ones.
 - `vertices=nothing`: for `PT=Bernstein` bases on simplices (`F = :P` or `:P⁻`), the basis is defined on the simplex defined by `vertices` instead of the reference one.
@@ -63,6 +64,25 @@ function FEEC_poly_basis(::Val{D},::Type{T},r,k,F::Symbol,PT=_default_poly_type(
   # 𝓢ᵣΛᵏ(□ᴰ) and 𝓢⁻ᵣΛᵏ(□ᴰ), the serendipity spaces of [AA] and [GK].
   if DG_calc && F in (:S,:S⁻) && 0 < k < D
     return SerendipityPolyBasis{D}(PT, T, r, k; trimmed=(F == :S⁻))
+  end
+
+  # 𝓟ᵣΛᵏ(△ᴰ or □ᴰ), every form component in 𝓟ᵣ: the face weights of 𝓢 and 𝓢⁻
+  if DG_calc && F == :P && 0 < k < D
+    _ensure_hierarchical(PT)
+    return CartProdPolyBasis(PT,Val(D),make_concretetype(T),r,_p_filter)
+  end
+
+  # 𝓗ᵣΛᵏ, the cubes `k`-forms whose coefficients have degree exactly `r`, and the
+  # exact d𝓗ᵣΛᵏ⁻¹ ⊂ 𝓗ᵣ₋₁Λᵏ: the `𝓙` moment blocks of the 𝓢 and 𝓢⁻ elements
+  if F == :dH
+    return _exact_poly_basis(PT, T, D, r-1, k; rotate_90)
+  elseif F == :H
+    _ensure_hierarchical(PT)
+    # every proxy component would carry 𝓗ᵣ, so the proxy identification of the
+    # components, and hence `rotate_90`, would be lost
+    @notimplementedif !DG_calc && 0 < k < D
+    V = DG_calc ? make_concretetype(T) : T
+    return CartProdPolyBasis(PT,Val(D),V,r,_p_complement_filter(r-1))
   end
 
   @notimplementedif DG_calc && !(k in (0,D))

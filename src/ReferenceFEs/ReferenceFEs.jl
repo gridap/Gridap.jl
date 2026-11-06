@@ -13,7 +13,7 @@ using Test
 using DocStringExtensions
 using LinearAlgebra
 using StaticArrays
-using Combinatorics: permutations, combinations
+using Combinatorics: permutations, combinations, levicivita
 using FillArrays
 using AutoHashEquals: @auto_hash_equals as @ahe
 using ..Gridap
@@ -363,6 +363,8 @@ include("NedelecRefFEs.jl")
 
 include("ModalScalarRefFEs.jl")
 
+include("SerendipityHdivHcurl.jl")
+
 include("ExteriorCalculusRefFEs.jl")
 
 include("CrouzeixRaviartRefFEs.jl")
@@ -384,8 +386,6 @@ include("ArnoldWintherNCRefFEs.jl")
 include("ArnoldWintherCRefFEs.jl")
 
 include("MardalTaiWintherRefFEs.jl")
-
-include("SerendipityHdivHcurl.jl")
 
 include("CartProdRefFEs.jl")
 

@@ -23,9 +23,9 @@ function ReferenceFE(p::Polytope{D},F::Symbol,r,k,T::Type;
 
   VV = _DG_calc ? make_concretetype(V) : V
 
-  if F == :S && k == D # 𝓢ᵣΛᴰ ≡ 𝓟ᵣ space, which no modal name carries
+  if F in (:S,:S⁻) && k == D # 𝓢ᵣΛᴰ ≡ 𝓟ᵣ and 𝓢⁻ᵣΛᴰ ≡ 𝓟ᵣ₋₁, which no modal name carries
     @notimplementedif !nodal "Modal SrΛᴰ elements are not implemented, please use nodal ones (pass `nodal=true`)."
-    return ReferenceFE(p, lagrangian, VV, r; space=:P, kwargs...)
+    return ReferenceFE(p, lagrangian, VV, F == :S ? r : r-1; space=:P, kwargs...)
   end
 
   (name, order) = FEEC_name_and_order(F, r, k, Val(D), nodal, rotate_90)
@@ -51,7 +51,7 @@ value type; it is not called directly.
 """
 function FEEC_reference_fe(
   name::ReferenceFEName, ::Type{V}, p::Polytope{D}, order::Integer;
-  change_dof=nothing, poly_type=nothing, mom_poly_type=_mom_reffe_default_PT(p)
+  change_dof=nothing, poly_type=nothing, mom_poly_type=nothing
 ) where {V<:ExteriorFormValue,D}
 
   VV = make_concretetype(V)
@@ -74,8 +74,10 @@ function FEEC_reference_fe(
     """
 
   # only the 0 < k < D serendipity prebases are not geometrically decomposed
-  isnothing(change_dof) && (change_dof = !(F in (:S,:S⁻) && 0 < k < D))
-  isnothing(poly_type)  && (poly_type  = Polynomials._default_poly_type(F,k,D))
+  ser = F in (:S,:S⁻) && 0 < k < D
+  isnothing(change_dof)    && (change_dof    = !ser)
+  isnothing(poly_type)     && (poly_type     = Polynomials._default_poly_type(F,k,D))
+  isnothing(mom_poly_type) && (mom_poly_type = ser ? Legendre : _mom_reffe_default_PT(p))
   PT, MPT = poly_type, mom_poly_type
   # the value type asks for the form valued bases, no flag needed
   prebasis = FEEC_poly_basis(Val(D), VV, r, k, F, PT)
@@ -90,16 +92,21 @@ function FEEC_reference_fe(
       μ = FEEC_poly_basis(Val(d), μV, mom_r, mom_k, mom_F, MPT)
       iszero(length(μ)) || push!(moments, (get_dimrange(p,d), form_moment, μ))
     end
-    if F==:S⁻ && r-2*(d-k) ≥ 0 && mom_k > 0
-      # remaining :S⁻ dofs
-      μ = Polynomials._exact_poly_basis(Legendre, μV, d, r-2*(d-k), mom_k)
-      iszero(length(μ)) || push!(moments, (get_dimrange(p,d), form_moment, μ))
+    s = r-2*(d-k)
+    if F==:S⁻ && s ≥ 0 && mom_k > 0
+      # remaining :S⁻ dofs, d𝓗ₛ₊₁Λᵐᵒᵐᵏ⁻¹, taken from its potentials on a glued face
+      μ, mom = d < D && mom_k == 1 ?
+        (FEEC_poly_basis(Val(d), ExteriorFormValue{0,d,T}, s+1, 0, :H), dform_moment) :
+        (FEEC_poly_basis(Val(d), μV, s+1, mom_k, :dH), form_moment)
+      iszero(length(μ)) || push!(moments, (get_dimrange(p,d), mom, μ))
     end
   end
 
   conf = PΛConformity()
   change_dof = _validate_change_dof(change_dof, prebasis, p, conf)
-  MomentBasedReferenceFE(name, p, prebasis, moments, conf; change_dof)
+  # every form moment integrates a top form over its face, which flips with it
+  oriented = trues(length(moments))
+  MomentBasedReferenceFE(name, p, prebasis, moments, conf; change_dof, oriented)
 end
 
 get_form_degree(reffe::ReferenceFE) = get_form_degree(return_type(get_shapefuns(reffe)))
@@ -118,6 +125,11 @@ function form_moment(φ, μ, ds::FaceMeasure)
   Broadcasting(Operation(flat_vol_coeff))(wdg)
 end
 
+"""
+    dform_moment(φ, μ, ds) -> form_moment(φ, Broadcasting(𝑑)(μ), ds)
+"""
+dform_moment(φ, μ, ds::FaceMeasure) = form_moment(φ, Broadcasting(𝑑)(μ), ds)
+
 # ─────────────────────────────────────────────────────────────────────────────
 # helpers
 # ─────────────────────────────────────────────────────────────────────────────
@@ -131,14 +143,15 @@ agree on every cell, `rotate_90` only picking between the two names a 2D space
 has.
 
 This logic should keep consistent with the Table in the ReferenceFEs
-documentation. `FEEC_family_and_order` below is its inverse, name by
-name, up to `𝓟ᵣΛ⁰ = 𝓟ᵣ⁻Λ⁰` and `𝓢ᵣΛᴰ = 𝓟ᵣΛᴰ`, where two families name one space.
+documentation. `FEEC_family_and_order` below is its inverse, name by name, up to
+`𝓟ᵣΛ⁰ = 𝓟ᵣ⁻Λ⁰`, `𝓢⁻ᵣΛ⁰ = 𝓢ᵣΛ⁰`, `𝓢⁻ᵣΛᴰ = 𝓢ᵣ₋₁Λᴰ` and `𝓢ᵣΛᴰ = 𝓟ᵣΛᴰ`, where two
+families name one space.
 """
 function FEEC_name_and_order(F::Symbol, r, k, ::Val{D}, nodal::Bool, rotate_90::Bool) where D
   # The single component degrees are the scalar ends of the table, nodal or
   # moment based, and are tested first so that D=1 lands on them.
   if k in (0,D)
-    scalar = F == :S ? serendipity : lagrangian
+    scalar = F in (:S,:S⁻) ? serendipity : lagrangian
     # `𝓟ᵣ⁽⁻⁾Λ⁰ = 𝓟ᵣ`, `𝓟ᵣ⁻Λᴰ = 𝓟ᵣ₋₁`, `𝓟ᵣΛᴰ = 𝓟ᵣ`, and likewise for 𝓠/𝓢
     order = (iszero(k) || F in (:P,:S)) ? r : r-1
     return (nodal ? scalar : ModalScalar(scalar), order)

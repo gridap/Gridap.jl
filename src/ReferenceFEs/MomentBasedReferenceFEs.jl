@@ -600,15 +600,37 @@ end
 
 get_basis_permutations(poly::Polytope, basis) = nothing
 
+# The signed permutation of the components of a `V` valued basis pulled back by
+# the symmetry of Jacobian `J`: `dxˡ` becomes `J[l,m]dxᵐ` and `dxᴵ` the product
+# over `I`, reordered -- so a scalar is fixed and a `D`-form scaled by `det(J)`.
+_value_permutation(::Type, J) = nothing
+_value_permutation(::Type{<:Real}, J) = [1]
+function _value_permutation(::Type{V}, J) where V<:MultiValue
+  D = size(J,1)
+  k, Dv = V <: ExteriorFormValue ? _form_degree_dim(V) : (1, num_components(V))
+  Dv == D || return nothing
+  iszero(k) && return [1]
+  k == D && return [round(Int, det(J))]
+  ax = [findfirst(!iszero, Tuple(J[l,:])) for l in 1:D]
+  map(sorted_combinations(D,k)) do I
+    img = [ax[i] for i in I]
+    s = prod(i -> round(Int, J[i,ax[i]]), I) * levicivita(sortperm(img))
+    s * combination_index(sort(img), D)
+  end
+end
+
 # Bernstein on a simplex: the multi-indices are the domain points
 
-function get_basis_permutations(poly::Polytope{D}, b::BernsteinBasisOnSimplex{D,<:Real}) where D
+function get_basis_permutations(poly::Polytope{D}, b::BernsteinBasisOnSimplex{D,V}) where {D,V}
+  (is_simplex(poly) && num_indep_components(V) == 1) || return nothing
   K = get_order(b)
   verts = get_vertex_coordinates(poly)
   nodes = map(bernstein_terms(K, D)) do α      # the barycenter at K = 0
     sum((α[i] + 1)/(K + D + 1) * verts[i] for i in eachindex(α))
   end
-  compute_own_nodes_permutations(poly, nodes)
+  qs = map(J -> _value_permutation(V, J), get_vertex_permutation_jacobians(poly))
+  any(isnothing, qs) && return nothing
+  map((q, π) -> only(q) .* π, qs, compute_own_nodes_permutations(poly, nodes))
 end
 
 # 1D
@@ -645,13 +667,14 @@ end
 function get_basis_permutations(poly::Polytope{D}, b::CartProdPolyBasis{D,V,PT}) where {D,V,PT}
   (is_n_cube(poly) && _has_1d_permutations(PT)) || return nothing
   L = num_indep_components(V)
-  L == D || return nothing
-  map(get_vertex_permutation_jacobians(poly)) do J
+  Js = get_vertex_permutation_jacobians(poly)
+  qs = map(J -> _value_permutation(V, J), Js)
+  any(isnothing, qs) && return nothing
+  map(Js, qs) do J, q
     τ = _tensor_product(PT, get_orders(b), b.terms, b.terms, J)
     perm = zeros(Int, L*length(τ))
     for (i, t) in enumerate(τ), l in 1:L
-      m = findfirst(!iszero, Tuple(J[l,:]))
-      perm[L*(i-1) + l] = J[l,m]*sign(t)*(L*(abs(t)-1) + m)
+      perm[L*(i-1) + l] = sign(q[l])*sign(t)*(L*(abs(t)-1) + abs(q[l]))
     end
     perm
   end
@@ -661,15 +684,17 @@ end
 function get_basis_permutations(poly::Polytope{D}, b::CompWiseTensorPolyBasis{D,V,PT}) where {D,V,PT}
   (is_n_cube(poly) && _has_1d_permutations(PT)) || return nothing
   L = num_indep_components(V)
-  L == D || return nothing
   blocks = Polynomials.get_comp_terms(b)
   offsets = cumsum([0; length.(blocks)[1:end-1]])
-  map(get_vertex_permutation_jacobians(poly)) do J
+  Js = get_vertex_permutation_jacobians(poly)
+  qs = map(J -> _value_permutation(V, J), Js)
+  any(isnothing, qs) && return nothing
+  map(Js, qs) do J, q
     perm = zeros(Int, sum(length, blocks))
     for l in 1:L
-      m = findfirst(!iszero, Tuple(J[l,:]))
+      m = abs(q[l])
       τ = _tensor_product(PT, b.orders[l,:], blocks[l], blocks[m], J)
-      perm[offsets[l] .+ (1:length(τ))] = J[l,m] .* sign.(τ) .* (offsets[m] .+ abs.(τ))
+      perm[offsets[l] .+ (1:length(τ))] = sign(q[l]) .* sign.(τ) .* (offsets[m] .+ abs.(τ))
     end
     perm
   end

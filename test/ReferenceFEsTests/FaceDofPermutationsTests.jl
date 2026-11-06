@@ -13,7 +13,7 @@ using Gridap
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.ReferenceFEs
-using Gridap.ReferenceFEs: MomentBasedDofBasis
+using Gridap.ReferenceFEs: MomentBasedDofBasis, has_complete_dof_permutations
 
 # All affine maps x ↦ Ax + b of the reference polytope onto itself, with the
 # vertex permutation each induces (vertex i goes to vertex img[i]), solved by
@@ -33,12 +33,13 @@ end
 
 # ℓ̂ ∘ Φ^*, as a DoF basis: Σₙ mₙ ⊙ (Φ^*ψ)(xₙ) = Σₙ (Tᵀmₙ) ⊙ ψ(Φxₙ), with
 # Φ^*ψ = T ψ∘Φ the pullback of the element's Piola map, T = Aᵀ (covariant),
-# |det A| A⁻¹ (contravariant) or 1 (none).
-function twist(dofs::MomentBasedDofBasis, A, b, conf)
+# |det A| A⁻¹ (contravariant), Λᵏ(Aᵀ) (form valued) or 1 (none).
+function twist(dofs::MomentBasedDofBasis, A::TensorValue{D,D}, b, conf) where D
   nodes = map(x -> A⋅x + b, dofs.nodes)
   Tᵀ = conf isa CurlConformity ? A :
        conf isa DivConformity ? abs(det(A))*transpose(inv(A)) : nothing
-  f = isnothing(Tᵀ) ? identity : (m -> Tᵀ⋅m)
+  f = conf isa PΛConformity ? (m -> pullback(m, TensorValue{Cov(D),Con(D)}(A.data...))) :
+      isnothing(Tᵀ) ? identity : (m -> Tᵀ⋅m)
   moments = map(mat -> map(f, mat), dofs.face_moments)
   MomentBasedDofBasis(nodes, moments, dofs.face_nodes, dofs.face_own_moms, dofs.operator)
 end
@@ -105,5 +106,28 @@ nd_tet = ReferenceFE(TET, nedelec, 1; change_dof=false)
 @test isempty(unsupported_faces(ReferenceFE(TET, nedelec, 0; change_dof=false)))
 @test isempty(unsupported_faces(ReferenceFE(HEX, nedelec, 1; change_dof=false)))
 @test isempty(unsupported_faces(ReferenceFE(TET, raviart_thomas, 1; change_dof=false)))
+
+# The form valued FEEC elements, whose moments pair with a `k`-form and so are
+# pulled back as one: `𝓟ᵣΛᵏ`, `𝓟⁻ᵣΛᵏ`, `𝓠⁻ᵣΛᵏ`, `𝓢ᵣΛᵏ` and `𝓢⁻ᵣΛᵏ`.
+for (p, F, r, k) in ((TRI,:P,3,0), (TRI,:P,2,1), (TRI,:P⁻,2,1), (TRI,:P⁻,3,0),
+                     (TET,:P,3,0), (TET,:P,2,2), (TET,:P⁻,2,2), (TET,:P⁻,3,0),
+                     (QUAD,:Q⁻,3,0), (QUAD,:Q⁻,2,1), (QUAD,:S,3,1), (QUAD,:S⁻,3,1),
+                     (HEX,:Q⁻,3,0), (HEX,:Q⁻,2,1), (HEX,:Q⁻,2,2),
+                     (HEX,:S,3,1), (HEX,:S,2,2), (HEX,:S⁻,2,2), (HEX,:S⁻,3,1))
+  reffe = ReferenceFE(p, F, r, k, Float64; change_dof=false)
+  @test isempty(unsupported_faces(reffe))
+  test_face_permutations(reffe)
+end
+
+# The 1-forms on a tetrahedron are the only ones left out, as `nedelec` and
+# `nedelec2` are: their triangular face weights are 1-forms on a triangle,
+# which the face symmetries mix -- for `𝓟⁻ᵣΛ¹`, whose weights are the two
+# constant 1-forms, no signed permutation can exist at all.
+@test !has_complete_dof_permutations(ReferenceFE(TET, nedelec2, 2; change_dof=false))
+for F in (:P, :P⁻)
+  @test unsupported_faces(ReferenceFE(TET,F,2,1,Float64; change_dof=false)) ==
+        [get_dimrange(TET, 1); get_dimrange(TET, 2)]
+  @test isempty(unsupported_faces(ReferenceFE(TET,F,1,1,Float64; change_dof=false)))
+end
 
 end # module

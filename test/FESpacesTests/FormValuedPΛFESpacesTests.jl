@@ -520,4 +520,64 @@ end
   end
 end
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Signed face DOF permutations: the moment based elements on any vertex order
+# ─────────────────────────────────────────────────────────────────────────────
+
+@testset "scrambled cell vertex orders" begin
+  # Relabelling each cell by a symmetry of its polytope makes the shared faces
+  # be seen in different orders by their two cells, which is what the signed
+  # permutation tables of the moments are there for.
+  function relabel_cells(model)
+    grid = get_grid(model)
+    syms = get_vertex_permutations(only(get_polytopes(model)))
+    perms = syms[randperm(MersenneTwister(0), length(syms))]
+    cn = get_cell_node_ids(grid)
+    UnstructuredDiscreteModel(UnstructuredGrid(
+      vec(collect(get_node_coordinates(grid))),
+      Table([collect(cn[i])[perms[mod1(i,length(perms))]] for i in 1:length(cn)]),
+      collect(get_reffes(grid)), collect(get_cell_type(grid)), NonOriented()))
+  end
+  cartesian(D) = UnstructuredDiscreteModel(
+    CartesianDiscreteModel(ntuple(i -> isodd(i) ? 0 : 1, 2D), ntuple(_ -> 2, D)))
+
+  sorted = Dict(TRI => sorted_tri, TET => sorted_tet, QUAD => cartesian(2), HEX => cartesian(3))
+  scrambled = Dict(p => relabel_cells(m) for (p,m) in sorted)
+  for (p,model) in scrambled
+    @test !Gridap.Geometry.has_sorted_cells(model)
+    @test length(unique(get_cell_permutations(get_grid_topology(model)).data)) > 1
+  end
+
+  # The 1-forms on a tetrahedron are the only elements left with the one-entry
+  # tables, exactly as `nedelec` and `nedelec2` are: the face symmetries mix
+  # their triangular face weights, which are 1-forms on a triangle.
+  no_tables(p,k,r) = p == TET && k == 1 && r > 1
+
+  for (p,F) in ((TRI,:P),(TRI,:P⁻),(TET,:P),(TET,:P⁻),(QUAD,:Q⁻),(HEX,:Q⁻),
+                (QUAD,:S),(QUAD,:S⁻),(HEX,:S),(HEX,:S⁻)), k in 0:num_dims(p), r in 1:2
+    F in (:S,:S⁻) && k == num_dims(p) && continue  # 𝓢ᵣΛᴰ is nodal only
+    reffe = ReferenceFE(p,F,r,k,Float64; change_dof=false)
+    if no_tables(p,k,r)
+      @test !Gridap.ReferenceFEs.has_complete_dof_permutations(reffe)
+      @test_throws ErrorException FESpace(scrambled[p], reffe)
+      continue
+    end
+    @test Gridap.ReferenceFEs.has_complete_dof_permutations(reffe)
+    D = num_dims(p); q = _full_degree(F,r,k); f = _form(Val(k),Val(D),q)
+    # the same space as on the sorted mesh, and still exact on 𝓟_qΛᵏ
+    V, Vs = FESpace(sorted[p], reffe), FESpace(scrambled[p], reffe)
+    @test num_free_dofs(V) == num_free_dofs(Vs)
+    Ω = Triangulation(scrambled[p]); dΩ = Measure(Ω, 2*(r+q)+2)
+    @test relative_error(interpolate(f,Vs), CellField(f,Ω), dΩ) < TOL
+  end
+
+  # the signs also reach `𝑑` of the glued basis
+  for (p,F,r,k) in ((TRI,:P,2,0), (TRI,:P⁻,2,1), (TET,:P,1,1), (QUAD,:Q⁻,2,0))
+    reffe = ReferenceFE(p,F,r,k,Float64; change_dof=false)
+    f = _form(Val(k),Val(num_dims(p)),_full_degree(F,r,k))
+    dnorm(m) = L2norm(𝑑(interpolate(f, FESpace(m, reffe))), Measure(Triangulation(m), 2*r+4))
+    @test dnorm(scrambled[p]) ≈ dnorm(sorted[p])
+  end
+end
+
 end # module

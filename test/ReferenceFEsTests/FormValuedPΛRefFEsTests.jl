@@ -705,6 +705,18 @@ end
     @test length(FEEC_poly_basis(Val(D),ExteriorFormValue{D,Cov(D),Float64},r,D,:S)) ==
           binomial(D+r,D)
   end
+
+  # The scalar ends carry no name of their own, so the element must land on
+  # the space the factory names: `𝓢⁻ᵣΛ⁰ = 𝓢ᵣΛ⁰` is serendipity, not `𝓠ᵣ`, and
+  # the `D`-forms, having no modal name, are reached nodally only.
+  for D in (2,3), r in 2:4, F in (:S,:S⁻)
+    V = ExteriorFormValue{0,Cov(D),Float64}
+    @test num_dofs(ReferenceFE(ncube(D),F,r,0,V)) == length(FEEC_poly_basis(Val(D),V,r,0,F))
+    W = ExteriorFormValue{D,Cov(D),Float64}
+    @test num_dofs(ReferenceFE(ncube(D),F,r,D,W; nodal=true)) ==
+          length(FEEC_poly_basis(Val(D),W,r,D,F))
+    @test_throws "nodal" ReferenceFE(ncube(D),F,r,D,W)
+  end
 end
 
 @testset "test_reference_fe on the serendipity families" begin
