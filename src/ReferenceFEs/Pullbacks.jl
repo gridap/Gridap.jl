@@ -416,6 +416,8 @@ is_pushed_by(::LazyArray{<:Fill{Broadcasting{Operation{PF}}}}, ::PF) where PF<:P
 is_pushed_by(::Fill{<:Fields.BroadcastOpFieldArray{PF}}, ::PF) where PF<:Pushforward = true
 is_pushed_by(a::LazyArray{<:Fill{typeof(linear_combination)}}, pf::Pushforward) =
   is_pushed_by(a.args[2],pf)
+is_pushed_by(a::LazyArray{<:Fill{typeof(transpose)}}, pf::Pushforward) =
+  is_pushed_by(a.args[1],pf) # for trial bases
 
 
 # Commutation rules between exterior_derivative and pullback for varianced
@@ -443,6 +445,10 @@ function Fields.exterior_derivative(a::LazyArray{<:Fill{typeof(linear_combinatio
   partial derivatives otherwise.
   """
   return lazy_map(linear_combination,cell_values,exterior_derivative(cell_basis))
+end
+
+function Fields.exterior_derivative(a::LazyArray{<:Fill{typeof(transpose)}})
+  return lazy_map(transpose,exterior_derivative(a.args[1])) # for trial bases
 end
 
 
