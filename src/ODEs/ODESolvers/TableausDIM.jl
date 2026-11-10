@@ -244,14 +244,19 @@ end
 
 """
     SDIRK_3_3
+
+L-stable, 3-stage, 3rd order SDIRK
+
+# References
+R. Alexander, Diagonally Implicit Runge–Kutta Methods for Stiff O.D.E.’s (1977)
 """
 struct SDIRK_3_3 <: TableauName end
 
 function ButcherTableau(::SDIRK_3_3, ::Type{T}=Float64) where {T}
-  α = 2 * cospi(1 // 18) / sqrt(3)
+  α = 1 + sqrt(2) * cos((acos(sqrt(8) / 3) - 2π) / 3)
   a = (1 - α) / 2
-  b = -3 * α^2 + 4 * α - 1 // 4
-  c = 3 * α^2 - 5 * α + 5 // 4
+  b = -3 // 2 * α^2 + 4 * α - 1 // 4
+  c = 3 // 2 * α^2 - 5 * α + 5 // 4
   matrix = T[
     α 0 0
     a α 0
