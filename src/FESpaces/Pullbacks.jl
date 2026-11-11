@@ -79,14 +79,6 @@ function compute_cell_bases_changes(
   nothing
 end
 
-# The face DoFs of a cell are a signed permutation of the global ones (see
-# `get_face_own_dofs_permutations` and `get_face_own_dofs_signs`): the
-# permutations are applied by the DoF numbering, and the signs here, from the
-# `pindex` table that numbering reads (`FaceDofSignMap`). The normal moments of
-# H(div) are taken against the outward normal, opposite for the two cells
-# sharing the facet: that is `get_sign_flip`. The tangential moments of H(curl)
-# are written in the facet's own frame, which the permutation accounts for.
-
 function compute_cell_bases_changes(
   ::ReferenceFEName, ::ContraVariantPiolaMap, model, cell_reffe, cell_Jt
 )
