@@ -194,6 +194,11 @@ end
 
 """
     DIRK_TRBDF_3_2
+
+L-stable 3-stage 2nd order ESDIRK method with a 3rd order embedded method.
+
+# References
+M.E. Hosea, L.F. Shampine, Analysis and implementation of TR-BDF2 (1996).
 """
 struct DIRK_TRBDF_3_2 <: TableauName end
 
@@ -207,19 +212,24 @@ function ButcherTableau(::DIRK_TRBDF_3_2, ::Type{T}=Float64) where {T<:Real}
     w w d
   ]
   weights = T[w, w, d]
-  order = 3
+  order = 2
   tableau = GenericTableau(matrix, weights, order)
 
   ĉ = d / 3
   b̂ = (3 * w + 1) / 3
   â = 1 - b̂ - ĉ
   emb_weights = [â, b̂, ĉ]
-  emb_order = 2
+  emb_order = 3
   EmbeddedTableau(tableau, emb_weights, emb_order)
 end
 
 """
     DIRK_TRX_3_2
+
+A-stable 3-stage 2nd order ESDIRK method with a 3rd order embedded method.
+
+# References
+M.E. Hosea, L.F. Shampine, Analysis and implementation of TR-BDF2 (1996).
 """
 struct DIRK_TRX_3_2 <: TableauName end
 
@@ -232,13 +242,13 @@ function ButcherTableau(::DIRK_TRX_3_2, ::Type{T}=Float64) where {T<:Real}
     a b a
   ]
   weights = T[a, b, a]
-  order = 3
+  order = 2
   tableau = GenericTableau(matrix, weights, order)
 
   c = 1 / 6
   d = 2 / 3
   emb_weights = [c, d, c]
-  emb_order = 2
+  emb_order = 3
   EmbeddedTableau(tableau, emb_weights, emb_order)
 end
 
@@ -354,6 +364,6 @@ function ButcherTableau(::SDIRK_4_3, ::Type{T}=Float64) where {T}
     d e a a
   ]
   weights = T[d, e, a, a]
-  order = 4
+  order = 3
   GenericTableau(matrix, weights, order)
 end
