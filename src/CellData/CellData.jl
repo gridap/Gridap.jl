@@ -38,6 +38,7 @@ import Gridap.Arrays: return_cache
 import Gridap.Fields: gradient, DIV
 import Gridap.Fields: ∇∇
 import Gridap.Fields: integrate
+import Gridap.ReferenceFEs: MomentBasedQuadrature
 import Gridap.Fields: grad2curl
 import Gridap.Fields: hodge_star_form
 import Gridap.Fields: exterior_derivative, codifferential
@@ -92,6 +93,11 @@ export get_contribution
 export add_contribution!
 export Measure
 
+export MomentBasedQuadrature
+export MomentBasedMeasure
+export PatchQuadrature
+export PatchMeasure
+
 export attach_dirichlet
 export attach_constraints_rows
 export attach_constraints_cols
@@ -119,6 +125,8 @@ include("CellQuadratures.jl")
 include("CellStates.jl")
 
 include("DomainContributions.jl")
+
+include("MomentBasedQuadratures.jl")
 
 include("DiracDeltas.jl")
 
