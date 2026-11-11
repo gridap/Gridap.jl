@@ -101,13 +101,21 @@ function compute_cell_bases_changes(
 end
 
 function _face_sign_cell_bases_changes(model, cell_reffe, normal_change)
-  reffe = testitem(cell_reffe)
-  k = FaceDofSignMap(model, reffe)
-  trivial = all(isone, k.cell_lface_pindex.data) || all(f -> all(s -> all(isone, s), f), k.face_dof_signs)
-  if trivial
-    isnothing(normal_change) && return nothing
-    return (normal_change, normal_change)
-  end
+  no_face_change = isnothing(normal_change) ? nothing : (normal_change, normal_change)
+
+  # Cheap check first, on the reference FEs only: no face DoF ever changes sign
+  ctype_reffe, _ = compress_cell_data(cell_reffe)
+  all_ones(signs) = all(f -> all(s -> all(isone, s), f), signs)
+  all(reffe -> all_ones(get_face_own_dofs_signs(reffe)), ctype_reffe) && return no_face_change
+
+  @notimplementedif length(ctype_reffe) > 1 """\n
+  Face DoF sign changes are not implemented for meshes with more than one
+  reference FE (got $(length(ctype_reffe))).
+  """
+  k = FaceDofSignMap(model, only(ctype_reffe))
+  # oriented meshes: every cell sees its faces in the reference order
+  all(isone, k.cell_lface_pindex.data) && return no_face_change
+
   face_change = lazy_map(k, IdentityVector(num_cells(model)))
   isnothing(normal_change) && return (face_change, face_change)
   change = lazy_map(*, normal_change, face_change)

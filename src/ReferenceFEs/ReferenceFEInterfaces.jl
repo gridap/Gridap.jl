@@ -802,12 +802,18 @@ function get_face_own_dofs_permutations(reffe::GenericRefFE, conf::Conformity)
 end
 
 function get_face_own_dofs_signs(reffe::GenericRefFE, conf::Conformity)
+  # `get_face_own_dofs_permutations` may be overloaded for a `GenericRefFE{T}`
+  # (e.g. MacroFEs), so it gives the shape (and errors on invalid `conf`). The
+  # stored signs are only used if the stored permutations are the ones it returns,
+  # otherwise every valid DoF gets `+1` (and `INVALID_PERM` entries `0`).
+  perms = get_face_own_dofs_permutations(reffe, conf)
   if conf == Conformity(reffe)
     signed_perms = reffe.face_own_dofs_permutations
-  elseif conf isa L2Conformity
-    signed_perms = l2_face_own_dofs_permutations(get_face_own_dofs(reffe, conf))
+    if map(f -> map(p -> abs.(p), f), signed_perms) == perms
+      return map(f -> map(p -> sign.(p), f), signed_perms)
+    end
   end
-  return map(perms -> map(p -> sign.(p), perms), signed_perms)
+  return map(f -> map(p -> sign.(p), f), perms)
 end
 
 function get_face_dofs(reffe::GenericRefFE)

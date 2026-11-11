@@ -56,7 +56,7 @@ containing [`HEX_AXIS`](@ref) and [`TET_AXIS`](@ref) constants.  See e.g.
 [`QUAD`](@ref), [`TRI`](@ref), [`PYRAMID`](@ref).
 
 The underlying extrusion is available via [`get_extrusion`](@ref). Since the
-first extrusion has no meaning, it overwritten to `HEX_AXIS` for 1D `ExtrusionPolytope`
+first extrusion has no meaning, it is overwritten to `HEX_AXIS` for 1D `ExtrusionPolytope`
 or to the second one for D≥2.
 
 Instances of this type can be obtained with the constructors
@@ -826,8 +826,8 @@ function _compute_vertex_perms(p::DFace{D}) where D
      [3, 2, 1, 6, 5, 4], [6, 5, 4, 3, 2, 1]]
 
   else
-    @warn "Vertex permutations for polytpe with extrusion $(p.extrusion) is not implemented, returning empty vector."
-    Vector{Vector{Int}}()
+    @warn "Vertex permutations for polytope with extrusion $(p.extrusion) are not implemented, returning only the identity."
+    [collect(1:length(first(_dimfrom_fs_dimto_fs(p, D, 0))))]
   end
 
   perms
@@ -852,7 +852,7 @@ function _admissible_permutations_n_cube(p::DFace{D}) where D
   noflip, flip = 1:2, 2:-1:1
 
   p_id = 1
-  # Iterate through all 2^D possible compination of plane symmetries
+  # Iterate through all 2^D possible combinations of plane symmetries
   for flips in Iterators.product(tfill((noflip,flip), Val(D))...)
     # Iterate through all D! rotations of the frame (x, y, z,...)
     @inbounds for axes_perm in permutations(1:D)
