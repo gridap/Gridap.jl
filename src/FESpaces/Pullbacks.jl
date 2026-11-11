@@ -79,26 +79,39 @@ function compute_cell_bases_changes(
   nothing
 end
 
+# The face DoFs of a cell are a signed permutation of the global ones (see
+# `get_face_own_dofs_permutations` and `get_face_own_dofs_signs`): the
+# permutations are applied by the DoF numbering, and the signs here, from the
+# `pindex` table that numbering reads (`FaceDofSignMap`). The normal moments of
+# H(div) are taken against the outward normal, opposite for the two cells
+# sharing the facet: that is `get_sign_flip`. The tangential moments of H(curl)
+# are written in the facet's own frame, which the permutation accounts for.
+
 function compute_cell_bases_changes(
   ::ReferenceFEName, ::ContraVariantPiolaMap, model, cell_reffe, cell_Jt
 )
-  change = get_sign_flip(model, cell_reffe) # equal to its transposed inverse
-  return (change,change)
+  normal_change = get_sign_flip(model, cell_reffe) # equal to its transposed inverse
+  _face_sign_cell_bases_changes(model, cell_reffe, normal_change)
 end
 
 function compute_cell_bases_changes(
   ::ReferenceFEName, ::CoVariantPiolaMap, model, cell_reffe, cell_Jt
 )
-  D = num_cell_dims(model)
-  poly = only(get_polytopes(model))
-  if (D==2) || is_simplex(poly)
-    # For these cases, we do not need to aply a sign flip
-    return nothing
-  elseif (D==3) && is_n_cube(poly)
-    change = get_sign_flip(model, cell_reffe)
-    return (change,change)
+  _face_sign_cell_bases_changes(model, cell_reffe, nothing)
+end
+
+function _face_sign_cell_bases_changes(model, cell_reffe, normal_change)
+  reffe = testitem(cell_reffe)
+  k = FaceDofSignMap(model, reffe)
+  trivial = all(isone, k.cell_lface_pindex.data) || all(f -> all(s -> all(isone, s), f), k.face_dof_signs)
+  if trivial
+    isnothing(normal_change) && return nothing
+    return (normal_change, normal_change)
   end
-  @notimplemented
+  face_change = lazy_map(k, IdentityVector(num_cells(model)))
+  isnothing(normal_change) && return (face_change, face_change)
+  change = lazy_map(*, normal_change, face_change)
+  return (change, change)
 end
 
 using Gridap.ReferenceFEs: DoubleContraVariantPiolaMap
@@ -701,6 +714,44 @@ function compute_cell_bases_changes(
     )
   end
   return (cell_change, cell_change_invt)
+end
+
+"""
+    struct FaceDofSignMap <: Map
+
+Map taking a cell id to the diagonal ±1 change of basis of its DoFs: the
+`get_face_own_dofs_signs` of the reference FE, at the `pindex` of each local
+face of the cell (`get_cell_permutations(topo)`).
+"""
+struct FaceDofSignMap{P} <: Map
+  cell_lface_pindex::P
+  face_own_dofs::Vector{Vector{Int}}
+  face_dof_signs::Vector{Vector{Vector{Int}}}
+end
+
+function FaceDofSignMap(model::DiscreteModel, reffe)
+  FaceDofSignMap(
+    get_cell_permutations(get_grid_topology(model)),
+    get_face_own_dofs(reffe),
+    get_face_own_dofs_signs(reffe)
+  )
+end
+
+function return_value(k::FaceDofSignMap, cell)
+  Diagonal(fill(one(Float64), sum(length, k.face_own_dofs)))
+end
+
+return_cache(k::FaceDofSignMap, cell) = CachedVector(Float64)
+
+function evaluate!(cache, k::FaceDofSignMap, cell)
+  setsize!(cache, (sum(length, k.face_own_dofs),))
+  signs = cache.array
+  pindex = k.cell_lface_pindex
+  p = pindex.ptrs[cell] - 1
+  for (lface, own) in enumerate(k.face_own_dofs)
+    signs[own] .= k.face_dof_signs[lface][pindex.data[p+lface]]
+  end
+  return Diagonal(signs)
 end
 
 ############################################################################################

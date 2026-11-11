@@ -51,7 +51,7 @@ function physical_vandermonde(reffe, verts; degree=6)
     v̂a, v̂b = get_face_coordinates(p, 1)[k]
     xa, xb = F(v̂a), F(v̂b)
     L = norm(xb - xa)
-    n = ReferenceFEs._rot90((xb - xa) / L)
+    n = ReferenceFEs._frame_normal((xb - xa) / L)
 
     x̂ = [v̂a + si[1] * (v̂b - v̂a) for si in ŝ]
     ∇Ψ̂ = evaluate(Broadcasting(∇)(Ψ̂), x̂)
@@ -141,7 +141,7 @@ quad = Quadrature(SEGMENT, 6)
 for k in 1:3
   v̂a, v̂b = get_face_coordinates(TRI, 1)[k]
   L = norm(v̂b - v̂a)
-  n = ReferenceFEs._rot90((v̂b - v̂a) / L)
+  n = ReferenceFEs._frame_normal((v̂b - v̂a) / L)
   x̂ = [v̂a + si[1] * (v̂b - v̂a) for si in ŝ]
   ∇φ = evaluate(Broadcasting(∇)(prebasis), x̂)
   for j in 1:6
@@ -169,7 +169,7 @@ end
 # Transformation to a physical cell
 ############################################################################################
 
-ts, ns = ReferenceFEs._edge_frames(TRI)
+ts, ns = get_edge_tangent(TRI), last(ReferenceFEs._facet_frames(TRI))
 
 test_cells = (
   [Point(0.0, 0.0), Point(1.0, 0.0), Point(0.0, 1.0)],  # the reference cell
@@ -212,7 +212,7 @@ for verts in test_cells
   for e in 1:3
     t̂, n̂ = ts[e], ns[e]
     Jt̂ = t̂ ⋅ Jt                       # = J t̂
-    Jinv_n = inv(J) ⋅ ReferenceFEs._rot90(Jt̂ / norm(Jt̂))
+    Jinv_n = inv(J) ⋅ ReferenceFEs._frame_normal(Jt̂ / norm(Jt̂))
     @test det(Jt) * (n̂ ⋅ (G ⋅ n̂)) ≈ norm(Jt̂) * (n̂ ⋅ Jinv_n)
     @test det(Jt) * (t̂ ⋅ (G ⋅ n̂)) ≈ norm(Jt̂) * (t̂ ⋅ Jinv_n)
   end
@@ -288,7 +288,7 @@ function exact_edge_dofs(∇u)
   [begin
      v̂a, v̂b = get_face_coordinates(TRI, 1)[k]
      L = norm(v̂b - v̂a)
-     n = ReferenceFEs._rot90((v̂b - v̂a) / L)
+     n = ReferenceFEs._frame_normal((v̂b - v̂a) / L)
      sum(ŵ_f .* L .* [∇u(v̂a + si[1] * (v̂b - v̂a)) ⋅ n for si in ŝ_f])
    end for k in 1:3]
 end

@@ -65,7 +65,7 @@ function _morley_dof_basis(::Type{T}, p::Polytope{2}, prebasis) where T
 
   eb = MonomialBasis(Val(1), T, 0)  # the constant on an edge
   function emom(φ, μ, ds)                                # σ_e(∇u,μ) = ∫(∇u⋅n)μ
-    n = _edge_normal(ds)
+    n = _facet_normal(ds)
     φn = Broadcasting(Operation(⋅))(φ, n)
     Broadcasting(Operation(*))(φn, μ)
   end
@@ -136,7 +136,7 @@ struct MorleyChangeOfBasis <: Map
 end
 
 function MorleyChangeOfBasis(p::Polytope{2}, transposed_inverse::Bool)
-  ts, ns = _edge_frames(p)
+  ts, ns = get_edge_tangent(p), last(_facet_frames(p))
   MorleyChangeOfBasis(ts, ns, get_faces(p, 1, 0), transposed_inverse)
 end
 

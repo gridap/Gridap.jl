@@ -97,7 +97,7 @@ function hhj_vandermonde(reffe, verts, σ; degree=12)
     v̂a, v̂b = get_face_coordinates(p, 1)[e]
     xa, xb = F(v̂a), F(v̂b)
     L = norm(xb - xa)                # physical edge length: ds = L dŝ
-    n = ReferenceFEs._rot90((xb - xa) / L)  # nn-moments are quadratic in n
+    n = ReferenceFEs._frame_normal((xb - xa) / L)  # nn-moments are quadratic in n
 
     x̂ = [v̂a + s[1] * (v̂b - v̂a) for s in ŝ]
     Ψ̂x = evaluate(Ψ̂, x̂)
@@ -165,7 +165,7 @@ function test_hhj_dofs(r)
   for e in 1:3
     v̂a, v̂b = get_face_coordinates(TRI, 1)[e]
     L = norm(v̂b - v̂a)
-    n = ReferenceFEs._rot90((v̂b - v̂a) / L)
+    n = ReferenceFEs._frame_normal((v̂b - v̂a) / L)
     x̂ = [v̂a + s[1] * (v̂b - v̂a) for s in ŝ]
     φx = evaluate(prebasis, x̂)
     μ = evaluate(μb, ŝ)

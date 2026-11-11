@@ -67,8 +67,8 @@ function NedelecRefFE(
   function cmom(φ,μ,ds) # Cell moment function: σ_K(φ,μ) = ∫(φ⋅μ)dK
     Broadcasting(Operation(⋅))(φ,μ)
   end
-  function fmom_HEX(φ,μ,ds) # Face moment function: σ_F(φ,μ) = ∫((φ×n)⋅μ)dF
-    n = get_facet_normal(ds)
+  function fmom_HEX(φ,μ,ds) # Face moment function: σ_F(φ,μ) = ∫((φ×n)⋅Eμ)dF, n the facet frame's
+    n = _facet_normal(ds)
     E = get_extension(ds)
     Eμ = Broadcasting(Operation(⋅))(E,μ) # We have to extend the basis to 3D
     φn = Broadcasting(Operation(×))(n,φ)
@@ -88,17 +88,20 @@ function NedelecRefFE(
   moments = Tuple[
     (get_dimrange(p,1),emom,eb), # Edge moments
   ]
+  oriented = Bool[true]                          # the edge tangent flips with the edge
   if (D == 3) && order > kind-1
     fmom = ifelse(is_n_cube(p),fmom_HEX,fmom_TET)
     push!(moments,(get_dimrange(p,D-1),fmom,fb)) # Face moments
+    push!(oriented,is_n_cube(p))                 # n× flips with the face, φ⋅Eμ does not
   end
   if (is_n_cube(p) && order > 0) || (is_simplex(p) && order > D+kind-3)
     push!(moments,(get_dimrange(p,D),cmom,cb))   # Cell moments
+    push!(oriented,false)
   end
 
   conf = CurlConformity()
   change_dof = _validate_change_dof(change_dof, prebasis, p, conf)
-  return MomentBasedReferenceFE(Nedelec{kind}(),p,prebasis,moments,conf; change_dof)
+  return MomentBasedReferenceFE(Nedelec{kind}(),p,prebasis,moments,conf; change_dof, oriented)
 end
 
 function ReferenceFE(p::Polytope,::Nedelec{K},::Type{T}, order; kwargs...) where {K, T}
