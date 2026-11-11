@@ -145,4 +145,52 @@ for odeslvr in odeslvrs
   end
 end
 
+# Test accuracy order of RungeKutta methods
+
+# The linear ODE
+#   u̇[1] = 1,
+#   u̇[n] - t u̇[n-1] - n u[n-1] = 0.
+# Setting u[n] equal to the nth Legendre polynomial solves the ODE.
+function legendre_ode_operator(::Type{ODEType}, degree::Int) where {ODEType}
+  n = degree
+  mat0 = sparse(ones(n,n)) .= 0
+
+  function mass(t)
+    M = copy(mat0)
+    diagview(M,0) .= 1
+    diagview(M,-1) .= -t
+    return M
+  end
+
+  K = copy(mat0)
+  diagview(K,-1) .= -(2:degree)
+  stiffness(t) = K
+
+  forcing(t) = Float64[i == 1 for i in 1:n]
+
+  return ODEOperatorMock{ODEType}((stiffness, mass), forcing)
+end
+legendre_polynomial(n::Int, t::Real) = sum(k -> binomial(n,k)^2 * (t-1)^(n-k) * (t+1)^k, 0:n) / 2^n
+legendre_ode_solution(t::Real, degree::Int) = [legendre_polynomial(n, t) for n in 1:degree]
+
+function test_solver_order(tableau, order::Int)
+  odeop = legendre_ode_operator(LinearODE, order)
+  u0 = legendre_ode_solution(-1, order)
+
+  tspan = (-1, 1)
+  for t_final in range(tspan..., order + 1)[begin+1:end]
+    odesolver = RungeKutta(sysslvr_nl, sysslvr_l, t_final - first(tspan), tableau)
+    odesltn = solve(odesolver, odeop, first(tspan), t_final, u0)
+
+    for (tn, un) in odesltn
+      un_exact = legendre_ode_solution(tn, order)
+      @test isapprox(un, un_exact; atol, rtol)
+    end
+  end
+end
+
+@testset for tableau in available_tableaus
+  test_solver_order(tableau, get_order(ButcherTableau(tableau)))
+end
+
 end # module Order1ODETests
