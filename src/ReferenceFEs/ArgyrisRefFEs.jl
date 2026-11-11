@@ -86,7 +86,7 @@ function _argyris_dof_basis(::Type{T}, p::Polytope{2}, prebasis) where T
 
   e0 = MonomialBasis(Val(1), T, 0)  # the constant on an edge
   function emom(φ, μ, ds)  # σ_e(∇u,μ) = ∫ₑ (∇u⋅n) μ ds
-    n = _edge_normal(ds)
+    n = _facet_normal(ds)
     Broadcasting(Operation(*))(Broadcasting(Operation(⋅))(φ, n), μ)
   end
   normals = MomentBasedDofBasis(p, prebasis, Tuple[(edges, emom, e0)], ∇)
@@ -169,7 +169,7 @@ struct ArgyrisChangeOfBasis <: Map
 end
 
 function ArgyrisChangeOfBasis(p::Polytope{2}, transposed_inverse::Bool)
-  ts, ns = _edge_frames(p)
+  ts, ns = get_edge_tangent(p), last(_facet_frames(p))
   ArgyrisChangeOfBasis(ts, ns, get_faces(p, 1, 0), transposed_inverse)
 end
 

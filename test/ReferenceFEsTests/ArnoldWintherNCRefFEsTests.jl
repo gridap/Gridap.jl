@@ -86,7 +86,7 @@ function awnc_vandermonde(reffe, verts, σ; degree=12)
     xa, xb = F(v̂a), F(v̂b)
     L = norm(xb - xa)
     t = (xb - xa) / L
-    n = ReferenceFEs._rot90(t)
+    n = ReferenceFEs._frame_normal(t)
     x̂ = [v̂a + s[1] * (v̂b - v̂a) for s in ŝ]
     Ψ̂x = evaluate(Ψ̂, x̂)
     μ = evaluate(μb, ŝ)
@@ -147,7 +147,7 @@ for k in 1:3
   v1, v2 = get_face_coordinates(TRI, 1)[k]
   e = v2 - v1
   L = norm(e)
-  n = ReferenceFEs._rot90(e / L)
+  n = ReferenceFEs._frame_normal(e / L)
   x = [v1 + s[1] * e for s in ŝe]
   Ψx = evaluate(Ψ, x)
   μ2 = evaluate(μb2, ŝe)[:, 3]

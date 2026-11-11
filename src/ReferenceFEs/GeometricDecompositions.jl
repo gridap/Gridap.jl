@@ -399,8 +399,9 @@ function apply_face_signflip(
 
     for (face, own_funs) in enumerate(face_own_funs)
       if face ∈ facet_range
-        # Summary: for consistency with the moments φ -> ∫((φ×n)⋅μ)dF defined in NedelecRefFEs.jl,
-        # the tangential traces
+        # Summary: for consistency with the moments φ -> ∫((φ×n)⋅Eμ)dF defined
+        # in NedelecRefFEs.jl, n the normal of the facet's own frame
+        # (`_facet_normal`), the tangential traces
         #     (bᵢ×n ⋅ E e₁|Fⱼ)
         # and
         #     (bᵢ×n ⋅ E e₂|Fⱼ)
@@ -411,17 +412,15 @@ function apply_face_signflip(
 
         # it happens that the first half of the face owned shapefuns are
         # along n⋅E e₂, and the second half are along n⋅E e₁, there's always an
-        # even number of facet owned shapefuns for Q spaces
+        # even number of facet owned shapefuns for Q spaces. With the outward
+        # normal instead, the facet sign would be [1 -1 -1 1 1 -1], the ratio
+        # of the two normals (see GeometricDecompositionsTests).
         n_own_funs = length(own_funs)
         tan_1_own_funs = own_funs[begin:(n_own_funs÷2)]
         tan_2_own_funs = own_funs[(n_own_funs÷2+1):end]
 
-        lfacet = face-21+1 # There's 21 vertex+edges in an HEX
-        # empirically determined, see GeometricDecompositionsTests
-        facet_sign = [1 -1 -1 1 1 -1][lfacet]
-
-        sign_flip[tan_1_own_funs] .= flipsign(-1, facet_sign)
-        sign_flip[tan_2_own_funs] .= flipsign( 1, facet_sign)
+        sign_flip[tan_1_own_funs] .=  1
+        sign_flip[tan_2_own_funs] .= -1
       end
     end
 

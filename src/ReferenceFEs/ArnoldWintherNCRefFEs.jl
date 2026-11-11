@@ -67,12 +67,12 @@ function ArnoldWintherNCRefFE(::Type{T}, p::Polytope{D}) where {T,D}
   Ei = map(constant_field, representatives_of_componentbasis_dual(SymTensorValue{2,T}))
 
   function nnmom(φ, μ, ds)
-    n = _edge_normal(ds)
+    n = _facet_normal(ds)
     φn = Broadcasting(Operation(⋅))(φ, n)
     Broadcasting(Operation(*))(Broadcasting(Operation(⋅))(φn, n), μ)
   end
   function ntmom(φ, μ, ds)
-    n = _edge_normal(ds)
+    n = _facet_normal(ds)
     t = get_edge_tangent(ds)
     φn = Broadcasting(Operation(⋅))(φ, n)
     Broadcasting(Operation(*))(Broadcasting(Operation(⋅))(φn, t), μ)
@@ -199,7 +199,7 @@ end
 
 function AWNCChangeOfBasis(reffe::ReferenceFE, transposed_inverse::Bool)
   p = get_polytope(reffe)
-  ts, ns = _edge_frames(p)
+  ts, ns = get_edge_tangent(p), last(_facet_frames(p))
   own = get_face_own_dofs(reffe)
   nv = num_faces(p, 0)
   edge_dofs = [own[nv+e] for e in 1:num_faces(p, 1)]

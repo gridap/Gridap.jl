@@ -133,6 +133,7 @@ export bernstein_term_id
 export CompWiseTensorPolyBasis
 export NedelecPolyBasisOnSimplex
 export RaviartThomasPolyBasis
+export SerendipityPolyBasis
 
 export ModalC0Basis
 export ModalC0
@@ -173,6 +174,8 @@ include("DubinerBases.jl")
 include("ModalC0Bases.jl")
 
 include("BarycentricPΛBases.jl")
+
+include("SerendipityPolyBases.jl")
 
 include("ExteriorCalculusBases.jl")
 

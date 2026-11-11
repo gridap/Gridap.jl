@@ -392,35 +392,54 @@ function get_edge_tangent(m::FaceMeasure{1,Dc}) where {Dc}
 end
 
 # ─────────────────────────────────────────────────────────────────────────────
-# The rotated edge frame `n = R t`
+# The frame of a facet
 # ─────────────────────────────────────────────────────────────────────────────
-# In 2D an edge admits a normal fixed by the direction in which the edge is
-# traversed rather than by which cell it bounds,
+# A facet with vertices v₁, v₂, … in the order `get_faces(p, D-1, 0)` lists
+# them carries the tangents eᵢ = vᵢ₊₁ - v₁ (i = 1 … D-1) and the normal
 #
-#   n = R t,   R = [0 1; -1 0]   (clockwise rotation),
+#   nᵢ = det[ êᵢ | e₁ | ⋯ | e_{D-1} ],   i.e. n = ⋆(e₁ ∧ ⋯ ∧ e_{D-1}),
 #
-# the convention of [Aznaran, Farrell & Kirby, SMAI-JCM 8 (2022) 399, §2.1].
-# It is NOT NECESSARILY the polytope's outward normal (e.g. for TRIs).
+# completing (n, e₁, …, e_{D-1}) to a positively oriented basis of Rᴰ. In 2D
+# this is n = R t with R = [0 1; -1 0] the clockwise rotation, the convention of
+# [Aznaran, Farrell & Kirby, SMAI-JCM 8 (2022) 399, §2.1]; in 3D it is e₁ × e₂.
 #
-# This frame has some advantages as it keeps the sign of the normal consistent 
-# w.r.t to the edge's orientation.
-_rot90(t::VectorValue{2,T}) where T = VectorValue{2,T}(t[2], -t[1])
+# This frame is fixed by the order in which the facet's vertices are listed,
+# not by the cell the facet bounds, so n is NOT in general the outward normal
+# (e.g. for TRIs): two cells listing the vertices of a shared facet in the same
+# order agree on it, where their outward normals are opposite, and relabelling
+# the facet multiplies it by the det of the relabelling. That is what makes it
+# the normal of moments glued by a signed permutation of the facet's DoFs.
+_frame_normal(t::VectorValue{2,T}) where T = VectorValue{2,T}(t[2], -t[1])
+_frame_normal(e₁::VectorValue{3}, e₂::VectorValue{3}) = cross(e₁, e₂)
 
-_edge_normal(ds) = ConstantField(_rot90(get_edge_tangent(ds).value))
-
-function _edge_frames(p::Polytope{2})
-  ts = get_edge_tangent(p)
-  return (ts, map(_rot90, ts))
+# The tangents (eᵢ = vᵢ₊₁ - v₁, not unitary) and the unit normal of every facet
+# of `p`, as `(tangents, normals)`
+function _facet_frames(p::Polytope{D}) where D
+  x = get_vertex_coordinates(p)
+  es = map(v -> ntuple(i -> x[v[i+1]] - x[v[1]], D-1), get_faces(p, D-1, 0))
+  ns = map(e -> (n = _frame_normal(e...); n/norm(n)), es)
+  return (es, ns)
 end
 
-# Matrix of the contravariant piola map from `m.fpoly` to to the face `m.face`
-# of `m.cpoly`, used to extend a Df-dimensional vector in `m.fpoly` to a
-# Dc-dimensional one that lives in the tangent space of the Dc-embedded Df-dimensional
-# manifold `m.face`.
+# the frame of the facet `ds.face`, as constant fields
+function _facet_tangents(ds::FaceMeasure{Df,Dc}) where {Df,Dc}
+  @check Df == Dc - 1
+  map(ConstantField, first(_facet_frames(ds.cpoly))[ds.face])
+end
+
+function _facet_normal(ds::FaceMeasure{Df,Dc}) where {Df,Dc}
+  @check Df == Dc - 1
+  ConstantField(last(_facet_frames(ds.cpoly))[ds.face])
+end
+
+# Matrix of the contravariant piola map from `m.fpoly` to the face `m.face` of
+# `m.cpoly`, used to extend a Df-dimensional vector in `m.fpoly` to a
+# Dc-dimensional one that lives in the tangent space of the Dc-embedded
+# Df-dimensional manifold `m.face`: the facet's tangents, by columns.
 function get_extension(m::FaceMeasure{Df,Dc}) where {Df,Dc}
   @check Df == Dc - 1
-  vs = ReferenceFEs._nfaces_vertices(Float64,m.cpoly,Df)[m.face]
-  J = TensorValue(hcat([vs[2]-vs[1]...],[vs[3]-vs[1]...]))
+  e = first(_facet_frames(m.cpoly))[m.face]
+  J = TensorValue{Dc,Df}(ntuple(k -> e[(k-1) ÷ Dc + 1][(k-1) % Dc + 1], Dc*Df))
   return ConstantField(J/meas(transpose(J)))
 end
 # function get_extension(m::FaceMeasure{Df,Dc}) where {Df,Dc}
@@ -493,7 +512,8 @@ end
       moments::AbstractVector{<:Tuple},
       conformity::Conformity,
       face_own_dofs=nothing;
-      change_dof=false
+      change_dof=false,
+      oriented=falses(length(moments))
     )
 
 Constructs a ReferenceFEs on `p` with a moment DoF (pre-)basis defined by
@@ -501,6 +521,10 @@ Constructs a ReferenceFEs on `p` with a moment DoF (pre-)basis defined by
 
 The dofs ownership to faces can be overloaded, the default is given by
 [`get_face_own_moments`](@ref).
+
+`oriented[m]` says whether the `m`-th moment carries a vector of the frame of
+its face that flips with the face's orientation (an edge tangent, `n×` on a
+face, a rotation), see [`moment_face_own_dofs_permutations`](@ref).
 
 If `change_dof=true`, `prebasis` is used as shape functions.
 This requires it to fullfill a geometric decomposition relative to the faces of
@@ -518,7 +542,8 @@ function MomentBasedReferenceFE(
   moments::AbstractVector{<:Tuple},
   conformity::Conformity,
   face_own_dofs=nothing;
-  change_dof=false
+  change_dof=false,
+  oriented=falses(length(moments))
 )
 
   dof_basis = MomentBasedDofBasis(p, prebasis, moments)
@@ -543,16 +568,176 @@ function MomentBasedReferenceFE(
 
   if isnothing(face_own_dofs)
     face_own_dofs = get_face_own_moments(dof_basis)
+    face_own_dofs_permutations = moment_face_own_dofs_permutations(p, moments, oriented, face_own_dofs)
+  else
+    face_own_dofs_permutations = l2_face_own_dofs_permutations(face_own_dofs)
   end
   GenericRefFE{typeof(name)}(
-    n_dofs, p, prebasis, dof_basis, conformity, metadata, face_own_dofs
+    n_dofs, p, prebasis, dof_basis, conformity, metadata, face_own_dofs;
+    face_own_dofs_permutations
   )
+end
+
+############################################################################################
+# Face DoF permutations
+############################################################################################
+
+get_basis_permutations(poly::Polytope, basis) = nothing
+
+# Bernstein on a simplex: the multi-indices are the domain points
+
+function get_basis_permutations(poly::Polytope{D}, b::BernsteinBasisOnSimplex{D,<:Real}) where D
+  K = get_order(b)
+  verts = get_vertex_coordinates(poly)
+  nodes = map(bernstein_terms(K, D)) do α      # the barycenter at K = 0
+    sum((α[i] + 1)/(K + D + 1) * verts[i] for i in eachindex(α))
+  end
+  compute_own_nodes_permutations(poly, nodes)
+end
+
+# 1D
+
+function get_basis_permutations(::Polytope{1}, b::CartProdPolyBasis{1,<:Real,PT}) where PT
+  get_basis_permutations(SEGMENT, PT, get_order(b))
+end
+
+get_basis_permutations(::Polytope{1}, ::Type{<:Polynomial}, K) = nothing
+
+_has_1d_permutations(PT) = !isnothing(get_basis_permutations(SEGMENT, PT, 0))
+
+# B_α(1-t) = B_{K-α}(t)
+get_basis_permutations(::Polytope{1}, ::Type{Bernstein}, K) = [collect(1:K+1), collect(K+1:-1:1)]
+
+# L_α(1-t) = (-1)^α L_α(t)
+get_basis_permutations(::Polytope{1}, ::Type{Legendre}, K) = [collect(1:K+1), [(-1)^α*(α+1) for α in 0:K]]
+
+# n-cubes: the Jacobian J of a symmetry of the cube is a signed permutation
+# matrix, Jᵀeₖ = ±eₘ, the k-th coordinate of the image being ± the m-th one:
+# a function of the k-th coordinate becomes, composed with Mσ, a function of
+# the m-th one, reversed if the sign is negative, and so does the k-th
+# component of a vector field pulled back by Jᵀ: m is the one nonzero of the
+# k-th row of J, and the sign is J[k,m].
+
+function get_basis_permutations(poly::Polytope{D}, b::CartProdPolyBasis{D,<:Real,PT}) where {D,PT}
+  (is_n_cube(poly) && _has_1d_permutations(PT)) || return nothing
+  map(get_vertex_permutation_jacobians(poly)) do J
+    _tensor_product(PT, get_orders(b), b.terms, b.terms, J)
+  end
+end
+
+# the components are consecutive within each term
+function get_basis_permutations(poly::Polytope{D}, b::CartProdPolyBasis{D,V,PT}) where {D,V,PT}
+  (is_n_cube(poly) && _has_1d_permutations(PT)) || return nothing
+  L = num_indep_components(V)
+  L == D || return nothing
+  map(get_vertex_permutation_jacobians(poly)) do J
+    τ = _tensor_product(PT, get_orders(b), b.terms, b.terms, J)
+    perm = zeros(Int, L*length(τ))
+    for (i, t) in enumerate(τ), l in 1:L
+      m = findfirst(!iszero, Tuple(J[l,:]))
+      perm[L*(i-1) + l] = J[l,m]*sign(t)*(L*(abs(t)-1) + m)
+    end
+    perm
+  end
+end
+
+# one block of terms per component, each of its own orders
+function get_basis_permutations(poly::Polytope{D}, b::CompWiseTensorPolyBasis{D,V,PT}) where {D,V,PT}
+  (is_n_cube(poly) && _has_1d_permutations(PT)) || return nothing
+  L = num_indep_components(V)
+  L == D || return nothing
+  blocks = Polynomials.get_comp_terms(b)
+  offsets = cumsum([0; length.(blocks)[1:end-1]])
+  map(get_vertex_permutation_jacobians(poly)) do J
+    perm = zeros(Int, sum(length, blocks))
+    for l in 1:L
+      m = findfirst(!iszero, Tuple(J[l,:]))
+      τ = _tensor_product(PT, b.orders[l,:], blocks[l], blocks[m], J)
+      perm[offsets[l] .+ (1:length(τ))] = J[l,m] .* sign.(τ) .* (offsets[m] .+ abs.(τ))
+    end
+    perm
+  end
+end
+
+# The tensor product of the 1D permutations of the factors under the cube
+# symmetry encoded in the Jacobian J: 
+# the term α of `terms`, of orders `orders`, goes to the term β of `image_terms`
+function _tensor_product(PT, orders, terms, image_terms, J)
+  # the symmetry sends the axis k to the axis axes[k], reversed if flip[k]
+  axes = [findfirst(!iszero, Tuple(J[k,:])) for k in eachindex(orders)]
+  flip = [J[k,axes[k]] < 0 for k in eachindex(orders)]
+  # hence the 1D permutation of each factor: the identity or the reflection
+  p = [get_basis_permutations(SEGMENT, PT, K)[flip[k] ? 2 : 1] for (k, K) in enumerate(orders)]
+  # the term α goes to the term β with β[axes[k]] = |p[k][α[k]]|, with the product of the signs
+  ids = Dict(t => i for (i, t) in enumerate(image_terms))
+  map(terms) do α
+    image = [p[k][α[k]] for k in eachindex(orders)]
+    β = zeros(Int, length(orders))
+    β[axes] = abs.(image)
+    prod(sign, image) * ids[CartesianIndex(β...)]
+  end
+end
+
+"""
+    moment_face_own_dofs_permutations(p::Polytope, moments, oriented::AbstractVector{Bool}, face_own_dofs)
+
+The signed `face_own_dofs_permutations` (see [`GenericRefFE`](@ref)) of the
+moment-based reference FE on `p` defined by `moments` (see [`MomentBasedDofBasis`](@ref)). 
+
+For a moment (face, σ, μ), the signed permutations, given a face permutation π, 
+are determined by two factors: 
+
+1. The permutations of the basis μ under the face permutation π.
+2. A possible sign factor given by the moment's dependence on the face's frame, for 
+instance if σ depends on the tangents of the face.
+
+If such a permutation cannot be deduced, we return [`l2_face_own_dofs_permutations`](@ref).
+
+"""
+function moment_face_own_dofs_permutations(
+  p::Polytope{D}, moments, oriented, face_own_dofs
+) where D
+  @check length(oriented) == length(moments)
+  facedims = get_facedims(p)
+
+  # the signed permutations of each moment's weights under the symmetries of its face
+  moment_perms = map(moments, oriented) do (faces, _, μ), is_oriented
+    d = facedims[first(faces)]
+    fp = Polytope{d}(p, first(faces) - get_offset(p, d))
+    if !(0 < d < D)
+      # a vertex or the cell is seen in one order only
+      return [collect(1:length(μ)) for _ in get_vertex_permutations(fp)]
+    end
+    perms = get_basis_permutations(fp, μ)
+    (isnothing(perms) || !is_oriented) && return perms
+    map((J, π) -> det(J) .* π, get_vertex_permutation_jacobians(fp), perms)
+  end
+
+  # If we cannot determine the signed permutations for all moments, 
+  # we fall back to the L2 face own dofs permutations.
+  if any(isnothing, moment_perms)
+    return l2_face_own_dofs_permutations(face_own_dofs)
+  end
+
+  # on each face, the concatenation of the blocks of the moments on it
+  vperms = get_face_vertex_permutations(p)
+  map(1:num_faces(p)) do f
+    blocks = moment_perms[findall(moment -> f in first(moment), moments)]
+    npindex = isempty(blocks) ? length(vperms[f]) : length(first(blocks))
+    map(1:npindex) do pindex
+      # each block permuted within itself, shifted by what precedes it
+      perm = Int[]
+      for π in getindex.(blocks, pindex)
+        append!(perm, sign.(π) .* (length(perm) .+ abs.(π)))
+      end
+      perm
+    end
+  end
 end
 
 # Default polynomial type for moment based reference FEs
 function _mom_reffe_default_PT(p)
-  is_simplex(p) && return Bernstein
-  is_n_cube(p) && return Polynomials.ModalC0
+  (is_simplex(p) || is_n_cube(p)) && return Bernstein
   Monomial
 end
 

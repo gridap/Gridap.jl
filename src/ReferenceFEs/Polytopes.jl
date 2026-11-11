@@ -37,6 +37,7 @@ And optionally these ones:
 - [`get_facet_normal(p::Polytope)`](@ref)
 - [`get_facet_orientations(p::Polytope)`](@ref)
 - [`get_vertex_permutations(p::Polytope)`](@ref)
+- [`get_vertex_permutation_jacobians(p::Polytope)`](@ref)
 - [`is_n_cube(p::Polytope)`](@ref)
 - [`is_simplex(p::Polytope)`](@ref)
 - [`simplexify(p::Polytope)`](@ref)
@@ -204,40 +205,53 @@ end
     get_vertex_permutations(p::Polytope) -> Vector{Vector{Int}}
 
 Returns a vector of vectors containing all admissible permutations of the
-vertices of `p`. An admissible permutation is one such that, if the vertices of
-the polytope are re-labeled according to this permutation, the resulting
-polytope preserves the shape of the original one.
+vertices of `p`. A vertex permutation is "admissible" if it is the image of the
+polytope's vertices by a diffeomorphism of the polytope to itself, like a typical
+geometrical mapping.
 
-These permutation are used to iddentify every possile way a geometrical map may
+These permutation are used to e.g. iddentify every possile way a geometrical map may
 permute the vertices of the boundary faces of a reference polytope (of dimension
-≤ 3) into the physical one. Only the iddentity permutation `[1, 2, …, N]` is
-returned for 3D polytopes with `N` vertices. Indeed, a (3≥D)-dimensional
-physical polytope `𝓟` is only mapped by one physical map, but its faces are
-mapped by the physical map of all adjascent elements.
+≤ 3) into the physical one.
 
 # Examples
 
 ```jldoctest
 using Gridap.ReferenceFEs
 
-perms = get_vertex_permutations(SEGMENT)
+perms = get_vertex_permutations(SEGMENT);
 println(perms)
 
 # output
 Array{Int,1}[[1, 2], [2, 1]]
 
-perms = get_vertex_permutations(TET)
-println(perms)
+perms = get_vertex_permutations(QUAD);
+println(length(perms))
 
 # output
-Array{Int,1}[[1, 2], [2, 1]]
+8
 ```
 The first admissible permutation for a segment is `[1,2]`,i.e., the identity.
 The second one is `[2,1]`, i.e., the first vertex is relabeled as `2` and the
 second vertex is relabeled as `1`.
 
+The QUAD has only 8 admissible vertex permutations although there are 24 possible
+permutations of its vertices, but 16 of them "pinch" the square into an "hourglass",
+creating a point where the map is not differentiable.
 """
 function get_vertex_permutations(p::Polytope)
+  @abstractmethod
+end
+
+"""
+    get_vertex_permutation_jacobians(p::Polytope{D}) -> Vector{TensorValue{D,D,Int}}
+
+For each vertex permutation `σ` of `p`, in the order of
+[`get_vertex_permutations`](@ref), the Jacobian of the affine map of `p` onto
+itself sending its vertex `v` to the vertex `invperm(σ)[v]`, the map of
+[`compute_own_nodes_permutations`](@ref). On an n-cube it is a signed
+permutation matrix; its determinant, `±1`, is the orientation of the symmetry.
+"""
+function get_vertex_permutation_jacobians(p::Polytope)
   @abstractmethod
 end
 
