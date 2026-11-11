@@ -42,6 +42,8 @@ using Test
 
 @testset "WitherdenVincentQuadratures" begin include("WitherdenVincentQuadraturesTests.jl") end
 
+@testset "MomentBasedQuadratures" begin include("MomentBasedQuadraturesTests.jl") end
+
 @testset "RaviartThomasRefFEs" begin include("RaviartThomasRefFEsTests.jl") end
 
 @testset "NedelecRefFEs" begin include("NedelecRefFEsTests.jl") end

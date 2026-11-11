@@ -268,6 +268,8 @@ export bubble
 export Quadrature
 export QuadratureName
 export GenericQuadrature
+export MomentBasedQuadrature
+export MomentBasedQuadratureMap
 export num_points
 export get_coordinates
 export get_weights
@@ -326,6 +328,8 @@ include("XiaoGimbutasQuadratures.jl")
 include("PolytopalQuadratures.jl")
 
 include("WitherdenVincentQuadratures.jl")
+
+include("MomentBasedQuadratures.jl")
 
 include("MomentBasedReferenceFEs.jl")
 
