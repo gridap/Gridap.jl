@@ -1,6 +1,7 @@
 module ZeroMeanFESpacesTests
 
 using Test
+using FillArrays
 using Gridap
 using Gridap.Arrays
 using Gridap.Geometry
@@ -106,5 +107,66 @@ B = assemble_vector(q -> b(uh,q),Q)
 B0 = assemble_vector(q -> b(uh,q),Q0)
 @test abs(sum(B)) < 1.0e-10
 @test abs(sum(B0)) < 1.0e-10
+
+# Moment based bases
+#
+# `modalC0` is not a partition of unity from order 2 on, so the mean direction
+# of a space of it is not the vector of ones: its volume is not the sum of the
+# DOF volumes, and the DOF the space fixes cannot be the last one, which the
+# direction vanishes on.
+
+# A nodal basis keeps the single scalar shift
+@test ZeroMeanFESpace(_V,dΩ).dir_free isa Ones
+
+# A space with Dirichlet DOFs has no mean direction
+@test_throws ArgumentError ZeroMeanFESpace(
+  FESpace(model,ReferenceFE(lagrangian,Float64,1);dirichlet_tags="boundary"),dΩ)
+
+for p_order in (2,3)
+  _Vm = FESpace(model,ReferenceFE(QUAD,modalC0,Float64,p_order);conformity=:L2)
+  Vm  = ZeroMeanFESpace(_Vm,dΩ)
+  @test !isa(Vm.dir_free,Ones)
+  @test Vm.vol ≈ sum(∫(1)*dΩ)
+  # the direction vanishes on the last DOF, the one a partition of unity fixes,
+  # so the space has to fix another one
+  @test abs(get_free_dof_values(interpolate(1.0,_Vm))[end]) < 1.0e-12
+  @test Vm.dir_fixed != 0
+
+  vhm = interpolate(g,TrialFESpace(Vm))
+  ehm = vhm - g
+  @test abs(sum(∫(vhm)*dΩ)) < 1.0e-10
+  @test sum(∫(ehm*ehm)*dΩ) < 1.0e-10
+end
+
+# The invariant the construction checks: the vector of ones does not represent
+# the mean functional of a moment based basis, the interpolation of 1 does.
+_Vm = FESpace(model,ReferenceFE(QUAD,modalC0,Float64,2);conformity=:L2)
+int_φi_m = assemble_vector(v->∫(v)*dΩ,_Vm)
+@test !FESpaces._represents_mean_functional(_Vm,dΩ,int_φi_m,
+        FEFunction(_Vm,ones(num_free_dofs(_Vm))))
+@test FESpaces._represents_mean_functional(_Vm,dΩ,int_φi_m,interpolate(1.0,_Vm))
+
+# Pure Neumann Poisson, whose solution the zero mean value selects. `modalC0`
+# of order 2 spans the same space as `lagrangian` of order 2, so both bases
+# give the same solution.
+u_N(x) = cos(pi*x[1])
+f_N(x) = pi^2*cos(pi*x[1])
+dΩ_N = Measure(trian,8)
+
+function zero_mean_poisson(reffe)
+  V0 = FESpace(model,reffe;conformity=:H1,constraint=:zeromean)
+  op = AffineFEOperator((u,v) -> ∫( ∇(u)⋅∇(v) )*dΩ_N,
+                        v -> ∫( f_N*v )*dΩ_N, TrialFESpace(V0), V0)
+  solve(op)
+end
+
+uh_nodal  = zero_mean_poisson(ReferenceFE(lagrangian,Float64,2))
+uh_moment = zero_mean_poisson(ReferenceFE(QUAD,modalC0,Float64,2))
+@test abs(sum(∫(uh_nodal)*dΩ_N))  < 1.0e-10
+@test abs(sum(∫(uh_moment)*dΩ_N)) < 1.0e-10
+e_N = uh_nodal - uh_moment
+@test sqrt(sum(∫( e_N*e_N )*dΩ_N)) < 1.0e-10
+e_ex = uh_nodal - u_N
+@test sqrt(sum(∫( e_ex*e_ex )*dΩ_N)) < 1.0e-2
 
 end # module
