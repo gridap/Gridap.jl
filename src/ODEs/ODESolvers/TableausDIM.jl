@@ -279,11 +279,16 @@ end
 
 """
     SDIRK_Crouzeix_3_4
+    SDIRK_Norsett_3_4
+
+A-stable 3-stage 4th order SDIRK
 """
 struct SDIRK_Crouzeix_3_4 <: TableauName end
 
 function ButcherTableau(::SDIRK_Crouzeix_3_4, ::Type{T}=Float64) where {T}
   α = 2 * cospi(1 // 18) / sqrt(3)
+  # One of the three roots of x^3 - 3*x^2 + x/2 - 1/24
+  # The largest one brings most stability
   a = (1 + α) / 2
   b = -α / 2
   c = 1 + α
@@ -300,28 +305,10 @@ function ButcherTableau(::SDIRK_Crouzeix_3_4, ::Type{T}=Float64) where {T}
   GenericTableau(matrix, weights, order)
 end
 
-"""
-    SDIRK_Norsett_3_4
-"""
 struct SDIRK_Norsett_3_4 <: TableauName end
 
 function ButcherTableau(::SDIRK_Norsett_3_4, ::Type{T}=Float64) where {T}
-  # One of the three roots of x^3 - 3*x^2 + x/2 - 1/24
-  # The largest one brings most stability
-  α = 1.0685790213016289
-  b = 1 // 2 - α
-  c = 2 * α
-  d = 1 - 4 * α
-  e = 1 // 6 / (1 - 2 * α)^2
-  f = 1 - 1 // 3 / (1 - 2 * α)^2
-  matrix = T[
-    α 0 0
-    b α 0
-    c d α
-  ]
-  weights = T[e, f, e]
-  order = 4
-  GenericTableau(matrix, weights, order)
+  return ButcherTableau(SDIRK_Crouzeix_3_4(), T)
 end
 
 """
