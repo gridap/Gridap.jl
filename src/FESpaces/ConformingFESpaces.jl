@@ -37,7 +37,7 @@ function GenericCellConformity(
   cell_lface_own_ldofs :: AbstractVector{<:AbstractVector{<:AbstractVector{<:Integer}}},
   cell_d_num_dfaces :: AbstractVector{<:AbstractVector{<:Integer}},
 )
-  cell_lface_pindex_pdofs = lazy_map(ReferenceFEs._trivial_face_own_dofs_permutations, cell_lface_own_ldofs)
+  cell_lface_pindex_pdofs = lazy_map(ReferenceFEs.l2_face_own_dofs_permutations, cell_lface_own_ldofs)
   cell_num_dofs = lazy_map(x -> sum(length, x), cell_lface_own_ldofs)
   cell_ldof_comp = lazy_map(n -> fill(0,n), cell_num_dofs)
   GenericCellConformity(
@@ -125,7 +125,7 @@ end
 #     ndofs = length(b)
 #     [ifelse(isequal(face,nfaces),collect(1:ndofs),Int[]) for face in 1:nfaces]
 #   end
-#   ctype_lface_pindex_pdofs = map(ReferenceFEs._trivial_face_own_dofs_permutations, ctype_lface_own_ldofs)
+#   ctype_lface_pindex_pdofs = map(ReferenceFEs.l2_face_own_dofs_permutations, ctype_lface_own_ldofs)
 #   d_ctype_num_faces = [
 #     map(p -> num_faces(p,d), ctype_poly) for d in 0:D
 #   ]

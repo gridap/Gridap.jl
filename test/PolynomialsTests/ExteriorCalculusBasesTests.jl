@@ -10,11 +10,11 @@ using Gridap.Polynomials: _p_filter, _q_filter, _ser_filter
 using ForwardDiff
 using StaticArrays
 
-@test Polynomials._default_poly_type(:P⁻) == Bernstein
-@test Polynomials._default_poly_type(:P)  == Bernstein
-@test Polynomials._default_poly_type(:Q⁻) == Polynomials.ModalC0
-@test Polynomials._default_poly_type(:S)  == Polynomials.ModalC0
-@test Polynomials._default_poly_type(:default) == Monomial
+@test Polynomials._default_poly_type(:P⁻,0,2) == Bernstein
+@test Polynomials._default_poly_type(:P,0,2)  == Bernstein
+@test Polynomials._default_poly_type(:Q⁻,0,2) == Polynomials.ModalC0
+@test Polynomials._default_poly_type(:S,0,2)  == Polynomials.ModalC0
+@test Polynomials._default_poly_type(:default,0,2) == Monomial
 
 # differential geometry / exterior calculus isn't implemented yet
 DG_calc = true
@@ -144,11 +144,10 @@ b2 = CompWiseTensorPolyBasis{D}(Monomial, V, orders)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:Q⁻,D)
 
-@test_throws ErrorException FEEC_poly_basis(Val(D),T,r,k,:S,Monomial)
-# b = FEEC_poly_basis(Val(D),T,r,k,:S,Monomial)
-# b2 = # TODO
-# @test b isa PolynomialBasis{D,V,r,Monomial}
-#_test_bases(b,b3,r,k,:S,D)
+b = FEEC_poly_basis(Val(D),T,r,k,:S,Monomial)
+b2 = SerendipityPolyBasis{D}(Monomial,T,r,k)
+@test b isa PolynomialBasis{D,V,Monomial}
+_test_bases(b,b2,r,k,:S,D,no_hessian)
 
 b = FEEC_poly_basis(Val(D),T,r,k,:P⁻,Monomial; rotate_90=true)
 b2 = RaviartThomasPolyBasis{D}(Monomial,T,r-1)
@@ -166,11 +165,10 @@ b2 = CompWiseTensorPolyBasis{D}(Monomial,V,orders)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:Q⁻,D)
 
-@test_throws ErrorException FEEC_poly_basis(Val(D),T,r,k,:S,Monomial; rotate_90=true)
-# b = FEEC_poly_basis(Val(D),T,r,k,:S,Monomial)
-# b2 = # TODO
-# @test b isa PolynomialBasis{D,V,r,Monomial}
-#_test_bases(b,b3,r,k,:S,D)
+b = FEEC_poly_basis(Val(D),T,r,k,:S,Monomial; rotate_90=true)
+b2 = SerendipityPolyBasis{D}(Monomial,T,r,k; rotate_90=true)
+@test b isa PolynomialBasis{D,V,Monomial}
+_test_bases(b,b2,r,k,:S,D,no_hessian)
 
 
 D, k = 2, 2
@@ -202,11 +200,10 @@ b2 = CompWiseTensorPolyBasis{D}(Monomial, V, orders)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:Q⁻,D)
 
-@test_throws ErrorException FEEC_poly_basis(Val(D),T,r,k,:S,Monomial)
-# b = FEEC_poly_basis(Val(D),T,r,k,:P,Monomial)
-# b2 =
-# @test b isa PolynomialBasis{D,V,r,Monomial}
-# _test_bases(b,b2,r,k,:S,D)
+b = FEEC_poly_basis(Val(D),T,r,k,:S,Monomial)
+b2 = SerendipityPolyBasis{D}(Monomial,T,r,k)
+@test b isa PolynomialBasis{D,V,Monomial}
+_test_bases(b,b2,r,k,:S,D,no_hessian)
 
 
 D, k = 3, 2
@@ -227,11 +224,10 @@ b2 = CompWiseTensorPolyBasis{D}(Monomial, V, orders)
 @test b isa PolynomialBasis{D,V,Monomial}
 _test_bases(b,b2,r,k,:Q⁻,D)
 
-@test_throws ErrorException FEEC_poly_basis(Val(D),T,r,k,:S,Monomial)
-# b = FEEC_poly_basis(Val(D),T,r,k,:P,Monomial)
-# b2 =
-# @test b isa PolynomialBasis{D,V,r,Monomial}
-# _test_bases(b,b2,r,k,:S,D)
+b = FEEC_poly_basis(Val(D),T,r,k,:S,Monomial)
+b2 = SerendipityPolyBasis{D}(Monomial,T,r,k)
+@test b isa PolynomialBasis{D,V,Monomial}
+_test_bases(b,b2,r,k,:S,D,no_hessian)
 
 
 D, k = 3, 3

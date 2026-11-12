@@ -1,6 +1,7 @@
 module ExtrusionPolytopesTests
 
 using Test
+using LinearAlgebra: det
 using Gridap: Gridap
 using Gridap.Helpers
 using Gridap.TensorValues
@@ -34,7 +35,7 @@ r = Point{2,Float64}[(1, 0), (1, 0), (0, 1), (0, 1)]
 r = [
   [1, 2, 3, 4], [1, 3, 2, 4], [2, 1, 4, 3], [2, 4, 1, 3],
   [3, 1, 4, 2], [3, 4, 1, 2], [4, 2, 3, 1], [4, 3, 2, 1]]
-@test get_vertex_permutations(p) == r
+@test Set(get_vertex_permutations(p)) == Set(r)
 
 r = Point{2,Float64}[(0, -1), (0, 1), (-1, 0), (1, 0)]
 @test get_facet_normal(p) == r
@@ -73,10 +74,47 @@ test_polytope(TET,optional=true)
 test_polytope(HEX,optional=true)
 
 perm = get_vertex_permutations(TRI)
-@test perm == [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+@test Set(perm) == Set([[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]])
 
 perm = get_vertex_permutations(QUAD)
-@test isa(perm,Vector{Vector{Int}})
+@test Set(perm) == Set([[1, 2, 3, 4],
+                        [1, 3, 2, 4],
+                        [2, 1, 4, 3],
+                        [2, 4, 1, 3],
+                        [3, 1, 4, 2],
+                        [3, 4, 1, 2],
+                        [4, 2, 3, 1],
+                        [4, 3, 2, 1]])
+
+perm = get_vertex_permutations(PYRAMID)
+@test Set(perm) == Set([[1, 2, 3, 4, 5],
+                        [1, 3, 2, 4, 5],
+                        [2, 1, 4, 3, 5],
+                        [2, 4, 1, 3, 5],
+                        [3, 1, 4, 2, 5],
+                        [3, 4, 1, 2, 5],
+                        [4, 2, 3, 1, 5],
+                        [4, 3, 2, 1, 5]])
+
+#[1, 2, 3] ⊗ {[1, 2], [2, 1]}
+#[1, 3, 2]
+#[2, 1, 3]
+#[2, 3, 1]
+#[3, 1, 2]
+#[3, 2, 1]
+perm = get_vertex_permutations(WEDGE)
+@test Set(perm) == Set([[1, 2, 3, 4, 5, 6],
+                        [1, 3, 2, 4, 6, 5],
+                        [2, 1, 3, 5, 4, 6],
+                        [2, 3, 1, 5, 6, 4],
+                        [3, 1, 2, 6, 4, 5],
+                        [3, 2, 1, 6, 5, 4],
+                        [4, 5, 6, 1, 2, 3],
+                        [4, 6, 5, 1, 3, 2],
+                        [5, 4, 6, 2, 1, 3],
+                        [5, 6, 4, 2, 3, 1],
+                        [6, 4, 5, 3, 1, 2],
+                        [6, 5, 4, 3, 2, 1]])
 
 @test num_facets(SEGMENT) == 2
 @test num_facets(TRI) == 3
@@ -106,20 +144,32 @@ iface_to_ftype = get_face_type(WEDGE,d)
 @test length(reffaces) == 1
 @test iface_to_ftype == [1, 1, 1, 1, 1, 1, 1, 1, 1]
 
-@test get_face_vertex_permutations(QUAD,1) == [[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]]]
-@test get_face_vertex_permutations(QUAD,2) == [[[1,2,3,4],[1,3,2,4],[2,1,4,3],[2,4,1,3],[3,1,4,2],[3,4,1,2],[4,2,3,1],[4,3,2,1]]]
+expected = [[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]]]
+got = get_face_vertex_permutations(QUAD,1)
+@test all(Set(a) == Set(b) for (a,b) in zip(got, expected))
 
-r = [
+expected = [[[1,2,3,4],[1,3,2,4],[2,1,4,3],[2,4,1,3],[3,1,4,2],[3,4,1,2],[4,2,3,1],[4,3,2,1]]]
+got = get_face_vertex_permutations(QUAD,2)
+@test all(Set(a) == Set(b) for (a,b) in zip(got, expected))
+
+expected = [
   [[1]],[[1]],[[1]],[[1]],
   [[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]],
   [[1,2,3,4],[1,3,2,4],[2,1,4,3],[2,4,1,3],[3,1,4,2],[3,4,1,2],[4,2,3,1],[4,3,2,1]]]
-@test get_face_vertex_permutations(QUAD) == r
+got = get_face_vertex_permutations(QUAD)
+@test all(Set(a) == Set(b) for (a,b) in zip(got, expected))
 
-r = [[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]]]
-@test get_face_vertex_permutations(TRI,1) == r
+expected = [[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]]]
+got = get_face_vertex_permutations(TRI,1)
+@test all(Set(a) == Set(b) for (a,b) in zip(got, expected))
 
-@test get_face_vertex_permutations(HEX,3) == [[[1, 2, 3, 4, 5, 6, 7, 8]]]
-@test get_face_vertex_permutations(TET,3) == [[[1, 2, 3, 4]]]
+expected = [[[1, 2, 3, 4, 5, 6, 7, 8], [1, 2, 5, 6, 3, 4, 7, 8], [1, 3, 2, 4, 5, 7, 6, 8], [1, 3, 5, 7, 2, 4, 6, 8], [1, 5, 2, 6, 3, 7, 4, 8], [1, 5, 3, 7, 2, 6, 4, 8], [2, 1, 4, 3, 6, 5, 8, 7], [2, 1, 6, 5, 4, 3, 8, 7], [2, 4, 1, 3, 6, 8, 5, 7], [2, 4, 6, 8, 1, 3, 5, 7], [2, 6, 1, 5, 4, 8, 3, 7], [2, 6, 4, 8, 1, 5, 3, 7], [3, 1, 4, 2, 7, 5, 8, 6], [3, 1, 7, 5, 4, 2, 8, 6], [3, 4, 1, 2, 7, 8, 5, 6], [3, 4, 7, 8, 1, 2, 5, 6], [3, 7, 1, 5, 4, 8, 2, 6], [3, 7, 4, 8, 1, 5, 2, 6], [4, 2, 3, 1, 8, 6, 7, 5], [4, 2, 8, 6, 3, 1, 7, 5], [4, 3, 2, 1, 8, 7, 6, 5], [4, 3, 8, 7, 2, 1, 6, 5], [4, 8, 2, 6, 3, 7, 1, 5], [4, 8, 3, 7, 2, 6, 1, 5], [5, 1, 6, 2, 7, 3, 8, 4], [5, 1, 7, 3, 6, 2, 8, 4], [5, 6, 1, 2, 7, 8, 3, 4], [5, 6, 7, 8, 1, 2, 3, 4], [5, 7, 1, 3, 6, 8, 2, 4], [5, 7, 6, 8, 1, 3, 2, 4], [6, 2, 5, 1, 8, 4, 7, 3], [6, 2, 8, 4, 5, 1, 7, 3], [6, 5, 2, 1, 8, 7, 4, 3], [6, 5, 8, 7, 2, 1, 4, 3], [6, 8, 2, 4, 5, 7, 1, 3], [6, 8, 5, 7, 2, 4, 1, 3], [7, 3, 5, 1, 8, 4, 6, 2], [7, 3, 8, 4, 5, 1, 6, 2], [7, 5, 3, 1, 8, 6, 4, 2], [7, 5, 8, 6, 3, 1, 4, 2], [7, 8, 3, 4, 5, 6, 1, 2], [7, 8, 5, 6, 3, 4, 1, 2], [8, 4, 6, 2, 7, 3, 5, 1], [8, 4, 7, 3, 6, 2, 5, 1], [8, 6, 4, 2, 7, 5, 3, 1], [8, 6, 7, 5, 4, 2, 3, 1], [8, 7, 4, 3, 6, 5, 2, 1], [8, 7, 6, 5, 4, 3, 2, 1]]]
+got = get_face_vertex_permutations(HEX,3)
+@test all(Set(a) == Set(b) for (a,b) in zip(got, expected))
+
+expected = [[[1, 2, 3, 4], [1, 2, 4, 3], [1, 3, 2, 4], [1, 3, 4, 2], [1, 4, 2, 3], [1, 4, 3, 2], [2, 1, 3, 4], [2, 1, 4, 3], [2, 3, 1, 4], [2, 3, 4, 1], [2, 4, 1, 3], [2, 4, 3, 1], [3, 1, 2, 4], [3, 1, 4, 2], [3, 2, 1, 4], [3, 2, 4, 1], [3, 4, 1, 2], [3, 4, 2, 1], [4, 1, 2, 3], [4, 1, 3, 2], [4, 2, 1, 3], [4, 2, 3, 1], [4, 3, 1, 2], [4, 3, 2, 1]]]
+got = get_face_vertex_permutations(TET,3)
+@test all(Set(a) == Set(b) for (a,b) in zip(got, expected))
 
 v,p = simplexify(QUAD)
 @test p == TRI
@@ -191,6 +241,14 @@ for D in 1:5
   @test norm(b1.x_to_λ - b2.x_to_λ) < 1e-14
 end
 
+@test SEGMENT == ExtrusionPolytope(HEX_AXIS) == ExtrusionPolytope(TET_AXIS)
+@test TRI == ExtrusionPolytope(HEX_AXIS, TET_AXIS)
+@test QUAD == ExtrusionPolytope(TET_AXIS, HEX_AXIS)
+@test TET == ExtrusionPolytope(HEX_AXIS, TET_AXIS, TET_AXIS)
+@test HEX == ExtrusionPolytope(TET_AXIS, HEX_AXIS, HEX_AXIS)
+@test PYRAMID == ExtrusionPolytope(TET_AXIS, HEX_AXIS, TET_AXIS)
+@test WEDGE == ExtrusionPolytope(HEX_AXIS, TET_AXIS, HEX_AXIS)
+
 #using Gridap.Fields
 #
 #using .ReferenceFEs: _polytopenfaces
@@ -249,5 +307,18 @@ end
 #
 #f = DFace{3}(p,27)
 
+
+# the Jacobian of each vertex permutation's symmetry maps the vertices onto
+# the permuted ones, exactly, and has determinant ±1
+for p in (SEGMENT, TRI, QUAD, TET, HEX, WEDGE, PYRAMID)
+  x = get_vertex_coordinates(p)
+  for (σ, J) in zip(get_vertex_permutations(p), get_vertex_permutation_jacobians(p))
+    w = invperm(σ)
+    b = x[w[1]] - J⋅x[1]
+    @test all(v -> J⋅x[v] + b == x[w[v]], 1:length(x))
+    @test abs(det(J)) == 1
+  end
+end
+@test all(J -> all(c -> count(!iszero, Tuple(J[:,c])) == 1, 1:3), get_vertex_permutation_jacobians(HEX))
 
 end # module

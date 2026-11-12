@@ -72,7 +72,7 @@ function edge_quadrature(p::Polytope{2}, k::Integer, degree::Integer)
   t = e / L
 
   x = [v1 + si[1] * e for si in ŝ]
-  (x, ŵ .* L, ŝ, t, ReferenceFEs._rot90(t))
+  (x, ŵ .* L, ŝ, t, ReferenceFEs._frame_normal(t))
 end
 
 # Transposed Jacobian of the affine map from the reference triangle onto the
@@ -112,7 +112,7 @@ function mtw_vandermonde(reffe, verts; degree=8)
     xa, xb = F(v̂a), F(v̂b)
     L = norm(xb - xa)
     t = (xb - xa) / L
-    n = ReferenceFEs._rot90(t)
+    n = ReferenceFEs._frame_normal(t)
 
     x̂ = [v̂a + si[1] * (v̂b - v̂a) for si in ŝ]
     Ψ̂x = evaluate(Ψ̂, x̂)                                  # (nq, ndofs)
@@ -284,7 +284,7 @@ end
 # 2D -- transformation to a physical cell
 ############################################################################################
 
-ts2, ns2 = ReferenceFEs._edge_frames(TRI)
+ts2, ns2 = get_edge_tangent(TRI), last(ReferenceFEs._facet_frames(TRI))
 
 test_cells_2d = (
   [Point(0.0, 0.0), Point(1.0, 0.0), Point(0.0, 1.0)],  # the reference cell
@@ -345,7 +345,7 @@ function test_mtw_fe_space_2d(model)
   Λ = SkeletonTriangulation(model)
   dΛ = Measure(Λ, 8)
   n_Λ = get_normal_vector(Λ)
-  t_Λ = Operation(ReferenceFEs._rot90)(n_Λ)
+  t_Λ = Operation(ReferenceFEs._frame_normal)(n_Λ)
 
   # H(div)-conforming: the normal component is continuous
   @test sqrt(sum(∫(jump(wh ⋅ n_Λ) * jump(wh ⋅ n_Λ))dΛ)) < 1e-10

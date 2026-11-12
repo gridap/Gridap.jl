@@ -71,7 +71,7 @@ inpedendent component).
 """
 function get_face_own_nodes_permutations(reffe::LagrangianRefFE,conf::Conformity)
   face_own_nodes = get_face_own_nodes(reffe,conf)
-  _trivial_face_own_dofs_permutations(face_own_nodes)
+  l2_face_own_dofs_permutations(face_own_nodes)
 end
 
 function get_face_own_nodes_permutations(reffe::LagrangianRefFE)
@@ -322,7 +322,7 @@ end
 
 function get_face_own_dofs_permutations(reffe::LagrangianRefFE,conf::L2Conformity)
   face_own_dofs = get_face_own_dofs(reffe,conf)
-  _trivial_face_own_dofs_permutations(face_own_dofs)
+  l2_face_own_dofs_permutations(face_own_dofs)
 end
 
 """

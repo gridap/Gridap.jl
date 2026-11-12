@@ -32,4 +32,8 @@ end
   @time @testset "Mardal-Tai-Winther, 2D and 3D" begin include("MardalTaiWinther.jl") end
 end
 
+@testset "Serendipity H(div) and H(curl)" begin
+  @time @testset "Mixed Poisson and curl-curl" begin include("SerendipityHdivHcurl.jl") end
+end
+
 end

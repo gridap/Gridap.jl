@@ -103,7 +103,7 @@ function _mtw_reffe(::Type{T}, p::Polytope{2}) where T
   cb = LegendreBasis(Val(1), T, 3, Polynomials._p_complement_filter(1))  # P₃(e) ∩ P₁(e)^⊥
 
   function nmom(φ, μ, ds)            # ∫ₑ (Φ⋅n) μ ds
-    n = _edge_normal(ds)
+    n = _facet_normal(ds)
     Broadcasting(Operation(*))(Broadcasting(Operation(⋅))(φ, n), μ)
   end
   function tmom(φ, μ, ds)            # ∫ₑ (Φ⋅t) μ ds
@@ -274,7 +274,7 @@ struct MTWChangeOfBasis <: Map
 end
 
 function MTWChangeOfBasis(p::Polytope{2}, transposed_inverse::Bool)
-  ts, ns = _edge_frames(p)
+  ts, ns = get_edge_tangent(p), last(_facet_frames(p))
   MTWChangeOfBasis(ts, ns, transposed_inverse)
 end
 

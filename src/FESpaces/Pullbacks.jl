@@ -82,23 +82,36 @@ end
 function compute_cell_bases_changes(
   ::ReferenceFEName, ::ContraVariantPiolaMap, model, cell_reffe, cell_Jt
 )
-  change = get_sign_flip(model, cell_reffe) # equal to its transposed inverse
-  return (change,change)
+  normal_change = get_sign_flip(model, cell_reffe) # equal to its transposed inverse
+  _face_sign_cell_bases_changes(model, cell_reffe, normal_change)
 end
 
 function compute_cell_bases_changes(
   ::ReferenceFEName, ::CoVariantPiolaMap, model, cell_reffe, cell_Jt
 )
-  D = num_cell_dims(model)
-  poly = only(get_polytopes(model))
-  if (D==2) || is_simplex(poly)
-    # For these cases, we do not need to aply a sign flip
-    return nothing
-  elseif (D==3) && is_n_cube(poly)
-    change = get_sign_flip(model, cell_reffe)
-    return (change,change)
-  end
-  @notimplemented
+  _face_sign_cell_bases_changes(model, cell_reffe, nothing)
+end
+
+function _face_sign_cell_bases_changes(model, cell_reffe, normal_change)
+  no_face_change = isnothing(normal_change) ? nothing : (normal_change, normal_change)
+
+  # Cheap check first, on the reference FEs only: no face DoF ever changes sign
+  ctype_reffe, _ = compress_cell_data(cell_reffe)
+  all_ones(signs) = all(f -> all(s -> all(isone, s), f), signs)
+  all(reffe -> all_ones(get_face_own_dofs_signs(reffe)), ctype_reffe) && return no_face_change
+
+  @notimplementedif length(ctype_reffe) > 1 """\n
+  Face DoF sign changes are not implemented for meshes with more than one
+  reference FE (got $(length(ctype_reffe))).
+  """
+  k = FaceDofSignMap(model, only(ctype_reffe))
+  # oriented meshes: every cell sees its faces in the reference order
+  all(isone, k.cell_lface_pindex.data) && return no_face_change
+
+  face_change = lazy_map(k, IdentityVector(num_cells(model)))
+  isnothing(normal_change) && return (face_change, face_change)
+  change = lazy_map(*, normal_change, face_change)
+  return (change, change)
 end
 
 using Gridap.ReferenceFEs: DoubleContraVariantPiolaMap
@@ -701,6 +714,44 @@ function compute_cell_bases_changes(
     )
   end
   return (cell_change, cell_change_invt)
+end
+
+"""
+    struct FaceDofSignMap <: Map
+
+Map taking a cell id to the diagonal ±1 change of basis of its DoFs: the
+`get_face_own_dofs_signs` of the reference FE, at the `pindex` of each local
+face of the cell (`get_cell_permutations(topo)`).
+"""
+struct FaceDofSignMap{P} <: Map
+  cell_lface_pindex::P
+  face_own_dofs::Vector{Vector{Int}}
+  face_dof_signs::Vector{Vector{Vector{Int}}}
+end
+
+function FaceDofSignMap(model::DiscreteModel, reffe)
+  FaceDofSignMap(
+    get_cell_permutations(get_grid_topology(model)),
+    get_face_own_dofs(reffe),
+    get_face_own_dofs_signs(reffe)
+  )
+end
+
+function return_value(k::FaceDofSignMap, cell)
+  Diagonal(fill(one(Float64), sum(length, k.face_own_dofs)))
+end
+
+return_cache(k::FaceDofSignMap, cell) = CachedVector(Float64)
+
+function evaluate!(cache, k::FaceDofSignMap, cell)
+  setsize!(cache, (sum(length, k.face_own_dofs),))
+  signs = cache.array
+  pindex = k.cell_lface_pindex
+  p = pindex.ptrs[cell] - 1
+  for (lface, own) in enumerate(k.face_own_dofs)
+    signs[own] .= k.face_dof_signs[lface][pindex.data[p+lface]]
+  end
+  return Diagonal(signs)
 end
 
 ############################################################################################

@@ -105,7 +105,7 @@ function gls_vandermonde(reffe, verts, σ; degree=12)
     xa, xb = F(v̂a), F(v̂b)
     L = norm(xb - xa)                # physical edge length: ds = L dŝ
     t = (xb - xa) / L                # nt-moments are bilinear, both flip: either sense
-    nrm = ReferenceFEs._rot90(t)
+    nrm = ReferenceFEs._frame_normal(t)
 
     x̂ = [v̂a + s[1] * (v̂b - v̂a) for s in ŝ]
     Ψ̂x = evaluate(Ψ̂, x̂)
@@ -177,7 +177,7 @@ function test_gls_dofs(r)
     v̂a, v̂b = get_face_coordinates(TRI, 1)[e]
     L = norm(v̂b - v̂a)
     t = (v̂b - v̂a) / L
-    n = ReferenceFEs._rot90(t)
+    n = ReferenceFEs._frame_normal(t)
     x̂ = [v̂a + s[1] * (v̂b - v̂a) for s in ŝ]
     φx = evaluate(prebasis, x̂)
     μ = evaluate(μb, ŝ)
@@ -193,7 +193,7 @@ function test_gls_dofs(r)
     xc, wc = get_coordinates(cq), get_weights(cq)
     φc = evaluate(prebasis, xc)
     qc = evaluate(cb, xc)
-    ts, ns = ReferenceFEs._edge_frames(TRI)
+    ts, ns = get_edge_tangent(TRI), last(ReferenceFEs._facet_frames(TRI))
     nq = length(cb)
     for (k, d) in enumerate(own[7]), j in 1:ndofs
       e = (k - 1) ÷ nq + 1                 # which edge's frame this set uses
@@ -297,7 +297,7 @@ function test_gls_fe_space(r, model)
   Λ = SkeletonTriangulation(model)
   dΛ = Measure(Λ, 2*r + 6)
   n = get_normal_vector(Λ).⁺
-  t = Operation(ReferenceFEs._rot90)(n)   # the unit tangent of the shared edge
+  t = Operation(ReferenceFEs._frame_normal)(n)   # the unit tangent of the shared edge
 
   # Only the normal-tangential component is continuous -- the defining property
   @test sqrt(sum(∫((t ⋅ jump(wh) ⋅ n) * (t ⋅ jump(wh) ⋅ n))dΛ)) < 1e-12
