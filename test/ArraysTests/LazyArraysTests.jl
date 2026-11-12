@@ -326,4 +326,22 @@ c = a + b
 @test all(lazy_map(test_map,c,k,a,b))
 @test all(lazy_map((x...)->test_map(x...,cmp=≈),c,k,a,b))
 
+# array_cache type stability: compiler must infer a concrete type (not Any)
+# on both the miss path and the hit path (DAG — same node as multiple args).
+let
+  x = [1.0, 2.0, 3.0]
+  y = lazy_map(a -> a .+ 1.0, x)
+
+  # true DAG — y shared as both args; second array_cache(dict,y) is a cache hit
+  res = lazy_map((a,b) -> a .+ b, y, y)
+  rt = only(Base.return_types(array_cache, (Dict{UInt,Any}, typeof(res))))
+  @test rt != Any
+
+  # correctness — DAG sharing preserved: both occurrences of y share the same IndexItemPair
+  dict = Dict{UInt,Any}()
+  c = array_cache(dict, res)
+  cf = c[1][3]   # cache layout: ((cg, cgi, cf), IndexItemPair) → cf is arg caches
+  @test cf[1][2] === cf[2][2]
+end
+
 end # module
