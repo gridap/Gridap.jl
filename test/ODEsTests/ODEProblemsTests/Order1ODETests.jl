@@ -157,13 +157,18 @@ function legendre_ode_operator(::Type{ODEType}, degree::Int) where {ODEType}
 
   function mass(t)
     M = copy(mat0)
-    diagview(M,0) .= 1
-    diagview(M,-1) .= -t
+    M[1,1] = 1
+    for i in 2:degree
+        M[i,i] = 1
+        M[i,i-1] = -t
+    end
     return M
   end
 
   K = copy(mat0)
-  diagview(K,-1) .= -(2:degree)
+  for i in 2:degree
+      K[i,i-1] = -i
+  end
   stiffness(t) = K
 
   forcing(t) = Float64[i == 1 for i in 1:n]
