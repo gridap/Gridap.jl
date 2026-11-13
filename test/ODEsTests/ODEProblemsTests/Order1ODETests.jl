@@ -194,8 +194,17 @@ function test_solver_order(tableau, order::Int)
   end
 end
 
-@testset for tableau in available_tableaus
-  test_solver_order(tableau, get_order(ButcherTableau(tableau)))
+@testset for tableau_name in available_tableaus
+  tableau = ButcherTableau(tableau_name)
+  test_solver_order(tableau, get_order(tableau))
+  if tableau isa EmbeddedTableau
+    emb_tableau = GenericTableau(
+      get_matrix(tableau),
+      get_embedded_weights(tableau),
+      get_embedded_order(tableau)
+    )
+    @testset "embedded method" test_solver_order(emb_tableau, get_order(emb_tableau))
+  end
 end
 
 end # module Order1ODETests
