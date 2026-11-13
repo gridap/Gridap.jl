@@ -328,7 +328,7 @@ function ButcherTableau(::EXRK_BogackiShampine_4_3, ::Type{T}=Float64) where {T}
   order = 3
   tableau = GenericTableau(matrix, weights, order)
 
-  emb_weights = T[0, a, b, 1]
+  emb_weights = T[7//24, 1//4, 1//3, 1//8]
   emb_order = 2
   EmbeddedTableau(tableau, emb_weights, emb_order)
 end

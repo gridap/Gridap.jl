@@ -32,7 +32,7 @@ function Algebra.allocate_residual(
   t::Real, us::Tuple{Vararg{AbstractVector}},
   odeopcache
 )
-  f = forcing(t)
+  f = odeop.forcing(t)
   copy(f)
 end
 

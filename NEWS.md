@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `+` and `-` of `HighOrderTensorValue`s with more than 32 components are now type-stable. Since PR[#1350](https://github.com/gridap/Gridap.jl/pull/1350).
 - Implemented `Base.muladd` for `MultiValue`'d inputs, optimizing it using fma if an argument is scalar. Since PR[#1347](https://github.com/gridap/Gridap.jl/pull/1347).
 - Raviart–Thomas, Nédélec and BDM now work on non-oriented meshes, except for Nédélec on tetrahedra (one must use `rotating_pλ`, `trimmed_pλ` for that). Since PR[#1349](https://github.com/gridap/Gridap.jl/pull/1349).
+- Fixed `SDIRK_3_3`, the embedded method in `EXRK_BogackiShampine_4_3`, and the order returned by `get_order` and `get_embedded_order` for `DIRK_TRBDF_3_2`, `DIRK_TRX_3_2`, and `SDIRK_4_3`. Since PR[#1354](https://github.com/gridap/Gridap.jl/pull/1354).
 
 ### Changed
 

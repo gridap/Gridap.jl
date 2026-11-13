@@ -194,6 +194,11 @@ end
 
 """
     DIRK_TRBDF_3_2
+
+L-stable 3-stage 2nd order ESDIRK method with a 3rd order embedded method.
+
+# References
+M.E. Hosea, L.F. Shampine, Analysis and implementation of TR-BDF2 (1996).
 """
 struct DIRK_TRBDF_3_2 <: TableauName end
 
@@ -207,19 +212,24 @@ function ButcherTableau(::DIRK_TRBDF_3_2, ::Type{T}=Float64) where {T<:Real}
     w w d
   ]
   weights = T[w, w, d]
-  order = 3
+  order = 2
   tableau = GenericTableau(matrix, weights, order)
 
   ĉ = d / 3
   b̂ = (3 * w + 1) / 3
   â = 1 - b̂ - ĉ
   emb_weights = [â, b̂, ĉ]
-  emb_order = 2
+  emb_order = 3
   EmbeddedTableau(tableau, emb_weights, emb_order)
 end
 
 """
     DIRK_TRX_3_2
+
+A-stable 3-stage 2nd order ESDIRK method with a 3rd order embedded method.
+
+# References
+M.E. Hosea, L.F. Shampine, Analysis and implementation of TR-BDF2 (1996).
 """
 struct DIRK_TRX_3_2 <: TableauName end
 
@@ -232,26 +242,31 @@ function ButcherTableau(::DIRK_TRX_3_2, ::Type{T}=Float64) where {T<:Real}
     a b a
   ]
   weights = T[a, b, a]
-  order = 3
+  order = 2
   tableau = GenericTableau(matrix, weights, order)
 
   c = 1 / 6
   d = 2 / 3
   emb_weights = [c, d, c]
-  emb_order = 2
+  emb_order = 3
   EmbeddedTableau(tableau, emb_weights, emb_order)
 end
 
 """
     SDIRK_3_3
+
+L-stable, 3-stage, 3rd order SDIRK
+
+# References
+R. Alexander, Diagonally Implicit Runge–Kutta Methods for Stiff O.D.E.’s (1977)
 """
 struct SDIRK_3_3 <: TableauName end
 
 function ButcherTableau(::SDIRK_3_3, ::Type{T}=Float64) where {T}
-  α = 2 * cospi(1 // 18) / sqrt(3)
+  α = 1 + sqrt(2) * cos((acos(sqrt(8) / 3) - 2π) / 3)
   a = (1 - α) / 2
-  b = -3 * α^2 + 4 * α - 1 // 4
-  c = 3 * α^2 - 5 * α + 5 // 4
+  b = -3 // 2 * α^2 + 4 * α - 1 // 4
+  c = 3 // 2 * α^2 - 5 * α + 5 // 4
   matrix = T[
     α 0 0
     a α 0
@@ -264,11 +279,16 @@ end
 
 """
     SDIRK_Crouzeix_3_4
+    SDIRK_Norsett_3_4
+
+A-stable 3-stage 4th order SDIRK
 """
 struct SDIRK_Crouzeix_3_4 <: TableauName end
 
 function ButcherTableau(::SDIRK_Crouzeix_3_4, ::Type{T}=Float64) where {T}
   α = 2 * cospi(1 // 18) / sqrt(3)
+  # One of the three roots of x^3 - 3*x^2 + x/2 - 1/24
+  # The largest one brings most stability
   a = (1 + α) / 2
   b = -α / 2
   c = 1 + α
@@ -285,28 +305,10 @@ function ButcherTableau(::SDIRK_Crouzeix_3_4, ::Type{T}=Float64) where {T}
   GenericTableau(matrix, weights, order)
 end
 
-"""
-    SDIRK_Norsett_3_4
-"""
 struct SDIRK_Norsett_3_4 <: TableauName end
 
 function ButcherTableau(::SDIRK_Norsett_3_4, ::Type{T}=Float64) where {T}
-  # One of the three roots of x^3 - 3*x^2 + x/2 - 1/24
-  # The largest one brings most stability
-  α = 1.0685790213016289
-  b = 1 // 2 - α
-  c = 2 * α
-  d = 1 - 4 * α
-  e = 1 // 6 / (1 - 2 * α)^2
-  f = 1 - 1 // 3 / (1 - 2 * α)^2
-  matrix = T[
-    α 0 0
-    b α 0
-    c d α
-  ]
-  weights = T[e, f, e]
-  order = 4
-  GenericTableau(matrix, weights, order)
+  return ButcherTableau(SDIRK_Crouzeix_3_4(), T)
 end
 
 """
@@ -349,6 +351,6 @@ function ButcherTableau(::SDIRK_4_3, ::Type{T}=Float64) where {T}
     d e a a
   ]
   weights = T[d, e, a, a]
-  order = 4
+  order = 3
   GenericTableau(matrix, weights, order)
 end
