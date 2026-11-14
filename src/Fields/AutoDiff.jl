@@ -221,6 +221,50 @@ function (::PartialDerivatives{N})(f::Function, x::Point{D}, fx::Number) where {
 end
 
 _indep_comp_svector(a::Number) = SVector(get_indep_components(a))
+
+function exterior_derivative(ω::Function)
+  function _exterior_derivative(x)
+    exterior_derivative(ω,x)
+  end
+end
+
+exterior_derivative(ω::Function, x::Point) =
+  partials_to_exteriorderivative(partial_derivatives(ω,x))
+
+function codifferential(ω::Function, I::UniformScaling)
+  function _codifferential(x)
+    codifferential(ω,x,I)
+  end
+end
+
+codifferential(ω::Function, x::Point, ::UniformScaling) =
+  partials_to_flat_codifferential(partial_derivatives(ω,x))
+
+# With the metric given as functions too, `g` and the `metric_args` that
+# `partials_to_codifferential` takes after it:
+#
+# function codifferential(ω::Function, g::Function, metric_args::Function...)
+#   function _codifferential(x)
+#     codifferential(ω,x,g,metric_args...)
+#   end
+# end
+#
+# function codifferential(ω::Function, x::Point, g::Function, metric_args::Function...)
+#   gx = g(x)
+#   args = map(a -> a(x), metric_args)
+#   Γ = partials_to_Christoffel_2(partial_derivatives(g,x), gx, args...)
+#   partials_to_codifferential(partial_derivatives(ω,x), ω(x), Γ, gx, args...)
+# end
+
+function lie_derivative(v::Function, ω::Function)
+  function _lie_derivative(x)
+    lie_derivative(v,ω,x)
+  end
+end
+
+lie_derivative(v::Function, ω::Function, x::Point) = partials_to_liederivative(
+  v(x), ω(x), partial_derivatives(v,x), partial_derivatives(ω,x))
+
 #####################################################################################
 # Arbitrary-order gradients by forward-mode automatic differentiation
 #
@@ -252,7 +296,7 @@ function seed_point(x::Point{D}, ::Val{N}) where {D,N}
 end
 
 #     taylor_tensor(::Type{G}, v, Val(N), Val(D))
-# 
+#
 # The tensor of type `G` whose entry `(i₁,…,i_N, c…)` is `∂_{i₁}⋯∂_{i_N} v_c`, read off the value
 # `v` of a field at an `N`-times seeded point. Derivative indices
 # come first (Gridap's convention, `∇f[i,j] = ∂ᵢf_j`), in column-major order.

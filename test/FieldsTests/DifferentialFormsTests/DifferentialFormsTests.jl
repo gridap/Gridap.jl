@@ -334,4 +334,53 @@ bδ = Broadcasting(codifferential)(Fill(ωfld,3),LinearAlgebra.I)
 bκ = Broadcasting(koszul)(Fill(ωfld,3))
 @test evaluate(bκ[1], x1) === evaluate(koszul(ωfld), x1)
 
+# ── operators of functions ────────────────────────────────────────────────────
+# Of a function, 𝑑, δ and 𝓛 are functions, as ∇ and divergence are, with the
+# values of the field versions.
+
+@test 𝑑(ωfun) isa Function
+@test 𝑑(ωfun)(x1) === evaluate(exterior_derivative(ωfld), x1)
+@test (∇∧ωfun)(x1) === 𝑑(ωfun)(x1)
+@test δ(ωfun, LinearAlgebra.I)(x1) === evaluate(δω, x1)
+@test 𝓛(ufun, ωfun)(x1) === evaluate(Lω, x1)
+
+# They compose, the outer one differentiating through the inner one: the Hodge
+# Laplacian dδ + δd of a 1-form of ℝ³ proxies minus the vector Laplacian.
+uvec(y) = VectorValue(y[1]*y[2]^2, sin(y[3])*y[1], exp(y[2])*y[3])
+u1form(y) = ExteriorFormValue{1,Cov(3)}(Tuple(uvec(y)))
+x3 = Point(0.3, -0.7, 1.1)
+hodge_lap(u) = y -> 𝑑(δ(u, LinearAlgebra.I))(y) + δ(𝑑(u), LinearAlgebra.I)(y)
+@test collect(Tuple(hodge_lap(u1form)(x3))) ≈ collect(Tuple(-laplacian(uvec)(x3)))
+@test iszero(𝑑(𝑑(u1form))(x3))
+δδ = δ(δ(𝑑(u1form), LinearAlgebra.I), LinearAlgebra.I)(x3)
+@test δδ ≈ zero(δδ) atol=1e-12
+
+# With the metric as functions, see the commented `codifferential` methods of
+# `Fields/AutoDiff.jl`. The Euclidean metric gives the flat δ.
+#
+# g_flat(y)     = one(SymTensorValue{Cov(2),Float64})
+# g_flat_inv(y) = one(SymTensorValue{Con(2),Float64})
+# @test δ(ωfun, g_flat, g_flat_inv)(x1) ≈ δ(ωfun, LinearAlgebra.I)(x1)
+#
+# Polar coordinates φ(r,θ) = (r cos θ, r sin θ) are an isometry from the
+# metric g = φ*e = dr² + r²dθ², so δ and 𝑑 commutes with the pullback by φ.
+#
+# polar(y) = Point(y[1]*cos(y[2]), y[1]*sin(y[2]))
+# polar_Jt(y) = TensorValue{Cov(2),Con(2)}(cos(y[2]), -y[1]*sin(y[2]), sin(y[2]), y[1]*cos(y[2]))
+# g_polar(y)     = SymTensorValue{Cov(2)}(1.0, 0.0, y[1]^2)
+# g_polar_inv(y) = SymTensorValue{Con(2)}(1.0, 0.0, 1/y[1]^2)
+# pulled(ω) = y -> pullback(ω(polar(y)), polar_Jt(y))
+# ωpolar = pulled(ωfun)
+# y1 = Point(1.3, 0.4)
+# @test δ(ωpolar, g_polar, g_polar_inv)(y1) ≈ δ(ωfun, LinearAlgebra.I)(polar(y1))
+# δ_polar(ω) = δ(ω, g_polar, g_polar_inv)
+# δ_flat(ω)  = δ(ω, LinearAlgebra.I)
+# @test 𝑑(δ_polar(ωpolar))(y1) + δ_polar(𝑑(ωpolar))(y1) ≈
+#       pulled(y -> 𝑑(δ_flat(ωfun))(y) + δ_flat(𝑑(ωfun))(y))(y1)
+
+# partial derivatives of an argument they are not defined for reach the
+# abstract `evaluate!`, rather than calling themselves again through the
+# generic `Map` call
+@test_throws ErrorException partial_derivatives(Operation(flat_hodge_star)(ωfun))
+
 end # module

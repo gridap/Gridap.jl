@@ -154,7 +154,7 @@ needs_DG_calc(f::Field, x::Point) = needs_DG_calc(return_type(f,x))
 needs_DG_calc(basis::AbstractArray{<:Field}, x::Point) =
   needs_DG_calc(eltype(return_type(basis,x)))
 
-evaluate!(cache,k::PartialDerivatives,f) = k(f)
+evaluate!(cache, k::PartialDerivatives, f::Union{Field,Function}) = k(f)
 
 evaluate!(cache,::Broadcasting{typeof(∇)},a::Field) = ∇(a)
 evaluate!(cache,::Broadcasting{typeof(∇∇)},a::Field) = ∇∇(a)
@@ -683,12 +683,12 @@ function product_rule(::typeof(⋅),f1::TensorValue,f2::VectorValue,∇f1,∇f2)
   ∇f1⋅f2 + ∇f2⋅transpose(f1)
 end
 
-# ∂_k (f1⋅f2)_j = (∂_k f1)_a f2_aj + f1_a (∂_k f2)_kaj. 
+# ∂_k (f1⋅f2)_j = (∂_k f1)_a f2_aj + f1_a (∂_k f2)_kaj.
 function product_rule(::typeof(⋅),f1::VectorValue,f2::TensorValue,∇f1,∇f2)
   ∇f1⋅f2 + tensor_contraction(∇f2,f1,Val(2),Val(1))
 end
 
-# ∂_k (f1⋅f2)_ij = (∂_k f1)_kia f2_aj + f1_ia (∂_k f2)_kaj. 
+# ∂_k (f1⋅f2)_ij = (∂_k f1)_kia f2_aj + f1_ia (∂_k f2)_kaj.
 function product_rule(::typeof(⋅),f1::TensorValue,f2::TensorValue,∇f1,∇f2)
   ∇f1⋅f2 + permutedims(tensor_contraction(f1,∇f2,Val(2),Val(2)),Val((2,1,3)))
 end

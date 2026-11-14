@@ -216,6 +216,7 @@ const 𝓛 = lie_derivative
 
 """
     codifferential(ω)
+    codifferential(ω::Function, ::UniformScaling)
     δ(ω)
 
 Codifferential of a differential K-form `ω`, is a (K-1)-form:
@@ -223,7 +224,8 @@ Codifferential of a differential K-form `ω`, is a (K-1)-form:
 with ``s = sgn(det(g))``, ``+1`` for Riemanian metric, ``-1`` for Lorentzian metric.
 
 It depends on the metric via the [`hodge_star`](@ref). The metric is is
-automatically fed to `ω` if it is a cell field.
+automatically fed to `ω` if it is a cell field. For a function `ω`, `δ(ω, I)`
+is the flat codifferential (Euclidean metric).
 """
 function codifferential end
 
