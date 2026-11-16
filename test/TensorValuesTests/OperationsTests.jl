@@ -921,6 +921,11 @@ st = SymTensorValue(1:3...)
 st = SymTensorValue(9,8,7,5,4,1)
 @test det(st) == det(TensorValue(get_array(st)))
 @test inv(st) ≈  inv(TensorValue(get_array(st)))
+@test inv(st) isa SymTensorValue{3,Float64}
+
+g = SymTensorValue{cov3}(4.,1,0.5,3,0.2,2)
+@test inv(g) isa SymTensorValue{con3,Float64}
+@test get_array(inv(g)) ≈ inv(get_array(g))
 
 qk = SkewSymTensorValue{1,Int}()
 @test det(qk) == det(TensorValue(get_array(qk)))

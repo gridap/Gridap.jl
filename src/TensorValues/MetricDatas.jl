@@ -85,7 +85,7 @@ Base.merge(nt::NamedTuple, md::MetricData) = merge(nt, NamedTuple(md))
 MetricData(gdata::MetricData) = gdata
 
 # Computes the field (only) if it is not stored
-function Base.getproperty(md::MetricData, name::Symbol)
+@inline function Base.getproperty(md::MetricData, name::Symbol)
   if     name==:g
     g = getfield(md, :g)
     !isnothing(g) && return g
@@ -109,7 +109,7 @@ function Base.getproperty(md::MetricData, name::Symbol)
   end
 end
 
-function Base.getproperty(::MetricData{Nothing,Nothing,T}, name::Symbol) where T
+@inline function Base.getproperty(::MetricData{Nothing,Nothing,T}, name::Symbol) where T
   if     name==:g
     return UniformScaling{T}(one(T))
   elseif name==:g_inv
@@ -124,7 +124,7 @@ end
 # The signed volume density sgn(det g)√|det g| of a metric tensor. A function of
 # its own so that `partial_derivatives` of an expression holding it has a rule
 # to apply, see [`partials_op_rule`](@ref).
-_signed_sqrt_det(g::SymTensorValue) = (d = det(g); copysign(sqrt(abs(d)), d))
+@inline _signed_sqrt_det(g::SymTensorValue) = (d = det(g); copysign(sqrt(abs(d)), d))
 
 # `det g` and `det g⁻¹` are reciprocal, hence of one sign. One of the two is
 # always stored, so the sign of the metric index is always available.

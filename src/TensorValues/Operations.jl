@@ -756,7 +756,7 @@ rank(a::MultiValue) = rank(SArray(a))
 
 Determinent of square second order tensors.
 """
-function det(a::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+@inline function det(a::MultiValue{Tuple{D1,D2}}) where {D1,D2}
   D1 == D2 || @unreachable "det only defined for square tensors, got size $(size(a))"
   _det(Val(Int(D1)), a)
 end
@@ -771,13 +771,13 @@ _det(::Val{D}, a) where D = det(get_array(a))
 
 _det(::Val{1}, a) = a[1]
 
-function _det(::Val{2}, a)
+@inline function _det(::Val{2}, a)
   a_11 = a[1, 1]; a_12 = a[1, 2]
   a_21 = a[2, 1]; a_22 = a[2, 2]
   a_11*a_22 - a_12*a_21
 end
 
-function _det(::Val{3}, a)
+@inline function _det(::Val{3}, a)
   a_11 = a[1,1]; a_12 = a[1,2]; a_13 = a[1,3]
   a_21 = a[2,1]; a_22 = a[2,2]; a_23 = a[2,3]
   a_31 = a[3,1]; a_32 = a[3,2]; a_33 = a[3,3]
@@ -864,11 +864,13 @@ function pinvJt(J_or_Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
   V(m_pinv)
 end
 
-function inv(a::SymTensorValue{D}) where D
+@inline function inv(a::SymTensorValue{D}) where D
   V = SymTensorValue{inverse_variance(D)}
   if Int(D) == 2
     c = 1/det(a)
     V(a[2,2]*c, -a[2,1]*c, a[1,1]*c)
+  elseif Int(D) == 3
+    adjugate(a) * inv(det(a))
   else
     _inv_array(V, a)
   end
@@ -980,7 +982,7 @@ function adjugate(a::MultiValue{Tuple{D1,D2},T}) where {D1,D2,T}
   end
 end
 
-function adjugate(a::SymTensorValue{D,T}) where {D,T}
+@inline function adjugate(a::SymTensorValue{D,T}) where {D,T}
   D_inv = inverse_variance(D)
   V = SymTensorValue{D_inv}
   if D==0

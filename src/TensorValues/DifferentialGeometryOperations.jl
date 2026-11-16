@@ -9,6 +9,7 @@
 
 function _parse_and_check_metricargs(eu, fields::Tuple{Symbol,Vararg{Symbol}}, D)
   quote
+    $(Expr(:meta, :inline))
     md = parse_metric_data(metric_args...)
     isidentity(md) && return $eu
     (; $(fields...)) = md
