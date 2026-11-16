@@ -37,8 +37,11 @@ function allocate_odecache(
   num_stages = length(get_nodes(odeslvr.tableau))
   slopes = [zero(u0) for _ in 1:num_stages]
 
+  fsal = get_order(odeop) == 1 && is_first_same_as_last(odeslvr.tableau)
+  initialized = false
+
   sysslvrcache = nothing
-  odeslvrcache = (ui_pre, slopes, sysslvrcache)
+  odeslvrcache = (initialized, fsal, ui_pre, slopes, sysslvrcache)
 
   (odeslvrcache, odeopcache)
 end
@@ -52,7 +55,7 @@ function ode_march!(
   # Unpack inputs
   u0 = state0[1]
   odeslvrcache, odeopcache = odecache
-  ui_pre, slopes, sysslvrcache = odeslvrcache
+  initialized, fsal, ui_pre, slopes, sysslvrcache = odeslvrcache
 
   # Unpack solver
   sysslvr = odeslvr.sysslvr
@@ -60,6 +63,14 @@ function ode_march!(
   A, b, c = get_matrix(tableau), get_weights(tableau), get_nodes(tableau)
 
   for i in eachindex(c)
+    # If fsal then we can reuse last slope from previous timestep
+    if i == firstindex(c) && fsal && initialized
+      tmp = first(slopes)
+      slopes[firstindex(slopes)] = last(slopes)
+      slopes[lastindex(slopes)] = tmp
+      continue
+    end
+
     # Define scheme
     x = slopes[i]
     tx = t0 + c[i] * dt
@@ -87,7 +98,7 @@ function ode_march!(
   stateF = _update_exrk!(stateF, state0, dt, slopes, b)
 
   # Pack outputs
-  odeslvrcache = (ui_pre, slopes, sysslvrcache)
+  odeslvrcache = (true, fsal, ui_pre, slopes, sysslvrcache)
   odecache = (odeslvrcache, odeopcache)
   (tF, stateF, odecache)
 end
@@ -110,12 +121,14 @@ function allocate_odecache(
   is_semilinear = ODEOperatorType(odeop) <: AbstractSemilinearODE
   constant_mass = is_form_constant(odeop, 1)
   reuse = (is_semilinear && constant_mass)
+  fsal = get_order(odeop) == 1 && is_first_same_as_last(odeslvr.tableau)
+  initialized = false
 
   J = allocate_jacobian(odeop, t0, us0N, odeopcache)
   r = allocate_residual(odeop, t0, us0N, odeopcache)
 
   sysslvrcache = nothing
-  odeslvrcache = (reuse, ui_pre, slopes, J, r, sysslvrcache)
+  odeslvrcache = (initialized, reuse, fsal, ui_pre, slopes, J, r, sysslvrcache)
 
   (odeslvrcache, odeopcache)
 end
@@ -130,7 +143,7 @@ function ode_march!(
   # Unpack inputs
   u0 = state0[1]
   odeslvrcache, odeopcache = odecache
-  reuse, ui_pre, slopes, J, r, sysslvrcache = odeslvrcache
+  initialized, reuse, fsal, ui_pre, slopes, J, r, sysslvrcache = odeslvrcache
 
   # Unpack solver
   sysslvr = odeslvr.sysslvr
@@ -138,6 +151,14 @@ function ode_march!(
   A, b, c = get_matrix(tableau), get_weights(tableau), get_nodes(tableau)
 
   for i in eachindex(c)
+    # If fsal then we can reuse last slope from previous timestep
+    if i == firstindex(c) && fsal && initialized
+      tmp = first(slopes)
+      slopes[firstindex(slopes)] = last(slopes)
+      slopes[lastindex(slopes)] = tmp
+      continue
+    end
+
     # Define scheme
     # Set x to zero to split jacobian and residual
     x = slopes[i]
@@ -168,7 +189,7 @@ function ode_march!(
   stateF = _update_exrk!(stateF, state0, dt, slopes, b)
 
   # Pack outputs
-  odeslvrcache = (reuse, ui_pre, slopes, J, r, sysslvrcache)
+  odeslvrcache = (true, reuse, fsal, ui_pre, slopes, J, r, sysslvrcache)
   odecache = (odeslvrcache, odeopcache)
   (tF, stateF, odecache)
 end
