@@ -971,15 +971,14 @@ inv(a::SkewSymTensorValue{2}) = (typeof(a))(-inv(a.data[1]))
 inv(a::SkewSymTensorValue{3,T,L}) where {T,L} = SkewSymTensorValue{3,T}(tfill(inv(zero(T)), Val(L)))
 
 """
-    inv(a::MultiValue{Tuple{D1,D2,D1,D2}})
+    inv(a::HighOrderTensorValue{Tuple{D1,D2,D1,D2}})
 
 Inverse with respect to [`⋅²`](@ref double_contraction):
 `a ⋅² a⁻¹ == a⁻¹ ⋅² a == 𝕀`, with `𝕀[i,j,k,l] = δᵢₖδⱼₗ`.
-It does not exist for tensors with minor symmetries (e.g. `SymFourthOrderTensorValue`).
 """
-function inv(a::MultiValue{Tuple{D1,D2,D1,D2}}) where {D1,D2}
+function inv(a::HighOrderTensorValue{Tuple{D1,D2,D1,D2}}) where {D1,D2}
   M = D1*D2
-  m = SMatrix{M,M}(Tuple(get_array(a)))
+  m = SMatrix{M,M}(Tuple(a))
   HighOrderTensorValue{Tuple{D1,D2,D1,D2}}(Tuple(inv(m)))
 end
 
