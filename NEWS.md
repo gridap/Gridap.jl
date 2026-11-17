@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implemented arbitrary-order gradients `gradient(f, Val(N))` of fields using forward-mode automatic differentiation. Hand-written kernels still take precedence. Since PR[#1350](https://github.com/gridap/Gridap.jl/pull/1350).
 - Added support for moment-based quadratures and measures on triangulations. Since PR[#1352](https://github.com/gridap/Gridap.jl/pull/1352).
 - Added the serendipity H(div) and H(curl) reference FEs on quadrilaterals and hexahedra, `sdiv`, `scurl`, `trimmed_sdiv` and `trimmed_scurl`. Their prebasis is the new `SerendipityPolyBasis`, also available through `FEEC_poly_basis` with the family `:S` or `:S⁻`. Since PR[#1349](https://github.com/gridap/Gridap.jl/pull/1349).
-- Added `inv` for fourth order tensors `HighOrderTensorValue{Tuple{D1,D2,D1,D2}}`, the inverse with respect to the double contraction `⋅²`, such that `a ⋅² inv(a) == inv(a) ⋅² a == 𝕀` with `𝕀ᵢⱼₖₗ = δᵢₖδⱼₗ`. Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX).
+- Added `inv` for fourth order tensors `HighOrderTensorValue{Tuple{D1,D2,D1,D2}}`, the inverse with respect to the double contraction `⋅²`, such that `a ⋅² inv(a) == inv(a) ⋅² a == 𝕀` with `𝕀ᵢⱼₖₗ = δᵢₖδⱼₗ`. Since PR[#1356](https://github.com/gridap/Gridap.jl/pull/XXXX).
 
 ### Fixed
 
