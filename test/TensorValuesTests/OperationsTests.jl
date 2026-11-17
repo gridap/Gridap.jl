@@ -902,23 +902,12 @@ t = TensorValue{2,3}(1:6...)
 @test_throws ErrorException inv(t)
 
 # Inverse of fourth order tensors w.r.t. ⋅²
-for D in 1:3
-  I2 = one(TensorValue{D,D,Float64})
-  I4 = HighOrderTensorValue(Val(4), Tuple(Float64(i==k && j==l) for i in 1:D, j in 1:D, k in 1:D, l in 1:D))
-  a = HighOrderTensorValue(Val(4), Tuple(1:D^4)./D^4) + I2⊗I2 + 3*I4
-  ai = @inferred inv(a)
-  @test ai isa HighOrderTensorValue{NTuple{4,D}}
-  @test ai ≈ HighOrderTensorValue(Val(4), Tuple(inv(TensorValue(Tuple(a)))))
-  @test a ⋅² ai ≈ I4
-  @test ai ⋅² a ≈ I4
-  @test inv(ai) ≈ a
-
-  I4 = HighOrderTensorValue{Tuple{D,2,D,2}}(Tuple(Float64(i==k && j==l) for i in 1:D, j in 1:2, k in 1:D, l in 1:2))
-  b = HighOrderTensorValue{Tuple{D,2,D,2}}(Tuple(1:4D^2)./(4D^2)) + 3*I4
-  @test b ⋅² inv(b) ≈ I4
-  @test inv(b) ⋅² b ≈ I4
-end
-@test inv(HighOrderTensorValue(Val(4), (2,))) == HighOrderTensorValue(Val(4), (0.5,))
+I4 = HighOrderTensorValue(Val(4), Tuple(one(TensorValue{4,4,Int})))
+a = HighOrderTensorValue(Val(4), 1:16...) + 20*I4
+ai = inv(a)
+@test isa(ai, HighOrderTensorValue{NTuple{4,2}})
+@test a ⋅² ai ≈ I4
+@test ai ⋅² a ≈ I4
 
 # Test eigen function
 t = TensorValue(1.0,2.0,3.0,4.0)

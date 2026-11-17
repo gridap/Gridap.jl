@@ -973,16 +973,9 @@ inv(a::SkewSymTensorValue{3,T,L}) where {T,L} = SkewSymTensorValue{3,T}(tfill(in
 """
     inv(a::MultiValue{Tuple{D1,D2,D1,D2}})
 
-Inverse of a fourth order tensor `a` with respect to the double contraction
-[`⋅²`](@ref double_contraction), i.e. the tensor `b` such that
-
-`a ⋅² b == b ⋅² a == 𝕀`, with `𝕀[i,j,k,l] = δᵢₖδⱼₗ`.
-
-`a` is seen as a linear map between second order tensors of size `(D1,D2)`, and
-inverted as the `(D1*D2)×(D1*D2)` matrix `A[(i,j),(k,l)] = a[i,j,k,l]`.
-
-Tensors with minor symmetries (e.g. `SymFourthOrderTensorValue`) are singular
-as maps on all second order tensors, so this inverse does not exist for them.
+Inverse with respect to [`⋅²`](@ref double_contraction):
+`a ⋅² a⁻¹ == a⁻¹ ⋅² a == 𝕀`, with `𝕀[i,j,k,l] = δᵢₖδⱼₗ`.
+It does not exist for tensors with minor symmetries (e.g. `SymFourthOrderTensorValue`).
 """
 function inv(a::MultiValue{Tuple{D1,D2,D1,D2}}) where {D1,D2}
   M = D1*D2
