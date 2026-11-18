@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.11] - 2026-11-18
+
 ### Added
 
 - Implemented arbitrary-order gradients `gradient(f, Val(N))` of fields using forward-mode automatic differentiation. Hand-written kernels still take precedence. Since PR[#1350](https://github.com/gridap/Gridap.jl/pull/1350).
