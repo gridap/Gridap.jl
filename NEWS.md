@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Enabled algebraic operations in residual of a linear `TransientFEOperator` when the space of the corresponding time derivative has zero Dirichlet values. Since PR[#1345](https://github.com/gridap/Gridap.jl/pull/1345).
 - `get_vertex_permutations` now returns the full symmetry group of 3D polytopes (24 for `TET`, 48 for `HEX`, 8 for `PYRAMID`, 12 for `WEDGE`) instead of only the identity. Since PR[#1349](https://github.com/gridap/Gridap.jl/pull/1349).
+- Optimized Runge-Kutta methods that satisfy the FSAL property (`DIRK_CrankNicolson_2_2`, `DIRK_LobattoIIIA_2_2`, `SDIRK_3_2`, `DIRK_TRBDF_3_2`, `DIRK_TRX_3_2`, and `EXRK_BogackiShampine_4_3`). Since PR[#1355](https://github.com/gridap/Gridap.jl/pull/1355).
 
 ## [0.20.10] - 2026-09-22
 
