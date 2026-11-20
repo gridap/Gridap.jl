@@ -902,7 +902,7 @@ function exterior_derivative(a::CellField)
   similar_cell_field(a, cell_da, get_triangulation(a), DomainStyle(a))
 end
 
-# `δ` does not comute with pullback, the derivatives have to be taken in physical space
+# `δ` and cov∇ do not comute with pullback, the derivatives have to be taken in physical space
 function codifferential(a::CellField)
   trian = get_triangulation(a)
   codifferential(a, get_metric_data(trian), get_metric_partials_data(trian))
@@ -921,6 +921,30 @@ function codifferential(a::CellField, metric_data::Tuple, ∂g::CellField)
   g_inv = metric_data[2]
   Γ = Operation(partials_to_Christoffel_2)(∂g, g_inv)
   Operation(partials_to_codifferential)(partial_derivatives(a), a, Γ, g_inv)
+end
+
+function covariant_derivative(a::CellField)
+  trian = get_triangulation(a)
+  covariant_derivative(a, get_metric_data(trian), get_metric_partials_data(trian))
+end
+
+function covariant_derivative(v::CellField, a::CellField)
+  trian = get_triangulation(a)
+  covariant_derivative(v, a, get_metric_data(trian), get_metric_partials_data(trian))
+end
+
+covariant_derivative(a::CellField, ::Tuple, ::UniformScaling) = partial_derivatives(a)
+covariant_derivative(v::CellField, a::CellField, ::Tuple, ::UniformScaling) =
+  covariant_derivative(v, a, LinearAlgebra.I)
+
+function covariant_derivative(a::CellField, metric_data::Tuple, ∂g::CellField)
+  Γ = Operation(partials_to_Christoffel_2)(∂g, metric_data[2])
+  Operation(partials_to_covariantderivative)(partial_derivatives(a), a, Γ)
+end
+
+function covariant_derivative(v::CellField, a::CellField, metric_data::Tuple, ∂g::CellField)
+  Γ = Operation(partials_to_Christoffel_2)(∂g, metric_data[2])
+  Operation(partials_to_covariantderivative)(v, partial_derivatives(a), a, Γ)
 end
 
 # `κ_x(a) = ι_x(a)` contracts `a` with the position vector

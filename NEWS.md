@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `from_0form`, the inverse of `to_0form`.
   - `∫( … )dΩ` now can integrate an `ExteriorFormValue{K,D}` for `K=0` or `D`. `from_0form` is implicitly added to a 0-form. So `∫( 𝑑(u) ∧ ★𝑑(v) )dΩ`, `∫( 𝑑(u) ⨟ 𝑑(v) )dΩ` and `∫( from_0form(★(𝑑(u) ∧ ★𝑑(v))) )dΩ` are equivalent, although the first is most efficient.
   - implemented `lie_derivative`/`𝓛`, applied to a (contravariant) vector and an arbitrary tensor field.
+  - implemented `covariant_derivative`/`cov∇` for the Levi-Civita connection of the metric, applied to an arbitrary tensor field. `cov∇(a)` has the shape of  `∂(a)`, `cov∇(v, a)` is the covariant derivative `∇_v a` along a contravariant vector field `v`, of the same type as `a`.
   - implemented `interior_product`/`ι` and `koszul` on cell fields.
   - Added abstraction for the variance of a tensor, `Cov` for covariant and `Con` for contravariant, optionally wrapping the dimension `Int` in the type parameters of `MultiValue` tensors. New associated `TensorValues` APIs: `Dim`, `is_same_variance`, `can_contract`, `inverse_variance`.
   - The existing tensor operations are generalized to tensors with variance when they are strictly consistent with it, in a fully retro-compatible way.

@@ -215,6 +215,28 @@ lie_derivative(v,ω) = Operation(partials_to_liederivative)(v,ω,partial_derivat
 const 𝓛 = lie_derivative
 
 """
+    covariant_derivative(a::CellField)
+    covariant_derivative(v::CellField, a::CellField)
+    covariant_derivative([v, ]a, ::UniformScaling)
+    cov∇([v, ]a)
+
+Covariant derivative of the field `a` for the Levi-Civita connection of the
+metric, along the (contravariant) vector field `v` if given. `cov∇(v, a)` is
+of the same type as `a`, `cov∇(a)` has the type of `∂(a)`.
+
+It depends on the metric, which is automatically fed to `a` if it is a
+`CellField`. For a field or a function `a`, `cov∇(a, I)` is the same as `∂`.
+"""
+function covariant_derivative end
+
+covariant_derivative(a, ::UniformScaling) = partial_derivatives(a)
+
+covariant_derivative(v, a, ::UniformScaling) =
+  Operation(partials_to_flat_covariantderivative)(v, partial_derivatives(a))
+
+const cov∇ = covariant_derivative
+
+"""
     codifferential(ω)
     codifferential(ω::Function, ::UniformScaling)
     δ(ω)
@@ -307,5 +329,16 @@ function evaluate!(cache,::Broadcasting{typeof(codifferential)},f,g,metric_args.
         Broadcasting(partial_derivatives)(g), g, metric_args...)
   Broadcasting(Operation(partials_to_codifferential))(
     Broadcasting(partial_derivatives)(f), f, Γ, g, metric_args...)
+end
+
+return_value(k::Broadcasting{typeof(covariant_derivative)}, a, args...) =
+  evaluate!(nothing, k, a, args...)
+
+evaluate!(cache, ::Broadcasting{typeof(covariant_derivative)}, a, ::UniformScaling) =
+  Broadcasting(partial_derivatives)(a)
+
+function evaluate!(cache, ::Broadcasting{typeof(covariant_derivative)}, v, a, ::UniformScaling)
+  Broadcasting(Operation(partials_to_flat_covariantderivative))(
+    v, Broadcasting(partial_derivatives)(a))
 end
 

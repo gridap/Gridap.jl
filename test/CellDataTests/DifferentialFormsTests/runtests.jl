@@ -8,6 +8,8 @@ using Test
 
 @testset "MetricCodifferential" begin include("MetricCodifferentialTests.jl") end
 
+@testset "CovariantDerivative" begin include("CovariantDerivativeTests.jl") end
+
 @testset "MeasureConvention" begin include("MeasureConventionTests.jl") end
 
 @testset "MetricFormAssembly" begin include("MetricFormAssemblyTests.jl") end

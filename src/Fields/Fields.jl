@@ -7,6 +7,7 @@ $(public_names_in_md(@__MODULE__; change_link=Dict(
   :𝑑  => "exterior_derivative",
   :δ  => "codifferential",
   :𝓛  => "lie_derivative",
+  :cov∇ => "covariant_derivative",
   :∂  => "partial_derivatives",
   :∂∂ => "second_partial_derivatives",
 )))
@@ -124,6 +125,7 @@ export ∂∂
 export needs_DG_calc
 export exterior_derivative, 𝑑
 export lie_derivative, 𝓛
+export covariant_derivative, cov∇
 export codifferential, δ
 
 # Re-export from Gridap.Arrays

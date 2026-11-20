@@ -297,6 +297,22 @@ x1 = Point(1.0, 2.0)
 @test evaluate(δω, x1) isa ExteriorFormValue{0,cov2}
 @test evaluate(δω, x1).data[1] ≈ -26.0   atol=1e-8
 
+# ── covariant derivative ──────────────────────────────────────────────────────
+# A field carries no metric, so only the euclidean connection is available on
+# one, for which ∇ is ∂ and ∇_u contracts it with u
+ufun(x) = ContraVectorValue{Con(2)}(0.4 + x[2], -1.2*x[1])
+ufld = GenericField(ufun)
+
+∇ω = covariant_derivative(ωfld,LinearAlgebra.I)
+@test evaluate(∇ω, x1) === partial_derivatives(ωfun, x1)
+
+∇uω = covariant_derivative(ufld,ωfld,LinearAlgebra.I)
+@test evaluate(∇uω, x1) ===
+  partials_to_flat_covariantderivative(ufun(x1), partial_derivatives(ωfun, x1))
+@test evaluate(∇uω, x1) isa ExteriorFormValue{1,cov2}
+@test all(Tuple(evaluate(∇uω, x1)) .≈
+  (sum(ufun(x1)[k]*partial_derivatives(ωfun,x1)[k,i] for k in 1:2) for i in 1:2))
+
 # ── pointwise Hodge star, and differentiating through it ──────────────────────
 # The star is an `Operation`, and `partial_derivatives` differentiates the
 # starred field as a black box, so the two compose.
@@ -330,6 +346,12 @@ bd = Broadcasting(exterior_derivative)(Fill(ωfld,3))
 
 bδ = Broadcasting(codifferential)(Fill(ωfld,3),LinearAlgebra.I)
 @test evaluate(bδ[1], x1) === evaluate(δω, x1)
+
+b∇ = Broadcasting(covariant_derivative)(Fill(ωfld,3),LinearAlgebra.I)
+@test evaluate(b∇[1], x1) === evaluate(∇ω, x1)
+
+b∇u = Broadcasting(covariant_derivative)(Fill(ufld,3),Fill(ωfld,3),LinearAlgebra.I)
+@test evaluate(b∇u[1], x1) === evaluate(∇uω, x1)
 
 bκ = Broadcasting(koszul)(Fill(ωfld,3))
 @test evaluate(bκ[1], x1) === evaluate(koszul(ωfld), x1)

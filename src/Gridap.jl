@@ -44,6 +44,7 @@ $(Helpers.public_names_in_md(@__MODULE__; change_link=Dict(
   :𝑑  => "exterior_derivative",
   :δ  => "codifferential",
   :𝓛  => "lie_derivative",
+  :cov∇ => "covariant_derivative",
   :ReferenceDomain  => "DomainStyle",
   :PhysicalDomain   => "DomainStyle",
   :nedelec1  => "nedelec",

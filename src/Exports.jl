@@ -66,6 +66,8 @@ using Gridap.TensorValues: ♭, ♭ᴱ, ♯, ♯ᴱ; export ♭, ♭ᴱ, ♯, �
 @publish Fields 𝑑
 @publish Fields lie_derivative
 @publish Fields 𝓛
+@publish Fields covariant_derivative
+@publish Fields cov∇
 @publish Fields codifferential
 @publish Fields δ
 #@publish TensorValues symbolic_coordinates

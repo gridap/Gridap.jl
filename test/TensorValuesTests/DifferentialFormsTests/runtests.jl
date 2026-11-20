@@ -10,4 +10,6 @@ using Test
 
 @testset "FormBridge" begin include("FormBridgeTests.jl") end
 
+@testset "CovariantDerivative" begin include("CovariantDerivativeTests.jl") end
+
 end # module

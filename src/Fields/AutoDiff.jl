@@ -265,6 +265,15 @@ end
 lie_derivative(v::Function, ω::Function, x::Point) = partials_to_liederivative(
   v(x), ω(x), partial_derivatives(v,x), partial_derivatives(ω,x))
 
+function covariant_derivative(v::Function, a::Function, I::UniformScaling)
+  function _covariant_derivative(x)
+    covariant_derivative(v,a,x,I)
+  end
+end
+
+covariant_derivative(v::Function, a::Function, x::Point, I::UniformScaling) =
+  partials_to_covariantderivative(v(x), partial_derivatives(a,x), a(x), I)
+
 #####################################################################################
 # Arbitrary-order gradients by forward-mode automatic differentiation
 #

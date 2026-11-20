@@ -1720,6 +1720,260 @@ end
   :( $Vr(($(comps...),)) )
 end
 
+# covariant derivative
+
+"""
+    partials_to_covariantderivative(∂a, a, Γ)
+    partials_to_covariantderivative(u, ∂a, a, Γ)
+
+Covariant derivative of a tensor field `a` at `x` for the connection coefficients `Γ`, see
+[`partials_to_Christoffel_2`](@ref), from the first order partial derivatives
+`∂a = partial_derivatives(a)(x)`. A `UniformScaling` `Γ` stands for a vanishing
+connection, for which `∇` is `∂`.
+
+    ∇a[k, I] = ∂a[k, I] + ∑_{p contravariant} ∑_l Γ[i_p, k, l] a[I with i_p ← l]
+                        - ∑_{p covariant}     ∑_l Γ[l, k, i_p] a[I with i_p ← l]
+
+The second method is the covariant derivative `∇_u a[I] = ∑_k u[k] ∇a[k, I]`
+along the contravariant vector field `u`, of the same type as `a`.
+
+A Levi-Civita `Γ` makes `∇` metric compatible: `∇g = 0`, and torsion free:
+`∇_u v - ∇_v u = 𝓛_u v`.
+"""
+function partials_to_covariantderivative end
+
+function _Christoffel_error(Dl, Dg, D)
+  Dg isa Cov || return ArgumentError(
+    "the Christoffel symbols are symmetric in two covariant indices, got $Dg")
+  Dl === inverse_variance(Dg) || return ArgumentError(
+    "the upper index of the Christoffel symbols must be contravariant of the
+    dimension of the lower two, got $Dl and $Dg")
+  Int(Dg) == D ? nothing : DimensionMismatch(
+    "the tensor and the connection must live in the same dimension, got $D and $(Int(Dg))")
+end
+
+function _directional_covderivative_error(Du, Dp, Dw)
+  Du isa Con || return :(throw(ArgumentError(
+    $("the covariant derivative requires a contravariant vector field, got a direction of size ($Du,)"))))
+  Dp isa Cov || return :(throw(ArgumentError(
+    $("partial derivatives should have a covariant index, got $Dp"))))
+  Du == Dw || return :(throw(DimensionMismatch(
+    $("the direction and the tensor must live in the same dimension, got $(Int(Du)) and $(Int(Dw))"))))
+  can_contract(Dp, Du) ? nothing : :(throw(DimensionMismatch(
+    $("the direction and the derivation index must live in the same dimension, got $(Int(Du)) and $(Int(Dp))"))))
+end
+
+# `Γ[l,i,j]`, whose symmetric pair of lower indices is stored slowest
+_Γ_comp(D, l, i, j) = :( indep_comp_getindex(
+  Γ, $((_2d_sym_tensor_linear_index(D, min(i,j), max(i,j))-1)*D + l)) )
+
+# `Γlm(l,m)` reads `Γ[l,k,m]` at the free derivation index `k` of `∇a`, or its
+# contraction `∑_k u[k] Γ[l,k,m]` for `∇_u a`, and is `nothing` for a vanishing
+# connection. Each index of `a` is transported according to its own variance,
+# the contravariant ones against the covariant ones, which signs their term.
+function _covderivative_comp(∂terms, Γlm, is_cov, O, D, T)
+  terms = copy(∂terms)
+  isnothing(Γlm) || for p in eachindex(is_cov), l in 1:D
+    I = _congruence_source_index(O, (p,), (l,))
+    Γpl = is_cov[p] ? Γlm(l, O[p]) : Γlm(O[p], l)
+    push!(terms, _signed(is_cov[p] ? -1 : 1, :( a[$(I...)] * $Γpl )))
+  end
+  _sum_expr(terms, T)
+end
+
+# The same on a K-form or K-vector `ω`: the transported index vanishes when it
+# already sits in `I`, so for each `a` it runs over the complement of `I∖i_a`.
+function _covderivative_form_comp(∂terms, Γlm, is_cov, I, K, D, T)
+  terms = copy(∂terms)
+  for a in 1:K
+    Ia = ntuple(i -> I[i + Int(i≥a)], K-1)
+    Iacomp = combination_complement(Ia, D)
+    for (q, n) in enumerate(sup_combinations_ids(Ia, D))
+      j = Iacomp[q]
+      sgn = sorting_sign(I[1:a-1]..., j, I[a+1:end]...)
+      Γaj = is_cov ? Γlm(j, I[a]) : Γlm(I[a], j)
+      push!(terms, _signed(is_cov ? -sgn : sgn, :( $Γaj * indep_comp_getindex(ω, $n) )))
+    end
+  end
+  _sum_expr(terms, T)
+end
+
+# Result value type of `∇_u a`, which transports each index by its variance one
+# at a time, as `𝓛` does, and so keeps the same index symmetries.
+_covderivative_value_type(a, sz, N) =
+  all(Dk -> Dk === first(sz), sz) ? _congruence_type(a, first(sz)) : _tensor_base_type(N, sz)
+
+# ∇a and ∇_u a of a scalar function, which has no index to transport
+partials_to_covariantderivative(
+  ∂f::MultiValue{Tuple{Dp}}, f::Number,
+  Γ::ProductTensorValue{<:MultiValue{Tuple{Dl}},SymTensorValue{Dg}}) where {Dp,Dl,Dg} = ∂f
+
+function partials_to_covariantderivative(
+  u::MultiValue{Tuple{Du}}, ∂f::MultiValue{Tuple{Dp}}, f::Number,
+  Γ::ProductTensorValue{<:MultiValue{Tuple{Dl}},SymTensorValue{Dg}}) where {Du,Dp,Dl,Dg}
+
+  Du isa Con || throw(ArgumentError(
+    "the covariant derivative requires a contravariant vector field, got a direction of size ($Du,)"))
+  Dp isa Cov || throw(ArgumentError(
+    "partial derivatives should have a covariant index, got $Dp"))
+  u⋅∂f
+end
+
+# ∇a of a K-form or a K-vector
+@generated function partials_to_covariantderivative(
+  ∂ω::ProductTensorValue{A,SkewSymKTensorValue{V,K,Dw},Tdw},
+  ω::SkewSymKTensorValue{V,K,Dw,Tw},
+  Γ::ProductTensorValue{<:MultiValue{Tuple{Dl}},SymTensorValue{Dg},TΓ}
+  ) where {Dp,A<:MultiValue{Tuple{Dp}},V,K,Dw,Tdw,Tw,Dl,Dg,TΓ}
+
+  Dp isa Cov || return :(throw(ArgumentError(
+    $("partial derivatives should have a covariant index, got $Dp"))))
+  err = _throw_expr(_Christoffel_error, Dl, Dg, Int(Dw))
+  isnothing(err) || return err
+
+  D = Int(Dw)
+  T = Base.promote_op(+, Tdw, Base.promote_op(*, Tw, TΓ))
+  Vr = SkewSymKTensorValue{V,K,Dw}
+  comps = [ _covderivative_form_comp([:( ∂ω[$k, $(I...)] )],
+              (l,m) -> _Γ_comp(D,l,k,m), V === Cov, I, K, D, T)
+            for I in sorted_combinations(D, K) for k in 1:D ]
+
+  :( ProductTensorValue{$A,$Vr,$T}(($(comps...),)) )
+end
+
+# ∇a of a tensor of any order and variance
+@generated function partials_to_covariantderivative(
+  ∂a::ProductTensorValue{A,<:MultiValue{S},Tda},
+  a::MultiValue{S,Ta},
+  Γ::ProductTensorValue{<:MultiValue{Tuple{Dl}},SymTensorValue{Dg},TΓ}
+  ) where {Dp,A<:MultiValue{Tuple{Dp}},S,Tda,Ta,Dl,Dg,TΓ}
+
+  Dp isa Cov || return :(throw(ArgumentError(
+    $("partial derivatives should have a covariant index, got $Dp"))))
+
+  sz = size(a)
+  N = length(sz)
+  iszero(N) && return :( ∂a )
+  err = _throw_expr(_Christoffel_error, Dl, Dg, Int(first(sz)))
+  isnothing(err) || return err
+  is_cov, err = _pullpush_validate_indices(sz, Dl, "the covariant derivative")
+  isnothing(err) || return err
+
+  D = Int(Dg)
+  T = Base.promote_op(+, Tda, Base.promote_op(*, Ta, TΓ))
+  Vr = _covderivative_value_type(a, sz, N)
+  comps = [ _covderivative_comp([:( ∂a[$k, $(O...)] )],
+              (l,m) -> _Γ_comp(D,l,k,m), is_cov, O, D, T)
+            for O in _indep_comp_cartesian_indices(make_concretetype(Vr{Int})) for k in 1:D ]
+
+  :( ProductTensorValue{$A,$Vr,$T}(($(comps...),)) )
+end
+
+# ∇_u a of a K-form or a K-vector
+@generated function partials_to_covariantderivative(
+  u::MultiValue{Tuple{Du},Tu},
+  ∂ω::ProductTensorValue{<:MultiValue{Tuple{Dp}},SkewSymKTensorValue{V,K,Dw},Tdw},
+  ω::SkewSymKTensorValue{V,K,Dw,Tw},
+  Γ::ProductTensorValue{<:MultiValue{Tuple{Dl}},SymTensorValue{Dg},TΓ}
+  ) where {Du,Dp,V,K,Dw,Tu,Tdw,Tw,Dl,Dg,TΓ}
+
+  err = _directional_covderivative_error(Du, Dp, Dw)
+  isnothing(err) || return err
+  err = _throw_expr(_Christoffel_error, Dl, Dg, Int(Dw))
+  isnothing(err) || return err
+
+  D = Int(Dw)
+  T = Base.promote_op(+, Base.promote_op(*,Tu,Tdw), Base.promote_op(*,Tu,Tw,TΓ))
+  iszero(binomial(D, K)) && return :( zero(SkewSymKTensorValue{$V,$K,$Dw,$T}) )
+
+  uΓ = [ _sum_expr([:( u[$k] * $(_Γ_comp(D,l,k,m)) ) for k in 1:D], T)
+         for m in 1:D for l in 1:D ]
+  comps = [ _covderivative_form_comp([:( u[$k] * ∂ω[$k, $(I...)] ) for k in 1:D],
+              (l,m) -> :( uΓ[$((m-1)*D + l)] ), V === Cov, I, K, D, T)
+            for I in sorted_combinations(D, K) ]
+
+  quote
+    uΓ = ($(uΓ...),)
+    SkewSymKTensorValue{$V,$K,$Dw}(($(comps...),))
+  end
+end
+
+# ∇_u a of a tensor of any order and variance
+@generated function partials_to_covariantderivative(
+  u::MultiValue{Tuple{Du},Tu},
+  ∂a::ProductTensorValue{<:MultiValue{Tuple{Dp}},<:MultiValue{S},Tda},
+  a::MultiValue{S,Ta},
+  Γ::ProductTensorValue{<:MultiValue{Tuple{Dl}},SymTensorValue{Dg},TΓ}
+  ) where {Du,Dp,S,Tu,Tda,Ta,Dl,Dg,TΓ}
+
+  sz = size(a)
+  N = length(sz)
+  err = _directional_covderivative_error(Du, Dp, iszero(N) ? Du : first(sz))
+  isnothing(err) || return err
+  err = _throw_expr(_Christoffel_error, Dl, Dg, Int(Du))
+  isnothing(err) || return err
+  iszero(N) && return :( u⋅∂a )
+  is_cov, err = _pullpush_validate_indices(sz, Du, "the covariant derivative")
+  isnothing(err) || return err
+
+  D = Int(Du)
+  T = Base.promote_op(+, Base.promote_op(*,Tu,Tda), Base.promote_op(*,Tu,Ta,TΓ))
+  Vr = _covderivative_value_type(a, sz, N)
+  Vc = make_concretetype(Vr{Int})
+  (iszero(D) || iszero(num_stored_components(Vc))) && return :( zero($Vr{$T}) )
+
+  uΓ = [ _sum_expr([:( u[$k] * $(_Γ_comp(D,l,k,m)) ) for k in 1:D], T)
+         for m in 1:D for l in 1:D ]
+  comps = [ _covderivative_comp([:( u[$k] * ∂a[$k, $(O...)] ) for k in 1:D],
+              (l,m) -> :( uΓ[$((m-1)*D + l)] ), is_cov, O, D, T)
+            for O in _stored_comp_cartesian_indices(Vc) ]
+
+  quote
+    uΓ = ($(uΓ...),)
+    $Vr(($(comps...),))
+  end
+end
+
+partials_to_covariantderivative(∂a, a, ::UniformScaling) = ∂a
+
+partials_to_covariantderivative(u, ∂a, a, ::UniformScaling) =
+  partials_to_flat_covariantderivative(u, ∂a)
+
+"""
+    partials_to_flat_covariantderivative(u, ∂a)
+
+Covariant derivative `∇_u a` of a tensor field `a` at `x` along the
+contravariant vector `u` in Euclidean space, where `cov∇` is `∂`, from the first
+order partial derivatives `∂a = partial_derivatives(a)(x)`.
+
+    ∇_u a[I] = ∑_k u[k] ∂a[k, I]
+
+See also [`partials_to_covariantderivative`](@ref).
+"""
+@generated function partials_to_flat_covariantderivative(
+  u::MultiValue{Tuple{Du},Tu},
+  ∂a::ProductTensorValue{<:MultiValue{Tuple{Dp}},B,Tda}) where {Du,Dp,B,Tu,Tda}
+
+  sz = size(B)
+  N = length(sz)
+  err = _directional_covderivative_error(Du, Dp, iszero(N) ? Du : first(sz))
+  isnothing(err) || return err
+  iszero(N) && return :( u⋅∂a )
+  _, err = _pullpush_validate_indices(sz, Du, "the covariant derivative")
+  isnothing(err) || return err
+
+  D = Int(Du)
+  T = Base.promote_op(*, Tu, Tda)
+  Vr = _covderivative_value_type(B, sz, N)
+  Vc = make_concretetype(Vr{Int})
+  (iszero(D) || iszero(num_stored_components(Vc))) && return :( zero($Vr{$T}) )
+
+  comps = [ _sum_expr([:( u[$k] * ∂a[$k, $(O...)] ) for k in 1:D], T)
+            for O in _stored_comp_cartesian_indices(Vc) ]
+
+  :( $Vr(($(comps...),)) )
+end
+
 # codifferential
 
 """
