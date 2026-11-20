@@ -110,27 +110,26 @@ B0 = assemble_vector(q -> b(uh,q),Q0)
 
 # Moment based bases
 #
-# `modalC0` is not a partition of unity from order 2 on, so the mean direction
-# of a space of it is not the vector of ones: its volume is not the sum of the
-# DOF volumes, and the DOF the space fixes cannot be the last one, which the
-# direction vanishes on.
+# `modalC0` is not a partition of unity from order 2 on, so the DOF values of 𝔥
+# are not all ones: the volume is not the sum of the `∫φᵢ`, and the DOF the
+# space fixes cannot be the last one, on which they vanish.
 
 # A nodal basis keeps the single scalar shift
-@test ZeroMeanFESpace(_V,dΩ).dir_free isa Ones
+@test ZeroMeanFESpace(_V,dΩ).h_free isa Ones
 
-# A space with Dirichlet DOFs has no mean direction
+# A space with Dirichlet DOFs is rejected
 @test_throws ArgumentError ZeroMeanFESpace(
   FESpace(model,ReferenceFE(lagrangian,Float64,1);dirichlet_tags="boundary"),dΩ)
 
 for p_order in (2,3)
   _Vm = FESpace(model,ReferenceFE(QUAD,modalC0,Float64,p_order);conformity=:L2)
   Vm  = ZeroMeanFESpace(_Vm,dΩ)
-  @test !isa(Vm.dir_free,Ones)
+  @test !isa(Vm.h_free,Ones)
   @test Vm.vol ≈ sum(∫(1)*dΩ)
-  # the direction vanishes on the last DOF, the one a partition of unity fixes,
-  # so the space has to fix another one
+  # the DOF values of 𝔥 vanish on the last DOF, the one a partition of unity
+  # fixes, so the space has to fix another one
   @test abs(get_free_dof_values(interpolate(1.0,_Vm))[end]) < 1.0e-12
-  @test Vm.dir_fixed != 0
+  @test Vm.h_diri != 0
 
   vhm = interpolate(g,TrialFESpace(Vm))
   ehm = vhm - g

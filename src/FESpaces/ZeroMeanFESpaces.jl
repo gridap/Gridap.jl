@@ -41,6 +41,11 @@ c = - ( (Σ_i≠k f_i ∫φ_i) + d ∫φ_k) / "vol".
 Evaluating `u` still requires `h_dofs`.
 """
 function ZeroMeanFESpace(space::SingleFieldFESpace, dΩ::Measure)
+  num_dirichlet_dofs(space) == 0 || throw(ArgumentError("""\n
+  The space of a `ZeroMeanFESpace` must have no Dirichlet DOF, and this one has
+  $(num_dirichlet_dofs(space)).
+  """))
+
   int_φi = assemble_vector(v->∫(v)*dΩ, space)
   T = eltype(int_φi)
   @notimplementedif !isone(num_indep_components(T))
