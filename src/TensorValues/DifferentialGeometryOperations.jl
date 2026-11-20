@@ -1,7 +1,7 @@
 # Tensor operations involving proper tensor calculus and differential geometry operations.
 #
 # This includes pointwise algebra such as
-# (∧, ι, ⋆, ♭/♯, koszul, …).
+# (∧, ι, ★, ♭/♯, koszul, …).
 
 # ============================================================
 # Generate-time expression builders
@@ -174,13 +174,13 @@ Provided by the GridapSymbolicsExt package extension when Symbolics is loaded.
 function symbolic_coordinates end
 
 # ============================================================
-# Metric Hodge star ⋆ : Ωᴷ → Ωᴰ⁻ᴷ
+# Metric Hodge star ★ : Ωᴷ → Ωᴰ⁻ᴷ
 #
 # Algorithm (coordinate formula):
 #   Step 1 — raise indices:
 #     ω^I = Σ_{J sorted K-index} det([g_inv[I[a],J[b]]]_{a,b}) ω_J
 #   Step 2 — Levi-Civita contraction:
-#     (⋆ ω)_L = √|det(g)| Σ_{I sorted} ε(I,L) ω^I
+#     (★ ω)_L = √|det(g)| Σ_{I sorted} ε(I,L) ω^I
 #
 # Passing g_inv (the pointwise inverse metric tensor) and signed_sqrt_g, whose
 # magnitude is the volume density √|det g|, keeps this purely algebraic.
@@ -192,7 +192,7 @@ function symbolic_coordinates end
 Levi-Civita signs of the flat Hodge star, entry `[n] = ε_{I Iᶜ}` for `I` the
 n-th `K`-combination of `1:D`, so that with `L = binomial(D,K)`
 
-    (⋆ω)_{L+1-n} = _hodge_star_signs(K,D)[n] * ω_n.
+    (★ω)_{L+1-n} = _hodge_star_signs(K,D)[n] * ω_n.
 
 Only the complementary pair contributes, and its output component index is
 `L+1-n` because complementation reverses the lexicographic order of the
@@ -230,9 +230,9 @@ end
 
 """
     hodge_star(ω::MultiValue{NTuple{K,D}}, metric_args...)
-    ⋆(ω, metric_args...)
+    ★(ω, metric_args...)
 
-Hodge star `⋆ω` of a `K`-tensor `ω` with variance. It is an alternating
+Hodge star `★ω` of a `K`-tensor `ω` with variance. It is an alternating
 `(D-K)`-tensor of the same variance, a form for a covariant `ω` and a
 `(D-K)`-vector for a contravariant one.
 
@@ -279,14 +279,14 @@ function hodge_star(a::MultiValue{NTuple{K,D}}, metric_args::Vararg{_MetricArg})
   hodge_star(𝔸(a), metric_args...)
 end
 
-const ⋆ = hodge_star
+const ★ = hodge_star
 
 """
     flat_hodge_star(ω::ExteriorFormValue{K,D})
     flat_hodge_star(ω::MultiValue{NTuple{K,D}})
-    ⋆ᴱ(ω)
+    ★ᴱ(ω)
 
-Hodge star `⋆ω` in Euclidean space, that is [`hodge_star`](@ref) with the
+Hodge star `★ω` in Euclidean space, that is [`hodge_star`](@ref) with the
 identity metric, an alternating `(D-K)`-tensor with same variance as `ω`.
 """
 @generated function flat_hodge_star(ω::SkewSymKTensorValue{V,K,Dw}) where {V,K,Dw}
@@ -300,13 +300,13 @@ identity metric, an alternating `(D-K)`-tensor with same variance as `ω`.
   :( SkewSymKTensorValue{V,$Kc,$Dw}($(comps...)) )
 end
 flat_hodge_star(a::MultiValue{NTuple{K,Dw}}) where {K,Dw} = flat_hodge_star(𝔸(a))
-const ⋆ᴱ = flat_hodge_star
+const ★ᴱ = flat_hodge_star
 
 """
     inverse_hodge_star(ω::MultiValue{NTuple{K,D}}, metric_args...)
-    ⋆⁻¹(ω, metric_args...)
+    ★⁻¹(ω, metric_args...)
 
-It is `⋆⁻¹ = sgn(det g) (-1)^{K(D-K)} ⋆`
+It is `★⁻¹ = sgn(det g) (-1)^{K(D-K)} ★`
 
 See also [`flat_inverse_hodge_star(ω)`](@ref) and [`hodge_star`].
 """
@@ -319,9 +319,9 @@ See also [`flat_inverse_hodge_star(ω)`](@ref) and [`hodge_star`].
   L   = binomial(D, K)   # = binomial(D, Kc), the two are matched by complementation
   c_K = sorted_combinations(D, K)
 
-  # The signed volume density is the volume factor of `⋆` and the `sgn(det g)`
-  # of the inverse in one, and the parity is type data: `⋆⁻¹` reads the same
-  # metric data as `⋆` and costs the same.
+  # The signed volume density is the volume factor of `★` and the `sgn(det g)`
+  # of the inverse in one, and the parity is type data: `★⁻¹` reads the same
+  # metric data as `★` and costs the same.
   _g_or_ginv = V === Cov ? :g_inv : :g
   _volume    = V === Cov ? :signed_sqrt_g : :(inv(signed_sqrt_g))
   parity     = isodd(K*Kc) ? -1 : 1
@@ -343,14 +343,14 @@ function inverse_hodge_star(a::MultiValue{NTuple{K,D}}, metric_args::Vararg{_Met
   inverse_hodge_star(𝔸(a), metric_args...)
 end
 
-const ⋆⁻¹ = inverse_hodge_star
+const ★⁻¹ = inverse_hodge_star
 
 """
     flat_inverse_hodge_star(ω::ExteriorFormValue{K,D})
     flat_inverse_hodge_star(ω::MultiValue{NTuple{K,D}})
-    ⋆ᴱ⁻¹(ω)
+    ★ᴱ⁻¹(ω)
 
-The inverse [`flat_hodge_star`](@ref), it is `⋆ᴱ⁻¹ = (-1)^{K(D-K)} ⋆ᴱ`.
+The inverse [`flat_hodge_star`](@ref), it is `★ᴱ⁻¹ = (-1)^{K(D-K)} ★ᴱ`.
 """
 @generated function flat_inverse_hodge_star(ω::SkewSymKTensorValue{V,K,Dw}) where {V,K,Dw}
   D = Int(Dw)
@@ -364,7 +364,7 @@ The inverse [`flat_hodge_star`](@ref), it is `⋆ᴱ⁻¹ = (-1)^{K(D-K)} ⋆ᴱ
   :( SkewSymKTensorValue{V,$Kc,$Dw}($(comps...)) )
 end
 flat_inverse_hodge_star(a::MultiValue{NTuple{K,Dw}}) where {K,Dw} = flat_inverse_hodge_star(𝔸(a))
-const ⋆ᴱ⁻¹ = flat_inverse_hodge_star
+const ★ᴱ⁻¹ = flat_inverse_hodge_star
 
 
 # ============================================================
@@ -1334,7 +1334,7 @@ end
 # the second sum running over sorted multi-indices, which reduces to
 # Σ_I α_I β_I for a flat metric. This is the inner product the Hodge star is
 # built on,
-#   α ∧ ⋆_g β = (α|β) μ = (α|β) √|det(g)| dx¹ ∧ … ∧ dx^D.
+#   α ∧ ★_g β = (α|β) μ = (α|β) √|det(g)| dx¹ ∧ … ∧ dx^D.
 #
 # `flat_inner` is the tensor inner product with the indices of β raised by the
 # identity metric, such that flat_inner(α,β) = K!(α|β).
@@ -1353,7 +1353,7 @@ that
 
 where `μ` is the metric volume form. `ω ⊙ η` is `K!` times `ω⨟η`.
 
-Integrating `ω⨟η` is mathematically equivalent to integrating `ω ∧ ⋆η`. Indeed,
+Integrating `ω⨟η` is mathematically equivalent to integrating `ω ∧ ★η`. Indeed,
 the integrand of the former automatically get's fed a √|det(g)|, because it is
 a scalar, while the integrand of the latter is the form component `ω⨟η
 √|det(g)|`, because it is a top form.
@@ -1420,7 +1420,7 @@ end
 # via the standard inner product.  These conversions let you
 # take a VectorValue FEFunction (e.g., from a Nédélec FESpace)
 # and treat it as a genuine differential 1-form for subsequent
-# operations (d, ⋆, ∧, …).
+# operations (d, ★, ∧, …).
 # ============================================================
 
 """
@@ -1524,7 +1524,7 @@ would thus be
 
 ``flat_vol_coeff(ω)/√|det g|``,
 
-which is equivalent to `from_0form(⋆(ω, metric_args...))`.
+which is equivalent to `from_0form(★(ω, metric_args...))`.
 """ # to integrate a k-vector, the hodge_star (with metric) needs to be applied before flat_vol_coeff.
 function flat_vol_coeff(ω::ExteriorFormValue{K,D}) where {K,D}
   K == D || @unreachable "flat_vol_coeff requires a top-degree form, got K = $K and D = $(Int(D))"

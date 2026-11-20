@@ -9,8 +9,8 @@ be splatted into them:
 
 Either `(LinearAlgebra.I,)`, the identity metric, or `(g, g_inv, signed_sqrt_g)`.
 
-It is metric data only: a `⋆` takes an orientation as well, and on an embedded
-triangulation the lifted `⋆(ω)` supplies the one its background induces, which
+It is metric data only: a `★` takes an orientation as well, and on an embedded
+triangulation the lifted `★(ω)` supplies the one its background induces, which
 splatting this into `hodge_star` by hand does not.
 
 A triangulation whose cells do not fill the ambient space carries the metric its
@@ -67,10 +67,10 @@ is_sub_trian(trian::Triangulation) = is_sub_trian(trian, get_background_model(tr
 # datum of its metric -- `g_Γ` is invariant under `Jι → -Jι` -- and is held by
 # [`_induced_orientation`](@ref), which the two writings of a top form integral
 #
-#   ∫( ω )dΓ = ∫( ⋆ω )dΓ
+#   ∫( ω )dΓ = ∫( ★ω )dΓ
 #
 # both reach it through: the first in the weights, see [`_oriented_weights`](@ref),
-# the second in the `⋆`, see [`_oriented`](@ref). Slot 3's magnitude is the area
+# the second in the `★`, see [`_oriented`](@ref). Slot 3's magnitude is the area
 # element `meas(Jι)` that the integration map already applies, so it is not added
 # to a scalar integrand a second time, see [`_metric_weights`](@ref).
 function _induced_metric_data(trian::Triangulation, model, ::UniformScaling)

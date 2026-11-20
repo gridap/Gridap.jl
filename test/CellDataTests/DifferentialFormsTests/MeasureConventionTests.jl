@@ -99,10 +99,10 @@ dΓ = Measure(Γ,3)
 # take the euclidean element.
 @test_throws ErrorException sum(∫( 1.0 )Measure(BoundaryTriangulation(cmodel),3))
 
-# ── `∫(a ∧ ⋆b)dΩ == ∫(alt_inner(a,b))dΩ` for every degree and dimension ───────
+# ── `∫(a ∧ ★b)dΩ == ∫(alt_inner(a,b))dΩ` for every degree and dimension ───────
 
-# The convention is one rule read from both ends, `a ∧ ⋆b = √|det g| (a|b) dx¹∧…∧dx^D`:
-# the metric enters the form spelling through `⋆` and the scalar one through the
+# The convention is one rule read from both ends, `a ∧ ★b = √|det g| (a|b) dx¹∧…∧dx^D`:
+# the metric enters the form spelling through `★` and the scalar one through the
 # volume element. The tensor inner product differs from both by `K!`.
 const g3 = SymTensorValue{Cov(3)}(2.0,0.5,0.0,1.0,0.25,1.5)
 model3  = CartesianDiscreteModel((0.0,1.0,0.0,1.0,0.0,1.0),(2,2,2))
@@ -118,14 +118,14 @@ for (D,Ωk,dΩk) in ((2,Ωc,dΩc), (3,Ωc3,dΩc3))
     a, b = map(f -> CellField(f,Ωk,PhysicalDomain()), (af,bf))
     @test sum(∫( a ∧ hodge_star(b) )dΩk) ≈ sum(∫( alt_inner(a,b) )dΩk)
     @test sum(∫( inner(a,b) )dΩk) ≈ factorial(K) * sum(∫( alt_inner(a,b) )dΩk)
-    # The `⋆` of a top form divides its coefficient by `√|det g|`, which the
+    # The `★` of a top form divides its coefficient by `√|det g|`, which the
     # volume element of the 0-form it becomes restores.
     @test sum(∫( hodge_star(a ∧ hodge_star(b)) )dΩk) ≈ sum(∫( alt_inner(a,b) )dΩk)
   end
 end
 
-# `⋆` and the volume element read one density, so the convention holds whatever
-# the index of the metric. `⋆` of a top form carries that index, `⋆μ = sgn(det
+# `★` and the volume element read one density, so the convention holds whatever
+# the index of the metric. `★` of a top form carries that index, `★μ = sgn(det
 # g)`, so composing the two returns the inner product up to it.
 for K in 0:2
   L = binomial(2,K)

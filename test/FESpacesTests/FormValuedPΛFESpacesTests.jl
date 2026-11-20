@@ -271,7 +271,7 @@ end
 
 # `𝑑` of a cell basis takes the `natural_exterior_derivative` short circuit,
 # which the FE function tests above do not reach in the same shape. On a 0-form
-# space `∫ 𝑑u ∧ ⋆𝑑v` is the stiffness matrix `∫ ∇u⋅∇v` of the P1 Lagrangian
+# space `∫ 𝑑u ∧ ★𝑑v` is the stiffness matrix `∫ ∇u⋅∇v` of the P1 Lagrangian
 # space, up to the DOF numbering, which the spectrum is blind to.
 
 @testset "FEEC stiffness matrix of a 0-form space" begin

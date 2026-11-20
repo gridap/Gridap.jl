@@ -285,8 +285,8 @@ x0 = Point(2.0, 3.0)
 @test collect(κω_vol.data) ≈ [-3.0, 2.0]   atol=1e-12
 
 # ── codifferential ────────────────────────────────────────────────────────────
-# ω = 3x¹x² dx¹ + 5(x²)² dx²; ⋆ω = -5(x²)² dx¹ + 3x¹x² dx²
-# d⋆ω = (∂₁(3x¹x²) + ∂₂(5(x²)²)) vol = (3x² + 10x²) vol, δω = -13x²
+# ω = 3x¹x² dx¹ + 5(x²)² dx²; ★ω = -5(x²)² dx¹ + 3x¹x² dx²
+# d★ω = (∂₁(3x¹x²) + ∂₂(5(x²)²)) vol = (3x² + 10x²) vol, δω = -13x²
 
 ωfun(x) = ExteriorFormValue{1,Cov(2)}((3.0*x[1]*x[2], 5.0*x[2]^2))
 ωfld = GenericField(ωfun)
@@ -307,7 +307,7 @@ star_ω = Operation(flat_hodge_star)(ωfld)
 d_star_ω = exterior_derivative(star_ω)
 @test evaluate(d_star_ω, x1) ===
       partials_to_exteriorderivative(partial_derivatives(y -> flat_hodge_star(ωfun(y)), x1))
-# δω = (-1)^{D(K-1)+1} ⋆d⋆ω, with D=2 and K=1 the sign is -1
+# δω = (-1)^{D(K-1)+1} ★d★ω, with D=2 and K=1 the sign is -1
 @test (-flat_hodge_star(evaluate(d_star_ω, x1))).data[1] ≈ evaluate(δω, x1).data[1]   atol=1e-8
 
 # ── lie_derivative ────────────────────────────────────────────────────────────

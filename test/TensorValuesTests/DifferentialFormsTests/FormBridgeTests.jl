@@ -18,12 +18,12 @@ using Test
 ω3d = ExteriorFormValue{3,3}((-2.5,))
 @test flat_vol_coeff(ω3d) === -2.5
 
-# flat_vol_coeff extracts the scalar content of ω ∧ ⋆η
-# In 2D: ω = (a, b), ⋆ω = (-b, a); ω ∧ ⋆ω = (a²+b²) dx¹∧dx²
+# flat_vol_coeff extracts the scalar content of ω ∧ ★η
+# In 2D: ω = (a, b), ★ω = (-b, a); ω ∧ ★ω = (a²+b²) dx¹∧dx²
 ω = CoVectorValue{2}((3.0, 4.0))
 @test flat_vol_coeff(ω ∧ flat_hodge_star(ω)) ≈ 25.0   atol=1e-12  # 3²+4² = 25
 
-# flat_vol_coeff(du ∧ ⋆dv) = ∇u·∇v
+# flat_vol_coeff(du ∧ ★dv) = ∇u·∇v
 du = CoVectorValue{2}((1.0, 2.0))
 dv = CoVectorValue{2}((3.0, 4.0))
 @test flat_vol_coeff(du ∧ flat_hodge_star(dv)) ≈ 11.0   # 1·3 + 2·4

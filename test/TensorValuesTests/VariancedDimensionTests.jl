@@ -791,7 +791,7 @@ g_up  = SymTensorValue{con2}(1.0, 0.0, 1.0)
 @test_throws ArgumentError flat_flat(ω2)
 @test_throws ArgumentError flat_sharp(v2)
 
-# the flat operators alias the non-flat symbol suffixed by ᴱ, like flat_hodge_star/⋆ᴱ
+# the flat operators alias the non-flat symbol suffixed by ᴱ, like flat_hodge_star/★ᴱ
 @test ♭ᴱ(v2) === flat_flat(v2)
 @test ♯ᴱ(ω2) === flat_sharp(ω2)
 
@@ -1023,7 +1023,7 @@ for v in (ContraVectorValue{con2}((1.0, 0.0)), ContraVectorValue{con2}((0.7, -0.
   @test star_v isa ContraVectorValue{con2}
   # agrees with the form-side star transported by the musical isomorphisms
   @test star_v ≈ sharp(hodge_star(flat(v, gd), gdi), gdi)
-  # ⋆⋆ = (-1)^{K(D-K)} = -1 for K = 1, D = 2
+  # ★★ = (-1)^{K(D-K)} = -1 for K = 1, D = 2
   @test hodge_star(star_v, gd) ≈ -1.0 * v
   # either tensor, and √|det(g)| given or not
   @test hodge_star(v, gdi)      ≈ star_v

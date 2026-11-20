@@ -58,7 +58,7 @@ g_inv_full = TensorValue{2,2,Float64,4}(g_inv[1,1], g_inv[2,1], g_inv[1,2], g_in
 # ── Part 1: Diagonal metric (analytical exact values) ────────────────────────
 #
 # g = diag(p, q),  g_inv = diag(1/p, 1/q),  √det g = √(pq)
-# ⋆_g dx¹ = √(p/q) dx²    ⋆_g dx² = −√(q/p) dx¹
+# ★_g dx¹ = √(p/q) dx²    ★_g dx² = −√(q/p) dx¹
 
 p, q       = 2.0, 3.0
 g_diag     = SymTensorValue{cov2,Float64,3}(p, 0.0, q)
@@ -75,17 +75,17 @@ star_dx2 = hodge_star(dx2, g_inv_diag, sdg_diag)
 @test collect(star_dx1.data) ≈ [0.0, sqrt(q/p)]    atol=1e-12   # √(q/p) dx²
 @test collect(star_dx2.data) ≈ [-sqrt(p/q), 0.0]   atol=1e-12   # -√(p/q) dx¹
 
-# ⋆_g ∘ ⋆_g = (-1)^{K(D-K)} = -1 for K=1, D=2
+# ★_g ∘ ★_g = (-1)^{K(D-K)} = -1 for K=1, D=2
 @test collect(hodge_star(star_dx1, g_inv_diag, sdg_diag).data) ≈ collect((-1.0 * dx1).data)  atol=1e-12
 @test collect(hodge_star(star_dx2, g_inv_diag, sdg_diag).data) ≈ collect((-1.0 * dx2).data)  atol=1e-12
 
-# 0-form: ⋆_g f = f √det(g) vol_coord
+# 0-form: ★_g f = f √det(g) vol_coord
 f0    = ExteriorFormValue{0,2}((5.0,))
 sf0_d = hodge_star(f0, g_inv_diag, sdg_diag)
 @test typeof(sf0_d) <: ExteriorFormValue{2,cov2}
 @test collect(sf0_d.data) ≈ [5.0 * sdg_diag]   atol=1e-12
 
-# 2-form: ⋆_g vol_coord = 1/√det(g)
+# 2-form: ★_g vol_coord = 1/√det(g)
 vol_coord = ExteriorFormValue{2,2}((1.0,))
 svol_d    = hodge_star(vol_coord, g_inv_diag, sdg_diag)
 @test typeof(svol_d) <: ExteriorFormValue{0,cov2}
@@ -102,7 +102,7 @@ end
 
 # ── Part 2: CubedSphere metric at a generic point ─────────────────────────────
 
-# ⋆_g ∘ ⋆_g = -1 for K=1, D=2
+# ★_g ∘ ★_g = -1 for K=1, D=2
 for ω in [dx1, dx2]
   sω  = hodge_star(ω,  g_inv, sdg)
   ssω = hodge_star(sω, g_inv, sdg)
@@ -115,7 +115,7 @@ s1 = hodge_star(omega_gen, g_inv, sdg)
 s2 = hodge_star(s1,        g_inv, sdg)
 @test collect(s2.data) ≈ collect((-1.0 * omega_gen).data)   atol=1e-10
 
-# 0-form ⋆_g: result is a 2-form with coefficient f·√det(g)
+# 0-form ★_g: result is a 2-form with coefficient f·√det(g)
 f0_cs  = ExteriorFormValue{0,2}((3.0,))
 sf0_cs = hodge_star(f0_cs, g_inv, sdg)
 @test typeof(sf0_cs) <: ExteriorFormValue{2,cov2}
@@ -171,10 +171,10 @@ for ω in [dx1, dx2, omega_gen]
   @test collect(ω_rt.data) ≈ collect(ω.data)   atol=1e-10
 end
 
-# ── Part 4: L²-inner product via ω ∧ ⋆_g η ──────────────────────────────────
+# ── Part 4: L²-inner product via ω ∧ ★_g η ──────────────────────────────────
 # For K=1, D=2 with diagonal metric g = diag(p,q):
-#   ⟨dx¹, dx¹⟩_g = g^{11} = 1/p  →  dx¹ ∧ ⋆_g dx¹ = (1/p)·√(pq) dx¹∧dx²
-#   ⟨dx², dx²⟩_g = g^{22} = 1/q  →  dx² ∧ ⋆_g dx² = (1/q)·√(pq) dx¹∧dx²
+#   ⟨dx¹, dx¹⟩_g = g^{11} = 1/p  →  dx¹ ∧ ★_g dx¹ = (1/p)·√(pq) dx¹∧dx²
+#   ⟨dx², dx²⟩_g = g^{22} = 1/q  →  dx² ∧ ★_g dx² = (1/q)·√(pq) dx¹∧dx²
 #   ⟨dx¹, dx²⟩_g = 0
 
 inner11 = (dx1 ∧ hodge_star(dx1, g_inv_diag, sdg_diag)).data[1]
@@ -305,13 +305,13 @@ g_inv_lor = inv(g_lor) # con2
 @test_throws AssertionError parse_metric_data(g_lor, 1.0)
 @test_throws AssertionError compute_metric_data(g_inv_lor, 1.0)
 
-# `hodge_star` reads the density `abs(signed_sqrt_g)`, here 1: ⋆ of a 0-form is
-# multiplication by it, and ⋆ of the top form by it times det g⁻¹
+# `hodge_star` reads the density `abs(signed_sqrt_g)`, here 1: ★ of a 0-form is
+# multiplication by it, and ★ of the top form by it times det g⁻¹
 md_lor = compute_metric_data(g_lor)
 @test collect(hodge_star(f0, md_lor).data)        ≈ [ 5.0]  atol=1e-12
 @test collect(hodge_star(vol_coord, md_lor).data) ≈ [-1.0]  atol=1e-12
 
-# ⋆ squares to sgn(det g)(-1)^{K(D-K)}, which is +1 on the 1-forms and -1 on
+# ★ squares to sgn(det g)(-1)^{K(D-K)}, which is +1 on the 1-forms and -1 on
 # the 0- and 2-forms of this metric
 star2(ω) = hodge_star(hodge_star(ω, md_lor), md_lor)
 @test collect(star2(f0).data)        ≈ -collect(f0.data)         atol=1e-12
@@ -323,7 +323,7 @@ end
 
 # ── Inverse Hodge star ────────────────────────────────────────────────────────
 #
-# `⋆⁻¹ = sgn(det g)(-1)^{K(D-K)} ⋆` inverts `⋆` on either side, on a form and on
+# `★⁻¹ = sgn(det g)(-1)^{K(D-K)} ★` inverts `★` on either side, on a form and on
 # a K-vector, whatever the index of the metric.
 
 g2_gen = SymTensorValue{cov2}(2.0, 0.5, 3.0)
@@ -357,8 +357,8 @@ end
 @test_throws DimensionMismatch inverse_hodge_star(dx1, md3)
 
 # The aliases are the functions themselves
-@test (⋆⁻¹) === inverse_hodge_star && (⋆ᴱ⁻¹) === flat_inverse_hodge_star
-@test ⋆⁻¹(dx1, md_eager) === inverse_hodge_star(dx1, md_eager)
-@test ⋆ᴱ⁻¹(dx1)         === flat_inverse_hodge_star(dx1)
+@test (★⁻¹) === inverse_hodge_star && (★ᴱ⁻¹) === flat_inverse_hodge_star
+@test ★⁻¹(dx1, md_eager) === inverse_hodge_star(dx1, md_eager)
+@test ★ᴱ⁻¹(dx1)         === flat_inverse_hodge_star(dx1)
 
 end # module

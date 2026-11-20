@@ -264,7 +264,7 @@ If it is a differential form, that is its value type is `ExteriorFormValue{K,D}`
 - else, the integral is not defined.
 
 As a consequence, integrating a `0`- or `D`-form `ω` can equivalently be done
-using `∫( ω )dΩ` or `∫( ⋆(ω) )dΩ`, since `⋆` acts on `0`- and `D`-forms by
+using `∫( ω )dΩ` or `∫( ★(ω) )dΩ`, since `★` acts on `0`- and `D`-forms by
 multiplying by √|det `g`| and √|det `g`⁻¹|, respectively. See also
 [`alt_inner`](@ref).
 

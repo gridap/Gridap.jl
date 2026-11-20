@@ -405,7 +405,7 @@ end
 # A facet with vertices v₁, v₂, … in the order `get_faces(p, D-1, 0)` lists
 # them carries the tangents eᵢ = vᵢ₊₁ - v₁ (i = 1 … D-1) and the normal
 #
-#   nᵢ = det[ êᵢ | e₁ | ⋯ | e_{D-1} ],   i.e. n = ⋆(e₁ ∧ ⋯ ∧ e_{D-1}),
+#   nᵢ = det[ êᵢ | e₁ | ⋯ | e_{D-1} ],   i.e. n = ★(e₁ ∧ ⋯ ∧ e_{D-1}),
 #
 # completing (n, e₁, …, e_{D-1}) to a positively oriented basis of Rᴰ. In 2D
 # this is n = R t with R = [0 1; -1 0] the clockwise rotation, the convention of

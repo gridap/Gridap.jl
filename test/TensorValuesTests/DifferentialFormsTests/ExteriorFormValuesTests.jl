@@ -272,7 +272,7 @@ N3  = TensorValue{3,3}(Tuple(Nm3))
 
 # ── Hodge star (flat Euclidean) ──────────────────────────────────────────────
 
-# 3D: ⋆dx¹ = dx²∧dx³,  ⋆dx² = -dx¹∧dx³,  ⋆dx³ = dx¹∧dx²
+# 3D: ★dx¹ = dx²∧dx³,  ★dx² = -dx¹∧dx³,  ★dx³ = dx¹∧dx²
 dx1_3d = CoVectorValue{D3}((1.0, 0.0, 0.0))
 dx2_3d = CoVectorValue{D3}((0.0, 1.0, 0.0))
 dx3_3d = CoVectorValue{D3}((0.0, 0.0, 1.0))
@@ -281,7 +281,7 @@ dx3_3d = CoVectorValue{D3}((0.0, 0.0, 1.0))
 @test flat_hodge_star(dx2_3d).data == (0.0, -1.0,  0.0)    # -dx¹∧dx³
 @test flat_hodge_star(dx3_3d).data == (1.0,  0.0,  0.0)    # dx¹∧dx²
 
-# ⋆∘⋆ = +1 for K=1, D=3 ((-1)^{K(D-K)} = (-1)^2 = +1)
+# ★∘★ = +1 for K=1, D=3 ((-1)^{K(D-K)} = (-1)^2 = +1)
 for ω in [dx1_3d, dx2_3d, dx3_3d]
   @test flat_hodge_star(flat_hodge_star(ω)).data == ω.data
 end
@@ -297,15 +297,15 @@ svol3 = flat_hodge_star(vol3)
 @test typeof(svol3) <: ExteriorFormValue{0,cov3}
 @test svol3.data == (1.0,)
 
-# 2D: ⋆ maps 1-forms to 1-forms (Kc = D-K = 2-1 = 1)
-# ⋆dx¹ = dx², ⋆dx² = -dx¹  (standard 2D orientation)
+# 2D: ★ maps 1-forms to 1-forms (Kc = D-K = 2-1 = 1)
+# ★dx¹ = dx², ★dx² = -dx¹  (standard 2D orientation)
 sdx1_2d = flat_hodge_star(dx1_2d)
 sdx2_2d = flat_hodge_star(dx2_2d)
 @test typeof(sdx1_2d) <: CoVectorValue{cov2}
 @test sdx1_2d.data == (0.0, 1.0)    # 0*dx¹ + 1*dx²
 @test sdx2_2d.data == (-1.0, 0.0)   # -1*dx¹ + 0*dx²
 
-# ⋆∘⋆ = -1 for K=1, D=2 ((-1)^{K(D-K)} = (-1)^1 = -1)
+# ★∘★ = -1 for K=1, D=2 ((-1)^{K(D-K)} = (-1)^1 = -1)
 for ω in [dx1_2d, dx2_2d]
   @test flat_hodge_star(flat_hodge_star(ω)).data == (-1.0 * ω).data
 end
@@ -361,14 +361,14 @@ for (α, β) in [(ExteriorFormValue{0,D3}((7.0,)),
   @test ⨟(α, β, g_inv_fi) == alt_inner(α, β, g_inv_fi)
   @test flat_alt_inner(α, β) == sum(α.data .* β.data)
   @test flat_alt_inner(α, β) ≈ alt_inner(α, β, one(g_inv_fi))
-  # α ∧ ⋆_g β = √det(g) (α|β) dx¹∧…∧dx^D, the property that defines (α|β)
+  # α ∧ ★_g β = √det(g) (α|β) dx¹∧…∧dx^D, the property that defines (α|β)
   @test flat_vol_coeff(α ∧ hodge_star(β, g_inv_fi, sdg_fi)) ≈ sdg_fi * alt_inner(α, β, g_inv_fi)
   # the flat tensor inner product drops the 1/K! of (α|β)
   @test flat_inner(α, β) ≈ factorial(K) * flat_alt_inner(α, β)
   # the flat operators alias the non-flat symbol suffixed by ᴱ
   @test (α ⊙ᴱ β) === flat_inner(α, β)
   @test (α ⨟ᴱ β) === flat_alt_inner(α, β)
-  @test ⋆ᴱ(α) === flat_hodge_star(α)
+  @test ★ᴱ(α) === flat_hodge_star(α)
   # Summing the binomial(D,K) independent components gives the same as
   # contracting all Dᴷ of them. The forms are expanded first because both carry
   # covariant indices, which `can_contract` pairs only with contravariant ones.
@@ -515,7 +515,7 @@ triv_v = ExteriorVectorValue{3,2,Float32}(())
 @test to_1form(VectorValue{0,Float32}()) === zero(CoVectorValue{0,Float32})
 @test from_1form(CoVectorValue{0,Float32}(())) === zero(VectorValue{0,Float32})
 
-# ⋆ of such a form would be a Λ^(D-K) with D-K < 0, which is not a type
+# ★ of such a form would be a Λ^(D-K) with D-K < 0, which is not a type
 @test_throws ErrorException flat_hodge_star(triv)
 @test_throws ErrorException hodge_star(triv, SymTensorValue{Con(D3),Int}(1,0,0,1,0,1), 1.0)
 

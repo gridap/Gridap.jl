@@ -635,7 +635,7 @@ end
 _is_varianced(::Type{T}) where T<:MultiValue = !all(i -> i isa Int, size(T))
 _is_varianced(::Type) = false
 
-# A `⋆` takes an orientation as well as a metric, and the one an embedded
+# A `★` takes an orientation as well as a metric, and the one an embedded
 # triangulation carries is the one its background induces on it, not the one its
 # own parametrisation happens to have, see [`_induced_orientation`](@ref).
 _oriented(op, trian, b) = b

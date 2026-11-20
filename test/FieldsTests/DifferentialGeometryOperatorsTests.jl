@@ -180,8 +180,8 @@ function test_codifferential(K, x::Point{D}) where D
   for (n,I) in enumerate(sorted_combinations(D,K-1))
     @test indep_comp_getindex(δω,n) ≈ -sum(j -> ∂ω[j,j,I...], 1:D)
   end
-  # δ is ±⋆d⋆ in Euclidean space
-  @test δω ≈ (isodd(D*(K-1)+1) ? -1 : 1) * ⋆ᴱ(d(y -> ⋆ᴱ(f(y)))(x))
+  # δ is ±★d★ in Euclidean space
+  @test δω ≈ (isodd(D*(K-1)+1) ? -1 : 1) * ★ᴱ(d(y -> ★ᴱ(f(y)))(x))
   # the mixed partials are symmetric, so δ∘δ vanishes exactly where it is defined
   K ≥ 2 && @test iszero(δ(δ(f))(x))
 end
@@ -510,7 +510,7 @@ function test_curved_codifferential(K, gF, x::Point{D}) where D
   @test partials_to_codifferential(∂ω, ω, Γ, g) ≈ δω
   @test partials_to_codifferential(∂ω, ω, Γ, compute_metric_data(g)) ≈ δω
 
-  # δ is (-1)^{D(K+1)+1} ⋆d⋆ for a metric of index 0, the definition the three
+  # δ is (-1)^{D(K+1)+1} ★d★ for a metric of index 0, the definition the three
   # Christoffel terms answer to: one per index of ω
   starf = y -> hodge_star(f(y), gF(y))
   dstar = partials_to_exteriorderivative(partial_derivatives(starf, x))
@@ -557,7 +557,7 @@ end
 
 # Derivative rules of the metric dependent operations
 
-# `inv`, `√|det g|` and `⋆` are not linear in the metric, so their rules read
+# `inv`, `√|det g|` and `★` are not linear in the metric, so their rules read
 # its value as well as its derivatives
 function test_metric_partials_rules(gF, x::Point{D}) where D
   g, ∂g = gF(x), partial_derivatives(gF, x)
@@ -571,7 +571,7 @@ function test_metric_partials_rules(gF, x::Point{D}) where D
   @test ∂sq ≈ partial_derivatives(sq_g, x)
   @test typeof(∂sq) === typeof(partial_derivatives(sq_g, x))
 
-  # `⋆ω = vol ⋆ᴱ(Mᴷω)` raises the K indices of ω through the K-th compound of
+  # `★ω = vol ★ᴱ(Mᴷω)` raises the K indices of ω through the K-th compound of
   # the metric, so the rule is a product rule over `vol` and the rows of each
   # minor of that compound
   for K in 0:D, V in (Cov, Con)
@@ -583,7 +583,7 @@ function test_metric_partials_rules(gF, x::Point{D}) where D
     @test typeof(∂star) === typeof(partial_derivatives(star, x))
   end
 
-  # The rule reads the metric of the variance `⋆` raises and the volume factor
+  # The rule reads the metric of the variance `★` raises and the volume factor
   # off its arguments, and derives neither of the two from the other
   f1 = y -> mk(CoVectorValue{Cov(D)}, y)
   @test_throws ErrorException partials_op_rule(Val(1), hodge_star)(
@@ -594,7 +594,7 @@ test_metric_partials_rules(g2F, x2)
 test_metric_partials_rules(g3F, x3)
 
 # Indefinite metric: the rules read the signed volume density, whose magnitude
-# is the volume factor `⋆` applies and whose sign factors out of the derivative
+# is the volume factor `★` applies and whose sign factors out of the derivative
 g2LF(y) = SymTensorValue{cov2}(-2.0 - y[1]^2, w(1,y), 3.0 + sin(y[2]))
 test_metric_partials_rules(g2LF, x2)
 

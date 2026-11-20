@@ -2,7 +2,7 @@ module FeecPoissonTests
 # End-to-end validation of the differential-form bilinear forms for FEEC:
 #  1. d_0form, d_1form at CellField level
 #  2. Scalar Poisson:
-#       a(u,v) = ∫(flat_vol_coeff(d_0form(u) ∧ ⋆(d_0form(v)))) * dΩ
+#       a(u,v) = ∫(flat_vol_coeff(d_0form(u) ∧ ★(d_0form(v)))) * dΩ
 #     gives a machine-precision identical solution to ∫(∇u·∇v)*dΩ,
 #     and the correct solution (L² error ≪ 1).
 
@@ -53,7 +53,7 @@ U = TrialFESpace(V, 0.0)
 f_cf = CellField(x -> 2π^2*sin(π*x[1])*sin(π*x[2]), Ω8, PhysicalDomain())
 l(v) = ∫( f_cf * v ) * dΩ8
 
-# Differential-form bilinear form: a(u,v) = ∫(d₀u ∧ ⋆d₀v)
+# Differential-form bilinear form: a(u,v) = ∫(d₀u ∧ ★d₀v)
 a_form(u,v) = ∫( flat_vol_coeff(d_0form(u) ∧ flat_hodge_star(d_0form(v))) ) * dΩ8
 
 # Standard Gridap bilinear form for comparison

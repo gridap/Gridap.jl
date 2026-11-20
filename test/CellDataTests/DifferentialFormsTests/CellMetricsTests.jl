@@ -91,8 +91,8 @@ gΓ, gΓ_inv, sqrt_det_gΓ = get_metric_data(Γ)
 @test all(v -> Tuple(v) == (4.0,),  first_point_values(gΓ_inv))
 
 # Its volume element is positive, carrying the index of the metric and no
-# orientation: the sign that makes `∫( ω )dΓ` and `∫( ⋆ω )dΓ` agree is the
-# triangulation's, and is applied to the measure and to the `⋆`.
+# orientation: the sign that makes `∫( ω )dΓ` and `∫( ★ω )dΓ` agree is the
+# triangulation's, and is applied to the measure and to the `★`.
 @test all(v -> v == 0.5, first_point_values(sqrt_det_gΓ))
 @test sort(unique(induced_orientation(Γ))) == [-1.0, 1.0]
 
@@ -152,10 +152,10 @@ md = compute_metric_data(gv[1],giv[1],sv[1])
 @test hodge_star(ω,gv[1],giv[1],sv[1]) ≈ hodge_star(ω,md)
 @test inverse_hodge_star(ω,gv[1],giv[1],sv[1]) ≈ inverse_hodge_star(ω,md)
 
-# `⋆⁻¹` reads the triangulation's metric as `⋆` does, and inverts it
+# `★⁻¹` reads the triangulation's metric as `★` does, and inverts it
 ωc  = CellField(x -> ExteriorFormValue{1,Cov(2)}(1.0 + x[1], 2.0 - x[2]), Ωc, PhysicalDomain())
 ωcv = first_point_values(ωc)
-for rt in map(first_point_values, (inverse_hodge_star(hodge_star(ωc)), ⋆⁻¹(⋆(ωc))))
+for rt in map(first_point_values, (inverse_hodge_star(hodge_star(ωc)), ★⁻¹(★(ωc))))
   @test all(cell -> rt[cell] ≈ ωcv[cell], eachindex(rt))
 end
 

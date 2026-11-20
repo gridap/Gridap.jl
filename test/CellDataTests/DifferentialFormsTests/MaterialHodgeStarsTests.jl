@@ -42,68 +42,68 @@ model3 = CartesianDiscreteModel((0.,1.,0.,1.,0.,1.),(2,2,2))
 
 # `K = 1` in dimension 3 has both sides act on `Λ²`, where the stored component
 # contraction carries a `2!` that the material must not be charged with: the
-# identity matrix gives `⋆` back, and a non-symmetric material acts as that
+# identity matrix gives `★` back, and a non-symmetric material acts as that
 # matrix does on the stored components, in that order.
 Nm = [1.0 2.0 3.0; 4.0 5.0 6.0; 7.0 8.0 10.0]
 
 @test all(first_point_values(postcomposed_material_hodge_star(Matrix(1.0I,3,3),1,Ω3)(ω3)) .≈
           first_point_values(hodge_star(ω3)))
 
-⋆ᴺ = postcomposed_material_hodge_star(Nm,1,Ω3)
-@test all(first_point_values(⋆ᴺ(ω3)) .≈
+★ᴺ = postcomposed_material_hodge_star(Nm,1,Ω3)
+@test all(first_point_values(★ᴺ(ω3)) .≈
           map(s -> form(Val(2),Val(3),Nm*comps(s)), first_point_values(hodge_star(ω3))))
 
 # the pre-composed material acts on `Λ^K`, so `K = 2` puts it on `Λ²` too
-⋆ᴹ = precomposed_material_hodge_star(Nm,2,Ω3)
-@test all(first_point_values(⋆ᴹ(η3)) .≈
+★ᴹ = precomposed_material_hodge_star(Nm,2,Ω3)
+@test all(first_point_values(★ᴹ(η3)) .≈
           map(e -> flat_hodge_star(form(Val(2),Val(3),Nm*comps(e))), first_point_values(η3)))
 
-# ── The two sides are conjugate: `N ∘ ⋆ = ⋆ ∘ M`, `M = ⋆⁻¹ ∘ N ∘ ⋆` ───────────
+# ── The two sides are conjugate: `N ∘ ★ = ★ ∘ M`, `M = ★⁻¹ ∘ N ∘ ★` ───────────
 
 S3 = operator_matrix(flat_hodge_star,Val(1),Val(3))
 @test all(first_point_values(precomposed_material_hodge_star(S3\(Nm*S3),1,Ω3)(ω3)) .≈
-          first_point_values(⋆ᴺ(ω3)))
+          first_point_values(★ᴺ(ω3)))
 
 # ── Inverse: the side the material composes on swaps ──────────────────────────
 
-# `inv(N ∘ ⋆) = (-1)^(K*(D-K)) ⋆ ∘ N⁻¹`, a pre-composed star of degree `D-K`.
+# `inv(N ∘ ★) = (-1)^(K*(D-K)) ★ ∘ N⁻¹`, a pre-composed star of degree `D-K`.
 # Dimension 2 is where that sign is not 1.
 model2 = CartesianDiscreteModel((0.,1.,0.,1.),(2,2))
 Ω2 = Triangulation(model2)
 ω2 = CellField(x -> ExteriorFormValue{1,Cov(2)}(1.0 + 3x[1]*x[2], 2.0 + x[1]^2), Ω2, PhysicalDomain())
 N2 = [2.0 1.0; 0.5 3.0]
 
-⋆ᴺ₂ = postcomposed_material_hodge_star(N2,1,Ω2)
-⋆ᴺ⁻¹ = precomposed_material_hodge_star(-inv(N2),1,Ω2)
-@test all(first_point_values(⋆ᴺ⁻¹(⋆ᴺ₂(ω2))) .≈ first_point_values(ω2))
+★ᴺ₂ = postcomposed_material_hodge_star(N2,1,Ω2)
+★ᴺ⁻¹ = precomposed_material_hodge_star(-inv(N2),1,Ω2)
+@test all(first_point_values(★ᴺ⁻¹(★ᴺ₂(ω2))) .≈ first_point_values(ω2))
 
-@test all(first_point_values(inv(⋆ᴺ₂)(⋆ᴺ₂(ω2))) .≈ first_point_values(ω2))
-@test all(first_point_values(inv(⋆ᴺ₂)(⋆ᴺ₂(ω2))) .≈ first_point_values(⋆ᴺ⁻¹(⋆ᴺ₂(ω2))))
+@test all(first_point_values(inv(★ᴺ₂)(★ᴺ₂(ω2))) .≈ first_point_values(ω2))
+@test all(first_point_values(inv(★ᴺ₂)(★ᴺ₂(ω2))) .≈ first_point_values(★ᴺ⁻¹(★ᴺ₂(ω2))))
 
 # `K = 1` in dimension 3 inverts into a pre-composed star of the 2-forms, whose
 # material is the 3×3 `inv` of the original's
-invᴺ₃ = inv(⋆ᴺ)
+invᴺ₃ = inv(★ᴺ)
 @test invᴺ₃ isa CellData.MaterialHodgeStar{2,3,:pre}
-@test (⋆ᴺ).inverse == false && invᴺ₃.inverse == true
-@test all(first_point_values(invᴺ₃(⋆ᴺ(ω3))) .≈ first_point_values(ω3))
-@test all(first_point_values(⋆ᴺ(invᴺ₃(η3))) .≈ first_point_values(η3))
+@test (★ᴺ).inverse == false && invᴺ₃.inverse == true
+@test all(first_point_values(invᴺ₃(★ᴺ(ω3))) .≈ first_point_values(ω3))
+@test all(first_point_values(★ᴺ(invᴺ₃(η3))) .≈ first_point_values(η3))
 
 # and the pre-composed side inverts into the post-composed one
-invᴹ₃ = inverse_map(⋆ᴹ)
+invᴹ₃ = inverse_map(★ᴹ)
 @test invᴹ₃ isa CellData.MaterialHodgeStar{1,3,:post}
-@test all(first_point_values(invᴹ₃(⋆ᴹ(η3))) .≈ first_point_values(η3))
+@test all(first_point_values(invᴹ₃(★ᴹ(η3))) .≈ first_point_values(η3))
 
 # inverting twice gives the operator back, the material field included
-@test inv(invᴺ₃) isa typeof(⋆ᴺ)
-@test inv(invᴺ₃).inverse == (⋆ᴺ).inverse
-@test inv(invᴺ₃).m === (⋆ᴺ).m
+@test inv(invᴺ₃) isa typeof(★ᴺ)
+@test inv(invᴺ₃).inverse == (★ᴺ).inverse
+@test inv(invᴺ₃).m === (★ᴺ).m
 
 # ── The kinds a material may be given as ──────────────────────────────────────
 
 # in dimension 3, where the `2!` of `Λ²` tells a material that is rescaled once
 # at construction from one that is rescaled at each point, or not at all
 N3v = TensorValue{3,3}(Tuple(Nm))
-ref3 = first_point_values(⋆ᴺ(ω3))
+ref3 = first_point_values(★ᴺ(ω3))
 for material in (N3v, Nm, Fill(N3v,num_cells(model3)), x -> N3v,
                  CellField(x -> N3v, Ω3, PhysicalDomain()))
   @test all(first_point_values(postcomposed_material_hodge_star(material,1,Ω3)(ω3)) .≈ ref3)
@@ -120,10 +120,10 @@ end
 V = FESpace(model2,ReferenceFE(QUAD,:Q⁻,1,1,Float64),conformity=:HΛ)
 dΩ2 = Measure(Ω2,2)
 S2 = operator_matrix(flat_hodge_star,Val(1),Val(2))
-⋆ᴹ₂ = precomposed_material_hodge_star(S2\(N2*S2),1,Ω2)
+★ᴹ₂ = precomposed_material_hodge_star(S2\(N2*S2),1,Ω2)
 
-@test assemble_matrix((u,v) -> ∫( v ∧ ⋆ᴺ₂(u) )dΩ2, V, V) ≈
-      assemble_matrix((u,v) -> ∫( v ∧ ⋆ᴹ₂(u) )dΩ2, V, V)
+@test assemble_matrix((u,v) -> ∫( v ∧ ★ᴺ₂(u) )dΩ2, V, V) ≈
+      assemble_matrix((u,v) -> ∫( v ∧ ★ᴹ₂(u) )dΩ2, V, V)
 
 # ── Against the wedge, on a chart of non-trivial metric ───────────────────────
 
@@ -153,27 +153,27 @@ dΩc = Measure(Ωc,2)
 # weight, so the `√|det g|` of `μ` is the one the scalars on the right are
 # integrated against.
 md  = compute_metric_data(g)
-⋆ᴺᶜ = postcomposed_material_hodge_star(N2,1,Ωc)
+★ᴺᶜ = postcomposed_material_hodge_star(N2,1,Ωc)
 
-# `ω ∧ ⋆ᴺ(η) = (⋆ω ⨟ N(⋆η)) μ`: `N` weights the pairing of the `D-K`-forms,
+# `ω ∧ ★ᴺ(η) = (★ω ⨟ N(★η)) μ`: `N` weights the pairing of the `D-K`-forms,
 # which is the space it is an endomorphism of, with no conjugation anywhere.
 sη   = hodge_star(ExteriorFormValue{1,Cov(2)}(0.5, 1.0), md)
 Nsηc = CellField(x -> form(Val(1),Val(2),N2*comps(sη)), Ωc, PhysicalDomain())
-@test sum(∫( ωc ∧ ⋆ᴺᶜ(ηc) )dΩc) ≈ sum(∫( hodge_star(ωc) ⨟ Nsηc )dΩc)
+@test sum(∫( ωc ∧ ★ᴺᶜ(ηc) )dΩc) ≈ sum(∫( hodge_star(ωc) ⨟ Nsηc )dΩc)
 
-# `ω ∧ ⋆ᴹ(η) = (ω ⨟ M(η)) μ` is the same identity read on the `K`-forms, `⋆`
-# being an isometry of `⨟`; equating the two gives `M = ⋆⁻¹ ∘ N ∘ ⋆` back.
+# `ω ∧ ★ᴹ(η) = (ω ⨟ M(η)) μ` is the same identity read on the `K`-forms, `★`
+# being an isometry of `⨟`; equating the two gives `M = ★⁻¹ ∘ N ∘ ★` back.
 Sc  = operator_matrix(w -> hodge_star(w,md),Val(1),Val(2))
 Mηc = CellField(x -> form(Val(1),Val(2),(Sc\(N2*Sc))*[0.5,1.0]), Ωc, PhysicalDomain())
-@test sum(∫( ωc ∧ ⋆ᴺᶜ(ηc) )dΩc) ≈ sum(∫( ωc ⨟ Mηc )dΩc)
+@test sum(∫( ωc ∧ ★ᴺᶜ(ηc) )dΩc) ≈ sum(∫( ωc ⨟ Mηc )dΩc)
 
-# the `⋆` of the chart metric is the one composed, not the Euclidean one
+# the `★` of the chart metric is the one composed, not the Euclidean one
 η2 = CellField(x -> ExteriorFormValue{1,Cov(2)}(0.5, 1.0), Ω2, PhysicalDomain())
-@test !(sum(∫( ωc ∧ ⋆ᴺᶜ(ηc) )dΩc) ≈ sum(∫( ω2 ∧ ⋆ᴺ₂(η2) )dΩ2))
+@test !(sum(∫( ωc ∧ ★ᴺᶜ(ηc) )dΩc) ≈ sum(∫( ω2 ∧ ★ᴺ₂(η2) )dΩ2))
 
-@test all(first_point_values(inv(⋆ᴺᶜ)(⋆ᴺᶜ(ηc))) .≈ first_point_values(ηc))
+@test all(first_point_values(inv(★ᴺᶜ)(★ᴺᶜ(ηc))) .≈ first_point_values(ηc))
 
-# ── Differentiation: the operator commutes with ∂ as the ⋆ it composes does ───
+# ── Differentiation: the operator commutes with ∂ as the ★ it composes does ───
 
 # The material contracts the form linearly, so a material Hodge star is a
 # bilinear operation of its material and its argument, and the Leibniz rule
@@ -184,7 +184,7 @@ Mηc = CellField(x -> form(Val(1),Val(2),(Sc\(N2*Sc))*[0.5,1.0]), Ωc, PhysicalD
 refᴺ = CellField(x -> form(Val(1),Val(2),N2*comps(flat_hodge_star(ω2fun(x)))), Ω2, PhysicalDomain())
 
 # the pre-composed conjugate is the same map, so it has the same derivatives
-for material_star in (⋆ᴺ₂, ⋆ᴹ₂),
+for material_star in (★ᴺ₂, ★ᴹ₂),
     k in (exterior_derivative, partial_derivatives, second_partial_derivatives)
   @test all(first_point_values(k(material_star(ω2d))) .≈ first_point_values(k(refᴺ)))
 end
@@ -195,19 +195,19 @@ end
 xc  = get_cell_points(Ωc)
 refᴺᶜ = CellField(x -> form(Val(1),Val(2),N2*comps(hodge_star(ω2fun(x),md))), Ωc, PhysicalDomain())
 for k in (exterior_derivative, partial_derivatives)
-  @test all(collect(k(⋆ᴺᶜ(ωcd))(xc)) .≈ collect(k(refᴺᶜ)(xc)))
+  @test all(collect(k(★ᴺᶜ(ωcd))(xc)) .≈ collect(k(refᴺᶜ)(xc)))
 end
-@test_throws ErrorException collect(second_partial_derivatives(⋆ᴺᶜ(ωcd))(xc))
+@test_throws ErrorException collect(second_partial_derivatives(★ᴺᶜ(ωcd))(xc))
 @test_throws ErrorException collect(second_partial_derivatives(hodge_star(ωcd))(xc))
 
 # ── An FE basis is derived through either side alike ──────────────────────────
 
-# `𝑑(⋆ᴺu)` of an FE basis goes through the lazy path, where the material star
+# `𝑑(★ᴺu)` of an FE basis goes through the lazy path, where the material star
 # carries the rule of a bilinear operation. The material mixes the components of
-# `⋆u`, so this does not vanish on a space of divergence free Whitney forms, as
-# `𝑑(⋆u)` itself does.
-aᴺ(u,v) = ∫( exterior_derivative(⋆ᴺ₂(u)) ⨟ exterior_derivative(⋆ᴺ₂(v)) )dΩ2
-aᴹ(u,v) = ∫( exterior_derivative(⋆ᴹ₂(u)) ⨟ exterior_derivative(⋆ᴹ₂(v)) )dΩ2
+# `★u`, so this does not vanish on a space of divergence free Whitney forms, as
+# `𝑑(★u)` itself does.
+aᴺ(u,v) = ∫( exterior_derivative(★ᴺ₂(u)) ⨟ exterior_derivative(★ᴺ₂(v)) )dΩ2
+aᴹ(u,v) = ∫( exterior_derivative(★ᴹ₂(u)) ⨟ exterior_derivative(★ᴹ₂(v)) )dΩ2
 Aᴺ = assemble_matrix(aᴺ, V, V)
 @test Aᴺ ≈ assemble_matrix(aᴹ, V, V)
 @test norm(Aᴺ) > 0

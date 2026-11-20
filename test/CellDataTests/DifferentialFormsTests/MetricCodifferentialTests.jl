@@ -13,7 +13,7 @@ using Test
 import LinearAlgebra
 
 # The codifferential on a chart model: `δ` reads the metric of the triangulation
-# and the Christoffel symbols its derivatives give. The `⋆d⋆` spelling of the
+# and the Christoffel symbols its derivatives give. The `★d★` spelling of the
 # same operator and the adjointness to `𝑑` are what check it.
 
 # ── Chart models of given metric ──────────────────────────────────────────────
@@ -35,7 +35,7 @@ chart_model(model,g) = ChartModel(model,Fill(GenericField(g),num_cells(model)))
 
 # Covariant as a metric must be, non constant so that the Christoffel symbols do
 # not vanish, and diagonally dominant hence positive definite, which is the
-# metric index 0 that the sign of `±⋆d⋆` below assumes.
+# metric index 0 that the sign of `±★d★` below assumes.
 g2(x) = SymTensorValue{Cov(2)}(1.5 + 0.4x[1]^2, 0.25x[2], 2.0 + 0.3x[1]*x[2])
 g3(x) = SymTensorValue{Cov(3)}(1.5 + 0.4x[1]^2, 0.25x[2], 0.1x[3],
                                2.0 + 0.3x[1]*x[2], 0.2x[1], 1.75 + 0.5x[3]^2)
@@ -65,12 +65,12 @@ function max_diff(a, b, sgn=1)
   m
 end
 
-# ── `δ` of a chart is `±⋆d⋆` of the same metric ───────────────────────────────
+# ── `δ` of a chart is `±★d★` of the same metric ───────────────────────────────
 
-# `δα = (-1)^{D(K+1)+1} ⋆d⋆α` for a positive definite metric. The two sides
+# `δα = (-1)^{D(K+1)+1} ★d★α` for a positive definite metric. The two sides
 # share no kernel: `δ` contracts the Christoffel symbols of the metric, while
-# `⋆d⋆` composes two metric Hodge stars with the metric free `𝑑`.
-@testset "δ is ±⋆d⋆ on a chart of dimension $D" for (D,cmodel) in
+# `★d★` composes two metric Hodge stars with the metric free `𝑑`.
+@testset "δ is ±★d★ on a chart of dimension $D" for (D,cmodel) in
     ((2,cmodel2), (3,cmodel3))
   Ω = Triangulation(cmodel)
   pts = get_cell_points(Ω)
@@ -138,7 +138,7 @@ end
 
 # The inverse metric and the signed volume density are built from the metric, so
 # the rules of `inv` and of `sgn(det g)√|det g|` are what lets them be
-# differentiated, and with them the metric `⋆` of an expression `𝑑` is taken of.
+# differentiated, and with them the metric `★` of an expression `𝑑` is taken of.
 let Ω = Triangulation(cmodel2), pts = get_cell_points(Ω)
   g, g_inv, signed_sqrt_g = get_metric_data(Ω)
   ∂g, ∂g_inv, ∂signed_sqrt_g = map(partial_derivatives, (g, g_inv, signed_sqrt_g))

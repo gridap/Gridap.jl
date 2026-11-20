@@ -243,7 +243,7 @@ Finite Element Exterior Calculus polynomial basis for the spaces P⁻`ᵣ`Λ`ᵏ
 
 Unless the constructor is handed an `ExteriorFormValue`, the polynomial forms
 are explicitely transformed into vectors using the standard equivalence with
-usual vector calculus defined in terms of the hodge star operator ⋆ and the
+usual vector calculus defined in terms of the hodge star operator ★ and the
 sharp map ♯, see [`_basis_forms_components`](@ref) (the simplex is assumed
 Euclidean).
 
@@ -387,7 +387,7 @@ Finite Element Exterior Calculus polynomial basis for the spaces P`ᵣ`Λ`ᵏ` o
 
 Unless the constructor is handed an `ExteriorFormValue`, the polynomial forms
 are explicitely transformed into vectors using the standard equivalence with
-usual vector calculus defined in terms of the hodge star operator ⋆ and the
+usual vector calculus defined in terms of the hodge star operator ★ and the
 sharp map ♯, see [`_basis_forms_components`](@ref) (the simplex is assumed
 Euclidean).
 
@@ -660,8 +660,8 @@ k-form components dxᴵ = dxᴵ¹ ∧ dxᴵ² ∧ ... ∧ dxᴵᵏ where `I` is 
 If `DG_style`==false, the indices are changed to implement the vector proxy of
 the differential forms ω defined by:
 - ω♯    if `k` = 0 or 1
-- (⋆ω)♯ if `k` = `D`-1 or `D` and `k`>1
-where ⋆ is the hodge star operator and ♯ the sharp map.
+- (★ω)♯ if `k` = `D`-1 or `D` and `k`>1
+where ★ is the hodge star operator and ♯ the sharp map.
 
 The triples become (`I_proxy_id`, `I`, `I_proxy_sgn`) with the same `I` (and in
 the same order), such that the components of the vector proxy v of a `k`-form ω are
@@ -669,15 +669,15 @@ the same order), such that the components of the vector proxy v of a `k`-form ω
     v[I_proxy_id] = I_proxy_sgn * ω[I_id]
 
 If `k` ∈ {0,1,`D`}, the proxy is trivial. If `k`=`D`-1, ♯ reverses the
-components order and ⋆ adds signs 1, -1, 1, -1 ...
+components order and ★ adds signs 1, -1, 1, -1 ...
 
-If `rotate_90` is `true` and `k` is `1`, the (⋆ω)♯ proxy is applied instead of ω♯.
+If `rotate_90` is `true` and `k` is `1`, the (★ω)♯ proxy is applied instead of ω♯.
 """
 function _basis_forms_components(D,k,DG_style,rot_90)
   components = Vector{Tuple{ Int, Vector{Int}, Int}}(undef, binomial(D,k))
   for (I_id, I) in enumerate(sorted_combinations(D,k))
     # The rotation for 2D Raviart-Thomas/BDM is actually considering k to be D-1
-    # rather than 1, that is applying ⋆.
+    # rather than 1, that is applying ★.
     if DG_style || iszero(k) || isone(k) && !rot_90
       components[I_id] = (I_id, I, 1)
     else # if k == D, I = [1:D] and this is just (1, [], 1) (but that works)

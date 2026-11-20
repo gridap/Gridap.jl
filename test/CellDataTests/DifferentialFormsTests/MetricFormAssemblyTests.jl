@@ -13,7 +13,7 @@ using Test
 import LinearAlgebra
 
 # The metric operators and the measure convention through the FE path: a 𝓟ᵣΛᵏ
-# space on a simplicial chart model. `∫( a ∧ ⋆b )dΩ` and `∫( alt_inner(a,b) )dΩ`
+# space on a simplicial chart model. `∫( a ∧ ★b )dΩ` and `∫( alt_inner(a,b) )dΩ`
 # are the same bilinear form read from either end, and each is the metric weak
 # form written by hand.
 
@@ -57,11 +57,11 @@ spaces(model,reffe) = (V = FESpace(model,reffe); (TrialFESpace(V), V))
 
 # ── The two spellings of a metric bilinear form assemble the same matrix ──────
 
-# `a ∧ ⋆b = (a|b) √|det g| dx¹∧…∧dx^D`: the wedge is a top form, integrated
-# against the euclidean weights because its `⋆` carries the volume factor, and
+# `a ∧ ★b = (a|b) √|det g| dx¹∧…∧dx^D`: the wedge is a top form, integrated
+# against the euclidean weights because its `★` carries the volume factor, and
 # `alt_inner` a scalar, integrated against the metric volume element. Both read
 # the metric of the model, so the two assemble the same matrix.
-@testset "∧⋆ and alt_inner agree on $lbl" for (lbl,cmodel,p,D,cases) in (
+@testset "∧★ and alt_inner agree on $lbl" for (lbl,cmodel,p,D,cases) in (
     ("TRI", ctri, TRI, 2, ((:P,2,0),(:P⁻,1,1),(:P,2,1),(:P⁻,1,2),(:P,2,2))),
     ("TET", ctet, TET, 3, ((:P⁻,1,0),(:P⁻,1,1),(:P⁻,1,2),(:P⁻,1,3))),
   )
@@ -81,7 +81,7 @@ spaces(model,reffe) = (V = FESpace(model,reffe); (TrialFESpace(V), V))
   end
 end
 
-# `𝑑` of a top form is zero, and the `(D+1)`-forms it is valued in have no `⋆`,
+# `𝑑` of a top form is zero, and the `(D+1)`-forms it is valued in have no `★`,
 # so that one bilinear form has the `alt_inner` spelling alone.
 let dΩ = Measure(Ωc,4), (U,V) = spaces(ctri, fe(TRI,:P⁻,1,2))
   @test iszero(assemble_matrix((u,v) -> ∫( alt_inner(𝑑(u),𝑑(v)) )dΩ, U, V))
@@ -133,9 +133,9 @@ end
 
 # ── The euclidean spelling is not the chart's ─────────────────────────────────
 
-# `flat_vol_coeff(a ∧ ⋆ᴱb)` is `flat_alt_inner(a,b)`, a scalar: it takes the
+# `flat_vol_coeff(a ∧ ★ᴱb)` is `flat_alt_inner(a,b)`, a scalar: it takes the
 # metric volume element of the measure all the same, and the metric the chart's
-# `⋆` would have carried is the one missing. `LinearAlgebra.I` asks for that
+# `★` would have carried is the one missing. `LinearAlgebra.I` asks for that
 # same euclidean operator.
 let dΩ = Measure(Ωc,6), (U,V) = spaces(ctri, fe(TRI,:P⁻,1,1))
   euc = assemble_matrix(

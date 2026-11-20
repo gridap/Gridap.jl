@@ -20,9 +20,9 @@ using Gridap.CellData: induced_orientation
 # integral of a top form below is written in both ways, as the integral of the
 # form and as the integral of the function it stars to,
 #
-#   ∫( ω )dΓ = ∫( ⋆ω )dΓ,
+#   ∫( ω )dΓ = ∫( ★ω )dΓ,
 #
-# the two agreeing only if the `⋆` of `Γ` and its measure carry the same
+# the two agreeing only if the `★` of `Γ` and its measure carry the same
 # orientation.
 
 # The values a cell field takes at the first cell point of each of its cells.
@@ -41,7 +41,7 @@ function stokes_terms(model, ::Val{D}, deg=6) where D
   Γ = BoundaryTriangulation(model); dΓ = Measure(Γ,deg)
   trΓ = get_trace_operator(Γ,Ω)
   ω = CellField(test_form(Val(D)), Ω, PhysicalDomain())
-  (sum(∫( 𝑑(ω) )dΩ), sum(∫( trΓ(ω) )dΓ), sum(∫( ⋆(trΓ(ω)) )dΓ))
+  (sum(∫( 𝑑(ω) )dΩ), sum(∫( trΓ(ω) )dΓ), sum(∫( ★(trΓ(ω)) )dΓ))
 end
 
 # ── Stokes' theorem, in both writings ─────────────────────────────────────────
@@ -91,7 +91,7 @@ g, g_inv, vol = get_metric_data(Γ)
 
 # the volume element is their length, and carries no orientation: a metric has
 # none. The sign that makes the two writings of an integral agree is held by the
-# triangulation, and reaches the measure and the `⋆` from there.
+# triangulation, and reaches the measure and the `★` from there.
 @test all(v -> v ≈ 1/n, first_point_values(vol))
 
 ε = induced_orientation(Γ)
@@ -107,12 +107,12 @@ tr8 = get_trace_operator(Γ8,Ω)
 p̄   = CellField(ExteriorFormValue{0,Cov(1)}(-1.0), Γ8, PhysicalDomain())
 
 b_form = assemble_vector(v -> ∫( p̄ ∧ tr8(v)    )dΓ8, V)
-b_star = assemble_vector(v -> ∫( p̄ ∧ ⋆(tr8(v)) )dΓ8, V)
+b_star = assemble_vector(v -> ∫( p̄ ∧ ★(tr8(v)) )dΓ8, V)
 
 @test b_form ≈ b_star
 @test !iszero(b_form)
 
-# ── An interior facet orients its `⋆` the same way ────────────────────────────
+# ── An interior facet orients its `★` the same way ────────────────────────────
 
 # `jump` and `mean` are taken on `Ω` and the trace after them, a lifted operator
 # bringing its arguments to a common domain as it is built. `Λ` is oriented by
@@ -122,7 +122,7 @@ dΛ  = Measure(Λ,4)
 trΛ = get_trace_operator(Λ,Ω)
 ωΛ  = CellField(test_form(Val(2)), Ω, PhysicalDomain())
 
-@test sum(∫( trΛ(mean(ωΛ)) )dΛ) ≈ sum(∫( ⋆(trΛ(mean(ωΛ))) )dΛ)
+@test sum(∫( trΛ(mean(ωΛ)) )dΛ) ≈ sum(∫( ★(trΛ(mean(ωΛ))) )dΛ)
 @test !iszero(sum(∫( trΛ(mean(ωΛ)) )dΛ))
 
 end # module

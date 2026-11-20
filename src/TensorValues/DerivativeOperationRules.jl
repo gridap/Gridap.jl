@@ -197,10 +197,10 @@ _alt_compound_derivative_comps(M::Symbol, ∂M::Symbol, c_out, c_in, T, src::Sym
 
 #     _hodge_star_slice(ω, ∂ωc, M, ∂Mc, vol, dvolc)
 #
-# The derivation slice `∂_c(⋆ω)` of the derivative of [`hodge_star`](@ref), from
+# The derivation slice `∂_c(★ω)` of the derivative of [`hodge_star`](@ref), from
 # the `c`-th slices `∂ωc`, `∂Mc` and `dvolc` of the derivatives of its arguments.
 #
-# `⋆ω = vol ⋆ᴱ(Mᴷω)` raises the `K` indices of `ω` through the `K`-th compound of
+# `★ω = vol ★ᴱ(Mᴷω)` raises the `K` indices of `ω` through the `K`-th compound of
 # the metric `M` of variance opposite to `ω`, so the rule is a product rule over
 # `vol` and the `K` rows of each minor of that compound.
 @generated function _hodge_star_slice(
@@ -240,7 +240,7 @@ end
 # Order 1 rule for [`hodge_star`](@ref), one [`_hodge_star_slice`](@ref) per
 # derivation index.
 #
-# Both the metric tensor of the variance `⋆` raises the indices of `ω` with and
+# Both the metric tensor of the variance `★` raises the indices of `ω` with and
 # the signed volume density must be among `metric_args`: the rule differentiates
 # the arguments it is handed, and derives neither of the two from the other.
 # `get_metric_data` returns all of them.

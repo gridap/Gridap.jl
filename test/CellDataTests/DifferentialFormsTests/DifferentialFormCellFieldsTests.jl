@@ -19,10 +19,10 @@ using FillArrays: Fill
 # The 1-form ω = 3xy dx¹ + x² dx²  is used throughout.
 # Its exterior derivative: dω = (∂x²/∂x − ∂3xy/∂y) dx¹∧dx² = −x dx¹∧dx²
 # Codifferential (sign = -1 for D=2, K=1):
-#   ⋆(ω₁dx¹+ω₂dx²) = (−ω₂)dx¹ + ω₁dx²  (convention: ⋆dx¹=dx², ⋆dx²=−dx¹)
-#   ⋆ω = (−x²)dx¹ + (3xy)dx²
-#   d⋆ω = (∂(3xy)/∂x − ∂(−x²)/∂y) dx¹∧dx² = 3y dx¹∧dx²
-#   δω = −1 × ⋆(3y vol) = −3y;  at (0.125,0.125): −0.375
+#   ★(ω₁dx¹+ω₂dx²) = (−ω₂)dx¹ + ω₁dx²  (convention: ★dx¹=dx², ★dx²=−dx¹)
+#   ★ω = (−x²)dx¹ + (3xy)dx²
+#   d★ω = (∂(3xy)/∂x − ∂(−x²)/∂y) dx¹∧dx² = 3y dx¹∧dx²
+#   δω = −1 × ★(3y vol) = −3y;  at (0.125,0.125): −0.375
 
 # The values a cell field takes at the cell points of its own triangulation.
 function cell_values(cf)
@@ -103,20 +103,20 @@ sv0         = getindex!(csv, star_valx, 1)
 @test typeof(sv0) <: AbstractArray{<:CoVectorValue{cov2}}
 
 # Chaining: the star is a pointwise operation and the exterior derivative
-# differentiates the starred field as a black box, so d(⋆ω) is a 2-form.
+# differentiates the starred field as a black box, so d(★ω) is a 2-form.
 d_star_ω = exterior_derivative(star_ω)
 @test form_eltype(d_star_ω) <: ExteriorFormValue{2,cov2}
 
-# δω = (-1)^{D(K-1)+1} ⋆d⋆ω, with D=2 and K=1 the sign is -1
+# δω = (-1)^{D(K-1)+1} ★d★ω, with D=2 and K=1 the sign is -1
 @test (-flat_hodge_star(evaluate(exterior_derivative(Operation(flat_hodge_star)(ωfld)), x_c))).data[1] ≈
       δv.data[1]   atol=1e-8
 
-# `⋆⁻¹` inverts `⋆`; the identity metric of this model selects its Euclidean
+# `★⁻¹` inverts `★`; the identity metric of this model selects its Euclidean
 # version, whose index is +1
 inv_star_ω = inverse_hodge_star(star_ω)
 @test form_eltype(inv_star_ω) <: ExteriorFormValue{1,cov2}
 @test all(first(cell_values(inv_star_ω)) .≈ first(cell_values(ω)))
-@test all(first(cell_values(⋆⁻¹(⋆(ω)))) .≈ first(cell_values(ω)))
+@test all(first(cell_values(★⁻¹(★(ω)))) .≈ first(cell_values(ω)))
 
 # ── wedge product ─────────────────────────────────────────────────────────────
 
@@ -212,7 +212,7 @@ cv    = array_cache(vx)
 vval0 = getindex!(cv, vx, 1)
 @test typeof(vval0) <: AbstractArray{<:VectorValue{2}}
 
-# ── Integration: ∫(flat_vol_coeff(ω ∧ ⋆ω)) dΩ equals ∫‖ω‖² dΩ ───────────────
+# ── Integration: ∫(flat_vol_coeff(ω ∧ ★ω)) dΩ equals ∫‖ω‖² dΩ ───────────────
 # ω = x¹ dx¹ + x² dx² on [0,1]²
 # ‖ω‖² = x¹² + x²²; ∫₀¹∫₀¹(x²+y²) dx dy = 1/3+1/3 = 2/3
 dΩ = Measure(Ω, 4)
@@ -308,7 +308,7 @@ for Ωi in (Ω, Triangulation(model_na))
 end
 
 # ── The FEEC spelling of a bilinear form ─────────────────────────────────────
-# On a 0-form space `∫ 𝑑u ∧ ⋆𝑑v` is the stiffness matrix `∫ ∇u⋅∇v`, which pins
+# On a 0-form space `∫ 𝑑u ∧ ★𝑑v` is the stiffness matrix `∫ ∇u⋅∇v`, which pins
 # the pushforward: the FE basis lives in the reference domain.
 
 U = TrialFESpace(V)

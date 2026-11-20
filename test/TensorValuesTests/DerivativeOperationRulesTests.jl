@@ -91,11 +91,11 @@ end
 @test partials_op_rule(-)(∂(d2,VectorValue(1.0,2.0)), ∂(d2,VectorValue(0.5,1.0))) ===
       ∂(d2, VectorValue(0.5,1.0))
 
-# ⋆ is linear with constant coefficients, so it acts on the value factor alone,
+# ★ is linear with constant coefficients, so it acts on the value factor alone,
 # at any derivation order
-let ω = ExteriorFormValue{1,2,Float64}(1.0,2.0), ⋆ω = flat_hodge_star(ω)
-  @test partials_op_rule(flat_hodge_star)(∂(d1,ω)) === ∂(d1, ⋆ω)
-  @test partials_op_rule(flat_hodge_star)(∂(d2,ω)) === ∂(d2, ⋆ω)
+let ω = ExteriorFormValue{1,2,Float64}(1.0,2.0), ★ω = flat_hodge_star(ω)
+  @test partials_op_rule(flat_hodge_star)(∂(d1,ω)) === ∂(d1, ★ω)
+  @test partials_op_rule(flat_hodge_star)(∂(d2,ω)) === ∂(d2, ★ω)
   @test partials_op_rule(flat_hodge_star)(∂(d1,ω)) === _map_second_factor(flat_hodge_star, ∂(d1,ω))
 end
 

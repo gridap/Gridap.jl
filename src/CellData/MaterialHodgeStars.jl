@@ -16,7 +16,7 @@ struct MaterialHodgeStar{K,D,PP,F<:CellField}
     `0 ≤ K ≤ D`, got K = $K and D = $D.
     """
     @check PP === :pre || PP === :post """\n
-    The material composes `⋆` either before (`:pre`) or after (`:post`) it, got
+    The material composes `★` either before (`:pre`) or after (`:post`) it, got
     `$PP`.
     """
     new{K,D,PP,typeof(m)}(m, inverse)
@@ -29,10 +29,10 @@ end
 
 A material (or constitutive) Hodge star for the `K`-forms on `Ω`, the linear
 map `Λ^K → Λ^{D-K}` resulting from applying `M` before, or `N` after, the
-metric Hodge star [`⋆`](@ref):
+metric Hodge star [`★`](@ref):
 
-    ⋆ᴹ = ⋆ ∘ M,    M ∈ End(Λ^K),
-    ⋆ᴺ = N ∘ ⋆,    N ∈ End(Λ^{D-K}).
+    ★ᴹ = ★ ∘ M,    M ∈ End(Λ^K),
+    ★ᴺ = N ∘ ★,    N ∈ End(Λ^{D-K}).
 
 # Arguments
 
@@ -56,26 +56,26 @@ These act as
 The definition of the [`hodge_star`](@ref) in terms of the inner product of
 `K`-forms `ω` and `η`
 
-    ω ∧ ⋆η = (ω ⨟ η) μ,  μ = √|det g| dx¹∧…∧dx^D
+    ω ∧ ★η = (ω ⨟ η) μ,  μ = √|det g| dx¹∧…∧dx^D
 
 generalises to
 
-    ω ∧ ⋆ᴹ(η) =  (  ω ⨟ M(η)  ) μ,
-    ω ∧ ⋆ᴺ(η) = s( ⋆ω ⨟ N(⋆η) ) μ,
+    ω ∧ ★ᴹ(η) =  (  ω ⨟ M(η)  ) μ,
+    ω ∧ ★ᴺ(η) = s( ★ω ⨟ N(★η) ) μ,
 
-where `s = sgn(det(g))`. ⋆ᴹ` and `⋆ᴺ` are the same operator if `M` and `N` verify
+where `s = sgn(det(g))`. ★ᴹ` and `★ᴺ` are the same operator if `M` and `N` verify
 
-    M = ⋆⁻¹ ∘ N ∘ ⋆,     N = ⋆ ∘ M ∘ ⋆⁻¹.
+    M = ★⁻¹ ∘ N ∘ ★,     N = ★ ∘ M ∘ ★⁻¹.
 
 ### Inverse
 
-A `⋆` squares to `s(-1)^(K*(D-K))` on `Λ^K`, so inverting a material
+A `★` squares to `s(-1)^(K*(D-K))` on `Λ^K`, so inverting a material
 Hodge star writes
 
-    inv(⋆ᴹ) = M⁻¹ ∘ ⋆⁻¹ = s(-1)^(K*(D-K)) M⁻¹ ∘ ⋆,
-    inv(⋆ᴺ) = ⋆⁻¹ ∘ N⁻¹ = s(-1)^(K*(D-K)) ⋆ ∘ N⁻¹.
+    inv(★ᴹ) = M⁻¹ ∘ ★⁻¹ = s(-1)^(K*(D-K)) M⁻¹ ∘ ★,
+    inv(★ᴺ) = ★⁻¹ ∘ N⁻¹ = s(-1)^(K*(D-K)) ★ ∘ N⁻¹.
 
-`⋆ᴹ` and `⋆ᴺ` support `inv`. This inverse is what transform a resistivity to a
+`★ᴹ` and `★ᴺ` support `inv`. This inverse is what transform a resistivity to a
 conductivity, a magnetic permeability to a magnetic reluctivity, etc.
 """
 postcomposed_material_hodge_star(N, K::Int, Ω::Triangulation) =
@@ -159,7 +159,7 @@ _metric_star(s::MaterialHodgeStar, a::CellField) =
 _inverse_material(m::CellField) = Operation(inv)(m)
 _inverse_material(m::OperationCellField{DS,typeof(inv)}) where DS = only(m.args)::CellField
 
-# `inv(⋆ᴹ) = M⁻¹ ∘ ⋆⁻¹` and `inv(⋆ᴺ) = ⋆⁻¹ ∘ N⁻¹` map `Λ^{D-K} → Λ^K
+# `inv(★ᴹ) = M⁻¹ ∘ ★⁻¹` and `inv(★ᴺ) = ★⁻¹ ∘ N⁻¹` map `Λ^{D-K} → Λ^K
 inverse_map(s::MaterialHodgeStar{K,D,:pre}) where {K,D} =
   MaterialHodgeStar{D-K,D,:post}(_inverse_material(s.m), !s.inverse)
 

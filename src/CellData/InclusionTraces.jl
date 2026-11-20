@@ -77,7 +77,7 @@ tensor field of `Ω` restricts to on `Γ`. Only a purely covariant field, of typ
 `(0,s,0)`, has such a restriction, a differential form in particular.
 
     trΓ = get_trace_operator(Γ, Ω)
-    ∫( p̄ ∧ trΓ(v) )dΓ       # or, as a function, ∫( p̄ ∧ ⋆(trΓ(v)) )dΓ
+    ∫( p̄ ∧ trΓ(v) )dΓ       # or, as a function, ∫( p̄ ∧ ★(trΓ(v)) )dΓ
 
 The traced field has its components in the reference cell coordinates of `Γ`,
 where the metric is [`get_metric_data`](@ref)`(Γ)` and a top form integrates
@@ -175,7 +175,7 @@ function induced_orientation(Γ::BoundaryTriangulation)
 end
 
 # The orientation the cells of a triangulation carry, one sign per cell, as the
-# `⋆` of an embedded triangulation and the integral of a top form need it. Unlike
+# `★` of an embedded triangulation and the integral of a top form need it. Unlike
 # the metric, which holds no orientation, it is not a function of the background,
 # which is why it is the one thing a new triangulation has to declare.
 _induced_orientation(trian::Triangulation) = @abstractmethod """\n
