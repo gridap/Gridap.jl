@@ -54,10 +54,8 @@ function ZeroMeanFESpace(space::SingleFieldFESpace, dΩ::Measure)
   h_dofs = all(isone,h_dofs) ? Ones(length(h_dofs)) : h_dofs
   vol = h_dofs isa Ones ? sum(int_φi) : dot(int_φi, h_dofs)
 
-  vol > zero(vol) || throw(ArgumentError("""\n
-  A `ZeroMeanFESpace` of volume $vol has no function of unit mean value to
-  shift its functions along, so no function of it can be given zero mean value.
-  """))
+  abs(vol) > eps(T)*norm(int_φi, 1) || throw(ArgumentError(
+    "Mean value undefined: the fespace has zero ($vol) volume."))
   @check _represents_mean_functional(space, dΩ, int_φi, uh) """\n
   `space` does not contain a riesz representative for the mean functional.
   Either it does not contain the constants and you should impose the zero mean
