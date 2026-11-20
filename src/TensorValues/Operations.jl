@@ -983,7 +983,8 @@ function inv(a::MultiValue{Tuple{D1,D2,D1,D2}}) where {D1,D2}
   HighOrderTensorValue{Tuple{D1,D2,D1,D2}}(Tuple(inv(m)))
 end
 
-# Minor symmetries imply a ⋅² w == 0 for any skew-symmetric w, column (1,2) equals column (2,1)
+# Minor symmetries imply a ⋅² w == 0 for any skew-symmetric w. Column D+1 = (1,2)
+# equals column 2 = (2,1), so D+1 is the first zero pivot in exact arithmetic.
 inv(a::SymFourthOrderTensorValue{D}) where D = throw(SingularException(D+1))
 inv(a::SymFourthOrderTensorValue{1}) = SymFourthOrderTensorValue{1}(inv(a.data[1]))
 
