@@ -121,6 +121,10 @@ B0 = assemble_vector(q -> b(uh,q),Q0)
 @test_throws ArgumentError ZeroMeanFESpace(
   FESpace(model,ReferenceFE(lagrangian,Float64,1);dirichlet_tags="boundary"),dΩ)
 
+# A vector valued space is rejected
+@test_throws "scalar valued spaces only" ZeroMeanFESpace(
+  FESpace(model,ReferenceFE(lagrangian,VectorValue{2,Float64},1)),dΩ)
+
 for p_order in (2,3)
   _Vm = FESpace(model,ReferenceFE(QUAD,modalC0,Float64,p_order);conformity=:L2)
   Vm  = ZeroMeanFESpace(_Vm,dΩ)

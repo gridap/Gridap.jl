@@ -15,7 +15,7 @@ such that
 
     ∫(u)dΩ = 0
 
-One DOF of `U` (whose shape-function has non-zera mean) is fixed to force the
+One DOF of `U` (whose shape-function has non-zero mean) is fixed to force the
 constraint.
 
 # Extended help
@@ -31,12 +31,12 @@ of the mean functional,
 
     ⟨𝔥,q⟩ = ∫(𝔥*q)dΩ = ∫q  for all q.
 
-`𝔥`'s dof values, `h_dofs`, is the vector of ones for a basis that is a
+`𝔥`'s dof values vector, `h_dofs`, is the vector of ones for a basis that is a
 partition of unity (like Lagrangian).
 
 So, `u` is imposed to have zero mean by fixing the constant `c` to
 
-c = - ( (Σ_i≠k f_i ∫φ_i) + d ∫φ_k) / "vol".
+    c = - ( (Σ_i≠k f_i ∫φ_i) + f_k ∫φ_k) / "vol".
 
 Evaluating `u` still requires `h_dofs`.
 """
@@ -46,9 +46,14 @@ function ZeroMeanFESpace(space::SingleFieldFESpace, dΩ::Measure)
   $(num_dirichlet_dofs(space)).
   """))
 
+  # Value type of the functions of `space`, inferred without evaluating them
+  T = eltype(return_type(testitem(get_data(get_fe_basis(space))),
+                         testitem(get_data(get_cell_points(dΩ)))))
+  @notimplementedif !isone(num_indep_components(T)) """\n
+  `ZeroMeanFESpace` is implemented for scalar valued spaces only, and this
+  one is $T valued.
+  """
   int_φi = assemble_vector(v->∫(v)*dΩ, space)
-  T = eltype(int_φi)
-  @notimplementedif !isone(num_indep_components(T))
   uh = interpolate(one(T), space)
   h_dofs = get_free_dof_values(uh)
   h_dofs = all(isone,h_dofs) ? Ones(length(h_dofs)) : h_dofs
