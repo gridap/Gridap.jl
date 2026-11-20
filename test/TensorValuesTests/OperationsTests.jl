@@ -909,6 +909,10 @@ ai = inv(a)
 @test a ⋅² ai ≈ I4
 @test ai ⋅² a ≈ I4
 
+@test inv(SymFourthOrderTensorValue{1}(4.0)) == SymFourthOrderTensorValue{1}(0.25)
+@test_throws SingularException inv(one(SymFourthOrderTensorValue{2,Float64}))
+@test_throws SingularException inv(one(SymFourthOrderTensorValue{3,Float64}))
+
 # Test eigen function
 t = TensorValue(1.0,2.0,3.0,4.0)
 result = eigen(t)
