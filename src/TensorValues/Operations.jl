@@ -971,6 +971,24 @@ inv(a::SkewSymTensorValue{2}) = (typeof(a))(-inv(a.data[1]))
 inv(a::SkewSymTensorValue{3,T,L}) where {T,L} = SkewSymTensorValue{3,T}(tfill(inv(zero(T)), Val(L)))
 
 """
+    inv(a::MultiValue{Tuple{D1,D2,D1,D2}})
+
+Inverse with respect to [`⋅²`](@ref double_contraction):
+`a ⋅² a⁻¹ == a⁻¹ ⋅² a == 𝕀`, with `𝕀[i,j,k,l] = δᵢₖδⱼₗ`.
+A `SymFourthOrderTensorValue{D}` is singular for `D` > 1.
+"""
+function inv(a::MultiValue{Tuple{D1,D2,D1,D2}}) where {D1,D2}
+  M = D1*D2
+  m = SMatrix{M,M}(Tuple(get_array(a)))
+  HighOrderTensorValue{Tuple{D1,D2,D1,D2}}(Tuple(inv(m)))
+end
+
+# Minor symmetries imply a ⋅² w == 0 for any skew-symmetric w. Column D+1 = (1,2)
+# equals column 2 = (2,1), so D+1 is the first zero pivot in exact arithmetic.
+inv(a::SymFourthOrderTensorValue{D}) where D = throw(SingularException(D+1))
+inv(a::SymFourthOrderTensorValue{1}) = SymFourthOrderTensorValue{1}(inv(a.data[1]))
+
+"""
     eigen(a::MultiValue{Tuple{D,D}})
 
 Eigenvalue decomposition of a square second order tensor.
