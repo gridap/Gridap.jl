@@ -1,80 +1,147 @@
 
-"""
-    struct ZeroMeanFESpace <: SingleFieldFESpace
-      # private fields
-    end
-"""
-struct ZeroMeanFESpace{CA,S} <: SingleFieldFESpace
+struct ZeroMeanFESpace{CA,S,D<:AbstractVector{Float64}} <: SingleFieldFESpace
   space::FESpaceWithConstantFixed{CA,S}
-  vol_i::Vector{Float64}
+  int_φi::Vector{Float64}
   vol::Float64
+  h_free::D
+  h_diri::Float64
 end
 
 """
+    ZeroMeanFESpace(U::SingleFieldFESpace, dΩ::Measure)
+
+Subspace of `U` of the functions with zero mean, that is all `u ∈ U`
+such that
+
+    ∫(u)dΩ = 0
+
+One DOF of `U` (whose shape-function has non-zero mean) is fixed to force the
+constraint.
+
+# Extended help
+
+In order to be robust to non-partition of unity dof basis of `U`, the space is
+"decomposed" as
+
+    u = Σ_i u_i φ_i = (Σ_i≠k f_i φ_i) + f_k φ_k + c 𝔥
+
+where `k` is the DOF of `U` that the ZeroMeanFESpace fixes, `u_i = f_i +
+c·h_i`, `φ_i` are `U`'s shape functions, and `𝔥 ∈ U` is the Riesz representative
+of the mean functional,
+
+    ⟨𝔥,q⟩ = ∫(𝔥*q)dΩ = ∫q  for all q.
+
+`𝔥`'s dof values vector, `h_dofs`, is the vector of ones for a basis that is a
+partition of unity (like Lagrangian).
+
+So, `u` is imposed to have zero mean by fixing the constant `c` to
+
+    c = - ( (Σ_i≠k f_i ∫φ_i) + f_k ∫φ_k) / "vol".
+
+Evaluating `u` still requires `h_dofs`.
 """
-function ZeroMeanFESpace(space::SingleFieldFESpace,dΩ::Measure)
-  _space = FESpaceWithConstantFixed(space,true,num_free_dofs(space))
-  vol_i = assemble_vector(v->∫(v)*dΩ,space)
-  vol = sum(vol_i)
-  ZeroMeanFESpace(_space,vol_i,vol)
+function ZeroMeanFESpace(space::SingleFieldFESpace, dΩ::Measure)
+  num_dirichlet_dofs(space) == 0 || throw(ArgumentError("""\n
+  The space of a `ZeroMeanFESpace` must have no Dirichlet DOF, and this one has
+  $(num_dirichlet_dofs(space)).
+  """))
+
+  # Value type of the functions of `space`, inferred without evaluating them
+  T = eltype(return_type(testitem(get_data(get_fe_basis(space))),
+                         testitem(get_data(get_cell_points(dΩ)))))
+  @notimplementedif !isone(num_indep_components(T)) """\n
+  `ZeroMeanFESpace` is implemented for scalar valued spaces only, and this
+  one is $T valued.
+  """
+  int_φi = assemble_vector(v->∫(v)*dΩ, space)
+  uh = interpolate(one(T), space)
+  h_dofs = get_free_dof_values(uh)
+  h_dofs = all(isone,h_dofs) ? Ones(length(h_dofs)) : h_dofs
+  vol = h_dofs isa Ones ? sum(int_φi) : dot(int_φi, h_dofs)
+
+  abs(vol) > eps(T)*norm(int_φi, 1) || throw(ArgumentError(
+    "Mean value undefined: the fespace has zero ($vol) volume."))
+  @check _represents_mean_functional(space, dΩ, int_φi, uh) """\n
+  `space` does not contain a riesz representative for the mean functional.
+  Either it does not contain the constants and you should impose the zero mean
+  value with a Lagrange multiplier (using a mixed field formulation with a
+  `ConstantFESpace` unknown), or the space's DOF basis is broken.
+  """
+
+  if h_dofs isa Ones
+    dof_to_fix = length(h_dofs)
+    h_free = Ones(length(h_dofs)-1)
+  else
+    # The h_dofs of the dof to fix must not be zero
+    dof_to_fix = last(findmax(abs, h_dofs))
+    h_free = deleteat!(copy(h_dofs), dof_to_fix)
+  end
+
+  _space = FESpaceWithConstantFixed(space, true, dof_to_fix)
+  ZeroMeanFESpace(_space, int_φi, vol, h_free, h_dofs[dof_to_fix])
 end
 
-# Genuine functions
+# Checks whether uh is the Riesz representative of the mean functional for the
+# φ -> ∫(uh * φ) inner product, that is that q -> ∫( q(𝔥-1) ) is zero.
+function _represents_mean_functional(space, dΩ, int_φi, uh)
+  one_ = one(eltype(int_φi))
+  norm(assemble_vector(q -> ∫( *(q, (uh-one_)) )*dΩ,space)) ≤ 1.0e-6*norm(int_φi)
+end
 
 function TrialFESpace(f::ZeroMeanFESpace)
   U = TrialFESpace(f.space)
-  ZeroMeanFESpace(U,f.vol_i,f.vol)
+  ZeroMeanFESpace(U, f.int_φi, f.vol, f.h_free, f.h_diri)
 end
 
 # function FEFunction(f::ZeroMeanFESpace,free_values)
 #   msg = """
-#     This function should never be called for ZeroMeanFESpace. Please use 
+#     This function should never be called for ZeroMeanFESpace. Please use
 #     `FEFunction(f::ZeroMeanFESpace,free_values,dirichlet_values)` instead.
-#     Reason: 
-#       Without the fixed value (i.e the dirichlet_values), we cannot correctly 
+#     Reason:
+#       Without the fixed value (i.e the dirichlet_values), we cannot correctly
 #       interpolate the free dofs within the space.
 #   """
 #   @unreachable msg
 # end
-# 
+#
 function FEFunction(
   f::ZeroMeanFESpace,
   free_values::AbstractVector,
-  dirichlet_values::AbstractVector
+  dirichlet_values::AbstractVector # only 1, the average fixing dof
 )
   c = _compute_new_fixedval(
     free_values,
     dirichlet_values,
-    f.vol_i,
+    f.int_φi,
     f.vol,
     f.space.dof_to_fix
   )
-  fv = lazy_map(+,free_values,Fill(c,length(free_values)))
-  dv = dirichlet_values .+ c
-  FEFunction(f.space,fv,dv)
+  fv = lazy_map(+, free_values, c .* f.h_free)
+  dv = dirichlet_values .+ c*f.h_diri
+  FEFunction(f.space, fv, dv)
 end
 
 function EvaluationFunction(f::ZeroMeanFESpace,free_values)
   FEFunction(f.space,free_values)
 end
 
-function _compute_new_fixedval(fv,dv,vol_i,vol,fixed_dof)
-  @assert length(fv) + 1 == length(vol_i)
+function _compute_new_fixedval(fv, dv, int_φi, vol, fixed_dof)
+  @assert length(fv) + 1 == length(int_φi)
   @assert length(dv) == 1
-  c = zero(eltype(vol_i))
+  c = zero(eltype(int_φi))
   for i=1:fixed_dof-1
-    c += fv[i]*vol_i[i]
+    c += fv[i]*int_φi[i]
   end
-  c += first(dv)*vol_i[fixed_dof]
-  for i=fixed_dof+1:length(vol_i)
-    c += fv[i-1]*vol_i[i]
+  c += first(dv)*int_φi[fixed_dof]
+  for i=fixed_dof+1:length(int_φi)
+    c += fv[i-1]*int_φi[i]
   end
   c = -c/vol
   return c
 end
 
-# This is required, otherwise we end up calling `FEFunction` with a fixed value of zero, 
-# which does not properly interpolate the function provided. 
+# This is required, otherwise we end up calling `FEFunction` with a fixed value of zero,
+# which does not properly interpolate the function provided.
 # With this change, we are interpolating in the unconstrained space and then
 # substracting the mean.
 function interpolate!(object,free_values,fs::ZeroMeanFESpace)
@@ -86,7 +153,7 @@ end
 
 get_triangulation(f::ZeroMeanFESpace) = get_triangulation(f.space)
 
-ConstraintStyle(::Type{ZeroMeanFESpace{CA,S}}) where {CA,S} = ConstraintStyle(S)
+ConstraintStyle(::Type{<:ZeroMeanFESpace{CA,S}}) where {CA,S} = ConstraintStyle(S)
 
 CellField(t::ZeroMeanFESpace,cell_vals) = CellField(t.space,cell_vals)
 
