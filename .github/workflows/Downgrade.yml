@@ -31,6 +31,7 @@ jobs:
       - uses: julia-actions/julia-downgrade-compat@v2
         with: # As per documentation, we exclude packages within the Julia standard library
           skip: LinearAlgebra,SparseArrays,Random,Statistics,Test
+          no_promote: AMD,Aqua # test-only deps, see julia-downgrade-compat#58
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         with:
