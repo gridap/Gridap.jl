@@ -79,7 +79,7 @@ Pushforward(::Type{TrimmedSerendipityDiv}) = ContraVariantPiolaMap()
 Pushforward(::Type{TrimmedSerendipityCurl}) = CoVariantPiolaMap()
 
 """
-    SerendipityDivRefFE(::Type{T}, p::Polytope{D}, r::Integer)
+    SerendipityDivRefFE(::Type{T}, p::Polytope{D}, r::Integer; change_dof=false)
 
 The serendipity H(div) reference FE of degree `r ≥ 1` on the `D`-cube `p`, with
 `T` the scalar type, for `D = 2` and `D = 3`:
@@ -106,7 +106,7 @@ With `n` the unit outward normal of the facet `f`,
 
 that is `2D dim 𝓟ᵣ(f)` facet DoFs plus `D dim 𝓟ᵣ₋₂(□ᴰ)` interior ones.
 """
-function SerendipityDivRefFE(::Type{T}, p::Polytope{D}, r::Integer) where {T,D}
+function SerendipityDivRefFE(::Type{T}, p::Polytope{D}, r::Integer; change_dof=false) where {T,D}
   @notimplementedif !(D in (2,3) && is_n_cube(p)) """\n
   The serendipity H(div) element is only implemented on squares and cubes, got $p.
   """
@@ -130,15 +130,16 @@ function SerendipityDivRefFE(::Type{T}, p::Polytope{D}, r::Integer) where {T,D}
     push!(moments, (get_dimrange(p, D), cmom, cb))
   end
   conf = DivConformity()
-  MomentBasedReferenceFE(sdiv, p, prebasis, moments, conf)
+  change_dof = _validate_change_dof(change_dof, prebasis, p, conf)
+  MomentBasedReferenceFE(sdiv, p, prebasis, moments, conf; change_dof)
 end
 
-function ReferenceFE(p::Polytope, ::SerendipityDiv, ::Type{T}, order) where T
-  SerendipityDivRefFE(T, p, order)
+function ReferenceFE(p::Polytope, ::SerendipityDiv, ::Type{T}, order; kwargs...) where T
+  SerendipityDivRefFE(T, p, order; kwargs...)
 end
 
 """
-    SerendipityCurlRefFE(::Type{T}, p::Polytope{D}, r::Integer)
+    SerendipityCurlRefFE(::Type{T}, p::Polytope{D}, r::Integer; change_dof=false)
 
 The serendipity H(curl) reference FE of degree `r ≥ 1` on the `D`-cube `p`, with
 `T` the scalar type, for `D = 2` and `D = 3`:
@@ -163,7 +164,7 @@ in its own frame, `n = e₁×e₂` for the edges `e₁, e₂` of `f` at its firs
     ℓ^{f,p}(u) = ∫_f (u×n)⋅p,     p ∈ 𝓟ᵣ₋₂(f;R²),           for each face f (3D)
     ℓ^{p}(u)   = ∫_K u⋅p,         p ∈ 𝓟ᵣ₋₂₍ᴰ₋₁₎(□ᴰ;Rᴰ).
 """
-function SerendipityCurlRefFE(::Type{T}, p::Polytope{D}, r::Integer) where {T,D}
+function SerendipityCurlRefFE(::Type{T}, p::Polytope{D}, r::Integer; change_dof=false) where {T,D}
   @notimplementedif !(D in (2,3) && is_n_cube(p)) """\n
   The serendipity H(curl) element is only implemented on squares and cubes, got $p.
   """
@@ -202,15 +203,16 @@ function SerendipityCurlRefFE(::Type{T}, p::Polytope{D}, r::Integer) where {T,D}
     push!(oriented, false)
   end
   conf = CurlConformity()
-  MomentBasedReferenceFE(scurl, p, prebasis, moments, conf; oriented)
+  change_dof = _validate_change_dof(change_dof, prebasis, p, conf)
+  MomentBasedReferenceFE(scurl, p, prebasis, moments, conf; change_dof, oriented)
 end
 
-function ReferenceFE(p::Polytope, ::SerendipityCurl, ::Type{T}, order) where T
-  SerendipityCurlRefFE(T, p, order)
+function ReferenceFE(p::Polytope, ::SerendipityCurl, ::Type{T}, order; kwargs...) where T
+  SerendipityCurlRefFE(T, p, order; kwargs...)
 end
 
 """
-    TrimmedSerendipityDivRefFE(::Type{T}, p::Polytope{D}, k::Integer)
+    TrimmedSerendipityDivRefFE(::Type{T}, p::Polytope{D}, k::Integer; change_dof=false)
 
 The trimmed serendipity H(div) reference FE of order `k ≥ 0` on the `D`-cube
 `p`, with `T` the scalar type, for `D = 2` and `D = 3`:
@@ -236,7 +238,7 @@ With `n` the unit outward normal of the facet `f`,
 
 [GK, (4.1)].
 """
-function TrimmedSerendipityDivRefFE(::Type{T}, p::Polytope{D}, k::Integer) where {T,D}
+function TrimmedSerendipityDivRefFE(::Type{T}, p::Polytope{D}, k::Integer; change_dof=false) where {T,D}
   @notimplementedif !(D in (2,3) && is_n_cube(p)) """\n
   The trimmed serendipity H(div) element is only implemented on squares and cubes, got $p.
   """
@@ -264,15 +266,16 @@ function TrimmedSerendipityDivRefFE(::Type{T}, p::Polytope{D}, k::Integer) where
     push!(moments, (get_dimrange(p, D), cmom, gb))
   end
   conf = DivConformity()
-  MomentBasedReferenceFE(trimmed_sdiv, p, prebasis, moments, conf)
+  change_dof = _validate_change_dof(change_dof, prebasis, p, conf)
+  MomentBasedReferenceFE(trimmed_sdiv, p, prebasis, moments, conf; change_dof)
 end
 
-function ReferenceFE(p::Polytope, ::TrimmedSerendipityDiv, ::Type{T}, order) where T
-  TrimmedSerendipityDivRefFE(T, p, order)
+function ReferenceFE(p::Polytope, ::TrimmedSerendipityDiv, ::Type{T}, order; kwargs...) where T
+  TrimmedSerendipityDivRefFE(T, p, order; kwargs...)
 end
 
 """
-    TrimmedSerendipityCurlRefFE(::Type{T}, p::Polytope{D}, k::Integer)
+    TrimmedSerendipityCurlRefFE(::Type{T}, p::Polytope{D}, k::Integer; change_dof=false)
 
 The trimmed serendipity H(curl) reference FE of order `k ≥ 0` on the `D`-cube
 `p`, with `T` the scalar type, for `D = 2` and `D = 3`:
@@ -301,7 +304,7 @@ in its own frame, `n = e₁×e₂` for the edges `e₁, e₂` of `f` at its firs
 [GK, (4.1)]: on a `d`-face, the index space `𝓟ₛ₋₁Λᵈ⁻¹ ⊕ d𝓗ₛ₊₁Λᵈ⁻²`,
 `s = k+1-2(d-1)`, paired with the trace of `u` by the wedge product.
 """
-function TrimmedSerendipityCurlRefFE(::Type{T}, p::Polytope{D}, k::Integer) where {T,D}
+function TrimmedSerendipityCurlRefFE(::Type{T}, p::Polytope{D}, k::Integer; change_dof=false) where {T,D}
   @notimplementedif !(D in (2,3) && is_n_cube(p)) """\n
   The trimmed serendipity H(curl) element is only implemented on squares and cubes, got $p.
   """
@@ -355,9 +358,10 @@ function TrimmedSerendipityCurlRefFE(::Type{T}, p::Polytope{D}, k::Integer) wher
     end
   end
   conf = CurlConformity()
-  MomentBasedReferenceFE(trimmed_scurl, p, prebasis, moments, conf; oriented)
+  change_dof = _validate_change_dof(change_dof, prebasis, p, conf)
+  MomentBasedReferenceFE(trimmed_scurl, p, prebasis, moments, conf; change_dof, oriented)
 end
 
-function ReferenceFE(p::Polytope, ::TrimmedSerendipityCurl, ::Type{T}, order) where T
-  TrimmedSerendipityCurlRefFE(T, p, order)
+function ReferenceFE(p::Polytope, ::TrimmedSerendipityCurl, ::Type{T}, order; kwargs...) where T
+  TrimmedSerendipityCurlRefFE(T, p, order; kwargs...)
 end

@@ -901,6 +901,18 @@ t = TensorValue{2,3}(1:6...)
 @test_throws ErrorException det(t)
 @test_throws ErrorException inv(t)
 
+# Inverse of fourth order tensors w.r.t. ⋅²
+I4 = HighOrderTensorValue(Val(4), Tuple(one(TensorValue{4,4,Int})))
+a = HighOrderTensorValue(Val(4), 1:16...) + 20*I4
+ai = inv(a)
+@test isa(ai, HighOrderTensorValue{NTuple{4,2}})
+@test a ⋅² ai ≈ I4
+@test ai ⋅² a ≈ I4
+
+@test inv(SymFourthOrderTensorValue{1}(4.0)) == SymFourthOrderTensorValue{1}(0.25)
+@test_throws SingularException inv(one(SymFourthOrderTensorValue{2,Float64}))
+@test_throws SingularException inv(one(SymFourthOrderTensorValue{3,Float64}))
+
 # Test eigen function
 t = TensorValue(1.0,2.0,3.0,4.0)
 result = eigen(t)

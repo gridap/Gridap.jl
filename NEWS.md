@@ -5,13 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Polytopal]
 
 ### Added
-
-- Implemented arbitrary-order gradients `gradient(f, Val(N))` of fields using forward-mode automatic differentiation. Hand-written kernels still take precedence. Since PR[#1350](https://github.com/gridap/Gridap.jl/pull/1350).
-- Added support for moment-based quadratures and measures on triangulations. Since PR[#1352](https://github.com/gridap/Gridap.jl/pull/1352).
-- Added the serendipity H(div) and H(curl) reference FEs on quadrilaterals and hexahedra, `sdiv`, `scurl`, `trimmed_sdiv` and `trimmed_scurl`. Their prebasis is the new `SerendipityPolyBasis`, also available through `FEEC_poly_basis` with the family `:S` or `:S⁻`. Since PR[#1349](https://github.com/gridap/Gridap.jl/pull/1349).
 
 - Added keyword `idegree` to `PolytopalFESpace` (and the polytopal `PatchFESpace`), setting the quadrature degree of the L2 projection used to interpolate into the space. Defaults to `2*order`, i.e. the previous behaviour.
 - Added `LocalStagedSolveMap`, a local solve map for `LocalOperator` that solves block systems stage by stage (block forward substitution) and returns a subset of the unknown blocks. It takes any number of test, trial and input blocks, and covers saddle-point problems with discarded multipliers and the composition of local operators.
@@ -21,18 +17,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `GridTopology(Polytope{d},topo)` of a `PolytopalGridTopology` now keeps the numbering of the faces of dimension lower than `d`.
-- `+` and `-` of `HighOrderTensorValue`s with more than 32 components are now type-stable. Since PR[#1350](https://github.com/gridap/Gridap.jl/pull/1350).
-- Implemented `Base.muladd` for `MultiValue`'d inputs, optimizing it using fma if an argument is scalar. Since PR[#1347](https://github.com/gridap/Gridap.jl/pull/1347).
-- Raviart–Thomas, Nédélec and BDM now work on non-oriented meshes, except for Nédélec on tetrahedra (one must use `rotating_pλ`, `trimmed_pλ` for that). Since PR[#1349](https://github.com/gridap/Gridap.jl/pull/1349).
 - Fixed the face-to-cell reference map of `BoundaryTriangulation` on 3D polytopal grids for faces that are not facets (edges, vertices).
 
 ### Changed
 
 - **Breaking**: `BoundaryTriangulation{Dc,Dp,Dm,A,B}` has a new type parameter `Dm`, the dimension of the faces of the model its faces are glued to. It also stores the grid of those faces, which defaults to the grid of the model and can be set with `BoundaryTriangulation(trian,glue,cell_grid)`. The normal vector is only defined for `Dm == Dc + 1`.
 - **Breaking**: a `LocalOperator` applied to an `FESpace` now returns an `FESpace` with the dofs of the input space and the images of its basis as shape functions (a `PatchFESpace` for patch operators), instead of the tuple of trial and test images. `LocalOperator` has a new type parameter and a new field, `ptopo`.
+
+## [Unreleased]
+
+### Added
+
+- Added compatibility for `NLsolve.jl` v5 and `DocStringExtensions.jl` v0.10. Since PR [#1358](https://github.com/gridap/Gridap.jl/pull/1358).
+
+## [0.20.11] - 2026-11-18
+
+### Added
+
+- Implemented arbitrary-order gradients `gradient(f, Val(N))` of fields using forward-mode automatic differentiation. Hand-written kernels still take precedence. Since PR[#1350](https://github.com/gridap/Gridap.jl/pull/1350).
+- Added support for moment-based quadratures and measures on triangulations. Since PR[#1352](https://github.com/gridap/Gridap.jl/pull/1352).
+- Added the serendipity H(div) and H(curl) reference FEs on quadrilaterals and hexahedra, `sdiv`, `scurl`, `trimmed_sdiv` and `trimmed_scurl`. Their prebasis is the new `SerendipityPolyBasis`, also available through `FEEC_poly_basis` with the family `:S` or `:S⁻`. Since PR[#1349](https://github.com/gridap/Gridap.jl/pull/1349).
+- Added `inv` for fourth order tensors `MultiValue{Tuple{D1,D2,D1,D2}}`, the inverse with respect to the double contraction `⋅²`, such that `a ⋅² inv(a) == inv(a) ⋅² a == 𝕀` with `𝕀ᵢⱼₖₗ = δᵢₖδⱼₗ`. Since PR[#1356](https://github.com/gridap/Gridap.jl/pull/1356).
+
+### Fixed
+
+- `GridTopology(Polytope{d},topo)` of a `PolytopalGridTopology` now keeps the numbering of the faces of dimension lower than `d`.
+- `+` and `-` of `HighOrderTensorValue`s with more than 32 components are now type-stable. Since PR[#1350](https://github.com/gridap/Gridap.jl/pull/1350).
+- Implemented `Base.muladd` for `MultiValue`'d inputs, optimizing it using fma if an argument is scalar. Since PR[#1347](https://github.com/gridap/Gridap.jl/pull/1347).
+- Raviart–Thomas, Nédélec and BDM now work on non-oriented meshes, except for Nédélec on tetrahedra (one must use `rotating_pλ`, `trimmed_pλ` for that). Since PR[#1349](https://github.com/gridap/Gridap.jl/pull/1349).
+- Fixed `SDIRK_3_3`, the embedded method in `EXRK_BogackiShampine_4_3`, and the order returned by `get_order` and `get_embedded_order` for `DIRK_TRBDF_3_2`, `DIRK_TRX_3_2`, and `SDIRK_4_3`. Since PR[#1354](https://github.com/gridap/Gridap.jl/pull/1354).
+
+### Changed
+
 - Enabled algebraic operations in residual of a linear `TransientFEOperator` when the space of the corresponding time derivative has zero Dirichlet values. Since PR[#1345](https://github.com/gridap/Gridap.jl/pull/1345).
 - `get_vertex_permutations` now returns the full symmetry group of 3D polytopes (24 for `TET`, 48 for `HEX`, 8 for `PYRAMID`, 12 for `WEDGE`) instead of only the identity. Since PR[#1349](https://github.com/gridap/Gridap.jl/pull/1349).
+- Optimized Runge-Kutta methods that satisfy the FSAL property (`DIRK_CrankNicolson_2_2`, `DIRK_LobattoIIIA_2_2`, `SDIRK_3_2`, `DIRK_TRBDF_3_2`, `DIRK_TRX_3_2`, and `EXRK_BogackiShampine_4_3`). Since PR[#1355](https://github.com/gridap/Gridap.jl/pull/1355).
 
 ## [0.20.10] - 2026-09-22
 

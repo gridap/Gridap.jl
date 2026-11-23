@@ -782,7 +782,7 @@ function _compute_face_vertex_permutations(
     # Match the permuted coordinates to find the fine node permutation
     p_fnodes = zeros(Ti,length(fcoords))
     for (i,c) in enumerate(p_fcoords)
-      p = findfirst(x -> norm(x-c) < eps(T),fcoords)
+      p = findfirst(x -> norm(x-c) < 100*eps(T),fcoords)
       @assert !isnothing(p)
       p_fnodes[i] = p # for non-local numbering, we would do fnodes[p]
     end
