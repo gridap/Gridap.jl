@@ -45,3 +45,17 @@ get_cell_metric_partials(model::DiscreteModel) =
 _cell_metric_partials(::UniformScaling) = LinearAlgebra.I
 _cell_metric_partials(cell_metric::AbstractArray) =
   lazy_map(partial_derivatives, cell_metric)
+
+"""
+    get_cell_metric_second_partials(model::DiscreteModel)
+
+The second order partial derivatives `∂∂g` of the metric tensor.
+
+See also [`get_cell_metric_partials`](@ref).
+"""
+get_cell_metric_second_partials(model::DiscreteModel) =
+  _cell_metric_second_partials(get_cell_metric(model))
+
+_cell_metric_second_partials(::UniformScaling) = LinearAlgebra.I
+_cell_metric_second_partials(cell_metric::AbstractArray) =
+  lazy_map(second_partial_derivatives, cell_metric)

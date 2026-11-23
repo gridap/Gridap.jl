@@ -2201,3 +2201,45 @@ function partials_to_Christoffel_2(
   Γ = SMatrix{D,(D*(D+1))÷2}(Tuple(Γ1))
   V(Tuple(get_array(g_inv) * Γ))
 end
+
+"""
+    second_partials_to_Christoffel_1_partials(∂∂g)
+
+Second partial derivatives of the Christoffel symbols of the first kind, from
+`∂∂g = second_partial_derivatives(g)(x)` of a metric value,
+
+    ∂ₘΓₖᵢⱼ = (∂ₘ∂ᵢgⱼₖ + ∂ₘ∂ⱼgᵢₖ - ∂ₘ∂ₖgᵢⱼ) / 2
+
+See also [`partials_to_Christoffel_1`](@ref).
+"""
+function second_partials_to_Christoffel_1_partials(
+  ∂∂g::ProductTensorValue{A,SymTensorValue{Dg},T,Tuple{Dm,Dm,Dg,Dg},4,L}
+) where {A,Dm,Dg,T,L}
+
+  Dg isa Cov || throw(ArgumentError(
+    "the Christoffel symbols require a covariant metric tensor, got metric indices of variance $(typeof(Dg))"))
+  Dm === Dg || throw(DimensionMismatch(
+    "the derivation indices and the metric indices must share dimension and variance, got $Dm and $Dg"))
+  TT = Base.promote_op(/,T,Int)
+  iszero(L) &&
+    return zero(ProductTensorValue{TensorValue{Dg,Dg},SymTensorValue{Dg},TT})
+
+  D = Int(Dg)
+  Ns = (D*(D+1))÷2
+  data = ntuple(Val(D*D*Ns)) do n
+    @inline
+    sij, mk = fldmod1(n, D*D)
+    k, m = fldmod1(mk, D)
+    i, j = _2d_sym_tensor_index_pair(D, sij)
+    sjk = _2d_sym_tensor_linear_index(D,j,k)
+    sik = _2d_sym_tensor_linear_index(D,i,k)
+    smi = _2d_sym_tensor_linear_index(D,m,i)
+    smj = _2d_sym_tensor_linear_index(D,m,j)
+    smk = _2d_sym_tensor_linear_index(D,m,k)
+    (indep_comp_getindex(∂∂g, (sjk-1)*Ns + smi) +
+     indep_comp_getindex(∂∂g, (sik-1)*Ns + smj) -
+     indep_comp_getindex(∂∂g, (sij-1)*Ns + smk)) / 2
+  end
+
+  ProductTensorValue{TensorValue{Dg,Dg},SymTensorValue{Dg}}(data)
+end

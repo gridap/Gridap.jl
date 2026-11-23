@@ -177,6 +177,7 @@ export partials_to_flat_codifferential
 export partials_to_codifferential
 export partials_to_Christoffel_1
 export partials_to_Christoffel_2
+export second_partials_to_Christoffel_1_partials
 export partials_op_rule
 
 import Base: show

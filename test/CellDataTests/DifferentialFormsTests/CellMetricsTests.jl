@@ -245,8 +245,23 @@ gv, giv = map(first_point_values, (g,g_inv))
 @test partials_to_Christoffel_1(first(∂gv)) isa
   ProductTensorValue{CoVectorValue{Cov(2)},SymTensorValue{Cov(2)}}
 
+# The second derivatives are read the same way, and vanish for this linear metric
+@test get_cell_metric_second_partials(model) === LinearAlgebra.I
+@test get_metric_second_partials_data(Ω) === LinearAlgebra.I
+
+∂∂g = get_metric_second_partials_data(Ωc)
+@test DomainStyle(∂∂g) == PhysicalDomain()
+
+∂∂gv = first_point_values(∂∂g)
+@test all(v -> v isa
+  ProductTensorValue{SymNTensorValue{Tuple{Cov(2),Cov(2)}},SymTensorValue{Cov(2)}}, ∂∂gv)
+@test all(v -> all(iszero, Tuple(v)), ∂∂gv)
+@test second_partials_to_Christoffel_1_partials(first(∂∂gv)) isa
+  ProductTensorValue{TensorValue{Cov(2),Cov(2)},SymTensorValue{Cov(2)}}
+
 # A facet needs the induced metric, so its derivatives are rejected with it
 @test_throws ErrorException get_metric_partials_data(BoundaryTriangulation(cmodel))
+@test_throws ErrorException get_metric_second_partials_data(BoundaryTriangulation(cmodel))
 
 # A model whose metric has no derivative supplies `∂g` itself
 struct OpaqueMetric <: Field end
@@ -256,5 +271,7 @@ Gridap.Arrays.evaluate!(cache, ::OpaqueMetric, x::Point{2}) =
 omodel = ChartModel(model,[OpaqueMetric() for cell in 1:num_cells(model)])
 @test_throws ErrorException first_point_values(
   get_metric_partials_data(Triangulation(omodel)))
+@test_throws ErrorException first_point_values(
+  get_metric_second_partials_data(Triangulation(omodel)))
 
 end # module

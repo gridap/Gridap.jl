@@ -380,6 +380,8 @@ end
 ref_Christoffel_1(∂g,k,i,j) = (∂g[i,j,k] + ∂g[j,i,k] - ∂g[k,i,j])/2
 ref_Christoffel_2(∂g,g_inv,D,k,i,j) =
   sum(g_inv[k,m]*ref_Christoffel_1(∂g,m,i,j) for m in 1:D)
+ref_Christoffel_1_partials(∂∂g,m,k,i,j) =
+  (∂∂g[m,i,j,k] + ∂∂g[m,j,i,k] - ∂∂g[m,k,i,j])/2
 
 function test_Christoffel(gF, x::Point{D}) where D
   g, ∂g = gF(x), partial_derivatives(gF,x)
@@ -419,6 +421,32 @@ function test_Christoffel(gF, x::Point{D}) where D
   # the first kind takes no metric at all, the second needs one
   @test_throws MethodError partials_to_Christoffel_1(∂g, g)
   @test_throws ArgumentError partials_to_Christoffel_2(∂g)
+
+  # `Γ` being linear in `∂g`, its derivatives take no metric either
+  ∂∂g = second_partial_derivatives(gF, x)
+  ∂Γ1 = second_partials_to_Christoffel_1_partials(∂∂g)
+  @test size(∂Γ1) === (Cov(D), Cov(D), Cov(D), Cov(D))
+  @test num_indep_components(typeof(∂Γ1)) == D*D*(D*(D+1)÷2)
+  @test (@inferred second_partials_to_Christoffel_1_partials(∂∂g)) === ∂Γ1
+  @test_throws MethodError second_partials_to_Christoffel_1_partials(∂∂g, g)
+
+  for m in 1:D, k in 1:D, i in 1:D, j in 1:D
+    @test ∂Γ1[m,k,i,j] ≈ ref_Christoffel_1_partials(∂∂g,m,k,i,j) atol=1e-12
+    # symmetric in the last two indices like `Γ`, but not in the first two
+    @test ∂Γ1[m,k,i,j] === ∂Γ1[m,k,j,i]
+  end
+
+  # a central difference of `Γ` gives them back, which pins the derivation index
+  # first and the index it precedes second
+  h = 1.0e-5
+  for m in 1:D
+    δ = Point(ntuple(i -> i == m ? h : 0.0, D)...)
+    Γp = partials_to_Christoffel_1(partial_derivatives(gF, x + δ))
+    Γm = partials_to_Christoffel_1(partial_derivatives(gF, x - δ))
+    for k in 1:D, i in 1:D, j in 1:D
+      @test ∂Γ1[m,k,i,j] ≈ (Γp[k,i,j] - Γm[k,i,j])/2h atol=1e-7
+    end
+  end
 end
 
 # Metric fields: symmetric, diagonally dominant hence invertible, with partial

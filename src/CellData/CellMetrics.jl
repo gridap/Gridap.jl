@@ -116,25 +116,21 @@ end
 """
     get_metric_partials_data(trian::Triangulation)
 
-The first order partial derivatives `∂g` of the metric of `trian`, to be fed to
+The first order partial derivatives `∂g` of the metric of `trian` (see
+[`get_metric_data`](@ref)). It is `LinearAlgebra.I` when the metric is the
+identity, or a cell field.
 
-    partials_to_Christoffel_2(get_metric_partials_data(Ω), get_metric_data(Ω)[2])
-
-It is `LinearAlgebra.I` when the metric is the identity, or a cell field.
-
-They are the derivatives of the metric [`get_metric_data`](@ref) returns, and
-like it they are a property of the background model rather than of the
-triangulation, except that an embedded triangulation has none: the derivatives
-of an induced metric are not those of the background's.
+`∂g` is currently provided by the background model rather than the
+triangulation, so this function is not implemented for sub-triangulations,
+which carry the metric induced by the inclusion rather than the background's.
 """
 function get_metric_partials_data(trian::Triangulation)
   model = get_background_model(trian)
   @notimplementedif is_sub_trian(trian) """\n
-  The metric of a $(num_cell_dims(trian))-dimensional triangulation embedded in
-  $(num_point_dims(trian)) dimensions is the one its background induces on it,
-  see [`get_metric_data`](@ref), so its partial derivatives are those of that
-  induced metric and not those of the background's, which are not implemented.
-  The operators that need them, `δ` in particular, are not available there.
+  A $(num_cell_dims(trian))-dimensional triangulation of a
+  $(num_point_dims(trian))-dimensional background carries the metric its
+  inclusion induces, `ι*g`, see [`get_metric_data`](@ref). Its partial
+  derivatives differentiate the inclusion too, which is not implemented.
   """
   _varianced_cell_metric(model, get_cell_metric(model)) isa UniformScaling &&
     return LinearAlgebra.I
@@ -147,6 +143,27 @@ function _metric_partials_data(trian::Triangulation, model, model_cell_∂g::Abs
   _ensures_full_rank_metric(trian, model)
   m_∂g = GenericCellField(model_cell_∂g, Triangulation(model), PhysicalDomain())
   change_domain(m_∂g, trian, PhysicalDomain())
+end
+
+"""
+    get_metric_second_partials_data(trian::Triangulation)
+
+The second order partial derivatives `∂∂g` of the metric of `trian`.
+It is `LinearAlgebra.I` when the metric is the identity, or a cell field.
+
+See also [`get_metric_partials_data`](@ref).
+"""
+function get_metric_second_partials_data(trian::Triangulation)
+  model = get_background_model(trian)
+  @notimplementedif is_sub_trian(trian) """\n
+  A $(num_cell_dims(trian))-dimensional triangulation of a
+  $(num_point_dims(trian))-dimensional background carries the metric its
+  inclusion induces, `ι*g`, see [`get_metric_data`](@ref). Its second order
+  partial derivatives differentiate the inclusion too, which is not implemented.
+  """
+  _varianced_cell_metric(model, get_cell_metric(model)) isa UniformScaling &&
+    return LinearAlgebra.I
+  _metric_partials_data(trian, model, get_cell_metric_second_partials(model))
 end
 
 # A triangulation of lower dimension than its model, or a model whose cells are

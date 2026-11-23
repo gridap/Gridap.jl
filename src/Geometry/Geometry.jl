@@ -172,6 +172,7 @@ export compute_node_face_owner
 export get_cell_metric
 export get_cell_inv_metric
 export get_cell_metric_partials
+export get_cell_metric_second_partials
 export get_triangulation
 
 export UnstructuredDiscreteModel
