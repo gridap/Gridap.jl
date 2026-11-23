@@ -1210,31 +1210,28 @@ for V in (:SymTracelessTensorValue, :SkewSymTensorValue)
 end
 
 """
-    tr(v::MultiValue{Tuple{D,D,D2}}) -> ::VectorValue{D2}
+    tr(v::MultiValue{Tuple{D,D,S...}}) -> ::MultiValue{Tuple{S...}}
 
-Return a vector of length `D2` of traces computed on the first two indices: `resⱼ = Σᵢ vᵢᵢⱼ`.
+Return the traces computed on the first two indices: `res[J] = Σᵢ v[i,i,J]`, a
+tensor of the order and size of the indices left un-contracted.
 """
 @generated function tr(v::NTensorValue{S,T,N}) where {S,T,N}
-  if N > 3
-    # This may be generalizable if wanted
-    msg = "Trace is not implemented for tensors of order ≥ 4, got tensors ::$(v)"
-    return :( throw(ArgumentError($msg)) )
-  end
-
   A12 = first(size(v), 2)
   can_contract(A12...) || return _not_traceable_expr(A12...)
 
-  B = last(size(v))
-  V = _tensor_base_type_expr(1, (B,))
-  iszero(length(v)) && return :(zero($V{T}))
+  D = Int(A12[1])
+  Nr = N - 2
+  iszero(Nr) && return _sum_expr([:( v[$i,$i] ) for i in 1:D], T)
 
-  comps = Expr[]
-  for k in 1:Int(B)
-    summands = [:( v[$i,$i,$k] ) for i in 1:Int(A12[1])]
-    push!(comps, Expr(:call, :+, summands...))
-  end
+  V = _tensor_base_type(Nr, last(size(v), Nr))
+  iszero(length(v)) && return :( zero($V{T}) )
+
+  comps = [ _sum_expr([:( v[$i,$i,$(J...)] ) for i in 1:D], T)
+            for J in _stored_comp_cartesian_indices(make_concretetype(V{T})) ]
   :( $V($(comps...)) )
 end
+
+tr(a::MultiValue) = @notimplemented "`tr` of a $(typeof(a)) is not implemented"
 
 ###############################################################
 # Adjoint and transpose

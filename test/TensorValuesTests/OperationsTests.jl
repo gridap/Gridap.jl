@@ -1110,7 +1110,17 @@ t23 = TensorValue{2,3}(1:6...)
 @test_throws ArgumentError tr(t23)
 
 t4 = NTensorValue(Val(4), 1:16...)
-@test_throws ArgumentError  tr(t4)
+@test tr(t4) == tensor_contraction(t4, (1,), (2,))
+
+t5 = NTensorValue(Val(5), 1:32...)
+@test tr(t5) == tensor_contraction(t5, (1,), (2,))
+@test isa(tr(t5), ThirdOrderTensorValue{2,2,2})
+
+# a tensor no `tr` method reaches is rejected, and not returned untouched by
+# `tr(::Number)`, `MultiValue` being a `Number`
+@test_throws ErrorException tr(
+  ProductTensorValue{TensorValue{Con(2),Cov(2)},SymTensorValue{Cov(2)}}(1:12...))
+@test_throws ErrorException tr(SymNTensorValue{Tuple{3,3,3}}(1:10...))
 
 # symmetric and skew-symmetric parts
 
