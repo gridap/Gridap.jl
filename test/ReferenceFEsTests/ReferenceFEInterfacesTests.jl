@@ -112,4 +112,11 @@ reffe_signed = GenericRefFE{typeof(conf2)}(
 @test get_face_own_dofs_permutations(reffe_signed, L2Conformity())[end] == [[1, 2, 3, 4]]
 @test get_face_own_dofs_signs(reffe_signed, L2Conformity())[end] == [[1, 1, 1, 1]]
 
+# Conformities from symbols
+@test ReferenceFEs.symbol_conformity(:H1) == GradConformity()
+@test ReferenceFEs.symbol_conformity(:Hcurl) == CurlConformity()
+@test ReferenceFEs.symbol_conformity(:HDiv) == DivConformity()
+@test ReferenceFEs.symbol_conformity(:L2) == L2Conformity()
+@test ReferenceFEs.symbol_conformity(:H1, lagrangian) == ReferenceFEs.symbol_conformity(:H1)
+
 end # module

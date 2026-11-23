@@ -431,6 +431,77 @@ function Arrays.evaluate!(cache::Nothing, k::LocalPenaltySolveMap, lhs, rhs)
   return RuΩ, RuΓ
 end
 
+
+"""
+    LocalConstrainedSolveMap(; factorize! = lu!)
+
+A map for solving local linear systems given as block arrays, with or without constraints.
+
+Constrained case: given a 2x2 block matrix `lhs = [App Apλ; Aλp 0]` and a 2xN block array
+`rhs`, whose columns are `[Bp_j; Bλ_j]`, returns an N-tuple with the primal solutions `x_j` of
+
+    [App Apλ; Aλp 0] * [x_j; λ_j] = [Bp_j; Bλ_j]
+
+The multipliers `λ_j` are discarded. Blocks `Bλ_j` that are not touched are taken as zero.
+
+Unconstrained case: given a 1x1 block matrix `lhs = [App]` and a 1xN block array `rhs`,
+returns the N-tuple of solutions of `App * x_j = Bp_j`.
+
+If `rhs` is a block vector (a single right-hand side), a 1-tuple is returned.
+
+Unlike `LocalPenaltySolveMap`, the saddle-point system is solved exactly and
+any number `N` of right-hand-side blocks is supported, each with its own constraint data.
+"""
+struct LocalConstrainedSolveMap{A} <: Map
+  factorize! :: A
+end
+
+LocalConstrainedSolveMap(; factorize! = lu!) = LocalConstrainedSolveMap(factorize!)
+
+function Arrays.evaluate!(cache, k::LocalConstrainedSolveMap, mats::Tuple)
+  lhs, rhs = mats
+  evaluate!(cache, k, lhs, rhs)
+end
+
+function Arrays.evaluate!(cache, k::LocalConstrainedSolveMap, lhs::MatrixBlock, rhs::VectorBlock)
+  @check size(rhs,1) == size(lhs,1)
+  F, np = _factorize_constrained_system(k, lhs)
+  B = isone(size(rhs,1)) ? rhs.array[1] : vcat(rhs.array[1], rhs.array[2])
+  x = F \ B
+  return (x[1:np],)
+end
+
+function Arrays.evaluate!(cache, k::LocalConstrainedSolveMap, lhs::MatrixBlock, rhs::MatrixBlock)
+  @check size(rhs,1) == size(lhs,1)
+  F, np = _factorize_constrained_system(k, lhs)
+  nλ = size(F,1) - np
+  constrained = (size(rhs,1) == 2)
+  return ntuple(size(rhs,2)) do j
+    Bp = rhs.array[1,j]
+    if constrained
+      Bλ = rhs.touched[2,j] ? rhs.array[2,j] : zeros(eltype(Bp), nλ, size(Bp,2))
+      B = vcat(Bp, Bλ)
+    else
+      B = Bp
+    end
+    x = F \ B
+    x[1:np,:]
+  end
+end
+
+function _factorize_constrained_system(k::LocalConstrainedSolveMap, lhs::MatrixBlock)
+  @check size(lhs) == (2,2) || size(lhs) == (1,1)
+  App = lhs.array[1,1]
+  np = size(App,1)
+  if size(lhs) == (1,1)
+    return k.factorize!(copy(App)), np
+  end
+  Aλp, Apλ = lhs.array[2,1], lhs.array[1,2]
+  nλ = size(Aλp,1)
+  K = [App Apλ; Aλp zeros(eltype(App), nλ, nλ)]
+  return k.factorize!(K), np
+end
+
 """
     LocalStagedSolveMap(stages; output = last trial block, factorize! = lu!, pivot = RowMaximum())
 

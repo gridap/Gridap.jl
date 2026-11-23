@@ -4,7 +4,7 @@ using Test
 using Gridap
 using Gridap.Geometry, Gridap.ReferenceFEs, Gridap.TensorValues
 using Gridap.Fields, Gridap.FESpaces, Gridap.CellData
-using Gridap.Arrays
+using Gridap.Arrays, Gridap.Polynomials
 
 using FillArrays
 
@@ -153,5 +153,69 @@ VΓ0 = FESpaces.PolytopalFESpace(Triangulation(ReferenceFE{1},pmodel),Float64,0,
 uh = interpolate_dirichlet(p2,VΓ0)
 dΓ = Measure(BoundaryTriangulation(pmodel),4)
 @test maximum(abs,get_array(∫(uh - p2)dΓ)) < 1.e-12
+
+# Orthonormal bases: the mass matrix is the identity, on polytopal grids (physical domain),
+# standard grids (reference domain) and patch grids (physical domain on a standard grid).
+
+function test_orthonormal(V,order)
+  dΩ = Measure(get_triangulation(V),2*order)
+  u, v = get_trial_fe_basis(V), get_fe_basis(V)
+  for M in get_array(∫(u⋅v)dΩ)
+    @test M ≈ one(M)
+  end
+end
+
+model = UnstructuredDiscreteModel(CartesianDiscreteModel((0,2,0,1),(4,3)))
+pmodel = Gridap.Geometry.voronoi(Gridap.Geometry.simplexify(model))
+test_orthonormal(FESpaces.PolytopalFESpace(pmodel,Float64,order,orthonormal=true),order)
+test_orthonormal(FESpaces.PolytopalFESpace(Triangulation(ReferenceFE{1},pmodel),Float64,order,orthonormal=true),order)
+test_orthonormal(FESpaces.PolytopalFESpace(Triangulation(ReferenceFE{1},pmodel),VectorValue{2,Float64},order,orthonormal=true),order)
+
+# The centroid map is isotropic: same scaling in all directions, also for stretched cells.
+
+for cmap in FESpaces.get_centroid_map(get_grid(pmodel))
+  G = cmap.gradient
+  @test G ≈ G[1,1]*one(G)
+end
+
+model = CartesianDiscreteModel((0,2,0,1,0,1),(2,2,2))
+pmodel = Geometry.PolytopalDiscreteModel(model)
+Γ = Triangulation(ReferenceFE{2},pmodel)
+for (cmap,K) in zip(FESpaces.get_centroid_map(get_grid(Γ)),FESpaces.get_tangent_frames(get_grid(Γ)))
+  @test transpose(K)⋅K ≈ one(TensorValue{2,2,Float64})
+  @test cmap.gradient ≈ (cmap.gradient⊙K/2)*K
+end
+
+# Tangent-valued spaces on embedded faces: the values are vectors of the ambient space,
+# tangent to the face.
+
+VΓ = FESpaces.PolytopalFESpace(Γ,VectorValue{2,Float64},order,orthonormal=true)
+test_orthonormal(VΓ,order)
+normal(K) = VectorValue(K[1,1],K[2,1],K[3,1]) × VectorValue(K[1,2],K[2,2],K[3,2])
+nΓ = CellField(map(normal,FESpaces.get_tangent_frames(get_grid(Γ))),Γ)
+vΓ = get_fe_basis(VΓ)
+pts = get_cell_points(Measure(Γ,2*order))
+@test eltype(eltype(vΓ(pts))) == VectorValue{3,Float64}
+@test all(x -> maximum(abs,x) < 1.e-12, (vΓ⋅nΓ)(pts))
+
+t_exact(x) = VectorValue(x[2]^order,x[3]^order - x[1],x[1]*x[2])
+tΓ = t_exact - (t_exact⋅nΓ)*nΓ
+eh = interpolate(tΓ,VΓ) - tΓ
+@test sum(∫(eh⋅eh)Measure(Γ,2*order)) < 1e-10
+
+# Spaces from a given prebasis
+
+mono = MonomialBasis(Val(2),VectorValue{2,Float64},order,Polynomials._p_filter)
+V1 = FESpaces.PolytopalFESpace(Γ,VectorValue{2,Float64},order)
+V2 = FESpaces.PolytopalFESpace(Γ,mono)
+@test V2.order == order
+@test get_fe_basis(V1)(pts) == get_fe_basis(V2)(pts)
+
+n = length(mono)
+C = zeros(n,n-2); for i in 1:n-2; C[i,i] = 1.0; end
+V3 = FESpaces.PolytopalFESpace(pmodel,linear_combination(C,mono);trian=Γ,orthonormal=true,dirichlet_tags=["boundary"])
+@test num_free_dofs(V3) + num_dirichlet_dofs(V3) == (n-2)*num_cells(Γ)
+@test num_dirichlet_dofs(V3) > 0
+test_orthonormal(V3,order)
 
 end

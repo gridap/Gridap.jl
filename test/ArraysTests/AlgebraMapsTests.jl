@@ -60,6 +60,38 @@ A = zeros(4)
 k!(A,fill(3.0,2),[1,1])
 @test A == zeros(4)
 
+# LocalConstrainedSolveMap
+
+@testset "LocalConstrainedSolveMap" begin
+  np, nλ, icols = 4, 2, (3, 2)
+  App = randn(np, np) + 5*I
+  Apλ, Aλp = randn(np, nλ), randn(nλ, np)
+  K = [App Apλ; Aλp zeros(nλ, nλ)]
+  lhs = ArrayBlock(reshape([App, Aλp, Apλ, zeros(0, 0)], 2, 2), [true true; true false])
+  k = LocalConstrainedSolveMap()
+
+  # Several right-hand sides, one of them without constraint data
+  B = reshape([randn(np, icols[1]), randn(nλ, icols[1]), randn(np, icols[2]), zeros(0, 0)], 2, 2)
+  rhs = ArrayBlock(B, [true true; true false])
+  x = evaluate(k, (lhs, rhs))
+  @test length(x) == 2
+  @test x[1] ≈ (K \ vcat(B[1, 1], B[2, 1]))[1:np, :]
+  @test x[2] ≈ (K \ vcat(B[1, 2], zeros(nλ, icols[2])))[1:np, :]
+
+  # A single right-hand side
+  b = ArrayBlock([randn(np), randn(nλ)], [true, true])
+  x = evaluate(k, (lhs, b))
+  @test length(x) == 1
+  @test only(x) ≈ (K \ vcat(b.array[1], b.array[2]))[1:np]
+
+  # Unconstrained 1x1 block system
+  lhs1 = ArrayBlock(reshape([App], 1, 1), fill(true, 1, 1))
+  rhs1 = ArrayBlock(reshape([B[1, 1], B[1, 2]], 1, 2), fill(true, 1, 2))
+  x = evaluate(k, (lhs1, rhs1))
+  @test x[1] ≈ App \ B[1, 1]
+  @test x[2] ≈ App \ B[1, 2]
+end
+
 # LocalStagedSolveMap
 
 @testset "LocalStagedSolveMap" begin

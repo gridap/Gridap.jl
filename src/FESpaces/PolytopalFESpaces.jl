@@ -17,6 +17,14 @@ the projection is exact for the polynomials the method reproduces (`2*k-2` in th
 
 Keyword arguments: `space = :P`, `vector_type`, `hierarchical = false`, `orthonormal = false`,
 `local_kernel = nothing`, `idegree = 2*order`, `labels`, `dirichlet_tags`, `dirichlet_masks`.
+
+    PolytopalFESpace(model::DiscreteModel, prebasis::AbstractVector{<:Field}; kwargs...)
+    PolytopalFESpace(trian::Triangulation, prebasis::AbstractVector{<:Field}; kwargs...)
+
+The local space is spanned by `prebasis`, a basis of polynomials in the local coordinates
+of the cells (see `get_centroid_map`), e.g. a `linear_combination` of a monomial basis. Its
+value type and order are taken from the prebasis. Same keyword arguments, except `space`
+and `hierarchical`.
 """
 struct PolytopalFESpace{V,M} <: SingleFieldFESpace
   vector_type::Type{V}
@@ -80,6 +88,26 @@ function PolytopalFESpace(
 ) where {T}
   cell_shapefuns, domain_style = get_polytopal_cell_shapefuns(
     trian, T, order; space, hierarchical, orthonormal, local_kernel
+  )
+  vtype = ifelse(!isnothing(vector_type),vector_type,Vector{_dof_type(T)})
+  return PolytopalFESpace(
+    vtype, model, cell_shapefuns, order, domain_style; trian, kwargs...
+  )
+end
+
+function PolytopalFESpace(
+  model::DiscreteModel,prebasis::AbstractVector{<:Field};
+  trian = Triangulation(model),
+  vector_type = nothing,
+  orthonormal = false,
+  local_kernel = nothing,
+  domain_style = nothing,
+  kwargs...
+)
+  T, order = value_type(prebasis), Polynomials.get_order(prebasis)
+  cell_prebasis = Fill(prebasis, num_cells(trian))
+  cell_shapefuns, domain_style = get_polytopal_cell_shapefuns(
+    trian, cell_prebasis; orthonormal, local_kernel, domain_style, order
   )
   vtype = ifelse(!isnothing(vector_type),vector_type,Vector{_dof_type(T)})
   return PolytopalFESpace(
@@ -156,14 +184,20 @@ function get_polytopal_cell_shapefuns(
   @check !polytopal || isa(domain_style, PhysicalDomain)
   if isa(domain_style, PhysicalDomain)
     cell_shapefuns = lazy_map(Broadcasting(∘), cell_prebasis, get_centroid_map(trian))
+    D, Dp = num_cell_dims(trian), num_point_dims(trian)
+    if (T <: VectorValue{D}) && (Dp > D)
+      # Vector fields on embedded cells are tangent vectors of the ambient space
+      cell_frames = lazy_map(constant_field, get_tangent_frames(trian))
+      cell_shapefuns = lazy_map(Broadcasting(Operation(⋅)), cell_frames, cell_shapefuns)
+    end
   else
     cell_shapefuns = cell_prebasis
   end
   if !isnothing(local_kernel)
-    cell_shapefuns = remove_local_kernel(cell_shapefuns, trian, T, order, local_kernel)
+    cell_shapefuns = remove_local_kernel(cell_shapefuns, trian, T, order, local_kernel, domain_style)
   end
   if orthonormal
-    cell_shapefuns = orthogonalise_basis(cell_shapefuns, trian, order)
+    cell_shapefuns = orthogonalise_basis(cell_shapefuns, trian, order, domain_style)
   end
   return cell_shapefuns, domain_style
 end
@@ -252,34 +286,44 @@ function centroid_map(poly::Polytope)
   centroid_map(Val(D),Val(Dp),get_vertex_coordinates(poly))
 end
 
-function centroid_map(::Val{D},::Val{D},vertices) where D
-  pmin, pmax = get_bounding_box(vertices)
+function centroid_map(::Val{D},::Val{Dp},vertices) where {D,Dp}
+  K = tangent_frame(Val(D),Val(Dp),vertices)
+  pmin, pmax = get_bounding_box(v -> v⋅K, vertices)
   xc = 0.5 * (pmin + pmax)
-  h = 0.5 * (pmax - pmin)
-  G = TensorValues.diagonal_tensor(VectorValue(ntuple(i -> 1.0/h[i], Val(D))))
-  O = -xc⋅G
+  h = 0.5 * maximum(Tuple(pmax - pmin))
+  G = K / h
+  O = -xc / h
   return affine_map(G,O)
 end
 
-function centroid_map(::Val{D},::Val{Dp},vertices) where {D,Dp}
+function get_tangent_frames(trian::Grid)
+  D, Dp = num_cell_dims(trian), num_point_dims(trian)
+  cell_coords = get_cell_coordinates(trian)
+  frame(v) = tangent_frame(Val(D),Val(Dp),v)
+  return lazy_map(frame, cell_coords)
+end
+
+function tangent_frame(::Val{D},::Val{D},vertices) where D
+  return one(TensorValue{D,D,eltype(eltype(vertices))})
+end
+
+function tangent_frame(::Val{D},::Val{Dp},vertices) where {D,Dp}
   @check Dp > D
   t_space = ReferenceFEs.compute_tangent_space(Val(D),vertices)
-  K = TensorValues.tensor_from_columns(t_space...)
-  pmin, pmax = get_bounding_box(v -> v⋅K, vertices)
-  xc = 0.5 * (pmin + pmax)
-  h = 0.5 * (pmax - pmin)
-  G = TensorValues.diagonal_tensor(VectorValue(ntuple(i -> 1.0/h[i], Val(D))))
-  O = -xc⋅G
-  return affine_map(K⋅G,O)
+  return TensorValues.tensor_from_columns(isa(t_space,Tuple) ? t_space : (t_space,))
+end
+
+# Cell-wise integral of an array of fields (in the given domain) on the cells of `trian`
+function _integrate_on_cells(cell_integ,trian,degree,domain_style)
+  f = GenericCellField(cell_integ,trian,domain_style)
+  return integrate(f,CellQuadrature(trian,degree))
 end
 
 # Orthogonalisation
 
-function orthogonalise_basis(cell_basis,trian,order)
-  cell_quads = Quadrature(trian,2*order)
+function orthogonalise_basis(cell_basis,trian,order,domain_style=PhysicalDomain())
   cell_integ = lazy_map(Broadcasting(Operation(⋅)),cell_basis,lazy_map(transpose,cell_basis))
-  cell_vals  = lazy_map(evaluate,cell_integ,lazy_map(get_coordinates,cell_quads))
-  cell_mass  = lazy_map(IntegrationMap(),cell_vals,lazy_map(get_weights,cell_quads))
+  cell_mass  = _integrate_on_cells(cell_integ,trian,2*order,domain_style)
   cell_coeffs = lazy_map(OrthogonaliseBasisMap(),cell_mass)
   return lazy_map(linear_combination,cell_coeffs,cell_basis)
 end
@@ -324,17 +368,15 @@ end
 
 # Local kernel removal
 
-function remove_local_kernel(cell_basis,trian,T,order,local_kernel)
+function remove_local_kernel(cell_basis,trian,T,order,local_kernel,domain_style=PhysicalDomain())
   if isa(local_kernel,Function)
     local_kernel_func = local_kernel
   else
     local_kernel_func = _kernel_from_symbol(local_kernel,T,cell_basis)
   end
 
-  cell_quads = Quadrature(trian,2*order)
   cell_integ = local_kernel_func(lazy_map(transpose,cell_basis))
-  cell_vals = lazy_map(evaluate,cell_integ,lazy_map(get_coordinates,cell_quads))
-  cell_kernel = lazy_map(IntegrationMap(),cell_vals,lazy_map(get_weights,cell_quads))
+  cell_kernel = _integrate_on_cells(cell_integ,trian,2*order,domain_style)
   cell_coeffs = lazy_map(NullspaceMap(),cell_kernel)
   return lazy_map(linear_combination,cell_coeffs,cell_basis)
 end

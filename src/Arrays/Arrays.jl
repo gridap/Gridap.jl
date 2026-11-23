@@ -148,6 +148,7 @@ export TouchEntriesMap
 
 export LocalSolveMap
 export LocalPenaltySolveMap
+export LocalConstrainedSolveMap
 export LocalStagedSolveMap
 
 export ∑

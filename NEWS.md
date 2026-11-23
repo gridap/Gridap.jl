@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added keyword `idegree` to `PolytopalFESpace` (and the polytopal `PatchFESpace`), setting the quadrature degree of the L2 projection used to interpolate into the space. Defaults to `2*order`, i.e. the previous behaviour.
+- Added `PolytopalFESpace(model,prebasis)` and `PolytopalFESpace(trian,prebasis)`, building the space from a given polynomial prebasis (e.g. a `linear_combination` of a monomial basis) instead of a `space` symbol.
+- Added `ReferenceFEs.symbol_conformity(symb)`, the conformity represented by a symbol, without the `ReferenceFEName` argument (which is kept as an extension point).
+- Added `LocalConstrainedSolveMap`, a local solve map for `LocalOperator` that solves a saddle-point block system `[App Apλ; Aλp 0]` exactly (no penalty) and discards the multiplier, for any number of right-hand-side blocks. It also accepts an unconstrained 1x1 block system.
 - Added `LocalStagedSolveMap`, a local solve map for `LocalOperator` that solves block systems stage by stage (block forward substitution) and returns a subset of the unknown blocks. It takes any number of test, trial and input blocks, and covers saddle-point problems with discarded multipliers and the composition of local operators.
 - Added keywords `trian` and `fe_basis` to `PatchFESpace(space,ptopo)`, to choose the triangulation and prescribe the basis of the patch space (a mock basis by default, as before). Added `FESpaceWithBasis`.
 - Added `PatchTopology(ReferenceFE{Dc},ReferenceFE{Df},model)`, the patches of `Dc`-dimensional faces around each `Df`-dimensional face. `PatchBoundaryTriangulation(model,ptopo)` now accepts a `ptopo` of lower dimension than the model, in which case its normal is the conormal.
@@ -18,9 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed the face-to-cell reference map of `BoundaryTriangulation` on 3D polytopal grids for faces that are not facets (edges, vertices).
+- Fixed the `orthonormal` and `local_kernel` options of `PolytopalFESpace` and `PatchFESpace`: the local matrices were computed from the raw quadrature points and weights, without cell map or Jacobian, which is only right on polytopal grids. On standard grids (e.g. the edges of a mesh, or the bounding-box grid of `PatchFESpace`) the resulting basis was not orthonormal.
 
 ### Changed
 
+- **Breaking**: the centroid map used by `PolytopalFESpace` for its physical-domain bases (`get_centroid_map`) is now isotropic: it scales all directions by the largest half-length of the bounding box of the cell, instead of each direction by its own. Polynomial spaces that are not invariant under anisotropic scalings (gradients, curls, Koszul complements) are now the same space on every cell. Full polynomial spaces span the same space as before, with a different basis.
+- **Breaking**: `PolytopalFESpace` with a tangent-valued basis on embedded cells (value type `VectorValue{D}` on `D`-dimensional cells of a higher-dimensional space, e.g. `VectorValue{2}` on the faces of a 3D mesh) now returns vectors of the ambient space, tangent to the cell, instead of their components in the tangent frame of the cell. Added `get_tangent_frames`.
 - **Breaking**: `BoundaryTriangulation{Dc,Dp,Dm,A,B}` has a new type parameter `Dm`, the dimension of the faces of the model its faces are glued to. It also stores the grid of those faces, which defaults to the grid of the model and can be set with `BoundaryTriangulation(trian,glue,cell_grid)`. The normal vector is only defined for `Dm == Dc + 1`.
 - **Breaking**: a `LocalOperator` applied to an `FESpace` now returns an `FESpace` with the dofs of the input space and the images of its basis as shape functions (a `PatchFESpace` for patch operators), instead of the tuple of trial and test images. `LocalOperator` has a new type parameter and a new field, `ptopo`.
 

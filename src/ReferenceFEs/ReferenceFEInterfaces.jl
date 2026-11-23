@@ -95,8 +95,7 @@ Instances are used to select a reference FE in the [`ReferenceFE`](@ref Referenc
 """
 abstract type ReferenceFEName end
 
-# ReferenceFEName argument added to enable easy extension from outside Gridap
-function symbol_conformity(symb::Symbol, ::ReferenceFEName)
+function symbol_conformity(symb::Symbol)
   symb == :L2    && return L2Conformity()
   symb == :H1    && return GradConformity()
   symb == :C0    && return GradConformity()
@@ -111,6 +110,8 @@ function symbol_conformity(symb::Symbol, ::ReferenceFEName)
   symb == :Hdiv  && return DivConformity()
   symb == :HDiv  && return DivConformity()
 end
+
+symbol_conformity(symb::Symbol, ::ReferenceFEName) = symbol_conformity(symb)
 
 # Extensible factory function
 
