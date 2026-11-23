@@ -121,13 +121,8 @@ end
     struct BoundaryTriangulation{Dc,Dp,Dm,A,B,C} <: Triangulation{Dc,Dp}
 
 Triangulation of `Dc`-dimensional faces of a model, each of them glued to one of the
-`Dm`-dimensional faces around it, with `Dc < Dm`. The usual case is `Dm = Dc + 1` with `Dm`
+`Dm`-dimensional faces around it, with `Dc < Dm`. The usual case is `Dc = Dm - 1` with `Dm`
 the dimension of the model, i.e. facets glued to a neighboring cell.
-
-Other values of `Dm` are possible: faces of higher codimension glued to a cell
-(`Dm > Dc + 1`, e.g. the vertices of a [`DiracDelta`](@ref)), or faces glued to
-faces of the model that are not cells (`Dm < num_cell_dims(model)`, see
-[`PatchBoundaryTriangulation`](@ref)).
 
 The glue to the `Dm`-dimensional faces is always available through `get_glue(trian,Val(Dm))`.
 The normal vector only makes sense for `Dm == Dc + 1`. It is the outward unit vector normal
