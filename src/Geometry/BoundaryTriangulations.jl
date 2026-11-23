@@ -100,7 +100,7 @@ function generate_ctype_to_lface_to_ftype(
 end
 
 function generate_ctype_to_lface_to_ftype(
-  cell_grid::PolytopalGrid{3}, face_grid::PolytopalGrid{2}, face_to_cell, face_to_lface, face_to_ftype, cell_to_ctype
+  cell_grid::PolytopalGrid{3}, face_grid::Grid, face_to_cell, face_to_lface, face_to_ftype, cell_to_ctype
 )
   return nothing # Too expensive and not needed for polytopal grids
 end
@@ -118,20 +118,52 @@ function get_children(n::TreeNode, a::FaceToCellGlue)
 end
 
 """
+    struct BoundaryTriangulation{Dc,Dp,Dm,A,B,C} <: Triangulation{Dc,Dp}
+
+Triangulation of `Dc`-dimensional faces of a model, each of them glued to one of the
+`Dm`-dimensional faces around it, with `Dc < Dm`. The usual case is `Dm = Dc + 1` with `Dm`
+the dimension of the model, i.e. facets glued to a neighboring cell.
+
+Other values of `Dm` are possible: faces of higher codimension glued to a cell
+(`Dm > Dc + 1`, e.g. the vertices of a [`DiracDelta`](@ref)), or faces glued to
+faces of the model that are not cells (`Dm < num_cell_dims(model)`, see
+[`PatchBoundaryTriangulation`](@ref)).
+
+The glue to the `Dm`-dimensional faces is always available through `get_glue(trian,Val(Dm))`.
+The normal vector only makes sense for `Dm == Dc + 1`. It is the outward unit vector normal
+to the face and tangent to the `Dm`-dimensional face it is glued to.
+
+# Constructors
+
+    BoundaryTriangulation(trian::BodyFittedTriangulation,glue)
+    BoundaryTriangulation(trian::BodyFittedTriangulation,glue,cell_grid::Grid)
+
+where `cell_grid` is the grid of the `Dm`-dimensional faces of the background model,
+i.e. `Grid(ReferenceFE{Dm},model)`. It defaults to the grid of the background model.
 """
-struct BoundaryTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
+struct BoundaryTriangulation{Dc,Dp,Dm,A,B,C} <: Triangulation{Dc,Dp}
   trian::A
   glue::B
+  cell_grid::C
   function BoundaryTriangulation(
     trian::BodyFittedTriangulation,
-    glue)
-
+    glue,
+    cell_grid::Grid
+  )
     Dc = num_cell_dims(trian)
     Dp = num_point_dims(trian)
+    Dm = num_cell_dims(cell_grid)
+    @check Dc < Dm <= num_cell_dims(get_background_model(trian))
     A = typeof(trian)
     B = typeof(glue)
-    new{Dc,Dp,A,B}(trian,glue)
+    C = typeof(cell_grid)
+    new{Dc,Dp,Dm,A,B,C}(trian,glue,cell_grid)
   end
+end
+
+function BoundaryTriangulation(trian::BodyFittedTriangulation,glue)
+  cell_grid = get_grid(get_background_model(trian))
+  BoundaryTriangulation(trian,glue,cell_grid)
 end
 
 """
@@ -219,9 +251,15 @@ get_background_model(t::BoundaryTriangulation) = get_background_model(t.trian)
 get_grid(t::BoundaryTriangulation) = get_grid(t.trian)
 get_glue(t::BoundaryTriangulation{D},::Val{D}) where D = get_glue(t.trian,Val(D))
 
+# Dimension of the faces of the background model the triangulation is glued to
+num_glued_dims(::BoundaryTriangulation{Dc,Dp,Dm}) where {Dc,Dp,Dm} = Dm
+
+# Grid of the faces of the background model the triangulation is glued to, which
+# are the cells of the model in most cases (but not always, see `PatchBoundaryTriangulation`).
+get_glued_cell_grid(trian::BoundaryTriangulation) = trian.cell_grid
+
 function get_glue(trian::BoundaryTriangulation,::Val{Dp}) where Dp
-  model = get_background_model(trian)
-  Dm = num_cell_dims(model)
+  Dm = num_glued_dims(trian)
   get_glue(trian,Val(Dp),Val(Dm))
 end
 
@@ -230,8 +268,7 @@ function get_glue(trian::BoundaryTriangulation,::Val{Dp},::Val{Dm}) where {Dp,Dm
 end
 
 function get_glue(trian::BoundaryTriangulation,::Val{D},::Val{D}) where D
-  bgmodel = get_background_model(trian)
-  cell_grid = get_grid(bgmodel)
+  cell_grid = get_glued_cell_grid(trian)
   face_grid = get_grid(trian)
   tface_to_mface = trian.glue.face_to_cell
   mface_to_tface = nothing
@@ -242,9 +279,11 @@ end
 @inline get_facet_normal(trian::BoundaryTriangulation) = get_facet_normal(trian,trian.glue)
 
 function get_facet_normal(trian::BoundaryTriangulation,face_to_cell_glue)
-  bgmodel = get_background_model(trian)
-  D = num_cell_dims(bgmodel)
-  cell_grid = get_grid(bgmodel)
+  D = num_glued_dims(trian)
+  @notimplementedif D != num_cell_dims(trian) + 1 """\n
+  The normal vector is only defined for faces glued to faces of one dimension more.
+  """
+  cell_grid = get_glued_cell_grid(trian)
   face_glue = get_glue(trian,Val(D))
   get_facet_normal(cell_grid,face_glue,face_to_cell_glue)
 end
@@ -333,7 +372,9 @@ end
 function compute_face_to_cell_reference_map(
   cell_grid::PolytopalGrid{3},face_grid::Grid,glue::FaceToCellGlue
 )
-  return Fill(GenericField(identity), num_cells(face_grid))
+  # The reference space of the cells is the physical one. The facets are polygons,
+  # which also live in the physical space. Edges and vertices have a reference space.
+  return get_cell_map(face_grid)
 end
 
 # TODO: Rename this to compute_face_to_cell_vertex_coords
@@ -344,8 +385,7 @@ end
 function _compute_face_to_q_vertex_coords(
   trian::BoundaryTriangulation, glue::FaceToCellGlue
 )
-  bgmodel = get_background_model(trian)
-  cell_grid = get_grid(bgmodel)
+  cell_grid = get_glued_cell_grid(trian)
   face_grid = get_grid(trian)
   return _compute_face_to_q_vertex_coords(cell_grid,face_grid,glue)
 end

@@ -324,6 +324,7 @@ function Arrays.return_cache(k::LocalSolveMap, mat::MatrixBlock, vec::MatrixBloc
   @check size(mat,1) == size(mat,2) == size(vec,1) == 1
   cmat = CachedArray(copy(get_array(mat)[1,1]))
   cvec = ntuple(i -> CachedArray(copy(get_array(vec)[i])), size(vec,2))
+  return cmat, cvec
 end
 
 function Arrays.evaluate!(cache,k::LocalSolveMap, mat::MatrixBlock, vec::MatrixBlock)
@@ -429,3 +430,195 @@ function Arrays.evaluate!(cache::Nothing, k::LocalPenaltySolveMap, lhs, rhs)
 
   return RuΩ, RuΓ
 end
+
+"""
+    LocalStagedSolveMap(stages; output = last trial block, factorize! = lu!, pivot = RowMaximum())
+
+A map that solves local block systems `A x = B u` stage by stage, by block forward
+substitution.
+
+`A` is the block matrix assembled from the test fields (block rows) and the trial fields
+(block columns) of a `LocalOperator`, and `B` holds one block column per input field.
+
+`stages` is a tuple of `(rows, cols)` pairs, each a tuple of test block indices and a tuple
+of trial block indices. The stages are solved in order: for stage `s`,
+
+    x[cols_s] = A[rows_s, cols_s] \\ ( B[rows_s, :] - Σ_{t<s} A[rows_s, cols_t] * x[cols_t] )
+
+where `A[rows_s, cols_s]` is flattened into a single matrix, which has to be square. The
+blocks `A[rows_s, cols_t]` with `t > s` are ignored: the system is taken to be block lower
+triangular in the stage ordering.
+
+`output` is the trial block (or tuple of trial blocks, concatenated) that is returned. The
+other trial blocks are intermediate unknowns: they are used by later stages and discarded.
+
+The result is a tuple with one array per input field (block column of `B`), or a 1-tuple if
+the right-hand side is a block vector (a single function as input).
+
+# Examples
+
+- `LocalStagedSolveMap((((1,),(1,)),))`: a plain solve, as `LocalSolveMap`.
+- `LocalStagedSolveMap((((1,2),(1,2)),); output = 1)`: a saddle-point system with a
+  multiplier that is discarded.
+- `LocalStagedSolveMap((((1,2),(1,)),))`: one unknown field tested against two families.
+- `LocalStagedSolveMap((((1,),(1,)), ((2,3),(2,))))`: the composition of two operators. The
+  first unknown is computed with the first test field. The second unknown is computed with
+  the other two test fields, and its equations can involve the first unknown.
+"""
+struct LocalStagedSolveMap{S,O,A,B} <: Map
+  stages :: S
+  output :: O
+  factorize! :: A
+  pivot :: B
+end
+
+function LocalStagedSolveMap(
+  stages; output = last(last(last(stages))), factorize! = lu!, pivot = RowMaximum()
+)
+  _stages = map(s -> (Tuple(s[1]), Tuple(s[2])), Tuple(stages))
+  _output = Tuple(output)
+  solved = reduce((a, b) -> (a..., b...), map(last, _stages))
+  @check allunique(solved) "A trial block can only be solved in one stage"
+  @check allunique(reduce((a, b) -> (a..., b...), map(first, _stages))) "A test block can only be used in one stage"
+  @check all(in(solved), _output) "The output blocks have to be solved in some stage"
+  LocalStagedSolveMap(_stages, _output, factorize!, pivot)
+end
+
+Arrays.return_cache(k::LocalStagedSolveMap, matvec::Tuple) = return_cache(k, matvec...)
+Arrays.evaluate!(cache, k::LocalStagedSolveMap, matvec::Tuple) = evaluate!(cache, k, matvec...)
+
+# Cache: block offsets of the test, trial and input blocks, which trial blocks are solved,
+# the solution `X` of all the trial blocks (one column per input dof), the matrix and
+# right-hand side of each stage, and the output arrays (one per input block).
+function Arrays.return_cache(k::LocalStagedSolveMap, lhs::MatrixBlock, rhs::Union{MatrixBlock,VectorBlock})
+  T = promote_type(eltype(eltype(lhs.array)), eltype(eltype(rhs.array)))
+  offsets = (zeros(Int, size(lhs, 1) + 1), zeros(Int, size(lhs, 2) + 1), zeros(Int, size(rhs, 2) + 1))
+  solved = fill(false, size(lhs, 2))
+  X = CachedArray(zeros(T, 0, 0))
+  stages = map(_ -> (CachedArray(zeros(T, 0, 0)), CachedArray(zeros(T, 0, 0))), k.stages)
+  out = _staged_output_cache(T, rhs)
+  return offsets, solved, X, stages, out
+end
+
+_staged_output_cache(::Type{T}, rhs::MatrixBlock) where T = ntuple(_ -> CachedArray(zeros(T, 0, 0)), size(rhs, 2))
+_staged_output_cache(::Type{T}, rhs::VectorBlock) where T = (CachedArray(zeros(T, 0)),)
+
+function Arrays.evaluate!(cache, k::LocalStagedSolveMap, lhs::MatrixBlock, rhs::Union{MatrixBlock,VectorBlock})
+  @check size(lhs, 1) == size(rhs, 1)
+  offsets, solved, cX, cstages, cout = cache
+  ro, co, io = offsets
+  _staged_block_offsets!(ro, lhs, 1)
+  _staged_block_offsets!(co, lhs, 2)
+  _staged_input_offsets!(io, rhs)
+
+  setsize!(cX, (last(co), last(io)))
+  X = cX.array
+  fill!(solved, false)
+  _staged_solve_stages!(k, k.stages, cstages, X, solved, offsets, lhs, rhs)
+
+  n = _staged_num_entries(co, k.output)
+  return map(cout, ntuple(identity, length(cout))) do c, b
+    _staged_set_output_size!(c, n, io[b+1] - io[b])
+    _staged_fill_output!(c.array, X, k.output, co, io, b)
+  end
+end
+
+# Recursion on the stages, which are tuples of different types
+_staged_solve_stages!(k, ::Tuple{}, ::Tuple{}, args...) = nothing
+function _staged_solve_stages!(k, stages::Tuple, cstages::Tuple, args...)
+  _staged_solve_stage!(k, first(stages), first(cstages), args...)
+  _staged_solve_stages!(k, Base.tail(stages), Base.tail(cstages), args...)
+end
+
+function _staged_solve_stage!(k, (rows, cols), (cF, cR), X, solved, (ro, co, io), lhs, rhs)
+  n = _staged_num_entries(co, cols)
+  @check _staged_num_entries(ro, rows) == n "Stage $((rows, cols)) is not square: $(_staged_num_entries(ro, rows)) equations, $n unknowns"
+  setsize!(cF, (n, n))
+  setsize!(cR, (n, last(io)))
+  F, R = cF.array, cR.array
+  fill!(F, zero(eltype(F)))
+  fill!(R, zero(eltype(R)))
+
+  oi = 0
+  for i in rows
+    I = oi+1:oi+ro[i+1]-ro[i]
+    # Stage matrix
+    oj = 0
+    for j in cols
+      J = oj+1:oj+co[j+1]-co[j]
+      lhs.touched[i, j] && copyto!(view(F, I, J), lhs.array[i, j])
+      oj = last(J)
+    end
+    # Right-hand side, minus the contributions of the unknowns solved in previous stages
+    _staged_add_rhs!(R, I, io, rhs, i)
+    for j in eachindex(solved)
+      if solved[j] && lhs.touched[i, j]
+        mul!(view(R, I, :), lhs.array[i, j], view(X, co[j]+1:co[j+1], :), -1, 1)
+      end
+    end
+    oi = last(I)
+  end
+
+  f = k.factorize!(F, k.pivot; check = false)
+  @check issuccess(f) "Factorization failed in stage $((rows, cols))"
+  ldiv!(f, R)
+
+  oj = 0
+  for j in cols
+    J = oj+1:oj+co[j+1]-co[j]
+    copyto!(view(X, co[j]+1:co[j+1], :), view(R, J, :))
+    solved[j] = true
+    oj = last(J)
+  end
+  return nothing
+end
+
+function _staged_fill_output!(out, X, output, co, io, b)
+  o = 0
+  for j in output
+    J = o+1:o+co[j+1]-co[j]
+    copyto!(_staged_rows(out, J), view(X, co[j]+1:co[j+1], io[b]+1:io[b+1]))
+    o = last(J)
+  end
+  return out
+end
+
+_staged_rows(a::AbstractVector, I) = view(a, I)
+_staged_rows(a::AbstractMatrix, I) = view(a, I, :)
+_staged_set_output_size!(c::CachedVector, n, m) = setsize!(c, (n,))
+_staged_set_output_size!(c::CachedMatrix, n, m) = setsize!(c, (n, m))
+_staged_num_entries(offsets, blocks) = sum(b -> offsets[b+1] - offsets[b], blocks)
+
+# Bases as input: one block column per input field
+function _staged_add_rhs!(R, I, io, rhs::MatrixBlock, i)
+  for b in axes(rhs.array, 2)
+    rhs.touched[i, b] && copyto!(view(R, I, io[b]+1:io[b+1]), rhs.array[i, b])
+  end
+end
+
+# A function as input: a single column
+function _staged_add_rhs!(R, I, io, rhs::VectorBlock, i)
+  rhs.touched[i] && copyto!(view(R, I, 1), rhs.array[i])
+end
+
+# Block offsets along dimension `dim`. The patch assembler returns every block allocated
+# with its size, but cell-wise integration leaves the zero blocks untouched, so sizes are
+# read from the touched ones.
+function _staged_block_offsets!(offsets, m::MatrixBlock, dim)
+  offsets[1] = 0
+  for i in axes(m.array, dim)
+    offsets[i+1] = offsets[i] + _staged_block_size(m, dim, i)
+  end
+  return offsets
+end
+
+function _staged_block_size(m::MatrixBlock, dim, i)
+  for j in axes(m.array, 3 - dim)
+    I = (dim == 1) ? CartesianIndex(i, j) : CartesianIndex(j, i)
+    m.touched[I] && return size(m.array[I], dim)
+  end
+  @notimplemented "Cannot find the size of block $i (dimension $dim): it is empty"
+end
+
+_staged_input_offsets!(offsets, rhs::MatrixBlock) = _staged_block_offsets!(offsets, rhs, 2)
+_staged_input_offsets!(offsets, rhs::VectorBlock) = (offsets[1] = 0; offsets[2] = 1; offsets)

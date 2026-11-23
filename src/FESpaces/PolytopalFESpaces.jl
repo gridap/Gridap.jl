@@ -1,6 +1,22 @@
 
 """
     struct PolytopalFESpace{V,M} <: SingleFieldFESpace
+
+Discontinuous polynomial FE space on a (possibly polytopal) triangulation.
+
+Functions are interpolated into the space through a cell-wise L2 projection, integrated
+with a quadrature of degree `idegree`. The default, `idegree = 2*order`, is exact for data
+in the space. When the space is the low-order component of a higher-order method (e.g. 
+moments of order `k-2` within a method of order `k`), `idegree` should be raised so that 
+the projection is exact for the polynomials the method reproduces (`2*k-2` in the example).
+
+# Constructors
+
+    PolytopalFESpace(model::DiscreteModel, ::Type{T}, order::Integer; kwargs...)
+    PolytopalFESpace(trian::Triangulation, ::Type{T}, order::Integer; kwargs...)
+
+Keyword arguments: `space = :P`, `vector_type`, `hierarchical = false`, `orthonormal = false`,
+`local_kernel = nothing`, `idegree = 2*order`, `labels`, `dirichlet_tags`, `dirichlet_masks`.
 """
 struct PolytopalFESpace{V,M} <: SingleFieldFESpace
   vector_type::Type{V}
@@ -13,6 +29,7 @@ struct PolytopalFESpace{V,M} <: SingleFieldFESpace
   dirichlet_cells::Vector{Int32}
   ntags::Int
   order::Int
+  idegree::Int
   metadata::M
 end
 
@@ -80,6 +97,7 @@ function PolytopalFESpace(
   labels = get_face_labeling(model),
   dirichlet_tags = Int[],
   dirichlet_masks = nothing,
+  idegree::Integer = 2*order,
 )
   Dc = num_cell_dims(trian)
   fe_basis = SingleFieldFEBasis(cell_shapefuns, trian, TestBasis(), domain_style)
@@ -104,7 +122,7 @@ function PolytopalFESpace(
   return PolytopalFESpace(
     vector_type,nfree,ndir,cell_dof_ids,fe_basis,
     cell_is_dirichlet,dirichlet_dof_tag,dirichlet_cells,ntags,
-    order,metadata
+    order,idegree,metadata
   )
 end
 
@@ -170,7 +188,7 @@ num_dirichlet_tags(f::PolytopalFESpace) = f.ntags
 get_dirichlet_dof_tag(f::PolytopalFESpace) = f.dirichlet_dof_tag
 
 function _cell_vals(f::PolytopalFESpace,object)
-  dΩ = Measure(get_triangulation(f),2*f.order)
+  dΩ = Measure(get_triangulation(f),f.idegree)
   u, v = get_trial_fe_basis(f), get_fe_basis(f)
 
   lhs = get_array(∫(u⋅v)dΩ)
@@ -451,6 +469,7 @@ function FESpaces.reindex_free_and_dirichlet_dof_ids(
     dirichlet_cells,
     space.ntags,
     space.order,
+    space.idegree,
     space.metadata
   )
 end

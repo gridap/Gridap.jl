@@ -64,9 +64,13 @@ end
 
 ###########################################################################################
 
-function FESpaces.PatchFESpace(space::MultiFieldFESpace,ptopo::PatchTopology)
-  spaces = map(space) do sf
-    FESpaces.PatchFESpace(sf,ptopo)
+function FESpaces.PatchFESpace(
+  space::MultiFieldFESpace,ptopo::PatchTopology;
+  fe_basis = map(sf -> nothing, space), kwargs...
+)
+  @check length(fe_basis) == num_fields(space)
+  spaces = map(space,collect(Any,fe_basis)) do sf, sf_basis
+    FESpaces.PatchFESpace(sf,ptopo;fe_basis=sf_basis,kwargs...)
   end
   style = MultiFieldStyle(space)
   return MultiFieldFESpace(spaces;style=style)
@@ -80,14 +84,18 @@ end
 
 ###########################################################################################
 
+# The output space has one field per field of the input space: the shape functions of field
+# `i` are the images of the basis of the i-th input field.
 function Arrays.evaluate!(
   cache,k::LocalOperator,space::MultiFieldFESpace
 )
-  u = evaluate!(cache,k,get_trial_fe_basis(space))
-  v = map(u) do ui
-    CellData.similar_cell_field(ui,lazy_map(transpose,CellData.get_data(ui)))
-  end |> MultiFieldCellField
-  return u, v
+  mf_shapefuns = FESpaces._compute_local_solves(k,get_trial_fe_basis(space))
+  @notimplementedif !isa(mf_shapefuns,Tuple) || (length(mf_shapefuns) != num_fields(space))
+  spaces = map(space,collect(Any,mf_shapefuns)) do sf, sf_shapefuns
+    FESpaces._local_operator_space(k,sf,sf_shapefuns)
+  end
+  style = MultiFieldStyle(space)
+  return MultiFieldFESpace(spaces;style=style)
 end
 
 function Arrays.evaluate!(

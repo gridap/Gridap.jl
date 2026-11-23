@@ -30,6 +30,8 @@ using Test
 
 @testset "PatchAssemblersTests" begin include("PatchAssemblersTests.jl") end
 
+@testset "LocalFEOperatorsTests" begin include("LocalFEOperatorsTests.jl") end
+
 @testset "PolytopalFESpacesTests" begin include("PolytopalFESpacesTests.jl") end
 
 @testset "HighOrderGrids" begin include("HighOrderGridsTests.jl") end

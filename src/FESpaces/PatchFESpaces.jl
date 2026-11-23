@@ -12,26 +12,77 @@ end
 FESpaceWithoutBCs(space::ConstantFESpace) = space
 FESpaceWithoutBCs(space::TrialFESpace) = FESpaceWithoutBCs(space.space)
 
-function PatchFESpace(space::SingleFieldFESpace, ptopo::PatchTopology)
-  vector_type = get_vector_type(space)
+"""
+    PatchFESpace(space::FESpace, ptopo::PatchTopology; trian, fe_basis)
 
-  nfree = num_free_dofs(space)
+Returns a space with the dofs of `space`, where the dofs of each cell are the dofs of
+`space` in the patch the cell belongs to (in increasing order, Dirichlet dofs included).
+
+- `trian`: the triangulation of the new space. Defaults to `PatchTriangulation(model,ptopo)`.
+- `fe_basis`: the test basis of the new space, a `CellField` on `trian` with one shape
+  function per patch dof. If `nothing` (default), the space has a mock basis: it can be used
+  for assembly, but cannot be evaluated.
+
+For a `MultiFieldFESpace`, `fe_basis` is a collection with one entry per field.
+"""
+function PatchFESpace(
+  space::SingleFieldFESpace, ptopo::PatchTopology;
+  trian::Triangulation = PatchTriangulation(get_background_model(get_triangulation(space)),ptopo),
+  fe_basis = nothing
+)
   patch_dof_ids = generate_patch_dof_ids(space,ptopo)
+  cell_dof_ids = Table(_patch_to_tface_data(trian,ptopo,patch_dof_ids))
+  return FESpaceWithBasis(space,trian,cell_dof_ids;fe_basis,metadata=ptopo)
+end
 
-  model = get_background_model(get_triangulation(space))
-  ptrian = PatchTriangulation(model,ptopo)
-  cell_dof_ids = Table(lazy_map(Broadcasting(Reindex(patch_dof_ids)), ptrian.glue.tface_to_patch))
+function PatchFESpace(space::TrialFESpace,ptopo::PatchTopology;kwargs...)
+  TrialFESpace(space.dirichlet_values,PatchFESpace(space.space,ptopo;kwargs...))
+end
 
-  Dc = num_cell_dims(model)
+function _patch_to_tface_data(trian::PatchTriangulation,ptopo::PatchTopology,patch_to_data)
+  @check trian.ptopo === ptopo
+  lazy_map(Broadcasting(Reindex(patch_to_data)), trian.glue.tface_to_patch)
+end
+
+function _patch_to_tface_data(trian::Triangulation,ptopo::PatchTopology,patch_to_data)
+  ptrian = PatchTriangulation(get_background_model(trian),ptopo)
+  _move_patch_coeffs(trian,ptrian,patch_to_data)
+end
+
+"""
+    FESpaceWithBasis(space::SingleFieldFESpace, trian, cell_dof_ids; fe_basis = nothing, metadata = nothing)
+
+Returns a space with the dofs of `space` (same free and Dirichlet dofs, same Dirichlet
+tags), but defined on `trian`, with cell dof ids `cell_dof_ids` and test basis `fe_basis`.
+
+`fe_basis` is a `CellField` on `trian` with one shape function per cell dof. The shape
+functions do not need to be linearly independent. If `nothing`, the space has a mock basis.
+
+The space has no dof basis, so one cannot interpolate into it. An `FEFunction` built from
+dof values of `space` is the corresponding linear combination of the shape functions.
+"""
+function FESpaceWithBasis(
+  space::SingleFieldFESpace, trian::Triangulation, cell_dof_ids::AbstractArray;
+  fe_basis = nothing, metadata = nothing
+)
+  @check length(cell_dof_ids) == num_cells(trian)
+  vector_type = get_vector_type(space)
+  nfree = num_free_dofs(space)
+
+  Dp = num_point_dims(trian)
   cell_to_ndofs = collect(lazy_map(length,cell_dof_ids))
   type_to_ndofs = unique(cell_to_ndofs)
   cell_to_type = collect(Int8,indexin(cell_to_ndofs,type_to_ndofs))
-  type_to_basis = [MockFieldArray(zeros(Float64,ndofs)) for ndofs in type_to_ndofs]
-  type_to_dofs = [ReferenceFEs.MockDofBasis(zeros(VectorValue{Dc,Float64},ndofs)) for ndofs in type_to_ndofs] 
-  cell_shapefuns = expand_cell_data(type_to_basis,cell_to_type)
+  type_to_dofs = [ReferenceFEs.MockDofBasis(zeros(VectorValue{Dp,Float64},ndofs)) for ndofs in type_to_ndofs]
   cell_dof_basis = expand_cell_data(type_to_dofs,cell_to_type)
-  fe_basis = GenericCellField(cell_shapefuns,ptrian,ReferenceDomain())
-  fe_dof_basis = CellDof(cell_dof_basis,ptrian,ReferenceDomain())
+  fe_dof_basis = CellDof(cell_dof_basis,trian,ReferenceDomain())
+
+  if isnothing(fe_basis)
+    type_to_basis = [MockFieldArray(zeros(Float64,ndofs)) for ndofs in type_to_ndofs]
+    cell_shapefuns = expand_cell_data(type_to_basis,cell_to_type)
+    fe_basis = GenericCellField(cell_shapefuns,trian,ReferenceDomain())
+  end
+  @check get_triangulation(fe_basis) === trian
 
   ndirichlet = num_dirichlet_dofs(space)
   dirichlet_dof_tag = get_dirichlet_dof_tag(space)
@@ -40,7 +91,6 @@ function PatchFESpace(space::SingleFieldFESpace, ptopo::PatchTopology)
   cell_is_dirichlet = collect(Bool,lazy_map(I -> any(i -> i < 0, I), cell_dof_ids))
   dirichlet_cells = collect(Int32,findall(cell_is_dirichlet))
 
-  metadata = ptopo
   UnconstrainedFESpace(
     vector_type,
     nfree,
@@ -56,8 +106,10 @@ function PatchFESpace(space::SingleFieldFESpace, ptopo::PatchTopology)
   )
 end
 
-function PatchFESpace(space::TrialFESpace,ptopo::PatchTopology)
-  TrialFESpace(space.dirichlet_values,PatchFESpace(space.space,ptopo))
+function FESpaceWithBasis(
+  space::TrialFESpace, trian::Triangulation, cell_dof_ids::AbstractArray; kwargs...
+)
+  TrialFESpace(space.dirichlet_values,FESpaceWithBasis(space.space,trian,cell_dof_ids;kwargs...))
 end
 
 function generate_patch_dof_ids(
@@ -214,6 +266,7 @@ function PatchFESpace(
   labels = get_face_labeling(model),
   dirichlet_tags = Int[],
   dirichlet_masks = nothing,
+  idegree::Integer = 2*order,
 )
   patch_to_faces = trian.glue.patch_to_tfaces
   face_to_patch = trian.glue.tface_to_patch
@@ -256,6 +309,6 @@ function PatchFESpace(
   return PolytopalFESpace(
     vector_type,nfree,ndir,cell_dof_ids,fe_basis,
     cell_is_dirichlet,dirichlet_dof_tag,dirichlet_cells,ntags,
-    order,metadata
+    order,idegree,metadata
   )
 end

@@ -131,5 +131,27 @@ model = CartesianDiscreteModel((0,1,0,1),(2,2))
 ptopo = Geometry.PatchTopology(get_grid_topology(model), Table([[1,2],[3,4]]))
 
 pspace = FESpaces.PatchFESpace(model,ptopo,Float64,order,space=:P)
+pspace = FESpaces.PatchFESpace(model,ptopo,Float64,order,space=:P,idegree=2*order+2)
+@test pspace.idegree == 2*order+2
+
+# Interpolation degree: Projecting P_2 data onto P_0 requires idegree = 2 to get exact means.
+
+model = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),(2,2)))
+pmodel = Gridap.Geometry.voronoi(Gridap.Geometry.simplexify(model))
+Ω = Triangulation(pmodel)
+dΩ = Measure(Ω,4)
+p2(x) = x[1]^2 + x[1]*x[2]
+
+V0 = FESpaces.PolytopalFESpace(pmodel,Float64,0,space=:P)
+@test V0.idegree == 0
+V0 = FESpaces.PolytopalFESpace(pmodel,Float64,0,space=:P,idegree=2)
+@test V0.idegree == 2
+uh = interpolate(p2,V0)
+@test maximum(abs,get_array(∫(uh - p2)dΩ)) < 1.e-12
+
+VΓ0 = FESpaces.PolytopalFESpace(Triangulation(ReferenceFE{1},pmodel),Float64,0,space=:P,dirichlet_tags=["boundary"],idegree=2)
+uh = interpolate_dirichlet(p2,VΓ0)
+dΓ = Measure(BoundaryTriangulation(pmodel),4)
+@test maximum(abs,get_array(∫(uh - p2)dΓ)) < 1.e-12
 
 end

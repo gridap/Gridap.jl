@@ -13,14 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added support for moment-based quadratures and measures on triangulations. Since PR[#1352](https://github.com/gridap/Gridap.jl/pull/1352).
 - Added the serendipity H(div) and H(curl) reference FEs on quadrilaterals and hexahedra, `sdiv`, `scurl`, `trimmed_sdiv` and `trimmed_scurl`. Their prebasis is the new `SerendipityPolyBasis`, also available through `FEEC_poly_basis` with the family `:S` or `:S⁻`. Since PR[#1349](https://github.com/gridap/Gridap.jl/pull/1349).
 
+- Added keyword `idegree` to `PolytopalFESpace` (and the polytopal `PatchFESpace`), setting the quadrature degree of the L2 projection used to interpolate into the space. Defaults to `2*order`, i.e. the previous behaviour.
+- Added `LocalStagedSolveMap`, a local solve map for `LocalOperator` that solves block systems stage by stage (block forward substitution) and returns a subset of the unknown blocks. It takes any number of test, trial and input blocks, and covers saddle-point problems with discarded multipliers and the composition of local operators.
+- Added keywords `trian` and `fe_basis` to `PatchFESpace(space,ptopo)`, to choose the triangulation and prescribe the basis of the patch space (a mock basis by default, as before). Added `FESpaceWithBasis`.
+- Added `PatchTopology(ReferenceFE{Dc},ReferenceFE{Df},model)`, the patches of `Dc`-dimensional faces around each `Df`-dimensional face. `PatchBoundaryTriangulation(model,ptopo)` now accepts a `ptopo` of lower dimension than the model, in which case its normal is the conormal.
+- Added `PatchFaceTriangulation(ReferenceFE{Df},model,ptopo)`, the faces of any dimension of the patches, glued to the patch cells (e.g. the edges of each cell in 3D, as seen from the cell).
+
 ### Fixed
 
+- `GridTopology(Polytope{d},topo)` of a `PolytopalGridTopology` now keeps the numbering of the faces of dimension lower than `d`.
 - `+` and `-` of `HighOrderTensorValue`s with more than 32 components are now type-stable. Since PR[#1350](https://github.com/gridap/Gridap.jl/pull/1350).
 - Implemented `Base.muladd` for `MultiValue`'d inputs, optimizing it using fma if an argument is scalar. Since PR[#1347](https://github.com/gridap/Gridap.jl/pull/1347).
 - Raviart–Thomas, Nédélec and BDM now work on non-oriented meshes, except for Nédélec on tetrahedra (one must use `rotating_pλ`, `trimmed_pλ` for that). Since PR[#1349](https://github.com/gridap/Gridap.jl/pull/1349).
+- Fixed the face-to-cell reference map of `BoundaryTriangulation` on 3D polytopal grids for faces that are not facets (edges, vertices).
 
 ### Changed
 
+- **Breaking**: `BoundaryTriangulation{Dc,Dp,Dm,A,B}` has a new type parameter `Dm`, the dimension of the faces of the model its faces are glued to. It also stores the grid of those faces, which defaults to the grid of the model and can be set with `BoundaryTriangulation(trian,glue,cell_grid)`. The normal vector is only defined for `Dm == Dc + 1`.
+- **Breaking**: a `LocalOperator` applied to an `FESpace` now returns an `FESpace` with the dofs of the input space and the images of its basis as shape functions (a `PatchFESpace` for patch operators), instead of the tuple of trial and test images. `LocalOperator` has a new type parameter and a new field, `ptopo`.
 - Enabled algebraic operations in residual of a linear `TransientFEOperator` when the space of the corresponding time derivative has zero Dirichlet values. Since PR[#1345](https://github.com/gridap/Gridap.jl/pull/1345).
 - `get_vertex_permutations` now returns the full symmetry group of 3D polytopes (24 for `TET`, 48 for `HEX`, 8 for `PYRAMID`, 12 for `WEDGE`) instead of only the identity. Since PR[#1349](https://github.com/gridap/Gridap.jl/pull/1349).
 

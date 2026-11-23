@@ -205,6 +205,7 @@ export move_contributions
 export PatchTopology
 export PatchTriangulation
 export PatchBoundaryTriangulation
+export PatchFaceTriangulation
 
 include("Grids.jl")
 

@@ -36,12 +36,29 @@ struct StarPatchMetadata
 end
 
 function PatchTopology(
-  ::Type{ReferenceFE{Df}},model::DiscreteModel;
-  labels = get_face_labeling(model), tags = nothing
+  ::Type{ReferenceFE{Df}},model::DiscreteModel; kwargs...
 ) where Df
   Dc = num_cell_dims(model)
-  topo = get_grid_topology(model)
-  patch_cells = get_faces(topo,Df,Dc)
+  PatchTopology(ReferenceFE{Dc},ReferenceFE{Df},model;kwargs...)
+end
+
+"""
+    PatchTopology(ReferenceFE{Dc},ReferenceFE{Df},model::DiscreteModel; labels, tags)
+
+Patches of `Dc`-dimensional faces of `model` around each of its `Df`-dimensional faces,
+with `Df <= Dc`. The topology of the patches is `GridTopology(Polytope{Dc},topo)`.
+
+In particular, `PatchTopology(ReferenceFE{d},ReferenceFE{d},model)` has one patch per
+`d`-dimensional face, and `PatchTopology(ReferenceFE{Df},model)` takes `Dc` as the
+dimension of the model.
+"""
+function PatchTopology(
+  ::Type{ReferenceFE{Dc}},::Type{ReferenceFE{Df}},model::DiscreteModel;
+  labels = get_face_labeling(model), tags = nothing
+) where {Dc,Df}
+  @check Df <= Dc <= num_cell_dims(model)
+  topo = GridTopology(Polytope{Dc},get_grid_topology(model))
+  patch_cells = Table(get_faces(topo,Df,Dc))
   patch_roots = collect(Int32,1:num_faces(topo,Df))
   if !isnothing(tags)
     patches = findall(get_face_mask(labels,tags,Df))
@@ -610,7 +627,8 @@ end
 """
     PatchBoundaryTriangulation(model::DiscreteModel,ptopo::PatchTopology{Dc};tags=nothing)
 """
-function PatchBoundaryTriangulation(model::DiscreteModel{Dc},ptopo::PatchTopology{Dc};tags=nothing) where Dc
+function PatchBoundaryTriangulation(model::DiscreteModel,ptopo::PatchTopology{Dc};tags=nothing) where Dc
+  @check Dc <= num_cell_dims(model)
   patch_faces = get_patch_faces(ptopo,Dc-1)
   pface_to_face = patch_faces.data
 
@@ -630,12 +648,63 @@ function PatchBoundaryTriangulation(model::DiscreteModel{Dc},ptopo::PatchTopolog
   tface_to_face  = pface_to_face[tface_to_pface]
 
   # Create overlapping boundary triangulation
-  topo = get_grid_topology(model)
-  cell_grid = get_grid(model)
+  # NOTE: The cells of the patches can be faces of the model
+  topo = ptopo.topo
+  cell_grid = Grid(ReferenceFE{Dc},model)
   face_grid = view(Grid(ReferenceFE{Dc-1},model),tface_to_face)
   face_glue = OverlappingFaceToCellGlue(topo,cell_grid,face_grid,tface_to_face,tface_to_lcell)
   face_trian = BodyFittedTriangulation(model,face_grid,tface_to_face)
-  trian = BoundaryTriangulation(face_trian,face_glue)
+  trian = BoundaryTriangulation(face_trian,face_glue,cell_grid)
+
+  return PatchTriangulation(trian,ptopo,tface_to_pface)
+end
+
+"""
+    PatchFaceTriangulation(::Type{ReferenceFE{Df}},model::DiscreteModel,ptopo::PatchTopology{Dc};tags=nothing)
+
+Triangulation of the `Df`-dimensional faces of each patch of `ptopo`, with `Df < Dc`, each
+of them glued to a cell of its patch. Unlike `PatchTriangulation(ReferenceFE{Df},model,ptopo)`,
+quantities defined on the patch cells can be restricted to it.
+
+If a face belongs to several cells of its patch, it is glued to the first of them. For
+`Df == Dc-1` and patches of a single cell, this is [`PatchBoundaryTriangulation`](@ref).
+The normal vector is only defined for `Df == Dc-1`.
+"""
+function PatchFaceTriangulation(
+  ::Type{ReferenceFE{Df}},model::DiscreteModel,ptopo::PatchTopology{Dc};tags=nothing
+) where {Df,Dc}
+  @check Df < Dc <= num_cell_dims(model)
+  topo = ptopo.topo
+  patch_cells = get_patch_cells(ptopo)
+  patch_faces = get_patch_faces(ptopo,Df)
+  face_to_cells = get_faces(topo,Df,Dc)
+  pface_to_face = patch_faces.data
+
+  # Patch cell each p-face is glued to
+  pface_to_lcell = zeros(Int8,length(pface_to_face))
+  for patch in 1:num_patches(ptopo)
+    pcells = view(patch_cells,patch)
+    for pface in datarange(patch_faces,patch)
+      fcells = view(face_to_cells,pface_to_face[pface])
+      pface_to_lcell[pface] = findfirst(c -> c in pcells, fcells)
+    end
+  end
+
+  if !isnothing(tags)
+    labels = get_face_labeling(model)
+    face_to_mask = get_face_mask(labels,tags,Df)
+    tface_to_pface = findall(lazy_map(Reindex(face_to_mask),pface_to_face))
+  else
+    tface_to_pface = collect(1:length(pface_to_face))
+  end
+  tface_to_lcell = pface_to_lcell[tface_to_pface]
+  tface_to_face  = pface_to_face[tface_to_pface]
+
+  cell_grid = Grid(ReferenceFE{Dc},model)
+  face_grid = view(Grid(ReferenceFE{Df},model),tface_to_face)
+  face_glue = OverlappingFaceToCellGlue(topo,cell_grid,face_grid,tface_to_face,tface_to_lcell)
+  face_trian = BodyFittedTriangulation(model,face_grid,tface_to_face)
+  trian = BoundaryTriangulation(face_trian,face_glue,cell_grid)
 
   return PatchTriangulation(trian,ptopo,tface_to_pface)
 end

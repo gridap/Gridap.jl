@@ -150,4 +150,86 @@ pc_rest_p = get_patch_cells(ptopo_pr)
 @test pc_orig_p.data == pc_rest_p.data
 @test pc_orig_p.ptrs == pc_rest_p.ptrs
 
+# Patches of lower-dimensional faces: one patch per d-face, with its (d-1)-faces as boundary.
+# The normal of the boundary is the outward conormal, tangent to the d-face.
+
+function test_face_patches(model,d)
+  topo = get_grid_topology(model)
+  ptopo = PatchTopology(ReferenceFE{d},ReferenceFE{d},model)
+  @test num_cell_dims(ptopo) == d
+  @test num_patches(ptopo) == num_faces(topo,d)
+  # The sub-topology keeps the numbering of the model
+  for n in 0:d-1
+    @test get_faces(ptopo.topo,d,n) == get_faces(topo,d,n)
+    @test Geometry.get_patch_faces(ptopo,n) == map(sort,get_faces(topo,d,n))
+  end
+
+  Fp = PatchTriangulation(model,ptopo)
+  Ep = PatchBoundaryTriangulation(model,ptopo)
+  @test num_cell_dims(Fp) == d
+  @test num_cell_dims(Ep) == d-1
+  @test num_cells(Ep) == length(get_faces(topo,d,d-1).data)
+  @test isnothing(get_glue(Ep,Val(num_cell_dims(model)))) == (d != num_cell_dims(model))
+
+  # Divergence theorem on each patch: ∫_∂F x⋅n = d |F|
+  nE = get_normal_vector(Ep)
+  xE = CellField(identity,Ep)
+  flux = get_array(∫(xE⋅nE)*Measure(Ep,2))
+  meas = get_array(∫(1)*Measure(Fp,2))
+  patch_to_tfaces = Ep.glue.patch_to_tfaces
+  @test all(p -> sum(flux[patch_to_tfaces[p]]) ≈ d*meas[p], 1:num_patches(ptopo))
 end
+
+model2 = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),(3,3)))
+model3 = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1,0,1),(2,2,2)))
+for model in (model2, Geometry.voronoi(simplexify(model2)))
+  test_face_patches(model,1)
+  test_face_patches(model,2)
+end
+for model in (model3, simplexify(model3), PolytopalDiscreteModel(model3))
+  test_face_patches(model,1)
+  test_face_patches(model,2)
+  test_face_patches(model,3)
+end
+# NOTE: d = 3 is not tested here. The polytopes of a polytopal model created from simplices
+# have half of their facet normals pointing inwards (also seen in `BoundaryTriangulation`).
+model = PolytopalDiscreteModel(simplexify(model3))
+test_face_patches(model,1)
+test_face_patches(model,2)
+
+@test PatchTopology(ReferenceFE{0},model3).topo === get_grid_topology(model3)
+@test get_patch_cells(PatchTopology(ReferenceFE{2},ReferenceFE{0},model3)) == get_faces(get_grid_topology(model3),0,2)
+
+# Faces of the patch cells of any codimension, glued to the cells
+
+function test_patch_faces(model,df)
+  D = num_cell_dims(model)
+  topo = get_grid_topology(model)
+  ptopo = PatchTopology(ReferenceFE{D},ReferenceFE{D},model)
+  Λ = PatchFaceTriangulation(ReferenceFE{df},model,ptopo)
+  @test num_cell_dims(Λ) == df
+  @test num_cells(Λ) == length(get_faces(topo,D,df).data)
+  @test get_glue(Λ,Val(D)).tface_to_mface == Λ.glue.tface_to_patch
+  @test get_glue(Λ,Val(df)).tface_to_mface == Geometry.get_patch_faces(ptopo,df).data
+
+  # Quantities on the cells, restricted to the faces
+  Ω = Triangulation(model)
+  dΛ = Measure(Λ,2)
+  meas = get_array(∫(1)dΛ)
+  id = CellField(collect(Float64,1:num_cells(Ω)),Ω)
+  @test get_array(∫(id)dΛ) ≈ Λ.glue.tface_to_patch .* meas
+  x = CellData.GenericCellField(get_cell_map(Ω),Ω,ReferenceDomain())
+  @test get_array(∫(x⋅x)dΛ) ≈ get_array(∫(CellField(y -> y⋅y,Λ))dΛ)
+end
+
+for model in (model2, Geometry.voronoi(simplexify(model2)))
+  test_patch_faces(model,0)
+  test_patch_faces(model,1)
+end
+for model in (model3, simplexify(model3), PolytopalDiscreteModel(model3))
+  test_patch_faces(model,0)
+  test_patch_faces(model,1)
+  test_patch_faces(model,2)
+end
+
+end # module

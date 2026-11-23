@@ -1,14 +1,39 @@
 
 """
-    struct LocalOperator end
+    struct LocalOperator{P} end
+
+An operator defined by local problems, solved by a local map (e.g. `LocalSolveMap`).
+
+- `LocalOperator(local_map, ptopo, space_to, space_from, lhs, rhs; kwargs...)`: one problem
+  per patch of the `PatchTopology` `ptopo`.
+- `LocalOperator(local_map, space_to, lhs, rhs; kwargs...)`: one problem per cell of
+  `trian_out`. In this case `P == Nothing`.
+
+An operator `R` can be applied to
+
+- an `FEFunction` or a `CellField`, returning a `CellField`;
+- an FE basis, returning the images of the basis functions;
+- an `FESpace` `X`, returning the space `R(X)`: it has the dofs of `X`, and its shape
+  functions are the images of the basis of `X`. So `FEFunction(R(X),x)` is `R(xh)`, with `xh`
+  the function of `X` with dof values `x`. For patch operators, `R(X)` is a `PatchFESpace`.
+  The local problems must have one input column per dof of `X`, Dirichlet dofs included:
+  build the operator with `space_from = FESpaceWithoutBCs(X)`.
 """
-struct LocalOperator
+struct LocalOperator{P<:Union{Nothing,PatchTopology}}
   local_map    :: Map           # coeffs = evaluate(local_map, lhs, rhs)
   trian_coeffs :: Triangulation # Where the coefficients are defined
   trian_out    :: Triangulation # Where the output field is defined
   space_out    :: FESpace
   weakform     :: Function
   collect_coefficients :: Bool # Collect local coefficients / keep them as lazy maps
+  ptopo        :: P             # Patches of the local problems. `nothing` if cell-wise.
+end
+
+function LocalOperator(
+  local_map::Map,trian_coeffs::Triangulation,trian_out::Triangulation,
+  space_out::FESpace,weakform::Function,collect_coefficients::Bool
+)
+  LocalOperator(local_map,trian_coeffs,trian_out,space_out,weakform,collect_coefficients,nothing)
 end
 
 function LocalOperator(
@@ -52,7 +77,7 @@ function LocalOperator(
 
   trian_coeffs = PatchTriangulation(get_background_model(trian_out),ptopo)
   return LocalOperator(
-    local_map, trian_coeffs, trian_out, space_out, weakform, collect_coefficients
+    local_map, trian_coeffs, trian_out, space_out, weakform, collect_coefficients, ptopo
   )
 end
 
@@ -89,11 +114,43 @@ end
 (P::LocalOperator)(u) = evaluate(P,u)
 
 function Arrays.evaluate!(
-  cache,k::LocalOperator,space::FESpace
+  cache,k::LocalOperator,space::SingleFieldFESpace
 )
-  u = evaluate!(cache,k,get_trial_fe_basis(space))
-  v = CellData.similar_cell_field(u,lazy_map(transpose,CellData.get_data(u)),get_triangulation(u),DomainStyle(u))
-  return u, v
+  cell_shapefuns = _compute_local_solves(k,get_trial_fe_basis(space))
+  @notimplementedif isa(cell_shapefuns,Tuple)
+  return _local_operator_space(k,space,cell_shapefuns)
+end
+
+# Cell-wise operator: the dofs of each cell are the dofs of `space` seen from the cell
+function _local_operator_space(k::LocalOperator{Nothing},space::SingleFieldFESpace,cell_shapefuns)
+  fe_basis = _local_operator_basis(k,cell_shapefuns)
+  cell_dof_ids = get_cell_dof_ids(space,k.trian_out)
+  @check _check_num_shapefuns(cell_shapefuns,cell_dof_ids)
+  return FESpaceWithBasis(space,k.trian_out,cell_dof_ids;fe_basis)
+end
+
+# Patch operator: the dofs of each cell are the dofs of `space` in its patch
+function _local_operator_space(k::LocalOperator{<:PatchTopology},space::SingleFieldFESpace,cell_shapefuns)
+  fe_basis = _local_operator_basis(k,cell_shapefuns)
+  out = PatchFESpace(space,k.ptopo;trian=k.trian_out,fe_basis)
+  @check _check_num_shapefuns(cell_shapefuns,get_cell_dof_ids(out))
+  return out
+end
+
+function _local_operator_basis(k::LocalOperator,cell_shapefuns)
+  domain = DomainStyle(get_fe_basis(k.space_out))
+  return SingleFieldFEBasis(cell_shapefuns,k.trian_out,TestBasis(),domain)
+end
+
+function _check_num_shapefuns(cell_shapefuns,cell_dof_ids)
+  iszero(length(cell_dof_ids)) && return true
+  nfuns, ndofs = length(first(cell_shapefuns)), length(first(cell_dof_ids))
+  @check nfuns == ndofs """\n
+  The local operator returns $nfuns functions per cell, but the cells have $ndofs dofs.
+  The input space of the operator must not have Dirichlet dofs: build the operator
+  with `space_from = FESpaceWithoutBCs(space)`.
+  """
+  return true
 end
 
 function Arrays.evaluate!(

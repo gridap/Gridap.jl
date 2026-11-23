@@ -270,6 +270,10 @@ function GridTopology(::Type{<:Polytope{D}},topo::GridTopology) where D
   GridTopology(Polytope{D},_topo)
 end
 
+function GridTopology(::Type{<:Polytope{D}},topo::UnstructuredGridTopology{D}) where D
+  topo
+end
+
 function GridTopology(::Type{<:Polytope{D}},topo::UnstructuredGridTopology) where D
 
   vertex_coordinates = get_vertex_coordinates(topo)

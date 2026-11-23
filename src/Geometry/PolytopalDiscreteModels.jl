@@ -259,8 +259,10 @@ function GridTopology(::Type{<:Polytope{Df}},topo::PolytopalGridTopology{Dc}) wh
     face_to_ftype = fill(Int8(1),num_faces(topo,Df))
     ftopo = UnstructuredGridTopology(node_coordinates, face_to_nodes, face_to_ftype, polytopes)
   else
+    # We prescribe the vertices of all the faces, to keep the numbering of the parent
     face_to_polytopes = get_reffaces(Polytope{Df},topo)
-    ftopo = PolytopalGridTopology(node_coordinates, face_to_nodes, face_to_polytopes)
+    d_to_dface_to_nodes = [Table(get_faces(topo,d,0)) for d in 0:Df]
+    ftopo = PolytopalGridTopology(node_coordinates, d_to_dface_to_nodes, face_to_polytopes)
   end
   return ftopo
 end
