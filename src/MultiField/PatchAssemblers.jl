@@ -65,12 +65,22 @@ end
 ###########################################################################################
 
 function FESpaces.PatchFESpace(
-  space::MultiFieldFESpace,ptopo::PatchTopology;
-  fe_basis = map(sf -> nothing, space), kwargs...
+  space::MultiFieldFESpace, ptopo::PatchTopology; kwargs...
 )
-  @check length(fe_basis) == num_fields(space)
-  spaces = map(space,collect(Any,fe_basis)) do sf, sf_basis
-    FESpaces.PatchFESpace(sf,ptopo;fe_basis=sf_basis,kwargs...)
+  spaces = map(1:num_fields(space)) do field
+    FESpaces.PatchFESpace(spaces[field],ptopo; kwargs...)
+  end
+  style = MultiFieldStyle(space)
+  return MultiFieldFESpace(spaces;style=style)
+end
+
+function FESpaces.PatchFESpace(
+  space::MultiFieldFESpace, trian::Triangulation, 
+  ptopo::PatchTopology, fe_basis::MultiFieldCellField; kwargs...
+)
+  @check num_fields(fe_basis) == num_fields(space)
+  spaces = map(1:num_fields(space)) do field
+    FESpaces.PatchFESpace(space[field],trian,ptopo,fe_basis[field]; kwargs...)
   end
   style = MultiFieldStyle(space)
   return MultiFieldFESpace(spaces;style=style)
@@ -89,13 +99,14 @@ end
 function Arrays.evaluate!(
   cache,k::LocalOperator,space::MultiFieldFESpace
 )
+  @notimplementedif !isa(k.space_out,SingleFieldFESpace)
   mf_shapefuns = FESpaces._compute_local_solves(k,get_trial_fe_basis(space))
-  @notimplementedif !isa(mf_shapefuns,Tuple) || (length(mf_shapefuns) != num_fields(space))
-  spaces = map(space,collect(Any,mf_shapefuns)) do sf, sf_shapefuns
-    FESpaces._local_operator_space(k,sf,sf_shapefuns)
-  end
-  style = MultiFieldStyle(space)
-  return MultiFieldFESpace(spaces;style=style)
+  @check length(mf_shapefuns) == num_fields(space)
+  domain = DomainStyle(get_fe_basis(k.space_out))
+  fe_basis = MultiFieldCellField(map(mf_shapefuns) do sf_shapefuns
+    SingleFieldFEBasis(sf_shapefuns,k.trian_out,TestBasis(),domain)
+  end)
+  return FESpaces.PatchFESpace(space,k.trian_out,k.ptopo,fe_basis)
 end
 
 function Arrays.evaluate!(
@@ -166,4 +177,13 @@ function Arrays.evaluate!(
   end
 
   return MultiFieldCellField(single_fields)
+end
+
+function FESpaces._split_local_solves(
+  space_out::MultiFieldFESpace, trian_out::Triangulation, cell_coeffs
+)
+  nfields = num_fields(space_out)
+  map(1:nfields) do field
+    _split_local_solves(space_out[field], trian_out, cell_coeffs; row=field)
+  end
 end

@@ -276,14 +276,16 @@ end # end for T
 """
     LocalSolveMap(; factorize! = lu!, pivot = RowMaximum())
 
-A map for solving local linear systems, relying on a factorization method.
+A map for solving local linear systems `A x = B`, relying on a factorization method:
+`x = ldiv!(factorize!(A,pivot),B)`.
 
-Given a left-hand-side matrix `mat` and a set of N right-hand-side arrays `lhs`,
-returns an N-Tuple of arrays containing the solutions to the linear systems defined by
+- Given a matrix `A` and an array `B`, returns the array `x`.
+- Given a block matrix `A` (test blocks x trial blocks) and a block array `B` (test blocks
+  x input blocks, or a block vector for a single right-hand side), the blocks are flattened
+  into a single system, which has to be square. Returns the solution as a block array
+  (trial blocks x input blocks, or a block vector), which is reused between evaluations.
 
-Each system is given by `A*x_i = b_i`, and the solution is computed as
-`x_i = ldiv!(factorize!(A,pivot),b_i)`
-
+See the solution blocks returned by the other local maps in [`LocalStagedSolveMap`](@ref).
 """
 struct LocalSolveMap{A,B} <: Map
   factorize! :: A
@@ -316,34 +318,35 @@ function Arrays.evaluate!(cache,k::LocalSolveMap, mat, vec)
   return cvec.array
 end
 
-function Arrays.return_value(k::LocalSolveMap, mat::MatrixBlock, vec::MatrixBlock)
-  ntuple(i -> similar(get_array(vec)[i]), size(vec,2))
+# Block systems: a single stage with all the blocks, and all the trial blocks as output
+# (see `LocalStagedSolveMap`)
+
+function Arrays.return_value(k::LocalSolveMap, lhs::MatrixBlock, rhs::Union{MatrixBlock,VectorBlock})
+  evaluate!(return_cache(k,lhs,rhs),k,lhs,rhs)
 end
 
-function Arrays.return_cache(k::LocalSolveMap, mat::MatrixBlock, vec::MatrixBlock)
-  @check size(mat,1) == size(mat,2) == size(vec,1) == 1
-  cmat = CachedArray(copy(get_array(mat)[1,1]))
-  cvec = ntuple(i -> CachedArray(copy(get_array(vec)[i])), size(vec,2))
-  return cmat, cvec
+function Arrays.return_cache(k::LocalSolveMap, lhs::MatrixBlock, rhs::Union{MatrixBlock,VectorBlock})
+  T = promote_type(eltype(eltype(lhs.array)), eltype(eltype(rhs.array)))
+  offsets = _staged_offsets_cache(lhs, rhs)
+  solved = fill(false, size(lhs, 2))
+  X = CachedArray(zeros(T, 0, 0))
+  stage = (CachedArray(zeros(T, 0, 0)), CachedArray(zeros(T, 0, 0)))
+  out = _staged_output_cache(T, axes(lhs.array, 2), lhs, rhs)
+  return offsets, solved, X, stage, out
 end
 
-function Arrays.evaluate!(cache,k::LocalSolveMap, mat::MatrixBlock, vec::MatrixBlock)
-  @check size(mat,1) == size(mat,2) == size(vec,1) == 1
-  cmat, cvec = cache
+function Arrays.evaluate!(cache, k::LocalSolveMap, lhs::MatrixBlock, rhs::Union{MatrixBlock,VectorBlock})
+  @check size(lhs, 1) == size(rhs, 1)
+  offsets, solved, cX, cstage, cout = cache
+  ro, co, io = _staged_offsets!(offsets, lhs, rhs)
 
-  m = get_array(mat)[1,1]
-  setsize!(cmat, size(m))
-  copy!(cmat.array, m)
-  f = k.factorize!(cmat.array,k.pivot;check=false)
-  @check issuccess(f) "Factorization failed"
+  setsize!(cX, (last(co), last(io)))
+  X = cX.array
+  fill!(solved, false)
+  stage = (axes(lhs.array, 1), axes(lhs.array, 2))
+  _staged_solve_stage!(k, stage, cstage, X, solved, offsets, lhs, rhs)
 
-  v = get_array(vec)
-  for i in eachindex(v)
-    setsize!(cvec[i], size(v[i]))
-    ldiv!(cvec[i].array,f,v[i])
-  end
-
-  return ntuple(i -> cvec[i].array, size(vec,2))
+  return _staged_output!(cout, axes(lhs.array, 2), X, co, io)
 end
 
 ###########################################################################################
@@ -353,8 +356,9 @@ end
 
 A map for solving local constrained linear systems, relying on a factorization method.
 
-Given a left-hand-side 2x2 block matrix matrix`mat` and a set of 2xN right-hand-side arrays `lhs`,
-returns an N-Tuple of arrays containing the solutions to the linear systems.
+Given a left-hand-side 2x2 block matrix `mat` and a 2x2 block array (or a block vector of
+length 2) of right-hand sides, returns the primal solution as a 1 x 2 block array (or a
+block vector of length 1): the multiplier is not computed.
 
 Each system is given by `A*[x_i; λ_i] = b_i`, where `A = [App, Aλp; Apλ, 0]` is the
 augmented matrix, and `b_i = [Bp; Bλ]` is the right-hand side vector. The solution is
@@ -370,12 +374,22 @@ end
 
 LocalPenaltySolveMap(; factorize! = lu!, pivot = RowMaximum()) = LocalPenaltySolveMap(factorize!, pivot)
 
-function Arrays.evaluate!(cache::Nothing, k::LocalPenaltySolveMap, mats::Tuple)
-  lhs, rhs = mats
-  evaluate!(cache, k, lhs, rhs)
+Arrays.return_cache(k::LocalPenaltySolveMap, mats::Tuple) = return_cache(k, mats...)
+Arrays.evaluate!(cache, k::LocalPenaltySolveMap, mats::Tuple) = evaluate!(cache, k, mats...)
+
+# The solution blocks: the primal block, for each input block
+Arrays.return_cache(k::LocalPenaltySolveMap, lhs, rhs) = _primal_solution_blocks(lhs, rhs)
+
+function _primal_solution_blocks(lhs::MatrixBlock, rhs::VectorBlock)
+  return ArrayBlock(Vector{eltype(rhs.array)}(undef, 1), fill(true, 1))
 end
 
-function Arrays.evaluate!(cache::Nothing, k::LocalPenaltySolveMap, lhs, rhs::VectorBlock)
+function _primal_solution_blocks(lhs::MatrixBlock, rhs::MatrixBlock)
+  ni = size(rhs,2)
+  return ArrayBlock(Matrix{eltype(rhs.array)}(undef, 1, ni), fill(true, 1, ni))
+end
+
+function Arrays.evaluate!(cache, k::LocalPenaltySolveMap, lhs, rhs::VectorBlock)
   @check size(lhs) == (2,2)
   @check size(rhs) == (2,)
 
@@ -398,11 +412,11 @@ function Arrays.evaluate!(cache::Nothing, k::LocalPenaltySolveMap, lhs, rhs::Vec
   Ainv = k.factorize!(App,k.pivot;check=false)
   @check issuccess(Ainv) "Factorization failed"
 
-  Ru = ldiv!(Ainv,Bp)
-  return (Ru,)
+  cache.array[1] = ldiv!(Ainv,Bp)
+  return cache
 end
 
-function Arrays.evaluate!(cache::Nothing, k::LocalPenaltySolveMap, lhs, rhs)
+function Arrays.evaluate!(cache, k::LocalPenaltySolveMap, lhs, rhs)
   @check size(lhs) == (2,2)
   @check size(rhs) == (2,2)
 
@@ -425,10 +439,9 @@ function Arrays.evaluate!(cache::Nothing, k::LocalPenaltySolveMap, lhs, rhs)
   Ainv = k.factorize!(App,k.pivot;check=false)
   @check issuccess(Ainv) "Factorization failed"
 
-  RuΩ = ldiv!(Ainv,BpΩ)
-  RuΓ = ldiv!(Ainv,BpΓ)
-
-  return RuΩ, RuΓ
+  cache.array[1,1] = ldiv!(Ainv,BpΩ)
+  cache.array[1,2] = ldiv!(Ainv,BpΓ)
+  return cache
 end
 
 
@@ -438,16 +451,17 @@ end
 A map for solving local linear systems given as block arrays, with or without constraints.
 
 Constrained case: given a 2x2 block matrix `lhs = [App Apλ; Aλp 0]` and a 2xN block array
-`rhs`, whose columns are `[Bp_j; Bλ_j]`, returns an N-tuple with the primal solutions `x_j` of
+`rhs`, whose columns are `[Bp_j; Bλ_j]`, computes the primal solutions `x_j` of
 
     [App Apλ; Aλp 0] * [x_j; λ_j] = [Bp_j; Bλ_j]
 
 The multipliers `λ_j` are discarded. Blocks `Bλ_j` that are not touched are taken as zero.
 
 Unconstrained case: given a 1x1 block matrix `lhs = [App]` and a 1xN block array `rhs`,
-returns the N-tuple of solutions of `App * x_j = Bp_j`.
+computes the solutions of `App * x_j = Bp_j`.
 
-If `rhs` is a block vector (a single right-hand side), a 1-tuple is returned.
+The primal solutions `x_j` are returned as a 1xN block array. If `rhs` is a block vector (a
+single right-hand side), a block vector of length 1 is returned.
 
 Unlike `LocalPenaltySolveMap`, the saddle-point system is solved exactly and
 any number `N` of right-hand-side blocks is supported, each with its own constraint data.
@@ -458,17 +472,17 @@ end
 
 LocalConstrainedSolveMap(; factorize! = lu!) = LocalConstrainedSolveMap(factorize!)
 
-function Arrays.evaluate!(cache, k::LocalConstrainedSolveMap, mats::Tuple)
-  lhs, rhs = mats
-  evaluate!(cache, k, lhs, rhs)
-end
+Arrays.return_cache(k::LocalConstrainedSolveMap, mats::Tuple) = return_cache(k, mats...)
+Arrays.evaluate!(cache, k::LocalConstrainedSolveMap, mats::Tuple) = evaluate!(cache, k, mats...)
+
+Arrays.return_cache(k::LocalConstrainedSolveMap, lhs, rhs) = _primal_solution_blocks(lhs, rhs)
 
 function Arrays.evaluate!(cache, k::LocalConstrainedSolveMap, lhs::MatrixBlock, rhs::VectorBlock)
   @check size(rhs,1) == size(lhs,1)
   F, np = _factorize_constrained_system(k, lhs)
   B = isone(size(rhs,1)) ? rhs.array[1] : vcat(rhs.array[1], rhs.array[2])
-  x = F \ B
-  return (x[1:np],)
+  cache.array[1] = (F \ B)[1:np]
+  return cache
 end
 
 function Arrays.evaluate!(cache, k::LocalConstrainedSolveMap, lhs::MatrixBlock, rhs::MatrixBlock)
@@ -476,7 +490,7 @@ function Arrays.evaluate!(cache, k::LocalConstrainedSolveMap, lhs::MatrixBlock, 
   F, np = _factorize_constrained_system(k, lhs)
   nλ = size(F,1) - np
   constrained = (size(rhs,1) == 2)
-  return ntuple(size(rhs,2)) do j
+  for j in axes(rhs.array,2)
     Bp = rhs.array[1,j]
     if constrained
       Bλ = rhs.touched[2,j] ? rhs.array[2,j] : zeros(eltype(Bp), nλ, size(Bp,2))
@@ -485,8 +499,9 @@ function Arrays.evaluate!(cache, k::LocalConstrainedSolveMap, lhs::MatrixBlock, 
       B = Bp
     end
     x = F \ B
-    x[1:np,:]
+    cache.array[1,j] = x[1:np,:]
   end
+  return cache
 end
 
 function _factorize_constrained_system(k::LocalConstrainedSolveMap, lhs::MatrixBlock)
@@ -520,11 +535,16 @@ where `A[rows_s, cols_s]` is flattened into a single matrix, which has to be squ
 blocks `A[rows_s, cols_t]` with `t > s` are ignored: the system is taken to be block lower
 triangular in the stage ordering.
 
-`output` is the trial block (or tuple of trial blocks, concatenated) that is returned. The
-other trial blocks are intermediate unknowns: they are used by later stages and discarded.
+`output` is the trial block, or the tuple of trial blocks, that is returned. The other trial
+blocks are intermediate unknowns: they are used by later stages and discarded.
 
-The result is a tuple with one array per input field (block column of `B`), or a 1-tuple if
-the right-hand side is a block vector (a single function as input).
+The result is a block array with one row per block of `output`, in the order given, and one
+column per input field (block column of `B`). If the right-hand side is a block vector (a
+single function as input), it is a block vector with one entry per block of `output`. The
+result is reused between evaluations.
+
+All the local maps return the solution of a block system in this form. A `LocalOperator`
+takes the rows, in order, as its output fields.
 
 # Examples
 
@@ -560,38 +580,53 @@ Arrays.evaluate!(cache, k::LocalStagedSolveMap, matvec::Tuple) = evaluate!(cache
 
 # Cache: block offsets of the test, trial and input blocks, which trial blocks are solved,
 # the solution `X` of all the trial blocks (one column per input dof), the matrix and
-# right-hand side of each stage, and the output arrays (one per input block).
+# right-hand side of each stage, and the output blocks.
 function Arrays.return_cache(k::LocalStagedSolveMap, lhs::MatrixBlock, rhs::Union{MatrixBlock,VectorBlock})
   T = promote_type(eltype(eltype(lhs.array)), eltype(eltype(rhs.array)))
-  offsets = (zeros(Int, size(lhs, 1) + 1), zeros(Int, size(lhs, 2) + 1), zeros(Int, size(rhs, 2) + 1))
+  offsets = _staged_offsets_cache(lhs, rhs)
   solved = fill(false, size(lhs, 2))
   X = CachedArray(zeros(T, 0, 0))
   stages = map(_ -> (CachedArray(zeros(T, 0, 0)), CachedArray(zeros(T, 0, 0))), k.stages)
-  out = _staged_output_cache(T, rhs)
+  out = _staged_output_cache(T, k.output, lhs, rhs)
   return offsets, solved, X, stages, out
 end
 
-_staged_output_cache(::Type{T}, rhs::MatrixBlock) where T = ntuple(_ -> CachedArray(zeros(T, 0, 0)), size(rhs, 2))
-_staged_output_cache(::Type{T}, rhs::VectorBlock) where T = (CachedArray(zeros(T, 0)),)
+# The solution blocks (output blocks x input blocks, or a vector of output blocks for a
+# single right-hand side), and the arrays they point to.
+function _staged_output_cache(::Type{T}, output, lhs::MatrixBlock, rhs::MatrixBlock) where T
+  no, ni = length(output), size(rhs, 2)
+  caches = [CachedArray(zeros(T, 0, 0)) for _ in 1:no, _ in 1:ni]
+  return caches, ArrayBlock(Matrix{Matrix{T}}(undef, no, ni), fill(true, no, ni))
+end
+function _staged_output_cache(::Type{T}, output, lhs::MatrixBlock, rhs::VectorBlock) where T
+  no = length(output)
+  caches = [CachedArray(zeros(T, 0)) for _ in 1:no]
+  return caches, ArrayBlock(Vector{Vector{T}}(undef, no), fill(true, no))
+end
 
 function Arrays.evaluate!(cache, k::LocalStagedSolveMap, lhs::MatrixBlock, rhs::Union{MatrixBlock,VectorBlock})
   @check size(lhs, 1) == size(rhs, 1)
   offsets, solved, cX, cstages, cout = cache
-  ro, co, io = offsets
-  _staged_block_offsets!(ro, lhs, 1)
-  _staged_block_offsets!(co, lhs, 2)
-  _staged_input_offsets!(io, rhs)
+  ro, co, io = _staged_offsets!(offsets, lhs, rhs)
 
   setsize!(cX, (last(co), last(io)))
   X = cX.array
   fill!(solved, false)
   _staged_solve_stages!(k, k.stages, cstages, X, solved, offsets, lhs, rhs)
 
-  n = _staged_num_entries(co, k.output)
-  return map(cout, ntuple(identity, length(cout))) do c, b
-    _staged_set_output_size!(c, n, io[b+1] - io[b])
-    _staged_fill_output!(c.array, X, k.output, co, io, b)
+  return _staged_output!(cout, k.output, X, co, io)
+end
+
+# Copies the output blocks of the solution. For a single right-hand side, the blocks are
+# vectors and there is a single input block.
+function _staged_output!((caches, out), output, X, co, io)
+  for b in axes(caches, 2), (o, j) in enumerate(output)
+    c = caches[o, b]
+    _staged_set_output_size!(c, co[j+1] - co[j], io[b+1] - io[b])
+    copyto!(c.array, view(X, co[j]+1:co[j+1], io[b]+1:io[b+1]))
+    out.array[o, b] = c.array
   end
+  return out
 end
 
 # Recursion on the stages, which are tuples of different types
@@ -644,18 +679,6 @@ function _staged_solve_stage!(k, (rows, cols), (cF, cR), X, solved, (ro, co, io)
   return nothing
 end
 
-function _staged_fill_output!(out, X, output, co, io, b)
-  o = 0
-  for j in output
-    J = o+1:o+co[j+1]-co[j]
-    copyto!(_staged_rows(out, J), view(X, co[j]+1:co[j+1], io[b]+1:io[b+1]))
-    o = last(J)
-  end
-  return out
-end
-
-_staged_rows(a::AbstractVector, I) = view(a, I)
-_staged_rows(a::AbstractMatrix, I) = view(a, I, :)
 _staged_set_output_size!(c::CachedVector, n, m) = setsize!(c, (n,))
 _staged_set_output_size!(c::CachedMatrix, n, m) = setsize!(c, (n, m))
 _staged_num_entries(offsets, blocks) = sum(b -> offsets[b+1] - offsets[b], blocks)
@@ -670,6 +693,19 @@ end
 # A function as input: a single column
 function _staged_add_rhs!(R, I, io, rhs::VectorBlock, i)
   rhs.touched[i] && copyto!(view(R, I, 1), rhs.array[i])
+end
+
+# Offsets of the test, trial and input blocks
+function _staged_offsets_cache(lhs::MatrixBlock, rhs::Union{MatrixBlock,VectorBlock})
+  (zeros(Int, size(lhs, 1) + 1), zeros(Int, size(lhs, 2) + 1), zeros(Int, size(rhs, 2) + 1))
+end
+
+function _staged_offsets!(offsets, lhs::MatrixBlock, rhs::Union{MatrixBlock,VectorBlock})
+  ro, co, io = offsets
+  _staged_block_offsets!(ro, lhs, 1)
+  _staged_block_offsets!(co, lhs, 2)
+  _staged_input_offsets!(io, rhs)
+  return offsets
 end
 
 # Block offsets along dimension `dim`. The patch assembler returns every block allocated

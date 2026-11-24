@@ -76,6 +76,8 @@ Base.ndims(::Type{ArrayBlock{A,N}}) where {A,N} = N
   b.array[i...]
 end
 
+@propagate_inbounds unsafe_getindex(b::ArrayBlock, i...) = b.array[i...]
+
 @propagate_inbounds function Base.setindex!(b::ArrayBlock,v,i...)
  @check b.touched[i...] "Only touched entries can be set"
  b.array[i...] = v
@@ -839,6 +841,7 @@ Base.eltype(::ArrayBlockView{A}) where A = A
 Base.ndims(::ArrayBlockView{A,N}) where {A,N} = N
 Base.ndims(::Type{ArrayBlockView{A,N}}) where {A,N} = N
 @propagate_inbounds Base.getindex(b::ArrayBlockView, i...) = getindex(b.array, b.block_map[i...])
+@propagate_inbounds unsafe_getindex(b::ArrayBlockView, i...) = unsafe_getindex(b.array, b.block_map[i...])
 @propagate_inbounds Base.setindex!(b::ArrayBlockView, v, i...) = setindex!(b.array, v, b.block_map[i...])
 
 Base.copy(a::ArrayBlockView) = ArrayBlockView(copy(a.array),copy(a.block_map))

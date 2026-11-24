@@ -122,3 +122,11 @@ function evaluate!(cache, ::CellField, ::CellDof)
   f(s) instead of s(f)?
   """
 end
+
+# Mock
+
+function MockCellDof(trian::Triangulation, domain_style::DomainStyle)
+  Dp = num_point_dims(trian)
+  cell_dofs = Fill(ReferenceFEs.MockDofBasis(zeros(VectorValue{Dp,Float64},1)), num_cells(trian))
+  return CellDof(cell_dofs, trian, domain_style)
+end

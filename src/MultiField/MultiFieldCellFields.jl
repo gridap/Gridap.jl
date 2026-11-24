@@ -31,7 +31,7 @@ end
 function CellData.get_triangulation(f::MultiFieldCellField)
   trian = get_triangulation(first(f.single_fields))
   @check all(sf -> trian === get_triangulation(sf), f.single_fields)
-  trian
+  return trian
 end
 
 CellData.DomainStyle(::Type{MultiFieldCellField{DS}}) where DS = DS()
@@ -124,6 +124,18 @@ function MultiFieldFEBasis(
     MultiFieldFEBasisComponent(sf,fid,nfields)
   end
   MultiFieldCellField(blocked_fields)
+end
+
+function MockMultiFieldFEBasis(
+  trians::Vector{<:Triangulation}, 
+  basis_style::BasisStyle,
+  domain_style::DomainStyle,
+  args...; kwargs...
+)
+  single_fields = map(trians) do trian
+    FESpaces.MockSingleFieldFEBasis(trian, basis_style, domain_style)
+  end
+  MultiFieldFEBasis(single_fields, args...; kwargs...)
 end
 
 # Swapping field ids

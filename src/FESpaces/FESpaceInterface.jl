@@ -276,6 +276,13 @@ function _fix_cell_basis_dofs_at_skeleton(pair,::TrialBasis)
   SkeletonPair(plus,minus)
 end
 
+function MockSingleFieldFEBasis(
+  trian::Triangulation, basis_style::BasisStyle, domain_style::DomainStyle; T = Float64
+)
+  cell_basis = Fill(Fields.MockFieldArray(zeros(T,1)), num_cells(trian))
+  SingleFieldFEBasis(cell_basis, trian, basis_style, domain_style)
+end
+
 # Constraint-related
 
 """
