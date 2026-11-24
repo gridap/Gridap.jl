@@ -343,4 +343,15 @@ for Ωi in (Ω, Triangulation(model_na))
   @test same(second_partial_derivatives(koszul(ωi)), ad(y -> koszul(y, ωfun(y))))
 end
 
+let ωi = CellField(ωfun, Ω, PhysicalDomain())
+  @test form_eltype(ΔB(ωi, LinearAlgebra.I)) === form_eltype(ωi)
+  @test same(ΔB(ωi, LinearAlgebra.I),
+             CellField(ΔB(ωfun, LinearAlgebra.I), Ω, PhysicalDomain()))
+  @test same(ΔdR(ωi, LinearAlgebra.I), ΔB(ωi, LinearAlgebra.I))
+
+  # Without `I` they read the metric of the triangulation, euclidean here
+  @test same(ΔB(ωi), ΔB(ωi, LinearAlgebra.I))
+  @test same(ΔdR(ωi), ΔdR(ωi, LinearAlgebra.I))
+end
+
 end # module

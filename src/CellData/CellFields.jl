@@ -947,6 +947,32 @@ function covariant_derivative(v::CellField, a::CellField, metric_data::Tuple, �
   Operation(partials_to_covariantderivative)(v, partial_derivatives(a), a, Γ)
 end
 
+for (op, flat_kernel, kernel) in (
+  (:bochner_laplacian, :second_partials_to_flat_bochnerlaplacian, :second_partials_to_bochnerlaplacian),
+  (:hodge_laplacian,   :second_partials_to_flat_hodgelaplacian,   :second_partials_to_hodgelaplacian),
+)
+  @eval begin
+    function $op(a::CellField)
+      trian = get_triangulation(a)
+      $op(a, get_metric_data(trian), get_metric_partials_data(trian),
+          get_metric_second_partials_data(trian))
+    end
+
+    $op(a::CellField, ::UniformScaling) =
+      $op(a, (LinearAlgebra.I,), LinearAlgebra.I, LinearAlgebra.I)
+
+    function $op(a::CellField, ::Tuple{UniformScaling}, ::UniformScaling, ::UniformScaling)
+      ∂∂a = second_partial_derivatives(a)
+      cell_Δa = lazy_map(Broadcasting(Operation($flat_kernel)), get_data(∂∂a))
+      similar_cell_field(a, cell_Δa, get_triangulation(a), DomainStyle(a))
+    end
+
+    $op(a::CellField, metric_data::Tuple, ∂g::CellField, ∂∂g::CellField) =
+      Operation($kernel)(second_partial_derivatives(a), partial_derivatives(a), a,
+                         ∂∂g, ∂g, metric_data[2])
+  end
+end
+
 # `κ_x(a) = ι_x(a)` contracts `a` with the position vector
 koszul(a::CellField) = Operation(koszul)(get_physical_coordinate(get_triangulation(a)), a)
 

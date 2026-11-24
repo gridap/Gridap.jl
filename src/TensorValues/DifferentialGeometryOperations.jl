@@ -2118,6 +2118,321 @@ a degree K form is sized `NTuple{K,D}`, and no tuple has a negative length")
   end
 end
 
+# Laplacians
+
+"""
+    second_partials_to_flat_bochnerlaplacian(∂∂a)
+
+Value of the Bochner laplacian `ΔB a` of a tensor field `a` at `x` in Euclidean
+space, from its second order partial derivatives `∂∂a = ∂∂(a)(x)`.
+
+`ΔB = -tr ∘ cov∇ ∘ cov∇`:
+
+    ΔB a[I] = -∑_j ∂∂a[j, j, I]
+"""
+@generated function second_partials_to_flat_bochnerlaplacian(
+  ∂∂a::ProductTensorValue{SymNTensorValue{Tuple{Dp,Dp}},B,T}) where {Dp,B,T}
+
+  Dp isa Cov || return :(throw(ArgumentError(
+    $("partial derivatives should have a covariant index, got $Dp"))))
+
+  D = Int(Dp)
+  # a 0-form is an order 0 tensor that is not a scalar, and stays one
+  is_scalar = B <: ScalarValue
+  iLa = (D*(D+1))÷2
+  iLb = num_indep_components(make_concretetype(B{T}))
+  iszero(iLa*iLb) && return is_scalar ? :( zero(T) ) : :( zero($B{$T}) )
+
+  comps = [ :( -$(_sum_expr([:( indep_comp_getindex(∂∂a,
+                   $((lb-1)*iLa + _2d_sym_tensor_linear_index(D,j,j))) ) for j in 1:D], T)) )
+            for lb in 1:iLb ]
+  is_scalar ? only(comps) : :( $B(($(comps...),)) )
+end
+
+"""
+    second_partials_to_flat_hodgelaplacian(∂∂ω)
+
+Value of the Hodge laplacian `ΔdR ω = (dδ + δd)ω` of a K-form `ω` at `x` in
+Euclidean space, from its second order partial derivatives, a K-form.
+"""
+second_partials_to_flat_hodgelaplacian(
+  ∂∂ω::ProductTensorValue{SymNTensorValue{Tuple{Dw,Dw}},ExteriorFormValue{K,Dw}}
+) where {K,Dw} = second_partials_to_flat_bochnerlaplacian(∂∂ω)
+
+second_partials_to_flat_hodgelaplacian(
+  ∂∂f::ProductTensorValue{SymNTensorValue{Tuple{Dw,Dw}},ScalarValue}
+) where Dw = second_partials_to_flat_bochnerlaplacian(∂∂f)
+
+# `∂ₖΓᵐᵢⱼ = g_invᵐᵖ ∂ₖΓₚᵢⱼ + ∂ₖg_invᵐᵖ Γₚᵢⱼ`, raised from the first kind symbols
+# with `∂ₖg_invᵐᵖ = -g_invᵐᵃ ∂ₖgₐᵦ g_invᵝᵖ`, which is why it needs no kernel of
+# its own.
+@generated function _Christoffel_2_partials(
+  ∂∂g::ProductTensorValue{<:MultiValue{Tuple{Dk,Dk}},SymTensorValue{Dg},Tddg},
+  ∂g::ProductTensorValue{<:MultiValue{Tuple{Dk}},SymTensorValue{Dg},Tdg},
+  metric_args::Vararg{_MetricArg}) where {Dk,Dg,Tddg,Tdg}
+
+  Dg isa Cov || return :(throw(ArgumentError(
+    $("the Christoffel symbols require a covariant metric tensor, got metric indices of variance $Dg"))))
+  Dk === Dg || return :(throw(DimensionMismatch(
+    $("the derivation indices and the metric indices must share dimension and variance, got $Dk and $Dg"))))
+
+  D = Int(Dg)
+  T = Base.promote_op(/, Base.promote_op(+, Tdg, Tddg), Int)
+  V = ProductTensorValue{TensorValue{Dg,inverse_variance(Dg)},SymTensorValue{Dg},T}
+  iszero(D) && return :( zero($V) )
+
+  dginv_id(k,m,p) = ((p-1)*D + (m-1))*D + k
+  dginv = [ _sum_expr([:( -(g_inv[$m,$α] * ∂g[$k,$α,$β] * g_inv[$β,$p]) )
+                       for α in 1:D for β in 1:D], T)
+            for p in 1:D for m in 1:D for k in 1:D ]
+  comps = [ _sum_expr([:( g_inv[$m,$p] * ∂Γ1[$k,$p,$i,$j] +
+                          dginv[$(dginv_id(k,m,p))] * Γ1[$p,$i,$j] ) for p in 1:D], T)
+            for (i,j) in _indep_comp_cartesian_indices(make_concretetype(SymTensorValue{Dg,T}))
+            for m in 1:D for k in 1:D ]
+  quote
+    md = parse_metric_data(metric_args...)
+    (; g_inv) = md
+    isidentity(md) || _check_metric_dim(g_inv, $D)
+    Γ1  = partials_to_Christoffel_1(∂g)
+    ∂Γ1 = second_partials_to_Christoffel_1_partials(∂∂g)
+    dginv = ($(dginv...),)
+    $V(($(comps...),))
+  end
+end
+
+"""
+    second_partials_to_second_covariantderivative(∂∂a, ∂a, a, Γ, ∂Γ)
+
+Second covariant derivative `∇∇a[k,j,I] = ∇ₖ∇ⱼa[I]` of a tensor field `a` at
+`x`, for the connection coefficients `Γ` and their partial derivatives
+`∂Γ[k,m,i,j] = ∂ₖΓᵐᵢⱼ`,
+
+    ∇ₖ∇ⱼa[I] = ∂∂a[k,j,I] - ∑ₗ Γˡₖⱼ ∇a[l,I]
+               - ∑ₚ ∑ₘ ( ∂ₖΓᵐⱼᵢₚ a[I,iₚ←m] + Γᵐⱼᵢₚ ∂a[k,I,iₚ←m] + Γᵐₖᵢₚ ∇a[j,I,iₚ←m] )
+
+for a covariant index `iₚ`. The sign is flipped for a contravariant one
+
+See also [`second_partials_to_LC_second_covariantderivative`](@ref).
+"""
+@generated function second_partials_to_second_covariantderivative(
+  ∂∂a::ProductTensorValue{SymNTensorValue{Tuple{Dp,Dp}},B,Tdda},
+  ∂a::ProductTensorValue{<:MultiValue{Tuple{Dp}},B,Tda},
+  a::MultiValue{S,Ta},
+  Γ::ProductTensorValue{<:MultiValue{Tuple{Dl}},<:MultiValue{Tuple{Dg,Dg}},TΓ},
+  ∂Γ::ProductTensorValue{<:MultiValue{Tuple{Dp,Dl}},<:MultiValue{Tuple{Dg,Dg}},TdΓ}
+  ) where {Dp,B,S,Tdda,Tda,Ta,Dl,Dg,TΓ,TdΓ}
+
+  Dp isa Cov || return :(throw(ArgumentError(
+    $("partial derivatives should have a covariant index, got $Dp"))))
+  err = _throw_expr(_Christoffel_error, Dl, Dg, Int(Dp))
+  isnothing(err) || return err
+  sz = size(a)
+  is_cov = Bool[]
+  if !isempty(sz)
+    is_cov, err = _pullpush_validate_indices(sz, Dl, "the second covariant derivative")
+    isnothing(err) || return err
+  end
+
+  D = Int(Dp)
+  T = Base.promote_op(+, Tdda, Base.promote_op(*, TΓ, Tda),
+                      Base.promote_op(*, TΓ, TΓ, Ta), Base.promote_op(*, TdΓ, Ta))
+  V = ProductTensorValue{TensorValue{Dp,Dp},B,T}
+  Os = _indep_comp_cartesian_indices(make_concretetype(B{T}))
+  (iszero(D) || isempty(Os)) && return :( zero($V) )
+
+  comps = Expr[]
+  for O in Os, j in 1:D, k in 1:D
+    terms = Any[ :( ∂∂a[$k,$j,$(O...)] ) ]
+    for l in 1:D
+      push!(terms, :( -(Γ[$l,$k,$j] * ∇a[$l,$(O...)]) ))
+    end
+    for p in eachindex(is_cov), m in 1:D
+      Om = _congruence_source_index(O, (p,), (m,))
+      ip = O[p]
+      push!(terms, _signed(is_cov[p] ? -1 : 1, is_cov[p] ?
+        :( ∂Γ[$k,$m,$j,$ip] * a[$(Om...)] + Γ[$m,$j,$ip] * ∂a[$k,$(Om...)] +
+           Γ[$m,$k,$ip] * ∇a[$j,$(Om...)] ) :
+        :( ∂Γ[$k,$ip,$j,$m] * a[$(Om...)] + Γ[$ip,$j,$m] * ∂a[$k,$(Om...)] +
+           Γ[$ip,$k,$m] * ∇a[$j,$(Om...)] )))
+    end
+    push!(comps, _sum_expr(terms, T))
+  end
+
+  quote
+    ∇a = partials_to_covariantderivative(∂a, a, Γ)
+    $V(($(comps...),))
+  end
+end
+
+@generated function second_partials_to_second_covariantderivative(
+  ∂∂f::ProductTensorValue{SymNTensorValue{Tuple{Dp,Dp}},ScalarValue,Tddf},
+  ∂f::ProductTensorValue{<:MultiValue{Tuple{Dp}},ScalarValue,Tdf},
+  f::Number,
+  Γ::ProductTensorValue{<:MultiValue{Tuple{Dl}},<:MultiValue{Tuple{Dg,Dg}},TΓ},
+  ∂Γ) where {Dp,Tddf,Tdf,Dl,Dg,TΓ}
+
+  Dp isa Cov || return :(throw(ArgumentError(
+    $("partial derivatives should have a covariant index, got $Dp"))))
+  err = _throw_expr(_Christoffel_error, Dl, Dg, Int(Dp))
+  isnothing(err) || return err
+
+  D = Int(Dp)
+  T = Base.promote_op(+, Tddf, Base.promote_op(*, Tdf, TΓ))
+  V = ProductTensorValue{TensorValue{Dp,Dp},ScalarValue,T}
+  iszero(D) && return :( zero($V) )
+
+  comps = [ _sum_expr(Any[:( ∂∂f[$k,$j] ),
+                          (:( -(Γ[$l,$k,$j] * ∂f[$l]) ) for l in 1:D)...], T)
+            for j in 1:D for k in 1:D ]
+  :( $V(($(comps...),)) )
+end
+
+"""
+    second_partials_to_LC_second_covariantderivative(∂∂a, ∂a, a, ∂∂g, ∂g, metric_args...)
+
+[`second_partials_to_second_covariantderivative`](@ref) of the Levi-Civita
+connection of the metric `g`.
+"""
+second_partials_to_LC_second_covariantderivative(
+  ∂∂a::ProductTensorValue, ∂a::ProductTensorValue, a,
+  ∂∂g::ProductTensorValue, ∂g::ProductTensorValue, metric_args::Vararg{_MetricArg}) =
+  second_partials_to_second_covariantderivative(∂∂a, ∂a, a,
+    partials_to_Christoffel_2(∂g, metric_args...),
+    _Christoffel_2_partials(∂∂g, ∂g, metric_args...))
+
+# `∂Γ` transports the indices of `a` only, so a scalar or a 0-form reads none
+# and is spared its computation.
+second_partials_to_LC_second_covariantderivative(
+  ∂∂a::ProductTensorValue{<:MultiValue,<:MultiValue{Tuple{}}}, ∂a::ProductTensorValue, a,
+  ∂∂g::ProductTensorValue, ∂g::ProductTensorValue, metric_args::Vararg{_MetricArg}) =
+  second_partials_to_second_covariantderivative(∂∂a, ∂a, a,
+    partials_to_Christoffel_2(∂g, metric_args...),
+    _zero_Christoffel_2_partials(∂∂g, ∂g))
+
+_zero_Christoffel_2_partials(
+  ∂∂g::ProductTensorValue{<:MultiValue,SymTensorValue{Dg},Tddg},
+  ∂g::ProductTensorValue{<:MultiValue,SymTensorValue{Dg},Tdg}) where {Dg,Tddg,Tdg} =
+  zero(ProductTensorValue{TensorValue{Dg,inverse_variance(Dg)},SymTensorValue{Dg},
+                          Base.promote_op(/, Base.promote_op(+,Tdg,Tddg), Int)})
+
+# this could become a tr method, if we extend it's sementics to allow
+# iddentical index variance in the trace contraction and allow it taking
+# metric_args...
+@generated function _trace_second_covariantderivative(
+  ∇∇a::ProductTensorValue{TensorValue{Dp,Dp},B,T},
+  metric_args::Vararg{_MetricArg}) where {Dp,B,T}
+
+  D = Int(Dp)
+  is_scalar = B <: ScalarValue
+  Os = _indep_comp_cartesian_indices(make_concretetype(B{T}))
+  isempty(Os) && return :( zero($B{$T}) )
+
+  comps = [ :( -$(_sum_expr([:( g_inv[$j,$k] * ∇∇a[$j,$k,$(O...)] )
+                             for j in 1:D for k in 1:D], T)) ) for O in Os ]
+  body = is_scalar ? only(comps) : :( $B(($(comps...),)) )
+  quote
+    md = parse_metric_data(metric_args...)
+    (; g_inv) = md
+    isidentity(md) || _check_metric_dim(g_inv, $D)
+    $body
+  end
+end
+
+# `ΔdR ω = (dδ + δd)ω` from `∇∇ω`: the connection being metric and torsion
+# free, `∇g_inv` vanishes and `𝑑` alternates `∇` as it alternates `∂`, so with
+# `M = (m, I...)`,
+#
+#     (dδω)[I] = -∑_q (-1)^(q-1) g_invʲᵐ ∇∇ω[i_q, j, m, I∖i_q]
+#     (δdω)[I] = -g_invʲᵐ ∑_b (-1)^(b-1) ∇∇ω[j, M_b, M∖M_b]
+#
+# The outer derivation index is the free `i_q` in `dδ` and the contracted `j` in
+# `δd`: swapping them would shift `ΔdR` by a curvature term.
+@generated function _dR_second_covariantderivative(
+  ∇∇ω::ProductTensorValue{TensorValue{Dw,Dw},ExteriorFormValue{K,Dw},T},
+  metric_args::Vararg{_MetricArg}) where {K,Dw,T}
+
+  D = Int(Dw)
+  iszero(binomial(D,K)) && return :( zero(ExteriorFormValue{$K,$Dw,$T}) )
+
+  comps = Vector{Any}(undef, binomial(D,K))
+  for (n,I) in enumerate(sorted_combinations(D,K))
+    terms = Any[]
+    for q in 1:K
+      Iq = ntuple(i -> I[i + Int(i>=q)], K-1)
+      for j in 1:D, m in 1:D
+        push!(terms, _signed(-(-1)^(q-1),
+          :( g_inv[$j,$m] * ∇∇ω[$(I[q]),$j,$m,$(Iq...)] )))
+      end
+    end
+    for j in 1:D, m in 1:D
+      M = (m, I...)
+      for b in 1:K+1
+        Mb = ntuple(i -> M[i + Int(i>=b)], K)
+        push!(terms, _signed(-(-1)^(b-1),
+          :( g_inv[$j,$m] * ∇∇ω[$j,$(M[b]),$(Mb...)] )))
+      end
+    end
+    comps[n] = _sum_expr(terms, T)
+  end
+
+  quote
+    md = parse_metric_data(metric_args...)
+    (; g_inv) = md
+    isidentity(md) || _check_metric_dim(g_inv, $D)
+    ExteriorFormValue{$K,$Dw}(($(comps...),))
+  end
+end
+
+"""
+    second_partials_to_bochnerlaplacian(∂∂a, ∂a, a, ∂∂g, ∂g, metric_args...)
+
+Value of the Bochner laplacian `ΔB a` of a tensor field `a` at `x`, from its
+partial derivatives `∂a = ∂(a)(x)` and `∂∂a = ∂∂(a)(x)`, and those of the
+metric value `g`,
+
+    ΔB a[I] = -g_invʲᵏ ∇ⱼ∇ₖ a[I]
+
+`ΔB = ∇*∇ = -tr ∇∇` where `∇` is the Levi-Civita connection. `ΔB` is positive
+semi-definite, minus the connection laplacian, and minus the
+Laplace-Beltrami operator on a scalar field. `ΔB a` has the type of `a`, whose
+indices may be of any order and variance.
+
+`second_partials_to_bochnerlaplacian` uses `g_inv`.
+"""
+second_partials_to_bochnerlaplacian(
+  ∂∂a::ProductTensorValue, ∂a::ProductTensorValue, a,
+  ∂∂g::ProductTensorValue, ∂g::ProductTensorValue, metric_args::Vararg{_MetricArg}) =
+  _trace_second_covariantderivative(
+    second_partials_to_LC_second_covariantderivative(∂∂a, ∂a, a, ∂∂g, ∂g, metric_args...),
+    metric_args...)
+
+"""
+    second_partials_to_hodgelaplacian(∂∂ω, ∂ω, ω, ∂∂g, ∂g, metric_args...)
+
+Value of the Hodge laplacian `ΔdR ω = (dδ + δd)ω` of a K-form `ω` at `x`, a
+K-form, from its partial derivatives and those of the metric value `g`.
+
+`metric_args` contains the metric information, see [`parse_metric_data`](@ref),
+and `second_partials_to_hodgelaplacian` uses `g_inv`.
+"""
+function second_partials_to_hodgelaplacian(
+  ∂∂ω::ProductTensorValue{<:MultiValue,ExteriorFormValue{K,Dw}}, ∂ω::ProductTensorValue,
+  ω::ExteriorFormValue{K,Dw}, ∂∂g::ProductTensorValue, ∂g::ProductTensorValue,
+  metric_args::Vararg{_MetricArg}) where {K,Dw}
+
+  # `ΔdR ω = (dδ + δd)ω` is computed from `∇∇ω`, under the assumption that `∇`
+  # is the Levi-Civita connection.
+
+  return _dR_second_covariantderivative(
+    second_partials_to_LC_second_covariantderivative(∂∂ω, ∂ω, ω, ∂∂g, ∂g, metric_args...),
+    metric_args...)
+end
+
+second_partials_to_hodgelaplacian(
+  ∂∂f::ProductTensorValue{<:MultiValue,ScalarValue}, ∂f::ProductTensorValue, f::Number,
+  ∂∂g::ProductTensorValue, ∂g::ProductTensorValue, metric_args::Vararg{_MetricArg}) =
+  second_partials_to_bochnerlaplacian(∂∂f, ∂f, f, ∂∂g, ∂g, metric_args...)
+
 
 # Christoffel symbols
 
@@ -2206,7 +2521,7 @@ end
     second_partials_to_Christoffel_1_partials(∂∂g)
 
 Second partial derivatives of the Christoffel symbols of the first kind, from
-`∂∂g = second_partial_derivatives(g)(x)` of a metric value,
+`∂∂g = ∂∂(g)(x)` of a metric value,
 
     ∂ₘΓₖᵢⱼ = (∂ₘ∂ᵢgⱼₖ + ∂ₘ∂ⱼgᵢₖ - ∂ₘ∂ₖgᵢⱼ) / 2
 

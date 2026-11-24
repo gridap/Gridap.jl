@@ -8,6 +8,8 @@ $(public_names_in_md(@__MODULE__; change_link=Dict(
   :δ  => "codifferential",
   :𝓛  => "lie_derivative",
   :cov∇ => "covariant_derivative",
+  :ΔB => "bochner_laplacian",
+  :ΔdR => "hodge_laplacian",
   :∂  => "partial_derivatives",
   :∂∂ => "second_partial_derivatives",
 )))
@@ -127,6 +129,8 @@ export exterior_derivative, 𝑑
 export lie_derivative, 𝓛
 export covariant_derivative, cov∇
 export codifferential, δ
+export bochner_laplacian, ΔB
+export hodge_laplacian, ΔdR
 
 # Re-export from Gridap.Arrays
 export ArrayBlock

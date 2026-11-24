@@ -168,6 +168,9 @@ export from_Kform
 export to_0form
 export from_0form
 export to_Dform
+
+export partials_op_rule
+# low level differential operator kernels
 export grad_to_2form
 export partials_to_exteriorderivative
 export partials_to_liederivative
@@ -175,10 +178,15 @@ export partials_to_covariantderivative
 export partials_to_flat_covariantderivative
 export partials_to_flat_codifferential
 export partials_to_codifferential
+export second_partials_to_flat_bochnerlaplacian
+export second_partials_to_flat_hodgelaplacian
+export second_partials_to_second_covariantderivative
+export second_partials_to_LC_second_covariantderivative
+export second_partials_to_bochnerlaplacian
+export second_partials_to_hodgelaplacian
 export partials_to_Christoffel_1
 export partials_to_Christoffel_2
 export second_partials_to_Christoffel_1_partials
-export partials_op_rule
 
 import Base: show
 import Base: promote_rule

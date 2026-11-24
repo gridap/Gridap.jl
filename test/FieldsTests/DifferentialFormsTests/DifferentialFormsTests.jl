@@ -377,28 +377,102 @@ hodge_lap(u) = y -> 𝑑(δ(u, LinearAlgebra.I))(y) + δ(𝑑(u), LinearAlgebra.
 δδ = δ(δ(𝑑(u1form), LinearAlgebra.I), LinearAlgebra.I)(x3)
 @test δδ ≈ zero(δδ) atol=1e-12
 
-# With the metric as functions, see the commented `codifferential` methods of
-# `Fields/AutoDiff.jl`. The Euclidean metric gives the flat δ.
-#
-# g_flat(y)     = one(SymTensorValue{Cov(2),Float64})
-# g_flat_inv(y) = one(SymTensorValue{Con(2),Float64})
-# @test δ(ωfun, g_flat, g_flat_inv)(x1) ≈ δ(ωfun, LinearAlgebra.I)(x1)
-#
+# ── laplacians ────────────────────────────────────────────────────────────────
+# `ΔdR` answers what composing 𝑑 and δ by hand does, degree by degree, and `ΔB`
+# is minus the Laplace-Beltrami operator, which the flat Weitzenböck formula
+# makes the same operator on a form.
+
+@test ΔdR(u1form, LinearAlgebra.I)(x3) ≈ hodge_lap(u1form)(x3)
+@test Tuple(ΔB(u1form, LinearAlgebra.I)(x3)) == Tuple(ΔdR(u1form, LinearAlgebra.I)(x3))
+@test collect(Tuple(ΔB(u1form, LinearAlgebra.I)(x3))) ≈ collect(Tuple(-laplacian(uvec)(x3)))
+
+let u2form(y) = ExteriorFormValue{2,Cov(3)}(y[1]^3*y[2], y[2]^2*y[3], exp(y[1])*y[3]^2),
+    u3form(y) = ExteriorFormValue{3,Cov(3)}(y[1]^2*y[2]*y[3]^3)
+  @test ΔdR(u2form, LinearAlgebra.I)(x3) ≈ hodge_lap(u2form)(x3)
+  @test ΔdR(u3form, LinearAlgebra.I)(x3) ≈ hodge_lap(u3form)(x3)
+end
+
+# A scalar field is a 0-form, whose `δ` has no value type, so `ΔdR` is `δ𝑑`
+fun0(y) = y[1]^2*y[2] + 3.0*y[3]^3
+@test ΔdR(fun0, LinearAlgebra.I)(x3) ≈ δ(𝑑(fun0), LinearAlgebra.I)(x3)[1]
+@test ΔB(fun0, LinearAlgebra.I)(x3) ≈ -laplacian(fun0)(x3)
+
+# `ΔB` takes a tensor of any variance and order, and acts on each component
+let a11(y) = y[1]^2*y[2], a21(y) = exp(y[2]),
+    a12(y) = sin(y[1])*y[2]^2, a22(y) = y[1]^3 + y[2]
+  afun(y) = TensorValue{Cov(2),Con(2)}(a11(y), a21(y), a12(y), a22(y))
+  Δa = ΔB(afun, LinearAlgebra.I)(x1)
+  @test Δa isa TensorValue{Cov(2),Con(2)}
+  @test Δa[1,1] ≈ ΔB(a11, LinearAlgebra.I)(x1)
+  @test Δa[2,1] ≈ ΔB(a21, LinearAlgebra.I)(x1)
+  @test Δa[1,2] ≈ ΔB(a12, LinearAlgebra.I)(x1)
+  @test Δa[2,2] ≈ ΔB(a22, LinearAlgebra.I)(x1)
+end
+
+# of a field, and broadcast over an array of them, as the other operators are
+@test evaluate(ΔdR(ωfld, LinearAlgebra.I), x1) ===
+  second_partials_to_flat_hodgelaplacian(second_partial_derivatives(ωfun, x1))
+@test evaluate(ΔB(ωfld, LinearAlgebra.I), x1) === evaluate(ΔdR(ωfld, LinearAlgebra.I), x1)
+
+bΔ = Broadcasting(bochner_laplacian)(Fill(ωfld,3), LinearAlgebra.I)
+@test evaluate(bΔ[1], x1) === evaluate(ΔB(ωfld, LinearAlgebra.I), x1)
+bΔdR = Broadcasting(hodge_laplacian)(Fill(ωfld,3), LinearAlgebra.I)
+@test evaluate(bΔdR[1], x1) === evaluate(ΔdR(ωfld, LinearAlgebra.I), x1)
+
+@test ΔB === bochner_laplacian
+@test ΔdR === hodge_laplacian
+
+# ── with the metric as functions ──────────────────────────────────────────────
+
+# The Euclidean metric gives the flat operators back, although it is read as a
+# metric rather than declared by `I`. A constant field still reads the component
+# type of the point, without which it cannot be differentiated twice.
+g_flat(y) = one(SymTensorValue{Cov(2),eltype(y)})
+@test δ(ωfun, g_flat)(x1)   ≈ δ(ωfun, LinearAlgebra.I)(x1)
+@test ΔB(ωfun, g_flat)(x1)  ≈ ΔB(ωfun, LinearAlgebra.I)(x1)
+@test ΔdR(ωfun, g_flat)(x1) ≈ ΔdR(ωfun, LinearAlgebra.I)(x1)
+
+@test_throws ArgumentError ΔB(ωfun, y -> one(SymTensorValue{Cov(2),Float64}))(x1)
+
 # Polar coordinates φ(r,θ) = (r cos θ, r sin θ) are an isometry from the
-# metric g = φ*e = dr² + r²dθ², so δ and 𝑑 commutes with the pullback by φ.
-#
-# polar(y) = Point(y[1]*cos(y[2]), y[1]*sin(y[2]))
-# polar_Jt(y) = TensorValue{Cov(2),Con(2)}(cos(y[2]), -y[1]*sin(y[2]), sin(y[2]), y[1]*cos(y[2]))
-# g_polar(y)     = SymTensorValue{Cov(2)}(1.0, 0.0, y[1]^2)
-# g_polar_inv(y) = SymTensorValue{Con(2)}(1.0, 0.0, 1/y[1]^2)
-# pulled(ω) = y -> pullback(ω(polar(y)), polar_Jt(y))
-# ωpolar = pulled(ωfun)
-# y1 = Point(1.3, 0.4)
-# @test δ(ωpolar, g_polar, g_polar_inv)(y1) ≈ δ(ωfun, LinearAlgebra.I)(polar(y1))
-# δ_polar(ω) = δ(ω, g_polar, g_polar_inv)
-# δ_flat(ω)  = δ(ω, LinearAlgebra.I)
-# @test 𝑑(δ_polar(ωpolar))(y1) + δ_polar(𝑑(ωpolar))(y1) ≈
-#       pulled(y -> 𝑑(δ_flat(ωfun))(y) + δ_flat(𝑑(ωfun))(y))(y1)
+# metric g = φ*e = dr² + r²dθ², so δ and the laplacians commute with the
+# pullback by φ, although the Christoffel symbols of g do not vanish.
+polar(y) = Point(y[1]*cos(y[2]), y[1]*sin(y[2]))
+polar_Jt(y) = TensorValue{Cov(2),Con(2)}(cos(y[2]), -y[1]*sin(y[2]), sin(y[2]), y[1]*cos(y[2]))
+g_polar(y)     = SymTensorValue{Cov(2)}(1.0, 0.0, y[1]^2)
+pulled(ω) = y -> pullback(ω(polar(y)), polar_Jt(y))
+ωpolar = pulled(ωfun)
+y1 = Point(1.3, 0.4)
+@test δ(ωpolar, g_polar)(y1) ≈ δ(ωfun, LinearAlgebra.I)(polar(y1))
+δ_polar(ω) = δ(ω, g_polar)
+δ_flat(ω)  = δ(ω, LinearAlgebra.I)
+polar_lap = pulled(y -> 𝑑(δ_flat(ωfun))(y) + δ_flat(𝑑(ωfun))(y))
+@test 𝑑(δ_polar(ωpolar))(y1) + δ_polar(𝑑(ωpolar))(y1) ≈ polar_lap(y1)
+
+# so the laplacians of that metric answer the euclidean ones pulled back
+@test ΔdR(ωpolar, g_polar)(y1) ≈ polar_lap(y1)
+@test ΔB(ωpolar, g_polar)(y1)  ≈ polar_lap(y1)
+
+# A curved metric separates them by the curvature term of the Weitzenböck
+# formula, and `ΔdR` is still what composing 𝑑 and δ by hand gives
+let gc(y)  = SymTensorValue{Cov(3)}(2.0 + 0.3y[1]^2, 0.2y[2], 0.1y[3],
+                                    1.7 + 0.4y[2]*y[3], 0.25y[1], 2.3 + 0.2y[3]^2),
+    u2f(y) = ExteriorFormValue{2,Cov(3)}(y[1]^3*y[2], y[2]^2*y[3], exp(y[1])*y[3]^2)
+  curved_lap(u) = y -> 𝑑(δ(u, gc))(y) + δ(𝑑(u), gc)(y)
+  @test ΔdR(u1form, gc)(x3) ≈ curved_lap(u1form)(x3)
+  @test ΔdR(u2f, gc)(x3)    ≈ curved_lap(u2f)(x3)
+  @test !(ΔdR(u1form, gc)(x3) ≈ ΔB(u1form, gc)(x3))
+  # a 0-form has no `dδ`, so `ΔdR` is `δ𝑑` and carries no curvature term
+  @test ΔdR(fun0, gc)(x3) ≈ δ(𝑑(fun0), gc)(x3)[1]
+  @test ΔdR(fun0, gc)(x3) ≈ ΔB(fun0, gc)(x3)
+end
+
+# of a field, and broadcast over an array of them, as with `I`
+let gfld = GenericField(g_polar)
+  @test evaluate(ΔB(ωfld, gfld), x1) ≈ ΔB(ωfun, g_polar)(x1)
+  bΔg = Broadcasting(hodge_laplacian)(Fill(ωfld,3), Fill(gfld,3))
+  @test evaluate(bΔg[1], x1) ≈ ΔdR(ωfun, g_polar)(x1)
+end
 
 # partial derivatives of an argument they are not defined for reach the
 # abstract `evaluate!`, rather than calling themselves again through the

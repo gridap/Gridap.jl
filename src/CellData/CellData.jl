@@ -42,6 +42,7 @@ import Gridap.Fields: integrate
 import Gridap.ReferenceFEs: MomentBasedQuadrature
 import Gridap.Fields: grad2curl
 import Gridap.Fields: exterior_derivative, codifferential, covariant_derivative
+import Gridap.Fields: bochner_laplacian, hodge_laplacian
 import Gridap.Fields: ∂
 import Gridap.Geometry: num_cells
 import Gridap.Geometry: get_triangulation

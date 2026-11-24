@@ -12,4 +12,6 @@ using Test
 
 @testset "CovariantDerivative" begin include("CovariantDerivativeTests.jl") end
 
+@testset "Laplacians" begin include("LaplaciansTests.jl") end
+
 end # module

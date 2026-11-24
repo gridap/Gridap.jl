@@ -192,13 +192,13 @@ the point eltype and not hardcode a returned value.
 function _nested_jacobian(g, y::SVector{D,T}, ::Val{1}, ::Val{L}) where {D,T,L}
   a = ForwardDiff.jacobian(g,y)
   a isa SMatrix{L,D,T,L*D} || _throw_field_eltype(g, eltype(a))
-  a::SMatrix{L,D,T,L*D} # guarentee return type for nested autodiff (inference paranoia)
+  a::SMatrix{L,D,T,L*D} # guarantee return type for nested autodiff (inference paranoia)
 end
 
 function _nested_jacobian(g, y::SVector{D,T}, ::Val{N}, ::Val{L}) where {D,T,N,L}
   a = ForwardDiff.jacobian(z -> _nested_jacobian(g,z,Val(N-1),Val(L)), y)
   a isa SMatrix{L*D^(N-1),D,T,L*D^N} || _throw_field_eltype(g, eltype(a))
-  a::SMatrix{L*D^(N-1),D,T,L*D^N} # guarentee return type for nested autodiff (inference paranoia)
+  a::SMatrix{L*D^(N-1),D,T,L*D^N} # guarantee return type for nested autodiff (inference paranoia)
 end
 
 @generated function _partials_data(a::StaticMatrix, ::Val{D}, ::Val{N}, ::Val{L}) where {D,N,L}
@@ -241,7 +241,7 @@ function exterior_derivative(ω::Function)
 end
 
 exterior_derivative(ω::Function, x::Point) =
-  partials_to_exteriorderivative(partial_derivatives(ω,x))
+  partials_to_exteriorderivative(∂(ω,x))
 
 function codifferential(ω::Function, I::UniformScaling)
   function _codifferential(x)
@@ -250,9 +250,8 @@ function codifferential(ω::Function, I::UniformScaling)
 end
 
 codifferential(ω::Function, x::Point, ::UniformScaling) =
-  partials_to_flat_codifferential(partial_derivatives(ω,x))
+  partials_to_flat_codifferential(∂(ω,x))
 
-# With the metric given as a function too, of its covariant value
 function codifferential(ω::Function, g::Function)
   function _codifferential(x)
     codifferential(ω,x,g)
@@ -261,8 +260,8 @@ end
 
 function codifferential(ω::Function, x::Point, g::Function)
   gx = g(x)
-  Γ = partials_to_Christoffel_2(partial_derivatives(g,x), gx)
-  partials_to_codifferential(partial_derivatives(ω,x), ω(x), Γ, gx)
+  Γ = partials_to_Christoffel_2(∂(g,x), gx)
+  partials_to_codifferential(∂(ω,x), ω(x), Γ, gx)
 end
 
 function lie_derivative(v::Function, ω::Function)
@@ -272,7 +271,7 @@ function lie_derivative(v::Function, ω::Function)
 end
 
 lie_derivative(v::Function, ω::Function, x::Point) = partials_to_liederivative(
-  v(x), ω(x), partial_derivatives(v,x), partial_derivatives(ω,x))
+  v(x), ω(x), ∂(v,x), ∂(ω,x))
 
 function covariant_derivative(v::Function, a::Function, I::UniformScaling)
   function _covariant_derivative(x)
@@ -281,7 +280,45 @@ function covariant_derivative(v::Function, a::Function, I::UniformScaling)
 end
 
 covariant_derivative(v::Function, a::Function, x::Point, I::UniformScaling) =
-  partials_to_covariantderivative(v(x), partial_derivatives(a,x), a(x), I)
+  partials_to_covariantderivative(v(x), ∂(a,x), a(x), I)
+
+function bochner_laplacian(a::Function, I::UniformScaling)
+  function _bochner_laplacian(x)
+    bochner_laplacian(a,x,I)
+  end
+end
+
+bochner_laplacian(a::Function, x::Point, ::UniformScaling) =
+  second_partials_to_flat_bochnerlaplacian(∂∂(a,x))
+
+function bochner_laplacian(a::Function, g::Function)
+  function _bochner_laplacian(x)
+    bochner_laplacian(a,x,g)
+  end
+end
+
+bochner_laplacian(a::Function, x::Point, g::Function) =
+  second_partials_to_bochnerlaplacian(
+    ∂∂(a,x), ∂(a,x), a(x), ∂∂(g,x), ∂(g,x), g(x))
+
+function hodge_laplacian(ω::Function, I::UniformScaling)
+  function _hodge_laplacian(x)
+    hodge_laplacian(ω,x,I)
+  end
+end
+
+hodge_laplacian(ω::Function, x::Point, ::UniformScaling) =
+  second_partials_to_flat_hodgelaplacian(∂∂(ω,x))
+
+function hodge_laplacian(ω::Function, g::Function)
+  function _hodge_laplacian(x)
+    hodge_laplacian(ω,x,g)
+  end
+end
+
+hodge_laplacian(ω::Function, x::Point, g::Function) =
+  second_partials_to_hodgelaplacian(
+    ∂∂(ω,x), ∂(ω,x), ω(x), ∂∂(g,x), ∂(g,x), g(x))
 
 #####################################################################################
 # Arbitrary-order gradients by forward-mode automatic differentiation

@@ -217,15 +217,16 @@ const 𝓛 = lie_derivative
 """
     covariant_derivative(a::CellField)
     covariant_derivative(v::CellField, a::CellField)
-    covariant_derivative([v, ]a, ::UniformScaling)
-    cov∇([v, ]a)
+    covariant_derivative([v::F, ]a::F, g)
+    cov∇([v, ]a[, g])
 
 Covariant derivative of the field `a` for the Levi-Civita connection of the
-metric, along the (contravariant) vector field `v` if given. `cov∇(v, a)` is
+metric `g`, along the (contravariant) vector field `v` if given. `cov∇(v, a)` is
 of the same type as `a`, `cov∇(a)` has the type of `∂(a)`.
 
 It depends on the metric, which is automatically fed to `a` if it is a
-`CellField`. For a field or a function `a`, `cov∇(a, I)` is the same as `∂`.
+`CellField`, or needed explicitly for `Field` or a `Function` arguments. `g`
+may be `LinearAlgebra.I`. `cov∇(a, I)` is the same as `∂`.
 """
 function covariant_derivative end
 
@@ -237,17 +238,17 @@ covariant_derivative(v, a, ::UniformScaling) =
 const cov∇ = covariant_derivative
 
 """
-    codifferential(ω)
-    codifferential(ω::Function, ::UniformScaling)
-    δ(ω)
+    codifferential(ω::CellField)
+    codifferential(ω::F, g)
+    δ(ω[, g])
 
 Codifferential of a differential K-form `ω`, is a (K-1)-form:
   ``δω = s(-1)^{D(K-1)+1} ⋆ d ⋆ ω``
 with ``s = sgn(det(g))``, ``+1`` for Riemanian metric, ``-1`` for Lorentzian metric.
 
-It depends on the metric via the [`hodge_star`](@ref). The metric is is
-automatically fed to `ω` if it is a cell field. For a function `ω`, `δ(ω, I)`
-is the flat codifferential (Euclidean metric).
+It depends on the metric, which is automatically fed to `ω` if it is a cell
+field. For a `Function` or `Field` `ω::F`, `g` must be provided, but it can be
+`LinearAlgebra.I` (Euclidean metric).
 """
 function codifferential end
 
@@ -260,6 +261,46 @@ function codifferential(ω, g)
 end
 
 const δ = codifferential
+
+"""
+    bochner_laplacian(a::F, g)
+    ΔB(a, g)
+
+Bochner laplacian of the `Field` or `Function` `a::F`, `ΔB = ∇*∇ = -tr ∇∇`,
+positive semi-definite, so minus the connection laplacian. `ΔB a` is of the same
+type as `a`, and is minus the Laplace-Beltrami operator [`laplacian`](@ref) on a
+scalar field.
+
+The metric `g` is required, it may be of the type of `a` or `LinearAlgebra.I`.
+"""
+function bochner_laplacian end
+
+bochner_laplacian(a, ::UniformScaling) =
+  Operation(second_partials_to_flat_bochnerlaplacian)(∂∂(a))
+
+bochner_laplacian(a, g) =
+  Operation(second_partials_to_bochnerlaplacian)(∂∂(a), ∂(a), a, ∂∂(g), ∂(g), g)
+
+const ΔB = bochner_laplacian
+
+"""
+    hodge_laplacian(ω::F, g)
+    ΔdR(ω, g)
+
+Hodge laplacian of a differential K-form valued `Field` or `Function` `ω`, `ΔdR
+= dδ + δd`, is a K-form.
+
+The metric `g` is required, it may be of the type of `a` or `LinearAlgebra.I`.
+"""
+function hodge_laplacian end
+
+hodge_laplacian(ω, ::UniformScaling) =
+  Operation(second_partials_to_flat_hodgelaplacian)(∂∂(ω))
+
+hodge_laplacian(ω, g) =
+  Operation(second_partials_to_hodgelaplacian)(∂∂(ω), ∂(ω), ω, ∂∂(g), ∂(g), g)
+
+const ΔdR = hodge_laplacian
 
 """
     koszul(ω)
@@ -316,7 +357,7 @@ function evaluate!(cache,::Broadcasting{typeof(exterior_derivative)},f)
 end
 
 # `δ` reads the metric, which a field array carries no more than a field does,
-# so its broadcast takes the metric arguments the operator itself takes.
+# so its broadcast takes the metric argument the operator itself takes.
 return_value(k::Broadcasting{typeof(codifferential)},f,metric) =
   evaluate!(nothing,k,f,metric)
 
@@ -327,6 +368,26 @@ end
 function evaluate!(cache,::Broadcasting{typeof(codifferential)},f,g)
   Γ = Broadcasting(Operation(partials_to_Christoffel_2))(Broadcasting(∂)(g), g)
   Broadcasting(Operation(partials_to_codifferential))(Broadcasting(∂)(f), f, Γ, g)
+end
+
+for (op, flat_kernel, kernel) in (
+  (:bochner_laplacian, :second_partials_to_flat_bochnerlaplacian, :second_partials_to_bochnerlaplacian),
+  (:hodge_laplacian,   :second_partials_to_flat_hodgelaplacian,   :second_partials_to_hodgelaplacian),
+)
+  @eval begin
+    return_value(k::Broadcasting{typeof($op)}, f, metric) =
+      evaluate!(nothing, k, f, metric)
+
+    function evaluate!(cache,::Broadcasting{typeof($op)}, f, ::UniformScaling)
+      Broadcasting(Operation($flat_kernel))(Broadcasting(∂∂)(f))
+    end
+
+    function evaluate!(cache,::Broadcasting{typeof($op)}, f, g)
+      Broadcasting(Operation($kernel))(
+        Broadcasting(∂∂)(f), Broadcasting(∂)(f), f,
+        Broadcasting(∂∂)(g), Broadcasting(∂)(g), g)
+    end
+  end
 end
 
 return_value(k::Broadcasting{typeof(covariant_derivative)}, a, args...) =

@@ -167,6 +167,25 @@ let Γ = BoundaryTriangulation(cmodel2)
   @test_throws ErrorException δ(form_field(1,2,Γ))(get_cell_points(Γ))
 end
 
+# ── The laplacians of a chart read its metric ─────────────────────────────────
+
+# `ΔB` and `ΔdR` take the metric where `δ` takes it. What is checked here is
+# that plumbing: that the metric reaching the kernel is the triangulation's and
+# that `I` overrides it. Their values are checked of a varying metric in
+# `FieldsTests`.
+let Ω = Triangulation(cmodel2), Ωs = Triangulation(model2)
+  pts, ptss = get_cell_points(Ω), get_cell_points(Ωs)
+  ω = form_field(1,2,Ω)
+  for op in (ΔB, ΔdR)
+    @test max_diff(op(ω)(pts),
+                   CellField(op(mk(1,2), g2), Ω, PhysicalDomain())(pts)) < 1.0e-12
+    @test max_diff(op(ω,LinearAlgebra.I)(pts), op(form_field(1,2,Ωs))(ptss)) < 1.0e-12
+    @test max_diff(op(ω)(pts), op(ω,LinearAlgebra.I)(pts)) > 1.0e-3
+  end
+  # the chart is curved, so the curvature term of Weitzenböck separates the two
+  @test max_diff(ΔdR(ω)(pts), ΔB(ω)(pts)) > 1.0e-3
+end
+
 # ── `δ` of a form valued FE basis assembles ───────────────────────────────────
 
 # The basis reaches the kernel through the operation tree, so `δ` of it enters a

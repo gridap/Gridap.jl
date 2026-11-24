@@ -70,6 +70,10 @@ using Gridap.TensorValues: ♭, ♭ᴱ, ♯, ♯ᴱ; export ♭, ♭ᴱ, ♯, �
 @publish Fields cov∇
 @publish Fields codifferential
 @publish Fields δ
+@publish Fields bochner_laplacian
+@publish Fields ΔB
+@publish Fields hodge_laplacian
+@publish Fields ΔdR
 #@publish TensorValues symbolic_coordinates
 @publish TensorValues koszul
 #@publish TensorValues flat_vol_coeff
