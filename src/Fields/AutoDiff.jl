@@ -182,11 +182,23 @@ laplacian(f::Function,x::SVector) = laplacian(f,Point(x))
 # `N`th order partial derivatives of an `L` component function `g`. Each
 # nesting flattens the previous result column major, so with `D = length(y)`:
 #     a[l + L*∑_{k<N} (i_k-1)*D^(k-1), i_N] == ∂_{i_1} ⋯ ∂_{i_N} g_l
-_nested_jacobian(g, y::SVector{D,T}, ::Val{1}, ::Val{L}) where {D,T,L} =
-  ForwardDiff.jacobian(g,y)::SMatrix{L,D,T,L*D}
+@noinline _throw_field_eltype(@nospecialize(g), S) = throw(ArgumentError("""\n
+The differentiated field $g is not type-stable through automatic differentiation:
+make sure that the return value promotes with the point eltype, got a value of
+component type $S. For example, a constant field must promote explicitly with
+the point eltype and not hardcode a returned value.
+"""))
+
+function _nested_jacobian(g, y::SVector{D,T}, ::Val{1}, ::Val{L}) where {D,T,L}
+  a = ForwardDiff.jacobian(g,y)
+  a isa SMatrix{L,D,T,L*D} || _throw_field_eltype(g, eltype(a))
+  a::SMatrix{L,D,T,L*D} # guarentee return type for nested autodiff (inference paranoia)
+end
 
 function _nested_jacobian(g, y::SVector{D,T}, ::Val{N}, ::Val{L}) where {D,T,N,L}
-  ForwardDiff.jacobian(z -> _nested_jacobian(g,z,Val(N-1),Val(L)), y)::SMatrix{L*D^(N-1),D,T,L*D^N}
+  a = ForwardDiff.jacobian(z -> _nested_jacobian(g,z,Val(N-1),Val(L)), y)
+  a isa SMatrix{L*D^(N-1),D,T,L*D^N} || _throw_field_eltype(g, eltype(a))
+  a::SMatrix{L*D^(N-1),D,T,L*D^N} # guarentee return type for nested autodiff (inference paranoia)
 end
 
 @generated function _partials_data(a::StaticMatrix, ::Val{D}, ::Val{N}, ::Val{L}) where {D,N,L}
