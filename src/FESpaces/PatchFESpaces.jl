@@ -12,10 +12,6 @@ end
 FESpaceWithoutBCs(space::ConstantFESpace) = space
 FESpaceWithoutBCs(space::TrialFESpace) = FESpaceWithoutBCs(space.space)
 
-function PatchFESpace(space::TrialFESpace,args...;kwargs...)
-  TrialFESpace(space.dirichlet_values,PatchFESpace(space.space,args...;kwargs...))
-end
-
 function PatchFESpace(
   space::SingleFieldFESpace, ptopo::PatchTopology
 )
@@ -31,11 +27,28 @@ end
 function PatchFESpace(
   space::SingleFieldFESpace, trian::Triangulation, ptopo::PatchTopology, fe_basis
 )
-  # Patch dof ids
   model = get_background_model(trian)
   patch_dof_ids = generate_patch_dof_ids(space,ptopo)
   patch_trian = PatchTriangulation(model,ptopo)
-  cell_dof_ids = Table(_move_patch_coeffs(trian, patch_trian, patch_dof_ids))
+  cell_dof_ids = _move_patch_coeffs(trian, patch_trian, patch_dof_ids)
+  return PatchFESpace(space, trian, cell_dof_ids, fe_basis, ptopo)
+end
+
+function PatchFESpace(
+  space::TrialFESpace, trian::Triangulation, 
+  cell_dof_ids::AbstractArray, fe_basis,
+  metadata = nothing
+)
+  test_space = PatchFESpace(space.space,trian,cell_dof_ids,fe_basis,metadata)
+  TrialFESpace(space.dirichlet_values,test_space)
+end
+
+function PatchFESpace(
+  space::SingleFieldFESpace, trian::Triangulation, 
+  cell_dof_ids::AbstractArray, fe_basis,
+  metadata = nothing
+)
+  cell_dof_ids = Table(cell_dof_ids)
 
   nfree = num_free_dofs(space)
   ndirichlet = num_dirichlet_dofs(space)
@@ -48,18 +61,10 @@ function PatchFESpace(
 
   fe_dof_basis = CellData.MockCellDof(trian, DomainStyle(fe_basis))
 
-  metadata = ptopo
-  UnconstrainedFESpace(
-    vector_type,
-    nfree,
-    ndirichlet,
-    cell_dof_ids,
-    fe_basis,
-    fe_dof_basis,
-    cell_is_dirichlet,
-    dirichlet_dof_tag,
-    dirichlet_cells,
-    ntags,
+  return UnconstrainedFESpace(
+    vector_type, nfree, ndirichlet,
+    cell_dof_ids, fe_basis, fe_dof_basis,
+    cell_is_dirichlet, dirichlet_dof_tag, dirichlet_cells, ntags,
     metadata
   )
 end

@@ -142,7 +142,7 @@ for collect_coefficients in (true,false)
 
   # Spaces
   SX = S(X)
-  @test isa(SX,Tuple) && length(SX) == 2
+  @test isa(SX,Vector) && length(SX) == 2
   for (SXo,So) in zip(SX,(S1,S2))
     @test isa(SXo,MultiFieldFESpace)
     @test num_free_dofs(SXo) == num_free_dofs(X)
@@ -154,14 +154,14 @@ for collect_coefficients in (true,false)
 
   # Functions
   Sxh = S(xh)
-  @test isa(Sxh,Tuple) && length(Sxh) == 2
+  @test isa(Sxh,Vector) && length(Sxh) == 2
   @test l2(Sxh[1] - S1(xh),dΩp) < 1.e-10
   @test l2(Sxh[2] - S2(xh),dΩp) < 1.e-10
 
   # Bases
   Su = S(get_trial_fe_basis(X))
   Sv = S(get_fe_basis(Y))
-  @test isa(Su,Tuple) && length(Su) == 2
+  @test isa(Su,Vector) && length(Su) == 2
   for (o,So) in enumerate((S1,S2))
     m((uT,uF),(vT,vF)) = ∫((uT+uF)*(vT+vF))dΩp
     mats = assemble_matrix(assem,FESpaces.collect_patch_cell_matrix(assem,Xp,Xp,m(Su[o],Sv[o])))
@@ -186,9 +186,9 @@ end
 for collect_coefficients in (true,false)
   B = block_operator(;collect_coefficients)
   BX = B(X)
-  @test isa(BX,Tuple) && length(BX) == 3
+  @test isa(BX,Vector) && length(BX) == 3
   Bxh = B(xh) # A multi-field function as input
-  @test isa(Bxh,Tuple) && length(Bxh) == 3
+  @test isa(Bxh,Vector) && length(Bxh) == 3
   for (o,So) in enumerate((S1,S2))
     xT, xF = FEFunction(BX[o],x)
     @test l2(xT + xF - So(xh),dΩp) < 1.e-10

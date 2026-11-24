@@ -4,20 +4,17 @@
 
 An operator defined by local problems, solved by a local map (e.g. `LocalSolveMap`).
 
-- `LocalOperator(local_map, ptopo, space_to, space_from, lhs, rhs; kwargs...)`: one problem
-  per patch of the `PatchTopology` `ptopo`.
-- `LocalOperator(local_map, space_to, lhs, rhs; kwargs...)`: one problem per cell of
-  `trian_out`.
+- `LocalOperator(local_map, ptopo, space_to, space_from, lhs, rhs; kwargs...)`: 
+  one problem per patch of the `PatchTopology` `ptopo`.
+- `LocalOperator(local_map, space_to, lhs, rhs; kwargs...)`: 
+  one problem per cell of `trian_out`.
 
 An operator `R` can be applied to
 
 - an `FEFunction` or a `CellField`, returning a `CellField`;
 - an FE basis, returning the images of the basis functions;
-- an `FESpace` `X`, returning the space `R(X)`: it has the dofs of `X`, and its shape
-  functions are the images of the basis of `X`. So `FEFunction(R(X),x)` is `R(xh)`, with `xh`
-  the function of `X` with dof values `x`. `R(X)` is a `PatchFESpace`.
-  The local problems must have one input column per dof of `X`, Dirichlet dofs included:
-  build the operator with `space_from = FESpaceWithoutBCs(X)`.
+- an `FESpace` `X`, returning the space `R(X)` that: A) has the dofs of `X` collected onto 
+  the local patches, its basis functions are the images of the basis of `X`. 
 """
 struct LocalOperator
   local_map    :: Map           # coeffs = evaluate(local_map, lhs, rhs)
@@ -25,8 +22,8 @@ struct LocalOperator
   trian_out    :: Triangulation # Where the output field is defined
   space_out    :: FESpace
   weakform     :: Function
+  get_out_dof_ids :: Function  # space -> dof ids of `space` on the cells of `trian_out`
   collect_coefficients :: Bool # Collect local coefficients / keep them as lazy maps
-  ptopo        :: PatchTopology # Patches of the local problems
 end
 
 function LocalOperator(
@@ -69,8 +66,14 @@ function LocalOperator(
   end
 
   trian_coeffs = PatchTriangulation(get_background_model(trian_out),ptopo)
+
+  function get_out_dof_ids(space)
+    patch_dof_ids = generate_patch_dof_ids(space,ptopo)
+    _move_patch_coeffs(trian_out,trian_coeffs,patch_dof_ids)
+  end
+
   return LocalOperator(
-    local_map, trian_coeffs, trian_out, space_out, weakform, collect_coefficients, ptopo
+    local_map, trian_coeffs, trian_out, space_out, weakform, get_out_dof_ids, collect_coefficients
   )
 end
 
@@ -99,68 +102,54 @@ function LocalOperator(
     pair_arrays(lhs_mats,rhs_mats)
   end
 
-  # One patch per face
-  D = num_cell_dims(trian_out)
-  ptopo = PatchTopology(ReferenceFE{D},ReferenceFE{D},get_background_model(trian_out))
+  get_out_dof_ids(space) = get_cell_dof_ids(space,trian_out)
+
   return LocalOperator(
-    local_map, trian_out, trian_out, space_out, weakform, collect_coefficients, ptopo
+    local_map, trian_out, trian_out, space_out, weakform, get_out_dof_ids, collect_coefficients
   )
 end
 
 (P::LocalOperator)(u) = evaluate(P,u)
 
-function Arrays.evaluate!(
-  cache,k::LocalOperator,space::SingleFieldFESpace
+function Arrays.evaluate!(cache,k::LocalOperator,u)
+  _evaluate_local_operator(k,k.space_out,u)
+end
+
+function _evaluate_local_operator(k::LocalOperator,space_out::SingleFieldFESpace,u)
+  cell_coeffs = _compute_local_solves(k,u)
+  return _local_operator_output(k,space_out,u,cell_coeffs,1)
+end
+
+function _local_operator_output(
+  k::LocalOperator,space_out::SingleFieldFESpace,u::CellField,cell_coeffs,row
 )
-  @notimplementedif !isa(k.space_out,SingleFieldFESpace)
-  cell_shapefuns = _compute_local_solves(k,get_trial_fe_basis(space))
-  domain = DomainStyle(get_fe_basis(k.space_out))
+  _data = _split_local_solves(space_out,k.trian_out,cell_coeffs;row)
+  data = is_trial_fe_basis(u) ? lazy_map(transpose,_data) : _data
+  domain = DomainStyle(get_fe_basis(space_out))
+  return GenericCellField(data,k.trian_out,domain)
+end
+
+function _local_operator_output(
+  k::LocalOperator,space_out::SingleFieldFESpace,space::SingleFieldFESpace,cell_coeffs,row
+)
+  cell_shapefuns = _split_local_solves(space_out,k.trian_out,cell_coeffs;row)
+  domain = DomainStyle(get_fe_basis(space_out))
   fe_basis = SingleFieldFEBasis(cell_shapefuns,k.trian_out,TestBasis(),domain)
-  return PatchFESpace(space,k.trian_out,k.ptopo,fe_basis)
+  return PatchFESpace(space,k.trian_out,k.get_out_dof_ids(space),fe_basis)
 end
 
-function Arrays.evaluate!(
-  cache,k::LocalOperator,v::SingleFieldFEBasis{<:TestBasis}
-)
-  u = FESpaces.similar_fe_basis(
-    v,lazy_map(transpose,get_data(v)),get_triangulation(v),TrialBasis(),DomainStyle(v)
-  )
-  data = _compute_local_solves(k,u)
-  domain = DomainStyle(get_fe_basis(k.space_out))
-  return GenericCellField(data,k.trian_out,domain)
+function _compute_local_solves(k::LocalOperator,space::FESpace)
+  _compute_local_solves(k,get_trial_fe_basis(space))
 end
 
-function Arrays.evaluate!(
-  cache,k::LocalOperator,u::SingleFieldFEBasis{<:TrialBasis}
-)
-  _data = _compute_local_solves(k,u)
-  data = lazy_map(transpose,_data)
-  domain = DomainStyle(get_fe_basis(k.space_out))
-  return GenericCellField(data,k.trian_out,domain)
-end
-
-function Arrays.evaluate!(
-  cache,k::LocalOperator,v::CellField
-)
-  is_test(v) = eltype(get_data(v)) <: AbstractVector{<:Field}
-  is_trial(v) = eltype(get_data(v)) <: AbstractMatrix{<:Field}
-  u = is_test(v) ? CellData.similar_cell_field(v,lazy_map(transpose,get_data(v))) : v
-  _data = _compute_local_solves(k,u)
-  data = is_trial(v) ? lazy_map(transpose,_data) : _data
-  domain = DomainStyle(get_fe_basis(k.space_out))
-  return GenericCellField(data,k.trian_out,domain)
-end
-
-function _compute_local_solves(
-  k::LocalOperator, u::CellField
-)
-  cell_coeffs = lazy_map(k.local_map,k.weakform(u))
+function _compute_local_solves(k::LocalOperator,u::CellField)
+  v = is_test_fe_basis(u) ? as_trial_fe_basis(u) : u
+  cell_coeffs = lazy_map(k.local_map,k.weakform(v))
   cell_coeffs = _move_patch_coeffs(k.trian_out,k.trian_coeffs,cell_coeffs)
   if k.collect_coefficients
     cell_coeffs = Arrays.lazy_collect(cell_coeffs)
   end
-  cell_fields = _split_local_solves(k.space_out,k.trian_out,cell_coeffs)
-  return cell_fields
+  return cell_coeffs
 end
 
 function _split_local_solves(

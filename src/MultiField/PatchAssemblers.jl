@@ -68,7 +68,7 @@ function FESpaces.PatchFESpace(
   space::MultiFieldFESpace, ptopo::PatchTopology; kwargs...
 )
   spaces = map(1:num_fields(space)) do field
-    FESpaces.PatchFESpace(spaces[field],ptopo; kwargs...)
+    FESpaces.PatchFESpace(space[field],ptopo; kwargs...)
   end
   style = MultiFieldStyle(space)
   return MultiFieldFESpace(spaces;style=style)
@@ -86,6 +86,18 @@ function FESpaces.PatchFESpace(
   return MultiFieldFESpace(spaces;style=style)
 end
 
+function FESpaces.PatchFESpace(
+  space::MultiFieldFESpace, trian::Triangulation, 
+  cell_dof_ids::Vector{<:AbstractArray}, fe_basis::MultiFieldCellField
+)
+  @check num_fields(fe_basis) == length(cell_dof_ids) == num_fields(space)
+  spaces = map(1:num_fields(space)) do field
+    FESpaces.PatchFESpace(space[field],trian,cell_dof_ids[field],fe_basis[field])
+  end
+  style = MultiFieldStyle(space)
+  return MultiFieldFESpace(spaces;style=style)
+end
+
 function FESpaces.FESpaceWithoutBCs(space::MultiFieldFESpace)
   spaces = map(FESpaces.FESpaceWithoutBCs,space)
   style = MultiFieldStyle(space)
@@ -94,30 +106,11 @@ end
 
 ###########################################################################################
 
-# The output space has one field per field of the input space: the shape functions of field
-# `i` are the images of the basis of the i-th input field.
-function Arrays.evaluate!(
-  cache,k::LocalOperator,space::MultiFieldFESpace
-)
-  @notimplementedif !isa(k.space_out,SingleFieldFESpace)
-  mf_shapefuns = FESpaces._compute_local_solves(k,get_trial_fe_basis(space))
-  @check length(mf_shapefuns) == num_fields(space)
-  domain = DomainStyle(get_fe_basis(k.space_out))
-  fe_basis = MultiFieldCellField(map(mf_shapefuns) do sf_shapefuns
-    SingleFieldFEBasis(sf_shapefuns,k.trian_out,TestBasis(),domain)
-  end)
-  return FESpaces.PatchFESpace(space,k.trian_out,k.ptopo,fe_basis)
-end
-
 function Arrays.evaluate!(
   cache,k::LocalOperator,u::MultiFieldFEBasisComponent
 )
-  nfields, fieldid = u.nfields, u.fieldid
-  block_fields(fields,::TestBasis) = lazy_map(BlockMap(nfields,fieldid),fields)
-  block_fields(fields,::TrialBasis) = lazy_map(BlockMap((1,nfields),fieldid),fields)
-
   sf = evaluate!(nothing,k,u.single_field)
-  return MultiFieldFEBasisComponent(sf,fieldid,nfields)
+  return MultiFieldFEBasisComponent(sf,u.fieldid,u.nfields)
 end
 
 @inline function Arrays.evaluate!(
@@ -126,64 +119,45 @@ end
   evaluate!(cache,k,u.multi_cell_field)
 end
 
-# TODO: The following is a bit of a mess... we would like to return (and allow as inputs)
-# a MultiFieldCellField of GenericCellFields. Unfortunately, the changes of domain for 
-# blocked cell-data is not implemented. Rather, there are specific functions for the 
-# change of domain of MultiFieldFEBasisComponent.
-# What tod do? We woudl need to somehow add methods to the `extend`/`pos_neg_data` machinery.
-function Arrays.evaluate!(
-  cache,k::LocalOperator,u::MultiFieldCellField
-)
-  block_fields(fields,::TestBasis,i) = lazy_map(BlockMap(nfields,i),fields)
-  block_fields(fields,::TrialBasis,i) = lazy_map(BlockMap((1,nfields),i),fields)
-  _is_test(v::MultiFieldFEBasisComponent) = isa(BasisStyle(v),TestBasis)
-  _is_trial(v::MultiFieldFEBasisComponent) = isa(BasisStyle(v),TrialBasis)
-  _is_test(v) = eltype(get_data(v)) <: VectorBlock
-  _is_trial(v) = eltype(get_data(v)) <: MatrixBlock
-
-  domain = DomainStyle(get_fe_basis(k.space_out))
-  nfields = num_fields(u)
-  is_test  = all(_is_test, u.single_fields)
-  is_trial = all(_is_trial, u.single_fields)
-  is_basis = is_test || is_trial
-
-  if is_test
-    fields = map(1:nfields,u) do i,u
-      @assert isa(u,MultiFieldFEBasisComponent)
-      sf_data = lazy_map(transpose,CellData.get_data(u.single_field))
-      sf = FESpaces.similar_fe_basis(u.single_field,sf_data,get_triangulation(u),TrialBasis(),DomainStyle(u))
-      MultiFieldFEBasisComponent(sf,i,nfields)
-    end
-    v = MultiFieldCellField(fields)
-  else
-    v = u
+# Several outputs: one per field of `space_out`, from a single solve
+function FESpaces._evaluate_local_operator(k::LocalOperator,space_out::MultiFieldFESpace,u)
+  cell_coeffs = FESpaces._compute_local_solves(k,u)
+  return map(1:num_fields(space_out)) do field
+    FESpaces._local_operator_output(k,space_out[field],u,cell_coeffs,field)
   end
-  
-  mf_data = FESpaces._compute_local_solves(k,v)
-
-  if length(mf_data) != nfields
-    @assert isone(length(mf_data))
-    return GenericCellField(only(mf_data),k.trian_out,domain)
-  end
-
-  single_fields = map(1:nfields,mf_data,u) do i, sf_data, u
-    sf_data = is_trial ? lazy_map(transpose,sf_data) : sf_data
-    if is_basis
-      sf = FESpaces.similar_fe_basis(u.single_field,sf_data,k.trian_out,BasisStyle(u),domain)
-      MultiFieldFEBasisComponent(sf,i,nfields)
-    else
-      GenericCellField(sf_data,k.trian_out,domain)
-    end
-  end
-
-  return MultiFieldCellField(single_fields)
 end
 
-function FESpaces._split_local_solves(
-  space_out::MultiFieldFESpace, trian_out::Triangulation, cell_coeffs
+# The output space has one field per field of the input space: the shape functions of field
+# `i` are the images of the basis of the i-th input field.
+function FESpaces._local_operator_output(
+  k::LocalOperator,space_out::SingleFieldFESpace,space::MultiFieldFESpace,cell_coeffs,row
 )
-  nfields = num_fields(space_out)
-  map(1:nfields) do field
-    _split_local_solves(space_out[field], trian_out, cell_coeffs; row=field)
+  mf_shapefuns = FESpaces._split_local_solves(space_out,k.trian_out,cell_coeffs;row)
+  @check length(mf_shapefuns) == num_fields(space)
+  domain = DomainStyle(get_fe_basis(space_out))
+  fe_basis = MultiFieldCellField(map(mf_shapefuns) do sf_shapefuns
+    SingleFieldFEBasis(sf_shapefuns,k.trian_out,TestBasis(),domain)
+  end)
+  cell_dof_ids = map(k.get_out_dof_ids,space.spaces)
+  return FESpaces.PatchFESpace(space,k.trian_out,cell_dof_ids,fe_basis)
+end
+
+function FESpaces._local_operator_output(
+  k::LocalOperator,space_out::SingleFieldFESpace,u::MultiFieldCellField,cell_coeffs,row
+)
+  mf_data = FESpaces._split_local_solves(space_out,k.trian_out,cell_coeffs;row)
+  domain = DomainStyle(get_fe_basis(space_out))
+  is_trial = FESpaces.is_trial_fe_basis(u)
+  if !(is_trial || FESpaces.is_test_fe_basis(u))
+    return GenericCellField(mf_data,k.trian_out,domain)
   end
+
+  nfields = num_fields(u)
+  @check length(mf_data) == nfields
+  single_fields = map(1:nfields) do field
+    sf_data = is_trial ? lazy_map(transpose,mf_data[field]) : mf_data[field]
+    sf = FESpaces.similar_fe_basis(u[field].single_field,sf_data,k.trian_out,BasisStyle(u[field]),domain)
+    MultiFieldFEBasisComponent(sf,field,nfields)
+  end
+  return MultiFieldCellField(single_fields)
 end

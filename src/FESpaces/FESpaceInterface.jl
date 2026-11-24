@@ -184,10 +184,7 @@ end
 """
 """
 function get_trial_fe_basis(f::FESpace)
-  v = get_fe_basis(f)
-  cell_v = get_data(v)
-  cell_u = lazy_map(transpose,cell_v)
-  similar_fe_basis(v,cell_u,get_triangulation(v),TrialBasis(),DomainStyle(v))
+  as_trial_fe_basis(get_fe_basis(f))
 end
 
 function get_cell_shapefuns_trial(f::FESpace)
@@ -214,6 +211,47 @@ Has traits [`BasisStyle`](@ref) and [`DomainStyle`](@ref Gridap.CellData.DomainS
 abstract type FEBasis <: CellField end
 BasisStyle(::Type{<:FEBasis}) = @abstractmethod
 BasisStyle(::T) where T <: FEBasis = BasisStyle(T)
+
+"""
+    is_test_fe_basis(v::CellField)
+    is_trial_fe_basis(v::CellField)
+
+Return `true` if `v` is a test/trial basis, respectively.
+"""
+is_test_fe_basis(v::FEBasis) = isa(BasisStyle(v),TestBasis)
+is_trial_fe_basis(v::FEBasis) = isa(BasisStyle(v),TrialBasis)
+is_test_fe_basis(v::CellField) = eltype(get_data(v)) <: Union{AbstractVector{<:Field},VectorBlock}
+is_trial_fe_basis(v::CellField) = eltype(get_data(v)) <: Union{AbstractMatrix{<:Field},MatrixBlock}
+
+"""
+    as_trial_fe_basis(v::CellField)
+    as_test_fe_basis(u::CellField)
+
+Return a test basis `v` as a trial basis, or a trial basis `u` as a test basis.
+"""
+function as_trial_fe_basis(v::FEBasis)
+  @check is_test_fe_basis(v)
+  cell_u = lazy_map(transpose,get_data(v))
+  similar_fe_basis(v,cell_u,get_triangulation(v),TrialBasis(),DomainStyle(v))
+end
+
+function as_test_fe_basis(u::FEBasis)
+  @check is_trial_fe_basis(u)
+  cell_v = lazy_map(transpose,get_data(u))
+  similar_fe_basis(u,cell_v,get_triangulation(u),TestBasis(),DomainStyle(u))
+end
+
+function as_trial_fe_basis(v::CellField)
+  @check is_test_fe_basis(v)
+  cell_u = lazy_map(transpose,get_data(v))
+  similar_cell_field(v,cell_u,get_triangulation(v),DomainStyle(v))
+end
+
+function as_test_fe_basis(u::CellField)
+  @check is_trial_fe_basis(u)
+  cell_v = lazy_map(transpose,get_data(u))
+  similar_cell_field(u,cell_v,get_triangulation(u),DomainStyle(u))
+end
 
 struct SingleFieldFEBasis{BS<:BasisStyle,DS<:DomainStyle} <: FEBasis
   cell_basis::AbstractArray

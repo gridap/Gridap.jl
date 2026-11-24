@@ -161,6 +161,24 @@ CellData.get_triangulation(f::MultiFieldFEBasisComponent) = get_triangulation(f.
 FESpaces.BasisStyle(::Type{<:MultiFieldFEBasisComponent{B}}) where B = BasisStyle(B)
 CellData.DomainStyle(::Type{<:MultiFieldFEBasisComponent{B}}) where B = DomainStyle(B)
 
+FESpaces.is_test_fe_basis(f::MultiFieldFEBasisComponent) = FESpaces.is_test_fe_basis(f.single_field)
+FESpaces.is_trial_fe_basis(f::MultiFieldFEBasisComponent) = FESpaces.is_trial_fe_basis(f.single_field)
+FESpaces.is_test_fe_basis(f::MultiFieldCellField) = all(FESpaces.is_test_fe_basis,f.single_fields)
+FESpaces.is_trial_fe_basis(f::MultiFieldCellField) = all(FESpaces.is_trial_fe_basis,f.single_fields)
+
+function FESpaces.as_trial_fe_basis(f::MultiFieldFEBasisComponent)
+  MultiFieldFEBasisComponent(FESpaces.as_trial_fe_basis(f.single_field),f.fieldid,f.nfields)
+end
+function FESpaces.as_test_fe_basis(f::MultiFieldFEBasisComponent)
+  MultiFieldFEBasisComponent(FESpaces.as_test_fe_basis(f.single_field),f.fieldid,f.nfields)
+end
+function FESpaces.as_trial_fe_basis(f::MultiFieldCellField)
+  MultiFieldCellField(map(FESpaces.as_trial_fe_basis,f.single_fields))
+end
+function FESpaces.as_test_fe_basis(f::MultiFieldCellField)
+  MultiFieldCellField(map(FESpaces.as_test_fe_basis,f.single_fields))
+end
+
 function FESpaces.CellData.similar_cell_field(
   f::MultiFieldFEBasisComponent,cell_data,trian,ds::DomainStyle)
   @notimplemented
