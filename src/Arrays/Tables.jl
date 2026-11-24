@@ -800,6 +800,42 @@ function merge_entries(
 end
 
 """
+    merge_entries(a_to_lb_to_b::Table{<:Integer}, c_to_la_to_a::Table, nb::Integer) -> c_to_lb_to_b
+
+Version of [`merge_entries`](@ref) for integer entries in `1:nb`. Entries `b <= 0` are dropped
+(as in [`inverse_table`](@ref)). Each row of the result is sorted and without duplicates, i.e.
+the same as `merge_entries(a_to_lb_to_b, c_to_la_to_a; acc = SortedSet{T}())` (when all entries
+are positive), but duplicates are detected with a marker array of length `nb` instead of a set.
+"""
+function merge_entries(
+  a_to_lb_to_b::Table{T}, c_to_la_to_a::Table, nb::Integer
+) where T<:Integer
+  n_c = length(c_to_la_to_a)
+  mark = zeros(Int32,nb) # mark[b] == c: b already in row c
+  ptrs = zeros(Int32,n_c+1)
+  for c in 1:n_c, a in dataview(c_to_la_to_a,c), b in dataview(a_to_lb_to_b,a)
+    (b > 0 && mark[b] != c) || continue
+    mark[b] = c
+    ptrs[c+1] += 1
+  end
+  length_to_ptrs!(ptrs)
+
+  data = Vector{T}(undef,ptrs[end]-1)
+  fill!(mark,0)
+  for c in 1:n_c
+    p = ptrs[c]
+    for a in dataview(c_to_la_to_a,c), b in dataview(a_to_lb_to_b,a)
+      (b > 0 && mark[b] != c) || continue
+      mark[b] = c
+      data[p] = b
+      p += 1
+    end
+    sort!(view(data,ptrs[c]:p-1))
+  end
+  return Table(data,ptrs)
+end
+
+"""
     block_identity_array(::Type{T},ptrs) where T
 
 Given a vector of pointers of length `n+1`, returns a vector of length `ptrs[end]-1`

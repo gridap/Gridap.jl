@@ -258,4 +258,13 @@ empty_vals = [Int[]]
 vals_empty = gather_table_values(empty_ids, empty_vals)
 @test isempty(vals_empty)
 
+# merge_entries, integer version (sorted unique rows, entries <= 0 dropped)
+a_to_bs = Table([[3,1],[1,0,2],Int[],[5,-1,3]])
+c_to_as = Table([[1,2],[3],[4,1,2],[2,2]])
+c_to_bs = Arrays.merge_entries(a_to_bs,c_to_as,5)
+@test c_to_bs == Table([[1,2,3],Int[],[1,2,3,5],[1,2]])
+@test eltype(c_to_bs.data) == Int
+c_to_bs_set = Arrays.merge_entries(a_to_bs,c_to_as;post=s->sort!(filter(>(0),collect(s))))
+@test c_to_bs == c_to_bs_set
+
 end # module
