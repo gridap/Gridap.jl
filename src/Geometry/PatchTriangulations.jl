@@ -1,26 +1,28 @@
 
 """
-    struct PatchTopology{Dc,Dp} <: GridapType
-      topo :: GridTopology{Dc,Dp}
+    struct PatchTopology{Dc,Dp,M,T<:GridTopology{Dc,Dp}} <: GridapType
+      topo :: T
       d_to_patch_to_dfaces :: Vector{Table{Int32,Vector{Int32},Vector{Int32}}}
+      metadata :: M
     end
 
 # Fields: 
 
 - `topo`: Underlying grid topology
 - `d_to_patch_to_dfaces`: For each dimension `d`, a table mapping each patch to it's d-faces.
+- `metadata`: Optional metadata associated with the patch topology.
 """
-struct PatchTopology{Dc,Dp,A} <: GridapType
-  topo :: GridTopology{Dc,Dp}
+struct PatchTopology{Dc,Dp,M,T<:GridTopology{Dc,Dp}} <: GridapType
+  topo :: T
   d_to_patch_to_dfaces :: Vector{Table{Int32,Vector{Int32},Vector{Int32}}}
-  metadata :: A
+  metadata :: M
   function PatchTopology(
     topo::GridTopology{Dc,Dp},
     d_to_patch_to_dfaces::Vector{Table{Int32,Vector{Int32},Vector{Int32}}},
-    metadata=nothing
+    metadata = nothing
   ) where {Dc,Dp}
-    A = typeof(metadata)
-    new{Dc,Dp,A}(topo,d_to_patch_to_dfaces,metadata)
+    M, T = typeof(metadata), typeof(topo)
+    new{Dc,Dp,M,T}(topo,d_to_patch_to_dfaces,metadata)
   end
 end
 
@@ -72,6 +74,45 @@ end
 function PatchTopology(model::DiscreteModel;kwargs...)
   D = num_cell_dims(model)
   PatchTopology(ReferenceFE{D},model;kwargs...)
+end
+
+struct MacroStarPatchMetadata{A<:MacroGridTopology}
+  macro_topo :: A
+  root_dim :: Int8
+  patch_roots :: Vector{Int32}
+end
+
+"""
+    PatchTopology(ReferenceFE{Dc},ReferenceFE{Df},mt::MacroGridTopology; patch_roots)
+
+Patches of the fine `Dc`-faces of the coarse `Dc`-faces around each coarse `Df`-face of `mt`
+(or only those in `patch_roots`), with `Df <= Dc`.
+
+In particular, `PatchTopology(mt)` has one patch per coarse cell (its fine cells), and
+`PatchTopology(ReferenceFE{d},ReferenceFE{d},mt)` one patch per coarse `d`-face.
+"""
+function PatchTopology(
+  ::Type{ReferenceFE{Dc}},::Type{ReferenceFE{Df}},mt::MacroGridTopology;
+  patch_roots = Base.OneTo(num_faces(mt,Df))
+) where {Dc,Df}
+  @check Df <= Dc <= num_cell_dims(mt)
+  topo = GridTopology(Polytope{Dc},get_grid_topology(mt))
+  root_to_cfaces = get_faces(mt,Df,Dc)[patch_roots]
+  patch_cells = Arrays.merge_entries(
+    get_coarse_to_fine_faces(mt,Dc,Dc),root_to_cfaces,num_faces(topo,Dc)
+  )
+  metadata = MacroStarPatchMetadata(mt,Int8(Df),collect(Int32,patch_roots))
+  PatchTopology(topo,patch_cells,metadata)
+end
+
+function PatchTopology(::Type{ReferenceFE{Df}},mt::MacroGridTopology;kwargs...) where Df
+  Dc = num_cell_dims(mt)
+  PatchTopology(ReferenceFE{Dc},ReferenceFE{Df},mt;kwargs...)
+end
+
+function PatchTopology(mt::MacroGridTopology;kwargs...)
+  D = num_cell_dims(mt)
+  PatchTopology(ReferenceFE{D},mt;kwargs...)
 end
 
 function InterfacePatchTopology(model::DiscreteModel; kwargs...)
@@ -263,7 +304,7 @@ end
 function generate_patch_faces(ptopo::PatchTopology{Dc},Df) where Dc
   cell_to_faces = get_faces(ptopo.topo,Dc,Df)
   patch_cells = get_patch_cells(ptopo)
-  return Arrays.merge_entries(cell_to_faces, patch_cells; acc = SortedSet{Int32}())
+  return Arrays.merge_entries(Table(cell_to_faces), patch_cells, num_faces(ptopo.topo,Df))
 end
 
 function generate_patch_faces(ptopo::PatchTopology,dimfrom::Integer,dimto::Integer)

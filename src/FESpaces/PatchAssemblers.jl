@@ -114,13 +114,15 @@ end
 
 # Takes all dofs owned by a face that is connected to the root of the patch.
 # This is different than :interior for patches whose root is on the domain boundary.
+# For star patches around coarse faces (`MacroStarPatchMetadata`), connected to the root
+# means that the coarse face of the dface is incident to the root.
 function get_patch_assembly_ids(::Val{:star},space::FESpace, ptopo::PatchTopology)
-  @check ptopo.metadata isa Geometry.StarPatchMetadata """
-    PatchTopology does not have StarPatchMetadata metadata.
+  metadata = ptopo.metadata
+  @check metadata isa Union{Geometry.StarPatchMetadata,Geometry.MacroStarPatchMetadata} """
+    PatchTopology does not have StarPatchMetadata or MacroStarPatchMetadata metadata.
   """
   D = num_cell_dims(ptopo)
-  topo, metadata = ptopo.topo, ptopo.metadata
-  Dr, patch_roots = metadata.root_dim, metadata.patch_roots
+  patch_roots = metadata.patch_roots
 
   # A dpface is masked (removed) iff
   #  - It is a boundary of the patch, AND
@@ -129,20 +131,34 @@ function get_patch_assembly_ids(::Val{:star},space::FESpace, ptopo::PatchTopolog
 
     dpface_to_dface = Geometry.get_patch_faces(ptopo,d).data
     dpface_to_patch = Geometry.get_pface_to_patch(ptopo,d)
-    root_to_dfaces = Geometry.get_faces(topo,Dr,d)
-    
+    is_connected = _root_connectivity(metadata,ptopo.topo,d)
+
     dpface_to_mask = Geometry.compute_isboundary_face(ptopo,d)
     for (dpface, dface) in enumerate(dpface_to_dface)
       !dpface_to_mask[dpface] && continue # Already interior
-      # Check if it is connected to the root
       root = patch_roots[dpface_to_patch[dpface]]
-      dpface_to_mask[dpface] = (dface ∉ view(root_to_dfaces,root))
+      dpface_to_mask[dpface] = !is_connected(root,dface)
     end
 
     return dpface_to_mask
   end
 
   return _patch_assembly_ids_masked(space,ptopo,d_to_dpface_to_mask)
+end
+
+function _root_connectivity(metadata::Geometry.StarPatchMetadata,topo,d)
+  root_to_dfaces = Geometry.get_faces(topo,metadata.root_dim,d)
+  (root,dface) -> dface ∈ dataview(root_to_dfaces,root)
+end
+
+function _root_connectivity(metadata::Geometry.MacroStarPatchMetadata,topo,d)
+  mt, Dr = metadata.macro_topo, metadata.root_dim
+  dface_to_cdim, dface_to_cface = Geometry.get_fine_to_coarse_faces(mt,d)
+  function is_connected(root,dface)
+    cdim = dface_to_cdim[dface]
+    cface = dface_to_cface[dface]
+    cface ∈ dataview(Geometry.get_faces(mt,Dr,cdim),root)
+  end
 end
 
 # Takes all dofs owned by a face that is not boundary of the patch

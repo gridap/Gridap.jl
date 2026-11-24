@@ -14,7 +14,7 @@ using FillArrays
 
 using LinearAlgebra: ⋅, Diagonal
 using Statistics: mean
-using DataStructures: SortedSet
+using DataStructures: SortedSet, IntDisjointSets, find_root!
 using SparseArrays: sparse
 using Graphs: Graph, is_connected
 
@@ -110,6 +110,7 @@ export expand_cell_data
 export compress_cell_data
 
 export UnstructuredGridTopology
+export MacroGridTopology
 
 export Triangulation
 export get_reffes
@@ -248,6 +249,8 @@ include("SkeletonTriangulations.jl")
 include("AppendedTriangulations.jl")
 
 include("CompressedCellArrays.jl")
+
+include("MacroGridTopologies.jl")
 
 include("PatchTriangulations.jl")
 

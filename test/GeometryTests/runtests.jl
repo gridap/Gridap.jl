@@ -42,4 +42,6 @@ using Test
 
 @testset "PatchTriangulations" begin include("PatchTriangulationsTests.jl") end
 
+@testset "MacroGridTopologies" begin include("MacroGridTopologiesTests.jl") end
+
 end # module
