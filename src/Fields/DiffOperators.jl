@@ -254,9 +254,9 @@ function codifferential end
 codifferential(ω, ::UniformScaling) =
   Operation(partials_to_flat_codifferential)(partial_derivatives(ω))
 
-function codifferential(ω, g, metric_args...)
-  Γ = Operation(partials_to_Christoffel_2)(partial_derivatives(g), g, metric_args...)
-  Operation(partials_to_codifferential)(partial_derivatives(ω), ω, Γ, g, metric_args...)
+function codifferential(ω, g)
+  Γ = Operation(partials_to_Christoffel_2)(∂(g), g)
+  Operation(partials_to_codifferential)(∂(ω), ω, Γ, g)
 end
 
 const δ = codifferential
@@ -317,18 +317,16 @@ end
 
 # `δ` reads the metric, which a field array carries no more than a field does,
 # so its broadcast takes the metric arguments the operator itself takes.
-return_value(k::Broadcasting{typeof(codifferential)},f,metric_args...) =
-  evaluate!(nothing,k,f,metric_args...)
+return_value(k::Broadcasting{typeof(codifferential)},f,metric) =
+  evaluate!(nothing,k,f,metric)
 
 function evaluate!(cache,::Broadcasting{typeof(codifferential)},f,::UniformScaling)
-  Broadcasting(Operation(partials_to_flat_codifferential))(Broadcasting(partial_derivatives)(f))
+  Broadcasting(Operation(partials_to_flat_codifferential))(Broadcasting(∂)(f))
 end
 
-function evaluate!(cache,::Broadcasting{typeof(codifferential)},f,g,metric_args...)
-  Γ = Broadcasting(Operation(partials_to_Christoffel_2))(
-        Broadcasting(partial_derivatives)(g), g, metric_args...)
-  Broadcasting(Operation(partials_to_codifferential))(
-    Broadcasting(partial_derivatives)(f), f, Γ, g, metric_args...)
+function evaluate!(cache,::Broadcasting{typeof(codifferential)},f,g)
+  Γ = Broadcasting(Operation(partials_to_Christoffel_2))(Broadcasting(∂)(g), g)
+  Broadcasting(Operation(partials_to_codifferential))(Broadcasting(∂)(f), f, Γ, g)
 end
 
 return_value(k::Broadcasting{typeof(covariant_derivative)}, a, args...) =

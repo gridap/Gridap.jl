@@ -252,21 +252,18 @@ end
 codifferential(ω::Function, x::Point, ::UniformScaling) =
   partials_to_flat_codifferential(partial_derivatives(ω,x))
 
-# With the metric given as functions too, `g` and the `metric_args` that
-# `partials_to_codifferential` takes after it:
-#
-# function codifferential(ω::Function, g::Function, metric_args::Function...)
-#   function _codifferential(x)
-#     codifferential(ω,x,g,metric_args...)
-#   end
-# end
-#
-# function codifferential(ω::Function, x::Point, g::Function, metric_args::Function...)
-#   gx = g(x)
-#   args = map(a -> a(x), metric_args)
-#   Γ = partials_to_Christoffel_2(partial_derivatives(g,x), gx, args...)
-#   partials_to_codifferential(partial_derivatives(ω,x), ω(x), Γ, gx, args...)
-# end
+# With the metric given as a function too, of its covariant value
+function codifferential(ω::Function, g::Function)
+  function _codifferential(x)
+    codifferential(ω,x,g)
+  end
+end
+
+function codifferential(ω::Function, x::Point, g::Function)
+  gx = g(x)
+  Γ = partials_to_Christoffel_2(partial_derivatives(g,x), gx)
+  partials_to_codifferential(partial_derivatives(ω,x), ω(x), Γ, gx)
+end
 
 function lie_derivative(v::Function, ω::Function)
   function _lie_derivative(x)
