@@ -365,10 +365,13 @@ function compute_face_to_cell_reference_map(
 end
 
 function compute_face_to_cell_reference_map(
-  cell_grid::PolytopalGrid{3},face_grid::Grid,glue::FaceToCellGlue
+  cell_grid::PolytopalGrid,face_grid::Grid,glue::FaceToCellGlue
 )
-  # The reference space of the cells is the physical one. The facets are polygons,
-  # which also live in the physical space. Edges and vertices have a reference space.
+  # The reference space of the cells is the physical one, so the map is the cell map of
+  # the faces: the identity for polygons (which also live in the physical space), the
+  # usual geometrical map for edges and vertices (which have a reference space).
+  # This also avoids the generic method, which loops over the cell types: in a polytopal
+  # grid there is one per cell.
   return get_cell_map(face_grid)
 end
 
