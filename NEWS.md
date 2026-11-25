@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added compatibility for `NLsolve.jl` v5 and `DocStringExtensions.jl` v0.10. Since PR [#1358](https://github.com/gridap/Gridap.jl/pull/1358).
+- Added support for exporting polynomials of order 3 or more in 1D to VTK. Since PR [#1361](https://github.com/gridap/Gridap.jl/pull/1361).
 
 ## [0.20.11] - 2026-11-18
 
