@@ -3,6 +3,7 @@ module UniformRefinementTests
 using Test
 using Gridap
 using Gridap.Adaptivity
+using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.ReferenceFEs
 using Gridap.Adaptivity: uniformly_refine
@@ -103,5 +104,25 @@ uh = interpolate(u3,U)
 dΩ = Measure(Ω,1)
 e = u3 - uh
 @test sqrt(sum(∫( e⋅e )*dΩ )) < 1.0e-10
+
+# Surface mesh in 3D: the boundary of a tetrahedron
+coords = Point{3,Float64}[(0,0,0),(2,0,0),(0,2,0),(0,0,2)]
+cell_vertices = Table([[1,2,3],[1,2,4],[1,3,4],[2,3,4]])
+grid = UnstructuredGrid(coords,cell_vertices,[LagrangianRefFE(Float64,TRI,1)],ones(Int8,4))
+surface = UnstructuredDiscreteModel(grid)
+fine_surface = refine(surface,2).model
+midpoints = Point{3,Float64}[(1,0,0),(0,1,0),(0,0,1),(1,1,0),(1,0,1),(0,1,1)]
+fine_coords = get_vertex_coordinates(get_grid_topology(fine_surface))
+@test fine_coords isa Vector{Point{3,Float64}}
+@test issetequal(fine_coords,[coords; midpoints])
+@test num_cells(fine_surface) == 16
+
+# The type of the new coordinates is inferred
+topo = get_grid_topology(surface)
+cell_rr, perms = Adaptivity._uniform_cell_rr_and_face_perms(Val(2),topo,collect(get_cell_type(surface)),trues(4),2)
+cell_l2g, n_nodes = Adaptivity._uniform_cell_l2gmap_and_nnodes(topo,cell_rr,perms)
+cell_ref_coords = lazy_map(get_node_coordinates,lazy_map(Adaptivity.get_ref_grid,cell_rr))
+cell_map = get_cell_map(grid)
+@test fine_coords == @inferred Adaptivity._uniform_coordinates(cell_ref_coords,cell_l2g,cell_map,n_nodes)
 
 end

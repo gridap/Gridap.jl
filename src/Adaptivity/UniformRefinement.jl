@@ -433,7 +433,8 @@ end
 
 # Return the coordinates of the uniformly refined mesh.
 function _uniform_coordinates(cell_ref_coords, cell_l2g, cell_map, n_nodes)
-  coords = similar(first(cell_ref_coords), n_nodes)
+  P = return_type(testitem(cell_map), testitem(testitem(cell_ref_coords)))
+  coords = Vector{P}(undef, n_nodes)
   cell_l2g = Table(cell_l2g)
   @inbounds Threads.@threads for ci in eachindex(cell_l2g)
     ref_co = cell_ref_coords[ci]
