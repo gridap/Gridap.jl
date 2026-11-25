@@ -113,6 +113,9 @@ writevtk(x,f,celldata=["cellid" => collect(1:num_cells(trian))], nodaldata = ["x
 
 
 # Write VTK_LAGRANGE_* FE elements
+for order in 1:10
+  writevtk(Grid(LagrangianRefFE(Float64,SEGMENT,order)),joinpath(d,"segment_order$order"))
+end
 writevtk(Grid(LagrangianRefFE(Float64,TRI,3)),joinpath(d,"tri_order3"))
 writevtk(Grid(LagrangianRefFE(Float64,TRI,4)),joinpath(d,"tri_order4"))
 writevtk(Grid(LagrangianRefFE(Float64,TRI,5)),joinpath(d,"tri_order5"))
