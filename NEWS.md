@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `+` and `-` of `HighOrderTensorValue`s with more than 32 components are now type-stable. Since PR[#1350](https://github.com/gridap/Gridap.jl/pull/1350).
 - Implemented `Base.muladd` for `MultiValue`'d inputs, optimizing it using fma if an argument is scalar. Since PR[#1347](https://github.com/gridap/Gridap.jl/pull/1347).
 - Raviart–Thomas, Nédélec and BDM now work on non-oriented meshes, except for Nédélec on tetrahedra (one must use `rotating_pλ`, `trimmed_pλ` for that). Since PR[#1349](https://github.com/gridap/Gridap.jl/pull/1349).
+- Uniform `refine(model, n)` of meshes whose cells have a lower dimension than the space, e.g. surfaces in 3D.
 
 ### Changed
 
