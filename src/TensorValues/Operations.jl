@@ -606,7 +606,7 @@ the specific functions above if possible), but is used as default generic implem
   for cib in CartesianIndices(Sb_keep) # Julia is column major, last index enumerates first
     for cia in CartesianIndices(Sa_keep)
       summands = [:(a[$cia, $ciC]*b[$ciC, $cib]) for ciC in CartesianIndices(S_contract)]
-      push!(comps, Expr(:call, :+, summands...))
+      push!(comps, reduce((x, y) -> :($x + $y), summands))
     end
   end
   iszero(Nr) ? :( $(comps[1]) ) : :( $V($(comps...)) )
