@@ -50,6 +50,9 @@ is_child(t1::Triangulation,t2::AdaptedTriangulation) = false
 
 is_related(t1::Triangulation,t2::Triangulation) = is_child(t1,t2) || is_child(t2,t1)
 
+# Whether the cells of `t` are cells of its background model, rather than lower dimensional faces.
+_is_not_subdimensional(t::Triangulation) = num_cell_dims(t) == num_cell_dims(get_background_model(t))
+
 
 # Wrap Triangulation API
 function Geometry.get_background_model(t::AdaptedTriangulation)
@@ -151,29 +154,29 @@ for (stype,ttype) in [(:AdaptedTriangulation,:AdaptedTriangulation),(:AdaptedTri
       if (get_background_model(strian) === get_background_model(ttrian))
         return is_change_possible($sstrian,$tttrian)
       end
-      
-      strian_is_cell_wise = (num_cell_dims(strian) == num_point_dims(strian))
-      trians_are_related  = is_related(strian,ttrian)
-      return strian_is_cell_wise && trians_are_related
+
+      strian_isnt_subdim = _is_not_subdimensional(strian)
+      trians_are_related = is_related(strian,ttrian)
+      return strian_isnt_subdim && trians_are_related
     end
   end
   @eval begin
     function Geometry.best_target(strian::$stype,ttrian::$ttype)
       @check is_change_possible(strian,ttrian)
-    
+
       (strian === ttrian) && (return ttrian)
-    
+
       if (get_background_model(strian) === get_background_model(ttrian))
         return best_target($sstrian,$tttrian)
       end
 
-      ttrian_is_cell_wise = (num_cell_dims(ttrian) == num_point_dims(ttrian))
-      strian_is_cell_wise = (num_cell_dims(strian) == num_point_dims(strian))
-    
-      if strian_is_cell_wise && ttrian_is_cell_wise
+      ttrian_isnt_subdim = _is_not_subdimensional(ttrian)
+      strian_isnt_subdim = _is_not_subdimensional(strian)
+
+      if strian_isnt_subdim && ttrian_isnt_subdim
         # Choose the child mesh, both ways are possible
         is_child(ttrian,strian) ? (return ttrian) : (return strian)
-      elseif strian_is_cell_wise
+      elseif strian_isnt_subdim
         return strian
       end
 
@@ -190,7 +193,7 @@ function CellData.change_domain(a::CellField,strian::Triangulation,::ReferenceDo
     b = change_domain(a,strian,ReferenceDomain(),ttrian.trian,ReferenceDomain())
     return CellData.similar_cell_field(b,get_data(b),ttrian,ReferenceDomain())
   end
-  
+
   return change_domain_o2n(a,strian,ttrian)
 end
 
@@ -200,7 +203,7 @@ function CellData.change_domain(a::CellField,strian::AdaptedTriangulation,::Refe
   if (get_background_model(strian) === get_background_model(ttrian))
     return change_domain(a,strian.trian,ReferenceDomain(),ttrian,ReferenceDomain())
   end
-  
+
   return change_domain_n2o(a,strian,ttrian)
 end
 
@@ -235,13 +238,35 @@ for sdomain in [:ReferenceDomain,:PhysicalDomain]
   end
 end
 
+# For physical source, reference target, between different models. With coarse and
+# fine cell maps `cmap_c` and `cmap_f`, and `Φ` from a fine cell to its parent:
+# - without this specialization, the generic CellData method goes through the
+#   physical domain of `ttrian`: ((a∘cmap_c∘Φ)∘inv(cmap_f))∘cmap_f. The `cmap_f`
+#   and `inv(cmap_f)` are not cancelled, and the Newton solve for inv fails if
+#   Dc < Dp and cmap_f is not affine,
+# - with it, the result is a∘cmap_c∘Φ, as for reference to reference moves.
+# Moves from fine to coarse avoid `inv(cmap_c)` in the same way.
+for (stype,ttype) in [(:AdaptedTriangulation,:AdaptedTriangulation),(:AdaptedTriangulation,:Triangulation),(:Triangulation,:AdaptedTriangulation)]
+  @eval begin
+    function CellData.change_domain(a::CellField,strian::$stype,::PhysicalDomain,ttrian::$ttype,::ReferenceDomain)
+      if (get_background_model(strian) === get_background_model(ttrian))
+        a_ttrian = change_domain(a,strian,PhysicalDomain(),ttrian,PhysicalDomain())
+        return change_domain(a_ttrian,ReferenceDomain())
+      end
+
+      a_ref = change_domain(a,ReferenceDomain())
+      return change_domain(a_ref,strian,ReferenceDomain(),ttrian,ReferenceDomain())
+    end
+  end
+end
+
 function Geometry.move_contributions(scell_to_val::AbstractArray, strian::AdaptedTriangulation, ttrian::Triangulation{Dc}) where Dc
-  # Default Gridap 
+  # Default Gridap
   if get_background_model(strian) === get_background_model(ttrian)
     return move_contributions(scell_to_val,strian.trian,ttrian)
   end
-  
-  # Else 
+
+  # Else
   smodel = get_adapted_model(strian)
   @check get_parent(smodel) === get_background_model(ttrian)
 
@@ -287,7 +312,7 @@ function change_domain_n2o(f_new,new_trian::AdaptedTriangulation,old_trian::Tria
 end
 
 """
-  Given a AdaptivityGlue and a CellField defined on the parent(old) mesh, 
+  Given a AdaptivityGlue and a CellField defined on the parent(old) mesh,
   returns an equivalent CellField on the child(new) mesh.
 """
 function change_domain_o2n(f_old,old_trian::Triangulation,new_trian::AdaptedTriangulation,glue::AdaptivityGlue)
@@ -298,7 +323,7 @@ function change_domain_o2n(f_coarse,ctrian::Triangulation{Dc},ftrian::AdaptedTri
   cglue = get_glue(ctrian,Val(Dc))
   fglue = get_glue(ftrian,Val(Dc))
 
-  @notimplementedif num_point_dims(ctrian) != Dc
+  @notimplementedif !_is_not_subdimensional(ctrian)
   @notimplementedif isa(fglue,Nothing)
 
   if (num_cells(ctrian) != 0)
@@ -307,7 +332,7 @@ function change_domain_o2n(f_coarse,ctrian::Triangulation{Dc},ftrian::AdaptedTri
     coarse_mface_to_field = extend(coarse_tface_to_field,cglue.mface_to_tface)
 
     ### Old Model -> New Model
-    # Coarse field but with fine indexing, i.e 
+    # Coarse field but with fine indexing, i.e
     #   f_f2c[i_fine] = f_coarse[coarse_parent(i_fine)]
     f_f2c = o2n_reindex(coarse_mface_to_field,glue)
 
@@ -337,7 +362,7 @@ function change_domain_o2n(
   oglue = get_glue(old_trian,Val(Dc))
   nglue = get_glue(new_trian,Val(Dc))
 
-  @notimplementedif num_point_dims(old_trian) != Dc
+  @notimplementedif !_is_not_subdimensional(old_trian)
   @notimplementedif isa(nglue,Nothing)
 
   if (num_cells(old_trian) != 0)
@@ -364,11 +389,11 @@ function change_domain_o2n(
   else
     f_new = Fill(zero(testitem(CellData.get_data(f_old))),num_cells(new_trian))
     return CellData.similar_cell_field(f_old,f_new,new_trian,ReferenceDomain())
-  end 
+  end
 end
 
 """
-  Given a AdaptivityGlue and a CellField defined on the child(new) mesh, 
+  Given a AdaptivityGlue and a CellField defined on the child(new) mesh,
   returns an equivalent CellField on the parent(old) mesh.
 """
 function change_domain_n2o(f_new,new_trian::AdaptedTriangulation,old_trian::Triangulation,glue::AdaptivityGlue)
@@ -379,7 +404,7 @@ function change_domain_n2o(f_fine,ftrian::AdaptedTriangulation{Dc},ctrian::Trian
   fglue = get_glue(ftrian,Val(Dc))
   cglue = get_glue(ctrian,Val(Dc))
 
-  @notimplementedif num_point_dims(ftrian) != Dc
+  @notimplementedif !_is_not_subdimensional(ftrian)
   @notimplementedif isa(cglue,Nothing)
 
   if (num_cells(ctrian) != 0)

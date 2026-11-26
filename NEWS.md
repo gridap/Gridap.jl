@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Uniform `refine(model, n)` of meshes whose cells have a lower dimension than the space, e.g. surfaces in 3D.
+- `change_domain` of `CellField`s is now implemented between an adapted model and its parent when the cells have a lower dimension than the space, e.g. surfaces in 3D. A `CellField` in the `PhysicalDomain` is now moved to the `ReferenceDomain` of a related adapted triangulation without inverting its cell maps.
 
 ### Changed
 
