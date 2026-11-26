@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Uniform `refine(model, n)` of meshes whose cells have a lower dimension than the space, e.g. surfaces in 3D.
-- `inner` and the other contractions of tensors with many summands per component (`inner` of 4th order tensors in 3D no longer allocate).
+- `inner` and the other contractions of tensors with many summands per component (`inner` of 4th order tensors in 3D no longer allocate). Since PR [#1365](https://github.com/gridap/Gridap.jl/pull/1365).
 
 ## [0.20.11] - 2026-11-18
 
