@@ -13,3 +13,4 @@ const SUITE = BenchmarkGroup()
 
 @include_bm SUITE "bm_assembly"
 @include_bm SUITE "bm_monomial_basis"
+@include_bm SUITE "bm_tensor_values"
