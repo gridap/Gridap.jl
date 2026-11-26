@@ -1744,8 +1744,9 @@ for h in (h5, h4)
 end
 
 # inner of 4th order tensors in 3D (a sum of 81 terms) does not allocate
+inner_allocations(a, b) = @allocated inner(a, b)
 @test inner(h4, h4) == sum(abs2, Tuple(h4))
-@allocated inner(h4, h4)  # compile
-@test (@allocated inner(h4, h4)) == 0
+inner_allocations(h4, h4)  # compile
+@test inner_allocations(h4, h4) == 0
 
 end # module OperationsTests
