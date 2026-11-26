@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added compatibility for `NLsolve.jl` v5 and `DocStringExtensions.jl` v0.10. Since PR [#1358](https://github.com/gridap/Gridap.jl/pull/1358).
 - Added support for exporting polynomials of order 3 or more in 1D to VTK. Since PR [#1361](https://github.com/gridap/Gridap.jl/pull/1361).
+- Added `CellField(f::Field, trian, ds::DomainStyle)`, the same `Field` on every cell, and `CellField(f::AbstractArray{<:Field}, trian, ds::DomainStyle)`, one `Field` per cell.
 - Since PR[#XXXX](https://github.com/gridap/Gridap.jl/pull/XXXX):
   - Initial experimental support (API is still unstable) for varianced tensor dimensions: a `MultiValue` size may hold `Cov`/`Con` dimensions in addition to plain `Int`s, and the operations of `TensorValues` honour them. Added the predicates `can_contract`, `is_same_variance` and `inverse_variance`, and `tensor_type`, which counts the dimensions of each variance.
   - Added `from_0form`, the inverse of `to_0form`.

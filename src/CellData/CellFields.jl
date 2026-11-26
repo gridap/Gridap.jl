@@ -98,10 +98,12 @@ end
     CellField(f::Function, trian::Triangulation, ds::DomainStyle=PhysicalDomain())
     CellField(f::Number,   trian::Triangulation, ds::DomainStyle)
     CellField(f::AbstractArray{<:Number}, trian::Triangulation, ds::DomainStyle)
+    CellField(f::Field,    trian::Triangulation, ds::DomainStyle)
+    CellField(f::AbstractArray{<:Field},  trian::Triangulation, ds::DomainStyle)
     CellField(f::CellField, trian::Triangulation, ds::DomainStyle=ReferenceDomain())
 
 Generic `CellField` factory for closed form cell fields. The default `DomainStyle` is `ReferenceDomain`
-except for julia `Function`s.
+except for julia `Function`s. `Field`s have no default.
 """ # Functions are assumed physical
 CellField(f::Function, trian::Triangulation) = CellField(f, trian, PhysicalDomain())
 
@@ -130,6 +132,29 @@ function CellField(f::AbstractArray{<:Number},trian::Triangulation,domain_style:
   """
   cell_field = lazy_map(constant_field,f)
   GenericCellField(cell_field,trian,domain_style)
+end
+
+function CellField(f::Field,trian::Triangulation,domain_style::DomainStyle)
+  s = size(get_cell_map(trian))
+  CellField(Fill(f,s),trian,domain_style)
+end
+
+function CellField(f::AbstractArray{<:Field},trian::Triangulation,domain_style::DomainStyle)
+  @check length(f)==num_cells(trian)  """\n
+  You are trying to build a CellField from an array of length $(length(f))
+  on a Triangulation with $(num_cells(trian)) cells. The length of the given array
+  and the number of cells should match.
+  """
+  GenericCellField(f,trian,domain_style)
+end
+
+# A `Field` can be a reference map (shape functions) or a physical one (geometry):
+# no `DomainStyle` is a safe default.
+function CellField(f::Union{Field,AbstractArray{<:Field}},trian::Triangulation)
+  throw(ArgumentError("""
+  The DomainStyle in which the Field(s) are evaluated must be given,
+  `CellField(f,trian,ReferenceDomain())` or `CellField(f,trian,PhysicalDomain())`.
+  """))
 end
 
 function CellField(f::CellField,trian::Triangulation,domain_style::DomainStyle)
