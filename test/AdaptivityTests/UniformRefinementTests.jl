@@ -7,6 +7,7 @@ using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.ReferenceFEs
 using Gridap.Adaptivity: uniformly_refine
+using Gridap.CellData: change_domain
 
 using ..EdgeBasedRefinementTests: test_grid_transfers
 
@@ -124,5 +125,17 @@ cell_l2g, n_nodes = Adaptivity._uniform_cell_l2gmap_and_nnodes(topo,cell_rr,perm
 cell_ref_coords = lazy_map(get_node_coordinates,lazy_map(Adaptivity.get_ref_grid,cell_rr))
 cell_map = get_cell_map(grid)
 @test fine_coords == @inferred Adaptivity._uniform_coordinates(cell_ref_coords,cell_l2g,cell_map,n_nodes)
+
+# CellFields move between the levels of a surface, coarse to fine and back
+f(x) = VectorValue(x[1]^2, x[2]*x[3], 1.0)
+adapted_surface = refine(surface,2)
+Ωc, Ωf = Triangulation(surface), Triangulation(adapted_surface)
+dΩc, dΩf = Measure(Ωc,4), Measure(Ωf,4)
+for fc in (CellField(f,Ωc), change_domain(CellField(f,Ωc),ReferenceDomain()))
+  ef = change_domain(fc,Ωf,ReferenceDomain()) - CellField(f,Ωf)
+  @test sqrt(sum(∫( ef⋅ef )*dΩf)) < 1.0e-12
+end
+ec = change_domain(CellField(f,Ωf),Ωc,ReferenceDomain()) - CellField(f,Ωc)
+@test sqrt(sum(∫( ec⋅ec )*dΩc)) < 1.0e-12
 
 end
