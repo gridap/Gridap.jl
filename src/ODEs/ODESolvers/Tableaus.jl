@@ -101,6 +101,12 @@ function Polynomials.get_order(tableau::AbstractTableau)
   @abstractmethod
 end
 
+function is_first_same_as_last(tableau::AbstractTableau)
+    A = get_matrix(tableau)
+    b = get_weights(tableau)
+    return @view(A[end,:]) == b && all(iszero, @view(A[begin,:]))
+end
+
 ##################
 # GenericTableau #
 ##################

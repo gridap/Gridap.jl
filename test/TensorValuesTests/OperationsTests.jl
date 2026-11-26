@@ -975,6 +975,28 @@ t = TensorValue{2,3}(1:6...)
 @test_throws ErrorException det(t)
 @test_throws ErrorException inv(t)
 
+# Inverse of fourth order tensors w.r.t. ⋅²
+I4 = NTensorValue(Val(4), Tuple(one(TensorValue{4,4,Int})))
+a = NTensorValue(Val(4), 1:16...) + 20*I4
+ai = inv(a)
+@test isa(ai, NTensorValue{NTuple{4,2}})
+@test a ⋅² ai ≈ I4
+@test ai ⋅² a ≈ I4
+
+@test inv(SymFourthOrderTensorValue{1}(4.0)) == SymFourthOrderTensorValue{1}(0.25)
+@test_throws SingularException inv(one(SymFourthOrderTensorValue{2,Float64}))
+@test_throws SingularException inv(one(SymFourthOrderTensorValue{3,Float64}))
+
+# with variance, `inv` inverses it and swaps the index pairs
+S = Tuple{Con(2),Cov(2),Cov(2),Con(2)}
+av = NTensorValue{S}(Tuple(get_array(a)))
+aiv = inv(av)
+@test isa(aiv, NTensorValue{Tuple{Con(2),Cov(2),Cov(2),Con(2)}})
+@test get_array(av ⋅² aiv) ≈ get_array(I4)
+@test get_array(aiv ⋅² av) ≈ get_array(I4)
+@test inv(SymFourthOrderTensorValue{Cov(1)}(4.0)) == SymFourthOrderTensorValue{Con(1)}(0.25)
+@test_throws ErrorException inv(NTensorValue{Tuple{2,3,3,2}}(Tuple(1.0:36.0)))
+
 # Test eigen function
 t = TensorValue(1.0,2.0,3.0,4.0)
 result = eigen(t)

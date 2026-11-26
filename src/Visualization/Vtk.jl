@@ -298,13 +298,12 @@ function _vtkinfo_extrusion_polytope(p,exponents)
   elseif p == SEGMENT
     if n_nodes == 2
       vtkid = 3
-      vtknodes = [1,2]
     elseif n_nodes == 3
       vtkid = 21
-      vtknodes = [1,2,3]
     else
-      @notimplemented
+      vtkid = 68
     end
+    vtknodes = collect(1:n_nodes)
 
   elseif p == TRI
     if n_nodes == 3
@@ -404,7 +403,6 @@ function _vtkcelltypedict()
   d = Dict{Int,WriteVTK.VTKCellTypes.VTKCellType}()
   d[VTK_VERTEX.vtk_id] = VTK_VERTEX
   d[VTK_LINE.vtk_id] = VTK_LINE
-  d[VTK_LINE.vtk_id] = VTK_LINE
   d[VTK_TRIANGLE.vtk_id] = VTK_TRIANGLE
   d[VTK_QUAD.vtk_id] = VTK_QUAD
   d[VTK_TETRA.vtk_id] = VTK_TETRA
@@ -417,6 +415,7 @@ function _vtkcelltypedict()
   d[VTK_QUADRATIC_EDGE.vtk_id] = VTK_QUADRATIC_EDGE
   d[VTK_QUADRATIC_HEXAHEDRON.vtk_id] = VTK_QUADRATIC_HEXAHEDRON
   d[VTK_PYRAMID.vtk_id] = VTK_PYRAMID
+  d[VTK_LAGRANGE_CURVE.vtk_id] = VTK_LAGRANGE_CURVE
   d[VTK_LAGRANGE_TRIANGLE.vtk_id] = VTK_LAGRANGE_TRIANGLE
   d[VTK_LAGRANGE_QUADRILATERAL.vtk_id] = VTK_LAGRANGE_QUADRILATERAL
   d[VTK_LAGRANGE_TETRAHEDRON.vtk_id] = VTK_LAGRANGE_TETRAHEDRON

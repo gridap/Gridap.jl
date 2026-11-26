@@ -1051,6 +1051,33 @@ end
 
 
 """
+    inv(a::MultiValue{Tuple{D1,D2,D3,D4}})
+
+Inverse with respect to [`⋅²`](@ref double_contraction):
+`a ⋅² a⁻¹ == a⁻¹ ⋅² a == 𝕀`, with `𝕀[i,j,k,l] = δᵢₖδⱼₗ`.
+`Int(D1) == Int(D3)` and `Int(D2) == Int(D4)` are required.
+A `SymFourthOrderTensorValue{D}` is singular for `D` > 1.
+
+`inv` inverses the variance of all indices and swaps the first and last pairs,
+the result has shape `(D3⁻,D4⁻,D1⁻,D2⁻)`, `Dᵢ⁻` the inverse variance of `Dᵢ`.
+"""
+function inv(a::MultiValue{Tuple{D1,D2,D3,D4}}) where {D1,D2,D3,D4}
+  (Int(D1) == Int(D3) && Int(D2) == Int(D4)) ||
+    @unreachable "inv undefined for this tensor shape: $(size(a))"
+  M = Int(D1)*Int(D2)
+  m = SMatrix{M,M}(Tuple(get_array(a)))
+  S = Tuple{inverse_variance(D3),inverse_variance(D4),inverse_variance(D1),inverse_variance(D2)}
+  NTensorValue{S}(Tuple(inv(m)))
+end
+
+# Minor symmetries imply a ⋅² w == 0 for any skew-symmetric w. Column D+1 = (1,2)
+# equals column 2 = (2,1), so D+1 is the first zero pivot in exact arithmetic.
+function inv(a::SymFourthOrderTensorValue{D}) where D
+  Int(D) == 1 || throw(SingularException(Int(D)+1))
+  SymFourthOrderTensorValue{inverse_variance(D)}(inv(a.data[1]))
+end
+
+"""
     eigen(a::MultiValue{Tuple{D1,D2}})
 
 Eigenvalue decomposition of a square second order tensor.
