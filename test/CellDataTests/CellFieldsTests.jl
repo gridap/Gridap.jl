@@ -210,4 +210,21 @@ h_N = (2*f_N+g)⋅g
 hx_N = h_N(x_N)
 test_array(hx_N,collect(hx_N))
 
+afield = AffineField(TensorValue(2.0,0.0,0.0,3.0),VectorValue(1.0,0.0))
+afun(x) = x⋅TensorValue(2.0,0.0,0.0,3.0) + VectorValue(1.0,0.0)
+a = CellField(afield,trian,PhysicalDomain())
+@test DomainStyle(a) == PhysicalDomain()
+test_array(a(x),CellField(afun,trian)(x),(i,j)->all(map(≈,i,j)))
+test_array(∇(a)(x),∇(CellField(afun,trian))(x),(i,j)->all(map(≈,i,j)))
+a = CellField(afield,trian,ReferenceDomain())
+@test DomainStyle(a) == ReferenceDomain()
+test_array(a(x),map(xs->afun.(xs),get_data(x)))
+
+cell_afield = [AffineField(TensorValue(1.0,0.0,0.0,1.0)*i,VectorValue(0.0,0.0)) for i in 1:num_cells(trian)]
+a = CellField(cell_afield,trian,ReferenceDomain())
+test_array(a(x),map((f,xs)->f.(xs),cell_afield,get_data(x)))
+@test_throws AssertionError CellField(cell_afield[1:2],trian,ReferenceDomain())
+@test_throws ArgumentError CellField(afield,trian)
+@test_throws ArgumentError CellField(cell_afield,trian)
+
 end # module

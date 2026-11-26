@@ -107,6 +107,29 @@ function CellField(f::AbstractArray{<:Number},trian::Triangulation,domain_style:
   GenericCellField(cell_field,trian,domain_style)
 end
 
+function CellField(f::Field,trian::Triangulation,domain_style::DomainStyle)
+  s = size(get_cell_map(trian))
+  CellField(Fill(f,s),trian,domain_style)
+end
+
+function CellField(f::AbstractArray{<:Field},trian::Triangulation,domain_style::DomainStyle)
+  @check length(f)==num_cells(trian)  """\n
+  You are trying to build a CellField from an array of length $(length(f))
+  on a Triangulation with $(num_cells(trian)) cells. The length of the given array
+  and the number of cells should match.
+  """
+  GenericCellField(f,trian,domain_style)
+end
+
+# A `Field` can be a reference map (shape functions) or a physical one (geometry):
+# no `DomainStyle` is a safe default.
+function CellField(f::Union{Field,AbstractArray{<:Field}},trian::Triangulation)
+  throw(ArgumentError("""
+  The DomainStyle in which the Field(s) are evaluated must be given,
+  `CellField(f,trian,ReferenceDomain())` or `CellField(f,trian,PhysicalDomain())`.
+  """))
+end
+
 function CellField(f::CellField,trian::Triangulation,domain_style::DomainStyle)
   change_domain(f,trian,domain_style)
 end
