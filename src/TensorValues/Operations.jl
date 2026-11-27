@@ -869,14 +869,84 @@ function cross(a::MultiValue{Tuple{2}}, b::MultiValue{Tuple{2}})
   a[1]b[2] - a[2]b[1]
 end
 
+# Sum of the `(sign, expression)` pairs in `terms`, from left to right.
+function _signed_sum(terms)
+  s, e = first(terms)
+  ex = s > 0 ? e : :(-$e)
+  for (s, e) in Iterators.drop(terms, 1)
+    ex = Expr(:call, s > 0 ? :+ : :-, ex, e)
+  end
+  ex
+end
+
 """
     cross(a::VectorValue{3}, b::VectorValue{3}) -> VectorValue{3}
     cross(a::VectorValue{2}, b::VectorValue{2}) -> scalar
+    cross(a::MultiValue, b::MultiValue)
     a × b
 
-Cross product of 2D and 3D vector.
+Cross product of 2D and 3D vectors, and its generalisation to 3D tensors, the
+tensor cross product of de Boer (1982), see Bonet, Gil and Ortigosa (2015),
+[doi:10.1016/j.cma.2014.10.002](https://doi.org/10.1016/j.cma.2014.10.002),
+Appendix. With `ε` the Levi-Civita symbol and implicit summation:
+
+- `(v × A)[i,j] = ε[i,k,l] v[k] A[l,j]`, i.e. `(v × A)⋅w = v × (A⋅w)`,
+- `(A × v)[i,j] = ε[j,k,l] A[i,k] v[l]`, i.e. `(A × v)⋅w = A⋅(v × w)`,
+- `(A × B)[i,j] = ε[i,k,l] ε[j,m,n] A[k,m] B[l,n]`,
+
+where `v` is a vector and `A`, `B` are second order tensors. The product is
+commutative between second order tensors, `A × B = B × A`, and e.g.
+`cof(A) = (A × A)/2` and `(A × A) ⊙ A = 6det(A)`.
+
+The products with tensors `T` of higher order cross the indices of `T` next to
+the other operand:
+
+- `(v × T)[i,J...] = ε[i,k,l] v[k] T[l,J...]`,
+- `(T × v)[J...,j] = ε[j,k,l] T[J...,k] v[l]`,
+- `(A × T)[i,j,K...] = ε[i,k,l] ε[j,m,n] A[k,m] T[l,n,K...]`,
+- `(T × A)[K...,i,j] = ε[i,k,l] ε[j,m,n] T[K...,k,m] A[l,n]`,
+
+so that `A × T = 𝕏(A) ⋅² T` and `T × A = T ⋅² 𝕏(A)` with `𝕏(A)[i,j,k,l] =
+ε[i,k,m] ε[j,l,n] A[m,n]`, the derivative of `A × B` with respect to `B`.
+
+The result of a tensor cross product is a full tensor (`TensorValue` or
+`HighOrderTensorValue`), whatever the symmetries of the operands.
 """
-cross(a::MultiValue, b::MultiValue) = error("Cross product only defined for R2 and R3 vectors of same dimension")
+@generated function cross(a::MultiValue{Sa}, b::MultiValue{Sb}) where {Sa,Sb}
+  sa, sb = Tuple(Sa.parameters), Tuple(Sb.parameters)
+  na, nb = length(sa), length(sb)
+  ε = sorting_sign
+  r3 = 1:3
+  # Components read into local variables, a_i_j = a[i,j], once rather than in each term
+  a_(I...) = Symbol(:a_, join(I, '_'))
+  b_(I...) = Symbol(:b_, join(I, '_'))
+  if na == 1 && nb ≥ 2 && sa[1] == 3 && sb[1] == 3
+    sr = sb
+    comp = I -> [(ε(I[1],k,l), :($(a_(k)) * $(b_(l, I[2:end]...))))
+                 for l in r3 for k in r3 if !iszero(ε(I[1],k,l))]
+  elseif na ≥ 2 && nb == 1 && sa[end] == 3 && sb[1] == 3
+    sr = sa
+    comp = I -> [(ε(I[end],k,l), :($(a_(I[1:end-1]..., k)) * $(b_(l))))
+                 for l in r3 for k in r3 if !iszero(ε(I[end],k,l))]
+  elseif na == 2 && nb ≥ 2 && sa == (3,3) && sb[1:2] == (3,3)
+    sr = sb
+    comp = I -> [(ε(I[1],k,l)*ε(I[2],m,n), :($(a_(k, m)) * $(b_(l, n, I[3:end]...))))
+                 for n in r3 for l in r3 for m in r3 for k in r3 if !iszero(ε(I[1],k,l)*ε(I[2],m,n))]
+  elseif na ≥ 3 && nb == 2 && sb == (3,3) && sa[end-1:end] == (3,3)
+    sr = sa
+    comp = I -> [(ε(I[end-1],k,l)*ε(I[end],m,n), :($(a_(I[1:end-2]..., k, m)) * $(b_(l, n))))
+                 for n in r3 for l in r3 for m in r3 for k in r3 if !iszero(ε(I[end-1],k,l)*ε(I[end],m,n))]
+  else
+    msg = "Cross product not defined between tensors of sizes $sa and $sb: it is defined between " *
+      "R2 or R3 vectors of same dimension, and between 3D tensors if one of them is of order 1 or 2"
+    return :( throw(DimensionMismatch($msg)) )
+  end
+  comps = [_signed_sum(comp(Tuple(I))) for I in CartesianIndices(sr)]
+  V = length(sr) == 2 ? :(TensorValue{3,3}) : :(HighOrderTensorValue{$(Tuple{sr...})})
+  reads_a = [:( $(a_(Tuple(I)...)) = a[$I] ) for I in CartesianIndices(sa)]
+  reads_b = [:( $(b_(Tuple(I)...)) = b[$I] ) for I in CartesianIndices(sb)]
+  Expr(:block, reads_a..., reads_b..., :( $V($(comps...)) ))
+end
 
 ###############################################################
 # Linear Algebra
