@@ -68,7 +68,7 @@ function add_tensor_operations_benchmarks!(SUITE, D)
 
   if D == 3
     group = SUITE["TensorValues"]["cross"][dim]
-    for (label, a, b) in (("1×1", v, u),)# ("2×2", A, B), ("2×4", A, H), ("4×2", H, A), ("3×2", W, A))
+    for (label, a, b) in (("1×1", v, u), ("2×2", A, B), ("2×4", A, H), ("4×2", H, A), ("3×2", W, A))
       add_tensor_benchmark!(group, label, ×, a, b)
     end
   end
