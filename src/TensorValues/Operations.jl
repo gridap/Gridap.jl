@@ -882,7 +882,7 @@ end
 """
     cross(a::VectorValue{3}, b::VectorValue{3}) -> VectorValue{3}
     cross(a::VectorValue{2}, b::VectorValue{2}) -> scalar
-    cross(a::MultiValue, b::MultiValue)
+    cross(a::MultiValue, b::MultiValue) -> MultiValue
     a × b
 
 Cross product of 2D and 3D vectors, and its generalisation to 3D tensors, the
@@ -890,24 +890,17 @@ tensor cross product of de Boer (1982), see Bonet, Gil and Ortigosa (2015),
 [doi:10.1016/j.cma.2014.10.002](https://doi.org/10.1016/j.cma.2014.10.002),
 Appendix. With `ε` the Levi-Civita symbol and implicit summation:
 
-- `(v × A)[i,j] = ε[i,k,l] v[k] A[l,j]`, i.e. `(v × A)⋅w = v × (A⋅w)`,
-- `(A × v)[i,j] = ε[j,k,l] A[i,k] v[l]`, i.e. `(A × v)⋅w = A⋅(v × w)`,
+- `(u × v)[i] = ε[i,j,k] u[j] v[k]`,
+- `(v × A)[i,j] = ε[i,k,l] v[k] A[l,j]`, i.e. `(v × A)·w = v × (A·w)`,
+- `(A × v)[i,j] = ε[j,k,l] A[i,k] v[l]`, i.e. `(A × v)·w = A·(v × w)`,
 - `(A × B)[i,j] = ε[i,k,l] ε[j,m,n] A[k,m] B[l,n]`,
-
-where `v` is a vector and `A`, `B` are second order tensors. The product is
-commutative between second order tensors, `A × B = B × A`, and e.g.
-`cof(A) = (A × A)/2` and `(A × A) ⊙ A = 6det(A)`.
-
-The products with tensors `T` of higher order cross the indices of `T` next to
-the other operand:
-
 - `(v × T)[i,J...] = ε[i,k,l] v[k] T[l,J...]`,
-- `(T × v)[J...,j] = ε[j,k,l] T[J...,k] v[l]`,
 - `(A × T)[i,j,K...] = ε[i,k,l] ε[j,m,n] A[k,m] T[l,n,K...]`,
-- `(T × A)[K...,i,j] = ε[i,k,l] ε[j,m,n] T[K...,k,m] A[l,n]`,
 
-so that `A × T = 𝕏(A) ⋅² T` and `T × A = T ⋅² 𝕏(A)` with `𝕏(A)[i,j,k,l] =
-ε[i,k,m] ε[j,l,n] A[m,n]`, the derivative of `A × B` with respect to `B`.
+where `u` and `v` are vectors, `A`, `B` are second order tensors and `T` is a
+high order tensor; `T × v` and `T × A` cross the last indices of `T` likewise.
+The product is commutative between second order tensors,
+`A × B = B × A`, and e.g. `cof(A) = (A × A)/2` and `(A × A) ⊙ A = 6det(A)`.
 
 The result of a tensor cross product is a full tensor (`TensorValue` or
 `HighOrderTensorValue`), whatever the symmetries of the operands.
