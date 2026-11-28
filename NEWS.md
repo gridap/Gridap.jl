@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added compatibility for `NLsolve.jl` v5 and `DocStringExtensions.jl` v0.10. Since PR [#1358](https://github.com/gridap/Gridap.jl/pull/1358).
 - Added support for exporting polynomials of order 3 or more in 1D to VTK. Since PR [#1361](https://github.com/gridap/Gridap.jl/pull/1361).
 - Added `CellField(f::Field, trian, ds::DomainStyle)`, the same `Field` on every cell, and `CellField(f::AbstractArray{<:Field}, trian, ds::DomainStyle)`, one `Field` per cell.
+- Generalised `cross` (`×`) to 3D tensors, the tensor cross product of de Boer (1982) used in Bonet, Gil and Ortigosa (2015): `(A × B)[i,j] = ε[i,k,l] ε[j,m,n] A[k,m] B[l,n]` between second order tensors. Since PR [#1366](https://github.com/gridap/Gridap.jl/pull/1366)
 
 ### Fixed
 

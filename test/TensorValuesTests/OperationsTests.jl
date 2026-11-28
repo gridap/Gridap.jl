@@ -831,7 +831,60 @@ b = VectorValue(3.0,-2.0)
 
 a = VectorValue(4.0,1.0)
 b = VectorValue(3.0,-2.0,1.0)
-@test_throws ErrorException cross(a, b)
+@test_throws DimensionMismatch cross(a, b)
+
+# Tensor cross product (Bonet, Gil and Ortigosa 2015, Appendix)
+
+ε3 = HighOrderTensorValue{Tuple{3,3,3}}(ntuple(n -> sorting_sign(Tuple(CartesianIndices((3,3,3))[n])...), 27))
+A = TensorValue{3,3}(1.,-2.,3.,4.,0.5,6.,-7.,8.,2.)
+B = TensorValue{3,3}(0.,1.,-1.,2.,3.,5.,-4.,1.,2.)
+v = VectorValue(1.,-3.,2.)
+w = VectorValue(2.,1.,-5.)
+H = HighOrderTensorValue{Tuple{3,3,3,3}}(ntuple(n -> sin(n), 81))
+W = HighOrderTensorValue{Tuple{3,3,3}}(ntuple(n -> cos(n), 27))
+I3 = one(A)
+
+# Definitions (A.1), (A.2) and (A.3)
+@test (v × A) ⋅ w ≈ v × (A ⋅ w)
+@test (A × v) ⋅ w ≈ A ⋅ (v × w)
+@test v ⋅ (A × B) ⋅ w ≈ (v × A) ⊙ (B × w)
+AxB = TensorValue{3,3}([sum(ε3[i,k,l]*ε3[j,m,n]*A[k,m]*B[l,n] for k in 1:3, l in 1:3, m in 1:3, n in 1:3) for i in 1:3, j in 1:3])
+@test A × B ≈ AxB
+@test (A × B) isa TensorValue{3,3,Float64}
+
+# Properties (A.5)-(A.14)
+@test A × B == B × A
+@test transpose(A × B) ≈ transpose(A) × transpose(B)
+@test (A × B) ⊙ I3 ≈ (B × I3) ⊙ A ≈ (A × I3) ⊙ B
+@test A × I3 ≈ tr(A)*I3 - transpose(A)
+@test I3 × I3 == 2I3
+@test (A × A) ⊙ A ≈ 6det(A)
+@test (A × A)/2 ≈ det(A)*transpose(inv(A))
+@test (v ⊗ w) × (w ⊗ v) ≈ (v × w) ⊗ (w × v)
+@test v × (A ⋅ w ⊗ v) ≈ (v × A) ⋅ w ⊗ v
+@test v × (A × w) ≈ (v × A) × w
+@test A × (v ⊗ w) ≈ -(v × A × w)
+
+# Symmetric operands, integer components
+As = SymTensorValue{3}(1,2,3,4,5,6)
+Af = TensorValue{3,3}(ntuple(n -> As[n], 9))
+@test As × B ≈ Af × B
+@test As × As == Af × Af
+@test (As × As) isa TensorValue{3,3,Int}
+
+# Higher order tensors: A × T = 𝕏(A) ⋅² T and T × A = T ⋅² 𝕏(A)
+𝕏A = HighOrderTensorValue{Tuple{3,3,3,3}}([sum(ε3[i,k,m]*ε3[j,l,n]*A[m,n] for m in 1:3, n in 1:3) for i in 1:3, j in 1:3, k in 1:3, l in 1:3])
+@test 𝕏A ⋅² B ≈ A × B
+@test A × H ≈ 𝕏A ⋅² H
+@test H × A ≈ H ⋅² 𝕏A
+@test W × A ≈ W ⋅² 𝕏A
+@test A × W ≈ 𝕏A ⋅² W
+@test (A × H) isa HighOrderTensorValue{Tuple{3,3,3,3},Float64}
+
+# Not defined
+@test_throws DimensionMismatch TensorValue{2,2}(1,2,3,4) × TensorValue{2,2}(1,2,3,4)
+@test_throws DimensionMismatch H × H
+@test_throws DimensionMismatch TensorValue{3,2}(1,2,3,4,5,6) × A
 
 # Linear Algebra
 
